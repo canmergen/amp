@@ -1,0 +1,265 @@
+# Analitik Modelleme Platformu — teslim notu
+
+Bu tur: **Bölme Stratejisi .txt'deki hiyerarşiye getirildi** — koşullu
+görünürlük, "?" ipuçları, "Detaylar ve Terimler", tek terim dili,
+gap + çoklu tekrar. Ayrıca her adım bloğuna ince Akbank kırmızısı çerçeve.
+
+> **Deploy sonrası "Yeni Çalışma"ya bas.**
+
+---
+
+## Kopyala-yapıştır sırası
+
+**Library Editor (`python/fe_agent/`):**
+`akis_durum.py` → `akis_panel.py` → `akis_faz01.py`
+**Webapp:** `style.css` → `app.js`
+
+---
+
+## 1. Adım bloklarına 3px Akbank kırmızısı çerçeve
+
+`.adim-blok` artık **3px**, markanın **kendi** kırmızısıyla çerçeveli
+(`--blok-cerceve: 3px` + `solid var(--kirmizi)`). İş akışının her adımı
+nerede başlayıp nerede bittiği belli.
+
+Renk için ara değişken KULLANILMIYOR ve sebebi önemli: `:root` üzerinde
+`--kirmizi-cerceve: var(--kirmizi)` yazınca değer **tanımlandığı yerde**
+çözülüyor, koyu temanın `#kabuk.koyu` içindeki yeni `--kirmizi`'sini
+görmüyor — çerçeve iki temada da açık temanın kırmızısında kalıyordu.
+Kural artık doğrudan `var(--kirmizi)` okuyor; açık temada `#D51115`,
+koyu temada `#FF4D4F`. İkisini de ölçtüm.
+
+## 2. Koşullu görünürlük — "20 inputlu form" yok
+
+Karşılığı olmayan satır **hiç çizilmiyor** (pasif değil, yok):
+
+| Seçim | Görünen | Kalkan |
+|---|---|---|
+| Zamansal | Dönem Kolonu, OOT/Test Dönemi, Dönemler Arası Boşluk | OOT/Test Büyüklüğü |
+| Rastgele | OOT/Test Büyüklüğü | dönem satırları |
+| Doğrulama = Kullanma | — | Doğrulama Büyüklüğü |
+| Çapraz Doğrulama = Yok | — | Kat Sayısı |
+| Bölme Birimi = Satır | — | Bölme Kolonu |
+| Tekrarlanabilirlik = Sabit | Seed | Tekrar Sayısı |
+| Tekrarlanabilirlik = Çoklu | Tekrar Sayısı | Seed |
+
+Koşul taslaktan hesaplanıyor: kutuya basıldığı anda satır açılıp
+kapanıyor, sunucuya gidip gelmeden.
+
+## 3. Açıklama iki katmanda
+
+- **Satır yanında "?"** → en fazla iki satır, "bu ne işe yarıyor"
+- **En altta "Detaylar ve Terimler"** (varsayılan kapalı) → üç bölüm:
+  Veri Setleri / Bölme Yöntemleri / Değerlendirme
+
+Ana ekrandaki uzun cümleler kalktı. Kullanıcı üç şey görüyor: ne
+seçiyorum → sistem ne öneriyor → ben ne seçtim.
+
+## 4. Tek terim dili
+
+Uydurma karşılıklar ("sınav", "deneme seti", "dönüşümlü deneme") tamamen
+kalktı. Ekranda sektör adları var ve her biri sözlükte tanımlı:
+**Eğitim Seti · Doğrulama Seti · OOT / Test Seti · Çapraz Doğrulama ·
+Kat Sayısı · Tekrar Sayısı · Seed**.
+
+Ayrı bir "Test" + "OOT" kavramı yok — tek ad: **OOT / Test Seti**.
+Testi buna göre değiştirdim: eskiden yabancı terim yasağı vardı, şimdi
+kural daha sert — ekranda geçen her terim sözlükte tanımlı olmalı.
+
+## 5. İki yeni yetenek
+
+**Dönemler Arası Boşluk (gap).** Zamansal bölmede eğitim ile OOT/Test
+arasında modele **hiç dahil edilmeyen** dönem sayısı. Performans
+penceresi yüzünden son eğitim dönemi ile ilk test dönemi aynı gözlemi
+paylaşabiliyordu. Atlanan satırlar hiçbir sete girmiyor; aşırı boşluk
+eğitimi boşaltamıyor (en az bir dönem kalacak şekilde kırpılıyor).
+
+**Çoklu tekrar.** "Tekrarlanabilirlik" artık Sabit bölme / Çoklu tekrar.
+Çoklu seçilince Tekrar Sayısı satırı geliyor ve çapraz doğrulama farklı
+seed'lerle o kadar kez tekrarlanıyor (3 tekrar × 3 kat = 9 kat). Her
+turun seed'i ana seed'den türetiliyor, çalışma yine tekrar üretilebilir.
+CV kapalıyken çoklu tekrar seçilirse uyarı çıkıyor.
+
+## 6. Onay kutuları seçim listesi oldu
+
+"Doğrulama Seti" → Kullan / Kullanma, "Hedef Dağılımı" → Korunsun /
+Korunmasın. Tek başına bir kare "işaretli ne demek" sorusunu
+doğuruyordu.
+
+## 7. Yol üstünde çıkan iki hata
+
+- **`Number(k.en_az) || 2`** — boşluk alanının alt sınırı 0 ve JS'te 0
+  yanlış sayılıyor; sınır sessizce 2'ye çıkıyor, "boşluk yok"
+  denemiyordu.
+- **`bfSecimAlani` değeri arka uçtan okuyordu** — "Kullan" seçip başka
+  bir alanı değiştirince doğrulama seti sessizce eski değerine dönüyordu.
+  Artık taslaktan okuyor.
+
+---
+
+## Önceki turlardan devam eden notlar
+
+
+> Zipte yalnız Dataiku'ya yapıştıracağın dosyalar var.
+
+## Kopyala-yapıştır sırası
+
+**Library Editor (`python/fe_agent/`):**
+`akis_faz01.py` → `akis_kayit.py` → `akis_sohbet.py` → `akis.py` → `akis_durum.py`
+**Webapp:** `style.css` → `app.js`
+
+---
+
+## 1. "Veri seti ve sözlük bağlandı" paragrafı kalktı
+
+Doğrulama kartının hemen altında beliren o paragraf, kartta verdiğin
+kararın tekrarıydı. Artık sonuç **kartın rozetine** yazılıyor: karar
+verilince rozet `✓ Girdiler doğrulandı` yerine `✓ 2 kolon sözlüğe eklendi`
+oluyor. Bilgi kaybolmadı, yeri değişti.
+
+Aynı şekilde sonraki adımın sorusu ("Devam etmek için hedef değişken ve
+kimlik kolonu bilgisine ihtiyacım var…") da kalktı — o cümleyi zaten
+**Modelleme tanımları kartının açıklaması** söylüyordu; kullanıcı aynı şeyi
+iki kez okuyordu. Yazarak girme örneği (`target … id …`) kartın içine, tek
+aralıklı bir ipucu satırına taşındı ve yine **senin kendi kolonlarından**
+üretiliyor.
+
+`kurulum_uygula` artık yalnızca **istenenden farklı** bir şey olduğunda
+konuşuyor: bir tanım sözlüğe yazılamadıysa ya da çalışma kopyası
+kurulamadıysa. Sessiz kalırsa kullanıcı kolonun neden süreç dışında
+kaldığını bilemez.
+
+## 2. Rozet ne olduğunu söylüyor
+
+`✓ Hazır` → **`✓ Girdiler doğrulandı`**. Tek başına "Hazır" neyin hazır
+olduğunu söylemiyordu; rozet artık seçim formundaki "Girdiler hazır" ile
+aynı dili konuşuyor.
+
+## 3. Modelleme tanımlarında ikinci onay kalktı
+
+Formu doldurup **Tanımları onayla**'ya bastıktan sonra gelen
+*"Modelleme tanımları: … Doğru mu?"* özeti ve **Onayla ve Uygula** satırı
+kaldırıldı. Haklıydın: o üç satır sağ paneldeki Veri seti kartında zaten
+duruyor ve onayı zaten formda vermiştin.
+
+Bunun için akış makinesine küçük bir kural eklendi: **`plan=None` olan
+adımda formun kendisi onaydır.** Form gönderilince `uygula` doğrudan
+çalışır. (Girdisi olmayan, planı olan adımlar — bölme, profil, SFA… —
+eskisi gibi plan gösterip onay bekliyor.)
+
+**Hesap kaybolmadı:** hedefin tipi/dağılımı, event rate, dönem listesi ve
+kimlik tekrarı artık `tanimlar_uygula` içinde hesaplanıyor. Bölme adımı
+bunlara dayanıyor ve testte doğrulanıyor.
+
+**Sessiz geçilmesi pahalıya patlayacak şeyler yazılmaya devam ediyor:**
+hedef binary değilse, pozitif oran %1'in altında/%99'un üstündeyse, dönem
+kolonu verilmemişse ya da tek değer taşıyorsa, kimlik kolonunda tekrar
+varsa — bunlar uyarı olarak çıkıyor. Geri kalan bilgi sağ panelde.
+
+## 4. Yan bulgu: "1/3 seçildi"
+
+Modelleme tanımları kartı hiçbir alan doldurulmamışken **"1/3 seçildi"**
+yazıyordu: opsiyonel dönem kolonu boşken de "geçerli" sayıldığı için
+paydaya giriyordu. Durum göstergesi artık yalnız **zorunlu** alanları
+sayıyor — `0/2` → `1/2` → `✓ Girdiler hazır`. Düğmenin etkinliği yine
+bütün alanların geçerliliğine bakıyor (opsiyonel alana geçersiz değer
+yazılırsa form yine kilitli kalır).
+
+---
+
+## 5. Doğrulama
+
+```
+python  20 dosya      hepsi geçti
+js       9 dosya      hepsi geçti
+uçtan uca                RC=0, istisna yok
+```
+
+`test_dogrulama_bagimsiz.py` (38 iddia) ajanın testlerine bakılmadan yazıldı
+ve bozulması **en pahalı** üç şeyi sınıyor:
+
+- **Orijinal sözlük ve veri seti gerçekten değişmiyor:** kararı uyguladıktan
+  sonra iki DataFrame de `equals` ile birebir karşılaştırılıyor; tanımsız
+  kolonların orijinal sözlükte olmadığı ayrıca kontrol ediliyor.
+- **Onaylanmadan hiçbir şey yazılmıyor:** kart kurulduğunda çalışma
+  kopyasında o kolonlar yok; yalnız onaylanan kolon yazılıyor, hariç tutulan
+  yazılmıyor.
+- **LLM'e veri sızmıyor:** veri setine ayırt edici damgalı değerler konup
+  LLM çağrısı yakalanıyor; çağrının gövdesinde bu damgaların hiçbiri yok,
+  ama kolon adı var (istenen bu). LLM patlatıldığında adım yine çalışıyor ve
+  her satırın `oneri_kaynak` alanı `"yok"` oluyor.
+- Karar gövdesi gelmezse eski davranış: hepsi hariç, kopyaya satır eklenmiyor.
+- Yasak üç cümle `fe_agent/` + `webapp/` ağacında hiç geçmiyor.
+- AST: `akis_faz01.py` ve `sozluk_calisma.py` içinde dataset yazma çağrısı yok.
+
+**Ekran gerçekten Chromium'da çizilip sürüldü** (jsdom render etmiyor). Kartı
+tıklayıp gönderilen gövde okundu: `{haric: [...], ekle: [{kolon, aciklama,
+kategori}]}` ve `sessiz: true`. İki hata böyle görüldü ve düzeltildi:
+
+1. **Genel aksiyon satırı kartla birlikte çiziliyordu.** Adım plan/onay
+   aşamasında olduğu için "Onayla ve Uygula / Değiştir / Geri Dön" da
+   açılıyor, kartın kendi düğmelerinin yanında duruyordu — dış incelemenin
+   "birbirini tekrar ediyor" dediği şeyin aynısı.
+2. **Düğme etiketi gizli kalan kolonları saymıyordu.** 200 sınırı aşıldığında
+   etiket "200 Kolonu Hariç Tut" yazıp 900'ünü hariç tutuyordu.
+
+Ayrıca ön yüz ajanının bildirdiği bir sorunu da kapattım: "Seçimi Düzenle" ve
+"Geri" sohbete kullanıcı balonu basıyordu. İkisi de artık sessiz gidiyor —
+kullanıcı bir cümle yazmadı, düğmeye bastı.
+
+---
+
+## 6. Bu turda doğrulanan ekstra şeyler
+
+`test_tmd_kapi.py` (125 iddia) diğer testlere bakılmadan yazıldı ve
+**kapının bütünlüğünü** sınıyor:
+
+- `bloker_sayisi`, `teslim_durumu`, `hazir_mi` ve `teslim_damgasi` **her
+  durumda** birbirini doğruluyor — ilk hâlde, her bloker kapatıldıktan sonra
+  tek tek, geri alındığında, boş durumda ve bozuk durumda
+- `/dokuman_bolum` teslim özetini de döndürüyor ve tam gövdeyle **aynı**
+  değerleri taşıyor (damga tek kayıtta bayatlamıyor)
+- bloker geri alınınca **geri geliyor**
+- 13/15/16/17 asla bloker değil ve `eksikler` listeleri dolu
+- `dokuman.py`'nin metin sabitlerinde **başka bir kurumun veri seti / kolon
+  adı yok** (AST taraması; modülün kendi sabitleri ayıklanıyor). Taramanın
+  gerçek bir ihlali yakaladığı da ayrıca kanıtlanıyor — yoksa kontrol
+  sessizce "hep geçer" hâle gelirdi
+- Δ=0 düzeltmesi ve ölçüm kapsamı metni dokümanda duruyor
+- `dokuman.py` / `docx_yaz.py` hiçbir dataset'e dokunmuyor
+- damga `.docx`'te üç yerde: başlık sayfası, künye satırı, 20. bölüm
+
+**Sayfa gerçekten Chromium'da çizilip bakıldı** (jsdom render etmiyor). İki
+kusur böyle görüldü ve düzeltildi:
+
+1. Künyede "Doküman durumu" **başlıksız, tek satırlık ikinci bir tablo**
+   olarak sonda duruyordu. Statü tablosuna bağlı olduğu için ancak ikinci
+   geçte üretilebiliyor; artık asıl künye tablosuna satır olarak ekleniyor.
+   Düzenlenmiş künyede hiçbir şey yapılmıyor.
+2. Damga tek bölüm kaydında bayatlıyordu. Uç tam gövdeyi zaten üretiyordu ama
+   yalnız bölümü döndürüyordu; teslim özeti de eklendi. Ön yüzdeki "soluk
+   damga" ara hâli kaldırıldı — gerekçesi kalmadı.
+
+---
+
+## 7. Sırada
+
+- **Doküman LLM katmanı:** kullanıcı bölümleri için röportaj soruları. Şu an
+  o bölümler "Tamamlanması gerekenler" listesiyle ne yazılacağını söylüyor
+  ama soruyu soran yok. LLM sayı yazmayacak, yalnız hesaplananı yorumlayacak.
+- **Platformun hesaplamadığı analizler:** kalibrasyon, segment performansı,
+  SHAP/ablation, MD/OOS/OOT ayrı performans. Bölümler açıldı, yerleri belli;
+  her biri ayrı bir adım işi.
+- DAĞILIM ve İLİŞKİLER sekmeleri hâlâ iskelet.
+
+## 8. Sende duran işler
+
+- `akis_durum.bolme_ozeti`, `bolme["satir"]` metin gelirse `AttributeError`
+  atıyor. Aynı yolu HAZIRLIK paneli de kullanıyor.
+- `/tani` çıktısı: `kimlik_yolu == "backend"` ise bütün kullanıcılar tek
+  oturumu paylaşıyor.
+- Senaryo: `skorlar["oot"]` zamansal modda test seti skorlarını taşımalı;
+  `hiperparametre_arama` / `cv_etkin` / `cv_grup_kolon` onurlandırılmazsa
+  gruplama düzeltmesi geri alınmış olur; `konfig_al(is_adi, oturum_id)`.
+- Model Risk eşikleri hâlâ yer tutucu.
+- **Sohbete yapıştırdığın GitHub token'ı hâlâ iptal edilmedi.**

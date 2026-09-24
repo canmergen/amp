@@ -1,0 +1,12 @@
+Analitik Modelleme Platformu - kurtarilan kaynak kodlar
+Kurtarma tarihi: 18.09.2026
+
+fe_agent/        -> Dataiku Library Editor: /python/fe_agent/ altina
+webapp/          -> Dataiku webapp editoru sekmelerine:
+  index.html     -> HTML sekmesi  (kaynak: a65c37be tur 75, 17.09.2026)
+  style.css      -> CSS sekmesi   (kaynak: 22293c1f tur 23, 17.09.2026 13:52 - EN SON)
+  app.js         -> JS sekmesi    (kaynak: a65c37be tur 75, 17.09.2026)
+  backend.py     -> Python sekmesi(kaynak: a65c37be tur 59, 17.09.2026)
+
+NOT: index.html tam bir HTML belgesi degildir; Dataiku webapp HTML sekmesi
+yalnizca govde isaretlemesi tutar. <html>/<head>/<body> etiketi yoktur.

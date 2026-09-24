@@ -1,0 +1,229 @@
+<!-- lang="tr" BURADA ZORUNLU. Uç yazılar CSS ile büyütülüyor
+     (text-transform: uppercase) ve tarayıcı bu dönüşümü dile göre
+     yapıyor: dil belirtilmezse "Veri" → "VERI" ve "İlişkiler" →
+     "ILIŞKILER" çıkıyordu. Türkçede i → İ, ı → I. Dataiku sayfa
+     kabuğunu kendisi üretip <html> etiketini bize bırakmadığı için
+     dil en dıştaki kendi kabımıza yazılıyor; en yakın lang geçerli
+     olduğundan bu yeterli. -->
+<div id="kabuk" lang="tr">
+
+  <header id="ustbar">
+    <div id="ustbar-sol">
+      <img id="banner" alt="">
+      <div id="baslik-blok">
+        <!-- Çipler: seçili veri seti ve sözlük. JS doldurur, seçim yoksa
+             gizli kalır. Üst barda kalan TEK bilgi bunlar; aşama sol
+             panelde, kapsam/hedef sağ panelde, değişken seti özet
+             sayfasında zaten var. -->
+        <div id="urun-adi-satir">
+          <div id="urun-adi">Analitik Modelleme Platformu</div>
+          <span id="veri-seti-cip" class="ust-cip" hidden></span>
+          <span id="sozluk-cip" class="ust-cip" hidden></span>
+        </div>
+        <div id="urun-alt">Bireysel Krediler Analitik ve Tahsis BI</div>
+      </div>
+    </div>
+
+    <!-- Üst şerit: baştan sona ne olduğunu anlatan dört kart
+         (VERİ → ELEME → ÜRETİM → MODEL). -->
+    <div id="ozet-serit"></div>
+
+    <div id="ustbar-sag">
+      <div class="ustbar-sag-satir">
+        <!-- Dar ekranda panelleri çekmece olarak açar; geniş ekranda gizli -->
+        <button id="panel-btn" class="cekmece-btn" type="button"
+                title="İş akışı panelini aç/kapat" aria-label="İş akışı panelini aç/kapat"
+                aria-expanded="false" aria-controls="panel">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+               stroke="currentColor" stroke-width="2.3"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18M3 12h18M3 18h18"></path>
+          </svg>
+        </button>
+        <button id="analiz-btn" class="cekmece-btn" type="button"
+                title="Analiz panelini aç/kapat" aria-label="Analiz panelini aç/kapat"
+                aria-expanded="false" aria-controls="analiz-panel">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+               stroke="currentColor" stroke-width="2.3"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19V10M10 19V5M16 19v-6M22 19H2"></path>
+          </svg>
+        </button>
+        <button id="tema-btn" type="button" title="Koyu tema" aria-label="Tema değiştir"></button>
+        <!-- Panel genişliklerini varsayılana döndürür. Tema düğmesiyle
+             AYNI biçimde: ikon boyu, yüksekliği ve yeri aynı şeritte.
+             Yalnızca genişlikleri sıfırlar - çalışmaya, oturuma ya da
+             akışa DOKUNMAZ; o iş "Yeni Çalışma" düğmesinin. Genişlikler
+             varsayılandayken pasif durur: basılacak bir şey yokken
+             etkin görünmesi "acaba ne sıfırlanıyor" sorusunu doğuruyor. -->
+        <button id="genislik-btn" type="button"
+                title="Panel genişliklerini sıfırla"
+                aria-label="Panel genişliklerini sıfırla">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+               stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9 3 12l3 3M18 9l3 3-3 3M9 12h6"></path>
+            <path d="M12 4v16"></path>
+          </svg>
+        </button>
+        <!-- Dataiku'nun kendi REFRESH düğmesi bunun hemen üstünde duruyor ve
+             karıştırılınca gerçek veri kaybı yaşandı: bu yüzden yalnız ikon
+             değil, görünür etiket de taşır.
+             İKON NEDEN SVG, KARAKTER DEĞİL: ⟳ / ↻ gibi karakterler fonttan
+             fonta değişiyor (bazı sistemlerde tek oklu, bazılarında kutu
+             çıkıyor). Buradaki SVG her ortamda aynı çiziliyor.
+             NEDEN TEK OKLU: sohbet metninde geçen "sağ üstteki ⟳ Yeni
+             Çalışma" ifadesindeki karakter tek oklu; düğmedeki ikon iki
+             oklu olunca metin ile düğme aynı şeyi göstermiyordu. Dataiku'nun
+             kendi REFRESH ikonu da tek oklu.
+             stroke/fill currentColor: düğmenin rengini izler, koyu temada
+             ayrıca kural gerekmez. -->
+        <button id="sifirla-btn" type="button"
+                title="Yeni Çalışma (mevcut çalışma silinir)"
+                aria-label="Yeni Çalışma (mevcut çalışma silinir)">
+          <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
+               focusable="false">
+            <path d="M12.532 5.887 A5 5 0 1 1 9.294 3.170"
+                  fill="none" stroke="currentColor" stroke-width="1.45"
+                  stroke-linecap="round"/>
+            <polygon points="10.550,3.507 7.662,4.234 8.414,1.432"
+                     fill="currentColor"/>
+          </svg>
+          <span class="sifirla-etiket">Yeni Çalışma</span>
+        </button>
+        <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
+      </div>
+
+      <div id="sekmeler">
+        <button class="sekme aktif" data-sayfa="calisma" type="button">ÇALIŞMA</button>
+        <button class="sekme" data-sayfa="ozet" type="button">ÖZET</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== SAYFA 1: ÇALIŞMA ===================== -->
+  <div id="sayfa-calisma" class="sayfa">
+
+    <aside id="panel">
+      <section class="panel-blok">
+        <div class="panel-baslik">ANALİTİK SÜREÇ</div>
+        <p class="panel-metin">
+          Ham veriden final modele kadar olan analitik süreç tek ve izlenebilir
+          bir çalışma akışında yürütülür. Veri hazırlanır, yeni değişkenler
+          üretilir, adaylar değerlendirilir, model denemeleri yapılıp en iyi
+          model pickle formatında kaydedilir ve yeni değişkenlerin modele olan
+          katkıları ölçülür.
+        </p>
+        <p class="panel-metin">
+          Hesaplamalar Python ile gerçekleştirilir; kritik kararlar kullanıcı
+          onayıyla uygulanır. Üretilen değişkenlerin kaynağı, dönüşümü ve seçim
+          durumu süreç boyunca kayıt altında tutulur.
+        </p>
+      </section>
+
+      <section class="panel-blok">
+        <div class="panel-baslik">İŞ AKIŞI</div>
+        <div id="faz-listesi"></div>
+      </section>
+    </aside>
+
+    <!-- SÜRÜKLEME TUTAMAĞI (sol panel <-> sohbet).
+         Panel TAMAMEN KAPANMAZ (kullanıcı kararı: "diğer bloğu tamamen
+         silmeden"): app.js'teki PANEL_SINIR alt sınırı koruyor, sohbet
+         sütununa da ayrı bir taban genişlik bırakılıyor. Dar ekranda
+         paneller çekmeceye dönüştüğü için tutamak gizlenir. -->
+    <div id="tutamak-sol" class="tutamak" role="separator"
+         aria-orientation="vertical" tabindex="0"
+         aria-label="İş akışı panelinin genişliği"
+         title="Sürükleyerek genişliği ayarlayın (çift tıklama: varsayılan)"></div>
+
+    <main id="sohbet-alani">
+      <div id="sohbet" role="log" aria-live="polite" aria-relevant="additions text"></div>
+
+      <!-- ONAY DÜĞMELERİ ARTIK BURADA DEĞİL.
+           "Onayla ve Uygula / Değiştir / Geri Dön" sohbetin altında ortak
+           bir şeritteydi: kullanıcı transkriptte yukarı çıkıp önceki bir
+           bloğu okurken düğmeler görüş alanından çıkıyor, hangi bloğa ait
+           oldukları belirsiz kalıyordu. Düğmeler blokların İÇİNE taşındı
+           (app.js: blokBasligiEkle / blokOnayEkle); her blok kendi
+           kararını taşır, sağ üstündeki Geri Dön o adıma döner. -->
+      <div id="giris-bolge">
+        <div id="giris">
+          <textarea id="kutu" rows="1" placeholder="Cevabınızı ya da sorunuzu yazın…"></textarea>
+          <button id="gonder" type="button">Gönder</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- SÜRÜKLEME TUTAMAĞI (sohbet <-> analiz paneli) -->
+    <div id="tutamak-sag" class="tutamak" role="separator"
+         aria-orientation="vertical" tabindex="0"
+         aria-label="Analiz panelinin genişliği"
+         title="Sürükleyerek genişliği ayarlayın (çift tıklama: varsayılan)"></div>
+
+    <aside id="analiz-panel">
+
+
+      <!-- 3x2 ızgara. EKSİK DEĞER sekmesi kaldırıldı; içeriği HAZIRLIK'a
+           taşındı. Sıra ızgaradaki okuma sırasıdır: üst satır veriyi tarif
+           eder, alt satır veriyle ne yapıldığını. -->
+      <div id="analiz-sekmeler">
+        <button class="analiz-sekme aktif" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
+        <button class="analiz-sekme" data-tab="dagilim" type="button">DAĞILIM</button>
+        <button class="analiz-sekme" data-tab="sfa" type="button">SFA</button>
+        <button class="analiz-sekme" data-tab="iliski" type="button">İLİŞKİLER</button>
+        <button class="analiz-sekme" data-tab="hazirlik" type="button">HAZIRLIK</button>
+        <button class="analiz-sekme" data-tab="validasyon" type="button">VALİDASYON</button>
+      </div>
+
+      <div id="analiz-govde"></div>
+
+      <!-- Sözlük teyidi adımında panelin ALTINDA duran ikinci birincil
+           düğme: kullanıcı değişken listesini burada gözden geçiriyor,
+           onay için sohbete dönmek zorunda kalmamalı. Sohbetteki kartla
+           AYNI düğmedir; biri basılınca ikisi de kilitlenir. -->
+      <div id="analiz-alt" hidden>
+        <button id="analiz-teyit" class="secim-onay" type="button"></button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ===================== SAYFA 2: MODEL GELİŞTİRME DOKÜMANI =====
+       Sayfa artık kısa bir çalışma özeti değil, Model Risk'e giden
+       dokümanın kendisi: künye + 20 numaralı bölüm + ek, kullanıcı
+       düzenlemesi ve Word çıktısı. Gövde /dokuman ucundan gelir; başlık,
+       tarih ve teslim damgası da oradan yazılır, burada sabit metin yok. -->
+  <div id="sayfa-ozet" class="sayfa gizli">
+    <div id="ozet-govde">
+      <div class="dok-serit">
+        <div class="dok-serit-sol">
+          <!-- Damga başlığın YANINDA: dokümanı açan ilk bakışta taslak mı
+               final mi olduğunu görmeli. Kapı etikettedir, hiçbir eylemi
+               kapatmaz (bkz. dok-word her durumda etkin). -->
+          <div class="dok-baslik-satir">
+            <h1 id="dok-baslik" class="dok-baslik"></h1>
+            <span id="dok-damga" class="dok-damga" hidden></span>
+          </div>
+          <div id="dok-tarih" class="dok-tarih"></div>
+        </div>
+        <!-- Her durumda etkin: eksik bölümler dosyada "—" olarak görünür,
+             yarım dokümanı indirebilmek kullanıcının hakkı. -->
+        <button id="dok-word" class="dok-dugme" type="button">Word Olarak İndir</button>
+      </div>
+
+      <!-- İndirme hatası: dosya inmediğinde kullanıcı hiçbir şey görmüyordu -->
+      <div id="dok-indirme-hata" class="dok-hata" role="alert" hidden></div>
+
+      <!-- Bloker · eksik · kısmi sayacı. Bloker varsa kırmızı, yalnız
+           eksik/kısmi varsa amber, hiçbiri yoksa gizli. -->
+      <div id="dok-uyari" class="dok-uyari" hidden></div>
+
+      <div id="dok-bolumler"></div>
+    </div>
+  </div>
+
+  <!-- Dar ekranda açılan çekmecelerin arka perdesi -->
+  <div id="cekmece-perde" hidden></div>
+
+</div>
