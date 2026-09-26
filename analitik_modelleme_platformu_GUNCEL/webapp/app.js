@@ -6673,6 +6673,8 @@ function yanitUygula(d, metin) {
         if (metinBlok.onay && kap) blokOnayEkle(kap);
     }
     secenekEkle(d.secenekler);          // balon varsa ayni kutuya girer
+    /* Başlangıç ekranı: A/B/C/D'nin altında önceki çalışmalar. */
+    if (!hataMi && d.adim_anahtari === "mod" && !d.mod) oncekiCalismalarEkle();
     secimAlaniEkle(d.secim_alani, blok);
     if (typeof d.tur_no === "number") TUR_NO = Math.max(TUR_NO, d.tur_no);
 
@@ -7216,9 +7218,9 @@ function calismalarAc() {
         .catch(() => calismalarCiz(null));
 }
 
-function calismayaGec(kimlik) {
+function calismayaGec(kimlik, zorla) {
     calismalarKapat();
-    if (!kimlik || kimlik === OTURUM_ID) return;
+    if (!kimlik || (kimlik === OTURUM_ID && !zorla)) return;
     /* Uçuşta bir /mesaj varsa önce onu iptal et: geç dönen yanıt yeni
        açılan çalışmanın ekranına yazılmasın. "sifirla" durumu bunu
        zaten sağlıyor (bkz. istegiIptalEt). */
@@ -7227,6 +7229,100 @@ function calismayaGec(kimlik) {
     ekraniTemizle();
     sayfaAc("calisma");
     calismaAc(kimlik).finally(() => { kilitle(false); });
+}
+
+/* ==================== Önceki çalışmalar (başlangıç ekranı) ====================
+   Kullanıcı en baştan eski bir çalışmanın üzerinden ilerleyebilsin:
+     Devam Et          -> o çalışma kaldığı yerden açılır; her adımın
+                          bloğu ve Geri Dön'ü yerinde, düzeltip devam eder.
+     Kopyasıyla Başla  -> aynı kararlarla YENİ bir numara (v5) açılır,
+                          orijinale dokunulmaz. Eski çalışmayı bozmadan
+                          bir adımı değiştirip denemek için.
+   Her satır o çalışmada verilen kararları gösteriyor (başlangıç, veri
+   seti, sözlük, hedef ...): numaradan değil içeriğinden tanınsın. */
+function oncekiCalismalarEkle() {
+    const secenekler = sohbetEl.querySelectorAll(".secenek-kok");
+    const yer = secenekler.length ? secenekler[secenekler.length - 1] : null;
+    if (!yer) return;
+    const eski = yer.parentNode.querySelector(".onceki-kok");
+    if (eski) eski.remove();
+
+    const kok = elYap("div", "onceki-kok");
+    yer.parentNode.insertBefore(kok, yer.nextSibling);
+
+    fetch(getWebAppBackendUrl("calismalar")
+          + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+        .then(r => r.json())
+        .then(d => {
+            const liste = ((d && d.calismalar) || []).filter(c =>
+                c.calisma_id !== OTURUM_ID && c.baslamis !== false && !c.hata);
+            if (!liste.length) { kok.remove(); return; }
+            kok.appendChild(elYap("div", "onceki-baslik", "ÖNCEKİ ÇALIŞMALAR"));
+            kok.appendChild(elYap("div", "onceki-aciklama",
+                "Önceki bir çalışmadan devam edebilir ya da kopyasıyla yeni "
+                + "bir çalışma başlatabilirsiniz. Açtığınız çalışmada her "
+                + "adıma geri dönüp düzeltebilirsiniz."));
+            liste.forEach(c => kok.appendChild(oncekiSatir(c)));
+        })
+        .catch(() => kok.remove());
+}
+
+function oncekiSatir(c) {
+    const satir = elYap("div", "onceki-satir");
+    const bas = elYap("div", "onceki-bas");
+    bas.appendChild(elYap("span", "onceki-ad", c.ad || c.calisma_id));
+    const alt = [tarihBicim(c.zaman)];
+    if (c.adim) alt.push("Adım " + c.adim_no + "/" + c.toplam + " · " + tireSade(c.adim));
+    if (c.kaynak) alt.push(c.kaynak + " kopyası");
+    bas.appendChild(elYap("span", "onceki-alt", alt.filter(Boolean).join(" · ")));
+    satir.appendChild(bas);
+
+    if ((c.secimler || []).length) {
+        const tablo = elYap("dl", "onceki-secimler");
+        c.secimler.forEach(([etiket, deger]) => {
+            tablo.appendChild(elYap("dt", "", tireSade(etiket)));
+            tablo.appendChild(elYap("dd", "", tireSade(deger)));
+        });
+        satir.appendChild(tablo);
+    }
+
+    const dugmeler = elYap("div", "onceki-dugmeler");
+    const devam = elYap("button", "onceki-dugme", "Devam Et");
+    devam.type = "button";
+    devam.title = "Bu çalışmayı kaldığı yerden aç";
+    devam.onclick = () => { if (!mesgul) calismayaGec(c.calisma_id); };
+    const kopya = elYap("button", "onceki-dugme ikincil", "Kopyasıyla Başla");
+    kopya.type = "button";
+    kopya.title = "Aynı kararlarla yeni bir çalışma aç; bu çalışma değişmez";
+    kopya.onclick = () => { if (!mesgul) calismaKopyala(c.calisma_id); };
+    dugmeler.appendChild(devam);
+    dugmeler.appendChild(kopya);
+    satir.appendChild(dugmeler);
+    return satir;
+}
+
+function calismaKopyala(kaynak) {
+    kilitle(true);
+    fetch(getWebAppBackendUrl("calisma_kopyala"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oturum_id: OTURUM_ID, kaynak: kaynak })
+    })
+    .then(r => r.json())
+    .then(d => {
+        kilitle(false);
+        if (d.hata || !d.calisma_id) {
+            balonEkle("bot", d.metin || d.cevap || "Çalışma kopyalanamadı.", true);
+            return;
+        }
+        /* Hedef, şu an açık boş çalışmanın numarası olabilir: aynı
+           kimliğe de ZORLA yeniden yüklenir. */
+        calismayaGec(d.calisma_id, true);
+    })
+    .catch(e => {
+        kilitle(false);
+        balonEkle("bot", "Çalışma kopyalanamadı: " + e, true);
+    });
 }
 
 if (calismalarBtn && calismalarListe) {

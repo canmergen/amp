@@ -1,5 +1,19 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **başlangıç ekranında önceki çalışmalar**.
+Yapıştır (webapp): `backend.py` → `style.css` → `app.js`
+
+- A/B/C/D kartlarının altında «ÖNCEKİ ÇALIŞMALAR»: her çalışma numarası,
+  son işlem zamanı, kaldığı adım ve verilen kararlarla (başlangıç, kaynak
+  tablolar, veri seti, sözlük, hedef/kimlik/dönem, süreç dışı sayısı).
+- **Devam Et**: çalışma kaldığı yerden açılır; her adımın bloğu ve
+  Geri Dön'ü yerinde, düzeltip devam edilir.
+- **Kopyasıyla Başla**: aynı kararlar, sohbet geçmişi ve klasördeki
+  dosyalarla yeni bir v-numarası açılır; orijinale dokunulmaz. Açık
+  çalışma boşsa onun numarası kullanılır.
+
+---
+
 Bu tur: **çalışmalar v1, v2, v3 …** ve **MODELLEME_BAZ adı sabit**.
 Yapıştır: `akis_durum.py` → `akis_faz01.py` → `akis_kayit.py` → `akis_faz05.py`
 → `bakim.py` · Webapp: `backend.py`

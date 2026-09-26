@@ -837,6 +837,37 @@ button.ozet-kart:focus-visible {
   line-height: 1.5; margin-top: 2px;
 }
 
+/* -------- Başlangıç ekranı: önceki çalışmalar -------- */
+.onceki-kok { display: flex; flex-direction: column; gap: var(--b-2); margin-top: var(--b-4); }
+.onceki-baslik {
+  font-size: var(--fs-etiket); font-weight: var(--fw-kalin);
+  letter-spacing: var(--etiket-aralik); color: var(--kirmizi);
+}
+.onceki-aciklama { font-size: var(--fs-govde); color: var(--metin-soluk); line-height: 1.5; }
+.onceki-satir {
+  padding: var(--b-3) var(--b-4);
+  background: var(--yuzey); border: 1px solid var(--kenar);
+  border-radius: var(--r); box-shadow: var(--golge-1);
+}
+.onceki-bas { display: flex; align-items: baseline; gap: var(--b-3); flex-wrap: wrap; }
+.onceki-ad { font-weight: var(--fw-kalin); font-size: var(--fs-baslik); }
+.onceki-alt { font-size: var(--fs-kucuk); color: var(--metin-soluk); }
+.onceki-secimler {
+  display: grid; grid-template-columns: max-content 1fr;
+  gap: 2px var(--b-4); margin: var(--b-2) 0 0; font-size: var(--fs-govde);
+}
+.onceki-secimler dt { color: var(--metin-soluk); }
+.onceki-secimler dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.onceki-dugmeler { display: flex; gap: var(--b-2); margin-top: var(--b-3); flex-wrap: wrap; }
+.onceki-dugme {
+  height: 26px; padding: 0 var(--b-4);
+  border: 1px solid var(--kirmizi); border-radius: var(--r-kucuk);
+  background: var(--kirmizi); color: #fff; cursor: pointer;
+  font-family: inherit; font-size: var(--fs-govde); font-weight: var(--fw-kalin);
+}
+.onceki-dugme.ikincil { background: var(--yuzey); color: var(--kirmizi); }
+.onceki-dugme:hover { box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
+
 /* -------- Seçim formu: dataset seçici -------- */
 /* Sohbete dogrudan dusen kart: balonla AYNI genislikte ve sola
    yapisik — kart ile balon ayni sutunda basliyor. */

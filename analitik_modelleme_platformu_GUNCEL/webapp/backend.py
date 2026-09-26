@@ -1152,7 +1152,9 @@ def karsilama_endpoint():
         if _oturum_var_mi(durum):
             govde = _surdurme_govdesi(durum)
             if _v_mi(calisma):
-                govde["devam_bilgi"]["ad"] = calisma
+                govde["devam_bilgi"]["ad"] = calisma + (
+                    " (%s kopyası)" % durum["_kopya_kaynagi"]
+                    if durum.get("_kopya_kaynagi") else "")
         else:
             durum = akis.yeni_durum()
             durum["_oturum_id"] = anahtar
@@ -1474,7 +1476,40 @@ def _calisma_ozeti(calisma, durum):
     }
     if 0 <= i < len(sira):
         ozet["adim"] = _adim_gorunen_adi(sira[i])
+    ozet["secimler"] = _calisma_secimleri(durum)
+    if durum.get("_kopya_kaynagi"):
+        ozet["kaynak"] = durum["_kopya_kaynagi"]
     return ozet
+
+
+def _calisma_secimleri(durum):
+    """Calismada o ana kadar verilmis kararlar: [[etiket, deger], ...].
+
+    Baslangic ekranindaki "Önceki Çalışmalar" listesi bunlari gosteriyor;
+    kullanici hangi calismanin hangisi oldugunu numaradan degil
+    kararlarindan taniyor."""
+    sec = []
+    mod = durum.get("mod")
+    if mod:
+        sec.append(["Başlangıç", "%s · %s" % (mod, akis.MOD_ADLARI.get(mod, ""))])
+    if durum.get("ham_tablolar"):
+        sec.append(["Kaynak Tablolar", ", ".join(map(str, durum["ham_tablolar"]))])
+    if durum.get("veri_seti"):
+        sec.append(["Veri Seti", str(durum["veri_seti"])])
+    kaynak_sz = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
+    if kaynak_sz:
+        sec.append(["Kaynak Sözlükler", ", ".join(kaynak_sz)])
+    elif durum.get("sozluk"):
+        sec.append(["Sözlük", str(durum["sozluk"])])
+    meta = durum.get("meta") or {}
+    for anahtar, etiket in (("target", "Hedef Değişken"), ("id", "Kimlik Kolonu"),
+                            ("donem", "Dönem Kolonu")):
+        if meta.get(anahtar):
+            sec.append([etiket, str(meta[anahtar])])
+    haric = durum.get("haric_kolonlar") or []
+    if haric:
+        sec.append(["Süreç Dışı Kolon", "%d kolon" % len(haric)])
+    return sec
 
 
 def _calismalar(en_fazla=CALISMA_LISTE_SINIRI, aktif=None):
@@ -1512,6 +1547,66 @@ def _son_calisma_id():
         return son[0]["calisma_id"]
     yeni, _ = _calisma_kimlikleri()
     return yeni[0] if yeni else _yeni_calisma_id()
+
+
+@app.route("/calisma_kopyala", methods=["POST"])
+def calisma_kopyala_endpoint():
+    """Onceki bir calismanin KOPYASIYLA yeni calisma baslatir.
+
+    Orijinale DOKUNULMAZ. Kopya ayni kararlari, sohbet gecmisini ve
+    calisma klasorundeki dosyalari (sozluk kopyasi, birlestirme sonucu,
+    AMP ciktilari) tasir; kullanici herhangi bir adima geri donup
+    duzeltip devam edebilir.
+
+    Hedef: su an acik calisma HIC BASLAMAMISSA onun numarasi (baslangic
+    ekranindan secildiginde bos bir numara harcanmasin), degilse yeni
+    numara."""
+    try:
+        istek = request.get_json(force=True) or {}
+        kaynak = _temiz(istek.get("kaynak"))
+        mevcut = _calisma_id(istek)
+        kaynak_anahtar = _oturum_anahtari(kaynak)       # erisim denetimi
+        durum = _durum_al(kaynak_anahtar)
+        if not _calisma_basladi_mi(durum):
+            raise ValueError("Kopyalanacak çalışma henüz başlamamış.")
+
+        hedef = None
+        if _v_mi(mevcut) and mevcut != kaynak:
+            try:
+                if not _calisma_basladi_mi(_durum_al(_oturum_anahtari(mevcut))):
+                    hedef = mevcut
+            except Exception:
+                hedef = None
+        hedef = hedef or _yeni_calisma_id()
+        hedef_anahtar = _oturum_anahtari(hedef)
+
+        # Kaynak klasordeki dosyalar hedef klasore. Kayit dosyasinin
+        # kendisi atlanir; asagida yeni kimlikle yaziliyor.
+        hafiza = _hafiza()
+        on_ek = "/%s/" % kaynak_anahtar
+        for yol in _hafiza_yollari():
+            if not yol.startswith(on_ek) or yol.endswith("/calisma.json"):
+                continue
+            with hafiza.get_download_stream(yol) as akim:
+                icerik = akim.read()
+            hafiza.upload_stream("/%s/%s" % (hedef_anahtar, yol[len(on_ek):]),
+                                 icerik)
+
+        # Durumdaki klasor yollari yeni klasoru gostersin.
+        metin = json.dumps(durum, ensure_ascii=False).replace(
+            on_ek, "/%s/" % hedef_anahtar)
+        yeni = json.loads(metin)
+        yeni["_oturum_id"] = hedef_anahtar
+        yeni["_sahip"] = _sahip_ozeti()
+        yeni["_kopya_kaynagi"] = kaynak
+        # Eski bicimli AMP klasoru kaynaga ait: kopya kendi klasorune yazar.
+        yeni.pop("_amp_klasor", None)
+        yeni.pop("_oneri_is", None)
+        _kaydet(hedef_anahtar, yeni)
+        return jsonify({"calisma_id": hedef, "kaynak": kaynak})
+    except Exception as e:
+        return jsonify(_hata_govdesi("calisma_kopyala", e,
+                                     "Çalışma kopyalanamadı."))
 
 
 @app.route("/calismalar")
