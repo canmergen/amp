@@ -314,6 +314,13 @@ def _calisma_kaydi_yaz(kayit):
         json.dumps(kayit, ensure_ascii=False, indent=1).encode("utf-8"))
 
 
+def _v_silindi_mi(calisma):
+    """Calisma "Çalışmalarım"dan silinmis mi? Numara kayitta ISARETLI
+    kalir (silindi alani): ayni numara bir daha verilmesin, eski sekmede
+    acik kalan kimlik baska bir calismaya denk gelmesin."""
+    return bool((_calisma_kaydi_oku().get(calisma) or {}).get("silindi"))
+
+
 def _v_sahibi(calisma):
     """v-calismanin sahip ozeti; bilinmiyorsa None."""
     sahip = (_calisma_kaydi_oku().get(calisma) or {}).get("sahip")
@@ -338,6 +345,8 @@ def _oturum_anahtari(istemci_id=None):
         sahip = _v_sahibi(calisma)
         if sahip and sahip != _sahip_ozeti():
             raise CalismaErisimYok("Bu çalışma başka bir kullanıcıya ait.")
+        if _v_silindi_mi(calisma):
+            raise CalismaErisimYok("Bu çalışma silinmiş.")
         return calisma
     if _sayili_mi(calisma):
         return "%s_%s" % (_kullanici_on_eki(), calisma)
@@ -1407,7 +1416,8 @@ def _calisma_kimlikleri(yollar=None):
     yollar = _hafiza_yollari() if yollar is None else yollar
     ben = _sahip_ozeti()
     v = [k for k, d in _calisma_kaydi_oku().items()
-         if _v_mi(k) and (d or {}).get("sahip") == ben]
+         if _v_mi(k) and (d or {}).get("sahip") == ben
+         and not (d or {}).get("silindi")]
     sayili_re = re.compile(r"^/oturum_%s_(\d{1,6})\.json$"
                            % re.escape(_kullanici_on_eki()))
     eski_re = re.compile(r"^/oturum_%s([A-Za-z0-9_-]+)\.json$"
@@ -1607,6 +1617,60 @@ def calisma_kopyala_endpoint():
     except Exception as e:
         return jsonify(_hata_govdesi("calisma_kopyala", e,
                                      "Çalışma kopyalanamadı."))
+
+
+@app.route("/calisma_sil", methods=["POST"])
+def calisma_sil_endpoint():
+    """Bir calismayi "Çalışmalarım"dan KALICI olarak siler.
+
+    Silinen: calismanin klasorundeki her dosya (/v3/...: calisma kaydi,
+    sozluk kopyasi, birlestirme sonucu, AMP ciktilari). Eski bicimli
+    kayitta tek dosya (/oturum_<anahtar>.json).
+    SILINMEYEN: Dataiku dataset'leri. Onlar projede ortak; baska bir
+    calisma ya da kullanici ayni dataset'i kullaniyor olabilir.
+
+    Numara CALISMA_KAYDI'nda "silindi" isaretiyle kalir (bkz.
+    _v_silindi_mi). Yalnizca sahibi silebilir: _oturum_anahtari baskasinin
+    calismasinda CalismaErisimYok atar.
+
+    Silinen calisma su an ACIK olansa yanit "sonraki"yi tasir: istemci
+    kullanicinin en son calismasina (yoksa yeni bos bir calismaya) gecer."""
+    try:
+        istek = request.get_json(force=True) or {}
+        hedef = _temiz(istek.get("calisma"))
+        if not hedef:
+            raise ValueError("Silinecek çalışma belirtilmedi.")
+        mevcut = _calisma_id(istek)
+        anahtar = _oturum_anahtari(hedef)              # erisim denetimi
+
+        hafiza = _hafiza()
+        if _v_mi(hedef):
+            on_ek = "/%s/" % anahtar
+            silinecek = [y for y in _hafiza_yollari() if y.startswith(on_ek)]
+        else:
+            silinecek = [akis._yol(anahtar)]
+        for yol in silinecek:
+            try:
+                hafiza.delete_path(yol)
+            except Exception as e:
+                _hata_kaydet("calisma_sil:dosya", e)
+
+        if _v_mi(hedef):
+            kayit = _calisma_kaydi_oku()
+            girdi = dict(kayit.get(hedef) or {"sahip": _sahip_ozeti()})
+            girdi["silindi"] = datetime.datetime.now().isoformat(timespec="seconds")
+            kayit[hedef] = girdi
+            _calisma_kaydi_yaz(kayit)
+
+        govde = {"tamam": True, "silinen": hedef}
+        if hedef == mevcut:
+            govde["sonraki"] = _son_calisma_id()
+        return jsonify(govde)
+    except CalismaErisimYok as e:
+        return jsonify({"hata": True, "metin": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("calisma_sil", e,
+                                     "Çalışma silinemedi."))
 
 
 @app.route("/calismalar")

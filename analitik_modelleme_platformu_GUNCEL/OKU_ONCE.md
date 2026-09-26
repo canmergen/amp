@@ -1,6 +1,21 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **dönem kolonu listesi filtreli**. Yapıştır: `akis_faz01.py`
+Bu tur: **Çalışmalarım'da Aç ve Sil**. Yapıştır: `app.js`, `backend.py`, `style.css`
+
+- Her satırın sağında "Kopyala" yerine **Aç** ve **Sil** var. Açık
+  çalışmada Aç "Açık" yazar ve pasiftir.
+- Sil'e basınca aynı yerde "Silinsin mi?" + Onayla / Reddet çıkar.
+  Onayla, çalışmanın klasöründeki her dosyayı siler (`/vN/...`). Dataiku
+  dataset'lerine dokunulmaz (projede ortak).
+- Numara `CALISMALAR.json`'da "silindi" işaretiyle kalır: aynı numara
+  bir daha verilmez, eski sekmede kalan kimlik açılmaz.
+- Açık çalışma silinirse en son çalışmaya, hiç yoksa yeni boş çalışmaya
+  geçilir.
+- Kopyalama ekrandan kalktı; `/calisma_kopyala` ucu backend'de duruyor.
+
+---
+
+Önceki tur: **dönem kolonu listesi filtreli**. Yapıştır: `akis_faz01.py`
 
 - Modelleme Tanımları'ndaki dönem listesine yalnızca tarih tipi ya da dönem
   biçimli (202401, 20240115, "2024-01-15") kolonlar geliyor; tek değerli,
@@ -9,8 +24,8 @@ Bu tur: **dönem kolonu listesi filtreli**. Yapıştır: `akis_faz01.py`
 - Aday yoksa liste boş kalır ve "tarih ya da dönem biçimli kolon
   bulunamadı; zamansal bölme kurulamaz" notu yazar.
 - Serbest yazılan uygunsuz dönem de reddediliyor (hedef/kimlik gibi).
-- Adaylar veri seti seçilirken çıkarılıyor; bu sürümden önce başlamış
-  çalışmalarda liste filtresiz kalır (eski profil), yeni çalışmada dolar.
+- Adaylar veri seti seçilirken çıkarılıyor; eski çalışmada profilde yoksa
+  form ilk açılışta tablodan bir kez hesaplıyor (tüm kolonlara düşmez).
 
 ---
 

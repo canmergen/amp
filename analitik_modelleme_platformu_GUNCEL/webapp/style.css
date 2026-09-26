@@ -391,19 +391,26 @@ button.ozet-kart:focus-visible {
 #yeni-onayla { border: 1px solid var(--kirmizi); background: var(--kirmizi); color: #fff; }
 #yeni-reddet { border: 1px solid var(--kenar); background: var(--yuzey); color: var(--metin); }
 #yeni-reddet:hover { border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik); }
-/* Çalışmalarım satırı: açma düğmesi + Kopyala */
+/* Çalışmalarım satırı: çalışma bilgisi + Aç / Sil (silmede yerinde onay) */
 .calisma-satir { display: flex; align-items: center; gap: var(--b-1); }
 .calisma-satir .calisma-oge { flex: 1; min-width: 0; }
-.calisma-kopya {
+.calisma-dugmeler { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.calisma-dugme {
   flex-shrink: 0; height: 22px; padding: 0 var(--b-2);
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
   background: var(--yuzey); color: var(--metin); cursor: pointer;
   font-family: inherit; font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
 }
-.calisma-kopya:hover { border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik); }
+.calisma-dugme[hidden] { display: none; }
+.calisma-dugme:hover:not(:disabled) { border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik); }
+.calisma-dugme:disabled { opacity: .5; cursor: default; }
+.calisma-dugme.sil { color: var(--kirmizi); }
+.calisma-dugme.onayla { border-color: var(--kirmizi); background: var(--kirmizi); color: #fff; }
+.calisma-dugme.onayla:hover:not(:disabled) { background: var(--kirmizi); color: #fff; opacity: .9; }
+.calisma-sil-soru { font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--kirmizi); white-space: nowrap; }
 #calismalar-liste {
   position: absolute; top: calc(100% + 4px); right: 0; z-index: 50;
-  width: min(340px, 90vw); max-height: 60vh; overflow-y: auto;
+  width: min(400px, 92vw); max-height: 60vh; overflow-y: auto;
   padding: var(--b-1);
   background: var(--yuzey); border: 1px solid var(--kenar);
   border-radius: var(--r); box-shadow: var(--golge-2);

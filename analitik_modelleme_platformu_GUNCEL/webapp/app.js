@@ -7452,22 +7452,83 @@ function calismalarCiz(d) {
             oge.title = "Bu çalışmayı kaldığı yerden aç";
             oge.onclick = () => calismayaGec(c.calisma_id);
         }
-        /* KOPYALA: aynı kararlarla yeni numara; orijinal değişmez. Bir
-           adımı eski çalışmayı bozmadan değiştirip denemek için. */
+        /* SAĞDAKİ DÜĞMELER: Aç ve Sil (kullanıcı kararı: "Kopyala" yerine
+           "Aç"; listeden silinebilsin). Satırın kendisine tıklamak da açar;
+           Aç düğmesi bunu görünür kılıyor. */
         const satir = elYap("div", "calisma-satir");
         satir.appendChild(oge);
-        if (!c.hata && c.baslamis !== false) {
-            const kopya = elYap("button", "calisma-kopya", "Kopyala");
-            kopya.type = "button";
-            kopya.title = "Aynı kararlarla yeni bir çalışma aç; bu çalışma değişmez";
-            kopya.onclick = () => {
-                if (mesgul) return;
-                calismalarKapat();
-                calismaKopyala(c.calisma_id);
-            };
-            satir.appendChild(kopya);
+        const dugmeler = elYap("div", "calisma-dugmeler");
+        const ac = elYap("button", "calisma-dugme", aktif ? "Açık" : "Aç");
+        ac.type = "button";
+        ac.disabled = oge.disabled;
+        ac.title = aktif ? "Şu an bu çalışmadasınız" : "Bu çalışmayı kaldığı yerden aç";
+        if (!ac.disabled) ac.onclick = () => calismayaGec(c.calisma_id);
+        dugmeler.appendChild(ac);
+        /* Hiç başlamamış (boş) açık çalışmada silinecek bir şey yok. */
+        if (c.baslamis !== false || c.hata) {
+            const sil = elYap("button", "calisma-dugme sil", "Sil");
+            sil.type = "button";
+            sil.title = "Bu çalışmayı kalıcı olarak sil";
+            sil.onclick = () => calismaSilOnayi(dugmeler, c);
+            dugmeler.appendChild(sil);
         }
+        satir.appendChild(dugmeler);
         calismalarListe.appendChild(satir);
+    });
+}
+
+/* SİLME ONAYI AYNI YERDE (Yeni Çalışma ile aynı düzen): Aç ve Sil
+   gizlenir, yerinde "Silinsin mi?" ile solda Onayla, sağda Reddet
+   belirir. Silme geri alınamaz; tek tıkla olmamalı. */
+function calismaSilOnayi(dugmeler, c) {
+    const eski = Array.from(dugmeler.children);
+    eski.forEach(d => { d.hidden = true; });
+    const soru = elYap("span", "calisma-sil-soru", "Silinsin mi?");
+    const onayla = elYap("button", "calisma-dugme onayla", "Onayla");
+    const reddet = elYap("button", "calisma-dugme", "Reddet");
+    onayla.type = reddet.type = "button";
+    onayla.title = c.calisma_id + " kalıcı olarak silinir; geri alınamaz";
+    const geriGetir = () => {
+        [soru, onayla, reddet].forEach(d => d.remove());
+        eski.forEach(d => { d.hidden = false; });
+    };
+    reddet.onclick = geriGetir;
+    onayla.onclick = () => {
+        onayla.disabled = reddet.disabled = true;
+        soru.textContent = "Siliniyor…";
+        calismaSil(c.calisma_id, geriGetir);
+    };
+    dugmeler.append(soru, onayla, reddet);
+    onayla.focus();
+}
+
+function calismaSil(kimlik, hataysa) {
+    fetch(getWebAppBackendUrl("calisma_sil"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oturum_id: OTURUM_ID, calisma: kimlik })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.hata || !d.tamam) {
+            hataysa();
+            calismalarListe.insertBefore(
+                elYap("div", "calisma-bos calisma-hata",
+                      "Silinemedi: " + String(d.metin || d.cevap || "bilinmeyen hata")
+                          .replace(/^HATA:\s*/, "")),
+                calismalarListe.firstChild);
+            return;
+        }
+        /* Açık çalışma silindiyse en son çalışmaya (yoksa yeni boş
+           çalışmaya) geçilir; değilse liste yenilenir, açık kalır. */
+        if (d.sonraki) calismayaGec(d.sonraki, true);
+        else calismalarAc();
+    })
+    .catch(e => {
+        hataysa();
+        calismalarListe.insertBefore(
+            elYap("div", "calisma-bos calisma-hata", "Silinemedi: " + e),
+            calismalarListe.firstChild);
     });
 }
 
@@ -7494,30 +7555,6 @@ function calismayaGec(kimlik, zorla) {
     ekraniTemizle();
     sayfaAc("calisma");
     calismaAc(kimlik).finally(() => { kilitle(false); });
-}
-
-function calismaKopyala(kaynak) {
-    kilitle(true);
-    fetch(getWebAppBackendUrl("calisma_kopyala"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oturum_id: OTURUM_ID, kaynak: kaynak })
-    })
-    .then(r => r.json())
-    .then(d => {
-        kilitle(false);
-        if (d.hata || !d.calisma_id) {
-            balonEkle("bot", d.metin || d.cevap || "Çalışma kopyalanamadı.", true);
-            return;
-        }
-        /* Hedef, şu an açık boş çalışmanın numarası olabilir: aynı
-           kimliğe de ZORLA yeniden yüklenir. */
-        calismayaGec(d.calisma_id, true);
-    })
-    .catch(e => {
-        kilitle(false);
-        balonEkle("bot", "Çalışma kopyalanamadı: " + e, true);
-    });
 }
 
 if (calismalarBtn && calismalarListe) {
