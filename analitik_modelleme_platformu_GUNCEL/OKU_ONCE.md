@@ -11,7 +11,7 @@ Bu tur: **dört başlangıç (A/B/C/D)** ve **rozetler Başlık Büyük Harfi**.
 | Harf | Başlangıç | Adımlar |
 |---|---|---|
 | A | Veri Seti ve Sözlük Hazır | kurulum → tanımlar → sözlük tanımları |
-| **B (yeni)** | Veri Seti Hazır Değil, Sözlük Hazır | ham tablolar → birleştirme → **sözlük seçimi** → tanımlar → sözlük tanımları |
+| **B (yeni)** | Veri Seti Hazır Değil, Sözlük Hazır | ham tablolar → **kaynak sözlükleri** → birleştirme (+ nihai sözlük otomatik) → tanımlar → sözlük tanımları |
 | C (eski B) | Veri Seti Hazır, Sözlük Hazır Değil | veri seti → sözlük üretimi → tanımlar |
 | D (eski C) | Veri Seti ve Sözlük Hazır Değil | ham tablolar → birleştirme → sözlük üretimi → tanımlar |
 
@@ -19,9 +19,14 @@ Eski kayıtlar okunurken B→C, C→D çevriliyor (`akis_durum.MOD_GOCU`);
 yarım kalmış çalışmalar bozulmuyor. Kod artık `mod == "C"` gibi tek
 harfe değil `BIRLESTIREN_MODLAR` / `SOZLUK_URETEN_MODLAR` gruplarına bakıyor.
 
-**Dikkat (B):** Birleştirmenin ürettiği toplama kolonları hazır sözlükte
-olmayacağı için «Sözlük Tanımları» kartında tanımsız listelenir ve
-varsayılan olarak analiz dışında kalır; dil modeli önerileri o kartta.
+**B nasıl çalışıyor:** Nihai veri seti yok ama kaynak tablolar ve her
+birinin sözlüğü hazır. «Kaynak Sözlükleri» adımında her tabloya sözlüğü
+seçilir (aynı sözlük birden çok tabloya seçilebilir). Birleştirme bitince
+nihai sözlük (MODELLEME_SOZLUK) köken kütüğünden otomatik kurulur:
+kaynak kolon tanımını aynen alır; toplama kolonu "Kart işlem tutarı (TL)
+— toplam, son 3 ay (KART_ISLEM.TUTAR)" gibi türetilir; kayıt sayısı
+kolonları "KART_ISLEM tablosundaki kayıt sayısı, son 6 ay" olur. Kaynağında
+tanımı olmayan kolonlar «Sözlük Tanımları» adımında listelenir.
 
 ## 2. Rozetler
 "✓ Girdiler hazır" → "✓ Girdiler Hazır", "0/2 seçildi" → "0/2 Seçildi",

@@ -29,7 +29,7 @@ from fe_agent.akis_durum import (
     AMP_KLASOR, AMP_SOZLUK_ADI, AMP_SOZLUK_KOLONLARI, AMP_VERI_ADI,
     BOLME_BOLUMLERI, bolme_kaydet, bolme_onerisi, bolme_ozeti,
     hazir_bolme_bul, kolon_ozeti_cikar, metin_yaz, modelleme_df,
-    onbellek_temizle, yeni_durum,
+    onbellek_temizle, sozluk_orijinal_oku, yeni_durum,
 )
 
 
@@ -527,6 +527,12 @@ def birlestirme_uygula(durum):
     _kimlik_duplicate(durum, baz, p)
     durum["profil"] = p
 
+    # Mod B: kaynak sozluklerden nihai sozluk. Ayri bir adim DEGIL: kaynak
+    # sozlukler zaten secildi, kullanicinin verecegi bir karar yok.
+    sozluk_not = ""
+    if durum.get("mod") == "B":
+        sozluk_not = _mod_b_sozlugu(durum, baz, kutuk)
+
     # birl_mod.calistir ozeti: kismi sonucta kullanici ACIKCA uyarilir.
     hata_not = ""
     if ozet.get("hatalar"):
@@ -553,14 +559,15 @@ def birlestirme_uygula(durum):
             "  Eklenen           : %s kolon  (%s tanesi point-in-time)\n"
             "  Kaynak sayısı     : %s tablo  (%s başarılı, %s başarısız)\n\n"
             "Her kolonun hangi tablodan, hangi anahtarla ve hangi pencereyle "
-            "geldiğini %s tablosuna yazdım; istediğiniz zaman "
+            "geldiğini köken kütüğüne yazdım (%s); istediğiniz zaman "
             "denetleyebilirsiniz.%s"
             % (baslik, BAZ_ADI, _sayi(ozet["satir"]), _sayi(ozet["kolon"]),
                _sayi(ozet["baslangic_kolon"]), _sayi(ozet["eklenen_kolon"]),
                _sayi(ozet["pit_kolon"]), _sayi(ozet["kaynak_sayisi"]),
                _sayi(ozet.get("basarili_kaynak", 0)),
                _sayi(ozet.get("basarisiz_kaynak", 0)),
-               _nerede(lineage_yazildi, lineage_yedek), hata_not))
+               _nerede(lineage_yazildi, lineage_yedek), hata_not)
+            + sozluk_not)
 
 # ===========================================================================
 # ADIM 1.2B — VERI SETI  (Mod B)
@@ -756,57 +763,200 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     return True, None
 
 # ===========================================================================
-# ADIM SOZLUK SECIMI  (Mod B: veri seti birlestirmeyle olustu, sozluk hazir)
+# ADIM KAYNAK SOZLUKLERI  (Mod B)
 # ===========================================================================
-# Mod A'nin kurulum formunun YALNIZCA sozluk alani: veri seti bir onceki
-# adimda (birlestirme) BAZ_ADI olarak yazildi, burada yeniden sorulmaz.
-# Sonrasi Mod A ile AYNI: tanimlar -> sozluk_tanim -> teyit. Birlestirmenin
-# urettigi toplama kolonlari hazir sozlukte bulunmayacagi icin sozluk_tanim
-# adiminda "tanimsiz" olarak listelenir.
-def _sozluk_sec_formu(durum, sozluk=None):
+# Mod B: nihai (baz) veri seti YOK, ama onu olusturacak kaynak tablolar ve
+# HER BIRININ SOZLUGU hazir. Burada her tabloya sozlugu eslenir; nihai
+# sozluk birlestirmeden SONRA bu sozluklerden otomatik kurulur (bkz.
+# kaynak_sozlugunden_kur): kaynak kolon tanimini aynen alir, toplama
+# kolonlari kaynak tanim + fonksiyon + pencereyle tarif edilir.
+#
+# Ayni sozluk birden fazla tabloya secilebilir (ortak sozluk).
+KAYNAK_SOZLUK_ONEK = "kaynak sözlükleri:"
+KAYNAK_SOZLUK_AYRAC = " | "
+
+
+def _kaynak_sozluk_formu(durum, secili=None):
+    tablolar = list(durum.get("ham_tablolar") or [])
+    secili = secili or durum.get("kaynak_sozlukler") or {}
+    alanlar = [{"ad": "sozluk_%d" % i, "etiket": t,
+                "deger": secili.get(t) or ""}
+               for i, t in enumerate(tablolar)]
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Değişken sözlüğü",
-        "aciklama": "Birleştirilen veri seti için kullanılacak değişken "
-                    "sözlüğünü seçin.",
-        "buton": "Girdileri Doğrula",
-        "alanlar": [
-            {"ad": "sozluk", "etiket": "Değişken sözlüğü",
-             "deger": sozluk or durum.get("sozluk") or ""},
-        ],
-        "sablon": "sözlük {sozluk}",
+        "baslik": "Kaynak sözlükleri",
+        "aciklama": "Her kaynak tablonun değişken sözlüğünü seçin. Aynı "
+                    "sözlük birden fazla tablo için seçilebilir. Nihai "
+                    "sözlük birleştirmeden sonra bu sözlüklerden kurulur.",
+        "buton": "Sözlükleri Onayla",
+        "alanlar": alanlar,
+        "sablon": KAYNAK_SOZLUK_ONEK + " " + KAYNAK_SOZLUK_AYRAC.join(
+            "{%s}" % a["ad"] for a in alanlar),
     }
 
 
-def sozluk_sec_girdi(durum, mesaj, yeniden_sor=False):
-    """kurulum_girdi'nin sozluk yarisi. Metin yok, yalniz form."""
-    a = niyet_kural.alanlari_cikar(mesaj) if mesaj else {}
-    sozluk = a.get("sozluk")
+def _kaynak_sozluk_coz(durum, mesaj):
+    """'kaynak sözlükleri: S1 | S2' -> {tablo: sozluk}; bicim tutmazsa None."""
+    metin = (mesaj or "").strip()
+    if not metin.lower().startswith(KAYNAK_SOZLUK_ONEK):
+        return None
+    degerler = [d.strip() for d in
+                metin[len(KAYNAK_SOZLUK_ONEK):].split(KAYNAK_SOZLUK_AYRAC.strip())]
+    tablolar = list(durum.get("ham_tablolar") or [])
+    if len(degerler) != len(tablolar):
+        return None
+    return dict(zip(tablolar, degerler))
 
-    if yeniden_sor or not sozluk:
-        _sozluk_sec_formu(durum, sozluk or (durum.get("sozluk")
-                                            if yeniden_sor else None))
+
+def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
+    """Metin yok, yalniz form (kurulum ile ayni dil)."""
+    secim = None if yeniden_sor else _kaynak_sozluk_coz(durum, mesaj)
+    if not secim:
+        _kaynak_sozluk_formu(durum)
         return False, ""
 
-    if not durum.get("veri_seti"):
-        # Birlestirme yazilamadiysa (bkz. birlestirme_uygula) buraya
-        # gelinmemeli; eski bir oturum icin acik hata.
-        raise AdimHatasi("Birleştirilmiş veri seti bulunamadı. "
-                         "Birleştirme Planı adımına dönüp yeniden çalıştırın.")
+    bos = [t for t, s in secim.items() if not s]
+    if bos:
+        _kaynak_sozluk_formu(durum, secim)
+        return False, ("Şu tabloların sözlüğü seçilmedi: %s"
+                       % ", ".join(bos))
 
-    if not _dataset_var_mi(sozluk):
-        _sozluk_sec_formu(durum, sozluk)
-        return False, ("'%s' adında bir tabloya erişemiyorum. "
-                       "Adı kontrol edip yeniden seçin." % sozluk)
+    erisilemeyen = sorted({s for s in secim.values() if not _dataset_var_mi(s)})
+    if erisilemeyen:
+        _kaynak_sozluk_formu(durum, secim)
+        return False, ("Erişemediğim sözlükler: %s\n\n"
+                       "Adlarını kontrol eder misiniz?" % ", ".join(erisilemeyen))
 
-    durum["sozluk"] = sozluk
+    durum["kaynak_sozlukler"] = secim
     durum["_secim_alani"] = None
     return True, None
 
 
-def sozluk_sec_uygula(durum):
-    """Kapsam ve calisma kopyasi: kurulum_uygula ile ayni is."""
-    return kurulum_uygula(durum)
+def kaynak_sozluk_uygula(durum):
+    adlar = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
+    return "Kaynak sözlükleri kaydedildi: %s" % ", ".join(adlar)
+
+
+def _tanim_haritasi(sozluk_df):
+    """{kolon_adi_buyuk: (aciklama, kategori)} - bos tanimlar atlanir."""
+    ad_k = sozluk_calisma.degisken_kolonu_bul(sozluk_df)
+    tanim_k = sozluk_calisma.tanim_kolonu_bul(sozluk_df)
+    kat_k = sozluk_calisma.kategori_kolonu_bul(sozluk_df)
+    harita = {}
+    if ad_k is None or tanim_k is None:
+        return harita
+    for _, r in sozluk_df.iterrows():
+        ad = str(r[ad_k]).strip()
+        tanim = r[tanim_k]
+        if not ad or tanim is None or (isinstance(tanim, float) and np.isnan(tanim)):
+            continue
+        tanim = str(tanim).strip()
+        if not tanim:
+            continue
+        kat = r[kat_k] if kat_k is not None else None
+        kat = "" if kat is None or (isinstance(kat, float) and np.isnan(kat)) \
+            else str(kat).strip()
+        harita.setdefault(ad.upper(), (tanim, kat))
+    return harita
+
+
+def _turetilmis_tanim(kayit, kaynak_tanim):
+    """Kutuk satirindan kolon tanimi. None: kaynakta tanim yok."""
+    tablo = str(kayit.get("KAYNAK_TABLO") or "")
+    kolon = str(kayit.get("KAYNAK_KOLON") or "")
+    tur = str(kayit.get("TUR") or "")
+    pencere = str(kayit.get("PENCERE") or "-")
+    if tur == "işlem toplama":
+        fonk = str(kayit.get("FONKSIYON") or "")
+        m = re.search(r"\(([^)]*)\)", fonk)
+        fonk_adi = m.group(1) if m else fonk
+        if kolon == "(satır sayısı)":
+            return "%s tablosundaki kayıt sayısı, %s." % (tablo, pencere)
+        if not kaynak_tanim:
+            return None
+        return "%s — %s, %s (%s.%s)." % (kaynak_tanim.rstrip("."), fonk_adi,
+                                         pencere, tablo, kolon)
+    if not kaynak_tanim:
+        return None
+    if tur == "boyut":
+        ek = (" (%s tablosundan, %s)" % (tablo, pencere) if pencere != "-"
+              else " (%s tablosundan)" % tablo)
+        return kaynak_tanim.rstrip(".") + ek + "."
+    return kaynak_tanim
+
+
+def kaynak_sozlugunden_kur(durum, baz, kutuk):
+    """Mod B: nihai sozlugu kaynak sozluklerden ve koken kutugunden kurar.
+
+    Her kolon icin kutuk "hangi tablonun hangi kolonundan, hangi
+    fonksiyon ve pencereyle" geldigini soyluyor; tanim o tablonun
+    sozlugunden okunuyor. Kaynakta tanimi olmayan kolon sozluge
+    YAZILMAZ: "Sözlük Tanımları" adiminda tanimsiz olarak listelenir.
+    Doner: (tablo_df, ozet_sozlugu)."""
+    esleme = durum.get("kaynak_sozlukler") or {}
+    haritalar, okunamayan = {}, []
+    for ad in sorted(set(esleme.values())):
+        try:
+            haritalar[ad] = _tanim_haritasi(_df_oku(ad))
+        except Exception as e:
+            haritalar[ad] = {}
+            okunamayan.append("%s (%s)" % (ad, str(e)[:60]))
+
+    satirlar, gorulen = [], set()
+    turetilen = 0
+    for _, k in kutuk.iterrows():
+        kolon = str(k.get("KOLON"))
+        if kolon in gorulen or kolon not in baz.columns:
+            continue
+        gorulen.add(kolon)
+        tablo = str(k.get("KAYNAK_TABLO") or "")
+        kaynak_kolon = str(k.get("KAYNAK_KOLON") or "")
+        tanim, kat = haritalar.get(esleme.get(tablo), {}).get(
+            kaynak_kolon.upper(), (None, ""))
+        aciklama = _turetilmis_tanim(k, tanim)
+        if not aciklama:
+            continue
+        toplama = str(k.get("TUR") or "") == "işlem toplama"
+        turetilen += int(toplama)
+        satirlar.append({
+            "DEGISKEN": kolon,
+            "ACIKLAMA": aciklama,
+            "KATEGORI": kat or "tanımsız",
+            "KAYNAK": "%s.%s" % (tablo, kaynak_kolon),
+            "URETIM": ("kaynak sözlükten türetildi" if toplama
+                       else "kaynak sözlük"),
+        })
+    tablo_df = pd.DataFrame(satirlar, columns=[
+        "DEGISKEN", "ACIKLAMA", "KATEGORI", "KAYNAK", "URETIM"])
+    return tablo_df, {"toplam": int(baz.shape[1]), "tanimli": len(satirlar),
+                      "turetilen": turetilen, "okunamayan": okunamayan}
+
+
+def _mod_b_sozlugu(durum, baz, kutuk):
+    """Birlestirmeden sonra Mod B'nin sozluk isi. Doner: rapor metni."""
+    tablo, oz = kaynak_sozlugunden_kur(durum, baz, kutuk)
+    yazildi, yedek = _yaz(SOZLUK_ADI, tablo, "/degisken_sozlugu.csv")
+    durum["sozluk"] = yazildi or None
+    durum["sozluk_yedek"] = yedek
+    durum["sozluk_uretim"] = {"kaynak": "kaynak sözlükleri", **oz}
+    kopya_not = _calisma_kopyasi_kur(durum, tablo)
+    # Profil + kapsam SIMDI: baz zaten bellekte. Modelleme tanimlari
+    # hedef/kimlik adaylarini, sozluk tanimlari tanimsiz listesini
+    # buradan okuyor; tablo ikinci kez taranmiyor.
+    _kapsam_hesapla(durum, baz, tablo)
+    tanimsiz = oz["toplam"] - oz["tanimli"]
+    metin = ("\n\nDEĞİŞKEN SÖZLÜĞÜ\n"
+             "  %s kolonun %s tanesi kaynak sözlüklerden tanımlandı "
+             "(%s toplama kolonu türetildi).\n"
+             "  Tablo: %s"
+             % (_sayi(oz["toplam"]), _sayi(oz["tanimli"]),
+                _sayi(oz["turetilen"]), _nerede(yazildi, yedek)))
+    if tanimsiz:
+        metin += ("\n  Kaynağında tanımı olmayan %s kolon «Sözlük "
+                  "Tanımları» adımında listelenecek." % _sayi(tanimsiz))
+    if oz["okunamayan"]:
+        metin += "\n\n%s" % _liste("Okunamayan sözlükler:", oz["okunamayan"], 6)
+    return metin + kopya_not
 
 
 # ---------------------------------------------------------------------------
@@ -1363,7 +1513,13 @@ def _kapsami_cikar(durum):
     onbellek_temizle(durum.get("veri_seti"))
     onbellek_temizle(durum.get("sozluk"))
     df = modelleme_df(durum)
-    sz = _df_oku(durum["sozluk"])
+    # sozluk_orijinal_oku: Mod B'de uretilen sozluk dataset'e yazilamazsa
+    # CSV yedeginden okunur (durum["sozluk"] None kalir).
+    return _kapsam_hesapla(durum, df, sozluk_orijinal_oku(durum))
+
+
+def _kapsam_hesapla(durum, df, sz):
+    """Profil + kapsam + tanimsiz liste. Tablo elde olan cagiran icin."""
     ad_kolonu = sozluk_calisma.degisken_kolonu_bul(sz)
     sozluk_ad = set(sz[ad_kolonu].astype(str)) if ad_kolonu is not None else set()
 

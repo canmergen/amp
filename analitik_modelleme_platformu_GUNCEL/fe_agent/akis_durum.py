@@ -134,6 +134,7 @@ def yeni_durum():
         # Mod harflerinin hangi duzene gore yazildigi (bkz. MOD_GOCU).
         "_mod_surumu": MOD_SURUMU,
         "ham_tablolar": [],          # Mod B ve D
+        "kaynak_sozlukler": {},      # Mod B: {kaynak tablo: sozluk}
         "birlestirme": {},           # plan + ozet
         "sozluk_uretim": {},         # ozet
         "veri_seti": None, "sozluk": None,

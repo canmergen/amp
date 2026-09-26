@@ -91,6 +91,8 @@ def _serit_veri_sozluk_karti(durum):
                      else str(kaynak)))
     elif durum.get("mod") in SOZLUK_URETEN_MODLAR:
         alt = "sözlük LLM tarafından üretilecek"
+    elif durum.get("mod") == "B":
+        alt = "sözlük kaynak sözlüklerden kurulacak"
     else:
         alt = "sözlük seçilmedi"
 
@@ -706,9 +708,9 @@ def sol_panel_adi(anahtar):
 # birlestirme planindan uretiliyor; A ve C'de gruplu adimda seciliyor.
 VERI_ADIMI_ANAHTARI = {"A": "kurulum", "B": "birlestirme",
                        "C": "veri_sec", "D": "birlestirme"}
-# Sozlugu hangi adim getiriyor: A'da kurulumda, B'de ayri adimda hazir
-# sozluk secilir; C ve D'de veriden uretilir.
-SOZLUK_ADIMI_ANAHTARI = {"A": "kurulum", "B": "sozluk_sec",
+# Sozlugu hangi adim getiriyor: A'da kurulumda secilir; B'de birlestirmede
+# kaynak sozluklerden kurulur; C ve D'de veriden uretilir.
+SOZLUK_ADIMI_ANAHTARI = {"A": "kurulum", "B": "birlestirme",
                          "C": "sozluk_uret", "D": "sozluk_uret"}
 
 
@@ -734,7 +736,7 @@ BOLME_ADIMI = sol_panel_adi("bolme")
 # modlar farkli adim tasiyor ama ortak adimlarin sirasi aynı.
 _AKIS_ADLARI = []
 for _a in (["mod", "ham_veri", "birlestirme", "kurulum", "veri_sec",
-            "sozluk_sec", "sozluk_uret", "tanimlar", "sozluk_tanim",
+            "kaynak_sozluk", "sozluk_uret", "tanimlar", "sozluk_tanim",
             "teyit", "bolme"]
            + [a for a in adim_sirasi(None) if a != "mod"]):
     if sol_panel_adi(_a) not in _AKIS_ADLARI:
@@ -913,6 +915,11 @@ def _sozluk_kokeni(durum):
     vermek icin var."""
     mod = durum.get("mod")
     uretilen = mod in SOZLUK_URETEN_MODLAR
+    if mod == "B":
+        adlar = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
+        if not (durum.get("sozluk") or durum.get("sozluk_yedek")):
+            return None
+        return "Kaynak Sözlüklerden Kuruldu: %s" % ", ".join(adlar)
     if not (durum.get("sozluk") or durum.get("sozluk_yedek")):
         return "Dil Modeli Tarafından Oluşturulacak" if uretilen else None
     if not uretilen:

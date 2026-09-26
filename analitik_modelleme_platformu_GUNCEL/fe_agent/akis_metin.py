@@ -40,8 +40,8 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 
 # DORT BASLANGIC. Harf = ekranda gorunen harf = ic anahtar.
 #   A  veri seti hazir,  sozluk hazir
-#   B  veri seti YOK,    sozluk hazir   (yeni: tablolar birlestirilir,
-#                                         hazir sozluk baglanir)
+#   B  veri seti YOK,    kaynak tablolar VE sozlukleri hazir (yeni:
+#                        tablolar ve sozlukler birlestirilir)
 #   C  veri seti hazir,  sozluk YOK     (eski B)
 #   D  veri seti YOK,    sozluk YOK     (eski C)
 # Eski kayitlardaki B/C, okunurken C/D'ye cevriliyor
@@ -51,8 +51,9 @@ MOD_SECENEKLERI = [
      "aciklama": "Mevcut veri seti ve değişken sözlüğüyle doğrudan modelleme "
                  "tanımlarına ve veri analizine geçin."},
     {"deger": "B", "baslik": "Veri Seti Hazır Değil, Sözlük Hazır",
-     "aciklama": "Kaynak tabloları birleştirerek veri setini oluşturun; "
-                 "mevcut değişken sözlüğünü bağlayın."},
+     "aciklama": "Kaynak tablolar ve sözlükleri hazır: tabloları "
+                 "birleştirerek veri setini, sözlükleri birleştirerek "
+                 "nihai sözlüğü oluşturun."},
     {"deger": "C", "baslik": "Veri Seti Hazır, Sözlük Hazır Değil",
      "aciklama": "Hazır veri setini kullanın; değişken sözlüğünü kolon yapısı "
                  "ve veri profili üzerinden oluşturun."},

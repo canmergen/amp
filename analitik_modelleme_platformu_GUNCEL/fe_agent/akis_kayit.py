@@ -10,7 +10,7 @@ from fe_agent.akis_faz01 import (
     birlestirme_plan, birlestirme_uygula, bolme_girdi, bolme_uygula,
     ham_veri_girdi, ham_veri_plan, ham_veri_uygula, kurulum_girdi,
     kurulum_uygula, mod_girdi, mod_plan, mod_uygula,
-    sozluk_sec_girdi, sozluk_sec_uygula,
+    kaynak_sozluk_girdi, kaynak_sozluk_uygula,
     sozluk_tanim_plan, sozluk_tanim_uygula,
     sozluk_uret_plan, sozluk_uret_uygula, tanimlar_girdi,
     tanimlar_uygula, teyit_girdi, teyit_uygula, veri_sec_girdi,
@@ -83,12 +83,14 @@ ADIMLAR = {
         # tanimi zorunlu, hangileri oldugu once bilinmeli).
         "girdi": kurulum_girdi, "plan": None, "uygula": kurulum_uygula},
 
-    "sozluk_sec": {
-        "baslik": "Değişken Sözlüğü",
-        "aciklama": "Birleştirilen veri seti için hazır değişken sözlüğü "
-                    "seçilir; kapsam oranı hesaplanır.",
+    "kaynak_sozluk": {
+        "baslik": "Kaynak Sözlükleri",
+        "aciklama": "Her kaynak tablonun değişken sözlüğü seçilir. Nihai "
+                    "sözlük birleştirmeden sonra bu sözlüklerden kurulur; "
+                    "toplama kolonları kaynak tanımdan türetilir.",
         # plan=None: FORMUN KENDISI ONAYDIR (kurulum ile ayni).
-        "girdi": sozluk_sec_girdi, "plan": None, "uygula": sozluk_sec_uygula},
+        "girdi": kaynak_sozluk_girdi, "plan": None,
+        "uygula": kaynak_sozluk_uygula},
 
     "sozluk_tanim": {
         "baslik": "Sözlük Tanımları",
@@ -206,10 +208,11 @@ FAZ01_ADIMLARI = {
     # donem kolonunun sozlukte tanimli olmasi zorunlu; hangi kolonlar
     # oldugu tanimlar adiminda belli oluyor.
     "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "teyit", "bolme"],
-    # B: veri seti kaynak tablolardan BIRLESTIRILIR, sozluk HAZIR. Sozluk
-    # hazir oldugu icin A gibi sozluk_tanim adimi var: birlestirmenin
-    # urettigi kolonlar sozlukte bulunmaz.
-    "B":  ["mod", "ham_veri", "birlestirme", "sozluk_sec", "tanimlar",
+    # B: nihai veri seti YOK; kaynak tablolar ve HER BIRININ SOZLUGU hazir.
+    # Sozlukler birlestirmeden ONCE eslenir, nihai sozluk birlestirmede
+    # bunlardan kurulur. Kaynagi tanimsiz kolonlar icin A gibi
+    # sozluk_tanim adimi var.
+    "B":  ["mod", "ham_veri", "kaynak_sozluk", "birlestirme", "tanimlar",
            "sozluk_tanim", "teyit", "bolme"],
     # C ve D'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
     # tanimsiz kolon kalmiyor ve ayri bir "sozluk_tanim" adimina gerek
@@ -233,8 +236,6 @@ ADIM_GRUPLARI = {
     "kurulum":     "veri_sozluk",
     "tanimlar":    "veri_sozluk",
     "sozluk_tanim": "veri_sozluk",
-    # B modu: hazir sozluk secimi
-    "sozluk_sec":  "veri_sozluk",
     # C modu: veri seti secimi + sozluk uretimi + modelleme tanimlari
     "veri_sec":    "veri_sozluk",
     "sozluk_uret": "veri_sozluk",
