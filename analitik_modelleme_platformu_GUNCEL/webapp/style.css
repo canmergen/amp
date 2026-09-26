@@ -380,7 +380,11 @@ button.ozet-kart:focus-visible {
    üstünde kalmalı. */
 #calismalar-kap, #yeni-kap { position: relative; flex-shrink: 0; }
 /* Yeni Çalışma onayı: düğmenin YERİNDE iki düğme, aynı boy ve kutu. */
-#yeni-onay { display: flex; gap: 4px; }
+#yeni-onay { display: flex; gap: 4px; align-items: center; }
+#yeni-soru {
+  font-size: var(--fs-govde); font-weight: var(--fw-kalin);
+  color: var(--metin); white-space: nowrap; margin-right: 4px;
+}
 #yeni-onay[hidden] { display: none; }
 #yeni-onay button {
   height: 22px; padding: 0 var(--b-2); cursor: pointer; white-space: nowrap;

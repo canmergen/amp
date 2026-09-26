@@ -1,6 +1,12 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **girdi tablosuna _SPLIT yazılmıyor; süreli Yeni Çalışma onayı**. Yapıştır: `akis_faz01.py`, `app.js`
+Bu tur: **Yeni Çalışma onayında soru**. Yapıştır: `app.js`, `index.html`, `style.css`
+
+- Onayla / Reddet'in önünde "Yeni Çalışma Açılsın mı?" yazıyor.
+
+---
+
+Önceki tur: **girdi tablosuna _SPLIT yazılmıyor; süreli Yeni Çalışma onayı**. Yapıştır: `akis_faz01.py`, `app.js`
 
 - HATA DÜZELTİLDİ: kimlik kullanılamayan bölmede _SPLIT kolonu kullanıcının
   girdi veri setine yazılıyordu. Artık yalnızca platform kopyasına

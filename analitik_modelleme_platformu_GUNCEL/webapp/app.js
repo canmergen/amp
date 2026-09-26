@@ -8262,6 +8262,15 @@ function yeniOnayKur() {
     return kutu;
 }
 const yeniOnay = yeniOnayKur();
+/* NEYİN ONAYLANDIĞI YAZAR (kullanıcı bildirimi: "neyi onayla neyi
+   reddet belirsiz"). Düğmelerin önünde kısa soru; index.html eski
+   kalsa da burada eklenir. */
+if (!document.getElementById("yeni-soru")) {
+    const soru = document.createElement("span");
+    soru.id = "yeni-soru";
+    soru.textContent = "Yeni Çalışma Açılsın mı?";
+    yeniOnay.insertBefore(soru, yeniOnay.firstChild);
+}
 const yeniOnayla = document.getElementById("yeni-onayla");
 const yeniReddet = document.getElementById("yeni-reddet");
 
