@@ -2391,15 +2391,15 @@ button.ozet-kart:focus-visible {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 .bolme-tip {
-  display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 30;
+  display: none; position: fixed; z-index: 60;
   width: 22rem; max-width: 70vw; padding: var(--b-3) var(--b-4);
   background: var(--yuzey); color: var(--metin);
   border: 1px solid var(--kenar); border-radius: var(--r); box-shadow: var(--golge-2);
   font-size: var(--fs-kucuk); line-height: 1.5; text-align: left; white-space: normal;
   font-style: normal; font-weight: var(--fw-normal);
 }
-.bolme-info:hover .bolme-tip, .bolme-info:focus .bolme-tip,
-.bolme-info:focus-within .bolme-tip { display: block; }
+/* Görünürlük JS'ten (konum hesabıyla birlikte); CSS yalnızca biçim. */
+.bf-metin { width: 16rem; max-width: 100%; }
 .bolme-tip-bas { font-weight: var(--fw-kalin); margin-bottom: 4px; }
 .bolme-tip-p + .bolme-tip-p { margin-top: 6px; }
 

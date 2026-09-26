@@ -919,13 +919,15 @@ def bolme_ayarlari(durum):
     a["test_tanim"] = ham
     a["tur"] = ham                     # modul ici eski ad, ayni deger
 
+    # BOLME BIRIMI KULLANICIYA SORULMUYOR (kullanici karari): kimlik
+    # kolonu tekil tanimlayicidir; donem varsa (kimlik, donem) tekildir.
+    # Ayni kimligin birden fazla satiri OLABILIYORSA (donem kolonu var ya
+    # da kimlik bazli tekrar olculdu) kayitlar kimlik bazinda bir arada
+    # tutulur; aksi halde kimlik = satir, gruplamanin etkisi yok.
     kimlik = m.get("id")
-    birim = b.get("birim") if b.get("birim") in ("satir", "kimlik") else None
-    if birim is None:
-        birim = "kimlik" if kimlik else "satir"
-    # Kimlik kolonu yokken "kimlik" birimi bos bir sozdur: gruplanacak
-    # anahtar yok. Alan satira cekiliyor ki panel de gercegi gostersin.
-    a["birim"] = birim if kimlik else "satir"
+    coklu_satir = bool(m.get("donem")) or bool(_tam_sayi(
+        (p or {}).get("duplicate_kimlik"), 0, 0))
+    a["birim"] = "kimlik" if (kimlik and coklu_satir) else "satir"
 
     if "katmanla" in b:
         a["katmanla"] = bool(b["katmanla"])
@@ -977,6 +979,16 @@ def bolme_ayarlari(durum):
         # "Çoklu tekrar" secilip tekrar 1 kalirsa ayar hicbir sey
         # yapmiyor demektir; en az iki tekrar.
         a["tekrar"] = 2
+    # COKLU TEKRARIN SEED'LERI. Kullanici listeyi kendisi verebilir
+    # (kullanici karari: "hangi seedleri kullanacağımızı seçemiyor
+    # muyum"); vermediyse ana seed'den turetilir: 42, 43, 44. Elle
+    # verilen liste tekrar sayisini da belirler.
+    liste = _seed_listesi(b.get("seedler")) if a["seed_tur"] == "coklu" else []
+    if len(liste) >= 2:
+        a["tekrar"] = min(len(liste), TEKRAR_EN_COK)
+        a["seedler"] = liste[:a["tekrar"]]
+    else:
+        a["seedler"] = [a["seed"] + i for i in range(a["tekrar"])]
 
     # ZAMANSAL BOLMEDE BOSLUK (gap): egitim ile OOT/Test donemleri
     # arasinda modele HIC dahil edilmeyen donem sayisi. Performans
@@ -2066,7 +2078,9 @@ def katlar(durum, df, y=None):
             # sayi veriyor, butun calisma yine tekrar uretilebilir
             # kaliyor.
             tur_a = dict(a)
-            tur_a["seed"] = int(a["seed"]) + tur
+            seedler = a.get("seedler") or []
+            tur_a["seed"] = int(seedler[tur]) if tur < len(seedler) \
+                else int(a["seed"]) + tur
             parca = _kfold_katlari(idx, y, gruplar, tur_a,
                                    notlar if tur == 0 else [])
             if not parca:
@@ -2093,10 +2107,10 @@ def katlar(durum, df, y=None):
 # Formdan gelebilecek alanlar. Beyaz liste: gelen govde durum["bolme"]'ye
 # oldugu gibi yazilsaydi istemci "kalici" ya da "test_kimlikleri" gonderip
 # hic hesaplanmamis bir bolmeyi hesaplanmis gibi gosterebilirdi.
-BOLME_FORM_ALANLARI = ("test_tanim", "birim", "katmanla", "val_var",
+BOLME_FORM_ALANLARI = ("test_tanim", "katmanla", "val_var",
                        "val_oran", "test_oran", "cv", "kat", "oot_adet",
                        "oot_tanim", "seed", "seed_tur", "tekrar", "gap",
-                       "oot_deger", "train_kullanimi")
+                       "oot_deger", "train_kullanimi", "seedler")
 
 # Bolme degistiginde kalici kayit GECERSIZDIR; yeniden hesaplanana kadar
 # eski setler dolasimda kalmamali.
@@ -2105,6 +2119,23 @@ BOLME_KALICI_ALANLARI = ("kalici", "set_kimlikleri", "test_kimlikleri",
                          "hazir_kolonlar",
                          "satir", "train_satir", "test_satir",
                          "oot_donemleri", "cv_etkin", "cv_notlari")
+
+
+def _seed_listesi(ham):
+    """"42, 43, 44" ya da [42, 43, 44] -> [42, 43, 44]; bos/gecersiz -> []."""
+    if ham is None:
+        return []
+    parcalar = ham if isinstance(ham, (list, tuple)) else \
+        re.split(r"[,;\s]+", str(ham))
+    cikti = []
+    for x in parcalar:
+        try:
+            v = int(str(x).strip())
+        except (TypeError, ValueError):
+            continue
+        if v not in cikti:
+            cikti.append(v)
+    return cikti[:TEKRAR_EN_COK]
 
 
 def bolme_kaydet(durum, gelen):
@@ -2143,6 +2174,13 @@ def bolme_kaydet(durum, gelen):
         gelen["kat"] = min(_tam_sayi(gelen["kat"], 5, KAT_EN_AZ), KAT_EN_COK)
     if "tekrar" in gelen:
         gelen["tekrar"] = min(_tam_sayi(gelen["tekrar"], 1, 1), TEKRAR_EN_COK)
+    # Seed listesi verildiyse tekrar sayisi listenin uzunlugudur; tek
+    # seed'lik liste "liste yok" sayilir (ana seed'den turetilir).
+    if "seedler" in gelen:
+        liste = _seed_listesi(gelen["seedler"])
+        gelen["seedler"] = liste if len(liste) >= 2 else []
+        if gelen["seedler"]:
+            gelen["tekrar"] = len(gelen["seedler"])
     if "gap" in gelen:
         gelen["gap"] = min(_tam_sayi(gelen["gap"], 0, 0), GAP_EN_COK)
     # ONAY KUTUSU YERINE IKI SECENEKLI LISTE: on yuz artik "kullan" /
@@ -2358,7 +2396,7 @@ def _orana_yuvarla(deger, yedek=0.20):
 BOLME_BOLUMLERI = (
     {"anahtar": "oot", "baslik": "Test (OOT)"},
     {"anahtar": "dogrulama", "baslik": "Validasyon (OOS)"},
-    {"anahtar": "kural", "baslik": "Bölme Kuralları"},
+    {"anahtar": "kural", "baslik": "Hedef Dağılımı"},
     {"anahtar": "tekrar", "baslik": "Tekrarlanabilirlik"},
 )
 
@@ -2394,21 +2432,18 @@ BOLME_SATIRLARI = (
      "bolum": "dogrulama", "alanlar": ("kat",),
      "kosul": {"alan": "cv", "degerler": ("kfold", "zaman")}},
 
-    {"anahtar": "birim", "etiket": "Bölme birimi",
-     "bolum": "kural", "alanlar": ("birim",)},
-    {"anahtar": "bolme_kolon", "etiket": "Bölme kolonu",
-     "bolum": "kural", "alanlar": (), "salt": "bolme_kolon",
-     "kosul": {"alan": "birim", "degerler": ("kimlik",)}},
     {"anahtar": "katmanla", "etiket": "Hedef dağılımı",
      "bolum": "kural", "alanlar": ("katmanla",)},
 
     {"anahtar": "seed_tur", "etiket": "Bölme yaklaşımı",
      "bolum": "tekrar", "alanlar": ("seed_tur",)},
     {"anahtar": "seed", "etiket": "Seed",
-     "bolum": "tekrar", "alanlar": ("seed",),
-     "kosul": {"alan": "seed_tur", "degerler": ("sabit",)}},
+     "bolum": "tekrar", "alanlar": ("seed",)},
     {"anahtar": "tekrar", "etiket": "Tekrar sayısı",
      "bolum": "tekrar", "alanlar": ("tekrar",),
+     "kosul": {"alan": "seed_tur", "degerler": ("coklu",)}},
+    {"anahtar": "seedler", "etiket": "Kullanılacak seed'ler",
+     "bolum": "tekrar", "alanlar": ("seedler",),
      "kosul": {"alan": "seed_tur", "degerler": ("coklu",)}},
 )
 
@@ -2502,22 +2537,33 @@ BOLME_SATIR_BILGI = {
         "Korunmasın: kayıtlar hedefe bakılmadan dağıtılır. Sürekli "
         "(sayısal) hedeflerde kullanılır."),
     "seed_tur": (
-        "Sabit bölme: bölme bir kez, sabit bir seed ile yapılır; her "
-        "çalıştırmada aynı kayıtlar aynı sete düşer. Sonuçlar tekrar "
-        "üretilebilir olur, çalışma böyle raporlanır.\n\n"
-        "Çoklu tekrar: çapraz doğrulama farklı seed'lerle birkaç kez "
-        "tekrarlanır ve sonuçların ne kadar oynadığı görülür. Ölçümün "
-        "tek bir bölmenin şansına bağlı olduğundan şüphe edildiğinde; "
-        "süre tekrar sayısı kadar uzar."),
+        "Sabit bölme: Train / Validasyon / Test ayrımı ve çapraz doğrulama "
+        "parçaları tek bir seed ile bir kez kurulur; her çalıştırmada aynı "
+        "kayıtlar aynı sete düşer. Sonuç tekrar üretilebilir, çalışma böyle "
+        "raporlanır. Standart seçim budur.\n\n"
+        "Çoklu tekrar: set ayrımı yine sabittir; yalnızca ÇAPRAZ DOĞRULAMA "
+        "parçaları farklı seed'lerle birkaç kez yeniden kurulur ve her "
+        "turun skoru ayrı ölçülür. Amaç: «5 katlı CV'de %72 çıktı» "
+        "sonucunun şansa mı bağlı olduğunu görmek; 3 tekrarda skor %70-74 "
+        "arasında kalıyorsa ölçüm sağlamdır. Süre tekrar sayısı kadar "
+        "uzar. Seed'ler ana seed'den türetilir ya da listeden verilir."),
     "seed": (
         "Rastgele işlemlerin başlangıç sayısı. Aynı seed, aynı veri ve aynı "
         "ayarlarla her çalıştırmada birebir aynı bölme elde edilir; bir "
         "meslektaşınız da aynı seed ile aynı sonucu görür. Sayının kendisinin "
-        "bir anlamı yoktur, sabit kalması önemlidir."),
+        "bir anlamı yoktur, sabit kalması önemlidir.\n\n"
+        "Çoklu tekrarda bu ana seed'dir: kullanılacak seed'ler buradan "
+        "türetilir (42 → 42, 43, 44) ya da aşağıdaki listede elle verilir."),
     "tekrar": (
         "Çapraz doğrulamanın kaç farklı seed ile tekrarlanacağı. 3 tekrar × "
         "5 kat = 15 model eğitimi. Tekrar arttıkça ölçümün güven aralığı "
-        "daralır, süre uzar."),
+        "daralır, süre uzar. Seed listesi elle verildiyse tekrar sayısı "
+        "listedeki seed sayısıdır."),
+    "seedler": (
+        "Her tekrarda kullanılacak seed. Boş bırakılırsa ana seed'den "
+        "türetilir (ana seed 42, 3 tekrar → 42, 43, 44). Belirli seed'lerle "
+        "çalışmak isterseniz virgülle ayırarak yazın: 42, 7, 2024. Yazdığınız "
+        "seed sayısı tekrar sayısını belirler."),
 }
 
 # "Detaylar ve Terimler" - TEK yerde, panelin altinda, varsayilan
@@ -2546,11 +2592,17 @@ BOLME_SOZLUK = (
      "eğitim %20 ölçüm demektir. Stratified, her parçada hedef oranını "
      "korur. Zaman sıralı, parçaları dönem sırasıyla ayırır ve hep "
      "geçmişten öğrenip gelecekte ölçer."),
-    ("Kimlik bazlı bölme neden kullanılır?",
-     "Aynı müşteriye ait tüm kayıtların aynı sette tutulmasını sağlar. Bir "
-     "müşterinin bir ayı eğitimde diğer ayı testte olursa model o müşteriyi "
-     "ezberler ve test sonucu gerçekte olduğundan iyi çıkar; buna veri "
-     "sızıntısı denir."),
+    ("Aynı müşterinin kayıtları nasıl dağıtılıyor?",
+     "Kimlik kolonu tekil tanımlayıcıdır; dönem kolonu varsa (kimlik, "
+     "dönem) tekildir. Aynı kimliğin birden fazla satırı olabiliyorsa "
+     "platform bu satırları rastgele bölmede ve çapraz doğrulama "
+     "parçalarında otomatik olarak bir arada tutar; ayrıca bir ayar "
+     "yoktur. Aksi halde bir müşterinin bir ayı eğitimde diğer ayı "
+     "validasyonda olur, model o müşteriyi ezberler ve skor şişer (veri "
+     "sızıntısı). Zamansal bölmede Test (OOT) dönem bazlı ayrıldığı için "
+     "aynı müşteri eski dönemleriyle eğitimde, yeni dönemiyle testte "
+     "bulunabilir; bu tasarım gereğidir. Kimlik, hedef ve dönem kolonları "
+     "modele değişken olarak girmez."),
     ("Hedef dağılımını korumak ne demektir?",
      "Hedef sınıf oranlarının (örneğin %3 temerrüt) her sette aynı "
      "tutulmasıdır. Seyrek hedeflerde bir setin hedefsiz kalmasını önler; "
@@ -2629,6 +2681,9 @@ def bolme_satir_degeri(anahtar, a, durum=None):
     if anahtar == "tekrar":
         return "%d" % int(a.get("tekrar") or 1)
 
+    if anahtar == "seedler":
+        return ", ".join(str(x) for x in (a.get("seedler") or [])) or "-"
+
     if anahtar == "birim":
         return "Kimlik" if a.get("birim") == "kimlik" else "Satır"
 
@@ -2677,12 +2732,6 @@ def bolme_kisitlari(durum):
         kisitlar.append({
             "alan": "cv", "secenek": "zaman",
             "metin": "Zaman sıralı çapraz doğrulama dönem kolonu gerektirir."})
-
-    if not m.get("id"):
-        kisitlar.append({
-            "alan": "birim", "secenek": "kimlik",
-            "metin": "Kimlik kolonu tanımlı olmadığı için bölme yalnızca "
-                     "satır bazında yapılabilir."})
 
     if m.get("target") and p.get("hedef_tip") == "surekli":
         kisitlar.append({

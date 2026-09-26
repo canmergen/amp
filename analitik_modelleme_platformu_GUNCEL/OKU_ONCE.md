@@ -1,5 +1,23 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **bölme birimi kalktı (otomatik)**, **seed listesi**, **tooltip sabit**.
+Yapıştır: `akis_durum.py` → `akis_panel.py` → `akis_faz01.py` (fe_agent);
+`style.css` → `app.js` (webapp)
+
+- «Bölme birimi» ve «Bölme kolonu» satırları kalktı. Kural otomatik: kimlik
+  kolonu var VE aynı kimliğin birden fazla satırı olabiliyorsa (dönem kolonu
+  var ya da kimlik bazlı tekrar ölçüldü) kayıtlar rastgele bölmede ve CV
+  parçalarında bir arada tutulur; özet satırı "Aynı SM_ID: bir arada
+  tutulur" diye yazar. Aksi halde kimlik = satır, gruplama yok.
+- Seed satırı her modda görünür. Çoklu tekrarda yeni «Kullanılacak seed'ler»
+  alanı: boşsa ana seed'den türetilir (42 → 42, 43, 44), elle yazılırsa
+  (42, 7, 2024) tekrar sayısı listeden gelir. Arka uç `seedler` alanını
+  kaydediyor; CV turları bu listeyi kullanıyor.
+- «i» açıklaması sabit konumlu (sayfayı oynatmıyor); alta sığmazsa yukarı
+  açılır. Bölme yaklaşımı / çoklu tekrar açıklamaları genişletildi.
+
+---
+
 Bu tur: **Örneklem ve Doğrulama Tasarımı kartı yeniden tasarlandı**.
 Yapıştır: `akis_durum.py` → `akis_panel.py` → `akis_faz01.py` (fe_agent);
 `style.css` → `app.js` (webapp)

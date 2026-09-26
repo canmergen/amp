@@ -2913,6 +2913,7 @@ def _oneri_ayarlari(durum, ek):
         "val_oran": round(float(a.get("val_oran") or 0.20), 4),
         "cv": a.get("cv"),
         "kat": int(a.get("kat") or 5),
+        "seedler": ", ".join(str(x) for x in (a.get("seedler") or [])),
         "katmanla": "koru" if a.get("katmanla") else "koruma",
         "seed_tur": a.get("seed_tur") or "sabit",
         "tekrar": int(a.get("tekrar") or 1),

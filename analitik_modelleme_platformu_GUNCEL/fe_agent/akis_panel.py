@@ -1567,7 +1567,14 @@ def bolme_formu(durum):
                             if a["cv"] == "yok" else {})),
             "katmanla": katmanla,
             "seed": _alan("seed", a["seed"]),
+            # Coklu tekrarin seed listesi; virgullu metin olarak gidip
+            # geliyor (bkz. akis_durum._seed_listesi).
+            "seedler": _alan("seedler", ", ".join(str(x) for x in a["seedler"]),
+                             tip="metin", kilitli=a["seed_tur"] != "coklu"),
         },
+        # Kimlik bazli gruplama OTOMATIK (kullaniciya sorulmuyor); ozet
+        # satiri bilgi olarak yaziyor.
+        "gruplama_kolonu": m.get("id") if a["birim"] == "kimlik" else None,
         "ozet": bolme_ozeti(durum),
         # Ozet GERCEK satir sayilarini mi tasiyor yoksa beklenen dagilimi
         # mi? On yuz bunu metinden anlayamaz; oneri modunda tahmini ozeti

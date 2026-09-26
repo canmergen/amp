@@ -2908,7 +2908,9 @@ function bfAlanlar(f) {
         seed_tur: d("seed_tur", "sabit"),
         tekrar: d("tekrar", 1),
         gap: d("gap", 0),
-        seed: d("seed", 42)
+        seed: d("seed", 42),
+        /* Çoklu tekrarın seed listesi: virgüllü metin ("42, 43, 44"). */
+        seedler: String(d("seedler", "") || "")
     };
 }
 
@@ -2927,7 +2929,9 @@ function bfGovdeDen(a) {
         val_var: bfValVar(a.val_var),
         val_oran: String(bfSayi(a.val_oran, 0.20)),
         cv: a.cv, kat: String(bfTam(a.kat, 5)),
-        seed: bfTam(a.seed, 42)
+        seed: bfTam(a.seed, 42),
+        seed_tur: a.seed_tur, tekrar: String(bfTam(a.tekrar, 1)),
+        seedler: bfSeedListesi(a.seedler).join(",")
     };
 }
 
@@ -3081,9 +3085,43 @@ function bfSecimKutusu(ad, secenekler, deger, pasif, degisti) {
    hemen altinda tek cumlede yaziyor; gerektiginde cumle sektorde
    yaygin karsiligi da soyluyor. */
 
+/* "42, 43, 44" -> [42, 43, 44]; geçersizler atlanır, tekrarlar tekil. */
+function bfSeedListesi(metin) {
+    const cikti = [];
+    String(metin || "").split(/[,;\s]+/).forEach(x => {
+        const v = Math.round(Number(x));
+        if (x !== "" && isFinite(v) && cikti.indexOf(v) < 0) cikti.push(v);
+    });
+    return cikti;
+}
+
+/* Ana seed ve tekrar sayısından türeyen liste: 42, 3 -> "42, 43, 44". */
+function bfTuretilenSeedler(seed, tekrar) {
+    const s0 = bfTam(seed, 42), n = Math.max(bfTam(tekrar, 1), 1);
+    const liste = [];
+    for (let i = 0; i < n; i++) liste.push(s0 + i);
+    return liste.join(", ");
+}
+
 function bfDegistir(ad, deger) {
     BF.alan[ad] = deger;
     BF.not = "";
+    /* Seed listesi ELLE yazılmadıysa ana seed / tekrar sayısından
+       türetilmeye devam eder; elle yazıldıysa tekrar sayısı listeden. */
+    if (ad === "seed" || ad === "tekrar" || ad === "seed_tur") {
+        /* Çokluya geçince en az iki tekrar (arka uçla aynı kural);
+           ilk hazır çip 3. */
+        if (ad === "seed_tur" && deger === "coklu" && bfTam(BF.alan.tekrar, 1) < 2)
+            BF.alan.tekrar = 3;
+        if (!BF.seedlerElle)
+            BF.alan.seedler = bfTuretilenSeedler(BF.alan.seed, BF.alan.tekrar);
+    }
+    if (ad === "seedler") {
+        const liste = bfSeedListesi(deger);
+        BF.seedlerElle = liste.length >= 2;
+        if (liste.length >= 2) BF.alan.tekrar = liste.length;
+        else BF.alan.seedler = bfTuretilenSeedler(BF.alan.seed, BF.alan.tekrar);
+    }
     // val_var / cv ELLE degistiyse hazir secim artik gecerli degil:
     // etiket (val_var, cv) ikilisinden yeniden turetiliyor, "ozel"
     // olabilir. Arka uca da acik olarak bu ikisi gonderilecek.
@@ -3163,7 +3201,7 @@ function bfTaslakPasif(ad) {
     if (ad === "test_oran") return a.test_tanim !== "rastgele";
     if (ad === "val_oran") return !bfValVar(a.val_var);
     if (ad === "kat") return a.cv === "yok";
-    if (ad === "tekrar") return a.seed_tur !== "coklu";
+    if (ad === "tekrar" || ad === "seedler") return a.seed_tur !== "coklu";
     if (ad === "gap") return a.test_tanim !== "zamansal";
     return false;
 }
@@ -5233,6 +5271,7 @@ function bfKiyasDeger(ad, v) {
     if (ad === "katmanla") return bfKatmanla(v) ? "1" : "0";
     if (ad === "kat" || ad === "seed" || ad === "tekrar" || ad === "gap")
         return String(bfTam(v, 0));
+    if (ad === "seedler") return bfSeedListesi(v).join(",");
     return String(v);
 }
 
@@ -5247,6 +5286,11 @@ function bfOneriMi(ad, deger) {
    gibi) fark sayılmaz: ekranda görünmüyor, sonucu değiştirmiyor. */
 function bfAlanFarkli(ad) {
     if (bfTaslakPasif(ad)) return false;
+    /* Seed listesi ana seed'den türetildiği sürece "fark" değil;
+       tekrar sayısı zaten kendi satırında sayılıyor. */
+    if (ad === "seedler")
+        return bfSeedListesi(BF.alan.seedler).join(",")
+            !== bfSeedListesi(bfTuretilenSeedler(BF.alan.seed, BF.alan.tekrar)).join(",");
     const o = bfOneriDegeri(ad);
     if (o === undefined || o === null) return false;
     return bfKiyasDeger(ad, BF.alan[ad]) !== bfKiyasDeger(ad, o);
@@ -5292,6 +5336,8 @@ function bolmeTaslagiOneriyleDoldur(alan) {
         if (k in BF.alan && o[k] !== undefined && o[k] !== null) BF.alan[k] = o[k];
     });
     BF.acikEksen = false;
+    BF.seedlerElle = bfSeedListesi(BF.alan.seedler).join(",")
+        !== bfSeedListesi(bfTuretilenSeedler(BF.alan.seed, BF.alan.tekrar)).join(",");
 }
 
 /* ---- ÖZET ÇUBUĞU: "Veri nasıl bölünecek" ----
@@ -5345,11 +5391,16 @@ function bolmeOzetCubukCiz(kok, alan) {
             parcalar.push(["Validasyon (OOS)", "eğitimin " + bfYuzde(bfSayi(a.val_oran, 0.2)) + "'i"]);
         parcalar.push(["Çapraz doğrulama",
             a.cv === "yok" ? "Yok" : etiket("cv") + ", " + bfTam(a.kat, 5) + " kat"]);
-        parcalar.push(["Birim", etiket("birim") + (a.birim === "kimlik" && al.birim && al.birim.kolon ? " (" + al.birim.kolon + ")" : "")]);
         parcalar.push(["Hedef dağılımı", bfKatmanla(a.katmanla) ? "korunuyor" : "korunmuyor"]);
+        /* Gruplama OTOMATİK: aynı kimliğin birden fazla satırı
+           olabiliyorsa kayıtlar bir arada tutulur; ayar değil, bilgi. */
+        if (BF.veri && BF.veri.gruplama_kolonu)
+            parcalar.push(["Aynı " + BF.veri.gruplama_kolonu, "bir arada tutulur"]);
     }
-    parcalar.push([a.seed_tur === "coklu" ? "Tekrar" : "Seed",
-        a.seed_tur === "coklu" ? bfTam(a.tekrar, 3) + " tekrar" : String(bfTam(a.seed, 42))]);
+    if (a.seed_tur === "coklu")
+        parcalar.push(["Seed'ler", bfSeedListesi(a.seedler).join(", ") || bfTuretilenSeedler(a.seed, a.tekrar)]);
+    else
+        parcalar.push(["Seed", String(bfTam(a.seed, 42))]);
     const alt = elYap("div", "bolme-ozet-alt");
     parcalar.forEach(([k, v]) => {
         const sp = elYap("span", "", k + ": ");
@@ -5477,6 +5528,27 @@ function bolmeBilgiSimgesi(metin, baslik) {
     kap.appendChild(tip);
     /* Tıklama da açar (dokunmatik ekran): odak simgede kalır. */
     kap.onclick = (e) => { e.stopPropagation(); kap.focus(); };
+    /* KONUM SABİT (position: fixed) ve JS ile hesaplanıyor: akış içinde
+       çizilen balon kartı uzatıp sayfayı aşağı-yukarı oynatıyordu
+       (kullanıcı bildirimi). Aşağıya sığmazsa simgenin ÜSTÜNE açılır;
+       sağ kenar simgenin sağına hizalı, ekrandan taşmaz. */
+    const yerlestir = () => {
+        const r = kap.getBoundingClientRect();
+        tip.style.display = "block";
+        const en = Math.min(tip.offsetWidth, window.innerWidth - 16);
+        const boy = tip.offsetHeight;
+        let sol = Math.min(r.right - en, window.innerWidth - en - 8);
+        sol = Math.max(sol, 8);
+        const altYer = window.innerHeight - r.bottom - 8;
+        const ust = (boy <= altYer || r.top < boy + 8) ? r.bottom + 6 : r.top - boy - 6;
+        tip.style.left = sol + "px";
+        tip.style.top = ust + "px";
+    };
+    const gizle = () => { tip.style.display = ""; };
+    kap.onmouseenter = yerlestir;
+    kap.onfocus = yerlestir;
+    kap.onmouseleave = gizle;
+    kap.onblur = gizle;
     return kap;
 }
 
@@ -5540,7 +5612,7 @@ function bfCipKabi(kutu, notMetni) {
    Gerçekten dışarıdan gelen kısıtlar (dönem kolonu yok gibi) bu yoldan
    gelmez; arka uç o durumda seçenek listesini BOŞ gönderir. */
 const BF_TASLAK_ALANLARI = ["oot_adet", "test_oran", "val_oran",
-                            "kat", "tekrar", "gap"];
+                            "kat", "tekrar", "gap", "seedler"];
 
 function bfCipAlani(ad, al, pasif) {
     const k = (al && al[ad]) || {};
@@ -5552,6 +5624,8 @@ function bfCipAlani(ad, al, pasif) {
     const not = kapali ? (k["not"] || "") : "";
 
     if (ad === "seed") return bfCipSayi(ad, k, kapali, not, []);
+    if (ad === "seedler") return bfMetinAlani(ad, k, kapali,
+        "Örnek: 42, 7, 2024 — boş bırakılırsa ana seed'den türetilir.");
     if (k.tip === "yuzde") return bfCipYuzde(ad, k, kapali, not);
     if (k.tip === "sayi") return bfCipSayi(ad, k, kapali, not, k.hazir || []);
 
@@ -5600,6 +5674,28 @@ function bfCipAlani(ad, al, pasif) {
        kısıt kutusu aynı cümleyi söylüyor, seçenek de üstü çizili ve
        ipucunda sebep var (o.aciklama / title). */
     return bfCipKabi(kutu, not);
+}
+
+/* SERBEST METİN (seed listesi). Değer alandan çıkınca taslağa yazılır. */
+function bfMetinAlani(ad, k, kapali, ipucu) {
+    const kap = elYap("div", "bolme-satir-deger");
+    const sat = elYap("div", "bolme-ozel-kutu");
+    const i = document.createElement("input");
+    i.type = "text";
+    i.className = "ft-esik-kutu bf-metin";
+    i.setAttribute("data-alan", ad);
+    i.setAttribute("data-ft-odak", "bf-" + ad);
+    i.value = String((BF.alan && BF.alan[ad]) || k.deger || "");
+    i.placeholder = "42, 43, 44";
+    i.disabled = kapali;
+    if (!kapali) {
+        i.onchange = () => bfDegistir(ad, i.value);
+        i.onclick = (e) => e.stopPropagation();
+    }
+    sat.appendChild(i);
+    kap.appendChild(sat);
+    if (ipucu) kap.appendChild(elYap("div", "bolme-cip-not", ipucu));
+    return kap;
 }
 
 /* YÜZDE: hazır çipler (%10 %20 %30) + "Özel" -> 1-99 arası serbest kutu.
@@ -5942,6 +6038,7 @@ function bolmeKartiEkle(alan, blok) {
         BF.kaydediyor = false;
         BF.zorlaOnay = false;
         BF.kilitAcik = false;
+        BF.seedlerElle = false;
         /* Taslak öneriyle başlar (geçmişten çizilen kilitli kartta
            kayıtlı ayar gösterilir, öneriyle ezilmez). */
         if (!gecmisten) bolmeTaslagiOneriyleDoldur(alan);
