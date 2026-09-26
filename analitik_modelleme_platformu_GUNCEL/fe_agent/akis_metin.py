@@ -48,18 +48,19 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 # (bkz. akis_durum.MOD_GOCU).
 MOD_SECENEKLERI = [
     {"deger": "A", "baslik": "Veri Seti ve Sözlük Hazır",
-     "aciklama": "Mevcut veri seti ve değişken sözlüğüyle doğrudan modelleme "
-                 "tanımlarına ve veri analizine geçin."},
+     "aciklama": "Modellemeye girecek baz veri seti ve onun baz sözlüğü "
+                 "hazır: doğrudan modelleme tanımlarına ve veri analizine "
+                 "geçin."},
     {"deger": "B", "baslik": "Veri Seti Hazır Değil, Sözlük Hazır",
-     "aciklama": "Kaynak tablolar ve sözlükleri hazır: tabloları "
-                 "birleştirerek veri setini, sözlükleri birleştirerek "
-                 "nihai sözlüğü oluşturun."},
+     "aciklama": "Kaynak tablolar ve kaynak sözlükleri hazır: tablolar "
+                 "birleştirilerek baz veri seti, sözlükler birleştirilerek "
+                 "baz sözlük oluşturulur."},
     {"deger": "C", "baslik": "Veri Seti Hazır, Sözlük Hazır Değil",
-     "aciklama": "Hazır veri setini kullanın; değişken sözlüğünü kolon yapısı "
-                 "ve veri profili üzerinden oluşturun."},
+     "aciklama": "Baz veri seti hazır: baz sözlük kolon yapısı ve veri "
+                 "profili üzerinden oluşturulur."},
     {"deger": "D", "baslik": "Veri Seti ve Sözlük Hazır Değil",
-     "aciklama": "Kaynak tabloları seçin; birleştirme, veri seti oluşturma "
-                 "ve sözlük hazırlama dahil süreci baştan kurun."},
+     "aciklama": "Yalnızca kaynak tablolar hazır: birleştirilerek baz veri "
+                 "seti, ardından baz sözlük oluşturulur."},
 ]
 
 # Mod gruplari: kod "mod == 'C'" gibi tek harfe bakmasin, NE yapildigina

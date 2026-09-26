@@ -755,10 +755,14 @@ def _veri_sec_formu(durum, veri=None):
     """B secenegi formu. Onceki secim varsa alan dolu gelir."""
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Veri seti",
-        "aciklama": "Değişken sözlüğü oluşturulacak veri setini seçin.",
+        "baslik": "Baz veri seti",
+        "aciklama": "Modellemeye girecek baz veri setini seçin; baz sözlük "
+                    "bu veri setinden oluşturulacak.",
         "buton": "Devam Et",
-        "alanlar": [{"ad": "veri_seti", "etiket": "Veri seti",
+        "alanlar": [{"ad": "veri_seti", "etiket": "Baz veri seti",
+                     "placeholder": "Baz veri seti ara…",
+                     "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik "
+                              "ve tüm değişkenler bu tabloda",
                      "deger": veri or durum.get("veri_seti") or ""}],
         "sablon": "veri seti {veri_seti}",
     }
@@ -891,17 +895,24 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
     """A secenegi formu. Onceki secim varsa alanlar dolu gelir."""
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Veri seti ve değişken sözlüğü",
-        "aciklama": "Analiz edilecek veri setini ve değişken sözlüğünü seçin.",
+        "baslik": "Baz veri seti ve baz sözlük",
+        "aciklama": "Modellemeye girecek baz veri setini ve bu veri setinin "
+                    "değişken açıklamalarını taşıyan baz sözlüğü seçin.",
         # Dugme etiketi SONRAKI EKRANIN adini soylemeli: bu form
         # gonderildiginde "Girdi doğrulama tamamlandı" karti aciliyor.
         # Eski etiket analizin burada basladigini ima ediyordu; oysa
         # analiz bu adimdan cok sonra basliyor.
         "buton": "Girdileri Doğrula",
         "alanlar": [
-            {"ad": "veri_seti", "etiket": "Veri seti",
+            {"ad": "veri_seti", "etiket": "Baz veri seti",
+             "placeholder": "Baz veri seti ara…",
+             "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik ve tüm "
+                      "değişkenler bu tabloda",
              "deger": veri or durum.get("veri_seti") or ""},
-            {"ad": "sozluk", "etiket": "Değişken sözlüğü",
+            {"ad": "sozluk", "etiket": "Baz sözlük",
+             "placeholder": "Sözlük tablosu ara…",
+             "ipucu": "Baz veri setindeki kolonların adını ve açıklamasını "
+                      "taşıyan tablo",
              "deger": sozluk or durum.get("sozluk") or ""},
         ],
         "sablon": "veri seti {veri_seti} ve sözlük {sozluk}",
@@ -1025,15 +1036,16 @@ KAYNAK_SOZLUK_AYRAC = " | "
 def _kaynak_sozluk_formu(durum, secili=None):
     tablolar = list(durum.get("ham_tablolar") or [])
     secili = secili or durum.get("kaynak_sozlukler") or {}
-    alanlar = [{"ad": "sozluk_%d" % i, "etiket": t,
+    alanlar = [{"ad": "sozluk_%d" % i, "etiket": "%s tablosunun sözlüğü" % t,
+                "placeholder": "Kaynak sözlük ara…",
                 "deger": secili.get(t) or ""}
                for i, t in enumerate(tablolar)]
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Kaynak sözlükleri",
-        "aciklama": "Her kaynak tablonun değişken sözlüğünü seçin. Aynı "
-                    "sözlük birden fazla tablo için seçilebilir. Nihai "
-                    "sözlük birleştirmeden sonra bu sözlüklerden kurulur.",
+        "baslik": "Kaynak sözlükler",
+        "aciklama": "Her kaynak tablonun kendi sözlüğünü seçin. Aynı "
+                    "sözlük birden fazla tablo için seçilebilir. Baz sözlük "
+                    "birleştirmeden sonra bu kaynak sözlüklerden kurulur.",
         "buton": "Sözlükleri Onayla",
         "alanlar": alanlar,
         "sablon": KAYNAK_SOZLUK_ONEK + " " + KAYNAK_SOZLUK_AYRAC.join(
@@ -1674,11 +1686,11 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         # / "Tamamlandı" diyor.
         "rozet": "",
         "ozet": [
-            {"etiket": "Veri seti", "deger": durum.get("veri_seti") or "",
+            {"etiket": "Baz veri seti", "deger": durum.get("veri_seti") or "",
              "alt": ["%s satır · %s kolon"
                      % (_sayi(profil.get("satir") or 0), _sayi(kolon)),
                      tip_alt]},
-            {"etiket": "Değişken sözlüğü", "deger": durum.get("sozluk") or "",
+            {"etiket": "Baz sözlük", "deger": durum.get("sozluk") or "",
              "alt": ["%s tanım" % _sayi(profil.get("sozluk_satir") or 0)]},
         ],
         "kapsam": {"yuzde": kapsam, "tanimli": eslesen, "toplam": kolon,

@@ -606,33 +606,25 @@ function fazlariYukle(liste) {
     FAZLAR.forEach(f => f.adimlar.forEach(a => { DUZ_ADIMLAR[a.sira] = a; }));
 }
 
-/* ANALİTİK SÜREÇ açılır kapanır. KENDİLİĞİNDEN KAPANMAZ (kullanıcı
-   kararı: "analitik süreç sol tarafta kapanmamalı"). Eskiden başlangıç
-   seçildikten sonra otomatik kapanıyordu. Artık yalnızca kullanıcı
-   başlığa basınca kapanır ya da açılır; seçim tarayıcıda saklanır,
-   sayfa yenilense ya da başka çalışmaya geçilse de korunur. */
+/* ANALİTİK SÜREÇ HEP AÇIK (kullanıcı kararı: "açıp kapatılamamalı").
+   Başlık düğme değil. index.html eski sürümde kalırsa düğme burada
+   pasifleştirilir: ok gizlenir, tıklama bir şey yapmaz. */
 const surecBlok = document.getElementById("surec-blok");
 const surecBas  = document.getElementById("surec-bas");
-const SUREC_DEPO_ANAHTARI = "fe_agent_surec_acik";
-let surecElle = (() => {       // null: seçim yok (açık) | true | false
-    const v = depoOku(SUREC_DEPO_ANAHTARI);
-    return v === "1" ? true : (v === "0" ? false : null);
-})();
 
 function surecGuncelle() {
-    if (!surecBlok || !surecBas) return;
-    const acik = surecElle !== null ? surecElle : true;
-    surecBlok.classList.toggle("kapali", !acik);
-    surecBas.setAttribute("aria-expanded", acik ? "true" : "false");
-    surecBas.title = acik ? "Açıklamayı gizle" : "Açıklamayı göster";
+    if (!surecBlok) return;
+    surecBlok.classList.remove("kapali");
+    if (surecBas) {
+        surecBas.onclick = null;
+        surecBas.removeAttribute("aria-expanded");
+        surecBas.removeAttribute("title");
+        surecBas.style.cursor = "default";
+        const ok = surecBas.querySelector(".surec-ok");
+        if (ok) ok.remove();
+    }
 }
-if (surecBas) {
-    surecBas.onclick = () => {
-        surecElle = surecBlok.classList.contains("kapali");
-        depoYaz(SUREC_DEPO_ANAHTARI, surecElle ? "1" : "0");
-        surecGuncelle();
-    };
-}
+surecGuncelle();
 
 function fazlariCiz() {
     surecGuncelle();
@@ -7307,6 +7299,7 @@ function secimAlaniEkle(alan, blok) {
             const combo = comboYap(a.etiket, durumTazele, a.deger, {
                 kaynak: a.kaynak || "dataset",
                 zorunlu: a.zorunlu,
+                placeholder: a.placeholder,
                 liste: Array.isArray(a.secenekler) ? a.secenekler : undefined
             });
             combolar[a.ad] = combo;
@@ -7981,7 +7974,7 @@ function ekraniTemizle() {
     sonYanitMetni = null;
     geriAlKilit = null;
     acikFazlar = new Set();
-    /* surecElle SIFIRLANMAZ: kullanıcının aç/kapa seçimi çalışmalar arası korunur. */
+
     /* Doküman önceki çalışmaya aitti: ÖZET bir daha açılana kadar
        ekranda kalmasın, açılınca yenisi istenir. */
     dokumanSifirla();

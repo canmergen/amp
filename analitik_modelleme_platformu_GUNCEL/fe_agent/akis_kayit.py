@@ -50,7 +50,7 @@ ADIMLAR = {
 
     "ham_veri": {
         "baslik": "Kaynak Tablolar",
-        "aciklama": "Veri setini oluşturacak kaynak tablolar seçilir; "
+        "aciklama": "Baz veri setini oluşturacak kaynak tablolar seçilir; "
                     "boyutları ve kolon sayıları çıkarılır.",
         "girdi": ham_veri_girdi, "plan": ham_veri_plan, "uygula": ham_veri_uygula},
     "birlestirme": {
@@ -61,8 +61,8 @@ ADIMLAR = {
         "girdi": None, "plan": birlestirme_plan, "uygula": birlestirme_uygula},
 
     "veri_sec": {
-        "baslik": "Veri Seti",
-        "aciklama": "Analiz edilecek veri seti seçilir; boyut ve tip "
+        "baslik": "Baz Veri Seti",
+        "aciklama": "Modellemeye girecek baz veri seti seçilir; boyut ve tip "
                     "dağılımı çıkarılır.",
         "girdi": veri_sec_girdi, "plan": veri_sec_plan, "uygula": veri_sec_uygula},
 
@@ -74,7 +74,7 @@ ADIMLAR = {
         "girdi": None, "plan": sozluk_uret_plan, "uygula": sozluk_uret_uygula},
 
     "kurulum": {
-        "baslik": "Veri Seti ve Değişken Sözlüğü",
+        "baslik": "Baz Veri Seti ve Baz Sözlük",
         "aciklama": "Analiz edilecek veri seti ve değişken sözlüğü "
                     "seçilir; kapsam oranı hesaplanır.",
         # plan=None: FORMUN KENDISI ONAYDIR. Tanimsiz kolon karari artik

@@ -1,6 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **DAĞILIM sekmesi bağlandı; "Kontrol Ediliyor" yeniden sarı**. Yapıştır: `backend.py`, `app.js`, `style.css`
+Bu tur: **Analitik Süreç hep açık; baz / kaynak adları**. Yapıştır: `akis_metin.py`, `akis_faz01.py`, `akis_kayit.py`, `akis_panel.py`, `app.js`, `index.html`
+
+- ANALİTİK SÜREÇ açılıp kapatılamaz (başlık düğme değil).
+- Terimler: baz veri seti (modellemeye girecek tek tablo), baz sözlük (onun
+  açıklamaları), kaynak tablolar, kaynak sözlükler. Formlar, adım adları,
+  başlangıç açıklamaları, özet kartı ve yer tutucular bu adlarla; alanların
+  altında ne istendiği tek satırda.
+
+---
+
+Önceki tur: **DAĞILIM sekmesi bağlandı; "Kontrol Ediliyor" yeniden sarı**. Yapıştır: `backend.py`, `app.js`, `style.css`
 
 - Yeni uç /dagilim (tam veri): kolon listesi; seçilen kolon + set için
   satır / boş oranı / farklı değer, sayısalda histogram (%1-%99 aralığı,

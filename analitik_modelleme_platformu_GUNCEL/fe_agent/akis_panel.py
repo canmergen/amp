@@ -410,7 +410,7 @@ def detay(durum):
 
     if p.get("kolon"):
         bolumler.append(_bolum("KAYNAK VERİ", [
-            ("Veri seti", durum.get("veri_seti")),
+            ("Baz veri seti", durum.get("veri_seti")),
             ("Satır", _sayi(p["satir"])),
             ("Kolon", _sayi(p["kolon_baslangic"])),
             ("Sayısal / kategorik", "%s / %s" % (
