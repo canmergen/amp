@@ -1,5 +1,20 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **birleştirme sonucunun adı soruluyor ve çalışma klasörüne de yazılıyor**.
+Yapıştır: `akis_durum.py` → `akis_faz01.py` → `akis_kayit.py` → `akis_faz05.py`
+
+- B ve D'de «Birleştirme Planı» adımı önce "Birleştirme sonucuna ne ad
+  verelim?" diye soruyor (varsayılan: son verilen ad ya da MODELLEME_BAZ).
+- Tablo iki yere yazılıyor: `PROJE_HAFIZASI/cmergen_03/<AD>.csv` (çalışmanın
+  kalıcı kopyası) ve akıştaki `<AD>` veri seti.
+- Ortak veri setlerinin son sahibi `VERI_SETI_SAHIPLERI.json`'da
+  (AMP_VERISETI_SAHIBI.txt'nin yerini aldı). Başka çalışma aynı veri setinin
+  üzerine yazdıysa çalışma kendi klasöründeki kopyayı okur.
+- Akışta o adla veri seti yoksa tablo yine klasöre kaydedilir, hata
+  mesajı ya veri setini oluşturmayı ya da Geri Dön ile başka ad vermeyi söyler.
+
+---
+
 Bu tur: **sade kayıt yeri** ve **ortak AMP_VERISETI hatası**.
 Yapıştır: `akis_durum.py` → `akis_faz01.py`
 

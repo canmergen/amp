@@ -55,10 +55,13 @@ AMP_SOZLUK_ADI = "AMP_SOZLUK"
 # ciktilarini kendi klasorune yaziyor (bkz. akis_faz01.amp_klasor_adi).
 AMP_KLASOR = "AMP"
 
-# AMP_VERISETI veri setini EN SON hangi calismanin yazdigi. Veri seti
-# tum calismalarin ORTAK veri seti; bu isaretci olmadan Calisma 01'e
-# geri donen kullanici, Calisma 03'un tablosunu okurdu.
-AMP_SAHIP_DOSYA = "/AMP_VERISETI_SAHIBI.txt"
+# ORTAK VERI SETLERININ SAHIBI. AMP_VERISETI ve birlestirme sonucu
+# (MODELLEME_BAZ ya da kullanicinin verdigi ad) akista TEK veri setidir;
+# butun calismalar ayni veri setine yazar. Hangi veri setine EN SON hangi
+# calismanin yazdigi burada tutulur: {veri_seti: calisma}. Bu kayit
+# olmadan Calisma 01'e geri donen kullanici Calisma 03'un tablosunu
+# okurdu. Sahibi baskasiysa calisma KENDI KLASORUNDEKI kopyayi okur.
+SAHIP_DOSYA = "/VERI_SETI_SAHIPLERI.json"
 
 # AMP_SOZLUK tablosunun kolon adlari. Sabit olarak duruyor cunku iki
 # yerden kullaniliyor (tabloyu yazan taraf ve gizlilik denetimi yapan
@@ -139,6 +142,7 @@ def yeni_durum():
         # Mod harflerinin hangi duzene gore yazildigi (bkz. MOD_GOCU).
         "_mod_surumu": MOD_SURUMU,
         "ham_tablolar": [],          # Mod B ve D
+        "baz_adi": None,             # Mod B ve D: birlestirme sonucunun adi
         "kaynak_sozlukler": {},      # Mod B: {kaynak tablo: sozluk}
         "birlestirme": {},           # plan + ozet
         "sozluk_uretim": {},         # ozet
@@ -406,7 +410,7 @@ def modelleme_kaynagi(durum):
     # SAHIPLIK: veri seti baska bir calismanin kaydiyla ezilmisse
     # kullanicinin kendi tablosu okunur; tip donusumleri modelleme_df'de
     # yeniden uygulandigi icin sonuc ayni tablodur.
-    if amp and amp_sahibi_mi(durum):
+    if amp and sahibi_mi(amp, durum):
         return str(amp), True
     return durum.get("veri_seti"), False
 
@@ -415,40 +419,91 @@ def _calisma_kimligi(durum):
     return re.sub(r"[^A-Za-z0-9_-]", "", str((durum or {}).get("_oturum_id") or ""))
 
 
-# Isaretci ayni istek icinde defalarca okunuyor (her modelleme_df
-# cagrisi); kisa omurlu onbellek. Yazan taraf onbellegi kendisi gunceller.
-_AMP_SAHIP_ONBELLEK = {"zaman": 0.0, "deger": None}
-AMP_SAHIP_OMUR_SN = 10
+# Kayit ayni istek icinde defalarca okunuyor (her modelleme_df cagrisi);
+# kisa omurlu onbellek. Yazan taraf onbellegi kendisi gunceller.
+_SAHIP_ONBELLEK = {"zaman": 0.0, "deger": {}}
+SAHIP_OMUR_SN = 10
+
+
+def _sahipler_oku(taze=False):
+    if not taze and time.time() - _SAHIP_ONBELLEK["zaman"] < SAHIP_OMUR_SN:
+        return _SAHIP_ONBELLEK["deger"]
+    try:
+        with _folder().get_download_stream(SAHIP_DOSYA) as s:
+            deger = json.loads(s.read().decode("utf-8"))
+        if not isinstance(deger, dict):
+            deger = {}
+    except Exception:
+        deger = {}
+    _SAHIP_ONBELLEK.update(zaman=time.time(), deger=deger)
+    return deger
+
+
+def sahip_yaz(ad, durum):
+    """ad veri setine SON yazan calisma bu. Doner: yazilabildi mi.
+
+    Yazilamazsa zarar yok: sahibi_mi False doner ve calisma kendi
+    klasorundeki kopyayi okur."""
+    kayit = dict(_sahipler_oku(taze=True))
+    kayit[str(ad)] = _calisma_kimligi(durum)
+    tamam = metin_yaz(SAHIP_DOSYA, json.dumps(kayit, ensure_ascii=False))
+    _SAHIP_ONBELLEK.update(zaman=time.time(), deger=kayit if tamam else {})
+    return tamam
+
+
+def sahibi_mi(ad, durum):
+    """ad veri seti su an BU calismanin kaydini mi tasiyor?
+
+    Kayit okunamazsa HAYIR: yanlis calismanin tablosunu okumaktansa
+    calismanin kendi kopyasina donmek her zaman dogru sonucu verir."""
+    kimlik = _calisma_kimligi(durum)
+    return bool(kimlik) and _sahipler_oku().get(str(ad)) == kimlik
 
 
 def amp_sahibi_yaz(durum):
     """AMP_VERISETI'ni bu calismanin yazdigini kaydeder."""
-    kimlik = _calisma_kimligi(durum)
-    tamam = metin_yaz(AMP_SAHIP_DOSYA, kimlik)
-    _AMP_SAHIP_ONBELLEK.update(zaman=time.time(),
-                               deger=kimlik if tamam else None)
-    return tamam
+    return sahip_yaz(AMP_VERI_ADI, durum)
 
 
-def _amp_sahibi_oku():
-    if time.time() - _AMP_SAHIP_ONBELLEK["zaman"] < AMP_SAHIP_OMUR_SN:
-        return _AMP_SAHIP_ONBELLEK["deger"]
+def dataset_yaz(ad, tablo):
+    """Yalniz dataset'e yazar (yedege DUSMEZ). Doner: yazildi mi."""
     try:
-        with _folder().get_download_stream(AMP_SAHIP_DOSYA) as s:
-            deger = s.read().decode("utf-8").strip()
+        dataiku.Dataset(ad).write_with_schema(tablo)
+        onbellek_temizle(ad)
+        return True
     except Exception:
-        deger = None
-    _AMP_SAHIP_ONBELLEK.update(zaman=time.time(), deger=deger)
-    return deger
+        return False
 
 
-def amp_sahibi_mi(durum):
-    """AMP_VERISETI su an BU calismanin kaydini mi tasiyor?
+def dosya_yaz(yol, tablo):
+    """PROJE_HAFIZASI icine CSV. Doner: yazildi mi."""
+    try:
+        _folder().upload_stream(yol, tablo.to_csv(index=False).encode("utf-8"))
+        _DF_ONBELLEK.pop((str(yol), None), None)
+        return True
+    except Exception:
+        return False
 
-    Isaretci okunamazsa HAYIR: yanlis calismanin tablosunu okumaktansa
-    kullanicinin kendi tablosuna donmek her zaman dogru sonucu verir."""
-    kimlik = _calisma_kimligi(durum)
-    return bool(kimlik) and _amp_sahibi_oku() == kimlik
+
+def _dosya_oku(yol, limit=None):
+    """PROJE_HAFIZASI'ndaki CSV'yi okur; _df_oku ile ayni onbellek."""
+    anahtar = (str(yol), limit)
+    kayit = _DF_ONBELLEK.get(anahtar)
+    if kayit is not None and time.time() - kayit[0] <= ONBELLEK_OMRU_SN:
+        return kayit[1].copy()
+    with _folder().get_download_stream(yol) as s:
+        df = pd.read_csv(io.BytesIO(s.read()), nrows=limit)
+    _DF_ONBELLEK[anahtar] = (time.time(), df)
+    return df.copy()
+
+
+def _calisma_kopyasi(durum, ad):
+    """Birlestirme sonucu baska bir calismanin kaydiyla EZILDIYSE, bu
+    calismanin klasorundeki kopyanin yolu; aksi halde None."""
+    b = (durum or {}).get("birlestirme") or {}
+    if not b.get("dosya") or ad != b.get("dataset"):
+        return None
+    return None if sahibi_mi(ad, durum) else b["dosya"]
 
 
 def modelleme_df(durum, limit=-1, kaynak=False):
@@ -472,7 +527,11 @@ def modelleme_df(durum, limit=-1, kaynak=False):
     oldugu gibi geri verilir."""
     ad, amp_mi = ((durum or {}).get("veri_seti"), False) if kaynak \
         else modelleme_kaynagi(durum)
-    df = _df_oku(ad, limit=limit)
+    kopya = None if amp_mi else _calisma_kopyasi(durum, ad)
+    if kopya:
+        df = _dosya_oku(kopya, None if limit == -1 else limit)
+    else:
+        df = _df_oku(ad, limit=limit)
     # AMP_VERISETI donusumleri ZATEN ISLENMIS halde tasiyor; ikinci kez
     # uygulamak (tarih -> tarih gibi) degerleri bozardi.
     if amp_mi:
