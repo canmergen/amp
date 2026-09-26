@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **"kaldığı yerden yüklendi" satırında da faz içi adım**. Yapıştır: `backend.py`, `app.js`
+Bu tur: **Değişken Kontrolü'nde görünenleri toplu süreç dışı bırakma**. Yapıştır: `app.js`, `style.css`
+
+- Tablonun üstünde "Görünenleri Süreç Dışı Bırak (N)" ve "Görünenleri
+  Sürece Al (N)". Arama ve null eşiğiyle süzülen, kilitsiz satırlara
+  uygulanır; tek istekle gider.
+
+---
+
+Önceki tur: **"kaldığı yerden yüklendi" satırında da faz içi adım**. Yapıştır: `backend.py`, `app.js`
 
 - Sayfa açılışındaki satır da "01 Çalışma Kurulumu · Adım 3/4 - Değişken
   Kontrolü" biçiminde.

@@ -6362,8 +6362,23 @@ function teyitKartiEkle(alan, blok) {
         hataEl.hidden = true;
         kart.appendChild(hataEl);
 
-        if ((dg.satirlar || []).some(x => x.oneri_tip || x.oneri_tanim))
-            kart.appendChild(elYap("div", "dg-lejant", ONERI_LEJANT));
+        /* TOPLU SÜREÇ DIŞI (kullanıcı kararı: null oranına göre süzüp
+           tek tek işaretlemek zorunda kalıyordu). Düğmeler FİLTREDE
+           GÖRÜNEN satırlara uygulanır; kilitli satırlara dokunmaz. Tek
+           istekle gider; sonuçta kutular sunucunun listesine göre kurulur. */
+        const ust = elYap("div", "dg-tablo-ust");
+        ust.appendChild(elYap("div", "dg-lejant",
+            (dg.satirlar || []).some(x => x.oneri_tip || x.oneri_tanim)
+                ? ONERI_LEJANT : ""));
+        const toplu = elYap("div", "dg-toplu");
+        const topluDisi = elYap("button", "dg-toplu-btn", "");
+        const topluIci = elYap("button", "dg-toplu-btn", "");
+        topluDisi.type = topluIci.type = "button";
+        topluDisi.title = "Filtrede görünen değişkenlerin hepsini süreç dışı bırak";
+        topluIci.title = "Filtrede görünen değişkenlerin hepsini sürece geri al";
+        toplu.append(topluDisi, topluIci);
+        ust.appendChild(toplu);
+        kart.appendChild(ust);
 
         const sar = elYap("div", "dg-tablo-sar");
         const tablo = elYap("table", "dg-tablo");
@@ -6554,6 +6569,7 @@ function teyitKartiEkle(alan, blok) {
                 }
                 r.tr.hidden = gizle;
             });
+            topluSayilari();
 
             const [alan, yon] = (sirala.value || ":").split(":");
             if (!alan) return;
@@ -6583,6 +6599,68 @@ function teyitKartiEkle(alan, blok) {
         ara.oninput = listeyiUygula;
         esik.oninput = listeyiUygula;
         sirala.onchange = listeyiUygula;
+
+        /* Görünen ve değiştirilebilir (kilitsiz) satırlar. */
+        const degisebilir = () => satirlar.filter(
+            r => !r.tr.hidden && !r.kutu.disabled);
+        function topluSayilari() {
+            const g = degisebilir();
+            const disiOlmayan = g.filter(r => !r.kutu.checked).length;
+            const disiOlan = g.length - disiOlmayan;
+            topluDisi.textContent = "Görünenleri Süreç Dışı Bırak (" + disiOlmayan + ")";
+            topluIci.textContent = "Görünenleri Sürece Al (" + disiOlan + ")";
+            const kilitli = kart.classList.contains("kilitli") || !dg.duzenlenebilir;
+            topluDisi.disabled = kilitli || !disiOlmayan;
+            topluIci.disabled = kilitli || !disiOlan;
+        }
+        function topluUygula(deger) {
+            if (kart.classList.contains("kilitli") || !dg.duzenlenebilir) return;
+            const hedef = degisebilir().filter(r => r.kutu.checked !== deger);
+            if (!hedef.length) return;
+            const once = satirlar.map(r => r.kutu.checked);
+            hedef.forEach(r => {
+                r.kutu.checked = deger;
+                r.tr.dataset.islem = deger ? "haric" : "ekle";
+                if (r.kutu._disiCiz) r.kutu._disiCiz();
+            });
+            topluDisi.disabled = topluIci.disabled = true;
+            const liste = satirlar.filter(r => r.kutu.checked).map(r => r.tr.dataset.kolon);
+            const kur = (kume) => satirlar.forEach((r, i) => {
+                r.kutu.checked = kume ? kume.has(r.tr.dataset.kolon) : once[i];
+                r.tr.dataset.islem = r.kutu.checked ? "haric" : "ekle";
+                if (r.kutu._disiCiz) r.kutu._disiCiz();
+            });
+            fetch(getWebAppBackendUrl("haric_kolonlar"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(ftKimlikGovdesi({ kolonlar: liste }))
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (!d || d.tamam !== true) {
+                    kur(null);
+                    teyitHatasi(hataEl, (d && d.hata) || "Süreç dışı listesi yazılamadı.");
+                } else {
+                    kur(new Set(d.kolonlar || []));
+                    const oz = document.querySelector(".teyit-kart .teyit-ozet");
+                    if (oz && d.ozet) oz.textContent = tireSade(d.ozet);
+                    teyitHatasi(hataEl, (d.reddedilen || []).length ? (d.hata || "") : "");
+                }
+                topluSayilari();
+            })
+            .catch(e => {
+                kur(null);
+                teyitHatasi(hataEl, "Süreç dışı listesi yazılamadı: " + e);
+                topluSayilari();
+            });
+        }
+        topluDisi.onclick = () => topluUygula(true);
+        topluIci.onclick = () => topluUygula(false);
+        /* Tek tek işaretlemede de sayılar güncel kalsın. */
+        tbody.addEventListener("change", e => {
+            if (e.target && e.target.classList.contains("dg-ekle")) topluSayilari();
+        });
+        topluSayilari();
 
         /* Kart kilitlenince liste SALT OKUNUR kalır: karar verildi. */
         teyitListesi = () => satirlar;

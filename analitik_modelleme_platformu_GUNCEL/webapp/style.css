@@ -2887,3 +2887,6 @@ span.bolme-cip { cursor: default; }
 .dg-tablo tr.dg-disi .dg-tip-sec {
   text-decoration: line-through; opacity: .6;
 }
+
+/* Kart gönderildikten sonra toplu düğmeler de kapalı görünür. */
+.teyit-kart.kilitli .dg-toplu-btn { opacity: .5; pointer-events: none; }
