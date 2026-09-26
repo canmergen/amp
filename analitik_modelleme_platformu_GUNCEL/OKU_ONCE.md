@@ -1,5 +1,17 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **Yeni Çalışma onayı düğmenin üzerinde**, sohbette değil.
+Yapıştır (webapp): `index.html` → `style.css` → `app.js`
+
+- «Yeni Çalışma»ya basınca düğmenin altında küçük kutu: "Yeni çalışma
+  başlatılsın mı? Açık çalışma (v2) silinmez…" [Başlat] [Vazgeç]. Dışarı
+  tıklamak ya da Esc kapatır. Açık çalışma boşsa sorulmaz.
+- Sohbetteki onay bloğu kaldırıldı.
+- «Kopyasıyla Başla» artık Çalışmalarım listesinde her satırın yanında
+  («Kopyala»).
+
+---
+
 Bu tur: **açılış sorusu kaldırıldı**, **Yeni Çalışma onayı kart düzeninde**.
 Yapıştır (webapp): `app.js`
 

@@ -7184,7 +7184,22 @@ function calismalarCiz(d) {
             oge.title = "Bu çalışmayı kaldığı yerden aç";
             oge.onclick = () => calismayaGec(c.calisma_id);
         }
-        calismalarListe.appendChild(oge);
+        /* KOPYALA: aynı kararlarla yeni numara; orijinal değişmez. Bir
+           adımı eski çalışmayı bozmadan değiştirip denemek için. */
+        const satir = elYap("div", "calisma-satir");
+        satir.appendChild(oge);
+        if (!c.hata && c.baslamis !== false) {
+            const kopya = elYap("button", "calisma-kopya", "Kopyala");
+            kopya.type = "button";
+            kopya.title = "Aynı kararlarla yeni bir çalışma aç; bu çalışma değişmez";
+            kopya.onclick = () => {
+                if (mesgul) return;
+                calismalarKapat();
+                calismaKopyala(c.calisma_id);
+            };
+            satir.appendChild(kopya);
+        }
+        calismalarListe.appendChild(satir);
     });
 }
 
@@ -7211,112 +7226,6 @@ function calismayaGec(kimlik, zorla) {
     ekraniTemizle();
     sayfaAc("calisma");
     calismaAc(kimlik).finally(() => { kilitle(false); });
-}
-
-/* YENİ ÇALIŞMA ONAYI. "Yeni Çalışma" düğmesi yanlışlıkla basılabilir
-   (kullanıcı kararı): soru, açık çalışmanın ALTINA bir blok olarak
-   eklenir; ekran silinmez. "Hayır" bloğu kaldırır, kullanıcı hiçbir şey
-   kaybetmeden devam eder. Açık çalışma hiç başlamamışsa soru sorulmaz. */
-/* Soru kartı: başlangıç seçimindeki A/B/C/D kartlarıyla aynı görünüm. */
-function acilisKarti(simge, baslik, aciklama, tikla, mesguldeDe) {
-    const kart = elYap("button", "secenek");
-    kart.type = "button";
-    kart.appendChild(elYap("span", "secenek-rozet", simge));
-    const govde = elYap("div", "secenek-govde");
-    govde.appendChild(elYap("div", "secenek-baslik", baslik));
-    govde.appendChild(elYap("div", "secenek-aciklama", aciklama));
-    kart.appendChild(govde);
-    kart.onclick = () => { if (!mesgul || mesguldeDe) tikla(); };
-    return kart;
-}
-
-function yeniCalismaSorusu() {
-    if (!(aktifAdim > 0 || aktifMod)) return sifirlaUygula();
-    fetch(getWebAppBackendUrl("calismalar")
-          + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
-        .then(r => r.json())
-        .then(d => yeniCalismaSorusuCiz(((d && d.calismalar) || []).filter(c =>
-            c.baslamis !== false && !c.hata)))
-        .catch(() => yeniCalismaSorusuCiz([]));
-}
-
-function yeniCalismaSorusuCiz(liste) {
-    const onceki = sohbetEl.querySelector('.adim-blok[data-adim="yeni_calisma"]');
-    if (onceki) onceki.closest(".satir").remove();
-    const kap = adimKabiAl({ adim: "yeni_calisma", baslik: "Yeni Çalışma", geri: false });
-    const satir = kap.closest(".satir");
-    const acik = liste.find(c => c.calisma_id === OTURUM_ID);
-    const digerleri = liste.filter(c => c.calisma_id !== OTURUM_ID);
-    /* Metin KART DÜZENİNDE: tek soru cümlesi, altında açık çalışmanın
-       kimliği (numara, tarih, adım) ve kararları - Çalışmalarım
-       listesindeki satırla aynı görünüm. Noktalarla birbirine eklenmiş
-       tek paragraf okunmuyordu. */
-    kap.appendChild(balonIcerikYap("bot", "Yeni bir çalışma başlatılsın mı?"));
-    const bilgi = elYap("div", "onceki-kok");
-    if (acik) bilgi.appendChild(oncekiSatir(acik, true));
-    bilgi.appendChild(elYap("div", "onceki-aciklama",
-        "Açık çalışmanız silinmez; Çalışmalarım listesinden her zaman açılır."));
-    kap.appendChild(bilgi);
-
-    const secim = elYap("div", "secenek-kok");
-    secim.appendChild(acilisKarti("+", "Evet, Yeni Çalışma Başlat",
-        "Başlangıç seçimine geçilir.", () => sifirlaUygula(), true));
-    secim.appendChild(acilisKarti("←", "Hayır, Bu Çalışmaya Devam Et",
-        "Bu soru kapanır; çalışmanız olduğu gibi devam eder.",
-        () => satir.remove(), true));
-    if (digerleri.length) {
-        secim.appendChild(acilisKarti("↺", "Önceki Bir Çalışmayı Aç",
-            "Kayıtlı diğer çalışmalarınız verdiğiniz kararlarla listelenir.",
-            () => {
-                secim.remove();
-                const kok = elYap("div", "onceki-kok");
-                digerleri.forEach(c => kok.appendChild(oncekiSatir(c)));
-                const vazgec = elYap("button", "onceki-dugme ikincil",
-                                     "Vazgeç, Bu Çalışmaya Devam Et");
-                vazgec.type = "button";
-                vazgec.onclick = () => satir.remove();
-                kok.appendChild(vazgec);
-                kap.appendChild(kok);
-                sohbetEl.scrollTop = sohbetEl.scrollHeight;
-            }));
-    }
-    kap.appendChild(secim);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
-}
-
-function oncekiSatir(c, yalnizBilgi) {
-    const satir = elYap("div", "onceki-satir");
-    const bas = elYap("div", "onceki-bas");
-    bas.appendChild(elYap("span", "onceki-ad", c.ad || c.calisma_id));
-    const alt = [tarihBicim(c.zaman)];
-    if (c.adim) alt.push("Adım " + c.adim_no + "/" + c.toplam + " · " + tireSade(c.adim));
-    if (c.kaynak) alt.push(c.kaynak + " kopyası");
-    bas.appendChild(elYap("span", "onceki-alt", alt.filter(Boolean).join(" · ")));
-    satir.appendChild(bas);
-
-    if ((c.secimler || []).length) {
-        const tablo = elYap("dl", "onceki-secimler");
-        c.secimler.forEach(([etiket, deger]) => {
-            tablo.appendChild(elYap("dt", "", tireSade(etiket)));
-            tablo.appendChild(elYap("dd", "", tireSade(deger)));
-        });
-        satir.appendChild(tablo);
-    }
-
-    if (yalnizBilgi) return satir;
-    const dugmeler = elYap("div", "onceki-dugmeler");
-    const devam = elYap("button", "onceki-dugme", "Devam Et");
-    devam.type = "button";
-    devam.title = "Bu çalışmayı kaldığı yerden aç";
-    devam.onclick = () => { if (!mesgul) calismayaGec(c.calisma_id, true); };
-    const kopya = elYap("button", "onceki-dugme ikincil", "Kopyasıyla Başla");
-    kopya.type = "button";
-    kopya.title = "Aynı kararlarla yeni bir çalışma aç; bu çalışma değişmez";
-    kopya.onclick = () => { if (!mesgul) calismaKopyala(c.calisma_id); };
-    dugmeler.appendChild(devam);
-    dugmeler.appendChild(kopya);
-    satir.appendChild(dugmeler);
-    return satir;
 }
 
 function calismaKopyala(kaynak) {
@@ -7355,16 +7264,52 @@ if (calismalarBtn && calismalarListe) {
 }
 
 const sifirlaBtn = document.getElementById("sifirla-btn");
+const yeniOnay = document.getElementById("yeni-onay");
 
-/* ONAYLA yeni çalışma açar (kullanıcı kararı: "yanlışlıkla basabilir").
-   Soru açık çalışmanın altına eklenir, ekran silinmez (bkz.
-   yeniCalismaSorusu). Uzun süren bir işlem sırasında da basılabilir:
-   "Evet" uçuştaki isteği iptal edip yeni çalışmayı açar. */
-sifirlaBtn.onclick = () => {
+/* ONAY DÜĞMENİN ÜZERİNDE (kullanıcı kararı: "yanlışlıkla basabilir",
+   "sohbette değil"). Düğmenin altında küçük bir kutu açılır; sohbete
+   hiçbir şey eklenmez, ekran olduğu gibi kalır. Açık çalışma hiç
+   başlamamışsa kaybedilecek bir şey yok: sorulmadan yenisi açılır.
+   Uzun süren bir işlem sırasında da basılabilir: "Başlat" uçuştaki
+   isteği iptal edip yeni çalışmayı açar. */
+function yeniOnayKapat() {
+    if (!yeniOnay || yeniOnay.hidden) return;
+    yeniOnay.hidden = true;
+    sifirlaBtn.setAttribute("aria-expanded", "false");
+}
+
+function yeniOnayAc() {
+    yeniOnay.innerHTML = "";
+    yeniOnay.appendChild(elYap("div", "yeni-onay-soru", "Yeni çalışma başlatılsın mı?"));
+    yeniOnay.appendChild(elYap("div", "yeni-onay-not",
+        "Açık çalışma" + (OTURUM_ID ? " (" + OTURUM_ID + ")" : "")
+        + " silinmez; Çalışmalarım listesinden her zaman açılır."));
+    const dugmeler = elYap("div", "yeni-onay-dugmeler");
+    const evet = elYap("button", "onceki-dugme", "Başlat");
+    evet.type = "button";
+    evet.onclick = () => { yeniOnayKapat(); sifirlaUygula(); };
+    const vazgec = elYap("button", "onceki-dugme ikincil", "Vazgeç");
+    vazgec.type = "button";
+    vazgec.onclick = yeniOnayKapat;
+    dugmeler.appendChild(evet);
+    dugmeler.appendChild(vazgec);
+    yeniOnay.appendChild(dugmeler);
+    yeniOnay.hidden = false;
+    sifirlaBtn.setAttribute("aria-expanded", "true");
+    evet.focus();
+}
+
+sifirlaBtn.onclick = (e) => {
+    e.stopPropagation();
     calismalarKapat();
     sayfaAc("calisma");
-    yeniCalismaSorusu();
+    if (!yeniOnay.hidden) return yeniOnayKapat();
+    if (!(aktifAdim > 0 || aktifMod)) return sifirlaUygula();
+    yeniOnayAc();
 };
+yeniOnay.addEventListener("click", e => e.stopPropagation());
+document.addEventListener("click", yeniOnayKapat);
+document.addEventListener("keydown", e => { if (e.key === "Escape") yeniOnayKapat(); });
 
 
 /* AÇILIŞ: soru SORULMAZ (kullanıcı kararı). Tarayıcıda kayıtlı çalışma
