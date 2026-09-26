@@ -1,6 +1,13 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **kontrol sırasında çerçeve kırmızı kalıyor**. Yapıştır: `app.js`, `style.css`
+Bu tur: **sohbet arka plan bulanıklığı kapatıldı**. Yapıştır: `style.css`
+
+- --sohbet-bulanik 13px -> 0px. Kaydırmada kare düşüşünün kaynağıydı;
+  görsel ve üstündeki yarı saydam örtü duruyor.
+
+---
+
+Önceki tur: **kontrol sırasında çerçeve kırmızı kalıyor**. Yapıştır: `app.js`, `style.css`
 
 - Sarı yalnızca "● Kontrol Ediliyor" etiketinde; blok çerçeveleri kontrol
   sırasında da kırmızı (önceki turdaki sarı çerçeve geri alındı).
