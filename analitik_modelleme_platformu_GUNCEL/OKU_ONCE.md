@@ -1,6 +1,17 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Çalışmalarım'da Aç ve Sil**. Yapıştır: `app.js`, `backend.py`, `style.css`
+Bu tur: **Arşiv adı, sade panel tutamakları**. Yapıştır: `app.js`, `index.html`, `style.css`
+
+- "Çalışmalarım" düğmesinin adı **Arşiv**.
+- Üst çubuktaki panel genişliği sıfırlama düğmesi kaldırıldı. Bir paneli
+  ilk genişliğine döndürmek için kenarına çift tıklanır.
+- Panel kenarı sürüklenirken ya da üzerine gelinince çıkan "... px
+  (varsayılan)" etiketi kaldırıldı.
+- index.html eski kalsa bile app.js düğmeyi söküyor ve adı Arşiv yazıyor.
+
+---
+
+Önceki tur: **Çalışmalarım'da Aç ve Sil**. Yapıştır: `app.js`, `backend.py`, `style.css`
 
 - Her satırın sağında "Kopyala" yerine **Aç** ve **Sil** var. Açık
   çalışmada Aç "Açık" yazar ve pasiftir.

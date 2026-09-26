@@ -338,14 +338,14 @@ button.ozet-kart:focus-visible {
 }
 .ustbar-sag-satir { display: flex; align-items: center; justify-content: center; gap: var(--b-2); }
 
-#tema-btn, #genislik-btn, .cekmece-btn {
+#tema-btn, .cekmece-btn {
   display: flex; align-items: center; justify-content: center;
   width: 22px; height: 22px; padding: 0;
   border: 1px solid var(--kenar); background: var(--yuzey);
   border-radius: var(--r-kucuk); cursor: pointer; color: var(--metin); flex-shrink: 0;
 }
-#tema-btn svg, #genislik-btn svg, .cekmece-btn svg { width: 12px; height: 12px; }
-#tema-btn:hover, #genislik-btn:hover:not(:disabled), .cekmece-btn:hover {
+#tema-btn svg, .cekmece-btn svg { width: 12px; height: 12px; }
+#tema-btn:hover, .cekmece-btn:hover {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 /* Genişlikler varsayılandayken sıfırlanacak bir şey yok: düğme pasif.
@@ -353,7 +353,6 @@ button.ozet-kart:focus-visible {
    sorusunu doğuruyordu. */
 /* Pasif düğme SOLUKLUKLA anlatılıyor, gri metinle değil: üst barda
    soluk gri metin kalmadı. */
-#genislik-btn:disabled { opacity: .4; cursor: default; }
 
 /* Yeni çalışma düğmesi: Dataiku'nun kendi REFRESH düğmesi bunun hemen
    üstünde duruyor ve ikon tek başına ikisini ayırt etmiyordu. Görünür
@@ -391,7 +390,7 @@ button.ozet-kart:focus-visible {
 #yeni-onayla { border: 1px solid var(--kirmizi); background: var(--kirmizi); color: #fff; }
 #yeni-reddet { border: 1px solid var(--kenar); background: var(--yuzey); color: var(--metin); }
 #yeni-reddet:hover { border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik); }
-/* Çalışmalarım satırı: çalışma bilgisi + Aç / Sil (silmede yerinde onay) */
+/* Arşiv satırı: çalışma bilgisi + Aç / Sil (silmede yerinde onay) */
 .calisma-satir { display: flex; align-items: center; gap: var(--b-1); }
 .calisma-satir .calisma-oge { flex: 1; min-width: 0; }
 .calisma-dugmeler { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
@@ -1765,26 +1764,6 @@ button.ozet-kart:focus-visible {
 .tutamak:hover::after,
 .tutamak.suruklenirken::after { opacity: 1; }
 
-/* CANLI ÖLÇÜ: tutamağın üzerine gelince ve sürüklerken o panelin
-   genişliği piksel olarak yazılır. Kullanıcı istediği eni deneyerek
-   bulup sayıyı okuyabilsin diye (kullanıcı kararı: "ben deneyip sana
-   diyeyim onu kullanalım direkt diye"). */
-.tutamak-olcu {
-  position: absolute; top: var(--b-4);
-  padding: 2px var(--b-2); border-radius: var(--r-kucuk);
-  background: var(--kirmizi); color: #fff;
-  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
-  line-height: 1.4; white-space: nowrap;
-  opacity: 0; pointer-events: none; transition: opacity .12s;
-  box-shadow: var(--golge-1);
-}
-/* Etiket kendi panelinin ÜSTÜNE değil, sohbet tarafına açılır:
-   panelin içeriğini kapatmasın. */
-#tutamak-sol .tutamak-olcu { left: calc(var(--ayrac-kalinlik) + 5px); }
-#tutamak-sag .tutamak-olcu { right: calc(var(--ayrac-kalinlik) + 5px); }
-.tutamak:hover .tutamak-olcu,
-.tutamak:focus-visible .tutamak-olcu,
-.tutamak.suruklenirken .tutamak-olcu { opacity: 1; }
 .tutamak:focus-visible { outline: none; }
 .tutamak:focus-visible::after { opacity: 1; }
 /* Sürükleme sırasında tüm sayfada imleç col-resize ve metin seçilmez:

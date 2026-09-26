@@ -52,7 +52,7 @@ function depoYaz(anahtar, deger) {
    kayıtlı değilse boş gider ve /karsilama kullanıcının en son
    çalışmasını açıp numarasını döndürür (bkz. oturumAyarla).
    Tarayıcıda eski bir kimlik kayıtlıysa o çalışma aynen açılır.
-   let: "Yeni Çalışma" ve "Çalışmalarım" kimliği değiştiriyor; bütün
+   let: "Yeni Çalışma" ve "Arşiv" kimliği değiştiriyor; bütün
    istekler değişkeni çağrı anında okuyor. */
 let OTURUM_ID = depoOku(OTURUM_DEPO_ANAHTARI) || "";
 
@@ -81,7 +81,7 @@ const HAFIZA_KLASORU = "PROJE_HAFIZASI";
    calisma baslat" yazisi tek basina Dataiku'nun REFRESH dugmesini de
    tarif ediyordu. */
 const YENI_CALISMA_ETIKETI = "⟳ Yeni Çalışma";
-const CALISMALARIM_ETIKETI = "Çalışmalarım";
+const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
     banner:     getWebAppBackendUrl("gorsel/banner"),
@@ -331,7 +331,11 @@ const SOHBET_TABAN = 420;
    sürüklenecek bir sütun kalmıyor (bkz. style.css medya sorguları). */
 const SURUKLEME_ESIGI = 945;
 
-const genislikBtn = document.getElementById("genislik-btn");
+/* Üst çubuktaki "panel genişliklerini sıfırla" düğmesi KALDIRILDI
+   (kullanıcı kararı). index.html eski sürümde kalırsa düğme burada
+   sökülüyor; tek panel çift tıklamayla varsayılana döner. */
+const genislikBtn = null;
+{ const eski = document.getElementById("genislik-btn"); if (eski) eski.remove(); }
 const tutamakSol = document.getElementById("tutamak-sol");
 const tutamakSag = document.getElementById("tutamak-sag");
 
@@ -395,26 +399,13 @@ function tutamakKur(tutamak, taraf, el) {
     let surukleniyor = false;
     let basX = 0, basEn = 0;
 
-    /* CANLI ÖLÇÜ: üzerine gelince ve sürüklerken o panelin genişliği
-       piksel olarak okunuyor. Genişliği deneyerek bulup sayıyı not
-       edebilmek için (kullanıcı kararı). */
-    const olcu = document.createElement("span");
-    olcu.className = "tutamak-olcu";
-    tutamak.appendChild(olcu);
-    function olcuYaz() {
-        const px = suankiEn(el);
-        olcu.textContent = px + " px"
-            + (panelEni[taraf] === null ? " (varsayılan)" : "");
-        tutamak.title = (taraf === "sol" ? "İş akışı paneli" : "Analiz paneli")
-            + ": " + px + " px - sürükleyerek ayarlayın, "
-            + "çift tıklama varsayılana döndürür";
-    }
-    olcuYaz();
-    tutamak.addEventListener("pointerenter", olcuYaz);
-    tutamak.addEventListener("focus", olcuYaz);
-    /* Genişlik dışarıdan da değişebilir (sıfırlama düğmesi, pencere
-       boyutu): ölçüyü her çizimde tazelemek için listeye giriyor. */
-    OLCU_TAZELE.push(olcuYaz);
+    /* Ölçü etiketi (piksel, "varsayılan") KALDIRILDI (kullanıcı kararı):
+       sürüklerken ekranda sayı yazmıyor. Yalnızca ne işe yaradığını
+       söyleyen ipucu kalıyor. Eski bir sürümden kalmış etiket sökülür. */
+    tutamak.querySelectorAll(".tutamak-olcu").forEach(x => x.remove());
+    tutamak.title = (taraf === "sol" ? "İş akışı paneli" : "Analiz paneli")
+        + ": sürükleyerek genişletin ya da daraltın; "
+        + "çift tıklama ilk genişliğe döndürür";
 
     function bitir() {
         if (!surukleniyor) return;
@@ -7318,7 +7309,7 @@ function devamMetni(bilgi) {
     return satirlar.join("\n");
 }
 
-/* Çalışmayı açar: ilk yüklemede ve "Çalışmalarım"dan seçimde AYNI yol.
+/* Çalışmayı açar: ilk yüklemede ve "Arşiv"dan seçimde AYNI yol.
    kimlik verilirse o çalışma, verilmezse kayıtlı/en son çalışma. */
 function calismaAc(kimlik) {
     return fetch(getWebAppBackendUrl("karsilama")
@@ -7399,7 +7390,7 @@ function sifirlaUygula() {
     .finally(() => { kilitle(false); });
 }
 
-/* ==================== Çalışmalarım ==================== */
+/* ==================== Arşiv (kayıtlı çalışmalar) ==================== */
 /* Kayıtlı çalışmaların listesi. Liste her açılışta sunucudan istenir:
    başka bir sekmede ilerlemiş bir çalışmanın adımı eski görünmesin.
    Seçilen çalışma calismaAc ile açılır; sunucudaki hiçbir kayıt
@@ -7557,6 +7548,14 @@ function calismayaGec(kimlik, zorla) {
     calismaAc(kimlik).finally(() => { kilitle(false); });
 }
 
+/* Düğmenin adı "Arşiv" (kullanıcı kararı). index.html eski sürümde
+   kalsa da doğru ad görünsün diye burada da yazılıyor. */
+if (calismalarBtn) {
+    const etiket = calismalarBtn.querySelector(".sifirla-etiket");
+    if (etiket) etiket.textContent = CALISMALARIM_ETIKETI;
+    calismalarBtn.title = "Kayıtlı çalışmalarınız: açın ya da silin";
+}
+
 if (calismalarBtn && calismalarListe) {
     calismalarBtn.onclick = (e) => {
         e.stopPropagation();
@@ -7631,6 +7630,6 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") yeniOnayKapa
 
 /* AÇILIŞ: soru SORULMAZ (kullanıcı kararı). Tarayıcıda kayıtlı çalışma
    ya da kullanıcının en son çalışması doğrudan açılır; başka bir
-   çalışmaya "Çalışmalarım" düğmesinden geçilir. Dosyanın SONUNDA
-   çağrılıyor: kullandığı Çalışmalarım sabitleri aşağıda tanımlı. */
+   çalışmaya "Arşiv" düğmesinden geçilir. Dosyanın SONUNDA
+   çağrılıyor: kullandığı Arşiv sabitleri aşağıda tanımlı. */
 calismaAc();
