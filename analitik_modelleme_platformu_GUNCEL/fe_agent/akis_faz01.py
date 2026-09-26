@@ -352,10 +352,10 @@ MOD_ONAY_SORUSU = ("Mod değiştirirseniz seçili veri seti, sözlük ve yapılm
                    "analizler sıfırlanır. Devam edilsin mi?")
 
 MOD_ONAY_SECENEKLERI = [
-    {"deger": "evet", "baslik": "Evet, sıfırla",
+    {"deger": "evet", "baslik": "Evet, Sıfırla",
      "aciklama": "Yeni moda geç; mevcut veri seti, sözlük ve analizler "
                  "silinsin."},
-    {"deger": "hayır", "baslik": "Hayır, vazgeç",
+    {"deger": "hayır", "baslik": "Hayır, Vazgeç",
      "aciklama": "Mod değişmesin; çalışma olduğu gibi kalsın."},
 ]
 
@@ -523,9 +523,9 @@ def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
     if yeniden_sor or kabul_edilmeyen or len(adaylar) < 2:
         durum["_secim_alani"] = {
             "tip": "liste",
-            "baslik": "Kaynak tablolar",
+            "baslik": "Kaynak Tablolar",
             "aciklama": "En az iki tablo seçin; seçim sırası önemli değil.",
-            "etiket": "Kaynak tablo ara",
+            "etiket": "Kaynak Tablo Ara",
             # Dugme etiketi Baslik Buyuk Harfi: her kelime buyuk baslar,
             # baglac ve edatlar ("ve, veya, ile, icin, mi, da, de") kucuk
             # kalir. Ayni kural butun rozet ve dugmelerde gecerli.
@@ -755,11 +755,11 @@ def _veri_sec_formu(durum, veri=None):
     """B secenegi formu. Onceki secim varsa alan dolu gelir."""
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Baz veri seti",
+        "baslik": "Baz Veri Seti",
         "aciklama": "Modellemeye girecek baz veri setini seçin; baz sözlük "
                     "bu veri setinden oluşturulacak.",
         "buton": "Devam Et",
-        "alanlar": [{"ad": "veri_seti", "etiket": "Baz veri seti",
+        "alanlar": [{"ad": "veri_seti", "etiket": "Baz Veri Seti",
                      "placeholder": "Baz veri seti ara…",
                      "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik "
                               "ve tüm değişkenler bu tabloda",
@@ -895,7 +895,7 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
     """A secenegi formu. Onceki secim varsa alanlar dolu gelir."""
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Baz veri seti ve baz sözlük",
+        "baslik": "Baz Veri Seti ve Baz Sözlük",
         "aciklama": "Modellemeye girecek baz veri setini ve bu veri setinin "
                     "değişken açıklamalarını taşıyan baz sözlüğü seçin.",
         # Dugme etiketi SONRAKI EKRANIN adini soylemeli: bu form
@@ -904,12 +904,12 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
         # analiz bu adimdan cok sonra basliyor.
         "buton": "Girdileri Doğrula",
         "alanlar": [
-            {"ad": "veri_seti", "etiket": "Baz veri seti",
+            {"ad": "veri_seti", "etiket": "Baz Veri Seti",
              "placeholder": "Baz veri seti ara…",
              "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik ve tüm "
                       "değişkenler bu tabloda",
              "deger": veri or durum.get("veri_seti") or ""},
-            {"ad": "sozluk", "etiket": "Baz sözlük",
+            {"ad": "sozluk", "etiket": "Baz Sözlük",
              "placeholder": "Sözlük tablosu ara…",
              "ipucu": "Baz veri setindeki kolonların adını ve açıklamasını "
                       "taşıyan tablo",
@@ -1036,13 +1036,13 @@ KAYNAK_SOZLUK_AYRAC = " | "
 def _kaynak_sozluk_formu(durum, secili=None):
     tablolar = list(durum.get("ham_tablolar") or [])
     secili = secili or durum.get("kaynak_sozlukler") or {}
-    alanlar = [{"ad": "sozluk_%d" % i, "etiket": "%s tablosunun sözlüğü" % t,
+    alanlar = [{"ad": "sozluk_%d" % i, "etiket": "%s Tablosunun Sözlüğü" % t,
                 "placeholder": "Kaynak sözlük ara…",
                 "deger": secili.get(t) or ""}
                for i, t in enumerate(tablolar)]
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Kaynak sözlükler",
+        "baslik": "Kaynak Sözlükler",
         "aciklama": "Her kaynak tablonun kendi sözlüğünü seçin. Aynı "
                     "sözlük birden fazla tablo için seçilebilir. Baz sözlük "
                     "birleştirmeden sonra bu kaynak sözlüklerden kurulur.",
@@ -1686,11 +1686,11 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         # / "Tamamlandı" diyor.
         "rozet": "",
         "ozet": [
-            {"etiket": "Baz veri seti", "deger": durum.get("veri_seti") or "",
+            {"etiket": "Baz Veri Seti", "deger": durum.get("veri_seti") or "",
              "alt": ["%s satır · %s kolon"
                      % (_sayi(profil.get("satir") or 0), _sayi(kolon)),
                      tip_alt]},
-            {"etiket": "Baz sözlük", "deger": durum.get("sozluk") or "",
+            {"etiket": "Baz Sözlük", "deger": durum.get("sozluk") or "",
              "alt": ["%s tanım" % _sayi(profil.get("sozluk_satir") or 0)]},
         ],
         "kapsam": {"yuzde": kapsam, "tanimli": eslesen, "toplam": kolon,
@@ -1756,7 +1756,7 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
     satirlar.sort(key=lambda s: 0 if s.get("zorunlu") else 1)
 
     alan["tanimsiz"] = {
-        "baslik": "Sözlükte tanımı bulunmayan kolonlar",
+        "baslik": "Sözlükte Tanımı Bulunmayan Kolonlar",
         "varsayilan": "haric",
         # TEK NOT. Kac kolon incelendigini de yaziyor ki bekleme suresi
         # anlamli gorunsun (bkz. TANIMSIZ_NOT_KALIP).
@@ -2217,7 +2217,7 @@ def _tanimlar_formu(durum, meta=None):
 
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Modelleme tanımları",
+        "baslik": "Modelleme Tanımları",
         # ACIKLAMA ADIMIN METNINI DE TASIR. Eskiden ayni bilgi once bir
         # sohbet balonunda ("Devam etmek için hedef değişken ve kimlik
         # kolonu bilgisine ihtiyacım var...") sonra kartta yaziyordu;
@@ -2239,13 +2239,13 @@ def _tanimlar_formu(durum, meta=None):
         # olabilir metin de, tek kural "az sayida farkli deger" olurdu ve
         # bu kural yillik/aylik setlerde yaniltici.
         "alanlar": [
-            {"ad": "target", "etiket": "Hedef değişken", "kaynak": "kolon",
+            {"ad": "target", "etiket": "Hedef Değişken", "kaynak": "kolon",
              "deger": m.get("target") or "", "secenekler": hedef_liste,
              "ipucu": "Yalnızca 0/1 değerli kolonlar", "not": hedef_not},
-            {"ad": "id", "etiket": "Kimlik kolonu", "kaynak": "kolon",
+            {"ad": "id", "etiket": "Kimlik Kolonu", "kaynak": "kolon",
              "deger": m.get("id") or "", "secenekler": kimlik_liste,
              "ipucu": "Yalnızca tekrarsız kolonlar", "not": kimlik_not},
-            {"ad": "donem", "etiket": "Dönem kolonu (opsiyonel)",
+            {"ad": "donem", "etiket": "Dönem Kolonu (Opsiyonel)",
              "kaynak": "kolon", "zorunlu": False,
              "deger": m.get("donem") or "", "secenekler": donem_liste,
              "ipucu": "Dönem bilgisi taşıyan kolonlar: 202501 (sayı, metin ya da kategori), 2025-01, tarih",

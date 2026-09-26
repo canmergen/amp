@@ -390,19 +390,19 @@ def detay(durum):
     if bl.get("ozet"):
         o = bl["ozet"]
         bolumler.append(_bolum("BİRLEŞTİRME", [
-            ("İskelet tablo", o.get("ana_tablo")),
+            ("İskelet Tablo", o.get("ana_tablo")),
             ("Anahtar", " + ".join(o.get("anahtar") or [])),
-            ("Dönem kolonu", o.get("donem_kolon") or "-"),
-            ("Kaynak tablo", _sayi(o.get("kaynak_sayisi", 0))),
-            ("Eklenen kolon", _sayi(o.get("eklenen_kolon", 0))),
+            ("Dönem Kolonu", o.get("donem_kolon") or "-"),
+            ("Kaynak Tablo", _sayi(o.get("kaynak_sayisi", 0))),
+            ("Eklenen Kolon", _sayi(o.get("eklenen_kolon", 0))),
             ("Point-in-time", _sayi(o.get("pit_kolon", 0))),
-            ("Soy kütüğü", bl.get("lineage") or LINEAGE_ADI),
+            ("Soy Kütüğü", bl.get("lineage") or LINEAGE_ADI),
         ]))
 
     if durum.get("sozluk_uretim"):
         o = durum["sozluk_uretim"]
         bolumler.append(_bolum("SÖZLÜK ÜRETİMİ", [
-            ("Toplam kolon", _sayi(o.get("toplam", 0))),
+            ("Toplam Kolon", _sayi(o.get("toplam", 0))),
             ("Açıklanan", "%s  (%%%s)" % (_sayi(o.get("aciklamali", 0)),
                                           _ond(o.get("kapsam", 0)))),
             ("Dataset", SOZLUK_ADI),
@@ -410,10 +410,10 @@ def detay(durum):
 
     if p.get("kolon"):
         bolumler.append(_bolum("KAYNAK VERİ", [
-            ("Baz veri seti", durum.get("veri_seti")),
+            ("Baz Veri Seti", durum.get("veri_seti")),
             ("Satır", _sayi(p["satir"])),
             ("Kolon", _sayi(p["kolon_baslangic"])),
-            ("Sayısal / kategorik", "%s / %s" % (
+            ("Sayısal / Kategorik", "%s / %s" % (
                 _sayi(p.get("sayisal", 0)),
                 _sayi(p["kolon_baslangic"] - p.get("sayisal", 0)))),
             ("Sözlük", durum.get("sozluk") or durum.get("sozluk_yedek")),
@@ -422,41 +422,41 @@ def detay(durum):
     if m.get("target"):
         bolumler.append(_bolum("MODELLEME TANIMLARI", [
             ("Hedef", m.get("target")),
-            ("Hedef tipi", p.get("hedef_ozet")),
-            ("Kimlik kolonu", m.get("id")),
-            ("Dönem kolonu", m.get("donem") or "belirtilmedi"),
+            ("Hedef Tipi", p.get("hedef_ozet")),
+            ("Kimlik Kolonu", m.get("id")),
+            ("Dönem Kolonu", m.get("donem") or "belirtilmedi"),
         ]))
 
     if b.get("tur"):
         bolumler.append(_bolum("BÖLME STRATEJİSİ", [
             ("Tür", "zamansal" if b["tur"] == "zamansal" else "rastgele"),
-            ("Test dönemi", b.get("oot_deger") or "-"),
-            ("Geliştirme satır", _sayi(b.get("train_satir", 0))),
-            ("Test satır", _sayi(b.get("test_satir", 0))),
-            ("Rastgelelik tohumu", b.get("seed", "-")),
+            ("Test Dönemi", b.get("oot_deger") or "-"),
+            ("Geliştirme Satır", _sayi(b.get("train_satir", 0))),
+            ("Test Satır", _sayi(b.get("test_satir", 0))),
+            ("Rastgelelik Tohumu", b.get("seed", "-")),
         ]))
 
     if t:
         bolumler.append(_bolum("VERİ PROFİLİ", [
-            ("Sorunsuz kolon", _sayi(len(t.get("temiz") or []))),
-            ("Eksik oranı yüksek", _sayi(len(t.get("cok_bos") or []))),
+            ("Sorunsuz Kolon", _sayi(len(t.get("temiz") or []))),
+            ("Eksik Oranı Yüksek", _sayi(len(t.get("cok_bos") or []))),
             ("Sabit", _sayi(len(t.get("sabit") or []))),
-            ("Kimlik benzeri", _sayi(len(t.get("kimlik_gibi") or []))),
-            ("Kardinalite yüksek", _sayi(len(t.get("yuksek_kardinalite") or []))),
+            ("Kimlik Benzeri", _sayi(len(t.get("kimlik_gibi") or []))),
+            ("Kardinalite Yüksek", _sayi(len(t.get("yuksek_kardinalite") or []))),
         ]))
 
     if s.get("analiz_edilen") is not None:
         bolumler.append(_bolum("TEK DEĞİŞKEN ANALİZİ", [
-            ("Analiz edilen", _sayi(s["analiz_edilen"])),
+            ("Analiz Edilen", _sayi(s["analiz_edilen"])),
             ("PASS", _sayi(s.get("pass_adet", 0))),
-            ("Sızıntı şüpheli", _sayi(len(s.get("sizinti") or []))),
+            ("Sızıntı Şüpheli", _sayi(len(s.get("sizinti") or []))),
         ]))
 
     if st and not st.get("atlandi"):
         bolumler.append(_bolum("STABİLİTE (PSI)", [
             ("Ölçülen", _sayi(st.get("olculen", 0))),
             ("Kararlı", _sayi(st.get("stabil", 0))),
-            ("Kayma gösteren", _sayi(len(st.get("kayan") or []))),
+            ("Kayma Gösteren", _sayi(len(st.get("kayan") or []))),
         ]))
 
     if bz.get("dataset"):
@@ -471,7 +471,7 @@ def detay(durum):
     if uretilen:
         blok = {x[0]: len(x[1]) for x in (durum.get("kod_bloklari") or [])}
         bolumler.append(_bolum("DEĞİŞKEN ÜRETİMİ", [
-            ("Toplam üretilen", _sayi(uretilen)),
+            ("Toplam Üretilen", _sayi(uretilen)),
         ] + [(ad, _sayi(n)) for ad, n in blok.items()]))
 
     if k:
@@ -484,7 +484,7 @@ def detay(durum):
         bolumler.append(_bolum("ADAY DEĞİŞKEN SETİ", [
             ("Aday", _sayi(sc.get("aday", 0))),
             ("Seçilen", _sayi(sc["secilen"])),
-            ("Önem yöntemi", sc.get("onem_yontemi")),
+            ("Önem Yöntemi", sc.get("onem_yontemi")),
         ]))
 
     if md and not md.get("hata"):
@@ -952,18 +952,18 @@ def veri_paneli(durum):
         ("Veri Seti", PLATFORM_VERI_ADI if durum.get("veri_seti") else None,
          veri_adimi),
         ("Köken", _veri_kokeni(durum), veri_adimi),
-        ("Kayıt yeri", _kayit_yeri(durum, "veri"), KAYIT_ADIMI),
-        ("Satır × kolon", boyut, veri_adimi),
-        ("Sayısal / kategorik / tarih", _tip_dagilimi(p), veri_adimi),
-        ("Tekrarlı satır", _duplicate_metni(p), veri_adimi),
-        ("Kimlik bazlı tekrar",
+        ("Kayıt Yeri", _kayit_yeri(durum, "veri"), KAYIT_ADIMI),
+        ("Satır × Kolon", boyut, veri_adimi),
+        ("Sayısal / Kategorik / Tarih", _tip_dagilimi(p), veri_adimi),
+        ("Tekrarlı Satır", _duplicate_metni(p), veri_adimi),
+        ("Kimlik Bazlı Tekrar",
          None if kimlik_dup is None else _sayi(kimlik_dup), TANIM_ADIMI),
-        ("Toplam null oranı", _yuzde(p.get("null_oran"), 2), PROFIL_ADIMI),
-        ("Hedef değişken",
+        ("Toplam Null Oranı", _yuzde(p.get("null_oran"), 2), PROFIL_ADIMI),
+        ("Hedef Değişken",
          (durum.get("meta") or {}).get("target"), TANIM_ADIMI),
-        ("Hedef tipi ve dağılımı", p.get("hedef_ozet"), TANIM_ADIMI),
-        ("Hedef oranı", _yuzde_dogrudan(p.get("event_rate")), TANIM_ADIMI),
-        ("Dönem aralığı", _donem_araligi(p), TANIM_ADIMI),
+        ("Hedef Tipi ve Dağılımı", p.get("hedef_ozet"), TANIM_ADIMI),
+        ("Hedef Oranı", _yuzde_dogrudan(p.get("event_rate")), TANIM_ADIMI),
+        ("Dönem Aralığı", _donem_araligi(p), TANIM_ADIMI),
     ])
 
     kartlar = [veri_kart]
@@ -1209,11 +1209,11 @@ def _sozluk_karti(durum):
          PLATFORM_SOZLUK_ADI if sozluk_calisma.sozluk_adi(durum) else None,
          sozluk_adimi),
         ("Köken", _sozluk_kokeni(durum), sozluk_adimi),
-        ("Kayıt yeri", _kayit_yeri(durum, "sozluk"), KAYIT_ADIMI),
-        ("Tanım sayısı", _sayi(len(tanimli)) if kolonlar else None,
+        ("Kayıt Yeri", _kayit_yeri(durum, "sozluk"), KAYIT_ADIMI),
+        ("Tanım Sayısı", _sayi(len(tanimli)) if kolonlar else None,
          sozluk_adimi),
         ("Kapsam", _yuzde_dogrudan(kapsam, 1), sozluk_adimi),
-        ("Sözlükte olmayan değişken sayısı",
+        ("Sözlükte Olmayan Değişken Sayısı",
          _sayi(len(tanimsiz)) if kolonlar else None, sozluk_adimi),
     ])
 
@@ -1280,20 +1280,20 @@ def eksik_paneli(durum):
     nullu_oran = _oran(nullu_olan, toplam_kolon)
 
     ozet_kart = _kart("Eksik değer özeti", [
-        ("İncelenen kolon", _sayi(toplam_kolon), PROFIL_ADIMI),
-        ("Null içeren kolon",
+        ("İncelenen Kolon", _sayi(toplam_kolon), PROFIL_ADIMI),
+        ("Null İçeren Kolon",
          None if nullu_olan is None
          else "%s  (%s)" % (_sayi(nullu_olan),
                             _yuzde(nullu_oran, 1) if nullu_oran is not None
                             else "-"), PROFIL_ADIMI),
-        ("Toplam null oranı", _yuzde(p.get("null_oran"), 2), PROFIL_ADIMI),
-        ("En yüksek null oranı", _en_yuksek_null(p, en_yuksek), PROFIL_ADIMI),
-        ("Aşırı null eşiğini aşan", _sayi(_tam(p.get("asiri_null_adet"), 0)),
+        ("Toplam Null Oranı", _yuzde(p.get("null_oran"), 2), PROFIL_ADIMI),
+        ("En Yüksek Null Oranı", _en_yuksek_null(p, en_yuksek), PROFIL_ADIMI),
+        ("Aşırı Null Eşiğini Aşan", _sayi(_tam(p.get("asiri_null_adet"), 0)),
          PROFIL_ADIMI),
     ])
 
     dagilim_kart = _kart("Null oranı dağılımı", [
-        ("Hiç null yok", _sayi(_tam(n.get("hic_null_yok"), 0)), PROFIL_ADIMI),
+        ("Hiç Null Yok", _sayi(_tam(n.get("hic_null_yok"), 0)), PROFIL_ADIMI),
         ("Az  (≤ %5)", _sayi(_tam(n.get("az"), 0)), PROFIL_ADIMI),
         ("Orta  (%5-%50)", _sayi(_tam(n.get("orta"), 0)), PROFIL_ADIMI),
         ("Aşırı  (> %50)", _sayi(_tam(n.get("asiri"), 0)), PROFIL_ADIMI),
@@ -1731,20 +1731,20 @@ def sfa_paneli(durum):
     pass_oran = _oran(gecen, olculen)
 
     ozet_kart = _kart("Tek değişken analizi", [
-        ("Ölçülen değişken", _sayi(olculen), SFA_ADIMI),
+        ("Ölçülen Değişken", _sayi(olculen), SFA_ADIMI),
         ("PASS", "%s  (%s)" % (_sayi(gecen),
                                _yuzde(pass_oran, 1)
                                if pass_oran is not None else "-"), SFA_ADIMI),
         ("Atlanan (ölçülemedi)", _sayi(atlanan), SFA_ADIMI),
-        ("Sızıntı şüpheli", _sayi(sizinti), SFA_ADIMI),
-        ("Tam tablo", s.get("tablo_dataset") or "proje hafızası", None),
+        ("Sızıntı Şüpheli", _sayi(sizinti), SFA_ADIMI),
+        ("Tam Tablo", s.get("tablo_dataset") or "proje hafızası", None),
     ])
 
     esik_kart = _kart("Eşikler", [
         ("IV", "> %s" % _ond(sfa_mod.IV_ESIK, 2), None),
         ("C-value", "> %s" % _ond(sfa_mod.C_ESIK, 2), None),
-        ("Sızıntı şüphesi", "C-value > %s" % _ond(sfa_mod.SIZINTI_ESIK, 2), None),
-        ("Kategorik seviye sınırı", _sayi(sfa_mod.KATEGORIK_MAX), None),
+        ("Sızıntı Şüphesi", "C-value > %s" % _ond(sfa_mod.SIZINTI_ESIK, 2), None),
+        ("Kategorik Seviye Sınırı", _sayi(sfa_mod.KATEGORIK_MAX), None),
     ])
 
     satirlar = [[r.get("FEATURE"),

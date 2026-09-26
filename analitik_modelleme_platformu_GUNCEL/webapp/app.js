@@ -976,7 +976,7 @@ function dokCagriYap(b) {
         + "dokümanda eksik görünür."));
     const eksikler = dokEksiklerYap(b);
     if (eksikler) kutu.appendChild(eksikler);
-    const btn = elYap("button", "dok-dugme", "Bu bölümü yaz");
+    const btn = elYap("button", "dok-dugme", "Bu Bölümü Yaz");
     btn.type = "button";
     btn.onclick = () => dokDuzenleAc(b.anahtar);
     kutu.appendChild(btn);
@@ -1078,7 +1078,7 @@ function dokDuzenleAc(anahtar) {
 }
 
 /* Boş metin = düzenlemeyi sil, bölüm hesaplanan hâline dönsün.
-   "özgün hâline dön" ayrı bir uç değil; aynı ucun boş metinli hâli. */
+   "Özgün Hâline Dön" ayrı bir uç değil; aynı ucun boş metinli hâli. */
 function dokBolumYaz(anahtar, metin) {
     if (DOK.kaydediyor) return;
     DOK.kaydediyor = true;
@@ -1149,7 +1149,7 @@ function dokBolumYap(b) {
         aksiyon.appendChild(duzenle);
 
         if (b.duzenlendi) {
-            const geri = elYap("button", "dok-bag", "özgün hâline dön");
+            const geri = elYap("button", "dok-bag", "Özgün Hâline Dön");
             geri.type = "button";
             geri.title = "Yazdığınız metni siler; bölüm hesaplanan hâline döner.";
             geri.disabled = DOK.kaydediyor;
@@ -1378,7 +1378,7 @@ const ANALIZ_ICERIK = {
         kartlar: [
             {grafik: "Histogram"},
             {baslik: "Yüzdelik", satirlar: ["min / p1 / p25 / medyan", "p75 / p99 / maks"]},
-            {baslik: "Aykırı değer", satirlar: ["IQR dışı oran", "Budama önerisi"]}
+            {baslik: "Aykırı değer", satirlar: ["IQR Dışı Oran", "Budama önerisi"]}
         ]
     },
     iliski: {
@@ -1468,7 +1468,7 @@ function validasyonCiz(v) {
     }
     if (v.hata) {
         const kart = elYap("div", "iskele-kart val-kart kaldi");
-        kart.appendChild(elYap("div", "iskele-baslik", "Validasyon hesaplanamadı"));
+        kart.appendChild(elYap("div", "iskele-baslik", "Validasyon Hesaplanamadı"));
         kart.appendChild(elYap("div", "val-ozet", v.hata));
         analizGovde.appendChild(kart);
         return;
@@ -1478,7 +1478,7 @@ function validasyonCiz(v) {
     const sonuc = elYap("div", "iskele-kart val-kart " + v.genel);
     const ust = elYap("div", "val-sonuc");
     const sol = elYap("div", "");
-    const baslik = elYap("div", "iskele-baslik", "Final model sonucu");
+    const baslik = elYap("div", "iskele-baslik", "Final Model Sonucu");
     baslik.style.marginBottom = "0";
     sol.appendChild(baslik);
     if (v.model) sol.appendChild(elYap("div", "val-model", v.model));
@@ -1578,7 +1578,7 @@ function panelCiz(v) {
 
     if (v.durum === "bekliyor" && v.bekleme_notu) {
         const kart = elYap("div", "iskele-kart hazirlaniyor");
-        kart.appendChild(elYap("div", "iskele-baslik", "Henüz hesaplanmadı"));
+        kart.appendChild(elYap("div", "iskele-baslik", "Henüz Hesaplanmadı"));
         kart.appendChild(elYap("div", "val-ozet", v.bekleme_notu));
         analizGovde.appendChild(kart);
     }
@@ -2548,16 +2548,16 @@ function ftDetayCiz() {
        GELMEYEN ALAN HIC CIZILMEZ - bos "∅" kullaniciya "olculdu ve
        bostu" diye okunuyor. */
     const satirlar = [
-        ["Sözlük tanımı", degerGoster(s.tanim)],
+        ["Sözlük Tanımı", degerGoster(s.tanim)],
         ["Tip", degerGoster(s.tip)],
-        ["Null oranı", ftOran(s.null_oran)],
+        ["Null Oranı", ftOran(s.null_oran)],
         [FT.haric.has(s.feature) ? "Süreç dışı" : "Süreçte",
          FT.haric.has(s.feature) ? "evet" : "hayır"]
     ];
     if (s.tekil !== null && s.tekil !== undefined)
-        satirlar.push(["Tekil değer", ftBinlik(s.tekil)]);
+        satirlar.push(["Tekil Değer", ftBinlik(s.tekil)]);
     if (s.ornek !== null && s.ornek !== undefined && s.ornek !== "")
-        satirlar.push(["Örnek değer", degerGoster(s.ornek)]);
+        satirlar.push(["Örnek Değer", degerGoster(s.ornek)]);
     // IV / C yalnizca SFA calistiysa var; yoksa satir HIC cizilmiyor -
     // bos "∅" kullaniciya "hesaplandi ama sifir" diye okunuyordu.
     if (s.iv !== null && s.iv !== undefined) satirlar.push(["IV", ftOndalik(s.iv)]);
@@ -3152,7 +3152,7 @@ function bfDegistir(ad, deger) {
 function bfKilitCiz() {
     const f = BF.veri;
     const kutu = elYap("div", "bf-kilit");
-    kutu.appendChild(elYap("div", "bf-kilit-baslik", "Bölme kilitli"));
+    kutu.appendChild(elYap("div", "bf-kilit-baslik", "Bölme Kilitli"));
     kutu.appendChild(elYap("div", "val-ozet",
         f.kilit_nedeni || "Bölme uygulandı ve sonraki adımlar bu bölme "
         + "üzerinde çalıştı."));
@@ -3295,7 +3295,7 @@ function bfKisitCiz(kok, kisitlar) {
     const liste = kisitlar || (BF.veri && BF.veri.kisitlar) || [];
     if (!liste.length) return;
     const kutu = elYap("div", "bf-kisitlar");
-    kutu.appendChild(elYap("div", "bf-kisit-baslik", "Veriden gelen kısıtlar"));
+    kutu.appendChild(elYap("div", "bf-kisit-baslik", "Veriden Gelen Kısıtlar"));
     liste.forEach(k => kutu.appendChild(
         elYap("div", "bf-kisit", (k && k.metin) || String(k))));
     kok.appendChild(kutu);
@@ -3681,8 +3681,8 @@ function dagilimGovdeCiz(govde, d) {
     if (d.set_notu) govde.appendChild(elYap("div", "dag-not", tireSade(d.set_notu)));
 
     const ozet = elYap("div", "dag-ozet");
-    [["Satır", dagSayi(g.n)], ["Boş oranı", ftOran(g.bos_oran)],
-     ["Farklı değer", dagSayi(g.tekil)], ["Tip", tireSade(g.tip || "")]]
+    [["Satır", dagSayi(g.n)], ["Boş Oranı", ftOran(g.bos_oran)],
+     ["Farklı Değer", dagSayi(g.tekil)], ["Tip", tireSade(g.tip || "")]]
         .forEach(([e, v]) => {
             const t = elYap("div", "dag-tile");
             t.appendChild(elYap("div", "dag-tile-deger", v));
@@ -3716,10 +3716,10 @@ function dagilimGovdeCiz(govde, d) {
 
         const a = g.aykiri || {}, b = g.budama || {};
         const kA = dagKart("Aykırı Değer");
-        dagSatir(kA, "IQR dışı oran", ftOran(a.oran) + " (" + dagSayi(a.adet) + " değer)");
-        dagSatir(kA, "IQR sınırları", dagSayi(a.alt_sinir) + " / " + dagSayi(a.ust_sinir));
-        dagSatir(kA, "Budama önerisi (%1–%99)", dagSayi(b.alt) + " / " + dagSayi(b.ust));
-        dagSatir(kA, "Budamadan etkilenen", ftOran(b.oran) + " (" + dagSayi(b.adet) + " değer)");
+        dagSatir(kA, "IQR Dışı Oran", ftOran(a.oran) + " (" + dagSayi(a.adet) + " değer)");
+        dagSatir(kA, "IQR Sınırları", dagSayi(a.alt_sinir) + " / " + dagSayi(a.ust_sinir));
+        dagSatir(kA, "Budama Önerisi (%1–%99)", dagSayi(b.alt) + " / " + dagSayi(b.ust));
+        dagSatir(kA, "Budamadan Etkilenen", ftOran(b.oran) + " (" + dagSayi(b.adet) + " değer)");
         govde.appendChild(kA);
     } else if (g.kategoriler) {
         const k = dagKart("En Sık Değerler");
@@ -5782,9 +5782,9 @@ function bolmeOzetCubukCiz(kok, alan) {
         parcalar.push(["Ayrım", etiket("test_tanim")]);
         if (bfZamansalMi() && bfValVar(a.val_var))
             parcalar.push(["Validasyon (OOS)", "eğitimin " + bfYuzde(bfSayi(a.val_oran, 0.2)) + "'i"]);
-        parcalar.push(["Çapraz doğrulama",
+        parcalar.push(["Çapraz Doğrulama",
             a.cv === "yok" ? "Yok" : etiket("cv") + ", " + bfTam(a.kat, 5) + " kat"]);
-        parcalar.push(["Hedef dağılımı", bfKatmanla(a.katmanla) ? "korunuyor" : "korunmuyor"]);
+        parcalar.push(["Hedef Dağılımı", bfKatmanla(a.katmanla) ? "korunuyor" : "korunmuyor"]);
         /* Gruplama OTOMATİK: aynı kimliğin birden fazla satırı
            olabiliyorsa kayıtlar bir arada tutulur; ayar değil, bilgi. */
         if (BF.veri && BF.veri.gruplama_kolonu)

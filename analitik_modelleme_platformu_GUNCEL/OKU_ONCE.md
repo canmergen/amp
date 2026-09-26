@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **durum etiketleri açık zemin + koyu yazı**. Yapıştır: `style.css`
+Bu tur: **başlık ve etiketlerde Başlık Büyük Harfi**. Yapıştır: `akis_faz01.py`, `akis_durum.py`, `akis_panel.py`, `app.js`
+
+- Form alanları, kart başlıkları, bölme satırları, sağ panel etiketleri,
+  dağılım kutuları: her kelime büyük harfle (ve, veya, ile, için, mi, da,
+  de küçük). Açıklama cümleleri değişmedi.
+
+---
+
+Önceki tur: **durum etiketleri açık zemin + koyu yazı**. Yapıştır: `style.css`
 
 - "● Yanıtınız Bekleniyor": açık kırmızı zemin, koyu kırmızı yazı.
 - "● Kontrol Ediliyor": açık sarı zemin, koyu sarı yazı.
