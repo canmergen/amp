@@ -241,7 +241,9 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK):
         teshisler = []
         if null_oran > null_esik:
             cok_bos.append(kol); teshisler.append("aşırı null")
-        if tekil <= 1:
+        # SABIT = tek deger; BOS HUCRE AYRI DEGER SAYILIR (kullanici
+        # karari): "1 ve boş" iki degerdir, bayrak kolonudur, sabit degil.
+        if tekil + (1 if null_adet > 0 else 0) <= 1:
             sabit.append(kol); teshisler.append("sabit")
         # Kimlik benzeri: yuksek tekillik TEK BASINA yetmez. Yuvarlanmamis
         # para alanlari (gelir, bakiye, islem tutari) dogal olarak ~%100

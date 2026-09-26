@@ -469,6 +469,24 @@ def sahibi_mi(ad, durum):
     return bool(kimlik) and _sahipler_oku().get(str(ad)) == kimlik
 
 
+def sahiplikleri_birak(oturum_id):
+    """Silinen calismanin ortak veri seti sahipliklerini kaldirir.
+
+    Silinen numara yeniden veriliyor (backend._yeni_calisma_id). Kayit
+    silinmezse yeni "v1", eski v1'in yazdigi ortak veri setini KENDI
+    kaydi sanip onun yerine okuyabilirdi. Doner: yazilabildi mi."""
+    kimlik = re.sub(r"[^A-Za-z0-9_-]", "", str(oturum_id or ""))
+    if not kimlik:
+        return True
+    kayit = dict(_sahipler_oku(taze=True))
+    kalan = {k: v for k, v in kayit.items() if v != kimlik}
+    if len(kalan) == len(kayit):
+        return True
+    tamam = metin_yaz(SAHIP_DOSYA, json.dumps(kalan, ensure_ascii=False))
+    _SAHIP_ONBELLEK.update(zaman=time.time(), deger=kalan if tamam else {})
+    return tamam
+
+
 def amp_sahibi_yaz(durum):
     """AMP_VERISETI'ni bu calismanin yazdigini kaydeder."""
     return sahip_yaz(AMP_VERI_ADI, durum)

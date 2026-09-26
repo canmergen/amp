@@ -1,6 +1,19 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **dönem notu kısa + maddeli**. Yapıştır: `akis_faz01.py`, `app.js`, `style.css`
+Bu tur: **tek değerliler otomatik süreç dışı; arşiv numaraları yeniden kullanılıyor**. Yapıştır: `akis_faz01.py`, `akis_durum.py`, `sfa.py`, `backend.py`, `app.js`
+
+- Değişken Kontrolü açılınca tek değer taşıyan kolonlar süreç dışı işaretli
+  gelir (bir kez; kullanıcı kaldırabilir). Boş hücre ayrı değer sayılır:
+  "1 ve boş" olan kolon tek değerli değildir. Tamamen boş kolon tek değerlidir.
+- SFA'daki "sabit" teşhisi de aynı kurala geçti.
+- Arşiv: silinen numara kayıttan çıkar ve yeniden verilir; yeni çalışma en
+  küçük boş numarayı alır (hepsi silindiyse v1). Eski sürümün "silindi"
+  işaretli girdileri de boş sayılır. Silmede ortak veri seti sahiplikleri
+  bırakılır.
+
+---
+
+Önceki tur: **dönem notu kısa + maddeli**. Yapıştır: `akis_faz01.py`, `app.js`, `style.css`
 
 - Aday yoksa not yalnızca "Dönem kolonu bulunamadı." Altında adı dönem/tarih
   olan kolonlar ayrı maddelerde, neden seçilemedikleriyle (en fazla 5).

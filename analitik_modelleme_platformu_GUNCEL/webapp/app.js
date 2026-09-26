@@ -6407,6 +6407,11 @@ function teyitKartiEkle(alan, blok) {
                 tdI.title = kutu.title;
                 tr.classList.add("dg-rol-kilitli");
             }
+            else if (sat.disi_sebebi) {
+                /* Otomatik işaretlenmiş (tek değerli): kilitli değil,
+                   neden işaretli geldiği ipucunda yazıyor. */
+                kutu.title = tireSade(sat.disi_sebebi);
+            }
             kutu.onchange = () => {
                 tr.dataset.islem = kutu.checked ? "haric" : "ekle";
                 haricKaydet(ad, kutu, hataEl);

@@ -2475,6 +2475,43 @@ def tanimsiz_kolonlari_isaretle(durum):
     return yeni
 
 
+TEK_DEGER_SEBEBI = ("tek değer taşıyor: her satırda aynı değer (boş hücre "
+                    "ayrı bir değer sayılır); modele bilgi katmaz")
+
+
+def tek_degerlileri_isaretle(durum):
+    """TEK DEGERLI kolonlari SUREC DISI isaretler (kullanici karari:
+    "değişken kontrolünde süreç dışı otomatik olarak tek değer içerenleri
+    seçmeli").
+
+    BOS HUCRE AYRI BIR DEGERDIR: "1 ve boş" iki deger sayilir, kolon tek
+    degerli DEGILDIR (kullanici karari: "1 ve nan varsa iki değer
+    sayılmalı"). Bir bayrak kolonu (1 = var, bos = yok) tam da boyledir ve
+    modele bilgi tasir. Bu yuzden nunique(dropna=False).
+
+    tanimsiz_kolonlari_isaretle gibi BIR KEZ calisir ve kilitli DEGILDIR:
+    kullanici kutuyu kaldirirsa karar onundur, sonraki cizimde geri
+    isaretlenmez. Hedef / kimlik / donem otomatik dusurulmez.
+
+    Doner: yeni isaretlenen kolon adlari."""
+    if durum.get("_tek_deger_haric_uygulandi"):
+        return []
+    try:
+        df = modelleme_df(durum)
+        tekil = df.nunique(dropna=False)
+    except Exception:
+        return []          # okunamadi: bir sonraki cizimde yeniden denenir
+    tek = [str(k) for k, n in tekil.items() if int(n) <= 1]
+    korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
+    mevcut = {str(k) for k in (durum.get("haric_kolonlar") or [])}
+    yeni = [a for a in tek if a not in mevcut and a not in korunan]
+    if yeni:
+        durum["haric_kolonlar"] = sorted(mevcut | set(yeni))
+    durum["_tek_degerli"] = sorted(set(tek) - korunan)
+    durum["_tek_deger_haric_uygulandi"] = True
+    return yeni
+
+
 def teyit_ozeti(durum):
     """Kartin tek satirlik ozeti: '1.042 değişken · 2 süreç dışı · ...'.
 
@@ -2645,6 +2682,7 @@ def teyit_satirlari(durum):
     from fe_agent import akis_panel
     tablo = akis_panel.feature_tablo(durum)
     haric = set(durum.get("haric_kolonlar") or [])
+    tek_degerli = set(durum.get("_tek_degerli") or [])
     secilen = durum.get("tip_donusum") or {}
     ornek = _tip_ornegi(durum)
     satirlar = []
@@ -2697,6 +2735,8 @@ def teyit_satirlari(durum):
             "disi_kilit_sebebi": (
                 DONEM_TEK_DEGER_SEBEBI if _donem_tek_deger_mi(durum, ad)
                 else ROL_KILIT_SEBEBI.get(_tip_rolu(durum, ad), "")),
+            # Neden isaretli geldigi (kilitli degil, kaldirilabilir).
+            "disi_sebebi": TEK_DEGER_SEBEBI if ad in tek_degerli else "",
             "donusum": kod,
             # Kilitli (gecmisten cizilen) kartta acilir liste yok; orada
             # secimin ETIKETI yaziyor. Etiket satirda durmazsa, teklif
@@ -3012,7 +3052,20 @@ def _teyit_karti(durum):
     # tanimsiz_kolonlari_isaretle). Kart kurulmadan ONCE calismali ki
     # satirlarin "disi" bayragi ile durumdaki liste ayni olsun.
     otomatik = tanimsiz_kolonlari_isaretle(durum)
+    tek = tek_degerlileri_isaretle(durum)
     satirlar, duzenlenebilir = teyit_satirlari(durum)
+    notlar = []
+    if otomatik:
+        notlar.append("Sözlükte açıklaması bulunmayan %s değişken süreç dışı "
+                      "olarak işaretlendi; bunlar analitik baz sete alınmaz."
+                      % _sayi(len(otomatik)))
+    if tek:
+        notlar.append("Tek değer taşıyan %s değişken süreç dışı olarak "
+                      "işaretlendi (boş hücre ayrı değer sayılır: 1 ve boş "
+                      "olan kolon tek değerli değildir)." % _sayi(len(tek)))
+    if notlar:
+        notlar.append("Veri setinde kalmasını istediğiniz varsa işareti "
+                      "kaldırın.")
     durum["_secim_alani"] = {
         "tip": "teyit",
         "baslik": ADIM_ADI["teyit"],
@@ -3021,11 +3074,7 @@ def _teyit_karti(durum):
         # Otomatik isaretleme SESSIZ YAPILMAZ: kullanici kartta neden
         # bazi kutularin isaretli geldigini gormeli, yoksa kendisinin
         # isaretledigini sanir ya da fark etmeden kolon kaybeder.
-        "otomatik_not": (
-            "Sözlükte açıklaması bulunmayan %s değişken süreç dışı olarak "
-            "işaretlendi; bunlar analitik baz sete alınmaz. Veri setinde "
-            "kalmasını istediğiniz varsa işareti kaldırın."
-            % _sayi(len(otomatik))) if otomatik else "",
+        "otomatik_not": " ".join(notlar),
         # "Kaydet" (kullanici karari): dugme bir onay degil, bir YAZMA
         # islemi yapiyor - tanimlar, tip secimleri ve surec disi karari
         # kaydediliyor ve ancak kaydedildikten sonra Excel'e indirilebilir

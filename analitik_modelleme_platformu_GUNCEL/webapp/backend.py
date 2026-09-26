@@ -315,10 +315,23 @@ def _calisma_kaydi_yaz(kayit):
 
 
 def _v_silindi_mi(calisma):
-    """Calisma "Çalışmalarım"dan silinmis mi? Numara kayitta ISARETLI
-    kalir (silindi alani): ayni numara bir daha verilmesin, eski sekmede
-    acik kalan kimlik baska bir calismaya denk gelmesin."""
-    return bool((_calisma_kaydi_oku().get(calisma) or {}).get("silindi"))
+    """Calisma YOK mu? Silinen numara artik kayittan TAMAMEN cikiyor ve
+    yeniden verilebiliyor (kullanici karari: "sildim ama hala v7 ile
+    başlıyor, v1 geri dönmeli"). Eski surumun "silindi" isaretli
+    girdileri de silinmis sayilir.
+
+    Kayitta olmayan ve klasorunde calisma dosyasi da olmayan bir v-numara
+    YOK demektir: eski bir sekmede kalmis silinmis kimlik acilmaya
+    calisilirsa bos bir calisma KAYITSIZ olarak yaratilmaz; kullanicinin
+    son calismasi acilir (bkz. karsilama_endpoint)."""
+    girdi = _calisma_kaydi_oku().get(calisma)
+    if girdi is not None:
+        return bool((girdi or {}).get("silindi"))
+    try:
+        with _hafiza().get_download_stream("/%s/calisma.json" % calisma):
+            return False
+    except Exception:
+        return True
 
 
 def _v_sahibi(calisma):
@@ -1447,12 +1460,20 @@ def _yeni_calisma_id():
     ben = _sahip_ozeti()
     for _deneme in range(5):
         kayit = _calisma_kaydi_oku()
-        sayilar = [int(V_KALIP.match(k).group(1)) for k in kayit if _v_mi(k)]
+        # Eski surumun "silindi" isaretli girdileri numarayi tutmasin.
+        kayit = {k: d for k, d in kayit.items()
+                 if not (_v_mi(k) and (d or {}).get("silindi"))}
+        dolu = {int(V_KALIP.match(k).group(1)) for k in kayit if _v_mi(k)}
         for y in _hafiza_yollari():
             m = re.match(r"^/v(\d{1,6})/", y)
             if m:
-                sayilar.append(int(m.group(1)))
-        yeni = "v%d" % (max(sayilar or [0]) + 1)
+                dolu.add(int(m.group(1)))
+        # EN KUCUK BOS NUMARA: hepsi silindiyse yeniden v1'den baslar;
+        # aradaki silinmis numaralar da yeniden kullanilir.
+        n = 1
+        while n in dolu:
+            n += 1
+        yeni = "v%d" % n
         kayit[yeni] = {"sahip": ben, "olusturma": datetime.datetime.now()
                        .isoformat(timespec="seconds")}
         _calisma_kaydi_yaz(kayit)
@@ -1629,9 +1650,9 @@ def calisma_sil_endpoint():
     SILINMEYEN: Dataiku dataset'leri. Onlar projede ortak; baska bir
     calisma ya da kullanici ayni dataset'i kullaniyor olabilir.
 
-    Numara CALISMA_KAYDI'nda "silindi" isaretiyle kalir (bkz.
-    _v_silindi_mi). Yalnizca sahibi silebilir: _oturum_anahtari baskasinin
-    calismasinda CalismaErisimYok atar.
+    Numara CALISMA_KAYDI'ndan CIKARILIR ve yeniden verilebilir (bkz.
+    _yeni_calisma_id: en kucuk bos numara). Yalnizca sahibi silebilir:
+    _oturum_anahtari baskasinin calismasinda CalismaErisimYok atar.
 
     Silinen calisma su an ACIK olansa yanit "sonraki"yi tasir: istemci
     kullanicinin en son calismasina (yoksa yeni bos bir calismaya) gecer."""
@@ -1655,11 +1676,17 @@ def calisma_sil_endpoint():
             except Exception as e:
                 _hata_kaydet("calisma_sil:dosya", e)
 
+        # Ortak veri seti sahiplikleri de birakilir: numara yeniden
+        # verilince yeni calisma eskisinin tablosunu kendi sanmasin.
+        try:
+            from fe_agent import akis_durum as _ad
+            _ad.sahiplikleri_birak(anahtar)
+        except Exception as e:
+            _hata_kaydet("calisma_sil:sahiplik", e)
+
         if _v_mi(hedef):
             kayit = _calisma_kaydi_oku()
-            girdi = dict(kayit.get(hedef) or {"sahip": _sahip_ozeti()})
-            girdi["silindi"] = datetime.datetime.now().isoformat(timespec="seconds")
-            kayit[hedef] = girdi
+            kayit.pop(hedef, None)
             _calisma_kaydi_yaz(kayit)
 
         govde = {"tamam": True, "silinen": hedef}
