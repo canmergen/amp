@@ -4003,6 +4003,10 @@ function adimKabiAl(blok) {
    Kart kendi "✓ Girdiler Onaylandı" rozetini taşıyorsa ikinci bir
    "Tamamlandı" yazılmaz: aynı şeyi iki kez söylemesin. */
 const BLOK_BEKLIYOR = "● Yanıtınız Bekleniyor";
+/* YANIT VERİLDİ, SUNUCU İŞLİYOR (kullanıcı kararı): "Yanıtınız
+   Bekleniyor" o sırada yanlış - yanıt zaten verildi. Blok SARI olur,
+   kartın kendi rozeti boş kalır; tek etiket bu. */
+const BLOK_KONTROL = "● Kontrol Ediliyor";
 const BLOK_TAMAM = "✓ Tamamlandı";
 
 function blokDurumEtiketi(bas, durum) {
@@ -4011,6 +4015,7 @@ function blokDurumEtiketi(bas, durum) {
     const onayliRozet = durum === "tamam"
         && bas.querySelector(":scope > .alt-rozet .onayli");
     const metin = durum === "bekliyor" ? BLOK_BEKLIYOR
+        : durum === "kontrol" ? BLOK_KONTROL
         : (durum === "tamam" && !onayliRozet ? BLOK_TAMAM : "");
     if (!metin) { if (et) et.remove(); return; }
     if (!et) {
@@ -4020,30 +4025,34 @@ function blokDurumEtiketi(bas, durum) {
     }
     if (et.textContent !== metin) et.textContent = metin;
     et.classList.toggle("bekliyor", durum === "bekliyor");
+    et.classList.toggle("kontrol", durum === "kontrol");
     et.classList.toggle("tamam", durum === "tamam");
 }
 
 function sinifAyarla(el, durum) {
     el.classList.toggle("durum-bekliyor", durum === "bekliyor");
+    el.classList.toggle("durum-kontrol", durum === "kontrol");
     el.classList.toggle("durum-tamam", durum === "tamam");
 }
 
 function blokDurumlariniTazele() {
     const aktif = (DUZ_ADIMLAR[aktifAdim] || {}).anahtar || "";
+    /* İstek uçuştayken aktif adım "kontrol" (sarı), değilse "bekliyor". */
+    const aktifDurum = mesgul ? "kontrol" : "bekliyor";
     sohbetEl.querySelectorAll(".adim-blok").forEach(blok => {
         if (blok.classList.contains("gruplu")) {
             let bekliyorVar = false;
             blok.querySelectorAll(":scope > .alt-bolum").forEach(bolum => {
-                const durum = bolum.dataset.adim === aktif ? "bekliyor" : "tamam";
-                if (durum === "bekliyor") bekliyorVar = true;
+                const durum = bolum.dataset.adim === aktif ? aktifDurum : "tamam";
+                if (durum !== "tamam") bekliyorVar = durum;
                 sinifAyarla(bolum, durum);
                 blokDurumEtiketi(bolum.querySelector(":scope > .alt-bas"), durum);
             });
-            sinifAyarla(blok, bekliyorVar ? "bekliyor" : "tamam");
+            sinifAyarla(blok, bekliyorVar || "tamam");
             return;
         }
         if (!blok.dataset.adim) return;
-        const durum = blok.dataset.adim === aktif ? "bekliyor" : "tamam";
+        const durum = blok.dataset.adim === aktif ? aktifDurum : "tamam";
         sinifAyarla(blok, durum);
         blokDurumEtiketi(blok.querySelector(":scope > .blok-bas"), durum);
     });
@@ -4985,8 +4994,10 @@ function dogrulamaKartiEkle(alan, blok) {
                    tanımı şart. İşareti kaldırılamaz, açıklaması boş
                    bırakılamaz (bkz. akis_faz01.zorunlu_tanimlar). */
                 zorunlu: !!sat.zorunlu,
+                /* TEK DEĞERLİ: sözlüğe eklenemez, süreç dışı (kilitli). */
+                kilitli: !!sat.kilitli && !sat.zorunlu,
                 rol: String(sat.rol || ""),
-                islem: sat.zorunlu ? "ekle"
+                islem: sat.zorunlu ? "ekle" : sat.kilitli ? "haric"
                      : ((sat.islem === "ekle" || sat.islem === "haric")
                         ? sat.islem : varsayilan)
             };
@@ -5061,8 +5072,16 @@ function dogrulamaKartiEkle(alan, blok) {
             kutu.className = "dg-ekle";
             kutu.setAttribute("aria-label", durum.kolon + " sözlüğe eklensin");
             if (durum.zorunlu) kutu.disabled = true;
+            if (durum.kilitli) {
+                kutu.disabled = true;
+                kutu.title = tireSade(sat.kilit_sebebi || "");
+                tdI.title = kutu.title;
+                giris.disabled = true;
+                tr.classList.add("dg-rol-kilitli");
+            }
             kutu.addEventListener("change", () => {
-                if (kart.classList.contains("kilitli") || durum.zorunlu) {
+                if (kart.classList.contains("kilitli") || durum.zorunlu
+                        || durum.kilitli) {
                     kutuCiz(i); return;
                 }
                 durum.islem = kutu.checked ? "ekle" : "haric";
@@ -6400,6 +6419,8 @@ function teyitKartiEkle(alan, blok) {
                 sec.dataset.eski = sec.value;
                 sec.disabled = !dg.duzenlenebilir;
                 sec._vurgu = () => satirVurgu();
+                if (sat.oneri_tip && sat.oneri_tip_sebebi)
+                    sec.title = "Öneri: " + tireSade(sat.oneri_tip_sebebi);
                 sec.onchange = () => { satirVurgu(); tipKaydet(ad, sec, tipEl, hataEl); };
                 tdT.appendChild(sec);
             } else {
@@ -6739,7 +6760,9 @@ function secimAlaniEkle(alan, blok) {
     function kartiKilitle(gonderim) {
         kart.classList.add("kilitli");
         if (gonderim) {
-            durumEl.textContent = "Kontrol Ediliyor…";
+            /* Rozet BOŞ (gizli): durumu blok başlığındaki sarı "Kontrol
+               Ediliyor" anlatıyor; ikinci bir etiket yan yana binmesin. */
+            durumEl.textContent = "";
             durumEl.classList.remove("hazir", "onayli");
         } else {
             durumEl.textContent = SECIM_HAZIR;
@@ -7122,6 +7145,7 @@ function yanitUygula(d, metin) {
 /* ==================== Gönderme ==================== */
 function kilitle(durum) {
     mesgul = durum;
+    blokDurumPlanla();
     gonderEl.disabled = durum;
     /* Blokların içindeki düğmeler: istek uçuştayken hepsi pasif.
        Tek bir şerit yerine ekranda birden fazla blok olabiliyor. */

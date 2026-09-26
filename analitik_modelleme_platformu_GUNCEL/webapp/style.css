@@ -1230,12 +1230,19 @@ button.ozet-kart:focus-visible {
 /* ALTI KOLON: Değişken | Tip | Tip Değişikliği | Sözlük Tanımı |
    Null Oranı | Süreç Dışı. Yukarıdaki genişlikler doğrulama kartının
    DÖRT kolonu içindi. */
-.teyit-kart .dg-tablo th:nth-child(1) { width: 22%; }
-.teyit-kart .dg-tablo th:nth-child(2) { width: 8%; }
-.teyit-kart .dg-tablo th:nth-child(3) { width: 22%; }
+.teyit-kart .dg-tablo th:nth-child(1) { width: 26%; }
+.teyit-kart .dg-tablo th:nth-child(2) { width: 9%; }
+.teyit-kart .dg-tablo th:nth-child(3) { width: 21%; }
 .teyit-kart .dg-tablo th:nth-child(4) { width: auto; white-space: nowrap; }
-.teyit-kart .dg-tablo th:nth-child(5) { width: 64px; white-space: normal; }
-.teyit-kart .dg-tablo th:nth-child(6) { width: 62px; white-space: normal; }
+.teyit-kart .dg-tablo th:nth-child(5) { width: 60px; white-space: normal; }
+.teyit-kart .dg-tablo th:nth-child(6) { width: 58px; white-space: normal; }
+/* HIZA (kullanıcı bildirimi: "tablo kaymış"): başlık, altındaki
+   değerle aynı hizada. Null oranı sağa, süreç dışı kutusu ortaya;
+   eskiden başlıklar solda, değerler sağda/ortada kalıyordu. */
+.teyit-kart .dg-tablo th:nth-child(5) { text-align: right; }
+.teyit-kart .dg-tablo th:nth-child(6),
+.teyit-kart .dg-tablo td.dg-ekle-hucre { text-align: center; }
+.dg-tablo td.dg-ekle-hucre .dg-ekle { margin: 0; vertical-align: middle; }
 
 /* Null oranı: sayı, sağa yaslı ve tabular - göz kolonu aşağı tarayarak
    yüksek oranları bulabilsin. */
@@ -1418,6 +1425,13 @@ button.ozet-kart:focus-visible {
 .blok-durum.bekliyor {
   color: #fff; background: var(--kirmizi); border-color: var(--kirmizi);
 }
+.blok-durum.kontrol {
+  color: #3d2c00; background: #F5C518; border-color: #D9A900;
+}
+.adim-blok.durum-kontrol { border-color: #E0AE00; }
+.adim-blok.durum-kontrol > .blok-bas .blok-ad { color: var(--metin); }
+.alt-bolum.durum-kontrol { border: 2px solid #E0AE00; }
+.alt-bolum.durum-kontrol > .alt-bas .alt-ad { color: var(--metin); }
 .blok-durum.tamam {
   color: var(--yesil); background: var(--yesil-acik); border-color: var(--yesil);
 }

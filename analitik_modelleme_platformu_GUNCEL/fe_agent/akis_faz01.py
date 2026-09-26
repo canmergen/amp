@@ -1704,6 +1704,7 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
     # Geri donuste ONCEKI KARARLAR: kullanicinin yazdigi aciklama ve
     # ekle/haric secimi kartta aynen geri gelir (bkz. sozluk_tanim_uygula).
     kararlar = durum.get("_tanim_kararlari") or {}
+    tek_kume = {str(k) for k in (durum.get("_tek_degerli") or [])}
     satirlar = []
     for ad in gosterilen:
         oneri = (oneriler or {}).get(ad) or {}
@@ -1722,6 +1723,11 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
             "oneri": aciklama,
             "oneri_kaynak": "llm" if aciklama else "yok",
         }
+        if not rol and ad in tek_kume:
+            # TEK DEGERLI: sozluge eklenemez, surec disi kalir (kilitli).
+            satir["islem"] = "haric"
+            satir["kilitli"] = True
+            satir["kilit_sebebi"] = TEK_DEGER_SEBEBI
         if onceki and onceki.get("aciklama"):
             # Kullanicinin daha once onayladigi metin; model onerisi bunu
             # EZMEZ. Oneri ile ayniysa satir "oneri", degilse "degisti".
@@ -1902,6 +1908,10 @@ def sozluk_tanim_plan(durum):
         df, p = _kapsami_cikar(durum)
     aciklamasiz = _tanim_listesi(durum)
 
+    try:
+        _tek_degerli_hesapla(durum, df)
+    except Exception:
+        pass
     tanimsiz_kume = set(aciklamasiz)
     zorunlu = [k for k in zorunlu_tanimlar(durum) if k in tanimsiz_kume]
     gosterilen = zorunlu + [k for k in aciklamasiz if k not in set(zorunlu)]
@@ -1995,6 +2005,7 @@ def _karar_oku(durum, tanimsiz):
     bilmeden onu bir kovaya koymaktir); govdede kategori gelse bile
     okunmuyor ve satir_ekle'ye bos kategori gidiyor."""
     izinli = {str(k) for k in (tanimsiz or [])}
+    tek = {str(k) for k in (durum.get("_tek_degerli") or [])}
     karar = durum.pop("_dogrulama_karari", None)
     if not isinstance(karar, dict):
         return sorted(izinli), []
@@ -2004,7 +2015,7 @@ def _karar_oku(durum, tanimsiz):
         if not isinstance(satir, dict):
             continue
         ad = str(satir.get("kolon") or "").strip()
-        if ad not in izinli or ad in gorulen:
+        if ad not in izinli or ad in gorulen or ad in tek:
             continue
         aciklama = str(satir.get("aciklama") or "").strip()
         if not aciklama:
@@ -2525,8 +2536,30 @@ def tanimsiz_kolonlari_isaretle(durum):
     return yeni
 
 
-TEK_DEGER_SEBEBI = ("tek değer taşıyor: her satırda aynı değer (boş hücre "
-                    "ayrı bir değer sayılır); modele bilgi katmaz")
+TEK_DEGER_SEBEBI = ("tüm veri setinde tek değer taşıyor (boş hücre ayrı "
+                    "değer sayılır); modele bilgi katmaz, süreç dışı kalmak "
+                    "zorunda")
+
+
+def _tek_degerli_hesapla(durum, df=None):
+    """TUM VERI SETINDE tek degerli kolonlar; durum["_tek_degerli"]'ye yazar.
+
+    Bos hucre ayri deger: nunique(dropna=False). Hedef / kimlik / donem
+    rolundeki kolonlar listeye girmez (kendi kurallari var). Ayni veri
+    seti icin bir kez hesaplanir. Doner: liste."""
+    kaynak = [durum.get("veri_seti"), durum.get("sozluk")]
+    if durum.get("_tek_degerli_kaynak") == kaynak \
+            and isinstance(durum.get("_tek_degerli"), list):
+        return durum["_tek_degerli"]
+    if df is None:
+        df = modelleme_df(durum)
+    tekil = df.nunique(dropna=False)
+    korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
+    tek = sorted(str(k) for k, n in tekil.items()
+                 if int(n) <= 1 and str(k) not in korunan)
+    durum["_tek_degerli"] = tek
+    durum["_tek_degerli_kaynak"] = kaynak
+    return tek
 
 
 def tek_degerlileri_isaretle(durum):
@@ -2544,80 +2577,157 @@ def tek_degerlileri_isaretle(durum):
     isaretlenmez. Hedef / kimlik / donem otomatik dusurulmez.
 
     Doner: yeni isaretlenen kolon adlari."""
-    if durum.get("_tek_deger_haric_uygulandi"):
-        return []
+    # KILITLI (kullanici karari): her cizimde uygulanir; kullanici kutuyu
+    # kaldiramaz. Onceki surumdeki "bir kez, kaldirilabilir" kurali
+    # tek degerli PERIOD'un surece alinabilmesine yol aciyordu.
     try:
-        df = modelleme_df(durum)
-        tekil = df.nunique(dropna=False)
+        tek = _tek_degerli_hesapla(durum)
     except Exception:
         return []          # okunamadi: bir sonraki cizimde yeniden denenir
-    tek = [str(k) for k, n in tekil.items() if int(n) <= 1]
-    korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
     mevcut = {str(k) for k in (durum.get("haric_kolonlar") or [])}
-    yeni = [a for a in tek if a not in mevcut and a not in korunan]
+    yeni = [a for a in tek if a not in mevcut]
     if yeni:
         durum["haric_kolonlar"] = sorted(mevcut | set(yeni))
-    durum["_tek_degerli"] = sorted(set(tek) - korunan)
-    durum["_tek_deger_haric_uygulandi"] = True
     return yeni
 
 
+TIP_ONERI_SURUMU = 2
+# Sayisal bir kolonun KOD oldugunu (kategorik modellenmesi gerektigini)
+# gosteren ad parcalari. Yalnizca ad + az sayida tam sayi deger birlikte
+# varsa kategorik onerilir; ad tek basina yetmez.
+_KOD_AD_PARCALARI = {"KOD", "KODU", "CODE", "CD", "TIP", "TIPI", "TYPE",
+                     "SEGMENT", "SEG", "SINIF", "CLASS", "GRUP", "GROUP",
+                     "KATEGORI", "CAT", "IL", "ILCE", "SUBE", "BRANCH",
+                     "SEKTOR", "SECTOR", "MESLEK", "STATU", "STATUS"}
+
+
+def _ad_parcalari(ad):
+    return {p for p in re.split(r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+", str(ad).upper()) if p}
+
+
+def _tip_onerisi(seri, kaynak_tip, ad):
+    """Tek kolon icin (kod, sebep) ya da (None, None).
+
+    KURALLAR (sirasiyla, ilk tutan kazanir):
+      1. Sayisal ya da metin, tum degerler YYYYAA  -> donem_ym6
+         (tip tarih, yazim korunur). Tekil sayisi 600'u (50 yil) asan
+         kolon donem sayilmaz.
+      2. Tum degerler YYYYAAGG                     -> donem_ymd8
+      3. Metin, tum degerler sayi                  -> sayisal (virgul
+         iceren degerde ondalik virgul yolu once denenir). Basinda sifir
+         olan deger varsa KOD sayilir (00123), donusturulmez.
+      4. Metin, tum degerler tarih (YYYY-AA-GG / GG.AA.YYYY) -> tarih
+      5. Sayisal, adi kod/tip/segment gibi ve tam sayi, en fazla 50
+         farkli deger                              -> kategorik
+    Her kural TAM KOLONLA denetlenir (tip_donusum.denetle); once kucuk
+    ornekle elenir ki 1.000 kolonluk sette kart acilisi yavaslamasin."""
+    dolu = seri.dropna()
+    if not len(dolu):
+        return None, None
+    ornek = seri.head(tip_donusum.ORNEK_SATIR)
+    try:
+        tekil = int(dolu.nunique())
+    except Exception:
+        tekil = len(dolu)
+
+    def tutar(kod):
+        try:
+            if not tip_donusum.denetle(ornek, kod)[0]:
+                return False
+            return bool(tip_donusum.denetle(seri, kod)[0])
+        except Exception:
+            return False
+
+    if kaynak_tip in ("sayısal", "kategorik") and 2 <= tekil <= 600 \
+            and tutar("donem_ym6"):
+        return "donem_ym6", "Değerlerin tamamı YYYYAA (yıl-ay) biçiminde"
+    if kaynak_tip in ("sayısal", "kategorik") and tekil >= 2 \
+            and tutar("donem_ymd8"):
+        return "donem_ymd8", "Değerlerin tamamı YYYYAAGG (tarih) biçiminde"
+
+    if kaynak_tip == "kategorik":
+        metin = dolu.astype(str).str.strip()
+        kod_gibi = bool(metin.str.match(r"^0\d").any())
+        if not kod_gibi:
+            virgul_var = bool(metin.str.contains(",", regex=False).any())
+            sira = (("sayisal_virgul", "sayisal_nokta") if virgul_var
+                    else ("sayisal_nokta", "sayisal_virgul"))
+            for kod in sira:
+                if tutar(kod):
+                    return kod, "Metin olarak okunmuş ama değerlerin tamamı sayı"
+        for kod in ("tarih_ymd", "tarih_dmy"):
+            if tutar(kod):
+                return kod, "Metin olarak okunmuş ama değerlerin tamamı tarih"
+
+    if kaynak_tip == "sayısal" and (_ad_parcalari(ad) & _KOD_AD_PARCALARI) \
+            and 2 <= tekil <= tip_donusum.KATEGORI_SEVIYE_SINIRI:
+        try:
+            tam = bool((dolu.astype(float) % 1 == 0).all())
+        except Exception:
+            tam = False
+        if tam and tutar("kategorik_metin"):
+            return ("kategorik_metin",
+                    "Adı kod/tip/segment bildiriyor ve %d farklı tam sayı değer "
+                    "var; sayı olarak değil kategori olarak modellenmeli" % tekil)
+    return None, None
+
+
 def tip_onerilerini_uygula(durum):
-    """DONEM KOLONLARI ICIN TIP ONERISI (kullanici karari: "period
-    202501 ise bunu tarihe çevirmeli ama yine 202501 formatında olmalı").
+    """TIP ONERILERI - TUM VERI SETI (kullanici karari: "değişken
+    kontrolünde kendisi öneride bulunsun; hangi kolonu nasıl değiştirmek
+    gerekiyorsa"). Kurallar: _tip_onerisi. Ornek: 202501 tutan PERIOD
+    icin tarih (donem) onerilir, deger 202501 kalir.
 
-    Aday: modelleme tanimlarinda secilen donem kolonu ve ADI donem/tarih
-    olan kolonlar (_donem_adli_mi). Tam kolon YYYYAA (ya da YYYYAAGG)
-    olarak cozuluyorsa yazimi KORUYAN donusum (tip_donusum.donem_ym6 /
-    donem_ymd8) onerilir ve SECILI gelir; deger degismez, yalnizca tip
-    "tarih" olur. Zaten tarih tipindeki kolona dokunulmaz.
+    Oneriler SECILI gelir ve kartta kirmizi satirla gosterilir;
+    kullanici degistirirse satir sari olur. Oneri bir kez uygulanir
+    (surum isaretiyle): kullanici "Değişmesin"e cekerse geri gelmez.
+    Surec disi, hedef ve kimlik kolonlarina dokunulmaz; donem kolonuna
+    yalnizca tarih onerilir.
 
-    Oneri kurala dayanir, dil modeline degil: "bu kolon yil-ay mi"
-    sorusunun cevabi verinin kendisinde; modelin tahmini burada yalnizca
-    yanilma payi ekler.
-
-    BIR KEZ calisir; kullanici oneriyi "Değişmesin"e cekerse sonraki
-    cizimde geri gelmez. Oneriler durum["_tip_oneri"]'de: kart onerilen
-    satiri kirmizi, kullanicinin degistirdigini sari gosterir.
+    Oneri kurala dayanir, dil modeline degil: tipin cevabi verinin
+    kendisinde; modelin tahmini yalnizca yanilma payi ekler.
     Doner: {kolon: kod}."""
-    if durum.get("_tip_oneri_uygulandi"):
+    if durum.get("_tip_oneri_surum") == TIP_ONERI_SURUMU:
         return {}
-    m = durum.get("meta") or {}
     haric = {str(k) for k in (durum.get("haric_kolonlar") or [])}
     secilen = dict(durum.get("tip_donusum") or {})
     try:
         df = _df_oku(durum["veri_seti"])
     except Exception:
         return {}           # okunamadi: sonraki cizimde yeniden denenir
-    adaylar = []
-    if m.get("donem") and m["donem"] in df.columns:
-        adaylar.append(str(m["donem"]))
-    for k in df.columns:
-        if _donem_adli_mi(k) and str(k) not in adaylar:
-            adaylar.append(str(k))
-    oneriler = {}
-    for kolon in adaylar:
-        if kolon in haric or kolon in secilen:
+    oneriler, sebepler = {}, {}
+    for kolon in df.columns:
+        ad = str(kolon)
+        if ad in haric or ad in secilen:
             continue
-        if (_kaynak_tipi(durum, kolon) or "") not in ("sayısal", "kategorik"):
+        rol = _tip_rolu(durum, ad)
+        if rol in ("target", "id"):
             continue
-        rol = _tip_rolu(durum, kolon)
-        if rol and rol != "donem":
+        kaynak_tip = _kaynak_tipi(durum, ad) or ""
+        if kaynak_tip not in ("sayısal", "kategorik"):
             continue
-        for kod in ("donem_ym6", "donem_ymd8"):
-            try:
-                uygun, _sebep = tip_donusum.denetle(df[kolon], kod)
-            except Exception:
-                uygun = False
-            if uygun:
-                oneriler[kolon] = kod
-                break
+        try:
+            kod, sebep = _tip_onerisi(df[kolon], kaynak_tip, ad)
+        except Exception:
+            kod, sebep = None, None
+        if not kod:
+            continue
+        if rol == "donem" and tip_donusum.hedef_tip(kod) != "tarih":
+            continue
+        oneriler[ad] = kod
+        sebepler[ad] = sebep
     if oneriler:
         secilen.update(oneriler)
         durum["tip_donusum"] = secilen
         _tip_ozetini_tazele(durum)
-    durum["_tip_oneri"] = dict(oneriler)
-    durum["_tip_oneri_uygulandi"] = True
+    # Onceki surumun onerileri korunur (kart onlari da kirmizi gosterir).
+    eski = dict(durum.get("_tip_oneri") or {})
+    eski.update(oneriler)
+    durum["_tip_oneri"] = eski
+    eski_s = dict(durum.get("_tip_oneri_sebep") or {})
+    eski_s.update(sebepler)
+    durum["_tip_oneri_sebep"] = eski_s
+    durum["_tip_oneri_surum"] = TIP_ONERI_SURUMU
     return oneriler
 
 
@@ -2733,7 +2843,13 @@ def zorunlu_disi_kolonlar(durum):
     karti) ve her birinde tek tek hatirlanmasi gereken bir kural
     sessizce dusuyordu."""
     ad = str((durum or {}).get("_donem_dusuruldu") or "").strip()
-    return {ad} if ad else set()
+    disi = {ad} if ad else set()
+    # TEK DEGERLI KOLONLAR da zorunlu disi (kullanici karari: "period tek
+    # değer içermesine rağmen hâlâ içeri alabiliyorum"). Liste TUM VERI
+    # SETI uzerinden hesaplaniyor (bkz. _tek_degerli_hesapla); bolme
+    # henuz yapilmadi, parca bazli bakmak anlamsiz.
+    disi |= {str(k) for k in ((durum or {}).get("_tek_degerli") or [])}
+    return disi
 
 
 def platform_disi_kolonlar(durum):
@@ -2846,15 +2962,18 @@ def teyit_satirlari(durum):
             # kolonu ise ICERI alinamaz. Ikisi de "kutuya dokunma"
             # demek, sebepleri farkli - ipucunda yazan sebep de farkli.
             "disi_kilitli": bool(_tip_rolu(durum, ad))
-                            or _donem_tek_deger_mi(durum, ad),
+                            or _donem_tek_deger_mi(durum, ad)
+                            or ad in tek_degerli,
             "disi_kilit_sebebi": (
                 DONEM_TEK_DEGER_SEBEBI if _donem_tek_deger_mi(durum, ad)
+                else TEK_DEGER_SEBEBI if ad in tek_degerli
                 else ROL_KILIT_SEBEBI.get(_tip_rolu(durum, ad), "")),
             # Neden isaretli geldigi (kilitli degil, kaldirilabilir).
-            "disi_sebebi": TEK_DEGER_SEBEBI if ad in tek_degerli else "",
+            "disi_sebebi": "",
             # SISTEM ONERISI: kart satiri oneriyle ayniysa kirmizi,
             # kullanici degistirdiyse sari gosterir.
             "oneri_tip": tip_oneri.get(ad, ""),
+            "oneri_tip_sebebi": (durum.get("_tip_oneri_sebep") or {}).get(ad, ""),
             "oneri_tanim": tanim_oneri.get(ad, ""),
             "donusum": kod,
             # Kilitli (gecmisten cizilen) kartta acilir liste yok; orada
@@ -3177,18 +3296,18 @@ def _teyit_karti(durum):
     notlar = []
     if otomatik:
         notlar.append("Sözlükte açıklaması bulunmayan %s değişken süreç dışı "
-                      "olarak işaretlendi; bunlar analitik baz sete alınmaz."
-                      % _sayi(len(otomatik)))
-    if tek:
-        notlar.append("Tek değer taşıyan %s değişken süreç dışı olarak "
-                      "işaretlendi (boş hücre ayrı değer sayılır: 1 ve boş "
-                      "olan kolon tek değerli değildir)." % _sayi(len(tek)))
-    if notlar:
-        notlar.append("Veri setinde kalmasını istediğiniz varsa işareti "
-                      "kaldırın.")
+                      "olarak işaretlendi; veri setinde kalmasını istediğiniz "
+                      "varsa işareti kaldırın." % _sayi(len(otomatik)))
+    tek_hepsi = durum.get("_tek_degerli") or []
+    if tek_hepsi:
+        notlar.append("Tüm veri setinde tek değer taşıyan %s değişken süreç "
+                      "dışında ve kilitli (boş hücre ayrı değer sayılır: 1 ve "
+                      "boş olan kolon tek değerli değildir)."
+                      % _sayi(len(tek_hepsi)))
     if tip_oneri:
-        notlar.append("%s dönem kolonunun tipi tarih olarak önerildi; "
-                      "yazımı (202501) değişmez." % _sayi(len(tip_oneri)))
+        notlar.append("%s değişkenin tipi için öneri seçili geldi (kırmızı "
+                      "satırlar). Dönem kolonlarında yazım (202501) "
+                      "değişmez." % _sayi(len(tip_oneri)))
     durum["_secim_alani"] = {
         "tip": "teyit",
         "baslik": ADIM_ADI["teyit"],

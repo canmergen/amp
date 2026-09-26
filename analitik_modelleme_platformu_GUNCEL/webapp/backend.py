@@ -2082,11 +2082,16 @@ def haric_kolonlar_endpoint():
         # kilit yalnizca gorsel; istek dogrudan da gonderilebilir ve o
         # kolon geri alinirsa modele her satirda ayni sabiti tasiyan bir
         # degisken girerdi.
-        zorunlu_disi = str((durum.get("_donem_dusuruldu") or "")).strip()
-        geri_alinan = ""
-        if zorunlu_disi and zorunlu_disi not in secili:
-            secili = sorted(set(secili) | {zorunlu_disi})
-            geri_alinan = zorunlu_disi
+        # Tek degerli kolonlar da (tum veri seti) zorunlu disi.
+        try:
+            from fe_agent import akis_faz01 as _f1
+            zorunlu = set(_f1.zorunlu_disi_kolonlar(durum))
+        except Exception:
+            zorunlu = {str((durum.get("_donem_dusuruldu") or "")).strip()} - {""}
+        eksik = sorted(zorunlu - set(secili))
+        geri_alinan = ", ".join(eksik)
+        if eksik:
+            secili = sorted(set(secili) | set(eksik))
 
         durum["haric_kolonlar"] = secili
         # Kart govdesi de tazelenir: aksi halde adimin ortasinda F5
@@ -2100,15 +2105,14 @@ def haric_kolonlar_endpoint():
                         "haric": len(secili),
                         # Reddedilenler SESSIZ DUSURULMEZ: on yuz kutuyu
                         # geri alip sebebini yaziyor.
-                        "reddedilen": reddedilen
-                                      + ([geri_alinan] if geri_alinan else []),
+                        "reddedilen": reddedilen + eksik,
                         "hata": ("%s süreç dışı bırakılamaz: modelleme "
                                  "tanımlarında seçilen hedef / kimlik / "
                                  "dönem kolonu." % ", ".join(reddedilen))
                                 if reddedilen else
-                                ("%s süreç dışında kalmak zorunda: dönem "
-                                 "kolonu olarak seçildi ama tek değer "
-                                 "taşıyor." % geri_alinan)
+                                ("%s süreç dışında kalmak zorunda: tüm "
+                                 "veri setinde tek değer taşıyor."
+                                 % geri_alinan)
                                 if geri_alinan else "",
                         "ozet": akis.teyit_ozeti(durum)})
     except Exception as e:

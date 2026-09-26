@@ -1,6 +1,21 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **sözlük tanımları geri dönüş, dönem tipi önerisi, öneri renkleri**. Yapıştır: `tip_donusum.py`, `akis_faz01.py`, `app.js`, `style.css`
+Bu tur: **sarı "Kontrol Ediliyor", tüm veri seti tip önerisi, tek değerli kilidi, tablo hizası**. Yapıştır: `akis_faz01.py`, `backend.py`, `app.js`, `style.css` (ve önceki turdan `tip_donusum.py`)
+
+- Yanıt gönderilince blok SARI "● Kontrol Ediliyor" olur; kartın rozeti o
+  sırada boş. "Yanıtınız Bekleniyor" yalnızca gerçekten yanıt beklenirken.
+- Tip önerisi tüm veri setinde (akis_faz01._tip_onerisi): YYYYAA / YYYYAAGG
+  -> tarih (yazım korunur); sayı taşıyan metin -> sayısal; tarih taşıyan
+  metin -> tarih; adı kod/tip/segment olan az değerli tam sayı -> kategorik.
+  Başında sıfır olan kodlar dönüştürülmez. Öneri nedeni ipucunda.
+- Tek değerli kolonlar TÜM VERİ SETİ üzerinden hesaplanır ve KİLİTLİ süreç
+  dışıdır: Değişken Kontrolü'nde işaret kaldırılamaz, Sözlük Tanımları'nda
+  sözlüğe eklenemez, /haric_kolonlar ucu da geri ekler.
+- Değişken Kontrolü tablosunda başlık/değer hizaları eşitlendi.
+
+---
+
+Önceki tur: **sözlük tanımları geri dönüş, dönem tipi önerisi, öneri renkleri**. Yapıştır: `tip_donusum.py`, `akis_faz01.py`, `app.js`, `style.css`
 
 - Sözlük Tanımları geri dönünce ORİJİNAL tanımsız kolonların hepsi, önceki
   karar (ekle + yazılan açıklama / hariç) ile geri gelir. Kartın "Girdiler
