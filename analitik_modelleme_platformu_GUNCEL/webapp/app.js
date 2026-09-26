@@ -8265,7 +8265,19 @@ const yeniOnay = yeniOnayKur();
 const yeniOnayla = document.getElementById("yeni-onayla");
 const yeniReddet = document.getElementById("yeni-reddet");
 
+/* SÜRELİ ONAY (kullanıcı kararı): 10 saniye içinde karar verilmezse
+   düğmeler kendiliğinden "Yeni Çalışma"ya döner. Kalan süre Onayla'nın
+   üzerinde sayılır. */
+const YENI_ONAY_SURE = 10;
+let yeniOnaySayac = null;
+
+function yeniOnaySayacDurdur() {
+    if (yeniOnaySayac) { clearInterval(yeniOnaySayac); yeniOnaySayac = null; }
+    yeniOnayla.textContent = "Onayla";
+}
+
 function yeniOnayKapat() {
+    yeniOnaySayacDurdur();
     if (yeniOnay.hidden) return;
     yeniOnay.hidden = true;
     sifirlaBtn.hidden = false;
@@ -8275,6 +8287,14 @@ function yeniOnayAc() {
     sifirlaBtn.hidden = true;
     yeniOnay.hidden = false;
     yeniOnayla.focus();
+    yeniOnaySayacDurdur();
+    let kalan = YENI_ONAY_SURE;
+    yeniOnayla.textContent = "Onayla (" + kalan + ")";
+    yeniOnaySayac = setInterval(() => {
+        kalan -= 1;
+        if (kalan <= 0) { yeniOnayKapat(); return; }
+        yeniOnayla.textContent = "Onayla (" + kalan + ")";
+    }, 1000);
 }
 
 sifirlaBtn.onclick = (e) => {

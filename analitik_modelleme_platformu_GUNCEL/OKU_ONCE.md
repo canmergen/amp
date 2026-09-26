@@ -1,6 +1,17 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **"Tamamlandı" yerine açıklamalı onay**. Yapıştır: `app.js`
+Bu tur: **girdi tablosuna _SPLIT yazılmıyor; süreli Yeni Çalışma onayı**. Yapıştır: `akis_faz01.py`, `app.js`
+
+- HATA DÜZELTİLDİ: kimlik kullanılamayan bölmede _SPLIT kolonu kullanıcının
+  girdi veri setine yazılıyordu. Artık yalnızca platform kopyasına
+  (AMP_VERISETI); kopya yoksa adım nedenini söyleyip durur. Daha önce
+  yazılmış _SPLIT kolonu girdi tablosunda duruyor, elle kaldırılmalı.
+- Yeni Çalışma onayı 10 saniye bekler ("Onayla (9)" ...), sonra kendiliğinden
+  kapanır.
+
+---
+
+Önceki tur: **"Tamamlandı" yerine açıklamalı onay**. Yapıştır: `app.js`
 
 - Geçilmiş blokların yeşil etiketi neyin yapıldığını söylüyor: "✓ A
   Başlangıcı Seçildi", "✓ Modelleme Tanımları Onaylandı", "✓ Bölme

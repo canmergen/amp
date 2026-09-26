@@ -31,7 +31,7 @@ from fe_agent.akis_durum import (
     hazir_bolme_bul, kolon_ozeti_cikar, metin_yaz, modelleme_df,
     onbellek_temizle, sozluk_orijinal_oku, yeni_durum, amp_sahibi_yaz,
     donem_degeri, donem_serisi, donem_sirala,
-    dataset_yaz, dosya_yaz, sahip_yaz,
+    dataset_yaz, dosya_yaz, sahip_yaz, modelleme_kaynagi,
 )
 
 
@@ -3621,14 +3621,30 @@ def bolme_uygula(durum):
                 "tiple işleniyor." % _sayi(len(secilen_tipler))
                 if secilen_tipler else "")
 
+    # KULLANICININ TABLOSUNA ASLA YAZILMAZ (kullanici bildirimi: yeni
+    # calismada kendi veri setinde _SPLIT kolonu gordu). Eskiden kimlik
+    # kullanilamayinca _SPLIT kolonu durum["veri_seti"]'ne, yani
+    # kullanicinin girdi tablosuna yaziliyordu. Artik yalnizca platformun
+    # KENDI kopyasina (AMP_VERISETI) yazilir; o kopya yoksa (dataset olarak
+    # yazilamamissa) bolme kalici yapilamaz ve adim nedenini soyler.
+    kaynak_ad, amp_mi = modelleme_kaynagi(durum)
+
     def _split_yaz(kopya):
-        yazildi, _ = _yaz(veri_seti, kopya, "/bolme_split.csv")
+        if not amp_mi or not kaynak_ad or kaynak_ad == veri_seti:
+            raise AdimHatasi(
+                "Bölme kolonu yazılacak platform kopyası (%s) yok; girdi "
+                "tablonuza yazılmaz. Modelleme tanımlarında kimlik kolonu "
+                "belirtirseniz bölme kimlik üzerinden sabitlenir."
+                % AMP_VERI_ADI)
+        yazildi, _ = _yaz(kaynak_ad, kopya, _amp_yolu(durum, kaynak_ad))
+        if yazildi:
+            amp_sahibi_yaz(durum)
         return yazildi
 
     # Bolme BIR KEZ hesaplanip kalici hale getiriliyor; maskeler() bundan
     # sonra hep ayni satirlari ayni sete koyuyor.
     tr, te, notlar = bolme_hazirla(durum, df, yazici=_split_yaz)
-    onbellek_temizle(veri_seti)
+    onbellek_temizle(kaynak_ad)
 
     # Set sayimlarini bolme_hazirla yaziyor (dort yolun da ayni sayimi
     # uretmesi icin); burada yalnizca toplam ekleniyor.
