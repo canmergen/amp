@@ -175,6 +175,30 @@ def _donem_adaylari(df, kimlik=()):
     return cikti
 
 
+def _donem_adaylarini_hazirla(durum):
+    """Profilde donem adaylari yoksa BIR KEZ hesaplayip yazar; profili doner.
+
+    Bu liste veri seti secilirken (_temel_profil) cikariliyor. O surumden
+    ONCE baslamis calismalarin profilinde yok; eskiden bu durumda form tum
+    kolonlara dusuyordu ve kimlik, hedef, tutar kolonlari donem olarak
+    secilebiliyordu (kullanici bildirimi). Artik eksikse tablodan
+    hesaplaniyor. Okuma onbellekten gelir; tablo okunamazsa liste bos
+    kalir ve form "aday bulunamadi" der - tum kolonlara DUSULMEZ."""
+    p = durum.get("profil") or {}
+    if isinstance(p.get("donem_adaylari"), list):
+        return p
+    try:
+        df = modelleme_df(durum)
+        kimlik = p.get("kimlik_adaylari")
+        if not isinstance(kimlik, list):
+            _hedef, kimlik = _aday_kolonlar(df)
+        p["donem_adaylari"] = _donem_adaylari(df, kimlik)
+    except Exception:
+        p["donem_adaylari"] = []
+    durum["profil"] = p
+    return p
+
+
 def _temel_profil(durum, df):
     """Veri seti secildiginde BIR KEZ hesaplanan temel sayilar.
 
@@ -1914,7 +1938,7 @@ def _tanimlar_formu(durum, meta=None):
     """
     m = meta or durum.get("meta") or {}
     kolonlar = _veri_seti_kolonlari(durum)
-    p = durum.get("profil") or {}
+    p = _donem_adaylarini_hazirla(durum)
 
     # ADAY LISTELERI. Bos donerse TUM kolonlara dusulur ve nedeni
     # alanin altinda yazilir: veri setinde uygun kolon yoksa kullaniciyi
@@ -1929,18 +1953,19 @@ def _tanimlar_formu(durum, meta=None):
             return liste + [deger]
         return liste
 
-    # Eski calismada profil bu listeyi tasimiyor (None): filtre yok, tum
-    # kolonlar. Hesaplanmis ama bos ([]) ise gercekten aday yok.
-    donem_hesaplandi = isinstance(p.get("donem_adaylari"), list)
-    donem_aday = [k for k in (p.get("donem_adaylari") or []) if k in kolonlar]
+    # Hedef ve kimlik olarak SECILMIS kolonlar donem listesine hic girmez
+    # (bicim kontrolunden gecseler bile).
+    secili = {m.get("target"), m.get("id")} - {None, ""}
+    donem_aday = [k for k in (p.get("donem_adaylari") or [])
+                  if k in kolonlar and k not in secili]
     hedef_liste = _ekle(hedef_aday, m.get("target")) if hedef_aday else kolonlar
     kimlik_liste = _ekle(kimlik_aday, m.get("id")) if kimlik_aday else kolonlar
     # DONEM: yalnizca tarih ya da donem bicimli kolonlar (bkz.
     # _donem_adaylari). Aday yoksa liste bos kalir ve nedeni yazilir;
     # tum kolonlara DUSULMEZ - kimlik ya da hedefin donem secilmesi
     # zamansal bolmeyi sessizce bozardi.
-    donem_liste = _ekle(donem_aday, m.get("donem")) if donem_hesaplandi else kolonlar
-    donem_not = ("" if (donem_aday or not donem_hesaplandi) else
+    donem_liste = _ekle(donem_aday, m.get("donem"))
+    donem_not = ("" if donem_aday else
                  "Veri setinde tarih ya da dönem biçimli (202401, "
                  "2024-01-15…) bir kolon bulunamadı; zamansal bölme "
                  "kurulamaz.")
@@ -2039,7 +2064,7 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
     # Kontrol yalnizca listede olmasi yetmedigi icin burada tekrarlaniyor:
     # kullanicinin hedefle kimligi yer degistirmesi, platformun sonradan
     # "pozitif oran %0,00" diye rapor ettigi asil hataydi.
-    p = durum.get("profil") or {}
+    p = _donem_adaylarini_hazirla(durum)
     aday_kurali = [
         ("target", p.get("hedef_adaylari"), "hedef değişken",
          "yalnızca 0/1 değerli bir kolon olabilir"),
