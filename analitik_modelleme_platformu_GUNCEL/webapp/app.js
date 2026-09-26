@@ -4928,7 +4928,9 @@ function dogrulamaKartiEkle(alan, blok) {
                 toplu.appendChild(b);
                 topluBtnleri.push(b);
             });
-        tbas.appendChild(toplu);
+        /* Toplu düğmeler TABLONUN HEMEN ÜSTÜNDE (kullanıcı kararı: başlık
+           satırında notların üstünde kalıp tablodan kopuyordu). Aşağıda,
+           tablodan hemen önce ekleniyor. */
         kart.appendChild(tbas);
 
         /* SOZLESME7 §2: eski UC not satiri (tanimsiz.aciklama,
@@ -4962,7 +4964,10 @@ function dogrulamaKartiEkle(alan, blok) {
             kart.appendChild(oh);
         }
 
-        kart.appendChild(elYap("div", "dg-lejant", ONERI_LEJANT));
+        const ust = elYap("div", "dg-tablo-ust");
+        ust.appendChild(elYap("div", "dg-lejant", ONERI_LEJANT));
+        ust.appendChild(toplu);
+        kart.appendChild(ust);
         const sar = document.createElement("div");
         sar.className = "dg-tablo-sar";
 

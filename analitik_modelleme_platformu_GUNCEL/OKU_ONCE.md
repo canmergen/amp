@@ -1,6 +1,13 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **sohbet arka plan bulanıklığı kapatıldı**. Yapıştır: `style.css`
+Bu tur: **Tümünü Seç / Tümünü Temizle tablonun hemen üstünde**. Yapıştır: `app.js`, `style.css`
+
+- Sözlük Tanımları kartında toplu düğmeler başlık satırından alındı,
+  tablonun hemen üstüne (renk açıklamasıyla aynı satır, sağda) taşındı.
+
+---
+
+Önceki tur: **sohbet arka plan bulanıklığı kapatıldı**. Yapıştır: `style.css`
 
 - --sohbet-bulanik 13px -> 0px. Kaydırmada kare düşüşünün kaynağıydı;
   görsel ve üstündeki yarı saydam örtü duruyor.

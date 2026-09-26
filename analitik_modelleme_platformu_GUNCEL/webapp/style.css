@@ -2867,3 +2867,11 @@ span.bolme-cip { cursor: default; }
 .dg-lejant {
   margin: var(--b-2) 0; font-size: var(--fs-kucuk); color: var(--metin-soluk);
 }
+
+/* Sözlük Tanımları: renk açıklaması solda, Tümünü Seç / Tümünü Temizle
+   sağda; ikisi de tablonun HEMEN ÜSTÜNDE. */
+.dg-tablo-ust {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--b-3); flex-wrap: wrap; margin: var(--b-2) 0 var(--b-2);
+}
+.dg-tablo-ust .dg-lejant { margin: 0; }
