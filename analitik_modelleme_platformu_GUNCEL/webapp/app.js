@@ -7705,8 +7705,17 @@ function calismaAltSatiri(c) {
     const parca = [];
     const zaman = tarihBicim(c.zaman);
     if (zaman) parca.push(zaman);
-    if (c.adim) parca.push("Adım " + c.adim_no + "/" + c.toplam + " · " + tireSade(c.adim));
-    if (c.veri_seti) parca.push(tireSade(c.veri_seti));
+    /* FAZ İÇİ SIRA (sol paneldeki gibi): "01 Çalışma Kurulumu · Adım
+       3/4 · Değişken Kontrolü". Tüm fazların toplamı (5/18) ekranda
+       hiçbir yerde görünmediği için anlamsızdı. Veri seti adı bu satırdan
+       kaldırıldı (kullanıcı kararı). */
+    if (c.adim && c.faz_no) {
+        parca.push(c.faz_no + " " + tireSade(c.faz_baslik || "")
+                   + " · Adım " + c.faz_adim_no + "/" + c.faz_toplam
+                   + " · " + tireSade(c.adim));
+    } else if (c.adim) {
+        parca.push(tireSade(c.adim));
+    }
     return parca.join(" · ");
 }
 

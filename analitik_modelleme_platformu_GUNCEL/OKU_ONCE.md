@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **süreç dışı satırlar çizili ve kilitli**. Yapıştır: `app.js`, `style.css`
+Bu tur: **Arşiv satırında faz içi adım**. Yapıştır: `backend.py`, `app.js`
+
+- Arşiv satırı: "01 Çalışma Kurulumu · Adım 3/4 · Değişken Kontrolü".
+  Sayım sol paneldeki gibi faz içinde, gruplu adımlar tek. Veri seti adı
+  satırdan kaldırıldı.
+
+---
+
+Önceki tur: **süreç dışı satırlar çizili ve kilitli**. Yapıştır: `app.js`, `style.css`
 
 - Değişken Kontrolü'nde süreç dışı satırın üstü çizili, tip ve tanım
   alanları kapalı. Kilitli (tek değerli, hedef/kimlik) satırda kutu da

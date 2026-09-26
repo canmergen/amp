@@ -1471,6 +1471,30 @@ def _adim_gorunen_adi(anahtar):
     return grup_baslik or (akis.ADIMLAR.get(anahtar) or {}).get("baslik") or anahtar
 
 
+def _faz_konumu(mod, anahtar):
+    """Adimin FAZ ICINDEKI yeri, sol paneldeki sayimla ayni: gruplu adimlar
+    (Veri ve Model Tanımları gibi) tek adim sayilir. Kullanici bildirimi:
+    Arşiv "Adım 5/18" diyordu; 18 butun fazlarin toplami, ekranda hic
+    gorunmeyen bir sayi. Doner: {faz_no, faz_baslik, faz_adim_no,
+    faz_toplam} ya da {}."""
+    try:
+        for f in akis.fazlar(mod):
+            ogeler = []
+            for a in f["adimlar"]:
+                grup, _ = akis.adim_grubu(a)
+                oge = grup or a
+                if oge not in ogeler:
+                    ogeler.append(oge)
+            if anahtar in f["adimlar"]:
+                grup, _ = akis.adim_grubu(anahtar)
+                return {"faz_no": f["no"], "faz_baslik": f["baslik"],
+                        "faz_adim_no": ogeler.index(grup or anahtar) + 1,
+                        "faz_toplam": len(ogeler)}
+    except Exception:
+        pass
+    return {}
+
+
 def _calisma_ozeti(calisma, durum):
     mod = durum.get("mod")
     sira = akis.adim_sirasi(mod)
@@ -1487,6 +1511,7 @@ def _calisma_ozeti(calisma, durum):
     }
     if 0 <= i < len(sira):
         ozet["adim"] = _adim_gorunen_adi(sira[i])
+        ozet.update(_faz_konumu(mod, sira[i]))
     ozet["secimler"] = _calisma_secimleri(durum)
     if durum.get("_kopya_kaynagi"):
         ozet["kaynak"] = durum["_kopya_kaynagi"]
