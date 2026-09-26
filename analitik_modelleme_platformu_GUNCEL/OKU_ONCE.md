@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Tümünü Seç / Tümünü Temizle tablonun hemen üstünde**. Yapıştır: `app.js`, `style.css`
+Bu tur: **süreç dışı satırlar çizili ve kilitli**. Yapıştır: `app.js`, `style.css`
+
+- Değişken Kontrolü'nde süreç dışı satırın üstü çizili, tip ve tanım
+  alanları kapalı. Kilitli (tek değerli, hedef/kimlik) satırda kutu da
+  kapalı; kilitsiz satırda işaret kaldırılınca satır geri açılır.
+
+---
+
+Önceki tur: **Tümünü Seç / Tümünü Temizle tablonun hemen üstünde**. Yapıştır: `app.js`, `style.css`
 
 - Sözlük Tanımları kartında toplu düğmeler başlık satırından alındı,
   tablonun hemen üstüne (renk açıklamasıyla aynı satır, sağda) taşındı.

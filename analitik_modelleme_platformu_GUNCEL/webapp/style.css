@@ -2875,3 +2875,15 @@ span.bolme-cip { cursor: default; }
   gap: var(--b-3); flex-wrap: wrap; margin: var(--b-2) 0 var(--b-2);
 }
 .dg-tablo-ust .dg-lejant { margin: 0; }
+
+/* SÜREÇ DIŞI SATIR (Değişken Kontrolü): üstü çizili ve soluk; alanlar
+   kilitli. Öneri renkleri bu satırda gösterilmez. Kutu hücresi çizilmez:
+   kilitli olmayan satırda işaret oradan kaldırılır. */
+.dg-tablo tr.dg-disi > td { background: var(--yuzey-alt) !important; }
+.dg-tablo tr.dg-disi > td:not(.dg-ekle-hucre) {
+  text-decoration: line-through; color: var(--metin-soluk);
+}
+.dg-tablo tr.dg-disi .dg-giris,
+.dg-tablo tr.dg-disi .dg-tip-sec {
+  text-decoration: line-through; opacity: .6;
+}

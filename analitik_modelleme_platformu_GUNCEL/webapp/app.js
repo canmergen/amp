@@ -1950,6 +1950,7 @@ function haricKaydet(kolon, kutu, hataEl) {
                birakmak, surec disi kararinda en pahali hata. */
             kutu.checked = !kutu.checked;
             kutu.closest("tr").dataset.islem = kutu.checked ? "haric" : "ekle";
+            if (kutu._disiCiz) kutu._disiCiz();
             teyitHatasi(hataEl, (d && d.hata) || "Süreç dışı listesi yazılamadı.");
             return;
         }
@@ -1968,7 +1969,13 @@ function haricKaydet(kolon, kutu, hataEl) {
                 const t = document.querySelector(
                     '.teyit-kart .dg-satir[data-kolon="' + k + '"]');
                 const kk = t && t.querySelector(".dg-ekle");
-                if (kk) { kk.checked = false; t.dataset.islem = "ekle"; }
+                if (kk) {
+                    /* Uç zorunlu dışı kolonu (tek değerli) GERİ EKLEMİŞ
+                       olabilir: kutu sunucunun listesine göre kurulur. */
+                    kk.checked = (d.kolonlar || []).indexOf(k) !== -1;
+                    t.dataset.islem = kk.checked ? "haric" : "ekle";
+                    if (kk._disiCiz) kk._disiCiz();
+                }
             });
             teyitHatasi(hataEl, d.hata || "Bu kolon süreç dışı bırakılamaz.");
             return;
@@ -1978,6 +1985,7 @@ function haricKaydet(kolon, kutu, hataEl) {
     .catch(e => {
         kutu.disabled = false;
         kutu.checked = !kutu.checked;
+        if (kutu._disiCiz) kutu._disiCiz();
         teyitHatasi(hataEl, "Süreç dışı listesi yazılamadı: " + e);
     });
 }
@@ -6490,12 +6498,27 @@ function teyitKartiEkle(alan, blok) {
                    neden işaretli geldiği ipucunda yazıyor. */
                 kutu.title = tireSade(sat.disi_sebebi);
             }
+            /* SÜREÇ DIŞI SATIR ÇİZİLİR (kullanıcı kararı): satırın üstü
+               çizili, tip ve tanım alanları kilitli - süreç dışı bir
+               kolonda yapılacak bir şey yok. Kilitli olmayan satırda kutu
+               açık kalır: işaret kaldırılınca satır geri açılır. */
+            kutu._disiCiz = () => {
+                const disi = kutu.checked;
+                tr.classList.toggle("dg-disi", disi);
+                const acik = !disi && !!dg.duzenlenebilir
+                    && !kart.classList.contains("kilitli");
+                giris.disabled = !acik;
+                const secEl = tdT.querySelector(".dg-tip-sec");
+                if (secEl) secEl.disabled = !acik;
+            };
             kutu.onchange = () => {
                 tr.dataset.islem = kutu.checked ? "haric" : "ekle";
+                kutu._disiCiz();
                 haricKaydet(ad, kutu, hataEl);
             };
             tdI.appendChild(kutu);
             tr.appendChild(tdI);
+            kutu._disiCiz();
 
             satirlar.push({ tr: tr, ad: ftSade(ad), tanim: ftSade(sat.tanim || ""),
                             /* Süzme ve sıralama için ham değerler:
@@ -6636,6 +6659,9 @@ function teyitKartiEkle(alan, blok) {
                    isaretlenemez. */
                 kart.querySelectorAll(".dg-rol-kilitli .dg-ekle")
                     .forEach(e => { e.disabled = true; });
+                /* Süreç dışı satırların alanları kapalı kalır. */
+                kart.querySelectorAll(".dg-ekle")
+                    .forEach(e => { if (e._disiCiz) e._disiCiz(); });
             };
 
             /* Sessiz gider (ikinci parametre false): kullanici bir cumle
