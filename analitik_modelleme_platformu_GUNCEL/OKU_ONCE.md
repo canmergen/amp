@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **ayrı yükleniyor kartı yok; işlem satırı bloğun içinde**. Yapıştır: `app.js`, `style.css`
+Bu tur: **onay düğmeleri ortada**. Yapıştır: `style.css`
+
+- Kartların ana düğmeleri (Girdileri Doğrula, Tanımları Onayla, Seçimleri
+  Uygula ve Devam Et, Kaydet ve Devam Et, Bu Ayarları Seç) ve blok onay
+  düğmeleri yatayda ortalı.
+
+---
+
+Önceki tur: **ayrı yükleniyor kartı yok; işlem satırı bloğun içinde**. Yapıştır: `app.js`, `style.css`
 
 - İstek sürerken aktif adımın bloğunun en altında tek satır:
   "İşleniyor · 0:12 · İptal". İlk 2,5 sn görünmez. Durum başlıktaki

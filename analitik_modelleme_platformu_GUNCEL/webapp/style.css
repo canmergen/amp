@@ -2950,3 +2950,12 @@ span.bolme-cip { cursor: default; }
   text-decoration: underline;
 }
 .islem-iptal:disabled { color: var(--metin-soluk); cursor: default; text-decoration: none; }
+
+/* ONAY DÜĞMELERİ ORTADA (kullanıcı kararı): kartların ana düğmesi
+   (Girdileri Doğrula, Tanımları Onayla, Kaydet ve Devam Et, Bu Ayarları
+   Seç ...) ve blok onay düğmeleri yatayda ortalanır. */
+.secim-kart > .secim-onay { display: block; margin-left: auto; margin-right: auto; }
+.onay-dugmeler, .blok-dugmeler { justify-content: center; }
+.bolme-alt { justify-content: center; }
+.bolme-alt-acilirlar:empty { display: none; }
+.bolme-alt-dugmeler { margin-left: auto; margin-right: auto; }
