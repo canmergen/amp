@@ -1,6 +1,11 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **"Kontrol Ediliyor" koyu sarı üstüne beyaz**. Yapıştır: `style.css`
+Bu tur: **başlangıç başlıkları baz/kaynak adlarıyla; sarı eski tonunda**. Yapıştır: `akis_metin.py`, `style.css`
+
+- A Baz Veri Seti ve Baz Sözlük Hazır · B Baz Veri Seti Hazır Değil, Kaynak
+  Sözlükler Hazır · C Baz Veri Seti Hazır, Baz Sözlük Hazır Değil · D Baz
+  Veri Seti ve Baz Sözlük Hazır Değil.
+- "Kontrol Ediliyor": açık sarı (#F5C518) üstüne beyaz.
 
 ---
 

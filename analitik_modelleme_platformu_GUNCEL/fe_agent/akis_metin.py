@@ -47,18 +47,18 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 # Eski kayitlardaki B/C, okunurken C/D'ye cevriliyor
 # (bkz. akis_durum.MOD_GOCU).
 MOD_SECENEKLERI = [
-    {"deger": "A", "baslik": "Veri Seti ve Sözlük Hazır",
+    {"deger": "A", "baslik": "Baz Veri Seti ve Baz Sözlük Hazır",
      "aciklama": "Modellemeye girecek baz veri seti ve onun baz sözlüğü "
                  "hazır: doğrudan modelleme tanımlarına ve veri analizine "
                  "geçin."},
-    {"deger": "B", "baslik": "Veri Seti Hazır Değil, Sözlük Hazır",
+    {"deger": "B", "baslik": "Baz Veri Seti Hazır Değil, Kaynak Sözlükler Hazır",
      "aciklama": "Kaynak tablolar ve kaynak sözlükleri hazır: tablolar "
                  "birleştirilerek baz veri seti, sözlükler birleştirilerek "
                  "baz sözlük oluşturulur."},
-    {"deger": "C", "baslik": "Veri Seti Hazır, Sözlük Hazır Değil",
+    {"deger": "C", "baslik": "Baz Veri Seti Hazır, Baz Sözlük Hazır Değil",
      "aciklama": "Baz veri seti hazır: baz sözlük kolon yapısı ve veri "
                  "profili üzerinden oluşturulur."},
-    {"deger": "D", "baslik": "Veri Seti ve Sözlük Hazır Değil",
+    {"deger": "D", "baslik": "Baz Veri Seti ve Baz Sözlük Hazır Değil",
      "aciklama": "Yalnızca kaynak tablolar hazır: birleştirilerek baz veri "
                  "seti, ardından baz sözlük oluşturulur."},
 ]

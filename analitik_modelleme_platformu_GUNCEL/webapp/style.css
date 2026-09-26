@@ -1426,8 +1426,7 @@ button.ozet-kart:focus-visible {
   color: #fff; background: var(--kirmizi); border-color: var(--kirmizi);
 }
 .blok-durum.kontrol {
-  /* Koyu sarı (hardal): beyaz yazıyla kontrast 3,2:1 (açık sarıda 1,6:1). */
-  color: #FFFFFF; background: #B8860B; border-color: #9A700A;
+  color: #FFFFFF; background: #F5C518; border-color: #D9A900;
 }
 .blok-durum.tamam {
   color: var(--yesil); background: var(--yesil-acik); border-color: var(--yesil);
