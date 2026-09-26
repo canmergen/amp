@@ -2779,7 +2779,7 @@ const BF_ETIKET = {
 /* Ayni uyariyi arka uc da uretiyor (akis_durum.GECERSIZ_BIRLESIM); burada
    kisasi duruyor cunku kullanici bu birlesimi KAYDETMEDEN once gormeli. */
 const BF_GECERSIZ_BIRLESIM =
-    "Doğrulama seti yok ve çapraz doğrulama kapalı: model ayarlarını "
+    "Validasyon (OOS) seti yok ve çapraz doğrulama kapalı: model ayarlarını "
     + "deneyecek temiz bir yer kalmıyor. Algoritma seçimi sabit "
     + "ayarlarla yapılır (arama yapılmaz) ve bu rapora yazılır.";
 
@@ -2995,15 +2995,15 @@ function bfYerelOzet() {
        hesabi test payini 0 sayip "eğitim %100" yaziyordu - acikca
        yanlis bir sayi (kendi ekran kontrolumde yakalandi). */
     if (bfZamansalMi()) {
-        const parcalar = ["OOT / Test: " + bfDonemEtiketi()];
-        if (p.val) parcalar.push("doğrulama: eğitimin " + bfYuzde(p.val) + "'i");
-        parcalar.unshift("eğitim: kalan dönemler");
+        const parcalar = ["Test (OOT): " + bfDonemEtiketi()];
+        if (p.val) parcalar.push("Validasyon (OOS): eğitimin " + bfYuzde(p.val) + "'i");
+        parcalar.unshift("Train (MS): kalan dönemler");
         return parcalar.join(" · ");
     }
 
-    const parcalar = ["eğitim " + (p.train ? bfYuzde(p.train) : "-"),
-                      "doğrulama " + (p.val ? bfYuzde(p.val) : "-"),
-                      "OOT / Test " + (p.test ? bfYuzde(p.test) : "-")];
+    const parcalar = ["Train (MS) " + (p.train ? bfYuzde(p.train) : "-"),
+                      "Validasyon (OOS) " + (p.val ? bfYuzde(p.val) : "-"),
+                      "Test (OOT) " + (p.test ? bfYuzde(p.test) : "-")];
     return parcalar.join(" · ");
 }
 
@@ -3023,17 +3023,17 @@ function bfUyariListesi() {
        duruyor. */
     if (a.test_tanim === "hazir") return liste;
 
-    if (!bfValVar(a.val_var) && a.cv === "yok" && !varMi(/Doğrulama seti yok/))
+    if (!bfValVar(a.val_var) && a.cv === "yok" && !varMi(/seti yok ve çapraz/))
         liste.push(BF_GECERSIZ_BIRLESIM);
 
     const testO = bfZamansalMi() ? 0 : bfSayi(a.test_oran, 0);
     const valO = bfValVar(a.val_var) ? bfSayi(a.val_oran, 0) : 0;
     if (testO + valO >= 1 && !varMi(/eğitime satır kalmaz/))
-        liste.push("OOT / Test (" + bfYuzde(testO) + ") ve doğrulama ("
+        liste.push("Test (OOT) (" + bfYuzde(testO) + ") ve Validasyon (OOS) ("
                    + bfYuzde(valO) + ") paylarının toplamı tüm veriyi "
                    + "kaplıyor; eğitime satır kalmaz.");
     else if (testO + valO > 0.6 && !varMi(/ölçüm güvenilir olmayabilir/))
-        liste.push("Eğitime verinin yalnızca "
+        liste.push("Train (MS) setine verinin yalnızca "
                    + bfYuzde(1 - testO - valO) + "'i kalıyor; ölçüm "
                    + "güvenilir olmayabilir.");
     return liste;
@@ -3168,6 +3168,16 @@ function bfTaslakPasif(ad) {
     return false;
 }
 
+
+/* Önerilen oran, yüzde olarak (çipteki nokta için); yoksa null. */
+function bfOneriYuzde(ad) {
+    const o = bfOneriDegeri(ad);
+    if (o === undefined || o === null) return null;
+    let v = Number(o);
+    if (!isFinite(v) || v <= 0) return null;
+    if (v <= 1) v = v * 100;
+    return Math.round(v);
+}
 
 /* Arka uç yüzde olarak gönderiyor; eski gövdede kesir gelebilir. */
 function bfYuzdeDegeri(ad, k) {
@@ -3349,9 +3359,9 @@ function bolmeFormuCiz(f) {
 /* ETIKETLER TURKCE (kullanici karari): ekranda yabancı terim yok. */
 const SET_SECENEKLERI = [
     { anahtar: "tumu",  etiket: "Tümü" },
-    { anahtar: "train", etiket: "Eğitim" },
-    { anahtar: "val",   etiket: "Doğrulama",  alan: "val_var" },
-    { anahtar: "test",  etiket: "Test" }
+    { anahtar: "train", etiket: "Train (MS)" },
+    { anahtar: "val",   etiket: "Validasyon (OOS)",  alan: "val_var" },
+    { anahtar: "test",  etiket: "Test (OOT)" }
 ];
 
 /* Secicinin GORUNDUGU sekmeler. VERİ & SÖZLÜK ve HAZIRLIK her zaman tum
@@ -5189,40 +5199,36 @@ const BOLME = {
    ayrılıp ayrılmadığını söylüyor - kaydetme yolu buna bağlı. */
 function bolmeOzellestirildi() { return bfDegisti(); }
 
-/* ---- İKİ SEÇİLEBİLİR PANEL ----
+/* ---- TEK LİSTE, ÖNERİLEN DEĞERLER ÖNCEDEN SEÇİLİ ----
 
-        ┌ ● ÖNERİLEN AYARLAR ┐  ┌ ○ ÖZEL AYARLAR ┐
-        │  aynı gruplar      │  │  aynı gruplar   │
-        │  salt okunur çip   │  │  seçilebilir çip│
-        │  ▸ Öneri gerekçesi │  │                 │
-        │  ▸ Detaylar        │  │  ▸ Detaylar     │
-        │  [Bu Ayarları Seç] │  │ [Bu Ayarları Seç]│
-        └────────────────────┘  └─────────────────┘
+   Kullanıcı kararı: iki sütun (Önerilen / Özel) aynı 14 satırı iki kez
+   çiziyordu. Şimdi TEK liste: her satırda seçenekler çip olarak yan
+   yana, önerilen olan seçili ve yeşil noktayla işaretli. Değiştirmek
+   için tıklamak yeterli. Önerilenden sapan satır kehribar renkte ve
+   yanında "önerilene dön". Üstte "Veri nasıl bölünecek" çubuğu her
+   tıklamada anında güncellenir; her satırın yanında "i" simgesi, hiç
+   bilmeyen için yazılmış açıklamayı fareyle gösterir.
 
-   SEÇİM EKRANI, FORM DEĞİL (kullanıcı kararı: "profesyonel ilerlerken
-   demo haline düştü"). İki panel sürekli yan yana ve karşılaştırılabilir
-   duruyor; seçili olan tam opaklıkta ve kırmızı çerçeveli, diğeri soluk
-   ve kontrolleri pasif. Panele herhangi bir yerden basmak onu seçer -
-   panel kaybolmuyor, içerik değişmiyor, accordion'a dönüşmüyor.
-
-   AÇILIR LİSTE EN AZA İNDİ: seçenek sayısı azsa çip şeridi. Açılır liste
-   yalnızca gerçekten uzun listede (OOT / Test dönemi: 11 seçenek, bölme
-   kolonu: binlerce kolon olabilir). */
-
-/* Kıyas EKRANDAKİ CÜMLE üzerinden değil, HAM DEĞERLER üzerinden: arka
-   uç önerinin ham ayarlarını da gönderiyor (oneri.ayarlar). "Son dönem
-   (202312)" gibi bir cümleyi karşılaştırmak, metin her değiştiğinde
-   koşullu görünürlüğü sessizce bozardı. */
+   Kıyas EKRANDAKİ CÜMLE üzerinden değil, HAM DEĞERLER üzerinden: arka
+   uç önerinin ham ayarlarını gönderiyor (oneri.ayarlar). */
 function bolmeOneriAyari(alan) {
     return (alan && alan.oneri && alan.oneri.ayarlar) || null;
+}
+
+function bfOneriDegeri(ad) {
+    const o = bolmeOneriAyari(BOLME.alan);
+    return o ? o[ad] : undefined;
 }
 
 /* Karşılaştırma için tek biçim: oran kesir (4 hane), sayılar tam,
    iki seçenekli alanlar "1"/"0", geri kalanı metin. */
 function bfKiyasDeger(ad, v) {
     if (v === undefined || v === null) return "";
-    if (ad === "test_oran" || ad === "val_oran")
-        return String(Math.round(bfSayi(v, 0.20) * 10000));
+    if (ad === "test_oran" || ad === "val_oran") {
+        let x = bfSayi(v, 0.20);
+        if (x > 1) x = x / 100;          // yüzde de kesir de gelebilir
+        return String(Math.round(x * 10000));
+    }
     if (ad === "val_var") return bfValVar(v) ? "1" : "0";
     if (ad === "katmanla") return bfKatmanla(v) ? "1" : "0";
     if (ad === "kat" || ad === "seed" || ad === "tekrar" || ad === "gap")
@@ -5230,163 +5236,245 @@ function bfKiyasDeger(ad, v) {
     return String(v);
 }
 
-function bolmePanelleri(alan) {
-    return (alan.paneller && alan.paneller.length) ? alan.paneller
-        : [{ anahtar: "oneri", etiket: "Önerilen Ayarlar" },
-           { anahtar: "ozel", etiket: "Özel Ayarlar" }];
+/* Bu seçenek önerilen mi? (çipteki yeşil nokta) */
+function bfOneriMi(ad, deger) {
+    const o = bfOneriDegeri(ad);
+    if (o === undefined || o === null) return false;
+    return bfKiyasDeger(ad, deger) === bfKiyasDeger(ad, o);
 }
 
-function bolmeSecili() { return BOLME.mod === "ozel" ? "ozel" : "oneri"; }
+/* Alan taslakta öneriden farklı mı? Pasif alan (kullanılmayan pay
+   gibi) fark sayılmaz: ekranda görünmüyor, sonucu değiştirmiyor. */
+function bfAlanFarkli(ad) {
+    if (bfTaslakPasif(ad)) return false;
+    const o = bfOneriDegeri(ad);
+    if (o === undefined || o === null) return false;
+    return bfKiyasDeger(ad, BF.alan[ad]) !== bfKiyasDeger(ad, o);
+}
 
-function bolmePanellerCiz(kok, alan, kilitli) {
-    const izgara = elYap("div", "bolme-paneller");
-    izgara.setAttribute("role", "radiogroup");
-    izgara.setAttribute("aria-label", tireSade(alan.baslik || "Bölme"));
-    bolmePanelleri(alan).forEach(p => {
-        izgara.appendChild(bolmePanelCiz(p, alan, kilitli));
+function bolmeSatirFarkli(sat) {
+    return (sat.alanlar || []).some(bfAlanFarkli);
+}
+
+function bolmeGorunurSatirlar(alan) {
+    return (alan.satirlar || []).filter(sat => bolmeSatirGorunur(sat));
+}
+
+function bolmeFarkSayisi(alan) {
+    return bolmeGorunurSatirlar(alan).filter(bolmeSatirFarkli).length;
+}
+
+/* Verilen alanları önerilen değere döndürür. val_var / cv değişince
+   train_kullanimi ikilisi yeniden türetilir (bkz. bfDegistir). */
+function bolmeOnerileneDon(alanlar) {
+    if (bfPasif()) return;
+    (alanlar || []).forEach(ad => {
+        const o = bfOneriDegeri(ad);
+        if (o === undefined || o === null) return;
+        BF.alan[ad] = o;
+        if (BOLME.ozelAcik) delete BOLME.ozelAcik[ad];
     });
-    kok.appendChild(izgara);
+    BF.alan.train_kullanimi = bfTrainKullanimi(
+        bfValVar(BF.alan.val_var), BF.alan.cv);
+    BF.acikEksen = true;
+    BF.not = "";
+    bfTazele();
 }
 
-function bolmePanelCiz(p, alan, kilitli) {
-    const secili = p.anahtar === bolmeSecili();
-    const panel = elYap("div", "bolme-panel" + (secili ? " secili" : " soluk"));
-    panel.setAttribute("data-panel", p.anahtar);
-    panel.setAttribute("role", "radio");
-    panel.setAttribute("aria-checked", secili ? "true" : "false");
+/* Kart açılırken taslak ÖNERİYLE dolar: form sunucudaki kayıtlı (ya da
+   varsayılan) değerleri taşıyor, öneri ise veriden hesaplanıyor; ikisi
+   farklı olabilir. Kullanıcı daha önce kendi ayarını kaydettiyse
+   (mod "ozel") taslak o ayar kalır. */
+function bolmeTaslagiOneriyleDoldur(alan) {
+    const o = bolmeOneriAyari(alan);
+    if (!o || alan.mod === "ozel" || !BF.alan) return;
+    Object.keys(o).forEach(k => {
+        if (k in BF.alan && o[k] !== undefined && o[k] !== null) BF.alan[k] = o[k];
+    });
+    BF.acikEksen = false;
+}
 
-    /* PANELE HERHANGİ BİR YERDEN BASMAK ONU SEÇER. Seçili panelde bu
-       kanca yok: orada tıklamalar kontrollere ait. */
-    if (!secili && !kilitli && !BF.kaydediyor) {
-        panel.tabIndex = 0;
-        panel.onclick = () => bolmePaneliSec(p.anahtar);
-        panel.onkeydown = (e) => {
-            if (e.key === " " || e.key === "Enter") {
-                e.preventDefault();
-                bolmePaneliSec(p.anahtar);
-            }
-        };
+/* ---- ÖZET ÇUBUĞU: "Veri nasıl bölünecek" ----
+   Kartın en görünür yeri. Rastgele bölmede üç setin yüzdesi renkli
+   çubukta; zamansal bölmede dönem sırası (eğitim dönemleri · gap · son N
+   dönem). Her tıklamada yeniden çizilir. */
+function bolmeOzetCubukCiz(kok, alan) {
+    const kutu = elYap("div", "bolme-ozet");
+    const bas = elYap("div", "bolme-ozet-bas");
+    bas.appendChild(elYap("b", "", "Veri nasıl bölünecek"));
+    const fark = bolmeFarkSayisi(alan);
+    bas.appendChild(elYap("span", "bolme-rozet " + (fark ? "ozel" : "oneri"),
+        fark ? "Önerilenden " + fark + " fark" : "Önerilen ayarlar"));
+    kutu.appendChild(bas);
+
+    const a = BF.alan;
+    if (a.test_tanim === "hazir") {
+        kutu.appendChild(elYap("div", "bolme-ozet-alt",
+            "Setler veri setindeki bölme kolonundan okunacak."));
+    } else if (bfZamansalMi()) {
+        const cubuk = elYap("div", "bolme-cubuk");
+        const gap = bfTam(a.gap, 0);
+        cubuk.appendChild(bolmeCubukParca("egitim", 60, "Train (MS) · önceki dönemler"));
+        if (gap) cubuk.appendChild(bolmeCubukParca("gap", 8, "gap " + gap));
+        cubuk.appendChild(bolmeCubukParca("test", gap ? 32 : 40,
+                                          "Test (OOT) · " + bfDonemEtiketi()));
+        kutu.appendChild(cubuk);
+    } else {
+        const p = bfPaylar();
+        const cubuk = elYap("div", "bolme-cubuk");
+        const yz = v => Math.round(100 * v);
+        /* Dar parçada uzun ad sığmıyor: %25'in altında kısaltma. */
+        const ad = (uzun, kisa, v) => (yz(v) < 25 ? kisa : uzun) + " %" + yz(v);
+        if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), ad("Train (MS)", "MS", p.train), "Train (MS) %" + yz(p.train)));
+        if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), ad("Validasyon (OOS)", "OOS", p.val), "Validasyon (OOS) %" + yz(p.val)));
+        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), ad("Test (OOT)", "OOT", p.test), "Test (OOT) %" + yz(p.test)));
+        kutu.appendChild(cubuk);
     }
 
-    const bas = elYap("div", "bolme-panel-bas");
-    bas.appendChild(elYap("span", "bolme-radyo" + (secili ? " secili" : ""), ""));
-    const ust = elYap("div", "bolme-panel-ust");
-    ust.appendChild(elYap("div", "bolme-panel-ad", p.etiket || ""));
-    if (p.aciklama)
-        ust.appendChild(elYap("div", "bolme-panel-not", p.aciklama));
-    bas.appendChild(ust);
-    panel.appendChild(bas);
-
-    panel.appendChild(bolmeAyarlariCiz(alan, p.anahtar === "ozel", !secili));
-
-    /* ÖNERİ GEREKÇESİ yalnızca önerilen panelde, KAPALI açılır alanda.
-       Eskiden ekranın üstünde duruyor ve dörtte birini metin yiyordu. */
-    if (p.anahtar === "oneri") bolmeGerekceCiz(panel, alan);
-    bolmeSozlukCiz(panel, alan, p.anahtar);
-
-    if (!BOLME.gonderildi) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "secim-onay bolme-panel-onay";
-        btn.setAttribute("data-panel-onay", p.anahtar);
-        btn.textContent = tireSade(alan.buton || "Bu Ayarları Seç");
-        btn.disabled = kilitli || BF.kaydediyor || (secili && bfPasif());
-        if (btn.disabled && bfPasif())
-            btn.title = "Bölme kilitli; değiştirmek için önce kilidi açın.";
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            if (!secili) { bolmePaneliSec(p.anahtar); return; }
-            if (typeof BOLME.onayla === "function") BOLME.onayla();
-        };
-        panel.appendChild(btn);
+    /* Tek satır özet: çubukta yer almayan ayarlar. */
+    const parcalar = [];
+    const al = (BF.veri && BF.veri.alanlar) || {};
+    const etiket = (ad) => {
+        const sec = bfSecenekler(ad, (al[ad] || {}).secenekler, []);
+        const b = sec.find(o => bfKiyasDeger(ad, o.anahtar) === bfKiyasDeger(ad, a[ad]));
+        return b ? b.etiket : String(a[ad] || "");
+    };
+    if (a.test_tanim !== "hazir") {
+        parcalar.push(["Ayrım", etiket("test_tanim")]);
+        if (bfZamansalMi() && bfValVar(a.val_var))
+            parcalar.push(["Validasyon (OOS)", "eğitimin " + bfYuzde(bfSayi(a.val_oran, 0.2)) + "'i"]);
+        parcalar.push(["Çapraz doğrulama",
+            a.cv === "yok" ? "Yok" : etiket("cv") + ", " + bfTam(a.kat, 5) + " kat"]);
+        parcalar.push(["Birim", etiket("birim") + (a.birim === "kimlik" && al.birim && al.birim.kolon ? " (" + al.birim.kolon + ")" : "")]);
+        parcalar.push(["Hedef dağılımı", bfKatmanla(a.katmanla) ? "korunuyor" : "korunmuyor"]);
     }
-    return panel;
+    parcalar.push([a.seed_tur === "coklu" ? "Tekrar" : "Seed",
+        a.seed_tur === "coklu" ? bfTam(a.tekrar, 3) + " tekrar" : String(bfTam(a.seed, 42))]);
+    const alt = elYap("div", "bolme-ozet-alt");
+    parcalar.forEach(([k, v]) => {
+        const sp = elYap("span", "", k + ": ");
+        sp.appendChild(elYap("b", "", v));
+        alt.appendChild(sp);
+    });
+    kutu.appendChild(alt);
+
+    /* Bölme hesaplandıysa (kesin satır sayıları) sunucunun özeti de yazılır. */
+    const f = BF.veri || {};
+    const sunucu = (BF.ozet !== null && BF.ozet !== undefined) ? BF.ozet : (f.ozet || "");
+    if (sunucu && f.ozet_kesin && !bfDegisti())
+        kutu.appendChild(elYap("div", "bolme-ozet-kesin", sunucu));
+    kok.appendChild(kutu);
 }
 
-/* Panel seçimi. "Önerilen"e dönmek öneriyi UYGULAR: aksi halde panel
-   "önerilen" derken veride kullanıcının eski özel ayarı durur ve iki
-   ekran iki farklı bölme anlatırdı. */
-function bolmePaneliSec(anahtar) {
-    if (mesgul || BF.kaydediyor || BOLME.gonderildi) return;
-    if (anahtar === bolmeSecili()) return;
-    BOLME.mod = anahtar;
-    if (anahtar === "oneri" && bfDegisti() && !bfPasif())
-        bfKaydet({ oneri: true, mod: "oneri" });
-    else bolmeGovdeTazele();
+function bolmeCubukParca(sinif, genislik, metin, ipucu) {
+    const p = elYap("span", "bolme-cubuk-" + sinif, metin);
+    p.style.flexGrow = String(Math.max(genislik, 1));
+    p.title = ipucu || metin;
+    return p;
 }
 
-/* Panelin ayar listesi: dört grup, koşullu satırlar.
-   ozelMi=false -> salt okunur çip (önerilen panel)
-   pasif=true   -> panel seçili değil, kontroller kapalı */
-function bolmeAyarlariCiz(alan, ozelMi, pasif) {
+/* ---- KISITLAR: tek satırlık kutu ----
+   Kısıt yapılamayacak bir seçimi anlatır (dönem kolonu yok -> zamansal
+   bölme yok). Seçeneğin kendisi de üstü çizili ve pasif (bfCipDugmesi);
+   burada yalnızca ne yapılacağı yazılıyor. */
+function bolmeKisitCiz(kok, alan) {
+    const liste = alan.kisitlar || (BF.veri && BF.veri.kisitlar) || [];
+    if (!liste.length) return;
+    const kutu = elYap("div", "bolme-kisit");
+    kutu.appendChild(elYap("span", "bolme-kisit-im", "!"));
+    const metin = elYap("div", "bolme-kisit-metin");
+    liste.forEach(k => metin.appendChild(elYap("div", "", (k && k.metin) || String(k))));
+    kutu.appendChild(metin);
+    kok.appendChild(kutu);
+}
+
+/* Ayar listesi: dört grup, koşullu satırlar. */
+function bolmeAyarlariCiz(alan, pasif) {
     const al = (BF.veri && BF.veri.alanlar) || {};
     const kapali = pasif || bfPasif();
-    const oneriAyar = bolmeOneriAyari(alan);
     const kok = elYap("div", "bolme-ayarlar");
-
-    const satirlar = (alan.satirlar || []).filter(
-        sat => bolmeSatirGorunur(sat, ozelMi ? null : oneriAyar));
+    const satirlar = bolmeGorunurSatirlar(alan);
     (alan.bolumler || []).forEach(b => {
         const kendi = satirlar.filter(x => x.bolum === b.anahtar);
         if (!kendi.length) return;
         kok.appendChild(elYap("div", "bolme-grup-baslik", b.baslik || ""));
-        kendi.forEach(sat => kok.appendChild(
-            ozelMi ? bolmeSatirOzelCiz(sat, al, kapali)
-                   : bolmeSatirOneriCiz(sat)));
+        kendi.forEach(sat => kok.appendChild(bolmeSatirCiz(sat, al, kapali)));
     });
     return kok;
 }
 
-/* Satır görünür mü? KARŞILIĞI OLMAYAN SATIR HİÇ ÇİZİLMEZ: "Doğrulama
-   büyüklüğü" doğrulama seti kapalıyken, "OOT / Test dönemi" rastgele
+/* Satır görünür mü? KARŞILIĞI OLMAYAN SATIR HİÇ ÇİZİLMEZ: "Validasyon
+   büyüklüğü" validasyon seti kapalıyken, "Test (OOT) dönemi" rastgele
    bölmede ekranda duruyor ve ikisi de hiçbir şeyi değiştirmiyordu.
-   Sistem hepsini destekliyor ama ekran hiçbir zaman "20 inputlu form"
-   görünmüyor.
-
-   Koşul o panelin KENDİ değerlerinden hesaplanıyor: önerilen panel
-   öneriye, özel panel taslağa bakar. Yoksa "Rastgele" öneren bir planın
-   yanında "Zamansal" seçen kullanıcı iki farklı satır listesi görürdü. */
-function bolmeSatirGorunur(sat, oneriAyar) {
+   Koşul taslaktan hesaplanıyor. */
+function bolmeSatirGorunur(sat) {
     const k = sat.kosul;
     if (!k || !k.alan) return true;
-    const kaynak = oneriAyar || BF.alan || {};
+    const kaynak = BF.alan || {};
     return (k.degerler || []).some(
         v => bfKiyasDeger(k.alan, v) === bfKiyasDeger(k.alan, kaynak[k.alan]));
 }
 
-function bolmeSatirKabi(sat) {
-    const s = elYap("div", "bolme-satir");
+/* Bir satır: etiket | çipler (+ "önerilene dön") | i */
+function bolmeSatirCiz(sat, al, pasif) {
+    const farkli = bolmeSatirFarkli(sat);
+    const s = elYap("div", "bolme-satir" + (farkli ? " farkli" : ""));
     s.setAttribute("data-satir", sat.anahtar || "");
     s.appendChild(elYap("div", "bolme-satir-etiket", sat.etiket || ""));
-    return s;
-}
 
-/* Önerilen panel: her satır TEK, salt okunur çip. */
-function bolmeSatirOneriCiz(sat) {
-    const s = bolmeSatirKabi(sat);
-    const kutu = elYap("div", "bolme-cipler");
-    kutu.appendChild(elYap("span", "bolme-cip secili salt", sat.oneri || "-"));
-    s.appendChild(kutu);
-    return s;
-}
-
-/* Özel panel: çip şeridi (ya da gerçekten gerekliyse açılır liste). */
-function bolmeSatirOzelCiz(sat, al, pasif) {
-    const s = bolmeSatirKabi(sat);
+    const govde = elYap("div", "bolme-satir-govde");
     if (!(sat.alanlar || []).length) {
         /* Veriden gelen, bu adımda seçilemeyen değer: Dönem Kolonu,
            Bölme Kolonu. Modelleme Tanımları adımında belirlendi. */
         const kutu = elYap("div", "bolme-cipler");
-        kutu.appendChild(elYap("span", "bolme-cip salt",
-                               sat.salt || sat.oneri || "-"));
-        s.appendChild(kutu);
-        return s;
+        kutu.appendChild(elYap("span", "bolme-cip salt", sat.salt || sat.oneri || "-"));
+        govde.appendChild(kutu);
+    } else {
+        (sat.alanlar || []).forEach(ad => {
+            const el = bfCipAlani(ad, al, pasif);
+            if (el) govde.appendChild(el);
+        });
+        if (farkli && !pasif) {
+            const geri = document.createElement("button");
+            geri.type = "button";
+            geri.className = "bolme-geri-al";
+            geri.textContent = "önerilene dön";
+            geri.title = "Bu satırı önerilen değere döndür";
+            geri.onclick = (e) => { e.stopPropagation(); bolmeOnerileneDon(sat.alanlar); };
+            govde.appendChild(geri);
+        }
     }
-    (sat.alanlar || []).forEach(ad => {
-        const el = bfCipAlani(ad, al, pasif);
-        if (el) s.appendChild(el);
-    });
+    s.appendChild(govde);
+    s.appendChild(bolmeBilgiSimgesi(sat.bilgi, sat.etiket));
     return s;
+}
+
+/* "i" simgesi: fare üzerine gelince (ya da klavyeyle odaklanınca)
+   açıklama açılır. Metin arka uçtan geliyor (akis_durum.BOLME_SATIR_BILGI)
+   ve hiç bilmeyen için yazıldı; paragraflar boş satırla ayrılıyor. */
+function bolmeBilgiSimgesi(metin, baslik) {
+    const kap = elYap("span", "bolme-info" + (metin ? "" : " bos"));
+    if (!metin) return kap;
+    kap.tabIndex = 0;
+    kap.setAttribute("role", "button");
+    kap.setAttribute("aria-label", "Açıklama: " + tireSade(baslik || ""));
+    kap.appendChild(elYap("span", "bolme-info-i", "i"));
+    const tip = elYap("div", "bolme-tip");
+    tip.setAttribute("role", "tooltip");
+    if (baslik) tip.appendChild(elYap("div", "bolme-tip-bas", baslik));
+    String(metin).split(/\n\s*\n/).forEach(par => {
+        const p = elYap("div", "bolme-tip-p");
+        /* Tek satır sonu: satır kırılır (seçenek listesi gibi). */
+        par.split("\n").forEach((satir, i) => {
+            if (i) p.appendChild(document.createElement("br"));
+            p.appendChild(document.createTextNode(tireSade(satir)));
+        });
+        tip.appendChild(p);
+    });
+    kap.appendChild(tip);
+    /* Tıklama da açar (dokunmatik ekran): odak simgede kalır. */
+    kap.onclick = (e) => { e.stopPropagation(); kap.focus(); };
+    return kap;
 }
 
 /* ---- ÇİP ALANI ----
@@ -5417,10 +5505,14 @@ function bolmeOzelAyarla(ad, acik) {
     BOLME.ozelAcik[ad] = !!acik;
 }
 
-function bfCipDugmesi(ad, anahtar, etiket, secili, pasif, sec, aciklama) {
+function bfCipDugmesi(ad, anahtar, etiket, secili, pasif, sec, aciklama, oneri) {
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "bolme-cip" + (secili ? " secili" : "");
+    /* "oneri": çipte yeşil nokta - önerilen değer bu. Seçenek çiplerinde
+       ham anahtardan, yüzde/sayı çiplerinde çağıranın hesabından. */
+    const onerilen = (oneri === undefined) ? bfOneriMi(ad, anahtar) : !!oneri;
+    b.className = "bolme-cip" + (secili ? " secili" : "") + (onerilen ? " oneri" : "");
+    if (onerilen) b.setAttribute("data-oneri", "1");
     b.setAttribute("data-alan", ad);
     b.setAttribute("data-cip", String(anahtar));
     b.setAttribute("aria-pressed", secili ? "true" : "false");
@@ -5501,12 +5593,10 @@ function bfCipAlani(ad, al, pasif) {
             () => bfDegistir(ad, o.anahtar),
             o.aciklama));
     });
-    /* KURULAMAYAN SEÇENEĞİN SEBEBİ ALAN AÇIKKEN DE YAZILIR: "Zamansal
-       bölme kullanılamıyor - dönem kolonu uygun değil" kullanıcının
-       aksiyonunu doğrudan etkiliyor, sebepsiz pasif bir düğme ise
-       "bozuk" hissi veriyordu (kullanıcı kararı). */
-    const kilitliVar = secenekler.some(o => o.kilitli);
-    return bfCipKabi(kutu, not || (kilitliVar ? (k["not"] || "") : ""));
+    /* Kurulamayan seçeneğin sebebi SATIRDA TEKRAR YAZILMAZ: üstteki
+       kısıt kutusu aynı cümleyi söylüyor, seçenek de üstü çizili ve
+       ipucunda sebep var (o.aciklama / title). */
+    return bfCipKabi(kutu, not);
 }
 
 /* YÜZDE: hazır çipler (%10 %20 %30) + "Özel" -> 1-99 arası serbest kutu.
@@ -5522,15 +5612,18 @@ function bfCipYuzde(ad, k, kapali, not) {
     const acik = bolmeOzelAcikMi(ad, hazirMi);
 
     const kutu = elYap("div", "bolme-cipler");
+    const oneriYz = bfOneriYuzde(ad);
     hazir.forEach(h => {
         kutu.appendChild(bfCipDugmesi(
             ad, h, "%" + h, !acik && simdi === h, kapali,
-            () => { bolmeOzelAyarla(ad, false); bfDegistir(ad, h / 100); }));
+            () => { bolmeOzelAyarla(ad, false); bfDegistir(ad, h / 100); },
+            null, oneriYz === h));
     });
     kutu.appendChild(bfCipDugmesi(
         ad, "ozel", "Özel", acik, kapali,
         () => { bolmeOzelAyarla(ad, true); bfTazele(); },
-        "Kendi oranınızı yazın (%" + enAz + " - %" + enCok + ")."));
+        "Kendi oranınızı yazın (%" + enAz + " - %" + enCok + ").",
+        oneriYz !== null && hazir.indexOf(oneriYz) < 0));
 
     const kap = elYap("div", "bolme-satir-deger");
     kap.appendChild(kutu);
@@ -5598,16 +5691,21 @@ function bfCipSayi(ad, k, kapali, not, hazirHam) {
     const kap = elYap("div", "bolme-satir-deger");
     if (hazir.length) {
         const kutu = elYap("div", "bolme-cipler");
+        const oneriDeger = bfOneriDegeri(ad);
+        const oneriTam = (oneriDeger === undefined || oneriDeger === null)
+            ? null : bfTam(oneriDeger, NaN);
         hazir.forEach(h => {
             kutu.appendChild(bfCipDugmesi(
                 ad, h, etiketler[String(h)] || String(h),
                 !acik && simdi === h, kapali,
-                () => { bolmeOzelAyarla(ad, false); bfDegistir(ad, h); }));
+                () => { bolmeOzelAyarla(ad, false); bfDegistir(ad, h); },
+                null, oneriTam === h));
         });
         kutu.appendChild(bfCipDugmesi(
             ad, "ozel", "Özel", acik, kapali,
             () => { bolmeOzelAyarla(ad, true); bfTazele(); },
-            "Kendi değerinizi yazın (" + enAz + " - " + enCok + ")."));
+            "Kendi değerinizi yazın (" + enAz + " - " + enCok + ").",
+            oneriTam !== null && isFinite(oneriTam) && hazir.indexOf(oneriTam) < 0));
         kap.appendChild(kutu);
     }
 
@@ -5717,20 +5815,54 @@ function bolmeGovdeCiz(kok) {
     const alan = BOLME.alan || {};
     const kilitli = BOLME.gonderildi || !!(BOLME.blok && BOLME.blok.kilit);
 
-    /* UYARILAR SEÇİMİN ÜSTÜNDE (kullanıcı kararı): "aşağıda gözükmüyor
-       gözden kayboluyor". Uyarı seçimi etkilemek için var; panellerin
-       altına düşünce karar verildikten sonra okunuyordu. */
+    /* UYARILAR EN ÜSTTE: yapılan seçimin sonucunu anlatır ("eğitime
+       satır kalmaz"), karar verilmeden görülmeli. */
     bfUyariKutusuCiz(kok);
-    /* KISITLAR da seçimin üstünde: "Zamansal bölme kullanılamıyor -
-       dönem kolonu uygun değil" bilgisi kullanıcı aksiyonunu doğrudan
-       etkilediği için ekranda kalmalı. */
-    bfKisitCiz(kok, alan.kisitlar);
-    /* KİLİT BLOĞU da seçimin üstünde: bölme kilitliyken önce "neden
-       değiştiremiyorum"u, sonra panelleri görmek gerekiyor. */
+    /* KİLİT BLOĞU da üstte: bölme kilitliyken önce "neden
+       değiştiremiyorum" görülmeli. */
     if (BF.veri && BF.veri.kilitli) kok.appendChild(bfKilitCiz());
 
-    bolmePanellerCiz(kok, alan, kilitli);
-    bfOzetCiz(kok);
+    bolmeOzetCubukCiz(kok, alan);
+    bolmeKisitCiz(kok, alan);
+    kok.appendChild(bolmeAyarlariCiz(alan, kilitli));
+
+    /* Alt satır: açılır alanlar solda, düğmeler sağda. */
+    const alt = elYap("div", "bolme-alt");
+    const acilirlar = elYap("div", "bolme-alt-acilirlar");
+    bolmeGerekceCiz(acilirlar, alan);
+    bolmeSozlukCiz(acilirlar, alan, "tek");
+    alt.appendChild(acilirlar);
+
+    if (!BOLME.gonderildi) {
+        const dugmeler = elYap("div", "bolme-alt-dugmeler");
+        if (bolmeFarkSayisi(alan) > 0 && !kilitli && !bfPasif()) {
+            const geri = document.createElement("button");
+            geri.type = "button";
+            geri.className = "secim-onay bolme-onay ikincil";
+            geri.textContent = "Önerilene Dön";
+            geri.title = "Bütün ayarları önerilen değerlere döndür";
+            geri.onclick = (e) => {
+                e.stopPropagation();
+                bolmeOnerileneDon(Object.keys(bolmeOneriAyari(alan) || {}));
+            };
+            dugmeler.appendChild(geri);
+        }
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "secim-onay bolme-onay";
+        btn.setAttribute("data-bolme-onay", "1");
+        btn.textContent = tireSade(alan.buton || "Bu Ayarları Seç");
+        btn.disabled = kilitli || BF.kaydediyor || bfPasif();
+        if (btn.disabled && bfPasif())
+            btn.title = "Bölme kilitli; değiştirmek için önce kilidi açın.";
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            if (typeof BOLME.onayla === "function") BOLME.onayla();
+        };
+        dugmeler.appendChild(btn);
+        alt.appendChild(dugmeler);
+    }
+    kok.appendChild(alt);
 
     if (BF.not) {
         const n = elYap("div", "ft-not", BF.not);
@@ -5807,6 +5939,9 @@ function bolmeKartiEkle(alan, blok) {
         BF.kaydediyor = false;
         BF.zorlaOnay = false;
         BF.kilitAcik = false;
+        /* Taslak öneriyle başlar (geçmişten çizilen kilitli kartta
+           kayıtlı ayar gösterilir, öneriyle ezilmez). */
+        if (!gecmisten) bolmeTaslagiOneriyleDoldur(alan);
     }
 
     const butonMetni = tireSade(alan.buton || "Bu Ayarları Seç");
@@ -5839,22 +5974,18 @@ function bolmeKartiEkle(alan, blok) {
             gonder(butonMetni, false);
         }
 
-        /* Seçili panelin "Bu Ayarları Seç" düğmesi buraya bağlanır. */
+        /* "Bu Ayarları Seç": TASLAK ÖNCE KAYDEDİLİR, sonra adım
+           ilerler. Taslak öneriyle aynıysa öneri arka uçta uygulanır
+           ("oneri": true - iki tarafın ayrı öneri hesaplaması olmasın);
+           farklıysa taslak gönderilir. */
         BOLME.onayla = () => {
             if (mesgul || BOLME.gonderildi || bfPasif()) return;
-            /* TASLAK ÖNCE KAYDEDİLİR: ayrı bir "Kaydet" düğmesi yok,
-               bu düğme iki işi birden yapıyor. Kaydetmeden ilerletmek,
-               ekranda görünen ayarla veride uygulanan bölmenin
-               ayrışması demekti. */
-            if (bolmeOzellestirildi()) {
-                bfKaydet({ mod: bolmeSecili(), sonra: () => {
-                    bolmeKartiKilitle();
-                    ilerlet();
-                } });
-                return;
-            }
-            bolmeKartiKilitle();
-            ilerlet();
+            const sonra = () => { bolmeKartiKilitle(); ilerlet(); };
+            const fark = bolmeFarkSayisi(BOLME.alan || {});
+            BOLME.mod = fark ? "ozel" : "oneri";
+            if (fark === 0 && bfDegisti()) { bfKaydet({ oneri: true, mod: "oneri", sonra }); return; }
+            if (fark > 0 && bfDegisti()) { bfKaydet({ mod: "ozel", sonra }); return; }
+            sonra();
         };
     }
 
@@ -5862,10 +5993,7 @@ function bolmeKartiEkle(alan, blok) {
     rozetiBasligaTasi(blok, durumEl);
     sohbetEl.scrollTop = sohbetEl.scrollHeight;
     if (gecmisten) return;
-    /* Odak SEÇİLİ PANELİN düğmesine gider: klavyeyle gelen kullanıcı
-       önce hangi ayarın seçili olduğunu görsün, sonra Enter'a bassın. */
-    yeniOdak = govde.querySelector(".bolme-panel.secili .bolme-panel-onay")
-        || govde.querySelector(".bolme-panel-onay");
+    yeniOdak = govde.querySelector("[data-bolme-onay]");
 }
 
 

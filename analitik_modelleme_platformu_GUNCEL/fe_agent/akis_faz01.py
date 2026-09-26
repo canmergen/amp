@@ -2873,7 +2873,11 @@ def _tip_secimlerini_dogrula(durum):
 # BASLIK ALTINDA TEK CUMLE (kullanici karari: "uzun yönlendirmelerin
 # hiçbirine gerek yok"). Ekranin geri kalani secimin kendisi.
 BOLME_ACIKLAMA = (
-    "Model geliştirme ve OOT / Test bölme yaklaşımınızı seçin.")
+    "Veri üç sete ayrılır: modelin öğrendiği Train (MS), model ayarlarının "
+    "seçildiği Validasyon (OOS) ve nihai ölçümün yapıldığı Test (OOT). "
+    "Aşağıdaki ayarlar veri yapınıza göre önerilen değerlerle dolu; "
+    "değiştirmek için satırdaki seçeneğe tıklayın, açıklama için «i» "
+    "simgesine gelin.")
 
 # SUTUN BASLIKLARI. Mod SECIMI DEGIL: iki sutun ayni anda ekranda
 # duruyor (kullanici karari: "yanyana durmaları, birine basınca

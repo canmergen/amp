@@ -2279,66 +2279,55 @@ button.ozet-kart:focus-visible {
 }
 .bf-kisit { font-size: var(--fs-govde); color: var(--metin); line-height: 1.5; }
 
-/* ==================== Bölme Stratejisi kartı ====================
-   ---- İKİ SEÇİLEBİLİR PANEL ----
-
-     ┌ ● ÖNERİLEN AYARLAR ┐ ┌ ○ ÖZEL AYARLAR ┐
-     │  aynı gruplar      │ │  aynı gruplar  │
-     │  [Bu Ayarları Seç] │ │ [Bu Ayarları Seç]│
-     └────────────────────┘ └────────────────┘
-
-   Kip seçimi YOK: iki panel aynı anda ekranda, aynı satırlar aynı
-   sırada. Seçili panel tam opaklıkta, kırmızı çerçeveli ve çok hafif
-   kırmızı zeminli; diğeri soluk ve kontrolleri kapalı. Panelin
-   herhangi bir yerine basmak onu seçer.
-
-   İKİ PANEL EŞİT YÜKSEKLİKTE ve düğmeleri aynı hizada: alt alta
-   kayan iki düğme "hangisi asıl" sorusunu doğuruyordu. */
-.bolme-paneller {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--b-4); margin-top: var(--b-4); align-items: stretch;
+/* ---- Bölme kartı: tek liste, özet çubuğu, bilgi simgesi ----
+   (kullanıcı kararı: iki sütun yerine tek liste; önerilen değerler
+   seçili gelir, sapan satır kehribar, üstte "veri nasıl bölünecek"). */
+.bolme-ozet {
+  margin-top: var(--b-3); padding: var(--b-3) var(--b-4);
+  background: var(--yuzey-alt); border: 1px solid var(--kenar);
+  border-radius: var(--r);
 }
-.bolme-panel {
-  display: flex; flex-direction: column; min-width: 0;
-  padding: var(--b-4);
-  background: var(--yuzey);
-  border: 1px solid var(--kenar); border-radius: var(--r);
-  transition: opacity .15s, border-color .15s, background .15s;
+.bolme-ozet-bas {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--b-3); margin-bottom: var(--b-2); font-size: var(--fs-govde);
 }
-.bolme-panel.secili {
-  border-color: var(--kirmizi); background: var(--kirmizi-acik);
+.bolme-rozet {
+  padding: 1px var(--b-3); border-radius: 10px;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); white-space: nowrap;
 }
-/* Soluk panel GÖRÜNÜR ama kullanılmaz: içeriği okunabilir kalmalı ki
-   kullanıcı "ben ne yapabilirim"i görsün (kullanıcı kararı). */
-.bolme-panel.soluk { opacity: .55; cursor: pointer; }
-.bolme-panel.soluk:hover { opacity: .8; border-color: var(--kenar-guclu); }
-.bolme-panel.soluk:focus-visible {
-  outline: var(--halka) solid var(--kirmizi-halka); outline-offset: 2px;
-  opacity: .8;
+.bolme-rozet.oneri { background: var(--yesil-acik); color: var(--yesil); }
+.bolme-rozet.ozel  { background: var(--amber-acik); color: var(--amber); }
+.bolme-cubuk {
+  display: flex; height: 26px; border-radius: var(--r-kucuk); overflow: hidden;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: #fff;
 }
-
-.bolme-panel-bas {
-  display: flex; align-items: flex-start; gap: var(--b-3);
-  padding-bottom: var(--b-3); border-bottom: 1px solid var(--kenar);
+.bolme-cubuk > span {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 0; padding: 0 6px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; flex-basis: 0;
 }
-.bolme-radyo {
-  flex: 0 0 auto; width: 15px; height: 15px; margin-top: 2px;
-  border: 2px solid var(--kenar-guclu); border-radius: 50%;
-  background: var(--yuzey);
-}
-.bolme-radyo.secili {
-  border-color: var(--kirmizi); background: var(--kirmizi);
-  box-shadow: inset 0 0 0 2px var(--kirmizi-acik);
-}
-.bolme-panel-ust { min-width: 0; }
-.bolme-panel-ad {
-  font-size: var(--fs-baslik); font-weight: var(--fw-kalin);
-  color: var(--metin); line-height: 1.3;
-}
-.bolme-panel-not {
+.bolme-cubuk-egitim { background: #3B5F9E; }
+.bolme-cubuk-val    { background: #6E8FCF; }
+.bolme-cubuk-gap    { background: var(--kenar-guclu); color: var(--metin); }
+.bolme-cubuk-test   { background: var(--kirmizi); }
+.bolme-ozet-alt {
+  display: flex; flex-wrap: wrap; gap: 4px var(--b-4); margin-top: var(--b-2);
   font-size: var(--fs-kucuk); color: var(--metin-soluk);
-  line-height: 1.45; margin-top: 2px;
 }
+.bolme-ozet-alt b { color: var(--metin); font-weight: var(--fw-kalin); }
+.bolme-ozet-kesin {
+  margin-top: var(--b-2); font-size: var(--fs-kucuk); color: var(--metin);
+}
+
+/* Kısıt: tek kutu, kehribar. Seçeneğin kendisi de pasif (üstü çizili). */
+.bolme-kisit {
+  display: flex; gap: var(--b-2); align-items: flex-start;
+  margin-top: var(--b-3); padding: var(--b-2) var(--b-3);
+  background: var(--amber-acik); border: 1px solid var(--amber);
+  border-radius: var(--r-kucuk); font-size: var(--fs-kucuk); line-height: 1.45;
+}
+.bolme-kisit-im { color: var(--amber); font-weight: var(--fw-kalin); }
+.bolme-kisit-metin { color: var(--metin); }
 
 /* ---- Ayar grupları ve satırlar ----
    ETİKET ÜSTTE, DEĞER ALTTA: iki sütunlu bir satır dar panelde
@@ -2351,12 +2340,84 @@ button.ozet-kart:focus-visible {
   border-bottom: 1px solid var(--kenar-acik);
 }
 .bolme-ayarlar > .bolme-grup-baslik:first-child { margin-top: 0; }
-.bolme-satir { padding: var(--b-3) 0 0; min-width: 0; }
+.bolme-satir {
+  display: grid; grid-template-columns: 11rem minmax(0, 1fr) 20px;
+  align-items: center; gap: var(--b-2) var(--b-3);
+  padding: 4px var(--b-2); margin: 2px 0; border-radius: var(--r-kucuk);
+  min-width: 0;
+}
+.bolme-satir:hover { background: var(--yuzey-alt); }
 .bolme-satir-etiket {
-  font-size: var(--fs-govde); color: var(--metin); line-height: 1.35;
-  margin-bottom: var(--b-2);
+  font-size: var(--fs-govde); color: var(--metin-soluk); line-height: 1.35;
+}
+.bolme-satir-govde {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--b-2); min-width: 0;
 }
 .bolme-satir-deger { min-width: 0; }
+/* Önerilenden sapan satır: kehribar; çip de kehribar çerçeveli. */
+.bolme-satir.farkli { background: var(--amber-acik); }
+.bolme-satir.farkli .bolme-satir-etiket { color: var(--amber); }
+.bolme-satir.farkli .bolme-cip.secili {
+  border-color: var(--amber); color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber);
+}
+.bolme-geri-al {
+  border: none; background: none; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: var(--fs-kucuk); color: var(--mavi, #2B5DB8);
+  text-decoration: underline;
+}
+/* Önerilen değer: çipin sağında yeşil nokta. */
+.bolme-cip.oneri::after {
+  content: ""; display: inline-block; width: 6px; height: 6px;
+  margin-left: 5px; border-radius: 50%; background: var(--yesil);
+}
+/* Kilitli seçenek (veriden gelen kısıt): üstü çizili. */
+.bolme-cip:disabled:not(.salt):not(.secili) { text-decoration: line-through; }
+
+/* "i" simgesi ve fareyle açılan açıklama */
+.bolme-info { position: relative; display: inline-flex; justify-content: center; width: 20px; }
+.bolme-info.bos { visibility: hidden; }
+.bolme-info-i {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 1px solid var(--kenar-guclu); color: var(--metin-soluk);
+  font-size: 10px; font-weight: var(--fw-kalin); font-style: italic;
+  display: flex; align-items: center; justify-content: center; cursor: help;
+}
+.bolme-info:hover .bolme-info-i, .bolme-info:focus .bolme-info-i,
+.bolme-info:focus-within .bolme-info-i {
+  border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
+}
+.bolme-tip {
+  display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 30;
+  width: 22rem; max-width: 70vw; padding: var(--b-3) var(--b-4);
+  background: var(--yuzey); color: var(--metin);
+  border: 1px solid var(--kenar); border-radius: var(--r); box-shadow: var(--golge-2);
+  font-size: var(--fs-kucuk); line-height: 1.5; text-align: left; white-space: normal;
+  font-style: normal; font-weight: var(--fw-normal);
+}
+.bolme-info:hover .bolme-tip, .bolme-info:focus .bolme-tip,
+.bolme-info:focus-within .bolme-tip { display: block; }
+.bolme-tip-bas { font-weight: var(--fw-kalin); margin-bottom: 4px; }
+.bolme-tip-p + .bolme-tip-p { margin-top: 6px; }
+
+/* Alt satır: açılırlar solda, düğmeler sağda */
+.bolme-alt {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--b-3);
+  flex-wrap: wrap; margin-top: var(--b-4); padding-top: var(--b-3);
+  border-top: 1px solid var(--kenar-acik);
+}
+.bolme-alt-acilirlar { display: flex; gap: var(--b-4); flex-wrap: wrap; flex: 1 1 auto; min-width: 0; }
+.bolme-alt-acilirlar .bolme-acilir { margin-top: 0; }
+/* Açılır gövde tam genişlikte, düğme satırının altına iner. */
+.bolme-alt-acilirlar .bolme-acilir.acik { flex-basis: 100%; }
+.bolme-alt-dugmeler { display: flex; gap: var(--b-2); margin-left: auto; }
+.bolme-kart .bolme-onay { margin-top: 0; width: auto; padding: 0 var(--b-5); }
+.bolme-kart .bolme-onay.ikincil {
+  background: var(--yuzey); color: var(--kirmizi); border: 1px solid var(--kirmizi);
+}
+@media (max-width: 700px) {
+  .bolme-satir { grid-template-columns: minmax(0, 1fr) 20px; }
+  .bolme-satir-govde { grid-column: 1 / 2; }
+}
 
 /* ---- Çip şeridi ----
    Açılır liste yerine seçilebilir çip: seçim ekranı olduğu bir bakışta
@@ -2441,22 +2502,9 @@ span.bolme-cip { cursor: default; }
 .bolme-terim-ad:first-child { margin-top: 0; }
 .bolme-terim-ack { color: var(--metin-soluk); }
 
-/* Panel düğmesi EN ALTTA ve iki panelde aynı hizada: "margin-top: auto"
-   kalan boşluğu düğmenin üstüne itiyor, böylece sözlüğü açık olan panel
-   uzasa bile iki düğme aynı satırda kalıyor. Seçicinin özgüllüğü
-   ".bolme-kart .secim-onay" kuralını geçecek kadar yüksek olmalı. */
-.bolme-kart .bolme-panel-onay { margin-top: auto; padding-top: var(--b-4); }
 
-/* Dar ekranda paneller alt alta. */
-@media (max-width: 860px) {
-  .bolme-paneller { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* Kart kilitliyken iki panel de soluk: karar verildi, artık okunacak
-   bir kayıt. Seçili panelin kırmızı çerçevesi duruyor ki hangi ayarın
-   uygulandığı görünsün. */
-.bolme-kart.kilitli .bolme-panel { opacity: .6; }
-.bolme-kart.kilitli .bolme-panel.soluk { opacity: .4; cursor: default; }
+/* Kart kilitliyken liste soluk: karar verildi, artık okunacak bir kayıt. */
+.bolme-kart.kilitli .bolme-ayarlar { opacity: .7; }
 
 /* ============ SAYFA 2: MODEL GELİŞTİRME DOKÜMANI ====================
    Yeni renk ya da yeni kart biçimi YOK: kırmızı başlık + beyaz yüzey +

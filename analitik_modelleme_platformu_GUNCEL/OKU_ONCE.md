@@ -1,5 +1,24 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **Örneklem ve Doğrulama Tasarımı kartı yeniden tasarlandı**.
+Yapıştır: `akis_durum.py` → `akis_panel.py` → `akis_faz01.py` (fe_agent);
+`style.css` → `app.js` (webapp)
+
+- Set adları: **Train (MS) · Validasyon (OOS) · Test (OOT)** — kart, sağ
+  panel set seçici, uyarılar ve sözlük dahil her yerde.
+- İki sütun (Önerilen / Özel) yerine **tek liste**: önerilen değer seçili
+  ve yeşil noktalı gelir; tıklayınca değişir. Sapan satır kehribar, yanında
+  "önerilene dön"; üstte "Önerilenden N fark" rozeti ve "Önerilene Dön".
+- **"Veri nasıl bölünecek" çubuğu**: üç setin payı (rastgele) ya da dönem
+  sırası (zamansal), her tıklamada güncellenir; altında tek satır özet.
+- Her satırda **i simgesi**: fareyle açılan, hiç bilmeyen için yazılmış
+  açıklama (`akis_durum.BOLME_SATIR_BILGI`). "Detaylar ve Terimler" de
+  aynı özende yeniden yazıldı (CV nedir, kat ne yapar…).
+- Kısıtlar tek kutuda; kullanılamayan seçenek üstü çizili.
+- Arka uç sözleşmesi (`/bolme_kaydet`) değişmedi.
+
+---
+
 Bu tur: **"refresh ekranı boşalttı" düzeltmesi**. Yapıştır (webapp): `app.js`
 
 - Sebep: yeni app.js, eski index.html'de olmayan Onayla/Reddet düğmelerini

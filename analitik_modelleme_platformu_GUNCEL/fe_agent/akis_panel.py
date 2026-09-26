@@ -12,6 +12,7 @@ from fe_agent.akis_metin import (
     BIRLESTIREN_MODLAR, MOD_ADLARI, SOZLUK_URETEN_MODLAR)
 from fe_agent.akis_durum import (
     AMP_SOZLUK_ADI, AMP_VERI_ADI, BOLME_ALAN_ACIKLAMA, BOLME_ALAN_BASLIK,
+    BOLME_SATIR_BILGI,
     LINEAGE_ADI, SOZLUK_ADI, TRAIN_KULLANIMI_BASLIK, _ond, _sayi,
     BOLME_BOLUMLERI, BOLME_SATIRLARI,
     BOLME_SOZLUK, GAP_EN_COK, TEKRAR_EN_COK,
@@ -1474,7 +1475,7 @@ def bolme_formu(durum):
     if test_oran["kilitli"]:
         # KILITLI ALAN SEBEBINI YAZAR. Soluk bir "%20" tek basina
         # "neden dokunamiyorum" sorusunu doguruyordu.
-        test_oran["not"] = ("Zamansal bölmede OOT / Test dönemlere göre "
+        test_oran["not"] = ("Zamansal bölmede Test (OOT) dönemlere göre "
                             "ayrılıyor; bu pay kullanılmıyor.")
     val_oran = _alan("val_oran", int(round(100 * a["val_oran"])),
                      tip="yuzde", hazir=[10, 20, 30],
@@ -1483,7 +1484,7 @@ def bolme_formu(durum):
                      toplam_satir=satir,
                      kilitli=not a["val_var"])
     if val_oran["kilitli"]:
-        val_oran["not"] = ("Doğrulama seti kapalı; açarsanız bu pay "
+        val_oran["not"] = ("Validasyon (OOS) seti kapalı; açarsanız bu pay "
                            "kullanılır.")
 
     birim_kisit = _kisit("birim", "kimlik")
@@ -1539,7 +1540,7 @@ def bolme_formu(durum):
                                               "değerlendirme seti ayrılır."},
                                  {"anahtar": "kullanma",
                                   "etiket": "Kullanma",
-                                  "aciklama": "Ayrı bir doğrulama seti "
+                                  "aciklama": "Ayrı bir validasyon seti "
                                               "açılmaz."}]),
             "seed_tur": _alan("seed_tur", a["seed_tur"],
                               secenekler=bolme_secenek_listesi(
@@ -1587,10 +1588,10 @@ def _hazir_bolme_notu(hazir):
     for ad in ("egitim", "val", "test", "oot"):
         n = sayim.get(ad)
         if n:
-            parcalar.append("%s %s" % ({"egitim": "eğitim",
-                                        "val": "doğrulama",
-                                        "test": "test",
-                                        "oot": "test"}[ad], _sayi(int(n))))
+            parcalar.append("%s %s" % ({"egitim": "Train (MS)",
+                                        "val": "Validasyon (OOS)",
+                                        "test": "Test (OOT)",
+                                        "oot": "Test (OOT)"}[ad], _sayi(int(n))))
     return ("Veri setinde hazır bölme bulundu (%s): %s. Kolonlara "
             "dokunulmaz, yalnızca okunur."
             % (", ".join(hazir.get("kolonlar") or []),
@@ -1626,6 +1627,8 @@ def bolme_satirlari(durum, oneri_ayarlari=None):
             "bolum": tanim["bolum"],
             "alanlar": list(tanim["alanlar"]),
             "oneri": bolme_satir_degeri(tanim["anahtar"], a_oneri, durum),
+            # "i" simgesinde acilan aciklama (bkz. akis_durum.BOLME_SATIR_BILGI)
+            "bilgi": BOLME_SATIR_BILGI.get(tanim["anahtar"], ""),
         }
         if tanim.get("salt"):
             kayit["salt"] = bolme_satir_degeri(tanim["anahtar"],
