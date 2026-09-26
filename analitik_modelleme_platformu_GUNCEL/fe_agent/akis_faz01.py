@@ -876,6 +876,68 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
         "sablon": "veri seti {veri_seti} ve sözlük {sozluk}",
     }
 
+def _kolon_listesi_metni(kolonlar, en_fazla=8):
+    kolonlar = [str(k) for k in kolonlar]
+    ek = " …" if len(kolonlar) > en_fazla else ""
+    return ", ".join(kolonlar[:en_fazla]) + ek
+
+
+def _sozluk_denetle(sozluk_ad, veri_ad):
+    """Sozlugun girdi olarak KABUL edilip edilemeyecegi. Hata metni ya da
+    None doner (kullanici karari: "sözlükte kolon adı ve açıklama kolonu
+    olmalı; kontrollerden geçmeden onaylanmamalı").
+
+    Denetimler, sonraki adimlarin sozlugu okurken kullandigi kurallarin
+    AYNISI (sozluk_calisma.degisken_kolonu_bul / tanim_kolonu_bul):
+      1. Aciklama kolonu var: ACIKLAMA / AÇIKLAMA / TANIM / DESCRIPTION.
+      2. Kolon adi kolonu veri setinin kolonlarini gercekten tasiyor: en
+         az bir veri kolonu sozlukte geciyor (buyuk/kucuk harf farksiz).
+         Ad kolonu bilinen adlardan biri degilse ilk kolon varsayiliyor;
+         eslesme yoksa bu varsayim yanlis demektir.
+      3. Eslesen kolonlardan en az birinin aciklamasi dolu.
+    Hepsi gecmeden adim ilerlemez; kart onayli gorunmez."""
+    try:
+        sz = _df_oku(sozluk_ad)
+    except Exception as e:
+        return "'%s' sözlüğü okunamadı: %s" % (sozluk_ad, str(e)[:160])
+    try:
+        veri_kolonlari = [str(c) for c in _df_oku(veri_ad, limit=5).columns]
+    except Exception as e:
+        return "'%s' veri seti okunamadı: %s" % (veri_ad, str(e)[:160])
+    if sz is None or not len(sz.columns) or not len(sz):
+        return "'%s' sözlüğü boş; içinde satır yok." % sozluk_ad
+
+    sozluk_kolonlari = _kolon_listesi_metni(sz.columns)
+    tanim_k = sozluk_calisma.tanim_kolonu_bul(sz)
+    if tanim_k is None:
+        return ("'%s' sözlüğünde açıklama kolonu bulunamadı. Kolonların "
+                "açıklamasını taşıyan kolonun adı ACIKLAMA, TANIM ya da "
+                "DESCRIPTION olmalı. Sözlüğün kolonları: %s."
+                % (sozluk_ad, sozluk_kolonlari))
+
+    ad_k = sozluk_calisma.degisken_kolonu_bul(sz)
+    sozluk_adlari = {str(x).strip().upper() for x in sz[ad_k].dropna()}
+    eslesen = [c for c in veri_kolonlari if c.strip().upper() in sozluk_adlari]
+    if not eslesen:
+        return ("'%s' sözlüğünde '%s' veri setinin kolon adlarını taşıyan "
+                "bir kolon bulunamadı. Kolon adlarını taşıyan kolonun adı "
+                "DEGISKEN, KOLON ya da VARIABLE olmalı (ya da sözlüğün ilk "
+                "kolonu olmalı) ve içindeki adlar veri setindekilerle aynı "
+                "yazılmalı. Sözlüğün kolonları: %s. Veri setinden örnek "
+                "kolonlar: %s."
+                % (sozluk_ad, veri_ad, sozluk_kolonlari,
+                   _kolon_listesi_metni(veri_kolonlari, 5)))
+
+    tanimlar = sz[tanim_k].fillna("").astype(str).str.strip()
+    adlar = sz[ad_k].astype(str).str.strip().str.upper()
+    dolu = set(adlar[tanimlar != ""])
+    if not any(c.strip().upper() in dolu for c in eslesen):
+        return ("'%s' sözlüğünde veri setiyle eşleşen %d kolonun hiçbirinin "
+                "açıklaması dolu değil ('%s' kolonu boş)."
+                % (sozluk_ad, len(eslesen), tanim_k))
+    return None
+
+
 def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     """yeniden_sor=True ('Değiştir'): mevcut degerlerle DOLU form acilir."""
     a = niyet_kural.alanlari_cikar(mesaj) if mesaj else {}
@@ -905,6 +967,11 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
             _kurulum_formu(durum, veri, sozluk)
             return False, ("'%s' adında bir tabloya erişemiyorum. "
                            "Adı kontrol edip yeniden seçin." % ad)
+
+    hata = _sozluk_denetle(sozluk, veri)
+    if hata:
+        _kurulum_formu(durum, veri, sozluk)
+        return False, "Girdiler onaylanmadı. " + hata
 
     durum["veri_seti"], durum["sozluk"] = veri, sozluk
     durum["_secim_alani"] = None
@@ -974,6 +1041,15 @@ def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
         _kaynak_sozluk_formu(durum, secim)
         return False, ("Erişemediğim sözlükler: %s\n\n"
                        "Adlarını kontrol eder misiniz?" % ", ".join(erisilemeyen))
+
+    hatalar = []
+    for tablo, sozluk in secim.items():
+        hata = _sozluk_denetle(sozluk, tablo)
+        if hata:
+            hatalar.append("• %s: %s" % (tablo, hata))
+    if hatalar:
+        _kaynak_sozluk_formu(durum, secim)
+        return False, ("Sözlükler onaylanmadı:\n" + "\n".join(hatalar))
 
     durum["kaynak_sozlukler"] = secim
     durum["_secim_alani"] = None

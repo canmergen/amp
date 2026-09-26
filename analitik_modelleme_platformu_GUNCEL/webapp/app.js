@@ -122,6 +122,12 @@ let mesgul = false;
 
 /* Hata olursa tiklanan kart grubunu / secim kartini eski haline dondurur */
 let geriAlKilit = null;
+/* KONTROLDEN GEÇMEDEN ONAY YOK (kullanıcı kararı). Form kartı
+   gönderilince "Kontrol Ediliyor…" der; "✓ Girdiler Onaylandı" ancak
+   sunucu girdiyi KABUL EDİNCE yazılır (bkz. gonderimSonucu). Reddederse
+   (tablo yok, sözlükte kolon adı ya da açıklama kolonu yok...) kart
+   onaylı görünmez: yerine düzeltilebilir yeni form gelir. */
+let bekleyenGonderim = null;   // {kart, durumEl, adim, geriAl}
 /* Yanit sonrasi odaklanilacak yeni etkilesimli oge */
 let yeniOdak = null;
 
@@ -600,20 +606,22 @@ function fazlariYukle(liste) {
     FAZLAR.forEach(f => f.adimlar.forEach(a => { DUZ_ADIMLAR[a.sira] = a; }));
 }
 
-/* ANALİTİK SÜREÇ açılır kapanır. Çalışma başlamadan (başlangıç
-   seçimi ekranında) açık durur: platformu ilk kez gören kullanıcı ne
-   yapıldığını orada okuyor. Başlangıç seçildikten sonra kendiliğinden
-   kapanır; iki paragraf İŞ AKIŞI'nın yerini yiyordu ve iş akışı adım
-   adım uzadıkça listenin altı ekrandan taşıyordu.
-   Kullanıcı başlığa bastıysa ONUN SEÇİMİ geçerli (surecElle), otomatik
-   kural bir daha karışmaz; Yeni Çalışma / çalışma değiştirme sıfırlar. */
+/* ANALİTİK SÜREÇ açılır kapanır. KENDİLİĞİNDEN KAPANMAZ (kullanıcı
+   kararı: "analitik süreç sol tarafta kapanmamalı"). Eskiden başlangıç
+   seçildikten sonra otomatik kapanıyordu. Artık yalnızca kullanıcı
+   başlığa basınca kapanır ya da açılır; seçim tarayıcıda saklanır,
+   sayfa yenilense ya da başka çalışmaya geçilse de korunur. */
 const surecBlok = document.getElementById("surec-blok");
 const surecBas  = document.getElementById("surec-bas");
-let surecElle = null;          // null: otomatik | true: açık | false: kapalı
+const SUREC_DEPO_ANAHTARI = "fe_agent_surec_acik";
+let surecElle = (() => {       // null: seçim yok (açık) | true | false
+    const v = depoOku(SUREC_DEPO_ANAHTARI);
+    return v === "1" ? true : (v === "0" ? false : null);
+})();
 
 function surecGuncelle() {
     if (!surecBlok || !surecBas) return;
-    const acik = surecElle !== null ? surecElle : aktifAdim === 0;
+    const acik = surecElle !== null ? surecElle : true;
     surecBlok.classList.toggle("kapali", !acik);
     surecBas.setAttribute("aria-expanded", acik ? "true" : "false");
     surecBas.title = acik ? "Açıklamayı gizle" : "Açıklamayı göster";
@@ -621,6 +629,7 @@ function surecGuncelle() {
 if (surecBas) {
     surecBas.onclick = () => {
         surecElle = surecBlok.classList.contains("kapali");
+        depoYaz(SUREC_DEPO_ANAHTARI, surecElle ? "1" : "0");
         surecGuncelle();
     };
 }
@@ -6669,13 +6678,24 @@ function secimAlaniEkle(alan, blok) {
     let kilitEk = null;
 
     /* Gonderim: dugme gizlenir, durumu gosterge anlatir. */
-    function kartiKilitle() {
+    /* gonderim=true: kullanıcı ŞİMDİ gönderdi, sonuç henüz belli değil.
+       gonderim=false: geçmişten çizim; adım zaten kabul edilmişti. */
+    function kartiKilitle(gonderim) {
         kart.classList.add("kilitli");
-        durumEl.textContent = SECIM_HAZIR;
-        durumEl.classList.add("hazir", "onayli");
+        if (gonderim) {
+            durumEl.textContent = "Kontrol Ediliyor…";
+            durumEl.classList.remove("hazir", "onayli");
+        } else {
+            durumEl.textContent = SECIM_HAZIR;
+            durumEl.classList.add("hazir", "onayli");
+        }
         onayBtn.hidden = true;
         onayBtn.disabled = true;
         if (kilitEk) kilitEk();
+    }
+    function gonderimiKaydet(geriAl) {
+        bekleyenGonderim = { kart: kart, durumEl: durumEl,
+                             adim: (blok && blok.adim) || "", geriAl: geriAl };
     }
     function kilidiAc() {
         kart.classList.remove("kilitli");
@@ -6777,7 +6797,7 @@ function secimAlaniEkle(alan, blok) {
             if (mesgul || secilenler.length < (alan.min || 1)) return;
             const siller = Array.from(rozetler.querySelectorAll(".secim-yuvarlak.sil"));
 
-            kartiKilitle();
+            kartiKilitle(true);
             ekleBtn.disabled = true;
             combo.giris.disabled = true;
             siller.forEach(b => { b.disabled = true; });
@@ -6789,6 +6809,7 @@ function secimAlaniEkle(alan, blok) {
                 siller.forEach(b => { b.disabled = false; });
                 durumTazele();
             };
+            gonderimiKaydet(geriAlKilit);
 
             gonder((alan.sablon || "{liste}").replace("{liste}", secilenler.join(", ")),
                    false);
@@ -6870,7 +6891,7 @@ function secimAlaniEkle(alan, blok) {
                 combolar[k].giris.value = v;
                 metin = metin.replace("{" + k + "}", v);
             });
-            kartiKilitle();
+            kartiKilitle(true);
             Object.keys(combolar).forEach(k => { combolar[k].giris.disabled = true; });
 
             /* Hata olursa form ESKI ACIK haline donsun */
@@ -6879,6 +6900,7 @@ function secimAlaniEkle(alan, blok) {
                 Object.keys(combolar).forEach(k => { combolar[k].giris.disabled = false; });
                 durumTazele();
             };
+            gonderimiKaydet(geriAlKilit);
 
             gonder(metin, false);
         };
@@ -6894,7 +6916,7 @@ function secimAlaniEkle(alan, blok) {
     /* GECMISTEN YENIDEN CIZIM: kart kilitli acilir. Adim zaten
        tamamlandi; kullanici degeri degistirecekse Geri Dön'e basar.
        Odak da verilmez, sayfa eski bir bloga atlamamali. */
-    if (blok && blok.kilit) { kartiKilitle(); return; }
+    if (blok && blok.kilit) { kartiKilitle(false); return; }
     yeniOdak = kart.querySelector(".combo-giris") || kart.querySelector(".secim-onay");
 }
 
@@ -7032,6 +7054,38 @@ function kilitle(durum) {
     fazEl.querySelectorAll(".adim-git").forEach(b => { b.disabled = durum; });
 }
 
+/* Gönderilen form kartının sonucu. AYNI ADIM hâlâ girdi bekliyorsa
+   sunucu girdiyi REDDETTİ: yeni bir form geliyorsa eski kart (ve
+   başlıktaki rozeti) kaldırılır, yenisi uyarıyla birlikte yerine
+   çizilir; form gelmiyorsa eski kart yeniden açılır. Aksi halde girdi
+   kabul edildi: rozet "✓ Girdiler Onaylandı" olur. */
+/* Döndürdüğü işlev yanıt ÇİZİLDİKTEN SONRA çağrılır. Ret uyarısı o
+   anda ekrana geliyor; "red-uyari" işareti alır ki girdi sonunda kabul
+   edilince onaylanmış bölümde "onaylanmadı" yazısı kalmasın. */
+function gonderimSonucu(g, d) {
+    const kap = g.kart.parentElement;
+    const reddedildi = d && d.bekleyen === "girdi" && d.adim_anahtari === g.adim;
+    if (reddedildi) {
+        const onceki = new Set(kap ? kap.querySelectorAll(":scope > .balon") : []);
+        if (d.secim_alani) {
+            try { g.durumEl.remove(); g.kart.remove(); } catch (e) { /* yok say */ }
+        } else {
+            try { g.geriAl(); } catch (e) { /* yok say */ }
+        }
+        return () => {
+            if (!kap) return;
+            kap.querySelectorAll(":scope > .balon").forEach(b => {
+                if (!onceki.has(b)) b.classList.add("red-uyari");
+            });
+        };
+    }
+    g.durumEl.textContent = SECIM_HAZIR;
+    g.durumEl.classList.add("hazir", "onayli");
+    if (kap) kap.querySelectorAll(":scope > .balon.red-uyari").forEach(b => b.remove());
+    blokDurumPlanla();
+    return null;
+}
+
 /* Hata/iptal yolunda: tiklanan kart grubunu ve secim kartini eski haline dondur */
 function kartlariGeriAl() {
     if (!geriAlKilit) return;
@@ -7040,6 +7094,7 @@ function kartlariGeriAl() {
 }
 
 function istegiIptalEt(neden) {
+    bekleyenGonderim = null;
     if (!istekKontrol) return;
     istekDurumu = neden || "iptal";
     try { istekKontrol.abort(); } catch (e) { /* yok say */ }
@@ -7158,12 +7213,17 @@ function gonder(metinDisaridan, etiket, ekGovde) {
            ekranda yeni kart gelmez: tiklanan kartlari geri acmak SART. */
         const hataMi = !!d && (d.hata === true
             || (typeof d.cevap === "string" && d.cevap.startsWith("HATA:")));
+        const gonderim = bekleyenGonderim;
+        bekleyenGonderim = null;
         if (hataMi) kartlariGeriAl();
         else geriAlKilit = null;        // yanit geldi: eski kartlara donulmeyecek
+        const sonra = (gonderim && !hataMi) ? gonderimSonucu(gonderim, d) : null;
         yanitUygula(d, d.cevap);
+        if (sonra) sonra();
     })
     .catch(e => {
         gosterge.kaldir();
+        bekleyenGonderim = null;
         if (istekDurumu === "sifirla") return;   // sifirlama ekrani zaten kuruyor
         kartlariGeriAl();
         rozetGuncelle("hata");
@@ -7290,8 +7350,32 @@ function gecilenBloklariCiz(liste) {
     return cizilen;
 }
 
+/* REDDEDİLMİŞ FORMLAR GEÇMİŞTEN ÇİZİLMEZ. Girdi reddedilince aynı adım
+   aynı formu (aynı başlıkla) yeniden gönderiyor; F5 sonrası eski form
+   kilitli, yani "✓ Girdiler Onaylandı" rozetiyle çiziliyordu - oysa o
+   girdi kontrolden geçmemişti. Aynı adımda aynı başlıklı daha yeni bir
+   form varsa eskisinin kartı düşülür; uyarı metni yerinde kalır. */
+function reddedilenFormlariAyikla(liste) {
+    const baslik = g => (g && g.rol === "bot" && g.adim && g.ekran
+                         && g.ekran.secim_alani && g.ekran.secim_alani.tip === "form")
+        ? g.adim + "\u0000" + (g.ekran.secim_alani.baslik || "") : null;
+    const sonra = new Set();
+    for (let i = liste.length - 1; i >= 0; i--) {
+        const b = baslik(liste[i]);
+        if (!b) continue;
+        if (sonra.has(b)) {
+            const ekran = Object.assign({}, liste[i].ekran);
+            delete ekran.secim_alani;
+            liste[i] = Object.assign({}, liste[i], { ekran: ekran });
+        } else {
+            sonra.add(b);
+        }
+    }
+    return liste;
+}
+
 function gecmisiCiz(gecmis, sonMetin) {
-    const liste = (gecmis || []).slice();
+    const liste = reddedilenFormlariAyikla((gecmis || []).slice());
 
     /* AKTIF ADIMIN SON EKRANI canli ciziliyor (yanitUygula); gecmisten
        ikinci kez cizilmemeli. Ondan ONCEKI ekranlari ise gecmisten
@@ -7434,7 +7518,7 @@ function ekraniTemizle() {
     sonYanitMetni = null;
     geriAlKilit = null;
     acikFazlar = new Set();
-    surecElle = null;
+    /* surecElle SIFIRLANMAZ: kullanıcının aç/kapa seçimi çalışmalar arası korunur. */
     /* Doküman önceki çalışmaya aitti: ÖZET bir daha açılana kadar
        ekranda kalmasın, açılınca yenisi istenir. */
     dokumanSifirla();

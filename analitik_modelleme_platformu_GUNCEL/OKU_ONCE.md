@@ -1,6 +1,22 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **blok durum renkleri, "Girdiler Onaylandı"**. Yapıştır: `app.js`, `style.css`, `akis_faz01.py`
+Bu tur: **girdiler kontrolden geçmeden onaylanmıyor; Analitik Süreç kapanmıyor**. Yapıştır: `app.js`, `akis_faz01.py`
+
+- Veri seti + sözlük formu gönderilince rozet "Kontrol Ediliyor…" der.
+  "✓ Girdiler Onaylandı" yalnızca sunucu kabul edince yazılır.
+- Sözlük denetimi (akis_faz01._sozluk_denetle): açıklama kolonu var
+  (ACIKLAMA / TANIM / DESCRIPTION), kolon adı kolonu veri setinin
+  kolonlarını taşıyor (en az bir eşleşme) ve eşleşenlerden en az birinin
+  açıklaması dolu. Mod B'deki kaynak sözlüklere de uygulanıyor.
+- Reddedilen girdide eski kart kalkar, uyarı ve dolu yeni form gelir. Kabul
+  edilince uyarı da silinir. F5 sonrası reddedilmiş eski formlar geçmişten
+  çizilmez.
+- Analitik Süreç artık kendiliğinden kapanmıyor. Kullanıcının aç/kapa
+  seçimi tarayıcıda saklanıyor.
+
+---
+
+Önceki tur: **blok durum renkleri, "Girdiler Onaylandı"**. Yapıştır: `app.js`, `style.css`, `akis_faz01.py`
 
 - Yanıt bekleyen blok (gruplu blokta o adımın bölümü) kırmızı çerçeve ve
   "● Yanıtınız Bekleniyor" etiketi taşıyor. Geçilmiş bloklar gri çerçeve,
