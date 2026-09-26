@@ -1386,7 +1386,7 @@ button.ozet-kart:focus-visible {
    Onay düğmeleri sohbetin altındaki ortak şeritten blokların İÇİNE
    taşındı (#aksiyonlar kaldırıldı). Blok = başlık satırı + gövde +
    (onay bekliyorsa) düğme satırı. */
-/* EN DIŞTAKİ BLOK AKBANK KIRMIZISI ÇERÇEVE TAŞIR (kullanıcı kararı):
+/* EN DIŞTAKİ BLOK MARKA KIRMIZISI ÇERÇEVE TAŞIR (kullanıcı kararı):
    iş akışının her adımı ekranda nerede başlayıp nerede bittiği belli
    olsun. Nötr gri çerçeve arka plan dokusunda kayboluyordu.
    Kalınlık 3px ve renk markanın KENDİ kırmızısı - açılmış ton

@@ -1,6 +1,17 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **tek değerliler otomatik süreç dışı; arşiv numaraları yeniden kullanılıyor**. Yapıştır: `akis_faz01.py`, `akis_durum.py`, `sfa.py`, `backend.py`, `app.js`
+Bu tur: **kurum adı kaldırıldı**. Yapıştır: `llm.py`, `backend.py`, `style.css`
+
+- Asistan yönergesindeki, stil yorumundaki ve bu nottaki kurum adı kaldırıldı.
+- Görsel dosyalarının eski önekli adlarına düşen yedek liste kaldırıldı:
+  LLM_WEBAPP_GORSEL klasöründeki görseller robot_llm_ust.png,
+  robot_llm_chat.png, robot_llm_person.png, llm_chat_light.png,
+  llm_chat_dark.png adlarında olmalı.
+- Depoya girmiş __pycache__ dosyaları çıkarıldı, .gitignore eklendi.
+
+---
+
+Önceki tur: **tek değerliler otomatik süreç dışı; arşiv numaraları yeniden kullanılıyor**. Yapıştır: `akis_faz01.py`, `akis_durum.py`, `sfa.py`, `backend.py`, `app.js`
 
 - Değişken Kontrolü açılınca tek değer taşıyan kolonlar süreç dışı işaretli
   gelir (bir kez; kullanıcı kaldırabilir). Boş hücre ayrı değer sayılır:
@@ -392,7 +403,7 @@ Eski dosyalar yeniden adlandırılmadı, olduğu gibi okunuyor.
 
 Bu tur: **Bölme Stratejisi .txt'deki hiyerarşiye getirildi** — koşullu
 görünürlük, "?" ipuçları, "Detaylar ve Terimler", tek terim dili,
-gap + çoklu tekrar. Ayrıca her adım bloğuna ince Akbank kırmızısı çerçeve.
+gap + çoklu tekrar. Ayrıca her adım bloğuna ince marka kırmızısı çerçeve.
 
 > **Deploy sonrası "Yeni Çalışma"ya bas.**
 
@@ -406,7 +417,7 @@ gap + çoklu tekrar. Ayrıca her adım bloğuna ince Akbank kırmızısı çerç
 
 ---
 
-## 1. Adım bloklarına 3px Akbank kırmızısı çerçeve
+## 1. Adım bloklarına 3px marka kırmızısı çerçeve
 
 `.adim-blok` artık **3px**, markanın **kendi** kırmızısıyla çerçeveli
 (`--blok-cerceve: 3px` + `solid var(--kirmizi)`). İş akışının her adımı

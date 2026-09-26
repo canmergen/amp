@@ -30,23 +30,12 @@ GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 
 # Mantiksal ad -> folder'daki gercek dosya adi.
 # Gorsel degistirmek istersen SADECE burayi duzenle, JS'e dokunma.
-# Dosya adlarindaki "akbank_" oneki KALDIRILDI: gorseller folder'da
-# yeniden adlandirildi. Eski adlar da kabul ediliyor (yedek listesi)
-# ki folder'i henuz guncellememis bir ortamda gorseller kaybolmasin.
 GORSELLER = {
     "banner":     "robot_llm_ust.png",
     "bot":        "robot_llm_chat.png",
     "user":       "robot_llm_person.png",
     "zemin_acik": "llm_chat_light.png",
     "zemin_koyu": "llm_chat_dark.png",
-}
-
-GORSEL_YEDEK = {
-    "banner":     "akbank_robot_llm_ust.png",
-    "bot":        "akbank_robot_llm_chat.png",
-    "user":       "akbank_robot_llm_person.png",
-    "zemin_acik": "akbank_llm_chat_light.png",
-    "zemin_koyu": "akbank_llm_chat_dark.png",
 }
 
 _MIME = {".png": "image/png", ".jpg": "image/jpeg",
@@ -421,16 +410,7 @@ def gorsel_endpoint(anahtar):
     if uzanti not in _MIME:
         return Response("gecersiz uzanti", status=404)
 
-    # Once yeni ad, bulunamazsa eski "akbank_" onekli ad denenir. Boylece
-    # folder'i yeniden adlandirmis da adlandirmamis ortamda da calisir;
-    # gorsel kaybolursa sohbet avatarlari sessizce yok oluyordu.
     yol = _dosya_bul(dosya_adi)
-    if not yol:
-        eski = GORSEL_YEDEK.get(anahtar)
-        if eski:
-            yol = _dosya_bul(eski)
-            if yol:
-                uzanti = os.path.splitext(eski)[1].lower()
     if not yol:
         return Response("gorsel bulunamadi", status=404)
 
