@@ -1391,6 +1391,31 @@ button.ozet-kart:focus-visible {
   background: var(--yuzey); box-shadow: var(--golge-1);
   padding: var(--b-3) var(--b-4) var(--b-4);
 }
+/* ---- BLOK DURUMU (kullanıcı kararı: "tamamlandı rengi ayrı, cevap
+   bekliyor rengi ayrı olmalı") ----
+   Kırmızı çerçeve artık YALNIZCA yanıt bekleyen bloğun. Geçilmiş
+   bloklar gri çerçeveye ve sessiz başlığa iner; içerik soluklaştırılmaz,
+   okunur kalır. Kalınlık aynı: durum değişince yerleşim kaymasın. */
+.adim-blok.durum-tamam { border-color: var(--kenar-guclu); box-shadow: none; }
+.adim-blok.durum-tamam > .blok-bas .blok-ad { color: var(--metin-soluk); }
+.adim-blok.durum-bekliyor { box-shadow: 0 0 0 4px var(--kirmizi-halka, rgba(213,17,21,.14)), var(--golge-1); }
+/* Gruplu blokta aktif adımın BÖLÜMÜ ayrıca vurgulanır: aynı kapta hangi
+   kartın cevap beklediği tek bakışta görünsün. */
+.alt-bolum.durum-bekliyor { border: 2px solid var(--kirmizi); }
+.alt-bolum.durum-bekliyor > .alt-bas .alt-ad { color: var(--kirmizi); }
+.alt-bolum.durum-tamam > .alt-bas .alt-ad { color: var(--metin-soluk); }
+.blok-durum {
+  flex: 0 0 auto; white-space: nowrap;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  border-radius: 999px; padding: 1px 9px; border: 1px solid;
+}
+.blok-durum.bekliyor {
+  color: #fff; background: var(--kirmizi); border-color: var(--kirmizi);
+}
+.blok-durum.tamam {
+  color: var(--yesil); background: var(--yesil-acik); border-color: var(--yesil);
+}
+
 /* GRUPLU BLOK BİR KAP: içinde her adım kendi kartında duruyor
    (bkz. .alt-bolum). Kap soluk zemine geçiyor ki beyaz iç kartlar
    ondan ayrılsın; kabın kendi gölgesi kalkıyor - iç kartlar zaten

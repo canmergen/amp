@@ -143,7 +143,15 @@ DONEM_ORNEK_SATIR = 5000
 DONEM_COZULME_ORANI = 0.95
 
 
-def _donem_adaylari(df, kimlik=()):
+# Donem adayi hesabinin surumu. Kural degisince eski calismalarin
+# profilindeki liste YENIDEN hesaplanir (bkz. _donem_adaylarini_hazirla).
+DONEM_ADAY_SURUMU = 3
+# Aday cikmadiginda nedeni yazilan kolonlar: adi donem/tarih cagristiran.
+_DONEM_ADI_KALIP = re.compile(r"(DONEM|DÖNEM|PERIOD|TARIH|TARİH|DATE|AY_|_AY|MONTH|YIL|YEAR|SNAP)",
+                              re.IGNORECASE)
+
+
+def _donem_adaylari(df, kimlik=(), nedenler=None):
     """Donem kolonu adaylari (kullanici karari: "tek değeri olan gelmemeli,
     kimlik ve hedef gelmemeli, tarih ya da tarihe benzeyen kolon gelmeli").
 
@@ -169,6 +177,9 @@ def _donem_adaylari(df, kimlik=()):
         except Exception:
             continue
         if n_tekil <= 1 or ad in kimlik or (satir > 1 and n_tekil == satir):
+            if nedenler is not None:
+                nedenler[ad] = ("tek değer taşıyor" if n_tekil <= 1 else
+                                "her satırda farklı (kimlik gibi)")
             continue
         try:
             ay, bicim = birl_mod._donem_coz(ornek[kolon])
@@ -184,7 +195,24 @@ def _donem_adaylari(df, kimlik=()):
             bicim = None
         if bicim:
             cikti.append(ad)
+        elif nedenler is not None:
+            try:
+                ornek_deger = ", ".join(
+                    str(x) for x in ornek[kolon].dropna().astype(str).unique()[:3])
+            except Exception:
+                ornek_deger = ""
+            nedenler[ad] = "değerler dönem olarak okunamadı" + (
+                " (örnek: %s)" % ornek_deger if ornek_deger else "")
     return cikti
+
+
+def _donem_neden_metni(nedenler):
+    """Aday cikmadiginda, adi donem cagristiran kolonlarin neden
+    elendigi: "PERIOD: tek değer taşıyor". Kullanici neyi duzeltecegini
+    gorsun; "bulunamadı" demek tek basina yetmiyordu."""
+    ilgili = [(k, v) for k, v in (nedenler or {}).items()
+              if _DONEM_ADI_KALIP.search(str(k))][:4]
+    return "; ".join("%s: %s" % (k, v) for k, v in ilgili)
 
 
 def _donem_adaylarini_hazirla(durum):
@@ -197,16 +225,25 @@ def _donem_adaylarini_hazirla(durum):
     hesaplaniyor. Okuma onbellekten gelir; tablo okunamazsa liste bos
     kalir ve form "aday bulunamadi" der - tum kolonlara DUSULMEZ."""
     p = durum.get("profil") or {}
-    if isinstance(p.get("donem_adaylari"), list):
+    if (isinstance(p.get("donem_adaylari"), list)
+            and p.get("donem_adaylari_surum") == DONEM_ADAY_SURUMU):
         return p
     try:
         df = modelleme_df(durum)
         kimlik = p.get("kimlik_adaylari")
         if not isinstance(kimlik, list):
             _hedef, kimlik = _aday_kolonlar(df)
-        p["donem_adaylari"] = _donem_adaylari(df, kimlik)
-    except Exception:
+        nedenler = {}
+        p["donem_adaylari"] = _donem_adaylari(df, kimlik, nedenler)
+        p["donem_neden"] = _donem_neden_metni(nedenler)
+        p["donem_adaylari_surum"] = DONEM_ADAY_SURUMU
+        p.pop("donem_hata", None)
+    except Exception as e:
+        # OKUMA HATASI KALICI YAZILMAZ (surum isareti konmuyor): eskiden
+        # bos liste profile yaziliyor ve tablo sonra okunabilse de liste
+        # bir daha hesaplanmiyordu. Bir sonraki acilista yeniden denenir.
         p["donem_adaylari"] = []
+        p["donem_hata"] = str(e)[:200]
     durum["profil"] = p
     return p
 
@@ -236,7 +273,11 @@ def _temel_profil(durum, df):
     hedef_aday, kimlik_aday = _aday_kolonlar(df)
     p["hedef_adaylari"] = hedef_aday
     p["kimlik_adaylari"] = kimlik_aday
-    p["donem_adaylari"] = _donem_adaylari(df, kimlik_aday)
+    nedenler = {}
+    p["donem_adaylari"] = _donem_adaylari(df, kimlik_aday, nedenler)
+    p["donem_neden"] = _donem_neden_metni(nedenler)
+    p["donem_adaylari_surum"] = DONEM_ADAY_SURUMU
+    p.pop("donem_hata", None)
     _kimlik_duplicate(durum, df, p)
     durum["profil"] = p
     return p
@@ -1977,10 +2018,17 @@ def _tanimlar_formu(durum, meta=None):
     # tum kolonlara DUSULMEZ - kimlik ya da hedefin donem secilmesi
     # zamansal bolmeyi sessizce bozardi.
     donem_liste = _ekle(donem_aday, m.get("donem"))
-    donem_not = ("" if donem_aday else
-                 "Veri setinde dönem bilgisi taşıyan bir kolon "
-                 "bulunamadı (202501 gibi sayı ya da metin, 2025-01 ya "
-                 "da tarih). Zamansal bölme kurulamaz.")
+    if donem_aday:
+        donem_not = ""
+    elif p.get("donem_hata"):
+        donem_not = ("Dönem adayları çıkarılamadı: tablo okunamadı (%s). "
+                     "Sayfayı yenileyince yeniden denenir." % p["donem_hata"])
+    else:
+        donem_not = ("Veri setinde dönem bilgisi taşıyan bir kolon "
+                     "bulunamadı (202501 gibi sayı ya da metin, 2025-01 ya "
+                     "da tarih). Zamansal bölme kurulamaz.")
+        if p.get("donem_neden"):
+            donem_not += " Elenenler: %s." % p["donem_neden"]
 
     hedef_not = ("" if hedef_aday else
                  "Veri setinde 0/1 değerli kolon bulunamadı; tüm kolonlar "

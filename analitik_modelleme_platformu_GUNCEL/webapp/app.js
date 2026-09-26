@@ -3725,7 +3725,7 @@ function blokBasligiEkle(kap, blok) {
     bas.appendChild(avatarYap("bot"));
     bas.appendChild(elYap("span", "blok-ad", tireSade(b.baslik || "")));
     /* Durum rozetinin yuvası - gruplu bloktaki .alt-bas ile AYNI sınıf.
-       Kart kendi başlığını artık çizmediği için ("✓ Girdiler Hazır")
+       Kart kendi başlığını artık çizmediği için ("✓ Girdiler Onaylandı")
        rozetin gidecek bir yeri olmalı; boşken CSS onu gizliyor. */
     bas.appendChild(elYap("span", "alt-rozet"));
 
@@ -3935,7 +3935,7 @@ function grupKabiAl(blok) {
         bolum.dataset.adim = blok.adim;
         const bas = elYap("div", "alt-bas");
         bas.appendChild(elYap("span", "alt-ad", tireSade(blok.baslik || "")));
-        /* ROZET YUVASI: kartın "✓ Girdiler Hazır" göstergesi buraya
+        /* ROZET YUVASI: kartın "✓ Girdiler Onaylandı" göstergesi buraya
            taşınıyor. Kartın kendi başlık satırında kalınca alt başlık
            ile gövde metni arasında koca bir boşluk oluşuyordu; rozet
            tek başına bir satır kaplıyordu. */
@@ -3968,6 +3968,80 @@ function adimKabiAl(blok) {
     satir.appendChild(sutun);
     sohbetEl.appendChild(satir);
     return sutun;
+}
+
+/* ---- BLOK DURUMU: BEKLENİYOR / TAMAMLANDI ----
+   Kullanıcı bildirimi: bütün bloklar aynı kırmızı çerçeveyle durunca
+   "şu an hangisindeyim, neyi cevaplıyorum" anlaşılmıyordu. Artık:
+     - AKTİF ADIMIN bloğu (ya da gruplu blokta aktif adımın bölümü)
+       kırmızı çerçeve + "● Yanıtınız Bekleniyor" etiketi,
+     - geçilmiş bloklar gri çerçeve, sessiz başlık ve "✓ Tamamlandı".
+   Aktif adım sol paneldeki ile AYNI kaynaktan: DUZ_ADIMLAR[aktifAdim].
+   Kart kendi "✓ Girdiler Onaylandı" rozetini taşıyorsa ikinci bir
+   "Tamamlandı" yazılmaz: aynı şeyi iki kez söylemesin. */
+const BLOK_BEKLIYOR = "● Yanıtınız Bekleniyor";
+const BLOK_TAMAM = "✓ Tamamlandı";
+
+function blokDurumEtiketi(bas, durum) {
+    if (!bas) return;
+    let et = bas.querySelector(":scope > .blok-durum");
+    const onayliRozet = durum === "tamam"
+        && bas.querySelector(":scope > .alt-rozet .onayli");
+    const metin = durum === "bekliyor" ? BLOK_BEKLIYOR
+        : (durum === "tamam" && !onayliRozet ? BLOK_TAMAM : "");
+    if (!metin) { if (et) et.remove(); return; }
+    if (!et) {
+        et = elYap("span", "blok-durum");
+        const rozet = bas.querySelector(":scope > .alt-rozet");
+        bas.insertBefore(et, rozet || bas.querySelector(":scope > .blok-geri"));
+    }
+    if (et.textContent !== metin) et.textContent = metin;
+    et.classList.toggle("bekliyor", durum === "bekliyor");
+    et.classList.toggle("tamam", durum === "tamam");
+}
+
+function sinifAyarla(el, durum) {
+    el.classList.toggle("durum-bekliyor", durum === "bekliyor");
+    el.classList.toggle("durum-tamam", durum === "tamam");
+}
+
+function blokDurumlariniTazele() {
+    const aktif = (DUZ_ADIMLAR[aktifAdim] || {}).anahtar || "";
+    sohbetEl.querySelectorAll(".adim-blok").forEach(blok => {
+        if (blok.classList.contains("gruplu")) {
+            let bekliyorVar = false;
+            blok.querySelectorAll(":scope > .alt-bolum").forEach(bolum => {
+                const durum = bolum.dataset.adim === aktif ? "bekliyor" : "tamam";
+                if (durum === "bekliyor") bekliyorVar = true;
+                sinifAyarla(bolum, durum);
+                blokDurumEtiketi(bolum.querySelector(":scope > .alt-bas"), durum);
+            });
+            sinifAyarla(blok, bekliyorVar ? "bekliyor" : "tamam");
+            return;
+        }
+        if (!blok.dataset.adim) return;
+        const durum = blok.dataset.adim === aktif ? "bekliyor" : "tamam";
+        sinifAyarla(blok, durum);
+        blokDurumEtiketi(blok.querySelector(":scope > .blok-bas"), durum);
+    });
+}
+
+/* Sohbete her blok/kart eklenişinde bir kare sonra tazelenir: blokları
+   kuran yolların hepsine (canlı yanıt, geçmişten çizim, geri dönüşte
+   kırpma) tek tek çağrı serpiştirmek yerine. Yalnızca childList
+   izleniyor; sınıf değişimi tetiklemez, döngü olmaz. */
+let blokDurumBekleyen = false;
+function blokDurumPlanla() {
+    if (blokDurumBekleyen) return;
+    blokDurumBekleyen = true;
+    requestAnimationFrame(() => {
+        blokDurumBekleyen = false;
+        try { blokDurumlariniTazele(); } catch (e) { /* görsel; akışı bozmasın */ }
+    });
+}
+if (sohbetEl && window.MutationObserver) {
+    new MutationObserver(blokDurumPlanla)
+        .observe(sohbetEl, { childList: true, subtree: true });
 }
 
 function balonYap(rol, metin, hataMi) {
@@ -4287,9 +4361,12 @@ function kolonlariHazirla(alan) {
 /* ROZETLER BAŞLIK BÜYÜK HARFİYLE (kullanıcı kararı: "Girdiler hazır"
    değil "Girdiler Hazır"). Sabit metinler burada öyle yazılı; arka
    uçtan gelen rozet metinleri rozetMetni() ile aynı biçime çevriliyor. */
-const SECIM_HAZIR = "✓ Girdiler Hazır";
-const secimDurumMetni = (dolu, toplam) =>
-    (toplam > 0 && dolu >= toplam) ? SECIM_HAZIR : (dolu + "/" + toplam + " Seçildi");
+/* GÖNDERİLMİŞ KART: "✓ Girdiler Onaylandı" (kullanıcı kararı; "Girdiler
+   Hazır" belirsizdi: hazır ama gönderilmemiş mi, onaylanmış mı?). Rozet
+   YALNIZCA gönderimden sonra çıkar; dolu ama gönderilmemiş kart "2/2
+   Seçildi" der ve düğmesi durur. */
+const SECIM_HAZIR = "✓ Girdiler Onaylandı";
+const secimDurumMetni = (dolu, toplam) => dolu + "/" + toplam + " Seçildi";
 const rozetMetni = (metin) => "✓ " + baslikBuyuk(metin);
 
 const GECERSIZ_GOLGE = "0 0 0 var(--halka) var(--amber-halka)";
@@ -6062,7 +6139,7 @@ function bolmeKartiEkle(alan, blok) {
         BOLME.gonderildi = true;
         kart.classList.add("kilitli");
         durumEl.textContent = SECIM_HAZIR;
-        durumEl.classList.add("hazir");
+        durumEl.classList.add("hazir", "onayli");
         /* Panel düğmeleri BOLME.gonderildi ile birlikte hiç çizilmiyor
            (bkz. bolmePanelCiz): kilitli kartta basılabilir bir düğme
            bırakmak adımı ikinci kez geçirmenin yolu olurdu. */
@@ -6077,7 +6154,7 @@ function bolmeKartiEkle(alan, blok) {
                 BOLME.gonderildi = false;
                 kart.classList.remove("kilitli");
                 durumEl.textContent = "";
-                durumEl.classList.remove("hazir");
+                durumEl.classList.remove("hazir", "onayli");
                 bolmeGovdeTazele();
             };
             gonder(butonMetni, false);
@@ -6411,7 +6488,7 @@ function teyitKartiEkle(alan, blok) {
     function teyitKartiKilitle() {
         kart.classList.add("kilitli");
         durumEl.textContent = SECIM_HAZIR;
-        durumEl.classList.add("hazir");
+        durumEl.classList.add("hazir", "onayli");
         onayBtn.disabled = true;
         onayBtn.hidden = true;
         /* Karar verildi: liste SALT OKUNUR. Arama AÇIK KALIYOR:
@@ -6446,7 +6523,7 @@ function teyitKartiEkle(alan, blok) {
                 teyitKilitle(false);
                 kart.classList.remove("kilitli");
                 durumEl.textContent = "";
-                durumEl.classList.remove("hazir");
+                durumEl.classList.remove("hazir", "onayli");
                 onayBtn.disabled = false;
                 onayBtn.hidden = false;
                 /* Liste de geri acilir: karar uygulanmadi. Arama HER
@@ -6482,7 +6559,7 @@ function teyitKartiEkle(alan, blok) {
 
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     rozetiBasligaTasi(blok, durumEl);
-    /* Excel düğmesi BLOK BAŞLIK SATIRINDA, "✓ Girdiler Hazır" rozetinin
+    /* Excel düğmesi BLOK BAŞLIK SATIRINDA, "✓ Girdiler Onaylandı" rozetinin
        yanında (kullanıcı kararı). Kart gövdesinde, listenin üstünde
        dururken hem kendi satırını yiyordu hem de kaydettikten sonra
        kullanıcının baktığı yer başlık satırıydı. */
@@ -6496,7 +6573,7 @@ function teyitKartiEkle(alan, blok) {
     if (alan.hedef) analizSekmeAc(alan.hedef);
 }
 
-/* Kartın durum rozetini ("✓ Girdiler Hazır") ALT BAŞLIK satırına taşır.
+/* Kartın durum rozetini ("✓ Girdiler Onaylandı") ALT BAŞLIK satırına taşır.
    Gruplu blokta kartın kendi başlık satırı çizilmiyor; rozet orada
    kalsaydı tek başına bir satır kaplar ve alt başlık ile gövde arasında
    büyük bir boşluk bırakırdı. */
@@ -6557,12 +6634,12 @@ function secimAlaniEkle(alan, blok) {
        BAŞLIĞINDA yazıyor ("Modelleme Tanımları"). Kart bir de kendi
        başlığını ("Modelleme tanımları") basınca aynı ad iki kez, üstelik
        iki ayrı yazım biçimiyle görünüyordu. Satır DURUYOR: sağındaki
-       "✓ Girdiler Hazır" göstergesi ona yaslı. */
+       "✓ Girdiler Onaylandı" göstergesi ona yaslı. */
     bas.textContent = kartBasligiGerekli(alan, blok) ? tireSade(alan.baslik) : "";
     basSatir.appendChild(bas);
 
     /* Durum gostergesi: <span>, dugme DEGIL. Kart gonderildikten sonra
-       "✓ Girdiler Hazır" yazip kalir; kartin kilitli oldugunu anlatan
+       "✓ Girdiler Onaylandı" yazip kalir; kartin kilitli oldugunu anlatan
        tek isaret budur. */
     const durumEl = document.createElement("span");
     durumEl.className = "secim-durum";
@@ -6595,7 +6672,7 @@ function secimAlaniEkle(alan, blok) {
     function kartiKilitle() {
         kart.classList.add("kilitli");
         durumEl.textContent = SECIM_HAZIR;
-        durumEl.classList.add("hazir");
+        durumEl.classList.add("hazir", "onayli");
         onayBtn.hidden = true;
         onayBtn.disabled = true;
         if (kilitEk) kilitEk();
@@ -6643,7 +6720,8 @@ function secimAlaniEkle(alan, blok) {
             onayBtn.textContent = (alan.buton || "Devam et")
                 + (secilenler.length ? "  (" + secilenler.length + ")" : "");
             durumEl.textContent = secimDurumMetni(secilenler.length, gerekli);
-            durumEl.classList.toggle("hazir", secilenler.length >= gerekli);
+            /* Dolu ama GÖNDERİLMEMİŞ kart yeşil olmaz: yeşil "onaylandı" demek. */
+            durumEl.classList.remove("hazir", "onayli");
             ekleDurumu();
         }
 
@@ -6751,7 +6829,8 @@ function secimAlaniEkle(alan, blok) {
             const dolu = sayilan.filter(k => combolar[k].dolu()).length;
             onayBtn.disabled = anahtarlar.some(k => !combolar[k].gecerli());
             durumEl.textContent = secimDurumMetni(dolu, sayilan.length);
-            durumEl.classList.toggle("hazir", dolu >= sayilan.length);
+            /* Dolu ama GÖNDERİLMEMİŞ kart yeşil olmaz: yeşil "onaylandı" demek. */
+            durumEl.classList.remove("hazir", "onayli");
         }
 
         alanlar.forEach(a => {
@@ -6924,6 +7003,7 @@ function yanitUygula(d, metin) {
     if (d.mod !== undefined) aktifMod = d.mod;
     if (d.adim_no !== undefined) {
         aktifAdim = d.adim_no;
+        blokDurumPlanla();
         aktifFaziAc();
     }
     fazlariCiz();

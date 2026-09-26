@@ -1,6 +1,21 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **dönem kolonu: sayı, metin, kategori**. Yapıştır: `birlestirme.py`, `akis_durum.py`, `akis_faz01.py`
+Bu tur: **blok durum renkleri, "Girdiler Onaylandı"**. Yapıştır: `app.js`, `style.css`, `akis_faz01.py`
+
+- Yanıt bekleyen blok (gruplu blokta o adımın bölümü) kırmızı çerçeve ve
+  "● Yanıtınız Bekleniyor" etiketi taşıyor. Geçilmiş bloklar gri çerçeve,
+  soluk başlık ve yeşil "✓ Tamamlandı" etiketiyle duruyor.
+- Aktif adım sol paneldekiyle aynı kaynaktan (DUZ_ADIMLAR[aktifAdim]).
+- Gönderilmiş kart "✓ Girdiler Onaylandı" diyor. Dolu ama gönderilmemiş kart
+  "2/2 Seçildi" der ve yeşil olmaz.
+- Dönem adayları: tablo okunamazsa boş liste artık kalıcı yazılmıyor, sonraki
+  açılışta yeniden deneniyor. Hesap kuralı sürümlü; eski çalışmalar yeni
+  kurala göre bir kez yeniden hesaplanıyor. Aday yoksa adı dönem çağrıştıran
+  kolonların neden elendiği notta yazıyor.
+
+---
+
+Önceki tur: **dönem kolonu: sayı, metin, kategori**. Yapıştır: `birlestirme.py`, `akis_durum.py`, `akis_faz01.py`
 
 - 202501 sayı, ondalık (202501.0), metin (" 202501 ") ya da kategori olarak
   tutulsa da dönem adayı. Metin kolonda "NULL", boş, "nan" hücreler boş
