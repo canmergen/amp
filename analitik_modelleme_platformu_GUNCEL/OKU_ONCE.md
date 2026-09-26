@@ -1,5 +1,18 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **açılışta önce "önceki çalışmanız var, dönmek ister misiniz?"**.
+Yapıştır (webapp): `app.js` (önceki turun `backend.py` ve `style.css`'i gerekli)
+
+- Sayfa açılınca başlamış bir çalışma varsa ilk ekran bu soru: en son
+  çalışmanın numarası, adımı ve veri seti yazıyor.
+  - **Evet** → çalışmalar kararlarıyla listelenir (Devam Et / Kopyasıyla Başla).
+  - **Hayır** → yeni çalışma, A/B/C/D.
+- Hiç çalışma yoksa soru sorulmaz. Soru ekranında sohbet kutusu kilitli,
+  iş akışı başlangıç hâlinde.
+- A/B/C/D altındaki liste kaldırıldı (soru onun yerini aldı).
+
+---
+
 Bu tur: **başlangıç ekranında önceki çalışmalar**.
 Yapıştır (webapp): `backend.py` → `style.css` → `app.js`
 

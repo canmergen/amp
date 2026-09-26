@@ -33,6 +33,9 @@ function depoYaz(anahtar, deger) {
    let: "Yeni Çalışma" ve "Çalışmalarım" kimliği değiştiriyor; bütün
    istekler değişkeni çağrı anında okuyor. */
 let OTURUM_ID = depoOku(OTURUM_DEPO_ANAHTARI) || "";
+/* Açılış sorusu ekranında geç dönen /fazlar yanıtı, bu arada açılmış
+   bir çalışmanın iş akışını ezmesin. */
+let OTURUM_ID_ACILDI = false;
 
 function oturumAyarla(kimlik) {
     if (!kimlik || kimlik === OTURUM_ID) return;
@@ -771,23 +774,9 @@ function aktifFaziAc() {
     });
 }
 
-/* Kimlik henüz yoksa İSTENMEZ: sunucu boş kimliği eski "ana" kaydına
-   çözerdi ve bu yanıt /karsilama'dan sonra gelirse doğru çalışmanın
-   adımlarını ezerdi. /karsilama yanıtı fazları zaten taşıyor. */
-if (OTURUM_ID) fetch(getWebAppBackendUrl("fazlar") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
-    .then(r => r.json())
-    .then(d => {
-        if (!d || d.hata || !d.fazlar) {
-            fazEl.textContent = "İş akışı yüklenemedi"
-                + (d && d.hata_kodu ? " (" + d.hata_kodu + ")." : ".");
-            return;
-        }
-        fazlariYukle(d.fazlar);
-        aktifMod = d.mod || null;
-        aktifFaziAc();
-        fazlariCiz();
-    })
-    .catch(() => { fazEl.textContent = "İş akışı yüklenemedi."; });
+/* İş akışı AÇILIŞTA ayrıca istenmiyor: önce "önceki çalışmaya
+   dönülsün mü?" sorusu geliyor (bkz. acilisSorusu); bir çalışma
+   açılınca /karsilama yanıtı fazları zaten taşıyor. */
 
 
 /* ==================== Üst özet kartları ==================== */
@@ -6673,8 +6662,6 @@ function yanitUygula(d, metin) {
         if (metinBlok.onay && kap) blokOnayEkle(kap);
     }
     secenekEkle(d.secenekler);          // balon varsa ayni kutuya girer
-    /* Başlangıç ekranı: A/B/C/D'nin altında önceki çalışmalar. */
-    if (!hataMi && d.adim_anahtari === "mod" && !d.mod) oncekiCalismalarEkle();
     secimAlaniEkle(d.secim_alani, blok);
     if (typeof d.tur_no === "number") TUR_NO = Math.max(TUR_NO, d.tur_no);
 
@@ -7074,6 +7061,7 @@ function calismaAc(kimlik) {
       + "?oturum_id=" + encodeURIComponent(kimlik || OTURUM_ID))
     .then(r => r.json())
     .then(d => {
+        OTURUM_ID_ACILDI = true;
         oturumAyarla(d.calisma_id);
         const metin = d.metin || d.cevap;
         if (d.devam) {
@@ -7097,7 +7085,7 @@ function calismaAc(kimlik) {
         balonEkle("bot", "Bağlantı hatası: " + e, true);
     });
 }
-calismaAc();
+acilisSorusu();
 
 
 /* ==================== Yeni oturum ==================== */
@@ -7137,6 +7125,7 @@ function sifirlaUygula() {
             balonEkle("bot", d.metin || d.cevap || "Yeni çalışma açılamadı.", true);
             return;
         }
+        OTURUM_ID_ACILDI = true;
         oturumAyarla(d.calisma_id);
         ekraniTemizle();
         yanitUygula(d, d.metin || d.cevap);
@@ -7231,40 +7220,94 @@ function calismayaGec(kimlik, zorla) {
     calismaAc(kimlik).finally(() => { kilitle(false); });
 }
 
-/* ==================== Önceki çalışmalar (başlangıç ekranı) ====================
-   Kullanıcı en baştan eski bir çalışmanın üzerinden ilerleyebilsin:
-     Devam Et          -> o çalışma kaldığı yerden açılır; her adımın
-                          bloğu ve Geri Dön'ü yerinde, düzeltip devam eder.
-     Kopyasıyla Başla  -> aynı kararlarla YENİ bir numara (v5) açılır,
-                          orijinale dokunulmaz. Eski çalışmayı bozmadan
-                          bir adımı değiştirip denemek için.
-   Her satır o çalışmada verilen kararları gösteriyor (başlangıç, veri
-   seti, sözlük, hedef ...): numaradan değil içeriğinden tanınsın. */
-function oncekiCalismalarEkle() {
-    const secenekler = sohbetEl.querySelectorAll(".secenek-kok");
-    const yer = secenekler.length ? secenekler[secenekler.length - 1] : null;
-    if (!yer) return;
-    const eski = yer.parentNode.querySelector(".onceki-kok");
-    if (eski) eski.remove();
-
-    const kok = elYap("div", "onceki-kok");
-    yer.parentNode.insertBefore(kok, yer.nextSibling);
-
+/* ==================== Açılış: önceki çalışmaya dönülsün mü? ====================
+   HER ŞEYDEN ÖNCE SORULUR (kullanıcı kararı). Sayfa açıldığında kayıtlı
+   ve başlamış bir çalışma varsa ilk ekran A/B/C/D değil şu sorudur:
+   "Önceki çalışmanız var. Dönmek ister misiniz?"
+     Evet  -> kayıtlı çalışmalar kararlarıyla listelenir; her birinde
+              Devam Et (kaldığı yerden, her adıma Geri Dön ile dönülür)
+              ve Kopyasıyla Başla (orijinal değişmez).
+     Hayır -> yeni çalışma açılır (A/B/C/D). Önceki çalışmalar silinmez.
+   Hiç çalışma yoksa soru sorulmaz, doğrudan başlangıç seçimi gelir. */
+function acilisSorusu() {
     fetch(getWebAppBackendUrl("calismalar")
           + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
         .then(r => r.json())
         .then(d => {
             const liste = ((d && d.calismalar) || []).filter(c =>
-                c.calisma_id !== OTURUM_ID && c.baslamis !== false && !c.hata);
-            if (!liste.length) { kok.remove(); return; }
-            kok.appendChild(elYap("div", "onceki-baslik", "ÖNCEKİ ÇALIŞMALAR"));
-            kok.appendChild(elYap("div", "onceki-aciklama",
-                "Önceki bir çalışmadan devam edebilir ya da kopyasıyla yeni "
-                + "bir çalışma başlatabilirsiniz. Açtığınız çalışmada her "
-                + "adıma geri dönüp düzeltebilirsiniz."));
-            liste.forEach(c => kok.appendChild(oncekiSatir(c)));
+                c.baslamis !== false && !c.hata);
+            if (!liste.length) return calismaAc();
+            acilisSorusuCiz(liste);
         })
-        .catch(() => kok.remove());
+        .catch(() => calismaAc());
+}
+
+function acilisKarti(simge, baslik, aciklama, tikla) {
+    const kart = elYap("button", "secenek");
+    kart.type = "button";
+    kart.appendChild(elYap("span", "secenek-rozet", simge));
+    const govde = elYap("div", "secenek-govde");
+    govde.appendChild(elYap("div", "secenek-baslik", baslik));
+    govde.appendChild(elYap("div", "secenek-aciklama", aciklama));
+    kart.appendChild(govde);
+    kart.onclick = () => { if (!mesgul) tikla(); };
+    return kart;
+}
+
+function acilisSorusuCiz(liste) {
+    sohbetEl.innerHTML = "";
+    /* Henüz bir çalışma açılmadı: sohbet kutusu KİLİTLİ, iş akışı
+       başlangıç hâlinde. "__yeni" kimliği kayıtlı bir çalışmaya
+       karşılık gelmez; sunucu başlangıç ağacını döndürür, hiçbir şey
+       yazmaz. (Kayıtlı çalışmanın ağacı gösterilseydi kullanıcı henüz
+       seçmediği bir çalışmanın adımlarını görürdü.) */
+    aktifAdim = 0;
+    kutuGuncelle("girdi");
+    fetch(getWebAppBackendUrl("fazlar") + "?oturum_id=__yeni")
+        .then(r => r.json())
+        .then(d => {
+            if (!d || !d.fazlar || OTURUM_ID_ACILDI) return;
+            fazlariYukle(d.fazlar);
+            aktifFaziAc();
+            fazlariCiz();
+            kutuGuncelle("girdi");
+        })
+        .catch(() => {});
+    const kap = adimKabiAl({ adim: "acilis", baslik: "Önceki Çalışmalar", geri: false });
+    const son = liste[0];
+    const sayi = liste.length > 1
+        ? " Kayıtlı " + liste.length + " çalışmanız bulunuyor; en son"
+          + " üzerinde çalıştığınız:"
+        : "";
+    kap.appendChild(balonIcerikYap("bot",
+        "**Önceki çalışmanız var.**" + sayi + "\n**" + tireSade(son.ad) + "** · "
+        + calismaAltSatiri(son)
+        + "\n\nÖnceki bir çalışmaya dönmek ister misiniz?"));
+
+    const secim = elYap("div", "secenek-kok");
+    secim.appendChild(acilisKarti("↺", "Evet, Önceki Çalışmaya Dön",
+        "Kayıtlı çalışmalarınız verdiğiniz kararlarla listelenir; kaldığınız "
+        + "yerden devam edebilir ya da kopyasıyla yeni bir çalışma "
+        + "başlatabilirsiniz.",
+        () => {
+            secim.remove();
+            const kok = elYap("div", "onceki-kok");
+            kok.appendChild(elYap("div", "onceki-aciklama",
+                "Açtığınız çalışmada her adıma Geri Dön ile dönüp "
+                + "düzeltebilir, oradan devam edebilirsiniz."));
+            liste.forEach(c => kok.appendChild(oncekiSatir(c)));
+            const yeni = elYap("button", "onceki-dugme ikincil",
+                               "Hayır, Yeni Çalışma Başlat");
+            yeni.type = "button";
+            yeni.onclick = () => { if (!mesgul) sifirlaUygula(); };
+            kok.appendChild(yeni);
+            kap.appendChild(kok);
+        }));
+    secim.appendChild(acilisKarti("+", "Hayır, Yeni Çalışma Başlat",
+        "Verinizin durumuna göre başlangıç seçimine geçilir. Önceki "
+        + "çalışmalar silinmez, Çalışmalarım listesinden her zaman açılır.",
+        () => sifirlaUygula()));
+    kap.appendChild(secim);
 }
 
 function oncekiSatir(c) {
@@ -7290,7 +7333,7 @@ function oncekiSatir(c) {
     const devam = elYap("button", "onceki-dugme", "Devam Et");
     devam.type = "button";
     devam.title = "Bu çalışmayı kaldığı yerden aç";
-    devam.onclick = () => { if (!mesgul) calismayaGec(c.calisma_id); };
+    devam.onclick = () => { if (!mesgul) calismayaGec(c.calisma_id, true); };
     const kopya = elYap("button", "onceki-dugme ikincil", "Kopyasıyla Başla");
     kopya.type = "button";
     kopya.title = "Aynı kararlarla yeni bir çalışma aç; bu çalışma değişmez";
