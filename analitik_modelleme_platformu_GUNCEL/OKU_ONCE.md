@@ -1,6 +1,22 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Arşiv adı, sade panel tutamakları**. Yapıştır: `app.js`, `index.html`, `style.css`
+Bu tur: **dönem kolonu: sayı, metin, kategori**. Yapıştır: `birlestirme.py`, `akis_durum.py`, `akis_faz01.py`
+
+- 202501 sayı, ondalık (202501.0), metin (" 202501 ") ya da kategori olarak
+  tutulsa da dönem adayı. Metin kolonda "NULL", boş, "nan" hücreler boş
+  sayılıyor; eskiden tek bir tanesi kolonu listeden düşürüyordu.
+- Yeni tanınan yazımlar: 2025M01, 2025/01, 01/2025.
+- Aday olmak için dolu hücrelerin en az %95'i dönem olarak çözülmeli.
+- Bölme dönemleri tek biçime indiriyor (birlestirme.donem_degeri): bu
+  yazımların hepsi aynı "202501" metni.
+- DÜZELTİLEN HATA: dönem kolonunda boş hücre varsa "nan" metni en son dönem
+  sayılıyor ve dönemi boş satırlar test setine gidiyordu. Artık boş dönemli
+  satır teste gitmiyor.
+- Dönemler zaman sırasına diziliyor (2025M2 < 2025M10, 12/2025 < 01/2026).
+
+---
+
+Önceki tur: **Arşiv adı, sade panel tutamakları**. Yapıştır: `app.js`, `index.html`, `style.css`
 
 - "Çalışmalarım" düğmesinin adı **Arşiv**.
 - Üst çubuktaki panel genişliği sıfırlama düğmesi kaldırıldı. Bir paneli

@@ -269,6 +269,104 @@ def _ad_uret(tablo, kolon, fn, pencere, kullanilan=None):
 # ---------------------------------------------------------------------------
 # YURUTME
 # ---------------------------------------------------------------------------
+# Metin kolonlarda "bos" anlamina gelen yazimlar. Dataiku'dan metin ya da
+# kategori olarak gelen donem kolonunda tek bir "NULL" hucresi, kolonun
+# sayisal donem olarak taninmasini engelliyordu.
+DONEM_BOS_YAZIMLAR = frozenset(("", "nan", "none", "null", "na", "n/a",
+                                "nat", "-", "?"))
+# "2025M01", "2025/01", "2025_1", "2025 01" -> yil + ay
+_YIL_AY_KALIP = re.compile(r"^(\d{4})\s*[-/._mM]?\s*(\d{1,2})$")
+# "01/2025", "1-2025", "01.2025" -> ay + yil
+_AY_YIL_KALIP = re.compile(r"^(\d{1,2})\s*[-/._]\s*(\d{4})$")
+
+
+def donem_degeri(x):
+    """Tek bir donem degerinin METIN karsiligi; bossa None.
+
+    Ayni donem kolonu Dataiku'dan sayi (202501), ondalikli sayi (bos
+    hucre yuzunden 202501.0), metin ("202501", " 202501 ") ya da kategori
+    olarak gelebilir. Bolme donemleri metin olarak karsilastiriyor; bu
+    yazimlarin HEPSI ayni "202501" metnine iner. Bos hucre "nan" metnine
+    DONUSMEZ: eskiden "nan" metin siralamasinda en sona dusup "son donem"
+    sayiliyor ve donemi bos satirlar test setine gidiyordu."""
+    if x is None:
+        return None
+    try:
+        if pd.isna(x):
+            return None
+    except (TypeError, ValueError):
+        pass
+    if isinstance(x, (bool, np.bool_)):
+        return str(x)
+    if isinstance(x, (int, np.integer)):
+        return str(int(x))
+    if isinstance(x, (float, np.floating)):
+        return str(int(x)) if float(x).is_integer() else str(x)
+    t = str(x).strip()
+    if t.lower() in DONEM_BOS_YAZIMLAR:
+        return None
+    if re.fullmatch(r"-?\d+\.0+", t):
+        t = t.split(".")[0]
+    return t
+
+
+def donem_serisi(s):
+    """Donem kolonunun donem_degeri ile normallesmis hali (object; bos=None).
+    Her farkli deger bir kez cevrilir: milyon satirda da hizli."""
+    s = pd.Series(s)
+    if pd.api.types.is_datetime64_any_dtype(s):
+        # Tarih kolonu ONCEKI metin bicimini korur ("2025-01-15"): kayitli
+        # test donemleri bu bicimde, degisirse eslesmez.
+        return s.astype(str).where(s.notna(), None).astype(object)
+    if isinstance(s.dtype, pd.CategoricalDtype):
+        s = s.astype(object)
+    esleme = {}
+    for deger in pd.unique(s):
+        try:
+            esleme[deger] = donem_degeri(deger)
+        except Exception:
+            esleme[deger] = None
+    return s.map(lambda d: esleme.get(d, None) if d == d else None).astype(object)
+
+
+def donem_sirala(degerler):
+    """Donem metinlerini ZAMAN sirasina dizer.
+
+    Metin siralamasi "2025M10"u "2025M2"den, "02/2025"i "01/2026"dan once
+    koyamaz. Degerler donem olarak cozulebiliyorsa (_donem_coz) aya gore,
+    ayni ay icinde metne gore; cozulemiyorsa duz metin sirasi."""
+    liste = sorted({str(d) for d in degerler if d is not None})
+    if len(liste) < 2:
+        return liste
+    try:
+        ay, _bicim = _donem_coz(pd.Series(liste, dtype=object))
+    except Exception:
+        ay = None
+    if ay is None or pd.Series(ay).isna().any():
+        return liste
+    sira = sorted(zip(pd.Series(ay).astype(float).tolist(), liste))
+    return [d for _a, d in sira]
+
+
+def _yil_ay_coz(s):
+    """"2025M01", "2025/01", "01/2025" gibi yazimlar -> (ay serisi, "YYYYMM").
+    Butun dolu degerler bu kaliplardan birine uymali ve ay 1-12 olmali."""
+    metin = s.astype(str).str.strip()
+    ay = pd.Series(np.nan, index=s.index)
+    for kalip, yil_i, ay_i in ((_YIL_AY_KALIP, 1, 2), (_AY_YIL_KALIP, 2, 1)):
+        parca = metin.str.extract(kalip)
+        if parca.isna().all().all():
+            continue
+        yil = pd.to_numeric(parca[yil_i - 1], errors="coerce")
+        a = pd.to_numeric(parca[ay_i - 1], errors="coerce")
+        uygun = yil.between(1900, 2999) & a.between(1, 12)
+        ay = ay.where(ay.notna() | ~uygun, yil * 12 + a)
+    dolu = s.notna()
+    if dolu.any() and ay[dolu].notna().all():
+        return ay, "YYYYMM"
+    return None, None
+
+
 def _donem_coz(s):
     """Donem kolonunu karsilastirilabilir aylik sayiya cevirir.
 
@@ -279,12 +377,21 @@ def _donem_coz(s):
         return None, None
 
     if not pd.api.types.is_numeric_dtype(s):
+        # Kategori ve metin: bos yazimlar ("", "NULL", "nan") gercekten bos
+        # sayilir, " 202501 " kirpilir, "202501.0" -> "202501".
+        if not pd.api.types.is_datetime64_any_dtype(s):
+            s = donem_serisi(s)
+            if not s.notna().any():
+                return None, None
         # "202401" gibi metin donemler once sayisal olarak denenir
         sayisal = pd.to_numeric(s, errors="coerce")
         if sayisal.notna().any() and sayisal.notna().sum() == int(s.notna().sum()):
             ay, bicim = _donem_coz(sayisal)
             if ay is not None:
                 return ay, bicim
+        ay, bicim = _yil_ay_coz(s)
+        if ay is not None:
+            return ay, bicim
         d = pd.to_datetime(s, errors="coerce")
         if d.notna().any():
             return d.dt.year * 12 + d.dt.month, "tarih"

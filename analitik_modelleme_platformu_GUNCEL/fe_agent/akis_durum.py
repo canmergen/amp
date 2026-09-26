@@ -14,6 +14,7 @@ import dataiku
 import numpy as np
 import pandas as pd
 
+from fe_agent.birlestirme import donem_degeri, donem_serisi, donem_sirala
 from fe_agent.akis_metin import ADIM_ADI, MOD_SECENEKLERI, SECIM_KALIP
 
 
@@ -1193,20 +1194,33 @@ def _donem_metni(durum, df):
     diye burada da metne cevriliyor."""
     donem = (durum.get("meta") or {}).get("donem")
     if donem and donem in df.columns:
-        return df[donem].astype(str)
+        # Sayi, ondalik, metin ve kategori ayni metne iner; bos hucre None
+        # kalir ("nan" metni olup son donem sayilmaz). Bkz. donem_degeri.
+        return donem_serisi(df[donem])
     return None
+
+
+def _donem_listesi(degerler):
+    """Kayitli donem secimlerini (eski calismada "202501.0" olabilir)
+    tablodaki normallesmis metinle ayni bicime getirir."""
+    if not isinstance(degerler, (list, tuple, set)):
+        degerler = [degerler]
+    cikti = []
+    for d in degerler:
+        n = donem_degeri(d)
+        if n is not None and n not in cikti:
+            cikti.append(n)
+    return cikti
 
 
 def _oot_donemleri(ds, a):
     """OOT'ye ayrilacak donem degerleri."""
-    tum = sorted(pd.unique(ds.dropna()).tolist())
+    tum = donem_sirala(pd.unique(ds.dropna()).tolist())
     if not tum:
         return []
     t = a["oot_tanim"]
     if t["tur"] == "secili" and t["deger"] not in (None, "", []):
-        d = t["deger"]
-        secili = set(str(x) for x in
-                     (d if isinstance(d, (list, tuple)) else [d]))
+        secili = set(_donem_listesi(t["deger"]))
         return [x for x in tum if x in secili]
     return tum[-t["adet"]:]
 
@@ -1334,7 +1348,7 @@ def _zamansal_val(ds, test_donemi, a, oot):
     Donem degerleri ayrik oldugu icin val_oran birebir tutturulamaz;
     val_oran'i karsilayan en az sayida onceki donem alinir ve egitime en
     az bir donem birakilir. Egitime donem kalmiyorsa val kurulmaz."""
-    tum = sorted(pd.unique(ds.dropna()).tolist())
+    tum = donem_sirala(pd.unique(ds.dropna()).tolist())
     if test_donemi not in tum:
         return pd.Series(False, index=ds.index)
     onceki = [d for d in tum[:tum.index(test_donemi)]
@@ -1367,17 +1381,16 @@ def _zamansal_test_donemleri(durum, ds, a):
     # adiminda BIR KEZ hesaplanip duruma yaziliyor.
     kalici = b.get("test_donemleri")
     if kalici:
-        return [str(x) for x in kalici]
+        return _donem_listesi(kalici)
 
     adet = int((a.get("oot_tanim") or {}).get("adet") or 1)
     secili = (a.get("oot_tanim") or {}).get("deger")
 
     if (a.get("oot_tanim") or {}).get("tur") == "secili" and secili:
-        return [str(x) for x in (secili if isinstance(secili, (list, tuple))
-                                 else [secili])]
+        return _donem_listesi(secili)
     if b.get("oot_deger") is not None and adet <= 1:
-        return [str(b["oot_deger"])]
-    sirali = sorted(set(ds.dropna().astype(str)))
+        return _donem_listesi(b["oot_deger"])
+    sirali = donem_sirala(set(ds.dropna()))
     return sirali[-adet:] if sirali else []
 
 
@@ -1411,7 +1424,7 @@ def _zamansal_bosluk(ds, test_donemleri, a, df):
     n = int(a.get("gap") or 0)
     if n <= 0 or not test_donemleri:
         return _bos_maske(df)
-    tum = sorted(set(str(x) for x in pd.unique(ds.dropna())))
+    tum = donem_sirala(pd.unique(ds.dropna()))
     kalan = [d for d in tum if d not in set(test_donemleri)]
     if len(kalan) <= 1:
         return _bos_maske(df)
@@ -1961,7 +1974,7 @@ def _zaman_katlari(ds, idx, a, notlar):
     """Walk-forward: her kat onceki donemlerde egitilir, SONRAKI donemde
     dogrulanir. Gelecegi gorup gecmisi tahmin etmek modelin gercek kullanim
     kosulu degildir."""
-    donemler = sorted(pd.unique(ds.dropna()).tolist())
+    donemler = donem_sirala(pd.unique(ds.dropna()).tolist())
     if len(donemler) < 2:
         notlar.append("Zaman sıralı çapraz doğrulama için en az iki dönem gerekiyor; "
                       "eğitim setinde %s dönem var. Çapraz doğrulama kapatıldı."

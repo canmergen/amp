@@ -139,6 +139,10 @@ def _aday_kolonlar(df):
 DONEM_ORNEK_SATIR = 5000
 
 
+# Aday olmak icin dolu hucrelerin en az bu kadari donem olarak cozulmeli.
+DONEM_COZULME_ORANI = 0.95
+
+
 def _donem_adaylari(df, kimlik=()):
     """Donem kolonu adaylari (kullanici karari: "tek değeri olan gelmemeli,
     kimlik ve hedef gelmemeli, tarih ya da tarihe benzeyen kolon gelmeli").
@@ -167,7 +171,15 @@ def _donem_adaylari(df, kimlik=()):
         if n_tekil <= 1 or ad in kimlik or (satir > 1 and n_tekil == satir):
             continue
         try:
-            _ay, bicim = birl_mod._donem_coz(ornek[kolon])
+            ay, bicim = birl_mod._donem_coz(ornek[kolon])
+            dolu = birl_mod.donem_serisi(ornek[kolon]).notna()
+            # Tarih cozucusu tek bir tarihe benzer hucrede bile "tarih"
+            # diyebiliyor; aday olmak icin dolu hucrelerin neredeyse
+            # tamami donem olarak cozulmeli.
+            if bicim and dolu.any():
+                oran = float(pd.Series(ay)[dolu.to_numpy()].notna().mean())
+                if oran < DONEM_COZULME_ORANI:
+                    bicim = None
         except Exception:
             bicim = None
         if bicim:
@@ -1966,9 +1978,9 @@ def _tanimlar_formu(durum, meta=None):
     # zamansal bolmeyi sessizce bozardi.
     donem_liste = _ekle(donem_aday, m.get("donem"))
     donem_not = ("" if donem_aday else
-                 "Veri setinde tarih ya da dönem biçimli (202401, "
-                 "2024-01-15…) bir kolon bulunamadı; zamansal bölme "
-                 "kurulamaz.")
+                 "Veri setinde dönem bilgisi taşıyan bir kolon "
+                 "bulunamadı (202501 gibi sayı ya da metin, 2025-01 ya "
+                 "da tarih). Zamansal bölme kurulamaz.")
 
     hedef_not = ("" if hedef_aday else
                  "Veri setinde 0/1 değerli kolon bulunamadı; tüm kolonlar "
@@ -2010,7 +2022,7 @@ def _tanimlar_formu(durum, meta=None):
             {"ad": "donem", "etiket": "Dönem kolonu (opsiyonel)",
              "kaynak": "kolon", "zorunlu": False,
              "deger": m.get("donem") or "", "secenekler": donem_liste,
-             "ipucu": "Yalnızca tarih ya da dönem biçimli kolonlar",
+             "ipucu": "Dönem bilgisi taşıyan kolonlar: 202501 (sayı, metin ya da kategori), 2025-01, tarih",
              "not": donem_not},
         ],
         "sablon": "target {target} id {id} donem {donem}",
@@ -2071,8 +2083,9 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
         ("id", p.get("kimlik_adaylari"), "kimlik kolonu",
          "yalnızca tekrarsız (her satırda farklı) bir kolon olabilir"),
         ("donem", p.get("donem_adaylari"), "dönem kolonu",
-         "yalnızca tarih ya da dönem biçimli (202401, 2024-01-15…) ve "
-         "birden fazla değer taşıyan bir kolon olabilir"),
+         "yalnızca dönem bilgisi taşıyan (202501 gibi sayı, metin ya da "
+         "kategori; 2025-01 ya da tarih) ve birden fazla değer taşıyan "
+         "bir kolon olabilir"),
     ]
     uygunsuz = []
     for anahtar, adaylar, etiket, kural in aday_kurali:
@@ -2162,7 +2175,10 @@ def tanimlar_uygula(durum):
     donem_not = "belirtilmedi"
     durum.pop("_donem_dusuruldu", None)
     if donem and donem in df.columns:
-        donemler = sorted(pd.Series(df[donem].dropna().unique()).astype(str))
+        # Bolmeyle AYNI normallestirme ve ZAMAN sirasi (bkz.
+        # birlestirme.donem_degeri / donem_sirala).
+        donemler = birl_mod.donem_sirala(
+            birl_mod.donem_serisi(df[donem]).dropna().unique().tolist())
         durum["_donemler"] = donemler
         if donemler:
             p["donem_min"] = donemler[0]
