@@ -8,7 +8,8 @@ import pandas as pd
 
 from fe_agent import sfa as sfa_mod
 from fe_agent import sozluk_calisma
-from fe_agent.akis_metin import MOD_ADLARI
+from fe_agent.akis_metin import (
+    BIRLESTIREN_MODLAR, MOD_ADLARI, SOZLUK_URETEN_MODLAR)
 from fe_agent.akis_durum import (
     AMP_SOZLUK_ADI, AMP_VERI_ADI, BOLME_ALAN_ACIKLAMA, BOLME_ALAN_BASLIK,
     LINEAGE_ADI, SOZLUK_ADI, TRAIN_KULLANIMI_BASLIK, _ond, _sayi,
@@ -23,9 +24,8 @@ from fe_agent.akis_durum import (
 from fe_agent.akis_kayit import ADIMLAR, adim_grubu, adim_sirasi, fazlar
 
 
-# Sozluk YALNIZCA Mod B ve C'de platform tarafindan uretilir; Mod A'da
-# kullanicinin hazir sozlugu secmesi beklenir.
-SOZLUK_URETEN_MODLAR = ("B", "C")
+# Sozluk YALNIZCA Mod C ve D'de platform tarafindan uretilir; A ve B'de
+# kullanicinin hazir sozlugu secmesi beklenir (akis_metin'de tanimli).
 
 
 def _baz_degisken_sayisi(bz, p):
@@ -97,7 +97,8 @@ def _serit_veri_sozluk_karti(durum):
     if not (veri_ad and kolon):
         return {"deger": BOS_DEGER, "bos": True,
                 "ust": ("kaynak tablolardan oluşturulacak"
-                        if durum.get("mod") == "C" else "veri seti seçilmedi"),
+                        if durum.get("mod") in BIRLESTIREN_MODLAR
+                        else "veri seti seçilmedi"),
                 "alt": alt}
 
     return {"deger": "%s × %s" % (_sayi(satir or 0), _sayi(kolon)),
@@ -701,12 +702,14 @@ def sol_panel_adi(anahtar):
     return (ADIMLAR.get(anahtar) or {}).get("baslik") or anahtar
 
 
-# Veri setini hangi adim getiriyor - moda gore. Mod C'de tablo
-# birlestirme planindan uretiliyor; A ve B'de gruplu adimda seciliyor.
-VERI_ADIMI_ANAHTARI = {"A": "kurulum", "B": "veri_sec", "C": "birlestirme"}
-# Sozlugu hangi adim getiriyor: A'da hazir sozluk kurulumda secilir,
-# B ve C'de veriden uretilir.
-SOZLUK_ADIMI_ANAHTARI = {"A": "kurulum", "B": "sozluk_uret", "C": "sozluk_uret"}
+# Veri setini hangi adim getiriyor - moda gore. B ve D'de tablo
+# birlestirme planindan uretiliyor; A ve C'de gruplu adimda seciliyor.
+VERI_ADIMI_ANAHTARI = {"A": "kurulum", "B": "birlestirme",
+                       "C": "veri_sec", "D": "birlestirme"}
+# Sozlugu hangi adim getiriyor: A'da kurulumda, B'de ayri adimda hazir
+# sozluk secilir; C ve D'de veriden uretilir.
+SOZLUK_ADIMI_ANAHTARI = {"A": "kurulum", "B": "sozluk_sec",
+                         "C": "sozluk_uret", "D": "sozluk_uret"}
 
 
 def _veri_adimi(durum):
@@ -731,7 +734,8 @@ BOLME_ADIMI = sol_panel_adi("bolme")
 # modlar farkli adim tasiyor ama ortak adimlarin sirasi aynı.
 _AKIS_ADLARI = []
 for _a in (["mod", "ham_veri", "birlestirme", "kurulum", "veri_sec",
-            "sozluk_uret", "tanimlar", "sozluk_tanim", "teyit", "bolme"]
+            "sozluk_sec", "sozluk_uret", "tanimlar", "sozluk_tanim",
+            "teyit", "bolme"]
            + [a for a in adim_sirasi(None) if a != "mod"]):
     if sol_panel_adi(_a) not in _AKIS_ADLARI:
         _AKIS_ADLARI.append(sol_panel_adi(_a))
@@ -884,8 +888,12 @@ def _veri_kokeni(durum):
     ORIJINAL AD BURADA gecer, ayri bir "ad" satirinda degil: kullanici
     hangi tablodan gelindigini bilmeli ama onu bir baslik gibi degil,
     kokenin parcasi olarak gormeli."""
-    if durum.get("mod") == "C":
+    if durum.get("mod") in BIRLESTIREN_MODLAR:
         adlar = _kaynak_tablolar(durum)
+        if not durum.get("veri_seti"):
+            # Birlestirme henuz CALISMADI: "Oluşturuldu" demek yanlis;
+            # satir bos kalir ve kart notu hangi adimda dolacagini soyler.
+            return None
         if not adlar:
             return "Kaynak Tablolardan Oluşturuldu"
         gorunen = ", ".join(adlar[:KOKEN_TABLO_SINIRI])
@@ -909,7 +917,7 @@ def _sozluk_kokeni(durum):
         return "Dil Modeli Tarafından Oluşturulacak" if uretilen else None
     if not uretilen:
         return "Hazır Sözlük Seçildi: %s" % sozluk_calisma.sozluk_adi(durum)
-    koken = ("Sıfırdan, Dil Modeli Tarafından Oluşturuldu" if mod == "C"
+    koken = ("Sıfırdan, Dil Modeli Tarafından Oluşturuldu" if mod == "D"
              else "Veri Setinden Dil Modeli Tarafından Oluşturuldu")
     return "%s; %s" % (koken, "Teyit Edildi" if _adim_gecildi(durum, "teyit")
                        else "Teyit Edilecek")

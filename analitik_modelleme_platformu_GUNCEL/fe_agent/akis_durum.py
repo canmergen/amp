@@ -14,7 +14,7 @@ import dataiku
 import numpy as np
 import pandas as pd
 
-from fe_agent.akis_metin import ADIM_ADI, SECIM_KALIP
+from fe_agent.akis_metin import ADIM_ADI, MOD_SECENEKLERI, SECIM_KALIP
 
 
 HAFIZA_FOLDER = "PROJE_HAFIZASI"
@@ -130,8 +130,10 @@ def _yol(oturum_id):
 def yeni_durum():
     return {
         "i": 0, "bekleyen": "girdi",
-        "mod": None,                 # "A" | "B" | "C"
-        "ham_tablolar": [],          # Mod A
+        "mod": None,                 # "A" | "B" | "C" | "D"
+        # Mod harflerinin hangi duzene gore yazildigi (bkz. MOD_GOCU).
+        "_mod_surumu": MOD_SURUMU,
+        "ham_tablolar": [],          # Mod B ve D
         "birlestirme": {},           # plan + ozet
         "sozluk_uretim": {},         # ozet
         "veri_seti": None, "sozluk": None,
@@ -201,6 +203,47 @@ def _json_uygun(deger, yol="durum"):
     raise TypeError("Durum JSON'a cevrilemedi: %s -> %s tipi desteklenmiyor "
                     "(deger: %.80r)" % (yol, type(deger).__name__, deger))
 
+# ---------------------------------------------------------------------------
+# MOD GOCU
+# ---------------------------------------------------------------------------
+# Surum 2'de "Veri Seti Hazır Değil, Sözlük Hazır" B olarak araya girdi;
+# eski B (veri hazir, sozluk yok) C, eski C (ikisi de yok) D oldu. Harf
+# ekranda gorundugu ve kodda moda gore adim listesi sectigi icin, eski bir
+# kaydin "B"si okunurken "C"ye cevrilmezse calisma baska bir adim
+# listesine dusup bozulurdu. Kayitta "_mod_surumu" yoksa eski duzendir.
+MOD_SURUMU = 2
+MOD_GOCU = {"B": "C", "C": "D"}
+
+
+def _mod_goc(durum):
+    if durum.get("_mod_surumu", 1) >= MOD_SURUMU:
+        return durum
+    for alan in ("mod", "_onceki_mod", "_mod_onay"):
+        if durum.get(alan) in MOD_GOCU:
+            durum[alan] = MOD_GOCU[durum[alan]]
+    # Baslangic seciminde bekleyen eski uc kart: yenileri gosterilsin.
+    if _eski_mod_kartlari(durum.get("_secenekler")):
+        durum["_secenekler"] = [dict(x) for x in MOD_SECENEKLERI]
+    # Sohbet gecmisinde cizilen eski kartlar ve isaretli secim: eski
+    # calisma acilinca "B" isaretli gorunup yeni B'yi anlatmasin.
+    for kayit in durum.get("_gecmis") or []:
+        ekran = kayit.get("ekran") if isinstance(kayit, dict) else None
+        if not isinstance(ekran, dict) or \
+                not _eski_mod_kartlari(ekran.get("secenekler")):
+            continue
+        ekran["secenekler"] = [dict(x) for x in MOD_SECENEKLERI]
+        if ekran.get("secili") in MOD_GOCU:
+            ekran["secili"] = MOD_GOCU[ekran["secili"]]
+    durum["_mod_surumu"] = MOD_SURUMU
+    return durum
+
+
+def _eski_mod_kartlari(secenekler):
+    return (isinstance(secenekler, list) and len(secenekler) == 3 and all(
+        isinstance(x, dict) and x.get("deger") in ("A", "B", "C")
+        for x in secenekler))
+
+
 def durum_kaydet(oturum_id, durum):
     temiz = _json_uygun(durum)
     veri = json.dumps(temiz, ensure_ascii=False, indent=2,
@@ -249,7 +292,7 @@ def durum_yukle(oturum_id):
         raise DurumOkunamadi("Oturum kaydı beklenen biçimde değil (%s)." % yol)
 
     durum["_oturum_id"] = oturum_id
-    return durum
+    return _mod_goc(durum)
 
 def durum_yukle_guvenli(oturum_id):
     """(durum, hata) doner. Bozuk kayitta hata metni dolu gelir ve durum

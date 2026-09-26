@@ -1,5 +1,39 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **dört başlangıç (A/B/C/D)** ve **rozetler Başlık Büyük Harfi**.
+
+## Kopyala-yapıştır sırası (bu tur)
+**Library Editor (`python/fe_agent/`):** `akis_metin.py` → `akis_durum.py`
+→ `akis_faz01.py` → `akis_kayit.py` → `akis_panel.py` → `akis_faz05.py`
+**Webapp:** `backend.py` → `app.js`
+
+## 1. Dört başlangıç
+| Harf | Başlangıç | Adımlar |
+|---|---|---|
+| A | Veri Seti ve Sözlük Hazır | kurulum → tanımlar → sözlük tanımları |
+| **B (yeni)** | Veri Seti Hazır Değil, Sözlük Hazır | ham tablolar → birleştirme → **sözlük seçimi** → tanımlar → sözlük tanımları |
+| C (eski B) | Veri Seti Hazır, Sözlük Hazır Değil | veri seti → sözlük üretimi → tanımlar |
+| D (eski C) | Veri Seti ve Sözlük Hazır Değil | ham tablolar → birleştirme → sözlük üretimi → tanımlar |
+
+Eski kayıtlar okunurken B→C, C→D çevriliyor (`akis_durum.MOD_GOCU`);
+yarım kalmış çalışmalar bozulmuyor. Kod artık `mod == "C"` gibi tek
+harfe değil `BIRLESTIREN_MODLAR` / `SOZLUK_URETEN_MODLAR` gruplarına bakıyor.
+
+**Dikkat (B):** Birleştirmenin ürettiği toplama kolonları hazır sözlükte
+olmayacağı için «Sözlük Tanımları» kartında tanımsız listelenir ve
+varsayılan olarak analiz dışında kalır; dil modeli önerileri o kartta.
+
+## 2. Rozetler
+"✓ Girdiler hazır" → "✓ Girdiler Hazır", "0/2 seçildi" → "0/2 Seçildi",
+"Değiştir Seçildi", "Geri Dönüldü"; karar sonrası rozet metni de
+("2 Kolon Sözlüğe Eklendi") aynı biçime çevriliyor.
+
+## 3. Küçük düzeltme
+Birleştirme yapılmadan veri kartında «Köken: Kaynak Tablolardan
+Oluşturuldu» yazıyordu; artık satır boş kalıyor.
+
+---
+
 Bu tur: **sağ panel adım adları sol panelle aynı**, **"ve ve ve" cümlesi
 düzeldi**, **ANALİTİK SÜREÇ açılır kapanır**, **çalışma adları sade** ve
 **"Yeni Çalışma" artık hiçbir şeyi silmiyor — "Çalışmalarım" listesinden

@@ -9,6 +9,7 @@ from fe_agent import kutuk as katalog_mod
 from fe_agent import senaryo as senaryo_mod
 from fe_agent import validasyon
 
+from fe_agent.akis_metin import BIRLESTIREN_MODLAR
 from fe_agent.akis_durum import (
     BAZ_ADI, LINEAGE_ADI, _dataset_okunur_mu, _df_oku, _ond, _sayi, _yaz,
     GECERSIZ_BIRLESIM, bolme_ayarlari, bolme_uyarilari, katlar,
@@ -579,10 +580,10 @@ def katalog_uygula(durum):
     elif _sifir_iceriyor(ga):
         katki += "  (güven aralığı sıfırı içeriyor - gürültüden ayırt edilemiyor)"
 
-    # MODELLEME_BAZ ve MODELLEME_LINEAGE YALNIZCA Mod C'de (birlestirme
-    # adiminda) uretilir; Mod A'da bu iki veri seti yoktur.
+    # MODELLEME_BAZ ve MODELLEME_LINEAGE YALNIZCA birlestiren modlarda
+    # (B, D) uretilir; A ve C'de bu iki veri seti yoktur.
     ek = ""
-    if durum.get("mod") == "C":
+    if durum.get("mod") in BIRLESTIREN_MODLAR:
         ek = "\n  %s\n  %s" % (BAZ_ADI, LINEAGE_ADI)
 
     atlanan_not = ""

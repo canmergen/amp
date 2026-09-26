@@ -19,7 +19,7 @@ from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 
 from fe_agent.akis_metin import (
-    ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI)
+    ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI, MOD_SIRA)
 from fe_agent.akis_durum import (
     BAZ_ADI, LINEAGE_ADI, SOZLUK_ADI, SPLIT_KOLON, TEST_KIMLIK_LIMITI,
     AdimHatasi, _ad_haritasi,
@@ -250,8 +250,7 @@ def mod_girdi(durum, mesaj):
     if bekleyen_mod:
         if m:
             # Kullanici onay yerine baska bir mod kartina dokundu.
-            secilen = {"1": "A", "2": "B", "3": "C"}.get(
-                m.group(2).upper(), m.group(2).upper())
+            secilen = MOD_SIRA.get(m.group(2).upper(), m.group(2).upper())
             if secilen == eski_mod:
                 # Eski moda geri dondu: silinecek bir sey yok, onay gereksiz.
                 _mod_yerlestir(durum, secilen)
@@ -298,7 +297,7 @@ def mod_girdi(durum, mesaj):
         return False, KARSILAMA
 
     secim = m.group(2).upper()
-    yeni_mod = {"1": "A", "2": "B", "3": "C"}.get(secim, secim)
+    yeni_mod = MOD_SIRA.get(secim, secim)
 
     if eski_mod and eski_mod != yeni_mod:
         # _mod_sifirla DOGRUDAN CAGRILMAZ: once onay.
@@ -755,6 +754,60 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     durum["veri_seti"], durum["sozluk"] = veri, sozluk
     durum["_secim_alani"] = None
     return True, None
+
+# ===========================================================================
+# ADIM SOZLUK SECIMI  (Mod B: veri seti birlestirmeyle olustu, sozluk hazir)
+# ===========================================================================
+# Mod A'nin kurulum formunun YALNIZCA sozluk alani: veri seti bir onceki
+# adimda (birlestirme) BAZ_ADI olarak yazildi, burada yeniden sorulmaz.
+# Sonrasi Mod A ile AYNI: tanimlar -> sozluk_tanim -> teyit. Birlestirmenin
+# urettigi toplama kolonlari hazir sozlukte bulunmayacagi icin sozluk_tanim
+# adiminda "tanimsiz" olarak listelenir.
+def _sozluk_sec_formu(durum, sozluk=None):
+    durum["_secim_alani"] = {
+        "tip": "form",
+        "baslik": "Değişken sözlüğü",
+        "aciklama": "Birleştirilen veri seti için kullanılacak değişken "
+                    "sözlüğünü seçin.",
+        "buton": "Girdileri Doğrula",
+        "alanlar": [
+            {"ad": "sozluk", "etiket": "Değişken sözlüğü",
+             "deger": sozluk or durum.get("sozluk") or ""},
+        ],
+        "sablon": "sözlük {sozluk}",
+    }
+
+
+def sozluk_sec_girdi(durum, mesaj, yeniden_sor=False):
+    """kurulum_girdi'nin sozluk yarisi. Metin yok, yalniz form."""
+    a = niyet_kural.alanlari_cikar(mesaj) if mesaj else {}
+    sozluk = a.get("sozluk")
+
+    if yeniden_sor or not sozluk:
+        _sozluk_sec_formu(durum, sozluk or (durum.get("sozluk")
+                                            if yeniden_sor else None))
+        return False, ""
+
+    if not durum.get("veri_seti"):
+        # Birlestirme yazilamadiysa (bkz. birlestirme_uygula) buraya
+        # gelinmemeli; eski bir oturum icin acik hata.
+        raise AdimHatasi("Birleştirilmiş veri seti bulunamadı. "
+                         "Birleştirme Planı adımına dönüp yeniden çalıştırın.")
+
+    if not _dataset_var_mi(sozluk):
+        _sozluk_sec_formu(durum, sozluk)
+        return False, ("'%s' adında bir tabloya erişemiyorum. "
+                       "Adı kontrol edip yeniden seçin." % sozluk)
+
+    durum["sozluk"] = sozluk
+    durum["_secim_alani"] = None
+    return True, None
+
+
+def sozluk_sec_uygula(durum):
+    """Kapsam ve calisma kopyasi: kurulum_uygula ile ayni is."""
+    return kurulum_uygula(durum)
+
 
 # ---------------------------------------------------------------------------
 # GIRDI DOGRULAMA  —  tanimsiz kolonlar icin satir satir karar

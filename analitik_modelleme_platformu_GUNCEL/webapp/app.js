@@ -3679,7 +3679,7 @@ function blokBasligiEkle(kap, blok) {
     bas.appendChild(avatarYap("bot"));
     bas.appendChild(elYap("span", "blok-ad", tireSade(b.baslik || "")));
     /* Durum rozetinin yuvası - gruplu bloktaki .alt-bas ile AYNI sınıf.
-       Kart kendi başlığını artık çizmediği için ("✓ Girdiler hazır")
+       Kart kendi başlığını artık çizmediği için ("✓ Girdiler Hazır")
        rozetin gidecek bir yeri olmalı; boşken CSS onu gizliyor. */
     bas.appendChild(elYap("span", "alt-rozet"));
 
@@ -3889,7 +3889,7 @@ function grupKabiAl(blok) {
         bolum.dataset.adim = blok.adim;
         const bas = elYap("div", "alt-bas");
         bas.appendChild(elYap("span", "alt-ad", tireSade(blok.baslik || "")));
-        /* ROZET YUVASI: kartın "✓ Girdiler hazır" göstergesi buraya
+        /* ROZET YUVASI: kartın "✓ Girdiler Hazır" göstergesi buraya
            taşınıyor. Kartın kendi başlık satırında kalınca alt başlık
            ile gövde metni arasında koca bir boşluk oluşuyordu; rozet
            tek başına bir satır kaplıyordu. */
@@ -4238,9 +4238,13 @@ function kolonlariHazirla(alan) {
    — basilabilir gorunuyor, basilinca hicbir sey olmuyordu. Yerine baslik
    satirinin saginda .secim-durum gostergesi var (bir <span>; dugme degil,
    imleci degismez), gonderildikten sonra birincil dugme GIZLENIR. */
-const SECIM_HAZIR = "✓ Girdiler hazır";
+/* ROZETLER BAŞLIK BÜYÜK HARFİYLE (kullanıcı kararı: "Girdiler hazır"
+   değil "Girdiler Hazır"). Sabit metinler burada öyle yazılı; arka
+   uçtan gelen rozet metinleri rozetMetni() ile aynı biçime çevriliyor. */
+const SECIM_HAZIR = "✓ Girdiler Hazır";
 const secimDurumMetni = (dolu, toplam) =>
-    (toplam > 0 && dolu >= toplam) ? SECIM_HAZIR : (dolu + "/" + toplam + " seçildi");
+    (toplam > 0 && dolu >= toplam) ? SECIM_HAZIR : (dolu + "/" + toplam + " Seçildi");
+const rozetMetni = (metin) => "✓ " + baslikBuyuk(metin);
 
 const GECERSIZ_GOLGE = "0 0 0 var(--halka) var(--amber-halka)";
 const LISTE_YUKSEKLIGI = 208;            /* .combo-liste max-height ile ayni */
@@ -4643,7 +4647,7 @@ function dogrulamaKartiEkle(alan, blok) {
     if (alan.rozet) {
         rozet = document.createElement("span");
         rozet.className = "dg-rozet";
-        rozet.textContent = "✓ " + tireSade(alan.rozet);
+        rozet.textContent = rozetMetni(alan.rozet);
         basSatir.appendChild(rozet);
     }
     /* Gruplu blokta başlık satırı boş kalır ve rozet alt başlığa taşınır
@@ -5017,7 +5021,7 @@ function dogrulamaKartiEkle(alan, blok) {
         oneriBekliyor = false;
         girdileriKilitle(true);
         const eskiRozet = rozet ? rozet.textContent : "";
-        if (rozet && ozet) rozet.textContent = "✓ " + tireSade(ozet);
+        if (rozet && ozet) rozet.textContent = rozetMetni(ozet);
 
         geriAlKilit = () => {
             kart.classList.remove("kilitli");
@@ -6234,7 +6238,7 @@ function teyitKartiEkle(alan, blok) {
 
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     rozetiBasligaTasi(blok, durumEl);
-    /* Excel düğmesi BLOK BAŞLIK SATIRINDA, "✓ Girdiler hazır" rozetinin
+    /* Excel düğmesi BLOK BAŞLIK SATIRINDA, "✓ Girdiler Hazır" rozetinin
        yanında (kullanıcı kararı). Kart gövdesinde, listenin üstünde
        dururken hem kendi satırını yiyordu hem de kaydettikten sonra
        kullanıcının baktığı yer başlık satırıydı. */
@@ -6248,7 +6252,7 @@ function teyitKartiEkle(alan, blok) {
     if (alan.hedef) analizSekmeAc(alan.hedef);
 }
 
-/* Kartın durum rozetini ("✓ Girdiler hazır") ALT BAŞLIK satırına taşır.
+/* Kartın durum rozetini ("✓ Girdiler Hazır") ALT BAŞLIK satırına taşır.
    Gruplu blokta kartın kendi başlık satırı çizilmiyor; rozet orada
    kalsaydı tek başına bir satır kaplar ve alt başlık ile gövde arasında
    büyük bir boşluk bırakırdı. */
@@ -6309,12 +6313,12 @@ function secimAlaniEkle(alan, blok) {
        BAŞLIĞINDA yazıyor ("Modelleme Tanımları"). Kart bir de kendi
        başlığını ("Modelleme tanımları") basınca aynı ad iki kez, üstelik
        iki ayrı yazım biçimiyle görünüyordu. Satır DURUYOR: sağındaki
-       "✓ Girdiler hazır" göstergesi ona yaslı. */
+       "✓ Girdiler Hazır" göstergesi ona yaslı. */
     bas.textContent = kartBasligiGerekli(alan, blok) ? tireSade(alan.baslik) : "";
     basSatir.appendChild(bas);
 
     /* Durum gostergesi: <span>, dugme DEGIL. Kart gonderildikten sonra
-       "✓ Girdiler hazır" yazip kalir; kartin kilitli oldugunu anlatan
+       "✓ Girdiler Hazır" yazip kalir; kartin kilitli oldugunu anlatan
        tek isaret budur. */
     const durumEl = document.createElement("span");
     durumEl.className = "secim-durum";
@@ -6885,8 +6889,8 @@ function gonder(metinDisaridan, etiket, ekGovde) {
    (aksiyon izi) dusuyor - bu bir balon degil, ince bir ayrac satiri. */
 const AKSIYON_IZLERI = {
     onayla:   "✓ Onaylandı",
-    degistir: "Değiştir seçildi",
-    geri:     "Geri dönüldü"
+    degistir: "Değiştir Seçildi",
+    geri:     "Geri Dönüldü"
 };
 
 function aksiyonIziEkle(metin) {

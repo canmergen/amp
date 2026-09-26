@@ -976,7 +976,7 @@ def _karsilama_govdesi(durum):
 # gecmise hic yazilmiyorlar; ama bu duzeltmeden ONCE kaydedilmis
 # oturumlarda duruyorlar ve oturum acilinca ekranda tek harflik "A"
 # balonu olarak beliriyorlar. Eski kayitlar icin okuma sirasinda elenir.
-_SECIM_JETONLARI = {"a", "b", "c", "1", "2", "3",
+_SECIM_JETONLARI = {"a", "b", "c", "d", "1", "2", "3", "4",
                     "evet", "hayir", "hayır", "onayla", "onay", "tamam",
                     "devam", "geri", "geri dön", "değiştir", "degistir",
                     "onayla ve uygula", "analizi başlat", "analizi baslat",

@@ -10,6 +10,7 @@ from fe_agent.akis_faz01 import (
     birlestirme_plan, birlestirme_uygula, bolme_girdi, bolme_uygula,
     ham_veri_girdi, ham_veri_plan, ham_veri_uygula, kurulum_girdi,
     kurulum_uygula, mod_girdi, mod_plan, mod_uygula,
+    sozluk_sec_girdi, sozluk_sec_uygula,
     sozluk_tanim_plan, sozluk_tanim_uygula,
     sozluk_uret_plan, sozluk_uret_uygula, tanimlar_girdi,
     tanimlar_uygula, teyit_girdi, teyit_uygula, veri_sec_girdi,
@@ -81,6 +82,13 @@ ADIMLAR = {
         # tanimlarindan SONRA veriliyor (hedef/kimlik/donem kolonunun
         # tanimi zorunlu, hangileri oldugu once bilinmeli).
         "girdi": kurulum_girdi, "plan": None, "uygula": kurulum_uygula},
+
+    "sozluk_sec": {
+        "baslik": "Değişken Sözlüğü",
+        "aciklama": "Birleştirilen veri seti için hazır değişken sözlüğü "
+                    "seçilir; kapsam oranı hesaplanır.",
+        # plan=None: FORMUN KENDISI ONAYDIR (kurulum ile ayni).
+        "girdi": sozluk_sec_girdi, "plan": None, "uygula": sozluk_sec_uygula},
 
     "sozluk_tanim": {
         "baslik": "Sözlük Tanımları",
@@ -198,11 +206,16 @@ FAZ01_ADIMLARI = {
     # donem kolonunun sozlukte tanimli olmasi zorunlu; hangi kolonlar
     # oldugu tanimlar adiminda belli oluyor.
     "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "teyit", "bolme"],
-    # B ve C'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
+    # B: veri seti kaynak tablolardan BIRLESTIRILIR, sozluk HAZIR. Sozluk
+    # hazir oldugu icin A gibi sozluk_tanim adimi var: birlestirmenin
+    # urettigi kolonlar sozlukte bulunmaz.
+    "B":  ["mod", "ham_veri", "birlestirme", "sozluk_sec", "tanimlar",
+           "sozluk_tanim", "teyit", "bolme"],
+    # C ve D'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
     # tanimsiz kolon kalmiyor ve ayri bir "sozluk_tanim" adimina gerek
     # yok. Zorunlu tanim kurali orada yapisi geregi saglaniyor.
-    "B":  ["mod", "veri_sec", "sozluk_uret", "tanimlar", "teyit", "bolme"],
-    "C":  ["mod", "ham_veri", "birlestirme", "sozluk_uret", "tanimlar",
+    "C":  ["mod", "veri_sec", "sozluk_uret", "tanimlar", "teyit", "bolme"],
+    "D":  ["mod", "ham_veri", "birlestirme", "sozluk_uret", "tanimlar",
            "teyit", "bolme"],
 }
 
@@ -220,10 +233,12 @@ ADIM_GRUPLARI = {
     "kurulum":     "veri_sozluk",
     "tanimlar":    "veri_sozluk",
     "sozluk_tanim": "veri_sozluk",
-    # B modu: veri seti secimi + sozluk uretimi + modelleme tanimlari
+    # B modu: hazir sozluk secimi
+    "sozluk_sec":  "veri_sozluk",
+    # C modu: veri seti secimi + sozluk uretimi + modelleme tanimlari
     "veri_sec":    "veri_sozluk",
     "sozluk_uret": "veri_sozluk",
-    # C modunda ham tablolar ve birlestirme AYRI kalir: onlar veri
+    # B ve D modunda ham tablolar ve birlestirme AYRI kalir: onlar veri
     # hazirlama isi, sozluk ve tanimlar ayri bir karar kumesi.
 }
 

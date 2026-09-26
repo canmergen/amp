@@ -38,17 +38,36 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 # ADIM 1.1 — CALISMA BASLANGICI  (her secimde ilk adim)
 # ===========================================================================
 
+# DORT BASLANGIC. Harf = ekranda gorunen harf = ic anahtar.
+#   A  veri seti hazir,  sozluk hazir
+#   B  veri seti YOK,    sozluk hazir   (yeni: tablolar birlestirilir,
+#                                         hazir sozluk baglanir)
+#   C  veri seti hazir,  sozluk YOK     (eski B)
+#   D  veri seti YOK,    sozluk YOK     (eski C)
+# Eski kayitlardaki B/C, okunurken C/D'ye cevriliyor
+# (bkz. akis_durum.MOD_GOCU).
 MOD_SECENEKLERI = [
     {"deger": "A", "baslik": "Veri Seti ve Sözlük Hazır",
      "aciklama": "Mevcut veri seti ve değişken sözlüğüyle doğrudan modelleme "
                  "tanımlarına ve veri analizine geçin."},
-    {"deger": "B", "baslik": "Veri Seti Hazır, Sözlük Hazır Değil",
+    {"deger": "B", "baslik": "Veri Seti Hazır Değil, Sözlük Hazır",
+     "aciklama": "Kaynak tabloları birleştirerek veri setini oluşturun; "
+                 "mevcut değişken sözlüğünü bağlayın."},
+    {"deger": "C", "baslik": "Veri Seti Hazır, Sözlük Hazır Değil",
      "aciklama": "Hazır veri setini kullanın; değişken sözlüğünü kolon yapısı "
                  "ve veri profili üzerinden oluşturun."},
-    {"deger": "C", "baslik": "Veri Seti ve Sözlük Hazır Değil",
+    {"deger": "D", "baslik": "Veri Seti ve Sözlük Hazır Değil",
      "aciklama": "Kaynak tabloları seçin; birleştirme, veri seti oluşturma "
                  "ve sözlük hazırlama dahil süreci baştan kurun."},
 ]
+
+# Mod gruplari: kod "mod == 'C'" gibi tek harfe bakmasin, NE yapildigina
+# baksin. Yeni bir mod eklenince yalnizca bu iki satir guncellenir.
+BIRLESTIREN_MODLAR = ("B", "D")      # veri seti kaynak tablolardan
+SOZLUK_URETEN_MODLAR = ("C", "D")    # sozluk dil modeliyle uretiliyor
+
+# Kart tiklamasi harf ("B") ya da sira ("2") gonderebilir.
+MOD_SIRA = {str(i + 1): s["deger"] for i, s in enumerate(MOD_SECENEKLERI)}
 
 # LLM baglami ve ozet icin okunur adlar
 MOD_ADLARI = {s["deger"]: s["baslik"] for s in MOD_SECENEKLERI}
@@ -96,7 +115,7 @@ GERI_KALIP = re.compile(r"\b(geri|onceki adim\w*|bir onceki|geri don\w*)\b")
 SECIM_KALIP = re.compile(r"\d+")
 
 # Yalnizca tek basina "A", "mod b", "3" gibi girdiler mod secimi sayilir.
-MOD_KALIP = re.compile(r"^\s*(mod\s*)?([abc123])\s*$", re.I)
+MOD_KALIP = re.compile(r"^\s*(mod\s*)?([abcd1234])\s*$", re.I)
 
 # norm (kucuk harf, Turkce karaktersiz) uzerinde calisir
 SORU_KALIP = re.compile(
