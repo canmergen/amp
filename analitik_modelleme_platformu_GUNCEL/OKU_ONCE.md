@@ -1,5 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **Öneri gerekçesi ve Detaylar ve Terimler düğmeleri kalktı**.
+Yapıştır: `akis_durum.py` (fe_agent); `style.css` → `app.js` (webapp)
+
+- Gerekçe: "Önerilen ayarlar" rozetinin yanındaki «i»de ("Neden bu ayarlar
+  önerildi").
+- Terimler: kartın giriş cümlesinin sonundaki «i»de, soru-cevap listesi.
+- Öneri gerekçesindeki gruplama cümlesi yalnızca gruplama gerçekten
+  yapılıyorsa yazılıyor (bolme_ayarlari ile aynı kural).
+
+---
+
 Bu tur: **bölme birimi kalktı (otomatik)**, **seed listesi**, **tooltip sabit**.
 Yapıştır: `akis_durum.py` → `akis_panel.py` → `akis_faz01.py` (fe_agent);
 `style.css` → `app.js` (webapp)

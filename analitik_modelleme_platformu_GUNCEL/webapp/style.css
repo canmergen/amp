@@ -2401,6 +2401,12 @@ button.ozet-kart:focus-visible {
 /* Görünürlük JS'ten (konum hesabıyla birlikte); CSS yalnızca biçim. */
 .bf-metin { width: 16rem; max-width: 100%; }
 .bolme-tip-bas { font-weight: var(--fw-kalin); margin-bottom: 4px; }
+/* Terimler listesi: daha geniş balon, soru satırı kalın. */
+.bolme-info-genis .bolme-tip { width: 30rem; max-height: 70vh; overflow-y: auto; }
+.bolme-info-genis .bolme-tip-p { white-space: pre-line; }
+.bolme-info-genis .bolme-tip-p::first-line { font-weight: var(--fw-kalin); }
+.bolme-giris .bolme-info { vertical-align: middle; }
+.bolme-ozet-sag { display: inline-flex; align-items: center; gap: var(--b-2); }
 .bolme-tip-p + .bolme-tip-p { margin-top: 6px; }
 
 /* Alt satır: açılırlar solda, düğmeler sağda */

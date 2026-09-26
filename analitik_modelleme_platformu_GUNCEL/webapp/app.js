@@ -5349,8 +5349,16 @@ function bolmeOzetCubukCiz(kok, alan) {
     const bas = elYap("div", "bolme-ozet-bas");
     bas.appendChild(elYap("b", "", "Veri nasıl bölünecek"));
     const fark = bolmeFarkSayisi(alan);
-    bas.appendChild(elYap("span", "bolme-rozet " + (fark ? "ozel" : "oneri"),
+    const sag = elYap("span", "bolme-ozet-sag");
+    sag.appendChild(elYap("span", "bolme-rozet " + (fark ? "ozel" : "oneri"),
         fark ? "Önerilenden " + fark + " fark" : "Önerilen ayarlar"));
+    /* ÖNERİ GEREKÇESİ ayrı bir açılır düğme değil (kullanıcı kararı):
+       rozetin yanındaki "i" simgesinde. */
+    const o = alan.oneri || {};
+    const maddeler = (o.gerekce || []).map(x => "• " + tireSade(x));
+    const gerekce = [o.ozet, maddeler.join("\n")].filter(Boolean).join("\n\n");
+    if (gerekce) sag.appendChild(bolmeBilgiSimgesi(gerekce, "Neden bu ayarlar önerildi"));
+    bas.appendChild(sag);
     kutu.appendChild(bas);
 
     const a = BF.alan;
@@ -5925,12 +5933,10 @@ function bolmeGovdeCiz(kok) {
     bolmeKisitCiz(kok, alan);
     kok.appendChild(bolmeAyarlariCiz(alan, kilitli));
 
-    /* Alt satır: açılır alanlar solda, düğmeler sağda. */
+    /* Alt satır: yalnızca düğmeler. "Öneri gerekçesi" rozetin yanındaki,
+       "Detaylar ve Terimler" giriş cümlesinin yanındaki "i"de
+       (kullanıcı kararı: ayrı açılır düğme yok). */
     const alt = elYap("div", "bolme-alt");
-    const acilirlar = elYap("div", "bolme-alt-acilirlar");
-    bolmeGerekceCiz(acilirlar, alan);
-    bolmeSozlukCiz(acilirlar, alan, "tek");
-    alt.appendChild(acilirlar);
 
     if (!BOLME.gonderildi) {
         const dugmeler = elYap("div", "bolme-alt-dugmeler");
@@ -6004,8 +6010,20 @@ function bolmeKartiEkle(alan, blok) {
     basSatir.appendChild(durumEl);
     if (kartBasligiGerekli(alan, blok)) kart.appendChild(basSatir);
 
-    if (alan.aciklama)
-        kart.appendChild(elYap("div", "secim-aciklama", tireSade(alan.aciklama)));
+    if (alan.aciklama) {
+        const ack = elYap("div", "secim-aciklama bolme-giris", tireSade(alan.aciklama));
+        /* TERİMLER: "Detaylar ve Terimler" açılırı yerine giriş
+           cümlesinin yanındaki "i" (soru - cevap listesi). */
+        const sorular = (alan.sozluk && alan.sozluk.sorular) || [];
+        if (sorular.length) {
+            const metin = sorular.map(q => tireSade(q.soru || "") + "\n" + tireSade(q.cevap || "")).join("\n\n");
+            const i = bolmeBilgiSimgesi(metin, (alan.sozluk && alan.sozluk.etiket) || "Terimler");
+            i.classList.add("bolme-info-genis");
+            ack.appendChild(document.createTextNode(" "));
+            ack.appendChild(i);
+        }
+        kart.appendChild(ack);
+    }
 
     const govde = elYap("div", "bolme-govde");
     kart.appendChild(govde);

@@ -2761,7 +2761,10 @@ def bolme_onerisi(durum):
         durum.get("_hazir_bolme"), dict) else None
 
     zamansal = bool(m.get("donem")) and len(donemler) >= ONERI_EN_AZ_DONEM
-    kimlik = bool(m.get("id"))
+    # Gruplama bolme_ayarlari ile AYNI kural: kimlik var ve ayni kimligin
+    # birden fazla satiri olabiliyor (donem kolonu ya da olculmus tekrar).
+    kimlik = bool(m.get("id")) and (bool(m.get("donem")) or bool(
+        _tam_sayi(p.get("duplicate_kimlik"), 0, 0)))
     katmanla = bool(m.get("target")) and p.get("hedef_tip") != "surekli"
     buyuk = satir >= ONERI_CAPRAZ_SINIRI
     kullanim = "val" if buyuk else "full_cv"
@@ -2863,8 +2866,9 @@ def bolme_onerisi(durum):
                 "aynı tutuluyor.")
         if kimlik:
             detaylar.append(
-                "Bölme %s üzerinden yapılıyor: bir müşterinin bütün "
-                "satırları aynı tarafta kalıyor." % m["id"])
+                "Aynı %s değerine ait satırlar bir arada tutuluyor: bir "
+                "müşterinin kayıtları hem eğitimde hem validasyonda "
+                "olmuyor." % m["id"])
         if buyuk:
             detaylar.append(
                 "Tablo %s satır; bu büyüklükte ayrı bir doğrulama seti "
