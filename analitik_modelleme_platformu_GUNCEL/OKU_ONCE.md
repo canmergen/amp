@@ -1,6 +1,10 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **tek değer notu sadeleşti**. Yapıştır: `akis_faz01.py`
+Bu tur: **"Kontrol Ediliyor" etiketi siyah**. Yapıştır: `style.css`
+
+---
+
+Önceki tur: **tek değer notu sadeleşti**. Yapıştır: `akis_faz01.py`
 
 - Not: "PERIOD tüm veri setinde tek bir değer taşıdığı için modele bilgi
   katmaz; süreç dışı bırakıldı ve kilitlendi." Boş hücre örneği kaldırıldı.
