@@ -1708,6 +1708,143 @@ def calisma_sil_endpoint():
                                      "Çalışma silinemedi."))
 
 
+# ===========================================================================
+# DAGILIM SEKMESI
+# ---------------------------------------------------------------------------
+# Sag paneldeki DAĞILIM sekmesi: secilen TEK kolonun dagilimi, secilen
+# sette (Tümü / Train / Validasyon / Test). TAM VERI (orneklem yok).
+# Set secimi ancak bolme uygulandiktan sonra anlamli; oncesinde Tümü.
+# ===========================================================================
+DAGILIM_KUTU = 20          # histogram kutu sayisi (sayisal)
+DAGILIM_KATEGORI = 15      # gosterilen en sik kategori sayisi
+_DAGILIM_SET = {"train": "egitim", "val": "val", "test": "test"}
+
+
+def _yuvarla(x, basamak=4):
+    try:
+        x = float(x)
+    except (TypeError, ValueError):
+        return None
+    if x != x or x in (float("inf"), float("-inf")):
+        return None
+    return round(x, basamak)
+
+
+def _dagilim_hesapla(seri):
+    """Tek kolonun dagilim ozeti (tam seri)."""
+    import numpy as np
+    import pandas as pd
+    n = int(len(seri))
+    bos = int(seri.isna().sum())
+    dolu = seri.dropna()
+    sonuc = {"n": n, "bos": bos, "bos_oran": _yuvarla(bos / n if n else 0.0),
+             "tekil": int(dolu.nunique())}
+    sayisal = (pd.api.types.is_numeric_dtype(seri)
+               and not pd.api.types.is_bool_dtype(seri))
+    if not len(dolu):
+        sonuc["tip"] = "sayısal" if sayisal else "kategorik"
+        return sonuc
+    if sayisal:
+        v = dolu.astype(float)
+        v = v[np.isfinite(v)]
+        q = v.quantile([0, .01, .25, .5, .75, .99, 1]).tolist()
+        sonuc["tip"] = "sayısal"
+        sonuc["yuzdelik"] = dict(zip(
+            ["min", "p1", "p25", "medyan", "p75", "p99", "maks"],
+            [_yuvarla(x) for x in q]))
+        sonuc["ortalama"] = _yuvarla(v.mean())
+        # HISTOGRAM: az sayida tam sayi degerde her deger kendi cubugu.
+        tekiller = np.sort(v.unique())
+        if len(tekiller) <= DAGILIM_KUTU and bool((tekiller % 1 == 0).all()):
+            sayim = v.value_counts().sort_index()
+            sonuc["histogram"] = [{"etiket": ("%d" % k), "adet": int(c)}
+                                  for k, c in sayim.items()]
+            sonuc["histogram_tur"] = "deger"
+        else:
+            # ARALIK %1-%99: tek bir uc deger (1e6 gibi) butun cubuklari
+            # ilk kutuya yigmasin. Disarida kalan deger sayisi ayrica
+            # yazilir; hicbir deger gizlenmez.
+            alt_s, ust_s = (q[1], q[5]) if q[5] > q[1] else (q[0], q[6])
+            icerde = v[(v >= alt_s) & (v <= ust_s)]
+            sonuc["histogram_disari"] = int(len(v) - len(icerde))
+            adet, sinir = np.histogram(icerde, bins=DAGILIM_KUTU,
+                                       range=(alt_s, ust_s))
+            sonuc["histogram"] = [
+                {"alt": _yuvarla(sinir[i]), "ust": _yuvarla(sinir[i + 1]),
+                 "adet": int(adet[i])} for i in range(len(adet))]
+            sonuc["histogram_tur"] = "aralik"
+        # AYKIRI: IQR disi (1,5 x IQR).
+        q1, q3 = q[2], q[4]
+        iqr = q3 - q1
+        alt, ust = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+        disari = int(((v < alt) | (v > ust)).sum())
+        sonuc["aykiri"] = {"alt_sinir": _yuvarla(alt), "ust_sinir": _yuvarla(ust),
+                           "adet": disari,
+                           "oran": _yuvarla(disari / len(v) if len(v) else 0)}
+        # BUDAMA ONERISI: %1 - %99 sinirlarina cekme; kac deger etkilenir.
+        etk = int(((v < q[1]) | (v > q[5])).sum())
+        sonuc["budama"] = {"alt": _yuvarla(q[1]), "ust": _yuvarla(q[5]),
+                           "adet": etk,
+                           "oran": _yuvarla(etk / len(v) if len(v) else 0)}
+    else:
+        sayim = dolu.astype(str).value_counts()
+        ust_k = sayim.head(DAGILIM_KATEGORI)
+        sonuc["tip"] = "kategorik"
+        sonuc["kategoriler"] = [{"etiket": str(k), "adet": int(c)}
+                                for k, c in ust_k.items()]
+        sonuc["diger"] = int(sayim.iloc[DAGILIM_KATEGORI:].sum()) \
+            if len(sayim) > DAGILIM_KATEGORI else 0
+        sonuc["diger_kategori"] = max(len(sayim) - DAGILIM_KATEGORI, 0)
+    return sonuc
+
+
+@app.route("/dagilim")
+def dagilim_endpoint():
+    """DAĞILIM sekmesi. ?oturum_id=&kolon=&set=tumu|train|val|test
+    Kolon verilmezse yalnizca kolon listesi doner."""
+    try:
+        anahtar = _oturum_anahtari(_temiz(request.args.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        if not durum.get("veri_seti"):
+            return jsonify({"tamam": True, "kolonlar": [],
+                            "not": "Veri seti seçildikten sonra dolar."})
+        df = akis.modelleme_df(durum)
+        haric = {str(k) for k in (durum.get("haric_kolonlar") or [])}
+        kolonlar = [str(c) for c in df.columns if str(c) not in haric]
+        govde = {"tamam": True, "kolonlar": kolonlar}
+        kolon = str(request.args.get("kolon") or "")
+        if not kolon:
+            return jsonify(govde)
+        if kolon not in df.columns:
+            govde.update({"tamam": False,
+                          "hata": "'%s' kolonu tabloda yok." % kolon})
+            return jsonify(govde)
+
+        istenen = str(request.args.get("set") or "tumu")
+        seri = df[kolon]
+        set_notu = ""
+        if istenen in _DAGILIM_SET:
+            if not (durum.get("bolme") or {}).get("kalici"):
+                istenen = "tumu"
+                set_notu = ("Bölme henüz uygulanmadı; tüm satırlar "
+                            "gösteriliyor.")
+            else:
+                try:
+                    maske = akis.setler(durum, df)[_DAGILIM_SET[istenen]]
+                    seri = seri[maske.reindex(df.index).fillna(False).astype(bool)]
+                except Exception as e:
+                    istenen = "tumu"
+                    set_notu = ("Set ayrılamadı (%s); tüm satırlar "
+                                "gösteriliyor." % _hata_kaydet("dagilim:set", e))
+        govde.update({"kolon": kolon, "set": istenen, "set_notu": set_notu,
+                      "dagilim": _dagilim_hesapla(seri)})
+        return jsonify(govde)
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("dagilim", e, "Dağılım hesaplanamadı."))
+
+
 @app.route("/calismalar")
 def calismalar_endpoint():
     """Çalışmalarım listesi. Hicbir calismayi DEGISTIRMEZ; secilen

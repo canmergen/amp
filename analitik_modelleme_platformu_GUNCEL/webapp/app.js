@@ -3509,12 +3509,259 @@ function analizCiz(tab) {
         ftOdakGeriVer(odak);
         return;
     }
+    if (tab === "dagilim") { dagilimCiz(); return; }
     if (ANALIZ_ICERIK[tab]) iskeletCiz(ANALIZ_ICERIK[tab]);
+}
+
+/* ==================== DAĞILIM sekmesi ====================
+   Seçilen TEK değişkenin dağılımı, seçilen sette (Tümü / Train /
+   Validasyon / Test). Sunucu TAM VERİYLE hesaplıyor (/dagilim);
+   sonuç (kolon, set) başına önbellekte, her yeni sunucu yanıtında
+   (veri değişmiş olabilir) önbellek boşalıyor. */
+const DAGILIM = { kolonlar: null, kolon: "", onbellek: {}, istek: 0 };
+
+function dagilimSifirla() {
+    DAGILIM.kolonlar = null;
+    DAGILIM.onbellek = {};
+}
+
+function dagSayi(x) {
+    if (x === null || x === undefined || x === "") return "∅";
+    const n = Number(x);
+    if (!isFinite(n)) return String(x);
+    return n.toLocaleString("tr-TR", { maximumFractionDigits: Math.abs(n) >= 100 ? 2 : 4 });
+}
+
+function dagilimGetir(kolon, set) {
+    const url = getWebAppBackendUrl("dagilim") + "?oturum_id=" + encodeURIComponent(OTURUM_ID)
+        + (kolon ? "&kolon=" + encodeURIComponent(kolon) + "&set=" + encodeURIComponent(set) : "");
+    return fetch(url).then(r => r.json());
+}
+
+function dagilimCiz() {
+    const kap = elYap("div", "dag-kap");
+    analizGovde.appendChild(kap);
+    const istek = ++DAGILIM.istek;
+    const hala = () => istek === DAGILIM.istek && aktifAnalizSekme === "dagilim";
+
+    if (!DAGILIM.kolonlar) {
+        kap.appendChild(elYap("div", "dag-not", "Değişken listesi yükleniyor…"));
+        dagilimGetir("", "")
+            .then(d => {
+                if (!hala()) return;
+                if (!d || d.tamam !== true) {
+                    kap.innerHTML = "";
+                    kap.appendChild(elYap("div", "dag-not dag-hata",
+                        tireSade((d && (d.hata || d.metin)) || "Değişken listesi okunamadı.")));
+                    return;
+                }
+                DAGILIM.kolonlar = d.kolonlar || [];
+                if (!DAGILIM.kolonlar.length) {
+                    kap.innerHTML = "";
+                    kap.appendChild(elYap("div", "dag-not", tireSade(d.not || "Gösterilecek değişken yok.")));
+                    return;
+                }
+                analizCiz("dagilim");
+            })
+            .catch(e => { if (hala()) { kap.innerHTML = ""; kap.appendChild(elYap("div", "dag-not dag-hata", "Değişken listesi okunamadı: " + e)); } });
+        return;
+    }
+
+    const combo = comboYap("Değişken", () => {
+        const v = combo.deger ? combo.deger() : combo.giris.value;
+        if (combo.gecerli && combo.gecerli() && v && v !== DAGILIM.kolon) {
+            DAGILIM.kolon = v;
+            analizCiz("dagilim");
+        }
+    }, DAGILIM.kolon, { liste: DAGILIM.kolonlar, zorunlu: false,
+                        placeholder: "Değişken ara…" });
+    kap.appendChild(combo.kok);
+
+    const govde = elYap("div", "dag-govde");
+    kap.appendChild(govde);
+    if (!DAGILIM.kolon) {
+        govde.appendChild(elYap("div", "dag-not", "Dağılımını görmek istediğiniz değişkeni seçin."));
+        return;
+    }
+    const anahtar = DAGILIM.kolon + "|" + AKTIF_SET;
+    const hazir = DAGILIM.onbellek[anahtar];
+    if (hazir) { dagilimGovdeCiz(govde, hazir); return; }
+
+    govde.appendChild(elYap("div", "dag-not", "Hesaplanıyor (tüm satırlar)…"));
+    dagilimGetir(DAGILIM.kolon, AKTIF_SET)
+        .then(d => {
+            if (!hala()) return;
+            if (!d || d.tamam !== true || !d.dagilim) {
+                govde.innerHTML = "";
+                govde.appendChild(elYap("div", "dag-not dag-hata",
+                    tireSade((d && (d.hata || d.metin)) || "Dağılım hesaplanamadı.")));
+                return;
+            }
+            DAGILIM.onbellek[anahtar] = d;
+            govde.innerHTML = "";
+            dagilimGovdeCiz(govde, d);
+        })
+        .catch(e => { if (hala()) { govde.innerHTML = ""; govde.appendChild(elYap("div", "dag-not dag-hata", "Dağılım hesaplanamadı: " + e)); } });
+}
+
+function dagSatir(kap, etiket, deger) {
+    const r = elYap("div", "dag-satir");
+    r.appendChild(elYap("span", "dag-etiket", etiket));
+    r.appendChild(elYap("span", "dag-deger", deger));
+    kap.appendChild(r);
+}
+
+function dagKart(baslik) {
+    const k = elYap("div", "dag-kart");
+    k.appendChild(elYap("div", "dag-kart-bas", baslik));
+    return k;
+}
+
+/* Tek serili çubuk grafiği (SVG). Çubuklar arası 2px boşluk, üst uçlar
+   yuvarlak, taban düz; eksen ve ızgara geri planda. Üzerine gelince
+   değer ipucu çıkar. ogeler: [{etiket, adet}] */
+function dagCubukGrafik(ogeler, altEtiketler) {
+    const G = 320, Y = 132, ALT = 18;
+    const kap = elYap("div", "dag-grafik");
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 " + G + " " + (Y + ALT));
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Dağılım grafiği");
+    const enCok = Math.max(1, ...ogeler.map(o => o.adet));
+    const toplam = ogeler.reduce((a, o) => a + o.adet, 0) || 1;
+    const aralik = 2, en = (G - aralik * (ogeler.length - 1)) / ogeler.length;
+    const taban = document.createElementNS(ns, "line");
+    taban.setAttribute("x1", 0); taban.setAttribute("x2", G);
+    taban.setAttribute("y1", Y); taban.setAttribute("y2", Y);
+    taban.setAttribute("class", "dag-eksen");
+    svg.appendChild(taban);
+    const ipucu = elYap("div", "dag-ipucu");
+    ipucu.hidden = true;
+    ogeler.forEach((o, i) => {
+        const x = i * (en + aralik);
+        const h = o.adet ? Math.max(2, (o.adet / enCok) * (Y - 6)) : 0;
+        const r = Math.min(4, en / 2, h);
+        const y = Y - h;
+        if (h > 0) {
+            const yol = document.createElementNS(ns, "path");
+            yol.setAttribute("d", "M" + x + "," + Y + " V" + (y + r)
+                + " Q" + x + "," + y + " " + (x + r) + "," + y
+                + " H" + (x + en - r) + " Q" + (x + en) + "," + y + " " + (x + en) + "," + (y + r)
+                + " V" + Y + " Z");
+            yol.setAttribute("class", "dag-cubuk");
+            svg.appendChild(yol);
+        }
+        /* Vuruş alanı çubuktan büyük: tüm sütun yüksekliği. */
+        const alan = document.createElementNS(ns, "rect");
+        alan.setAttribute("x", x); alan.setAttribute("y", 0);
+        alan.setAttribute("width", en + aralik); alan.setAttribute("height", Y);
+        alan.setAttribute("class", "dag-vurus");
+        alan.addEventListener("mouseenter", () => {
+            ipucu.textContent = o.etiket + ": " + dagSayi(o.adet) + " satır ("
+                + dagSayi(Math.round(1000 * o.adet / toplam) / 10) + "%)";
+            ipucu.hidden = false;
+            /* İpucu grafik kutusunun içinde kalır (kenardaki çubukta
+               panelin dışına taşmasın). */
+            const kg = kap.clientWidth, iw = ipucu.offsetWidth;
+            const merkez = ((x + en / 2) / G) * kg;
+            ipucu.style.left = Math.max(0, Math.min(kg - iw, merkez - iw / 2)) + "px";
+        });
+        alan.addEventListener("mouseleave", () => { ipucu.hidden = true; });
+        svg.appendChild(alan);
+    });
+    (altEtiketler || []).forEach(([konum, metin]) => {
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", konum === "sol" ? 0 : G);
+        t.setAttribute("y", Y + 13);
+        t.setAttribute("text-anchor", konum === "sol" ? "start" : "end");
+        t.setAttribute("class", "dag-eksen-yazi");
+        t.textContent = metin;
+        svg.appendChild(t);
+    });
+    kap.appendChild(svg);
+    kap.appendChild(ipucu);
+    return kap;
+}
+
+function dagilimGovdeCiz(govde, d) {
+    const g = d.dagilim || {};
+    if (d.set_notu) govde.appendChild(elYap("div", "dag-not", tireSade(d.set_notu)));
+
+    const ozet = elYap("div", "dag-ozet");
+    [["Satır", dagSayi(g.n)], ["Boş oranı", ftOran(g.bos_oran)],
+     ["Farklı değer", dagSayi(g.tekil)], ["Tip", tireSade(g.tip || "")]]
+        .forEach(([e, v]) => {
+            const t = elYap("div", "dag-tile");
+            t.appendChild(elYap("div", "dag-tile-deger", v));
+            t.appendChild(elYap("div", "dag-tile-etiket", e));
+            ozet.appendChild(t);
+        });
+    govde.appendChild(ozet);
+
+    if (g.tip === "sayısal" && g.histogram) {
+        const k = dagKart("Histogram");
+        const ogeler = g.histogram.map(h => ({
+            etiket: h.etiket !== undefined ? h.etiket : (dagSayi(h.alt) + " – " + dagSayi(h.ust)),
+            adet: h.adet }));
+        const ilk = g.histogram[0], son = g.histogram[g.histogram.length - 1];
+        const alt = g.histogram_tur === "deger"
+            ? [["sol", ilk.etiket], ["sag", son.etiket]]
+            : [["sol", dagSayi(ilk.alt)], ["sag", dagSayi(son.ust)]];
+        k.appendChild(dagCubukGrafik(ogeler, alt));
+        if (g.histogram_disari)
+            k.appendChild(elYap("div", "dag-not",
+                "Grafik %1–%99 aralığını gösterir; bu aralığın dışında "
+                + dagSayi(g.histogram_disari) + " değer var."));
+        govde.appendChild(k);
+
+        const y = g.yuzdelik || {};
+        const kY = dagKart("Yüzdelik");
+        [["Min", y.min], ["%1", y.p1], ["%25", y.p25], ["Medyan", y.medyan],
+         ["%75", y.p75], ["%99", y.p99], ["Maks", y.maks], ["Ortalama", g.ortalama]]
+            .forEach(([e, v]) => dagSatir(kY, e, dagSayi(v)));
+        govde.appendChild(kY);
+
+        const a = g.aykiri || {}, b = g.budama || {};
+        const kA = dagKart("Aykırı Değer");
+        dagSatir(kA, "IQR dışı oran", ftOran(a.oran) + " (" + dagSayi(a.adet) + " değer)");
+        dagSatir(kA, "IQR sınırları", dagSayi(a.alt_sinir) + " / " + dagSayi(a.ust_sinir));
+        dagSatir(kA, "Budama önerisi (%1–%99)", dagSayi(b.alt) + " / " + dagSayi(b.ust));
+        dagSatir(kA, "Budamadan etkilenen", ftOran(b.oran) + " (" + dagSayi(b.adet) + " değer)");
+        govde.appendChild(kA);
+    } else if (g.kategoriler) {
+        const k = dagKart("En Sık Değerler");
+        const toplam = (g.n || 0) - (g.bos || 0);
+        g.kategoriler.forEach(c => {
+            const r = elYap("div", "dag-kat");
+            const ust = elYap("div", "dag-kat-ust");
+            ust.appendChild(elYap("span", "dag-kat-ad", c.etiket));
+            ust.appendChild(elYap("span", "dag-kat-sayi",
+                dagSayi(c.adet) + " · " + ftOran(toplam ? c.adet / toplam : 0)));
+            r.appendChild(ust);
+            const cubuk = elYap("div", "dag-kat-cubuk");
+            const dolu = elYap("div", "dag-kat-dolu");
+            dolu.style.width = (toplam ? 100 * c.adet / toplam : 0) + "%";
+            cubuk.appendChild(dolu);
+            r.appendChild(cubuk);
+            r.title = c.etiket + ": " + dagSayi(c.adet) + " satır";
+            k.appendChild(r);
+        });
+        if (g.diger) dagSatir(k, "Diğer (" + dagSayi(g.diger_kategori) + " değer)",
+                              dagSayi(g.diger) + " satır");
+        govde.appendChild(k);
+    } else {
+        govde.appendChild(elYap("div", "dag-not", "Bu değişkende dolu değer yok."));
+    }
 }
 
 function analizGuncelle(veri) {
     if (!veri) return;
     ANALIZ_VERI = veri;
+    /* Veri değişmiş olabilir (süreç dışı, tip dönüşümü, bölme): dağılım
+       önbelleği boşalır; sekme açıksa yeniden istenir. */
+    dagilimSifirla();
+    if (aktifAnalizSekme === "dagilim") analizCiz("dagilim");
     // Acik sekme backend verisine bagliysa yeniden ciz
     if (BAGLI_SEKMELER.indexOf(aktifAnalizSekme) !== -1)
         analizCiz(aktifAnalizSekme);
@@ -3586,7 +3833,8 @@ function teyitPanelGuncelle(alan, bekleyen) {
    yanlışlıkla açan bir değişiklikten sonra). */
 
 analizSekme.forEach(s => {
-    const bagli = BAGLI_SEKMELER.indexOf(s.dataset.tab) !== -1;
+    const bagli = BAGLI_SEKMELER.indexOf(s.dataset.tab) !== -1
+        || s.dataset.tab === "dagilim";
     if (!bagli) {
         s.classList.add("hazir-degil");
         s.title = "Hazırlanıyor - bu sekmenin verisi henüz bağlı değil";
@@ -7723,6 +7971,9 @@ function calismaAc(kimlik) {
 /* Ekrandaki çalışmaya ait her şeyi temizler: Yeni Çalışma ve başka bir
    çalışmaya geçiş aynı temizliği yapıyor. Sunucudaki kayda DOKUNMAZ. */
 function ekraniTemizle() {
+    /* Dağılım sekmesi önceki çalışmanın kolonlarını göstermesin. */
+    dagilimSifirla();
+    DAGILIM.kolon = "";
     sohbetEl.innerHTML = "";
     aktifAdim = 0;
     aktifMod = null;

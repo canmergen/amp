@@ -1,6 +1,18 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **dönem notu ayrıntısı "i" simgesinde; toplu düğmeler sağda**. Yapıştır: `app.js`, `style.css`
+Bu tur: **DAĞILIM sekmesi bağlandı; "Kontrol Ediliyor" yeniden sarı**. Yapıştır: `backend.py`, `app.js`, `style.css`
+
+- Yeni uç /dagilim (tam veri): kolon listesi; seçilen kolon + set için
+  satır / boş oranı / farklı değer, sayısalda histogram (%1-%99 aralığı,
+  dışarıda kalan sayısı yazılır), yüzdelikler, IQR dışı oran, %1-%99
+  budama önerisi; kategorikte en sık 15 değer + diğer.
+- Set seçici (Tümü / Train / Validasyon / Test) bölme uygulandıktan sonra
+  gerçek setleri kullanır; öncesinde Tümü ve not.
+- "● Kontrol Ediliyor" etiketi yeniden sarı.
+
+---
+
+Önceki tur: **dönem notu ayrıntısı "i" simgesinde; toplu düğmeler sağda**. Yapıştır: `app.js`, `style.css`
 
 - "Dönem kolonu bulunamadı." yanında i simgesi; kolon kolon nedenler
   üzerine gelince açılır, doğrudan gösterilmez.
