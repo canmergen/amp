@@ -4413,36 +4413,40 @@ function sureBicim(sn) {
     return d + ":" + (s < 10 ? "0" : "") + s;
 }
 
-/* Uzun islemde: zipla yan yana adim adi, gecen sure ve iptal dugmesi.
-   Tek basina ucin ziplayan nokta kullaniciya donma hissi veriyordu. */
-function calismaGostergesi(iptalEt) {
-    const satir = balonEkle("bot", "");
-    const balon = satir.querySelector(".balon");
-    balon.classList.add("calisiyor");
+/* İŞLEM SATIRI (kullanıcı kararı): ayrı bir "yükleniyor" kartı YOK.
+   Durumu başlıktaki "● Kontrol Ediliyor" etiketi anlatıyor; aktif adımın
+   bloğunun EN ALTINA tek ince satır gelir: "İşleniyor · 0:12 · İptal".
+   Satır ilk ISLEM_GECIKME_MS boyunca görünmez: kısa işlemlerde ekranda
+   hiçbir şey zıplamaz, yalnızca etiket değişir. Her adımda aynı. */
+const ISLEM_GECIKME_MS = 2500;
 
-    const ust = document.createElement("div");
-    ust.className = "calisma-ust";
-    for (let i = 0; i < 3; i++) {
-        const n = document.createElement("span");
-        n.className = "nokta";
-        ust.appendChild(n);
+function aktifBlokKabi() {
+    const aktif = (DUZ_ADIMLAR[aktifAdim] || {}).anahtar || "";
+    let kap = null;
+    if (aktif) {
+        const hepsi = sohbetEl.querySelectorAll(
+            '.alt-bolum[data-adim="' + aktif + '"], .adim-blok:not(.gruplu)[data-adim="' + aktif + '"]');
+        if (hepsi.length) kap = hepsi[hepsi.length - 1];
     }
-    const ad = document.createElement("span");
-    ad.className = "calisma-adim";
-    ad.textContent = adimAdi() || "İşlem sürüyor";
-    ust.appendChild(ad);
-    balon.appendChild(ust);
+    if (!kap) {
+        const bloklar = sohbetEl.querySelectorAll(".adim-blok");
+        if (bloklar.length) {
+            kap = bloklar[bloklar.length - 1];
+            const bolumler = kap.querySelectorAll(":scope > .alt-bolum");
+            if (bolumler.length) kap = bolumler[bolumler.length - 1];
+        }
+    }
+    return kap;
+}
 
-    const alt = document.createElement("div");
-    alt.className = "calisma-alt";
-
-    const sure = document.createElement("span");
-    sure.className = "calisma-sure";
-    alt.appendChild(sure);
-
+function calismaGostergesi(iptalEt) {
+    const kap = aktifBlokKabi();
+    const satir = elYap("div", "islem-satiri");
+    satir.setAttribute("role", "status");
+    const sure = elYap("span", "islem-sure", "");
     const iptal = document.createElement("button");
     iptal.type = "button";
-    iptal.className = "calisma-iptal";
+    iptal.className = "islem-iptal";
     iptal.textContent = "İptal";
     iptal.title = "İsteği durdur (sunucudaki işlem sürebilir)";
     iptal.onclick = () => {
@@ -4450,22 +4454,21 @@ function calismaGostergesi(iptalEt) {
         iptal.textContent = "İptal ediliyor…";
         if (iptalEt) iptalEt();
     };
-    alt.appendChild(iptal);
-    balon.appendChild(alt);
+    satir.append(sure, iptal);
+    (kap || sohbetEl).appendChild(satir);
 
     let gecen = 0;
-    const enFazla = Math.round(ISTEK_ZAMAN_ASIMI / 1000);
-    function yaz() {
-        sure.textContent = "Geçen süre " + sureBicim(gecen)
-            + " · en fazla " + sureBicim(enFazla);
-    }
+    const yaz = () => { sure.textContent = "İşleniyor · " + sureBicim(gecen); };
     yaz();
     const sayac = setInterval(() => { gecen += 1; yaz(); }, 1000);
-
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    const goster = setTimeout(() => {
+        satir.classList.add("gorunur");
+        if (!kap) sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    }, ISLEM_GECIKME_MS);
     return {
         kaldir() {
             clearInterval(sayac);
+            clearTimeout(goster);
             satir.remove();
         }
     };

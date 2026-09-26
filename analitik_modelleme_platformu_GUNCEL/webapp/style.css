@@ -2933,3 +2933,20 @@ span.bolme-cip { cursor: default; }
 .dag-kat-sayi { color: var(--metin-soluk); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dag-kat-cubuk { height: 6px; border-radius: 3px; background: var(--kenar-acik); margin-top: 3px; }
 .dag-kat-dolu { height: 100%; border-radius: 3px; background: var(--grafik-seri); }
+
+/* İŞLEM SATIRI: aktif bloğun en altında tek ince satır; ilk saniyelerde
+   gizli (kısa işlemde görünmez). */
+.islem-satiri {
+  display: none; align-items: center; gap: var(--b-3);
+  margin-top: var(--b-3); padding-top: var(--b-2);
+  border-top: 1px dashed var(--kenar);
+  font-size: var(--fs-kucuk); color: var(--metin-soluk);
+}
+.islem-satiri.gorunur { display: flex; }
+.islem-sure { font-variant-numeric: tabular-nums; }
+.islem-iptal {
+  border: none; background: none; padding: 0; cursor: pointer;
+  color: var(--kirmizi); font: inherit; font-weight: var(--fw-kalin);
+  text-decoration: underline;
+}
+.islem-iptal:disabled { color: var(--metin-soluk); cursor: default; text-decoration: none; }

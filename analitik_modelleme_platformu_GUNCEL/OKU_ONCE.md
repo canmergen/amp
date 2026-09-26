@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Yeni Çalışma onayı tamamen kaldırıldı**. Yapıştır: `app.js`, `index.html`, `style.css`
+Bu tur: **ayrı yükleniyor kartı yok; işlem satırı bloğun içinde**. Yapıştır: `app.js`, `style.css`
+
+- İstek sürerken aktif adımın bloğunun en altında tek satır:
+  "İşleniyor · 0:12 · İptal". İlk 2,5 sn görünmez. Durum başlıktaki
+  "● Kontrol Ediliyor" etiketinde. Bütün adımlarda aynı.
+
+---
+
+Önceki tur: **Yeni Çalışma onayı tamamen kaldırıldı**. Yapıştır: `app.js`, `index.html`, `style.css`
 
 - "Yeni Çalışma"ya basınca doğrudan yeni çalışma açılır; açık çalışma
   silinmez, Arşiv'den geri açılır. Onay kutusu, süre ve soru kaldırıldı.
