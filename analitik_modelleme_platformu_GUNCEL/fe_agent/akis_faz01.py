@@ -145,10 +145,29 @@ DONEM_COZULME_ORANI = 0.95
 
 # Donem adayi hesabinin surumu. Kural degisince eski calismalarin
 # profilindeki liste YENIDEN hesaplanir (bkz. _donem_adaylarini_hazirla).
-DONEM_ADAY_SURUMU = 3
-# Aday cikmadiginda nedeni yazilan kolonlar: adi donem/tarih cagristiran.
-_DONEM_ADI_KALIP = re.compile(r"(DONEM|DÖNEM|PERIOD|TARIH|TARİH|DATE|AY_|_AY|MONTH|YIL|YEAR|SNAP)",
-                              re.IGNORECASE)
+DONEM_ADAY_SURUMU = 4
+# Aday cikmadiginda nedeni yazilan kolonlar: ADI donem/tarih olan. Ad
+# "_" ile parcalanip PARCA PARCA bakiliyor: TXN_ACTIVE_MONTH_CNT gibi
+# sayac kolonlari adinda MONTH gecse de donem kolonu degil (kullanici
+# bildirimi: notta bunlar da listeleniyordu). Olcu parcasi tasiyan ad
+# (CNT, AMT, SUM ...) hic listelenmez.
+_DONEM_AD_PARCALARI = {"DONEM", "DÖNEM", "PERIOD", "PERIYOD", "TARIH", "TARİH",
+                       "DATE", "DT", "AY", "YIL", "YEAR", "MONTH", "SNAP",
+                       "SNAPSHOT", "YYYYMM", "YYYYMMDD", "REF"}
+_OLCU_PARCALARI = {"CNT", "COUNT", "SUM", "AMT", "AVG", "MEAN", "MIN", "MAX",
+                   "STD", "RATIO", "ORAN", "ADET", "TUTAR", "SAYI", "NUM",
+                   "FLAG", "FLG", "PCT", "DIFF", "CHG", "TOT", "TOTAL"}
+_DONEM_AD_KOKLERI = ("DONEM", "DÖNEM", "TARIH", "TARİH", "PERIOD", "PERIYOD", "DATE")
+DONEM_NEDEN_EN_FAZLA = 5
+
+
+def _donem_adli_mi(ad):
+    parcalar = {p for p in re.split(r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+", str(ad).upper()) if p}
+    if parcalar & _OLCU_PARCALARI:
+        return False
+    # Turkce ekli bicimler de: TARIHI, DONEMI, PERIODU ...
+    return bool(parcalar & _DONEM_AD_PARCALARI) or any(
+        p.startswith(k) for p in parcalar for k in _DONEM_AD_KOKLERI)
 
 
 def _donem_adaylari(df, kimlik=(), nedenler=None):
@@ -178,8 +197,18 @@ def _donem_adaylari(df, kimlik=(), nedenler=None):
             continue
         if n_tekil <= 1 or ad in kimlik or (satir > 1 and n_tekil == satir):
             if nedenler is not None:
-                nedenler[ad] = ("tek değer taşıyor" if n_tekil <= 1 else
-                                "her satırda farklı (kimlik gibi)")
+                if n_tekil <= 1:
+                    try:
+                        deger = birl_mod.donem_degeri(df[kolon].dropna().iloc[0])
+                    except Exception:
+                        deger = None
+                    nedenler[ad] = ("tüm satırlarda aynı değer%s; veri tek "
+                                    "dönemlik" % (" (%s)" % deger if deger else ""))
+                elif ad in kimlik:
+                    nedenler[ad] = "kimlik adayı"
+                else:
+                    nedenler[ad] = ("her satırda farklı değer; kimlik ya da "
+                                    "zaman damgası gibi")
             continue
         try:
             ay, bicim = birl_mod._donem_coz(ornek[kolon])
@@ -201,18 +230,17 @@ def _donem_adaylari(df, kimlik=(), nedenler=None):
                     str(x) for x in ornek[kolon].dropna().astype(str).unique()[:3])
             except Exception:
                 ornek_deger = ""
-            nedenler[ad] = "değerler dönem olarak okunamadı" + (
+            nedenler[ad] = "değerler dönem biçiminde değil" + (
                 " (örnek: %s)" % ornek_deger if ornek_deger else "")
     return cikti
 
 
-def _donem_neden_metni(nedenler):
-    """Aday cikmadiginda, adi donem cagristiran kolonlarin neden
-    elendigi: "PERIOD: tek değer taşıyor". Kullanici neyi duzeltecegini
-    gorsun; "bulunamadı" demek tek basina yetmiyordu."""
-    ilgili = [(k, v) for k, v in (nedenler or {}).items()
-              if _DONEM_ADI_KALIP.search(str(k))][:4]
-    return "; ".join("%s: %s" % (k, v) for k, v in ilgili)
+def _donem_neden_maddeleri(nedenler):
+    """Aday cikmadiginda, ADI donem olan kolonlarin neden secilemedigi;
+    her kolon ayri madde (kullanici karari: "bulunamadı yazsın, bulunan
+    varsa neden seçilemeyecekleri ayrı ayrı maddelerde")."""
+    return ["%s: %s" % (k, v) for k, v in (nedenler or {}).items()
+            if _donem_adli_mi(k)][:DONEM_NEDEN_EN_FAZLA]
 
 
 def _donem_adaylarini_hazirla(durum):
@@ -235,7 +263,7 @@ def _donem_adaylarini_hazirla(durum):
             _hedef, kimlik = _aday_kolonlar(df)
         nedenler = {}
         p["donem_adaylari"] = _donem_adaylari(df, kimlik, nedenler)
-        p["donem_neden"] = _donem_neden_metni(nedenler)
+        p["donem_nedenler"] = _donem_neden_maddeleri(nedenler)
         p["donem_adaylari_surum"] = DONEM_ADAY_SURUMU
         p.pop("donem_hata", None)
     except Exception as e:
@@ -275,7 +303,7 @@ def _temel_profil(durum, df):
     p["kimlik_adaylari"] = kimlik_aday
     nedenler = {}
     p["donem_adaylari"] = _donem_adaylari(df, kimlik_aday, nedenler)
-    p["donem_neden"] = _donem_neden_metni(nedenler)
+    p["donem_nedenler"] = _donem_neden_maddeleri(nedenler)
     p["donem_adaylari_surum"] = DONEM_ADAY_SURUMU
     p.pop("donem_hata", None)
     _kimlik_duplicate(durum, df, p)
@@ -2094,17 +2122,16 @@ def _tanimlar_formu(durum, meta=None):
     # tum kolonlara DUSULMEZ - kimlik ya da hedefin donem secilmesi
     # zamansal bolmeyi sessizce bozardi.
     donem_liste = _ekle(donem_aday, m.get("donem"))
+    donem_maddeler = []
     if donem_aday:
         donem_not = ""
     elif p.get("donem_hata"):
-        donem_not = ("Dönem adayları çıkarılamadı: tablo okunamadı (%s). "
-                     "Sayfayı yenileyince yeniden denenir." % p["donem_hata"])
+        donem_not = ("Dönem kolonu aranamadı: tablo okunamadı. Sayfayı "
+                     "yenileyince yeniden denenir.")
+        donem_maddeler = [str(p["donem_hata"])]
     else:
-        donem_not = ("Veri setinde dönem bilgisi taşıyan bir kolon "
-                     "bulunamadı (202501 gibi sayı ya da metin, 2025-01 ya "
-                     "da tarih). Zamansal bölme kurulamaz.")
-        if p.get("donem_neden"):
-            donem_not += " Elenenler: %s." % p["donem_neden"]
+        donem_not = "Dönem kolonu bulunamadı."
+        donem_maddeler = list(p.get("donem_nedenler") or [])
 
     hedef_not = ("" if hedef_aday else
                  "Veri setinde 0/1 değerli kolon bulunamadı; tüm kolonlar "
@@ -2147,7 +2174,7 @@ def _tanimlar_formu(durum, meta=None):
              "kaynak": "kolon", "zorunlu": False,
              "deger": m.get("donem") or "", "secenekler": donem_liste,
              "ipucu": "Dönem bilgisi taşıyan kolonlar: 202501 (sayı, metin ya da kategori), 2025-01, tarih",
-             "not": donem_not},
+             "not": donem_not, "not_maddeler": donem_maddeler},
         ],
         "sablon": "target {target} id {id} donem {donem}",
     }

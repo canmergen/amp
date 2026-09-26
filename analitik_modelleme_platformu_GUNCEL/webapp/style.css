@@ -969,6 +969,12 @@ button.ozet-kart:focus-visible {
   font-size: var(--fs-kucuk); line-height: 1.35; color: var(--metin-soluk);
 }
 .alan-not-uyari { color: var(--amber); }
+.alan-not-liste {
+  margin: var(--b-1) 0 0; padding-left: 16px;
+  color: var(--metin-soluk);
+}
+.alan-not-liste li + li { margin-top: 2px; }
+.alan-not-liste b { color: var(--metin); font-weight: var(--fw-kalin); word-break: break-all; }
 
 /* Listeyi acan ok dugmesi. Liste artik odaklaninca kendiliginden
    acilmiyor; gorunur tek acma yolu bu (klavye: ArrowDown). */

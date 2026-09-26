@@ -1,6 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **girdiler kontrolden geçmeden onaylanmıyor; Analitik Süreç kapanmıyor**. Yapıştır: `app.js`, `akis_faz01.py`
+Bu tur: **dönem notu kısa + maddeli**. Yapıştır: `akis_faz01.py`, `app.js`, `style.css`
+
+- Aday yoksa not yalnızca "Dönem kolonu bulunamadı." Altında adı dönem/tarih
+  olan kolonlar ayrı maddelerde, neden seçilemedikleriyle (en fazla 5).
+- Ad eşleşmesi parça parça: MONTH_CNT gibi sayaç/tutar kolonları listelenmez;
+  TARIHI, DONEMI gibi ekli adlar listelenir.
+- Alan sözleşmesi: form alanında yeni "not_maddeler" listesi.
+
+---
+
+Önceki tur: **girdiler kontrolden geçmeden onaylanmıyor; Analitik Süreç kapanmıyor**. Yapıştır: `app.js`, `akis_faz01.py`
 
 - Veri seti + sözlük formu gönderilince rozet "Kontrol Ediliyor…" der.
   "✓ Girdiler Onaylandı" yalnızca sunucu kabul edince yazılır.

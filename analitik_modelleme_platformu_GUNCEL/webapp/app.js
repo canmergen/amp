@@ -6877,6 +6877,27 @@ function secimAlaniEkle(alan, blok) {
             if (altMetin) {
                 const alt = elYap("div",
                     "alan-not" + (a["not"] ? " alan-not-uyari" : ""), altMetin);
+                /* NOT MADDELERİ: kısa not ("Dönem kolonu bulunamadı.") ve
+                   altında her kolon için ayrı madde, neden seçilemediği.
+                   Tek paragrafa sıkıştırılınca okunmuyordu (kullanıcı
+                   bildirimi). */
+                const maddeler = Array.isArray(a.not_maddeler) ? a.not_maddeler : [];
+                if (a["not"] && maddeler.length) {
+                    const ul = elYap("ul", "alan-not-liste");
+                    maddeler.forEach(m => {
+                        const li = document.createElement("li");
+                        const metin = tireSade(String(m));
+                        const i = metin.indexOf(": ");
+                        if (i > 0) {
+                            li.appendChild(elYap("b", "", metin.slice(0, i)));
+                            li.appendChild(document.createTextNode(metin.slice(i)));
+                        } else {
+                            li.textContent = metin;
+                        }
+                        ul.appendChild(li);
+                    });
+                    alt.appendChild(ul);
+                }
                 combo.kok.appendChild(alt);
             }
         });
