@@ -72,7 +72,9 @@ def kalite_uygula(durum):
         s = pd.to_numeric(df[c], errors="coerce").replace([np.inf, -np.inf], np.nan)
         if s.isna().mean() > 0.5:
             eksik.append(c); continue
-        if s.nunique(dropna=True) <= 1:
+        # BOS HUCRE AYRI DEGER (kullanici karari): bir deger + bos iki
+        # deger sayilir; yalnizca hepsi ayni (ya da hepsi bos) sabittir.
+        if s.nunique(dropna=True) + (1 if s.isna().any() else 0) <= 1:
             sabit.append(c); continue
         kor = s.corr(y)
         if kor is not None and not pd.isna(kor) and abs(kor) > 0.95:

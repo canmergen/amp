@@ -1,6 +1,15 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Değişken Kontrolü'nde görünenleri toplu süreç dışı bırakma**. Yapıştır: `app.js`, `style.css`
+Bu tur: **tek değer metinleri; kalite kapısında boş hücre kuralı**. Yapıştır: `akis_faz01.py`, `akis_faz04.py`, `sfa.py`
+
+- Kural genel: bir değer + boş hücre (A ve boş, 1 ve boş ...) iki değerdir.
+  Metinlerdeki "1 ve boş" örneği kaldırıldı.
+- Faz 04 kalite kapısı üretilen değişkeni "bir değer + boş" diye tek
+  değerli sayıp eliyordu; artık aynı kurala uyuyor.
+
+---
+
+Önceki tur: **Değişken Kontrolü'nde görünenleri toplu süreç dışı bırakma**. Yapıştır: `app.js`, `style.css`
 
 - Tablonun üstünde "Görünenleri Süreç Dışı Bırak (N)" ve "Görünenleri
   Sürece Al (N)". Arama ve null eşiğiyle süzülen, kilitsiz satırlara

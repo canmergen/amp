@@ -2536,9 +2536,8 @@ def tanimsiz_kolonlari_isaretle(durum):
     return yeni
 
 
-TEK_DEGER_SEBEBI = ("tüm veri setinde tek değer taşıyor (boş hücre ayrı "
-                    "değer sayılır); modele bilgi katmaz, süreç dışı kalmak "
-                    "zorunda")
+TEK_DEGER_SEBEBI = ("tüm veri setinde her satırda aynı değer var, boş hücre "
+                    "de yok; modele bilgi katmaz, süreç dışı kalmak zorunda")
 
 
 def _tek_degerli_hesapla(durum, df=None):
@@ -2567,9 +2566,10 @@ def tek_degerlileri_isaretle(durum):
     "değişken kontrolünde süreç dışı otomatik olarak tek değer içerenleri
     seçmeli").
 
-    BOS HUCRE AYRI BIR DEGERDIR: "1 ve boş" iki deger sayilir, kolon tek
-    degerli DEGILDIR (kullanici karari: "1 ve nan varsa iki değer
-    sayılmalı"). Bir bayrak kolonu (1 = var, bos = yok) tam da boyledir ve
+    BOS HUCRE AYRI BIR DEGERDIR: herhangi bir tek deger + bos hucre
+    ("A" ve bos, 1 ve bos ...) iki deger sayilir, kolon tek degerli
+    DEGILDIR (kullanici karari). Tek degerli = butun satirlarda ayni
+    deger ve hic bos yok, ya da butun satirlar bos. Bir bayrak kolonu (1 = var, bos = yok) tam da boyledir ve
     modele bilgi tasir. Bu yuzden nunique(dropna=False).
 
     tanimsiz_kolonlari_isaretle gibi BIR KEZ calisir ve kilitli DEGILDIR:
@@ -3300,9 +3300,9 @@ def _teyit_karti(durum):
                       "varsa işareti kaldırın." % _sayi(len(otomatik)))
     tek_hepsi = durum.get("_tek_degerli") or []
     if tek_hepsi:
-        notlar.append("Tüm veri setinde tek değer taşıyan %s değişken süreç "
-                      "dışında ve kilitli (boş hücre ayrı değer sayılır: 1 ve "
-                      "boş olan kolon tek değerli değildir)."
+        notlar.append("Tüm veri setinde her satırında aynı değer olan %s "
+                      "değişken süreç dışında ve kilitli. Bir değerin yanında "
+                      "boş hücre de olan kolonlar tek değerli sayılmaz."
                       % _sayi(len(tek_hepsi)))
     if tip_oneri:
         notlar.append("%s değişkenin tipi için öneri seçili geldi (kırmızı "
