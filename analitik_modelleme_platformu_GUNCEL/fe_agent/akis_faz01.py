@@ -30,6 +30,7 @@ from fe_agent.akis_durum import (
     BOLME_BOLUMLERI, bolme_kaydet, bolme_onerisi, bolme_ozeti,
     hazir_bolme_bul, kolon_ozeti_cikar, metin_yaz, modelleme_df,
     onbellek_temizle, sozluk_orijinal_oku, yeni_durum, amp_sahibi_yaz,
+    donem_degeri, donem_serisi, donem_sirala,
     dataset_yaz, dosya_yaz, sahip_yaz,
 )
 
@@ -199,7 +200,7 @@ def _donem_adaylari(df, kimlik=(), nedenler=None):
             if nedenler is not None:
                 if n_tekil <= 1:
                     try:
-                        deger = birl_mod.donem_degeri(df[kolon].dropna().iloc[0])
+                        deger = donem_degeri(df[kolon].dropna().iloc[0])
                     except Exception:
                         deger = None
                     nedenler[ad] = ("tüm satırlarda aynı değer%s; veri tek "
@@ -212,7 +213,7 @@ def _donem_adaylari(df, kimlik=(), nedenler=None):
             continue
         try:
             ay, bicim = birl_mod._donem_coz(ornek[kolon])
-            dolu = birl_mod.donem_serisi(ornek[kolon]).notna()
+            dolu = donem_serisi(ornek[kolon]).notna()
             # Tarih cozucusu tek bir tarihe benzer hucrede bile "tarih"
             # diyebiliyor; aday olmak icin dolu hucrelerin neredeyse
             # tamami donem olarak cozulmeli.
@@ -2328,8 +2329,8 @@ def tanimlar_uygula(durum):
     if donem and donem in df.columns:
         # Bolmeyle AYNI normallestirme ve ZAMAN sirasi (bkz.
         # birlestirme.donem_degeri / donem_sirala).
-        donemler = birl_mod.donem_sirala(
-            birl_mod.donem_serisi(df[donem]).dropna().unique().tolist())
+        donemler = donem_sirala(
+            donem_serisi(df[donem]).dropna().unique().tolist())
         durum["_donemler"] = donemler
         if donemler:
             p["donem_min"] = donemler[0]

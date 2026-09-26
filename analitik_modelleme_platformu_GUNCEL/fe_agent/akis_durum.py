@@ -14,7 +14,43 @@ import dataiku
 import numpy as np
 import pandas as pd
 
-from fe_agent.birlestirme import donem_degeri, donem_serisi, donem_sirala
+# DONEM YARDIMCILARI birlestirme.py'de. Dosyalar Dataiku'ya ELLE
+# yapistiriliyor; birlestirme.py eski surumde kalinca bu import
+# ImportError atiyor ve BACKEND HIC ACILMIYORDU ("Backend died before
+# startup complete"). Eski dosyada yedek tanimlar devreye girer: uygulama
+# calisir, yalnizca donem normallestirmesi eski (daha basit) haliyle olur.
+try:
+    from fe_agent.birlestirme import donem_degeri, donem_serisi, donem_sirala
+    BIRLESTIRME_ESKI = False
+except ImportError:
+    BIRLESTIRME_ESKI = True
+
+    def donem_degeri(x):
+        """Yedek: bos -> None, 202501.0 -> "202501", metin kirpilir."""
+        if x is None:
+            return None
+        try:
+            if pd.isna(x):
+                return None
+        except (TypeError, ValueError):
+            pass
+        if isinstance(x, float) and float(x).is_integer():
+            return str(int(x))
+        t = str(x).strip()
+        if t.lower() in ("", "nan", "none", "null", "nat"):
+            return None
+        if re.fullmatch(r"-?\d+\.0+", t):
+            t = t.split(".")[0]
+        return t
+
+    def donem_serisi(s):
+        s = pd.Series(s)
+        if pd.api.types.is_datetime64_any_dtype(s):
+            return s.astype(str).where(s.notna(), None).astype(object)
+        return s.astype(object).map(donem_degeri).astype(object)
+
+    def donem_sirala(degerler):
+        return sorted({str(d) for d in degerler if d is not None})
 from fe_agent.akis_metin import ADIM_ADI, MOD_SECENEKLERI, SECIM_KALIP
 
 

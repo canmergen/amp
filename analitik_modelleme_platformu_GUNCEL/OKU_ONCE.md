@@ -1,6 +1,13 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **kurum adı kaldırıldı**. Yapıştır: `llm.py`, `backend.py`, `style.css`
+Bu tur: **eski birlestirme.py backend'i düşürmüyor**. Yapıştır: `akis_durum.py`, `akis_faz01.py` (ve güncel `birlestirme.py`)
+
+- akis_durum dönem yardımcılarını birlestirme.py'den alıyor; dosya eski
+  kalırsa artık yedek tanımlar devreye giriyor, backend açılıyor.
+
+---
+
+Önceki tur: **kurum adı kaldırıldı**. Yapıştır: `llm.py`, `backend.py`, `style.css`
 
 - Asistan yönergesindeki, stil yorumundaki ve bu nottaki kurum adı kaldırıldı.
 - Görsel dosyalarının eski önekli adlarına düşen yedek liste kaldırıldı:
