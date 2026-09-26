@@ -50,10 +50,15 @@ SOZLUK_ADI = "MODELLEME_SOZLUK"
 AMP_VERI_ADI = "AMP_VERISETI"
 AMP_SOZLUK_ADI = "AMP_SOZLUK"
 
-# Klasor OTURUM BAZLI: ayni projede birden fazla calisma yurutulebiliyor
-# (bkz. sozluk_calisma da ayni deseni kullaniyor). Sabit tek dosya
-# olsaydi ikinci calisma birincinin ciktisini sessizce ezerdi.
+# Yalnizca ESKI kayitlar icin: bu surumden once AMP ciktilari
+# "AMP/<tarih>_<oturum>/" altina yaziliyordu. Yeni calismalar
+# ciktilarini kendi klasorune yaziyor (bkz. akis_faz01.amp_klasor_adi).
 AMP_KLASOR = "AMP"
+
+# AMP_VERISETI veri setini EN SON hangi calismanin yazdigi. Veri seti
+# tum calismalarin ORTAK veri seti; bu isaretci olmadan Calisma 01'e
+# geri donen kullanici, Calisma 03'un tablosunu okurdu.
+AMP_SAHIP_DOSYA = "/AMP_VERISETI_SAHIBI.txt"
 
 # AMP_SOZLUK tablosunun kolon adlari. Sabit olarak duruyor cunku iki
 # yerden kullaniliyor (tabloyu yazan taraf ve gizlilik denetimi yapan
@@ -398,9 +403,52 @@ def modelleme_kaynagi(durum):
     durum = durum or {}
     kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
     amp = kayit.get("dataset")
-    if amp:
+    # SAHIPLIK: veri seti baska bir calismanin kaydiyla ezilmisse
+    # kullanicinin kendi tablosu okunur; tip donusumleri modelleme_df'de
+    # yeniden uygulandigi icin sonuc ayni tablodur.
+    if amp and amp_sahibi_mi(durum):
         return str(amp), True
     return durum.get("veri_seti"), False
+
+
+def _calisma_kimligi(durum):
+    return re.sub(r"[^A-Za-z0-9_-]", "", str((durum or {}).get("_oturum_id") or ""))
+
+
+# Isaretci ayni istek icinde defalarca okunuyor (her modelleme_df
+# cagrisi); kisa omurlu onbellek. Yazan taraf onbellegi kendisi gunceller.
+_AMP_SAHIP_ONBELLEK = {"zaman": 0.0, "deger": None}
+AMP_SAHIP_OMUR_SN = 10
+
+
+def amp_sahibi_yaz(durum):
+    """AMP_VERISETI'ni bu calismanin yazdigini kaydeder."""
+    kimlik = _calisma_kimligi(durum)
+    tamam = metin_yaz(AMP_SAHIP_DOSYA, kimlik)
+    _AMP_SAHIP_ONBELLEK.update(zaman=time.time(),
+                               deger=kimlik if tamam else None)
+    return tamam
+
+
+def _amp_sahibi_oku():
+    if time.time() - _AMP_SAHIP_ONBELLEK["zaman"] < AMP_SAHIP_OMUR_SN:
+        return _AMP_SAHIP_ONBELLEK["deger"]
+    try:
+        with _folder().get_download_stream(AMP_SAHIP_DOSYA) as s:
+            deger = s.read().decode("utf-8").strip()
+    except Exception:
+        deger = None
+    _AMP_SAHIP_ONBELLEK.update(zaman=time.time(), deger=deger)
+    return deger
+
+
+def amp_sahibi_mi(durum):
+    """AMP_VERISETI su an BU calismanin kaydini mi tasiyor?
+
+    Isaretci okunamazsa HAYIR: yanlis calismanin tablosunu okumaktansa
+    kullanicinin kendi tablosuna donmek her zaman dogru sonucu verir."""
+    kimlik = _calisma_kimligi(durum)
+    return bool(kimlik) and _amp_sahibi_oku() == kimlik
 
 
 def modelleme_df(durum, limit=-1, kaynak=False):

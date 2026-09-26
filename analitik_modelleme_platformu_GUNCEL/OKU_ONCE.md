@@ -1,5 +1,19 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **sade kayıt yeri** ve **ortak AMP_VERISETI hatası**.
+Yapıştır: `akis_durum.py` → `akis_faz01.py`
+
+- Bir çalışmanın her dosyası tek klasörde:
+  `PROJE_HAFIZASI/cmergen_03/AMP_VERISETI.csv`, `AMP_SOZLUK.csv`,
+  `sozluk_calisma.csv`. AMP klasörü, tarih damgası ve SON.txt yok.
+  Eski çalışmalar eski yerlerine yazmaya devam eder.
+- AMP_VERISETI veri seti tüm çalışmaların ortak veri seti; en son kimin
+  yazdığı `AMP_VERISETI_SAHIBI.txt`'de tutuluyor. Başka çalışma üzerine
+  yazdıysa sonraki fazlar kullanıcının kendi tablosunu (tip dönüşümleri
+  uygulanmış) okur — eskiden Çalışma 01'e dönen, 03'ün tablosunu okuyordu.
+
+---
+
 Bu tur: **dört başlangıç (A/B/C/D)** ve **rozetler Başlık Büyük Harfi**.
 
 ## Kopyala-yapıştır sırası (bu tur)

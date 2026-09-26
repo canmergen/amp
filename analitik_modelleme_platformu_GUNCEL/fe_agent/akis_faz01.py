@@ -29,7 +29,7 @@ from fe_agent.akis_durum import (
     AMP_KLASOR, AMP_SOZLUK_ADI, AMP_SOZLUK_KOLONLARI, AMP_VERI_ADI,
     BOLME_BOLUMLERI, bolme_kaydet, bolme_onerisi, bolme_ozeti,
     hazir_bolme_bul, kolon_ozeti_cikar, metin_yaz, modelleme_df,
-    onbellek_temizle, sozluk_orijinal_oku, yeni_durum,
+    onbellek_temizle, sozluk_orijinal_oku, yeni_durum, amp_sahibi_yaz,
 )
 
 
@@ -2529,44 +2529,33 @@ def teyit_excel(durum, genis=True):
 
 
 def amp_klasor_adi(durum):
-    """Calismanin AMP klasoru: "cmergen_03" (eski kayitlarda
-    "2026-09-21_1809_<oturum>").
+    """Calismanin kayit klasoru: "cmergen_03".
 
-    YENI ADLANDIRMA: oturum anahtari artik "<kullanici>_<sira>" (bkz.
-    backend._oturum_anahtari). Kimin ve kacinci calisma oldugu adin
-    kendisinde okunuyor; sira numarasi zaten zaman sirasi. Tarih + 30
-    karakterlik ozet yalnizca ESKI bicimli anahtarlarda kaliyor.
+    SADE KAYIT (kullanici karari: "amp içine tarihli garip sayılı bir
+    dosya açmak saçma"). Bir calismanin PROJE_HAFIZASI'nda biraktigi her
+    sey TEK klasorde: sozluk calisma kopyasi zaten /<calisma>/ altinda
+    duruyordu, AMP_VERISETI ve AMP_SOZLUK da artik yaninda:
 
-    NEDEN TARIHLI: eski ad yalnizca oturum kimligiydi ("a3f2c1de") ve
-    klasor listesinde hangisinin hangi calisma oldugu anlasilmiyordu.
-    Tarih basta oldugu icin ADA GORE siralamak ZAMANA gore siralamaktir;
-    oturum kimligi sonda duruyor, ayni dakikada iki calisma acilabilir.
+        PROJE_HAFIZASI/cmergen_03/AMP_VERISETI.csv
+        PROJE_HAFIZASI/cmergen_03/AMP_SOZLUK.csv
+        PROJE_HAFIZASI/cmergen_03/sozluk_calisma.csv
 
-    Ad BIR KEZ uretilip duruma yaziliyor. Her yazmada yeniden
-    uretilseydi ikinci "Kaydet" baska bir dakikaya, dolayisiyla baska
-    bir klasore duserdi ve kullanici iki yarim klasor bulurdu."""
-    if isinstance(durum, dict) and durum.get("_amp_klasor"):
-        return durum["_amp_klasor"]
-    oturum = re.sub(r"[^A-Za-z0-9_-]", "",
-                    str((durum or {}).get("_oturum_id") or ""))
-    if re.match(r"^[a-z0-9-]+_\d+$", oturum):
-        ad = oturum
-    else:
-        damga = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
-        ad = ("%s_%s" % (damga, oturum)) if oturum else damga
-    if isinstance(durum, dict):
-        durum["_amp_klasor"] = ad
-    return ad
+    Ayri bir AMP klasoru, tarih damgasi ya da SON.txt yok. Klasor adi
+    "Çalışmalarım" listesindeki numarayla ayni.
+
+    ESKI KAYITLAR: daha once "AMP/2026-09-21_1809_.../" altina yazmis bir
+    calisma (durumda _amp_klasor dolu) ayni yere yazmaya devam eder;
+    kullanici dosyalarini iki farkli yerde aramasin."""
+    eski = (durum or {}).get("_amp_klasor") if isinstance(durum, dict) else None
+    if eski:
+        return "%s/%s" % (AMP_KLASOR, eski)
+    return re.sub(r"[^A-Za-z0-9_-]", "",
+                  str((durum or {}).get("_oturum_id") or "")) or "calisma"
 
 
 def _amp_yolu(durum, ad):
-    """PROJE_HAFIZASI icindeki tarihli calisma klasorunde dosya yolu."""
-    return "/%s/%s/%s.csv" % (AMP_KLASOR, amp_klasor_adi(durum), ad)
-
-
-# En son calismanin klasor adini tasiyan isaretci. Kullanici klasor
-# adlarini ezberlemeden "sonuncusu hangisi" sorusunu okuyabilsin diye.
-AMP_SON_DOSYA = "/%s/SON.txt" % AMP_KLASOR
+    """PROJE_HAFIZASI icinde calismanin kendi klasorunde dosya yolu."""
+    return "/%s/%s.csv" % (amp_klasor_adi(durum), ad)
 
 
 def amp_ciktilarini_yaz(durum):
@@ -2614,14 +2603,14 @@ def amp_ciktilarini_yaz(durum):
         sonuc["sozluk"] = {"ad": AMP_SOZLUK_ADI, "dataset": yazildi,
                            "dosya": yedek, "satir": int(len(tablo))}
 
-    # "SON" isaretcisi: en son yazan calismanin klasor adi. Klasor
-    # listesini acmadan "sonuncusu hangisi" okunabilsin diye. Yazilamazsa
-    # sessizce gecilir (bkz. akis_durum.metin_yaz) - asil ciktilar yazildi.
-    klasor = amp_klasor_adi(durum)
-    sonuc["klasor"] = klasor
-    metin_yaz(AMP_SON_DOSYA,
-              "%s\n%s\n" % (klasor,
-                            datetime.datetime.now().isoformat(timespec="seconds")))
+    sonuc["klasor"] = amp_klasor_adi(durum)
+    # AMP_VERISETI veri seti TEK ve BUTUN calismalarin ortak veri seti.
+    # Hangi calismanin en son yazdigi kaydediliyor; sonraki fazlar veri
+    # setini yalnizca SAHIBI olan calismada okur (bkz.
+    # akis_durum.modelleme_kaynagi). Yazilamazsa sessizce gecilir: o
+    # zaman okuma kullanicinin kendi tablosuna duser, sonuc yine dogru.
+    if (sonuc.get("veri") or {}).get("dataset"):
+        amp_sahibi_yaz(durum)
 
     durum["amp_cikti"] = sonuc
     return sonuc
