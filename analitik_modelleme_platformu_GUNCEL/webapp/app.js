@@ -1,3 +1,25 @@
+/* YÜKLEME HATASI GÖRÜNÜR OLSUN. Bu dosyada bir hata atılırsa geri kalan
+   kod çalışmaz ve ekran sessizce BOŞ kalır (kullanıcı bildirimi:
+   "refresh bütün ekranı boşalttı"). Hata artık sohbet alanına yazılıyor;
+   en sık sebebi index.html / style.css / app.js'in farklı sürümlerde
+   yapıştırılmış olması. */
+window.addEventListener("error", function (olay) {
+    try {
+        const alan = document.getElementById("sohbet");
+        if (!alan || document.getElementById("yukleme-hatasi")) return;
+        const kutu = document.createElement("div");
+        kutu.id = "yukleme-hatasi";
+        kutu.setAttribute("role", "alert");
+        kutu.style.cssText = "margin:12px;padding:10px 14px;border:1px solid #D51115;"
+            + "border-radius:6px;background:#FDF1F1;color:#D51115;font-size:13px;line-height:1.5";
+        kutu.textContent = "Arayüz yüklenirken bir hata oluştu: "
+            + ((olay && olay.message) || "bilinmeyen hata")
+            + ". webapp'teki index.html, style.css ve app.js dosyalarının aynı "
+            + "sürümden yapıştırıldığını kontrol edip sayfayı yenileyin.";
+        alan.appendChild(kutu);
+    } catch (e) { /* uyarı da çizilemezse yapacak bir şey yok */ }
+});
+
 /* Calisma kimligi: F5 saatlerce suren calismayi silmesin diye kalici.
    Dataiku artifact'inda depolama engellenebilir; o zaman sabit "ana"
    kimligine dusuyoruz — backend anahtari zaten KULLANICI kimliginden
@@ -7271,7 +7293,30 @@ const sifirlaBtn = document.getElementById("sifirla-btn");
    geri getirir. Açık çalışma hiç başlamamışsa kaybedilecek bir şey yok:
    sorulmadan yenisi açılır. Uzun süren bir işlem sırasında da
    onaylanabilir: uçuştaki istek iptal edilip yeni çalışma açılır. */
-const yeniOnay = document.getElementById("yeni-onay");
+/* Düğmeler index.html'de yoksa BURADA kurulur. Dosyalar elle
+   yapıştırılıyor; index.html eski sürümde kalınca bu üç öğe null
+   geliyordu, ilk atamada hata atılıyor ve sayfanın geri kalanı (açılışta
+   çalışmayı yükleyen çağrı dahil) hiç çalışmıyordu: ekran bomboş. */
+function yeniOnayKur() {
+    let kutu = document.getElementById("yeni-onay");
+    if (kutu && document.getElementById("yeni-onayla")
+             && document.getElementById("yeni-reddet")) return kutu;
+    if (kutu) kutu.remove();
+    kutu = document.createElement("div");
+    kutu.id = "yeni-onay";
+    kutu.setAttribute("role", "group");
+    kutu.setAttribute("aria-label", "Yeni çalışma onayı");
+    kutu.hidden = true;
+    [["yeni-onayla", "Onayla", "Yeni çalışmayı başlat (açık çalışma silinmez)"],
+     ["yeni-reddet", "Reddet", "Vazgeç, bu çalışmada kal"]].forEach(([id, ad, ipucu]) => {
+        const d = document.createElement("button");
+        d.type = "button"; d.id = id; d.textContent = ad; d.title = ipucu;
+        kutu.appendChild(d);
+    });
+    sifirlaBtn.insertAdjacentElement("afterend", kutu);
+    return kutu;
+}
+const yeniOnay = yeniOnayKur();
 const yeniOnayla = document.getElementById("yeni-onayla");
 const yeniReddet = document.getElementById("yeni-reddet");
 

@@ -1,5 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **"refresh ekranı boşalttı" düzeltmesi**. Yapıştır (webapp): `app.js`
+
+- Sebep: yeni app.js, eski index.html'de olmayan Onayla/Reddet düğmelerini
+  arıyordu; hata atılınca açılışta çalışmayı yükleyen kod hiç çalışmıyordu.
+- app.js düğmeler yoksa kendisi kuruyor.
+- Yüklemede bir hata olursa ekran artık boş kalmıyor: sohbet alanında
+  hatayı ve "dosyaların aynı sürümden yapıştırıldığını kontrol edin"
+  uyarısını gösteriyor.
+
+---
+
 Bu tur: **adım metinleri kutusuz**, **Kaynak Tablolar adımı yeniden yazıldı**.
 Yapıştır: `akis_faz01.py` → `akis_kayit.py` (fe_agent), `style.css` (webapp)
 
