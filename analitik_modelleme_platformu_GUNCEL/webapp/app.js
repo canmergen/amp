@@ -7588,7 +7588,12 @@ function devamMetni(bilgi) {
     if (zaman) parcalar.push("Son işlem: " + zaman);
 
     const adimNo = bilgi.adim_no;
-    if (adimNo !== undefined && adimNo !== null && bilgi.toplam) {
+    if (bilgi.faz_no && bilgi.adim) {
+        /* Faz içi sıra, Arşiv satırıyla aynı biçimde. */
+        parcalar.push(bilgi.faz_no + " " + tireSade(bilgi.faz_baslik || "")
+                      + " · Adım " + bilgi.faz_adim_no + "/" + bilgi.faz_toplam
+                      + " - " + tireSade(bilgi.adim));
+    } else if (adimNo !== undefined && adimNo !== null && bilgi.toplam) {
         parcalar.push("Adım " + adimNo + "/" + bilgi.toplam
                       + (bilgi.adim ? " - " + tireSade(bilgi.adim) : ""));
     } else if (bilgi.adim) {

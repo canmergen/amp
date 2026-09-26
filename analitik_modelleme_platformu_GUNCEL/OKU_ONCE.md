@@ -1,6 +1,13 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Arşiv satırında faz içi adım**. Yapıştır: `backend.py`, `app.js`
+Bu tur: **"kaldığı yerden yüklendi" satırında da faz içi adım**. Yapıştır: `backend.py`, `app.js`
+
+- Sayfa açılışındaki satır da "01 Çalışma Kurulumu · Adım 3/4 - Değişken
+  Kontrolü" biçiminde.
+
+---
+
+Önceki tur: **Arşiv satırında faz içi adım**. Yapıştır: `backend.py`, `app.js`
 
 - Arşiv satırı: "01 Çalışma Kurulumu · Adım 3/4 · Değişken Kontrolü".
   Sayım sol paneldeki gibi faz içinde, gruplu adımlar tek. Veri seti adı

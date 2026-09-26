@@ -1096,6 +1096,9 @@ def _devam_bilgi(durum):
         # Sol paneldeki ad (gruplu adimda grubun adi): mesaj "Adım 3/7 -
         # Modelleme Tanımları" deyip listede o satir bulunmuyordu.
         bilgi["adim"] = _adim_gorunen_adi(sira[i])
+        # Faz ici sira (Arşiv ile ayni): "Adım 5/18" yerine "01 Çalışma
+        # Kurulumu · Adım 3/4".
+        bilgi.update(_faz_konumu(mod, sira[i]))
     if durum.get("_son_islem"):
         bilgi["zaman"] = durum["_son_islem"]
     if durum.get("veri_seti"):
