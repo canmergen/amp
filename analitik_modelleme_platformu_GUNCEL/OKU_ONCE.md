@@ -1,6 +1,13 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **başlangıç başlıkları baz/kaynak adlarıyla; sarı eski tonunda**. Yapıştır: `akis_metin.py`, `style.css`
+Bu tur: **durum etiketleri açık zemin + koyu yazı**. Yapıştır: `style.css`
+
+- "● Yanıtınız Bekleniyor": açık kırmızı zemin, koyu kırmızı yazı.
+- "● Kontrol Ediliyor": açık sarı zemin, koyu sarı yazı.
+
+---
+
+Önceki tur (1): **başlangıç başlıkları baz/kaynak adlarıyla; sarı eski tonunda**. Yapıştır: `akis_metin.py`, `style.css`
 
 - A Baz Veri Seti ve Baz Sözlük Hazır · B Baz Veri Seti Hazır Değil, Kaynak
   Sözlükler Hazır · C Baz Veri Seti Hazır, Baz Sözlük Hazır Değil · D Baz

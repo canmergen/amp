@@ -1422,11 +1422,16 @@ button.ozet-kart:focus-visible {
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
   border-radius: 999px; padding: 1px 9px; border: 1px solid;
 }
+/* AÇIK ZEMİN + KOYU YAZI (kullanıcı kararı): okunurluk her ekranda
+   garanti. Kırmızıda kontrast 4,9:1, sarıda 4,6:1. */
 .blok-durum.bekliyor {
-  color: #fff; background: var(--kirmizi); border-color: var(--kirmizi);
+  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi);
 }
 .blok-durum.kontrol {
-  color: #FFFFFF; background: #F5C518; border-color: #D9A900;
+  color: #A16207; background: #FEF9C3; border-color: #A16207;
+}
+#kabuk.koyu .blok-durum.kontrol {
+  color: #F5C518; background: #2A2210; border-color: #F5C518;
 }
 .blok-durum.tamam {
   color: var(--yesil); background: var(--yesil-acik); border-color: var(--yesil);
