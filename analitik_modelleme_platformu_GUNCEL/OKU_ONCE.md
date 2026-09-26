@@ -1,6 +1,13 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **örneklem tamamen kaldırıldı**. Yapıştır: `akis_durum.py`, `akis_faz01.py`, `sozluk.py`, `secim.py`, `llm.py`, `tip_donusum.py`
+Bu tur: **tek değer notu sadeleşti**. Yapıştır: `akis_faz01.py`
+
+- Not: "PERIOD tüm veri setinde tek bir değer taşıdığı için modele bilgi
+  katmaz; süreç dışı bırakıldı ve kilitlendi." Boş hücre örneği kaldırıldı.
+
+---
+
+Önceki tur: **örneklem tamamen kaldırıldı**. Yapıştır: `akis_durum.py`, `akis_faz01.py`, `sozluk.py`, `secim.py`, `llm.py`, `tip_donusum.py`
 
 - Kolon özeti örnek değeri ve kişisel veri denetimi: tam kolon.
 - Dönem adayları: tam tablo (5.000 satır sınırı kalktı).

@@ -2538,8 +2538,8 @@ def tanimsiz_kolonlari_isaretle(durum):
     return yeni
 
 
-TEK_DEGER_SEBEBI = ("tüm veri setinde her satırda aynı değer var, boş hücre "
-                    "de yok; modele bilgi katmaz, süreç dışı kalmak zorunda")
+TEK_DEGER_SEBEBI = ("Tüm veri setinde tek bir değer taşıyor; modele bilgi "
+                    "katmaz, süreç dışı kalmak zorunda.")
 
 
 def _tek_degerli_hesapla(durum, df=None):
@@ -3323,10 +3323,12 @@ def _teyit_karti(durum):
                       "varsa işareti kaldırın." % _sayi(len(otomatik)))
     tek_hepsi = durum.get("_tek_degerli") or []
     if tek_hepsi:
-        notlar.append("Tüm veri setinde her satırında aynı değer olan %s "
-                      "değişken süreç dışında ve kilitli. Bir değerin yanında "
-                      "boş hücre de olan kolonlar tek değerli sayılmaz."
-                      % _sayi(len(tek_hepsi)))
+        adlar = ", ".join(str(k) for k in tek_hepsi[:3]) + (
+            " ve %s değişken daha" % _sayi(len(tek_hepsi) - 3)
+            if len(tek_hepsi) > 3 else "")
+        notlar.append("%s tüm veri setinde tek bir değer taşıdığı için modele "
+                      "bilgi katmaz; süreç dışı bırakıldı ve kilitlendi."
+                      % adlar)
     if tip_oneri:
         notlar.append("%s değişkenin tipi için öneri seçili geldi (kırmızı "
                       "satırlar). Dönem kolonlarında yazım (202501) "
