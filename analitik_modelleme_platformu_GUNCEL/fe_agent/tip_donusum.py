@@ -31,10 +31,8 @@ TASARIM KARARI - "GUVENLIYSE ONAYLANSIN"
 import numpy as np
 import pandas as pd
 
-# Ornek boyutu: TEKLIF asamasinin okudugu satir sayisi. Buyutmek
-# teklifleri daha isabetli yapar ama kart acilisini yavaslatir; onay
-# zaten tam veriyle yapildigi icin buradaki kacirma maliyetsiz.
-ORNEK_SATIR = 200
+# ORNEKLEM YOK (kullanici karari): teklifler de onay da TAM KOLONLA
+# hesaplanir (bkz. akis_faz01._tip_secenekleri).
 
 # Sayisal bir kolonun "kategorik" olarak modellenmesi ancak sinirli
 # sayida farkli deger varsa anlamli. Ustunde kalan kolonlar kilitli

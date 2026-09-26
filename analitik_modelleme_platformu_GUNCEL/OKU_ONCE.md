@@ -1,6 +1,20 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **süreç dışı AMP'den düşüyor, tip seçenekleri tam kolonla, sarı = her değişiklik**. Yapıştır: `akis_faz01.py`, `tip_donusum.py`, `app.js`
+Bu tur: **örneklem tamamen kaldırıldı**. Yapıştır: `akis_durum.py`, `akis_faz01.py`, `sozluk.py`, `secim.py`, `llm.py`, `tip_donusum.py`
+
+- Kolon özeti örnek değeri ve kişisel veri denetimi: tam kolon.
+- Dönem adayları: tam tablo (5.000 satır sınırı kalktı).
+- Tip önerisi: örnekle ön eleme kalktı, yalnız tam kolon.
+- Faz 05: MI ve model önemi (SHAP dahil) tam veriyle; korelasyon elemesi
+  TÜM adaylarla (ilk 800 sınırı kalktı).
+- Dil modeline giden sözlük listesi kesilmiyor (400 satır sınırı kalktı).
+- Hız için sonucu değiştirmeyen kesin ön elemeler ve matris korelasyonu.
+- Kalan satır sınırlı okumalar yalnız KOLON ADI için (şema); kalan "ilk N"
+  kullanımları ekranda / istemde gösterilen örnek ve listelerdir.
+
+---
+
+Önceki tur: **süreç dışı AMP'den düşüyor, tip seçenekleri tam kolonla, sarı = her değişiklik**. Yapıştır: `akis_faz01.py`, `tip_donusum.py`, `app.js`
 
 - AMP_VERISETI süreç dışı kolonlar olmadan yazılır (hedef/kimlik/dönem
   hariç). 1. faz adımları kullanıcının kendi tablosunu okur (kaynak=True);

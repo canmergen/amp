@@ -14,8 +14,6 @@ import pandas as pd
 KORELASYON_ESIK = 0.95
 QUASI_ESIK = 0.99        # tek degerin payi bunu asarsa yari-sabit
 ONEM_ORAN = 0.0005       # toplam onemin bu payindan azi zayif sayilir
-MAX_KOLON_KOR = 800      # korelasyon matrisi maliyetli; ust sinir
-MI_ORNEK = 5000          # MI icin satir orneklemesi
 
 
 def _sayisal(df, kolonlar):
@@ -40,12 +38,21 @@ def yari_sabit_ele(df, adaylar, esik=QUASI_ESIK):
 def korelasyon_ele(df, adaylar, oncelik=None, esik=KORELASYON_ESIK):
     """Birbirine cok benzeyen ciftlerden dusuk oncelikli olani duser.
     oncelik: {kolon: skor} — yuksek skorlu tutulur (orn. IV)."""
-    adaylar = list(adaylar)[:MAX_KOLON_KOR]
+    # TUM ADAYLAR (kullanici karari: orneklem yok). Eskiden ilk 800 aday
+    # karsilastiriliyordu; sonrakiler hic bakilmadan geciyordu.
+    adaylar = list(adaylar)
     if len(adaylar) < 2:
         return {}, len(adaylar)
 
     X = _sayisal(df, adaylar)
-    kor = X.corr().abs()
+    # Bos deger yoksa ayni Pearson katsayisi matris carpimiyla (cok daha
+    # hizli); bos varsa pandas'in ikili-eksiksiz hesabi.
+    if not X.isna().values.any():
+        with np.errstate(invalid="ignore", divide="ignore"):
+            kor = pd.DataFrame(np.corrcoef(X.values, rowvar=False),
+                               index=X.columns, columns=X.columns).abs()
+    else:
+        kor = X.corr().abs()
     ust = kor.where(np.triu(np.ones(kor.shape), k=1).astype(bool))
 
     ciftler = ust.stack()
@@ -105,12 +112,9 @@ def mi_skorla(df, adaylar, y, binary=True):
     except Exception:
         return {}
 
+    # TAM VERI (kullanici karari: orneklem yok).
     X = _sayisal(df, adaylar).fillna(0)
     t = pd.to_numeric(y, errors="coerce").fillna(0)
-
-    if len(X) > MI_ORNEK:
-        idx = X.sample(MI_ORNEK, random_state=42).index
-        X, t = X.loc[idx], t.loc[idx]
 
     try:
         fonk = mutual_info_classif if binary else mutual_info_regression
@@ -135,10 +139,7 @@ def onem_skorla(df, adaylar, y, binary=True):
     t = pd.to_numeric(y, errors="coerce").fillna(0)
     if binary:
         t = (t > 0).astype(int)
-
-    if len(X) > MI_ORNEK:
-        idx = X.sample(MI_ORNEK, random_state=42).index
-        X, t = X.loc[idx], t.loc[idx]
+    # TAM VERI (kullanici karari: orneklem yok).
 
     Model = RandomForestClassifier if binary else RandomForestRegressor
     model = Model(n_estimators=150, max_depth=8, n_jobs=-1, random_state=42)
@@ -150,8 +151,7 @@ def onem_skorla(df, adaylar, y, binary=True):
     # SHAP varsa tercih edilir — yon ve buyukluk bilgisi daha guvenilir
     try:
         import shap
-        ornek = X.sample(min(500, len(X)), random_state=42)
-        deger = shap.TreeExplainer(model).shap_values(ornek.values)
+        deger = shap.TreeExplainer(model).shap_values(X.values)
         if isinstance(deger, list):
             # Eski shap: sinif basina liste -> pozitif sinif
             deger = deger[-1]

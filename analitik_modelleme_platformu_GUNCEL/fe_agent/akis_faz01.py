@@ -137,7 +137,6 @@ def _aday_kolonlar(df):
 # Donem adayligi icin taranan satir sayisi: bicim kontrolu (YYYYMM,
 # YYYYMMDD, tarih) icin ornek yeter; 1.042 kolonu tam tabloda cozmek
 # pahali. Tekil sayisi tam tablodan.
-DONEM_ORNEK_SATIR = 5000
 
 
 # Aday olmak icin dolu hucrelerin en az bu kadari donem olarak cozulmeli.
@@ -187,7 +186,7 @@ def _donem_adaylari(df, kimlik=(), nedenler=None):
     except Exception:
         return []
     satir = int(df.shape[0])
-    ornek = df.head(DONEM_ORNEK_SATIR)
+    ornek = df          # TAM TABLO (kullanici karari: orneklem yok)
     kimlik = set(kimlik or ())
     cikti = []
     for kolon in df.columns:
@@ -213,7 +212,10 @@ def _donem_adaylari(df, kimlik=(), nedenler=None):
             continue
         try:
             ay, bicim = birl_mod._donem_coz(ornek[kolon])
-            dolu = donem_serisi(ornek[kolon]).notna()
+            # Sayisal kolonda bos = NaN; metin normallestirmesi gereksiz.
+            dolu = (ornek[kolon].notna()
+                    if pd.api.types.is_numeric_dtype(ornek[kolon])
+                    else donem_serisi(ornek[kolon]).notna())
             # Tarih cozucusu tek bir tarihe benzer hucrede bile "tarih"
             # diyebiliyor; aday olmak icin dolu hucrelerin neredeyse
             # tamami donem olarak cozulmeli.
@@ -2624,16 +2626,15 @@ def _tip_onerisi(seri, kaynak_tip, ad):
     dolu = seri.dropna()
     if not len(dolu):
         return None, None
-    ornek = seri.head(tip_donusum.ORNEK_SATIR)
     try:
         tekil = int(dolu.nunique())
     except Exception:
         tekil = len(dolu)
 
     def tutar(kod):
+        # YALNIZCA TAM KOLON (orneklem yok); hiz, tip_donusum'daki
+        # aralik on elemesinden geliyor.
         try:
-            if not tip_donusum.denetle(ornek, kod)[0]:
-                return False
             return bool(tip_donusum.denetle(seri, kod)[0])
         except Exception:
             return False
@@ -2761,24 +2762,6 @@ def _tip_secenekleri(durum, df, ad, kaynak_tip):
             _TIP_SECENEK_ONBELLEK[anahtar] = []
     return [dict(d) for d in _TIP_SECENEK_ONBELLEK[anahtar]
             if not _tip_kilidi(durum, ad, d["kod"])]
-
-
-def _tip_ornegi(durum):
-    """Donusum tekliflerinin uzerinde hesaplandigi KUCUK ornek.
-
-    Tam tabloyu okumuyor: kart acilirken 1.042 kolonun her biri icin
-    alti donusum denenecek; ornek okuma bunu saniyenin altinda tutuyor.
-    Ornekte gorunmeyen bozuk deger, secim ANINDA tam kolonla yapilan
-    denetimde (tip_secimi_dogrula) yakalaniyor. Okuma basarisiz olursa
-    None doner ve kart donusum secenegi gostermez - yanlis teklif
-    gostermektense hic gostermemek dogru."""
-    ad = durum.get("veri_seti")
-    if not ad:
-        return None
-    try:
-        return _df_oku(ad, limit=tip_donusum.ORNEK_SATIR)
-    except Exception:
-        return None
 
 
 # Hedef / kimlik / donem kolonlarinin tipi MODELLEME TANIMLARI adiminda

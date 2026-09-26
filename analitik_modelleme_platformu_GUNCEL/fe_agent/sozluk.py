@@ -29,7 +29,6 @@ ORNEK_ADET = 8
 KIMLIK_ESIK = 0.85        # tekil oran bunun ustundeyse ornek gonderilmez
 UZUN_METIN = 60           # ortalama karakter bunun ustundeyse ornek gonderilmez
 
-PII_ORNEK_ADET = 500      # deseni ararken bakilacak en fazla deger
 PII_DESEN_ORAN = 0.30     # degerlerin bu orani desene uyarsa kolon PII sayilir
 
 # --- Turkce karakterden ve buyuk/kucuk harften bagimsiz ad eslesmesi -------
@@ -104,25 +103,46 @@ def _pii_ad_mi(kol):
 
 def _pii_deger_mi(s):
     """Kolon DEGERLERINE gore kisisel veri denetimi (tip bagimsiz)."""
-    ornek = s.dropna()
-    if not len(ornek):
+    dolu = s.dropna()
+    if not len(dolu):
         return None
-    ornek = ornek.head(PII_ORNEK_ADET).astype(str).str.strip()
+    # KESIN ON ELEME (sonucu degistirmez): sayisal kolonda desene
+    # uyabilecek tek deger, 10-19 haneli TAM SAYIDIR (telefon, TCKN, kart);
+    # e-posta ve IBAN harf icerir, sayisal kolonda olamaz. Bu adaylarin
+    # orani esigin altindaysa kolon PII olamaz.
+    if pd.api.types.is_numeric_dtype(dolu) and not pd.api.types.is_bool_dtype(dolu):
+        try:
+            v = dolu.astype(float).abs()
+            aday = ((v % 1 == 0) & (v >= 1e9) & (v < 1e19)).sum()
+            if float(aday) / float(len(dolu)) < PII_DESEN_ORAN:
+                return None
+        except Exception:
+            pass
+    # TAM KOLON (kullanici karari: orneklem yok). Desen oranlari butun
+    # degerler uzerinden; ayni deger tekrar tekrar denenmesin diye tekil
+    # degerler bir kez denetlenip tekrar sayilariyla agirliklandiriliyor.
+    # Sonuc tum degerleri tek tek denetlemekle birebir ayni.
+    sayim = dolu.astype(str).str.strip().value_counts()
+    ornek = pd.Series(sayim.index, dtype=object)
+    agirlik = sayim.values.astype(float)
     # 12345678901.0 gibi float gosterimlerini sadelestir
     ornek = ornek.str.replace(r"\.0$", "", regex=True)
     sade = ornek.str.replace(r"[\s\-()]", "", regex=True)
-    n = float(len(ornek))
+    n = float(agirlik.sum())
+
+    def oran(isaret):
+        return float((isaret.values.astype(float) * agirlik).sum()) / n
 
     denetimler = (
-        ("e-posta", ornek.map(lambda v: bool(_DESEN_EPOSTA.match(v)))),
-        ("IBAN", sade.map(lambda v: bool(_DESEN_IBAN.match(v)))),
-        ("telefon", sade.map(lambda v: bool(_DESEN_TELEFON.match(v)))),
-        ("TC kimlik no", sade.map(lambda v: bool(_DESEN_TCKN.match(v)))),
-        ("kart numarası", sade.map(lambda v: bool(_DESEN_KART.match(v)))),
+        ("e-posta", lambda: ornek.map(lambda v: bool(_DESEN_EPOSTA.match(v)))),
+        ("IBAN", lambda: sade.map(lambda v: bool(_DESEN_IBAN.match(v)))),
+        ("telefon", lambda: sade.map(lambda v: bool(_DESEN_TELEFON.match(v)))),
+        ("TC kimlik no", lambda: sade.map(lambda v: bool(_DESEN_TCKN.match(v)))),
+        ("kart numarası", lambda: sade.map(lambda v: bool(_DESEN_KART.match(v)))),
     )
-    for ad, isaret in denetimler:
-        if isaret.sum() / n >= PII_DESEN_ORAN:
-            if ad == "TC kimlik no" and sade.map(_tckn_sezgi).sum() / n >= PII_DESEN_ORAN:
+    for ad, hesap in denetimler:
+        if oran(hesap()) >= PII_DESEN_ORAN:
+            if ad == "TC kimlik no" and oran(sade.map(_tckn_sezgi)) >= PII_DESEN_ORAN:
                 return "TC kimlik no (kontrol basamağı uyumlu)"
             return ad
     return None

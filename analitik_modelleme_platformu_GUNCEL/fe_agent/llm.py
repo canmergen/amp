@@ -455,7 +455,7 @@ Kurallar:
 - En fazla 12 sablon oner.""" + SINIRLAYICI_KURALI
 
 
-def gelenekse_plan_oner(sozluk_df, haric, meta, max_satir=400):
+def gelenekse_plan_oner(sozluk_df, haric, meta, max_satir=None):
     """Doner: (plan_listesi, hata). Hata varsa plan bos listedir."""
     meta = meta or {}
     ad_kol, ack_kol, kolon_hata = _sozluk_kolonlari(sozluk_df)
@@ -467,7 +467,7 @@ def gelenekse_plan_oner(sozluk_df, haric, meta, max_satir=400):
     yasak = {x for x in (hedef, kimlik) if x}
 
     kayitlar = []
-    for _, r in sozluk_df.head(max_satir).iterrows():
+    for _, r in (sozluk_df if max_satir is None else sozluk_df.head(max_satir)).iterrows():
         kolon = str(r[ad_kol])
         if kolon in haric or kolon in yasak:
             continue
@@ -535,7 +535,7 @@ Kurallar:
 - En fazla 10 hipotez oner.""" + SINIRLAYICI_KURALI
 
 
-def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=300):
+def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None):
     """Kisitli gramerle yeni degisken hipotezleri. Ciktı ifade.dogrula()
     ile AST duzeyinde ayrica denetlenir.
     Doner: (hipotezler, hata)."""
@@ -550,7 +550,7 @@ def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=300):
     yasak = {x for x in (hedef, kimlik) if x}
 
     kayitlar = []
-    for _, r in sozluk_df.head(max_satir).iterrows():
+    for _, r in (sozluk_df if max_satir is None else sozluk_df.head(max_satir)).iterrows():
         kolon = str(r[ad_kol])
         if kolon not in mevcut or kolon in yasak:
             continue

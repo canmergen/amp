@@ -802,9 +802,8 @@ def sozluk_orijinal_oku(durum):
 #   deger gostermek, sozluk uretiminde LLM'e gondermemek icin verdigimiz
 #   ugrasi bosa cikarir. sozluk.py'nin PII denetimi burada da calisir.
 # ===========================================================================
-# Ornek deger ararken taranan satir sayisi. Tam tarama 1.042 kolonda
-# gereksiz; ilk N satirda hic dolu deger yoksa ornek bos birakilir.
-ORNEK_TARAMA = 200
+# Ornek deger ve kisisel veri denetimi TAM KOLONLA yapilir (kullanici
+# karari: orneklem yok).
 ORNEK_UZUNLUK = 40
 ORNEK_MASKE = "•••"
 
@@ -829,7 +828,6 @@ def kolon_ozeti_cikar(df):
         null_oranlari = df.isna().mean()
     except Exception:
         null_oranlari = {}
-    bas = df.head(ORNEK_TARAMA)
 
     ozet = []
     for kol in df.columns:
@@ -848,10 +846,12 @@ def kolon_ozeti_cikar(df):
 
         ornek = None
         try:
-            dolu = bas[kol].dropna()
+            # TAM KOLON (kullanici karari: orneklem yok). Kisisel veri
+            # denetimi de butun degerlere bakar.
+            dolu = s.dropna()
             if len(dolu):
                 if (sozluk_mod._pii_ad_mi(kol)
-                        or sozluk_mod._pii_deger_mi(dolu.head(8))):
+                        or sozluk_mod._pii_deger_mi(dolu)):
                     ornek = ORNEK_MASKE
                 else:
                     ornek = _ornek_metni(dolu.iloc[0])
