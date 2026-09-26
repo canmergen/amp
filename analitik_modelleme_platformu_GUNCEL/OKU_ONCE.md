@@ -1,5 +1,19 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **dönem kolonu listesi filtreli**. Yapıştır: `akis_faz01.py`
+
+- Modelleme Tanımları'ndaki dönem listesine yalnızca tarih tipi ya da dönem
+  biçimli (202401, 20240115, "2024-01-15") kolonlar geliyor; tek değerli,
+  kimlik (her satırda farklı) ve 0/1 hedef kolonları gelmiyor. Kural
+  zamansal bölmenin dönem çözücüsüyle aynı (`birlestirme._donem_coz`).
+- Aday yoksa liste boş kalır ve "tarih ya da dönem biçimli kolon
+  bulunamadı; zamansal bölme kurulamaz" notu yazar.
+- Serbest yazılan uygunsuz dönem de reddediliyor (hedef/kimlik gibi).
+- Adaylar veri seti seçilirken çıkarılıyor; bu sürümden önce başlamış
+  çalışmalarda liste filtresiz kalır (eski profil), yeni çalışmada dolar.
+
+---
+
 Bu tur: **Öneri gerekçesi ve Detaylar ve Terimler düğmeleri kalktı**.
 Yapıştır: `akis_durum.py` (fe_agent); `style.css` → `app.js` (webapp)
 

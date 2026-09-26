@@ -133,6 +133,48 @@ def _aday_kolonlar(df):
     return hedef, kimlik
 
 
+# Donem adayligi icin taranan satir sayisi: bicim kontrolu (YYYYMM,
+# YYYYMMDD, tarih) icin ornek yeter; 1.042 kolonu tam tabloda cozmek
+# pahali. Tekil sayisi tam tablodan.
+DONEM_ORNEK_SATIR = 5000
+
+
+def _donem_adaylari(df, kimlik=()):
+    """Donem kolonu adaylari (kullanici karari: "tek değeri olan gelmemeli,
+    kimlik ve hedef gelmemeli, tarih ya da tarihe benzeyen kolon gelmeli").
+
+    Aday olmak icin:
+      - en az iki farkli deger (tek donemlik sette donem kolonu anlamsiz)
+      - her satirda farkli DEGIL (kimlik kolonu / zaman damgasi degil)
+      - taninan bir donem bicimi: tarih tipi, YYYYMM (202401), YYYYMMDD
+        (20240115) ya da tarihe cevrilebilen metin (birlestirme._donem_coz
+        ile AYNI kural; zamansal bolme de bu bicimleri cozuyor).
+    0/1 hedef kolonlari bicime uymadigi icin zaten elenir."""
+    try:
+        tekil = df.nunique(dropna=False)
+    except Exception:
+        return []
+    satir = int(df.shape[0])
+    ornek = df.head(DONEM_ORNEK_SATIR)
+    kimlik = set(kimlik or ())
+    cikti = []
+    for kolon in df.columns:
+        ad = str(kolon)
+        try:
+            n_tekil = int(tekil[kolon])
+        except Exception:
+            continue
+        if n_tekil <= 1 or ad in kimlik or (satir > 1 and n_tekil == satir):
+            continue
+        try:
+            _ay, bicim = birl_mod._donem_coz(ornek[kolon])
+        except Exception:
+            bicim = None
+        if bicim:
+            cikti.append(ad)
+    return cikti
+
+
 def _temel_profil(durum, df):
     """Veri seti secildiginde BIR KEZ hesaplanan temel sayilar.
 
@@ -158,6 +200,7 @@ def _temel_profil(durum, df):
     hedef_aday, kimlik_aday = _aday_kolonlar(df)
     p["hedef_adaylari"] = hedef_aday
     p["kimlik_adaylari"] = kimlik_aday
+    p["donem_adaylari"] = _donem_adaylari(df, kimlik_aday)
     _kimlik_duplicate(durum, df, p)
     durum["profil"] = p
     return p
@@ -1886,8 +1929,21 @@ def _tanimlar_formu(durum, meta=None):
             return liste + [deger]
         return liste
 
+    # Eski calismada profil bu listeyi tasimiyor (None): filtre yok, tum
+    # kolonlar. Hesaplanmis ama bos ([]) ise gercekten aday yok.
+    donem_hesaplandi = isinstance(p.get("donem_adaylari"), list)
+    donem_aday = [k for k in (p.get("donem_adaylari") or []) if k in kolonlar]
     hedef_liste = _ekle(hedef_aday, m.get("target")) if hedef_aday else kolonlar
     kimlik_liste = _ekle(kimlik_aday, m.get("id")) if kimlik_aday else kolonlar
+    # DONEM: yalnizca tarih ya da donem bicimli kolonlar (bkz.
+    # _donem_adaylari). Aday yoksa liste bos kalir ve nedeni yazilir;
+    # tum kolonlara DUSULMEZ - kimlik ya da hedefin donem secilmesi
+    # zamansal bolmeyi sessizce bozardi.
+    donem_liste = _ekle(donem_aday, m.get("donem")) if donem_hesaplandi else kolonlar
+    donem_not = ("" if (donem_aday or not donem_hesaplandi) else
+                 "Veri setinde tarih ya da dönem biçimli (202401, "
+                 "2024-01-15…) bir kolon bulunamadı; zamansal bölme "
+                 "kurulamaz.")
 
     hedef_not = ("" if hedef_aday else
                  "Veri setinde 0/1 değerli kolon bulunamadı; tüm kolonlar "
@@ -1928,7 +1984,9 @@ def _tanimlar_formu(durum, meta=None):
              "ipucu": "Yalnızca tekrarsız kolonlar", "not": kimlik_not},
             {"ad": "donem", "etiket": "Dönem kolonu (opsiyonel)",
              "kaynak": "kolon", "zorunlu": False,
-             "deger": m.get("donem") or ""},
+             "deger": m.get("donem") or "", "secenekler": donem_liste,
+             "ipucu": "Yalnızca tarih ya da dönem biçimli kolonlar",
+             "not": donem_not},
         ],
         "sablon": "target {target} id {id} donem {donem}",
     }
@@ -1987,6 +2045,9 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
          "yalnızca 0/1 değerli bir kolon olabilir"),
         ("id", p.get("kimlik_adaylari"), "kimlik kolonu",
          "yalnızca tekrarsız (her satırda farklı) bir kolon olabilir"),
+        ("donem", p.get("donem_adaylari"), "dönem kolonu",
+         "yalnızca tarih ya da dönem biçimli (202401, 2024-01-15…) ve "
+         "birden fazla değer taşıyan bir kolon olabilir"),
     ]
     uygunsuz = []
     for anahtar, adaylar, etiket, kural in aday_kurali:
