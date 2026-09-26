@@ -1,8 +1,9 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Yeni Çalışma onayında soru**. Yapıştır: `app.js`, `index.html`, `style.css`
+Bu tur: **Yeni Çalışma onayı tamamen kaldırıldı**. Yapıştır: `app.js`, `index.html`, `style.css`
 
-- Onayla / Reddet'in önünde "Yeni Çalışma Açılsın mı?" yazıyor.
+- "Yeni Çalışma"ya basınca doğrudan yeni çalışma açılır; açık çalışma
+  silinmez, Arşiv'den geri açılır. Onay kutusu, süre ve soru kaldırıldı.
 
 ---
 

@@ -8232,92 +8232,17 @@ if (calismalarBtn && calismalarListe) {
 
 const sifirlaBtn = document.getElementById("sifirla-btn");
 
-/* ONAY AYNI YERDE (kullanıcı kararı: açılır kutu değil). "Yeni Çalışma"ya
-   basınca düğme gizlenir, yerinde solda Onayla, sağda Reddet belirir;
-   sohbete hiçbir şey eklenmez. Reddet, dışarı tıklama ya da Esc düğmeyi
-   geri getirir. Açık çalışma hiç başlamamışsa kaybedilecek bir şey yok:
-   sorulmadan yenisi açılır. Uzun süren bir işlem sırasında da
-   onaylanabilir: uçuştaki istek iptal edilip yeni çalışma açılır. */
-/* Düğmeler index.html'de yoksa BURADA kurulur. Dosyalar elle
-   yapıştırılıyor; index.html eski sürümde kalınca bu üç öğe null
-   geliyordu, ilk atamada hata atılıyor ve sayfanın geri kalanı (açılışta
-   çalışmayı yükleyen çağrı dahil) hiç çalışmıyordu: ekran bomboş. */
-function yeniOnayKur() {
-    let kutu = document.getElementById("yeni-onay");
-    if (kutu && document.getElementById("yeni-onayla")
-             && document.getElementById("yeni-reddet")) return kutu;
-    if (kutu) kutu.remove();
-    kutu = document.createElement("div");
-    kutu.id = "yeni-onay";
-    kutu.setAttribute("role", "group");
-    kutu.setAttribute("aria-label", "Yeni çalışma onayı");
-    kutu.hidden = true;
-    [["yeni-onayla", "Onayla", "Yeni çalışmayı başlat (açık çalışma silinmez)"],
-     ["yeni-reddet", "Reddet", "Vazgeç, bu çalışmada kal"]].forEach(([id, ad, ipucu]) => {
-        const d = document.createElement("button");
-        d.type = "button"; d.id = id; d.textContent = ad; d.title = ipucu;
-        kutu.appendChild(d);
-    });
-    sifirlaBtn.insertAdjacentElement("afterend", kutu);
-    return kutu;
-}
-const yeniOnay = yeniOnayKur();
-/* NEYİN ONAYLANDIĞI YAZAR (kullanıcı bildirimi: "neyi onayla neyi
-   reddet belirsiz"). Düğmelerin önünde kısa soru; index.html eski
-   kalsa da burada eklenir. */
-if (!document.getElementById("yeni-soru")) {
-    const soru = document.createElement("span");
-    soru.id = "yeni-soru";
-    soru.textContent = "Yeni Çalışma Açılsın mı?";
-    yeniOnay.insertBefore(soru, yeniOnay.firstChild);
-}
-const yeniOnayla = document.getElementById("yeni-onayla");
-const yeniReddet = document.getElementById("yeni-reddet");
-
-/* SÜRELİ ONAY (kullanıcı kararı): 10 saniye içinde karar verilmezse
-   düğmeler kendiliğinden "Yeni Çalışma"ya döner. Kalan süre Onayla'nın
-   üzerinde sayılır. */
-const YENI_ONAY_SURE = 10;
-let yeniOnaySayac = null;
-
-function yeniOnaySayacDurdur() {
-    if (yeniOnaySayac) { clearInterval(yeniOnaySayac); yeniOnaySayac = null; }
-    yeniOnayla.textContent = "Onayla";
-}
-
-function yeniOnayKapat() {
-    yeniOnaySayacDurdur();
-    if (yeniOnay.hidden) return;
-    yeniOnay.hidden = true;
-    sifirlaBtn.hidden = false;
-}
-
-function yeniOnayAc() {
-    sifirlaBtn.hidden = true;
-    yeniOnay.hidden = false;
-    yeniOnayla.focus();
-    yeniOnaySayacDurdur();
-    let kalan = YENI_ONAY_SURE;
-    yeniOnayla.textContent = "Onayla (" + kalan + ")";
-    yeniOnaySayac = setInterval(() => {
-        kalan -= 1;
-        if (kalan <= 0) { yeniOnayKapat(); return; }
-        yeniOnayla.textContent = "Onayla (" + kalan + ")";
-    }, 1000);
-}
-
+/* YENİ ÇALIŞMA ONAYSIZ (kullanıcı kararı: onay adımı "iyice saçmalaştı",
+   tamamen kaldırıldı). Basınca yeni çalışma hemen açılır; açık çalışma
+   SİLİNMEZ, Arşiv'den geri açılır. index.html eski kalsa da eski onay
+   kutusu burada sökülür. */
+{ const eski = document.getElementById("yeni-onay"); if (eski) eski.remove(); }
 sifirlaBtn.onclick = (e) => {
     e.stopPropagation();
     calismalarKapat();
     sayfaAc("calisma");
-    if (!(aktifAdim > 0 || aktifMod)) return sifirlaUygula();
-    yeniOnayAc();
+    sifirlaUygula();
 };
-yeniOnayla.onclick = (e) => { e.stopPropagation(); yeniOnayKapat(); sifirlaUygula(); };
-yeniReddet.onclick = (e) => { e.stopPropagation(); yeniOnayKapat(); };
-yeniOnay.addEventListener("click", e => e.stopPropagation());
-document.addEventListener("click", yeniOnayKapat);
-document.addEventListener("keydown", e => { if (e.key === "Escape") yeniOnayKapat(); });
 
 
 /* AÇILIŞ: soru SORULMAZ (kullanıcı kararı). Tarayıcıda kayıtlı çalışma

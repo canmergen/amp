@@ -81,13 +81,12 @@
           </button>
           <div id="calismalar-liste" role="menu" hidden></div>
         </div>
-        <!-- Yeni Çalışma onayı AYNI YERDE: düğmeye basınca düğme gizlenir,
-             yerinde solda Onayla, sağda Reddet belirir (app.js: yeniOnayAc). -->
+        <!-- Yeni Çalışma ONAYSIZ: basınca yeni çalışma açılır; açık çalışma
+             silinmez, Arşiv'den geri açılır. -->
         <div id="yeni-kap">
         <button id="sifirla-btn" type="button"
                 title="Yeni Çalışma (mevcut çalışma silinmez, Arşiv'den geri açılır)"
-                aria-label="Yeni Çalışma (mevcut çalışma silinmez)"
-                aria-haspopup="true" aria-expanded="false" aria-controls="yeni-onay">
+                aria-label="Yeni Çalışma (mevcut çalışma silinmez)">
           <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
                focusable="false">
             <path d="M12.532 5.887 A5 5 0 1 1 9.294 3.170"
@@ -98,13 +97,6 @@
           </svg>
           <span class="sifirla-etiket">Yeni Çalışma</span>
         </button>
-          <div id="yeni-onay" role="group" aria-label="Yeni çalışma onayı" hidden>
-            <span id="yeni-soru">Yeni Çalışma Açılsın mı?</span>
-            <button id="yeni-onayla" type="button"
-                    title="Yeni çalışmayı başlat (açık çalışma silinmez)">Onayla</button>
-            <button id="yeni-reddet" type="button"
-                    title="Vazgeç, bu çalışmada kal">Reddet</button>
-          </div>
         </div>
         <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
       </div>
