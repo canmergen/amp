@@ -2301,10 +2301,14 @@ button.ozet-kart:focus-visible {
   display: flex; height: 26px; border-radius: var(--r-kucuk); overflow: hidden;
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: #fff;
 }
+/* Parça yazısından DAR OLAMAZ: flex-basis auto + flex-shrink 0. Yüzde
+   yalnızca kalan alanın paylaşımını belirler; yazı hiçbir zaman
+   kırpılmaz (kullanıcı kararı). Dar ekranda çubuk sarılır. */
+.bolme-cubuk { flex-wrap: wrap; row-gap: 2px; height: auto; min-height: 26px; }
 .bolme-cubuk > span {
   display: flex; align-items: center; justify-content: center;
-  min-width: 0; padding: 0 6px; white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis; flex-basis: 0;
+  height: 26px; padding: 0 10px; white-space: nowrap;
+  flex-basis: auto; flex-shrink: 0;
 }
 .bolme-cubuk-egitim { background: #3B5F9E; }
 .bolme-cubuk-val    { background: #6E8FCF; }

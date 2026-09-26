@@ -5323,11 +5323,11 @@ function bolmeOzetCubukCiz(kok, alan) {
         const p = bfPaylar();
         const cubuk = elYap("div", "bolme-cubuk");
         const yz = v => Math.round(100 * v);
-        /* Dar parçada uzun ad sığmıyor: %25'in altında kısaltma. */
-        const ad = (uzun, kisa, v) => (yz(v) < 25 ? kisa : uzun) + " %" + yz(v);
-        if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), ad("Train (MS)", "MS", p.train), "Train (MS) %" + yz(p.train)));
-        if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), ad("Validasyon (OOS)", "OOS", p.val), "Validasyon (OOS) %" + yz(p.val)));
-        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), ad("Test (OOT)", "OOT", p.test), "Test (OOT) %" + yz(p.test)));
+        /* TAM AD, KISALTMA YOK (kullanıcı kararı). Parça yüzdeyle
+           orantılı büyür ama yazısından dar olamaz (bolmeCubukParca). */
+        if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), "Train (MS) %" + yz(p.train)));
+        if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), "Validasyon (OOS) %" + yz(p.val)));
+        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), "Test (OOT) %" + yz(p.test)));
         kutu.appendChild(cubuk);
     }
 
@@ -5366,10 +5366,13 @@ function bolmeOzetCubukCiz(kok, alan) {
     kok.appendChild(kutu);
 }
 
-function bolmeCubukParca(sinif, genislik, metin, ipucu) {
+/* Parça: flex-grow = yüzde, flex-basis = yazının kendi genişliği.
+   Böylece küçük paylı set bile adını tam gösterir; kalan alan
+   yüzdelere göre paylaşılır. Yazı kırpılmaz, kesilmez. */
+function bolmeCubukParca(sinif, genislik, metin) {
     const p = elYap("span", "bolme-cubuk-" + sinif, metin);
     p.style.flexGrow = String(Math.max(genislik, 1));
-    p.title = ipucu || metin;
+    p.title = metin;
     return p;
 }
 
