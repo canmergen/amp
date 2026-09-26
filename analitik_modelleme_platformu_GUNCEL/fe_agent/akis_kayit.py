@@ -7,7 +7,7 @@ akis.py bolundu; bu dosya o bolumun aynisidir.
 from fe_agent.akis_metin import (
     ADIM_ADI, FAZ01_OZET, GRUP_ADI_VERI_SOZLUK, SONRAKI_FAZLAR)
 from fe_agent.akis_faz01 import (
-    birlestirme_girdi, birlestirme_plan, birlestirme_uygula, bolme_girdi, bolme_uygula,
+    birlestirme_plan, birlestirme_uygula, bolme_girdi, bolme_uygula,
     ham_veri_girdi, ham_veri_plan, ham_veri_uygula, kurulum_girdi,
     kurulum_uygula, mod_girdi, mod_plan, mod_uygula,
     kaynak_sozluk_girdi, kaynak_sozluk_uygula,
@@ -58,9 +58,7 @@ ADIMLAR = {
         "aciklama": "Yapay zekâ iskelet tabloyu, bağlantı anahtarlarını ve "
                     "işlem tablolarından üretilecek zaman pencereli "
                     "toplamaları önerir. Point-in-time kuralı uygulanır.",
-        # girdi: birlestirilmis tablonun ADI kullaniciya soruluyor.
-        "girdi": birlestirme_girdi, "plan": birlestirme_plan,
-        "uygula": birlestirme_uygula},
+        "girdi": None, "plan": birlestirme_plan, "uygula": birlestirme_uygula},
 
     "veri_sec": {
         "baslik": "Veri Seti",

@@ -421,56 +421,12 @@ def ham_veri_uygula(durum):
 # ===========================================================================
 # ADIM 1.3A — BIRLESTIRME PLANI  (Mod B ve D)   <-- LLM
 # ===========================================================================
-# BIRLESTIRILMIS TABLONUN ADI KULLANICIYA SORULUR (kullanici karari).
-# Tablo iki yere yazilir:
-#   1) calismanin kendi klasoru: PROJE_HAFIZASI/cmergen_03/<AD>.csv
+# Sonuc iki yere yazilir (ad SABIT: MODELLEME_BAZ, kullanici degistiremez):
+#   1) calismanin kendi klasoru: PROJE_HAFIZASI/v3/MODELLEME_BAZ.csv
 #      -> calismanin KALICI kopyasi; baska calisma ezemez.
-#   2) akista <AD> adli veri seti -> sonraki fazlar ve Dataiku senaryolari
-#      buradan okur. Veri seti ORTAK oldugu icin sahibi kaydedilir;
-#      baska calisma uzerine yazarsa bu calisma (1)'i okur.
-DATASET_ADI_KALIP = re.compile(r"^[A-Za-z][A-Za-z0-9_]{2,59}$")
-
-
-def _baz_adi_formu(durum, ad=None, not_metni=""):
-    durum["_secim_alani"] = {
-        "tip": "form",
-        "baslik": "Birleştirilmiş veri seti",
-        "aciklama": ("Birleştirme sonucuna ne ad verelim? Tablo çalışmanın "
-                     "klasörüne kaydedilir; Dataiku akışında bu adla bir "
-                     "veri seti varsa oraya da yazılır."
-                     + (" " + not_metni if not_metni else "")),
-        "buton": "Devam Et",
-        "alanlar": [{"ad": "tablo_adi", "etiket": "Veri seti adı",
-                     "kaynak": "serbest",
-                     "deger": ad or durum.get("baz_adi") or BAZ_ADI}],
-        "sablon": "tablo adı {tablo_adi}",
-    }
-
-
-def birlestirme_girdi(durum, mesaj, yeniden_sor=False):
-    """Birlestirilmis tablonun adi. Ad zaten verildiyse tekrar sorulmaz."""
-    m = re.match(r"^\s*tablo ad[ıi]\s*[:=]?\s*(\S+)\s*$", mesaj or "", re.I)
-    ad = m.group(1).strip() if m else None
-
-    if not ad:
-        if durum.get("baz_adi") and not yeniden_sor:
-            return True, None
-        _baz_adi_formu(durum)
-        return False, ""
-
-    if not DATASET_ADI_KALIP.match(ad):
-        _baz_adi_formu(durum, ad)
-        return False, ("'%s' veri seti adı olarak kullanılamaz: harfle "
-                       "başlamalı; yalnızca harf, rakam ve alt tire "
-                       "içerebilir (3-60 karakter)." % ad)
-    if ad in (durum.get("ham_tablolar") or []):
-        _baz_adi_formu(durum, ad)
-        return False, ("'%s' birleştirilecek kaynak tablolardan biri; "
-                       "üzerine yazılamaz. Başka bir ad verin." % ad)
-
-    durum["baz_adi"] = ad
-    durum["_secim_alani"] = None
-    return True, None
+#   2) akistaki MODELLEME_BAZ veri seti -> sonraki fazlar ve Dataiku
+#      senaryolari buradan okur. Veri seti ORTAK oldugu icin sahibi
+#      kaydedilir; baska calisma uzerine yazarsa bu calisma (1)'i okur.
 
 
 def birlestirme_plan(durum):
@@ -546,7 +502,7 @@ def birlestirme_uygula(durum):
     lineage_yazildi, lineage_yedek = _yaz(LINEAGE_ADI, kutuk, "/lineage.csv")
     durum["birlestirme"]["lineage"] = lineage_yazildi
 
-    ad = durum.get("baz_adi") or BAZ_ADI
+    ad = BAZ_ADI
     kopya = _amp_yolu(durum, ad)
     durum["birlestirme"]["dosya"] = kopya if dosya_yaz(kopya, baz) else None
     if not dataset_yaz(ad, baz):
@@ -560,8 +516,7 @@ def birlestirme_uygula(durum):
             "büyük olasılıkla akışta bu adda bir veri seti yok.\n\n"
             "Tabloyu %s; köken kütüğü %s.\n\n"
             "Dataiku akışında %s adında bir veri seti oluşturup adımı "
-            "yeniden çalıştırın ya da bu adımda «Geri Dön» ile akışta var olan bir "
-            "ad verin."
+            "yeniden çalıştırın."
             % (ad, kayit, _nerede(lineage_yazildi, lineage_yedek), ad))
 
     durum["veri_seti"] = ad
@@ -2591,16 +2546,16 @@ def teyit_excel(durum, genis=True):
 
 
 def amp_klasor_adi(durum):
-    """Calismanin kayit klasoru: "cmergen_03".
+    """Calismanin kayit klasoru: "v3".
 
     SADE KAYIT (kullanici karari: "amp içine tarihli garip sayılı bir
     dosya açmak saçma"). Bir calismanin PROJE_HAFIZASI'nda biraktigi her
     sey TEK klasorde: sozluk calisma kopyasi zaten /<calisma>/ altinda
     duruyordu, AMP_VERISETI ve AMP_SOZLUK da artik yaninda:
 
-        PROJE_HAFIZASI/cmergen_03/AMP_VERISETI.csv
-        PROJE_HAFIZASI/cmergen_03/AMP_SOZLUK.csv
-        PROJE_HAFIZASI/cmergen_03/sozluk_calisma.csv
+        PROJE_HAFIZASI/v3/AMP_VERISETI.csv
+        PROJE_HAFIZASI/v3/AMP_SOZLUK.csv
+        PROJE_HAFIZASI/v3/sozluk_calisma.csv
 
     Ayri bir AMP klasoru, tarih damgasi ya da SON.txt yok. Klasor adi
     "Çalışmalarım" listesindeki numarayla ayni.

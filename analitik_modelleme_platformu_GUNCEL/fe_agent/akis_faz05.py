@@ -584,7 +584,7 @@ def katalog_uygula(durum):
     # (B, D) uretilir; A ve C'de bu iki veri seti yoktur.
     ek = ""
     if durum.get("mod") in BIRLESTIREN_MODLAR:
-        ek = "\n  %s\n  %s" % (durum.get("veri_seti") or BAZ_ADI, LINEAGE_ADI)
+        ek = "\n  %s\n  %s" % (BAZ_ADI, LINEAGE_ADI)
 
     atlanan_not = ""
     if atlanan > 0:

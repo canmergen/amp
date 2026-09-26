@@ -232,39 +232,39 @@ def _yedek_kimlik():
 # ---------------------------------------------------------------------------
 # CALISMA ADLARI
 # ---------------------------------------------------------------------------
-# ESKI AD: "oturum_u3f9a2c41d07be58a_ck2m9x1qz.json" - 16 haneli kullanici
-# ozeti + istemcinin urettigi rastgele kimlik. PROJE_HAFIZASI'nda
-# hangisinin kimin, hangisinin hangi calisma oldugu okunmuyordu; ayni ad
-# sozluk kopyasinin klasorunde ve AMP klasorunde de tekrarliyordu.
+# YENI AD: v1, v2, v3 ... (kullanici karari: "v1 v2 gibi basitçe").
+# Bir calismanin HER SEYI tek klasorde:
+#     PROJE_HAFIZASI/v3/calisma.json        <- kayit
+#     PROJE_HAFIZASI/v3/sozluk_calisma.csv
+#     PROJE_HAFIZASI/v3/AMP_VERISETI.csv ...
+# Numara PROJE GENELINDE tekildir (iki kullanicinin "v1"i olmaz), bu
+# yuzden kullanici adi ada girmiyor.
 #
-# YENI AD: "<kullanici>_<sira>"  ->  oturum_cmergen_03.json
-#   kullanici : Dataiku login'i, dosya adina uygun hale getirilmis
-#   sira      : o kullanicinin kacinci calismasi (01, 02, ...). Sunucu
-#               veriyor; istemci yalnizca hangi siradaki calismayi
-#               istedigini soyluyor.
-# Kullanici kismi HER ZAMAN sunucunun cozdugu kimlikten gelir: istemci
-# "03" gonderir, "baskasi_03" gonderemez - baskasinin calismasina erisim
-# yine kapali.
+# ERISIM. Kimin hangi calismanin sahibi oldugu CALISMA_KAYDI'nda tutulur
+# (sahip = kullanici kimliginin ozeti). Istemci "v3" gonderir; v3
+# baskasinin ise istek REDDEDILIR. Kayit dosyasinda girdi yoksa
+# calismanin kendi dosyasindaki "_sahip" alanina bakilir.
 #
-# ESKI KAYITLAR BOZULMAZ. Calisma kimligi yalnizca rakamsa yeni ad,
-# degilse (tarayicida kayitli "ck2m9x1qz" ya da "ana") eski ad kullanilir;
-# eski calismalar "Çalışmalarım" listesinde de gorunur.
+# ONCEKI BICIMLER OKUNMAYA DEVAM EDER:
+#   "03"        -> oturum_<kullanici>_03.json  (bir onceki tur)
+#   "ck2m9x1qz" -> oturum_u<ozet>_ck2m9x1qz.json (ilk bicim)
+# Ikisi de "Çalışmalarım" listesinde "Eski Kayıt" olarak gorunur.
 _TR_ASCII = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosuCGIOSU")
+CALISMA_KAYDI = "/CALISMALAR.json"
+V_KALIP = re.compile(r"^v(\d{1,6})$")
+
+
+class CalismaErisimYok(Exception):
+    """Istenen calisma baska bir kullaniciya ait."""
 
 
 def _kullanici_on_eki():
-    """Dosya adinda kullanicinin gorunen kismi: "cmergen", "can-mergen-4f1a".
-
-    Login'de dosya adina girmeyen karakter varsa (nokta, @, bosluk)
-    tireye cevrilir ve login'in kisa ozeti eklenir: "can.mergen" ile
-    "can_mergen" ayni ada dusmesin. Kimlik alinamazsa yalitilmis
-    "misafir-<ozet>" kovasina dusulur."""
+    """ONCEKI TURUN bicimi ("cmergen_03") icin kullanicinin ad kismi.
+    Yeni calismalar bunu KULLANMAZ; yalnizca eski kayitlari bulmak icin."""
     ad, _ = _kullanici_adi()
     if not ad:
         return "misafir-" + hashlib.sha256(
             _yedek_kimlik().encode("utf-8")).hexdigest()[:8]
-    # "ad@kurum" bicimli login'de alan adi dosya adina tasinmaz; butun
-    # login yine ozette oldugu icin iki kurumun ayni adi ayni kovaya dusmez.
     yerel = str(ad).split("@")[0]
     sade = unicodedata.normalize("NFKD", yerel.translate(_TR_ASCII))
     sade = sade.encode("ascii", "ignore").decode("ascii")
@@ -275,25 +275,71 @@ def _kullanici_on_eki():
     return ("%s-%s" % (sade, ozet)) if sade else ("k" + ozet)
 
 
-def _eski_on_ek():
-    """Eski adlandirmanin kullanici kismi: "u<16 haneli ozet>_"."""
+def _sahip_ozeti():
+    """Kullanicinin 16 haneli kimlik ozeti (ilk bicimdeki "u<ozet>" ile ayni)."""
     kimlik = _kullanici_kimligi() or _yedek_kimlik()
-    return "u%s_" % hashlib.sha256(kimlik.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha256(kimlik.encode("utf-8")).hexdigest()[:16]
 
 
-def _yeni_bicim_mi(calisma):
+def _eski_on_ek():
+    """Ilk adlandirmanin kullanici kismi: "u<16 haneli ozet>_"."""
+    return "u%s_" % _sahip_ozeti()
+
+
+def _v_mi(calisma):
+    return bool(V_KALIP.match(str(calisma or "")))
+
+
+def _sayili_mi(calisma):
+    """Bir onceki turun bicimi: yalnizca rakam ("03")."""
     return bool(calisma) and str(calisma).isdigit()
+
+
+def _hafiza():
+    return dataiku.Folder(getattr(akis, "HAFIZA_FOLDER", "PROJE_HAFIZASI"))
+
+
+def _calisma_kaydi_oku():
+    try:
+        with _hafiza().get_download_stream(CALISMA_KAYDI) as s:
+            kayit = json.loads(s.read().decode("utf-8"))
+        return kayit if isinstance(kayit, dict) else {}
+    except Exception:
+        return {}
+
+
+def _calisma_kaydi_yaz(kayit):
+    _hafiza().upload_stream(
+        CALISMA_KAYDI,
+        json.dumps(kayit, ensure_ascii=False, indent=1).encode("utf-8"))
+
+
+def _v_sahibi(calisma):
+    """v-calismanin sahip ozeti; bilinmiyorsa None."""
+    sahip = (_calisma_kaydi_oku().get(calisma) or {}).get("sahip")
+    if sahip:
+        return sahip
+    # Kayitta yok: calismanin kendi dosyasina bak (varsa).
+    try:
+        with _hafiza().get_download_stream("/%s/calisma.json" % calisma) as s:
+            return (json.loads(s.read().decode("utf-8")) or {}).get("_sahip")
+    except Exception:
+        return None
 
 
 def _oturum_anahtari(istemci_id=None):
     """Sunucu tarafli oturum anahtari.
 
-    Yeni bicim : <kullanici>_<sira>      (istemci_id yalnizca rakam)
-    Eski bicim : u<kullanici ozeti>_<istemci_id>
-    Istemcinin gonderdigi deger yalnizca ayni kullanicinin calismalarini
-    ayirir; baskasinin calismasina erisim saglamaz."""
+    v3        -> "v3" (sahibi degilse CalismaErisimYok)
+    03        -> <kullanici>_03          (onceki tur)
+    ck2m9x1qz -> u<kullanici ozeti>_ck2m9x1qz (ilk bicim)"""
     calisma = _temiz(istemci_id) or "ana"
-    if _yeni_bicim_mi(calisma):
+    if _v_mi(calisma):
+        sahip = _v_sahibi(calisma)
+        if sahip and sahip != _sahip_ozeti():
+            raise CalismaErisimYok("Bu çalışma başka bir kullanıcıya ait.")
+        return calisma
+    if _sayili_mi(calisma):
         return "%s_%s" % (_kullanici_on_eki(), calisma)
     return "%s%s" % (_eski_on_ek(), calisma)
 
@@ -1087,22 +1133,31 @@ def karsilama_endpoint():
 
     Istemci calisma kimligi GONDERMEZSE (ilk acilis, tarayici deposu
     engelli ya da temizlenmis) kullanicinin EN SON calismasi acilir;
-    hic calismasi yoksa 01 numarali calisma baslar. Hangi calismanin
+    hic calismasi yoksa yeni bir numara (v1, v2 ...) ile baslar. Hangi calismanin
     acildigi yanitta "calisma_id" olarak doner, istemci onu saklar."""
     try:
         calisma = _temiz(request.args.get("oturum_id"))
         if not calisma:
             calisma = _son_calisma_id()
-        anahtar = _oturum_anahtari(calisma)
+        try:
+            anahtar = _oturum_anahtari(calisma)
+        except CalismaErisimYok:
+            # Tarayicida baskasinin calisma kimligi kayitli (ortak
+            # bilgisayar): o calisma ACILMAZ, kullanicinin kendi son
+            # calismasi acilir.
+            calisma = _son_calisma_id()
+            anahtar = _oturum_anahtari(calisma)
         durum = _durum_al(anahtar)
 
         if _oturum_var_mi(durum):
             govde = _surdurme_govdesi(durum)
-            if _yeni_bicim_mi(calisma):
-                govde["devam_bilgi"]["ad"] = "Çalışma %s" % calisma
+            if _v_mi(calisma):
+                govde["devam_bilgi"]["ad"] = calisma
         else:
             durum = akis.yeni_durum()
             durum["_oturum_id"] = anahtar
+            if _v_mi(calisma):
+                durum["_sahip"] = _sahip_ozeti()
             govde = _karsilama_govdesi(durum)
             durum["_tur_no"] = 0
             durum["_son_cevap"] = govde["cevap"]
@@ -1286,7 +1341,7 @@ def sifirla_endpoint():
         istek = request.get_json(force=True) or {}
         calisma = _calisma_id(istek)
         bos_mu = False
-        if _yeni_bicim_mi(calisma):
+        if _v_mi(calisma):
             try:
                 bos_mu = not _calisma_basladi_mi(
                     _durum_al(_oturum_anahtari(calisma)))
@@ -1303,6 +1358,8 @@ def sifirla_endpoint():
         akis.calisma_kopyasi_sil(anahtar)
 
         durum = akis.yeni_durum()
+        durum["_oturum_id"] = anahtar
+        durum["_sahip"] = _sahip_ozeti()
         govde = _karsilama_govdesi(durum)       # _secenekler burada doluyor
         durum["_tur_no"] = 0
         durum["_son_cevap"] = govde["cevap"]
@@ -1334,31 +1391,31 @@ CALISMA_LISTE_SINIRI = 30
 
 def _hafiza_yollari():
     try:
-        return list(dataiku.Folder(
-            getattr(akis, "HAFIZA_FOLDER", "PROJE_HAFIZASI")
-        ).list_paths_in_partition())
+        return list(_hafiza().list_paths_in_partition())
     except Exception as e:
         _hata_kaydet("calismalar:liste", e)
         return []
 
 
 def _calisma_kimlikleri(yollar=None):
-    """Bu kullanicinin calisma kimlikleri: (yeni_sira_listesi, eski_liste)."""
+    """Bu kullanicinin calismalari: (v_listesi, eski_liste).
+
+    v_listesi CALISMA_KAYDI'ndan (sahibi bu kullanici olanlar, yeniden
+    eskiye); eski liste onceki iki bicimin dosya adlarindan."""
     yollar = _hafiza_yollari() if yollar is None else yollar
-    yeni_re = re.compile(r"^/oturum_%s_(\d{1,6})\.json$"
-                         % re.escape(_kullanici_on_eki()))
+    ben = _sahip_ozeti()
+    v = [k for k, d in _calisma_kaydi_oku().items()
+         if _v_mi(k) and (d or {}).get("sahip") == ben]
+    sayili_re = re.compile(r"^/oturum_%s_(\d{1,6})\.json$"
+                           % re.escape(_kullanici_on_eki()))
     eski_re = re.compile(r"^/oturum_%s([A-Za-z0-9_-]+)\.json$"
                          % re.escape(_eski_on_ek()))
-    yeni, eski = [], []
+    eski = []
     for y in yollar:
-        m = yeni_re.match(y)
+        m = sayili_re.match(y) or eski_re.match(y)
         if m:
-            yeni.append(m.group(1))
-            continue
-        m = eski_re.match(y)
-        if m and not _yeni_bicim_mi(m.group(1)):
             eski.append(m.group(1))
-    return yeni, eski
+    return sorted(v, key=lambda k: int(k[1:]), reverse=True), eski
 
 
 def _calisma_basladi_mi(durum):
@@ -1370,10 +1427,26 @@ def _calisma_basladi_mi(durum):
 
 
 def _yeni_calisma_id():
-    """Kullanicinin siradaki calisma numarasi: "01", "02", ... """
-    yeni, _ = _calisma_kimlikleri()
-    en_buyuk = max([int(x) for x in yeni] or [0])
-    return "%02d" % (en_buyuk + 1)
+    """Siradaki PROJE GENELINDE tekil numara ("v7"); sahipligini kaydeder.
+
+    Iki kullanici ayni anda "Yeni Çalışma"ya basarsa ayni numarayi
+    alabilirler; yazdiktan sonra kayit yeniden okunur, numara
+    baskasina gectiyse bir sonrakine gecilir."""
+    ben = _sahip_ozeti()
+    for _deneme in range(5):
+        kayit = _calisma_kaydi_oku()
+        sayilar = [int(V_KALIP.match(k).group(1)) for k in kayit if _v_mi(k)]
+        for y in _hafiza_yollari():
+            m = re.match(r"^/v(\d{1,6})/", y)
+            if m:
+                sayilar.append(int(m.group(1)))
+        yeni = "v%d" % (max(sayilar or [0]) + 1)
+        kayit[yeni] = {"sahip": ben, "olusturma": datetime.datetime.now()
+                       .isoformat(timespec="seconds")}
+        _calisma_kaydi_yaz(kayit)
+        if (_calisma_kaydi_oku().get(yeni) or {}).get("sahip") == ben:
+            return yeni
+    raise RuntimeError("Yeni çalışma numarası alınamadı.")
 
 
 def _adim_gorunen_adi(anahtar):
@@ -1391,8 +1464,7 @@ def _calisma_ozeti(calisma, durum):
     i = durum.get("i") or 0
     ozet = {
         "calisma_id": calisma,
-        "ad": ("Çalışma %s" % calisma) if _yeni_bicim_mi(calisma)
-              else "Eski Kayıt",
+        "ad": calisma if _v_mi(calisma) else "Eski Kayıt",
         "zaman": durum.get("_son_islem"),
         "baslamis": _calisma_basladi_mi(durum),
         "adim_no": min(i + 1, len(sira)),
@@ -1411,13 +1483,13 @@ def _calismalar(en_fazla=CALISMA_LISTE_SINIRI, aktif=None):
     Hic baslamamis (bos) calismalar listeye girmez; su an acik olan
     haric - kullanici hangisinde oldugunu gormeli."""
     yeni, eski = _calisma_kimlikleri()
-    adaylar = sorted(yeni, key=int, reverse=True) + eski
+    adaylar = yeni + eski
     cikti = []
     for calisma in adaylar[:max(en_fazla, CALISMA_LISTE_SINIRI)]:
         try:
             durum = _durum_al(_oturum_anahtari(calisma))
         except Exception as e:
-            cikti.append({"calisma_id": calisma, "ad": "Çalışma %s" % calisma,
+            cikti.append({"calisma_id": calisma, "ad": calisma,
                           "hata": "Kayıt okunamadı (%s)."
                                   % _hata_kaydet("calismalar:oku", e)})
             continue
@@ -1434,12 +1506,12 @@ def _calismalar(en_fazla=CALISMA_LISTE_SINIRI, aktif=None):
 def _son_calisma_id():
     """Kimliksiz acilista acilacak calisma: en son islem goren. Hicbiri
     baslamamissa en buyuk numarali (bos) calisma yeniden kullanilir -
-    her F5'te yeni bos bir calisma acilmasin. Hic yoksa "01"."""
+    her F5'te yeni bos bir calisma acilmasin. Hic yoksa yeni numara."""
     son = _calismalar(en_fazla=1)
     if son:
         return son[0]["calisma_id"]
     yeni, _ = _calisma_kimlikleri()
-    return max(yeni, key=int) if yeni else "01"
+    return yeni[0] if yeni else _yeni_calisma_id()
 
 
 @app.route("/calismalar")

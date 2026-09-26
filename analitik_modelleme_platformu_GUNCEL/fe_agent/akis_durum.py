@@ -133,7 +133,12 @@ def _folder():
     return dataiku.Folder(HAFIZA_FOLDER)
 
 def _yol(oturum_id):
-    return "/oturum_%s.json" % re.sub(r"[^A-Za-z0-9_-]", "", str(oturum_id))
+    """Kayit dosyasi. Yeni calismalar (v1, v2 ...) kendi klasorunde:
+    /v3/calisma.json. Onceki bicimler kokte: /oturum_<anahtar>.json."""
+    temiz = re.sub(r"[^A-Za-z0-9_-]", "", str(oturum_id))
+    if re.match(r"^v\d{1,6}$", temiz):
+        return "/%s/calisma.json" % temiz
+    return "/oturum_%s.json" % temiz
 
 def yeni_durum():
     return {
@@ -142,7 +147,6 @@ def yeni_durum():
         # Mod harflerinin hangi duzene gore yazildigi (bkz. MOD_GOCU).
         "_mod_surumu": MOD_SURUMU,
         "ham_tablolar": [],          # Mod B ve D
-        "baz_adi": None,             # Mod B ve D: birlestirme sonucunun adi
         "kaynak_sozlukler": {},      # Mod B: {kaynak tablo: sozluk}
         "birlestirme": {},           # plan + ozet
         "sozluk_uretim": {},         # ozet

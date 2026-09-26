@@ -37,7 +37,9 @@ from fe_agent.akis_durum import HAFIZA_FOLDER
 
 
 # Silinebilir kabul edilen desenler ------------------------------------------
-OTURUM_DESENI = re.compile(r"^/oturum_.+\.json$")
+# Yeni calismalar (v1, v2 ...) kaydini kendi klasorunde tutar:
+# /v3/calisma.json. Onceki bicim kokte: /oturum_<anahtar>.json.
+OTURUM_DESENI = re.compile(r"^/(oturum_.+\.json|v\d+/calisma\.json)$")
 SENARYO_DESENI = re.compile(r"^/senaryo_.+_(konfig|sonuc)\.json$")
 
 # Bir oturuma ait, oturumla birlikte eskiyen dosyalar. Sozluk calisma
@@ -216,7 +218,9 @@ def oturum_yollari(anahtar):
     temiz = re.sub(r"[^A-Za-z0-9_-]", "", str(anahtar or ""))
     if not temiz:
         return []
-    return ["/oturum_%s.json" % temiz,
+    kayit = ("/%s/calisma.json" % temiz if re.match(r"^v\d+$", temiz)
+             else "/oturum_%s.json" % temiz)
+    return [kayit,
             "/%s/sozluk_calisma.csv" % temiz,
             "/%s/sozluk_degisiklik.csv" % temiz]
 

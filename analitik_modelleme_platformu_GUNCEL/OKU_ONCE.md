@@ -1,5 +1,28 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **çalışmalar v1, v2, v3 …** ve **MODELLEME_BAZ adı sabit**.
+Yapıştır: `akis_durum.py` → `akis_faz01.py` → `akis_kayit.py` → `akis_faz05.py`
+→ `bakim.py` · Webapp: `backend.py`
+
+```
+PROJE_HAFIZASI/
+  CALISMALAR.json            ← hangi v kimin
+  VERI_SETI_SAHIPLERI.json   ← ortak veri setine son kim yazdı
+  v3/
+    calisma.json             ← çalışmanın kaydı
+    sozluk_calisma.csv
+    MODELLEME_BAZ.csv        ← (B/D) birleştirme sonucunun kopyası
+    AMP_VERISETI.csv / AMP_SOZLUK.csv (akışta veri seti yoksa)
+```
+
+- Numara proje genelinde tekil; kullanıcı adı dosya adında yok. Başka
+  kullanıcının çalışması açılamaz (CALISMALAR.json'daki sahip kontrolü).
+- MODELLEME_BAZ / MODELLEME_SOZLUK adları sabit, sorulmuyor (önceki turdaki
+  ad formu kaldırıldı).
+- Eski kayıtlar (oturum_*.json) "Çalışmalarım"da "Eski Kayıt" olarak açılır.
+
+---
+
 Bu tur: **birleştirme sonucunun adı soruluyor ve çalışma klasörüne de yazılıyor**.
 Yapıştır: `akis_durum.py` → `akis_faz01.py` → `akis_kayit.py` → `akis_faz05.py`
 
