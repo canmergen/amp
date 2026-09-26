@@ -1,5 +1,15 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **açılış sorusu kaldırıldı**, **Yeni Çalışma onayı kart düzeninde**.
+Yapıştır (webapp): `app.js`
+
+- Sayfa açılınca soru yok: kayıtlı ya da en son çalışma doğrudan açılır;
+  başka çalışmaya «Çalışmalarım» düğmesinden geçilir.
+- «Yeni Çalışma» onayı: tek soru cümlesi + açık çalışmanın kartı (numara,
+  tarih, adım, kararlar) + üç seçenek kartı.
+
+---
+
 Bu tur: **soru yalnızca yeni açılışta**, **Yeni Çalışma onaylı**.
 Yapıştır (webapp): `app.js`
 
