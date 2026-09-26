@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **başlık ve etiketlerde Başlık Büyük Harfi**. Yapıştır: `akis_faz01.py`, `akis_durum.py`, `akis_panel.py`, `app.js`
+Bu tur: **"Tamamlandı" yerine açıklamalı onay**. Yapıştır: `app.js`
+
+- Geçilmiş blokların yeşil etiketi neyin yapıldığını söylüyor: "✓ A
+  Başlangıcı Seçildi", "✓ Modelleme Tanımları Onaylandı", "✓ Bölme
+  Uygulandı" ... (app.js BLOK_TAMAM_METNI).
+
+---
+
+Önceki tur: **başlık ve etiketlerde Başlık Büyük Harfi**. Yapıştır: `akis_faz01.py`, `akis_durum.py`, `akis_panel.py`, `app.js`
 
 - Form alanları, kart başlıkları, bölme satırları, sağ panel etiketleri,
   dağılım kutuları: her kelime büyük harfle (ve, veya, ile, için, mi, da,

@@ -4258,15 +4258,47 @@ const BLOK_BEKLIYOR = "● Yanıtınız Bekleniyor";
    kartın kendi rozeti boş kalır; tek etiket bu. */
 const BLOK_KONTROL = "● Kontrol Ediliyor";
 const BLOK_TAMAM = "✓ Tamamlandı";
+/* AÇIKLAMALI ONAY (kullanıcı kararı: "Tamamlandı" neyin tamamlandığını
+   söylemiyordu). Adım başına kısa, geçmiş zamanlı bir onay; listede
+   olmayan adımda genel "Tamamlandı" kalır. */
+const BLOK_TAMAM_METNI = {
+    ham_veri: "Kaynak Tablolar Seçildi",
+    kaynak_sozluk: "Kaynak Sözlükler Onaylandı",
+    birlestirme: "Baz Veri Seti Oluşturuldu",
+    veri_sec: "Baz Veri Seti Seçildi",
+    sozluk_uret: "Baz Sözlük Oluşturuldu",
+    kurulum: "Girdiler Onaylandı",
+    tanimlar: "Modelleme Tanımları Onaylandı",
+    sozluk_tanim: "Sözlük Tanımları Kaydedildi",
+    teyit: "Değişken Listesi Kaydedildi",
+    bolme: "Bölme Uygulandı",
+    veri_profili: "Veri Profili Çıkarıldı",
+    sfa: "Tek Değişken Analizi Yapıldı",
+    stabilite: "Stabilite Ölçüldü",
+    baz: "Analitik Baz Set Hazırlandı",
+    kural: "Kural Tabanlı Değişkenler Üretildi",
+    kesif: "AI Değişken Keşfi Yapıldı",
+    kalite: "Kalite Kontrolü Yapıldı",
+    secim: "Aday Değişken Seti Belirlendi",
+    model: "Modeller Karşılaştırıldı",
+    algoritma: "Algoritma Seçildi",
+    final: "Model Finalize Edildi",
+    katalog: "Değişken Kataloğu Hazırlandı"
+};
+function blokTamamMetni(adim) {
+    if (adim === "mod")
+        return "✓ " + (aktifMod ? aktifMod + " Başlangıcı Seçildi" : "Başlangıç Seçildi");
+    return BLOK_TAMAM_METNI[adim] ? "✓ " + BLOK_TAMAM_METNI[adim] : BLOK_TAMAM;
+}
 
-function blokDurumEtiketi(bas, durum) {
+function blokDurumEtiketi(bas, durum, adim) {
     if (!bas) return;
     let et = bas.querySelector(":scope > .blok-durum");
     const onayliRozet = durum === "tamam"
         && bas.querySelector(":scope > .alt-rozet .onayli");
     const metin = durum === "bekliyor" ? BLOK_BEKLIYOR
         : durum === "kontrol" ? BLOK_KONTROL
-        : (durum === "tamam" && !onayliRozet ? BLOK_TAMAM : "");
+        : (durum === "tamam" && !onayliRozet ? blokTamamMetni(adim) : "");
     if (!metin) { if (et) et.remove(); return; }
     if (!et) {
         et = elYap("span", "blok-durum");
@@ -4297,7 +4329,8 @@ function blokDurumlariniTazele() {
                 const durum = bolum.dataset.adim === aktif ? aktifDurum : "tamam";
                 if (durum !== "tamam") bekliyorVar = durum;
                 sinifAyarla(bolum, durum);
-                blokDurumEtiketi(bolum.querySelector(":scope > .alt-bas"), durum);
+                blokDurumEtiketi(bolum.querySelector(":scope > .alt-bas"), durum,
+                                 bolum.dataset.adim);
             });
             sinifAyarla(blok, bekliyorVar || "tamam");
             return;
@@ -4305,7 +4338,8 @@ function blokDurumlariniTazele() {
         if (!blok.dataset.adim) return;
         const durum = blok.dataset.adim === aktif ? aktifDurum : "tamam";
         sinifAyarla(blok, durum);
-        blokDurumEtiketi(blok.querySelector(":scope > .blok-bas"), durum);
+        blokDurumEtiketi(blok.querySelector(":scope > .blok-bas"), durum,
+                         blok.dataset.adim);
     });
 }
 
