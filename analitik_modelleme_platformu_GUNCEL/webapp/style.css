@@ -380,17 +380,17 @@ button.ozet-kart:focus-visible {
    barın altındaki panellerin (sohbet z-index 1, çekmeceler 40)
    üstünde kalmalı. */
 #calismalar-kap, #yeni-kap { position: relative; flex-shrink: 0; }
-/* Yeni Çalışma onayı: Çalışmalarım listesiyle aynı kutu. */
-#yeni-onay {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 50;
-  width: min(290px, 90vw); padding: var(--b-3) var(--b-4);
-  background: var(--yuzey); border: 1px solid var(--kenar);
-  border-radius: var(--r); box-shadow: var(--golge-2);
-}
+/* Yeni Çalışma onayı: düğmenin YERİNDE iki düğme, aynı boy ve kutu. */
+#yeni-onay { display: flex; gap: 4px; }
 #yeni-onay[hidden] { display: none; }
-.yeni-onay-soru { font-weight: var(--fw-kalin); font-size: var(--fs-govde); }
-.yeni-onay-not { margin-top: 4px; font-size: var(--fs-kucuk); color: var(--metin-soluk); line-height: 1.45; }
-.yeni-onay-dugmeler { display: flex; gap: var(--b-2); margin-top: var(--b-3); }
+#yeni-onay button {
+  height: 22px; padding: 0 var(--b-2); cursor: pointer; white-space: nowrap;
+  border-radius: var(--r-kucuk); font-family: var(--font);
+  font-size: var(--fs-govde); font-weight: var(--fw-kalin);
+}
+#yeni-onayla { border: 1px solid var(--kirmizi); background: var(--kirmizi); color: #fff; }
+#yeni-reddet { border: 1px solid var(--kenar); background: var(--yuzey); color: var(--metin); }
+#yeni-reddet:hover { border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik); }
 /* Çalışmalarım satırı: açma düğmesi + Kopyala */
 .calisma-satir { display: flex; align-items: center; gap: var(--b-1); }
 .calisma-satir .calisma-oge { flex: 1; min-width: 0; }

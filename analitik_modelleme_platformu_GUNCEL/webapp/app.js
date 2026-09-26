@@ -7264,49 +7264,38 @@ if (calismalarBtn && calismalarListe) {
 }
 
 const sifirlaBtn = document.getElementById("sifirla-btn");
-const yeniOnay = document.getElementById("yeni-onay");
 
-/* ONAY DÜĞMENİN ÜZERİNDE (kullanıcı kararı: "yanlışlıkla basabilir",
-   "sohbette değil"). Düğmenin altında küçük bir kutu açılır; sohbete
-   hiçbir şey eklenmez, ekran olduğu gibi kalır. Açık çalışma hiç
-   başlamamışsa kaybedilecek bir şey yok: sorulmadan yenisi açılır.
-   Uzun süren bir işlem sırasında da basılabilir: "Başlat" uçuştaki
-   isteği iptal edip yeni çalışmayı açar. */
+/* ONAY AYNI YERDE (kullanıcı kararı: açılır kutu değil). "Yeni Çalışma"ya
+   basınca düğme gizlenir, yerinde solda Onayla, sağda Reddet belirir;
+   sohbete hiçbir şey eklenmez. Reddet, dışarı tıklama ya da Esc düğmeyi
+   geri getirir. Açık çalışma hiç başlamamışsa kaybedilecek bir şey yok:
+   sorulmadan yenisi açılır. Uzun süren bir işlem sırasında da
+   onaylanabilir: uçuştaki istek iptal edilip yeni çalışma açılır. */
+const yeniOnay = document.getElementById("yeni-onay");
+const yeniOnayla = document.getElementById("yeni-onayla");
+const yeniReddet = document.getElementById("yeni-reddet");
+
 function yeniOnayKapat() {
-    if (!yeniOnay || yeniOnay.hidden) return;
+    if (yeniOnay.hidden) return;
     yeniOnay.hidden = true;
-    sifirlaBtn.setAttribute("aria-expanded", "false");
+    sifirlaBtn.hidden = false;
 }
 
 function yeniOnayAc() {
-    yeniOnay.innerHTML = "";
-    yeniOnay.appendChild(elYap("div", "yeni-onay-soru", "Yeni çalışma başlatılsın mı?"));
-    yeniOnay.appendChild(elYap("div", "yeni-onay-not",
-        "Açık çalışma" + (OTURUM_ID ? " (" + OTURUM_ID + ")" : "")
-        + " silinmez; Çalışmalarım listesinden her zaman açılır."));
-    const dugmeler = elYap("div", "yeni-onay-dugmeler");
-    const evet = elYap("button", "onceki-dugme", "Başlat");
-    evet.type = "button";
-    evet.onclick = () => { yeniOnayKapat(); sifirlaUygula(); };
-    const vazgec = elYap("button", "onceki-dugme ikincil", "Vazgeç");
-    vazgec.type = "button";
-    vazgec.onclick = yeniOnayKapat;
-    dugmeler.appendChild(evet);
-    dugmeler.appendChild(vazgec);
-    yeniOnay.appendChild(dugmeler);
+    sifirlaBtn.hidden = true;
     yeniOnay.hidden = false;
-    sifirlaBtn.setAttribute("aria-expanded", "true");
-    evet.focus();
+    yeniOnayla.focus();
 }
 
 sifirlaBtn.onclick = (e) => {
     e.stopPropagation();
     calismalarKapat();
     sayfaAc("calisma");
-    if (!yeniOnay.hidden) return yeniOnayKapat();
     if (!(aktifAdim > 0 || aktifMod)) return sifirlaUygula();
     yeniOnayAc();
 };
+yeniOnayla.onclick = (e) => { e.stopPropagation(); yeniOnayKapat(); sifirlaUygula(); };
+yeniReddet.onclick = (e) => { e.stopPropagation(); yeniOnayKapat(); };
 yeniOnay.addEventListener("click", e => e.stopPropagation());
 document.addEventListener("click", yeniOnayKapat);
 document.addEventListener("keydown", e => { if (e.key === "Escape") yeniOnayKapat(); });

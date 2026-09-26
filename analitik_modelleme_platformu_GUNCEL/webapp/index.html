@@ -97,8 +97,8 @@
           </button>
           <div id="calismalar-liste" role="menu" hidden></div>
         </div>
-        <!-- Yeni Çalışma onayı düğmenin altında açılır (sohbete bir şey
-             eklenmez). app.js: yeniOnayAc. -->
+        <!-- Yeni Çalışma onayı AYNI YERDE: düğmeye basınca düğme gizlenir,
+             yerinde solda Onayla, sağda Reddet belirir (app.js: yeniOnayAc). -->
         <div id="yeni-kap">
         <button id="sifirla-btn" type="button"
                 title="Yeni Çalışma (mevcut çalışma silinmez, Çalışmalarım listesinden geri açılır)"
@@ -114,7 +114,12 @@
           </svg>
           <span class="sifirla-etiket">Yeni Çalışma</span>
         </button>
-          <div id="yeni-onay" role="dialog" aria-label="Yeni çalışma onayı" hidden></div>
+          <div id="yeni-onay" role="group" aria-label="Yeni çalışma onayı" hidden>
+            <button id="yeni-onayla" type="button"
+                    title="Yeni çalışmayı başlat (açık çalışma silinmez)">Onayla</button>
+            <button id="yeni-reddet" type="button"
+                    title="Vazgeç, bu çalışmada kal">Reddet</button>
+          </div>
         </div>
         <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
       </div>

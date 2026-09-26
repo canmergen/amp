@@ -1,5 +1,10 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **Yeni Çalışma onayı aynı yerde**: düğme gizlenir, yerinde solda
+Onayla, sağda Reddet. Yapıştır (webapp): `index.html` → `style.css` → `app.js`
+
+---
+
 Bu tur: **Yeni Çalışma onayı düğmenin üzerinde**, sohbette değil.
 Yapıştır (webapp): `index.html` → `style.css` → `app.js`
 
