@@ -1,5 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **soru yalnızca yeni açılışta**, **Yeni Çalışma onaylı**.
+Yapıştır (webapp): `app.js`
+
+- Aynı sekmede sayfa yenilenince (F5) soru gelmez, açık çalışma doğrudan
+  yüklenir. Yeni sekme/pencere yeniden sorar.
+- «Yeni Çalışma» düğmesi onay istiyor. Soru açık çalışmanın altına eklenir,
+  ekran silinmez: Evet, Yeni Çalışma Başlat / Hayır, Bu Çalışmaya Devam Et /
+  Önceki Bir Çalışmayı Aç. Açık çalışma hiç başlamamışsa sorulmaz.
+
+---
+
 Bu tur: **açılışta önce "önceki çalışmanız var, dönmek ister misiniz?"**.
 Yapıştır (webapp): `app.js` (önceki turun `backend.py` ve `style.css`'i gerekli)
 
