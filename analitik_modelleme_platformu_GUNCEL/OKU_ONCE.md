@@ -1,6 +1,15 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **"Kontrol Ediliyor" etiketi siyah**. Yapıştır: `style.css`
+Bu tur: **dönem notu ayrıntısı "i" simgesinde; toplu düğmeler sağda**. Yapıştır: `app.js`, `style.css`
+
+- "Dönem kolonu bulunamadı." yanında i simgesi; kolon kolon nedenler
+  üzerine gelince açılır, doğrudan gösterilmez.
+- Tümünü Seç / Tümünü Temizle ve Görünenleri Süreç Dışı Bırak / Sürece Al
+  satır dar gelip alta kaysa da sağa yaslı.
+
+---
+
+Önceki tur: **"Kontrol Ediliyor" etiketi siyah**. Yapıştır: `style.css`
 
 ---
 

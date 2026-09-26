@@ -2890,3 +2890,7 @@ span.bolme-cip { cursor: default; }
 
 /* Kart gönderildikten sonra toplu düğmeler de kapalı görünür. */
 .teyit-kart.kilitli .dg-toplu-btn { opacity: .5; pointer-events: none; }
+
+/* Toplu düğmeler HER ZAMAN SAĞDA (kullanıcı kararı): satır dar gelip
+   alta kaydığında da sola düşmesin. */
+.dg-tablo-ust .dg-toplu { margin-left: auto; }
