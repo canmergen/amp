@@ -1,6 +1,13 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **sarı "Kontrol Ediliyor", tüm veri seti tip önerisi, tek değerli kilidi, tablo hizası**. Yapıştır: `akis_faz01.py`, `backend.py`, `app.js`, `style.css` (ve önceki turdan `tip_donusum.py`)
+Bu tur: **kontrol sırasında çerçeve kırmızı kalıyor**. Yapıştır: `app.js`, `style.css`
+
+- Sarı yalnızca "● Kontrol Ediliyor" etiketinde; blok çerçeveleri kontrol
+  sırasında da kırmızı (önceki turdaki sarı çerçeve geri alındı).
+
+---
+
+Önceki tur: **sarı "Kontrol Ediliyor", tüm veri seti tip önerisi, tek değerli kilidi, tablo hizası**. Yapıştır: `akis_faz01.py`, `backend.py`, `app.js`, `style.css` (ve önceki turdan `tip_donusum.py`)
 
 - Yanıt gönderilince blok SARI "● Kontrol Ediliyor" olur; kartın rozeti o
   sırada boş. "Yanıtınız Bekleniyor" yalnızca gerçekten yanıt beklenirken.

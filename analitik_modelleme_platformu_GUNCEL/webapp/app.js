@@ -4030,8 +4030,9 @@ function blokDurumEtiketi(bas, durum) {
 }
 
 function sinifAyarla(el, durum) {
-    el.classList.toggle("durum-bekliyor", durum === "bekliyor");
-    el.classList.toggle("durum-kontrol", durum === "kontrol");
+    /* Çerçeve kontrol sırasında da KIRMIZI kalır (kullanıcı kararı);
+       sarı yalnızca başlıktaki "Kontrol Ediliyor" etiketi. */
+    el.classList.toggle("durum-bekliyor", durum === "bekliyor" || durum === "kontrol");
     el.classList.toggle("durum-tamam", durum === "tamam");
 }
 

@@ -1428,10 +1428,6 @@ button.ozet-kart:focus-visible {
 .blok-durum.kontrol {
   color: #3d2c00; background: #F5C518; border-color: #D9A900;
 }
-.adim-blok.durum-kontrol { border-color: #E0AE00; }
-.adim-blok.durum-kontrol > .blok-bas .blok-ad { color: var(--metin); }
-.alt-bolum.durum-kontrol { border: 2px solid #E0AE00; }
-.alt-bolum.durum-kontrol > .alt-bas .alt-ad { color: var(--metin); }
 .blok-durum.tamam {
   color: var(--yesil); background: var(--yesil-acik); border-color: var(--yesil);
 }
