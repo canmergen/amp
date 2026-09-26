@@ -1,6 +1,21 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **eski birlestirme.py backend'i düşürmüyor**. Yapıştır: `akis_durum.py`, `akis_faz01.py` (ve güncel `birlestirme.py`)
+Bu tur: **sözlük tanımları geri dönüş, dönem tipi önerisi, öneri renkleri**. Yapıştır: `tip_donusum.py`, `akis_faz01.py`, `app.js`, `style.css`
+
+- Sözlük Tanımları geri dönünce ORİJİNAL tanımsız kolonların hepsi, önceki
+  karar (ekle + yazılan açıklama / hariç) ile geri gelir. Kartın "Girdiler
+  Doğrulandı" rozeti kaldırıldı.
+- Yeni tip dönüşümleri: donem_ym6 / donem_ymd8. Tip "tarih" olur, değer
+  AYNEN kalır (202501). Tarih - YYYYAA eskisi gibi gerçek tarihe çevirir.
+- Değişken Kontrolü açılınca dönem kolonu ve adı dönem/tarih olan kolonlar
+  YYYYAA ise donem_ym6 önerilir ve seçili gelir (kurala dayalı, bir kez).
+- Öneri renkleri: öneriyi taşıyan satır kırmızı zeminli, kullanıcı öneriyi
+  değiştirdiyse sarı. Sözlük Tanımları'nda model açıklaması, Değişken
+  Kontrolü'nde tip önerisi ve modelden gelen tanım.
+
+---
+
+Önceki tur: **eski birlestirme.py backend'i düşürmüyor**. Yapıştır: `akis_durum.py`, `akis_faz01.py` (ve güncel `birlestirme.py`)
 
 - akis_durum dönem yardımcılarını birlestirme.py'den alıyor; dosya eski
   kalırsa artık yedek tanımlar devreye giriyor, backend açılıyor.

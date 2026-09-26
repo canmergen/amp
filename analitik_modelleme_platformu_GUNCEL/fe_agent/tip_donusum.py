@@ -54,6 +54,17 @@ ORNEK_DEGER = 3
 # olabilir, ondalikli bir virgul-uc de. Bu yuzden secenek "sayısal" degil,
 # "sayısal - ondalık ayırıcı nokta": kullanici hedefi degil, YOLU seciyor.
 DONUSUMLER = {
+    # BICIM KORUNUR (kullanici karari: "202501 tarihe çevrilmeli ama yine
+    # 202501 formatında olmalı"). Degerler DEGISMEZ; yalnizca kolonun tipi
+    # "tarih" (donem) olarak isaretlenir ve her degerin gecerli bir yil-ay
+    # oldugu tam kolonla denetlenir. tarih_ym6 ise degeri gercek tarihe
+    # (2025-01-01) cevirir ve yazimi bozar.
+    "donem_ym6": {
+        "hedef": "tarih",
+        "etiket": "Tarih (dönem) - YYYYAA, yazım korunur (202501)"},
+    "donem_ymd8": {
+        "hedef": "tarih",
+        "etiket": "Tarih - YYYYAAGG, yazım korunur (20250131)"},
     "sayisal_nokta": {
         "hedef": "sayısal",
         "etiket": "Sayısal - ondalık ayırıcı nokta (1234.50)"},
@@ -81,11 +92,15 @@ DONUSUMLER = {
 # Kaynak tipten hangi donusumler TEKLIF edilir. Sira ekranda gorunen
 # siradir: once en sik ihtiyac duyulan.
 ADAYLAR = {
-    "kategorik": ["sayisal_nokta", "sayisal_virgul",
+    "kategorik": ["donem_ym6", "donem_ymd8", "sayisal_nokta", "sayisal_virgul",
                   "tarih_ymd", "tarih_dmy", "tarih_ymd8", "tarih_ym6"],
-    "sayısal": ["kategorik_metin", "tarih_ymd8", "tarih_ym6"],
+    "sayısal": ["donem_ym6", "donem_ymd8", "kategorik_metin",
+                "tarih_ymd8", "tarih_ym6"],
     "tarih": ["kategorik_ay", "kategorik_yil", "sayisal_ymd8"],
 }
+
+# Yazimi koruyan donusumlerin denetim kalibi.
+KORUYAN_KALIP = {"donem_ym6": "%Y%m", "donem_ymd8": "%Y%m%d"}
 
 TARIH_KALIBI = {
     "tarih_ymd": "%Y-%m-%d",
@@ -141,6 +156,13 @@ def cevir(seri, kod):
             temiz = (m.str.replace(".", "", regex=False)
                       .str.replace(",", ".", regex=False))
         yeni = pd.to_numeric(temiz, errors="coerce")
+    elif kod in KORUYAN_KALIP:
+        # Deger AYNEN kalir; yalnizca gecerli yil-ay(-gun) mu diye bakilir.
+        m = _metin(seri)
+        uzunluk = 6 if kod == "donem_ym6" else 8
+        cozulen = pd.to_datetime(m.where(m.str.len() == uzunluk),
+                                 format=KORUYAN_KALIP[kod], errors="coerce")
+        yeni = kaynak.where(cozulen.reindex(kaynak.index).notna())
     elif kod in TARIH_KALIBI:
         m = _metin(seri)
         yeni = pd.to_datetime(m, format=TARIH_KALIBI[kod], errors="coerce")

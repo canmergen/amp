@@ -2845,3 +2845,15 @@ span.bolme-cip { cursor: default; }
   color: var(--kirmizi); font-size: var(--fs-kucuk);
 }
 .excel-hata[hidden] { display: none; }
+
+/* ÖNERİ VURGUSU (kullanıcı kararı): sistemin önerisini taşıyan satır
+   kırmızı zeminli, kullanıcının değiştirdiği öneri sarı. Zemin açık
+   ton; metin okunur kalır. Hücre bazında boyanıyor: tablo satırı
+   zemini bazı tarayıcılarda sticky hücrelerin altında kalıyor. */
+.dg-tablo tr.dg-oneri > td { background: rgba(213,17,21,.11); }
+.dg-tablo tr.dg-degisti > td { background: rgba(234,179,8,.22); }
+.dg-tablo tr.dg-oneri .dg-giris,
+.dg-tablo tr.dg-degisti .dg-giris { background: transparent; }
+.dg-lejant {
+  margin: var(--b-2) 0; font-size: var(--fs-kucuk); color: var(--metin-soluk);
+}

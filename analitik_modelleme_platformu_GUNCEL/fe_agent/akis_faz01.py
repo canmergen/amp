@@ -1666,10 +1666,11 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         # zaten o adin kendisi; kart ayrica "Girdi doğrulama tamamlandı"
         # diye ikinci bir baslik tasirsa ayni sey iki kere yaziliyor.
         "baslik": "",
-        # "Hazır" tek basina NEYIN hazir oldugunu soylemiyordu. Rozet,
-        # secim formundaki "Girdiler Hazır" ile ayni dili konusur: neyin
-        # dogrulandigini yazar. Baslik Buyuk Harfi (bkz. _kurulum_formu).
-        "rozet": "Girdiler Doğrulandı",
+        # ROZET YOK (kullanici bildirimi: "girdiler doğrulandı ne alaka,
+        # iki tik veriyor"). Girdiler bir onceki adimda onaylandi; bu
+        # kart bir karar karti, blok durumu zaten "Yanıtınız Bekleniyor"
+        # / "Tamamlandı" diyor.
+        "rozet": "",
         "ozet": [
             {"etiket": "Veri seti", "deger": durum.get("veri_seti") or "",
              "alt": ["%s satır · %s kolon"
@@ -1700,11 +1701,15 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
 
     ozet = _kolon_ozet_haritasi(profil)
     zorunlu_rol = _zorunlu_etiketler(durum)
+    # Geri donuste ONCEKI KARARLAR: kullanicinin yazdigi aciklama ve
+    # ekle/haric secimi kartta aynen geri gelir (bkz. sozluk_tanim_uygula).
+    kararlar = durum.get("_tanim_kararlari") or {}
     satirlar = []
     for ad in gosterilen:
         oneri = (oneriler or {}).get(ad) or {}
         aciklama = str(oneri.get("aciklama") or "")
         rol = zorunlu_rol.get(ad)
+        onceki = kararlar.get(ad) if isinstance(kararlar.get(ad), dict) else None
         # KATEGORI ALANI YOK. Kart dort kolona iniyor:
         # Degisken | Tip | Aciklama | Sozluge Ekle.
         satir = {
@@ -1712,10 +1717,16 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
             "tip": (ozet.get(ad) or {}).get("tip") or "",
             # ZORUNLU SATIR "ekle" ile acilir ve isaret kaldirilamaz:
             # hedef, kimlik ve donem kolonu sozlukte tanimsiz kalamaz.
-            "islem": "ekle" if rol else "haric",
+            "islem": "ekle" if rol else (
+                (onceki or {}).get("islem") or "haric"),
             "oneri": aciklama,
             "oneri_kaynak": "llm" if aciklama else "yok",
         }
+        if onceki and onceki.get("aciklama"):
+            # Kullanicinin daha once onayladigi metin; model onerisi bunu
+            # EZMEZ. Oneri ile ayniysa satir "oneri", degilse "degisti".
+            satir["onceki"] = str(onceki["aciklama"])
+            satir["onceki_oneri"] = str(onceki.get("oneri") or "")
         if rol:
             satir["zorunlu"] = True
             satir["rol"] = rol
@@ -1791,7 +1802,35 @@ def _kapsam_hesapla(durum, df, sz):
     p["_kaynak"] = [durum.get("veri_seti"), durum.get("sozluk")]
     durum["profil"] = p
     durum["_aciklamasiz"] = aciklamasiz
+    # ORIJINAL sozlukte tanimsiz olanlar. _aciklamasiz, sozluk tanimlari
+    # uygulaninca eklenenleri dusuyor; geri donuste kart bu ilk listeyle
+    # ve kullanicinin onceki kararlariyla yeniden kuruluyor.
+    durum["_aciklamasiz_ilk"] = list(aciklamasiz)
     return df, p
+
+
+def _tanim_listesi(durum):
+    """Sozluk tanimlari kartinin kolonlari: ORIJINAL sozlukte tanimsiz
+    olanlarin tamami (sonradan eklenenler dahil).
+
+    Kullanici bildirimi: geri donunce kart "%99,8: 1.040 / 1.042 kolon
+    tanımlı" diyor ama tanimsiz iki kolonu LISTELEMIYORDU; cunku liste
+    onceki onaydan sonra "hala tanimsiz olanlar"a inmisti. Artik ilk
+    liste ve onceki kararlar (eklendi + aciklamasi / haric) geri gelir."""
+    ilk = durum.get("_aciklamasiz_ilk")
+    if isinstance(ilk, list):
+        return [str(k) for k in ilk]
+    # Eski calisma: ilk liste yok, eklenenlerden yeniden kurulur.
+    kalan = [str(k) for k in (durum.get("_aciklamasiz") or [])]
+    eklenen = [str(k) for k in (durum.get("_sozluge_eklenen") or [])]
+    birlesik = list(dict.fromkeys(eklenen + kalan))
+    sira = [str(o.get("ad")) for o in ((durum.get("profil") or {})
+                                       .get("kolon_ozet") or [])
+            if isinstance(o, dict)]
+    if sira:
+        yer = {ad: i for i, ad in enumerate(sira)}
+        birlesik.sort(key=lambda a: yer.get(a, len(yer)))
+    return birlesik
 
 
 def _kapsam_hazir(durum):
@@ -1861,7 +1900,7 @@ def sozluk_tanim_plan(durum):
         df, p = modelleme_df(durum), durum["profil"]
     else:
         df, p = _kapsami_cikar(durum)
-    aciklamasiz = durum.get("_aciklamasiz") or []
+    aciklamasiz = _tanim_listesi(durum)
 
     tanimsiz_kume = set(aciklamasiz)
     zorunlu = [k for k in zorunlu_tanimlar(durum) if k in tanimsiz_kume]
@@ -1993,7 +2032,9 @@ def kurulum_uygula(durum):
 
 
 def sozluk_tanim_uygula(durum):
-    tanimsiz = [str(k) for k in (durum.get("_aciklamasiz") or [])]
+    tanimsiz = _tanim_listesi(durum)
+    if not isinstance(durum.get("_aciklamasiz_ilk"), list):
+        durum["_aciklamasiz_ilk"] = list(tanimsiz)
     # Onerileri arka plan isinden durum'a tasi: denetim izi (hangi
     # aciklama modelden geldi) satir_ekle'ye buradan gidiyor.
     _oneri_sonucunu_tasi(durum)
@@ -2008,6 +2049,14 @@ def sozluk_tanim_uygula(durum):
             "yazmadan devam edilemez:\n" +
             "\n".join("  • %s (%s)" % (ad, rol) for ad, rol in eksik))
     haric, ekle = _karar_oku(durum, tanimsiz)
+    # KARARLAR SAKLANIR: geri donuste kart bunlarla yeniden kurulur.
+    _oneri_harita = durum.get("_tanimsiz_oneri") or {}
+    durum["_tanim_kararlari"] = dict(
+        [(k, {"islem": "haric"}) for k in haric]
+        + [(x["kolon"], {"islem": "ekle", "aciklama": x["aciklama"],
+                         "oneri": ((_oneri_harita.get(x["kolon"]) or {})
+                                   .get("aciklama") or "")})
+           for x in ekle])
 
     # Calisma kopyasi kurulum adiminda cikarildi; burada bir kez daha
     # denenmesi zararsiz ve o adim atlanmissa (eski oturum) kurtarici.
@@ -2513,6 +2562,65 @@ def tek_degerlileri_isaretle(durum):
     return yeni
 
 
+def tip_onerilerini_uygula(durum):
+    """DONEM KOLONLARI ICIN TIP ONERISI (kullanici karari: "period
+    202501 ise bunu tarihe çevirmeli ama yine 202501 formatında olmalı").
+
+    Aday: modelleme tanimlarinda secilen donem kolonu ve ADI donem/tarih
+    olan kolonlar (_donem_adli_mi). Tam kolon YYYYAA (ya da YYYYAAGG)
+    olarak cozuluyorsa yazimi KORUYAN donusum (tip_donusum.donem_ym6 /
+    donem_ymd8) onerilir ve SECILI gelir; deger degismez, yalnizca tip
+    "tarih" olur. Zaten tarih tipindeki kolona dokunulmaz.
+
+    Oneri kurala dayanir, dil modeline degil: "bu kolon yil-ay mi"
+    sorusunun cevabi verinin kendisinde; modelin tahmini burada yalnizca
+    yanilma payi ekler.
+
+    BIR KEZ calisir; kullanici oneriyi "Değişmesin"e cekerse sonraki
+    cizimde geri gelmez. Oneriler durum["_tip_oneri"]'de: kart onerilen
+    satiri kirmizi, kullanicinin degistirdigini sari gosterir.
+    Doner: {kolon: kod}."""
+    if durum.get("_tip_oneri_uygulandi"):
+        return {}
+    m = durum.get("meta") or {}
+    haric = {str(k) for k in (durum.get("haric_kolonlar") or [])}
+    secilen = dict(durum.get("tip_donusum") or {})
+    try:
+        df = _df_oku(durum["veri_seti"])
+    except Exception:
+        return {}           # okunamadi: sonraki cizimde yeniden denenir
+    adaylar = []
+    if m.get("donem") and m["donem"] in df.columns:
+        adaylar.append(str(m["donem"]))
+    for k in df.columns:
+        if _donem_adli_mi(k) and str(k) not in adaylar:
+            adaylar.append(str(k))
+    oneriler = {}
+    for kolon in adaylar:
+        if kolon in haric or kolon in secilen:
+            continue
+        if (_kaynak_tipi(durum, kolon) or "") not in ("sayısal", "kategorik"):
+            continue
+        rol = _tip_rolu(durum, kolon)
+        if rol and rol != "donem":
+            continue
+        for kod in ("donem_ym6", "donem_ymd8"):
+            try:
+                uygun, _sebep = tip_donusum.denetle(df[kolon], kod)
+            except Exception:
+                uygun = False
+            if uygun:
+                oneriler[kolon] = kod
+                break
+    if oneriler:
+        secilen.update(oneriler)
+        durum["tip_donusum"] = secilen
+        _tip_ozetini_tazele(durum)
+    durum["_tip_oneri"] = dict(oneriler)
+    durum["_tip_oneri_uygulandi"] = True
+    return oneriler
+
+
 def teyit_ozeti(durum):
     """Kartin tek satirlik ozeti: '1.042 değişken · 2 süreç dışı · ...'.
 
@@ -2684,6 +2792,12 @@ def teyit_satirlari(durum):
     tablo = akis_panel.feature_tablo(durum)
     haric = set(durum.get("haric_kolonlar") or [])
     tek_degerli = set(durum.get("_tek_degerli") or [])
+    tip_oneri = durum.get("_tip_oneri") or {}
+    # Sozluk tanimlari adiminda MODEL ONERISIYLE eklenen tanimlar.
+    tanim_oneri = {k: str(v.get("oneri") or "")
+                   for k, v in (durum.get("_tanim_kararlari") or {}).items()
+                   if isinstance(v, dict) and v.get("islem") == "ekle"
+                   and v.get("oneri")}
     secilen = durum.get("tip_donusum") or {}
     ornek = _tip_ornegi(durum)
     satirlar = []
@@ -2738,6 +2852,10 @@ def teyit_satirlari(durum):
                 else ROL_KILIT_SEBEBI.get(_tip_rolu(durum, ad), "")),
             # Neden isaretli geldigi (kilitli degil, kaldirilabilir).
             "disi_sebebi": TEK_DEGER_SEBEBI if ad in tek_degerli else "",
+            # SISTEM ONERISI: kart satiri oneriyle ayniysa kirmizi,
+            # kullanici degistirdiyse sari gosterir.
+            "oneri_tip": tip_oneri.get(ad, ""),
+            "oneri_tanim": tanim_oneri.get(ad, ""),
             "donusum": kod,
             # Kilitli (gecmisten cizilen) kartta acilir liste yok; orada
             # secimin ETIKETI yaziyor. Etiket satirda durmazsa, teklif
@@ -3054,6 +3172,7 @@ def _teyit_karti(durum):
     # satirlarin "disi" bayragi ile durumdaki liste ayni olsun.
     otomatik = tanimsiz_kolonlari_isaretle(durum)
     tek = tek_degerlileri_isaretle(durum)
+    tip_oneri = tip_onerilerini_uygula(durum)
     satirlar, duzenlenebilir = teyit_satirlari(durum)
     notlar = []
     if otomatik:
@@ -3067,6 +3186,9 @@ def _teyit_karti(durum):
     if notlar:
         notlar.append("Veri setinde kalmasını istediğiniz varsa işareti "
                       "kaldırın.")
+    if tip_oneri:
+        notlar.append("%s dönem kolonunun tipi tarih olarak önerildi; "
+                      "yazımı (202501) değişmez." % _sayi(len(tip_oneri)))
     durum["_secim_alani"] = {
         "tip": "teyit",
         "baslik": ADIM_ADI["teyit"],

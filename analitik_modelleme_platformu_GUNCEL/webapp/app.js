@@ -1989,6 +1989,17 @@ function haricKaydet(kolon, kutu, hataEl) {
    üstünde yazar. Böylece ekranda görünen tip ile veri setindeki tip
    hiçbir anda ayrışmıyor - kullanıcı "değiştirmemde sorun yoksa
    onaylansın" dediği için onay bu uçta veriliyor. */
+/* ÖNERİ VURGUSU (kullanıcı kararı): sistemin (dil modeli ya da kural)
+   önerdiği değeri taşıyan satır KIRMIZI zeminli; kullanıcı öneriyi
+   değiştirdiyse SARI. Öneri olmayan satır boyanmaz. oneriVar=false ise
+   satırda hiç öneri yok demektir. */
+function oneriVurgusu(tr, oneriVar, degisti) {
+    if (!tr) return;
+    tr.classList.toggle("dg-oneri", !!oneriVar && !degisti);
+    tr.classList.toggle("dg-degisti", !!oneriVar && !!degisti);
+}
+const ONERI_LEJANT = "Kırmızı satır: sistemin önerisi. Sarı satır: öneri değiştirildi.";
+
 function tipKaydet(kolon, sec, tipEl, hataEl) {
     const eski = sec.dataset.eski === undefined ? "" : sec.dataset.eski;
     const kod = sec.value || "";
@@ -2004,10 +2015,12 @@ function tipKaydet(kolon, sec, tipEl, hataEl) {
         sec.disabled = false;
         if (!d || d.tamam !== true) {
             sec.value = eski;
+            if (sec._vurgu) sec._vurgu();
             teyitHatasi(hataEl, (d && d.hata) || "Tip değiştirilemedi.");
             return;
         }
         sec.dataset.eski = kod;
+        if (sec._vurgu) sec._vurgu();
         if (tipEl && d.tip) tipEl.textContent = tireSade(d.tip);
         const oz = document.querySelector(".teyit-kart .teyit-ozet");
         if (oz && d.ozet) oz.textContent = tireSade(d.ozet);
@@ -2016,6 +2029,7 @@ function tipKaydet(kolon, sec, tipEl, hataEl) {
     .catch(e => {
         sec.disabled = false;
         sec.value = eski;
+        if (sec._vurgu) sec._vurgu();
         teyitHatasi(hataEl, "Tip değiştirilemedi: " + e);
     });
 }
@@ -4938,6 +4952,7 @@ function dogrulamaKartiEkle(alan, blok) {
             kart.appendChild(oh);
         }
 
+        kart.appendChild(elYap("div", "dg-lejant", ONERI_LEJANT));
         const sar = document.createElement("div");
         sar.className = "dg-tablo-sar";
 
@@ -5008,13 +5023,29 @@ function dogrulamaKartiEkle(alan, blok) {
             const giris = document.createElement("input");
             giris.type = "text";
             giris.className = "dg-giris";
-            giris.value = tireSade(sat.oneri);
+            /* GERİ DÖNÜŞTE önceki onaylı metin gelir ve model önerisi
+               onu EZMEZ. Vurgu, satırdaki metnin öneriyle aynı olup
+               olmadığına göre (bkz. oneriVurgusu). */
+            if (sat.onceki) {
+                giris.value = tireSade(sat.onceki);
+                giris.dataset.dolduruldu = "1";
+                giris.dataset.oneriMetin = tireSade(sat.onceki_oneri || "");
+            } else {
+                giris.value = tireSade(sat.oneri);
+                if (sat.oneri) giris.dataset.oneriMetin = tireSade(sat.oneri);
+            }
             giris.placeholder = "Açıklama";
             giris.setAttribute("aria-label", durum.kolon + " açıklaması");
+            giris._vurgu = () => {
+                const o = giris.dataset.oneriMetin || "";
+                oneriVurgusu(tr, !!o, giris.value.trim() !== o.trim());
+            };
             giris.addEventListener("input", () => {
+                giris._vurgu();
                 if (kart.classList.contains("kilitli")) return;
                 durumTazele();
             });
+            giris._vurgu();
             tdA.appendChild(giris);
             tr.appendChild(tdA);
             girisler.push(giris);
@@ -5195,6 +5226,8 @@ function dogrulamaKartiEkle(alan, blok) {
             if (!ack) return;
             g.value = tireSade(ack);
             g.dataset.dolduruldu = "1";
+            g.dataset.oneriMetin = tireSade(ack);
+            if (g._vurgu) g._vurgu();
             if (satirElemanlari[i]) satirElemanlari[i].dataset.oneri = "llm";
         });
         if (kayit && kayit.hata) {
@@ -6296,6 +6329,9 @@ function teyitKartiEkle(alan, blok) {
         hataEl.hidden = true;
         kart.appendChild(hataEl);
 
+        if ((dg.satirlar || []).some(x => x.oneri_tip || x.oneri_tanim))
+            kart.appendChild(elYap("div", "dg-lejant", ONERI_LEJANT));
+
         const sar = elYap("div", "dg-tablo-sar");
         const tablo = elYap("table", "dg-tablo");
         const thead = document.createElement("thead");
@@ -6363,7 +6399,8 @@ function teyitKartiEkle(alan, blok) {
                 sec.value = sat.donusum || "";
                 sec.dataset.eski = sec.value;
                 sec.disabled = !dg.duzenlenebilir;
-                sec.onchange = () => tipKaydet(ad, sec, tipEl, hataEl);
+                sec._vurgu = () => satirVurgu();
+                sec.onchange = () => { satirVurgu(); tipKaydet(ad, sec, tipEl, hataEl); };
                 tdT.appendChild(sec);
             } else {
                 /* Örnek okunamadıysa teklif üretilmedi. Boş bir açılır
@@ -6383,8 +6420,22 @@ function teyitKartiEkle(alan, blok) {
             /* Odak çıkınca kaydedilir; her tuşta istek göndermek 1.042
                satırlık listede sunucuyu boğardı. */
             giris.onchange = () => tanimKaydet(ad, giris, hataEl);
+            giris.addEventListener("input", () => satirVurgu());
             tdA.appendChild(giris);
             tr.appendChild(tdA);
+
+            /* Satırın öneri vurgusu: tip önerisi (dönem kolonu) ya da
+               sözlük tanımları adımında model önerisiyle eklenen tanım. */
+            function satirVurgu() {
+                const secEl = tdT.querySelector(".dg-tip-sec");
+                const tipDegisti = !!sat.oneri_tip
+                    && (secEl ? secEl.value : (sat.donusum || "")) !== sat.oneri_tip;
+                const tanimDegisti = !!sat.oneri_tanim
+                    && giris.value.trim() !== tireSade(sat.oneri_tanim).trim();
+                oneriVurgusu(tr, !!(sat.oneri_tip || sat.oneri_tanim),
+                             tipDegisti || tanimDegisti);
+            }
+            satirVurgu();
 
             const tdN = elYap("td", "dg-null", ftOran(sat.null_oran));
             tdN.title = "Null oranı";
