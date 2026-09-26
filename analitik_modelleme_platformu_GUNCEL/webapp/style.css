@@ -1613,6 +1613,17 @@ button.ozet-kart:focus-visible {
 }
 .adim-blok > .balon:empty,
 .alt-bolum > .balon:empty { display: none; }
+/* ADIM METNİ DÜZ YAZI (kullanıcı kararı: "kutu içine alma yazılarımı").
+   Yukarıdaki iki kural bunu zaten istiyordu ama ".satir.bot .balon"
+   daha yüksek öncelikli olduğu için çerçeve, zemin, gölge ve sol kırmızı
+   çubuk geri geliyordu; metin blok içinde ikinci bir kutu gibi
+   duruyordu. Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
+   Hata balonu kutulu kalır: arıza bildirimi metinden ayrışmalı. */
+.satir.bot .adim-blok .balon:not(.hata) {
+  border: 0; background: none; box-shadow: none;
+  padding: 0; width: 100%; max-width: none; overflow: visible;
+}
+.satir.bot .adim-blok .balon:not(.hata)::before { display: none; }
 .adim-blok > .balon + .balon,
 .alt-bolum > .balon + .balon { margin-top: var(--b-3); }
 

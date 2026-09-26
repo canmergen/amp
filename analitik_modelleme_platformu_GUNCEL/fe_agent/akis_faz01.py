@@ -345,6 +345,16 @@ def mod_plan(durum):
 TABLO_ADI_KALIP = re.compile(r"^[\w.\-]+$", re.UNICODE)
 
 
+KAYNAK_TABLO_METNI = (
+    "**Veri setini oluşturacak kaynak tabloları seçin.**\n"
+    "Müşteri, ürün ve işlem tabloları gibi henüz birleştirilmemiş "
+    "tabloların tamamını ekleyin. Seçiminizden sonra tabloların "
+    "şemalarını inceleyip bir birleştirme planı önereceğim: hangi tablonun "
+    "iskelet olacağı, diğerlerinin hangi anahtarla bağlanacağı ve işlem "
+    "tablolarından hangi dönemsel toplamaların üretileceği. Plan, "
+    "onayınızdan önce uygulanmaz.")
+
+
 def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
     metin = (mesaj or "").strip()
     # "tablolar: ..." oneki varsa kullanici ACIKCA tablo listesi veriyor
@@ -362,11 +372,9 @@ def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
     if yeniden_sor or kabul_edilmeyen or len(adaylar) < 2:
         durum["_secim_alani"] = {
             "tip": "liste",
-            "baslik": "Birleştirilecek tablolar",
-            "aciklama": "En az iki tablo seçin. İlk seçtiğiniz tablo iskelet "
-                        "olmak zorunda değil; hangisinin iskelet olacağını "
-                        "şemalara bakıp ben öneririm.",
-            "etiket": "Tablo ara",
+            "baslik": "Kaynak tablolar",
+            "aciklama": "En az iki tablo seçin; seçim sırası önemli değil.",
+            "etiket": "Kaynak tablo ara",
             # Dugme etiketi Baslik Buyuk Harfi: her kelime buyuk baslar,
             # baglac ve edatlar ("ve, veya, ile, icin, mi, da, de") kucuk
             # kalir. Ayni kural butun rozet ve dugmelerde gecerli.
@@ -375,7 +383,10 @@ def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
             "sablon": "tablolar: {liste}",
             "secili": adaylar or list(durum.get("ham_tablolar") or []),
         }
-        soru = "Hangi tabloları birleştirelim?"
+        # Adimin metni KARSILAMA ile ayni ozende: ne istendigi ve
+        # ardindan ne olacagi. Kisa "Hangi tabloları birleştirelim?"
+        # sorusu ne yapilacagini anlatmiyordu (kullanici geri bildirimi).
+        soru = KAYNAK_TABLO_METNI
         if kabul_edilmeyen:
             # Sessizce atmak yerine nedenini soyle: eskiden Turkce karakterli
             # ya da tireli adlar hicbir aciklama olmadan dusuyordu.

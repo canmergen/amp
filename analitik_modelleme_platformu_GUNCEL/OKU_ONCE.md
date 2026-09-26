@@ -1,5 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **adım metinleri kutusuz**, **Kaynak Tablolar adımı yeniden yazıldı**.
+Yapıştır: `akis_faz01.py` → `akis_kayit.py` (fe_agent), `style.css` (webapp)
+
+- Blok içindeki asistan metni (hoş geldiniz, kaynak tablo açıklaması…)
+  artık ayrı kutu/çubukla çizilmiyor; düz yazı. Sebep bir CSS öncelik
+  hatasıydı. Hata mesajları kutulu kalıyor.
+- «Ham Tablolar» → «Kaynak Tablolar». "Hangi tabloları birleştirelim?"
+  yerine ne istendiğini ve ardından ne olacağını anlatan paragraf.
+
+---
+
 Bu tur: **Yeni Çalışma onayı aynı yerde**: düğme gizlenir, yerinde solda
 Onayla, sağda Reddet. Yapıştır (webapp): `index.html` → `style.css` → `app.js`
 

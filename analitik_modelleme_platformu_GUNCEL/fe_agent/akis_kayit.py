@@ -49,9 +49,9 @@ ADIMLAR = {
         "girdi": mod_girdi, "plan": mod_plan, "uygula": mod_uygula},
 
     "ham_veri": {
-        "baslik": "Ham Tablolar",
-        "aciklama": "Birleştirilecek ham tablolar seçilir; boyutları ve "
-                    "kolon sayıları çıkarılır.",
+        "baslik": "Kaynak Tablolar",
+        "aciklama": "Veri setini oluşturacak kaynak tablolar seçilir; "
+                    "boyutları ve kolon sayıları çıkarılır.",
         "girdi": ham_veri_girdi, "plan": ham_veri_plan, "uygula": ham_veri_uygula},
     "birlestirme": {
         "baslik": "Birleştirme Planı",
