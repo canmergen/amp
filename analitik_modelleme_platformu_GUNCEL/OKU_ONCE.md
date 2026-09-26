@@ -1,6 +1,10 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Analitik Süreç hep açık; baz / kaynak adları**. Yapıştır: `akis_metin.py`, `akis_faz01.py`, `akis_kayit.py`, `akis_panel.py`, `app.js`, `index.html`
+Bu tur: **"Kontrol Ediliyor" sarı üstüne beyaz**. Yapıştır: `style.css`
+
+---
+
+Önceki tur: **Analitik Süreç hep açık; baz / kaynak adları**. Yapıştır: `akis_metin.py`, `akis_faz01.py`, `akis_kayit.py`, `akis_panel.py`, `app.js`, `index.html`
 
 - ANALİTİK SÜREÇ açılıp kapatılamaz (başlık düğme değil).
 - Terimler: baz veri seti (modellemeye girecek tek tablo), baz sözlük (onun
