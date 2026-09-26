@@ -1,6 +1,6 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **"Kontrol Ediliyor" sarı üstüne beyaz**. Yapıştır: `style.css`
+Bu tur: **"Kontrol Ediliyor" koyu sarı üstüne beyaz**. Yapıştır: `style.css`
 
 ---
 
