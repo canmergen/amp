@@ -258,7 +258,7 @@ def _donem_adaylarini_hazirla(durum):
             and p.get("donem_adaylari_surum") == DONEM_ADAY_SURUMU):
         return p
     try:
-        df = modelleme_df(durum)
+        df = modelleme_df(durum, kaynak=True)
         kimlik = p.get("kimlik_adaylari")
         if not isinstance(kimlik, list):
             _hedef, kimlik = _aday_kolonlar(df)
@@ -784,7 +784,7 @@ def veri_sec_girdi(durum, mesaj, yeniden_sor=False):
     return True, None
 
 def veri_sec_plan(durum):
-    df = modelleme_df(durum)
+    df = modelleme_df(durum, kaynak=True)
     p = _temel_profil(durum, df)
 
     return ("Veri setini okudum:\n\n"
@@ -814,7 +814,7 @@ def sozluk_uret_plan(durum):
             % _sayi(p.get("kolon", 0)))
 
 def sozluk_uret_uygula(durum):
-    df = modelleme_df(durum)
+    df = modelleme_df(durum, kaynak=True)
 
     # NOT: burada ayrica 'haric' listesi VERILMIYOR. Kimlik/PII korumasi tek
     # yerde, sozluk.py icindeki _ornek_guvenli_mi()'de toplanmistir (kolon
@@ -1782,7 +1782,7 @@ def _kapsami_cikar(durum):
     # nasilsa okuyacakti.
     onbellek_temizle(durum.get("veri_seti"))
     onbellek_temizle(durum.get("sozluk"))
-    df = modelleme_df(durum)
+    df = modelleme_df(durum, kaynak=True)
     # sozluk_orijinal_oku: Mod B'de uretilen sozluk dataset'e yazilamazsa
     # CSV yedeginden okunur (durum["sozluk"] None kalir).
     return _kapsam_hesapla(durum, df, sozluk_orijinal_oku(durum))
@@ -1903,7 +1903,7 @@ def sozluk_tanim_plan(durum):
     if _kapsam_hazir(durum):
         # Kapsam `kurulum` adiminda cikarildi; tabloyu yalnizca tekil
         # sayimi ve oneri profilleri icin okuyoruz.
-        df, p = modelleme_df(durum), durum["profil"]
+        df, p = modelleme_df(durum, kaynak=True), durum["profil"]
     else:
         df, p = _kapsami_cikar(durum)
     aciklamasiz = _tanim_listesi(durum)
@@ -2339,7 +2339,7 @@ def tanimlar_uygula(durum):
     yazar. Sonraki adimin (bolme) dayandigi `_donemler` burada
     hesaplaniyor; hesap kaybolmadi, yalnizca anlatimi kalkti."""
     m = durum["meta"]
-    df = modelleme_df(durum)
+    df = modelleme_df(durum, kaynak=True)
     p = durum.get("profil") or {}
 
     y = pd.to_numeric(df[m["target"]], errors="coerce")
@@ -2551,7 +2551,7 @@ def _tek_degerli_hesapla(durum, df=None):
             and isinstance(durum.get("_tek_degerli"), list):
         return durum["_tek_degerli"]
     if df is None:
-        df = modelleme_df(durum)
+        df = modelleme_df(durum, kaynak=True)
     tekil = df.nunique(dropna=False)
     korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
     tek = sorted(str(k) for k, n in tekil.items()
@@ -2742,6 +2742,27 @@ def teyit_ozeti(durum):
         _sayi(degisken), _sayi(haric), _sayi(tanimli))
 
 
+# Tip seceneklerinin TAM KOLONLA hesaplanmis hali; kart her tazelendiginde
+# (her kutu isaretlemesinde) 1.000 kolon yeniden taranmasin.
+# Anahtar: (veri_seti, kolon, kaynak_tip).
+_TIP_SECENEK_ONBELLEK = {}
+
+
+def _tip_secenekleri(durum, df, ad, kaynak_tip):
+    """Kolonun UYGULANABILIR donusumleri (tam kolon, rol kilidi dusulmus)."""
+    anahtar = (str(durum.get("veri_seti")), ad, kaynak_tip)
+    if anahtar not in _TIP_SECENEK_ONBELLEK:
+        if len(_TIP_SECENEK_ONBELLEK) > 20000:
+            _TIP_SECENEK_ONBELLEK.clear()
+        try:
+            _TIP_SECENEK_ONBELLEK[anahtar] = tip_donusum.secenekler(
+                df[ad], kaynak_tip, yalniz_uygun=True)
+        except Exception:
+            _TIP_SECENEK_ONBELLEK[anahtar] = []
+    return [dict(d) for d in _TIP_SECENEK_ONBELLEK[anahtar]
+            if not _tip_kilidi(durum, ad, d["kod"])]
+
+
 def _tip_ornegi(durum):
     """Donusum tekliflerinin uzerinde hesaplandigi KUCUK ornek.
 
@@ -2915,7 +2936,18 @@ def teyit_satirlari(durum):
                    if isinstance(v, dict) and v.get("islem") == "ekle"
                    and v.get("oneri")}
     secilen = durum.get("tip_donusum") or {}
-    ornek = _tip_ornegi(durum)
+    # TAM TABLO (kullanici karari): secenekler ornekle degil tam kolonla
+    # hesaplaniyor; uygulanamayan secenek listede HIC gorunmuyor.
+    try:
+        tam = _df_oku(durum["veri_seti"])
+    except Exception:
+        tam = None
+    # Orijinal sozluk tanimlari: kullanici bir tanimi degistirdiyse satir
+    # sari gosterilir (bkz. app.js oneriVurgusu).
+    try:
+        orijinal = _tanim_haritasi(sozluk_orijinal_oku(durum))
+    except Exception:
+        orijinal = {}
     satirlar = []
     for r in tablo.get("satirlar") or []:
         ad = str(r.get("feature") or "")
@@ -2928,15 +2960,10 @@ def teyit_satirlari(durum):
         kaynak_tip = _kaynak_tipi(durum, ad) or (r.get("tip") or "")
         tip = (tip_donusum.hedef_tip(kod) or kaynak_tip) if kod else kaynak_tip
         donusumler = []
-        if ornek is not None and ad in ornek.columns:
+        if tam is not None and ad in tam.columns:
             # Teklifler daima ORIJINAL tip uzerinden uretilir: secim
             # henuz veriye islenmedi, kolon hala kaynak tipinde duruyor.
-            donusumler = tip_donusum.secenekler(ornek[ad], kaynak_tip)
-            for d in donusumler:
-                sebep = _tip_kilidi(durum, ad, d["kod"])
-                if sebep:
-                    d["uygun"] = False
-                    d["sebep"] = sebep
+            donusumler = _tip_secenekleri(durum, tam, ad, kaynak_tip)
         satirlar.append({
             "kolon": ad,
             "tip": tip,
@@ -2975,6 +3002,7 @@ def teyit_satirlari(durum):
             "oneri_tip": tip_oneri.get(ad, ""),
             "oneri_tip_sebebi": (durum.get("_tip_oneri_sebep") or {}).get(ad, ""),
             "oneri_tanim": tanim_oneri.get(ad, ""),
+            "tanim_orijinal": (orijinal.get(ad.upper()) or ("", ""))[0],
             "donusum": kod,
             # Kilitli (gecmisten cizilen) kartta acilir liste yok; orada
             # secimin ETIKETI yaziyor. Etiket satirda durmazsa, teklif
@@ -3139,6 +3167,17 @@ def amp_ciktilarini_yaz(durum):
     # kopyasindan turerdi).
     try:
         df = modelleme_df(durum, kaynak=True)
+        # SUREC DISI KOLONLAR YAZILMAZ (kullanici karari: "süreç dışı
+        # kolonları AMP_VERISETI'nden de düşür"). Hedef / kimlik / donem
+        # hicbir zaman dusmez. 1. fazdaki adimlar kullanicinin KENDI
+        # tablosunu okuyor (kaynak=True); geri donulup bir kolon surece
+        # alinirsa teyit yeniden kaydedilince AMP o kolonla yazilir.
+        korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
+        dusen = [c for c in df.columns
+                 if str(c) in set(map(str, durum.get("haric_kolonlar") or []))
+                 and str(c) not in korunan]
+        if dusen:
+            df = df.drop(columns=dusen)
     except Exception as e:
         sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": None, "dosya": None,
                          "hata": str(e)[:120]}
@@ -3146,7 +3185,8 @@ def amp_ciktilarini_yaz(durum):
         yazildi, yedek = _yaz(AMP_VERI_ADI, df, _amp_yolu(durum, AMP_VERI_ADI))
         sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": yazildi,
                          "dosya": yedek, "satir": int(len(df)),
-                         "kolon": int(df.shape[1])}
+                         "kolon": int(df.shape[1]),
+                         "dusen_kolon": len(dusen)}
 
     # --- sozluk: teyit tablosunun aynisi -------------------------------
     try:
@@ -3378,10 +3418,13 @@ def teyit_uygula(durum):
     # kaydediliyor. AMP_VERISETI ve AMP_SOZLUK bu noktada yaziliyor;
     # kullanici sonradan bu adlarla cekebilsin diye.
     cikti = amp_ciktilarini_yaz(durum)
+    dusen = int((cikti.get("veri") or {}).get("dusen_kolon") or 0)
     return ("Değişken listesi kaydedildi.\n"
-            "  Modelleme tablosu : %s\n"
+            "  Modelleme tablosu : %s%s\n"
             "  Değişken sözlüğü  : %s"
             % (amp_nerede(cikti.get("veri")),
+               (" (süreç dışı %s kolon tabloya yazılmadı)" % _sayi(dusen))
+               if dusen else "",
                amp_nerede(cikti.get("sozluk"))))
 
 

@@ -1,6 +1,17 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **tek değer metinleri; kalite kapısında boş hücre kuralı**. Yapıştır: `akis_faz01.py`, `akis_faz04.py`, `sfa.py`
+Bu tur: **süreç dışı AMP'den düşüyor, tip seçenekleri tam kolonla, sarı = her değişiklik**. Yapıştır: `akis_faz01.py`, `tip_donusum.py`, `app.js`
+
+- AMP_VERISETI süreç dışı kolonlar olmadan yazılır (hedef/kimlik/dönem
+  hariç). 1. faz adımları kullanıcının kendi tablosunu okur (kaynak=True);
+  geri dönüp kolon sürece alınırsa teyit kaydıyla AMP yeniden yazılır.
+- Tip seçenekleri TAM KOLONLA hesaplanır; uygulanamayan seçenek listede
+  hiç görünmez, hiç seçenek yoksa hücrede "-" yazar. Sonuç önbellekte.
+- Sarı satır: öneri ya da orijinal değerden farklı her değişiklik.
+
+---
+
+Önceki tur: **tek değer metinleri; kalite kapısında boş hücre kuralı**. Yapıştır: `akis_faz01.py`, `akis_faz04.py`, `sfa.py`
 
 - Kural genel: bir değer + boş hücre (A ve boş, 1 ve boş ...) iki değerdir.
   Metinlerdeki "1 ve boş" örneği kaldırıldı.

@@ -2003,10 +2003,12 @@ function haricKaydet(kolon, kutu, hataEl) {
    satırda hiç öneri yok demektir. */
 function oneriVurgusu(tr, oneriVar, degisti) {
     if (!tr) return;
+    /* SARI = kullanıcının değiştirdiği satır, öneri olsun olmasın
+       (kullanıcı kararı: öneri yokken yapılan değişiklik de sarı). */
     tr.classList.toggle("dg-oneri", !!oneriVar && !degisti);
-    tr.classList.toggle("dg-degisti", !!oneriVar && !!degisti);
+    tr.classList.toggle("dg-degisti", !!degisti);
 }
-const ONERI_LEJANT = "Kırmızı satır: sistemin önerisi. Sarı satır: öneri değiştirildi.";
+const ONERI_LEJANT = "Kırmızı satır: sistemin önerisi. Sarı satır: sizin değiştirdiğiniz.";
 
 function tipKaydet(kolon, sec, tipEl, hataEl) {
     const eski = sec.dataset.eski === undefined ? "" : sec.dataset.eski;
@@ -6367,9 +6369,7 @@ function teyitKartiEkle(alan, blok) {
            GÖRÜNEN satırlara uygulanır; kilitli satırlara dokunmaz. Tek
            istekle gider; sonuçta kutular sunucunun listesine göre kurulur. */
         const ust = elYap("div", "dg-tablo-ust");
-        ust.appendChild(elYap("div", "dg-lejant",
-            (dg.satirlar || []).some(x => x.oneri_tip || x.oneri_tanim)
-                ? ONERI_LEJANT : ""));
+        ust.appendChild(elYap("div", "dg-lejant", ONERI_LEJANT));
         const toplu = elYap("div", "dg-toplu");
         const topluDisi = elYap("button", "dg-toplu-btn", "");
         const topluIci = elYap("button", "dg-toplu-btn", "");
@@ -6476,12 +6476,18 @@ function teyitKartiEkle(alan, blok) {
 
             /* Satırın öneri vurgusu: tip önerisi (dönem kolonu) ya da
                sözlük tanımları adımında model önerisiyle eklenen tanım. */
+            /* Karşılaştırma tabanı: öneri varsa öneri, yoksa ORİJİNAL
+               değer (tipte "Değişmesin", tanımda orijinal sözlük tanımı).
+               Tabandan farklı olan her satır sarı. */
+            const tipTaban = sat.oneri_tip || "";
+            const tanimTaban = tireSade(sat.oneri_tanim
+                || (sat.tanim_orijinal !== undefined ? sat.tanim_orijinal : sat.tanim)
+                || "").trim();
             function satirVurgu() {
                 const secEl = tdT.querySelector(".dg-tip-sec");
-                const tipDegisti = !!sat.oneri_tip
-                    && (secEl ? secEl.value : (sat.donusum || "")) !== sat.oneri_tip;
-                const tanimDegisti = !!sat.oneri_tanim
-                    && giris.value.trim() !== tireSade(sat.oneri_tanim).trim();
+                const tip = secEl ? secEl.value : (sat.donusum || "");
+                const tipDegisti = tip !== tipTaban;
+                const tanimDegisti = giris.value.trim() !== tanimTaban;
                 oneriVurgusu(tr, !!(sat.oneri_tip || sat.oneri_tanim),
                              tipDegisti || tanimDegisti);
             }

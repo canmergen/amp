@@ -201,10 +201,40 @@ def _kategori_sebebi(seri):
     return None
 
 
+# Sayisal kolonda tarih/donem kaliplarinin HIZLI on elemesi: deger araligi
+# tutmuyorsa tam cevirme denenmez. 1.000 kolonluk sette seceneklerin TAM
+# KOLONLA hesaplanabilmesi bunun sayesinde (bkz. secenekler).
+_SAYISAL_ARALIK = {
+    "donem_ym6": (190001, 299912), "tarih_ym6": (190001, 299912),
+    "donem_ymd8": (19000101, 29991231), "tarih_ymd8": (19000101, 29991231),
+    "sayisal_ymd8": None,
+}
+
+
+def _hizli_red(seri, kod):
+    """Kesin uygun OLMAYAN durumu ucuz yoldan yakalar; sebep ya da None."""
+    if kod in _SAYISAL_ARALIK and _SAYISAL_ARALIK[kod] \
+            and pd.api.types.is_numeric_dtype(seri):
+        dolu = seri.dropna()
+        if not len(dolu):
+            return "kolonda dolu değer yok"
+        alt, ust = _SAYISAL_ARALIK[kod]
+        try:
+            if float(dolu.min()) < alt or float(dolu.max()) > ust \
+                    or not bool((dolu % 1 == 0).all()):
+                return "değerler bu biçimde değil"
+        except Exception:
+            return None
+    return None
+
+
 def denetle(seri, kod):
     """Tek donusumun bu kolonda uygun olup olmadigi.
 
     Doner: (uygun_mu, sebep). Uygunsa sebep None."""
+    hizli = _hizli_red(seri, kod)
+    if hizli:
+        return False, hizli
     if kod == "kategorik_metin":
         sebep = _kategori_sebebi(seri)
         if sebep:
@@ -223,15 +253,18 @@ def denetle(seri, kod):
                       ", ".join(ornekler) if ornekler else "örnek yok"))
 
 
-def secenekler(seri, tip):
-    """Bir kolonun donusum listesi - kilitliler DAHIL.
+def secenekler(seri, tip, yalniz_uygun=False):
+    """Bir kolonun donusum listesi.
 
-    Kilitli secenek listeden cikarilmiyor: kullanici "bu kolonu tarihe
-    cevirebilir miyim" sorusunun cevabini, sebebiyle birlikte ekranda
-    gormek istiyor."""
+    yalniz_uygun=True: YALNIZCA uygulanabilir secenekler (kullanici
+    karari: "yapamıyorsam hiç seçenek olarak görmemeliyim"). Seri TAM
+    KOLON olmali; ornekle uygun gorunup tam kolonda takilan secenek,
+    secildikten sonra hata veriyordu."""
     cikti = []
     for kod in ADAYLAR.get(tip, []):
         uygun, sebep = denetle(seri, kod)
+        if yalniz_uygun and not uygun:
+            continue
         cikti.append({"kod": kod,
                       "hedef": DONUSUMLER[kod]["hedef"],
                       "etiket": DONUSUMLER[kod]["etiket"],
