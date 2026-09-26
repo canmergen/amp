@@ -2320,7 +2320,13 @@ def teyit_excel(durum, genis=True):
 
 
 def amp_klasor_adi(durum):
-    """Calismanin AMP klasoru: "2026-09-21_1809_<oturum>".
+    """Calismanin AMP klasoru: "cmergen_03" (eski kayitlarda
+    "2026-09-21_1809_<oturum>").
+
+    YENI ADLANDIRMA: oturum anahtari artik "<kullanici>_<sira>" (bkz.
+    backend._oturum_anahtari). Kimin ve kacinci calisma oldugu adin
+    kendisinde okunuyor; sira numarasi zaten zaman sirasi. Tarih + 30
+    karakterlik ozet yalnizca ESKI bicimli anahtarlarda kaliyor.
 
     NEDEN TARIHLI: eski ad yalnizca oturum kimligiydi ("a3f2c1de") ve
     klasor listesinde hangisinin hangi calisma oldugu anlasilmiyordu.
@@ -2334,8 +2340,11 @@ def amp_klasor_adi(durum):
         return durum["_amp_klasor"]
     oturum = re.sub(r"[^A-Za-z0-9_-]", "",
                     str((durum or {}).get("_oturum_id") or ""))
-    damga = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
-    ad = ("%s_%s" % (damga, oturum)) if oturum else damga
+    if re.match(r"^[a-z0-9-]+_\d+$", oturum):
+        ad = oturum
+    else:
+        damga = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
+        ad = ("%s_%s" % (damga, oturum)) if oturum else damga
     if isinstance(durum, dict):
         durum["_amp_klasor"] = ad
     return ad

@@ -1,5 +1,59 @@
 # Analitik Modelleme Platformu — teslim notu
 
+Bu tur: **sağ panel adım adları sol panelle aynı**, **"ve ve ve" cümlesi
+düzeldi**, **ANALİTİK SÜREÇ açılır kapanır**, **çalışma adları sade** ve
+**"Yeni Çalışma" artık hiçbir şeyi silmiyor — "Çalışmalarım" listesinden
+eski çalışmaya dönülüyor**.
+
+> **Deploy sonrası "Yeni Çalışma"ya basmana gerek yok.** Eski çalışman
+> "Çalışmalarım" listesinde "Eski Kayıt" olarak duruyor.
+
+## Kopyala-yapıştır sırası
+
+**Library Editor (`python/fe_agent/`):** `akis_panel.py` → `akis_faz01.py`
+**Webapp:** `backend.py` → `index.html` → `style.css` → `app.js`
+
+## 1. Sağ panel sol panelde olmayan adım adı söylüyordu
+`akis_panel.py`'de dört sabit ad kalmıştı («Veri Seti», «Veri ve Sözlük»,
+«Modelleme Tanımları»). Artık ad adım anahtarından, sol panelin kuralıyla
+üretiliyor (`sol_panel_adi`): gruplu adım → «Veri ve Model Tanımları».
+Mod C'de veri satırları «Birleştirme Planı»nı gösteriyor. «Kayıt Yeri»
+satırı AMP tabloları gerçekten yazıldığı adımı («Değişken Kontrolü»)
+gösteriyor. `app.js`'teki «Veri Profili» de «Veri Profili ve Kalite» oldu.
+
+## 2. "«A» ve «B» ve «C» ve «D»" → "«A», «B», «C» ve «D»"
+Not artık akış sırasıyla dizili (Mod C'de sıra karışıyordu).
+
+## 3. ANALİTİK SÜREÇ açılır kapanır
+Başlangıç seçimi ekranında açık; seçim yapılınca kendiliğinden kapanır ve
+İŞ AKIŞI yukarı çıkar. Başlığa basınca açılır/kapanır; elle seçim o çalışma
+boyunca korunur.
+
+## 4. Çalışma adları
+| | Eski | Yeni |
+|---|---|---|
+| Durum dosyası | `oturum_u3f9a2c41d07be58a_ck2m9x1qz.json` | `oturum_cmergen_03.json` |
+| Sözlük kopyası | `u3f9a2c41d07be58a_ck2m9x1qz/` | `cmergen_03/` |
+| AMP klasörü | `AMP/2026-09-21_1809_u3f9…_ck2m…/` | `AMP/cmergen_03/` |
+
+`cmergen` = Dataiku login'i; `03` = kullanıcının kaçıncı çalışması (sunucu
+veriyor). Login'de nokta/@ gibi karakter varsa 4 haneli özet eklenir
+(`can.mergen` → `can-mergen-4f1a`) ki iki kullanıcı aynı ada düşmesin.
+Eski dosyalar yeniden adlandırılmadı, olduğu gibi okunuyor.
+
+## 5. Yeni Çalışma silmiyor + Çalışmalarım
+- **Yeni Çalışma** yeni bir numara açar; eski çalışma ve sözlük kopyası
+  yerinde kalır. Hiç başlanmamış bir çalışmadayken basılırsa aynı numara
+  kullanılır (liste boş çalışmalarla dolmasın).
+- **Çalışmalarım** (Yeni Çalışma'nın solunda): son işlem zamanı, adım ve
+  veri setiyle liste. Birine basınca o çalışma kaldığı yerden açılır.
+- Tarayıcıda kayıtlı kimlik yoksa (depolama engelli / temizlenmiş) en son
+  çalışılan çalışma açılır — eskiden boş bir "ana" çalışmasına düşülüyordu.
+
+---
+
+## Önceki tur
+
 Bu tur: **Bölme Stratejisi .txt'deki hiyerarşiye getirildi** — koşullu
 görünürlük, "?" ipuçları, "Detaylar ve Terimler", tek terim dili,
 gap + çoklu tekrar. Ayrıca her adım bloğuna ince Akbank kırmızısı çerçeve.

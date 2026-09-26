@@ -8,7 +8,7 @@ import pandas as pd
 
 from fe_agent import sfa as sfa_mod
 from fe_agent import sozluk_calisma
-from fe_agent.akis_metin import ADIM_ADI, MOD_ADLARI
+from fe_agent.akis_metin import MOD_ADLARI
 from fe_agent.akis_durum import (
     AMP_SOZLUK_ADI, AMP_VERI_ADI, BOLME_ALAN_ACIKLAMA, BOLME_ALAN_BASLIK,
     LINEAGE_ADI, SOZLUK_ADI, TRAIN_KULLANIMI_BASLIK, _ond, _sayi,
@@ -20,7 +20,7 @@ from fe_agent.akis_durum import (
     test_donem_anahtari,
     test_donem_secenekleri,
 )
-from fe_agent.akis_kayit import ADIMLAR, adim_sirasi, fazlar
+from fe_agent.akis_kayit import ADIMLAR, adim_grubu, adim_sirasi, fazlar
 
 
 # Sozluk YALNIZCA Mod B ve C'de platform tarafindan uretilir; Mod A'da
@@ -650,12 +650,25 @@ def _kart(baslik, tanimlar):
 
     kart = {"baslik": baslik, "satirlar": satirlar}
     if bekleyen:
-        if len(bekleyen) == 1:
-            kart["not"] = "Boş satırlar «%s» adımından sonra dolar." % bekleyen[0]
-        else:
-            kart["not"] = ("Boş satırlar «%s» adımlarından sonra dolar."
-                           % "» ve «".join(bekleyen))
+        # Kartta satir sirasi akis sirasi degil (Mod C'de "Kayıt yeri"
+        # satiri "Hedef değişken"den once geliyor); not AKIS SIRASIYLA.
+        bekleyen.sort(key=_akis_sirasi)
+        kart["not"] = "Boş satırlar %s %s sonra dolar." % (
+            _ad_listesi(bekleyen),
+            "adımından" if len(bekleyen) == 1 else "adımlarından")
     return kart
+
+
+def _ad_listesi(adlar):
+    """«A» / «A» ve «B» / «A», «B» ve «C».
+
+    Eskiden hepsi " ve " ile baglaniyordu: dort bekleyen adimda cumle
+    "«A» ve «B» ve «C» ve «D»" cikiyordu. Turkcede son ikisi "ve" ile,
+    oncekiler virgulle baglanir."""
+    tirnakli = ["«%s»" % a for a in adlar]
+    if len(tirnakli) <= 1:
+        return "".join(tirnakli)
+    return "%s ve %s" % (", ".join(tirnakli[:-1]), tirnakli[-1])
 
 
 def _bekleyen_panel(adim, kartlar=None):
@@ -668,11 +681,69 @@ def _bekleyen_panel(adim, kartlar=None):
 # --------------------------------------------------------------------------
 # VERI sekmesi  (app.js'te data-tab="ozet")
 # --------------------------------------------------------------------------
-VERI_ADIMI = "Veri Seti"
-TANIM_ADIMI = "Modelleme Tanımları"
-PROFIL_ADIMI = "Veri Profili ve Kalite"
-SFA_ADIMI = "Tek Değişken Analizi (SFA)"
-BOLME_ADIMI = ADIM_ADI["bolme"]
+# ADIM ADLARI SOL PANELDEN OKUNUR.
+# Kart notu "Boş satırlar «X» adımından sonra dolar" diyor; X sol
+# paneldeki is akisinda AYNEN bulunmali. Eskiden burada dort ad elle
+# yaziliydi ("Veri Seti", "Veri ve Sözlük", "Modelleme Tanımları") ve
+# sol panel o adimlari "Veri ve Model Tanımları" adli TEK satirda
+# gosterdigi icin kullaniciya listede olmayan adimlar soyleniyordu.
+# Artik ad, adim anahtarindan sol panelin kurallariyla (gruplu adim ->
+# grup adi) uretiliyor; biri degisince oteki de degisir.
+def sol_panel_adi(anahtar):
+    """Adimin sol paneldeki is akisinda gorunen adi.
+
+    Gruplu adimlar (kurulum, veri_sec, sozluk_uret, tanimlar,
+    sozluk_tanim) sol panelde grubun adiyla TEK satirdir; app.js
+    fazlariCiz ayni kurali uyguluyor."""
+    _grup, grup_baslik = adim_grubu(anahtar)
+    if grup_baslik:
+        return grup_baslik
+    return (ADIMLAR.get(anahtar) or {}).get("baslik") or anahtar
+
+
+# Veri setini hangi adim getiriyor - moda gore. Mod C'de tablo
+# birlestirme planindan uretiliyor; A ve B'de gruplu adimda seciliyor.
+VERI_ADIMI_ANAHTARI = {"A": "kurulum", "B": "veri_sec", "C": "birlestirme"}
+# Sozlugu hangi adim getiriyor: A'da hazir sozluk kurulumda secilir,
+# B ve C'de veriden uretilir.
+SOZLUK_ADIMI_ANAHTARI = {"A": "kurulum", "B": "sozluk_uret", "C": "sozluk_uret"}
+
+
+def _veri_adimi(durum):
+    return sol_panel_adi(VERI_ADIMI_ANAHTARI.get(
+        (durum or {}).get("mod"), "kurulum"))
+
+
+def _sozluk_adimi(durum):
+    return sol_panel_adi(SOZLUK_ADIMI_ANAHTARI.get(
+        (durum or {}).get("mod"), "kurulum"))
+
+
+TANIM_ADIMI = sol_panel_adi("tanimlar")
+# AMP_VERISETI / AMP_SOZLUK teyit "Kaydet ve Devam Et" ile yaziliyor
+# (bkz. akis_faz01.teyit_uygula); "Kayıt yeri" satiri o adimdan sonra dolar.
+KAYIT_ADIMI = sol_panel_adi("teyit")
+PROFIL_ADIMI = sol_panel_adi("veri_profili")
+SFA_ADIMI = sol_panel_adi("sfa")
+BOLME_ADIMI = sol_panel_adi("bolme")
+
+# Sol paneldeki adlarin akis sirasi, uc modun birlesimi. Faz 01'de
+# modlar farkli adim tasiyor ama ortak adimlarin sirasi aynı.
+_AKIS_ADLARI = []
+for _a in (["mod", "ham_veri", "birlestirme", "kurulum", "veri_sec",
+            "sozluk_uret", "tanimlar", "sozluk_tanim", "teyit", "bolme"]
+           + [a for a in adim_sirasi(None) if a != "mod"]):
+    if sol_panel_adi(_a) not in _AKIS_ADLARI:
+        _AKIS_ADLARI.append(sol_panel_adi(_a))
+del _a
+
+
+def _akis_sirasi(ad):
+    """Adin sol paneldeki sirasi; listede yoksa en sona."""
+    try:
+        return _AKIS_ADLARI.index(ad)
+    except ValueError:
+        return len(_AKIS_ADLARI)
 
 
 def _tam(x, yedek=None):
@@ -741,8 +812,6 @@ def _donem_araligi(p):
 # tamamen farkli seyler anlatiyor. Artik her kart iki satir konusuyor:
 #   ad     -> uzerinde calisilan tablonun / sozlugun adi
 #   köken  -> hangi baslangicta, neyden turedigi (+ sozlukte teyit durumu)
-KOKEN_ADIMI = "Veri ve Sözlük"
-
 # PLATFORMUN KENDI ADLARI. Kart artik kaynak tablonun HAM ADINI bir
 # "ad" satirinda gostermiyor (kullanici karari: "hala sağda sözlük ve
 # veri setinin orijinal adları duruyor, dediğim açıklama tipinde
@@ -803,7 +872,7 @@ def _kayit_yeri(durum, anahtar):
     Kullanici "sonradan da cekebileyim" dedi; adin ne oldugunu bilmek
     yetmiyor, akistaki veri setine mi yoksa PROJE_HAFIZASI icindeki
     klasore mi yazildigi da lazim. Teyit kaydedilmeden once bos kalir
-    ve kart "«Veri ve Sözlük» adımından sonra dolar" notunu gosterir."""
+    ve kart "«Değişken Kontrolü» adımından sonra dolar" notunu gosterir."""
     from fe_agent import akis_faz01
     kayit = ((durum or {}).get("amp_cikti") or {}).get(anahtar)
     return akis_faz01.amp_nerede(kayit)
@@ -857,6 +926,7 @@ def veri_paneli(durum):
              if satir and kolon else None)
 
     kimlik_dup = _tam(p.get("duplicate_kimlik"))
+    veri_adimi = _veri_adimi(durum)
     # HEDEF DEGISKEN AYRI KART DEGIL: hedef, veri setinin bir kolonu -
     # ayri kart olunca "baska bir kaynak" gibi okunuyordu. Tek kartta,
     # boyut/tip satirlarindan SONRA geliyor.
@@ -864,12 +934,12 @@ def veri_paneli(durum):
         # HAM AD DEGIL platformun adi; hangi tablodan gelindigi
         # "Köken" satirinda, cumle icinde yaziyor.
         ("Veri Seti", PLATFORM_VERI_ADI if durum.get("veri_seti") else None,
-         VERI_ADIMI),
-        ("Köken", _veri_kokeni(durum), KOKEN_ADIMI),
-        ("Kayıt yeri", _kayit_yeri(durum, "veri"), KOKEN_ADIMI),
-        ("Satır × kolon", boyut, VERI_ADIMI),
-        ("Sayısal / kategorik / tarih", _tip_dagilimi(p), VERI_ADIMI),
-        ("Tekrarlı satır", _duplicate_metni(p), VERI_ADIMI),
+         veri_adimi),
+        ("Köken", _veri_kokeni(durum), veri_adimi),
+        ("Kayıt yeri", _kayit_yeri(durum, "veri"), KAYIT_ADIMI),
+        ("Satır × kolon", boyut, veri_adimi),
+        ("Sayısal / kategorik / tarih", _tip_dagilimi(p), veri_adimi),
+        ("Tekrarlı satır", _duplicate_metni(p), veri_adimi),
         ("Kimlik bazlı tekrar",
          None if kimlik_dup is None else _sayi(kimlik_dup), TANIM_ADIMI),
         ("Toplam null oranı", _yuzde(p.get("null_oran"), 2), PROFIL_ADIMI),
@@ -882,7 +952,7 @@ def veri_paneli(durum):
 
     kartlar = [veri_kart]
     if not satir:
-        return _bekleyen_panel(VERI_ADIMI, kartlar)
+        return _bekleyen_panel(veri_adimi, kartlar)
     return {"durum": "hazir", "kartlar": kartlar}
 
 
@@ -902,7 +972,6 @@ def veri_paneli(durum):
 #   sozluk calisma kopyasi (kucuk CSV, kisa omurlu onbellekli) ve
 #   durum["sfa"]["ilk20"]. Hicbir yerde veri seti okunmaz.
 # --------------------------------------------------------------------------
-SOZLUK_ADIMI = "Veri ve Sözlük"
 
 # IV / C degerleri durum'da yalnizca SFA'nin ilk N satiri icin duruyor
 # (tam tablo dataset'te). Tabloda gorunmeyen satirlarin iv/c alani
@@ -1116,19 +1185,20 @@ def _sozluk_karti(durum):
     kapsam = (round(100.0 * len(tanimli) / len(kolonlar), 1)
               if kolonlar else None)
 
+    sozluk_adimi = _sozluk_adimi(durum)
     return _kart("Değişken Sözlüğü", [
         # HAM AD DEGIL platformun adi; hangi sozlukten gelindigi
         # "Köken" satirinda, cumle icinde yaziyor.
         ("Sözlük",
          PLATFORM_SOZLUK_ADI if sozluk_calisma.sozluk_adi(durum) else None,
-         SOZLUK_ADIMI),
-        ("Köken", _sozluk_kokeni(durum), KOKEN_ADIMI),
-        ("Kayıt yeri", _kayit_yeri(durum, "sozluk"), KOKEN_ADIMI),
+         sozluk_adimi),
+        ("Köken", _sozluk_kokeni(durum), sozluk_adimi),
+        ("Kayıt yeri", _kayit_yeri(durum, "sozluk"), KAYIT_ADIMI),
         ("Tanım sayısı", _sayi(len(tanimli)) if kolonlar else None,
-         SOZLUK_ADIMI),
-        ("Kapsam", _yuzde_dogrudan(kapsam, 1), SOZLUK_ADIMI),
+         sozluk_adimi),
+        ("Kapsam", _yuzde_dogrudan(kapsam, 1), sozluk_adimi),
         ("Sözlükte olmayan değişken sayısı",
-         _sayi(len(tanimsiz)) if kolonlar else None, SOZLUK_ADIMI),
+         _sayi(len(tanimsiz)) if kolonlar else None, sozluk_adimi),
     ])
 
 

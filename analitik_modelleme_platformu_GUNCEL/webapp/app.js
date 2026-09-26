@@ -24,12 +24,21 @@ function depoYaz(anahtar, deger) {
     return yazildi;
 }
 
-const OTURUM_ID = (function () {
-    const kayitli = depoOku(OTURUM_DEPO_ANAHTARI);
-    if (kayitli) return kayitli;
-    const yeni = "c" + Math.random().toString(36).slice(2, 10);
-    return depoYaz(OTURUM_DEPO_ANAHTARI, yeni) ? yeni : "ana";
-})();
+/* ÇALIŞMA KİMLİĞİNİ SUNUCU VERİR. Eskiden burada rastgele bir kimlik
+   ("ck2m9x1qz") üretiliyordu ve PROJE_HAFIZASI'nda okunmayan dosya
+   adlarına dönüşüyordu. Artık kimlik çalışmanın SIRA NUMARASI ("03");
+   kayıtlı değilse boş gider ve /karsilama kullanıcının en son
+   çalışmasını açıp numarasını döndürür (bkz. oturumAyarla).
+   Tarayıcıda eski bir kimlik kayıtlıysa o çalışma aynen açılır.
+   let: "Yeni Çalışma" ve "Çalışmalarım" kimliği değiştiriyor; bütün
+   istekler değişkeni çağrı anında okuyor. */
+let OTURUM_ID = depoOku(OTURUM_DEPO_ANAHTARI) || "";
+
+function oturumAyarla(kimlik) {
+    if (!kimlik || kimlik === OTURUM_ID) return;
+    OTURUM_ID = String(kimlik);
+    depoYaz(OTURUM_DEPO_ANAHTARI, OTURUM_ID);
+}
 
 /* Idempotenslik: backend'in isledigi son tur numarasi. Her mesaj
    TUR_NO + 1 ile gider; yanit gelmeden artmaz, boylece timeout sonrasi
@@ -50,6 +59,7 @@ const HAFIZA_KLASORU = "PROJE_HAFIZASI";
    calisma baslat" yazisi tek basina Dataiku'nun REFRESH dugmesini de
    tarif ediyordu. */
 const YENI_CALISMA_ETIKETI = "⟳ Yeni Çalışma";
+const CALISMALARIM_ETIKETI = "Çalışmalarım";
 
 const GORSEL = {
     banner:     getWebAppBackendUrl("gorsel/banner"),
@@ -577,7 +587,33 @@ function fazlariYukle(liste) {
     FAZLAR.forEach(f => f.adimlar.forEach(a => { DUZ_ADIMLAR[a.sira] = a; }));
 }
 
+/* ANALİTİK SÜREÇ açılır kapanır. Çalışma başlamadan (başlangıç
+   seçimi ekranında) açık durur: platformu ilk kez gören kullanıcı ne
+   yapıldığını orada okuyor. Başlangıç seçildikten sonra kendiliğinden
+   kapanır; iki paragraf İŞ AKIŞI'nın yerini yiyordu ve iş akışı adım
+   adım uzadıkça listenin altı ekrandan taşıyordu.
+   Kullanıcı başlığa bastıysa ONUN SEÇİMİ geçerli (surecElle), otomatik
+   kural bir daha karışmaz; Yeni Çalışma / çalışma değiştirme sıfırlar. */
+const surecBlok = document.getElementById("surec-blok");
+const surecBas  = document.getElementById("surec-bas");
+let surecElle = null;          // null: otomatik | true: açık | false: kapalı
+
+function surecGuncelle() {
+    if (!surecBlok || !surecBas) return;
+    const acik = surecElle !== null ? surecElle : aktifAdim === 0;
+    surecBlok.classList.toggle("kapali", !acik);
+    surecBas.setAttribute("aria-expanded", acik ? "true" : "false");
+    surecBas.title = acik ? "Açıklamayı gizle" : "Açıklamayı göster";
+}
+if (surecBas) {
+    surecBas.onclick = () => {
+        surecElle = surecBlok.classList.contains("kapali");
+        surecGuncelle();
+    };
+}
+
 function fazlariCiz() {
+    surecGuncelle();
     fazEl.innerHTML = "";
     FAZLAR.forEach((f, fi) => {
         /* GRUPLU ADIMLAR SOL PANELDE TEK SATIR (kullanıcı kararı).
@@ -735,7 +771,10 @@ function aktifFaziAc() {
     });
 }
 
-fetch(getWebAppBackendUrl("fazlar") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+/* Kimlik henüz yoksa İSTENMEZ: sunucu boş kimliği eski "ana" kaydına
+   çözerdi ve bu yanıt /karsilama'dan sonra gelirse doğru çalışmanın
+   adımlarını ezerdi. /karsilama yanıtı fazları zaten taşıyor. */
+if (OTURUM_ID) fetch(getWebAppBackendUrl("fazlar") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
     .then(r => r.json())
     .then(d => {
         if (!d || d.hata || !d.fazlar) {
@@ -2441,7 +2480,7 @@ function ftPencereCiz() {
         FT.dom.yer.appendChild(elYap("div", "ft-bos",
             (FT.veri && (FT.veri.satirlar || []).length)
                 ? "Filtrelerle eşleşen kolon yok."
-                : "Kolon listesi «Veri Profili» adımından sonra dolar."));
+                : "Kolon listesi «Veri Profili ve Kalite» adımından sonra dolar."));
         return;
     }
 
@@ -6995,7 +7034,8 @@ function tarihBicim(iso) {
 /* "Kaldigi yerden yuklendi" mesaji: nereden yuklendigi ve nasil
    sifirlanacagi acikca yazilir. devam_bilgi yoksa kisa mesaj kalir. */
 function devamMetni(bilgi) {
-    const bas = "**Önceki çalışmanız kaldığı yerden yüklendi.**";
+    const bas = "**" + (bilgi && bilgi.ad ? bilgi.ad : "Önceki çalışmanız")
+        + " kaldığı yerden yüklendi.**";
     if (!bilgi) return bas;
 
     const parcalar = [];
@@ -7015,14 +7055,20 @@ function devamMetni(bilgi) {
     if (parcalar.length) satirlar.push(parcalar.join(" · "));
     satirlar.push("Çalışma, Dataiku'daki " + HAFIZA_KLASORU + " klasöründe sizin "
                   + "kullanıcı adınıza kayıtlı. Sıfırdan başlamak için sağ "
-                  + "üstteki **" + YENI_CALISMA_ETIKETI + "** düğmesini kullanın.");
+                  + "üstteki **" + YENI_CALISMA_ETIKETI + "** düğmesini kullanın; "
+                  + "bu çalışma silinmez, **" + CALISMALARIM_ETIKETI
+                  + "** listesinden geri açılır.");
     return satirlar.join("\n");
 }
 
-fetch(getWebAppBackendUrl("karsilama")
-      + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+/* Çalışmayı açar: ilk yüklemede ve "Çalışmalarım"dan seçimde AYNI yol.
+   kimlik verilirse o çalışma, verilmezse kayıtlı/en son çalışma. */
+function calismaAc(kimlik) {
+    return fetch(getWebAppBackendUrl("karsilama")
+      + "?oturum_id=" + encodeURIComponent(kimlik || OTURUM_ID))
     .then(r => r.json())
     .then(d => {
+        oturumAyarla(d.calisma_id);
         const metin = d.metin || d.cevap;
         if (d.devam) {
             /* ADIM LISTESI GECMISTEN ONCE YUKLENIR. gecmisiCiz, gecilmis
@@ -7044,11 +7090,29 @@ fetch(getWebAppBackendUrl("karsilama")
         rozetGuncelle("hata");
         balonEkle("bot", "Bağlantı hatası: " + e, true);
     });
+}
+calismaAc();
 
 
 /* ==================== Yeni oturum ==================== */
 /* Tum calismayi silen bir islem: sohbet icinde onay kartiyla sorulur.
    native confirm() KULLANILMIYOR - Dataiku iframe'inde akisi bloklar. */
+/* Ekrandaki çalışmaya ait her şeyi temizler: Yeni Çalışma ve başka bir
+   çalışmaya geçiş aynı temizliği yapıyor. Sunucudaki kayda DOKUNMAZ. */
+function ekraniTemizle() {
+    sohbetEl.innerHTML = "";
+    aktifAdim = 0;
+    aktifMod = null;
+    TUR_NO = 0;
+    sonYanitMetni = null;
+    geriAlKilit = null;
+    acikFazlar = new Set();
+    surecElle = null;
+    /* Doküman önceki çalışmaya aitti: ÖZET bir daha açılana kadar
+       ekranda kalmasın, açılınca yenisi istenir. */
+    dokumanSifirla();
+}
+
 function sifirlaUygula() {
     /* Ucusta bir /mesaj varsa once onu iptal et: gec donen yanit
        sifirlanan durumun uzerine yazmasin. */
@@ -7061,16 +7125,14 @@ function sifirlaUygula() {
     })
     .then(r => r.json())
     .then(d => {
-        sohbetEl.innerHTML = "";
-        aktifAdim = 0;
-        aktifMod = null;
-        TUR_NO = 0;
-        sonYanitMetni = null;
-        geriAlKilit = null;
-        acikFazlar = new Set();
-        /* Doküman silinen çalışmaya aitti: ÖZET bir daha açılana kadar
-           ekranda kalmasın, açılınca yenisi istenir. */
-        dokumanSifirla();
+        /* Hata yanıtında ekran ve kimlik OLDUĞU GİBİ kalır: yarım bir
+           sıfırlama kullanıcıyı boş ekranla bırakmasın. */
+        if (d.hata) {
+            balonEkle("bot", d.metin || d.cevap || "Yeni çalışma açılamadı.", true);
+            return;
+        }
+        oturumAyarla(d.calisma_id);
+        ekraniTemizle();
         yanitUygula(d, d.metin || d.cevap);
         sayfaAc("calisma");
     })
@@ -7081,15 +7143,111 @@ function sifirlaUygula() {
     .finally(() => { kilitle(false); });
 }
 
+/* ==================== Çalışmalarım ==================== */
+/* Kayıtlı çalışmaların listesi. Liste her açılışta sunucudan istenir:
+   başka bir sekmede ilerlemiş bir çalışmanın adımı eski görünmesin.
+   Seçilen çalışma calismaAc ile açılır; sunucudaki hiçbir kayıt
+   değişmez, yalnızca ekran o çalışmaya geçer. */
+const calismalarBtn   = document.getElementById("calismalar-btn");
+const calismalarListe = document.getElementById("calismalar-liste");
+
+function calismalarKapat() {
+    if (!calismalarListe || calismalarListe.hidden) return;
+    calismalarListe.hidden = true;
+    calismalarBtn.setAttribute("aria-expanded", "false");
+}
+
+function calismaAltSatiri(c) {
+    const parca = [];
+    const zaman = tarihBicim(c.zaman);
+    if (zaman) parca.push(zaman);
+    if (c.adim) parca.push("Adım " + c.adim_no + "/" + c.toplam + " · " + tireSade(c.adim));
+    if (c.veri_seti) parca.push(tireSade(c.veri_seti));
+    return parca.join(" · ");
+}
+
+function calismalarCiz(d) {
+    calismalarListe.innerHTML = "";
+    if (!d || d.hata) {
+        calismalarListe.appendChild(elYap("div", "calisma-bos calisma-hata",
+            "Liste okunamadı" + (d && d.hata_kodu ? " (" + d.hata_kodu + ")." : ".")));
+        return;
+    }
+    const liste = d.calismalar || [];
+    if (!liste.length) {
+        calismalarListe.appendChild(elYap("div", "calisma-bos",
+            "Kayıtlı çalışma yok."));
+        return;
+    }
+    liste.forEach(c => {
+        const aktif = c.calisma_id === OTURUM_ID;
+        const oge = document.createElement("button");
+        oge.type = "button";
+        oge.className = "calisma-oge" + (aktif ? " aktif" : "");
+        oge.setAttribute("role", "menuitem");
+        const ad = elYap("div", "calisma-ad", c.ad || ("Çalışma " + c.calisma_id));
+        if (aktif) ad.appendChild(elYap("span", "calisma-etiket", "AÇIK"));
+        oge.appendChild(ad);
+        const alt = c.hata ? c.hata
+            : (c.baslamis === false ? "Henüz başlanmadı" : calismaAltSatiri(c));
+        if (alt) oge.appendChild(elYap("div", "calisma-alt" + (c.hata ? " calisma-hata" : ""), alt));
+        oge.disabled = !!c.hata || aktif;
+        if (!oge.disabled) {
+            oge.title = "Bu çalışmayı kaldığı yerden aç";
+            oge.onclick = () => calismayaGec(c.calisma_id);
+        }
+        calismalarListe.appendChild(oge);
+    });
+}
+
+function calismalarAc() {
+    calismalarListe.hidden = false;
+    calismalarBtn.setAttribute("aria-expanded", "true");
+    calismalarListe.innerHTML = "";
+    calismalarListe.appendChild(elYap("div", "calisma-bos", "Yükleniyor…"));
+    fetch(getWebAppBackendUrl("calismalar")
+          + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+        .then(r => r.json())
+        .then(calismalarCiz)
+        .catch(() => calismalarCiz(null));
+}
+
+function calismayaGec(kimlik) {
+    calismalarKapat();
+    if (!kimlik || kimlik === OTURUM_ID) return;
+    /* Uçuşta bir /mesaj varsa önce onu iptal et: geç dönen yanıt yeni
+       açılan çalışmanın ekranına yazılmasın. "sifirla" durumu bunu
+       zaten sağlıyor (bkz. istegiIptalEt). */
+    if (mesgul) istegiIptalEt("sifirla");
+    kilitle(true);
+    ekraniTemizle();
+    sayfaAc("calisma");
+    calismaAc(kimlik).finally(() => { kilitle(false); });
+}
+
+if (calismalarBtn && calismalarListe) {
+    calismalarBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (calismalarListe.hidden) calismalarAc();
+        else calismalarKapat();
+    };
+    calismalarListe.addEventListener("click", e => e.stopPropagation());
+    document.addEventListener("click", calismalarKapat);
+    document.addEventListener("keydown", e => { if (e.key === "Escape") calismalarKapat(); });
+}
+
 const sifirlaBtn = document.getElementById("sifirla-btn");
 
-/* TEK TIKLA sifirlar. Iki adimli onay KALDIRILDI.
+/* TEK TIKLA yeni çalışma açar. Onay sorulmuyor çünkü artık hiçbir
+   şey SİLİNMİYOR: önceki çalışma "Çalışmalarım" listesinden geri açılır.
+   (Eski not:) Iki adimli onay KALDIRILDI.
    NEDEN: onay, dugme yalnizca cippak bir ⟳ ikonuyken vardi ve Dataiku'nun
    kendi REFRESH dugmesiyle karistirildigi icin gerekliydi. Dugme artik
    "Yeni çalışma" yazili; niyet dugmenin uzerinde yaziyor ve her tiklamada
    "emin misiniz" sormak, sik sik yeni calisma baslatan kullaniciyi her
    seferinde iki tiklamaya zorluyordu. */
 sifirlaBtn.onclick = () => {
+    calismalarKapat();
     sayfaAc("calisma");
     sifirlaUygula();
 };

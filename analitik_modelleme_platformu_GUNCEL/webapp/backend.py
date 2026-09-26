@@ -229,16 +229,73 @@ def _yedek_kimlik():
     return "yedek:%s" % ozet
 
 
+# ---------------------------------------------------------------------------
+# CALISMA ADLARI
+# ---------------------------------------------------------------------------
+# ESKI AD: "oturum_u3f9a2c41d07be58a_ck2m9x1qz.json" - 16 haneli kullanici
+# ozeti + istemcinin urettigi rastgele kimlik. PROJE_HAFIZASI'nda
+# hangisinin kimin, hangisinin hangi calisma oldugu okunmuyordu; ayni ad
+# sozluk kopyasinin klasorunde ve AMP klasorunde de tekrarliyordu.
+#
+# YENI AD: "<kullanici>_<sira>"  ->  oturum_cmergen_03.json
+#   kullanici : Dataiku login'i, dosya adina uygun hale getirilmis
+#   sira      : o kullanicinin kacinci calismasi (01, 02, ...). Sunucu
+#               veriyor; istemci yalnizca hangi siradaki calismayi
+#               istedigini soyluyor.
+# Kullanici kismi HER ZAMAN sunucunun cozdugu kimlikten gelir: istemci
+# "03" gonderir, "baskasi_03" gonderemez - baskasinin calismasina erisim
+# yine kapali.
+#
+# ESKI KAYITLAR BOZULMAZ. Calisma kimligi yalnizca rakamsa yeni ad,
+# degilse (tarayicida kayitli "ck2m9x1qz" ya da "ana") eski ad kullanilir;
+# eski calismalar "Çalışmalarım" listesinde de gorunur.
+_TR_ASCII = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosuCGIOSU")
+
+
+def _kullanici_on_eki():
+    """Dosya adinda kullanicinin gorunen kismi: "cmergen", "can-mergen-4f1a".
+
+    Login'de dosya adina girmeyen karakter varsa (nokta, @, bosluk)
+    tireye cevrilir ve login'in kisa ozeti eklenir: "can.mergen" ile
+    "can_mergen" ayni ada dusmesin. Kimlik alinamazsa yalitilmis
+    "misafir-<ozet>" kovasina dusulur."""
+    ad, _ = _kullanici_adi()
+    if not ad:
+        return "misafir-" + hashlib.sha256(
+            _yedek_kimlik().encode("utf-8")).hexdigest()[:8]
+    # "ad@kurum" bicimli login'de alan adi dosya adina tasinmaz; butun
+    # login yine ozette oldugu icin iki kurumun ayni adi ayni kovaya dusmez.
+    yerel = str(ad).split("@")[0]
+    sade = unicodedata.normalize("NFKD", yerel.translate(_TR_ASCII))
+    sade = sade.encode("ascii", "ignore").decode("ascii")
+    sade = re.sub(r"[^A-Za-z0-9]+", "-", sade).strip("-").lower()[:24]
+    if sade and sade == str(ad).lower():
+        return sade
+    ozet = hashlib.sha256(str(ad).encode("utf-8")).hexdigest()[:4]
+    return ("%s-%s" % (sade, ozet)) if sade else ("k" + ozet)
+
+
+def _eski_on_ek():
+    """Eski adlandirmanin kullanici kismi: "u<16 haneli ozet>_"."""
+    kimlik = _kullanici_kimligi() or _yedek_kimlik()
+    return "u%s_" % hashlib.sha256(kimlik.encode("utf-8")).hexdigest()[:16]
+
+
+def _yeni_bicim_mi(calisma):
+    return bool(calisma) and str(calisma).isdigit()
+
+
 def _oturum_anahtari(istemci_id=None):
     """Sunucu tarafli oturum anahtari.
 
-    <kullanici ozeti>_<istemcinin calisma kimligi>
+    Yeni bicim : <kullanici>_<sira>      (istemci_id yalnizca rakam)
+    Eski bicim : u<kullanici ozeti>_<istemci_id>
     Istemcinin gonderdigi deger yalnizca ayni kullanicinin calismalarini
     ayirir; baskasinin calismasina erisim saglamaz."""
-    kimlik = _kullanici_kimligi() or _yedek_kimlik()
-    ozet = hashlib.sha256(kimlik.encode("utf-8")).hexdigest()[:16]
     calisma = _temiz(istemci_id) or "ana"
-    return "u%s_%s" % (ozet, calisma)
+    if _yeni_bicim_mi(calisma):
+        return "%s_%s" % (_kullanici_on_eki(), calisma)
+    return "%s%s" % (_eski_on_ek(), calisma)
 
 
 def _calisma_id(kaynak):
@@ -988,8 +1045,9 @@ def _devam_bilgi(durum):
     i = durum.get("i") or 0
     bilgi = {"adim_no": min(i + 1, len(sira)), "toplam": len(sira)}
     if 0 <= i < len(sira):
-        adim = akis.ADIMLAR.get(sira[i]) or {}
-        bilgi["adim"] = adim.get("baslik") or sira[i]
+        # Sol paneldeki ad (gruplu adimda grubun adi): mesaj "Adım 3/7 -
+        # Modelleme Tanımları" deyip listede o satir bulunmuyordu.
+        bilgi["adim"] = _adim_gorunen_adi(sira[i])
     if durum.get("_son_islem"):
         bilgi["zaman"] = durum["_son_islem"]
     if durum.get("veri_seti"):
@@ -1025,16 +1083,26 @@ def _kaydet(anahtar, durum):
 
 @app.route("/karsilama")
 def karsilama_endpoint():
-    """Yeni oturumda karsilama; kayitli oturumda kaldigi yerden devam."""
+    """Yeni oturumda karsilama; kayitli oturumda kaldigi yerden devam.
+
+    Istemci calisma kimligi GONDERMEZSE (ilk acilis, tarayici deposu
+    engelli ya da temizlenmis) kullanicinin EN SON calismasi acilir;
+    hic calismasi yoksa 01 numarali calisma baslar. Hangi calismanin
+    acildigi yanitta "calisma_id" olarak doner, istemci onu saklar."""
     try:
-        calisma = _temiz(request.args.get("oturum_id")) or "ana"
+        calisma = _temiz(request.args.get("oturum_id"))
+        if not calisma:
+            calisma = _son_calisma_id()
         anahtar = _oturum_anahtari(calisma)
         durum = _durum_al(anahtar)
 
         if _oturum_var_mi(durum):
             govde = _surdurme_govdesi(durum)
+            if _yeni_bicim_mi(calisma):
+                govde["devam_bilgi"]["ad"] = "Çalışma %s" % calisma
         else:
             durum = akis.yeni_durum()
+            durum["_oturum_id"] = anahtar
             govde = _karsilama_govdesi(durum)
             durum["_tur_no"] = 0
             durum["_son_cevap"] = govde["cevap"]
@@ -1203,16 +1271,35 @@ def oneriler_endpoint():
 
 @app.route("/sifirla", methods=["POST"])
 def sifirla_endpoint():
+    """YENI CALISMA ACAR; MEVCUT CALISMA SILINMEZ.
+
+    Eskiden ayni dosyanin uzerine bos durum yaziliyordu: yanlislikla
+    basilan "Yeni Çalışma" saatlerce suren calismayi geri donussuz
+    siliyordu. Artik yeni bir sira numarasi aliniyor; eski calisma
+    PROJE_HAFIZASI'nda duruyor ve "Çalışmalarım" listesinden kaldigi
+    yerden acilabiliyor.
+
+    Tek istisna: mevcut calisma HIC BASLAMAMISSA (baslangic secimi bile
+    yapilmamis) ayni numara yeniden kullanilir - art arda basmak listeyi
+    bos calismalarla doldurmasin."""
     try:
         istek = request.get_json(force=True) or {}
         calisma = _calisma_id(istek)
+        bos_mu = False
+        if _yeni_bicim_mi(calisma):
+            try:
+                bos_mu = not _calisma_basladi_mi(
+                    _durum_al(_oturum_anahtari(calisma)))
+            except Exception:
+                bos_mu = False          # okunamayan kayit: uzerine YAZILMAZ
+        if not bos_mu:
+            calisma = _yeni_calisma_id()
         anahtar = _oturum_anahtari(calisma)
 
-        # Oturumun sozluk CALISMA KOPYASI ve kategori degisiklik kutugu da
-        # silinir. Durum sifirlanip kopya diskte birakilirsa, yeni calisma
-        # ayni sozlugu bagladigi anda onceki calismada yapilmis kategori
-        # duzenlemelerini sessizce devraliyordu — kullanici "yeni calisma"
-        # dedigi halde eski kararlarla devam ediyordu.
+        # YENI anahtarin sozluk calisma kopyasi ve kategori kutugu
+        # temizlenir (normalde yoktur; bakimla silinmis bir calismanin
+        # numarasi yeniden verilmisse artik kalmasin). ESKI calismanin
+        # kopyasina DOKUNULMAZ: o calisma geri acilabilir durumda.
         akis.calisma_kopyasi_sil(anahtar)
 
         durum = akis.yeni_durum()
@@ -1231,6 +1318,142 @@ def sifirla_endpoint():
         return jsonify(govde)
     except Exception as e:
         return jsonify(_hata_govdesi("sifirla", e, "Oturum sıfırlanamadı."))
+
+
+# ===========================================================================
+# CALISMALARIM
+# ---------------------------------------------------------------------------
+# Kullanicinin PROJE_HAFIZASI'ndaki butun calismalari. Liste dosya
+# adlarindan cikariliyor, ayrintilar (son islem, adim, veri seti) her
+# calismanin kendi durum dosyasindan okunuyor. Durum dosyasi sohbet
+# gecmisini tasidigi icin buyuk olabilir; en yeni CALISMA_LISTE_SINIRI
+# kadari okunur.
+# ===========================================================================
+CALISMA_LISTE_SINIRI = 30
+
+
+def _hafiza_yollari():
+    try:
+        return list(dataiku.Folder(
+            getattr(akis, "HAFIZA_FOLDER", "PROJE_HAFIZASI")
+        ).list_paths_in_partition())
+    except Exception as e:
+        _hata_kaydet("calismalar:liste", e)
+        return []
+
+
+def _calisma_kimlikleri(yollar=None):
+    """Bu kullanicinin calisma kimlikleri: (yeni_sira_listesi, eski_liste)."""
+    yollar = _hafiza_yollari() if yollar is None else yollar
+    yeni_re = re.compile(r"^/oturum_%s_(\d{1,6})\.json$"
+                         % re.escape(_kullanici_on_eki()))
+    eski_re = re.compile(r"^/oturum_%s([A-Za-z0-9_-]+)\.json$"
+                         % re.escape(_eski_on_ek()))
+    yeni, eski = [], []
+    for y in yollar:
+        m = yeni_re.match(y)
+        if m:
+            yeni.append(m.group(1))
+            continue
+        m = eski_re.match(y)
+        if m and not _yeni_bicim_mi(m.group(1)):
+            eski.append(m.group(1))
+    return yeni, eski
+
+
+def _calisma_basladi_mi(durum):
+    """Baslangic secimi yapildi mi? _oturum_var_mi'dan FARKLI: o, karsilama
+    mesaji gecmise yazildigi anda True donuyor; burada soru "kullanici bu
+    calismada bir sey yapti mi". Hic baslamamis calisma listede
+    gosterilmez ve Yeni Çalışma onun numarasini yeniden kullanir."""
+    return bool(durum.get("mod") or (durum.get("i") or 0) > 0)
+
+
+def _yeni_calisma_id():
+    """Kullanicinin siradaki calisma numarasi: "01", "02", ... """
+    yeni, _ = _calisma_kimlikleri()
+    en_buyuk = max([int(x) for x in yeni] or [0])
+    return "%02d" % (en_buyuk + 1)
+
+
+def _adim_gorunen_adi(anahtar):
+    """Adimin SOL PANELDEKI adi: gruplu adimda grubun adi."""
+    try:
+        _grup, grup_baslik = akis.adim_grubu(anahtar)
+    except Exception:
+        grup_baslik = ""
+    return grup_baslik or (akis.ADIMLAR.get(anahtar) or {}).get("baslik") or anahtar
+
+
+def _calisma_ozeti(calisma, durum):
+    mod = durum.get("mod")
+    sira = akis.adim_sirasi(mod)
+    i = durum.get("i") or 0
+    ozet = {
+        "calisma_id": calisma,
+        "ad": ("Çalışma %s" % calisma) if _yeni_bicim_mi(calisma)
+              else "Eski Kayıt",
+        "zaman": durum.get("_son_islem"),
+        "baslamis": _calisma_basladi_mi(durum),
+        "adim_no": min(i + 1, len(sira)),
+        "toplam": len(sira),
+        "veri_seti": durum.get("veri_seti"),
+        "mod": mod,
+    }
+    if 0 <= i < len(sira):
+        ozet["adim"] = _adim_gorunen_adi(sira[i])
+    return ozet
+
+
+def _calismalar(en_fazla=CALISMA_LISTE_SINIRI, aktif=None):
+    """Calisma ozetleri, EN SON ISLEM GORENDEN baslayarak.
+
+    Hic baslamamis (bos) calismalar listeye girmez; su an acik olan
+    haric - kullanici hangisinde oldugunu gormeli."""
+    yeni, eski = _calisma_kimlikleri()
+    adaylar = sorted(yeni, key=int, reverse=True) + eski
+    cikti = []
+    for calisma in adaylar[:max(en_fazla, CALISMA_LISTE_SINIRI)]:
+        try:
+            durum = _durum_al(_oturum_anahtari(calisma))
+        except Exception as e:
+            cikti.append({"calisma_id": calisma, "ad": "Çalışma %s" % calisma,
+                          "hata": "Kayıt okunamadı (%s)."
+                                  % _hata_kaydet("calismalar:oku", e)})
+            continue
+        oz = _calisma_ozeti(calisma, durum)
+        if not oz["baslamis"] and calisma != aktif:
+            continue
+        cikti.append(oz)
+    # Zaman ISO bicimde: metin siralamasi zaman siralamasi. Zamani
+    # olmayan (okunamayan) kayitlar sona.
+    cikti.sort(key=lambda c: c.get("zaman") or "", reverse=True)
+    return cikti[:en_fazla]
+
+
+def _son_calisma_id():
+    """Kimliksiz acilista acilacak calisma: en son islem goren. Hicbiri
+    baslamamissa en buyuk numarali (bos) calisma yeniden kullanilir -
+    her F5'te yeni bos bir calisma acilmasin. Hic yoksa "01"."""
+    son = _calismalar(en_fazla=1)
+    if son:
+        return son[0]["calisma_id"]
+    yeni, _ = _calisma_kimlikleri()
+    return max(yeni, key=int) if yeni else "01"
+
+
+@app.route("/calismalar")
+def calismalar_endpoint():
+    """Çalışmalarım listesi. Hicbir calismayi DEGISTIRMEZ; secilen
+    calisma istemci tarafinda /karsilama?oturum_id=<sira> ile acilir."""
+    try:
+        aktif = _temiz(request.args.get("oturum_id"))
+        return jsonify({"calismalar": _calismalar(aktif=aktif),
+                        "aktif": aktif,
+                        "klasor": getattr(akis, "HAFIZA_FOLDER", None)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("calismalar", e,
+                                     "Çalışma listesi okunamadı."))
 
 
 # ===========================================================================

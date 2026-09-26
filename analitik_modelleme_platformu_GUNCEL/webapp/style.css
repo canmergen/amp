@@ -358,7 +358,7 @@ button.ozet-kart:focus-visible {
 /* Yeni çalışma düğmesi: Dataiku'nun kendi REFRESH düğmesi bunun hemen
    üstünde duruyor ve ikon tek başına ikisini ayırt etmiyordu. Görünür
    etiket ve daha geniş gövde kasıtlı: komşusuna benzemesin. */
-#sifirla-btn {
+#sifirla-btn, #calismalar-btn {
   display: flex; align-items: center; gap: 5px;
   height: 22px; padding: 0 var(--b-2);
   border: 1px solid var(--kenar); background: var(--yuzey);
@@ -368,13 +368,45 @@ button.ozet-kart:focus-visible {
 }
 /* SVG ikon: yüksekliği düğmenin metin satırına oturur. width/height
    birlikte verilmezse Safari intrinsic boyut uydurup ikonu şişiriyor. */
-#sifirla-btn .sifirla-ikon {
+#sifirla-btn .sifirla-ikon, #calismalar-btn .sifirla-ikon {
   width: 14px; height: 14px; display: block; flex-shrink: 0;
   color: inherit;   /* currentColor hover kırmızısını da izlesin */
 }
-#sifirla-btn:hover {
+#sifirla-btn:hover, #calismalar-btn:hover, #calismalar-btn[aria-expanded="true"] {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
+
+/* ÇALIŞMALARIM açılır listesi. Düğmenin altında, sağa yaslı; üst
+   barın altındaki panellerin (sohbet z-index 1, çekmeceler 40)
+   üstünde kalmalı. */
+#calismalar-kap { position: relative; flex-shrink: 0; }
+#calismalar-liste {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 50;
+  width: min(340px, 90vw); max-height: 60vh; overflow-y: auto;
+  padding: var(--b-1);
+  background: var(--yuzey); border: 1px solid var(--kenar);
+  border-radius: var(--r); box-shadow: var(--golge-2);
+}
+#calismalar-liste[hidden] { display: none; }
+.calisma-oge {
+  display: block; width: 100%; padding: var(--b-2) var(--b-3);
+  border: none; background: none; border-radius: var(--r-kucuk);
+  text-align: left; cursor: pointer; color: var(--metin);
+  font-family: inherit; font-size: var(--fs-govde); line-height: 1.45;
+}
+.calisma-oge:hover:not(:disabled), .calisma-oge:focus-visible {
+  outline: none; background: var(--kirmizi-acik);
+}
+.calisma-oge:disabled { cursor: default; }
+.calisma-oge.aktif { background: var(--kenar-acik); }
+.calisma-ad { font-weight: var(--fw-kalin); }
+.calisma-ad .calisma-etiket {
+  margin-left: var(--b-2); font-size: var(--fs-kucuk);
+  color: var(--yesil); font-weight: var(--fw-kalin);
+}
+.calisma-alt { opacity: .72; font-size: var(--fs-kucuk); }
+.calisma-bos { padding: var(--b-2) var(--b-3); opacity: .72; }
+.calisma-hata { color: var(--kirmizi); }
 /* Çekmece düğmeleri yalnızca panelin gizlendiği dar ekranlarda görünür */
 .cekmece-btn { display: none; }
 
@@ -433,6 +465,30 @@ button.ozet-kart:focus-visible {
   text-indent: 0;                 /* paragraf basi girintisi yok; istersen 1.5em */
 }
 .panel-metin:last-child { margin-bottom: 0; }
+
+/* ANALİTİK SÜREÇ: açılır kapanır başlık. Görünüşü öteki kırmızı
+   etiketlerle aynı kalsın diye düğmenin tarayıcı biçimi sıfırlanıyor;
+   ok, faz ağacındaki okla aynı dili konuşuyor (kapalı ›, açık ⌄). */
+.surec-bas {
+  display: flex; align-items: baseline; gap: var(--b-2);
+  width: 100%; padding: 0; border: none; background: none;
+  font-family: inherit; text-align: left; cursor: pointer;
+}
+.surec-bas:hover { opacity: .8; }
+.surec-bas:focus-visible {
+  outline: none; border-radius: var(--r-kucuk);
+  box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
+}
+.surec-ok {
+  flex-shrink: 0; width: 8px; text-align: center;
+  transition: transform .15s; transform: rotate(90deg);
+}
+/* Kapalıyken yalnız başlık satırı kalır; alt boşluk da daralır ki
+   İŞ AKIŞI yukarı çıksın. */
+#surec-blok.kapali { margin-bottom: var(--b-4); }
+#surec-blok.kapali .surec-bas { margin-bottom: 0; }
+#surec-blok.kapali .surec-ok { transform: none; }
+#surec-blok.kapali #surec-metin { display: none; }
 
 /* -------- Faz ağacı -------- */
 .faz { margin-bottom: 2px; }

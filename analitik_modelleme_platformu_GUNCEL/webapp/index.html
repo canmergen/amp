@@ -78,9 +78,28 @@
              kendi REFRESH ikonu da tek oklu.
              stroke/fill currentColor: düğmenin rengini izler, koyu temada
              ayrıca kural gerekmez. -->
+        <!-- ÇALIŞMALARIM: PROJE_HAFIZASI'ndaki kayıtlı çalışmalar. Birine
+             basınca o çalışma kaldığı yerden açılır. "Yeni Çalışma"
+             artık hiçbir şeyi silmediği için yanlışlıkla basılsa da
+             önceki çalışmaya buradan dönülür. Liste açılınca sunucudan
+             istenir (app.js: calismalarAc). -->
+        <div id="calismalar-kap">
+          <button id="calismalar-btn" type="button"
+                  title="Kayıtlı çalışmalarınız" aria-haspopup="true"
+                  aria-expanded="false" aria-controls="calismalar-liste">
+            <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
+                 focusable="false">
+              <path d="M1.75 4.25v8a1 1 0 0 0 1 1h10.5a1 1 0 0 0 1-1v-6.5a1 1 0 0 0-1-1H8L6.5 3.25H2.75a1 1 0 0 0-1 1z"
+                    fill="none" stroke="currentColor" stroke-width="1.45"
+                    stroke-linejoin="round"/>
+            </svg>
+            <span class="sifirla-etiket">Çalışmalarım</span>
+          </button>
+          <div id="calismalar-liste" role="menu" hidden></div>
+        </div>
         <button id="sifirla-btn" type="button"
-                title="Yeni Çalışma (mevcut çalışma silinir)"
-                aria-label="Yeni Çalışma (mevcut çalışma silinir)">
+                title="Yeni Çalışma (mevcut çalışma silinmez, Çalışmalarım listesinden geri açılır)"
+                aria-label="Yeni Çalışma (mevcut çalışma silinmez)">
           <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
                focusable="false">
             <path d="M12.532 5.887 A5 5 0 1 1 9.294 3.170"
@@ -105,8 +124,16 @@
   <div id="sayfa-calisma" class="sayfa">
 
     <aside id="panel">
-      <section class="panel-blok">
-        <div class="panel-baslik">ANALİTİK SÜREÇ</div>
+      <!-- AÇILIR KAPANIR. Çalışma başlayınca (başlangıç seçiminden sonra)
+           kendiliğinden kapanır; iki paragraf İŞ AKIŞI'nın yerini
+           yiyordu. Başlığa basınca açılır; kullanıcının seçimi o
+           çalışma boyunca korunur (app.js: surecGuncelle). -->
+      <section id="surec-blok" class="panel-blok">
+        <button id="surec-bas" class="panel-baslik surec-bas" type="button"
+                aria-expanded="true" aria-controls="surec-metin">
+          <span class="surec-ok" aria-hidden="true">›</span>ANALİTİK SÜREÇ
+        </button>
+        <div id="surec-metin">
         <p class="panel-metin">
           Ham veriden final modele kadar olan analitik süreç tek ve izlenebilir
           bir çalışma akışında yürütülür. Veri hazırlanır, yeni değişkenler
@@ -119,6 +146,7 @@
           onayıyla uygulanır. Üretilen değişkenlerin kaynağı, dönüşümü ve seçim
           durumu süreç boyunca kayıt altında tutulur.
         </p>
+        </div>
       </section>
 
       <section class="panel-blok">
