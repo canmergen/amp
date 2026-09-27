@@ -3055,7 +3055,7 @@ function bfYerelOzet() {
 
     const parcalar = ["Train (MS) " + (p.train ? bfYuzde(p.train) : "-"),
                       "Validasyon (OOS) " + (p.val ? bfYuzde(p.val) : "-"),
-                      "Test (OOT) " + (p.test ? bfYuzde(p.test) : "-")];
+                      TEST_OOS2 + " " + (p.test ? bfYuzde(p.test) : "-")];
     return parcalar.join(" · ");
 }
 
@@ -3081,7 +3081,7 @@ function bfUyariListesi() {
     const testO = bfZamansalMi() ? 0 : bfSayi(a.test_oran, 0);
     const valO = bfValVar(a.val_var) ? bfSayi(a.val_oran, 0) : 0;
     if (testO + valO >= 1 && !varMi(/eğitime satır kalmaz/))
-        liste.push("Test (OOT) (" + bfYuzde(testO) + ") ve Validasyon (OOS) ("
+        liste.push(TEST_OOS2 + " (" + bfYuzde(testO) + ") ve Validasyon (OOS) ("
                    + bfYuzde(valO) + ") paylarının toplamı tüm veriyi "
                    + "kaplıyor; eğitime satır kalmaz.");
     else if (testO + valO > 0.6 && !varMi(/ölçüm güvenilir olmayabilir/))
@@ -3450,6 +3450,11 @@ const SET_SECENEKLERI = [
     { anahtar: "test",  etiket: "Test (OOT)" }
 ];
 
+/* RASTGELE BOLMEDE TEST OOT DEGIL (kullanici karari): veri tek donemmis
+   gibi ele alinir, test seti de ayni donemden ayrilir. Adi "Test (OOS2)"
+   (arka uc: akis_durum.set_basligi). */
+const TEST_OOS2 = "Test (OOS2)";
+
 /* Secicinin GORUNDUGU sekmeler. VERİ & SÖZLÜK ve HAZIRLIK her zaman tum
    satirlarda calisiyor; orada pasif gri bir secici birakmak "burada da
    secilebilir ama simdi olmaz" diye okunuyordu - hic cizilmiyor.
@@ -3470,15 +3475,23 @@ function setBolmeAlanlari() {
     return (f && f.alanlar) || null;
 }
 
+/* Test setinin etiketi bolme turune gore: rastgele -> Test (OOS2). */
+function setEtiketi(s) {
+    const al = setBolmeAlanlari();
+    const tur = al && al.test_tanim && al.test_tanim.deger;
+    return (s.anahtar === "test" && tur === "rastgele") ? TEST_OOS2 : s.etiket;
+}
+
 function setSecenekleri() {
     const al = setBolmeAlanlari();
     return SET_SECENEKLERI.filter(s =>
-        !s.alan || !!(al && al[s.alan] && al[s.alan].deger));
+        !s.alan || !!(al && al[s.alan] && al[s.alan].deger))
+        .map(s => Object.assign({}, s, { etiket: setEtiketi(s) }));
 }
 
 function setAdi(anahtar) {
     for (let i = 0; i < SET_SECENEKLERI.length; i++)
-        if (SET_SECENEKLERI[i].anahtar === anahtar) return SET_SECENEKLERI[i].etiket;
+        if (SET_SECENEKLERI[i].anahtar === anahtar) return setEtiketi(SET_SECENEKLERI[i]);
     return SET_SECENEKLERI[0].etiket;
 }
 
@@ -5886,7 +5899,7 @@ function bolmeOzetCubukCiz(kok, alan) {
            orantılı büyür ama yazısından dar olamaz (bolmeCubukParca). */
         if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), "Train (MS) %" + yz(p.train)));
         if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), "Validasyon (OOS) %" + yz(p.val)));
-        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), "Test (OOT) %" + yz(p.test)));
+        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), TEST_OOS2 + " %" + yz(p.test)));
         kutu.appendChild(cubuk);
     }
 

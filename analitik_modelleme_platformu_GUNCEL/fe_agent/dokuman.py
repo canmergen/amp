@@ -667,7 +667,7 @@ def _bolme(durum):
         or (b.get("oot_deger") or BOS_DEGER)
 
     satirlar = [
-        ("Test tanımı", "zamansal (OOT)" if zamansal else "rastgele"),
+        ("Test tanımı", "zamansal (OOT)" if zamansal else "rastgele (OOS2)"),
         ("Bölme birimi", "kimlik bazlı" if a["birim"] == "kimlik"
                          else "satır bazlı"),
         ("Katmanlama", "açık" if a["katmanla"] else "kapalı"),
@@ -692,7 +692,7 @@ def _bolme(durum):
     # yoktur: zamansal testte test setinin KENDISI OOT'dur. Bunu tabloda
     # acikca yazmak, "uc set var mi" sorusunu tek bakista cevaplar.
     oos_durum = ("yok - test seti zaman dışı (OOT) olarak tanımlandı"
-                 if zamansal else "var (test seti)")
+                 if zamansal else "var (Test (OOS2) seti)")
     oot_durum = "var (test seti)" if zamansal else "yok - test rastgele ayrıldı"
     test_satir = _n(sayim.get("test") or b.get("test_satir"))
     bloklar.append({
@@ -718,8 +718,9 @@ def _bolme(durum):
             "gücü yalnızca sonraki dönemlerde ölçülmüştür."))
     else:
         bloklar.append(_p(
-            "Zaman dışı (OOT) bir test dönemi YOKTUR: test seti rastgele "
-            "ayrıldığı için modelin sonraki dönemlerdeki davranışı bu "
+            "Zaman dışı (OOT) bir test dönemi YOKTUR: veri tek dönemmiş "
+            "gibi ele alındı ve test seti aynı dönemden rastgele ayrıldı "
+            "(Test (OOS2)). Modelin sonraki dönemlerdeki davranışı bu "
             "kurguda ölçülmemiştir."))
 
     # Ic validasyon parcasi: hiperparametrelerde varsa satir olarak da

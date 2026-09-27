@@ -247,6 +247,26 @@ def hata_ozeti(is_):
     return "\n".join(dict.fromkeys(p for p in parca if p.strip()))
 
 
+class kilitli(object):
+    """Ayni turden tek is: webapp'teki oturumda calisan is de recipe ile
+    AYNI kilidi tutar (AMP_VERISETI butun calismalarin ortak veri seti).
+
+        with spark_is.kilitli("amp", "AMP_VERISETI yazma işi", sahip, girdi):
+            ..."""
+
+    def __init__(self, is_adi, etiket, sahip, girdi):
+        self.arg = (is_adi, etiket, sahip, girdi)
+
+    def __enter__(self):
+        is_adi, etiket, sahip, girdi = self.arg
+        _kilit_al(is_adi, etiket, sahip, girdi, sure())
+        return self
+
+    def __exit__(self, *hata):
+        _kilit_birak(self.arg[0], self.arg[2])
+        return False
+
+
 def calistir(is_adi, etiket, recete, cikti, cikti_tur, girdi,
              istek_degiskeni, istek, sahip, kosu_id=None):
     """Recipe'i `girdi` icin calistirir. istek'e kosu_id eklenir.

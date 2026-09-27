@@ -39,7 +39,7 @@ from fe_agent.akis_durum import (
     dataset_yaz, dosya_yaz, sahip_yaz, modelleme_kaynagi,
     ORNEK_MASKE, _ornek_metni, hazir_bolme_bul_profil,
     BOLME_KALICI_ALANLARI, SET_ADLARI, SPLIT_ETIKET, MIN_SET_SATIR,
-    SET_BASLIK, _zamansal_test_donemleri,
+    _zamansal_test_donemleri, set_basligi,
 )
 
 
@@ -3411,7 +3411,8 @@ def _tip_secimlerini_dogrula(durum):
 # hiçbirine gerek yok"). Ekranin geri kalani secimin kendisi.
 BOLME_ACIKLAMA = (
     "Veri üç sete ayrılır: modelin öğrendiği Train (MS), model ayarlarının "
-    "seçildiği Validasyon (OOS) ve nihai ölçümün yapıldığı Test (OOT). "
+    "seçildiği Validasyon (OOS) ve nihai ölçümün yapıldığı Test (zamansal "
+    "bölmede OOT, rastgele bölmede OOS2). "
     "Aşağıdaki ayarlar veri yapınıza göre önerilen değerlerle dolu; "
     "değiştirmek için satırdaki seçeneğe tıklayın, açıklama için «i» "
     "simgesine gelin.")
@@ -3649,7 +3650,8 @@ def _bolme_uygula_spark(durum):
         if 0 < n < MIN_SET_SATIR:
             notlar.append("%s seti yalnızca %s satır; %s satırın altındaki "
                           "sette ölçüm güvenilir değil."
-                          % (SET_BASLIK[ad], _sayi(n), _sayi(MIN_SET_SATIR)))
+                          % (set_basligi(ad, a["test_tanim"]), _sayi(n),
+                             _sayi(MIN_SET_SATIR)))
 
     # _SPLIT bir degisken degildir; degisken havuzunun disinda kalmali.
     durum["haric_kolonlar"] = sorted(

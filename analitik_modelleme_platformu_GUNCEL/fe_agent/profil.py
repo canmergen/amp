@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 """fe_agent/profil.py - VERI SETI PROFILI, WEBAPP TARAFI.
 
-Webapp tam tabloyu OKUMAZ (kullanici karari: buyuk veride pandas yok,
-PySpark var). Veri seti secildiginde bu modul Dataiku'daki PySpark
-recipe'ini (profil_spark.recete_calistir) o veri seti icin calistirir
-(bkz. spark_is), sonuc dosyasini okur ve calismanin kendi klasorune
-kopyalar:
+Webapp tam tabloyu pandas ile OKUMAZ (kullanici karari: buyuk veride
+pandas yok, PySpark var). Profil iki yerden biriyle cikarilir; hesap
+ikisinde de AYNI fonksiyon (profil_spark.spark_profil):
+
+  1. Webapp'te surekli acik Spark oturumu (spark_oturum). Yurutucu acilisi
+     ve Dataiku isi beklenmez; varsayilan yol budur.
+  2. Oturum yoksa ya da veri seti oradan okunamazsa Dataiku'daki PySpark
+     recipe'i (profil_spark.recete_calistir; bkz. spark_is).
+
+Sonuc calismanin kendi klasorune yazilir:
 
     PROJE_HAFIZASI/<calisma>/profil.json
 
@@ -21,12 +26,14 @@ AYARLAR (proje degiskenleri; tanimli degilse varsayilanlar)
 
 import datetime
 import json
+import logging
 import uuid
 
 import dataiku
 
 from fe_agent import profil_kural
 from fe_agent import spark_is
+from fe_agent import spark_oturum
 from fe_agent.akis_durum import AdimHatasi, _df_oku, _folder, metin_yaz
 
 VARSAYILAN_RECETE = "compute_AMP_PROFIL"
@@ -44,8 +51,39 @@ def profil_yolu(klasor):
     return "/%s/%s" % (klasor, PROFIL_ADI)
 
 
+_LOG = logging.getLogger(__name__)
+
+
+def _oturumda_profil(veri_seti):
+    """Webapp'teki acik oturumda profil; oturum yoksa None."""
+    spark = spark_oturum.oturum()
+    if spark is None:
+        return None
+    from fe_agent import profil_spark
+    baslangic = datetime.datetime.now().isoformat()
+    try:
+        df = spark_oturum.veri_oku(spark, veri_seti)
+    except Exception:           # pylint: disable=broad-except
+        _LOG.exception("Profil: veri seti webapp oturumundan okunamadı; recipe ile devam")
+        return None
+    try:
+        profil = profil_spark.spark_profil(spark, df, veri_seti)
+    except Exception:           # pylint: disable=broad-except
+        # Oturum ya da kume sorunu olabilir; ayni hesap recipe'te denenir.
+        _LOG.exception("Profil: webapp oturumunda hesaplanamadı; recipe ile devam")
+        return None
+    profil["kosu_id"] = uuid.uuid4().hex
+    profil["_baslangic"] = baslangic
+    profil["_bitis"] = datetime.datetime.now().isoformat()
+    profil["_calistigi_yer"] = "webapp"
+    return profil
+
+
 def _spark_profil(veri_seti, sahip):
     from fe_agent import profil_spark
+    profil = _oturumda_profil(veri_seti)
+    if profil is not None:
+        return profil
     klasor_ad = spark_is.ayar("amp_profil_klasor", VARSAYILAN_KLASOR)
     kosu_id = spark_is.calistir(
         "profil", "Profil işi",

@@ -1,6 +1,47 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **adım hata verince Değişken Listesi iki kez basılıyordu, düzeltildi**. Yapıştır (webapp): `app.js`
+Bu tur: **Spark oturumu webapp açılınca başlıyor** ve **rastgele bölmede test seti Test (OOS2)**.
+
+Yapıştır:
+- fe_agent: `spark_oturum.py` (YENİ), `spark_is.py`, `profil.py`, `amp.py`,
+  `akis_durum.py`, `akis_faz01.py`, `dokuman.py`
+- webapp: `backend.py` (Python sekmesi), `app.js` (JS sekmesi)
+
+Bir kez yapılacak kurulum:
+1. Bu projede, Spark'ı okuyabildiğiniz **PySpark notebook**'unda yeni bir
+   hücreye yazıp çalıştırın:
+   ```
+   from fe_agent import spark_oturum
+   spark_oturum.ayarlari_kaydet()
+   ```
+   Notebook'un Spark ayarlarını proje değişkenine (local >
+   `amp_spark_oturum`) yazar. Gizli değer taşıyan ayarlar (token, secret,
+   password, credential, access.key) yazılmaz; adları ekrana basılır.
+2. Webapp'in backend'ini yeniden başlatın.
+3. Kontrol: veri setini seçip adımı onaylayın. Jobs ekranında yeni bir
+   `Build_AMP_PROFIL…` işi AÇILMIYORSA profil webapp'teki oturumda
+   çıkarılmıştır.
+
+Nasıl çalışıyor:
+- Webapp açılırken Spark oturumu arkada açılır (sayfa beklemez) ve açık
+  kalır. Profil ve AMP_VERISETI yazımı bu oturumda yapılır: yürütücü açılışı
+  ve Dataiku işi beklenmez.
+- Hesap değişmedi: aynı `profil_spark` / `amp_spark` fonksiyonları.
+- Oturum açılamazsa ya da veri seti oradan okunamazsa iş eskisi gibi
+  recipe ile yapılır. Recipe'ler (compute_AMP_PROFIL, compute_AMP_VERISETI)
+  bu yüzden Flow'da kalmalı.
+- Kaynak: oturum açık kaldıkça yürütücüler (sizde 2 × 32 GB) webapp'te
+  tutulur. Kapatmak için proje değişkeni `amp_spark_webapp` = `hayir`.
+
+Test (OOS2):
+- Rastgele bölmede OOT yoktur: veri tek dönemmiş gibi ele alınır, test seti
+  de validasyon gibi aynı dönemden ayrılır. Bu yüzden ekranda, uyarılarda,
+  set seçicide ve dokümanda adı **Test (OOS2)**. Zamansal bölmede
+  **Test (OOT)** olarak kalır.
+
+---
+
+Önceki tur: **adım hata verince Değişken Listesi iki kez basılıyordu, düzeltildi**. Yapıştır (webapp): `app.js`
 
 - Değişken Kontrolü onayında bir hata dönünce (ör. "AMP_VERISETI Flow'da
   tanımlı değil") eski kart kilitli hâliyle kalıyor, düzeltilebilir yeni

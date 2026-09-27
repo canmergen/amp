@@ -14,11 +14,16 @@ AYARLAR (proje degiskenleri)
   amp_sonuc_klasor : recipe'in ikinci ciktisi (AMP_SONUC)
 """
 
+import datetime
+import logging
+import uuid
+
 import dataiku
 
 from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
 from fe_agent import spark_is
+from fe_agent import spark_oturum
 from fe_agent import tip_donusum
 from fe_agent.akis_durum import AMP_VERI_ADI, AdimHatasi
 
@@ -27,6 +32,9 @@ VARSAYILAN_SONUC = "AMP_SONUC"
 ISTEK_DEGISKENI = "amp_veri_istek"
 SONUC_DOSYA = "/sonuc.json"
 DISARIDA = "disarida"      # hicbir sete girmeyen satir (amp_spark ile ayni)
+ETIKET = "AMP_VERISETI yazma işi"
+
+_LOG = logging.getLogger(__name__)
 
 
 def dusen_kolonlar(durum, adlar):
@@ -49,9 +57,41 @@ def _donusum_istegi(durum, kolonlar):
     return cikti
 
 
+def _oturumda_yaz(durum, istek):
+    """Webapp'teki acik oturumda yazar. Doner: sonuc sozlugu ya da None
+    (oturum yok / okunamadi / yazilamadi -> recipe ile yapilir).
+    Hesabin kendi hatasi (cevrilemeyen hucre) None DEGIL, sonuc["hata"]."""
+    spark = spark_oturum.oturum()
+    if spark is None:
+        return None
+    from dataiku import spark as dkuspark
+    from fe_agent import amp_spark
+    veri_seti = durum.get("veri_seti")
+    with spark_is.kilitli("amp", ETIKET, durum.get("_oturum_id") or "", veri_seti):
+        sonuc = {"_baslangic": datetime.datetime.now().isoformat(),
+                 "_calistigi_yer": "webapp"}
+        try:
+            df = spark_oturum.veri_oku(spark, veri_seti)
+        except Exception:       # pylint: disable=broad-except
+            _LOG.exception("AMP: veri seti webapp oturumundan okunamadı; recipe ile devam")
+            return None
+        try:
+            yeni, oz = amp_spark.amp_hazirla(spark, df, istek)
+            sonuc.update(oz)
+            if yeni is not None:
+                dkuspark.write_with_schema(dataiku.Dataset(AMP_VERI_ADI), yeni)
+        except Exception:       # pylint: disable=broad-except
+            # Yarim kalan yazim sorun degil: recipe tabloyu bastan yazar.
+            _LOG.exception("AMP: webapp oturumunda yazılamadı; recipe ile devam")
+            return None
+    sonuc["_bitis"] = datetime.datetime.now().isoformat()
+    return sonuc
+
+
 def amp_yaz(durum, prof, bolme=None):
-    """AMP_VERISETI'ni Spark recipe'iyle yazar. Doner: recipe'in sonucu
-    ({satir, kolon, dusen, setler?}). Hata -> AdimHatasi."""
+    """AMP_VERISETI'ni Spark ile yazar: once webapp'teki acik oturumda,
+    olmazsa recipe ile. Doner: {satir, kolon, dusen, setler?}.
+    Hata -> AdimHatasi."""
     kolonlar = profil_mod.kolonlar(prof)
     istek = {
         "donusum": _donusum_istegi(durum, kolonlar),
@@ -59,13 +99,18 @@ def amp_yaz(durum, prof, bolme=None):
         "hedef": (durum.get("meta") or {}).get("target"),
         "bolme": bolme,
     }
+    sonuc = _oturumda_yaz(durum, istek)
+    if sonuc is not None:
+        if sonuc.get("hata"):
+            raise AdimHatasi(sonuc["hata"])
+        return sonuc
+
     klasor = spark_is.ayar("amp_sonuc_klasor", VARSAYILAN_SONUC)
     kosu_id = None
     try:
-        import uuid
         kosu_id = uuid.uuid4().hex
         spark_is.calistir(
-            "amp", "AMP_VERISETI yazma işi",
+            "amp", ETIKET,
             spark_is.ayar("amp_veri_recete", VARSAYILAN_RECETE),
             AMP_VERI_ADI, "DATASET", durum.get("veri_seti"),
             ISTEK_DEGISKENI, istek, durum.get("_oturum_id") or "", kosu_id=kosu_id)
