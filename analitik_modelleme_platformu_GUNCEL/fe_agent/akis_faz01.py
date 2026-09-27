@@ -390,13 +390,18 @@ def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
     durum["_secim_alani"] = None
     return True, None
 
+def _degerde(metin):
+    """Cikti listesi degerinde ":" etiket ayiracina karismasin."""
+    return str(metin).replace(": ", " · ").replace(":", " ·")
+
+
 def _tablo_ozeti(tablolar):
-    """Secilen tablolarin ozeti: her tablo icin KESIN satir x kolon.
+    """Secilen tablolarin ozeti: her tablo icin KESIN satir x kolon, cikti
+    listesi bicimiyle ("  Etiket : Deger"; arayuz hizali tablo cizer).
 
     Satir sayisi tablonun yerel Parquet kopyasinin ustbilgisinden okunur
     (veri_kaynak; sonraki adimlar ayni kopyayi kullanir, ikinci kez
-    indirilmez). Toplam kolon yazilmaz: ayni kolonlu tablolar alt alta
-    eklendiginde toplam yaniltici olurdu."""
+    indirilmez)."""
     import pyarrow.parquet as pq
     from fe_agent import veri_kaynak
     satirlar, toplam = [], 0
@@ -404,12 +409,13 @@ def _tablo_ozeti(tablolar):
         try:
             meta = pq.read_metadata(veri_kaynak.parquet_yolu(ad))
             toplam += int(meta.num_rows)
-            satirlar.append("  • %s · %s satır × %s kolon"
+            satirlar.append("  %s : %s satır × %s kolon"
                             % (ad, _sayi(meta.num_rows), _sayi(meta.num_columns)))
         except Exception as e:
-            satirlar.append("  • %s · okunamadı (%s)" % (ad, str(e)[:80]))
-    return ("%s tablo seçildi · toplam %s satır\n%s"
-            % (_sayi(len(tablolar)), _sayi(toplam), "\n".join(satirlar)))
+            satirlar.append("  %s : okunamadı (%s)" % (ad, _degerde(str(e)[:80])))
+    satirlar.append("  Toplam : %s satır" % _sayi(toplam))
+    return ("%s kaynak tablo seçildi.\n%s"
+            % (_sayi(len(tablolar)), "\n".join(satirlar)))
 
 
 def ham_veri_plan(durum):
@@ -506,9 +512,9 @@ def birlestirme_plan(durum):
     if llm_hata or not ham_plan:
         durum["birlestirme"] = {}
         raise AdimHatasi("Tabloları inceledim ama kullanılabilir bir birleştirme "
-                         "planı çıkaramadım.\n  • Sebep: %s\nTablo seçimini "
-                         "değiştirip yeniden deneyebilirsiniz."
-                         % (llm_hata or "Model tanımadığı tablo adları önerdi."))
+                         "planı çıkaramadım. Tablo seçimini değiştirip yeniden "
+                         "deneyebilirsiniz.\n  Sebep : %s"
+                         % _degerde(llm_hata or "Model tanımadığı tablo adları önerdi."))
 
     # Plani gercek adlara cevirip GERCEK semalara karsi dogruluyoruz
     ham_plan = _plan_adlari_cevir(ham_plan, kisa_to_tam)
@@ -517,9 +523,10 @@ def birlestirme_plan(durum):
     if plan is None:
         durum["birlestirme"] = {}
         raise AdimHatasi("Yapay zekânın önerdiği birleştirme planı doğrulamayı "
-                         "geçemedi:\n%s\nTablo seçimini değiştirip yeniden "
-                         "deneyebilirsiniz."
-                         % "\n".join("  • %s" % h for h in hatalar[:8]))
+                         "geçemedi. Tablo seçimini değiştirip yeniden "
+                         "deneyebilirsiniz.\n  Sebep : %s%s"
+                         % (_degerde(hatalar[0]) if hatalar else "-",
+                            "".join("\n  %s" % _degerde(h) for h in hatalar[1:8])))
 
     durum["birlestirme"] = {"plan": plan}
 
@@ -560,10 +567,10 @@ def birlestirme_uygula(durum):
                                    "KAYNAK_KOLON": c, "TUR": "alt alta"}
                                   for c in ornek.columns])
             sozluk_not = _mod_b_sozlugu(durum, ornek, kutuk)
-        return ("Tablolar alt alta eklendi · kolonları aynı olduğu için "
-                "yan yana değil, arka arkaya\n"
-                "  • Baz veri seti: %s satır × %s kolon\n"
-                "  • Kayıt: PROJE_HAFIZASI%s"
+        return ("Tablolar alt alta eklendi; kolonları aynı olduğu için yan "
+                "yana birleştirilmedi.\n"
+                "  Baz veri seti : %s satır × %s kolon\n"
+                "  Kayıt : PROJE_HAFIZASI%s"
                 % (_sayi(satir), _sayi(kolon), yol)) + sozluk_not
 
     baz, kutuk, ozet = birl_mod.calistir(plan, lambda ad: _df_oku(ad))
@@ -693,9 +700,10 @@ def veri_sec_plan(durum):
 def veri_sec_uygula(durum):
     """Form onaydir (plan=None): secimden sonra ozet yazilir, onay sorulmaz."""
     p = _temel_profil(durum, _profil(durum, taze=True))
-    return ("Veri seti seçildi · %s\n"
-            "  • %s satır × %s kolon\n"
-            "  • %s sayısal, %s kategorik"
+    return ("Baz veri seti seçildi.\n"
+            "  Veri seti : %s\n"
+            "  Boyut : %s satır × %s kolon\n"
+            "  Tipler : %s sayısal, %s kategorik"
             % (durum["veri_seti"], _sayi(p["satir"]), _sayi(p["kolon"]),
                _sayi(p["sayisal"]), _sayi(p["kolon"] - p["sayisal"])))
 

@@ -1,6 +1,17 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **seçilen tabloların satır × kolon sayısı**. Yapıştır (fe_agent): `akis_faz01.py`
+Bu tur: **yeni mesajlar platformun yazı standardında**. Yapıştır (fe_agent): `akis_faz01.py`
+
+- Kaynak tablo özeti, alt alta ekleme sonucu, Mod C veri seti özeti ve
+  birleştirme hata mesajları madde işaretli düz metin yerine "  Etiket : Değer"
+  satırlarıyla yazılıyor; arayüz bunları diğer adımlardaki gibi hizalı
+  etiket–değer tablosu olarak çiziyor.
+- Hata sebebindeki ":" karakterleri etiket ayıracıyla karışmasın diye " · "
+  olarak yazılıyor ("Ana tablo bulunamadı · …").
+
+---
+
+Önceki tur: **seçilen tabloların satır × kolon sayısı**. Yapıştır (fe_agent): `akis_faz01.py`
 
 - Kaynak tablo özeti her tablo için kesin satır ve kolon sayısını yazıyor:
   "• FPD_TXN_FEATS_2025 · 1.234.567 satır × 1.040 kolon". Başlıkta toplam
