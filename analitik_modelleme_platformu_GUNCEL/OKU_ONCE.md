@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **mod seçilince bütün fazların "Tamamlandı" basılması düzeltildi**. Yapıştır: `app.js`
+Bu tur: **Spark işi başarısız olunca asıl hata gösteriliyor**. Yapıştır (fe_agent): `spark_is.py`
+
+- Eskiden işin genel günlüğünün son satırları ("JOB IS COMPLETE" vb.)
+  gösteriliyordu. Artık başarısız recipe'in kendi günlüğünden Python
+  hatası (traceback) gösteriliyor.
+
+---
+
+Önceki tur: **mod seçilince bütün fazların "Tamamlandı" basılması düzeltildi**. Yapıştır: `app.js`
 
 - Yanıttaki faz listesi artık bloklar çizilmeden önce güncelleniyor.
   Eskiden A seçilince yeni blok numarasız kalıyor ve beş fazın hepsi

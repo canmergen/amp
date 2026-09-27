@@ -197,13 +197,54 @@ def _isi_bekle(proje, cikti_id, cikti_tur, sure_sn, etiket):
     except Exception:           # pylint: disable=broad-except
         durum = None
     if durum != "DONE":
-        try:
-            gunluk = "\n".join(str(is_.get_log() or "").splitlines()[-15:])
-        except Exception:       # pylint: disable=broad-except
-            gunluk = ""
+        ozet = hata_ozeti(is_)
         raise AdimHatasi("%s başarısız bitti (%s).%s"
                          % (etiket, durum or "durum okunamadı",
-                            ("\n\nİş günlüğünün sonu:\n" + gunluk) if gunluk else ""))
+                            ("\n\nHata:\n" + ozet) if ozet else ""))
+
+
+def _hata_satirlari(metin, en_cok=25):
+    """Gunlukten ASIL hatayi cikarir. Isin genel gunlugunun sonu yalnizca
+    "JOB IS COMPLETE" gibi kapanis satirlari (kullanici bildirimi); hata
+    recipe'in (aktivitenin) gunlugunde, Python traceback'i olarak durur."""
+    satirlar = str(metin or "").splitlines()
+    bas = None
+    for i, s in enumerate(satirlar):
+        if "Traceback (most recent call last)" in s:
+            bas = i
+    if bas is not None:
+        return satirlar[bas:bas + en_cok]
+    hatali = [s for s in satirlar
+              if any(k in s for k in ("Error", "Exception", "FAILED", "failed"))
+              and "[DEBUG]" not in s]
+    return hatali[-en_cok:]
+
+
+def hata_ozeti(is_):
+    """Basarisiz Dataiku isinin okunur hata ozeti ("" olabilir)."""
+    parca = []
+    try:
+        durum = is_.get_status() or {}
+        aktiviteler = (durum.get("baseStatus") or {}).get("activities") or {}
+    except Exception:           # pylint: disable=broad-except
+        aktiviteler = {}
+    for kimlik, akt in (aktiviteler.items() if isinstance(aktiviteler, dict) else []):
+        if not isinstance(akt, dict) or akt.get("state") not in ("FAILED", "ABORTED"):
+            continue
+        hata = akt.get("firstFailure") or {}
+        if hata.get("message"):
+            parca.append(str(hata.get("message"))[:500])
+        try:
+            parca.extend(_hata_satirlari(is_.get_log(activity=kimlik)))
+        except Exception:       # pylint: disable=broad-except
+            pass
+    if not parca:
+        try:
+            parca = _hata_satirlari(is_.get_log())
+        except Exception:       # pylint: disable=broad-except
+            parca = []
+    # Tekrarlari at, sirayi koru.
+    return "\n".join(dict.fromkeys(p for p in parca if p.strip()))
 
 
 def calistir(is_adi, etiket, recete, cikti, cikti_tur, girdi,
