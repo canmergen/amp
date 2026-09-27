@@ -1,6 +1,15 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **PySpark geçişi 1. adım: veri seti profili Spark'ta**. Yapıştır (fe_agent): `profil.py` (yeni), `profil_kural.py` (yeni), `profil_spark.py` (yeni), `akis_faz01.py`, `akis_durum.py`, `sozluk.py`, `tip_donusum.py`
+Bu tur: **başka projedeki veri setinin profili**. Yapıştır (fe_agent): `profil.py`, `profil_spark.py`
+
+- Başka projeden seçilen veri seti ("PROJE.VERI") için profil kısa adla
+  yazılıyor, webapp tam adla arıyordu; sonuç reddedilecekti. Düzeltildi.
+- Böyle bir veri seti recipe girdisi olabilmek için bu projeye
+  paylaşılmış olmalı (Exposed objects); değilse adım bunu söylüyor.
+
+---
+
+Önceki tur: **PySpark geçişi 1. adım: veri seti profili Spark'ta**. Yapıştır (fe_agent): `profil.py` (yeni), `profil_kural.py` (yeni), `profil_spark.py` (yeni), `akis_faz01.py`, `akis_durum.py`, `sozluk.py`, `tip_donusum.py`
 
 Ne değişti:
 - Veri seti seçimi onaylanınca webapp tabloyu artık okumuyor. Dataiku'daki

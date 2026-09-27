@@ -134,12 +134,21 @@ def _girdiyi_ayarla(proje, recete_adi, veri_seti):
     girdiler = list(ayar.get_flat_input_refs())
     if girdiler == [veri_seti]:
         return
+    # Baska projedeki veri seti ("PROJE.VERI") recipe'e ancak o proje veri
+    # setini bu projeye PAYLASTIYSA (Exposed objects) girdi olabilir;
+    # degilse Dataiku kaydi reddeder ve mesaj asagida kullaniciya gider.
     if len(girdiler) != 1:
         raise AdimHatasi(
             "Profil recipe'inin (%s) tek girdisi olmalı; şu an %d girdi var."
             % (recete_adi, len(girdiler)))
-    ayar.replace_input(girdiler[0], veri_seti)
-    ayar.save()
+    try:
+        ayar.replace_input(girdiler[0], veri_seti)
+        ayar.save()
+    except Exception as e:      # pylint: disable=broad-except
+        raise AdimHatasi(
+            "Profil recipe'inin girdisi %s olarak ayarlanamadı: %s. Veri seti "
+            "başka bir projedeyse o projenin veri setini bu projeye "
+            "paylaşması (Exposed objects) gerekir." % (veri_seti, str(e)[:160]))
 
 
 def _istek_yaz(proje, kosu_id, veri_seti):

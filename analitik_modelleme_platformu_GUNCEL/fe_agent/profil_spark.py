@@ -415,17 +415,24 @@ def recete_calistir():
     if len(girdiler) != 1 or len(ciktilar) != 1:
         raise RuntimeError("AMP profil recipe'inin tek girdisi (veri seti) ve "
                            "tek çıktısı (AMP_PROFIL klasörü) olmalı.")
-    veri_ad = girdiler[0].split(".")[-1]
+    tam_ad = girdiler[0]
+    kisa_ad = tam_ad.split(".")[-1]
     klasor = dataiku.Folder(ciktilar[0].split(".")[-1])
 
     sc = SparkContext.getOrCreate()
     sql = SQLContext(sc)
-    df = dkuspark.get_dataframe(sql, dataiku.Dataset(girdiler[0]))
+    df = dkuspark.get_dataframe(sql, dataiku.Dataset(tam_ad))
 
+    # Webapp veri setini kendi projesindeyse kisa adla ("VERI"), baska
+    # projedeyse tam adla ("PROJE.VERI") istiyor. Dataiku girdiyi her zaman
+    # tam adla veriyor; iki yazim da ayni veri setidir. Profil webapp'in
+    # istedigi adla yazilir ki orada aradigi yerde bulsun.
     istek = _istek()
+    eslesir = istek.get("veri_seti") in (tam_ad, kisa_ad)
+    veri_ad = istek["veri_seti"] if eslesir else kisa_ad
     baslangic = datetime.datetime.now().isoformat()
     profil = spark_profil(sql.sparkSession, df, veri_ad)
-    profil["kosu_id"] = istek.get("kosu_id") if istek.get("veri_seti") == veri_ad else None
+    profil["kosu_id"] = istek.get("kosu_id") if eslesir else None
     profil["_baslangic"] = baslangic
     profil["_bitis"] = datetime.datetime.now().isoformat()
     govde = json.dumps(profil, ensure_ascii=False, default=str).encode("utf-8")
