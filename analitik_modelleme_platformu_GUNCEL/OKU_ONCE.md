@@ -1,6 +1,15 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Spark işleri yürütücüde Python istemiyor**. Yapıştır (fe_agent): `profil_spark.py`, `amp_spark.py`
+Bu tur: **adım hata verince Değişken Listesi iki kez basılıyordu, düzeltildi**. Yapıştır (webapp): `app.js`
+
+- Değişken Kontrolü onayında bir hata dönünce (ör. "AMP_VERISETI Flow'da
+  tanımlı değil") eski kart kilitli hâliyle kalıyor, düzeltilebilir yeni
+  kart altına ekleniyordu. Artık eski kart, rozeti ve Excel düğmesi
+  kaldırılıyor; hata mesajının altında tek, açık kart duruyor.
+
+---
+
+Önceki tur: **Spark işleri yürütücüde Python istemiyor**. Yapıştır (fe_agent): `profil_spark.py`, `amp_spark.py`
 
 - Sebep: kurumdaki Spark yürütücüleri code env'siz imajla açılıyor ("the
   image for the executors wasn't built for the code env" uyarısı); yürütücüde

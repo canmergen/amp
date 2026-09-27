@@ -127,7 +127,7 @@ let geriAlKilit = null;
    sunucu girdiyi KABUL EDİNCE yazılır (bkz. gonderimSonucu). Reddederse
    (tablo yok, sözlükte kolon adı ya da açıklama kolonu yok...) kart
    onaylı görünmez: yerine düzeltilebilir yeni form gelir. */
-let bekleyenGonderim = null;   // {kart, durumEl, adim, geriAl}
+let bekleyenGonderim = null;   // {kart, durumEl, adim, geriAl, ekler?}
 /* Yanit sonrasi odaklanilacak yeni etkilesimli oge */
 let yeniOdak = null;
 
@@ -7138,6 +7138,17 @@ function teyitKartiEkle(alan, blok) {
                     .forEach(e => { if (e._disiCiz) e._disiCiz(); });
             };
 
+            /* GÖNDERİM KAYDI. Sunucu adımı geri çevirirse (ör. AMP_VERISETI
+               yazılamadı) aynı adımın kartı uyarıyla YENİDEN gelir.
+               Kayıt yokken eski kart kilitli hâliyle ekranda kalıyor,
+               yenisi altına ekleniyordu: liste iki kez görünüyordu
+               (kullanıcı bildirimi). gonderimSonucu eski kartı, rozetini
+               ve başlıktaki Excel düğmesini kaldırır. */
+            bekleyenGonderim = { kart: kart, durumEl: durumEl,
+                                 adim: (blok && blok.adim) || "",
+                                 geriAl: geriAlKilit,
+                                 ekler: [excelSerit.el] };
+
             /* Sessiz gider (ikinci parametre false): kullanici bir cumle
                yazmadi, bir dugmeye basti. */
             gonder(tireSade(alan.buton || "Devam Et"), false);
@@ -7671,6 +7682,9 @@ function gonderimSonucu(g, d) {
         const onceki = new Set(kap ? kap.querySelectorAll(":scope > .balon") : []);
         if (d.secim_alani) {
             try { g.durumEl.remove(); g.kart.remove(); } catch (e) { /* yok say */ }
+            (g.ekler || []).forEach(el => {
+                try { el.remove(); } catch (e) { /* yok say */ }
+            });
         } else {
             try { g.geriAl(); } catch (e) { /* yok say */ }
         }
