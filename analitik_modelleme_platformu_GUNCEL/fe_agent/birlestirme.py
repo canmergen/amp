@@ -367,6 +367,20 @@ def _yil_ay_coz(s):
     return None, None
 
 
+# Metnin tarih sayilabilmesi icin 4 haneli bir yil (1900-2999) ve en az bir
+# ayirici ya da harf tasimasi gerekir: "2024-01-15", "15.01.2024",
+# "15/01/2024 10:30", "Jan 2024" tarih; "045", "12", "7.5" tarih DEGIL.
+_TARIH_YIL_KALIP = r"(?<!\d)(?:19|2\d)\d{2}(?!\d)"
+_TARIH_AYIRICI_KALIP = r"[-/.:\s]|[A-Za-zÇĞİÖŞÜçğıöşü]"
+
+
+def tarih_metni_mi(s):
+    """Deger basina: metin bir tarih yazimina benziyor mu (bool seri)."""
+    metin = pd.Series(s).astype(str).str.strip()
+    return (metin.str.contains(_TARIH_YIL_KALIP, regex=True)
+            & metin.str.contains(_TARIH_AYIRICI_KALIP, regex=True))
+
+
 def _donem_coz(s):
     """Donem kolonunu karsilastirilabilir aylik sayiya cevirir.
 
@@ -392,7 +406,10 @@ def _donem_coz(s):
         ay, bicim = _yil_ay_coz(s)
         if ay is not None:
             return ay, bicim
-        d = pd.to_datetime(s, errors="coerce")
+        # Yalnizca TARIHE BENZEYEN metin tarih sayilir (bkz. tarih_metni_mi):
+        # tarih cozucusu "045" gibi kodlari da tarih sanip kolonu donem
+        # adayi yapiyordu (kullanici bildirimi).
+        d = pd.to_datetime(s, errors="coerce").where(tarih_metni_mi(s))
         if d.notna().any():
             return d.dt.year * 12 + d.dt.month, "tarih"
         return None, None

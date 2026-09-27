@@ -1,6 +1,17 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **başka projedeki veri setinin profili**. Yapıştır (fe_agent): `profil.py`, `profil_spark.py`
+Bu tur: **iki eski hata düzeltildi**. Yapıştır (fe_agent): `tip_donusum.py`, `birlestirme.py`, `profil_kural.py`
+
+- "15.01.2024" gibi tarihlere artık "Sayısal – ondalık virgül" önerilmiyor.
+  Binlik ayırıcı taşıyan değer ancak üçerli gruplanmışsa (1.234 / 1.234.567,50)
+  sayı sayılıyor. Bu kolonlar için öneri "Tarih – GG.AA.YYYY" oluyor.
+- "045" gibi kodlar artık dönem adayı olmuyor. Metnin tarih sayılması için
+  4 haneli bir yıl (1900-2999) ve bir ayırıcı ya da harf taşıması gerekiyor
+  ("2024-01-15", "15.01.2024", "Jan 2024" tarih; "045", "12" değil).
+
+---
+
+Önceki tur: **başka projedeki veri setinin profili**. Yapıştır (fe_agent): `profil.py`, `profil_spark.py`
 
 - Başka projeden seçilen veri seti ("PROJE.VERI") için profil kısa adla
   yazılıyor, webapp tam adla arıyordu; sonuç reddedilecekti. Düzeltildi.

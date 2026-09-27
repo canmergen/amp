@@ -140,6 +140,14 @@ def _metin(seri, tam_sayi=None):
     return dolu.astype(str).str.strip()
 
 
+# Binlik ayirici tasiyan sayinin dogru yazimi: ilk grup 1-3 hane, sonraki
+# her grup TAM 3 hane, istege bagli ondalik kisim.
+_BINLIK_KALIP = {
+    "sayisal_nokta": r"^[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?$",
+    "sayisal_virgul": r"^[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?$",
+}
+
+
 def cevir(seri, kod, tam_sayi=None):
     """Doner: (yeni_seri, takilan_sayisi, takilan_ornekler).
 
@@ -158,12 +166,21 @@ def cevir(seri, kod, tam_sayi=None):
 
     if kod in ("sayisal_nokta", "sayisal_virgul"):
         m = _metin(seri, tam_sayi)
+        binlik = "," if kod == "sayisal_nokta" else "."
         if kod == "sayisal_nokta":
             temiz = m.str.replace(",", "", regex=False)
         else:
             temiz = (m.str.replace(".", "", regex=False)
                       .str.replace(",", ".", regex=False))
         yeni = pd.to_numeric(temiz, errors="coerce")
+        # BINLIK AYIRICI UCERLI GRUP OLMALI (kullanici bildirimi: "15.01.2024"
+        # tarihine "sayısal - ondalık virgül" oneriliyordu; noktalar
+        # silinince 15012024 sayisi kaliyordu). Binlik ayirici tasiyan
+        # deger ancak 1.234 / 1.234.567,50 gibi dogru gruplanmissa sayidir.
+        ayiricili = m.str.contains(binlik, regex=False)
+        gecerli = m.str.match(_BINLIK_KALIP[kod])
+        yeni = yeni.where(~ayiricili.reindex(yeni.index, fill_value=False)
+                          | gecerli.reindex(yeni.index, fill_value=False))
     elif kod in KORUYAN_KALIP:
         # Deger AYNEN kalir; yalnizca gecerli yil-ay(-gun) mu diye bakilir.
         m = _metin(seri, tam_sayi)

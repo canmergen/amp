@@ -323,7 +323,8 @@ def tarih_parcasi(tur, degerler, adetler):
     d = birl.donem_serisi(seri)
     dolu = d.notna()
     tarih = _tarih_coz(d.where(dolu, None))
-    ok = (dolu & tarih.notna()).to_numpy()
+    # birlestirme._donem_coz ile ayni kapi: yalnizca tarihe BENZEYEN metin.
+    ok = (dolu & tarih.notna() & birl.tarih_metni_mi(d)).to_numpy()
     return float(np.asarray(adetler, dtype=float)[ok].sum())
 
 
