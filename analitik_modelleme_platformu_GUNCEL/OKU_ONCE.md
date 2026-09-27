@@ -1,6 +1,49 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Kaynak Tablolar kartı sadeleşti**. Yapıştır: fe_agent `akis_faz01.py` · webapp `app.js` (JS)
+Bu tur: **tam veriye dokunan işler Spark'ta (kümede); Flow nesnelerini webapp kurar**.
+
+Neden: gerçek veri ~135 milyon satır × 1.040 kolon (FPD_TXN_FEATS_2025 ≈ 19,3 M,
+_2026 ≈ 116 M). Bu hacim webapp'in makinesine indirilemez; DuckDB yolu kaldırıldı.
+
+Kütüphaneden (fe_agent) SİLİN: `veri_kaynak.py`, `profil_duck.py`, `amp_duck.py`
+
+Yapıştırın:
+- fe_agent: `spark_is.py`, `profil_spark.py`, `amp_spark.py`, `amp.py` (dördü de
+  YENİDEN geliyor), `profil.py`, `akis_faz01.py`, `akis_durum.py`, `akis_panel.py`,
+  `profil_kural.py`
+- webapp: `backend.py` (Python), `app.js` (JS)
+
+Flow'a SİZ bir şey eklemiyorsunuz. İlk kullanımda webapp kendisi kurar (girdi
+tablosunun bağlantısında, veri setleri Parquet):
+- compute_AMP_PROFIL  → AMP_PROFIL klasörü (profil)
+- compute_AMP_BAZ     → MODELLEME_BAZ veri seti + AMP_BAZ_SONUC klasörü
+                        (aynı kolonlu tabloları alt alta ekler)
+- compute_AMP_VERISETI→ AMP_VERISETI veri seti + AMP_SONUC klasörü
+Dataiku'da bir nesne tek bir recipe'in çıktısı olabildiği için her işin kendi
+sonuç klasörü var. Girdi tablolarınıza ve sözlüğünüze yazılmaz. Recipe'lerin
+kodu ve girdileri her çalıştırmada webapp tarafından tazelenir.
+
+Hız:
+- Profilin ilk geçişi geniş tabloda artık tek gruplamayla (kolon başına ayrı
+  sorgu yok); kolonlar 150'lik gruplar hâlinde, her grup Parquet'ten yalnızca
+  kendi kolonlarını okur. Tabloyu bellekte tutma (persist) kaldırıldı.
+- Tekrarlanan satır: 128 bitlik satır özetiyle sayılır (135 M satırda çakışma
+  olasılığı ~1e-22).
+- Yerel ölçüm 10.000 × 1.042: 150 sn → ~85 sn; sonuç pandas referansıyla aynı.
+  Kümede 135 M satırda süre dakikalar mertebesindedir.
+
+Bekleme: arayüz 5 dakikada vazgeçmiyor; iş bitene kadar (en fazla 3 saat)
+20 saniyede bir sonucu yokluyor ve geçen süreyi gösteriyor. Sunucudaki iş
+süresi sınırı `amp_is_sure` (varsayılan 10800 sn).
+
+Bilinen sınır: Faz 2-5 (Dağılım, SFA, eleme, model) AMP_VERISETI'ni hâlâ
+webapp'te pandas ile okuyor; 135 M satırda o adımlar da Spark'a taşınmalı.
+Yapay zekâ planıyla yan yana birleştirme (kolonları farklı tablolar) da
+pandas'ta; küçük tablolar içindir.
+
+---
+
+Önceki tur: **Kaynak Tablolar kartı sadeleşti**. Yapıştır: fe_agent `akis_faz01.py` · webapp `app.js` (JS)
 
 - Adım metni kalın değil, iki cümle: ne seçileceği (en az iki tablo) ve
   sonra ne olacağı (aynı kolonlu tablolar alt alta, farklı olanlar için

@@ -21,7 +21,7 @@ KESIN SAYIM, ORNEKLEM YOK (kullanici karari: "hepsi kesin olmalı, sayımda
   deger basina sayimlarin toplamindan verilir.
 
 IKI MOTOR, TEK KURAL
-  - profil_duck.py  : DuckDB motoru (asil yol, webapp icinde).
+  - profil_spark.py : PySpark recipe'i (asil yol, kumede).
   - yerel_profil()  : ayni kurallar pandas uzerinde; yalnizca test ve
     kucuk veri icin. Iki motor ayni tabloda AYNI profili uretmeli; testler
     bunu denetliyor.
@@ -629,7 +629,7 @@ def normallestir(seri, tur):
 
 def ilk_gecis_ozeti(ad, tur, seri):
     """Bir kolonun birinci gecis sayilari (yerel motor). DuckDB motoru ayni
-    alanlari toplu sorgu ile uretir (profil_duck._tt_ozetleri)."""
+    alanlari toplu sorgu ile uretir (profil_spark)."""
     dolu = seri.dropna()
     oz = {"ad": ad, "tur": tur, "dolu": int(len(dolu)),
           "bos": int(len(seri) - len(dolu)), "min": None, "max": None,
@@ -659,7 +659,7 @@ def ilk_gecis_ozeti(ad, tur, seri):
 
 def yerel_profil(df, veri_seti=None):
     """Ayni kurallar pandas ile. YALNIZCA TEST REFERANSI: DuckDB motorunun
-    (profil_duck) ayni tabloda ayni sonucu verdigi buna karsi sinanir;
+    (profil_spark) ayni tabloda ayni sonucu verdigi buna karsi sinanir;
     uygulama bu fonksiyonu cagirmaz."""
     satir = int(len(df))
     temiz = {}

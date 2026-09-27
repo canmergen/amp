@@ -785,7 +785,7 @@ def _teyitten_sonra(durum):
 def _kalan_kolonlar(durum, p):
     """Degisken Kontrolu'nden sonra tabloda KALAN kolonlarin ozeti
     (surec disi dusenler haric, tip secimleri islenmis)."""
-    from fe_agent import amp_duck as amp_mod
+    from fe_agent import amp as amp_mod
     ozet = [o for o in (p.get("kolon_ozet") or []) if isinstance(o, dict)]
     dusen = set(amp_mod.dusen_kolonlar(durum, [o.get("ad") for o in ozet]))
     return [o for o in ozet if o.get("ad") not in dusen]

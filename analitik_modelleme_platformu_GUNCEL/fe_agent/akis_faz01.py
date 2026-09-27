@@ -20,7 +20,8 @@ from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
-from fe_agent import amp_duck as amp_mod
+from fe_agent import amp as amp_mod
+from fe_agent import spark_is
 
 from fe_agent.akis_metin import (
     ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI, MOD_SIRA)
@@ -395,26 +396,18 @@ def _degerde(metin):
 
 
 def _tablo_ozeti(tablolar):
-    """Secilen tablolarin ozeti: her tablo icin KESIN satir x kolon, cikti
-    listesi bicimiyle ("  Etiket : Deger"; arayuz hizali tablo cizer).
-
-    Satir sayisi tablonun yerel Parquet kopyasinin ustbilgisinden okunur
-    (veri_kaynak; sonraki adimlar ayni kopyayi kullanir, ikinci kez
-    indirilmez)."""
-    import pyarrow.parquet as pq
-    from fe_agent import veri_kaynak
-    satirlar, toplam = [], 0
+    """Secilen tablolarin ozeti ("  Etiket : Deger"; arayuz hizali tablo
+    cizer). Kolon sayisi tek satirlik okumadan. SATIR SAYISI BURADA
+    SAYILMAZ: 135 milyon satirlik tabloyu webapp'e cekmek demek; kesin
+    satir sayilari birlestirme isinde (Spark) hesaplanip yazilir."""
+    satirlar = []
     for ad in tablolar:
         try:
-            meta = pq.read_metadata(veri_kaynak.parquet_yolu(ad))
-            toplam += int(meta.num_rows)
-            satirlar.append("  %s : %s satır × %s kolon"
-                            % (ad, _sayi(meta.num_rows), _sayi(meta.num_columns)))
+            satirlar.append("  %s : %s kolon" % (ad, _sayi(_df_oku(ad, limit=1).shape[1])))
         except Exception as e:
             satirlar.append("  %s : okunamadı (%s)" % (ad, _degerde(str(e)[:80])))
-    satirlar.append("  Toplam : %s satır" % _sayi(toplam))
-    return ("%s kaynak tablo seçildi.\n%s"
-            % (_sayi(len(tablolar)), "\n".join(satirlar)))
+    return ("%s kaynak tablo seçildi; satır sayıları birleştirmede "
+            "hesaplanacak.\n%s" % (_sayi(len(tablolar)), "\n".join(satirlar)))
 
 
 def ham_veri_plan(durum):
@@ -445,34 +438,10 @@ def _alt_alta_mi(semalar):
 
 
 def _alt_alta_uygula(durum, tablolar):
-    """Ayni kolonlu tablolari DuckDB ile alt alta ekler; sonuc calismanin
-    klasorune Parquet. Doner: (klasor_yolu, satir, kolon)."""
-    import os
-    from fe_agent import profil_duck, veri_kaynak
-    from fe_agent.akis_durum import _folder
-    yollar = [veri_kaynak.parquet_yolu(t) for t in tablolar]
-    cikti = veri_kaynak.gecici_dosya("baz")
-    con = profil_duck.baglan()
-    try:
-        liste = ", ".join(profil_duck.s(y) for y in yollar)
-        con.execute("COPY (SELECT * FROM read_parquet([%s], union_by_name = true)) "
-                    "TO %s (FORMAT PARQUET, COMPRESSION ZSTD)"
-                    % (liste, profil_duck.s(cikti)))
-        satir, kolon = con.execute(
-            "SELECT count(*), (SELECT count(*) FROM (DESCRIBE SELECT * FROM "
-            "read_parquet(%s))) FROM read_parquet(%s)"
-            % (profil_duck.s(cikti), profil_duck.s(cikti))).fetchone()
-    finally:
-        con.close()
-    yol = _amp_yolu(durum, BAZ_ADI)
-    try:
-        veri_kaynak.klasore_yukle(_folder(), yol, cikti)
-    finally:
-        try:
-            os.remove(cikti)
-        except OSError:
-            pass
-    return yol, int(satir), int(kolon)
+    """Ayni kolonlu tablolari kumede (Spark) alt alta MODELLEME_BAZ veri
+    setine yazar. Doner: isin sonucu {tablolar: {ad: {satir, kolon}},
+    satir, kolon}."""
+    return amp_mod.baz_yaz(durum, tablolar)
 
 
 def birlestirme_plan(durum):
@@ -552,25 +521,31 @@ def birlestirme_uygula(durum):
 
     if plan.get("tur") == "alt_alta":
         tablolar = list(plan.get("tablolar") or [])
-        yol, satir, kolon = _alt_alta_uygula(durum, tablolar)
+        oz = _alt_alta_uygula(durum, tablolar)
         onbellek_temizle()
-        durum["veri_seti"] = yol
-        durum["birlestirme"].update({"dosya": yol, "dataset": None,
-                                     "ozet": {"satir": satir, "kolon": kolon}})
+        durum["veri_seti"] = BAZ_ADI
+        durum["birlestirme"].update({"dataset": BAZ_ADI, "dosya": None,
+                                     "ozet": {"satir": oz.get("satir"),
+                                              "kolon": oz.get("kolon")}})
+        sahip_yaz(BAZ_ADI, durum)
         _temel_profil(durum, _profil(durum, taze=True))
         sozluk_not = ""
         if durum.get("mod") == "B":
             # Koken: her kolon ilk tablodaki ayni adli kolondan (hepsinde ayni).
-            ornek = _df_oku(yol, limit=1)
+            ornek = _df_oku(BAZ_ADI, limit=1)
             kutuk = pd.DataFrame([{"KOLON": c, "KAYNAK_TABLO": tablolar[0],
                                    "KAYNAK_KOLON": c, "TUR": "alt alta"}
                                   for c in ornek.columns])
             sozluk_not = _mod_b_sozlugu(durum, ornek, kutuk)
+        satirlar = ["  %s : %s satır × %s kolon"
+                    % (ad, _sayi(t.get("satir")), _sayi(t.get("kolon")))
+                    for ad, t in (oz.get("tablolar") or {}).items()]
         return ("Tablolar alt alta eklendi; kolonları aynı olduğu için yan "
-                "yana birleştirilmedi.\n"
+                "yana birleştirilmedi.\n%s\n"
                 "  Baz veri seti : %s satır × %s kolon\n"
-                "  Kayıt : PROJE_HAFIZASI%s"
-                % (_sayi(satir), _sayi(kolon), yol)) + sozluk_not
+                "  Kayıt : %s veri seti"
+                % ("\n".join(satirlar), _sayi(oz.get("satir")),
+                   _sayi(oz.get("kolon")), BAZ_ADI)) + sozluk_not
 
     baz, kutuk, ozet = birl_mod.calistir(plan, lambda ad: _df_oku(ad))
 
@@ -583,16 +558,17 @@ def birlestirme_uygula(durum):
 
     ad = BAZ_ADI
     kopya = dosya_yaz(_amp_yolu(durum, ad), baz)
-    if not kopya:
+    durum["birlestirme"]["dosya"] = kopya or None
+    # MODELLEME_BAZ Flow'da yoksa webapp kurar (kullanici bir sey eklemez);
+    # sonraki Spark isleri (profil, AMP) girdi olarak bu veri setini okur.
+    spark_is.veri_seti_hazirla(ad, durum["ham_tablolar"][0])
+    if not dataset_yaz(ad, baz):
         durum["veri_seti"] = None
-        raise AdimHatasi("Birleştirme hesaplandı ama sonucu çalışma klasörüne "
-                         "yazamadım (PROJE_HAFIZASI%s)." % _amp_yolu(durum, ad))
-    # TEK MOTOR: sonuc Flow'da veri seti DEGIL, calismanin klasorunde
-    # Parquet; sonraki adimlar bu yolu okur.
-    durum["birlestirme"]["dosya"] = kopya
-    durum["birlestirme"]["dataset"] = None
-    durum["veri_seti"] = kopya
-    ad = kopya
+        raise AdimHatasi("Birleştirme hesaplandı ama sonucu %s veri setine "
+                         "yazamadım." % ad)
+    durum["birlestirme"]["dataset"] = ad
+    durum["veri_seti"] = ad
+    sahip_yaz(ad, durum)
     onbellek_temizle()
 
     # Mod B/D'de veri seti burada olusuyor ve tablo zaten bellekte;
@@ -3063,9 +3039,9 @@ def amp_ciktilarini_yaz(durum):
     adla bir veri seti var ve oraya yazildi; degilse "dosya" PROJE
     HAFIZASI icindeki Parquet yolu (yalnizca sozluk ve "yerel" motor).
 
-    TEK MOTOR (kullanici karari: Flow'da recipe / veri seti yok):
-    AMP_VERISETI'ni DuckDB yazar (amp_duck), dosya calismanin kendi
-    klasorunde Parquet olarak durur; sonraki her faz onu okur.
+    SPARK (kullanici karari: veri 135 milyon satir): AMP_VERISETI'ni
+    kumede compute_AMP_VERISETI recipe'i yazar (amp_spark); recipe'i ve
+    veri setini webapp kurar. Sonraki fazlar bu veri setini okur.
 
     NE ZAMAN: sozluk teyidi KAYDEDILDIGINDE. O an tablo son halini
     aliyor - tip donusumleri secildi, tanimlar yazildi, surec disi
@@ -3074,10 +3050,10 @@ def amp_ciktilarini_yaz(durum):
     KAYNAK TABLOYA DOKUNULMAZ: AMP_VERISETI platformun KENDI kopyasi;
     Mod A ve B'de kullanicinin orijinal tablosu oldugu gibi kalir."""
     sonuc = {}
-    oz = amp_mod.amp_yaz(durum, _profil(durum), _amp_yolu(durum, AMP_VERI_ADI))
+    oz = amp_mod.amp_yaz(durum, _profil(durum))
     onbellek_temizle()
-    sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": None,
-                     "dosya": oz.get("dosya"), "satir": int(oz.get("satir") or 0),
+    sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": AMP_VERI_ADI,
+                     "dosya": None, "satir": int(oz.get("satir") or 0),
                      "kolon": int(oz.get("kolon") or 0),
                      "dusen_kolon": len(oz.get("dusen") or [])}
     # Tablo _SPLIT'siz yeniden yazildi: onceki bolme artik gecersiz.
@@ -3532,7 +3508,7 @@ def bolme_girdi(durum, mesaj, yeniden_sor=False):
 
 
 def _bolme_tarifi(durum, a, b, notlar):
-    """Motora giden bolme tarifi (amp_duck.bolme_ekle).
+    """Spark recipe'ine giden bolme tarifi (amp_spark.bolme_ekle).
 
     Kararlar bolme_hazirla ile AYNI kurallarla burada verilir; tablo
     okunmaz. Zamansal bolmenin test donemleri profildeki donem listesinden,
@@ -3574,9 +3550,9 @@ def _bolme_tarifi(durum, a, b, notlar):
             "hedef": m.get("target"), "oranlar": oranlar, "seed": a["seed"]}
 
 
-def _bolme_uygula_duck(durum):
-    """Bolmeyi DuckDB'de uygular: AMP_VERISETI _SPLIT kolonuyla yeniden
-    yazilir; set sayilari motordan gelir. Tablo pandas'a okunmaz."""
+def _bolme_uygula_spark(durum):
+    """Bolmeyi Spark'ta uygular: AMP_VERISETI _SPLIT kolonuyla yeniden
+    yazilir; set sayilari recipe'ten gelir. Tablo webapp'te okunmaz."""
     b = dict(durum.get("bolme") or {})
     a = bolme_ayarlari(durum)
     for k in ("test_tanim", "tur", "birim", "katmanla", "val_var", "val_oran",
@@ -3591,21 +3567,21 @@ def _bolme_uygula_duck(durum):
     tarif = _bolme_tarifi(durum, a, b, notlar)
     b.setdefault("test_donemleri", [])
 
-    oz = amp_mod.amp_yaz(durum, _profil(durum), _amp_yolu(durum, AMP_VERI_ADI),
-                         bolme=tarif)
+    oz = amp_mod.amp_yaz(durum, _profil(durum), bolme=tarif)
     onbellek_temizle()
     setler = oz.get("setler") or {}
     sayi = {ad: int((setler.get(SPLIT_ETIKET[ad]) or {}).get("satir") or 0)
             for ad in SET_ADLARI}
     b.update({"kalici": "kolon", "split_kolon": SPLIT_KOLON,
-              "split_dataset": None, "split_dosya": oz.get("dosya"), "satir": sayi,
+              "split_dataset": AMP_VERI_ADI, "satir": sayi,
               "train_satir": sayi["egitim"], "test_satir": sayi["test"],
               "toplam_satir": int(oz.get("satir") or 0)})
     durum["amp_cikti"] = dict(durum.get("amp_cikti") or {})
     durum["amp_cikti"]["veri"] = {
-        "ad": AMP_VERI_ADI, "dataset": None, "dosya": oz.get("dosya"),
+        "ad": AMP_VERI_ADI, "dataset": AMP_VERI_ADI, "dosya": None,
         "satir": int(oz.get("satir") or 0), "kolon": int(oz.get("kolon") or 0),
         "dusen_kolon": len(oz.get("dusen") or [])}
+    amp_sahibi_yaz(durum)
 
     disarida = int((setler.get(amp_mod.DISARIDA) or {}).get("satir") or 0)
     if tarif["tur"] == "hazir":
@@ -3655,5 +3631,5 @@ def _bolme_uygula_duck(durum):
 
 def bolme_uygula(durum):
     """Bolmeyi uygular: AMP_VERISETI _SPLIT kolonuyla yeniden yazilir
-    (DuckDB, bkz. amp_duck); set sayilari motordan gelir."""
-    return _bolme_uygula_duck(durum)
+    (Spark, bkz. amp_spark); set sayilari recipe'ten gelir."""
+    return _bolme_uygula_spark(durum)

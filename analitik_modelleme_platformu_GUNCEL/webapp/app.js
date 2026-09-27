@@ -7775,9 +7775,17 @@ function sunucudanTazele() {
    asılı kalmaz. */
 const YOKLAMA_ARALIKLARI = [1200, 2500, 4000, 7000, 11000, 15000];
 
+/* UZUN İŞLER (kullanıcı bildirimi: 135 milyon satırlık veride iş 5
+   dakikayı aşınca ekran vazgeçip başa dönüyordu). Kısa aralıklar bitince
+   yoklama DURMAZ: iş bitene kadar 20 saniyede bir, en fazla 3 saat
+   (sunucudaki iş süresi sınırıyla aynı: amp_is_sure) sürer. */
+const UZUN_YOKLAMA_ARALIGI = 20000;
+const UZUN_YOKLAMA_SURESI = 3 * 60 * 60 * 1000;
+
 function durumuYokla(satir, onEk) {
     if (!satir) return;
     let i = 0;
+    const baslangic = Date.now();
     /* Hata balonunun metin tasiyicisi .balon.hata (bkz.
        balonIcerikYap); textContent ile yaziliyor. */
     const yaz = (metin) => {
@@ -7790,11 +7798,19 @@ function durumuYokla(satir, onEk) {
         if (mesgul) { satir.remove(); return; }
         sunucudanTazele().then(yeni => {
             if (yeni) { satir.remove(); return; }   // gerçek yanıt geldi
+            const gecen = Date.now() - baslangic;
             if (i >= YOKLAMA_ARALIKLARI.length) {
-                yaz(onEk + " Sunucudan yeni bir sonuç gelmedi; işlem hâlâ "
-                    + "sürüyor olabilir. Sayfayı yenilediğinizde ya da aynı "
-                    + "adımı yeniden onayladığınızda güncel durum yüklenir - "
-                    + "adım İKİ KEZ uygulanmaz.");
+                if (gecen > UZUN_YOKLAMA_SURESI) {
+                    yaz(onEk + " 3 saat içinde sonuç gelmedi. Sayfayı "
+                        + "yenilediğinizde güncel durum yüklenir - adım İKİ KEZ "
+                        + "uygulanmaz.");
+                    return;
+                }
+                yaz("İşlem sürüyor · " + sureBicim(Math.round(
+                        (gecen + ISTEK_ZAMAN_ASIMI) / 1000))
+                    + ". Büyük veride Spark işi dakikalar sürebilir; bittiğinde "
+                    + "sonuç kendiliğinden gelecek, bu sayfayı açık tutmanız yeterli.");
+                setTimeout(tur, UZUN_YOKLAMA_ARALIGI);
                 return;
             }
             setTimeout(tur, YOKLAMA_ARALIKLARI[i++]);
@@ -7873,9 +7889,8 @@ function gonder(metinDisaridan, etiket, ekGovde) {
 
         if (istekDurumu === "zamanasimi") {
             durumuYokla(balonEkle("bot",
-                "İşlem " + sureBicim(Math.round(ISTEK_ZAMAN_ASIMI / 1000))
-                + " içinde yanıt vermedi. Sunucu adımı tamamlamış olabilir; "
-                + "sonucu bekliyorum…", true),
+                "İşlem sürüyor · " + sureBicim(Math.round(ISTEK_ZAMAN_ASIMI / 1000))
+                + ". Sonucu bekliyorum…", false),
                 "İşlem " + sureBicim(Math.round(ISTEK_ZAMAN_ASIMI / 1000))
                 + " içinde yanıt vermedi.");
         } else if (istekDurumu === "iptal") {
