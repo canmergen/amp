@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Spark oturumu webapp açılınca başlıyor** ve **rastgele bölmede test seti Test (OOS2)**.
+Bu tur: **geri çevrilen adımda uyarılar üst üste birikmiyor**. Yapıştır (webapp): `app.js`
+
+- Aynı adım birkaç kez geri çevrilince (ör. "AMP_VERISETI Flow'da tanımlı
+  değil") her denemede uyarı bir satır daha ekleniyordu. Artık yalnızca
+  son denemenin uyarısı görünüyor.
+
+---
+
+Önceki tur: **Spark oturumu webapp açılınca başlıyor** ve **rastgele bölmede test seti Test (OOS2)**.
 
 Yapıştır:
 - fe_agent: `spark_oturum.py` (YENİ), `spark_is.py`, `profil.py`, `amp.py`,

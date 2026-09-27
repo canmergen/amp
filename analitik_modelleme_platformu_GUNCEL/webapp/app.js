@@ -7692,6 +7692,11 @@ function gonderimSonucu(g, d) {
     const kap = g.kart.parentElement;
     const reddedildi = d && d.bekleyen === "girdi" && d.adim_anahtari === g.adim;
     if (reddedildi) {
+        /* ÖNCEKİ RET UYARISI KALKAR. Her yeni denemede aynı uyarı bir kez
+           daha ekleniyor, blokta üst üste üç "AMP_VERISETI Flow'da tanımlı
+           değil" satırı birikiyordu (kullanıcı bildirimi). Geçerli olan
+           yalnızca son denemenin uyarısı. */
+        if (kap) kap.querySelectorAll(":scope > .balon.red-uyari").forEach(b => b.remove());
         const onceki = new Set(kap ? kap.querySelectorAll(":scope > .balon") : []);
         if (d.secim_alani) {
             try { g.durumEl.remove(); g.kart.remove(); } catch (e) { /* yok say */ }
