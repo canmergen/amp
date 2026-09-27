@@ -1,6 +1,19 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **iki eski hata düzeltildi**. Yapıştır (fe_agent): `tip_donusum.py`, `birlestirme.py`, `profil_kural.py`
+Bu tur: **adım numaraları (01.1, 01.2 …) ve faz bitti ayracı**. Yapıştır: `app.js`, `style.css`, `backend.py` (webapp Python)
+
+- İş akışında, sohbet blok başlıklarında, Arşiv'de ve "kaldığı yerden
+  yüklendi" mesajında adımlar faz numarasıyla: 01.1 Başlangıç Seçimi,
+  01.2 Veri ve Model Tanımları, 01.3 Değişken Kontrolü, 01.4 Örneklem ve
+  Doğrulama Tasarımı. Gruplu bloğun içindeki adımlar 01.2.1, 01.2.2, 01.2.3.
+  Diğer fazlar da aynı düzende (02.1 …).
+- Bir faz bitince sohbette ince bir çizgi ve ortasında kırmızı
+  "01 Çalışma Kurulumu Tamamlandı" yazısı çıkıyor. O faza geri dönülürse
+  ayraç kalkıyor, faz yeniden bitince tekrar basılıyor.
+
+---
+
+Önceki tur: **iki eski hata düzeltildi**. Yapıştır (fe_agent): `tip_donusum.py`, `birlestirme.py`, `profil_kural.py`
 
 - "15.01.2024" gibi tarihlere artık "Sayısal – ondalık virgül" önerilmiyor.
   Binlik ayırıcı taşıyan değer ancak üçerli gruplanmışsa (1.234 / 1.234.567,50)

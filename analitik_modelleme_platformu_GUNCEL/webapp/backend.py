@@ -1490,9 +1490,13 @@ def _faz_konumu(mod, anahtar):
                     ogeler.append(oge)
             if anahtar in f["adimlar"]:
                 grup, _ = akis.adim_grubu(anahtar)
+                sira = ogeler.index(grup or anahtar) + 1
+                # ADIM NUMARASI (kullanici karari): sol paneldeki satir
+                # sirasi, "01.3" gibi. On yuz Arşiv ve "yuklendi"
+                # mesajinda bununla yaziyor.
                 return {"faz_no": f["no"], "faz_baslik": f["baslik"],
-                        "faz_adim_no": ogeler.index(grup or anahtar) + 1,
-                        "faz_toplam": len(ogeler)}
+                        "faz_adim_no": sira, "faz_toplam": len(ogeler),
+                        "adim_kodu": "%s.%d" % (f["no"], sira)}
     except Exception:
         pass
     return {}

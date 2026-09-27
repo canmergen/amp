@@ -2962,3 +2962,18 @@ span.bolme-cip { cursor: default; }
 .bolme-alt { justify-content: center; }
 .bolme-alt-acilirlar:empty { display: none; }
 .bolme-alt-dugmeler { margin-left: auto; margin-right: auto; }
+
+/* FAZ BİTTİ AYRACI (kullanıcı kararı): faz bitince sohbette ince bir
+   çizgi, ortasında kırmızı "01 Çalışma Kurulumu Tamamlandı". */
+.faz-bitti {
+  display: flex; align-items: center; gap: var(--b-3);
+  margin: var(--b-4) 0; padding: 0 var(--b-2);
+}
+.faz-bitti::before, .faz-bitti::after {
+  content: ""; flex: 1 1 0; height: 0; border-top: 1px solid var(--kirmizi);
+  opacity: .55;
+}
+.faz-bitti-metin {
+  color: var(--kirmizi); font-size: var(--fs-govde); font-weight: var(--fw-kalin);
+  white-space: nowrap;
+}

@@ -606,6 +606,58 @@ function fazlariYukle(liste) {
     FAZLAR.forEach(f => f.adimlar.forEach(a => { DUZ_ADIMLAR[a.sira] = a; }));
 }
 
+/* GRUPLU ADIMLAR SOL PANELDE TEK SATIR (kullanıcı kararı). "Veri Seti ve
+   Değişken Sözlüğü", "Modelleme Tanımları" ve "Sözlük Tanımları" sohbette
+   zaten TEK blok; iş akışında üç ayrı satır olarak durunca aynı iş üç kez
+   sayılıyordu. Satır grubun adını taşır. Adım listesinin kendisi (FAZLAR)
+   DOKUNULMADAN kalır: geri dönüş, transkript kırpma ve blok eşleme hep
+   tam listeye bakıyor. */
+function fazOgeleri(f) {
+    const ogeler = [];
+    (f.adimlar || []).forEach(a => {
+        const son = ogeler[ogeler.length - 1];
+        if (a.grup && son && son.grup === a.grup) {
+            son.bitis = a.sira;          // gruba katıl
+            son.adimlar.push(a.anahtar);
+            return;
+        }
+        ogeler.push({
+            anahtar: a.anahtar, sira: a.sira, bitis: a.sira,
+            grup: a.grup || "",
+            baslik: a.grup ? (a.grup_baslik || a.baslik) : a.baslik,
+            aciklama: a.aciklama,
+            adimlar: [a.anahtar]
+        });
+    });
+    ogeler.forEach((o, i) => { o.kod = f.no + "." + (i + 1); });
+    return ogeler;
+}
+
+/* ADIM NUMARASI (kullanıcı kararı: faz altındaki işler 01.1, 01.2 ...
+   diye adlandırılsın). Numara sol paneldeki SATIR sırasıdır; gruplu
+   satırın içindeki adımlar alt numara alır (01.2.1, 01.2.2). İş akışı,
+   sohbet başlıkları, Arşiv ve "kaldığı yerden yüklendi" mesajı aynı
+   numarayı kullanır. Doner: {fazIdx, faz, kod, altKod} ya da null. */
+function adimKonumu(anahtar) {
+    if (!anahtar) return null;
+    for (let fi = 0; fi < FAZLAR.length; fi++) {
+        const ogeler = fazOgeleri(FAZLAR[fi]);
+        for (let oi = 0; oi < ogeler.length; oi++) {
+            const j = ogeler[oi].adimlar.indexOf(anahtar);
+            if (j === -1) continue;
+            const kod = ogeler[oi].kod;
+            return { fazIdx: fi, faz: FAZLAR[fi], kod: kod,
+                     altKod: ogeler[oi].adimlar.length > 1 ? kod + "." + (j + 1) : kod };
+        }
+    }
+    return null;
+}
+
+function numarali(kod, baslik) {
+    const b = tireSade(baslik || "");
+    return kod ? kod + " " + b : b;
+}
+
 /* ANALİTİK SÜREÇ HEP AÇIK (kullanıcı kararı: "açıp kapatılamamalı").
    Başlık düğme değil. index.html eski sürümde kalırsa düğme burada
    pasifleştirilir: ok gizlenir, tıklama bir şey yapmaz. */
@@ -630,29 +682,9 @@ function fazlariCiz() {
     surecGuncelle();
     fazEl.innerHTML = "";
     FAZLAR.forEach((f, fi) => {
-        /* GRUPLU ADIMLAR SOL PANELDE TEK SATIR (kullanıcı kararı).
-           "Veri Seti ve Değişken Sözlüğü", "Modelleme Tanımları" ve
-           "Sözlük Tanımları" sohbette zaten TEK blok; iş akışında üç ayrı
-           satır olarak durunca aynı iş üç kez sayılıyordu. Satır grubun
-           adını taşır, tıklanınca grubun İLK adımına döner (grubun
-           tamamını yeniden gözden geçirmenin doğru başlangıcı orası).
-           Adım listesinin kendisi (FAZLAR) DOKUNULMADAN kalır: geri
-           dönüş, transkript kırpma ve blok eşleme hep tam listeye
-           bakıyor. */
-        const adimlar = [];
-        (f.adimlar || []).forEach(a => {
-            const son = adimlar[adimlar.length - 1];
-            if (a.grup && son && son.grup === a.grup) {
-                son.bitis = a.sira;          // gruba katıl
-                return;
-            }
-            adimlar.push({
-                anahtar: a.anahtar, sira: a.sira, bitis: a.sira,
-                grup: a.grup || "",
-                baslik: a.grup ? (a.grup_baslik || a.baslik) : a.baslik,
-                aciklama: a.aciklama
-            });
-        });
+        /* Gruplu satır tıklanınca grubun İLK adımına döner (grubun
+           tamamını yeniden gözden geçirmenin doğru başlangıcı orası). */
+        const adimlar = fazOgeleri(f);
         const siralar = f.adimlar.map(a => a.sira);
         const bitis = Math.max.apply(null, siralar);
         const aktifMi = siralar.indexOf(aktifAdim) !== -1;
@@ -752,7 +784,7 @@ function fazlariCiz() {
                 const dug = document.createElement("button");
                 dug.type = "button";
                 dug.className = "adim-git";
-                dug.textContent = a.baslik;
+                dug.textContent = numarali(a.kod, a.baslik);
                 dug.title = (a.sira === aktifAdim
                              ? "\"" + tireSade(a.baslik) + "\" adımını yeniden aç"
                              : "\"" + tireSade(a.baslik) + "\" adımına dön")
@@ -769,7 +801,7 @@ function fazlariCiz() {
                 li.title = (a.aciklama ? tireSade(a.aciklama) + ", " : "")
                     + "bu adıma henüz gelinmedi";
                 const t = document.createElement("span");
-                t.textContent = a.baslik;
+                t.textContent = numarali(a.kod, a.baslik);
                 li.appendChild(t);
             }
             liste.appendChild(li);
@@ -3996,7 +4028,10 @@ function blokBasligiEkle(kap, blok) {
        tarafına eklenince kartlar avatarsız kalıyordu, oysa adımı
        yürüten asistan orada da aynı asistan. */
     bas.appendChild(avatarYap("bot"));
-    bas.appendChild(elYap("span", "blok-ad", tireSade(b.baslik || "")));
+    const konum = b.kod === undefined ? adimKonumu(b.adim) : null;
+    bas.appendChild(elYap("span", "blok-ad",
+                          numarali(b.kod !== undefined ? b.kod : (konum ? konum.kod : ""),
+                                   b.baslik)));
     /* Durum rozetinin yuvası - gruplu bloktaki .alt-bas ile AYNI sınıf.
        Kart kendi başlığını artık çizmediği için ("✓ Girdiler Onaylandı")
        rozetin gidecek bir yeri olmalı; boşken CSS onu gizliyor. */
@@ -4187,13 +4222,16 @@ function grupKabiAl(blok) {
             ? son : son.querySelector(".adim-blok");
         if (ic && ic.dataset.grup === blok.grup) kok = ic;
     }
+    const konum = adimKonumu(blok.adim);
     if (!kok) {
+        fazAyraclariniEkle(blok.adim);
         const satir = elYap("div", "satir bot");
         kok = elYap("div", "balon-sutun adim-blok gruplu");
         kok.dataset.grup = blok.grup;
         /* Grup başlığında Geri Dön YOK: hangi adıma dönüleceği belirsiz
            olurdu. Düğmeler alt başlıklarda, adım adım. */
-        blokBasligiEkle(kok, { baslik: blok.grup_baslik || "", geri: false });
+        blokBasligiEkle(kok, { baslik: blok.grup_baslik || "", geri: false,
+                               kod: konum ? konum.kod : "" });
         satir.appendChild(kok);
         sohbetEl.appendChild(satir);
     }
@@ -4207,7 +4245,8 @@ function grupKabiAl(blok) {
         bolum = elYap("div", "alt-bolum");
         bolum.dataset.adim = blok.adim;
         const bas = elYap("div", "alt-bas");
-        bas.appendChild(elYap("span", "alt-ad", tireSade(blok.baslik || "")));
+        bas.appendChild(elYap("span", "alt-ad",
+                              numarali(konum ? konum.altKod : "", blok.baslik)));
         /* ROZET YUVASI: kartın "✓ Girdiler Onaylandı" göstergesi buraya
            taşınıyor. Kartın kendi başlık satırında kalınca alt başlık
            ile gövde metni arasında koca bir boşluk oluşuyordu; rozet
@@ -4223,6 +4262,39 @@ function grupKabiAl(blok) {
     return bolum;
 }
 
+/* ---- FAZ BİTTİ AYRACI (kullanıcı kararı) ----
+   Bir faz bitince sohbete ince bir çizgi ve ortasında kırmızı
+   "01 Çalışma Kurulumu Tamamlandı" yazısı basılır. Yeni açılan blok
+   sohbetteki son bloktan daha SONRAKİ bir faza aitse aradaki fazlar
+   bitmiş demektir. Aynı kural F5'teki yeniden çizimde de çalıştığı için
+   ayraç kaybolmaz. Ayraç, ardından gelen adımın işaretini taşır: o adıma
+   ya da öncesine dönülünce transkriptle birlikte silinir, faz yeniden
+   bitince yeniden basılır. yeniAdim yoksa (akışın sonu) son faz bitmiş
+   sayılır. */
+function fazAyraclariniEkle(yeniAdim) {
+    const bloklar = sohbetEl.querySelectorAll(".adim-blok");
+    let onceki = null;
+    for (let i = bloklar.length - 1; i >= 0 && !onceki; i--) {
+        onceki = adimKonumu(bloklar[i].dataset.adim);
+    }
+    if (!onceki) return;
+    const yeni = yeniAdim ? adimKonumu(yeniAdim) : null;
+    const hedef = yeni ? yeni.fazIdx : FAZLAR.length;
+    for (let fi = onceki.fazIdx; fi < hedef; fi++) {
+        if (sohbetEl.querySelector('.faz-bitti[data-faz="' + fi + '"]')) continue;
+        const f = FAZLAR[fi];
+        const sonraki = FAZLAR[fi + 1];
+        const ayrac = elYap("div", "faz-bitti");
+        ayrac.dataset.faz = String(fi);
+        ayrac.dataset.adim = (sonraki && sonraki.adimlar[0])
+            ? sonraki.adimlar[0].anahtar : "";
+        ayrac.setAttribute("role", "separator");
+        ayrac.appendChild(elYap("span", "faz-bitti-metin",
+                                f.no + " " + tireSade(f.baslik) + " Tamamlandı"));
+        sohbetEl.appendChild(ayrac);
+    }
+}
+
 function adimKabiAl(blok) {
     if (!blok || !blok.adim) return null;
     if (blok.grup) return grupKabiAl(blok);
@@ -4234,6 +4306,7 @@ function adimKabiAl(blok) {
         if (ic && !ic.dataset.grup && ic.dataset.adim === blok.adim) return ic;
     }
 
+    fazAyraclariniEkle(blok.adim);
     const satir = elYap("div", "satir bot");
     const sutun = elYap("div", "balon-sutun adim-blok");
     sutun.dataset.adim = blok.adim;
@@ -4320,6 +4393,14 @@ function sinifAyarla(el, durum) {
 
 function blokDurumlariniTazele() {
     const aktif = (DUZ_ADIMLAR[aktifAdim] || {}).anahtar || "";
+    /* Akışın sonu: son adım da geçildiyse son faz bitti. Yalnızca
+       sohbetin son bloğu son fazdaysa (yeniden çizim sürerken erken
+       basılmasın). */
+    if (DUZ_ADIMLAR.length && aktifAdim >= DUZ_ADIMLAR.length) {
+        const bloklar = sohbetEl.querySelectorAll(".adim-blok");
+        const son = bloklar.length ? adimKonumu(bloklar[bloklar.length - 1].dataset.adim) : null;
+        if (son && son.fazIdx === FAZLAR.length - 1) fazAyraclariniEkle(null);
+    }
     /* İstek uçuştayken aktif adım "kontrol" (sarı), değilse "bekliyor". */
     const aktifDurum = mesgul ? "kontrol" : "bekliyor";
     sohbetEl.querySelectorAll(".adim-blok").forEach(blok => {
@@ -7973,8 +8054,7 @@ function devamMetni(bilgi) {
     if (bilgi.faz_no && bilgi.adim) {
         /* Faz içi sıra, Arşiv satırıyla aynı biçimde. */
         parcalar.push(bilgi.faz_no + " " + tireSade(bilgi.faz_baslik || "")
-                      + " · Adım " + bilgi.faz_adim_no + "/" + bilgi.faz_toplam
-                      + " - " + tireSade(bilgi.adim));
+                      + " · " + numarali(bilgi.adim_kodu, bilgi.adim));
     } else if (adimNo !== undefined && adimNo !== null && bilgi.toplam) {
         parcalar.push("Adım " + adimNo + "/" + bilgi.toplam
                       + (bilgi.adim ? " - " + tireSade(bilgi.adim) : ""));
@@ -8095,14 +8175,12 @@ function calismaAltSatiri(c) {
     const parca = [];
     const zaman = tarihBicim(c.zaman);
     if (zaman) parca.push(zaman);
-    /* FAZ İÇİ SIRA (sol paneldeki gibi): "01 Çalışma Kurulumu · Adım
-       3/4 · Değişken Kontrolü". Tüm fazların toplamı (5/18) ekranda
-       hiçbir yerde görünmediği için anlamsızdı. Veri seti adı bu satırdan
-       kaldırıldı (kullanıcı kararı). */
+    /* ADIM NUMARASI (sol paneldeki gibi): "01 Çalışma Kurulumu · 01.3
+       Değişken Kontrolü". Veri seti adı bu satırdan kaldırıldı
+       (kullanıcı kararı). */
     if (c.adim && c.faz_no) {
         parca.push(c.faz_no + " " + tireSade(c.faz_baslik || "")
-                   + " · Adım " + c.faz_adim_no + "/" + c.faz_toplam
-                   + " · " + tireSade(c.adim));
+                   + " · " + numarali(c.adim_kodu, c.adim));
     } else if (c.adim) {
         parca.push(tireSade(c.adim));
     }
