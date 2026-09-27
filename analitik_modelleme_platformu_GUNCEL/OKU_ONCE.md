@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **TEK MOTOR: DuckDB, webapp içinde. Spark, recipe, Flow kurulumu yok.**
+Bu tur: **mod değişikliğinde onay sorusu kaldırıldı**. Yapıştır (fe_agent): `akis_faz01.py`
+
+- Başlangıç Seçimi'nde başka bir mod kartı seçilince "Evet, Sıfırla /
+  Hayır, Vazgeç" sorusu sorulmuyor; seçilen mod doğrudan uygulanıyor,
+  önceki modun verisi (veri seti, sözlük, analizler) sıfırlanıyor.
+
+---
+
+Önceki tur: **TEK MOTOR: DuckDB, webapp içinde. Spark, recipe, Flow kurulumu yok.**
 
 Kütüphaneden (fe_agent) SİLİN: `profil_spark.py`, `amp_spark.py`, `spark_is.py`,
 `spark_oturum.py`, `amp.py`, `tani.py`

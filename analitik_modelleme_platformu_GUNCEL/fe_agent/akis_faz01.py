@@ -254,46 +254,9 @@ def _mod_sifirla(durum):
     onbellek_temizle()
 
 
-# Mod degistirmek, o ana kadar yapilan her seyi silmek demek: secili veri
-# seti, sozluk, profil, SFA, uretilen degiskenler. Eskiden bu tek tikla ve
-# SESSIZCE oluyordu — yanlis karta dokunan analist calismasini geri
-# alamadan kaybediyordu. Artik arada bir onay var.
-MOD_ONAY_SORUSU = ("Mod değiştirirseniz seçili veri seti, sözlük ve yapılmış "
-                   "analizler sıfırlanır. Devam edilsin mi?")
-
-MOD_ONAY_SECENEKLERI = [
-    {"deger": "evet", "baslik": "Evet, Sıfırla",
-     "aciklama": "Yeni moda geç; mevcut veri seti, sözlük ve analizler "
-                 "silinsin."},
-    {"deger": "hayır", "baslik": "Hayır, Vazgeç",
-     "aciklama": "Mod değişmesin; çalışma olduğu gibi kalsın."},
-]
-
-
-def _mod_onay_istemi(eski_mod, yeni_mod, gecis=True):
-    """Onay istemi. gecis=False ise YALNIZCA soru doner.
-
-    NEDEN IKI BICIM: akis_sohbet._mesaj_isle, "bu mesaj bu adima ait
-    bilgi icermiyor mu?" sorusunu girdi fonksiyonunu BOS mesajla ikinci
-    kez cagirip metinleri karsilastirarak cevapliyor. Iki metin ayni
-    cikarsa mesaj serbest soru sayilip dil modeline gidiyor. Onay
-    sorusu her iki cagrida da ayni metni dondurdugu icin kullanicinin
-    mod secimi soruyu dogurmak yerine LLM'e dusuyordu. Gecis satiri
-    (ESKI → YENI) yalnizca kullanicinin bir SECIM yaptigi cagrida
-    ekleniyor; ekranin bos-mesaj istemi sade soru."""
-    if not gecis:
-        return MOD_ONAY_SORUSU
-    return ("%s → %s\n\n%s"
-            % (MOD_ADLARI.get(eski_mod, eski_mod),
-               MOD_ADLARI.get(yeni_mod, yeni_mod), MOD_ONAY_SORUSU))
-
-
-def _mod_onay_bekle(durum, eski_mod, yeni_mod, gecis=True):
-    durum["_mod_onay"] = yeni_mod
-    durum["_secenekler"] = MOD_ONAY_SECENEKLERI
-    return False, _mod_onay_istemi(eski_mod, yeni_mod, gecis)
-
-
+# MOD DEGISIKLIGINDE ONAY YOK (kullanici karari: "ne seçersem o olacak").
+# Baska bir mod karti secilince o ana kadarki secimler (veri seti, sozluk,
+# analizler) sessizce sifirlanir ve yeni mod yerlesir.
 def _mod_yerlestir(durum, yeni_mod):
     durum["mod"] = yeni_mod
     durum["_onceki_mod"] = yeni_mod
@@ -303,40 +266,9 @@ def _mod_yerlestir(durum, yeni_mod):
 
 def mod_girdi(durum, mesaj):
     m = MOD_KALIP.search(mesaj or "")
-    bekleyen_mod = durum.get("_mod_onay")
-    # Onay sorulurken mod alani None'a cekilmis olabilir (geri donus);
-    # "hangi moddan cikiyoruz" bilgisi _onceki_mod'da duruyor.
+    # Eski oturumlarda kalmis onay bekleme alani: artik onay sorulmuyor.
+    durum.pop("_mod_onay", None)
     eski_mod = durum.get("mod") or durum.get("_onceki_mod")
-
-    # --- Mod degisikligi onayi bekleniyor --------------------------------
-    if bekleyen_mod:
-        if m:
-            # Kullanici onay yerine baska bir mod kartina dokundu.
-            secilen = MOD_SIRA.get(m.group(2).upper(), m.group(2).upper())
-            if secilen == eski_mod:
-                # Eski moda geri dondu: silinecek bir sey yok, onay gereksiz.
-                _mod_yerlestir(durum, secilen)
-                return True, None
-            return _mod_onay_bekle(durum, eski_mod, secilen)
-
-        karar = niyet_kural.coz(mesaj or "")["aksiyon"]
-        if karar == "onay":
-            _mod_sifirla(durum)
-            _mod_yerlestir(durum, bekleyen_mod)
-            return True, None
-        if karar == "ret":
-            # Vazgecildi: HICBIR SEY silinmedi, eski mod geri konuyor.
-            durum.pop("_mod_onay", None)
-            if eski_mod:
-                durum["mod"] = eski_mod
-                durum["_onceki_mod"] = eski_mod
-            durum["_secenekler"] = MOD_SECENEKLERI
-            return False, ("Mod değişikliğini iptal ettim; çalışmanız olduğu "
-                           "gibi duruyor.\n\nBaşka bir seçim yapmak "
-                           "isterseniz aşağıdan devam edebilirsiniz.")
-        # Ne onay ne ret: soruyu tekrar sor. Bos mesaj ekran istemidir.
-        return _mod_onay_bekle(durum, eski_mod, bekleyen_mod,
-                               gecis=bool((mesaj or "").strip()))
 
     if not m:
         # Geri donuldugunde eski secim silinsin; faz agaci sifirlanir.
@@ -346,24 +278,16 @@ def mod_girdi(durum, mesaj):
             durum["_onceki_mod"] = durum["mod"]
         durum["mod"] = None
         durum["_secenekler"] = MOD_SECENEKLERI
-        # ADIMIN METNI KARSILAMA'DIR.
-        # Once "Nereden başlayalım?" donuyordu: ekranda uc secenek karti
-        # ve "ÇALIŞMA BAŞLANGICI" basligi varken ayni soruyu ikinci kez
-        # sormak oluyordu. Sonra bos donduruldu, bu sefer geri donuste
-        # secenekler cerceve metni olmadan tek basina kaldi.
-        # Doğrusu: bu adimin metni KARSILAMA. Ilk acilista da geri
-        # donuste de AYNI metin cikar ve TEK yerden gelir
-        # (backend._karsilama_govdesi artik bu donusu kullaniyor,
-        # KARSILAMA'yi ayrica eklemiyor; yoksa ilk ekranda iki kez
-        # basiliyordu).
+        # ADIMIN METNI KARSILAMA'DIR: ilk acilista da geri donuste de ayni
+        # metin, tek yerden (backend._karsilama_govdesi bu donusu kullanir).
         return False, KARSILAMA
 
     secim = m.group(2).upper()
     yeni_mod = MOD_SIRA.get(secim, secim)
 
     if eski_mod and eski_mod != yeni_mod:
-        # _mod_sifirla DOGRUDAN CAGRILMAZ: once onay.
-        return _mod_onay_bekle(durum, eski_mod, yeni_mod)
+        # Secilen kart uygulanir; onceki modun verisi sifirlanir.
+        _mod_sifirla(durum)
 
     _mod_yerlestir(durum, yeni_mod)
     return True, None
