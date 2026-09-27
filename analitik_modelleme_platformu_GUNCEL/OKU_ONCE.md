@@ -1,6 +1,41 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **geri çevrilen adımda uyarılar üst üste birikmiyor**. Yapıştır (webapp): `app.js`
+Bu tur: **TEK MOTOR: DuckDB, webapp içinde. Spark, recipe, Flow kurulumu yok.**
+
+Kütüphaneden (fe_agent) SİLİN: `profil_spark.py`, `amp_spark.py`, `spark_is.py`,
+`spark_oturum.py`, `amp.py`, `tani.py`
+
+Yapıştırın (fe_agent): `veri_kaynak.py` (YENİ), `profil_duck.py` (YENİ),
+`amp_duck.py` (YENİ), `profil.py`, `akis_faz01.py`, `akis_durum.py`,
+`akis_panel.py`, `profil_kural.py`
+Yapıştırın (webapp): `backend.py` (Python sekmesi)
+
+Code env'de olması gerekenler: `duckdb`, `pyarrow` (webapp'in code env'inde
+yoksa ekleyin; notebook ortamınızda ikisi de vardı).
+
+Flow'da hiçbir şey kurulmaz: AMP_DUMMY, compute_AMP_PROFIL, AMP_PROFIL,
+compute_AMP_VERISETI, AMP_SONUC artık kullanılmıyor; silebilirsiniz. Proje
+değişkenleri `amp_motor`, `amp_spark_oturum`, `amp_profil_*`, `amp_veri_*`,
+`amp_is_sure` okunmuyor.
+
+Nasıl çalışıyor:
+- Veri seti seçilince tablo Dataiku'dan parça parça (200.000 satır) webapp'in
+  yerel diskine Parquet olarak akıtılır (`veri_kaynak`). Girdi tablonuza
+  yazılmaz. Dataiku'daki dosyalar değişmedikçe yeniden indirilmez.
+- Profil (`profil_duck`) ve AMP_VERISETI + bölme (`amp_duck`) DuckDB ile
+  hesaplanır. Sayımlar kesin, örneklem yok. Kolonlar 150'lik gruplar
+  hâlinde işlenir; genişlik (30.000 kolon) bellek sorunu değildir.
+- AMP_VERISETI her zaman `PROJE_HAFIZASI/<çalışma>/AMP_VERISETI.parquet`;
+  `_SPLIT` kolonu orada. Sonraki fazlar bu dosyayı okur.
+- Yerel ölçüm: 10.000 × 1.042 profil 6,6 sn (Spark 150 sn, pandas 18,8 sn);
+  pandas referansıyla 0 fark. Zamansal / kimlik / satır / hazır bölme
+  sonuçları önceki motorla aynı.
+- Sınır: tek makine. Satır sayısında tavan webapp sunucusunun belleği ve
+  diski; DuckDB belleğe sığmayan ara sonuçları diske taşar.
+
+---
+
+Önceki tur: **geri çevrilen adımda uyarılar üst üste birikmiyor**. Yapıştır (webapp): `app.js`
 
 - Aynı adım birkaç kez geri çevrilince (ör. "AMP_VERISETI Flow'da tanımlı
   değil") her denemede uyarı bir satır daha ekleniyordu. Artık yalnızca

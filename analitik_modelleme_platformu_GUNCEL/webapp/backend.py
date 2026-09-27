@@ -25,15 +25,6 @@ import dataiku
 from flask import request, jsonify, Response
 
 from fe_agent import akis, validasyon
-from fe_agent import spark_oturum
-
-# SPARK OTURUMU WEBAPP ACILIRKEN (kullanici karari: "spark webapp çalıştığı
-# zaman aktif olsun"). Arkada acilir, sayfanin yuklenmesini bekletmez;
-# ilk Spark isi hazir oturumu bulur. Acilamazsa isler recipe ile yapilir.
-try:
-    spark_oturum.baslat_arkada()
-except Exception:               # pylint: disable=broad-except
-    logging.getLogger(__name__).exception("Spark oturumu başlatılamadı")
 
 GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 
@@ -1189,26 +1180,6 @@ def karsilama_endpoint():
         return jsonify(govde)
     except Exception as e:
         return jsonify(_hata_govdesi("karsilama", e, "Karşılama yüklenemedi."))
-
-
-@app.route("/ortam")
-def ortam_endpoint():
-    """Webapp ortaminin tanisi (motor secimi icin; bkz. fe_agent.tani).
-    ?veri_seti=AD verilirse veri setinin konumunu ve okuma suresini de olcer.
-    Hicbir seye yazmaz."""
-    try:
-        from fe_agent import tani as tani_mod
-        veri_seti = (request.args.get("veri_seti") or "").strip() or None
-        return jsonify(tani_mod.tani(veri_seti))
-    except Exception as e:
-        return jsonify(_hata_govdesi("tani", e, "Tanı çalıştırılamadı."))
-
-
-@app.route("/spark_durum")
-def spark_durum_endpoint():
-    """Webapp'teki Spark oturumunun durumu (tani icin):
-    kapali / ayar_yok / basliyor / hazir / hata, hata metni ve saatler."""
-    return jsonify(spark_oturum.durum())
 
 
 @app.route("/durum")

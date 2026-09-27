@@ -477,6 +477,10 @@ def modelleme_kaynagi(durum):
     # yeniden uygulandigi icin sonuc ayni tablodur.
     if amp and sahibi_mi(amp, durum):
         return str(amp), True
+    # TEK MOTOR: AMP_VERISETI calismanin KENDI klasorunde Parquet dosyasi
+    # ("/<calisma>/AMP_VERISETI.parquet"); sahiplik sorunu yok.
+    if kayit.get("dosya"):
+        return str(kayit["dosya"]), True
     return durum.get("veri_seti"), False
 
 
@@ -567,17 +571,34 @@ def dosya_yaz(yol, tablo):
         return None
     for y in tablo_io.aday_yollar(yol):
         _DF_ONBELLEK.pop((str(y), None), None)
+    try:
+        from fe_agent import veri_kaynak
+        veri_kaynak.klasor_dosyasini_dusur(gercek)
+    except Exception:
+        pass
     return gercek
 
 
 def _dosya_oku(yol, limit=None):
     """PROJE_HAFIZASI'ndaki tabloyu okur (Parquet, eski calismada CSV);
-    _df_oku ile ayni onbellek."""
+    _df_oku ile ayni onbellek. Parquet once YEREL kopyadan okunur
+    (veri_kaynak): platformun kendi yazdigi dosya yerel diskte durur,
+    yeniden indirilmez."""
     anahtar = (str(yol), limit)
     kayit = _DF_ONBELLEK.get(anahtar)
     if kayit is not None and time.time() - kayit[0] <= ONBELLEK_OMRU_SN:
         return kayit[1].copy()
-    df = tablo_io.klasorden_oku(_folder(), yol, limit)
+    df = None
+    try:
+        from fe_agent import veri_kaynak
+        yerel = veri_kaynak.klasor_dosyasi(_folder(), tablo_io.parquet_yolu(yol))
+        df = pd.read_parquet(yerel)
+        if limit:
+            df = df.head(limit)
+    except Exception:
+        df = None
+    if df is None:
+        df = tablo_io.klasorden_oku(_folder(), yol, limit)
     _DF_ONBELLEK[anahtar] = (time.time(), df)
     return df.copy()
 
@@ -615,6 +636,8 @@ def modelleme_df(durum, limit=-1, kaynak=False):
     kopya = None if amp_mi else _calisma_kopyasi(durum, ad)
     if kopya:
         df = _dosya_oku(kopya, None if limit == -1 else limit)
+    elif amp_mi and str(ad).startswith("/"):
+        df = _dosya_oku(ad, None if limit == -1 else limit)
     else:
         df = _df_oku(ad, limit=limit)
     # AMP_VERISETI donusumleri ZATEN ISLENMIS halde tasiyor; ikinci kez

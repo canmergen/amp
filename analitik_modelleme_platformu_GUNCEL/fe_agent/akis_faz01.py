@@ -20,8 +20,7 @@ from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
-from fe_agent import spark_is
-from fe_agent import amp as amp_mod
+from fe_agent import amp_duck as amp_mod
 
 from fe_agent.akis_metin import (
     ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI, MOD_SIRA)
@@ -3058,9 +3057,9 @@ def amp_ciktilarini_yaz(durum):
     adla bir veri seti var ve oraya yazildi; degilse "dosya" PROJE
     HAFIZASI icindeki Parquet yolu (yalnizca sozluk ve "yerel" motor).
 
-    SPARK MOTORU (varsayilan): AMP_VERISETI'ni PySpark recipe'i yazar
-    (bkz. amp.py). Flow'da AMP_VERISETI dataset'i yoksa adim DURUR; buyuk
-    tablo klasore yedeklenmez.
+    TEK MOTOR (kullanici karari: Flow'da recipe / veri seti yok):
+    AMP_VERISETI'ni DuckDB yazar (amp_duck), dosya calismanin kendi
+    klasorunde Parquet olarak durur; sonraki her faz onu okur.
 
     NE ZAMAN: sozluk teyidi KAYDEDILDIGINDE. O an tablo son halini
     aliyor - tip donusumleri secildi, tanimlar yazildi, surec disi
@@ -3069,48 +3068,17 @@ def amp_ciktilarini_yaz(durum):
     KAYNAK TABLOYA DOKUNULMAZ: AMP_VERISETI platformun KENDI kopyasi;
     Mod A ve B'de kullanicinin orijinal tablosu oldugu gibi kalir."""
     sonuc = {}
-
-    if spark_is.motor() == "spark":
-        oz = amp_mod.amp_yaz(durum, _profil(durum))
-        sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": AMP_VERI_ADI,
-                         "dosya": None, "satir": int(oz.get("satir") or 0),
-                         "kolon": int(oz.get("kolon") or 0),
-                         "dusen_kolon": len(oz.get("dusen") or [])}
-        # Tablo _SPLIT'siz yeniden yazildi: onceki bolme artik gecersiz.
-        b = durum.get("bolme") or {}
-        for k in BOLME_KALICI_ALANLARI:
-            b.pop(k, None)
-        durum["bolme"] = b
-        return _amp_sozluk_ve_kayit(durum, sonuc)
-
-    # --- veri seti: tip donusumleri uygulanmis TAM tablo ---------------
-    # kaynak=True: KULLANICININ tablosunu okur. Varsayilan yol artik
-    # AMP_VERISETI'ne bakiyor; bu fonksiyon onu URETEN taraf oldugu icin
-    # kendi ciktisini kaynak alamaz (ikinci kaydette tablo kendi
-    # kopyasindan turerdi).
-    try:
-        df = modelleme_df(durum, kaynak=True)
-        # SUREC DISI KOLONLAR YAZILMAZ (kullanici karari: "süreç dışı
-        # kolonları AMP_VERISETI'nden de düşür"). Hedef / kimlik / donem
-        # hicbir zaman dusmez. 1. fazdaki adimlar kullanicinin KENDI
-        # tablosunu okuyor (kaynak=True); geri donulup bir kolon surece
-        # alinirsa teyit yeniden kaydedilince AMP o kolonla yazilir.
-        korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
-        dusen = [c for c in df.columns
-                 if str(c) in set(map(str, durum.get("haric_kolonlar") or []))
-                 and str(c) not in korunan]
-        if dusen:
-            df = df.drop(columns=dusen)
-    except Exception as e:
-        sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": None, "dosya": None,
-                         "hata": str(e)[:120]}
-    else:
-        yazildi, yedek = _yaz(AMP_VERI_ADI, df, _amp_yolu(durum, AMP_VERI_ADI))
-        sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": yazildi,
-                         "dosya": yedek, "satir": int(len(df)),
-                         "kolon": int(df.shape[1]),
-                         "dusen_kolon": len(dusen)}
-
+    oz = amp_mod.amp_yaz(durum, _profil(durum), _amp_yolu(durum, AMP_VERI_ADI))
+    onbellek_temizle()
+    sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": None,
+                     "dosya": oz.get("dosya"), "satir": int(oz.get("satir") or 0),
+                     "kolon": int(oz.get("kolon") or 0),
+                     "dusen_kolon": len(oz.get("dusen") or [])}
+    # Tablo _SPLIT'siz yeniden yazildi: onceki bolme artik gecersiz.
+    b = durum.get("bolme") or {}
+    for k in BOLME_KALICI_ALANLARI:
+        b.pop(k, None)
+    durum["bolme"] = b
     return _amp_sozluk_ve_kayit(durum, sonuc)
 
 
@@ -3150,8 +3118,7 @@ def amp_nerede(kayit):
     if kayit.get("dataset"):
         return "%s veri seti" % kayit["dataset"]
     if kayit.get("dosya"):
-        # Flow'da ayni adli veri seti yok; klasore Parquet olarak yazildi.
-        return "PROJE_HAFIZASI%s (Flow'da veri seti tanımlı değil)" % kayit["dosya"]
+        return "PROJE_HAFIZASI%s" % kayit["dosya"]
     return "yazılamadı (%s)" % (kayit.get("hata") or "bilinmeyen hata")
 
 
@@ -3559,11 +3526,11 @@ def bolme_girdi(durum, mesaj, yeniden_sor=False):
 
 
 def _bolme_tarifi(durum, a, b, notlar):
-    """Spark recipe'ine giden bolme tarifi (amp_spark.bolme_ekle).
+    """Motora giden bolme tarifi (amp_duck.bolme_ekle).
 
     Kararlar bolme_hazirla ile AYNI kurallarla burada verilir; tablo
     okunmaz. Zamansal bolmenin test donemleri profildeki donem listesinden,
-    val ve bosluk donemleri recipe'te donem basina satir sayisindan cikar."""
+    val ve bosluk donemleri motorda donem basina satir sayisindan cikar."""
     m = durum.get("meta") or {}
     kol = profil_mod.kolonlar(_profil(durum))
     if a["test_tanim"] == "hazir":
@@ -3601,9 +3568,9 @@ def _bolme_tarifi(durum, a, b, notlar):
             "hedef": m.get("target"), "oranlar": oranlar, "seed": a["seed"]}
 
 
-def _bolme_uygula_spark(durum):
-    """Bolmeyi Spark'ta uygular: AMP_VERISETI _SPLIT kolonuyla yeniden
-    yazilir; set sayilari recipe'ten gelir. Tablo webapp'te okunmaz."""
+def _bolme_uygula_duck(durum):
+    """Bolmeyi DuckDB'de uygular: AMP_VERISETI _SPLIT kolonuyla yeniden
+    yazilir; set sayilari motordan gelir. Tablo pandas'a okunmaz."""
     b = dict(durum.get("bolme") or {})
     a = bolme_ayarlari(durum)
     for k in ("test_tanim", "tur", "birim", "katmanla", "val_var", "val_oran",
@@ -3618,20 +3585,21 @@ def _bolme_uygula_spark(durum):
     tarif = _bolme_tarifi(durum, a, b, notlar)
     b.setdefault("test_donemleri", [])
 
-    oz = amp_mod.amp_yaz(durum, _profil(durum), bolme=tarif)
+    oz = amp_mod.amp_yaz(durum, _profil(durum), _amp_yolu(durum, AMP_VERI_ADI),
+                         bolme=tarif)
+    onbellek_temizle()
     setler = oz.get("setler") or {}
     sayi = {ad: int((setler.get(SPLIT_ETIKET[ad]) or {}).get("satir") or 0)
             for ad in SET_ADLARI}
     b.update({"kalici": "kolon", "split_kolon": SPLIT_KOLON,
-              "split_dataset": AMP_VERI_ADI, "satir": sayi,
+              "split_dataset": None, "split_dosya": oz.get("dosya"), "satir": sayi,
               "train_satir": sayi["egitim"], "test_satir": sayi["test"],
               "toplam_satir": int(oz.get("satir") or 0)})
     durum["amp_cikti"] = dict(durum.get("amp_cikti") or {})
     durum["amp_cikti"]["veri"] = {
-        "ad": AMP_VERI_ADI, "dataset": AMP_VERI_ADI, "dosya": None,
+        "ad": AMP_VERI_ADI, "dataset": None, "dosya": oz.get("dosya"),
         "satir": int(oz.get("satir") or 0), "kolon": int(oz.get("kolon") or 0),
         "dusen_kolon": len(oz.get("dusen") or [])}
-    amp_sahibi_yaz(durum)
 
     disarida = int((setler.get(amp_mod.DISARIDA) or {}).get("satir") or 0)
     if tarif["tur"] == "hazir":
@@ -3680,76 +3648,6 @@ def _bolme_uygula_spark(durum):
 
 
 def bolme_uygula(durum):
-    if spark_is.motor() == "spark":
-        return _bolme_uygula_spark(durum)
-    # YEREL MOTOR (kucuk veri / deneme): tablo pandas ile okunur.
-    # TAM tablo okunuyor: eskiden limit=100000 ile okunup satir sayilari bu
-    # KESILMIS tablodan hesaplaniyordu; diger adimlar tam tabloyu okudugu
-    # icin kullaniciya yanlis satir sayisi gosteriliyordu.
-    veri_seti = durum["veri_seti"]
-    df = modelleme_df(durum)
-
-    # TIP DONUSUMLERI ZATEN UYGULANMIS GELIYOR: modelleme_df, sozluk
-    # teyidinde secilen donusumleri OKUMADA uyguluyor (bkz.
-    # akis_durum.modelleme_df). Burada yalnizca kullaniciya kac kolonun
-    # farkli tiple devam ettigi soyleniyor - bolmeden sonraki butun
-    # fazlar ayni okuma yolundan gectigi icin tip her yerde ayni.
-    secilen_tipler = durum.get("tip_donusum") or {}
-    tip_notu = ("%s kolon sözlük teyidindeki seçiminize göre dönüştürülmüş "
-                "tiple işleniyor." % _sayi(len(secilen_tipler))
-                if secilen_tipler else "")
-
-    # KULLANICININ TABLOSUNA ASLA YAZILMAZ (kullanici bildirimi: yeni
-    # calismada kendi veri setinde _SPLIT kolonu gordu). _SPLIT yalnizca
-    # platformun KENDI kopyasina (AMP_VERISETI) yazilir. O kopya akista
-    # dataset olarak yoksa (ya da baska calismanin kaydiyla ezildiyse)
-    # yazici None doner ve bolme_hazirla etiketleri calismanin klasorune
-    # kaydeder; adim hata verip karti yeniden ACMAZ.
-    kaynak_ad, amp_mi = modelleme_kaynagi(durum)
-
-    def _split_yaz(kopya):
-        if not amp_mi or not kaynak_ad or kaynak_ad == veri_seti:
-            return None
-        if not dataset_yaz(kaynak_ad, kopya):
-            return None
-        amp_sahibi_yaz(durum)
-        return kaynak_ad
-
-    # Bolme BIR KEZ hesaplanip kalici hale getiriliyor; maskeler() bundan
-    # sonra hep ayni satirlari ayni sete koyuyor.
-    tr, te, notlar = bolme_hazirla(
-        durum, df, yazici=_split_yaz,
-        yedek_dosya=_amp_yolu(durum, "AMP_BOLME"))
-    onbellek_temizle(kaynak_ad)
-
-    # Set sayimlarini bolme_hazirla yaziyor (dort yolun da ayni sayimi
-    # uretmesi icin); burada yalnizca toplam ekleniyor.
-    b = durum["bolme"]
-    b["toplam_satir"] = int(len(df))
-    durum["bolme"] = b
-
-    hedef = (durum.get("meta") or {}).get("target")
-    oran_not = ""
-    if hedef and hedef in df.columns:
-        try:
-            y = pd.to_numeric(df[hedef], errors="coerce")
-            if int(y.nunique(dropna=True)) <= 2:
-                oran_not = ("\nHedef oranı: geliştirme %%%s, test %%%s."
-                            % (_ond(100.0 * float((y[tr] > 0).mean()), 2),
-                               _ond(100.0 * float((y[te] > 0).mean()), 2)))
-        except Exception:
-            oran_not = ""
-
-    # Val ya da OOT acikken iki sayi tabloyu artik anlatmiyor; dort setin
-    # tamami tek satirda gosteriliyor.
-    dort = b.get("satir") or {}
-    if dort.get("val") or dort.get("oot"):
-        notlar = list(notlar) + ["Setler: %s." % bolme_ozeti(durum)]
-
-    ek = ("\n" + "\n".join(notlar)) if notlar else ""
-    if tip_notu:
-        ek += "\n" + tip_notu
-    return ("Bölme tanımlandı: %s satırın %s satırı geliştirme, %s satırı "
-            "test.%s%s"
-            % (_sayi(b["toplam_satir"]), _sayi(b["train_satir"]),
-               _sayi(b["test_satir"]), oran_not, ek))
+    """Bolmeyi uygular: AMP_VERISETI _SPLIT kolonuyla yeniden yazilir
+    (DuckDB, bkz. amp_duck); set sayilari motordan gelir."""
+    return _bolme_uygula_duck(durum)
