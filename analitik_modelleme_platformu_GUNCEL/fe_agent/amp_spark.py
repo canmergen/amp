@@ -38,8 +38,9 @@ ETIKET = {"egitim": "train", "val": "val", "test": "test", "oot": "oot"}
 DISARIDA = "disarida"
 
 # Tekil degeri bu sinirin altindaki kolonda donusum surucude, pandas'taki
-# ayni fonksiyonla hesaplanir ve eslenir.
-ESLEME_SINIRI = 200000
+# ayni fonksiyonla hesaplanir ve Spark haritasiyla eslenir. Ustunde Spark
+# ifadesi kullanilir (son kontrol farki yakalar).
+ESLEME_SINIRI = 5000
 
 
 # ===========================================================================
@@ -62,11 +63,19 @@ def _metin_ifadesi(c, tur, tam_sayi):
 
 def _yerel_ifade(c, kod, tur, tam_sayi):
     """Tekil degeri COK olan kolon icin Spark ifadesi (tip_donusum.cevir'in
-    kurallari). Son kontrol ifadeyle pandas arasindaki farki yakalar."""
+    kurallari). Son kontrol ifadeyle pandas arasindaki farki yakalar.
+
+    Yazimi koruyan donusumde (donem_ym6 / donem_ymd8) deger AYNEN kalir;
+    gecerli bir yil-ay(-gun) degilse null doner (denetim ve son kontrol
+    icin, tip_donusum.cevir ile ayni)."""
     from pyspark.sql import functions as F
-    if kod in tip_donusum.KORUYAN_KALIP:
-        return c                                   # deger aynen kalir
     m = _metin_ifadesi(c, tur, tam_sayi)
+    if kod in tip_donusum.KORUYAN_KALIP:
+        uzunluk = 6 if kod == "donem_ym6" else 8
+        desen = "yyyyMM" if kod == "donem_ym6" else "yyyyMMdd"
+        gecerli = (F.length(m) == uzunluk) & m.rlike(r"^\d+$") \
+            & F.to_timestamp(m, desen).isNotNull()
+        return F.when(gecerli, c)
     if kod == "sayisal_nokta":
         ok = ~m.contains(",") | m.rlike(tip_donusum._BINLIK_KALIP[kod])
         return F.when(ok, F.regexp_replace(m, ",", "").cast("double"))
@@ -87,39 +96,47 @@ def _yerel_ifade(c, kod, tur, tam_sayi):
     raise ValueError("Bilinmeyen dönüşüm: %s" % kod)
 
 
-def _esleme_tablosu(spark, df, kolon, kod, tur, tam_sayi, spark_tipi):
-    """Tekil degerler -> tip_donusum.cevir ile donusmus deger (surucude).
-    Doner: (k, v) DataFrame; eslenemeyen deger tabloda yok (null olur)."""
+def harita_ifadesi(ciftler, anahtar, anahtar_tipi, deger_tipi):
+    """Surucudeki (anahtar, deger) ciftleri -> Spark haritasi ile esleme.
+
+    YURUTUCUDE PYTHON YOK (kurumdaki Spark yurutuculerinde code env yok):
+    surucu listesinden createDataFrame yurutucude Python istiyor; harita
+    ise saf Spark ifadesidir. Eslenemeyen anahtar null doner."""
     from pyspark.sql import functions as F
-    from pyspark.sql import types as T
+    if not ciftler:
+        return F.lit(None).cast(deger_tipi)
+    parca = []
+    for a, d in ciftler:
+        parca += [F.lit(a).cast(anahtar_tipi), F.lit(d).cast(deger_tipi)]
+    return F.create_map(*parca).getItem(anahtar)
+
+
+def _esleme_ifadesi(df, kolon, kod, tur, tam_sayi, spark_tipi, ham_kolon):
+    """Tekil degerler -> tip_donusum.cevir ile donusmus deger (surucude,
+    pandas'la AYNI fonksiyon); tabloya Spark haritasiyla eslenir."""
+    from pyspark.sql import functions as F
+    import pandas as pd
     ham = [r[0] for r in df.select(F.col("`%s`" % kolon)).where(
         F.col("`%s`" % kolon).isNotNull()).distinct().collect()]
     seri = pk.seri_kur(tur, ham)
     yeni, _t, _o = tip_donusum.cevir(seri, kod, tam_sayi=tam_sayi)
     hedef = tip_donusum.hedef_tip(kod)
-    import pandas as pd
-    satirlar = []
+    ciftler = []
     for h, y in zip(ham, yeni.tolist()):
         try:
             if y is None or pd.isna(y):
                 continue
         except (TypeError, ValueError):
             pass
-        if kod in tip_donusum.KORUYAN_KALIP:
-            y = h
-        elif hedef == "tarih":
+        if hedef == "tarih":
             y = y.to_pydatetime() if hasattr(y, "to_pydatetime") else y
         elif hedef == "sayısal":
             y = float(y)
         else:
             y = str(y)
-        satirlar.append((h, y))
-    cikti_tipi = spark_tipi if kod in tip_donusum.KORUYAN_KALIP else \
-        {"sayısal": T.DoubleType(), "tarih": T.TimestampType(),
-         "kategorik": T.StringType()}[hedef]
-    sema = T.StructType([T.StructField("k", spark_tipi, True),
-                         T.StructField("v", cikti_tipi, True)])
-    return spark.createDataFrame(satirlar, sema)
+        ciftler.append((h, y))
+    return harita_ifadesi(ciftler, F.col(ham_kolon), spark_tipi,
+                          _HEDEF_SPARK[hedef])
 
 
 def donusumleri_uygula(spark, df, donusumler):
@@ -140,13 +157,11 @@ def donusumleri_uygula(spark, df, donusumler):
         ham = "__ham_%d" % i
         df = df.withColumn(ham, F.col("`%s`" % kolon))
         if int(d.get("tekil") or ESLEME_SINIRI + 1) <= ESLEME_SINIRI:
-            es = _esleme_tablosu(spark, df, kolon, kod, tur, tam, tipler[kolon])
-            es = es.withColumnRenamed("k", ham).withColumnRenamed("v", "__yeni")
-            df = df.join(F.broadcast(es), on=ham, how="left") \
-                   .withColumn(kolon, F.col("__yeni")).drop("__yeni")
+            yeni = _esleme_ifadesi(df, kolon, kod, tur, tam, tipler[kolon], ham)
         else:
-            df = df.withColumn(kolon, _yerel_ifade(F.col(ham), kod, tur, tam)
-                               .cast(_HEDEF_SPARK[tip_donusum.hedef_tip(kod)]))
+            yeni = _yerel_ifade(F.col(ham), kod, tur, tam) \
+                .cast(_HEDEF_SPARK[tip_donusum.hedef_tip(kod)])
+        df = df.withColumn(kolon, yeni)
         kontrol[kolon] = ham
     return df, kontrol
 
@@ -229,14 +244,13 @@ def _siraya_gore_etiket(spark, tablo, anahtar, katman, oranlar):
              for k, liste in araliklar.items() for b, s, ad in liste]
     w = Window.partitionBy(katman).orderBy(anahtar)
     sirali = tablo.withColumn("__sira", F.row_number().over(w) - 1)
-    if not satir:
-        return sirali.withColumn("_etiket", F.lit(ETIKET["egitim"]))
-    ar = spark.createDataFrame(satir, "__k string, __b long, __s long, __e string")
-    j = sirali.join(F.broadcast(ar), (sirali[katman] == ar["__k"])
-                    & (sirali["__sira"] >= ar["__b"]) & (sirali["__sira"] < ar["__s"]),
-                    "left")
-    return j.withColumn("_etiket", F.coalesce(F.col("__e"), F.lit(ETIKET["egitim"]))) \
-            .drop("__k", "__b", "__s", "__e")
+    # Katman x set araliklari az (katman sayisi x set sayisi): when zinciri,
+    # yurutucude Python gerektirmez.
+    etiket = F.lit(ETIKET["egitim"])
+    for k, b, e, ad in reversed(satir):
+        etiket = F.when((F.col(katman) == F.lit(k)) & (F.col("__sira") >= b)
+                        & (F.col("__sira") < e), F.lit(ad)).otherwise(etiket)
+    return sirali.withColumn("_etiket", etiket)
 
 
 def bolme_ekle(spark, df, b):
@@ -281,14 +295,10 @@ def bolme_ekle(spark, df, b):
         esleme = zamansal_esleme(sayim, b.get("test_donemleri") or [],
                                  b.get("val_var"), b.get("val_oran") or 0,
                                  b.get("gap"))
-        satir = [(h, esleme.get(n, ETIKET["egitim"])) for h, n in normal.items()]
-        from pyspark.sql import types as T
-        sema = T.StructType([T.StructField("__h", df.schema[kol].dataType, True),
-                             T.StructField(SPLIT_KOLON, T.StringType(), True)])
-        es = spark.createDataFrame(satir, sema)
-        df = df.join(F.broadcast(es), F.col("`%s`" % kol) == es["__h"], "left").drop("__h")
-        return df.withColumn(SPLIT_KOLON, F.coalesce(F.col(SPLIT_KOLON),
-                                                     F.lit(ETIKET["egitim"])))
+        ciftler = [(h, esleme.get(n, ETIKET["egitim"])) for h, n in normal.items()]
+        etiket = harita_ifadesi(ciftler, F.col("`%s`" % kol),
+                                df.schema[kol].dataType, "string")
+        return df.withColumn(SPLIT_KOLON, F.coalesce(etiket, F.lit(ETIKET["egitim"])))
 
     # RASTGELE (katmanli): kimlik varsa kimlik duzeyinde, yoksa satir duzeyinde.
     oranlar = [(ad, float(o)) for ad, o in (b.get("oranlar") or [])]
@@ -332,6 +342,8 @@ def bolme_ekle(spark, df, b):
 def amp_hazirla(spark, df, istek):
     """Doner: (yazilacak_df, sonuc_sozlugu). sonuc["hata"] doluysa YAZILMAZ."""
     from pyspark.sql import functions as F
+    # Gecersiz tarih metni null olsun, istisna atmasin (Spark 3 ayristiricisi).
+    spark.conf.set("spark.sql.legacy.timeParserPolicy", "CORRECTED")
     df, kontrol = donusumleri_uygula(spark, df, istek.get("donusum"))
 
     b = istek.get("bolme")

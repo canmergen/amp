@@ -1,6 +1,25 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Spark işi başarısız olunca asıl hata gösteriliyor**. Yapıştır (fe_agent): `spark_is.py`
+Bu tur: **Spark işleri yürütücüde Python istemiyor**. Yapıştır (fe_agent): `profil_spark.py`, `amp_spark.py`
+
+- Sebep: kurumdaki Spark yürütücüleri code env'siz imajla açılıyor ("the
+  image for the executors wasn't built for the code env" uyarısı); yürütücüde
+  Python/pandas yok. Profil işi değer bazlı kontrolleri yürütücüde Python'la
+  yapıyordu, iş orada düşüyordu.
+- Artık yürütücüde yalnızca Spark'ın kendi işlemleri çalışıyor (sizin
+  notebook'unuzdaki gibi):
+  - Tekil değeri 200 binin altındaki kolonlar: tekil değerler sürücüye
+    alınıp aynı kurallarla denetleniyor. Sonuç birebir aynı.
+  - Daha çok tekil değerli kolonlar: aynı kurallar Spark ifadeleriyle.
+    Hata mesajındaki örnek değer sayısı 1. Serbest biçimli tarih tanıma
+    (dönem adaylığı) yaygın kalıplarla sınırlı.
+  - AMP_VERISETI recipe'inde eşlemeler Spark haritasıyla yapılıyor.
+- Saat dilimsiz zaman damgası (TimestampNTZ) kolonları artık tarih olarak
+  tanınıyor (eskiden metin sayılıyordu).
+
+---
+
+Önceki tur: **Spark işi başarısız olunca asıl hata gösteriliyor**. Yapıştır (fe_agent): `spark_is.py`
 
 - Eskiden işin genel günlüğünün son satırları ("JOB IS COMPLETE" vb.)
   gösteriliyordu. Artık başarısız recipe'in kendi günlüğünden Python

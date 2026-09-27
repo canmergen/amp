@@ -19,15 +19,15 @@ HESAP (hepsi KESIN; yaklasik sayim ve orneklem yok)
      turune gore bir "uzun" tabloda groupBy. Tekil sayisi, en sik degerler,
      kantiller ve 50'den az seviyeli kolonlarin deger listesi buradan.
   4. Deger basina denetim (tip donusumu, kisisel veri deseni, donem
-     yazimlari): tekil deger tablosu uzerinde profil_kural fonksiyonlari,
-     her bolumde parca parca; parcalar toplanir (reduceByKey).
+     yazimlari): tekil degerler surucuye alinip profil_kural'in ayni
+     fonksiyonlariyla denetlenir; cok tekilli kolonda Spark ifadeleriyle.
+     YURUTUCUDE PYTHON CALISMAZ (kurumdaki yurutucu imajinda code env yok).
   Kurallar profil_kural.py'de; ayni kurallar yerel motorda da calisir ve
   iki motorun ayni tabloda ayni sonucu verdigi test ediliyor.
 """
 
 import datetime
 import json
-import sys
 
 from fe_agent import profil_kural as pk
 
@@ -53,7 +53,10 @@ def _tur(veri_tipi):
         return pk.TUR_TAM
     if isinstance(veri_tipi, (T.FloatType, T.DoubleType, T.DecimalType)):
         return pk.TUR_ONDALIK
-    if isinstance(veri_tipi, (T.DateType, T.TimestampType)):
+    # Spark 3.4+ saat dilimsiz zaman damgasini TimestampNTZType okur; o da tarih.
+    tarih_tipleri = tuple(t for t in (T.DateType, T.TimestampType,
+                                      getattr(T, "TimestampNTZType", None)) if t)
+    if isinstance(veri_tipi, tarih_tipleri):
         return pk.TUR_TARIH
     return pk.TUR_METIN
 
@@ -77,20 +80,6 @@ def _normal_kolon(c, tur):
 _UZUN_TIP = {pk.TUR_TAM: "long", pk.TUR_ONDALIK: "double",
              pk.TUR_MANTIKSAL: "boolean", pk.TUR_METIN: "string",
              pk.TUR_TARIH: "timestamp"}
-
-
-def _kod_gonder(spark):
-    """Deger basina denetim fonksiyonlari yurutuculerde calisir. Proje
-    kutuphanesi yurutuculerde kurulu olmayabilir; modulleri FONKSIYONLARLA
-    BIRLIKTE gondermek icin cloudpickle'a "degeriyle paketle" denir
-    (Spark 3.3+). Eski surumde yurutucunun fe_agent'i gormesi gerekir."""
-    try:
-        from pyspark import cloudpickle
-        from fe_agent import birlestirme, sozluk, tip_donusum
-        for mod in (pk, tip_donusum, sozluk, birlestirme, sys.modules[__name__]):
-            cloudpickle.register_pickle_by_value(mod)
-    except Exception:           # pylint: disable=broad-except
-        pass
 
 
 # ===========================================================================
@@ -204,14 +193,15 @@ def _sirali_listeler(tt, tur):
              for k, l in ornek.items()})
 
 
-def _kantiller(spark, tt, tur, dolular):
+def _kantiller(tt, tur, dolular):
     """Sayisal kolonlarin KESIN kantilleri (pandas quantile ile ayni formul):
     tekil degerler sirali, birikimli satir sayisi ile gereken sira
-    numaralarindaki degerler bulunur. Doner: {k: [5 deger]}."""
+    numaralarindaki degerler bulunur. Doner: {k: [5 deger]}.
+
+    Gereken sira numaralari Spark icinde, kolonun dolu satir sayisindan
+    hesaplanir; surucuden tablo gonderilmez (yurutucude Python gerekmesin)."""
     from pyspark.sql import Window, functions as F
-    istek = [(int(k), int(p)) for k, n in dolular.items() if n
-             for p in pk.kantil_konumlari(int(n))]
-    if not istek:
+    if not any(dolular.values()):
         return {}
     v = F.col("v").cast("int").cast("double") if tur == pk.TUR_MANTIKSAL \
         else F.col("v").cast("double")
@@ -219,52 +209,201 @@ def _kantiller(spark, tt, tur, dolular):
               .rowsBetween(Window.unboundedPreceding, Window.currentRow)
     birikim = tt.select("k", v.alias("vd"), "adet") \
                 .withColumn("son", F.sum("adet").over(w)) \
-                .withColumn("bas", F.col("son") - F.col("adet"))
-    konum = spark.createDataFrame(istek, "k int, p long")
-    eslesen = birikim.join(F.broadcast(konum), "k") \
-                     .where((F.col("bas") <= F.col("p")) & (F.col("p") < F.col("son"))) \
-                     .select("k", "p", "vd").collect()
-    sira = {}
-    for x in eslesen:
-        sira.setdefault(int(x["k"]), {})[int(x["p"])] = float(x["vd"])
-    return {k: pk.kantil_hesapla(int(dolular[k]), s) for k, s in sira.items()}
+                .withColumn("bas", F.col("son") - F.col("adet")) \
+                .withColumn("n", F.sum("adet").over(Window.partitionBy("k")))
+    kosul = F.lit(False)
+    for q in pk.KANTIL_NOKTALARI:
+        p = (F.col("n") - 1) * F.lit(float(q))
+        for sira in (F.floor(p), F.ceil(p)):
+            kosul = kosul | ((F.col("bas") <= sira) & (sira < F.col("son")))
+    satirlar = birikim.where(kosul).select("k", "vd", "bas", "son").collect()
+    aralik = {}
+    for x in satirlar:
+        aralik.setdefault(int(x["k"]), []).append(
+            (int(x["bas"]), int(x["son"]), float(x["vd"])))
+    cikti = {}
+    for k, liste in aralik.items():
+        n = int(dolular[k])
+        sira_deger = {}
+        for p in pk.kantil_konumlari(n):
+            for b, e, vd in liste:
+                if b <= p < e:
+                    sira_deger[p] = vd
+                    break
+        cikti[k] = pk.kantil_hesapla(n, sira_deger)
+    return cikti
 
 
 # ===========================================================================
-# 3) DEGER BASINA DENETIM (yurutuculerde)
+# 3) DEGER BASINA DENETIM - YURUTUCUDE PYTHON YOK
 # ===========================================================================
-def _parca_isleyici(turler, gorevler):
-    def isle(satirlar):
-        kova = {}
-        for x in satirlar:
-            k = int(x[0])
-            b = kova.setdefault(k, ([], []))
-            b[0].append(x[1])
-            b[1].append(int(x[2]))
-            if len(b[0]) >= PARCA_BOYU:
-                yield k, pk.parca_degerlendir(turler[k], b[0], b[1], gorevler[k])
-                kova[k] = ([], [])
-        for k, (vs, ns) in kova.items():
-            if vs:
-                yield k, pk.parca_degerlendir(turler[k], vs, ns, gorevler[k])
-    return isle
+# Kurumdaki Spark yurutuculeri code env'siz imajla aciliyor (Python/pandas
+# yok; kullanici: "önceden spark okuyabiliyordum", kendi kodu saf Spark).
+# Bu yuzden yurutucude Python calistiran hicbir sey (rdd.map, UDF, surucu
+# listesinden createDataFrame) KULLANILMAZ:
+#   - Tekil degeri SURUCU_SINIRI'nin altindaki kolon: tekil degerler ve
+#     satir sayilari surucuye alinir, profil_kural'in AYNI fonksiyonlariyla
+#     denetlenir (sonuc yerel motorla birebir ayni).
+#   - Ustundeki kolon: ayni kurallar Spark ifadeleriyle (regex, tip
+#     cevirme, tarih kaliplari) tek bir toplu sorguda sayilir.
+SURUCU_SINIRI = 200000
+# Surucuye bir seferde alinacak toplam tekil deger (bellek siniri).
+TOPLU_SATIR = 2000000
 
 
-def _tarih_isleyici(turler):
-    def isle(satirlar):
+def _surucude_denetle(tt, liste, tur, ozetler):
+    """liste: [(k, gorev)]. Tekil degerleri parti parti surucuye alir."""
+    from pyspark.sql import functions as F
+    partiler, parti, toplam = [], [], 0
+    for k, gorev in liste:
+        n = int(ozetler[k]["tekil"])
+        if parti and toplam + n > TOPLU_SATIR:
+            partiler.append(parti)
+            parti, toplam = [], 0
+        parti.append((k, gorev))
+        toplam += n
+    if parti:
+        partiler.append(parti)
+    for parti in partiler:
         kova = {}
-        for x in satirlar:
-            k = int(x[0])
-            b = kova.setdefault(k, ([], []))
-            b[0].append(x[1])
-            b[1].append(int(x[2]))
-            if len(b[0]) >= PARCA_BOYU:
-                yield k, pk.tarih_parcasi(turler[k], b[0], b[1])
-                kova[k] = ([], [])
-        for k, (vs, ns) in kova.items():
-            if vs:
-                yield k, pk.tarih_parcasi(turler[k], vs, ns)
-    return isle
+        for x in tt.where(F.col("k").isin([k for k, _g in parti])) \
+                   .select("k", "v", "adet").collect():
+            b = kova.setdefault(int(x["k"]), ([], []))
+            b[0].append(x["v"])
+            b[1].append(int(x["adet"]))
+        for k, gorev in parti:
+            vs, ns = kova.get(k, ([], []))
+            parca = None
+            for bas in range(0, max(len(vs), 1), PARCA_BOYU):
+                p = pk.parca_degerlendir(tur, vs[bas:bas + PARCA_BOYU],
+                                         ns[bas:bas + PARCA_BOYU], gorev)
+                parca = p if parca is None else pk.parca_birlestir(parca, p)
+            ozetler[k]["parca"] = parca
+            ozetler[k]["donem_parca"] = (parca or {}).get("donem")
+            if pk.tarih_gecisi_gerekli_mi(ozetler[k]):
+                ozetler[k]["donem_parca"]["tarih_ok"] = pk.tarih_parcasi(tur, vs, ns)
+
+
+def _metin_ifadesi(v, tur):
+    """pandas astype(str) karsiligi: tam sayili ondalik deger ".0" ile
+    ("12345678901.0"), ustel gosterim olmadan (Spark'in "1.2E10"u degil)."""
+    from pyspark.sql import functions as F
+    if tur == pk.TUR_ONDALIK:
+        tam = (v == F.floor(v)) & (F.abs(v) < 1e18)
+        return F.when(tam, F.concat(v.cast("long").cast("string"), F.lit(".0"))) \
+                .otherwise(v.cast("string"))
+    return v.cast("string")
+
+
+def _tckn_sezgi(sade):
+    """sozluk._tckn_sezgi'nin Spark ifadesi (kontrol basamaklari)."""
+    from pyspark.sql import functions as F
+    d = [F.substring(sade, i, 1).cast("int") for i in range(1, 12)]
+    tek = d[0] + d[2] + d[4] + d[6] + d[8]
+    cift = d[1] + d[3] + d[5] + d[7]
+    return (sade.rlike(r"^[1-9]\d{10}$")
+            & (F.pmod(tek * 7 - cift, F.lit(10)) == d[9])
+            & (F.pmod(d[0] + d[1] + d[2] + d[3] + d[4] + d[5] + d[6] + d[7]
+                      + d[8] + d[9], F.lit(10)) == d[10]))
+
+
+_TARIH_KALIPLARI = ("yyyy-M-d", "yyyy/M/d", "yyyy.M.d", "d.M.yyyy", "d/M/yyyy",
+                    "d-M-yyyy", "yyyy-M-d H:m:s", "yyyy-M-d'T'H:m:s",
+                    "yyyy-M-d H:m:s.SSS", "d.M.yyyy H:m:s", "d/M/yyyy H:m:s",
+                    "MMM yyyy", "d MMM yyyy", "MMMM yyyy", "d MMMM yyyy")
+
+
+def _donem_ifadeleri(v):
+    """METIN kolonda birlestirme._donem_coz'un deger basina bayraklari."""
+    from pyspark.sql import functions as F
+    from fe_agent import birlestirme as birl
+    t = F.trim(v.cast("string"))
+    bos = F.lower(t).isin(list(birl.DONEM_BOS_YAZIMLAR))
+    d = F.when(bos, F.lit(None).cast("string")) \
+         .otherwise(F.regexp_replace(t, r"^(-?\d+)\.0+$", "$1"))
+    sayi = d.cast("double")
+    sayi_ok = sayi.isNotNull() & ~F.isnan(sayi)
+    ym = sayi.between(pk.YM_ALT, pk.YM_UST) & (sayi % 100).between(1, 12)
+    ymd = (sayi.between(pk.YMD_ALT, pk.YMD_UST)
+           & (F.floor(sayi / 100) % 100).between(1, 12)
+           & (sayi % 100).between(1, 31))
+    yil_ay = F.lit(False)
+    for kalip, yil_i, ay_i in ((birl._YIL_AY_KALIP.pattern, 1, 2),
+                               (birl._AY_YIL_KALIP.pattern, 2, 1)):
+        yil = F.regexp_extract(d, kalip, yil_i).cast("int")
+        ay = F.regexp_extract(d, kalip, ay_i).cast("int")
+        yil_ay = yil_ay | F.coalesce(yil.between(1900, 2999) & ay.between(1, 12),
+                                     F.lit(False))
+    tarih = F.coalesce(*[F.to_timestamp(d, k) for k in _TARIH_KALIPLARI])
+    benzer = d.rlike(birl._TARIH_YIL_KALIP) & d.rlike(birl._TARIH_AYIRICI_KALIP)
+    tarih_ok = tarih.isNotNull() & benzer
+    return d, sayi_ok, F.coalesce(ym, F.lit(False)), F.coalesce(ymd, F.lit(False)), \
+        yil_ay, tarih_ok
+
+
+def _spark_ile_denetle(tt, k, tur, gorev, ozet):
+    """Tekil degeri cok olan TEK kolon: ayni kurallar Spark ifadeleriyle,
+    tek toplu sorguda. Doner: profil_kural parcasi ile ayni yapi."""
+    from pyspark.sql import functions as F
+    from fe_agent import amp_spark
+    from fe_agent import sozluk as sozluk_mod
+    v, w = F.col("v"), F.col("adet")
+    t = tt.where(F.col("k") == k)
+    metin = F.trim(_metin_ifadesi(v, tur))
+    ifade, parca = [F.sum(w).alias("n")], {"donusum": {}, "pii": None,
+                                           "donem": None, "uzunluk": None,
+                                           "metin": None}
+    kodlar = list(gorev.get("donusum") or [])
+    for j, kod in enumerate(kodlar):
+        yeni = amp_spark._yerel_ifade(v, kod, tur, gorev.get("tam_sayi"))
+        takildi = yeni.isNull()
+        ifade += [F.sum(F.when(takildi, w)).alias("t%d" % j),
+                  F.min(F.when(takildi, F.substring(v.cast("string"), 1, 24))).alias("o%d" % j)]
+    if gorev.get("pii"):
+        ornek = F.regexp_replace(metin, r"\.0$", "")
+        sade = F.regexp_replace(ornek, r"[\s\-()]", "")
+        desen = {"e-posta": ornek.rlike(sozluk_mod._DESEN_EPOSTA.pattern),
+                 "IBAN": sade.rlike("(?i)" + sozluk_mod._DESEN_IBAN.pattern),
+                 "telefon": sade.rlike(sozluk_mod._DESEN_TELEFON.pattern),
+                 "TC kimlik no": sade.rlike(sozluk_mod._DESEN_TCKN.pattern),
+                 "kart numarası": sade.rlike(sozluk_mod._DESEN_KART.pattern),
+                 "tckn_sezgi": _tckn_sezgi(sade)}
+        for j, (ad, kosul) in enumerate(desen.items()):
+            ifade.append(F.sum(F.when(kosul, w)).alias("p%d" % j))
+    if gorev.get("metin"):
+        ifade += [F.sum(F.length(v.cast("string")) * w).alias("uz"),
+                  F.sum(F.when(metin.rlike(r"^0\d"), w)).alias("kg"),
+                  F.sum(F.when(metin.contains(","), w)).alias("vg")]
+    if gorev.get("donem"):
+        d, sayi_ok, ym, ymd, yil_ay, tarih_ok = _donem_ifadeleri(v)
+        dolu = d.isNotNull()
+        ifade += [F.sum(F.when(dolu, w)).alias("d_dolu"),
+                  F.sum(F.when(dolu & ~sayi_ok, w)).alias("d_sayi"),
+                  F.sum(F.when(dolu & sayi_ok & ~ym, w)).alias("d_ym"),
+                  F.sum(F.when(dolu & sayi_ok & ~ymd, w)).alias("d_ymd"),
+                  F.sum(F.when(dolu & ~yil_ay, w)).alias("d_yilay"),
+                  F.sum(F.when(dolu & tarih_ok, w)).alias("d_tarih")]
+    r = t.agg(*ifade).collect()[0].asDict()
+    f = lambda a: float(r.get(a) or 0.0)
+    for j, kod in enumerate(kodlar):
+        parca["donusum"][kod] = {"takilan": f("t%d" % j),
+                                 "ornek": [r["o%d" % j]] if r.get("o%d" % j) else [],
+                                 "hata": None}
+    if gorev.get("pii"):
+        adlar = ["e-posta", "IBAN", "telefon", "TC kimlik no", "kart numarası",
+                 "tckn_sezgi"]
+        parca["pii"] = dict({ad: f("p%d" % j) for j, ad in enumerate(adlar)}, n=f("n"))
+    if gorev.get("metin"):
+        parca["uzunluk"] = {"toplam": f("uz"), "n": f("n")}
+        parca["metin"] = {"kod_gibi": f("kg"), "virgul": f("vg")}
+    if gorev.get("donem"):
+        parca["donem"] = {"dolu": f("d_dolu"), "sayi_degil": f("d_sayi"),
+                          "ym_degil": f("d_ym"), "ymd_degil": f("d_ymd"),
+                          "yil_ay_degil": f("d_yilay"), "tarih_ok": None}
+    ozet["parca"] = parca
+    ozet["donem_parca"] = parca.get("donem")
+    if pk.tarih_gecisi_gerekli_mi(ozet):
+        ozet["donem_parca"]["tarih_ok"] = f("d_tarih")
 
 
 def _gorevli(gorev):
@@ -281,7 +420,8 @@ def spark_profil(spark, df, veri_seti=None):
     from pyspark.sql import functions as F
     from fe_agent import sozluk as sozluk_mod
 
-    _kod_gonder(spark)
+    # Gecersiz tarih metni null olsun, istisna atmasin (Spark 3 ayristiricisi).
+    spark.conf.set("spark.sql.legacy.timeParserPolicy", "CORRECTED")
     adlar = [str(f.name) for f in df.schema.fields]
     turler = [_tur(f.dataType) for f in df.schema.fields]
     norm = df.select(*[_normal_kolon(F.col("`%s`" % f.name.replace("`", "``")),
@@ -326,7 +466,7 @@ def spark_profil(spark, df, veri_seti=None):
                     ozetler[i]["ust_degerler"] = ust.get(i, [])
                     ozetler[i]["ornek3"] = kucuk.get(i, [])
                 if tur in pk.SAYISAL_TURLER:
-                    kant = _kantiller(spark, tt, tur,
+                    kant = _kantiller(tt, tur,
                                       {i: ozetler[i]["dolu"] for i in indeks})
                     for i, k in kant.items():
                         ozetler[i]["kantiller"] = k
@@ -335,27 +475,13 @@ def spark_profil(spark, df, veri_seti=None):
                                               sozluk_mod._pii_ad_mi(adlar[i]))
                             for i in indeks}
                 is_var = [i for i in indeks if _gorevli(gorevler[i])]
-                if is_var:
-                    tur_harita = {i: tur for i in is_var}
-                    parcalar = (tt.where(F.col("k").isin(is_var))
-                                  .select("k", "v", "adet").rdd
-                                  .mapPartitions(_parca_isleyici(tur_harita, gorevler))
-                                  .reduceByKey(pk.parca_birlestir)
-                                  .collectAsMap())
-                    for i in is_var:
-                        p = parcalar.get(i)
-                        ozetler[i]["parca"] = p
-                        ozetler[i]["donem_parca"] = (p or {}).get("donem")
-                    tarih = [i for i in is_var
-                             if pk.tarih_gecisi_gerekli_mi(ozetler[i])]
-                    if tarih:
-                        ok = (tt.where(F.col("k").isin(tarih))
-                                .select("k", "v", "adet").rdd
-                                .mapPartitions(_tarih_isleyici({i: tur for i in tarih}))
-                                .reduceByKey(lambda a, b: a + b)
-                                .collectAsMap())
-                        for i in tarih:
-                            ozetler[i]["donem_parca"]["tarih_ok"] = float(ok.get(i, 0.0))
+                az_tekil = [(i, gorevler[i]) for i in is_var
+                            if ozetler[i]["tekil"] <= SURUCU_SINIRI]
+                if az_tekil:
+                    _surucude_denetle(tt, az_tekil, tur, ozetler)
+                for i in is_var:
+                    if ozetler[i]["tekil"] > SURUCU_SINIRI:
+                        _spark_ile_denetle(tt, i, tur, gorevler[i], ozetler[i])
 
                 # Donem adaylarinin tekil degerleri (normallestirilmis liste
                 # surucude cikarilir; aday kolonlar az ve tekil degerleri
