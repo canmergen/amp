@@ -390,29 +390,27 @@ def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
     durum["_secim_alani"] = None
     return True, None
 
-def ham_veri_plan(durum):
-    satirlar = []
-    toplam_kolon = 0
-    for ad in durum["ham_tablolar"]:
+def _tablo_ozeti(tablolar):
+    """Secilen tablolarin tek bicimli ozeti: baslik satiri + madde listesi."""
+    satirlar, toplam = [], 0
+    for ad in tablolar:
         try:
-            df = _df_oku(ad, limit=200)
-            satirlar.append("  %s\n      %s kolon"
-                            % (ad, _sayi(df.shape[1])))
-            toplam_kolon += int(df.shape[1])
+            n = int(_df_oku(ad, limit=1).shape[1])
+            toplam += n
+            satirlar.append("  • %s · %s kolon" % (ad, _sayi(n)))
         except Exception as e:
-            satirlar.append("  %s\n      okunamadı: %s" % (ad, str(e)[:60]))
+            satirlar.append("  • %s · okunamadı (%s)" % (ad, str(e)[:60]))
+    return ("%s tablo seçildi · toplam %s kolon\n%s"
+            % (_sayi(len(tablolar)), _sayi(toplam), "\n".join(satirlar)))
 
-    return ("%s tablo seçildi, toplam %s kolon:\n\n%s\n\n"
-            "Şimdi bu tabloların şemalarını yapay zekâya göstereceğim. "
-            "Hangisinin iskelet olacağını, diğerlerinin hangi anahtarla "
-            "bağlanacağını ve işlem tablolarından hangi toplamaların "
-            "üretileceğini önerecek.\n\n"
-            "Planı çıkarayım mı?"
-            % (_sayi(len(durum["ham_tablolar"])), _sayi(toplam_kolon),
-               "\n\n".join(satirlar)))
+
+def ham_veri_plan(durum):
+    """Kullanilmiyor (adim plan=None: form onaydir). Eski cagrilar icin."""
+    return _tablo_ozeti(durum["ham_tablolar"])
+
 
 def ham_veri_uygula(durum):
-    return "Tablolar kaydedildi."
+    return _tablo_ozeti(durum["ham_tablolar"])
 
 # ===========================================================================
 # ADIM 1.3A — BIRLESTIRME PLANI  (Mod B ve D)   <-- LLM
@@ -622,7 +620,13 @@ def veri_sec_plan(durum):
                _sayi(p["sayisal"]), _sayi(p["kolon"] - p["sayisal"])))
 
 def veri_sec_uygula(durum):
-    return "Veri seti bağlandı."
+    """Form onaydir (plan=None): secimden sonra ozet yazilir, onay sorulmaz."""
+    p = _temel_profil(durum, _profil(durum, taze=True))
+    return ("Veri seti seçildi · %s\n"
+            "  • %s satır × %s kolon\n"
+            "  • %s sayısal, %s kategorik"
+            % (durum["veri_seti"], _sayi(p["satir"]), _sayi(p["kolon"]),
+               _sayi(p["sayisal"]), _sayi(p["kolon"] - p["sayisal"])))
 
 # ===========================================================================
 # ADIM SOZLUK URETIMI  (Mod A ve B)   <-- LLM

@@ -7333,8 +7333,12 @@ function secimAlaniEkle(alan, blok) {
         ekleBtn.textContent = "+";
         satir.appendChild(ekleBtn);
 
-        kart.appendChild(satir);
+        /* SECILENLER USTTE, ARAMA ALTTA (kullanici karari: "seçilen
+           tabloları yukarı atması gerekmiyor mu"). Liste yukaridan
+           asagiya birikir; yeni ekleme listenin sonuna, arama kutusunun
+           hemen ustune duser. */
         kart.appendChild(rozetler);
+        kart.appendChild(satir);
 
         function ekleDurumu() {
             if (kart.classList.contains("kilitli")) return;

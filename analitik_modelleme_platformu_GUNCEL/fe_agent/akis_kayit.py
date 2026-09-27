@@ -52,7 +52,10 @@ ADIMLAR = {
         "baslik": "Kaynak Tablolar",
         "aciklama": "Baz veri setini oluşturacak kaynak tablolar seçilir; "
                     "boyutları ve kolon sayıları çıkarılır.",
-        "girdi": ham_veri_girdi, "plan": ham_veri_plan, "uygula": ham_veri_uygula},
+        # plan=None: FORMUN KENDISI ONAYDIR (kullanici karari: "zırt pırt
+        # onay almamalı seçmişiz işte"). Tablolar secilince birlestirme
+        # plani dogrudan cikarilir; arada "Planı çıkarayım mı?" yok.
+        "girdi": ham_veri_girdi, "plan": None, "uygula": ham_veri_uygula},
     "birlestirme": {
         "baslik": "Birleştirme Planı",
         "aciklama": "Yapay zekâ iskelet tabloyu, bağlantı anahtarlarını ve "
@@ -64,7 +67,9 @@ ADIMLAR = {
         "baslik": "Baz Veri Seti",
         "aciklama": "Modellemeye girecek baz veri seti seçilir; boyut ve tip "
                     "dağılımı çıkarılır.",
-        "girdi": veri_sec_girdi, "plan": veri_sec_plan, "uygula": veri_sec_uygula},
+        # plan=None: FORMUN KENDISI ONAYDIR; secimden sonra "Devam edilsin
+        # mi?" sorulmaz (ham_veri ile ayni kural).
+        "girdi": veri_sec_girdi, "plan": None, "uygula": veri_sec_uygula},
 
     "sozluk_uret": {
         "baslik": "Sözlük Üretimi",

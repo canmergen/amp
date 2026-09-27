@@ -1,6 +1,19 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **mod değişikliğinde onay sorusu kaldırıldı**. Yapıştır (fe_agent): `akis_faz01.py`
+Bu tur: **seçimden sonra ikinci onay yok; Kaynak Tablolar kartı düzenlendi**.
+Yapıştır: fe_agent `akis_faz01.py`, `akis_kayit.py` · webapp `app.js` (JS), `style.css` (CSS)
+
+- Kaynak Tablolar (Mod B/D): "Tabloları Onayla"dan sonra "Planı çıkarayım
+  mı?" sorulmuyor; seçim özeti yazılıp birleştirme planı doğrudan çıkarılıyor.
+- Baz Veri Seti (Mod C): seçimden sonra "Devam edilsin mi?" sorulmuyor.
+- Seçim özeti tek biçimde: "2 tablo seçildi · toplam 2.080 kolon" ve altında
+  "• TABLO · 1.040 kolon" maddeleri.
+- Liste kartı: seçilen tablolar arama kutusunun ÜSTÜNDE birikiyor; "+"
+  düğmesi giriş kutusuyla aynı yükseklikte ve hizada.
+
+---
+
+Önceki tur: **mod değişikliğinde onay sorusu kaldırıldı**. Yapıştır (fe_agent): `akis_faz01.py`
 
 - Başlangıç Seçimi'nde başka bir mod kartı seçilince "Evet, Sıfırla /
   Hayır, Vazgeç" sorusu sorulmuyor; seçilen mod doğrudan uygulanıyor,

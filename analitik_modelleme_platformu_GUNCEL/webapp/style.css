@@ -931,7 +931,13 @@ button.ozet-kart:focus-visible {
 .secim-govde { display: flex; gap: var(--b-3); flex-wrap: wrap; margin-bottom: var(--b-4); }
 .secim-govde .combo { flex: 1; min-width: 160px; }
 
-.secim-satir { display: flex; gap: var(--b-2); align-items: flex-end; margin-bottom: var(--b-3); }
+.secim-satir { display: flex; gap: var(--b-2); align-items: flex-end; margin-bottom: var(--b-4); }
+/* "+" giris kutusuyla ayni yukseklikte ve ayni hizada: etiketin altindaki
+   kutunun ortasina oturur, satirin disina tasmaz. */
+.secim-satir > .secim-yuvarlak.ekle {
+  height: var(--btn-h); width: var(--btn-h); flex: 0 0 var(--btn-h);
+  border-radius: var(--r-kucuk); font-size: 18px; line-height: 1;
+}
 .secim-satir .combo { flex: 1; }
 
 .combo { position: relative; }
@@ -1032,7 +1038,8 @@ button.ozet-kart:focus-visible {
   background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi);
 }
 
-.secim-rozetler { display: flex; flex-direction: column; gap: 5px; margin-bottom: var(--b-4); }
+.secim-rozetler { display: flex; flex-direction: column; gap: 5px; margin-bottom: var(--b-3); }
+.secim-rozetler:empty { display: none; }
 /* Uzun veri seti adi rozeti tasirip "−" butonunu ekran disina itmesin */
 .secim-rozet {
   display: flex; align-items: center; justify-content: space-between; gap: var(--b-3);
