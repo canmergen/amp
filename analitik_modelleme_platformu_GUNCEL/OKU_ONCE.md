@@ -1,6 +1,20 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **seçimden sonra ikinci onay yok; Kaynak Tablolar kartı düzenlendi**.
+Bu tur: **aynı kolonlu tablolar alt alta ekleniyor; birleştirme sonucu klasöre yazılıyor**.
+Yapıştır (fe_agent): `akis_faz01.py`, `akis_sohbet.py`, `akis_durum.py`, `veri_kaynak.py` · (webapp) `backend.py`
+
+- Seçilen tabloların hepsi aynı kolonlara sahipse (ör. FPD_TXN_FEATS_2025 ve
+  _2026) yapay zekâya sorulmaz: DuckDB ile alt alta eklenir, onay beklenmez.
+  Kolon sırası farklı olabilir; adla eşlenir.
+- Birleştirme sonucu (alt alta ya da yapay zekâ planıyla yan yana) Flow'daki
+  MODELLEME_BAZ veri setine değil, `PROJE_HAFIZASI/<çalışma>/MODELLEME_BAZ.parquet`
+  dosyasına yazılır; sonraki adımlar bu dosyayı okur.
+- Yapay zekâ planı çıkaramaz ya da plan doğrulamayı geçemezse "Onayla ve
+  Uygula" gösterilmez; hata yazılır ve tablo seçim kartı önceki seçimle açılır.
+
+---
+
+Önceki tur: **seçimden sonra ikinci onay yok; Kaynak Tablolar kartı düzenlendi**.
 Yapıştır: fe_agent `akis_faz01.py`, `akis_kayit.py` · webapp `app.js` (JS), `style.css` (CSS)
 
 - Kaynak Tablolar (Mod B/D): "Tabloları Onayla"dan sonra "Planı çıkarayım

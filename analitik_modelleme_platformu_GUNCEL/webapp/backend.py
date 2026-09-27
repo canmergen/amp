@@ -552,6 +552,14 @@ def _kolon_adlari(veri_seti):
     if kayit and simdi - kayit[0] < KOLON_ONBELLEK_SURESI:
         return kayit[1]
 
+    if str(veri_seti or "").startswith("/"):
+        # Calisma klasorundeki Parquet (Mod B/D birlestirme ciktisi).
+        import pyarrow.parquet as pq
+        from fe_agent import veri_kaynak
+        kolonlar = list(pq.read_schema(veri_kaynak.parquet_yolu(veri_seti)).names)
+        _kolon_onbellek[veri_seti] = (simdi, kolonlar)
+        return kolonlar
+
     ds = dataiku.Dataset(veri_seti)
     kolonlar = []
     try:

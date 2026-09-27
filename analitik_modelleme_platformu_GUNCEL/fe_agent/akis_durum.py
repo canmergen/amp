@@ -424,6 +424,10 @@ def onbellek_temizle(ad=None):
 def _df_oku(ad, limit=-1, onbellek=True):
     if limit == -1:
         limit = OKUMA_LIMITI
+    # "/<calisma>/MODELLEME_BAZ.parquet" gibi yol: Flow'da veri seti degil,
+    # calismanin klasorundeki Parquet (Mod B/D birlestirme ciktisi).
+    if str(ad or "").startswith("/"):
+        return _dosya_oku(ad, limit)
     anahtar = (str(ad), limit)
 
     if onbellek:

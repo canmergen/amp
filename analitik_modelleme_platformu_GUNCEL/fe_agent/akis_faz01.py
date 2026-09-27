@@ -423,19 +423,67 @@ def ham_veri_uygula(durum):
 #      kaydedilir; baska calisma uzerine yazarsa bu calisma (1)'i okur.
 
 
+def _alt_alta_mi(semalar):
+    """Secilen tablolarin HEPSI ayni kolonlara mi sahip (sira onemsiz)?
+    Oyleyse bunlar ayni verinin parcalaridir (yil, donem ...) ve yan yana
+    birlestirilmez, ALT ALTA eklenir."""
+    kumeler = [frozenset(map(str, k)) for k in semalar.values()]
+    return len(kumeler) >= 2 and all(k == kumeler[0] for k in kumeler)
+
+
+def _alt_alta_uygula(durum, tablolar):
+    """Ayni kolonlu tablolari DuckDB ile alt alta ekler; sonuc calismanin
+    klasorune Parquet. Doner: (klasor_yolu, satir, kolon)."""
+    import os
+    from fe_agent import profil_duck, veri_kaynak
+    from fe_agent.akis_durum import _folder
+    yollar = [veri_kaynak.parquet_yolu(t) for t in tablolar]
+    cikti = veri_kaynak.gecici_dosya("baz")
+    con = profil_duck.baglan()
+    try:
+        liste = ", ".join(profil_duck.s(y) for y in yollar)
+        con.execute("COPY (SELECT * FROM read_parquet([%s], union_by_name = true)) "
+                    "TO %s (FORMAT PARQUET, COMPRESSION ZSTD)"
+                    % (liste, profil_duck.s(cikti)))
+        satir, kolon = con.execute(
+            "SELECT count(*), (SELECT count(*) FROM (DESCRIBE SELECT * FROM "
+            "read_parquet(%s))) FROM read_parquet(%s)"
+            % (profil_duck.s(cikti), profil_duck.s(cikti))).fetchone()
+    finally:
+        con.close()
+    yol = _amp_yolu(durum, BAZ_ADI)
+    try:
+        veri_kaynak.klasore_yukle(_folder(), yol, cikti)
+    finally:
+        try:
+            os.remove(cikti)
+        except OSError:
+            pass
+    return yol, int(satir), int(kolon)
+
+
 def birlestirme_plan(durum):
     # Gercek semalar: anahtar = tam dataset adi
     semalar = {}
     for ad in durum["ham_tablolar"]:
         try:
-            semalar[ad] = list(_df_oku(ad, limit=50).columns)
+            semalar[ad] = list(_df_oku(ad, limit=1).columns)
         except Exception:
             continue
 
     if len(semalar) < 2:
         durum["birlestirme"] = {}
-        return ("Seçilen tabloların en az ikisini okuyamadım. Önceki adıma "
-                "dönüp tablo seçimini gözden geçirir misiniz?")
+        raise AdimHatasi("Seçilen tabloların en az ikisini okuyamadım; tablo "
+                         "seçimini gözden geçirin.")
+
+    # AYNI KOLONLU TABLOLAR ALT ALTA (kullanici bildirimi: iki yillik ayni
+    # tablo verildi, yapay zeka yan yana birlestirmeye calisip var olmayan
+    # bir tablo adi uydurdu). Karar gerektirmez: onay beklenmeden uygulanir.
+    if _alt_alta_mi(semalar):
+        durum["birlestirme"] = {"plan": {"tur": "alt_alta",
+                                         "tablolar": list(semalar)}}
+        durum["_plan_otomatik"] = True
+        return ""
 
     # LLM'e kisa adla gonderiyoruz: uzun proje onekleri hem baglami sisiriyor
     # hem de model oneki atip gecersiz ad uretebiliyor.
@@ -449,10 +497,10 @@ def birlestirme_plan(durum):
 
     if llm_hata or not ham_plan:
         durum["birlestirme"] = {}
-        return ("Tabloları inceledim ama kullanılabilir bir birleştirme planı "
-                "çıkaramadım.\n\n  Sebep: %s\n\n"
-                "Önceki adıma dönüp tablo seçimini değiştirebilirsiniz."
-                % (llm_hata or "Model tanımadığı tablo adları önerdi."))
+        raise AdimHatasi("Tabloları inceledim ama kullanılabilir bir birleştirme "
+                         "planı çıkaramadım.\n  • Sebep: %s\nTablo seçimini "
+                         "değiştirip yeniden deneyebilirsiniz."
+                         % (llm_hata or "Model tanımadığı tablo adları önerdi."))
 
     # Plani gercek adlara cevirip GERCEK semalara karsi dogruluyoruz
     ham_plan = _plan_adlari_cevir(ham_plan, kisa_to_tam)
@@ -460,9 +508,10 @@ def birlestirme_plan(durum):
 
     if plan is None:
         durum["birlestirme"] = {}
-        return ("Plan doğrulamayı geçemedi:\n%s\n\n"
-                "Önceki adıma dönebilirsiniz."
-                % "\n".join("  • %s" % h for h in hatalar[:8]))
+        raise AdimHatasi("Yapay zekânın önerdiği birleştirme planı doğrulamayı "
+                         "geçemedi:\n%s\nTablo seçimini değiştirip yeniden "
+                         "deneyebilirsiniz."
+                         % "\n".join("  • %s" % h for h in hatalar[:8]))
 
     durum["birlestirme"] = {"plan": plan}
 
@@ -487,6 +536,30 @@ def birlestirme_uygula(durum):
     if not plan:
         return "Uygulanacak plan yok."
 
+    if plan.get("tur") == "alt_alta":
+        tablolar = list(plan.get("tablolar") or [])
+        yol, satir, kolon = _alt_alta_uygula(durum, tablolar)
+        onbellek_temizle()
+        durum["veri_seti"] = yol
+        durum["birlestirme"].update({"dosya": yol, "dataset": None,
+                                     "ozet": {"satir": satir, "kolon": kolon}})
+        _temel_profil(durum, _profil(durum, taze=True))
+        sozluk_not = ""
+        if durum.get("mod") == "B":
+            # Koken: her kolon ilk tablodaki ayni adli kolondan (hepsinde ayni).
+            ornek = _df_oku(yol, limit=1)
+            kutuk = pd.DataFrame([{"KOLON": c, "KAYNAK_TABLO": tablolar[0],
+                                   "KAYNAK_KOLON": c, "TUR": "alt alta"}
+                                  for c in ornek.columns])
+            sozluk_not = _mod_b_sozlugu(durum, ornek, kutuk)
+        return ("Tablolar alt alta eklendi · %s tablo aynı %s kolona sahip\n"
+                "%s\n"
+                "  • Baz veri seti: %s satır × %s kolon\n"
+                "  • Kayıt: PROJE_HAFIZASI%s"
+                % (_sayi(len(tablolar)), _sayi(kolon),
+                   "\n".join("  • %s" % t for t in tablolar),
+                   _sayi(satir), _sayi(kolon), yol)) + sozluk_not
+
     baz, kutuk, ozet = birl_mod.calistir(plan, lambda ad: _df_oku(ad))
 
     # Hedef veri seti yoksa write_with_schema patliyordu ve o ana kadarki
@@ -498,24 +571,16 @@ def birlestirme_uygula(durum):
 
     ad = BAZ_ADI
     kopya = dosya_yaz(_amp_yolu(durum, ad), baz)
-    durum["birlestirme"]["dosya"] = kopya or None
-    if not dataset_yaz(ad, baz):
+    if not kopya:
         durum["veri_seti"] = None
-        durum["birlestirme"]["dataset"] = None
-        kayit = ("PROJE_HAFIZASI%s dosyasına kaydettim"
-                 % kopya if durum["birlestirme"]["dosya"]
-                 else "çalışma klasörüne de yazamadım")
-        raise AdimHatasi(
-            "Birleştirme hesaplandı ama sonucu %s veri setine yazamadım; "
-            "büyük olasılıkla akışta bu adda bir veri seti yok.\n\n"
-            "Tabloyu %s; köken kütüğü %s.\n\n"
-            "Dataiku akışında %s adında bir veri seti oluşturup adımı "
-            "yeniden çalıştırın."
-            % (ad, kayit, _nerede(lineage_yazildi, lineage_yedek), ad))
-
-    durum["veri_seti"] = ad
-    durum["birlestirme"]["dataset"] = ad
-    sahip_yaz(ad, durum)
+        raise AdimHatasi("Birleştirme hesaplandı ama sonucu çalışma klasörüne "
+                         "yazamadım (PROJE_HAFIZASI%s)." % _amp_yolu(durum, ad))
+    # TEK MOTOR: sonuc Flow'da veri seti DEGIL, calismanin klasorunde
+    # Parquet; sonraki adimlar bu yolu okur.
+    durum["birlestirme"]["dosya"] = kopya
+    durum["birlestirme"]["dataset"] = None
+    durum["veri_seti"] = kopya
+    ad = kopya
     onbellek_temizle()
 
     # Mod B/D'de veri seti burada olusuyor ve tablo zaten bellekte;

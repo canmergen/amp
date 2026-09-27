@@ -140,7 +140,14 @@ def _adima_gir(durum, yeniden_sor=False):
         # Girdi fonksiyonu gerekli bilgiyi durumda buldu: dogrudan plana gec
 
     durum["bekleyen"] = "onay"
-    return adim["plan"](durum)
+    metin = adim["plan"](durum)
+    # KARAR GEREKTIRMEYEN PLAN (kullanici karari: "zırt pırt onay
+    # almamalı"): plan fonksiyonu ortada secilecek bir sey olmadigini
+    # _plan_otomatik ile bildirirse onay beklenmeden uygulanir. Ornek: ayni
+    # kolonlara sahip tablolar alt alta eklenir; sorulacak bir sey yok.
+    if not yeniden_sor and durum.pop("_plan_otomatik", False):
+        return _onayi_uygula(durum, adim, sira[durum["i"]])
+    return metin
 
 def _adet(durum, anahtar):
     return len(durum.get("plan" if anahtar == "kural" else "hipotez") or [])
@@ -322,6 +329,8 @@ def mesaj_isle(durum, mesaj, dogrulama=None, hedef_adim=None):
         # yaptığı seçimler kaybolmasın.
         durum["i"] = yedek_i
         durum["bekleyen"] = yedek_bekleyen
+        # Adim geri alindi: yarida yazilan "tamamlandi" ozeti ekrana dusmesin.
+        durum.pop("_tamamlanan", None)
         return _birlestir(str(e), _adima_gir(durum, yeniden_sor=True))
     except Exception as e:
         durum["i"] = yedek_i

@@ -186,7 +186,14 @@ def _parquet_yaz(ds, hedef):
 
 
 def parquet_yolu(veri_seti, taze=False):
-    """Kullanicinin veri setinin yerel Parquet kopyasinin yolu."""
+    """Kullanicinin veri setinin yerel Parquet kopyasinin yolu.
+
+    "/..." ile baslayan ad calismanin klasorundeki Parquet'tir (Mod B/D
+    birlestirme ciktisi); klasorden yerel kopyasi alinir."""
+    if str(veri_seti or "").startswith("/"):
+        from fe_agent import tablo_io
+        from fe_agent.akis_durum import _folder
+        return klasor_dosyasi(_folder(), tablo_io.parquet_yolu(veri_seti))
     ds = dataiku.Dataset(veri_seti)
     hedef = _dosya_adi("kaynak", veri_seti)
     meta_yol = hedef + ".json"
