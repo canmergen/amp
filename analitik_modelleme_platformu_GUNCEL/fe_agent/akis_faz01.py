@@ -391,16 +391,24 @@ def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
     return True, None
 
 def _tablo_ozeti(tablolar):
-    """Secilen tablolarin tek bicimli ozeti: baslik satiri + madde listesi."""
+    """Secilen tablolarin ozeti: her tablo icin KESIN satir x kolon.
+
+    Satir sayisi tablonun yerel Parquet kopyasinin ustbilgisinden okunur
+    (veri_kaynak; sonraki adimlar ayni kopyayi kullanir, ikinci kez
+    indirilmez). Toplam kolon yazilmaz: ayni kolonlu tablolar alt alta
+    eklendiginde toplam yaniltici olurdu."""
+    import pyarrow.parquet as pq
+    from fe_agent import veri_kaynak
     satirlar, toplam = [], 0
     for ad in tablolar:
         try:
-            n = int(_df_oku(ad, limit=1).shape[1])
-            toplam += n
-            satirlar.append("  • %s · %s kolon" % (ad, _sayi(n)))
+            meta = pq.read_metadata(veri_kaynak.parquet_yolu(ad))
+            toplam += int(meta.num_rows)
+            satirlar.append("  • %s · %s satır × %s kolon"
+                            % (ad, _sayi(meta.num_rows), _sayi(meta.num_columns)))
         except Exception as e:
-            satirlar.append("  • %s · okunamadı (%s)" % (ad, str(e)[:60]))
-    return ("%s tablo seçildi · toplam %s kolon\n%s"
+            satirlar.append("  • %s · okunamadı (%s)" % (ad, str(e)[:80]))
+    return ("%s tablo seçildi · toplam %s satır\n%s"
             % (_sayi(len(tablolar)), _sayi(toplam), "\n".join(satirlar)))
 
 
@@ -552,13 +560,11 @@ def birlestirme_uygula(durum):
                                    "KAYNAK_KOLON": c, "TUR": "alt alta"}
                                   for c in ornek.columns])
             sozluk_not = _mod_b_sozlugu(durum, ornek, kutuk)
-        return ("Tablolar alt alta eklendi · %s tablo aynı %s kolona sahip\n"
-                "%s\n"
+        return ("Tablolar alt alta eklendi · kolonları aynı olduğu için "
+                "yan yana değil, arka arkaya\n"
                 "  • Baz veri seti: %s satır × %s kolon\n"
                 "  • Kayıt: PROJE_HAFIZASI%s"
-                % (_sayi(len(tablolar)), _sayi(kolon),
-                   "\n".join("  • %s" % t for t in tablolar),
-                   _sayi(satir), _sayi(kolon), yol)) + sozluk_not
+                % (_sayi(satir), _sayi(kolon), yol)) + sozluk_not
 
     baz, kutuk, ozet = birl_mod.calistir(plan, lambda ad: _df_oku(ad))
 

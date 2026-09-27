@@ -1,6 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **aynı kolonlu tablolar alt alta ekleniyor; birleştirme sonucu klasöre yazılıyor**.
+Bu tur: **seçilen tabloların satır × kolon sayısı**. Yapıştır (fe_agent): `akis_faz01.py`
+
+- Kaynak tablo özeti her tablo için kesin satır ve kolon sayısını yazıyor:
+  "• FPD_TXN_FEATS_2025 · 1.234.567 satır × 1.040 kolon". Başlıkta toplam
+  satır var; yanıltıcı olan "toplam kolon" kaldırıldı.
+- Alt alta ekleme mesajı tablo adlarını tekrar saymıyor; baz veri setinin
+  satır × kolon sayısını ve kayıt yerini yazıyor.
+
+---
+
+Önceki tur: **aynı kolonlu tablolar alt alta ekleniyor; birleştirme sonucu klasöre yazılıyor**.
 Yapıştır (fe_agent): `akis_faz01.py`, `akis_sohbet.py`, `akis_durum.py`, `veri_kaynak.py` · (webapp) `backend.py`
 
 - Seçilen tabloların hepsi aynı kolonlara sahipse (ör. FPD_TXN_FEATS_2025 ve
