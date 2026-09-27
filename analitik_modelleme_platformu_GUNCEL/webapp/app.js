@@ -4279,6 +4279,8 @@ function fazAyraclariniEkle(yeniAdim) {
     }
     if (!onceki) return;
     const yeni = yeniAdim ? adimKonumu(yeniAdim) : null;
+    // Adım listede yoksa hiçbir faz bitmiş sayılmaz (akışın sonu değil).
+    if (yeniAdim && !yeni) return;
     const hedef = yeni ? yeni.fazIdx : FAZLAR.length;
     for (let fi = onceki.fazIdx; fi < hedef; fi++) {
         if (sohbetEl.querySelector('.faz-bitti[data-faz="' + fi + '"]')) continue;
@@ -7529,6 +7531,11 @@ function yanitUygula(d, metin) {
        yarım kalmış bir işlem yüzünden geçmiş silinmemeli. */
     if (geriHedefi && !hataMi) transkriptiKirp(geriHedefi);
     geriHedefi = null;
+    /* FAZ LİSTESİ BLOKLARDAN ÖNCE. Mod seçilince adım listesi değişiyor;
+       eski listeyle çizilen yeni blok numarasız kalıyor ve faz ayracı
+       adımı bulamayıp bütün fazları "Tamamlandı" basıyordu (kullanıcı
+       bildirimi). */
+    if (d.fazlar) fazlariYukle(d.fazlar);
     /* Secili veri setinin adi bu iki govdeden okunuyor; kolon kaynakli
        form cizilmeden ONCE guncellenmeli. */
     if (d.ozet)  SON_OZET  = d.ozet;
@@ -7616,7 +7623,6 @@ function yanitUygula(d, metin) {
     secimAlaniEkle(d.secim_alani, blok);
     if (typeof d.tur_no === "number") TUR_NO = Math.max(TUR_NO, d.tur_no);
 
-    if (d.fazlar) fazlariYukle(d.fazlar);
     if (d.mod !== undefined) aktifMod = d.mod;
     if (d.adim_no !== undefined) {
         aktifAdim = d.adim_no;

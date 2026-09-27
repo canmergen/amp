@@ -1,6 +1,14 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Parquet + AMP_VERISETI Spark'ta + bölme tabloda + panel düzeltmeleri**.
+Bu tur: **mod seçilince bütün fazların "Tamamlandı" basılması düzeltildi**. Yapıştır: `app.js`
+
+- Yanıttaki faz listesi artık bloklar çizilmeden önce güncelleniyor.
+  Eskiden A seçilince yeni blok numarasız kalıyor ve beş fazın hepsi
+  "Tamamlandı" yazılıyordu.
+
+---
+
+Önceki tur: **Parquet + AMP_VERISETI Spark'ta + bölme tabloda + panel düzeltmeleri**.
 Yapıştır (fe_agent): yeni `tablo_io.py`, `spark_is.py`, `amp.py`, `amp_spark.py`;
 değişen `profil.py`, `akis_durum.py`, `akis_faz01.py`, `akis_faz02.py`,
 `akis_faz04.py`, `akis_faz05.py`, `akis_panel.py`, `sozluk_calisma.py`,
