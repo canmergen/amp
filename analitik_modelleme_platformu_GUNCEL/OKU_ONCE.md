@@ -1,6 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **yeni mesajlar platformun yazı standardında**. Yapıştır (fe_agent): `akis_faz01.py`
+Bu tur: **Kaynak Tablolar kartı sadeleşti**. Yapıştır: fe_agent `akis_faz01.py` · webapp `app.js` (JS)
+
+- Adım metni tek satır ve kalın değil: "Baz veri setini oluşturacak kaynak
+  tabloları seçin (en az iki tablo)." Ayrı gri "En az iki tablo seçin…" satırı
+  kaldırıldı.
+- Listeye eklenmiş tablolar arama listesinde artık görünmüyor; aynı tablo iki
+  kez seçilemez.
+
+---
+
+Önceki tur: **yeni mesajlar platformun yazı standardında**. Yapıştır (fe_agent): `akis_faz01.py`
 
 - Kaynak tablo özeti, alt alta ekleme sonucu, Mod C veri seti özeti ve
   birleştirme hata mesajları madde işaretli düz metin yerine "  Etiket : Değer"

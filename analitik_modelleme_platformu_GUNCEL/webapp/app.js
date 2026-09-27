@@ -4848,6 +4848,10 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         : kaynak.durum;
     const zorunlu = (s.zorunlu === false) ? false : true;
     const eslesmeYok = s.bos_mesaji || kaynak.eslesme_yok;
+    /* Listede GOSTERILMEYECEK adlar (ör. listeye zaten eklenmiş tablolar;
+       kullanıcı bildirimi: "önceden seçtiğim tekrardan seçim kısmında
+       gözüküyor"). Fonksiyon: her çizimde güncel liste okunur. */
+    const haricAl = typeof s.haric === "function" ? s.haric : () => [];
 
     const no = ++KOMBO_SAYAC;
     const kok = document.createElement("div");
@@ -4989,8 +4993,9 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         if (d === "bos")        { bilgiSatiri(kaynak.bos_durum_mesaji); return; }
 
         const f = ftSade(filtre || "");
+        const haric = new Set(haricAl().map(ftSade));
         const sonuc = listeAl()
-            .filter(x => ftSade(x).includes(f)).slice(0, 80);
+            .filter(x => !haric.has(ftSade(x)) && ftSade(x).includes(f)).slice(0, 80);
         if (!sonuc.length) {
             bilgiSatiri(eslesmeYok);
             return;
@@ -7323,7 +7328,7 @@ function secimAlaniEkle(alan, blok) {
         satir.className = "secim-satir";
 
         const combo = comboYap(alan.etiket || "Tablo ara", () => ekleDurumu(),
-                               "", { kaynak: alan.kaynak });
+                               "", { kaynak: alan.kaynak, haric: () => secilenler });
         satir.appendChild(combo.kok);
 
         const ekleBtn = document.createElement("button");

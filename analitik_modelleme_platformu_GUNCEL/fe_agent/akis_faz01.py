@@ -330,14 +330,11 @@ def mod_plan(durum):
 TABLO_ADI_KALIP = re.compile(r"^[\w.\-]+$", re.UNICODE)
 
 
-KAYNAK_TABLO_METNI = (
-    "**Veri setini oluşturacak kaynak tabloları seçin.**\n"
-    "Müşteri, ürün ve işlem tabloları gibi henüz birleştirilmemiş "
-    "tabloların tamamını ekleyin. Seçiminizden sonra tabloların "
-    "şemalarını inceleyip bir birleştirme planı önereceğim: hangi tablonun "
-    "iskelet olacağı, diğerlerinin hangi anahtarla bağlanacağı ve işlem "
-    "tablolarından hangi dönemsel toplamaların üretileceği. Plan, "
-    "onayınızdan önce uygulanmaz.")
+# TEK SATIR, KALIN DEGIL (kullanici karari: "yazı bold olmamalı, çok
+# gereksiz uzun"). "En az iki tablo" kurali ayri gri satirda degil, ayni
+# cumlede.
+KAYNAK_TABLO_METNI = ("Baz veri setini oluşturacak kaynak tabloları seçin "
+                      "(en az iki tablo).")
 
 
 def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
@@ -358,7 +355,6 @@ def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
         durum["_secim_alani"] = {
             "tip": "liste",
             "baslik": "Kaynak Tablolar",
-            "aciklama": "En az iki tablo seçin; seçim sırası önemli değil.",
             "etiket": "Kaynak Tablo Ara",
             # Dugme etiketi Baslik Buyuk Harfi: her kelime buyuk baslar,
             # baglac ve edatlar ("ve, veya, ile, icin, mi, da, de") kucuk
