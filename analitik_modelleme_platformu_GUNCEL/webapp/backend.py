@@ -1191,6 +1191,19 @@ def karsilama_endpoint():
         return jsonify(_hata_govdesi("karsilama", e, "Karşılama yüklenemedi."))
 
 
+@app.route("/tani")
+def tani_endpoint():
+    """Webapp ortaminin tanisi (motor secimi icin; bkz. fe_agent.tani).
+    ?veri_seti=AD verilirse veri setinin konumunu ve okuma suresini de olcer.
+    Hicbir seye yazmaz."""
+    try:
+        from fe_agent import tani as tani_mod
+        veri_seti = (request.args.get("veri_seti") or "").strip() or None
+        return jsonify(tani_mod.tani(veri_seti))
+    except Exception as e:
+        return jsonify(_hata_govdesi("tani", e, "Tanı çalıştırılamadı."))
+
+
 @app.route("/spark_durum")
 def spark_durum_endpoint():
     """Webapp'teki Spark oturumunun durumu (tani icin):
