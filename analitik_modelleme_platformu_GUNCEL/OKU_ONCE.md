@@ -1,6 +1,9 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **onay düğmeleri ortada**. Yapıştır: `style.css`
+Bu tur: **onay düğmeleri ve işlem satırı ortada**. Yapıştır: `style.css`
+
+- "İşleniyor · 0:12 · İptal" satırı da ortalı. Bölme kartında
+  Önerilene Dön + Bu Ayarları Seç birlikte ortada (denetlendi).
 
 - Kartların ana düğmeleri (Girdileri Doğrula, Tanımları Onayla, Seçimleri
   Uygula ve Devam Et, Kaydet ve Devam Et, Bu Ayarları Seç) ve blok onay

@@ -2937,7 +2937,7 @@ span.bolme-cip { cursor: default; }
 /* İŞLEM SATIRI: aktif bloğun en altında tek ince satır; ilk saniyelerde
    gizli (kısa işlemde görünmez). */
 .islem-satiri {
-  display: none; align-items: center; gap: var(--b-3);
+  display: none; align-items: center; justify-content: center; gap: var(--b-3);
   margin-top: var(--b-3); padding-top: var(--b-2);
   border-top: 1px dashed var(--kenar);
   font-size: var(--fs-kucuk); color: var(--metin-soluk);
