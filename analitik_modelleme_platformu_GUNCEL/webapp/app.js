@@ -5962,6 +5962,16 @@ function bolmeBilgiSimgesi(metin, baslik) {
        çizilen balon kartı uzatıp sayfayı aşağı-yukarı oynatıyordu
        (kullanıcı bildirimi). Aşağıya sığmazsa simgenin ÜSTÜNE açılır;
        sağ kenar simgenin sağına hizalı, ekrandan taşmaz. */
+    /* UZUN METİN KAYDIRILABİLİR (kullanıcı bildirimi: "yazı uzunsa aşağı
+       kaydıramıyorum, kaydırmaya çalıştığımda kutu kayboluyor"). Balonun
+       yüksekliği sınırlı ve kendi içinde kayıyor (style.css .bolme-tip).
+       Eskiden fare simgeden balona geçerken aradaki boşlukta balon
+       kapanıyordu; kapanma kısa bir gecikmeyle yapılıyor, fare balona
+       girerse iptal ediliyor. Tekerlek balonun içindeyken yalnızca
+       balonu kaydırıyor; balon açıkken sayfa kayarsa (simge yerinden
+       oynar) balon simgeye yeniden hizalanıyor. */
+    let kapat = null;
+    const acikMi = () => tip.style.display === "block";
     const yerlestir = () => {
         const r = kap.getBoundingClientRect();
         tip.style.display = "block";
@@ -5970,14 +5980,34 @@ function bolmeBilgiSimgesi(metin, baslik) {
         let sol = Math.min(r.right - en, window.innerWidth - en - 8);
         sol = Math.max(sol, 8);
         const altYer = window.innerHeight - r.bottom - 8;
-        const ust = (boy <= altYer || r.top < boy + 8) ? r.bottom + 6 : r.top - boy - 6;
+        let ust = (boy <= altYer || r.top < boy + 8) ? r.bottom + 6 : r.top - boy - 6;
+        ust = Math.max(8, Math.min(ust, window.innerHeight - boy - 8));
         tip.style.left = sol + "px";
         tip.style.top = ust + "px";
     };
-    const gizle = () => { tip.style.display = ""; };
-    kap.onmouseenter = yerlestir;
-    kap.onfocus = yerlestir;
-    kap.onmouseleave = gizle;
+    const kaydirinca = (e) => {
+        if (e.target === tip || tip.contains(e.target)) return;
+        if (acikMi()) yerlestir();
+    };
+    const ac = () => {
+        clearTimeout(kapat);
+        if (acikMi()) return;          // açıkken yeniden konumlama sıçratmasın
+        tip.scrollTop = 0;
+        yerlestir();
+        window.addEventListener("scroll", kaydirinca, true);
+    };
+    const gizle = () => {
+        clearTimeout(kapat);
+        tip.style.display = "";
+        window.removeEventListener("scroll", kaydirinca, true);
+    };
+    kap.onmouseenter = ac;
+    kap.onfocus = ac;
+    kap.onmouseleave = () => {
+        clearTimeout(kapat);
+        if (document.activeElement === kap) return;   // tıklanarak açıldıysa açık kalır
+        kapat = setTimeout(gizle, 250);
+    };
     kap.onblur = gizle;
     return kap;
 }

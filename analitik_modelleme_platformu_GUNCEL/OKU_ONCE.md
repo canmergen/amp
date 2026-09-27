@@ -1,6 +1,15 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **"İşleniyor" yerine "İşlem Devam Ediyor"**. Yapıştır: `app.js`
+Bu tur: **"i" açıklamaları kaydırılabiliyor**. Yapıştır: `app.js`, `style.css`
+
+- Uzun açıklama balonun içinde kayıyor (en fazla ekranın %60'ı yükseklik);
+  tekerlek balondayken sayfa kaymıyor.
+- Fare simgeden balona geçerken balon kapanmıyor (kısa gecikme).
+  Tıklanarak açılan balon, başka yere tıklanana kadar açık kalıyor.
+
+---
+
+Önceki tur: **"İşleniyor" yerine "İşlem Devam Ediyor"**. Yapıştır: `app.js`
 
 - Aktif bloğun altındaki satır artık "İşlem Devam Ediyor · 0:12 · İptal".
 

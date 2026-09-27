@@ -2418,6 +2418,9 @@ button.ozet-kart:focus-visible {
   border: 1px solid var(--kenar); border-radius: var(--r); box-shadow: var(--golge-2);
   font-size: var(--fs-kucuk); line-height: 1.5; text-align: left; white-space: normal;
   font-style: normal; font-weight: var(--fw-normal);
+  /* Uzun açıklama balonun İÇİNDE kayar; tekerlek sayfaya geçmez. */
+  max-height: min(60vh, 28rem); overflow-y: auto; overscroll-behavior: contain;
+  cursor: auto;
 }
 /* Görünürlük JS'ten (konum hesabıyla birlikte); CSS yalnızca biçim. */
 .bf-metin { width: 16rem; max-width: 100%; }
