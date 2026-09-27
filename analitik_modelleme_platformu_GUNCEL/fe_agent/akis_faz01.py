@@ -333,8 +333,11 @@ TABLO_ADI_KALIP = re.compile(r"^[\w.\-]+$", re.UNICODE)
 # TEK SATIR, KALIN DEGIL (kullanici karari: "yazı bold olmamalı, çok
 # gereksiz uzun"). "En az iki tablo" kurali ayri gri satirda degil, ayni
 # cumlede.
-KAYNAK_TABLO_METNI = ("Baz veri setini oluşturacak kaynak tabloları seçin "
-                      "(en az iki tablo).")
+KAYNAK_TABLO_METNI = (
+    "Baz veri setini oluşturacak kaynak tabloları seçin (en az iki tablo). "
+    "Kolonları aynı olan tablolar (ör. yıllara bölünmüş aynı tablo) alt alta "
+    "eklenir; kolonları farklı olanlar için yapay zekâ hangi tablonun iskelet "
+    "olacağını ve diğerlerinin hangi anahtarla bağlanacağını önerir.")
 
 
 def ham_veri_girdi(durum, mesaj, yeniden_sor=False):

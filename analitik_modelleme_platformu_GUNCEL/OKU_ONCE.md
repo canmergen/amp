@@ -2,8 +2,9 @@
 
 Bu tur: **Kaynak Tablolar kartı sadeleşti**. Yapıştır: fe_agent `akis_faz01.py` · webapp `app.js` (JS)
 
-- Adım metni tek satır ve kalın değil: "Baz veri setini oluşturacak kaynak
-  tabloları seçin (en az iki tablo)." Ayrı gri "En az iki tablo seçin…" satırı
+- Adım metni kalın değil, iki cümle: ne seçileceği (en az iki tablo) ve
+  sonra ne olacağı (aynı kolonlu tablolar alt alta, farklı olanlar için
+  yapay zekâ birleştirme planı). Ayrı gri "En az iki tablo seçin…" satırı
   kaldırıldı.
 - Listeye eklenmiş tablolar arama listesinde artık görünmüyor; aynı tablo iki
   kez seçilemez.
