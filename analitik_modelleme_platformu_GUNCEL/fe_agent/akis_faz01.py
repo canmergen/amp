@@ -3622,28 +3622,26 @@ def bolme_uygula(durum):
                 if secilen_tipler else "")
 
     # KULLANICININ TABLOSUNA ASLA YAZILMAZ (kullanici bildirimi: yeni
-    # calismada kendi veri setinde _SPLIT kolonu gordu). Eskiden kimlik
-    # kullanilamayinca _SPLIT kolonu durum["veri_seti"]'ne, yani
-    # kullanicinin girdi tablosuna yaziliyordu. Artik yalnizca platformun
-    # KENDI kopyasina (AMP_VERISETI) yazilir; o kopya yoksa (dataset olarak
-    # yazilamamissa) bolme kalici yapilamaz ve adim nedenini soyler.
+    # calismada kendi veri setinde _SPLIT kolonu gordu). _SPLIT yalnizca
+    # platformun KENDI kopyasina (AMP_VERISETI) yazilir. O kopya akista
+    # dataset olarak yoksa (ya da baska calismanin kaydiyla ezildiyse)
+    # yazici None doner ve bolme_hazirla etiketleri calismanin klasorune
+    # kaydeder; adim hata verip karti yeniden ACMAZ.
     kaynak_ad, amp_mi = modelleme_kaynagi(durum)
 
     def _split_yaz(kopya):
         if not amp_mi or not kaynak_ad or kaynak_ad == veri_seti:
-            raise AdimHatasi(
-                "Bölme kolonu yazılacak platform kopyası (%s) yok; girdi "
-                "tablonuza yazılmaz. Modelleme tanımlarında kimlik kolonu "
-                "belirtirseniz bölme kimlik üzerinden sabitlenir."
-                % AMP_VERI_ADI)
-        yazildi, _ = _yaz(kaynak_ad, kopya, _amp_yolu(durum, kaynak_ad))
-        if yazildi:
-            amp_sahibi_yaz(durum)
-        return yazildi
+            return None
+        if not dataset_yaz(kaynak_ad, kopya):
+            return None
+        amp_sahibi_yaz(durum)
+        return kaynak_ad
 
     # Bolme BIR KEZ hesaplanip kalici hale getiriliyor; maskeler() bundan
     # sonra hep ayni satirlari ayni sete koyuyor.
-    tr, te, notlar = bolme_hazirla(durum, df, yazici=_split_yaz)
+    tr, te, notlar = bolme_hazirla(
+        durum, df, yazici=_split_yaz,
+        yedek_dosya=_amp_yolu(durum, "AMP_BOLME"))
     onbellek_temizle(kaynak_ad)
 
     # Set sayimlarini bolme_hazirla yaziyor (dort yolun da ayni sayimi

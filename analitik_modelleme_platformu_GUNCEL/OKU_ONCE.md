@@ -1,6 +1,19 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **onay düğmeleri ve işlem satırı ortada**. Yapıştır: `style.css`
+Bu tur: **Örneklem ve Doğrulama Tasarımı onayı sonraki adıma geçiyor**. Yapıştır: `akis_durum.py`, `akis_faz01.py`
+
+- Sebep: kimlik kolonu yokken bölme `_SPLIT` etiketini AMP_VERISETI veri
+  setine yazmak zorundaydı. AMP_VERISETI akışta dataset olarak yoksa
+  (klasördeki CSV'ye düşmüşse) adım hata verip kartı yeniden açıyordu.
+- Artık o durumda etiketler çalışmanın klasörüne kaydediliyor:
+  `PROJE_HAFIZASI/vN/AMP_BOLME.csv`. Girdi tablosuna yine dokunulmuyor.
+  AMP_VERISETI dataset olarak varsa `_SPLIT` eskisi gibi oraya yazılıyor.
+- Bölmeden sonra tablonun satır sayısı değişirse setler tahmin edilmiyor;
+  bölme adımının yeniden çalıştırılması isteniyor.
+
+---
+
+Önceki tur: **onay düğmeleri ve işlem satırı ortada**. Yapıştır: `style.css`
 
 - "İşleniyor · 0:12 · İptal" satırı da ortalı. Bölme kartında
   Önerilene Dön + Bu Ayarları Seç birlikte ortada (denetlendi).

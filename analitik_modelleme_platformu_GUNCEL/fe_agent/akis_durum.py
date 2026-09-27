@@ -1755,6 +1755,10 @@ def setler(durum, df):
     if split_kolon in df.columns:
         return _setler_etiket(df[split_kolon], df)
 
+    # 3b) Calisma klasorune kaydedilmis bolme etiketleri
+    if b.get("split_dosya"):
+        return _setler_etiket(_split_dosyasi_oku(b, df), df)
+
     # 4) Hicbir kalici kayit yok: bolme adimi calismamis ya da durum
     #    eksik yuklenmis demektir. Burada YENIDEN rastgeleleme YAPMIYORUZ;
     #    sessizce sizdirmaktansa acikca durduruyoruz.
@@ -1762,6 +1766,30 @@ def setler(durum, df):
         "Geliştirme/test bölmesi henüz kalıcı hale getirilmemiş. "
         "\"%s\" adımını çalıştırın; sızıntı sınırı olmadan "
         "hesaplama yapmıyorum." % ADIM_ADI["bolme"])
+
+
+def _split_dosyasi_oku(b, df):
+    """Calisma klasorundeki bolme etiketlerini df'nin satirlarina eslestirir.
+
+    Etiketler SATIR SIRASIYLA eslesir: dosyadaki n. etiket tablonun n.
+    satiri. Tablo TAM okunmali (setler hep tam tabloyla cagriliyor).
+    Uzunluk tutmuyorsa tablo bolmeden sonra degismis demektir; setler
+    tahmin edilmez, adim yeniden istenir."""
+    try:
+        etiket = _dosya_oku(b["split_dosya"])[SPLIT_KOLON]
+    except Exception:
+        raise AdimHatasi(
+            "Bölme etiketleri çalışma klasöründe okunamadı (PROJE_HAFIZASI%s). "
+            "\"%s\" adımını yeniden çalıştırın."
+            % (b["split_dosya"], ADIM_ADI["bolme"]))
+    n = len(df)
+    if n != len(etiket):
+        raise AdimHatasi(
+            "Veri seti bölmeden sonra değişmiş (%s satır bölündü, şimdi %s "
+            "satır); eski bölme bu tabloya uygulanamaz. \"%s\" adımını "
+            "yeniden çalıştırın."
+            % (_sayi(len(etiket)), _sayi(n), ADIM_ADI["bolme"]))
+    return pd.Series(etiket.to_numpy(), index=df.index)
 
 
 def maskeler(durum, df):
@@ -1774,7 +1802,7 @@ def maskeler(durum, df):
     return s["egitim"], s["test"]
 
 
-def bolme_hazirla(durum, df, yazici=None):
+def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
     """Bolmeyi BIR KEZ hesaplar ve SATIR KIMLIGI bazinda KALICI yapar.
 
     Eski surum maskeyi her cagrida okunan DataFrame'in uzunluguna ve satir
@@ -1786,7 +1814,9 @@ def bolme_hazirla(durum, df, yazici=None):
       1. Zamansal bolme  -> donem kolonundan her defasinda ayni setler cikar
       2. Kimlik kolonu   -> set kimlikleri durum["bolme"]["set_kimlikleri"]
       3. Kimlik yoksa    -> veri setine kalici SPLIT_KOLON yazilir
-         (yazici: (df) -> yazilan_dataset_adi ya da None)
+         (yazici: (df) -> yazilan_dataset_adi ya da None). Yazilacak
+         veri seti yoksa etiketler calismanin klasorune (yedek_dosya)
+         tek kolonluk dosya olarak kaydedilir; setler() oradan okur.
 
     Doner: (egitim_maske, test_maske, notlar)  notlar = kullaniciya mesaj listesi
     """
@@ -1885,14 +1915,11 @@ def bolme_hazirla(durum, df, yazici=None):
             eg, te = _bitir(durum, s, notlar)
             return eg, te, notlar
         notlar.append("Set kimliği sayısı %s üzerinde olduğu için kimlik "
-                      "listesi yerine veri setine kalıcı %s kolonu yazıldı."
-                      % (_sayi(TEST_KIMLIK_LIMITI), SPLIT_KOLON))
+                      "listesi yerine satır bazında kalıcı bölme etiketi "
+                      "kullanıldı." % _sayi(TEST_KIMLIK_LIMITI))
     elif a["birim"] == "kimlik":
         notlar.append("Kimlik kolonu veri setinde bulunamadığı için bölme "
                       "satır bazında yapıldı.")
-    else:
-        notlar.append("Bölme veri setine kalıcı %s kolonu olarak yazıldı."
-                      % SPLIT_KOLON)
 
     # --- Kalici _SPLIT kolonu --------------------------------------------
     secim = _katmanli_bolum_secimi(
@@ -1920,12 +1947,31 @@ def bolme_hazirla(durum, df, yazici=None):
                 "yazılamadı (%s). Sızıntı sınırını garanti edemediğim için "
                 "adımı tamamlamıyorum." % (SPLIT_KOLON, str(e)[:140]))
     b["split_dataset"] = yazilan
-    if not yazilan:
+    b.pop("split_dosya", None)
+    b.pop("split_satir", None)
+    if yazilan:
+        notlar.append("Bölme %s veri setine kalıcı %s kolonu olarak yazıldı."
+                      % (yazilan, SPLIT_KOLON))
+    elif yedek_dosya:
+        # PLATFORM KOPYASI DATASET DEGILSE (kullanici bildirimi: "örneklem
+        # ve doğrulama tasarımı onaylasam da tekrar soruyor"). AMP_VERISETI
+        # akista tanimli degilse klasordeki CSV'ye dusuyor ve kaynak
+        # olmuyor; _SPLIT'in yazilacagi yer kalmiyordu, adim her onayda
+        # hata verip karti yeniden aciyordu. Girdi tablosuna yazmak yasak
+        # oldugu icin etiketler calismanin KENDI klasorune tek kolon olarak
+        # kaydedilir; setler() satir sirasiyla eslestirir.
+        if dosya_yaz(yedek_dosya, pd.DataFrame({SPLIT_KOLON: etiket})):
+            b["split_dosya"] = yedek_dosya
+            b["split_satir"] = int(len(df))
+            notlar.append("Bölme etiketleri çalışma klasörüne kaydedildi "
+                          "(PROJE_HAFIZASI%s); girdi tablonuza dokunulmadı."
+                          % yedek_dosya)
+    if not yazilan and not b.get("split_dosya"):
         raise AdimHatasi(
-            "Bölmeyi kalıcı hale getiremedim: kimlik kolonu yok ve %s kolonu "
-            "veri setine yazılamadı. Modelleme tanımlarında bir kimlik kolonu "
-            "belirtirseniz bölme kimlik üzerinden sabitlenebilir."
-            % SPLIT_KOLON)
+            "Bölmeyi kalıcı hale getiremedim: kimlik kolonu yok ve bölme "
+            "etiketleri ne veri setine ne de çalışma klasörüne yazılabildi. "
+            "Modelleme tanımlarında bir kimlik kolonu belirtirseniz bölme "
+            "kimlik üzerinden sabitlenebilir.")
 
     # _SPLIT bir degisken degildir; degisken havuzunun disinda kalmali.
     durum["haric_kolonlar"] = sorted(
@@ -2182,7 +2228,8 @@ BOLME_FORM_ALANLARI = ("test_tanim", "katmanla", "val_var",
 # Bolme degistiginde kalici kayit GECERSIZDIR; yeniden hesaplanana kadar
 # eski setler dolasimda kalmamali.
 BOLME_KALICI_ALANLARI = ("kalici", "set_kimlikleri", "test_kimlikleri",
-                         "split_kolon", "split_dataset", "kimlik_kolon",
+                         "split_kolon", "split_dataset", "split_dosya",
+                         "split_satir", "kimlik_kolon",
                          "hazir_kolonlar",
                          "satir", "train_satir", "test_satir",
                          "oot_donemleri", "cv_etkin", "cv_notlari")
