@@ -1,6 +1,13 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **adım numaraları (01.1, 01.2 …) ve faz bitti ayracı**. Yapıştır: `app.js`, `style.css`, `backend.py` (webapp Python)
+Bu tur: **sağ panel sekme sırası**. Yapıştır: `index.html`
+
+- Üst satır: VERİ & SÖZLÜK · HAZIRLIK · DAĞILIM. Alt satır: SFA ·
+  İLİŞKİLER · VALİDASYON.
+
+---
+
+Önceki tur: **adım numaraları (01.1, 01.2 …) ve faz bitti ayracı**. Yapıştır: `app.js`, `style.css`, `backend.py` (webapp Python)
 
 - İş akışında, sohbet blok başlıklarında, Arşiv'de ve "kaldığı yerden
   yüklendi" mesajında adımlar faz numarasıyla: 01.1 Başlangıç Seçimi,
