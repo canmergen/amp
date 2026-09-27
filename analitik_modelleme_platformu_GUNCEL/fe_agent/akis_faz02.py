@@ -157,7 +157,7 @@ def veri_profili_uygula(durum):
     haric = set(durum.get("haric_kolonlar") or []) | {m.get("target"), m.get("id"), m.get("donem")}
 
     tablo, teshis = sfa_mod.profil_cikar(df, haric=haric)
-    yazildi, yedek = _yaz("%s_PROFIL" % durum["veri_seti"], tablo, "/veri_profili.csv")
+    yazildi, yedek = _yaz("%s_PROFIL" % durum["veri_seti"], tablo, "/veri_profili.parquet")
 
     p = durum.get("profil") or {}
     p["profil_teshis"] = teshis
@@ -222,7 +222,7 @@ def sfa_uygula(durum):
 
     tablo, ozet = sfa_mod.sfa_calistir(df, durum["meta"]["target"], adaylar,
                                        train_maske=tr)
-    yazildi, yedek = _yaz("%s_SFA" % durum["veri_seti"], tablo, "/sfa_tablosu.csv")
+    yazildi, yedek = _yaz("%s_SFA" % durum["veri_seti"], tablo, "/sfa_tablosu.parquet")
     ozet["tablo_dataset"] = yazildi
     # SFA sekmesi: IV'ye gore ilk 20 satir (tam tablo dataset'te kalir).
     ozet["ilk20"] = _sfa_ilk20(tablo)
@@ -314,7 +314,7 @@ def stabilite_uygula(durum):
         durum["stabilite"] = {"atlandi": True}
         return "Stabilite analizi yapılamadı."
 
-    yazildi, yedek = _yaz("%s_PSI" % durum["veri_seti"], tablo, "/stabilite.csv")
+    yazildi, yedek = _yaz("%s_PSI" % durum["veri_seti"], tablo, "/stabilite.parquet")
     ozet["tablo_dataset"] = yazildi
     ozet["karsilastirma"] = "eğitim ↔ test"
     # Olcumun NE ANLAMA geldigi bolmeye gore degisir; rapor bunu yazmali
@@ -421,7 +421,7 @@ def baz_uygula(durum):
     # Hedef veri seti akista tanimli degilse adim COKMESIN: hesap korunur,
     # tablo yedek dosyaya yazilir ve kullaniciya acik bir uyari verilir.
     baz_ds = "%s_BAZ" % durum["veri_seti"]
-    yazildi, yedek = _yaz(baz_ds, df, "/analitik_baz_set.csv")
+    yazildi, yedek = _yaz(baz_ds, df, "/analitik_baz_set.parquet")
 
     durum["haric_kolonlar"] = sorted(set(durum.get("haric_kolonlar") or []) | set(dusur))
     durum["baz"] = {"dataset": yazildi, "doldurma": "medyan (geliştirme seti)",

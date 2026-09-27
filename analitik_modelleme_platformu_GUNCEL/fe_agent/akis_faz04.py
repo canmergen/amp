@@ -136,7 +136,7 @@ def secim_uygula(durum):
         oncelik=(durum.get("sfa") or {}).get("iv_skorlari"), binary=binary,
         train_maske=tr)
 
-    yazildi, yedek = _yaz("%s_SECIM" % durum["veri_seti"], tablo, "/secim_tablosu.csv")
+    yazildi, yedek = _yaz("%s_SECIM" % durum["veri_seti"], tablo, "/secim_tablosu.parquet")
     durum["secim"] = oz
     durum["secim_tablo"] = tablo.to_dict("records")
 

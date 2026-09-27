@@ -52,12 +52,13 @@ SENARYO_DESENI = re.compile(r"^/senaryo_.+_(konfig|sonuc)\.json$")
 # CSV'ler ise her oturumda yeniden uretilir; korumali sayilirsa her
 # kullanicinin her oturumu klasorde kalici bir iz birakir ve PROJE_HAFIZASI
 # hicbir zaman temizlenemez.
-OTURUM_DOSYASI_DESENI = re.compile(r"^/[^/]+/(sozluk_calisma|sozluk_degisiklik)\.csv$")
+OTURUM_DOSYASI_DESENI = re.compile(
+    r"^/[^/]+/(sozluk_calisma|sozluk_degisiklik)\.(csv|parquet)$")
 
 # Varsayilan olarak DOKUNULMAZ: bunlar bir sorunun kaniti ya da ciktisi
 KORUMALI_DESENLER = (
     re.compile(r"^/uretim_kodu\.py$"),
-    re.compile(r"^/[^/]+\.csv$"),          # YALNIZCA kokteki CSV yedekleri
+    re.compile(r"^/[^/]+\.(csv|parquet)$"),  # YALNIZCA kokteki tablo yedekleri
 )
 
 # Kac gunden eski dosyalar eskimis sayilir (varsayilan)
@@ -220,9 +221,9 @@ def oturum_yollari(anahtar):
         return []
     kayit = ("/%s/calisma.json" % temiz if re.match(r"^v\d+$", temiz)
              else "/oturum_%s.json" % temiz)
-    return [kayit,
-            "/%s/sozluk_calisma.csv" % temiz,
-            "/%s/sozluk_degisiklik.csv" % temiz]
+    return [kayit] + ["/%s/%s.%s" % (temiz, ad, uz)
+                      for ad in ("sozluk_calisma", "sozluk_degisiklik")
+                      for uz in ("parquet", "csv")]
 
 
 def oturum_sil(anahtar, uygula=False):

@@ -11,6 +11,8 @@ import math
 import re
 import time
 import dataiku
+
+from fe_agent import tablo_io
 import numpy as np
 import pandas as pd
 
@@ -140,6 +142,7 @@ SET_BASLIK = {"egitim": "Train (MS)", "val": "Validasyon (OOS)",
 # yazilmis veri setlerinde bu deger duruyor ve okunamazsa o oturumun
 # bolmesi kaybolur.
 SPLIT_ETIKET = {"egitim": "train", "val": "val", "test": "test", "oot": "oot"}
+SPLIT_DISARIDA = "disarida"
 
 # Bir setin altinda anlamli olcum yapilamayan satir sayisi.
 MIN_SET_SATIR = 50
@@ -539,23 +542,25 @@ def dataset_yaz(ad, tablo):
 
 
 def dosya_yaz(yol, tablo):
-    """PROJE_HAFIZASI icine CSV. Doner: yazildi mi."""
+    """PROJE_HAFIZASI icine PARQUET (bkz. tablo_io; yol ".csv" verilse de).
+    Doner: yazilan GERCEK yol ya da None."""
     try:
-        _folder().upload_stream(yol, tablo.to_csv(index=False).encode("utf-8"))
-        _DF_ONBELLEK.pop((str(yol), None), None)
-        return True
+        gercek = tablo_io.klasore_yaz(_folder(), yol, tablo)
     except Exception:
-        return False
+        return None
+    for y in tablo_io.aday_yollar(yol):
+        _DF_ONBELLEK.pop((str(y), None), None)
+    return gercek
 
 
 def _dosya_oku(yol, limit=None):
-    """PROJE_HAFIZASI'ndaki CSV'yi okur; _df_oku ile ayni onbellek."""
+    """PROJE_HAFIZASI'ndaki tabloyu okur (Parquet, eski calismada CSV);
+    _df_oku ile ayni onbellek."""
     anahtar = (str(yol), limit)
     kayit = _DF_ONBELLEK.get(anahtar)
     if kayit is not None and time.time() - kayit[0] <= ONBELLEK_OMRU_SN:
         return kayit[1].copy()
-    with _folder().get_download_stream(yol) as s:
-        df = pd.read_csv(io.BytesIO(s.read()), nrows=limit)
+    df = tablo_io.klasorden_oku(_folder(), yol, limit)
     _DF_ONBELLEK[anahtar] = (time.time(), df)
     return df.copy()
 
@@ -718,8 +723,8 @@ def _yaz(dataset_adi, tablo, yedek_dosya):
         onbellek_temizle(dataset_adi)
         return dataset_adi, None
     except Exception:
-        _folder().upload_stream(yedek_dosya, tablo.to_csv(index=False).encode("utf-8"))
-        return None, yedek_dosya
+        # Yedek PARQUET (bkz. tablo_io); donen yol gercek dosya adidir.
+        return None, tablo_io.klasore_yaz(_folder(), yedek_dosya, tablo)
 
 def _nerede(yazildi, yedek):
     return ("%s veri setinde" % yazildi) if yazildi \
@@ -771,8 +776,7 @@ def sozluk_orijinal_oku(durum):
         return _df_oku(ad)
     yedek = durum.get("sozluk_yedek")
     if yedek:
-        with _folder().get_download_stream(yedek) as s:
-            return pd.read_csv(io.BytesIO(s.read()))
+        return tablo_io.klasorden_oku(_folder(), yedek)
     raise AdimHatasi("Değişken sözlüğü bulunamadı; sözlük üretimi adımını "
                      "tamamlamanız gerekiyor.")
 
@@ -1727,7 +1731,10 @@ def _setler_etiket(seri, df):
     test = e == SPLIT_ETIKET["test"]
     val = e == SPLIT_ETIKET["val"]
     oot = e == SPLIT_ETIKET["oot"]
-    return _tamamla(df, oot, val, test)
+    # "disarida": hicbir sete girmeyen satir (zamansal bolmede atlanan
+    # donem, hazir bolmede isaretsiz satir). Egitime de SAYILMAZ.
+    disarida = e == SPLIT_DISARIDA
+    return _tamamla(df, oot, val, test, disarida)
 
 
 def setler(durum, df):
@@ -1743,6 +1750,13 @@ def setler(durum, df):
     b = durum.get("bolme") or {}
     m = durum.get("meta") or {}
     a = bolme_ayarlari(durum)
+
+    # 00) AMP_VERISETI'NDEKI _SPLIT KOLONU. Spark motorunda HER bolme turu
+    # (hazir, zamansal, kimlik, satir) bu kolona yazilir; tablo neyse set
+    # odur, yeniden hesaplanmaz.
+    split_kolon = b.get("split_kolon")
+    if b.get("kalici") == "kolon" and split_kolon and split_kolon in df.columns:
+        return _setler_etiket(df[split_kolon], df)
 
     # 0) VERI SETINDE HAZIR DURAN BOLME. En basta: kullanici bunu acikca
     # sectiyse tabloda yazan bolme dogruluk kaynagidir ve platformun

@@ -20,6 +20,8 @@ from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
+from fe_agent import spark_is
+from fe_agent import amp as amp_mod
 
 from fe_agent.akis_metin import (
     ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI, MOD_SIRA)
@@ -36,6 +38,8 @@ from fe_agent.akis_durum import (
     donem_degeri, donem_serisi, donem_sirala,
     dataset_yaz, dosya_yaz, sahip_yaz, modelleme_kaynagi,
     ORNEK_MASKE, _ornek_metni, hazir_bolme_bul_profil,
+    BOLME_KALICI_ALANLARI, SET_ADLARI, SPLIT_ETIKET, MIN_SET_SATIR,
+    SET_BASLIK, _zamansal_test_donemleri,
 )
 
 
@@ -199,9 +203,13 @@ def _temel_profil(durum, prof):
     Sonuclar durum["profil"] icine yazilir; Analiz Merkezi'ndeki VERI
     sekmesi ve modelleme tanimlari formu buradan beslenir."""
     p = durum.get("profil") or {}
+    hucre = int(prof["satir"]) * int(prof["kolon"])
+    bos = sum(int(k.get("bos") or 0) for k in prof.get("kolonlar") or [])
     p.update({
         "satir": int(prof["satir"]), "kolon": int(prof["kolon"]),
         "kolon_baslangic": int(prof["kolon"]),
+        # Toplam null orani: tam tablo, butun hucreler (profilden, kesin).
+        "null_oran": round(float(bos) / hucre, 4) if hucre else None,
         "sayisal": int(prof["sayisal"]),
         "tarih": int(prof["tarih"]),
         "duplicate": int(prof["duplicate"]),
@@ -564,12 +572,12 @@ def birlestirme_uygula(durum):
     # tum hesap kayboluyordu. Once ozet/kutuk durumda saklanir, tablo CSV
     # yedegine alinir, sonra anlasilir hata verilir.
     durum["birlestirme"]["ozet"] = ozet
-    lineage_yazildi, lineage_yedek = _yaz(LINEAGE_ADI, kutuk, "/lineage.csv")
+    lineage_yazildi, lineage_yedek = _yaz(LINEAGE_ADI, kutuk, "/lineage.parquet")
     durum["birlestirme"]["lineage"] = lineage_yazildi
 
     ad = BAZ_ADI
-    kopya = _amp_yolu(durum, ad)
-    durum["birlestirme"]["dosya"] = kopya if dosya_yaz(kopya, baz) else None
+    kopya = dosya_yaz(_amp_yolu(durum, ad), baz)
+    durum["birlestirme"]["dosya"] = kopya or None
     if not dataset_yaz(ad, baz):
         durum["veri_seti"] = None
         durum["birlestirme"]["dataset"] = None
@@ -731,7 +739,7 @@ def sozluk_uret_uygula(durum):
     tablo = sozluk_mod.tablo_olustur(profiller, aciklamalar)
 
     try:
-        yazildi, yedek = _yaz(SOZLUK_ADI, tablo, "/degisken_sozlugu.csv")
+        yazildi, yedek = _yaz(SOZLUK_ADI, tablo, "/degisken_sozlugu.parquet")
     except Exception as e:
         durum["sozluk"], durum["sozluk_yedek"] = None, None
         raise AdimHatasi(
@@ -1092,7 +1100,7 @@ def kaynak_sozlugunden_kur(durum, baz, kutuk):
 def _mod_b_sozlugu(durum, baz, kutuk):
     """Birlestirmeden sonra Mod B'nin sozluk isi. Doner: rapor metni."""
     tablo, oz = kaynak_sozlugunden_kur(durum, baz, kutuk)
-    yazildi, yedek = _yaz(SOZLUK_ADI, tablo, "/degisken_sozlugu.csv")
+    yazildi, yedek = _yaz(SOZLUK_ADI, tablo, "/degisken_sozlugu.parquet")
     durum["sozluk"] = yazildi or None
     durum["sozluk_yedek"] = yedek
     durum["sozluk_uretim"] = {"kaynak": "kaynak sözlükleri", **oz}
@@ -3021,9 +3029,9 @@ def amp_klasor_adi(durum):
     sey TEK klasorde: sozluk calisma kopyasi zaten /<calisma>/ altinda
     duruyordu, AMP_VERISETI ve AMP_SOZLUK da artik yaninda:
 
-        PROJE_HAFIZASI/v3/AMP_VERISETI.csv
-        PROJE_HAFIZASI/v3/AMP_SOZLUK.csv
-        PROJE_HAFIZASI/v3/sozluk_calisma.csv
+        PROJE_HAFIZASI/v3/AMP_SOZLUK.parquet   (Flow'da dataset yoksa)
+        PROJE_HAFIZASI/v3/sozluk_calisma.parquet
+        PROJE_HAFIZASI/v3/profil.json
 
     Ayri bir AMP klasoru, tarih damgasi ya da SON.txt yok. Klasor adi
     "Çalışmalarım" listesindeki numarayla ayni.
@@ -3040,7 +3048,7 @@ def amp_klasor_adi(durum):
 
 def _amp_yolu(durum, ad):
     """PROJE_HAFIZASI icinde calismanin kendi klasorunde dosya yolu."""
-    return "/%s/%s.csv" % (amp_klasor_adi(durum), ad)
+    return "/%s/%s.parquet" % (amp_klasor_adi(durum), ad)
 
 
 def amp_ciktilarini_yaz(durum):
@@ -3048,7 +3056,11 @@ def amp_ciktilarini_yaz(durum):
 
     Her deger: {"ad", "dataset", "dosya"} - "dataset" doluysa akista o
     adla bir veri seti var ve oraya yazildi; degilse "dosya" PROJE
-    HAFIZASI icindeki CSV yolu.
+    HAFIZASI icindeki Parquet yolu (yalnizca sozluk ve "yerel" motor).
+
+    SPARK MOTORU (varsayilan): AMP_VERISETI'ni PySpark recipe'i yazar
+    (bkz. amp.py). Flow'da AMP_VERISETI dataset'i yoksa adim DURUR; buyuk
+    tablo klasore yedeklenmez.
 
     NE ZAMAN: sozluk teyidi KAYDEDILDIGINDE. O an tablo son halini
     aliyor - tip donusumleri secildi, tanimlar yazildi, surec disi
@@ -3057,6 +3069,19 @@ def amp_ciktilarini_yaz(durum):
     KAYNAK TABLOYA DOKUNULMAZ: AMP_VERISETI platformun KENDI kopyasi;
     Mod A ve B'de kullanicinin orijinal tablosu oldugu gibi kalir."""
     sonuc = {}
+
+    if spark_is.motor() == "spark":
+        oz = amp_mod.amp_yaz(durum, _profil(durum))
+        sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": AMP_VERI_ADI,
+                         "dosya": None, "satir": int(oz.get("satir") or 0),
+                         "kolon": int(oz.get("kolon") or 0),
+                         "dusen_kolon": len(oz.get("dusen") or [])}
+        # Tablo _SPLIT'siz yeniden yazildi: onceki bolme artik gecersiz.
+        b = durum.get("bolme") or {}
+        for k in BOLME_KALICI_ALANLARI:
+            b.pop(k, None)
+        durum["bolme"] = b
+        return _amp_sozluk_ve_kayit(durum, sonuc)
 
     # --- veri seti: tip donusumleri uygulanmis TAM tablo ---------------
     # kaynak=True: KULLANICININ tablosunu okur. Varsayilan yol artik
@@ -3086,6 +3111,11 @@ def amp_ciktilarini_yaz(durum):
                          "kolon": int(df.shape[1]),
                          "dusen_kolon": len(dusen)}
 
+    return _amp_sozluk_ve_kayit(durum, sonuc)
+
+
+def _amp_sozluk_ve_kayit(durum, sonuc):
+    """AMP_SOZLUK'u yazar, sahipligi ve durumu kaydeder."""
     # --- sozluk: teyit tablosunun aynisi -------------------------------
     try:
         kolonlar, satirlar, _yuzde = _excel_satirlari(durum, True)
@@ -3120,7 +3150,8 @@ def amp_nerede(kayit):
     if kayit.get("dataset"):
         return "%s veri seti" % kayit["dataset"]
     if kayit.get("dosya"):
-        return "PROJE_HAFIZASI%s" % kayit["dosya"]
+        # Flow'da ayni adli veri seti yok; klasore Parquet olarak yazildi.
+        return "PROJE_HAFIZASI%s (Flow'da veri seti tanımlı değil)" % kayit["dosya"]
     return "yazılamadı (%s)" % (kayit.get("hata") or "bilinmeyen hata")
 
 
@@ -3526,7 +3557,130 @@ def bolme_girdi(durum, mesaj, yeniden_sor=False):
     return True, None
 
 
+def _bolme_tarifi(durum, a, b, notlar):
+    """Spark recipe'ine giden bolme tarifi (amp_spark.bolme_ekle).
+
+    Kararlar bolme_hazirla ile AYNI kurallarla burada verilir; tablo
+    okunmaz. Zamansal bolmenin test donemleri profildeki donem listesinden,
+    val ve bosluk donemleri recipe'te donem basina satir sayisindan cikar."""
+    m = durum.get("meta") or {}
+    kol = profil_mod.kolonlar(_profil(durum))
+    if a["test_tanim"] == "hazir":
+        tanim = durum.get("_hazir_bolme")
+        if not isinstance(tanim, dict):
+            raise AdimHatasi(
+                "Veri setinde hazır bölme kullanılacaktı ama bölme kolonu "
+                "bulunamadı; \"%s\" adımını yeniden çalıştırın."
+                % ADIM_ADI["bolme"])
+        b["hazir_kolonlar"] = list(tanim.get("kolonlar") or [])
+        return {"tur": "hazir", "bicim": tanim.get("tur"),
+                "kolon": tanim.get("kolon"), "esleme": tanim.get("esleme") or {}}
+    donem = m.get("donem")
+    if a["test_tanim"] == "zamansal" and donem in kol:
+        donemler = durum.get("_donemler") or _donem_listesi_profilden(kol[donem])
+        durum["bolme"] = b
+        test = _zamansal_test_donemleri(durum, pd.Series(donemler, dtype=object), a)
+        b["test_donemleri"] = test
+        return {"tur": "zamansal", "kolon": donem, "test_donemleri": test,
+                "val_var": bool(a["val_var"]), "val_oran": a["val_oran"],
+                "gap": a.get("gap")}
+    oranlar = [["test", a["test_oran"]]]
+    if a["val_var"]:
+        oranlar.append(["val", a["val_oran"]])
+    kimlik = m.get("id") if a["birim"] == "kimlik" else None
+    if kimlik and kimlik in kol:
+        notlar.append("Bölme %s kimliği üzerinden yapıldı; aynı kimlik iki "
+                      "sete birden düşmez." % kimlik)
+    else:
+        if a["birim"] == "kimlik":
+            notlar.append("Kimlik kolonu veri setinde bulunamadığı için bölme "
+                          "satır bazında yapıldı.")
+        kimlik = None
+    return {"tur": "rastgele", "kimlik": kimlik, "katmanla": bool(a["katmanla"]),
+            "hedef": m.get("target"), "oranlar": oranlar, "seed": a["seed"]}
+
+
+def _bolme_uygula_spark(durum):
+    """Bolmeyi Spark'ta uygular: AMP_VERISETI _SPLIT kolonuyla yeniden
+    yazilir; set sayilari recipe'ten gelir. Tablo webapp'te okunmaz."""
+    b = dict(durum.get("bolme") or {})
+    a = bolme_ayarlari(durum)
+    for k in ("test_tanim", "tur", "birim", "katmanla", "val_var", "val_oran",
+              "test_oran", "cv", "kat", "oot_adet", "oot_tanim", "seed",
+              "seed_tur", "tekrar", "gap"):
+        b[k] = a[k]
+    b.pop("oot_var", None)
+    for k in BOLME_KALICI_ALANLARI:
+        b.pop(k, None)
+    b.pop("test_donemleri", None)
+    notlar = []
+    tarif = _bolme_tarifi(durum, a, b, notlar)
+    b.setdefault("test_donemleri", [])
+
+    oz = amp_mod.amp_yaz(durum, _profil(durum), bolme=tarif)
+    setler = oz.get("setler") or {}
+    sayi = {ad: int((setler.get(SPLIT_ETIKET[ad]) or {}).get("satir") or 0)
+            for ad in SET_ADLARI}
+    b.update({"kalici": "kolon", "split_kolon": SPLIT_KOLON,
+              "split_dataset": AMP_VERI_ADI, "satir": sayi,
+              "train_satir": sayi["egitim"], "test_satir": sayi["test"],
+              "toplam_satir": int(oz.get("satir") or 0)})
+    durum["amp_cikti"] = dict(durum.get("amp_cikti") or {})
+    durum["amp_cikti"]["veri"] = {
+        "ad": AMP_VERI_ADI, "dataset": AMP_VERI_ADI, "dosya": None,
+        "satir": int(oz.get("satir") or 0), "kolon": int(oz.get("kolon") or 0),
+        "dusen_kolon": len(oz.get("dusen") or [])}
+    amp_sahibi_yaz(durum)
+
+    disarida = int((setler.get(amp_mod.DISARIDA) or {}).get("satir") or 0)
+    if tarif["tur"] == "hazir":
+        if disarida:
+            notlar.append("Veri setindeki bölme kullanıldı (%s). %s satır hiçbir "
+                          "sete işaretlenmemiş; bu satırlar modellemeye girmiyor."
+                          % (", ".join(b["hazir_kolonlar"]), _sayi(disarida)))
+        else:
+            notlar.append("Veri setindeki bölme kullanıldı (%s); kolonlara "
+                          "dokunulmadı." % ", ".join(b["hazir_kolonlar"]))
+    elif tarif["tur"] == "zamansal" and a["val_var"] and not sayi["val"]:
+        notlar.append("Zamansal bölmede doğrulama için ayrılabilecek dönem "
+                      "kalmadı; eğitime en az bir dönem bırakıldı.")
+    for ad in SET_ADLARI:
+        n = sayi[ad]
+        if 0 < n < MIN_SET_SATIR:
+            notlar.append("%s seti yalnızca %s satır; %s satırın altındaki "
+                          "sette ölçüm güvenilir değil."
+                          % (SET_BASLIK[ad], _sayi(n), _sayi(MIN_SET_SATIR)))
+
+    # _SPLIT bir degisken degildir; degisken havuzunun disinda kalmali.
+    durum["haric_kolonlar"] = sorted(
+        set(durum.get("haric_kolonlar") or []) | {SPLIT_KOLON})
+    durum["bolme"] = b
+
+    oran_not = ""
+    if (durum.get("profil") or {}).get("hedef_tip") == "binary":
+        def oran(ad):
+            s = setler.get(SPLIT_ETIKET[ad]) or {}
+            return 100.0 * float(s.get("pozitif") or 0) / s["satir"] \
+                if s.get("satir") else 0.0
+        oran_not = ("\nHedef oranı: geliştirme %%%s, test %%%s."
+                    % (_ond(oran("egitim"), 2), _ond(oran("test"), 2)))
+    if sayi["val"] or sayi["oot"]:
+        notlar.append("Setler: %s." % bolme_ozeti(durum))
+    ek = ("\n" + "\n".join(notlar)) if notlar else ""
+    secilen_tipler = durum.get("tip_donusum") or {}
+    if secilen_tipler:
+        ek += ("\n%s kolon sözlük teyidindeki seçiminize göre dönüştürülmüş "
+               "tiple işleniyor." % _sayi(len(secilen_tipler)))
+    return ("Bölme tanımlandı: %s satırın %s satırı geliştirme, %s satırı "
+            "test.%s%s"
+            % (_sayi(b["toplam_satir"]), _sayi(b["train_satir"]),
+               _sayi(b["test_satir"]), oran_not, ek))
+
+
 def bolme_uygula(durum):
+    if spark_is.motor() == "spark":
+        return _bolme_uygula_spark(durum)
+    # YEREL MOTOR (kucuk veri / deneme): tablo pandas ile okunur.
     # TAM tablo okunuyor: eskiden limit=100000 ile okunup satir sayilari bu
     # KESILMIS tablodan hesaplaniyordu; diger adimlar tam tabloyu okudugu
     # icin kullaniciya yanlis satir sayisi gosteriliyordu.

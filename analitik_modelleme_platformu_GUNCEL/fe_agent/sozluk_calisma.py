@@ -41,10 +41,11 @@ import time
 import pandas as pd
 
 from fe_agent import kutuk as kutuk_mod
+from fe_agent import tablo_io
 from fe_agent.akis_durum import _folder, sozluk_orijinal_oku
 
 
-DOSYA_ADI = "sozluk_calisma.csv"
+DOSYA_ADI = "sozluk_calisma.parquet"   # eski calismalarda .csv (okunur)
 
 # Kopyada kategori tutulan kolonun KANONIK adi. Sozlukte baska bir
 # yazimla varsa (Kategori / KATEGORİ) o kolon KULLANILIR, yenisi acilmaz.
@@ -175,9 +176,7 @@ def _onbellek_dusur(yol=None):
 
 
 def _oku_yoldan(yol):
-    with _folder().get_download_stream(yol) as s:
-        ham = s.read()
-    return pd.read_csv(io.BytesIO(ham))
+    return tablo_io.klasorden_oku(_folder(), yol)
 
 
 def kopya_oku(oturum_anahtari):
@@ -212,7 +211,7 @@ def _kopya_yaz(oturum_anahtari, tablo):
         return None, ("Oturum anahtarı çözülemediği için sözlük çalışma "
                       "kopyası oluşturulamadı.")
     try:
-        _folder().upload_stream(yol, tablo.to_csv(index=False).encode("utf-8"))
+        yol = tablo_io.klasore_yaz(_folder(), yol, tablo)
     except Exception as e:
         return None, ("Sözlük çalışma kopyası proje hafızasına yazılamadı "
                       "(%s)." % str(e)[:140])
@@ -728,9 +727,11 @@ def calisma_kopyasi_sil(oturum_anahtari):
         return []
 
     silinen = []
-    for hedef in (yol, kutuk_mod._degisiklik_yolu(oturum_anahtari)):
-        if not hedef:
-            continue
+    hedefler = []
+    for y in (yol, kutuk_mod._degisiklik_yolu(oturum_anahtari)):
+        if y:
+            hedefler.extend(tablo_io.aday_yollar(y))   # .parquet ve eski .csv
+    for hedef in hedefler:
         try:
             _folder().delete_path(hedef)
             silinen.append(hedef)

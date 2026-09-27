@@ -563,7 +563,7 @@ def katalog_uygula(durum):
     # fazla kosunun satiri ayirt edilebilsin.
     tablo = katalog_mod.olustur(durum, oturum_id=durum.get("_oturum_id"))
     yazildi, yedek = _yaz("%s_KATALOG" % durum["veri_seti"], tablo,
-                          "/degisken_katalogu.csv")
+                          "/degisken_katalogu.parquet")
 
     secilen = int((tablo["SECIM"] == "SECILDI").sum()) if len(tablo) else 0
     atlanan = int(getattr(tablo, "attrs", {}).get("atlanan_satir") or 0)

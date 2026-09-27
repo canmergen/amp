@@ -1,6 +1,58 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **sağ panel sekme sırası**. Yapıştır: `index.html`
+Bu tur: **Parquet + AMP_VERISETI Spark'ta + bölme tabloda + panel düzeltmeleri**.
+Yapıştır (fe_agent): yeni `tablo_io.py`, `spark_is.py`, `amp.py`, `amp_spark.py`;
+değişen `profil.py`, `akis_durum.py`, `akis_faz01.py`, `akis_faz02.py`,
+`akis_faz04.py`, `akis_faz05.py`, `akis_panel.py`, `sozluk_calisma.py`,
+`kutuk.py`, `bakim.py`
+
+Dataiku'da bir kez yapılacak kurulum (profil recipe'ine ek olarak):
+1. Yeni **PySpark recipe**:
+   - Girdi: baz veri setiniz. Webapp her çalıştırmada girdiyi seçilen
+     veri setine çevirir.
+   - Çıktı 1: yeni veri seti **AMP_VERISETI**. Bağlantı S3, Settings >
+     Format: **Parquet**.
+   - Çıktı 2: yeni managed folder **AMP_SONUC**.
+   - Recipe adı `compute_AMP_VERISETI` olmalı (Dataiku varsayılan olarak
+     bu adı verir). Farklıysa proje değişkeni `amp_veri_recete`'ye yazın.
+   - Kodun tamamı:
+     ```
+     from fe_agent import amp_spark
+     amp_spark.recete_calistir()
+     ```
+2. Webapp'in code env'inde **pyarrow** olmalı (klasöre yazılan tablolar
+   Parquet). Yoksa dosyalar geçici olarak CSV'ye düşer.
+
+Ne değişti:
+- Platformun klasöre yazdığı her tablo Parquet: sözlük çalışma kopyası,
+  değişiklik kütüğü, yedekler. Eski çalışmaların CSV'leri okunmaya devam
+  eder.
+- AMP_VERISETI'ni artık Spark recipe'i yazıyor (Değişken Kontrolü
+  onayında):
+  - Tip dönüşümleri uygulanıyor, süreç dışı kolonlar düşürülüyor.
+  - Dönüşüm eski yolla birebir aynı sonucu veriyor.
+  - Dolu olup çevrilemeyen tek hücre bile varsa iş durur.
+  - CSV yedeği yok: AMP_VERISETI Flow'da yoksa adım bunu söyleyip durur.
+- Bölme: AMP_VERISETI yeniden yazılıyor ve bölme `_SPLIT` kolonu olarak
+  tabloya ekleniyor (hazır, zamansal, kimlik bazlı ve satır bazlı).
+  Sonraki adımlar setleri bu kolondan okuyor. Set sayıları ve hedef
+  oranları Spark'tan geliyor.
+- Veri Seti kartı:
+  - Satır × Kolon ve Sayısal / Kategorik / Tarih, Değişken Kontrolü'nden
+    sonra kalan kolonlara ve son tiplere göre.
+  - Toplam Null Oranı veri seti seçilince doluyor.
+  - Hedef Oranı satırı kaldırıldı (Hedef Tipi ve Dağılımı'nda zaten var).
+  - Dönem Aralığı: tek değerli dönem için nedenini yazıyor.
+  - Kayıt Yeri: Flow'da veri seti yoksa bunu açıkça söylüyor.
+- Sözlük kartı: yalnızca süreçte kalan kolonları sayıyor
+  ("1.041 · 1 süreç dışı"). Alttaki tabloya dokunulmadı.
+
+Hâlâ pandas ile tam tabloyu okuyanlar (sonraki adımlar): B/D birleştirmesi,
+2-5. fazlar (veri profili, SFA, stabilite, seçim, model) ve Dağılım sekmesi.
+
+---
+
+Önceki tur: **sağ panel sekme sırası**. Yapıştır: `index.html`
 
 - Üst satır: VERİ & SÖZLÜK · HAZIRLIK · DAĞILIM. Alt satır: SFA ·
   İLİŞKİLER · VALİDASYON.

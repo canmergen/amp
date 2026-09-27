@@ -12,6 +12,7 @@ import re
 
 import pandas as pd
 
+from fe_agent import tablo_io
 from fe_agent.akis_durum import _folder
 
 SUTUNLAR = ["KOSU_ID", "ZAMAN", "FEATURE", "KAYNAK", "IFADE", "KAYNAK_KOLONLAR",
@@ -166,7 +167,7 @@ def olustur(durum, oturum_id=None):
 #   engellemek icin gecerli bir sebep degil. Yazma basarisiz olursa
 #   False doner; cagiran taraf isterse bildirir, akis durmaz.
 # ===========================================================================
-DEGISIKLIK_DOSYASI = "sozluk_degisiklik.csv"
+DEGISIKLIK_DOSYASI = "sozluk_degisiklik.parquet"   # eski calismalarda .csv
 DEGISIKLIK_SUTUNLARI = ["ZAMAN", "KOSU_ID", "ALAN", "ANAHTAR",
                         "ESKI", "YENI", "KAYNAK"]
 
@@ -184,9 +185,7 @@ def degisiklik_oku(oturum_anahtari):
     if not yol:
         return pd.DataFrame(columns=DEGISIKLIK_SUTUNLARI)
     try:
-        with _folder().get_download_stream(yol) as s:
-            ham = s.read()
-        return pd.read_csv(io.BytesIO(ham))
+        return tablo_io.klasorden_oku(_folder(), yol)
     except Exception:
         return pd.DataFrame(columns=DEGISIKLIK_SUTUNLARI)
 
@@ -218,7 +217,7 @@ def degisiklik_dus(oturum_anahtari, kayitlar):
         eski = degisiklik_oku(oturum_anahtari)
         tablo = pd.concat([eski, yeni], ignore_index=True) \
             if len(eski) else yeni
-        _folder().upload_stream(yol, tablo.to_csv(index=False).encode("utf-8"))
+        tablo_io.klasore_yaz(_folder(), yol, tablo)
         return True
     except Exception:
         return False

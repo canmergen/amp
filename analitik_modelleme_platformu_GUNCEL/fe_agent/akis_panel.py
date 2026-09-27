@@ -776,11 +776,35 @@ def _oran(pay, payda):
     return p / float(b)
 
 
-def _tip_dagilimi(p):
+def _teyitten_sonra(durum):
+    """Degisken Kontrolu kaydedildi mi (AMP_VERISETI yazildi mi)?"""
+    amp = ((durum or {}).get("amp_cikti") or {}).get("veri") or {}
+    return bool(amp.get("dataset") or amp.get("dosya"))
+
+
+def _kalan_kolonlar(durum, p):
+    """Degisken Kontrolu'nden sonra tabloda KALAN kolonlarin ozeti
+    (surec disi dusenler haric, tip secimleri islenmis)."""
+    from fe_agent import amp as amp_mod
+    ozet = [o for o in (p.get("kolon_ozet") or []) if isinstance(o, dict)]
+    dusen = set(amp_mod.dusen_kolonlar(durum, [o.get("ad") for o in ozet]))
+    return [o for o in ozet if o.get("ad") not in dusen]
+
+
+def _tip_dagilimi(p, durum=None):
     """'812 / 218 / 12' - sayisal / kategorik / tarih.
 
     Tarih kolonlari eskiden kategorige sayiliyordu; kategorik artik
-    kolon - sayisal - tarih olarak hesaplanir."""
+    kolon - sayisal - tarih olarak hesaplanir.
+
+    DEGISKEN KONTROLU'NDEN SONRA tabloda kalan kolonlar ve son tipleri
+    sayilir: surec disi kolon duser, tipi degistirilen kolon yeni
+    tipinde sayilir (kullanici bildirimi: sayilar guncellenmiyordu)."""
+    if durum is not None and _teyitten_sonra(durum) and p.get("kolon_ozet"):
+        kalan = _kalan_kolonlar(durum, p)
+        say = lambda t: sum(1 for o in kalan if o.get("tip") == t)
+        return "%s / %s / %s" % (_sayi(say("sayısal")), _sayi(say("kategorik")),
+                                  _sayi(say("tarih")))
     kolon = _tam(p.get("kolon_baslangic") or p.get("kolon"))
     if not kolon:
         return None
@@ -800,7 +824,12 @@ def _duplicate_metni(p):
     return "%s  (%s)" % (_sayi(adet), _yuzde(oran, 2))
 
 
-def _donem_araligi(p):
+def _donem_araligi(p, durum=None):
+    # Donem secildi ama tek degerli oldugu icin dusuruldu: bos (Ø) yerine
+    # nedeni (kullanici bildirimi).
+    dusen = (durum or {}).get("_donem_dusuruldu")
+    if dusen:
+        return "%s tek değerli olduğu için kullanılmadı" % dusen
     if not p.get("donem_min"):
         return None
     if p.get("donem_min") == p.get("donem_maks"):
@@ -940,6 +969,14 @@ def veri_paneli(durum):
 
     boyut = ("%s × %s" % (_sayi(satir), _sayi(kolon))
              if satir and kolon else None)
+    # DEGISKEN KONTROLU'NDEN SONRA yazilan tablonun boyutu (kullanici
+    # bildirimi: surec disi kolon dustugu halde ilk sayi kaliyordu).
+    amp = (durum.get("amp_cikti") or {}).get("veri") or {}
+    if boyut and _teyitten_sonra(durum):
+        dusen = _tam(amp.get("dusen_kolon"), 0) or 0
+        boyut = "%s × %s" % (_sayi(satir), _sayi(max(kolon - dusen, 0)))
+        if dusen:
+            boyut += "  (%s süreç dışı düşürüldü)" % _sayi(dusen)
 
     kimlik_dup = _tam(p.get("duplicate_kimlik"))
     veri_adimi = _veri_adimi(durum)
@@ -954,16 +991,17 @@ def veri_paneli(durum):
         ("Köken", _veri_kokeni(durum), veri_adimi),
         ("Kayıt Yeri", _kayit_yeri(durum, "veri"), KAYIT_ADIMI),
         ("Satır × Kolon", boyut, veri_adimi),
-        ("Sayısal / Kategorik / Tarih", _tip_dagilimi(p), veri_adimi),
+        ("Sayısal / Kategorik / Tarih", _tip_dagilimi(p, durum), veri_adimi),
         ("Tekrarlı Satır", _duplicate_metni(p), veri_adimi),
         ("Kimlik Bazlı Tekrar",
          None if kimlik_dup is None else _sayi(kimlik_dup), TANIM_ADIMI),
-        ("Toplam Null Oranı", _yuzde(p.get("null_oran"), 2), PROFIL_ADIMI),
+        # Null orani veri seti profilinden (tam tablo), secimle birlikte dolar.
+        ("Toplam Null Oranı", _yuzde(p.get("null_oran"), 2), veri_adimi),
         ("Hedef Değişken",
          (durum.get("meta") or {}).get("target"), TANIM_ADIMI),
+        # "Hedef Oranı" satiri KALDIRILDI: ayni oran bu satirda zaten var.
         ("Hedef Tipi ve Dağılımı", p.get("hedef_ozet"), TANIM_ADIMI),
-        ("Hedef Oranı", _yuzde_dogrudan(p.get("event_rate")), TANIM_ADIMI),
-        ("Dönem Aralığı", _donem_araligi(p), TANIM_ADIMI),
+        ("Dönem Aralığı", _donem_araligi(p, durum), TANIM_ADIMI),
     ])
 
     kartlar = [veri_kart]
@@ -1198,8 +1236,19 @@ def _sozluk_karti(durum):
     # kapsamla celisiyordu. Uc satir da artik ayni kaynaktan
     # (sozluk_kapsami) geliyor, dolayisiyla birlikte hareket ediyorlar.
     kolonlar, tanimli, tanimsiz = sozluk_kapsami(durum)
+    # YALNIZCA SURECTE KALAN KOLONLAR sayilir; surec disi kolonlar
+    # AMP_SOZLUK'ta isaretiyle durur ama tabloda yoktur. Kac tane oldugu
+    # Tanım Sayısı satirinda ayrica yazar.
+    disi = set(map(str, durum.get("haric_kolonlar") or [])) & set(kolonlar)
+    kolonlar = [k for k in kolonlar if k not in disi]
+    tanimli = [k for k in tanimli if k not in disi]
+    tanimsiz = [k for k in tanimsiz if k not in disi]
     kapsam = (round(100.0 * len(tanimli) / len(kolonlar), 1)
               if kolonlar else None)
+    tanim_sayisi = None
+    if kolonlar or disi:
+        tanim_sayisi = _sayi(len(tanimli)) + (
+            "  · %s süreç dışı" % _sayi(len(disi)) if disi else "")
 
     sozluk_adimi = _sozluk_adimi(durum)
     return _kart("Değişken Sözlüğü", [
@@ -1210,7 +1259,7 @@ def _sozluk_karti(durum):
          sozluk_adimi),
         ("Köken", _sozluk_kokeni(durum), sozluk_adimi),
         ("Kayıt Yeri", _kayit_yeri(durum, "sozluk"), KAYIT_ADIMI),
-        ("Tanım Sayısı", _sayi(len(tanimli)) if kolonlar else None,
+        ("Tanım Sayısı", tanim_sayisi,
          sozluk_adimi),
         ("Kapsam", _yuzde_dogrudan(kapsam, 1), sozluk_adimi),
         ("Sözlükte Olmayan Değişken Sayısı",
