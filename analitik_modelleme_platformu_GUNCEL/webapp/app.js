@@ -4415,7 +4415,7 @@ function sureBicim(sn) {
 
 /* İŞLEM SATIRI (kullanıcı kararı): ayrı bir "yükleniyor" kartı YOK.
    Durumu başlıktaki "● Kontrol Ediliyor" etiketi anlatıyor; aktif adımın
-   bloğunun EN ALTINA tek ince satır gelir: "İşleniyor · 0:12 · İptal".
+   bloğunun EN ALTINA tek ince satır gelir: "İşlem Devam Ediyor · 0:12 · İptal".
    Satır ilk ISLEM_GECIKME_MS boyunca görünmez: kısa işlemlerde ekranda
    hiçbir şey zıplamaz, yalnızca etiket değişir. Her adımda aynı. */
 const ISLEM_GECIKME_MS = 2500;
@@ -4458,7 +4458,7 @@ function calismaGostergesi(iptalEt) {
     (kap || sohbetEl).appendChild(satir);
 
     let gecen = 0;
-    const yaz = () => { sure.textContent = "İşleniyor · " + sureBicim(gecen); };
+    const yaz = () => { sure.textContent = "İşlem Devam Ediyor · " + sureBicim(gecen); };
     yaz();
     const sayac = setInterval(() => { gecen += 1; yaz(); }, 1000);
     const goster = setTimeout(() => {

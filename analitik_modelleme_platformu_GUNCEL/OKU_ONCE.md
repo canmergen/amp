@@ -1,6 +1,12 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Örneklem ve Doğrulama Tasarımı onayı sonraki adıma geçiyor**. Yapıştır: `akis_durum.py`, `akis_faz01.py`
+Bu tur: **"İşleniyor" yerine "İşlem Devam Ediyor"**. Yapıştır: `app.js`
+
+- Aktif bloğun altındaki satır artık "İşlem Devam Ediyor · 0:12 · İptal".
+
+---
+
+Önceki tur: **Örneklem ve Doğrulama Tasarımı onayı sonraki adıma geçiyor**. Yapıştır: `akis_durum.py`, `akis_faz01.py`
 
 - Sebep: kimlik kolonu yokken bölme `_SPLIT` etiketini AMP_VERISETI veri
   setine yazmak zorundaydı. AMP_VERISETI akışta dataset olarak yoksa
