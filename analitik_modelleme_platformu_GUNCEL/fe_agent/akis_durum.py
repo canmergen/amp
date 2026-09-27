@@ -1554,54 +1554,59 @@ def _hazir_dogru_mu(sayim):
     return bool(sayim.get("egitim")) and bool(sayim.get("test"))
 
 
-def _hazir_etiket_kolonu(df, kol):
-    """Kolon bir bolme ETIKETI tasiyor mu? Tasiyorsa tanim, yoksa None."""
-    try:
-        seri = df[kol].dropna()
-    except Exception:
+def _hazir_etiket_kolonu(kol, sayimlar):
+    """Kolon bir bolme ETIKETI tasiyor mu? Tasiyorsa tanim, yoksa None.
+
+    sayimlar: kolonun bos olmayan tekil degerleri ve satir sayilari
+    [(deger, adet)] - tam tablodan (profil) ya da tablodan (value_counts).
+    None: deger listesi yok (tekil deger cok; etiket kolonu olamaz)."""
+    if not sayimlar:
         return None
-    if not len(seri):
-        return None
-    try:
-        benzersiz = seri.astype(str).str.strip().str.lower().unique()
-    except Exception:
-        return None
-    if not len(benzersiz) or len(benzersiz) > HAZIR_MAX_DEGER:
+    normal = {}
+    for deger, adet in sayimlar:
+        ham = str(deger).strip().lower()
+        normal[ham] = normal.get(ham, 0) + int(adet)
+    if not normal or len(normal) > HAZIR_MAX_DEGER:
         return None
 
     esleme = {}
-    for ham in benzersiz:
-        hedef = HAZIR_ETIKET.get(str(ham))
+    for ham in normal:
+        hedef = HAZIR_ETIKET.get(ham)
         if hedef is None:
             return None                     # tanimsiz deger -> bolme degil
-        esleme[str(ham)] = hedef
+        esleme[ham] = hedef
 
-    normal = seri.astype(str).str.strip().str.lower()
     sayim = {}
     for ham, hedef in esleme.items():
-        sayim[hedef] = sayim.get(hedef, 0) + int((normal == ham).sum())
+        sayim[hedef] = sayim.get(hedef, 0) + normal[ham]
     if not _hazir_dogru_mu(sayim):
         return None
     return {"tur": "etiket", "kolon": str(kol), "kolonlar": [str(kol)],
             "esleme": esleme, "sayim": sayim}
 
 
-def _ikili_mi(seri):
-    """Seri 0/1 (ya da True/False) bayragi mi?"""
+def _sayisal_degerler(sayimlar):
+    """[(deger, adet)] -> [(sayi | NaN, adet)] (pd.to_numeric, coerce)."""
+    if not sayimlar:
+        return []
+    sayi = pd.to_numeric(pd.Series([d for d, _n in sayimlar], dtype=object),
+                         errors="coerce")
+    return list(zip(sayi.tolist(), [int(n) for _d, n in sayimlar]))
+
+
+def _ikili_mi(sayimlar):
+    """Kolon 0/1 (ya da True/False) bayragi mi?"""
     try:
-        dolu = seri.dropna()
-        if not len(dolu):
-            return False
-        benzersiz = set(pd.to_numeric(dolu, errors="coerce").dropna().unique())
+        benzersiz = {v for v, _n in _sayisal_degerler(sayimlar) if v == v}
     except Exception:
         return False
     return bool(benzersiz) and benzersiz.issubset({0, 1, 0.0, 1.0})
 
 
-def _hazir_bayrak_kolonlari(df):
+def _hazir_bayrak_kolonlari(adlar, sayim_al):
     """<onek>_TRAIN / _VAL / _TEST / _OOT ucluleri. Yoksa None."""
     gruplar = {}
-    for kol in df.columns:
+    for kol in adlar:
         ad = str(kol)
         buyuk = ad.upper()
         for sonek, hedef in HAZIR_SONEK.items():
@@ -1614,20 +1619,36 @@ def _hazir_bayrak_kolonlari(df):
         esleme = gruplar[on_ek]
         if "egitim" not in esleme or "test" not in esleme:
             continue
-        if not all(_ikili_mi(df[a]) for a in esleme.values()):
+        if not all(_ikili_mi(sayim_al(a)) for a in esleme.values()):
             continue
         sayim = {}
         for hedef, ad in esleme.items():
-            try:
-                sayim[hedef] = int(pd.to_numeric(df[ad], errors="coerce")
-                                   .fillna(0).astype(bool).sum())
-            except Exception:
-                sayim[hedef] = 0
+            # pd.to_numeric(...).fillna(0).astype(bool).sum() karsiligi
+            sayim[hedef] = sum(n for v, n in _sayisal_degerler(sayim_al(ad))
+                               if v == v and v != 0)
         if not _hazir_dogru_mu(sayim):
             continue
         return {"tur": "bayrak", "on_ek": on_ek,
                 "kolonlar": sorted(esleme.values()),
                 "esleme": esleme, "sayim": sayim}
+    return None
+
+
+def _hazir_bul(adlar, sayim_al):
+    bayrak = None
+    try:
+        bayrak = _hazir_bayrak_kolonlari(adlar, sayim_al)
+    except Exception:
+        bayrak = None
+    if bayrak:
+        return bayrak
+    for kol in adlar:
+        try:
+            bulunan = _hazir_etiket_kolonu(kol, sayim_al(kol))
+        except Exception:
+            bulunan = None
+        if bulunan:
+            return bulunan
     return None
 
 
@@ -1639,20 +1660,29 @@ def hazir_bolme_bul(df):
     daha genis oldugu icin sonra geliyor."""
     if df is None or not len(getattr(df, "columns", [])):
         return None
-    try:
-        bayrak = _hazir_bayrak_kolonlari(df)
-    except Exception:
-        bayrak = None
-    if bayrak:
-        return bayrak
-    for kol in df.columns:
-        try:
-            bulunan = _hazir_etiket_kolonu(df, kol)
-        except Exception:
-            bulunan = None
-        if bulunan:
-            return bulunan
-    return None
+
+    def sayim_al(kol):
+        s = df[kol].dropna()
+        if s.nunique() > HAZIR_MAX_DEGER * 8:
+            return None
+        return list(s.value_counts(sort=False).items())
+
+    return _hazir_bul([str(c) for c in df.columns], sayim_al)
+
+
+def hazir_bolme_bul_profil(profil):
+    """hazir_bolme_bul'un profil karsiligi: kolonlarin TAM TABLODAN
+    cikarilmis deger sayimlariyla (tekil degeri 50'yi asan kolonun listesi
+    profilde yok; o kolon bir bolme etiketi ya da 0/1 bayragi olamaz)."""
+    kolonlar = {k["ad"]: k for k in ((profil or {}).get("kolonlar") or [])}
+    if not kolonlar:
+        return None
+
+    def sayim_al(kol):
+        liste = (kolonlar.get(kol) or {}).get("degerler")
+        return [(v, n) for v, n in liste] if liste is not None else None
+
+    return _hazir_bul(list(kolonlar), sayim_al)
 
 
 def _setler_hazir(durum, df, tanim):

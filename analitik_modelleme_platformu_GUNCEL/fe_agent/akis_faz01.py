@@ -5,6 +5,7 @@ akis.py bolundu; bu dosya o bolumun aynisidir.
 """
 
 import datetime
+import json
 import re
 import threading
 import uuid
@@ -17,6 +18,8 @@ from fe_agent import sozluk as sozluk_mod
 from fe_agent import sozluk_calisma
 from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
+from fe_agent import profil as profil_mod
+from fe_agent import profil_kural
 
 from fe_agent.akis_metin import (
     ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI, MOD_SIRA)
@@ -32,6 +35,7 @@ from fe_agent.akis_durum import (
     onbellek_temizle, sozluk_orijinal_oku, yeni_durum, amp_sahibi_yaz,
     donem_degeri, donem_serisi, donem_sirala,
     dataset_yaz, dosya_yaz, sahip_yaz, modelleme_kaynagi,
+    ORNEK_MASKE, _ornek_metni, hazir_bolme_bul_profil,
 )
 
 
@@ -54,93 +58,9 @@ _MOD_GECICI = ("_donemler", "_aciklamasiz", "_dusurulecek", "_soru_gecmis",
                "teyit")
 
 
-# Tarih kolonlarini ayirmak icin kullanilan dtype listesi. Kategorik sayisi
-# "kolon - sayisal - tarih" olarak hesaplanir; tarih kolonlari eskiden
-# kategorik sayiliyordu ve VERI sekmesinde yanlis goruniyordu.
-TARIH_TIPLERI = ["datetime64[ns]", "datetimetz"]
-
-
-def _tarih_kolon_sayisi(df):
-    """Veri setindeki tarih/zaman damgasi kolonu adedi."""
-    try:
-        return int(df.select_dtypes(include=TARIH_TIPLERI).shape[1])
-    except Exception:
-        return 0
-
-
-# Bir kolonun ikili olup olmadigina bakmadan once tekil sayisina bakilir:
-# 1.042 kolonun her birinde unique() cagirmak pahali, tekil sayisi zaten
-# tek seferde cikiyor. Esik 3: {0,1} ve {0,1,NaN} gecsin, digerleri
-# taramaya hic girmesin.
-IKILI_TEKIL_ESIGI = 3
-
-
-def _aday_kolonlar(df):
-    """(hedef_adaylari, kimlik_adaylari).
-
-    NEDEN FILTRE VAR
-      Form uc alana da veri setinin BUTUN kolonlarini oneriyordu.
-      1.042 kolonluk bir sette hedef ile kimlik kolonu yer degistirince
-      platform bunu bir hata olarak degil, veri kalitesi bulgusu olarak
-      raporluyordu: "Hedefin pozitif orani %0,00", "Kimlik kolonunda
-      9.998 satir tekrar ediyor". Ikisi de dogruydu ama asil sorun
-      secimin kendisiydi. Artik secilemeyen sey hic listelenmiyor.
-
-    HEDEF: yalnizca 0/1. Sinifladirma yapiliyor; sürekli ya da çok
-      sınıflı bir kolon hedef olamaz. Kabul edilen: non-null degerler
-      kumesi TAM OLARAK {0, 1} (ya da bool dtype). Sabit kolon (hepsi 0)
-      KABUL EDILMEZ — modellenecek bir olay yok.
-
-    KIMLIK: yalnizca tam tekrarsiz kolon. nunique(dropna=False) satir
-      sayisina esit olmali; bir tek tekrar bile kimligi kimlik olmaktan
-      cikarir (ayni kayit iki sete birden dusebilir).
-
-    ADAY BULUNAMAZSA BOS LISTE doner; cagiran taraf o zaman tum kolon
-    listesine duser ve NEDENINI yazar (bkz. _tanimlar_formu). Panel
-    verisi bir musteri x donem tablosuysa tekrarsiz kolon gercekten
-    olmayabilir; kullaniciyi kilitlemek dogru olmaz."""
-    try:
-        tekil = df.nunique(dropna=False)
-    except Exception:
-        return [], []
-
-    satir = int(df.shape[0])
-    hedef, kimlik = [], []
-    for kolon in df.columns:
-        ad = str(kolon)
-        try:
-            n_tekil = int(tekil[kolon])
-        except Exception:
-            continue
-
-        if satir and n_tekil == satir:
-            kimlik.append(ad)
-
-        s = df[kolon]
-        try:
-            if s.dtype == bool:
-                hedef.append(ad)
-                continue
-            if n_tekil > IKILI_TEKIL_ESIGI:
-                continue
-            if not pd.api.types.is_numeric_dtype(s):
-                continue
-            degerler = {float(v) for v in pd.unique(s.dropna())}
-            if degerler == {0.0, 1.0}:
-                hedef.append(ad)
-        except Exception:
-            continue
-
-    return hedef, kimlik
-
-
-# Donem adayligi icin taranan satir sayisi: bicim kontrolu (YYYYMM,
-# YYYYMMDD, tarih) icin ornek yeter; 1.042 kolonu tam tabloda cozmek
-# pahali. Tekil sayisi tam tablodan.
-
-
-# Aday olmak icin dolu hucrelerin en az bu kadari donem olarak cozulmeli.
-DONEM_COZULME_ORANI = 0.95
+# Aday olmak icin dolu hucrelerin en az bu kadari donem olarak cozulmeli
+# (kural profil_kural'da; profil isi ayni esigi kullaniyor).
+DONEM_COZULME_ORANI = profil_kural.DONEM_COZULME_ORANI
 
 
 # Donem adayi hesabinin surumu. Kural degisince eski calismalarin
@@ -170,74 +90,6 @@ def _donem_adli_mi(ad):
         p.startswith(k) for p in parcalar for k in _DONEM_AD_KOKLERI)
 
 
-def _donem_adaylari(df, kimlik=(), nedenler=None):
-    """Donem kolonu adaylari (kullanici karari: "tek değeri olan gelmemeli,
-    kimlik ve hedef gelmemeli, tarih ya da tarihe benzeyen kolon gelmeli").
-
-    Aday olmak icin:
-      - en az iki farkli deger (tek donemlik sette donem kolonu anlamsiz)
-      - her satirda farkli DEGIL (kimlik kolonu / zaman damgasi degil)
-      - taninan bir donem bicimi: tarih tipi, YYYYMM (202401), YYYYMMDD
-        (20240115) ya da tarihe cevrilebilen metin (birlestirme._donem_coz
-        ile AYNI kural; zamansal bolme de bu bicimleri cozuyor).
-    0/1 hedef kolonlari bicime uymadigi icin zaten elenir."""
-    try:
-        tekil = df.nunique(dropna=False)
-    except Exception:
-        return []
-    satir = int(df.shape[0])
-    ornek = df          # TAM TABLO (kullanici karari: orneklem yok)
-    kimlik = set(kimlik or ())
-    cikti = []
-    for kolon in df.columns:
-        ad = str(kolon)
-        try:
-            n_tekil = int(tekil[kolon])
-        except Exception:
-            continue
-        if n_tekil <= 1 or ad in kimlik or (satir > 1 and n_tekil == satir):
-            if nedenler is not None:
-                if n_tekil <= 1:
-                    try:
-                        deger = donem_degeri(df[kolon].dropna().iloc[0])
-                    except Exception:
-                        deger = None
-                    nedenler[ad] = ("tüm satırlarda aynı değer%s; veri tek "
-                                    "dönemlik" % (" (%s)" % deger if deger else ""))
-                elif ad in kimlik:
-                    nedenler[ad] = "kimlik adayı"
-                else:
-                    nedenler[ad] = ("her satırda farklı değer; kimlik ya da "
-                                    "zaman damgası gibi")
-            continue
-        try:
-            ay, bicim = birl_mod._donem_coz(ornek[kolon])
-            # Sayisal kolonda bos = NaN; metin normallestirmesi gereksiz.
-            dolu = (ornek[kolon].notna()
-                    if pd.api.types.is_numeric_dtype(ornek[kolon])
-                    else donem_serisi(ornek[kolon]).notna())
-            # Tarih cozucusu tek bir tarihe benzer hucrede bile "tarih"
-            # diyebiliyor; aday olmak icin dolu hucrelerin neredeyse
-            # tamami donem olarak cozulmeli.
-            if bicim and dolu.any():
-                oran = float(pd.Series(ay)[dolu.to_numpy()].notna().mean())
-                if oran < DONEM_COZULME_ORANI:
-                    bicim = None
-        except Exception:
-            bicim = None
-        if bicim:
-            cikti.append(ad)
-        elif nedenler is not None:
-            try:
-                ornek_deger = ", ".join(
-                    str(x) for x in ornek[kolon].dropna().astype(str).unique()[:3])
-            except Exception:
-                ornek_deger = ""
-            nedenler[ad] = "değerler dönem biçiminde değil" + (
-                " (örnek: %s)" % ornek_deger if ornek_deger else "")
-    return cikti
-
-
 def _donem_neden_maddeleri(nedenler):
     """Aday cikmadiginda, ADI donem olan kolonlarin neden secilemedigi;
     her kolon ayri madde (kullanici karari: "bulunamadı yazsın, bulunan
@@ -260,13 +112,10 @@ def _donem_adaylarini_hazirla(durum):
             and p.get("donem_adaylari_surum") == DONEM_ADAY_SURUMU):
         return p
     try:
-        df = modelleme_df(durum, kaynak=True)
-        kimlik = p.get("kimlik_adaylari")
-        if not isinstance(kimlik, list):
-            _hedef, kimlik = _aday_kolonlar(df)
-        nedenler = {}
-        p["donem_adaylari"] = _donem_adaylari(df, kimlik, nedenler)
-        p["donem_nedenler"] = _donem_neden_maddeleri(nedenler)
+        prof = _profil(durum)
+        p = durum.get("profil") or p
+        p["donem_adaylari"] = list(prof.get("donem_adaylari") or [])
+        p["donem_nedenler"] = _donem_neden_maddeleri(prof.get("donem_nedenler"))
         p["donem_adaylari_surum"] = DONEM_ADAY_SURUMU
         p.pop("donem_hata", None)
     except Exception as e:
@@ -279,52 +128,106 @@ def _donem_adaylarini_hazirla(durum):
     return p
 
 
-def _temel_profil(durum, df):
-    """Veri seti secildiginde BIR KEZ hesaplanan temel sayilar.
+# ===========================================================================
+# VERI SETI PROFILI (tam tablo, PySpark) - bkz. fe_agent/profil.py
+# ===========================================================================
+# Birinci fazin tam veriye bakan kararlari (tek deger, hedef / kimlik /
+# donem adaylari, tip donusumu, kisisel veri, null orani, tekrarlanan
+# satir) webapp'te pandas ile DEGIL, veri seti secildiginde bir kez
+# calisan PySpark isinin profilinden okunur (kullanici karari: buyuk
+# veride pandas yok). Profil calismanin klasorunde: /<calisma>/profil.json.
+def _profil(durum, taze=False):
+    """Secili veri setinin profili. Calismada ayni veri seti icin profil
+    varsa o okunur; yoksa (ya da taze=True) PySpark isi calistirilir."""
+    veri = durum.get("veri_seti")
+    p = durum.get("profil") or {}
+    if not taze and p.get("_profil_veri") == veri and p.get("_profil_kosu"):
+        prof = profil_mod.profil_oku(amp_klasor_adi(durum), p["_profil_kosu"])
+        if prof:
+            return prof
+    prof = profil_mod.profil_cikar(veri, amp_klasor_adi(durum),
+                                   durum.get("_oturum_id") or "")
+    _profil_isaretle(durum, prof, veri)
+    return prof
 
-    kurulum_plan (Mod A/C) ve veri_sec_plan (Mod B) ayni tabloyu zaten
-    bastan sona okuyor; duplicate ve tarih sayimi ayni okumadan
-    turetildigi icin ek maliyet getirmiyor. Sonuclar durum["profil"]
-    icine yazilir; Analiz Merkezi'ndeki VERI sekmesi buradan beslenir.
-    """
+
+def _profil_isaretle(durum, prof, veri):
+    p = durum.get("profil") or {}
+    p["_profil_veri"] = veri
+    p["_profil_kosu"] = prof.get("kosu_id")
+    durum["profil"] = p
+
+
+def _bellekten_profil(durum, df, veri):
+    """Tablo zaten bellekteyse (Mod B/D birlestirme sonucu) profil ayni
+    kurallarla oradan cikarilir ve calismaya yazilir."""
+    prof = profil_kural.yerel_profil(df, veri)
+    prof["kosu_id"] = uuid.uuid4().hex
+    yol = profil_mod.profil_yolu(amp_klasor_adi(durum))
+    metin_yaz(yol, json.dumps(prof, ensure_ascii=False, default=str))
+    profil_mod._ONBELLEK[yol] = (prof["kosu_id"], prof)
+    _profil_isaretle(durum, prof, veri)
+    return prof
+
+
+def _profil_kolonlari(durum):
+    """{kolon: kolon_profili}; profil okunamazsa bos."""
+    try:
+        return profil_mod.kolonlar(_profil(durum))
+    except Exception:
+        return {}
+
+
+def _kolon_ozeti(prof):
+    """kolon_ozeti_cikar'in profil karsiligi: {ad, tip, null_oran, tekil,
+    ornek}. Kisisel veri tasiyan kolonun ornegi maskelenir."""
+    ozet = []
+    for k in prof.get("kolonlar") or []:
+        ornek = None
+        if k.get("dolu"):
+            ornek = ORNEK_MASKE if (k.get("pii_ad") or k.get("pii_deger")) \
+                else _ornek_metni(k.get("ornek"))
+        ozet.append({"ad": k["ad"], "tip": k["kaynak_tip"],
+                     "null_oran": k.get("null_oran"),
+                     "tekil": k.get("tekil"), "ornek": ornek})
+    return ozet
+
+
+def _temel_profil(durum, prof):
+    """Veri seti secildiginde BIR KEZ hesaplanan temel sayilar - PROFILDEN.
+
+    Sonuclar durum["profil"] icine yazilir; Analiz Merkezi'ndeki VERI
+    sekmesi ve modelleme tanimlari formu buradan beslenir."""
     p = durum.get("profil") or {}
     p.update({
-        "satir": int(df.shape[0]), "kolon": int(df.shape[1]),
-        "kolon_baslangic": int(df.shape[1]),
-        "sayisal": int(df.select_dtypes(include=[np.number]).shape[1]),
-        "tarih": _tarih_kolon_sayisi(df),
-        "duplicate": int(df.duplicated().sum()),
-        # Feature tablosu bu ozetten uretiliyor; tablo zaten okunmusken
-        # cikariliyor ki her /analiz cagrisinda yeniden okunmasin.
-        "kolon_ozet": kolon_ozeti_cikar(df),
+        "satir": int(prof["satir"]), "kolon": int(prof["kolon"]),
+        "kolon_baslangic": int(prof["kolon"]),
+        "sayisal": int(prof["sayisal"]),
+        "tarih": int(prof["tarih"]),
+        "duplicate": int(prof["duplicate"]),
+        "kolon_ozet": _kolon_ozeti(prof),
     })
-    # Modelleme tanimlari formunun acilir listeleri. Tablo ZATEN elde
-    # oldugu icin burada cikariliyor; form acilirken veri setini yeniden
-    # okumak 1.042 kolonluk sette gereksiz bir tur daha demekti.
-    hedef_aday, kimlik_aday = _aday_kolonlar(df)
-    p["hedef_adaylari"] = hedef_aday
-    p["kimlik_adaylari"] = kimlik_aday
-    nedenler = {}
-    p["donem_adaylari"] = _donem_adaylari(df, kimlik_aday, nedenler)
-    p["donem_nedenler"] = _donem_neden_maddeleri(nedenler)
+    p["hedef_adaylari"] = list(prof.get("hedef_adaylari") or [])
+    p["kimlik_adaylari"] = list(prof.get("kimlik_adaylari") or [])
+    p["donem_adaylari"] = list(prof.get("donem_adaylari") or [])
+    p["donem_nedenler"] = _donem_neden_maddeleri(prof.get("donem_nedenler"))
     p["donem_adaylari_surum"] = DONEM_ADAY_SURUMU
     p.pop("donem_hata", None)
-    _kimlik_duplicate(durum, df, p)
+    _kimlik_duplicate(durum, prof, p)
     durum["profil"] = p
     return p
 
 
-def _kimlik_duplicate(durum, df, p):
+def _kimlik_duplicate(durum, prof, p):
     """Kimlik kolonu belliyse ayrica kimlik bazli tekrar sayisi.
 
     "Satirin tamami ayni" ile "ayni musteri iki kere" farkli sorunlardir;
-    ikincisi panelde ayri satir olarak gosterilir."""
+    ikincisi panelde ayri satir olarak gosterilir. Tekrar = satir - bos
+    dahil tekil deger sayisi (df.duplicated(subset=[kimlik]) ile ayni)."""
     kimlik = (durum.get("meta") or {}).get("id")
-    if kimlik and kimlik in df.columns:
-        try:
-            p["duplicate_kimlik"] = int(df.duplicated(subset=[kimlik]).sum())
-        except Exception:
-            pass
+    kp = profil_mod.kolonlar(prof).get(kimlik) if kimlik else None
+    if kp is not None:
+        p["duplicate_kimlik"] = int(kp.get("tekrar") or 0)
 
 
 def _mod_sifirla(durum):
@@ -686,21 +589,9 @@ def birlestirme_uygula(durum):
     sahip_yaz(ad, durum)
     onbellek_temizle()
 
-    p = durum.get("profil") or {}
-    p.update({
-        "satir": ozet["satir"],
-        "kolon": ozet["kolon"],
-        "kolon_baslangic": ozet["kolon"],
-        "sayisal": int(baz.select_dtypes(include=[np.number]).shape[1]),
-        "tarih": _tarih_kolon_sayisi(baz),
-        "duplicate": int(baz.duplicated().sum()),
-        # Mod C'de veri seti burada olusuyor; feature tablosunun kolon
-        # ozeti de burada cikmali, yoksa VERI & SOZLUK sekmesi profil
-        # adimina kadar bos kalir.
-        "kolon_ozet": kolon_ozeti_cikar(baz),
-    })
-    _kimlik_duplicate(durum, baz, p)
-    durum["profil"] = p
+    # Mod B/D'de veri seti burada olusuyor ve tablo zaten bellekte;
+    # profil (kolon ozeti, adaylar) ayni kurallarla buradan cikar.
+    _temel_profil(durum, _bellekten_profil(durum, baz, ad))
 
     # Mod B: kaynak sozluklerden nihai sozluk. Ayri bir adim DEGIL: kaynak
     # sozlukler zaten secildi, kullanicinin verecegi bir karar yok.
@@ -790,8 +681,7 @@ def veri_sec_girdi(durum, mesaj, yeniden_sor=False):
     return True, None
 
 def veri_sec_plan(durum):
-    df = modelleme_df(durum, kaynak=True)
-    p = _temel_profil(durum, df)
+    p = _temel_profil(durum, _profil(durum, taze=True))
 
     return ("Veri setini okudum:\n\n"
             "  %s\n"
@@ -820,14 +710,14 @@ def sozluk_uret_plan(durum):
             % _sayi(p.get("kolon", 0)))
 
 def sozluk_uret_uygula(durum):
-    df = modelleme_df(durum, kaynak=True)
+    prof = _profil(durum)
 
     # NOT: burada ayrica 'haric' listesi VERILMIYOR. Kimlik/PII korumasi tek
     # yerde, sozluk.py icindeki _ornek_guvenli_mi()'de toplanmistir (kolon
     # adi deseni, deger deseni, tekil oran, uzun metin). Eskiden buraya
     # meta["id"] ile bir haric kumesi geciliyordu; sozluk_uret adimi
     # tanimlar adimindan ONCE geldigi icin meta["id"] daima bostu — olu kod.
-    profiller = sozluk_mod.profil_cikar(df)
+    profiller = sozluk_mod.profil_cikar_profilden(prof)
 
     # llm.sozluk_aciklama_uret artik (aciklamalar, hata) donuyor.
     aciklamalar, llm_hata = llm_mod.sozluk_aciklama_uret(profiller)
@@ -1210,7 +1100,7 @@ def _mod_b_sozlugu(durum, baz, kutuk):
     # Profil + kapsam SIMDI: baz zaten bellekte. Modelleme tanimlari
     # hedef/kimlik adaylarini, sozluk tanimlari tanimsiz listesini
     # buradan okuyor; tablo ikinci kez taranmiyor.
-    _kapsam_hesapla(durum, baz, tablo)
+    _kapsam_hesapla(durum, _profil(durum), tablo)
     tanimsiz = oz["toplam"] - oz["tanimli"]
     metin = ("\n\nDEĞİŞKEN SÖZLÜĞÜ\n"
              "  %s kolonun %s tanesi kaynak sözlüklerden tanımlandı "
@@ -1285,26 +1175,21 @@ def _kolon_ozet_haritasi(profil):
     return harita
 
 
-def _tekil_tamamla(df, kolonlar, profil):
-    """Karara konu olan kolonlarin tekil deger sayisini profile isler.
-
-    kolon_ozeti_cikar tekil sayisini BILEREK bos birakiyor: 1.000 kolonlu
-    bir tabloda her kolonu tam taramak veri seti secimini yavaslatir.
-    Burada yalnizca kullanicinin karar verecegi (en fazla EN_FAZLA_TANIMSIZ)
-    kolon icin hesaplaniyor — hem kartta gosteriliyor hem de dil modeline
-    giden tek metadata parcalarindan biri."""
+def _tekil_tamamla(prof, kolonlar, profil):
+    """Karara konu olan kolonlarin tekil deger sayisini profile isler
+    (kartta gosteriliyor, dil modeline giden metadata'da da var). Sayi
+    veri seti profilinden: tam tablo, kesin."""
     hedef = {str(k) for k in (kolonlar or [])}
     if not hedef:
         return
+    kol = profil_mod.kolonlar(prof)
     for k in (profil.get("kolon_ozet") or []):
         if not isinstance(k, dict) or str(k.get("ad")) not in hedef:
             continue
         if k.get("tekil") is not None:
             continue
-        try:
-            k["tekil"] = int(df[k["ad"]].nunique(dropna=True))
-        except Exception:
-            k["tekil"] = None
+        kp = kol.get(str(k["ad"]))
+        k["tekil"] = int(kp["tekil"]) if kp is not None else None
 
 
 def _etiket_kirp(deger):
@@ -1315,36 +1200,30 @@ def _etiket_kirp(deger):
     return metin
 
 
-def _sayisal_ozet(seri):
-    """Sayisal kolondan min / maks / ceyrekler. TEK TEK DEGER DONMEZ."""
-    try:
-        sn = pd.to_numeric(seri, errors="coerce").dropna()
-    except Exception:
-        return {}
-    if not len(sn):
+def _sayisal_ozet(kp):
+    """Sayisal kolondan min / maks / ceyrekler (profilin kesin
+    kantilleri). TEK TEK DEGER DONMEZ."""
+    q = kp.get("kantiller")
+    if not q:
         return {}
     try:
-        q = sn.quantile([0.0, 0.25, 0.5, 0.75, 1.0]).tolist()
-    except Exception:
+        q = [float(x) for x in q]
+    except (TypeError, ValueError):
         return {}
-    return {"min": round(float(q[0]), 4),
-            "maks": round(float(q[4]), 4),
-            "ceyrekler": [round(float(x), 4) for x in q[1:4]]}
+    return {"min": round(q[0], 4),
+            "maks": round(q[4], 4),
+            "ceyrekler": [round(x, 4) for x in q[1:4]]}
 
 
-def _tarih_ozet(seri):
+def _tarih_ozet(kp):
     """Tarih kolonundan YALNIZ min/maks. Ceyrek de ornek de gitmez:
     bir tarih kolonunun ne oldugunu anlamak icin araligi yeter."""
-    try:
-        s = seri.dropna()
-        if not len(s):
-            return {}
-        return {"min": str(s.min())[:19], "maks": str(s.max())[:19]}
-    except Exception:
+    if kp.get("min") is None:
         return {}
+    return {"min": str(kp["min"])[:19], "maks": str(kp["max"])[:19]}
 
 
-def _kategorik_ozet(seri, satir, ad):
+def _kategorik_ozet(kp, satir):
     """Kategorik kolondan en sik EN_SIK_ETIKET etiket ve orani.
 
     ETIKETLER BILEREK GIDIYOR: bir kategorik kolonun ne oldugu ancak
@@ -1353,22 +1232,49 @@ def _kategorik_ozet(seri, satir, ad):
     sayimdan turetilmis bir dagilimdir.
 
     Kimlik benzeri, kisisel veri ya da uzun metin tasiyan kolonda HIC
-    etiket gonderilmez. Bu kapi sozluk._ornek_guvenli_mi'de zaten duruyor;
-    ikinci bir kural yazmiyoruz ki iki yerden biri guncellenip digeri
-    unutulmasin."""
-    try:
-        guvenli, neden = sozluk_mod._ornek_guvenli_mi(seri, satir, ad)
-    except Exception:
-        return {}
+    etiket gonderilmez. Bu kapi sozluk.ornek_guvenli_profil'de (ayni
+    kurallar sozluk._ornek_guvenli_mi'de) duruyor."""
+    guvenli, neden = sozluk_mod.ornek_guvenli_profil(kp, satir)
     if not guvenli:
         return {"not": neden}
-    try:
-        sayim = seri.dropna().astype(str).value_counts().head(EN_SIK_ETIKET)
-    except Exception:
-        return {}
     toplam = max(int(satir or 0), 1)
     return {"en_sik": [[_etiket_kirp(etiket), round(float(adet) / toplam, 4)]
-                       for etiket, adet in sayim.items()]}
+                       for etiket, adet in
+                       (kp.get("ust_degerler") or [])[:EN_SIK_ETIKET]]}
+
+
+def _oneri_profilleri(prof, kolonlar, profil):
+    """Dil modeline gidecek TURETILMIS ozetler - veri seti profilinden.
+
+    Tablo OKUNMAZ; her sayi profil isinin tam tablodan cikardigi kesin
+    sayilardir. Yalnizca sozlukte tanimi bulunmayan kolonlar icin."""
+    ozet = _kolon_ozet_haritasi(profil)
+    kol = profil_mod.kolonlar(prof)
+    satir = int((prof or {}).get("satir") or 0)
+    kayitlar = []
+    for ad in kolonlar:
+        k = ozet.get(ad) or {}
+        tip = k.get("tip") or ""
+        try:
+            oran = float(k.get("null_oran") or 0.0)
+        except (TypeError, ValueError):
+            oran = 0.0
+        tekil = k.get("tekil")
+        kayit = {"ad": ad, "tip": tip, "null_oran": round(oran, 4),
+                 "tekil": 0 if tekil is None else int(tekil)}
+
+        kp = kol.get(ad)
+        if kp is not None:
+            if tip == "sayısal":
+                kayit.update(_sayisal_ozet(kp))
+            elif tip == "tarih":
+                kayit.update(_tarih_ozet(kp))
+            else:
+                kayit.update(_kategorik_ozet(kp, satir))
+
+        kayit["dagilim"] = _dagilim_metni(kayit)
+        kayitlar.append(kayit)
+    return kayitlar
 
 
 def _dagilim_metni(kayit):
@@ -1390,48 +1296,7 @@ def _dagilim_metni(kayit):
     return ""
 
 
-def _oneri_profilleri(df, kolonlar, profil):
-    """Dil modeline gidecek TURETILMIS ozetler.
-
-    Veri seti cagiran tarafta BIR KEZ okunmustur; burada kolon basina
-    yeni bir okuma YAPILMAZ, elde duran tablonun yalnizca hedeflenen
-    kolonlari taranir. Taranan kolonlar da yalnizca sozlukte tanimi
-    bulunmayanlardir: tanimli kolonun serisine hic dokunulmaz."""
-    ozet = _kolon_ozet_haritasi(profil)
-    satir = int(len(df)) if df is not None else 0
-    kayitlar = []
-    for ad in kolonlar:
-        k = ozet.get(ad) or {}
-        tip = k.get("tip") or ""
-        try:
-            oran = float(k.get("null_oran") or 0.0)
-        except (TypeError, ValueError):
-            oran = 0.0
-        tekil = k.get("tekil")
-        kayit = {"ad": ad, "tip": tip, "null_oran": round(oran, 4),
-                 "tekil": 0 if tekil is None else int(tekil)}
-
-        seri = None
-        try:
-            if df is not None and ad in df.columns:
-                seri = df[ad]
-        except Exception:
-            seri = None
-
-        if seri is not None:
-            if tip == "sayısal":
-                kayit.update(_sayisal_ozet(seri))
-            elif tip == "tarih":
-                kayit.update(_tarih_ozet(seri))
-            else:
-                kayit.update(_kategorik_ozet(seri, satir, ad))
-
-        kayit["dagilim"] = _dagilim_metni(kayit)
-        kayitlar.append(kayit)
-    return kayitlar
-
-
-def _tanimsiz_oneriler(durum, kolonlar, profil, df=None):
+def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
     """Tanimsiz kolonlar icin dil modelinden ACIKLAMA onerisi.
 
     Doner: {kolon: {"aciklama": ...}}. Oneri alinamayan
@@ -1476,7 +1341,8 @@ def _tanimsiz_oneriler(durum, kolonlar, profil, df=None):
             and durum.get("_tanimsiz_oneri_kolonlar") == kolonlar:
         return onbellek
 
-    profiller = _oneri_profilleri(df, kolonlar, profil)
+    profiller = _oneri_profilleri(prof if prof is not None else _profil(durum),
+                                  kolonlar, profil)
 
     ham = {}
     grup_sayisi = 0
@@ -1780,8 +1646,10 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
     return alan
 
 
-def _kapsami_cikar(durum):
-    """Veri seti ve sozlugu okur, profili ve tanimsiz kolon listesini kurar.
+def _kapsami_cikar(durum, taze=False):
+    """Veri seti profilini (PySpark isi) ve sozlugu okur, tanimsiz kolon
+    listesini kurar. taze=True: profil isi veri seti icin YENIDEN calisir
+    (veri seti secimi onaylandiginda: tablo o arada degismis olabilir).
 
     ESKIDEN kurulum_plan'in basindaydi. Artik sozluk tanimlari adimi
     modelleme tanimlarindan SONRA geldigi icin (hedef/kimlik/donem
@@ -1796,24 +1664,25 @@ def _kapsami_cikar(durum):
     # nasilsa okuyacakti.
     onbellek_temizle(durum.get("veri_seti"))
     onbellek_temizle(durum.get("sozluk"))
-    df = modelleme_df(durum, kaynak=True)
+    prof = _profil(durum, taze=taze)
     # sozluk_orijinal_oku: Mod B'de uretilen sozluk dataset'e yazilamazsa
     # CSV yedeginden okunur (durum["sozluk"] None kalir).
-    return _kapsam_hesapla(durum, df, sozluk_orijinal_oku(durum))
+    return _kapsam_hesapla(durum, prof, sozluk_orijinal_oku(durum))
 
 
-def _kapsam_hesapla(durum, df, sz):
-    """Profil + kapsam + tanimsiz liste. Tablo elde olan cagiran icin."""
+def _kapsam_hesapla(durum, prof, sz):
+    """Profil + kapsam + tanimsiz liste. Doner: (veri seti profili, p)."""
     ad_kolonu = sozluk_calisma.degisken_kolonu_bul(sz)
     sozluk_ad = set(sz[ad_kolonu].astype(str)) if ad_kolonu is not None else set()
 
-    aciklamasiz = [str(c) for c in df.columns if str(c) not in sozluk_ad]
-    eslesen = df.shape[1] - len(aciklamasiz)
+    adlar = [k["ad"] for k in prof.get("kolonlar") or []]
+    aciklamasiz = [c for c in adlar if c not in sozluk_ad]
+    eslesen = len(adlar) - len(aciklamasiz)
 
-    p = _temel_profil(durum, df)
+    p = _temel_profil(durum, prof)
     p.update({
         "sozluk_satir": int(sz.shape[0]), "eslesen": eslesen,
-        "kapsam": round(100.0 * eslesen / max(df.shape[1], 1), 1),
+        "kapsam": round(100.0 * eslesen / max(len(adlar), 1), 1),
     })
     # Profilin HANGI girdilerden cikarildigi: sozluk_tanim adimi ayni
     # veri seti ve sozluk icin profili yeniden CIKARMAZ, yalnizca tabloyu
@@ -1826,7 +1695,7 @@ def _kapsam_hesapla(durum, df, sz):
     # uygulaninca eklenenleri dusuyor; geri donuste kart bu ilk listeyle
     # ve kullanicinin onceki kararlariyla yeniden kuruluyor.
     durum["_aciklamasiz_ilk"] = list(aciklamasiz)
-    return df, p
+    return prof, p
 
 
 def _tanim_listesi(durum):
@@ -1915,15 +1784,15 @@ def sozluk_tanim_plan(durum):
     (bkz. oneri_isi_baslat). Oneriler bitene kadar aciklama alanlari ve
     devam dugmesi kilitli kaliyor."""
     if _kapsam_hazir(durum):
-        # Kapsam `kurulum` adiminda cikarildi; tabloyu yalnizca tekil
-        # sayimi ve oneri profilleri icin okuyoruz.
-        df, p = modelleme_df(durum, kaynak=True), durum["profil"]
+        # Kapsam `kurulum` adiminda cikarildi; tekil sayilari ve oneri
+        # ozetleri veri seti profilinden (tablo okunmaz).
+        prof, p = _profil(durum), durum["profil"]
     else:
-        df, p = _kapsami_cikar(durum)
+        prof, p = _kapsami_cikar(durum)
     aciklamasiz = _tanim_listesi(durum)
 
     try:
-        _tek_degerli_hesapla(durum, df)
+        _tek_degerli_hesapla(durum, prof)
     except Exception:
         pass
     tanimsiz_kume = set(aciklamasiz)
@@ -1942,10 +1811,10 @@ def sozluk_tanim_plan(durum):
         oneriler = onceki["oneriler"]
         durum["_tanimsiz_oneri_hata"] = onceki["hata"]
     else:
-        _tekil_tamamla(df, gosterilen, p)
-        # Profil ve dil modeli cagrisi YALNIZCA tanimsiz kolonlar icin;
-        # veri seti yukarida bir kez okundu, ayni tablo kullaniliyor.
-        profiller = _oneri_profilleri(df, gosterilen, p)
+        _tekil_tamamla(prof, gosterilen, p)
+        # Dil modeli cagrisi YALNIZCA tanimsiz kolonlar icin; ozetler veri
+        # seti profilinden.
+        profiller = _oneri_profilleri(prof, gosterilen, p)
         durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller)
         durum["_oneri_kolonlar"] = list(gosterilen)
         durum["_tanimsiz_oneri_hata"] = ""
@@ -2049,8 +1918,10 @@ def kurulum_uygula(durum):
     hangileri oldugu once bilinmeli.
 
     Burada yalnizca profil cikariliyor (tanimlar adimi hedef ve kimlik
-    adaylarini buradan okuyor) ve sozluk calisma kopyasi kuruluyor."""
-    _kapsami_cikar(durum)
+    adaylarini buradan okuyor) ve sozluk calisma kopyasi kuruluyor.
+    Profil TAZE cikarilir: veri seti secimi onaylandi, tablo bir onceki
+    profilden bu yana degismis olabilir."""
+    _kapsami_cikar(durum, taze=True)
     # Calisma kopyasi sozluk baglanir baglanmaz cikarilir: satir_ekle
     # yalnizca kopyaya yazar, kopya yoksa yazacak yer yoktur.
     return _calisma_kopyasi_kur(durum).strip()
@@ -2193,7 +2064,7 @@ def _tanimlar_formu(durum, meta=None):
     hedef_liste = _ekle(hedef_aday, m.get("target")) if hedef_aday else kolonlar
     kimlik_liste = _ekle(kimlik_aday, m.get("id")) if kimlik_aday else kolonlar
     # DONEM: yalnizca tarih ya da donem bicimli kolonlar (bkz.
-    # _donem_adaylari). Aday yoksa liste bos kalir ve nedeni yazilir;
+    # profil_kural.donem_adayi_mi). Aday yoksa liste bos kalir ve nedeni yazilir;
     # tum kolonlara DUSULMEZ - kimlik ya da hedefin donem secilmesi
     # zamansal bolmeyi sessizce bozardi.
     donem_liste = _ekle(donem_aday, m.get("donem"))
@@ -2340,6 +2211,46 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
     durum["_secim_alani"] = None
     return True, None
 
+def _hedef_sayilari(kp):
+    """Hedef kolonu icin (sayisal tekil deger sayisi, pozitif satir sayisi).
+
+    Eski yol: y = pd.to_numeric(df[hedef]); y.nunique(), (y > 0).sum().
+    Sayisal kolonda bu sayilar profilde zaten var. Metin kolonda deger
+    listesinden (en fazla 50 seviye) sayiya cevrilerek bulunur; listesi
+    olmayan (cok seviyeli) metin kolonu iki sinifli olamaz."""
+    if not kp:
+        return 0, 0
+    if kp.get("tur") in profil_kural.SAYISAL_TURLER:
+        return int(kp.get("tekil") or 0), int(kp.get("pozitif") or 0)
+    liste = kp.get("degerler")
+    if liste is None:
+        return int(kp.get("tekil") or 0), 0
+    sayi = pd.to_numeric(pd.Series([v for v, _n in liste], dtype=object),
+                         errors="coerce")
+    tekil = int(sayi.dropna().nunique())
+    pozitif = int(sum(n for (v, n), x in zip(liste, sayi.tolist())
+                      if x == x and x > 0))
+    return tekil, pozitif
+
+
+def _donem_listesi_profilden(kp):
+    """Donem kolonunun normallestirilmis TEKIL degerleri (tam tablo).
+
+    Donem adayinda profil isi listeyi zaten cikariyor. Aday listesi bos
+    oldugu icin aday disi bir kolon secildiyse (kural o zaman
+    uygulanmiyor) 50 seviyeye kadar deger listesinden kurulur; daha cok
+    seviyeli ve donem bicimi tasimayan bir kolon donem olamaz."""
+    if kp.get("donem_degerleri") is not None:
+        return list(kp["donem_degerleri"])
+    if kp.get("degerler") is not None:
+        return profil_kural.donem_degerleri(kp["tur"],
+                                            [v for v, _n in kp["degerler"]])
+    raise AdimHatasi(
+        "%s dönem kolonu olarak kullanılamaz: %s farklı değer taşıyor ve "
+        "değerleri dönem biçiminde değil (202501, 2025-01 ya da tarih)."
+        % (kp.get("ad"), _sayi(kp.get("tekil") or 0)))
+
+
 def tanimlar_uygula(durum):
     """Tanimlari uygular ve hedefin tipini/dagilimini cikarir.
 
@@ -2353,13 +2264,17 @@ def tanimlar_uygula(durum):
     yazar. Sonraki adimin (bolme) dayandigi `_donemler` burada
     hesaplaniyor; hesap kaybolmadi, yalnizca anlatimi kalkti."""
     m = durum["meta"]
-    df = modelleme_df(durum, kaynak=True)
+    prof = _profil(durum)
+    kol = profil_mod.kolonlar(prof)
     p = durum.get("profil") or {}
 
-    y = pd.to_numeric(df[m["target"]], errors="coerce")
-    tekil = int(y.nunique(dropna=True))
+    # HEDEF: tekil deger sayisi ve pozitif orani PROFILDEN (tam tablo,
+    # kesin). pd.to_numeric(hedef) karsiligi: sayisal kolonda profilin
+    # kendi sayilari; metin kolonda deger listesi sayiya cevrilir.
+    tekil, pozitif = _hedef_sayilari(kol.get(m["target"]))
+    satir = int(prof.get("satir") or 0)
     if tekil <= 2:
-        oran = 100.0 * float((y > 0).mean())
+        oran = 100.0 * float(pozitif) / satir if satir else 0.0
         p["hedef_tip"] = "binary"
         # Event rate hedef_ozet metninin ICINE gomulu; panelin metni geri
         # ayristirmasi gerekmesin diye AYRI sayisal alan olarak da yazilir.
@@ -2374,7 +2289,7 @@ def tanimlar_uygula(durum):
     p.pop("donem_min", None)
     p.pop("donem_maks", None)
     p.pop("donem_adet", None)
-    _kimlik_duplicate(durum, df, p)
+    _kimlik_duplicate(durum, prof, p)
     durum["profil"] = p
 
     # VERI SETINDE HAZIR DURAN BOLME. Tablo zaten okunmusken araniyor;
@@ -2383,7 +2298,7 @@ def tanimlar_uygula(durum):
     # "yine seçime göre geri dönmek istersem diye").
     durum.pop("_hazir_bolme", None)
     try:
-        hazir = hazir_bolme_bul(df)
+        hazir = hazir_bolme_bul_profil(prof)
     except Exception:
         hazir = None
     if hazir:
@@ -2400,11 +2315,10 @@ def tanimlar_uygula(durum):
     donem = m.get("donem")
     donem_not = "belirtilmedi"
     durum.pop("_donem_dusuruldu", None)
-    if donem and donem in df.columns:
+    if donem and donem in kol:
         # Bolmeyle AYNI normallestirme ve ZAMAN sirasi (bkz.
-        # birlestirme.donem_degeri / donem_sirala).
-        donemler = donem_sirala(
-            donem_serisi(df[donem]).dropna().unique().tolist())
+        # birlestirme.donem_degeri / donem_sirala). Degerler profilden.
+        donemler = donem_sirala(_donem_listesi_profilden(kol[donem]))
         durum["_donemler"] = donemler
         if donemler:
             p["donem_min"] = donemler[0]
@@ -2554,7 +2468,7 @@ TEK_DEGER_SEBEBI = ("Tüm veri setinde tek bir değer taşıyor; modele bilgi "
                     "katmaz, süreç dışı kalmak zorunda.")
 
 
-def _tek_degerli_hesapla(durum, df=None):
+def _tek_degerli_hesapla(durum, prof=None):
     """TUM VERI SETINDE tek degerli kolonlar; durum["_tek_degerli"]'ye yazar.
 
     Bos hucre ayri deger: nunique(dropna=False). Hedef / kimlik / donem
@@ -2564,12 +2478,12 @@ def _tek_degerli_hesapla(durum, df=None):
     if durum.get("_tek_degerli_kaynak") == kaynak \
             and isinstance(durum.get("_tek_degerli"), list):
         return durum["_tek_degerli"]
-    if df is None:
-        df = modelleme_df(durum, kaynak=True)
-    tekil = df.nunique(dropna=False)
+    if prof is None:
+        prof = _profil(durum)
     korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
-    tek = sorted(str(k) for k, n in tekil.items()
-                 if int(n) <= 1 and str(k) not in korunan)
+    # tekil_bos_dahil = nunique(dropna=False): bos hucre ayri deger.
+    tek = sorted(str(k["ad"]) for k in prof.get("kolonlar") or []
+                 if int(k["tekil_bos_dahil"]) <= 1 and str(k["ad"]) not in korunan)
     durum["_tek_degerli"] = tek
     durum["_tek_degerli_kaynak"] = kaynak
     return tek
@@ -2619,7 +2533,7 @@ def _ad_parcalari(ad):
     return {p for p in re.split(r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+", str(ad).upper()) if p}
 
 
-def _tip_onerisi(seri, kaynak_tip, ad):
+def _tip_onerisi(kp, kaynak_tip, ad):
     """Tek kolon icin (kod, sebep) ya da (None, None).
 
     KURALLAR (sirasiyla, ilk tutan kazanir):
@@ -2633,23 +2547,15 @@ def _tip_onerisi(seri, kaynak_tip, ad):
       4. Metin, tum degerler tarih (YYYY-AA-GG / GG.AA.YYYY) -> tarih
       5. Sayisal, adi kod/tip/segment gibi ve tam sayi, en fazla 50
          farkli deger                              -> kategorik
-    Her kural TAM KOLONLA denetlenir (tip_donusum.denetle); once kucuk
-    ornekle elenir ki 1.000 kolonluk sette kart acilisi yavaslamasin."""
-    dolu = seri.dropna()
-    if not len(dolu):
+    Her kural TAM KOLONLA denetlenir: kp veri seti profilinin kolon
+    kaydi; donusumlerin uygunlugu profil isinde tum tablodan kesin
+    hesaplandi (tip_donusum.denetle ile ayni kural)."""
+    if not kp or not kp.get("dolu"):
         return None, None
-    try:
-        tekil = int(dolu.nunique())
-    except Exception:
-        tekil = len(dolu)
+    tekil = int(kp.get("tekil") or 0)
 
     def tutar(kod):
-        # YALNIZCA TAM KOLON (orneklem yok); hiz, tip_donusum'daki
-        # aralik on elemesinden geliyor.
-        try:
-            return bool(tip_donusum.denetle(seri, kod)[0])
-        except Exception:
-            return False
+        return bool(((kp.get("donusum") or {}).get(kod) or {}).get("uygun"))
 
     if kaynak_tip in ("sayısal", "kategorik") and 2 <= tekil <= 600 \
             and tutar("donem_ym6"):
@@ -2659,10 +2565,9 @@ def _tip_onerisi(seri, kaynak_tip, ad):
         return "donem_ymd8", "Değerlerin tamamı YYYYAAGG (tarih) biçiminde"
 
     if kaynak_tip == "kategorik":
-        metin = dolu.astype(str).str.strip()
-        kod_gibi = bool(metin.str.match(r"^0\d").any())
+        kod_gibi = bool(kp.get("kod_gibi"))
         if not kod_gibi:
-            virgul_var = bool(metin.str.contains(",", regex=False).any())
+            virgul_var = bool(kp.get("virgul_var"))
             sira = (("sayisal_virgul", "sayisal_nokta") if virgul_var
                     else ("sayisal_nokta", "sayisal_virgul"))
             for kod in sira:
@@ -2674,10 +2579,7 @@ def _tip_onerisi(seri, kaynak_tip, ad):
 
     if kaynak_tip == "sayısal" and (_ad_parcalari(ad) & _KOD_AD_PARCALARI) \
             and 2 <= tekil <= tip_donusum.KATEGORI_SEVIYE_SINIRI:
-        try:
-            tam = bool((dolu.astype(float) % 1 == 0).all())
-        except Exception:
-            tam = False
+        tam = bool(kp.get("hepsi_tam"))
         if tam and tutar("kategorik_metin"):
             return ("kategorik_metin",
                     "Adı kod/tip/segment bildiriyor ve %d farklı tam sayı değer "
@@ -2705,12 +2607,11 @@ def tip_onerilerini_uygula(durum):
     haric = {str(k) for k in (durum.get("haric_kolonlar") or [])}
     secilen = dict(durum.get("tip_donusum") or {})
     try:
-        df = _df_oku(durum["veri_seti"])
+        kol = profil_mod.kolonlar(_profil(durum))
     except Exception:
         return {}           # okunamadi: sonraki cizimde yeniden denenir
     oneriler, sebepler = {}, {}
-    for kolon in df.columns:
-        ad = str(kolon)
+    for ad, kp in kol.items():
         if ad in haric or ad in secilen:
             continue
         rol = _tip_rolu(durum, ad)
@@ -2720,7 +2621,7 @@ def tip_onerilerini_uygula(durum):
         if kaynak_tip not in ("sayısal", "kategorik"):
             continue
         try:
-            kod, sebep = _tip_onerisi(df[kolon], kaynak_tip, ad)
+            kod, sebep = _tip_onerisi(kp, kaynak_tip, ad)
         except Exception:
             kod, sebep = None, None
         if not kod:
@@ -2758,22 +2659,24 @@ def teyit_ozeti(durum):
 # Tip seceneklerinin TAM KOLONLA hesaplanmis hali; kart her tazelendiginde
 # (her kutu isaretlemesinde) 1.000 kolon yeniden taranmasin.
 # Anahtar: (veri_seti, kolon, kaynak_tip).
-_TIP_SECENEK_ONBELLEK = {}
 
 
-def _tip_secenekleri(durum, df, ad, kaynak_tip):
-    """Kolonun UYGULANABILIR donusumleri (tam kolon, rol kilidi dusulmus)."""
-    anahtar = (str(durum.get("veri_seti")), ad, kaynak_tip)
-    if anahtar not in _TIP_SECENEK_ONBELLEK:
-        if len(_TIP_SECENEK_ONBELLEK) > 20000:
-            _TIP_SECENEK_ONBELLEK.clear()
-        try:
-            _TIP_SECENEK_ONBELLEK[anahtar] = tip_donusum.secenekler(
-                df[ad], kaynak_tip, yalniz_uygun=True)
-        except Exception:
-            _TIP_SECENEK_ONBELLEK[anahtar] = []
-    return [dict(d) for d in _TIP_SECENEK_ONBELLEK[anahtar]
-            if not _tip_kilidi(durum, ad, d["kod"])]
+def _tip_secenekleri(durum, kolonlar, ad, kaynak_tip):
+    """Kolonun UYGULANABILIR donusumleri (tam kolon, rol kilidi dusulmus).
+
+    Uygunluk veri seti profilinden (tip_donusum.secenekler ile ayni
+    liste ve sira; yalnizca uygun olanlar)."""
+    donusum = (kolonlar.get(ad) or {}).get("donusum") or {}
+    cikti = []
+    for kod in tip_donusum.ADAYLAR.get(kaynak_tip, []):
+        if not (donusum.get(kod) or {}).get("uygun"):
+            continue
+        if _tip_kilidi(durum, ad, kod):
+            continue
+        cikti.append({"kod": kod, "hedef": tip_donusum.DONUSUMLER[kod]["hedef"],
+                      "etiket": tip_donusum.DONUSUMLER[kod]["etiket"],
+                      "uygun": True, "sebep": ""})
+    return cikti
 
 
 # Hedef / kimlik / donem kolonlarinin tipi MODELLEME TANIMLARI adiminda
@@ -2934,7 +2837,7 @@ def teyit_satirlari(durum):
     # TAM TABLO (kullanici karari): secenekler ornekle degil tam kolonla
     # hesaplaniyor; uygulanamayan secenek listede HIC gorunmuyor.
     try:
-        tam = _df_oku(durum["veri_seti"])
+        tam = profil_mod.kolonlar(_profil(durum))
     except Exception:
         tam = None
     # Orijinal sozluk tanimlari: kullanici bir tanimi degistirdiyse satir
@@ -2955,7 +2858,7 @@ def teyit_satirlari(durum):
         kaynak_tip = _kaynak_tipi(durum, ad) or (r.get("tip") or "")
         tip = (tip_donusum.hedef_tip(kod) or kaynak_tip) if kod else kaynak_tip
         donusumler = []
-        if tam is not None and ad in tam.columns:
+        if tam is not None and ad in tam:
             # Teklifler daima ORIJINAL tip uzerinden uretilir: secim
             # henuz veriye islenmedi, kolon hala kaynak tipinde duruyor.
             donusumler = _tip_secenekleri(durum, tam, ad, kaynak_tip)
@@ -3258,15 +3161,15 @@ def tip_secimi_dogrula(durum, kolon, kod):
                 "mesaj": "'%s' bu şekilde çevrilemiyor: %s." % (kolon, kilit)}
 
     try:
-        df = _df_oku(durum["veri_seti"])
+        kol = profil_mod.kolonlar(_profil(durum))
     except Exception as e:
         return {"tamam": False,
-                "mesaj": "Veri seti okunamadı (%s)." % str(e)[:80]}
-    if kolon not in df.columns:
+                "mesaj": "Veri seti profili okunamadı (%s)." % str(e)[:80]}
+    if kolon not in kol:
         return {"tamam": False,
                 "mesaj": "'%s' kolonu veri setinde yok." % kolon}
 
-    uygun, sebep = tip_donusum.denetle(df[kolon], kod)
+    uygun, sebep = _profil_donusum_karari(kol[kolon], kod)
     if not uygun:
         return {"tamam": False,
                 "mesaj": "'%s' bu şekilde çevrilemiyor: %s." % (kolon, sebep)}
@@ -3425,6 +3328,18 @@ def teyit_uygula(durum):
                amp_nerede(cikti.get("sozluk"))))
 
 
+def _profil_donusum_karari(kp, kod):
+    """(uygun, sebep): donusumun bu kolonda uygulanip uygulanamayacagi,
+    profilin tam tablodan kesin sonucu. Kolonun kaynak tipine teklif
+    edilmeyen bir donusum uygulanamaz."""
+    if not tip_donusum.gecerli_kod(kod):
+        return False, "tanınmayan dönüşüm (%s)" % kod
+    sonuc = (kp.get("donusum") or {}).get(kod)
+    if sonuc is None:
+        return False, "bu kolon tipi için sunulan bir dönüşüm değil"
+    return bool(sonuc.get("uygun")), sonuc.get("sebep") or None
+
+
 def _tip_secimlerini_dogrula(durum):
     """Secilen tum donusumleri tam veriyle dogrular; takilan varsa
     AdimHatasi atar. Secim yoksa veri seti OKUNMAZ."""
@@ -3432,12 +3347,19 @@ def _tip_secimlerini_dogrula(durum):
     if not secilen:
         return
     try:
-        df = _df_oku(durum["veri_seti"])
+        kol = profil_mod.kolonlar(_profil(durum))
     except Exception as e:
         raise AdimHatasi(
-            "Tip değişiklikleri doğrulanamadı: veri seti okunamadı (%s)."
-            % str(e)[:100])
-    _, _uygulanan, atlanan = tip_donusum.uygula(df, secilen)
+            "Tip değişiklikleri doğrulanamadı: veri seti profili okunamadı "
+            "(%s)." % str(e)[:100])
+    atlanan = {}
+    for kolon, kod in secilen.items():
+        if kolon not in kol:
+            atlanan[kolon] = "kolon tabloda yok"
+            continue
+        uygun, sebep = _profil_donusum_karari(kol[kolon], kod)
+        if not uygun:
+            atlanan[kolon] = sebep
     if atlanan:
         raise AdimHatasi(
             "Seçtiğiniz tip değişikliklerinden bazıları artık "

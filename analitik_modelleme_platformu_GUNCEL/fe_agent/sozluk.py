@@ -123,26 +123,48 @@ def _pii_deger_mi(s):
     # degerler bir kez denetlenip tekrar sayilariyla agirliklandiriliyor.
     # Sonuc tum degerleri tek tek denetlemekle birebir ayni.
     sayim = dolu.astype(str).str.strip().value_counts()
-    ornek = pd.Series(sayim.index, dtype=object)
-    agirlik = sayim.values.astype(float)
+    return pii_karar(pii_sayim(pd.Series(sayim.index, dtype=object),
+                               sayim.values))
+
+
+# Deger deseni denetimleri; SIRA ONEMLI (ilk tutan kazanir).
+PII_DESENLERI = ("e-posta", "IBAN", "telefon", "TC kimlik no", "kart numarası")
+
+
+def pii_sayim(metinler, agirlik):
+    """Kirpilmis METIN degerler ve her birinin satir sayisi -> desene uyan
+    agirliklar. Parca parca toplanabilir (profil isi tekil degerleri
+    parca parca denetliyor); karar pii_karar'da."""
+    ornek = pd.Series(metinler, dtype=object).reset_index(drop=True)
+    agirlik = np.asarray(agirlik, dtype=float)
     # 12345678901.0 gibi float gosterimlerini sadelestir
     ornek = ornek.str.replace(r"\.0$", "", regex=True)
     sade = ornek.str.replace(r"[\s\-()]", "", regex=True)
-    n = float(agirlik.sum())
 
-    def oran(isaret):
-        return float((isaret.values.astype(float) * agirlik).sum()) / n
+    def topla(isaret):
+        return float((isaret.values.astype(float) * agirlik).sum())
 
-    denetimler = (
-        ("e-posta", lambda: ornek.map(lambda v: bool(_DESEN_EPOSTA.match(v)))),
-        ("IBAN", lambda: sade.map(lambda v: bool(_DESEN_IBAN.match(v)))),
-        ("telefon", lambda: sade.map(lambda v: bool(_DESEN_TELEFON.match(v)))),
-        ("TC kimlik no", lambda: sade.map(lambda v: bool(_DESEN_TCKN.match(v)))),
-        ("kart numarası", lambda: sade.map(lambda v: bool(_DESEN_KART.match(v)))),
-    )
-    for ad, hesap in denetimler:
-        if oran(hesap()) >= PII_DESEN_ORAN:
-            if ad == "TC kimlik no" and oran(sade.map(_tckn_sezgi)) >= PII_DESEN_ORAN:
+    return {
+        "n": float(agirlik.sum()),
+        "e-posta": topla(ornek.map(lambda v: bool(_DESEN_EPOSTA.match(v)))),
+        "IBAN": topla(sade.map(lambda v: bool(_DESEN_IBAN.match(v)))),
+        "telefon": topla(sade.map(lambda v: bool(_DESEN_TELEFON.match(v)))),
+        "TC kimlik no": topla(sade.map(lambda v: bool(_DESEN_TCKN.match(v)))),
+        "kart numarası": topla(sade.map(lambda v: bool(_DESEN_KART.match(v)))),
+        "tckn_sezgi": topla(sade.map(_tckn_sezgi)),
+    }
+
+
+def pii_karar(sayim):
+    """pii_sayim ciktisindan (parcalari toplanmis olabilir) desen adi ya
+    da None. Esik ve sira _pii_deger_mi ile ayni."""
+    n = float((sayim or {}).get("n") or 0)
+    if not n:
+        return None
+    for ad in PII_DESENLERI:
+        if float(sayim.get(ad) or 0) / n >= PII_DESEN_ORAN:
+            if ad == "TC kimlik no" and \
+                    float(sayim.get("tckn_sezgi") or 0) / n >= PII_DESEN_ORAN:
                 return "TC kimlik no (kontrol basamağı uyumlu)"
             return ad
     return None
@@ -189,6 +211,62 @@ def _ornek_guvenli_mi(s, satir, kol=None):
         except Exception:
             pass
     return True, ""
+
+
+def ornek_guvenli_profil(kp, satir):
+    """_ornek_guvenli_mi'nin profil karsiligi (ayni sira, ayni esikler).
+
+    kp: profil_kural.profil_kur'un kolon kaydi (tam tablodan)."""
+    if kp.get("pii_ad"):
+        return False, "kişisel veri (kolon adı: %s)" % kp["pii_ad"]
+    if kp.get("pii_deger"):
+        return False, "kişisel veri (değer deseni: %s)" % kp["pii_deger"]
+    tekil = int(kp.get("tekil") or 0)
+    if satir and tekil / max(satir, 1) > KIMLIK_ESIK and not kp.get("ondalikli"):
+        return False, "kimlik benzeri"
+    if kp.get("kaynak_tip") != "sayısal":
+        ort = kp.get("ort_uzunluk")
+        if ort and ort > UZUN_METIN:
+            return False, "uzun metin"
+    return True, ""
+
+
+def profil_cikar_profilden(profil, haric=()):
+    """profil_cikar'in profil karsiligi: tablo OKUNMAZ, her sayi veri seti
+    profilinden (tam tablo, kesin). Doner: ayni yapi."""
+    haric = set(h for h in haric if h)
+    satir = int((profil or {}).get("satir") or 0)
+    kayitlar = []
+    for kp in (profil or {}).get("kolonlar") or []:
+        kol = kp["ad"]
+        if kol in haric:
+            continue
+        sayisal = kp.get("kaynak_tip") == "sayısal"
+        guvenli, neden = ornek_guvenli_profil(kp, satir)
+        ornekler, dagilim = [], ""
+        if guvenli:
+            if sayisal:
+                q = kp.get("kantiller")
+                if q:
+                    q = [round(float(x), 3) for x in q]
+                    dagilim = ("min %s · p25 %s · medyan %s · p75 %s · maks %s"
+                               % tuple(q))
+                    ornekler = [round(float(v), 3) for v, _n in
+                                (kp.get("ust_degerler") or [])[:ORNEK_ADET]]
+            else:
+                sayim = (kp.get("ust_degerler") or [])[:ORNEK_ADET]
+                ornekler = [str(v) for v, _n in sayim]
+                dagilim = " · ".join("%s (%s)" % (v, n) for v, n in sayim[:5])
+        kayitlar.append({
+            "ad": kol,
+            "tip": "sayısal" if sayisal else "kategorik",
+            "null_oran": round(float(kp.get("bos") or 0) / satir, 4) if satir else 0.0,
+            "tekil": int(kp.get("tekil") or 0),
+            "ornekler": ornekler,
+            "dagilim": dagilim,
+            "not": neden,
+        })
+    return kayitlar
 
 
 def profil_cikar(df, haric=()):

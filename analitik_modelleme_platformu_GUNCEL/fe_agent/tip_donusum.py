@@ -120,24 +120,34 @@ def gecerli_kod(kod):
 # ---------------------------------------------------------------------------
 # CEVIRME
 # ---------------------------------------------------------------------------
-def _metin(seri):
+def _metin(seri, tam_sayi=None):
     """Dolu degerleri kirpilmis metin olarak. Sayisal kaynakta
     float 20240131.0 -> "20240131": .0 kuyrugu tarih kaliplarini
-    tutturmuyordu."""
+    tutturmuyordu.
+
+    tam_sayi: kolonun TAMAMI icin "sonlu degerlerin hepsi tam sayi mi"
+    karari. Verilmezse seriden hesaplanir. Profil isi kolonu PARCA PARCA
+    (tekil degerler uzerinden) denetliyor; karar parcaya gore verilseydi
+    tam sayili bir parca "20240131", kesirli deger tasiyan kolonun geri
+    kalani "20240131.0" uretirdi. Karar tum kolondan bir kez gelir."""
     dolu = seri.dropna()
     if pd.api.types.is_float_dtype(dolu):
         tam = dolu[np.isfinite(dolu)]
-        if len(tam) and (tam == tam.astype("int64")).all():
+        if tam_sayi is None:
+            tam_sayi = bool(len(tam)) and bool((tam == tam.astype("int64")).all())
+        if tam_sayi:
             dolu = tam.astype("int64")
     return dolu.astype(str).str.strip()
 
 
-def cevir(seri, kod):
+def cevir(seri, kod, tam_sayi=None):
     """Doner: (yeni_seri, takilan_sayisi, takilan_ornekler).
 
     yeni_seri KAYNAKLA AYNI INDEKSTE doner ve orijinalde bos olan
     hucreler bos kalir - "bos deger cevrilemedi" diye sayilmazlar.
-    Takilan = doluyken cevrilemeyen deger."""
+    Takilan = doluyken cevrilemeyen deger.
+
+    tam_sayi: bkz. _metin (profil isi tum kolonun kararini verir)."""
     if kod not in DONUSUMLER:
         raise ValueError("Bilinmeyen dönüşüm: %s" % kod)
 
@@ -147,7 +157,7 @@ def cevir(seri, kod):
         return pd.Series([np.nan] * len(seri), index=seri.index), 0, []
 
     if kod in ("sayisal_nokta", "sayisal_virgul"):
-        m = _metin(seri)
+        m = _metin(seri, tam_sayi)
         if kod == "sayisal_nokta":
             temiz = m.str.replace(",", "", regex=False)
         else:
@@ -156,16 +166,16 @@ def cevir(seri, kod):
         yeni = pd.to_numeric(temiz, errors="coerce")
     elif kod in KORUYAN_KALIP:
         # Deger AYNEN kalir; yalnizca gecerli yil-ay(-gun) mu diye bakilir.
-        m = _metin(seri)
+        m = _metin(seri, tam_sayi)
         uzunluk = 6 if kod == "donem_ym6" else 8
         cozulen = pd.to_datetime(m.where(m.str.len() == uzunluk),
                                  format=KORUYAN_KALIP[kod], errors="coerce")
         yeni = kaynak.where(cozulen.reindex(kaynak.index).notna())
     elif kod in TARIH_KALIBI:
-        m = _metin(seri)
+        m = _metin(seri, tam_sayi)
         yeni = pd.to_datetime(m, format=TARIH_KALIBI[kod], errors="coerce")
     elif kod == "kategorik_metin":
-        yeni = _metin(seri)
+        yeni = _metin(seri, tam_sayi)
     elif kod in ("kategorik_ay", "kategorik_yil", "sayisal_ymd8"):
         tarih = pd.to_datetime(kaynak, errors="coerce")
         kalip = {"kategorik_ay": "%Y-%m", "kategorik_yil": "%Y",

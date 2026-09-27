@@ -1,6 +1,49 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **"i" açıklamaları kaydırılabiliyor**. Yapıştır: `app.js`, `style.css`
+Bu tur: **PySpark geçişi 1. adım: veri seti profili Spark'ta**. Yapıştır (fe_agent): `profil.py` (yeni), `profil_kural.py` (yeni), `profil_spark.py` (yeni), `akis_faz01.py`, `akis_durum.py`, `sozluk.py`, `tip_donusum.py`
+
+Ne değişti:
+- Veri seti seçimi onaylanınca webapp tabloyu artık okumuyor. Dataiku'daki
+  PySpark recipe'i tam tablodan tek bir profil çıkarıyor. Sonraki kontrollerin
+  hepsi bu profilden okunuyor: tek değerli kolonlar, hedef / kimlik / dönem
+  adayları, tip önerileri ve dönüşüm uygunluğu, kişisel veri, null oranı,
+  tekrarlanan satır, hazır bölme, dil modeline giden özetler.
+- Sayımların hepsi kesin: tekil değerler groupBy ile çıkıyor; yaklaşık sayım
+  ya da örneklem yok.
+- Spark ve yerel motor aynı test tablosunda birebir aynı profili üretiyor.
+  Kararlar eski pandas yoluyla aynı.
+
+Dataiku'da bir kez yapılacak kurulum:
+1. Flow'da yeni bir managed folder oluşturun, adı **AMP_PROFIL** (S3 olabilir).
+2. **PySpark recipe** oluşturun:
+   - Girdi: herhangi bir veri seti (ör. baz veri setiniz; webapp her
+     çalıştırmada girdiyi seçilen veri setine çevirir).
+   - Çıktı: AMP_PROFIL klasörü. Recipe adı `compute_AMP_PROFIL` olmalı
+     (Dataiku varsayılan olarak bu adı verir). Farklıysa proje
+     değişkenine `amp_profil_recete` olarak yazın.
+   - Kodun tamamı şu iki satır:
+     ```
+     from fe_agent import profil_spark
+     profil_spark.recete_calistir()
+     ```
+   - Code env: webapp ile aynı (pandas ve numpy yürütücülerde de gerekli).
+3. Webapp backend'ini çalıştıran kullanıcının bu projede recipe düzenleme,
+   proje değişkeni yazma ve iş (job) başlatma yetkisi olmalı.
+4. İsteğe bağlı proje değişkenleri: `amp_profil_klasor` (varsayılan
+   AMP_PROFIL), `amp_profil_sure` (en fazla bekleme, sn; varsayılan 7200).
+
+Bilinmesi gerekenler:
+- Aynı anda tek profil işi çalışır. Başka bir çalışma o an profil çıkarıyorsa
+  adım bunu söyler.
+- Metin kolonlarında boş metin ("") artık boş hücre sayılıyor; iki motorda
+  aynı tanım.
+- Bu adımda hâlâ pandas ile tam tabloyu okuyanlar (sonraki adımlar):
+  B/D birleştirmesi, sözlük teyidinde AMP_VERISETI yazımı, bölme, 2-5.
+  fazlar ve Dağılım sekmesi.
+
+---
+
+Önceki tur: **"i" açıklamaları kaydırılabiliyor**. Yapıştır: `app.js`, `style.css`
 
 - Uzun açıklama balonun içinde kayıyor (en fazla ekranın %60'ı yükseklik);
   tekerlek balondayken sayfa kaymıyor.
