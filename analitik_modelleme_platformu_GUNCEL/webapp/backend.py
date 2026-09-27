@@ -1191,8 +1191,8 @@ def karsilama_endpoint():
         return jsonify(_hata_govdesi("karsilama", e, "Karşılama yüklenemedi."))
 
 
-@app.route("/tani")
-def tani_endpoint():
+@app.route("/ortam")
+def ortam_endpoint():
     """Webapp ortaminin tanisi (motor secimi icin; bkz. fe_agent.tani).
     ?veri_seti=AD verilirse veri setinin konumunu ve okuma suresini de olcer.
     Hicbir seye yazmaz."""
