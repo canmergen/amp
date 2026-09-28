@@ -9,6 +9,13 @@ Projenin Amacı
 
 Veri seti ve değişken sözlüğünden hedefi daha iyi açıklayan yeni değişkenleri yapay zekâ desteğiyle üretip model üzerinde test ederek değişken üretim sürecini hızlandırmak ve her değişkenin katkısını kanıta dayalı kılmak. Aynı altyapı sonraki adımda uçtan uca Analitik Modelleme Platformu'na genişletilecektir.
 
+Proje İşleyişi
+  - Veri ve Sözlük Hazırlığı: Veri seti ve değişken sözlüğü seçilir; eksik açıklamalar için yapay zekâ öneri sunar; hedef, kimlik ve dönem tanımlanır.
+  - Bölme ve Baz Set: Sızıntıyı önleyen eğitim / validasyon / test ayrımı sabitlenir; mevcut değişkenlerin gücü (IV) ve stabilitesi (PSI) ölçülür.
+  - Kural Tabanlı Üretim: Yapay zekâ klasik dönüşümleri (fark, oran, log, sıralama, uç değer kırpma) önerir; onaydan sonra Python hesaplar.
+  - AI Değişken Keşfi: Yapay zekâ kısıtlı bir formül diliyle yeni değişken hipotezleri üretir; kod yazmaz, her formül denetimden geçer.
+  - Kalite, Seçim ve Model Testi: Zayıf ve sızıntı şüpheli değişkenler elenir; base ve enriched modeller 5 seed ile karşılaştırılır; her değişken kataloğa yazılır.
+  - Sonraki Adım: Aynı altyapı, ham veriden final modele uzanan Analitik Modelleme Platformu'na genişletilir.
 Bugünkü yapıda yapay zekâ yalnızca öneri verir; hesabı ve akışı Python yönetir. Her öneri kolon adlarıyla doğrulanır, kural ve formül denetiminden geçer; kalite, seçim ve model karşılaştırması kapılarını geçmeyen hiçbir değişken modele girmez. Yapı Dataiku üzerinde web uygulaması olarak çalışır; yalnızca kurum ortamındaki paketleri kullanır, ek kütüphane kurulumu gerektirmez.
 
 AKILLI DEĞİŞKEN ÜRETİMİ — YÖNETİM ÖZETİ
@@ -34,6 +41,7 @@ Denemelerin Rakam Çıktıları
   - Sözlük sıkıştırma: 1.040 kolonda 0 → 848 eşleşme, 14 → 270 değişken ailesi.
   - Bu sonuç bugünkü yapının tasarımını belirledi; bugünkü yapının gerçek veri sonucu sunum öncesinde koşulacaktır.
 
+Proje Metodolojisi
 Üç aşamanın her biri bir öncekinin gösterdiği eksikten doğmuştur. İlk PoC yapay zekânın kendi kodunu yazıp çalıştırdığı bir ajandı; ilk yapı hesabı koda verip sözlük, hafıza ve model testi ekledi; bugünkü yapı geleneksel üretimi yapay zekâdan ayırıp her değişkeni base modele karşı ölçen uçtan uca bir çerçeve kurdu.
 
 DENEMELERİN RAKAM ÇIKTILARI
