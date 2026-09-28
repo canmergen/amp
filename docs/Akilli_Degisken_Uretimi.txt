@@ -1,5 +1,4 @@
 AKILLI DEĞİŞKEN ÜRETİMİ: RAPOR (metin sürümü)
-Bireysel Krediler Analitik ve Tahsis, 28 Eylül 2026
 Görseller: docs/gorseller/ (01 proje işleyişi, 02 proje metodolojisi, 03 değişken üretimi akışı)
 
 AKILLI DEĞİŞKEN ÜRETİMİ
@@ -59,7 +58,7 @@ Elde bulunan tek model sonucu ilk yapıya aittir (10 Eylül 2026). Karşılaşt�
   Yalnızca 33 yapay zekâ değişkeni     | 33                    | 0,5679
   Rastgele seçilmiş 33 mevcut değişken | 33                    | 0,5946
 
-Ne gösteriyor?
+Ne Gösteriyor?
 --------------
   - Eşli karşılaştırmada fark −0,0012 (çapraz doğrulama) ve −0,0010 (doğrulama seti) çıkmış; %95 güven aralığı [−0,0076, +0,0061] sıfırı kapsamıştır. Ölçülebilir bir katkı yoktur.
   - Yapay zekâ değişkenleri teknik olarak geçerli formüllerdi: 33 değişkenden 32'si elemeyi geçti, en güçlüsü 279 kolon içinde 13. sırada yer aldı. Ancak tek başlarına, rastgele seçilmiş 33 mevcut kolondan daha zayıf kaldılar.
@@ -70,7 +69,7 @@ Neden?
   - Kabul kriteri modele katkıya bakmıyordu. Bir hipotez, tek başına lift ve oran farkı eşiğini geçip mevcut değişkenlere benzemiyorsa kabul ediliyordu; base modele artımlı katkı ölçülmüyordu.
   - Tekrar kontrolü isme bağlıydı. Aynı mantık farklı bir adla yeniden üretilebiliyordu.
 
-Bu rakamın değeri
+Bu Rakamın Değeri
 -----------------
 Yöntem katkı sağlamadı, ancak ölçüm çalıştı: katkısız değişkenler rakamla yakalandı ve karar buna göre verildi. Bugünkü yapıda bu ölçüm akışın standart adımıdır; geleneksel üretim yapay zekâdan ayrılmış, kabul kararı model testine bağlanmıştır. Sözlük sıkıştırmada ise 1.040 kolon için eski yöntemin bulamadığı eşleşme 848'e, 14 kaba aile 270 değişken ailesine çıkmış; yapay zekânın gerçek kolon adlarından geçerli formül ürettiği saha testinde doğrulanmıştır.
 Bugünkü yapının kendi rakamı henüz yoktur. Base ve enriched karşılaştırması akışın içinde hazırdır ancak gerçek veride henüz koşulmamıştır. Sunum öncesinde FPD verisiyle bir koşu yapılması planlanmaktadır.
@@ -80,12 +79,12 @@ GEÇMİŞ DENEMELER VE ÇIKARILAN DERSLER
 
 İlk PoC: Bireysel Deep Agent
 Ekip dışında ayrı bir sandbox projesinde kurulan ilk akış uçtan uca çalışıyor ve çıktı üretiyordu; ancak üretilen değişkenlerin kalitesi ve kurgunun metodolojisi sonuçların modelde kullanılmasına izin vermiyordu.
-Nasıl çalışıyordu?
+Nasıl Çalışıyordu?
   - Ajan, langgraph ve deepagents kütüphaneleriyle kurulmuştu ve Qwen 27B modelini "otonom kredi riski analisti" olarak çalıştırıyordu; yapay zekâ kendi pandas kodunu yazıyor, çalıştırıyor ve çıktısını okuyordu.
   - Her koşu rastgele bir kolon ailesi ve tema odağıyla başlıyor, her turda kod tarafından farklı bir analiz yöntemi dayatılıyordu.
   - Prompt'ta sıkı kurallar vardı: her sayı script çıktısından alınmalı, zayıf sinyal etiketlenmeli, sıfır yoğunluklu kolonlarda sahte keşif sayılmamalı, aktivite hacmi etkisi kontrol edilmeli.
   - Çıktı: her hipotez için bir dosya (H01, H02, …), hipotez tablosu, rapor ve bunlardan derlenen bir features.py.
-Ne yanlıştı?
+Ne Yanlıştı?
   - Üretilen kod çalışırken hata veriyordu. Hipotez dosyalarındaki kodlar doğrudan çalışmadığı için her hipotezin pandas kodu tanımına göre tek tek yeniden kurgulandı.
   - Kod üretiminde token uzunluğu hataları alınıyordu. ~150 satırlık prompt, sözlük ve tur geçmişiyle birlikte model sınıra takılıyor; üretilen kod ya da çıktı yarıda kalıyordu.
   - Üretilen değişkenler basit ve anlamsızdı. Çoğu delta, momentum ya da iki pencerenin oranıydı; bir hipotez zaten var olan bir kolonu yeniden "keşfediyordu"; sıfır paydalı oranlar müşterilerin büyük kısmında boş değer üretiyordu.
@@ -95,13 +94,13 @@ Ne yanlıştı?
 
 İlk Yapı: Hafızalı Keşif Akışı
 Akış, kurumda onaylanmayan kütüphaneler olmadan Dataiku LLM Mesh üzerinde yeniden kuruldu ve roller ters çevrildi: yapay zekâ kod yazmaz, değişken önerir; hesabı ve ölçümü kod yapar. Akış Dataiku'daki TARGET_FEATURE_DISCOVERY bölgesinde durmaktadır.
-Ne yapıldı?
+Ne Yapıldı?
   - Daha iyi sözlük: 1.040 kolon açıklaması, yapay zekânın okuyabileceği kompakt bir haritaya çevrildi; 848 kolon eşleşti, 270 aile çıktı.
   - Veri sözleşmesi: Hedef, kimlik, dönem, doğrulama oranı ve kabul eşikleri tek bir meta dosyasında sabitlendi; %80/%20 tabakalı bölme bir kez dondurulup her koşuda aynı kullanıldı.
   - Hafıza: Kabul edilen değişkenler formül, gerekçe ve istatistikleriyle kayda; reddedilenler gerekçesiyle ayrı bir arşive yazıldı.
   - Keşif döngüsü: Her turda 6 hipotez ve formül önerildi; kod formülü gerçek kolonlara karşı doğrulayıp decile, lift ve oran farkıyla ölçtü. Yaklaşık 22 tur sonunda 33 değişken birikti; kabul oranı düşünce üretim durduruldu.
   - Kanıt: Kabul edilen değişkenler veri setine eklendi ve base ile enriched modeller aynı ayarlarla karşılaştırıldı.
-Neden yetmedi?
+Neden Yetmedi?
   - Yapay zekâ, veri setinde eksik olan geleneksel değişkenleri (delta, trend, momentum, pencere oranı) üretiyordu; bunların kuralla ve deterministik üretilmesi gerekiyordu.
   - Kabul kriteri modele artımlı katkıya bakmıyordu; 33 değişkenden 32'si elemeyi geçti ama modele katkı sağlamadı.
   - Dosya adları, hedef ve eşikler projeye özeldi; her adım notebook ve recipe'lerden elle tetikleniyordu. Başka bir ekip başka bir veri setiyle kullanamazdı.
@@ -120,14 +119,14 @@ BUGÜNKÜ YAPIDA DEĞİŞKEN ÜRETİMİ: İŞLEYİŞ AYRINTISI
 ==================================================
 
 Değişken üretimi iki üretim adımı ve üç kapıdan oluşur. Her adım önce planını gösterir; kullanıcı onaylamadan hiçbir değişken üretilmez.
-  - Kural tabanlı üretim: Yapay zekâ sözlük açıklamalarını okuyup hangi kolon grubuna hangi klasik dönüşümün uygulanacağını önerir. Seçenekler kapalı bir listeyle sınırlıdır: fark, oran, log, sıralama (rank) ve uç değer kırpma (winsorize); en fazla 12 dönüşüm ailesi önerilir. Kullanıcı planın tümünü ya da bir kısmını onaylar; hesabı Python yapar. Kırpma eşikleri ve sıralama referansı yalnızca eğitim satırlarından öğrenilir.
-  - AI değişken keşfi: Yapay zekâ, en az iki kolonu birleştiren en fazla 10 yeni değişken hipotezi yazar. Bunu Python koduyla değil kısıtlı bir formül diliyle yapar (dört işlem, log1p, abs, sqrt, rank, clip, fark). Her formül söz dizimi ağacı düzeyinde denetlenir, kolon adları gerçek şemayla karşılaştırılır ve platformun kendi yürütücüsüyle hesaplanır; eval kullanılmaz. Tek değişken analizinde (SFA) en güçlü çıkan değişkenler yapay zekâya bağlam olarak verilir.
-  - Kalite kapısı: Boş oranı %50'nin üstünde olanlar, sabit değer taşıyanlar ve hedefle korelasyonu 0,95'i aşanlar (sızıntı şüphesi) elenir.
-  - Seçim hattı: Yarı sabit olanlar, birbirine çok benzeyenler (|r| > 0,95 olan çiftte IV'si düşük olan) ve model önemi çok düşük olanlar elenir. Hepsi yalnızca eğitim satırlarında hesaplanır; elenen her değişkenin hangi adımda ve neden elendiği tabloda kalır.
-  - Model karşılaştırması: Aynı bölme ve aynı algoritmayla (gradient boosting, erken durdurma açık; eksik değerler modele bırakılır) base ve enriched modeller eğitilir. Ölçüm 5 seed ile tekrarlanır; AUC, Gini ve KS farkı ortalama, standart sapma ve %95 güven aralığıyla raporlanır. Karşılaştırma yalnızca eğitim satırlarında yapılır; test ve OOT satırları bu adıma girmez.
-  - Değişken kütüğü ve üretim kodu: Her değişkenin formülü, kaynak kolonları, gerekçesi, kalite ve seçim sonucu ve model katkısı tek tabloda tutulur. Tüm üretimin çalıştırılabilir Python kodu tek dosyaya yazılır; sonuç başka bir ortamda yeniden üretilebilir.
+  - Kural Tabanlı Üretim: Yapay zekâ sözlük açıklamalarını okuyup hangi kolon grubuna hangi klasik dönüşümün uygulanacağını önerir. Seçenekler kapalı bir listeyle sınırlıdır: fark, oran, log, sıralama (rank) ve uç değer kırpma (winsorize); en fazla 12 dönüşüm ailesi önerilir. Kullanıcı planın tümünü ya da bir kısmını onaylar; hesabı Python yapar. Kırpma eşikleri ve sıralama referansı yalnızca eğitim satırlarından öğrenilir.
+  - AI Değişken Keşfi: Yapay zekâ, en az iki kolonu birleştiren en fazla 10 yeni değişken hipotezi yazar. Bunu Python koduyla değil kısıtlı bir formül diliyle yapar (dört işlem, log1p, abs, sqrt, rank, clip, fark). Her formül söz dizimi ağacı düzeyinde denetlenir, kolon adları gerçek şemayla karşılaştırılır ve platformun kendi yürütücüsüyle hesaplanır; eval kullanılmaz. Tek değişken analizinde (SFA) en güçlü çıkan değişkenler yapay zekâya bağlam olarak verilir.
+  - Kalite Kapısı: Boş oranı %50'nin üstünde olanlar, sabit değer taşıyanlar ve hedefle korelasyonu 0,95'i aşanlar (sızıntı şüphesi) elenir.
+  - Seçim Hattı: Yarı sabit olanlar, birbirine çok benzeyenler (|r| > 0,95 olan çiftte IV'si düşük olan) ve model önemi çok düşük olanlar elenir. Hepsi yalnızca eğitim satırlarında hesaplanır; elenen her değişkenin hangi adımda ve neden elendiği tabloda kalır.
+  - Model Karşılaştırması: Aynı bölme ve aynı algoritmayla (gradient boosting, erken durdurma açık; eksik değerler modele bırakılır) base ve enriched modeller eğitilir. Ölçüm 5 seed ile tekrarlanır; AUC, Gini ve KS farkı ortalama, standart sapma ve %95 güven aralığıyla raporlanır. Karşılaştırma yalnızca eğitim satırlarında yapılır; test ve OOT satırları bu adıma girmez.
+  - Değişken Kütüğü ve Üretim Kodu: Her değişkenin formülü, kaynak kolonları, gerekçesi, kalite ve seçim sonucu ve model katkısı tek tabloda tutulur. Tüm üretimin çalıştırılabilir Python kodu tek dosyaya yazılır; sonuç başka bir ortamda yeniden üretilebilir.
 
-Üretimi çevreleyen güvence katmanı
+Üretimi Çevreleyen Güvence Katmanı
 ----------------------------------
 Bir değişkenin gerçekten işe yaradığını söyleyebilmek için üretimden önce ve sonra şu unsurların kurulu olması gerekir; bugünkü yapı bunların hepsini aynı akışta kurar.
   - Veri sözleşmesi: Hedef, kimlik ve dönem iki kez korunur; ne bir dönüşüme girer ne de yeni bir değişkenin adı olabilir.
@@ -152,7 +151,7 @@ Değişken üretimi, ham veriden final modele uzanan beş fazlı bir modelleme a
 
 Yapı gerçek hacme göre kurulmuştur: FPD_TXN_FEATS tabloları toplam yaklaşık 135 milyon satır ve 1.040 kolondur. Tam veriye dokunan işler (profil, veri seti yazımı, bölme) Spark üzerinde kümede çalışır ve gereken Flow nesnelerini uygulama kendisi kurar.
 
-Açık işler
+Açık İşler
 ----------
   - Gerçek veride ilk sonuç: Bugünkü yapıyla FPD verisi üzerinde base ve enriched karşılaştırması çalıştırılmalı; bu rapordaki tek rakam seti ilk yapıya aittir.
   - Faz 2-5'in Spark'a taşınması: SFA, stabilite, üretim, seçim ve model adımları veri setini hâlâ uygulama içinde pandas ile okumaktadır; 135 milyon satırda bu adımlar da Spark'a taşınmalıdır.
