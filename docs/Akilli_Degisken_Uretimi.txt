@@ -1,15 +1,17 @@
-AKILLI DEĞİŞKEN ÜRETİMİ — RAPOR (metin sürümü)
-Bireysel Krediler Analitik ve Tahsis · 28 Eylül 2026
+AKILLI DEĞİŞKEN ÜRETİMİ: RAPOR (metin sürümü)
+Bireysel Krediler Analitik ve Tahsis, 28 Eylül 2026
 Görseller: docs/gorseller/ (01 proje işleyişi, 02 proje metodolojisi, 03 değişken üretimi akışı)
 
 AKILLI DEĞİŞKEN ÜRETİMİ
 =======================
 
 Projenin Amacı
+--------------
 
 Veri seti ve değişken sözlüğünden hedefi daha iyi açıklayan yeni değişkenleri yapay zekâ desteğiyle üretip model üzerinde test ederek değişken üretim sürecini hızlandırmak ve her değişkenin katkısını kanıta dayalı kılmak. Aynı altyapı sonraki adımda uçtan uca Analitik Modelleme Platformu'na genişletilecektir.
 
 Proje İşleyişi
+--------------
   - Veri ve Sözlük Hazırlığı: Veri seti ve değişken sözlüğü seçilir; eksik açıklamalar için yapay zekâ öneri sunar; hedef, kimlik ve dönem tanımlanır.
   - Bölme ve Baz Set: Sızıntıyı önleyen eğitim / validasyon / test ayrımı sabitlenir; mevcut değişkenlerin gücü (IV) ve stabilitesi (PSI) ölçülür.
   - Kural Tabanlı Üretim: Yapay zekâ klasik dönüşümleri (fark, oran, log, sıralama, uç değer kırpma) önerir; onaydan sonra Python hesaplar.
@@ -18,8 +20,8 @@ Proje İşleyişi
   - Sonraki Adım: Aynı altyapı, ham veriden final modele uzanan Analitik Modelleme Platformu'na genişletilir.
 Bugünkü yapıda yapay zekâ yalnızca öneri verir; hesabı ve akışı Python yönetir. Her öneri kolon adlarıyla doğrulanır, kural ve formül denetiminden geçer; kalite, seçim ve model karşılaştırması kapılarını geçmeyen hiçbir değişken modele girmez. Yapı Dataiku üzerinde web uygulaması olarak çalışır; yalnızca kurum ortamındaki paketleri kullanır, ek kütüphane kurulumu gerektirmez.
 
-AKILLI DEĞİŞKEN ÜRETİMİ — YÖNETİM ÖZETİ
-=======================================
+AKILLI DEĞİŞKEN ÜRETİMİ: YÖNETİM ÖZETİ
+======================================
 
 Üretim ve Verimlilik Hızı
   - Değişken fikri, formülü, hesabı ve ilk testi tek akışta üretilir; analist kod yazmak yerine önerileri değerlendirir.
@@ -42,6 +44,7 @@ Denemelerin Rakam Çıktıları
   - Bu sonuç bugünkü yapının tasarımını belirledi; bugünkü yapının gerçek veri sonucu sunum öncesinde koşulacaktır.
 
 Proje Metodolojisi
+------------------
 Üç aşamanın her biri bir öncekinin gösterdiği eksikten doğmuştur. İlk PoC yapay zekânın kendi kodunu yazıp çalıştırdığı bir ajandı; ilk yapı hesabı koda verip sözlük, hafıza ve model testi ekledi; bugünkü yapı geleneksel üretimi yapay zekâdan ayırıp her değişkeni base modele karşı ölçen uçtan uca bir çerçeve kurdu.
 
 DENEMELERİN RAKAM ÇIKTILARI
@@ -75,7 +78,7 @@ Bugünkü yapının kendi rakamı henüz yoktur. Base ve enriched karşılaştı
 GEÇMİŞ DENEMELER VE ÇIKARILAN DERSLER
 =====================================
 
-İlk PoC — Bireysel Deep Agent
+İlk PoC: Bireysel Deep Agent
 Ekip dışında ayrı bir sandbox projesinde kurulan ilk akış uçtan uca çalışıyor ve çıktı üretiyordu; ancak üretilen değişkenlerin kalitesi ve kurgunun metodolojisi sonuçların modelde kullanılmasına izin vermiyordu.
 Nasıl çalışıyordu?
   - langgraph ve deepagents ile kurulmuş bir ajan, Qwen 27B modelini "otonom kredi riski analisti" olarak çalıştırıyordu; yapay zekâ kendi pandas kodunu yazıyor, çalıştırıyor ve çıktısını okuyordu.
@@ -90,7 +93,7 @@ Ne yanlıştı?
   - Metodoloji eksikti. Prompt hedefin FPD olduğunu söylemiyordu; eğitim/test ayrımı, sızıntı kontrolü ve minimum segment büyüklüğü kuralı yoktu; %50 hedef oranlı dengeli örneklem lift yorumlarını yanıltıyordu.
   - Kurum ortamında çalışamıyordu. langgraph ve deepagents kurulumu Teknoloji Mimarisi tarafından reddedildi; akışın Dataiku'nun kendi yetkinlikleriyle yeniden kurulması gerekti.
 
-İlk Yapı — Hafızalı Keşif Akışı
+İlk Yapı: Hafızalı Keşif Akışı
 Ajan, yasaklı kütüphaneler olmadan Dataiku LLM Mesh üzerinde yeniden kuruldu ve roller ters çevrildi: yapay zekâ kod yazmaz, değişken önerir; hesabı ve ölçümü kod yapar. Akış Dataiku'daki TARGET_FEATURE_DISCOVERY bölgesinde durmaktadır.
 Ne yapıldı?
   - Daha iyi sözlük: 1.040 kolon açıklaması, yapay zekânın okuyabileceği kompakt bir haritaya çevrildi; 848 kolon eşleşti, 270 aile çıktı.
@@ -104,7 +107,7 @@ Neden yetmedi?
   - Dosya adları, hedef ve eşikler projeye özeldi; her adım notebook ve recipe'lerden elle tetikleniyordu. Başka bir ekip başka bir veri setiyle kullanamazdı.
   - Tip kontrolü, zamansal (OOT) bölme, IV, PSI ve Model Risk'e gidecek dokümantasyon akışın içinde değildi.
 
-Bugünkü Yapı — Akıllı Değişken Üretimi
+Bugünkü Yapı: Akıllı Değişken Üretimi
 İlk iki aşamanın dersleri tek bir sistemde toplandı. Aşağıdaki kurallar bugünkü tasarımın omurgasıdır.
   - Yapay zekâ kod yazmaz. Kapalı bir dönüşüm listesinden seçer ya da kısıtlı bir formül dilinde yazar; Python denetler, hesaplar ve çalışır kodu kendisi üretir.
   - Akışı Python yönetir. Adımlar, geçişler ve onaylar deterministiktir; yapay zekâ hiçbir adımı ilerletemez. (Akışı sohbet üzerinden yapay zekâya yönettirme denemesi, çalışmamış adımların "tamamlandı" sayılması nedeniyle bırakıldı.)
@@ -113,8 +116,8 @@ Bugünkü Yapı — Akıllı Değişken Üretimi
   - Bölme baştan sabittir. Tüm öğrenmeler yalnızca eğitim satırlarından yapılır; zamansal bölmede son dönem test (OOT) olarak ayrılır, rastgele bölmede aynı müşterinin kayıtları bir arada tutulur.
   - Veri seti ve sözlük parametredir. Hedef, kimlik ve dönem kullanıcıdan alınır; aynı akış her modelleme çalışmasında, ek kütüphane kurulumu olmadan çalışır.
 
-BUGÜNKÜ YAPIDA DEĞİŞKEN ÜRETİMİ — İŞLEYİŞ AYRINTISI
-===================================================
+BUGÜNKÜ YAPIDA DEĞİŞKEN ÜRETİMİ: İŞLEYİŞ AYRINTISI
+==================================================
 
 Değişken üretimi iki üretim adımı ve üç kapıdan oluşur. Her adım önce planını gösterir; kullanıcı onaylamadan hiçbir değişken üretilmez.
   - Kural tabanlı üretim: Yapay zekâ sözlük açıklamalarını okuyup hangi kolon grubuna hangi klasik dönüşümün uygulanacağını önerir. Seçenekler kapalı bir listeyle sınırlıdır: fark, oran, log, sıralama (rank) ve uç değer kırpma (winsorize); en fazla 12 dönüşüm ailesi önerilir. Kullanıcı planın tümünü ya da bir kısmını onaylar; hesabı Python yapar. Kırpma eşikleri ve sıralama referansı yalnızca eğitim satırlarından öğrenilir.
@@ -152,7 +155,7 @@ Yapı gerçek hacme göre kurulmuştur: FPD_TXN_FEATS tabloları toplam yaklaş�
 Açık işler
 ----------
   - Gerçek veride ilk sonuç: Bugünkü yapıyla FPD verisi üzerinde base ve enriched karşılaştırması çalıştırılmalı; bu rapordaki tek rakam seti ilk yapıya aittir.
-  - Faz 2–5'in Spark'a taşınması: SFA, stabilite, üretim, seçim ve model adımları veri setini hâlâ uygulama içinde pandas ile okumaktadır; 135 milyon satırda bu adımlar da Spark'a taşınmalıdır.
+  - Faz 2-5'in Spark'a taşınması: SFA, stabilite, üretim, seçim ve model adımları veri setini hâlâ uygulama içinde pandas ile okumaktadır; 135 milyon satırda bu adımlar da Spark'a taşınmalıdır.
   - Nesil nesil keşif: AI keşfi şu an tek turda en fazla 10 hipotez üretir; sonraki tura önceki hipotezlerin skorlarını geri besleyen bir döngü eklenmelidir.
   - Formül bazlı tekrar kontrolü: Aynı mantığın farklı adla yeniden önerilmesini engelleyecek bir formül parmak izi kütüğe eklenmelidir.
   - İkili dönüşümlerin eşleşmesi: Fark ve oran, önerilen kolon listesindeki ardışık çiftlere uygulanmaktadır; hangi kolonun hangisiyle eşleşeceği açıkça planlanmalıdır.
