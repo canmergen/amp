@@ -658,9 +658,9 @@ def ilk_gecis_ozeti(ad, tur, seri):
 
 
 def yerel_profil(df, veri_seti=None):
-    """Ayni kurallar pandas ile. YALNIZCA TEST REFERANSI: DuckDB motorunun
-    (profil_spark) ayni tabloda ayni sonucu verdigi buna karsi sinanir;
-    uygulama bu fonksiyonu cagirmaz."""
+    """Ayni kurallar pandas ile. KUCUK VERIDE PROFILIN KENDISI (bkz.
+    motor.py, profil.py); Spark isinin (profil_spark) ayni tabloda ayni
+    sonucu verdigi de buna karsi sinanir."""
     satir = int(len(df))
     temiz = {}
     ozetler = []

@@ -1,6 +1,22 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **başlangıç kartları: açık olanlar seçilebilir, metinler "ne mevcut / ne oluşturulacak"**.
+Bu tur: **boyuta göre motor (küçük veri pandas, büyük veri Spark); başlangıç kartı metinleri**.
+Yeni ekle (fe_agent): `motor.py`, `amp_pandas.py`
+Değiştir (fe_agent): `amp.py`, `profil.py`, `profil_kural.py`, `akis_faz01.py`, `akis_metin.py`
+Webapp dosyalarında değişiklik yok.
+
+- Motor, veri setinin Dataiku'daki dosya boyutuna ("basic:SIZE" metriği,
+  tabloyu okumadan) göre seçilir. Toplam boyut 0,25 GB ve altıysa profil,
+  alt alta ekleme ve AMP_VERISETI yazımı webapp içinde pandas ile yapılır;
+  üstündeyse Spark recipe'leriyle. Boyut okunamazsa Spark.
+- Eşik proje değişkeniyle değiştirilebilir: `amp_pandas_sinir_gb`.
+- Mesajlarda "Dosya Boyutu" ve "Motor" satırı görünür.
+- Başlangıç kartları dört kart olarak kalıyor; başlıklar "X Mevcut - Y Mevcut
+  (Değil)" biçiminde, açıklamalar tek düzende yeniden yazıldı.
+
+---
+
+Önceki tur: **başlangıç kartları: açık olanlar seçilebilir, metinler "ne mevcut / ne oluşturulacak"**.
 Yapıştır: fe_agent `akis_metin.py`, `akis_faz01.py` · webapp `app.js` (JS), `style.css` (CSS)
 
 - Açık başlangıçlar: A (Baz Veri Seti ve Baz Sözlük Mevcut) ve D (Kaynak

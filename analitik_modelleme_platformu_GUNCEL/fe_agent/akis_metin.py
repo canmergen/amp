@@ -56,19 +56,18 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 ACIK_MODLAR = ("A", "D")
 
 MOD_SECENEKLERI = [
-    {"deger": "A", "baslik": "Baz Veri Seti ve Baz Sözlük Mevcut",
-     "aciklama": "Eksik yok. Doğrudan modelleme tanımlarına ve veri "
-                 "analizine geçilir."},
-    {"deger": "B", "baslik": "Kaynak Tablolar ve Kaynak Sözlükler Mevcut",
-     "aciklama": "Baz veri seti ve baz sözlük yok. Tablolar birleştirilerek "
-                 "baz veri seti, kaynak sözlükler birleştirilerek baz sözlük "
-                 "oluşturulur."},
-    {"deger": "C", "baslik": "Baz Veri Seti Mevcut",
-     "aciklama": "Baz sözlük yok. Veri setinin kolon yapısı ve profilinden "
-                 "oluşturulur."},
-    {"deger": "D", "baslik": "Kaynak Tablolar Mevcut",
-     "aciklama": "Baz veri seti ve baz sözlük yok. Tablolar birleştirilerek "
-                 "baz veri seti, ardından baz sözlük oluşturulur."},
+    {"deger": "A", "baslik": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut",
+     "aciklama": "Veri seti ve sözlük hazır. Doğrudan modelleme tanımlarına "
+                 "ve veri analizine geçilir."},
+    {"deger": "B", "baslik": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut",
+     "aciklama": "Baz veri seti kaynak tablolar birleştirilerek, baz sözlük "
+                 "kaynak sözlükler birleştirilerek oluşturulur."},
+    {"deger": "C", "baslik": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil",
+     "aciklama": "Baz sözlük, veri setinin kolon yapısı ve profilinden yapay "
+                 "zekâ desteğiyle oluşturulur."},
+    {"deger": "D", "baslik": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut Değil",
+     "aciklama": "Baz veri seti kaynak tablolar birleştirilerek oluşturulur; "
+                 "baz sözlük ardından yapay zekâ desteğiyle üretilir."},
 ]
 for _s in MOD_SECENEKLERI:
     _s["kapali"] = _s["deger"] not in ACIK_MODLAR
