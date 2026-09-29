@@ -3547,6 +3547,7 @@ function analizCiz(tab) {
         panelBolumBasligi("Tek Değişken Analizi (SFA)");
         analizGovde.appendChild(elYap("div", "set-not", SFA_SET_NOTU));
         panelCiz(ANALIZ_VERI.sfa);
+        if (ANALIZ_VERI.sfa && ANALIZ_VERI.sfa.aralik) aralikCiz();
         panelBolumBasligi("Eksik Değer");
         panelCiz(ANALIZ_VERI.eksik);
         ftOdakGeriVer(odak);
@@ -3562,6 +3563,183 @@ function analizCiz(tab) {
     }
     panelCiz(ANALIZ_VERI[tab]);
     ftOdakGeriVer(odak);
+}
+
+/* ==================== SFA aralık önerileri ====================
+   Değişken başına hedefe göre aralık önerisi (fe_agent/aralik.py). Liste
+   /sfa_aralik ucundan bir kez çekilir; satıra tıklayınca o değişkenin
+   aralıkları açılır. "Doldurmadan Önce" eksikleri ayrı aralıkta,
+   "Doldurduktan Sonra" medyanın düştüğü aralıkta gösterir. */
+const ARALIK = { liste: null, detay: {}, gorunum: "ayri", filtre: "oneri",
+                 ara: "", acik: "", istek: 0 };
+const ARALIK_SATIR_SINIRI = 200;
+const SEKIL_ETIKET = { "artan": "Artan", "azalan": "Azalan", "U": "U",
+                       "ters U": "Ters U", "gruplama": "Gruplama",
+                       "düz": "İlişki Yok", "düzensiz": "Düzensiz" };
+
+function aralikSifirla() { ARALIK.liste = null; ARALIK.detay = {}; }
+
+function aralikGetir(kolon) {
+    return fetch(getWebAppBackendUrl("sfa_aralik") + "?oturum_id="
+                 + encodeURIComponent(OTURUM_ID)
+                 + (kolon ? "&kolon=" + encodeURIComponent(kolon) : ""))
+        .then(r => r.json());
+}
+
+function ivMetni(v) {
+    return (v === null || v === undefined) ? "∅"
+        : Number(v).toLocaleString("tr-TR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+}
+
+function yuzdeMetni(v, basamak) {
+    return "%" + (100 * Number(v || 0)).toLocaleString("tr-TR",
+        { minimumFractionDigits: basamak, maximumFractionDigits: basamak });
+}
+
+function aralikCiz() {
+    const kap = elYap("div", "aralik-kap");
+    analizGovde.appendChild(kap);
+    const istek = ++ARALIK.istek;
+    if (!ARALIK.liste) {
+        kap.appendChild(elYap("div", "dag-not", "Aralık önerileri yükleniyor…"));
+        aralikGetir("").then(d => {
+            if (istek !== ARALIK.istek || aktifAnalizSekme !== "degisken") return;
+            ARALIK.liste = (d && d.degiskenler) || [];
+            if (d && d.tamam === false) ARALIK.hata = d.hata;
+            analizCiz("degisken");
+        }).catch(() => {});
+        return;
+    }
+    if (ARALIK.hata) { kap.appendChild(elYap("div", "dag-not dag-hata", ARALIK.hata)); return; }
+
+    kap.appendChild(elYap("div", "iskele-baslik aralik-baslik", "Hedefe Göre Aralık Önerileri"));
+    const secimSatiri = (etiket, secenekler, deger, degisti) => {
+        const satir = elYap("div", "aralik-secim");
+        satir.appendChild(elYap("span", "aralik-secim-etiket", etiket));
+        secenekler.forEach(([k, ad]) => {
+            const b = elYap("button", "bolme-cip" + (k === deger ? " secili" : ""), ad);
+            b.type = "button";
+            b.onclick = () => degisti(k);
+            satir.appendChild(b);
+        });
+        kap.appendChild(satir);
+    };
+    secimSatiri("Eksik Değer", [["ayri", "Doldurmadan Önce"], ["dolu", "Doldurduktan Sonra"]],
+                ARALIK.gorunum, k => { ARALIK.gorunum = k; analizCiz("degisken"); });
+    secimSatiri("Göster", [["oneri", "Öneri Olanlar"], ["hassas", "Hassas"], ["tumu", "Tümü"]],
+                ARALIK.filtre, k => { ARALIK.filtre = k; analizCiz("degisken"); });
+
+    const ara = document.createElement("input");
+    ara.className = "ft-ara aralik-ara";
+    ara.placeholder = "Değişken ara…";
+    ara.value = ARALIK.ara;
+    ara.oninput = () => { ARALIK.ara = ara.value; tabloCiz(); };
+    kap.appendChild(ara);
+
+    const tabloKap = elYap("div", "aralik-tablo-kap");
+    kap.appendChild(tabloKap);
+
+    function suz() {
+        const a = ftSade(ARALIK.ara || "");
+        return ARALIK.liste.filter(o =>
+            (ARALIK.filtre === "tumu"
+             || (ARALIK.filtre === "oneri" && o.aralik > 1)
+             || (ARALIK.filtre === "hassas" && o.hassas))
+            && (!a || ftSade(o.ad).includes(a)));
+    }
+
+    function tabloCiz() {
+        tabloKap.innerHTML = "";
+        const liste = suz();
+        if (!liste.length) {
+            tabloKap.appendChild(elYap("div", "dag-not", "Bu filtreye uyan değişken yok."));
+            return;
+        }
+        const t = elYap("table", "aralik-tablo");
+        const bas = elYap("tr");
+        ["Değişken", "Eğilim", "Aralık", "IV"].forEach(x => bas.appendChild(elYap("th", "", x)));
+        t.appendChild(bas);
+        liste.slice(0, ARALIK_SATIR_SINIRI).forEach(o => {
+            const tr = elYap("tr", "aralik-satir" + (ARALIK.acik === o.ad ? " acik" : ""));
+            const ad = elYap("td", "aralik-ad");
+            ad.appendChild(elYap("span", "", o.ad));
+            if (o.hassas) ad.appendChild(elYap("span", "aralik-rozet hassas", "Hassas"));
+            if (o.tutarsiz) ad.appendChild(elYap("span", "aralik-rozet uyari", "Sıra Bozuluyor"));
+            if (o.not) ad.appendChild(elYap("span", "aralik-rozet not", "Eksik Notu"));
+            tr.appendChild(ad);
+            tr.appendChild(elYap("td", "", SEKIL_ETIKET[o.sekil] || o.sekil || "∅"));
+            tr.appendChild(elYap("td", "sayi", String(o.aralik || "∅")));
+            const iv = ARALIK.gorunum === "dolu" && o.iv_dolu !== null && o.iv_dolu !== undefined
+                ? o.iv_dolu : o.iv_ayri;
+            tr.appendChild(elYap("td", "sayi", ivMetni(iv)));
+            tr.onclick = () => {
+                ARALIK.acik = (ARALIK.acik === o.ad) ? "" : o.ad;
+                tabloCiz();
+            };
+            t.appendChild(tr);
+            if (ARALIK.acik === o.ad) {
+                const dtr = elYap("tr", "aralik-detay-satir");
+                const td = elYap("td");
+                td.colSpan = 4;
+                dtr.appendChild(td);
+                t.appendChild(dtr);
+                detayCiz(td, o.ad);
+            }
+        });
+        tabloKap.appendChild(t);
+        if (liste.length > ARALIK_SATIR_SINIRI)
+            tabloKap.appendChild(elYap("div", "dag-not", liste.length + " değişkenden ilk "
+                + ARALIK_SATIR_SINIRI + " tanesi gösteriliyor; aramayla daraltın."));
+    }
+
+    function detayCiz(td, ad) {
+        const v = ARALIK.detay[ad];
+        if (!v) {
+            td.appendChild(elYap("div", "dag-not", "Aralıklar yükleniyor…"));
+            aralikGetir(ad).then(d => {
+                if (d && d.tamam) { ARALIK.detay[ad] = d.degisken; if (ARALIK.acik === ad) tabloCiz(); }
+                else { td.innerHTML = ""; td.appendChild(elYap("div", "dag-not dag-hata", (d && d.hata) || "Okunamadı.")); }
+            });
+            return;
+        }
+        const g = (ARALIK.gorunum === "dolu" && v.dolu) ? v.dolu : v.ayri;
+        td.appendChild(elYap("div", "aralik-oneri", v.oneri || ""));
+        (v.notlar || []).forEach(n => td.appendChild(elYap("div", "aralik-not", n)));
+        if (ARALIK.gorunum === "dolu" && !v.dolu)
+            td.appendChild(elYap("div", "dag-not", v.tur === "kategorik"
+                ? "Kategorik değişkende eksikler MISSING kategorisi olarak kalır."
+                : "Bu değişkende eksik değer yok; iki görünüm aynı."));
+        const t = elYap("table", "aralik-bin");
+        const bas = elYap("tr");
+        ["Aralık", "Satır", "Pay", "Batma Oranı", "WoE"].forEach(x => bas.appendChild(elYap("th", "", x)));
+        t.appendChild(bas);
+        const enCok = Math.max.apply(null, g.satirlar.map(s => s.oran).concat([1e-9]));
+        g.satirlar.forEach(s => {
+            const r = elYap("tr", s.etiket === "Eksik" ? "eksik" : "");
+            r.appendChild(elYap("td", "", s.etiket));
+            r.appendChild(elYap("td", "sayi", Number(s.n).toLocaleString("tr-TR")));
+            r.appendChild(elYap("td", "sayi", yuzdeMetni(s.pay, 1)));
+            const o = elYap("td", "aralik-oran");
+            const cubuk = elYap("span", "aralik-cubuk");
+            cubuk.style.width = Math.round(100 * s.oran / enCok) + "%";
+            o.appendChild(cubuk);
+            o.appendChild(elYap("span", "aralik-oran-metin", yuzdeMetni(s.oran, 2)));
+            r.appendChild(o);
+            r.appendChild(elYap("td", "sayi", s.woe === null ? "∅"
+                : Number(s.woe).toLocaleString("tr-TR", { maximumFractionDigits: 3 })));
+            t.appendChild(r);
+        });
+        td.appendChild(t);
+        const ivler = "IV: " + ivMetni(g.iv) + (v.ham_iv !== null && v.ham_iv !== undefined
+            ? "  ·  SFA'daki IV (10 eşit aralık, medyanla doldurulmuş): " + ivMetni(v.ham_iv) : "");
+        td.appendChild(elYap("div", "aralik-alt", ivler));
+        const tut = Object.keys(v.tutarlilik || {});
+        if (tut.length)
+            td.appendChild(elYap("div", "aralik-alt", "Sıra tutarlılığı (eğitimle sıra korelasyonu): "
+                + tut.map(k => k + " " + Number(v.tutarlilik[k]).toLocaleString("tr-TR")).join(" · ")));
+    }
+
+    tabloCiz();
 }
 
 /* Birlesik sekmelerde bolum basligi (DEĞİŞKEN ANALİZİ, BÖLME & VALİDASYON) */
@@ -3817,6 +3995,7 @@ function analizGuncelle(veri) {
     /* Veri değişmiş olabilir (süreç dışı, tip dönüşümü, bölme): dağılım
        önbelleği boşalır; sekme açıksa yeniden istenir. */
     dagilimSifirla();
+    aralikSifirla();
     // Acik sekme backend verisine bagliysa yeniden ciz
     if (BAGLI_SEKMELER.indexOf(aktifAnalizSekme) !== -1)
         analizCiz(aktifAnalizSekme);

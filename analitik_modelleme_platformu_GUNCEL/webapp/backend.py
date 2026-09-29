@@ -1804,6 +1804,42 @@ def _dagilim_hesapla(seri):
     return sonuc
 
 
+@app.route("/sfa_aralik")
+def sfa_aralik_endpoint():
+    """SFA aralik onerileri (bkz. fe_agent/aralik.py).
+    ?oturum_id=           -> degisken ozetleri (tablo)
+    ?oturum_id=&kolon=X   -> X'in araliklari (eksik oncesi / sonrasi)"""
+    from fe_agent import akis_faz02, aralik
+    try:
+        anahtar = _oturum_anahtari(_temiz(request.args.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        tum = akis_faz02.aralik_oku(durum)
+        if not tum:
+            return jsonify({"tamam": True, "degiskenler": [],
+                            "not": "SFA adımından sonra dolar."})
+        kolon = str(request.args.get("kolon") or "")
+        if kolon:
+            if kolon not in tum:
+                return jsonify({"tamam": False, "hata": "'%s' için aralık yok." % kolon})
+            return jsonify({"tamam": True, "degisken": tum[kolon]})
+        ozetler = []
+        for ad, v in tum.items():
+            ozetler.append({
+                "ad": ad, "tur": v.get("tur"), "sekil": v.get("sekil"),
+                "aralik": v.get("aralik_sayisi"), "ham_iv": v.get("ham_iv"),
+                "iv_ayri": (v.get("ayri") or {}).get("iv"),
+                "iv_dolu": (v.get("dolu") or {}).get("iv"),
+                "hassas": v.get("hassas"), "not": bool(v.get("notlar")),
+                "tutarsiz": any(r < aralik.TUTARLILIK_ESIK
+                                for r in (v.get("tutarlilik") or {}).values()),
+            })
+        ozetler.sort(key=lambda o: -(o["iv_ayri"] or 0))
+        return jsonify({"tamam": True, "degiskenler": ozetler})
+    except Exception as e:
+        kod = _hata_kaydet("sfa_aralik", e)
+        return jsonify({"tamam": False, "hata": "Aralık önerileri okunamadı (%s)." % kod})
+
+
 @app.route("/dagilim")
 def dagilim_endpoint():
     """DAĞILIM sekmesi. ?oturum_id=&kolon=&set=tumu|train|val|test

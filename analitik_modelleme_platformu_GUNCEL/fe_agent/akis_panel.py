@@ -1817,6 +1817,15 @@ def sfa_paneli(durum):
                 for r in (s.get("ilk20") or [])]
 
     veri = {"durum": "hazir", "kartlar": [ozet_kart, esik_kart]}
+    a = s.get("aralik") or {}
+    if a.get("dosya"):
+        # Aralik onerileri: degisken tablosunu arayuz /sfa_aralik ucundan
+        # ceker (IV, egilim, aralik, eksik oncesi / sonrasi). Ilk 20 tablosu
+        # bu tabloda zaten var; ikinci kez cizilmez.
+        veri["aralik"] = {"degisken": a.get("degisken"), "onerilen": a.get("onerilen"),
+                          "hassas": len(a.get("hassas") or []),
+                          "tutarsiz": len(a.get("tutarsiz") or [])}
+        return veri
     if satirlar:
         veri["tablo"] = {
             "baslik": "Bilgi Değerine Göre İlk %d Değişken" % len(satirlar),

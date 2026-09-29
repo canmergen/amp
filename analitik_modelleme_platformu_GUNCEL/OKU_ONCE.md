@@ -1,6 +1,28 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **sağ panel üç sekme; "Planlanan Dönüşümler" kaldırıldı; hedef oranı sayılarla**.
+Bu tur: **SFA'ya hedefe göre aralık (binleme) önerileri**.
+Yeni ekle (fe_agent): `aralik.py`
+Değiştir (fe_agent): `akis_faz02.py`, `akis_panel.py`, `akis_kayit.py`
+Değiştir (webapp): `backend.py`, `app.js` (JS), `style.css` (CSS)
+
+- SFA adımı her değişken için batma oranına göre aralık önerir: artan,
+  azalan, U ya da ters U (U ancak IV'yi en az %10 artırıyorsa). Her aralıkta
+  eğitim satırlarının en az %5'i; oranı anlamlı farklı olmayan komşu
+  aralıklar birleşir (en fazla 8). Kategoriklerde oranı benzer kategoriler
+  gruplanır. IV 0,02'nin altında kalan değişkene öneri verilmez.
+- Aralıklar yalnızca eğitim setinden öğrenilir; validasyon / test setinde
+  sıralamanın korunup korunmadığı ayrıca yazılır.
+- Hassas değişkenler (yaş, cinsiyet, uyruk, medeni hâl ...) adından ve
+  sözlük açıklamasından bulunur, öneride ayrıca belirtilir.
+- Eksik değer iki görünümde: doldurmadan önce (ayrı aralık) ve doldurduktan
+  sonra (medyanın düştüğü aralıkta). Eksiklerin oranı belirgin farklıysa not düşülür.
+- Değişken Analizi sekmesinde "Hedefe Göre Aralık Önerileri" tablosu;
+  satıra tıklayınca aralıklar, batma oranları ve WoE açılır.
+- Öneriyi kabul edip dönüşüme çevirme sonraki tur.
+
+---
+
+Önceki tur: **sağ panel üç sekme; "Planlanan Dönüşümler" kaldırıldı; hedef oranı sayılarla**.
 Değiştir (fe_agent): `akis.py`, `akis_panel.py`, `akis_faz01.py`
 Değiştir (webapp): `backend.py`, `app.js` (JS), `index.html` (HTML), `style.css` (CSS)
 

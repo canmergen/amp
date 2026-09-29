@@ -4,15 +4,86 @@
 akis.py bolundu; bu dosya o bolumun aynisidir.
 """
 
+import json
+
 import numpy as np
 import pandas as pd
+from fe_agent import aralik as aralik_mod
 from fe_agent import sfa as sfa_mod
 
 from fe_agent.akis_durum import (
     SPLIT_KOLON, _df_oku, _liste, _nerede, _ond, _sayi, _yaz,
     bolme_ayarlari, kolon_ozeti_cikar, kolon_ozeti_tamamla, maskeler,
-    modelleme_df, setler,
+    modelleme_df, setler, metin_yaz, set_basligi, sozluk_oku,
 )
+
+# SFA'nin aralik onerileri (bkz. aralik.py) calismanin klasorunde; durum
+# dosyasini sisirmemek icin ayri JSON. Panel /sfa_aralik ucundan okur.
+ARALIK_DOSYA = "sfa_aralik.json"
+
+
+def _dosya_metni(yol):
+    from fe_agent.akis_durum import _folder
+    try:
+        with _folder().get_download_stream(yol) as akis:
+            return akis.read().decode("utf-8")
+    except Exception:
+        return None
+
+
+def aralik_oku(durum):
+    """SFA aralik onerileri {degisken: sonuc}; yoksa {}."""
+    a = (durum.get("sfa") or {}).get("aralik") or {}
+    if not a.get("dosya"):
+        return {}
+    try:
+        return json.loads(_dosya_metni(a["dosya"]) or "{}")
+    except Exception:
+        return {}
+
+
+def aralik_yolu(durum):
+    from fe_agent.akis_faz01 import amp_klasor_adi
+    return "/%s/%s" % (amp_klasor_adi(durum), ARALIK_DOSYA)
+
+
+def _aciklamalar(durum):
+    """{kolon: sozluk aciklamasi}: hassas degisken tespiti icin."""
+    try:
+        from fe_agent import sozluk_calisma
+        sz = sozluk_oku(durum)
+        ad_k = sozluk_calisma.degisken_kolonu_bul(sz)
+        tanim_k = sozluk_calisma.tanim_kolonu_bul(sz)
+        if ad_k is None or tanim_k is None:
+            return {}
+        return {str(a): str(t) for a, t in zip(sz[ad_k], sz[tanim_k].fillna(""))}
+    except Exception:
+        return {}
+
+
+def _aralik_hesapla(durum, df, target, adaylar, iv_skorlari):
+    """SFA'nin aralik onerileri. Araliklar egitim setinden ogrenilir; diger
+    setlerde yalnizca siralamanin korunup korunmadigina bakilir.
+    Doner: ozet (durum["sfa"]["aralik"])."""
+    s = setler(durum, df)
+    test_tanim = bolme_ayarlari(durum).get("test_tanim")
+    diger = {set_basligi(ad, test_tanim): s[ad] for ad in ("val", "test", "oot")
+             if ad in s and bool(s[ad].any())}
+    sonuc = aralik_mod.hesapla(df, target, adaylar, s["egitim"], diger,
+                               _aciklamalar(durum), iv_skorlari)
+    yol = aralik_yolu(durum)
+    metin_yaz(yol, json.dumps(sonuc, ensure_ascii=False, default=str))
+    onerilen = [k for k, v in sonuc.items() if v["aralik_sayisi"] > 1]
+    return {
+        "dosya": yol,
+        "degisken": len(sonuc),
+        "onerilen": len(onerilen),
+        "hassas": sorted(k for k, v in sonuc.items() if v.get("hassas")),
+        "tutarsiz": sorted(k for k in onerilen
+                           if any(r < aralik_mod.TUTARLILIK_ESIK
+                                  for r in (sonuc[k].get("tutarlilik") or {}).values())),
+        "eksik_notu": sorted(k for k, v in sonuc.items() if v.get("notlar")),
+    }
 
 
 # Plan metinleri her "Geri Dön" tiklamasinda yeniden uretilir; bu yuzden
@@ -195,7 +266,9 @@ def sfa_plan(durum):
             "ölçeceğim:\n\n"
             "  • IV: bilgi değeri         (eşik > %s)\n"
             "  • C-value: tek değişkenli AUC   (eşik > %s)\n"
-            "  • eksik değer doldurma ve kodlama kararı\n\n"
+            "  • eksik değer doldurma ve kodlama kararı\n"
+            "  • hedefe göre aralık önerisi: batma oranı artan, azalan ya da U "
+            "şeklinde; her aralıkta geliştirme satırlarının en az %%5'i\n\n"
             "SIZINTI SINIRI: hangi satırda ne yapılıyor\n"
             "  • medyan doldurma değeri   : yalnızca geliştirme satırlarından "
             "öğrenilir (%s satır)\n"
@@ -222,6 +295,18 @@ def sfa_uygula(durum):
 
     tablo, ozet = sfa_mod.sfa_calistir(df, durum["meta"]["target"], adaylar,
                                        train_maske=tr)
+    # HEDEFE GORE ARALIK ONERILERI (kullanici karari: SFA bu sureci de
+    # kapsar). Tam tabloya da iki kolon eklenir.
+    ozet["aralik"] = _aralik_hesapla(durum, df, durum["meta"]["target"], adaylar,
+                                     ozet.get("iv_skorlari"))
+    try:
+        ar = json.loads(_dosya_metni(ozet["aralik"]["dosya"]) or "{}")
+    except Exception:
+        ar = {}
+    if len(tablo):
+        tablo["EGILIM"] = tablo["FEATURE"].map(lambda k: (ar.get(str(k)) or {}).get("sekil"))
+        tablo["ARALIK_SAYISI"] = tablo["FEATURE"].map(
+            lambda k: (ar.get(str(k)) or {}).get("aralik_sayisi"))
     yazildi, yedek = _yaz("%s_SFA" % durum["veri_seti"], tablo, "/sfa_tablosu.parquet")
     ozet["tablo_dataset"] = yazildi
     # SFA sekmesi: IV'ye gore ilk 20 satir (tam tablo dataset'te kalir).
@@ -249,13 +334,24 @@ def sfa_uygula(durum):
                  "bulundu; tablodaki NOT kolonunda gerekçesi yazıyor."
                  % _sayi(notlu)) if notlu else ""
 
+    a = ozet.get("aralik") or {}
+    aralik_not = ("\n\nARALIK ÖNERİLERİ\n"
+                  "  Öneri Olan Değişken : %s\n"
+                  "  Hassas Değişken : %s\n"
+                  "  Sıralaması Diğer Setlerde Korunmayan : %s\n"
+                  "  Eksik Değer Notu Olan : %s\n"
+                  "Ayrıntılar sağdaki Değişken Analizi sekmesinde."
+                  % (_sayi(a.get("onerilen", 0)),
+                     ", ".join(a.get("hassas") or []) or "yok",
+                     _sayi(len(a.get("tutarsiz") or [])),
+                     _sayi(len(a.get("eksik_notu") or []))))
     return ("Analiz tamamlandı. %s değişken ölçüldü, %s tanesi PASS.\n\n"
-            "BİLGİ DEĞERİNE GÖRE İLK 12\n%s\n\n%s%s%s\n\nTam tablo %s."
+            "BİLGİ DEĞERİNE GÖRE İLK 12\n%s\n\n%s%s%s\n\nTam tablo %s.%s"
             % (_sayi(ozet["analiz_edilen"]), _sayi(ozet["pass_adet"]),
                "\n".join(satirlar) or "  (tablo boş)",
                _liste("Sızıntı şüphesi (C-value > 0,95):", ozet["sizinti"], 8),
                atlanan_not, not_uyari,
-               _nerede(yazildi, yedek)))
+               _nerede(yazildi, yedek), aralik_not))
 
 def _psi_olculur_mu(durum):
     """PSI hangi sete karsi olculecek? Doner: "test" | None.

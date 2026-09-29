@@ -142,7 +142,8 @@ ADIMLAR = {
     "sfa": {
         "baslik": "Tek Değişken Analizi (SFA)",
         "aciklama": "Her değişkenin hedefle tek başına ilişkisi ölçülür: "
-                    "IV ve C-value. Eleme kuralı değildir.",
+                    "IV ve C-value. Batma oranına göre aralık önerisi "
+                    "çıkarılır. Eleme kuralı değildir.",
         "girdi": None, "plan": sfa_plan, "uygula": sfa_uygula},
     "stabilite": {
         "baslik": "Stabilite Analizi (PSI)",

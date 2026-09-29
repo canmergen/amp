@@ -3001,3 +3001,49 @@ span.bolme-cip { cursor: default; }
   color: var(--kirmizi); font-size: var(--fs-govde); font-weight: var(--fw-kalin);
   white-space: nowrap;
 }
+
+/* -------- SFA aralık önerileri (Değişken Analizi) -------- */
+.aralik-kap {
+  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: var(--r);
+  padding: var(--b-4); margin-bottom: var(--b-3); box-shadow: var(--golge-1);
+}
+.aralik-baslik { margin-bottom: var(--b-2); }
+.aralik-secim { display: flex; flex-wrap: wrap; align-items: center; gap: var(--b-2); margin-bottom: var(--b-2); }
+.aralik-secim-etiket { font-size: var(--fs-kucuk); color: var(--metin-soluk); min-width: 5.5rem; }
+.aralik-ara {
+  width: 100%; box-sizing: border-box; margin: var(--b-1) 0 var(--b-2);
+  font-family: inherit; font-size: var(--fs-govde); padding: 5px 8px;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk); background: var(--yuzey);
+}
+.aralik-tablo, .aralik-bin { width: 100%; border-collapse: collapse; font-size: var(--fs-kucuk); }
+.aralik-tablo th, .aralik-bin th {
+  text-align: left; font-weight: var(--fw-kalin); color: var(--metin-soluk);
+  padding: 4px 6px; border-bottom: 1px solid var(--kenar);
+}
+.aralik-tablo td, .aralik-bin td { padding: 4px 6px; border-bottom: 1px solid var(--kenar-acik); vertical-align: top; }
+.aralik-tablo td.sayi, .aralik-bin td.sayi, .aralik-tablo th:nth-child(n+3) { text-align: right; white-space: nowrap; }
+.aralik-satir { cursor: pointer; }
+.aralik-satir:hover, .aralik-satir.acik { background: var(--yuzey-alt); }
+.aralik-ad span:first-child { font-weight: var(--fw-kalin); word-break: break-all; }
+.aralik-rozet {
+  display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: var(--r-kucuk);
+  font-size: 10px; font-weight: var(--fw-kalin); vertical-align: 1px;
+}
+.aralik-rozet.hassas { background: var(--kirmizi-acik); color: var(--kirmizi); }
+.aralik-rozet.uyari { background: var(--amber-acik); color: var(--amber); }
+.aralik-rozet.not { background: var(--kenar-acik); color: var(--metin-soluk); }
+.aralik-detay-satir > td { background: var(--yuzey-alt); padding: var(--b-3); }
+.aralik-oneri { font-size: var(--fs-govde); line-height: 1.5; margin-bottom: var(--b-2); }
+.aralik-not {
+  font-size: var(--fs-kucuk); line-height: 1.45; color: var(--amber);
+  background: var(--amber-acik); border-radius: var(--r-kucuk); padding: 4px 8px; margin-bottom: var(--b-2);
+}
+.aralik-bin { background: var(--yuzey); }
+.aralik-bin tr.eksik td { color: var(--metin-soluk); font-style: italic; }
+.aralik-oran { position: relative; min-width: 7rem; }
+.aralik-cubuk {
+  position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+  height: 10px; max-width: calc(100% - 12px); background: var(--kirmizi-halka); border-radius: 2px;
+}
+.aralik-oran-metin { position: relative; }
+.aralik-alt { font-size: var(--fs-kucuk); color: var(--metin-soluk); margin-top: var(--b-2); line-height: 1.45; }
