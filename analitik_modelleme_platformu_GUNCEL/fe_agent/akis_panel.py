@@ -8,6 +8,7 @@ import pandas as pd
 
 from fe_agent import sfa as sfa_mod
 from fe_agent import sozluk_calisma
+from fe_agent import motor as motor_mod
 from fe_agent.akis_metin import (
     BIRLESTIREN_MODLAR, MOD_ADLARI, SOZLUK_URETEN_MODLAR)
 from fe_agent.akis_durum import (
@@ -991,6 +992,12 @@ def veri_paneli(durum):
         ("Köken", _veri_kokeni(durum), veri_adimi),
         ("Kayıt Yeri", _kayit_yeri(durum, "veri"), KAYIT_ADIMI),
         ("Satır × Kolon", boyut, veri_adimi),
+        # Veri setinin Dataiku'daki dosya boyutu ve tam veri islerinin
+        # motoru (bkz. motor.py). Sohbette ayrica yazilmaz (kullanici
+        # karari: secim zaten yapildi, ozet sag panelde).
+        ("Dosya Boyutu", motor_mod.boyut_metni(p.get("dosya_boyutu"))
+         if p.get("motor") else None, veri_adimi),
+        ("Motor", motor_mod.AD.get(p.get("motor")), veri_adimi),
         ("Sayısal / Kategorik / Tarih", _tip_dagilimi(p, durum), veri_adimi),
         ("Tekrarlı Satır", _duplicate_metni(p), veri_adimi),
         ("Kimlik Bazlı Tekrar",

@@ -1,6 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **boyuta göre motor (küçük veri pandas, büyük veri Spark); başlangıç kartı metinleri**.
+Bu tur: **dosya boyutu ve motor sohbette değil, sağdaki Veri Seti kartında**.
+Değiştir (fe_agent): `akis_faz01.py`, `akis_panel.py`
+
+- "Baz veri seti ve baz sözlük seçildi" mesajı kaldırıldı; adım eskisi gibi
+  mesaj yazmadan modelleme tanımlarına geçer. Kaynak tablo ve alt alta ekleme
+  mesajlarındaki boyut / motor satırları da kaldırıldı.
+- Sağ paneldeki Veri Seti kartına "Dosya Boyutu" ve "Motor" satırları eklendi.
+
+---
+
+Önceki tur: **boyuta göre motor (küçük veri pandas, büyük veri Spark); başlangıç kartı metinleri**.
 Yeni ekle (fe_agent): `motor.py`, `amp_pandas.py`
 Değiştir (fe_agent): `amp.py`, `profil.py`, `profil_kural.py`, `akis_faz01.py`, `akis_metin.py`
 Webapp dosyalarında değişiklik yok.

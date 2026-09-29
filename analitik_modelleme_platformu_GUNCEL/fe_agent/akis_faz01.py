@@ -21,7 +21,6 @@ from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
 from fe_agent import amp as amp_mod
-from fe_agent import motor as motor_mod
 from fe_agent import spark_is
 
 from fe_agent.akis_metin import (
@@ -217,7 +216,7 @@ def _temel_profil(durum, prof):
         "duplicate": int(prof["duplicate"]),
         "kolon_ozet": _kolon_ozeti(prof),
         # Profili hangi motorun cikardigi ve veri setinin dosya boyutu
-        # (bkz. motor.py); mesajlarda "Motor : ..." satiri buradan.
+        # (bkz. motor.py); sag paneldeki Veri Seti kartinda gorunur.
         "motor": prof.get("motor"),
         "dosya_boyutu": prof.get("dosya_boyutu"),
     })
@@ -230,15 +229,6 @@ def _temel_profil(durum, prof):
     _kimlik_duplicate(durum, prof, p)
     durum["profil"] = p
     return p
-
-
-def _motor_satirlari(p):
-    """Profilden iki satir: dosya boyutu ve motor ("  Etiket : Deger")."""
-    m = (p or {}).get("motor")
-    if m not in motor_mod.AD:
-        return []
-    return ["  Dosya Boyutu : %s" % motor_mod.boyut_metni(p.get("dosya_boyutu")),
-            "  Motor : %s" % motor_mod.AD[m]]
 
 
 def _kimlik_duplicate(durum, prof, p):
@@ -423,18 +413,10 @@ def _tablo_ozeti(tablolar):
     satir sayilari birlestirme isinde (Spark) hesaplanip yazilir."""
     satirlar = []
     for ad in tablolar:
-        boyut = motor_mod.boyut(ad)
-        ek = (" · %s" % motor_mod.boyut_metni(boyut)) if boyut is not None else ""
         try:
-            satirlar.append("  %s : %s kolon%s"
-                            % (ad, _sayi(_df_oku(ad, limit=1).shape[1]), ek))
+            satirlar.append("  %s : %s kolon" % (ad, _sayi(_df_oku(ad, limit=1).shape[1])))
         except Exception as e:
             satirlar.append("  %s : okunamadı (%s)" % (ad, _degerde(str(e)[:80])))
-    # Motor tablolarin TOPLAM boyutuna gore (bkz. motor.py); birlestirme ve
-    # profil bu motorla calisir.
-    motor, toplam = motor_mod.sec(tablolar)
-    satirlar.append("  Toplam Dosya Boyutu : %s" % motor_mod.boyut_metni(toplam))
-    satirlar.append("  Motor : %s" % motor_mod.AD[motor])
     return ("%s kaynak tablo seçildi; satır sayıları birleştirmede "
             "hesaplanacak.\n%s" % (_sayi(len(tablolar)), "\n".join(satirlar)))
 
@@ -572,11 +554,9 @@ def birlestirme_uygula(durum):
         return ("Tablolar alt alta eklendi; kolonları aynı olduğu için yan "
                 "yana birleştirilmedi.\n%s\n"
                 "  Baz veri seti : %s satır × %s kolon\n"
-                "  Kayıt : %s veri seti\n"
-                "  Motor : %s"
+                "  Kayıt : %s veri seti"
                 % ("\n".join(satirlar), _sayi(oz.get("satir")),
-                   _sayi(oz.get("kolon")), BAZ_ADI,
-                   motor_mod.AD.get(oz.get("motor"), "-"))) + sozluk_not
+                   _sayi(oz.get("kolon")), BAZ_ADI)) + sozluk_not
 
     baz, kutuk, ozet = birl_mod.calistir(plan, lambda ad: _df_oku(ad))
 
@@ -709,10 +689,9 @@ def veri_sec_uygula(durum):
     return ("Baz veri seti seçildi.\n"
             "  Veri seti : %s\n"
             "  Boyut : %s satır × %s kolon\n"
-            "  Tipler : %s sayısal, %s kategorik%s"
+            "  Tipler : %s sayısal, %s kategorik"
             % (durum["veri_seti"], _sayi(p["satir"]), _sayi(p["kolon"]),
-               _sayi(p["sayisal"]), _sayi(p["kolon"] - p["sayisal"]),
-               "".join("\n" + x for x in _motor_satirlari(p))))
+               _sayi(p["sayisal"]), _sayi(p["kolon"] - p["sayisal"])))
 
 # ===========================================================================
 # ADIM SOZLUK URETIMI  (Mod A ve B)   <-- LLM
@@ -1942,19 +1921,10 @@ def kurulum_uygula(durum):
     adaylarini buradan okuyor) ve sozluk calisma kopyasi kuruluyor.
     Profil TAZE cikarilir: veri seti secimi onaylandi, tablo bir onceki
     profilden bu yana degismis olabilir."""
-    _prof, p = _kapsami_cikar(durum, taze=True)
+    _kapsami_cikar(durum, taze=True)
     # Calisma kopyasi sozluk baglanir baglanmaz cikarilir: satir_ekle
     # yalnizca kopyaya yazar, kopya yoksa yazacak yer yoktur.
-    not_ = _calisma_kopyasi_kur(durum)
-    # Veri setinin boyutu ve hangi motorla islendigi (kullanici karari:
-    # motor gizli secilmesin, mesajda yazsin).
-    return ("Baz veri seti ve baz sözlük seçildi.\n"
-            "  Veri seti : %s\n"
-            "  Sözlük : %s\n"
-            "  Boyut : %s satır × %s kolon%s"
-            % (durum["veri_seti"], durum.get("sozluk") or "-",
-               _sayi(p["satir"]), _sayi(p["kolon"]),
-               "".join("\n" + x for x in _motor_satirlari(p)))) + not_
+    return _calisma_kopyasi_kur(durum).strip()
 
 
 def sozluk_tanim_uygula(durum):
