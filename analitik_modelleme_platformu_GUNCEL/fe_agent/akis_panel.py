@@ -678,7 +678,7 @@ def _ad_listesi(adlar):
 
 def _bekleyen_panel(adim, kartlar=None):
     veri = {"durum": "bekliyor",
-            "bekleme_notu": "Bu sekme «%s» adımından sonra dolar." % adim,
+            "bekleme_notu": "Bu bölüm «%s» adımından sonra dolar." % adim,
             "kartlar": kartlar or []}
     return veri
 
@@ -961,6 +961,24 @@ def _sozluk_kokeni(durum):
                        else "Teyit Edilecek")
 
 
+def _hedef_tipi(p):
+    if p.get("hedef_tip") == "binary":
+        return "İki sınıflı (0/1)"
+    ozet = p.get("hedef_ozet")
+    return ozet or None
+
+
+def _hedef_orani(p):
+    """Pozitif oran ve sayilar; iki sinifli olmayan hedefte None."""
+    if p.get("hedef_tip") != "binary" or p.get("event_rate") is None:
+        return None
+    oran = "%%%s" % _ond(p.get("event_rate"), 2)
+    pozitif, satir = p.get("hedef_pozitif"), p.get("satir")
+    if pozitif is None or not satir:
+        return oran
+    return "%s · %s / %s" % (oran, _sayi(pozitif), _sayi(satir))
+
+
 def veri_paneli(durum):
     """VERI sekmesi. Tek seferde dolmaz: veri seti secilince boyutlar,
     tanimlar girilince hedef satirlari, profil calisinca null orani dolar."""
@@ -1006,8 +1024,10 @@ def veri_paneli(durum):
         ("Toplam Null Oranı", _yuzde(p.get("null_oran"), 2), veri_adimi),
         ("Hedef Değişken",
          (durum.get("meta") or {}).get("target"), TANIM_ADIMI),
-        # "Hedef Oranı" satiri KALDIRILDI: ayni oran bu satirda zaten var.
-        ("Hedef Tipi ve Dağılımı", p.get("hedef_ozet"), TANIM_ADIMI),
+        # TIP VE ORAN AYRI SATIR: tek satirda dar panelde kesiliyordu.
+        # Oran sayilarla birlikte (kullanici karari): "%3,21 · 12.345 / 384.567".
+        ("Hedef Tipi", _hedef_tipi(p), TANIM_ADIMI),
+        ("Hedef Oranı", _hedef_orani(p), TANIM_ADIMI),
         ("Dönem Aralığı", _donem_araligi(p, durum), TANIM_ADIMI),
     ])
 
@@ -1384,31 +1404,6 @@ def eksik_paneli(durum):
 # olarak kullaniyor. Iki yerde ayni kart kodunu tutmak, birinin sessizce
 # eskimesi demekti.
 # --------------------------------------------------------------------------
-def _donusum_karti(durum):
-    """Planlanan donusumler.
-
-    Donusumun KENDISI bu turda yok; veri sozlesmesi ve bos liste hazir.
-    Kart bos gorunmesin diye listenin bos hali acikca yaziliyor -
-    "henüz tanımlanmadı" ile "hesaplanamadı" ayni sey degil."""
-    hz = durum.get("hazirlik")
-    adimlar = (hz or {}).get("adimlar") or []
-    if not adimlar:
-        return {"baslik": "Planlanan Dönüşümler",
-                "not": "Dönüşüm tanımlandıkça bu kart dolar.",
-                "satirlar": [{"etiket": "Durum",
-                              "deger": "Henüz dönüşüm tanımlanmadı"}]}
-
-    satirlar = []
-    for sira, adim in enumerate(adimlar, 1):
-        if isinstance(adim, dict):
-            etiket = adim.get("ad") or adim.get("baslik") or "Adım %d" % sira
-            deger = adim.get("aciklama") or adim.get("ozet") or "-"
-        else:
-            etiket, deger = "Adım %d" % sira, str(adim)
-        satirlar.append({"etiket": etiket, "deger": deger})
-    return {"baslik": "Planlanan Dönüşümler", "satirlar": satirlar}
-
-
 # Bolme degistirilince gecersiz kalan adimlarin durum anahtarlari.
 # Profil BURADA YOK: profil tum satirlarda olculuyor, bolmeden etkilenmiyor.
 BOLME_BAGIMLI = ("sfa", "stabilite", "baz", "kalite", "secim", "model",
@@ -1756,12 +1751,23 @@ def bolme_ozet_karti(durum):
     return kart
 
 
+def bolme_paneli(durum):
+    """BÖLME & VALİDASYON sekmesinin bolme kismi: salt okunur bolme ozeti.
+    Validasyon sonuclari ayri anahtarla gelir (validasyon.panel)."""
+    veri = {"durum": "hazir", "kartlar": [bolme_ozet_karti(durum)]}
+    veri["bolme_formu"] = dict(bolme_formu(durum), sadece_ozet=True)
+    return veri
+
+
 def hazirlik_paneli(durum):
-    """HAZIRLIK sekmesi: bolme OZETI + eksik deger ozeti + donusumler."""
+    """ESKI HAZIRLIK sekmesi (bolme ozeti + eksik deger ozeti). Sag panel
+    uc sekmeye indi (kullanici karari); bu fonksiyon disaridan cagiranlar
+    icin duruyor. "Planlanan Dönüşümler" karti KALDIRILDI: onu dolduran
+    bir adim yoktu, hep bos duruyordu (kullanici bildirimi)."""
     temel = eksik_paneli(durum)
     veri = dict(temel)
     veri["kartlar"] = (list(temel.get("kartlar") or [])
-                       + [bolme_ozet_karti(durum), _donusum_karti(durum)])
+                       + [bolme_ozet_karti(durum)])
     # FORM ARTIK BURADA CIZILMIYOR (bkz. bolme_ozet_karti). Alan listesi
     # yine gonderiliyor: ust seritteki set secici "Doğrulama" dugmesini
     # gosterip gostermeyecegini buradan okuyor ve ikinci bir kaynak

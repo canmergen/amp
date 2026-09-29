@@ -144,7 +144,9 @@ let aktifAnalizSekme = "ozet";
 /* "ozet" = VERİ & SÖZLÜK sekmesi (data-tab degeri bu).
    EKSİK DEĞER sekmesi kaldirildi; ayni panel govdesi artik "hazirlik"
    anahtariyla geliyor (bkz. akis_panel.hazirlik_paneli). */
-const BAGLI_SEKMELER = ["ozet", "hazirlik", "sfa", "validasyon"];
+/* UC SEKME: "degisken" (DEĞİŞKEN ANALİZİ: dağılım + SFA + eksik değer)
+   ve "bolme" (BÖLME & VALİDASYON). */
+const BAGLI_SEKMELER = ["ozet", "degisken", "bolme"];
 
 /* Dataset listesi: "yukleniyor" | "hazir" | "bos" | "hata"
    "bos": liste okundu ama proje icinde dataset yok -> elle yazmaya izin ver */
@@ -3384,8 +3386,8 @@ function bfKaydet(secenek) {
                    dondururdu. Panel kopyasi SALT OKUNUR isaretleniyor -
                    HAZIRLIK sekmesi artik ozet gosteriyor, form degil
                    (bkz. bolmeFormuCiz). */
-                if (ANALIZ_VERI.hazirlik) {
-                    ANALIZ_VERI.hazirlik.bolme_formu =
+                if (ANALIZ_VERI.bolme) {
+                    ANALIZ_VERI.bolme.bolme_formu =
                         Object.assign({}, d.bolme_formu, { sadece_ozet: true });
                 }
                 BF.veri = d.bolme_formu;
@@ -3460,9 +3462,10 @@ const TEST_OOS2 = "Test (OOS2)";
    secilebilir ama simdi olmaz" diye okunuyordu - hic cizilmiyor.
    VALİDASYON da listede yok: final metrikleri test setinde, sonda bir
    kez olculur; secilecek bir sey yok. */
-const SET_SECICI_SEKMELER = ["dagilim", "iliski", "sfa"];
-/* SFA egitim satirlarina kilitli: secici gorunur ama pasif. */
-const SET_PASIF_SEKMELER = ["sfa"];
+/* DEĞİŞKEN ANALİZİ'nde secici DAĞILIM bolumune uygulanir; SFA her zaman
+   egitim satirlarinda (bolum basliginin altinda yazar). */
+const SET_SECICI_SEKMELER = ["degisken"];
+const SET_PASIF_SEKMELER = [];
 const SFA_SET_NOTU = "SFA yalnızca eğitim satırlarında ölçülür";
 
 let AKTIF_SET = "tumu";
@@ -3470,7 +3473,7 @@ let AKTIF_SET = "tumu";
 /* val_var bilgisi HAZIRLIK panelindeki bolme formundan okunur; ikinci
    bir kaynak tutmak iki yerin farkli sey soylemesi demekti. */
 function setBolmeAlanlari() {
-    const h = ANALIZ_VERI && ANALIZ_VERI.hazirlik;
+    const h = ANALIZ_VERI && ANALIZ_VERI.bolme;
     const f = h && h.bolme_formu;
     return (f && f.alanlar) || null;
 }
@@ -3536,18 +3539,34 @@ function analizCiz(tab) {
     const odak = ftOdakAnahtari();
     aktifAnalizSekme = tab;
     analizGovde.innerHTML = "";
-    setSeciciCiz(tab);
-    if (tab === "validasyon") {
-        validasyonCiz(ANALIZ_VERI.validasyon);
-        return;
-    }
-    if (BAGLI_SEKMELER.indexOf(tab) !== -1) {
-        panelCiz(ANALIZ_VERI[tab]);
+    if (tab === "degisken") {
+        /* Kume secici yalnizca Dağılım bolumune uygulanir: basligin altinda. */
+        panelBolumBasligi("Dağılım");
+        setSeciciCiz(tab);
+        dagilimCiz();
+        panelBolumBasligi("Tek Değişken Analizi (SFA)");
+        analizGovde.appendChild(elYap("div", "set-not", SFA_SET_NOTU));
+        panelCiz(ANALIZ_VERI.sfa);
+        panelBolumBasligi("Eksik Değer");
+        panelCiz(ANALIZ_VERI.eksik);
         ftOdakGeriVer(odak);
         return;
     }
-    if (tab === "dagilim") { dagilimCiz(); return; }
-    if (ANALIZ_ICERIK[tab]) iskeletCiz(ANALIZ_ICERIK[tab]);
+    setSeciciCiz(tab);
+    if (tab === "bolme") {
+        panelBolumBasligi("Bölme");
+        panelCiz(ANALIZ_VERI.bolme);
+        panelBolumBasligi("Validasyon");
+        validasyonCiz(ANALIZ_VERI.validasyon);
+        return;
+    }
+    panelCiz(ANALIZ_VERI[tab]);
+    ftOdakGeriVer(odak);
+}
+
+/* Birlesik sekmelerde bolum basligi (DEĞİŞKEN ANALİZİ, BÖLME & VALİDASYON) */
+function panelBolumBasligi(metin) {
+    analizGovde.appendChild(elYap("div", "panel-bolum-baslik", metin));
 }
 
 /* ==================== DAĞILIM sekmesi ====================
@@ -3579,7 +3598,7 @@ function dagilimCiz() {
     const kap = elYap("div", "dag-kap");
     analizGovde.appendChild(kap);
     const istek = ++DAGILIM.istek;
-    const hala = () => istek === DAGILIM.istek && aktifAnalizSekme === "dagilim";
+    const hala = () => istek === DAGILIM.istek && aktifAnalizSekme === "degisken";
 
     if (!DAGILIM.kolonlar) {
         kap.appendChild(elYap("div", "dag-not", "Değişken listesi yükleniyor…"));
@@ -3598,7 +3617,7 @@ function dagilimCiz() {
                     kap.appendChild(elYap("div", "dag-not", tireSade(d.not || "Gösterilecek değişken yok.")));
                     return;
                 }
-                analizCiz("dagilim");
+                analizCiz("degisken");
             })
             .catch(e => { if (hala()) { kap.innerHTML = ""; kap.appendChild(elYap("div", "dag-not dag-hata", "Değişken listesi okunamadı: " + e)); } });
         return;
@@ -3608,7 +3627,7 @@ function dagilimCiz() {
         const v = combo.deger ? combo.deger() : combo.giris.value;
         if (combo.gecerli && combo.gecerli() && v && v !== DAGILIM.kolon) {
             DAGILIM.kolon = v;
-            analizCiz("dagilim");
+            analizCiz("degisken");
         }
     }, DAGILIM.kolon, { liste: DAGILIM.kolonlar, zorunlu: false,
                         placeholder: "Değişken ara…" });
@@ -3798,7 +3817,6 @@ function analizGuncelle(veri) {
     /* Veri değişmiş olabilir (süreç dışı, tip dönüşümü, bölme): dağılım
        önbelleği boşalır; sekme açıksa yeniden istenir. */
     dagilimSifirla();
-    if (aktifAnalizSekme === "dagilim") analizCiz("dagilim");
     // Acik sekme backend verisine bagliysa yeniden ciz
     if (BAGLI_SEKMELER.indexOf(aktifAnalizSekme) !== -1)
         analizCiz(aktifAnalizSekme);
@@ -3870,8 +3888,7 @@ function teyitPanelGuncelle(alan, bekleyen) {
    yanlışlıkla açan bir değişiklikten sonra). */
 
 analizSekme.forEach(s => {
-    const bagli = BAGLI_SEKMELER.indexOf(s.dataset.tab) !== -1
-        || s.dataset.tab === "dagilim";
+    const bagli = BAGLI_SEKMELER.indexOf(s.dataset.tab) !== -1;
     if (!bagli) {
         s.classList.add("hazir-degil");
         s.title = "Hazırlanıyor - bu sekmenin verisi henüz bağlı değil";

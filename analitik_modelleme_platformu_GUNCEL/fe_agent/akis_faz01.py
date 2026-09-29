@@ -2279,7 +2279,11 @@ def tanimlar_uygula(durum):
         # Event rate hedef_ozet metninin ICINE gomulu; panelin metni geri
         # ayristirmasi gerekmesin diye AYRI sayisal alan olarak da yazilir.
         p["event_rate"] = round(oran, 2)
-        p["hedef_ozet"] = "İki sınıflı (0/1) · %%%s pozitif" % _ond(oran, 2)
+        # Oranin yaninda sayilar da (kullanici karari): "%3,21 pozitif
+        # (12.345 / 384.567)".
+        p["hedef_pozitif"] = int(pozitif)
+        p["hedef_ozet"] = ("İki sınıflı (0/1) · %%%s pozitif (%s / %s)"
+                           % (_ond(oran, 2), _sayi(pozitif), _sayi(satir)))
     else:
         p["hedef_tip"] = "surekli"
         p["event_rate"] = None

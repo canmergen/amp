@@ -725,12 +725,14 @@ def _analiz_verisi(durum):
         kod = _hata_kaydet("validasyon.panel", e)
         veri["validasyon"] = {"hata": "Validasyon paneli hesaplanamadı (%s)." % kod}
 
-    # Anahtarlar app.js'teki data-tab degerleriyle AYNI olmali:
-    # VERİ & SÖZLÜK sekmesinin anahtari "ozet"tir.
-    # "eksik" anahtari KALDIRILDI; icerigi "hazirlik" sekmesine tasindi.
+    # UC SEKME (kullanici karari: panel fazla bolunmustu):
+    #   ozet      VERİ & SÖZLÜK
+    #   degisken  DEĞİŞKEN ANALİZİ  -> "sfa" + "eksik" + /dagilim
+    #   bolme     BÖLME & VALİDASYON -> "bolme" + "validasyon"
     for anahtar, ad, uretici in (
             ("ozet", "VERİ & SÖZLÜK", akis.veri_sozluk_paneli),
-            ("hazirlik", "HAZIRLIK", akis.hazirlik_paneli),
+            ("eksik", "Eksik değer", akis.eksik_paneli),
+            ("bolme", "Bölme", akis.bolme_paneli),
             ("sfa", "SFA", akis.sfa_paneli)):
         try:
             veri[anahtar] = uretici(durum)

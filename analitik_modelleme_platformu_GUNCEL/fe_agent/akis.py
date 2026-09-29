@@ -93,7 +93,8 @@ from fe_agent.akis_kayit import (  # noqa
 )
 from fe_agent.akis_panel import (  # noqa
     _bolum, bolme_formu, detay, eksik_paneli, feature_tablo,
-    hazirlik_paneli, ozet, sfa_paneli, veri_paneli, veri_sozluk_paneli,
+    hazirlik_paneli, bolme_paneli, ozet, sfa_paneli, veri_paneli,
+    veri_sozluk_paneli,
 )
 from fe_agent.dokuman import (  # noqa
     BLOKER_BOLUMLER as DOKUMAN_BLOKER_BOLUMLERI,

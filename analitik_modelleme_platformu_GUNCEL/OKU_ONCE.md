@@ -1,6 +1,20 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **dosya boyutu ve motor sohbette değil, sağdaki Veri Seti kartında**.
+Bu tur: **sağ panel üç sekme; "Planlanan Dönüşümler" kaldırıldı; hedef oranı sayılarla**.
+Değiştir (fe_agent): `akis.py`, `akis_panel.py`, `akis_faz01.py`
+Değiştir (webapp): `backend.py`, `app.js` (JS), `index.html` (HTML), `style.css` (CSS)
+
+- Sekmeler: VERİ & SÖZLÜK · DEĞİŞKEN ANALİZİ (Dağılım, SFA, Eksik Değer
+  bölümleri alt alta) · BÖLME & VALİDASYON (bölme özeti, validasyon).
+  HAZIRLIK, DAĞILIM, SFA, İLİŞKİLER, VALİDASYON sekmeleri kalktı; İLİŞKİLER
+  hiç hesaplanmayan bir iskeletti.
+- "Planlanan Dönüşümler" kartı kaldırıldı (dolduran adım yoktu).
+- Veri Seti kartında hedef iki satır: "Hedef Tipi" ve "Hedef Oranı"
+  (ör. %3,21 · 12.345 / 384.567).
+
+---
+
+Önceki tur: **dosya boyutu ve motor sohbette değil, sağdaki Veri Seti kartında**.
 Değiştir (fe_agent): `akis_faz01.py`, `akis_panel.py`
 
 - "Baz veri seti ve baz sözlük seçildi" mesajı kaldırıldı; adım eskisi gibi
