@@ -7,7 +7,7 @@ AKILLI DEĞİŞKEN ÜRETİMİ
 Projenin Amacı
 --------------
 
-Analitik Modelleme Platformu üzerinde, kredi risk modellerinde kullanılan değişkenlerin üretimini yapay zekâ desteğiyle hızlandırmak ve üretilen her değişkenin modele katkısını ölçerek yalnızca fayda sağlayan değişkenlerin modele alınmasını sağlamak.
+Analitik Modelleme Platformu üzerinde, model geliştirme çalışmalarında kullanılan değişkenlerin üretimini yapay zekâ desteğiyle hızlandırmak ve üretilen her değişkenin modele katkısını ölçerek yalnızca fayda sağlayan değişkenlerin modele alınmasını sağlamak. Yapı belirli bir model türüne bağlı değildir; farklı hedefler ve veri setleri için ortak olarak kullanılabilir.
 
 Proje İşleyişi
 --------------
@@ -33,9 +33,9 @@ Model Performansını Artırmak
   - Bilinen değişkenler otomatik üretilir; yapay zekâ kapasitesi yeni ve farklı fikirlere ayrılır.
 
 ROI / ROE
-  - Riski daha iyi ayırt eden bir model, aynı onay oranında daha düşük kredi kaybı ya da aynı kayıp düzeyinde daha yüksek onay oranı sağlar.
-  - Bu etkinin kredi kayıp karşılıklarına ve sermaye kullanımına olumlu yansıması beklenmektedir.
-  - Parasal karşılık, gerçek veri sonucu alındıktan sonra portföy büyüklüğü üzerinden hesaplanacaktır.
+  - Daha isabetli modeller daha doğru iş kararları demektir; örneğin bir kredi modelinde aynı onay oranında daha düşük kayıp ya da aynı kayıp düzeyinde daha yüksek onay oranı sağlanır.
+  - Bu etkinin, modelin kullanıldığı alana göre kayıp, maliyet ve sermaye kullanımına olumlu yansıması beklenmektedir.
+  - Parasal karşılık, gerçek veri sonucu alındıktan sonra modelin kullanıldığı portföy üzerinden hesaplanacaktır.
 
 Denemelerin Rakam Çıktıları
   - İlk yapı ile yapılan denemede yapay zekânın ürettiği 33 değişken model başarısını artırmamıştır.
@@ -100,7 +100,7 @@ Bugünkü Yapı: Akıllı Değişken Üretimi
 ANALİTİK MODELLEME PLATFORMU
 ============================
 
-Akıllı Değişken Üretimi, Analitik Modelleme Platformu içinde çalışır. Platform, kredi risk modellerinin veriden final modele kadar tüm geliştirme sürecini tek bir yapıda, adım adım ve kullanıcı onayıyla yönetir. Değişken üretimi bu sürecin üçüncü adımıdır.
+Akıllı Değişken Üretimi, Analitik Modelleme Platformu içinde çalışır. Platform, modellerin veriden final modele kadar tüm geliştirme sürecini tek bir yapıda, adım adım ve kullanıcı onayıyla yönetir. Belirli bir model türüne bağlı değildir; farklı hedefler, veri setleri ve ekipler için aynı süreç kullanılır. Değişken üretimi bu sürecin üçüncü adımıdır.
 
   Adım                  | Ne Yapılır?                                          
   ----------------------+------------------------------------------------------
