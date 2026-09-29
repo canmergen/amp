@@ -1417,6 +1417,20 @@ def _bolme_kilidi(durum):
     b = durum.get("bolme") or {}
     if not b.get("kalici"):
         return False, ""
+    # AKIS BOLME ADIMINDA YA DA GERISINDEYSE KILIT YOK. Kullanici "Geri
+    # Dön" ile bu adima BILEREK dondu; kilit burada "Bu Ayarları Seç"i
+    # pasif birakip akisi durduruyordu: ne ayar degisiyor ne ileri
+    # gidilebiliyordu (kullanici bildirimi: "01.4 ve öncesine geri dön
+    # ile dönemiyorum"). Bolme yeniden uygulaninca SFA ve sonrasi zaten
+    # yeniden hesaplanir. Kilit yalnizca akis bolmeyi GECMISKEN, sag
+    # paneldeki formdan degistirmede gecerli.
+    sira = adim_sirasi(durum.get("mod"))
+    try:
+        i = int(durum.get("i") or 0)
+    except (TypeError, ValueError):
+        i = 0
+    if "bolme" in sira and i <= sira.index("bolme"):
+        return False, ""
     calisan = [k for k in BOLME_BAGIMLI if durum.get(k)]
     if not calisan:
         return False, ""

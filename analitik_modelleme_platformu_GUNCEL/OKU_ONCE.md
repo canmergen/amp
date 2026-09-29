@@ -1,6 +1,21 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Tek Değişken Analizi açıklamalı; aralık detayında öncesi / sonrası grafiği, IV ve C-value, sözlük açıklaması**.
+Bu tur: **Geri Dön ile 01.4 ve öncesine dönülünce bölme kilitli kalmıyor**.
+Değiştir (fe_agent): `akis_panel.py`
+Kütüphane dosyasını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+
+- SFA çalıştıktan sonra 01.4'e (ya da daha önceki bir adıma dönüp yeniden
+  01.4'e) gelindiğinde bölme kartı "Bölme Kilitli" açılıyor ve "Bu Ayarları
+  Seç" pasif kalıyordu; akış ancak "Yine de değiştir" düğmesine iki kez
+  basılınca ilerliyordu. Artık akış bölme adımında ya da gerisindeyken kilit
+  yok: ayar değiştirilebilir ya da aynı ayarla devam edilebilir; Veri
+  Profili, SFA ve aralık önerileri kendiliğinden yeniden hesaplanır.
+- Kilit yalnızca akış bölmeyi geçmişken, sağdaki Bölme & Validasyon
+  sekmesinden bölme değiştirilmek istenirse sorulur (değişmedi).
+
+---
+
+Önceki tur: **Tek Değişken Analizi açıklamalı; aralık detayında öncesi / sonrası grafiği, IV ve C-value, sözlük açıklaması**.
 Değiştir (fe_agent): `akis_faz02.py`, `aralik.py`, `sfa.py`, `akis_panel.py`, `akis_sohbet.py`
 Değiştir (webapp): `backend.py`, `app.js` (JS), `style.css` (CSS)
 Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
