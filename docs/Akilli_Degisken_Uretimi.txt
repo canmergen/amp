@@ -16,7 +16,7 @@ Proje İşleyişi
   - Standart Değişken Üretimi: Değişim, oran ve eğilim gibi bilinen türdeki değişkenler önceden tanımlı kurallarla otomatik olarak üretilir.
   - Yapay Zekâ ile Yeni Değişkenler: Yapay zekâ, iş bilgisine dayalı yeni değişken önerileri sunar. Her öneri sistem tarafından doğrulanır ve hesaplanır.
   - Test ve Seçim: Yeni değişkenlerin model başarısına etkisi ölçülür. Yalnızca katkı sağlayan değişkenler modele alınır ve kayıt altına alınır.
-  - Sonraki Adım: Kurulan altyapının, veriden final modele kadar tüm süreci kapsayan Analitik Modelleme Platformu'na dönüştürülmesi ve diğer modelleme ekiplerinin kullanımına açılması planlanmaktadır.
+  - Sonraki Adım: Değişken üretimi, Analitik Modelleme Platformu'nun bir parçası olarak geliştirilmiştir. Sonraki adımda platformun tamamının (veri hazırlığından final modele kadar) devreye alınması ve diğer modelleme ekiplerinin kullanımına açılması planlanmaktadır.
 Yapay zekâ süreçte yalnızca öneri üretir; hesaplama, doğrulama ve karar sistem tarafından yapılır. Analist onayı olmadan hiçbir değişken üretilmez, katkısı ölçülmeyen hiçbir değişken modele alınmaz.
 
 AKILLI DEĞİŞKEN ÜRETİMİ: YÖNETİM ÖZETİ
@@ -100,7 +100,7 @@ Bugünkü Yapı: Akıllı Değişken Üretimi
 SONRAKİ ADIM: ANALİTİK MODELLEME PLATFORMU
 ==========================================
 
-Değişken üretimi, veriden final modele kadar uzanan beş adımlı bir modelleme sürecinin parçası olarak kurulmuştur. Sonraki adımda bu süreç tek bir platformda birleştirilerek banka içindeki diğer modelleme ekiplerinin kullanımına açılacaktır.
+Değişken üretimi, Analitik Modelleme Platformu'nun beş adımlı modelleme sürecinin üçüncü adımıdır. Platform, veri hazırlığından final modele kadar tüm süreci tek bir yapı içinde yönetmektedir. Sonraki adımda platformun tamamının devreye alınması ve banka içindeki diğer modelleme ekiplerinin kullanımına açılması planlanmaktadır.
 
   Adım                  | Ne Yapılır?                                          
   ----------------------+------------------------------------------------------
