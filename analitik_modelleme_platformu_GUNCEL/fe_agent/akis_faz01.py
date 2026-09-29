@@ -16,11 +16,13 @@ from fe_agent import llm as llm_mod
 from fe_agent import birlestirme as birl_mod
 from fe_agent import sozluk as sozluk_mod
 from fe_agent import sozluk_calisma
+from fe_agent import sozluk_dosya
 from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
 from fe_agent import amp as amp_mod
+from fe_agent import motor as motor_mod
 from fe_agent import spark_is
 
 from fe_agent.akis_metin import (
@@ -40,7 +42,7 @@ from fe_agent.akis_durum import (
     dataset_yaz, dosya_yaz, sahip_yaz, modelleme_kaynagi,
     ORNEK_MASKE, _ornek_metni, hazir_bolme_bul_profil,
     BOLME_KALICI_ALANLARI, SET_ADLARI, SPLIT_ETIKET, MIN_SET_SATIR,
-    _zamansal_test_donemleri, set_basligi,
+    _zamansal_test_donemleri, set_basligi, gorunen_ad,
 )
 
 
@@ -215,6 +217,10 @@ def _temel_profil(durum, prof):
         "tarih": int(prof["tarih"]),
         "duplicate": int(prof["duplicate"]),
         "kolon_ozet": _kolon_ozeti(prof),
+        # Profili hangi motorun cikardigi ve veri setinin dosya boyutu
+        # (bkz. motor.py); mesajlarda "Motor : ..." satiri buradan.
+        "motor": prof.get("motor"),
+        "dosya_boyutu": prof.get("dosya_boyutu"),
     })
     p["hedef_adaylari"] = list(prof.get("hedef_adaylari") or [])
     p["kimlik_adaylari"] = list(prof.get("kimlik_adaylari") or [])
@@ -225,6 +231,15 @@ def _temel_profil(durum, prof):
     _kimlik_duplicate(durum, prof, p)
     durum["profil"] = p
     return p
+
+
+def _motor_satirlari(p):
+    """Profilden iki satir: dosya boyutu ve motor ("  Etiket : Deger")."""
+    m = (p or {}).get("motor")
+    if m not in motor_mod.AD:
+        return []
+    return ["  Dosya Boyutu : %s" % motor_mod.boyut_metni(p.get("dosya_boyutu")),
+            "  Motor : %s" % motor_mod.AD[m]]
 
 
 def _kimlik_duplicate(durum, prof, p):
@@ -372,6 +387,8 @@ def ham_veri_girdi(durum, mesaj, yeniden_sor=False):
             # kalir. Ayni kural butun rozet ve dugmelerde gecerli.
             "buton": "Tabloları Onayla",
             "min": 2,
+            # Listenin altinda "SQL ile Getir" dugmesi (bkz. sql_getir)
+            "sql": True,
             "sablon": "tablolar: {liste}",
             "secili": adaylar or list(durum.get("ham_tablolar") or []),
         }
@@ -409,10 +426,18 @@ def _tablo_ozeti(tablolar):
     satir sayilari birlestirme isinde (Spark) hesaplanip yazilir."""
     satirlar = []
     for ad in tablolar:
+        boyut = motor_mod.boyut(ad)
+        ek = (" · %s" % motor_mod.boyut_metni(boyut)) if boyut is not None else ""
         try:
-            satirlar.append("  %s : %s kolon" % (ad, _sayi(_df_oku(ad, limit=1).shape[1])))
+            satirlar.append("  %s : %s kolon%s"
+                            % (ad, _sayi(_df_oku(ad, limit=1).shape[1]), ek))
         except Exception as e:
             satirlar.append("  %s : okunamadı (%s)" % (ad, _degerde(str(e)[:80])))
+    # Motor tablolarin TOPLAM boyutuna gore (bkz. motor.py); birlestirme ve
+    # profil bu motorla calisir.
+    motor, toplam = motor_mod.sec(tablolar)
+    satirlar.append("  Toplam Dosya Boyutu : %s" % motor_mod.boyut_metni(toplam))
+    satirlar.append("  Motor : %s" % motor_mod.AD[motor])
     return ("%s kaynak tablo seçildi; satır sayıları birleştirmede "
             "hesaplanacak.\n%s" % (_sayi(len(tablolar)), "\n".join(satirlar)))
 
@@ -550,9 +575,11 @@ def birlestirme_uygula(durum):
         return ("Tablolar alt alta eklendi; kolonları aynı olduğu için yan "
                 "yana birleştirilmedi.\n%s\n"
                 "  Baz veri seti : %s satır × %s kolon\n"
-                "  Kayıt : %s veri seti"
+                "  Kayıt : %s veri seti\n"
+                "  Motor : %s"
                 % ("\n".join(satirlar), _sayi(oz.get("satir")),
-                   _sayi(oz.get("kolon")), BAZ_ADI)) + sozluk_not
+                   _sayi(oz.get("kolon")), BAZ_ADI,
+                   motor_mod.AD.get(oz.get("motor"), "-"))) + sozluk_not
 
     baz, kutuk, ozet = birl_mod.calistir(plan, lambda ad: _df_oku(ad))
 
@@ -643,6 +670,7 @@ def _veri_sec_formu(durum, veri=None):
                      "placeholder": "Baz veri seti ara…",
                      "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik "
                               "ve tüm değişkenler bu tabloda",
+                     "sql": True,
                      "deger": veri or durum.get("veri_seti") or ""}],
         "sablon": "veri seti {veri_seti}",
     }
@@ -685,9 +713,10 @@ def veri_sec_uygula(durum):
     return ("Baz veri seti seçildi.\n"
             "  Veri seti : %s\n"
             "  Boyut : %s satır × %s kolon\n"
-            "  Tipler : %s sayısal, %s kategorik"
+            "  Tipler : %s sayısal, %s kategorik%s"
             % (durum["veri_seti"], _sayi(p["satir"]), _sayi(p["kolon"]),
-               _sayi(p["sayisal"]), _sayi(p["kolon"] - p["sayisal"])))
+               _sayi(p["sayisal"]), _sayi(p["kolon"] - p["sayisal"]),
+               "".join("\n" + x for x in _motor_satirlari(p))))
 
 # ===========================================================================
 # ADIM SOZLUK URETIMI  (Mod A ve B)   <-- LLM
@@ -794,12 +823,16 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
              "placeholder": "Baz veri seti ara…",
              "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik ve tüm "
                       "değişkenler bu tabloda",
+             # Alanin yaninda "SQL ile Getir" dugmesi (bkz. sql_getir)
+             "sql": True,
              "deger": veri or durum.get("veri_seti") or ""},
             {"ad": "sozluk", "etiket": "Baz Sözlük",
-             "placeholder": "Sözlük tablosu ara…",
-             "ipucu": "Baz veri setindeki kolonların adını ve açıklamasını "
-                      "taşıyan tablo",
-             "deger": sozluk or durum.get("sozluk") or ""},
+             "placeholder": "Sözlük tablosu ara ya da dosya yükle…",
+             "ipucu": "Kolon adını ve açıklamasını taşıyan Excel/CSV "
+                      "dosyası ya da Dataiku veri seti",
+             # Alanin yaninda "Dosya Yükle" dugmesi (bkz. sozluk_dosya)
+             "dosya": True,
+             "deger": gorunen_ad(sozluk or durum.get("sozluk"))},
         ],
         "sablon": "veri seti {veri_seti} ve sözlük {sozluk}",
     }
@@ -810,7 +843,7 @@ def _kolon_listesi_metni(kolonlar, en_fazla=8):
     return ", ".join(kolonlar[:en_fazla]) + ek
 
 
-def _sozluk_denetle(sozluk_ad, veri_ad):
+def _sozluk_denetle(sozluk_ad, veri_ad, sz=None):
     """Sozlugun girdi olarak KABUL edilip edilemeyecegi. Hata metni ya da
     None doner (kullanici karari: "sözlükte kolon adı ve açıklama kolonu
     olmalı; kontrollerden geçmeden onaylanmamalı").
@@ -823,11 +856,16 @@ def _sozluk_denetle(sozluk_ad, veri_ad):
          Ad kolonu bilinen adlardan biri degilse ilk kolon varsayiliyor;
          eslesme yoksa bu varsayim yanlis demektir.
       3. Eslesen kolonlardan en az birinin aciklamasi dolu.
-    Hepsi gecmeden adim ilerlemez; kart onayli gorunmez."""
-    try:
-        sz = _df_oku(sozluk_ad)
-    except Exception as e:
-        return "'%s' sözlüğü okunamadı: %s" % (sozluk_ad, str(e)[:160])
+    Hepsi gecmeden adim ilerlemez; kart onayli gorunmez.
+
+    sz verilirse sozluk yeniden okunmaz (Mod B: tek dosyanin o tabloya
+    ait satirlari)."""
+    if sz is None:
+        try:
+            sz = _df_oku(sozluk_ad)
+        except Exception as e:
+            return "'%s' sözlüğü okunamadı: %s" % (gorunen_ad(sozluk_ad), str(e)[:160])
+    sozluk_ad = gorunen_ad(sozluk_ad)
     try:
         veri_kolonlari = [str(c) for c in _df_oku(veri_ad, limit=5).columns]
     except Exception as e:
@@ -872,7 +910,10 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     # Kayitli deger YALNIZCA mesaj en az bir alan iceriyorsa eksigi tamamlar.
     # Bos mesaj ya da "hayır" gibi alan icermeyen mesaj her zaman formu acar.
     veri = a.get("veri_seti") or (durum.get("veri_seti") if a else None)
-    sozluk = a.get("sozluk") or (durum.get("sozluk") if a else None)
+    # Yuklenen dosyanin adi ("KREDI_SOZLUK.xlsx") calismanin klasorundeki
+    # yola cevrilir; Dataiku veri seti adi aynen kalir.
+    sozluk = sozluk_dosya.coz(amp_klasor_adi(durum), a.get("sozluk")) \
+        or (durum.get("sozluk") if a else None)
 
     # METIN YOK, YALNIZ FORM. Formun kendi basligi ("Veri seti ve değişken
     # sözlüğü") ve aciklamasi ("Analiz edilecek veri setini ve değişken
@@ -894,7 +935,7 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
         if not _dataset_var_mi(ad):
             _kurulum_formu(durum, veri, sozluk)
             return False, ("'%s' adında bir tabloya erişemiyorum. "
-                           "Adı kontrol edip yeniden seçin." % ad)
+                           "Adı kontrol edip yeniden seçin." % gorunen_ad(ad))
 
     hata = _sozluk_denetle(sozluk, veri)
     if hata:
@@ -906,50 +947,65 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     return True, None
 
 # ===========================================================================
-# ADIM KAYNAK SOZLUKLERI  (Mod B)
+# ADIM KAYNAK SOZLUK  (Mod B)
 # ===========================================================================
 # Mod B: nihai (baz) veri seti YOK, ama onu olusturacak kaynak tablolar ve
-# HER BIRININ SOZLUGU hazir. Burada her tabloya sozlugu eslenir; nihai
-# sozluk birlestirmeden SONRA bu sozluklerden otomatik kurulur (bkz.
+# kolon aciklamalari hazir. Kullanici karari: "kaynak sözlük tek dosya
+# olsun". Dosyada TABLO kolonu varsa her tablo kendi satirlariyla eslenir;
+# yoksa (ya da bir tabloya ait satir yoksa) kolon adiyla butun dosyadan.
+# Nihai sozluk birlestirmeden SONRA bu dosyadan otomatik kurulur (bkz.
 # kaynak_sozlugunden_kur): kaynak kolon tanimini aynen alir, toplama
 # kolonlari kaynak tanim + fonksiyon + pencereyle tarif edilir.
-#
-# Ayni sozluk birden fazla tabloya secilebilir (ortak sozluk).
+KAYNAK_SOZLUK_TEK_ONEK = "kaynak sözlük:"
+# Eski bicim (tablo basina ayri sozluk): eski oturumlardan gelen mesajlar
+# icin okunmaya devam ediyor.
 KAYNAK_SOZLUK_ONEK = "kaynak sözlükleri:"
 KAYNAK_SOZLUK_AYRAC = " | "
 
 
 def _kaynak_sozluk_formu(durum, secili=None):
-    tablolar = list(durum.get("ham_tablolar") or [])
-    secili = secili or durum.get("kaynak_sozlukler") or {}
-    alanlar = [{"ad": "sozluk_%d" % i, "etiket": "%s Tablosunun Sözlüğü" % t,
-                "placeholder": "Kaynak sözlük ara…",
-                "deger": secili.get(t) or ""}
-               for i, t in enumerate(tablolar)]
+    esleme = durum.get("kaynak_sozlukler") or {}
+    deger = secili or (sorted(set(esleme.values()))[0] if esleme else "")
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Kaynak Sözlükler",
-        "aciklama": "Her kaynak tablonun kendi sözlüğünü seçin. Aynı "
-                    "sözlük birden fazla tablo için seçilebilir. Baz sözlük "
-                    "birleştirmeden sonra bu kaynak sözlüklerden kurulur.",
-        "buton": "Sözlükleri Onayla",
-        "alanlar": alanlar,
-        "sablon": KAYNAK_SOZLUK_ONEK + " " + KAYNAK_SOZLUK_AYRAC.join(
-            "{%s}" % a["ad"] for a in alanlar),
+        "baslik": "Kaynak Sözlük",
+        "aciklama": "Kaynak tabloların kolon açıklamalarını taşıyan sözlüğü "
+                    "seçin ya da Excel/CSV dosyası olarak yükleyin. TABLO "
+                    "kolonu varsa kolonlar tablo bazında eşlenir. Baz sözlük "
+                    "birleştirmeden sonra bu sözlükten kurulur.",
+        "buton": "Sözlüğü Onayla",
+        "alanlar": [{"ad": "sozluk", "etiket": "Kaynak Sözlük",
+                     "placeholder": "Sözlük tablosu ara ya da dosya yükle…",
+                     "dosya": True,
+                     "deger": gorunen_ad(deger)}],
+        "sablon": KAYNAK_SOZLUK_TEK_ONEK + " {sozluk}",
     }
 
 
 def _kaynak_sozluk_coz(durum, mesaj):
-    """'kaynak sözlükleri: S1 | S2' -> {tablo: sozluk}; bicim tutmazsa None."""
+    """Mesaj -> {tablo: sozluk}; bicim tutmazsa None.
+    'kaynak sözlük: X'   -> butun tablolar X (tek dosya)
+    'kaynak sözlükleri: S1 | S2' -> eski bicim, tablo basina."""
     metin = (mesaj or "").strip()
+    tablolar = list(durum.get("ham_tablolar") or [])
+    if metin.lower().startswith(KAYNAK_SOZLUK_TEK_ONEK):
+        deger = metin[len(KAYNAK_SOZLUK_TEK_ONEK):].strip()
+        ad = sozluk_dosya.coz(amp_klasor_adi(durum), deger) if deger else ""
+        return {t: ad for t in tablolar}
     if not metin.lower().startswith(KAYNAK_SOZLUK_ONEK):
         return None
     degerler = [d.strip() for d in
                 metin[len(KAYNAK_SOZLUK_ONEK):].split(KAYNAK_SOZLUK_AYRAC.strip())]
-    tablolar = list(durum.get("ham_tablolar") or [])
     if len(degerler) != len(tablolar):
         return None
     return dict(zip(tablolar, degerler))
+
+
+def _tablo_sozlugu(sz, tablo):
+    """Sozlugun bu tabloya ait satirlari; TABLO kolonu yoksa ya da tabloya
+    ait satir yoksa butun sozluk. Doner: (df, tabloya_gore_mu)."""
+    alt = sozluk_dosya.tabloya_ait(sz, tablo)
+    return (alt, True) if alt is not None else (sz, False)
 
 
 def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
@@ -961,24 +1017,31 @@ def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
 
     bos = [t for t, s in secim.items() if not s]
     if bos:
-        _kaynak_sozluk_formu(durum, secim)
-        return False, ("Şu tabloların sözlüğü seçilmedi: %s"
-                       % ", ".join(bos))
+        _kaynak_sozluk_formu(durum)
+        return False, "Kaynak sözlük seçilmedi."
 
-    erisilemeyen = sorted({s for s in secim.values() if not _dataset_var_mi(s)})
+    erisilemeyen = sorted({gorunen_ad(s) for s in secim.values()
+                           if not _dataset_var_mi(s)})
     if erisilemeyen:
-        _kaynak_sozluk_formu(durum, secim)
+        _kaynak_sozluk_formu(durum)
         return False, ("Erişemediğim sözlükler: %s\n\n"
                        "Adlarını kontrol eder misiniz?" % ", ".join(erisilemeyen))
 
     hatalar = []
     for tablo, sozluk in secim.items():
-        hata = _sozluk_denetle(sozluk, tablo)
+        try:
+            sz = _df_oku(sozluk)
+        except Exception as e:
+            hatalar.append("• %s: '%s' okunamadı (%s)"
+                           % (tablo, gorunen_ad(sozluk), str(e)[:120]))
+            continue
+        alt, _tabloya_gore = _tablo_sozlugu(sz, tablo)
+        hata = _sozluk_denetle(sozluk, tablo, sz=alt)
         if hata:
             hatalar.append("• %s: %s" % (tablo, hata))
     if hatalar:
-        _kaynak_sozluk_formu(durum, secim)
-        return False, ("Sözlükler onaylanmadı:\n" + "\n".join(hatalar))
+        _kaynak_sozluk_formu(durum, next(iter(secim.values())))
+        return False, ("Sözlük onaylanmadı:\n" + "\n".join(hatalar))
 
     durum["kaynak_sozlukler"] = secim
     durum["_secim_alani"] = None
@@ -986,8 +1049,40 @@ def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
 
 
 def kaynak_sozluk_uygula(durum):
-    adlar = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
-    return "Kaynak sözlükleri kaydedildi: %s" % ", ".join(adlar)
+    esleme = durum.get("kaynak_sozlukler") or {}
+    satirlar = []
+    for tablo, sozluk in esleme.items():
+        try:
+            alt, tabloya_gore = _tablo_sozlugu(_df_oku(sozluk), tablo)
+            ne = ("%s satır, TABLO kolonuyla eşlendi" % _sayi(len(alt))
+                  if tabloya_gore else "kolon adıyla eşlenecek")
+        except Exception:
+            ne = "okunamadı"
+        satirlar.append("  %s : %s" % (tablo, ne))
+    adlar = sorted({gorunen_ad(s) for s in esleme.values()})
+    return ("Kaynak sözlük seçildi.\n  Sözlük : %s\n%s"
+            % (", ".join(adlar), "\n".join(satirlar)))
+
+
+def sozluk_dosyasi_kaydet(durum, ham, dosya_adi):
+    """Kartin "Dosya Yükle" dugmesi: Excel/CSV sozlugu calismanin
+    klasorune Parquet olarak kaydeder. Kullanicinin dosyasina / tablosuna
+    yazilmaz. Doner: (formda gorunecek ad, ozet). Hata ->
+    sozluk_dosya.DosyaHatasi (mesaj kullaniciya aynen gider)."""
+    ad = sozluk_dosya.temiz_ad(dosya_adi)
+    df = sozluk_dosya.oku(ham, ad)
+    if sozluk_calisma.tanim_kolonu_bul(df) is None:
+        raise sozluk_dosya.DosyaHatasi(
+            "Dosyada açıklama kolonu bulunamadı. Açıklamayı taşıyan kolonun "
+            "adı ACIKLAMA, TANIM ya da DESCRIPTION olmalı. Dosyanın "
+            "kolonları: %s." % _kolon_listesi_metni(df.columns))
+    yol = sozluk_dosya.yol(amp_klasor_adi(durum), ad)
+    gercek = dosya_yaz(yol, df)
+    if not gercek:
+        raise sozluk_dosya.DosyaHatasi("Dosya çalışma klasörüne kaydedilemedi.")
+    onbellek_temizle(gercek)
+    return ad, {"satir": int(len(df)), "kolon": int(len(df.columns)),
+                "tablo_kolonu": sozluk_dosya.tablo_kolonu_bul(df)}
 
 
 def _tanim_haritasi(sozluk_df):
@@ -1047,13 +1142,18 @@ def kaynak_sozlugunden_kur(durum, baz, kutuk):
     YAZILMAZ: "Sözlük Tanımları" adiminda tanimsiz olarak listelenir.
     Doner: (tablo_df, ozet_sozlugu)."""
     esleme = durum.get("kaynak_sozlukler") or {}
+    # HARITA TABLO BASINA: tek sozluk dosyasinda TABLO kolonu varsa her
+    # tablo yalnizca kendi satirlarindan tanim alir (iki tabloda ayni adli
+    # kolon farkli seyi anlatabilir).
     haritalar, okunamayan = {}, []
-    for ad in sorted(set(esleme.values())):
+    for tablo, ad in esleme.items():
         try:
-            haritalar[ad] = _tanim_haritasi(_df_oku(ad))
+            alt, _tabloya_gore = _tablo_sozlugu(_df_oku(ad), tablo)
+            haritalar[tablo] = _tanim_haritasi(alt)
         except Exception as e:
-            haritalar[ad] = {}
-            okunamayan.append("%s (%s)" % (ad, str(e)[:60]))
+            haritalar[tablo] = {}
+            okunamayan.append("%s (%s)" % (gorunen_ad(ad), str(e)[:60]))
+        okunamayan = list(dict.fromkeys(okunamayan))
 
     satirlar, gorulen = [], set()
     turetilen = 0
@@ -1064,8 +1164,17 @@ def kaynak_sozlugunden_kur(durum, baz, kutuk):
         gorulen.add(kolon)
         tablo = str(k.get("KAYNAK_TABLO") or "")
         kaynak_kolon = str(k.get("KAYNAK_KOLON") or "")
-        tanim, kat = haritalar.get(esleme.get(tablo), {}).get(
+        tanim, kat = haritalar.get(tablo, {}).get(
             kaynak_kolon.upper(), (None, ""))
+        if tanim is None and str(k.get("TUR") or "") == "alt alta":
+            # Alt alta eklenen tablolarin kolonlari ayni; ilk tablonun
+            # sozlugunde tanimi olmayan kolon diger tablolardan alinir.
+            for diger in esleme:
+                bulunan = haritalar.get(diger, {}).get(kaynak_kolon.upper())
+                if bulunan:
+                    (tanim, kat), tablo = bulunan, diger
+                    k = dict(k, KAYNAK_TABLO=diger)
+                    break
         aciklama = _turetilmis_tanim(k, tanim)
         if not aciklama:
             continue
@@ -1552,7 +1661,7 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
              "alt": ["%s satır · %s kolon"
                      % (_sayi(profil.get("satir") or 0), _sayi(kolon)),
                      tip_alt]},
-            {"etiket": "Baz Sözlük", "deger": durum.get("sozluk") or "",
+            {"etiket": "Baz Sözlük", "deger": gorunen_ad(durum.get("sozluk")),
              "alt": ["%s tanım" % _sayi(profil.get("sozluk_satir") or 0)]},
         ],
         "kapsam": {"yuzde": kapsam, "tanimli": eslesen, "toplam": kolon,
@@ -1917,10 +2026,19 @@ def kurulum_uygula(durum):
     adaylarini buradan okuyor) ve sozluk calisma kopyasi kuruluyor.
     Profil TAZE cikarilir: veri seti secimi onaylandi, tablo bir onceki
     profilden bu yana degismis olabilir."""
-    _kapsami_cikar(durum, taze=True)
+    _prof, p = _kapsami_cikar(durum, taze=True)
     # Calisma kopyasi sozluk baglanir baglanmaz cikarilir: satir_ekle
     # yalnizca kopyaya yazar, kopya yoksa yazacak yer yoktur.
-    return _calisma_kopyasi_kur(durum).strip()
+    not_ = _calisma_kopyasi_kur(durum)
+    # Veri setinin boyutu ve hangi motorla islendigi (kullanici karari:
+    # motor gizli secilmesin, kartta yazsin).
+    return ("Baz veri seti ve baz sözlük seçildi.\n"
+            "  Veri seti : %s\n"
+            "  Sözlük : %s\n"
+            "  Boyut : %s satır × %s kolon%s"
+            % (durum["veri_seti"], gorunen_ad(durum.get("sozluk")),
+               _sayi(p["satir"]), _sayi(p["kolon"]),
+               "".join("\n" + x for x in _motor_satirlari(p)))) + not_
 
 
 def sozluk_tanim_uygula(durum):

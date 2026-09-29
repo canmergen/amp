@@ -38,40 +38,69 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 # ADIM 1.1 — CALISMA BASLANGICI  (her secimde ilk adim)
 # ===========================================================================
 
-# DORT BASLANGIC. Harf = ekranda gorunen harf = ic anahtar.
+# DORT BASLANGIC. Harf = ic anahtar (ekranda harf GORUNMEZ).
 #   A  veri seti hazir,  sozluk hazir
-#   B  veri seti YOK,    kaynak tablolar VE sozlukleri hazir (yeni:
-#                        tablolar ve sozlukler birlestirilir)
+#   B  veri seti YOK,    kaynak tablolar VE sozluk dosyasi hazir (yeni:
+#                        tablolar birlestirilir, sozluk tablo bazinda eslenir)
 #   C  veri seti hazir,  sozluk YOK     (eski B)
 #   D  veri seti YOK,    sozluk YOK     (eski C)
 # Eski kayitlardaki B/C, okunurken C/D'ye cevriliyor
 # (bkz. akis_durum.MOD_GOCU).
-# KART METNI (kullanici karari): BASLIK elinizde NE MEVCUT, ACIKLAMA neyin
-# mevcut OLMADIGI ve bu adimlarla nasil olusturulacagi.
+#
+# EKRANDA TEK KART, IKI SATIR (kullanici karari: "kartları çoğaltmak
+# amatörce durur ... seçimli bir mod lazım"). Kullanici iki bagimsiz soruyu
+# yanitlar: VERI ne halde (Baz Veri Seti / Kaynak Tablolar), SOZLUK var mi
+# (Sözlük Var / Sözlük Yok). Harf bu iki secimden turetilir; kartin altinda
+# secilen kombinasyonun "aciklama"si yazar. Yeni bir durum eklenince kart
+# cogalmaz, bir satira bir secenek eklenir.
 #
 # ACIK MODLAR (kullanici karari: "şu anda hangileri açıksa onları seçebileyim
-# diğerlerini seçmeme izin verme"). Buyuk veri (Spark) yoluyla uctan uca
-# denenmis baslangiclar acik; digerleri kartta soluk ve tiklanamaz durur,
-# yazarak secilmeye calisilirsa da reddedilir. Acmak icin bu listeye ekleyin.
+# diğerlerini seçmeme izin verme"). Kapali kombinasyon secilince kartin
+# altinda "Şu An Kapalı" yazar ve Devam dugmesi kapanir; yazarak secilmeye
+# calisilirsa da reddedilir. Acmak icin bu listeye ekleyin.
 ACIK_MODLAR = ("A", "D")
 
+# Iki satirin tanimi. "bilgi" satirin "i" simgesinde gorunur.
+BASLANGIC_EKSENLERI = [
+    {"ad": "veri", "etiket": "Veri",
+     "bilgi": "Baz Veri Seti: modellemeye girecek tek tablo hazır. Dataiku "
+              "veri seti olarak seçilir ya da SQL sorgusuyla getirilir.\n\n"
+              "Kaynak Tablolar: birleştirilecek en az iki tablo. Her biri "
+              "Dataiku veri seti olarak seçilir ya da SQL sorgusuyla getirilir.",
+     "secenekler": [{"deger": "baz", "etiket": "Baz Veri Seti"},
+                    {"deger": "kaynak", "etiket": "Kaynak Tablolar"}]},
+    {"ad": "sozluk", "etiket": "Sözlük",
+     "bilgi": "Sözlük Var: Excel ya da CSV dosyası (ya da Dataiku veri "
+              "seti). Kolon adı ve açıklama kolonu taşır; TABLO kolonu "
+              "varsa kolonlar tablo bazında eşlenir.\n\n"
+              "Sözlük Yok: kolon açıklamalarını yapay zekâ, kolon yapısı ve "
+              "profilden önerir; siz onaylarsınız.",
+     "secenekler": [{"deger": "var", "etiket": "Sözlük Var"},
+                    {"deger": "yok", "etiket": "Sözlük Yok"}]},
+]
+
 MOD_SECENEKLERI = [
-    {"deger": "A", "baslik": "Baz Veri Seti ve Baz Sözlük Mevcut",
-     "aciklama": "Eksik yok. Doğrudan modelleme tanımlarına ve veri "
-                 "analizine geçilir."},
-    {"deger": "B", "baslik": "Kaynak Tablolar ve Kaynak Sözlükler Mevcut",
-     "aciklama": "Baz veri seti ve baz sözlük yok. Tablolar birleştirilerek "
-                 "baz veri seti, kaynak sözlükler birleştirilerek baz sözlük "
-                 "oluşturulur."},
-    {"deger": "C", "baslik": "Baz Veri Seti Mevcut",
-     "aciklama": "Baz sözlük yok. Veri setinin kolon yapısı ve profilinden "
-                 "oluşturulur."},
-    {"deger": "D", "baslik": "Kaynak Tablolar Mevcut",
-     "aciklama": "Baz veri seti ve baz sözlük yok. Tablolar birleştirilerek "
-                 "baz veri seti, ardından baz sözlük oluşturulur."},
+    {"deger": "A", "veri": "baz", "sozluk": "var",
+     "baslik": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut",
+     "aciklama": "Baz veri seti ve baz sözlük seçilir; doğrudan modelleme "
+                 "tanımlarına geçilir."},
+    {"deger": "B", "veri": "kaynak", "sozluk": "var",
+     "baslik": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut",
+     "aciklama": "Kaynak tablolar birleştirilerek baz veri seti oluşturulur; "
+                 "baz sözlük, sözlük dosyasından tablo bazında kurulur."},
+    {"deger": "C", "veri": "baz", "sozluk": "yok",
+     "baslik": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil",
+     "aciklama": "Baz sözlük, veri setinin kolon yapısı ve profilinden "
+                 "yapay zekâ ile oluşturulur."},
+    {"deger": "D", "veri": "kaynak", "sozluk": "yok",
+     "baslik": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut Değil",
+     "aciklama": "Kaynak tablolar birleştirilerek baz veri seti, ardından "
+                 "yapay zekâ ile baz sözlük oluşturulur."},
 ]
 for _s in MOD_SECENEKLERI:
     _s["kapali"] = _s["deger"] not in ACIK_MODLAR
+    # Arayuz iki satiri buradan cizer (her secenekte ayni liste).
+    _s["eksenler"] = BASLANGIC_EKSENLERI
 
 # Mod gruplari: kod "mod == 'C'" gibi tek harfe bakmasin, NE yapildigina
 # baksin. Yeni bir mod eklenince yalnizca bu iki satir guncellenir.

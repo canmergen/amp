@@ -89,10 +89,12 @@ ADIMLAR = {
         "girdi": kurulum_girdi, "plan": None, "uygula": kurulum_uygula},
 
     "kaynak_sozluk": {
-        "baslik": "Kaynak Sözlükleri",
-        "aciklama": "Her kaynak tablonun değişken sözlüğü seçilir. Nihai "
-                    "sözlük birleştirmeden sonra bu sözlüklerden kurulur; "
-                    "toplama kolonları kaynak tanımdan türetilir.",
+        "baslik": "Kaynak Sözlük",
+        "aciklama": "Kaynak tabloların kolon açıklamalarını taşıyan sözlük "
+                    "seçilir ya da dosya olarak yüklenir. TABLO kolonu varsa "
+                    "kolonlar tablo bazında eşlenir. Nihai sözlük "
+                    "birleştirmeden sonra bu sözlükten kurulur; toplama "
+                    "kolonları kaynak tanımdan türetilir.",
         # plan=None: FORMUN KENDISI ONAYDIR (kurulum ile ayni).
         "girdi": kaynak_sozluk_girdi, "plan": None,
         "uygula": kaynak_sozluk_uygula},

@@ -4576,6 +4576,14 @@ function calismaGostergesi(iptalEt) {
    kart isaretli kalir; adim zaten tamamlandi. */
 function secenekEkle(secenekler, kilit, secili) {
     if (!secenekler || !secenekler.length) return;
+    /* BAŞLANGIÇ: tek kart, iki satır (Veri / Sözlük). Seçenekler eksen
+       tanımını taşıyorsa kart kart çizilmez (kullanıcı kararı: "kartları
+       çoğaltmak amatörce durur"). Eski kayıtlarda eksen yok; onlar eski
+       düzende çizilir. */
+    if (secenekler[0] && Array.isArray(secenekler[0].eksenler)) {
+        baslangicKartiEkle(secenekler, kilit, secili);
+        return;
+    }
 
     const kok = document.createElement("div");
     kok.className = "secenek-kok";
@@ -4651,6 +4659,95 @@ function secenekEkle(secenekler, kilit, secili) {
     }
     sohbetEl.scrollTop = sohbetEl.scrollHeight;
     if (!kilit) yeniOdak = kok.querySelector(".secenek");
+}
+
+
+/* ==================== Başlangıç kartı ==================== */
+/* Iki satir: Veri (Baz Veri Seti / Kaynak Tablolar) ve Sözlük (Sözlük Var /
+   Sözlük Yok). Harf (A-D) iki secimden turetilir ve gonderilir; kartin
+   altinda secilen kombinasyonun aciklamasi yazar. Kapali kombinasyonda
+   "Şu An Kapalı" yazar, dugme kapanir. Satirlar bolme kartinin cip
+   duzenini kullanir (etiket | cipler | i). */
+function baslangicKartiEkle(secenekler, kilit, secili) {
+    const eksenler = secenekler[0].eksenler || [];
+    const secim = {};
+    const onceki = secenekler.find(x => x.deger === secili);
+    if (onceki) eksenler.forEach(e => { secim[e.ad] = onceki[e.ad]; });
+
+    const kart = elYap("div", "secim-kart baslangic-kart");
+    const ciplar = [];          // {el, eksen, deger}
+    eksenler.forEach(e => {
+        const satir = elYap("div", "bolme-satir");
+        satir.appendChild(elYap("div", "bolme-satir-etiket", e.etiket));
+        const govde = elYap("div", "bolme-satir-govde");
+        const grup = elYap("div", "bolme-cipler");
+        (e.secenekler || []).forEach(o => {
+            const cip = elYap("button", "bolme-cip", o.etiket);
+            cip.type = "button";
+            cip.onclick = () => {
+                if (mesgul || kart.classList.contains("kilitli")) return;
+                secim[e.ad] = o.deger;
+                tazele();
+            };
+            ciplar.push({ el: cip, eksen: e.ad, deger: o.deger });
+            grup.appendChild(cip);
+        });
+        govde.appendChild(grup);
+        satir.appendChild(govde);
+        satir.appendChild(bolmeBilgiSimgesi(e.bilgi || "", e.etiket));
+        kart.appendChild(satir);
+    });
+
+    const ozet = elYap("div", "baslangic-ozet");
+    kart.appendChild(ozet);
+    const btn = elYap("button", "secim-onay", "Devam Et");
+    btn.type = "button";
+    kart.appendChild(btn);
+
+    function eslesen() {
+        return secenekler.find(s => eksenler.every(e => s[e.ad] === secim[e.ad]));
+    }
+    function tazele() {
+        ciplar.forEach(c => c.el.classList.toggle("secili", secim[c.eksen] === c.deger));
+        const s = eslesen();
+        ozet.innerHTML = "";
+        ozet.classList.toggle("kapali", !!(s && s.kapali));
+        if (!s) {
+            ozet.textContent = "Verinin ve sözlüğün durumunu seçin.";
+        } else {
+            ozet.appendChild(document.createTextNode(tireSade(s.aciklama || "")));
+            if (s.kapali) ozet.appendChild(elYap("span", "secenek-kapali", "Şu An Kapalı"));
+        }
+        btn.disabled = !s || !!s.kapali || kart.classList.contains("kilitli");
+    }
+    function kilitle(evet) {
+        kart.classList.toggle("kilitli", evet);
+        ciplar.forEach(c => { c.el.disabled = evet; });
+        btn.hidden = evet;
+        tazele();
+    }
+    btn.onclick = () => {
+        const s = eslesen();
+        if (mesgul || !s || s.kapali) return;
+        kilitle(true);
+        geriAlKilit = () => kilitle(false);
+        gonder(s.deger, false);          // false: kullanici balonu basma
+    };
+
+    tazele();
+    if (kilit) kilitle(true);
+
+    const son = sohbetEl.lastElementChild;
+    const sutun = (son && son.classList.contains("bot"))
+        ? son.querySelector(".balon-sutun") : null;
+    if (sutun) {
+        sutun.classList.add("secenekli");
+        sutun.appendChild(kart);
+    } else {
+        sohbetEl.appendChild(kart);
+    }
+    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    if (!kilit) yeniOdak = kart.querySelector(".bolme-cip");
 }
 
 
@@ -4849,7 +4946,10 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
     const s = secenekler || {};
     const kaynak = COMBO_KAYNAKLARI[s.kaynak] || COMBO_KAYNAKLARI.dataset;
     const sabitListe = Array.isArray(s.liste) ? s.liste : null;
-    const listeAl = sabitListe ? () => sabitListe : kaynak.liste;
+    /* EK GECERLI DEGERLER: listede olmayan ama kabul edilen adlar (ör.
+       karttan yüklenen sözlük dosyası "KREDI_SOZLUK.xlsx"). */
+    const ekAl = typeof s.ekler === "function" ? s.ekler : () => [];
+    const listeAl = () => (sabitListe ? sabitListe : kaynak.liste()).concat(ekAl());
     const durumAl = sabitListe
         ? () => (sabitListe.length ? "hazir" : "bos")
         : kaynak.durum;
@@ -4943,6 +5043,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         const yazi = giris.value.trim();
         /* zorunlu:false alan bos birakilabilir; "Devam et" onu beklemez */
         if (!yazi) return !zorunlu;
+        if (ekAl().some(x => ftSade(x) === ftSade(yazi))) return true;
         const d = durumAl();
         if (d === "hazir") return bul(yazi) !== null;
         if (d === "hata" || d === "bos") return yazi.length > 1;
@@ -5136,7 +5237,215 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         return gecerli() && giris.value.trim() !== "";
     }
 
-    return { kok, giris, gecerli, dolu, deger, isaretle, ciz: ac };
+    return { kok, giris, gecerli, dolu, deger, isaretle, ciz: ac, sec };
+}
+
+
+/* ==================== Alan araçları: SQL ile Getir, Dosya Yükle ==================== */
+/* Veri seti alanının altında "SQL ile Getir": bağlantı + ad + sorgu verilir,
+   platform sorguyu çalıştırıp sonucu Dataiku veri seti olarak yazar
+   (fe_agent/sql_getir.py). İş arka planda sürer; bittiğinde yeni ad alana
+   (listede ise listeye) eklenir. Sözlük alanının altında "Dosya Yükle":
+   Excel/CSV çalışmanın klasörüne kaydedilir (fe_agent/sozluk_dosya.py). */
+let YUKLENEN_DOSYALAR = [];
+let SQL_BAGLANTILARI = null;          // null: henüz okunmadı
+
+function aracDurumu(el, metin, hata) {
+    el.textContent = metin || "";
+    el.classList.toggle("hata", !!hata);
+    el.hidden = !metin;
+}
+
+function sqlBaglantilariAl() {
+    if (SQL_BAGLANTILARI) return Promise.resolve(SQL_BAGLANTILARI);
+    return fetch(getWebAppBackendUrl("sql_baglantilar"))
+        .then(r => r.json())
+        .then(d => { SQL_BAGLANTILARI = (d && d.baglantilar) || []; return SQL_BAGLANTILARI; })
+        .catch(() => []);
+}
+
+function sureMetni(sn) {
+    const dk = Math.floor(sn / 60), s = sn % 60;
+    return String(dk).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+}
+
+/* panelYeri: SQL panelinin çizileceği yer (form kartında formun tam
+   genişliğindeki satır); verilmezse bağlantının altında açılır. */
+function sqlAraci(tamam, panelYeri) {
+    const kap = elYap("div", "alan-arac-kap");
+    const ac = elYap("button", "alan-arac", "SQL ile Getir");
+    ac.type = "button";
+    kap.appendChild(ac);
+    const durum = elYap("div", "arac-durum");
+    durum.hidden = true;
+
+    const panel = elYap("div", "sql-panel");
+    panel.hidden = true;
+    const baglantiKap = elYap("div", "sql-alan");
+    baglantiKap.appendChild(elYap("span", "", "Bağlantı"));
+    const baglantiSec = document.createElement("select");
+    const baglantiYaz = document.createElement("input");
+    baglantiYaz.placeholder = "Bağlantı adı";
+    baglantiYaz.hidden = true;
+    baglantiKap.appendChild(baglantiSec);
+    baglantiKap.appendChild(baglantiYaz);
+    const adKap = elYap("div", "sql-alan");
+    adKap.appendChild(elYap("span", "", "Veri Seti Adı"));
+    const adGiris = document.createElement("input");
+    adGiris.placeholder = "ör. MUSTERI_ISLEM";
+    adKap.appendChild(adGiris);
+    const sorguKap = elYap("div", "sql-alan sql-sorgu");
+    sorguKap.appendChild(elYap("span", "", "Sorgu"));
+    const sorgu = document.createElement("textarea");
+    sorgu.rows = 6;
+    sorgu.placeholder = "SELECT ... FROM ...";
+    sorgu.spellcheck = false;
+    sorguKap.appendChild(sorgu);
+    const dugmeler = elYap("div", "onay-dugmeler");
+    const getir = elYap("button", "secim-onay", "Getir");
+    getir.type = "button";
+    const vazgec = elYap("button", "secim-onay ucuncul", "Vazgeç");
+    vazgec.type = "button";
+    dugmeler.appendChild(getir);
+    dugmeler.appendChild(vazgec);
+    [baglantiKap, adKap, sorguKap, dugmeler].forEach(x => panel.appendChild(x));
+    (panelYeri || kap).appendChild(panel);
+    kap.appendChild(durum);
+
+    let calisiyor = false;
+    function baglanti() {
+        return (baglantiYaz.hidden ? baglantiSec.value : baglantiYaz.value).trim();
+    }
+    function hazirMi() {
+        getir.disabled = calisiyor || !baglanti() || !adGiris.value.trim()
+            || !sorgu.value.trim();
+    }
+    [baglantiSec, baglantiYaz, adGiris, sorgu].forEach(x => {
+        x.addEventListener("input", hazirMi);
+        x.addEventListener("change", hazirMi);
+    });
+
+    ac.onclick = () => {
+        if (calisiyor) return;
+        panel.hidden = !panel.hidden;
+        if (panel.hidden) return;
+        baglantiSec.innerHTML = "";
+        baglantiSec.appendChild(elYap("option", "", "Yükleniyor…"));
+        baglantiSec.disabled = true;
+        sqlBaglantilariAl().then(liste => {
+            baglantiSec.innerHTML = "";
+            baglantiSec.disabled = false;
+            /* Liste okunamazsa bağlantı adı elle yazılır. */
+            baglantiSec.hidden = !liste.length;
+            baglantiYaz.hidden = !!liste.length;
+            liste.forEach(b => {
+                const o = elYap("option", "", b.ad + (b.tur ? "  (" + b.tur + ")" : ""));
+                o.value = b.ad;
+                baglantiSec.appendChild(o);
+            });
+            hazirMi();
+        });
+        adGiris.focus();
+        hazirMi();
+    };
+    vazgec.onclick = () => { if (!calisiyor) panel.hidden = true; };
+
+    getir.onclick = () => {
+        if (getir.disabled) return;
+        calisiyor = true;
+        hazirMi();
+        [baglantiSec, baglantiYaz, adGiris, sorgu].forEach(x => { x.disabled = true; });
+        aracDurumu(durum, "Başlatılıyor…");
+        const bitir = () => {
+            calisiyor = false;
+            [baglantiSec, baglantiYaz, adGiris, sorgu].forEach(x => { x.disabled = false; });
+            hazirMi();
+        };
+        fetch(getWebAppBackendUrl("sql_getir"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({
+                ad: adGiris.value.trim(), baglanti: baglanti(), sorgu: sorgu.value }))
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (!d || !d.tamam) {
+                aracDurumu(durum, (d && d.hata) || "İş başlatılamadı.", true);
+                bitir();
+                return;
+            }
+            const yokla = () => {
+                fetch(getWebAppBackendUrl("sql_durum") + "?is=" + encodeURIComponent(d.is))
+                    .then(r => r.json())
+                    .then(x => {
+                        if (!x.bitti) {
+                            aracDurumu(durum, "Getiriliyor · " + sureMetni(x.gecen_sn || 0));
+                            setTimeout(yokla, 3000);
+                            return;
+                        }
+                        bitir();
+                        if (x.hata) { aracDurumu(durum, x.hata, true); return; }
+                        const son = x.sonuc || {};
+                        aracDurumu(durum, son.ad + " getirildi · " + (son.boyut_metni || "")
+                                   + " · " + sureMetni(son.sure_sn || 0));
+                        panel.hidden = true;
+                        if (DATASETLER.indexOf(son.ad) === -1) DATASETLER.push(son.ad);
+                        if (DATASET_DURUMU !== "hazir" && DATASETLER.length) DATASET_DURUMU = "hazir";
+                        tamam(son.ad);
+                    })
+                    .catch(() => setTimeout(yokla, 5000));
+            };
+            yokla();
+        })
+        .catch(() => { aracDurumu(durum, "İş başlatılamadı.", true); bitir(); });
+    };
+    hazirMi();
+    return kap;
+}
+
+function dosyaAraci(tamam) {
+    const kap = elYap("div", "alan-arac-kap");
+    const dugme = elYap("button", "alan-arac", "Dosya Yükle");
+    dugme.type = "button";
+    const secici = document.createElement("input");
+    secici.type = "file";
+    secici.accept = ".xlsx,.csv";
+    secici.hidden = true;
+    const durum = elYap("div", "arac-durum");
+    durum.hidden = true;
+    kap.appendChild(dugme);
+    kap.appendChild(secici);
+    kap.appendChild(durum);
+    dugme.onclick = () => secici.click();
+    secici.onchange = () => {
+        const f = secici.files && secici.files[0];
+        if (!f) return;
+        const govde = new FormData();
+        govde.append("dosya", f, f.name);
+        govde.append("oturum_id", OTURUM_ID);
+        govde.append("calisma_id", OTURUM_ID);
+        dugme.disabled = true;
+        aracDurumu(durum, "Yükleniyor…");
+        fetch(getWebAppBackendUrl("sozluk_yukle"), { method: "POST", body: govde })
+            .then(r => r.json())
+            .then(d => {
+                dugme.disabled = false;
+                secici.value = "";
+                if (!d || !d.tamam) {
+                    aracDurumu(durum, (d && d.hata) || "Dosya yüklenemedi.", true);
+                    return;
+                }
+                if (YUKLENEN_DOSYALAR.indexOf(d.ad) === -1) YUKLENEN_DOSYALAR.push(d.ad);
+                aracDurumu(durum, d.ad + " yüklendi · " + d.satir + " satır"
+                           + (d.tablo_kolonu ? " · TABLO kolonu var" : ""));
+                tamam(d.ad);
+            })
+            .catch(() => {
+                dugme.disabled = false;
+                aracDurumu(durum, "Dosya yüklenemedi.", true);
+            });
+    };
+    return kap;
 }
 
 /* ==================== Girdi doğrulama kartı ====================
@@ -7351,6 +7660,16 @@ function secimAlaniEkle(alan, blok) {
            hemen ustune duser. */
         kart.appendChild(rozetler);
         kart.appendChild(satir);
+        if (alan.sql) {
+            const araclar = elYap("div", "alan-araclar");
+            araclar.appendChild(sqlAraci(ad => {
+                if (kart.classList.contains("kilitli")) return;
+                if (secilenler.indexOf(ad) === -1) secilenler.push(ad);
+                rozetCiz();
+                durumTazele();
+            }));
+            kart.appendChild(araclar);
+        }
 
         function ekleDurumu() {
             if (kart.classList.contains("kilitli")) return;
@@ -7479,6 +7798,9 @@ function secimAlaniEkle(alan, blok) {
             durumEl.classList.remove("hazir", "onayli");
         }
 
+        /* SQL paneli formun TAM GENİŞLİĞİNDE açılır (alan sütununa
+           sığmıyor); yeri alanların altındaki satır. */
+        const panelYeri = elYap("div", "alan-panel-yeri");
         alanlar.forEach(a => {
             /* Her alan kendi kaynagini kullanir: veri seti mi, kolon mu?
                ALAN BAZLI LISTE: a.secenekler geldiyse o alanda YALNIZCA
@@ -7490,11 +7812,15 @@ function secimAlaniEkle(alan, blok) {
                 kaynak: a.kaynak || "dataset",
                 zorunlu: a.zorunlu,
                 placeholder: a.placeholder,
-                liste: Array.isArray(a.secenekler) ? a.secenekler : undefined
+                liste: Array.isArray(a.secenekler) ? a.secenekler : undefined,
+                /* Sözlük alanı: yüklenen dosyanın adı da geçerli değer */
+                ekler: a.dosya ? () => YUKLENEN_DOSYALAR.concat(
+                    /\.(xlsx|csv)$/i.test(a.deger || "") ? [a.deger] : []) : undefined
             });
             combolar[a.ad] = combo;
             zorunluAlan[a.ad] = (a.zorunlu !== false);
             govde.appendChild(combo.kok);
+
 
             /* Alanin altindaki tek satir: listenin neye gore daraltildigi
                (ipucu) ya da daraltilamadiysa NEDENI (not). Kullanici
@@ -7516,7 +7842,17 @@ function secimAlaniEkle(alan, blok) {
                 }
                 combo.kok.appendChild(alt);
             }
+
+            /* Alan araçları: veri seti alanında "SQL ile Getir", sözlük
+               alanında "Dosya Yükle". Kart kilitlenince gizlenir (CSS). */
+            if (a.sql || a.dosya) {
+                const araclar = elYap("div", "alan-araclar");
+                if (a.dosya) araclar.appendChild(dosyaAraci(ad => combo.sec(ad)));
+                if (a.sql) araclar.appendChild(sqlAraci(ad => combo.sec(ad), panelYeri));
+                combo.kok.appendChild(araclar);
+            }
         });
+        govde.appendChild(panelYeri);
 
         kart.appendChild(govde);
 

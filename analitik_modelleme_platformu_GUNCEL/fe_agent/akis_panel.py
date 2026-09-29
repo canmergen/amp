@@ -20,7 +20,7 @@ from fe_agent.akis_durum import (
     bolme_satir_degeri, bolme_secenek_listesi, bolme_uyarilari,
     KAT_EN_AZ, KAT_EN_COK, ORAN_EN_AZ, ORAN_EN_COK,
     test_donem_anahtari,
-    test_donem_secenekleri,
+    test_donem_secenekleri, gorunen_ad,
 )
 from fe_agent.akis_kayit import ADIMLAR, adim_grubu, adim_sirasi, fazlar
 
@@ -354,7 +354,7 @@ def ozet(durum):
     return {
         # Secilmediyse cip cizilmez; None'i uc katmani bekliyor.
         "veri_seti_cip": durum.get("veri_seti") or None,
-        "sozluk_cip": (durum.get("sozluk") or durum.get("sozluk_yedek")
+        "sozluk_cip": (gorunen_ad(durum.get("sozluk") or durum.get("sozluk_yedek"))
                        or None),
         # SIRA AKISIN GERCEK SIRASI: degisken URETILIR, sonra ELENIR,
         # sonunda MODEL kurulur.
@@ -416,7 +416,7 @@ def detay(durum):
             ("Sayısal / Kategorik", "%s / %s" % (
                 _sayi(p.get("sayisal", 0)),
                 _sayi(p["kolon_baslangic"] - p.get("sayisal", 0)))),
-            ("Sözlük", durum.get("sozluk") or durum.get("sozluk_yedek")),
+            ("Sözlük", gorunen_ad(durum.get("sozluk") or durum.get("sozluk_yedek"))),
         ]))
 
     if m.get("target"):

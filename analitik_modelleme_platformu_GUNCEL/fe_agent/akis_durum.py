@@ -290,7 +290,26 @@ MOD_SURUMU = 2
 MOD_GOCU = {"B": "C", "C": "D"}
 
 
+def _dort_kart_mi(secenekler):
+    """Tek karta (iki satir) gecmeden onceki dort ayri baslangic karti."""
+    return (isinstance(secenekler, list) and len(secenekler) == 4 and all(
+        isinstance(x, dict) and x.get("deger") in ("A", "B", "C", "D")
+        and "eksenler" not in x for x in secenekler))
+
+
+def _kartlari_tazele(durum):
+    """Kayitli baslangic kartlari yeni tek karta cevrilir (harflerin anlami
+    ayni); eski calisma acilinca da iki satirli kart gorunur."""
+    if _dort_kart_mi(durum.get("_secenekler")):
+        durum["_secenekler"] = [dict(x) for x in MOD_SECENEKLERI]
+    for kayit in durum.get("_gecmis") or []:
+        ekran = kayit.get("ekran") if isinstance(kayit, dict) else None
+        if isinstance(ekran, dict) and _dort_kart_mi(ekran.get("secenekler")):
+            ekran["secenekler"] = [dict(x) for x in MOD_SECENEKLERI]
+
+
 def _mod_goc(durum):
+    _kartlari_tazele(durum)
     if durum.get("_mod_surumu", 1) >= MOD_SURUMU:
         return durum
     for alan in ("mod", "_onceki_mod", "_mod_onay"):
@@ -652,11 +671,28 @@ def _dataset_var_mi(ad):
     """
     if not ad:
         return False
+    if str(ad).startswith("/"):
+        # Calismanin klasorundeki tablo (yuklenen sozluk dosyasi gibi)
+        try:
+            tablo_io.klasorden_oku(_folder(), ad, 1)
+            return True
+        except Exception:
+            return False
     try:
         dataiku.Dataset(ad).get_config()
         return True
     except Exception:
         return False
+
+
+def gorunen_ad(ad):
+    """Ekranda gorunen ad. Klasordeki dosyada yol yerine dosya adi:
+    "/v3/yuklenen/KREDI_SOZLUK.xlsx.parquet" -> "KREDI_SOZLUK.xlsx"."""
+    metin = str(ad or "")
+    if metin.startswith("/"):
+        son = metin.rstrip("/").split("/")[-1]
+        return re.sub(r"\.parquet$", "", son)
+    return metin
 
 
 def _dataset_okunur_mu(ad):

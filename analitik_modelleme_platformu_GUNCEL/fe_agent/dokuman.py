@@ -47,7 +47,7 @@ from fe_agent import validasyon as validasyon_mod
 from fe_agent.akis_metin import MOD_ADLARI
 from fe_agent.akis_durum import (
     LINEAGE_ADI, TRAIN_KULLANIMI_BASLIK, _ond, _sayi,
-    bolme_ayarlari, bolme_ozeti, bolme_uyarilari,
+    bolme_ayarlari, bolme_ozeti, bolme_uyarilari, gorunen_ad,
 )
 
 BASLIK = "Analitik Modelleme Platformu: Model Geliştirme Dokümanı"
@@ -464,7 +464,7 @@ def _kunye(durum):
         ("Çalışma modu", ("%s - %s" % (mod, MOD_ADLARI.get(mod, mod)))
                          if mod else BOS_DEGER),
         ("Veri seti", _m(durum.get("veri_seti"))),
-        ("Sözlük", _m(durum.get("sozluk") or durum.get("sozluk_yedek"))),
+        ("Sözlük", _m(gorunen_ad(durum.get("sozluk") or durum.get("sozluk_yedek")))),
         ("Hedef değişken", _m(meta.get("target"))),
         ("Doküman tarihi", _bicimli_zaman(_olusturma(durum))),
     ]))
@@ -580,7 +580,7 @@ def _veri(durum):
         ("Dönem kolonu", meta.get("donem") or "belirtilmedi"),
         ("Dönem aralığı", ("%s-%s" % (p.get("donem_min"), p.get("donem_maks")))
                           if p.get("donem_min") else None),
-        ("Sözlük", _m(durum.get("sozluk") or durum.get("sozluk_yedek"))),
+        ("Sözlük", _m(gorunen_ad(durum.get("sozluk") or durum.get("sozluk_yedek")))),
         ("Sözlükteki tanım", _n(p.get("sozluk_satir"))
                              if p.get("sozluk_satir") else None),
         ("Sözlük kapsamı", ("%%%s" % _ond(p.get("kapsam"), 1))

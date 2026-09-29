@@ -70,6 +70,7 @@ from fe_agent.akis_faz01 import (  # noqa
     amp_ciktilarini_yaz, amp_nerede,
     teyit_kartini_tazele, teyit_uygula, tip_secimi_dogrula,
     veri_sec_girdi, veri_sec_plan, veri_sec_uygula,
+    sozluk_dosyasi_kaydet,
 )
 from fe_agent.akis_faz02 import (  # noqa
     baz_plan, baz_uygula, sfa_plan, sfa_uygula, stabilite_plan,
@@ -166,4 +167,5 @@ __all__ = [
     "veri_paneli", "veri_profili_plan", "veri_profili_uygula",
     "veri_sozluk_paneli",
     "veri_sec_girdi", "veri_sec_plan", "veri_sec_uygula", "yeni_durum",
+    "sozluk_dosyasi_kaydet",
 ]

@@ -859,6 +859,74 @@ button.ozet-kart:focus-visible {
   line-height: 1.5; margin-top: 2px;
 }
 
+/* -------- Başlangıç kartı: iki satır (Veri / Sözlük) --------
+   Satırlar bölme kartının çip düzenini kullanır (.bolme-satir). Etiket
+   sütunu kısa: "Veri", "Sözlük". */
+.baslangic-kart { padding-top: var(--b-3); }
+.balon-sutun .baslangic-kart { width: 0; min-width: 100%; margin-top: var(--b-2); }
+.baslangic-kart .bolme-satir { grid-template-columns: 5rem minmax(0, 1fr) 20px; }
+.baslangic-ozet {
+  display: flex; align-items: center; gap: var(--b-2); flex-wrap: wrap;
+  margin: var(--b-3) var(--b-2) var(--b-3); min-height: 1.5em;
+  font-size: var(--fs-govde); color: var(--metin-soluk); line-height: 1.5;
+}
+.baslangic-ozet .secenek-kapali { align-self: auto; }
+.baslangic-kart .secim-onay { margin-left: var(--b-2); }
+@media (max-width: 700px) {
+  .baslangic-kart .bolme-satir { grid-template-columns: minmax(0, 1fr) 20px; }
+}
+
+/* -------- Alan araçları: "SQL ile Getir", "Dosya Yükle" --------
+   Alanın altında küçük metin düğmeleri; tıklanınca SQL paneli açılır.
+   Kart kilitlenince (gönderildi) gizlenir. */
+.alan-araclar {
+  display: flex; flex-wrap: wrap; gap: var(--b-1) var(--b-4);
+  margin-top: var(--b-1);
+}
+.secim-kart.kilitli .alan-araclar { display: none; }
+/* Liste kartında arama satırının altında */
+.secim-kart > .alan-araclar { margin: calc(-1 * var(--b-2)) 0 var(--b-4); }
+.alan-arac-kap { min-width: 0; flex: 0 1 auto; }
+.alan-arac-kap:has(.sql-panel:not([hidden])) { flex-basis: 100%; }
+/* Form kartında SQL paneli alanların altında tam genişlik */
+.alan-panel-yeri { flex-basis: 100%; min-width: 0; }
+.alan-panel-yeri:not(:has(.sql-panel:not([hidden]))) { display: none; }
+.alan-arac {
+  border: none; background: none; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: var(--fs-kucuk); color: var(--kirmizi);
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.alan-arac:disabled { color: var(--metin-soluk); cursor: default; }
+.arac-durum {
+  font-size: var(--fs-kucuk); color: var(--metin-soluk); line-height: 1.45;
+  margin-top: 2px; white-space: pre-line;
+}
+.arac-durum.hata { color: var(--kirmizi); }
+.sql-panel {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--b-2) var(--b-3); margin-top: var(--b-2);
+  padding: var(--b-3); border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey-alt);
+}
+.sql-panel[hidden] { display: none; }
+.sql-alan { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sql-alan > span { font-size: var(--fs-kucuk); color: var(--metin-soluk); }
+.sql-alan input, .sql-alan select, .sql-alan textarea {
+  width: 100%; box-sizing: border-box;
+  font-family: inherit; font-size: var(--fs-govde); color: var(--metin);
+  background: var(--yuzey); border: 1px solid var(--kenar);
+  border-radius: var(--r-kucuk); padding: 5px 8px; min-width: 0;
+}
+.sql-alan input[hidden], .sql-alan select[hidden] { display: none; }
+.sql-sorgu, .sql-panel .onay-dugmeler { grid-column: 1 / -1; }
+.sql-alan textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-kucuk); resize: vertical; min-height: 7em;
+}
+@media (max-width: 700px) {
+  .sql-panel { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* -------- Onay kutusu düğmeleri (Yeni Çalışma) -------- */
 .onceki-dugme {
   height: 26px; padding: 0 var(--b-4);

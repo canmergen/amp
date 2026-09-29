@@ -130,8 +130,18 @@ def degisken_kolonu_bul(df):
     if df is None or not len(df.columns):
         return None
     bulunan = _kolon_ara(df, ("DEGISKEN", "DEĞİŞKEN", "FEATURE", "KOLON",
-                              "VARIABLE", "ALAN"))
-    return bulunan if bulunan is not None else df.columns[0]
+                              "VARIABLE", "ALAN", "KOLON_ADI", "COLUMN",
+                              "COLUMN_NAME"))
+    if bulunan is not None:
+        return bulunan
+    # Ilk kolon; ama yuklenen sozlukte ilk kolon TABLO olabilir (tablo
+    # bazinda sozluk, bkz. sozluk_dosya) - o zaman ondan sonraki.
+    tablo = _kolon_ara(df, ("TABLO", "TABLO_ADI", "TABLOADI", "TABLE",
+                            "TABLE_NAME", "KAYNAK_TABLO"))
+    for kol in df.columns:
+        if kol != tablo:
+            return kol
+    return df.columns[0]
 
 
 def tanim_kolonu_bul(df):
@@ -367,7 +377,8 @@ def sozluk_adi(durum):
     durum = durum or {}
     ad = durum.get("sozluk")
     if ad:
-        return str(ad)
+        from fe_agent.akis_durum import gorunen_ad
+        return gorunen_ad(ad)
     yedek = durum.get("sozluk_yedek")
     if yedek:
         return str(yedek).lstrip("/")

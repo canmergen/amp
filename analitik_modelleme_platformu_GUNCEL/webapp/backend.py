@@ -25,6 +25,7 @@ import dataiku
 from flask import request, jsonify, Response
 
 from fe_agent import akis, validasyon
+from fe_agent import akis_durum as akis_durum_mod
 
 GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 
@@ -622,6 +623,80 @@ def datasetler_endpoint():
         return jsonify({"datasetler": [],
                         "hata": "Veri seti listesi alınamadı.",
                         "hata_kodu": kod})
+
+
+# ===========================================================================
+# SOZLUK DOSYASI YUKLEME  (Excel / CSV; bkz. fe_agent/sozluk_dosya.py)
+# ===========================================================================
+@app.route("/sozluk_yukle", methods=["POST"])
+def sozluk_yukle_endpoint():
+    """Kartin "Dosya Yükle" dugmesi. Dosya calismanin klasorune Parquet
+    olarak kaydedilir; formda dosya adi secili gelir."""
+    from fe_agent.sozluk_dosya import DosyaHatasi
+    try:
+        anahtar = _oturum_anahtari(_calisma_id(request.form))
+        durum = _durum_al(anahtar)
+        dosya = request.files.get("dosya")
+        if dosya is None:
+            return jsonify({"tamam": False, "hata": "Dosya gelmedi."})
+        ad, ozet = akis.sozluk_dosyasi_kaydet(durum, dosya.read(), dosya.filename)
+        govde = {"tamam": True, "ad": ad}
+        govde.update(ozet)
+        return jsonify(govde)
+    except DosyaHatasi as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        kod = _hata_kaydet("sozluk_yukle", e)
+        return jsonify({"tamam": False,
+                        "hata": "Dosya yüklenemedi (%s)." % kod})
+
+
+# ===========================================================================
+# SQL ILE VERI GETIRME  (bkz. fe_agent/sql_getir.py)
+# ===========================================================================
+@app.route("/sql_baglantilar")
+def sql_baglantilar_endpoint():
+    from fe_agent import sql_getir
+    try:
+        return jsonify({"baglantilar": sql_getir.baglantilar(
+            taze=bool(request.args.get("tazele")))})
+    except Exception as e:
+        kod = _hata_kaydet("sql_baglantilar", e)
+        return jsonify({"baglantilar": [],
+                        "hata": "Bağlantı listesi alınamadı (%s)." % kod})
+
+
+@app.route("/sql_getir", methods=["POST"])
+def sql_getir_endpoint():
+    """Isi arka planda baslatir; arayuz /sql_durum ile yoklar."""
+    from fe_agent import sql_getir
+    from fe_agent.akis_durum import AdimHatasi
+    try:
+        istek = request.get_json(force=True) or {}
+        _oturum_anahtari(_calisma_id(istek))       # calisma erisim denetimi
+        kimlik = sql_getir.baslat(istek.get("ad"), istek.get("baglanti"),
+                                  istek.get("sorgu"))
+        return jsonify({"tamam": True, "is": kimlik})
+    except AdimHatasi as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        kod = _hata_kaydet("sql_getir", e)
+        return jsonify({"tamam": False, "hata": "SQL çekme işi başlatılamadı (%s)." % kod})
+
+
+@app.route("/sql_durum")
+def sql_durum_endpoint():
+    global _dataset_onbellek
+    from fe_agent import sql_getir
+    try:
+        d = sql_getir.durum(request.args.get("is") or "")
+        if d.get("sonuc"):
+            # Yeni veri seti bir sonraki listede gorunsun.
+            _dataset_onbellek = {}
+        return jsonify(d)
+    except Exception as e:
+        kod = _hata_kaydet("sql_durum", e)
+        return jsonify({"bitti": True, "hata": "İş durumu okunamadı (%s)." % kod})
 
 
 @app.route("/kolonlar")
@@ -1539,11 +1614,12 @@ def _calisma_secimleri(durum):
         sec.append(["Kaynak Tablolar", ", ".join(map(str, durum["ham_tablolar"]))])
     if durum.get("veri_seti"):
         sec.append(["Veri Seti", str(durum["veri_seti"])])
-    kaynak_sz = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
+    kaynak_sz = sorted(set(akis_durum_mod.gorunen_ad(v) for v in
+                           (durum.get("kaynak_sozlukler") or {}).values()))
     if kaynak_sz:
         sec.append(["Kaynak Sözlükler", ", ".join(kaynak_sz)])
     elif durum.get("sozluk"):
-        sec.append(["Sözlük", str(durum["sozluk"])])
+        sec.append(["Sözlük", akis_durum_mod.gorunen_ad(durum["sozluk"])])
     meta = durum.get("meta") or {}
     for anahtar, etiket in (("target", "Hedef Değişken"), ("id", "Kimlik Kolonu"),
                             ("donem", "Dönem Kolonu")):

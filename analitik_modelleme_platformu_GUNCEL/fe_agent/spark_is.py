@@ -156,9 +156,14 @@ def _proje_ve_ad(proje, ref):
 
 
 def _baglanti(proje, girdi):
-    """Girdi veri setinin baglantisi ve turu (S3, HDFS, Filesystem ...)."""
+    """Ciktilarin acilacagi baglanti ve turu: girdi veri setininki (S3,
+    HDFS ...). Girdi bir SQL tablosuysa orada klasor ve Parquet acilamaz;
+    o zaman depo baglantisi (bkz. sql_getir)."""
+    from fe_agent import sql_getir
     p, ad = _proje_ve_ad(proje, girdi)
     ham = p.get_dataset(ad).get_settings().get_raw()
+    if ham.get("type") in sql_getir.SQL_TURLERI:
+        return sql_getir.depo_baglantisi(proje)
     return (ham.get("params") or {}).get("connection"), ham.get("type")
 
 
