@@ -7,49 +7,49 @@ AKILLI DEĞİŞKEN ÜRETİMİ
 Projenin Amacı
 --------------
 
-Kredi risk modellerinde kullanılan değişkenlerin üretimini yapay zekâ desteğiyle hızlandırmak ve her yeni değişkenin modele gerçekten katkı sağlayıp sağlamadığını ölçerek karar vermek. Aynı altyapı sonraki adımda uçtan uca Analitik Modelleme Platformu'na genişletilecektir.
+Kredi risk modellerinde kullanılan değişkenlerin üretimini yapay zekâ desteğiyle hızlandırmak ve üretilen her değişkenin modele katkısını ölçerek yalnızca fayda sağlayan değişkenlerin modele alınmasını sağlamak.
 
 Proje İşleyişi
 --------------
-  - Veri Hazırlığı: Çalışılacak veri ve değişken açıklamaları seçilir. Eksik açıklamaları yapay zekâ tamamlar, analist onaylar.
-  - Ölçüm Zemini: Mevcut değişkenlerin gücü ölçülür. Yeni değişkenler bu ölçüye göre değerlendirilir.
-  - Standart Değişkenler: Değişim, oran ve trend gibi bilinen değişkenler kurallarla, otomatik olarak üretilir.
-  - Yapay Zekâ ile Yeni Değişkenler: Yapay zekâ, iş bilgisine dayalı yeni değişken fikirleri önerir. Her öneri kontrol edilerek hesaplanır.
-  - Test ve Seçim: Yeni değişkenlerin modeli iyileştirip iyileştirmediği ölçülür. Yalnızca katkı sağlayanlar kullanılır ve kayıt altına alınır.
-  - Sonraki Adım: Aynı altyapı, veriden final modele kadar tüm süreci yöneten Analitik Modelleme Platformu'na genişletilir.
-Yapay zekâ yalnızca öneri verir; hesaplama ve karar sistemdedir. Analistin onaylamadığı hiçbir değişken üretilmez, katkısı ölçülmeyen hiçbir değişken modele girmez.
+  - Veri Hazırlığı: Modelde kullanılacak veri seti ve değişken açıklamaları belirlenir. Eksik açıklamalar yapay zekâ tarafından önerilir, analist tarafından onaylanır.
+  - Mevcut Durum Ölçümü: Mevcut değişkenlerin model başarısına katkısı ölçülür. Yeni değişkenler bu ölçüme göre değerlendirilir.
+  - Standart Değişken Üretimi: Değişim, oran ve eğilim gibi bilinen türdeki değişkenler önceden tanımlı kurallarla otomatik olarak üretilir.
+  - Yapay Zekâ ile Yeni Değişkenler: Yapay zekâ, iş bilgisine dayalı yeni değişken önerileri sunar. Her öneri sistem tarafından doğrulanır ve hesaplanır.
+  - Test ve Seçim: Yeni değişkenlerin model başarısına etkisi ölçülür. Yalnızca katkı sağlayan değişkenler modele alınır ve kayıt altına alınır.
+  - Sonraki Adım: Kurulan altyapının, veriden final modele kadar tüm süreci kapsayan Analitik Modelleme Platformu'na dönüştürülmesi ve diğer modelleme ekiplerinin kullanımına açılması planlanmaktadır.
+Yapay zekâ süreçte yalnızca öneri üretir; hesaplama, doğrulama ve karar sistem tarafından yapılır. Analist onayı olmadan hiçbir değişken üretilmez, katkısı ölçülmeyen hiçbir değişken modele alınmaz.
 
 AKILLI DEĞİŞKEN ÜRETİMİ: YÖNETİM ÖZETİ
 ======================================
 
 Üretim ve Verimlilik Hızı
-  - Günler süren manuel değişken tasarımı, tek bir akışta ve kısa sürede tamamlanır.
+  - Manuel değişken tasarımına harcanan süre önemli ölçüde kısalır; öneri, hesaplama ve test tek bir akışta tamamlanır.
   - Analist kod yazmak yerine sistemin önerilerini değerlendirir ve onaylar.
-  - Aynı yapı farklı veri setleri ve modeller için yeniden kurulmadan kullanılır.
+  - Aynı yapı, farklı veri setleri ve modeller için yeniden kurulum gerektirmeden kullanılır.
 
 Model Performansını Artırmak
-  - Her yeni değişkenin modele katkısı ayrı ayrı ölçülür.
-  - Yalnızca modeli gerçekten iyileştiren değişkenler kullanılır; etkisiz olanlar elenir.
-  - Bilinen değişkenler otomatik üretilir; yapay zekâ yeni ve farklı fikirlere odaklanır.
+  - Her yeni değişkenin model başarısına etkisi ayrı ayrı ölçülür.
+  - Yalnızca modeli iyileştiren değişkenler kullanılır; etkisiz olanlar elenir.
+  - Bilinen değişkenler otomatik üretilir; yapay zekâ kapasitesi yeni ve farklı fikirlere ayrılır.
 
 ROI / ROE
-  - Riski daha iyi ayırt eden model, aynı onay oranında daha az kayıp, aynı kayıpta daha fazla onay demektir.
-  - Bunun kredi kayıplarına ve sermaye kullanımına olumlu yansıması beklenir.
-  - Parasal karşılık, gerçek veri sonucu alındıktan sonra hesaplanacaktır.
+  - Riski daha iyi ayırt eden bir model, aynı onay oranında daha düşük kredi kaybı ya da aynı kayıp düzeyinde daha yüksek onay oranı sağlar.
+  - Bu etkinin kredi kayıp karşılıklarına ve sermaye kullanımına olumlu yansıması beklenmektedir.
+  - Parasal karşılık, gerçek veri sonucu alındıktan sonra portföy büyüklüğü üzerinden hesaplanacaktır.
 
 Denemelerin Rakam Çıktıları
-  - İlk denemede yapay zekânın ürettiği 33 değişken modele katkı sağlamadı.
-  - Bu sonuç, yöntemin nerede eksik kaldığını gösterdi ve bugünkü yapının tasarımını belirledi.
-  - Bugünkü yapının gerçek veri sonucu sunum öncesinde alınacaktır.
+  - İlk yapı ile yapılan denemede yapay zekânın ürettiği 33 değişken model başarısını artırmamıştır.
+  - Bu sonuç yöntemin eksiklerini ortaya koymuş ve bugünkü yapının tasarımına yön vermiştir.
+  - Bugünkü yapının gerçek veri ile sonucu sunum öncesinde alınacaktır.
 
 Proje Metodolojisi
 ------------------
-Proje üç aşamada bugünkü hâline geldi. Her aşama, bir öncekinde görülen eksikleri gidermek için kuruldu.
+Proje üç aşamada bugünkü hâlini almıştır. Her aşama, bir öncekinde görülen eksikleri gidermek amacıyla kurulmuştur.
 
 DENEMELERİN RAKAM ÇIKTILARI
 ===========================
 
-İlk yapıyla yapılan denemede (Eylül 2026, 10.000 müşterilik havale/EFT işlem verisi) mevcut model ile yapay zekâ değişkenleri eklenmiş model karşılaştırıldı. Tabloda modelin riskli ve risksiz müşteriyi ayırma gücü gösterilmektedir; değer ne kadar yüksekse model o kadar iyidir.
+İlk yapı ile Eylül 2026'da yapılan denemede, mevcut model ile yapay zekâ değişkenleri eklenmiş model 10.000 müşterilik havale ve EFT işlem verisi üzerinde karşılaştırılmıştır. Tabloda modelin riskli ve risksiz müşteriyi ayırma gücü yer almaktadır; değer yükseldikçe model başarısı artar.
 
   Model                                  | Değişken Sayısı | Ayırma Gücü
   ---------------------------------------+-----------------+------------
@@ -58,68 +58,68 @@ DENEMELERİN RAKAM ÇIKTILARI
 
 Ne Gösteriyor?
 --------------
-  - Yapay zekânın ürettiği değişkenler eklendiğinde modelin başarısı değişmedi. Aradaki fark ölçüm hatası sınırları içinde kaldı.
-  - Değişkenler teknik olarak doğru hesaplanıyordu, ancak modele yeni bir bilgi katmıyordu.
+  - Yapay zekâ değişkenleri eklendiğinde model başarısı değişmemiştir; aradaki fark ölçüm hatası sınırları içindedir.
+  - Değişkenler teknik olarak doğru hesaplanmış, ancak modele yeni bir bilgi katmamıştır.
 
 Neden?
 ------
-  - Yapay zekâ zamanını basit değişkenlere harcadı. Kuralla kolayca üretilebilecek değişim ve oran gibi değişkenleri üretti; asıl beklenen yeni ve iş bilgisine dayalı fikirlere sıra gelmedi.
-  - Değişkenlerin modele katkısı ölçülmeden kabul ediliyordu. Tek başına anlamlı görünen bir değişken, modele katkısına bakılmadan listeye alınıyordu.
+  - Yapay zekâ kapasitesi basit değişkenlere harcanmıştır. Kurallarla kolayca üretilebilecek değişim ve oran türü değişkenler üretilmiş; iş bilgisine dayalı yeni fikirlere sıra gelmemiştir.
+  - Değişkenler modele katkısı ölçülmeden kabul edilmiştir. Tek başına anlamlı görünen değişkenler, model başarısına etkisine bakılmadan listeye alınmıştır.
 
 Bu Sonucun Değeri
 -----------------
-Deneme istenen sonucu vermedi, ancak ölçüm doğru çalıştı: etkisiz değişkenler rakamla tespit edildi ve karar buna göre verildi. Bugünkü yapıda bu ölçüm her çalışmanın standart adımıdır.
-Bugünkü yapının kendi sonucu henüz yoktur. Karşılaştırma sistemde hazırdır; gerçek veriyle sonucun sunum öncesinde alınması planlanmaktadır.
+Deneme beklenen sonucu vermemiş, ancak ölçüm yöntemi doğru çalışmıştır: etkisiz değişkenler rakamla tespit edilmiş ve karar buna göre verilmiştir. Bugünkü yapıda bu ölçüm her çalışmanın standart adımıdır.
+Bugünkü yapının kendi sonucu henüz alınmamıştır. Karşılaştırma sistemde hazırdır; gerçek veri ile sonucun sunum öncesinde alınması planlanmaktadır.
 
 GEÇMİŞ DENEMELER VE ÇIKARILAN DERSLER
 =====================================
 
 İlk Deneme: Kendi Kodunu Yazan Yapay Zekâ
-İlk denemede yapay zekâ, veriyi kendisi inceleyip değişken fikri üreten ve bunları test etmek için kendi kodunu yazan bir asistan olarak kurgulandı.
+İlk denemede yapay zekâ, veriyi kendisi inceleyen, değişken fikri üreten ve bu fikirleri test etmek için kendi kodunu yazan bir asistan olarak kurgulanmıştır.
 Neden Yetmedi?
-  - Yapay zekânın yazdığı kodlar sık sık hata verdi; her öneri elle yeniden düzenlenmek zorunda kaldı.
-  - Üretilen değişkenler çoğunlukla basit ve bilinen türdendi; bazıları veride zaten vardı.
-  - Öneri açıklamaları veriyle çelişebiliyordu; sonuçların güvenilirliği sınırlıydı.
-  - Kullanılan yazılım kütüphaneleri kurum ortamında onaylanmadığı için yapı kullanılamadı.
+  - Yapay zekânın yazdığı kodlar sık sık hata vermiş; her öneri elle yeniden düzenlenmek zorunda kalmıştır.
+  - Üretilen değişkenler çoğunlukla basit ve bilinen türde olmuş; bir kısmı veride zaten mevcut olan değişkenleri tekrar etmiştir.
+  - Öneri açıklamaları veri ile çelişebildiğinden sonuçların güvenilirliği sınırlı kalmıştır.
+  - Kullanılan yazılım bileşenleri kurum ortamında onaylanmadığından yapı kullanıma alınamamıştır.
 
-İlk Yapı: Hesabı Sisteme Veren Akış
-Yapay zekânın rolü öneri vermekle sınırlandı; hesaplamayı ve ölçümü sistem yapmaya başladı. Değişken açıklamaları düzenlendi, önerilerin kaydı tutuldu ve sonuçlar modelle test edildi.
+İlk Yapı: Hesaplamayı Sisteme Veren Akış
+Yapay zekânın rolü öneri vermekle sınırlandırılmış; hesaplama ve ölçüm sisteme alınmıştır. Değişken açıklamaları düzenlenmiş, önerilerin kaydı tutulmuş ve sonuçlar model üzerinde test edilmiştir.
 Neden Yetmedi?
-  - Yapay zekâ, kurallarla üretilebilecek basit değişkenleri üretmeye devam etti.
-  - Değişkenler modele katkısı ölçülmeden kabul ediliyordu; 33 değişken modele katkı sağlamadı.
-  - Yapı tek bir veri setine özeldi ve her adım elle çalıştırılıyordu; başka ekipler kullanamazdı.
+  - Yapay zekâ, kurallarla üretilebilecek basit değişkenleri üretmeye devam etmiştir.
+  - Değişkenler modele katkısı ölçülmeden kabul edilmiş; üretilen 33 değişken model başarısını artırmamıştır.
+  - Yapı tek bir veri setine özel kurulmuş ve her adım elle çalıştırılmıştır; diğer ekiplerin kullanımına uygun olmamıştır.
 
 Bugünkü Yapı: Akıllı Değişken Üretimi
-İlk iki aşamadan çıkan dersler tek bir sistemde birleştirildi.
-  - Bilinen değişkenler kuralla, yeni fikirler yapay zekâ ile üretilir. Yapay zekâ zamanını basit işlere harcamaz.
-  - Yapay zekâ yalnızca öneri verir. Hesaplama, kontrol ve karar sistemdedir; analist her adımı onaylar.
+İlk iki aşamadan çıkarılan dersler tek bir sistemde birleştirilmiştir.
+  - Bilinen değişkenler kurallarla, yeni fikirler yapay zekâ ile üretilir. Yapay zekâ kapasitesi basit işlere harcanmaz.
+  - Yapay zekâ yalnızca öneri üretir. Hesaplama, doğrulama ve karar sistemdedir; analist her adımı onaylar.
   - Her değişkenin modele katkısı ölçülür. Modeli iyileştirmeyen değişken kullanılmaz.
-  - Farklı veri setleri ve modeller için kullanılabilir. Yapı tek bir projeye bağlı değildir.
-  - Her şey kayıt altındadır. Hangi değişkenin neden eklendiği ve nasıl hesaplandığı raporlanır; denetim ve validasyon için hazırdır.
+  - Farklı veri setleri ve modellerde kullanılabilir. Yapı tek bir projeye bağlı değildir.
+  - Tüm süreç kayıt altındadır. Hangi değişkenin neden eklendiği ve nasıl hesaplandığı raporlanır; denetim ve validasyon için hazırdır.
 
 SONRAKİ ADIM: ANALİTİK MODELLEME PLATFORMU
 ==========================================
 
-Değişken üretimi, veriden final modele kadar uzanan beş adımlı bir modelleme sürecinin parçası olarak kuruldu. Sonraki adımda bu süreç tek bir platformda birleştirilerek banka içindeki diğer modelleme ekiplerinin kullanımına açılacaktır.
+Değişken üretimi, veriden final modele kadar uzanan beş adımlı bir modelleme sürecinin parçası olarak kurulmuştur. Sonraki adımda bu süreç tek bir platformda birleştirilerek banka içindeki diğer modelleme ekiplerinin kullanımına açılacaktır.
 
   Adım                  | Ne Yapılır?                                          
   ----------------------+------------------------------------------------------
-  01 Çalışma Kurulumu   | Veri seçilir, modelin amacı tanımlanır.              
-  02 Veri Hazırlığı     | Veri incelenir, kalite kontrolleri yapılır.          
+  01 Çalışma Kurulumu   | Veri seçilir; modelin amacı ve hedefi tanımlanır.    
+  02 Veri Hazırlığı     | Veri incelenir; kalite kontrolleri yapılır.          
   03 Değişken Üretimi   | Yeni değişkenler üretilir (bu projenin konusu).      
   04 Değişken Seçimi    | Etkisiz ve riskli değişkenler elenir.                
-  05 Model ve Raporlama | Final model kurulur, denetime hazır doküman üretilir.
+  05 Model ve Raporlama | Final model kurulur; denetime hazır doküman üretilir.
 
 Platformun Getirisi
 -------------------
-  - Standart süreç: Tüm modelleme ekipleri aynı adımları, aynı kalite kontrolleriyle uygular.
-  - Hız: Veriden modele kadar geçen süre kısalır; tekrar eden işler otomatikleşir.
-  - Denetlenebilirlik: Model Risk ve validasyon ekiplerine gidecek dokümanlar otomatik hazırlanır.
-  - Ölçeklenebilirlik: Yapı, 135 milyon satırlık gerçek veri hacmine göre tasarlandı.
+  - Standart süreç: Tüm modelleme ekipleri aynı adımları aynı kalite kontrolleriyle uygular.
+  - Hız: Veriden modele kadar geçen süre kısalır; tekrar eden işler otomatik hale gelir.
+  - Denetlenebilirlik: Model Risk ve validasyon ekiplerine sunulacak dokümanlar otomatik olarak hazırlanır.
+  - Ölçeklenebilirlik: Yapı, yaklaşık 135 milyon satırlık gerçek veri hacmi dikkate alınarak tasarlanmıştır.
 
 Yakın Dönem Planı
 -----------------
-  - Bugünkü yapının gerçek veriyle ilk sonucunun alınması.
+  - Bugünkü yapının gerçek veri ile ilk sonucunun alınması.
   - Sonuca göre ROI / ROE etkisinin parasal olarak hesaplanması.
   - Tüm adımların büyük veri hacminde çalışacak şekilde tamamlanması.
-  - Validasyon kriterlerinin Model Risk ekibiyle netleştirilmesi.
+  - Validasyon kriterlerinin Model Risk ekibi ile netleştirilmesi.
