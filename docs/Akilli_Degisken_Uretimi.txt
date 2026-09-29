@@ -19,8 +19,8 @@ Proje İşleyişi
   - Model ve Raporlama: Seçilen değişkenlerle final model kurulur. Model ve değişkenler için denetime hazır doküman otomatik olarak hazırlanır.
 Yapay zekâ süreçte yalnızca öneri üretir; hesaplama, doğrulama ve karar sistem tarafından yapılır. Kullanıcı onayı olmadan hiçbir değişken üretilmez, katkısı ölçülmeyen hiçbir değişken modele alınmaz.
 
-AKILLI DEĞİŞKEN ÜRETİMİ: YÖNETİM ÖZETİ
-======================================
+KAZANIMLAR VE SONUÇLAR
+======================
 
 Üretim ve Verimlilik Hızı
   - Manuel değişken tasarımına harcanan süre önemli ölçüde kısalır; öneri, hesaplama ve test tek bir akışta tamamlanır.
