@@ -3047,3 +3047,19 @@ span.bolme-cip { cursor: default; }
 }
 .aralik-oran-metin { position: relative; }
 .aralik-alt { font-size: var(--fs-kucuk); color: var(--metin-soluk); margin-top: var(--b-2); line-height: 1.45; }
+
+/* -------- Aralık Önerileri kartı (sözlük tanımları kartıyla aynı düzen) -------- */
+.aralik-karar-tablo td { vertical-align: top; }
+.aralik-karar-oneri { font-size: var(--fs-kucuk); line-height: 1.45; min-width: 14rem; }
+.aralik-kontroller { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.aralik-kontrol {
+  font-size: 10px; padding: 0 5px; border-radius: var(--r-kucuk); white-space: nowrap;
+}
+.aralik-kontrol.gecti { background: var(--yesil-acik); color: var(--yesil); }
+.aralik-kontrol.kaldi { background: var(--amber-acik); color: var(--amber); }
+.aralik-gerekce { margin-top: 4px; color: var(--metin); }
+.aralik-gerekce-bas {
+  font-size: 10px; font-weight: var(--fw-kalin); color: var(--kirmizi);
+  background: var(--kirmizi-acik); border-radius: var(--r-kucuk); padding: 0 5px;
+}
+.aralik-kontrol.notr { background: var(--kenar-acik); color: var(--metin-soluk); }

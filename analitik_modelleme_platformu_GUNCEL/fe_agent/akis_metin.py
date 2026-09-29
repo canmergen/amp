@@ -86,7 +86,7 @@ MOD_ADLARI = {s["deger"]: s["baslik"] for s in MOD_SECENEKLERI}
 SONRAKI_FAZLAR = [
     {"no": "02", "baslik": "Veri Anlama ve Hazırlama",
      "ozet": "Profil, kalite, SFA ve stabilite",
-     "adimlar": ["veri_profili", "sfa", "stabilite", "baz"]},
+     "adimlar": ["veri_profili", "sfa", "aralik", "stabilite", "baz"]},
     {"no": "03", "baslik": "Değişken Mühendisliği",
      "ozet": "Kural tabanlı ve AI destekli üretim",
      "adimlar": ["kural", "kesif"]},

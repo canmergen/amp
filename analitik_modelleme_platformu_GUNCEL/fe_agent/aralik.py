@@ -450,7 +450,7 @@ def degisken_araligi(ad, s, y, tr, diger_setler, aciklama="", ham_iv=None):
         "ham_iv": ham_iv, "ayri": ayri, "dolu": dolu_gor,
         "medyan": medyan, "kesimler": None if kategorik else [b["ust"] for b in ar[:-1]],
         "gruplar": [b.get("degerler") for b in ar] if kategorik else None,
-        "tutarlilik": tutarlilik, "hassas": hassas,
+        "tutarlilik": tutarlilik, "hassas": hassas, "etiketler": etiketler,
         "oneri": oneri_metni(ar, sekil, kategorik, hassas, tutarlilik, ham_iv,
                              ayri["iv"], etiketler),
         "notlar": notlar,
@@ -507,3 +507,57 @@ def hesapla(df, target, adaylar, tr, diger_setler, aciklamalar=None, ham_ivler=N
         if r:
             cikti[str(kol)] = r
     return cikti
+
+
+# ===========================================================================
+# METRIK KONTROLLERI  (karar kartinda ve yapay zeka degerlendirmesinde)
+# ===========================================================================
+def kontroller(sonuc):
+    """Kayitli sonuctan kesin kontroller: [{"ad", "gecti", "deger"}].
+    Sayilar kodla hesaplanir; yapay zeka bunlari yorumlar, hesaplamaz."""
+    satirlar = [s for s in ((sonuc.get("ayri") or {}).get("satirlar") or [])
+                if s.get("etiket") != "Eksik"]
+    toplam = sum(s["n"] for s in satirlar) or 1
+    min_pay = min((float(s["n"]) / toplam for s in satirlar), default=0.0)
+    p_enbuyuk = max((_p_degeri(satirlar[i], satirlar[i + 1])
+                     for i in range(len(satirlar) - 1)), default=None)
+    iv = (sonuc.get("ayri") or {}).get("iv")
+    tut = sonuc.get("tutarlilik") or {}
+    cikti = [
+        {"ad": "Her aralıkta en az %5", "gecti": min_pay >= MIN_PAY - 1e-9,
+         "deger": _yuzde(min_pay)},
+        {"ad": "Eğilim", "gecti": sonuc.get("sekil") in ("artan", "azalan", "U", "ters U", "gruplama"),
+         "deger": sonuc.get("sekil")},
+        {"ad": "IV en az 0,02", "gecti": iv is not None and iv >= IV_MIN,
+         "deger": "-" if iv is None else ("%.3f" % iv).replace(".", ",")},
+        {"ad": "Komşu aralıklar anlamlı farklı", "gecti": p_enbuyuk is not None and p_enbuyuk <= ANLAM_P,
+         "deger": "-" if p_enbuyuk is None else ("p %.3f" % p_enbuyuk).replace(".", ",")},
+    ]
+    if tut:
+        cikti.append({"ad": "Sıra diğer setlerde korunuyor",
+                      "gecti": all(r >= TUTARLILIK_ESIK for r in tut.values()),
+                      "deger": ", ".join("%s %s" % (k, ("%.2f" % r).replace(".", ","))
+                                         for k, r in tut.items())})
+    cikti.append({"ad": "Hassas değişken değil", "gecti": not sonuc.get("hassas"),
+                  "deger": sonuc.get("hassas") or "-"})
+    return cikti
+
+
+def uygula_seri(s, plan):
+    """Planlanan donusumu bir seriye uygular. plan["tur"]:
+      "aralik" -> aralik etiketi (metin); eksik -> "Eksik"
+      "eksik"  -> eksik isareti (1 eksik, 0 dolu)"""
+    if plan.get("tur") == "eksik":
+        return s.isna().astype(int)
+    etiketler = plan.get("etiketler") or []
+    if plan.get("gruplar") is not None:
+        harita = {d: etiketler[i] for i, g in enumerate(plan["gruplar"]) for d in (g or [])}
+        # Egitimde gorulmemis kategori: "Diğer"
+        cikti = s.astype(str).map(harita).fillna("Diğer")
+    else:
+        kesimler = [float(k) for k in plan.get("kesimler") or []]
+        x = pd.to_numeric(s, errors="coerce")
+        kutu = np.searchsorted(kesimler, x.to_numpy(), side="left")
+        cikti = pd.Series([etiketler[i] if i < len(etiketler) else None for i in kutu],
+                          index=s.index)
+    return cikti.where(s.notna(), "Eksik").astype(object)

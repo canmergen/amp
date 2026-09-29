@@ -435,6 +435,83 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None):
 
 
 # ===========================================================================
+# LLM — ARALIK (BINLEME) ONERILERININ DEGERLENDIRILMESI
+# ===========================================================================
+SISTEM_ARALIK = """Sen kredi riski modellemesinde deneyimli bir analistsin.
+Sana degiskenler icin hedefe (batma) gore aralik onerileri ve bunlarin
+metrikleri verilecek. Her degisken icin:
+  1. Metrik kontrollerini gozden gecir: her aralikta en az %5 gozlem,
+     egilimin (artan/azalan/U) anlamli olmasi, IV, komsu araliklarin
+     farkli olmasi, siralamanin diger setlerde korunmasi.
+  2. Egilimin is mantigina uygun olup olmadigini degerlendir (degisken
+     adi ve aciklamasina bak).
+  3. Karar ver: "uygula" ya da "uygulama".
+  4. Gerekceyi Turkce, en fazla iki cumleyle yaz. YALNIZCA sana verilen
+     sayilari kullan; yeni sayi hesaplama ya da uydurma.
+Hassas degiskenlerde (yas, cinsiyet, uyruk ...) ayrimcilik riskini ve
+duzenleyici beklentiyi (EU AI Act yuksek riskli sistem) gerekcede an.
+Eksik deger notu varsa eksiklerin ayri tutulup tutulmamasi gerektigini de
+belirt.
+
+CIKTI KURALI: Cevabin SADECE JSON olsun, baska metin yazma. Format:
+{"degiskenler":[{"ad":"...","karar":"uygula","gerekce":"..."}]}
+Degisken adlarini sana verilen listeden AYNEN kopyala.""" + SINIRLAYICI_KURALI
+
+ARALIK_PARCA = 15
+
+
+def aralik_degerlendir(adaylar, parca=ARALIK_PARCA):
+    """adaylar: [{"ad", "aciklama", "tur", "sekil", "araliklar": [(etiket,
+    pay, oran)], "iv", "tutarlilik", "hassas", "notlar", "kontroller"}]
+    Doner: ({ad: {"karar": "uygula"|"uygulama", "gerekce": str}}, hata)."""
+    sonuc, gecerli = {}, {a["ad"] for a in adaylar}
+    toplam, dusen, son_hata = 0, 0, None
+    for i in range(0, len(adaylar), parca):
+        blok = adaylar[i:i + parca]
+        toplam += 1
+        satirlar = []
+        for a in blok:
+            s = "- %s | %s | aciklama: %s | egilim: %s | IV %s" % (
+                a["ad"], a.get("tur"), str(a.get("aciklama") or "-")[:160],
+                a.get("sekil"), a.get("iv"))
+            s += "\n    araliklar: " + " ; ".join(
+                "%s pay %s oran %s" % (e, p, o) for e, p, o in a.get("araliklar") or [])
+            s += "\n    kontroller: " + " ; ".join(
+                "%s=%s (%s)" % (k["ad"], "gecti" if k["gecti"] else "kaldi", k["deger"])
+                for k in a.get("kontroller") or [])
+            if a.get("hassas"):
+                s += "\n    hassas degisken: %s" % a["hassas"]
+            for n in a.get("notlar") or []:
+                s += "\n    eksik deger notu: %s" % n
+            satirlar.append(s)
+        try:
+            ham = _cagir(SISTEM_ARALIK, _veri_blogu("DEGISKENLER:", "\n".join(satirlar)),
+                         sicaklik=0.2)
+            veri = _json_ayristir(ham, {}, dict)
+        except Exception as e:
+            dusen += 1
+            son_hata = _hata_metni(e)
+            continue
+        liste = veri.get("degiskenler") or []
+        if not liste:
+            dusen += 1
+            son_hata = son_hata or "dil modeli okunabilir JSON döndürmedi"
+        for k in liste:
+            if not isinstance(k, dict) or k.get("ad") not in gecerli:
+                continue
+            karar = str(k.get("karar") or "").strip().lower()
+            sonuc[k["ad"]] = {
+                "karar": "uygula" if karar == "uygula" else "uygulama",
+                "gerekce": str(k.get("gerekce") or "").strip()[:400],
+            }
+    hata = None
+    if dusen:
+        hata = ("%s parçanın %s tanesi için yapay zekâ değerlendirmesi alınamadı; "
+                "son hata: %s" % (toplam, dusen, son_hata or "bilinmiyor"))
+    return sonuc, hata
+
+
+# ===========================================================================
 # LLM #3 — GELENEKSEL DONUSUM PLANI
 # ===========================================================================
 SISTEM_PLAN = """Sen bir feature engineering danismanisin.

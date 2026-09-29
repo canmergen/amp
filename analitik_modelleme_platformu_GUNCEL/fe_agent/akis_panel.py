@@ -732,6 +732,7 @@ TANIM_ADIMI = sol_panel_adi("tanimlar")
 KAYIT_ADIMI = sol_panel_adi("teyit")
 PROFIL_ADIMI = sol_panel_adi("veri_profili")
 SFA_ADIMI = sol_panel_adi("sfa")
+ARALIK_ADIMI = sol_panel_adi("aralik")
 BOLME_ADIMI = sol_panel_adi("bolme")
 
 # Sol paneldeki adlarin akis sirasi, uc modun birlesimi. Faz 01'de
@@ -1817,6 +1818,15 @@ def sfa_paneli(durum):
                 for r in (s.get("ilk20") or [])]
 
     veri = {"durum": "hazir", "kartlar": [ozet_kart, esik_kart]}
+    plan = durum.get("donusum_plani")
+    if isinstance(plan, list):
+        # Aralık Önerileri adiminda kabul edilenler (bos liste: hepsi reddedildi)
+        satirlar_p = [(p["ad"], ("%s aralık · %s" % (p.get("aralik_sayisi"), p.get("sekil"))
+                                 if p["tur"] == "aralik" else "eksik işareti")
+                       + (" · ham hâli çıkarılacak" if p.get("hassas") and p["tur"] == "aralik" else ""),
+                       ARALIK_ADIMI) for p in plan]
+        veri["kartlar"].append(_kart("Planlanan Dönüşümler", satirlar_p or [
+            ("Durum", "Kabul edilen öneri yok", ARALIK_ADIMI)]))
     a = s.get("aralik") or {}
     if a.get("dosya"):
         # Aralik onerileri: degisken tablosunu arayuz /sfa_aralik ucundan

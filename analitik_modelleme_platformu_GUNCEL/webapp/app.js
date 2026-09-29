@@ -4783,7 +4783,9 @@ function secenekEkle(secenekler, kilit, secili) {
 
         const rozet = document.createElement("span");
         rozet.className = "secenek-rozet";
-        rozet.textContent = s.deger;
+        /* Rozet: kart ayrica kisa bir rozet verdiyse o ("1", "2"); mod
+           kartlarinda harfin kendisi. */
+        rozet.textContent = s.rozet || s.deger;
         kart.appendChild(rozet);
 
         const govde = document.createElement("div");
@@ -5917,6 +5919,143 @@ function dogrulamaKartiEkle(alan, blok) {
         oneriKilidi(false, 0, alan.oneri_toplam || durumlar.length);
         oneriYokla(String(alan.oneri_is));
     }
+    yeniOdak = birincil;
+}
+
+/* ==================== Aralık Önerileri kartı ====================
+   SFA'nın aralık ve eksik işareti önerileri; sözlük tanımları kartıyla
+   aynı düzen (kullanıcı kararı): satır başına "Uygula" kutusu, Tümünü Seç /
+   Tümünü Temizle, tek birincil düğme. Öneri metninin altında metrik
+   kontrolleri (✓ / ✗) ve yapay zekâ seçildiyse gerekçesi yazar. */
+function aralikKartiEkle(alan, blok) {
+    const kart = elYap("div", "secim-kart dg-kart aralik-kart");
+    if (kartBasligiGerekli(alan, blok)) {
+        const bas = elYap("div", "dg-bas");
+        bas.appendChild(elYap("div", "secim-baslik", alan.baslik || ""));
+        kart.appendChild(bas);
+    }
+    if (alan.aciklama) kart.appendChild(elYap("div", "secim-aciklama dg-aciklama", alan.aciklama));
+    kart.appendChild(elYap("div", "dg-not", alan.kaynak === "yapay_zeka"
+        ? "Kutular yapay zekânın değerlendirmesine göre işaretlendi; gerekçesi her satırda yazıyor."
+        : "Kutular metrik kontrollerine göre işaretlendi: bütün kontrolleri geçen öneri işaretli gelir."));
+    if (alan.ai_hata) kart.appendChild(elYap("div", "dg-oneri-hata", alan.ai_hata));
+
+    const satirlar = alan.satirlar || [];
+    const kutular = [];
+    const toplu = elYap("div", "dg-toplu");
+    const topluBtn = [];
+    [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([deger, ad]) => {
+        const b = elYap("button", "dg-toplu-btn", ad);
+        b.type = "button";
+        b.onclick = () => {
+            if (kart.classList.contains("kilitli")) return;
+            kutular.forEach(k => { k.checked = deger; });
+            tazele();
+        };
+        toplu.appendChild(b);
+        topluBtn.push(b);
+    });
+    const ust = elYap("div", "dg-tablo-ust");
+    ust.appendChild(elYap("div", "dg-lejant", satirlar.length + " öneri"));
+    ust.appendChild(toplu);
+    kart.appendChild(ust);
+
+    const sar = elYap("div", "dg-tablo-sar");
+    const tablo = elYap("table", "dg-tablo aralik-karar-tablo");
+    const htr = elYap("tr");
+    ["Değişken", "Dönüşüm", "Öneri", "Uygula"].forEach(h => htr.appendChild(elYap("th", "", h)));
+    const thead = document.createElement("thead");
+    thead.appendChild(htr);
+    tablo.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    satirlar.forEach(sat => {
+        const tr = elYap("tr", "dg-satir");
+        const tdK = elYap("td", "dg-kolon");
+        tdK.appendChild(document.createTextNode(sat.ad));
+        if (sat.hassas) tdK.appendChild(elYap("span", "aralik-rozet hassas", "Hassas"));
+        tr.appendChild(tdK);
+        const tdD = elYap("td", "dg-tip", sat.donusum
+            + (sat.tur === "aralik" && sat.egilim ? " · " + (SEKIL_ETIKET[sat.egilim] || sat.egilim) : ""));
+        tr.appendChild(tdD);
+        const tdO = elYap("td", "aralik-karar-oneri");
+        tdO.appendChild(elYap("div", "", sat.oneri || ""));
+        if ((sat.kontroller || []).length) {
+            /* Hepsi geçtiyse tek rozet (ayrıntı üzerine gelince); geçmeyen
+               varsa yalnızca onlar görünür: satır gereksiz uzamasın. */
+            const kk = elYap("div", "aralik-kontroller");
+            const kalan = sat.kontroller.filter(k => !k.gecti);
+            const liste = sat.kontroller.map(k => (k.gecti ? "✓ " : "✗ ") + k.ad
+                                                  + (k.deger ? " (" + k.deger + ")" : "")).join("\n");
+            if (!kalan.length) {
+                const c = elYap("span", "aralik-kontrol gecti",
+                                "✓ " + sat.kontroller.length + " kontrolün hepsi geçti");
+                c.title = liste;
+                kk.appendChild(c);
+            } else {
+                kalan.forEach(k => {
+                    const c = elYap("span", "aralik-kontrol kaldi", "✗ " + k.ad);
+                    c.title = k.deger || "";
+                    kk.appendChild(c);
+                });
+                const g = elYap("span", "aralik-kontrol notr",
+                                (sat.kontroller.length - kalan.length) + "/" + sat.kontroller.length + " geçti");
+                g.title = liste;
+                kk.appendChild(g);
+            }
+            tdO.appendChild(kk);
+        }
+        if (sat.gerekce) {
+            const g = elYap("div", "aralik-gerekce");
+            g.appendChild(elYap("span", "aralik-gerekce-bas", "Yapay Zekâ"));
+            g.appendChild(document.createTextNode(" " + tireSade(sat.gerekce)));
+            tdO.appendChild(g);
+        }
+        tr.appendChild(tdO);
+        const tdU = elYap("td", "dg-ekle-hucre");
+        const kutu = document.createElement("input");
+        kutu.type = "checkbox";
+        kutu.className = "dg-ekle";
+        kutu.checked = !!sat.secili;
+        kutu.setAttribute("aria-label", sat.ad + " önerisi uygulansın");
+        kutu.onchange = () => { if (!kart.classList.contains("kilitli")) tazele(); };
+        tdU.appendChild(kutu);
+        tr.appendChild(tdU);
+        kutular.push(kutu);
+        tbody.appendChild(tr);
+    });
+    tablo.appendChild(tbody);
+    sar.appendChild(tablo);
+    kart.appendChild(sar);
+
+    const dugmeler = elYap("div", "onay-dugmeler dg-dugmeler");
+    const birincil = elYap("button", "secim-onay dg-birincil");
+    birincil.type = "button";
+    dugmeler.appendChild(birincil);
+    kart.appendChild(dugmeler);
+
+    function tazele() {
+        const n = kutular.filter(k => k.checked).length;
+        birincil.textContent = n ? n + " Öneriyi Uygula ve Devam Et"
+                                 : "Öneri Uygulamadan Devam Et";
+    }
+    function kilitle(evet) {
+        kart.classList.toggle("kilitli", evet);
+        kutular.forEach(k => { k.disabled = evet; });
+        topluBtn.forEach(b => { b.disabled = evet; });
+        birincil.disabled = evet;
+    }
+    birincil.onclick = () => {
+        if (mesgul || birincil.disabled) return;
+        const secilen = satirlar.filter((s, i) => kutular[i].checked)
+            .map(s => s.ad + ":" + s.tur);
+        kilitle(true);
+        geriAlKilit = () => kilitle(false);
+        gonder((alan.sablon || "{liste}").replace("{liste}", secilen.join(", ")), false);
+    };
+    tazele();
+    (adimKabiAl(blok) || sohbetEl).appendChild(kart);
+    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    if (blok && blok.kilit) { kilitle(true); geriAlKilit = null; return; }
     yeniOdak = birincil;
 }
 
@@ -7444,6 +7583,8 @@ function secimAlaniEkle(alan, blok) {
     if (alan.tip === "teyit") { teyitKartiEkle(alan, blok); return; }
     /* Bolme stratejisi: iki modlu kart (Önerilen / Özel Ayarlar) */
     if (alan.tip === "bolme") { bolmeKartiEkle(alan, blok); return; }
+    /* Aralık önerileri: satır başına kabul / ret (sözlük tanımları gibi) */
+    if (alan.tip === "aralik_karar") { aralikKartiEkle(alan, blok); return; }
 
     const kart = document.createElement("div");
     kart.className = "secim-kart";

@@ -17,6 +17,7 @@ from fe_agent.akis_faz01 import (
     veri_sec_plan, veri_sec_uygula,
 )
 from fe_agent.akis_faz02 import (
+    aralik_girdi, aralik_uygula,
     baz_plan, baz_uygula, sfa_plan, sfa_uygula, stabilite_plan,
     stabilite_uygula, veri_profili_plan, veri_profili_uygula,
 )
@@ -145,6 +146,14 @@ ADIMLAR = {
                     "IV ve C-value. Batma oranına göre aralık önerisi "
                     "çıkarılır. Eleme kuralı değildir.",
         "girdi": None, "plan": sfa_plan, "uygula": sfa_uygula},
+    "aralik": {
+        "baslik": "Aralık Önerileri",
+        "aciklama": "SFA'nın aralık ve eksik değer önerileri, isterseniz "
+                    "yapay zekâ değerlendirmesiyle, satır satır kabul ya da "
+                    "reddedilir. Kabul edilenler Analitik Baz Set'te yeni "
+                    "kolon olarak üretilir.",
+        # plan=None: KARTIN KENDISI ONAYDIR (sozluk tanimlari ile ayni).
+        "girdi": aralik_girdi, "plan": None, "uygula": aralik_uygula},
     "stabilite": {
         "baslik": "Stabilite Analizi (PSI)",
         "aciklama": "Değişken dağılımlarının zaman içinde kayıp kaymadığı "

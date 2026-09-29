@@ -288,7 +288,25 @@ def sfa_plan(durum):
                _sayi((durum.get("bolme") or {}).get("train_satir", 0)),
                _sayi(sfa_mod.KATEGORIK_MAX)))
 
+def _buyuk_veri_engeli(durum, adim):
+    """SFA ve aralik hesabi su an pandas'ta: tablo webapp'e tam okunur.
+    Veri seti motor esiginin (bkz. motor.py) ustundeyse bellek tasmasin
+    diye adim acik bir mesajla durur."""
+    from fe_agent import motor
+    from fe_agent.akis_durum import AdimHatasi, modelleme_kaynagi
+    ad, _amp = modelleme_kaynagi(durum)
+    secilen, toplam = motor.sec([ad])
+    if secilen == motor.SPARK:
+        raise AdimHatasi(
+            "%s bu veri setinde henüz çalıştırılamıyor: veri seti büyük "
+            "(%s) ve bu adımın Spark sürümü hazır değil. Pandas sınırı "
+            "amp_pandas_sinir_gb proje değişkeniyle yükseltilebilir, ama "
+            "webapp belleği yetmezse adım yarıda kalır."
+            % (adim, motor.boyut_metni(toplam)))
+
+
 def sfa_uygula(durum):
+    _buyuk_veri_engeli(durum, "Tek Değişken Analizi (SFA)")
     df = modelleme_df(durum)
     tr, _ = maskeler(durum, df)
     adaylar = (durum.get("profil", {}).get("profil_teshis") or {}).get("temiz") or []
@@ -458,6 +476,16 @@ def _dusurulecek_kume(durum):
     return sorted(teshis | tanimsiz), sorted(teshis), sorted(tanimsiz)
 
 
+def _plan_satiri(durum):
+    plan = durum.get("donusum_plani") or []
+    if not plan:
+        return ""
+    n_ar = sum(1 for p in plan if p["tur"] == "aralik")
+    return ("  ÜRETİLECEK (Planlanan Dönüşümler)\n"
+            "    %s aralık kolonu, %s eksik işareti kolonu\n\n"
+            % (_sayi(n_ar), _sayi(len(plan) - n_ar)))
+
+
 def baz_plan(durum):
     t = (durum.get("profil") or {}).get("profil_teshis") or {}
     s = durum.get("sfa") or {}
@@ -481,6 +509,7 @@ def baz_plan(durum):
             "sızıntı %s · kararsız %s · süreç dışı %s\n\n"
             "  DOLDURULACAK\n"
             "    sayısal boşluklar, geliştirme setinin medyanıyla\n\n"
+            "%s"
             "  YAZILACAK\n    %s_BAZ%s\n\n"
             "Oluşturayım mı?"
             % (_sayi(len(dusur)),
@@ -488,8 +517,25 @@ def baz_plan(durum):
                _sayi(len(t.get("kimlik_gibi") or [])),
                _sayi(len(t.get("yuksek_kardinalite") or [])),
                _sayi(len(s.get("sizinti") or [])), _sayi(len(st.get("kayan") or [])),
-               _sayi(len(tanimsiz)),
+               _sayi(len(tanimsiz)), _plan_satiri(durum),
                durum["veri_seti"], tanimsiz_not))
+
+def _donusumleri_uygula(durum, df):
+    """durum["donusum_plani"] -> df'ye yeni kolonlar (yerinde).
+    Doner: (yeni kolon adlari, ham hali cikacak hassas kolonlar)."""
+    from fe_agent import aralik as aralik_mod
+    yeni, hassas = [], []
+    for p in durum.get("donusum_plani") or []:
+        ad = p.get("ad")
+        if ad not in df.columns:
+            continue
+        hedef = "%s_%s" % (ad, "ARALIK" if p["tur"] == "aralik" else "EKSIK")
+        df[hedef] = aralik_mod.uygula_seri(df[ad], p)
+        yeni.append(hedef)
+        if p["tur"] == "aralik" and p.get("hassas"):
+            hassas.append(ad)
+    return yeni, sorted(set(hassas) - _meta_kolonlar(durum))
+
 
 def baz_uygula(durum):
     df = modelleme_df(durum)
@@ -501,6 +547,13 @@ def baz_uygula(durum):
                  - _meta_kolonlar(durum))
     dusur = [c for c in tum if c in df.columns]
     tanimsiz_dusen = [c for c in tanimsiz if c in df.columns]
+
+    # PLANLANAN DONUSUMLER (Aralık Önerileri adiminda kabul edilenler).
+    # Eksik degerler doldurulmadan ONCE: eksik isareti ve "Eksik" araligi
+    # ancak ham eksiklerden uretilebilir. Hassas degiskende aralik kabul
+    # edildiyse ham kolon baz setten cikar.
+    yeni_kolonlar, hassas_cikan = _donusumleri_uygula(durum, df)
+    dusur = sorted(set(dusur) | {c for c in hassas_cikan if c in df.columns})
     df = df.drop(columns=dusur)
 
     doldurma = {}
@@ -517,10 +570,19 @@ def baz_uygula(durum):
     # Hedef veri seti akista tanimli degilse adim COKMESIN: hesap korunur,
     # tablo yedek dosyaya yazilir ve kullaniciya acik bir uyari verilir.
     baz_ds = "%s_BAZ" % durum["veri_seti"]
+    # Veri seti Flow'da yoksa webapp kurar (kullanici Flow'a bir sey eklemez;
+    # kaynak tablonun baglantisinda Parquet). Kurulamazsa eskisi gibi yedek
+    # dosyaya yazilir ve uyari verilir.
+    try:
+        from fe_agent import spark_is
+        spark_is.veri_seti_hazirla(baz_ds, durum["veri_seti"])
+    except Exception:
+        pass
     yazildi, yedek = _yaz(baz_ds, df, "/analitik_baz_set.parquet")
 
     durum["haric_kolonlar"] = sorted(set(durum.get("haric_kolonlar") or []) | set(dusur))
-    durum["baz"] = {"dataset": yazildi, "doldurma": "medyan (geliştirme seti)",
+    durum["baz"] = {"yeni_kolonlar": yeni_kolonlar,
+                    "dataset": yazildi, "doldurma": "medyan (geliştirme seti)",
                     "doldurma_degerleri": doldurma,
                     "kolon": int(df.shape[1]), "kolonlar": baz_kolonlar}
 
@@ -539,7 +601,180 @@ def baz_uygula(durum):
                 % (baz_ds, yedek, _sayi(len(dusur)), _sayi(len(doldurma)),
                    tanimsiz_not, baz_ds))
 
+    yeni_not = ("\n%s yeni kolon planlanan dönüşümlerden üretildi%s."
+                % (_sayi(len(yeni_kolonlar)),
+                   ("; hassas olduğu için ham hâli çıkarılan: %s" % ", ".join(hassas_cikan))
+                   if hassas_cikan else "")) if yeni_kolonlar else ""
     return ("Analitik baz set hazır: %s, %s kolon.\n"
-            "%s kolon düşürüldü, %s kolonda eksik değerler dolduruldu.%s"
+            "%s kolon düşürüldü, %s kolonda eksik değerler dolduruldu.%s%s"
             % (baz_ds, _sayi(df.shape[1]), _sayi(len(dusur)),
-               _sayi(len(doldurma)), tanimsiz_not))
+               _sayi(len(doldurma)), tanimsiz_not, yeni_not))
+
+
+# ===========================================================================
+# ADIM - ARALIK ONERILERI  (SFA'nin devami)
+# ===========================================================================
+# Kullanici karari: oneriler yapay zekayla degerlendirilebilmeli ama bunu
+# kullanici o anda secer ("yapılmasını istiyor musunuz diye sorsun").
+# Kabul / ret sozluk tanimlari kartindaki gibi satir basina kutuyla.
+# Kabul edilenler durum["donusum_plani"]'na yazilir; Analitik Baz Set
+# adiminda yeni kolon olarak uretilir.
+ARALIK_AI_EVET = "aralık: yapay zekâ"
+ARALIK_AI_HAYIR = "aralık: kural"
+ARALIK_KARAR_ONEK = "aralık kararları:"
+
+ARALIK_SECENEKLERI = [
+    {"deger": ARALIK_AI_EVET, "rozet": "1", "baslik": "Yapay Zekâ Değerlendirsin",
+     "aciklama": "Her öneriyi metrik kontrolleriyle birlikte yapay zekâ "
+                 "inceler; uygulanıp uygulanmamasını gerekçesiyle önerir. "
+                 "Yapay zekâ yalnızca aralık tablolarını görür, ham veriyi görmez."},
+    {"deger": ARALIK_AI_HAYIR, "rozet": "2", "baslik": "Kural Tabanlı Kalsın",
+     "aciklama": "Öneriler hesaplanan metriklere göre işaretlenir; yapay "
+                 "zekâ çağrılmaz."},
+]
+
+
+def _aralik_adaylari(durum):
+    """Karar kartina girecek satirlar: aralik onerisi olanlar ve eksik
+    degeri farkli risk tasiyanlar."""
+    tum = aralik_oku(durum)
+    satirlar = []
+    for ad, v in tum.items():
+        kont = aralik_mod.kontroller(v)
+        if v.get("aralik_sayisi", 0) > 1:
+            satirlar.append({"ad": ad, "tur": "aralik", "v": v, "kontroller": kont})
+        if v.get("notlar"):
+            satirlar.append({"ad": ad, "tur": "eksik", "v": v, "kontroller": []})
+    satirlar.sort(key=lambda s: -((s["v"].get("ayri") or {}).get("iv") or 0))
+    return satirlar
+
+
+def _ai_degerlendir(durum, adaylar):
+    from fe_agent import llm as llm_mod
+    aciklama = _aciklamalar(durum)
+    girdi, gorulen = [], set()
+    for a in adaylar:
+        if a["ad"] in gorulen:
+            continue
+        gorulen.add(a["ad"])
+        v = a["v"]
+        girdi.append({
+            "ad": a["ad"], "aciklama": aciklama.get(a["ad"], ""), "tur": v.get("tur"),
+            "sekil": v.get("sekil"), "iv": (v.get("ayri") or {}).get("iv"),
+            "araliklar": [(s["etiket"], "%.1f%%" % (100 * s["pay"]), "%.2f%%" % (100 * s["oran"]))
+                          for s in (v.get("ayri") or {}).get("satirlar") or []],
+            "tutarlilik": v.get("tutarlilik"), "hassas": v.get("hassas"),
+            "notlar": v.get("notlar"), "kontroller": aralik_mod.kontroller(v)})
+    return llm_mod.aralik_degerlendir(girdi)
+
+
+def _aralik_karti(durum, adaylar):
+    ai = durum.get("_aralik_ai") or {}
+    sonuc = ai.get("sonuc") or {}
+    onceki = durum.get("donusum_plani")
+    onceki_secim = ({(p["ad"], p["tur"]) for p in onceki}
+                    if isinstance(onceki, list) else None)
+    satirlar = []
+    for a in adaylar:
+        v = a["v"]
+        if a["tur"] == "eksik":
+            oneri = (v.get("notlar") or [""])[0]
+            varsayilan = True
+        else:
+            oneri = v.get("oneri") or ""
+            varsayilan = all(k["gecti"] for k in a["kontroller"])
+        karar = sonuc.get(a["ad"]) if ai.get("acik") else None
+        if karar:
+            varsayilan = karar["karar"] == "uygula"
+        if onceki_secim is not None:
+            varsayilan = (a["ad"], a["tur"]) in onceki_secim
+        satirlar.append({
+            "ad": a["ad"], "tur": a["tur"],
+            "donusum": "Aralık" if a["tur"] == "aralik" else "Eksik İşareti",
+            "egilim": v.get("sekil") if a["tur"] == "aralik" else "-",
+            "oneri": oneri,
+            "gerekce": (karar or {}).get("gerekce") or "",
+            "kaynak": "yapay_zeka" if karar else "kural",
+            "kontroller": a["kontroller"],
+            "hassas": v.get("hassas") or "",
+            "secili": bool(varsayilan),
+        })
+    durum["_secim_alani"] = {
+        "tip": "aralik_karar",
+        "baslik": "Aralık Önerileri",
+        "aciklama": ("Uygulanacak önerileri işaretleyin. İşaretlenenler "
+                     "Analitik Baz Set adımında yeni kolon olarak üretilir; "
+                     "orijinal kolon korunur (hassas değişkende çıkarılır)."),
+        "kaynak": "yapay_zeka" if ai.get("acik") else "kural",
+        "ai_hata": ai.get("hata") or "",
+        "satirlar": satirlar,
+        "sablon": ARALIK_KARAR_ONEK + " {liste}",
+    }
+
+
+def aralik_girdi(durum, mesaj, yeniden_sor=False):
+    metin = (mesaj or "").strip()
+    adaylar = _aralik_adaylari(durum)
+    if not adaylar:
+        durum["donusum_plani"] = []
+        durum["_secim_alani"] = None
+        return True, None
+
+    if metin.lower().startswith(ARALIK_KARAR_ONEK) and not yeniden_sor:
+        secilen = set()
+        for parca in metin[len(ARALIK_KARAR_ONEK):].split(","):
+            ad, _, tur = parca.strip().rpartition(":")
+            if ad:
+                secilen.add((ad.strip(), tur.strip()))
+        plan = []
+        for a in adaylar:
+            if (a["ad"], a["tur"]) not in secilen:
+                continue
+            v = a["v"]
+            kayit = {"ad": a["ad"], "tur": a["tur"], "hassas": v.get("hassas") or ""}
+            if a["tur"] == "aralik":
+                kayit.update({"kesimler": v.get("kesimler"), "gruplar": v.get("gruplar"),
+                              "etiketler": v.get("etiketler"), "sekil": v.get("sekil"),
+                              "aralik_sayisi": v.get("aralik_sayisi")})
+            plan.append(kayit)
+        durum["donusum_plani"] = plan
+        durum["_secim_alani"] = None
+        return True, None
+
+    if metin in (ARALIK_AI_EVET, ARALIK_AI_HAYIR) and not yeniden_sor:
+        ai = {"acik": metin == ARALIK_AI_EVET}
+        if ai["acik"]:
+            sonuc, hata = _ai_degerlendir(durum, adaylar)
+            ai.update(sonuc=sonuc, hata=hata)
+        durum["_aralik_ai"] = ai
+        durum["_secenekler"] = []
+        _aralik_karti(durum, adaylar)
+        return False, ""
+
+    if durum.get("_aralik_ai") is not None and not yeniden_sor:
+        _aralik_karti(durum, adaylar)
+        return False, ""
+
+    # Ilk giris ya da "Geri Dön": once yapay zeka sorusu.
+    durum.pop("_aralik_ai", None)
+    durum["_secim_alani"] = None
+    durum["_secenekler"] = ARALIK_SECENEKLERI
+    n_aralik = sum(1 for a in adaylar if a["tur"] == "aralik")
+    n_eksik = sum(1 for a in adaylar if a["tur"] == "eksik")
+    return False, ("SFA %s değişken için aralık, %s değişken için eksik değer "
+                   "işareti önerdi. Önerileri yapay zekâ değerlendirsin mi?"
+                   % (_sayi(n_aralik), _sayi(n_eksik)))
+
+
+def aralik_uygula(durum):
+    plan = durum.get("donusum_plani") or []
+    n_ar = sum(1 for p in plan if p["tur"] == "aralik")
+    n_ek = sum(1 for p in plan if p["tur"] == "eksik")
+    hassas = sorted({p["ad"] for p in plan if p.get("hassas") and p["tur"] == "aralik"})
+    satirlar = ["Planlanan dönüşümler kaydedildi.",
+                "  Aralık : %s değişken" % _sayi(n_ar),
+                "  Eksik İşareti : %s değişken" % _sayi(n_ek)]
+    if hassas:
+        satirlar.append("  Ham Hâli Çıkarılacak : %s" % ", ".join(hassas))
+    satirlar.append("Yeni kolonlar Analitik Baz Set adımında üretilecek.")
+    return "\n".join(satirlar)

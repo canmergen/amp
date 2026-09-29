@@ -1,6 +1,32 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **SFA'ya hedefe göre aralık (binleme) önerileri**.
+Bu tur: **Aralık Önerileri adımı (yapay zekâ sorusu, satır satır kabul / ret, baz sette yeni kolon); "Karşılama yüklenemedi" hatası**.
+Değiştir (fe_agent): `aralik.py`, `akis_faz02.py`, `akis_kayit.py`, `akis_metin.py`, `akis_panel.py`, `llm.py`
+Değiştir (webapp): `backend.py`, `app.js` (JS), `style.css` (CSS)
+Önceki turdan eksik kaldıysa: webapp `index.html` (HTML sekmesi) ve fe_agent `akis.py`.
+Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+
+- "Karşılama yüklenemedi": backend yeni panel fonksiyonlarını kütüphanede
+  bulamayınca bütün karşılama çöküyordu. Artık yalnızca ilgili panel hata yazar.
+- Faz 02'ye SFA'dan sonra "Aralık Önerileri" adımı eklendi. Önce
+  "Yapay Zekâ Değerlendirsin / Kural Tabanlı Kalsın" sorulur. Yapay zekâ
+  aralık tablolarını ve metrik kontrollerini görür (ham veri yok), her öneri
+  için uygula / uygulama ve gerekçe yazar.
+- Karar kartı sözlük tanımları kartı gibi: satır başına Uygula kutusu,
+  Tümünü Seç / Temizle. Metrik kontrolleri (en az %5, eğilim, IV ≥ 0,02,
+  komşu aralık farkı, diğer setlerde sıra, hassas) kodla hesaplanır.
+- Kabul edilenler "Planlanan Dönüşümler" kartında görünür ve Analitik Baz
+  Set adımında `<KOLON>_ARALIK` / `<KOLON>_EKSIK` kolonları olarak üretilir;
+  hassas değişkende ham kolon çıkarılır.
+- Analitik Baz Set veri seti Flow'da yoksa webapp kurar.
+- SFA veri seti pandas sınırının üstündeyse açık mesajla durur (Spark
+  sürümü henüz yok).
+- Faz 02'ye adım eklendiği için Faz 02 ve sonrasındaki mevcut çalışmalarda
+  adım numaraları bir kayar.
+
+---
+
+Önceki tur: **SFA'ya hedefe göre aralık (binleme) önerileri**.
 Yeni ekle (fe_agent): `aralik.py`
 Değiştir (fe_agent): `akis_faz02.py`, `akis_panel.py`, `akis_kayit.py`
 Değiştir (webapp): `backend.py`, `app.js` (JS), `style.css` (CSS)

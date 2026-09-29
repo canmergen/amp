@@ -729,16 +729,20 @@ def _analiz_verisi(durum):
     #   ozet      VERİ & SÖZLÜK
     #   degisken  DEĞİŞKEN ANALİZİ  -> "sfa" + "eksik" + /dagilim
     #   bolme     BÖLME & VALİDASYON -> "bolme" + "validasyon"
-    for anahtar, ad, uretici in (
-            ("ozet", "VERİ & SÖZLÜK", akis.veri_sozluk_paneli),
-            ("eksik", "Eksik değer", akis.eksik_paneli),
-            ("bolme", "Bölme", akis.bolme_paneli),
-            ("sfa", "SFA", akis.sfa_paneli)):
+    # Fonksiyon ADLA ve try icinde aliniyor: kutuphane (fe_agent) webapp'ten
+    # eski kalirsa yalnizca o bolum hata yazar; karsilama cokmez
+    # (kullanici bildirimi: "Karşılama yüklenemedi").
+    for anahtar, ad, fonk in (
+            ("ozet", "VERİ & SÖZLÜK", "veri_sozluk_paneli"),
+            ("eksik", "Eksik değer", "eksik_paneli"),
+            ("bolme", "Bölme", "bolme_paneli"),
+            ("sfa", "SFA", "sfa_paneli")):
         try:
-            veri[anahtar] = uretici(durum)
+            veri[anahtar] = getattr(akis, fonk)(durum)
         except Exception as e:
-            kod = _hata_kaydet("akis.%s" % uretici.__name__, e)
-            veri[anahtar] = {"hata": "%s paneli hesaplanamadı (%s)." % (ad, kod)}
+            kod = _hata_kaydet("akis.%s" % fonk, e)
+            veri[anahtar] = {"hata": "%s paneli hesaplanamadı (%s). fe_agent "
+                                     "kütüphanesi güncel olmayabilir." % (ad, kod)}
     return veri
 
 
