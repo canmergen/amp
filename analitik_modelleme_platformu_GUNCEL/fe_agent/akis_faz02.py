@@ -237,14 +237,15 @@ def _kayit_metni(yazildi, yedek):
 
 
 def veri_profili_plan(durum):
-    """Faz 02'nin acilisi: TEK onay. Profilden sonra SFA ve aralik onerileri
-    onay beklemeden calisir (kullanici karari: "zırt pırt onay almamalı")."""
-    return ("Veri Anlama ve Hazırlama fazı başlıyor. Önce kolonların teknik "
-            "durumu, ardından hedefle ilişkisi ve aralık önerileri çıkarılır.\n"
-            "  İncelenecek Kolon : %s\n"
-            "  Profil : eksik değer, tekil değer, sabit ve kimlik benzeri kolonlar\n"
-            "  SFA : IV, C-value ve hedefe göre aralık önerisi (geliştirme setinde)\n"
-            "Başlayalım mı?" % _sayi(_kolon_sayisi(durum)))
+    """ONAY SORULMAZ (kullanici karari: "başlama desem başlamayacak da ne
+    alaka, otomatik başlasın"). Bolme kaydedilince profil, SFA ve aralik
+    onerileri art arda calisir; ilk durak aralik kararidir.
+
+    Metin yalnizca "Geri Dön" ile bu adima donulunce gorunur (otomatik
+    calismada kullanilmaz)."""
+    durum["_plan_otomatik"] = True
+    return ("Veri profili yeniden çıkarılacak; ardından SFA ve aralık "
+            "önerileri yeniden hesaplanır. Onaylıyor musunuz?")
 
 def veri_profili_uygula(durum):
     df = modelleme_df(durum)
@@ -290,9 +291,11 @@ def veri_profili_uygula(durum):
 def sfa_plan(durum):
     """Onay SORULMAZ: faz acilisinda (veri profili) zaten onaylandi.
     Sizinti kurallari (doldurma, sinirlar ve olcum yalnizca gelistirme
-    setinde) SFA adiminin aciklamasinda ve sag paneldeki Esikler kartinda."""
+    setinde) SFA adiminin aciklamasinda ve sag paneldeki Esikler kartinda.
+    Metin yalnizca "Geri Dön" ile donulunce gorunur."""
     durum["_plan_otomatik"] = True
-    return ""
+    return ("SFA ve aralık önerileri yeniden hesaplanacak; önceki aralık "
+            "kararları silinir. Onaylıyor musunuz?")
 
 def _buyuk_veri_engeli(durum, adim):
     """SFA ve aralik hesabi su an pandas'ta: tablo webapp'e tam okunur.
@@ -395,9 +398,10 @@ def _psi_olculur_mu(durum):
 
 def stabilite_plan(durum):
     """Onay sorulmaz: olcum karar gerektirmiyor; sonuc baz set onayinda
-    (dusurulecek kararsiz kolonlar) gorunur."""
+    (dusurulecek kararsiz kolonlar) gorunur. Metin yalnizca "Geri Dön"
+    ile donulunce gorunur."""
     durum["_plan_otomatik"] = True
-    return ""
+    return "Stabilite yeniden ölçülecek. Onaylıyor musunuz?"
 
 def stabilite_uygula(durum):
     hedef_set = _psi_olculur_mu(durum)

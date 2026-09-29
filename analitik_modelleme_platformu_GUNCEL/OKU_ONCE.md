@@ -1,6 +1,16 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **yapay zekâ değerlendirmesi arka planda ve yalnızca karar gerektiren önerilerde; Faz 02 mesajları Faz 01 düzeninde**.
+Bu tur: **Faz 02 onaysız başlıyor**.
+Değiştir (fe_agent): `akis_faz02.py`
+
+- Bölme kaydedilince Veri Profili, SFA ve aralık önerileri kendiliğinden art
+  arda çalışır; ilk durak aralık önerileri kartıdır. "Başlayalım mı?" onayı kalktı.
+- "Geri Dön" ile Profil, SFA ya da Stabilite adımına dönülürse yeniden
+  hesaplamadan önce onay sorulur (eski sonuçlar silineceği için).
+
+---
+
+Önceki tur: **yapay zekâ değerlendirmesi arka planda ve yalnızca karar gerektiren önerilerde; Faz 02 mesajları Faz 01 düzeninde**.
 Değiştir (fe_agent): `akis_faz02.py`, `akis_faz01.py`, `akis_kayit.py`, `akis_sohbet.py`, `llm.py`
 Değiştir (webapp): `backend.py`, `app.js` (JS)
 Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
