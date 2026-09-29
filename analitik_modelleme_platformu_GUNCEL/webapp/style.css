@@ -859,23 +859,6 @@ button.ozet-kart:focus-visible {
   line-height: 1.5; margin-top: 2px;
 }
 
-/* -------- Başlangıç kartı: iki satır (Veri / Sözlük) --------
-   Satırlar bölme kartının çip düzenini kullanır (.bolme-satir). Etiket
-   sütunu kısa: "Veri", "Sözlük". */
-.baslangic-kart { padding-top: var(--b-3); }
-.balon-sutun .baslangic-kart { width: 0; min-width: 100%; margin-top: var(--b-2); }
-.baslangic-kart .bolme-satir { grid-template-columns: 5rem minmax(0, 1fr) 20px; }
-.baslangic-ozet {
-  display: flex; align-items: center; gap: var(--b-2); flex-wrap: wrap;
-  margin: var(--b-3) var(--b-2) var(--b-3); min-height: 1.5em;
-  font-size: var(--fs-govde); color: var(--metin-soluk); line-height: 1.5;
-}
-.baslangic-ozet .secenek-kapali { align-self: auto; }
-.baslangic-kart .secim-onay { margin-left: var(--b-2); }
-@media (max-width: 700px) {
-  .baslangic-kart .bolme-satir { grid-template-columns: minmax(0, 1fr) 20px; }
-}
-
 /* -------- Alan araçları: "SQL ile Getir", "Dosya Yükle" --------
    Alanın altında küçük metin düğmeleri; tıklanınca SQL paneli açılır.
    Kart kilitlenince (gönderildi) gizlenir. */

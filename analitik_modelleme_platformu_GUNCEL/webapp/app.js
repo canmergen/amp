@@ -4576,14 +4576,6 @@ function calismaGostergesi(iptalEt) {
    kart isaretli kalir; adim zaten tamamlandi. */
 function secenekEkle(secenekler, kilit, secili) {
     if (!secenekler || !secenekler.length) return;
-    /* BAŞLANGIÇ: tek kart, iki satır (Veri / Sözlük). Seçenekler eksen
-       tanımını taşıyorsa kart kart çizilmez (kullanıcı kararı: "kartları
-       çoğaltmak amatörce durur"). Eski kayıtlarda eksen yok; onlar eski
-       düzende çizilir. */
-    if (secenekler[0] && Array.isArray(secenekler[0].eksenler)) {
-        baslangicKartiEkle(secenekler, kilit, secili);
-        return;
-    }
 
     const kok = document.createElement("div");
     kok.className = "secenek-kok";
@@ -4659,95 +4651,6 @@ function secenekEkle(secenekler, kilit, secili) {
     }
     sohbetEl.scrollTop = sohbetEl.scrollHeight;
     if (!kilit) yeniOdak = kok.querySelector(".secenek");
-}
-
-
-/* ==================== Başlangıç kartı ==================== */
-/* Iki satir: Veri (Baz Veri Seti / Kaynak Tablolar) ve Sözlük (Sözlük Var /
-   Sözlük Yok). Harf (A-D) iki secimden turetilir ve gonderilir; kartin
-   altinda secilen kombinasyonun aciklamasi yazar. Kapali kombinasyonda
-   "Şu An Kapalı" yazar, dugme kapanir. Satirlar bolme kartinin cip
-   duzenini kullanir (etiket | cipler | i). */
-function baslangicKartiEkle(secenekler, kilit, secili) {
-    const eksenler = secenekler[0].eksenler || [];
-    const secim = {};
-    const onceki = secenekler.find(x => x.deger === secili);
-    if (onceki) eksenler.forEach(e => { secim[e.ad] = onceki[e.ad]; });
-
-    const kart = elYap("div", "secim-kart baslangic-kart");
-    const ciplar = [];          // {el, eksen, deger}
-    eksenler.forEach(e => {
-        const satir = elYap("div", "bolme-satir");
-        satir.appendChild(elYap("div", "bolme-satir-etiket", e.etiket));
-        const govde = elYap("div", "bolme-satir-govde");
-        const grup = elYap("div", "bolme-cipler");
-        (e.secenekler || []).forEach(o => {
-            const cip = elYap("button", "bolme-cip", o.etiket);
-            cip.type = "button";
-            cip.onclick = () => {
-                if (mesgul || kart.classList.contains("kilitli")) return;
-                secim[e.ad] = o.deger;
-                tazele();
-            };
-            ciplar.push({ el: cip, eksen: e.ad, deger: o.deger });
-            grup.appendChild(cip);
-        });
-        govde.appendChild(grup);
-        satir.appendChild(govde);
-        satir.appendChild(bolmeBilgiSimgesi(e.bilgi || "", e.etiket));
-        kart.appendChild(satir);
-    });
-
-    const ozet = elYap("div", "baslangic-ozet");
-    kart.appendChild(ozet);
-    const btn = elYap("button", "secim-onay", "Devam Et");
-    btn.type = "button";
-    kart.appendChild(btn);
-
-    function eslesen() {
-        return secenekler.find(s => eksenler.every(e => s[e.ad] === secim[e.ad]));
-    }
-    function tazele() {
-        ciplar.forEach(c => c.el.classList.toggle("secili", secim[c.eksen] === c.deger));
-        const s = eslesen();
-        ozet.innerHTML = "";
-        ozet.classList.toggle("kapali", !!(s && s.kapali));
-        if (!s) {
-            ozet.textContent = "Verinin ve sözlüğün durumunu seçin.";
-        } else {
-            ozet.appendChild(document.createTextNode(tireSade(s.aciklama || "")));
-            if (s.kapali) ozet.appendChild(elYap("span", "secenek-kapali", "Şu An Kapalı"));
-        }
-        btn.disabled = !s || !!s.kapali || kart.classList.contains("kilitli");
-    }
-    function kilitle(evet) {
-        kart.classList.toggle("kilitli", evet);
-        ciplar.forEach(c => { c.el.disabled = evet; });
-        btn.hidden = evet;
-        tazele();
-    }
-    btn.onclick = () => {
-        const s = eslesen();
-        if (mesgul || !s || s.kapali) return;
-        kilitle(true);
-        geriAlKilit = () => kilitle(false);
-        gonder(s.deger, false);          // false: kullanici balonu basma
-    };
-
-    tazele();
-    if (kilit) kilitle(true);
-
-    const son = sohbetEl.lastElementChild;
-    const sutun = (son && son.classList.contains("bot"))
-        ? son.querySelector(".balon-sutun") : null;
-    if (sutun) {
-        sutun.classList.add("secenekli");
-        sutun.appendChild(kart);
-    } else {
-        sohbetEl.appendChild(kart);
-    }
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
-    if (!kilit) yeniOdak = kart.querySelector(".bolme-cip");
 }
 
 
