@@ -46,22 +46,33 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 #   D  veri seti YOK,    sozluk YOK     (eski C)
 # Eski kayitlardaki B/C, okunurken C/D'ye cevriliyor
 # (bkz. akis_durum.MOD_GOCU).
+# KART METNI (kullanici karari): BASLIK elinizde NE MEVCUT, ACIKLAMA neyin
+# mevcut OLMADIGI ve bu adimlarla nasil olusturulacagi.
+#
+# ACIK MODLAR (kullanici karari: "şu anda hangileri açıksa onları seçebileyim
+# diğerlerini seçmeme izin verme"). Buyuk veri (Spark) yoluyla uctan uca
+# denenmis baslangiclar acik; digerleri kartta soluk ve tiklanamaz durur,
+# yazarak secilmeye calisilirsa da reddedilir. Acmak icin bu listeye ekleyin.
+ACIK_MODLAR = ("A", "D")
+
 MOD_SECENEKLERI = [
-    {"deger": "A", "baslik": "Baz Veri Seti ve Baz Sözlük Hazır",
-     "aciklama": "Modellemeye girecek baz veri seti ve onun baz sözlüğü "
-                 "hazır: doğrudan modelleme tanımlarına ve veri analizine "
-                 "geçin."},
-    {"deger": "B", "baslik": "Baz Veri Seti Hazır Değil, Kaynak Sözlükler Hazır",
-     "aciklama": "Kaynak tablolar ve kaynak sözlükleri hazır: tablolar "
-                 "birleştirilerek baz veri seti, sözlükler birleştirilerek "
-                 "baz sözlük oluşturulur."},
-    {"deger": "C", "baslik": "Baz Veri Seti Hazır, Baz Sözlük Hazır Değil",
-     "aciklama": "Baz veri seti hazır: baz sözlük kolon yapısı ve veri "
-                 "profili üzerinden oluşturulur."},
-    {"deger": "D", "baslik": "Baz Veri Seti ve Baz Sözlük Hazır Değil",
-     "aciklama": "Yalnızca kaynak tablolar hazır: birleştirilerek baz veri "
-                 "seti, ardından baz sözlük oluşturulur."},
+    {"deger": "A", "baslik": "Baz Veri Seti ve Baz Sözlük Mevcut",
+     "aciklama": "Oluşturulacak bir şey yok: doğrudan modelleme tanımlarına "
+                 "ve veri analizine geçilir."},
+    {"deger": "B", "baslik": "Kaynak Tablolar ve Kaynak Sözlükler Mevcut",
+     "aciklama": "Baz veri seti ve baz sözlük mevcut değil: tablolar "
+                 "birleştirilerek baz veri seti, kaynak sözlükler "
+                 "birleştirilerek baz sözlük bu adımlarla oluşturulur."},
+    {"deger": "C", "baslik": "Baz Veri Seti Mevcut",
+     "aciklama": "Baz sözlük mevcut değil: veri setinin kolon yapısı ve "
+                 "profili üzerinden bu adımlarla oluşturulur."},
+    {"deger": "D", "baslik": "Kaynak Tablolar Mevcut",
+     "aciklama": "Baz veri seti ve baz sözlük mevcut değil: tablolar "
+                 "birleştirilerek baz veri seti, ardından baz sözlük bu "
+                 "adımlarla oluşturulur."},
 ]
+for _s in MOD_SECENEKLERI:
+    _s["kapali"] = _s["deger"] not in ACIK_MODLAR
 
 # Mod gruplari: kod "mod == 'C'" gibi tek harfe bakmasin, NE yapildigina
 # baksin. Yeni bir mod eklenince yalnizca bu iki satir guncellenir.

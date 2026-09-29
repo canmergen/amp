@@ -828,6 +828,12 @@ button.ozet-kart:focus-visible {
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .secenek:disabled { cursor: default; opacity: .45; }
+.secenek.kapali { cursor: not-allowed; opacity: .4; }
+.secenek-kapali {
+  align-self: center; flex-shrink: 0; white-space: nowrap;
+  font-size: var(--fs-kucuk, 11px); color: var(--metin-soluk);
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk); padding: 1px 6px;
+}
 .secenek.secili {
   opacity: 1; background: var(--kirmizi-acik);
   border-color: var(--kirmizi);

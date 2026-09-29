@@ -4606,7 +4606,14 @@ function secenekEkle(secenekler, kilit, secili) {
         }
         kart.appendChild(govde);
 
-        if (kilit) {
+        /* KAPALI SEÇENEK (kullanıcı kararı: henüz açılmamış başlangıçlar
+           seçilemesin). Soluk durur, tıklanamaz, sağında "Şu An Kapalı". */
+        if (s.kapali) {
+            kart.classList.add("kapali");
+            kart.appendChild(elYap("span", "secenek-kapali", "Şu An Kapalı"));
+        }
+
+        if (kilit || s.kapali) {
             kart.disabled = true;
             if (secili && s.deger === secili) kart.classList.add("secili");
         } else {

@@ -24,7 +24,8 @@ from fe_agent import amp as amp_mod
 from fe_agent import spark_is
 
 from fe_agent.akis_metin import (
-    ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI, MOD_SIRA)
+    ACIK_MODLAR, ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI,
+    MOD_SIRA)
 from fe_agent.akis_durum import (
     BAZ_ADI, LINEAGE_ADI, SOZLUK_ADI, SPLIT_KOLON, TEST_KIMLIK_LIMITI,
     AdimHatasi, _ad_haritasi,
@@ -285,6 +286,12 @@ def mod_girdi(durum, mesaj):
 
     secim = m.group(2).upper()
     yeni_mod = MOD_SIRA.get(secim, secim)
+
+    if yeni_mod not in ACIK_MODLAR:
+        # Kapali baslangic: kartta zaten tiklanamaz; yazarak da secilemez.
+        durum["_secenekler"] = MOD_SECENEKLERI
+        return False, ("«%s» başlangıcı şu an kapalı. Açık başlangıçlardan "
+                       "birini seçin." % MOD_ADLARI.get(yeni_mod, yeni_mod))
 
     if eski_mod and eski_mod != yeni_mod:
         # Secilen kart uygulanir; onceki modun verisi sifirlanir.

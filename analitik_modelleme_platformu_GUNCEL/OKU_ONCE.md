@@ -1,6 +1,18 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **tam veriye dokunan işler Spark'ta (kümede); Flow nesnelerini webapp kurar**.
+Bu tur: **başlangıç kartları: açık olanlar seçilebilir, metinler "ne mevcut / ne oluşturulacak"**.
+Yapıştır: fe_agent `akis_metin.py`, `akis_faz01.py` · webapp `app.js` (JS), `style.css` (CSS)
+
+- Açık başlangıçlar: A (Baz Veri Seti ve Baz Sözlük Mevcut) ve D (Kaynak
+  Tablolar Mevcut). B ve C kartta soluk, "Şu An Kapalı" etiketli ve
+  tıklanamaz; yazarak seçilmeye çalışılırsa da reddedilir. Açmak için
+  `akis_metin.ACIK_MODLAR` listesine eklenir.
+- Kart başlığı elinizde ne mevcut olduğunu, açıklama neyin mevcut olmadığını
+  ve bu adımlarla nasıl oluşturulacağını söylüyor.
+
+---
+
+Önceki tur: **tam veriye dokunan işler Spark'ta (kümede); Flow nesnelerini webapp kurar**.
 
 Neden: gerçek veri ~135 milyon satır × 1.040 kolon (FPD_TXN_FEATS_2025 ≈ 19,3 M,
 _2026 ≈ 116 M). Bu hacim webapp'in makinesine indirilemez; DuckDB yolu kaldırıldı.
