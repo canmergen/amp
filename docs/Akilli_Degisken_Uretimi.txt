@@ -11,20 +11,20 @@ Analitik Modelleme Platformu üzerinde, kredi risk modellerinde kullanılan değ
 
 Proje İşleyişi
 --------------
-  - Veri Hazırlığı: Modelde kullanılacak veri seti ve değişken açıklamaları belirlenir. Eksik açıklamalar yapay zekâ tarafından önerilir, analist tarafından onaylanır.
+  - Veri Hazırlığı: Modelde kullanılacak veri seti ve değişken açıklamaları belirlenir. Eksik açıklamalar yapay zekâ tarafından önerilir, kullanıcı tarafından onaylanır.
   - Mevcut Durum Ölçümü: Mevcut değişkenlerin model başarısına katkısı ölçülür. Yeni değişkenler bu ölçüme göre değerlendirilir.
   - Standart Değişken Üretimi: Değişim, oran ve eğilim gibi bilinen türdeki değişkenler önceden tanımlı kurallarla otomatik olarak üretilir.
   - Yapay Zekâ ile Yeni Değişkenler: Yapay zekâ, iş bilgisine dayalı yeni değişken önerileri sunar. Her öneri sistem tarafından doğrulanır ve hesaplanır.
   - Test ve Seçim: Yeni değişkenlerin model başarısına etkisi ölçülür. Yalnızca katkı sağlayan değişkenler modele alınır ve kayıt altına alınır.
   - Model ve Raporlama: Seçilen değişkenlerle final model kurulur. Model ve değişkenler için denetime hazır doküman otomatik olarak hazırlanır.
-Yapay zekâ süreçte yalnızca öneri üretir; hesaplama, doğrulama ve karar sistem tarafından yapılır. Analist onayı olmadan hiçbir değişken üretilmez, katkısı ölçülmeyen hiçbir değişken modele alınmaz.
+Yapay zekâ süreçte yalnızca öneri üretir; hesaplama, doğrulama ve karar sistem tarafından yapılır. Kullanıcı onayı olmadan hiçbir değişken üretilmez, katkısı ölçülmeyen hiçbir değişken modele alınmaz.
 
 AKILLI DEĞİŞKEN ÜRETİMİ: YÖNETİM ÖZETİ
 ======================================
 
 Üretim ve Verimlilik Hızı
   - Manuel değişken tasarımına harcanan süre önemli ölçüde kısalır; öneri, hesaplama ve test tek bir akışta tamamlanır.
-  - Analist kod yazmak yerine sistemin önerilerini değerlendirir ve onaylar.
+  - Kullanıcı kod yazmak yerine sistemin önerilerini değerlendirir ve onaylar.
   - Aynı yapı, farklı veri setleri ve modeller için yeniden kurulum gerektirmeden kullanılır.
 
 Model Performansını Artırmak
@@ -92,7 +92,7 @@ Neden Yetmedi?
 Bugünkü Yapı: Akıllı Değişken Üretimi
 İlk iki aşamadan çıkarılan dersler tek bir sistemde birleştirilmiştir.
   - Bilinen değişkenler kurallarla, yeni fikirler yapay zekâ ile üretilir. Yapay zekâ kapasitesi basit işlere harcanmaz.
-  - Yapay zekâ yalnızca öneri üretir. Hesaplama, doğrulama ve karar sistemdedir; analist her adımı onaylar.
+  - Yapay zekâ yalnızca öneri üretir. Hesaplama, doğrulama ve karar sistemdedir; kullanıcı her adımı onaylar.
   - Her değişkenin modele katkısı ölçülür. Modeli iyileştirmeyen değişken kullanılmaz.
   - Farklı veri setleri ve modellerde kullanılabilir. Yapı tek bir projeye bağlı değildir.
   - Tüm süreç kayıt altındadır. Hangi değişkenin neden eklendiği ve nasıl hesaplandığı raporlanır; denetim ve validasyon için hazırdır.
@@ -100,7 +100,7 @@ Bugünkü Yapı: Akıllı Değişken Üretimi
 ANALİTİK MODELLEME PLATFORMU
 ============================
 
-Akıllı Değişken Üretimi, Analitik Modelleme Platformu içinde çalışır. Platform, kredi risk modellerinin veriden final modele kadar tüm geliştirme sürecini tek bir yapıda, adım adım ve analist onayıyla yönetir. Değişken üretimi bu sürecin üçüncü adımıdır.
+Akıllı Değişken Üretimi, Analitik Modelleme Platformu içinde çalışır. Platform, kredi risk modellerinin veriden final modele kadar tüm geliştirme sürecini tek bir yapıda, adım adım ve kullanıcı onayıyla yönetir. Değişken üretimi bu sürecin üçüncü adımıdır.
 
   Adım                  | Ne Yapılır?                                          
   ----------------------+------------------------------------------------------
