@@ -1,5 +1,5 @@
 AKILLI DEĞİŞKEN ÜRETİMİ: RAPOR (metin sürümü)
-Görseller: docs/gorseller/ (01 proje işleyişi, 02 proje metodolojisi, 03 değişken üretimi akışı)
+Görseller: docs/gorseller/ (01 proje işleyişi, 02 proje metodolojisi)
 
 AKILLI DEĞİŞKEN ÜRETİMİ
 =======================
@@ -7,157 +7,119 @@ AKILLI DEĞİŞKEN ÜRETİMİ
 Projenin Amacı
 --------------
 
-Veri seti ve değişken sözlüğünden hedefi daha iyi açıklayan yeni değişkenleri yapay zekâ desteğiyle üretip model üzerinde test ederek değişken üretim sürecini hızlandırmak ve her değişkenin katkısını kanıta dayalı kılmak. Aynı altyapı sonraki adımda uçtan uca Analitik Modelleme Platformu'na genişletilecektir.
+Kredi risk modellerinde kullanılan değişkenlerin üretimini yapay zekâ desteğiyle hızlandırmak ve her yeni değişkenin modele gerçekten katkı sağlayıp sağlamadığını ölçerek karar vermek. Aynı altyapı sonraki adımda uçtan uca Analitik Modelleme Platformu'na genişletilecektir.
 
 Proje İşleyişi
 --------------
-  - Veri ve Sözlük Hazırlığı: Veri seti ve değişken sözlüğü seçilir; eksik açıklamalar için yapay zekâ öneri sunar; hedef, kimlik ve dönem tanımlanır.
-  - Bölme ve Baz Set: Sızıntıyı önleyen eğitim / validasyon / test ayrımı sabitlenir; mevcut değişkenlerin gücü (IV) ve stabilitesi (PSI) ölçülür.
-  - Kural Tabanlı Üretim: Yapay zekâ klasik dönüşümleri (fark, oran, log, sıralama, uç değer kırpma) önerir; onaydan sonra Python hesaplar.
-  - AI Değişken Keşfi: Yapay zekâ kısıtlı bir formül diliyle yeni değişken hipotezleri üretir; kod yazmaz, her formül denetimden geçer.
-  - Kalite, Seçim ve Model Testi: Zayıf ve sızıntı şüpheli değişkenler elenir; base ve enriched modeller 5 seed ile karşılaştırılır; her değişken kataloğa yazılır.
-  - Sonraki Adım: Aynı altyapı, ham veriden final modele uzanan Analitik Modelleme Platformu'na genişletilir.
-Bugünkü yapıda yapay zekâ yalnızca öneri verir; hesabı ve akışı Python yönetir. Her öneri kolon adlarıyla doğrulanır, kural ve formül denetiminden geçer; kalite, seçim ve model karşılaştırması kapılarını geçmeyen hiçbir değişken modele girmez. Yapı Dataiku üzerinde web uygulaması olarak çalışır; yalnızca kurum ortamındaki paketleri kullanır, ek kütüphane kurulumu gerektirmez.
+  - Veri Hazırlığı: Çalışılacak veri ve değişken açıklamaları seçilir. Eksik açıklamaları yapay zekâ tamamlar, analist onaylar.
+  - Ölçüm Zemini: Mevcut değişkenlerin gücü ölçülür. Yeni değişkenler bu ölçüye göre değerlendirilir.
+  - Standart Değişkenler: Değişim, oran ve trend gibi bilinen değişkenler kurallarla, otomatik olarak üretilir.
+  - Yapay Zekâ ile Yeni Değişkenler: Yapay zekâ, iş bilgisine dayalı yeni değişken fikirleri önerir. Her öneri kontrol edilerek hesaplanır.
+  - Test ve Seçim: Yeni değişkenlerin modeli iyileştirip iyileştirmediği ölçülür. Yalnızca katkı sağlayanlar kullanılır ve kayıt altına alınır.
+  - Sonraki Adım: Aynı altyapı, veriden final modele kadar tüm süreci yöneten Analitik Modelleme Platformu'na genişletilir.
+Yapay zekâ yalnızca öneri verir; hesaplama ve karar sistemdedir. Analistin onaylamadığı hiçbir değişken üretilmez, katkısı ölçülmeyen hiçbir değişken modele girmez.
 
 AKILLI DEĞİŞKEN ÜRETİMİ: YÖNETİM ÖZETİ
 ======================================
 
 Üretim ve Verimlilik Hızı
-  - Değişken fikri, formülü, hesabı ve ilk testi tek akışta üretilir; analist kod yazmak yerine önerileri değerlendirir.
-  - Aynı akış yeni bir veri seti ve sözlükle kod değiştirmeden çalışır; ham tablodan başlayan çalışmalar için birleştirme ve sözlük üretimi de yapay zekâ desteklidir.
-  - Tam veriye dokunan kurulum işleri (profil, veri seti yazımı, bölme) Spark ile kümede koşar; 135 milyon satırlık gerçek veri için kalan adımların Spark'a taşınması sürmektedir.
+  - Günler süren manuel değişken tasarımı, tek bir akışta ve kısa sürede tamamlanır.
+  - Analist kod yazmak yerine sistemin önerilerini değerlendirir ve onaylar.
+  - Aynı yapı farklı veri setleri ve modeller için yeniden kurulmadan kullanılır.
 
 Model Performansını Artırmak
-  - Her yeni değişken base modele karşı 5 seed ve %95 güven aralığıyla test edilir; yalnızca katkısı kanıtlanan modele girer.
-  - Bölme baştan sabitlenir; zamansal bölmede son dönem test (OOT) olarak ayrılır; eşik, sıralama, IV ve önem hesapları yalnızca eğitim satırlarından yapılır.
-  - Geleneksel dönüşümler kuralla, iş mantığına dayalı yeni değişkenler yapay zekâ ile üretilir.
+  - Her yeni değişkenin modele katkısı ayrı ayrı ölçülür.
+  - Yalnızca modeli gerçekten iyileştiren değişkenler kullanılır; etkisiz olanlar elenir.
+  - Bilinen değişkenler otomatik üretilir; yapay zekâ yeni ve farklı fikirlere odaklanır.
 
 ROI / ROE
-  - Daha iyi ayrışan bir risk modeli, aynı onay oranında daha düşük batak, aynı batak oranında daha yüksek onay demektir.
-  - Kayıp karşılıkları ve risk ağırlıklı sermaye kullanımının olumlu etkilenmesi beklenir; analist zamanı ve validasyon süresi kısalır.
-  - Parasal karşılık, ilk gerçek veri sonucundan sonra portföy büyüklüğü ve karar eşiğiyle hesaplanacaktır.
+  - Riski daha iyi ayırt eden model, aynı onay oranında daha az kayıp, aynı kayıpta daha fazla onay demektir.
+  - Bunun kredi kayıplarına ve sermaye kullanımına olumlu yansıması beklenir.
+  - Parasal karşılık, gerçek veri sonucu alındıktan sonra hesaplanacaktır.
 
 Denemelerin Rakam Çıktıları
-  - İlk yapıda üretilen 33 yapay zekâ değişkeni modele katkı sağlamadı: CV AUC 0,6128 → 0,6121, fark gürültü bandında.
-  - Sözlük sıkıştırma: 1.040 kolonda 0 → 848 eşleşme, 14 → 270 değişken ailesi.
-  - Bu sonuç bugünkü yapının tasarımını belirledi; yeni yapının gerçek veri sonucu sunum öncesinde alınacaktır.
+  - İlk denemede yapay zekânın ürettiği 33 değişken modele katkı sağlamadı.
+  - Bu sonuç, yöntemin nerede eksik kaldığını gösterdi ve bugünkü yapının tasarımını belirledi.
+  - Bugünkü yapının gerçek veri sonucu sunum öncesinde alınacaktır.
 
 Proje Metodolojisi
 ------------------
-Üç aşamanın her biri bir öncekinin gösterdiği eksikten doğmuştur. İlk PoC yapay zekânın kendi kodunu yazıp çalıştırdığı bir ajandı; ilk yapı hesabı koda verip sözlük, hafıza ve model testi ekledi; bugünkü yapı geleneksel üretimi yapay zekâdan ayırıp her değişkeni base modele karşı ölçen uçtan uca bir çerçeve kurdu.
+Proje üç aşamada bugünkü hâline geldi. Her aşama, bir öncekinde görülen eksikleri gidermek için kuruldu.
 
 DENEMELERİN RAKAM ÇIKTILARI
 ===========================
 
-Elde bulunan tek model sonucu ilk yapıya aittir (10 Eylül 2026). Karşılaştırma HAVALE_EFT_NTT verisiyle, 10.000 müşteri ve 1.042 kolon üzerinde, 8.000 eğitim / 2.000 doğrulama satırı, LightGBM, 5 seed ve 3 katlı çapraz doğrulama ile yapılmıştır.
+İlk yapıyla yapılan denemede (Eylül 2026, 10.000 müşterilik havale/EFT işlem verisi) mevcut model ile yapay zekâ değişkenleri eklenmiş model karşılaştırıldı. Tabloda modelin riskli ve risksiz müşteriyi ayırma gücü gösterilmektedir; değer ne kadar yüksekse model o kadar iyidir.
 
-  Kurulum                              | Kolon (eleme sonrası) | CV AUC
-  -------------------------------------+-----------------------+-------
-  Base (mevcut değişkenler)            | 247                   | 0,6128
-  Enriched (mevcut + yapay zekâ)       | 279                   | 0,6121
-  Yalnızca 33 yapay zekâ değişkeni     | 33                    | 0,5679
-  Rastgele seçilmiş 33 mevcut değişken | 33                    | 0,5946
+  Model                                  | Değişken Sayısı | Ayırma Gücü
+  ---------------------------------------+-----------------+------------
+  Mevcut model                           | 247             | 0,6128     
+  Mevcut model + yapay zekâ değişkenleri | 279             | 0,6121     
 
 Ne Gösteriyor?
 --------------
-  - Eşli karşılaştırmada fark −0,0012 (çapraz doğrulama) ve −0,0010 (doğrulama seti) çıkmış; %95 güven aralığı [−0,0076, +0,0061] sıfırı kapsamıştır. Ölçülebilir bir katkı yoktur.
-  - Yapay zekâ değişkenleri teknik olarak geçerli formüllerdi: 33 değişkenden 32'si elemeyi geçti, en güçlüsü 279 kolon içinde 13. sırada yer aldı. Ancak tek başlarına, rastgele seçilmiş 33 mevcut kolondan daha zayıf kaldılar.
+  - Yapay zekânın ürettiği değişkenler eklendiğinde modelin başarısı değişmedi. Aradaki fark ölçüm hatası sınırları içinde kaldı.
+  - Değişkenler teknik olarak doğru hesaplanıyordu, ancak modele yeni bir bilgi katmıyordu.
 
 Neden?
 ------
-  - Yapay zekâ, veri setinde eksik olan geleneksel değişkenleri üretiyordu. Delta, trend, momentum ve pencere oranları veri setinde yoktu; sınırlı öneri hakkı bunlara harcanıyor, iş mantığına dayalı yeni değişkenlere sıra gelmiyordu.
-  - Kabul kriteri modele katkıya bakmıyordu. Bir hipotez, tek başına lift ve oran farkı eşiğini geçip mevcut değişkenlere benzemiyorsa kabul ediliyordu; base modele artımlı katkı ölçülmüyordu.
-  - Tekrar kontrolü isme bağlıydı. Aynı mantık farklı bir adla yeniden üretilebiliyordu.
+  - Yapay zekâ zamanını basit değişkenlere harcadı. Kuralla kolayca üretilebilecek değişim ve oran gibi değişkenleri üretti; asıl beklenen yeni ve iş bilgisine dayalı fikirlere sıra gelmedi.
+  - Değişkenlerin modele katkısı ölçülmeden kabul ediliyordu. Tek başına anlamlı görünen bir değişken, modele katkısına bakılmadan listeye alınıyordu.
 
-Bu Rakamın Değeri
+Bu Sonucun Değeri
 -----------------
-Yöntem katkı sağlamadı, ancak ölçüm çalıştı: katkısız değişkenler rakamla yakalandı ve karar buna göre verildi. Bugünkü yapıda bu ölçüm akışın standart adımıdır; geleneksel üretim yapay zekâdan ayrılmış, kabul kararı model testine bağlanmıştır. Sözlük sıkıştırmada ise 1.040 kolon için eski yöntemin bulamadığı eşleşme 848'e, 14 kaba aile 270 değişken ailesine çıkmış; yapay zekânın gerçek kolon adlarından geçerli formül ürettiği saha testinde doğrulanmıştır.
-Bugünkü yapının kendi rakamı henüz yoktur. Base ve enriched karşılaştırması akışın içinde hazırdır ancak gerçek veride henüz koşulmamıştır. Sunum öncesinde FPD verisiyle bir koşu yapılması planlanmaktadır.
+Deneme istenen sonucu vermedi, ancak ölçüm doğru çalıştı: etkisiz değişkenler rakamla tespit edildi ve karar buna göre verildi. Bugünkü yapıda bu ölçüm her çalışmanın standart adımıdır.
+Bugünkü yapının kendi sonucu henüz yoktur. Karşılaştırma sistemde hazırdır; gerçek veriyle sonucun sunum öncesinde alınması planlanmaktadır.
 
 GEÇMİŞ DENEMELER VE ÇIKARILAN DERSLER
 =====================================
 
-İlk PoC: Bireysel Deep Agent
-Ekip dışında ayrı bir sandbox projesinde kurulan ilk akış uçtan uca çalışıyor ve çıktı üretiyordu; ancak üretilen değişkenlerin kalitesi ve kurgunun metodolojisi sonuçların modelde kullanılmasına izin vermiyordu.
-Nasıl Çalışıyordu?
-  - Ajan, langgraph ve deepagents kütüphaneleriyle kurulmuştu ve Qwen 27B modelini "otonom kredi riski analisti" olarak çalıştırıyordu; yapay zekâ kendi pandas kodunu yazıyor, çalıştırıyor ve çıktısını okuyordu.
-  - Her koşu rastgele bir kolon ailesi ve tema odağıyla başlıyor, her turda kod tarafından farklı bir analiz yöntemi dayatılıyordu.
-  - Prompt'ta sıkı kurallar vardı: her sayı script çıktısından alınmalı, zayıf sinyal etiketlenmeli, sıfır yoğunluklu kolonlarda sahte keşif sayılmamalı, aktivite hacmi etkisi kontrol edilmeli.
-  - Çıktı: her hipotez için bir dosya (H01, H02, …), hipotez tablosu, rapor ve bunlardan derlenen bir features.py.
-Ne Yanlıştı?
-  - Üretilen kod çalışırken hata veriyordu. Hipotez dosyalarındaki kodlar doğrudan çalışmadığı için her hipotezin pandas kodu tanımına göre tek tek yeniden kurgulandı.
-  - Kod üretiminde token uzunluğu hataları alınıyordu. ~150 satırlık prompt, sözlük ve tur geçmişiyle birlikte model sınıra takılıyor; üretilen kod ya da çıktı yarıda kalıyordu.
-  - Üretilen değişkenler basit ve anlamsızdı. Çoğu delta, momentum ya da iki pencerenin oranıydı; bir hipotez zaten var olan bir kolonu yeniden "keşfediyordu"; sıfır paydalı oranlar müşterilerin büyük kısmında boş değer üretiyordu.
-  - Hipotez metinleri veriyle tutarlı değildi. Gelen ve giden işlem kolonları (GLN/GDN) ters etiketlenmişti; hipotezler birbiriyle çelişiyordu; stabilite alanı hiçbir dosyada dolmamıştı.
-  - Metodoloji eksikti. Prompt hedefin FPD olduğunu söylemiyordu; eğitim/test ayrımı, sızıntı kontrolü ve minimum segment büyüklüğü kuralı yoktu; %50 hedef oranlı dengeli örneklem lift yorumlarını yanıltıyordu.
-  - Kurum ortamında çalışamıyordu. Teknoloji Mimarisi, langgraph ve deepagents kurulumunu reddetti; akışın Dataiku'nun kendi yetkinlikleriyle yeniden kurulması gerekti.
-
-İlk Yapı: Hafızalı Keşif Akışı
-Akış, kurumda onaylanmayan kütüphaneler olmadan Dataiku LLM Mesh üzerinde yeniden kuruldu ve roller ters çevrildi: yapay zekâ kod yazmaz, değişken önerir; hesabı ve ölçümü kod yapar. Akış Dataiku'daki TARGET_FEATURE_DISCOVERY bölgesinde durmaktadır.
-Ne Yapıldı?
-  - Daha iyi sözlük: 1.040 kolon açıklaması, yapay zekânın okuyabileceği kompakt bir haritaya çevrildi; 848 kolon eşleşti, 270 aile çıktı.
-  - Veri sözleşmesi: Hedef, kimlik, dönem, doğrulama oranı ve kabul eşikleri tek bir meta dosyasında sabitlendi; %80/%20 tabakalı bölme bir kez dondurulup her koşuda aynı kullanıldı.
-  - Hafıza: Kabul edilen değişkenler formül, gerekçe ve istatistikleriyle kayda; reddedilenler gerekçesiyle ayrı bir arşive yazıldı.
-  - Keşif döngüsü: Her turda 6 hipotez ve formül önerildi; kod formülü gerçek kolonlara karşı doğrulayıp decile, lift ve oran farkıyla ölçtü. Yaklaşık 22 tur sonunda 33 değişken birikti; kabul oranı düşünce üretim durduruldu.
-  - Kanıt: Kabul edilen değişkenler veri setine eklendi ve base ile enriched modeller aynı ayarlarla karşılaştırıldı.
+İlk Deneme: Kendi Kodunu Yazan Yapay Zekâ
+İlk denemede yapay zekâ, veriyi kendisi inceleyip değişken fikri üreten ve bunları test etmek için kendi kodunu yazan bir asistan olarak kurgulandı.
 Neden Yetmedi?
-  - Yapay zekâ, veri setinde eksik olan geleneksel değişkenleri (delta, trend, momentum, pencere oranı) üretiyordu; bunların kuralla ve deterministik üretilmesi gerekiyordu.
-  - Kabul kriteri modele artımlı katkıya bakmıyordu; 33 değişkenden 32'si elemeyi geçti ama modele katkı sağlamadı.
-  - Dosya adları, hedef ve eşikler projeye özeldi; her adım notebook ve recipe'lerden elle tetikleniyordu. Başka bir ekip başka bir veri setiyle kullanamazdı.
-  - Tip kontrolü, zamansal (OOT) bölme, IV, PSI ve Model Risk'e gidecek dokümantasyon akışın içinde değildi.
+  - Yapay zekânın yazdığı kodlar sık sık hata verdi; her öneri elle yeniden düzenlenmek zorunda kaldı.
+  - Üretilen değişkenler çoğunlukla basit ve bilinen türdendi; bazıları veride zaten vardı.
+  - Öneri açıklamaları veriyle çelişebiliyordu; sonuçların güvenilirliği sınırlıydı.
+  - Kullanılan yazılım kütüphaneleri kurum ortamında onaylanmadığı için yapı kullanılamadı.
+
+İlk Yapı: Hesabı Sisteme Veren Akış
+Yapay zekânın rolü öneri vermekle sınırlandı; hesaplamayı ve ölçümü sistem yapmaya başladı. Değişken açıklamaları düzenlendi, önerilerin kaydı tutuldu ve sonuçlar modelle test edildi.
+Neden Yetmedi?
+  - Yapay zekâ, kurallarla üretilebilecek basit değişkenleri üretmeye devam etti.
+  - Değişkenler modele katkısı ölçülmeden kabul ediliyordu; 33 değişken modele katkı sağlamadı.
+  - Yapı tek bir veri setine özeldi ve her adım elle çalıştırılıyordu; başka ekipler kullanamazdı.
 
 Bugünkü Yapı: Akıllı Değişken Üretimi
-İlk iki aşamanın dersleri tek bir sistemde toplandı. Aşağıdaki kurallar bugünkü tasarımın omurgasıdır.
-  - Yapay zekâ kod yazmaz. Kapalı bir dönüşüm listesinden seçer ya da kısıtlı bir formül dilinde yazar; Python denetler, hesaplar ve çalışır kodu kendisi üretir.
-  - Akışı Python yönetir. Adımlar, geçişler ve onaylar deterministiktir; yapay zekâ hiçbir adımı ilerletemez. (Akışı sohbet üzerinden yapay zekâya yönettirme denemesi, çalışmamış adımların "tamamlandı" sayılması nedeniyle bırakıldı.)
-  - Geleneksel ve AI üretimi ayrıdır. Fark, oran, log, sıralama ve uç değer kırpma kural tabanlı adımda; birden çok kolonu birleştiren yeni değişkenler yapay zekâ keşfinde üretilir.
-  - Kabul kararı model testine bağlıdır. Değişken, aynı bölme ve algoritmayla base modele karşı 5 seed ile test edilir; güven aralığı sıfırı içeriyorsa "katkı ayırt edilemiyor" denir.
-  - Bölme baştan sabittir. Tüm öğrenmeler yalnızca eğitim satırlarından yapılır; zamansal bölmede son dönem test (OOT) olarak ayrılır, rastgele bölmede aynı müşterinin kayıtları bir arada tutulur.
-  - Veri seti ve sözlük parametredir. Hedef, kimlik ve dönem kullanıcıdan alınır; aynı akış her modelleme çalışmasında, ek kütüphane kurulumu olmadan çalışır.
-
-BUGÜNKÜ YAPIDA DEĞİŞKEN ÜRETİMİ: İŞLEYİŞ AYRINTISI
-==================================================
-
-Değişken üretimi iki üretim adımı ve üç kapıdan oluşur. Her adım önce planını gösterir; kullanıcı onaylamadan hiçbir değişken üretilmez.
-  - Kural Tabanlı Üretim: Yapay zekâ sözlük açıklamalarını okuyup hangi kolon grubuna hangi klasik dönüşümün uygulanacağını önerir. Seçenekler kapalı bir listeyle sınırlıdır: fark, oran, log, sıralama (rank) ve uç değer kırpma (winsorize); en fazla 12 dönüşüm ailesi önerilir. Kullanıcı planın tümünü ya da bir kısmını onaylar; hesabı Python yapar. Kırpma eşikleri ve sıralama referansı yalnızca eğitim satırlarından öğrenilir.
-  - AI Değişken Keşfi: Yapay zekâ, en az iki kolonu birleştiren en fazla 10 yeni değişken hipotezi yazar. Bunu Python koduyla değil kısıtlı bir formül diliyle yapar (dört işlem, log1p, abs, sqrt, rank, clip, fark). Her formül söz dizimi ağacı düzeyinde denetlenir, kolon adları gerçek şemayla karşılaştırılır ve platformun kendi yürütücüsüyle hesaplanır; eval kullanılmaz. Tek değişken analizinde (SFA) en güçlü çıkan değişkenler yapay zekâya bağlam olarak verilir.
-  - Kalite Kapısı: Boş oranı %50'nin üstünde olanlar, sabit değer taşıyanlar ve hedefle korelasyonu 0,95'i aşanlar (sızıntı şüphesi) elenir.
-  - Seçim Hattı: Yarı sabit olanlar, birbirine çok benzeyenler (|r| > 0,95 olan çiftte IV'si düşük olan) ve model önemi çok düşük olanlar elenir. Hepsi yalnızca eğitim satırlarında hesaplanır; elenen her değişkenin hangi adımda ve neden elendiği tabloda kalır.
-  - Model Karşılaştırması: Aynı bölme ve aynı algoritmayla (gradient boosting, erken durdurma açık; eksik değerler modele bırakılır) base ve enriched modeller eğitilir. Ölçüm 5 seed ile tekrarlanır; AUC, Gini ve KS farkı ortalama, standart sapma ve %95 güven aralığıyla raporlanır. Karşılaştırma yalnızca eğitim satırlarında yapılır; test ve OOT satırları bu adıma girmez.
-  - Değişken Kütüğü ve Üretim Kodu: Her değişkenin formülü, kaynak kolonları, gerekçesi, kalite ve seçim sonucu ve model katkısı tek tabloda tutulur. Tüm üretimin çalıştırılabilir Python kodu tek dosyaya yazılır; sonuç başka bir ortamda yeniden üretilebilir.
-
-Üretimi Çevreleyen Güvence Katmanı
-----------------------------------
-Bir değişkenin gerçekten işe yaradığını söyleyebilmek için üretimden önce ve sonra şu unsurların kurulu olması gerekir; bugünkü yapı bunların hepsini aynı akışta kurar.
-  - Veri sözleşmesi: Hedef, kimlik ve dönem iki kez korunur; ne bir dönüşüme girer ne de yeni bir değişkenin adı olabilir.
-  - Sözlük: Eksik açıklamalar için yapay zekâ öneri sunar, kullanıcı onaylar. Kurumsal sözlük tablosu hiçbir koşulda değiştirilmez; oturuma özel bir kopya üzerinde çalışılır.
-  - Tip ve kalite kontrolü: Metin olarak gelen tutarlar, sayı olarak gelen tarihler ve kodlar yalnızca verinin izin verdiği dönüşümlerle düzeltilir; tek değerli kolonlar süreç dışı bırakılır.
-  - Referans çizgisi: Mevcut değişkenlerin tek değişken gücü (IV, C-değeri) ve zaman içindeki stabilitesi (PSI) ölçülür; yeni değişkenler bu çizgiyle karşılaştırılır.
-  - Belge: Her değişken kütüğe, tüm çalışma Model Risk'e gidecek Teknik Model Dokümanı'na yazılır. Dokümandaki her sayı koddan gelir; yapay zekâ tek bir metrik yazmaz. Doküman Word, değişken listesi Excel olarak ek paket gerektirmeden indirilir.
-  - Veri güvenliği: Kişisel veri çağrıştıran kolonların gerçek değerleri yapay zekâya gönderilmez; girdi tablolarına ve kurumsal sözlüğe yazılmaz.
+İlk iki aşamadan çıkan dersler tek bir sistemde birleştirildi.
+  - Bilinen değişkenler kuralla, yeni fikirler yapay zekâ ile üretilir. Yapay zekâ zamanını basit işlere harcamaz.
+  - Yapay zekâ yalnızca öneri verir. Hesaplama, kontrol ve karar sistemdedir; analist her adımı onaylar.
+  - Her değişkenin modele katkısı ölçülür. Modeli iyileştirmeyen değişken kullanılmaz.
+  - Farklı veri setleri ve modeller için kullanılabilir. Yapı tek bir projeye bağlı değildir.
+  - Her şey kayıt altındadır. Hangi değişkenin neden eklendiği ve nasıl hesaplandığı raporlanır; denetim ve validasyon için hazırdır.
 
 SONRAKİ ADIM: ANALİTİK MODELLEME PLATFORMU
 ==========================================
 
-Değişken üretimi, ham veriden final modele uzanan beş fazlı bir modelleme akışının üçüncü fazı olarak kurulmuştur. Platform, veri ve sözlük seçiminden Model Risk'e gidecek dokümana kadar tüm süreci tek arayüzde yönetir. Hedef, platformu banka içinde diğer modelleme ekiplerinin kendi yetkili veri setleriyle kullanabileceği bir araca dönüştürmektir.
+Değişken üretimi, veriden final modele kadar uzanan beş adımlı bir modelleme sürecinin parçası olarak kuruldu. Sonraki adımda bu süreç tek bir platformda birleştirilerek banka içindeki diğer modelleme ekiplerinin kullanımına açılacaktır.
 
-  Faz                          | Ne yapılıyor                                                  | Değişken üretimine katkısı                                 
-  -----------------------------+---------------------------------------------------------------+------------------------------------------------------------
-  01 Çalışma Kurulumu          | Veri ve sözlük, modelleme tanımları, tip kontrolü, bölme      | Hedef, kimlik ve sızıntı sınırını belirler                 
-  02 Veri Anlama ve Hazırlama  | Profil, SFA, PSI, analitik baz set                            | Referans çizgisini ve yapay zekâya verilecek bağlamı üretir
-  03 Değişken Mühendisliği     | Kural tabanlı üretim ve AI değişken keşfi                     | Üretimin kendisi                                           
-  04 Değişken Değerlendirme    | Kalite kapısı, aday değişken seti                             | Zayıf ve riskli değişkenleri eler                          
-  05 Modelleme ve Finalizasyon | Model karşılaştırması, algoritma seçimi, final model, katalog | Katkıyı kanıtlar ve kayıt altına alır                      
+  Adım                  | Ne Yapılır?                                          
+  ----------------------+------------------------------------------------------
+  01 Çalışma Kurulumu   | Veri seçilir, modelin amacı tanımlanır.              
+  02 Veri Hazırlığı     | Veri incelenir, kalite kontrolleri yapılır.          
+  03 Değişken Üretimi   | Yeni değişkenler üretilir (bu projenin konusu).      
+  04 Değişken Seçimi    | Etkisiz ve riskli değişkenler elenir.                
+  05 Model ve Raporlama | Final model kurulur, denetime hazır doküman üretilir.
 
-Yapı gerçek hacme göre kurulmuştur: FPD_TXN_FEATS tabloları toplam yaklaşık 135 milyon satır ve 1.040 kolondur. Tam veriye dokunan işler (profil, veri seti yazımı, bölme) Spark üzerinde kümede çalışır ve gereken Flow nesnelerini uygulama kendisi kurar.
+Platformun Getirisi
+-------------------
+  - Standart süreç: Tüm modelleme ekipleri aynı adımları, aynı kalite kontrolleriyle uygular.
+  - Hız: Veriden modele kadar geçen süre kısalır; tekrar eden işler otomatikleşir.
+  - Denetlenebilirlik: Model Risk ve validasyon ekiplerine gidecek dokümanlar otomatik hazırlanır.
+  - Ölçeklenebilirlik: Yapı, 135 milyon satırlık gerçek veri hacmine göre tasarlandı.
 
-Açık İşler
-----------
-  - Gerçek veride ilk sonuç: Bugünkü yapıyla FPD verisi üzerinde base ve enriched karşılaştırması çalıştırılmalı; bu rapordaki tek rakam seti ilk yapıya aittir.
-  - Faz 2-5'in Spark'a taşınması: SFA, stabilite, üretim, seçim ve model adımları veri setini hâlâ uygulama içinde pandas ile okumaktadır; 135 milyon satırda bu adımlar da Spark'a taşınmalıdır.
-  - Nesil nesil keşif: AI keşfi şu an tek turda en fazla 10 hipotez üretir; sonraki tura önceki hipotezlerin skorlarını geri besleyen bir döngü eklenmelidir.
-  - Formül bazlı tekrar kontrolü: Aynı mantığın farklı adla yeniden önerilmesini engelleyecek bir formül parmak izi kütüğe eklenmelidir.
-  - İkili dönüşümlerin eşleşmesi: Fark ve oran, önerilen kolon listesindeki ardışık çiftlere uygulanmaktadır; hangi kolonun hangisiyle eşleşeceği açıkça planlanmalıdır.
-  - Model Risk eşikleri: Validasyon eşikleri şu an varsayılan değerlerdir; Model Risk ekibiyle netleştirilmelidir.
-  - ROI / ROE hesabı: Portföy büyüklüğü, karar eşiği ve Gini kazancının batak oranına etkisi üzerinden parasal karşılık hesaplanmalıdır.
-  - Platform tarafı: Kalibrasyon, segment performansı ve SHAP analizleri ile Dağılım ve İlişkiler sekmeleri henüz tamamlanmamıştır; Teknik Model Dokümanı'nın kullanıcı bölümleri için yönlendirmeli soru katmanı planlanmaktadır.
+Yakın Dönem Planı
+-----------------
+  - Bugünkü yapının gerçek veriyle ilk sonucunun alınması.
+  - Sonuca göre ROI / ROE etkisinin parasal olarak hesaplanması.
+  - Tüm adımların büyük veri hacminde çalışacak şekilde tamamlanması.
+  - Validasyon kriterlerinin Model Risk ekibiyle netleştirilmesi.
