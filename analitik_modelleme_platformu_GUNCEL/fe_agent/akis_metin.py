@@ -57,17 +57,17 @@ ACIK_MODLAR = ("A", "D")
 
 MOD_SECENEKLERI = [
     {"deger": "A", "baslik": "Baz Veri Seti ve Baz Sözlük Mevcut",
-     "aciklama": "Oluşturulacak bir şey yok: doğrudan modelleme tanımlarına "
+     "aciklama": "Oluşturulacak bir şey yok, doğrudan modelleme tanımlarına "
                  "ve veri analizine geçilir."},
     {"deger": "B", "baslik": "Kaynak Tablolar ve Kaynak Sözlükler Mevcut",
-     "aciklama": "Baz veri seti ve baz sözlük mevcut değil: tablolar "
+     "aciklama": "Baz veri seti ve baz sözlük mevcut değil, tablolar "
                  "birleştirilerek baz veri seti, kaynak sözlükler "
                  "birleştirilerek baz sözlük bu adımlarla oluşturulur."},
     {"deger": "C", "baslik": "Baz Veri Seti Mevcut",
-     "aciklama": "Baz sözlük mevcut değil: veri setinin kolon yapısı ve "
+     "aciklama": "Baz sözlük mevcut değil, veri setinin kolon yapısı ve "
                  "profili üzerinden bu adımlarla oluşturulur."},
     {"deger": "D", "baslik": "Kaynak Tablolar Mevcut",
-     "aciklama": "Baz veri seti ve baz sözlük mevcut değil: tablolar "
+     "aciklama": "Baz veri seti ve baz sözlük mevcut değil, tablolar "
                  "birleştirilerek baz veri seti, ardından baz sözlük bu "
                  "adımlarla oluşturulur."},
 ]
