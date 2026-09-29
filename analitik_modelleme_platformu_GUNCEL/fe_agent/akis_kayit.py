@@ -153,7 +153,10 @@ ADIMLAR = {
                     "reddedilir. Kabul edilenler Analitik Baz Set'te yeni "
                     "kolon olarak üretilir.",
         # plan=None: KARTIN KENDISI ONAYDIR (sozluk tanimlari ile ayni).
-        "girdi": aralik_girdi, "plan": None, "uygula": aralik_uygula},
+        "girdi": aralik_girdi, "plan": None, "uygula": aralik_uygula,
+        # Kartin gonderdigi mesajlar ("aralık: ...", "aralık kararları: ...")
+        # soru sanilip dil modeline gitmesin.
+        "tanir": lambda m: str(m or "").strip().lower().startswith("aralık")},
     "stabilite": {
         "baslik": "Stabilite Analizi (PSI)",
         "aciklama": "Değişken dağılımlarının zaman içinde kayıp kaymadığı "

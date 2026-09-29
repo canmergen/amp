@@ -490,7 +490,10 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
             # Adimin bos-mesaj istemi (kopya uzerinde: durumu degistirmesin)
             _, bos_istem = _girdi_cagir(adim, copy.deepcopy(durum), "")
 
-            if uyari == bos_istem:
+            # Adim bu mesaji KENDI kart mesaji olarak taniyorsa (ornek:
+            # "aralık: yapay zekâ") soru sanilmaz; kart zaten acildi.
+            tanir = adim.get("tanir")
+            if uyari == bos_istem and not (tanir and tanir(mesaj)):
                 # Mesaj bu adima ait bilgi icermiyor. Ekrandaki form/kartlar
                 # AYNEN yeniden gonderilir: yukaridaki kopya tiklanmissa
                 # kilitli ve kullanicinin secim alani kalmiyor.

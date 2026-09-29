@@ -1808,6 +1808,18 @@ def _dagilim_hesapla(seri):
     return sonuc
 
 
+@app.route("/aralik_ai")
+def aralik_ai_endpoint():
+    """Aralık Önerileri kartı: arka planda çalışan yapay zekâ
+    değerlendirmesinin durumu ve gelen kararlar."""
+    from fe_agent import akis_faz02
+    try:
+        return jsonify(akis_faz02.aralik_ai_durumu(request.args.get("is") or ""))
+    except Exception as e:
+        kod = _hata_kaydet("aralik_ai", e)
+        return jsonify({"durum": "bitti", "hata": "Durum okunamadı (%s)." % kod})
+
+
 @app.route("/sfa_aralik")
 def sfa_aralik_endpoint():
     """SFA aralik onerileri (bkz. fe_agent/aralik.py).

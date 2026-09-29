@@ -5942,6 +5942,8 @@ function aralikKartiEkle(alan, blok) {
 
     const satirlar = alan.satirlar || [];
     const kutular = [];
+    const gerekceler = [];     /* satir basina yapay zeka gerekcesi */
+    const dokunulan = new Set();  /* kullanicinin elle degistirdigi kutular */
     const toplu = elYap("div", "dg-toplu");
     const topluBtn = [];
     [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([deger, ad]) => {
@@ -6004,12 +6006,14 @@ function aralikKartiEkle(alan, blok) {
             }
             tdO.appendChild(kk);
         }
-        if (sat.gerekce) {
-            const g = elYap("div", "aralik-gerekce");
-            g.appendChild(elYap("span", "aralik-gerekce-bas", "Yapay Zekâ"));
-            g.appendChild(document.createTextNode(" " + tireSade(sat.gerekce)));
-            tdO.appendChild(g);
-        }
+        /* Gerekce alani her satirda var; yapay zeka sonucu geldikce dolar. */
+        const g = elYap("div", "aralik-gerekce");
+        g.hidden = !sat.gerekce;
+        g.appendChild(elYap("span", "aralik-gerekce-bas", "Yapay Zekâ"));
+        const gm = document.createTextNode(" " + tireSade(sat.gerekce || ""));
+        g.appendChild(gm);
+        gerekceler.push({ el: g, metin: gm });
+        tdO.appendChild(g);
         tr.appendChild(tdO);
         const tdU = elYap("td", "dg-ekle-hucre");
         const kutu = document.createElement("input");
@@ -6017,7 +6021,12 @@ function aralikKartiEkle(alan, blok) {
         kutu.className = "dg-ekle";
         kutu.checked = !!sat.secili;
         kutu.setAttribute("aria-label", sat.ad + " önerisi uygulansın");
-        kutu.onchange = () => { if (!kart.classList.contains("kilitli")) tazele(); };
+        const sira = kutular.length;
+        kutu.onchange = () => {
+            if (kart.classList.contains("kilitli")) return;
+            dokunulan.add(sira);
+            tazele();
+        };
         tdU.appendChild(kutu);
         tr.appendChild(tdU);
         kutular.push(kutu);
@@ -6027,6 +6036,9 @@ function aralikKartiEkle(alan, blok) {
     sar.appendChild(tablo);
     kart.appendChild(sar);
 
+    const aiDurum = elYap("div", "dg-gerekce");
+    aiDurum.hidden = true;
+    kart.appendChild(aiDurum);
     const dugmeler = elYap("div", "onay-dugmeler dg-dugmeler");
     const birincil = elYap("button", "secim-onay dg-birincil");
     birincil.type = "button";
@@ -6052,10 +6064,45 @@ function aralikKartiEkle(alan, blok) {
         geriAlKilit = () => kilitle(false);
         gonder((alan.sablon || "{liste}").replace("{liste}", secilen.join(", ")), false);
     };
+    /* YAPAY ZEKÂ ARKA PLANDA: kart hemen açılır, kararlar geldikçe
+       satırlara düşer. Bitene kadar düğme kilitli; kullanıcının elle
+       değiştirdiği kutuya dokunulmaz. */
+    function aiUygula(sonuc) {
+        satirlar.forEach((sat, i) => {
+            const k = sonuc && sonuc[sat.ad];
+            if (!k || sat.tur !== "aralik") return;
+            if (!dokunulan.has(i)) kutular[i].checked = k.karar === "uygula";
+            gerekceler[i].metin.textContent = " " + tireSade(k.gerekce || "");
+            gerekceler[i].el.hidden = !k.gerekce;
+        });
+        tazele();
+    }
+    function aiYokla(isId) {
+        fetch(getWebAppBackendUrl("aralik_ai") + "?is=" + encodeURIComponent(isId))
+            .then(r => r.json())
+            .then(d => {
+                if (!kart.isConnected || kart.classList.contains("kilitli")) return;
+                aiUygula(d.sonuc || {});
+                if (d.durum === "calisiyor") {
+                    aiDurum.hidden = false;
+                    aiDurum.textContent = "Yapay zekâ değerlendiriyor · " + (d.biten || 0)
+                        + "/" + (d.toplam || "?") + " parça. Bitince düğme açılır.";
+                    birincil.disabled = true;
+                    setTimeout(() => aiYokla(isId), 2500);
+                    return;
+                }
+                aiDurum.hidden = !d.hata;
+                aiDurum.textContent = d.hata ? tireSade(d.hata) : "";
+                birincil.disabled = false;
+            })
+            .catch(() => { if (kart.isConnected) { birincil.disabled = false; } });
+    }
+
     tazele();
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     sohbetEl.scrollTop = sohbetEl.scrollHeight;
     if (blok && blok.kilit) { kilitle(true); geriAlKilit = null; return; }
+    if (alan.ai_is) { birincil.disabled = true; aiYokla(String(alan.ai_is)); }
     yeniOdak = birincil;
 }
 

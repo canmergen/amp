@@ -1,6 +1,25 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Aralık Önerileri adımı (yapay zekâ sorusu, satır satır kabul / ret, baz sette yeni kolon); "Karşılama yüklenemedi" hatası**.
+Bu tur: **yapay zekâ değerlendirmesi arka planda ve yalnızca karar gerektiren önerilerde; Faz 02 mesajları Faz 01 düzeninde**.
+Değiştir (fe_agent): `akis_faz02.py`, `akis_faz01.py`, `akis_kayit.py`, `akis_sohbet.py`, `llm.py`
+Değiştir (webapp): `backend.py`, `app.js` (JS)
+Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+
+- "Yapay Zekâ Değerlendirsin" beklemede kalıyordu: 519 önerinin hepsi sırayla
+  ve tek istekte dil modeline gidiyordu; ayrıca seçim mesajı yanlışlıkla soru
+  sanılıp bir kez daha dil modeline gönderiliyordu. Şimdi:
+  - karta yalnızca aralıklarla IV'si 0,05'i geçen ya da hassas olan öneriler
+    ve eksik değer işaretleri girer (diğerleri sağ paneldeki tabloda),
+  - değerlendirme arka planda, 3 paralel parçayla çalışır; kart hemen açılır,
+    kararlar geldikçe satırlara düşer, bitince düğme açılır,
+  - seçim mesajı artık soru sanılmıyor.
+- Faz 02'de tek onay faz başında (Veri Profili); SFA ve Stabilite onay
+  beklemeden çalışır. Profil, SFA, Stabilite ve Analitik Baz Set mesajları
+  "Etiket : Değer" düzeninde; ASCII tablolar ve "%%50" hatası kalktı.
+
+---
+
+Önceki tur: **Aralık Önerileri adımı (yapay zekâ sorusu, satır satır kabul / ret, baz sette yeni kolon); "Karşılama yüklenemedi" hatası**.
 Değiştir (fe_agent): `aralik.py`, `akis_faz02.py`, `akis_kayit.py`, `akis_metin.py`, `akis_panel.py`, `llm.py`
 Değiştir (webapp): `backend.py`, `app.js` (JS), `style.css` (CSS)
 Önceki turdan eksik kaldıysa: webapp `index.html` (HTML sekmesi) ve fe_agent `akis.py`.

@@ -57,6 +57,8 @@ _MOD_GECICI = ("_donemler", "_aciklamasiz", "_dusurulecek", "_soru_gecmis",
                # da degisir.
                "_donem_dusuruldu", "_sozluge_eklenen", "_bolme_mod",
                "_hazir_bolme",
+               # Aralik Onerileri adiminin kararlari o veri setine ait.
+               "_aralik_ai", "donusum_plani",
                # Sozluk teyidi eski moda ait bir denetim kaydidir; mod
                # degisince veri seti de sozluk de degisir, damga
                # tasinmamali.

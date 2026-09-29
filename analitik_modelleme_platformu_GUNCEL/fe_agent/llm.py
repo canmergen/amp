@@ -457,57 +457,76 @@ CIKTI KURALI: Cevabin SADECE JSON olsun, baska metin yazma. Format:
 {"degiskenler":[{"ad":"...","karar":"uygula","gerekce":"..."}]}
 Degisken adlarini sana verilen listeden AYNEN kopyala.""" + SINIRLAYICI_KURALI
 
-ARALIK_PARCA = 15
+ARALIK_PARCA = 10
+ARALIK_PARALEL = 3
 
 
-def aralik_degerlendir(adaylar, parca=ARALIK_PARCA):
+def _aralik_parca_metni(blok):
+    satirlar = []
+    for a in blok:
+        s = "- %s | %s | aciklama: %s | egilim: %s | IV %s" % (
+            a["ad"], a.get("tur"), str(a.get("aciklama") or "-")[:160],
+            a.get("sekil"), a.get("iv"))
+        s += "\n    araliklar: " + " ; ".join(
+            "%s pay %s oran %s" % (e, p, o) for e, p, o in a.get("araliklar") or [])
+        s += "\n    kontroller: " + " ; ".join(
+            "%s=%s (%s)" % (k["ad"], "gecti" if k["gecti"] else "kaldi", k["deger"])
+            for k in a.get("kontroller") or [])
+        if a.get("hassas"):
+            s += "\n    hassas degisken: %s" % a["hassas"]
+        for n in a.get("notlar") or []:
+            s += "\n    eksik deger notu: %s" % n
+        satirlar.append(s)
+    return "\n".join(satirlar)
+
+
+def _aralik_parca(blok):
+    """Tek parca: (sonuc, hata)."""
+    gecerli = {a["ad"] for a in blok}
+    try:
+        ham = _cagir(SISTEM_ARALIK, _veri_blogu("DEGISKENLER:", _aralik_parca_metni(blok)),
+                     sicaklik=0.2)
+        veri = _json_ayristir(ham, {}, dict)
+    except Exception as e:
+        return {}, _hata_metni(e)
+    sonuc = {}
+    for k in veri.get("degiskenler") or []:
+        if not isinstance(k, dict) or k.get("ad") not in gecerli:
+            continue
+        karar = str(k.get("karar") or "").strip().lower()
+        sonuc[k["ad"]] = {"karar": "uygula" if karar == "uygula" else "uygulama",
+                          "gerekce": str(k.get("gerekce") or "").strip()[:400]}
+    return sonuc, (None if sonuc else "dil modeli okunabilir JSON döndürmedi")
+
+
+def aralik_degerlendir(adaylar, parca=ARALIK_PARCA, ilerleme=None):
     """adaylar: [{"ad", "aciklama", "tur", "sekil", "araliklar": [(etiket,
     pay, oran)], "iv", "tutarlilik", "hassas", "notlar", "kontroller"}]
+    Parcalar PARALEL gonderilir (ARALIK_PARALEL); ilerleme(biten, toplam,
+    sonuc) her parca bitince cagrilir.
     Doner: ({ad: {"karar": "uygula"|"uygulama", "gerekce": str}}, hata)."""
-    sonuc, gecerli = {}, {a["ad"] for a in adaylar}
-    toplam, dusen, son_hata = 0, 0, None
-    for i in range(0, len(adaylar), parca):
-        blok = adaylar[i:i + parca]
-        toplam += 1
-        satirlar = []
-        for a in blok:
-            s = "- %s | %s | aciklama: %s | egilim: %s | IV %s" % (
-                a["ad"], a.get("tur"), str(a.get("aciklama") or "-")[:160],
-                a.get("sekil"), a.get("iv"))
-            s += "\n    araliklar: " + " ; ".join(
-                "%s pay %s oran %s" % (e, p, o) for e, p, o in a.get("araliklar") or [])
-            s += "\n    kontroller: " + " ; ".join(
-                "%s=%s (%s)" % (k["ad"], "gecti" if k["gecti"] else "kaldi", k["deger"])
-                for k in a.get("kontroller") or [])
-            if a.get("hassas"):
-                s += "\n    hassas degisken: %s" % a["hassas"]
-            for n in a.get("notlar") or []:
-                s += "\n    eksik deger notu: %s" % n
-            satirlar.append(s)
-        try:
-            ham = _cagir(SISTEM_ARALIK, _veri_blogu("DEGISKENLER:", "\n".join(satirlar)),
-                         sicaklik=0.2)
-            veri = _json_ayristir(ham, {}, dict)
-        except Exception as e:
-            dusen += 1
-            son_hata = _hata_metni(e)
-            continue
-        liste = veri.get("degiskenler") or []
-        if not liste:
-            dusen += 1
-            son_hata = son_hata or "dil modeli okunabilir JSON döndürmedi"
-        for k in liste:
-            if not isinstance(k, dict) or k.get("ad") not in gecerli:
-                continue
-            karar = str(k.get("karar") or "").strip().lower()
-            sonuc[k["ad"]] = {
-                "karar": "uygula" if karar == "uygula" else "uygulama",
-                "gerekce": str(k.get("gerekce") or "").strip()[:400],
-            }
+    bloklar = [adaylar[i:i + parca] for i in range(0, len(adaylar), parca)]
+    sonuc, dusen, son_hata, biten = {}, 0, None, 0
+    # Ayri havuz: _cagir kendi icinde _HAVUZ'u kullaniyor; ayni havuzda
+    # beklemek kilitlenmeye yol acardi.
+    with futures.ThreadPoolExecutor(max_workers=ARALIK_PARALEL) as havuz:
+        isler = [havuz.submit(_aralik_parca, b) for b in bloklar]
+        for is_ in futures.as_completed(isler):
+            parca_sonuc, hata = is_.result()
+            sonuc.update(parca_sonuc)
+            if hata:
+                dusen += 1
+                son_hata = hata
+            biten += 1
+            if ilerleme:
+                try:
+                    ilerleme(biten, len(bloklar), dict(sonuc))
+                except Exception:
+                    pass
     hata = None
     if dusen:
         hata = ("%s parçanın %s tanesi için yapay zekâ değerlendirmesi alınamadı; "
-                "son hata: %s" % (toplam, dusen, son_hata or "bilinmiyor"))
+                "son hata: %s" % (len(bloklar), dusen, son_hata or "bilinmiyor"))
     return sonuc, hata
 
 
