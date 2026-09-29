@@ -72,7 +72,7 @@ from fe_agent.akis_faz01 import (  # noqa
     veri_sec_girdi, veri_sec_plan, veri_sec_uygula,
 )
 from fe_agent.akis_faz02 import (  # noqa
-    baz_plan, baz_uygula, sfa_plan, sfa_uygula, stabilite_plan,
+    baz_plan, baz_uygula, sfa_girdi, sfa_uygula, stabilite_plan,
     stabilite_uygula, veri_profili_plan, veri_profili_uygula,
 )
 from fe_agent.akis_faz03 import (  # noqa
@@ -153,7 +153,7 @@ __all__ = [
     "oneri_isi_durumu", "oneri_isi_iptal",
     "mesaj_isle", "mod_girdi", "mod_plan", "mod_uygula",
     "model_plan", "model_uygula", "ozet", "secim_plan",
-    "secim_uygula", "setler", "sfa_paneli", "sfa_plan", "sfa_uygula",
+    "secim_uygula", "setler", "sfa_paneli", "sfa_girdi", "sfa_uygula",
     "sozluk_kaynak_etiketi", "sozluk_kopya_kur", "sozluk_kopya_var_mi",
     "sozluk_satir_ekle", "sozluk_tanim_yaz",
     "sozluk_uret_plan", "sozluk_uret_uygula", "stabilite_plan",

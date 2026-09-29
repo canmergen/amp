@@ -531,6 +531,121 @@ def aralik_degerlendir(adaylar, parca=ARALIK_PARCA, ilerleme=None):
 
 
 # ===========================================================================
+# SFA KARARI — HER DEGISKEN MODELE HANGI HALIYLE GIRSIN
+# ===========================================================================
+# Kullanici karari: metrikleri kod hesaplar, her degisken icin karari dil
+# modeli verir; SFA eleme yeri degildir. Degiskenler parca parca gider
+# (SFA_PARCA) ama her degisken icin AYRI karar ve gerekce istenir.
+SISTEM_SFA = """Sen kredi riski skorkart modellemesinde deneyimli bir analistsin.
+Tek degisken analizi (SFA) sonuclari verilecek. Her degisken icin modele EN IYI
+hangi haliyle girecegine karar ver. SFA bir ELEME adimi DEGILDIR: IV ya da
+C-value dusuk diye degiskeni modelden cikarma.
+
+Her degisken icin su alanlari sec:
+  kullan: "evet" | "hayir"  -> "hayir" YALNIZCA sizinti suphesi varsa ya da
+          hassas degisken (yas, cinsiyet, uyruk...) hedefle anlamli iliski
+          tasimiyorsa.
+  eksik: "yok" (eksik yoksa) | "medyan" | "sabit" | "isaret" (eksik isareti
+          kolonu + medyan; eksiklerin hedef orani dolulardan belirgin farkliysa)
+          | "missing" (yalniz kategorik)
+  eksik_deger: yalnizca eksik="sabit" ise sayi, degilse null
+  aykiri: "yok" | "winsor" (%5-%95 kirpma; uc deger payi yuksekse ya da
+          kirpilmis C-value hamdan iyiyse)
+  donusum: "yok" | "log" | "ustel" | "sira" (carpiklik, dagilim ve egilimin
+          sekline gore; tekduze donusumler tek degiskenli C-value'yu degistirmez,
+          karari dagilim ve dogrusal modele uygunluga gore ver)
+  ayriklastirma: "yok" | "onerilen" (onerilen araliklar: iliski U / ters U ise,
+          egilim dogrusal degilse, hassas degiskense ya da kategorik gruplama
+          anlamliysa)
+  gerekce: Turkce, en fazla iki cumle. YALNIZCA verilen sayilari kullan, yeni
+          sayi hesaplama ya da uydurma.
+Kategorik degiskende aykiri ve donusum "yok" olur.
+"kural" alani kural tabanli varsayilandir; daha iyisi yoksa ona uyabilirsin.
+
+CIKTI KURALI: Cevabin SADECE JSON olsun, baska metin yazma. Format:
+{"degiskenler":[{"ad":"...","kullan":"evet","eksik":"medyan","eksik_deger":null,
+"aykiri":"yok","donusum":"yok","ayriklastirma":"yok","gerekce":"..."}]}
+Degisken adlarini sana verilen listeden AYNEN kopyala.""" + SINIRLAYICI_KURALI
+
+SFA_PARCA = 8
+SFA_PARALEL = 3
+
+
+def _sfa_parca_metni(blok):
+    satirlar = []
+    for a in blok:
+        c = a.get("c") or {}
+        s = ("- %s | tip %s | aciklama: %s\n"
+             "    eksik orani %s, eksiklerde hedef orani %s, genel hedef orani %s\n"
+             "    min %s, max %s, medyan %s, carpiklik %s, uc deger payi %s, tekil %s\n"
+             "    C-value ham %s, kirpilmis %s, log %s, ustel %s, sira %s\n"
+             "    IV (10 aralik) %s, IV (onerilen) %s, egilim %s, aralik sayisi %s" % (
+                 a["ad"], a.get("tip"), str(a.get("aciklama") or "-")[:160],
+                 a.get("eksik_orani"), a.get("eksik_hedef_orani"), a.get("hedef_orani"),
+                 a.get("min"), a.get("max"), a.get("medyan"), a.get("carpiklik"),
+                 a.get("aykiri_payi"), a.get("tekil"),
+                 c.get("ham"), c.get("kirpik"), c.get("log"), c.get("ustel"), c.get("sira"),
+                 a.get("iv_ham"), a.get("iv_onerilen"), a.get("sekil"),
+                 a.get("aralik_sayisi")))
+        if a.get("araliklar"):
+            s += "\n    onerilen araliklar: " + " ; ".join(
+                "%s pay %s oran %s" % (e, p, o) for e, p, o in a["araliklar"])
+        if a.get("tutarlilik"):
+            s += "\n    sira tutarliligi: " + ", ".join(
+                "%s %s" % (k, v) for k, v in a["tutarlilik"].items())
+        if a.get("hassas"):
+            s += "\n    hassas degisken: %s" % a["hassas"]
+        if a.get("sizinti"):
+            s += "\n    SIZINTI SUPHESI (C-value > 0,95)"
+        for n in a.get("notlar") or []:
+            s += "\n    eksik deger notu: %s" % n
+        s += "\n    kural: %s" % json.dumps(a.get("kural") or {}, ensure_ascii=False)
+        satirlar.append(s)
+    return "\n".join(satirlar)
+
+
+def _sfa_parca(blok):
+    gecerli = {a["ad"] for a in blok}
+    try:
+        ham = _cagir(SISTEM_SFA, _veri_blogu("DEGISKENLER:", _sfa_parca_metni(blok)),
+                     sicaklik=0.2)
+        veri = _json_ayristir(ham, {}, dict)
+    except Exception as e:
+        return {}, _hata_metni(e)
+    sonuc = {}
+    for k in veri.get("degiskenler") or []:
+        if isinstance(k, dict) and k.get("ad") in gecerli:
+            sonuc[k["ad"]] = k
+    return sonuc, (None if sonuc else "dil modeli okunabilir JSON döndürmedi")
+
+
+def sfa_karar_ver(girdi, isle=None, parca=SFA_PARCA):
+    """girdi: sfa_karar.ai_girdisi ciktisi. Her parca bitince isle(sonuc)
+    cagrilir (kararlar dosyaya o anda yazilir). Doner: (sonuc, hata)."""
+    bloklar = [girdi[i:i + parca] for i in range(0, len(girdi), parca)]
+    sonuc, dusen, son_hata = {}, 0, None
+    with futures.ThreadPoolExecutor(max_workers=SFA_PARALEL) as havuz:
+        isler = [havuz.submit(_sfa_parca, b) for b in bloklar]
+        for is_ in futures.as_completed(isler):
+            parca_sonuc, hata = is_.result()
+            sonuc.update(parca_sonuc)
+            if hata:
+                dusen += 1
+                son_hata = hata
+            if isle and parca_sonuc:
+                try:
+                    isle(parca_sonuc)
+                except Exception as e:   # pylint: disable=broad-except
+                    son_hata = _hata_metni(e)
+    hata = None
+    if dusen:
+        hata = ("%s parçanın %s tanesi için yapay zekâ kararı alınamadı; bu "
+                "değişkenlerde kural tabanlı karar geçerli. Son hata: %s"
+                % (len(bloklar), dusen, son_hata or "bilinmiyor"))
+    return sonuc, hata
+
+
+# ===========================================================================
 # LLM #3 — GELENEKSEL DONUSUM PLANI
 # ===========================================================================
 SISTEM_PLAN = """Sen bir feature engineering danismanisin.

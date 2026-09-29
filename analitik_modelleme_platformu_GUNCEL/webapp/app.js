@@ -3565,31 +3565,39 @@ function analizCiz(tab) {
     ftOdakGeriVer(odak);
 }
 
-/* ==================== SFA aralık önerileri ====================
-   Değişken başına hedefe göre aralık önerisi (fe_agent/aralik.py). Liste
-   /sfa_aralik ucundan bir kez çekilir; değişken adına tıklayınca o
-   değişkenin sözlük açıklaması, IV / C-value karşılaştırması, öncesi /
-   sonrası batma oranı grafiği ve aralık tablosu açılır.
-   "Doldurmadan Önce" eksikleri ayrı aralıkta, "Doldurduktan Sonra"
-   medyanın düştüğü aralıkta gösterir. */
-const ARALIK = { liste: null, detay: {}, filtre: "oneri", ara: "", acik: "", istek: 0 };
+/* ==================== SFA ekranı (Değişken Analizi sekmesi) ====================
+   Kullanıcı kararı: SFA eleme yeri değil; her değişken için ölçütler,
+   özellik dağılımı + hedef (1) oranı grafiği (çift eksen, örnek ekrandaki
+   gibi) ve yapay zekânın verdiği, kullanıcının değiştirebildiği karar
+   (Kullan, Eksik Doldurma, Aykırı Değer, Dönüşüm, Ayrıklaştırma, Yorum).
+   Liste /sfa_degiskenler ucundan bir kez çekilir; değişken adına tıklayınca
+   /sfa_degisken ile o değişkenin ayrıntısı gelir. */
+const ARALIK = { liste: null, detay: {}, filtre: "tumu", ara: "", acik: "", istek: 0,
+                 gorunum: "ham" };
 const ARALIK_SATIR_SINIRI = 200;
 const SEKIL_ETIKET = { "artan": "Artan", "azalan": "Azalan", "U": "U",
                        "ters U": "Ters U", "gruplama": "Gruplama",
                        "düz": "İlişki Yok", "düzensiz": "Düzensiz" };
-const ARALIK_ACIKLAMA =
-    "SFA'da her değişken 10 eşit aralığa bölünüp ölçüldü. Burada aralıklar "
-    + "hedefe göre yeniden kuruldu: batma oranı birbirine yakın komşu aralıklar "
-    + "birleştirildi, her aralıkta satırların en az %5'i kaldı ve oran artan, "
-    + "azalan ya da U biçiminde düzenli ilerliyor. Değişken adına tıklayınca "
-    + "sözlük açıklaması, öncesi ve sonrası grafiği ile IV ve C-value "
-    + "karşılaştırması açılır.";
+const SFA_KAYNAK_ETIKET = { yapay_zeka: "Yapay Zekâ", kullanici: "Sizin Kararınız",
+                            kural: "Kural" };
+const SFA_SECENEK = {
+    kullan: [["evet", "Evet"], ["hayir", "Hayır"]],
+    eksik: [["yok", "Yok"], ["medyan", "Medyan"], ["sabit", "Sabit Değer"],
+            ["isaret", "Eksik İşareti + Medyan"], ["missing", "MISSING Kategorisi"]],
+    aykiri: [["yok", "Yok"], ["winsor", "Winsor (%5)"]],
+    donusum: [["yok", "Yok"], ["log", "Log"], ["ustel", "Üstel"], ["sira", "Sıra"]],
+    ayriklastirma: [["yok", "Yok"], ["onerilen", "Önerilen Aralıklar"]]
+};
+const SFA_ACIKLAMA =
+    "Her değişkenin hedefle ilişkisi Train satırlarında ölçüldü; eleme yapılmadı. "
+    + "Yapay zekâ her değişkenin modele hangi hâliyle gireceğine karar verdi. "
+    + "Değişken adına tıklayınca ölçütler, grafik ve karar formu açılır; "
+    + "değiştirdiğiniz karar yapay zekânın kararının yerine geçer.";
 
 function aralikSifirla() { ARALIK.liste = null; ARALIK.detay = {}; }
 
-function aralikGetir(kolon) {
-    return fetch(getWebAppBackendUrl("sfa_aralik") + "?oturum_id="
-                 + encodeURIComponent(OTURUM_ID)
+function sfaGetir(uc, kolon) {
+    return fetch(getWebAppBackendUrl(uc) + "?oturum_id=" + encodeURIComponent(OTURUM_ID)
                  + (kolon ? "&kolon=" + encodeURIComponent(kolon) : ""))
         .then(r => r.json());
 }
@@ -3600,8 +3608,21 @@ function ivMetni(v) {
 }
 
 function yuzdeMetni(v, basamak) {
+    if (v === null || v === undefined) return "∅";
     return "%" + (100 * Number(v || 0)).toLocaleString("tr-TR",
         { minimumFractionDigits: basamak, maximumFractionDigits: basamak });
+}
+
+/* Eksen etiketi için kısa sayı: 1.234.567 -> 1,2 Mn; 12.345 -> 12,3 B */
+function kisaSayi(v) {
+    if (v === null || v === undefined) return "";
+    const n = Number(v), m = Math.abs(n);
+    const f = (x, b) => x.toLocaleString("tr-TR", { maximumFractionDigits: b });
+    if (m >= 1e6) return f(n / 1e6, 1) + " Mn";
+    if (m >= 1e4) return f(n / 1e3, 1) + " B";
+    if (m >= 100) return f(n, 0);
+    if (m >= 1) return f(n, 1);
+    return f(n, 3);
 }
 
 function aralikCiz() {
@@ -3609,35 +3630,33 @@ function aralikCiz() {
     analizGovde.appendChild(kap);
     const istek = ++ARALIK.istek;
     if (!ARALIK.liste) {
-        kap.appendChild(elYap("div", "dag-not", "Aralık önerileri yükleniyor…"));
-        aralikGetir("").then(d => {
+        kap.appendChild(elYap("div", "dag-not", "SFA sonuçları yükleniyor…"));
+        sfaGetir("sfa_degiskenler").then(d => {
             if (istek !== ARALIK.istek || aktifAnalizSekme !== "degisken") return;
             ARALIK.liste = (d && d.degiskenler) || [];
-            if (d && d.tamam === false) ARALIK.hata = d.hata;
+            ARALIK.hata = (d && d.tamam === false) ? d.hata : "";
             analizCiz("degisken");
         }).catch(() => {});
         return;
     }
     if (ARALIK.hata) { kap.appendChild(elYap("div", "dag-not dag-hata", ARALIK.hata)); return; }
 
-    kap.appendChild(elYap("div", "iskele-baslik aralik-baslik", "Hedefe Göre Aralık Önerileri"));
-    kap.appendChild(elYap("div", "aralik-aciklama", ARALIK_ACIKLAMA));
-    const secimSatiri = (etiket, secenekler, deger, degisti) => {
-        const satir = elYap("div", "aralik-secim");
-        satir.appendChild(elYap("span", "aralik-secim-etiket", etiket));
-        secenekler.forEach(([k, ad]) => {
-            const b = elYap("button", "bolme-cip" + (k === deger ? " secili" : ""), ad);
-            b.type = "button";
-            b.onclick = () => degisti(k);
-            satir.appendChild(b);
-        });
-        kap.appendChild(satir);
-    };
+    kap.appendChild(elYap("div", "iskele-baslik aralik-baslik", "Değişkenler"));
+    kap.appendChild(elYap("div", "aralik-aciklama", SFA_ACIKLAMA));
     const adet = f => ARALIK.liste.filter(f).length.toLocaleString("tr-TR");
-    secimSatiri("Göster", [["oneri", "Öneri Olanlar (" + adet(o => o.aralik > 1) + ")"],
-                           ["hassas", "Hassas (" + adet(o => o.hassas) + ")"],
-                           ["tumu", "Tümü (" + adet(() => true) + ")"]],
-                ARALIK.filtre, k => { ARALIK.filtre = k; analizCiz("degisken"); });
+    const satir = elYap("div", "aralik-secim");
+    [["tumu", "Tümü", () => true],
+     ["yapay_zeka", "Yapay Zekâ", o => o.kaynak === "yapay_zeka"],
+     ["kullanici", "Sizin", o => o.kaynak === "kullanici"],
+     ["girmeyen", "Modele Girmeyen", o => o.karar === "Modele girmez"],
+     ["hassas", "Hassas", o => !!o.hassas]].forEach(([k, ad, f]) => {
+        const b = elYap("button", "bolme-cip" + (k === ARALIK.filtre ? " secili" : ""),
+                        ad + " (" + adet(f) + ")");
+        b.type = "button";
+        b.onclick = () => { ARALIK.filtre = k; analizCiz("degisken"); };
+        satir.appendChild(b);
+    });
+    kap.appendChild(satir);
 
     const ara = document.createElement("input");
     ara.className = "ft-ara aralik-ara";
@@ -3651,10 +3670,12 @@ function aralikCiz() {
 
     function suz() {
         const a = ftSade(ARALIK.ara || "");
+        const f = ARALIK.filtre;
         return ARALIK.liste.filter(o =>
-            (ARALIK.filtre === "tumu"
-             || (ARALIK.filtre === "oneri" && o.aralik > 1)
-             || (ARALIK.filtre === "hassas" && o.hassas))
+            (f === "tumu" || (f === "yapay_zeka" && o.kaynak === "yapay_zeka")
+             || (f === "kullanici" && o.kaynak === "kullanici")
+             || (f === "girmeyen" && o.karar === "Modele girmez")
+             || (f === "hassas" && o.hassas))
             && (!a || ftSade(o.ad).includes(a)));
     }
 
@@ -3667,10 +3688,8 @@ function aralikCiz() {
         }
         const t = elYap("table", "aralik-tablo");
         const bas = elYap("tr");
-        [["Değişken", ""], ["Eğilim", "Aralıklar boyunca batma oranının seyri"],
-         ["Aralık", "Önerilen aralık sayısı (eksik aralığı hariç)"],
-         ["IV", "Önerilen aralıklarla, eksikler ayrı aralıkta"],
-         ["C-value", "Önerilen aralıklarla, eksikler ayrı aralıkta"]].forEach(([x, ipucu]) => {
+        [["Değişken", ""], ["IV", "10 aralıkla, Train"], ["C-value", "Ham değerle, Train"],
+         ["Karar", "Modele hangi hâliyle girecek"]].forEach(([x, ipucu]) => {
             const th = elYap("th", "", x);
             if (ipucu) th.title = ipucu;
             bas.appendChild(th);
@@ -3680,228 +3699,350 @@ function aralikCiz() {
             const acik = ARALIK.acik === o.ad;
             const tr = elYap("tr", "aralik-satir" + (acik ? " acik" : ""));
             const ad = elYap("td", "aralik-ad");
-            const ok = elYap("span", "aralik-ok", acik ? "▾" : "▸");
-            ad.appendChild(ok);
+            ad.appendChild(elYap("span", "aralik-ok", acik ? "▾" : "▸"));
             const link = elYap("button", "aralik-ad-link", o.ad);
             link.type = "button";
-            link.title = "Açıklama, grafik ve ölçütler";
+            link.title = "Ölçütler, grafik ve karar";
             ad.appendChild(link);
             if (o.hassas) ad.appendChild(elYap("span", "aralik-rozet hassas", "Hassas"));
-            if (o.tutarsiz) ad.appendChild(elYap("span", "aralik-rozet uyari", "Sıra Bozuluyor"));
-            if (o.not) ad.appendChild(elYap("span", "aralik-rozet not", "Eksik Notu"));
+            if (o.sizinti) ad.appendChild(elYap("span", "aralik-rozet uyari", "Sızıntı Şüphesi"));
             tr.appendChild(ad);
-            tr.appendChild(elYap("td", "", SEKIL_ETIKET[o.sekil] || o.sekil || "∅"));
-            tr.appendChild(elYap("td", "sayi", String(o.aralik || "∅")));
-            tr.appendChild(elYap("td", "sayi", ivMetni(o.iv_ayri)));
-            tr.appendChild(elYap("td", "sayi", ivMetni(o.c_ayri)));
-            tr.onclick = () => {
-                ARALIK.acik = acik ? "" : o.ad;
-                tabloCiz();
-            };
+            tr.appendChild(elYap("td", "sayi", ivMetni(o.iv)));
+            tr.appendChild(elYap("td", "sayi", ivMetni(o.c)));
+            const k = elYap("td", "aralik-karar-hucre");
+            k.appendChild(elYap("span", "", o.karar || "∅"));
+            if (o.kaynak) k.appendChild(elYap("span", "aralik-kaynak " + o.kaynak,
+                                               SFA_KAYNAK_ETIKET[o.kaynak] || o.kaynak));
+            tr.appendChild(k);
+            tr.onclick = () => { ARALIK.acik = acik ? "" : o.ad; tabloCiz(); };
             t.appendChild(tr);
             if (acik) {
                 const dtr = elYap("tr", "aralik-detay-satir");
                 const td = elYap("td");
-                td.colSpan = 5;
+                td.colSpan = 4;
                 dtr.appendChild(td);
                 t.appendChild(dtr);
-                aralikDetayCiz(td, o.ad, tabloCiz);
+                sfaDetayCiz(td, o, tabloCiz);
             }
         });
         tabloKap.appendChild(t);
         if (liste.length > ARALIK_SATIR_SINIRI)
-            tabloKap.appendChild(elYap("div", "dag-not", liste.length + " değişkenden ilk "
-                + ARALIK_SATIR_SINIRI + " tanesi gösteriliyor; aramayla daraltın."));
+            tabloKap.appendChild(elYap("div", "dag-not", liste.length.toLocaleString("tr-TR")
+                + " değişkenden ilk " + ARALIK_SATIR_SINIRI + " tanesi gösteriliyor; aramayla daraltın."));
     }
 
     tabloCiz();
 }
 
-/* Bir değişkenin detayı: açıklama, öneri, IV / C-value, grafik, tablo. */
-function aralikDetayCiz(td, ad, yenidenCiz) {
+/* Bir değişkenin SFA sayfası: açıklama, ölçütler, grafik, karar formu. */
+function sfaDetayCiz(td, ozet, yenidenCiz) {
+    const ad = ozet.ad;
     const v = ARALIK.detay[ad];
     if (!v) {
-        td.appendChild(elYap("div", "dag-not", "Aralıklar yükleniyor…"));
-        aralikGetir(ad).then(d => {
+        td.appendChild(elYap("div", "dag-not", "Değişken yükleniyor…"));
+        sfaGetir("sfa_degisken", ad).then(d => {
             if (d && d.tamam) { ARALIK.detay[ad] = d.degisken; if (ARALIK.acik === ad) yenidenCiz(); }
             else { td.innerHTML = ""; td.appendChild(elYap("div", "dag-not dag-hata", (d && d.hata) || "Okunamadı.")); }
         });
         return;
     }
-    const bolum = (baslik) => {
-        td.appendChild(elYap("div", "aralik-bolum", baslik));
-    };
-    const kategorik = v.tur === "kategorik";
-    const eksikVar = (v.ayri.satirlar || []).some(s => s.etiket === "Eksik");
+    const m = v.sfa || {};
+    const kategorik = m.tip === "kategorik";
+    const bolum = baslik => td.appendChild(elYap("div", "aralik-bolum", baslik));
 
-    bolum("Değişken Açıklaması");
     td.appendChild(elYap("div", "aralik-tanim" + (v.aciklama ? "" : " bos"),
         v.aciklama || "Sözlükte bu değişken için açıklama yok."));
 
-    bolum("Öneri");
-    td.appendChild(elYap("div", "aralik-oneri", v.oneri || ""));
-    (v.notlar || []).forEach(n => td.appendChild(elYap("div", "aralik-not", n)));
-
-    bolum("IV ve C-value");
-    const mt = elYap("table", "aralik-bin aralik-olcut");
-    const mb = elYap("tr");
-    ["Ölçüm", "IV", "C-value"].forEach(x => mb.appendChild(elYap("th", "", x)));
-    mt.appendChild(mb);
-    const olcut = (ad, alt, iv, c) => {
-        const r = elYap("tr");
-        const h = elYap("td");
-        h.appendChild(elYap("div", "", ad));
-        h.appendChild(elYap("div", "aralik-olcut-alt", alt));
-        r.appendChild(h);
-        r.appendChild(elYap("td", "sayi", ivMetni(iv)));
-        r.appendChild(elYap("td", "sayi", ivMetni(c)));
-        mt.appendChild(r);
+    /* ÖLÇÜTLER: örnek ekrandaki tablonun karşılığı, dar panele sığsın diye
+       iki sütunlu etiket / değer ızgarası. */
+    bolum("Ölçütler");
+    const g = elYap("div", "sfa-olcut");
+    const hucre = (etiket, deger, ipucu) => {
+        const h = elYap("div", "sfa-olcut-hucre");
+        h.appendChild(elYap("div", "sfa-olcut-etiket", etiket));
+        h.appendChild(elYap("div", "sfa-olcut-deger", deger));
+        if (ipucu) h.title = ipucu;
+        g.appendChild(h);
     };
-    olcut("SFA", kategorik
-            ? "Kategoriler tek tek, eksikler MISSING kategorisinde"
-            : "IV 10 eşit aralıkla, C-value ham değerle; eksikler medyanla dolu",
-          v.ham_iv, v.ham_c);
-    olcut("Önerilen Aralıklar · Doldurmadan Önce",
-          v.aralik_sayisi + " aralık" + (eksikVar ? ", eksikler ayrı aralıkta" : ""),
-          v.ayri.iv, v.ayri.c);
-    if (v.dolu)
-        olcut("Önerilen Aralıklar · Doldurduktan Sonra",
-              "Eksikler medyanın düştüğü aralıkta", v.dolu.iv, v.dolu.c);
-    td.appendChild(mt);
-    td.appendChild(elYap("div", "aralik-alt",
-        "IV: 0,02'nin altı etkisiz, 0,02-0,10 zayıf, 0,10-0,30 orta, 0,30'un üstü güçlü. "
-        + "C-value: 0,50 rastgele, 1,00 kusursuz ayrım."));
+    const sayi = x => (x === null || x === undefined) ? "∅"
+        : Number(x).toLocaleString("tr-TR", { maximumFractionDigits: 4 });
+    hucre("Tip", kategorik ? "Kategorik" : "Sayısal");
+    hucre("Eksik Sayısı", sayi(m.eksik_sayisi));
+    hucre("Eksik Oranı", yuzdeMetni(m.eksik_orani, 2));
+    hucre("Eksikte Hedef Oranı", m.eksik_sayisi ? yuzdeMetni(m.eksik_hedef_orani, 2) : "∅",
+          "Eksik satırlarda hedefin 1 olma oranı");
+    hucre("Genel Hedef Oranı", yuzdeMetni(m.hedef_orani, 2));
+    if (!kategorik) {
+        hucre("Min", sayi(m.min));
+        hucre("Maks", sayi(m.max));
+        hucre("Medyan", sayi(m.medyan));
+        hucre("Çarpıklık", sayi(m.carpiklik));
+        hucre("Uç Değer Payı", yuzdeMetni(m.aykiri_payi, 2), "Q1 − 3·IQR ve Q3 + 3·IQR dışındaki pay");
+    } else {
+        hucre("Kategori Sayısı", sayi(m.tekil));
+    }
+    hucre("IV (10 Aralık)", ivMetni(v.ham_iv));
+    hucre("IV (Önerilen)", ivMetni((v.ayri || {}).iv),
+          v.aralik_sayisi + " aralık, eksikler ayrı aralıkta");
+    hucre("Eğilim", SEKIL_ETIKET[v.sekil] || v.sekil || "∅");
+    td.appendChild(g);
+    const c = m.c || {};
+    const ct = elYap("table", "aralik-bin sfa-c-tablo");
+    const cb = elYap("tr");
+    const cd = elYap("tr");
+    [["ham", "Ham"], ["kirpik", "Kırpılmış"], ["log", "Log"], ["ustel", "Üstel"], ["sira", "Sıra"]]
+        .forEach(([k, e]) => {
+            cb.appendChild(elYap("th", "", e));
+            cd.appendChild(elYap("td", "sayi", ivMetni(c[k])));
+        });
+    const cbas = elYap("tr");
+    const cth = elYap("th", "sfa-c-bas", "C-value");
+    cth.colSpan = 5;
+    cth.title = "Kırpılmış: Train %5 ve %95 yüzdeliklerinde. Log, üstel ve sıra "
+        + "tekdüze dönüşüm olduğu için tek değişkenli C-value'yu değiştirmez.";
+    cbas.appendChild(cth);
+    ct.appendChild(cbas); ct.appendChild(cb); ct.appendChild(cd);
+    td.appendChild(ct);
 
-    bolum("Batma Oranı · Doldurmadan Önce ve Sonra");
-    if (!v.dolu)
-        td.appendChild(elYap("div", "dag-not", kategorik && eksikVar
-            ? "Kategorik değişkende eksikler MISSING kategorisi olarak kalır; tek görünüm var."
-            : "Bu değişkende eksik değer yok; doldurma aralıkları değiştirmez."));
-    td.appendChild(aralikGrafik(v.ayri, v.dolu));
-
-    const t = elYap("table", "aralik-bin");
-    const bas = elYap("tr");
-    (v.dolu ? ["Aralık", "Satır", "Pay", "Önce", "Sonra", "WoE"]
-            : ["Aralık", "Satır", "Pay", "Batma Oranı", "WoE"])
-        .forEach(x => bas.appendChild(elYap("th", "", x)));
-    t.appendChild(bas);
-    const sonra = {};
-    (v.dolu ? v.dolu.satirlar : []).forEach(s => { sonra[s.etiket] = s; });
-    v.ayri.satirlar.forEach(s => {
-        const r = elYap("tr", s.etiket === "Eksik" ? "eksik" : "");
-        r.appendChild(elYap("td", "", s.etiket));
-        r.appendChild(elYap("td", "sayi", Number(s.n).toLocaleString("tr-TR")));
-        r.appendChild(elYap("td", "sayi", yuzdeMetni(s.pay, 1)));
-        r.appendChild(elYap("td", "sayi", yuzdeMetni(s.oran, 2)));
-        if (v.dolu) {
-            const k = sonra[s.etiket];
-            r.appendChild(elYap("td", "sayi", k ? yuzdeMetni(k.oran, 2) : "∅"));
-        }
-        r.appendChild(elYap("td", "sayi", s.woe === null ? "∅"
-            : Number(s.woe).toLocaleString("tr-TR", { maximumFractionDigits: 3 })));
-        t.appendChild(r);
+    /* GRAFİK: çubuk = popülasyon payı (sol eksen), nokta = hedef (1) oranı
+       (sağ eksen), çizgiler = eğilim. Görünüm: ham, kırpılmış, önerilen. */
+    bolum("Dağılım ve Hedef Oranı");
+    const dag = v.dagilim || {};
+    const secenekler = kategorik ? [["ham", "Kategoriler"], ["onerilen", "Önerilen Gruplar"]]
+        : [["ham", "Ham"], ["kirpik", "Kırpılmış (%5)"], ["onerilen", "Önerilen Aralıklar"]];
+    if (!secenekler.some(([k]) => k === ARALIK.gorunum)) ARALIK.gorunum = "ham";
+    const gs = elYap("div", "aralik-secim");
+    secenekler.forEach(([k, e]) => {
+        const b = elYap("button", "bolme-cip" + (k === ARALIK.gorunum ? " secili" : ""), e);
+        b.type = "button";
+        b.onclick = (ev) => { ev.stopPropagation(); ARALIK.gorunum = k; yenidenCiz(); };
+        gs.appendChild(b);
     });
-    td.appendChild(t);
-    if (v.dolu)
-        td.appendChild(elYap("div", "aralik-alt",
-            "Satır, Pay ve WoE doldurmadan önceki görünüme aittir. Doldurduktan sonra "
-            + "eksik satırlar medyanın düştüğü aralığa eklenir."));
-    const tut = Object.keys(v.tutarlilik || {});
-    if (tut.length)
-        td.appendChild(elYap("div", "aralik-alt", "Sıra tutarlılığı (Train ile sıra korelasyonu, "
-            + "0,80'in altı bozuk sayılır): "
-            + tut.map(k => k + " " + Number(v.tutarlilik[k]).toLocaleString("tr-TR")).join(" · ")));
+    td.appendChild(gs);
+    let binler;
+    if (ARALIK.gorunum === "onerilen") {
+        binler = ((v.ayri || {}).satirlar || []).map(s => Object.assign({}, s, { eksik: s.etiket === "Eksik" }));
+    } else {
+        binler = (dag[ARALIK.gorunum] || dag.ham || []).slice();
+        if (dag.eksik) binler.unshift(Object.assign({}, dag.eksik, { eksik: true }));
+    }
+    td.appendChild(sfaGrafik(binler, m.hedef_orani, kategorik,
+        ARALIK.gorunum === "onerilen" ? (kategorik ? "Önerilen grup" : "Önerilen aralık")
+            : (kategorik ? "Kategori (hedef oranına göre sıralı)" : "Aralık (değerlerin ortalaması)")));
+    if (v.oneri && ARALIK.gorunum === "onerilen")
+        td.appendChild(elYap("div", "aralik-alt", v.oneri));
+
+    bolum("Karar");
+    td.appendChild(sfaKararFormu(v, ozet, yenidenCiz));
 }
 
-/* Yatay gruplu çubuk grafiği: her aralıkta Doldurmadan Önce (mavi) ve
-   Doldurduktan Sonra (turuncu) batma oranı. Kesikli dikey çizgi Train
-   ortalaması. Aralık adı solda HTML değil SVG metni; uzun etiket
-   kısaltılır, tam hali ipucunda. Üzerine gelince iki değer birlikte. */
-function aralikGrafik(ayri, dolu) {
+/* Çift eksenli tek grafik (kullanıcı kararı, örnek ekrandaki gibi):
+   çubuk = aralıktaki popülasyon payı (sol eksen), nokta + ince çizgi =
+   aralıktaki hedef (1) oranı (sağ eksen), kesikli = doğrusal eğilim,
+   noktalı = log eğilim. Eksik aralığı en solda, taralı. */
+function sfaGrafik(binler, genelOran, kategorik, eksenAdi) {
     const ns = "http://www.w3.org/2000/svg";
-    const kap = elYap("div", "dag-grafik aralik-grafik");
-    const seriler = [{ ad: "Doldurmadan Önce", sinif: "aralik-seri-1", g: ayri }];
-    if (dolu) seriler.push({ ad: "Doldurduktan Sonra", sinif: "aralik-seri-2", g: dolu });
-    if (seriler.length > 1) {
-        const lj = elYap("div", "aralik-lejant");
-        seriler.forEach(s => {
-            const o = elYap("span", "aralik-lejant-oge");
-            o.appendChild(elYap("span", "aralik-lejant-renk " + s.sinif));
-            o.appendChild(document.createTextNode(s.ad));
-            lj.appendChild(o);
-        });
-        kap.appendChild(lj);
-    }
-    const bul = (g, et) => (g.satirlar || []).find(x => x.etiket === et);
-    const etiketler = ayri.satirlar.map(s => s.etiket);
-    const n = seriler.length;
-    const G = 320, SOL = 92, SAG = 44, CUBUK = 8, ARA = 2, GRUP_ARA = 8, UST = 4, ALT = 16;
-    const grupH = n * CUBUK + (n - 1) * ARA;
-    const H = UST + etiketler.length * grupH + (etiketler.length - 1) * GRUP_ARA + ALT;
-    const W = G - SOL - SAG;
-    let enCok = 1e-9;
-    seriler.forEach(s => (s.g.satirlar || []).forEach(x => { enCok = Math.max(enCok, x.oran); }));
-    const kotu = ayri.satirlar.reduce((a, x) => a + x.kotu, 0);
-    const top = ayri.satirlar.reduce((a, x) => a + x.n, 0) || 1;
-    const ort = kotu / top;
-    enCok = Math.max(enCok, ort) * 1.08;
+    const kap = elYap("div", "dag-grafik sfa-grafik");
+    if (!binler.length) { kap.appendChild(elYap("div", "dag-not", "Gösterilecek değer yok.")); return kap; }
+    const lj = elYap("div", "aralik-lejant");
+    [["sfa-lj-cubuk", "Popülasyon Payı (sol)"], ["sfa-lj-nokta", "Hedef (1) Oranı (sağ)"],
+     ["sfa-lj-lin", "Doğrusal Eğilim"], ["sfa-lj-log", "Log Eğilim"]].forEach(([s, e]) => {
+        const o = elYap("span", "aralik-lejant-oge");
+        o.appendChild(elYap("span", "sfa-lj " + s));
+        o.appendChild(document.createTextNode(e));
+        lj.appendChild(o);
+    });
+    kap.appendChild(lj);
+
+    const W = 420, H = 210, SOL = 36, SAG = 40, UST = 8, ALT = 34;
+    const gw = W - SOL - SAG, gh = H - UST - ALT;
+    const n = binler.length, slot = gw / n, cw = Math.max(2, Math.min(18, slot * 0.62));
+    const payMax = Math.max(1e-9, ...binler.map(b => b.pay || 0)) * 1.1;
+    const oranMax = Math.max(1e-9, genelOran || 0, ...binler.map(b => b.oran || 0)) * 1.15;
+    const X = i => SOL + slot * (i + 0.5);
+    const YP = p => UST + gh - gh * (p / payMax);
+    const YO = o => UST + gh - gh * (o / oranMax);
     const svg = document.createElementNS(ns, "svg");
-    svg.setAttribute("viewBox", "0 0 " + G + " " + H);
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.setAttribute("role", "img");
-    svg.setAttribute("aria-label", "Aralıklara göre batma oranı");
-    const el = (ad, ozellik, sinif) => {
+    svg.setAttribute("aria-label", "Popülasyon payı ve hedef oranı");
+    const el = (ad, oz, sinif, metin) => {
         const e = document.createElementNS(ns, ad);
-        Object.keys(ozellik).forEach(k => e.setAttribute(k, ozellik[k]));
+        Object.keys(oz).forEach(k => e.setAttribute(k, oz[k]));
         if (sinif) e.setAttribute("class", sinif);
+        if (metin !== undefined) e.textContent = metin;
         svg.appendChild(e);
         return e;
     };
-    const altY = H - ALT;
-    el("line", { x1: SOL, x2: SOL, y1: 0, y2: altY }, "dag-eksen");
+    const desen = document.createElementNS(ns, "defs");
+    desen.innerHTML = '<pattern id="sfa-tarama" width="4" height="4" patternUnits="userSpaceOnUse" '
+        + 'patternTransform="rotate(45)"><rect width="4" height="4" class="sfa-tarama-zemin"/>'
+        + '<line x1="0" y1="0" x2="0" y2="4" class="sfa-tarama-cizgi"/></pattern>';
+    svg.appendChild(desen);
+    /* Izgara ve eksenler: sol % popülasyon, sağ % hedef */
+    [0, 0.5, 1].forEach(f => {
+        const y = UST + gh - gh * f;
+        el("line", { x1: SOL, x2: W - SAG, y1: y, y2: y }, "sfa-izgara");
+        el("text", { x: SOL - 4, y: y + 3, "text-anchor": "end" }, "dag-eksen-yazi", yuzdeMetni(payMax * f, 0));
+        el("text", { x: W - SAG + 4, y: y + 3, "text-anchor": "start" }, "dag-eksen-yazi", yuzdeMetni(oranMax * f, 1));
+    });
+    el("line", { x1: SOL, x2: W - SAG, y1: UST + gh, y2: UST + gh }, "dag-eksen");
+    /* Çubuklar */
+    binler.forEach((b, i) => {
+        const h = Math.max(0, UST + gh - YP(b.pay || 0));
+        if (h > 0) {
+            const x = X(i) - cw / 2, y = UST + gh - h, r = Math.min(3, cw / 2, h);
+            el("path", { d: "M" + x + "," + (UST + gh) + " V" + (y + r) + " Q" + x + "," + y + " " + (x + r) + "," + y
+                + " H" + (x + cw - r) + " Q" + (x + cw) + "," + y + " " + (x + cw) + "," + (y + r) + " V" + (UST + gh) + " Z" },
+               b.eksik ? "sfa-cubuk eksik" : "sfa-cubuk");
+        }
+    });
+    /* Genel hedef oranı: yatay referans */
+    if (genelOran !== null && genelOran !== undefined)
+        el("line", { x1: SOL, x2: W - SAG, y1: YO(genelOran), y2: YO(genelOran) }, "aralik-ortalama");
+    /* Eğilim çizgileri: eksik hariç, satır ağırlıklı en küçük kareler; x = sıra */
+    const dolu = binler.map((b, i) => ({ i, b })).filter(o => !o.b.eksik && o.b.oran !== null && o.b.oran !== undefined);
+    const uydur = f => {
+        let sw = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+        dolu.forEach(({ i, b }) => {
+            const w = b.n || 1, x = f(i - dolu[0].i);
+            sw += w; sx += w * x; sy += w * b.oran; sxx += w * x * x; sxy += w * x * b.oran;
+        });
+        const pay = sw * sxx - sx * sx;
+        if (dolu.length < 2 || !pay) return null;
+        const bb = (sw * sxy - sx * sy) / pay;
+        return { a: (sy - bb * sx) / sw, b: bb };
+    };
+    [[x => x, "sfa-lin"], [x => Math.log(1 + x), "sfa-log"]].forEach(([f, sinif]) => {
+        const u = uydur(f);
+        if (!u) return;
+        const yol = dolu.map(({ i }, k) => (k ? "L" : "M") + X(i) + ","
+            + YO(Math.max(0, Math.min(oranMax, u.a + u.b * f(i - dolu[0].i)))));
+        el("path", { d: yol.join(" ") }, sinif);
+    });
+    /* Hedef oranı noktaları ve bağlantı çizgisi */
+    if (dolu.length > 1)
+        el("path", { d: dolu.map(({ i, b }, k) => (k ? "L" : "M") + X(i) + "," + YO(b.oran)).join(" ") }, "sfa-oran-cizgi");
+    binler.forEach((b, i) => {
+        if (b.oran === null || b.oran === undefined) return;
+        el("circle", { cx: X(i), cy: YO(b.oran), r: 3.2 }, b.eksik ? "sfa-nokta eksik" : "sfa-nokta");
+    });
+    /* X ekseni etiketleri: sığdığı kadar (sayısalda aralığın ortalaması) */
+    const adim = Math.max(1, Math.ceil(n / 8));
+    binler.forEach((b, i) => {
+        if (i % adim && !b.eksik) return;
+        let e = b.eksik ? "Eksik" : (kategorik || b.ort === undefined || b.ort === null
+            ? String(b.etiket || "") : kisaSayi(b.ort));
+        if (e.length > 9) e = e.slice(0, 8) + "…";
+        el("text", { x: X(i), y: UST + gh + 12, "text-anchor": "middle" }, "dag-eksen-yazi", e);
+    });
+    el("text", { x: SOL + gw / 2, y: H - 4, "text-anchor": "middle" }, "dag-eksen-yazi", eksenAdi || "");
+    /* Üzerine gelince aralığın tam bilgisi */
     const ipucu = elYap("div", "dag-ipucu");
     ipucu.hidden = true;
-    etiketler.forEach((et, i) => {
-        const y0 = UST + i * (grupH + GRUP_ARA);
-        const yazi = el("text", { x: SOL - 6, y: y0 + grupH / 2 + 3.5, "text-anchor": "end" },
-                        "dag-eksen-yazi");
-        yazi.textContent = et.length > 16 ? et.slice(0, 15) + "…" : et;
-        seriler.forEach((s, j) => {
-            const x = bul(s.g, et);
-            if (!x) return;
-            const y = y0 + j * (CUBUK + ARA);
-            const w = x.oran > 0 ? Math.max(2, W * x.oran / enCok) : 0;
-            const r = Math.min(4, CUBUK / 2, w);
-            if (w > 0)
-                el("path", { d: "M" + SOL + "," + y + " H" + (SOL + w - r)
-                    + " Q" + (SOL + w) + "," + y + " " + (SOL + w) + "," + (y + r)
-                    + " V" + (y + CUBUK - r)
-                    + " Q" + (SOL + w) + "," + (y + CUBUK) + " " + (SOL + w - r) + "," + (y + CUBUK)
-                    + " H" + SOL + " Z" }, "aralik-cubuk-g " + s.sinif);
-        });
-        const alan = el("rect", { x: 0, y: y0 - GRUP_ARA / 2, width: G,
-                                  height: grupH + GRUP_ARA }, "dag-vurus");
+    binler.forEach((b, i) => {
+        const alan = el("rect", { x: SOL + slot * i, y: UST, width: slot, height: gh }, "dag-vurus");
         alan.addEventListener("mouseenter", () => {
-            ipucu.textContent = et + " · " + seriler.map(s => {
-                const x = bul(s.g, et);
-                return (seriler.length > 1 ? s.ad + " " : "Batma Oranı ")
-                    + (x ? yuzdeMetni(x.oran, 2) + " (" + Number(x.n).toLocaleString("tr-TR") + " satır)" : "∅");
-            }).join(" · ");
+            ipucu.textContent = (b.eksik ? "Eksik" : b.etiket) + " · "
+                + Number(b.n || 0).toLocaleString("tr-TR") + " satır (" + yuzdeMetni(b.pay, 1)
+                + ") · hedef oranı " + yuzdeMetni(b.oran, 2);
             ipucu.hidden = false;
             const kg = kap.clientWidth, iw = ipucu.offsetWidth;
-            ipucu.style.left = Math.max(0, Math.min(kg - iw, (SOL / G) * kg)) + "px";
-            ipucu.style.top = (((y0) / H) * kap.querySelector("svg").clientHeight
-                               + (kap.querySelector(".aralik-lejant") || { offsetHeight: 0 }).offsetHeight
-                               - 6) + "px";
+            const merkez = (X(i) / W) * kg;
+            ipucu.style.left = Math.max(0, Math.min(kg - iw, merkez - iw / 2)) + "px";
+            ipucu.style.top = (lj.offsetHeight + 4) + "px";
         });
         alan.addEventListener("mouseleave", () => { ipucu.hidden = true; });
     });
-    const ox = SOL + W * ort / enCok;
-    el("line", { x1: ox, x2: ox, y1: 0, y2: altY }, "aralik-ortalama");
-    const oy = el("text", { x: ox, y: altY + 12, "text-anchor": "middle" }, "dag-eksen-yazi");
-    oy.textContent = "Ortalama " + yuzdeMetni(ort, 2);
     kap.appendChild(svg);
     kap.appendChild(ipucu);
     return kap;
+}
+
+/* KARAR FORMU (örnek ekrandaki sağ sütunun karşılığı). Kaydedilen karar
+   "Sizin Kararınız" olur; yapay zekâ o değişkeni artık değiştirmez. */
+function sfaKararFormu(v, ozet, yenidenCiz) {
+    const k = Object.assign({}, v.karar || {});
+    const kategorik = (v.sfa || {}).tip === "kategorik";
+    const form = elYap("div", "sfa-form");
+    form.onclick = e => e.stopPropagation();
+    const kaynak = elYap("div", "sfa-form-kaynak");
+    kaynak.appendChild(elYap("span", "aralik-kaynak " + (k.kaynak || ""),
+                             SFA_KAYNAK_ETIKET[k.kaynak] || "Karar yok"));
+    if (k.gerekce) kaynak.appendChild(elYap("span", "sfa-gerekce", tireSade(k.gerekce)));
+    form.appendChild(kaynak);
+
+    const alanlar = {};
+    const satir = (etiket, anahtar, secenekler) => {
+        const s = elYap("label", "sfa-form-satir");
+        s.appendChild(elYap("span", "sfa-form-etiket", etiket));
+        const sel = document.createElement("select");
+        sel.className = "sfa-form-sec";
+        secenekler.forEach(([d, e]) => {
+            const o = document.createElement("option");
+            o.value = d; o.textContent = e;
+            sel.appendChild(o);
+        });
+        sel.value = k[anahtar] || secenekler[0][0];
+        s.appendChild(sel);
+        form.appendChild(s);
+        alanlar[anahtar] = sel;
+        return sel;
+    };
+    satir("Kullan", "kullan", SFA_SECENEK.kullan);
+    const eksikSec = satir("Eksik Doldurma", "eksik", SFA_SECENEK.eksik.filter(([d]) =>
+        kategorik ? (d === "yok" || d === "missing") : d !== "missing"));
+    const deger = document.createElement("input");
+    deger.className = "sfa-form-deger";
+    deger.placeholder = "Doldurma değeri";
+    deger.value = (k.eksik_deger === null || k.eksik_deger === undefined) ? "" : String(k.eksik_deger).replace(".", ",");
+    const degerSatir = elYap("label", "sfa-form-satir");
+    degerSatir.appendChild(elYap("span", "sfa-form-etiket", "Doldurma Değeri"));
+    degerSatir.appendChild(deger);
+    form.appendChild(degerSatir);
+    const degerGoster = () => { degerSatir.hidden = eksikSec.value !== "sabit"; };
+    eksikSec.onchange = degerGoster;
+    degerGoster();
+    if (!kategorik) {
+        satir("Aykırı Değer", "aykiri", SFA_SECENEK.aykiri);
+        satir("Dönüşüm", "donusum", SFA_SECENEK.donusum);
+    }
+    satir("Ayrıklaştırma", "ayriklastirma", SFA_SECENEK.ayriklastirma);
+    const yorum = document.createElement("textarea");
+    yorum.className = "sfa-form-yorum";
+    yorum.rows = 2;
+    yorum.placeholder = "Yorum";
+    yorum.value = k.yorum || "";
+    const ys = elYap("label", "sfa-form-satir");
+    ys.appendChild(elYap("span", "sfa-form-etiket", "Yorum"));
+    ys.appendChild(yorum);
+    form.appendChild(ys);
+
+    const alt = elYap("div", "sfa-form-alt");
+    const durum = elYap("span", "sfa-form-durum");
+    const kaydet = elYap("button", "secim-onay sfa-kaydet", "Kaydet");
+    kaydet.type = "button";
+    kaydet.onclick = () => {
+        const karar = { yorum: yorum.value, eksik_deger: deger.value.replace(",", ".") || null };
+        Object.keys(alanlar).forEach(a => { karar[a] = alanlar[a].value; });
+        kaydet.disabled = true;
+        durum.textContent = "Kaydediliyor…";
+        fetch(getWebAppBackendUrl("sfa_karar"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oturum_id: OTURUM_ID, kolon: v.ad || ozet.ad, karar: karar })
+        }).then(r => r.json()).then(d => {
+            kaydet.disabled = false;
+            if (!d || !d.tamam) { durum.textContent = tireSade((d && d.hata) || "Kaydedilemedi."); return; }
+            v.karar = d.karar;
+            ozet.karar = d.ozet;
+            ozet.kaynak = "kullanici";
+            yenidenCiz();
+        }).catch(e => { kaydet.disabled = false; durum.textContent = "Kaydedilemedi: " + e; });
+    };
+    alt.appendChild(durum);
+    alt.appendChild(kaydet);
+    form.appendChild(alt);
+    return form;
 }
 
 /* Birlesik sekmelerde bolum basligi (DEĞİŞKEN ANALİZİ, BÖLME & VALİDASYON) */
@@ -6089,182 +6230,91 @@ function dogrulamaKartiEkle(alan, blok) {
    aynı düzen (kullanıcı kararı): satır başına "Uygula" kutusu, Tümünü Seç /
    Tümünü Temizle, tek birincil düğme. Öneri metninin altında metrik
    kontrolleri (✓ / ✗) ve yapay zekâ seçildiyse gerekçesi yazar. */
-function aralikKartiEkle(alan, blok) {
-    const kart = elYap("div", "secim-kart dg-kart aralik-kart");
-    if (kartBasligiGerekli(alan, blok)) {
-        const bas = elYap("div", "dg-bas");
-        bas.appendChild(elYap("div", "secim-baslik", alan.baslik || ""));
-        kart.appendChild(bas);
-    }
-    if (alan.aciklama) kart.appendChild(elYap("div", "secim-aciklama dg-aciklama", alan.aciklama));
-    kart.appendChild(elYap("div", "dg-not", alan.kaynak === "yapay_zeka"
-        ? "Kutular yapay zekânın değerlendirmesine göre işaretlendi; gerekçesi her satırda yazıyor."
-        : "Kutular metrik kontrollerine göre işaretlendi: bütün kontrolleri geçen öneri işaretli gelir."));
-    if (alan.ai_hata) kart.appendChild(elYap("div", "dg-oneri-hata", alan.ai_hata));
+/* ---- tip: sfa_karar ----
+   SFA adımının kartı. Yapay zekâ arka planda her değişken için karar
+   verir; kart ilerlemeyi gösterir ve kararları sağ paneldeki Değişken
+   Analizi sekmesine yönlendirir. "Kararları Onayla" akışı ilerletir;
+   yapay zekâ bitmeden basılırsa kalan değişkenlerde kural kararı geçer. */
+function sfaKartiEkle(alan, blok) {
+    const kart = elYap("div", "secim-kart dg-kart sfa-kart");
+    const durum = elYap("div", "sfa-kart-durum");
+    const cubuk = elYap("div", "sfa-ilerleme");
+    const dolgu = elYap("div", "sfa-ilerleme-dolgu");
+    cubuk.appendChild(dolgu);
+    kart.appendChild(durum);
+    kart.appendChild(cubuk);
+    const hata = elYap("div", "dg-oneri-hata");
+    hata.hidden = true;
+    kart.appendChild(hata);
 
-    const satirlar = alan.satirlar || [];
-    const kutular = [];
-    const gerekceler = [];     /* satir basina yapay zeka gerekcesi */
-    const dokunulan = new Set();  /* kullanicinin elle degistirdigi kutular */
-    const toplu = elYap("div", "dg-toplu");
-    const topluBtn = [];
-    [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([deger, ad]) => {
-        const b = elYap("button", "dg-toplu-btn", ad);
-        b.type = "button";
-        b.onclick = () => {
-            if (kart.classList.contains("kilitli")) return;
-            kutular.forEach(k => { k.checked = deger; });
-            tazele();
-        };
-        toplu.appendChild(b);
-        topluBtn.push(b);
-    });
-    const ust = elYap("div", "dg-tablo-ust");
-    ust.appendChild(elYap("div", "dg-lejant", satirlar.length + " öneri"));
-    ust.appendChild(toplu);
-    kart.appendChild(ust);
-
-    const sar = elYap("div", "dg-tablo-sar");
-    const tablo = elYap("table", "dg-tablo aralik-karar-tablo");
-    const htr = elYap("tr");
-    ["Değişken", "Dönüşüm", "Öneri", "Uygula"].forEach(h => htr.appendChild(elYap("th", "", h)));
-    const thead = document.createElement("thead");
-    thead.appendChild(htr);
-    tablo.appendChild(thead);
-    const tbody = document.createElement("tbody");
-    satirlar.forEach(sat => {
-        const tr = elYap("tr", "dg-satir");
-        const tdK = elYap("td", "dg-kolon");
-        tdK.appendChild(document.createTextNode(sat.ad));
-        if (sat.hassas) tdK.appendChild(elYap("span", "aralik-rozet hassas", "Hassas"));
-        tr.appendChild(tdK);
-        const tdD = elYap("td", "dg-tip", sat.donusum
-            + (sat.tur === "aralik" && sat.egilim ? " · " + (SEKIL_ETIKET[sat.egilim] || sat.egilim) : ""));
-        tr.appendChild(tdD);
-        const tdO = elYap("td", "aralik-karar-oneri");
-        tdO.appendChild(elYap("div", "", sat.oneri || ""));
-        if ((sat.kontroller || []).length) {
-            /* Hepsi geçtiyse tek rozet (ayrıntı üzerine gelince); geçmeyen
-               varsa yalnızca onlar görünür: satır gereksiz uzamasın. */
-            const kk = elYap("div", "aralik-kontroller");
-            const kalan = sat.kontroller.filter(k => !k.gecti);
-            const liste = sat.kontroller.map(k => (k.gecti ? "✓ " : "✗ ") + k.ad
-                                                  + (k.deger ? " (" + k.deger + ")" : "")).join("\n");
-            if (!kalan.length) {
-                const c = elYap("span", "aralik-kontrol gecti",
-                                "✓ " + sat.kontroller.length + " kontrolün hepsi geçti");
-                c.title = liste;
-                kk.appendChild(c);
-            } else {
-                kalan.forEach(k => {
-                    const c = elYap("span", "aralik-kontrol kaldi", "✗ " + k.ad);
-                    c.title = k.deger || "";
-                    kk.appendChild(c);
-                });
-                const g = elYap("span", "aralik-kontrol notr",
-                                (sat.kontroller.length - kalan.length) + "/" + sat.kontroller.length + " geçti");
-                g.title = liste;
-                kk.appendChild(g);
-            }
-            tdO.appendChild(kk);
-        }
-        /* Gerekce alani her satirda var; yapay zeka sonucu geldikce dolar. */
-        const g = elYap("div", "aralik-gerekce");
-        g.hidden = !sat.gerekce;
-        g.appendChild(elYap("span", "aralik-gerekce-bas", "Yapay Zekâ"));
-        const gm = document.createTextNode(" " + tireSade(sat.gerekce || ""));
-        g.appendChild(gm);
-        gerekceler.push({ el: g, metin: gm });
-        tdO.appendChild(g);
-        tr.appendChild(tdO);
-        const tdU = elYap("td", "dg-ekle-hucre");
-        const kutu = document.createElement("input");
-        kutu.type = "checkbox";
-        kutu.className = "dg-ekle";
-        kutu.checked = !!sat.secili;
-        kutu.setAttribute("aria-label", sat.ad + " önerisi uygulansın");
-        const sira = kutular.length;
-        kutu.onchange = () => {
-            if (kart.classList.contains("kilitli")) return;
-            dokunulan.add(sira);
-            tazele();
-        };
-        tdU.appendChild(kutu);
-        tr.appendChild(tdU);
-        kutular.push(kutu);
-        tbody.appendChild(tr);
-    });
-    tablo.appendChild(tbody);
-    sar.appendChild(tablo);
-    kart.appendChild(sar);
-
-    const aiDurum = elYap("div", "dg-gerekce");
-    aiDurum.hidden = true;
-    kart.appendChild(aiDurum);
     const dugmeler = elYap("div", "onay-dugmeler dg-dugmeler");
-    const birincil = elYap("button", "secim-onay dg-birincil");
+    const ac = elYap("button", "secim-onay ikincil", "Değişken Analizini Aç");
+    ac.type = "button";
+    ac.onclick = () => analizSekmeAc("degisken");
+    const birincil = elYap("button", "secim-onay dg-birincil", alan.buton || "Kararları Onayla");
     birincil.type = "button";
+    dugmeler.appendChild(ac);
     dugmeler.appendChild(birincil);
     kart.appendChild(dugmeler);
 
-    function tazele() {
-        const n = kutular.filter(k => k.checked).length;
-        birincil.textContent = n ? n + " Öneriyi Uygula ve Devam Et"
-                                 : "Öneri Uygulamadan Devam Et";
-    }
     function kilitle(evet) {
         kart.classList.toggle("kilitli", evet);
-        kutular.forEach(k => { k.disabled = evet; });
-        topluBtn.forEach(b => { b.disabled = evet; });
         birincil.disabled = evet;
     }
     birincil.onclick = () => {
         if (mesgul || birincil.disabled) return;
-        const secilen = satirlar.filter((s, i) => kutular[i].checked)
-            .map(s => s.ad + ":" + s.tur);
         kilitle(true);
         geriAlKilit = () => kilitle(false);
-        gonder((alan.sablon || "{liste}").replace("{liste}", secilen.join(", ")), false);
+        gonder(alan.sablon || "sfa kararları: onaylandı", false);
     };
-    /* YAPAY ZEKÂ ARKA PLANDA: kart hemen açılır, kararlar geldikçe
-       satırlara düşer. Bitene kadar düğme kilitli; kullanıcının elle
-       değiştirdiği kutuya dokunulmaz. */
-    function aiUygula(sonuc) {
-        satirlar.forEach((sat, i) => {
-            const k = sonuc && sonuc[sat.ad];
-            if (!k || sat.tur !== "aralik") return;
-            if (!dokunulan.has(i)) kutular[i].checked = k.karar === "uygula";
-            gerekceler[i].metin.textContent = " " + tireSade(k.gerekce || "");
-            gerekceler[i].el.hidden = !k.gerekce;
-        });
-        tazele();
+    const toplam = Number(alan.toplam || 0);
+    function goster(d) {
+        const biten = Math.min(Number((d && d.biten) || 0), toplam || Infinity);
+        const calisiyor = d && d.durum === "calisiyor";
+        dolgu.style.width = (toplam ? Math.round(100 * biten / toplam) : 0) + "%";
+        cubuk.hidden = !calisiyor;
+        if (calisiyor)
+            durum.textContent = "Yapay zekâ karar veriyor · " + biten.toLocaleString("tr-TR")
+                + " / " + toplam.toLocaleString("tr-TR") + " değişken. Kararlar geldikçe "
+                + "Değişken Analizi sekmesine düşer; beklemeden onaylarsanız kalan "
+                + "değişkenlerde kural tabanlı karar geçerli olur.";
+        else if (d && d.durum === "bitti")
+            durum.textContent = "Yapay zekâ " + biten.toLocaleString("tr-TR") + " değişken için "
+                + "karar verdi. Kararları Değişken Analizi sekmesinde inceleyip değiştirebilirsiniz.";
+        else
+            durum.textContent = "Kararlar Değişken Analizi sekmesinde; inceleyip "
+                + "değiştirebilirsiniz.";
+        hata.hidden = !(d && d.hata);
+        hata.textContent = (d && d.hata) ? tireSade(d.hata) : "";
     }
-    function aiYokla(isId) {
-        fetch(getWebAppBackendUrl("aralik_ai") + "?is=" + encodeURIComponent(isId))
+    let sonBiten = -1;
+    function yokla(isId) {
+        fetch(getWebAppBackendUrl("sfa_ai") + "?is=" + encodeURIComponent(isId))
             .then(r => r.json())
             .then(d => {
-                if (!kart.isConnected || kart.classList.contains("kilitli")) return;
-                aiUygula(d.sonuc || {});
-                if (d.durum === "calisiyor") {
-                    aiDurum.hidden = false;
-                    aiDurum.textContent = "Yapay zekâ değerlendiriyor · " + (d.biten || 0)
-                        + "/" + (d.toplam || "?") + " parça. Bitince düğme açılır.";
-                    birincil.disabled = true;
-                    setTimeout(() => aiYokla(isId), 2500);
-                    return;
+                if (!kart.isConnected) return;
+                goster(d);
+                /* Yeni kararlar geldiyse açık SFA listesi tazelenir */
+                if (d && d.biten !== sonBiten) {
+                    sonBiten = d.biten;
+                    /* Açık bir karar formu varsa dokunulmaz: kullanıcının
+                       kaydetmediği seçimler silinmesin. */
+                    if (aktifAnalizSekme === "degisken" && ARALIK.liste && !ARALIK.acik) {
+                        ARALIK.liste = null;
+                        ARALIK.detay = {};
+                        analizCiz("degisken");
+                    }
                 }
-                aiDurum.hidden = !d.hata;
-                aiDurum.textContent = d.hata ? tireSade(d.hata) : "";
-                birincil.disabled = false;
+                if (d && d.durum === "calisiyor" && !kart.classList.contains("kilitli"))
+                    setTimeout(() => yokla(isId), 3000);
             })
-            .catch(() => { if (kart.isConnected) { birincil.disabled = false; } });
+            .catch(() => {});
     }
-
-    tazele();
+    goster(null);
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     sohbetEl.scrollTop = sohbetEl.scrollHeight;
     if (blok && blok.kilit) { kilitle(true); geriAlKilit = null; return; }
-    if (alan.ai_is) { birincil.disabled = true; aiYokla(String(alan.ai_is)); }
+    if (alan.ai_is) yokla(String(alan.ai_is));
     yeniOdak = birincil;
 }
 
@@ -7793,7 +7843,7 @@ function secimAlaniEkle(alan, blok) {
     /* Bolme stratejisi: iki modlu kart (Önerilen / Özel Ayarlar) */
     if (alan.tip === "bolme") { bolmeKartiEkle(alan, blok); return; }
     /* Aralık önerileri: satır başına kabul / ret (sözlük tanımları gibi) */
-    if (alan.tip === "aralik_karar") { aralikKartiEkle(alan, blok); return; }
+    if (alan.tip === "sfa_karar") { sfaKartiEkle(alan, blok); return; }
 
     const kart = document.createElement("div");
     kart.className = "secim-kart";

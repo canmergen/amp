@@ -1,6 +1,38 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Geri Dön ile 01.4 ve öncesine dönülünce bölme kilitli kalmıyor**.
+Bu tur: **SFA yeniden tasarlandı: eleme yok, her değişken için yapay zekâ kararı, çift eksenli grafik**.
+Yeni (fe_agent): `sfa_karar.py`
+Değiştir (fe_agent): `sfa.py`, `aralik.py`, `llm.py`, `akis_faz02.py`, `akis_faz01.py`, `akis_kayit.py`, `akis_metin.py`, `akis.py`, `akis_panel.py`, `dokuman.py`
+Değiştir (webapp): `backend.py`, `app.js` (JS), `style.css` (CSS)
+Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+Devam eden bir çalışmada 02.1 Veri Profili'ne Geri Dön ile dönüp yeniden onaylayın
+(adım sırası değişti; SFA yeniden hesaplanır).
+
+- SFA eleme yapmıyor: PASS/FAIL kalktı. IV bilgi amaçlı (etkisiz / zayıf / orta
+  / güçlü). Eleme sonuçlarında SFA yalnızca kararlar onaylanınca "modele
+  girecek" sayısıyla görünür.
+- 02.3 Aralık Önerileri adımı kalktı; aralıklar SFA'nın içinde
+  ("Ayrıklaştırma: Önerilen Aralıklar").
+- Yapay zekâ her değişken için ayrı karar veriyor (arka planda, 8'erli
+  parçalar, 3 paralel): Kullan, Eksik Doldurma, Aykırı Değer (Winsor %5),
+  Dönüşüm (Log / Üstel / Sıra), Ayrıklaştırma, gerekçe. Beklerken kural
+  tabanlı karar geçerli; kararlar geldikçe listeye düşer.
+- Sağ panel (hafif genişledi) Değişken Analizi: değişken listesi (IV, C-value,
+  karar, kaynağı). Değişken adına tıklayınca sözlük açıklaması, ölçütler,
+  beş dönüşümlü C-value, çift eksenli grafik (çubuk = popülasyon payı, nokta
+  = hedef 1 oranı, doğrusal ve log eğilim; Ham / Kırpılmış %5 / Önerilen
+  Aralıklar) ve karar formu. Kaydedilen karar "Sizin Kararınız" olur ve
+  yapay zekâ onu değiştirmez.
+- Sohbette SFA kartı: yapay zekâ ilerlemesi ve "Kararları Onayla".
+- Analitik Baz Set kararları uygular: doldurma, kırpma, dönüşüm, aralık;
+  yeni hâl yeni adla (ör. GELIR_KIRP_LOG, SKOR_ARALIK), ham kolon çıkar.
+- Aralık hesabı düzeltildi: değerleri tek noktada yığılan değişkenlerde
+  yüzdelik sınırlar çakışıp 2-3 aralık kalıyordu ("IV güvenilmez" 576).
+  Artık yığın kendi aralığını alıyor, kalan değerler eşit bölünüyor.
+
+---
+
+Önceki tur: **Geri Dön ile 01.4 ve öncesine dönülünce bölme kilitli kalmıyor**.
 Değiştir (fe_agent): `akis_panel.py`
 Kütüphane dosyasını değiştirdikten sonra webapp backend'ini yeniden başlatın.
 

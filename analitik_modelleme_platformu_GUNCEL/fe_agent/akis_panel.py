@@ -6,7 +6,6 @@ akis.py bolundu; bu dosya o bolumun aynisidir.
 
 import pandas as pd
 
-from fe_agent import sfa as sfa_mod
 from fe_agent import sozluk_calisma
 from fe_agent import motor as motor_mod
 from fe_agent.akis_metin import (
@@ -236,7 +235,8 @@ def _eleme_karti(durum):
 
     ham = _tam(p.get("kolon_baslangic") or p.get("kolon"))
     temiz = _liste_adet(t.get("temiz")) if t else None
-    sfa_gecen = _tam(sfa.get("pass_adet"))
+    # SFA eleme yapmaz; kararlar onaylandiysa "modele girecek" sayisi
+    sfa_gecen = _tam(sfa.get("kullanilan")) if sfa.get("onaylandi") else None
     uretilen = _liste_adet(durum.get("uretilen"))
 
     basamaklar = []
@@ -449,7 +449,7 @@ def detay(durum):
     if s.get("analiz_edilen") is not None:
         bolumler.append(_bolum("TEK DEĞİŞKEN ANALİZİ", [
             ("Analiz Edilen", _sayi(s["analiz_edilen"])),
-            ("PASS", _sayi(s.get("pass_adet", 0))),
+            ("Modele Girecek", _sayi(s.get("kullanilan", 0)) if s.get("onaylandi") else "onay bekliyor"),
             ("Sızıntı Şüpheli", _sayi(len(s.get("sizinti") or []))),
         ]))
 
@@ -732,7 +732,6 @@ TANIM_ADIMI = sol_panel_adi("tanimlar")
 KAYIT_ADIMI = sol_panel_adi("teyit")
 PROFIL_ADIMI = sol_panel_adi("veri_profili")
 SFA_ADIMI = sol_panel_adi("sfa")
-ARALIK_ADIMI = sol_panel_adi("aralik")
 BOLME_ADIMI = sol_panel_adi("bolme")
 
 # Sol paneldeki adlarin akis sirasi, uc modun birlesimi. Faz 01'de
@@ -1795,84 +1794,40 @@ def hazirlik_paneli(durum):
 # SFA sekmesi
 # --------------------------------------------------------------------------
 def sfa_paneli(durum):
-    """SFA sekmesi. Kaynak: durum["sfa"] ozeti + sfa_uygula'nin yazdigi
-    IV'ye gore ilk 20 satir; tam tablo dataset'te kalir."""
+    """SFA sekmesi. Ozet kart + degisken ekrani (arayuz /sfa_degiskenler ve
+    /sfa_degisken uclarindan ceker). SFA eleme yapmaz (kullanici karari);
+    kart kararlarin durumunu gosterir."""
     s = durum.get("sfa") or {}
     if s.get("analiz_edilen") is None:
         return _bekleyen_panel(SFA_ADIMI)
 
     olculen = _tam(s.get("analiz_edilen"), 0)
-    gecen = _tam(s.get("pass_adet"), 0)
-    atlanan = len(s.get("atlanan") or [])
-    sizinti = len(s.get("sizinti") or [])
-    pass_oran = _oran(gecen, olculen)
-
-    a = s.get("aralik") or {}
+    b = s.get("iv_bantlari") or {}
     tam = s.get("tablo_dataset") or (
         "PROJE_HAFIZASI%s" % s["tablo_yedek"] if s.get("tablo_yedek") else None)
-    ozet_kart = _kart("Tek değişken analizi", [
+    ko = s.get("kararlar_ozet") or {}
+    satirlar = [
         ("Ölçüm Seti", "Train (MS) · %s satır" % _sayi(s["train_satir"])
          if s.get("train_satir") else "Train (MS)", None),
         ("Ölçülen Değişken", _sayi(olculen), SFA_ADIMI),
-        ("Geçen (PASS)", "%s  (%s)" % (_sayi(gecen),
-                                       _yuzde(pass_oran, 1)
-                                       if pass_oran is not None else "-"), SFA_ADIMI),
-        ("Kalan (FAIL)", _sayi(max(olculen - gecen, 0)), SFA_ADIMI),
-        ("IV Güvenilmez", _sayi(s["iv_guvenilmez"])
-         if s.get("iv_guvenilmez") is not None else "-", None),
-        ("Sızıntı Şüphesi", _sayi(sizinti), SFA_ADIMI),
-        ("Ölçülemeyen Kategorik", _sayi(atlanan), SFA_ADIMI),
-        ("Aralık Önerisi", _sayi(a.get("onerilen", 0)) if a else "-", None),
-        ("Hassas Değişken", _sayi(len(a.get("hassas") or [])) if a else "-", None),
-        ("Tam Tablo", tam or "-", None),
-    ])
+        ("IV Dağılımı", "güçlü %s · orta %s · zayıf %s · etkisiz %s" % (
+            _sayi(b.get("güçlü", 0)), _sayi(b.get("orta", 0)),
+            _sayi(b.get("zayıf", 0)), _sayi(b.get("etkisiz", 0))), None),
+        ("Sızıntı Şüphesi", _sayi(len(s.get("sizinti") or [])), SFA_ADIMI),
+        ("Hassas Değişken", _sayi(len(s.get("hassas") or [])), SFA_ADIMI),
+        ("Kararlar", "onaylandı" if s.get("onaylandi") else "onay bekliyor", None),
+    ]
+    if s.get("onaylandi"):
+        satirlar.append(("Modele Girecek", _sayi(s.get("kullanilan") or 0), None))
+    satirlar.append(("Tam Tablo", tam or "-", None))
+    ozet_kart = _kart("Tek değişken analizi", satirlar)
     ozet_kart["not"] = (
-        "Her değişkenin hedefi tek başına ayırma gücü Train satırlarında "
-        "ölçüldü. Eksikler sayısalda Train medyanıyla, kategorikte MISSING "
-        "kategorisiyle dolduruldu. FAIL çıkarma kararı değildir.")
-
-    esik_kart = _kart("Geçme Ölçütleri", [
-        ("IV", "> %s" % _ond(sfa_mod.IV_ESIK, 2), None),
-        ("C-value", "> %s" % _ond(sfa_mod.C_ESIK, 2), None),
-        ("Sızıntı Şüphesi", "C-value > %s" % _ond(sfa_mod.SIZINTI_ESIK, 2), None),
-        ("Kategorik Seviye Sınırı", "%s farklı değer" % _sayi(sfa_mod.KATEGORIK_MAX), None),
-    ])
-    esik_kart["not"] = (
-        "IV: 0,02'nin altı etkisiz, 0,02-0,10 zayıf, 0,10-0,30 orta, 0,30'un "
-        "üstü güçlü. C-value: değişken tek başına skor olsaydı AUC; 0,50 "
-        "rastgele, 1,00 kusursuz.")
-
-    satirlar = [[r.get("FEATURE"),
-                 _ond(r.get("IV"), 3),
-                 _ond(r.get("C_VALUE"), 3),
-                 r.get("SFA_RESULT") or "",
-                 r.get("NOT") or ""]
-                for r in (s.get("ilk20") or [])]
-
-    veri = {"durum": "hazir", "kartlar": [ozet_kart, esik_kart]}
-    plan = durum.get("donusum_plani")
-    if isinstance(plan, list):
-        # Aralık Önerileri adiminda kabul edilenler (bos liste: hepsi reddedildi)
-        satirlar_p = [(p["ad"], ("%s aralık · %s" % (p.get("aralik_sayisi"), p.get("sekil"))
-                                 if p["tur"] == "aralik" else "eksik işareti")
-                       + (" · ham hâli çıkarılacak" if p.get("hassas") and p["tur"] == "aralik" else ""),
-                       ARALIK_ADIMI) for p in plan]
-        veri["kartlar"].append(_kart("Planlanan Dönüşümler", satirlar_p or [
-            ("Durum", "Kabul edilen öneri yok", ARALIK_ADIMI)]))
-    if a.get("dosya"):
-        # Aralik onerileri: degisken tablosunu arayuz /sfa_aralik ucundan
-        # ceker (IV, egilim, aralik, eksik oncesi / sonrasi). Ilk 20 tablosu
-        # bu tabloda zaten var; ikinci kez cizilmez.
-        veri["aralik"] = {"degisken": a.get("degisken"), "onerilen": a.get("onerilen"),
-                          "hassas": len(a.get("hassas") or []),
-                          "tutarsiz": len(a.get("tutarsiz") or [])}
-        return veri
-    if satirlar:
-        veri["tablo"] = {
-            "baslik": "Bilgi Değerine Göre İlk %d Değişken" % len(satirlar),
-            "kolonlar": ["FEATURE", "IV", "C-VALUE", "SONUÇ", "NOT"],
-            "satirlar": satirlar,
-            "toplam": olculen + atlanan,
-            "gosterilen": len(satirlar),
-        }
+        "Ölçümler Train satırlarında. Eleme yapılmaz; her değişkenin modele "
+        "hangi hâliyle gireceğine yapay zekâ karar verir, aşağıda değişken "
+        "adına tıklayıp değiştirebilirsiniz.")
+    veri = {"durum": "hazir", "kartlar": [ozet_kart]}
+    if (s.get("aralik") or {}).get("dosya"):
+        veri["aralik"] = {"degisken": (s.get("aralik") or {}).get("degisken"),
+                          "ai_is": s.get("ai_is"), "onaylandi": bool(s.get("onaylandi")),
+                          "girmeyen": len(ko.get("girmeyen") or [])}
     return veri

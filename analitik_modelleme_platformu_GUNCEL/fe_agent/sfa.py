@@ -13,8 +13,49 @@ anlamli olabilir; burada yalnizca tek degiskenli guc raporlanir.
 import numpy as np
 import pandas as pd
 
-IV_ESIK = 0.05
+IV_ESIK = 0.05           # bilgi amacli (eleme YOK, kullanici karari)
 C_ESIK = 0.55
+KIRPMA = 0.05            # kirpilmis C-value: train %5 ve %95 yuzdelikleri
+
+# IV bantlari (bilgi amacli): etkisiz / zayif / orta / guclu
+IV_BANTLARI = ((0.02, "etkisiz"), (0.10, "zayıf"), (0.30, "orta"), (None, "güçlü"))
+
+
+def iv_bandi(iv):
+    if iv is None or (isinstance(iv, float) and np.isnan(iv)):
+        return "-"
+    for sinir, ad in IV_BANTLARI:
+        if sinir is None or iv < sinir:
+            return ad
+    return "güçlü"
+
+
+def donusumler(x, tr_x):
+    """Bes C-value donusumu (kullanici karari). Parametreler train'den.
+    Tek degiskenli AUC sira tabanli oldugu icin tekduze donusumler (log,
+    ustel, sira) ham C-value'yu DEGISTIRMEZ; kirpma uclari esitledigi icin
+    az da olsa degistirebilir. Hepsi yine de hesaplanip gosterilir."""
+    # bool kolonlar da sayisal sayiliyor; yuzdelik ve fark icin float
+    x = pd.to_numeric(x, errors="coerce").astype(float)
+    t = pd.to_numeric(tr_x, errors="coerce").astype(float).dropna()
+    if not len(t):
+        return {}
+    alt, ust = np.nanpercentile(t, [100 * KIRPMA, 100 * (1 - KIRPMA)])
+    enk, enb = float(t.min()), float(t.max())
+    genis = (enb - enk) or 1.0
+    sirali = np.sort(t.to_numpy())
+    return {
+        "ham": x,
+        "kirpik": x.clip(alt, ust),
+        "log": np.sign(x) * np.log1p(np.abs(x)),
+        "ustel": np.exp(((x - enk) / genis).clip(-5, 5)),
+        "sira": pd.Series(np.searchsorted(sirali, x.to_numpy(), side="right")
+                          / float(len(sirali)), index=x.index).where(x.notna()),
+    }
+
+
+C_DONUSUMLERI = (("ham", "C_HAM"), ("kirpik", "C_KIRPIK"), ("log", "C_LOG"),
+                 ("ustel", "C_USTEL"), ("sira", "C_SIRA"))
 PSI_ESIK = 0.10
 
 NULL_ESIK = 0.50
@@ -22,7 +63,7 @@ BIN_SAYISI = 10
 KATEGORIK_MAX = 50
 MIN_SATIR = 100
 SIZINTI_ESIK = 0.95
-MIN_BIN = 3              # bu sayinin altina dusen binlemede IV guvenilmez
+MIN_BIN = 2              # tek bine dusen (sabit) degiskende IV olculemez
 NULL_BIN = "__EKSIK__"   # PSI'da eksik degerin kendi bin'i
 OOF_KAT = 5              # kategorik hedef orani kodlamasi icin fold sayisi
 
@@ -88,30 +129,21 @@ def _binle(s, bin_sayisi=BIN_SAYISI, ogren_maske=None):
     """Bin sinirlari ogren_maske (train) uzerinden ogrenilir, TUM satirlara
     uygulanir. Doner: (gruplar, gerceklesen_bin_sayisi); basarisizsa (None, 0).
 
-    duplicates="drop" ya da yigilmis dagilim yuzunden gerceklesen bin sayisi
-    istenenden az olabilir; cagiran taraf bu sayiyi raporlar."""
-    if ogren_maske is None:
-        ogren = s
-    else:
-        ogren = s[ogren_maske]
+    Sinirlar esit sikliga en yakin ve ayni degeri iki bine bolmeyecek
+    sekilde kurulur (aralik.esit_frekans_kesimleri). Eskiden yuzdelik
+    sinirlar yigilmis dagilimda cakisiyor, gerceklesen bin sayisi 2-3'e
+    dusuyor ve IV "güvenilmez" sayiliyordu. Tekil deger sayisi bin
+    sayisindan azsa her deger kendi binidir."""
+    from fe_agent.aralik import esit_frekans_kesimleri
+    ogren = s if ogren_maske is None else s[ogren_maske]
     ogren = pd.to_numeric(ogren, errors="coerce").dropna()
     if len(ogren) < 2:
         return None, 0
-    try:
-        sinirlar = np.unique(np.nanpercentile(
-            ogren, np.linspace(0, 100, bin_sayisi + 1)))
-    except Exception:
-        return None, 0
-    if len(sinirlar) < 2:
-        return None, 0
-    sinirlar = np.asarray(sinirlar, dtype=float)
-    sinirlar[0], sinirlar[-1] = -np.inf, np.inf
-    try:
-        gruplar = pd.cut(pd.to_numeric(s, errors="coerce"),
-                         sinirlar, labels=False, include_lowest=True)
-    except Exception:
-        return None, 0
-    return gruplar, int(len(sinirlar) - 1)
+    kesimler = esit_frekans_kesimleri(ogren, bin_sayisi)
+    x = pd.to_numeric(s, errors="coerce")
+    kutu = np.searchsorted(kesimler, x.to_numpy(), side="left").astype(float)
+    kutu[x.isna().to_numpy()] = np.nan
+    return pd.Series(kutu, index=s.index), int(len(kesimler) + 1)
 
 
 def _oof_hedef_orani(sk, y, tr_index, kat_sayisi=OOF_KAT, seed=42):
@@ -292,8 +324,8 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK):
 def sfa_calistir(df, target, adaylar, train_maske=None):
     """Imputation istatistikleri, BIN SINIRLARI ve IV / C-value SADECE train
     uzerinden hesaplanir (leakage). Ogrenilen sinirlar tum satirlara uygulanir
-    ama OLCUM train satirlarindadir: OOT'de guclu ama train'de sinyalsiz bir
-    degisken PASS alamaz.
+    ama OLCUM train satirlarindadir. Eleme yapilmaz: IV ve C-value bilgi
+    amaclidir, degiskenin modele nasil girecegi SFA kararlarinda verilir.
     Doner: (tablo, ozet)"""
     y = pd.to_numeric(df[target], errors="coerce")
     tr = train_maske if train_maske is not None else pd.Series(True, index=df.index)
@@ -319,11 +351,13 @@ def sfa_calistir(df, target, adaylar, train_maske=None):
             gruplar, bin_adet = _binle(dolu, ogren_maske=tr)
             iv = _iv_gruplu(gruplar[tr], y[tr]) if gruplar is not None else None
             c = _c_value(dolu[tr], y[tr])               # <-- olcum train'de
+            dn = donusumler(dolu, dolu[tr])
+            c_ler = {kol_ad: (_c_value(dn[k][tr], y[tr]) if k in dn else None)
+                     for k, kol_ad in C_DONUSUMLERI}
             enc = "binning (%d)" % bin_adet
             if bin_adet < MIN_BIN:
-                enc += ": IV güvenilmez"
-                not_metni = ("gerçekleşen bin sayısı %d (<%d); dağılım yığılmış, "
-                             "IV güvenilmez" % (bin_adet, MIN_BIN))
+                enc += ": IV ölçülemedi"
+                not_metni = "train'de tek değer var; IV ölçülemez"
         else:
             tekil = int(s.nunique(dropna=True))
             if tekil > KATEGORIK_MAX:
@@ -337,6 +371,7 @@ def sfa_calistir(df, target, adaylar, train_maske=None):
                     "ENCODING": "-",
                     "IV": None,
                     "C_VALUE": None,
+                    "IV_BANDI": "-",
                     "SFA_RESULT": "ATLANDI",
                     "NOT": ("kategorik seviye sayısı %d > %d; hedef oranı "
                             "kodlaması güvenilir değil" % (tekil, KATEGORIK_MAX)),
@@ -350,12 +385,17 @@ def sfa_calistir(df, target, adaylar, train_maske=None):
             oof = _oof_hedef_orani(sk, y, tr_index)
             c = _c_value(oof, y.loc[tr_index])
             enc = "hedef oranı (train, out-of-fold)"
+            # Kategorikte sayisal donusum yok: bes C-value ayni (kodlanmis) deger
+            c_ler = {kol_ad: c for _k, kol_ad in C_DONUSUMLERI}
 
         if c is not None and c > SIZINTI_ESIK:
             sizinti.append(kol)
 
-        gecti = (iv is not None and iv > IV_ESIK and c is not None and c > C_ESIK
-                 and not not_metni)
+        # ELEME YOK (kullanici karari: "sfa bir eleme yeri değil, IV ve
+        # C-value düşük diye eleyemezsin"). Sonuc kolonu yalnizca olculup
+        # olculemedigini soyler; degiskenin modele nasil girecegi SFA
+        # kararlarinda (sfa_karar.py) verilir.
+        kayit_c = {k: (None if v is None else round(v, 4)) for k, v in c_ler.items()}
         kayitlar.append({
             "FEATURE": kol,
             "TYPE": "numeric" if sayisal else "categorical",
@@ -364,7 +404,9 @@ def sfa_calistir(df, target, adaylar, train_maske=None):
             "ENCODING": enc,
             "IV": None if iv is None else round(iv, 4),
             "C_VALUE": None if c is None else round(c, 4),
-            "SFA_RESULT": "PASS" if gecti else "FAIL",
+            **kayit_c,
+            "IV_BANDI": iv_bandi(iv),
+            "SFA_RESULT": "ÖLÇÜLDÜ" if not not_metni else "ÖLÇÜLEMEDİ",
             "NOT": not_metni,
         })
 
@@ -373,10 +415,13 @@ def sfa_calistir(df, target, adaylar, train_maske=None):
         tablo = tablo.sort_values("IV", ascending=False,
                                   na_position="last").reset_index(drop=True)
 
-    gecen = tablo[tablo["SFA_RESULT"] == "PASS"] if len(tablo) else tablo
+    bantlar = {ad: 0 for _s, ad in IV_BANTLARI}
+    for _, r in tablo.iterrows() if len(tablo) else []:
+        if r["SFA_RESULT"] == "ÖLÇÜLDÜ" and r.get("IV_BANDI") in bantlar:
+            bantlar[r["IV_BANDI"]] += 1
     ozet = {
         "analiz_edilen": int(len(tablo)) - len(atlanan),
-        "pass_adet": int(len(gecen)),
+        "iv_bantlari": bantlar,
         "atlanan": atlanan,
         "sizinti": sizinti,
         "en_iyi": [(r["FEATURE"], r["IV"]) for _, r in tablo.head(15).iterrows()

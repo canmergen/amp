@@ -1823,56 +1823,113 @@ def _dagilim_hesapla(seri):
     return sonuc
 
 
-@app.route("/aralik_ai")
-def aralik_ai_endpoint():
-    """Aralık Önerileri kartı: arka planda çalışan yapay zekâ
-    değerlendirmesinin durumu ve gelen kararlar."""
-    from fe_agent import akis_faz02
+# ===========================================================================
+# SFA EKRANI (Değişken Analizi sekmesi)
+# ---------------------------------------------------------------------------
+#   /sfa_degiskenler  degisken listesi (IV, C-value, egilim, karar ozeti)
+#   /sfa_degisken     tek degisken: metrikler, grafik tablolari, karar
+#   /sfa_karar  POST  kullanicinin karari (yapay zekanin ustune yazar)
+#   /sfa_ai           yapay zeka karar isinin ilerlemesi
+# ===========================================================================
+def _karar_ozet_metni(k):
+    from fe_agent import sfa_karar
+    if not k:
+        return ""
+    if k.get("kullan") == "hayir":
+        return "Modele girmez"
+    parca = []
+    if k.get("ayriklastirma") == "onerilen":
+        parca.append("Aralık")
+    else:
+        if k.get("aykiri") == "winsor":
+            parca.append("Winsor")
+        if k.get("donusum") not in (None, "yok"):
+            parca.append(sfa_karar.ETIKET["donusum"].get(k["donusum"], k["donusum"]))
+    if k.get("eksik") == "isaret":
+        parca.append("Eksik İşareti")
+    return " · ".join(parca) or "Olduğu gibi"
+
+
+@app.route("/sfa_ai")
+def sfa_ai_endpoint():
+    from fe_agent import sfa_karar
     try:
-        return jsonify(akis_faz02.aralik_ai_durumu(request.args.get("is") or ""))
+        d = sfa_karar.ai_durumu(request.args.get("is") or "")
+        return jsonify(d or {"durum": "yok"})
     except Exception as e:
-        kod = _hata_kaydet("aralik_ai", e)
+        kod = _hata_kaydet("sfa_ai", e)
         return jsonify({"durum": "bitti", "hata": "Durum okunamadı (%s)." % kod})
 
 
-@app.route("/sfa_aralik")
-def sfa_aralik_endpoint():
-    """SFA aralik onerileri (bkz. fe_agent/aralik.py).
-    ?oturum_id=           -> degisken ozetleri (tablo)
-    ?oturum_id=&kolon=X   -> X'in araliklari (eksik oncesi / sonrasi)"""
-    from fe_agent import akis_faz02, aralik
+@app.route("/sfa_degiskenler")
+def sfa_degiskenler_endpoint():
+    from fe_agent import akis_faz02
     try:
         anahtar = _oturum_anahtari(_temiz(request.args.get("oturum_id")))
         durum = _durum_al(anahtar)
-        tum = akis_faz02.aralik_oku(durum)
-        if not tum:
+        detay = akis_faz02.sfa_detay_oku(durum)
+        if not detay:
             return jsonify({"tamam": True, "degiskenler": [],
                             "not": "SFA adımından sonra dolar."})
-        kolon = str(request.args.get("kolon") or "")
-        if kolon:
-            if kolon not in tum:
-                return jsonify({"tamam": False, "hata": "'%s' için aralık yok." % kolon})
-            degisken = dict(tum[kolon])
-            # Degisken adina tiklaninca sozluk aciklamasi da gorunur
-            degisken["aciklama"] = akis_faz02._aciklamalar(durum).get(kolon, "")
-            return jsonify({"tamam": True, "degisken": degisken})
-        ozetler = []
-        for ad, v in tum.items():
-            ozetler.append({
-                "ad": ad, "tur": v.get("tur"), "sekil": v.get("sekil"),
-                "aralik": v.get("aralik_sayisi"), "ham_iv": v.get("ham_iv"),
-                "ham_c": v.get("ham_c"), "c_ayri": (v.get("ayri") or {}).get("c"),
-                "iv_ayri": (v.get("ayri") or {}).get("iv"),
-                "iv_dolu": (v.get("dolu") or {}).get("iv"),
-                "hassas": v.get("hassas"), "not": bool(v.get("notlar")),
-                "tutarsiz": any(r < aralik.TUTARLILIK_ESIK
-                                for r in (v.get("tutarlilik") or {}).values()),
+        kararlar = akis_faz02.sfa_kararlari_oku(durum)
+        liste = []
+        for ad, d in detay.items():
+            k = kararlar.get(ad) or {}
+            m = d.get("sfa") or {}
+            liste.append({
+                "ad": ad, "tip": m.get("tip"), "iv": d.get("ham_iv"),
+                "c": (m.get("c") or {}).get("ham"), "sekil": d.get("sekil"),
+                "aralik": d.get("aralik_sayisi"), "hassas": d.get("hassas"),
+                "sizinti": d.get("sizinti"), "eksik": m.get("eksik_orani"),
+                "karar": _karar_ozet_metni(k), "kaynak": k.get("kaynak"),
             })
-        ozetler.sort(key=lambda o: -(o["iv_ayri"] or 0))
-        return jsonify({"tamam": True, "degiskenler": ozetler})
+        liste.sort(key=lambda o: -(o["iv"] or 0))
+        s = durum.get("sfa") or {}
+        return jsonify({"tamam": True, "degiskenler": liste, "ai_is": s.get("ai_is"),
+                        "onaylandi": bool(s.get("onaylandi"))})
     except Exception as e:
-        kod = _hata_kaydet("sfa_aralik", e)
-        return jsonify({"tamam": False, "hata": "Aralık önerileri okunamadı (%s)." % kod})
+        kod = _hata_kaydet("sfa_degiskenler", e)
+        return jsonify({"tamam": False, "hata": "SFA sonuçları okunamadı (%s)." % kod})
+
+
+@app.route("/sfa_degisken")
+def sfa_degisken_endpoint():
+    from fe_agent import akis_faz02
+    try:
+        anahtar = _oturum_anahtari(_temiz(request.args.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        kolon = str(request.args.get("kolon") or "")
+        detay = akis_faz02.sfa_detay_oku(durum)
+        if kolon not in detay:
+            return jsonify({"tamam": False, "hata": "'%s' için SFA sonucu yok." % kolon})
+        d = dict(detay[kolon])
+        d["karar"] = akis_faz02.sfa_kararlari_oku(durum).get(kolon) or {}
+        return jsonify({"tamam": True, "degisken": d})
+    except Exception as e:
+        kod = _hata_kaydet("sfa_degisken", e)
+        return jsonify({"tamam": False, "hata": "Değişken okunamadı (%s)." % kod})
+
+
+@app.route("/sfa_karar", methods=["POST"])
+def sfa_karar_endpoint():
+    from fe_agent import akis_faz02, sfa_karar
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        kolon = str(istek.get("kolon") or "")
+        yol = (durum.get("sfa") or {}).get("karar_dosya")
+        detay = akis_faz02.sfa_detay_oku(durum)
+        if not yol or kolon not in detay:
+            return jsonify({"tamam": False, "hata": "Bu değişken için SFA kararı yok."})
+        alanlar = {k: v for k, v in (istek.get("karar") or {}).items()
+                   if k in sfa_karar.KARAR_ALANLARI}
+        kategorik = (detay[kolon].get("sfa") or {}).get("tip") == "kategorik"
+        yeni = sfa_karar.kullanici_karari(yol, kolon, alanlar, kategorik)
+        return jsonify({"tamam": True, "karar": yeni, "ozet": _karar_ozet_metni(yeni)})
+    except Exception as e:
+        kod = _hata_kaydet("sfa_karar", e)
+        return jsonify({"tamam": False, "hata": "Karar kaydedilemedi (%s)." % kod})
 
 
 @app.route("/dagilim")

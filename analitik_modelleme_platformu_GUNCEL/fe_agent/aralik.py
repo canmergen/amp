@@ -246,14 +246,40 @@ def en_iyi_araliklar(ince, toplam):
 # ===========================================================================
 # INCE ARALIKLAR (pandas)
 # ===========================================================================
+def esit_frekans_kesimleri(x, k):
+    """Esit sikliga EN YAKIN, ayni degeri iki araliga bolmeyen kesimler.
+
+    Yuzdelik sinirlar yigilmis dagilimda (degerlerin yarisi 0 olan sayim
+    degiskenleri gibi) cakisiyor ve aralik sayisi 2-3'e dusuyordu; SFA bu
+    degiskenleri "IV güvenilmez" sayiyordu (1.038 degiskenin 576'si).
+    Burada tekil degerler sirayla toplanir; biriken satir hedefe ulasinca
+    kesilir, hedef kalan satir / kalan aralik olarak yeniden hesaplanir.
+    Boylece yigin kendi araligini alir, gerisi esit bolunur.
+    Doner: kesimler (her araligin DAHIL ust degeri; son aralik haric).
+    Aralik no = np.searchsorted(kesimler, x, side="left")."""
+    x = pd.to_numeric(pd.Series(x), errors="coerce").dropna().to_numpy()
+    if not len(x):
+        return np.array([], dtype=float)
+    degerler, adetler = np.unique(x, return_counts=True)
+    if len(degerler) <= k:
+        return degerler[:-1].astype(float)
+    kesimler, biriken, kalan_satir, kalan_aralik = [], 0, float(len(x)), int(k)
+    hedef = kalan_satir / kalan_aralik
+    for i in range(len(degerler) - 1):
+        biriken += adetler[i]
+        if biriken >= hedef and kalan_aralik > 1:
+            kesimler.append(float(degerler[i]))
+            kalan_satir -= biriken
+            kalan_aralik -= 1
+            biriken = 0
+            hedef = kalan_satir / kalan_aralik
+    return np.asarray(kesimler, dtype=float)
+
+
 def _ince_sayisal(x, y):
     """x, y: egitim satirlari, x dolu. Doner: ince araliklar (sirali)."""
     x = pd.to_numeric(x, errors="coerce")
-    tekil = np.unique(x.to_numpy())
-    if len(tekil) <= INCE_ARALIK:
-        kesimler = tekil[:-1]
-    else:
-        kesimler = np.unique(np.nanpercentile(x, np.linspace(0, 100, INCE_ARALIK + 1))[1:-1])
+    kesimler = esit_frekans_kesimleri(x, INCE_ARALIK)
     kutu = np.searchsorted(kesimler, x.to_numpy(), side="left")
     tablo = pd.DataFrame({"k": kutu, "x": x.to_numpy(), "y": y.to_numpy()})
     g = tablo.groupby("k").agg(n=("y", "size"), kotu=("y", "sum"),

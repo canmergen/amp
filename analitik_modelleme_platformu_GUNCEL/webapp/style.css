@@ -134,7 +134,7 @@
   /* PANEL DARALTILDI (kullanıcı kararı): 32vw geniş ekranda 480px'e
      kadar çıkıp sohbeti sıkıştırıyordu. Alt sınır --ft-en + gövde
      dolgusu kadar: sözlük tablosu hâlâ kaydırmasız sığıyor. */
-  --analiz-en:  clamp(312px, 28vw, 400px);
+  --analiz-en:  clamp(340px, 31vw, 460px);   /* SFA ekranı için hafif genişletildi */
   /* Ust bar yuksekligi; logo buna gore olceklenir.
      70px'ti: sekiz sayfa once kartlara dorduncu satir (.ozet-alt)
      eklenince icerik 75px'e cikti ve son satir barin altindan
@@ -3093,3 +3093,61 @@ span.bolme-cip { cursor: default; }
 .aralik-lejant-renk.aralik-seri-2, .aralik-cubuk-g.aralik-seri-2 { background: var(--aralik-seri-2); fill: var(--aralik-seri-2); }
 .aralik-ortalama { stroke: var(--metin-soluk); stroke-width: 1; stroke-dasharray: 3 3; }
 .aralik-grafik .dag-ipucu { white-space: normal; max-width: 100%; }
+
+/* ==================== SFA ekranı ==================== */
+.aralik-karar-hucre { font-size: var(--fs-kucuk); }
+.aralik-kaynak {
+  display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px;
+  font-size: 10px; line-height: 16px; background: var(--kenar-acik); color: var(--metin-soluk);
+  white-space: nowrap;
+}
+.aralik-kaynak.yapay_zeka { background: var(--yesil-acik); color: var(--yesil); }
+.aralik-kaynak.kullanici { background: var(--kirmizi-acik); color: var(--kirmizi); }
+.sfa-olcut { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--b-3); }
+.sfa-olcut-hucre { display: flex; justify-content: space-between; gap: var(--b-2);
+  padding: 3px 0; border-bottom: 1px solid var(--kenar-acik); font-size: var(--fs-kucuk); }
+.sfa-olcut-etiket { color: var(--metin-soluk); }
+.sfa-olcut-deger { font-variant-numeric: tabular-nums; text-align: right; }
+.sfa-c-tablo { margin-top: var(--b-2); }
+.sfa-c-tablo th, .sfa-c-tablo td { text-align: center !important; }
+.sfa-c-bas { color: var(--metin-soluk); }
+.sfa-grafik svg { overflow: visible; }
+/* Ipucu lejantin ALTINDA, grafigin ust kenarinda (lejanti ortmesin) */
+.sfa-grafik .dag-ipucu { transform: none; white-space: normal; max-width: 100%; }
+.sfa-cubuk { fill: var(--grafik-seri); opacity: .85; }
+.sfa-cubuk.eksik { fill: url(#sfa-tarama); opacity: 1; }
+.sfa-tarama-zemin { fill: var(--grafik-seri); opacity: .35; }
+.sfa-tarama-cizgi { stroke: var(--grafik-seri); stroke-width: 1.5; }
+.sfa-nokta { fill: var(--aralik-seri-2); stroke: var(--yuzey); stroke-width: 1.5; }
+.sfa-nokta.eksik { fill: var(--yuzey); stroke: var(--aralik-seri-2); stroke-width: 2; }
+.sfa-oran-cizgi { fill: none; stroke: var(--aralik-seri-2); stroke-width: 1; opacity: .55; }
+.sfa-lin { fill: none; stroke: var(--metin); stroke-width: 1.5; stroke-dasharray: 5 3; opacity: .7; }
+.sfa-log { fill: none; stroke: var(--metin-soluk); stroke-width: 1.5; stroke-dasharray: 1.5 2.5; }
+.sfa-izgara { stroke: var(--kenar-acik); stroke-width: 1; }
+.sfa-lj { display: inline-block; width: 12px; height: 10px; }
+.sfa-lj-cubuk { background: var(--grafik-seri); border-radius: 2px; }
+.sfa-lj-nokta { width: 8px; height: 8px; border-radius: 50%; background: var(--aralik-seri-2); }
+.sfa-lj-lin { height: 0; border-top: 1.5px dashed var(--metin); }
+.sfa-lj-log { height: 0; border-top: 2px dotted var(--metin-soluk); }
+.sfa-form { display: flex; flex-direction: column; gap: 5px; background: var(--yuzey);
+  border: 1px solid var(--kenar-acik); border-radius: var(--r-kucuk); padding: var(--b-3); }
+.sfa-form-kaynak { font-size: var(--fs-kucuk); line-height: 1.45; margin-bottom: 2px; }
+.sfa-form-kaynak .aralik-kaynak { margin-left: 0; margin-right: 6px; }
+.sfa-gerekce { color: var(--metin); }
+.sfa-form-satir { display: grid; grid-template-columns: 9rem minmax(0, 1fr); align-items: center;
+  gap: var(--b-2); font-size: var(--fs-kucuk); }
+.sfa-form-satir[hidden] { display: none; }
+.sfa-form-etiket { color: var(--metin-soluk); }
+.sfa-form-sec, .sfa-form-deger, .sfa-form-yorum {
+  font: inherit; font-size: var(--fs-kucuk); padding: 3px 6px; color: var(--metin);
+  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  min-width: 0; width: 100%; box-sizing: border-box;
+}
+.sfa-form-yorum { resize: vertical; }
+.sfa-form-alt { display: flex; justify-content: flex-end; align-items: center; gap: var(--b-3); margin-top: 2px; }
+.sfa-form-durum { font-size: var(--fs-kucuk); color: var(--metin-soluk); }
+.sfa-kaydet { min-width: 6rem; }
+.sfa-kart-durum { font-size: var(--fs-govde); line-height: 1.5; }
+.sfa-ilerleme { height: 4px; border-radius: 2px; background: var(--kenar-acik); margin: var(--b-2) 0; overflow: hidden; }
+.sfa-ilerleme[hidden] { display: none; }
+.sfa-ilerleme-dolgu { height: 100%; width: 0; background: var(--kirmizi); transition: width .4s; }

@@ -788,10 +788,9 @@ def _kalite(durum):
 
 # --- 7. SFA -----------------------------------------------------------------
 SFA_KAPI_NOTU = (
-    "SFA PASS'i model giriş kapısı değildir: SFA tek değişkenli "
-    "ayrıştırma gücünü ölçer, modele hangi değişkenlerin gireceğini "
-    "belirlemez. FAIL alan bir değişken çok değişkenli modelde anlamlı "
-    "olabilir; modele giren liste eleme ve seçim adımında belirlenir.")
+    "SFA bir model giriş kapısı değildir: tek değişkenli ayrıştırma gücü "
+    "düşük bir değişken çok değişkenli modelde anlamlı olabilir; modele "
+    "giren liste eleme ve seçim adımında belirlenir.")
 
 
 def _psi_haritasi(durum):
@@ -810,21 +809,20 @@ def _sfa(durum):
         return []
     bloklar = _bloklar(_alan_tablosu([
         ("Analiz edilen değişken", _n(s.get("analiz_edilen"))),
-        ("PASS", _n(s.get("pass_adet"))),
+        ("Modele girecek", _n(s.get("kullanilan"))),
         ("Ölçülemeyen (ATLANDI)", _n(len(_ls(s.get("atlanan"))))),
         ("Sızıntı şüpheli", _n(len(_ls(s.get("sizinti"))))),
         ("Tam tablo", _m(s.get("tablo_dataset"))),
     ]))
 
-    # PASS ESIGI koddan okunur; dokumana elle yazilan bir esik, modul
-    # degistiginde sessizce yalan olurdu.
+    # SFA eleme yapmaz (kullanici karari); esik yalnizca sizinti icin.
     bloklar.append(_p(
-        "PASS kriteri: bilgi değeri (IV) > %s VE tek değişken ayrıştırma "
-        "gücü (C-value) > %s. İkisinden biri sağlanmazsa FAIL; ölçüm "
-        "yapılamayan değişken ATLANDI sayılır ve elenmiş gibi "
-        "gösterilmez. Sızıntı şüphesi eşiği: C-value > %s."
-        % (_ond(sfa_mod.IV_ESIK, 2), _ond(sfa_mod.C_ESIK, 2),
-           _ond(sfa_mod.SIZINTI_ESIK, 2))))
+        "Tek değişken analizi eleme adımı değildir: IV ve C-value her "
+        "değişken için ölçülür, düşük değer tek başına çıkarma sebebi "
+        "sayılmaz. Her değişkenin modele hangi hâliyle gireceği (eksik "
+        "doldurma, kırpma, dönüşüm, aralık) değişken bazında kararla "
+        "belirlenir. Sızıntı şüphesi eşiği: C-value > %s."
+        % _ond(sfa_mod.SIZINTI_ESIK, 2)))
     bloklar.append(_p(SFA_KAPI_NOTU))
 
     # KARAR TABLOSU: platformda hangi alan varsa o doldurulur, olmayan
