@@ -385,6 +385,8 @@ def sfa_calistir(df, target, adaylar, train_maske=None):
         # "is not None" yetmez; pd.notna ile suzulur.
         "iv_skorlari": {r["FEATURE"]: r["IV"] for _, r in tablo.iterrows()
                         if pd.notna(r["IV"])} if len(tablo) else {},
+        "c_skorlari": {r["FEATURE"]: r["C_VALUE"] for _, r in tablo.iterrows()
+                       if pd.notna(r["C_VALUE"])} if len(tablo) else {},
         "imputation": {r["FEATURE"]: r["IMPUTATION_VALUE"]
                        for _, r in tablo.iterrows()
                        if pd.notna(r["IMPUTATION_VALUE"])} if len(tablo) else {},

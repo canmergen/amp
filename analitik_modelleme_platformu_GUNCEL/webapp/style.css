@@ -3024,7 +3024,15 @@ span.bolme-cip { cursor: default; }
 .aralik-tablo td.sayi, .aralik-bin td.sayi, .aralik-tablo th:nth-child(n+3) { text-align: right; white-space: nowrap; }
 .aralik-satir { cursor: pointer; }
 .aralik-satir:hover, .aralik-satir.acik { background: var(--yuzey-alt); }
-.aralik-ad span:first-child { font-weight: var(--fw-kalin); word-break: break-all; }
+.aralik-ad { word-break: break-all; }
+.aralik-ok { color: var(--metin-soluk); margin-right: 4px; font-size: 10px; }
+/* Degisken adi tiklanabilir: detay (aciklama, grafik, olcutler) acilir */
+.aralik-ad-link {
+  background: none; border: 0; padding: 0; font: inherit; color: var(--metin);
+  cursor: pointer; text-align: left; word-break: break-all;
+}
+/* Alti cizgi yok: kolon adlarindaki "_" cizginin altinda kayboluyordu */
+.aralik-ad-link:hover, .aralik-satir.acik .aralik-ad-link { color: var(--kirmizi); }
 .aralik-rozet {
   display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: var(--r-kucuk);
   font-size: 10px; font-weight: var(--fw-kalin); vertical-align: 1px;
@@ -3063,3 +3071,25 @@ span.bolme-cip { cursor: default; }
   background: var(--kirmizi-acik); border-radius: var(--r-kucuk); padding: 0 5px;
 }
 .aralik-kontrol.notr { background: var(--kenar-acik); color: var(--metin-soluk); }
+
+/* ==================== Aralık detayı: açıklama, ölçütler, grafik ==================== */
+:root { --aralik-seri-2: #EB6834; }
+#kabuk.koyu { --aralik-seri-2: #D95926; }   /* koyu yüzeyde doğrulandı */
+.aralik-aciklama { font-size: var(--fs-govde); line-height: 1.5; color: var(--metin); margin-bottom: var(--b-3); }
+.aralik-bolum {
+  font-size: var(--fs-etiket); letter-spacing: var(--etiket-aralik); text-transform: uppercase;
+  color: var(--kirmizi); margin: var(--b-4) 0 var(--b-2);
+}
+.aralik-detay-satir > td > .aralik-bolum:first-child { margin-top: 0; }
+.aralik-tanim { font-size: var(--fs-govde); line-height: 1.5; }
+.aralik-tanim.bos { color: var(--metin-soluk); }
+.aralik-olcut td:first-child { white-space: normal; }
+.aralik-olcut-alt { font-size: var(--fs-kucuk); color: var(--metin-soluk); margin-top: 1px; }
+.aralik-grafik { margin-bottom: var(--b-3); }
+.aralik-lejant { display: flex; flex-wrap: wrap; gap: var(--b-4); font-size: var(--fs-kucuk); color: var(--metin); margin-bottom: var(--b-2); }
+.aralik-lejant-oge { display: inline-flex; align-items: center; gap: 5px; }
+.aralik-lejant-renk { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.aralik-lejant-renk.aralik-seri-1, .aralik-cubuk-g.aralik-seri-1 { background: var(--grafik-seri); fill: var(--grafik-seri); }
+.aralik-lejant-renk.aralik-seri-2, .aralik-cubuk-g.aralik-seri-2 { background: var(--aralik-seri-2); fill: var(--aralik-seri-2); }
+.aralik-ortalama { stroke: var(--metin-soluk); stroke-width: 1; stroke-dasharray: 3 3; }
+.aralik-grafik .dag-ipucu { white-space: normal; max-width: 100%; }

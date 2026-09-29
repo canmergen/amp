@@ -1793,22 +1793,40 @@ def sfa_paneli(durum):
     sizinti = len(s.get("sizinti") or [])
     pass_oran = _oran(gecen, olculen)
 
+    a = s.get("aralik") or {}
+    tam = s.get("tablo_dataset") or (
+        "PROJE_HAFIZASI%s" % s["tablo_yedek"] if s.get("tablo_yedek") else None)
     ozet_kart = _kart("Tek değişken analizi", [
+        ("Ölçüm Seti", "Train (MS) · %s satır" % _sayi(s["train_satir"])
+         if s.get("train_satir") else "Train (MS)", None),
         ("Ölçülen Değişken", _sayi(olculen), SFA_ADIMI),
-        ("PASS", "%s  (%s)" % (_sayi(gecen),
-                               _yuzde(pass_oran, 1)
-                               if pass_oran is not None else "-"), SFA_ADIMI),
-        ("Atlanan (ölçülemedi)", _sayi(atlanan), SFA_ADIMI),
-        ("Sızıntı Şüpheli", _sayi(sizinti), SFA_ADIMI),
-        ("Tam Tablo", s.get("tablo_dataset") or "proje hafızası", None),
+        ("Geçen (PASS)", "%s  (%s)" % (_sayi(gecen),
+                                       _yuzde(pass_oran, 1)
+                                       if pass_oran is not None else "-"), SFA_ADIMI),
+        ("Kalan (FAIL)", _sayi(max(olculen - gecen, 0)), SFA_ADIMI),
+        ("IV Güvenilmez", _sayi(s["iv_guvenilmez"])
+         if s.get("iv_guvenilmez") is not None else "-", None),
+        ("Sızıntı Şüphesi", _sayi(sizinti), SFA_ADIMI),
+        ("Ölçülemeyen Kategorik", _sayi(atlanan), SFA_ADIMI),
+        ("Aralık Önerisi", _sayi(a.get("onerilen", 0)) if a else "-", None),
+        ("Hassas Değişken", _sayi(len(a.get("hassas") or [])) if a else "-", None),
+        ("Tam Tablo", tam or "-", None),
     ])
+    ozet_kart["not"] = (
+        "Her değişkenin hedefi tek başına ayırma gücü Train satırlarında "
+        "ölçüldü. Eksikler sayısalda Train medyanıyla, kategorikte MISSING "
+        "kategorisiyle dolduruldu. FAIL çıkarma kararı değildir.")
 
-    esik_kart = _kart("Eşikler", [
+    esik_kart = _kart("Geçme Ölçütleri", [
         ("IV", "> %s" % _ond(sfa_mod.IV_ESIK, 2), None),
         ("C-value", "> %s" % _ond(sfa_mod.C_ESIK, 2), None),
         ("Sızıntı Şüphesi", "C-value > %s" % _ond(sfa_mod.SIZINTI_ESIK, 2), None),
-        ("Kategorik Seviye Sınırı", _sayi(sfa_mod.KATEGORIK_MAX), None),
+        ("Kategorik Seviye Sınırı", "%s farklı değer" % _sayi(sfa_mod.KATEGORIK_MAX), None),
     ])
+    esik_kart["not"] = (
+        "IV: 0,02'nin altı etkisiz, 0,02-0,10 zayıf, 0,10-0,30 orta, 0,30'un "
+        "üstü güçlü. C-value: değişken tek başına skor olsaydı AUC; 0,50 "
+        "rastgele, 1,00 kusursuz.")
 
     satirlar = [[r.get("FEATURE"),
                  _ond(r.get("IV"), 3),
@@ -1827,7 +1845,6 @@ def sfa_paneli(durum):
                        ARALIK_ADIMI) for p in plan]
         veri["kartlar"].append(_kart("Planlanan Dönüşümler", satirlar_p or [
             ("Durum", "Kabul edilen öneri yok", ARALIK_ADIMI)]))
-    a = s.get("aralik") or {}
     if a.get("dosya"):
         # Aralik onerileri: degisken tablosunu arayuz /sfa_aralik ucundan
         # ceker (IV, egilim, aralik, eksik oncesi / sonrasi). Ilk 20 tablosu

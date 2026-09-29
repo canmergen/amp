@@ -64,7 +64,7 @@ def _aciklamalar(durum):
         return {}
 
 
-def _aralik_hesapla(durum, df, target, adaylar, iv_skorlari):
+def _aralik_hesapla(durum, df, target, adaylar, iv_skorlari, c_skorlari=None):
     """SFA'nin aralik onerileri. Araliklar egitim setinden ogrenilir; diger
     setlerde yalnizca siralamanin korunup korunmadigina bakilir.
     Doner: ozet (durum["sfa"]["aralik"])."""
@@ -73,7 +73,7 @@ def _aralik_hesapla(durum, df, target, adaylar, iv_skorlari):
     diger = {set_basligi(ad, test_tanim): s[ad] for ad in ("val", "test", "oot")
              if ad in s and bool(s[ad].any())}
     sonuc = aralik_mod.hesapla(df, target, adaylar, s["egitim"], diger,
-                               _aciklamalar(durum), iv_skorlari)
+                               _aciklamalar(durum), iv_skorlari, c_skorlari)
     yol = aralik_yolu(durum)
     metin_yaz(yol, json.dumps(sonuc, ensure_ascii=False, default=str))
     onerilen = [k for k, v in sonuc.items() if v["aralik_sayisi"] > 1]
@@ -328,7 +328,7 @@ def sfa_uygula(durum):
     # HEDEFE GORE ARALIK ONERILERI (kullanici karari: SFA bu sureci de
     # kapsar). Tam tabloya da iki kolon eklenir.
     ozet["aralik"] = _aralik_hesapla(durum, df, durum["meta"]["target"], adaylar,
-                                     ozet.get("iv_skorlari"))
+                                     ozet.get("iv_skorlari"), ozet.get("c_skorlari"))
     try:
         ar = json.loads(_dosya_metni(ozet["aralik"]["dosya"]) or "{}")
     except Exception:
@@ -339,36 +339,80 @@ def sfa_uygula(durum):
             lambda k: (ar.get(str(k)) or {}).get("aralik_sayisi"))
     yazildi, yedek = _yaz("%s_SFA" % durum["veri_seti"], tablo, "/sfa_tablosu.parquet")
     ozet["tablo_dataset"] = yazildi
+    ozet["tablo_yedek"] = None if yazildi else yedek
     # SFA sekmesi: IV'ye gore ilk 20 satir (tam tablo dataset'te kalir).
     ozet["ilk20"] = _sfa_ilk20(tablo)
     durum["sfa"] = ozet
 
-    notlu = 0
+    ozet["train_satir"] = int(tr.sum())
+    return sfa_sonuc_metni(durum, tablo, ozet, _kayit_metni(yazildi, yedek))
+
+
+def _en_gucluler(tablo, adet=3):
+    """"A (IV 0,412 · C 0,701), B (…)": IV'ye gore ilk uc olculen degisken."""
+    if not len(tablo):
+        return "-"
+    parca = []
+    for _, r in tablo.iterrows():
+        if r.get("SFA_RESULT") == "ATLANDI" or pd.isna(r.get("IV")):
+            continue
+        parca.append("%s (IV %s · C %s)" % (r["FEATURE"], _ond(r["IV"], 3),
+                                            _ond(r.get("C_VALUE"), 3)))
+        if len(parca) == adet:
+            break
+    return ", ".join(parca) or "-"
+
+
+def sfa_sonuc_metni(durum, tablo, ozet, kayit):
+    """SFA sonucu, 01 Calisma Kurulumu yazim duzeninde: once ne yapildi,
+    sonra "  Etiket : Deger" satirlari (her birinin yaninda ne anlama
+    geldigi), sonra olcutlerin nasil okunacagi.
+    (kullanici karari: "ne yapıldı ne oldu detaylı açıklansın")"""
+    guvenilmez = 0
     if len(tablo) and "NOT" in tablo.columns:
-        notlu = int(sum(1 for _, r in tablo.iterrows()
-                        if str(r.get("NOT") or "").strip()
-                        and r.get("SFA_RESULT") != "ATLANDI"))
-    en_iyi = " · ".join("%s %s" % (ad, _ond(iv, 3)) for ad, iv in (ozet.get("en_iyi") or [])[:3])
+        guvenilmez = int(sum(1 for _, r in tablo.iterrows()
+                             if str(r.get("NOT") or "").strip()
+                             and r.get("SFA_RESULT") != "ATLANDI"))
+    ozet["iv_guvenilmez"] = guvenilmez
+    olculen = int(ozet.get("analiz_edilen") or 0)
+    gecen = int(ozet.get("pass_adet") or 0)
     a = ozet.get("aralik") or {}
-    return ("Tek değişken analizi tamamlandı.\n"
-            "  Ölçülen Değişken : %s\n"
-            "  PASS : %s  (IV > %s ve C-value > %s)\n"
-            "  En Yüksek IV : %s\n"
-            "  IV Güvenilmez : %s  (dağılımı yığılmış)\n"
-            "  Sızıntı Şüphesi : %s\n"
-            "  Ölçülemeyen Kategorik : %s\n"
-            "  Aralık Önerisi : %s\n"
-            "  Hassas Değişken : %s\n"
-            "  Kayıt : %s\n"
-            "Tam tablo ve aralıklar sağdaki Değişken Analizi sekmesinde."
-            % (_sayi(ozet["analiz_edilen"]), _sayi(ozet["pass_adet"]),
-               _ond(sfa_mod.IV_ESIK, 2), _ond(sfa_mod.C_ESIK, 2), en_iyi or "-",
-               _sayi(notlu), _sayi_ad(ozet.get("sizinti")),
-               _sayi_ad(ozet.get("atlanan")),
-               _sayi(a.get("onerilen", 0)) + (
-                   "  (%s tanesinin sırası diğer setlerde korunmuyor)"
-                   % _sayi(len(a["tutarsiz"])) if a.get("tutarsiz") else ""),
-               _adlar(a.get("hassas")), _kayit_metni(yazildi, yedek)))
+    tutarsiz = a.get("tutarsiz") or []
+    aralik_notu = ("  (%s tanesinin sırası diğer setlerde korunmuyor)"
+                   % _sayi(len(tutarsiz)) if tutarsiz else "")
+    return (
+        "Tek değişken analizi tamamlandı. Profilde temiz çıkan her değişkenin "
+        "hedefi tek başına ne kadar ayırdığı ölçüldü. Ölçüm yalnızca Train (MS) "
+        "setindeki %s satırda yapıldı; Validasyon ve Test satırları hesaba "
+        "girmedi.\n"
+        "  Ölçülen Değişken : %s\n"
+        "  Geçen (PASS) : %s  (IV > %s ve C-value > %s)\n"
+        "  Kalan (FAIL) : %s\n"
+        "  En Güçlü : %s\n"
+        "  IV Güvenilmez : %s  (değerler birkaç noktada yığılmış, %s aralığa "
+        "bölünemedi)\n"
+        "  Sızıntı Şüphesi : %s  (C-value > %s, hedefi neredeyse birebir veriyor)\n"
+        "  Ölçülemeyen Kategorik : %s  (%s'den fazla farklı değer)\n"
+        "  Aralık Önerisi : %s  (hedefe göre birleştirilmiş aralıklar)%s\n"
+        "  Hassas Değişken : %s\n"
+        "  Tam Tablo : %s\n"
+        "IV (Information Value) değişkenin hedefin 1 ve 0 olduğu satırları ayırma gücüdür: "
+        "0,02'nin altı etkisiz, 0,02-0,10 zayıf, 0,10-0,30 orta, 0,30'un üstü "
+        "güçlü sayılır. C-value, değişken tek başına skor olarak kullanılsaydı "
+        "elde edilecek AUC'dir: 0,50 rastgele, 1,00 kusursuz ayrım. Eksik "
+        "değerler sayısal değişkenlerde Train medyanıyla, kategoriklerde MISSING "
+        "kategorisiyle dolduruldu. FAIL bir çıkarma kararı değildir; değişken "
+        "seçiminde diğer ölçütlerle birlikte yeniden değerlendirilir.\n"
+        "Değişken bazında IV, C-value ve aralık grafikleri sağdaki Değişken "
+        "Analizi sekmesinde; değişken adına tıklayınca açılır."
+        % (_sayi(ozet.get("train_satir") or 0),
+           _sayi(olculen), _sayi(gecen), _ond(sfa_mod.IV_ESIK, 2),
+           _ond(sfa_mod.C_ESIK, 2), _sayi(max(olculen - gecen, 0)),
+           _en_gucluler(tablo), _sayi(guvenilmez), _sayi(sfa_mod.BIN_SAYISI),
+           _sayi_ad(ozet.get("sizinti")), _ond(sfa_mod.SIZINTI_ESIK, 2),
+           _sayi_ad(ozet.get("atlanan")), _sayi(sfa_mod.KATEGORIK_MAX),
+           _sayi(a.get("onerilen", 0)), aralik_notu,
+           _adlar(a.get("hassas")), kayit))
 
 def _psi_olculur_mu(durum):
     """PSI hangi sete karsi olculecek? Doner: "test" | None.

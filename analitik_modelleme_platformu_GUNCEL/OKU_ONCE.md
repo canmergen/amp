@@ -1,6 +1,30 @@
 # Analitik Modelleme Platformu — teslim notu
 
-Bu tur: **Faz 02 onaysız başlıyor**.
+Bu tur: **Tek Değişken Analizi açıklamalı; aralık detayında öncesi / sonrası grafiği, IV ve C-value, sözlük açıklaması**.
+Değiştir (fe_agent): `akis_faz02.py`, `aralik.py`, `sfa.py`, `akis_panel.py`, `akis_sohbet.py`
+Değiştir (webapp): `backend.py`, `app.js` (JS), `style.css` (CSS)
+Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+
+- SFA sonuç mesajı 01 düzeninde: ne yapıldığı (Train satır sayısıyla), her
+  satırın ne anlama geldiği, IV ve C-value'nun nasıl okunacağı, eksiklerin
+  nasıl doldurulduğu ve FAIL'in çıkarma kararı olmadığı yazıyor.
+- Sağ panel SFA kartı: Ölçüm Seti, Geçen / Kalan, IV Güvenilmez, Aralık
+  Önerisi, Hassas Değişken satırları ve açıklama notu eklendi; "Tam Tablo"
+  artık gerçek yolu gösteriyor.
+- Hedefe Göre Aralık Önerileri: değişken adına tıklayınca sözlük açıklaması,
+  öneri, IV / C-value tablosu (SFA · önerilen önce · önerilen sonra) ve
+  batma oranının doldurmadan önce / sonra grafiği açılıyor. Listeye C-value
+  kolonu eklendi; "Eksik Değer" düğmeleri kalktı (grafik ikisini birlikte
+  gösteriyor).
+- C-value aralık sayımlarından kesin hesaplanıyor (eşit oranlı aralıklar
+  yarım sayılır).
+- Hata düzeltmesi: art arda biten adımların metinleri yanlış bloğa
+  düşüyordu (bölme metni "Aralık Önerileri" bloğunda görünüyordu). Artık her
+  adımın metni kendi bloğunda.
+
+---
+
+Önceki tur: **Faz 02 onaysız başlıyor**.
 Değiştir (fe_agent): `akis_faz02.py`
 
 - Bölme kaydedilince Veri Profili, SFA ve aralık önerileri kendiliğinden art

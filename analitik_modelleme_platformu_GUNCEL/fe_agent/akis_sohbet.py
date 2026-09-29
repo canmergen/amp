@@ -316,6 +316,7 @@ def mesaj_isle(durum, mesaj, dogrulama=None, hedef_adim=None):
     # Onceki turdan kalan "tamamlandi" isareti bu tura sizmasin: arka uc
     # onu okuyup transkripte satir yaziyor, iki kez yazilmamali.
     durum.pop("_tamamlanan", None)
+    durum.pop("_tamamlananlar", None)
     try:
         if hedef_adim:
             cevap = _hedefe_don(durum, str(hedef_adim))
@@ -331,6 +332,7 @@ def mesaj_isle(durum, mesaj, dogrulama=None, hedef_adim=None):
         durum["bekleyen"] = yedek_bekleyen
         # Adim geri alindi: yarida yazilan "tamamlandi" ozeti ekrana dusmesin.
         durum.pop("_tamamlanan", None)
+        durum.pop("_tamamlananlar", None)
         return _birlestir(str(e), _adima_gir(durum, yeniden_sor=True))
     except Exception as e:
         durum["i"] = yedek_i
@@ -407,13 +409,20 @@ def _tamamlandi_yaz(durum, anahtar, cikti):
     "Geri Dön" de kaybolup kullanici geriye donemez hale geliyordu.
     Arka uc bu isareti okuyup iki AYRI transkript satiri yaziyor."""
     dolu, secili = _biten_ekran(durum, anahtar, ADIMLAR.get(anahtar, {}))
-    durum["_tamamlanan"] = {
+    kayit = {
         "adim": anahtar,
         "baslik": ADIMLAR.get(anahtar, {}).get("baslik", ""),
         "metin": (cikti or "").strip(),
         "dolu": dolu,
         "secili": secili,
     }
+    durum["_tamamlanan"] = kayit
+    # BIR TURDA BIRDEN FAZLA ADIM BITEBILIR (bolme -> profil -> SFA ->
+    # aralik karti, onaysiz zincir). Hepsi SIRAYLA tutulur; tek kayit
+    # tutulunca yalnizca sonuncusu kendi blogunu aliyor, digerlerinin
+    # metni yeni adimin bloguna dusuyordu (kullanici bildirimi: bolme
+    # sonucu "Aralık Önerileri" blogunda gorundu).
+    durum.setdefault("_tamamlananlar", []).append(kayit)
 
 
 def _onayi_uygula(durum, adim, anahtar, secim=None):

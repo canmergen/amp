@@ -995,11 +995,17 @@ def _gecmise_ekle_bolerek(durum, cevap, adim, ekran=None, rozet=None,
     tek satir olarak yazilir ve ozet kendi satirini alir. Kart govdesi
     (`ekran`) YENI adima aittir: o turda cizilen kart odur."""
     tamam = durum.pop("_tamamlanan", None)
+    # Bir turda biten BUTUN adimlar, sirayla (onaysiz zincir).
+    tamamlar = durum.pop("_tamamlananlar", None) or ([tamam] if tamam else [])
     metin = cevap or ""
-    if tamam and tamam.get("adim"):
+    for i, tamam in enumerate(tamamlar):
+        if not (tamam and tamam.get("adim")):
+            continue
         # Once biten adimin kart govdeleri son haline getirilir; satirlar
-        # transkriptte ONCEKI turlardan duruyor.
-        _biten_adimi_guncelle(durum, tamam, rozet, karar)
+        # transkriptte ONCEKI turlardan duruyor. Kararin rozeti yalnizca
+        # kullanicinin karar verdigi ILK adima aittir.
+        _biten_adimi_guncelle(durum, tamam, rozet if i == 0 else None,
+                              karar if i == 0 else None)
         ozet = (tamam.get("metin") or "").strip()
         kalan = metin
         if ozet and metin.strip().startswith(ozet):
@@ -1278,18 +1284,27 @@ def mesaj_endpoint():
         # TANIMLARI blogunun icinde gorunuyordu. Transkript bu ayrimi
         # zaten yapiyor (bkz. _gecmise_ekle_bolerek); on yuz de ayni
         # ayrimla cizsin diye govdeye ekleniyor.
-        _tamam = durum.get("_tamamlanan") or {}
-        if _tamam.get("adim") and (_tamam.get("metin") or "").strip():
+        # Bir turda birden fazla adim bitebilir: hepsi SIRAYLA ayrilir.
+        _liste = durum.get("_tamamlananlar") or (
+            [durum["_tamamlanan"]] if durum.get("_tamamlanan") else [])
+        _kalan = (cevap or "").strip()
+        govde["tamamlananlar"] = []
+        for _tamam in _liste:
+            if not (_tamam.get("adim") and (_tamam.get("metin") or "").strip()):
+                continue
             _ozet = _tamam["metin"].strip()
-            govde["tamamlanan"] = {
+            govde["tamamlananlar"].append({
                 "adim": _tamam["adim"],
                 "baslik": _tamam.get("baslik")
                           or akis.adim_basligi(_tamam["adim"]),
                 "metin": _ozet,
-            }
-            if (cevap or "").strip().startswith(_ozet):
-                govde["cevap"] = (cevap or "").strip()[len(_ozet):].lstrip("\n")
-                govde["metin"] = govde["cevap"]
+            })
+            if _kalan.startswith(_ozet):
+                _kalan = _kalan[len(_ozet):].lstrip("\n")
+        if govde["tamamlananlar"]:
+            govde["tamamlanan"] = govde["tamamlananlar"][-1]
+            govde["cevap"] = _kalan
+            govde["metin"] = _kalan
         # Dogrulama karti karardan SONRA rozetini degistiriyor; o metin
         # kullanicinin gonderdigi mesajin ta kendisi.
         _rozet = mesaj if isinstance(dogrulama, dict) and mesaj else None
@@ -1837,12 +1852,16 @@ def sfa_aralik_endpoint():
         if kolon:
             if kolon not in tum:
                 return jsonify({"tamam": False, "hata": "'%s' için aralık yok." % kolon})
-            return jsonify({"tamam": True, "degisken": tum[kolon]})
+            degisken = dict(tum[kolon])
+            # Degisken adina tiklaninca sozluk aciklamasi da gorunur
+            degisken["aciklama"] = akis_faz02._aciklamalar(durum).get(kolon, "")
+            return jsonify({"tamam": True, "degisken": degisken})
         ozetler = []
         for ad, v in tum.items():
             ozetler.append({
                 "ad": ad, "tur": v.get("tur"), "sekil": v.get("sekil"),
                 "aralik": v.get("aralik_sayisi"), "ham_iv": v.get("ham_iv"),
+                "ham_c": v.get("ham_c"), "c_ayri": (v.get("ayri") or {}).get("c"),
                 "iv_ayri": (v.get("ayri") or {}).get("iv"),
                 "iv_dolu": (v.get("dolu") or {}).get("iv"),
                 "hassas": v.get("hassas"), "not": bool(v.get("notlar")),

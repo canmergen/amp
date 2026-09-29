@@ -98,6 +98,32 @@ def iv_hesapla(araliklar):
     return iv
 
 
+def c_hesapla(araliklar):
+    """Araliklarin batma oranini skor sayarak tek degiskenli AUC (C-value).
+    Sayim tablosundan KESIN hesaplanir (Mann-Whitney, esitlikler yarim).
+    0,5'in altina duserse 1'e tamamlanir (sfa._c_value ile ayni kural)."""
+    liste = sorted(araliklar, key=_oran)
+    kotu_t = sum(b["kotu"] for b in liste)
+    iyi_t = sum(b["n"] - b["kotu"] for b in liste)
+    if not kotu_t or not iyi_t:
+        return None
+    toplam, alttaki_iyi = 0.0, 0.0
+    i = 0
+    while i < len(liste):
+        # ayni orana sahip araliklar tek skor sayilir
+        j = i
+        grup_kotu = grup_iyi = 0
+        while j < len(liste) and _oran(liste[j]) == _oran(liste[i]):
+            grup_kotu += liste[j]["kotu"]
+            grup_iyi += liste[j]["n"] - liste[j]["kotu"]
+            j += 1
+        toplam += grup_kotu * (alttaki_iyi + 0.5 * grup_iyi)
+        alttaki_iyi += grup_iyi
+        i = j
+    auc = toplam / (kotu_t * iyi_t)
+    return max(auc, 1.0 - auc)
+
+
 def _woe(b, kotu_t, iyi_t, k):
     pk = (b["kotu"] + LAPLACE) / (kotu_t + LAPLACE * k)
     pi = (b["n"] - b["kotu"] + LAPLACE) / (iyi_t + LAPLACE * k)
@@ -284,7 +310,7 @@ def _etiket(b, kategorik, tam_sayili=True, ilk=False, son=False):
         return "%s - %s" % (_sayi_metni(b.get("min")), _sayi_metni(b.get("max")))
     alt, ust = b.get("alt"), b.get("ust")
     if ilk or alt is None:
-        return "≤ %s" % _sayi_metni(ust) if ust is not None else "tümü"
+        return "≤ %s" % _sayi_metni(ust) if ust is not None else "Tüm Değerler"
     if son or ust is None:
         return "> %s" % _sayi_metni(alt)
     return "%s - %s" % (_sayi_metni(alt), _sayi_metni(ust))
@@ -342,7 +368,9 @@ def _gorunum(araliklar, eksik, kategorik, etiketler):
                     if kotu_t and iyi_t else None),
         })
     iv = iv_hesapla(liste)
-    return {"satirlar": satirlar, "iv": None if iv is None else round(iv, 4)}
+    c = c_hesapla(liste)
+    return {"satirlar": satirlar, "iv": None if iv is None else round(iv, 4),
+            "c": None if c is None else round(c, 4)}
 
 
 def _tutarlilik(araliklar, x, y, kategorik):
@@ -367,7 +395,7 @@ def _tutarlilik(araliklar, x, y, kategorik):
     return None if pd.isna(r) else round(float(r), 3)
 
 
-def degisken_araligi(ad, s, y, tr, diger_setler, aciklama="", ham_iv=None):
+def degisken_araligi(ad, s, y, tr, diger_setler, aciklama="", ham_iv=None, ham_c=None):
     """Tek degiskenin aralik onerisi. s: tum satirlar; tr: egitim maskesi;
     diger_setler: {"Validasyon (OOS)": maske, ...}. Doner: sozluk ya da None."""
     kategorik = not pd.api.types.is_numeric_dtype(s) or pd.api.types.is_bool_dtype(s)
@@ -447,7 +475,7 @@ def degisken_araligi(ad, s, y, tr, diger_setler, aciklama="", ham_iv=None):
     return {
         "ad": str(ad), "tur": "kategorik" if kategorik else "sayısal",
         "sekil": sekil, "aralik_sayisi": len(ar),
-        "ham_iv": ham_iv, "ayri": ayri, "dolu": dolu_gor,
+        "ham_iv": ham_iv, "ham_c": ham_c, "ayri": ayri, "dolu": dolu_gor,
         "medyan": medyan, "kesimler": None if kategorik else [b["ust"] for b in ar[:-1]],
         "gruplar": [b.get("degerler") for b in ar] if kategorik else None,
         "tutarlilik": tutarlilik, "hassas": hassas, "etiketler": etiketler,
@@ -491,7 +519,8 @@ def oneri_metni(ar, sekil, kategorik, hassas, tutarlilik, ham_iv, yeni_iv, etike
     return " ".join(parca)
 
 
-def hesapla(df, target, adaylar, tr, diger_setler, aciklamalar=None, ham_ivler=None):
+def hesapla(df, target, adaylar, tr, diger_setler, aciklamalar=None, ham_ivler=None,
+            ham_cler=None):
     """Butun adaylar icin aralik onerisi. Doner: {degisken: sonuc}."""
     y = df[target]
     cikti = {}
@@ -501,7 +530,7 @@ def hesapla(df, target, adaylar, tr, diger_setler, aciklamalar=None, ham_ivler=N
         try:
             r = degisken_araligi(kol, df[kol], y, tr, diger_setler,
                                  (aciklamalar or {}).get(kol, ""),
-                                 (ham_ivler or {}).get(kol))
+                                 (ham_ivler or {}).get(kol), (ham_cler or {}).get(kol))
         except Exception:       # pylint: disable=broad-except
             r = None
         if r:
