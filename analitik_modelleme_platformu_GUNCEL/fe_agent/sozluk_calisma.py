@@ -281,10 +281,132 @@ def kopya_kur(durum, tablo=None):
         if tablo is None or not len(tablo.columns):
             return None, "Sözlük okunamadığı için çalışma kopyası çıkarılamadı."
         tablo, _ = _kategori_kolonu_garanti(tablo)
-        return _kopya_yaz(oturum, tablo)
+        # VERI SETIYLE ESITLEME (kullanici karari): kopyada yalnizca veri
+        # setindeki kolonlar durur. Orijinal sozluge dokunulmaz.
+        kolonlar = _veri_seti_kolonlari(durum)
+        rapor = None
+        if kolonlar:
+            tablo, rapor = veri_setiyle_esitle(tablo, kolonlar)
+            durum["_sozluk_esitleme"] = {
+                "dusen": len(rapor["dusen"]), "eklenen": len(rapor["eklenen"]),
+                "duzeltilen": len(rapor["duzeltilen"]), "cift": rapor["cift"],
+                "dusen_ornek": rapor["dusen"][:20],
+                "eklenen_ornek": rapor["eklenen"][:20]}
+        yol, hata = _kopya_yaz(oturum, tablo)
+        if yol and rapor:
+            _esitlemeyi_kutuge_dus(durum, oturum, rapor)
+        return yol, hata
     except Exception as e:
         return None, ("Sözlük çalışma kopyası çıkarılamadı (%s)."
                       % str(e)[:140])
+
+
+# ---------------------------------------------------------------------------
+# VERI SETIYLE ESITLEME
+# ---------------------------------------------------------------------------
+# Kullanici karari: "sozlukte veri setinden farkli ve fazla kolon varsa o
+# satirlar sozlukten dusurulmeli; veri setinde olup sozlukte olmayan kolon
+# da sozluge eklenmeli". Yalnizca CALISMA KOPYASINDA yapilir; kurumsal
+# sozluk tablosu okunur, asla yazilmaz.
+KAYNAK_ESITLEME = "veri seti eşitlemesi"
+
+
+def _veri_seti_kolonlari(durum):
+    """Veri setinin kolon adlari (profildeki kolon ozetinden, sirasiyla).
+    Profil henuz yoksa bos liste: eslestirme yapilmaz."""
+    ozet = ((durum or {}).get("profil") or {}).get("kolon_ozet")
+    return [str(o["ad"]) for o in (ozet if isinstance(ozet, list) else [])
+            if isinstance(o, dict) and o.get("ad") not in (None, "")]
+
+
+def veri_setiyle_esitle(tablo, kolonlar):
+    """Sozluk tablosunu veri setinin kolonlarina esitler.
+
+      - Adi veri setinde birebir olan satir KALIR.
+      - Adi yalnizca buyuk/kucuk harf ya da Turkce karakterle farkli olan
+        satir (musteri_yas / MUSTERI_YAS) veri setindeki yazima cevrilir;
+        aciklamasi korunur.
+      - Veri setinde karsiligi olmayan satir DUSER.
+      - Ayni kolon icin birden fazla satir varsa tek satir kalir
+        (aciklamasi dolu olan tercih edilir).
+      - Veri setinde olup sozlukte olmayan kolon, aciklamasi BOS bir satir
+        olarak eklenir; "Sözlük Tanımları" adiminda tanimsiz listelenir.
+      - Satirlar veri setinin kolon sirasina dizilir.
+    Doner: (yeni_tablo, {"dusen", "eklenen", "duzeltilen", "cift"})."""
+    tablo, tanim_kolon = _tanim_kolonu_garanti(tablo.reset_index(drop=True))
+    tablo, kat_kolon = _kategori_kolonu_garanti(tablo)
+    ad_kolon = degisken_kolonu_bul(tablo)
+    kume = set(kolonlar)
+    normal = {}
+    for k in kolonlar:
+        normal.setdefault(_normalize_ad(k), []).append(k)
+
+    secilen, dusen, duzeltilen, cift = {}, [], [], 0
+    for i, ham in zip(tablo.index, tablo[ad_kolon].tolist()):
+        ad = "" if ham is None or (isinstance(ham, float) and pd.isna(ham)) \
+            else str(ham).strip()
+        if not ad:
+            continue
+        hedef = ad if ad in kume else None
+        if hedef is None:
+            aday = normal.get(_normalize_ad(ad)) or []
+            if len(aday) == 1:
+                hedef = aday[0]
+                duzeltilen.append((ad, hedef))
+        if hedef is None:
+            dusen.append(ad)
+            continue
+        dolu = str(tablo.at[i, tanim_kolon] or "").strip() not in ("", "nan")
+        if hedef in secilen:
+            cift += 1
+            onceki = secilen[hedef]
+            onceki_dolu = str(tablo.at[onceki, tanim_kolon] or "").strip() not in ("", "nan")
+            if dolu and not onceki_dolu:
+                secilen[hedef] = i
+            continue
+        secilen[hedef] = i
+
+    yeni = tablo.loc[list(secilen.values())].copy()
+    yeni[ad_kolon] = list(secilen.keys())
+    eklenen = [k for k in kolonlar if k not in secilen]
+    if eklenen:
+        ek = pd.DataFrame({c: [None] * len(eklenen) for c in tablo.columns})
+        ek[ad_kolon] = eklenen
+        ek[tanim_kolon] = ""
+        ek[kat_kolon] = ""
+        yeni = pd.concat([yeni, ek], ignore_index=True)
+    sira = {k: j for j, k in enumerate(kolonlar)}
+    yeni = yeni.iloc[sorted(range(len(yeni)),
+                            key=lambda j: sira.get(str(yeni[ad_kolon].iloc[j]), len(sira)))]
+    yeni = yeni.reset_index(drop=True)
+    yeni[tanim_kolon] = yeni[tanim_kolon].astype(object).where(yeni[tanim_kolon].notna(), "")
+    return yeni, {"dusen": dusen, "eklenen": eklenen,
+                  "duzeltilen": duzeltilen, "cift": cift}
+
+
+def _esitlemeyi_kutuge_dus(durum, oturum, rapor):
+    """Degisiklik kutugune yazar; ayni veri seti ve sozluk icin BIR KEZ
+    (kopya ayni calismada yeniden kurulabiliyor, kutuk sismesin)."""
+    imza = [durum.get("veri_seti"), durum.get("sozluk"),
+            len(rapor["dusen"]), len(rapor["eklenen"]), len(rapor["duzeltilen"])]
+    if durum.get("_sozluk_esitleme_imza") == imza:
+        return
+    durum["_sozluk_esitleme_imza"] = imza
+    satirlar = (
+        [{"ALAN": "sozluk", "ANAHTAR": ad, "ESKI": "sözlükte var",
+          "YENI": "veri setinde yok, çıkarıldı", "KAYNAK": KAYNAK_ESITLEME}
+         for ad in rapor["dusen"]]
+        + [{"ALAN": "sozluk", "ANAHTAR": ad, "ESKI": "sözlükte yok",
+            "YENI": "eklendi (açıklama boş)", "KAYNAK": KAYNAK_ESITLEME}
+           for ad in rapor["eklenen"]]
+        + [{"ALAN": "sozluk", "ANAHTAR": yeni, "ESKI": eski,
+            "YENI": "yazım veri setine göre düzeltildi", "KAYNAK": KAYNAK_ESITLEME}
+           for eski, yeni in rapor["duzeltilen"]])
+    if satirlar:
+        try:
+            kutuk_mod.degisiklik_dus(oturum, satirlar)
+        except Exception:
+            pass
 
 
 def _orijinal_oku(durum):

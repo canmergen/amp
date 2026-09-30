@@ -1301,7 +1301,20 @@ def _sozluk_karti(durum):
         ("Kapsam", _yuzde_dogrudan(kapsam, 1), sozluk_adimi),
         ("Sözlükte Olmayan Değişken Sayısı",
          _sayi(len(tanimsiz)) if kolonlar else None, sozluk_adimi),
-    ])
+    ] + _esitleme_satiri(durum, sozluk_adimi))
+
+
+def _esitleme_satiri(durum, sozluk_adimi):
+    """Calisma kopyasinin veri setiyle esitlenmesi (bkz. sozluk_calisma.
+    veri_setiyle_esitle): cikarilan ve eklenen satir sayisi."""
+    e = durum.get("_sozluk_esitleme")
+    if not isinstance(e, dict):
+        return []
+    parca = ["%s satır çıkarıldı" % _sayi(e.get("dusen", 0)),
+             "%s kolon eklendi" % _sayi(e.get("eklenen", 0))]
+    if e.get("duzeltilen"):
+        parca.append("%s ad düzeltildi" % _sayi(e["duzeltilen"]))
+    return [("Veri Setiyle Eşitleme", " · ".join(parca), sozluk_adimi)]
 
 
 def teyit_adiminda_mi(durum):

@@ -1,6 +1,23 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Eleme sonuçlarında hedef ve kimlik kolonu "elendi" sayılmıyor**.
+Bu tur: **Sözlük çalışma kopyası veri setiyle eşitleniyor**.
+Değiştir (fe_agent): `sozluk_calisma.py`, `akis_faz01.py`, `akis_panel.py`
+Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+
+- Veri seti ve sözlük seçilince çalışma sözlüğü veri setinin kolonlarına
+  eşitlenir: veri setinde olmayan sözlük satırları çıkarılır, sözlükte
+  olmayan kolonlar açıklaması boş satır olarak eklenir (Sözlük Tanımları
+  adımında tanımsız listelenir), satırlar veri setinin kolon sırasına dizilir.
+- Yalnızca büyük/küçük harf ya da Türkçe karakterle farklı yazılmış adlar
+  (müşteri_yaş / MUSTERI_YAS) veri setindeki yazıma çevrilir, açıklama korunur.
+  Aynı kolon için birden fazla satır varsa açıklaması dolu olan kalır.
+- Orijinal sözlük dataset'ine dokunulmaz; değişiklikler denetim kütüğüne
+  "veri seti eşitlemesi" kaynağıyla yazılır. Sağ paneldeki sözlük kartında
+  "Veri Setiyle Eşitleme" satırı kaç satırın çıkarılıp eklendiğini gösterir.
+
+---
+
+Önceki tur: **Eleme sonuçlarında hedef ve kimlik kolonu "elendi" sayılmıyor**.
 Değiştir (fe_agent): `akis_panel.py`
 Kütüphane dosyasını değiştirdikten sonra webapp backend'ini yeniden başlatın.
 

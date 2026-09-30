@@ -56,6 +56,7 @@ _MOD_GECICI = ("_donemler", "_aciklamasiz", "_dusurulecek", "_soru_gecmis",
                # kaydi: ikisi de o veri setine ait, mod degisince tablo
                # da degisir.
                "_donem_dusuruldu", "_sozluge_eklenen", "_bolme_mod",
+               "_sozluk_esitleme", "_sozluk_esitleme_imza",
                "_hazir_bolme",
                # Sozluk teyidi eski moda ait bir denetim kaydidir; mod
                # degisince veri seti de sozluk de degisir, damga
@@ -1096,11 +1097,12 @@ def _mod_b_sozlugu(durum, baz, kutuk):
     durum["sozluk"] = yazildi or None
     durum["sozluk_yedek"] = yedek
     durum["sozluk_uretim"] = {"kaynak": "kaynak sözlükleri", **oz}
-    kopya_not = _calisma_kopyasi_kur(durum, tablo)
     # Profil + kapsam SIMDI: baz zaten bellekte. Modelleme tanimlari
     # hedef/kimlik adaylarini, sozluk tanimlari tanimsiz listesini
-    # buradan okuyor; tablo ikinci kez taranmiyor.
+    # buradan okuyor; tablo ikinci kez taranmiyor. Kopyadan ONCE: kopya
+    # veri setinin kolon listesine esitleniyor (bkz. sozluk_calisma).
     _kapsam_hesapla(durum, _profil(durum), tablo)
+    kopya_not = _calisma_kopyasi_kur(durum, tablo)
     tanimsiz = oz["toplam"] - oz["tanimli"]
     metin = ("\n\nDEĞİŞKEN SÖZLÜĞÜ\n"
              "  %s kolonun %s tanesi kaynak sözlüklerden tanımlandı "
@@ -1673,10 +1675,15 @@ def _kapsami_cikar(durum, taze=False):
 def _kapsam_hesapla(durum, prof, sz):
     """Profil + kapsam + tanimsiz liste. Doner: (veri seti profili, p)."""
     ad_kolonu = sozluk_calisma.degisken_kolonu_bul(sz)
-    sozluk_ad = set(sz[ad_kolonu].astype(str)) if ad_kolonu is not None else set()
+    sozluk_ad = set(sz[ad_kolonu].astype(str).str.strip()) if ad_kolonu is not None else set()
+    # Calisma kopyasi, yalnizca buyuk/kucuk harf ya da Turkce karakterle
+    # farkli yazilmis adlari veri setindeki yazima ceviriyor (aciklama
+    # korunur); kapsam da ayni esleşmeyi saymali.
+    sozluk_normal = {sozluk_calisma._normalize_ad(a) for a in sozluk_ad}
 
     adlar = [k["ad"] for k in prof.get("kolonlar") or []]
-    aciklamasiz = [c for c in adlar if c not in sozluk_ad]
+    aciklamasiz = [c for c in adlar if c not in sozluk_ad
+                   and sozluk_calisma._normalize_ad(c) not in sozluk_normal]
     eslesen = len(adlar) - len(aciklamasiz)
 
     p = _temel_profil(durum, prof)
