@@ -7334,7 +7334,7 @@ function teyitKartiEkle(alan, blok) {
                                    tireSade(alan.otomatik_not)));
         }
 
-        /* ARAMA · SIRALAMA TEK SATIRDA. NULL EŞİĞİ, TİP DEĞİŞİKLİĞİ VE
+        /* ARAMA · TİP · SIRALAMA TEK SATIRDA. NULL EŞİĞİ, TİP DEĞİŞİKLİĞİ VE
            NULL ORANI KOLONU KALDIRILDI (kullanıcı kararı: "zaten sfa
            adımında göreceğiz"). Burada yalnızca değişken, tip, sözlük
            tanımı ve süreç dışı kararı var. */
@@ -7346,6 +7346,30 @@ function teyitKartiEkle(alan, blok) {
         ara.placeholder = "Değişken adı veya tanımda ara…";
         ara.setAttribute("aria-label", "Değişken adı veya tanımda ara");
         filtreKap.appendChild(ara);
+
+        /* TİP SÜZGECİ (kullanıcı kararı): "Tip: Tümü" ve listedeki
+           tipler. Tek tip varsa kutu görünür ama pasif - gizlemek
+           "filtre neden yok?" sorusunu doğururdu. */
+        const tipSec = document.createElement("select");
+        tipSec.className = "dg-sirala dg-tip-suzgec";
+        tipSec.setAttribute("aria-label", "Tipe göre süz");
+        const tipListesi = [];
+        (dg.satirlar || []).forEach(sat => {
+            const t = tireSade(sat.tip || "").trim();
+            if (t && tipListesi.indexOf(t) === -1) tipListesi.push(t);
+        });
+        tipListesi.sort((a, b) => a.localeCompare(b, "tr"));
+        [{ deger: "", etiket: "Tip: Tümü" }]
+            .concat(tipListesi.map(t => ({ deger: t, etiket: t })))
+            .forEach(o => {
+                const op = document.createElement("option");
+                op.value = o.deger;
+                op.textContent = o.etiket;
+                tipSec.appendChild(op);
+            });
+        tipSec.disabled = tipListesi.length <= 1;
+        if (tipSec.disabled) tipSec.title = "Listede tek tip var; süzmeye gerek yok.";
+        filtreKap.appendChild(tipSec);
 
         const sirala = document.createElement("select");
         sirala.className = "dg-sirala";
@@ -7481,6 +7505,7 @@ function teyitKartiEkle(alan, blok) {
 
             satirlar.push({ tr: tr, ad: ftSade(ad), tanim: ftSade(sat.tanim || ""),
                             tip: ftSade(sat.tip || ""),
+                            tipHam: tireSade(sat.tip || "").trim(),
                             giris: giris, kutu: kutu });
             tbody.appendChild(tr);
         });
@@ -7488,15 +7513,17 @@ function teyitKartiEkle(alan, blok) {
         sar.appendChild(tablo);
         kart.appendChild(sar);
 
-        /* SÜZ + SIRALA TEK YERDE: iki kontrol de aynı listeyi
+        /* SÜZ + SIRALA TEK YERDE: üç kontrol de aynı listeyi
            etkiliyor; ayrı ayrı uygulanırsa biri diğerinin sonucunu
            siler (arama yazıp sonra sıralayınca gizli satırlar geri
            gelirdi). */
         function listeyiUygula() {
             const f = ftSade(ara.value || "");
+            const t = tipSec.value;
             satirlar.forEach(r => {
-                r.tr.hidden = !!f && r.ad.indexOf(f) === -1
-                                  && r.tanim.indexOf(f) === -1;
+                r.tr.hidden = (!!f && r.ad.indexOf(f) === -1
+                                   && r.tanim.indexOf(f) === -1)
+                              || (!!t && r.tipHam !== t);
             });
             topluSayilari();
 
@@ -7523,6 +7550,7 @@ function teyitKartiEkle(alan, blok) {
             sirali.forEach(r => tbody.appendChild(r.tr));
         }
         ara.oninput = listeyiUygula;
+        tipSec.onchange = listeyiUygula;
         sirala.onchange = listeyiUygula;
 
         /* Görünen ve değiştirilebilir (kilitsiz) satırlar. */

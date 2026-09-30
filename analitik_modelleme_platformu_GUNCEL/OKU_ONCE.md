@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.3 Değişken Kontrolü sadeleşti**. Değiştir: `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `fe_agent/akis_faz01.py`
+Bu tur: **01.3 Değişken Kontrolü'ne tip süzgeci eklendi**. Değiştir: `webapp/app.js`
+
+- Arama kutusu ile sıralama arasında "Tip: Tümü" açılır listesi; listedeki
+  tipler (kategorik, sayısal, tarih…) seçilince yalnızca o tipteki
+  satırlar görünür. Arama ve sıralamayla birlikte çalışır; "Görünenleri
+  Süreç Dışı Bırak / Sürece Al" sayıları süzgece göre güncellenir.
+
+---
+
+Önceki tur: **01.3 Değişken Kontrolü sadeleşti**. Değiştir: `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `fe_agent/akis_faz01.py`
 
 - Tablo dört kolon: Değişken · Tip · Sözlük Tanımı · Süreç Dışı.
   Tip Değişikliği ve Null Oranı kolonları, "null >" eşik kutusu ve
