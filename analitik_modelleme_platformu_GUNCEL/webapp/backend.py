@@ -31,8 +31,8 @@ GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 # Mantiksal ad -> folder'daki gercek dosya adi.
 # Gorsel degistirmek istersen SADECE burayi duzenle, JS'e dokunma.
 GORSELLER = {
-    "banner":     "robot_tam_govde.png",
-    "bot":        "robot_avatar.png",
+    "banner":     "robot_llm_ust.png",
+    "bot":        "robot_llm_chat.png",
     "user":       "robot_llm_person.png",
     "zemin_acik": "llm_chat_light.png",
     "zemin_koyu": "llm_chat_dark.png",

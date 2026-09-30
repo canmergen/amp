@@ -1,15 +1,6 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **robot görselleri değişti**. Yapıştır (webapp): `backend.py`
-
-- Üst görsel robot_llm_ust.png yerine robot_tam_govde.png, sohbetteki
-  asistan görseli robot_llm_chat.png yerine robot_avatar.png.
-- İki dosya LLM_WEBAPP_GORSEL klasöründe bu adlarla ve .png uzantısıyla
-  bulunmalı; ad büyük-küçük harf duyarsız eşleşir.
-
----
-
-Önceki tur: **AMP çalışma klasöründe ve tek kaynak; setler Train (MS) / Validasyon (OOT) / Test (OOS)**.
+Bu tur: **AMP çalışma klasöründe ve tek kaynak; setler Train (MS) / Validasyon (OOT) / Test (OOS)**.
 Değiştir (fe_agent): `amp.py`, `amp_pandas.py`, `amp_spark.py`, `spark_is.py`, `akis_durum.py`, `akis_faz01.py`, `akis_faz02.py`, `akis_sohbet.py`, `akis_panel.py`, `sozluk_calisma.py`, `dokuman.py`, `validasyon.py`
 Değiştir (webapp): `app.js` (JS)
 Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
