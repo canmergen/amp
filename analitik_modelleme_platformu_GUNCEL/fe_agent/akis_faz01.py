@@ -2530,7 +2530,7 @@ def tek_degerlileri_isaretle(durum):
     return yeni
 
 
-TIP_ONERI_SURUMU = 2
+TIP_ONERI_SURUMU = 3
 # Sayisal bir kolonun KOD oldugunu (kategorik modellenmesi gerektigini)
 # gosteren ad parcalari. Yalnizca ad + az sayida tam sayi deger birlikte
 # varsa kategorik onerilir; ad tek basina yetmez.
@@ -2612,11 +2612,25 @@ def tip_onerilerini_uygula(durum):
 
     Oneri kurala dayanir, dil modeline degil: tipin cevabi verinin
     kendisinde; modelin tahmini yalnizca yanilma payi ekler.
+
+    YALNIZCA DONEM KOLONU (kullanici karari: "tip değişikliği önerisi
+    artık burada değil sadece sfa kısmında yapılabiliyor olmalı çünkü
+    değişkenlerin bütün durumuna orada karar vereceğiz"). Model
+    degiskenlerinin tip karari SFA'da (sfa_karar.tip_onerisi). Donem
+    kolonu model degiskeni degil, bolmenin anahtari; onun tarih (donem)
+    isareti burada kalir. Surum 3'e gecen calismada daha once model
+    degiskenlerine yazilmis tip secimleri temizlenir.
     Doner: {kolon: kod}."""
     if durum.get("_tip_oneri_surum") == TIP_ONERI_SURUMU:
         return {}
     haric = {str(k) for k in (durum.get("haric_kolonlar") or [])}
-    secilen = dict(durum.get("tip_donusum") or {})
+    secilen = {k: v for k, v in (durum.get("tip_donusum") or {}).items()
+               if _tip_rolu(durum, str(k)) == "donem"}
+    if secilen != dict(durum.get("tip_donusum") or {}):
+        durum["tip_donusum"] = secilen
+        _tip_ozetini_tazele(durum)
+        durum["_tip_oneri"] = {k: v for k, v in (durum.get("_tip_oneri") or {}).items()
+                               if k in secilen}
     try:
         kol = profil_mod.kolonlar(_profil(durum))
     except Exception:
@@ -2626,7 +2640,7 @@ def tip_onerilerini_uygula(durum):
         if ad in haric or ad in secilen:
             continue
         rol = _tip_rolu(durum, ad)
-        if rol in ("target", "id"):
+        if rol != "donem":
             continue
         kaynak_tip = _kaynak_tipi(durum, ad) or ""
         if kaynak_tip not in ("sayısal", "kategorik"):
@@ -3291,7 +3305,7 @@ def _teyit_karti(durum):
     # satirlarin "disi" bayragi ile durumdaki liste ayni olsun.
     otomatik = tanimsiz_kolonlari_isaretle(durum)
     tek = tek_degerlileri_isaretle(durum)
-    tip_oneri = tip_onerilerini_uygula(durum)
+    tip_onerilerini_uygula(durum)
     satirlar, duzenlenebilir = teyit_satirlari(durum)
     notlar = []
     if otomatik:
@@ -3306,10 +3320,6 @@ def _teyit_karti(durum):
         notlar.append("%s tüm veri setinde tek bir değer taşıdığı için modele "
                       "bilgi katmaz; süreç dışı bırakıldı ve kilitlendi."
                       % adlar)
-    if tip_oneri:
-        notlar.append("%s değişkenin tipi için öneri seçili geldi (kırmızı "
-                      "satırlar). Dönem kolonlarında yazım (202501) "
-                      "değişmez." % _sayi(len(tip_oneri)))
     durum["_secim_alani"] = {
         "tip": "teyit",
         "baslik": ADIM_ADI["teyit"],

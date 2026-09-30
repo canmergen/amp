@@ -11,6 +11,13 @@ KULLANICI KARARLARI
   - Aralik onerileri SFA'nin icindedir: "Ayrıklaştırma: Önerilen Aralıklar".
 
 KARAR ALANLARI (her degisken)
+  tip            "yok" | tip_donusum kodu ("kategorik_metin", "sayisal_nokta",
+                   "sayisal_virgul"). TIP KARARI YALNIZCA SFA'DA (kullanici
+                   karari: "degiskenlerin butun durumuna orada karar
+                   verecegiz"). Kural onerir, kullanici degistirir; dil
+                   modeli tipi degistirmez (tipin cevabi verinin kendisinde).
+                   Tip degisince degiskenin SFA detayi yeni tiple yeniden
+                   hesaplanir (akis_faz02.sfa_tip_degistir).
   kullan         "evet" | "hayir"   (hayir yalnizca sizinti / hassas icin)
   eksik          "yok" | "medyan" | "sabit" | "isaret" | "missing"
                    isaret : eksik isareti kolonu (<K>_EKSIK) + medyan
@@ -37,7 +44,10 @@ import uuid
 import numpy as np
 import pandas as pd
 
+import re
+
 from fe_agent import aralik as aralik_mod
+from fe_agent import tip_donusum
 
 KARAR_DOSYA = "sfa_kararlar.json"
 GRAFIK_ARALIK = 20          # grafikteki ince aralik sayisi (ornek ekranla ayni)
@@ -60,8 +70,82 @@ ETIKET = {
     "donusum": {"yok": "Yok", "log": "Log", "ustel": "Üstel", "sira": "Sıra"},
     "ayriklastirma": {"yok": "Yok", "onerilen": "Önerilen Aralıklar"},
 }
-KARAR_ALANLARI = ("kullan", "eksik", "eksik_deger", "aykiri", "donusum",
+KARAR_ALANLARI = ("tip", "kullan", "eksik", "eksik_deger", "aykiri", "donusum",
                   "ayriklastirma", "yorum")
+
+# SFA'da teklif edilen tip donusumleri: yalnizca modelde anlamli hedefler
+# (sayisal <-> kategorik). Tarihe cevirmek bir model degiskeni icin
+# anlamsiz; donem kolonunun tarih isareti 01.3'te kaliyor.
+TIP_ADAYLARI = {
+    "kategorik": ("sayisal_nokta", "sayisal_virgul"),
+    "sayısal": ("kategorik_metin",),
+}
+# Sayisal bir kolonun KOD oldugunu gosteren ad parcalari (01.3'teki
+# eski kuralin aynisi). Ad + az sayida tam sayi deger birlikte varsa
+# kategorik onerilir; ad tek basina yetmez.
+KOD_AD_PARCALARI = {"KOD", "KODU", "CODE", "CD", "TIP", "TIPI", "TYPE",
+                    "SEGMENT", "SEG", "SINIF", "CLASS", "GRUP", "GROUP",
+                    "KATEGORI", "CAT", "IL", "ILCE", "SUBE", "BRANCH",
+                    "SEKTOR", "SECTOR", "MESLEK", "STATU", "STATUS"}
+
+
+def seri_tipi(s):
+    return ("kategorik" if (not pd.api.types.is_numeric_dtype(s)
+                            or pd.api.types.is_bool_dtype(s)) else "sayısal")
+
+
+def tip_secenekleri(s):
+    """Kolonun TAM VERIYLE uygulanabilir tip donusumleri (AMP kolonu).
+    Doner: [{"kod", "hedef", "etiket"}]."""
+    if pd.api.types.is_bool_dtype(s):
+        return []
+    cikti = []
+    for kod in TIP_ADAYLARI.get(seri_tipi(s), ()):
+        try:
+            uygun, _sebep = tip_donusum.denetle(s, kod)
+        except Exception:        # pylint: disable=broad-except
+            uygun = False
+        if uygun:
+            cikti.append({"kod": kod, "hedef": tip_donusum.hedef_tip(kod),
+                          "etiket": tip_donusum.DONUSUMLER[kod]["etiket"]})
+    return cikti
+
+
+def tip_onerisi(ad, s, secenekler):
+    """Kural tabanli tip onerisi: (kod, sebep) ya da (None, None).
+      - Metin kolon, tum degerler sayi (basinda sifirli kod yoksa) -> sayisal
+      - Sayisal kolon, adi kod/tip/segment bildiriyor, tam sayi ve en cok
+        50 farkli deger -> kategorik"""
+    kodlar = [o["kod"] for o in secenekler]
+    if not kodlar:
+        return None, None
+    if seri_tipi(s) == "kategorik":
+        m = s.dropna().astype(str).str.strip()
+        if bool(m.str.match(r"^[+-]?0\d").any()):
+            return None, None          # 00123 gibi kodlar sayi degil
+        sira = (("sayisal_virgul", "sayisal_nokta") if bool(m.str.contains(",", regex=False).any())
+                else ("sayisal_nokta", "sayisal_virgul"))
+        for kod in sira:
+            if kod in kodlar:
+                return kod, "Metin olarak okunmuş ama değerlerin tamamı sayı"
+        return None, None
+    parca = {p for p in re.split(r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+", str(ad).upper()) if p}
+    if "kategorik_metin" in kodlar and parca & KOD_AD_PARCALARI:
+        dolu = pd.to_numeric(s.dropna(), errors="coerce")
+        tekil = int(dolu.nunique())
+        if 2 <= tekil and bool((dolu % 1 == 0).all()):
+            return ("kategorik_metin",
+                    "Adı kod/tip/segment bildiriyor ve %d farklı tam sayı değer var; "
+                    "sayı olarak değil kategori olarak modellenmeli" % tekil)
+    return None, None
+
+
+def tip_uygula(s, kod):
+    """Tip kararini seriye uygular; cevrilemezse seri AYNEN doner."""
+    if not kod or kod == "yok" or not tip_donusum.gecerli_kod(kod):
+        return s
+    yeni, takilan, _ = tip_donusum.cevir(s, kod)
+    return s if takilan else yeni
 
 
 # ===========================================================================
@@ -174,9 +258,13 @@ def kural_karari(d, sizinti=False):
     """d: degisken detayi (aralik + "sfa"). Kararin gerekcesi de yazilir."""
     m = d.get("sfa") or {}
     kategorik = m.get("tip") == "kategorik"
-    k = {"kullan": "evet", "eksik": "yok", "eksik_deger": None, "aykiri": "yok",
+    k = {"tip": d.get("tip_uygulanan") or "yok",
+         "kullan": "evet", "eksik": "yok", "eksik_deger": None, "aykiri": "yok",
          "donusum": "yok", "ayriklastirma": "yok", "yorum": "", "kaynak": "kural"}
     neden = []
+    if k["tip"] != "yok" and d.get("tip_sebebi"):
+        neden.append("tip %s olarak alındı (%s)" % (
+            m.get("tip") or "", d["tip_sebebi"][0].lower() + d["tip_sebebi"][1:]))
     if sizinti:
         k["kullan"] = "hayir"
         neden.append("C-value 0,95'in üstünde: hedefi neredeyse birebir veriyor, "
@@ -221,9 +309,13 @@ def kural_karari(d, sizinti=False):
     return k
 
 
-def karar_dogrula(k, kategorik):
-    """Disaridan gelen (yapay zeka / kullanici) karari gecerli degerlere indirger."""
+def karar_dogrula(k, kategorik, tip_kodlari=None):
+    """Disaridan gelen (yapay zeka / kullanici) karari gecerli degerlere indirger.
+    tip_kodlari verilirse "tip" alani da denetlenir (yalnizca kullanici);
+    verilmezse tip alanina hic dokunulmaz."""
     t = {}
+    if tip_kodlari is not None:
+        t["tip"] = k.get("tip") if k.get("tip") in tip_kodlari else "yok"
     t["kullan"] = k.get("kullan") if k.get("kullan") in KULLAN else "evet"
     eksik = k.get("eksik") if k.get("eksik") in EKSIK else "yok"
     if kategorik and eksik in ("medyan", "sabit", "isaret"):
@@ -299,14 +391,24 @@ def kararlari_yaz(yol, kararlar):
     _yaz(yol, kararlar)
 
 
-def kullanici_karari(yol, ad, alanlar, kategorik):
+def kullanici_karari(yol, ad, alanlar, kategorik, yeni_karar=None):
     """Paneldeki formdan gelen karar. Kullanicinin karari kalicidir:
-    yapay zeka isi bu degiskeni artik degistirmez."""
+    yapay zeka isi bu degiskeni artik degistirmez.
+    yeni_karar: tip degistiyse yeni tiple kurulmus kural karari; formun
+    eski tipe gore doldurulmus alanlari yerine o yazilir (yorum korunur)."""
     with _DOSYA_KILIT:
         kararlar = dict(_oku(yol))
         eski = kararlar.get(ad) or {}
+        if yeni_karar is not None:
+            yeni = dict(yeni_karar)
+            yeni["yorum"] = str(alanlar.get("yorum", eski.get("yorum", "")) or "")[:500]
+            yeni["kaynak"] = "kullanici"
+            kararlar[ad] = yeni
+            _yaz(yol, kararlar)
+            return yeni
         yeni = dict(eski)
         yeni.update(karar_dogrula(dict(eski, **alanlar), kategorik))
+        yeni["tip"] = eski.get("tip", "yok")
         yeni["kaynak"] = "kullanici"
         kararlar[ad] = yeni
         _yaz(yol, kararlar)
@@ -329,7 +431,8 @@ def ai_girdisi(detay, kararlar):
         ayri = d.get("ayri") or {}
         cikti.append({
             "ad": ad, "aciklama": str(d.get("aciklama") or "")[:160],
-            "tip": m.get("tip"), "eksik_orani": m.get("eksik_orani"),
+            "tip": m.get("tip"), "tip_kaynak": d.get("tip_kaynak") or m.get("tip"),
+            "eksik_orani": m.get("eksik_orani"),
             "eksik_hedef_orani": m.get("eksik_hedef_orani"),
             "hedef_orani": m.get("hedef_orani"),
             "min": m.get("min"), "max": m.get("max"), "medyan": m.get("medyan"),
@@ -372,6 +475,7 @@ def ai_baslat(karar_yolu, girdi):
                     continue
                 yeni = dict(eski)
                 yeni.update(karar_dogrula(k, kategorik.get(ad, False)))
+                yeni["tip"] = eski.get("tip", "yok")      # tip kural/kullanici karari
                 yeni["yorum"] = eski.get("yorum", "")
                 yeni["gerekce"] = str(k.get("gerekce") or "")[:500]
                 yeni["kaynak"] = "yapay_zeka"
@@ -420,12 +524,17 @@ def uygula(df, tr, kararlar, detay):
     Parametreler (medyan, kirpma sinirlari, donusum olcekleri) TRAIN'den.
     Doner: (df, rapor) rapor = {"dusen", "uretilen", "degisen": {ham: yeni}}."""
     df = df.copy()
-    rapor = {"dusen": [], "uretilen": [], "degisen": {}, "doldurulan": 0}
+    rapor = {"dusen": [], "uretilen": [], "degisen": {}, "doldurulan": 0, "tip": {}}
     for ad, k in (kararlar or {}).items():
         if ad not in df.columns:
             continue
         d = detay.get(ad) or {}
         s = df[ad]
+        if k.get("tip") not in (None, "", "yok") and k.get("kullan") != "hayir":
+            # TIP ONCE: aralik kesimleri / gruplari zaten yeni tiple hesaplandi
+            s = tip_uygula(s, k["tip"])
+            df[ad] = s
+            rapor["tip"][ad] = k["tip"]
         kategorik = not pd.api.types.is_numeric_dtype(s) or pd.api.types.is_bool_dtype(s)
         if k.get("kullan") == "hayir":
             df = df.drop(columns=[ad])

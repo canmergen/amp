@@ -560,6 +560,9 @@ Her degisken icin su alanlari sec:
   gerekce: Turkce, en fazla iki cumle. YALNIZCA verilen sayilari kullan, yeni
           sayi hesaplama ya da uydurma.
 Kategorik degiskende aykiri ve donusum "yok" olur.
+Degiskenin tipi (sayisal / kategorik) kod tarafinda verinin kendisinden
+belirlenir; "tip" alani dondurme. "tip kaynak" farkliysa degisken o tipten
+cevrilmis ve metrikler yeni tiple olculmustur.
 "kural" alani kural tabanli varsayilandir; daha iyisi yoksa ona uyabilirsin.
 
 CIKTI KURALI: Cevabin SADECE JSON olsun, baska metin yazma. Format:
@@ -593,6 +596,8 @@ def _sfa_parca_metni(blok):
         if a.get("tutarlilik"):
             s += "\n    sira tutarliligi: " + ", ".join(
                 "%s %s" % (k, v) for k, v in a["tutarlilik"].items())
+        if a.get("tip_kaynak") and a.get("tip_kaynak") != a.get("tip"):
+            s += "\n    tip kaynak: %s (kod %s olarak cevirdi)" % (a["tip_kaynak"], a.get("tip"))
         if a.get("hassas"):
             s += "\n    hassas degisken: %s" % a["hassas"]
         if a.get("sizinti"):

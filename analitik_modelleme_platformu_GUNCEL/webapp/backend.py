@@ -1838,6 +1838,9 @@ def _karar_ozet_metni(k):
     if k.get("kullan") == "hayir":
         return "Modele girmez"
     parca = []
+    if k.get("tip") not in (None, "", "yok"):
+        from fe_agent import tip_donusum
+        parca.append("Tip: %s" % (tip_donusum.hedef_tip(k["tip"]) or k["tip"]).capitalize())
     if k.get("ayriklastirma") == "onerilen":
         parca.append("Aralık")
     else:
@@ -1913,6 +1916,7 @@ def sfa_degisken_endpoint():
 @app.route("/sfa_karar", methods=["POST"])
 def sfa_karar_endpoint():
     from fe_agent import akis_faz02, sfa_karar
+    from fe_agent.akis_durum import AdimHatasi
     try:
         istek = request.get_json(force=True) or {}
         anahtar = _oturum_anahtari(_calisma_id(istek))
@@ -1925,8 +1929,34 @@ def sfa_karar_endpoint():
         alanlar = {k: v for k, v in (istek.get("karar") or {}).items()
                    if k in sfa_karar.KARAR_ALANLARI}
         kategorik = (detay[kolon].get("sfa") or {}).get("tip") == "kategorik"
-        yeni = sfa_karar.kullanici_karari(yol, kolon, alanlar, kategorik)
-        return jsonify({"tamam": True, "karar": yeni, "ozet": _karar_ozet_metni(yeni)})
+        # TIP DEGISTIYSE degiskenin SFA'si yeni tiple yeniden hesaplanir;
+        # formun eski tipe gore doldurulmus alanlari yerine yeni tipin
+        # kural karari yazilir (kullanici sonra degistirebilir).
+        simdiki = detay[kolon].get("tip_uygulanan") or "yok"
+        istenen = alanlar.get("tip") or simdiki
+        yeni_detay = None
+        if "tip" in alanlar and istenen != simdiki:
+            try:
+                yeni_detay, kural = akis_faz02.sfa_tip_degistir(
+                    durum, kolon, None if istenen == "yok" else istenen)
+            except AdimHatasi as e:
+                return jsonify({"tamam": False, "hata": str(e)})
+            _kaydet(anahtar, durum)
+            yeni = sfa_karar.kullanici_karari(yol, kolon, alanlar, kategorik,
+                                              yeni_karar=kural)
+        else:
+            yeni = sfa_karar.kullanici_karari(yol, kolon, alanlar, kategorik)
+        govde = {"tamam": True, "karar": yeni, "ozet": _karar_ozet_metni(yeni)}
+        if yeni_detay is not None:
+            d = dict(yeni_detay)
+            d["karar"] = yeni
+            m = d.get("sfa") or {}
+            govde["degisken"] = d
+            govde["liste"] = {"tip": m.get("tip"), "iv": d.get("ham_iv"),
+                              "c": (m.get("c") or {}).get("ham"), "sekil": d.get("sekil"),
+                              "aralik": d.get("aralik_sayisi"), "sizinti": d.get("sizinti"),
+                              "eksik": m.get("eksik_orani")}
+        return jsonify(govde)
     except Exception as e:
         kod = _hata_kaydet("sfa_karar", e)
         return jsonify({"tamam": False, "hata": "Karar kaydedilemedi (%s)." % kod})

@@ -3124,6 +3124,10 @@ span.bolme-cip { cursor: default; }
 .sfa-form-kaynak { font-size: var(--fs-kucuk); line-height: 1.45; margin-bottom: 2px; }
 .sfa-form-kaynak .aralik-kaynak { margin-left: 0; margin-right: 6px; }
 .sfa-gerekce { color: var(--metin); }
+.sfa-form-not {
+  font-size: var(--fs-kucuk); color: var(--metin-soluk);
+  margin: -2px 0 6px;
+}
 .sfa-form-satir { display: grid; grid-template-columns: 9rem minmax(0, 1fr); align-items: center;
   gap: var(--b-2); font-size: var(--fs-kucuk); }
 .sfa-form-satir[hidden] { display: none; }

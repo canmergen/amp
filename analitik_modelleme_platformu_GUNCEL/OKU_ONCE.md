@@ -1,6 +1,29 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.3 Değişken Kontrolü'ne tip süzgeci eklendi**. Değiştir: `webapp/app.js`
+Bu tur: **tip kararı yalnızca SFA'da**. Değiştir: `fe_agent/sfa_karar.py`, `fe_agent/akis_faz02.py`, `fe_agent/akis_faz01.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+
+- 01.3 artık model değişkenlerine tip önerisi yapmıyor. Yalnızca dönem
+  kolonunun tarih (dönem) işareti kaldı (model değişkeni değil, bölmenin
+  anahtarı). Önceden model değişkenlerine yazılmış tip seçimleri, 01.3
+  kartı bir kez daha açıldığında temizlenir.
+- SFA karar formunun ilk alanı "Tip": Kaynak Tip ya da verinin tam
+  kolonla izin verdiği dönüşüm (sayısal → kategorik; metin → sayısal,
+  ondalık nokta / virgül). Tarihe çevirme SFA'da yok.
+- Kural önerir: metin olup değerlerin tamamı sayı olan kolon → sayısal
+  (00123 gibi kodlar hariç); adı KOD/TIP/SEGMENT… olan, tam sayı değerli
+  sayısal kolon → kategorik. Öneri varsa SFA o değişkeni yeni tipiyle
+  ölçer; gerekçede yazar.
+- Tip değişince o değişkenin SFA'sı (IV, C-value, aralıklar, grafik) yeni
+  tiple yeniden hesaplanır; diğer karar alanları yeni tipe göre kuraldan
+  yeniden önerilir, karar "Sizin Kararınız" olur.
+- Yapay zekâ tipi değiştirmez (tipin cevabı verinin kendisinde); diğer
+  alanlara yeni tipe göre karar verir.
+- Tip kararı Analitik Baz Set'te diğer işlemlerden önce uygulanır. SFA
+  onay özetine "Tip Değişikliği" satırı eklendi.
+
+---
+
+Önceki tur: **01.3 Değişken Kontrolü'ne tip süzgeci eklendi**. Değiştir: `webapp/app.js`
 
 - Arama kutusu ile sıralama arasında "Tip: Tümü" açılır listesi; listedeki
   tipler (kategorik, sayısal, tarih…) seçilince yalnızca o tipteki

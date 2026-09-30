@@ -3989,6 +3989,27 @@ function sfaKararFormu(v, ozet, yenidenCiz) {
         alanlar[anahtar] = sel;
         return sel;
     };
+    /* TİP KARARI YALNIZCA BURADA (kullanıcı kararı: "değişkenlerin
+       bütün durumuna orada karar vereceğiz"). Seçenekler verinin tam
+       kolonla izin verdiği dönüşümler; ilk seçenek kaynak tip. Tip
+       değişince sunucu değişkenin SFA'sını yeni tiple yeniden hesaplar,
+       form yeni tipin kararıyla yeniden çizilir. */
+    const kaynakTip = v.tip_kaynak || (v.sfa || {}).tip || "";
+    const tipSec = satir("Tip", "tip", [["yok", "Kaynak Tip ("
+        + (kaynakTip ? kaynakTip.charAt(0).toLocaleUpperCase("tr-TR") + kaynakTip.slice(1) : "-")
+        + ")"]].concat((v.tip_secenekleri || []).map(o => [o.kod, tireSade(o.etiket)])));
+    if (!(v.tip_secenekleri || []).length) {
+        tipSec.disabled = true;
+        tipSec.title = "Bu değişkenin verisi başka bir tipe çevrilemiyor.";
+    }
+    const tipNot = elYap("div", "sfa-form-not",
+        "Tip değişince bu değişkenin SFA'sı yeni tiple yeniden hesaplanır; "
+        + "diğer alanlar yeni tipe göre yeniden önerilir.");
+    tipNot.hidden = true;
+    form.appendChild(tipNot);
+    tipSec.addEventListener("change", () => {
+        tipNot.hidden = tipSec.value === (k.tip || "yok");
+    });
     satir("Kullan", "kullan", SFA_SECENEK.kullan);
     const eksikSec = satir("Eksik Doldurma", "eksik", SFA_SECENEK.eksik.filter(([d]) =>
         kategorik ? (d === "yok" || d === "missing") : d !== "missing"));
@@ -4026,7 +4047,8 @@ function sfaKararFormu(v, ozet, yenidenCiz) {
         const karar = { yorum: yorum.value, eksik_deger: deger.value.replace(",", ".") || null };
         Object.keys(alanlar).forEach(a => { karar[a] = alanlar[a].value; });
         kaydet.disabled = true;
-        durum.textContent = "Kaydediliyor…";
+        durum.textContent = tipSec.value !== (k.tip || "yok")
+            ? "SFA yeni tiple hesaplanıyor…" : "Kaydediliyor…";
         fetch(getWebAppBackendUrl("sfa_karar"), {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ oturum_id: OTURUM_ID, kolon: v.ad || ozet.ad, karar: karar })
@@ -4034,6 +4056,11 @@ function sfaKararFormu(v, ozet, yenidenCiz) {
             kaydet.disabled = false;
             if (!d || !d.tamam) { durum.textContent = tireSade((d && d.hata) || "Kaydedilemedi."); return; }
             v.karar = d.karar;
+            if (d.degisken) {
+                /* Tip değişti: detay (ölçütler, grafik, aralıklar) yeni tiple. */
+                ARALIK.detay[v.ad || ozet.ad] = d.degisken;
+                Object.assign(ozet, d.liste || {});
+            }
             ozet.karar = d.ozet;
             ozet.kaynak = "kullanici";
             yenidenCiz();

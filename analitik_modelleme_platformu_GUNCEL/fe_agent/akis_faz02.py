@@ -300,6 +300,78 @@ def sfa_kararlari_oku(durum):
     return sfa_karar.kararlar_oku(yol) if yol else {}
 
 
+def _diger_setler(durum, s):
+    test_tanim = bolme_ayarlari(durum).get("test_tanim")
+    return {set_basligi(ad, test_tanim): s[ad] for ad in ("val", "test", "oot")
+            if ad in s and bool(s[ad].any())}
+
+
+def _detay_kur(kol, r, tablo, ar, df, target, tr, acik, sizinti, tip):
+    """Tek degiskenin SFA detayi (aralik onerisi + metrikler + grafik +
+    tip bilgisi). r: SFA tablosunun o degiskene ait satiri."""
+    c_ler = {k: (None if pd.isna(r.get(ad)) else float(r.get(ad)))
+             for k, ad in sfa_mod.C_DONUSUMLERI if ad in tablo.columns}
+    iv = None if pd.isna(r.get("IV")) else float(r["IV"])
+    d = dict(ar.get(kol) or {
+        "ad": kol, "tur": "kategorik" if r.get("TYPE") == "categorical" else "sayısal",
+        "sekil": None, "aralik_sayisi": 1, "ham_iv": iv,
+        "ham_c": c_ler.get("ham"), "ayri": None, "dolu": None,
+        "kesimler": None, "gruplar": None, "tutarlilik": {},
+        "hassas": aralik_mod.hassas_mi(kol, acik.get(kol, "")),
+        "etiketler": None, "oneri": "", "notlar": []})
+    d.update(sfa_karar.degisken_detayi(df[kol], df[target], tr, c_ler))
+    d["aciklama"] = acik.get(kol, "")
+    d["sizinti"] = kol in sizinti
+    d["iv_bandi"] = r.get("IV_BANDI")
+    d["sfa_not"] = str(r.get("NOT") or "")
+    d.update(tip or {"tip_kaynak": (d.get("sfa") or {}).get("tip"),
+                     "tip_secenekleri": [], "tip_uygulanan": None, "tip_sebebi": ""})
+    return d
+
+
+def sfa_tip_degistir(durum, kol, kod):
+    """SFA panelinde bir degiskenin tipi degisti: o degiskenin SFA'si yeni
+    tiple YENIDEN hesaplanir (IV, C-value, aralik, grafik) ve karari yeni
+    tipe gore kuraldan kurulur. Doner: (detay, kural_karari)."""
+    from fe_agent.akis_durum import AdimHatasi
+    detay = dict(sfa_detay_oku(durum))
+    eski = detay.get(kol)
+    if not eski:
+        raise AdimHatasi("'%s' için SFA sonucu yok." % kol)
+    kodlar = [o["kod"] for o in (eski.get("tip_secenekleri") or [])]
+    kod = kod if kod in kodlar else None
+    target = durum["meta"]["target"]
+    df = modelleme_df(durum)
+    s = setler(durum, df)
+    tr = s["egitim"]
+    alt = df[[kol, target]].copy()
+    if kod:
+        yeni = sfa_karar.tip_uygula(alt[kol], kod)
+        if yeni is alt[kol]:
+            raise AdimHatasi("'%s' bu tipe çevrilemedi." % kol)
+        alt[kol] = yeni
+    tablo, ozet = sfa_mod.sfa_calistir(alt, target, [kol], train_maske=tr)
+    if not len(tablo):
+        raise AdimHatasi("'%s' yeni tipiyle ölçülemedi." % kol)
+    acik = _aciklamalar(durum)
+    ar = aralik_mod.hesapla(alt, target, [kol], tr, _diger_setler(durum, s), acik,
+                            ozet.get("iv_skorlari"), ozet.get("c_skorlari"))
+    tip = {"tip_kaynak": eski.get("tip_kaynak"),
+           "tip_secenekleri": eski.get("tip_secenekleri") or [],
+           "tip_uygulanan": kod,
+           "tip_sebebi": "Sizin seçiminiz" if kod else ""}
+    d = _detay_kur(kol, tablo.iloc[0], tablo, ar, alt, target, tr, acik,
+                   set(ozet.get("sizinti") or []), tip)
+    detay[kol] = d
+    a = (durum.get("sfa") or {}).get("aralik") or {}
+    sfa_karar.detay_yaz(a.get("dosya") or aralik_yolu(durum), detay)
+    sf = durum.get("sfa") or {}
+    if isinstance(sf.get("iv_skorlari"), dict):
+        sf["iv_skorlari"][kol] = d.get("ham_iv")
+    k = sfa_karar.kural_karari(d, d["sizinti"])
+    return d, k
+
+
 def _sfa_hesapla(durum):
     """SFA tablosu + aralik onerileri + degisken detayi + kural kararlari;
     ardindan yapay zeka karar isi arka planda baslar."""
@@ -313,10 +385,26 @@ def _sfa_hesapla(durum):
     tr = s["egitim"]
     adaylar = (durum.get("profil", {}).get("profil_teshis") or {}).get("temiz") or []
 
+    # TIP KARARI SFA'DA: secenekler ve kural onerisi AMP kolonunun TAM
+    # verisiyle; oneri varsa SFA o degiskeni yeni tipiyle olcer.
+    tip_bilgi = {}
+    df = df.copy(deep=False)
+    for kol in adaylar:
+        if kol not in df.columns or kol == target:
+            continue
+        sec = sfa_karar.tip_secenekleri(df[kol])
+        kod, sebep = sfa_karar.tip_onerisi(kol, df[kol], sec)
+        tip_bilgi[kol] = {"tip_kaynak": sfa_karar.seri_tipi(df[kol]),
+                          "tip_secenekleri": sec, "tip_uygulanan": None,
+                          "tip_sebebi": ""}
+        if kod:
+            yeni = sfa_karar.tip_uygula(df[kol], kod)
+            if yeni is not df[kol]:
+                df[kol] = yeni
+                tip_bilgi[kol].update(tip_uygulanan=kod, tip_sebebi=sebep)
+
     tablo, ozet = sfa_mod.sfa_calistir(df, target, adaylar, train_maske=tr)
-    test_tanim = bolme_ayarlari(durum).get("test_tanim")
-    diger = {set_basligi(ad, test_tanim): s[ad] for ad in ("val", "test", "oot")
-             if ad in s and bool(s[ad].any())}
+    diger = _diger_setler(durum, s)
     acik = _aciklamalar(durum)
     ar = aralik_mod.hesapla(df, target, adaylar, tr, diger, acik,
                             ozet.get("iv_skorlari"), ozet.get("c_skorlari"))
@@ -327,22 +415,8 @@ def _sfa_hesapla(durum):
         kol = str(r["FEATURE"])
         if kol not in df.columns:
             continue
-        c_ler = {k: (None if pd.isna(r.get(ad)) else float(r.get(ad)))
-                 for k, ad in sfa_mod.C_DONUSUMLERI if ad in tablo.columns}
-        iv = None if pd.isna(r.get("IV")) else float(r["IV"])
-        d = dict(ar.get(kol) or {
-            "ad": kol, "tur": "kategorik" if r.get("TYPE") == "categorical" else "sayısal",
-            "sekil": None, "aralik_sayisi": 1, "ham_iv": iv,
-            "ham_c": c_ler.get("ham"), "ayri": None, "dolu": None,
-            "kesimler": None, "gruplar": None, "tutarlilik": {},
-            "hassas": aralik_mod.hassas_mi(kol, acik.get(kol, "")),
-            "etiketler": None, "oneri": "", "notlar": []})
-        d.update(sfa_karar.degisken_detayi(df[kol], df[target], tr, c_ler))
-        d["aciklama"] = acik.get(kol, "")
-        d["sizinti"] = kol in sizinti
-        d["iv_bandi"] = r.get("IV_BANDI")
-        d["sfa_not"] = str(r.get("NOT") or "")
-        detay[kol] = d
+        detay[kol] = _detay_kur(kol, r, tablo, ar, df, target, tr, acik,
+                                sizinti, tip_bilgi.get(kol))
 
     yol = aralik_yolu(durum)
     sfa_karar.detay_yaz(yol, detay)
@@ -437,16 +511,19 @@ def sfa_uygula(durum):
     s["kullanilan"] = len(kararlar) - len(girmeyen)
     s["kararlar_ozet"] = {"girmeyen": girmeyen, "kaynak": kaynak}
     durum["sfa"] = s
+    tip_say = sum(1 for v in kararlar.values()
+                  if v.get("kullan") != "hayir" and v.get("tip") not in (None, "", "yok"))
     metin = ("SFA kararları kaydedildi.\n"
              "  Modele Girecek : %s\n"
              "  Girmeyecek : %s\n"
+             "  Tip Değişikliği : %s\n"
              "  Önerilen Aralıklarla : %s\n"
              "  Dönüşüm : log %s · üstel %s · sıra %s\n"
              "  Winsor (%%5) : %s\n"
              "  Eksik İşareti : %s\n"
              "  Karar Kaynağı : yapay zekâ %s · sizin %s · kural %s\n"
              "Kararlar Analitik Baz Set adımında uygulanır."
-             % (_sayi(s["kullanilan"]), _sayi_ad(girmeyen),
+             % (_sayi(s["kullanilan"]), _sayi_ad(girmeyen), _sayi(tip_say),
                 _sayi(say("ayriklastirma", "onerilen")), _sayi(say("donusum", "log")),
                 _sayi(say("donusum", "ustel")), _sayi(say("donusum", "sira")),
                 _sayi(say("aykiri", "winsor")), _sayi(say("eksik", "isaret")),
