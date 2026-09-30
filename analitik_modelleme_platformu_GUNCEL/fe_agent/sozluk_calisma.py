@@ -160,12 +160,59 @@ def _temiz_anahtar(oturum_anahtari):
     return re.sub(r"[^A-Za-z0-9_-]", "", str(oturum_anahtari or ""))
 
 
-def kopya_yolu(oturum_anahtari):
-    """PROJE_HAFIZASI icindeki yol; anahtar cozulemezse None."""
+# AMP_SOZLUK (kullanici karari): Degisken Kontrolu kaydedildikten sonra
+# sozlugun TEK kaynagi calisma klasorundeki AMP_SOZLUK'tur. Dosya varsa
+# butun okumalar ve yazmalar ona gider; teyit oncesine donulunce silinir ve
+# calisma kopyasina geri donulur.
+AMP_SOZLUK_DOSYA = "AMP_SOZLUK.parquet"
+
+
+def _calisma_kopyasi_yolu(oturum_anahtari):
     temiz = _temiz_anahtar(oturum_anahtari)
-    if not temiz:
+    return "/%s/%s" % (temiz, DOSYA_ADI) if temiz else None
+
+
+def amp_sozluk_yolu(oturum_anahtari):
+    temiz = _temiz_anahtar(oturum_anahtari)
+    return "/%s/%s" % (temiz, AMP_SOZLUK_DOSYA) if temiz else None
+
+
+def _amp_sozluk_var(oturum_anahtari):
+    yol = amp_sozluk_yolu(oturum_anahtari)
+    return bool(yol) and _oku_onbellekli(yol) is not None
+
+
+def kopya_yolu(oturum_anahtari):
+    """Sozlugun o anki calisma tablosunun yolu: AMP_SOZLUK varsa o, yoksa
+    oturumun calisma kopyasi. Anahtar cozulemezse None."""
+    if _amp_sozluk_var(oturum_anahtari):
+        return amp_sozluk_yolu(oturum_anahtari)
+    return _calisma_kopyasi_yolu(oturum_anahtari)
+
+
+def amp_sozluk_yaz(durum, tablo):
+    """AMP_SOZLUK'u calisma klasorune yazar. Doner: yol ya da None."""
+    yol = amp_sozluk_yolu((durum or {}).get("_oturum_id"))
+    if not yol:
         return None
-    return "/%s/%s" % (temiz, DOSYA_ADI)
+    try:
+        yol = tablo_io.klasore_yaz(_folder(), yol, tablo)
+    except Exception:
+        return None
+    _onbellek_dusur(yol)
+    return yol
+
+
+def amp_sozluk_sil(oturum_anahtari):
+    """Teyit oncesine donuldu: AMP_SOZLUK silinir, calisma kopyasina donulur."""
+    yol = amp_sozluk_yolu(oturum_anahtari)
+    if not yol:
+        return
+    try:
+        _folder().delete_path(yol)
+    except Exception:
+        pass
+    _onbellek_dusur(yol)
 
 
 def _onbellek_dusur(yol=None):
@@ -179,34 +226,41 @@ def _oku_yoldan(yol):
     return tablo_io.klasorden_oku(_folder(), yol)
 
 
-def kopya_oku(oturum_anahtari):
-    """Calisma kopyasi DataFrame'i; yoksa ya da okunamazsa None."""
-    yol = kopya_yolu(oturum_anahtari)
-    if not yol:
-        return None
-
+def _oku_onbellekli(yol):
+    """Dosyayi okur (kisa omurlu onbellek; yoklugu da onbellege girer).
+    Doner: DataFrame ya da None. Donen tablo PAYLASILIR, degistirilmemeli."""
     kayit = _ONBELLEK.get(yol)
     if kayit is not None:
         zaman, tablo = kayit
         if (time.time() - zaman) <= ONBELLEK_OMRU_SN:
-            return tablo.copy()
+            return tablo
         _ONBELLEK.pop(yol, None)
-
     try:
         tablo = _oku_yoldan(yol)
     except Exception:
-        return None
+        tablo = None
     _ONBELLEK[yol] = (time.time(), tablo)
-    return tablo.copy()
+    return tablo
+
+
+def kopya_oku(oturum_anahtari):
+    """Sozlugun calisma tablosu (AMP_SOZLUK ya da calisma kopyasi);
+    yoksa ya da okunamazsa None."""
+    yol = kopya_yolu(oturum_anahtari)
+    if not yol:
+        return None
+    tablo = _oku_onbellekli(yol)
+    return None if tablo is None else tablo.copy()
 
 
 def kopya_var_mi(oturum_anahtari):
     return kopya_oku(oturum_anahtari) is not None
 
 
-def _kopya_yaz(oturum_anahtari, tablo):
-    """Kopyayi diske yazar. Doner: (yol, hata_metni)."""
-    yol = kopya_yolu(oturum_anahtari)
+def _kopya_yaz(oturum_anahtari, tablo, yol=None):
+    """Sozlugun calisma tablosunu (AMP_SOZLUK ya da kopya) diske yazar.
+    Doner: (yol, hata_metni)."""
+    yol = yol or kopya_yolu(oturum_anahtari)
     if not yol:
         return None, ("Oturum anahtarı çözülemediği için sözlük çalışma "
                       "kopyası oluşturulamadı.")
@@ -292,7 +346,8 @@ def kopya_kur(durum, tablo=None):
                 "duzeltilen": len(rapor["duzeltilen"]), "cift": rapor["cift"],
                 "dusen_ornek": rapor["dusen"][:20],
                 "eklenen_ornek": rapor["eklenen"][:20]}
-        yol, hata = _kopya_yaz(oturum, tablo)
+        # Kopya TEYIT ONCESININ tablosudur: AMP_SOZLUK'un ustune yazilmaz.
+        yol, hata = _kopya_yaz(oturum, tablo, _calisma_kopyasi_yolu(oturum))
         if yol and rapor:
             _esitlemeyi_kutuge_dus(durum, oturum, rapor)
         return yol, hata
@@ -844,13 +899,14 @@ def calisma_kopyasi_sil(oturum_anahtari):
 
     Doner: silinen yol listesi. Dosya hic olusmamis olabilir; bu bir
     hata degildir, o yuzden sessizce gecilir."""
-    yol = kopya_yolu(oturum_anahtari)
+    yol = _calisma_kopyasi_yolu(oturum_anahtari)
     if not yol:
         return []
 
     silinen = []
     hedefler = []
-    for y in (yol, kutuk_mod._degisiklik_yolu(oturum_anahtari)):
+    for y in (yol, amp_sozluk_yolu(oturum_anahtari),
+              kutuk_mod._degisiklik_yolu(oturum_anahtari)):
         if y:
             hedefler.extend(tablo_io.aday_yollar(y))   # .parquet ve eski .csv
     for hedef in hedefler:
@@ -859,5 +915,5 @@ def calisma_kopyasi_sil(oturum_anahtari):
             silinen.append(hedef)
         except Exception:
             pass                      # yoksa silinecek bir sey de yok
-    _onbellek_dusur(yol)
+    _onbellek_dusur()
     return silinen

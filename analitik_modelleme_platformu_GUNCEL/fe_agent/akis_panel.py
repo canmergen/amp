@@ -19,7 +19,7 @@ from fe_agent.akis_durum import (
     bolme_ayarlari, bolme_etiket, bolme_kisitlari, bolme_ozeti,
     bolme_satir_degeri, bolme_secenek_listesi, bolme_uyarilari,
     KAT_EN_AZ, KAT_EN_COK, ORAN_EN_AZ, ORAN_EN_COK,
-    test_donem_anahtari,
+    test_donem_anahtari, set_basligi,
     test_donem_secenekleri,
 )
 from fe_agent.akis_kayit import ADIMLAR, adim_grubu, adim_sirasi, fazlar
@@ -299,10 +299,10 @@ def _eleme_karti(durum):
 
 
 # Ust seritte gosterilecek model metrikleri: (durum anahtari, etiket, basamak)
-MODEL_METRIKLERI = (("gini_test", "Gini test", 3),
-                    ("gini_oot", "Gini test (zamansal)", 3),
+MODEL_METRIKLERI = (("gini_test", "Gini Validasyon (OOT)", 3),
+                    ("gini_oot", "Gini ek OOT", 3),
                     ("ks_test", "KS", 3),
-                    ("gini_egitim", "Gini eğitim", 3))
+                    ("gini_egitim", "Gini Train (MS)", 3))
 
 
 def _model_karti(durum):
@@ -441,9 +441,12 @@ def detay(durum):
     if b.get("tur"):
         bolumler.append(_bolum("BÖLME STRATEJİSİ", [
             ("Tür", "zamansal" if b["tur"] == "zamansal" else "rastgele"),
-            ("Test Dönemi", b.get("oot_deger") or "-"),
-            ("Geliştirme Satır", _sayi(b.get("train_satir", 0))),
-            ("Test Satır", _sayi(b.get("test_satir", 0))),
+            ("Validasyon (OOT) Dönemi", ", ".join(map(str, b.get("test_donemleri") or []))
+             or b.get("oot_deger") or "-"),
+            ("Train (MS) Satır", _sayi(b.get("train_satir", 0))),
+            (set_basligi("test", b.get("tur")) + " Satır", _sayi(b.get("test_satir", 0))),
+        ] + ([("Test (OOS) Satır", _sayi(((b.get("satir") or {}).get("val")) or 0))]
+             if b.get("tur") != "rastgele" else []) + [
             ("Rastgelelik Tohumu", b.get("seed", "-")),
         ]))
 
@@ -1563,8 +1566,8 @@ def bolme_formu(durum):
     if test_oran["kilitli"]:
         # KILITLI ALAN SEBEBINI YAZAR. Soluk bir "%20" tek basina
         # "neden dokunamiyorum" sorusunu doguruyordu.
-        test_oran["not"] = ("Zamansal bölmede Test (OOT) dönemlere göre "
-                            "ayrılıyor; bu pay kullanılmıyor.")
+        test_oran["not"] = ("Zamansal bölmede Validasyon (OOT) dönemlere göre "
+                            "ayrılıyor; Test (OOS) payı aşağıdaki alanda.")
     val_oran = _alan("val_oran", int(round(100 * a["val_oran"])),
                      tip="yuzde", hazir=[10, 20, 30],
                      en_az=int(round(100 * ORAN_EN_AZ)),
@@ -1572,7 +1575,7 @@ def bolme_formu(durum):
                      toplam_satir=satir,
                      kilitli=not a["val_var"])
     if val_oran["kilitli"]:
-        val_oran["not"] = ("Validasyon (OOS) seti kapalı; açarsanız bu pay "
+        val_oran["not"] = ("Test (OOS) seti kapalı; açarsanız bu pay "
                            "kullanılır.")
 
     birim_kisit = _kisit("birim", "kimlik")
@@ -1683,10 +1686,7 @@ def _hazir_bolme_notu(hazir):
     for ad in ("egitim", "val", "test", "oot"):
         n = sayim.get(ad)
         if n:
-            parcalar.append("%s %s" % ({"egitim": "Train (MS)",
-                                        "val": "Validasyon (OOS)",
-                                        "test": "Test (OOT)",
-                                        "oot": "Test (OOT)"}[ad], _sayi(int(n))))
+            parcalar.append("%s %s" % (set_basligi(ad, "hazir"), _sayi(int(n))))
     return ("Veri setinde hazır bölme bulundu (%s): %s. Kolonlara "
             "dokunulmaz, yalnızca okunur."
             % (", ".join(hazir.get("kolonlar") or []),
@@ -1755,13 +1755,16 @@ def bolme_ozet_karti(durum):
     satirlar = [("Bölme Türü", bolme_etiket("test_tanim", a["test_tanim"]),
                  BOLME_ADIMI)]
     if a["test_tanim"] == "zamansal":
-        satirlar.append(("Test Dönemi",
+        satirlar.append(("Validasyon (OOT) Dönemi",
                          "Son %d dönem%s" % (int(a["oot_tanim"]["adet"]),
                                              (" (%s)" % donemler[-1])
                                              if donemler else ""),
                          BOLME_ADIMI))
+        if a["val_var"]:
+            satirlar.append(("Test (OOS)", "geliştirme döneminin %%%d'i"
+                             % round(100 * float(a["val_oran"])), BOLME_ADIMI))
     else:
-        satirlar.append(("Geliştirme / Test",
+        satirlar.append(("Train (MS) / Test (OOS)",
                          "%%%d / %%%d"
                          % (round(100 * (1 - float(a["test_oran"]))),
                             round(100 * float(a["test_oran"]))),

@@ -21,26 +21,26 @@ import numpy as np
 #          "puan" (0.021 -> +2,1 puan)
 # ---------------------------------------------------------------------------
 ESIKLER = [
-    {"anahtar": "gini_test", "ad": "Gini (test)",
+    {"anahtar": "gini_test", "ad": "Gini (Validasyon OOT)",
      "yon": "buyuk", "gecer": 0.40, "uyari": 0.30, "bicim": "yuzde",
-     "aciklama": "Test kümesinde ayrıştırma gücü"},
-    {"anahtar": "gini_oot", "ad": "Gini (zamansal test)",
+     "aciklama": "Dışarıda tutulan sette ayrıştırma gücü (zamansal bölmede Validasyon (OOT), rastgele bölmede Test (OOS))"},
+    {"anahtar": "gini_oot", "ad": "Gini (ek OOT seti)",
      "yon": "buyuk", "gecer": 0.40, "uyari": 0.30, "bicim": "yuzde",
-     "aciklama": "Zamansal ayrılmış test döneminde ayrıştırma gücü"},
-    {"anahtar": "gini_dusus", "ad": "Gini düşüşü (eğitim → test)",
+     "aciklama": "Ayrıca işaretlenmiş bir OOT seti varsa (hazır bölme) orada ayrıştırma gücü"},
+    {"anahtar": "gini_dusus", "ad": "Gini düşüşü (Train → Validasyon)",
      "yon": "kucuk", "gecer": 0.10, "uyari": 0.20, "bicim": "yuzde",
      "aciklama": "Eğitime göre göreli kayıp; aşırı öğrenme göstergesi"},
-    {"anahtar": "ks_test", "ad": "KS (test)",
+    {"anahtar": "ks_test", "ad": "KS (Validasyon OOT)",
      "yon": "buyuk", "gecer": 0.30, "uyari": 0.20, "bicim": "yuzde",
      "aciklama": "İyi ve kötü skor dağılımları arasındaki en büyük fark"},
     {"anahtar": "psi_skor", "ad": "Skor PSI",
      "yon": "kucuk", "gecer": 0.10, "uyari": 0.25, "bicim": "ondalik",
-     "aciklama": "Eğitim ile zamansal ayrılmış test seti arasındaki skor "
-                 "dağılımı farkı; bölme rastgeleyse ölçülmez (eğitim-test "
+     "aciklama": "Train (MS) ile Validasyon (OOT) arasındaki skor "
+                 "dağılımı farkı; bölme rastgeleyse ölçülmez (Train-Test "
                  "PSI yapısı gereği daima geçer, anlamlı değil)"},
     {"anahtar": "gini_artis", "ad": "Yeni değişken katkısı",
      "yon": "buyuk", "gecer": 0.02, "uyari": 0.0, "bicim": "puan",
-     "aciklama": "Final model ile baz model arasındaki test Gini farkı"},
+     "aciklama": "Final model ile baz model arasındaki Validasyon Gini farkı"},
 ]
 
 DURUM_SIRASI = {"kaldi": 3, "kosullu": 2, "gecti": 1}

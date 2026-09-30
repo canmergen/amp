@@ -423,7 +423,7 @@ def _tutarlilik(araliklar, x, y, kategorik):
 
 def degisken_araligi(ad, s, y, tr, diger_setler, aciklama="", ham_iv=None, ham_c=None):
     """Tek degiskenin aralik onerisi. s: tum satirlar; tr: egitim maskesi;
-    diger_setler: {"Validasyon (OOS)": maske, ...}. Doner: sozluk ya da None."""
+    diger_setler: {"Test (OOS)": maske, ...}. Doner: sozluk ya da None."""
     kategorik = not pd.api.types.is_numeric_dtype(s) or pd.api.types.is_bool_dtype(s)
     yb = (pd.to_numeric(y, errors="coerce") > 0).astype(int)
     gecerli = pd.to_numeric(y, errors="coerce").notna()

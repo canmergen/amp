@@ -291,15 +291,28 @@ def bolme_ekle(spark, df, b):
         for h, n in sayim_ham.items():
             if h in normal:
                 sayim[normal[h]] = sayim.get(normal[h], 0) + n
+        # Donem esleme yalnizca OOT (ic adi test) ve bosluk donemlerini verir;
+        # Test (OOS, ic adi val) gelistirme satirlarindan RASTGELE ayrilir.
         esleme = zamansal_esleme(sayim, b.get("test_donemleri") or [],
-                                 b.get("val_var"), b.get("val_oran") or 0,
-                                 b.get("gap"))
+                                 False, 0, b.get("gap"))
         ciftler = [(h, esleme.get(n, ETIKET["egitim"])) for h, n in normal.items()]
         etiket = harita_ifadesi(ciftler, F.col("`%s`" % kol),
                                 df.schema[kol].dataType, "string")
-        return df.withColumn(SPLIT_KOLON, F.coalesce(etiket, F.lit(ETIKET["egitim"])))
+        df = df.withColumn(SPLIT_KOLON, F.coalesce(etiket, F.lit(ETIKET["egitim"])))
+        oos = b.get("oos")
+        if not oos:
+            return df
+        gel = df.filter(F.col(SPLIT_KOLON) == F.lit(ETIKET["egitim"])).drop(SPLIT_KOLON)
+        diger = df.filter(F.col(SPLIT_KOLON) != F.lit(ETIKET["egitim"]))
+        return rastgele_ekle(spark, gel, oos).unionByName(diger)
 
-    # RASTGELE (katmanli): kimlik varsa kimlik duzeyinde, yoksa satir duzeyinde.
+    return rastgele_ekle(spark, df, b)
+
+
+def rastgele_ekle(spark, df, b):
+    """RASTGELE (katmanli) _SPLIT: kimlik varsa kimlik duzeyinde, yoksa satir
+    duzeyinde. b: {oranlar, kimlik, katmanla, hedef, seed}."""
+    from pyspark.sql import functions as F
     oranlar = [(ad, float(o)) for ad, o in (b.get("oranlar") or [])]
     hedef = b.get("hedef")
     seed = int(b.get("seed") or 42)

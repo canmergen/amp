@@ -125,15 +125,26 @@ def bolme_ekle(df, b):
         for h, n in sayim_ham.items():
             if h in normal:
                 sayim[normal[h]] = sayim.get(normal[h], 0) + int(n)
+        # amp_spark ile ayni: donemler yalnizca OOT (ic adi test) ve bosluk;
+        # Test (OOS, ic adi val) gelistirme satirlarindan RASTGELE.
         esleme = ak.zamansal_esleme(sayim, b.get("test_donemleri") or [],
-                                    b.get("val_var"), b.get("val_oran") or 0,
-                                    b.get("gap"))
+                                    False, 0, b.get("gap"))
         harita = {h: esleme.get(n, ETIKET["egitim"]) for h, n in normal.items()}
         df = df.copy(deep=False)
         df[SPLIT_KOLON] = df[kol].map(harita).fillna(ETIKET["egitim"]).astype(object)
+        oos = b.get("oos")
+        if oos:
+            gel = df[SPLIT_KOLON] == ETIKET["egitim"]
+            alt = rastgele_ekle(df.loc[gel].drop(columns=[SPLIT_KOLON]), oos)
+            df.loc[gel, SPLIT_KOLON] = alt[SPLIT_KOLON].to_numpy()
         return df
 
-    # RASTGELE (katmanli): kimlik varsa kimlik duzeyinde, yoksa satir duzeyinde.
+    return rastgele_ekle(df, b)
+
+
+def rastgele_ekle(df, b):
+    """RASTGELE (katmanli) _SPLIT: kimlik varsa kimlik duzeyinde, yoksa satir
+    duzeyinde (amp_spark.rastgele_ekle ile ayni tarif)."""
     oranlar = [(ad, float(o)) for ad, o in (b.get("oranlar") or [])]
     hedef = b.get("hedef")
     seed = int(b.get("seed") or 42)

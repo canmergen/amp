@@ -1,6 +1,32 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sözlük çalışma kopyası veri setiyle eşitleniyor**.
+Bu tur: **AMP çalışma klasöründe ve tek kaynak; setler Train (MS) / Validasyon (OOT) / Test (OOS)**.
+Değiştir (fe_agent): `amp.py`, `amp_pandas.py`, `amp_spark.py`, `spark_is.py`, `akis_durum.py`, `akis_faz01.py`, `akis_faz02.py`, `akis_sohbet.py`, `akis_panel.py`, `sozluk_calisma.py`, `dokuman.py`, `validasyon.py`
+Değiştir (webapp): `app.js` (JS)
+Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+Devam eden çalışmada «01.3 Değişken Kontrolü» adımına Geri Dön ile dönüp kaydedin:
+AMP bu çalışmanın klasörüne yeniden yazılır ve bölme yeni düzenle yapılır.
+
+- AMP_VERISETI ve AMP_SOZLUK çalışmanın kendi klasörüne yazılır
+  (PROJE_HAFIZASI/<çalışma>/AMP_VERISETI.parquet, AMP_SOZLUK.parquet).
+  Büyük veride (Spark) Dataiku kuralı gereği çıktı bir veri setidir; adı
+  çalışmaya özeldir (AMP_VERISETI_V8, bölünmüş hali AMP_VERISETI_V8_B).
+- Değişken Kontrolü kaydedildikten sonra tek kaynak AMP_VERISETI ve
+  AMP_SOZLUK: bölme de AMP'den okur, sözlük okumaları ve sağ paneldeki
+  düzenlemeler AMP_SOZLUK'a gider; kaynak tabloya ya da sözlüğe dönülmez.
+- 01.3 ya da öncesine Geri Dön ile dönülünce AMP_VERISETI, AMP_SOZLUK ve
+  sonraki bütün sonuçlar silinir; adımlar oradan yeniden yapılır.
+- Setler (kurum düzeni): Train (MS); Validasyon (OOT) = son dönem(ler);
+  Test (OOS) = geliştirme döneminden rastgele (hedef oranı korunarak,
+  kimlik varsa müşteri bazında) ayrılan pay. Zamansal bölmede Test (OOS)
+  varsayılan olarak açık (%20). Dönem kolonu yoksa Validasyon (OOT) yoktur,
+  yalnızca Test (OOS) ayrılır.
+- Bölme sonucu, bölme kartı, sağ panel, stabilite (Train ↔ Validasyon OOT),
+  validasyon kriterleri ve model dokümanı yeni adlarla.
+
+---
+
+Önceki tur: **Sözlük çalışma kopyası veri setiyle eşitleniyor**.
 Değiştir (fe_agent): `sozluk_calisma.py`, `akis_faz01.py`, `akis_panel.py`
 Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
 

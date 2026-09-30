@@ -667,7 +667,7 @@ def _bolme(durum):
         or (b.get("oot_deger") or BOS_DEGER)
 
     satirlar = [
-        ("Test tanımı", "zamansal (OOT)" if zamansal else "rastgele (OOS2)"),
+        ("Ayrım yöntemi", "zamansal (Validasyon OOT)" if zamansal else "rastgele (yalnızca Test OOS)"),
         ("Bölme birimi", "kimlik bazlı" if a["birim"] == "kimlik"
                          else "satır bazlı"),
         ("Katmanlama", "açık" if a["katmanla"] else "kapalı"),
@@ -675,52 +675,50 @@ def _bolme(durum):
                                                        a["train_kullanimi"])),
         ("Çapraz doğrulama", ("%s · %s kat" % (a["cv"], _n(a["kat"])))
                              if a["cv"] != "yok" else "yok"),
-        ("Test dönemi", donem_metni if zamansal else None),
-        ("Test oranı", ("%%%d" % round(100 * float(a["test_oran"])))
-                       if not zamansal else None),
+        ("Validasyon (OOT) dönemi", donem_metni if zamansal else None),
+        ("Test (OOS) oranı", ("%%%d" % round(100 * float(a["test_oran"])))
+                       if not zamansal else (("geliştirme döneminin %%%d'i"
+                                             % round(100 * float(a["val_oran"])))
+                                            if a["val_var"] else None)),
         ("Toplam satır", _n(b.get("toplam_satir")) if b.get("toplam_satir")
                          else None),
-        ("Geliştirme satırı", _n(sayim.get("egitim") or b.get("train_satir"))),
-        ("Doğrulama satırı", _n(sayim.get("val")) if sayim.get("val") else None),
-        ("Test satırı", _n(sayim.get("test") or b.get("test_satir"))),
+        ("Train (MS) satırı", _n(sayim.get("egitim") or b.get("train_satir"))),
+        ("Validasyon (OOT) satırı", _n(sayim.get("test") or b.get("test_satir"))
+                                    if zamansal else None),
+        ("Test (OOS) satırı", _n(sayim.get("val")) if zamansal and sayim.get("val")
+                              else (None if zamansal else
+                                    _n(sayim.get("test") or b.get("test_satir")))),
         ("Seed", _n(a["seed"])),
     ]
     bloklar = _bloklar(_alan_tablosu(satirlar),
                        _p("Set özeti - %s" % bolme_ozeti(durum)))
 
-    # MD / OOS / OOT TERMINOLOJI TABLOSU. Platformda AYRI bir OOT seti
-    # yoktur: zamansal testte test setinin KENDISI OOT'dur. Bunu tabloda
-    # acikca yazmak, "uc set var mi" sorusunu tek bakista cevaplar.
-    oos_durum = ("yok - test seti zaman dışı (OOT) olarak tanımlandı"
-                 if zamansal else "var (Test (OOS2) seti)")
-    oot_durum = "var (test seti)" if zamansal else "yok - test rastgele ayrıldı"
-    test_satir = _n(sayim.get("test") or b.get("test_satir"))
+    # MS / OOT / OOS KURGUSU (kurum duzeni): Train (MS), Validasyon (OOT)
+    # = son donem(ler), Test (OOS) = gelistirme doneminden rastgele pay.
+    # Ic adlar: egitim, test (OOT; rastgele bolmede OOS), val (OOS).
+    oot_satir = _n(sayim.get("test") or b.get("test_satir")) if zamansal else BOS_DEGER
+    oos_satir = (_n(sayim.get("val")) if sayim.get("val") else BOS_DEGER) if zamansal \
+        else _n(sayim.get("test") or b.get("test_satir"))
     bloklar.append({
-        "tur": "tablo", "baslik": "MD / OOS / OOT kurgusu",
+        "tur": "tablo", "baslik": "Train (MS) / Validasyon (OOT) / Test (OOS) kurgusu",
         "kolonlar": ["Set", "Amaç", "Mevcut durum", "Satır", "Dönem"],
         "satirlar": [
-            ["MD (model geliştirme)", "Model bu set üzerinde öğrenir", "var",
+            ["Train (MS, model sample)", "Model bu set üzerinde öğrenir", "var",
              _n(sayim.get("egitim") or b.get("train_satir")),
-             "test dışındaki dönemler" if zamansal else "tüm dönemler"],
-            ["OOS (aynı dönem, bağımsız)",
-             "Öğrenmeye girmemiş satırlarda ayrıştırma gücü", oos_durum,
-             BOS_DEGER if zamansal else test_satir,
-             BOS_DEGER if zamansal else "tüm dönemler"],
-            ["OOT (zaman dışı)", "Sonraki dönemlerde davranış", oot_durum,
-             test_satir if zamansal else BOS_DEGER,
+             "geliştirme dönemi" if zamansal else "tüm dönemler"],
+            ["Validasyon (OOT, zaman dışı)", "Sonraki dönemlerde davranış",
+             "var" if zamansal else "yok - dönem kolonu yok", oot_satir,
              donem_metni if zamansal else BOS_DEGER],
+            ["Test (OOS, aynı dönem, bağımsız)",
+             "Öğrenmeye girmemiş satırlarda ayrıştırma gücü",
+             "var" if oos_satir != BOS_DEGER else "yok", oos_satir,
+             "geliştirme dönemi" if zamansal else "tüm dönemler"],
         ]})
-
-    if zamansal:
+    if not zamansal:
         bloklar.append(_p(
-            "Aynı dönemden ayrılmış bağımsız bir OOS seti YOKTUR: test "
-            "seti zaman dışı (OOT) olarak tanımlandığı için ayrıştırma "
-            "gücü yalnızca sonraki dönemlerde ölçülmüştür."))
-    else:
-        bloklar.append(_p(
-            "Zaman dışı (OOT) bir test dönemi YOKTUR: veri tek dönemmiş "
-            "gibi ele alındı ve test seti aynı dönemden rastgele ayrıldı "
-            "(Test (OOS2)). Modelin sonraki dönemlerdeki davranışı bu "
+            "Zaman dışı (OOT) bir Validasyon dönemi YOKTUR: dönem kolonu "
+            "olmadığı için veri tek dönemmiş gibi ele alındı ve yalnızca Test "
+            "(OOS) rastgele ayrıldı. Modelin sonraki dönemlerdeki davranışı bu "
             "kurguda ölçülmemiştir."))
 
     # Ic validasyon parcasi: hiperparametrelerde varsa satir olarak da

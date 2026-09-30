@@ -72,11 +72,15 @@ def _sayi_ad(liste, en_fazla=3):
 
 def _kolon_sayisi(durum):
     """Plan metni icin kolon sayisi. Once durum, sonra sinirli sema okumasi."""
+    # Teyitten sonra tek kaynak AMP_VERISETI (kullanici karari)
+    amp = (durum.get("amp_cikti") or {}).get("veri") or {}
+    if amp.get("kolon"):
+        return int(amp["kolon"])
     p = durum.get("profil") or {}
     if p.get("kolon"):
         return int(p["kolon"])
     try:
-        return int(_df_oku(durum["veri_seti"], limit=SEMA_LIMITI).shape[1])
+        return int(modelleme_df(durum, limit=SEMA_LIMITI).shape[1])
     except Exception:
         return 0
 
@@ -491,13 +495,14 @@ def stabilite_uygula(durum):
     hedef_set = _psi_olculur_mu(durum)
     if hedef_set is None:
         durum["stabilite"] = {"atlandi": True}
-        return "Stabilite atlandı: karşılaştırılacak test seti yok."
+        return "Stabilite atlandı: karşılaştırılacak Validasyon (OOT) / Test (OOS) seti yok."
 
     df = modelleme_df(durum)
     s = setler(durum, df)
     if not int(s["test"].sum()):
         durum["stabilite"] = {"atlandi": True}
-        return "Stabilite analizi atlandı; test setinde satır yok."
+        return ("Stabilite analizi atlandı; %s setinde satır yok."
+                % set_basligi("test", bolme_ayarlari(durum)["test_tanim"]))
     adaylar = (durum.get("profil", {}).get("profil_teshis") or {}).get("temiz") or []
 
     tablo, ozet = sfa_mod.stabilite_calistir(df, adaylar, s["egitim"],
@@ -508,7 +513,8 @@ def stabilite_uygula(durum):
 
     yazildi, yedek = _yaz("%s_PSI" % durum["veri_seti"], tablo, "/stabilite.parquet")
     ozet["tablo_dataset"] = yazildi
-    ozet["karsilastirma"] = "eğitim ↔ test"
+    karsi = set_basligi("test", bolme_ayarlari(durum)["test_tanim"])
+    ozet["karsilastirma"] = "Train (MS) ↔ %s" % karsi
     # Olcumun NE ANLAMA geldigi bolmeye gore degisir; rapor bunu yazmali
     # yoksa rastgele bolmedeki ~0 PSI "model saglam" diye okunur.
     ozet["olcum_turu"] = ("zaman kayması"
@@ -517,7 +523,7 @@ def stabilite_uygula(durum):
     durum["stabilite"] = ozet
 
     en_kotu = " · ".join("%s %s" % (c, _ond(v, 3)) for c, v in (ozet.get("en_kotu") or [])[:3])
-    return ("Stabilite ölçüldü (PSI, geliştirme ↔ test; %s).\n"
+    return ("Stabilite ölçüldü (PSI, " + ozet["karsilastirma"] + "; %s).\n"
             "  Ölçülen Değişken : %s\n"
             "  Kararlı : %s  (PSI < %s)\n"
             "  Kayan : %s\n"
@@ -578,7 +584,7 @@ def baz_plan(durum):
             "  SFA Kararları : %s değişken modele girmeyecek · %s aralıkla · "
             "%s dönüşümle · %s eksik işaretiyle\n"
             "  Doldurma : SFA kararına göre; kararı olmayan sayısal kolonlar "
-            "geliştirme medyanıyla\n"
+            "Train (MS) medyanıyla\n"
             "  Kayıt : %s_BAZ veri seti\n"
             "Oluşturayım mı?"
             % (_sayi(len(dusur)),
@@ -637,7 +643,7 @@ def baz_uygula(durum):
 
     durum["haric_kolonlar"] = sorted(set(durum.get("haric_kolonlar") or []) | set(dusur))
     durum["baz"] = {"yeni_kolonlar": yeni_kolonlar, "sfa_degisen": rapor["degisen"],
-                    "dataset": yazildi, "doldurma": "medyan (geliştirme seti)",
+                    "dataset": yazildi, "doldurma": "medyan (Train (MS))",
                     "doldurma_degerleri": doldurma,
                     "kolon": int(df.shape[1]), "kolonlar": baz_kolonlar}
 
@@ -654,7 +660,7 @@ def baz_uygula(durum):
     return ("Analitik baz set hazır.\n"
             "  Kolon : %s\n"
             "  Düşürülen : %s kolon\n"
-            "  Doldurulan : %s kolon  (geliştirme medyanı)\n"
+            "  Doldurulan : %s kolon  (Train (MS) medyanı)\n"
             "  SFA Kararıyla Girmeyen : %s\n"
             "  Yeni Hâliyle Giren : %s\n"
             "  Kayıt : %s veri seti"

@@ -7,18 +7,31 @@ pandas ile (amp_pandas), buyuk veri Dataiku'daki PySpark recipe'leriyle
 (amp_spark; recipe'leri ve ciktilarini webapp kurar, spark_is.ISLER).
 Iki yolun sonuc sozlugu ayni bicimde; cagiran taraf motoru bilmez.
 
-  amp_yaz   : Degisken Kontrolu onayinda tip donusumleri + surec disi
-              kolonlar; Orneklem ve Dogrulama'da ayni tablo + _SPLIT.
+  amp_yaz       : Degisken Kontrolu onayinda tip donusumleri + surec disi
+                  kolonlar (KAYNAK TABLODAN, bir kez).
+  amp_bolme_yaz : Orneklem ve Dogrulama'da _SPLIT; KAYNAK AMP_VERISETI'nin
+                  KENDISI (kullanici karari: AMP olustuktan sonra yalnizca
+                  AMP_VERISETI ve AMP_SOZLUK kullanilir).
+
+CALISMAYA OZEL (kullanici karari: "her çalışma bir folder açıyor, oraya bu
+dataseti kaydetmek lazım"): pandas yolunda AMP_VERISETI calismanin
+PROJE_HAFIZASI klasorune Parquet yazilir (/<calisma>/AMP_VERISETI.parquet).
+Spark yolunda Dataiku kurali geregi cikti bir veri setidir; adi calismaya
+ozeldir (AMP_VERISETI_V8), baska bir calisma onu ezemez.
   baz_yaz   : Mod B/D'de ayni kolonlu kaynak tablolar alt alta ->
               MODELLEME_BAZ.
 """
+
+import re
 
 from fe_agent import motor
 from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
 from fe_agent import spark_is
 from fe_agent import tip_donusum
-from fe_agent.akis_durum import AdimHatasi, _df_oku, dataset_yaz, onbellek_temizle
+from fe_agent import tablo_io
+from fe_agent.akis_durum import (AdimHatasi, _df_oku, _folder, dataset_yaz,
+                                 onbellek_temizle)
 
 SONUC_DOSYA = "/sonuc.json"
 DISARIDA = "disarida"      # hicbir sete girmeyen satir (amp_spark ile ayni)
@@ -46,23 +59,24 @@ def _donusum_istegi(durum, kolonlar):
     return cikti
 
 
-def _sonuc_ile_calistir(is_adi, girdiler, istek, sahip):
+def _sonuc_ile_calistir(is_adi, girdiler, istek, sahip, ad_eki=None):
     """Isi calistirir ve sonuc.json'u doner. Is basarisiz bittiyse ama
     recipe kendi hatasini (ornegin cevrilemeyen hucre) sonuca yazdiysa o
     daha anlasilir oldugu icin o gosterilir."""
     import uuid
     kosu_id = uuid.uuid4().hex
     try:
-        spark_is.calistir(is_adi, girdiler, istek, sahip, kosu_id=kosu_id)
+        spark_is.calistir(is_adi, girdiler, istek, sahip, kosu_id=kosu_id,
+                          ad_eki=ad_eki)
     except AdimHatasi:
         try:
-            sonuc = spark_is.sonuc_oku(is_adi, SONUC_DOSYA, kosu_id)
+            sonuc = spark_is.sonuc_oku(is_adi, SONUC_DOSYA, kosu_id, ad_eki)
         except AdimHatasi:
             sonuc = None
         if isinstance(sonuc, dict) and sonuc.get("hata"):
             raise AdimHatasi(sonuc["hata"])
         raise
-    sonuc = spark_is.sonuc_oku(is_adi, SONUC_DOSYA, kosu_id)
+    sonuc = spark_is.sonuc_oku(is_adi, SONUC_DOSYA, kosu_id, ad_eki)
     if sonuc.get("hata"):
         raise AdimHatasi(sonuc["hata"])
     return sonuc
@@ -78,28 +92,86 @@ def _pandas_yaz(ad, tablo, kaynak):
     motor.unut(ad)
 
 
-def amp_yaz(durum, prof, bolme=None):
-    """AMP_VERISETI'ni yazar. Doner: {satir, kolon, dusen, setler?, motor}.
-    Hata -> AdimHatasi."""
+def calisma_eki(durum):
+    """Calismanin kisa adi (Spark cikti adlari icin): "V8"."""
+    from fe_agent.akis_faz01 import amp_klasor_adi
+    ek = re.sub(r"[^A-Za-z0-9]+", "_", str(amp_klasor_adi(durum)).split("/")[-1])
+    return ek.strip("_").upper() or "CALISMA"
+
+
+def amp_dosya_yolu(durum):
+    """Pandas yolunda AMP_VERISETI'nin calisma klasorundeki yeri."""
+    from fe_agent.akis_faz01 import amp_klasor_adi
+    return "/%s/%s.parquet" % (amp_klasor_adi(durum), AMP_VERI_ADI)
+
+
+def _klasore_yaz(yol, tablo):
+    try:
+        yol = tablo_io.klasore_yaz(_folder(), yol, tablo)
+    except Exception as e:
+        raise AdimHatasi("AMP_VERISETI çalışma klasörüne yazılamadı (%s)." % str(e)[:200])
+    onbellek_temizle(yol)
+    return yol
+
+
+def amp_yaz(durum, prof):
+    """AMP_VERISETI'ni KAYNAK TABLODAN yazar (Degisken Kontrolu onayi).
+    Doner: {satir, kolon, dusen, motor, dataset | dosya}. Hata -> AdimHatasi."""
     kolonlar = profil_mod.kolonlar(prof)
     veri = durum.get("veri_seti")
     istek = {
         "donusum": _donusum_istegi(durum, kolonlar),
         "dusen": dusen_kolonlar(durum, list(kolonlar)),
         "hedef": (durum.get("meta") or {}).get("target"),
-        "bolme": bolme,
+        "bolme": None,
     }
     if motor.sec([veri])[0] == motor.PANDAS:
         from fe_agent import amp_pandas
         tablo, sonuc = amp_pandas.amp_hazirla(_df_oku(veri), istek)
         if sonuc.get("hata"):
             raise AdimHatasi(sonuc["hata"])
-        _pandas_yaz(AMP_VERI_ADI, tablo, veri)
-        sonuc["motor"] = motor.PANDAS
+        sonuc.update(motor=motor.PANDAS, dataset=None,
+                     dosya=_klasore_yaz(amp_dosya_yolu(durum), tablo))
         return sonuc
-    sonuc = _sonuc_ile_calistir("amp", [veri], istek, durum.get("_oturum_id") or "")
-    motor.unut(AMP_VERI_ADI)
-    sonuc["motor"] = motor.SPARK
+    ek = calisma_eki(durum)
+    sonuc = _sonuc_ile_calistir("amp", [veri], istek, durum.get("_oturum_id") or "",
+                                ad_eki=ek)
+    ad = "%s_%s" % (AMP_VERI_ADI, ek)
+    motor.unut(ad)
+    sonuc.update(motor=motor.SPARK, dataset=ad, dosya=None, taban=ad)
+    return sonuc
+
+
+def amp_bolme_yaz(durum, bolme):
+    """_SPLIT kolonunu AMP_VERISETI'NIN KENDISINE ekler; kaynak tabloya
+    geri donulmez. Pandas: calisma klasorundeki dosya okunur, eski _SPLIT
+    atilir, yenisi eklenip ayni dosyaya yazilir. Spark: bir veri seti ayni
+    recipe'in hem girdisi hem ciktisi olamaz; teyitte yazilan AMP veri seti
+    girdi, bolunmus hali ayri cikti (AMP_VERISETI_V8_B) olur ve bundan sonra
+    AMP_VERISETI odur. Doner: amp_yaz ile ayni bicim + setler."""
+    kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+    if not (kayit.get("dosya") or kayit.get("dataset")):
+        raise AdimHatasi("AMP_VERISETI henüz oluşturulmadı; önce «Değişken "
+                         "Kontrolü» adımını kaydedin.")
+    istek = {"donusum": {}, "dusen": [],
+             "hedef": (durum.get("meta") or {}).get("target"), "bolme": bolme}
+    from fe_agent import amp_pandas
+    if kayit.get("dosya"):
+        df = tablo_io.klasorden_oku(_folder(), kayit["dosya"])
+        df = df.drop(columns=[amp_pandas.SPLIT_KOLON], errors="ignore")
+        tablo, sonuc = amp_pandas.amp_hazirla(df, istek)
+        if sonuc.get("hata"):
+            raise AdimHatasi(sonuc["hata"])
+        sonuc.update(motor=motor.PANDAS, dataset=None,
+                     dosya=_klasore_yaz(kayit["dosya"], tablo))
+        return sonuc
+    taban = kayit.get("taban") or kayit["dataset"]
+    ek = calisma_eki(durum) + "_B"
+    sonuc = _sonuc_ile_calistir("amp", [taban], istek, durum.get("_oturum_id") or "",
+                                ad_eki=ek)
+    ad = "%s_%s" % (AMP_VERI_ADI, ek)
+    motor.unut(ad)
+    sonuc.update(motor=motor.SPARK, dataset=ad, dosya=None, taban=taban)
     return sonuc
 
 

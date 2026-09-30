@@ -289,10 +289,17 @@ def _hedefe_don(durum, hedef):
 
     durum["i"] = yeni
     _validasyonu_tazele(durum, sira)
+    # TEYIT VE ONCESI: AMP_VERISETI / AMP_SOZLUK ve sonrasi silinir, akis
+    # buradan yeniden yapilir (kullanici karari; bkz. amp_gecersiz_kil).
+    not_metni = ""
+    if "teyit" in sira and yeni <= sira.index("teyit"):
+        from fe_agent.akis_faz01 import amp_gecersiz_kil
+        not_metni = amp_gecersiz_kil(durum)
     # yeniden_sor=True: bilgi durumda tam olsa bile form yeniden acilir.
     # Aksi halde kullanici donduğu adimda degistirecek bir sey bulamiyor,
     # adim kendini uygulayip bir sonrakine geciyordu.
-    return _adima_gir(durum, yeniden_sor=True)
+    cevap = _adima_gir(durum, yeniden_sor=True)
+    return _birlestir(not_metni, cevap) if not_metni else cevap
 
 
 def mesaj_isle(durum, mesaj, dogrulama=None, hedef_adim=None):

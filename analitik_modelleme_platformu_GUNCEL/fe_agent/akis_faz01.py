@@ -3074,10 +3074,7 @@ def amp_ciktilarini_yaz(durum):
     sonuc = {}
     oz = amp_mod.amp_yaz(durum, _profil(durum))
     onbellek_temizle()
-    sonuc["veri"] = {"ad": AMP_VERI_ADI, "dataset": AMP_VERI_ADI,
-                     "dosya": None, "satir": int(oz.get("satir") or 0),
-                     "kolon": int(oz.get("kolon") or 0),
-                     "dusen_kolon": len(oz.get("dusen") or [])}
+    sonuc["veri"] = _amp_veri_kaydi(oz)
     # Tablo _SPLIT'siz yeniden yazildi: onceki bolme artik gecersiz.
     b = durum.get("bolme") or {}
     for k in BOLME_KALICI_ALANLARI:
@@ -3086,33 +3083,105 @@ def amp_ciktilarini_yaz(durum):
     return _amp_sozluk_ve_kayit(durum, sonuc)
 
 
+def _amp_veri_kaydi(oz):
+    """amp_yaz / amp_bolme_yaz sonucundan durum["amp_cikti"]["veri"]."""
+    return {"ad": AMP_VERI_ADI, "dataset": oz.get("dataset"),
+            "dosya": oz.get("dosya"), "taban": oz.get("taban"),
+            "motor": oz.get("motor"),
+            "satir": int(oz.get("satir") or 0), "kolon": int(oz.get("kolon") or 0),
+            "dusen_kolon": len(oz.get("dusen") or [])}
+
+
 def _amp_sozluk_ve_kayit(durum, sonuc):
-    """AMP_SOZLUK'u yazar, sahipligi ve durumu kaydeder."""
-    # --- sozluk: teyit tablosunun aynisi -------------------------------
+    """AMP_SOZLUK'u CALISMA KLASORUNE yazar ve durumu kaydeder.
+
+    Bundan sonra sozlugun TEK kaynagi AMP_SOZLUK'tur (kullanici karari):
+    okuma da yazma da (sag paneldeki tanim / kategori duzenlemeleri) bu
+    dosyaya gider (bkz. sozluk_calisma.kopya_yolu). Kategori de tasinir."""
     try:
-        kolonlar, satirlar, _yuzde = _excel_satirlari(durum, True)
-        tablo = pd.DataFrame(satirlar, columns=list(AMP_SOZLUK_KOLONLARI))
-        del kolonlar
+        _kolonlar, satirlar, _yuzde = _excel_satirlari(durum, True)
+        tablo = pd.DataFrame(satirlar, columns=list(AMP_SOZLUK_KOLONLARI[:6]))
+        from fe_agent import akis_panel
+        harita, _kat, _adet, _kopya = akis_panel._sozluk_kayitlari(durum)
+        tablo["KATEGORI"] = [
+            ("" if (harita.get(str(k)) or (None, ""))[1] == sozluk_calisma.KATEGORISIZ
+             else (harita.get(str(k)) or (None, ""))[1]) for k in tablo["DEGISKEN"]]
+        tablo = tablo[list(AMP_SOZLUK_KOLONLARI)]
     except Exception as e:
         sonuc["sozluk"] = {"ad": AMP_SOZLUK_ADI, "dataset": None,
                            "dosya": None, "hata": str(e)[:120]}
     else:
-        yazildi, yedek = _yaz(AMP_SOZLUK_ADI, tablo,
-                              _amp_yolu(durum, AMP_SOZLUK_ADI))
-        sonuc["sozluk"] = {"ad": AMP_SOZLUK_ADI, "dataset": yazildi,
-                           "dosya": yedek, "satir": int(len(tablo))}
+        yol = sozluk_calisma.amp_sozluk_yaz(durum, tablo)
+        sonuc["sozluk"] = {"ad": AMP_SOZLUK_ADI, "dataset": None,
+                           "dosya": yol, "satir": int(len(tablo))}
+        if not yol:
+            sonuc["sozluk"]["hata"] = "çalışma klasörüne yazılamadı"
 
     sonuc["klasor"] = amp_klasor_adi(durum)
-    # AMP_VERISETI veri seti TEK ve BUTUN calismalarin ortak veri seti.
-    # Hangi calismanin en son yazdigi kaydediliyor; sonraki fazlar veri
-    # setini yalnizca SAHIBI olan calismada okur (bkz.
-    # akis_durum.modelleme_kaynagi). Yazilamazsa sessizce gecilir: o
-    # zaman okuma kullanicinin kendi tablosuna duser, sonuc yine dogru.
-    if (sonuc.get("veri") or {}).get("dataset"):
-        amp_sahibi_yaz(durum)
-
     durum["amp_cikti"] = sonuc
     return sonuc
+
+
+# Teyitten SONRA uretilen durum alanlari: AMP silinince hepsi gecersiz.
+_AMP_SONRASI = ("sfa", "stabilite", "baz", "ogrenilen_donusum", "plan",
+                "hipotez", "uretilen", "kod_bloklari", "kalite", "secim",
+                "secim_tablo", "model", "katalog")
+
+
+def _amp_klasoru():
+    from fe_agent.akis_durum import _folder
+    return _folder()
+
+
+def amp_gecersiz_kil(durum):
+    """Degisken Kontrolu'ne (teyit) ya da oncesine donuldu.
+
+    KULLANICI KARARI: "AMP olustuktan sonra AMP_VERISETI'nin oncesine
+    gidilmemeli; gidilecekse islemler en bastan yaptirilmali". AMP_VERISETI
+    ve AMP_SOZLUK silinir, teyitten sonra uretilen butun sonuclar (bolme,
+    profil teshisi, SFA, stabilite, baz set ve sonrasi) sifirlanir. Adimlar
+    yeniden onaylandikca AMP yeniden yazilir ve akis oradan devam eder.
+    Kullanicinin kaynak tablosuna ve sozlugune dokunulmaz.
+
+    Doner: kullaniciya yazilacak tek satir ("" = silinecek bir sey yoktu)."""
+    kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+    if not durum.get("amp_cikti"):
+        return ""
+    # Dosyalar: pandas yolunda AMP_VERISETI klasorde; AMP_SOZLUK her zaman.
+    if kayit.get("dosya"):
+        try:
+            _amp_klasoru().delete_path(kayit["dosya"])
+        except Exception:
+            pass
+    sozluk_calisma.amp_sozluk_sil(durum.get("_oturum_id"))
+    ai = (durum.get("sfa") or {}).get("ai_is")
+    if ai:
+        try:
+            from fe_agent import sfa_karar
+            sfa_karar.ai_durdur(ai)
+        except Exception:
+            pass
+    taze = yeni_durum()
+    for anahtar in _AMP_SONRASI:
+        durum[anahtar] = taze.get(anahtar, {})
+    for anahtar in ("amp_cikti", "_aralik_ai", "donusum_plani", "_dusurulecek"):
+        durum.pop(anahtar, None)
+    p = durum.get("profil") or {}
+    for anahtar in ("profil_teshis", "profil_dataset", "eksik_ilk20", "null_ozet"):
+        p.pop(anahtar, None)
+    b = durum.get("bolme") or {}
+    for anahtar in tuple(BOLME_KALICI_ALANLARI) + ("test_donemleri",):
+        b.pop(anahtar, None)
+    durum["haric_kolonlar"] = [k for k in (durum.get("haric_kolonlar") or [])
+                               if k != SPLIT_KOLON]
+    try:
+        from fe_agent import validasyon
+        validasyon.temizle(durum)
+    except Exception:
+        pass
+    onbellek_temizle()
+    return ("AMP_VERISETI ve AMP_SOZLUK silindi; bu adımdan sonraki bütün "
+            "sonuçlar yeniden oluşturulacak.")
 
 
 def amp_nerede(kayit):
@@ -3381,9 +3450,9 @@ def _tip_secimlerini_dogrula(durum):
 # BASLIK ALTINDA TEK CUMLE (kullanici karari: "uzun yönlendirmelerin
 # hiçbirine gerek yok"). Ekranin geri kalani secimin kendisi.
 BOLME_ACIKLAMA = (
-    "Veri üç sete ayrılır: modelin öğrendiği Train (MS), model ayarlarının "
-    "seçildiği Validasyon (OOS) ve nihai ölçümün yapıldığı Test (zamansal "
-    "bölmede OOT, rastgele bölmede OOS2). "
+    "Veri üç sete ayrılır: modelin öğrendiği Train (MS), en yeni "
+    "dönemlerden ayrılan Validasyon (OOT) ve geliştirme döneminden rastgele "
+    "ayrılan Test (OOS). Dönem kolonu yoksa Validasyon (OOT) ayrılamaz. "
     "Aşağıdaki ayarlar veri yapınıza göre önerilen değerlerle dolu; "
     "değiştirmek için satırdaki seçeneğe tıklayın, açıklama için «i» "
     "simgesine gelin.")
@@ -3547,29 +3616,36 @@ def _bolme_tarifi(durum, a, b, notlar):
         b["hazir_kolonlar"] = list(tanim.get("kolonlar") or [])
         return {"tur": "hazir", "bicim": tanim.get("tur"),
                 "kolon": tanim.get("kolon"), "esleme": tanim.get("esleme") or {}}
+    # Rastgele ayirmanin birimi (kimlik / satir): zamansal bolmedeki Test
+    # (OOS) payi da ayni kuralla ayrilir.
+    kimlik = m.get("id") if a["birim"] == "kimlik" else None
+    if kimlik and kimlik in kol:
+        notlar.append("Rastgele ayırma %s kimliği üzerinden yapıldı; aynı kimlik "
+                      "iki sete birden düşmez." % kimlik)
+    else:
+        if a["birim"] == "kimlik":
+            notlar.append("Kimlik kolonu veri setinde bulunamadığı için rastgele "
+                          "ayırma satır bazında yapıldı.")
+        kimlik = None
+    rastgele = {"kimlik": kimlik, "katmanla": bool(a["katmanla"]),
+                "hedef": m.get("target"), "seed": a["seed"]}
+
     donem = m.get("donem")
     if a["test_tanim"] == "zamansal" and donem in kol:
         donemler = durum.get("_donemler") or _donem_listesi_profilden(kol[donem])
         durum["bolme"] = b
         test = _zamansal_test_donemleri(durum, pd.Series(donemler, dtype=object), a)
         b["test_donemleri"] = test
-        return {"tur": "zamansal", "kolon": donem, "test_donemleri": test,
-                "val_var": bool(a["val_var"]), "val_oran": a["val_oran"],
-                "gap": a.get("gap")}
-    oranlar = [["test", a["test_oran"]]]
-    if a["val_var"]:
-        oranlar.append(["val", a["val_oran"]])
-    kimlik = m.get("id") if a["birim"] == "kimlik" else None
-    if kimlik and kimlik in kol:
-        notlar.append("Bölme %s kimliği üzerinden yapıldı; aynı kimlik iki "
-                      "sete birden düşmez." % kimlik)
-    else:
-        if a["birim"] == "kimlik":
-            notlar.append("Kimlik kolonu veri setinde bulunamadığı için bölme "
-                          "satır bazında yapıldı.")
-        kimlik = None
-    return {"tur": "rastgele", "kimlik": kimlik, "katmanla": bool(a["katmanla"]),
-            "hedef": m.get("target"), "oranlar": oranlar, "seed": a["seed"]}
+        # SET DUZENI (kurum karari): son donem(ler) Validasyon (OOT); geri
+        # kalan GELISTIRME donemindeki satirlardan rastgele (katmanli) bir
+        # pay Test (OOS); kalani Train (MS). Ic adlar: test = OOT, val = OOS.
+        tarif = {"tur": "zamansal", "kolon": donem, "test_donemleri": test,
+                 "gap": a.get("gap")}
+        if a["val_var"]:
+            tarif["oos"] = dict(rastgele, oranlar=[["val", a["val_oran"]]])
+        return tarif
+    # Donem yoksa OOT yoktur: yalnizca Test (OOS) ayrilir (ic adi test).
+    return dict(rastgele, tur="rastgele", oranlar=[["test", a["test_oran"]]])
 
 
 def _bolme_uygula_spark(durum):
@@ -3589,21 +3665,23 @@ def _bolme_uygula_spark(durum):
     tarif = _bolme_tarifi(durum, a, b, notlar)
     b.setdefault("test_donemleri", [])
 
-    oz = amp_mod.amp_yaz(durum, _profil(durum), bolme=tarif)
+    # KAYNAK AMP_VERISETI'nin KENDISI (kullanici karari); kaynak tabloya
+    # geri donulmez.
+    oz = amp_mod.amp_bolme_yaz(durum, tarif)
     onbellek_temizle()
     setler = oz.get("setler") or {}
     sayi = {ad: int((setler.get(SPLIT_ETIKET[ad]) or {}).get("satir") or 0)
             for ad in SET_ADLARI}
     b.update({"kalici": "kolon", "split_kolon": SPLIT_KOLON,
-              "split_dataset": AMP_VERI_ADI, "satir": sayi,
+              "split_dataset": oz.get("dataset") or oz.get("dosya"), "satir": sayi,
               "train_satir": sayi["egitim"], "test_satir": sayi["test"],
               "toplam_satir": int(oz.get("satir") or 0)})
     durum["amp_cikti"] = dict(durum.get("amp_cikti") or {})
-    durum["amp_cikti"]["veri"] = {
-        "ad": AMP_VERI_ADI, "dataset": AMP_VERI_ADI, "dosya": None,
-        "satir": int(oz.get("satir") or 0), "kolon": int(oz.get("kolon") or 0),
-        "dusen_kolon": len(oz.get("dusen") or [])}
-    amp_sahibi_yaz(durum)
+    eski = (durum["amp_cikti"].get("veri") or {})
+    kayit = _amp_veri_kaydi(oz)
+    # Surec disi kolonlar teyitte dustu; bolme yeni kolon dusurmez.
+    kayit["dusen_kolon"] = eski.get("dusen_kolon", kayit["dusen_kolon"])
+    durum["amp_cikti"]["veri"] = kayit
 
     disarida = int((setler.get(amp_mod.DISARIDA) or {}).get("satir") or 0)
     if tarif["tur"] == "hazir":
@@ -3615,8 +3693,8 @@ def _bolme_uygula_spark(durum):
             notlar.append("Veri setindeki bölme kullanıldı (%s); kolonlara "
                           "dokunulmadı." % ", ".join(b["hazir_kolonlar"]))
     elif tarif["tur"] == "zamansal" and a["val_var"] and not sayi["val"]:
-        notlar.append("Zamansal bölmede doğrulama için ayrılabilecek dönem "
-                      "kalmadı; eğitime en az bir dönem bırakıldı.")
+        notlar.append("Geliştirme döneminde Test (OOS) için ayrılabilecek "
+                      "kayıt kalmadı.")
     for ad in SET_ADLARI:
         n = sayi[ad]
         if 0 < n < MIN_SET_SATIR:
@@ -3630,25 +3708,30 @@ def _bolme_uygula_spark(durum):
         set(durum.get("haric_kolonlar") or []) | {SPLIT_KOLON})
     durum["bolme"] = b
 
-    oran_not = ""
-    if (durum.get("profil") or {}).get("hedef_tip") == "binary":
-        def oran(ad):
-            s = setler.get(SPLIT_ETIKET[ad]) or {}
-            return 100.0 * float(s.get("pozitif") or 0) / s["satir"] \
-                if s.get("satir") else 0.0
-        oran_not = ("\nHedef oranı: geliştirme %%%s, test %%%s."
-                    % (_ond(oran("egitim"), 2), _ond(oran("test"), 2)))
-    if sayi["val"] or sayi["oot"]:
-        notlar.append("Setler: %s." % bolme_ozeti(durum))
+    ikili = (durum.get("profil") or {}).get("hedef_tip") == "binary"
+
+    def set_satiri(ad):
+        st = setler.get(SPLIT_ETIKET[ad]) or {}
+        n = int(st.get("satir") or 0)
+        metin = "  %s : %s satır" % (set_basligi(ad, a["test_tanim"]), _sayi(n))
+        if ikili and n:
+            metin += " · hedef oranı %%%s" % _ond(100.0 * float(st.get("pozitif") or 0) / n, 2)
+        if ad == "test" and tarif["tur"] == "zamansal" and b.get("test_donemleri"):
+            metin += "  (dönem: %s)" % ", ".join(str(x) for x in b["test_donemleri"])
+        return metin
+
+    # Sira (kurum duzeni): Train (MS), Validasyon (OOT), Test (OOS)
+    sira = ["egitim", "test"] + (["val"] if sayi["val"] else [])
+    satirlar = [set_satiri(ad) for ad in sira]
+    if disarida and tarif["tur"] != "hazir":
+        satirlar.append("  Hiçbir Sete Girmeyen : %s satır  (ara dönem)" % _sayi(disarida))
     ek = ("\n" + "\n".join(notlar)) if notlar else ""
     secilen_tipler = durum.get("tip_donusum") or {}
     if secilen_tipler:
         ek += ("\n%s kolon sözlük teyidindeki seçiminize göre dönüştürülmüş "
                "tiple işleniyor." % _sayi(len(secilen_tipler)))
-    return ("Bölme tanımlandı: %s satırın %s satırı geliştirme, %s satırı "
-            "test.%s%s"
-            % (_sayi(b["toplam_satir"]), _sayi(b["train_satir"]),
-               _sayi(b["test_satir"]), oran_not, ek))
+    return ("Bölme tanımlandı: %s satır AMP_VERISETI içinde setlere ayrıldı.\n%s%s"
+            % (_sayi(b["toplam_satir"]), "\n".join(satirlar), ek))
 
 
 def bolme_uygula(durum):
