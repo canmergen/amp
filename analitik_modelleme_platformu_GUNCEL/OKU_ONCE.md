@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **AMP çalışma klasöründe ve tek kaynak; setler Train (MS) / Validasyon (OOT) / Test (OOS)**.
+Bu tur: **01.3 Değişken Kontrolü sadeleşti**. Değiştir: `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `fe_agent/akis_faz01.py`
+
+- Tablo dört kolon: Değişken · Tip · Sözlük Tanımı · Süreç Dışı.
+  Tip Değişikliği ve Null Oranı kolonları, "null >" eşik kutusu ve
+  "Null oranı ↓/↑" sıralamaları kaldırıldı (SFA adımında görülüyor).
+- Kaydettikten sonra indirilen Excel listesi de aynı dört kolon.
+- Sistemin otomatik tip önerileri (ör. dönem kolonu tarih) arka uçta
+  uygulanmaya devam ediyor; yalnızca elle seçim ekranı yok.
+
+---
+
+Önceki tur: **AMP çalışma klasöründe ve tek kaynak; setler Train (MS) / Validasyon (OOT) / Test (OOS)**.
 Değiştir (fe_agent): `amp.py`, `amp_pandas.py`, `amp_spark.py`, `spark_is.py`, `akis_durum.py`, `akis_faz01.py`, `akis_faz02.py`, `akis_sohbet.py`, `akis_panel.py`, `sozluk_calisma.py`, `dokuman.py`, `validasyon.py`
 Değiştir (webapp): `app.js` (JS)
 Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.

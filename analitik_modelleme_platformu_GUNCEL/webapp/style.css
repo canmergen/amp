@@ -1223,26 +1223,16 @@ button.ozet-kart:focus-visible {
 }
 .dg-tip { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
 
-/* TEYIT TABLOSU BES KOLON: Değişken | Tip | Tip Değişikliği |
-   Sözlük Tanımı | Süreç Dışı. Yukarıdaki genişlikler doğrulama
-   kartının DÖRT kolonu içindi; burada 4. sıra artık açıklama, 62px
-   ile ezilmemeli. Bu yüzden teyit kartında beş kolon ayrıca
-   tanımlanıyor - tek bir kural seti iki tabloyu birden doğru
-   bölemiyordu. */
-/* ALTI KOLON: Değişken | Tip | Tip Değişikliği | Sözlük Tanımı |
-   Null Oranı | Süreç Dışı. Yukarıdaki genişlikler doğrulama kartının
-   DÖRT kolonu içindi. */
-.teyit-kart .dg-tablo th:nth-child(1) { width: 26%; }
-.teyit-kart .dg-tablo th:nth-child(2) { width: 9%; }
-.teyit-kart .dg-tablo th:nth-child(3) { width: 21%; }
-.teyit-kart .dg-tablo th:nth-child(4) { width: auto; white-space: nowrap; }
-.teyit-kart .dg-tablo th:nth-child(5) { width: 60px; white-space: normal; }
-.teyit-kart .dg-tablo th:nth-child(6) { width: 58px; white-space: normal; }
-/* HIZA (kullanıcı bildirimi: "tablo kaymış"): başlık, altındaki
-   değerle aynı hizada. Null oranı sağa, süreç dışı kutusu ortaya;
-   eskiden başlıklar solda, değerler sağda/ortada kalıyordu. */
-.teyit-kart .dg-tablo th:nth-child(5) { text-align: right; }
-.teyit-kart .dg-tablo th:nth-child(6),
+/* TEYIT TABLOSU DÖRT KOLON: Değişken | Tip | Sözlük Tanımı | Süreç
+   Dışı. Tip değişikliği ve null oranı kaldırıldı (SFA adımında
+   görülüyor). Yukarıdaki genişlikler doğrulama kartının dört kolonu
+   içindi; burada 3. sıra açıklama, ayrıca tanımlanıyor. */
+.teyit-kart .dg-tablo th:nth-child(1) { width: 30%; }
+.teyit-kart .dg-tablo th:nth-child(2) { width: 12%; }
+.teyit-kart .dg-tablo th:nth-child(3) { width: auto; white-space: nowrap; }
+.teyit-kart .dg-tablo th:nth-child(4) { width: 58px; white-space: normal; }
+/* Süreç dışı kutusu ve başlığı ortada. */
+.teyit-kart .dg-tablo th:nth-child(4),
 .teyit-kart .dg-tablo td.dg-ekle-hucre { text-align: center; }
 .dg-tablo td.dg-ekle-hucre .dg-ekle { margin: 0; vertical-align: middle; }
 

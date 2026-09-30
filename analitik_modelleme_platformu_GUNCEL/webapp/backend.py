@@ -2271,7 +2271,7 @@ XLSX_MIME = ("application/vnd.openxmlformats-officedocument."
 def degisken_excel_endpoint():
     """Değişken listesini .xlsx olarak indirir.
 
-    tur=liste  -> sohbetteki karar tablosunun aynısı (altı kolon)
+    tur=liste  -> sohbetteki karar tablosunun aynısı (dört kolon)
     tur=sozluk -> sağ paneldeki açıklama tablosu (üç kolon)
 
     KAPI: sözlük teyidi KAYDEDİLMEDEN indirilemez. Kaydedilmemiş bir

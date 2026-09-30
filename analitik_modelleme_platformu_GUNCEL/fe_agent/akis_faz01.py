@@ -2976,15 +2976,14 @@ def teyit_kartini_tazele(durum, kolon=None, tanim=None):
 #   uzerinde offline calisiyor.
 #
 # IKI AYRI GORUNUM, TEK URETICI
-#   Sohbetteki karar tablosu ALTI kolon (tip degisikligi ve surec disi
-#   karari orada veriliyor); sag panel yalnizca UC kolon gosteriyor
+#   Sohbetteki karar tablosu DORT kolon (Degisken, Tip, Sozluk Tanimi,
+#   Surec Disi; tip degisikligi ve null orani SFA'da goruluyor); sag panel yalnizca UC kolon gosteriyor
 #   (orada karar yok, aciklama var). Indirilen dosya da bakilan yerle
 #   ayni olmali; aksi halde "ekranda gordugum tablo bu degil" denir.
 TEYIT_EXCEL_ADI = "degisken_listesi.xlsx"
 SOZLUK_EXCEL_ADI = "degisken_sozlugu.xlsx"
 
-TEYIT_EXCEL_KOLONLARI = ["Değişken", "Tip", "Tip Değişikliği",
-                         "Sözlük Tanımı", "Null Oranı", "Süreç Dışı"]
+TEYIT_EXCEL_KOLONLARI = ["Değişken", "Tip", "Sözlük Tanımı", "Süreç Dışı"]
 SOZLUK_EXCEL_KOLONLARI = ["Değişken", "Tip", "Sözlük Tanımı"]
 
 # Excel'de "evet/hayır" okunur; True/False Turkce bir tabloda yabanci.
@@ -2999,23 +2998,15 @@ def _excel_satirlari(durum, genis):
         return (list(SOZLUK_EXCEL_KOLONLARI),
                 [[s["kolon"], s["tip"], s["tanim"]] for s in satirlar],
                 ())
-    govde = []
-    for s in satirlar:
-        oran = s.get("null_oran")
-        govde.append([
-            s["kolon"], s["tip"], s.get("donusum_etiket") or "",
-            s["tanim"],
-            None if oran is None else float(oran),
-            _DISI_METNI[bool(s.get("disi"))],
-        ])
-    # 4: "Null Oranı" sutunu; deger 0-1 oraninda, Excel %%'yi kendi ekler.
-    return list(TEYIT_EXCEL_KOLONLARI), govde, (4,)
+    govde = [[s["kolon"], s["tip"], s["tanim"], _DISI_METNI[bool(s.get("disi"))]]
+             for s in satirlar]
+    return list(TEYIT_EXCEL_KOLONLARI), govde, ()
 
 
 def teyit_excel(durum, genis=True):
     """Degisken listesini .xlsx olarak uretir; bayt dizisi doner.
 
-    genis=True  : sohbetteki karar tablosunun aynisi (alti kolon)
+    genis=True  : sohbetteki karar tablosunun aynisi (dort kolon)
     genis=False : sag paneldeki aciklama tablosu (uc kolon)"""
     kolonlar, satirlar, yuzde = _excel_satirlari(durum, genis)
     return xlsx_yaz.tablo_xlsx(

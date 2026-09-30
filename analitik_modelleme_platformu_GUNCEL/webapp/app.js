@@ -1915,8 +1915,6 @@ const DG_SIRALAMA = [
     { deger: "feature:a",   etiket: "Değişken A→Z" },
     { deger: "feature:z",   etiket: "Değişken Z→A" },
     { deger: "tip:a",       etiket: "Tip A→Z" },
-    { deger: "null_oran:z", etiket: "Null oranı ↓" },
-    { deger: "null_oran:a", etiket: "Null oranı ↑" },
     { deger: "disi:z",      etiket: "Süreç dışı önce" },
     { deger: "tanimsiz:a",  etiket: "Tanımı olmayanlar önce" }
 ];
@@ -7336,11 +7334,10 @@ function teyitKartiEkle(alan, blok) {
                                    tireSade(alan.otomatik_not)));
         }
 
-        /* ARAMA · NULL EŞİĞİ · SIRALAMA TEK SATIRDA (kullanıcı kararı):
-           "null filtresini filter sort kısmını llm chat sohbet bloğuna
-           ekleyelim". Üçü de aynı işi yapıyor - 1.042 satırlık listeyi
-           karar verilebilir boyuta indirmek - ve karar burada veriliyor.
-           Sağ panelde bunlar kaldırıldı; orası artık açıklama yüzeyi. */
+        /* ARAMA · SIRALAMA TEK SATIRDA. NULL EŞİĞİ, TİP DEĞİŞİKLİĞİ VE
+           NULL ORANI KOLONU KALDIRILDI (kullanıcı kararı: "zaten sfa
+           adımında göreceğiz"). Burada yalnızca değişken, tip, sözlük
+           tanımı ve süreç dışı kararı var. */
         const filtreKap = elYap("div", "dg-filtreler");
 
         const ara = document.createElement("input");
@@ -7349,17 +7346,6 @@ function teyitKartiEkle(alan, blok) {
         ara.placeholder = "Değişken adı veya tanımda ara…";
         ara.setAttribute("aria-label", "Değişken adı veya tanımda ara");
         filtreKap.appendChild(ara);
-
-        const esikKap = elYap("label", "dg-esik");
-        esikKap.appendChild(elYap("span", "", "null >"));
-        const esik = document.createElement("input");
-        esik.type = "number";
-        esik.className = "dg-esik-kutu";
-        esik.min = "0"; esik.max = "100"; esik.step = "1";
-        esik.setAttribute("aria-label", "Null oranı eşiği, yüzde");
-        esikKap.appendChild(esik);
-        esikKap.appendChild(elYap("span", "", "%"));
-        filtreKap.appendChild(esikKap);
 
         const sirala = document.createElement("select");
         sirala.className = "dg-sirala";
@@ -7398,12 +7384,7 @@ function teyitKartiEkle(alan, blok) {
         const tablo = elYap("table", "dg-tablo");
         const thead = document.createElement("thead");
         const htr = document.createElement("tr");
-        /* NULL ORANI, SÜREÇ DIŞI kutusunun HEMEN SOLUNDA (kullanıcı
-           kararı): "belki ona göre dışarıda bırakmak isteyebilir
-           kullanıcı". Karar kutusuyla o karara dayanak olan sayı yan
-           yana; sağ panele bakıp geri dönmek gerekmiyor. */
-        ["Değişken", "Tip", "Tip Değişikliği", "Sözlük Tanımı",
-         "Null Oranı", "Süreç Dışı"].forEach(h => {
+        ["Değişken", "Tip", "Sözlük Tanımı", "Süreç Dışı"].forEach(h => {
             const th = document.createElement("th");
             th.textContent = h;
             htr.appendChild(th);
@@ -7426,53 +7407,6 @@ function teyitKartiEkle(alan, blok) {
             const tipEl = elYap("td", "dg-tip", tireSade(sat.tip));
             tr.appendChild(tipEl);
 
-            /* ---- TİP DEĞİŞİKLİĞİ ----
-               Serbest tip ataması YOK: listede yalnızca verinin izin
-               verdiği dönüşümler seçilebilir. Uygun olmayanlar listeden
-               ÇIKARILMIYOR, kilitli (disabled) gösteriliyor ve sebebi
-               yanlarında yazıyor - "bunu neden yapamıyorum" sorusu
-               ekranda cevaplanmış oluyor. */
-            const tdT = elYap("td", "dg-tip-hucre");
-            const donusumler = sat.donusumler || [];
-            if (blok && blok.kilit) {
-                /* Geçmişten çizilen kart salt okunur. Teklif listesi
-                   oturuma yazılmıyor (1.042 satırda yarım megabayt);
-                   burada seçilmiş dönüşümün etiketi yazıyor. */
-                tdT.appendChild(elYap(
-                    "span", sat.donusum ? "dg-tip-secili" : "dg-tip-yok",
-                    tireSade(sat.donusum_etiket || "-")));
-            } else if (donusumler.length) {
-                const sec = document.createElement("select");
-                sec.className = "dg-tip-sec";
-                sec.setAttribute("aria-label", ad + " tip değişikliği");
-                const bos = document.createElement("option");
-                bos.value = "";
-                bos.textContent = "Değişmesin";
-                sec.appendChild(bos);
-                donusumler.forEach(d => {
-                    const o = document.createElement("option");
-                    o.value = d.kod;
-                    o.textContent = tireSade(d.etiket)
-                        + (d.uygun ? "" : "  -  " + tireSade(d.sebep || ""));
-                    o.disabled = !d.uygun;
-                    if (!d.uygun) o.title = tireSade(d.sebep || "");
-                    sec.appendChild(o);
-                });
-                sec.value = sat.donusum || "";
-                sec.dataset.eski = sec.value;
-                sec.disabled = !dg.duzenlenebilir;
-                sec._vurgu = () => satirVurgu();
-                if (sat.oneri_tip && sat.oneri_tip_sebebi)
-                    sec.title = "Öneri: " + tireSade(sat.oneri_tip_sebebi);
-                sec.onchange = () => { satirVurgu(); tipKaydet(ad, sec, tipEl, hataEl); };
-                tdT.appendChild(sec);
-            } else {
-                /* Örnek okunamadıysa teklif üretilmedi. Boş bir açılır
-                   liste göstermektense neden yok olduğunu yazmak doğru. */
-                tdT.appendChild(elYap("span", "dg-tip-yok", "-"));
-            }
-            tr.appendChild(tdT);
-
             const tdA = elYap("td", "dg-aciklama-hucre");
             const giris = document.createElement("input");
             giris.type = "text";
@@ -7488,28 +7422,20 @@ function teyitKartiEkle(alan, blok) {
             tdA.appendChild(giris);
             tr.appendChild(tdA);
 
-            /* Satırın öneri vurgusu: tip önerisi (dönem kolonu) ya da
-               sözlük tanımları adımında model önerisiyle eklenen tanım. */
-            /* Karşılaştırma tabanı: öneri varsa öneri, yoksa ORİJİNAL
-               değer (tipte "Değişmesin", tanımda orijinal sözlük tanımı).
-               Tabandan farklı olan her satır sarı. */
-            const tipTaban = sat.oneri_tip || "";
+            /* Satırın öneri vurgusu: sözlük tanımları adımında model
+               önerisiyle eklenen tanım. Karşılaştırma tabanı: öneri varsa
+               öneri, yoksa orijinal sözlük tanımı. Tabandan farklı olan
+               her satır sarı. (Tip önerisi arka uçta uygulanmaya devam
+               ediyor; tip değişikliği kolonu kaldırıldığı için vurguya
+               girmiyor.) */
             const tanimTaban = tireSade(sat.oneri_tanim
                 || (sat.tanim_orijinal !== undefined ? sat.tanim_orijinal : sat.tanim)
                 || "").trim();
             function satirVurgu() {
-                const secEl = tdT.querySelector(".dg-tip-sec");
-                const tip = secEl ? secEl.value : (sat.donusum || "");
-                const tipDegisti = tip !== tipTaban;
-                const tanimDegisti = giris.value.trim() !== tanimTaban;
-                oneriVurgusu(tr, !!(sat.oneri_tip || sat.oneri_tanim),
-                             tipDegisti || tanimDegisti);
+                oneriVurgusu(tr, !!sat.oneri_tanim,
+                             giris.value.trim() !== tanimTaban);
             }
             satirVurgu();
-
-            const tdN = elYap("td", "dg-null", ftOran(sat.null_oran));
-            tdN.title = "Null oranı";
-            tr.appendChild(tdN);
 
             const tdI = elYap("td", "dg-ekle-hucre");
             const kutu = document.createElement("input");
@@ -7543,8 +7469,6 @@ function teyitKartiEkle(alan, blok) {
                 const acik = !disi && !!dg.duzenlenebilir
                     && !kart.classList.contains("kilitli");
                 giris.disabled = !acik;
-                const secEl = tdT.querySelector(".dg-tip-sec");
-                if (secEl) secEl.disabled = !acik;
             };
             kutu.onchange = () => {
                 tr.dataset.islem = kutu.checked ? "haric" : "ekle";
@@ -7556,12 +7480,6 @@ function teyitKartiEkle(alan, blok) {
             kutu._disiCiz();
 
             satirlar.push({ tr: tr, ad: ftSade(ad), tanim: ftSade(sat.tanim || ""),
-                            /* Süzme ve sıralama için ham değerler:
-                               nullOran 0-1 aralığında sayı ya da null. */
-                            nullOran: (sat.null_oran === null
-                                       || sat.null_oran === undefined
-                                       || sat.null_oran === "")
-                                      ? null : Number(sat.null_oran),
                             tip: ftSade(sat.tip || ""),
                             giris: giris, kutu: kutu });
             tbody.appendChild(tr);
@@ -7570,24 +7488,15 @@ function teyitKartiEkle(alan, blok) {
         sar.appendChild(tablo);
         kart.appendChild(sar);
 
-        /* SÜZ + SIRALA TEK YERDE: üç kontrol de aynı listeyi
+        /* SÜZ + SIRALA TEK YERDE: iki kontrol de aynı listeyi
            etkiliyor; ayrı ayrı uygulanırsa biri diğerinin sonucunu
            siler (arama yazıp sonra sıralayınca gizli satırlar geri
            gelirdi). */
         function listeyiUygula() {
             const f = ftSade(ara.value || "");
-            const e = parseFloat(esik.value);
-            const esikVar = isFinite(e);
             satirlar.forEach(r => {
-                let gizle = !!f && r.ad.indexOf(f) === -1
-                                && r.tanim.indexOf(f) === -1;
-                /* Null oranı BİLİNMEYEN satır eşiği GEÇTİ sayılmaz:
-                   "%5'ten boş olanları göster" dendiğinde oranı
-                   ölçülmemiş kolonu listeye koymak yanlış olurdu. */
-                if (!gizle && esikVar) {
-                    gizle = !(r.nullOran !== null && r.nullOran > e / 100);
-                }
-                r.tr.hidden = gizle;
+                r.tr.hidden = !!f && r.ad.indexOf(f) === -1
+                                  && r.tanim.indexOf(f) === -1;
             });
             topluSayilari();
 
@@ -7595,7 +7504,6 @@ function teyitKartiEkle(alan, blok) {
             if (!alan) return;
             const carpan = yon === "z" ? -1 : 1;
             const anahtar = (r) => {
-                if (alan === "null_oran") return r.nullOran;
                 if (alan === "tip") return r.tip;
                 if (alan === "tanim") return r.tanim;
                 if (alan === "disi") return r.kutu.checked ? 1 : 0;
@@ -7604,9 +7512,7 @@ function teyitKartiEkle(alan, blok) {
             };
             const sirali = satirlar.slice().sort((x, y) => {
                 const a = anahtar(x), b = anahtar(y);
-                /* Bilinmeyen (null) değer HER İKİ YÖNDE DE SONDA:
-                   "en çok boş olan" sorusunun cevabı, oranı hiç
-                   ölçülmemiş bir kolon değildir. */
+                /* Boş değer HER İKİ YÖNDE DE SONDA. */
                 const aBos = a === null || a === undefined || a === "";
                 const bBos = b === null || b === undefined || b === "";
                 if (aBos !== bBos) return aBos ? 1 : -1;
@@ -7617,7 +7523,6 @@ function teyitKartiEkle(alan, blok) {
             sirali.forEach(r => tbody.appendChild(r.tr));
         }
         ara.oninput = listeyiUygula;
-        esik.oninput = listeyiUygula;
         sirala.onchange = listeyiUygula;
 
         /* Görünen ve değiştirilebilir (kilitsiz) satırlar. */
