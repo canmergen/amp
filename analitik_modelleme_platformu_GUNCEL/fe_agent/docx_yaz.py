@@ -246,7 +246,7 @@ _STIL_TANIMLARI = ("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 _UYGULAMA = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
-<Application>Analitik Modelleme Platformu</Application>
+<Application>Akıllı Modelleme Platformu</Application>
 </Properties>"""
 
 

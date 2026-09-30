@@ -1,6 +1,20 @@
-# Analitik Modelleme Platformu — teslim notu
+# Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **SFA yeniden tasarlandı: eleme yok, her değişken için yapay zekâ kararı, çift eksenli grafik**.
+Bu tur: **Ürün adı "Akıllı Modelleme Platformu" oldu**.
+Değiştir (fe_agent): `akis_metin.py`, `llm.py`, `dokuman.py`, `docx_yaz.py`, `akis.py`
+Değiştir (webapp): `index.html` (HTML)
+Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+
+- Üst barda, karşılama metninde, model dokümanının başlığında ve Word
+  dosyasının "uygulama" bilgisinde ad "Akıllı Modelleme Platformu".
+- Ekip adı her yerde "Bireysel Krediler Analitik ve Tahsis BI" (sohbet
+  asistanının kendini tanıttığı metinde "BI" eksikti).
+- Dataiku'daki webapp adı ("AMP - Analitik Modelleme Platformu") Dataiku'nun
+  kendi ayarı; webapp'in Settings / Summary kısmından elle değiştirilmeli.
+
+---
+
+Önceki tur: **SFA yeniden tasarlandı: eleme yok, her değişken için yapay zekâ kararı, çift eksenli grafik**.
 Yeni (fe_agent): `sfa_karar.py`
 Değiştir (fe_agent): `sfa.py`, `aralik.py`, `llm.py`, `akis_faz02.py`, `akis_faz01.py`, `akis_kayit.py`, `akis_metin.py`, `akis.py`, `akis_panel.py`, `dokuman.py`
 Değiştir (webapp): `backend.py`, `app.js` (JS), `style.css` (CSS)

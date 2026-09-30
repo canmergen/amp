@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis.py - Analitik Modelleme Platformu akis orkestratoru.
+"""fe_agent/akis.py - Akıllı Modelleme Platformu akis orkestratoru.
 
 Bu dosya artik yalnizca bir CEPHE (facade). Gercek kod su modullerde:
 

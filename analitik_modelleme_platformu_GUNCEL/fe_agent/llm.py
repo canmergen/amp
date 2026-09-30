@@ -835,8 +835,8 @@ def test(model=None):
 # ===========================================================================
 # SERBEST SORU — akis disi mesajlari yanitlar
 # ===========================================================================
-SORU_SISTEM = """Sen Bireysel Krediler Analitik ve Tahsis ekibinin \
-kullandığı Analitik Modelleme Platformu'nun asistanısın.
+SORU_SISTEM = """Sen Bireysel Krediler Analitik ve Tahsis BI ekibinin \
+kullandığı Akıllı Modelleme Platformu'nun asistanısın.
 
 Görevin: kullanıcının sorduğu şeyi, EKRAN DURUMU ve TANIMLAR bölümlerine \
 dayanarak doğrudan ve somut biçimde yanıtlamak.

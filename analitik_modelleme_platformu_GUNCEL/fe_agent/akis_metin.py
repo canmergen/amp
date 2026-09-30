@@ -8,7 +8,7 @@ import re
 
 
 
-KARSILAMA = """**Analitik Modelleme Platformu'na hoş geldiniz.**
+KARSILAMA = """**Akıllı Modelleme Platformu'na hoş geldiniz.**
 Çalışma, soldaki iş akışında yer alan beş faz boyunca adım adım ilerler. Her adımda önce yapılacak işlem açıklanır; onayınızla uygulanır ve sonuçları kayıt altına alınır. Başlamak için verinizin mevcut durumuna uygun çalışma başlangıcını seçin."""
 
 # ===========================================================================
