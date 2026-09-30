@@ -446,7 +446,7 @@ def detay(durum):
             ("Train (MS) Satır", _sayi(b.get("train_satir", 0))),
             (set_basligi("test", b.get("tur")) + " Satır", _sayi(b.get("test_satir", 0))),
         ] + ([("Test (OOS) Satır", _sayi(((b.get("satir") or {}).get("val")) or 0))]
-             if b.get("tur") != "rastgele" else []) + [
+             if ((b.get("satir") or {}).get("val")) else []) + [
             ("Rastgelelik Tohumu", b.get("seed", "-")),
         ]))
 
@@ -1567,7 +1567,7 @@ def bolme_formu(durum):
         # KILITLI ALAN SEBEBINI YAZAR. Soluk bir "%20" tek basina
         # "neden dokunamiyorum" sorusunu doguruyordu.
         test_oran["not"] = ("Zamansal bölmede Validasyon (OOT) dönemlere göre "
-                            "ayrılıyor; Test (OOS) payı aşağıdaki alanda.")
+                            "ayrılıyor; bu pay kullanılmıyor.")
     val_oran = _alan("val_oran", int(round(100 * a["val_oran"])),
                      tip="yuzde", hazir=[10, 20, 30],
                      en_az=int(round(100 * ORAN_EN_AZ)),
@@ -1761,10 +1761,10 @@ def bolme_ozet_karti(durum):
                                              if donemler else ""),
                          BOLME_ADIMI))
         if a["val_var"]:
-            satirlar.append(("Test (OOS)", "geliştirme döneminin %%%d'i"
+            satirlar.append(("Test (OOS)", "eğitimin %%%d'i"
                              % round(100 * float(a["val_oran"])), BOLME_ADIMI))
     else:
-        satirlar.append(("Train (MS) / Test (OOS)",
+        satirlar.append(("Train (MS) / Validasyon (OOT)",
                          "%%%d / %%%d"
                          % (round(100 * (1 - float(a["test_oran"]))),
                             round(100 * float(a["test_oran"]))),

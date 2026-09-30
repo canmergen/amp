@@ -131,29 +131,29 @@ SET_ADLARI = ("egitim", "val", "test", "oot")
 # oot_var=False) ama AYRI BIR SET DEGIL: zamansal bolmede test setinin
 # kendisi zaten zaman disidir. Bu yuzden TEK AD kullaniliyor -
 # "OOT / Test" - ve ekranda hicbir yerde ayri bir OOT seti gecmiyor.
-# SET ADLARI (kurum karari): sektor kisaltmasiyla birlikte.
-#   Train (MS)        - model sample: modelin ogrendigi kayitlar
-#   Validasyon (OOT)  - out of time: son donem(ler); zaman disi olcum
-#   Test (OOS)        - out of sample: gelistirme doneminden rastgele ayrilan,
-#                       modelin gormedigi kayitlar
-# IC ADLAR DEGISMEDI (butun fazlar ve eski oturumlar bunlarla calisiyor):
-#   egitim = Train (MS), test = Validasyon (OOT) (zamansal/hazir bolmede),
-#   val = Test (OOS). Rastgele bolmede OOT yoktur; disarida tutulan tek set
-#   Test (OOS)'tur ve ic adi test'tir.
+# SET ADLARI (kurum karari): YALNIZCA ADLAR DEGISTI, bolme kurgusu ayni
+# (kullanici karari: "tek dert validasyon yerine test demen ve ona gore
+# kurgulaman lazimdi").
+#   egitim -> Train (MS)        modelin ogrendigi kayitlar
+#   val    -> Test (OOS)        egitim verisinden ayrilan, model ayarlarinin
+#                               secildigi ara set (istege bagli)
+#   test   -> Validasyon (OOT)  modelin hic gormedigi, nihai olcumun
+#                               yapildigi set (zamansal bolmede son donemler,
+#                               rastgele bolmede rastgele pay)
 SET_BASLIK = {"egitim": "Train (MS)", "val": "Test (OOS)",
               "test": "Validasyon (OOT)", "oot": "Validasyon (OOT)"}
 
-# RASTGELE BOLMEDE OOT YOKTUR: donem bilgisi olmadan zaman disi olcum
-# yapilamaz. Disarida tutulan set Test (OOS)'tur.
-TEST_BASLIK_RASTGELE = "Test (OOS)"
-OOS2_ACIKLAMA = ("Rastgele bölmede OOT yoktur: dönem bilgisi olmadan zaman "
-                 "dışı ölçüm yapılamaz. Dışarıda tutulan tek set Test (OOS) "
-                 "olur; Validasyon (OOT) ancak dönem kolonu tanımlıysa ayrılır.")
+# Rastgele bolmede de nihai set Validasyon (OOT) adiyla gosterilir
+# (kullanici karari: ekrandaki bolum basligi ile ust cubuk ayni adi
+# tasimali).
+TEST_BASLIK_RASTGELE = "Validasyon (OOT)"
+OOS2_ACIKLAMA = ("Rastgele bölmede Validasyon (OOT) seti zamana göre değil, "
+                 "kayıtlardan rastgele ayrılır.")
 
 
 def set_basligi(ad, test_tanim=None):
-    """Setin ekrandaki adi. Ic "test" seti zamansal ve hazir bolmede
-    "Validasyon (OOT)", rastgele bolmede "Test (OOS)"."""
+    """Setin ekrandaki adi: egitim Train (MS), val Test (OOS), test
+    Validasyon (OOT)."""
     if ad in ("test", "oot") and test_tanim == "rastgele":
         return TEST_BASLIK_RASTGELE
     return SET_BASLIK[ad]
@@ -1038,16 +1038,7 @@ def bolme_ayarlari(durum):
         # davranis korunur: hedef tanimliysa katmanla.
         a["katmanla"] = bool(m.get("target")) and p.get("hedef_tip") != "surekli"
 
-    # SET DUZENI (kurum karari): Train (MS), Validasyon (OOT), Test (OOS).
-    # Ic adlar: egitim = MS, test = OOT (zamansal bolmenin son donemleri),
-    # val = OOS (gelistirme doneminden rastgele pay). Zamansal bolmede
-    # Test (OOS) varsayilan olarak ACIK. Rastgele bolmede OOT yoktur ve
-    # disarida tutulan tek set Test (OOS)'tur (ic adi test); ikinci bir
-    # OOS seti ayrilmaz.
-    if a["test_tanim"] == "rastgele":
-        a["val_var"] = False
-    else:
-        a["val_var"] = bool(b.get("val_var", a["test_tanim"] == "zamansal"))
+    a["val_var"] = bool(b.get("val_var", False))
     a["val_oran"] = _oran_kirp(b.get("val_oran"), 0.20)
     a["test_oran"] = _oran_kirp(b.get("test_oran"), 0.20)
 
@@ -1154,7 +1145,7 @@ BOLME_SECENEK = {
         "zamansal": ("Zamansal",
                      "Eski dönemler eğitim, yeni dönemler Validasyon (OOT)."),
         "rastgele": ("Rastgele",
-                     "Dönem yoksa: yalnızca Test (OOS) rastgele ayrılır."),
+                     "Kayıtlar rastgele ayrılır; Validasyon (OOT) seti de rastgele ayrılır."),
         "hazir":    ("Veri setindeki bölme",
                      "Tablodaki bölme kolonu olduğu gibi kullanılır."),
     },
@@ -1191,7 +1182,7 @@ BOLME_SECENEK = {
 BOLME_ALAN_BASLIK = {
     "test_tanim":      "Ayrım Yöntemi",
     "oot_adet":        "Validasyon (OOT) Dönemi",
-    "test_oran":       "Test (OOS) Büyüklüğü",
+    "test_oran":       "Validasyon (OOT) Büyüklüğü",
     # TEK AD KURALI: satir etiketi de sozluk maddesi de "Ara Dönem
     # (Gap)". Ayni ayar icin iki ad ("Dönemler Arası Boşluk") ekranda
     # iki farkli sey sanilmasina yol aciyordu.
@@ -1213,13 +1204,13 @@ BOLME_ALAN_BASLIK = {
 # Alan altindaki TEK KISA SATIR. Uzunu (sektor karsiligi dahil)
 # BOLME_SATIR_ACIKLAMA'da, "Detayları göster" alaninda.
 BOLME_ALAN_ACIKLAMA = {
-    "test_tanim":      "Validasyon (OOT) son dönemlerden ayrılır.",
+    "test_tanim":      "Validasyon (OOT) seti eğitimde hiç kullanılmaz.",
     "oot_adet":        "Hangi dönemler Validasyon (OOT) olsun.",
-    "test_oran":       "Kayıtların ne kadarı Test (OOS) olsun.",
+    "test_oran":       "Kayıtların ne kadarı Validasyon (OOT) olsun.",
     "train_kullanimi": "Validasyon (OOT) ayrıldıktan sonra kalan veri.",
     "birim":           "Satırlar mı müşteriler mi bir arada tutulsun.",
-    "val_var":         "Geliştirme döneminden rastgele ayrılan set.",
-    "val_oran":        "Geliştirme döneminin ne kadarı Test (OOS) olsun.",
+    "val_var":         "Model seçimi için ayrılan ara değerlendirme seti.",
+    "val_oran":        "Eğitim verisinin ne kadarı Test (OOS) olsun.",
     "cv":              "Ölçüm tek bir bölmenin şansına bağlı kalmasın.",
     "kat":             "Veri kaç parçaya bölünsün.",
     "katmanla":        "Hedefin oranı her parçada aynı kalsın.",
@@ -2605,7 +2596,7 @@ def _orana_yuvarla(deger, yedek=0.20):
 #      ekranda duruyor ve ikisi de hicbir seyi degistirmiyordu.
 BOLME_BOLUMLERI = (
     {"anahtar": "oot", "baslik": "Validasyon (OOT)"},
-    {"anahtar": "dogrulama", "baslik": "Test (OOS) ve Çapraz Doğrulama"},
+    {"anahtar": "dogrulama", "baslik": "Test (OOS)"},
     {"anahtar": "kural", "baslik": "Hedef Dağılımı"},
     {"anahtar": "tekrar", "baslik": "Tekrarlanabilirlik"},
 )
@@ -2627,15 +2618,12 @@ BOLME_SATIRLARI = (
     {"anahtar": "gap", "etiket": "Ara Dönem (Gap)",
      "bolum": "oot", "alanlar": ("gap",),
      "kosul": {"alan": "test_tanim", "degerler": ("zamansal",)}},
-    {"anahtar": "test_boyut", "etiket": "Test (OOS) Büyüklüğü",
+    {"anahtar": "test_boyut", "etiket": "Validasyon (OOT) Büyüklüğü",
      "bolum": "oot", "alanlar": ("test_oran",),
      "kosul": {"alan": "test_tanim", "degerler": ("rastgele",)}},
 
-    # Rastgele bolmede disarida tutulan tek set zaten Test (OOS): ikinci
-    # bir OOS seti sorulmaz (kurum karari).
     {"anahtar": "val_var", "etiket": "Test (OOS) Seti",
-     "bolum": "dogrulama", "alanlar": ("val_var",),
-     "kosul": {"alan": "test_tanim", "degerler": ("zamansal", "hazir")}},
+     "bolum": "dogrulama", "alanlar": ("val_var",)},
     {"anahtar": "val_oran", "etiket": "Test (OOS) Büyüklüğü",
      "bolum": "dogrulama", "alanlar": ("val_oran",),
      "kosul": {"alan": "val_var", "degerler": (True,)}},
@@ -2669,54 +2657,56 @@ BOLME_SATIRLARI = (
 # yardim dokumani gibi surekli metin durmuyor.
 BOLME_SATIR_BILGI = {
     "test_tanim": (
-        "Veri üç sete ayrılır: Train (MS), Validasyon (OOT) ve Test (OOS). "
-        "Validasyon ve Test eğitimde hiç kullanılmaz.\n\n"
-        "Zamansal: en yeni dönem(ler) Validasyon (OOT) olur; model geçmişten "
-        "öğrenir, gelecekte sınanır. Kalan geliştirme döneminden rastgele "
-        "bir pay Test (OOS) olarak ayrılır, geri kalanı Train (MS). Dönem "
-        "kolonu gerektirir.\n\n"
-        "Rastgele: kayıtlar zamana bakılmadan ayrılır. Dönem bilgisi yoksa "
-        "ya da veri tek döneme aitse kullanılır. " + OOS2_ACIKLAMA),
+        "Validasyon (OOT) seti, modelin hiç görmediği ve sonunda not aldığı "
+        "kayıtlardır; eğitimde asla kullanılmaz.\n\n"
+        "Zamansal: eski dönemler eğitimde, en yeni dönemler Validasyon (OOT) "
+        "setinde kalır. Gerçek hayattaki kullanıma en yakın ölçüm budur: "
+        "model geçmişten öğrenir, gelecekte sınanır. Dönem kolonu "
+        "gerektirir.\n\n"
+        "Rastgele: kayıtlar zamana bakılmadan rastgele ayrılır. Dönem "
+        "bilgisi yoksa ya da veri tek döneme aitse kullanılır. "
+        + OOS2_ACIKLAMA),
     "donem_kolon": (
         "Kayıtların hangi döneme (ay, çeyrek…) ait olduğunu söyleyen "
         "kolon. Zamansal bölme bu kolona göre yapılır. «Modelleme "
         "Tanımları» adımında seçildi; burada değiştirilmez."),
     "test_donem": (
         "Hangi dönemlerin Validasyon (OOT) olacağı. «Son 1 dönem» seçilirse en "
-        "yeni dönem Validasyon (OOT), öncekiler geliştirme dönemi olur. Daha "
-        "fazla dönem zaman dışı ölçümü güçlendirir ama geliştirmeye daha az "
-        "veri bırakır."),
+        "yeni dönem Validasyon (OOT), öncekilerin tamamı eğitim olur. Daha "
+        "fazla dönem ölçümü güçlendirir ama eğitime daha az veri bırakır."),
     "gap": (
-        "Geliştirme dönemi ile Validasyon (OOT) dönemleri arasında hiçbir "
-        "sete girmeyen boşluk.\n\n"
+        "Eğitim ile Validasyon (OOT) dönemleri arasında hiçbir sete girmeyen "
+        "boşluk.\n\n"
         "Neden gerekir: hedef genellikle «sonraki N ayda temerrüt» gibi "
         "ileriye bakan bir pencereyle tanımlanır. Eğitimin son dönemi ile "
         "testin ilk dönemi aynı geleceğe bakar; arada boşluk bırakmak "
         "modelin test cevabını eğitimden «görmesini» engeller. Pencere "
         "kaç dönemse boşluk o kadar seçilir."),
     "test_boyut": (
-        "Rastgele bölmede kayıtların yüzde kaçı Test (OOS) olsun. %20 "
+        "Rastgele bölmede kayıtların yüzde kaçı Validasyon (OOT) olsun. %20 "
         "yaygın ölçü: test yeterince büyük, eğitime de yeterince kayıt "
         "kalıyor. Küçük veri setinde %30, çok büyükte %10 da olabilir."),
     "val_var": (
-        "Test (OOS, out of sample) seti, Validasyon (OOT) ayrıldıktan sonra "
-        "kalan geliştirme döneminden RASTGELE ayrılan, modelin görmediği "
-        "kayıtlardır. Train (MS) ile aynı dönemden geldiği için modelin "
-        "zaman etkisinden bağımsız ayrıştırma gücünü ölçer; Validasyon "
-        "(OOT) ise zaman içindeki kararlılığı.\n\n"
-        "Hedef oranı korunarak (katmanlı) ve kimlik tanımlıysa aynı "
-        "müşterinin kayıtları bir arada ayrılır."),
+        "Test (OOS) seti, eğitim verisinden ayrılan ve model ayarlarını "
+        "(hangi algoritma, hangi parametreler, ne zaman durulacağı) seçmek "
+        "için kullanılan ara settir.\n\n"
+        "Validasyon (OOT) seti bu iş için kullanılamaz: model ayarları ona "
+        "göre seçilirse o set artık «görülmemiş» olmaz ve sonuç iyimser "
+        "çıkar. Veri büyükse (on binlerce kayıt) ayrı bir Test (OOS) seti "
+        "önerilir; küçükse veri harcamamak için çapraz doğrulama tercih "
+        "edilir."),
     "val_oran": (
-        "Geliştirme döneminin (Validasyon (OOT) dışındaki kayıtların) yüzde "
-        "kaçı Test (OOS) olsun. %20 seçilirse geliştirme döneminin %80'i "
-        "Train (MS) olur."),
+        "Verinin yüzde kaçı Test (OOS) olsun. Rastgele bölmede pay toplam "
+        "veriye göredir: Validasyon (OOT) %20, Test (OOS) %20 seçilirse "
+        "Train (MS) setine verinin %60'ı kalır. Zamansal bölmede Test (OOS), "
+        "eğitim dönemlerinin içinden ayrılır."),
     "cv": (
         "Çapraz doğrulama (cross-validation, CV): eğitim verisini birkaç "
         "parçaya böler, her turda bir parçayı dışarıda bırakıp kalanla "
         "model kurar ve dışarıda kalan parçada ölçer. Turların ortalaması "
         "tek bir bölmenin şansına bağlı kalmayan, daha güvenilir bir "
         "ölçüm verir.\n\n"
-        "Yok: yapılmaz; ölçüm dışarıda tutulan setlerden gelir.\n"
+        "Yok: yapılmaz; Test (OOS) seti varsa ölçüm oradan gelir.\n"
         "Stratified K-Fold: parçalar eşit büyüklükte ve her parçada hedef "
         "oranı (örneğin temerrüt oranı) aynı tutulur. Seyrek hedeflerde "
         "bir parçanın hedefsiz kalmasını önler.\n"
@@ -2744,14 +2734,14 @@ BOLME_SATIR_BILGI = {
     "katmanla": (
         "Hedefin oranı her sette aynı kalsın mı (stratified / katmanlı "
         "örnekleme).\n\n"
-        "Korunsun: verinin %3'ü temerrütse Train (MS) ve Test (OOS) "
+        "Korunsun: verinin %3'ü temerrütse Train (MS), Test (OOS) ve Validasyon (OOT) "
         "setlerinin her birinde de yaklaşık %3 temerrüt olur. Seyrek "
         "hedeflerde bir setin neredeyse hedefsiz kalmasını önler; "
         "sınıflandırma modellerinde standarttır.\n"
         "Korunmasın: kayıtlar hedefe bakılmadan dağıtılır. Sürekli "
         "(sayısal) hedeflerde kullanılır."),
     "seed_tur": (
-        "Sabit bölme: Train / Test (OOS) / Validasyon (OOT) ayrımı ve çapraz doğrulama "
+        "Sabit bölme: Train (MS) / Test (OOS) / Validasyon (OOT) ayrımı ve çapraz doğrulama "
         "parçaları tek bir seed ile bir kez kurulur; her çalıştırmada aynı "
         "kayıtlar aynı sete düşer. Sonuç tekrar üretilebilir, çalışma böyle "
         "raporlanır. Standart seçim budur.\n\n"
@@ -2785,18 +2775,20 @@ BOLME_SATIR_BILGI = {
 # koyunca goruntu yardim dokumanina donuyor"). Sorular kullanicinin
 # soracagi bicimde yazili.
 BOLME_SOZLUK = (
-    ("Train (MS), Validasyon (OOT) ve Test (OOS) nedir?",
+    ("Train (MS), Test (OOS) ve Validasyon (OOT) nedir?",
      "Veri üç parçaya ayrılır. Train (MS, model sample): modelin öğrendiği "
-     "kayıtlar. Validasyon (OOT, out of time): en yeni dönem(ler); model "
-     "geçmişten öğrenip gelecekte sınanır, zaman içindeki kararlılık burada "
-     "ölçülür. Test (OOS, out of sample): Train ile aynı dönemden rastgele "
-     "ayrılan, modelin görmediği kayıtlar; zamandan bağımsız ayrıştırma "
-     "gücü burada ölçülür. İkisi de eğitimde kullanılmaz. " + OOS2_ACIKLAMA),
-    ("Neden hem Validasyon (OOT) hem Test (OOS) var?",
-     "İkisi farklı soruları cevaplar. Test (OOS) «model aynı dönemde "
-     "görmediği müşterileri ne kadar iyi ayırıyor», Validasyon (OOT) «model "
-     "gelecekte de aynı başarıyı koruyor mu» sorusunun cevabıdır. İkisi "
-     "arasındaki fark zaman etkisini gösterir."),
+     "kayıtlar. Test (OOS, out of sample): model ayarlarını seçmek için "
+     "ayrılan, eğitimde kullanılmayan kayıtlar. Validasyon (OOT, out of "
+     "time): modelin hiç görmediği, en sonda bir kez ölçüm yapılan kayıtlar; "
+     "zamansal bölmede en yeni dönemlerdir. Validasyon sonucu «bu model "
+     "sahada ne yapar» sorusunun cevabıdır ve model ayarlanırken ona "
+     "bakılmaz. " + OOS2_ACIKLAMA),
+    ("Neden ayrı bir Test (OOS) seti gerekir?",
+     "Algoritma seçimi ve parametre ayarı için bir ölçüm gerekir. Bu ölçüm "
+     "eğitim setinde yapılırsa model ezberi ölçülür, Validasyon (OOT) "
+     "setinde yapılırsa o set artık görülmemiş sayılmaz. Test (OOS) ikisinin "
+     "arasında duran, yalnızca ayar seçmek için harcanan settir. Veri "
+     "küçükse aynı işi çapraz doğrulama görür."),
     ("Çapraz doğrulama (CV) nedir, ayarları ne yapar?",
      "Eğitim verisi K parçaya bölünür; K tur boyunca her seferinde bir "
      "parça dışarıda bırakılır, kalanla model kurulur, dışarıdaki parçada "
@@ -2812,8 +2804,8 @@ BOLME_SOZLUK = (
      "parçalarında otomatik olarak bir arada tutar; ayrıca bir ayar "
      "yoktur. Aksi halde bir müşterinin bir ayı eğitimde diğer ayı "
      "Test (OOS)'ta olur, model o müşteriyi ezberler ve skor şişer (veri "
-     "sızıntısı). Validasyon (OOT) dönem bazlı ayrıldığı için aynı müşteri "
-     "eski dönemleriyle geliştirmede, yeni dönemiyle Validasyon (OOT)'ta "
+     "sızıntısı). Zamansal bölmede Validasyon (OOT) dönem bazlı ayrıldığı "
+     "için aynı müşteri eski dönemleriyle eğitimde, yeni dönemiyle Validasyon (OOT)'ta "
      "bulunabilir; bu tasarım gereğidir. Kimlik, hedef ve dönem kolonları "
      "modele değişken olarak girmez."),
     ("Hedef dağılımını korumak ne demektir?",
@@ -2832,9 +2824,9 @@ BOLME_SOZLUK = (
      "dönemler Validasyon (OOT) olur; model gerçek kullanımdaki gibi geçmişten "
      "öğrenip gelecekte sınanır. Rastgele bölme, dönem bilgisi olmayan ya "
      "da tek döneme ait verilerde kullanılır; o zaman Validasyon (OOT) "
-     "yoktur, yalnızca Test (OOS) ayrılır."),
+     "seti rastgele ayrılır."),
     ("Ara dönem (gap) ne işe yarar?",
-     "Geliştirme ile Validasyon (OOT) dönemleri arasında hiçbir sete "
+     "Eğitim ile Validasyon (OOT) dönemleri arasında hiçbir sete "
      "girmeyen boşluktur. "
      "Hedef ileriye bakan bir pencereyle (sonraki 12 ayda temerrüt gibi) "
      "tanımlıysa eğitimin son dönemi ile testin ilk dönemi aynı geleceği "
@@ -2982,10 +2974,7 @@ def bolme_onerisi(durum):
         _tam_sayi(p.get("duplicate_kimlik"), 0, 0)))
     katmanla = bool(m.get("target")) and p.get("hedef_tip") != "surekli"
     buyuk = satir >= ONERI_CAPRAZ_SINIRI
-    # Zamansal bolmede Test (OOS) seti ACIK (kurum duzeni: MS / OOT / OOS);
-    # rastgele bolmede disarida tutulan tek set Test (OOS), ikincisi yok.
-    kullanim = ("val" if buyuk else "val_cv") if (zamansal and not hazir) \
-        else ("full" if buyuk else "full_cv")
+    kullanim = "val" if buyuk else "full_cv"
 
     # HAZIR BOLME VARSA ONERI ODUR. Tabloda zaten bir bolme duruyorsa
     # platformun ikinci ve farkli bir bolme uretmesi, daha once uretilmis
@@ -3036,7 +3025,7 @@ def bolme_onerisi(durum):
         satirlar.append(_satir(
             "oot_adet", None,
             "Son dönem%s" % ((" (%s)" % donemler[-1]) if donemler else "")))
-        satirlar.append({"etiket": "Geliştirme Dönemleri",
+        satirlar.append({"etiket": "Eğitim Dönemleri",
                          "deger": "%s dönem" % _sayi(max(len(donemler) - 1, 0))})
     else:
         satirlar.append(_satir(
@@ -3125,13 +3114,11 @@ def _bolme_oran_ozeti(durum):
         adet = int((a.get("oot_tanim") or {}).get("adet") or 1)
         donemler = [str(x) for x in (durum.get("_donemler") or [])]
         kalan = max(len(donemler) - adet, 0)
-        parcalar = []
+        parcalar = ["Validasyon (OOT): son %d dönem" % adet]
         if kalan:
-            parcalar.append("Train (MS): %s dönem%s" % (
-                _sayi(kalan), (" (%%%d'i)" % round(100 * (1 - val))) if val else ""))
-        parcalar.append("Validasyon (OOT): son %d dönem" % adet)
+            parcalar.insert(0, "Train (MS): %s dönem" % _sayi(kalan))
         if val:
-            parcalar.append("Test (OOS): geliştirme döneminin %%%d'i" % round(100 * val))
+            parcalar.append("Test (OOS): eğitimin %%%d'i" % round(100 * val))
         return " · ".join(parcalar) + "   (satır sayıları bölme uygulanınca)"
 
     test = float(a.get("test_oran") or 0.0)
@@ -3145,7 +3132,8 @@ def _bolme_oran_ozeti(durum):
             return "%s %s" % (ad, yuzde)
         return "%s ~%s (%s)" % (ad, _sayi(int(round(satir * oran))), yuzde)
 
-    parcalar = [parca("Train (MS)", egitim), parca("Test (OOS)", test)]
+    parcalar = [parca("Train (MS)", egitim), parca("Test (OOS)", val),
+                parca("Validasyon (OOT)", test)]
     return " · ".join(parcalar) + "   (satır sayıları bölme uygulanınca)"
 
 
@@ -3170,11 +3158,8 @@ def bolme_ozeti(durum):
         # yazilir ve bunun bir tahmin oldugu acikca soylenir.
         return _bolme_oran_ozeti(durum)
     a = bolme_ayarlari(durum)
-    # Sira (kurum duzeni): Train (MS) · Validasyon (OOT) · Test (OOS).
-    sira = ("egitim", "test") if a["test_tanim"] == "rastgele" \
-        else ("egitim", "test", "val")
     parcalar = []
-    for ad in sira:
+    for ad in ("egitim", "val", "test"):
         n = sayim.get(ad)
         parcalar.append("%s %s" % (set_basligi(ad, a["test_tanim"]),
                                    _sayi(int(n)) if n else "-"))

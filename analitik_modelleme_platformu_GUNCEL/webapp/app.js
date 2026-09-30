@@ -3013,11 +3013,8 @@ function bfZamansalMi() { return BF.alan.test_tanim === "zamansal"; }
 /* Zamansal testte test orani yok: test son N donemdir. */
 function bfPaylar() {
     const a = BF.alan;
-    /* Rastgele bolmede OOT yok; disarida tutulan tek set Test (OOS)
-       (ic adi test), ikinci bir OOS seti ayrilmaz (kurum karari). */
     const test = bfZamansalMi() ? 0 : bfSayi(a.test_oran, 0.20);
-    const val = (bfValVar(a.val_var) && a.test_tanim !== "rastgele")
-        ? bfSayi(a.val_oran, 0.20) : 0;
+    const val = bfValVar(a.val_var) ? bfSayi(a.val_oran, 0.20) : 0;
     return { train: Math.max(1 - test - val, 0), val: val, test: test };
 }
 
@@ -3050,14 +3047,14 @@ function bfYerelOzet() {
        hesabi test payini 0 sayip "eğitim %100" yaziyordu - acikca
        yanlis bir sayi (kendi ekran kontrolumde yakalandi). */
     if (bfZamansalMi()) {
-        /* Kurum duzeni: Train (MS) · Validasyon (OOT) · Test (OOS) */
-        const parcalar = ["Train (MS): geliştirme döneminin " + bfYuzde(1 - p.val) + "'i",
-                          "Validasyon (OOT): " + bfDonemEtiketi()];
-        if (p.val) parcalar.push("Test (OOS): geliştirme döneminin " + bfYuzde(p.val) + "'i");
+        const parcalar = ["Validasyon (OOT): " + bfDonemEtiketi()];
+        if (p.val) parcalar.push("Test (OOS): eğitimin " + bfYuzde(p.val) + "'i");
+        parcalar.unshift("Train (MS): kalan dönemler");
         return parcalar.join(" · ");
     }
 
     const parcalar = ["Train (MS) " + (p.train ? bfYuzde(p.train) : "-"),
+                      "Test (OOS) " + (p.val ? bfYuzde(p.val) : "-"),
                       TEST_OOS2 + " " + (p.test ? bfYuzde(p.test) : "-")];
     return parcalar.join(" · ");
 }
@@ -3084,7 +3081,8 @@ function bfUyariListesi() {
 
     const testO = p.test, valO = p.val;
     if (testO + valO >= 1 && !varMi(/eğitime satır kalmaz/))
-        liste.push("Test (OOS) payı (" + bfYuzde(testO + valO) + ") tüm veriyi "
+        liste.push(TEST_OOS2 + " (" + bfYuzde(testO) + ") ve Test (OOS) ("
+                   + bfYuzde(valO) + ") paylarının toplamı tüm veriyi "
                    + "kaplıyor; eğitime satır kalmaz.");
     else if (testO + valO > 0.6 && !varMi(/ölçüm güvenilir olmayabilir/))
         liste.push("Train (MS) setine verinin yalnızca "
@@ -3448,14 +3446,14 @@ function bolmeFormuCiz(f) {
 const SET_SECENEKLERI = [
     { anahtar: "tumu",  etiket: "Tümü" },
     { anahtar: "train", etiket: "Train (MS)" },
-    { anahtar: "test",  etiket: "Validasyon (OOT)" },
-    { anahtar: "val",   etiket: "Test (OOS)",  alan: "val_var" }
+    { anahtar: "val",   etiket: "Test (OOS)",  alan: "val_var" },
+    { anahtar: "test",  etiket: "Validasyon (OOT)" }
 ];
 
-/* SET DUZENI (kurum karari): Train (MS), Validasyon (OOT), Test (OOS).
-   Ic adlar: test = OOT, val = OOS. Rastgele bolmede OOT yoktur; ic "test"
-   seti orada Test (OOS)'tur (arka uc: akis_durum.set_basligi). */
-const TEST_OOS2 = "Test (OOS)";
+/* SET ADLARI (kurum karari; yalnizca adlar degisti, kurgu ayni):
+   egitim = Train (MS), val = Test (OOS), test = Validasyon (OOT) - rastgele
+   bolmede de (arka uc: akis_durum.set_basligi). */
+const TEST_OOS2 = "Validasyon (OOT)";
 
 /* Secicinin GORUNDUGU sekmeler. VERİ & SÖZLÜK ve HAZIRLIK her zaman tum
    satirlarda calisiyor; orada pasif gri bir secici birakmak "burada da
@@ -3478,7 +3476,7 @@ function setBolmeAlanlari() {
     return (f && f.alanlar) || null;
 }
 
-/* Test setinin etiketi bolme turune gore: rastgele -> Test (OOS). */
+/* Nihai setin etiketi: her bolme turunde Validasyon (OOT). */
 function setEtiketi(s) {
     const al = setBolmeAlanlari();
     const tur = al && al.test_tanim && al.test_tanim.deger;
@@ -6519,10 +6517,7 @@ function bolmeOzetCubukCiz(kok, alan) {
     } else if (bfZamansalMi()) {
         const cubuk = elYap("div", "bolme-cubuk");
         const gap = bfTam(a.gap, 0);
-        const pz = bfPaylar();
-        const oos = Math.round(60 * pz.val);
-        cubuk.appendChild(bolmeCubukParca("egitim", 60 - oos, "Train (MS) · önceki dönemler"));
-        if (oos) cubuk.appendChild(bolmeCubukParca("val", oos, "Test (OOS) %" + Math.round(100 * pz.val)));
+        cubuk.appendChild(bolmeCubukParca("egitim", 60, "Train (MS) · önceki dönemler"));
         if (gap) cubuk.appendChild(bolmeCubukParca("gap", 8, "gap " + gap));
         cubuk.appendChild(bolmeCubukParca("test", gap ? 32 : 40,
                                           "Validasyon (OOT) · " + bfDonemEtiketi()));
@@ -6550,7 +6545,7 @@ function bolmeOzetCubukCiz(kok, alan) {
     if (a.test_tanim !== "hazir") {
         parcalar.push(["Ayrım", etiket("test_tanim")]);
         if (bfZamansalMi() && bfValVar(a.val_var))
-            parcalar.push(["Test (OOS)", "geliştirme döneminin " + bfYuzde(bfSayi(a.val_oran, 0.2)) + "'i"]);
+            parcalar.push(["Test (OOS)", "eğitimin " + bfYuzde(bfSayi(a.val_oran, 0.2)) + "'i"]);
         parcalar.push(["Çapraz Doğrulama",
             a.cv === "yok" ? "Yok" : etiket("cv") + ", " + bfTam(a.kat, 5) + " kat"]);
         parcalar.push(["Hedef Dağılımı", bfKatmanla(a.katmanla) ? "korunuyor" : "korunmuyor"]);

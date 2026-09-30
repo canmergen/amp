@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **tip kararı yalnızca SFA'da**. Değiştir: `fe_agent/sfa_karar.py`, `fe_agent/akis_faz02.py`, `fe_agent/akis_faz01.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+Bu tur: **bölme kurgusu eski haline döndü; yalnızca set adları değişti**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `fe_agent/akis_panel.py`, `fe_agent/dokuman.py`, `fe_agent/validasyon.py`, `webapp/app.js`
+
+- Önceki turlardan birinde bölme kurgusu da değiştirilmişti (zamansalda
+  Test (OOS) geliştirme döneminden rastgele, rastgelede Test (OOS) seçimi
+  kalkmıştı). Geri alındı: kurgu eskisi gibi, yalnızca adlar yeni.
+    eğitim            -> Train (MS)
+    validasyon (val)  -> Test (OOS)      istege bağlı, model ayarı için
+    test              -> Validasyon (OOT) nihai ölçüm; rastgele bölmede de
+                                          bu adla gösterilir
+- Rastgele bölmede "Test (OOS) Seti" seçimi geri geldi; üst çubuk ve
+  bölüm başlıkları aynı adları taşıyor (Validasyon (OOT) Büyüklüğü).
+- Zamansal bölmede Test (OOS) yine eğitim dönemlerinden, dönem bazında
+  ayrılıyor; varsayılan kapalı.
+
+---
+
+Önceki tur: **tip kararı yalnızca SFA'da**. Değiştir: `fe_agent/sfa_karar.py`, `fe_agent/akis_faz02.py`, `fe_agent/akis_faz01.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
 
 - 01.3 artık model değişkenlerine tip önerisi yapmıyor. Yalnızca dönem
   kolonunun tarih (dönem) işareti kaldı (model değişkeni değil, bölmenin

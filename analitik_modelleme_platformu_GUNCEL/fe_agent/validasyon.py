@@ -23,7 +23,7 @@ import numpy as np
 ESIKLER = [
     {"anahtar": "gini_test", "ad": "Gini (Validasyon OOT)",
      "yon": "buyuk", "gecer": 0.40, "uyari": 0.30, "bicim": "yuzde",
-     "aciklama": "Dışarıda tutulan sette ayrıştırma gücü (zamansal bölmede Validasyon (OOT), rastgele bölmede Test (OOS))"},
+     "aciklama": "Dışarıda tutulan nihai sette (Validasyon (OOT)) ayrıştırma gücü"},
     {"anahtar": "gini_oot", "ad": "Gini (ek OOT seti)",
      "yon": "buyuk", "gecer": 0.40, "uyari": 0.30, "bicim": "yuzde",
      "aciklama": "Ayrıca işaretlenmiş bir OOT seti varsa (hazır bölme) orada ayrıştırma gücü"},
