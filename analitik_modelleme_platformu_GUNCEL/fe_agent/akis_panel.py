@@ -234,6 +234,16 @@ def _eleme_karti(durum):
     sfa = durum.get("sfa") or {}
 
     ham = _tam(p.get("kolon_baslangic") or p.get("kolon"))
+    # HEDEF, KIMLIK VE DONEM ADAY DEGIL: profil onlari aday listesine hic
+    # almiyor. Huni girisinde sayilinca "elendi" gorunuyorlardi (kullanici
+    # bildirimi: yalnizca PERIOD disarida kalmisken "3 aday elendi").
+    if ham is not None:
+        m = durum.get("meta") or {}
+        kolonlar = {str(k.get("ad")) for k in (p.get("kolon_ozet") or [])
+                    if isinstance(k, dict)}
+        meta = {m.get(k) for k in ("target", "id", "donem") if m.get(k)}
+        # Kolon listesi bilinmiyorsa tanimli meta kolonlarinin hepsi dusulur
+        ham = max(ham - len(meta & kolonlar if kolonlar else meta), 0)
     temiz = _liste_adet(t.get("temiz")) if t else None
     # SFA eleme yapmaz; kararlar onaylandiysa "modele girecek" sayisi
     sfa_gecen = _tam(sfa.get("kullanilan")) if sfa.get("onaylandi") else None

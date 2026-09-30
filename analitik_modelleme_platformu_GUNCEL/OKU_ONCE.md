@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Ürün adı "Akıllı Modelleme Platformu" oldu**.
+Bu tur: **Eleme sonuçlarında hedef ve kimlik kolonu "elendi" sayılmıyor**.
+Değiştir (fe_agent): `akis_panel.py`
+Kütüphane dosyasını değiştirdikten sonra webapp backend'ini yeniden başlatın.
+
+- Huninin başlangıcı tablonun tüm kolonlarıydı (1.042); hedef, kimlik ve
+  dönem kolonları aday olmadığı için profilde listeye girmiyor ve "elendi"
+  sayılıyordu. Yalnızca PERIOD süreç dışıyken "3 aday elendi" yazıyordu.
+  Artık başlangıç aday kolonlar (1.040), sonuç "1.040 → 1.039, 1 aday elendi".
+
+---
+
+Önceki tur: **Ürün adı "Akıllı Modelleme Platformu" oldu**.
 Değiştir (fe_agent): `akis_metin.py`, `llm.py`, `dokuman.py`, `docx_yaz.py`, `akis.py`
 Değiştir (webapp): `index.html` (HTML)
 Kütüphane dosyalarını değiştirdikten sonra webapp backend'ini yeniden başlatın.
