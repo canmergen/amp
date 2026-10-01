@@ -2345,6 +2345,10 @@ button.ozet-kart:focus-visible {
   height: 26px; padding: 0 10px; white-space: nowrap;
   flex-basis: auto; flex-shrink: 0;
 }
+.bolme-cubuk > span.iki-satir {
+  flex-direction: column; height: 38px; line-height: 1.2;
+}
+.bolme-cubuk-alt { font-weight: var(--fw-normal, 400); opacity: .92; font-size: .95em; }
 .bolme-cubuk-egitim { background: #3B5F9E; }
 .bolme-cubuk-val    { background: #6E8FCF; }
 .bolme-cubuk-gap    { background: var(--kenar-guclu); color: var(--metin); }

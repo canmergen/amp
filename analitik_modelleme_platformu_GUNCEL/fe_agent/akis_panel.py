@@ -1672,6 +1672,12 @@ def bolme_formu(durum):
         # HIC cizmiyor (plan listesi zaten ayni bilgiyi satir satir
         # yaziyor), kesin sayilari ise gosteriyor.
         "ozet_kesin": bool((durum.get("bolme") or {}).get("satir")),
+        # Cubuktaki hedef oranlari: genel oran (bolme oncesi beklenen) ve
+        # bolme uygulandiysa setlerin gercek oranlari.
+        "hedef_orani": (p.get("event_rate") / 100.0
+                        if p.get("hedef_tip") == "binary" and p.get("event_rate") is not None
+                        else None),
+        "set_hedef_oran": (durum.get("bolme") or {}).get("hedef_oran") or {},
         "uyarilar": bolme_uyarilari(durum),
         "kisitlar": kisitlar,
         "kilitli": kilitli,

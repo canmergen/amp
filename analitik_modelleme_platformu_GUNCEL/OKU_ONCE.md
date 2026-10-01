@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **sohbet artık en alta atmıyor**. Değiştir: `webapp/app.js`
+Bu tur: **01.4 kartı sadeleşti, hedef oranı çubukta**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`
+
+- Başlık "Veri nasıl bölünecek" → "Veri Bölme Stratejisi".
+- "Önerilen ayarlar uygulandı." ve "Bölme ayarları kaydedildi."
+  yazıları kaldırıldı.
+- Bölme sonrası "Bölme tanımlandı: … Train / Test / Validasyon satır ve
+  hedef oranı" metni yazılmıyor; kimlik notu da (kartta "Aynı <kimlik>:
+  bir arada tutulur" yazıyor). Yalnızca dikkat isteyen notlar kalıyor
+  (çok küçük set, ara dönem, hazır bölme, kimlik bulunamadı).
+- Hedef Dağılımı "Korunsun" iken çubuğun her parçasında ikinci satır
+  "Hedef %x": bölme öncesi genel hedef oranı, bölme uygulanınca setlerin
+  gerçek oranı. "Korunmasın"da yazmaz. Zamansal bölmede dönem setlerinin
+  oranı önceden bilinmediği için yalnızca uygulandıktan sonra yazar.
+
+---
+
+Önceki tur: **sohbet artık en alta atmıyor**. Değiştir: `webapp/app.js`
 
 - Yeni içerik gelince ekran yeni içeriğin BAŞINA kaydırılıyor, en alta
   değil. Zincirleme adımlarda (01.4 sonucu → 02.1 çıktısı → 02.2 kartı)

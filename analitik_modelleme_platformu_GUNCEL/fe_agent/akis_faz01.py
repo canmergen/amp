@@ -3630,8 +3630,7 @@ def _bolme_tarifi(durum, a, b, notlar):
         oranlar.append(["val", a["val_oran"]])
     kimlik = m.get("id") if a["birim"] == "kimlik" else None
     if kimlik and kimlik in kol:
-        notlar.append("Bölme %s kimliği üzerinden yapıldı; aynı kimlik iki "
-                      "sete birden düşmez." % kimlik)
+        pass        # kartta yaziyor: "Aynı <kimlik>: bir arada tutulur"
     else:
         if a["birim"] == "kimlik":
             notlar.append("Kimlik kolonu veri setinde bulunamadığı için bölme "
@@ -3702,6 +3701,14 @@ def _bolme_uygula_spark(durum):
     durum["bolme"] = b
 
     ikili = (durum.get("profil") or {}).get("hedef_tip") == "binary"
+    # Setlerin GERCEK hedef oranlari: karttaki cubuk bunlari yazar.
+    b["hedef_oran"] = {}
+    if ikili:
+        for ad in SET_ADLARI:
+            st = setler.get(SPLIT_ETIKET[ad]) or {}
+            if st.get("satir"):
+                b["hedef_oran"][ad] = float(st.get("pozitif") or 0) / int(st["satir"])
+    durum["bolme"] = b
 
     def set_satiri(ad):
         st = setler.get(SPLIT_ETIKET[ad]) or {}
@@ -3722,8 +3729,11 @@ def _bolme_uygula_spark(durum):
     if secilen_tipler:
         ek += ("\n%s kolon sözlük teyidindeki seçiminize göre dönüştürülmüş "
                "tiple işleniyor." % _sayi(len(secilen_tipler)))
-    return ("Bölme tanımlandı: %s satır AMP_VERISETI içinde setlere ayrıldı.\n%s%s"
-            % (_sayi(b["toplam_satir"]), "\n".join(satirlar), ek))
+    # "Bölme tanımlandı" ozeti YAZILMAZ (kullanici karari: "altta yazmasina
+    # gerek yok"): setler ve hedef oranlari kartin cubugunda. Yalnizca
+    # dikkat isteyen notlar (kucuk set, ara donem, hazir bolme) yazilir.
+    del satirlar
+    return "\n".join(notlar)
 
 
 def bolme_uygula(durum):

@@ -3396,8 +3396,9 @@ function bfKaydet(secenek) {
             BF.acikEksen = false;
             BF.kilitAcik = false;
             BF.zorlaOnay = false;
-            BF.not = ayar.oneri ? "Önerilen ayarlar uygulandı."
-                                : "Bölme ayarları kaydedildi.";
+            /* "Önerilen ayarlar uygulandı." / "Bölme ayarları kaydedildi."
+               yazılmaz (kullanıcı kararı: "saçma duruyor"). */
+            BF.not = "";
             /* Sohbetteki bolme karti aciksa taze govdeyi o da alir:
                ozet, uyarilar ve kisitlar ayara bagli. */
             if (d.secim_alani && BOLME.kart) BOLME.alan = d.secim_alani;
@@ -4320,6 +4321,15 @@ function dagilimGovdeCiz(govde, d) {
 function analizGuncelle(veri) {
     if (!veri) return;
     ANALIZ_VERI = veri;
+    /* Bölme uygulandıysa sohbetteki bölme kartının çubuğu setlerin
+       GERÇEK hedef oranlarını yazsın (yalnızca bu iki alan alınır;
+       kullanıcının taslağına dokunulmaz). */
+    const bf = veri.bolme && veri.bolme.bolme_formu;
+    if (bf && BF.veri && BOLME.govde && BOLME.govde.isConnected) {
+        BF.veri.set_hedef_oran = bf.set_hedef_oran || {};
+        if (bf.hedef_orani !== undefined) BF.veri.hedef_orani = bf.hedef_orani;
+        bolmeGovdeTazele();
+    }
     /* Veri değişmiş olabilir (süreç dışı, tip dönüşümü, bölme): dağılım
        önbelleği boşalır; sekme açıksa yeniden istenir. */
     dagilimSifirla();
@@ -6431,7 +6441,7 @@ function bolmeOzellestirildi() { return bfDegisti(); }
    çiziyordu. Şimdi TEK liste: her satırda seçenekler çip olarak yan
    yana, önerilen olan seçili ve yeşil noktayla işaretli. Değiştirmek
    için tıklamak yeterli. Önerilenden sapan satır kehribar renkte ve
-   yanında "önerilene dön". Üstte "Veri nasıl bölünecek" çubuğu her
+   yanında "önerilene dön". Üstte "Veri Bölme Stratejisi" çubuğu her
    tıklamada anında güncellenir; her satırın yanında "i" simgesi, hiç
    bilmeyen için yazılmış açıklamayı fareyle gösterir.
 
@@ -6528,14 +6538,14 @@ function bolmeTaslagiOneriyleDoldur(alan) {
         !== bfSeedListesi(bfTuretilenSeedler(BF.alan.seed, BF.alan.tekrar)).join(",");
 }
 
-/* ---- ÖZET ÇUBUĞU: "Veri nasıl bölünecek" ----
+/* ---- ÖZET ÇUBUĞU: "Veri Bölme Stratejisi" ----
    Kartın en görünür yeri. Rastgele bölmede üç setin yüzdesi renkli
    çubukta; zamansal bölmede dönem sırası (eğitim dönemleri · gap · son N
    dönem). Her tıklamada yeniden çizilir. */
 function bolmeOzetCubukCiz(kok, alan) {
     const kutu = elYap("div", "bolme-ozet");
     const bas = elYap("div", "bolme-ozet-bas");
-    bas.appendChild(elYap("b", "", "Veri nasıl bölünecek"));
+    bas.appendChild(elYap("b", "", "Veri Bölme Stratejisi"));
     const fark = bolmeFarkSayisi(alan);
     const sag = elYap("span", "bolme-ozet-sag");
     sag.appendChild(elYap("span", "bolme-rozet " + (fark ? "ozel" : "oneri"),
@@ -6550,16 +6560,31 @@ function bolmeOzetCubukCiz(kok, alan) {
     kutu.appendChild(bas);
 
     const a = BF.alan;
+    /* HEDEF ORANI ÇUBUKTA (kullanıcı kararı): "Hedef Dağılımı: Korunsun"
+       seçiliyse her setin hedef oranı parçanın içinde yazar. Bölme
+       uygulandıysa setlerin gerçek oranı, değilse genel oran (katmanlı
+       bölmede her set onu taşır). Zamansal bölmede dönem setlerinin oranı
+       önceden bilinmez; yalnızca bölme uygulandıysa yazar. */
+    const fv = BF.veri || {};
+    const gercek = !bfDegisti() ? (fv.set_hedef_oran || {}) : {};
+    const hedefYaz = (ad) => {
+        if (!bfKatmanla(a.katmanla)) return "";
+        let o = gercek[ad];
+        if ((o === undefined || o === null) && !bfZamansalMi()) o = fv.hedef_orani;
+        if (o === undefined || o === null) return "";
+        return "Hedef %" + (100 * Number(o)).toLocaleString("tr-TR",
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
     if (a.test_tanim === "hazir") {
         kutu.appendChild(elYap("div", "bolme-ozet-alt",
             "Setler veri setindeki bölme kolonundan okunacak."));
     } else if (bfZamansalMi()) {
         const cubuk = elYap("div", "bolme-cubuk");
         const gap = bfTam(a.gap, 0);
-        cubuk.appendChild(bolmeCubukParca("egitim", 60, "Train (MS) · önceki dönemler"));
+        cubuk.appendChild(bolmeCubukParca("egitim", 60, "Train (MS) · önceki dönemler", hedefYaz("egitim")));
         if (gap) cubuk.appendChild(bolmeCubukParca("gap", 8, "gap " + gap));
         cubuk.appendChild(bolmeCubukParca("test", gap ? 32 : 40,
-                                          "Validasyon (OOT) · " + bfDonemEtiketi()));
+                                          "Validasyon (OOT) · " + bfDonemEtiketi(), hedefYaz("test")));
         kutu.appendChild(cubuk);
     } else {
         const p = bfPaylar();
@@ -6567,9 +6592,9 @@ function bolmeOzetCubukCiz(kok, alan) {
         const yz = v => Math.round(100 * v);
         /* TAM AD, KISALTMA YOK (kullanıcı kararı). Parça yüzdeyle
            orantılı büyür ama yazısından dar olamaz (bolmeCubukParca). */
-        if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), "Train (MS) %" + yz(p.train)));
-        if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), "Test (OOS) %" + yz(p.val)));
-        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), TEST_OOS2 + " %" + yz(p.test)));
+        if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), "Train (MS) %" + yz(p.train), hedefYaz("egitim")));
+        if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), "Test (OOS) %" + yz(p.val), hedefYaz("val")));
+        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), TEST_OOS2 + " %" + yz(p.test), hedefYaz("test")));
         kutu.appendChild(cubuk);
     }
 
@@ -6616,10 +6641,14 @@ function bolmeOzetCubukCiz(kok, alan) {
 /* Parça: flex-grow = yüzde, flex-basis = yazının kendi genişliği.
    Böylece küçük paylı set bile adını tam gösterir; kalan alan
    yüzdelere göre paylaşılır. Yazı kırpılmaz, kesilmez. */
-function bolmeCubukParca(sinif, genislik, metin) {
-    const p = elYap("span", "bolme-cubuk-" + sinif, metin);
+function bolmeCubukParca(sinif, genislik, metin, alt) {
+    /* alt: ikinci satır (hedef oranı); varsa parça iki satırlı çizilir,
+       çubuk yine tek sıra kalır. */
+    const p = elYap("span", "bolme-cubuk-" + sinif + (alt ? " iki-satir" : ""));
+    p.appendChild(elYap("span", "bolme-cubuk-ust", metin));
+    if (alt) p.appendChild(elYap("span", "bolme-cubuk-alt", alt));
     p.style.flexGrow = String(Math.max(genislik, 1));
-    p.title = metin;
+    p.title = alt ? metin + " · " + alt : metin;
     return p;
 }
 
