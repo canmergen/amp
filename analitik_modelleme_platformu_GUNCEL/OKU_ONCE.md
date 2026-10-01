@@ -1,6 +1,23 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.2'ye Segment Kolonu (Opsiyonel)**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `fe_agent/dokuman.py`, `webapp/app.js`, `webapp/style.css`
+Bu tur: **01.4 segment güncellemesi; açılır listelerde tam ad**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `fe_agent/amp.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `webapp/app.js`, `webapp/style.css`
+
+- Açılır listeler en uzun ada göre genişliyor (en çok 560px); kolon adları
+  kesilmiyor.
+- Segment kolonu tanımlıysa 01.4 kartında "Segmentler" tablosu:
+  bölme öncesi segment başına satır, pay ve hedef oranı; bölme
+  uygulanınca segment × set (Train / Test (OOS) / Validasyon) satır ve
+  hedef oranı.
+- Hedef Dağılımı "Korunsun" iken rastgele ayırmada katman segment × hedef:
+  her segmentin her setteki payı ve hedef oranı aynı kalır.
+- Küçük segment uyarısı: bir sette 50 satırın ya da 20 kötünün altında
+  kalan segment tabloda sarı, kartta uyarı satırı.
+- Spark yolunda bölme öncesi segment hedef oranı yok (yalnızca satır);
+  bölme uygulanınca set bazında gelir. Spark yolu yerelde denenemedi.
+
+---
+
+Önceki tur: **01.2.2'ye Segment Kolonu (Opsiyonel)**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `fe_agent/dokuman.py`, `webapp/app.js`, `webapp/style.css`
 
 - Dönem kolonunun yanında "Segment Kolonu (Opsiyonel)": 2–20 farklı değer
   taşıyan kolonlar listelenir; açıklaması "i" simgesinde.

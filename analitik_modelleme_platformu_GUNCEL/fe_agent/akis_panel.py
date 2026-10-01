@@ -19,7 +19,7 @@ from fe_agent.akis_durum import (
     bolme_ayarlari, bolme_etiket, bolme_kisitlari, bolme_ozeti,
     bolme_satir_degeri, bolme_secenek_listesi, bolme_uyarilari,
     KAT_EN_AZ, KAT_EN_COK, ORAN_EN_AZ, ORAN_EN_COK,
-    test_donem_anahtari, set_basligi,
+    test_donem_anahtari, set_basligi, segment_ozeti,
     test_donem_secenekleri,
 )
 from fe_agent.akis_kayit import ADIMLAR, adim_grubu, adim_sirasi, fazlar
@@ -1689,11 +1689,27 @@ def bolme_formu(durum):
                         if p.get("hedef_tip") == "binary" and p.get("event_rate") is not None
                         else None),
         "set_hedef_oran": (durum.get("bolme") or {}).get("hedef_oran") or {},
+        # SEGMENT TABLOSU (01.4): segment basina satir ve hedef orani;
+        # bolme uygulandiysa set bazinda gercek sayilar.
+        "segment": _segment_bilgisi(durum),
         "uyarilar": bolme_uyarilari(durum),
         "kisitlar": kisitlar,
         "kilitli": kilitli,
         "kilit_nedeni": neden,
     }
+
+
+def _segment_bilgisi(durum):
+    seg = (durum.get("meta") or {}).get("segment")
+    if not seg:
+        return None
+    try:
+        ozet = segment_ozeti(durum) or []
+    except Exception:
+        ozet = []
+    return {"kolon": seg,
+            "ozet": [{"ad": a, "satir": n, "pozitif": k} for a, n, k in ozet],
+            "setler": (durum.get("bolme") or {}).get("segment_setler") or {}}
 
 
 def _hazir_bolme_notu(hazir):

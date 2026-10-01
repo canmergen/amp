@@ -154,7 +154,9 @@ def amp_bolme_yaz(durum, bolme):
         raise AdimHatasi("AMP_VERISETI henüz oluşturulmadı; önce «Değişken "
                          "Kontrolü» adımını kaydedin.")
     istek = {"donusum": {}, "dusen": [],
-             "hedef": (durum.get("meta") or {}).get("target"), "bolme": bolme}
+             "hedef": (durum.get("meta") or {}).get("target"), "bolme": bolme,
+             # Segment kolonu: set x segment sayimi (01.4 segment tablosu)
+             "segment": (durum.get("meta") or {}).get("segment")}
     from fe_agent import amp_pandas
     if kayit.get("dosya"):
         df = tablo_io.klasorden_oku(_folder(), kayit["dosya"])

@@ -3179,6 +3179,91 @@ def bolme_ozeti(durum):
     return metin
 
 
+# KUCUK SEGMENT ESIKLERI: bir segmentin herhangi bir setinde bunlarin
+# altinda kalmasi o segmentin ayri modelini ve olcumunu guvenilmez yapar.
+SEGMENT_MIN_SATIR = MIN_SET_SATIR
+SEGMENT_MIN_KOTU = 20
+
+
+def segment_ozeti(durum):
+    """Segment basina [segment, satir, pozitif] (AMP_VERISETI, tam veri).
+
+    Pandas yolunda AMP'den bir kez hesaplanir ve durumda saklanir (anahtar:
+    AMP kaydi + segment + hedef). Spark yolunda burada veri okunmaz:
+    profildeki satir sayilari doner, pozitif None (hedef orani bolme
+    uygulaninca setlerle birlikte gelir). Segment yoksa None."""
+    m = durum.get("meta") or {}
+    seg, hedef = m.get("segment"), m.get("target")
+    if not seg:
+        return None
+    kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+    anahtar = [kayit.get("dosya") or kayit.get("dataset"), seg, hedef]
+    onb = durum.get("_segment_ozet") or {}
+    if onb.get("anahtar") == anahtar:
+        return onb.get("satirlar")
+    satirlar = None
+    if kayit.get("dosya"):
+        try:
+            df = modelleme_df(durum)
+            if seg in df.columns:
+                y = (pd.to_numeric(df[hedef], errors="coerce") > 0) if hedef in df.columns \
+                    else pd.Series(False, index=df.index)
+                g = df[seg].astype(object).where(df[seg].notna())
+                g = g.map(lambda v: str(int(v)) if isinstance(v, float) and v.is_integer()
+                          else str(v), na_action="ignore").fillna("(boş)")
+                t = pd.DataFrame({"g": g, "y": y}).groupby("g")["y"].agg(["size", "sum"])
+                satirlar = [[str(k), int(r["size"]), int(r["sum"])]
+                            for k, r in t.sort_values("size", ascending=False).iterrows()]
+        except Exception:
+            satirlar = None
+    if satirlar is None:
+        satirlar = [[str(v), int(n), None]
+                    for v, n in ((durum.get("profil") or {}).get("segment_dagilim") or [])]
+    durum["_segment_ozet"] = {"anahtar": anahtar, "satirlar": satirlar}
+    return satirlar
+
+
+def kucuk_segmentler(durum, a=None):
+    """Bir setinde SEGMENT_MIN_SATIR satirin ya da SEGMENT_MIN_KOTU kotunun
+    altinda kalan segmentler. Bolme uygulandiysa gercek sayilar, degilse
+    rastgele bolmede paylardan beklenen sayilar. Doner: [segment]."""
+    a = a or bolme_ayarlari(durum)
+    b = durum.get("bolme") or {}
+    gercek = b.get("segment_setler") or {}
+    kucuk = []
+    if gercek:
+        for seg, setler in gercek.items():
+            for ad, st in setler.items():
+                if ad == "disarida":
+                    continue
+                if st.get("satir", 0) < SEGMENT_MIN_SATIR or \
+                        st.get("pozitif", 0) < SEGMENT_MIN_KOTU:
+                    kucuk.append(seg)
+                    break
+        return kucuk
+    if a["test_tanim"] != "rastgele":
+        return []
+    test_o = float(a.get("test_oran") or 0.0)
+    val_o = float(a.get("val_oran") or 0.0) if a.get("val_var") else 0.0
+    paylar = [p for p in (1.0 - test_o - val_o, test_o, val_o) if p > 0]
+    for seg, n, poz in (segment_ozeti(durum) or []):
+        for p in paylar:
+            if n * p < SEGMENT_MIN_SATIR or (poz is not None and poz * p < SEGMENT_MIN_KOTU):
+                kucuk.append(seg)
+                break
+    return kucuk
+
+
+def kucuk_segment_uyarisi(liste):
+    if not liste:
+        return ""
+    adlar = ", ".join(liste[:6]) + (" ve %d segment daha" % (len(liste) - 6)
+                                    if len(liste) > 6 else "")
+    return ("Küçük segment: %s. En az bir sette %d satırın ya da %d kötünün "
+            "(hedef = 1) altında kalıyor; bu segmentlerin ayrı modeli ve "
+            "ölçümü güvenilir olmaz." % (adlar, SEGMENT_MIN_SATIR, SEGMENT_MIN_KOTU))
+
+
 def bolme_uyarilari(durum):
     """Bolme ayarlarindan dogan uyarilar (veri OKUMADAN).
 
@@ -3227,6 +3312,13 @@ def bolme_uyarilari(durum):
     if a["test_tanim"] == "zamansal" and not m.get("donem"):
         uyarilar.append("Zamansal test istendi ama dönem kolonu tanımlı "
                         "değil; rastgele teste düşüldü.")
+    if m.get("segment"):
+        try:
+            k = kucuk_segment_uyarisi(kucuk_segmentler(durum, a))
+        except Exception:
+            k = ""
+        if k:
+            uyarilar.append(k)
     # "Çoklu tekrar" CAPRAZ DOGRULAMAYA BAGLI: cv kapaliyken tekrar
     # sayisinin hicbir etkisi yok, ayar sessizce bosa gidiyordu.
     if a.get("seed_tur") == "coklu" and a["cv"] == "yok":

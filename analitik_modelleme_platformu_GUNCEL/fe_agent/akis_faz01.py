@@ -37,6 +37,7 @@ from fe_agent.akis_durum import (
     hazir_bolme_bul, kolon_ozeti_cikar, metin_yaz, modelleme_df,
     onbellek_temizle, sozluk_orijinal_oku, yeni_durum, amp_sahibi_yaz,
     donem_degeri, donem_serisi, donem_sirala,
+    kucuk_segmentler, kucuk_segment_uyarisi, segment_ozeti,
     dataset_yaz, dosya_yaz, sahip_yaz, modelleme_kaynagi,
     ORNEK_MASKE, _ornek_metni, hazir_bolme_bul_profil,
     BOLME_KALICI_ALANLARI, SET_ADLARI, SPLIT_ETIKET, MIN_SET_SATIR,
@@ -3708,7 +3709,9 @@ def _bolme_tarifi(durum, a, b, notlar):
                           "satır bazında yapıldı.")
         kimlik = None
     return {"tur": "rastgele", "kimlik": kimlik, "katmanla": bool(a["katmanla"]),
-            "hedef": m.get("target"), "oranlar": oranlar, "seed": a["seed"]}
+            "hedef": m.get("target"), "oranlar": oranlar, "seed": a["seed"],
+            # Hedef dagilimi korunuyorsa katman segment x hedef olur.
+            "segment": m.get("segment")}
 
 
 def _bolme_uygula_spark(durum):
@@ -3738,7 +3741,9 @@ def _bolme_uygula_spark(durum):
     b.update({"kalici": "kolon", "split_kolon": SPLIT_KOLON,
               "split_dataset": oz.get("dataset") or oz.get("dosya"), "satir": sayi,
               "train_satir": sayi["egitim"], "test_satir": sayi["test"],
-              "toplam_satir": int(oz.get("satir") or 0)})
+              "toplam_satir": int(oz.get("satir") or 0),
+              # {segment: {set_etiketi: {satir, pozitif}}} - 01.4 segment tablosu
+              "segment_setler": oz.get("segment_setler") or {}})
     durum["amp_cikti"] = dict(durum.get("amp_cikti") or {})
     eski = (durum["amp_cikti"].get("veri") or {})
     kayit = _amp_veri_kaydi(oz)
@@ -3758,6 +3763,11 @@ def _bolme_uygula_spark(durum):
     elif tarif["tur"] == "zamansal" and a["val_var"] and not sayi["val"]:
         notlar.append("Zamansal bölmede Test (OOS) için ayrılabilecek dönem "
                       "kalmadı; eğitime en az bir dönem bırakıldı.")
+    if (durum.get("meta") or {}).get("segment"):
+        durum["bolme"] = b
+        k = kucuk_segment_uyarisi(kucuk_segmentler(durum, a))
+        if k:
+            notlar.append(k)
     for ad in SET_ADLARI:
         n = sayi[ad]
         if 0 < n < MIN_SET_SATIR:

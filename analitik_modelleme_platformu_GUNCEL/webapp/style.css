@@ -1008,6 +1008,14 @@ button.ozet-kart:focus-visible {
   max-height: 208px; overflow-y: auto; display: none;
 }
 .combo-liste.acik { display: block; }
+/* TAM AD GORUNSUN (kullanici bildirimi: "tam adları gözükmüyor"). Liste
+   kutunun genisligine kilitli degil: en uzun kolon adina gore genisler
+   (en az kutu kadar, en cok 560px); daha uzun ad satir icinde kirilir. */
+.combo-liste {
+  right: auto; min-width: 100%; width: max-content;
+  max-width: min(560px, 92vw); overflow-x: hidden;
+}
+.combo-liste li { overflow-wrap: anywhere; }
 /* Sohbet alani kaydirilabilir oldugu icin kart hep en altta kalir;
    asagi sigmayan liste YUKARI acilir (JS olcup .yukari ekler). */
 .combo-liste.yukari {
@@ -3149,3 +3157,16 @@ span.bolme-cip { cursor: default; }
 .sfa-ilerleme { height: 4px; border-radius: 2px; background: var(--kenar-acik); margin: var(--b-2) 0; overflow: hidden; }
 .sfa-ilerleme[hidden] { display: none; }
 .sfa-ilerleme-dolgu { height: 100%; width: 0; background: var(--kirmizi); transition: width .4s; }
+
+/* 01.4 segment tablosu */
+.bolme-segment { margin-top: var(--b-3); }
+.bolme-segment-bas { font-size: var(--fs-kucuk); color: var(--metin-soluk); margin-bottom: 4px; }
+.bolme-segment-bas b { color: var(--metin); }
+.bolme-segment-tablo { width: 100%; border-collapse: collapse; font-size: var(--fs-kucuk); }
+.bolme-segment-tablo th { text-align: left; font-weight: var(--fw-kalin); color: var(--metin-soluk);
+  padding: 4px 8px; border-bottom: 1px solid var(--kenar); white-space: nowrap; }
+.bolme-segment-tablo td { padding: 4px 8px; border-bottom: 1px solid var(--kenar); }
+.bolme-segment-tablo td.sayi, .bolme-segment-tablo th:not(:first-child) { text-align: right;
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bolme-segment-tablo tr.kucuk td { background: var(--sari-acik, #fff6d6); }
+.bolme-segment-not { margin-top: 4px; font-size: var(--fs-kucuk); color: var(--metin-soluk); }

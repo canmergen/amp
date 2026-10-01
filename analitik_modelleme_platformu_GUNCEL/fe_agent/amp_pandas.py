@@ -136,6 +136,13 @@ def bolme_ekle(df, b):
     return rastgele_ekle(df, b)
 
 
+def _metin_katman(seri):
+    """Segment degerinin katman metni (Spark'taki cast("string") karsiligi)."""
+    return seri.astype(object).where(seri.notna()).map(
+        lambda v: str(int(v)) if isinstance(v, (float, np.floating)) and float(v).is_integer()
+        else str(v), na_action="ignore").fillna("__BOS__")
+
+
 def rastgele_ekle(df, b):
     """RASTGELE (katmanli) _SPLIT: kimlik varsa kimlik duzeyinde, yoksa satir
     duzeyinde (amp_spark.rastgele_ekle ile ayni tarif)."""
@@ -144,6 +151,9 @@ def rastgele_ekle(df, b):
     seed = int(b.get("seed") or 42)
     anahtar_tuzu = _hash_anahtari(seed)
     kimlik = b.get("kimlik")
+    # SEGMENT x HEDEF KATMANI: segment kolonu tanimliysa ve hedef dagilimi
+    # korunuyorsa her segmentin her setteki payi ve hedef orani ayni kalir.
+    seg = b.get("segment") if (b.get("katmanla") and b.get("segment") in df.columns) else None
     df = df.copy(deep=False)
     if kimlik:
         k = df[kimlik].astype(object).where(df[kimlik].notna())
@@ -152,6 +162,10 @@ def rastgele_ekle(df, b):
             y = _sayi(df[hedef])
             kt = pd.DataFrame({"id": k, "y": y}).groupby("id", sort=True)["y"].max()
             katman = kt.map(lambda v: "__BOS__" if pd.isna(v) else str(float(v)))
+            if seg:
+                sg = pd.DataFrame({"id": k, "s": _metin_katman(df[seg])}) \
+                    .groupby("id", sort=True)["s"].min()
+                katman = sg.reindex(katman.index).fillna("__BOS__") + "|" + katman
         else:
             katman = pd.Series("__TEK__", index=pd.Index(sorted(k.unique()), name="id"))
         idler = pd.Series(katman.index, index=katman.index)
@@ -165,6 +179,8 @@ def rastgele_ekle(df, b):
         katman = katman.map(lambda v: str(float(v)) if isinstance(v, (int, float, np.number))
                             and not isinstance(v, bool) else str(v),
                             na_action="ignore").fillna("__BOS__")
+        if seg:
+            katman = _metin_katman(df[seg]) + "|" + katman
     else:
         katman = pd.Series("__TEK__", index=df.index)
     anahtar = pd.util.hash_pandas_object(df, index=False, hash_key=anahtar_tuzu)
@@ -206,6 +222,15 @@ def amp_hazirla(df, istek):
         sayim = tablo.groupby("s")["y"].agg(["size", "sum"])
         sonuc["setler"] = {str(s): {"satir": int(r["size"]), "pozitif": int(r["sum"])}
                            for s, r in sayim.iterrows()}
+        seg = istek.get("segment")
+        if seg and seg in df.columns:
+            tablo["g"] = _metin_katman(df[seg]).to_numpy()
+            ss = tablo.groupby(["g", "s"])["y"].agg(["size", "sum"])
+            cikti = {}
+            for (g, st), r in ss.iterrows():
+                cikti.setdefault(str(g), {})[str(st)] = {
+                    "satir": int(r["size"]), "pozitif": int(r["sum"])}
+            sonuc["segment_setler"] = cikti
     return df, sonuc
 
 

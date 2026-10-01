@@ -4327,6 +4327,7 @@ function analizGuncelle(veri) {
     const bf = veri.bolme && veri.bolme.bolme_formu;
     if (bf && BF.veri && BOLME.govde && BOLME.govde.isConnected) {
         BF.veri.set_hedef_oran = bf.set_hedef_oran || {};
+        if (bf.segment !== undefined) BF.veri.segment = bf.segment;
         if (bf.hedef_orani !== undefined) BF.veri.hedef_orani = bf.hedef_orani;
         bolmeGovdeTazele();
     }
@@ -6630,11 +6631,79 @@ function bolmeOzetCubukCiz(kok, alan) {
     });
     kutu.appendChild(alt);
 
+    bolmeSegmentTablosu(kutu, a);
+
     /* Bölme hesaplandıysa (kesin satır sayıları) sunucunun özeti de yazılır. */
     const f = BF.veri || {};
     const sunucu = (BF.ozet !== null && BF.ozet !== undefined) ? BF.ozet : (f.ozet || "");
     if (sunucu && f.ozet_kesin && !bfDegisti())
         kutu.appendChild(elYap("div", "bolme-ozet-kesin", sunucu));
+    kok.appendChild(kutu);
+}
+
+/* ---- SEGMENT TABLOSU (01.4) ----
+   Segment kolonu tanımlıysa her segmentin satır sayısı ve hedef (1) oranı
+   tek tabloda. Bölme uygulandıysa her setin (Train / Test / Validasyon)
+   satırı ve hedef oranı ayrı kolonda; uygulanmadıysa segmentin toplamı.
+   Küçük segmentler (bir sette 50 satırın ya da 20 kötünün altı) sarı. */
+const SEGMENT_MIN_SATIR = 50, SEGMENT_MIN_KOTU = 20;
+
+function bolmeSegmentTablosu(kok, a) {
+    const s = (BF.veri || {}).segment;
+    if (!s || !s.kolon) return;
+    const yuzde = (k, n) => (k === null || k === undefined || !n) ? "-"
+        : "%" + (100 * k / n).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const sayi = n => Number(n || 0).toLocaleString("tr-TR");
+    const kutu = elYap("div", "bolme-segment");
+    const bas = elYap("div", "bolme-segment-bas");
+    bas.appendChild(elYap("b", "", "Segmentler"));
+    bas.appendChild(elYap("span", "", " · " + s.kolon));
+    kutu.appendChild(bas);
+
+    const setler = (!bfDegisti() && s.setler && Object.keys(s.setler).length) ? s.setler : null;
+    const tablo = elYap("table", "bolme-segment-tablo");
+    const htr = document.createElement("tr");
+    let kolonlar;
+    if (setler) {
+        const tur = a.test_tanim;
+        const var_ = k => Object.values(setler).some(x => x && x[k]);
+        kolonlar = [["train", "Train (MS)"], ["val", "Test (OOS)"],
+                    ["test", tur === "rastgele" ? TEST_OOS2 : "Validasyon (OOT)"]]
+            .filter(([k]) => var_(k));
+        ["Segment"].concat(kolonlar.map(x => x[1])).forEach(h => htr.appendChild(elYap("th", "", h)));
+    } else {
+        ["Segment", "Satır", "Pay", "Hedef Oranı"].forEach(h => htr.appendChild(elYap("th", "", h)));
+    }
+    tablo.appendChild(htr);
+    const toplam = (s.ozet || []).reduce((t, x) => t + (x.satir || 0), 0);
+    const adlar = setler ? Object.keys(setler).sort((x, y) => {
+        const n = k => Object.values(setler[k] || {}).reduce((t, v) => t + (v.satir || 0), 0);
+        return n(y) - n(x);
+    }) : (s.ozet || []).map(x => x.ad);
+    adlar.forEach(ad => {
+        const tr = document.createElement("tr");
+        tr.appendChild(elYap("td", "", ad));
+        let kucuk = false;
+        if (setler) {
+            kolonlar.forEach(([k]) => {
+                const st = (setler[ad] || {})[k] || { satir: 0, pozitif: 0 };
+                if (st.satir < SEGMENT_MIN_SATIR || st.pozitif < SEGMENT_MIN_KOTU) kucuk = true;
+                tr.appendChild(elYap("td", "sayi", sayi(st.satir) + " · " + yuzde(st.pozitif, st.satir)));
+            });
+        } else {
+            const x = (s.ozet || []).find(o => o.ad === ad) || {};
+            tr.appendChild(elYap("td", "sayi", sayi(x.satir)));
+            tr.appendChild(elYap("td", "sayi", toplam ? "%" + (100 * x.satir / toplam).toLocaleString("tr-TR", { maximumFractionDigits: 1 }) : "-"));
+            tr.appendChild(elYap("td", "sayi", yuzde(x.pozitif, x.satir)));
+        }
+        if (kucuk) { tr.classList.add("kucuk"); tr.title = "Bir sette " + SEGMENT_MIN_SATIR + " satırın ya da " + SEGMENT_MIN_KOTU + " kötünün altında"; }
+        tablo.appendChild(tr);
+    });
+    kutu.appendChild(tablo);
+    if (!setler)
+        kutu.appendChild(elYap("div", "bolme-segment-not",
+            "Setlere göre satır sayısı ve hedef oranı bölme uygulanınca yazılır."
+            + (bfKatmanla(a.katmanla) ? " Hedef dağılımı korunduğu için her segmentin her setteki payı ve hedef oranı aynı tutulur." : "")));
     kok.appendChild(kutu);
 }
 

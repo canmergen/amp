@@ -310,14 +310,23 @@ def rastgele_ekle(spark, df, b):
     hedef = b.get("hedef")
     seed = int(b.get("seed") or 42)
     kimlik = b.get("kimlik")
+    # SEGMENT x HEDEF KATMANI (amp_pandas.rastgele_ekle ile ayni kural)
+    seg = b.get("segment") if (b.get("katmanla") and b.get("segment") in df.columns) else None
+    seg_ifade = (F.coalesce(F.col("`%s`" % seg).cast("string"), F.lit("__BOS__"))
+                 if seg else None)
     if kimlik:
         k = F.coalesce(F.col("`%s`" % kimlik).cast("string"), F.lit("__BOS__"))
         if b.get("katmanla") and hedef:
-            kt = df.select(k.alias("__id"),
-                           F.col("`%s`" % hedef).cast("double").alias("__y")) \
-                   .groupBy("__id").agg(F.max("__y").alias("__y"))
-            kt = kt.withColumn("__katman", F.coalesce(F.col("__y").cast("string"),
-                                                      F.lit("__BOS__")))
+            sutunlar = [k.alias("__id"), F.col("`%s`" % hedef).cast("double").alias("__y")]
+            if seg:
+                sutunlar.append(seg_ifade.alias("__s"))
+            kt = df.select(*sutunlar).groupBy("__id").agg(
+                F.max("__y").alias("__y"),
+                *([F.min("__s").alias("__s")] if seg else []))
+            katman = F.coalesce(F.col("__y").cast("string"), F.lit("__BOS__"))
+            if seg:
+                katman = F.concat_ws("|", F.col("__s"), katman)
+            kt = kt.withColumn("__katman", katman)
         else:
             kt = df.select(k.alias("__id")).distinct() \
                    .withColumn("__katman", F.lit("__TEK__"))
@@ -330,6 +339,8 @@ def rastgele_ekle(spark, df, b):
 
     katman = (F.coalesce(F.col("`%s`" % hedef).cast("string"), F.lit("__BOS__"))
               if b.get("katmanla") and hedef else F.lit("__TEK__"))
+    if seg and b.get("katmanla") and hedef:
+        katman = F.concat_ws("|", seg_ifade, katman)
     # BELIRLENIMCI ANAHTAR: rand() her eylemde (yazma, sayim) yeniden
     # uretilebilir ve yazilan etiketle raporlanan sayi ayrisabilirdi. Satirin
     # butun kolonlari + seed'in ozeti her seferinde ayni sirayi verir; ayni
@@ -384,6 +395,16 @@ def amp_hazirla(spark, df, istek):
             F.count(F.when(y, 1)).alias("poz")).collect()
         sonuc["setler"] = {r[SPLIT_KOLON]: {"satir": int(r["n"]), "pozitif": int(r["poz"])}
                            for r in sayim}
+        seg = istek.get("segment")
+        if seg and seg in df.columns:
+            g = F.coalesce(F.col("`%s`" % seg).cast("string"), F.lit("__BOS__"))
+            ss = df.groupBy(g.alias("__g"), F.col(SPLIT_KOLON)).agg(
+                F.count(F.lit(1)).alias("n"), F.count(F.when(y, 1)).alias("poz")).collect()
+            cikti = {}
+            for r in ss:
+                cikti.setdefault(str(r["__g"]), {})[r[SPLIT_KOLON]] = {
+                    "satir": int(r["n"]), "pozitif": int(r["poz"])}
+            sonuc["segment_setler"] = cikti
     return df, sonuc
 
 
