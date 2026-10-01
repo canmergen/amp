@@ -3711,8 +3711,8 @@ def _bolme_tarifi(durum, a, b, notlar):
         kimlik = None
     return {"tur": "rastgele", "kimlik": kimlik, "katmanla": bool(a["katmanla"]),
             "hedef": m.get("target"), "oranlar": oranlar, "seed": a["seed"],
-            # Hedef dagilimi korunuyorsa katman segment x hedef olur.
-            "segment": m.get("segment")}
+            # Hedef ve segment dagilimi korunuyorsa katman segment x hedef olur.
+            "segment": m.get("segment") if a.get("segment_katmanla", True) else None}
 
 
 def _bolme_uygula_spark(durum):

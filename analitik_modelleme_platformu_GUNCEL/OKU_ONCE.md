@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **sözlük tablosu tam okunur, "i" balonu okunur, zorunlu tanım metni**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`
+Bu tur: **01.4'te ayrı "Segment Dağılımı" ayarı**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `webapp/app.js`
+
+- Hedef Dağılımı satırının altında "Segment Dağılımı: Korunsun /
+  Korunmasın" (yalnızca segment kolonu tanımlıysa ve hedef dağılımı
+  korunurken görünür; açıklaması "i" simgesinde).
+- Korunsun: katman segment × hedef (her segmentin payı ve hedef oranı her
+  sette aynı). Korunmasın: yalnızca genel hedef oranı korunur.
+- Varsayılan Korunsun (önceki davranış).
+
+---
+
+Önceki tur: **sözlük tablosu tam okunur, "i" balonu okunur, zorunlu tanım metni**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`
 
 - Sağ panel VERİ & SÖZLÜK tablosunda değişken adı ve sözlük tanımı
   kırpılmıyor; alt satıra kayıyor. Satırlar sabit yükseklikte değil;

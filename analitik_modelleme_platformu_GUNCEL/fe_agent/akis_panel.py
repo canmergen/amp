@@ -1609,6 +1609,13 @@ def bolme_formu(durum):
                          {"anahtar": "koruma", "etiket": "Korunmasın",
                           "aciklama": "Kayıtlar hedefe bakılmadan "
                                       "dağıtılır."}])
+    segment_katmanla = _alan(
+        "segment_katmanla", "koru" if a.get("segment_katmanla", True) else "koruma",
+        secenekler=[
+            {"anahtar": "koru", "etiket": "Korunsun",
+             "aciklama": "Her segmentin payı ve hedef oranı setlerde aynı tutulur."},
+            {"anahtar": "koruma", "etiket": "Korunmasın",
+             "aciklama": "Yalnızca genel hedef oranı korunur."}])
     katmanla_kisit = _kisit("katmanla")
     if katmanla_kisit:
         katmanla["not"] = katmanla_kisit
@@ -1668,6 +1675,7 @@ def bolme_formu(durum):
                          **({"not": "Çapraz doğrulama kapalı."}
                             if a["cv"] == "yok" else {})),
             "katmanla": katmanla,
+            "segment_katmanla": segment_katmanla,
             "seed": _alan("seed", a["seed"]),
             # Coklu tekrarin seed listesi; virgullu metin olarak gidip
             # geliyor (bkz. akis_durum._seed_listesi).
@@ -1748,7 +1756,10 @@ def bolme_satirlari(durum, oneri_ayarlari=None):
             a_oneri["oot_tanim"] = oneri_ayarlari["oot_tanim"]
 
     satirlar = []
+    segment_var = bool((durum.get("meta") or {}).get("segment"))
     for tanim in BOLME_SATIRLARI:
+        if tanim["anahtar"] == "segment_katmanla" and not segment_var:
+            continue
         kayit = {
             "anahtar": tanim["anahtar"],
             "etiket": tanim["etiket"],

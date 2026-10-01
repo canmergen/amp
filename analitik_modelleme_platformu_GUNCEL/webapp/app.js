@@ -2872,6 +2872,7 @@ const BF_ALAN_YEDEK = {
     birim: "Bölme Birimi", val_var: "Doğrulama Seti Kullan",
     val_oran: "Doğrulama Oranı", cv: "Çapraz Doğrulama Yöntemi",
     kat: "Parça Sayısı", katmanla: "Hedefe Göre Katmanla",
+    segment_katmanla: "Segment Dağılımı",
     oot_tanim: "Test Dönemi Seçimi", oot_deger: "Test Dönemi",
     seed: "Rastgelelik Tohumu"
 };
@@ -2982,6 +2983,7 @@ function bfAlanlar(f) {
         cv: cv,
         kat: d("kat", 5),
         katmanla: d("katmanla", "koru"),
+        segment_katmanla: d("segment_katmanla", "koru"),
         seed_tur: d("seed_tur", "sabit"),
         tekrar: d("tekrar", 1),
         gap: d("gap", 0),
@@ -3003,6 +3005,7 @@ function bfGovdeDen(a) {
         test_oran: String(bfSayi(a.test_oran, 0.20)),
         train_kullanimi: a.train_kullanimi,
         birim: a.birim, katmanla: bfKatmanla(a.katmanla),
+        segment_katmanla: bfKatmanla(a.segment_katmanla),
         val_var: bfValVar(a.val_var),
         val_oran: String(bfSayi(a.val_oran, 0.20)),
         cv: a.cv, kat: String(bfTam(a.kat, 5)),
@@ -6496,7 +6499,7 @@ function bfKiyasDeger(ad, v) {
         return String(Math.round(x * 10000));
     }
     if (ad === "val_var") return bfValVar(v) ? "1" : "0";
-    if (ad === "katmanla") return bfKatmanla(v) ? "1" : "0";
+    if (ad === "katmanla" || ad === "segment_katmanla") return bfKatmanla(v) ? "1" : "0";
     if (ad === "kat" || ad === "seed" || ad === "tekrar" || ad === "gap")
         return String(bfTam(v, 0));
     if (ad === "seedler") return bfSeedListesi(v).join(",");
@@ -6643,6 +6646,8 @@ function bolmeOzetCubukCiz(kok, alan) {
         parcalar.push(["Çapraz Doğrulama",
             a.cv === "yok" ? "Yok" : etiket("cv") + ", " + bfTam(a.kat, 5) + " kat"]);
         parcalar.push(["Hedef Dağılımı", bfKatmanla(a.katmanla) ? "korunuyor" : "korunmuyor"]);
+        if (BF.veri && BF.veri.segment && BF.veri.segment.kolon && bfKatmanla(a.katmanla))
+            parcalar.push(["Segment Dağılımı", bfKatmanla(a.segment_katmanla) ? "korunuyor" : "korunmuyor"]);
         /* Gruplama OTOMATİK: aynı kimliğin birden fazla satırı
            olabiliyorsa kayıtlar bir arada tutulur; ayar değil, bilgi. */
         if (BF.veri && BF.veri.gruplama_kolonu)
@@ -6732,7 +6737,9 @@ function bolmeSegmentTablosu(kok, a) {
     if (!setler)
         kutu.appendChild(elYap("div", "bolme-segment-not",
             "Setlere göre satır sayısı ve hedef oranı bölme uygulanınca yazılır."
-            + (bfKatmanla(a.katmanla) ? " Hedef dağılımı korunduğu için her segmentin her setteki payı ve hedef oranı aynı tutulur." : "")));
+            + ((bfKatmanla(a.katmanla) && bfKatmanla(a.segment_katmanla))
+               ? " Segment dağılımı korunduğu için her segmentin her setteki payı ve hedef oranı aynı tutulur."
+               : (bfKatmanla(a.katmanla) ? " Yalnızca genel hedef oranı korunur; segmentlerin setlere dağılımı rastgeledir." : ""))));
     kok.appendChild(kutu);
 }
 

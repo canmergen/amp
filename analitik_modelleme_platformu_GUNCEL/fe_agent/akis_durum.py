@@ -1038,6 +1038,11 @@ def bolme_ayarlari(durum):
         # davranis korunur: hedef tanimliysa katmanla.
         a["katmanla"] = bool(m.get("target")) and p.get("hedef_tip") != "surekli"
 
+    # SEGMENT DAGILIMI AYRI KARAR (kullanici karari: "belki sadece genel
+    # hedef dagilimi korunsun ama segment bazinda korunmasin istiyorum").
+    # Yalnizca hedef dagilimi korunurken ve segment kolonu varken anlamli.
+    a["segment_katmanla"] = bool(b.get("segment_katmanla", True))
+
     a["val_var"] = bool(b.get("val_var", False))
     a["val_oran"] = _oran_kirp(b.get("val_oran"), 0.20)
     a["test_oran"] = _oran_kirp(b.get("test_oran"), 0.20)
@@ -1195,6 +1200,7 @@ BOLME_ALAN_BASLIK = {
     "kat":             "Kat Sayısı",
     "tekrar":          "Tekrar Sayısı",
     "katmanla":        "Hedef Dağılımı",
+    "segment_katmanla": "Segment Dağılımı",
     "seed_tur":        "Tekrarlanabilirlik",
     "seed":            "Seed",
     "oot_tur":         "Validasyon (OOT) Dönemi Seçimi",
@@ -1214,6 +1220,7 @@ BOLME_ALAN_ACIKLAMA = {
     "cv":              "Ölçüm tek bir bölmenin şansına bağlı kalmasın.",
     "kat":             "Veri kaç parçaya bölünsün.",
     "katmanla":        "Hedefin oranı her parçada aynı kalsın.",
+    "segment_katmanla": "Her segmentin payı ve hedef oranı her sette aynı kalsın.",
     "oot_tur":         "Hangi dönemler Validasyon (OOT) olsun.",
     "oot_deger":       "Validasyon (OOT) için kullanılacak dönem.",
     "gap":             "Atlanacak dönem sayısı.",
@@ -1913,7 +1920,8 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
     # Cozulen ayarlar durumA YAZILIR. Varsayilan turetimi baglama bakiyor
     # (kimlik/donem kolonu, hedef tipi); baglam sonradan degisirse ayni
     # bolme baska satirlari ayirirdi. Kalici bolmenin ayarlari da kalici.
-    for k in ("test_tanim", "tur", "birim", "katmanla", "val_var", "val_oran",
+    for k in ("test_tanim", "tur", "birim", "katmanla", "segment_katmanla",
+              "val_var", "val_oran",
               "test_oran", "cv", "kat", "oot_adet", "oot_tanim", "seed",
               "seed_tur", "tekrar", "gap"):
         b[k] = a[k]
@@ -2307,7 +2315,7 @@ def katlar(durum, df, y=None):
 # Formdan gelebilecek alanlar. Beyaz liste: gelen govde durum["bolme"]'ye
 # oldugu gibi yazilsaydi istemci "kalici" ya da "test_kimlikleri" gonderip
 # hic hesaplanmamis bir bolmeyi hesaplanmis gibi gosterebilirdi.
-BOLME_FORM_ALANLARI = ("test_tanim", "katmanla", "val_var",
+BOLME_FORM_ALANLARI = ("test_tanim", "katmanla", "segment_katmanla", "val_var",
                        "val_oran", "test_oran", "cv", "kat", "oot_adet",
                        "oot_tanim", "seed", "seed_tur", "tekrar", "gap",
                        "oot_deger", "train_kullanimi", "seedler")
@@ -2391,6 +2399,8 @@ def bolme_kaydet(durum, gelen):
         gelen["val_var"] = gelen["val_var"] == "kullan"
     if isinstance(gelen.get("katmanla"), str):
         gelen["katmanla"] = gelen["katmanla"] == "koru"
+    if isinstance(gelen.get("segment_katmanla"), str):
+        gelen["segment_katmanla"] = gelen["segment_katmanla"] == "koru"
 
     for k in BOLME_FORM_ALANLARI:
         if k in gelen:
@@ -2418,7 +2428,8 @@ def bolme_kaydet(durum, gelen):
 
     # Cozulen degerler yaziliyor: kullanici "kimlik" sectiyse ama kimlik
     # kolonu yoksa formda da uygulamada da "satir" gorunmeli.
-    for k in ("test_tanim", "tur", "birim", "katmanla", "val_var", "val_oran",
+    for k in ("test_tanim", "tur", "birim", "katmanla", "segment_katmanla",
+              "val_var", "val_oran",
               "test_oran", "cv", "kat", "oot_adet", "oot_tanim", "seed",
               "seed_tur", "tekrar", "gap"):
         b[k] = a[k]
@@ -2635,6 +2646,10 @@ BOLME_SATIRLARI = (
 
     {"anahtar": "katmanla", "etiket": "Hedef Dağılımı",
      "bolum": "kural", "alanlar": ("katmanla",)},
+    # Yalnizca segment kolonu tanimliysa listelenir (akis_panel.bolme_satirlari).
+    {"anahtar": "segment_katmanla", "etiket": "Segment Dağılımı",
+     "bolum": "kural", "alanlar": ("segment_katmanla",),
+     "kosul": {"alan": "katmanla", "degerler": (True,)}},
 
     {"anahtar": "seed_tur", "etiket": "Bölme Yaklaşımı",
      "bolum": "tekrar", "alanlar": ("seed_tur",)},
@@ -2731,6 +2746,16 @@ BOLME_SATIR_BILGI = {
         "Kimlik bazlı bölmede bir arada tutulacak kayıtları tanımlayan "
         "kolon (müşteri numarası gibi). «Modelleme Tanımları» adımında "
         "seçildi; burada değiştirilmez."),
+    "segment_katmanla": (
+        "Hedef dağılımı korunurken segmentler de ayrıca korunsun mu.\n\n"
+        "Korunsun: katman segment × hedef olur. Her segmentin her setteki "
+        "payı ve hedef oranı aynı kalır (ör. segment A verinin %30'uysa "
+        "Train, Test ve Validasyon setlerinin her birinde de %30'u olur). "
+        "Segment başına ayrı model ya da segment kırılımında ölçüm "
+        "yapılacaksa önerilir.\n"
+        "Korunmasın: yalnızca genel hedef oranı korunur; segmentlerin "
+        "setlere dağılımı rastgeledir ve küçük segmentlerde setler "
+        "arasında fark oluşabilir."),
     "katmanla": (
         "Hedefin oranı her sette aynı kalsın mı (stratified / katmanlı "
         "örnekleme).\n\n"
@@ -2899,6 +2924,9 @@ def bolme_satir_degeri(anahtar, a, durum=None):
 
     if anahtar == "katmanla":
         return "Korunuyor" if a.get("katmanla") else "Korunmuyor"
+
+    if anahtar == "segment_katmanla":
+        return "Korunuyor" if a.get("segment_katmanla", True) else "Korunmuyor"
 
     if anahtar == "seed_tur":
         return bolme_etiket("seed_tur", a.get("seed_tur"))
