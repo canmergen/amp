@@ -8890,7 +8890,16 @@ function calismaSilOnayi(dugmeler, c) {
     onayla.onclick = () => {
         onayla.disabled = reddet.disabled = true;
         soru.textContent = "Siliniyor…";
-        calismaSil(c.calisma_id, geriGetir, satir);
+        /* BEKLETMEZ (kullanıcı kararı): açık olmayan çalışmanın satırı
+           hemen kalkar, silme arkada sürer. Başarısız olursa satır hata
+           mesajıyla geri gelir. Açık çalışma silinirken ekran ondan
+           ayrılacağı için yanıt beklenir. */
+        const aktif = c.calisma_id === OTURUM_ID;
+        if (satir && !aktif) satir.hidden = true;
+        calismaSil(c.calisma_id, () => {
+            if (satir) satir.hidden = false;
+            geriGetir();
+        }, satir);
     };
     dugmeler.append(soru, onayla, reddet);
     onayla.focus();

@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Arşiv hızlandı, silme klasörü de siliyor, kayıp çalışmalar geri geldi**. Değiştir: `webapp/backend.py`, `webapp/app.js`
+Bu tur: **Arşiv'de silme hızlandı**. Değiştir: `webapp/backend.py`, `webapp/app.js`
+
+- Silme ~20 sıralı Dataiku isteğinden 4'e indi: kayıt 1 okuma, klasör tek
+  istekle silme, yalnızca o klasöre bakan 1 kontrol, kayıt 1 yazma.
+  Veri seti sahiplik temizliği arka planda.
+- Klasör tek istekte silinmezse kalan dosyalar paralel siliniyor; yine
+  dosya kalırsa çalışma listede kalıyor ve hata kodu gösteriliyor.
+- Onayla'ya basınca satır hemen kalkıyor, silme arkada sürüyor; başarısız
+  olursa satır hata mesajıyla geri geliyor. Açık çalışma silinirken
+  yanıt bekleniyor (ekran başka çalışmaya geçiyor).
+
+---
+
+Önceki tur: **Arşiv hızlandı, silme klasörü de siliyor, kayıp çalışmalar geri geldi**. Değiştir: `webapp/backend.py`, `webapp/app.js`
 
 - Hız: her çalışma kaydedilirken yanına küçük bir özet yazılıyor
   (/vN/ozet.json). Arşiv yalnızca bunları, paralel okuyor; sohbet

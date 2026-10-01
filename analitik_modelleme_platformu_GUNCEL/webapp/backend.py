@@ -15,6 +15,7 @@ import re
 import json
 import datetime
 import time
+import threading
 import uuid
 import hashlib
 import logging
@@ -1765,6 +1766,60 @@ def calisma_kopyala_endpoint():
                                      "Çalışma kopyalanamadı."))
 
 
+def _klasor_dosyalari(hafiza, kimlik):
+    """Calisma klasorundeki dosyalar. Once yalnizca o klasore bakilir
+    (get_path_details); cevap anlasilamazsa butun klasor listelenir.
+    Doner: [yol] - klasor yoksa []."""
+    on_ek = "/%s/" % kimlik
+    try:
+        d = hafiza.get_path_details("/%s" % kimlik) or {}
+        if d.get("exists") is False:
+            return []
+        if "children" in d:
+            cikti, yigin = [], list(d.get("children") or [])
+            while yigin:
+                c = yigin.pop() or {}
+                yol = c.get("fullPath") or c.get("path")
+                if c.get("directory"):
+                    if "children" not in c:
+                        raise ValueError("alt klasor ayrintisi yok")
+                    yigin.extend(c.get("children") or [])
+                elif yol:
+                    cikti.append(_yol_normal(yol))
+                else:
+                    raise ValueError("yol bilgisi yok")
+            return cikti
+    except Exception:
+        pass
+    return [y for y in _hafiza_yollari() if _yol_normal(y).startswith(on_ek)]
+
+
+def _klasoru_sil(hafiza, kimlik):
+    """Calisma klasorunu siler. Once klasorun kendisi tek istekle; dosya
+    kalirsa dosyalar PARALEL silinir. Doner: silinemeyen dosyalar."""
+    from concurrent import futures
+    try:
+        hafiza.delete_path("/%s" % kimlik)
+    except Exception as e:
+        _hata_kaydet("calisma_sil:klasor", e)
+    kalan = _klasor_dosyalari(hafiza, kimlik)
+    if not kalan:
+        return []
+
+    def sil(yol):
+        try:
+            hafiza.delete_path(yol)
+        except Exception as e:
+            _hata_kaydet("calisma_sil:dosya", e)
+    with futures.ThreadPoolExecutor(max_workers=8) as havuz:
+        list(havuz.map(sil, kalan))
+    try:
+        hafiza.delete_path("/%s" % kimlik)       # bos kalan klasor
+    except Exception:
+        pass
+    return _klasor_dosyalari(hafiza, kimlik)
+
+
 @app.route("/calisma_sil", methods=["POST"])
 def calisma_sil_endpoint():
     """Bir calismayi "Çalışmalarım"dan KALICI olarak siler.
@@ -1787,30 +1842,20 @@ def calisma_sil_endpoint():
         if not hedef:
             raise ValueError("Silinecek çalışma belirtilmedi.")
         mevcut = _calisma_id(istek)
-        anahtar = _oturum_anahtari(hedef)              # erisim denetimi
-
         hafiza = _hafiza()
+
+        # HIZ (kullanici bildirimi: "yavaş siliyor"): her folder islemi
+        # Dataiku'ya ayri bir istek. Eskiden ~20 istek sirayla gidiyordu
+        # (kayit 3 kez okunuyor, klasorun TAMAMI iki kez listeleniyor,
+        # dosyalar tek tek siliniyordu). Simdi: kayit 1 okuma, klasor 1
+        # silme, 1 kontrol, kayit 1 yazma; sahiplik temizligi arka planda.
         if _v_mi(hedef):
-            on_ek = "/%s/" % anahtar
-            silinecek = [y for y in _hafiza_yollari() if _yol_normal(y).startswith(on_ek)]
-        else:
-            silinecek = [akis._yol(anahtar)]
-        for yol in silinecek:
-            try:
-                hafiza.delete_path(yol)
-            except Exception as e:
-                _hata_kaydet("calisma_sil:dosya", e)
-        if _v_mi(hedef):
-            # KLASORUN KENDISI de silinir (kullanici bildirimi: "silmiyor
-            # gibi arkaplanda folder içindeki folderı"). Dosyalar tek tek
-            # silinince bos klasor kaliyordu.
-            for yol in ("/%s" % anahtar, "/%s/" % anahtar):
-                try:
-                    hafiza.delete_path(yol)
-                    break
-                except Exception:
-                    continue
-            kalan = [y for y in _hafiza_yollari() if _yol_normal(y).startswith(on_ek)]
+            kayit = _calisma_kaydi_oku(kati=True)
+            sahip = (kayit.get(hedef) or {}).get("sahip") or _v_sahibi(hedef)
+            if sahip and sahip != _sahip_ozeti():
+                raise CalismaErisimYok("Bu çalışma başka bir kullanıcıya ait.")
+            anahtar = hedef
+            kalan = _klasoru_sil(hafiza, anahtar)
             if kalan:
                 kod = _hata_kaydet("calisma_sil:kalan",
                                    RuntimeError(", ".join(kalan[:5])))
@@ -1818,19 +1863,25 @@ def calisma_sil_endpoint():
                                 "%s klasöründe %d dosya silinemedi (hata kodu: %s). "
                                 "Çalışma listede bırakıldı; tekrar deneyin."
                                 % (hedef, len(kalan), kod)})
+            kayit.pop(hedef, None)
+            _calisma_kaydi_yaz(kayit)
+        else:
+            anahtar = _oturum_anahtari(hedef)          # erisim denetimi
+            try:
+                hafiza.delete_path(akis._yol(anahtar))
+            except Exception as e:
+                _hata_kaydet("calisma_sil:dosya", e)
 
         # Ortak veri seti sahiplikleri de birakilir: numara yeniden
         # verilince yeni calisma eskisinin tablosunu kendi sanmasin.
-        try:
-            from fe_agent import akis_durum as _ad
-            _ad.sahiplikleri_birak(anahtar)
-        except Exception as e:
-            _hata_kaydet("calisma_sil:sahiplik", e)
-
-        if _v_mi(hedef):
-            kayit = _calisma_kaydi_oku(kati=True)
-            kayit.pop(hedef, None)
-            _calisma_kaydi_yaz(kayit)
+        # Kullaniciyi bekletmesin diye arka planda.
+        def sahiplik():
+            try:
+                from fe_agent import akis_durum as _ad
+                _ad.sahiplikleri_birak(anahtar)
+            except Exception as e:
+                _hata_kaydet("calisma_sil:sahiplik", e)
+        threading.Thread(target=sahiplik, daemon=True).start()
 
         govde = {"tamam": True, "silinen": hedef}
         if hedef == mevcut:
