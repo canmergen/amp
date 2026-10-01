@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.4 segment güncellemesi; açılır listelerde tam ad**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `fe_agent/amp.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `webapp/app.js`, `webapp/style.css`
+Bu tur: **sözlük tablosu tam okunur, "i" balonu okunur, zorunlu tanım metni**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`
+
+- Sağ panel VERİ & SÖZLÜK tablosunda değişken adı ve sözlük tanımı
+  kırpılmıyor; alt satıra kayıyor. Satırlar sabit yükseklikte değil;
+  1.042 satırın hepsi bir anda çizilmiyor, kaydırdıkça 120'şer satır
+  ekleniyor. Düzenlenebilir tanım kutusu da çok satırlı.
+- "i" balonu onaylanmış (soluk) kartta saydam görünüyordu; artık sayfa
+  gövdesinde, tam opak açılıyor.
+- 01.2.3 notu: "Hedef değişken ve kimlik kolonu sözlükte tanımlı olmak
+  zorundadır; dönem ve segment kolonu yalnızca seçildiyse."
+
+---
+
+Önceki tur: **01.4 segment güncellemesi; açılır listelerde tam ad**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `fe_agent/amp.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `webapp/app.js`, `webapp/style.css`
 
 - Açılır listeler en uzun ada göre genişliyor (en çok 560px); kolon adları
   kesilmiyor.

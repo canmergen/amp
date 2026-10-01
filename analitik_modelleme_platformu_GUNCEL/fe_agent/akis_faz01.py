@@ -1164,9 +1164,10 @@ TANIMSIZ_NOT_KALIP = ("Tanımı bulunmayan %s kolon aşağıda listelendi; "
 # Hedef, kimlik ve donem kolonu modelin iskeletidir. Tanimsiz kalirlarsa
 # model kartinda "bu kolon neydi" sorusunun cevabi hicbir yerde yazmaz;
 # bu yuzden satirlari kilitli isaretli gelir ve aciklama bos birakilamaz.
-ZORUNLU_NOT = ("Hedef değişken, kimlik, dönem ve segment kolonu sözlükte "
-               "tanımlı olmak zorundadır. Bu satırların işareti "
-               "kaldırılamaz; açıklamaları yazılmadan devam edilemez.")
+ZORUNLU_NOT = ("Hedef değişken ve kimlik kolonu sözlükte tanımlı olmak "
+               "zorundadır; dönem ve segment kolonu yalnızca seçildiyse. "
+               "Bu satırların işareti kaldırılamaz; açıklamaları yazılmadan "
+               "devam edilemez.")
 
 
 def _kolon_ozet_haritasi(profil):

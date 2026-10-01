@@ -1759,6 +1759,7 @@ function ftSatirBul(ad) {
 function ftBasaSar() {
     FT.kaydirma = 0;
     FT.pencere = null;
+    FT.gosterilen = 0;
     if (FT.dom && FT.dom.govde) FT.dom.govde.scrollTop = 0;
 }
 
@@ -2441,8 +2442,10 @@ function ftTanimHucresi(s) {
         return h;
     }
 
-    const giris = document.createElement("input");
-    giris.type = "text";
+    /* TEXTAREA: tanım tamamı okunabilsin diye satır kaydırarak uzar
+       (kullanıcı kararı: "tamamen okunabilir düzeyde olmalı"). */
+    const giris = document.createElement("textarea");
+    giris.rows = 1;
     giris.className = "ft-tanim-giris";
     giris.value = deger;
     giris.placeholder = "Tanım yok";
@@ -2450,7 +2453,7 @@ function ftTanimHucresi(s) {
     giris.setAttribute("aria-label", s.feature + " sözlük tanımı");
     giris.title = deger;
     giris.onclick = ev => ev.stopPropagation();      // detay acilmasin
-    giris.oninput = () => { FT.taslak.set(s.feature, giris.value); };
+    giris.oninput = () => { FT.taslak.set(s.feature, giris.value); ftKutuBoyu(giris); };
     /* Yazma YALNIZ onaylaninca (blur / Enter) gider: her tus vurusunda
        uca istek atmak 1.042 satirlik tabloda kabul edilemez. */
     giris.onchange = () => ftTanimYaz(s, giris.value);
@@ -2469,7 +2472,7 @@ function ftSatirCiz(s, i) {
         + (FT.detay === s.feature ? " acik" : "")
         + (hata ? " hatali" : ""));
     satir.setAttribute("role", "row");
-    satir.style.top = (i * FT_SATIR_H) + "px";
+    void i;
 
     /* ISARETLI = SUREC DISI (SOZLESME7 §5). Satirin soluk gorunmesi de
        bu kutudan geliyor; ayri bir DURUM kolonu yok. */
@@ -2525,13 +2528,47 @@ function ftSatirCiz(s, i) {
     return satir;
 }
 
+/* SATIRLAR DEĞİŞKEN YÜKSEKLİKTE (kullanıcı kararı: sözlük tanımı tamamen
+   okunabilmeli, kırpılmamalı). Sabit yükseklikli sanal pencere yerine
+   PARÇA PARÇA çizim: ilk FT_PARCA satır çizilir, kaydırma sona
+   yaklaştıkça bir parça daha eklenir. 1.042 satırın hepsi bir anda DOM'a
+   basılmıyor; uzun tanım alt satıra kayıyor. */
+const FT_PARCA = 120;
+
+function ftKutuBoyu(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + 2 + "px";
+}
+
+function ftSatirEkle(adet) {
+    const n = FT.suzulmus.length;
+    const bas = FT.gosterilen || 0;
+    const son = Math.min(n, bas + adet);
+    if (son <= bas) return;
+    // Tek parcada baglaniyor: satir satir appendChild her seferinde
+    // yerlesimi yeniden hesaplatiyordu.
+    const parca = document.createDocumentFragment();
+    for (let i = bas; i < son; i++)
+        parca.appendChild(ftSatirCiz(FT.suzulmus[i], i));
+    FT.dom.yer.appendChild(parca);
+    FT.gosterilen = son;
+    FT.dom.yer.querySelectorAll("textarea.ft-tanim-giris:not([data-boy])").forEach(t => {
+        t.setAttribute("data-boy", "1");
+        ftKutuBoyu(t);
+    });
+}
+
 function ftPencereCiz() {
     const kap = FT.dom.govde;
     const n = FT.suzulmus.length;
-    FT.dom.yer.style.height = (n * FT_SATIR_H) + "px";
+    /* Yeniden çizimde kaydırma yeri korunur: içerik boşalınca tarayıcı
+       konumu sıfırlıyor. */
+    const hedef = kap.scrollTop || FT.kaydirma || 0;
+    FT.dom.yer.style.height = "";
     FT.dom.yer.innerHTML = "";
 
     if (!n) {
+        FT.gosterilen = 0;
         FT.dom.yer.appendChild(elYap("div", "ft-bos",
             (FT.veri && (FT.veri.satirlar || []).length)
                 ? "Filtrelerle eşleşen kolon yok."
@@ -2539,17 +2576,13 @@ function ftPencereCiz() {
         return;
     }
 
+    const istenen = Math.max(FT.gosterilen || 0, FT_PARCA);
+    FT.gosterilen = 0;
+    ftSatirEkle(istenen);
     const yukseklik = kap.clientHeight || FT_VARSAYILAN_YUKSEKLIK;
-    const ust = Math.max(0, Math.floor(kap.scrollTop / FT_SATIR_H) - FT_TAMPON);
-    const adet = Math.ceil(yukseklik / FT_SATIR_H) + FT_TAMPON * 2;
-    const alt = Math.min(n, ust + adet);
-    FT.pencere = { ust: ust, alt: alt };
-    // Tek parcada baglaniyor: satir satir appendChild her seferinde
-    // yerlesimi yeniden hesaplatiyordu.
-    const parca = document.createDocumentFragment();
-    for (let i = ust; i < alt; i++)
-        parca.appendChild(ftSatirCiz(FT.suzulmus[i], i));
-    FT.dom.yer.appendChild(parca);
+    while (FT.gosterilen < n && kap.scrollHeight < hedef + yukseklik * 2)
+        ftSatirEkle(FT_PARCA);
+    kap.scrollTop = hedef;
 }
 
 /* Her kaydirma olayinda DOM'u yeniden kurmak gereksiz: tampon zaten
@@ -2558,14 +2591,10 @@ function ftPencereCiz() {
    icinde ~13 olaydan yalnizca biri cizim yapiyor. */
 function ftKaydirmaIsle() {
     const kap = FT.dom.govde;
-    const p = FT.pencere;
-    const n = FT.suzulmus.length;
+    if ((FT.gosterilen || 0) >= FT.suzulmus.length) return;
     const yukseklik = kap.clientHeight || FT_VARSAYILAN_YUKSEKLIK;
-    const gorunurUst = Math.floor(kap.scrollTop / FT_SATIR_H);
-    const gorunurAlt = Math.ceil((kap.scrollTop + yukseklik) / FT_SATIR_H);
-    // p.alt >= n: liste sonuna gelindi, asagida cizilecek satir kalmadi.
-    if (p && gorunurUst >= p.ust && (gorunurAlt <= p.alt || p.alt >= n)) return;
-    ftPencereCiz();
+    if (kap.scrollTop + yukseklik > kap.scrollHeight - yukseklik)
+        ftSatirEkle(FT_PARCA);
 }
 
 function ftDetayCiz() {
@@ -6853,9 +6882,18 @@ function bolmeBilgiSimgesi(metin, baslik) {
         if (e.target === tip || tip.contains(e.target)) return;
         if (acikMi()) yerlestir();
     };
+    /* BALON SAYFA GÖVDESİNDE AÇILIR (kullanıcı bildirimi: "i kısmına
+       bastığımda yazı okunmuyor"). Onaylanmış kart soluk çiziliyor
+       (opacity) ve balon kartın içindeyken o saydamlığı alıp arkasındaki
+       yazıyla karışıyordu. Açılınca body'ye taşınır, kapanınca geri
+       döner. */
     const ac = () => {
         clearTimeout(kapat);
         if (acikMi()) return;          // açıkken yeniden konumlama sıçratmasın
+        if (tip.parentNode !== document.body) {
+            tip.classList.toggle("genis", kap.classList.contains("bolme-info-genis"));
+            document.body.appendChild(tip);
+        }
         tip.scrollTop = 0;
         yerlestir();
         window.addEventListener("scroll", kaydirinca, true);
@@ -6863,8 +6901,18 @@ function bolmeBilgiSimgesi(metin, baslik) {
     const gizle = () => {
         clearTimeout(kapat);
         tip.style.display = "";
+        if (tip.parentNode !== kap) kap.appendChild(tip);
         window.removeEventListener("scroll", kaydirinca, true);
     };
+    /* Balon artık simgenin içinde değil: fare balona geçince kapanmasın,
+       balondan çıkınca kapansın; balona tıklamak odağı simgeden almasın. */
+    tip.onmouseenter = () => clearTimeout(kapat);
+    tip.onmouseleave = () => {
+        clearTimeout(kapat);
+        if (document.activeElement === kap) return;
+        kapat = setTimeout(gizle, 250);
+    };
+    tip.onmousedown = (e) => { if (e.target !== tip) e.preventDefault(); };
     kap.onmouseenter = ac;
     kap.onfocus = ac;
     kap.onmouseleave = () => {
