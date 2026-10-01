@@ -436,6 +436,7 @@ def detay(durum):
             ("Hedef Tipi", p.get("hedef_ozet")),
             ("Kimlik Kolonu", m.get("id")),
             ("Dönem Kolonu", m.get("donem") or "belirtilmedi"),
+            ("Segment Kolonu", m.get("segment") or "belirtilmedi"),
         ]))
 
     if b.get("tur"):
@@ -992,6 +993,15 @@ def _hedef_orani(p):
     return "%s · %s / %s" % (oran, _sayi(pozitif), _sayi(satir))
 
 
+def _segment_metni(p, durum):
+    """"SEGMENT_KOD · 5 segment"; segment secilmediyse None."""
+    seg = (durum.get("meta") or {}).get("segment")
+    if not seg:
+        return None
+    adet = p.get("segment_adet")
+    return "%s · %s segment" % (seg, _sayi(adet)) if adet else seg
+
+
 def veri_paneli(durum):
     """VERI sekmesi. Tek seferde dolmaz: veri seti secilince boyutlar,
     tanimlar girilince hedef satirlari, profil calisinca null orani dolar."""
@@ -1042,6 +1052,7 @@ def veri_paneli(durum):
         ("Hedef Tipi", _hedef_tipi(p), TANIM_ADIMI),
         ("Hedef Oranı", _hedef_orani(p), TANIM_ADIMI),
         ("Dönem Aralığı", _donem_araligi(p, durum), TANIM_ADIMI),
+        ("Segment", _segment_metni(p, durum), TANIM_ADIMI),
     ])
 
     kartlar = [veri_kart]

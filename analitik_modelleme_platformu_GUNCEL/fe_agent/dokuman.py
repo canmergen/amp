@@ -578,6 +578,7 @@ def _veri(durum):
         # ve zaman ekseni burada tanimlanir, hedef bolumunde degil.
         ("Kimlik kolonu", _m(meta.get("id"))),
         ("Dönem kolonu", meta.get("donem") or "belirtilmedi"),
+        ("Segment kolonu", meta.get("segment") or "belirtilmedi"),
         ("Dönem aralığı", ("%s-%s" % (p.get("donem_min"), p.get("donem_maks")))
                           if p.get("donem_min") else None),
         ("Sözlük", _m(durum.get("sozluk") or durum.get("sozluk_yedek"))),

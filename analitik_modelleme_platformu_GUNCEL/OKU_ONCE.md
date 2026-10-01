@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.4 kartı sadeleşti, hedef oranı çubukta**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`
+Bu tur: **01.2.2'ye Segment Kolonu (Opsiyonel)**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `fe_agent/dokuman.py`, `webapp/app.js`, `webapp/style.css`
+
+- Dönem kolonunun yanında "Segment Kolonu (Opsiyonel)": 2–20 farklı değer
+  taşıyan kolonlar listelenir; açıklaması "i" simgesinde.
+- Seçilen segment kolonu rol kolonu olur: 01.3'te süreç dışı bırakılamaz,
+  01.2.3'te sözlük tanımı zorunlu (hedef/kimlik/dönem gibi). Segment
+  sayısı ve segment başına satır sayısı profilden alınır; sağ panelde
+  "Segment: <kolon> · N segment", model dokümanında "Segment kolonu".
+- Formda boş bırakılan opsiyonel alan (dönem, segment) artık eski
+  değerinde kalmıyor; temizleniyor.
+- Segment kolonu şimdilik modele normal değişken olarak da girebilir;
+  01.4 ve modelleme tarafı (segment başına model / tek model + kırılım)
+  ayrıca kararlaştırılacak.
+
+---
+
+Önceki tur: **01.4 kartı sadeleşti, hedef oranı çubukta**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`
 
 - Başlık "Veri nasıl bölünecek" → "Veri Bölme Stratejisi".
 - "Önerilen ayarlar uygulandı." ve "Bölme ayarları kaydedildi."

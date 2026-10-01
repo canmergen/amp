@@ -8138,6 +8138,12 @@ function secimAlaniEkle(alan, blok) {
                         maddeler.map(m => "• " + String(m)).join("\n"),
                         "Neden seçilemiyor"));
                 }
+                /* ALANIN AÇIKLAMASI "i" SİMGESİNDE (01.4'teki gibi). */
+                if (a.bilgi) {
+                    alt.appendChild(document.createTextNode(" "));
+                    alt.appendChild(bolmeBilgiSimgesi(tireSade(a.bilgi),
+                        tireSade(a.etiket || "")));
+                }
                 combo.kok.appendChild(alt);
             }
         });
@@ -8150,8 +8156,13 @@ function secimAlaniEkle(alan, blok) {
             Object.keys(combolar).forEach(k => {
                 const v = combolar[k].deger();
                 combolar[k].giris.value = v;
-                metin = metin.replace("{" + k + "}", v);
+                /* Boş opsiyonel alan anahtar kelimesiyle birlikte düşer
+                   ("segment {segment}" -> ""): bir sonraki anahtar kelime
+                   değer sanılmasın. */
+                metin = v ? metin.replace("{" + k + "}", v)
+                          : metin.replace(new RegExp("\\S+\\s*\\{" + k + "\\}"), "");
             });
+            metin = metin.replace(/\s+/g, " ").trim();
             kartiKilitle(true);
             Object.keys(combolar).forEach(k => { combolar[k].giris.disabled = true; });
 

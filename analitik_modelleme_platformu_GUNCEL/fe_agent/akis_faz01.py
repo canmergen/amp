@@ -1163,7 +1163,7 @@ TANIMSIZ_NOT_KALIP = ("Tanımı bulunmayan %s kolon aşağıda listelendi; "
 # Hedef, kimlik ve donem kolonu modelin iskeletidir. Tanimsiz kalirlarsa
 # model kartinda "bu kolon neydi" sorusunun cevabi hicbir yerde yazmaz;
 # bu yuzden satirlari kilitli isaretli gelir ve aciklama bos birakilamaz.
-ZORUNLU_NOT = ("Hedef değişken, kimlik kolonu ve dönem kolonu sözlükte "
+ZORUNLU_NOT = ("Hedef değişken, kimlik, dönem ve segment kolonu sözlükte "
                "tanımlı olmak zorundadır. Bu satırların işareti "
                "kaldırılamaz; açıklamaları yazılmadan devam edilemez.")
 
@@ -1745,7 +1745,7 @@ def zorunlu_tanimlar(durum):
     "sözlükte tanımlı olmadan ilerlenemez"). Doner: sirali liste."""
     meta = durum.get("meta") or {}
     cikti = []
-    for anahtar in ("target", "id", "donem"):
+    for anahtar in ("target", "id", "donem", "segment"):
         ad = str(meta.get(anahtar) or "").strip()
         if ad and ad not in cikti:
             cikti.append(ad)
@@ -1753,7 +1753,7 @@ def zorunlu_tanimlar(durum):
 
 
 ZORUNLU_ETIKET = {"target": "hedef değişken", "id": "kimlik kolonu",
-                  "donem": "dönem kolonu"}
+                  "donem": "dönem kolonu", "segment": "segment kolonu"}
 
 
 def _zorunlu_etiketler(durum):
@@ -2016,8 +2016,42 @@ SEMA_LIMITI = 200
 TANIM_KALIP = {
     "target": r"target\s*[:=]?\s*([a-z0-9_]+)",
     "id": r"\bid\s*[:=]?\s*([a-z0-9_]+)",
-    "donem": r"donem\s*[:=]?\s*([a-z0-9_]+)",
+    # Bos opsiyonel alanda bir sonraki anahtar kelime deger sanilmasin.
+    "donem": r"\bdonem\s*[:=]?\s*(?!segment\b)([a-z0-9_]+)",
+    "segment": r"\bsegment\s*[:=]?\s*(?!donem\b)([a-z0-9_]+)",
 }
+
+# SEGMENT KOLONU (opsiyonel; kullanici karari: "segment başına ayrı model
+# de kurulmalı ama tek model ile segment kırılımı da olmalı"). Az sayida
+# farkli deger tasiyan kolon: urun, kanal, musteri tipi gibi.
+SEGMENT_EN_AZ = 2
+SEGMENT_EN_COK = 20
+SEGMENT_BILGI = (
+    "Segment kolonu veriyi alt gruplara ayıran kolondur (ürün, kanal, "
+    "müşteri tipi gibi; 2–20 farklı değer).\n\n"
+    "Seçerseniz her segmentin satır sayısı ve hedef (0/1) dağılımı ayrı "
+    "görülür; ileride segment başına ayrı model ya da tek model ve segment "
+    "kırılımında rapor bu kolona göre kurulur.\n\n"
+    "Seçmezseniz veri tek parça olarak modellenir.")
+
+
+def _segment_adaylari(durum, haric=()):
+    """2-20 farkli deger tasiyan kolonlar (profilden, tam tablo)."""
+    try:
+        kol = profil_mod.kolonlar(_profil(durum))
+    except Exception:
+        return []
+    cikti = []
+    for ad, kp in kol.items():
+        if ad in haric or not kp:
+            continue
+        try:
+            tekil = int(kp.get("tekil") or 0)
+        except (TypeError, ValueError):
+            continue
+        if SEGMENT_EN_AZ <= tekil <= SEGMENT_EN_COK:
+            cikti.append(str(ad))
+    return cikti
 
 def _veri_seti_kolonlari(durum):
     """Secili veri setinin kolon adlari. Okunamazsa bos liste.
@@ -2086,6 +2120,11 @@ def _tanimlar_formu(durum, meta=None):
         donem_not = "Dönem kolonu bulunamadı."
         donem_maddeler = list(p.get("donem_nedenler") or [])
 
+    segment_aday = [k for k in _segment_adaylari(
+        durum, haric={m.get("target"), m.get("id"), m.get("donem")}) if k in kolonlar]
+    segment_liste = _ekle(segment_aday, m.get("segment"))
+    segment_not = "" if segment_aday else "Segment olabilecek (2–20 değerli) kolon bulunamadı."
+
     hedef_not = ("" if hedef_aday else
                  "Veri setinde 0/1 değerli kolon bulunamadı; tüm kolonlar "
                  "listeleniyor.")
@@ -2101,9 +2140,10 @@ def _tanimlar_formu(durum, meta=None):
         # kolonu bilgisine ihtiyacım var...") sonra kartta yaziyordu;
         # kullanici ayni cumleyi iki kez okuyordu.
         "aciklama": "Hedef değişkeni ve kimlik kolonunu veri setinin "
-                    "kolonları arasından seçin. Dönem kolonu zorunlu değil; "
-                    "verirseniz zamansal bölme kurulabilir ve stabilite "
-                    "ölçülebilir.",
+                    "kolonları arasından seçin. Dönem ve segment kolonu "
+                    "zorunlu değil; dönem verirseniz zamansal bölme "
+                    "kurulabilir ve stabilite ölçülebilir, segment verirseniz "
+                    "segmentler ayrı görülür.",
         # "ipucu" KALDIRILDI. Kartta uc acilir liste duruyor; altina bir
         # de "target <kolon> id <kolon>" ornek satiri koymak, formu
         # doldurmanin yaninda bir de yazarak girme yolu varmis izlenimi
@@ -2128,8 +2168,13 @@ def _tanimlar_formu(durum, meta=None):
              "deger": m.get("donem") or "", "secenekler": donem_liste,
              "ipucu": "Dönem bilgisi taşıyan kolonlar: 202501 (sayı, metin ya da kategori), 2025-01, tarih",
              "not": donem_not, "not_maddeler": donem_maddeler},
+            {"ad": "segment", "etiket": "Segment Kolonu (Opsiyonel)",
+             "kaynak": "kolon", "zorunlu": False,
+             "deger": m.get("segment") or "", "secenekler": segment_liste,
+             "ipucu": "2–20 farklı değer taşıyan kolonlar", "not": segment_not,
+             "bilgi": SEGMENT_BILGI},
         ],
-        "sablon": "target {target} id {id} donem {donem}",
+        "sablon": "target {target} id {id} donem {donem} segment {segment}",
     }
 
 
@@ -2148,6 +2193,12 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
         m = re.search(kalip, norm)
         if m:
             meta[anahtar] = mesaj[m.start(1):m.end(1)]
+    # FORMDAN GELEN MESAJDA bos birakilan opsiyonel alan TEMIZLENIR: eskiden
+    # once secilip sonra bosaltilan donem/segment eski degerinde kaliyordu.
+    if re.search(r"\btarget\b", norm):
+        for anahtar in ("donem", "segment"):
+            if not re.search(TANIM_KALIP[anahtar], norm):
+                meta.pop(anahtar, None)
 
     # Mod A: birlestirme planindan anahtar ve donem otomatik doldurulur
     plan = (durum.get("birlestirme") or {}).get("plan") or {}
@@ -2190,7 +2241,16 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
          "yalnızca dönem bilgisi taşıyan (202501 gibi sayı, metin ya da "
          "kategori; 2025-01 ya da tarih) ve birden fazla değer taşıyan "
          "bir kolon olabilir"),
+        ("segment", _segment_adaylari(durum), "segment kolonu",
+         "yalnızca 2–20 farklı değer taşıyan bir kolon olabilir"),
     ]
+    seg = meta.get("segment")
+    if seg and seg in {meta.get("target"), meta.get("id"), meta.get("donem")}:
+        meta.pop("segment", None)
+        durum["meta"] = meta
+        _tanimlar_formu(durum, meta)
+        return False, ("Seçim uygun değil:\n  • %s segment kolonu olamaz; "
+                       "hedef, kimlik ya da dönem olarak seçildi." % seg)
     uygunsuz = []
     for anahtar, adaylar, etiket, kural in aday_kurali:
         deger = meta.get(anahtar)
@@ -2358,6 +2418,15 @@ def tanimlar_uygula(durum):
             _donem_kolonunu_disla(durum, donem)
     else:
         durum["_donemler"] = []
+
+    # SEGMENT DAGILIMI (satir sayisi): profilin deger listesinden, tam tablo.
+    p.pop("segment_dagilim", None)
+    p.pop("segment_adet", None)
+    seg = m.get("segment")
+    if seg and seg in kol:
+        liste = (kol[seg] or {}).get("degerler") or []
+        p["segment_dagilim"] = [[str(v), int(n)] for v, n in liste]
+        p["segment_adet"] = len(liste) or int((kol[seg] or {}).get("tekil") or 0)
 
     # UYARILAR: sessiz gecilmesi pahaliya patlayacak olanlar. Geri kalan
     # bilgi sag paneldeki Veri seti kartinda duruyor.
@@ -2716,6 +2785,7 @@ ROL_KILIT_SEBEBI = {
     "target": "hedef değişken süreç dışı bırakılamaz",
     "id": "kimlik kolonu süreç dışı bırakılamaz",
     "donem": "dönem kolonu süreç dışı bırakılamaz",
+    "segment": "segment kolonu süreç dışı bırakılamaz",
 }
 
 # Tek degerli donem kolonunun kilit sebebi. Yukaridakilerin TERSI yonde
@@ -2816,13 +2886,14 @@ TIP_KILIT_SEBEBI = {
     "target": "hedef değişken - tipi modelleme tanımlarında belirlendi",
     "id": "kimlik kolonu - tipi modelleme tanımlarında belirlendi",
     "donem": "dönem kolonu - yalnızca tarihe çevrilebilir",
+    "segment": "segment kolonu - tipi modelleme tanımlarında belirlendi",
 }
 
 
 def _tip_rolu(durum, ad):
-    """Kolonun modelleme rolu ("target"/"id"/"donem") ya da None."""
+    """Kolonun modelleme rolu ("target"/"id"/"donem"/"segment") ya da None."""
     m = durum.get("meta") or {}
-    for rol in ("target", "id", "donem"):
+    for rol in ("target", "id", "donem", "segment"):
         if m.get(rol) and str(m[rol]) == ad:
             return rol
     return None

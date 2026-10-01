@@ -935,7 +935,7 @@ button.ozet-kart:focus-visible {
 }
 
 .secim-govde { display: flex; gap: var(--b-3); flex-wrap: wrap; margin-bottom: var(--b-4); }
-.secim-govde .combo { flex: 1; min-width: 160px; }
+.secim-govde .combo { flex: 1; min-width: 130px; }
 
 .secim-satir { display: flex; gap: var(--b-2); align-items: flex-end; margin-bottom: var(--b-4); }
 /* "+" giris kutusuyla ayni yukseklikte ve ayni hizada: etiketin altindaki
