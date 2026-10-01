@@ -288,13 +288,29 @@ def _hafiza():
     return dataiku.Folder(getattr(akis, "HAFIZA_FOLDER", "PROJE_HAFIZASI"))
 
 
-def _calisma_kaydi_oku():
-    try:
-        with _hafiza().get_download_stream(CALISMA_KAYDI) as s:
-            kayit = json.loads(s.read().decode("utf-8"))
-        return kayit if isinstance(kayit, dict) else {}
-    except Exception:
-        return {}
+def _calisma_kaydi_oku(kati=False):
+    """CALISMALAR.json. kati=True: dosya VAR ama okunamadiysa hata atar.
+    Yazan taraf (yeni numara, silme) bos sozlukle devam ederse kaydi
+    tek girdiye indirip butun calismalari listeden dusururdu."""
+    for deneme in range(3 if kati else 1):
+        try:
+            with _hafiza().get_download_stream(CALISMA_KAYDI) as s:
+                kayit = json.loads(s.read().decode("utf-8"))
+            return kayit if isinstance(kayit, dict) else {}
+        except Exception:
+            if kati and deneme < 2:
+                time.sleep(0.3)
+    if kati and CALISMA_KAYDI in set(_yol_normal(y) for y in _hafiza_yollari()):
+        raise RuntimeError("Çalışma kaydı (CALISMALAR.json) okunamadı; "
+                           "kayıt bozulmasın diye işlem yapılmadı.")
+    return {}
+
+
+def _yol_normal(yol):
+    """Folder yolunu "/v3/calisma.json" bicimine getirir (bazi surumler
+    bastaki "/" olmadan donduruyor)."""
+    yol = str(yol or "")
+    return yol if yol.startswith("/") else "/" + yol
 
 
 def _calisma_kaydi_yaz(kayit):
@@ -1142,6 +1158,49 @@ def _kaydet(anahtar, durum):
     """Durumu kaydeder ve son islem zamanini damgalar."""
     durum["_son_islem"] = datetime.datetime.now().isoformat(timespec="seconds")
     akis.durum_kaydet(anahtar, durum)
+    _ozet_yaz(anahtar, durum)
+
+
+# ARSIV HIZI: her calismanin yaninda kucuk bir ozet dosyasi. Arşiv listesi
+# yalnizca bunlari okur; sohbet gecmisini tasiyan (MB'larca) calisma
+# dosyasini her acilista calisma basina okumak listeyi dakikalarca
+# bekletiyordu (kullanici bildirimi: "arşive bastığımda açılmıyor ya da
+# çok yavaş açılıyor").
+OZET_DOSYA = "ozet.json"
+
+
+def _ozet_yolu(calisma):
+    return "/%s/%s" % (calisma, OZET_DOSYA)
+
+
+def _ozet_yaz(anahtar, durum):
+    if not _v_mi(anahtar):
+        return
+    try:
+        oz = _calisma_ozeti(anahtar, durum)
+        oz["_sahip"] = durum.get("_sahip") or _sahip_ozeti()
+        _hafiza().upload_stream(_ozet_yolu(anahtar),
+                                json.dumps(oz, ensure_ascii=False, default=str)
+                                .encode("utf-8"))
+    except Exception as e:
+        _hata_kaydet("ozet_yaz", e)
+
+
+def _ozet_oku(calisma):
+    """Calismanin liste ozeti. Ozet dosyasi yoksa (eski calisma) durum bir
+    kez okunur ve ozet yazilir."""
+    if _v_mi(calisma):
+        try:
+            with _hafiza().get_download_stream(_ozet_yolu(calisma)) as s:
+                oz = json.loads(s.read().decode("utf-8"))
+            if isinstance(oz, dict) and oz.get("calisma_id") == calisma:
+                return oz
+        except Exception:
+            pass
+    durum = _durum_al(calisma if _v_mi(calisma) else _oturum_anahtari(calisma))
+    if _v_mi(calisma):
+        _ozet_yaz(calisma, durum)
+    return _calisma_ozeti(calisma, durum)
 
 
 @app.route("/karsilama")
@@ -1431,10 +1490,36 @@ def _calisma_kimlikleri(yollar=None):
     v_listesi CALISMA_KAYDI'ndan (sahibi bu kullanici olanlar, yeniden
     eskiye); eski liste onceki iki bicimin dosya adlarindan."""
     yollar = _hafiza_yollari() if yollar is None else yollar
+    yollar = [_yol_normal(y) for y in yollar]
     ben = _sahip_ozeti()
-    v = [k for k, d in _calisma_kaydi_oku().items()
+    kayit = _calisma_kaydi_oku()
+    v = [k for k, d in kayit.items()
          if _v_mi(k) and (d or {}).get("sahip") == ben
          and not (d or {}).get("silindi")]
+    # KAYITTA OLMAYAN KLASORLER (kullanici bildirimi: "hepsi gözükmüyor").
+    # Klasorunde calisma dosyasi duran ama CALISMALAR.json'da girdisi
+    # olmayan v-calisma listeye geri alinir (sahibi bu kullaniciysa) ve
+    # kayda yeniden yazilir; boylece acilabilir ya da duzgun silinebilir.
+    yetim = sorted({m.group(1) for m in (re.match(r"^/(v\d{1,6})/calisma\.json$", y)
+                                        for y in yollar) if m} - set(kayit))
+    eklenen = {}
+    for k in yetim:
+        try:
+            sahip = _v_sahibi(k)
+        except Exception:
+            sahip = None
+        if sahip in (None, ben):
+            eklenen[k] = {"sahip": ben, "olusturma": datetime.datetime.now()
+                          .isoformat(timespec="seconds"), "geri_alindi": True}
+    if eklenen:
+        try:
+            guncel = _calisma_kaydi_oku(kati=True)
+            for k, d in eklenen.items():
+                guncel.setdefault(k, d)
+            _calisma_kaydi_yaz(guncel)
+            v.extend(k for k in eklenen if k not in v)
+        except Exception as e:
+            _hata_kaydet("calismalar:yetim", e)
     sayili_re = re.compile(r"^/oturum_%s_(\d{1,6})\.json$"
                            % re.escape(_kullanici_on_eki()))
     eski_re = re.compile(r"^/oturum_%s([A-Za-z0-9_-]+)\.json$"
@@ -1463,13 +1548,13 @@ def _yeni_calisma_id():
     baskasina gectiyse bir sonrakine gecilir."""
     ben = _sahip_ozeti()
     for _deneme in range(5):
-        kayit = _calisma_kaydi_oku()
+        kayit = _calisma_kaydi_oku(kati=True)
         # Eski surumun "silindi" isaretli girdileri numarayi tutmasin.
         kayit = {k: d for k, d in kayit.items()
                  if not (_v_mi(k) and (d or {}).get("silindi"))}
         dolu = {int(V_KALIP.match(k).group(1)) for k in kayit if _v_mi(k)}
         for y in _hafiza_yollari():
-            m = re.match(r"^/v(\d{1,6})/", y)
+            m = re.match(r"^/v(\d{1,6})/", _yol_normal(y))
             if m:
                 dolu.add(int(m.group(1)))
         # EN KUCUK BOS NUMARA: hepsi silindiyse yeniden v1'den baslar;
@@ -1581,19 +1666,26 @@ def _calismalar(en_fazla=CALISMA_LISTE_SINIRI, aktif=None):
 
     Hic baslamamis (bos) calismalar listeye girmez; su an acik olan
     haric - kullanici hangisinde oldugunu gormeli."""
+    from concurrent import futures
     yeni, eski = _calisma_kimlikleri()
-    adaylar = yeni + eski
-    cikti = []
-    for calisma in adaylar[:max(en_fazla, CALISMA_LISTE_SINIRI)]:
+    adaylar = (yeni + eski)[:max(en_fazla, CALISMA_LISTE_SINIRI)]
+
+    def oku(calisma):
         try:
-            durum = _durum_al(_oturum_anahtari(calisma))
+            return _ozet_oku(calisma)
         except Exception as e:
-            cikti.append({"calisma_id": calisma, "ad": calisma,
-                          "hata": "Kayıt okunamadı (%s)."
-                                  % _hata_kaydet("calismalar:oku", e)})
-            continue
-        oz = _calisma_ozeti(calisma, durum)
-        if not oz["baslamis"] and calisma != aktif:
+            return {"calisma_id": calisma, "ad": calisma,
+                    "hata": "Kayıt okunamadı (%s)."
+                            % _hata_kaydet("calismalar:oku", e)}
+
+    # Ozetler PARALEL okunur: her okuma ayri bir folder istegi.
+    with futures.ThreadPoolExecutor(max_workers=8) as havuz:
+        ozetler = list(havuz.map(oku, adaylar))
+    cikti = []
+    for oz in ozetler:
+        oz.pop("_sahip", None)
+        if not oz.get("hata") and not oz.get("baslamis") \
+                and oz.get("calisma_id") != aktif:
             continue
         cikti.append(oz)
     # Zaman ISO bicimde: metin siralamasi zaman siralamasi. Zamani
@@ -1700,7 +1792,7 @@ def calisma_sil_endpoint():
         hafiza = _hafiza()
         if _v_mi(hedef):
             on_ek = "/%s/" % anahtar
-            silinecek = [y for y in _hafiza_yollari() if y.startswith(on_ek)]
+            silinecek = [y for y in _hafiza_yollari() if _yol_normal(y).startswith(on_ek)]
         else:
             silinecek = [akis._yol(anahtar)]
         for yol in silinecek:
@@ -1708,6 +1800,24 @@ def calisma_sil_endpoint():
                 hafiza.delete_path(yol)
             except Exception as e:
                 _hata_kaydet("calisma_sil:dosya", e)
+        if _v_mi(hedef):
+            # KLASORUN KENDISI de silinir (kullanici bildirimi: "silmiyor
+            # gibi arkaplanda folder içindeki folderı"). Dosyalar tek tek
+            # silinince bos klasor kaliyordu.
+            for yol in ("/%s" % anahtar, "/%s/" % anahtar):
+                try:
+                    hafiza.delete_path(yol)
+                    break
+                except Exception:
+                    continue
+            kalan = [y for y in _hafiza_yollari() if _yol_normal(y).startswith(on_ek)]
+            if kalan:
+                kod = _hata_kaydet("calisma_sil:kalan",
+                                   RuntimeError(", ".join(kalan[:5])))
+                return jsonify({"hata": True, "metin":
+                                "%s klasöründe %d dosya silinemedi (hata kodu: %s). "
+                                "Çalışma listede bırakıldı; tekrar deneyin."
+                                % (hedef, len(kalan), kod)})
 
         # Ortak veri seti sahiplikleri de birakilir: numara yeniden
         # verilince yeni calisma eskisinin tablosunu kendi sanmasin.
@@ -1718,7 +1828,7 @@ def calisma_sil_endpoint():
             _hata_kaydet("calisma_sil:sahiplik", e)
 
         if _v_mi(hedef):
-            kayit = _calisma_kaydi_oku()
+            kayit = _calisma_kaydi_oku(kati=True)
             kayit.pop(hedef, None)
             _calisma_kaydi_yaz(kayit)
 

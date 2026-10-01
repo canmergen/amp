@@ -1,6 +1,25 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **bölme kurgusu eski haline döndü; yalnızca set adları değişti**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `fe_agent/akis_panel.py`, `fe_agent/dokuman.py`, `fe_agent/validasyon.py`, `webapp/app.js`
+Bu tur: **Arşiv hızlandı, silme klasörü de siliyor, kayıp çalışmalar geri geldi**. Değiştir: `webapp/backend.py`, `webapp/app.js`
+
+- Hız: her çalışma kaydedilirken yanına küçük bir özet yazılıyor
+  (/vN/ozet.json). Arşiv yalnızca bunları, paralel okuyor; sohbet
+  geçmişini taşıyan çalışma dosyası artık okunmuyor. Özeti olmayan eski
+  çalışmada ilk açılışta bir kez okunup özet yazılıyor.
+- Arşiv ikinci açılıştan itibaren son listeyi anında gösteriyor, taze
+  liste arkadan geliyor.
+- Sil: dosyalar silindikten sonra klasörün kendisi de siliniyor; sonra
+  klasör yeniden listeleniyor. Dosya kalmışsa çalışma listeden düşmüyor,
+  hata kodu gösteriliyor (eskiden sessizce "silindi" sayılıyordu).
+- Sil sonrası liste yeniden yüklenmiyor; yalnızca o satır kalkıyor.
+- Klasörde duran ama CALISMALAR.json'da girdisi olmayan çalışmalar
+  (sahibi sizseniz) listeye geri alınıyor; açılabilir ya da silinebilir.
+- CALISMALAR.json okunamazsa yeni numara alma ve silme durur (eskiden
+  boş kabul edilip üstüne yazılıyordu; kayıttaki çalışmalar kayboluyordu).
+
+---
+
+Önceki tur: **bölme kurgusu eski haline döndü; yalnızca set adları değişti**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `fe_agent/akis_panel.py`, `fe_agent/dokuman.py`, `fe_agent/validasyon.py`, `webapp/app.js`
 
 - Önceki turlardan birinde bölme kurgusu da değiştirilmişti (zamansalda
   Test (OOS) geliştirme döneminden rastgele, rastgelede Test (OOS) seçimi

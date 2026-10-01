@@ -8874,6 +8874,7 @@ function calismalarCiz(d) {
    gizlenir, yerinde "Silinsin mi?" ile solda Onayla, sağda Reddet
    belirir. Silme geri alınamaz; tek tıkla olmamalı. */
 function calismaSilOnayi(dugmeler, c) {
+    const satir = dugmeler.closest(".calisma-satir");
     const eski = Array.from(dugmeler.children);
     eski.forEach(d => { d.hidden = true; });
     const soru = elYap("span", "calisma-sil-soru", "Silinsin mi?");
@@ -8889,13 +8890,13 @@ function calismaSilOnayi(dugmeler, c) {
     onayla.onclick = () => {
         onayla.disabled = reddet.disabled = true;
         soru.textContent = "Siliniyor…";
-        calismaSil(c.calisma_id, geriGetir);
+        calismaSil(c.calisma_id, geriGetir, satir);
     };
     dugmeler.append(soru, onayla, reddet);
     onayla.focus();
 }
 
-function calismaSil(kimlik, hataysa) {
+function calismaSil(kimlik, hataysa, satir) {
     fetch(getWebAppBackendUrl("calisma_sil"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -8913,9 +8914,16 @@ function calismaSil(kimlik, hataysa) {
             return;
         }
         /* Açık çalışma silindiyse en son çalışmaya (yoksa yeni boş
-           çalışmaya) geçilir; değilse liste yenilenir, açık kalır. */
-        if (d.sonraki) calismayaGec(d.sonraki, true);
-        else calismalarAc();
+           çalışmaya) geçilir. Değilse YALNIZCA O SATIR kaldırılır; liste
+           yeniden istenmez (kullanıcı bildirimi: "her sil tuşuna
+           bastığımda arşiv ekranı kapanıp tekrar açılıyor"). */
+        if (ARSIV_ONBELLEK && ARSIV_ONBELLEK.calismalar)
+            ARSIV_ONBELLEK.calismalar = ARSIV_ONBELLEK.calismalar
+                .filter(x => x.calisma_id !== kimlik);
+        if (d.sonraki) { calismayaGec(d.sonraki, true); return; }
+        if (satir) satir.remove();
+        if (!calismalarListe.querySelector(".calisma-satir"))
+            calismalarListe.appendChild(elYap("div", "calisma-bos", "Kayıtlı çalışma yok."));
     })
     .catch(e => {
         hataysa();
@@ -8925,16 +8933,33 @@ function calismaSil(kimlik, hataysa) {
     });
 }
 
+/* Son alınan liste: Arşiv açılınca HEMEN bu çizilir, sunucudan gelen
+   taze liste arkadan yerine geçer (kullanıcı beklemez). */
+let ARSIV_ONBELLEK = null;
+let ARSIV_ISTEK = 0;
+
 function calismalarAc() {
     calismalarListe.hidden = false;
     calismalarBtn.setAttribute("aria-expanded", "true");
-    calismalarListe.innerHTML = "";
-    calismalarListe.appendChild(elYap("div", "calisma-bos", "Yükleniyor…"));
+    if (ARSIV_ONBELLEK) {
+        calismalarCiz(ARSIV_ONBELLEK);
+    } else {
+        calismalarListe.innerHTML = "";
+        calismalarListe.appendChild(elYap("div", "calisma-bos", "Yükleniyor…"));
+    }
+    const istek = ++ARSIV_ISTEK;
     fetch(getWebAppBackendUrl("calismalar")
           + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
         .then(r => r.json())
-        .then(calismalarCiz)
-        .catch(() => calismalarCiz(null));
+        .then(d => {
+            if (istek !== ARSIV_ISTEK || calismalarListe.hidden) return;
+            /* Silme onayı açıkken liste yeniden çizilmez: kullanıcının
+               yarım kalan işlemi elinden alınmasın. */
+            if (calismalarListe.querySelector(".calisma-sil-soru")) return;
+            if (d && !d.hata) ARSIV_ONBELLEK = d;
+            calismalarCiz(d);
+        })
+        .catch(() => { if (istek === ARSIV_ISTEK && !ARSIV_ONBELLEK) calismalarCiz(null); });
 }
 
 function calismayaGec(kimlik, zorla) {
