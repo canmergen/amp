@@ -1,6 +1,20 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Arşiv'de silme hızlandı**. Değiştir: `webapp/backend.py`, `webapp/app.js`
+Bu tur: **sohbet artık en alta atmıyor**. Değiştir: `webapp/app.js`
+
+- Yeni içerik gelince ekran yeni içeriğin BAŞINA kaydırılıyor, en alta
+  değil. Zincirleme adımlarda (01.4 sonucu → 02.1 çıktısı → 02.2 kartı)
+  ilk gelen çıktı ekranda kalıyor.
+- Ekran yalnızca aşağı kayar, yukarı çekilmez.
+- İstek sürerken kendiniz kaydırdıysanız (tekerlek, dokunma, klavye,
+  kaydırma çubuğu) ekran hiç oynatılmaz. Yeni bir onay/mesaj bunu sıfırlar.
+- Yanıt sonrası düğmeye odak verilirken tarayıcının kendiliğinden
+  kaydırması da kapatıldı.
+- Geçmiş yüklenirken (çalışma açılışı) eskisi gibi en alta gider.
+
+---
+
+Önceki tur: **Arşiv'de silme hızlandı**. Değiştir: `webapp/backend.py`, `webapp/app.js`
 
 - Silme ~20 sıralı Dataiku isteğinden 4'e indi: kayıt 1 okuma, klasör tek
   istekle silme, yalnızca o klasöre bakan 1 kontrol, kayıt 1 yazma.

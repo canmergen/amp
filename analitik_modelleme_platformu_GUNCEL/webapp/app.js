@@ -5000,9 +5000,48 @@ function sistemNotuEkle(metin) {
     not.setAttribute("role", "status");
     not.innerHTML = metinBicimle(tireSade(metin));
     sohbetEl.appendChild(not);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
     return not;
 }
+
+/* ==================== Otomatik kaydırma ====================
+   KULLANICI KARARI: "veri geldikçe otomatik en aşağı atıyor ... işlemleri
+   kendim görmek adına yukarı kaydırıyorum". Kurallar:
+   - Yeni içerik gelince sohbet EN ALTA değil, YENİ İÇERİĞİN BAŞINA
+     kaydırılır. Zincirleme adımlarda (02.1 çıktısı, ardından 02.2 kartı)
+     ilk gelen çıktı ekranda kalır; altındakine kullanıcı kendisi iner.
+   - Ekran yalnızca AŞAĞI kaydırılır, asla yukarı çekilmez.
+   - Kullanıcı istek sürerken kendisi kaydırdıysa hiç kaydırılmaz.
+   - Yeni bir gönderim (kart onayı, mesaj) bu durumu sıfırlar.
+   Geçmiş yüklenirken (gönderim yokken) eskisi gibi en alta gider. */
+const KAYDIRMA = { ilk: null, kullanici: false };
+
+function kaydirmaBaslat() {
+    KAYDIRMA.ilk = sohbetEl.scrollHeight;
+    KAYDIRMA.kullanici = false;
+}
+
+function sohbetKaydir() {
+    if (KAYDIRMA.kullanici) return;
+    const enAlt = Math.max(sohbetEl.scrollHeight - sohbetEl.clientHeight, 0);
+    const hedef = KAYDIRMA.ilk === null ? enAlt
+        : Math.min(Math.max(KAYDIRMA.ilk - 24, 0), enAlt);
+    if (hedef > sohbetEl.scrollTop) sohbetEl.scrollTop = hedef;
+}
+
+/* Kullanıcının kendi kaydırması: tekerlek, dokunma, klavye, kaydırma
+   çubuğu. Programın yaptığı scrollTop ataması bu olayları üretmez. */
+["wheel", "touchmove"].forEach(ad => sohbetEl.addEventListener(ad, () => {
+    KAYDIRMA.kullanici = true;
+}, { passive: true }));
+sohbetEl.addEventListener("keydown", e => {
+    if (["PageUp", "PageDown", "ArrowUp", "ArrowDown", "Home", "End", " "].includes(e.key)
+        && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || ""))
+        KAYDIRMA.kullanici = true;
+});
+sohbetEl.addEventListener("pointerdown", e => {
+    if (e.target === sohbetEl) KAYDIRMA.kullanici = true;     // kaydırma çubuğu
+});
 
 function balonEkle(rol, metin, hataMi, blok) {
     /* Adım bilgisi varsa balon KENDI satirini kurmaz: o adimin acik
@@ -5012,12 +5051,12 @@ function balonEkle(rol, metin, hataMi, blok) {
     if (kap) {
         kap.appendChild(balonIcerikYap("bot", metin, false));
         if (blok && blok.onay) blokOnayEkle(kap);
-        sohbetEl.scrollTop = sohbetEl.scrollHeight;
+        sohbetKaydir();
         return kap.parentElement;
     }
     const satir = balonYap(rol, metin, hataMi);
     sohbetEl.appendChild(satir);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
     return satir;
 }
 
@@ -5083,7 +5122,7 @@ function calismaGostergesi(iptalEt) {
     const sayac = setInterval(() => { gecen += 1; yaz(); }, 1000);
     const goster = setTimeout(() => {
         satir.classList.add("gorunur");
-        if (!kap) sohbetEl.scrollTop = sohbetEl.scrollHeight;
+        if (!kap) sohbetKaydir();
     }, ISLEM_GECIKME_MS);
     return {
         kaldir() {
@@ -5175,7 +5214,7 @@ function secenekEkle(secenekler, kilit, secili) {
     } else {
         sohbetEl.appendChild(kok);
     }
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
     if (!kilit) yeniOdak = kok.querySelector(".secenek");
 }
 
@@ -6235,7 +6274,7 @@ function dogrulamaKartiEkle(alan, blok) {
 
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     rozetiBasligaTasi(blok, rozet);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
 
     /* GECMISTEN yeniden cizim: kart kilitli acilir, rozet karar
        verildigi andaki halini korur (ozet gecirilmiyor). Yoklama da
@@ -6337,7 +6376,7 @@ function sfaKartiEkle(alan, blok) {
     }
     goster(null);
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
     if (blok && blok.kilit) { kilitle(true); geriAlKilit = null; return; }
     if (alan.ai_is) yokla(String(alan.ai_is));
     yeniOdak = birincil;
@@ -7288,7 +7327,7 @@ function bolmeKartiEkle(alan, blok) {
 
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     rozetiBasligaTasi(blok, durumEl);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
     if (gecmisten) return;
     yeniOdak = govde.querySelector("[data-bolme-onay]");
 }
@@ -7746,7 +7785,7 @@ function teyitKartiEkle(alan, blok) {
        dururken hem kendi satırını yiyordu hem de kaydettikten sonra
        kullanıcının baktığı yer başlık satırıydı. */
     rozetYuvasinaEkle(blok, excelSerit.el);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
     if (gecmisten) return;
 
     yeniOdak = onayBtn;
@@ -8104,7 +8143,7 @@ function secimAlaniEkle(alan, blok) {
 
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     rozetiBasligaTasi(blok, durumEl);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
 
     /* GECMISTEN YENIDEN CIZIM: kart kilitli acilir. Adim zaten
        tamamlandi; kullanici degeri degistirecekse Geri Dön'e basar.
@@ -8401,6 +8440,7 @@ function gonder(metinDisaridan, etiket, ekGovde) {
        kullanici balonu belirmesin. Canli oturumda gizlenen sey, gecmis
        cizilirken ortaya cikiyordu. */
     const sessiz = (etiket === false);
+    kaydirmaBaslat();
     if (!sessiz) balonEkle("kullanici", etiket || metin);
     kutuEl.value = "";
     kutuEl.style.height = "auto";
@@ -8484,9 +8524,12 @@ function gonder(metinDisaridan, etiket, ekGovde) {
         const analizdeYaziyor = analizPanel
             && analizPanel.contains(document.activeElement);
         if (yeniOdak && document.contains(yeniOdak)) {
-            try { yeniOdak.focus(); } catch (err) { kutuEl.focus(); }
+            /* preventScroll: odak almak tarayıcıyı o elemana (çoğu zaman
+               kartın en altındaki düğmeye) kaydırıyordu. */
+            try { yeniOdak.focus({ preventScroll: true }); }
+            catch (err) { kutuEl.focus({ preventScroll: true }); }
         } else if (!analizdeYaziyor) {
-            kutuEl.focus();
+            kutuEl.focus({ preventScroll: true });
         }
         yeniOdak = null;
     });
@@ -8508,7 +8551,7 @@ function aksiyonIziEkle(metin) {
     yazi.textContent = tireSade(metin);
     iz.appendChild(yazi);
     sohbetEl.appendChild(iz);
-    sohbetEl.scrollTop = sohbetEl.scrollHeight;
+    sohbetKaydir();
     return iz;
 }
 
@@ -8743,6 +8786,8 @@ function ekraniTemizle() {
     dagilimSifirla();
     DAGILIM.kolon = "";
     sohbetEl.innerHTML = "";
+    KAYDIRMA.ilk = null;
+    KAYDIRMA.kullanici = false;
     aktifAdim = 0;
     aktifMod = null;
     TUR_NO = 0;
