@@ -2976,7 +2976,6 @@ span.bolme-cip { cursor: default; }
 }
 .islem-satiri.gorunur { display: flex; }
 .islem-sure { font-variant-numeric: tabular-nums; }
-.islem-robot { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .islem-iptal {
   border: none; background: none; padding: 0; cursor: pointer;
   color: var(--kirmizi); font: inherit; font-weight: var(--fw-kalin);

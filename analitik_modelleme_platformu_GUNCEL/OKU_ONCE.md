@@ -6,8 +6,9 @@ Bu tur: **robot görselleri duruma göre**. Değiştir: `webapp/backend.py`, `we
     robot_header.png   üst bar solu
     robot_welcome.png  sohbetteki ilk (karşılama) robot
     robot_chat.png     normal konuşma
-    robot_think.png    arkada iş sürerken ("İşlem Devam Ediyor · sayaç"
-                       satırında; çalışan bloğun robotu da geçici olarak bu)
+    robot_think.png    arkada iş sürerken: çalışan bloğun başlığındaki
+                       robot geçici olarak bu ("İşlem Devam Ediyor"
+                       satırında görsel yok)
 - İşlem 2,5 saniyeden kısa sürerse düşünen görsel hiç çıkmaz (titreme yok).
 
 ---

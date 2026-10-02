@@ -5163,15 +5163,10 @@ function calismaGostergesi(iptalEt) {
         iptal.textContent = "İptal ediliyor…";
         if (iptalEt) iptalEt();
     };
-    /* DÜŞÜNEN ROBOT: işlem sürerken satırda düşünen görsel; çalışan
-       bloğun başlığındaki robot da geçici olarak düşünen hâle geçer. */
-    const dusun = document.createElement("img");
-    dusun.className = "islem-robot";
-    dusun.src = GORSEL.dusunme;
-    dusun.alt = "";
-    dusun.setAttribute("aria-hidden", "true");
-    dusun.onerror = () => { dusun.style.display = "none"; };
-    satir.append(dusun, sure, iptal);
+    /* DÜŞÜNEN ROBOT: işlem sürerken çalışan bloğun başlığındaki robot
+       geçici olarak düşünen hâle geçer. "İşlem Devam Ediyor" satırına
+       görsel konmaz (kullanıcı kararı). */
+    satir.append(sure, iptal);
     (kap || sohbetEl).appendChild(satir);
     const blokAvatar = kap && kap.parentElement
         ? kap.parentElement.querySelector(".balon-avatar.bot") : null;
