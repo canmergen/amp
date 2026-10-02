@@ -30,6 +30,13 @@ from fe_agent import ifade as ifade_mod
 # Model adinda nokta YOK (dropdown'da gorunen isimle ayni degil).
 LLAMA = "openai:dataiku-llama-31-70b-instruct-gptq-int4:meta-llama-31-70b-instruct-gptq-int4"
 QWEN  = "openai:dataiku-qwen3-30b-a3b-thinking-2507-fp8:qwen3-30b-a3b-thinking-2507-fp8"
+# LLM Connections'a sonradan eklenen model (dropdown: qwen38-flash-next-fp8).
+# Id yazimi ekrandaki baglanti / model adindan; Dataiku'da dogrulamak icin:
+#   [l["id"] for l in dataiku.api_client().get_default_project().list_llms()]
+QWEN_FLASH = "openai:dataiku-qwen38-flash-next-fp8:qwen38-flash-next-fp8"
+
+# Karsilastirma testinin (karsilastir) denedigi modeller.
+MODELLER = {"llama": LLAMA, "qwen_thinking": QWEN, "qwen_flash": QWEN_FLASH}
 
 # Varsayilan: Llama. Instruct-tuned oldugu icin JSON formatina daha sadik.
 VARSAYILAN_MODEL = LLAMA
@@ -338,6 +345,11 @@ Her kolon icin:
   kategori : sunlardan biri: kimlik, demografi, gelir, bakiye, islem,
              gecikme, urun, kanal, davranis, zaman, hedef, diger
 
+ORNEK TANIMLAR verilirse (kurumun kendi sozlugundeki, adi benzeyen
+kolonlar): yazim tarzina, cumle yapisina ve kisaltmalarin (TXN, GDN, AMT,
+CNT, 3D...) anlamina UY. Ornekleri kopyalama; her kolonu kendi adi ve
+dagilimina gore yaz. VERI SETI adi verilirse tablonun konusunu ondan da cikar.
+
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme veya aciklama YAZMA.
 {"kolonlar": [{"ad": "...", "aciklama": "...", "kategori": "..."}]}
 
@@ -352,11 +364,58 @@ Emin olamadigin kolon icin tahmin yaz ama kategoriyi "diger" birak.""" \
 EN_UZUN_DAGILIM = 400
 
 
-def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None):
+# Aciklama onerisinde parca basina en cok kac ornek tanim gonderilir.
+ORNEK_TANIM_SAYISI = 10
+
+
+def _ad_parcalari(ad):
+    return [x for x in re.split(r"[^A-Z0-9]+", _normalize_ad_parcali(ad)) if x]
+
+
+def _normalize_ad_parcali(ad):
+    """Buyuk harf, Turkce harf sadelesmis; ayraclar korunur."""
+    return "".join(_TR_HARF.get(c, c) for c in str(ad)).upper()
+
+
+def benzer_ornekler(adlar, tanimlar, adet=ORNEK_TANIM_SAYISI):
+    """Kurumun sozlugunden, adlari verilen kolonlara en cok benzeyen
+    tanimli kolonlar: [(ad, aciklama)]. Benzerlik ad parcalarindan
+    (TXN_GDN_3D_AMT -> TXN, GDN, 3D, AMT): ortak bas parcalar once."""
+    if not tanimlar:
+        return []
+    hedefler = [_ad_parcalari(a) for a in adlar]
+    puanlar = []
+    for ad, aciklama in tanimlar.items():
+        aciklama = str(aciklama or "").strip()
+        if not aciklama or ad in adlar:
+            continue
+        p = _ad_parcalari(ad)
+        en_iyi = 0
+        for h in hedefler:
+            bas = 0
+            for x, y in zip(p, h):
+                if x != y:
+                    break
+                bas += 1
+            ortak = len(set(p) & set(h))
+            en_iyi = max(en_iyi, bas * 3 + ortak)
+        if en_iyi > 0:
+            puanlar.append((en_iyi, str(ad), aciklama[:200]))
+    puanlar.sort(key=lambda x: (-x[0], x[1]))
+    return [(ad, ack) for _p, ad, ack in puanlar[:adet]]
+
+
+def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None):
     """profiller: sozluk.profil_cikar() ciktisi
     Doner: (aciklamalar, hata)
       aciklamalar: {kolon_adi: {"aciklama": ..., "kategori": ...}}
       hata: None ya da basarisiz parca sayisini ve SON hatayi tasiyan metin.
+
+    baglam: {"veri_seti": ad, "tanimlar": {kolon: aciklama}} (opsiyonel).
+    Verilirse her parcaya veri setinin adi ve kurumun sozlugunden adi
+    benzeyen ORNEK_TANIM_SAYISI kadar tanimli kolon eklenir: oneriler
+    kurumun yazim tarzinda ve kisaltma anlamlarina uygun gelir. Ham veri
+    degil, yalnizca sozlukteki aciklama metinleri gider.
 
     kategoriler: modelin secebilecegi kategori listesi. Verilmezse
     SOZLUK_KATEGORILERI kullanilir. NEDEN PARAMETRE: sabit liste kurumun
@@ -397,10 +456,21 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None):
                 s += "\n    (ornek deger paylasilmadi: %s)" % p["not"]
             satirlar.append(s)
 
+        govde = "\n".join(satirlar)
+        baslik = "KOLONLAR:"
+        if baglam:
+            ek = []
+            if baglam.get("veri_seti"):
+                ek.append("VERI SETI: %s" % baglam["veri_seti"])
+            ornek = benzer_ornekler([p["ad"] for p in blok], baglam.get("tanimlar") or {})
+            if ornek:
+                ek.append("ORNEK TANIMLAR (kurumun sozlugunden):\n"
+                          + "\n".join("- %s: %s" % (a, t) for a, t in ornek))
+            if ek:
+                govde = "\n\n".join(ek) + "\n\nKOLONLAR:\n" + govde
+                baslik = "VERI SETI, ORNEK TANIMLAR VE KOLONLAR:"
         try:
-            ham = _cagir(sistem,
-                         _veri_blogu("KOLONLAR:", "\n".join(satirlar)),
-                         sicaklik=0.3)
+            ham = _cagir(sistem, _veri_blogu(baslik, govde), sicaklik=0.3)
             veri = _json_ayristir(ham, {}, dict)
         except Exception as e:
             dusen_parca += 1
@@ -819,6 +889,103 @@ def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None):
 # ===========================================================================
 # Test yardimcisi
 # ===========================================================================
+def karsilastir(modeller=None, tekrar=1):
+    """Notebook'ta calistir: modelleri AYNI iki gorevle karsilastirir.
+
+      sozluk : 6 ornek kolon icin aciklama (Turkce kalitesi, JSON)
+      sfa    : 4 ornek degisken icin SFA karari (JSON, alan gecerliligi)
+
+    Her model icin sure (sn), JSON okunabildi mi, kac kayit dondu ve
+    ornek ciktilar yazilir. Doner: {model_adi: sonuc}. Veri okunmaz;
+    girdiler asagida sabit."""
+    modeller = modeller or MODELLER
+    kolonlar = [
+        {"ad": "TXN_GDN_3D_AMT", "tip": "sayısal", "null_oran": 0.0, "tekil": 8123,
+         "dagilim": "min 0 · q1 120 · medyan 850 · q3 3400 · maks 250000"},
+        {"ad": "TXN_GDN_3D_HS_CNT", "tip": "sayısal", "null_oran": 0.0, "tekil": 14,
+         "dagilim": "min 0 · q1 0 · medyan 0 · q3 1 · maks 23"},
+        {"ad": "TXN_GDN_KRIPTO_3D_CNT", "tip": "sayısal", "null_oran": 0.02, "tekil": 9,
+         "dagilim": "min 0 · q1 0 · medyan 0 · q3 0 · maks 12"},
+        {"ad": "MUST_YAS", "tip": "sayısal", "null_oran": 0.01, "tekil": 63,
+         "dagilim": "min 18 · q1 31 · medyan 42 · q3 54 · maks 80"},
+        {"ad": "KANAL_KOD", "tip": "kategorik", "null_oran": 0.0, "tekil": 4,
+         "dagilim": "MOBIL %61 · INTERNET %22 · SUBE %12 · ATM %5"},
+        {"ad": "rn", "tip": "sayısal", "null_oran": 0.0, "tekil": 10000,
+         "dagilim": "min 1 · q1 2500 · medyan 5000 · q3 7500 · maks 10000"},
+    ]
+    baglam = {"veri_seti": "HAVALE_EFT_NTT", "tanimlar": {
+        "TXN_GDN_3D_CNT": "Son 3 günde giden işlem adedi",
+        "TXN_GDN_3D_AMT_AVG": "Son 3 günde giden işlem ortalama tutarı",
+        "TXN_GDN_3D_HS_AMT": "Son 3 günde hafta sonu giden işlem tutarı",
+        "TXN_GDN_KRIPTO_3D_AMT": "Son 3 günde kripto şirketlerine giden işlem tutarı"}}
+    sfa_girdi = [
+        {"ad": "GELIR", "tip": "sayısal", "aciklama": "Aylık gelir", "eksik_orani": 0.2,
+         "eksik_hedef_orani": 0.22, "hedef_orani": 0.14, "min": 0, "max": 250000,
+         "medyan": 9000, "carpiklik": 4.1, "aykiri_payi": 0.03, "tekil": 9000,
+         "c": {"ham": 0.58, "kirpik": 0.59, "log": 0.58, "ustel": 0.57, "sira": 0.58},
+         "iv_ham": 0.12, "iv_onerilen": 0.13, "sekil": "azalan", "aralik_sayisi": 4,
+         "kural": {"kullan": "evet", "eksik": "isaret", "aykiri": "winsor",
+                   "donusum": "log", "ayriklastirma": "yok"}},
+        {"ad": "MUST_YAS", "tip": "sayısal", "aciklama": "Müşteri yaşı", "eksik_orani": 0.0,
+         "hedef_orani": 0.14, "min": 18, "max": 80, "medyan": 42, "carpiklik": 0.3,
+         "aykiri_payi": 0.0, "tekil": 63, "c": {"ham": 0.55}, "iv_ham": 0.05,
+         "iv_onerilen": 0.06, "sekil": "U", "aralik_sayisi": 4, "hassas": "yaş",
+         "kural": {"kullan": "evet", "eksik": "yok", "aykiri": "yok",
+                   "donusum": "yok", "ayriklastirma": "onerilen"}},
+        {"ad": "KANAL_KOD", "tip": "kategorik", "aciklama": "İşlem kanalı",
+         "eksik_orani": 0.0, "hedef_orani": 0.14, "tekil": 4, "c": {"ham": 0.52},
+         "iv_ham": 0.02, "iv_onerilen": 0.02, "sekil": "gruplama", "aralik_sayisi": 2,
+         "kural": {"kullan": "evet", "eksik": "yok", "aykiri": "yok",
+                   "donusum": "yok", "ayriklastirma": "onerilen"}},
+        {"ad": "SKOR_0_10", "tip": "sayısal", "aciklama": "İç skor", "eksik_orani": 0.0,
+         "hedef_orani": 0.14, "min": 0, "max": 10, "medyan": 5, "carpiklik": 0.0,
+         "aykiri_payi": 0.0, "tekil": 11, "c": {"ham": 0.97}, "iv_ham": 2.1,
+         "iv_onerilen": 2.1, "sekil": "artan", "aralik_sayisi": 5, "sizinti": True,
+         "kural": {"kullan": "hayir", "eksik": "yok", "aykiri": "yok",
+                   "donusum": "yok", "ayriklastirma": "yok"}},
+    ]
+    global VARSAYILAN_MODEL
+    eski = VARSAYILAN_MODEL
+    sonuclar = {}
+    try:
+        for ad, model in modeller.items():
+            VARSAYILAN_MODEL = model
+            kayit = {}
+            for gorev in ("sozluk", "sfa"):
+                sureler, adetler, hatalar, ornek = [], [], [], None
+                for _ in range(max(1, int(tekrar))):
+                    t0 = time.time()
+                    if gorev == "sozluk":
+                        sonuc, hata = sozluk_aciklama_uret(kolonlar, parca=len(kolonlar),
+                                                           baglam=baglam)
+                    else:
+                        sonuc, hata = sfa_karar_ver(sfa_girdi)
+                    sureler.append(round(time.time() - t0, 1))
+                    adetler.append(len(sonuc or {}))
+                    if hata:
+                        hatalar.append(hata)
+                    ornek = sonuc
+                kayit[gorev] = {"sure_sn": sureler, "kayit": adetler,
+                                "beklenen": len(kolonlar) if gorev == "sozluk" else len(sfa_girdi),
+                                "hata": hatalar, "ornek": ornek}
+            sonuclar[ad] = kayit
+    finally:
+        VARSAYILAN_MODEL = eski
+    for ad, kayit in sonuclar.items():
+        print("=" * 70)
+        print(ad, "->", modeller[ad])
+        for gorev, k in kayit.items():
+            print("  %-6s sure %s sn | kayit %s/%s | hata: %s"
+                  % (gorev, k["sure_sn"], k["kayit"], k["beklenen"], k["hata"] or "-"))
+        for kolon, v in ((kayit["sozluk"]["ornek"]) or {}).items():
+            print("    %-24s %s" % (kolon, v.get("aciklama")))
+        for kolon, v in ((kayit["sfa"]["ornek"]) or {}).items():
+            print("    %-12s kullan=%s eksik=%s donusum=%s ayrik=%s | %s" % (
+                kolon, v.get("kullan"), v.get("eksik"), v.get("donusum"),
+                v.get("ayriklastirma"), str(v.get("gerekce") or "")[:90]))
+    return sonuclar
+
+
 def test(model=None):
     """Notebook'ta calistir: model baglantisi ve JSON ayristirma calisiyor mu."""
     try:

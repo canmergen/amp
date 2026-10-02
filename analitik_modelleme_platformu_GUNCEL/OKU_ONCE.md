@@ -1,6 +1,25 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **robot görselleri duruma göre**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+Bu tur: **yeni dil modeli + model karşılaştırma testi; açıklama önerisine sözlük bağlamı**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`
+
+- llm.py'ye QWEN_FLASH (qwen38-flash-next-fp8) eklendi. Varsayılan hâlâ
+  Llama; değiştirmek için llm.py'de VARSAYILAN_MODEL satırı.
+- Karşılaştırma (Dataiku notebook'ta):
+      from fe_agent import llm
+      llm.karsilastir()            # llama, qwen_thinking, qwen_flash
+  Her model aynı 6 kolonluk açıklama ve 4 değişkenlik SFA isteğiyle
+  çağrılır; süre, dönen kayıt sayısı, hata ve örnek çıktılar yazılır.
+  Model kimliği yanlışsa o modelde "hata" satırı çıkar; doğru kimlik:
+      [l["id"] for l in dataiku.api_client().get_default_project().list_llms()]
+- Açıklama önerisi (sözlükte tanımı olmayan kolonlar): isteğe veri setinin
+  adı ve sözlüğünüzden adı en çok benzeyen 10 tanımlı kolon örnek olarak
+  ekleniyor (TXN_GDN_3D_… için diğer TXN_GDN_3D_… açıklamaları). Ham veri
+  gitmiyor, yalnızca sözlükteki açıklama metinleri. C/D modunda sözlük
+  olmadığı için yalnızca veri setinin adı gidiyor.
+
+---
+
+Önceki tur: **robot görselleri duruma göre**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
 
 - LLM_WEBAPP_GORSEL klasöründe bu adlar olmalı:
     robot_header.png   üst bar solu

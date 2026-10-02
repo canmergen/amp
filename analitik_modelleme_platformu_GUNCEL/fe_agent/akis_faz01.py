@@ -722,7 +722,9 @@ def sozluk_uret_uygula(durum):
     profiller = sozluk_mod.profil_cikar_profilden(prof)
 
     # llm.sozluk_aciklama_uret artik (aciklamalar, hata) donuyor.
-    aciklamalar, llm_hata = llm_mod.sozluk_aciklama_uret(profiller)
+    # Sozluk yok (C/D): baglam yalnizca veri setinin adi.
+    aciklamalar, llm_hata = llm_mod.sozluk_aciklama_uret(
+        profiller, baglam={"veri_seti": durum.get("veri_seti") or "", "tanimlar": {}})
     if llm_hata and not aciklamalar:
         # Tek bir aciklama bile uretilemedi: adimi ilerletmiyoruz.
         raise AdimHatasi(
@@ -1300,6 +1302,25 @@ def _dagilim_metni(kayit):
     return ""
 
 
+def _aciklama_baglami(durum):
+    """Aciklama onerisine giden baglam: veri setinin adi ve kurumun
+    sozlugundeki tanimli kolonlar (llm.benzer_ornekler bunlardan adi
+    benzeyenleri secer). Sozluk yoksa / okunamazsa yalnizca ad.
+    Ham veri gitmez; yalnizca sozlukteki aciklama metinleri."""
+    baglam = {"veri_seti": durum.get("veri_seti") or "", "tanimlar": {}}
+    try:
+        sz = sozluk_orijinal_oku(durum)
+        ad_kol, ack_kol, hata = llm_mod._sozluk_kolonlari(sz)
+        if not hata and ack_kol is not None:
+            for ad, ack in zip(sz[ad_kol].astype(str), sz[ack_kol]):
+                ack = "" if ack is None or (isinstance(ack, float) and ack != ack) else str(ack).strip()
+                if ack:
+                    baglam["tanimlar"][ad.strip()] = ack
+    except Exception:
+        pass
+    return baglam
+
+
 def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
     """Tanimsiz kolonlar icin dil modelinden ACIKLAMA onerisi.
 
@@ -1347,6 +1368,7 @@ def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
 
     profiller = _oneri_profilleri(prof if prof is not None else _profil(durum),
                                   kolonlar, profil)
+    baglam = _aciklama_baglami(durum)
 
     ham = {}
     grup_sayisi = 0
@@ -1361,7 +1383,7 @@ def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
             # profilleriyle kuruluyor, onceki grubun kolonlari
             # gonderilmiyor — baglam tasinmiyor.
             sonuc, _hata = llm_mod.sozluk_aciklama_uret(
-                grup, parca=len(grup))
+                grup, parca=len(grup), baglam=baglam)
         except Exception as e:
             # Bu grup onerisiz kalir, digerleri gelir. AMA SESSIZ DEGIL:
             # hata tamamen yutulunca imza uyusmazligi ya da kapali bir
@@ -1424,7 +1446,7 @@ def _oneri_isi_kirp():
         _ONERI_ISLER.pop(anahtar, None)
 
 
-def _oneri_isi_calis(is_id, profiller):
+def _oneri_isi_calis(is_id, profiller, baglam=None):
     """Isci: gruplari sirayla isler, her gruptan sonra kaydi tazeler."""
     dusen_grup = 0
     grup_sayisi = 0
@@ -1441,7 +1463,8 @@ def _oneri_isi_calis(is_id, profiller):
             # parca=len(grup): llm.py'nin kendi parcalamasi devreye
             # girmesin; grup TEK cagri olsun. Gruplar arasinda baglam
             # tasinmaz, her cagri kendi kolonlariyla baslar.
-            sonuc, _hata = llm_mod.sozluk_aciklama_uret(grup, parca=len(grup))
+            sonuc, _hata = llm_mod.sozluk_aciklama_uret(grup, parca=len(grup),
+                                                       baglam=baglam)
             if isinstance(sonuc, dict):
                 for ad, kayit_s in sonuc.items():
                     if not isinstance(kayit_s, dict):
@@ -1476,7 +1499,7 @@ def _oneri_isi_calis(is_id, profiller):
             % (_sayi(grup_sayisi), _sayi(dusen_grup), son_hata))
 
 
-def oneri_isi_baslat(kolonlar, profiller):
+def oneri_isi_baslat(kolonlar, profiller, baglam=None):
     """Arka plan onerisini baslatir. Doner: is kimligi."""
     is_id = uuid.uuid4().hex[:12]
     with _ONERI_KILIT:
@@ -1490,7 +1513,7 @@ def oneri_isi_baslat(kolonlar, profiller):
     if not profiller:
         return is_id
     isci = threading.Thread(
-        target=_oneri_isi_calis, args=(is_id, profiller), daemon=True)
+        target=_oneri_isi_calis, args=(is_id, profiller, baglam), daemon=True)
     isci.start()
     return is_id
 
@@ -1824,7 +1847,8 @@ def sozluk_tanim_plan(durum):
         # Dil modeli cagrisi YALNIZCA tanimsiz kolonlar icin; ozetler veri
         # seti profilinden.
         profiller = _oneri_profilleri(prof, gosterilen, p)
-        durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller)
+        durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller,
+                                              _aciklama_baglami(durum))
         durum["_oneri_kolonlar"] = list(gosterilen)
         durum["_tanimsiz_oneri_hata"] = ""
         oneriler = {}
