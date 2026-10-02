@@ -86,6 +86,8 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 const GORSEL = {
     banner:     getWebAppBackendUrl("gorsel/banner"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
+    karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
+    dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
     user:       getWebAppBackendUrl("gorsel/user"),
     zeminAcik:  getWebAppBackendUrl("gorsel/zemin_acik"),
     zeminKoyu:  getWebAppBackendUrl("gorsel/zemin_koyu"),
@@ -4542,10 +4544,15 @@ function metinBicimle(metin) {
 
    Gorsel YUKLENMEZSE (folder'da yok, ag hatasi) <img> kendini gizler:
    kirik resim ikonu, olmayan bir seyin yerini tutmaktan kotudur. */
+/* ROBOT GÖRSELLERİ (kullanıcı kararı): sohbetteki İLK robot (karşılama)
+   el sallayan görsel, normal konuşmada konuşan görsel, arkada iş
+   sürerken düşünen görsel (bkz. calismaGostergesi). */
 function avatarYap(rol) {
     const img = document.createElement("img");
     img.className = "balon-avatar " + rol;
-    img.src = rol === "bot" ? GORSEL.bot : GORSEL.user;
+    const ilk = rol === "bot" && !sohbetEl.querySelector(".balon-avatar.bot");
+    img.src = rol === "bot" ? (ilk ? GORSEL.karsilama : GORSEL.bot) : GORSEL.user;
+    if (ilk) img.classList.add("karsilama");
     img.alt = "";                 // dekoratif: ekran okuyucu atlasin
     img.setAttribute("aria-hidden", "true");
     img.onerror = () => { img.style.display = "none"; };
@@ -5156,8 +5163,19 @@ function calismaGostergesi(iptalEt) {
         iptal.textContent = "İptal ediliyor…";
         if (iptalEt) iptalEt();
     };
-    satir.append(sure, iptal);
+    /* DÜŞÜNEN ROBOT: işlem sürerken satırda düşünen görsel; çalışan
+       bloğun başlığındaki robot da geçici olarak düşünen hâle geçer. */
+    const dusun = document.createElement("img");
+    dusun.className = "islem-robot";
+    dusun.src = GORSEL.dusunme;
+    dusun.alt = "";
+    dusun.setAttribute("aria-hidden", "true");
+    dusun.onerror = () => { dusun.style.display = "none"; };
+    satir.append(dusun, sure, iptal);
     (kap || sohbetEl).appendChild(satir);
+    const blokAvatar = kap && kap.parentElement
+        ? kap.parentElement.querySelector(".balon-avatar.bot") : null;
+    const eskiAvatar = blokAvatar ? blokAvatar.src : null;
 
     let gecen = 0;
     const yaz = () => { sure.textContent = "İşlem Devam Ediyor · " + sureBicim(gecen); };
@@ -5165,6 +5183,7 @@ function calismaGostergesi(iptalEt) {
     const sayac = setInterval(() => { gecen += 1; yaz(); }, 1000);
     const goster = setTimeout(() => {
         satir.classList.add("gorunur");
+        if (blokAvatar && !blokAvatar.classList.contains("karsilama")) blokAvatar.src = GORSEL.dusunme;
         if (!kap) sohbetKaydir();
     }, ISLEM_GECIKME_MS);
     return {
@@ -5172,6 +5191,7 @@ function calismaGostergesi(iptalEt) {
             clearInterval(sayac);
             clearTimeout(goster);
             satir.remove();
+            if (blokAvatar && eskiAvatar && blokAvatar.src !== eskiAvatar) blokAvatar.src = eskiAvatar;
         }
     };
 }

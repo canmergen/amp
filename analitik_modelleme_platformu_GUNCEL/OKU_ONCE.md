@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.4'te ayrı "Segment Dağılımı" ayarı**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `webapp/app.js`
+Bu tur: **robot görselleri duruma göre**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+
+- LLM_WEBAPP_GORSEL klasöründe bu adlar olmalı:
+    robot_header.png   üst bar solu
+    robot_welcome.png  sohbetteki ilk (karşılama) robot
+    robot_chat.png     normal konuşma
+    robot_think.png    arkada iş sürerken ("İşlem Devam Ediyor · sayaç"
+                       satırında; çalışan bloğun robotu da geçici olarak bu)
+- İşlem 2,5 saniyeden kısa sürerse düşünen görsel hiç çıkmaz (titreme yok).
+
+---
+
+Önceki tur: **01.4'te ayrı "Segment Dağılımı" ayarı**. Değiştir: `fe_agent/akis_durum.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_panel.py`, `webapp/app.js`
 
 - Hedef Dağılımı satırının altında "Segment Dağılımı: Korunsun /
   Korunmasın" (yalnızca segment kolonu tanımlıysa ve hedef dağılımı
