@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **yeni dil modeli + model karşılaştırma testi; açıklama önerisine sözlük bağlamı**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`
+Bu tur: **Arşiv'de "Listede Görünmeyen Klasörler"**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+
+- PROJE_HAFIZASI'nda olup Arşiv listesinde olmayan v-klasörleri listenin
+  altında nedeniyle yazılır: "Boş klasör" (eski silmelerden kalan),
+  "Çalışma dosyası yok · N dosya kalmış", "Başlanmamış çalışma".
+- Her birinde "Temizle" (onaylı; Sil ile aynı uç, klasörü kalıcı siler).
+- Başka kullanıcının çalışması listelenmez.
+
+---
+
+Önceki tur: **yeni dil modeli + model karşılaştırma testi; açıklama önerisine sözlük bağlamı**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`
 
 - llm.py'ye QWEN_FLASH (qwen38-flash-next-fp8) eklendi. Varsayılan hâlâ
   Llama; değiştirmek için llm.py'de VARSAYILAN_MODEL satırı.

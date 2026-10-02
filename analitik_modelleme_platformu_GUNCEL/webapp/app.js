@@ -9050,6 +9050,7 @@ function calismalarCiz(d) {
     if (!liste.length) {
         calismalarListe.appendChild(elYap("div", "calisma-bos",
             "Kayıtlı çalışma yok."));
+        gizliKlasorleriCiz(d.gizli);
         return;
     }
     liste.forEach(c => {
@@ -9089,6 +9090,33 @@ function calismalarCiz(d) {
             sil.onclick = () => calismaSilOnayi(dugmeler, c);
             dugmeler.appendChild(sil);
         }
+        satir.appendChild(dugmeler);
+        calismalarListe.appendChild(satir);
+    });
+    gizliKlasorleriCiz(d.gizli);
+}
+
+/* LİSTEDE GÖRÜNMEYEN KLASÖRLER (kullanıcı bildirimi: "arşiv kısmında
+   bütün folderlar gözükmüyor"). PROJE_HAFIZASI'nda olup listede olmayan
+   v-klasörleri nedeniyle yazılır: boş klasör, çalışma dosyası silinmiş
+   artık dosyalar, başlanmamış çalışma. "Temizle" klasörü kalıcı siler
+   (onaylı, Sil ile aynı uç). */
+function gizliKlasorleriCiz(gizli) {
+    if (!gizli || !gizli.length) return;
+    calismalarListe.appendChild(elYap("div", "calisma-gizli-baslik",
+        "Listede Görünmeyen Klasörler (" + gizli.length + ")"));
+    gizli.forEach(g => {
+        const satir = elYap("div", "calisma-satir calisma-gizli");
+        const oge = elYap("div", "calisma-oge");
+        oge.appendChild(elYap("div", "calisma-ad", g.ad));
+        oge.appendChild(elYap("div", "calisma-alt", tireSade(g.neden || "")));
+        satir.appendChild(oge);
+        const dugmeler = elYap("div", "calisma-dugmeler");
+        const sil = elYap("button", "calisma-dugme sil", "Temizle");
+        sil.type = "button";
+        sil.title = g.ad + " klasörünü kalıcı olarak sil";
+        sil.onclick = () => calismaSilOnayi(dugmeler, { calisma_id: g.ad });
+        dugmeler.appendChild(sil);
         satir.appendChild(dugmeler);
         calismalarListe.appendChild(satir);
     });
@@ -9153,6 +9181,8 @@ function calismaSil(kimlik, hataysa, satir) {
         if (ARSIV_ONBELLEK && ARSIV_ONBELLEK.calismalar)
             ARSIV_ONBELLEK.calismalar = ARSIV_ONBELLEK.calismalar
                 .filter(x => x.calisma_id !== kimlik);
+        if (ARSIV_ONBELLEK && ARSIV_ONBELLEK.gizli)
+            ARSIV_ONBELLEK.gizli = ARSIV_ONBELLEK.gizli.filter(x => x.ad !== kimlik);
         if (d.sonraki) { calismayaGec(d.sonraki, true); return; }
         if (satir) satir.remove();
         if (!calismalarListe.querySelector(".calisma-satir"))

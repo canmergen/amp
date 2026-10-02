@@ -1701,6 +1701,63 @@ def _calismalar(en_fazla=CALISMA_LISTE_SINIRI, aktif=None):
     return cikti[:en_fazla]
 
 
+def _gizli_klasorler(gosterilen):
+    """PROJE_HAFIZASI'nda olup Arşiv'de GÖRÜNMEYEN v-klasörleri ve nedeni
+    (kullanici bildirimi: "arşiv kısmında bütün folderlar gözükmüyor").
+
+      Boş klasör              : içinde dosya yok (eski silmelerden kalan)
+      Çalışma dosyası yok     : calisma.json silinmiş, artık dosyalar kalmış
+      Başlanmamış çalışma     : açılmış ama hiçbir adım yapılmamış
+    Başka kullanıcının çalışması listelenmez. Doner: [{ad, neden, dosya}]."""
+    hafiza = _hafiza()
+    dosyalar = {}
+    for y in _hafiza_yollari():
+        m = re.match(r"^/(v\d{1,6})/(.+)$", _yol_normal(y))
+        if m:
+            dosyalar.setdefault(m.group(1), []).append(m.group(2))
+    adlar = set(dosyalar)
+    # Bos klasorler dosya listesinde gorunmez; kok klasorun ayrintisindan.
+    try:
+        kok = hafiza.get_path_details("/") or {}
+        for c in kok.get("children") or []:
+            ad = str(c.get("name") or c.get("fullPath") or "").strip("/")
+            if c.get("directory") and V_KALIP.match(ad):
+                adlar.add(ad)
+    except Exception:
+        pass
+    ben = _sahip_ozeti()
+    kayit = _calisma_kaydi_oku()
+    cikti = []
+    for ad in sorted(adlar - set(gosterilen), key=lambda k: int(k[1:])):
+        icerik = dosyalar.get(ad) or []
+        sahip = (kayit.get(ad) or {}).get("sahip")
+        if not icerik:
+            if sahip and sahip != ben:
+                continue
+            cikti.append({"ad": ad, "neden": "Boş klasör", "dosya": 0})
+            continue
+        if "calisma.json" not in icerik:
+            if sahip and sahip != ben:
+                continue
+            cikti.append({"ad": ad, "neden": "Çalışma dosyası yok · %d dosya kalmış"
+                          % len(icerik), "dosya": len(icerik)})
+            continue
+        try:
+            sahip = sahip or _v_sahibi(ad)
+        except Exception:
+            pass
+        if sahip and sahip != ben:
+            continue
+        try:
+            oz = _ozet_oku(ad)
+            neden = ("Başlanmamış çalışma" if not oz.get("baslamis")
+                     else "Liste sınırının dışında")
+        except Exception:
+            neden = "Çalışma dosyası okunamadı"
+        cikti.append({"ad": ad, "neden": neden, "dosya": len(icerik)})
+    return cikti
+
+
 def _son_calisma_id():
     """Kimliksiz acilista acilacak calisma: en son islem goren. Hicbiri
     baslamamissa en buyuk numarali (bos) calisma yeniden kullanilir -
@@ -2182,7 +2239,13 @@ def calismalar_endpoint():
     calisma istemci tarafinda /karsilama?oturum_id=<sira> ile acilir."""
     try:
         aktif = _temiz(request.args.get("oturum_id"))
-        return jsonify({"calismalar": _calismalar(aktif=aktif),
+        liste = _calismalar(aktif=aktif)
+        try:
+            gizli = _gizli_klasorler({c.get("calisma_id") for c in liste})
+        except Exception as e:
+            _hata_kaydet("calismalar:gizli", e)
+            gizli = []
+        return jsonify({"calismalar": liste, "gizli": gizli,
                         "aktif": aktif,
                         "klasor": getattr(akis, "HAFIZA_FOLDER", None)})
     except Exception as e:
