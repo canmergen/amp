@@ -294,11 +294,8 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 #baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
-/* Ürün adı METİN (kullanıcı kararı: görsel yerine kendimiz yazalım).
-   KATIB kırmızı ve kalın (koyu temada --kirmizi açık kırmızıya döner);
-   alt satır açık temada siyah, koyu temada beyaz (--metin). */
 #urun-adi {
-  font-weight: 800; font-size: 30px; line-height: 1; letter-spacing: .02em;
+  font-weight: var(--fw-kalin); font-size: var(--fs-buyuk); letter-spacing: -.01em;
   white-space: nowrap; color: var(--kirmizi);
 }
 /* Seçili veri seti ve sözlük: başlığın yanında iki küçük çip.
@@ -318,7 +315,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .ust-cip[hidden] { display: none; }
 #urun-alt {
   font-size: var(--fs-govde); font-weight: var(--fw-kalin); color: var(--metin);
-  margin-top: 4px; white-space: nowrap;
+  margin-top: 2px; white-space: nowrap;
 }
 
 /* Üst şerit: dört kart, VERİ → ELEME → ÜRETİM → MODEL.

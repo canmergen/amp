@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **KATIB görsel yerine metin**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
+Bu tur: **Üst bar eski hâline döndü: "Akıllı Modelleme Platformu"**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
+
+- KATIB denemesinin üç turu geri alındı; webapp dosyaları o denemeden
+  önceki hâliyle birebir aynı. katib_*.png görselleri kullanılmıyor.
+
+Önceki tur: **KATIB görsel yerine metin**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
 
 - Logonun yanında "KATIB" (kırmızı, kalın, 30 px) ve altında "Bireysel
   Krediler Analitik ve Tahsis BI" (açık temada siyah, koyu temada beyaz)
