@@ -1,6 +1,20 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.3 renk açıklaması yazıları**. Değiştir: `webapp/app.js`
+Bu tur: **Tanım kontrolü anlamı korumalı**. Değiştir: `fe_agent/llm.py`
+
+- Kontrol ve hakem istemlerine "ANLAM KORUNUR" kuralı: öneri pencereyi,
+  yönü, tutar/adet ayrımını, oranın payını ve paydasını değiştiremez;
+  tanım kolon adıyla tutarlıysa yalnızca aynı anlam daha açık yazılır.
+  Örnek doğru/yanlış (180D_360D_AMT_RATIO) istemde.
+- Tüm sözlük istemlerine kolon adı kalıpları: <A>D_<B>D_..._RATIO = son A
+  günün son B güne oranı (aralık değil); AMT tutar, CNT adet, AVG ortalama.
+- Kural tabanlı son kapı: RATIO kolonunda "A-B gün arası" diyen öneri ve
+  kolon adındaki pencere sayısını (180, 360) düşüren öneri listelenmez.
+- Mevcut çalışma: 01.2.4'te Geri Dön; kontrol yeni kurallarla baştan çalışır.
+
+---
+
+Önceki tur: **01.2.3 renk açıklaması yazıları**. Değiştir: `webapp/app.js`
 
 - Dört renk: Sözlükte Boş · Dil Modeli Önerisi · Sözlüğe Eklendi ·
   Sözlüğe Eklenmedi.

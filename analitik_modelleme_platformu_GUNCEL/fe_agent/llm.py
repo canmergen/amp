@@ -337,6 +337,19 @@ def birlestirme_plan_oner(semalar, meta=None, max_kolon_goster=60):
 # ===========================================================================
 # LLM #2 — SOZLUK ACIKLAMASI  (Mod A ve B)
 # ===========================================================================
+# KOLON ADI KALIPLARI (kullanici bildirimi: "180D_360D_AMT_RATIO" kolonunda
+# modeller "Son 180 gun / 360 gun ... orani" tanimini "180-360 gun arasi"
+# diye yeniden yazip anlamini degistirdi). Aciklama, kontrol ve hakem
+# istemlerinin hepsine eklenir.
+AD_KALIP_KURALI = """
+KOLON ADI KALIPLARI:
+  - 3D, 30D, 180D, 360D ...: son N gunluk pencere ("son 180 gun").
+  - <A>D_<B>D_..._RATIO ya da ..._<A>D_<B>D_RATIO (ornek 180D_360D_AMT_RATIO):
+    SON A GUNDEKI degerin SON B GUNDEKI degere ORANI. "A ile B. gun arasi"
+    bir zaman araligi DEGILDIR.
+  - AMT: tutar, CNT: adet, AVG: ortalama, RATIO: oran.
+  - Diger kisaltmalarin anlamini ORNEK / ONAYLI TANIMLARDAN cikar."""
+
 SISTEM_SOZLUK = """Sen bir bankacilik veri sozlugu uzmanisin. Sana kolonlarin
 adi, tipi ve dagilim ozeti verilecek. Her kolonun ne anlama geldigini yaz.
 
@@ -362,7 +375,7 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme veya aciklama YAZMA.
 {"kolonlar": [{"ad": "...", "aciklama": "...", "kategori": "..."}]}
 
 Emin olamadigin kolon icin tahmin yaz ama kategoriyi "diger" birak.""" \
-    + SINIRLAYICI_KURALI
+    + AD_KALIP_KURALI + SINIRLAYICI_KURALI
 
 
 # Dagilim ozetinin promptta kirpildigi sinir. 130'du: tanimsiz kolonlar
@@ -740,7 +753,8 @@ dogru bir aciklama yaz. Karar verirken:
   - tek cumle, Turkce, kolon adini tekrar etme
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
-{"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + SINIRLAYICI_KURALI
+{"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + AD_KALIP_KURALI \
+    + SINIRLAYICI_KURALI
 
 
 def aciklama_orkestra(profiller, baglam=None, orkestra=None):
@@ -845,6 +859,18 @@ Mevcut tanimin dogru yazilip yazilmadigini degerlendir.
   - belirgin yazim hatasi var
 Yalnizca uslup farki icin "duzelt" DEME. Emin degilsen "uygun" de.
 
+ANLAM KORUNUR: oneri, mevcut tanimin anlattigi olcumu DEGISTIREMEZ —
+pencere (son kac gun), yon (giden / gelen), tutar / adet, oranin payi ve
+paydasi aynen kalir. Mevcut tanim kolon adiyla tutarliysa yalnizca ayni
+anlami daha acik ve dogru Turkceyle yazabilirsin. Ornek:
+  ad      : TXN_GDN_BAHIS_180D_360D_AMT_RATIO
+  mevcut  : Son 180 gun / 360 gun bahis sirketlerine giden islem tutari orani
+  DOGRU   : Son 180 gunde bahis sirketlerine giden islem tutarinin son 360
+            gundeki tutara orani
+  YANLIS  : 180-360 gun arasi bahis sirketlerine giden islem tutari orani
+            (anlam degisti: oran bir zaman araligina donustu)
+Mevcut tanim kolon adiyla CELISIYORSA kolon adi esas alinir.
+
 "duzelt" dersen:
   oneri   : duzeltilmis tanim; tek cumle, Turkce, kurumun YAZIM TARZINA ve
             ORNEK / ONAYLI TANIMLARA uygun
@@ -852,7 +878,7 @@ Yalnizca uslup farki icin "duzelt" DEME. Emin degilsen "uygun" de.
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "...", "durum": "uygun|duzelt", "oneri": "...",
-  "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
+  "gerekce": "..."}]}""" + AD_KALIP_KURALI + SINIRLAYICI_KURALI
 
 SISTEM_HAKEM_KONTROL = """Sen bir bankacilik veri sozlugu editorusun. Her
 kolon icin sozlukteki MEVCUT tanim ve iki denetcinin gorusu verilecek.
@@ -865,9 +891,39 @@ Son karari sen ver.
   karar "uygun" : mevcut tanim dogru; yalnizca uslup farki varsa da "uygun".
   gerekce       : tek kisa cumle.
 
+ANLAM KORUNUR: yazacagin aciklama mevcut tanimin olcumunu (pencere, yon,
+tutar / adet, oranin payi ve paydasi) DEGISTIREMEZ; mevcut tanim kolon
+adiyla celismiyorsa ayni anlami daha acik yaz. Denetcinin onerisi anlami
+degistiriyorsa o oneriyi KULLANMA; dogru bir yeniden yazim yoksa "uygun".
+
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "...", "karar": "uygun|duzelt", "aciklama": "...",
-  "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
+  "gerekce": "..."}]}""" + AD_KALIP_KURALI + SINIRLAYICI_KURALI
+
+
+_PENCERE_ORANI = re.compile(r"(\d+)D_(\d+)D(?:_|$)", re.I)
+_ARALIK_METNI = re.compile(r"(\d+)\s*[-–]\s*(\d+)\s*g[uü]n\s*aras", re.I)
+
+
+def _anlam_degisti(ad, mevcut, oneri):
+    """Kural tabanli son kapi: modellerin bilinen anlam bozmasi.
+
+    <A>D_<B>D ... RATIO kolonunda oneri "A-B gun arasi" diyorsa (mevcut
+    tanim demiyorken) oran bir zaman araligina donusmustur; oneri dusurulur.
+    Ayrica mevcut tanimdaki sayilar (180, 360 ...) oneride de olmali."""
+    ad_b = str(ad or "").upper()
+    if "RATIO" in ad_b and _PENCERE_ORANI.search(ad_b) \
+            and _ARALIK_METNI.search(oneri or "") \
+            and not _ARALIK_METNI.search(mevcut or ""):
+        return True
+    # Mevcut tanimda olup KOLON ADINDA da gecen bir sayi (pencere) oneride
+    # kaybolduysa anlam degismistir. Ad ile celisen sayi (ad 3D, tanim
+    # "son 6 ay") duzeltilebilir: o sayi adda gecmez.
+    ad_sayi = set(re.findall(r"\d+", ad_b))
+    dogrulanan = set(re.findall(r"\d+", str(mevcut or ""))) & ad_sayi
+    if dogrulanan and not dogrulanan <= set(re.findall(r"\d+", str(oneri or ""))):
+        return True
+    return False
 
 
 def _kontrol_satiri(p):
@@ -959,6 +1015,8 @@ def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):
             gerekce = a.get("gerekce") or b.get("gerekce")
         oneri = tarza_uydur(oneri, tarz)[:300]
         if not oneri or _ayni_metin(oneri, mevcut[ad]):
+            continue
+        if _anlam_degisti(ad, mevcut[ad], oneri):
             continue
         duzeltmeler[ad] = {"mevcut": mevcut[ad], "oneri": oneri,
                            "gerekce": gerekce or "", "modeller": " + ".join(adlar)}
