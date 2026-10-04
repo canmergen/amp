@@ -1188,6 +1188,13 @@ def turkcelestir(kayitlar, baglam=None, orkestra=None):
 _KISALTMA_KURALLARI = """KURALLAR:
   - Pencereye ya da sayiya bagli anlamlari SAYISIZ yaz ("onceki es donem";
     "onceki 3 gun" degil). Somut pencere kolon adindan okunur.
+  - Iki kisaltma BIRLIKTE bir ifade olusturuyorsa her birine KENDI
+    anlamini yaz; sozlukteki ifadeyi parcalara bolup dagitma: PER_DAY
+    "gunluk ortalama" demek ama PER = "basina", DAY = "gun"dur (gun basina
+    = gunluk ortalama). Bu durumda genel anlam dogrudur ("genel" sec).
+  - Birlesik Ingilizce kalip kisaltmalari (TMSNC = time since, TMSNCFRST
+    = time since first: "ilk islemden bu yana gecen sure") DOGRU
+    kisaltmalardir; anlamin TAMAMINI yaz, tek kelimeye indirme.
   - Kisaltma, kolon adlarinda sayiyla birlesik geciyorsa (H00, H06, H18
     icin H) yalniz HARF kisminin anlamini yaz: H = "saat". Sayi o kalibin
     degeridir, anlama katilmaz ("saat 00" degil). Bu kisaltma icin yeni
@@ -1204,6 +1211,11 @@ _KISALTMA_KURALLARI = """KURALLAR:
   - Emin degilsen "emin_degil"; tahmin uydurma. Yanlis anlam bos anlamdan
     kotudur.
 
+"kisaltma_yanlis" YALNIZ su durumda: kisaltmanin BILINEN bir genel anlami
+var ("genel" bos degil) ve bu anlam kolonlarin olctugu seyden BASKA bir
+kavram. Es anlamli, daha genel ya da yakin anlamlar (IN = giris / gelen)
+bu durum degildir. Ayni anlami tasiyan baska bir kisaltma da olmasi (IN ve
+GLN ikisi de "gelen") yanlislik degildir.
 "kisaltma_yanlis" SECILIRSE: "anlam" kisaltmanin GENEL anlamidir (kisaltma
 sozlugunde o kalir), "yeni_kisaltma" bu kolonlarin gercek anlamini
 tasiyan daha acik, yaygin bir kisaltmadir (BUYUK harf, 2-8 karakter,
@@ -1217,6 +1229,8 @@ kalipta olur. Adlar Ingilizce kisaltmalarla yazilmissa (TXN, AMT, CNT,
 MAX) yeni kisaltma da yaygin Ingilizce kisaltmadir (onceki es donem ->
 PREV); Turkce anlamin harflerinden kisaltma URETME ("en cok" -> ENCO
 YANLIS). Adlar Turkce kisaltmalarla yazilmissa Turkce kisaltma oner.
+Birbirinin karsiligi olan kisaltmalara (FRST / LST, IN / OUT) oneriler
+TUTARLI bir cift olsun (TSF / TSL gibi; TSFT / ELAP degil).
 Anlam alanlari her durumda Turkce kalir."""
 
 SISTEM_KISALTMA = """Sen bir bankacilik ve veri bilimi sozlugu uzmanisin.
@@ -1377,9 +1391,13 @@ def _kisaltma_oku(veri, girdi, ek=None):
         yeni = re.sub(r"[^A-Z0-9]", "", str(k.get("yeni_kisaltma") or "").upper())
         yeni = yeni if _YENI_KISA.match(yeni) and yeni != ad else ""
         yeni_anlam = _kucult(k.get("yeni_anlam")) or soz
-        if secim == "kisaltma_yanlis" and not (yeni and yeni_anlam and (anlam or gen)):
-            # Yeni kisaltma / genel anlam yoksa: sozluk dogru demektir.
-            secim, anlam = "sozluk", soz
+        if secim == "kisaltma_yanlis" and not (yeni and yeni_anlam and gen):
+            # "Yanlis kisaltma" ancak kisaltmanin BILINEN bir genel anlami
+            # varsa olur (kullanici bildirimi: X2, TMSNCFRST icin genel anlam
+            # yokken bu karar verilip anlam "gunun" / "ilk" kaliyordu). Genel
+            # anlam yoksa bu kolonlardaki anlam TAM yazilir, oneri yok.
+            anlam = yeni_anlam or (anlam if anlam != gen else "") or soz
+            secim = "sozluk" if (soz and _ayni_metin(anlam, soz)) else "yeni"
         if secim != "kisaltma_yanlis":
             yeni, yeni_anlam = "", ""
         if secim == "emin_degil":

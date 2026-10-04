@@ -6932,8 +6932,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* 01.2 SADE RENK: renksiz aynı / normal, sarı dikkat (anlam boş,
        sözlük ve genel farklı, uyarılı), yeşil sizin düzenlediğiniz. Anlam'a
        hangisinin yazıldığını ✓ gösterir; hafızada onaylı olan "Seç" işaretli. */
-    ust.appendChild(dgLejant([["dg-l-renksiz", "Sözlük ve Genel Aynı"],
-                              ["dg-l-dikkat", "Boş, Farklı ya da Uyarılı"],
+    /* Sarı yalnız sözlükteki anlam DEĞİŞTİYSE (dil modeli doğru, ikisi de
+       yanlış, yanlış kısaltma), boşsa ya da uyarı varsa; "sözlük doğru" ve
+       "ikisi aynı" renksiz (kullanıcı kararı). */
+    ust.appendChild(dgLejant([["dg-l-renksiz", "Sözlük Doğru"],
+                              ["dg-l-dikkat", "Sözlük Değişti, Boş ya da Uyarılı"],
                               ["dg-l-duzenlendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");

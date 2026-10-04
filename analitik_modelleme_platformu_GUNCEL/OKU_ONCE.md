@@ -1,6 +1,31 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **"genel anlamı yok" yerine ∅**. Değiştir: `webapp/app.js` (yalnız sayfa yenileme)
+Bu tur: **Kısaltma sonuçlarının gözden geçirmesinden çıkan 6 düzeltme**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+
+1) Kendini açıklayan kelime (BAHIS, KRIPTO, ODEME): anlamı kelimenin
+   kendisiyse (Türkçe) listeye girmez.
+2) "Yanlış kısaltma" kararı yalnız kısaltmanın BİLİNEN bir genel anlamı
+   varsa ve bu anlam başka bir kavramsa. Eş anlamlı / yakın anlam (IN =
+   giriş / gelen) bu değil. Önerilen yeni kısaltma aynı anlamda zaten
+   varsa (IN -> GLN) hata sayılmaz: karar "sözlük doğru", uyarı yok.
+3) Genel anlam yokken (X2, TMSNCFRST) "yanlış kısaltma" verilmez; anlam
+   tam yazılır ("önceki eş dönem", "ilk işlemden bu yana geçen süre").
+   TMSNC gibi birleşik İngilizce kalıplar doğru kısaltma sayılır; karşılık
+   kısaltmalara tutarlı çift önerilir (TSF / TSL).
+4) Birlikte ifade oluşturan kısaltmalar (PER_DAY = günlük ortalama):
+   her birine kendi anlamı (PER = başına, DAY = gün); istem kuralı.
+5) Renk: sarı yalnız sözlükteki anlam değiştiyse (dil modeli doğru, ikisi
+   de yanlış, yanlış kısaltma), boşsa ya da uyarı varsa. "Sözlük doğru" ve
+   "ikisi aynı" renksiz. Lejant: Sözlük Doğru / Sözlük Değişti, Boş ya da
+   Uyarılı / Düzenlendi.
+6) Sözlük istatistiği: parantez içi aday değil ("düzeltilmiş (shrink)");
+   iki kelimesi de ekli tamlamada başı alınır ("dağılımı entropisi" ->
+   entropi); Türkçe olmayan ifade elenir; tamlayan ekli kelime, yalını
+   tanımlarda da geçiyorsa yalına iner ("günün" -> gün).
+Excel: LLM Sözlük, LLM Genel, Karar, Gerekçe, Önerilen Kısaltma ayrı
+sütunlar; Kaynak sütunu kısaldı.
+
+Önceki tur: **"genel anlamı yok" yerine ∅**. Değiştir: `webapp/app.js` (yalnız sayfa yenileme)
 
 - Kısaltma Sözlüğü'nde LLM Genel sütunu, genel anlamı olmayan (kuruma
   özgü) kısaltmada "genel anlamı yok" yerine ∅ gösterir.

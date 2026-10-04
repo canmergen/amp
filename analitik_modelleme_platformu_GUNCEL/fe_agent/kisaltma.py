@@ -114,11 +114,17 @@ def _tanim_kokleri(tanim):
     """Tanimdan {kok: yuzey bicimi} (tekli) ve iki kelimelik ifadeler."""
     # IKI HARFLI kelimeler de aday ("ay" -> MONTH, "en" -> "en cok"); anlam
     # tasimayan iki harfliler _DURAK'ta.
-    kelimeler = [k for k in re.findall(r"[A-Za-zÇĞİÖŞÜçğıöşü]+", str(tanim or ""))
-                 if len(k) >= 2]
+    # PARANTEZ ICI aday degil: cogunlukla Ingilizce karsilik ya da kisaltma
+    # ("duzeltilmis (shrink)", "yogunlasmasi (HHI)"); ifade de oradan bolunur.
+    metin = re.sub(r"\([^)]*\)", " | ", str(tanim or ""))
+    kelimeler = [k for k in re.findall(r"[A-Za-zÇĞİÖŞÜçğıöşü]+|\|", metin)
+                 if len(k) >= 2 or k == "|"]
     tekli, ikili = {}, {}
     onceki = None
     for k in kelimeler:
+        if k == "|":
+            onceki = None
+            continue
         kk = _kok(k)
         if _sade(k) in _DURAK:
             onceki = None
@@ -250,7 +256,13 @@ def adaylar(tanimlar):
                 ayirt = puan[k][0]
                 if " " in k and en_iyi in k.split(" ") and ayirt >= sinir and all(
                         (tekli.get(p) or (0, 0))[0] >= sinir for p in k.split(" ")):
-                    liste.append(k)
+                    zayif = _ifade_zayif(yuzey[k])
+                    if not zayif:
+                        liste.append(k)
+                    elif zayif == "tamlama" and k.split(" ")[1] in tekli:
+                        # "dagilimi entropisi": anlam tamlamanin BASI
+                        # (entropi), niteleyen degil (dagilim).
+                        liste.append(k.split(" ")[1])
                     break
             liste.append(en_iyi)
         goruldu, adaylar_ = set(), []
@@ -260,13 +272,49 @@ def adaylar(tanimlar):
             goruldu.add(anahtar)
             bicimler = yuzey[anahtar]
             anlam = min(bicimler, key=lambda y: (len(y), -bicimler[y]))
-            anlam = yalin_anlam(anlam)
+            anlam = _korpus_yalin(yalin_anlam(anlam), sozcukler)
             ayirt, destek = puan[anahtar]
             adaylar_.append({"anlam": anlam, "destek": round(destek, 3),
                              "ayirt": round(ayirt, 3), "anahtar": anahtar})
         cikti[parca] = {"kolon": int(adet), "adaylar": adaylar_,
                         "tekli": {k: v[0] for k, v in tekli.items()}}
     return cikti
+
+
+def _ifade_zayif(bicimler):
+    """Iki kelimelik aday ifade kisaltma anlami OLAMAZ mi (kullanici
+    bildirimi: "dagilimi entropisi", "duzeltilmis shrink"):
+      - kelimelerden biri Turkce degil (shrink)
+      - iki kelime de ekli (tamlama: "dagilimi entropisi" = dagilimin
+        entropisi; bu bir aciklamadir, kisaltmanin anlami tek kelimedir)."""
+    yuz = max(bicimler, key=lambda y: bicimler[y])
+    kelimeler = yuz.split(" ")
+    try:
+        from fe_agent import llm as llm_mod
+        if llm_mod.turkce_sorunu(yuz):
+            return "dil"
+    except Exception:
+        pass
+    if len(kelimeler) == 2 and all(_yalin_kelime(k) != k for k in kelimeler):
+        return "tamlama"
+    return ""
+
+
+_TAMLAYAN = ("nın", "nin", "nun", "nün", "ın", "in", "un", "ün")
+
+
+def _korpus_yalin(anlam, sozcukler):
+    """Tamlayan ekli tek kelime ("gunun") yalin hali tanimlarda da
+    geciyorsa yalina iner ("gun"). Yalnizca korpusta dogrulanan kok
+    kullanilir: "yaygin", "butun" gibi kelimeler kesilmez."""
+    a = str(anlam or "")
+    if not a or " " in a:
+        return a
+    kume = {str(k).lower() for k in (sozcukler or ())}
+    for ek in _TAMLAYAN:
+        if a.endswith(ek) and len(a) - len(ek) >= 2 and a[:-len(ek)] in kume:
+            return a[:-len(ek)]
+    return a
 
 
 def _harf_guclu(parca, a):
@@ -973,8 +1021,16 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         if d.get("anlam"):
             son_anlam[k] = d["anlam"]
     son_anlam.update(onay)
+    kendini = set()
     for kisa, d in dm.items():
         if kisa in onay:
+            continue
+        # KENDINI ACIKLAYAN KELIME (kullanici karari: BAHIS, KRIPTO, ODEME
+        # kisaltma degil, Turkce kelime): anlami kelimenin kendisiyse listeye
+        # girmez.
+        if _kendini_aciklar(kisa, d.get("anlam") or d.get("genel") or ""):
+            cikti.pop(kisa, None)
+            kendini.add(kisa)
             continue
         # SOZLUKSUZ GENEL ANLAM (llm.SISTEM_KISALTMA_KOR): None = sorulmadi,
         # "" = model genel bir anlam bilmiyor (kuruma ozgu).
@@ -1075,10 +1131,20 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         y = o.get("yeni_kisaltma")
         if not y:
             continue
+        ya = o.get("yeni_anlam") or o.get("istatistik") or ""
+        if parca_say.get(y) and son_anlam.get(y) and _ayni_anlam(son_anlam[y], ya):
+            # AYNI ANLAMDA BASKA KISALTMA ZATEN VAR (IN ve GLN ikisi de
+            # "gelen"): hata degil; sozlukteki anlam dogru, oneri yok,
+            # uyari yok (kullanici karari).
+            o.update(yeni_kisaltma="", yeni_anlam="", secim="sozluk", anlam=ya,
+                     gerekce=(o.get("gerekce") or "")
+                     + (" %s ile aynı anlamda; ikisi de kullanılabilir." % y))
+            continue
         neden = ("%s birden fazla kısaltma için önerildi" % y if say_yeni[y] > 1 else
                  "%s kolon adlarında zaten başka bir kısaltma" % y if parca_say.get(y) else "")
         if neden:
-            o["yeni_kisaltma"], o["yeni_anlam"] = "", ""
+            # Oneri dusunce bu kolonlardaki anlam (sozluk) gecerli olur.
+            o.update(yeni_kisaltma="", yeni_anlam="", secim="sozluk", anlam=ya or o.get("anlam"))
             o["uyari"] = " ".join(x for x in (o.get("uyari"), "Önerilen kısaltma kullanılmadı (%s)."
                                               % neden) if x)
     # ONCEKI CALISMALARDAN OGRENILEN: bu sozlukten ogrenilemeyen (ya da
@@ -1089,7 +1155,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
     # adinda TXN geciyorsa "islem" buradan gelir.
     tum_say = Counter(p for ad in (tanimlar or {}) for p in set(parcalar(ad)))
     for kisa, adet in tum_say.items():
-        if kisa in onay or kisa not in ogr:
+        if kisa in onay or kisa not in ogr or kisa in kendini:
             continue
         if kisa in cikti and cikti[kisa]["anlam"]:
             continue
@@ -1120,6 +1186,20 @@ def yuzdesinde(n):
     else:
         ek = "ünde"                       # yuz
     return "%%%d'%s" % (n, ek)
+
+
+def _kendini_aciklar(kisa, anlam):
+    """Parca, anlaminin kendisi (Turkce kelime): BAHIS = bahis, ODEME =
+    odeme. Ingilizce kelimenin kopyasi (SCORE = score) sayilmaz; o Turkce
+    kontrolune takilir."""
+    a = str(anlam or "").strip()
+    if not a or _sade(a).replace(" ", "") != kisa.lower():
+        return False
+    try:
+        from fe_agent import llm as llm_mod
+        return not llm_mod.turkce_sorunu(a)
+    except Exception:
+        return True
 
 
 def _metin_uyarilari(anlam):
@@ -1205,14 +1285,19 @@ _KARAR_AD = {"ayni": "ikisi aynı", "sozluk": "sözlük doğru, genel anlam uymu
 def _uyum(o, bekliyor):
     """"ayni" / "farkli" / "" : sozlukteki anlam ile dil modelinin karari."""
     soz, dm = o.get("istatistik") or "", o.get("dm_anlam") or ""
-    if bekliyor or not soz or not dm:
+    if bekliyor:
         return ""
     # Modelin acik karari varsa o belirler (es anlamlilar "ayni").
+    # SARI YALNIZ SOZLUK DEGISTIYSE (kullanici karari): "ikisi ayni" ve
+    # "sozluk dogru" kararlarinda yapacak bir sey yok, renksiz. Sozlukte
+    # anlam yoksa degisen bir sey de yok.
     secim = o.get("secim")
-    if secim == "ayni":
+    if secim in ("ayni", "sozluk"):
         return "ayni"
-    if secim in ("sozluk", "genel", "yeni", "kisaltma_yanlis"):
-        return "ayni" if _ayni_anlam(yalin_anlam(soz), yalin_anlam(dm)) else "farkli"
+    if secim in ("genel", "yeni", "kisaltma_yanlis"):
+        return "farkli" if soz else ""
+    if not soz or not dm:
+        return ""
     if o.get("dm_karar") == "dogru" or _ayni_anlam(yalin_anlam(soz), yalin_anlam(dm)):
         return "ayni"
     return "farkli"
@@ -1287,6 +1372,7 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          "yeni_kisaltma": "" if kisa in onay else (o.get("yeni_kisaltma") or ""),
                          "yeni_anlam": "" if kisa in onay else (o.get("yeni_anlam") or ""),
                          "secim": o.get("secim") or "",
+                         "gerekce": o.get("gerekce") or "",
                          # Sozluk ile dil modeli AYNI mi (kartta satir rengi;
                          # kullanici karari). Biri yoksa karsilastirma yok.
                          "uyum": _uyum(o, kisa in bekleyen),
@@ -1306,7 +1392,8 @@ RAPOR_ORNEK = 5          # anlami tasiyan ornek kolon
 RAPOR_CELISEN = 3        # anlami TASIMAYAN ornek kolon (sozluk hatasi adayi)
 
 RAPOR_KOLONLARI = (
-    ["Kısaltma", "Önerilen Anlam", "Kaynak", "Hafızada Onaylı",
+    ["Kısaltma", "Önerilen Anlam", "LLM Sözlük", "LLM Genel", "Karar", "Gerekçe",
+     "Önerilen Kısaltma", "Kaynak", "Hafızada Onaylı",
      "Geçtiği Tanımlı Kolon", "Anlamı Taşıyan Kolon", "İstatistik Adayları"]
     + sum([["Örnek %d Kolon" % i, "Örnek %d Açıklama" % i]
            for i in range(1, RAPOR_ORNEK + 1)], [])
@@ -1334,9 +1421,16 @@ def rapor_satirlari(tanimlar, veri_seti=""):
         ist = "; ".join("%s (%%%d, ayırt %%%d)" % (a["anlam"], round(a["destek"] * 100),
                                                   round(a["ayirt"] * 100))
                         for a in (aday.get(kisa) or {}).get("adaylar", [])[:ADAY_SAYISI])
-        kanit = " · ".join(x for x in (r_.get("kaynak_ad"), r_["kanit"]) if x) \
+        # KARAR VE GEREKCE AYRI SUTUNDA (Kaynak sutunu cok uzundu).
+        parca_ = [x for x in str(r_["kanit"] or "").split(" · ")
+                  if x and not x.startswith(("Karar:", "Önerilen:"))]
+        kanit = " · ".join(x for x in [r_.get("kaynak_ad")] + parca_ if x) \
             + ((" · UYARI: " + r_["uyari"]) if r_.get("uyari") else "")
-        satir = [kisa, anlam, kanit, "Evet" if r_["onayli"] else "Hayır",
+        yeni_k = ("%s = %s" % (r_["yeni_kisaltma"], r_.get("yeni_anlam") or "")
+                  if r_.get("yeni_kisaltma") else None)
+        satir = [kisa, anlam, r_.get("sozlukten") or None, r_.get("dil_modeli") or None,
+                 _KARAR_AD.get(r_.get("secim") or "", None), r_.get("gerekce") or None,
+                 yeni_k, kanit, "Evet" if r_["onayli"] else "Hayır",
                  len(kolonlar), len(tasiyan) if anlam else None, ist]
         for i in range(RAPOR_ORNEK):
             o = ornek[i] if i < len(ornek) else None
