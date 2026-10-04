@@ -588,7 +588,7 @@ button.ozet-kart:focus-visible {
 /* Tamamlanan adim: yesil isaret VE yesil kalin yazi. Yazi ince kalinca
    isaretle ayni oge gibi okunmuyordu. */
 .faz-adimlar li.tamam { color: var(--yesil); font-weight: var(--fw-kalin); }
-.faz-adimlar li.tamam .adim-isaret {
+.faz-adimlar li.tamam > .adim-isaret {
   background: var(--yesil); border-color: var(--yesil); color: #fff;
 }
 /* Tamamlanan adım TIKLANABİLİR: doğrudan o adıma döner. Düğme gibi
@@ -616,10 +616,20 @@ button.ozet-kart:focus-visible {
    okunabilir, ve koyu temada zaten kendi karsiligina (#F5B042)
    donusuyor. Isaret degismedi. */
 .faz-adimlar li.aktif { color: var(--amber); font-weight: var(--fw-kalin); }
-.faz-adimlar li.aktif .adim-isaret {
+.faz-adimlar li.aktif > .adim-isaret {
   background: var(--sari); border-color: var(--sari); color: #000;
   box-shadow: 0 0 0 var(--halka) var(--sari-acik);
 }
+
+/* Grup satırının alt adımları (01.2.1, 01.2.2 ...): grup satırının
+   altında, aynı işaret ve renk kurallarıyla, bir kademe içeride. */
+.faz-adimlar li.grup-satir { flex-wrap: wrap; }
+.faz-adimlar li.grup-satir:hover { background: none; }
+.faz-alt-adimlar {
+  list-style: none; flex: 1 0 100%; margin: 3px 0 0 5px;
+  padding: 0 0 0 var(--b-3); border-left: 1px solid var(--kenar);
+}
+.faz-alt-adimlar li { font-size: var(--fs-kucuk); padding: 3px 5px; }
 
 /* ==================== ORTA: ÇALIŞMA ALANI ==================== */
 #sohbet-alani {

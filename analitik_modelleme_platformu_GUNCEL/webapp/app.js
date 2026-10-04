@@ -620,9 +620,12 @@ function fazOgeleri(f) {
     const ogeler = [];
     (f.adimlar || []).forEach(a => {
         const son = ogeler[ogeler.length - 1];
+        const alt = { anahtar: a.anahtar, sira: a.sira, bitis: a.sira,
+                      baslik: a.baslik, aciklama: a.aciklama };
         if (a.grup && son && son.grup === a.grup) {
             son.bitis = a.sira;          // gruba katıl
             son.adimlar.push(a.anahtar);
+            son.alt.push(alt);
             return;
         }
         ogeler.push({
@@ -630,10 +633,14 @@ function fazOgeleri(f) {
             grup: a.grup || "",
             baslik: a.grup ? (a.grup_baslik || a.baslik) : a.baslik,
             aciklama: a.aciklama,
-            adimlar: [a.anahtar]
+            adimlar: [a.anahtar],
+            alt: [alt]
         });
     });
-    ogeler.forEach((o, i) => { o.kod = f.no + "." + (i + 1); });
+    ogeler.forEach((o, i) => {
+        o.kod = f.no + "." + (i + 1);
+        o.alt.forEach((x, j) => { x.kod = o.kod + "." + (j + 1); });
+    });
     return ogeler;
 }
 
@@ -754,7 +761,12 @@ function fazlariCiz() {
         const liste = document.createElement("ol");
         liste.className = "faz-adimlar";
         liste.id = "faz-adimlar-" + fi;
-        adimlar.forEach(a => {
+        /* GRUP SATIRININ ALT ADIMLARI (kullanıcı kararı: "bütün akış sol
+           tarafta yer almalı"). Grup satırı (01.2 Veri ve Model
+           Tanımları) kalır; altında her adım kendi numarasıyla (01.2.1,
+           01.2.2 ...) aynı kurallarla — tamamlandı / aktif / tıklanabilir
+           — listelenir. */
+        const satirKur = (a) => {
             const li = document.createElement("li");
             // Grup satırı: aktif adım grubun HERHANGİ bir adımıysa aktif.
             const tamamlandi = a.bitis < aktifAdim;
@@ -807,6 +819,16 @@ function fazlariCiz() {
                 const t = document.createElement("span");
                 t.textContent = numarali(a.kod, a.baslik);
                 li.appendChild(t);
+            }
+            return li;
+        };
+        adimlar.forEach(a => {
+            const li = satirKur(a);
+            if (a.alt && a.alt.length > 1) {
+                li.classList.add("grup-satir");
+                const altListe = elYap("ol", "faz-alt-adimlar");
+                a.alt.forEach(x => altListe.appendChild(satirKur(x)));
+                li.appendChild(altListe);
             }
             liste.appendChild(li);
         });

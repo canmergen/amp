@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.4 Sözlük Tanım Kontrolü isteğe bağlı**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`
+Bu tur: **Sol panel İş Akışı alt adımları**. Değiştir: `webapp/app.js`, `webapp/style.css`
+
+- Gruplu satırın (01.2 Veri ve Model Tanımları) altında alt adımlar
+  numarasıyla listeleniyor: 01.2.1 … 01.2.4. Tamamlandı / aktif /
+  henüz gelinmedi işaretleri ve tıklayıp o adıma dönme her alt adımda ayrı.
+
+---
+
+Önceki tur: **01.2.4 Sözlük Tanım Kontrolü isteğe bağlı**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`
 
 - Adım açılınca kontrol BAŞLAMAZ; kartta kaç tanımın kontrol
   edilebileceği ve iki düğme: "Tanımları Kontrol Et" / "Kontrol Etmeden
