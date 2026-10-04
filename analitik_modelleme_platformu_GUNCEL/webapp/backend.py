@@ -948,6 +948,29 @@ def _dogrulama_satirlarini_isle(alan, karar):
             sat["islem"] = "haric"
 
 
+def _kontrol_satirlarini_isle(alan, karar, durum):
+    """Tanim kontrolu satirlarini (canli akista yoklamayla gelmisti)
+    kart govdesine yazar: F5 / gecmisten cizimde karar aynen gorunur.
+    Metinler istemciden degil, akisin uyguladigi kayittan okunur."""
+    kontrol = (alan or {}).get("kontrol")
+    gelen = karar.get("kontrol") if isinstance(karar, dict) else None
+    if not isinstance(kontrol, dict) or not isinstance(gelen, list):
+        return
+    kayit = (durum or {}).get("_tanim_duzeltmeleri") or {}
+    satirlar = []
+    for g in gelen:
+        ad = str((g or {}).get("kolon") or "")
+        k = kayit.get(ad)
+        if not isinstance(k, dict):
+            continue
+        satirlar.append({"kolon": ad, "mevcut": k.get("mevcut") or "",
+                         "oneri": k.get("oneri") or "",
+                         "aciklama": k.get("aciklama") or "",
+                         "gerekce": k.get("gerekce") or "",
+                         "islem": "uygula" if k.get("islem") == "uygula" else "red"})
+    kontrol["satirlar"] = satirlar
+
+
 def _biten_adimi_guncelle(durum, tamam, rozet=None, karar=None):
     """Biten adimin transkriptteki kart govdelerini SON haliyle gunceller.
 
@@ -987,6 +1010,7 @@ def _biten_adimi_guncelle(durum, tamam, rozet=None, karar=None):
                 alan["rozet"] = rozet
             if karar:
                 _dogrulama_satirlarini_isle(alan, karar)
+                _kontrol_satirlarini_isle(alan, karar, durum)
             dg_bitti = True
             continue
         if form_bitti:
@@ -1288,6 +1312,8 @@ def mesaj_endpoint():
         calisma = _calisma_id(istek)
         anahtar = _oturum_anahtari(calisma)
         durum = _durum_al(anahtar)
+        # Onayli tanim hafizasinda "kim onayladi" alani icin.
+        durum["_kullanici_ad"] = _kullanici_adi()[0] or ""
 
         son_tur = int(durum.get("_tur_no") or 0)
         try:
@@ -2502,6 +2528,7 @@ def sozluk_tanim_endpoint():
         istek = request.get_json(force=True) or {}
         anahtar = _oturum_anahtari(_calisma_id(istek))
         durum = _durum_al(anahtar)
+        durum["_kullanici_ad"] = _kullanici_adi()[0] or ""
         tamam, neden = akis.sozluk_tanim_yaz(
             durum, istek.get("kolon"), istek.get("tanim"))
         if not tamam:

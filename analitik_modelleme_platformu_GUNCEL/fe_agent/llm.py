@@ -18,6 +18,7 @@ HATA SOZLESMESI
 
 import json
 import re
+import threading
 import time
 from concurrent import futures
 
@@ -350,6 +351,13 @@ kolonlar): yazim tarzina, cumle yapisina ve kisaltmalarin (TXN, GDN, AMT,
 CNT, 3D...) anlamina UY. Ornekleri kopyalama; her kolonu kendi adi ve
 dagilimina gore yaz. VERI SETI adi verilirse tablonun konusunu ondan da cikar.
 
+ONAYLI TANIMLAR verilirse (kullanicilarin daha once onayladigi tanimlar):
+bunlar en guvenilir kaynaktir. AYNI ADLI kolon varsa o tanimi esas al;
+benzer adli kolonlarda ayni kalibi ve kisaltma anlamlarini kullan.
+
+YAZIM TARZI verilirse (kurumun sozlugundeki tanimlardan cikarildi):
+uzunluk, noktalama ve buyuk/kucuk harf kullanimini ona gore ayarla.
+
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme veya aciklama YAZMA.
 {"kolonlar": [{"ad": "...", "aciklama": "...", "kategori": "..."}]}
 
@@ -405,7 +413,135 @@ def benzer_ornekler(adlar, tanimlar, adet=ORNEK_TANIM_SAYISI):
     return [(ad, ack) for _p, ad, ack in puanlar[:adet]]
 
 
-def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None):
+def _profil_satiri(p):
+    """Bir kolonun modele giden TURETILMIS ozeti (ham deger yok)."""
+    s = "- %s | %s | null %%%s | %s tekil" % (
+        p["ad"], p.get("tip", ""), round(float(p.get("null_oran") or 0) * 100, 1),
+        p.get("tekil", ""))
+    if p.get("dagilim"):
+        s += "\n    dagilim: %s" % str(p["dagilim"])[:EN_UZUN_DAGILIM]
+    elif p.get("not"):
+        s += "\n    (ornek deger paylasilmadi: %s)" % p["not"]
+    return s
+
+
+def _baglamli_govde(adlar, kolon_metni, baglam, kolon_basligi="KOLONLAR"):
+    """Kolon listesinin ONUNE baglam bloklarini ekler. Doner: (baslik, govde).
+
+    Bloklar (hepsi opsiyonel, baglam'dan):
+      VERI SETI       : tablonun adi
+      YAZIM TARZI     : sozlukteki tanimlardan cikarilan tarz (yazim_tarzi)
+      ONAYLI TANIMLAR : kullanicilarin onayladigi tanimlar (tanim_hafiza);
+                        once AYNI ADLI kolonlar, sonra adi benzeyenler
+      ORNEK TANIMLAR  : kurumun sozlugundeki adi benzeyen tanimlar"""
+    if not baglam:
+        return kolon_basligi + ":", kolon_metni
+    ek = []
+    if baglam.get("veri_seti"):
+        ek.append("VERI SETI: %s" % baglam["veri_seti"])
+    tarz = baglam.get("tarz")
+    if tarz:
+        ek.append("YAZIM TARZI: %s" % tarz_metni(tarz))
+    hafiza = baglam.get("hafiza") or {}
+    if hafiza:
+        ayni = [(a, str(hafiza[a])[:200]) for a in adlar if a in hafiza]
+        benzer = benzer_ornekler(adlar, hafiza, ORNEK_TANIM_SAYISI)
+        satir = ["- %s (AYNI AD): %s" % (a, t) for a, t in ayni] \
+            + ["- %s: %s" % (a, t) for a, t in benzer]
+        if satir:
+            ek.append("ONAYLI TANIMLAR (kullanicilarin onayladigi):\n"
+                      + "\n".join(satir))
+    ornek = benzer_ornekler(adlar, baglam.get("tanimlar") or {})
+    if ornek:
+        ek.append("ORNEK TANIMLAR (kurumun sozlugunden):\n"
+                  + "\n".join("- %s: %s" % (a, t) for a, t in ornek))
+    if not ek:
+        return kolon_basligi + ":", kolon_metni
+    return ("BAGLAM VE %s:" % kolon_basligi,
+            "\n\n".join(ek) + "\n\n%s:\n" % kolon_basligi + kolon_metni)
+
+
+# ---------------------------------------------------------------------------
+# YAZIM TARZI — kurumun sozlugundeki tanimlardan, kural tabanli
+# ---------------------------------------------------------------------------
+# Tarz dil modeline "sozluge benze" demekle birakilmiyor: noktalama ve bas
+# harf gibi olculebilen kisimlar sozlukten SAYILIYOR, modele acikca
+# yaziliyor ve cikti ayrica bu kurala uyduruluyor (tarza_uydur).
+TARZ_EN_AZ = 5            # bundan az tanimdan tarz cikarilmaz
+TARZ_ORNEK = 2000         # sayimda bakilan en cok tanim
+TARZ_ESIK = 0.7           # "cogunlukla" sayilan pay
+
+
+def yazim_tarzi(tanimlar):
+    """{kolon: aciklama} -> tarz sozlugu ya da None.
+
+      nokta     : True (cogu noktayla biter) / False (cogu bitmez) / None
+      buyuk_bas : True / False / None (ilk harf)
+      tum_buyuk : tamami buyuk harfle mi yazilmis
+      kelime    : tanimlarin ortanca kelime sayisi"""
+    metinler = [str(t).strip() for t in (tanimlar or {}).values()
+                if str(t or "").strip()][:TARZ_ORNEK]
+    n = len(metinler)
+    if n < TARZ_EN_AZ:
+        return None
+
+    def pay(kosul):
+        return sum(1 for t in metinler if kosul(t)) / float(n)
+
+    def karar(p):
+        return True if p >= TARZ_ESIK else (False if p <= 1 - TARZ_ESIK else None)
+
+    harfli = [t for t in metinler if any(c.isalpha() for c in t)]
+    kelimeler = sorted(len(t.split()) for t in metinler)
+    return {
+        "nokta": karar(pay(lambda t: t.endswith("."))),
+        "buyuk_bas": karar(pay(lambda t: t[:1].isupper())),
+        "tum_buyuk": bool(harfli) and (sum(1 for t in harfli if t == t.upper())
+                                       / float(len(harfli))) >= TARZ_ESIK,
+        "kelime": kelimeler[n // 2],
+    }
+
+
+def tarz_metni(tarz):
+    """Tarz sozlugunu modele giden tek satira cevirir."""
+    if not tarz:
+        return ""
+    p = ["tanimlar genellikle %s kelime" % tarz.get("kelime")]
+    if tarz.get("nokta") is True:
+        p.append("cumle sonunda nokta VAR")
+    elif tarz.get("nokta") is False:
+        p.append("cumle sonunda nokta YOK")
+    if tarz.get("tum_buyuk"):
+        p.append("tamami BUYUK HARF")
+    elif tarz.get("buyuk_bas") is True:
+        p.append("buyuk harfle basliyor")
+    elif tarz.get("buyuk_bas") is False:
+        p.append("kucuk harfle basliyor")
+    return "; ".join(p)
+
+
+def _tr_buyuk(metin):
+    return str(metin).replace("i", "İ").replace("ı", "I").upper()
+
+
+def tarza_uydur(metin, tarz):
+    """Olculebilen tarz kurallarini metne uygular (nokta, bas harf)."""
+    m = re.sub(r"\s+", " ", str(metin or "")).strip()
+    if not m or not tarz:
+        return m
+    if tarz.get("nokta") is True and not m.endswith((".", "!", "?")):
+        m += "."
+    elif tarz.get("nokta") is False:
+        m = m.rstrip(".").rstrip()
+    if tarz.get("tum_buyuk"):
+        m = _tr_buyuk(m)
+    elif tarz.get("buyuk_bas") is True and m[:1].islower():
+        m = _tr_buyuk(m[:1]) + m[1:]
+    return m
+
+
+def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
+                         model=None):
     """profiller: sozluk.profil_cikar() ciktisi
     Doner: (aciklamalar, hata)
       aciklamalar: {kolon_adi: {"aciklama": ..., "kategori": ...}}
@@ -448,29 +584,13 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None):
 
         satirlar = []
         for p in blok:
-            s = "- %s | %s | null %%%s | %s tekil" % (
-                p["ad"], p["tip"], round(p["null_oran"] * 100, 1), p["tekil"])
-            if p.get("dagilim"):
-                s += "\n    dagilim: %s" % p["dagilim"][:EN_UZUN_DAGILIM]
-            elif p.get("not"):
-                s += "\n    (ornek deger paylasilmadi: %s)" % p["not"]
-            satirlar.append(s)
+            satirlar.append(_profil_satiri(p))
 
-        govde = "\n".join(satirlar)
-        baslik = "KOLONLAR:"
-        if baglam:
-            ek = []
-            if baglam.get("veri_seti"):
-                ek.append("VERI SETI: %s" % baglam["veri_seti"])
-            ornek = benzer_ornekler([p["ad"] for p in blok], baglam.get("tanimlar") or {})
-            if ornek:
-                ek.append("ORNEK TANIMLAR (kurumun sozlugunden):\n"
-                          + "\n".join("- %s: %s" % (a, t) for a, t in ornek))
-            if ek:
-                govde = "\n\n".join(ek) + "\n\nKOLONLAR:\n" + govde
-                baslik = "VERI SETI, ORNEK TANIMLAR VE KOLONLAR:"
+        baslik, govde = _baglamli_govde([p["ad"] for p in blok],
+                                        "\n".join(satirlar), baglam)
         try:
-            ham = _cagir(sistem, _veri_blogu(baslik, govde), sicaklik=0.3)
+            ham = _cagir(sistem, _veri_blogu(baslik, govde), model=model,
+                         sicaklik=0.3)
             veri = _json_ayristir(ham, {}, dict)
         except Exception as e:
             dusen_parca += 1
@@ -503,6 +623,346 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None):
                                                   son_hata or "bilinmiyor"))
     return sonuc, hata
 
+
+
+# ===========================================================================
+# ORKESTRA — sozluk aciklamasini ve tanim kontrolunu BIRDEN FAZLA MODELLE
+# ===========================================================================
+# Kullanici karari: "oneri kismi orchestrator ile kurulmali, bir suru llm
+# var elimizde". Tek modelin tek cevabi yerine roller:
+#
+#   ACIKLAMA (sozlukte tanimi olmayan kolonlar)
+#     yazarlar : iki model AYNI girdiyle bagimsiz aday yazar (paralel)
+#     hakem    : adaylar farkliysa profile, yazim tarzina, onayli tanimlara
+#                ve kurumun orneklerine bakarak en dogrusunu secer ya da
+#                ikisini birlestirir. Adaylar ayniysa hakem cagrilmaz.
+#
+#   TANIM KONTROLU (sozlukte tanimi olan kolonlar)
+#     tarayici : hizli model butun tanimlari tarar, yalniz SORUNLU
+#                gorduklerini isaretler (cogu tanim buradan "uygun" cikar)
+#     denetci  : isaretlenenlere ikinci model bagimsiz bakar
+#     hakem    : iki gorusu tartip son karari verir. Hakem cevap
+#                veremezse yalnizca IKI MODELIN DE "duzelt" dedigi
+#                tanimlar onerilir (temkinli taraf).
+#
+# Bir model cevap veremezse (baglanti, zaman asimi, okunamayan JSON) is
+# DURMAZ: rol listedeki bir sonraki modele gecer. Ust uste
+# ORKESTRA_DUSME_SINIRI kez dusen model o isin geri kalaninda atlanir ve
+# kart ustunde hangi modelin kullanilamadigi yazar.
+ORKESTRA = {
+    "yazarlar": ("llama", "qwen_flash"),
+    "hakem": ("qwen_thinking", "llama"),
+    "tarayici": ("qwen_flash", "llama"),
+    "denetci": ("llama", "qwen_thinking"),
+}
+MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_thinking": "Qwen 3 Thinking",
+                "qwen_flash": "Qwen Flash"}
+ORKESTRA_DUSME_SINIRI = 2
+_ORKESTRA_HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
+
+
+class Orkestra(object):
+    """Bir oneri isi boyunca model sagligini tutar (is basina bir tane)."""
+
+    def __init__(self, roller=None):
+        self.roller = dict(ORKESTRA)
+        self.roller.update(roller or {})
+        self._hata = {}            # model -> ust uste hata sayisi
+        self._son = {}             # model -> son hata metni
+        self._kilit = threading.Lock()
+
+    def uygun_mu(self, ad):
+        with self._kilit:
+            return ad in MODELLER \
+                and self._hata.get(ad, 0) < ORKESTRA_DUSME_SINIRI
+
+    def modeller(self, rol):
+        return [m for m in self.roller.get(rol, ()) if self.uygun_mu(m)]
+
+    def cagir(self, ad, sistem, govde, sicaklik=0.2):
+        """Tek model cagrisi; ham metin doner, basarisizsa firlatir."""
+        try:
+            ham = _cagir(sistem, govde, model=MODELLER[ad], sicaklik=sicaklik)
+            with self._kilit:
+                self._hata[ad] = 0
+            return ham
+        except Exception as e:
+            with self._kilit:
+                self._hata[ad] = self._hata.get(ad, 0) + 1
+                self._son[ad] = _hata_metni(e)
+            raise
+
+    def json_cagir(self, adlar, sistem, govde, sicaklik=0.2, haric=()):
+        """adlar sirasiyla dener; ilk OKUNABILIR JSON'u doner.
+        Doner: (model, veri). Hicbiri olmazsa (None, {})."""
+        for ad in adlar:
+            if ad in haric or not self.uygun_mu(ad):
+                continue
+            try:
+                veri = _json_ayristir(self.cagir(ad, sistem, govde, sicaklik),
+                                      {}, dict)
+            except Exception:
+                continue
+            if veri.get("kolonlar"):
+                return ad, veri
+            with self._kilit:
+                self._hata[ad] = self._hata.get(ad, 0) + 1
+                self._son[ad] = "okunabilir JSON döndürmedi"
+        return None, {}
+
+    def notu(self):
+        """Kullanilamayan modeller icin kart notu ("" ise sorun yok)."""
+        with self._kilit:
+            dusen = [a for a, n in self._hata.items()
+                     if n >= ORKESTRA_DUSME_SINIRI]
+            son = dict(self._son)
+        if not dusen:
+            return ""
+        return ("%s modeline ulaşılamadı (%s); öneriler diğer modellerle "
+                "üretildi." % (", ".join(MODEL_ADLARI.get(a, a) for a in dusen),
+                               "; ".join(son.get(a, "") for a in dusen)[:200]))
+
+
+def _ayni_metin(a, b):
+    sade = lambda x: re.sub(r"[\W_]+", " ", str(x or "").lower()).strip()
+    return sade(a) == sade(b)
+
+
+SISTEM_HAKEM_ACIKLAMA = """Sen bir bankacilik veri sozlugu editorusun. Her
+kolon icin farkli dil modellerinin yazdigi ADAY aciklamalar verilecek.
+
+Her kolon icin en dogru aciklamayi sec ya da adaylari birlestirerek daha
+dogru bir aciklama yaz. Karar verirken:
+  - kolon adi, tipi ve dagilim ozetiyle CELISEN aday elenir
+    (ornek: dagilim 0/1 iken "tutar" diyen aday yanlistir)
+  - ONAYLI TANIMLAR en guvenilir kaynaktir; AYNI ADLI kolon varsa onu esas al
+  - ORNEK TANIMLAR ve YAZIM TARZI kurumun yazim bicimidir, ona uy
+  - tek cumle, Turkce, kolon adini tekrar etme
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + SINIRLAYICI_KURALI
+
+
+def aciklama_orkestra(profiller, baglam=None, orkestra=None):
+    """Tanimsiz kolonlar icin coklu model aciklamasi (tek grup).
+
+    Doner: (sonuc, hata)
+      sonuc: {kolon: {"aciklama": ..., "modeller": "Llama 3.1 70B + ..."}}
+      hata : hicbir yazar cevap veremediyse metin, yoksa None"""
+    ork = orkestra or Orkestra()
+    tarz = (baglam or {}).get("tarz")
+    yazarlar = ork.modeller("yazarlar")
+    if not yazarlar:
+        # Yazar kalmadi: hakem modelleri yazar olarak denenir.
+        yazarlar = ork.modeller("hakem")[:1]
+    if not yazarlar:
+        return {}, "Kullanılabilir dil modeli kalmadı."
+
+    def yaz(ad):
+        try:
+            sonuc, hata = sozluk_aciklama_uret(profiller, parca=len(profiller),
+                                               baglam=baglam, model=MODELLER[ad])
+        except Exception as e:
+            sonuc, hata = {}, _hata_metni(e)
+        with ork._kilit:
+            if sonuc:
+                ork._hata[ad] = 0
+            else:
+                ork._hata[ad] = ork._hata.get(ad, 0) + 1
+                # sozluk_aciklama_uret'in uzun metninden yalniz son hata
+                m = re.search(r"son hata: (.*)\)$", str(hata or ""))
+                ork._son[ad] = (m.group(1) if m else hata) or "boş cevap"
+        return ad, sonuc or {}
+
+    isler = [_ORKESTRA_HAVUZ.submit(yaz, ad) for ad in yazarlar]
+    adaylar = {}                         # kolon -> [(model, metin)]
+    for f in isler:
+        model, sonuc = f.result()
+        for kolon, k in sonuc.items():
+            metin = str((k or {}).get("aciklama") or "").strip()
+            if metin:
+                adaylar.setdefault(kolon, []).append((model, metin))
+    if not adaylar:
+        return {}, "Yazar modellerin hiçbiri açıklama döndürmedi."
+
+    sonuc = {}
+    tartisma = []
+    for p in profiller:
+        liste = adaylar.get(p["ad"]) or []
+        if not liste:
+            continue
+        if len(liste) == 1 or all(_ayni_metin(liste[0][1], m) for _a, m in liste[1:]):
+            sonuc[p["ad"]] = {"aciklama": liste[0][1],
+                              "modeller": " + ".join(MODEL_ADLARI.get(a, a)
+                                                     for a, _m in liste)}
+        else:
+            tartisma.append(p)
+
+    if tartisma:
+        satirlar = []
+        for p in tartisma:
+            s = _profil_satiri(p)
+            for i, (_a, metin) in enumerate(adaylar[p["ad"]]):
+                s += "\n    aday %s: %s" % ("ABCD"[i], metin[:300])
+            satirlar.append(s)
+        baslik, govde = _baglamli_govde([p["ad"] for p in tartisma],
+                                        "\n".join(satirlar), baglam)
+        hakem, veri = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_ACIKLAMA,
+                                     _veri_blogu(baslik, govde), 0.1)
+        secilen = {}
+        for k in (veri.get("kolonlar") or []):
+            if isinstance(k, dict) and str(k.get("aciklama") or "").strip():
+                secilen[str(k.get("ad"))] = str(k["aciklama"]).strip()[:300]
+        for p in tartisma:
+            liste = adaylar[p["ad"]]
+            if p["ad"] in secilen:
+                sonuc[p["ad"]] = {
+                    "aciklama": secilen[p["ad"]],
+                    "modeller": "%s (hakem: %s)" % (
+                        " + ".join(MODEL_ADLARI.get(a, a) for a, _m in liste),
+                        MODEL_ADLARI.get(hakem, hakem))}
+            else:
+                # Hakem karar veremedi: ilk yazarin adayi (yazar sirasi
+                # ORKESTRA["yazarlar"]'daki tercih sirasidir).
+                sonuc[p["ad"]] = {"aciklama": liste[0][1],
+                                  "modeller": MODEL_ADLARI.get(liste[0][0], liste[0][0])}
+
+    for kayit in sonuc.values():
+        kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)[:300]
+    return sonuc, None
+
+
+SISTEM_KONTROL = """Sen bir bankacilik veri sozlugu denetcisisin. Her kolon
+icin adi, tipi, dagilim ozeti ve sozlukteki MEVCUT tanimi verilecek.
+Mevcut tanimin dogru yazilip yazilmadigini degerlendir.
+
+"duzelt" YALNIZCA su durumlarda:
+  - tanim kolon adi ya da dagilimla CELISIYOR (ornek: dagilim 0/1 iken
+    "tutar", ad AMT iken "adet", ad 3D iken "son 6 ay")
+  - tanim bos, anlamsiz ya da kolon adinin tekrarindan ibaret
+    ("X kolonu", "deger", "-")
+  - tanim eksik ya da belirsiz, kolonun ne olctugu anlasilmiyor
+  - belirgin yazim hatasi var
+Yalnizca uslup farki icin "duzelt" DEME. Emin degilsen "uygun" de.
+
+"duzelt" dersen:
+  oneri   : duzeltilmis tanim; tek cumle, Turkce, kurumun YAZIM TARZINA ve
+            ORNEK / ONAYLI TANIMLARA uygun
+  gerekce : sorunun ne oldugu, tek kisa cumle
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "...", "durum": "uygun|duzelt", "oneri": "...",
+  "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
+
+SISTEM_HAKEM_KONTROL = """Sen bir bankacilik veri sozlugu editorusun. Her
+kolon icin sozlukteki MEVCUT tanim ve iki denetcinin gorusu verilecek.
+Son karari sen ver.
+
+  karar "duzelt": mevcut tanim gercekten yanlis, celiskili, bos/anlamsiz,
+                  belirsiz ya da yazim hatali. aciklama alanina en dogru
+                  tanimi yaz (denetcilerin onerilerinden sec ya da birlestir;
+                  YAZIM TARZINA ve ONAYLI TANIMLARA uy).
+  karar "uygun" : mevcut tanim dogru; yalnizca uslup farki varsa da "uygun".
+  gerekce       : tek kisa cumle.
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "...", "karar": "uygun|duzelt", "aciklama": "...",
+  "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
+
+
+def _kontrol_satiri(p):
+    return _profil_satiri(p) + "\n    MEVCUT TANIM: %s" % str(p.get("mevcut") or "")[:300]
+
+
+def _kontrol_oku(veri, gecerli):
+    """Denetci cevabi -> {kolon: {"durum", "oneri", "gerekce"}}."""
+    cikti = {}
+    for k in (veri.get("kolonlar") or []):
+        if not isinstance(k, dict) or str(k.get("ad")) not in gecerli:
+            continue
+        durum = str(k.get("durum") or k.get("karar") or "").strip().lower()
+        cikti[str(k["ad"])] = {
+            "durum": "duzelt" if durum.startswith("duzelt") or durum.startswith("düzelt")
+            else "uygun",
+            "oneri": str(k.get("oneri") or k.get("aciklama") or "").strip()[:300],
+            "gerekce": str(k.get("gerekce") or "").strip()[:200]}
+    return cikti
+
+
+def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):
+    """Sozlukte tanimi OLAN kolonlarin tanimlarini denetler (tek grup).
+
+    kayitlar: profil sozlukleri + "mevcut" (sozlukteki tanim).
+    Doner: (duzeltmeler, hata)
+      duzeltmeler: {kolon: {"mevcut", "oneri", "gerekce", "modeller"}} —
+                   YALNIZCA duzeltilmesi onerilenler
+      hata       : tarama hic yapilamadiysa metin, yoksa None"""
+    ork = orkestra or Orkestra()
+    tarz = (baglam or {}).get("tarz")
+    mevcut = {p["ad"]: str(p.get("mevcut") or "") for p in kayitlar}
+    gecerli = set(mevcut)
+
+    def istek(blok):
+        baslik, govde = _baglamli_govde([p["ad"] for p in blok],
+                                        "\n".join(_kontrol_satiri(p) for p in blok),
+                                        baglam)
+        return _veri_blogu(baslik, govde)
+
+    tarayici, veri = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KONTROL,
+                                    istek(kayitlar), 0.1)
+    if tarayici is None:
+        return {}, "Tanım kontrolü için dil modeline ulaşılamadı."
+    ilk = _kontrol_oku(veri, gecerli)
+    isaretli = [p for p in kayitlar
+                if (ilk.get(p["ad"]) or {}).get("durum") == "duzelt"]
+    if not isaretli:
+        return {}, None
+
+    # Denetci: tarayicidan FARKLI bir model (ayni model ayni hatayi yapar).
+    denetci, veri2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KONTROL,
+                                    istek(isaretli), 0.1, haric=(tarayici,))
+    ikinci = _kontrol_oku(veri2, gecerli) if denetci else {}
+
+    satirlar = []
+    for p in isaretli:
+        a, b = ilk.get(p["ad"]) or {}, ikinci.get(p["ad"])
+        s = _kontrol_satiri(p)
+        s += "\n    denetci 1: %s | oneri: %s | gerekce: %s" % (
+            a.get("durum"), a.get("oneri"), a.get("gerekce"))
+        if b:
+            s += "\n    denetci 2: %s | oneri: %s | gerekce: %s" % (
+                b.get("durum"), b.get("oneri"), b.get("gerekce"))
+        satirlar.append(s)
+    baslik, govde = _baglamli_govde([p["ad"] for p in isaretli],
+                                    "\n".join(satirlar), baglam)
+    hakem, veri3 = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_KONTROL,
+                                  _veri_blogu(baslik, govde), 0.1)
+    son = _kontrol_oku(veri3, gecerli) if hakem else {}
+
+    adlar = list(dict.fromkeys(MODEL_ADLARI.get(m, m)
+                               for m in (tarayici, denetci, hakem) if m))
+    duzeltmeler = {}
+    for p in isaretli:
+        ad = p["ad"]
+        a, b = ilk.get(ad) or {}, ikinci.get(ad) or {}
+        if hakem:
+            k = son.get(ad)
+            if not k or k["durum"] != "duzelt":
+                continue
+            oneri = k["oneri"] or b.get("oneri") or a.get("oneri")
+            gerekce = k["gerekce"] or a.get("gerekce")
+        else:
+            # Hakem yok: yalniz IKI denetcinin de "duzelt" dedigi tanim.
+            if b.get("durum") != "duzelt":
+                continue
+            oneri = a.get("oneri") or b.get("oneri")
+            gerekce = a.get("gerekce") or b.get("gerekce")
+        oneri = tarza_uydur(oneri, tarz)[:300]
+        if not oneri or _ayni_metin(oneri, mevcut[ad]):
+            continue
+        duzeltmeler[ad] = {"mevcut": mevcut[ad], "oneri": oneri,
+                           "gerekce": gerekce or "", "modeller": " + ".join(adlar)}
+    return duzeltmeler, None
 
 # ===========================================================================
 # LLM — ARALIK (BINLEME) ONERILERININ DEGERLENDIRILMESI

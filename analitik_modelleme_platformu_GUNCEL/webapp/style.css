@@ -2882,17 +2882,66 @@ span.bolme-cip { cursor: default; }
 }
 .excel-hata[hidden] { display: none; }
 
-/* ÖNERİ VURGUSU (kullanıcı kararı): sistemin önerisini taşıyan satır
-   kırmızı zeminli, kullanıcının değiştirdiği öneri sarı. Zemin açık
+/* SATIR RENKLERİ (kullanıcı kararı: "kırmızı hata varmış gibi
+   gösteriyor"). Karar öncesi: sarı = açıklama boş, mavi = dil modeli
+   önerisi. Karar sonrası: yeşil = sözlüğe eklendi / düzeltme uygulandı,
+   kırmızı = eklenmedi. Kullanıcının yazdığı metin renksiz. Zemin açık
    ton; metin okunur kalır. Hücre bazında boyanıyor: tablo satırı
    zemini bazı tarayıcılarda sticky hücrelerin altında kalıyor. */
-.dg-tablo tr.dg-oneri > td { background: rgba(213,17,21,.11); }
-.dg-tablo tr.dg-degisti > td { background: rgba(234,179,8,.22); }
-.dg-tablo tr.dg-oneri .dg-giris,
-.dg-tablo tr.dg-degisti .dg-giris { background: transparent; }
+:root {
+  --dg-bos: rgba(234,179,8,.22);
+  --dg-llm: rgba(59,130,246,.15);
+  --dg-eklendi: rgba(22,163,74,.16);
+  --dg-eklenmedi: rgba(213,17,21,.12);
+}
+/* Koyu yüzeyde aynı tonlar biraz daha belirgin. */
+#kabuk.koyu {
+  --dg-bos: rgba(250,204,21,.18);
+  --dg-llm: rgba(91,141,239,.24);
+  --dg-eklendi: rgba(34,197,94,.20);
+  --dg-eklenmedi: rgba(239,68,68,.20);
+}
+.dg-tablo tr.dg-bos > td { background: var(--dg-bos); }
+.dg-tablo tr.dg-llm > td { background: var(--dg-llm); }
+.dg-tablo tr.dg-eklendi > td { background: var(--dg-eklendi); }
+.dg-tablo tr.dg-eklenmedi > td { background: var(--dg-eklenmedi); }
+.dg-tablo tr.dg-bos .dg-giris, .dg-tablo tr.dg-llm .dg-giris,
+.dg-tablo tr.dg-eklendi .dg-giris,
+.dg-tablo tr.dg-eklenmedi .dg-giris { background: transparent; }
 .dg-lejant {
   margin: var(--b-2) 0; font-size: var(--fs-kucuk); color: var(--metin-soluk);
+  display: flex; flex-wrap: wrap; gap: var(--b-1) var(--b-3);
 }
+.dg-lejant-oge { display: inline-flex; align-items: center; gap: 5px; }
+.dg-lejant-kutu {
+  width: 11px; height: 11px; border-radius: 3px;
+  border: 1px solid var(--kenar); flex: 0 0 auto;
+}
+.dg-l-bos { background: var(--dg-bos); }
+.dg-l-llm { background: var(--dg-llm); }
+.dg-l-eklendi { background: var(--dg-eklendi); }
+.dg-l-eklenmedi { background: var(--dg-eklenmedi); }
+
+/* TANIM KONTROLÜ tablosu: Değişken | Mevcut Tanım | Önerilen Tanım |
+   Uygula. İki tanım da TAM METİN okunur (kırpılmaz, satır kayar);
+   önerilen tanım düzenlenebilir, kutu içeriğe göre uzar. */
+.dg-kontrol-bas { margin-top: var(--b-4); }
+.dg-kontrol-bas .dg-tablo-baslik { display: flex; align-items: center; gap: var(--b-1); }
+.dg-kontrol-tablo th:nth-child(1) { width: 24%; }
+.dg-kontrol-tablo th:nth-child(2) { width: 34%; }
+.dg-kontrol-tablo th:nth-child(3) { width: auto; }
+.dg-kontrol-tablo th:nth-child(4) { width: 62px; }
+.dg-kontrol-tablo td { vertical-align: top; }
+.dg-kontrol-tablo td.dg-ekle-hucre { text-align: center; }
+.dg-kontrol-tablo .dg-kolon { white-space: normal; overflow-wrap: anywhere; }
+.dg-kontrol-tablo .dg-kolon .bolme-info { margin-left: 4px; vertical-align: middle; }
+.dg-mevcut { color: var(--metin); white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+.dg-giris.dg-metin {
+  height: auto; min-height: var(--btn-h-kucuk); padding: 3px var(--b-2);
+  resize: none; overflow: hidden; line-height: 1.4; font-family: inherit;
+  display: block;
+}
+.dg-kontrol-durum[hidden], .dg-oneri-hata[hidden] { display: none; }
 
 /* Sözlük Tanımları: renk açıklaması solda, Tümünü Seç / Tümünü Temizle
    sağda; ikisi de tablonun HEMEN ÜSTÜNDE. */

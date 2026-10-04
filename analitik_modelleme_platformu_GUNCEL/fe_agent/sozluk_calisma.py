@@ -61,6 +61,10 @@ TANIM_KOLONU = "ACIKLAMA"
 # TMD'de "bu tanimi kim yazdi" sorusunun cevabi bu alandan okunur.
 KAYNAK_LLM = "llm onerisi (kullanici onayladi)"
 KAYNAK_KULLANICI = "kullanici yazdi"
+# Tanim kontrolunde modelin onerdigi DUZELTME (kullanici onayladi) ve
+# daha once uygulanmis bir duzeltmenin geri alinmasi.
+KAYNAK_DUZELTME = "llm duzeltme onerisi (kullanici onayladi)"
+KAYNAK_GERI_AL = "tanim duzeltmesi geri alindi"
 
 # Kategorisi olmayan degiskenin panelde ve kategori listesinde aldigi
 # etiket. Sozlukte bu anlama gelen birden fazla yazim var; hepsi tek
@@ -824,6 +828,47 @@ def tanim_yaz(durum, kolon, tanim):
     kutuk_mod.degisiklik_dus(oturum, [
         {"ALAN": "sozluk", "ANAHTAR": ad, "ESKI": sonuc, "YENI": metin,
          "KAYNAK": KAYNAK_KULLANICI}])
+    # Kullanicinin yazdigi tanim ONAYLI TANIM HAFIZASINA da duser (arka
+    # planda; yazilamazsa bu yazma etkilenmez). Bos tanim (silme) dusmez.
+    if metin:
+        try:
+            from fe_agent import tanim_hafiza
+            tanim_hafiza.arka_planda_ekle(
+                [{"kolon": ad, "aciklama": metin,
+                  "kaynak": tanim_hafiza.KAYNAK_PANEL}],
+                (durum or {}).get("veri_seti") or "",
+                (durum or {}).get("_kullanici_ad") or "")
+        except Exception:
+            pass
+    return True, ""
+
+
+def tanim_duzelt(durum, kolon, tanim, oneri=None, geri_al=False):
+    """Sozlukte TANIMI OLAN bir kolonun tanimini calisma kopyasinda
+    degistirir (tanim kontrolu karari). Orijinal sozluge ASLA yazilmaz.
+
+    oneri: modelin onerdigi metin; onaylanan metin bununla birebir
+    ayniysa kutuge KAYNAK_DUZELTME, degilse KAYNAK_KULLANICI duser.
+    geri_al: daha once uygulanmis duzeltmenin yerine eski tanim yaziliyor.
+    Doner: (True, "") ya da (False, "<neden>"). Istisna firlatmaz."""
+    oturum = (durum or {}).get("_oturum_id")
+    ad = "" if kolon is None else str(kolon).strip()
+    metin = "" if tanim is None else str(tanim).strip()
+    if not ad or not metin:
+        return False, "Düzeltilecek kolon ya da tanım boş."
+    if kopya_oku(oturum) is None:
+        _kopyayi_kurtar(durum)
+    tamam, sonuc = _tanimi_isle(oturum, ad, metin, "")
+    if not tamam:
+        return False, sonuc
+    if sonuc == metin:
+        return True, ""
+    kaynak = KAYNAK_GERI_AL if geri_al else (
+        KAYNAK_DUZELTME if (oneri and str(oneri).strip() == metin)
+        else KAYNAK_KULLANICI)
+    kutuk_mod.degisiklik_dus(oturum, [
+        {"ALAN": "sozluk", "ANAHTAR": ad, "ESKI": sonuc, "YENI": metin,
+         "KAYNAK": kaynak}])
     return True, ""
 
 

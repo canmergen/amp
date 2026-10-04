@@ -1,6 +1,48 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Arşiv'de "Listede Görünmeyen Klasörler"**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+Bu tur: **Sözlük Tanımları: yeni renkler, mevcut tanımların kontrolü, çoklu model (orkestra), onaylı tanım hafızası**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/tanim_hafiza.py` (YENİ), `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+
+- Renkler: karar öncesi sarı = açıklama boş, mavi = dil modeli önerisi
+  (değiştirilmemiş), renksiz = sizin yazdığınız. Onaydan sonra yeşil =
+  sözlüğe eklendi / düzeltme uygulandı, kırmızı = eklenmedi. 01.3
+  Değişken Kontrolü tablosu da aynı renkleri kullanıyor (sarı / mavi).
+- Kartın altında yeni bölüm "Sözlükteki Tanımların Kontrolü": sözlükte
+  tanımı olan kolonların tanımları denetlenir, yalnız düzeltilmesi
+  önerilenler "Mevcut Tanım / Önerilen Tanım" olarak listelenir; gerekçe
+  "i" simgesinde. Uygula işaretlenen düzeltme sözlüğün ÇALIŞMA KOPYASINA
+  yazılır, girdi sözlüğü değişmez. Varsayılan işaretsiz. Kontrol önce
+  tanımsız kolonların önerileri bittikten sonra başlar ve kartı
+  kilitlemez; beklemeden devam ederseniz kalan tanımlar olduğu gibi kalır.
+  Geri dönünce önceki kararlar gelir; uygulanmış düzeltmenin işareti
+  kaldırılırsa eski tanım geri yazılır.
+- Orkestra (llm.py, ORKESTRA sözlüğü):
+    açıklama : Llama ve Qwen Flash bağımsız yazar; farklıysa Qwen
+               Thinking hakem seçer / birleştirir.
+    kontrol  : Qwen Flash tüm tanımları tarar, sorunlu gördüklerine Llama
+               ikinci kez bakar, son kararı Qwen Thinking verir; hakem
+               cevap veremezse yalnız iki modelin de "düzelt" dediği
+               öneriler gelir.
+  Bir model iki kez üst üste cevap veremezse o işin geri kalanında
+  atlanır ve kartta "… modeline ulaşılamadı" notu çıkar.
+- Yazım tarzı: sözlüğünüzdeki tanımlardan sayılıyor (ortanca kelime
+  sayısı, sonda nokta var/yok, büyük harfle başlama, tamamı büyük harf);
+  modele yazılıyor ve nokta / baş harf çıktıda ayrıca düzeltiliyor.
+- Onaylı tanım hafızası: PROJE_HAFIZASI/TANIM_HAFIZASI.parquet (proje
+  geneli, çalışma klasörlerinin dışında). Yalnız onaylananlar girer:
+  Sözlüğe Ekle ile onaylanan açıklama, uygulanan düzeltme, sağ panelde
+  yazdığınız tanım. Kolonlar: KOLON, ACIKLAMA, VERI_SETI, KAYNAK,
+  KULLANICI, TARIH. Öneri ve kontrolde modele "ONAYLI TANIMLAR" olarak
+  gider: aynı adlı kolon varsa esas alınır, benzer adlılarda kalıp olarak
+  kullanılır.
+- Maliyet / süre: grup başına (25 kolon) açıklamada 2 paralel çağrı +
+  çoğu zaman 1 hakem çağrısı; kontrolde 1 tarama + yalnız sorunlu
+  görülenler için 2 çağrı. Hakem düşünen model olduğu için en yavaşı o.
+- Doğrulanmadı: gerçek modellerin çıktısı ve QWEN_FLASH kimliği
+  (sahte model cevaplarıyla test edildi).
+
+---
+
+Önceki tur: **Arşiv'de "Listede Görünmeyen Klasörler"**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
 
 - PROJE_HAFIZASI'nda olup Arşiv listesinde olmayan v-klasörleri listenin
   altında nedeniyle yazılır: "Boş klasör" (eski silmelerden kalan),

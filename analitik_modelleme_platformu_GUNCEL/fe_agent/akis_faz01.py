@@ -16,6 +16,7 @@ from fe_agent import llm as llm_mod
 from fe_agent import birlestirme as birl_mod
 from fe_agent import sozluk as sozluk_mod
 from fe_agent import sozluk_calisma
+from fe_agent import tanim_hafiza
 from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
@@ -35,7 +36,7 @@ from fe_agent.akis_durum import (
     AMP_KLASOR, AMP_SOZLUK_ADI, AMP_SOZLUK_KOLONLARI, AMP_VERI_ADI,
     BOLME_BOLUMLERI, bolme_kaydet, bolme_onerisi, bolme_ozeti,
     hazir_bolme_bul, kolon_ozeti_cikar, metin_yaz, modelleme_df,
-    onbellek_temizle, sozluk_orijinal_oku, yeni_durum, amp_sahibi_yaz,
+    onbellek_temizle, sozluk_orijinal_oku, sozluk_oku, yeni_durum, amp_sahibi_yaz,
     donem_degeri, donem_serisi, donem_sirala,
     kucuk_segmentler, kucuk_segment_uyarisi, segment_ozeti,
     dataset_yaz, dosya_yaz, sahip_yaz, modelleme_kaynagi,
@@ -58,7 +59,8 @@ _MOD_GECICI = ("_donemler", "_aciklamasiz", "_dusurulecek", "_soru_gecmis",
                # da degisir.
                "_donem_dusuruldu", "_sozluge_eklenen", "_bolme_mod",
                "_sozluk_esitleme", "_sozluk_esitleme_imza",
-               "_hazir_bolme",
+               "_hazir_bolme", "_tanim_duzeltmeleri", "_kontrol_kolonlar",
+               "_tanim_duzeltmeleri_kaynak",
                # Sozluk teyidi eski moda ait bir denetim kaydidir; mod
                # degisince veri seti de sozluk de degisir, damga
                # tasinmamali.
@@ -1139,6 +1141,25 @@ EN_FAZLA_TANIMSIZ = 200
 # onerisiz kalir, digerleri gelir.
 ONERI_GRUP = 25
 
+# Tanim kontrolunde TEK grupta denetlenen kolon sayisi (bkz.
+# llm.tanim_kontrol_orkestra: tarayici butun grubu, denetci ve hakem
+# yalniz isaretlenenleri gorur).
+KONTROL_GRUP = 25
+
+# Sozlukte tanimi OLAN kolonlarin kontrolu (kullanici karari: "sozlukte
+# yazilanlar ne kadar dogru yaziliyor oneri versin, kotu ya da yanlis
+# yazildiysa aciklama boyle duzenlensin diye karsilastirma sunsun").
+KONTROL_BASLIK = "Sözlükteki Tanımların Kontrolü"
+KONTROL_BILGI = (
+    "Sözlükte tanımı bulunan %s kolonun tanımı birden fazla dil modeliyle "
+    "kontrol edilir: hızlı bir model tüm tanımları tarar, sorunlu "
+    "gördüklerine ikinci bir model bağımsız bakar, son kararı hakem model "
+    "verir. Yalnızca düzeltilmesi önerilen tanımlar listelenir.\n\n"
+    "Uygula işaretlediğiniz düzeltmeler sözlüğün çalışma kopyasına yazılır; "
+    "girdi sözlüğünüz değişmez. İşaretlemediğiniz tanım olduğu gibi kalır.\n\n"
+    "Kontrol arka planda sürer; beklemeden devam ederseniz kontrol "
+    "edilmemiş tanımlar olduğu gibi kalır.")
+
 # Kategorik kolondan modele giden en sik etiket sayisi ve etiket metninin
 # kirpildigi uzunluk. Serbest metin tasiyan bir kolonun etiketleri promptu
 # sisirir; 40 karakter kolonun ne oldugunu anlamaya yeter.
@@ -1309,16 +1330,65 @@ def _aciklama_baglami(durum):
     Ham veri gitmez; yalnizca sozlukteki aciklama metinleri."""
     baglam = {"veri_seti": durum.get("veri_seti") or "", "tanimlar": {}}
     try:
-        sz = sozluk_orijinal_oku(durum)
-        ad_kol, ack_kol, hata = llm_mod._sozluk_kolonlari(sz)
-        if not hata and ack_kol is not None:
-            for ad, ack in zip(sz[ad_kol].astype(str), sz[ack_kol]):
-                ack = "" if ack is None or (isinstance(ack, float) and ack != ack) else str(ack).strip()
-                if ack:
-                    baglam["tanimlar"][ad.strip()] = ack
+        baglam["tanimlar"] = _sozluk_tanimlari(sozluk_orijinal_oku(durum))
     except Exception:
         pass
+    # YAZIM TARZI kurumun sozlugundeki tanimlardan; ONAYLI TANIMLAR proje
+    # genelindeki tanim hafizasindan (yalniz kullanicinin onayladiklari).
+    baglam["tarz"] = llm_mod.yazim_tarzi(baglam["tanimlar"])
+    try:
+        baglam["hafiza"] = tanim_hafiza.tanimlar()
+    except Exception:
+        baglam["hafiza"] = {}
     return baglam
+
+
+def _sozluk_tanimlari(sz):
+    """Sozluk tablosu -> {kolon: aciklama} (bos aciklamalar atlanir)."""
+    cikti = {}
+    ad_kol, ack_kol, hata = llm_mod._sozluk_kolonlari(sz)
+    if hata or ack_kol is None:
+        return cikti
+    for ad, ack in zip(sz[ad_kol].astype(str), sz[ack_kol]):
+        ack = "" if ack is None or (isinstance(ack, float) and ack != ack) else str(ack).strip()
+        if ack:
+            cikti[ad.strip()] = ack
+    return cikti
+
+
+def _onceki_duzeltmeler(durum):
+    """Onceki tanim kontrolu kararlari - YALNIZ ayni veri seti ve sozluk
+    icin. Baska bir sozluk baglandiysa eski kararlar o sozluge ait
+    degildir ve yok sayilir."""
+    if durum.get("_tanim_duzeltmeleri_kaynak") != [durum.get("veri_seti"),
+                                                   durum.get("sozluk")]:
+        return {}
+    return dict(durum.get("_tanim_duzeltmeleri") or {})
+
+
+def _kontrol_kolonlari(durum, prof):
+    """Tanim kontrolune girecek kolonlar: veri setinde olup sozlugun
+    CALISMA KOPYASINDA tanimi bulunanlar. Doner: (adlar, {ad: tanim}).
+
+    Daha once karari verilmis (uygulanmis ya da reddedilmis) kolonlar
+    yeniden denetlenmez; geri donuste o kararlar kartta aynen gelir."""
+    try:
+        tanimlar = _sozluk_tanimlari(sozluk_oku(durum))
+    except Exception:
+        return [], {}
+    normal = {sozluk_calisma._normalize_ad(a): t for a, t in tanimlar.items()}
+    tanimsiz = set(_tanim_listesi(durum))
+    karar = _onceki_duzeltmeler(durum)
+    adlar, harita = [], {}
+    for k in (prof or {}).get("kolonlar") or []:
+        ad = str(k.get("ad"))
+        if ad in tanimsiz or ad in karar:
+            continue
+        t = tanimlar.get(ad) or normal.get(sozluk_calisma._normalize_ad(ad))
+        if t:
+            adlar.append(ad)
+            harita[ad] = t
+    return adlar, harita
 
 
 def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
@@ -1382,8 +1452,7 @@ def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
             # girmesin; grup tek cagri olsun. Cagri yalnizca bu grubun
             # profilleriyle kuruluyor, onceki grubun kolonlari
             # gonderilmiyor — baglam tasinmiyor.
-            sonuc, _hata = llm_mod.sozluk_aciklama_uret(
-                grup, parca=len(grup), baglam=baglam)
+            sonuc, _hata = llm_mod.aciklama_orkestra(grup, baglam)
         except Exception as e:
             # Bu grup onerisiz kalir, digerleri gelir. AMA SESSIZ DEGIL:
             # hata tamamen yutulunca imza uyusmazligi ya da kapali bir
@@ -1446,34 +1515,47 @@ def _oneri_isi_kirp():
         _ONERI_ISLER.pop(anahtar, None)
 
 
-def _oneri_isi_calis(is_id, profiller, baglam=None):
-    """Isci: gruplari sirayla isler, her gruptan sonra kaydi tazeler."""
+def _iptal_mi(is_id):
+    with _ONERI_KILIT:
+        kayit = _ONERI_ISLER.get(is_id)
+        return kayit is None or bool(kayit.get("iptal"))
+
+
+def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
+    """Isci, IKI ASAMA:
+      1) tanimsiz kolonlara aciklama onerisi (kart bu asama bitene kadar
+         kilitli)
+      2) tanimli kolonlarin tanim kontrolu (kart kilitli DEGIL; satirlar
+         geldikce eklenir)
+    Her iki asama da llm.Orkestra ile birden fazla model kullanir; model
+    sagligi is boyunca tek orkestrada tutulur. Her gruptan sonra kayit
+    tazelenir."""
+    ork = llm_mod.Orkestra()
     dusen_grup = 0
     grup_sayisi = 0
     son_hata = ""
     for bas in range(0, len(profiller), ONERI_GRUP):
-        with _ONERI_KILIT:
-            kayit = _ONERI_ISLER.get(is_id)
-            if kayit is None or kayit.get("iptal"):
-                return
+        if _iptal_mi(is_id):
+            return
         grup = profiller[bas:bas + ONERI_GRUP]
         grup_sayisi += 1
         yeni = {}
         try:
-            # parca=len(grup): llm.py'nin kendi parcalamasi devreye
-            # girmesin; grup TEK cagri olsun. Gruplar arasinda baglam
-            # tasinmaz, her cagri kendi kolonlariyla baslar.
-            sonuc, _hata = llm_mod.sozluk_aciklama_uret(grup, parca=len(grup),
-                                                       baglam=baglam)
-            if isinstance(sonuc, dict):
-                for ad, kayit_s in sonuc.items():
-                    if not isinstance(kayit_s, dict):
-                        continue
-                    aciklama = str(kayit_s.get("aciklama") or "").strip()
-                    if aciklama:
-                        # YALNIZ ACIKLAMA: modelin donebilecegi kategori
-                        # alani bilerek okunmuyor.
-                        yeni[str(ad)] = {"aciklama": aciklama[:300]}
+            # Grup TEK orkestra turu: yazarlar paralel, gerekirse hakem.
+            # Gruplar arasinda baglam tasinmaz.
+            sonuc, hata = llm_mod.aciklama_orkestra(grup, baglam, ork)
+            if hata and not sonuc:
+                dusen_grup += 1
+                son_hata = hata
+            for ad, kayit_s in (sonuc or {}).items():
+                if not isinstance(kayit_s, dict):
+                    continue
+                aciklama = str(kayit_s.get("aciklama") or "").strip()
+                if aciklama:
+                    # YALNIZ ACIKLAMA (+ hangi modellerden geldigi):
+                    # kategori alani bilerek okunmuyor.
+                    yeni[str(ad)] = {"aciklama": aciklama[:300],
+                                     "modeller": kayit_s.get("modeller") or ""}
         except Exception as e:
             # Bu grup onerisiz kalir, digerleri gelir. AMA SESSIZ DEGIL:
             # sayac ve son hata kart ustunde yaziliyor.
@@ -1485,7 +1567,9 @@ def _oneri_isi_calis(is_id, profiller, baglam=None):
                 return
             kayit["oneriler"].update(yeni)
             kayit["biten"] = min(bas + len(grup), len(profiller))
+            kayit["model_notu"] = ork.notu()
 
+    kontrol = kontrol or []
     with _ONERI_KILIT:
         kayit = _ONERI_ISLER.get(is_id)
         if kayit is None:
@@ -1497,36 +1581,88 @@ def _oneri_isi_calis(is_id, profiller, baglam=None):
             "%s gruptan %s tanesi için öneri alınamadı (%s). O kolonların "
             "açıklamasını kendiniz yazabilir ya da hariç tutabilirsiniz."
             % (_sayi(grup_sayisi), _sayi(dusen_grup), son_hata))
+        if kontrol:
+            kayit["kontrol_durum"] = "calisiyor"
+
+    # ---- 2) TANIM KONTROLU ----
+    dusen, toplam_grup, son = 0, 0, ""
+    for bas in range(0, len(kontrol), KONTROL_GRUP):
+        if _iptal_mi(is_id):
+            return
+        grup = kontrol[bas:bas + KONTROL_GRUP]
+        toplam_grup += 1
+        yeni = {}
+        try:
+            yeni, hata = llm_mod.tanim_kontrol_orkestra(grup, baglam, ork)
+            if hata:
+                dusen += 1
+                son = hata
+        except Exception as e:
+            dusen += 1
+            son = "%s: %s" % (type(e).__name__, str(e)[:120])
+        with _ONERI_KILIT:
+            kayit = _ONERI_ISLER.get(is_id)
+            if kayit is None:
+                return
+            kayit["duzeltmeler"].update(yeni or {})
+            kayit["kontrol_biten"] = min(bas + len(grup), len(kontrol))
+            kayit["model_notu"] = ork.notu()
+    if not kontrol:
+        return
+    with _ONERI_KILIT:
+        kayit = _ONERI_ISLER.get(is_id)
+        if kayit is None:
+            return
+        kayit["kontrol_durum"] = "bitti"
+        kayit["kontrol_biten"] = len(kontrol)
+        kayit["kontrol_hata"] = (
+            "" if not dusen else
+            "%s gruptan %s tanesi kontrol edilemedi (%s); o tanımlar olduğu "
+            "gibi kalır." % (_sayi(toplam_grup), _sayi(dusen), son))
 
 
-def oneri_isi_baslat(kolonlar, profiller, baglam=None):
-    """Arka plan onerisini baslatir. Doner: is kimligi."""
+def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None):
+    """Arka plan onerisini (ve varsa tanim kontrolunu) baslatir.
+    kontrol: tanimli kolonlarin profilleri + "mevcut" tanim.
+    Doner: is kimligi."""
     is_id = uuid.uuid4().hex[:12]
+    kontrol = list(kontrol or [])
     with _ONERI_KILIT:
         _ONERI_ISLER[is_id] = {
             "durum": "calisiyor" if profiller else "bitti",
             "oneriler": {}, "toplam": len(profiller), "biten": 0,
             "hata": "", "kolonlar": list(kolonlar),
+            "kontrol_durum": ("bekliyor" if profiller else "calisiyor")
+                             if kontrol else "yok",
+            "kontrol_toplam": len(kontrol), "kontrol_biten": 0,
+            "duzeltmeler": {}, "kontrol_hata": "", "model_notu": "",
             "baslangic": datetime.datetime.now().timestamp(),
         }
         _oneri_isi_kirp()
-    if not profiller:
+    if not profiller and not kontrol:
         return is_id
     isci = threading.Thread(
-        target=_oneri_isi_calis, args=(is_id, profiller, baglam), daemon=True)
+        target=_oneri_isi_calis, args=(is_id, profiller, baglam, kontrol),
+        daemon=True)
     isci.start()
     return is_id
 
 
 def oneri_isi_durumu(is_id):
-    """Ilerleme + o ana kadarki oneriler. Is yoksa None."""
+    """Ilerleme + o ana kadarki oneriler ve duzeltmeler. Is yoksa None."""
     with _ONERI_KILIT:
         kayit = _ONERI_ISLER.get(str(is_id or ""))
         if kayit is None:
             return None
         return {"durum": kayit["durum"], "toplam": kayit["toplam"],
                 "biten": kayit["biten"], "hata": kayit["hata"],
-                "oneriler": dict(kayit["oneriler"])}
+                "oneriler": dict(kayit["oneriler"]),
+                "kontrol_durum": kayit.get("kontrol_durum") or "yok",
+                "kontrol_toplam": kayit.get("kontrol_toplam") or 0,
+                "kontrol_biten": kayit.get("kontrol_biten") or 0,
+                "kontrol_hata": kayit.get("kontrol_hata") or "",
+                "duzeltmeler": dict(kayit.get("duzeltmeler") or {}),
+                "model_notu": kayit.get("model_notu") or ""}
 
 
 def oneri_isi_iptal(is_id):
@@ -1550,7 +1686,29 @@ def _oneri_sonucunu_tasi(durum):
     durum["_tanimsiz_oneri_hata"] = kayit["hata"]
 
 
-def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
+def _kontrol_alani(durum, kontrol_sayisi):
+    """Kartin TANIM KONTROLU bolumu. Satirlar canli akista yoklamayla
+    gelir; burada yalnizca ONCEKI KARARLAR (geri donus) satir olarak
+    doner. Kontrol edilecek de, onceki karar da yoksa None."""
+    onceki = _onceki_duzeltmeler(durum)
+    satirlar = []
+    for ad, k in onceki.items():
+        if not isinstance(k, dict):
+            continue
+        satirlar.append({"kolon": ad, "mevcut": k.get("mevcut") or "",
+                         "oneri": k.get("oneri") or "",
+                         "aciklama": k.get("aciklama") or k.get("oneri") or "",
+                         "gerekce": k.get("gerekce") or "",
+                         "islem": "uygula" if k.get("islem") == "uygula" else "red"})
+    if not kontrol_sayisi and not satirlar:
+        return None
+    return {"baslik": KONTROL_BASLIK,
+            "bilgi": KONTROL_BILGI % _sayi(kontrol_sayisi + len(satirlar)),
+            "toplam": int(kontrol_sayisi), "satirlar": satirlar}
+
+
+def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler,
+                     kontrol_sayisi=0):
     """Adimin ekranda gosterdigi yapilandirilmis karar karti.
 
     Baslik, sayilar ve karar satirlari kartin ICINDE; adim ayrica metin
@@ -1601,9 +1759,14 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         # kaliyor.
     }
 
+    # Tanim kontrolu kapsam %100 olsa da calisir: tanimli kolonlar var.
+    alan["kontrol"] = _kontrol_alani(durum, kontrol_sayisi)
+    if alan["kontrol"]:
+        alan["buton_kalip"]["duzelt"] = "Seçimleri Uygula ve Devam Et"
+
     if not gosterilen:
-        # Kapsam %100: karar verilecek bir sey yok, kart yalnizca ozet ve
-        # kapsam gosterir.
+        # Kapsam %100: tanimsiz kolon karari yok; kart ozet, kapsam ve
+        # (varsa) tanim kontrolunu gosterir.
         return alan
 
     ozet = _kolon_ozet_haritasi(profil)
@@ -1837,23 +2000,35 @@ def sozluk_tanim_plan(durum):
     # Ayni kolon kumesi icin zaten TAMAMLANMIS bir is varsa yeniden
     # calistirilmaz; geri donup adimi tazelemek modeli ikinci kez
     # bekletmemeli.
+    # TANIM KONTROLU: sozlukte tanimi olan kolonlar (onceki kararlar
+    # haric). Ayni is, tanimsizlarin onerisi bittikten sonra bunlari
+    # birden fazla modelle denetler.
+    kontrol_adlar, kontrol_tanim = _kontrol_kolonlari(durum, prof)
     onceki = oneri_isi_durumu(durum.get("_oneri_is"))
     if onceki and onceki["durum"] == "bitti" \
-            and durum.get("_oneri_kolonlar") == gosterilen:
+            and onceki.get("kontrol_durum") in ("bitti", "yok") \
+            and durum.get("_oneri_kolonlar") == gosterilen \
+            and durum.get("_kontrol_kolonlar") == kontrol_adlar:
         oneriler = onceki["oneriler"]
         durum["_tanimsiz_oneri_hata"] = onceki["hata"]
     else:
-        _tekil_tamamla(prof, gosterilen, p)
-        # Dil modeli cagrisi YALNIZCA tanimsiz kolonlar icin; ozetler veri
-        # seti profilinden.
+        _tekil_tamamla(prof, gosterilen + kontrol_adlar, p)
+        # Dil modeli cagrisi tanimsiz kolonlar (aciklama) ve tanimli
+        # kolonlar (kontrol) icin; ozetler veri seti profilinden.
         profiller = _oneri_profilleri(prof, gosterilen, p)
+        kontrol = _oneri_profilleri(prof, kontrol_adlar, p)
+        for k in kontrol:
+            k["mevcut"] = kontrol_tanim.get(k["ad"], "")
         durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller,
-                                              _aciklama_baglami(durum))
+                                              _aciklama_baglami(durum),
+                                              kontrol)
         durum["_oneri_kolonlar"] = list(gosterilen)
         durum["_tanimsiz_oneri_hata"] = ""
         oneriler = {}
+    durum["_kontrol_kolonlar"] = list(kontrol_adlar)
 
-    durum["_secim_alani"] = _dogrulama_karti(durum, p, gosterilen, 0, oneriler)
+    durum["_secim_alani"] = _dogrulama_karti(durum, p, gosterilen, 0, oneriler,
+                                             len(kontrol_adlar))
     # On yuz bu kimlikle yoklayip satirlari dolduruyor.
     durum["_secim_alani"]["oneri_is"] = durum.get("_oneri_is") or ""
     durum["_secim_alani"]["oneri_toplam"] = len(gosterilen)
@@ -1977,6 +2152,12 @@ def sozluk_tanim_uygula(durum):
             "Şu kolonlar sözlükte tanımlı olmak zorunda; açıklamalarını "
             "yazmadan devam edilemez:\n" +
             "\n".join("  • %s (%s)" % (ad, rol) for ad, rol in eksik))
+    # Tanim kontrolu kararlari: is kaydindan (sunucunun gordugu mevcut
+    # tanim ve oneri) ONCE okunur, sonra kalan kontrol durdurulur —
+    # karar verildi, arka planda model cagirmaya devam etmek bosuna.
+    kontrol_kaydi = oneri_isi_durumu(durum.get("_oneri_is")) or {}
+    oneri_isi_iptal(durum.get("_oneri_is"))
+    kontrol_karar = karar.get("kontrol") if isinstance(karar, dict) else None
     haric, ekle = _karar_oku(durum, tanimsiz)
     # KARARLAR SAKLANIR: geri donuste kart bunlarla yeniden kurulur.
     _oneri_harita = durum.get("_tanimsiz_oneri") or {}
@@ -1993,6 +2174,7 @@ def sozluk_tanim_uygula(durum):
 
     oneriler = durum.get("_tanimsiz_oneri") or {}
     eklenen, basarisiz = [], []
+    hafiza = []
     for satir in ekle:
         oneri = (oneriler.get(satir["kolon"]) or {}).get("aciklama") or ""
         # Kategori BOS gider: kart kategori sormuyor, uydurma bir kovaya
@@ -2001,6 +2183,10 @@ def sozluk_tanim_uygula(durum):
             durum, satir["kolon"], satir["aciklama"], "", oneri=oneri)
         if tamam:
             eklenen.append(satir["kolon"])
+            hafiza.append({"kolon": satir["kolon"], "aciklama": satir["aciklama"],
+                           "kaynak": tanim_hafiza.KAYNAK_LLM
+                           if oneri and oneri.strip() == satir["aciklama"]
+                           else tanim_hafiza.KAYNAK_KULLANICI})
         else:
             # Yazilamayan tanim SESSIZCE surece dahil edilmez: kolon
             # varsayilana duser ve neden yazilamadigi kullaniciya soylenir.
@@ -2031,7 +2217,78 @@ def sozluk_tanim_uygula(durum):
         metin = ("Şu kolonlar sözlüğe eklenemedi ve süreç dışında "
                  "bırakıldı:\n" + "\n".join("  • %s: %s" % (a, n)
                                              for a, n in basarisiz))
+
+    duzelt_hafiza, duzelt_hata = _tanim_duzeltmelerini_uygula(
+        durum, kontrol_karar, kontrol_kaydi.get("duzeltmeler") or {})
+    hafiza.extend(duzelt_hafiza)
+    if duzelt_hata:
+        metin = (metin + "\n\nŞu tanım düzeltmeleri yazılamadı; sözlükteki "
+                 "tanım olduğu gibi kaldı:\n"
+                 + "\n".join("  • %s: %s" % (a, n) for a, n in duzelt_hata)).strip()
+
+    # ONAYLI TANIM HAFIZASI: kullanicinin onayladigi tanimlar proje
+    # genelindeki kutuphaneye (arka planda; yazilamazsa onay etkilenmez).
+    tanim_hafiza.arka_planda_ekle(hafiza, durum.get("veri_seti") or "",
+                                  durum.get("_kullanici_ad") or "")
     return (metin + kopya_not).strip()
+
+
+def _tanim_duzeltmelerini_uygula(durum, satirlar, is_duzeltmeleri):
+    """Tanim kontrolu kararlarini sozlugun CALISMA KOPYASINA isler.
+
+    satirlar: on yuzden [{kolon, aciklama, uygula}]. Yalnizca bu adimda
+    kontrole acilan ya da daha once karari verilmis kolonlar kabul edilir.
+    Mevcut tanim ve model onerisi ISTEMCIDEN degil is kaydindan /
+    onceki karardan okunur.
+
+    Uygula isaretli -> kullanicinin son metni yazilir.
+    Isaretsiz ve DAHA ONCE UYGULANMIS -> eski (mevcut) tanim geri yazilir.
+    Doner: (hafiza_kayitlari, [(kolon, neden)])."""
+    if not isinstance(satirlar, list):
+        return [], []
+    onceki = _onceki_duzeltmeler(durum)
+    izinli = set(durum.get("_kontrol_kolonlar") or []) | set(onceki)
+    hafiza, hatalar = [], []
+    for s in satirlar:
+        if not isinstance(s, dict):
+            continue
+        ad = str(s.get("kolon") or "").strip()
+        if ad not in izinli:
+            continue
+        eski = onceki.get(ad) if isinstance(onceki.get(ad), dict) else {}
+        is_k = is_duzeltmeleri.get(ad) or {}
+        mevcut = eski.get("mevcut") if eski else is_k.get("mevcut")
+        oneri = eski.get("oneri") if eski else is_k.get("oneri")
+        gerekce = eski.get("gerekce") if eski else is_k.get("gerekce")
+        if mevcut is None or not oneri:
+            continue                        # sunucunun bilmedigi oneri
+        aciklama = str(s.get("aciklama") or "").strip()
+        kayit = {"mevcut": mevcut, "oneri": oneri, "gerekce": gerekce or "",
+                 "aciklama": aciklama or oneri}
+        if s.get("uygula") and aciklama:
+            # Onceden uygulanmis olsa da YENIDEN yazilir: bu adim calisma
+            # kopyasini orijinalden yeniden kuruyor (_calisma_kopyasi_kur).
+            tamam, neden = sozluk_calisma.tanim_duzelt(durum, ad, aciklama,
+                                                       oneri=oneri)
+            if not tamam:
+                hatalar.append((ad, neden))
+                continue
+            onceki[ad] = dict(kayit, islem="uygula")
+            hafiza.append({"kolon": ad, "aciklama": aciklama,
+                           "kaynak": tanim_hafiza.KAYNAK_DUZELTME
+                           if aciklama == oneri else tanim_hafiza.KAYNAK_KULLANICI})
+        else:
+            if eski.get("islem") == "uygula":
+                tamam, neden = sozluk_calisma.tanim_duzelt(
+                    durum, ad, mevcut, geri_al=True)
+                if not tamam:
+                    hatalar.append((ad, neden))
+                    continue
+            onceki[ad] = dict(kayit, islem="red")
+    durum["_tanim_duzeltmeleri"] = onceki
+    durum["_tanim_duzeltmeleri_kaynak"] = [durum.get("veri_seti"),
+                                           durum.get("sozluk")]
+    return hafiza, hatalar
 
 # ===========================================================================
 # MODELLEME TANIMLARI  (her modda)
@@ -2955,6 +3212,10 @@ def teyit_satirlari(durum):
                    for k, v in (durum.get("_tanim_kararlari") or {}).items()
                    if isinstance(v, dict) and v.get("islem") == "ekle"
                    and v.get("oneri")}
+    # Tanim kontrolunde UYGULANAN model duzeltmeleri de model onerisidir.
+    for k, v in _onceki_duzeltmeler(durum).items():
+        if isinstance(v, dict) and v.get("islem") == "uygula" and v.get("oneri"):
+            tanim_oneri[k] = str(v["oneri"])
     secilen = durum.get("tip_donusum") or {}
     # TAM TABLO (kullanici karari): secenekler ornekle degil tam kolonla
     # hesaplaniyor; uygulanamayan secenek listede HIC gorunmuyor.

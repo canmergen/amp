@@ -2024,18 +2024,36 @@ function haricKaydet(kolon, kutu, hataEl) {
    üstünde yazar. Böylece ekranda görünen tip ile veri setindeki tip
    hiçbir anda ayrışmıyor - kullanıcı "değiştirmemde sorun yoksa
    onaylansın" dediği için onay bu uçta veriliyor. */
-/* ÖNERİ VURGUSU (kullanıcı kararı): sistemin (dil modeli ya da kural)
-   önerdiği değeri taşıyan satır KIRMIZI zeminli; kullanıcı öneriyi
-   değiştirdiyse SARI. Öneri olmayan satır boyanmaz. oneriVar=false ise
-   satırda hiç öneri yok demektir. */
-function oneriVurgusu(tr, oneriVar, degisti) {
+/* SATIR RENGİ (kullanıcı kararı: "kırmızı hata varmış gibi gösteriyor").
+     karar öncesi : SARI  = açıklama boş
+                    MAVİ  = dil modelinin önerisi (değiştirilmemiş)
+                    renksiz = kullanıcının yazdığı / değiştirdiği metin
+     karar sonrası: YEŞİL = sözlüğe eklendi / düzeltme uygulandı
+                    KIRMIZI = eklenmedi / uygulanmadı
+   karar: null (karar verilmedi), "evet", "hayir". */
+function dgRenk(tr, metin, oneri, karar) {
     if (!tr) return;
-    /* SARI = kullanıcının değiştirdiği satır, öneri olsun olmasın
-       (kullanıcı kararı: öneri yokken yapılan değişiklik de sarı). */
-    tr.classList.toggle("dg-oneri", !!oneriVar && !degisti);
-    tr.classList.toggle("dg-degisti", !!degisti);
+    const m = String(metin || "").trim();
+    const o = String(oneri || "").trim();
+    tr.classList.toggle("dg-bos", !karar && !m);
+    tr.classList.toggle("dg-llm", !karar && !!m && !!o && m === o);
+    tr.classList.toggle("dg-eklendi", karar === "evet");
+    tr.classList.toggle("dg-eklenmedi", karar === "hayir");
 }
-const ONERI_LEJANT = "Kırmızı satır: sistemin önerisi. Sarı satır: sizin değiştirdiğiniz.";
+/* Renk açıklaması: küçük renk kutuları + kısa etiket. */
+function dgLejant(ogeler) {
+    const kap = elYap("div", "dg-lejant");
+    ogeler.forEach(([sinif, metin]) => {
+        const o = elYap("span", "dg-lejant-oge");
+        o.appendChild(elYap("span", "dg-lejant-kutu " + sinif));
+        o.appendChild(document.createTextNode(metin));
+        kap.appendChild(o);
+    });
+    return kap;
+}
+const DG_LEJANT_KARAR = [["dg-l-bos", "Boş"], ["dg-l-llm", "Dil Modeli Önerisi"],
+                         ["dg-l-eklendi", "Eklendi"], ["dg-l-eklenmedi", "Eklenmedi"]];
+const DG_LEJANT_TEYIT = [["dg-l-bos", "Tanım Boş"], ["dg-l-llm", "Dil Modeli Önerisi"]];
 
 function tipKaydet(kolon, sec, tipEl, hataEl) {
     const eski = sec.dataset.eski === undefined ? "" : sec.dataset.eski;
@@ -5778,7 +5796,8 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
    koyu tema #kabuk.koyu degisken devriyle kendiliginden calisiyor.
    Ekrandaki her ad kullanicinin kendi verisinden gelir; sabit ornek
    veri seti / sozluk / kolon adi YOK. */
-const DG_EKSIK_NOTU = "Sözlüğe eklenecek kolonların açıklaması boş olamaz.";
+const DG_EKSIK_NOTU = "Sözlüğe eklenecek kolonların ve uygulanacak düzeltmelerin "
+    + "açıklaması boş olamaz.";
 /* Öneriler akarken açıklama alanları KİLİTLİ (kullanıcı kararı): yarım
    dolmuş bir listede yazmaya başlayıp üstüne öneri düşmesi, yazılanın
    kaybolması demek olurdu. */
@@ -5794,10 +5813,11 @@ const DG_KALIP = {
 
 /* POST /mesaj'in "mesaj" alani: insan tarafinda okunabilir TEK satir.
    Sessiz gider - kullanici bir cumle yazmadi, bir form doldurdu. */
-function dogrulamaOzetMetni(haricSayisi, ekleSayisi) {
+function dogrulamaOzetMetni(haricSayisi, ekleSayisi, duzeltSayisi) {
     const parcalar = [];
     if (haricSayisi) parcalar.push(ftBinlik(haricSayisi) + " kolon hariç tutuldu");
     if (ekleSayisi)  parcalar.push(ftBinlik(ekleSayisi) + " kolon sözlüğe eklendi");
+    if (duzeltSayisi) parcalar.push(ftBinlik(duzeltSayisi) + " tanım düzeltildi");
     return parcalar.length ? parcalar.join(", ") : "Girdi doğrulama onaylandı.";
 }
 
@@ -5983,7 +6003,7 @@ function dogrulamaKartiEkle(alan, blok) {
         }
 
         const ust = elYap("div", "dg-tablo-ust");
-        ust.appendChild(elYap("div", "dg-lejant", ONERI_LEJANT));
+        ust.appendChild(dgLejant(DG_LEJANT_KARAR));
         ust.appendChild(toplu);
         kart.appendChild(ust);
         const sar = document.createElement("div");
@@ -6060,7 +6080,7 @@ function dogrulamaKartiEkle(alan, blok) {
             giris.className = "dg-giris";
             /* GERİ DÖNÜŞTE önceki onaylı metin gelir ve model önerisi
                onu EZMEZ. Vurgu, satırdaki metnin öneriyle aynı olup
-               olmadığına göre (bkz. oneriVurgusu). */
+               olmadığına göre (bkz. dgRenk). */
             if (sat.onceki) {
                 giris.value = tireSade(sat.onceki);
                 giris.dataset.dolduruldu = "1";
@@ -6072,8 +6092,9 @@ function dogrulamaKartiEkle(alan, blok) {
             giris.placeholder = "Açıklama";
             giris.setAttribute("aria-label", durum.kolon + " açıklaması");
             giris._vurgu = () => {
-                const o = giris.dataset.oneriMetin || "";
-                oneriVurgusu(tr, !!o, giris.value.trim() !== o.trim());
+                const karar = kart.classList.contains("kilitli")
+                    ? (durum.islem === "ekle" ? "evet" : "hayir") : null;
+                dgRenk(tr, giris.value, giris.dataset.oneriMetin || "", karar);
             };
             giris.addEventListener("input", () => {
                 giris._vurgu();
@@ -6137,6 +6158,149 @@ function dogrulamaKartiEkle(alan, blok) {
         }
     }
 
+    /* ---- 5b) Sözlükteki tanımların kontrolü ----
+       Kullanıcı kararı: sözlükte tanımı OLAN kolonların tanımı da birden
+       fazla dil modeliyle denetlenir; yalnızca düzeltilmesi önerilenler
+       "Mevcut Tanım / Önerilen Tanım" karşılaştırmasıyla listelenir.
+       Satırlar arka plandaki işten yoklamayla gelir (bkz. kontrolIsle);
+       kart beklemeden onaylanabilir. Uygula işaretli düzeltme sözlüğün
+       ÇALIŞMA KOPYASINA yazılır, girdi sözlüğü değişmez. */
+    const kontrol = alan.kontrol || null;
+    const kDurumlar = [];            /* {kolon, oneri, tr, giris, kutu} */
+    const kGorulen = new Set();
+    let kTbody = null, kSar = null, kDurumEl = null, kHataEl = null, kToplu = null;
+    if (kontrol) {
+        const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
+        const kbas = elYap("div", "dg-tablo-baslik", kontrol.baslik || "Sözlükteki Tanımların Kontrolü");
+        if (kontrol.bilgi) kbas.appendChild(bolmeBilgiSimgesi(kontrol.bilgi, kontrol.baslik));
+        kb.appendChild(kbas);
+        kart.appendChild(kb);
+        kDurumEl = elYap("div", "dg-not dg-kontrol-durum", "");
+        kart.appendChild(kDurumEl);
+        kHataEl = elYap("div", "dg-oneri-hata");
+        kHataEl.hidden = true;
+        kart.appendChild(kHataEl);
+
+        const kUst = elYap("div", "dg-tablo-ust");
+        kUst.appendChild(dgLejant([["dg-l-llm", "Dil Modeli Önerisi"],
+                                   ["dg-l-eklendi", "Uygulandı"],
+                                   ["dg-l-eklenmedi", "Uygulanmadı"]]));
+        kToplu = elYap("div", "dg-toplu");
+        [[true, "Tümünü Uygula"], [false, "Tümünü Temizle"]].forEach(([deger, etiket]) => {
+            const b = elYap("button", "dg-toplu-btn", etiket);
+            b.type = "button";
+            b.onclick = () => {
+                if (kart.classList.contains("kilitli")) return;
+                kDurumlar.forEach(k => { k.kutu.checked = deger; k.vurgu(); });
+                durumTazele();
+            };
+            kToplu.appendChild(b);
+            topluBtnleri.push(b);
+        });
+        kUst.appendChild(kToplu);
+        kart.appendChild(kUst);
+
+        kSar = elYap("div", "dg-tablo-sar");
+        const kt = elYap("table", "dg-tablo dg-kontrol-tablo");
+        const kth = document.createElement("thead");
+        const khr = document.createElement("tr");
+        ["Değişken", "Mevcut Tanım", "Önerilen Tanım", "Uygula"].forEach(h =>
+            khr.appendChild(elYap("th", "", h)));
+        kth.appendChild(khr);
+        kt.appendChild(kth);
+        kTbody = document.createElement("tbody");
+        kt.appendChild(kTbody);
+        kSar.appendChild(kt);
+        kart.appendChild(kSar);
+        kSar.hidden = true;
+        kUst.hidden = true;
+        kSar._ust = kUst;
+        (kontrol.satirlar || []).forEach(sat => kontrolSatirEkle(sat));
+    }
+
+    function kontrolSatirEkle(sat) {
+        const ad = String(sat.kolon === null || sat.kolon === undefined ? "" : sat.kolon);
+        if (!kTbody || !ad || kGorulen.has(ad)) return;
+        kGorulen.add(ad);
+        const oneri = tireSade(sat.oneri || "");
+        const tr = elYap("tr", "dg-satir dg-kontrol-satir");
+        tr.dataset.kolon = ad;
+        const tdK = elYap("td", "dg-kolon", ad);
+        tdK.title = ad;
+        if (sat.gerekce) tdK.appendChild(bolmeBilgiSimgesi(sat.gerekce, ad));
+        tr.appendChild(tdK);
+        tr.appendChild(elYap("td", "dg-mevcut", sat.mevcut || ""));
+        const tdA = elYap("td", "dg-aciklama-hucre");
+        const giris = document.createElement("textarea");
+        giris.className = "dg-giris dg-metin";
+        giris.rows = 1;
+        giris.value = tireSade(sat.aciklama !== undefined && sat.aciklama !== ""
+                               ? sat.aciklama : oneri);
+        giris.setAttribute("aria-label", ad + " önerilen tanım");
+        if (sat.modeller) giris.title = "Öneren: " + tireSade(sat.modeller);
+        const boyla = () => { giris.style.height = "auto"; giris.style.height = giris.scrollHeight + "px"; };
+        tdA.appendChild(giris);
+        tr.appendChild(tdA);
+        const tdI = elYap("td", "dg-ekle-hucre");
+        const kutu = document.createElement("input");
+        kutu.type = "checkbox";
+        kutu.className = "dg-ekle";
+        kutu.checked = sat.islem === "uygula";
+        kutu.setAttribute("aria-label", ad + " düzeltmesi uygulansın");
+        tdI.appendChild(kutu);
+        tr.appendChild(tdI);
+        const k = { kolon: ad, oneri, tr, giris, kutu };
+        k.vurgu = () => {
+            const karar = kart.classList.contains("kilitli")
+                ? (kutu.checked ? "evet" : "hayir") : null;
+            dgRenk(tr, giris.value, oneri, karar);
+        };
+        giris.addEventListener("input", () => { boyla(); k.vurgu(); durumTazele(); });
+        kutu.addEventListener("change", () => {
+            if (kart.classList.contains("kilitli")) { kutu.checked = !kutu.checked; return; }
+            k.vurgu(); durumTazele();
+        });
+        if (kart.classList.contains("kilitli")) { giris.disabled = true; kutu.disabled = true; }
+        kDurumlar.push(k);
+        kTbody.appendChild(tr);
+        kSar.hidden = false;
+        if (kSar._ust) kSar._ust.hidden = false;
+        k.vurgu();
+        requestAnimationFrame(boyla);
+    }
+
+    /* Yoklama kaydından tanım kontrolü: yeni satırlar + ilerleme. */
+    function kontrolIsle(kayit) {
+        if (!kontrol || !kayit) return;
+        const dz = kayit.duzeltmeler || {};
+        Object.keys(dz).forEach(ad => {
+            const d = dz[ad] || {};
+            kontrolSatirEkle({ kolon: ad, mevcut: d.mevcut, oneri: d.oneri,
+                               gerekce: d.gerekce, modeller: d.modeller, islem: "red" });
+        });
+        const durumK = kayit.kontrol_durum || "yok";
+        const toplam = kayit.kontrol_toplam || 0;
+        const n = kDurumlar.length;
+        let metin = "";
+        if (durumK === "bekliyor")
+            metin = "Tanım kontrolü açıklama önerilerinden sonra başlayacak ("
+                + ftBinlik(toplam) + " kolon).";
+        else if (durumK === "calisiyor")
+            metin = "Tanım kontrolü sürüyor: " + ftBinlik(kayit.kontrol_biten || 0) + " / "
+                + ftBinlik(toplam) + " kolon. Beklemeden devam edebilirsiniz; kontrol "
+                + "edilmemiş tanımlar olduğu gibi kalır.";
+        else if (durumK === "bitti")
+            metin = ftBinlik(toplam) + " tanım kontrol edildi; " + (n
+                ? ftBinlik(n) + " tanım için düzeltme önerildi."
+                : "düzeltme gereken tanım bulunmadı.");
+        if (kDurumEl) { kDurumEl.textContent = metin; kDurumEl.hidden = !metin; }
+        if (kHataEl) {
+            kHataEl.textContent = tireSade(kayit.kontrol_hata || "");
+            kHataEl.hidden = !kayit.kontrol_hata;
+        }
+        durumTazele();
+    }
+
     /* ---- 6) Gerekce satiri + dugmeler ---- */
     const gerekce = document.createElement("div");
     gerekce.className = "dg-gerekce";
@@ -6160,6 +6324,7 @@ function dogrulamaKartiEkle(alan, blok) {
         const ekleMi = durumlar[i].islem === "ekle";
         k.checked = ekleMi;
         if (satirElemanlari[i]) satirElemanlari[i].dataset.islem = durumlar[i].islem;
+        if (girisler[i] && girisler[i]._vurgu) girisler[i]._vurgu();
     }
 
     /* Birincil dugmenin etiketi seçime gore CANLI hesaplanir. */
@@ -6185,8 +6350,20 @@ function dogrulamaKartiEkle(alan, blok) {
         const gizliHaric = (alan.tanimsiz && alan.tanimsiz.kalan) || 0;
         const toplamHaric = haricSayisi + gizliHaric;
 
+        /* Tanım kontrolü: işaretli düzeltme sayısı; boş metinle
+           uygulanacak satır da "eksik" sayılır. */
+        let duzeltSayisi = 0;
+        kDurumlar.forEach(k => {
+            if (!k.kutu.checked) { k.giris.classList.remove("dg-noksan"); return; }
+            duzeltSayisi++;
+            const bos = k.giris.value.trim() === "";
+            if (bos) eksikSayisi++;
+            k.giris.classList.toggle("dg-noksan", bos);
+        });
+
         let etiket;
-        if (!durumlar.length && !gizliHaric) etiket = kalip.bos;
+        if (duzeltSayisi > 0) etiket = kalip.karma;
+        else if (!durumlar.length && !gizliHaric) etiket = kalip.bos;
         else if (ekleSayisi === 0)   etiket = kalip.haric.replace("%s", ftBinlik(toplamHaric));
         else if (toplamHaric === 0)  etiket = kalip.ekle.replace("%s", ftBinlik(ekleSayisi));
         else                         etiket = kalip.karma;
@@ -6202,6 +6379,7 @@ function dogrulamaKartiEkle(alan, blok) {
 
     function girdileriKilitle(kilit) {
         girisler.forEach(g => { g.disabled = kilit; });
+        kDurumlar.forEach(k => { k.giris.disabled = kilit; k.kutu.disabled = kilit; });
         kutular.forEach((k, i) => {
             // Zorunlu satırın kutusu kilit açılsa da pasif kalır.
             k.disabled = kilit || !!(durumlar[i] && durumlar[i].zorunlu);
@@ -6220,6 +6398,14 @@ function dogrulamaKartiEkle(alan, blok) {
        bunu ayrı bir sohbet balonu olarak basıyordu ("Veri seti ve sözlük
        bağlandı. 2 kolon sözlüğe eklendi.") — kartın hemen altında, aynı
        kararın tekrarı olarak. Bilgi kaybolmadı, kartın içine taşındı. */
+    /* Karar verilince satırlar yeşil / kırmızı olur; geri alınınca
+       karar öncesi renklerine döner (bkz. dgRenk). */
+    function renkleriTazele() {
+        girisler.forEach(g => { if (g._vurgu) g._vurgu(); });
+        kDurumlar.forEach(k => k.vurgu());
+        if (kDurumEl && kart.classList.contains("kilitli")) kDurumEl.hidden = true;
+    }
+
     function kartiKilitle(ozet) {
         kart.classList.add("kilitli");
         // Karar verildi: öneri yoklaması sürerse boşuna istek gider.
@@ -6228,11 +6414,13 @@ function dogrulamaKartiEkle(alan, blok) {
         girdileriKilitle(true);
         const eskiRozet = rozet ? rozet.textContent : "";
         if (rozet && ozet) rozet.textContent = rozetMetni(ozet);
+        renkleriTazele();
 
         geriAlKilit = () => {
             kart.classList.remove("kilitli");
             girdileriKilitle(false);
             if (rozet) rozet.textContent = eskiRozet;
+            renkleriTazele();
             durumTazele();
         };
     }
@@ -6270,6 +6458,7 @@ function dogrulamaKartiEkle(alan, blok) {
             g.value = tireSade(ack);
             g.dataset.dolduruldu = "1";
             g.dataset.oneriMetin = tireSade(ack);
+            if (k.modeller) g.title = "Öneren: " + tireSade(k.modeller);
             if (g._vurgu) g._vurgu();
             if (satirElemanlari[i]) satirElemanlari[i].dataset.oneri = "llm";
         });
@@ -6281,6 +6470,16 @@ function dogrulamaKartiEkle(alan, blok) {
             }
             oh.textContent = tireSade(kayit.hata);
         }
+        /* Kullanılamayan model (orkestra diğer modellerle devam etti). */
+        if (kayit && kayit.model_notu) {
+            let mn = kart.querySelector(".dg-model-notu");
+            if (!mn) {
+                mn = elYap("div", "dg-not dg-model-notu");
+                kart.insertBefore(mn, dugmeler);
+            }
+            mn.textContent = tireSade(kayit.model_notu);
+        }
+        kontrolIsle(kayit);
     }
 
     function oneriYokla(isId) {
@@ -6291,13 +6490,22 @@ function dogrulamaKartiEkle(alan, blok) {
             .then(k => {
                 if (!kart.isConnected) return;       // kart ekrandan kalkti
                 onerileriIsle(k);
+                const kontrolSuruyor = k.kontrol_durum === "bekliyor"
+                    || k.kontrol_durum === "calisiyor";
                 if (k.durum === "calisiyor") {
                     oneriKilidi(false, k.biten, k.toplam);
-                    oneriZaman = setTimeout(() => oneriYokla(isId),
-                                            DG_ONERI_ARALIK);
-                } else {
+                } else if (oneriBekliyor) {
                     // "bitti" ya da "yok": her iki durumda da kilit acilir.
                     oneriKilidi(true);
+                }
+                /* Tanım kontrolü kartı KİLİTLEMEZ ama yoklama sürer. */
+                if (k.durum === "calisiyor" || kontrolSuruyor)
+                    oneriZaman = setTimeout(() => oneriYokla(isId),
+                                            DG_ONERI_ARALIK);
+                else if (k.durum === "yok" && kontrol && kDurumEl && !kDurumlar.length) {
+                    kDurumEl.textContent = "Tanım kontrolünün sonucu alınamadı "
+                        + "(sunucu yeniden başlamış olabilir).";
+                    kDurumEl.hidden = false;
                 }
             })
             .catch(() => {
@@ -6321,7 +6529,13 @@ function dogrulamaKartiEkle(alan, blok) {
             else
                 karar.haric.push(s.kolon);
         });
-        const ozet = dogrulamaOzetMetni(karar.haric.length, karar.ekle.length);
+        /* Tanım kontrolü: listelenen HER satır gider (uygula işaretli
+           olsun olmasın): geri dönüşte daha önce uygulanan düzeltme
+           işareti kaldırılınca eski tanım geri yazılır. */
+        karar.kontrol = kDurumlar.map(k => ({
+            kolon: k.kolon, aciklama: k.giris.value.trim(), uygula: k.kutu.checked }));
+        const duzelt = karar.kontrol.filter(k => k.uygula && k.aciklama).length;
+        const ozet = dogrulamaOzetMetni(karar.haric.length, karar.ekle.length, duzelt);
         kartiKilitle(ozet);
         /* Sessiz gider (ikinci parametre false): kullanici bir cumle
            yazmadi, bir form doldurdu. */
@@ -6339,9 +6553,11 @@ function dogrulamaKartiEkle(alan, blok) {
        BASLAMAZ: o is coktan bitti, tekrar sorulacak bir sey yok. */
     if (blok && blok.kilit) { kartiKilitle(); geriAlKilit = null; return; }
 
-    /* CANLI KART: öneriler arka planda üretiliyorsa yoklamayı başlat. */
-    if (alan.oneri_is && durumlar.length) {
-        oneriKilidi(false, 0, alan.oneri_toplam || durumlar.length);
+    /* CANLI KART: öneriler / tanım kontrolü arka planda sürüyorsa
+       yoklamayı başlat. */
+    if (alan.oneri_is && (durumlar.length || (kontrol && kontrol.toplam))) {
+        if (durumlar.length)
+            oneriKilidi(false, 0, alan.oneri_toplam || durumlar.length);
         oneriYokla(String(alan.oneri_is));
     }
     yeniOdak = birincil;
@@ -7622,7 +7838,7 @@ function teyitKartiEkle(alan, blok) {
            GÖRÜNEN satırlara uygulanır; kilitli satırlara dokunmaz. Tek
            istekle gider; sonuçta kutular sunucunun listesine göre kurulur. */
         const ust = elYap("div", "dg-tablo-ust");
-        ust.appendChild(elYap("div", "dg-lejant", ONERI_LEJANT));
+        ust.appendChild(dgLejant(DG_LEJANT_TEYIT));
         const toplu = elYap("div", "dg-toplu");
         const topluDisi = elYap("button", "dg-toplu-btn", "");
         const topluIci = elYap("button", "dg-toplu-btn", "");
@@ -7675,18 +7891,11 @@ function teyitKartiEkle(alan, blok) {
             tdA.appendChild(giris);
             tr.appendChild(tdA);
 
-            /* Satırın öneri vurgusu: sözlük tanımları adımında model
-               önerisiyle eklenen tanım. Karşılaştırma tabanı: öneri varsa
-               öneri, yoksa orijinal sözlük tanımı. Tabandan farklı olan
-               her satır sarı. (Tip önerisi arka uçta uygulanmaya devam
-               ediyor; tip değişikliği kolonu kaldırıldığı için vurguya
-               girmiyor.) */
-            const tanimTaban = tireSade(sat.oneri_tanim
-                || (sat.tanim_orijinal !== undefined ? sat.tanim_orijinal : sat.tanim)
-                || "").trim();
+            /* Satır rengi (bkz. dgRenk): tanım boşsa sarı, sözlük
+               tanımları adımında dil modelinin önerisiyle eklenen ya da
+               düzeltilen tanım değiştirilmediyse mavi. */
             function satirVurgu() {
-                oneriVurgusu(tr, !!sat.oneri_tanim,
-                             giris.value.trim() !== tanimTaban);
+                dgRenk(tr, giris.value, sat.oneri_tanim || "", null);
             }
             satirVurgu();
 
