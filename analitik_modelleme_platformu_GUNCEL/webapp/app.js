@@ -6173,7 +6173,11 @@ function dogrulamaKartiEkle(alan, blok) {
     let kTbody = null, kSar = null, kDurumEl = null, kHataEl = null, kToplu = null;
     /* Sözlük Tanım Kontrolü adımında (kontrol.bekle) devam düğmesi kontrol
        bitene kadar kapalı: adımın işi bu kontrol. */
-    let kontrolBekliyor = !!(kontrol && kontrol.bekle && kontrol.toplam);
+    let kontrolBekliyor = !!(kontrol && kontrol.bekle && kontrol.toplam && !kontrol.baslamadi);
+    /* İSTEĞE BAĞLI KONTROL (kullanıcı kararı): kart "Tanımları Kontrol
+       Et" ile açılır; basılmadıkça hiçbir dil modeli çağrılmaz. "Kontrol
+       Etmeden Devam Et" her zaman açık (sürerken de: kontrol durdurulur). */
+    let kBaslaBtn = null;
     if (kontrol) {
         const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
         const kbas = elYap("div", "dg-tablo-baslik", kontrol.baslik || "Sözlükteki Tanımların Kontrolü");
@@ -6188,6 +6192,14 @@ function dogrulamaKartiEkle(alan, blok) {
         kart.appendChild(kHataEl);
         if (!kontrol.toplam && !(kontrol.satirlar || []).length && !kontrol.hata) {
             kDurumEl.textContent = "Sözlükte kontrol edilecek tanım bulunmadı.";
+        } else if (kontrol.baslamadi) {
+            kDurumEl.textContent = "Sözlükte tanımı bulunan " + ftBinlik(kontrol.toplam)
+                + " kolonun tanımı dil modelleriyle kontrol edilebilir. Bu adım "
+                + "isteğe bağlıdır; kontrol etmeden de devam edebilirsiniz.";
+            kBaslaBtn = elYap("button", "secim-onay ikincil dg-kontrol-basla",
+                              "Tanımları Kontrol Et");
+            kBaslaBtn.type = "button";
+            kBaslaBtn.onclick = () => kontrolBaslat();
         } else kDurumEl.hidden = true;
 
         const kUst = elYap("div", "dg-tablo-ust");
@@ -6327,7 +6339,57 @@ function dogrulamaKartiEkle(alan, blok) {
     birincil.type = "button";
     birincil.className = "secim-onay dg-birincil";
     dugmeler.appendChild(birincil);
+    /* Tanım kontrolü adımı: "Kontrol Etmeden Devam Et" (ikincil) ve
+       başlamadıysa "Tanımları Kontrol Et". */
+    let atlaBtn = null;
+    if (kontrol && kontrol.bekle) {
+        if (kBaslaBtn) dugmeler.insertBefore(kBaslaBtn, birincil);
+        atlaBtn = elYap("button", "secim-onay ikincil dg-kontrol-atla",
+                        "Kontrol Etmeden Devam Et");
+        atlaBtn.type = "button";
+        atlaBtn.onclick = () => {
+            if (mesgul || kart.classList.contains("kilitli")) return;
+            const ozet = "Tanım kontrolü yapılmadan devam edildi";
+            kartiKilitle(ozet);
+            gonder(ozet, false, { dogrulama: { kontrol: [], atla: true } });
+        };
+        dugmeler.appendChild(atlaBtn);
+        /* Başlamadan önce ana düğmenin yapacağı bir şey yok. */
+        birincil.hidden = !!kontrol.baslamadi;
+    }
     kart.appendChild(dugmeler);
+
+    function kontrolBaslat() {
+        if (!kBaslaBtn || kart.classList.contains("kilitli")) return;
+        kBaslaBtn.disabled = true;
+        fetch(getWebAppBackendUrl("tanim_kontrol_baslat"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({}))
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (!d || d.tamam !== true || !d.oneri_is) {
+                kBaslaBtn.disabled = false;
+                kHataEl.textContent = tireSade((d && d.hata) || "Kontrol başlatılamadı.");
+                kHataEl.hidden = false;
+                return;
+            }
+            kontrol.baslamadi = false;
+            kontrol.toplam = (d.kontrol && d.kontrol.toplam) || kontrol.toplam;
+            kBaslaBtn.remove();
+            kBaslaBtn = null;
+            birincil.hidden = false;
+            kontrolBekliyor = true;
+            kDurumEl.textContent = "Tanım kontrolü başlıyor…";
+            durumTazele();
+            oneriYokla(String(d.oneri_is));
+        })
+        .catch(e => {
+            kBaslaBtn.disabled = false;
+            kHataEl.textContent = "Kontrol başlatılamadı: " + e;
+            kHataEl.hidden = false;
+        });
+    }
 
     function kutuCiz(i) {
         const k = kutular[i];
@@ -6395,6 +6457,8 @@ function dogrulamaKartiEkle(alan, blok) {
 
     function girdileriKilitle(kilit) {
         girisler.forEach(g => { g.disabled = kilit; });
+        if (atlaBtn) atlaBtn.disabled = kilit;
+        if (kBaslaBtn) kBaslaBtn.disabled = kilit;
         kDurumlar.forEach(k => { k.giris.disabled = kilit; k.kutu.disabled = kilit; });
         kutular.forEach((k, i) => {
             // Zorunlu satırın kutusu kilit açılsa da pasif kalır.
@@ -6578,7 +6642,8 @@ function dogrulamaKartiEkle(alan, blok) {
 
     /* CANLI KART: öneriler / tanım kontrolü arka planda sürüyorsa
        yoklamayı başlat. */
-    if (alan.oneri_is && (durumlar.length || (kontrol && kontrol.toplam))) {
+    if (alan.oneri_is && (durumlar.length
+            || (kontrol && kontrol.toplam && !kontrol.baslamadi))) {
         if (durumlar.length)
             oneriKilidi(false, 0, alan.oneri_toplam || durumlar.length);
         oneriYokla(String(alan.oneri_is));

@@ -61,7 +61,7 @@ _MOD_GECICI = ("_donemler", "_aciklamasiz", "_dusurulecek", "_soru_gecmis",
                "_donem_dusuruldu", "_sozluge_eklenen", "_bolme_mod",
                "_sozluk_esitleme", "_sozluk_esitleme_imza",
                "_hazir_bolme", "_tanim_duzeltmeleri", "_kontrol_kolonlar",
-               "_tanim_duzeltmeleri_kaynak", "_kontrol_is",
+               "_tanim_duzeltmeleri_kaynak", "_kontrol_is", "_kontrol_basladi",
                # Sozluk teyidi eski moda ait bir denetim kaydidir; mod
                # degisince veri seti de sozluk de degisir, damga
                # tasinmamali.
@@ -2319,12 +2319,57 @@ KONTROL_DUGME = {
 }
 
 
+def _kontrol_basladi_mi(durum):
+    """Kullanici bu veri seti + sozluk icin kontrolu BASLATTI mi?"""
+    return durum.get("_kontrol_basladi") == [durum.get("veri_seti"),
+                                             durum.get("sozluk")]
+
+
+def _kontrol_karti(durum, adlar, hata, basladi):
+    kontrol = _kontrol_alani(durum, len(adlar)) or {
+        "baslik": KONTROL_BASLIK, "bilgi": "", "toplam": 0, "satirlar": []}
+    # Kontrol bitene kadar uygulama dugmesi kapali (bkz. app.js
+    # kontrolIsle); "Kontrol Etmeden Devam Et" her zaman acik.
+    kontrol["bekle"] = True
+    kontrol["baslamadi"] = not basladi
+    if hata:
+        kontrol["hata"] = hata
+    return {
+        "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
+        "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
+        "buton_kalip": dict(KONTROL_DUGME),
+        "oneri_is": (durum.get("_kontrol_is") or "") if basladi else "",
+        "oneri_toplam": 0,
+    }
+
+
 def tanim_kontrol_plan(durum):
+    """ISTEGE BAGLI ADIM (kullanici karari). Kart once yalnizca kac tanimin
+    kontrol edilebilecegini ve iki secenegi gosterir: "Tanımları Kontrol
+    Et" (tanim_kontrol_baslat) ya da "Kontrol Etmeden Devam Et". Kullanici
+    baslatmadikca hicbir dil modeli cagrilmaz. Geri donuste kontrol daha
+    once baslatildiysa kaldigi yerden (onceki kararlarla) acilir."""
+    if _kapsam_hazir(durum):
+        prof = _profil(durum)
+    else:
+        prof, _p = _kapsami_cikar(durum)
+    adlar, _tanim, hata = _kontrol_kolonlari(durum, prof)
+    if _kontrol_basladi_mi(durum):
+        return tanim_kontrol_baslat(durum)
+    durum["_kontrol_kolonlar"] = list(adlar)
+    durum["_secim_alani"] = _kontrol_karti(durum, adlar, hata, False)
+    return ""
+
+
+def tanim_kontrol_baslat(durum):
+    """Kontrolu baslatir (ya da ayni kolonlar icin bitmis olani kullanir)
+    ve karti tazeler. Doner: "" (plan sozlesmesi); kart durum'da."""
     if _kapsam_hazir(durum):
         prof, p = _profil(durum), durum["profil"]
     else:
         prof, p = _kapsami_cikar(durum)
     adlar, tanim, hata = _kontrol_kolonlari(durum, prof)
+    durum["_kontrol_basladi"] = [durum.get("veri_seti"), durum.get("sozluk")]
 
     # Ayni kolonlar icin TAMAMLANMIS bir kontrol varsa yeniden calismaz.
     oneri_isi_iptal(durum.get("_kontrol_is"))
@@ -2338,19 +2383,7 @@ def tanim_kontrol_plan(durum):
         durum["_kontrol_is"] = oneri_isi_baslat([], [], _aciklama_baglami(durum),
                                                 kontrol)
     durum["_kontrol_kolonlar"] = list(adlar)
-
-    kontrol = _kontrol_alani(durum, len(adlar)) or {
-        "baslik": KONTROL_BASLIK, "bilgi": "", "toplam": 0, "satirlar": []}
-    # Kontrol bitene kadar devam dugmesi kapali (bkz. app.js kontrolIsle).
-    kontrol["bekle"] = True
-    if hata:
-        kontrol["hata"] = hata
-    durum["_secim_alani"] = {
-        "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
-        "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
-        "buton_kalip": dict(KONTROL_DUGME),
-        "oneri_is": durum.get("_kontrol_is") or "", "oneri_toplam": 0,
-    }
+    durum["_secim_alani"] = _kontrol_karti(durum, adlar, hata, True)
     return ""
 
 
@@ -2358,6 +2391,11 @@ def tanim_kontrol_uygula(durum):
     """Kartta Uygula isaretlenen duzeltmeleri calisma kopyasina yazar.
     Girdi sozlugune hicbir kosulda yazilmaz."""
     karar = durum.pop("_dogrulama_karari", None)
+    if isinstance(karar, dict) and karar.get("atla"):
+        # "Kontrol Etmeden Devam Et": dolu tanimlara dokunulmaz; suren
+        # kontrol varsa durdurulur.
+        oneri_isi_iptal(durum.get("_kontrol_is"))
+        return ""
     # Mevcut tanim ve model onerisi IS KAYDINDAN (istemciden degil); karar
     # verildi, kalan kontrol varsa durdurulur.
     kayit = oneri_isi_durumu(durum.get("_kontrol_is")) or {}

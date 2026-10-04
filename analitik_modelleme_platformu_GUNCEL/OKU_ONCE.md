@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Tanım kontrolü anlamı korumalı**. Değiştir: `fe_agent/llm.py`
+Bu tur: **01.2.4 Sözlük Tanım Kontrolü isteğe bağlı**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`
+
+- Adım açılınca kontrol BAŞLAMAZ; kartta kaç tanımın kontrol
+  edilebileceği ve iki düğme: "Tanımları Kontrol Et" / "Kontrol Etmeden
+  Devam Et". Basılmadıkça hiçbir dil modeli çağrılmaz.
+- "Kontrol Etmeden Devam Et" kontrol sürerken de açık: kontrol durur,
+  dolu tanımlara dokunulmaz, 01.3'e geçilir.
+- Yeni uç: POST /tanim_kontrol_baslat.
+
+---
+
+Önceki tur: **Tanım kontrolü anlamı korumalı**. Değiştir: `fe_agent/llm.py`
 
 - Kontrol ve hakem istemlerine "ANLAM KORUNUR" kuralı: öneri pencereyi,
   yönü, tutar/adet ayrımını, oranın payını ve paydasını değiştiremez;

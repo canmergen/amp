@@ -1420,6 +1420,33 @@ def mesaj_endpoint():
         return jsonify(_hata_govdesi("mesaj", e)), 200
 
 
+@app.route("/tanim_kontrol_baslat", methods=["POST"])
+def tanim_kontrol_baslat_endpoint():
+    """01.2.4 Sozluk Tanim Kontrolu ISTEGE BAGLI: kullanici "Tanımları
+    Kontrol Et" deyince arka plan kontrolu baslar. Kartin govdesi hem
+    durumda hem de transkriptte tazelenir (F5'te baslamis haliyle acilsin)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        if akis.adim_anahtari(durum) != "tanim_kontrol":
+            return jsonify({"tamam": False,
+                            "hata": "Çalışma Sözlük Tanım Kontrolü adımında değil."})
+        akis.tanim_kontrol_baslat(durum)
+        alan = durum.get("_secim_alani") or {}
+        for kayit in reversed(durum.get("_gecmis") or []):
+            ekran = kayit.get("ekran") if isinstance(kayit, dict) else None
+            if kayit.get("adim") == "tanim_kontrol" and isinstance(ekran, dict) \
+                    and isinstance(ekran.get("secim_alani"), dict):
+                ekran["secim_alani"] = _ekran_sadelestir(alan)
+                break
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": True, "oneri_is": alan.get("oneri_is") or "",
+                        "kontrol": alan.get("kontrol") or {}})
+    except Exception as e:
+        return jsonify(_hata_govdesi("tanim_kontrol_baslat", e)), 200
+
+
 @app.route("/oneriler")
 def oneriler_endpoint():
     """Sozluk tanimlari kartindaki ACIKLAMA ONERILERININ ilerlemesi.
