@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Zorunlu alanlarda kırmızı yıldız**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`
+Bu tur: **Form alanları hep tek satırda**. Değiştir: `webapp/app.js`, `webapp/style.css` (önceki turdaki `fe_agent/akis_faz01.py` da kopyalanmadıysa o da)
+
+- Seçim formlarında sütun sayısı alan sayısı kadar sabit (eşit
+  genişlik); ekran daralınca alan alt satıra kaymıyor, uzun etiket
+  "…" ile kısalıyor (tamamı üzerine gelince görünür).
+- 900 / 1250 / 2000 px genişlikte dört alan aynı hizada denendi.
+
+Önceki tur: **Zorunlu alanlarda kırmızı yıldız**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`
 
 - Zorunlu alanların etiketinin yanında kırmızı "*". İsteğe bağlı
   alanlardaki "(İsteğe Bağlı)" yazısı kaldırıldı (Baz Sözlük, kaynak

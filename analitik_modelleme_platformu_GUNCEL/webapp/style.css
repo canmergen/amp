@@ -948,7 +948,7 @@ button.ozet-kart:focus-visible {
    sütunlar; genişlik yetmezse 2x2'ye iner. Etiketler tek satır olduğu
    için aynı satırdaki bütün kutular aynı hizada. */
 .secim-govde {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--b-3); margin-bottom: var(--b-4); align-items: start;
 }
 .secim-govde .combo { min-width: 0; }

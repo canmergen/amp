@@ -8705,6 +8705,10 @@ function secimAlaniEkle(alan, blok) {
         const combolar = {};
         const zorunluAlan = {};
         const alanlar = alan.alanlar || [];
+        /* HEP TEK SATIR (kullanıcı kararı: "aynı satırda olmalı"): sütun
+           sayısı alan sayısı kadar, eşit genişlik. */
+        govde.style.gridTemplateColumns =
+            "repeat(" + Math.max(1, alanlar.length) + ", minmax(0, 1fr))";
         kilitEk = () => {
             Object.keys(combolar).forEach(k => { combolar[k].giris.disabled = true; });
         };
