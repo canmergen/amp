@@ -2057,8 +2057,9 @@ function haricKaydet(kolon, kutu, hataEl) {
    satır yeşil-mavi değil kendi tonunda (dg-hafiza-satir). */
 function hafizaCipi(td, tr, veriSeti) {
     if (!td || !tr) return;
-    const c = elYap("span", "dg-rol dg-hafiza", "Onaylı Tanım");
-    c.title = "Daha önce onaylanmış tanım" + (veriSeti ? " (veri seti: " + tireSade(veriSeti) + ")" : "")
+    /* Kısa çip "OT" (Onaylı Tanım); açılımı ve kaynağı ipucunda. */
+    const c = elYap("span", "dg-rol dg-hafiza", "OT");
+    c.title = "OT: Onaylı Tanım. Daha önce onaylanmış tanım" + (veriSeti ? " (veri seti: " + tireSade(veriSeti) + ")" : "")
         + "; dil modeli çağrılmadı.";
     td.appendChild(c);
     tr.classList.add("dg-hafiza-satir");
@@ -2086,7 +2087,7 @@ function dgLejant(ogeler) {
     });
     return kap;
 }
-const DG_LEJANT_KARAR = [["dg-l-bos", "Sözlükte Boş"], ["dg-l-hafiza", "Onaylı Tanımdan"],
+const DG_LEJANT_KARAR = [["dg-l-bos", "Sözlükte Boş"], ["dg-l-hafiza", "Onaylı Tanım (OT)"],
                          ["dg-l-llm", "Dil Modeli Önerisi"],
                          ["dg-l-eklendi", "Sözlüğe Eklendi"],
                          ["dg-l-eklenmedi", "Sözlüğe Eklenmedi"]];
@@ -6101,7 +6102,10 @@ function dogrulamaKartiEkle(alan, blok) {
             if (durum.zorunlu) {
                 /* Kolonun NEDEN zorunlu olduğu satırda yazsın; kullanıcı
                    işareti kaldıramayınca sebebini aramamalı. */
-                tdK.appendChild(elYap("span", "dg-rol", tireSade(durum.rol)));
+                /* Rol çipi Başlık Biçiminde ("Kimlik Kolonu"), kırmızı. */
+                tdK.appendChild(elYap("span", "dg-rol dg-rol-zorunlu",
+                    tireSade(durum.rol).split(" ").map(k =>
+                        k ? k.charAt(0).toLocaleUpperCase("tr") + k.slice(1) : k).join(" ")));
                 tr.classList.add("dg-zorunlu");
             }
             tr.appendChild(tdK);

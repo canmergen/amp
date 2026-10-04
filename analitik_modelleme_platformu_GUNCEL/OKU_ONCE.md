@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açılır listeler hep yukarı; başlangıç ve form metinleri sadeleşti**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`
+Bu tur: **Sözlük kartı çipleri**. Değiştir: `webapp/app.js`, `webapp/style.css`
+
+- "Onaylı Tanım" çipi kısaldı: "OT" (açılımı ve kaynak veri seti ipucunda);
+  renk açıklamasında "Onaylı Tanım (OT)".
+- Zorunlu rol çipi Başlık Biçiminde ("Kimlik Kolonu", "Hedef Değişken")
+  ve sarı yerine kırmızı.
+
+---
+
+Önceki tur: **Açılır listeler hep yukarı; başlangıç ve form metinleri sadeleşti**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`
 
 - Bütün açılır listeler alanın ÜSTÜNE açılır; üstte yer yoksa sohbet
   kaydırılarak yer açılır.

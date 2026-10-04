@@ -1572,6 +1572,8 @@ button.ozet-kart:focus-visible {
   font-size: var(--fs-etiket); font-weight: var(--fw-kalin);
   letter-spacing: .02em; white-space: nowrap;
 }
+/* Zorunlu rol (Hedef Değişken, Kimlik Kolonu ...): kırmızı. */
+.dg-rol.dg-rol-zorunlu { background: var(--kirmizi-acik); color: var(--kirmizi); }
 .dg-satir.dg-zorunlu .dg-ekle { cursor: not-allowed; }
 .dg-zorunlu-not { color: var(--amber); }
 
