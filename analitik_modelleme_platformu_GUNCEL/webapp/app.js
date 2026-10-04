@@ -7196,14 +7196,22 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const elle = {};
                 satirlar.forEach(x => {
                     if (x.r.bekliyor) return;
-                    if (x.g.value.trim() !== String(x.r.anlam || "").trim() || x.kutu.checked !== !!x.r.onayli
-                            || x.y.value !== String(x.r.yeni_kisaltma || ""))
-                        elle[x.r.kisaltma] = { anlam: x.g.value, kutu: x.kutu.checked, yeni: x.y.value };
+                    /* Karşılaştırma ekrandaki biçimle (tireSade); eskiden tire
+                       içeren anlam "elle değişti" sayılıyor, gelen önerilen
+                       kısaltma eski boş değerle eziliyordu. Yalnız gerçekten
+                       değişen alan korunur. */
+                    const anlamElle = x.g.value.trim() !== tireSade(x.r.anlam || "").trim();
+                    const yeniElle = x.y.value !== String(x.r.yeni_kisaltma || "");
+                    if (anlamElle || yeniElle || x.kutu.checked !== !!x.r.onayli)
+                        elle[x.r.kisaltma] = { anlam: anlamElle ? x.g.value : null, kutu: x.kutu.checked,
+                                               yeni: yeniElle ? x.y.value : null };
                 });
                 ciz(yeni.satirlar);
                 satirlar.forEach(x => {
                     const e = elle[x.r.kisaltma];
-                    if (e) { x.g.value = e.anlam; x.kutu.checked = e.kutu; x.y.value = e.yeni;
+                    if (e) { if (e.anlam !== null) x.g.value = e.anlam;
+                             x.kutu.checked = e.kutu;
+                             if (e.yeni !== null) x.y.value = e.yeni;
                              x.g.dispatchEvent(new Event("input")); }
                 });
                 /* Birleştirme önerileri: elle değişen satır ezilmez. */

@@ -1215,6 +1215,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         d0_yeni = d.get("yeni_kisaltma") or ""
         d0_yeni_anlam = d.get("yeni_anlam") or ""
         d0_sozluk = d.get("sozluk_anlam") or ""
+        d0_red = d.get("yeni_red") or ""
         if d.get("anlam"):
             d = dict(d, anlam=yalin_anlam(d["anlam"]))
         onceki = cikti.get(kisa) or {"kolon": int(parca_say.get(kisa, 0)),
@@ -1281,6 +1282,11 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
                 if not genel_uyumlu and not d0_secim:
                     uyari.append("Sözlüğe bakmadan verilen genel anlam: \"%s\"; "
                                  "seçilen anlam farklı, kontrol edin." % yalin_anlam(genel))
+        if d0_red and not d0_yeni:
+            # Bicime uymayan oneri gizli dusmez, soylenir.
+            uyari.append("Dil modelinin önerdiği kısaltma (%s) biçime uymadığı için "
+                         "kullanılmadı (en çok 4 parça, parça başına 8, toplam 24 "
+                         "karakter); isterseniz Önerilen Kısaltma'ya kendiniz yazın." % d0_red)
         if uyari and kisa in cikti:
             cikti[kisa]["uyari"] = " ".join(dict.fromkeys(uyari))
         # Kartta Dil Modeli sutunu: SOZLUGE BAKMADAN verilen genel anlam

@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Her parça ayrı kısaltma, birleştirme yalnız öneri; LLM Sözlük gerçekten dil modeli; LLM Karar sütunu**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Önerilen Kısaltma boş kalıyordu: düzeltme**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+Sebep (sahte modelle eski kodda yeniden üretildi): iki model aynı anlamı
+farklı kelimelerle yazınca karar hakeme gidiyor, hakem modellerin
+önerdiği kısaltmaları görmüyordu; öneri kararı verse de kısaltma
+yazmayınca karar "sözlük doğru"ya düşüyordu. Ayrıca boşluklu öneri
+("<A> <B>") parçaları bitiştirilip biçim dışı kalıyor ve sessizce
+siliniyordu.
+1) İki model de aynı öneri kararını (yanlış kısaltma / anlaşılmaz)
+   verdiyse anlamın yazımı farklı olsa da hakeme gitmez.
+2) Hakem satırında modellerin önerdiği kısaltmalar yazar; hakem öneri
+   kararı verip kısaltma yazmazsa aynı kararı veren modelin önerisi
+   kullanılır.
+3) Boşluk, tire, nokta parça ayıracı sayılır ("_" olur).
+4) Biçime yine uymayan öneri silinmez, satırda uyarı olarak yazar.
+5) Kartta yoklama sırasında tire içeren anlamlı satır "elle değişti"
+   sayılıp gelen önerinin boş değerle ezilmesi düzeltildi.
+
+Önceki tur: **Her parça ayrı kısaltma, birleştirme yalnız öneri; LLM Sözlük gerçekten dil modeli; LLM Karar sütunu**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 1) Kolon adlarında "_" ile ayrılan her parça ayrı kısaltmadır; önceki
    turdaki kendiliğinden birleştirme kaldırıldı. Hep yan yana geçen

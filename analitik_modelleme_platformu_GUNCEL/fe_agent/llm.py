@@ -1291,6 +1291,9 @@ bakarak SON KARARI ver (sozluk_anlam, secim, anlam, gerekce,
 yeni_kisaltma; anlamlari asagidaki gibi). "sozluk_anlam": ornek kolonlarin
 TANIMLARINA gore kisaltmanin sozlukteki anlami (tam yaz; "sozlukte" adayi
 kelime sayimidir, eksik olabilir).
+Modellerin onerdigi kisaltmalar satirda "onerilen kisaltma" olarak
+yazar; "kisaltma_yanlis" ya da "anlasilmaz" secersen "yeni_kisaltma"
+alanini MUTLAKA doldur (uygunsa onerilenlerden birini al).
   "ayni" / "sozluk" / "genel" / "kisaltma_yanlis" / "anlasilmaz" / "yeni" /
   "emin_degil"
 
@@ -1376,6 +1379,32 @@ _SECIMLER = ("ayni", "sozluk", "genel", "kisaltma_yanlis", "anlasilmaz", "yeni",
 _YENI_KISA = re.compile(r"^(?=.{2,24}$)[A-Z][A-Z0-9]{0,7}(_[A-Z0-9]{1,8}){0,3}$")
 
 
+_ONERILI = ("kisaltma_yanlis", "anlasilmaz")
+
+
+def _oneri_notu(e):
+    e = e or {}
+    if e.get("yeni_kisaltma"):
+        return " önerilen kısaltma: %s = %s" % (e["yeni_kisaltma"], e.get("yeni_anlam") or "")
+    return ""
+
+
+def _hakem_tamamla(veri, ea, ec):
+    """Hakem oneri karari verip kisaltma yazmadiysa ayni karari veren
+    modelin onerisi kullanilir (eskiden oneri sessizce dusuyordu)."""
+    for k in ((veri or {}).get("kolonlar") or []):
+        if not isinstance(k, dict) or str(k.get("yeni_kisaltma") or "").strip():
+            continue
+        ad = str(k.get("ad") or k.get("kisaltma") or "").strip().upper()
+        secim = str(k.get("secim") or "").strip().lower()
+        for e in (ea.get(ad), ec.get(ad)):
+            e = e or {}
+            if e.get("yeni_kisaltma") and secim[:5] == str(e.get("secim") or "")[:5]:
+                k["yeni_kisaltma"] = e["yeni_kisaltma"]
+                k.setdefault("yeni_anlam", e.get("yeni_anlam") or "")
+                break
+
+
 def _kucult(anlam):
     """Cumle basi buyuk harfi kucultur ("Yok" -> "yok"). Baska buyuk harf de
     varsa ozel addir (ozel adli olcu / yontem), dokunulmaz."""
@@ -1412,8 +1441,14 @@ def _kisaltma_oku(veri, girdi, ek=None):
             karar = str(k.get("karar") or "").strip().lower()
             secim = ("sozluk" if karar.startswith(("dogru", "doğru")) else
                      "emin_degil" if karar.startswith("emin") else "yeni")
-        yeni = re.sub(r"[^A-Z0-9_]", "", str(k.get("yeni_kisaltma") or "").upper()).strip("_")
-        yeni = yeni if _YENI_KISA.match(yeni) and yeni != ad else ""
+        # Bosluk / tire / nokta parca ayiracidir ("<A> <B>" -> "<A>_<B>");
+        # eskiden silinip parcalar bitisiyordu ve oneri bicime uymuyordu.
+        ham_yeni = str(k.get("yeni_kisaltma") or "").strip()
+        yeni = re.sub(r"[\s\-./]+", "_", ham_yeni.upper())
+        yeni = re.sub(r"_+", "_", re.sub(r"[^A-Z0-9_]", "", yeni)).strip("_")
+        red = ""
+        if yeni and (not _YENI_KISA.match(yeni) or yeni == ad):
+            red, yeni = (ham_yeni if yeni != ad else ""), ""
         # SOZLUKTEKI ANLAM modelin tanimlardan okudugu (kullanici bildirimi:
         # kelime sayimi tek kelimeye iniyordu); yoksa sayim adayi.
         soz_dm = _kucult(k.get("sozluk_anlam"))
@@ -1446,7 +1481,7 @@ def _kisaltma_oku(veri, girdi, ek=None):
         # Turkce olmayan / uzun anlam SILINMEZ: kisaltma.oneriler uyari yazar.
         cikti[ad] = anlam or None
         if ek is not None:
-            ek[ad] = {"secim": secim, "sozluk_anlam": soz_dm,
+            ek[ad] = {"secim": secim, "sozluk_anlam": soz_dm, "yeni_red": red,
                       "gerekce": re.sub(r"\s+", " ", str(k.get("gerekce") or "")).strip()[:240],
                       "yeni_kisaltma": yeni, "yeni_anlam": yeni_anlam}
     return cikti
@@ -1496,7 +1531,12 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                 continue
             if x == "yok" or y == "yok":
                 son, e = (y, ec.get(k)) if x == "yok" else (x, ea.get(k))
-            elif (x is None and y is None) or (x and y and _ayni_metin(x, y)):
+            elif (x is None and y is None) or (x and y and _ayni_metin(x, y)) or (
+                    x and y and (ea.get(k) or {}).get("secim") in _ONERILI
+                    and (ea.get(k) or {}).get("secim") == (ec.get(k) or {}).get("secim")
+                    and (ea.get(k) or {}).get("yeni_kisaltma")):
+                # Ayni anlam ya da IKI MODEL DE ayni oneri kararini verdi
+                # (anlamin yazimi farkli olsa da): hakeme gitmez.
                 son, e = x, dict(ea.get(k) or {})
                 if e and not e.get("yeni_kisaltma") \
                         and (ec.get(k) or {}).get("secim") in ("kisaltma_yanlis", "anlasilmaz"):
@@ -1511,13 +1551,15 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
             for g, x, y in ayrisan:
                 k = g["kisaltma"]
                 satir.append(_kisaltma_satiri(g)
-                             + "\n    model A: %s (%s) %s\n    model B: %s (%s) %s"
+                             + "\n    model A: %s (%s)%s %s\n    model B: %s (%s)%s %s"
                              % (x or "emin değil", (ea.get(k) or {}).get("secim", ""),
-                                (ea.get(k) or {}).get("gerekce", ""),
+                                _oneri_notu(ea.get(k)), (ea.get(k) or {}).get("gerekce", ""),
                                 y or "emin değil", (ec.get(k) or {}).get("secim", ""),
-                                (ec.get(k) or {}).get("gerekce", "")))
+                                _oneri_notu(ec.get(k)), (ec.get(k) or {}).get("gerekce", "")))
             mh, vh = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_KISALTMA,
                                     _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(satir)), 0.1)
+            if mh:
+                _hakem_tamamla(vh, ea, ec)
             h = _kisaltma_oku(vh, [g for g, _x, _y in ayrisan], eh) if mh else {}
             for g, x, y in ayrisan:
                 k = g["kisaltma"]
@@ -1552,7 +1594,8 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
             cikti_[k].update({"secim": e.get("secim") or "", "gerekce": e.get("gerekce") or "",
                               "yeni_kisaltma": e.get("yeni_kisaltma") or "",
                               "yeni_anlam": e.get("yeni_anlam") or "",
-                              "sozluk_anlam": e.get("sozluk_anlam") or ""})
+                              "sozluk_anlam": e.get("sozluk_anlam") or "",
+                              "yeni_red": e.get("yeni_red") or ""})
             # Genel anlam sozlukle celisiyor (01.2.6'da tanimlar duzeltilmeye aday).
             if anlam and oneri.get(k) and e.get("secim") in ("genel", "yeni") \
                     and not _ayni_metin(anlam, oneri[k]):
