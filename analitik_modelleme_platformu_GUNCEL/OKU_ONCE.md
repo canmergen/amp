@@ -4,6 +4,7 @@ Bu tur: **"genel anlamı yok" yerine ∅**. Değiştir: `webapp/app.js` (yalnız
 
 - Kısaltma Sözlüğü'nde LLM Genel sütunu, genel anlamı olmayan (kuruma
   özgü) kısaltmada "genel anlamı yok" yerine ∅ gösterir.
+- Dil modeli emin olamadığında da "emin değil" yerine ∅.
 
 Önceki tur: **01.2 kartlarında sade renk**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme)
 

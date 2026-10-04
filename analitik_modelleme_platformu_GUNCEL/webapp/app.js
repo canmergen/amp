@@ -6997,8 +6997,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             tdS.appendChild(document.createTextNode(r.sozlukten ? tireSade(r.sozlukten) : BOS_SIMGE));
             if (r.onceki_sozluk) tdS.appendChild(elYap("div", "dg-tip", "önceki sözlüklerden"));
             tr.appendChild(tdS);
-            const dmMetin = { bekliyor: "bekleniyor…", emin_degil: "emin değil",
-                              bilinmiyor: BOS_SIMGE, yok: BOS_SIMGE };   /* genel anlamı yok: ∅ (kullanıcı kararı) */
+            /* Genel anlamı yok / emin değil / sonuç yok: ∅ (kullanıcı kararı);
+               hangisi olduğu "i"deki kararda yazar. */
+            const dmMetin = { bekliyor: "bekleniyor…", emin_degil: BOS_SIMGE,
+                              bilinmiyor: BOS_SIMGE, yok: BOS_SIMGE };
             const tdD = elYap("td", "dg-kaynak-deger" + (r.secilen === "dil_modeli" ? " secili" : "")
                     + (r.dm_durum && r.dm_durum !== "var" ? " dg-kaynak-yok" : ""));
             tdD.appendChild(elYap("span", "dg-secim-isaret", "✓"));
