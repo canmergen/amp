@@ -337,16 +337,19 @@ def birlestirme_plan_oner(semalar, meta=None, max_kolon_goster=60):
 # ===========================================================================
 # LLM #2 — SOZLUK ACIKLAMASI  (Mod A ve B)
 # ===========================================================================
-# KOLON ADI KALIPLARI (kullanici bildirimi: "180D_360D_AMT_RATIO" kolonunda
-# modeller "Son 180 gun / 360 gun ... orani" tanimini "180-360 gun arasi"
-# diye yeniden yazip anlamini degistirdi). Aciklama, kontrol ve hakem
+# KOLON ADI KALIPLARI (kullanici bildirimi: iki pencereli oran kolonunda
+# modeller "son A gun / B gun orani" tanimini "A-B gun arasi" diye yeniden
+# yazip anlamini degistirdi). Aciklama, kontrol ve hakem
 # istemlerinin hepsine eklenir.
 AD_KALIP_KURALI = """
-KOLON ADI KALIPLARI:
-  - 3D, 30D, 180D, 360D ...: son N gunluk pencere ("son 180 gun").
-  - <A>D_<B>D_..._RATIO ya da ..._<A>D_<B>D_RATIO (ornek 180D_360D_AMT_RATIO):
-    SON A GUNDEKI degerin SON B GUNDEKI degere ORANI. "A ile B. gun arasi"
-    bir zaman araligi DEGILDIR.
+KOLON ADI KALIPLARI (genel kaliplardir; bu veri setinde gecerli olup
+olmadiklarini ORNEK TANIMLARDAN ve KISALTMALAR blogundan dogrula, varsayma):
+  - Sayi + birim harfi (bicim: <N><birim>) cogu zaman bir zaman
+    penceresidir ("son N gun / ay"). Ornek tanimlar baska bir anlam
+    gosteriyorsa onlara uy.
+  - Adda iki pencere ve bir oran parcasi birlikte geciyorsa ve tanim iki
+    pencerenin ORANI diyorsa: "son A birimdeki degerin son B birimdeki
+    degere orani"dir. "A ile B arasi" bir zaman araligina CEVIRME.
   - KISALTMALAR (kesin) blogu verilirse (kullanicinin onayladigi
     kisaltmalar) anlam ODUR; kendin tahmin etme.
   - KISALTMALAR (tahmini) blogu sozlukteki aciklamalardan OGRENILMISTIR:
@@ -368,11 +371,10 @@ Bu tanimlar sonra yeni degisken uretiminde kullanilacak; rolu dogru yansit.
 SADE YAZ: tanim kisa ve tek anlamli olsun; ayni ifadeyi tekrar etme,
 gereksiz kelime ekleme. Kurumun YAZIM TARZINDAKI uzunluga ve kalibina
 uy. Bu tanimlar sonra degisken uretiminde de dil modeline girdi
-olacak: kisa, net ve tutarli olmasi onemli. Ornek (oran kolonu):
-  UZUN : Son 180 günde bahis şirketlerine giden işlem tutarının son 360
-         günde bahis şirketlerine giden işlem tutarına oranı
-  SADE : Son 180 günde bahis şirketlerine giden işlem tutarının son 360
-         gündekine oranı
+olacak: kisa, net ve tutarli olmasi onemli. Ornek kalip (oran kolonu;
+<X> olculen degerdir):
+  UZUN : Son <A> günde <X> değerinin son <B> günde <X> değerine oranı
+  SADE : Son <A> günde <X> değerinin son <B> gündekine oranı
 """ + """
 TAMAMEN TURKCE YAZ (kullanici karari; bu kural YAZIM TARZINDAN ve
 orneklerden ONCE gelir):
@@ -396,8 +398,8 @@ Her kolon icin:
              gecikme, urun, kanal, davranis, zaman, hedef, diger
 
 ORNEK TANIMLAR verilirse (kurumun kendi sozlugundeki, adi benzeyen
-kolonlar): yazim tarzina, cumle yapisina ve kisaltmalarin (TXN, GDN, AMT,
-CNT, 3D...) anlamina UY. Ornekleri kopyalama; her kolonu kendi adi ve
+kolonlar): yazim tarzina, cumle yapisina ve kolon adlarindaki
+kisaltmalarin ve pencerelerin anlamina UY. Ornekleri kopyalama; her kolonu kendi adi ve
 dagilimina gore yaz. VERI SETI adi verilirse tablonun konusunu ondan da cikar.
 
 ONAYLI TANIMLAR verilirse (kullanicilarin daha once onayladigi tanimlar):
@@ -437,7 +439,7 @@ def _normalize_ad_parcali(ad):
 def benzer_ornekler(adlar, tanimlar, adet=ORNEK_TANIM_SAYISI):
     """Kurumun sozlugunden, adlari verilen kolonlara en cok benzeyen
     tanimli kolonlar: [(ad, aciklama)]. Benzerlik ad parcalarindan
-    (TXN_GDN_3D_AMT -> TXN, GDN, 3D, AMT): ortak bas parcalar once."""
+    (alt cizgiyle ayrilan parcalar): ortak bas parcalar once."""
     if not tanimlar:
         return []
     hedefler = [_ad_parcalari(a) for a in adlar]
@@ -925,7 +927,8 @@ Mevcut tanimin dogru yazilip yazilmadigini degerlendir.
 
 "duzelt" YALNIZCA su durumlarda:
   - tanim kolon adi ya da dagilimla CELISIYOR (ornek: dagilim 0/1 iken
-    "tutar", ad AMT iken "adet", ad 3D iken "son 6 ay")
+    tanim bir tutar anlatiyor; adda tutar anlamli bir kisaltma varken tanim
+    adet diyor; adda 3 gunluk pencere varken tanim 6 ay diyor)
   - tanim bos, anlamsiz ya da kolon adinin tekrarindan ibaret
     ("X kolonu", "deger", "-")
   - tanim eksik ya da belirsiz, kolonun ne olctugu anlasilmiyor
@@ -941,25 +944,22 @@ Mevcut tanimin dogru yazilip yazilmadigini degerlendir.
     pencere sayilariyla) kolon adindan BEKLENEN tanimi kur, sonra mevcut
     tanimla karsilastir. Bir parcanin anlami tanimda HIC yoksa ya da
     tanim o parcaya FARKLI bir anlam veriyorsa "duzelt"; gerekcede hangi
-    kisaltmanin anlaminin eksik ya da farkli oldugunu yaz (ornek: "AVG
-    'ortalama' tanımda yok."). Ayni anlami es anlamli kelimeyle veren
+    kisaltmanin anlaminin eksik ya da farkli oldugunu yaz (bicim: "<KISA>
+    '<anlam>' tanımda yok."). Ayni anlami es anlamli kelimeyle veren
     tanim uygundur (en cok / en fazla, adet / sayi).
-  - Adda pencere varsa (3D, 30D, 360D) ve tanim goreli bir ifade
-    kullaniyorsa ("bir onceki doneme gore"), ifadeyi o pencereyle
-    SOMUTLASTIR: TXN_GDN_3D_X2_RATIO_CNT icin "son 3 gundeki giden islem
-    adedinin onceki 3 gundeki adede orani". Belirsiz goreli ifade
-    "duzelt" sebebidir.
+  - Adda bir pencere varsa ve tanim goreli bir ifade kullaniyorsa ("bir
+    onceki doneme gore"), ifadeyi o pencereyle SOMUTLASTIR (pencere 3 gun
+    ise "onceki 3 gune gore"). Belirsiz goreli ifade "duzelt" sebebidir.
 Yalnizca uslup farki icin "duzelt" DEME. Emin degilsen "uygun" de.
 
 ANLAM KORUNUR: oneri, mevcut tanimin anlattigi olcumu DEGISTIREMEZ —
 pencere (son kac gun), yon (giden / gelen), tutar / adet, oranin payi ve
 paydasi aynen kalir. Mevcut tanim kolon adiyla tutarliysa yalnizca ayni
-anlami daha acik ve dogru Turkceyle yazabilirsin. Ornek:
-  ad      : TXN_GDN_BAHIS_180D_360D_AMT_RATIO
-  mevcut  : Son 180 gun / 360 gun bahis sirketlerine giden islem tutari orani
-  DOGRU   : Son 180 günde bahis şirketlerine giden işlem tutarının son 360
-            gündekine oranı
-  YANLIS  : 180-360 gün arası bahis şirketlerine giden işlem tutarı oranı
+anlami daha acik ve dogru Turkceyle yazabilirsin. Ornek kalip (<X>
+olculen degerdir, A ve B iki pencere):
+  mevcut  : Son A gun / B gun <X> orani
+  DOGRU   : Son A günde <X> değerinin son B gündekine oranı
+  YANLIS  : A-B gün arası <X> oranı
             (anlam degisti: oran bir zaman araligina donustu)
 Mevcut tanim kolon adiyla CELISIYORSA kolon adi esas alinir.
 
@@ -1116,7 +1116,7 @@ def turkce_sorunu(metin):
 
     Kural tabanli: Ingilizce kelime ya da dogru yazilisi Turkce karakter
     iceren bir kelimenin karaktersiz hali ("musteri", "islem", "gunde").
-    Kolon adi / kisaltma gibi BUYUK HARFLI kelimeler (TXN, AMT) sayilmaz."""
+    Kolon adi / kisaltma gibi BUYUK HARFLI kelimeler sayilmaz."""
     sorun = []
     for k in _KELIME.findall(str(metin or "")):
         if len(k) > 1 and k.isupper():
@@ -1189,20 +1189,20 @@ _KISALTMA_KURALLARI = """KURALLAR:
   - Pencereye ya da sayiya bagli anlamlari SAYISIZ yaz ("onceki es donem";
     "onceki 3 gun" degil). Somut pencere kolon adindan okunur.
   - Iki kisaltma BIRLIKTE bir ifade olusturuyorsa her birine KENDI
-    anlamini yaz; sozlukteki ifadeyi parcalara bolup dagitma: PER_DAY
-    "gunluk ortalama" demek ama PER = "basina", DAY = "gun"dur (gun basina
-    = gunluk ortalama). Bu durumda genel anlam dogrudur ("genel" sec).
-  - Birlesik Ingilizce kalip kisaltmalari (TMSNC = time since, TMSNCFRST
-    = time since first: "ilk islemden bu yana gecen sure") DOGRU
-    kisaltmalardir; anlamin TAMAMINI yaz, tek kelimeye indirme.
-  - Kisaltma, kolon adlarinda sayiyla birlesik geciyorsa (H00, H06, H18
-    icin H) yalniz HARF kisminin anlamini yaz: H = "saat". Sayi o kalibin
-    degeridir, anlama katilmaz ("saat 00" degil). Bu kisaltma icin yeni
-    kisaltma onerme.
+    anlamini yaz; sozlukteki ifadenin butun anlamini parcalardan birine
+    yukleme ya da ifadeyi parcalara bolup dagitma. Parcalarin kendi
+    anlamlari genel anlamlariysa "genel" sec.
+  - Birkac kelimenin kisaltilip bitistirildigi (ya da unluleri atilmis)
+    kalip kisaltmalari DOGRU kisaltmalardir; anlamin TAMAMINI yaz, tek
+    kelimeye indirme.
+  - Kisaltma kolon adlarinda sayiyla birlesik geciyorsa (harf + sayi
+    degeri) yalniz HARF kisminin anlamini yaz; sayi o kalibin degeridir,
+    anlama katilmaz. Bu kisaltma icin yeni kisaltma onerme.
   - Adi bilinen bir olcu ya da yontemse OZEL ADINI yaz, aciklamasini
-    degil: HHI = Herfindahl-Hirschman endeksi ("yogunlasma endeksi" degil).
-  - anlam, KISALTMANIN KENDI anlamidir; baglam ifadesi DEGIL: gunu
-    anlatan kisaltmanin anlami "gun"dur, "gunluk ortalama" degil.
+    degil.
+  - anlam, KISALTMANIN KENDI anlamidir; baglam ifadesi DEGIL: tanimlarda
+    kisaltmanin yanindaki kelimeler (pencere, yon, istatistik) anlama
+    katilmaz.
   - YALIN halde (adedi degil adet, orani degil oran, skoru degil skor),
     tamamen Turkce (ozel adlar haric), 1-5 kelime. Birden cok kelimeyi
     birlestiren kisaltmada anlamin tamamini yaz.
@@ -1213,9 +1213,8 @@ _KISALTMA_KURALLARI = """KURALLAR:
 
 "kisaltma_yanlis" YALNIZ su durumda: kisaltmanin BILINEN bir genel anlami
 var ("genel" bos degil) ve bu anlam kolonlarin olctugu seyden BASKA bir
-kavram. Es anlamli, daha genel ya da yakin anlamlar (IN = giris / gelen)
-bu durum degildir. Ayni anlami tasiyan baska bir kisaltma da olmasi (IN ve
-GLN ikisi de "gelen") yanlislik degildir.
+kavram. Es anlamli, daha genel ya da yakin anlamlar bu durum degildir.
+Ayni anlami tasiyan baska bir kisaltmanin da bulunmasi yanlislik degildir.
 "kisaltma_yanlis" SECILIRSE: "anlam" kisaltmanin GENEL anlamidir (kisaltma
 sozlugunde o kalir), "yeni_kisaltma" bu kolonlarin gercek anlamini
 tasiyan daha acik, yaygin bir kisaltmadir (BUYUK harf, 2-8 karakter,
@@ -1225,12 +1224,11 @@ yalniz A-Z ve 0-9, "diger kisaltmalar"dakilerden biri olmasin),
 
 YENI KISALTMANIN DILI: kolon adlari hangi dilde ve kalipta kisaltilmissa
 (bkz. "ADLANDIRMA KALIBI" satiri) yeni kisaltma da AYNI dilde ve
-kalipta olur. Adlar Ingilizce kisaltmalarla yazilmissa (TXN, AMT, CNT,
-MAX) yeni kisaltma da yaygin Ingilizce kisaltmadir (onceki es donem ->
-PREV); Turkce anlamin harflerinden kisaltma URETME ("en cok" -> ENCO
-YANLIS). Adlar Turkce kisaltmalarla yazilmissa Turkce kisaltma oner.
-Birbirinin karsiligi olan kisaltmalara (FRST / LST, IN / OUT) oneriler
-TUTARLI bir cift olsun (TSF / TSL gibi; TSFT / ELAP degil).
+kalipta olur. Adlar Ingilizce kisaltmalarla yazilmissa yeni kisaltma da
+anlamin YAYGIN Ingilizce kisaltmasidir; Turkce anlamin harflerinden
+kisaltma URETME. Adlar Turkce kisaltmalarla yazilmissa Turkce kisaltma
+oner. Birbirinin karsiligi olan kisaltmalara (ilk / son, gelen / giden
+gibi) oneriler TUTARLI bir cift olsun.
 Anlam alanlari her durumda Turkce kalir."""
 
 SISTEM_KISALTMA = """Sen bir bankacilik ve veri bilimi sozlugu uzmanisin.
@@ -1250,16 +1248,15 @@ Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
   "genel"          : genel anlam dogru; sozlukteki TANIMLAR yanlis ya da
                      eksik (kolonlar gercekte genel anlami olcuyor)
   "kisaltma_yanlis": sozlukteki tanimlar kolonlari DOGRU anlatiyor ama kolon
-                     adinda YANLIS kisaltma secilmis; kisaltmanin genel anlami
-                     baska. Ornek: pencere ve oranla gecen X2'nin tanimlari
-                     hep "bir onceki doneme gore" diyor; X2 genelde "kare"
-                     demek -> anlam "kare", yeni_kisaltma "PREV", yeni_anlam
-                     "onceki es donem"
+                     adinda YANLIS kisaltma secilmis; kisaltmanin bilinen
+                     genel anlami baska bir kavram. anlam = genel anlam,
+                     yeni_kisaltma = bu kolonlarin anlamini tasiyan yaygin
+                     kisaltma, yeni_anlam = sozlukteki anlam
   "yeni"           : ikisi de yanlis; dogru anlami "anlam" alanina yaz
   "emin_degil"     : karar verilemiyor
 "anlam"   : secilen anlam (daha dogru yazimi varsa onu yaz)
 "gerekce" : tek kisa cumle; ornek kolonlara dayanarak neden. Turkce
-            karakterlerle yaz (ç, ğ, ı, ö, ş, ü): "Sozlukte" degil "Sözlükte"
+            karakterlerle yaz (ç, ğ, ı, ö, ş, ü)
 
 """ + _KISALTMA_KURALLARI + """
 
@@ -1295,8 +1292,8 @@ geleneklerindeki YAYGIN anlamini yaz: kisaltmanin kendi anlami, yalin
 halde, tamamen Turkce, 1-5 kelime. Kolon adlarindaki diger parcalar
 yalniz baglamdir; onlarin anlamini bu kisaltmaya katma.
 
-Kolon adlarinda sayiyla birlesik geciyorsa (H00, H06 icin H) yalniz harf
-kisminin anlamini yaz (H = "saat"; "saat 00" degil).
+Kisaltma kolon adlarinda sayiyla birlesik geciyorsa (harf + sayi degeri)
+yalniz harf kisminin anlamini yaz; sayi o kalibin degeridir.
 
 Kuruma ozgu gorunen ya da yaygin bir anlami olmayan kisaltmada TAHMIN
 ETME: "anlam" alanini BOS birak.
@@ -1356,7 +1353,7 @@ _YENI_KISA = re.compile(r"^[A-Z][A-Z0-9]{1,7}$")
 
 def _kucult(anlam):
     """Cumle basi buyuk harfi kucultur ("Yok" -> "yok"). Baska buyuk harf de
-    varsa ozel addir (Herfindahl-Hirschman endeksi), dokunulmaz."""
+    varsa ozel addir (ozel adli olcu / yontem), dokunulmaz."""
     anlam = re.sub(r"\s+", " ", str(anlam or "")).strip().strip(".")
     if anlam[:1].isupper() and anlam[1:2].islower() \
             and not any(h.isupper() for h in anlam[1:]):
@@ -1393,8 +1390,8 @@ def _kisaltma_oku(veri, girdi, ek=None):
         yeni_anlam = _kucult(k.get("yeni_anlam")) or soz
         if secim == "kisaltma_yanlis" and not (yeni and yeni_anlam and gen):
             # "Yanlis kisaltma" ancak kisaltmanin BILINEN bir genel anlami
-            # varsa olur (kullanici bildirimi: X2, TMSNCFRST icin genel anlam
-            # yokken bu karar verilip anlam "gunun" / "ilk" kaliyordu). Genel
+            # varsa olur (kullanici bildirimi: genel anlami olmayan
+            # kisaltmalarda bu karar verilip anlam kirik kaliyordu). Genel
             # anlam yoksa bu kolonlardaki anlam TAM yazilir, oneri yok.
             anlam = yeni_anlam or (anlam if anlam != gen else "") or soz
             secim = "sozluk" if (soz and _ayni_metin(anlam, soz)) else "yeni"
@@ -2117,24 +2114,25 @@ def karsilastir(modeller=None, tekrar=1):
     girdiler asagida sabit."""
     modeller = modeller or MODELLER
     kolonlar = [
-        {"ad": "TXN_GDN_3D_AMT", "tip": "sayısal", "null_oran": 0.0, "tekil": 8123,
+        # Kurgusal ornek (hicbir gercek veri setinden alinmadi).
+        {"ad": "SIPARIS_TUTAR_30G", "tip": "sayısal", "null_oran": 0.0, "tekil": 8123,
          "dagilim": "min 0 · q1 120 · medyan 850 · q3 3400 · maks 250000"},
-        {"ad": "TXN_GDN_3D_HS_CNT", "tip": "sayısal", "null_oran": 0.0, "tekil": 14,
+        {"ad": "SIPARIS_ADET_7G", "tip": "sayısal", "null_oran": 0.0, "tekil": 14,
          "dagilim": "min 0 · q1 0 · medyan 0 · q3 1 · maks 23"},
-        {"ad": "TXN_GDN_KRIPTO_3D_CNT", "tip": "sayısal", "null_oran": 0.02, "tekil": 9,
+        {"ad": "IADE_ADET_90G", "tip": "sayısal", "null_oran": 0.02, "tekil": 9,
          "dagilim": "min 0 · q1 0 · medyan 0 · q3 0 · maks 12"},
         {"ad": "MUST_YAS", "tip": "sayısal", "null_oran": 0.01, "tekil": 63,
          "dagilim": "min 18 · q1 31 · medyan 42 · q3 54 · maks 80"},
         {"ad": "KANAL_KOD", "tip": "kategorik", "null_oran": 0.0, "tekil": 4,
-         "dagilim": "MOBIL %61 · INTERNET %22 · SUBE %12 · ATM %5"},
+         "dagilim": "A %61 · B %22 · C %12 · D %5"},
         {"ad": "rn", "tip": "sayısal", "null_oran": 0.0, "tekil": 10000,
          "dagilim": "min 1 · q1 2500 · medyan 5000 · q3 7500 · maks 10000"},
     ]
-    baglam = {"veri_seti": "HAVALE_EFT_NTT", "tanimlar": {
-        "TXN_GDN_3D_CNT": "Son 3 günde giden işlem adedi",
-        "TXN_GDN_3D_AMT_AVG": "Son 3 günde giden işlem ortalama tutarı",
-        "TXN_GDN_3D_HS_AMT": "Son 3 günde hafta sonu giden işlem tutarı",
-        "TXN_GDN_KRIPTO_3D_AMT": "Son 3 günde kripto şirketlerine giden işlem tutarı"}}
+    baglam = {"veri_seti": "ORNEK_VERI_SETI", "tanimlar": {
+        "SIPARIS_ADET_30G": "Son 30 günde verilen sipariş adedi",
+        "SIPARIS_TUTAR_7G": "Son 7 günde verilen siparişlerin toplam tutarı",
+        "IADE_TUTAR_30G": "Son 30 günde iade edilen siparişlerin tutarı",
+        "SEPET_ORT_TUTAR_90G": "Son 90 günde ortalama sepet tutarı"}}
     sfa_girdi = [
         {"ad": "GELIR", "tip": "sayısal", "aciklama": "Aylık gelir", "eksik_orani": 0.2,
          "eksik_hedef_orani": 0.22, "hedef_orani": 0.14, "min": 0, "max": 250000,

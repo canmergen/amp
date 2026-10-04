@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma sonuçlarının gözden geçirmesinden çıkan 6 düzeltme**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+Bu tur: **Kodda ve istemlerde veri içeriği yok**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/aralik.py`, `fe_agent/birlestirme.py`, `fe_agent/niyet_kural.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+
+- Dil modeli istemlerindeki, gerçek bir sözlükten alınmış kolon adı,
+  kısaltma ve tanım örnekleri kaldırıldı; kurallar soyut kalıp olarak
+  yazıldı (<KISA>, <X>, A / B pencere). İstemlerin davranışı veriye özgü
+  cevaplara yönlendirmez.
+- Pencere kalıbı (sayı + birim harfi) artık kesin kural değil: "genelde
+  pencere; bu veri setinde geçerliliğini örnek tanımlardan doğrula".
+- Kullanılmayan KISALTMA_BILGI metni silindi; Kolon Adı Önerileri yardım
+  metnindeki örnek çıkarıldı.
+- Yorum ve belge satırlarındaki veri örnekleri genel ifadelerle değişti.
+- karsilastir() test yardımcısının girdileri kurgusal (gerçek veri seti
+  adı / kolon adı yok).
+- Kodda kalan genel bilgiler (veriden değil): yaygın İngilizce ölçü
+  kısaltmaları kümesi (dönem adayı elemede), Türkçe dil bilgisi listeleri,
+  iki pencereli oran tanımının "A-B arası"na çevrilmesini engelleyen
+  kalıp kontrolü.
+
+Önceki tur: **Kısaltma sonuçlarının gözden geçirmesinden çıkan 6 düzeltme**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
 1) Kendini açıklayan kelime (BAHIS, KRIPTO, ODEME): anlamı kelimenin
    kendisiyse (Türkçe) listeye girmez.

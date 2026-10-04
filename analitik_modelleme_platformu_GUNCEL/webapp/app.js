@@ -6233,7 +6233,7 @@ function dogrulamaKartiEkle(alan, blok) {
     }
 
     /* ---- 5a) Kısaltma Sözlüğü (01.2.4) ----
-       Kolon adı kısaltmaları (TXN, GLN, GDN ...) sözlükten kural tabanlı
+       Kolon adı kısaltmaları sözlükten kural tabanlı
        çıkarılır; kullanıcı anlamı düzeltip proje genelindeki onaylı
        kısaltma hafızasına kaydeder. Kayıt adım akışından BAĞIMSIZ
        (kendi düğmesi, /kisaltma_kaydet). */

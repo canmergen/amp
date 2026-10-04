@@ -80,10 +80,10 @@ DONEM_COZULME_ORANI = profil_kural.DONEM_COZULME_ORANI
 # profilindeki liste YENIDEN hesaplanir (bkz. _donem_adaylarini_hazirla).
 DONEM_ADAY_SURUMU = 4
 # Aday cikmadiginda nedeni yazilan kolonlar: ADI donem/tarih olan. Ad
-# "_" ile parcalanip PARCA PARCA bakiliyor: TXN_ACTIVE_MONTH_CNT gibi
-# sayac kolonlari adinda MONTH gecse de donem kolonu degil (kullanici
+# "_" ile parcalanip PARCA PARCA bakiliyor: adinda MONTH gecen bir sayac
+# kolonu (..._MONTH_<olcu>) donem kolonu degil (kullanici
 # bildirimi: notta bunlar da listeleniyordu). Olcu parcasi tasiyan ad
-# (CNT, AMT, SUM ...) hic listelenmez.
+# (genel olcu kisaltmalari: asagidaki kume) hic listelenmez.
 _DONEM_AD_PARCALARI = {"DONEM", "DÖNEM", "PERIOD", "PERIYOD", "TARIH", "TARİH",
                        "DATE", "DT", "AY", "YIL", "YEAR", "MONTH", "SNAP",
                        "SNAPSHOT", "YYYYMM", "YYYYMMDD", "REF"}
@@ -1441,56 +1441,6 @@ def _kisaltma_kaynagi(durum):
 
 
 KISALTMA_BASLIK = "Kısaltma Sözlüğü"
-KISALTMA_BILGI = (
-    "Her kısaltma için dil modeli iki aday arasında karar verir: Sözlükte "
-    "(sözlükteki açıklamalardan çıkan anlam) ve Dil Modeli (sözlüğe "
-    "bakmadan, yalnız kolon adlarından verilen genel anlam). Karar ve "
-    "gerekçesi Not sütununda yazar: ikisi aynı; sözlük doğru (genel anlam "
-    "uymuyor, Anlam'a sözlükteki yazılır); dil modeli doğru (sözlükteki "
-    "tanımlar yanlış, 01.2.6'da düzeltilmeye aday); sözlük doğru ama kolon "
-    "adında yanlış kısaltma seçilmiş; ikisi de yanlış.\n\n"
-    "Yanlış seçilmiş kısaltmada (ör. X2: tanımlar 'önceki eş dönem' diyor, "
-    "X2 genelde 'kare' demek) X2'nin anlamı genel anlam olarak kalır, "
-    "Önerilen Kısaltma sütununa bu kolonların gerçek anlamını taşıyan yeni "
-    "kısaltma gelir (PREV = önceki eş dönem). Kolon Adı Önerileri adımında "
-    "bu kolonlar yeni kısaltmayla adlandırılır (yalnız platformun "
-    "kopyalarında); tanım kontrolü bu kolonları yeni kısaltmanın anlamıyla "
-    "yapar. Öneriyi boşaltırsanız Anlam sözlükteki anlama döner.\n\n"
-    "Anlam'a kararın gösterdiği değer yazılır, önündeki ✓ hangi sütundan "
-    "geldiğini gösterir; düzenleyebilirsiniz. Satır rengi: mavi iki kaynak "
-    "aynı, kırmızı farklı, renksiz karşılaştırma yok, mor hafızada onaylı, "
-    "yeşil sizin yazdığınız, sarı boş.\n\n"
-    "Anlamın önceliği: kısaltmanın bankacılık ve veri bilimindeki genel "
-    "anlamı. Sözlüğünüzdeki açıklamalar kanıttır ama hatalı olabilir; "
-    "genel anlam sözlükteki kullanımla çelişirse satırda \"sözlükteki "
-    "kullanım farklı\" yazar ve o kolonların tanımları Sözlük Tanım "
-    "Kontrolü adımında düzeltilmeye aday olur. Genel anlamı olmayan, "
-    "kuruma özgü kısaltmalarda anlam açıklamalardan çıkarılır.\n\n"
-    "Sözlüğe bakmadan da sorulur: dil modeline önce yalnız kısaltma ve "
-    "geçtiği birkaç kolon adı gider (açıklama ve sözlük önerisi gitmez), "
-    "model genel anlamı kendi bilgisinden verir. Seçilen anlam bununla "
-    "aynıysa Kaynak'ta \"sözlüğe bakmadan verilen genel anlamla aynı\" "
-    "yazar; farklıysa uyarı çıkar.\n\n"
-    "Onay düğmesi dil modeli kontrolü bitince açılır; beklemek "
-    "istemezseniz \"Kısaltmaları Onaylamadan Devam Et\" ile geçebilirsiniz.\n\n"
-    "Nasıl çıkarılır: önce bütün tanımlar sayılır (bir kelime, adında o "
-    "kısaltma geçen kolonların tanımlarında sık, geçmeyenlerinkinde "
-    "seyrekse aday olur; birlikte geçen başka bir kısaltmanın aldığı anlam "
-    "verilmez). Sonra her kısaltma adaylar ve çeşitli örnek kolonlarla iki "
-    "dil modeline sorulur; anlaşamazlarsa hakem karar verir.\n\n"
-    "Şüpheli anlam silinmez, Kaynak sütununda uyarı yazar: dil modeli emin "
-    "olamadıysa, anlam birlikte geçen başka bir kısaltmanın anlamını da "
-    "içeriyorsa (aynı anlamı veren eş kısaltmalar uyarı almaz), anlam "
-    "tamamen Türkçe değilse ya da çok uzunsa. Uyarılı anlamlar siz "
-    "onaylamadıkça kalıcı öğrenmeye girmez.\n\n"
-    "Onayladığınızda anlamı dolu her satır bu çalışmanın kısaltma "
-    "sözlüğü olur: Kolon Adı Önerileri ve Sözlük Tanım Kontrolü bu "
-    "anlamlarla yapılır. Bir anlamı kullanmak istemiyorsanız alanı boş "
-    "bırakın. Hafızaya Kaydet işaretli olanlar proje genelinde saklanır "
-    "ve başka veri setlerinde de kullanılır; işareti kaldırılan onaylı "
-    "kısaltma hafızadan silinir.")
-
-
 # Kartta basligin altinda (kullanici karari: "i" yerine kisa aciklama).
 KISALTMA_ACIKLAMA = (
     "Kolon adlarındaki kısaltmaların anlamı. LLM Sözlük: sözlükteki "
@@ -1529,12 +1479,12 @@ def _kisaltma_alani(durum, bekle=0.0):
 
 KOLON_AD_BASLIK = "Kolon Adı Önerileri"
 KOLON_AD_BILGI = (
-    "İki tür öneri var. 1) Kısaltma Sözlüğü'nde yanıltıcı bir kısaltma için "
-    "yeni kısaltma kabul ettiyseniz (ör. X2 yerine PREV), o kısaltmanın "
-    "geçtiği kolonlar yeni kısaltmayla önerilir. 2) "
+    "İki tür öneri var. 1) Kısaltma Sözlüğü'nde yanlış seçilmiş bir "
+    "kısaltma için yeni kısaltma kabul ettiyseniz, o kısaltmanın geçtiği "
+    "kolonlar yeni kısaltmayla önerilir. 2) "
     "Açıklamasında bir kısaltmanın anlamı geçen ama adında o kısaltma "
-    "bulunmayan kolonlar (ör. açıklama 'farklı banka adedi', adda DISTINCT "
-    "yok). Önerilen ad, kısaltmayı açıklamadaki sıraya göre ekler; "
+    "bulunmayan kolonlar. Önerilen ad, kısaltmayı açıklamadaki sıraya göre "
+    "ekler; "
     "değiştirebilirsiniz.\n\n"
     "Uygulanan adlar YALNIZ platformun kopyalarında geçerli olur: "
     "AMP_VERISETI ve AMP_SOZLUK (Değişken Kontrolü kaydedilince). Girdi veri "
@@ -1564,7 +1514,7 @@ def _kolon_ad_alani(durum):
         veri_kolon = set(str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or []))
     except Exception:
         veri_kolon = set()
-    # 01.2.4'te kabul edilen YENI KISALTMALAR (X2 -> PREV gibi).
+    # 01.2.4'te kabul edilen YENI KISALTMALAR (eski -> yeni).
     yeni_kisa = dict(durum.get("kisaltma_yeni") or {})
     anlamlar = dict(durum.get("kisaltma_sozluk") or {})
     degisen = {ad for ad in veri_kolon
@@ -1599,10 +1549,10 @@ def _kolon_ad_alani(durum):
 
 def _kisaltma_degistir(ad, eski, yeni):
     """Kolon adinda butun parca olarak gecen kisaltmayi degistirir
-    (buyuk / kucuk harf korunur): TXN_3D_X2_RATIO -> TXN_3D_PREV_RATIO."""
+    (buyuk / kucuk harf korunur): A_ESKI_B -> A_YENI_B."""
     def _d(m):
         return yeni.lower() if m.group(0).islower() else yeni
-    # Sayi degerli kalip: H00 -> HOUR00 (rakamlar korunur; bkz.
+    # Sayi degerli kalip: <K>00 -> <YENI>00 (rakamlar korunur; bkz.
     # kisaltma._SAYILI).
     return re.sub(r"(?<![A-Za-z0-9])%s(?=\d{2,}(?![A-Za-z0-9])|(?![A-Za-z0-9]))"
                   % re.escape(eski), _d, str(ad), flags=re.I)
@@ -1669,9 +1619,9 @@ def _onayli_anlamlar(durum):
     except Exception:
         anlamlar = {}
     anlamlar.update({str(k): str(v) for k, v in sozluk.items() if str(v or "").strip()})
-    # YANLIS SECILMIS KISALTMA: sozlukte genel anlamiyla durur (X2 = kare)
-    # ama BU veri setinin kolonlarinda yeni kisaltmanin anlamini tasir
-    # (X2 kolonlari = onceki es donem). Kolon adi uygulansa da uygulanmasa
+    # YANLIS SECILMIS KISALTMA: sozlukte genel anlamiyla durur ama BU veri
+    # setinin kolonlarinda yeni kisaltmanin anlamini (sozlukteki kullanim)
+    # tasir. Kolon adi uygulansa da uygulanmasa
     # da kontroller bu anlamla yapilir.
     for eski, y in (durum.get("kisaltma_yeni") or {}).items():
         if anlamlar.get(y):
@@ -1748,9 +1698,9 @@ def kisaltma_uygula(durum):
     # YENI KISALTMA (yaniltici kisaltma yerine; 01.2.5'te kolon adina
     # uygulanir). Gecersiz ya da baska anlamda kullanilan kisaltma adimi
     # durdurur.
-    # Yeni kisaltma KENDI anlamini tasir (kullanici karari: X2 genel
-    # anlaminda "kare" kalir, bu kolonlarin gercek anlami "onceki es donem"
-    # PREV'e gecer).
+    # Yeni kisaltma KENDI anlamini tasir (kullanici karari: eski kisaltma
+    # genel anlaminda kalir, bu kolonlarin gercek anlami yeni kisaltmaya
+    # gecer).
     yeni, yeni_anlam, hatalar = {}, {}, []
     for s_ in satirlar:
         kisa = str(s_.get("kisaltma") or "").strip()

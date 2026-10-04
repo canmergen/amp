@@ -3,7 +3,7 @@
 
 Tek isi: bir metinden su ikisini cikarmak
   aksiyon : onay / ret / adim_tekrar / alan_ver / belirsiz
-  alanlar : {"veri_seti": "HAVALE_EFT_NTT", "sozluk": "DEGISKENLER"}
+  alanlar : {"veri_seti": "<VERI_SETI>", "sozluk": "<SOZLUK>"}
 """
 
 import re
@@ -119,7 +119,7 @@ ALAN_KALIPLARI = {
     ],
 }
 
-# "sozluk olarak DEGISKENLER" gibi cumlelerde regex "olarak"i yakalayabiliyor.
+# "sozluk olarak <SOZLUK>" gibi cumlelerde regex "olarak"i yakalayabiliyor.
 # Bu kelimeler deger olarak kabul edilmez; bir sonraki kelimeye bakilir.
 DOLGU_KELIMELER = {
     "ve", "ile", "olarak", "icin", "da", "de", "ki", "bir",
@@ -177,7 +177,7 @@ def _alan_bul(orijinal, norm, kaliplar, gecerli_adlar=None):
     Eskiden ilk eslesmede yakalanan deger dolgu kelime cikinca `continue`
     bir sonraki KALIBA geciyordu ve alan tamamen kayboluyordu. Simdi ayni
     kalibin sonraki eslesmesine, oradan da dolgu kelimenin ardindaki
-    kelimeye bakiliyor ("veri seti olarak HAVALE_EFT_NTT").
+    kelimeye bakiliyor ("veri seti olarak <VERI_SETI>").
     """
     for k in kaliplar:
         for m in re.finditer(k, norm):

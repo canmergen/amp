@@ -241,7 +241,7 @@ def _tavana_kirp(kaynaklar, tavan):
 
 
 def _ad_uret(tablo, kolon, fn, pencere, kullanilan=None):
-    """HAVALE_ISLEM + TUTAR + sum + son_3a -> HAVALE__TUTAR_SUM_3A
+    """TABLO + KOLON + sum + son_3a -> TABLO__KOLON_SUM_3A
 
     Tablo ve kolon adlari kirpildigi icin iki farkli toplama ayni ada
     dusebilir. kullanilan kumesi verilirse cakismada kisa bir hash eki

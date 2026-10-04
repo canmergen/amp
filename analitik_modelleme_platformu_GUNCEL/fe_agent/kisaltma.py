@@ -10,16 +10,16 @@ ve onayli tanim hafizasindan ogrenilir. Yeni onaylanan her tanim bir
 sonraki cikarimin girdisidir; sistem kullanildikca kendini gunceller.
 
 1) ISTATISTIK (cikar) - butun tanimlar:
-   Kolon adi parcalara bolunur (TXN_GLN_BAHIS_180D_AMT -> TXN, GLN, BAHIS,
-   AMT; 180D gibi pencereler ve saf sayilar atlanir). Her parca icin
+   Kolon adi parcalara bolunur (A_B_C_180D_D -> A, B, C, D; 180D gibi
+   pencereler ve saf sayilar atlanir). Her parca icin
    adinda o parca gecen TUM tanimli kolonlarin tanimlarinda gecen
    kelimeler (ve iki kelimelik ifadeler) sayilir:
      destek: kelime, parcayi tasiyan tanimlarin yuzde kacinda geciyor
      ayirt : destek - (parcayi TASIMAYAN tanimlardaki pay)
    Adaylar en guclu kanittan zayifa dogru ATANIR. Bir parca, kolonlarinin
    yarisindan fazlasinda birlikte gectigi bir parcaya zaten verilmis
-   (ya da onayli) anlami alamaz: IN_7D_CP_CNT'de "karsi taraf" once CP'ye
-   gider, IN ikinci adayina ("gelen") gecer. Ekli bicim, yalin hali
+   (ya da onayli) anlami alamaz: iki kelimelik bir anlam once onu en
+   guclu tasiyan parcaya gider, digeri ikinci adayina gecer. Ekli bicim, yalin hali
    sozlukte de geciyorsa yalina iner (adedi -> adet).
 
 2) DIL MODELI (dogrulamayi_baslat) - her kisaltma icin:
@@ -64,10 +64,10 @@ EN_COK = 300           # kartta gosterilen en cok kisaltma
 _TR_KUCUK = str.maketrans({"I": "ı", "İ": "i"})
 _TR_SADE = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosuCGIOSU")
 _PENCERE = re.compile(r"^\d+[DAMYH]?$", re.I)     # 180D, 3A, 12, 6M
-# SAYI DEGERLI KALIP (kullanici bildirimi: H00, H06, H12, H18 icin dort
-# ayri kisaltma ve hepsine ayni "HR" onerisi): 1-2 harf + en az 2 rakam.
-# Harf kisminin kisaltmasi, rakam degeridir (H00 = saat 00, M12 = ay 12).
-# TOP1, X2 gibi tek rakamlilar kisaltmanin kendisi sayilir.
+# SAYI DEGERLI KALIP (kullanici bildirimi: ayni harf + farkli sayilar dort
+# ayri kisaltma sayiliyor ve hepsine ayni yeni kisaltma oneriliyordu):
+# 1-2 harf + en az 2 rakam. Harf kismi kisaltma, rakam degerdir.
+# Tek rakamlilar kisaltmanin kendisi sayilir.
 _SAYILI = re.compile(r"^([A-Z]{1,2})(\d{2,})$")
 # Anlam tasimayan baglaclar. "gun", "ay" artik DURAK DEGIL: DAY / MONTH
 # gibi kisaltmalarin anlami olabilirler; pencereli tanimlarin hepsinde
@@ -115,7 +115,7 @@ def _tanim_kokleri(tanim):
     # IKI HARFLI kelimeler de aday ("ay" -> MONTH, "en" -> "en cok"); anlam
     # tasimayan iki harfliler _DURAK'ta.
     # PARANTEZ ICI aday degil: cogunlukla Ingilizce karsilik ya da kisaltma
-    # ("duzeltilmis (shrink)", "yogunlasmasi (HHI)"); ifade de oradan bolunur.
+    # (Ingilizce karsilik, kisaltma); ifade de oradan bolunur.
     metin = re.sub(r"\([^)]*\)", " | ", str(tanim or ""))
     kelimeler = [k for k in re.findall(r"[A-Za-zÇĞİÖŞÜçğıöşü]+|\|", metin)
                  if len(k) >= 2 or k == "|"]
@@ -241,7 +241,7 @@ def adaylar(tanimlar):
         if not tekli:
             continue
         # Esitlikte kisaltmanin harflerini SIRAYLA iceren kelime one gecer
-        # (GLN -> gelen, GDN -> giden).
+        # (kisaltma harflerini sirayla tasiyan kelime).
         # SIRA TAM BELIRLI (kullanici testinde esit puanli kisaltmalar her
         # calistirmada farkli anlam aliyordu: kume sirasi rastgele).
         sirali = sorted(tekli, key=lambda k: (-tekli[k][0], -tekli[k][1],
@@ -250,7 +250,7 @@ def adaylar(tanimlar):
         for en_iyi in sirali:
             sinir = tekli[en_iyi][0] - 0.05
             # IKI KELIMELIK IFADE yalniz iki kelimesi de bu kisaltmaya ozgu
-            # ise ("hafta sonu", "karsi taraf"); tek kelime yedek olarak
+            # ise (iki kelimelik kalip ad); tek kelime yedek olarak
             # hemen arkasinda kalir.
             for k in sorted(puan):
                 ayirt = puan[k][0]
@@ -319,7 +319,7 @@ def _korpus_yalin(anlam, sozcukler):
 
 def _harf_guclu(parca, a):
     """Kisaltmanin harfleri anlamda SIRAYLA geciyor ve anlam guclu
-    (destek >= %90) mu: GLN-gelen, BNK-banka, ADT-adet, HS-hafta sonu."""
+    (destek >= %90) mu."""
     return int(a["destek"] >= 0.9 and _harf_uyumu(parca, _sade(a["anlam"]).replace(" ", "")))
 
 
@@ -327,8 +327,8 @@ def cikar(tanimlar, aday=None):
     """{kolon: tanim} -> {KISALTMA: {"anlam", "kolon", "destek", "ayirt"}}.
 
     ATAMA BUTUN ADAYLAR UZERINDEN, en guclu kanittan zayifa (kullanici
-    Excel'i: SUM'un zayif "karsi" adayi, CP'nin guclu "karsi taraf"indan
-    once ataniyordu, cunku sira kisaltma bazindaydi). Sira: harfleri
+    bildirimi: bir kisaltmanin zayif adayi, baska bir kisaltmanin guclu
+    adayindan once ataniyordu, cunku sira kisaltma bazindaydi). Sira: harfleri
     sirayla tutan guclu aday > ayirt (0.05'lik basamak) > ayni kisaltmada
     once gelen (iki kelimelik ifade tek kelimeden once) > kolon sayisi.
     Bir parca, birlikte gectigi parcaya verilmis ya da onayli anlami
@@ -361,11 +361,11 @@ def cikar(tanimlar, aday=None):
         if _yasakli(a["anlam"].split(" "), yasak):
             continue
         # IKI KELIMELIK IFADE baska bir kisaltmanin EN GUCLU tek kelime
-        # adayini icerirse secilmez (HIGH "yuksek yogunlasma": yogunlasma
-        # CONC'un; BNK "farkli banka": farkli DISTINCT'in).
+        # adayini icerirse secilmez (iki kelimeden biri baska bir
+        # kisaltmanin en guclu adayi).
         if " " in a.get("anahtar", "") and _baskasinin(a["anahtar"], parca, aday):
             continue
-        # Kendini anlatan parca (BAHIS -> bahis, "bahis sirketlerine")
+        # Kendini anlatan parca (parcanin kendisi Turkce bir kelime)
         # listeyi kalabaliklastirir: parca duser.
         if parca.lower() in _sade(a["anlam"]).split(" ") \
                 or _sade(a["anlam"]).replace(" ", "") == parca.lower():
@@ -389,8 +389,9 @@ def _baskasinin(anahtar, parca, aday, pay=0.05):
             tekli = a.get("tekli") or {}
             if not tekli:
                 continue
-            # Esit guclu ilk adaylarin HEPSI (CP: "karsi" ve "taraf" ayni
-            # ayirt'ta; yalniz birine bakmak digerini sahipsiz birakiyordu).
+            # Esit guclu ilk adaylarin HEPSI (iki kelimelik anlamin iki
+            # kelimesi ayni ayirt'ta; yalniz birine bakmak digerini sahipsiz
+            # birakiyordu).
             tepe = max(tekli.values())
             if k in tekli and tekli[k] >= tepe - 0.01 \
                     and tekli[k] >= benim.get(k, 0) - pay:
@@ -483,7 +484,7 @@ def _yalin(kelime, sozcukler):
 
 def yalin_anlam(anlam):
     """Anlam metni: TEK kelimeyse yalina iner. Cok kelimeli anlamlar
-    (hafta sonu, degisim katsayisi, karsi taraf) birlesik addir; son
+    (iki kelimelik kalip adlar) birlesik addir; son
     kelimenin eki anlamin parcasidir, dokunulmaz."""
     a = str(anlam or "").strip()
     if not a or " " in a:
@@ -583,7 +584,7 @@ def kaydet(satirlar, kullanici=""):
 
 # ---------------------------------------------------------------------------
 # OGRENILMIS BILGI (kullanici karari: "kendi kendini gelistiren bir sistem;
-# sozlugu olmayan veri setinde de TXN gecerse 'bu islem' diyebilmeli")
+# sozlugu olmayan veri setinde de ayni kisaltma gecerse anlamini bilmeli")
 # ---------------------------------------------------------------------------
 # PROJE_HAFIZASI/KISALTMA_OGRENILEN.parquet: sozluklu her calismada
 # istatistik + dil modeli kontrolunden GECEN anlamlar KENDILIGINDEN yazilir
@@ -731,7 +732,7 @@ def _kelime_eslesir(k, a):
 def _yeni_ad_oner(ad, kisa, anlam, tanim, anlamlar):
     """Kolon adina kisa'yi ekleyen ad onerisi: anlamin tanimda hemen
     ARDINDAN gelen ve adda karsiligi olan kisaltmanin ONUNE eklenir
-    ("farkli banka adedi" + DISTINCT -> ..._DISTINCT_BNK_ADT). Bulunamazsa
+    (aciklamadaki kelime sirasina gore). Bulunamazsa
     sona eklenir."""
     tok = _kelime_tokenlari(tanim)
     ilk = _sade(anlam.split()[0])
@@ -758,9 +759,9 @@ def tutarsizliklar(tanimlar, anlamlar=None):
                    kolonlarinin en az CELISKI_PAY kadari anlami tasiyorsa)
       adda_yok   : aciklamada bir kisaltmanin anlami geciyor, adda o
                    kisaltma da, ayni anlami veren baska bir kisaltma da
-                   yok (PER_DAY "gunluk ortalama": PER "ortalama" dedigi
-                   icin AVG aranmaz). Genel kelimeler (islem gibi,
-                   tanimlarin %30'undan fazlasinda gecen) sayilmaz.
+                   yok (anlami adda baska bir kisaltma zaten veriyorsa
+                   aranmaz). Genel kelimeler (tanimlarin %30'undan
+                   fazlasinda gecen) sayilmaz.
 
     Doner: {kolon: [{"tur", "kisaltma", "anlam", "gerekce", "yeni_ad"}]}"""
     if anlamlar is None:
@@ -812,9 +813,8 @@ def tutarsizliklar(tanimlar, anlamlar=None):
                 continue
             if genel(anlam) or not tasir(ad, anlam):
                 continue
-            # Adda AYNEN tanimda gecen bir parca varsa (HHI -> "... yogunlasmasi
-            # hhi") yanindaki kelimeler o parcanin aciklamasidir: "yogunlasma"
-            # icin CONC aranmaz.
+            # Adda AYNEN tanimda gecen bir parca varsa yanindaki kelimeler o
+            # parcanin aciklamasidir; onlar icin baska kisaltma aranmaz.
             tk = toklar[ad]
             yakin = set()
             for i, k in enumerate(tk):
@@ -823,7 +823,7 @@ def tutarsizliklar(tanimlar, anlamlar=None):
             if yakin and all(any(_kelime_eslesir(k, a) for k in yakin)
                              for a in anlam.split() if len(a) >= 2):
                 continue
-            # Kardes kisaltma adda varsa (TMSNCFRST / TMSNCLST: ortak 5 harf)
+            # Kardes kisaltma adda varsa (ilk 5 harfi ortak iki kisaltma)
             # anlam ondan geliyor olabilir; isaretlenmez.
             if any(len(p) >= 5 and p[:5] == kisa[:5] for p in ps):
                 continue
@@ -887,7 +887,7 @@ def _dm_girdisi(tanimlar):
         if adet < EN_AZ_KOLON or parca in onay:
             continue
         if parca not in aday and parca.isalpha() and len(parca) > 6:
-            continue        # uzun duz kelime (BAHIS, SEHIR...) kisaltma degil
+            continue        # uzun duz kelime kisaltma degil
         ornek = _ornekler(tanimlar, parca)
         # Orneklerdeki DIGER kisaltmalarin anlamlari (onayli ya da
         # ogrenilen): model hangi kelimenin baska kisaltmaya ait oldugunu
@@ -1025,8 +1025,8 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
     for kisa, d in dm.items():
         if kisa in onay:
             continue
-        # KENDINI ACIKLAYAN KELIME (kullanici karari: BAHIS, KRIPTO, ODEME
-        # kisaltma degil, Turkce kelime): anlami kelimenin kendisiyse listeye
+        # KENDINI ACIKLAYAN KELIME (kullanici karari: kolon adindaki Turkce
+        # kelime kisaltma degildir): anlami kelimenin kendisiyse listeye
         # girmez.
         if _kendini_aciklar(kisa, d.get("anlam") or d.get("genel") or ""):
             cikti.pop(kisa, None)
@@ -1054,8 +1054,8 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
                 d = {"anlam": "", "karar": "emin_degil"}
                 uyari.append("Dil modeli anlam yerine kısaltmanın kendisini verdi.")
         if d.get("anlam"):
-            # Birlikte gectigi kisaltmanin anlamini iceriyor (ADT ->
-            # "farkli", DISTINCT'in). Es anlamli (ayni anlam) uyari almaz.
+            # Birlikte gectigi kisaltmanin anlamini iceriyor. Es anlamli
+            # (ayni anlam) uyari almaz.
             for q in sorted(_birlikte(satirlar, kisa, parca_say)):
                 if q in son_anlam and not _ayni_anlam(son_anlam[q], d["anlam"]) \
                         and _yasakli(d["anlam"].split(), _anlam_kelimeleri(son_anlam[q])):
@@ -1133,8 +1133,8 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             continue
         ya = o.get("yeni_anlam") or o.get("istatistik") or ""
         if parca_say.get(y) and son_anlam.get(y) and _ayni_anlam(son_anlam[y], ya):
-            # AYNI ANLAMDA BASKA KISALTMA ZATEN VAR (IN ve GLN ikisi de
-            # "gelen"): hata degil; sozlukteki anlam dogru, oneri yok,
+            # AYNI ANLAMDA BASKA KISALTMA ZATEN VAR (iki kisaltma ayni
+            # anlamda): hata degil; sozlukteki anlam dogru, oneri yok,
             # uyari yok (kullanici karari).
             o.update(yeni_kisaltma="", yeni_anlam="", secim="sozluk", anlam=ya,
                      gerekce=(o.get("gerekce") or "")
@@ -1152,7 +1152,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
     # bilgiden doldurulur.
     ogr = ogrenilenler()
     # Tanimsiz kolonlar da sayilir: sozlugu olmayan veri setinde kolon
-    # adinda TXN geciyorsa "islem" buradan gelir.
+    # adinda daha once ogrenilmis bir kisaltma geciyorsa anlami buradan gelir.
     tum_say = Counter(p for ad in (tanimlar or {}) for p in set(parcalar(ad)))
     for kisa, adet in tum_say.items():
         if kisa in onay or kisa not in ogr or kisa in kendini:
@@ -1189,9 +1189,8 @@ def yuzdesinde(n):
 
 
 def _kendini_aciklar(kisa, anlam):
-    """Parca, anlaminin kendisi (Turkce kelime): BAHIS = bahis, ODEME =
-    odeme. Ingilizce kelimenin kopyasi (SCORE = score) sayilmaz; o Turkce
-    kontrolune takilir."""
+    """Parca, anlaminin kendisi (Turkce kelime; parca = anlami).
+    Ingilizce kelimenin kopyasi sayilmaz; o Turkce kontrolune takilir."""
     a = str(anlam or "").strip()
     if not a or _sade(a).replace(" ", "") != kisa.lower():
         return False
@@ -1231,7 +1230,7 @@ def birlesik(tanimlar):
     kesin = dict(onaylilar())
     # Onceki calismalardan ogrenilenlerin HEPSI (istem yalniz o gruptaki
     # kolon adlarinda gecenleri koyar): sozlugu olmayan veri setinde de
-    # TXN "islem" bilinir. Bu calismada ogrenilen onun ustune yazar.
+    # ogrenilmis kisaltma bilinir. Bu calismada ogrenilen onun ustune yazar.
     tahmini = {k: o["anlam"] for k, o in ogrenilenler().items() if k not in kesin}
     tahmini.update({k: o["anlam"] for k, o in oner.items()
                     if o["anlam"] and k not in kesin})

@@ -362,7 +362,8 @@ def _yuzde(o):
 
 def hassas_mi(ad, aciklama=""):
     """Hassas degisken turu ya da None. Ad "_" ile parcalanip parca parca
-    bakilir (TXN_AGE_DAYS gibi yanlis eslesmeyi azaltmak icin kok bastan)."""
+    bakilir (baska bir kelimenin icinde gecen kokle yanlis eslesmeyi
+    azaltmak icin kok bastan)."""
     parcalar = [p for p in re.split(r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+", str(ad).upper()) if p]
     metin = str(aciklama or "").upper()
     for tur, kokler in HASSAS_KOKLER.items():
