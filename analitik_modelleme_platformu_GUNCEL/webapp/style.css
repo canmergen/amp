@@ -1300,6 +1300,14 @@ button.ozet-kart:focus-visible {
 .dg-tip { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
 /* Kısaltma Sözlüğü: şüpheli anlam uyarısı (anlam silinmez). */
 .dg-kisa-uyari { color: var(--amber); margin-top: 2px; }
+/* Kısaltma Sözlüğü durum bilgisi: tablonun altında, onay düğmesinin
+   üstünde, bilgilendirme kutusu (kullanıcı kararı). */
+.dg-bilgi-kutu {
+  font-size: var(--fs-kucuk); color: var(--metin); line-height: 1.5;
+  margin: var(--b-3) 0 var(--b-2); padding: var(--b-2) var(--b-3);
+  background: var(--bilgi-zemin); border-left: 3px solid var(--bilgi-kenar);
+  border-radius: var(--r-kucuk);
+}
 .dg-kisa-aciklama { color: var(--metin); font-size: var(--fs-kucuk); margin: 2px 0 6px; line-height: 1.45; }
 /* Dil modeli sonucu gelmemiş kısaltma satırı: kilitli, soluk. */
 .dg-satir.dg-bekliyor td { opacity: .55; }
@@ -2987,6 +2995,10 @@ span.bolme-cip { cursor: default; }
   --dg-hafiza: rgba(139,92,246,.15);
   --dg-eklendi: rgba(22,163,74,.16);
   --dg-eklenmedi: rgba(213,17,21,.12);
+  /* Bilgilendirme kutusu: satir renklerinden (sari/mavi/kirmizi/mor/yesil)
+     ayri bir ton, camgobegi. */
+  --bilgi-zemin: rgba(13,148,136,.09);
+  --bilgi-kenar: #0D9488;
 }
 /* Koyu yüzeyde aynı tonlar biraz daha belirgin. */
 #kabuk.koyu {
@@ -2996,6 +3008,8 @@ span.bolme-cip { cursor: default; }
   --dg-hafiza: rgba(139,92,246,.20);
   --dg-eklendi: rgba(34,197,94,.15);
   --dg-eklenmedi: rgba(239,68,68,.17);
+  --bilgi-zemin: rgba(45,212,191,.12);
+  --bilgi-kenar: #2DD4BF;
 }
 .dg-tablo tr.dg-bos > td { background: var(--dg-bos); }
 .dg-tablo tr.dg-llm > td { background: var(--dg-llm); }

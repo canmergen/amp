@@ -6916,8 +6916,9 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     kb.appendChild(kbas);
     kart.appendChild(kb);
     if (ka.aciklama) kart.appendChild(elYap("div", "dg-kisa-aciklama", tireSade(ka.aciklama)));
-    const durumEl = elYap("div", "dg-not", "");
-    kart.appendChild(durumEl);
+    /* DURUM BİLGİSİ (kullanıcı kararı): tablonun altında, onay düğmesinin
+       üstünde, bilgilendirme kutusu olarak; aşağıda tablodan sonra eklenir. */
+    const durumEl = elYap("div", "dg-bilgi-kutu", "");
     const hataEl = elYap("div", "dg-oneri-hata");
     hataEl.hidden = true;
     kart.appendChild(hataEl);
@@ -6969,6 +6970,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
     tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
+    kart.appendChild(durumEl);
 
     function ciz(liste) {
         tb.textContent = "";

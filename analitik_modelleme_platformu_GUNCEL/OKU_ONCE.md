@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sütun adları: "Önerilen Kısaltma", "Seç"**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı; yalnız açıklama metni için)
+Bu tur: **Kısaltma durum bilgisi tablonun altında, bilgi kutusu olarak**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme)
+
+- "43 kısaltma; 0 tanesi hafızada onaylı. Dil modeli kontrolü sürüyor …"
+  satırı tablonun altına, onay düğmesinin üstüne taşındı.
+- Bilgilendirme kutusu: camgöbeği zemin ve sol çizgi (satır renklerinden
+  ayrı); açık ve koyu temada ayrı tonlar (--bilgi-zemin, --bilgi-kenar).
+  Turuncu "Dil modeli kontrolü bitince onaylanabilir" uyarısı kutunun
+  altında kalır.
+
+Önceki tur: **Sütun adları: "Önerilen Kısaltma", "Seç"**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı; yalnız açıklama metni için)
 
 - Kısaltma Sözlüğü: "Önerilen" -> "Önerilen Kısaltma", "Kaydet" -> "Seç".
 - Sözlük Tanımları (01.2.3): "Sözlüğe Ekle" sütun başlığı -> "Seç".
