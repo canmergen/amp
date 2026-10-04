@@ -1161,6 +1161,16 @@ def kanit_ornekleri(tanimlar, kisa, anlam, adet=KANIT_ORNEK):
     return secilen
 
 
+def _uyum(o, bekliyor):
+    """"ayni" / "farkli" / "" : sozlukteki anlam ile dil modelinin karari."""
+    soz, dm = o.get("istatistik") or "", o.get("dm_anlam") or ""
+    if bekliyor or not soz or not dm:
+        return ""
+    if o.get("dm_karar") == "dogru" or _ayni_anlam(yalin_anlam(soz), yalin_anlam(dm)):
+        return "ayni"
+    return "farkli"
+
+
 def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
     """Kartta gosterilecek satirlar: onaylilar + ogrenilenler.
     Doner: (satirlar, dm_durum). satir: {kisaltma, anlam, onayli, kanit,
@@ -1214,6 +1224,9 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          "dm_durum": ("bekliyor" if kisa in bekleyen else
                                       ("yok" if "dm_karar" not in o else
                                        ("emin_degil" if not o.get("dm_anlam") else "var"))),
+                         # Sozluk ile dil modeli AYNI mi (kartta satir rengi;
+                         # kullanici karari). Biri yoksa karsilastirma yok.
+                         "uyum": _uyum(o, kisa in bekleyen),
                          "secilen": ("hafiza" if kisa in onay else
                                      "" if not anlam else
                                      "dil_modeli" if o.get("kaynak") in

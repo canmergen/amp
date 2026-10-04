@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma kartında sözlük ve dil modeli ayrı sütunlarda**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma kartında renk: sözlük ve dil modeli aynı mı farklı mı**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+
+- Mavi: sözlük ile dil modeli aynı anlamı veriyor. Kırmızı: farklı.
+  Renksiz: karşılaştırma yok (dil modeli bekliyor / emin değil / sözlükte
+  anlam yok). Sarı boş, mor hafızada onaylı, yeşil sizin yazdığınız
+  (akışın geri kalanıyla aynı). Anlam'ın kaynağını ✓ gösterir.
+- ÖNEMLİ: son iki turun `fe_agent/llm.py` dosyası da kopyalanmalı;
+  eski llm.py ile dil modeli kontrolü "unexpected keyword argument 'ara'"
+  hatası verip hiç çalışmıyor (Dil Modeli sütunu boş kalır).
+
+Önceki tur: **Kısaltma kartında sözlük ve dil modeli ayrı sütunlarda**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 - Sütunlar: Kısaltma | Sözlükte | Dil Modeli | Anlam | Not | Hafızaya
   Kaydet. Sözlükte ve Dil Modeli salt okunur; Anlam'a daha mantıklı olan

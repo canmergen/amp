@@ -6923,11 +6923,14 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const ust = elYap("div", "dg-tablo-ust");
     /* "Önerilen": temel sözlük, sözlükten çıkarım ya da dil modeli
        (kaynağı satırın Kaynak sütununda yazar). */
-    /* RENKLER AKIŞIN GERİ KALANIYLA AYNI (Sözlük Tanımları kartı): boş
-       sarı, dil modeli mavi, onaylı mor, kullanıcının yazdığı yeşil;
-       sözlükten gelen (dil modeli farklı/emin değil/bekliyor) renksiz. */
-    ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"], ["dg-l-sozluk", "Sözlükten"],
-                              ["dg-l-llm", "Dil Modeli Önerisi"],
+    /* RENK = SÖZLÜK İLE DİL MODELİ AYNI MI (kullanıcı kararı): aynı
+       düşündükleri mavi, farklı düşündükleri kırmızı; karşılaştırma yoksa
+       (dil modeli bekliyor / emin değil / sözlükte yok) renksiz. Anlam'a
+       hangisinin yazıldığını ✓ gösterir. Boş sarı, onaylı mor, kullanıcının
+       yazdığı yeşil (akışın geri kalanıyla aynı). */
+    ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"],
+                              ["dg-l-llm", "Sözlük ve Dil Modeli Aynı"],
+                              ["dg-l-farkli", "Sözlük ve Dil Modeli Farklı"],
                               ["dg-l-hafiza", "Hafızada Onaylı"],
                               ["dg-l-eklendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
@@ -7019,18 +7022,21 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 /* Renk, Anlam'daki değerin NEREDEN geldiğine göre: kullanıcı
                    sözlükteki ya da dil modelindeki değeri yazarsa o kaynağın
                    rengine döner; başka bir şey yazarsa yeşil. */
+                const dmDen = r.dm_durum === "var" && ayni(r.dil_modeli);
+                const sozDen = ayni(r.sozlukten);
                 let tur = "";
                 if (!m) tur = "bos";
                 else if (r.onayli && ayni(r.anlam)) tur = "hafiza";
-                else if (r.dm_durum === "var" && ayni(r.dil_modeli)) tur = "llm";
-                else if (ayni(r.sozlukten)) tur = "sozluk";
+                else if (dmDen || sozDen)
+                    tur = r.uyum === "ayni" ? "ayni" : r.uyum === "farkli" ? "farkli" : "";
                 else tur = "eklendi";
                 tr.classList.toggle("dg-bos", tur === "bos");
                 tr.classList.toggle("dg-hafiza-renk", tur === "hafiza");
-                tr.classList.toggle("dg-llm", tur === "llm");
+                tr.classList.toggle("dg-llm", tur === "ayni");
+                tr.classList.toggle("dg-farkli", tur === "farkli");
                 tr.classList.toggle("dg-eklendi", tur === "eklendi");
-                tdS.classList.toggle("secili", tur === "sozluk" || (tur === "llm" && ayni(r.sozlukten)));
-                tdD.classList.toggle("secili", tur === "llm");
+                tdS.classList.toggle("secili", sozDen);
+                tdD.classList.toggle("secili", dmDen);
             };
             g.addEventListener("input", vurgu);
             vurgu();
