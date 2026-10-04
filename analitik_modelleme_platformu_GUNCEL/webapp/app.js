@@ -6932,7 +6932,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([d, e]) => {
         const b = elYap("button", "dg-toplu-btn", e);
         b.type = "button"; b.disabled = kilitli;
-        b.onclick = () => satirlar.forEach(x => { x.kutu.checked = d; });
+        b.onclick = () => satirlar.forEach(x => { if (!x.kutu.disabled) x.kutu.checked = d; });
         toplu.appendChild(b);
         topluBtn.push(b);
     });
@@ -6973,8 +6973,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const tdA = elYap("td", "dg-aciklama-hucre");
             const g = document.createElement("input");
             g.type = "text"; g.className = "dg-giris";
-            g.value = tireSade(r.anlam || ""); g.disabled = kilitli;
+            /* Dil modeli sonucu gelmemiş satır kilitli (kullanıcı kararı):
+               sonuç gelince yoklama satırı açar. */
+            g.value = tireSade(r.anlam || ""); g.disabled = kilitli || !!r.bekliyor;
             g.setAttribute("aria-label", r.kisaltma + " anlamı");
+            if (r.bekliyor) tr.classList.add("dg-bekliyor");
             tdA.appendChild(g); tr.appendChild(tdA);
             const tdKy = elYap("td", "dg-tip", r.onayli
                 ? "Onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || ""));
@@ -6987,7 +6990,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const tdI = elYap("td", "dg-ekle-hucre");
             const kutu = document.createElement("input");
             kutu.type = "checkbox"; kutu.className = "dg-ekle";
-            kutu.checked = !!r.onayli; kutu.disabled = kilitli;
+            kutu.checked = !!r.onayli; kutu.disabled = kilitli || !!r.bekliyor;
             tdI.appendChild(kutu); tr.appendChild(tdI);
             const vurgu = () => {
                 const m = g.value.trim();
@@ -7019,7 +7022,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     let yoklamaSayisi = 0;
     function yokla() {
         if (kilitli || !document.body.contains(tb)) return;
-        if (yoklamaSayisi++ > 120) {
+        if (yoklamaSayisi++ > 200) {
             /* 10 dakikada bitmedi: onay kilidi açılır, not yazar. */
             ka.dm = "zaman_asimi";
             durumEl.textContent += " Dil modeli kontrolü 10 dakikada bitmedi; liste kural tabanlı.";
@@ -7030,7 +7033,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             .then(r => r.json())
             .then(d => {
                 const yeni = d && d.kisaltma;
-                if (!yeni) return setTimeout(yokla, 5000);
+                if (!yeni) return setTimeout(yokla, 3000);
                 ka.not = yeni.not || "";
                 ka.dm = yeni.dm;
                 const elle = {};
@@ -7043,12 +7046,12 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                     const e = elle[x.r.kisaltma];
                     if (e) { x.g.value = e.anlam; x.kutu.checked = e.kutu; x.g.dispatchEvent(new Event("input")); }
                 });
-                if (yeni.dm === "calisiyor") setTimeout(yokla, 5000);
+                if (yeni.dm === "calisiyor") setTimeout(yokla, 3000);
                 if (degisti) degisti();
             })
             .catch(() => setTimeout(yokla, 8000));
     }
-    if (ka.dm === "calisiyor") setTimeout(yokla, 5000);
+    if (ka.dm === "calisiyor") setTimeout(yokla, 3000);
 
     kaydetBtn.onclick = () => {
         kaydetBtn.disabled = true;
@@ -7079,7 +7082,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             cikarilan: x.r.cikarilan || "", kaydet: x.kutu.checked })),
         kilitle: k => {
             kilitli = k;
-            satirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; });
+            satirlar.forEach(x => { x.g.disabled = k || !!x.r.bekliyor; x.kutu.disabled = k || !!x.r.bekliyor; });
             topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
         },
         /* Dil modeli kontrolü sürüyor mu (adım kartında onay kilidi). */

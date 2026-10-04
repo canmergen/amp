@@ -854,9 +854,21 @@ def _imza(girdi):
 
 def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
     hata = ""
+    ornek_say_ = {g["kisaltma"]: len(g["ornekler"]) for g in girdi}
+
+    def ara(parca, anahtarlar):
+        """Parca bitti: sonuclari hemen yaz, o kisaltmalar artik beklemiyor."""
+        with _DM_KILIT:
+            k = _DM.get(imza)
+            if not k or k.get("durum") != "calisiyor":
+                return
+            for kisa, v in parca.items():
+                v = dict(v, ornek=ornek_say_.get(kisa, 0))
+                k["sonuc"][kisa] = v
+            k["bekleyen"] = set(k.get("bekleyen") or ()) - set(anahtarlar)
     try:
         from fe_agent import llm as llm_mod
-        sonuc, hata = llm_mod.kisaltma_dogrula(girdi)
+        sonuc, hata = llm_mod.kisaltma_dogrula(girdi, ara=ara)
     except Exception as e:
         sonuc, hata = None, "%s: %s" % (type(e).__name__, str(e)[:160])
     ornek_say = {g["kisaltma"]: len(g["ornekler"]) for g in girdi}
@@ -883,7 +895,8 @@ def dogrulamayi_baslat(tanimlar, veri_seti=""):
         k = _DM.get(imza)
         if k and k["durum"] in ("calisiyor", "bitti"):
             return imza
-        _DM[imza] = {"durum": "calisiyor", "sonuc": {}, "zaman": time.time()}
+        _DM[imza] = {"durum": "calisiyor", "sonuc": {}, "zaman": time.time(),
+                     "bekleyen": set(g["kisaltma"] for g in girdi)}
         if len(_DM) > 20:                       # eski kayitlari kirp
             for eski in sorted(_DM, key=lambda x: _DM[x]["zaman"])[:len(_DM) - 20]:
                 if _DM[eski]["durum"] != "calisiyor":
@@ -891,6 +904,16 @@ def dogrulamayi_baslat(tanimlar, veri_seti=""):
     threading.Thread(target=_dm_calis, args=(imza, girdi, dict(tanimlar or {}), veri_seti),
                      daemon=True).start()
     return imza
+
+
+def bekleyenler(tanimlar, veri_seti=""):
+    """Dil modeli sonucu HENUZ gelmemis kisaltmalar (kontrol suruyorsa)."""
+    imza = dogrulamayi_baslat(tanimlar, veri_seti)
+    with _DM_KILIT:
+        k = _DM.get(imza) or {}
+        if k.get("durum") != "calisiyor":
+            return set()
+        return set(k.get("bekleyen") or ())
 
 
 def dogrulama_bilgisi(tanimlar, veri_seti=""):
@@ -1133,6 +1156,9 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
     cikarilan, kaynak} - kolon sayisina gore."""
     oner, durum = oneriler(tanimlar, bekle, veri_seti)
     onay = onaylilar()
+    # Sonucu henuz gelmeyen kisaltmalar kartta kilitli (kullanici karari:
+    # "yapabildiklerini degistirebileyim, LLM bitmeden digerlerini degil").
+    bekleyen = bekleyenler(tanimlar, veri_seti) if durum == "calisiyor" else set()
     satirlar = []
     for kisa in sorted(set(oner) | set(onay),
                        key=lambda k: (-(oner.get(k) or {}).get("kolon", 0), k)):
@@ -1143,7 +1169,7 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
             if o.get("ornek") and o["kaynak"] != "sozluk":
                 ad += " (%d örnekle)" % o["ornek"]
             parca.append(ad)
-            if durum == "calisiyor" and o["kaynak"] in ("sozluk", "onceki"):
+            if kisa in bekleyen and kisa not in onay:
                 parca.append("dil modeli kontrolü bekleniyor")
             if o.get("genel_uyumlu"):
                 parca.append("sözlüğe bakmadan verilen genel anlamla aynı")
@@ -1167,6 +1193,7 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          "sozluk_uyumsuz": bool(o.get("sozluk_uyumsuz")),
                          # Onayli satirda uyari gosterilmez (kullanici karar verdi).
                          "uyari": "" if kisa in onay else (o.get("uyari") or ""),
+                         "bekliyor": kisa in bekleyen and kisa not in onay,
                          "ornekler": kanit_ornekleri(tanimlar, kisa, anlam)})
     return satirlar[:EN_COK], durum
 

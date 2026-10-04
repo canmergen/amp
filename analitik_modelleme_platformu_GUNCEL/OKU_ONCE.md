@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltmada sözlüğe bakmadan genel anlam + kontrol bitmeden onay yok**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma sonuçları geldikçe kartta açılıyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+
+- Dil modeli kontrolü artık 8'er kısaltmalık parçalar halinde; her parça
+  bitince sonucu hemen karta düşer (eskiden 12'lik parçaların hepsi
+  bitince geliyordu).
+- Sonucu gelen satır düzenlenebilir; sonucu gelmeyen satır soluk ve
+  kilitli ("dil modeli kontrolü bekleniyor"), sonuç gelince açılır.
+  Düzenlediğiniz satırlar sonraki güncellemelerde ezilmez.
+- Not satırında ilerleme: "Dil modeli kontrolü sürüyor: 21 / 42
+  kısaltmanın sonucu geldi."
+- Kart 3 sn'de bir yoklar (eskiden 5 sn). Onay düğmesi yine kontrolün
+  tamamı bitince açılır. Tümünü Seç / Temizle kilitli satırlara dokunmaz.
+
+Önceki tur: **Kısaltmada sözlüğe bakmadan genel anlam + kontrol bitmeden onay yok**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
 1) Sözlüksüz (kör) genel anlam
 - Dil modeline önce yalnız kısaltma ve geçtiği en çok 6 kolon adı gider

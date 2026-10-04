@@ -1300,6 +1300,9 @@ button.ozet-kart:focus-visible {
 .dg-tip { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
 /* Kısaltma Sözlüğü: şüpheli anlam uyarısı (anlam silinmez). */
 .dg-kisa-uyari { color: var(--amber); margin-top: 2px; }
+/* Dil modeli sonucu gelmemiş kısaltma satırı: kilitli, soluk. */
+.dg-satir.dg-bekliyor td { opacity: .55; }
+.dg-satir.dg-bekliyor .dg-giris { cursor: not-allowed; }
 .dg-satir.dg-uyarili td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
 
 /* TEYIT TABLOSU DÖRT KOLON: Değişken | Tip | Sözlük Tanımı | Süreç

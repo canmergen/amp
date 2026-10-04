@@ -1284,7 +1284,8 @@ def _kor_oku(veri, girdi):
 
 # Parca basina kisaltma: 25'te istem uzun oluyordu (8 ornek x tanim) ve
 # 90 sn zaman asimina takilma riski vardi; parcalar AYNI ANDA calisir.
-KISALTMA_PARCA = 12
+# 8: parca bittikce kart guncellenir; kucuk parca = daha sik guncelleme.
+KISALTMA_PARCA = 8
 _KISALTMA_HAVUZ = futures.ThreadPoolExecutor(max_workers=3)
 
 
@@ -1340,12 +1341,14 @@ def _kisaltma_oku(veri, girdi, uyumsuz=None, genel_uyum=None):
     return cikti
 
 
-def kisaltma_dogrula(girdi, orkestra=None):
+def kisaltma_dogrula(girdi, orkestra=None, ara=None):
     """girdi: [{"kisaltma", "anlam" (kural tabanli, bos olabilir),
     "ornekler": [(kolon, tanim)]}].
     Doner: (sonuc, hata) sonuc: {KISA: {"anlam", "karar"}}; karar
     "dogru" / "duzeltildi" / "emin_degil". Iki model ayni anlami verirse
-    kabul; ayrisirsa hakem karar verir."""
+    kabul; ayrisirsa hakem karar verir.
+    ara(sonuc_parcasi, kisaltmalar): her parca bitince cagrilir (kart
+    sonuclari gelir gelmez gosterir)."""
     if not girdi:
         return {}, None
     ork = orkestra or Orkestra()
@@ -1414,7 +1417,35 @@ def kisaltma_dogrula(girdi, orkestra=None):
     bayrak_ = {}          # GENEL ANLAM sozlukteki kullanimla celisiyor
     genel_ = {}           # sozluksuz (kor) genel anlam; "" = bilinmiyor
     uyum_ = {}            # secilen anlam kor genel anlamla ayni anlamda mi
-    for f in [_KISALTMA_HAVUZ.submit(parca_, b) for b in bloklar]:
+    oneri = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
+
+    def kur(anahtarlar):
+        cikti_ = {}
+        for k in anahtarlar:
+            if k not in sonuc:
+                continue
+            anlam = sonuc[k]
+            if not anlam:
+                cikti_[k] = {"anlam": "", "karar": "emin_degil"}
+            elif oneri.get(k) and _ayni_metin(anlam, oneri[k]):
+                cikti_[k] = {"anlam": oneri[k], "karar": "dogru"}
+            else:
+                cikti_[k] = {"anlam": anlam, "karar": "duzeltildi"}
+            if anlam and bayrak_.get(k):
+                cikti_[k]["sozluk_uyumsuz"] = True
+            # Kor genel anlam (secilen anlamla karsilastirma kisaltma.oneriler'de).
+            if k in genel_:
+                cikti_[k]["genel"] = genel_[k]
+                if k in uyum_:
+                    cikti_[k]["genel_uyumlu"] = uyum_[k]
+        return cikti_
+
+    # PARCA BITTIKCE (kullanici karari: "hepsini yapinca iletmek yerine
+    # yaptikca"): her parcanin sonucu ara() ile hemen birakilir; kart o
+    # kisaltmalari acar, kalanlar sonuc gelene kadar kilitli kalir.
+    isler = {_KISALTMA_HAVUZ.submit(parca_, b): b for b in bloklar}
+    for f in futures.as_completed(isler):
+        blok = isler[f]
         try:
             s_, geldi = f.result()
         except Exception:
@@ -1424,30 +1455,16 @@ def kisaltma_dogrula(girdi, orkestra=None):
             sonuc.update(s_)
         else:
             dusen += 1
+        if ara is not None:
+            try:
+                ara(kur([g["kisaltma"] for g in blok]), [g["kisaltma"] for g in blok])
+            except Exception:
+                pass
     if hic_cevap:
         return None, "Kısaltma kontrolü için dil modeline ulaşılamadı."
-    oneri = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
-    cikti = {}
-    for k, anlam in sonuc.items():
-        if not anlam:
-            cikti[k] = {"anlam": "", "karar": "emin_degil"}
-        elif oneri.get(k) and _ayni_metin(anlam, oneri[k]):
-            cikti[k] = {"anlam": oneri[k], "karar": "dogru"}
-        else:
-            cikti[k] = {"anlam": anlam, "karar": "duzeltildi"}
-        if anlam and bayrak_.get(k):
-            cikti[k]["sozluk_uyumsuz"] = True
-    # Kor genel anlam her kisaltmaya eklenir (secilen anlamla karsilastirma
-    # kisaltma.oneriler'de; model "genel_uyumlu" demediyse metin karsilastirmasi).
-    for k, genel in genel_.items():
-        if k not in cikti:
-            continue          # sozluklu karar gelmedi: kisaltma kontrol edilmemis sayilir
-        cikti[k]["genel"] = genel
-        if k in uyum_:
-            cikti[k]["genel_uyumlu"] = uyum_[k]
-    return cikti, (None if not dusen else
-                   "%d parçadan %d tanesi için dil modeli cevap vermedi."
-                   % (len(bloklar), dusen))
+    return kur(list(sonuc)), (None if not dusen else
+                              "%d parçadan %d tanesi için dil modeli cevap vermedi."
+                              % (len(bloklar), dusen))
 
 
 def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):

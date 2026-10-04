@@ -1479,9 +1479,13 @@ def _kisaltma_alani(durum, bekle=0.0):
     hazirdir; yetismezse kural tabanli liste gelir ve not yazilir."""
     satirlar, dm = kisaltma_mod.kart_satirlari(_kisaltma_kaynagi(durum), bekle,
                                                durum.get("veri_seti") or "")
-    notu = {"calisiyor": "Dil modeli kontrolü sürüyor; liste şimdilik kural "
-                         "tabanlı, sonuç gelince kendiliğinden güncellenir.",
-            "hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
+    notu = {"hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
+    if dm == "calisiyor":
+        # PARCA BITTIKCE: biten kisaltmalar duzenlenebilir, bekleyenler kilitli.
+        bekleyen = sum(1 for r_ in satirlar if r_.get("bekliyor"))
+        notu = ("Dil modeli kontrolü sürüyor: %d / %d kısaltmanın sonucu geldi. "
+                "Sonucu gelen satırları düzenleyebilirsiniz; kilitli satırlar "
+                "sonuç gelince açılır." % (len(satirlar) - bekleyen, len(satirlar)))
     if dm == "hata":
         try:
             sebep = kisaltma_mod.dogrulama_bilgisi(_kisaltma_kaynagi(durum),
