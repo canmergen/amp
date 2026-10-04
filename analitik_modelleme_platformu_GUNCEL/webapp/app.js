@@ -6728,7 +6728,7 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
     const satirlar = [];
     const ust = elYap("div", "dg-tablo-ust");
     ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"], ["dg-l-llm", "Sözlükten Çıkarıldı"],
-                              ["dg-l-eklendi", "Hafızada Onaylı"]]));
+                              ["dg-l-hafiza", "Hafızada Onaylı"]]));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
     kaydetBtn.type = "button";
@@ -6772,7 +6772,8 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
             const vurgu = () => {
                 const m = g.value.trim();
                 tr.classList.toggle("dg-bos", !m);
-                tr.classList.toggle("dg-eklendi", !!m && !!r.onayli && m === String(r.anlam || "").trim());
+                /* Hafızada onaylı: mor (tanım satırlarındaki "Onaylı Tanım" ile aynı). */
+                tr.classList.toggle("dg-hafiza-renk", !!m && !!r.onayli && m === String(r.anlam || "").trim());
                 tr.classList.toggle("dg-llm", !!m && !r.onayli && m === String(r.cikarilan || "").trim());
             };
             g.addEventListener("input", vurgu);

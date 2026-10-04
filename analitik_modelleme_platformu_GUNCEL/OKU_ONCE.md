@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.4 tanım kontrolü önce onaylı tanım hafızasıyla**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`
+Bu tur: **Hafızada onaylı olanlar mor**. Değiştir: `webapp/app.js`
+
+- Kısaltma Sözlüğü'nde hafızada onaylı satırlar yeşil yerine mor (tanım
+  tablolarındaki "Onaylı Tanım" satırlarıyla aynı renk).
+
+---
+
+Önceki tur: **01.2.4 tanım kontrolü önce onaylı tanım hafızasıyla**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`
 
 - "Tanımları Kontrol Et" basılınca her dolu tanım önce onaylı tanım
   hafızasıyla karşılaştırılır (dil modeli yok):
