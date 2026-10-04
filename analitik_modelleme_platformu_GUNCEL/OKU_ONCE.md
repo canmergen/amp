@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Tanımlar tamamen Türkçe**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+Bu tur: **Koyu tema yenilendi**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+
+- Koyu temada zemin ve kartlar siyah, ayrım kenarlıkla; gri zemin
+  isteyen yerler (tablo başlığı, iç kutu, değer çipi) siyahtan görünür
+  biçimde ayrışan gri (#141414 / #1F1F1F).
+- Vurgu renkleri sakinleştirildi: kırmızı #E5262B (somon değil), yeşil
+  #34B86E, kehribar #E8A23A; sözlük satır renkleri daha düşük
+  saydamlıkla.
+- İkincil (gri) yazı iki temada tek renk: #767676 (beyazda 4,54:1,
+  siyahta 4,6:1).
+- Açılır seçim listesi iki temada da ince kırmızı çerçeveli.
+
+Önceki tur: **Tanımlar tamamen Türkçe**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
 
 - Dil modeli kuralları: tanım her zaman Türkçe karakterle (ç ğ ı İ ö ş ü)
   ve Türkçe kelimelerle yazılır; örnek / onaylı / mevcut tanımlar

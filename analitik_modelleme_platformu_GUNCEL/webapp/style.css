@@ -82,7 +82,10 @@
   --tutamak-tasma: calc((var(--tutamak-en) - var(--ayrac-kalinlik)) / 2);
 
   --metin:        #000000;
-  --metin-soluk:  rgba(0,0,0,.66);
+  /* IKI TEMADA TEK GRI (kullanici karari: "hem dark mode hem light mode
+     uyumlu bir grilik secelim"). #767676 beyaz zeminde 4.54:1, siyah
+     zeminde 4.6:1: iki temada da okunabilir sinirin ustunde. */
+  --metin-soluk:  #767676;
 
   --user-zemin:   #EEF0F3;          /* kullanici balonu: bot'tan ayrissin */
 
@@ -167,48 +170,51 @@
 
 /* -------- KOYU TEMA -------- */
 #kabuk.koyu {
-  --kirmizi:      #FF4D4F;
-  --kirmizi-koyu: #E03B3E;
-  --kirmizi-acik: #2A1517;
-  --kirmizi-halka: rgba(255,77,79,.22);
+  /* KOYU TEMA YENIDEN (kullanici karari: "siyah ya da beyaz olmali,
+     renkler koyu temada cok kotu, gri arka planlar kayboluyor").
+     Ilke: zemin ve kartlar SIYAH, ayrim kenarlikla; "gri zemin" isteyen
+     yerler (tablo basligi, ic kutu, deger cipi) siyahtan GORUNUR bicimde
+     ayrisan tek bir gri (#1A1A1A / #141414). Vurgu renkleri acik
+     temadakilerle AYNI aileden, neon degil: kirmizi marka kirmizisina
+     yakin (#E5262B, siyahta 4.6:1), yesil / kehribar sakin. */
+  --kirmizi:      #E5262B;
+  --kirmizi-koyu: #C81E23;
+  --kirmizi-acik: #1F0B0C;
+  --kirmizi-halka: rgba(229,38,43,.30);
 
-
-  --zemin:        #111111;
-  --yuzey:        #181818;
+  --zemin:        #000000;
+  --yuzey:        #000000;
   --yuzey-alt:    #141414;
-  --kenar:        #2E2E2E;
-  --kenar-guclu:  #454545;
-  --kenar-acik:   #232323;
+  --kenar:        #333333;
+  --kenar-guclu:  #4D4D4D;
+  --kenar-acik:   #1F1F1F;
   --ayrac:        #FFFFFF;
 
   --metin:        #FFFFFF;
-  --metin-soluk:  rgba(255,255,255,.68);
+  --metin-soluk:  #767676;
 
-  --user-zemin:   #262626;
+  --user-zemin:   #1A1A1A;
 
   --gonder-zemin: #FFFFFF;
   --gonder-metin: #000000;
 
-  --golge-1:   0 1px 2px rgba(0,0,0,.5);
-  --golge-2:   0 5px 13px rgba(0,0,0,.55);
+  --golge-1:   0 1px 2px rgba(0,0,0,.6);
+  --golge-2:   0 5px 13px rgba(0,0,0,.7);
 
-  --yesil:        #3DDC8A;
-  --yesil-acik:   #10281B;
-  /* Koyu temada zemin koyu: "koyu yeşil / açık yeşil" ayrımı tersine
-     çevrilmiyor ama ikisi de koyu zeminde okunacak kadar açılıyor. */
+  --yesil:        #34B86E;
+  --yesil-acik:   #0B1F14;
   --excel-koyu:    #17794A;   /* beyaz yazi ile 5.4:1 */
   --excel-en-koyu: #1E9159;
-  --excel-acik:    #14301F;
+  --excel-acik:    #0E2418;
   --excel-kenar:   #245A3B;
   --excel-halka:   rgba(46,158,96,.35);
-  --excel-pasif-yazi: #5FD69A;   /* koyu zemin uzerinde 7.9:1 */
-  --amber:        #F5B042;
-  --amber-acik:   #2A2210;
-  /* Koyu zeminde uyari halkasi acik temadaki degerle neredeyse gorunmezdi */
-  --amber-halka:  rgba(245,176,66,.42);
-  --sari:         #FACC15;
+  --excel-pasif-yazi: #5FD69A;
+  --amber:        #E8A23A;
+  --amber-acik:   #1F1709;
+  --amber-halka:  rgba(232,162,58,.40);
+  --sari:         #EAB308;
   --sari-koyu:    #FFFFFF;
-  --sari-acik:    #2A2410;
+  --sari-acik:    #1F1A06;
 }
 
 * { box-sizing: border-box; }
@@ -1037,7 +1043,9 @@ button.ozet-kart:focus-visible {
 .combo-liste {
   position: absolute; z-index: 20; top: 100%; left: 0; right: 0;
   margin: var(--b-1) 0 0; padding: var(--b-1); list-style: none;
-  background: var(--yuzey); border: 1px solid var(--kenar);
+  /* INCE KIRMIZI CERCEVE (kullanici karari): koyu temada siyah liste
+     siyah zeminle birlesiyordu; iki temada da ayni cerceve. */
+  background: var(--yuzey); border: 1px solid var(--kirmizi);
   border-radius: var(--r); box-shadow: var(--golge-2);
   max-height: 208px; overflow-y: auto; display: none;
 }
@@ -2933,11 +2941,12 @@ span.bolme-cip { cursor: default; }
 }
 /* Koyu yüzeyde aynı tonlar biraz daha belirgin. */
 #kabuk.koyu {
-  --dg-bos: rgba(250,204,21,.18);
-  --dg-llm: rgba(91,141,239,.24);
-  --dg-hafiza: rgba(167,139,250,.24);
-  --dg-eklendi: rgba(34,197,94,.20);
-  --dg-eklenmedi: rgba(239,68,68,.20);
+  /* Siyah zeminde dolgun ama camurlasmayan tonlar (saydamlik dusuk). */
+  --dg-bos: rgba(234,179,8,.14);
+  --dg-llm: rgba(59,130,246,.17);
+  --dg-hafiza: rgba(139,92,246,.20);
+  --dg-eklendi: rgba(34,197,94,.15);
+  --dg-eklenmedi: rgba(239,68,68,.17);
 }
 .dg-tablo tr.dg-bos > td { background: var(--dg-bos); }
 .dg-tablo tr.dg-llm > td { background: var(--dg-llm); }
