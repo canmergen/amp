@@ -85,8 +85,6 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
     banner:     getWebAppBackendUrl("gorsel/banner"),
-    katibAcik:  getWebAppBackendUrl("gorsel/katib_acik"),
-    katibKoyu:  getWebAppBackendUrl("gorsel/katib_koyu"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
@@ -160,57 +158,6 @@ const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
 bannerEl.src = GORSEL.banner;
 bannerEl.onerror = () => { bannerEl.style.display = "none"; };
-/* Ürün adı görseli: dosya yoksa görsel gizlenir (kırık simge çıkmasın).
-   KENAR BOŞLUĞU KIRPILIR (kullanıcı bildirimi: "çok küçük kaldı, yazı
-   okunmuyor"): PNG'nin etrafındaki boş alan (şeffaf ya da köşe
-   pikseliyle aynı renk) tarayıcıda kesilir; yazı bar yüksekliğinin
-   tamamını kullanır. Kırpma yapılamazsa görsel olduğu gibi gelir. */
-function gorselKenarKirp(url, bitti) {
-    const img = new Image();
-    img.onload = () => {
-        try {
-            const w = img.naturalWidth, h = img.naturalHeight;
-            const c = document.createElement("canvas");
-            c.width = w; c.height = h;
-            const cx = c.getContext("2d");
-            cx.drawImage(img, 0, 0);
-            const d = cx.getImageData(0, 0, w, h).data;
-            const z = [d[0], d[1], d[2], d[3]];          // sol üst köşe = zemin
-            const dolu = i => d[i + 3] > 16 && (Math.abs(d[i + 3] - z[3]) > 24
-                || Math.abs(d[i] - z[0]) > 24 || Math.abs(d[i + 1] - z[1]) > 24
-                || Math.abs(d[i + 2] - z[2]) > 24);
-            let x0 = w, y0 = h, x1 = -1, y1 = -1;
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    if (dolu((y * w + x) * 4)) {
-                        if (x < x0) x0 = x; if (x > x1) x1 = x;
-                        if (y < y0) y0 = y; if (y > y1) y1 = y;
-                    }
-                }
-            }
-            if (x1 < 0) return bitti(url);
-            const pay = 2;
-            x0 = Math.max(0, x0 - pay); y0 = Math.max(0, y0 - pay);
-            x1 = Math.min(w - 1, x1 + pay); y1 = Math.min(h - 1, y1 + pay);
-            const k = document.createElement("canvas");
-            k.width = x1 - x0 + 1; k.height = y1 - y0 + 1;
-            k.getContext("2d").drawImage(c, x0, y0, k.width, k.height, 0, 0, k.width, k.height);
-            bitti(k.toDataURL("image/png"));
-        } catch (e) {
-            bitti(url);
-        }
-    };
-    img.onerror = () => bitti(null);
-    img.src = url;
-}
-[["katib-acik", GORSEL.katibAcik], ["katib-koyu", GORSEL.katibKoyu]].forEach(([id, url]) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.onerror = () => { el.classList.add("yuklenemedi"); };
-    gorselKenarKirp(url, kirpik => {
-        if (kirpik) el.src = kirpik; else el.classList.add("yuklenemedi");
-    });
-});
 
 
 /* ==================== Metin yardımcıları ==================== */

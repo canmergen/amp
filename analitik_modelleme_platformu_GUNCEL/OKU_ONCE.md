@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **KATIB görseli büyütüldü (kenar boşluğu kırpılıyor)**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme; önceki turun dosyaları gerekli)
+Bu tur: **KATIB görsel yerine metin**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
+
+- Logonun yanında "KATIB" (kırmızı, kalın, 30 px) ve altında "Bireysel
+  Krediler Analitik ve Tahsis BI" (açık temada siyah, koyu temada beyaz)
+  METİN olarak yazılıyor. katib_*.png görselleri artık kullanılmıyor;
+  önceki iki turun görsel yükleme ve kenar kırpma kodu kaldırıldı.
+- Boyut: style.css'te #urun-adi (font-size: 30px) ve #urun-alt
+  (font-size: var(--fs-govde)).
+
+Önceki tur: **KATIB görseli büyütüldü (kenar boşluğu kırpılıyor)**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme; önceki turun dosyaları gerekli)
 
 - PNG'nin etrafındaki boş alan (şeffaf ya da köşe pikseliyle aynı renk)
   tarayıcıda kırpılıyor (`gorselKenarKirp`); klasördeki dosyaya

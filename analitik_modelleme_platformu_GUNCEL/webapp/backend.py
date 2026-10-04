@@ -34,10 +34,6 @@ GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 GORSELLER = {
     # Ust bar solu
     "banner":     "robot_header.png",
-    # Logonun yaninda urun adi gorseli: acik tema siyah yazi, koyu tema
-    # beyaz yazi
-    "katib_acik": "katib_siyah_yazi.png",
-    "katib_koyu": "katib_beyaz_yazi.png",
     # Sohbetteki ilk (karsilama) mesajin robotu
     "karsilama":  "robot_welcome.png",
     # Normal konusma
