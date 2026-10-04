@@ -1465,6 +1465,22 @@ def _kisaltma_alani(durum, bekle=0.0):
             "satirlar": satirlar, "not": notu}
 
 
+def kisaltma_alani_tazele(durum):
+    """Kayitli oturum geri yuklenirken acik kartin Kisaltma Sozlugu bolumu
+    YENIDEN kurulur (kullanici bildirimi: kod guncellendigi halde kartta
+    eski surumun satirlari - "Temel sozluk" - gorunuyordu, cunku kart
+    durumla birlikte kaydedilmisti). Beklemez: dil modeli kontrolu
+    surerse kartta not yazar."""
+    secim = durum.get("_secim_alani")
+    if not (isinstance(secim, dict) and secim.get("kisaltma") is not None):
+        return False
+    try:
+        secim["kisaltma"] = _kisaltma_alani(durum, 0.0)
+        return True
+    except Exception:
+        return False
+
+
 def kisaltma_kaydet(durum, satirlar):
     """Kart: secilen kisaltmalari onayli hafizaya yazar / kaldirir.
     Doner: (yeni kart alani, hata)."""

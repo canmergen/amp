@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Öğrenme döngüsü: çelişen tanımlar, düzeltilmiş hâlden kalıcı öğrenme, onaylı ağırlığı**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma kartı geri yüklemede yeniden kuruluyor**. Değiştir: `webapp/backend.py`, `fe_agent/akis.py`, `fe_agent/akis_faz01.py` (+ önceki iki turun `fe_agent/kisaltma.py`, `fe_agent/llm.py` dosyaları kopyalanmadıysa onlar da; backend yeniden başlatılmalı)
+
+- Sorun: açık kart oturumla birlikte kaydediliyor; kod güncellense de
+  sayfa yenilenince kart kaydedilmiş eski satırlarla ("Temel sözlük")
+  geliyordu.
+- Çözüm: kayıtlı oturum yüklenirken (sayfa açılışı / yenileme) Kısaltma
+  Sözlüğü bölümü güncel kod ve güncel hafızayla yeniden kurulur
+  (`akis.kisaltma_alani_tazele`). Beklemez: dil modeli kontrolü
+  sürüyorsa kartta not yazar, sayfa yeniden açılınca sonuç gelir.
+
+Önceki tur: **Öğrenme döngüsü: çelişen tanımlar, düzeltilmiş hâlden kalıcı öğrenme, onaylı ağırlığı**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
 
 - Kalıcı yazma 01.2.4 sonunda: öğrenilen kısaltmalar KISALTMA_OGRENILEN'e
   ancak düzeltmeler uygulandıktan ya da kontrol atlandıktan (ya da adım

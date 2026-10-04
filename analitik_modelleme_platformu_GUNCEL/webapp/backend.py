@@ -1125,6 +1125,12 @@ def _surdurme_govdesi(durum):
     # bir balon olarak. Metin yoksa ekrani adimin kendi karti kurar;
     # "kaldigi yerden yuklendi" seridi zaten ayrica basiliyor.
     metin = durum.get("_son_cevap") or ""
+    # Kisaltma Sozlugu her yuklemede guncel koddan ve guncel hafizadan
+    # yeniden kurulur (kaydedilmis eski satirlar gosterilmez).
+    try:
+        akis.kisaltma_alani_tazele(durum)
+    except Exception:
+        pass
     govde = _yanit(durum, metin)
     govde["metin"] = govde["cevap"]
     govde["devam"] = True
