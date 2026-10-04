@@ -322,20 +322,31 @@ def _mod_goc(durum):
 # "tanim_kontrol" adimi girdi. Adim konumu kayitta SAYI (durum["i"])
 # olarak durdugu icin eski bir calisma sozluk_tanim'in ilerisindeyse bir
 # adim GERIDE acilirdi; konum bir kaydirilir.
-SIRA_SURUMU = 2
-_SIRA_GOCU = {"A": 3, "B": 5}      # eski listede sozluk_tanim'in yeri
+# Surum 3'te sozluk_tanim ile tanim_kontrol arasina "kisaltma" ve
+# "kolon_ad" adimlari girdi (iki adim).
+SIRA_SURUMU = 3
+# surum -> (eklenen adim sayisi, {mod: sozluk_tanim'in o surumdeki yeri})
+_SIRA_GOCLERI = {
+    2: (1, {"A": 3, "B": 5}),
+    3: (2, {"A": 3, "B": 5}),
+}
 
 
 def _sira_goc(durum):
-    if durum.get("_sira_surumu", 1) >= SIRA_SURUMU:
+    surum = durum.get("_sira_surumu", 1)
+    if surum >= SIRA_SURUMU:
         return durum
-    yer = _SIRA_GOCU.get(durum.get("mod"))
     try:
         i = int(durum.get("i"))
     except (TypeError, ValueError):
         i = None
-    if yer is not None and i is not None and i > yer:
-        durum["i"] = i + 1
+    for hedef in range(int(surum) + 1, SIRA_SURUMU + 1):
+        adet, yerler = _SIRA_GOCLERI.get(hedef, (0, {}))
+        yer = yerler.get(durum.get("mod"))
+        if yer is not None and i is not None and i > yer:
+            i += adet
+    if i is not None:
+        durum["i"] = i
     durum["_sira_surumu"] = SIRA_SURUMU
     return durum
 

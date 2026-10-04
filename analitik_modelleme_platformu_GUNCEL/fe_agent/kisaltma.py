@@ -356,6 +356,19 @@ _SIFAT_EKI = ("li", "lı", "lu", "lü", "ci", "cı", "cu", "cü", "çi", "çı",
               "çü", "ki", "si" + "z", "sız", "suz", "süz")
 
 
+_UYUM = {"a": "ı", "ı": "ı", "e": "i", "i": "i", "o": "u", "u": "u", "ö": "ü", "ü": "ü"}
+
+
+def _uyumlu_ek(govde, unlu):
+    """Iyelik ekinin unlusu govdenin son unlusune uyuyor mu (dortlu unlu
+    uyumu)? "skor"+"u" evet; "entrop"+"i" HAYIR: entropi zaten yalin
+    (kullanici bildirimi: anlam "entrop" diye kesiliyordu)."""
+    for h in reversed(govde):
+        if h in _UYUM:
+            return _UYUM[h] == unlu
+    return False
+
+
 def _yalin_kelime(k, sozcukler=()):
     """Tek kelimeyi yalin hale getirir (kural tabanli Turkce ek atma):
     bayragi -> bayrak, skoru -> skor, adedi -> adet, orani -> oran,
@@ -376,14 +389,17 @@ def _yalin_kelime(k, sozcukler=()):
             aday = aday[:-3]
             break
     # 3) iyelik "-sı" unluden sonra: "entropisi" -> "entropi", "ödemesi"
-    if len(aday) > 5 and aday[-2] == "s" and aday[-1] in "ıiuü" and aday[-3] in _UNLU:
+    if len(aday) > 5 and aday[-2] == "s" and aday[-1] in "ıiuü" and aday[-3] in _UNLU \
+            and _uyumlu_ek(aday[:-2], aday[-1]):
         aday = aday[:-2]
     # 4) "-ğı" -> "k": "bayrağı" -> "bayrak", "yoğunluğu" -> "yoğunluk"
-    elif len(aday) >= 4 and aday[-2] == "ğ" and aday[-1] in "ıiuü":
+    elif len(aday) >= 4 and aday[-2] == "ğ" and aday[-1] in "ıiuü" \
+            and _uyumlu_ek(aday[:-2], aday[-1]):
         aday = aday[:-2] + "k"
     # 5) unsuzden sonra iyelik "-ı": "skoru" -> "skor", "adedi" -> "adet"
     elif len(aday) >= 4 and aday[-1] in "ıiuü" and aday[-2] not in _UNLU \
-            and not aday.endswith(_SIFAT_EKI) and aday not in _YALIN_ISTISNA:
+            and not aday.endswith(_SIFAT_EKI) and aday not in _YALIN_ISTISNA \
+            and _uyumlu_ek(aday[:-1], aday[-1]):
         govde = aday[:-1]
         if len(govde) >= 4 and govde[-1] in "bcd":
             govde = govde[:-1] + _YUMUSAK[govde[-1]]
@@ -586,7 +602,7 @@ def ogrenilenleri_kaydet(kayitlar, veri_seti=""):
 
 def kalici_ogren(tanimlar, veri_seti="", bekle=300.0):
     """KENDINI GELISTIRME (kullanici karari: "duzeltilmis halden kalici
-    olarak ogren"): 01.2.4 tamamlaninca (duzeltmeler uygulandiktan ya da
+    olarak ogren"): 01.2.6 tamamlaninca (duzeltmeler uygulandiktan ya da
     kontrol atlandiktan sonra) DUZELTILMIS calisma kopyasi + onayli
     tanimlar uzerinde ogrenme calisir ve dil modeli kontrolunden gecen
     anlamlar (dogrulanan / modellerin anlastigi) ogrenilmis bilgiye yazilir.
@@ -760,7 +776,7 @@ def tutarsizliklar(tanimlar, anlamlar=None):
 
 
 def celiskiler(tanimlar, anlamlar=None):
-    """01.2.4 kontrolu icin: {kolon: [gerekce, ...]} (bkz. tutarsizliklar)."""
+    """01.2.6 kontrolu icin: {kolon: [gerekce, ...]} (bkz. tutarsizliklar)."""
     return {ad: [t["gerekce"] for t in liste]
             for ad, liste in tutarsizliklar(tanimlar, anlamlar).items()}
 
@@ -936,6 +952,11 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         elif d["karar"] in ("duzeltildi", "dogru") and d.get("anlam"):
             cikti[kisa] = dict(onceki, anlam=d["anlam"], kaynak="dil_modeli",
                                sozlukten=(cikan.get(kisa) or {}).get("anlam", ""))
+        # GENEL ANLAM ONCE (kullanici karari): dil modeli kisaltmanin genel
+        # anlaminin sozlukteki kullanimla celistigini soylediyse kartta
+        # yazar; o kolonlarin tanimlari 01.2.6'da duzeltilmeye aday.
+        if d.get("sozluk_uyumsuz") and kisa in cikti and cikti[kisa].get("anlam"):
+            cikti[kisa]["sozluk_uyumsuz"] = True
         elif d["karar"] == "emin_degil" and kisa in cikti:
             # Dil modeli emin olamadi: istatistik tahmini gosterilmez,
             # anlam bos kalir (yanlis anlam bos anlamdan kotu).
@@ -1031,6 +1052,8 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
             if o.get("ornek") and o["kaynak"] != "sozluk":
                 ad += " (%d örnekle)" % o["ornek"]
             parca.append(ad)
+            if o.get("sozluk_uyumsuz"):
+                parca.append("genel anlam; sözlükteki kullanım farklı")
             if o.get("onceki"):
                 parca.append(o["onceki"])
             if o.get("sozlukten"):
@@ -1044,6 +1067,7 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          "cikarilan": o.get("anlam") or "",
                          "kaynak": o.get("kaynak") or "",
                          "onayli": kisa in onay, "kanit": " · ".join(p for p in parca if p),
+                         "sozluk_uyumsuz": bool(o.get("sozluk_uyumsuz")),
                          "ornekler": kanit_ornekleri(tanimlar, kisa, anlam)})
     return satirlar[:EN_COK], durum
 

@@ -1428,7 +1428,7 @@ def mesaj_endpoint():
 
 @app.route("/tanim_kontrol_baslat", methods=["POST"])
 def tanim_kontrol_baslat_endpoint():
-    """01.2.4 Sozluk Tanim Kontrolu ISTEGE BAGLI: kullanici "Tanımları
+    """01.2.6 Sozluk Tanim Kontrolu ISTEGE BAGLI: kullanici "Tanımları
     Kontrol Et" deyince arka plan kontrolu baslar. Kartin govdesi hem
     durumda hem de transkriptte tazelenir (F5'te baslamis haliyle acilsin)."""
     try:

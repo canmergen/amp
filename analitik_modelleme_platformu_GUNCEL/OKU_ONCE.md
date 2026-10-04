@@ -1,6 +1,45 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Bekleme azaltıldı: kayıtlı tanım ve öneriler doğrudan gelir**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+Bu tur: **01.2 akışı ayrıldı: Kısaltma Sözlüğü, Kolon Adı Önerileri, Sözlük Tanım Kontrolü ayrı adımlar**. Değiştir: `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+
+1) Yeni adım sırası (A ve B modu)
+- 01.2.3 Sözlük Tanımları (değişmedi)
+- 01.2.4 Kısaltma Sözlüğü: anlamı dolu her satır bu çalışmanın kısaltma
+  sözlüğü olur (`durum["kisaltma_sozluk"]`); "Hafızaya Kaydet" işaretli
+  olanlar ayrıca proje geneline yazılır. Kısaltma yoksa adım kendiliğinden
+  geçer; "Kısaltmaları Onaylamadan Devam Et" ile atlanabilir.
+- 01.2.5 Kolon Adı Önerileri: onaylanan anlamlarla açıklamada geçip adda
+  olmayan kısaltmalar için yeni ad. Uygula işaretli adlar yalnız AMP
+  kopyalarında uygulanır. Geçersiz ad varsa adım geçmez ve sebebi yazar.
+  Öneri yoksa adım kendiliğinden geçer; "Ad Değiştirmeden Devam Et" ile
+  atlanabilir (bu durumda kayıtlı yeni adlar temizlenir).
+- 01.2.6 Sözlük Tanım Kontrolü: kart yalnız tanım kontrolü.
+- Kayıtlı çalışmalar: sıra sürümü 3. 01.2.3'ten sonraki bir adımda
+  kalmış çalışma 2 adım kaydırılır (sürüm 1'den gelen önce 1, sonra 2).
+
+2) Kısaltma anlamında genel anlam önce
+- Dil modeli önce kısaltmanın bankacılık / veri bilimindeki genel
+  anlamını verir; sözlük kanıttır, otorite değil. Genel anlam sözlükteki
+  kullanımla çelişirse satırda "genel anlam; sözlükteki kullanım farklı"
+  yazar.
+- Bağlam ifadesi anlam olmaz (gün için "günlük ortalama" değil "gün").
+- Yalın hâl düzeltmesi: ünlü uyumu kontrol ediliyor; "entropi" artık
+  "entrop" diye kesilmiyor (skoru -> skor, adedi -> adet aynı).
+
+3) Tanım kontrolünde beklenen tanım
+- Her satıra ad parçalarının onaylı anlamları gider ("AD PARCALARI
+  (onayli): TXN=işlem · GDN=giden · AMT=tutar · AVG=ortalama"). Model
+  beklenen tanımı bunlarla kurar; bir parçanın anlamı tanımda yoksa ya
+  da farklıysa düzeltme önerir ve gerekçede o kısaltmayı yazar.
+- Açıklama önerilerine ve kontrole giden "KISALTMALAR (kesin)" listesi
+  01.2.4'te onaylananları içerir.
+- Geri dönüp kısaltma sözlüğü değiştirilirse tanım kontrolü yeniden
+  çalışır (eski sonuç kullanılmaz).
+
+Test edilmedi: gerçek dil modelleri ve Dataiku ortamı (sahte modelle
+denendi).
+
+Önceki tur: **Bekleme azaltıldı: kayıtlı tanım ve öneriler doğrudan gelir**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
 - Rol kolonu (kimlik, hedef, dönem, segment) AYNI veri setinde onaylanmış
   tanımla doğrudan dolar (SM_ID). Başka veri setinden gelen tanım rol

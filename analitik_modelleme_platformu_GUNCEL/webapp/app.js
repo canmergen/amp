@@ -4992,6 +4992,8 @@ const BLOK_TAMAM_METNI = {
     kurulum: "Girdiler Onaylandı",
     tanimlar: "Modelleme Tanımları Onaylandı",
     sozluk_tanim: "Sözlük Tanımları Kaydedildi",
+    kisaltma: "Kısaltmalar Onaylandı",
+    kolon_ad: "Kolon Adları Belirlendi",
     tanim_kontrol: "Sözlük Tanımları Kontrol Edildi",
     teyit: "Değişken Listesi Kaydedildi",
     bolme: "Bölme Uygulandı",
@@ -6230,12 +6232,17 @@ function dogrulamaKartiEkle(alan, blok) {
        çıkarılır; kullanıcı anlamı düzeltip proje genelindeki onaylı
        kısaltma hafızasına kaydeder. Kayıt adım akışından BAĞIMSIZ
        (kendi düğmesi, /kisaltma_kaydet). */
-    if (alan.kisaltma) kisaltmaBolumuEkle(kart, alan.kisaltma, !!(blok && blok.kilit));
+    /* AYRI ADIMLAR (kullanıcı kararı): 01.2.4 Kısaltma Sözlüğü ve 01.2.5
+       Kolon Adı Önerileri kendi kartlarında; karar birincil düğmeyle
+       adımla birlikte gider (alan.adim). Bölümlerin kendi kaydet
+       düğmeleri adım kartında gizlenir. */
+    const adimModu = alan.adim || "";
+    const kisaErisim = alan.kisaltma
+        ? kisaltmaBolumuEkle(kart, alan.kisaltma, !!(blok && blok.kilit), !!adimModu) : null;
     /* Kolon Adı Önerileri: açıklamada anlamı geçen ama adda olmayan
-       kısaltmalar için yeni ad (yalnız AMP kopyalarında uygulanır;
-       kendi düğmesi, /kolon_ad_kaydet). */
-    if (alan.kolon_ad && (alan.kolon_ad.satirlar || []).length)
-        kolonAdBolumuEkle(kart, alan.kolon_ad, !!(blok && blok.kilit));
+       kısaltmalar için yeni ad (yalnız AMP kopyalarında uygulanır). */
+    const kolonAdErisim = (alan.kolon_ad && (alan.kolon_ad.satirlar || []).length)
+        ? kolonAdBolumuEkle(kart, alan.kolon_ad, !!(blok && blok.kilit), !!adimModu) : null;
 
     /* ---- 5b) Sözlükteki tanımların kontrolü ----
        Kullanıcı kararı: sözlükte tanımı OLAN kolonların tanımı da birden
@@ -6444,6 +6451,18 @@ function dogrulamaKartiEkle(alan, blok) {
         dugmeler.appendChild(atlaBtn);
         /* Başlamadan önce ana düğmenin yapacağı bir şey yok. */
         birincil.hidden = !!kontrol.baslamadi;
+    } else if (alan.atla) {
+        /* İsteğe bağlı adım (Kısaltma Sözlüğü, Kolon Adı Önerileri). */
+        atlaBtn = elYap("button", "secim-onay ikincil dg-kontrol-atla", tireSade(alan.atla));
+        atlaBtn.type = "button";
+        atlaBtn.onclick = () => {
+            if (mesgul || kart.classList.contains("kilitli")) return;
+            const ozet = adimModu === "kolon_ad" ? "Kolon adları değiştirilmeden devam edildi"
+                : "Kısaltmalar onaylanmadan devam edildi";
+            kartiKilitle(ozet);
+            gonder(ozet, false, { dogrulama: { atla: true } });
+        };
+        dugmeler.appendChild(atlaBtn);
     }
     kart.appendChild(dugmeler);
 
@@ -6554,6 +6573,8 @@ function dogrulamaKartiEkle(alan, blok) {
             k.disabled = kilit || !!(durumlar[i] && durumlar[i].zorunlu);
         });
         topluBtnleri.forEach(b => { b.disabled = kilit; });
+        if (kisaErisim) kisaErisim.kilitle(kilit);
+        if (kolonAdErisim) kolonAdErisim.kilitle(kilit);
         birincil.disabled = kilit;
     }
 
@@ -6721,7 +6742,16 @@ function dogrulamaKartiEkle(alan, blok) {
         karar.kontrol = kDurumlar.map(k => ({
             kolon: k.kolon, aciklama: k.giris.value.trim(), uygula: k.kutu.checked }));
         const duzelt = karar.kontrol.filter(k => k.uygula && k.aciklama).length;
-        const ozet = (!durumlar.length && kontrol)
+        if (kisaErisim) karar.kisaltma = kisaErisim.deger();
+        if (kolonAdErisim) karar.kolon_ad = kolonAdErisim.deger();
+        let ozet;
+        if (adimModu === "kisaltma") {
+            const n = (karar.kisaltma || []).filter(k => k.anlam).length;
+            ozet = ftBinlik(n) + " kısaltmanın anlamı onaylandı";
+        } else if (adimModu === "kolon_ad") {
+            const n = (karar.kolon_ad || []).filter(k => k.uygula && k.yeni_ad && k.yeni_ad !== k.kolon).length;
+            ozet = n ? ftBinlik(n) + " kolonun adı değiştirilecek" : "Kolon adı değiştirilmedi";
+        } else ozet = (!durumlar.length && kontrol)
             ? (duzelt ? ftBinlik(duzelt) + " tanım düzeltildi" : "Düzeltme uygulanmadı")
             : dogrulamaOzetMetni(karar.haric.length, karar.ekle.length, duzelt);
         kartiKilitle(ozet);
@@ -6752,7 +6782,9 @@ function dogrulamaKartiEkle(alan, blok) {
     yeniOdak = birincil;
 }
 
-function kolonAdBolumuEkle(kart, ka, kilitli) {
+function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
+    let kilitli = ilkKilit;
+    const topluBtn = [];
     const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
     const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Kolon Adı Önerileri");
     if (ka.bilgi) kbas.appendChild(bolmeBilgiSimgesi(ka.bilgi, ka.baslik));
@@ -6772,10 +6804,12 @@ function kolonAdBolumuEkle(kart, ka, kilitli) {
         b.type = "button"; b.disabled = kilitli;
         b.onclick = () => satirlar.forEach(x => { x.kutu.checked = d; });
         toplu.appendChild(b);
+        topluBtn.push(b);
     });
     const kaydetBtn = elYap("button", "dg-toplu-btn", "Seçilen Adları Kaydet");
     kaydetBtn.type = "button"; kaydetBtn.disabled = kilitli;
-    toplu.appendChild(kaydetBtn);
+    /* Adım kartında kayıt birincil düğmeyle yapılır. */
+    if (!adimda) toplu.appendChild(kaydetBtn);
     ust.appendChild(toplu);
     kart.appendChild(ust);
     const sar = elYap("div", "dg-tablo-sar");
@@ -6816,9 +6850,12 @@ function kolonAdBolumuEkle(kart, ka, kilitli) {
             tb.appendChild(tr);
         });
         const kayitli = (liste || []).filter(r => r.kayitli).length;
-        durumEl.textContent = ftBinlik((liste || []).length) + " kolon için ad önerisi; "
-            + ftBinlik(kayitli) + " tanesi kaydedildi. Kaydedilen adlar Değişken Kontrolü "
-            + "kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır.";
+        durumEl.textContent = adimda
+            ? ftBinlik((liste || []).length) + " kolon için ad önerisi. Uygula işaretli adlar "
+              + "Değişken Kontrolü kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır."
+            : ftBinlik((liste || []).length) + " kolon için ad önerisi; "
+              + ftBinlik(kayitli) + " tanesi kaydedildi. Kaydedilen adlar Değişken Kontrolü "
+              + "kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır.";
     }
     ciz(ka.satirlar);
 
@@ -6846,9 +6883,21 @@ function kolonAdBolumuEkle(kart, ka, kilitli) {
             hataEl.hidden = false;
         });
     };
+    return {
+        deger: () => satirlar.map(x => ({ kolon: x.r.kolon, yeni_ad: x.g.value.trim(),
+                                          uygula: x.kutu.checked })),
+        /* Kart kilitlenince / Geri Al ile açılınca. */
+        kilitle: k => {
+            kilitli = k;
+            satirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; });
+            topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
+        }
+    };
 }
 
-function kisaltmaBolumuEkle(kart, ka, kilitli) {
+function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda) {
+    let kilitli = ilkKilit;
+    const topluBtn = [];
     const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
     const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Kısaltma Sözlüğü");
     if (ka.bilgi) kbas.appendChild(bolmeBilgiSimgesi(ka.bilgi, ka.baslik));
@@ -6874,9 +6923,11 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
         b.type = "button"; b.disabled = kilitli;
         b.onclick = () => satirlar.forEach(x => { x.kutu.checked = d; });
         toplu.appendChild(b);
+        topluBtn.push(b);
     });
     kaydetBtn.disabled = kilitli;
-    toplu.appendChild(kaydetBtn);
+    /* Adım kartında hafızaya kayıt birincil düğmeyle yapılır. */
+    if (!adimda) toplu.appendChild(kaydetBtn);
     ust.appendChild(toplu);
     kart.appendChild(ust);
     /* EXCEL (kullanıcı kararı): önerilen anlamlar örnek kolonları ve
@@ -6996,6 +7047,15 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
             hataEl.textContent = "Kısaltmalar kaydedilemedi: " + e;
             hataEl.hidden = false;
         });
+    };
+    return {
+        deger: () => satirlar.map(x => ({ kisaltma: x.r.kisaltma, anlam: x.g.value.trim(),
+            cikarilan: x.r.cikarilan || "", kaydet: x.kutu.checked })),
+        kilitle: k => {
+            kilitli = k;
+            satirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; });
+            topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
+        }
     };
 }
 
