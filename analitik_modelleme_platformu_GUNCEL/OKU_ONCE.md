@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Form etiketleri yeniden sola hizalı**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **Adım başlıkları büyüdü, geçilen adım gri**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+
+- Adım bloğu başlığı (01.1 Başlangıç Seçimi, 01.2 ...) 12px -> 15px
+  (48px avatarla orantılı); alt adım başlığı (01.2.1 ...) 12px -> 13px.
+- Geçilen adımın başlığı gri (#767676, iki temada aynı; beyazda 4,54:1,
+  siyahta 4,6:1). Yanıt bekleyen adım kırmızı kalıyor.
+
+Önceki tur: **Form etiketleri yeniden sola hizalı**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
 
 - Baz Veri Seti, Baz Sözlük, Hedef Değişken ... etiketleri kutunun sol
   kenarıyla hizalı. Tek satır düzeni ve iki satıra geçen etiketlerde

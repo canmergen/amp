@@ -19,6 +19,7 @@
   --fs-govde:  12px;     /* metin, butonlar */
   --fs-baslik: 13px;     /* kart/faz basliklari, ozet degerleri */
   --fs-buyuk:  14px;     /* urun adi, sayfa basligi */
+  --fs-blok:   15px;     /* adim blogu basligi (01.1 ...): 48px avatarla orantili */
 
   --fw-normal: 400;
   --fw-kalin:  700;
@@ -90,6 +91,9 @@
      "Kolon ara..." tam siyah olursa doldurulmus deger gibi okunur. */
   --metin-soluk:  #000000;
   --yer-tutucu:   rgba(0,0,0,.45);
+  /* GECILEN ADIMIN BASLIGI (kullanici karari: "asama gecince gri dursa
+     daha iyi"). Iki temada ayni gri: beyazda 4.54:1, siyahta 4.6:1. */
+  --metin-tamam:  #767676;
 
   --user-zemin:   #EEF0F3;          /* kullanici balonu: bot'tan ayrissin */
 
@@ -1472,13 +1476,13 @@ button.ozet-kart:focus-visible {
    bloklar gri çerçeveye ve sessiz başlığa iner; içerik soluklaştırılmaz,
    okunur kalır. Kalınlık aynı: durum değişince yerleşim kaymasın. */
 .adim-blok.durum-tamam { border-color: var(--kenar-guclu); box-shadow: none; }
-.adim-blok.durum-tamam > .blok-bas .blok-ad { color: var(--metin-soluk); }
+.adim-blok.durum-tamam > .blok-bas .blok-ad { color: var(--metin-tamam); }
 .adim-blok.durum-bekliyor { box-shadow: 0 0 0 4px var(--kirmizi-halka, rgba(213,17,21,.14)), var(--golge-1); }
 /* Gruplu blokta aktif adımın BÖLÜMÜ ayrıca vurgulanır: aynı kapta hangi
    kartın cevap beklediği tek bakışta görünsün. */
 .alt-bolum.durum-bekliyor { border: 2px solid var(--kirmizi); }
 .alt-bolum.durum-bekliyor > .alt-bas .alt-ad { color: var(--kirmizi); }
-.alt-bolum.durum-tamam > .alt-bas .alt-ad { color: var(--metin-soluk); }
+.alt-bolum.durum-tamam > .alt-bas .alt-ad { color: var(--metin-tamam); }
 .blok-durum {
   flex: 0 0 auto; white-space: nowrap;
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
@@ -1529,7 +1533,9 @@ button.ozet-kart:focus-visible {
    biçimi yan yana geliyordu. */
 .blok-ad {
   flex: 1 1 auto; min-width: 0;
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin);
+  /* Avatar 48px'e buyuyunce 12px baslik yaninda kucuk kaldi
+     (kullanici bildirimi); alt adim basligi bir kademe asagida. */
+  font-size: var(--fs-blok); font-weight: var(--fw-kalin);
   letter-spacing: .01em;
   color: var(--kirmizi);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -1660,7 +1666,7 @@ button.ozet-kart:focus-visible {
 }
 .alt-ad {
   flex: 1 1 auto; min-width: 0;
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin);
+  font-size: var(--fs-baslik); font-weight: var(--fw-kalin);
   letter-spacing: .01em;
   color: var(--metin);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
