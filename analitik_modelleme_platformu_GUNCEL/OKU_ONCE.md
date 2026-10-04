@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst barda ürün adı yerine KATIB görseli**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
+Bu tur: **KATIB görseli büyütüldü (kenar boşluğu kırpılıyor)**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme; önceki turun dosyaları gerekli)
+
+- PNG'nin etrafındaki boş alan (şeffaf ya da köşe pikseliyle aynı renk)
+  tarayıcıda kırpılıyor (`gorselKenarKirp`); klasördeki dosyaya
+  dokunulmaz.
+- Görsel yüksekliği 56 px'ten 68 px'e çıktı (en çok 420 px genişlik).
+  Kırpma yapılamazsa görsel olduğu gibi gösterilir.
+
+Önceki tur: **Üst barda ürün adı yerine KATIB görseli**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
 
 - "Akıllı Modelleme Platformu" ve "Bireysel Krediler Analitik ve Tahsis
   BI" yazıları kaldırıldı; logonun yanına görsel geldi.

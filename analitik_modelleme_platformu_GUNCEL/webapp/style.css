@@ -296,7 +296,10 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
 /* Ürün adı görseli (KATIB + alt yazı tek görselde): açık temada siyah
    yazılı, koyu temada beyaz yazılı dosya. Yükseklik logoya göre. */
-.katib-logo { height: calc(var(--ustbar-h) - 22px); width: auto; display: block; }
+/* Kenar boşluğu JS'te kırpılıyor (gorselKenarKirp); görsel barın
+   neredeyse tamamını kullanır, alt yazı okunur kalsın. */
+.katib-logo { height: calc(var(--ustbar-h) - 10px); width: auto; max-width: 420px;
+              object-fit: contain; display: block; }
 #katib-koyu { display: none; }
 #kabuk.koyu #katib-acik { display: none; }
 #kabuk.koyu #katib-koyu { display: block; }
