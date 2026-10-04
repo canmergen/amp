@@ -932,6 +932,10 @@ Mevcut tanimin dogru yazilip yazilmadigini degerlendir.
   - belirgin yazim hatasi var
   - tanim Turkce karakter kullanmiyor ("Musteri" -> "Müşteri") ya da
     Ingilizce / karisik dilde yazilmis: AYNI ANLAMI dogru Turkceyle yaz
+  - KISALTMA UYARISI verilmis: kolon adindaki kisaltma sozlugun geri
+    kalaninda hep o anlamda kullanilmis, bu tanim onu yansitmiyor. Uyari
+    yerindeyse tanimi kisaltmanin anlamiyla uyumlu duzelt; tanimin geri
+    kalanini (pencere, olcu, oran) koru
 Yalnizca uslup farki icin "duzelt" DEME. Emin degilsen "uygun" de.
 
 ANLAM KORUNUR: oneri, mevcut tanimin anlattigi olcumu DEGISTIREMEZ —
@@ -1015,7 +1019,10 @@ def _fazla_uzun(mevcut, oneri):
 
 
 def _kontrol_satiri(p):
-    return _profil_satiri(p) + "\n    MEVCUT TANIM: %s" % str(p.get("mevcut") or "")[:300]
+    s = _profil_satiri(p) + "\n    MEVCUT TANIM: %s" % str(p.get("mevcut") or "")[:300]
+    if p.get("celiski"):
+        s += "\n    KISALTMA UYARISI: %s" % str(p["celiski"])[:300]
+    return s
 
 
 def _kontrol_oku(veri, gecerli):
@@ -1387,12 +1394,66 @@ def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):
                            [tarayici, denetci, hakem]), None
 
 
+SISTEM_CELISKI = """Sen bir bankacilik veri sozlugu editorusun. Her kolon
+icin adi, MEVCUT TANIM ve bir KISALTMA UYARISI verilecek: kolon adindaki
+kisaltma sozlugun geri kalaninda hep belirtilen anlamda kullanilmis, bu
+tanim onu yansitmiyor.
+
+Gorevin: tanimi kisaltmanin anlamiyla UYUMLU olacak sekilde duzeltmek.
+  - yalniz celisen kismi duzelt; pencere (son kac gun), olcu (tutar /
+    adet), oranin payi ve paydasi AYNEN kalir
+  - tek cumle, tamamen Turkce, kolon adini tekrar etme
+  - uyari yanlis gorunuyorsa (tanim kolon adiyla zaten tutarli) "aciklama"
+    alanini BOS birak
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + AD_KALIP_KURALI \
+    + SINIRLAYICI_KURALI
+
+
+def _celiski_duzelt(p, baglam, ork):
+    """Kisaltma celiskisi icin duzeltilmis tanim ya da None."""
+    try:
+        baslik, govde = _baglamli_govde([p["ad"]], _kontrol_satiri(p), baglam)
+        _m, veri = ork.json_cagir(list(dict.fromkeys(ork.modeller("hakem")
+                                                     + ork.modeller("yazarlar"))),
+                                  SISTEM_CELISKI, _veri_blogu(baslik, govde), 0.1)
+    except Exception:
+        return None
+    for k in (veri.get("kolonlar") or []):
+        if isinstance(k, dict) and str(k.get("ad")) == p["ad"]:
+            metin = tarza_uydur(str(k.get("aciklama") or "").strip(),
+                                (baglam or {}).get("tarz"))[:300]
+            mevcut = str(p.get("mevcut") or "")
+            if not metin or turkce_sorunu(metin) or _ayni_metin(metin, mevcut) \
+                    or _anlam_degisti(p["ad"], mevcut, metin):
+                return None
+            return metin
+    return None
+
+
 def _turkce_tamamla(duzeltmeler, kayitlar, mevcut, baglam, ork, kullanilan):
     """TURKCE KAPISI (tanim kontrolu):
       - mevcut tanimi Turkce OLMAYAN kolon, denetciler "uygun" dese bile
         Turkceye cevrilmis haliyle onerilir
       - Turkce olmayan bir duzeltme onerisi de cevrilir; cevrilemezse
         oneri dusurulur (Turkce olmayan oneri gosterilmez)."""
+    # KISALTMA CELISKISI: denetciler "uygun" deyip duzeltme vermediyse
+    # kullanici yine gorsun (cogunluk azinligi duzeltir). Dil modeli bir
+    # duzeltme yazamazsa satir mevcut tanimla ve gerekceyle gelir;
+    # kullanici duzenleyip uygular.
+    for p in kayitlar:
+        if not p.get("celiski"):
+            continue
+        d = duzeltmeler.get(p["ad"])
+        if d:
+            if p["celiski"] not in d["gerekce"]:
+                d["gerekce"] = (d["gerekce"] + " " if d["gerekce"] else "") + p["celiski"]
+            continue
+        yeni = _celiski_duzelt(p, baglam, ork)
+        duzeltmeler[p["ad"]] = {"mevcut": mevcut[p["ad"]], "oneri": yeni or mevcut[p["ad"]],
+                                "gerekce": p["celiski"],
+                                "modeller": "Kısaltma kalıbı" + (" + dil modeli" if yeni else "")}
     cevir = []
     for p in kayitlar:
         ad = p["ad"]

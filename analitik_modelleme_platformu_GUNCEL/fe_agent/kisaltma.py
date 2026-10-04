@@ -127,25 +127,45 @@ def _harf_uyumu(parca, kok):
 
 
 
+# ONAYLI TANIM AGIRLIGI (kullanici karari: "onayladigim tanimlar daha agir
+# bassin"): kullanicinin platformda onayladigi tanim (tanim hafizasi),
+# sozlugun ham taniminin bu kati sayilir. Zamanla onaylanan dogru bilgi
+# baskin hale gelir.
+ONAY_AGIRLIK = 3
+
+
+def _onayli_tanimlar():
+    try:
+        from fe_agent import tanim_hafiza
+        return tanim_hafiza.tanimlar()
+    except Exception:
+        return {}
+
+
 def _parca_istatistigi(tanimlar):
-    """Ortak hazirlik: (satirlar, parca_say, genel, yuzey, sozcukler).
-    satirlar: [(parca_kumesi, tekli, ikili)] - yalniz tanimli kolonlar."""
-    satirlar = []
+    """Ortak hazirlik: (satirlar, parca_say, genel, yuzey, sozcukler, agirlik).
+    satirlar: [(parca_kumesi, tekli, ikili)] - yalniz tanimli kolonlar.
+    agirlik : satirlarla ayni sirada; onayli tanim ONAY_AGIRLIK, ham 1.
+    parca_say AGIRLIKSIZ kolon sayisidir (kartta gorunen)."""
+    onayli = _onayli_tanimlar()
+    satirlar, agirlik = [], []
     for ad, tanim in (tanimlar or {}).items():
         if not str(tanim or "").strip():
             continue
         tekli, ikili = _tanim_kokleri(tanim)
         satirlar.append((set(parcalar(ad)), tekli, ikili))
+        agirlik.append(ONAY_AGIRLIK if ad in onayli and str(onayli[ad]).strip()
+                       == str(tanim).strip() else 1)
     genel = Counter()
     yuzey = {}
     sozcukler = set()
-    for _p, tekli, ikili in satirlar:
+    for (_p, tekli, ikili), w in zip(satirlar, agirlik):
         sozcukler.update(tekli.values())
         for k, y in list(tekli.items()) + list(ikili.items()):
-            genel[k] += 1
-            yuzey.setdefault(k, Counter())[y] += 1
+            genel[k] += w
+            yuzey.setdefault(k, Counter())[y] += w
     parca_say = Counter(p for ps, _t, _i in satirlar for p in ps)
-    return satirlar, parca_say, genel, yuzey, sozcukler
+    return satirlar, parca_say, genel, yuzey, sozcukler, agirlik
 
 
 def _birlikte(satirlar, parca, parca_say):
@@ -176,8 +196,9 @@ def adaylar(tanimlar):
     Doner: {KISA: {"kolon": n, "adaylar": [{"anlam", "destek", "ayirt"}]}}
     (en gucluden zayifa; iki kelimelik ifade, kelimesi bu parcaya ozguyse
     tek kelimeden once gelir)."""
-    satirlar, parca_say, genel, yuzey, sozcukler = _parca_istatistigi(tanimlar)
+    satirlar, parca_say, genel, yuzey, sozcukler, agirlik = _parca_istatistigi(tanimlar)
     n = len(satirlar)
+    n_w = float(sum(agirlik))
     cikti = {}
     if n < EN_AZ_KOLON:
         return cikti
@@ -185,15 +206,18 @@ def adaylar(tanimlar):
         if adet < EN_AZ_KOLON or adet == n:
             continue
         icinde = Counter()
-        for ps, tekli, ikili in satirlar:
+        adet_w = 0.0
+        for (ps, tekli, ikili), w in zip(satirlar, agirlik):
             if parca in ps:
-                icinde.update(set(tekli) | set(ikili))
+                adet_w += w
+                for k in set(tekli) | set(ikili):
+                    icinde[k] += w
         puan = {}
         for k, say in icinde.items():
-            destek = say / float(adet)
+            destek = say / adet_w
             if destek < DESTEK_ESIK:
                 continue
-            ayirt = destek - (genel[k] - say) / float(max(n - adet, 1))
+            ayirt = destek - (genel[k] - say) / max(n_w - adet_w, 1.0)
             if ayirt >= AYIRT_ESIK:
                 puan[k] = (ayirt, destek)
         tekli = {k: v for k, v in puan.items() if " " not in k}
@@ -242,7 +266,7 @@ def cikar(tanimlar, aday=None):
     aday = adaylar(tanimlar) if aday is None else aday
     if not aday:
         return {}
-    satirlar, parca_say, _g, _y, _s = _parca_istatistigi(tanimlar)
+    satirlar, parca_say, _g, _y, _s, _a = _parca_istatistigi(tanimlar)
     onay = onaylilar()
     atanan = {k: v for k, v in onay.items()}       # parca -> anlam
     sonuc = {}
@@ -471,6 +495,85 @@ def ogrenilenleri_kaydet(kayitlar, veri_seti=""):
     return yazilan, None
 
 
+def kalici_ogren(tanimlar, veri_seti="", bekle=300.0):
+    """KENDINI GELISTIRME (kullanici karari: "duzeltilmis halden kalici
+    olarak ogren"): 01.2.4 tamamlaninca (duzeltmeler uygulandiktan ya da
+    kontrol atlandiktan sonra) DUZELTILMIS calisma kopyasi + onayli
+    tanimlar uzerinde ogrenme calisir ve dil modeli kontrolunden gecen
+    anlamlar (dogrulanan / modellerin anlastigi) ogrenilmis bilgiye yazilir.
+    Arka planda calisir; kullaniciyi bekletmez, hata akisi durdurmaz."""
+    if not tanimlar:
+        return
+
+    def is_():
+        try:
+            _s, durum = dogrulama_sonucu(tanimlar, bekle, veri_seti)
+            if durum != "bitti":
+                return
+            oner, _d = oneriler(tanimlar, 0.0, veri_seti)
+            ogrenilenleri_kaydet(
+                {k: {"anlam": o["anlam"], "kolon": o.get("kolon") or 0,
+                     "kaynak": o["kaynak"]}
+                 for k, o in oner.items()
+                 if o["anlam"] and o["kaynak"] in ("dil_modeli_dogruladi", "dil_modeli")},
+                veri_seti)
+        except Exception:
+            pass
+    threading.Thread(target=is_, daemon=True).start()
+
+
+# ---------------------------------------------------------------------------
+# 2) CELISKI - cogunluk azinligi duzeltir (kod tarafinda, dil modeli yok)
+# ---------------------------------------------------------------------------
+CELISKI_PAY = 0.85     # kisaltmanin kolonlarinin en az bu kadari anlami tasimali
+CELISKI_EN_AZ = 5      # ... ve en az bu kadar tanimli kolon olmali
+
+
+def _anlami_tasir(tanim, anlam):
+    """Tanim, anlamin her kelimesini (yalin ya da ekli) iceriyor mu."""
+    tk = [_sade(k) for k in re.findall(r"[A-Za-zÇĞİÖŞÜçğıöşü]+", str(tanim or ""))]
+    for a in str(anlam or "").split():
+        a = _sade(a)
+        if len(a) < 2:
+            continue
+        kok = a[:max(3, len(a) - 1)]          # "adet" -> "ade" (adedi de tutsun)
+        if not any(k.startswith(kok) for k in tk):
+            return False
+    return True
+
+
+def celiskiler(tanimlar, anlamlar=None):
+    """Ogrenilen kisaltma anlamiyla CELISEN tanimlar.
+
+    Bir kisaltmanin anlami, o kisaltmanin gectigi tanimli kolonlarin en az
+    CELISKI_PAY kadarinda geciyorsa bu bir sozluk kalibidir; kalibi
+    tasimayan tanim isaretlenir. anlamlar verilmezse onayli + ogrenilen
+    (oneriler) kullanilir.
+    Doner: {kolon: [gerekce, ...]}"""
+    if anlamlar is None:
+        oner, _d = oneriler(tanimlar, 0.0)
+        anlamlar = {k: o["anlam"] for k, o in oner.items() if o["anlam"]}
+        anlamlar.update(onaylilar())
+    tanimli = {ad: t for ad, t in (tanimlar or {}).items() if str(t or "").strip()}
+    cikti = {}
+    for kisa, anlam in anlamlar.items():
+        kolonlar = [ad for ad in tanimli if kisa in parcalar(ad)]
+        if len(kolonlar) < CELISKI_EN_AZ:
+            continue
+        tasiyan = [ad for ad in kolonlar if _anlami_tasir(tanimli[ad], anlam)]
+        pay = len(tasiyan) / float(len(kolonlar))
+        if pay < CELISKI_PAY or pay >= 1.0:
+            continue
+        for ad in kolonlar:
+            if ad in tasiyan:
+                continue
+            cikti.setdefault(ad, []).append(
+                "Kolon adındaki %s, sözlükteki %d kolonun %%%d'inde '%s' anlamında "
+                "kullanılmış; bu tanımda '%s' geçmiyor."
+                % (kisa, len(kolonlar), round(pay * 100), anlam, anlam))
+    return cikti
+
+
 # ---------------------------------------------------------------------------
 # DIL MODELI - arka planda, onbellekli
 # ---------------------------------------------------------------------------
@@ -543,20 +646,9 @@ def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
     with _DM_KILIT:
         _DM[imza] = {"durum": "bitti" if sonuc is not None else "hata",
                      "sonuc": sonuc or {}, "zaman": time.time()}
-    # KENDINI GELISTIRME: dil modeli kontrolunden gecen anlamlar ogrenilmis
-    # bilgiye yazilir (yalniz dogrulanan / modellerin anlastigi; emin
-    # olunamayan yazilmaz). Hata akisi durdurmaz.
-    if sonuc and tanimlar:
-        try:
-            oner, _d = oneriler(tanimlar, 0.0)
-            ogrenilenleri_kaydet(
-                {k: {"anlam": o["anlam"], "kolon": o.get("kolon") or 0,
-                     "kaynak": o["kaynak"]}
-                 for k, o in oner.items()
-                 if o["anlam"] and o["kaynak"] in ("dil_modeli_dogruladi", "dil_modeli")},
-                veri_seti)
-        except Exception:
-            pass
+    # KALICI YAZMA BURADA DEGIL: 01.2.4 tamamlaninca, DUZELTILMIS calisma
+    # kopyasindan yapilir (bkz. kalici_ogren). Ham sozlukten ogrenilen
+    # dosyaya yazilmaz.
 
 
 def dogrulamayi_baslat(tanimlar, veri_seti=""):
@@ -604,7 +696,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
     aday = adaylar(tanimlar)
     cikan = cikar(tanimlar, aday)
     dm, durum = dogrulama_sonucu(tanimlar, bekle, veri_seti)
-    satirlar, parca_say, _g, _y, _s = _parca_istatistigi(tanimlar)
+    satirlar, parca_say, _g, _y, _s, _a = _parca_istatistigi(tanimlar)
     onay = onaylilar()
     cikti = {}
     for kisa, c in cikan.items():

@@ -1,6 +1,23 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltmalar kendiliğinden öğrenilip saklanıyor**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+Bu tur: **Öğrenme döngüsü: çelişen tanımlar, düzeltilmiş hâlden kalıcı öğrenme, onaylı ağırlığı**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+
+- Kalıcı yazma 01.2.4 sonunda: öğrenilen kısaltmalar KISALTMA_OGRENILEN'e
+  ancak düzeltmeler uygulandıktan ya da kontrol atlandıktan (ya da adım
+  kendiliğinden geçtikten) sonra, DÜZELTİLMİŞ çalışma kopyası + onaylı
+  tanımlardan yazılır (arka planda). Ham sözlükten yazılmaz.
+- Çoğunluk azınlığı düzeltir (`kisaltma.celiskiler`, kod tarafında): bir
+  kısaltmanın anlamı o kısaltmanın geçtiği tanımlı kolonların en az
+  %85'inde geçiyorsa (en az 5 kolon), geçmeyen tanım işaretlenir.
+  01.2.4 kontrolünde bu tanım denetçiler "uygun" dese bile satır olarak
+  gelir; gerekçe: "Kolon adındaki GLN, sözlükteki 412 kolonun %99'unda
+  'gelen' anlamında kullanılmış; bu tanımda 'gelen' geçmiyor." Düzeltmeyi
+  dil modeli yazar (pencere / ölçü korunur); yazamazsa satır mevcut
+  tanımla gelir, kullanıcı düzenler.
+- Onaylı tanımlar 3 kat ağırlıkla sayılır (tanım hafızasındaki metinle
+  aynı olan tanım): zamanla onaylanan doğru bilgi baskın gelir.
+
+Önceki tur: **Kısaltmalar kendiliğinden öğrenilip saklanıyor**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
 
 - Yeni dosya: `PROJE_HAFIZASI/KISALTMA_OGRENILEN.parquet` (onaylı
   hafızadan ayrı, onay istemez). Sözlüklü her çalışmada, dil modeli

@@ -1400,6 +1400,16 @@ def _aciklama_baglami(durum):
     return baglam
 
 
+def _kalici_kisaltma_ogren(durum):
+    """01.2.4 tamamlaninca: DUZELTILMIS calisma kopyasi + onayli tanimlardan
+    kalici kisaltma ogrenmesi (arka planda; bkz. kisaltma.kalici_ogren)."""
+    try:
+        kisaltma_mod.kalici_ogren(_kisaltma_kaynagi(durum),
+                                  durum.get("veri_seti") or "")
+    except Exception:
+        pass
+
+
 def _kisaltma_kaynagi(durum):
     """Kisaltma cikariminin kaynagi: sozlugun CALISMA KOPYASI (bir onceki
     adimda eklenenler dahil) + onayli tanim hafizasi."""
@@ -2529,6 +2539,8 @@ def tanim_kontrol_plan(durum):
         # tanimlar bir onceki adimda eklendi): adim kendiliginden gecer.
         durum["_plan_otomatik"] = True
         durum["_secim_alani"] = None
+        # Adim gecti: kalici kisaltma ogrenmesi (onaylanan tanimlardan).
+        _kalici_kisaltma_ogren(durum)
         return ("Sözlükte kontrol edilecek mevcut tanım yok (tanımların "
                 "tamamı bir önceki adımda onaylandı); bu adım atlandı.")
     if _kontrol_basladi_mi(durum):
@@ -2585,8 +2597,17 @@ def tanim_kontrol_baslat(durum):
         _tekil_tamamla(prof, kalan, p)
         kontrol = _oneri_profilleri(prof, kalan, p)
         roller = _zorunlu_etiketler(durum)
+        # COGUNLUK AZINLIGI DUZELTIR (kullanici karari): ogrenilen kisaltma
+        # anlamiyla celisen tanim, denetciler "uygun" dese bile duzeltme
+        # onerisi alir (bkz. llm.tanim_kontrol_orkestra, KISALTMA UYARISI).
+        try:
+            celiski = kisaltma_mod.celiskiler(_kisaltma_kaynagi(durum))
+        except Exception:
+            celiski = {}
         for k in kontrol:
             k["mevcut"] = tanim.get(k["ad"], "")
+            if k["ad"] in celiski:
+                k["celiski"] = " ".join(celiski[k["ad"]])
             if k["ad"] in roller:
                 k["rol"] = roller[k["ad"]]
         durum["_kontrol_is"] = oneri_isi_baslat([], [], _aciklama_baglami(durum),
@@ -2606,6 +2627,7 @@ def tanim_kontrol_uygula(durum):
         # "Kontrol Etmeden Devam Et": dolu tanimlara dokunulmaz; suren
         # kontrol varsa durdurulur.
         oneri_isi_iptal(durum.get("_kontrol_is"))
+        _kalici_kisaltma_ogren(durum)
         return ""
     # Mevcut tanim ve model onerisi IS KAYDINDAN (istemciden degil); karar
     # verildi, kalan kontrol varsa durdurulur.
@@ -2616,6 +2638,7 @@ def tanim_kontrol_uygula(durum):
         durum, satirlar, kayit.get("duzeltmeler") or {})
     tanim_hafiza.arka_planda_ekle(hafiza, durum.get("veri_seti") or "",
                                   durum.get("_kullanici_ad") or "")
+    _kalici_kisaltma_ogren(durum)
     if not hatalar:
         return ""
     return ("Şu tanım düzeltmeleri yazılamadı; sözlükteki tanım olduğu gibi "
