@@ -92,6 +92,9 @@ def _serit_veri_sozluk_karti(durum):
                      else str(kaynak)))
     elif durum.get("mod") in SOZLUK_URETEN_MODLAR:
         alt = "sözlük LLM tarafından üretilecek"
+    elif durum.get("_sozluksuz"):
+        alt = ("sözlük seçilmedi · %s tanım bu çalışmada oluşturuldu" % _sayi(tanim)
+               if tanim else "sözlük seçilmedi · tanımlar bu çalışmada oluşturulacak")
     elif durum.get("mod") == "B":
         alt = "sözlük kaynak sözlüklerden kurulacak"
     else:
@@ -964,7 +967,11 @@ def _sozluk_kokeni(durum):
         adlar = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
         if not (durum.get("sozluk") or durum.get("sozluk_yedek")):
             return None
+        if not adlar:
+            return "Kaynak Sözlük Seçilmedi; Tanımlar Bu Çalışmada Oluşturuldu"
         return "Kaynak Sözlüklerden Kuruldu: %s" % ", ".join(adlar)
+    if durum.get("_sozluksuz"):
+        return "Sözlük Seçilmedi; Tanımlar Bu Çalışmada Oluşturuldu"
     if not (durum.get("sozluk") or durum.get("sozluk_yedek")):
         return "Dil Modeli Tarafından Oluşturulacak" if uretilen else None
     if not uretilen:

@@ -53,21 +53,25 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 # diğerlerini seçmeme izin verme"). Buyuk veri (Spark) yoluyla uctan uca
 # denenmis baslangiclar acik; digerleri kartta soluk ve tiklanamaz durur,
 # yazarak secilmeye calisilirsa da reddedilir. Acmak icin bu listeye ekleyin.
-ACIK_MODLAR = ("A", "C", "D")
+# IKI BASLANGIC (kullanici karari: "sozluk olup olmamasina gore akis
+# degismeyecek; sozluk varsa daha kolay ilerleyecek, yoksa sifirdan
+# olusturacak. A-C ve B-D birlestirilsin"). Sozluk her iki baslangicta da
+# ISTEGE BAGLI: secilmezse butun kolonlar 01.2.3 Sozluk Tanimlari kartinda
+# onayli tanim hafizasi + dil modeli onerileriyle tanimlanir.
+# C ve D YALNIZ ESKI CALISMALAR icin duruyor (kendi adim listeleriyle
+# acilmaya devam eder); yeni calismada secilemez.
+ACIK_MODLAR = ("A", "B")
 
 MOD_SECENEKLERI = [
-    {"deger": "A", "baslik": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut",
-     "aciklama": "Veri seti ve sözlük hazır. Doğrudan modelleme tanımlarına "
-                 "ve veri analizine geçilir."},
-    {"deger": "B", "baslik": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut",
-     "aciklama": "Baz veri seti kaynak tablolar birleştirilerek, baz sözlük "
-                 "kaynak sözlükler birleştirilerek oluşturulur."},
-    {"deger": "C", "baslik": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil",
-     "aciklama": "Baz sözlük, veri setinin kolon yapısı ve profilinden yapay "
-                 "zekâ desteğiyle oluşturulur."},
-    {"deger": "D", "baslik": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut Değil",
+    {"deger": "A", "baslik": "Baz Veri Seti Mevcut",
+     "aciklama": "Baz veri setini seçersiniz; baz sözlük varsa onu da seçersiniz. "
+                 "Sözlükte tanımı olmayan kolonlar (sözlük yoksa tümü) onaylı "
+                 "tanımlardan ve yapay zekâ önerileriyle tanımlanır."},
+    {"deger": "B", "baslik": "Kaynak Tablolar Mevcut",
      "aciklama": "Baz veri seti kaynak tablolar birleştirilerek oluşturulur; "
-                 "baz sözlük ardından yapay zekâ desteğiyle üretilir."},
+                 "kaynak tabloların sözlükleri varsa seçilir. Tanımı olmayan "
+                 "kolonlar onaylı tanımlardan ve yapay zekâ önerileriyle "
+                 "tanımlanır."},
 ]
 for _s in MOD_SECENEKLERI:
     _s["kapali"] = _s["deger"] not in ACIK_MODLAR
@@ -82,6 +86,10 @@ MOD_SIRA = {str(i + 1): s["deger"] for i, s in enumerate(MOD_SECENEKLERI)}
 
 # LLM baglami ve ozet icin okunur adlar
 MOD_ADLARI = {s["deger"]: s["baslik"] for s in MOD_SECENEKLERI}
+# Eski calismalarin baslangic adlari (secilemez, ozet / kayit icin).
+MOD_ADLARI.update({
+    "C": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil (eski)",
+    "D": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut Değil (eski)"})
 
 SONRAKI_FAZLAR = [
     {"no": "02", "baslik": "Veri Anlama ve Hazırlama",

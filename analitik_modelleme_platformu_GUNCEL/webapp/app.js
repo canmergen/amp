@@ -6601,6 +6601,13 @@ function dogrulamaKartiEkle(alan, blok) {
             if (!ack) return;
             g.value = tireSade(ack);
             g.dataset.dolduruldu = "1";
+            /* Sözlük seçilmediyse öneri gelen satır "Sözlüğe Ekle" işaretli
+               olur (zorunlu / kilitli satırlar kendi kuralında kalır). */
+            if (alan.tanimsiz && alan.tanimsiz.oneri_gelince_ekle
+                    && !s.zorunlu && !s.kilitli && s.islem !== "ekle") {
+                s.islem = "ekle";
+                kutuCiz(i);
+            }
             g.dataset.oneriMetin = tireSade(ack);
             if (k.modeller) g.title = "Öneren: " + tireSade(k.modeller);
             if (k.kaynak === "hafiza" && satirElemanlari[i]
@@ -8764,8 +8771,12 @@ function secimAlaniEkle(alan, blok) {
                 /* Boş opsiyonel alan anahtar kelimesiyle birlikte düşer
                    ("segment {segment}" -> ""): bir sonraki anahtar kelime
                    değer sanılmasın. */
+                /* bos_deger: boş alan yerine yazılan değer (kaynak sözlük
+                   formu: sıralı listede boş alan "-" ile yer tutar). */
                 metin = v ? metin.replace("{" + k + "}", v)
-                          : metin.replace(new RegExp("\\S+\\s*\\{" + k + "\\}"), "");
+                          : (alan.bos_deger !== undefined
+                             ? metin.replace("{" + k + "}", alan.bos_deger)
+                             : metin.replace(new RegExp("\\S+\\s*\\{" + k + "\\}"), ""));
             });
             metin = metin.replace(/\s+/g, " ").trim();
             kartiKilitle(true);

@@ -63,7 +63,7 @@ _MOD_GECICI = ("_donemler", "_aciklamasiz", "_dusurulecek", "_soru_gecmis",
                "_sozluk_esitleme", "_sozluk_esitleme_imza",
                "_hazir_bolme", "_tanim_duzeltmeleri", "_kontrol_kolonlar",
                "_tanim_duzeltmeleri_kaynak", "_kontrol_is", "_kontrol_basladi",
-               "_kontrol_hafiza",
+               "_kontrol_hafiza", "_sozluksuz",
                # Sozluk teyidi eski moda ait bir denetim kaydidir; mod
                # degisince veri seti de sozluk de degisir, damga
                # tasinmamali.
@@ -808,8 +808,9 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
     durum["_secim_alani"] = {
         "tip": "form",
         "baslik": "Baz Veri Seti ve Baz Sözlük",
-        "aciklama": "Modellemeye girecek baz veri setini ve bu veri setinin "
-                    "değişken açıklamalarını taşıyan baz sözlüğü seçin.",
+        "aciklama": "Modellemeye girecek baz veri setini seçin. Baz sözlük "
+                    "varsa onu da seçin; yoksa boş bırakın, kolon tanımları "
+                    "Sözlük Tanımları adımında oluşturulur.",
         # Dugme etiketi SONRAKI EKRANIN adini soylemeli: bu form
         # gonderildiginde "Girdi doğrulama tamamlandı" karti aciliyor.
         # Eski etiket analizin burada basladigini ima ediyordu; oysa
@@ -821,10 +822,10 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
              "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik ve tüm "
                       "değişkenler bu tabloda",
              "deger": veri or durum.get("veri_seti") or ""},
-            {"ad": "sozluk", "etiket": "Baz Sözlük",
-             "placeholder": "Sözlük tablosu ara…",
+            {"ad": "sozluk", "etiket": "Baz Sözlük (Opsiyonel)",
+             "placeholder": "Sözlük tablosu ara…", "zorunlu": False,
              "ipucu": "Baz veri setindeki kolonların adını ve açıklamasını "
-                      "taşıyan tablo",
+                      "taşıyan tablo; yoksa boş bırakın",
              "deger": sozluk or durum.get("sozluk") or ""},
         ],
         "sablon": "veri seti {veri_seti} ve sözlük {sozluk}",
@@ -898,7 +899,10 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     # Kayitli deger YALNIZCA mesaj en az bir alan iceriyorsa eksigi tamamlar.
     # Bos mesaj ya da "hayır" gibi alan icermeyen mesaj her zaman formu acar.
     veri = a.get("veri_seti") or (durum.get("veri_seti") if a else None)
-    sozluk = a.get("sozluk") or (durum.get("sozluk") if a else None)
+    # SOZLUK ISTEGE BAGLI: form veri setini gonderip sozlugu gondermediyse
+    # sozluk SECILMEDI demektir (eski secime dusulmez).
+    sozluk = a.get("sozluk") or (durum.get("sozluk")
+                                 if a and not a.get("veri_seti") else None)
 
     # METIN YOK, YALNIZ FORM. Formun kendi basligi ("Veri seti ve değişken
     # sözlüğü") ve aciklamasi ("Analiz edilecek veri setini ve değişken
@@ -912,22 +916,27 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
                        sozluk or durum.get("sozluk"))
         return False, ""
 
-    if not veri or not sozluk:
+    if not veri:
         _kurulum_formu(durum, veri, sozluk)
         return False, ""
 
-    for ad in (veri, sozluk):
+    for ad in [x for x in (veri, sozluk) if x]:
         if not _dataset_var_mi(ad):
             _kurulum_formu(durum, veri, sozluk)
             return False, ("'%s' adında bir tabloya erişemiyorum. "
                            "Adı kontrol edip yeniden seçin." % ad)
 
-    hata = _sozluk_denetle(sozluk, veri)
+    hata = _sozluk_denetle(sozluk, veri) if sozluk else None
     if hata:
         _kurulum_formu(durum, veri, sozluk)
         return False, "Girdiler onaylanmadı. " + hata
 
-    durum["veri_seti"], durum["sozluk"] = veri, sozluk
+    durum["veri_seti"], durum["sozluk"] = veri, sozluk or None
+    # SOZLUKSUZ: butun kolonlar 01.2.3'te tanimlanir (bkz.
+    # akis_durum.sozluk_orijinal_oku: bos sozluk tabani).
+    durum["_sozluksuz"] = not sozluk
+    if not sozluk:
+        durum["sozluk_yedek"] = None
     durum["_secim_alani"] = None
     return True, None
 
@@ -948,16 +957,20 @@ KAYNAK_SOZLUK_AYRAC = " | "
 def _kaynak_sozluk_formu(durum, secili=None):
     tablolar = list(durum.get("ham_tablolar") or [])
     secili = secili or durum.get("kaynak_sozlukler") or {}
-    alanlar = [{"ad": "sozluk_%d" % i, "etiket": "%s Tablosunun Sözlüğü" % t,
-                "placeholder": "Kaynak sözlük ara…",
+    alanlar = [{"ad": "sozluk_%d" % i,
+                "etiket": "%s Tablosunun Sözlüğü (Opsiyonel)" % t,
+                "placeholder": "Kaynak sözlük ara…", "zorunlu": False,
                 "deger": secili.get(t) or ""}
                for i, t in enumerate(tablolar)]
     durum["_secim_alani"] = {
         "tip": "form",
         "baslik": "Kaynak Sözlükler",
-        "aciklama": "Her kaynak tablonun kendi sözlüğünü seçin. Aynı "
-                    "sözlük birden fazla tablo için seçilebilir. Baz sözlük "
-                    "birleştirmeden sonra bu kaynak sözlüklerden kurulur.",
+        "aciklama": "Sözlüğü olan kaynak tabloların sözlüğünü seçin; olmayanları "
+                    "boş bırakın. Aynı sözlük birden fazla tablo için "
+                    "seçilebilir. Baz sözlük birleştirmeden sonra seçilen "
+                    "sözlüklerden kurulur; tanımı olmayan kolonlar Sözlük "
+                    "Tanımları adımında tanımlanır.",
+        "bos_deger": "-",
         "buton": "Sözlükleri Onayla",
         "alanlar": alanlar,
         "sablon": KAYNAK_SOZLUK_ONEK + " " + KAYNAK_SOZLUK_AYRAC.join(
@@ -985,11 +998,8 @@ def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
         _kaynak_sozluk_formu(durum)
         return False, ""
 
-    bos = [t for t, s in secim.items() if not s]
-    if bos:
-        _kaynak_sozluk_formu(durum, secim)
-        return False, ("Şu tabloların sözlüğü seçilmedi: %s"
-                       % ", ".join(bos))
+    # SOZLUK ISTEGE BAGLI: bos ("-") alan o tablonun sozlugu yok demektir.
+    secim = {t: s for t, s in secim.items() if s and s.strip() not in ("-", "")}
 
     erisilemeyen = sorted({s for s in secim.values() if not _dataset_var_mi(s)})
     if erisilemeyen:
@@ -1007,12 +1017,18 @@ def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
         return False, ("Sözlükler onaylanmadı:\n" + "\n".join(hatalar))
 
     durum["kaynak_sozlukler"] = secim
+    # Hicbir kaynak sozluk secilmediyse A'daki sozluksuz calisma ile ayni:
+    # 01.2.3'te oneri gelen satirlar "Sözlüğe Ekle" isaretli gelir.
+    durum["_sozluksuz"] = not secim
     durum["_secim_alani"] = None
     return True, None
 
 
 def kaynak_sozluk_uygula(durum):
     adlar = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
+    if not adlar:
+        return ("Kaynak sözlük seçilmedi; kolon tanımları Sözlük Tanımları "
+                "adımında oluşturulacak.")
     return "Kaynak sözlükleri kaydedildi: %s" % ", ".join(adlar)
 
 
@@ -1114,8 +1130,14 @@ def kaynak_sozlugunden_kur(durum, baz, kutuk):
 def _mod_b_sozlugu(durum, baz, kutuk):
     """Birlestirmeden sonra Mod B'nin sozluk isi. Doner: rapor metni."""
     tablo, oz = kaynak_sozlugunden_kur(durum, baz, kutuk)
-    yazildi, yedek = _yaz(SOZLUK_ADI, tablo, "/degisken_sozlugu.parquet")
-    durum["sozluk"] = yazildi or None
+    # CALISMANIN KENDI KLASORUNE (kullanici karari: kullanicilar birbirinin
+    # sozlugunu ezmesin). Eskiden ortak MODELLEME_SOZLUK veri setine
+    # yaziliyordu.
+    yedek = dosya_yaz(_amp_yolu(durum, "KAYNAK_SOZLUK"), tablo)
+    if not yedek:
+        raise AdimHatasi("Kaynak sözlüklerden kurulan baz sözlük çalışma "
+                         "klasörüne yazılamadı.")
+    durum["sozluk"] = None
     durum["sozluk_yedek"] = yedek
     durum["sozluk_uretim"] = {"kaynak": "kaynak sözlükleri", **oz}
     # Profil + kapsam SIMDI: baz zaten bellekte. Modelleme tanimlari
@@ -1130,7 +1152,7 @@ def _mod_b_sozlugu(durum, baz, kutuk):
              "(%s toplama kolonu türetildi).\n"
              "  Tablo: %s"
              % (_sayi(oz["toplam"]), _sayi(oz["tanimli"]),
-                _sayi(oz["turetilen"]), _nerede(yazildi, yedek)))
+                _sayi(oz["turetilen"]), _nerede(None, yedek)))
     if tanimsiz:
         metin += ("\n  Kaynağında tanımı olmayan %s kolon «Sözlük "
                   "Tanımları» adımında listelenecek." % _sayi(tanimsiz))
@@ -1202,6 +1224,11 @@ TANIMSIZ_NOT_KALIP = ("Tanımı bulunmayan %s kolon aşağıda listelendi; "
                       "varsayılan olarak analiz dışında tutulurlar. "
                       "Açıklama önerileri dil modeli tarafından üretildi, "
                       "doğrulanmamıştır.")
+
+SOZLUKSUZ_NOT_KALIP = ("Baz sözlük seçilmediği için veri setinin %s kolonunun "
+                       "tamamı listelendi. Onaylı tanımı olan kolonlar ondan, "
+                       "diğerleri dil modeli önerisiyle dolar; öneri gelen "
+                       "satırlar sözlüğe eklenecek şekilde işaretli gelir.")
 
 # Hedef, kimlik ve donem kolonu modelin iskeletidir. Tanimsiz kalirlarsa
 # model kartinda "bu kolon neydi" sorusunun cevabi hicbir yerde yazmaz;
@@ -1490,14 +1517,19 @@ def _kontrol_kolonlari(durum, prof):
         veri_adlari = [str(o.get("ad")) for o in ((durum.get("profil") or {})
                                                   .get("kolon_ozet") or [])
                        if isinstance(o, dict)]
+    eslesen = 0
     for ad in veri_adlari:
+        t = tanimlar.get(ad) or normal.get(sozluk_calisma._normalize_ad(ad))
+        if t:
+            eslesen += 1
         if ad in tanimsiz or ad in karar:
             continue
-        t = tanimlar.get(ad) or normal.get(sozluk_calisma._normalize_ad(ad))
         if t:
             adlar.append(ad)
             harita[ad] = t
-    if not adlar and not karar:
+    # Ad eslesmesi HIC yoksa sozluk okuma sorunu; eslesip hepsi bir onceki
+    # adimda eklenmisse (sozluksuz calisma) kontrol edilecek bir sey yok.
+    if not eslesen and not karar:
         return [], {}, (
             "Sözlükte %s tanım okundu ama hiçbiri veri setinin kolon adlarıyla "
             "eşleşmedi (veri seti: %s kolon). Örnek sözlük adları: %s."
@@ -1863,8 +1895,10 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
              "alt": ["%s satır · %s kolon"
                      % (_sayi(profil.get("satir") or 0), _sayi(kolon)),
                      tip_alt]},
-            {"etiket": "Baz Sözlük", "deger": durum.get("sozluk") or "",
-             "alt": ["%s tanım" % _sayi(profil.get("sozluk_satir") or 0)]},
+            {"etiket": "Baz Sözlük",
+             "deger": durum.get("sozluk") or ("Seçilmedi" if durum.get("_sozluksuz") else ""),
+             "alt": (["Tanımlar bu adımda oluşturulur"] if durum.get("_sozluksuz")
+                     else ["%s tanım" % _sayi(profil.get("sozluk_satir") or 0)])},
         ],
         "kapsam": {"yuzde": kapsam, "tanimli": eslesen, "toplam": kolon,
                    "metin": "%%%s: %s / %s kolon tanımlı"
@@ -1906,7 +1940,8 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
             # ZORUNLU SATIR "ekle" ile acilir ve isaret kaldirilamaz:
             # hedef, kimlik ve donem kolonu sozlukte tanimsiz kalamaz.
             "islem": "ekle" if rol else (
-                (onceki or {}).get("islem") or "haric"),
+                (onceki or {}).get("islem")
+                or ("ekle" if durum.get("_sozluksuz") and aciklama else "haric")),
             "oneri": aciklama,
             "oneri_kaynak": (oneri.get("kaynak") or "llm") if aciklama else "yok",
             "hafiza_veri_seti": oneri.get("hafiza_veri_seti") or "",
@@ -1934,7 +1969,11 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         "varsayilan": "haric",
         # TEK NOT. Kac kolon incelendigini de yaziyor ki bekleme suresi
         # anlamli gorunsun (bkz. TANIMSIZ_NOT_KALIP).
-        "not": TANIMSIZ_NOT_KALIP % _sayi(len(satirlar)),
+        "not": (SOZLUKSUZ_NOT_KALIP if durum.get("_sozluksuz")
+                else TANIMSIZ_NOT_KALIP) % _sayi(len(satirlar)),
+        # Sozluk secilmediyse oneri geldikce satir "Sözlüğe Ekle" isaretli
+        # olur (kullanici karari: 1.040 kutu tek tek isaretlenmesin).
+        "oneri_gelince_ekle": bool(durum.get("_sozluksuz")),
         "satirlar": satirlar,
         # Zorunlu kolonlarin acikca yazildigi uyari; on yuz devam
         # dugmesini bu listeye bakarak kapali tutuyor.
@@ -2449,6 +2488,13 @@ def tanim_kontrol_plan(durum):
     else:
         prof, _p = _kapsami_cikar(durum)
     adlar, _tanim, hata = _kontrol_kolonlari(durum, prof)
+    if not adlar and not hata and not _onceki_duzeltmeler(durum):
+        # Kontrol edilecek MEVCUT tanim yok (sozluk secilmedi ya da butun
+        # tanimlar bir onceki adimda eklendi): adim kendiliginden gecer.
+        durum["_plan_otomatik"] = True
+        durum["_secim_alani"] = None
+        return ("Sözlükte kontrol edilecek mevcut tanım yok (tanımların "
+                "tamamı bir önceki adımda onaylandı); bu adım atlandı.")
     if _kontrol_basladi_mi(durum):
         return tanim_kontrol_baslat(durum)
     durum["_kontrol_kolonlar"] = list(adlar)

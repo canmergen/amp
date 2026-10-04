@@ -1,6 +1,26 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **C başlangıcı açıldı (Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil)**. Değiştir: `fe_agent/akis_metin.py`
+Bu tur: **Başlangıçlar birleşti: A-C → "Baz Veri Seti Mevcut", B-D → "Kaynak Tablolar Mevcut"**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `webapp/app.js`
+
+- Başlangıç ekranında iki kart. Sözlük her ikisinde İSTEĞE BAĞLI:
+    A: "Baz Sözlük (Opsiyonel)" boş bırakılabilir.
+    B: her kaynak tablonun sözlüğü "(Opsiyonel)"; boş alan sözlük yok demek.
+- Sözlük seçilmediyse boş bir sözlük tabanı kullanılır; çalışma kopyası
+  veri setiyle eşitlenirken bütün kolonlar açıklaması boş eklenir ve
+  hepsi 01.2.3 Sözlük Tanımları kartında listelenir: önce onaylı tanım
+  hafızası, kalanlar dil modeli. Öneri gelen satırlar "Sözlüğe Ekle"
+  İŞARETLİ gelir (sözlük seçildiyse eskisi gibi işaretsiz).
+- 01.2.4 Sözlük Tanım Kontrolü: kontrol edilecek mevcut tanım yoksa
+  (sözlük seçilmedi) adım kendiliğinden geçer.
+- B'de kaynak sözlüklerden kurulan baz sözlük artık ortak
+  MODELLEME_SOZLUK veri setine değil, çalışmanın kendi klasörüne
+  (/vN/KAYNAK_SOZLUK.parquet) yazılıyor.
+- Eski C ve D çalışmaları kendi adım listeleriyle (Sözlük Üretimi dahil)
+  açılmaya devam eder; yeni çalışmada C/D seçilemez.
+
+---
+
+Önceki tur: **C başlangıcı açıldı (Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil)**. Değiştir: `fe_agent/akis_metin.py`
 
 - Adımlar: Başlangıç → Baz Veri Seti → Sözlük Üretimi → Modelleme
   Tanımları → Değişken Kontrolü → Örneklem ve Doğrulama.

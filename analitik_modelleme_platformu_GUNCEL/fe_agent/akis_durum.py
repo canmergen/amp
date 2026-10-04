@@ -841,6 +841,13 @@ def sozluk_orijinal_oku(durum):
     yedek = durum.get("sozluk_yedek")
     if yedek:
         return tablo_io.klasorden_oku(_folder(), yedek)
+    if durum.get("_sozluksuz"):
+        # Sozluk SECILMEDI: bos sozluk tabani. Calisma kopyasi bundan
+        # cikarilir ve veri setiyle esitlenirken her kolon aciklamasi bos
+        # bir satir olarak eklenir; hepsi 01.2.3'te tanimlanir.
+        return pd.DataFrame({"DEGISKEN": pd.Series(dtype=object),
+                             "ACIKLAMA": pd.Series(dtype=object),
+                             "KATEGORI": pd.Series(dtype=object)})
     raise AdimHatasi("Değişken sözlüğü bulunamadı; sözlük üretimi adımını "
                      "tamamlamanız gerekiyor.")
 
