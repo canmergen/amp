@@ -1465,6 +1465,27 @@ def _kisaltma_alani(durum, bekle=0.0):
             "satirlar": satirlar, "not": notu}
 
 
+KISALTMA_EXCEL_ADI = "kisaltma_onerileri.xlsx"
+
+
+def kisaltma_excel(durum):
+    """Kisaltma onerileri + ornekleri .xlsx (bayt). Ayni dosya calismanin
+    klasorune de yazilir: PROJE_HAFIZASI/<calisma>/KISALTMA_ONERILERI.xlsx.
+    Girdi veri setine ve sozluge yazilmaz.
+    Doner: (bayt, klasordeki_yol ya da None)."""
+    satirlar = kisaltma_mod.rapor_satirlari(_kisaltma_kaynagi(durum),
+                                            durum.get("veri_seti") or "")
+    veri = xlsx_yaz.tablo_xlsx(kisaltma_mod.RAPOR_KOLONLARI, satirlar,
+                               sayfa_adi="Kısaltmalar")
+    yol = "/%s/KISALTMA_ONERILERI.xlsx" % amp_klasor_adi(durum)
+    try:
+        from fe_agent.akis_durum import _folder as _klasor
+        _klasor().upload_stream(yol, veri)
+    except Exception:
+        yol = None
+    return veri, yol
+
+
 def kisaltma_alani_tazele(durum):
     """Kayitli oturum geri yuklenirken acik kartin Kisaltma Sozlugu bolumu
     YENIDEN kurulur (kullanici bildirimi: kod guncellendigi halde kartta

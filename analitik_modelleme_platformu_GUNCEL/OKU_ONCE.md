@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma kartında düzenlenen satır yeşil**. Değiştir: `webapp/app.js` (yalnız sayfa yenileme)
+Bu tur: **Kısaltma önerileri örnekleriyle Excel**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+
+- Kısaltma Sözlüğü kartında "Örnekleriyle Excel Olarak İndir" düğmesi
+  (`/kisaltma_excel`). Aynı dosya çalışma klasörüne de yazılır:
+  PROJE_HAFIZASI/<çalışma>/KISALTMA_ONERILERI.xlsx.
+- Sütunlar: Kısaltma, Önerilen Anlam, Kaynak, Hafızada Onaylı, Geçtiği
+  Tanımlı Kolon, Anlamı Taşıyan Kolon, İstatistik Adayları (yüzde ve
+  ayırt), 5 örnek (kolon + açıklama; anlamı taşıyan, çeşitli seçilmiş),
+  3 çelişen örnek (anlamı taşımayan; sözlükteki olası hata), boş Karar
+  sütunu.
+
+Önceki tur: **Kısaltma kartında düzenlenen satır yeşil**. Değiştir: `webapp/app.js` (yalnız sayfa yenileme)
 
 - Kullanıcı anlamı gelen değerden farklı yazınca satır yeşil
   ("Düzenlendi", lejanta eklendi); eski değere geri yazınca önceki

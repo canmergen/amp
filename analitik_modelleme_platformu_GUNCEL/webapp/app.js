@@ -1868,7 +1868,10 @@ const EXCEL_SIMGESI =
    indirdiğimiz için başlık okunmuyor, ad burada duruyor (bkz.
    DOKUMAN_DOSYA_ADI ile aynı gerekçe). */
 const EXCEL_ADLARI = { liste: "degisken_listesi.xlsx",
-                       sozluk: "degisken_sozlugu.xlsx" };
+                       sozluk: "degisken_sozlugu.xlsx",
+                       kisaltma: "kisaltma_onerileri.xlsx" };
+/* Tür -> uç. Kısaltma raporu kendi ucundan gelir (teyit kapısı yok). */
+const EXCEL_UCLARI = { kisaltma: "kisaltma_excel" };
 
 function excelSeridiYap(tur, etiket, ipucu) {
     const el = elYap("div", "excel-serit");
@@ -1900,7 +1903,7 @@ function excelSeridiYap(tur, etiket, ipucu) {
             btn.disabled = false;
             btn.lastChild.nodeValue = eski;
         };
-        fetch(getWebAppBackendUrl("degisken_excel")
+        fetch(getWebAppBackendUrl(EXCEL_UCLARI[tur] || "degisken_excel")
               + "?tur=" + encodeURIComponent(tur)
               + "&oturum_id=" + encodeURIComponent(OTURUM_ID))
             .then(r => {
@@ -6775,6 +6778,12 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
     toplu.appendChild(kaydetBtn);
     ust.appendChild(toplu);
     kart.appendChild(ust);
+    /* EXCEL (kullanıcı kararı): önerilen anlamlar örnek kolonları ve
+       anlamı taşımayan (çelişen) örneklerle birlikte indirilir; dosya
+       çalışma klasörüne de yazılır. Son sütun kullanıcının kararı için. */
+    const kisaExcel = excelSeridiYap("kisaltma", "Örnekleriyle Excel Olarak İndir", "");
+    kisaExcel.ac(true);
+    kart.insertBefore(kisaExcel.el, ust);
     const sar = elYap("div", "dg-tablo-sar");
     const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
     const th = document.createElement("thead"), hr = document.createElement("tr");

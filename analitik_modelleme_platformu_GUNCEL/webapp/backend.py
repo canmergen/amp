@@ -2650,6 +2650,25 @@ def degisken_excel_endpoint():
     })
 
 
+@app.route("/kisaltma_excel")
+def kisaltma_excel_endpoint():
+    """Kisaltma onerilerini ornekleriyle .xlsx olarak indirir (ayni dosya
+    calismanin PROJE_HAFIZASI klasorune de yazilir). Hata halinde duz metin."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        veri, _yol = akis.kisaltma_excel(durum)
+    except Exception as e:
+        kod = _hata_kaydet("kisaltma_excel", e)
+        return Response(
+            "Kısaltma önerileri Excel olarak oluşturulamadı (hata kodu: %s)." % kod,
+            status=500, mimetype="text/plain; charset=utf-8")
+    return Response(veri, mimetype=XLSX_MIME, headers={
+        "Content-Disposition": 'attachment; filename="%s"' % akis.KISALTMA_EXCEL_ADI,
+        "Cache-Control": "no-store",
+    })
+
+
 @app.route("/tip_degistir", methods=["POST"])
 def tip_degistir_endpoint():
     """Sozluk teyidinde secilen tip donusumunu TAM VERIYLE dogrular.

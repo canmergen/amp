@@ -882,3 +882,52 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          "onayli": kisa in onay, "kanit": " · ".join(p for p in parca if p),
                          "ornekler": kanit_ornekleri(tanimlar, kisa, anlam)})
     return satirlar[:EN_COK], durum
+
+
+# ---------------------------------------------------------------------------
+# RAPOR (kullanici karari: "onerilen anlami ornekleriyle indirebilecegim bir
+# sey; sozlukteki yazilar hatali oldugu icin tek tek bakip karar verecegiz")
+# ---------------------------------------------------------------------------
+RAPOR_ORNEK = 5          # anlami tasiyan ornek kolon
+RAPOR_CELISEN = 3        # anlami TASIMAYAN ornek kolon (sozluk hatasi adayi)
+
+RAPOR_KOLONLARI = (
+    ["Kısaltma", "Önerilen Anlam", "Kaynak", "Hafızada Onaylı",
+     "Geçtiği Tanımlı Kolon", "Anlamı Taşıyan Kolon", "İstatistik Adayları"]
+    + sum([["Örnek %d Kolon" % i, "Örnek %d Açıklama" % i]
+           for i in range(1, RAPOR_ORNEK + 1)], [])
+    + sum([["Çelişen Örnek %d Kolon" % i, "Çelişen Örnek %d Açıklama" % i]
+           for i in range(1, RAPOR_CELISEN + 1)], [])
+    + ["Karar (Doğru / Düzeltilmiş Anlam)"])
+
+
+def rapor_satirlari(tanimlar, veri_seti=""):
+    """Kisaltma karti + kanit: her kisaltma icin onerilen anlam, kaynagi,
+    istatistik adaylari, anlami tasiyan cesitli ornekler ve anlami
+    TASIMAYAN ornekler (sozlukteki olasi hata). Son sutun bos: kullanici
+    kararini yazar. Doner: satir listesi (RAPOR_KOLONLARI sirasiyla)."""
+    satirlar_k, _d = kart_satirlari(tanimlar, 0.0, veri_seti)
+    aday = adaylar(tanimlar)
+    tanimli = {ad: str(t) for ad, t in (tanimlar or {}).items() if str(t or "").strip()}
+    cikti = []
+    for r_ in satirlar_k:
+        kisa, anlam = r_["kisaltma"], r_["anlam"]
+        kolonlar = [ad for ad in tanimli if kisa in parcalar(ad)]
+        tasiyan = [ad for ad in kolonlar if anlam and _anlami_tasir(tanimli[ad], anlam)]
+        ornek = kanit_ornekleri(tanimlar, kisa, anlam, RAPOR_ORNEK)
+        celisen = [{"kolon": ad, "tanim": tanimli[ad][:300]}
+                   for ad in kolonlar if ad not in tasiyan][:RAPOR_CELISEN] if anlam else []
+        ist = "; ".join("%s (%%%d, ayırt %%%d)" % (a["anlam"], round(a["destek"] * 100),
+                                                  round(a["ayirt"] * 100))
+                        for a in (aday.get(kisa) or {}).get("adaylar", [])[:ADAY_SAYISI])
+        satir = [kisa, anlam, r_["kanit"], "Evet" if r_["onayli"] else "Hayır",
+                 len(kolonlar), len(tasiyan) if anlam else None, ist]
+        for i in range(RAPOR_ORNEK):
+            o = ornek[i] if i < len(ornek) else None
+            satir += [o["kolon"], o["tanim"]] if o else [None, None]
+        for i in range(RAPOR_CELISEN):
+            o = celisen[i] if i < len(celisen) else None
+            satir += [o["kolon"], o["tanim"]] if o else [None, None]
+        satir.append(None)
+        cikti.append(satir)
+    return cikti
