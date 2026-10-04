@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Koyu tema düzeltmeleri**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **Gri yazı kaldırıldı**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+
+- İkincil yazılar (açıklamalar, notlar, tip sütunu, sağ panel etiketleri)
+  açık temada siyah, koyu temada beyaz (`--metin-soluk` = ana metin).
+- Saydamlıkla grileştirilen üç yazı da tam renk: faz özetleri (sol
+  panel), arşivdeki çalışma alt satırı ve boş arşiv notu.
+- Bilerek bırakılanlar: boş kutudaki yer tutucu ("Açıklama", "Kolon
+  ara…") yarı saydam, yoksa dolu değer gibi okunur; kilitli / pasif /
+  süreç dışı öğelerin soluklaşması bir durum göstergesi.
+
+Önceki tur: **Koyu tema düzeltmeleri**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
 
 - Sözlük tablosundaki değişken adı koyu temada beyaz: tablo hücrelerinin
   yazı rengi artık açıkça veriliyor (Dataiku sayfasının kendi "td"

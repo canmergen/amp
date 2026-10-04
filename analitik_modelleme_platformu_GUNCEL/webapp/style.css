@@ -82,10 +82,14 @@
   --tutamak-tasma: calc((var(--tutamak-en) - var(--ayrac-kalinlik)) / 2);
 
   --metin:        #000000;
-  /* IKI TEMADA TEK GRI (kullanici karari: "hem dark mode hem light mode
-     uyumlu bir grilik secelim"). #767676 beyaz zeminde 4.54:1, siyah
-     zeminde 4.6:1: iki temada da okunabilir sinirin ustunde. */
-  --metin-soluk:  #767676;
+  /* GRI YAZI YOK (kullanici karari: "gri komple kaldirilsin, light
+     mode icin siyah, dark mode icin beyaz"). Ikincil metin de ana metin
+     renginde; ayrim boyut ve kalinlikla. Degisken adi korunuyor ki
+     kullanan 100+ kural tek yerden degissin.
+     TEK ISTISNA yer tutucu (placeholder): bos kutudaki "Açıklama",
+     "Kolon ara..." tam siyah olursa doldurulmus deger gibi okunur. */
+  --metin-soluk:  #000000;
+  --yer-tutucu:   rgba(0,0,0,.45);
 
   --user-zemin:   #EEF0F3;          /* kullanici balonu: bot'tan ayrissin */
 
@@ -191,7 +195,8 @@
   --ayrac:        #FFFFFF;
 
   --metin:        #FFFFFF;
-  --metin-soluk:  #767676;
+  --metin-soluk:  #FFFFFF;
+  --yer-tutucu:   rgba(255,255,255,.45);
 
   --user-zemin:   #1A1A1A;
 
@@ -438,8 +443,8 @@ button.ozet-kart:focus-visible {
   margin-left: var(--b-2); font-size: var(--fs-kucuk);
   color: var(--yesil); font-weight: var(--fw-kalin);
 }
-.calisma-alt { opacity: .72; font-size: var(--fs-kucuk); }
-.calisma-bos { padding: var(--b-2) var(--b-3); opacity: .72; }
+.calisma-alt { font-size: var(--fs-kucuk); }
+.calisma-bos { padding: var(--b-2) var(--b-3); }
 .calisma-hata { color: var(--kirmizi); }
 /* Çekmece düğmeleri yalnızca panelin gizlendiği dar ekranlarda görünür */
 .cekmece-btn { display: none; }
@@ -578,7 +583,7 @@ button.ozet-kart:focus-visible {
 .faz-govde { min-width: 0; flex: 1; }
 .faz-ad { font-size: var(--fs-baslik); font-weight: var(--fw-kalin); line-height: 1.35; color: inherit; }
 .faz-ozet {
-  font-size: var(--fs-govde); color: inherit; opacity: .72;
+  font-size: var(--fs-govde); color: inherit;
   margin-top: 2px; line-height: 1.45;
 }
 .faz-durum {
@@ -1010,7 +1015,7 @@ button.ozet-kart:focus-visible {
   outline: none; background: var(--yuzey); color: var(--metin);
   transition: border-color .15s, box-shadow .15s;
 }
-.combo-giris::placeholder { color: var(--metin-soluk); }
+.combo-giris::placeholder { color: var(--yer-tutucu); }
 .combo-giris:focus { border-color: var(--kirmizi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
 .combo-giris:disabled { background: var(--yuzey-alt); color: var(--metin-soluk); }
 
@@ -1345,7 +1350,7 @@ button.ozet-kart:focus-visible {
   font-size: var(--fs-govde); outline: none;
   transition: border-color .15s, box-shadow .15s;
 }
-.dg-giris::placeholder { color: var(--metin-soluk); }
+.dg-giris::placeholder { color: var(--yer-tutucu); }
 .dg-giris:focus {
   border-color: var(--kirmizi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
@@ -1585,7 +1590,7 @@ button.ozet-kart:focus-visible {
   outline: none; border-color: var(--kirmizi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
-.dg-arama::placeholder { color: var(--metin-soluk); }
+.dg-arama::placeholder { color: var(--yer-tutucu); }
 .dg-arama:disabled { background: var(--yuzey-alt); cursor: not-allowed; }
 
 /* ---- Alt başlıktaki durum rozeti ----
@@ -1800,7 +1805,7 @@ button.ozet-kart:focus-visible {
   font-size: var(--fs-govde); line-height: 1.5;
   resize: none; outline: none; max-height: 77px; overflow-y: auto;
 }
-#kutu::placeholder { color: var(--metin-soluk); }
+#kutu::placeholder { color: var(--yer-tutucu); }
 
 #gonder {
   height: var(--btn-h-kucuk); padding: 0 var(--b-5);
@@ -2257,7 +2262,7 @@ button.ozet-kart:focus-visible {
   outline: none; border-color: var(--kirmizi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
-.ft-tanim-giris::placeholder { color: var(--metin-soluk); }
+.ft-tanim-giris::placeholder { color: var(--yer-tutucu); }
 .ft-tanim.bekliyor { opacity: .6; }
 /* Süreç dışı bırakılan satır soluk: ayrı bir DURUM kolonu yok, kararı
    satırın kendisi gösteriyor. */
