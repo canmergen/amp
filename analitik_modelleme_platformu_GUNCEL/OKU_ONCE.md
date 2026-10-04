@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma önerileri iyileştirildi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+Bu tur: **Form etiketleri yeniden sola hizalı**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+
+- Baz Veri Seti, Baz Sözlük, Hedef Değişken ... etiketleri kutunun sol
+  kenarıyla hizalı. Tek satır düzeni ve iki satıra geçen etiketlerde
+  kutuların aynı hizada kalması aynen duruyor.
+
+Önceki tur: **Kısaltma önerileri iyileştirildi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
 - Temel sözlük (`kisaltma.TEMEL`): IN gelen, OUT giden, SUM toplam, DAY
   gün, MONTH ay, HIGH yüksek, LOW düşük, BY bazında, PER başına, TOP1 en

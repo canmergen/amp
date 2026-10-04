@@ -977,7 +977,8 @@ button.ozet-kart:focus-visible {
   gap: var(--b-3); margin-bottom: var(--b-4); align-items: start;
 }
 .secim-govde .combo { min-width: 0; }
-/* Etiket kutunun ortasına hizalı (kullanıcı kararı). Dar ekranda etiket
+/* Etiket SOLA hizalı (kullanıcı kararı: ortalı denendi, "sola dayalı
+   daha iyiymiş"). Dar ekranda etiket
    "…" ile kesilmesin diye alt satıra geçebilir; subgrid sayesinde bütün
    etiketler aynı satır yüksekliğini paylaşır (alta yaslı), kutular yine
    aynı hizada kalır. */
@@ -985,7 +986,7 @@ button.ozet-kart:focus-visible {
   display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0;
 }
 .secim-govde .combo label {
-  text-align: center; align-self: end;
+  text-align: left; align-self: end;
   white-space: normal; overflow: visible; text-overflow: clip;
 }
 
