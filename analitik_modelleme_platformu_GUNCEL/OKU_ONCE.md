@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Şüpheli kısaltma anlamı silinmiyor, uyarıyla gösteriliyor**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+Bu tur: **Üst barda ürün adı yerine KATIB görseli**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
+
+- "Akıllı Modelleme Platformu" ve "Bireysel Krediler Analitik ve Tahsis
+  BI" yazıları kaldırıldı; logonun yanına görsel geldi.
+- Açık tema: LLM_WEBAPP_GORSEL/katib_siyah_yazi.png; koyu tema:
+  LLM_WEBAPP_GORSEL/katib_beyaz_yazi.png (`/gorsel/katib_acik`,
+  `/gorsel/katib_koyu`). Dosya adı değişirse yalnız backend.py
+  GORSELLER'i düzenleyin.
+- Görsel yüksekliği üst bar - 22 px (56 px). Veri seti / sözlük çipleri
+  görselin yanında kalır. Dosya bulunamazsa görsel gizlenir.
+
+Önceki tur: **Şüpheli kısaltma anlamı silinmiyor, uyarıyla gösteriliyor**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 - Eskiden anlam sessizce siliniyordu; artık kalıyor ve Kaynak sütununda
   turuncu uyarı yazıyor (satırın solunda turuncu çizgi):

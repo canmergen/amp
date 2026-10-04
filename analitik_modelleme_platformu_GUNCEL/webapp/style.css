@@ -294,10 +294,13 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 #baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
-#urun-adi {
-  font-weight: var(--fw-kalin); font-size: var(--fs-buyuk); letter-spacing: -.01em;
-  white-space: nowrap; color: var(--kirmizi);
-}
+/* Ürün adı görseli (KATIB + alt yazı tek görselde): açık temada siyah
+   yazılı, koyu temada beyaz yazılı dosya. Yükseklik logoya göre. */
+.katib-logo { height: calc(var(--ustbar-h) - 22px); width: auto; display: block; }
+#katib-koyu { display: none; }
+#kabuk.koyu #katib-acik { display: none; }
+#kabuk.koyu #katib-koyu { display: block; }
+.katib-logo.yuklenemedi { display: none !important; }
 /* Seçili veri seti ve sözlük: başlığın yanında iki küçük çip.
    Üst şerit kaldırıldı (dört kartın dördü de başka bir panelin
    tekrarıydı); geriye kalan tek kimlik bilgisi bu iki ad. */
@@ -313,10 +316,6 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin);
 }
 .ust-cip[hidden] { display: none; }
-#urun-alt {
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin); color: var(--metin);
-  margin-top: 2px; white-space: nowrap;
-}
 
 /* Üst şerit: dört kart, VERİ → ELEME → ÜRETİM → MODEL.
    Kırmızı etiket, koyu değer, iki gri alt satır; ulaşılmamış değer ∅. */

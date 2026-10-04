@@ -85,6 +85,8 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
     banner:     getWebAppBackendUrl("gorsel/banner"),
+    katibAcik:  getWebAppBackendUrl("gorsel/katib_acik"),
+    katibKoyu:  getWebAppBackendUrl("gorsel/katib_koyu"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
@@ -158,6 +160,13 @@ const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
 bannerEl.src = GORSEL.banner;
 bannerEl.onerror = () => { bannerEl.style.display = "none"; };
+/* Ürün adı görseli: dosya yoksa görsel gizlenir (kırık simge çıkmasın). */
+[["katib-acik", GORSEL.katibAcik], ["katib-koyu", GORSEL.katibKoyu]].forEach(([id, url]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.onerror = () => { el.classList.add("yuklenemedi"); };
+    el.src = url;
+});
 
 
 /* ==================== Metin yardımcıları ==================== */
