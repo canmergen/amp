@@ -1,6 +1,37 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma kartında renk: sözlük ve dil modeli aynı mı farklı mı**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltmada açık karar (hangisi doğru) + yanıltıcı kısaltmaya yeni kısaltma**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+
+1) Açık karar
+- Dil Modeli sütunu artık SÖZLÜĞE BAKMADAN verilen genel anlam (X2 =
+  "kare"). Kuruma özgü kısaltmada "genel anlamı yok".
+- İki model (anlaşamazsa hakem) örnek kolonlara bakıp karar verir: ikisi
+  aynı / sözlük doğru / dil modeli doğru / ikisi de yanlış (doğrusunu
+  yazar). Karar ve tek cümle gerekçe Not sütununda.
+- İstem kuralları: genel anlam kolon adlarının yapısına uymuyorsa ve
+  sözlük tutarlıysa sözlük doğrudur (X2 = önceki eş dönem); pencereye
+  bağlı anlam sayısız yazılır; adı bilinen ölçüde özel ad (HHI =
+  Herfindahl-Hirschman endeksi). Özel adın büyük harfi korunur.
+- Renk: model "ikisi aynı" derse (eş anlamlı dahil) mavi.
+
+2) Yeni kısaltma
+- Kısaltma anlamına göre yanıltıcıysa dil modeli daha açık bir kısaltma
+  önerir: "Önerilen Kısaltma" sütunu (düzenlenebilir, boşaltılabilir;
+  büyük harf, 2-8 karakter, A-Z ve 0-9).
+- Onayda kontrol: başka anlamda kullanılan kısaltma ya da iki satıra aynı
+  öneri adımı durdurur. Kabul edilen yeni kısaltma kısaltma sözlüğüne
+  aynı anlamla girer (Hafızaya Kaydet işaretliyse hafızaya da).
+- 01.2.5 Kolon Adı Önerileri: eski kısaltmanın geçtiği kolonlar yeni
+  kısaltmayla önerilir (TXN_GDN_14D_X2_RATIO_CNT ->
+  TXN_GDN_14D_PREV_RATIO_CNT); yalnız AMP kopyalarında uygulanır.
+- Kolon Adı Önerileri artık yalnız bu veri setinin kolonlarını listeler
+  (eskiden onaylı tanım hafızasındaki başka veri setlerinin kolonları da
+  girebiliyordu).
+
+3) Tanım kontrolü (01.2.6): adda pencere varsa göreli ifade ("bir önceki
+   döneme göre") o pencereyle somutlaştırılır ("önceki 3 gündeki adede").
+
+Önceki tur: **Kısaltma kartında renk: sözlük ve dil modeli aynı mı farklı mı**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 - Mavi: sözlük ile dil modeli aynı anlamı veriyor. Kırmızı: farklı.
   Renksiz: karşılaştırma yok (dil modeli bekliyor / emin değil / sözlükte

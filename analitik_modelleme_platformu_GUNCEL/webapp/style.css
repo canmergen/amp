@@ -3030,12 +3030,14 @@ span.bolme-cip { cursor: default; }
 .dg-kontrol-bas { margin-top: var(--b-4); }
 /* Kısaltma (+ örnekler "i") | Anlam | Kaynak | Hafızaya Kaydet */
 /* Kısaltma | Sözlükte | Dil Modeli | Anlam | Kaynak | Hafızaya Kaydet */
-.dg-kisaltma-tablo th:nth-child(1) { width: 13%; }
-.dg-kisaltma-tablo th:nth-child(2) { width: 15%; }
-.dg-kisaltma-tablo th:nth-child(3) { width: 15%; }
+.dg-kisaltma-tablo th:nth-child(1) { width: 10%; }
+.dg-kisaltma-tablo th:nth-child(2) { width: 13%; }
+.dg-kisaltma-tablo th:nth-child(3) { width: 13%; }
 .dg-kisaltma-tablo th:nth-child(4) { width: auto; }
-.dg-kisaltma-tablo th:nth-child(5) { width: 22%; }
-.dg-kisaltma-tablo th:nth-child(6) { width: 76px; white-space: normal; }
+.dg-kisaltma-tablo th:nth-child(5) { width: 96px; white-space: normal; }
+.dg-kisaltma-tablo th:nth-child(6) { width: 24%; }
+.dg-kisaltma-tablo th:nth-child(7) { width: 76px; white-space: normal; }
+.dg-kisaltma-tablo .dg-yeni-kisa { text-transform: uppercase; }
 /* Kaynak değerleri salt okunur; Anlam'daki değer hangi kaynaktan
    geliyorsa onun önünde ✓ görünür. */
 .dg-kisaltma-tablo td.dg-kaynak-deger { color: var(--metin); }

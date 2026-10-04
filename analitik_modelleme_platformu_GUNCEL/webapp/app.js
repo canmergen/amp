@@ -6960,7 +6960,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* İKİ KAYNAK AYRI SÜTUNDA (kullanıcı kararı): sözlüğün ve dil
        modelinin dediği yan yana; Anlam'a daha mantıklı olan yazılır,
        kullanıcı düzenler. */
-    ["Kısaltma", "Sözlükte", "Dil Modeli", "Anlam", "Not", "Hafızaya Kaydet"]
+    ["Kısaltma", "Sözlükte", "Dil Modeli", "Anlam", "Önerilen Kısaltma", "Not", "Hafızaya Kaydet"]
         .forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
@@ -6987,7 +6987,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             tdS.appendChild(document.createTextNode(r.sozlukten ? tireSade(r.sozlukten) : BOS_SIMGE));
             if (r.onceki_sozluk) tdS.appendChild(elYap("div", "dg-tip", "önceki sözlüklerden"));
             tr.appendChild(tdS);
-            const dmMetin = { bekliyor: "bekleniyor…", emin_degil: "emin değil", yok: BOS_SIMGE };
+            const dmMetin = { bekliyor: "bekleniyor…", emin_degil: "emin değil",
+                              bilinmiyor: "genel anlamı yok", yok: BOS_SIMGE };
             const tdD = elYap("td", "dg-kaynak-deger" + (r.secilen === "dil_modeli" ? " secili" : "")
                     + (r.dm_durum && r.dm_durum !== "var" ? " dg-kaynak-yok" : ""));
             tdD.appendChild(elYap("span", "dg-secim-isaret", "✓"));
@@ -7003,6 +7004,19 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             g.setAttribute("aria-label", r.kisaltma + " anlamı");
             if (r.bekliyor) tr.classList.add("dg-bekliyor");
             tdA.appendChild(g); tr.appendChild(tdA);
+            /* YANILTICI KISALTMA için daha açık kısaltma (dil modeli önerir,
+               boşaltılabilir); kabul edilen Kolon Adı Önerileri'ne gider. */
+            const tdY = elYap("td", "dg-aciklama-hucre");
+            const y = document.createElement("input");
+            y.type = "text"; y.className = "dg-giris dg-yeni-kisa";
+            y.value = r.yeni_kisaltma || ""; y.maxLength = 8;
+            y.disabled = kilitli || !!r.bekliyor;
+            y.setAttribute("aria-label", r.kisaltma + " için önerilen kısaltma");
+            y.addEventListener("input", () => {
+                const b = y.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                if (b !== y.value) y.value = b;
+            });
+            tdY.appendChild(y); tr.appendChild(tdY);
             const tdKy = elYap("td", "dg-tip", r.onayli
                 ? "Hafızada onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || ""));
             /* ŞÜPHELİ ANLAM SİLİNMEZ, SÖYLENİR (kullanıcı kararı). */
@@ -7027,7 +7041,9 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 let tur = "";
                 if (!m) tur = "bos";
                 else if (r.onayli && ayni(r.anlam)) tur = "hafiza";
-                else if (dmDen || sozDen)
+                /* Kaynaklardan biri ya da DİL MODELİNİN KARARI (ikisi de
+                   yanlışsa yazdığı anlam, dokunulmamış) ise renk uyuma göre. */
+                else if (dmDen || sozDen || ayni(r.anlam))
                     tur = r.uyum === "ayni" ? "ayni" : r.uyum === "farkli" ? "farkli" : "";
                 else tur = "eklendi";
                 tr.classList.toggle("dg-bos", tur === "bos");
@@ -7040,7 +7056,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             };
             g.addEventListener("input", vurgu);
             vurgu();
-            satirlar.push({ r, g, kutu });
+            satirlar.push({ r, g, kutu, y });
             tb.appendChild(tr);
         });
         const onayli = (liste || []).filter(r => r.onayli).length;
@@ -7074,13 +7090,15 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 ka.dm = yeni.dm;
                 const elle = {};
                 satirlar.forEach(x => {
-                    if (x.g.value.trim() !== String(x.r.anlam || "").trim() || x.kutu.checked !== !!x.r.onayli)
-                        elle[x.r.kisaltma] = { anlam: x.g.value, kutu: x.kutu.checked };
+                    if (x.g.value.trim() !== String(x.r.anlam || "").trim() || x.kutu.checked !== !!x.r.onayli
+                            || x.y.value !== String(x.r.yeni_kisaltma || ""))
+                        elle[x.r.kisaltma] = { anlam: x.g.value, kutu: x.kutu.checked, yeni: x.y.value };
                 });
                 ciz(yeni.satirlar);
                 satirlar.forEach(x => {
                     const e = elle[x.r.kisaltma];
-                    if (e) { x.g.value = e.anlam; x.kutu.checked = e.kutu; x.g.dispatchEvent(new Event("input")); }
+                    if (e) { x.g.value = e.anlam; x.kutu.checked = e.kutu; x.y.value = e.yeni;
+                             x.g.dispatchEvent(new Event("input")); }
                 });
                 if (yeni.dm === "calisiyor") setTimeout(yokla, 3000);
                 if (degisti) degisti();
@@ -7115,10 +7133,12 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     };
     return {
         deger: () => satirlar.map(x => ({ kisaltma: x.r.kisaltma, anlam: x.g.value.trim(),
-            cikarilan: x.r.cikarilan || "", kaydet: x.kutu.checked })),
+            cikarilan: x.r.cikarilan || "", kaydet: x.kutu.checked,
+            yeni_kisaltma: x.y.value.trim() })),
         kilitle: k => {
             kilitli = k;
-            satirlar.forEach(x => { x.g.disabled = k || !!x.r.bekliyor; x.kutu.disabled = k || !!x.r.bekliyor; });
+            satirlar.forEach(x => { x.g.disabled = k || !!x.r.bekliyor; x.kutu.disabled = k || !!x.r.bekliyor;
+                                    x.y.disabled = k || !!x.r.bekliyor; });
             topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
         },
         /* Dil modeli kontrolü sürüyor mu (adım kartında onay kilidi). */
