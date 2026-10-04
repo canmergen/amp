@@ -970,6 +970,7 @@ button.ozet-kart:focus-visible {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   line-height: 1.4;
 }
+.combo-zorunlu { color: var(--kirmizi); font-weight: var(--fw-kalin); margin-left: 3px; }
 .combo-etiket-ek {
   font-size: var(--fs-kucuk); font-weight: normal; color: var(--metin-soluk);
 }

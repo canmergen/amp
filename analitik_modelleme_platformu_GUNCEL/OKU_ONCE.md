@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Form alanları hizalı**. Değiştir: `webapp/app.js`, `webapp/style.css`
+Bu tur: **Zorunlu alanlarda kırmızı yıldız**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py`
+
+- Zorunlu alanların etiketinin yanında kırmızı "*". İsteğe bağlı
+  alanlardaki "(İsteğe Bağlı)" yazısı kaldırıldı (Baz Sözlük, kaynak
+  tablo sözlükleri, Dönem Kolonu, Segment Kolonu).
+
+---
+
+Önceki tur: **Form alanları hizalı**. Değiştir: `webapp/app.js`, `webapp/style.css`
 
 - Form alanları eşit sütunlu ızgarada; genişlik yetmezse 2x2'ye iner.
 - Alan etiketi tek satır; "(İsteğe Bağlı)" küçük ve soluk. Sığmazsa "…"

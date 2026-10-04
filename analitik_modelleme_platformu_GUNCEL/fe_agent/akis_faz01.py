@@ -820,7 +820,7 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
              "placeholder": "Baz veri seti ara…",
              "ipucu": "Hedef, kimlik ve tüm değişkenleri içeren tablo",
              "deger": veri or durum.get("veri_seti") or ""},
-            {"ad": "sozluk", "etiket": "Baz Sözlük (İsteğe Bağlı)",
+            {"ad": "sozluk", "etiket": "Baz Sözlük",
              "placeholder": "Sözlük tablosu ara…", "zorunlu": False,
              "ipucu": "Kolon adlarını ve açıklamalarını içeren tablo",
              "deger": sozluk or durum.get("sozluk") or ""},
@@ -955,7 +955,7 @@ def _kaynak_sozluk_formu(durum, secili=None):
     tablolar = list(durum.get("ham_tablolar") or [])
     secili = secili or durum.get("kaynak_sozlukler") or {}
     alanlar = [{"ad": "sozluk_%d" % i,
-                "etiket": "%s Tablosunun Sözlüğü (İsteğe Bağlı)" % t,
+                "etiket": "%s Tablosunun Sözlüğü" % t,
                 "placeholder": "Kaynak sözlük ara…", "zorunlu": False,
                 "deger": secili.get(t) or ""}
                for i, t in enumerate(tablolar)]
@@ -2743,12 +2743,12 @@ def _tanimlar_formu(durum, meta=None):
              "deger": m.get("id") or "", "secenekler": kimlik_liste,
              "ipucu": "Her satırda farklı değer alan kolonlar listelenir",
              "not": kimlik_not},
-            {"ad": "donem", "etiket": "Dönem Kolonu (İsteğe Bağlı)",
+            {"ad": "donem", "etiket": "Dönem Kolonu",
              "kaynak": "kolon", "zorunlu": False,
              "deger": m.get("donem") or "", "secenekler": donem_liste,
              "ipucu": "Dönem bilgisi içeren kolonlar listelenir (202501, 2025-01 ya da tarih)",
              "not": donem_not, "not_maddeler": donem_maddeler},
-            {"ad": "segment", "etiket": "Segment Kolonu (İsteğe Bağlı)",
+            {"ad": "segment", "etiket": "Segment Kolonu",
              "kaynak": "kolon", "zorunlu": False,
              "deger": m.get("segment") or "", "secenekler": segment_liste,
              "ipucu": "2 ile 20 arası farklı değer alan kolonlar listelenir",

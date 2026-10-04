@@ -5559,6 +5559,14 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         lbl.textContent = m ? m[1] : tam;
         if (m) lbl.appendChild(elYap("span", "combo-etiket-ek", " (" + m[2] + ")"));
         lbl.title = tam;
+        /* ZORUNLU ALAN: etiketin yanında kırmızı yıldız (kullanıcı kararı).
+           Diğerleri isteğe bağlı; ayrıca yazılmıyor. */
+        if (zorunlu) {
+            const y = elYap("span", "combo-zorunlu", "*");
+            y.setAttribute("aria-hidden", "true");
+            lbl.appendChild(y);
+            lbl.title = tam + " (zorunlu)";
+        }
         lbl.htmlFor = girisId;
         kok.appendChild(lbl);
     }
