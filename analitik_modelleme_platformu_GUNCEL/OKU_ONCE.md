@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma kararı: "sözlük doğru ama kolon adında yanlış kısaltma"**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı; bir önceki turun dosyaları da kopyalanmadıysa onlar da: `webapp/style.css`, `webapp/backend.py`)
+Bu tur: **Önerilen kısaltma kolon adlarının dilinde**. Değiştir: `fe_agent/llm.py` (backend yeniden başlatılmalı; bir önceki turun dosyaları kopyalanmadıysa onlar da)
+
+- Dil modeline her parçada "ADLANDIRMA KALIBI" gider: kolon adlarında en
+  sık geçen 20 kısaltma (TXN, CNT, AMT ...). Yeni kısaltma aynı dilde ve
+  kalıpta önerilir: İngilizce adlarda yaygın İngilizce kısaltma (önceki eş
+  dönem -> PREV); Türkçe anlamın harflerinden kısaltma üretilmez ("en çok"
+  -> ENCO yanlış). Türkçe adlandırılmış veri setinde Türkçe kısaltma.
+- Gerekçe Türkçe karakterlerle yazılır ("Sozlukte" değil "Sözlükte").
+- Not: yeni kısaltma yalnız "sözlük doğru ama kolon adında yanlış
+  kısaltma" kararında önerilir; ekrandaki TOP1 = ENCO önerisi bir önceki
+  sürümün davranışı (orada her "yanıltıcı" kısaltmaya öneriliyordu).
+
+Önceki tur: **Kısaltma kararı: "sözlük doğru ama kolon adında yanlış kısaltma"**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı; bir önceki turun dosyaları da kopyalanmadıysa onlar da: `webapp/style.css`, `webapp/backend.py`)
 
 Karar seçenekleri (Not sütununda gerekçesiyle):
 - ikisi aynı (eş anlamlı dahil) -> o anlam

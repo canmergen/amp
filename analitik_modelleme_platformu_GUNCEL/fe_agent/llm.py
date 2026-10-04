@@ -1205,7 +1205,15 @@ sozlugunde o kalir), "yeni_kisaltma" bu kolonlarin gercek anlamini
 tasiyan daha acik, yaygin bir kisaltmadir (BUYUK harf, 2-8 karakter,
 yalniz A-Z ve 0-9, "diger kisaltmalar"dakilerden biri olmasin),
 "yeni_anlam" de onun anlamidir (sozluktaki kullanim). Diger secimlerde
-"yeni_kisaltma" ve "yeni_anlam" BOS."""
+"yeni_kisaltma" ve "yeni_anlam" BOS.
+
+YENI KISALTMANIN DILI: kolon adlari hangi dilde ve kalipta kisaltilmissa
+(bkz. "ADLANDIRMA KALIBI" satiri) yeni kisaltma da AYNI dilde ve
+kalipta olur. Adlar Ingilizce kisaltmalarla yazilmissa (TXN, AMT, CNT,
+MAX) yeni kisaltma da yaygin Ingilizce kisaltmadir (onceki es donem ->
+PREV); Turkce anlamin harflerinden kisaltma URETME ("en cok" -> ENCO
+YANLIS). Adlar Turkce kisaltmalarla yazilmissa Turkce kisaltma oner.
+Anlam alanlari her durumda Turkce kalir."""
 
 SISTEM_KISALTMA = """Sen bir bankacilik ve veri bilimi sozlugu uzmanisin.
 Kolon adlarinda gecen KISALTMALAR verilecek. Her biri icin iki aday anlam:
@@ -1232,7 +1240,8 @@ Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
   "yeni"           : ikisi de yanlis; dogru anlami "anlam" alanina yaz
   "emin_degil"     : karar verilemiyor
 "anlam"   : secilen anlam (daha dogru yazimi varsa onu yaz)
-"gerekce" : tek kisa Turkce cumle; ornek kolonlara dayanarak neden
+"gerekce" : tek kisa cumle; ornek kolonlara dayanarak neden. Turkce
+            karakterlerle yaz (ç, ğ, ı, ö, ş, ü): "Sozlukte" degil "Sözlükte"
 
 """ + _KISALTMA_KURALLARI + """
 
@@ -1407,8 +1416,9 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
             genel_[k_] = v_
         blok = [dict(g, genel=kor.get(g["kisaltma"])) if g["kisaltma"] in kor else g
                 for g in blok]
-        # 2) KARAR: hangi aday dogru.
-        govde = _veri_blogu("KISALTMALAR:", "\n".join(_kisaltma_satiri(g) for g in blok))
+        # 2) KARAR: hangi aday dogru. Adlandirma kalibi (yeni kisaltmanin
+        # dili icin; kullanici karari: "hangi dildeyse o baglamda").
+        govde = _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(_kisaltma_satiri(g) for g in blok))
         m1, v1 = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA, govde, 0.1)
         m2, v2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KISALTMA, govde, 0.1,
                                 haric=(m1,) if m1 else ())
@@ -1446,7 +1456,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                                 y or "emin değil", (ec.get(k) or {}).get("secim", ""),
                                 (ec.get(k) or {}).get("gerekce", "")))
             mh, vh = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_KISALTMA,
-                                    _veri_blogu("KISALTMALAR:", "\n".join(satir)), 0.1)
+                                    _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(satir)), 0.1)
             h = _kisaltma_oku(vh, [g for g, _x, _y in ayrisan], eh) if mh else {}
             for g, x, y in ayrisan:
                 k = g["kisaltma"]
@@ -1457,6 +1467,10 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
 
     bloklar = [girdi[b:b + KISALTMA_PARCA] for b in range(0, len(girdi), KISALTMA_PARCA)]
     sonuc, hic_cevap, dusen = {}, True, 0
+    # En sik gecen kisaltmalar: kolon adlarinin dili ve kalibi.
+    yaygin = [g["kisaltma"] for g in sorted(girdi, key=lambda g: -int(g.get("kolon") or 0))][:20]
+    kalip_ = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n"
+              % ", ".join(yaygin)) if yaygin else ""
     genel_ = {}           # sozluksuz (kor) genel anlam; "" = bilinmiyor
     ek_ = {}              # secim / gerekce / yeni_kisaltma
     oneri = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
