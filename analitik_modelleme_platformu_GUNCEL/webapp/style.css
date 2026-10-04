@@ -94,6 +94,7 @@
   /* GECILEN ADIMIN BASLIGI (kullanici karari: "asama gecince gri dursa
      daha iyi"). Iki temada ayni gri: beyazda 4.54:1, siyahta 4.6:1. */
   --metin-tamam:  #767676;
+  --metin-asil:   #000000;     /* gecilen blokta secilenlerin rengi */
 
   --user-zemin:   #EEF0F3;          /* kullanici balonu: bot'tan ayrissin */
 
@@ -200,6 +201,7 @@
 
   --metin:        #FFFFFF;
   --metin-soluk:  #FFFFFF;
+  --metin-asil:   #FFFFFF;
   --yer-tutucu:   rgba(255,255,255,.45);
 
   --user-zemin:   #1A1A1A;
@@ -1483,6 +1485,20 @@ button.ozet-kart:focus-visible {
 .alt-bolum.durum-bekliyor { border: 2px solid var(--kirmizi); }
 .alt-bolum.durum-bekliyor > .alt-bas .alt-ad { color: var(--kirmizi); }
 .alt-bolum.durum-tamam > .alt-bas .alt-ad { color: var(--metin-tamam); }
+/* GECILEN BLOKTA METIN GRI, SECILENLER TAM RENK (kullanici karari:
+   "geride kalanlar gri olmali, sadece secilen kisimlar haric; A
+   secildiyse o siyah kalsin"). Renk degiskeni blok icinde yeniden
+   tanimlaniyor: --metin / --metin-soluk okuyan butun yazilar griye
+   doner, kirmizi / yesil durum renkleri ve cipler degismez.
+   Secilenler: secilen baslangic karti, form kutularindaki secilmis
+   degerler (veri seti, sozluk, hedef ...) ve isaretli satirlar. */
+.adim-blok.durum-tamam, .alt-bolum.durum-tamam {
+  --metin: var(--metin-tamam); --metin-soluk: var(--metin-tamam);
+}
+.adim-blok.durum-tamam :is(.secenek.secili, input, select, textarea),
+.alt-bolum.durum-tamam :is(.secenek.secili, input, select, textarea) {
+  --metin: var(--metin-asil); --metin-soluk: var(--metin-asil);
+}
 .blok-durum {
   flex: 0 0 auto; white-space: nowrap;
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);

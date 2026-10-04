@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Adım başlıkları büyüdü, geçilen adım gri**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **Geçilen adımda metin gri, seçilenler siyah**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+
+- Geçilen adım bloğunda (ve gruplu bloğun geçilen alt bölümünde) bütün
+  yazılar gri (#767676). Seçilenler tam renkte kalır: seçilen başlangıç
+  kartı, form kutularındaki seçilmiş değerler (veri seti, sözlük,
+  hedef ...) ve tablolardaki giriş kutuları. Kırmızı / yeşil durum
+  renkleri ve çipler değişmez.
+
+Önceki tur: **Adım başlıkları büyüdü, geçilen adım gri**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
 
 - Adım bloğu başlığı (01.1 Başlangıç Seçimi, 01.2 ...) 12px -> 15px
   (48px avatarla orantılı); alt adım başlığı (01.2.1 ...) 12px -> 13px.
