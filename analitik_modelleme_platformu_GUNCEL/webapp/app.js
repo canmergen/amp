@@ -6295,6 +6295,7 @@ function dogrulamaKartiEkle(alan, blok) {
         const tdK = elYap("td", "dg-kolon", ad);
         tdK.title = ad;
         if (sat.gerekce) tdK.appendChild(bolmeBilgiSimgesi(sat.gerekce, ad));
+        if (sat.kaynak === "hafiza") hafizaCipi(tdK, tr, sat.hafiza_veri_seti);
         tr.appendChild(tdK);
         tr.appendChild(elYap("td", "dg-mevcut", sat.mevcut || ""));
         const tdA = elYap("td", "dg-aciklama-hucre");
@@ -6343,7 +6344,8 @@ function dogrulamaKartiEkle(alan, blok) {
         Object.keys(dz).forEach(ad => {
             const d = dz[ad] || {};
             kontrolSatirEkle({ kolon: ad, mevcut: d.mevcut, oneri: d.oneri,
-                               gerekce: d.gerekce, modeller: d.modeller, islem: "red" });
+                               gerekce: d.gerekce, modeller: d.modeller, islem: "red",
+                               kaynak: d.kaynak, hafiza_veri_seti: d.hafiza_veri_seti });
         });
         const durumK = kayit.kontrol_durum || "yok";
         const toplam = kayit.kontrol_toplam || 0;
@@ -6358,9 +6360,18 @@ function dogrulamaKartiEkle(alan, blok) {
                 ? "Kontrol bitince devam edebilirsiniz; önerilen düzeltmeler geldikçe listeye eklenir."
                 : "Beklemeden devam edebilirsiniz; kontrol edilmemiş tanımlar olduğu gibi kalır.");
         else if (durumK === "bitti")
-            metin = ftBinlik(toplam) + " tanım kontrol edildi; " + (n
-                ? ftBinlik(n) + " tanım için düzeltme önerildi."
+            metin = ftBinlik(toplam) + " tanım dil modeliyle kontrol edildi; " + (n
+                ? "listede " + ftBinlik(n) + " düzeltme önerisi var."
                 : "düzeltme gereken tanım bulunmadı.");
+        else if (durumK === "yok" && n)
+            metin = ftBinlik(n) + " tanım için onaylı tanımla fark bulundu.";
+        /* Onaylı tanım hafızasıyla karşılaştırma (dil modeli çağrılmadan). */
+        const hz = kontrol.hafiza || {};
+        if (hz.ayni || hz.farkli) {
+            metin = (metin ? metin + " " : "") + "Onaylı tanım hafızası: "
+                + ftBinlik(hz.ayni || 0) + " tanım onaylı tanımla aynı (kontrol edilmedi), "
+                + ftBinlik(hz.farkli || 0) + " tanımda onaylı tanım farklı (doğrudan öneri olarak listelendi).";
+        }
         if (kDurumEl) { kDurumEl.textContent = metin; kDurumEl.hidden = !metin; }
         if (kHataEl && kayit.kontrol_hata) {
             kHataEl.textContent = tireSade(kayit.kontrol_hata);
@@ -6422,6 +6433,7 @@ function dogrulamaKartiEkle(alan, blok) {
             }
             kontrol.baslamadi = false;
             kontrol.toplam = (d.kontrol && d.kontrol.toplam) || kontrol.toplam;
+            if (d.kontrol && d.kontrol.hafiza) kontrol.hafiza = d.kontrol.hafiza;
             kBaslaBtn.remove();
             kBaslaBtn = null;
             birincil.hidden = false;

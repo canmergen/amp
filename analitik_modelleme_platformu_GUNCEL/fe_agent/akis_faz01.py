@@ -63,6 +63,7 @@ _MOD_GECICI = ("_donemler", "_aciklamasiz", "_dusurulecek", "_soru_gecmis",
                "_sozluk_esitleme", "_sozluk_esitleme_imza",
                "_hazir_bolme", "_tanim_duzeltmeleri", "_kontrol_kolonlar",
                "_tanim_duzeltmeleri_kaynak", "_kontrol_is", "_kontrol_basladi",
+               "_kontrol_hafiza",
                # Sozluk teyidi eski moda ait bir denetim kaydidir; mod
                # degisince veri seti de sozluk de degisir, damga
                # tasinmamali.
@@ -1741,7 +1742,8 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
             "gibi kalır." % (_sayi(len(gruplar)), _sayi(sayac["dusen"]), sayac["son"]))
 
 
-def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None, hazir=None):
+def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None, hazir=None,
+                     hazir_duzeltme=None):
     """Arka plan onerisini (ve varsa tanim kontrolunu) baslatir.
     kontrol: tanimli kolonlarin profilleri + "mevcut" tanim.
     Doner: is kimligi."""
@@ -1755,7 +1757,8 @@ def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None, hazir=None)
             "kontrol_durum": ("bekliyor" if profiller else "calisiyor")
                              if kontrol else "yok",
             "kontrol_toplam": len(kontrol), "kontrol_biten": 0,
-            "duzeltmeler": {}, "kontrol_hata": "", "model_notu": "",
+            "duzeltmeler": dict(hazir_duzeltme or {}), "kontrol_hata": "",
+            "model_notu": "",
             "baslangic": datetime.datetime.now().timestamp(),
         }
         _oneri_isi_kirp()
@@ -2466,16 +2469,42 @@ def tanim_kontrol_baslat(durum):
     # Ayni kolonlar icin TAMAMLANMIS bir kontrol varsa yeniden calismaz.
     oneri_isi_iptal(durum.get("_kontrol_is"))
     onceki = oneri_isi_durumu(durum.get("_kontrol_is"))
-    if not (onceki and onceki.get("kontrol_durum") == "bitti"
+    if not (onceki and onceki.get("kontrol_durum") in ("bitti", "yok")
             and durum.get("_kontrol_kolonlar") == adlar):
-        _tekil_tamamla(prof, adlar, p)
-        kontrol = _oneri_profilleri(prof, adlar, p)
+        # ONCE ONAYLI TANIM HAFIZASI (kullanici karari: "zaten onaylanmislar,
+        # birebir ayniysa dil modeli tekrar tekrar uretmesin; oneriler
+        # bunlar diye direkt gelsin, kisi degistirirse o bazla guncellensin").
+        #   ayni  : sozlukteki tanim onayli tanimla birebir ayni -> kontrol
+        #           EDILMEZ (zaten onaylandi)
+        #   farkli: onayli tanim var ama sozluktekinden farkli -> dil modeli
+        #           cagrilmadan, onayli tanim DOGRUDAN oneri olarak gelir
+        #   kalan : hafizada yok -> dil modeli kontrolu
+        try:
+            hafiza = tanim_hafiza.bul(adlar, durum.get("veri_seti"))
+        except Exception:
+            hafiza = {}
+        ayni, hazir, kalan = [], {}, []
+        for ad in adlar:
+            h = hafiza.get(ad)
+            if not h:
+                kalan.append(ad)
+            elif llm_mod._ayni_metin(h["aciklama"], tanim.get(ad, "")):
+                ayni.append(ad)
+            else:
+                hazir[ad] = {"mevcut": tanim.get(ad, ""), "oneri": h["aciklama"],
+                             "gerekce": "Daha önce onaylanan tanım sözlüktekinden farklı.",
+                             "modeller": "Onaylı Tanım Hafızası", "kaynak": "hafiza",
+                             "hafiza_veri_seti": h.get("veri_seti") or ""}
+        _tekil_tamamla(prof, kalan, p)
+        kontrol = _oneri_profilleri(prof, kalan, p)
         for k in kontrol:
             k["mevcut"] = tanim.get(k["ad"], "")
         durum["_kontrol_is"] = oneri_isi_baslat([], [], _aciklama_baglami(durum),
-                                                kontrol)
+                                                kontrol, hazir_duzeltme=hazir)
+        durum["_kontrol_hafiza"] = {"ayni": len(ayni), "farkli": len(hazir)}
     durum["_kontrol_kolonlar"] = list(adlar)
     durum["_secim_alani"] = _kontrol_karti(durum, adlar, hata, True)
+    durum["_secim_alani"]["kontrol"]["hafiza"] = dict(durum.get("_kontrol_hafiza") or {})
     return ""
 
 

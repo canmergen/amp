@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Boş tanımlar önce onaylı tanım hafızasından**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`
+Bu tur: **01.2.4 tanım kontrolü önce onaylı tanım hafızasıyla**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`
+
+- "Tanımları Kontrol Et" basılınca her dolu tanım önce onaylı tanım
+  hafızasıyla karşılaştırılır (dil modeli yok):
+    aynı   -> kontrol edilmez (zaten onaylı)
+    farklı -> onaylı tanım DOĞRUDAN öneri olarak hemen listelenir
+              ("Onaylı Tanım" çipi, mor); değiştirip uygularsanız hafıza o
+              metinle güncellenir
+    yok    -> dil modeli kontrolüne gider
+- Durum satırında: kaç tanım hafızayla aynı, kaç tanımda fark var.
+
+---
+
+Önceki tur: **Boş tanımlar önce onaylı tanım hafızasından**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`
 
 - 01.2.3'te sözlükte tanımı olmayan bir kolonun AYNI ADLA onaylı tanımı
   hafızada varsa satır o metinle dolu gelir, dil modeli o kolon için
