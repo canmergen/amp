@@ -201,16 +201,18 @@ def adaylar(tanimlar):
             continue
         # Esitlikte kisaltmanin harflerini SIRAYLA iceren kelime one gecer
         # (GLN -> gelen, GDN -> giden).
-        sirali = sorted(tekli, key=lambda k: (tekli[k][0], tekli[k][1],
-                                              _harf_uyumu(parca, k), -len(k)),
-                        reverse=True)
+        # SIRA TAM BELIRLI (kullanici testinde esit puanli kisaltmalar her
+        # calistirmada farkli anlam aliyordu: kume sirasi rastgele).
+        sirali = sorted(tekli, key=lambda k: (-tekli[k][0], -tekli[k][1],
+                                              -_harf_uyumu(parca, k), len(k), k))
         liste = []
         for en_iyi in sirali:
             sinir = tekli[en_iyi][0] - 0.05
             # IKI KELIMELIK IFADE yalniz iki kelimesi de bu kisaltmaya ozgu
             # ise ("hafta sonu", "karsi taraf"); tek kelime yedek olarak
             # hemen arkasinda kalir.
-            for k, (ayirt, _d) in puan.items():
+            for k in sorted(puan):
+                ayirt = puan[k][0]
                 if " " in k and en_iyi in k.split(" ") and ayirt >= sinir and all(
                         (tekli.get(p) or (0, 0))[0] >= sinir for p in k.split(" ")):
                     liste.append(k)
@@ -244,8 +246,9 @@ def cikar(tanimlar, aday=None):
     onay = onaylilar()
     atanan = {k: v for k, v in onay.items()}       # parca -> anlam
     sonuc = {}
-    sira = sorted(aday, key=lambda p: (aday[p]["adaylar"][0]["ayirt"],
-                                       aday[p]["kolon"]), reverse=True)
+    sira = sorted(aday, key=lambda p: (-aday[p]["adaylar"][0]["ayirt"],
+                                       -_harf_uyumu(p, _sade(aday[p]["adaylar"][0]["anlam"])),
+                                       -aday[p]["kolon"], p))
     for parca in sira:
         if parca in onay:
             continue
@@ -302,9 +305,9 @@ def _bos():
     return pd.DataFrame(columns=KOLONLAR)
 
 
-def _var_mi():
+def _var_mi(dosya=DOSYA):
     klasor = _folder()
-    for yol in tablo_io.aday_yollar(DOSYA):
+    for yol in tablo_io.aday_yollar(dosya):
         try:
             if (klasor.get_path_details(yol) or {}).get("exists"):
                 return True
@@ -320,17 +323,18 @@ def _var_mi():
     return False
 
 
-def _oku_ham():
+def _oku_ham(dosya=DOSYA, kolonlar=None):
+    kolonlar = kolonlar or KOLONLAR
     try:
-        df = tablo_io.klasorden_oku(_folder(), DOSYA)
+        df = tablo_io.klasorden_oku(_folder(), dosya)
     except Exception as e:
-        if _var_mi() is False:
-            return _bos(), None
+        if _var_mi(dosya) is False:
+            return pd.DataFrame(columns=kolonlar), None
         return None, "Kısaltma hafızası okunamadı (%s)." % str(e)[:120]
-    for k in KOLONLAR:
+    for k in kolonlar:
         if k not in df.columns:
             df[k] = ""
-    return df[KOLONLAR].fillna("").astype(str), None
+    return df[kolonlar].fillna("").astype(str), None
 
 
 def onaylilar():
@@ -380,6 +384,91 @@ def kaydet(satirlar, kullanici=""):
     return onaylilar(), None
 
 
+
+
+# ---------------------------------------------------------------------------
+# OGRENILMIS BILGI (kullanici karari: "kendi kendini gelistiren bir sistem;
+# sozlugu olmayan veri setinde de TXN gecerse 'bu islem' diyebilmeli")
+# ---------------------------------------------------------------------------
+# PROJE_HAFIZASI/KISALTMA_OGRENILEN.parquet: sozluklu her calismada
+# istatistik + dil modeli kontrolunden GECEN anlamlar KENDILIGINDEN yazilir
+# (onay istemez; onayli hafizadan ayri). Sozlugu olmayan ya da az tanimli
+# sonraki calismalarda "tahmini" olarak kullanilir. Ayni kisaltma baska
+# sozlukte farkli anlamla cikarsa DAHA COK KOLONLA ogrenilen kalir.
+# Onayli hafiza her zaman bunun onune gecer. Girdi veri setine ve
+# sozluge hicbir kosulda yazilmaz.
+OGRENILEN_DOSYA = "/KISALTMA_OGRENILEN.parquet"
+OGRENILEN_KOLONLAR = ["KISALTMA", "ANLAM", "KOLON", "VERI_SETI", "KAYNAK", "TARIH"]
+_OGR_ONBELLEK = {"zaman": 0.0, "df": None}
+
+
+def ogrenilenler():
+    """{KISA: {"anlam", "kolon", "veri_seti", "tarih"}} (onbellekli)."""
+    simdi = time.time()
+    if _OGR_ONBELLEK["df"] is None or simdi - _OGR_ONBELLEK["zaman"] > ONBELLEK_OMRU_SN:
+        df, _h = _oku_ham(OGRENILEN_DOSYA, OGRENILEN_KOLONLAR)
+        if df is not None:
+            _OGR_ONBELLEK.update(zaman=simdi, df=df)
+    df = _OGR_ONBELLEK["df"]
+    if df is None or df.empty:
+        return {}
+    cikti = {}
+    for _i, r_ in df.iterrows():
+        if str(r_["ANLAM"]).strip():
+            try:
+                kolon = int(float(r_["KOLON"] or 0))
+            except (TypeError, ValueError):
+                kolon = 0
+            cikti[str(r_["KISALTMA"]).upper()] = {
+                "anlam": r_["ANLAM"], "kolon": kolon,
+                "veri_seti": r_["VERI_SETI"], "tarih": r_["TARIH"]}
+    return cikti
+
+
+def ogrenilenleri_kaydet(kayitlar, veri_seti=""):
+    """kayitlar: {KISA: {"anlam", "kolon", "kaynak"}}. Var olan kayit
+    yalniz yeni kanit en az onun kadar gucluyse (kolon sayisi) ya da anlam
+    ayniysa guncellenir. Doner: (yazilan, hata). Istisna firlatmaz."""
+    if not kayitlar:
+        return 0, None
+    zaman = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with _KILIT:
+        df, hata = _oku_ham(OGRENILEN_DOSYA, OGRENILEN_KOLONLAR)
+        if df is None:
+            return 0, hata
+        mevcut = {}
+        for _i, r_ in df.iterrows():
+            try:
+                mevcut[str(r_["KISALTMA"]).upper()] = (str(r_["ANLAM"]), int(float(r_["KOLON"] or 0)))
+            except (TypeError, ValueError):
+                mevcut[str(r_["KISALTMA"]).upper()] = (str(r_["ANLAM"]), 0)
+        yeni, yazilan = [], 0
+        for kisa, k in kayitlar.items():
+            kisa = str(kisa).upper()
+            anlam = str(k.get("anlam") or "").strip()
+            kolon = int(k.get("kolon") or 0)
+            if not anlam:
+                continue
+            eski = mevcut.get(kisa)
+            if eski and not _ayni_anlam(eski[0], anlam) and eski[1] > kolon:
+                continue                      # daha guclu eski kanit kalir
+            if eski and _ayni_anlam(eski[0], anlam):
+                kolon = max(kolon, eski[1])
+            yeni.append({"KISALTMA": kisa, "ANLAM": anlam, "KOLON": str(kolon),
+                         "VERI_SETI": str(veri_seti or ""),
+                         "KAYNAK": str(k.get("kaynak") or ""), "TARIH": zaman})
+            yazilan += 1
+        if not yeni:
+            return 0, None
+        df = df[~df["KISALTMA"].str.upper().isin([y["KISALTMA"] for y in yeni])]
+        df = pd.concat([df, pd.DataFrame(yeni, columns=OGRENILEN_KOLONLAR)],
+                       ignore_index=True).sort_values("KISALTMA")
+        try:
+            tablo_io.klasore_yaz(_folder(), OGRENILEN_DOSYA, df)
+        except Exception as e:
+            return 0, "Öğrenilen kısaltmalar yazılamadı (%s)." % str(e)[:120]
+        _OGR_ONBELLEK.update(zaman=time.time(), df=df)
+    return yazilan, None
 
 
 # ---------------------------------------------------------------------------
@@ -442,7 +531,7 @@ def _imza(girdi):
     return "|".join("%s=%s" % (g["kisaltma"], g["anlam"]) for g in girdi)
 
 
-def _dm_calis(imza, girdi):
+def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
     try:
         from fe_agent import llm as llm_mod
         sonuc, _hata = llm_mod.kisaltma_dogrula(girdi)
@@ -454,10 +543,25 @@ def _dm_calis(imza, girdi):
     with _DM_KILIT:
         _DM[imza] = {"durum": "bitti" if sonuc is not None else "hata",
                      "sonuc": sonuc or {}, "zaman": time.time()}
+    # KENDINI GELISTIRME: dil modeli kontrolunden gecen anlamlar ogrenilmis
+    # bilgiye yazilir (yalniz dogrulanan / modellerin anlastigi; emin
+    # olunamayan yazilmaz). Hata akisi durdurmaz.
+    if sonuc and tanimlar:
+        try:
+            oner, _d = oneriler(tanimlar, 0.0)
+            ogrenilenleri_kaydet(
+                {k: {"anlam": o["anlam"], "kolon": o.get("kolon") or 0,
+                     "kaynak": o["kaynak"]}
+                 for k, o in oner.items()
+                 if o["anlam"] and o["kaynak"] in ("dil_modeli_dogruladi", "dil_modeli")},
+                veri_seti)
+        except Exception:
+            pass
 
 
-def dogrulamayi_baslat(tanimlar):
+def dogrulamayi_baslat(tanimlar, veri_seti=""):
     """Dil modeli kontrolunu arka planda baslatir (ayni liste icin bir kez).
+    Bitince dogrulanan anlamlar ogrenilmis bilgiye yazilir.
     Doner: imza."""
     girdi = _dm_girdisi(tanimlar)
     imza = _imza(girdi)
@@ -472,15 +576,16 @@ def dogrulamayi_baslat(tanimlar):
             for eski in sorted(_DM, key=lambda x: _DM[x]["zaman"])[:len(_DM) - 20]:
                 if _DM[eski]["durum"] != "calisiyor":
                     _DM.pop(eski, None)
-    threading.Thread(target=_dm_calis, args=(imza, girdi), daemon=True).start()
+    threading.Thread(target=_dm_calis, args=(imza, girdi, dict(tanimlar or {}), veri_seti),
+                     daemon=True).start()
     return imza
 
 
-def dogrulama_sonucu(tanimlar, bekle=0.0):
+def dogrulama_sonucu(tanimlar, bekle=0.0, veri_seti=""):
     """Doner: (sonuc, durum). sonuc: {KISA: {"anlam", "karar", "ornek"}};
     karar "dogru" / "duzeltildi" / "emin_degil". durum: "yok" /
     "calisiyor" / "bitti" / "hata"."""
-    imza = dogrulamayi_baslat(tanimlar)
+    imza = dogrulamayi_baslat(tanimlar, veri_seti)
     son = time.time() + max(0.0, bekle)
     while True:
         with _DM_KILIT:
@@ -492,13 +597,13 @@ def dogrulama_sonucu(tanimlar, bekle=0.0):
         time.sleep(0.3)
 
 
-def oneriler(tanimlar, bekle=0.0):
+def oneriler(tanimlar, bekle=0.0, veri_seti=""):
     """Onayli olmayan kisaltmalarin ogrenilen anlamlari.
     Doner: ({KISA: {"anlam", "kaynak", "kolon", "destek", "ornek"}}, dm_durum)
       kaynak: "sozluk" / "dil_modeli_dogruladi" / "dil_modeli" / "emin_degil"."""
     aday = adaylar(tanimlar)
     cikan = cikar(tanimlar, aday)
-    dm, durum = dogrulama_sonucu(tanimlar, bekle)
+    dm, durum = dogrulama_sonucu(tanimlar, bekle, veri_seti)
     satirlar, parca_say, _g, _y, _s = _parca_istatistigi(tanimlar)
     onay = onaylilar()
     cikti = {}
@@ -538,6 +643,22 @@ def oneriler(tanimlar, bekle=0.0):
             # Dil modeli emin olamadi: istatistik tahmini gosterilmez,
             # anlam bos kalir (yanlis anlam bos anlamdan kotu).
             cikti[kisa] = dict(onceki, anlam="", kaynak="emin_degil")
+    # ONCEKI CALISMALARDAN OGRENILEN: bu sozlukten ogrenilemeyen (ya da
+    # anlami bos kalan) kisaltma, kolon adlarinda geciyorsa ogrenilmis
+    # bilgiden doldurulur.
+    ogr = ogrenilenler()
+    # Tanimsiz kolonlar da sayilir: sozlugu olmayan veri setinde kolon
+    # adinda TXN geciyorsa "islem" buradan gelir.
+    tum_say = Counter(p for ad in (tanimlar or {}) for p in set(parcalar(ad)))
+    for kisa, adet in tum_say.items():
+        if kisa in onay or kisa not in ogr:
+            continue
+        if kisa in cikti and cikti[kisa]["anlam"]:
+            continue
+        o = ogr[kisa]
+        cikti[kisa] = {"anlam": o["anlam"], "kaynak": "onceki", "kolon": int(adet),
+                       "destek": None, "ornek": 0,
+                       "onceki": "%s, %d kolon" % (o["veri_seti"] or "önceki sözlük", o["kolon"])}
     return cikti, durum
 
 
@@ -552,8 +673,12 @@ def birlesik(tanimlar):
                kontrolu bitmediyse beklemez (o ana kadarki sonuc)."""
     oner, _d = oneriler(tanimlar, 0.0)
     kesin = dict(onaylilar())
-    tahmini = {k: o["anlam"] for k, o in oner.items()
-               if o["anlam"] and k not in kesin}
+    # Onceki calismalardan ogrenilenlerin HEPSI (istem yalniz o gruptaki
+    # kolon adlarinda gecenleri koyar): sozlugu olmayan veri setinde de
+    # TXN "islem" bilinir. Bu calismada ogrenilen onun ustune yazar.
+    tahmini = {k: o["anlam"] for k, o in ogrenilenler().items() if k not in kesin}
+    tahmini.update({k: o["anlam"] for k, o in oner.items()
+                    if o["anlam"] and k not in kesin})
     return kesin, tahmini
 
 
@@ -562,14 +687,15 @@ _KANIT = {
     "dil_modeli_dogruladi": "Dil modeli doğruladı",
     "dil_modeli": "Dil modeli önerdi",
     "emin_degil": "Dil modeli emin olamadı",
+    "onceki": "Önceki sözlüklerden öğrenildi",
 }
 
 
-def kart_satirlari(tanimlar, bekle=0.0):
+def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
     """Kartta gosterilecek satirlar: onaylilar + ogrenilenler.
     Doner: (satirlar, dm_durum). satir: {kisaltma, anlam, onayli, kanit,
     cikarilan, kaynak} - kolon sayisina gore."""
-    oner, durum = oneriler(tanimlar, bekle)
+    oner, durum = oneriler(tanimlar, bekle, veri_seti)
     onay = onaylilar()
     satirlar = []
     for kisa in sorted(set(oner) | set(onay),
@@ -581,6 +707,8 @@ def kart_satirlari(tanimlar, bekle=0.0):
             if o.get("ornek") and o["kaynak"] != "sozluk":
                 ad += " (%d örnekle)" % o["ornek"]
             parca.append(ad)
+            if o.get("onceki"):
+                parca.append(o["onceki"])
             if o.get("sozlukten"):
                 parca.append("istatistik: %s" % o["sozlukten"])
             if o.get("destek") is not None:

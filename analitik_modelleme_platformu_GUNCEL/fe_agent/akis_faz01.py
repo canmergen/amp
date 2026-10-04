@@ -1392,7 +1392,7 @@ def _aciklama_baglami(durum):
     try:
         kaynak = dict(baglam["hafiza"])
         kaynak.update(baglam["tanimlar"])
-        kisaltma_mod.dogrulamayi_baslat(kaynak)
+        kisaltma_mod.dogrulamayi_baslat(kaynak, durum.get("veri_seti") or "")
         baglam["kisaltmalar"], baglam["kisaltmalar_tahmini"] = \
             kisaltma_mod.birlesik(kaynak)
     except Exception:
@@ -1410,6 +1410,14 @@ def _kisaltma_kaynagi(durum):
         pass
     try:
         kaynak.update(_sozluk_tanimlari(sozluk_oku(durum)))
+    except Exception:
+        pass
+    # Veri setinin TANIMSIZ kolonlari da (bos tanimla): sozlugu olmayan veri
+    # setinde kolon adlarindaki kisaltmalar onceki calismalardan ogrenilen
+    # bilgiyle kartta gorunsun. Bos tanim istatistige girmez.
+    try:
+        for k in (_profil(durum).get("kolonlar") or []):
+            kaynak.setdefault(str(k.get("ad")), "")
     except Exception:
         pass
     return kaynak
@@ -1438,7 +1446,8 @@ def _kisaltma_alani(durum, bekle=0.0):
     """bekle: dil modeli kisaltma kontrolunun sonucu icin en cok beklenen
     sure (sn). Kontrol 01.2.3'te arka planda basladigi icin cogu zaman
     hazirdir; yetismezse kural tabanli liste gelir ve not yazilir."""
-    satirlar, dm = kisaltma_mod.kart_satirlari(_kisaltma_kaynagi(durum), bekle)
+    satirlar, dm = kisaltma_mod.kart_satirlari(_kisaltma_kaynagi(durum), bekle,
+                                               durum.get("veri_seti") or "")
     notu = {"calisiyor": "Dil modeli kontrolü sürüyor; liste şimdilik kural "
                          "tabanlı. Adıma yeniden girildiğinde güncellenir.",
             "hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")

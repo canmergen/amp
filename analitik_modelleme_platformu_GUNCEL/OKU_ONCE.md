@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltmalar sözlükten öğreniliyor (sabit liste yok)**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltmalar kendiliğinden öğrenilip saklanıyor**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+
+- Yeni dosya: `PROJE_HAFIZASI/KISALTMA_OGRENILEN.parquet` (onaylı
+  hafızadan ayrı, onay istemez). Sözlüklü her çalışmada, dil modeli
+  kontrolünden geçen (doğrulanan ya da modellerin anlaştığı) anlamlar
+  kendiliğinden yazılır: KISALTMA, ANLAM, KOLON (kaç kolondan), VERI_SETI,
+  KAYNAK, TARIH. "Emin olamadı" olanlar yazılmaz.
+- Aynı kısaltma başka sözlükte farklı anlamla çıkarsa daha çok kolonla
+  öğrenilen kalır; aynı anlamsa kolon sayısı büyüğü tutulur.
+- Sözlüğü olmayan / az tanımlı çalışmada: bu dosya dil modeline tahmini
+  kısaltma olarak gider (TXN -> işlem) ve kartta "Önceki sözlüklerden
+  öğrenildi · HAVALE_EFT_NTT, 908 kolon" diye görünür. Kartta veri
+  setinin tanımsız kolon adları da sayılır.
+- Öncelik: onaylı hafıza > bu çalışmada öğrenilen > önceki çalışmalardan
+  öğrenilen.
+- Düzeltme: eşit kanıtlı kısaltmalarda sonuç çalıştırmadan çalıştırmaya
+  değişebiliyordu (küme sırası); sıra artık tam belirli.
+
+Önceki tur: **Kısaltmalar sözlükten öğreniliyor (sabit liste yok)**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
 
 - Önceden verilen temel kısaltma listesi KALDIRILDI (kullanıcı kararı:
   "kendi kendine gelişen bir sistem"). Her anlam o çalışmanın
