@@ -1350,8 +1350,17 @@ def _aciklama_baglami(durum):
 def _sozluk_tanimlari(sz):
     """Sozluk tablosu -> {kolon: aciklama} (bos aciklamalar atlanir)."""
     cikti = {}
-    ad_kol, ack_kol, hata = llm_mod._sozluk_kolonlari(sz)
-    if hata or ack_kol is None:
+    if sz is None or not len(sz.columns):
+        return cikti
+    # Sag paneldeki Sozluk Tanimi ile AYNI kolon bulucular. Eskiden
+    # llm._sozluk_kolonlari kullaniliyordu: o yalnizca DEGISKEN / KOLON /
+    # AD ... adli kolonu kabul ediyor, bulamazsa HIC tanim donmuyordu
+    # (kullanici bildirimi: 1.040 tanimli sozlukte "kontrol edilecek
+    # tanim bulunmadi"). sozluk_calisma.degisken_kolonu_bul bilinen ad
+    # yoksa ilk kolona duser - sozluk tablosunun ilk kolonu degisken adi.
+    ad_kol = sozluk_calisma.degisken_kolonu_bul(sz)
+    ack_kol = sozluk_calisma.tanim_kolonu_bul(sz)
+    if ad_kol is None or ack_kol is None:
         return cikti
     for ad, ack in zip(sz[ad_kol].astype(str), sz[ack_kol]):
         ack = "" if ack is None or (isinstance(ack, float) and ack != ack) else str(ack).strip()
@@ -1379,22 +1388,44 @@ def _kontrol_kolonlari(durum, prof):
     Daha once karari verilmis (uygulanmis ya da reddedilmis) kolonlar
     yeniden denetlenmez; geri donuste o kararlar kartta aynen gelir."""
     try:
-        tanimlar = _sozluk_tanimlari(sozluk_oku(durum))
+        sz = sozluk_oku(durum)
+        tanimlar = _sozluk_tanimlari(sz)
     except Exception as e:
         return [], {}, ("Sözlük okunamadığı için tanımlar kontrol edilemedi "
                         "(%s)." % str(e)[:140])
+    if not tanimlar:
+        # SESSIZ "bulunmadi" DEGIL: sozlukte satir var ama tanim
+        # okunamadiysa nedeni kartta yazar.
+        kolonlar = ", ".join(str(c) for c in list(getattr(sz, "columns", []))[:10])
+        if sz is not None and len(sz):
+            return [], {}, (
+                "Sözlükte %s satır var ama tanım metni okunamadı. Açıklama "
+                "kolonu ACIKLAMA, TANIM ya da DESCRIPTION adlı olmalı; "
+                "sözlüğün kolonları: %s." % (_sayi(len(sz)), kolonlar or "-"))
+        return [], {}, ""
     normal = {sozluk_calisma._normalize_ad(a): t for a, t in tanimlar.items()}
     tanimsiz = set(_tanim_listesi(durum))
     karar = _onceki_duzeltmeler(durum)
     adlar, harita = [], {}
-    for k in (prof or {}).get("kolonlar") or []:
-        ad = str(k.get("ad"))
+    veri_adlari = [str(k.get("ad")) for k in ((prof or {}).get("kolonlar") or [])
+                   if isinstance(k, dict)]
+    if not veri_adlari:
+        veri_adlari = [str(o.get("ad")) for o in ((durum.get("profil") or {})
+                                                  .get("kolon_ozet") or [])
+                       if isinstance(o, dict)]
+    for ad in veri_adlari:
         if ad in tanimsiz or ad in karar:
             continue
         t = tanimlar.get(ad) or normal.get(sozluk_calisma._normalize_ad(ad))
         if t:
             adlar.append(ad)
             harita[ad] = t
+    if not adlar and not karar:
+        return [], {}, (
+            "Sözlükte %s tanım okundu ama hiçbiri veri setinin kolon adlarıyla "
+            "eşleşmedi (veri seti: %s kolon). Örnek sözlük adları: %s."
+            % (_sayi(len(tanimlar)), _sayi(len(veri_adlari)),
+               ", ".join(list(tanimlar)[:5])))
     return adlar, harita, ""
 
 

@@ -1,6 +1,21 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Tanım kontrolü ayrı adım: 01.2.4 Sözlük Tanım Kontrolü**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `webapp/app.js`
+Bu tur: **01.2.4 "kontrol edilecek tanım bulunmadı" hatası**. Değiştir: `fe_agent/akis_faz01.py`
+
+- Sözlükten tanımlar, sağ paneldeki Sözlük Tanımı ile AYNI kolon
+  bulucuyla okunuyor. Eskisi değişken adı kolonunu yalnız DEGISKEN /
+  KOLON / AD / VARIABLE / COLUMN / FEATURE adıyla kabul ediyordu; başka
+  adla (ör. DEGISKEN_ADI) hiç tanım okumuyor ve "bulunmadı" diyordu. Aynı
+  hata açıklama önerisine giden sözlük örneklerini ve yazım tarzını da
+  boş bırakıyordu; o da düzeldi.
+- Tanım okunamazsa ya da veri seti adlarıyla eşleşmezse artık nedeni
+  kartta yazıyor (sözlüğün kolon adları / örnek adlar).
+- Mevcut çalışmada: 01.2.4'teki Geri Dön'e basın; adım yeniden açılır ve
+  kontrol baştan başlar.
+
+---
+
+Önceki tur: **Tanım kontrolü ayrı adım: 01.2.4 Sözlük Tanım Kontrolü**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `webapp/app.js`
 
 - Sıra (A ve B modu): 01.2.3 Sözlük Tanımları (yalnız boş tanımlar) →
   onay → 01.2.4 Sözlük Tanım Kontrolü (dolu tanımlar) → 01.3 Değişken
