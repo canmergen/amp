@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma kartında örnek kolon**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma örnekleri "i" simgesinde**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme; önceki turun `fe_agent/kisaltma.py` dosyası gerekli)
+
+- Ayrı "Örnek Kolon" sütunu kaldırıldı; örnek kolonlar (en çok 3, kolon
+  adı + sözlükteki açıklama) kısaltmanın yanındaki "i" simgesinde.
+
+Önceki tur: **Kısaltma kartında örnek kolon**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 - Kısaltma Sözlüğü tablosuna "Örnek Kolon" sütunu: anlamı onaylatan bir
   kolon adı ve sözlükteki açıklaması; en çok 2 örnek daha "i"

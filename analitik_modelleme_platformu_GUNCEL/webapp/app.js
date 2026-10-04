@@ -6777,7 +6777,7 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
     const sar = elYap("div", "dg-tablo-sar");
     const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
     const th = document.createElement("thead"), hr = document.createElement("tr");
-    ["Kısaltma", "Anlam", "Örnek Kolon", "Kaynak", "Hafızaya Kaydet"].forEach(h => hr.appendChild(elYap("th", "", h)));
+    ["Kısaltma", "Anlam", "Kaynak", "Hafızaya Kaydet"].forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
     tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
@@ -6787,28 +6787,22 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
         satirlar.length = 0;
         (liste || []).forEach(r => {
             const tr = elYap("tr", "dg-satir");
-            tr.appendChild(elYap("td", "dg-kolon", r.kisaltma));
+            /* ÖRNEKLER KISALTMANIN YANINDA "i" (kullanıcı kararı: ayrı
+               sütun gereksiz). Anlamı onaylatan kolon adları ve sözlükteki
+               açıklamaları; tanımı anlamı taşıyan yoksa herhangi örnekler
+               gelir, kullanıcı çelişkiyi görür. */
+            const tdK = elYap("td", "dg-kolon dg-kisaltma-ad", r.kisaltma);
+            const orn = r.ornekler || [];
+            if (orn.length) tdK.appendChild(bolmeBilgiSimgesi(
+                "Örnek kolonlar:\n\n" + orn.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n"),
+                r.kisaltma + " örnekleri"));
+            tr.appendChild(tdK);
             const tdA = elYap("td", "dg-aciklama-hucre");
             const g = document.createElement("input");
             g.type = "text"; g.className = "dg-giris";
             g.value = tireSade(r.anlam || ""); g.disabled = kilitli;
             g.setAttribute("aria-label", r.kisaltma + " anlamı");
             tdA.appendChild(g); tr.appendChild(tdA);
-            /* ÖRNEK KOLON (kullanıcı kararı): anlamı onaylatan kanıt. İlk
-               örnek hücrede (kolon adı + açıklaması); diğerleri "i"
-               simgesinin arkasında. Örnek anlamı taşımıyorsa soluk değil,
-               olduğu gibi gösterilir: kullanıcı çelişkiyi görür. */
-            const tdO = elYap("td", "dg-kisaltma-ornek");
-            const orn = r.ornekler || [];
-            if (orn.length) {
-                const bas = elYap("div", "dg-kisaltma-ornek-ad", orn[0].kolon);
-                if (orn.length > 1) bas.appendChild(bolmeBilgiSimgesi(
-                    orn.slice(1).map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n"),
-                    r.kisaltma + " örnekleri"));
-                tdO.appendChild(bas);
-                tdO.appendChild(elYap("div", "dg-kisaltma-ornek-tanim", tireSade(orn[0].tanim)));
-            }
-            tr.appendChild(tdO);
             tr.appendChild(elYap("td", "dg-tip", r.onayli
                 ? "Onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || "")));
             const tdI = elYap("td", "dg-ekle-hucre");
