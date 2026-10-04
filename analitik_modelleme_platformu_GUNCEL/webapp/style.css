@@ -2936,6 +2936,12 @@ span.bolme-cip { cursor: default; }
    Uygula. İki tanım da TAM METİN okunur (kırpılmaz, satır kayar);
    önerilen tanım düzenlenebilir, kutu içeriğe göre uzar. */
 .dg-kontrol-bas { margin-top: var(--b-4); }
+.dg-kisaltma-tablo th:nth-child(1) { width: 18%; }
+.dg-kisaltma-tablo th:nth-child(2) { width: auto; }
+.dg-kisaltma-tablo th:nth-child(3) { width: 30%; }
+.dg-kisaltma-tablo th:nth-child(4) { width: 80px; white-space: normal; }
+.dg-kisaltma-tablo td.dg-ekle-hucre { text-align: center; }
+.dg-kisaltma-tablo .dg-tip { white-space: normal; }
 .dg-kontrol-bas .dg-tablo-baslik { display: flex; align-items: center; gap: var(--b-1); }
 .dg-kontrol-tablo th:nth-child(1) { width: 24%; }
 .dg-kontrol-tablo th:nth-child(2) { width: 34%; }

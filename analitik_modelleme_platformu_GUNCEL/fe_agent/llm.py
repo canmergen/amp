@@ -348,6 +348,8 @@ KOLON ADI KALIPLARI:
     SON A GUNDEKI degerin SON B GUNDEKI degere ORANI. "A ile B. gun arasi"
     bir zaman araligi DEGILDIR.
   - AMT: tutar, CNT: adet, AVG: ortalama, RATIO: oran.
+  - KISALTMALAR blogu verilirse (kurumun sozlugunden cikarilan ve
+    kullanicinin onayladigi) kisaltmalarin anlami ODUR; kendin tahmin etme.
   - Diger kisaltmalarin anlamini ORNEK / ONAYLI TANIMLARDAN cikar.
 
 SADE YAZ: tanim kisa ve tek anlamli olsun; ayni ifadeyi tekrar etme,
@@ -464,6 +466,18 @@ def _baglamli_govde(adlar, kolon_metni, baglam, kolon_basligi="KOLONLAR"):
     tarz = baglam.get("tarz")
     if tarz:
         ek.append("YAZIM TARZI: %s" % tarz_metni(tarz))
+    # KISALTMALAR: yalniz bu gruptaki kolon adlarinda gecenler (istem
+    # kisa kalsin).
+    kisaltmalar = baglam.get("kisaltmalar") or {}
+    if kisaltmalar:
+        gecen = []
+        for a in adlar:
+            for p in re.split(r"[^A-Za-z0-9]+", _normalize_ad_parcali(a)):
+                if p in kisaltmalar and p not in gecen:
+                    gecen.append(p)
+        if gecen:
+            ek.append("KISALTMALAR:\n" + "\n".join(
+                "- %s: %s" % (p, kisaltmalar[p]) for p in gecen))
     hafiza = baglam.get("hafiza") or {}
     if hafiza:
         ayni = [(a, str(hafiza[a])[:200]) for a in adlar if a in hafiza]

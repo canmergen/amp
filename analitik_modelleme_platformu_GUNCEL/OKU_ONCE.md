@@ -1,6 +1,26 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sözlük önerileri sade yazılsın**. Değiştir: `fe_agent/llm.py`
+Bu tur: **Kısaltma sözlüğü (TXN, GLN, GDN ...) + onaylı kısaltma hafızası**. Değiştir: `fe_agent/kisaltma.py` (YENİ), `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+
+- Çıkarım (dil modeli yok): kolon adı parçalara bölünür; bir kelime,
+  adında o parça geçen kolonların tanımlarında sık (≥ %60), geçmeyenlerde
+  belirgin seyrekse (fark ≥ 0,3) parçanın anlamı sayılır. En az 3 kolon.
+  İki kelimelik anlam (HS → hafta sonu) iki kelimesi de parçaya özgüyse.
+  Kaynak: sözlüğün çalışma kopyası + onaylı tanım hafızası.
+- 01.2.4 kartının başında "Kısaltma Sözlüğü": Kısaltma | Anlam
+  (düzenlenebilir) | Kaynak (ör. "Sözlükten: 120 kolonun %98'inde") |
+  Hafızaya Kaydet. "Seçilenleri Hafızaya Kaydet" adım akışından bağımsız;
+  işareti kaldırıp kaydedilen hafızadan silinir.
+- Hafıza: PROJE_HAFIZASI/KISALTMA_HAFIZASI.parquet (proje geneli; KISALTMA,
+  ANLAM, KAYNAK, KULLANICI, TARIH).
+- Kullanım: açıklama önerisi (01.2.3), tanım kontrolü (01.2.4) ve sözlüksüz
+  modlarda sözlük üretimi (C/D) istemlerine "KISALTMALAR" bloğu gider
+  (yalnız o gruptaki kolon adlarında geçenler). Onaylı anlam, çıkarılanın
+  önüne geçer. C/D'de onaylı tanım hafızası da örnek olarak gider.
+
+---
+
+Önceki tur: **Sözlük önerileri sade yazılsın**. Değiştir: `fe_agent/llm.py`
 
 - Tüm sözlük istemlerine (açıklama, kontrol, hakem) "SADE YAZ" kuralı:
   kısa, tek anlamlı, tekrarsız, kurumun yazım tarzı uzunluğunda; tanımlar

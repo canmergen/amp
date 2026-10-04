@@ -1447,6 +1447,28 @@ def tanim_kontrol_baslat_endpoint():
         return jsonify(_hata_govdesi("tanim_kontrol_baslat", e)), 200
 
 
+@app.route("/kisaltma_kaydet", methods=["POST"])
+def kisaltma_kaydet_endpoint():
+    """Kisaltma Sozlugu: secilenler proje genelindeki onayli kisaltma
+    hafizasina yazilir, isareti kaldirilanlar silinir."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        durum["_kullanici_ad"] = _kullanici_adi()[0] or ""
+        alan, hata = akis.kisaltma_kaydet(durum, istek.get("kisaltmalar"))
+        for kayit in reversed(durum.get("_gecmis") or []):
+            ekran = kayit.get("ekran") if isinstance(kayit, dict) else None
+            secim = ekran.get("secim_alani") if isinstance(ekran, dict) else None
+            if isinstance(secim, dict) and secim.get("kisaltma") is not None:
+                secim["kisaltma"] = alan
+                break
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": not hata, "hata": hata or "", "kisaltma": alan})
+    except Exception as e:
+        return jsonify(_hata_govdesi("kisaltma_kaydet", e)), 200
+
+
 @app.route("/oneriler")
 def oneriler_endpoint():
     """Sozluk tanimlari kartindaki ACIKLAMA ONERILERININ ilerlemesi.

@@ -6182,6 +6182,13 @@ function dogrulamaKartiEkle(alan, blok) {
         }
     }
 
+    /* ---- 5a) Kısaltma Sözlüğü (01.2.4) ----
+       Kolon adı kısaltmaları (TXN, GLN, GDN ...) sözlükten kural tabanlı
+       çıkarılır; kullanıcı anlamı düzeltip proje genelindeki onaylı
+       kısaltma hafızasına kaydeder. Kayıt adım akışından BAĞIMSIZ
+       (kendi düğmesi, /kisaltma_kaydet). */
+    if (alan.kisaltma) kisaltmaBolumuEkle(kart, alan.kisaltma, !!(blok && blok.kilit));
+
     /* ---- 5b) Sözlükteki tanımların kontrolü ----
        Kullanıcı kararı: sözlükte tanımı OLAN kolonların tanımı da birden
        fazla dil modeliyle denetlenir; yalnızca düzeltilmesi önerilenler
@@ -6671,6 +6678,106 @@ function dogrulamaKartiEkle(alan, blok) {
         oneriYokla(String(alan.oneri_is));
     }
     yeniOdak = birincil;
+}
+
+function kisaltmaBolumuEkle(kart, ka, kilitli) {
+    const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
+    const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Kısaltma Sözlüğü");
+    if (ka.bilgi) kbas.appendChild(bolmeBilgiSimgesi(ka.bilgi, ka.baslik));
+    kb.appendChild(kbas);
+    kart.appendChild(kb);
+    const durumEl = elYap("div", "dg-not", "");
+    kart.appendChild(durumEl);
+    const hataEl = elYap("div", "dg-oneri-hata");
+    hataEl.hidden = true;
+    kart.appendChild(hataEl);
+    const satirlar = [];
+    const ust = elYap("div", "dg-tablo-ust");
+    ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"], ["dg-l-llm", "Sözlükten Çıkarıldı"],
+                              ["dg-l-eklendi", "Hafızada Onaylı"]]));
+    const toplu = elYap("div", "dg-toplu");
+    const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
+    kaydetBtn.type = "button";
+    [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([d, e]) => {
+        const b = elYap("button", "dg-toplu-btn", e);
+        b.type = "button"; b.disabled = kilitli;
+        b.onclick = () => satirlar.forEach(x => { x.kutu.checked = d; });
+        toplu.appendChild(b);
+    });
+    kaydetBtn.disabled = kilitli;
+    toplu.appendChild(kaydetBtn);
+    ust.appendChild(toplu);
+    kart.appendChild(ust);
+    const sar = elYap("div", "dg-tablo-sar");
+    const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
+    const th = document.createElement("thead"), hr = document.createElement("tr");
+    ["Kısaltma", "Anlam", "Kaynak", "Hafızaya Kaydet"].forEach(h => hr.appendChild(elYap("th", "", h)));
+    th.appendChild(hr); tablo.appendChild(th);
+    const tb = document.createElement("tbody");
+    tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
+
+    function ciz(liste) {
+        tb.textContent = "";
+        satirlar.length = 0;
+        (liste || []).forEach(r => {
+            const tr = elYap("tr", "dg-satir");
+            tr.appendChild(elYap("td", "dg-kolon", r.kisaltma));
+            const tdA = elYap("td", "dg-aciklama-hucre");
+            const g = document.createElement("input");
+            g.type = "text"; g.className = "dg-giris";
+            g.value = tireSade(r.anlam || ""); g.disabled = kilitli;
+            g.setAttribute("aria-label", r.kisaltma + " anlamı");
+            tdA.appendChild(g); tr.appendChild(tdA);
+            tr.appendChild(elYap("td", "dg-tip", r.onayli
+                ? "Onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || "")));
+            const tdI = elYap("td", "dg-ekle-hucre");
+            const kutu = document.createElement("input");
+            kutu.type = "checkbox"; kutu.className = "dg-ekle";
+            kutu.checked = !!r.onayli; kutu.disabled = kilitli;
+            tdI.appendChild(kutu); tr.appendChild(tdI);
+            const vurgu = () => {
+                const m = g.value.trim();
+                tr.classList.toggle("dg-bos", !m);
+                tr.classList.toggle("dg-eklendi", !!m && !!r.onayli && m === String(r.anlam || "").trim());
+                tr.classList.toggle("dg-llm", !!m && !r.onayli && m === String(r.cikarilan || "").trim());
+            };
+            g.addEventListener("input", vurgu);
+            vurgu();
+            satirlar.push({ r, g, kutu });
+            tb.appendChild(tr);
+        });
+        const onayli = (liste || []).filter(r => r.onayli).length;
+        durumEl.textContent = (liste || []).length
+            ? ftBinlik((liste || []).length) + " kısaltma; " + ftBinlik(onayli) + " tanesi hafızada onaylı."
+            : "Kolon adlarından güvenilir bir kısaltma çıkarılamadı.";
+        sar.hidden = ust.hidden = !(liste || []).length;
+    }
+    ciz(ka.satirlar);
+
+    kaydetBtn.onclick = () => {
+        kaydetBtn.disabled = true;
+        hataEl.hidden = true;
+        const govde = satirlar.map(x => ({ kisaltma: x.r.kisaltma, anlam: x.g.value.trim(),
+            cikarilan: x.r.cikarilan || "", kaydet: x.kutu.checked }));
+        fetch(getWebAppBackendUrl("kisaltma_kaydet"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({ kisaltmalar: govde }))
+        })
+        .then(r => r.json())
+        .then(d => {
+            kaydetBtn.disabled = false;
+            if (d && d.kisaltma) ciz(d.kisaltma.satirlar);
+            if (!d || d.tamam !== true) {
+                hataEl.textContent = tireSade((d && d.hata) || "Kısaltmalar kaydedilemedi.");
+                hataEl.hidden = false;
+            }
+        })
+        .catch(e => {
+            kaydetBtn.disabled = false;
+            hataEl.textContent = "Kısaltmalar kaydedilemedi: " + e;
+            hataEl.hidden = false;
+        });
+    };
 }
 
 /* ==================== Aralık Önerileri kartı ====================

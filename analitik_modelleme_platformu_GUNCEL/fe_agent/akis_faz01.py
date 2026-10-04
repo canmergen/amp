@@ -18,6 +18,7 @@ from fe_agent import birlestirme as birl_mod
 from fe_agent import sozluk as sozluk_mod
 from fe_agent import sozluk_calisma
 from fe_agent import tanim_hafiza
+from fe_agent import kisaltma as kisaltma_mod
 from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
@@ -726,8 +727,21 @@ def sozluk_uret_uygula(durum):
 
     # llm.sozluk_aciklama_uret artik (aciklamalar, hata) donuyor.
     # Sozluk yok (C/D): baglam yalnizca veri setinin adi.
+    # Sozluk yok: ONAYLI tanimlar ve ONAYLI kisaltmalar (proje hafizasi)
+    # baglam olarak gider; boylece sozluksuz veri setinde de kurumun
+    # kisaltma anlamlari ve yazimi kullanilir.
+    try:
+        _hafiza = tanim_hafiza.tanimlar()
+    except Exception:
+        _hafiza = {}
+    try:
+        _kisa = kisaltma_mod.birlesik(_hafiza)
+    except Exception:
+        _kisa = {}
     aciklamalar, llm_hata = llm_mod.sozluk_aciklama_uret(
-        profiller, baglam={"veri_seti": durum.get("veri_seti") or "", "tanimlar": {}})
+        profiller, baglam={"veri_seti": durum.get("veri_seti") or "", "tanimlar": {},
+                           "hafiza": _hafiza, "kisaltmalar": _kisa,
+                           "tarz": llm_mod.yazim_tarzi(_hafiza)})
     if llm_hata and not aciklamalar:
         # Tek bir aciklama bile uretilemedi: adimi ilerletmiyoruz.
         raise AdimHatasi(
@@ -1344,7 +1358,69 @@ def _aciklama_baglami(durum):
         baglam["hafiza"] = tanim_hafiza.tanimlar()
     except Exception:
         baglam["hafiza"] = {}
+    # KISALTMALAR: onaylilar + sozlukten ve onayli tanimlardan cikarilanlar.
+    try:
+        kaynak = dict(baglam["hafiza"])
+        kaynak.update(baglam["tanimlar"])
+        baglam["kisaltmalar"] = kisaltma_mod.birlesik(kaynak)
+    except Exception:
+        baglam["kisaltmalar"] = {}
     return baglam
+
+
+def _kisaltma_kaynagi(durum):
+    """Kisaltma cikariminin kaynagi: sozlugun CALISMA KOPYASI (bir onceki
+    adimda eklenenler dahil) + onayli tanim hafizasi."""
+    kaynak = {}
+    try:
+        kaynak.update(tanim_hafiza.tanimlar())
+    except Exception:
+        pass
+    try:
+        kaynak.update(_sozluk_tanimlari(sozluk_oku(durum)))
+    except Exception:
+        pass
+    return kaynak
+
+
+KISALTMA_BASLIK = "Kısaltma Sözlüğü"
+KISALTMA_BILGI = (
+    "Kolon adlarındaki kısaltmalar (TXN, GLN, GDN ...) sözlüğünüzdeki ve "
+    "onaylı tanımlardaki açıklamalardan kural tabanlı çıkarılır: bir "
+    "kelime, adında o kısaltma geçen kolonların tanımlarında sık, "
+    "geçmeyenlerinkinde seyrekse kısaltmanın anlamı sayılır. Dil modeli "
+    "kullanılmaz.\n\n"
+    "Bu liste açıklama önerilerine ve tanım kontrolüne her zaman gider. "
+    "Hafızaya kaydettikleriniz proje genelinde saklanır; sözlüğü olmayan ya "
+    "da eksik sözlüklü başka veri setlerinde de kullanılır. Anlamı "
+    "düzeltip kaydedebilirsiniz; işareti kaldırıp kaydederseniz hafızadan "
+    "silinir.")
+
+
+def _kisaltma_alani(durum):
+    satirlar = kisaltma_mod.kart_satirlari(_kisaltma_kaynagi(durum))
+    return {"baslik": KISALTMA_BASLIK, "bilgi": KISALTMA_BILGI,
+            "satirlar": satirlar}
+
+
+def kisaltma_kaydet(durum, satirlar):
+    """Kart: secilen kisaltmalari onayli hafizaya yazar / kaldirir.
+    Doner: (yeni kart alani, hata)."""
+    temiz = []
+    for s in satirlar or []:
+        if isinstance(s, dict) and str(s.get("kisaltma") or "").strip():
+            temiz.append({"kisaltma": s.get("kisaltma"), "anlam": s.get("anlam"),
+                          "kaydet": bool(s.get("kaydet")),
+                          "kaynak": kisaltma_mod.KAYNAK_ONAY
+                          if str(s.get("anlam") or "").strip()
+                          == str(s.get("cikarilan") or "").strip()
+                          else kisaltma_mod.KAYNAK_KULLANICI})
+    _onay, hata = kisaltma_mod.kaydet(temiz, durum.get("_kullanici_ad") or "")
+    alan = _kisaltma_alani(durum)
+    secim = durum.get("_secim_alani")
+    if isinstance(secim, dict) and secim.get("kisaltma") is not None:
+        secim["kisaltma"] = alan
+    return alan, hata
 
 
 def _sozluk_tanimlari(sz):
@@ -2337,6 +2413,7 @@ def _kontrol_karti(durum, adlar, hata, basladi):
     return {
         "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
         "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
+        "kisaltma": _kisaltma_alani(durum),
         "buton_kalip": dict(KONTROL_DUGME),
         "oneri_is": (durum.get("_kontrol_is") or "") if basladi else "",
         "oneri_toplam": 0,
