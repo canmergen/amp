@@ -6757,7 +6757,9 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
     kart.appendChild(hataEl);
     const satirlar = [];
     const ust = elYap("div", "dg-tablo-ust");
-    ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"], ["dg-l-llm", "Sözlükten Çıkarıldı"],
+    /* "Önerilen": temel sözlük, sözlükten çıkarım ya da dil modeli
+       (kaynağı satırın Kaynak sütununda yazar). */
+    ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"], ["dg-l-llm", "Önerilen"],
                               ["dg-l-hafiza", "Hafızada Onaylı"]]));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
@@ -6812,9 +6814,10 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
             tb.appendChild(tr);
         });
         const onayli = (liste || []).filter(r => r.onayli).length;
-        durumEl.textContent = (liste || []).length
+        durumEl.textContent = ((liste || []).length
             ? ftBinlik((liste || []).length) + " kısaltma; " + ftBinlik(onayli) + " tanesi hafızada onaylı."
-            : "Kolon adlarından güvenilir bir kısaltma çıkarılamadı.";
+            : "Kolon adlarından güvenilir bir kısaltma çıkarılamadı.")
+            + (ka.not ? " " + tireSade(ka.not) : "");
         sar.hidden = ust.hidden = !(liste || []).length;
     }
     ciz(ka.satirlar);

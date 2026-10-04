@@ -735,12 +735,13 @@ def sozluk_uret_uygula(durum):
     except Exception:
         _hafiza = {}
     try:
-        _kisa = kisaltma_mod.birlesik(_hafiza)
+        _kisa, _kisa_t = kisaltma_mod.birlesik(_hafiza)
     except Exception:
-        _kisa = {}
+        _kisa, _kisa_t = {}, {}
     aciklamalar, llm_hata = llm_mod.sozluk_aciklama_uret(
         profiller, baglam={"veri_seti": durum.get("veri_seti") or "", "tanimlar": {},
                            "hafiza": _hafiza, "kisaltmalar": _kisa,
+                           "kisaltmalar_tahmini": _kisa_t,
                            "tarz": llm_mod.yazim_tarzi(_hafiza)})
     if llm_hata and not aciklamalar:
         # Tek bir aciklama bile uretilemedi: adimi ilerletmiyoruz.
@@ -1385,13 +1386,17 @@ def _aciklama_baglami(durum):
         baglam["hafiza"] = tanim_hafiza.tanimlar()
     except Exception:
         baglam["hafiza"] = {}
-    # KISALTMALAR: onaylilar + sozlukten ve onayli tanimlardan cikarilanlar.
+    # KISALTMALAR: kesin (onayli + temel sozluk) ve tahmini (sozlukten /
+    # dil modelinden). Dil modeli kisaltma kontrolu burada ARKA PLANDA
+    # baslar; sonucu 01.2.4'teki Kisaltma Sozlugu kartina yetisir.
     try:
         kaynak = dict(baglam["hafiza"])
         kaynak.update(baglam["tanimlar"])
-        baglam["kisaltmalar"] = kisaltma_mod.birlesik(kaynak)
+        kisaltma_mod.dogrulamayi_baslat(kaynak)
+        baglam["kisaltmalar"], baglam["kisaltmalar_tahmini"] = \
+            kisaltma_mod.birlesik(kaynak)
     except Exception:
-        baglam["kisaltmalar"] = {}
+        baglam["kisaltmalar"], baglam["kisaltmalar_tahmini"] = {}, {}
     return baglam
 
 
@@ -1412,22 +1417,32 @@ def _kisaltma_kaynagi(durum):
 
 KISALTMA_BASLIK = "Kısaltma Sözlüğü"
 KISALTMA_BILGI = (
-    "Kolon adlarındaki kısaltmalar (TXN, GLN, GDN ...) sözlüğünüzdeki ve "
-    "onaylı tanımlardaki açıklamalardan kural tabanlı çıkarılır: bir "
-    "kelime, adında o kısaltma geçen kolonların tanımlarında sık, "
-    "geçmeyenlerinkinde seyrekse kısaltmanın anlamı sayılır. Dil modeli "
-    "kullanılmaz.\n\n"
-    "Bu liste açıklama önerilerine ve tanım kontrolüne her zaman gider. "
+    "Kolon adlarındaki kısaltmaların anlamı üç kaynaktan gelir. Temel "
+    "sözlük: standart kısaltmalar (IN gelen, OUT giden, SUM toplam, DAY "
+    "gün ...) sabittir. Sözlükten: bir kelime, adında o kısaltma geçen "
+    "kolonların tanımlarında sık, geçmeyenlerinkinde seyrekse anlam "
+    "sayılır; başka bir kısaltmanın aldığı anlam ikinci kez verilmez. "
+    "Dil modeli: sözlükten çıkan liste örnek kolonlarla iki modele "
+    "sorulur, anlaşamazlarsa hakem karar verir; emin olunamayan anlam boş "
+    "kalır.\n\n"
+    "Açıklama önerilerine ve tanım kontrolüne hafızada onaylı ve temel "
+    "kısaltmalar kesin, diğerleri tahmini olarak gider. "
     "Hafızaya kaydettikleriniz proje genelinde saklanır; sözlüğü olmayan ya "
     "da eksik sözlüklü başka veri setlerinde de kullanılır. Anlamı "
     "düzeltip kaydedebilirsiniz; işareti kaldırıp kaydederseniz hafızadan "
     "silinir.")
 
 
-def _kisaltma_alani(durum):
-    satirlar = kisaltma_mod.kart_satirlari(_kisaltma_kaynagi(durum))
+def _kisaltma_alani(durum, bekle=0.0):
+    """bekle: dil modeli kisaltma kontrolunun sonucu icin en cok beklenen
+    sure (sn). Kontrol 01.2.3'te arka planda basladigi icin cogu zaman
+    hazirdir; yetismezse kural tabanli liste gelir ve not yazilir."""
+    satirlar, dm = kisaltma_mod.kart_satirlari(_kisaltma_kaynagi(durum), bekle)
+    notu = {"calisiyor": "Dil modeli kontrolü sürüyor; liste şimdilik kural "
+                         "tabanlı. Adıma yeniden girildiğinde güncellenir.",
+            "hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
     return {"baslik": KISALTMA_BASLIK, "bilgi": KISALTMA_BILGI,
-            "satirlar": satirlar}
+            "satirlar": satirlar, "not": notu}
 
 
 def kisaltma_kaydet(durum, satirlar):
@@ -2481,7 +2496,7 @@ def _kontrol_karti(durum, adlar, hata, basladi):
     return {
         "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
         "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
-        "kisaltma": _kisaltma_alani(durum),
+        "kisaltma": _kisaltma_alani(durum, kisaltma_mod.DM_BEKLE_SN),
         "buton_kalip": dict(KONTROL_DUGME),
         "oneri_is": (durum.get("_kontrol_is") or "") if basladi else "",
         "oneri_toplam": 0,

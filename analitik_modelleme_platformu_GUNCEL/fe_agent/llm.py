@@ -348,8 +348,10 @@ KOLON ADI KALIPLARI:
     SON A GUNDEKI degerin SON B GUNDEKI degere ORANI. "A ile B. gun arasi"
     bir zaman araligi DEGILDIR.
   - AMT: tutar, CNT: adet, AVG: ortalama, RATIO: oran.
-  - KISALTMALAR blogu verilirse (kurumun sozlugunden cikarilan ve
-    kullanicinin onayladigi) kisaltmalarin anlami ODUR; kendin tahmin etme.
+  - KISALTMALAR (kesin) blogu verilirse (kullanicinin onayladigi ve
+    standart kisaltmalar) anlam ODUR; kendin tahmin etme.
+  - KISALTMALAR (tahmini) blogu sozlukten cikarilan ONERIDIR: kolon adi,
+    dagilim ve orneklerle tutarliysa kullan, celisiyorsa kullanma.
   - Diger kisaltmalarin anlamini ORNEK / ONAYLI TANIMLARDAN cikar.
 
 ROL verilen kolonlar (kullanicinin modelleme tanimlarinda sectigi):
@@ -493,15 +495,21 @@ def _baglamli_govde(adlar, kolon_metni, baglam, kolon_basligi="KOLONLAR"):
         ek.append("YAZIM TARZI: %s" % tarz_metni(tarz))
     # KISALTMALAR: yalniz bu gruptaki kolon adlarinda gecenler (istem
     # kisa kalsin).
-    kisaltmalar = baglam.get("kisaltmalar") or {}
-    if kisaltmalar:
+    # KESIN (onayli + temel sozluk) ve TAHMINI (sozlukten cikarilan / dil
+    # modelinin onerdigi) ayri bloklarda: tahmini anlam kolon adi ve
+    # orneklerle celisirse kullanilmaz (bkz. AD_KALIP_KURALI).
+    for anahtar, baslik in (("kisaltmalar", "KISALTMALAR (kesin)"),
+                            ("kisaltmalar_tahmini", "KISALTMALAR (tahmini)")):
+        kisaltmalar = baglam.get(anahtar) or {}
+        if not kisaltmalar:
+            continue
         gecen = []
         for a in adlar:
             for p in re.split(r"[^A-Za-z0-9]+", _normalize_ad_parcali(a)):
                 if p in kisaltmalar and p not in gecen:
                     gecen.append(p)
         if gecen:
-            ek.append("KISALTMALAR:\n" + "\n".join(
+            ek.append(baslik + ":\n" + "\n".join(
                 "- %s: %s" % (p, kisaltmalar[p]) for p in gecen))
     hafiza = baglam.get("hafiza") or {}
     if hafiza:
@@ -1138,6 +1146,143 @@ def turkcelestir(kayitlar, baglam=None, orkestra=None):
             continue
         sonuc[ad] = metin
     return sonuc, model
+
+
+# ===========================================================================
+# KISALTMA KONTROLU (kullanici karari: "kendisi de iyilesemez mi")
+# ===========================================================================
+SISTEM_KISALTMA = """Sen bir bankacilik veri sozlugu uzmanisin. Kolon
+adlarinda gecen KISALTMALAR verilecek. Her biri icin: kural tabanli
+ONERILEN anlam (bos olabilir) ve kisaltmanin gectigi ORNEK kolon adlari
+ile o kolonlarin sozluk tanimlari.
+
+Her kisaltma icin karar ver:
+  "dogru"     : onerilen anlam dogru
+  "duzelt"    : onerilen anlam yanlis ya da bos; dogru anlami "anlam"
+                alanina yaz
+  "emin_degil": orneklerden kisaltmanin anlami cikarilamiyor
+
+KURALLAR:
+  - anlam, KISALTMANIN KENDI anlamidir; yalin halde (adedi degil adet,
+    orani degil oran), tamamen Turkce, 1-4 kelime.
+  - Birlikte gectigi BASKA bir kisaltmanin anlamini verme. Ornek:
+    IN_CP_CNT kolonunda CP "karsi taraf"tir; IN "karsi taraf" DEGIL,
+    "gelen"dir.
+  - Tanimdaki hangi kelimenin bu kisaltmaya karsilik geldigini kolon
+    adindaki SIRAYLA eslestirerek bul.
+  - Emin degilsen "emin_degil" de; tahmin uydurma. Yanlis anlam bos
+    anlamdan kotudur.
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "KISALTMA", "karar": "dogru|duzelt|emin_degil",
+  "anlam": "..."}]}""" + SINIRLAYICI_KURALI
+
+SISTEM_HAKEM_KISALTMA = """Sen bir bankacilik veri sozlugu editorusun. Her
+kisaltma icin ornek kolonlar ve iki modelin onerdigi anlam verilecek.
+Ornek kolon adlari ve tanimlariyla en tutarli anlami sec ya da dogrusunu
+yaz; yalin halde, tamamen Turkce, 1-4 kelime. Birlikte gectigi baska bir
+kisaltmanin anlamini verme. Emin degilsen karar "emin_degil".
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "KISALTMA", "karar": "dogru|duzelt|emin_degil",
+  "anlam": "..."}]}""" + SINIRLAYICI_KURALI
+
+KISALTMA_PARCA = 25
+
+
+def _kisaltma_satiri(g):
+    s = "- %s | onerilen: %s" % (g["kisaltma"], g.get("anlam") or "(bos)")
+    for ad, t in g.get("ornekler") or []:
+        s += "\n    %s: %s" % (ad, t)
+    return s
+
+
+def _kisaltma_oku(veri, girdi):
+    """Model cevabi -> {KISA: anlam ya da None (emin degil)}."""
+    oneri = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
+    cikti = {}
+    for k in (veri.get("kolonlar") or []):
+        if not isinstance(k, dict):
+            continue
+        ad = str(k.get("ad") or k.get("kisaltma") or "").strip().upper()
+        if ad not in oneri:
+            continue
+        karar = str(k.get("karar") or "").strip().lower()
+        anlam = re.sub(r"\s+", " ", str(k.get("anlam") or "")).strip().strip(".")
+        if karar.startswith("dogru") or karar.startswith("doğru"):
+            anlam = oneri[ad]
+        elif karar.startswith("emin"):
+            anlam = ""
+        elif not anlam:
+            continue                # tanimsiz cevap: bu model cevap vermemis say
+        if anlam[:1].isupper() and anlam[1:2].islower():
+            # "Yok" -> "yok" (anlam cumle icinde kullaniliyor). Ozel ad
+            # (Herfindahl) da kuculur; anlam bozulmaz.
+            anlam = {"I": "ı", "İ": "i"}.get(anlam[0], anlam[0].lower()) + anlam[1:]
+        if anlam and (len(anlam.split()) > 6 or turkce_sorunu(anlam)):
+            anlam = ""                      # kapi: uzun ya da Turkce degil
+        cikti[ad] = anlam or None
+    return cikti
+
+
+def kisaltma_dogrula(girdi, orkestra=None):
+    """girdi: [{"kisaltma", "anlam" (kural tabanli, bos olabilir),
+    "ornekler": [(kolon, tanim)]}].
+    Doner: (sonuc, hata) sonuc: {KISA: {"anlam", "karar"}}; karar
+    "dogru" / "duzeltildi" / "emin_degil". Iki model ayni anlami verirse
+    kabul; ayrisirsa hakem karar verir."""
+    if not girdi:
+        return {}, None
+    ork = orkestra or Orkestra()
+    sonuc = {}
+    hic_cevap = True
+    for b in range(0, len(girdi), KISALTMA_PARCA):
+        blok = girdi[b:b + KISALTMA_PARCA]
+        govde = _veri_blogu("KISALTMALAR:", "\n".join(_kisaltma_satiri(g) for g in blok))
+        m1, v1 = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA, govde, 0.1)
+        m2, v2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KISALTMA, govde, 0.1,
+                                haric=(m1,) if m1 else ())
+        if not m1 and not m2:
+            continue
+        hic_cevap = False
+        a = _kisaltma_oku(v1, blok) if m1 else {}
+        c = _kisaltma_oku(v2, blok) if m2 else {}
+        ayrisan = []
+        for g in blok:
+            k = g["kisaltma"]
+            x, y = a.get(k, "yok"), c.get(k, "yok")
+            if x == "yok" and y == "yok":
+                continue
+            if x == "yok" or y == "yok":
+                son = y if x == "yok" else x      # tek model cevap verdi
+            elif (x is None and y is None) or (x and y and _ayni_metin(x, y)):
+                son = x
+            else:
+                ayrisan.append((g, x, y))
+                continue
+            sonuc[k] = son
+        if ayrisan:
+            satir = []
+            for g, x, y in ayrisan:
+                satir.append(_kisaltma_satiri(g) + "\n    model A: %s\n    model B: %s"
+                             % (x or "emin değil", y or "emin değil"))
+            mh, vh = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_KISALTMA,
+                                    _veri_blogu("KISALTMALAR:", "\n".join(satir)), 0.1)
+            h = _kisaltma_oku(vh, [g for g, _x, _y in ayrisan]) if mh else {}
+            for g, x, y in ayrisan:
+                sonuc[g["kisaltma"]] = h.get(g["kisaltma"])   # hakem yoksa emin degil
+    if hic_cevap:
+        return None, "Kısaltma kontrolü için dil modeline ulaşılamadı."
+    oneri = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
+    cikti = {}
+    for k, anlam in sonuc.items():
+        if not anlam:
+            cikti[k] = {"anlam": "", "karar": "emin_degil"}
+        elif oneri.get(k) and _ayni_metin(anlam, oneri[k]):
+            cikti[k] = {"anlam": oneri[k], "karar": "dogru"}
+        else:
+            cikti[k] = {"anlam": anlam, "karar": "duzeltildi"}
+    return cikti, None
 
 
 def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):

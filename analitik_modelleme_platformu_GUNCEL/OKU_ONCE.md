@@ -1,6 +1,28 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Logo ve avatar büyütüldü**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **Kısaltma önerileri iyileştirildi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+
+- Temel sözlük (`kisaltma.TEMEL`): IN gelen, OUT giden, SUM toplam, DAY
+  gün, MONTH ay, HIGH yüksek, LOW düşük, BY bazında, PER başına, TOP1 en
+  büyük (1. sıradaki), H00/H06... saat dilimi, TMSNCFRST/TMSNCLST ... sabit
+  ve kesin. İki anlamlı olanlar (NO, CURR, MON, VOL) bilerek yok.
+- Çıkarım kuralı: temel kısaltmalar yarışmaz; bir anlamı en güçlü
+  kanıtla alan kısaltmadan sonrakiler ikinci adaya geçer (yoksa boş);
+  bir kısaltmanın her kolonunda birlikte geçen temel kısaltmanın anlamı
+  ona verilmez (NO_TXN_FLAG: "bayrak" FLAG'in); ekli biçim, yalın hali
+  sözlükte de geçiyorsa yalına iner (adedi -> adet).
+- Dil modeli kontrolü (`llm.kisaltma_dogrula`): liste, kısaltma başına 4
+  örnek kolonla iki modele sorulur, anlaşamazlarsa hakem. 01.2.3'te arka
+  planda başlar; 01.2.4 kartı sonucu en çok 25 sn bekler, yetişmezse
+  kural tabanlı liste ve not gelir. Emin olunamayan anlam boş kalır.
+- Dil modeline giden istemde KISALTMALAR (kesin: onaylı + temel) ve
+  KISALTMALAR (tahmini: sözlükten / dil modelinden) ayrı; tahmini anlam
+  kolon adı ve örneklerle çelişirse kullanılmaz.
+- Kart: lejantta "Sözlükten Çıkarıldı" yerine "Önerilen"; Kaynak sütunu
+  anlamın nereden geldiğini yazar (Temel sözlük / Sözlükten / Dil modeli
+  doğruladı / Dil modeli önerdi / Dil modeli emin olamadı).
+
+Önceki tur: **Logo ve avatar büyütüldü**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
 
 - Sol üst logo 59px -> 72px yükseklik (üst barın neredeyse tamamı).
 - Sohbet avatarı 34px -> 48px.
