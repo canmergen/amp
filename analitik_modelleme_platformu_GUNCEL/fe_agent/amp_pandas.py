@@ -210,6 +210,11 @@ def amp_hazirla(df, istek):
     dusen = [c for c in (istek.get("dusen") or []) if c in df.columns]
     df = df.drop(columns=dusen)
     sonuc["dusen"] = dusen
+    # Kullanicinin onayladigi kolon adlari (yalniz bu kopyada).
+    yeni_ad = {a: y for a, y in (istek.get("yeniden_ad") or {}).items() if a in df.columns}
+    if yeni_ad:
+        df = df.rename(columns=yeni_ad)
+    sonuc["yeniden_ad"] = yeni_ad
     sonuc["kolon"] = int(len(df.columns))
 
     if b:

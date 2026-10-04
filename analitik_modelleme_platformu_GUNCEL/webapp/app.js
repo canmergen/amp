@@ -6231,6 +6231,11 @@ function dogrulamaKartiEkle(alan, blok) {
        kısaltma hafızasına kaydeder. Kayıt adım akışından BAĞIMSIZ
        (kendi düğmesi, /kisaltma_kaydet). */
     if (alan.kisaltma) kisaltmaBolumuEkle(kart, alan.kisaltma, !!(blok && blok.kilit));
+    /* Kolon Adı Önerileri: açıklamada anlamı geçen ama adda olmayan
+       kısaltmalar için yeni ad (yalnız AMP kopyalarında uygulanır;
+       kendi düğmesi, /kolon_ad_kaydet). */
+    if (alan.kolon_ad && (alan.kolon_ad.satirlar || []).length)
+        kolonAdBolumuEkle(kart, alan.kolon_ad, !!(blok && blok.kilit));
 
     /* ---- 5b) Sözlükteki tanımların kontrolü ----
        Kullanıcı kararı: sözlükte tanımı OLAN kolonların tanımı da birden
@@ -6745,6 +6750,102 @@ function dogrulamaKartiEkle(alan, blok) {
         oneriYokla(String(alan.oneri_is));
     }
     yeniOdak = birincil;
+}
+
+function kolonAdBolumuEkle(kart, ka, kilitli) {
+    const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
+    const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Kolon Adı Önerileri");
+    if (ka.bilgi) kbas.appendChild(bolmeBilgiSimgesi(ka.bilgi, ka.baslik));
+    kb.appendChild(kbas);
+    kart.appendChild(kb);
+    const durumEl = elYap("div", "dg-not", "");
+    kart.appendChild(durumEl);
+    const hataEl = elYap("div", "dg-oneri-hata");
+    hataEl.hidden = true;
+    kart.appendChild(hataEl);
+    const ust = elYap("div", "dg-tablo-ust");
+    ust.appendChild(dgLejant([["dg-l-llm", "Önerilen"], ["dg-l-eklendi", "Kaydedildi / Düzenlendi"]]));
+    const toplu = elYap("div", "dg-toplu");
+    const satirlar = [];
+    [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([d, e]) => {
+        const b = elYap("button", "dg-toplu-btn", e);
+        b.type = "button"; b.disabled = kilitli;
+        b.onclick = () => satirlar.forEach(x => { x.kutu.checked = d; });
+        toplu.appendChild(b);
+    });
+    const kaydetBtn = elYap("button", "dg-toplu-btn", "Seçilen Adları Kaydet");
+    kaydetBtn.type = "button"; kaydetBtn.disabled = kilitli;
+    toplu.appendChild(kaydetBtn);
+    ust.appendChild(toplu);
+    kart.appendChild(ust);
+    const sar = elYap("div", "dg-tablo-sar");
+    const tablo = elYap("table", "dg-tablo dg-kolonad-tablo");
+    const th = document.createElement("thead"), hr = document.createElement("tr");
+    ["Mevcut Ad", "Yeni Ad", "Uygula"].forEach(h => hr.appendChild(elYap("th", "", h)));
+    th.appendChild(hr); tablo.appendChild(th);
+    const tb = document.createElement("tbody");
+    tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
+
+    function ciz(liste) {
+        tb.textContent = "";
+        satirlar.length = 0;
+        (liste || []).forEach(r => {
+            const tr = elYap("tr", "dg-satir");
+            const tdK = elYap("td", "dg-kolon", r.kolon);
+            if (r.gerekce) tdK.appendChild(bolmeBilgiSimgesi(tireSade(r.gerekce), r.kolon));
+            tr.appendChild(tdK);
+            const tdA = elYap("td", "dg-aciklama-hucre");
+            const g = document.createElement("input");
+            g.type = "text"; g.className = "dg-giris";
+            g.value = r.yeni_ad || ""; g.disabled = kilitli;
+            g.setAttribute("aria-label", r.kolon + " yeni adı");
+            tdA.appendChild(g); tr.appendChild(tdA);
+            const tdI = elYap("td", "dg-ekle-hucre");
+            const kutu = document.createElement("input");
+            kutu.type = "checkbox"; kutu.className = "dg-ekle";
+            kutu.checked = !!r.kayitli; kutu.disabled = kilitli;
+            tdI.appendChild(kutu); tr.appendChild(tdI);
+            const vurgu = () => {
+                const m = g.value.trim();
+                tr.classList.toggle("dg-llm", !r.kayitli && m === String(r.oneri || "").trim());
+                tr.classList.toggle("dg-eklendi", !!r.kayitli || (!!m && m !== String(r.oneri || "").trim()));
+            };
+            g.addEventListener("input", () => { vurgu(); if (g.value.trim()) kutu.checked = true; });
+            vurgu();
+            satirlar.push({ r, g, kutu });
+            tb.appendChild(tr);
+        });
+        const kayitli = (liste || []).filter(r => r.kayitli).length;
+        durumEl.textContent = ftBinlik((liste || []).length) + " kolon için ad önerisi; "
+            + ftBinlik(kayitli) + " tanesi kaydedildi. Kaydedilen adlar Değişken Kontrolü "
+            + "kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır.";
+    }
+    ciz(ka.satirlar);
+
+    kaydetBtn.onclick = () => {
+        kaydetBtn.disabled = true;
+        hataEl.hidden = true;
+        const govde = satirlar.map(x => ({ kolon: x.r.kolon, yeni_ad: x.g.value.trim(),
+                                           uygula: x.kutu.checked }));
+        fetch(getWebAppBackendUrl("kolon_ad_kaydet"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({ kolonlar: govde }))
+        })
+        .then(r => r.json())
+        .then(d => {
+            kaydetBtn.disabled = false;
+            if (d && d.kolon_ad) ciz(d.kolon_ad.satirlar);
+            if (!d || d.tamam !== true) {
+                hataEl.textContent = tireSade((d && d.hata) || "Kolon adları kaydedilemedi.");
+                hataEl.hidden = false;
+            }
+        })
+        .catch(e => {
+            kaydetBtn.disabled = false;
+            hataEl.textContent = "Kolon adları kaydedilemedi: " + e;
+            hataEl.hidden = false;
+        });
+    };
 }
 
 function kisaltmaBolumuEkle(kart, ka, kilitli) {

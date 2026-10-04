@@ -2650,6 +2650,28 @@ def degisken_excel_endpoint():
     })
 
 
+@app.route("/kolon_ad_kaydet", methods=["POST"])
+def kolon_ad_kaydet_endpoint():
+    """Kolon Adi Onerileri: uygulanacak yeni adlar durumda saklanir;
+    AMP_VERISETI / AMP_SOZLUK Degisken Kontrolu kaydedilince bu adlarla
+    yazilir. Girdi veri setine ve sozluge dokunulmaz."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        alan, hata = akis.kolon_ad_kaydet(durum, istek.get("kolonlar"))
+        for kayit in reversed(durum.get("_gecmis") or []):
+            ekran = kayit.get("ekran") if isinstance(kayit, dict) else None
+            secim = ekran.get("secim_alani") if isinstance(ekran, dict) else None
+            if isinstance(secim, dict) and secim.get("kolon_ad") is not None:
+                secim["kolon_ad"] = alan
+                break
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": not hata, "hata": hata or "", "kolon_ad": alan})
+    except Exception as e:
+        return jsonify(_hata_govdesi("kolon_ad_kaydet", e)), 200
+
+
 @app.route("/kisaltma_excel")
 def kisaltma_excel_endpoint():
     """Kisaltma onerilerini ornekleriyle .xlsx olarak indirir (ayni dosya

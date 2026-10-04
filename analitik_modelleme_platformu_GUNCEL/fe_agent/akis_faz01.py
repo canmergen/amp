@@ -9,6 +9,7 @@ import json
 import re
 import threading
 import uuid
+from collections import Counter
 from concurrent import futures
 import numpy as np
 import pandas as pd
@@ -1459,10 +1460,115 @@ def _kisaltma_alani(durum, bekle=0.0):
     satirlar, dm = kisaltma_mod.kart_satirlari(_kisaltma_kaynagi(durum), bekle,
                                                durum.get("veri_seti") or "")
     notu = {"calisiyor": "Dil modeli kontrolü sürüyor; liste şimdilik kural "
-                         "tabanlı. Adıma yeniden girildiğinde güncellenir.",
+                         "tabanlı. Sayfa yenilenince güncellenir.",
             "hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
+    if dm == "hata":
+        try:
+            sebep = kisaltma_mod.dogrulama_bilgisi(_kisaltma_kaynagi(durum),
+                                                   durum.get("veri_seti") or "").get("hata")
+            if sebep:
+                notu += " Sebep: %s" % sebep
+        except Exception:
+            pass
     return {"baslik": KISALTMA_BASLIK, "bilgi": KISALTMA_BILGI,
             "satirlar": satirlar, "not": notu}
+
+
+KOLON_AD_BASLIK = "Kolon Adı Önerileri"
+KOLON_AD_BILGI = (
+    "Açıklamasında bir kısaltmanın anlamı geçen ama adında o kısaltma "
+    "bulunmayan kolonlar (ör. açıklama 'farklı banka adedi', adda DISTINCT "
+    "yok). Önerilen ad, kısaltmayı açıklamadaki sıraya göre ekler; "
+    "değiştirebilirsiniz.\n\n"
+    "Uygulanan adlar YALNIZ platformun kopyalarında geçerli olur: "
+    "AMP_VERISETI ve AMP_SOZLUK (Değişken Kontrolü kaydedilince). Girdi veri "
+    "setiniz ve sözlüğünüz değişmez; eski ad -> yeni ad eşlemesi çalışma "
+    "klasörüne KOLON_AD_ESLEME olarak yazılır. Hedef, kimlik, dönem ve "
+    "segment kolonları yeniden adlandırılmaz.")
+_AD_KALIP = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+
+
+def _korunan_kolonlar(durum):
+    return {str(v) for v in (durum.get("meta") or {}).values() if v}
+
+
+def _kolon_ad_alani(durum):
+    """01.2.4 kartinda kolon adi onerileri: tutarsizliklardan (adda_yok)
+    + daha once kaydedilmis adlar."""
+    try:
+        kaynak = _kisaltma_kaynagi(durum)
+        tut = kisaltma_mod.tutarsizliklar(kaynak)
+    except Exception:
+        kaynak, tut = {}, {}
+    kayitli = dict(durum.get("kolon_yeni_ad") or {})
+    korunan = _korunan_kolonlar(durum)
+    satirlar = []
+    for ad in sorted(set(tut) | set(kayitli)):
+        if ad in korunan:
+            continue
+        oneri = ""
+        gerekce = []
+        for t in tut.get(ad, []):
+            if t["tur"] != "adda_yok":
+                continue
+            # Birden cok eksik kisaltma: oneriler sirayla birlestirilir.
+            oneri = kisaltma_mod._yeni_ad_oner(oneri, t["kisaltma"], t["anlam"],
+                                               str(kaynak.get(ad) or ""),
+                                               {}) if oneri else t["yeni_ad"]
+            gerekce.append(t["gerekce"])
+        if not oneri and ad not in kayitli:
+            continue
+        satirlar.append({"kolon": ad, "oneri": oneri, "yeni_ad": kayitli.get(ad) or oneri,
+                         "kayitli": ad in kayitli, "gerekce": " ".join(gerekce)})
+    return {"baslik": KOLON_AD_BASLIK, "bilgi": KOLON_AD_BILGI, "satirlar": satirlar}
+
+
+def kolon_ad_kaydet(durum, satirlar):
+    """Kart: uygulanacak kolon adlarini durum["kolon_yeni_ad"]'a yazar.
+    satirlar: [{"kolon", "yeni_ad", "uygula"}]. Doner: (alan, hata).
+    Kurallar: harfle baslar, yalniz harf/rakam/_; mevcut baska bir kolonun
+    adi olamaz; iki kolon ayni yeni adi alamaz; rol kolonlari ve surec
+    disi kolonlar adlandirilmaz."""
+    korunan = _korunan_kolonlar(durum)
+    try:
+        mevcut = set(str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or []))
+    except Exception:
+        mevcut = set()
+    haric = set(map(str, durum.get("haric_kolonlar") or []))
+    esleme = dict(durum.get("kolon_yeni_ad") or {})
+    hatalar = []
+    for s_ in satirlar or []:
+        if not isinstance(s_, dict):
+            continue
+        ad = str(s_.get("kolon") or "").strip()
+        yeni = str(s_.get("yeni_ad") or "").strip()
+        if not ad:
+            continue
+        if not s_.get("uygula") or not yeni or yeni == ad:
+            esleme.pop(ad, None)
+            continue
+        if ad in korunan:
+            hatalar.append("%s: hedef / kimlik / dönem / segment kolonu yeniden adlandırılmaz." % ad)
+        elif ad in haric:
+            hatalar.append("%s: süreç dışı kolon; yeniden adlandırılmaz." % ad)
+        elif not _AD_KALIP.match(yeni):
+            hatalar.append("%s: '%s' geçersiz (harfle başlamalı; yalnız harf, rakam, _)." % (ad, yeni))
+        elif yeni in mevcut and yeni != ad:
+            hatalar.append("%s: '%s' veri setinde zaten başka bir kolonun adı." % (ad, yeni))
+        else:
+            esleme[ad] = yeni
+    # Ayni yeni adi alan iki kolon.
+    sayim = Counter(esleme.values())
+    for ad, yeni in list(esleme.items()):
+        if sayim[yeni] > 1:
+            hatalar.append("%s: '%s' adını birden fazla kolon alıyor." % (ad, yeni))
+            esleme.pop(ad)
+    durum["kolon_yeni_ad"] = esleme
+    alan = _kolon_ad_alani(durum)
+    secim = durum.get("_secim_alani")
+    if isinstance(secim, dict) and "kolon_ad" in secim:
+        secim["kolon_ad"] = alan
+    return alan, ("\n".join(hatalar) or None)
 
 
 KISALTMA_EXCEL_ADI = "kisaltma_onerileri.xlsx"
@@ -1473,10 +1579,19 @@ def kisaltma_excel(durum):
     klasorune de yazilir: PROJE_HAFIZASI/<calisma>/KISALTMA_ONERILERI.xlsx.
     Girdi veri setine ve sozluge yazilmaz.
     Doner: (bayt, klasordeki_yol ya da None)."""
-    satirlar = kisaltma_mod.rapor_satirlari(_kisaltma_kaynagi(durum),
-                                            durum.get("veri_seti") or "")
-    veri = xlsx_yaz.tablo_xlsx(kisaltma_mod.RAPOR_KOLONLARI, satirlar,
-                               sayfa_adi="Kısaltmalar")
+    kaynak = _kisaltma_kaynagi(durum)
+    satirlar = kisaltma_mod.rapor_satirlari(kaynak, durum.get("veri_seti") or "")
+    # IKINCI SAYFA: aciklama ile kolon adi arasindaki tutarsizliklar.
+    tut = []
+    for ad, liste in sorted(kisaltma_mod.tutarsizliklar(kaynak).items()):
+        for t in liste:
+            tut.append([ad, str(kaynak.get(ad) or "")[:300],
+                        "Adda Yok" if t["tur"] == "adda_yok" else "Açıklamada Yok",
+                        t["kisaltma"], t["anlam"], t["gerekce"], t["yeni_ad"] or None, None])
+    veri = xlsx_yaz.sayfalar_xlsx([
+        ("Kısaltmalar", kisaltma_mod.RAPOR_KOLONLARI, satirlar),
+        ("Tutarsızlıklar", ["Kolon", "Açıklama", "Tür", "Kısaltma", "Anlam",
+                            "Gerekçe", "Önerilen Yeni Ad", "Karar"], tut)])
     yol = "/%s/KISALTMA_ONERILERI.xlsx" % amp_klasor_adi(durum)
     try:
         from fe_agent.akis_durum import _folder as _klasor
@@ -1497,6 +1612,7 @@ def kisaltma_alani_tazele(durum):
         return False
     try:
         secim["kisaltma"] = _kisaltma_alani(durum, 0.0)
+        secim["kolon_ad"] = _kolon_ad_alani(durum)
         return True
     except Exception:
         return False
@@ -2554,6 +2670,7 @@ def _kontrol_karti(durum, adlar, hata, basladi):
         "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
         "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
         "kisaltma": _kisaltma_alani(durum, kisaltma_mod.DM_BEKLE_SN),
+        "kolon_ad": _kolon_ad_alani(durum),
         "buton_kalip": dict(KONTROL_DUGME),
         "oneri_is": (durum.get("_kontrol_is") or "") if basladi else "",
         "oneri_toplam": 0,
@@ -3830,12 +3947,44 @@ def amp_ciktilarini_yaz(durum):
     oz = amp_mod.amp_yaz(durum, _profil(durum))
     onbellek_temizle()
     sonuc["veri"] = _amp_veri_kaydi(oz)
+    _yeniden_ad_isle(durum, oz.get("yeniden_ad") or {})
     # Tablo _SPLIT'siz yeniden yazildi: onceki bolme artik gecersiz.
     b = durum.get("bolme") or {}
     for k in BOLME_KALICI_ALANLARI:
         b.pop(k, None)
     durum["bolme"] = b
     return _amp_sozluk_ve_kayit(durum, sonuc)
+
+
+def _yeniden_ad_isle(durum, esleme):
+    """AMP_VERISETI'nde uygulanan kolon adlari: durumda saklanir, sag
+    paneldeki kolon ozeti yeni adlara cevrilir (eski ad korunur) ve
+    esleme calisma klasorune yazilir (KOLON_AD_ESLEME.parquet)."""
+    durum["_amp_yeniden_ad"] = dict(esleme or {})
+    p = durum.get("profil") or {}
+    for satir in p.get("kolon_ozet") or []:
+        ad = satir.get("eski_ad") or satir.get("ad")
+        if ad in esleme:
+            satir["eski_ad"] = ad
+            satir["ad"] = esleme[ad]
+    if not esleme:
+        return
+    try:
+        tablo = pd.DataFrame([{"ESKI_AD": a, "YENI_AD": y} for a, y in sorted(esleme.items())])
+        from fe_agent.akis_durum import _folder as _klasor
+        from fe_agent import tablo_io
+        tablo_io.klasore_yaz(_klasor(), "/%s/KOLON_AD_ESLEME.parquet" % amp_klasor_adi(durum),
+                             tablo)
+    except Exception:
+        pass
+
+
+def _yeniden_ad_geri_al(durum):
+    """AMP silinince kolon ozeti kaynak tablonun adlarina doner."""
+    for satir in (durum.get("profil") or {}).get("kolon_ozet") or []:
+        if satir.get("eski_ad"):
+            satir["ad"] = satir.pop("eski_ad")
+    durum.pop("_amp_yeniden_ad", None)
 
 
 def _amp_veri_kaydi(oz):
@@ -3854,7 +4003,16 @@ def _amp_sozluk_ve_kayit(durum, sonuc):
     okuma da yazma da (sag paneldeki tanim / kategori duzenlemeleri) bu
     dosyaya gider (bkz. sozluk_calisma.kopya_yolu). Kategori de tasinir."""
     try:
-        _kolonlar, satirlar, _yuzde = _excel_satirlari(durum, True)
+        # AMP_SOZLUK ALTI ALANLA DOGRUDAN teyit satirlarindan (HATA DUZELTMESI:
+        # Degisken Kontrolu Excel'i dort kolona indirilince burada kullanilan
+        # _excel_satirlari da dort kolon donmeye basladi ve AMP_SOZLUK
+        # "6 columns passed, passed data had 4 columns" hatasiyla HIC
+        # yazilamiyordu).
+        t_satirlar, _d = teyit_satirlari(durum)
+        satirlar = [[r_["kolon"], r_["tip"],
+                     _DISI_METNI[bool(r_.get("kaynak_tip") and r_.get("tip") != r_.get("kaynak_tip"))],
+                     r_["tanim"], r_.get("null_oran"), _DISI_METNI[bool(r_.get("disi"))]]
+                    for r_ in t_satirlar]
         tablo = pd.DataFrame(satirlar, columns=list(AMP_SOZLUK_KOLONLARI[:6]))
         from fe_agent import akis_panel
         harita, _kat, _adet, _kopya = akis_panel._sozluk_kayitlari(durum)
@@ -3862,6 +4020,11 @@ def _amp_sozluk_ve_kayit(durum, sonuc):
             ("" if (harita.get(str(k)) or (None, ""))[1] == sozluk_calisma.KATEGORISIZ
              else (harita.get(str(k)) or (None, ""))[1]) for k in tablo["DEGISKEN"]]
         tablo = tablo[list(AMP_SOZLUK_KOLONLARI)]
+        # KOLON YENIDEN ADLANDIRMA: AMP_SOZLUK, AMP_VERISETI'yle ayni adlari
+        # tasir (kategori eski adla bulunduktan SONRA).
+        esleme = durum.get("_amp_yeniden_ad") or {}
+        if esleme:
+            tablo["DEGISKEN"] = [esleme.get(str(k), k) for k in tablo["DEGISKEN"]]
     except Exception as e:
         sonuc["sozluk"] = {"ad": AMP_SOZLUK_ADI, "dataset": None,
                            "dosya": None, "hata": str(e)[:120]}
@@ -3902,6 +4065,7 @@ def amp_gecersiz_kil(durum):
     kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
     if not durum.get("amp_cikti"):
         return ""
+    _yeniden_ad_geri_al(durum)
     # Dosyalar: pandas yolunda AMP_VERISETI klasorde; AMP_SOZLUK her zaman.
     if kayit.get("dosya"):
         try:

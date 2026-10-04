@@ -385,6 +385,11 @@ def amp_hazirla(spark, df, istek):
     dusen = [c for c in (istek.get("dusen") or []) if c in df.columns]
     df = df.drop(*dusen)
     sonuc["dusen"] = dusen
+    # Kullanicinin onayladigi kolon adlari (yalniz bu kopyada).
+    yeni_ad = {a: y for a, y in (istek.get("yeniden_ad") or {}).items() if a in df.columns}
+    for a, y in yeni_ad.items():
+        df = df.withColumnRenamed(a, y)
+    sonuc["yeniden_ad"] = yeni_ad
     sonuc["kolon"] = len(df.columns)
 
     if b:

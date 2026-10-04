@@ -266,3 +266,46 @@ def tablo_xlsx(kolonlar, satirlar, sayfa_adi="Sayfa1", yuzde_sutunlari=()):
         z.writestr("xl/worksheets/sheet1.xml",
                    _sayfa(kolonlar, satirlar, yuzde))
     return tampon.getvalue()
+
+
+def sayfalar_xlsx(sayfalar):
+    """Cok sayfali .xlsx. sayfalar: [(sayfa_adi, kolonlar, satirlar)].
+    Her sayfa tablo_xlsx'teki gibi (sabit baslik, suzgec, genislik)."""
+    sayfalar = [(s[0], list(s[1] or []), [list(r) for r in (s[2] or [])])
+                for s in (sayfalar or [])] or [("Sayfa1", [], [])]
+    n = len(sayfalar)
+    turler = ICERIK_TURLERI.replace(
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/'
+        'vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>',
+        "".join('<Override PartName="/xl/worksheets/sheet%d.xml" ContentType="application/'
+                'vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' % (i + 1)
+                for i in range(n)))
+    kitap = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<workbook xmlns="http://schemas.openxmlformats.org/'
+        'spreadsheetml/2006/main"'
+        ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/'
+        'relationships"><sheets>'
+        + "".join('<sheet name="%s" sheetId="%d" r:id="rId%d"/>'
+                  % (_sayfa_adi(s[0]), i + 1, i + 1) for i, s in enumerate(sayfalar))
+        + '</sheets></workbook>')
+    iliski = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
+        'relationships">'
+        + "".join('<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/'
+                  'officeDocument/2006/relationships/worksheet"'
+                  ' Target="worksheets/sheet%d.xml"/>' % (i + 1, i + 1) for i in range(n))
+        + '<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/'
+          'officeDocument/2006/relationships/styles" Target="styles.xml"/>' % (n + 1)
+        + '</Relationships>')
+    tampon = io.BytesIO()
+    with zipfile.ZipFile(tampon, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", turler)
+        z.writestr("_rels/.rels", KOK_ILISKI)
+        z.writestr("xl/workbook.xml", kitap)
+        z.writestr("xl/_rels/workbook.xml.rels", iliski)
+        z.writestr("xl/styles.xml", STILLER)
+        for i, (_ad, kolonlar, satirlar) in enumerate(sayfalar):
+            z.writestr("xl/worksheets/sheet%d.xml" % (i + 1), _sayfa(kolonlar, satirlar, set()))
+    return tampon.getvalue()

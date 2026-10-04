@@ -1209,7 +1209,10 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "KISALTMA", "karar": "dogru|duzelt|emin_degil",
   "anlam": "..."}]}""" + SINIRLAYICI_KURALI
 
-KISALTMA_PARCA = 25
+# Parca basina kisaltma: 25'te istem uzun oluyordu (8 ornek x tanim) ve
+# 90 sn zaman asimina takilma riski vardi; parcalar AYNI ANDA calisir.
+KISALTMA_PARCA = 12
+_KISALTMA_HAVUZ = futures.ThreadPoolExecutor(max_workers=3)
 
 
 def _kisaltma_satiri(g):
@@ -1224,8 +1227,8 @@ def _kisaltma_satiri(g):
     if g.get("bilinen"):
         s += "\n    diger kisaltmalar: " + ", ".join(
             "%s=%s" % kv for kv in sorted(g["bilinen"].items()))
-    for ad, t in g.get("ornekler") or []:
-        s += "\n    %s: %s" % (ad, t)
+    for ad, t in (g.get("ornekler") or [])[:6]:
+        s += "\n    %s: %s" % (ad, str(t)[:120])
     return s
 
 
@@ -1266,17 +1269,16 @@ def kisaltma_dogrula(girdi, orkestra=None):
     if not girdi:
         return {}, None
     ork = orkestra or Orkestra()
-    sonuc = {}
-    hic_cevap = True
-    for b in range(0, len(girdi), KISALTMA_PARCA):
-        blok = girdi[b:b + KISALTMA_PARCA]
+
+    def parca_(blok):
+        """Bir parca: (sonuc, cevap_geldi_mi)."""
+        sonuc_ = {}
         govde = _veri_blogu("KISALTMALAR:", "\n".join(_kisaltma_satiri(g) for g in blok))
         m1, v1 = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA, govde, 0.1)
         m2, v2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KISALTMA, govde, 0.1,
                                 haric=(m1,) if m1 else ())
         if not m1 and not m2:
-            continue
-        hic_cevap = False
+            return sonuc_, False
         a = _kisaltma_oku(v1, blok) if m1 else {}
         c = _kisaltma_oku(v2, blok) if m2 else {}
         ayrisan = []
@@ -1292,7 +1294,7 @@ def kisaltma_dogrula(girdi, orkestra=None):
             else:
                 ayrisan.append((g, x, y))
                 continue
-            sonuc[k] = son
+            sonuc_[k] = son
         if ayrisan:
             satir = []
             for g, x, y in ayrisan:
@@ -1302,7 +1304,21 @@ def kisaltma_dogrula(girdi, orkestra=None):
                                     _veri_blogu("KISALTMALAR:", "\n".join(satir)), 0.1)
             h = _kisaltma_oku(vh, [g for g, _x, _y in ayrisan]) if mh else {}
             for g, x, y in ayrisan:
-                sonuc[g["kisaltma"]] = h.get(g["kisaltma"])   # hakem yoksa emin degil
+                sonuc_[g["kisaltma"]] = h.get(g["kisaltma"])   # hakem yoksa emin degil
+        return sonuc_, True
+
+    bloklar = [girdi[b:b + KISALTMA_PARCA] for b in range(0, len(girdi), KISALTMA_PARCA)]
+    sonuc, hic_cevap, dusen = {}, True, 0
+    for f in [_KISALTMA_HAVUZ.submit(parca_, b) for b in bloklar]:
+        try:
+            s_, geldi = f.result()
+        except Exception:
+            s_, geldi = {}, False
+        if geldi:
+            hic_cevap = False
+            sonuc.update(s_)
+        else:
+            dusen += 1
     if hic_cevap:
         return None, "Kısaltma kontrolü için dil modeline ulaşılamadı."
     oneri = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
@@ -1314,7 +1330,9 @@ def kisaltma_dogrula(girdi, orkestra=None):
             cikti[k] = {"anlam": oneri[k], "karar": "dogru"}
         else:
             cikti[k] = {"anlam": anlam, "karar": "duzeltildi"}
-    return cikti, None
+    return cikti, (None if not dusen else
+                   "%d parçadan %d tanesi için dil modeli cevap vermedi."
+                   % (len(bloklar), dusen))
 
 
 def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):

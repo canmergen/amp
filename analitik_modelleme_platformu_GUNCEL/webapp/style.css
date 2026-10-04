@@ -3026,6 +3026,13 @@ span.bolme-cip { cursor: default; }
 .dg-kisaltma-tablo th:nth-child(4) { width: 80px; white-space: normal; }
 .dg-kisaltma-tablo td.dg-kisaltma-ad .bolme-info { margin-left: 4px; vertical-align: middle; }
 .dg-kisaltma-tablo td.dg-ekle-hucre { text-align: center; }
+/* Kolon Adı Önerileri: Mevcut Ad | Yeni Ad | Uygula */
+.dg-kolonad-tablo th:nth-child(1) { width: 42%; }
+.dg-kolonad-tablo th:nth-child(2) { width: auto; }
+.dg-kolonad-tablo th:nth-child(3) { width: 70px; }
+.dg-kolonad-tablo td.dg-ekle-hucre { text-align: center; }
+.dg-kolonad-tablo td.dg-kolon { white-space: normal; overflow-wrap: anywhere; }
+.dg-kolonad-tablo td.dg-kolon .bolme-info { margin-left: 4px; vertical-align: middle; }
 .dg-kisaltma-tablo .dg-tip { white-space: normal; }
 .dg-kontrol-bas .dg-tablo-baslik { display: flex; align-items: center; gap: var(--b-1); }
 .dg-kontrol-tablo th:nth-child(1) { width: 24%; }

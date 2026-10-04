@@ -1,6 +1,49 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma önerileri örnekleriyle Excel**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma düzeltmeleri + açıklama/kolon adı tutarsızlıkları + kolon yeniden adlandırma**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/amp.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `fe_agent/xlsx_yaz.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+
+1) Kısaltma çıkarımı
+- Atama artık BÜTÜN adaylar üzerinden en güçlüden zayıfa (SUM'un zayıf
+  "karşı" adayı CP'nin "karşı taraf"ından önce atanıyordu).
+- İki kelimelik ifade, başka bir kısaltmanın en güçlü tek kelime adayını
+  içeriyorsa seçilmez (HIGH -> yüksek, BNK -> banka, NO -> yok, BY ->
+  bazında, ACTIVE -> aktif).
+- Harfleri sırayla tutan güçlü aday öne geçer (BNK-banka, ADT-adet).
+- İki harfli kelimeler aday ("ay", "en çok"); "arası" anlam sayılmaz.
+- Yalın hâl: karşı, arası, sonu, altı, üstü ... kesilmez (SUM "karş").
+- Dil modeli kontrolü: parça 12 kısaltma, parçalar aynı anda; örnek 6,
+  açıklama 120 karakter (zaman aşımı riski azaldı). Hata sebebi kartta.
+
+2) Tutarsızlık raporu (`kisaltma.tutarsizliklar`, kod tarafında)
+- Adda Yok: açıklamada bir kısaltmanın anlamı geçiyor, adda o kısaltma da
+  aynı anlamı veren başka kısaltma da yok (ör. "farklı banka adedi",
+  adda DISTINCT yok -> TXN_GDN_3D_DISTINCT_BNK_ADT önerilir). PER_DAY
+  "günlük ortalama" işaretlenmez (PER "ortalama" der). Genel kelimeler
+  (tanımların %30'undan fazlası) ve adda aynen geçen parçanın yanındaki
+  kelimeler (HHI "yoğunlaşması hhi") sayılmaz.
+- Açıklamada Yok: adda kısaltma var, açıklamada anlamı yok.
+- 01.2.4 kontrolüne düzeltme önerisi olarak, Excel'e ikinci sayfa
+  ("Tutarsızlıklar") olarak gelir.
+
+3) Kolon yeniden adlandırma
+- 01.2.4 kartında "Kolon Adı Önerileri" tablosu: Mevcut Ad | Yeni Ad
+  (düzenlenebilir) | Uygula; "Seçilen Adları Kaydet" (`/kolon_ad_kaydet`).
+  Kurallar: harfle başlar, yalnız harf/rakam/_; mevcut kolon adı ve iki
+  kolona aynı ad olamaz; hedef/kimlik/dönem/segment ve süreç dışı
+  kolonlar adlandırılmaz.
+- Değişken Kontrolü kaydedilince yalnız platform kopyalarında uygulanır:
+  AMP_VERISETI (pandas ve Spark) ve AMP_SOZLUK; eşleme
+  PROJE_HAFIZASI/<çalışma>/KOLON_AD_ESLEME.parquet. Girdi veri seti ve
+  sözlük değişmez. Sağ panel kolon özeti yeni adları gösterir; AMP
+  silinince (teyit öncesine dönüş) eski adlara döner.
+
+HATA DÜZELTMESİ (mevcut): AMP_SOZLUK hiç yazılamıyordu ("6 columns
+passed, passed data had 4 columns"): Değişken Kontrolü Excel'i dört
+kolona indirilince AMP_SOZLUK'u besleyen satırlar da dörde inmişti.
+AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
+(TIP_DEGISIKLIGI: tip dönüşümü seçildiyse evet).
+
+Önceki tur: **Kısaltma önerileri örnekleriyle Excel**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
 - Kısaltma Sözlüğü kartında "Örnekleriyle Excel Olarak İndir" düğmesi
   (`/kisaltma_excel`). Aynı dosya çalışma klasörüne de yazılır:

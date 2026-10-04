@@ -67,7 +67,8 @@ _PENCERE = re.compile(r"^\d+[DAMYH]?$", re.I)     # 180D, 3A, 12, 6M
 # Anlam tasimayan baglaclar. "gun", "ay" artik DURAK DEGIL: DAY / MONTH
 # gibi kisaltmalarin anlami olabilirler; pencereli tanimlarin hepsinde
 # gectikleri icin ayirt olcusu onlari zaten eler.
-_DURAK = {"ve", "ile", "icin", "olan", "bir", "bu", "da", "de", "gore", "son"}
+_DURAK = {"ve", "ile", "icin", "olan", "bir", "bu", "da", "de", "gore", "son",
+          "ki", "mi", "ya", "ne", "o", "arasi"}
 
 ONBELLEK_OMRU_SN = 30.0
 _ONBELLEK = {"zaman": 0.0, "df": None}
@@ -103,8 +104,10 @@ def parcalar(ad):
 
 def _tanim_kokleri(tanim):
     """Tanimdan {kok: yuzey bicimi} (tekli) ve iki kelimelik ifadeler."""
+    # IKI HARFLI kelimeler de aday ("ay" -> MONTH, "en" -> "en cok"); anlam
+    # tasimayan iki harfliler _DURAK'ta.
     kelimeler = [k for k in re.findall(r"[A-Za-zÇĞİÖŞÜçğıöşü]+", str(tanim or ""))
-                 if len(k) >= 3]
+                 if len(k) >= 2]
     tekli, ikili = {}, {}
     onceki = None
     for k in kelimeler:
@@ -188,7 +191,7 @@ def _yasakli(kelimeler, yasak):
 
 
 def _anlam_kelimeleri(anlam):
-    return set(_sade(k) for k in str(anlam or "").split() if len(k) >= 3)
+    return set(_sade(k) for k in str(anlam or "").split() if len(k) >= 2)
 
 
 def adaylar(tanimlar):
@@ -252,53 +255,100 @@ def adaylar(tanimlar):
             anlam = yalin_anlam(anlam)
             ayirt, destek = puan[anahtar]
             adaylar_.append({"anlam": anlam, "destek": round(destek, 3),
-                             "ayirt": round(ayirt, 3)})
-        cikti[parca] = {"kolon": int(adet), "adaylar": adaylar_}
+                             "ayirt": round(ayirt, 3), "anahtar": anahtar})
+        cikti[parca] = {"kolon": int(adet), "adaylar": adaylar_,
+                        "tekli": {k: v[0] for k, v in tekli.items()}}
     return cikti
+
+
+def _harf_guclu(parca, a):
+    """Kisaltmanin harfleri anlamda SIRAYLA geciyor ve anlam guclu
+    (destek >= %90) mu: GLN-gelen, BNK-banka, ADT-adet, HS-hafta sonu."""
+    return int(a["destek"] >= 0.9 and _harf_uyumu(parca, _sade(a["anlam"]).replace(" ", "")))
 
 
 def cikar(tanimlar, aday=None):
     """{kolon: tanim} -> {KISALTMA: {"anlam", "kolon", "destek", "ayirt"}}.
 
-    Atama en guclu kanittan baslar; bir parca, birlikte gectigi parcaya
-    verilmis ya da onayli anlami alamaz (siradaki adaya gecer, aday
-    kalmazsa parca listede yer almaz)."""
+    ATAMA BUTUN ADAYLAR UZERINDEN, en guclu kanittan zayifa (kullanici
+    Excel'i: SUM'un zayif "karsi" adayi, CP'nin guclu "karsi taraf"indan
+    once ataniyordu, cunku sira kisaltma bazindaydi). Sira: harfleri
+    sirayla tutan guclu aday > ayirt (0.05'lik basamak) > ayni kisaltmada
+    once gelen (iki kelimelik ifade tek kelimeden once) > kolon sayisi.
+    Bir parca, birlikte gectigi parcaya verilmis ya da onayli anlami
+    alamaz; aday kalmazsa listede yer almaz."""
     aday = adaylar(tanimlar) if aday is None else aday
     if not aday:
         return {}
     satirlar, parca_say, _g, _y, _s, _a = _parca_istatistigi(tanimlar)
     onay = onaylilar()
     atanan = {k: v for k, v in onay.items()}       # parca -> anlam
-    sonuc = {}
-    sira = sorted(aday, key=lambda p: (-aday[p]["adaylar"][0]["ayirt"],
-                                       -_harf_uyumu(p, _sade(aday[p]["adaylar"][0]["anlam"])),
-                                       -aday[p]["kolon"], p))
-    for parca in sira:
+    birlikte = {}
+    ciftler = []
+    for parca, v in aday.items():
         if parca in onay:
             continue
+        for sira_, a in enumerate(v["adaylar"]):
+            ciftler.append((-_harf_guclu(parca, a), -int(round(a["ayirt"] / 0.05)),
+                            sira_, -v["kolon"], parca, a))
+    ciftler.sort(key=lambda c: c[:5])
+    sonuc, dusen = {}, set()
+    for _h, _ay, _sr, _k, parca, a in ciftler:
+        if parca in sonuc or parca in dusen:
+            continue
+        if parca not in birlikte:
+            birlikte[parca] = _birlikte(satirlar, parca, parca_say)
         yasak = set()
-        for q in _birlikte(satirlar, parca, parca_say):
+        for q in birlikte[parca]:
             if q in atanan:
                 yasak |= _anlam_kelimeleri(atanan[q])
-        for a in aday[parca]["adaylar"]:
-            if _yasakli(a["anlam"].split(" "), yasak):
-                continue
-            # Kendini anlatan parca (BAHIS -> bahis, "bahis sirketlerine")
-            # listeyi kalabaliklastirir.
-            if parca.lower() in _sade(a["anlam"]).split(" ") \
-                    or _sade(a["anlam"]).replace(" ", "") == parca.lower():
-                break
-            sonuc[parca] = {"anlam": a["anlam"], "kolon": aday[parca]["kolon"],
-                            "destek": a["destek"], "ayirt": a["ayirt"]}
-            atanan[parca] = a["anlam"]
-            break
+        if _yasakli(a["anlam"].split(" "), yasak):
+            continue
+        # IKI KELIMELIK IFADE baska bir kisaltmanin EN GUCLU tek kelime
+        # adayini icerirse secilmez (HIGH "yuksek yogunlasma": yogunlasma
+        # CONC'un; BNK "farkli banka": farkli DISTINCT'in).
+        if " " in a.get("anahtar", "") and _baskasinin(a["anahtar"], parca, aday):
+            continue
+        # Kendini anlatan parca (BAHIS -> bahis, "bahis sirketlerine")
+        # listeyi kalabaliklastirir: parca duser.
+        if parca.lower() in _sade(a["anlam"]).split(" ") \
+                or _sade(a["anlam"]).replace(" ", "") == parca.lower():
+            dusen.add(parca)
+            continue
+        sonuc[parca] = {"anlam": a["anlam"], "kolon": aday[parca]["kolon"],
+                        "destek": a["destek"], "ayirt": a["ayirt"]}
+        atanan[parca] = a["anlam"]
     return sonuc
+
+
+def _baskasinin(anahtar, parca, aday, pay=0.05):
+    """Ifadenin bir kelimesi, baska bir parcanin en guclu TEK kelime
+    adayi mi (o parcanin o kelimedeki ayirt'i bu parcanınkinden zayif
+    degilse)."""
+    benim = aday[parca].get("tekli") or {}
+    for k in anahtar.split(" "):
+        for q, a in aday.items():
+            if q == parca:
+                continue
+            tekli = a.get("tekli") or {}
+            if not tekli:
+                continue
+            # Esit guclu ilk adaylarin HEPSI (CP: "karsi" ve "taraf" ayni
+            # ayirt'ta; yalniz birine bakmak digerini sahipsiz birakiyordu).
+            tepe = max(tekli.values())
+            if k in tekli and tekli[k] >= tepe - 0.01 \
+                    and tekli[k] >= benim.get(k, 0) - pay:
+                return True
+    return False
 
 
 _YUMUSAK = {"d": "t", "ğ": "k", "b": "p", "c": "ç", "g": "k"}
 _UNLU = set("aeıioöuü")
 # Sonu i/ı/u/ü ile biten ama EK OLMAYAN kelimeler (kesilmez).
-_YALIN_ISTISNA = {"kredi", "bilgi", "yeni", "eski", "ilgili", "ikili", "mali",
+# karsi, arasi, sonu ...: yalin halleri ayri birer kelime; kesilince "kars"
+# gibi anlamsiz kok kaliyordu (kullanici Excel'inde SUM "kars").
+_YALIN_ISTISNA = {"karşı", "arası", "sonu", "altı", "üstü", "önü", "içi", "dışı",
+                  "yanı", "başı", "ortası", "kredi", "bilgi", "yeni", "eski", "ilgili", "ikili", "mali",
                   "resmi", "nakdi", "gayri", "tekli", "ilk", "fiili", "hissi",
                   "ölçü", "süreli", "güncel", "ortalama", "sayı"}
 # Bu eklerle biten kelime sifattir ya da yapim ekidir; kesilmez.
@@ -581,42 +631,144 @@ def _anlami_tasir(tanim, anlam):
     return True
 
 
-def celiskiler(tanimlar, anlamlar=None):
-    """Ogrenilen kisaltma anlamiyla CELISEN tanimlar.
+GENEL_PAY = 0.30   # tanimlarin bundan fazlasinda gecen kelime genel sayilir (islem, son)
 
-    Bir kisaltmanin anlami, o kisaltmanin gectigi tanimli kolonlarin en az
-    CELISKI_PAY kadarinda geciyorsa bu bir sozluk kalibidir; kalibi
-    tasimayan tanim isaretlenir. anlamlar verilmezse onayli + ogrenilen
-    (oneriler) kullanilir.
-    Doner: {kolon: [gerekce, ...]}"""
+
+def _kelime_tokenlari(tanim):
+    return [_sade(k) for k in re.findall(r"[A-Za-zÇĞİÖŞÜçğıöşü]+", str(tanim or ""))]
+
+
+def _kelime_eslesir(k, a):
+    """Tanim kelimesi k, anlam kelimesi a ile eslesir mi (ek payi ile)."""
+    a = _sade(a)
+    kok = a[:max(2, len(a) - 1)] if len(a) > 3 else a
+    return k.startswith(kok)
+
+
+def _yeni_ad_oner(ad, kisa, anlam, tanim, anlamlar):
+    """Kolon adina kisa'yi ekleyen ad onerisi: anlamin tanimda hemen
+    ARDINDAN gelen ve adda karsiligi olan kisaltmanin ONUNE eklenir
+    ("farkli banka adedi" + DISTINCT -> ..._DISTINCT_BNK_ADT). Bulunamazsa
+    sona eklenir."""
+    tok = _kelime_tokenlari(tanim)
+    ilk = _sade(anlam.split()[0])
+    try:
+        yer = next(i for i, k in enumerate(tok) if _kelime_eslesir(k, ilk))
+    except StopIteration:
+        yer = -1
+    parcalar_ = str(ad).split("_")
+    if yer >= 0:
+        for sonraki in tok[yer + len(anlam.split()):]:
+            for i, p in enumerate(parcalar_):
+                m = anlamlar.get(p.upper())
+                if m and any(_kelime_eslesir(sonraki, a) for a in m.split()):
+                    return "_".join(parcalar_[:i] + [kisa] + parcalar_[i:])
+    return "_".join(parcalar_ + [kisa])
+
+
+def tutarsizliklar(tanimlar, anlamlar=None):
+    """ACIKLAMA ile KOLON ADI arasindaki tutarsizliklar (kullanici karari:
+    "sozlukte ortalama diyor ama kolonda AVG yok; kolon adi da
+    degistirilmeli"). Iki yonlu, kod tarafinda:
+
+      tanimda_yok: adda kisaltma var, aciklamada anlami yok (kisaltmanin
+                   kolonlarinin en az CELISKI_PAY kadari anlami tasiyorsa)
+      adda_yok   : aciklamada bir kisaltmanin anlami geciyor, adda o
+                   kisaltma da, ayni anlami veren baska bir kisaltma da
+                   yok (PER_DAY "gunluk ortalama": PER "ortalama" dedigi
+                   icin AVG aranmaz). Genel kelimeler (islem gibi,
+                   tanimlarin %30'undan fazlasinda gecen) sayilmaz.
+
+    Doner: {kolon: [{"tur", "kisaltma", "anlam", "gerekce", "yeni_ad"}]}"""
     if anlamlar is None:
         oner, _d = oneriler(tanimlar, 0.0)
         anlamlar = {k: o["anlam"] for k, o in oner.items() if o["anlam"]}
         anlamlar.update(onaylilar())
     tanimli = {ad: t for ad, t in (tanimlar or {}).items() if str(t or "").strip()}
-    cikti = {}
+    if not tanimli or not anlamlar:
+        return {}
+    toklar = {ad: _kelime_tokenlari(t) for ad, t in tanimli.items()}
+    adlar_parca = {ad: parcalar(ad) for ad in tanimli}
+    # Kelime belge sikligi (genel kelime eleme).
+    df_ = Counter()
+    for tk in toklar.values():
+        df_.update(set(tk))
+    n = float(len(tanimli))
+
+    def tasir(ad, anlam):
+        return all(any(_kelime_eslesir(k, a) for k in toklar[ad])
+                   for a in anlam.split() if len(a) >= 2)
+
+    # Kisaltmanin kalibi guclu mu (kolonlarinin cogu anlami tasiyor mu).
+    guclu = {}
     for kisa, anlam in anlamlar.items():
-        kolonlar = [ad for ad in tanimli if kisa in parcalar(ad)]
+        kolonlar = [ad for ad in tanimli if kisa in adlar_parca[ad]]
         if len(kolonlar) < CELISKI_EN_AZ:
             continue
-        tasiyan = [ad for ad in kolonlar if _anlami_tasir(tanimli[ad], anlam)]
-        pay = len(tasiyan) / float(len(kolonlar))
-        if pay < CELISKI_PAY or pay >= 1.0:
-            continue
-        for ad in kolonlar:
-            if ad in tasiyan:
+        tasiyan = sum(1 for ad in kolonlar if tasir(ad, anlam))
+        guclu[kisa] = (tasiyan / float(len(kolonlar)), len(kolonlar))
+
+    def genel(anlam):
+        return all(max([df_[k] for k in df_ if _kelime_eslesir(k, a)] or [0]) / n > GENEL_PAY
+                   for a in anlam.split() if len(a) >= 2)
+
+    cikti = {}
+    for ad in tanimli:
+        ps = set(adlar_parca[ad])
+        for kisa, (pay, adet) in guclu.items():
+            anlam = anlamlar[kisa]
+            if pay < CELISKI_PAY:
                 continue
-            cikti.setdefault(ad, []).append(
-                "Kolon adındaki %s, sözlükteki %d kolonun %%%d'inde '%s' anlamında "
-                "kullanılmış; bu tanımda '%s' geçmiyor."
-                % (kisa, len(kolonlar), round(pay * 100), anlam, anlam))
+            if kisa in ps:
+                if pay < 1.0 and not tasir(ad, anlam):
+                    cikti.setdefault(ad, []).append({
+                        "tur": "tanimda_yok", "kisaltma": kisa, "anlam": anlam, "yeni_ad": "",
+                        "gerekce": "Kolon adındaki %s, sözlükteki %d kolonun %%%d'inde '%s' "
+                                   "anlamında kullanılmış; bu açıklamada '%s' geçmiyor."
+                                   % (kisa, adet, round(pay * 100), anlam, anlam)})
+                continue
+            if genel(anlam) or not tasir(ad, anlam):
+                continue
+            # Adda AYNEN tanimda gecen bir parca varsa (HHI -> "... yogunlasmasi
+            # hhi") yanindaki kelimeler o parcanin aciklamasidir: "yogunlasma"
+            # icin CONC aranmaz.
+            tk = toklar[ad]
+            yakin = set()
+            for i, k in enumerate(tk):
+                if k.upper() in ps:
+                    yakin.update(tk[max(0, i - 2):i + 3])
+            if yakin and all(any(_kelime_eslesir(k, a) for k in yakin)
+                             for a in anlam.split() if len(a) >= 2):
+                continue
+            # Kardes kisaltma adda varsa (TMSNCFRST / TMSNCLST: ortak 5 harf)
+            # anlam ondan geliyor olabilir; isaretlenmez.
+            if any(len(p) >= 5 and p[:5] == kisa[:5] for p in ps):
+                continue
+            # Adda ayni anlami veren baska kisaltma var mi (PER "ortalama").
+            kelimeler = [a for a in anlam.split() if len(a) >= 2]
+            if any(any(_kelime_eslesir(_sade(a2), a) or _kelime_eslesir(_sade(a), a2)
+                       for a in kelimeler for a2 in (anlamlar.get(p) or "").split())
+                   for p in ps):
+                continue
+            yeni = _yeni_ad_oner(ad, kisa, anlam, tanimli[ad], anlamlar)
+            cikti.setdefault(ad, []).append({
+                "tur": "adda_yok", "kisaltma": kisa, "anlam": anlam, "yeni_ad": yeni,
+                "gerekce": "Açıklamada '%s' geçiyor (sözlükte %d kolonda %s'nin anlamı); "
+                           "kolon adında %s yok. Ya açıklama düzeltilmeli ya da kolon "
+                           "adı %s olmalı." % (anlam, adet, kisa, kisa, yeni)})
     return cikti
+
+
+def celiskiler(tanimlar, anlamlar=None):
+    """01.2.4 kontrolu icin: {kolon: [gerekce, ...]} (bkz. tutarsizliklar)."""
+    return {ad: [t["gerekce"] for t in liste]
+            for ad, liste in tutarsizliklar(tanimlar, anlamlar).items()}
 
 
 # ---------------------------------------------------------------------------
 # DIL MODELI - arka planda, onbellekli
 # ---------------------------------------------------------------------------
-ORNEK_SAYISI = 8          # kisaltma basina modele giden en cok ornek kolon
+ORNEK_SAYISI = 6          # kisaltma basina modele giden en cok ornek kolon
 DM_BEKLE_SN = 25.0        # kart kurulurken sonucu en cok bu kadar bekler
 _DM = {}                  # imza -> {"durum", "sonuc", "zaman"}
 _DM_KILIT = threading.Lock()
@@ -674,17 +826,19 @@ def _imza(girdi):
 
 
 def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
+    hata = ""
     try:
         from fe_agent import llm as llm_mod
-        sonuc, _hata = llm_mod.kisaltma_dogrula(girdi)
-    except Exception:
-        sonuc = None
+        sonuc, hata = llm_mod.kisaltma_dogrula(girdi)
+    except Exception as e:
+        sonuc, hata = None, "%s: %s" % (type(e).__name__, str(e)[:160])
     ornek_say = {g["kisaltma"]: len(g["ornekler"]) for g in girdi}
     for k, v in (sonuc or {}).items():
         v["ornek"] = ornek_say.get(k, 0)
     with _DM_KILIT:
         _DM[imza] = {"durum": "bitti" if sonuc is not None else "hata",
-                     "sonuc": sonuc or {}, "zaman": time.time()}
+                     "sonuc": sonuc or {}, "zaman": time.time(),
+                     "hata": str(hata or ""), "sure": round(time.time() - _DM.get(imza, {}).get("zaman", time.time()))}
     # KALICI YAZMA BURADA DEGIL: 01.2.4 tamamlaninca, DUZELTILMIS calisma
     # kopyasindan yapilir (bkz. kalici_ogren). Ham sozlukten ogrenilen
     # dosyaya yazilmaz.
@@ -710,6 +864,16 @@ def dogrulamayi_baslat(tanimlar, veri_seti=""):
     threading.Thread(target=_dm_calis, args=(imza, girdi, dict(tanimlar or {}), veri_seti),
                      daemon=True).start()
     return imza
+
+
+def dogrulama_bilgisi(tanimlar, veri_seti=""):
+    """Kart ve Excel icin: {"durum", "hata", "sure"} (baslatmaz degil:
+    gerekiyorsa baslatir)."""
+    imza = dogrulamayi_baslat(tanimlar, veri_seti)
+    with _DM_KILIT:
+        k = dict(_DM.get(imza) or {})
+    return {"durum": k.get("durum", "yok"), "hata": k.get("hata", ""),
+            "sure": k.get("sure")}
 
 
 def dogrulama_sonucu(tanimlar, bekle=0.0, veri_seti=""):

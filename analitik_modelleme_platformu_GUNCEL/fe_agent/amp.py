@@ -46,6 +46,15 @@ def dusen_kolonlar(durum, adlar):
     return [c for c in adlar if str(c) in haric and str(c) not in korunan]
 
 
+def yeniden_ad_esleme(durum, adlar):
+    """Uygulanacak {eski: yeni}: tabloda olan, rol / surec disi olmayan."""
+    korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
+    dusen = set(dusen_kolonlar(durum, adlar))
+    adlar = set(map(str, adlar))
+    return {a: y for a, y in (durum.get("kolon_yeni_ad") or {}).items()
+            if a in adlar and a not in korunan and a not in dusen and y and y not in adlar}
+
+
 def _donusum_istegi(durum, kolonlar):
     cikti = {}
     for kolon, kod in (durum.get("tip_donusum") or {}).items():
@@ -124,6 +133,9 @@ def amp_yaz(durum, prof):
         "dusen": dusen_kolonlar(durum, list(kolonlar)),
         "hedef": (durum.get("meta") or {}).get("target"),
         "bolme": None,
+        # Kullanicinin onayladigi kolon adlari (01.2.4 Kolon Adi Onerileri);
+        # rol ve surec disi kolonlar haric. Girdi tabloya dokunulmaz.
+        "yeniden_ad": yeniden_ad_esleme(durum, list(kolonlar)),
     }
     if motor.sec([veri])[0] == motor.PANDAS:
         from fe_agent import amp_pandas
