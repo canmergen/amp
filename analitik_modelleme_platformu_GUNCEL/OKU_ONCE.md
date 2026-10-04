@@ -1,6 +1,26 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Form etiketleri ortalı**. Değiştir: `webapp/style.css`
+Bu tur: **Tanımlar tamamen Türkçe**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+
+- Dil modeli kuralları: tanım her zaman Türkçe karakterle (ç ğ ı İ ö ş ü)
+  ve Türkçe kelimelerle yazılır; örnek / onaylı / mevcut tanımlar
+  karaktersiz ya da İngilizce olsa bile. Kural içindeki örnekler de
+  Türkçe karakterli yazıldı.
+- Türkçe kapısı (`llm.turkce_sorunu`): İngilizce kelime ya da Türkçe
+  karakteri eksik yazılmış kelime ("musteri", "islem", "gunde" ...)
+  bulursa tanım "tamamen Türkçe değil" sayılır. Büyük harfli kısaltmalar
+  (TXN, AMT) sayılmaz. Kelime listesiyle çalışır; listede olmayan bir
+  karaktersiz kelimeyi yakalamayabilir.
+- 01.2.3 öneriler: Türkçe olmayan öneri ayrı bir çağrıyla anlam
+  korunarak Türkçeye çevrilir; çevrilemezse öneri gösterilmez. Türkçe
+  olmayan onaylı tanım hafızadan doğrudan doldurulmaz (dil modeli onu
+  örnek alıp Türkçe yazar).
+- 01.2.4 tanım kontrolü: sözlükteki tanım Türkçe değilse, denetçiler
+  "uygun" dese bile Türkçeye çevrilmiş hali öneri olarak gelir
+  (gerekçe: "Tanım tamamen Türkçe değil (...)"). Anlam kapıları
+  (pencere sayıları, oran / aralık, uzunluk) çeviriye de uygulanır.
+
+Önceki tur: **Form etiketleri ortalı**. Değiştir: `webapp/style.css`
 
 - Seçim formlarında etiket (Hedef Değişken vb.) kutunun ortasına hizalı.
 - Dar ekranda etiket "…" ile kesilmek yerine iki satıra geçer; bütün

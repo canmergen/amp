@@ -2176,7 +2176,11 @@ def sozluk_tanim_plan(durum):
                           "hafiza_veri_seti": k.get("veri_seti") or ""}
                      for ad, k in tanim_hafiza.bul(gosterilen,
                                                    durum.get("veri_seti")).items()
-                     if ad not in roller}
+                     if ad not in roller
+                     # TURKCE KAPISI: tamamen Turkce olmayan onayli tanim
+                     # dogrudan doldurulmaz; dil modeli onu ONAYLI TANIM
+                     # olarak gorup ayni anlami Turkce yazar.
+                     and not llm_mod.turkce_sorunu(k["aciklama"])}
         except Exception:
             hazir = {}
         # Kalanlar dil modeline (tanimli kolonlarin kontrolu SONRAKI
@@ -2539,7 +2543,12 @@ def tanim_kontrol_baslat(durum):
         ayni, hazir, kalan = [], {}, []
         for ad in adlar:
             h = hafiza.get(ad)
-            if not h:
+            # TURKCE KAPISI (kullanici karari: Turkce olmayan tanim Turkce
+            # onerilmeli): onayli tanim tamamen Turkce degilse dogrudan
+            # oneri olmaz, kolon dil modeli kontrolune gider. Sozlukteki
+            # tanim Turkce degilse orada Turkceye cevrilmis haliyle
+            # onerilir (onayli tanim Turkceyse zaten o onerilir).
+            if not h or llm_mod.turkce_sorunu(h["aciklama"]):
                 kalan.append(ad)
             elif llm_mod._ayni_metin(h["aciklama"], tanim.get(ad, "")):
                 ayni.append(ad)

@@ -354,23 +354,35 @@ KOLON ADI KALIPLARI:
 
 ROL verilen kolonlar (kullanicinin modelleme tanimlarinda sectigi):
   - kimlik kolonu : satiri tekil tanimlayan anahtar. Tanimi kimlik olarak
-                    yaz ("Musteri tekil kimlik numarasi" gibi); bir islem,
+                    yaz ("Müşteri tekil kimlik numarası" gibi); bir islem,
                     olay ya da tutar anlatma.
   - hedef degisken: modelin tahmin ettigi 0/1 olay. 1 degerinin neyi
                     ifade ettigini adindan ve ornek tanimlardan cikararak
                     yaz ("... gerceklestiyse 1, aksi halde 0" gibi).
-  - donem kolonu  : gozlemin ait oldugu donem ("Gozlem donemi (YYYYAA)").
-  - segment kolonu: gozlemin ait oldugu alt grup ("Musteri segmenti" gibi).
+  - donem kolonu  : gozlemin ait oldugu donem ("Gözlem dönemi (YYYYAA)").
+  - segment kolonu: gozlemin ait oldugu alt grup ("Müşteri segmenti" gibi).
 Bu tanimlar sonra yeni degisken uretiminde kullanilacak; rolu dogru yansit.
 
 SADE YAZ: tanim kisa ve tek anlamli olsun; ayni ifadeyi tekrar etme,
 gereksiz kelime ekleme. Kurumun YAZIM TARZINDAKI uzunluga ve kalibina
 uy. Bu tanimlar sonra degisken uretiminde de dil modeline girdi
 olacak: kisa, net ve tutarli olmasi onemli. Ornek (oran kolonu):
-  UZUN : Son 180 gunde bahis sirketlerine giden islem tutarinin son 360
-         gunde bahis sirketlerine giden islem tutarina orani
-  SADE : Son 180 gunde bahis sirketlerine giden islem tutarinin son 360
-         gundekine orani"""
+  UZUN : Son 180 günde bahis şirketlerine giden işlem tutarının son 360
+         günde bahis şirketlerine giden işlem tutarına oranı
+  SADE : Son 180 günde bahis şirketlerine giden işlem tutarının son 360
+         gündekine oranı
+""" + """
+TAMAMEN TURKCE YAZ (kullanici karari; bu kural YAZIM TARZINDAN ve
+orneklerden ONCE gelir):
+  - Turkce karakterleri HER ZAMAN dogru kullan: ç, ğ, ı, İ, ö, ş, ü.
+    "Musteri islem tutari" YANLIS, "Müşteri işlem tutarı" DOGRU.
+  - Ingilizce kelime YAZMA; Turkce karsiligini yaz (transaction -> işlem,
+    amount -> tutar, count -> adet, customer -> müşteri, ratio -> oran,
+    balance -> bakiye, payment -> ödeme, unique identifier -> tekil
+    kimlik). Kolon adindaki kisaltmalari da Turkce acarak yaz.
+  - ORNEK / ONAYLI / MEVCUT tanimlar Turkce karaktersiz ya da Ingilizce
+    yazilmis olsa bile sen dogru Turkceyle yaz; onlardan yalnizca ANLAMI
+    ve kalibi al."""
 
 SISTEM_SOZLUK = """Sen bir bankacilik veri sozlugu uzmanisin. Sana kolonlarin
 adi, tipi ve dagilim ozeti verilecek. Her kolonun ne anlama geldigini yaz.
@@ -883,6 +895,19 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
 
     for kayit in sonuc.values():
         kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)[:300]
+    # TURKCE KAPISI: tamamen Turkce olmayan oneri yeniden yazdirilir;
+    # yazilamazsa oneri GOSTERILMEZ (kullanici karari: oneriler tamamen
+    # Turkce olmali). Kolon onerisiz kalir, aciklamayi kullanici yazar.
+    sorunlu = [dict(p, kaynak=sonuc[p["ad"]]["aciklama"]) for p in profiller
+               if p["ad"] in sonuc and turkce_sorunu(sonuc[p["ad"]]["aciklama"])]
+    if sorunlu:
+        cevrilen, model = turkcelestir(sorunlu, baglam, ork)
+        for p in sorunlu:
+            if p["ad"] in cevrilen:
+                sonuc[p["ad"]]["aciklama"] = cevrilen[p["ad"]]
+                sonuc[p["ad"]]["modeller"] += " (Türkçe: %s)" % MODEL_ADLARI.get(model, model)
+            else:
+                sonuc.pop(p["ad"], None)
     return sonuc, None
 
 
@@ -897,6 +922,8 @@ Mevcut tanimin dogru yazilip yazilmadigini degerlendir.
     ("X kolonu", "deger", "-")
   - tanim eksik ya da belirsiz, kolonun ne olctugu anlasilmiyor
   - belirgin yazim hatasi var
+  - tanim Turkce karakter kullanmiyor ("Musteri" -> "Müşteri") ya da
+    Ingilizce / karisik dilde yazilmis: AYNI ANLAMI dogru Turkceyle yaz
 Yalnizca uslup farki icin "duzelt" DEME. Emin degilsen "uygun" de.
 
 ANLAM KORUNUR: oneri, mevcut tanimin anlattigi olcumu DEGISTIREMEZ —
@@ -905,9 +932,9 @@ paydasi aynen kalir. Mevcut tanim kolon adiyla tutarliysa yalnizca ayni
 anlami daha acik ve dogru Turkceyle yazabilirsin. Ornek:
   ad      : TXN_GDN_BAHIS_180D_360D_AMT_RATIO
   mevcut  : Son 180 gun / 360 gun bahis sirketlerine giden islem tutari orani
-  DOGRU   : Son 180 gunde bahis sirketlerine giden islem tutarinin son 360
-            gundekine orani
-  YANLIS  : 180-360 gun arasi bahis sirketlerine giden islem tutari orani
+  DOGRU   : Son 180 günde bahis şirketlerine giden işlem tutarının son 360
+            gündekine oranı
+  YANLIS  : 180-360 gün arası bahis şirketlerine giden işlem tutarı oranı
             (anlam degisti: oran bir zaman araligina donustu)
 Mevcut tanim kolon adiyla CELISIYORSA kolon adi esas alinir.
 
@@ -925,7 +952,8 @@ kolon icin sozlukteki MEVCUT tanim ve iki denetcinin gorusu verilecek.
 Son karari sen ver.
 
   karar "duzelt": mevcut tanim gercekten yanlis, celiskili, bos/anlamsiz,
-                  belirsiz ya da yazim hatali. aciklama alanina en dogru
+                  belirsiz, yazim hatali, Turkce karaktersiz ya da
+                  Ingilizce / karisik dilde. aciklama alanina en dogru
                   tanimi yaz (denetcilerin onerilerinden sec ya da birlestir;
                   YAZIM TARZINA ve ONAYLI TANIMLARA uy).
   karar "uygun" : mevcut tanim dogru; yalnizca uslup farki varsa da "uygun".
@@ -997,6 +1025,121 @@ def _kontrol_oku(veri, gecerli):
     return cikti
 
 
+# ===========================================================================
+# TURKCE KAPISI (kullanici karari: "tamamen Turkce olmali; sozluge Turkce
+# olmayan yazilmis tanimlar da Turkce olarak onerilmeli, model hic oneri
+# vermeyecekse bile Turkce degilse yeniden Turkceye cevirerek onermeli")
+# ===========================================================================
+_TR_OZEL_HARF = set("çğıöşüÇĞİÖŞÜ")
+_KELIME = re.compile(r"[^\W\d_]+", re.UNICODE)
+
+# Dogru Turkcede MUTLAKA Turkce karakter iceren kelimelerin karaktersiz
+# yazilisi. Kelime bu kokle BASLIYORSA (ve kelimede Turkce harf yoksa)
+# karaktersiz yazilmis sayilir: "musteri", "islemlerin", "gunde" ...
+_ASCII_KOK = (
+    "musteri", "islem", "gun", "sirket", "odeme", "oden", "sayisi", "orani",
+    "tutari", "tutarin", "sirasi", "numarasi", "donem", "gonder", "basvuru",
+    "iliski", "ucret", "kisi", "sube", "doviz", "borc", "gecmis", "degisken",
+    "deger", "gozlem", "urun", "icin", "iceren", "uzere", "dusuk", "yuksek",
+    "buyuk", "kucuk", "aylik", "yillik", "araligi", "suresi", "egitim",
+    "ogrenim", "calis", "kullanim", "kullanil", "kapali", "basari", "cikis",
+    "giris", "tarafindan", "gore", "hesabi", "cekim", "cekil", "yatirim",
+    "ozel", "turu", "turleri", "ilgili", "uye", "odenmis", "dagilim",
+    "gostergesi", "sayaci", "tutarina", "oranin", "bakiyesinin", "baslangic",
+    "bitis", "ilk", "acilis", "kapanis", "gecikmis", "olcu", "ozet",
+    "sehir", "ilce", "ulke", "dogum", "ogrenci", "calisan", "sektor",
+    "sozlesme", "ucuncu", "haftalik", "toplami", "miktari", "puani",
+    "bankasi", "karti", "farki", "sirasiyla", "kisa", "donus",
+    "gerceklesen", "gerceklestir", "olcul", "iliskili", "sayisal", "sinif",
+    "yapilan", "alinan", "verilen", "kayit", "kaydi", "satir", "acikla",
+)
+# Tam kelime eslesmesi gerekenler (kok olarak cok genis kalirdi).
+_ASCII_TAM = {"sayi", "yas", "yasi", "sure", "ust", "tur", "acik", "is", "isi"}
+# "ilk", "ilgili" dogru Turkcede de karaktersiz: listeden dusuluyor.
+_ASCII_KOK = tuple(k for k in _ASCII_KOK if k not in ("ilk", "ilgili"))
+
+_INGILIZCE = {
+    # "on" (Turkce: on = 10) ve "segment" (Turkcede de kullaniliyor) yok.
+    "the", "of", "and", "for", "with", "from", "per", "by", "in",
+    "transaction", "transactions", "amount", "amounts", "count", "customer",
+    "customers", "number", "total", "average", "ratio", "last", "day", "days",
+    "month", "months", "year", "years", "account", "accounts", "card",
+    "cards", "payment", "payments", "balance", "unique", "identifier",
+    "identity", "date", "rate", "income", "score", "type", "status",
+    "incoming", "outgoing", "transfer", "transfers", "currency", "row",
+    "index", "flag", "sum", "max", "min", "mean", "value", "values",
+    "previous", "current", "loan", "credit", "debit", "deposit", "branch",
+    "channel", "default", "target", "period", "since", "between",
+}
+
+
+def turkce_sorunu(metin):
+    """Tanim tamamen Turkce degilse sebebi (kisa metin), Turkceyse None.
+
+    Kural tabanli: Ingilizce kelime ya da dogru yazilisi Turkce karakter
+    iceren bir kelimenin karaktersiz hali ("musteri", "islem", "gunde").
+    Kolon adi / kisaltma gibi BUYUK HARFLI kelimeler (TXN, AMT) sayilmaz."""
+    sorun = []
+    for k in _KELIME.findall(str(metin or "")):
+        if len(k) > 1 and k.isupper():
+            continue                       # kisaltma / kolon adi
+        kk = k.lower()
+        if kk in _INGILIZCE:
+            if "İngilizce ifade" not in sorun:
+                sorun.append("İngilizce ifade")
+        elif not (_TR_OZEL_HARF & set(k)) and (kk in _ASCII_TAM
+                                         or kk.startswith(_ASCII_KOK)):
+            if "Türkçe karakter eksik" not in sorun:
+                sorun.append("Türkçe karakter eksik")
+    return " ve ".join(sorun) or None
+
+
+SISTEM_TURKCE = """Sen bir bankacilik veri sozlugu editorusun. Her kolon
+icin adi, tipi, dagilim ozeti ve bir KAYNAK TANIM verilecek. Kaynak tanim
+Turkce karaktersiz ya da Ingilizce / karisik dilde yazilmis.
+
+Gorevin: kaynak tanimi ANLAMINI HIC DEGISTIRMEDEN dogru ve sade Turkceyle
+yeniden yazmak.
+  - pencere (son kac gun), yon (giden / gelen), tutar / adet, oranin payi
+    ve paydasi AYNEN kalir; yeni bilgi EKLEME, bilgi CIKARMA
+  - Turkce karakterleri dogru kullan, Ingilizce kelimeleri Turkce yaz
+  - kaynak tanim kolon adiyla ACIKCA celisiyorsa kolon adi esas alinir
+  - tek cumle, kolon adini tekrar etme
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + AD_KALIP_KURALI \
+    + SINIRLAYICI_KURALI
+
+
+def turkcelestir(kayitlar, baglam=None, orkestra=None):
+    """kayitlar: profil sozlukleri + "kaynak" (Turkce olmayan tanim).
+    Doner: (sonuc, model)  sonuc: {kolon: Turkce tanim}. Yalniz kapilardan
+    gecen (Turkce, anlami ayni, fazla uzamamis) metinler doner."""
+    if not kayitlar:
+        return {}, None
+    ork = orkestra or Orkestra()
+    tarz = (baglam or {}).get("tarz")
+    kaynak = {p["ad"]: str(p.get("kaynak") or "") for p in kayitlar}
+    satirlar = "\n".join(_profil_satiri(p) + "\n    KAYNAK TANIM: %s"
+                         % kaynak[p["ad"]][:300] for p in kayitlar)
+    baslik, govde = _baglamli_govde(list(kaynak), satirlar, baglam)
+    adaylar = list(dict.fromkeys(ork.modeller("hakem") + ork.modeller("yazarlar")))
+    model, veri = ork.json_cagir(adaylar, SISTEM_TURKCE,
+                                 _veri_blogu(baslik, govde), 0.1)
+    sonuc = {}
+    for k in (veri.get("kolonlar") or []):
+        if not isinstance(k, dict) or str(k.get("ad")) not in kaynak:
+            continue
+        ad = str(k["ad"])
+        metin = tarza_uydur(str(k.get("aciklama") or "").strip(), tarz)[:300]
+        if not metin or turkce_sorunu(metin) \
+                or _anlam_degisti(ad, kaynak[ad], metin) \
+                or _fazla_uzun(kaynak[ad], metin):
+            continue
+        sonuc[ad] = metin
+    return sonuc, model
+
+
 def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):
     """Sozlukte tanimi OLAN kolonlarin tanimlarini denetler (tek grup).
 
@@ -1024,7 +1167,7 @@ def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):
     isaretli = [p for p in kayitlar
                 if (ilk.get(p["ad"]) or {}).get("durum") == "duzelt"]
     if not isaretli:
-        return {}, None
+        return _turkce_tamamla({}, kayitlar, mevcut, baglam, ork, [tarayici]), None
 
     # Denetci: tarayicidan FARKLI bir model (ayni model ayni hatayi yapar).
     denetci, veri2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KONTROL,
@@ -1072,7 +1215,45 @@ def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):
             continue
         duzeltmeler[ad] = {"mevcut": mevcut[ad], "oneri": oneri,
                            "gerekce": gerekce or "", "modeller": " + ".join(adlar)}
-    return duzeltmeler, None
+    return _turkce_tamamla(duzeltmeler, kayitlar, mevcut, baglam, ork,
+                           [tarayici, denetci, hakem]), None
+
+
+def _turkce_tamamla(duzeltmeler, kayitlar, mevcut, baglam, ork, kullanilan):
+    """TURKCE KAPISI (tanim kontrolu):
+      - mevcut tanimi Turkce OLMAYAN kolon, denetciler "uygun" dese bile
+        Turkceye cevrilmis haliyle onerilir
+      - Turkce olmayan bir duzeltme onerisi de cevrilir; cevrilemezse
+        oneri dusurulur (Turkce olmayan oneri gosterilmez)."""
+    cevir = []
+    for p in kayitlar:
+        ad = p["ad"]
+        d = duzeltmeler.get(ad)
+        if d and turkce_sorunu(d["oneri"]):
+            cevir.append(dict(p, kaynak=d["oneri"]))
+        elif not d and turkce_sorunu(mevcut[ad]):
+            cevir.append(dict(p, kaynak=mevcut[ad]))
+    if not cevir:
+        return duzeltmeler
+    cevrilen, model = turkcelestir(cevir, baglam, ork)
+    for p in cevir:
+        ad = p["ad"]
+        yeni = cevrilen.get(ad)
+        d = duzeltmeler.get(ad)
+        if not yeni or _ayni_metin(yeni, mevcut[ad]) \
+                or _anlam_degisti(ad, mevcut[ad], yeni):
+            duzeltmeler.pop(ad, None)
+            continue
+        adlar = list(dict.fromkeys(MODEL_ADLARI.get(m, m)
+                                   for m in list(kullanilan) + [model] if m))
+        sebep = turkce_sorunu(d["oneri"] if d else mevcut[ad])
+        duzeltmeler[ad] = {
+            "mevcut": mevcut[ad], "oneri": yeni,
+            "gerekce": (d or {}).get("gerekce") or (
+                "Tanım tamamen Türkçe değil (%s); aynı anlam Türkçe yazıldı."
+                % sebep),
+            "modeller": " + ".join(adlar)}
+    return duzeltmeler
 
 # ===========================================================================
 # LLM — ARALIK (BINLEME) ONERILERININ DEGERLENDIRILMESI
