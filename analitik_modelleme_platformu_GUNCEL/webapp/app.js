@@ -6945,6 +6945,34 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
     }
     ciz(ka.satirlar);
 
+    /* YOKLAMA (kullanıcı bildirimi: bekleme): kart beklemeden gelir; dil
+       modeli kontrolü sürüyorsa 5 sn'de bir sorulur, bitince satırlar
+       güncellenir. Kullanıcının elle değiştirdiği satır EZİLMEZ. */
+    let yoklamaSayisi = 0;
+    function yokla() {
+        if (kilitli || yoklamaSayisi++ > 120 || !document.body.contains(tb)) return;
+        fetch(getWebAppBackendUrl("kisaltma_alani") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+            .then(r => r.json())
+            .then(d => {
+                const yeni = d && d.kisaltma;
+                if (!yeni) return setTimeout(yokla, 5000);
+                ka.not = yeni.not || "";
+                const elle = {};
+                satirlar.forEach(x => {
+                    if (x.g.value.trim() !== String(x.r.anlam || "").trim() || x.kutu.checked !== !!x.r.onayli)
+                        elle[x.r.kisaltma] = { anlam: x.g.value, kutu: x.kutu.checked };
+                });
+                ciz(yeni.satirlar);
+                satirlar.forEach(x => {
+                    const e = elle[x.r.kisaltma];
+                    if (e) { x.g.value = e.anlam; x.kutu.checked = e.kutu; x.g.dispatchEvent(new Event("input")); }
+                });
+                if (yeni.dm === "calisiyor") setTimeout(yokla, 5000);
+            })
+            .catch(() => setTimeout(yokla, 8000));
+    }
+    if (ka.dm === "calisiyor") setTimeout(yokla, 5000);
+
     kaydetBtn.onclick = () => {
         kaydetBtn.disabled = true;
         hataEl.hidden = true;

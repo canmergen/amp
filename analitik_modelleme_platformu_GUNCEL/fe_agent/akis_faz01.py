@@ -1460,7 +1460,7 @@ def _kisaltma_alani(durum, bekle=0.0):
     satirlar, dm = kisaltma_mod.kart_satirlari(_kisaltma_kaynagi(durum), bekle,
                                                durum.get("veri_seti") or "")
     notu = {"calisiyor": "Dil modeli kontrolü sürüyor; liste şimdilik kural "
-                         "tabanlı. Sayfa yenilenince güncellenir.",
+                         "tabanlı, sonuç gelince kendiliğinden güncellenir.",
             "hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
     if dm == "hata":
         try:
@@ -1471,7 +1471,7 @@ def _kisaltma_alani(durum, bekle=0.0):
         except Exception:
             pass
     return {"baslik": KISALTMA_BASLIK, "bilgi": KISALTMA_BILGI,
-            "satirlar": satirlar, "not": notu}
+            "satirlar": satirlar, "not": notu, "dm": dm}
 
 
 KOLON_AD_BASLIK = "Kolon Adı Önerileri"
@@ -1599,6 +1599,11 @@ def kisaltma_excel(durum):
     except Exception:
         yol = None
     return veri, yol
+
+
+def kisaltma_alani(durum):
+    """On yuz yoklamasi icin (beklemez)."""
+    return _kisaltma_alani(durum, 0.0)
 
 
 def kisaltma_alani_tazele(durum):
@@ -2026,6 +2031,11 @@ def _oneri_sonucunu_tasi(durum):
     durum["_tanimsiz_oneri"] = kayit["oneriler"]
     durum["_tanimsiz_oneri_kolonlar"] = list(durum.get("_oneri_kolonlar") or [])
     durum["_tanimsiz_oneri_hata"] = kayit["hata"]
+    # Dil modeli onerileri onbellege (ayni veri setinde tekrar cagrilmasin).
+    tanim_hafiza.oneri_ekle(
+        {k: v for k, v in (kayit["oneriler"] or {}).items()
+         if isinstance(v, dict) and v.get("kaynak") != "hafiza"},
+        durum.get("veri_seti") or "")
 
 
 def _kontrol_alani(durum, kontrol_sayisi):
@@ -2355,22 +2365,34 @@ def sozluk_tanim_plan(durum):
         # aciklamalara bakip direkt doldursun, yoksa kendisi uretsin").
         # Ayni adli kolonun onayli tanimi varsa dil modeli CAGRILMAZ;
         # satir hafizadaki metinle dolu gelir ve kaynagi kartta yazar.
-        # ROLU OLAN KOLON (kimlik, hedef, donem, segment) hafizadan
-        # DOLDURULMAZ: tanimi rol bilgisiyle dil modeli yazar (kullanici
-        # bildirimi: kimlik kolonuna islem anlatan bir tanim gelmisti).
+        # ROLU OLAN KOLON (kimlik, hedef, donem, segment) yalniz AYNI VERI
+        # SETINDE onaylanmis tanimla dogrudan dolar (kullanici bildirimi:
+        # "onceden kayitliysa direkt oneremez mi"). Baska veri setinden
+        # gelen tanim rol kolonuna konmaz: kimlik kolonuna baska tablodan
+        # islem anlatan bir tanim gelmisti.
         roller = _zorunlu_etiketler(durum)
+        veri_seti = durum.get("veri_seti") or ""
         try:
             hazir = {ad: {"aciklama": k["aciklama"], "kaynak": "hafiza",
                           "hafiza_veri_seti": k.get("veri_seti") or ""}
-                     for ad, k in tanim_hafiza.bul(gosterilen,
-                                                   durum.get("veri_seti")).items()
-                     if ad not in roller
+                     for ad, k in tanim_hafiza.bul(gosterilen, veri_seti).items()
+                     if (ad not in roller or (k.get("veri_seti") or "") == veri_seti)
                      # TURKCE KAPISI: tamamen Turkce olmayan onayli tanim
                      # dogrudan doldurulmaz; dil modeli onu ONAYLI TANIM
                      # olarak gorup ayni anlami Turkce yazar.
                      and not llm_mod.turkce_sorunu(k["aciklama"])}
         except Exception:
             hazir = {}
+        # ONERI ONBELLEGI: ayni veri setinin ayni kolonu icin dil modelinin
+        # daha once verdigi oneri (onayli degil) - model yeniden cagrilmaz,
+        # satir "Dil Modeli Onerisi" olarak gelir.
+        try:
+            for ad, k in tanim_hafiza.oneri_bul(
+                    [g for g in gosterilen if g not in hazir], veri_seti).items():
+                hazir[ad] = {"aciklama": k["aciklama"], "kaynak": "llm",
+                             "modeller": k.get("modeller") or ""}
+        except Exception:
+            pass
         # Kalanlar dil modeline (tanimli kolonlarin kontrolu SONRAKI
         # ADIMDA, tanim_kontrol).
         kalan = [k for k in gosterilen if k not in hazir]
@@ -2669,7 +2691,10 @@ def _kontrol_karti(durum, adlar, hata, basladi):
     return {
         "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
         "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
-        "kisaltma": _kisaltma_alani(durum, kisaltma_mod.DM_BEKLE_SN),
+        # BEKLEMEZ (kullanici bildirimi: bekleme yasaniyor): dil modeli
+        # kontrolu surerse kart istatistik sonuclariyla hemen gelir, on yuz
+        # /kisaltma_alani ile yoklayip satirlari gunceller.
+        "kisaltma": _kisaltma_alani(durum, 0.0),
         "kolon_ad": _kolon_ad_alani(durum),
         "buton_kalip": dict(KONTROL_DUGME),
         "oneri_is": (durum.get("_kontrol_is") or "") if basladi else "",

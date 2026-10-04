@@ -177,3 +177,69 @@ def arka_planda_ekle(kayitlar, veri_seti="", kullanici=""):
         return
     threading.Thread(target=ekle, args=(list(kayitlar), veri_seti, kullanici),
                      daemon=True).start()
+
+
+# ---------------------------------------------------------------------------
+# ONERI ONBELLEGI (kullanici karari: "onceden kayitliysa direkt oneremez mi;
+# az da olsa bekleme yasaniyor"). ONAYLI DEGIL: dil modelinin bir veri
+# setinin bir kolonu icin verdigi SON oneri. Ayni veri setinin ayni kolonu
+# tekrar geldiginde dil modeli cagrilmaz, bu oneri "Dil Modeli Onerisi"
+# olarak gelir. Baska veri setinde kullanilmaz (onay hafizasi degil).
+# ---------------------------------------------------------------------------
+ONERI_DOSYA = "/ONERI_ONBELLEGI.parquet"
+ONERI_KOLONLAR = ["KOLON", "VERI_SETI", "ACIKLAMA", "MODELLER", "TARIH"]
+_ONERI_ONBELLEK = {"zaman": 0.0, "df": None}
+
+
+def _oneri_oku():
+    try:
+        df = tablo_io.klasorden_oku(_folder(), ONERI_DOSYA)
+    except Exception:
+        return pd.DataFrame(columns=ONERI_KOLONLAR)
+    for k in ONERI_KOLONLAR:
+        if k not in df.columns:
+            df[k] = ""
+    return df[ONERI_KOLONLAR].fillna("").astype(str)
+
+
+def oneri_bul(adlar, veri_seti):
+    """{kolon: {"aciklama", "modeller"}} - yalniz AYNI veri setinin onerileri."""
+    if not adlar or not veri_seti:
+        return {}
+    simdi = time.time()
+    if _ONERI_ONBELLEK["df"] is None or simdi - _ONERI_ONBELLEK["zaman"] > ONBELLEK_OMRU_SN:
+        _ONERI_ONBELLEK.update(zaman=simdi, df=_oneri_oku())
+    df = _ONERI_ONBELLEK["df"]
+    if df is None or df.empty:
+        return {}
+    df = df[(df["VERI_SETI"] == str(veri_seti)) & df["KOLON"].isin(set(map(str, adlar)))
+            & (df["ACIKLAMA"].str.strip() != "")]
+    return {r["KOLON"]: {"aciklama": r["ACIKLAMA"], "modeller": r["MODELLER"]}
+            for _i, r in df.iterrows()}
+
+
+def oneri_ekle(oneriler, veri_seti):
+    """oneriler: {kolon: {"aciklama", "modeller"}}. Ayni (kolon, veri seti)
+    guncellenir. Arka planda; hata akisi durdurmaz."""
+    temiz = {str(k): v for k, v in (oneriler or {}).items()
+             if isinstance(v, dict) and str(v.get("aciklama") or "").strip()}
+    if not temiz or not veri_seti:
+        return
+
+    def is_():
+        with _KILIT:
+            try:
+                df = _oneri_oku()
+                df = df[~((df["VERI_SETI"] == str(veri_seti)) & df["KOLON"].isin(set(temiz)))]
+                zaman = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                yeni = pd.DataFrame([{"KOLON": k, "VERI_SETI": str(veri_seti),
+                                      "ACIKLAMA": str(v["aciklama"]),
+                                      "MODELLER": str(v.get("modeller") or ""),
+                                      "TARIH": zaman} for k, v in temiz.items()],
+                                    columns=ONERI_KOLONLAR)
+                df = pd.concat([df, yeni], ignore_index=True)
+                tablo_io.klasore_yaz(_folder(), ONERI_DOSYA, df)
+                _ONERI_ONBELLEK.update(zaman=time.time(), df=df)
+            except Exception:
+                pass
+    threading.Thread(target=is_, daemon=True).start()

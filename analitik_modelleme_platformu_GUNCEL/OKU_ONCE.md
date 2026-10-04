@@ -1,6 +1,21 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma düzeltmeleri + açıklama/kolon adı tutarsızlıkları + kolon yeniden adlandırma**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/amp.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `fe_agent/xlsx_yaz.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+Bu tur: **Bekleme azaltıldı: kayıtlı tanım ve öneriler doğrudan gelir**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+
+- Rol kolonu (kimlik, hedef, dönem, segment) AYNI veri setinde onaylanmış
+  tanımla doğrudan dolar (SM_ID). Başka veri setinden gelen tanım rol
+  kolonuna konmaz.
+- Öneri önbelleği: PROJE_HAFIZASI/ONERI_ONBELLEGI.parquet (onaylı değil).
+  Dil modelinin bir veri setinin kolonu için verdiği son öneri saklanır;
+  aynı veri setinin aynı kolonu tekrar gelince model çağrılmaz, öneri
+  "Dil Modeli Önerisi" olarak hemen gelir (rn gibi eklenmeyen kolonlar).
+  Başka veri setinde kullanılmaz.
+- 01.2.4 Kısaltma Sözlüğü artık dil modelini beklemeden açılır
+  (eskiden en çok 25 sn bekliyordu); kontrol sürerse kart 5 sn'de bir
+  `/kisaltma_alani`'ndan yoklayıp satırları kendiliğinden günceller.
+  Elle değiştirilen satırlar ezilmez.
+
+Önceki tur: **Kısaltma düzeltmeleri + açıklama/kolon adı tutarsızlıkları + kolon yeniden adlandırma**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/amp.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `fe_agent/xlsx_yaz.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 1) Kısaltma çıkarımı
 - Atama artık BÜTÜN adaylar üzerinden en güçlüden zayıfa (SUM'un zayıf
