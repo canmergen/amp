@@ -42,6 +42,7 @@ KAYNAK_LLM = "dil modeli önerisi onaylandı"
 KAYNAK_KULLANICI = "kullanıcı yazdı"
 KAYNAK_DUZELTME = "tanım düzeltmesi onaylandı"
 KAYNAK_PANEL = "sağ panelde düzenlendi"
+KAYNAK_HAFIZA = "onaylı hafızadan alındı, yeniden onaylandı"
 
 ONBELLEK_OMRU_SN = 30.0
 _ONBELLEK = {"zaman": 0.0, "df": None}
@@ -107,6 +108,28 @@ def tanimlar():
         return {}
     df = df[df["ACIKLAMA"].str.strip() != ""].sort_values("TARIH")
     return dict(zip(df["KOLON"], df["ACIKLAMA"]))
+
+
+def bul(adlar, veri_seti=""):
+    """Kolon adlari icin ONAYLI tanim (dogrudan doldurma icin).
+
+    Doner: {kolon: {"aciklama", "veri_seti", "tarih"}}. Ayni veri setinde
+    onaylanmis tanim varsa o, yoksa baska veri setinde EN SON onaylanan.
+    Ad eslesmesi birebir; bulunamayan kolon donmez."""
+    df = oku()
+    if df.empty or not adlar:
+        return {}
+    istenen = set(str(a) for a in adlar)
+    df = df[(df["ACIKLAMA"].str.strip() != "") & df["KOLON"].isin(istenen)]
+    if df.empty:
+        return {}
+    df = df.assign(_ayni=(df["VERI_SETI"] == str(veri_seti or "")).astype(int))
+    df = df.sort_values(["_ayni", "TARIH"])
+    cikti = {}
+    for _i, r in df.iterrows():          # son yazilan (en uygun) kazanir
+        cikti[r["KOLON"]] = {"aciklama": r["ACIKLAMA"], "veri_seti": r["VERI_SETI"],
+                             "tarih": r["TARIH"]}
+    return cikti
 
 
 def ekle(kayitlar, veri_seti="", kullanici=""):

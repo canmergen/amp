@@ -1,6 +1,20 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma sözlüğü (TXN, GLN, GDN ...) + onaylı kısaltma hafızası**. Değiştir: `fe_agent/kisaltma.py` (YENİ), `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+Bu tur: **Boş tanımlar önce onaylı tanım hafızasından**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`
+
+- 01.2.3'te sözlükte tanımı olmayan bir kolonun AYNI ADLA onaylı tanımı
+  hafızada varsa satır o metinle dolu gelir, dil modeli o kolon için
+  çağrılmaz. Aynı veri setinde onaylanmış olan önceliklidir, yoksa en son
+  onaylanan. Satırda "Onaylı Tanım" çipi (üzerinde hangi veri setinden
+  geldiği), mor zemin; renk açıklamasına "Onaylı Tanımdan" eklendi.
+- Hafızada olmayanlar önceki gibi dil modeline gider (onaylı tanımlar,
+  kısaltmalar ve sözlük örnekleri bağlamıyla).
+- Onaylanınca hafızaya "onaylı hafızadan alındı, yeniden onaylandı"
+  kaynağıyla tekrar yazılır (bu veri seti için).
+
+---
+
+Önceki tur: **Kısaltma sözlüğü (TXN, GLN, GDN ...) + onaylı kısaltma hafızası**. Değiştir: `fe_agent/kisaltma.py` (YENİ), `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
 
 - Çıkarım (dil modeli yok): kolon adı parçalara bölünür; bir kelime,
   adında o parça geçen kolonların tanımlarında sık (≥ %60), geçmeyenlerde

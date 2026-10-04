@@ -1741,7 +1741,7 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
             "gibi kalır." % (_sayi(len(gruplar)), _sayi(sayac["dusen"]), sayac["son"]))
 
 
-def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None):
+def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None, hazir=None):
     """Arka plan onerisini (ve varsa tanim kontrolunu) baslatir.
     kontrol: tanimli kolonlarin profilleri + "mevcut" tanim.
     Doner: is kimligi."""
@@ -1750,7 +1750,7 @@ def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None):
     with _ONERI_KILIT:
         _ONERI_ISLER[is_id] = {
             "durum": "calisiyor" if profiller else "bitti",
-            "oneriler": {}, "toplam": len(profiller), "biten": 0,
+            "oneriler": dict(hazir or {}), "toplam": len(profiller), "biten": 0,
             "hata": "", "kolonlar": list(kolonlar),
             "kontrol_durum": ("bekliyor" if profiller else "calisiyor")
                              if kontrol else "yok",
@@ -1905,7 +1905,8 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
             "islem": "ekle" if rol else (
                 (onceki or {}).get("islem") or "haric"),
             "oneri": aciklama,
-            "oneri_kaynak": "llm" if aciklama else "yok",
+            "oneri_kaynak": (oneri.get("kaynak") or "llm") if aciklama else "yok",
+            "hafiza_veri_seti": oneri.get("hafiza_veri_seti") or "",
         }
         if not rol and ad in tek_kume:
             # TEK DEGERLI: sozluge eklenemez, surec disi kalir (kilitli).
@@ -2121,15 +2122,27 @@ def sozluk_tanim_plan(durum):
         durum["_tanimsiz_oneri_hata"] = onceki["hata"]
     else:
         _tekil_tamamla(prof, gosterilen, p)
-        # Dil modeli cagrisi YALNIZCA tanimsiz kolonlar icin; ozetler veri
-        # seti profilinden. Tanimli kolonlarin kontrolu SONRAKI ADIMDA
-        # (tanim_kontrol): once bos tanimlar onaylanir.
-        profiller = _oneri_profilleri(prof, gosterilen, p)
+        # ONCE ONAYLI TANIM HAFIZASI (kullanici karari: "once onaylanmis
+        # aciklamalara bakip direkt doldursun, yoksa kendisi uretsin").
+        # Ayni adli kolonun onayli tanimi varsa dil modeli CAGRILMAZ;
+        # satir hafizadaki metinle dolu gelir ve kaynagi kartta yazar.
+        try:
+            hazir = {ad: {"aciklama": k["aciklama"], "kaynak": "hafiza",
+                          "hafiza_veri_seti": k.get("veri_seti") or ""}
+                     for ad, k in tanim_hafiza.bul(gosterilen,
+                                                   durum.get("veri_seti")).items()}
+        except Exception:
+            hazir = {}
+        # Kalanlar dil modeline (tanimli kolonlarin kontrolu SONRAKI
+        # ADIMDA, tanim_kontrol).
+        kalan = [k for k in gosterilen if k not in hazir]
+        profiller = _oneri_profilleri(prof, kalan, p)
         durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller,
-                                              _aciklama_baglami(durum))
+                                              _aciklama_baglami(durum),
+                                              hazir=hazir)
         durum["_oneri_kolonlar"] = list(gosterilen)
         durum["_tanimsiz_oneri_hata"] = ""
-        oneriler = {}
+        oneriler = dict(hazir)
 
     durum["_secim_alani"] = _dogrulama_karti(durum, p, gosterilen, 0, oneriler)
     # On yuz bu kimlikle yoklayip satirlari dolduruyor.
@@ -2280,10 +2293,12 @@ def sozluk_tanim_uygula(durum):
             durum, satir["kolon"], satir["aciklama"], "", oneri=oneri)
         if tamam:
             eklenen.append(satir["kolon"])
+            ayni = bool(oneri) and oneri.strip() == satir["aciklama"]
+            hafizadan = (oneriler.get(satir["kolon"]) or {}).get("kaynak") == "hafiza"
             hafiza.append({"kolon": satir["kolon"], "aciklama": satir["aciklama"],
-                           "kaynak": tanim_hafiza.KAYNAK_LLM
-                           if oneri and oneri.strip() == satir["aciklama"]
-                           else tanim_hafiza.KAYNAK_KULLANICI})
+                           "kaynak": (tanim_hafiza.KAYNAK_HAFIZA if ayni and hafizadan
+                                      else tanim_hafiza.KAYNAK_LLM if ayni
+                                      else tanim_hafiza.KAYNAK_KULLANICI)})
         else:
             # Yazilamayan tanim SESSIZCE surece dahil edilmez: kolon
             # varsayilana duser ve neden yazilamadigi kullaniciya soylenir.

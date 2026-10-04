@@ -2053,12 +2053,25 @@ function haricKaydet(kolon, kutu, hataEl) {
      karar sonrası: YEŞİL = sözlüğe eklendi / düzeltme uygulandı
                     KIRMIZI = eklenmedi / uygulanmadı
    karar: null (karar verilmedi), "evet", "hayir". */
+/* Onaylı tanım hafızasından gelen satır: değişken adının yanında çip,
+   satır yeşil-mavi değil kendi tonunda (dg-hafiza-satir). */
+function hafizaCipi(td, tr, veriSeti) {
+    if (!td || !tr) return;
+    const c = elYap("span", "dg-rol dg-hafiza", "Onaylı Tanım");
+    c.title = "Daha önce onaylanmış tanım" + (veriSeti ? " (veri seti: " + tireSade(veriSeti) + ")" : "")
+        + "; dil modeli çağrılmadı.";
+    td.appendChild(c);
+    tr.classList.add("dg-hafiza-satir");
+}
+
 function dgRenk(tr, metin, oneri, karar) {
     if (!tr) return;
     const m = String(metin || "").trim();
     const o = String(oneri || "").trim();
     tr.classList.toggle("dg-bos", !karar && !m);
-    tr.classList.toggle("dg-llm", !karar && !!m && !!o && m === o);
+    const hafiza = tr.classList.contains("dg-hafiza-satir");
+    tr.classList.toggle("dg-llm", !karar && !!m && !!o && m === o && !hafiza);
+    tr.classList.toggle("dg-hafiza-renk", !karar && !!m && !!o && m === o && hafiza);
     tr.classList.toggle("dg-eklendi", karar === "evet");
     tr.classList.toggle("dg-eklenmedi", karar === "hayir");
 }
@@ -2073,7 +2086,8 @@ function dgLejant(ogeler) {
     });
     return kap;
 }
-const DG_LEJANT_KARAR = [["dg-l-bos", "Sözlükte Boş"], ["dg-l-llm", "Dil Modeli Önerisi"],
+const DG_LEJANT_KARAR = [["dg-l-bos", "Sözlükte Boş"], ["dg-l-hafiza", "Onaylı Tanımdan"],
+                         ["dg-l-llm", "Dil Modeli Önerisi"],
                          ["dg-l-eklendi", "Sözlüğe Eklendi"],
                          ["dg-l-eklenmedi", "Sözlüğe Eklenmedi"]];
 const DG_LEJANT_TEYIT = [["dg-l-bos", "Tanım Boş"], ["dg-l-llm", "Dil Modeli Önerisi"]];
@@ -6079,6 +6093,9 @@ function dogrulamaKartiEkle(alan, blok) {
             tdK.className = "dg-kolon";
             tdK.appendChild(document.createTextNode(durum.kolon));
             tdK.title = durum.kolon;
+            /* ONAYLI HAFIZADAN DOLDU: dil modeli çağrılmadı; metin daha
+               önce onaylanmış tanım. Kaynağı satırda yazar. */
+            if (sat.oneri_kaynak === "hafiza") hafizaCipi(tdK, tr, sat.hafiza_veri_seti);
             if (durum.zorunlu) {
                 /* Kolonun NEDEN zorunlu olduğu satırda yazsın; kullanıcı
                    işareti kaldıramayınca sebebini aramamalı. */
@@ -6569,6 +6586,11 @@ function dogrulamaKartiEkle(alan, blok) {
             g.dataset.dolduruldu = "1";
             g.dataset.oneriMetin = tireSade(ack);
             if (k.modeller) g.title = "Öneren: " + tireSade(k.modeller);
+            if (k.kaynak === "hafiza" && satirElemanlari[i]
+                    && !satirElemanlari[i].querySelector(".dg-hafiza")) {
+                hafizaCipi(satirElemanlari[i].querySelector(".dg-kolon"),
+                           satirElemanlari[i], k.hafiza_veri_seti);
+            }
             if (g._vurgu) g._vurgu();
             if (satirElemanlari[i]) satirElemanlari[i].dataset.oneri = "llm";
         });

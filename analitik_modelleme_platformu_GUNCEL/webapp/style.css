@@ -2901,6 +2901,7 @@ span.bolme-cip { cursor: default; }
 :root {
   --dg-bos: rgba(234,179,8,.22);
   --dg-llm: rgba(59,130,246,.15);
+  --dg-hafiza: rgba(139,92,246,.15);
   --dg-eklendi: rgba(22,163,74,.16);
   --dg-eklenmedi: rgba(213,17,21,.12);
 }
@@ -2908,11 +2909,16 @@ span.bolme-cip { cursor: default; }
 #kabuk.koyu {
   --dg-bos: rgba(250,204,21,.18);
   --dg-llm: rgba(91,141,239,.24);
+  --dg-hafiza: rgba(167,139,250,.24);
   --dg-eklendi: rgba(34,197,94,.20);
   --dg-eklenmedi: rgba(239,68,68,.20);
 }
 .dg-tablo tr.dg-bos > td { background: var(--dg-bos); }
 .dg-tablo tr.dg-llm > td { background: var(--dg-llm); }
+.dg-tablo tr.dg-hafiza-renk > td { background: var(--dg-hafiza); }
+.dg-tablo tr.dg-hafiza-renk .dg-giris { background: transparent; }
+.dg-l-hafiza { background: var(--dg-hafiza); }
+.dg-rol.dg-hafiza { background: var(--dg-hafiza); color: var(--metin); }
 .dg-tablo tr.dg-eklendi > td { background: var(--dg-eklendi); }
 .dg-tablo tr.dg-eklenmedi > td { background: var(--dg-eklenmedi); }
 .dg-tablo tr.dg-bos .dg-giris, .dg-tablo tr.dg-llm .dg-giris,
@@ -3246,3 +3252,7 @@ span.bolme-cip { cursor: default; }
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin-soluk);
 }
 .calisma-gizli .calisma-oge { cursor: default; opacity: .8; }
+
+/* Çipli değişken hücresi (kimlik kolonu, Onaylı Tanım) kırpılmasın:
+   ad ve çip alt alta sarabilir. */
+.dg-tablo td.dg-kolon:has(.dg-rol) { white-space: normal; overflow-wrap: anywhere; }
