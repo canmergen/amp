@@ -6758,7 +6758,7 @@ function dogrulamaKartiEkle(alan, blok) {
         karar.kontrol = kDurumlar.map(k => ({
             kolon: k.kolon, aciklama: k.giris.value.trim(), uygula: k.kutu.checked }));
         const duzelt = karar.kontrol.filter(k => k.uygula && k.aciklama).length;
-        if (kisaErisim) karar.kisaltma = kisaErisim.deger();
+        if (kisaErisim) { karar.kisaltma = kisaErisim.deger(); karar.birlesik = kisaErisim.birlesik(); }
         if (kolonAdErisim) karar.kolon_ad = kolonAdErisim.deger();
         let ozet;
         if (adimModu === "kisaltma") {
@@ -6967,12 +6967,69 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        kullanıcı düzenler. */
     /* Not sütunu kaldırıldı (kullanıcı kararı: çok yer kaplıyor); karar,
        gerekçe ve uyarılar kısaltmanın yanındaki "i"de. */
-    ["Kısaltma", "LLM Sözlük", "LLM Genel", "Anlam", "Önerilen Kısaltma", "Seç"]
+    /* Anlam sütunu "LLM Karar" (kullanıcı kararı): değer, dil modellerinin
+       iki kaynak arasındaki kararıdır; düzenlenebilir. */
+    ["Kısaltma", "LLM Sözlük", "LLM Genel", "LLM Karar", "Önerilen Kısaltma", "Seç"]
         .forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
     tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
+    /* BİRLEŞTİRME ÖNERİLERİ (kullanıcı kararı): her parça ayrı kısaltma;
+       hep yan yana geçen ve anlamı karışan parçalar için dil modeli
+       birleştirme önerir, kabul kullanıcının. Yalnız öneri varsa görünür. */
+    const bSar = elYap("div", "dg-birlesik");
+    bSar.appendChild(elYap("div", "dg-tablo-baslik dg-birlesik-baslik", "Birleştirme Önerileri"));
+    const bAck = elYap("div", "dg-kisa-aciklama", "");
+    bSar.appendChild(bAck);
+    const bTablo = elYap("table", "dg-tablo dg-birlesik-tablo");
+    const bTh = document.createElement("thead"), bHr = document.createElement("tr");
+    ["Kısaltmalar", "Ayrı Anlamlar", "Birlikte Anlam", "Birleştir"]
+        .forEach(h => bHr.appendChild(elYap("th", "", h)));
+    bTh.appendChild(bHr); bTablo.appendChild(bTh);
+    const bTb = document.createElement("tbody");
+    bTablo.appendChild(bTb); bSar.appendChild(bTablo);
+    bSar.hidden = true;
+    kart.appendChild(bSar);
     kart.appendChild(durumEl);
+    const bSatirlar = [];
+    function birlesikCiz(liste) {
+        bTb.textContent = "";
+        bSatirlar.length = 0;
+        bAck.textContent = tireSade(ka.birlesik_aciklama || "");
+        (liste || []).forEach(r => {
+            const tr = elYap("tr", "dg-satir");
+            const tdK = elYap("td", "dg-kolon dg-kisaltma-ad", (r.parcalar || []).join(" + "));
+            const iMetni = [r.gerekce ? "Gerekçe: " + r.gerekce : "",
+                            r.kolon ? ftBinlik(r.kolon) + " kolonda yan yana" : "",
+                            r.onayli ? "Hafızada onaylı" : ""].filter(Boolean).join("\n\n");
+            if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kisaltma));
+            tr.appendChild(tdK);
+            tr.appendChild(elYap("td", "dg-kaynak-deger", r.ayri ? tireSade(r.ayri) : BOS_SIMGE));
+            const tdA = elYap("td", "dg-aciklama-hucre");
+            const g = document.createElement("input");
+            g.type = "text"; g.className = "dg-giris";
+            g.value = tireSade(r.anlam || ""); g.disabled = kilitli;
+            g.setAttribute("aria-label", r.kisaltma + " birlikte anlamı");
+            tdA.appendChild(g); tr.appendChild(tdA);
+            const tdI = elYap("td", "dg-ekle-hucre");
+            const kutu = document.createElement("input");
+            kutu.type = "checkbox"; kutu.className = "dg-ekle";
+            kutu.checked = !!r.onayli; kutu.disabled = kilitli;
+            kutu.setAttribute("aria-label", r.kisaltma + " birleştir");
+            tdI.appendChild(kutu); tr.appendChild(tdI);
+            /* Öneri sarı (karar sizde); düzenlenirse yeşil. */
+            const vurgu = () => {
+                const ell = g.value.trim() !== tireSade(r.anlam || "").trim();
+                tr.classList.toggle("dg-duzenlendi", ell);
+                tr.classList.toggle("dg-farkli", !ell && !r.onayli);
+            };
+            g.addEventListener("input", vurgu);
+            vurgu();
+            bSatirlar.push({ r, g, kutu });
+            bTb.appendChild(tr);
+        });
+        bSar.hidden = !(liste || []).length;
+    }
 
     function ciz(liste) {
         tb.textContent = "";
@@ -6992,13 +7049,23 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 + orn.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n") : ""]
                 .filter(Boolean).join("\n\n");
             if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kisaltma));
+            /* SAYI DEĞERLİ KALIP (kullanıcı bildirimi: harf kısmına inince
+               sayının anlamı kayboluyordu): adlardaki biçimler altta. */
+            if ((r.sayili || []).length)
+                tdK.appendChild(elYap("div", "dg-tip", r.sayili.join(" · ")));
             if (r.uyari) tr.classList.add("dg-uyarili");
             tr.appendChild(tdK);
             /* Kaynak sütunları (salt okunur). Seçilen kaynak işaretlenir. */
-            const tdS = elYap("td", "dg-kaynak-deger" + (r.secilen === "sozluk" ? " secili" : ""));
+            const tdS = elYap("td", "dg-kaynak-deger" + (r.secilen === "sozluk" ? " secili" : "")
+                    + (r.bekliyor || !r.sozlukten ? " dg-kaynak-yok" : ""));
             tdS.appendChild(elYap("span", "dg-secim-isaret", "✓"));
-            tdS.appendChild(document.createTextNode(r.sozlukten ? tireSade(r.sozlukten) : BOS_SIMGE));
+            /* LLM Sözlük: dil modelinin tanımlardan okuduğu anlam. Sonucu
+               yoksa sözlükteki kelime sayımı (altında belirtilir). */
+            tdS.appendChild(document.createTextNode(r.bekliyor ? "bekleniyor…"
+                : r.sozlukten ? tireSade(r.sozlukten) : BOS_SIMGE));
             if (r.onceki_sozluk) tdS.appendChild(elYap("div", "dg-tip", "önceki sözlüklerden"));
+            else if (!r.bekliyor && r.sozluk_kaynak === "istatistik")
+                tdS.appendChild(elYap("div", "dg-tip", "kelime sayımı"));
             tr.appendChild(tdS);
             /* Genel anlamı yok / emin değil / sonuç yok: ∅ (kullanıcı kararı);
                hangisi olduğu "i"deki kararda yazar. */
@@ -7015,10 +7082,24 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             g.type = "text"; g.className = "dg-giris";
             /* Dil modeli sonucu gelmemiş satır kilitli (kullanıcı kararı):
                sonuç gelince yoklama satırı açar. */
-            g.value = tireSade(r.anlam || ""); g.disabled = kilitli || !!r.bekliyor;
+            /* Sonucu gelmemiş satırda karar boş görünür (kullanıcı
+               bildirimi: önce kelime sayımı yazıyor, sonra değişiyordu). */
+            g.value = r.bekliyor ? "" : tireSade(r.anlam || "");
+            g.disabled = kilitli || !!r.bekliyor;
+            if (r.bekliyor) g.placeholder = "bekleniyor…";
             g.setAttribute("aria-label", r.kisaltma + " anlamı");
             if (r.bekliyor) tr.classList.add("dg-bekliyor");
-            tdA.appendChild(g); tr.appendChild(tdA);
+            tdA.appendChild(g);
+            /* Sayı değerli kalıpta anlam sayıyla okunur: <K>00 = <anlam> 00. */
+            const sayiliEl = elYap("div", "dg-tip", "");
+            const sayiliYaz = () => {
+                const a = g.value.trim();
+                sayiliEl.textContent = a && (r.sayili || []).length
+                    ? r.sayili.slice(0, 1).map(b => b + " = " + a + " " + b.replace(/^[A-Z]+/, "").replace(/_/g, "-")).join("")
+                      + (r.sayili.length > 1 ? " …" : "") : "";
+            };
+            if ((r.sayili || []).length) { tdA.appendChild(sayiliEl); g.addEventListener("input", sayiliYaz); sayiliYaz(); }
+            tr.appendChild(tdA);
             /* YANILTICI KISALTMA için daha açık kısaltma (dil modeli önerir,
                boşaltılabilir); kabul edilen Kolon Adı Önerileri'ne gider. */
             const tdY = elYap("td", "dg-aciklama-hucre");
@@ -7061,7 +7142,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const dmDen = r.dm_durum === "var" && ayni(r.dil_modeli);
                 const sozDen = ayni(r.sozlukten);
                 let tur = "";
-                if (!m) tur = "bos";
+                if (r.bekliyor) tur = "";
+                else if (!m) tur = "bos";
                 else if (r.onayli && ayni(r.anlam)) tur = "hafiza";
                 /* Kaynaklardan biri ya da DİL MODELİNİN KARARI (ikisi de
                    yanlışsa yazdığı anlam, dokunulmamış) ise renk uyuma göre. */
@@ -7089,6 +7171,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         sar.hidden = ust.hidden = !(liste || []).length;
     }
     ciz(ka.satirlar);
+    birlesikCiz(ka.birlesik);
 
     /* YOKLAMA (kullanıcı bildirimi: bekleme): kart beklemeden gelir; dil
        modeli kontrolü sürüyorsa 5 sn'de bir sorulur, bitince satırlar
@@ -7112,6 +7195,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 ka.dm = yeni.dm;
                 const elle = {};
                 satirlar.forEach(x => {
+                    if (x.r.bekliyor) return;
                     if (x.g.value.trim() !== String(x.r.anlam || "").trim() || x.kutu.checked !== !!x.r.onayli
                             || x.y.value !== String(x.r.yeni_kisaltma || ""))
                         elle[x.r.kisaltma] = { anlam: x.g.value, kutu: x.kutu.checked, yeni: x.y.value };
@@ -7121,6 +7205,18 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                     const e = elle[x.r.kisaltma];
                     if (e) { x.g.value = e.anlam; x.kutu.checked = e.kutu; x.y.value = e.yeni;
                              x.g.dispatchEvent(new Event("input")); }
+                });
+                /* Birleştirme önerileri: elle değişen satır ezilmez. */
+                const bElle = {};
+                bSatirlar.forEach(x => {
+                    if (x.g.value.trim() !== tireSade(x.r.anlam || "").trim() || x.kutu.checked !== !!x.r.onayli)
+                        bElle[x.r.kisaltma] = { anlam: x.g.value, kutu: x.kutu.checked };
+                });
+                ka.birlesik_aciklama = yeni.birlesik_aciklama || ka.birlesik_aciklama;
+                birlesikCiz(yeni.birlesik);
+                bSatirlar.forEach(x => {
+                    const e = bElle[x.r.kisaltma];
+                    if (e) { x.g.value = e.anlam; x.kutu.checked = e.kutu; x.g.dispatchEvent(new Event("input")); }
                 });
                 if (yeni.dm === "calisiyor") setTimeout(yokla, 3000);
                 if (degisti) degisti();
@@ -7154,12 +7250,17 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         });
     };
     return {
-        deger: () => satirlar.map(x => ({ kisaltma: x.r.kisaltma, anlam: x.g.value.trim(),
+        /* Sonucu gelmemiş (kilitli) satır kelime sayımıyla gider. */
+        deger: () => satirlar.map(x => ({ kisaltma: x.r.kisaltma,
+            anlam: x.r.bekliyor ? String(x.r.anlam || "").trim() : x.g.value.trim(),
             cikarilan: x.r.cikarilan || "", kaydet: x.kutu.checked,
             yeni_kisaltma: x.y.value.trim(),
             yeni_anlam: x.y.value.trim() ? (x.r.yeni_anlam || x.r.sozlukten || "") : "" })),
+        birlesik: () => bSatirlar.map(x => ({ kisaltma: x.r.kisaltma, anlam: x.g.value.trim(),
+            kabul: x.kutu.checked })),
         kilitle: k => {
             kilitli = k;
+            bSatirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; });
             satirlar.forEach(x => { x.g.disabled = k || !!x.r.bekliyor; x.kutu.disabled = k || !!x.r.bekliyor;
                                     x.y.disabled = k || !!x.r.bekliyor; });
             topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });

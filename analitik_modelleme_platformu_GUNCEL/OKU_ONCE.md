@@ -1,6 +1,32 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Birlikte geçen parçalar tek kısaltma + "anlaşılmaz kısaltma" kararı**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Her parça ayrı kısaltma, birleştirme yalnız öneri; LLM Sözlük gerçekten dil modeli; LLM Karar sütunu**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+1) Kolon adlarında "_" ile ayrılan her parça ayrı kısaltmadır; önceki
+   turdaki kendiliğinden birleştirme kaldırıldı. Hep yan yana geçen
+   parçalar (her birinin kolonlarının en az %90'ında, en az 3 kolonda)
+   yalnız ADAY: iki dil modeline "ayrı anlamlar yan yana okununca anlam
+   karışıyor mu" diye sorulur; ikisi de "birleştir" derse kartta
+   "Birleştirme Önerileri" bölümünde çıkar. Birleştir kutusu varsayılan
+   boş; işaretlenirse bu çalışmada birlikte anlamıyla kullanılır
+   (01.2.6'daki ad parçaları) ve hafızaya "<A>_<B>" olarak yazılır.
+   İşaretlenmezse parçalar ayrı kalır. Kolon adları değişmez.
+2) LLM Sözlük sütunu eskiden sözlükteki kelime sayımını gösteriyordu
+   (tek kelimeye inmiş, eksik). Artık karar veren dil modeli, örnek
+   tanımlardan okuduğu anlamı ayrıca yazar (sozluk_anlam) ve sütunda o
+   görünür. Dil modeli sonucu yoksa kelime sayımı görünür, altında
+   "kelime sayımı" yazar. Karar artık bu okunan anlam ile genel anlam
+   arasında; kelime sayımı modele yalnız ipucu.
+3) Anlam sütununun adı LLM Karar (Excel'de de). Sonucu gelmemiş satırda
+   LLM Sözlük ve LLM Karar "bekleniyor…"; önce kelime sayımı görünüp
+   sonra değişmiyor.
+4) Sayı değerli kalıp (<K><NN>, aralıklı <K><NN>_<MM>): kısaltmanın
+   altında adlardaki biçimler, LLM Karar altında sayıyla okunuşu
+   (<K><NN> = <anlam> <NN>). 01.2.6'ya giden ad parçalarında sayı
+   korunur (aralık "<NN>-<MM>").
+5) Kısaltma adı tabloda kırpılmıyor, sığmazsa alt satıra geçiyor.
+
+Önceki tur: **Birlikte geçen parçalar tek kısaltma + "anlaşılmaz kısaltma" kararı**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 1) Birlikte geçen parçalar tek kısaltma: iki parça kolon adlarında
    neredeyse hep yan yana geçiyorsa (her birinin geçtiği kolonların en az

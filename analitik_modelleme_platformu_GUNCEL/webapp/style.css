@@ -3045,9 +3045,9 @@ span.bolme-cip { cursor: default; }
 .dg-kontrol-bas { margin-top: var(--b-4); }
 /* Kısaltma (+ örnekler "i") | Anlam | Kaynak | Hafızaya Kaydet */
 /* Kısaltma | Sözlükte | Dil Modeli | Anlam | Kaynak | Hafızaya Kaydet */
-.dg-kisaltma-tablo th:nth-child(1) { width: 14%; }
-.dg-kisaltma-tablo th:nth-child(2) { width: 18%; }
-.dg-kisaltma-tablo th:nth-child(3) { width: 18%; }
+.dg-kisaltma-tablo th:nth-child(1) { width: 17%; }
+.dg-kisaltma-tablo th:nth-child(2) { width: 17%; }
+.dg-kisaltma-tablo th:nth-child(3) { width: 16%; }
 .dg-kisaltma-tablo th:nth-child(4) { width: auto; }
 .dg-kisaltma-tablo th:nth-child(5) { width: 120px; white-space: normal; }
 .dg-kisaltma-tablo th:nth-child(6) { width: 64px; }
@@ -3060,6 +3060,19 @@ span.bolme-cip { cursor: default; }
 .dg-kisaltma-tablo td.dg-kaynak-deger.secili .dg-secim-isaret { visibility: visible; }
 .dg-kisaltma-tablo td.dg-kaynak-yok { color: var(--metin-soluk); }
 .dg-kisaltma-tablo td.dg-kisaltma-ad .bolme-info { margin-left: 4px; vertical-align: middle; }
+/* Kısaltma adı kırpılmaz (kullanıcı bildirimi: uzun kısaltmalar kesik
+   görünüyordu); sığmazsa alt satıra geçer. */
+.dg-kisaltma-tablo td.dg-kisaltma-ad,
+.dg-birlesik-tablo td.dg-kisaltma-ad { white-space: normal; overflow-wrap: anywhere; }
+.dg-kisaltma-tablo td.dg-kisaltma-ad .dg-tip { font-weight: normal; }
+/* Birleştirme Önerileri: Kısaltmalar | Ayrı Anlamlar | Birlikte Anlam | Birleştir */
+.dg-birlesik { margin-top: var(--b-4); }
+.dg-birlesik-tablo th:nth-child(1) { width: 22%; }
+.dg-birlesik-tablo th:nth-child(2) { width: 28%; }
+.dg-birlesik-tablo th:nth-child(3) { width: auto; }
+.dg-birlesik-tablo th:nth-child(4) { width: 80px; }
+.dg-birlesik-tablo td.dg-ekle-hucre { text-align: center; }
+.dg-birlesik-tablo td.dg-kaynak-deger { color: var(--metin); }
 .dg-kisaltma-tablo td.dg-ekle-hucre { text-align: center; }
 /* Kolon Adı Önerileri: Mevcut Ad | Yeni Ad | Uygula */
 .dg-kolonad-tablo th:nth-child(1) { width: 42%; }

@@ -113,54 +113,95 @@ def _ham_parcalar(ad):
     return cikti
 
 
-# BIRLIKTE GECEN PARCALAR TEK KISALTMA (kullanici karari): iki parca
-# kolon adlarinda neredeyse hep YAN YANA geciyorsa (her birinin
-# gectigi kolonlarin en az IFADE_PAY kadarinda) tek kisaltma sayilir
-# ("<A>_<B>"); anlami birlikte verilir. Kolon adi degismez.
+# HER PARCA AYRI KISALTMA (kullanici karari): "_" ile ayrilan her parca
+# kendi basina kisaltmadir; kendiliginden birlestirilmez. Kolon adlarinda
+# neredeyse hep YAN YANA gecen parcalar (her birinin gectigi kolonlarin en
+# az IFADE_PAY kadarinda) yalniz BIRLESTIRME ADAYIDIR: dil modeli ayri
+# anlamlarin yan yana okununca anlami karistirip karistirmadigina bakar,
+# karisiyorsa birlestirme onerir; oneri kullanici kabul ederse gecerli
+# olur (bkz. birlesik_onerileri).
 IFADE_PAY = 0.9
-_IFADE_KAYIT = {}         # kolon adi -> birlestirilmis parca listesi
-_IFADE_KILIT = threading.Lock()
+BIRLESIK_EN_COK = 40      # dil modeline giden en cok aday cift
 
 
-def ifadeleri_hazirla(adlar):
-    """Verilen kolon adlari icin ifade (yan yana parca) tespiti; sonuc
-    kolon adina gore kaydedilir, parcalar() onu kullanir."""
-    adlar = [str(a) for a in (adlar or ())]
-    hamlar = {ad: _ham_parcalar(ad) for ad in adlar}
+def ifade_adaylari(adlar):
+    """Hep yan yana gecen parca ciftleri: {(A, B): birlikte_gectigi_kolon}."""
     tek, cift = Counter(), Counter()
-    for ham in hamlar.values():
+    for ad in adlar or ():
+        ham = _ham_parcalar(ad)
         tek.update(set(p for p in ham if p))
         cift.update(set((a, b) for a, b in zip(ham, ham[1:]) if a and b and a != b))
-    ifade = {(a, b) for (a, b), n in cift.items()
-             if n >= EN_AZ_KOLON and n >= IFADE_PAY * tek[a] and n >= IFADE_PAY * tek[b]}
-    sonuc = {}
-    for ad, ham in hamlar.items():
-        cikti, i = [], 0
-        while i < len(ham):
-            p = ham[i]
-            if p and i + 1 < len(ham) and (p, ham[i + 1]) in ifade:
-                cikti.append(p + "_" + ham[i + 1])
-                i += 2
-                continue
-            if p:
-                cikti.append(p)
-            i += 1
-        sonuc[ad] = cikti
-    with _IFADE_KILIT:
-        if len(_IFADE_KAYIT) > 200000:
-            _IFADE_KAYIT.clear()
-        _IFADE_KAYIT.update(sonuc)
-    return ifade
+    return {(a, b): n for (a, b), n in cift.items()
+            if n >= EN_AZ_KOLON and n >= IFADE_PAY * tek[a] and n >= IFADE_PAY * tek[b]}
 
 
 def parcalar(ad):
     """Kolon adinin kisaltma adaylari (buyuk harf). Pencereler ve sayilar
-    atlanir. Ifade tespiti yapilmis kolonda yan yana parcalar tek
-    kisaltmadir (bkz. ifadeleri_hazirla)."""
-    kayit = _IFADE_KAYIT.get(str(ad or ""))
-    if kayit is not None:
-        return list(kayit)
+    atlanir; her parca ayri kisaltmadir."""
     return [p for p in _ham_parcalar(ad) if p]
+
+
+def _ham_bicimler(ad):
+    """Kolon adinin parcalari ADDAKI haliyle: [(bicim, kisaltma, sayi)].
+    Sayi degerli kalipta (<K><NN>) kisaltma harf kismi, sayi deger; hemen
+    ardindan yalniz rakamdan olusan parca gelirse aralik sayilir
+    (<K><NN>_<MM> -> sayi "<NN>-<MM>")."""
+    ham = [p for p in re.split(r"[^A-Za-z0-9ÇĞİÖŞÜçğıöşü]+", str(ad or "")) if p]
+    cikti, i = [], 0
+    while i < len(ham):
+        p = ham[i]
+        u = p.upper().translate(_TR_SADE)
+        i += 1
+        if len(u) < 2 or _PENCERE.match(u):
+            cikti.append((p, None, ""))       # komsulugu bozar (birlestirme yok)
+            continue
+        m = _SAYILI.match(u)
+        if not m:
+            cikti.append((p, u, ""))
+            continue
+        sayi = m.group(2)
+        if i < len(ham) and re.match(r"^\d{2,}$", ham[i]):
+            p, sayi = "%s_%s" % (p, ham[i]), "%s-%s" % (sayi, ham[i])
+            i += 1
+        cikti.append((p, m.group(1), sayi))
+    return cikti
+
+
+def ad_anlamlari(ad, anlamlar):
+    """Kolon adinin parcalari ve anlamlari (01.2.6'ya giden AD PARCALARI):
+    [(addaki bicim, anlam)]. Kabul edilen birlestirme ("<A>_<B>" anahtari)
+    yan yana iki parcayi tek anlamla verir; sayi degerli kalipta sayi
+    anlamda korunur (kullanici bildirimi: harf kismina inince sayinin
+    anlami kayboluyordu)."""
+    anlamlar = anlamlar or {}
+    bicim = _ham_bicimler(ad)
+    cikti, i = [], 0
+    while i < len(bicim):
+        b, k, n = bicim[i]
+        if k is None:
+            i += 1
+            continue
+        if i + 1 < len(bicim) and bicim[i + 1][1] and not n and not bicim[i + 1][2]:
+            ortak = "%s_%s" % (k, bicim[i + 1][1])
+            if anlamlar.get(ortak):
+                cikti.append(("%s_%s" % (b, bicim[i + 1][0]), anlamlar[ortak]))
+                i += 2
+                continue
+        if anlamlar.get(k):
+            cikti.append((b, ("%s %s" % (anlamlar[k], n)) if n else anlamlar[k]))
+        i += 1
+    return list(dict.fromkeys(cikti))
+
+
+def sayili_bicimler(tanimlar, kisa, adet=8):
+    """Kisaltmanin kolon adlarinda sayi degeriyle gectigi bicimler
+    (<K>00, <K>06 ...); kartta kisaltmanin altinda gosterilir."""
+    gorulen = []
+    for ad in tanimlar or {}:
+        for b, k, n in _ham_bicimler(ad):
+            if k and k == kisa and n and b.upper() not in gorulen:
+                gorulen.append(b.upper())
+    return sorted(gorulen)[:adet]
 
 
 def _tanim_kokleri(tanim):
@@ -218,7 +259,6 @@ def _parca_istatistigi(tanimlar):
     agirlik : satirlarla ayni sirada; onayli tanim ONAY_AGIRLIK, ham 1.
     parca_say AGIRLIKSIZ kolon sayisidir (kartta gorunen)."""
     onayli = _onayli_tanimlar()
-    ifadeleri_hazirla(list(tanimlar or {}))
     satirlar, agirlik = [], []
     for ad, tanim in (tanimlar or {}).items():
         if not str(tanim or "").strip():
@@ -818,7 +858,6 @@ def tutarsizliklar(tanimlar, anlamlar=None):
                    fazlasinda gecen) sayilmaz.
 
     Doner: {kolon: [{"tur", "kisaltma", "anlam", "gerekce", "yeni_ad"}]}"""
-    ifadeleri_hazirla(list(tanimlar or {}))
     if anlamlar is None:
         oner, _d = oneriler(tanimlar, 0.0)
         anlamlar = {k: o["anlam"] for k, o in oner.items() if o["anlam"]}
@@ -985,13 +1024,94 @@ def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
     ornek_say = {g["kisaltma"]: len(g["ornekler"]) for g in girdi}
     for k, v in (sonuc or {}).items():
         v["ornek"] = ornek_say.get(k, 0)
+    # Kisaltma sonuclari kartta hemen gorunsun; birlestirme sorusu ardindan.
+    with _DM_KILIT:
+        k_ = _DM.get(imza)
+        if k_ and k_.get("durum") == "calisiyor":
+            k_["sonuc"] = dict(sonuc or k_.get("sonuc") or {})
+            k_["bekleyen"] = set()
+    birlesik = {}
+    if sonuc is not None:
+        try:
+            birlesik = _birlesik_sor(tanimlar or {}, girdi, sonuc)
+        except Exception:
+            birlesik = {}
     with _DM_KILIT:
         _DM[imza] = {"durum": "bitti" if sonuc is not None else "hata",
-                     "sonuc": sonuc or {}, "zaman": time.time(),
+                     "sonuc": sonuc or {}, "zaman": time.time(), "birlesik": birlesik,
                      "hata": str(hata or ""), "sure": round(time.time() - _DM.get(imza, {}).get("zaman", time.time()))}
     # KALICI YAZMA BURADA DEGIL: 01.2.4 tamamlaninca, DUZELTILMIS calisma
     # kopyasindan yapilir (bkz. kalici_ogren). Ham sozlukten ogrenilen
     # dosyaya yazilmaz.
+
+
+def _birlesik_girdisi(tanimlar, anlamlar):
+    """Hep yan yana gecen ciftler + parcalarin anlamlari + ornek kolonlar."""
+    tanimli = {ad: t for ad, t in (tanimlar or {}).items() if str(t or "").strip()}
+    aday = ifade_adaylari(list(tanimli))
+    girdi = []
+    for (a, b), n in sorted(aday.items(), key=lambda x: (-x[1], x[0]))[:BIRLESIK_EN_COK]:
+        ornek = []
+        for ad, t in tanimli.items():
+            ham = _ham_parcalar(ad)
+            if any(x == a and y == b for x, y in zip(ham, ham[1:])):
+                ornek.append((ad, str(t)[:160]))
+            if len(ornek) >= 5:
+                break
+        girdi.append({"ad": "%s_%s" % (a, b), "parcalar": [a, b], "kolon": int(n),
+                      "anlamlar": [anlamlar.get(a, ""), anlamlar.get(b, "")],
+                      "ornekler": ornek})
+    return girdi
+
+
+def _birlesik_sor(tanimlar, girdi, sonuc):
+    """Dil modeline birlestirme sorusu: {"A_B": {"anlam", "gerekce",
+    "parcalar", "ayri"}} (yalniz birlestirme onerilenler)."""
+    anlamlar = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
+    anlamlar.update({k: v.get("anlam") for k, v in (sonuc or {}).items() if v.get("anlam")})
+    anlamlar.update(onaylilar())
+    ciftler = _birlesik_girdisi(tanimlar, anlamlar)
+    if not ciftler:
+        return {}
+    from fe_agent import llm as llm_mod
+    oner, _h = llm_mod.kisaltma_birlesik(ciftler)
+    cikti = {}
+    for g in ciftler:
+        o = (oner or {}).get(g["ad"])
+        if o:
+            cikti[g["ad"]] = dict(o, parcalar=list(g["parcalar"]), kolon=g["kolon"],
+                                  ayri=" + ".join(x or BOS_ANLAM for x in g["anlamlar"]))
+    return cikti
+
+
+BOS_ANLAM = "?"
+
+
+def birlesik_onerileri(tanimlar, veri_seti=""):
+    """Kart icin: (oneriler, hazir). oneriler: [{"kisaltma": "A_B",
+    "parcalar", "ayri", "anlam", "gerekce", "kolon", "onayli"}]. Hafizada
+    onayli birlestirme (hafizada "A_B" anahtari) dil modeli onermese de
+    listelenir, isaretli gelir."""
+    imza = dogrulamayi_baslat(tanimlar, veri_seti)
+    with _DM_KILIT:
+        k = dict(_DM.get(imza) or {})
+    oner = dict(k.get("birlesik") or {})
+    onay = onaylilar()
+    tanimli = [ad for ad, t in (tanimlar or {}).items() if str(t or "").strip()]
+    aday = ifade_adaylari(tanimli)
+    for (a, b), n in aday.items():
+        ad = "%s_%s" % (a, b)
+        if ad in onay and ad not in oner:
+            oner[ad] = {"anlam": onay[ad], "gerekce": "", "parcalar": [a, b], "kolon": int(n),
+                        "ayri": ""}
+    cikti = []
+    for ad, o in sorted(oner.items(), key=lambda x: (-int(x[1].get("kolon") or 0), x[0])):
+        cikti.append({"kisaltma": ad, "parcalar": o.get("parcalar") or ad.split("_", 1),
+                      "ayri": o.get("ayri") or "", "anlam": onay.get(ad) or o.get("anlam") or "",
+                      "oneri_anlam": o.get("anlam") or "",
+                      "gerekce": o.get("gerekce") or "", "kolon": int(o.get("kolon") or 0),
+                      "onayli": ad in onay})
+    return cikti, k.get("durum") != "calisiyor"
 
 
 def dogrulamayi_baslat(tanimlar, veri_seti=""):
@@ -1094,6 +1214,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         d0_secim, d0_gerekce = d.get("secim") or "", d.get("gerekce") or ""
         d0_yeni = d.get("yeni_kisaltma") or ""
         d0_yeni_anlam = d.get("yeni_anlam") or ""
+        d0_sozluk = d.get("sozluk_anlam") or ""
         if d.get("anlam"):
             d = dict(d, anlam=yalin_anlam(d["anlam"]))
         onceki = cikti.get(kisa) or {"kolon": int(parca_say.get(kisa, 0)),
@@ -1178,6 +1299,9 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             cikti[kisa]["gerekce"] = d0_gerekce
             cikti[kisa]["yeni_kisaltma"] = d0_yeni
             cikti[kisa]["yeni_anlam"] = yalin_anlam(d0_yeni_anlam) if d0_yeni_anlam else ""
+            # LLM SOZLUK (kullanici bildirimi: sutun dil modeli diyordu ama
+            # kelime sayimini gosteriyordu): modelin tanimlardan okudugu anlam.
+            cikti[kisa]["dm_sozluk"] = yalin_anlam(d0_sozluk) if d0_sozluk else ""
     # AYNI YENI KISALTMA BIRDEN FAZLA KISALTMAYA onerildiyse (ayri anlamlar
     # tek kisaltmaya inemez) ya da zaten kolon adlarinda baska bir kisaltma
     # olarak geciyorsa oneri dusurulur, satirda uyari yazar.
@@ -1339,7 +1463,7 @@ _KARAR_AD = {"ayni": "ikisi aynı", "sozluk": "sözlük doğru, genel anlam uymu
 
 def _uyum(o, bekliyor):
     """"ayni" / "farkli" / "" : sozlukteki anlam ile dil modelinin karari."""
-    soz, dm = o.get("istatistik") or "", o.get("dm_anlam") or ""
+    soz, dm = o.get("dm_sozluk") or o.get("istatistik") or "", o.get("dm_anlam") or ""
     if bekliyor:
         return ""
     # Modelin acik karari varsa o belirler (es anlamlilar "ayni").
@@ -1369,8 +1493,11 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
     # Sonucu henuz gelmeyen kisaltmalar kartta kilitli (kullanici karari:
     # "yapabildiklerini degistirebileyim, LLM bitmeden digerlerini degil").
     bekleyen = bekleyenler(tanimlar, veri_seti) if durum == "calisiyor" else set()
+    # Hafizadaki BIRLESTIRMELER ("<A>_<B>") ayri bolumde (birlesik_onerileri).
+    tanimli = [ad for ad, t in (tanimlar or {}).items() if str(t or "").strip()]
+    ciftler = {"%s_%s" % ab for ab in ifade_adaylari(tanimli)}
     satirlar = []
-    for kisa in sorted(set(oner) | set(onay),
+    for kisa in sorted((set(oner) | set(onay)) - ciftler,
                        key=lambda k: (-(oner.get(k) or {}).get("kolon", 0), k)):
         o = oner.get(kisa) or {}
         parca = []
@@ -1401,6 +1528,9 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                 parca.append(o["onceki"])
             if o.get("sozlukten"):
                 parca.append("istatistik: %s" % o["sozlukten"])
+            elif o.get("dm_sozluk") and o.get("istatistik") \
+                    and not _ayni_anlam(o["dm_sozluk"], o["istatistik"]):
+                parca.append("kelime sayımı: %s" % o["istatistik"])
             if o.get("destek") is not None:
                 parca.append("%d kolonun %s" % (o["kolon"], yuzdesinde(o["destek"] * 100)))
             elif o.get("kolon"):
@@ -1417,7 +1547,15 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          "bekliyor": kisa in bekleyen and kisa not in onay,
                          # Kartta iki kaynak ayri sutunda; Anlam'a hangisinin
                          # yazildigi "secilen" (renk de buna gore).
-                         "sozlukten": o.get("istatistik") or "",
+                         # LLM Sozluk: modelin tanimlardan okudugu; model
+                         # sonucu yoksa kelime sayimi (kartta belirtilir).
+                         "sozlukten": o.get("dm_sozluk") or o.get("istatistik") or "",
+                         "sozluk_kaynak": ("dil_modeli" if o.get("dm_sozluk") else
+                                           "istatistik" if o.get("istatistik") else ""),
+                         "istatistik": o.get("istatistik") or "",
+                         # Sayi degerli kalip: kolon adlarindaki bicimler
+                         # (<K>00 ...); anlam kartta sayiyla gosterilir.
+                         "sayili": sayili_bicimler(tanimlar, kisa),
                          "onceki_sozluk": o.get("kaynak") == "onceki",
                          "dil_modeli": o.get("dm_anlam") or "",
                          "dm_durum": ("bekliyor" if kisa in bekleyen else
@@ -1449,7 +1587,7 @@ RAPOR_ORNEK = 5          # anlami tasiyan ornek kolon
 RAPOR_CELISEN = 3        # anlami TASIMAYAN ornek kolon (sozluk hatasi adayi)
 
 RAPOR_KOLONLARI = (
-    ["Kısaltma", "Önerilen Anlam", "LLM Sözlük", "LLM Genel", "Karar", "Gerekçe",
+    ["Kısaltma", "LLM Karar", "LLM Sözlük", "LLM Genel", "Karar", "Gerekçe",
      "Önerilen Kısaltma", "Kaynak", "Hafızada Onaylı",
      "Geçtiği Tanımlı Kolon", "Anlamı Taşıyan Kolon", "İstatistik Adayları"]
     + sum([["Örnek %d Kolon" % i, "Örnek %d Açıklama" % i]
