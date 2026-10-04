@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2 kartlarında sade renk**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **"genel anlamı yok" yerine ∅**. Değiştir: `webapp/app.js` (yalnız sayfa yenileme)
+
+- Kısaltma Sözlüğü'nde LLM Genel sütunu, genel anlamı olmayan (kuruma
+  özgü) kısaltmada "genel anlamı yok" yerine ∅ gösterir.
+
+Önceki tur: **01.2 kartlarında sade renk**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme)
 
 01.2 Veri ve Model Tanımları kartlarında (Sözlük Tanımları, Kısaltma
 Sözlüğü, Kolon Adı Önerileri, Sözlük Tanım Kontrolü) yalnız üç anlam:

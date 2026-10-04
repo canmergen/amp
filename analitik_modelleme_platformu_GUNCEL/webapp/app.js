@@ -6998,7 +6998,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             if (r.onceki_sozluk) tdS.appendChild(elYap("div", "dg-tip", "önceki sözlüklerden"));
             tr.appendChild(tdS);
             const dmMetin = { bekliyor: "bekleniyor…", emin_degil: "emin değil",
-                              bilinmiyor: "genel anlamı yok", yok: BOS_SIMGE };
+                              bilinmiyor: BOS_SIMGE, yok: BOS_SIMGE };   /* genel anlamı yok: ∅ (kullanıcı kararı) */
             const tdD = elYap("td", "dg-kaynak-deger" + (r.secilen === "dil_modeli" ? " secili" : "")
                     + (r.dm_durum && r.dm_durum !== "var" ? " dg-kaynak-yok" : ""));
             tdD.appendChild(elYap("span", "dg-secim-isaret", "✓"));
