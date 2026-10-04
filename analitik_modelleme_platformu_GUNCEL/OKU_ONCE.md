@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Arşivden silinen çalışma geri gelmiyor**. Değiştir: `webapp/backend.py` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma kararı: "sözlük doğru ama kolon adında yanlış kısaltma"**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı; bir önceki turun dosyaları da kopyalanmadıysa onlar da: `webapp/style.css`, `webapp/backend.py`)
+
+Karar seçenekleri (Not sütununda gerekçesiyle):
+- ikisi aynı (eş anlamlı dahil) -> o anlam
+- sözlük doğru, genel anlam uymuyor -> Anlam = sözlükteki (IN: "giriş"
+  değil "gelen")
+- dil modeli doğru, sözlükteki tanımlar yanlış -> Anlam = genel anlam;
+  tanımlar 01.2.6'da düzeltilmeye aday
+- sözlük doğru ama kolon adında yanlış kısaltma seçilmiş (YENİ) ->
+  X2'nin anlamı genel anlam kalır ("kare"); Önerilen Kısaltma = PREV,
+  altında "= önceki eş dönem". Onayda kısaltma sözlüğüne X2 = kare,
+  PREV = önceki eş dönem yazılır. 01.2.5 bu kolonları PREV ile adlandırır.
+  Bu veri setinin kontrollerinde (kolon adı önerileri, 01.2.6) X2'li
+  kolonlar "önceki eş dönem" anlamıyla değerlendirilir; 01.2.6'ya kolonun
+  yeni adı da gider.
+  Önerilen kısaltmayı boşaltırsanız Anlam sözlükteki anlama döner.
+- ikisi de yanlış -> dil modelinin yazdığı anlam
+
+Önceki tur: **Arşivden silinen çalışma geri gelmiyor**. Değiştir: `webapp/backend.py` (backend yeniden başlatılmalı)
 
 - Sebep: silme sürerken ya da hemen sonra biten bir istek (adım, öneri,
   kart kaydı) çalışmanın calisma.json dosyasını yeniden yazıyordu; Arşiv

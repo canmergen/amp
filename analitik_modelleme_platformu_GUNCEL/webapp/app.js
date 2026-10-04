@@ -7012,11 +7012,26 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             y.value = r.yeni_kisaltma || ""; y.maxLength = 8;
             y.disabled = kilitli || !!r.bekliyor;
             y.setAttribute("aria-label", r.kisaltma + " için önerilen kısaltma");
+            tdY.appendChild(y);
+            /* Yeni kısaltmanın anlamı (bu kolonlardaki gerçek anlam). */
+            const yAnlam = elYap("div", "dg-tip", r.yeni_anlam ? "= " + tireSade(r.yeni_anlam) : "");
+            tdY.appendChild(yAnlam);
             y.addEventListener("input", () => {
                 const b = y.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
                 if (b !== y.value) y.value = b;
+                yAnlam.textContent = y.value && (r.yeni_anlam || r.sozlukten)
+                    ? "= " + tireSade(r.yeni_anlam || r.sozlukten) : "";
+                /* KISALTMA YANLIŞ SEÇİLMİŞ satırda öneri boşaltılırsa
+                   kolonlar eski kısaltmayla kalır; anlam bu çalışmada
+                   sözlükteki anlama döner (geri yazılınca genel anlama). */
+                if (r.secim === "kisaltma_yanlis" && r.sozlukten) {
+                    const genel = tireSade(r.anlam || ""), soz = tireSade(r.sozlukten);
+                    if (!y.value && g.value.trim() === genel) g.value = soz;
+                    else if (y.value && g.value.trim() === soz) g.value = genel;
+                    g.dispatchEvent(new Event("input"));
+                }
             });
-            tdY.appendChild(y); tr.appendChild(tdY);
+            tr.appendChild(tdY);
             const tdKy = elYap("td", "dg-tip", r.onayli
                 ? "Hafızada onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || ""));
             /* ŞÜPHELİ ANLAM SİLİNMEZ, SÖYLENİR (kullanıcı kararı). */
@@ -7134,7 +7149,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     return {
         deger: () => satirlar.map(x => ({ kisaltma: x.r.kisaltma, anlam: x.g.value.trim(),
             cikarilan: x.r.cikarilan || "", kaydet: x.kutu.checked,
-            yeni_kisaltma: x.y.value.trim() })),
+            yeni_kisaltma: x.y.value.trim(),
+            yeni_anlam: x.y.value.trim() ? (x.r.yeni_anlam || x.r.sozlukten || "") : "" })),
         kilitle: k => {
             kilitli = k;
             satirlar.forEach(x => { x.g.disabled = k || !!x.r.bekliyor; x.kutu.disabled = k || !!x.r.bekliyor;

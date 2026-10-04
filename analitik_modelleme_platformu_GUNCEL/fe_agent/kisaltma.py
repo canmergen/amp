@@ -974,6 +974,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         genel_uyumlu = d.get("genel_uyumlu")
         d0_secim, d0_gerekce = d.get("secim") or "", d.get("gerekce") or ""
         d0_yeni = d.get("yeni_kisaltma") or ""
+        d0_yeni_anlam = d.get("yeni_anlam") or ""
         if d.get("anlam"):
             d = dict(d, anlam=yalin_anlam(d["anlam"]))
         onceki = cikti.get(kisa) or {"kolon": int(parca_say.get(kisa, 0)),
@@ -1057,6 +1058,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             cikti[kisa]["secim"] = d0_secim
             cikti[kisa]["gerekce"] = d0_gerekce
             cikti[kisa]["yeni_kisaltma"] = d0_yeni
+            cikti[kisa]["yeni_anlam"] = yalin_anlam(d0_yeni_anlam) if d0_yeni_anlam else ""
     # ONCEKI CALISMALARDAN OGRENILEN: bu sozlukten ogrenilemeyen (ya da
     # anlami bos kalan) kisaltma, kolon adlarinda geciyorsa ogrenilmis
     # bilgiden doldurulur.
@@ -1171,8 +1173,10 @@ def kanit_ornekleri(tanimlar, kisa, anlam, adet=KANIT_ORNEK):
     return secilen
 
 
-_KARAR_AD = {"ayni": "ikisi aynı", "sozluk": "sözlük doğru",
-             "genel": "dil modeli doğru", "yeni": "ikisi de yanlış, düzeltildi",
+_KARAR_AD = {"ayni": "ikisi aynı", "sozluk": "sözlük doğru, genel anlam uymuyor",
+             "genel": "dil modeli doğru, sözlükteki tanımlar yanlış",
+             "kisaltma_yanlis": "sözlük doğru ama kolon adında yanlış kısaltma seçilmiş",
+             "yeni": "ikisi de yanlış, düzeltildi",
              "emin_degil": "karar verilemedi"}
 
 
@@ -1185,7 +1189,7 @@ def _uyum(o, bekliyor):
     secim = o.get("secim")
     if secim == "ayni":
         return "ayni"
-    if secim in ("sozluk", "genel", "yeni"):
+    if secim in ("sozluk", "genel", "yeni", "kisaltma_yanlis"):
         return "ayni" if _ayni_anlam(yalin_anlam(soz), yalin_anlam(dm)) else "farkli"
     if o.get("dm_karar") == "dogru" or _ayni_anlam(yalin_anlam(soz), yalin_anlam(dm)):
         return "ayni"
@@ -1217,6 +1221,11 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                 # ACIK KARAR (kullanici karari): hangisi dogru + gerekce.
                 parca.append("Karar: %s%s" % (_KARAR_AD.get(o["secim"], o["secim"]),
                                               (". " + o["gerekce"]) if o.get("gerekce") else ""))
+                if o.get("yeni_kisaltma"):
+                    parca.append("Önerilen: %s = %s; bu kolonlar Kolon Adı Önerileri "
+                                 "adımında %s ile adlandırılır"
+                                 % (o["yeni_kisaltma"], o.get("yeni_anlam") or "",
+                                    o["yeni_kisaltma"]))
             else:
                 if o.get("genel_uyumlu"):
                     parca.append("sözlüğe bakmadan verilen genel anlamla aynı")
@@ -1254,6 +1263,8 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          # YANILTICI KISALTMA icin dil modelinin onerdigi daha
                          # acik kisaltma (01.2.5'te kolon adina uygulanir).
                          "yeni_kisaltma": "" if kisa in onay else (o.get("yeni_kisaltma") or ""),
+                         "yeni_anlam": "" if kisa in onay else (o.get("yeni_anlam") or ""),
+                         "secim": o.get("secim") or "",
                          # Sozluk ile dil modeli AYNI mi (kartta satir rengi;
                          # kullanici karari). Biri yoksa karsilastirma yok.
                          "uyum": _uyum(o, kisa in bekleyen),
