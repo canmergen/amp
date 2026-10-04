@@ -1,6 +1,27 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma: birlikte geçen kısaltmanın anlamı verilmez**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltmalar sözlükten öğreniliyor (sabit liste yok)**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+
+- Önceden verilen temel kısaltma listesi KALDIRILDI (kullanıcı kararı:
+  "kendi kendine gelişen bir sistem"). Her anlam o çalışmanın
+  sözlüğünden ve onaylı tanım hafızasından öğrenilir; yeni onaylanan her
+  tanım bir sonraki öğrenmenin girdisi.
+- İstatistik bütün tanımlar üzerinden; atama en güçlü kanıttan başlar ve
+  bir kısaltma, kolonlarının yarısından fazlasında birlikte geçtiği
+  kısaltmaya verilmiş anlamı alamaz (IN, CP'nin "karşı taraf"ını almaz,
+  "gelen" olur; ADT, BNK'nin "banka"sını almaz, "adedi" olur).
+- Dil modeline her kısaltma için: en güçlü 3 aday ve yüzdeleri, örnek
+  kolonlardaki diğer kısaltmaların anlamları ve çeşitli seçilmiş en çok
+  8 örnek kolon (her yeni örnek, öncekilerde olmayan kısaltmaları
+  getirenlerden). Kural: "kullanıcı bu kısaltmanın geçtiği kolonlarda hep
+  şu kelimeyi yazmış, demek ki bundan bahsediyor"; yalın hal; emin
+  değilse boş.
+- Kart: Kaynak sütunu "Dil modeli doğruladı (8 örnekle)" gibi örnek
+  sayısını yazar. İstemde kesin = yalnız onaylı kısaltmalar.
+- İstatistiğin tek başına öğrenemedikleri (her tanımda geçen "işlem"
+  gibi) dil modeline yine sorulur.
+
+Önceki tur: **Kısaltma: birlikte geçen kısaltmanın anlamı verilmez**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py` (backend yeniden başlatılmalı)
 
 - Bir kısaltmanın kolonlarının yarısından fazlasında birlikte geçen ve
   anlamı kesin bilinen (temel / onaylı) kısaltmanın anlamı o kısaltmaya

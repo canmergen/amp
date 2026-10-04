@@ -347,11 +347,11 @@ KOLON ADI KALIPLARI:
   - <A>D_<B>D_..._RATIO ya da ..._<A>D_<B>D_RATIO (ornek 180D_360D_AMT_RATIO):
     SON A GUNDEKI degerin SON B GUNDEKI degere ORANI. "A ile B. gun arasi"
     bir zaman araligi DEGILDIR.
-  - AMT: tutar, CNT: adet, AVG: ortalama, RATIO: oran.
-  - KISALTMALAR (kesin) blogu verilirse (kullanicinin onayladigi ve
-    standart kisaltmalar) anlam ODUR; kendin tahmin etme.
-  - KISALTMALAR (tahmini) blogu sozlukten cikarilan ONERIDIR: kolon adi,
-    dagilim ve orneklerle tutarliysa kullan, celisiyorsa kullanma.
+  - KISALTMALAR (kesin) blogu verilirse (kullanicinin onayladigi
+    kisaltmalar) anlam ODUR; kendin tahmin etme.
+  - KISALTMALAR (tahmini) blogu sozlukteki aciklamalardan OGRENILMISTIR:
+    kolon adi, dagilim ve orneklerle tutarliysa kullan, celisiyorsa
+    kullanma.
   - Diger kisaltmalarin anlamini ORNEK / ONAYLI TANIMLARDAN cikar.
 
 ROL verilen kolonlar (kullanicinin modelleme tanimlarinda sectigi):
@@ -1152,9 +1152,13 @@ def turkcelestir(kayitlar, baglam=None, orkestra=None):
 # KISALTMA KONTROLU (kullanici karari: "kendisi de iyilesemez mi")
 # ===========================================================================
 SISTEM_KISALTMA = """Sen bir bankacilik veri sozlugu uzmanisin. Kolon
-adlarinda gecen KISALTMALAR verilecek. Her biri icin: kural tabanli
-ONERILEN anlam (bos olabilir) ve kisaltmanin gectigi ORNEK kolon adlari
-ile o kolonlarin sozluk tanimlari.
+adlarinda gecen KISALTMALAR verilecek. Her biri icin: sozlukteki BUTUN
+tanimlardan cikan ONERILEN anlam (bos olabilir), "istatistik" satirinda en
+guclu aday kelimeler ve yuzdeleri, "diger kisaltmalar" satirinda ornek
+kolon adlarindaki diger kisaltmalarin anlamlari ve kisaltmanin gectigi
+cesitli ORNEK kolon adlari ile tanimlari. Kullanici tanimlari kendisi
+yazdi: "bu kisaltma gecen kolonlarda kullanici hep su kelimeyi yazmis,
+demek ki bundan bahsediyor" diye dusun.
 
 Her kisaltma icin karar ver:
   "dogru"     : onerilen anlam dogru
@@ -1168,11 +1172,14 @@ KURALLAR:
   - Birlikte gectigi BASKA bir kisaltmanin anlamini verme. Ornek:
     IN_CP_CNT kolonunda CP "karsi taraf"tir; IN "karsi taraf" DEGIL,
     "gelen"dir.
-  - "bilinen" satiri ornek kolon adlarindaki DIGER kisaltmalarin kesin
-    anlamlaridir. O kelimeler bu kisaltmanin anlami OLAMAZ; onerilen
-    anlam bunlardan biriyse karar "duzelt" ya da "emin_degil" olmali.
-    Ornek: DISTINCT_BNK_ADT "Farkli banka adedi", bilinen DISTINCT=farkli,
-    BNK=banka -> ADT "adet".
+  - "diger kisaltmalar" satirindaki kelimeler baska kisaltmalarindir; bu
+    kisaltmanin anlami OLAMAZ. Onerilen anlam bunlardan biriyse karar
+    "duzelt" ya da "emin_degil" olmali. Ornek: DISTINCT_BNK_ADT "Farkli
+    banka adedi", diger kisaltmalar DISTINCT=farkli, BNK=banka -> ADT
+    "adet".
+  - "istatistik" adaylarinin hepsine ornekler uzerinden bak; en guclu
+    aday her zaman dogru degildir (birlikte gecen kisaltmanin kelimesi
+    olabilir).
   - Tanimdaki hangi kelimenin bu kisaltmaya karsilik geldigini kolon
     adindaki SIRAYLA eslestirerek bul; bilinenleri cikardiktan sonra
     kalan kelime adaydir.
@@ -1198,8 +1205,16 @@ KISALTMA_PARCA = 25
 
 def _kisaltma_satiri(g):
     s = "- %s | onerilen: %s" % (g["kisaltma"], g.get("anlam") or "(bos)")
+    if g.get("kolon"):
+        s += " | %d kolonda geciyor" % g["kolon"]
+    if g.get("adaylar"):
+        s += "\n    istatistik: " + "; ".join(
+            "%s (tanimlarin %%%d'inde, digerlerinden %%%d fazla)"
+            % (a["anlam"], round(a["destek"] * 100), round(a["ayirt"] * 100))
+            for a in g["adaylar"])
     if g.get("bilinen"):
-        s += "\n    bilinen: " + ", ".join("%s=%s" % kv for kv in sorted(g["bilinen"].items()))
+        s += "\n    diger kisaltmalar: " + ", ".join(
+            "%s=%s" % kv for kv in sorted(g["bilinen"].items()))
     for ad, t in g.get("ornekler") or []:
         s += "\n    %s: %s" % (ad, t)
     return s

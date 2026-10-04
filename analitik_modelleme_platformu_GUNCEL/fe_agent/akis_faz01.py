@@ -1386,7 +1386,7 @@ def _aciklama_baglami(durum):
         baglam["hafiza"] = tanim_hafiza.tanimlar()
     except Exception:
         baglam["hafiza"] = {}
-    # KISALTMALAR: kesin (onayli + temel sozluk) ve tahmini (sozlukten /
+    # KISALTMALAR: kesin (onayli) ve tahmini (sozlukten ogrenilen /
     # dil modelinden). Dil modeli kisaltma kontrolu burada ARKA PLANDA
     # baslar; sonucu 01.2.4'teki Kisaltma Sozlugu kartina yetisir.
     try:
@@ -1417,16 +1417,17 @@ def _kisaltma_kaynagi(durum):
 
 KISALTMA_BASLIK = "Kısaltma Sözlüğü"
 KISALTMA_BILGI = (
-    "Kolon adlarındaki kısaltmaların anlamı üç kaynaktan gelir. Temel "
-    "sözlük: standart kısaltmalar (IN gelen, OUT giden, SUM toplam, DAY "
-    "gün ...) sabittir. Sözlükten: bir kelime, adında o kısaltma geçen "
-    "kolonların tanımlarında sık, geçmeyenlerinkinde seyrekse anlam "
-    "sayılır; başka bir kısaltmanın aldığı anlam ikinci kez verilmez. "
-    "Dil modeli: sözlükten çıkan liste örnek kolonlarla iki modele "
-    "sorulur, anlaşamazlarsa hakem karar verir; emin olunamayan anlam boş "
-    "kalır.\n\n"
-    "Açıklama önerilerine ve tanım kontrolüne hafızada onaylı ve temel "
-    "kısaltmalar kesin, diğerleri tahmini olarak gider. "
+    "Kısaltmaların anlamı önceden verilmez; sözlüğünüzdeki ve onaylı "
+    "tanımlardaki açıklamalardan öğrenilir. Önce bütün tanımlar sayılır: "
+    "bir kelime, adında o kısaltma geçen kolonların tanımlarında sık, "
+    "geçmeyenlerinkinde seyrekse aday olur; birlikte geçen başka bir "
+    "kısaltmanın aldığı anlam verilmez. Sonra her kısaltma, en güçlü "
+    "adaylar ve yüzdeleri ile çeşitli seçilmiş en çok 8 örnek kolonla iki "
+    "dil modeline sorulur; anlaşamazlarsa hakem karar verir, emin "
+    "olunamayan anlam boş kalır. Yeni onaylanan her tanım bir sonraki "
+    "öğrenmenin girdisidir.\n\n"
+    "Açıklama önerilerine ve tanım kontrolüne hafızada onaylı kısaltmalar "
+    "kesin, öğrenilenler tahmini olarak gider. "
     "Hafızaya kaydettikleriniz proje genelinde saklanır; sözlüğü olmayan ya "
     "da eksik sözlüklü başka veri setlerinde de kullanılır. Anlamı "
     "düzeltip kaydedebilirsiniz; işareti kaldırıp kaydederseniz hafızadan "
