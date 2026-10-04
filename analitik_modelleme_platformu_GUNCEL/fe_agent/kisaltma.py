@@ -64,6 +64,11 @@ EN_COK = 300           # kartta gosterilen en cok kisaltma
 _TR_KUCUK = str.maketrans({"I": "ı", "İ": "i"})
 _TR_SADE = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosuCGIOSU")
 _PENCERE = re.compile(r"^\d+[DAMYH]?$", re.I)     # 180D, 3A, 12, 6M
+# SAYI DEGERLI KALIP (kullanici bildirimi: H00, H06, H12, H18 icin dort
+# ayri kisaltma ve hepsine ayni "HR" onerisi): 1-2 harf + en az 2 rakam.
+# Harf kisminin kisaltmasi, rakam degeridir (H00 = saat 00, M12 = ay 12).
+# TOP1, X2 gibi tek rakamlilar kisaltmanin kendisi sayilir.
+_SAYILI = re.compile(r"^([A-Z]{1,2})(\d{2,})$")
 # Anlam tasimayan baglaclar. "gun", "ay" artik DURAK DEGIL: DAY / MONTH
 # gibi kisaltmalarin anlami olabilirler; pencereli tanimlarin hepsinde
 # gectikleri icin ayirt olcusu onlari zaten eler.
@@ -98,6 +103,9 @@ def parcalar(ad):
         p = p.upper().translate(_TR_SADE)
         if len(p) < 2 or _PENCERE.match(p):
             continue
+        m = _SAYILI.match(p)
+        if m:
+            p = m.group(1)
         cikti.append(p)
     return cikti
 
@@ -1059,6 +1067,20 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             cikti[kisa]["gerekce"] = d0_gerekce
             cikti[kisa]["yeni_kisaltma"] = d0_yeni
             cikti[kisa]["yeni_anlam"] = yalin_anlam(d0_yeni_anlam) if d0_yeni_anlam else ""
+    # AYNI YENI KISALTMA BIRDEN FAZLA KISALTMAYA onerildiyse (ayri anlamlar
+    # tek kisaltmaya inemez) ya da zaten kolon adlarinda baska bir kisaltma
+    # olarak geciyorsa oneri dusurulur, satirda uyari yazar.
+    say_yeni = Counter(o.get("yeni_kisaltma") for o in cikti.values() if o.get("yeni_kisaltma"))
+    for kisa, o in cikti.items():
+        y = o.get("yeni_kisaltma")
+        if not y:
+            continue
+        neden = ("%s birden fazla kısaltma için önerildi" % y if say_yeni[y] > 1 else
+                 "%s kolon adlarında zaten başka bir kısaltma" % y if parca_say.get(y) else "")
+        if neden:
+            o["yeni_kisaltma"], o["yeni_anlam"] = "", ""
+            o["uyari"] = " ".join(x for x in (o.get("uyari"), "Önerilen kısaltma kullanılmadı (%s)."
+                                              % neden) if x)
     # ONCEKI CALISMALARDAN OGRENILEN: bu sozlukten ogrenilemeyen (ya da
     # anlami bos kalan) kisaltma, kolon adlarinda geciyorsa ogrenilmis
     # bilgiden doldurulur.

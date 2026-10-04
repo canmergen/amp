@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Önerilen kısaltma kolon adlarının dilinde**. Değiştir: `fe_agent/llm.py` (backend yeniden başlatılmalı; bir önceki turun dosyaları kopyalanmadıysa onlar da)
+Bu tur: **H00 / H06 / H12 / H18 tek kısaltma: H = saat**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+
+- 1-2 harf + en az 2 rakamlı parça (H00, H18, M12) artık "harf kısaltması +
+  değer" sayılır: kısaltma H, anlamı "saat"; sayı değerdir. Kartta dört
+  ayrı satır yerine tek H satırı. TOP1, X2 gibi tek rakamlılar değişmedi.
+- İstemlere kural: sayıyla birleşik kısaltmada yalnız harf kısmının anlamı
+  ("saat 00" değil "saat"), yeni kısaltma önerilmez.
+- Aynı yeni kısaltma birden fazla kısaltmaya önerilirse (H00..H18 -> HR)
+  ya da kolon adlarında zaten başka bir kısaltmaysa öneri düşürülür,
+  satırda uyarı yazar.
+- Kolon adı önerisinde kalıp korunur: H yerine HOUR kabul edilirse
+  H00 -> HOUR00.
+
+Önceki tur: **Önerilen kısaltma kolon adlarının dilinde**. Değiştir: `fe_agent/llm.py` (backend yeniden başlatılmalı; bir önceki turun dosyaları kopyalanmadıysa onlar da)
 
 - Dil modeline her parçada "ADLANDIRMA KALIBI" gider: kolon adlarında en
   sık geçen 20 kısaltma (TXN, CNT, AMT ...). Yeni kısaltma aynı dilde ve

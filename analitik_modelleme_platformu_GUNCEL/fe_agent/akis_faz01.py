@@ -1591,8 +1591,10 @@ def _kisaltma_degistir(ad, eski, yeni):
     (buyuk / kucuk harf korunur): TXN_3D_X2_RATIO -> TXN_3D_PREV_RATIO."""
     def _d(m):
         return yeni.lower() if m.group(0).islower() else yeni
-    return re.sub(r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(eski), _d,
-                  str(ad), flags=re.I)
+    # Sayi degerli kalip: H00 -> HOUR00 (rakamlar korunur; bkz.
+    # kisaltma._SAYILI).
+    return re.sub(r"(?<![A-Za-z0-9])%s(?=\d{2,}(?![A-Za-z0-9])|(?![A-Za-z0-9]))"
+                  % re.escape(eski), _d, str(ad), flags=re.I)
 
 
 def kolon_ad_kaydet(durum, satirlar):

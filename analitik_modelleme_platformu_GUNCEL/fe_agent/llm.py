@@ -1188,6 +1188,10 @@ def turkcelestir(kayitlar, baglam=None, orkestra=None):
 _KISALTMA_KURALLARI = """KURALLAR:
   - Pencereye ya da sayiya bagli anlamlari SAYISIZ yaz ("onceki es donem";
     "onceki 3 gun" degil). Somut pencere kolon adindan okunur.
+  - Kisaltma, kolon adlarinda sayiyla birlesik geciyorsa (H00, H06, H18
+    icin H) yalniz HARF kisminin anlamini yaz: H = "saat". Sayi o kalibin
+    degeridir, anlama katilmaz ("saat 00" degil). Bu kisaltma icin yeni
+    kisaltma onerme.
   - Adi bilinen bir olcu ya da yontemse OZEL ADINI yaz, aciklamasini
     degil: HHI = Herfindahl-Hirschman endeksi ("yogunlasma endeksi" degil).
   - anlam, KISALTMANIN KENDI anlamidir; baglam ifadesi DEGIL: gunu
@@ -1276,6 +1280,9 @@ Her kisaltma icin bankacilik / veri bilimi / Ingilizce kolon adlandirma
 geleneklerindeki YAYGIN anlamini yaz: kisaltmanin kendi anlami, yalin
 halde, tamamen Turkce, 1-5 kelime. Kolon adlarindaki diger parcalar
 yalniz baglamdir; onlarin anlamini bu kisaltmaya katma.
+
+Kolon adlarinda sayiyla birlesik geciyorsa (H00, H06 icin H) yalniz harf
+kisminin anlamini yaz (H = "saat"; "saat 00" degil).
 
 Kuruma ozgu gorunen ya da yaygin bir anlami olmayan kisaltmada TAHMIN
 ETME: "anlam" alanini BOS birak.
