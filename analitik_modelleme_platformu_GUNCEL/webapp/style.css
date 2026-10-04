@@ -3035,7 +3035,7 @@ span.bolme-cip { cursor: default; }
 .dg-kisaltma-tablo th:nth-child(2) { width: 18%; }
 .dg-kisaltma-tablo th:nth-child(3) { width: 18%; }
 .dg-kisaltma-tablo th:nth-child(4) { width: auto; }
-.dg-kisaltma-tablo th:nth-child(5) { width: 110px; }
+.dg-kisaltma-tablo th:nth-child(5) { width: 120px; white-space: normal; }
 .dg-kisaltma-tablo th:nth-child(6) { width: 64px; }
 .dg-kisaltma-tablo .dg-yeni-kisa { text-transform: uppercase; }
 /* Kaynak değerleri salt okunur; Anlam'daki değer hangi kaynaktan

@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma tablosu sadeleşti**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+Bu tur: **Sütun adları: "Önerilen Kısaltma", "Seç"**. Değiştir: `webapp/app.js`, `webapp/style.css`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı; yalnız açıklama metni için)
+
+- Kısaltma Sözlüğü: "Önerilen" -> "Önerilen Kısaltma", "Kaydet" -> "Seç".
+- Sözlük Tanımları (01.2.3): "Sözlüğe Ekle" sütun başlığı -> "Seç".
+  Düğme metni ("… Kolonu Sözlüğe Ekle ve Devam Et") değişmedi.
+
+Önceki tur: **Kısaltma tablosu sadeleşti**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 - Sütunlar: Kısaltma | LLM Sözlük | LLM Genel | Anlam | Önerilen | Kaydet.
 - Not sütunu kaldırıldı; karar, gerekçe, uyarı ve örnek kolonlar

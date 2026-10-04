@@ -6081,7 +6081,8 @@ function dogrulamaKartiEkle(alan, blok) {
            "Değişken"; "İşlem" degil "Sözlüğe Ekle" — kolon basligi da
            kutunun ne anlama geldigini soylemeli. Baslik Buyuk Harfi
            (§1): tablo basliklarinda her kelime buyuk baslar. */
-        ["Değişken", "Tip", "Açıklama", "Sözlüğe Ekle"].forEach(h => {
+        /* Kolon başlığı "Seç" (kullanıcı kararı; eskiden "Sözlüğe Ekle"). */
+        ["Değişken", "Tip", "Açıklama", "Seç"].forEach(h => {
             const th = document.createElement("th");
             th.textContent = h;
             htr.appendChild(th);
@@ -6963,7 +6964,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        kullanıcı düzenler. */
     /* Not sütunu kaldırıldı (kullanıcı kararı: çok yer kaplıyor); karar,
        gerekçe ve uyarılar kısaltmanın yanındaki "i"de. */
-    ["Kısaltma", "LLM Sözlük", "LLM Genel", "Anlam", "Önerilen", "Kaydet"]
+    ["Kısaltma", "LLM Sözlük", "LLM Genel", "Anlam", "Önerilen Kısaltma", "Seç"]
         .forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
