@@ -1191,8 +1191,33 @@ def _gecmisi_kirp(durum, hedef):
             return
 
 
+def _silinmis_v_mi(anahtar):
+    """Kayitta (CALISMALAR.json) girdisi kalmamis v-calisma: SILINDI.
+    Kayit okunamazsa False (veri kaybetmemek icin yazmaya izin verilir)."""
+    if not _v_mi(anahtar):
+        return False
+    try:
+        kayit = _calisma_kaydi_oku(kati=True)
+    except Exception:
+        return False
+    if not kayit:
+        return False
+    girdi = kayit.get(anahtar)
+    return girdi is None or bool((girdi or {}).get("silindi"))
+
+
 def _kaydet(anahtar, durum):
-    """Durumu kaydeder ve son islem zamanini damgalar."""
+    """Durumu kaydeder ve son islem zamanini damgalar.
+
+    SILINMIS CALISMAYA YAZILMAZ (kullanici bildirimi: "arşivden silsem de
+    silinmemeye başladı"): silme sirasinda suren bir istek (adim, oneri,
+    kart kaydi) bitince calisma.json'u yeniden yaratiyordu; Arşiv listesi
+    de klasorunde calisma.json duran ama kayitta olmayan calismayi geri
+    aliyordu (bkz. _calisma_kimlikleri, yetim)."""
+    if _silinmis_v_mi(anahtar):
+        _hata_kaydet("kaydet:silinmis", RuntimeError(
+            "%s silinmiş; kayıt yazılmadı." % anahtar))
+        return
     durum["_son_islem"] = datetime.datetime.now().isoformat(timespec="seconds")
     akis.durum_kaydet(anahtar, durum)
     _ozet_yaz(anahtar, durum)
@@ -1235,7 +1260,9 @@ def _ozet_oku(calisma):
         except Exception:
             pass
     durum = _durum_al(calisma if _v_mi(calisma) else _oturum_anahtari(calisma))
-    if _v_mi(calisma):
+    # Liste okunurken silinen calismanin klasoru ozet yazilarak yeniden
+    # yaratilmasin.
+    if _v_mi(calisma) and not _silinmis_v_mi(calisma):
         _ozet_yaz(calisma, durum)
     return _calisma_ozeti(calisma, durum)
 
@@ -1999,16 +2026,30 @@ def calisma_sil_endpoint():
             if sahip and sahip != _sahip_ozeti():
                 raise CalismaErisimYok("Bu çalışma başka bir kullanıcıya ait.")
             anahtar = hedef
+            # ONCE KAYITTAN CIKAR, SONRA KLASORU SIL: kayitta olmayan
+            # calismaya artik hicbir istek yazamaz (bkz. _kaydet). Eskiden
+            # tersiydi; klasor silinirken biten bir istek calisma.json'u
+            # yeniden yaratiyor ve calisma Arşiv'e geri donuyordu.
+            girdi = kayit.pop(hedef, None)
+            _calisma_kaydi_yaz(kayit)
             kalan = _klasoru_sil(hafiza, anahtar)
             if kalan:
+                # Silinemedi: kayit geri yazilir, calisma listede kalir.
+                try:
+                    geri = _calisma_kaydi_oku(kati=True)
+                    geri[hedef] = girdi or {"sahip": _sahip_ozeti()}
+                    _calisma_kaydi_yaz(geri)
+                except Exception as e:
+                    _hata_kaydet("calisma_sil:geri", e)
                 kod = _hata_kaydet("calisma_sil:kalan",
                                    RuntimeError(", ".join(kalan[:5])))
                 return jsonify({"hata": True, "metin":
                                 "%s klasöründe %d dosya silinemedi (hata kodu: %s). "
                                 "Çalışma listede bırakıldı; tekrar deneyin."
                                 % (hedef, len(kalan), kod)})
-            kayit.pop(hedef, None)
-            _calisma_kaydi_yaz(kayit)
+            # Silme sirasinda biten bir istek dosya yazdiysa bir kez daha.
+            if _klasor_dosyalari(hafiza, anahtar):
+                _klasoru_sil(hafiza, anahtar)
         else:
             anahtar = _oturum_anahtari(hedef)          # erisim denetimi
             try:

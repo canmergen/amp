@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltmada açık karar (hangisi doğru) + yanıltıcı kısaltmaya yeni kısaltma**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+Bu tur: **Arşivden silinen çalışma geri gelmiyor**. Değiştir: `webapp/backend.py` (backend yeniden başlatılmalı)
+
+- Sebep: silme sürerken ya da hemen sonra biten bir istek (adım, öneri,
+  kart kaydı) çalışmanın calisma.json dosyasını yeniden yazıyordu; Arşiv
+  listesi de klasöründe calisma.json olan ama kayıtta olmayan çalışmayı
+  "kayıtsız kalmış" sayıp geri ekliyordu.
+- Düzeltme: silmede önce CALISMALAR.json'dan çıkarılır, sonra klasör
+  silinir. Kayıtta olmayan çalışmaya kayıt yazılmaz (hata günlüğüne
+  "kaydet:silinmis" düşer). Klasör silinemezse kayıt geri yazılır,
+  çalışma listede kalır. Liste okunurken silinen çalışmaya özet
+  yazılmaz.
+
+Önceki tur: **Kısaltmada açık karar (hangisi doğru) + yanıltıcı kısaltmaya yeni kısaltma**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 1) Açık karar
 - Dil Modeli sütunu artık SÖZLÜĞE BAKMADAN verilen genel anlam (X2 =
