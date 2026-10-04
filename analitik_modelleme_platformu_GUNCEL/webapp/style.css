@@ -216,6 +216,11 @@
   --sari-koyu:    #FFFFFF;
   --sari-acik:    #1F1A06;
 }
+/* Acik temada --zemin (#F4F5F7) GRI bir yuzey olarak kullanilan yerler
+   koyu temada siyah zeminle birlesip kayboluyordu (kullanici bildirimi:
+   sag ustteki Calisma / Ozet sekmesi). Koyu temada gorunur gri. */
+#kabuk.koyu #sekmeler,
+#kabuk.koyu .secenek-rozet { background: var(--kenar-acik); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
@@ -236,6 +241,13 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   font-family: var(--font);
 }
 [hidden] { display: none !important; }
+/* TABLO HUCRELERININ YAZI RENGI ACIKCA VERILIR (kullanici bildirimi:
+   koyu temada sozluk tablosundaki degisken adi beyaza donmuyordu).
+   Hucre rengi miras kalinca Dataiku sayfasinin kendi stilindeki bir
+   "td" kurali (koyu gri) araya giriyor olabilir; test ortaminda bu stil
+   yok ve ad beyaz gorunuyordu. Ozgulluk (0,0,2): duz "td" kuralini
+   yener, sinifli kendi kurallarimizi (.dg-tip, .dg-tablo th ...) yenmez. */
+:where(#kabuk) table td, :where(#kabuk) table th { color: var(--metin); }
 
 /* Doküman başlığı: ürün adıyla aynı boyut, şeridin solunda */
 .dok-baslik {
@@ -1268,7 +1280,7 @@ button.ozet-kart:focus-visible {
 .dg-tablo tr:last-child td { border-bottom: none; }
 /* Uzun kolon adi tabloyu tasirmasin; tamami ipucunda */
 .dg-kolon {
-  font-weight: var(--fw-kalin);
+  font-weight: var(--fw-kalin); color: var(--metin);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .dg-tip { color: var(--metin-soluk); font-size: var(--fs-kucuk); }

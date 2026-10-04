@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Koyu tema yenilendi**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **Koyu tema düzeltmeleri**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+
+- Sözlük tablosundaki değişken adı koyu temada beyaz: tablo hücrelerinin
+  yazı rengi artık açıkça veriliyor (Dataiku sayfasının kendi "td"
+  kuralı araya girse de).
+- Açık temada gri zeminli olup koyu temada kaybolan yerler (sağ üstteki
+  Çalışma / Özet sekmesi, başlangıç kartındaki A / B rozeti) koyu temada
+  görünür gri. Otomatik tarama: açık temada gri olup koyu temada siyaha
+  düşen başka öğe kalmadı (sohbet zemini bilerek siyah).
+
+Önceki tur: **Koyu tema yenilendi**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
 
 - Koyu temada zemin ve kartlar siyah, ayrım kenarlıkla; gri zemin
   isteyen yerler (tablo başlığı, iç kutu, değer çipi) siyahtan görünür
