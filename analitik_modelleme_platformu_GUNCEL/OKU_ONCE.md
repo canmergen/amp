@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Geçilen adımda metin gri, seçilenler siyah**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **Avatar ve adım başlığı bir kademe küçüldü**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+
+- Sohbet avatarı 48px -> 42px; adım bloğu başlığı 15px -> 14px. Alt
+  adım başlığı (01.2.1 ...) 13px kaldı.
+
+Önceki tur: **Geçilen adımda metin gri, seçilenler siyah**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
 
 - Geçilen adım bloğunda (ve gruplu bloğun geçilen alt bölümünde) bütün
   yazılar gri (#767676). Seçilenler tam renkte kalır: seçilen başlangıç

@@ -19,7 +19,7 @@
   --fs-govde:  12px;     /* metin, butonlar */
   --fs-baslik: 13px;     /* kart/faz basliklari, ozet degerleri */
   --fs-buyuk:  14px;     /* urun adi, sayfa basligi */
-  --fs-blok:   15px;     /* adim blogu basligi (01.1 ...): 48px avatarla orantili */
+  --fs-blok:   14px;     /* adim blogu basligi (01.1 ...): 42px avatarla orantili */
 
   --fw-normal: 400;
   --fw-kalin:  700;
@@ -167,7 +167,7 @@
      Eskiden min(78%, 720px) idi ve kartlar kendi genişliklerini
      koyduğu için ekranda üç farklı blok eni yan yana duruyordu. */
   --balon-en:     100%;
-  --avatar-en:    48px;          /* sohbet avatarı (34px'ti; kullanıcı kararı: görsel seçilmiyordu) */
+  --avatar-en:    42px;          /* sohbet avatarı: 34 küçük, 48 fazla büyük kaldı (kullanıcı kararı) */
   --avatar-ara:   10px;          /* avatar ile blok arası */
   /* Ardisik balonlar arasindaki SABIT dikey aralik. Bot/kullanici,
      balon/kart ayrimi gozetmeden hepsi ayni bosluga sahip. */
