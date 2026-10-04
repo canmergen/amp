@@ -783,6 +783,33 @@ _KANIT = {
 }
 
 
+KANIT_ORNEK = 3          # kartta kisaltma basina gosterilen ornek kolon
+
+
+def kanit_ornekleri(tanimlar, kisa, anlam, adet=KANIT_ORNEK):
+    """Kartta anlami ONAYLATAN ornekler (kullanici karari: "onaylatan
+    sekilde kolon adi ve aciklamasi eklememiz guzel olmaz miydi"):
+    adinda kisaltma gecen ve tanimi anlami tasiyan kolonlardan CESITLI
+    secilmis en cok adet tane. Anlami tasiyan yoksa (dil modeli farkli
+    anlam verdiyse) herhangi uc ornek gelir: kullanici celiskiyi gorur.
+    Doner: [{"kolon", "tanim", "tasiyor"}]"""
+    havuz = [(ad, str(t), set(parcalar(ad)))
+             for ad, t in (tanimlar or {}).items()
+             if str(t or "").strip() and kisa in parcalar(ad)]
+    if anlam:
+        tasiyan = [h for h in havuz if _anlami_tasir(h[1], anlam)]
+        if tasiyan:
+            havuz = tasiyan
+    secilen, gorulen = [], set([kisa])
+    while havuz and len(secilen) < adet:
+        en = max(range(len(havuz)), key=lambda i: (len(havuz[i][2] - gorulen), -i))
+        ad, t, ps = havuz.pop(en)
+        secilen.append({"kolon": ad, "tanim": t[:200],
+                        "tasiyor": bool(anlam) and _anlami_tasir(t, anlam)})
+        gorulen |= ps
+    return secilen
+
+
 def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
     """Kartta gosterilecek satirlar: onaylilar + ogrenilenler.
     Doner: (satirlar, dm_durum). satir: {kisaltma, anlam, onayli, kanit,
@@ -807,9 +834,10 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                 parca.append("%d kolonun %%%d'inde" % (o["kolon"], round(o["destek"] * 100)))
             elif o.get("kolon"):
                 parca.append("%d kolonda" % o["kolon"])
-        satirlar.append({"kisaltma": kisa,
-                         "anlam": onay.get(kisa) or o.get("anlam") or "",
+        anlam = onay.get(kisa) or o.get("anlam") or ""
+        satirlar.append({"kisaltma": kisa, "anlam": anlam,
                          "cikarilan": o.get("anlam") or "",
                          "kaynak": o.get("kaynak") or "",
-                         "onayli": kisa in onay, "kanit": " · ".join(p for p in parca if p)})
+                         "onayli": kisa in onay, "kanit": " · ".join(p for p in parca if p),
+                         "ornekler": kanit_ornekleri(tanimlar, kisa, anlam)})
     return satirlar[:EN_COK], durum

@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma kartı geri yüklemede yeniden kuruluyor**. Değiştir: `webapp/backend.py`, `fe_agent/akis.py`, `fe_agent/akis_faz01.py` (+ önceki iki turun `fe_agent/kisaltma.py`, `fe_agent/llm.py` dosyaları kopyalanmadıysa onlar da; backend yeniden başlatılmalı)
+Bu tur: **Kısaltma kartında örnek kolon**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+
+- Kısaltma Sözlüğü tablosuna "Örnek Kolon" sütunu: anlamı onaylatan bir
+  kolon adı ve sözlükteki açıklaması; en çok 2 örnek daha "i"
+  simgesinin arkasında. Örnekler, tanımı anlamı taşıyan kolonlardan
+  çeşitli seçilir (farklı kısaltmalarla birlikte geçenler); anlamı
+  taşıyan yoksa herhangi bir örnek gelir, kullanıcı çelişkiyi görür.
+
+Önceki tur: **Kısaltma kartı geri yüklemede yeniden kuruluyor**. Değiştir: `webapp/backend.py`, `fe_agent/akis.py`, `fe_agent/akis_faz01.py` (+ önceki iki turun `fe_agent/kisaltma.py`, `fe_agent/llm.py` dosyaları kopyalanmadıysa onlar da; backend yeniden başlatılmalı)
 
 - Sorun: açık kart oturumla birlikte kaydediliyor; kod güncellense de
   sayfa yenilenince kart kaydedilmiş eski satırlarla ("Temel sözlük")
