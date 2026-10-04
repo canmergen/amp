@@ -1783,7 +1783,11 @@ def _gizli_klasorler(gosterilen):
       Boş klasör              : içinde dosya yok (eski silmelerden kalan)
       Çalışma dosyası yok     : calisma.json silinmiş, artık dosyalar kalmış
       Başlanmamış çalışma     : açılmış ama hiçbir adım yapılmamış
-    Başka kullanıcının çalışması listelenmez. Doner: [{ad, neden, dosya}]."""
+    BASKA KIMLIGE KAYITLI klasorler de listelenir (kullanici bildirimi:
+    "hepsi benim klasorumde, bana ait"): kimlik bazen tarayicidan, bazen
+    webapp hesabindan okunuyor; ayni kisinin calismasi farkli kimlikle
+    kaydedilmis olabiliyor. Bunlar "baskasi": True ile doner ve Temizle
+    onayli silme ile (zorla) calisir. Doner: [{ad, neden, dosya, baskasi}].""" 
     hafiza = _hafiza()
     dosyalar = {}
     for y in _hafiza_yollari():
@@ -1807,21 +1811,21 @@ def _gizli_klasorler(gosterilen):
         icerik = dosyalar.get(ad) or []
         sahip = (kayit.get(ad) or {}).get("sahip")
         if not icerik:
-            if sahip and sahip != ben:
-                continue
-            cikti.append({"ad": ad, "neden": "Boş klasör", "dosya": 0})
+            cikti.append({"ad": ad, "neden": "Boş klasör", "dosya": 0,
+                          "baskasi": bool(sahip and sahip != ben)})
             continue
         if "calisma.json" not in icerik:
-            if sahip and sahip != ben:
-                continue
             cikti.append({"ad": ad, "neden": "Çalışma dosyası yok · %d dosya kalmış"
-                          % len(icerik), "dosya": len(icerik)})
+                          % len(icerik), "dosya": len(icerik),
+                          "baskasi": bool(sahip and sahip != ben)})
             continue
         try:
             sahip = sahip or _v_sahibi(ad)
         except Exception:
             pass
         if sahip and sahip != ben:
+            cikti.append({"ad": ad, "neden": "Başka kullanıcı kimliğine kayıtlı · %d dosya"
+                          % len(icerik), "dosya": len(icerik), "baskasi": True})
             continue
         try:
             oz = _ozet_oku(ad)
@@ -1990,7 +1994,11 @@ def calisma_sil_endpoint():
         if _v_mi(hedef):
             kayit = _calisma_kaydi_oku(kati=True)
             sahip = (kayit.get(hedef) or {}).get("sahip") or _v_sahibi(hedef)
-            if sahip and sahip != _sahip_ozeti():
+            # zorla: Arşiv'in "Listede Görünmeyen Klasörler" bölümündeki
+            # Temizle (onayli). Kimlik farkiyla baska kimlige kayitli
+            # gorunen klasor de silinebilir; Dataiku klasor ekranindan
+            # silmekle ayni yetki.
+            if sahip and sahip != _sahip_ozeti() and not istek.get("zorla"):
                 raise CalismaErisimYok("Bu çalışma başka bir kullanıcıya ait.")
             anahtar = hedef
             kalan = _klasoru_sil(hafiza, anahtar)

@@ -9576,7 +9576,8 @@ function gizliKlasorleriCiz(gizli) {
         const sil = elYap("button", "calisma-dugme sil", "Temizle");
         sil.type = "button";
         sil.title = g.ad + " klasörünü kalıcı olarak sil";
-        sil.onclick = () => calismaSilOnayi(dugmeler, { calisma_id: g.ad });
+        if (g.baskasi) sil.title += " (başka kullanıcı kimliğine kayıtlı)";
+        sil.onclick = () => calismaSilOnayi(dugmeler, { calisma_id: g.ad, zorla: !!g.baskasi });
         dugmeler.appendChild(sil);
         satir.appendChild(dugmeler);
         calismalarListe.appendChild(satir);
@@ -9612,17 +9613,17 @@ function calismaSilOnayi(dugmeler, c) {
         calismaSil(c.calisma_id, () => {
             if (satir) satir.hidden = false;
             geriGetir();
-        }, satir);
+        }, satir, !!c.zorla);
     };
     dugmeler.append(soru, onayla, reddet);
     onayla.focus();
 }
 
-function calismaSil(kimlik, hataysa, satir) {
+function calismaSil(kimlik, hataysa, satir, zorla) {
     fetch(getWebAppBackendUrl("calisma_sil"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oturum_id: OTURUM_ID, calisma: kimlik })
+        body: JSON.stringify({ oturum_id: OTURUM_ID, calisma: kimlik, zorla: !!zorla })
     })
     .then(r => r.json())
     .then(d => {

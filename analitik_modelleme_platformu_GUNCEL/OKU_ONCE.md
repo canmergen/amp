@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Hafızada onaylı olanlar mor**. Değiştir: `webapp/app.js`
+Bu tur: **Arşiv: başka kimliğe kayıtlı klasörler de görünür ve temizlenebilir**. Değiştir: `webapp/backend.py`, `webapp/app.js`
+
+- "Listede Görünmeyen Klasörler" bölümü artık başka kullanıcı kimliğine
+  kayıtlı v-klasörlerini de "Başka kullanıcı kimliğine kayıtlı · N dosya"
+  nedeniyle gösteriyor. Temizle (onaylı) bunları da siler.
+- Neden: kimlik bazen tarayıcıdan, bazen webapp hesabından okunuyor; aynı
+  kişinin çalışması farklı kimlikle kaydedilmiş olabiliyor.
+
+---
+
+Önceki tur: **Hafızada onaylı olanlar mor**. Değiştir: `webapp/app.js`
 
 - Kısaltma Sözlüğü'nde hafızada onaylı satırlar yeşil yerine mor (tanım
   tablolarındaki "Onaylı Tanım" satırlarıyla aynı renk).
