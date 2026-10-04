@@ -6760,7 +6760,8 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
     /* "Önerilen": temel sözlük, sözlükten çıkarım ya da dil modeli
        (kaynağı satırın Kaynak sütununda yazar). */
     ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"], ["dg-l-llm", "Önerilen"],
-                              ["dg-l-hafiza", "Hafızada Onaylı"]]));
+                              ["dg-l-hafiza", "Hafızada Onaylı"],
+                              ["dg-l-eklendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
     kaydetBtn.type = "button";
@@ -6816,6 +6817,9 @@ function kisaltmaBolumuEkle(kart, ka, kilitli) {
                 /* Hafızada onaylı: mor (tanım satırlarındaki "Onaylı Tanım" ile aynı). */
                 tr.classList.toggle("dg-hafiza-renk", !!m && !!r.onayli && m === String(r.anlam || "").trim());
                 tr.classList.toggle("dg-llm", !!m && !r.onayli && m === String(r.cikarilan || "").trim());
+                /* KULLANICI DEĞİŞTİRDİ (kullanıcı kararı): gelen anlamdan
+                   farklıysa yeşil; geri yazınca eski rengine döner. */
+                tr.classList.toggle("dg-eklendi", !!m && m !== String(r.anlam || "").trim());
             };
             g.addEventListener("input", vurgu);
             vurgu();

@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma anlamları yalın hâlde**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma kartında düzenlenen satır yeşil**. Değiştir: `webapp/app.js` (yalnız sayfa yenileme)
+
+- Kullanıcı anlamı gelen değerden farklı yazınca satır yeşil
+  ("Düzenlendi", lejanta eklendi); eski değere geri yazınca önceki
+  rengine (Önerilen mavi / Hafızada Onaylı mor) döner.
+
+Önceki tur: **Kısaltma anlamları yalın hâlde**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py` (backend yeniden başlatılmalı)
 
 - Tek kelimelik anlamlar kural tabanlı yalına iner (sözlükte yalın hâli
   geçmese de): bayrağı -> bayrak, skoru -> skor, adedi -> adet, oranı ->
