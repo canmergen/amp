@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Hafızada onaylı olanlar mor**. Değiştir: `webapp/app.js`
+Bu tur: **Açılır listede fare kaydırma hatası**. Değiştir: `webapp/app.js`
+
+- Veri seti / sözlük seçim listesinde fare yarım görünen bir adın üzerine
+  gelince liste kendiliğinden kayıyordu (fare başka adın üzerine düşüyordu).
+  Artık fareyle vurgulama listeyi kaydırmıyor; yalnız klavye (ok tuşları,
+  Home/End) vurguyu görünür alana getiriyor.
+
+---
+
+Önceki tur: **Hafızada onaylı olanlar mor**. Değiştir: `webapp/app.js`
 
 - Kısaltma Sözlüğü'nde hafızada onaylı satırlar yeşil yerine mor (tanım
   tablolarındaki "Onaylı Tanım" satırlarıyla aynı renk).

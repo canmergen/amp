@@ -5642,7 +5642,11 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         giris.title = hatali ? kaynak.uyari : "";
     }
 
-    function vurgula(i) {
+    /* kaydir=false: FARE ile vurgulama listeyi KAYDIRMAZ (kullanici
+       bildirimi: yukari kaydirip yarim gorunen ustteki ada gelince liste
+       kendiliginden asagi kayiyor, fare baska bir adin uzerine dusuyordu).
+       Yalniz klavye (ok tuslari, Home/End) vurguyu gorunur alana getirir. */
+    function vurgula(i, kaydir = true) {
         vurguIndeks = i;
         ogeler.forEach((li, k) => {
             const secili = (k === i);
@@ -5652,6 +5656,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         if (i >= 0 && ogeler[i]) {
             giris.setAttribute("aria-activedescendant", ogeler[i].id);
             const li = ogeler[i];
+            if (!kaydir) return;
             if (li.offsetTop < liste.scrollTop) liste.scrollTop = li.offsetTop;
             else if (li.offsetTop + li.offsetHeight > liste.scrollTop + liste.clientHeight)
                 liste.scrollTop = li.offsetTop + li.offsetHeight - liste.clientHeight;
@@ -5694,7 +5699,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
             li.setAttribute("role", "option");
             li.setAttribute("aria-selected", "false");
             li.onmousedown = e => { e.preventDefault(); sec(ad); };
-            li.onmousemove = () => vurgula(i);
+            li.onmousemove = () => { if (vurguIndeks !== i) vurgula(i, false); };
             liste.appendChild(li);
             ogeler.push(li);
         });
