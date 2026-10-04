@@ -1371,7 +1371,9 @@ def _aciklama_baglami(durum):
     sozlugundeki tanimli kolonlar (llm.benzer_ornekler bunlardan adi
     benzeyenleri secer). Sozluk yoksa / okunamazsa yalnizca ad.
     Ham veri gitmez; yalnizca sozlukteki aciklama metinleri."""
-    baglam = {"veri_seti": durum.get("veri_seti") or "", "tanimlar": {}}
+    baglam = {"veri_seti": durum.get("veri_seti") or "", "tanimlar": {},
+              # Modelleme tanimlarinda secilen roller (kimlik, hedef ...).
+              "roller": _zorunlu_etiketler(durum)}
     try:
         baglam["tanimlar"] = _sozluk_tanimlari(sozluk_orijinal_oku(durum))
     except Exception:
@@ -2165,17 +2167,25 @@ def sozluk_tanim_plan(durum):
         # aciklamalara bakip direkt doldursun, yoksa kendisi uretsin").
         # Ayni adli kolonun onayli tanimi varsa dil modeli CAGRILMAZ;
         # satir hafizadaki metinle dolu gelir ve kaynagi kartta yazar.
+        # ROLU OLAN KOLON (kimlik, hedef, donem, segment) hafizadan
+        # DOLDURULMAZ: tanimi rol bilgisiyle dil modeli yazar (kullanici
+        # bildirimi: kimlik kolonuna islem anlatan bir tanim gelmisti).
+        roller = _zorunlu_etiketler(durum)
         try:
             hazir = {ad: {"aciklama": k["aciklama"], "kaynak": "hafiza",
                           "hafiza_veri_seti": k.get("veri_seti") or ""}
                      for ad, k in tanim_hafiza.bul(gosterilen,
-                                                   durum.get("veri_seti")).items()}
+                                                   durum.get("veri_seti")).items()
+                     if ad not in roller}
         except Exception:
             hazir = {}
         # Kalanlar dil modeline (tanimli kolonlarin kontrolu SONRAKI
         # ADIMDA, tanim_kontrol).
         kalan = [k for k in gosterilen if k not in hazir]
         profiller = _oneri_profilleri(prof, kalan, p)
+        for pr in profiller:
+            if pr["ad"] in roller:
+                pr["rol"] = roller[pr["ad"]]
         durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller,
                                               _aciklama_baglami(durum),
                                               hazir=hazir)
@@ -2540,8 +2550,11 @@ def tanim_kontrol_baslat(durum):
                              "hafiza_veri_seti": h.get("veri_seti") or ""}
         _tekil_tamamla(prof, kalan, p)
         kontrol = _oneri_profilleri(prof, kalan, p)
+        roller = _zorunlu_etiketler(durum)
         for k in kontrol:
             k["mevcut"] = tanim.get(k["ad"], "")
+            if k["ad"] in roller:
+                k["rol"] = roller[k["ad"]]
         durum["_kontrol_is"] = oneri_isi_baslat([], [], _aciklama_baglami(durum),
                                                 kontrol, hazir_duzeltme=hazir)
         durum["_kontrol_hafiza"] = {"ayni": len(ayni), "farkli": len(hazir)}

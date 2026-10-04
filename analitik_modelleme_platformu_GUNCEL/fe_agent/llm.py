@@ -352,6 +352,17 @@ KOLON ADI KALIPLARI:
     kullanicinin onayladigi) kisaltmalarin anlami ODUR; kendin tahmin etme.
   - Diger kisaltmalarin anlamini ORNEK / ONAYLI TANIMLARDAN cikar.
 
+ROL verilen kolonlar (kullanicinin modelleme tanimlarinda sectigi):
+  - kimlik kolonu : satiri tekil tanimlayan anahtar. Tanimi kimlik olarak
+                    yaz ("Musteri tekil kimlik numarasi" gibi); bir islem,
+                    olay ya da tutar anlatma.
+  - hedef degisken: modelin tahmin ettigi 0/1 olay. 1 degerinin neyi
+                    ifade ettigini adindan ve ornek tanimlardan cikararak
+                    yaz ("... gerceklestiyse 1, aksi halde 0" gibi).
+  - donem kolonu  : gozlemin ait oldugu donem ("Gozlem donemi (YYYYAA)").
+  - segment kolonu: gozlemin ait oldugu alt grup ("Musteri segmenti" gibi).
+Bu tanimlar sonra yeni degisken uretiminde kullanilacak; rolu dogru yansit.
+
 SADE YAZ: tanim kisa ve tek anlamli olsun; ayni ifadeyi tekrar etme,
 gereksiz kelime ekleme. Kurumun YAZIM TARZINDAKI uzunluga ve kalibina
 uy. Bu tanimlar sonra degisken uretiminde de dil modeline girdi
@@ -446,6 +457,8 @@ def _profil_satiri(p):
         s += "\n    dagilim: %s" % str(p["dagilim"])[:EN_UZUN_DAGILIM]
     elif p.get("not"):
         s += "\n    (ornek deger paylasilmadi: %s)" % p["not"]
+    if p.get("rol"):
+        s += "\n    ROL: %s" % p["rol"]
     return s
 
 
@@ -480,7 +493,11 @@ def _baglamli_govde(adlar, kolon_metni, baglam, kolon_basligi="KOLONLAR"):
                 "- %s: %s" % (p, kisaltmalar[p]) for p in gecen))
     hafiza = baglam.get("hafiza") or {}
     if hafiza:
-        ayni = [(a, str(hafiza[a])[:200]) for a in adlar if a in hafiza]
+        # Rolu olan kolonda (kimlik, hedef ...) ayni adli onayli tanim
+        # ESAS ALINMAZ: tanim rolden yazilir (bkz. AD_KALIP_KURALI ROL).
+        rollu = set((baglam.get("roller") or {}))
+        ayni = [(a, str(hafiza[a])[:200]) for a in adlar
+                if a in hafiza and a not in rollu]
         benzer = benzer_ornekler(adlar, hafiza, ORNEK_TANIM_SAYISI)
         satir = ["- %s (AYNI AD): %s" % (a, t) for a, t in ayni] \
             + ["- %s: %s" % (a, t) for a, t in benzer]

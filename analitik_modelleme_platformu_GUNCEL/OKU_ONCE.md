@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sözlük kartı renk açıklaması kısaltmalı**. Değiştir: `webapp/app.js`
+Bu tur: **Roller dil modeline iletiliyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`
+
+- 01.2.2'de seçilen hedef / kimlik / dönem / segment kolonları açıklama
+  önerisinde ve tanım kontrolünde modele "ROL: kimlik kolonu" gibi
+  satırla gider. Talimatta her rol için nasıl yazılacağı var (kimlik:
+  "Müşteri tekil kimlik numarası" gibi, işlem anlatma; hedef: 1'in neyi
+  ifade ettiği; dönem: gözlem dönemi; segment: alt grup).
+- Rolü olan kolon onaylı tanım hafızasından DOĞRUDAN doldurulmaz ve aynı
+  adlı onaylı tanım ona "esas alınacak tanım" olarak gitmez; tanım rolden
+  yeniden yazılır. Onaylanınca hafıza yeni metinle güncellenir.
+
+---
+
+Önceki tur: **Sözlük kartı renk açıklaması kısaltmalı**. Değiştir: `webapp/app.js`
 
 - Sözlükte Boş (SB) · Onaylı Tanım (OT) · Dil Modeli Önerisi (DMÖ) ·
   Sözlüğe Eklendi (SEN) · Sözlüğe Eklenmedi (SENM).
