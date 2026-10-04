@@ -952,6 +952,17 @@ button.ozet-kart:focus-visible {
   gap: var(--b-3); margin-bottom: var(--b-4); align-items: start;
 }
 .secim-govde .combo { min-width: 0; }
+/* Etiket kutunun ortasına hizalı (kullanıcı kararı). Dar ekranda etiket
+   "…" ile kesilmesin diye alt satıra geçebilir; subgrid sayesinde bütün
+   etiketler aynı satır yüksekliğini paylaşır (alta yaslı), kutular yine
+   aynı hizada kalır. */
+.secim-govde .combo {
+  display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0;
+}
+.secim-govde .combo label {
+  text-align: center; align-self: end;
+  white-space: normal; overflow: visible; text-overflow: clip;
+}
 
 .secim-satir { display: flex; gap: var(--b-2); align-items: flex-end; margin-bottom: var(--b-4); }
 /* "+" giris kutusuyla ayni yukseklikte ve ayni hizada: etiketin altindaki

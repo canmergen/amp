@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Form alanları hep tek satırda**. Değiştir: `webapp/app.js`, `webapp/style.css` (önceki turdaki `fe_agent/akis_faz01.py` da kopyalanmadıysa o da)
+Bu tur: **Form etiketleri ortalı**. Değiştir: `webapp/style.css`
+
+- Seçim formlarında etiket (Hedef Değişken vb.) kutunun ortasına hizalı.
+- Dar ekranda etiket "…" ile kesilmek yerine iki satıra geçer; bütün
+  etiketler aynı yüksekliği paylaşır (alta yaslı), kutular yine aynı
+  hizada (CSS subgrid; güncel Chrome/Edge/Firefox).
+
+Önceki tur: **Form alanları hep tek satırda**. Değiştir: `webapp/app.js`, `webapp/style.css` (önceki turdaki `fe_agent/akis_faz01.py` da kopyalanmadıysa o da)
 
 - Seçim formlarında sütun sayısı alan sayısı kadar sabit (eşit
   genişlik); ekran daralınca alan alt satıra kaymıyor, uzun etiket
