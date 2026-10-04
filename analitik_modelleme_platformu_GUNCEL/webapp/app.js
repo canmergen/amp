@@ -6911,9 +6911,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const topluBtn = [];
     const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
     const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Kısaltma Sözlüğü");
-    if (ka.bilgi) kbas.appendChild(bolmeBilgiSimgesi(ka.bilgi, ka.baslik));
+    /* "i" YERİNE KISA AÇIKLAMA başlığın altında (kullanıcı kararı). */
     kb.appendChild(kbas);
     kart.appendChild(kb);
+    if (ka.aciklama) kart.appendChild(elYap("div", "dg-kisa-aciklama", tireSade(ka.aciklama)));
     const durumEl = elYap("div", "dg-not", "");
     kart.appendChild(durumEl);
     const hataEl = elYap("div", "dg-oneri-hata");
@@ -6929,8 +6930,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        hangisinin yazıldığını ✓ gösterir. Boş sarı, onaylı mor, kullanıcının
        yazdığı yeşil (akışın geri kalanıyla aynı). */
     ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"],
-                              ["dg-l-llm", "Sözlük ve Dil Modeli Aynı"],
-                              ["dg-l-farkli", "Sözlük ve Dil Modeli Farklı"],
+                              ["dg-l-llm", "Sözlük ve Genel Aynı"],
+                              ["dg-l-farkli", "Sözlük ve Genel Farklı"],
                               ["dg-l-hafiza", "Hafızada Onaylı"],
                               ["dg-l-eklendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
@@ -6960,7 +6961,9 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* İKİ KAYNAK AYRI SÜTUNDA (kullanıcı kararı): sözlüğün ve dil
        modelinin dediği yan yana; Anlam'a daha mantıklı olan yazılır,
        kullanıcı düzenler. */
-    ["Kısaltma", "Sözlükte", "Dil Modeli", "Anlam", "Önerilen Kısaltma", "Not", "Hafızaya Kaydet"]
+    /* Not sütunu kaldırıldı (kullanıcı kararı: çok yer kaplıyor); karar,
+       gerekçe ve uyarılar kısaltmanın yanındaki "i"de. */
+    ["Kısaltma", "LLM Sözlük", "LLM Genel", "Anlam", "Önerilen", "Kaydet"]
         .forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
@@ -6977,9 +6980,14 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                gelir, kullanıcı çelişkiyi görür. */
             const tdK = elYap("td", "dg-kolon dg-kisaltma-ad", r.kisaltma);
             const orn = r.ornekler || [];
-            if (orn.length) tdK.appendChild(bolmeBilgiSimgesi(
-                "Örnek kolonlar:\n\n" + orn.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n"),
-                r.kisaltma + " örnekleri"));
+            /* Eski Not sütununun içeriği (karar, gerekçe, uyarı) + örnekler. */
+            const notMetni = [r.onayli ? "Hafızada onaylı" : "", r.kanit || "",
+                              r.uyari ? "Uyarı: " + r.uyari : ""].filter(Boolean).join("\n\n");
+            const iMetni = [notMetni, orn.length ? "Örnek kolonlar:\n\n"
+                + orn.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n") : ""]
+                .filter(Boolean).join("\n\n");
+            if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kisaltma));
+            if (r.uyari) tr.classList.add("dg-uyarili");
             tr.appendChild(tdK);
             /* Kaynak sütunları (salt okunur). Seçilen kaynak işaretlenir. */
             const tdS = elYap("td", "dg-kaynak-deger" + (r.secilen === "sozluk" ? " secili" : ""));
@@ -7032,14 +7040,6 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 }
             });
             tr.appendChild(tdY);
-            const tdKy = elYap("td", "dg-tip", r.onayli
-                ? "Hafızada onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || ""));
-            /* ŞÜPHELİ ANLAM SİLİNMEZ, SÖYLENİR (kullanıcı kararı). */
-            if (r.uyari) {
-                tdKy.appendChild(elYap("div", "dg-kisa-uyari", tireSade(r.uyari)));
-                tr.classList.add("dg-uyarili");
-            }
-            tr.appendChild(tdKy);
             const tdI = elYap("td", "dg-ekle-hucre");
             const kutu = document.createElement("input");
             kutu.type = "checkbox"; kutu.className = "dg-ekle";

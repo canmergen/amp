@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **H00 / H06 / H12 / H18 tek kısaltma: H = saat**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma tablosu sadeleşti**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+
+- Sütunlar: Kısaltma | LLM Sözlük | LLM Genel | Anlam | Önerilen | Kaydet.
+- Not sütunu kaldırıldı; karar, gerekçe, uyarı ve örnek kolonlar
+  kısaltmanın yanındaki "i" simgesinde. Uyarılı satırın solunda turuncu
+  çizgi kalır.
+- "Kısaltma Sözlüğü" başlığının yanındaki "i" kaldırıldı; başlığın altında
+  kısa açıklama var (KISALTMA_ACIKLAMA).
+- Lejant: "Sözlük ve Genel Aynı" / "Sözlük ve Genel Farklı".
+
+Önceki tur: **H00 / H06 / H12 / H18 tek kısaltma: H = saat**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
 
 - 1-2 harf + en az 2 rakamlı parça (H00, H18, M12) artık "harf kısaltması +
   değer" sayılır: kısaltma H, anlamı "saat"; sayı değerdir. Kartta dört

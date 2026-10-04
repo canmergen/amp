@@ -1491,6 +1491,17 @@ KISALTMA_BILGI = (
     "kısaltma hafızadan silinir.")
 
 
+# Kartta basligin altinda (kullanici karari: "i" yerine kisa aciklama).
+KISALTMA_ACIKLAMA = (
+    "Kolon adlarındaki kısaltmaların anlamı. LLM Sözlük: sözlükteki "
+    "açıklamalardan çıkan anlam. LLM Genel: dil modelinin sözlüğe bakmadan "
+    "verdiği genel anlam. Anlam: dil modelinin ikisi arasında karar verdiği "
+    "anlam; düzenleyebilirsiniz. Önerilen: kolon adında yanlış kısaltma "
+    "seçilmişse yerine önerilen kısaltma. Kaydet: proje genelindeki "
+    "hafızaya kaydedilir. Karar, gerekçe ve örnekler kısaltmanın yanındaki "
+    "i simgesinde.")
+
+
 def _kisaltma_alani(durum, bekle=0.0):
     """bekle: dil modeli kisaltma kontrolunun sonucu icin en cok beklenen
     sure (sn). Kontrol 01.2.3'te arka planda basladigi icin cogu zaman
@@ -1512,7 +1523,7 @@ def _kisaltma_alani(durum, bekle=0.0):
                 notu += " Sebep: %s" % sebep
         except Exception:
             pass
-    return {"baslik": KISALTMA_BASLIK, "bilgi": KISALTMA_BILGI,
+    return {"baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
             "satirlar": satirlar, "not": notu, "dm": dm}
 
 
