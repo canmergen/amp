@@ -1298,6 +1298,9 @@ button.ozet-kart:focus-visible {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .dg-tip { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+/* Kısaltma Sözlüğü: şüpheli anlam uyarısı (anlam silinmez). */
+.dg-kisa-uyari { color: var(--amber); margin-top: 2px; }
+.dg-satir.dg-uyarili td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
 
 /* TEYIT TABLOSU DÖRT KOLON: Değişken | Tip | Sözlük Tanımı | Süreç
    Dışı. Tip değişikliği ve null oranı kaldırıldı (SFA adımında

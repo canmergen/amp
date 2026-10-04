@@ -6965,8 +6965,14 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda) {
             g.value = tireSade(r.anlam || ""); g.disabled = kilitli;
             g.setAttribute("aria-label", r.kisaltma + " anlamı");
             tdA.appendChild(g); tr.appendChild(tdA);
-            tr.appendChild(elYap("td", "dg-tip", r.onayli
-                ? "Onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || "")));
+            const tdKy = elYap("td", "dg-tip", r.onayli
+                ? "Onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || ""));
+            /* ŞÜPHELİ ANLAM SİLİNMEZ, SÖYLENİR (kullanıcı kararı). */
+            if (r.uyari) {
+                tdKy.appendChild(elYap("div", "dg-kisa-uyari", tireSade(r.uyari)));
+                tr.classList.add("dg-uyarili");
+            }
+            tr.appendChild(tdKy);
             const tdI = elYap("td", "dg-ekle-hucre");
             const kutu = document.createElement("input");
             kutu.type = "checkbox"; kutu.className = "dg-ekle";

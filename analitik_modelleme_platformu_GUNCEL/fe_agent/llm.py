@@ -1280,8 +1280,8 @@ def _kisaltma_oku(veri, girdi, uyumsuz=None):
             # "Yok" -> "yok" (anlam cumle icinde kullaniliyor). Ozel ad
             # (Herfindahl) da kuculur; anlam bozulmaz.
             anlam = {"I": "ı", "İ": "i"}.get(anlam[0], anlam[0].lower()) + anlam[1:]
-        if anlam and (len(anlam.split()) > 6 or turkce_sorunu(anlam)):
-            anlam = ""                      # kapi: uzun ya da Turkce degil
+        # Turkce olmayan / uzun anlam SILINMEZ: kisaltma.oneriler satirda
+        # uyari olarak yazar (kullanici karari: bos kalmamali, soylenmeli).
         cikti[ad] = anlam or None
         if uyumsuz is not None and anlam and k.get("sozluk_uyumsuz") in (True, "true", "evet"):
             uyumsuz[ad] = True

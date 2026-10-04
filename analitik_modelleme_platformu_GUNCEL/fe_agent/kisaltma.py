@@ -369,6 +369,12 @@ def _uyumlu_ek(govde, unlu):
     return False
 
 
+# Sonu c ile yumusayan ç'li kokler: "borcu" -> "borç". "-cı/-ci" sifat eki
+# ile ayni yazildigi icin (yolcu, alıcı) yalniz bu kokler cevrilir.
+_C_KOK = {"borç", "harç", "amaç", "güç", "kazanç", "sayaç", "ilaç", "ağaç",
+          "taç", "uç"}
+
+
 def _yalin_kelime(k, sozcukler=()):
     """Tek kelimeyi yalin hale getirir (kural tabanli Turkce ek atma):
     bayragi -> bayrak, skoru -> skor, adedi -> adet, orani -> oran,
@@ -396,6 +402,10 @@ def _yalin_kelime(k, sozcukler=()):
     elif len(aday) >= 4 and aday[-2] == "ğ" and aday[-1] in "ıiuü" \
             and _uyumlu_ek(aday[:-2], aday[-1]):
         aday = aday[:-2] + "k"
+    # 5a) "borcu" -> "borç" (bkz. _C_KOK)
+    elif len(aday) >= 4 and aday[-2] == "c" and aday[-1] in "ıiuü" \
+            and aday[:-2] + "ç" in _C_KOK:
+        aday = aday[:-2] + "ç"
     # 5) unsuzden sonra iyelik "-ı": "skoru" -> "skor", "adedi" -> "adet"
     elif len(aday) >= 4 and aday[-1] in "ıiuü" and aday[-2] not in _UNLU \
             and not aday.endswith(_SIFAT_EKI) and aday not in _YALIN_ISTISNA \
@@ -620,7 +630,8 @@ def kalici_ogren(tanimlar, veri_seti="", bekle=300.0):
                 {k: {"anlam": o["anlam"], "kolon": o.get("kolon") or 0,
                      "kaynak": o["kaynak"]}
                  for k, o in oner.items()
-                 if o["anlam"] and o["kaynak"] in ("dil_modeli_dogruladi", "dil_modeli")},
+                 if o["anlam"] and not o.get("uyari")
+                 and o["kaynak"] in ("dil_modeli_dogruladi", "dil_modeli")},
                 veri_seti)
         except Exception:
             pass
@@ -936,16 +947,25 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         onceki = cikti.get(kisa) or {"kolon": int(parca_say.get(kisa, 0)),
                                      "destek": None}
         onceki["ornek"] = d.get("ornek", 0)
+        # BOS BIRAKILMAZ, SOYLENIR (kullanici karari): eskiden asagidaki
+        # durumlarda anlam silinip satir bos kaliyordu. Artik anlam kalir,
+        # satirda uyari yazar; karari kullanici verir.
+        uyari = []
         if d.get("anlam"):
-            yasak = set()
-            for q in _birlikte(satirlar, kisa, parca_say):
-                if q in son_anlam and not _ayni_anlam(son_anlam[q], d["anlam"]):
-                    yasak |= _anlam_kelimeleri(son_anlam[q])
-            # KAPI: dil modeli birlikte gectigi kisaltmanin anlamini
-            # verdiyse (ADT -> "farkli", DISTINCT'in) kabul edilmez.
-            if _yasakli(d["anlam"].split(), yasak) \
-                    or _sade(d["anlam"]).replace(" ", "") == kisa.lower():
+            if _sade(d["anlam"]).replace(" ", "") == kisa.lower():
+                # Anlam yerine kisaltmanin kendisi: anlam degil, bos kalir.
                 d = {"anlam": "", "karar": "emin_degil"}
+                uyari.append("Dil modeli anlam yerine kısaltmanın kendisini verdi.")
+        if d.get("anlam"):
+            # Birlikte gectigi kisaltmanin anlamini iceriyor (ADT ->
+            # "farkli", DISTINCT'in). Es anlamli (ayni anlam) uyari almaz.
+            for q in sorted(_birlikte(satirlar, kisa, parca_say)):
+                if q in son_anlam and not _ayni_anlam(son_anlam[q], d["anlam"]) \
+                        and _yasakli(d["anlam"].split(), _anlam_kelimeleri(son_anlam[q])):
+                    uyari.append("Anlam, birlikte geçtiği %s kısaltmasının anlamını "
+                                 "(\"%s\") da içeriyor; yalnız bu kısaltmanın anlamı mı, "
+                                 "kontrol edin." % (q, son_anlam[q]))
+            uyari += _metin_uyarilari(d["anlam"])
         if d["karar"] == "dogru" and kisa in cikan:
             onceki["kaynak"] = "dil_modeli_dogruladi"
             cikti[kisa] = onceki
@@ -958,9 +978,14 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         if d.get("sozluk_uyumsuz") and kisa in cikti and cikti[kisa].get("anlam"):
             cikti[kisa]["sozluk_uyumsuz"] = True
         elif d["karar"] == "emin_degil" and kisa in cikti:
-            # Dil modeli emin olamadi: istatistik tahmini gosterilmez,
-            # anlam bos kalir (yanlis anlam bos anlamdan kotu).
-            cikti[kisa] = dict(onceki, anlam="", kaynak="emin_degil")
+            # Dil modeli emin olamadi: istatistik tahmini UYARIYLA kalir
+            # (kullanici karari: bos kalmamali, soylenmeli).
+            cikti[kisa] = dict(onceki, kaynak="emin_degil")
+            if cikti[kisa].get("anlam"):
+                uyari.append("Dil modeli emin olamadı; anlam yalnız sözlük "
+                             "istatistiğinden, kontrol edin.")
+        if uyari and kisa in cikti:
+            cikti[kisa]["uyari"] = " ".join(dict.fromkeys(uyari))
     # ONCEKI CALISMALARDAN OGRENILEN: bu sozlukten ogrenilemeyen (ya da
     # anlami bos kalan) kisaltma, kolon adlarinda geciyorsa ogrenilmis
     # bilgiden doldurulur.
@@ -978,6 +1003,22 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
                        "destek": None, "ornek": 0,
                        "onceki": "%s, %d kolon" % (o["veri_seti"] or "önceki sözlük", o["kolon"])}
     return cikti, durum
+
+
+def _metin_uyarilari(anlam):
+    """Dil modelinin anlamindaki bicim sorunlari (eskiden anlam sessizce
+    siliniyordu): Turkce degil ya da cok uzun."""
+    cikti = []
+    try:
+        from fe_agent import llm as llm_mod
+        sebep = llm_mod.turkce_sorunu(anlam)
+    except Exception:
+        sebep = None
+    if sebep:
+        cikti.append("Anlam tamamen Türkçe değil (%s); düzeltin." % sebep)
+    if len(str(anlam or "").split()) > 6:
+        cikti.append("Anlam 6 kelimeden uzun; kısaltmanın kendi anlamı mı, kontrol edin.")
+    return cikti
 
 
 def _ayni_anlam(a, b):
@@ -1068,6 +1109,8 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          "kaynak": o.get("kaynak") or "",
                          "onayli": kisa in onay, "kanit": " · ".join(p for p in parca if p),
                          "sozluk_uyumsuz": bool(o.get("sozluk_uyumsuz")),
+                         # Onayli satirda uyari gosterilmez (kullanici karar verdi).
+                         "uyari": "" if kisa in onay else (o.get("uyari") or ""),
                          "ornekler": kanit_ornekleri(tanimlar, kisa, anlam)})
     return satirlar[:EN_COK], durum
 
@@ -1108,7 +1151,8 @@ def rapor_satirlari(tanimlar, veri_seti=""):
         ist = "; ".join("%s (%%%d, ayırt %%%d)" % (a["anlam"], round(a["destek"] * 100),
                                                   round(a["ayirt"] * 100))
                         for a in (aday.get(kisa) or {}).get("adaylar", [])[:ADAY_SAYISI])
-        satir = [kisa, anlam, r_["kanit"], "Evet" if r_["onayli"] else "Hayır",
+        kanit = r_["kanit"] + ((" · UYARI: " + r_["uyari"]) if r_.get("uyari") else "")
+        satir = [kisa, anlam, kanit, "Evet" if r_["onayli"] else "Hayır",
                  len(kolonlar), len(tasiyan) if anlam else None, ist]
         for i in range(RAPOR_ORNEK):
             o = ornek[i] if i < len(ornek) else None

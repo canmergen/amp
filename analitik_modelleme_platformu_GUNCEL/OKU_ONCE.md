@@ -1,6 +1,23 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2 akışı ayrıldı: Kısaltma Sözlüğü, Kolon Adı Önerileri, Sözlük Tanım Kontrolü ayrı adımlar**. Değiştir: `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+Bu tur: **Şüpheli kısaltma anlamı silinmiyor, uyarıyla gösteriliyor**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+
+- Eskiden anlam sessizce siliniyordu; artık kalıyor ve Kaynak sütununda
+  turuncu uyarı yazıyor (satırın solunda turuncu çizgi):
+  - anlam, birlikte geçtiği başka bir kısaltmanın anlamını da içeriyor
+    (TMSNCFRST "ilk işlemden bu yana geçen süre", TXN "işlem")
+  - dil modeli emin olamadı: sözlük istatistiğinin anlamı uyarıyla kalır
+  - anlam tamamen Türkçe değil ya da 6 kelimeden uzun
+- Eş anlamlı kısaltmalar (aynı anlamı veren iki kısaltma, ör. NUM ve CNT
+  "adet") uyarı almaz.
+- Tek boş kalan durum: dil modeli anlam yerine kısaltmanın kendisini
+  verdiyse (SCORE -> "score"); istatistik anlamı varsa o uyarıyla gelir.
+- Uyarılı anlamlar kalıcı öğrenmeye girmez; siz onaylarsanız (hafızaya
+  kaydederseniz) girer. Excel'de Kaynak sütununa "UYARI: ..." eklenir.
+- Yalın hâl: "borcu" -> "borç" (harç, amaç, güç, kazanç, sayaç ... aynı);
+  "yolcu", "alıcı" gibi -cı ekli kelimeler kesilmez.
+
+Önceki tur: **01.2 akışı ayrıldı: Kısaltma Sözlüğü, Kolon Adı Önerileri, Sözlük Tanım Kontrolü ayrı adımlar**. Değiştir: `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
 1) Yeni adım sırası (A ve B modu)
 - 01.2.3 Sözlük Tanımları (değişmedi)
