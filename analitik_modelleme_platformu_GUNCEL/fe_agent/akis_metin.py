@@ -53,7 +53,7 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 # diğerlerini seçmeme izin verme"). Buyuk veri (Spark) yoluyla uctan uca
 # denenmis baslangiclar acik; digerleri kartta soluk ve tiklanamaz durur,
 # yazarak secilmeye calisilirsa da reddedilir. Acmak icin bu listeye ekleyin.
-ACIK_MODLAR = ("A", "D")
+ACIK_MODLAR = ("A", "C", "D")
 
 MOD_SECENEKLERI = [
     {"deger": "A", "baslik": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut",

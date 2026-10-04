@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açılır listede fare kaydırma hatası**. Değiştir: `webapp/app.js`
+Bu tur: **C başlangıcı açıldı (Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil)**. Değiştir: `fe_agent/akis_metin.py`
+
+- Adımlar: Başlangıç → Baz Veri Seti → Sözlük Üretimi → Modelleme
+  Tanımları → Değişken Kontrolü → Örneklem ve Doğrulama.
+- Sözlük üretimi onaylı tanım hafızasını ve onaylı kısaltmaları bağlam
+  olarak kullanır.
+
+---
+
+Önceki tur: **Açılır listede fare kaydırma hatası**. Değiştir: `webapp/app.js`
 
 - Veri seti / sözlük seçim listesinde fare yarım görünen bir adın üzerine
   gelince liste kendiliğinden kayıyordu (fare başka adın üzerine düşüyordu).
