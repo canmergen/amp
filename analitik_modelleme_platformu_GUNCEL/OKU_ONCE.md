@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sözlük kartı çipleri**. Değiştir: `webapp/app.js`, `webapp/style.css`
+Bu tur: **Sözlük kartı renk açıklaması kısaltmalı**. Değiştir: `webapp/app.js`
+
+- Sözlükte Boş (SB) · Onaylı Tanım (OT) · Dil Modeli Önerisi (DMÖ) ·
+  Sözlüğe Eklendi (SEN) · Sözlüğe Eklenmedi (SENM).
+
+---
+
+Önceki tur: **Sözlük kartı çipleri**. Değiştir: `webapp/app.js`, `webapp/style.css`
 
 - "Onaylı Tanım" çipi kısaldı: "OT" (açılımı ve kaynak veri seti ipucunda);
   renk açıklamasında "Onaylı Tanım (OT)".
