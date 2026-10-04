@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.4 "kontrol edilecek tanım bulunmadı" hatası**. Değiştir: `fe_agent/akis_faz01.py`
+Bu tur: **01.2.3 renk açıklaması yazıları**. Değiştir: `webapp/app.js`
+
+- Dört renk: Sözlükte Boş · Dil Modeli Önerisi · Sözlüğe Eklendi ·
+  Sözlüğe Eklenmedi.
+
+---
+
+Önceki tur: **01.2.4 "kontrol edilecek tanım bulunmadı" hatası**. Değiştir: `fe_agent/akis_faz01.py`
 
 - Sözlükten tanımlar, sağ paneldeki Sözlük Tanımı ile AYNI kolon
   bulucuyla okunuyor. Eskisi değişken adı kolonunu yalnız DEGISKEN /

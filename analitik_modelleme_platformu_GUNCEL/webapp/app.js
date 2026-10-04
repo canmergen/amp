@@ -2051,8 +2051,9 @@ function dgLejant(ogeler) {
     });
     return kap;
 }
-const DG_LEJANT_KARAR = [["dg-l-bos", "Boş"], ["dg-l-llm", "Dil Modeli Önerisi"],
-                         ["dg-l-eklendi", "Eklendi"], ["dg-l-eklenmedi", "Eklenmedi"]];
+const DG_LEJANT_KARAR = [["dg-l-bos", "Sözlükte Boş"], ["dg-l-llm", "Dil Modeli Önerisi"],
+                         ["dg-l-eklendi", "Sözlüğe Eklendi"],
+                         ["dg-l-eklenmedi", "Sözlüğe Eklenmedi"]];
 const DG_LEJANT_TEYIT = [["dg-l-bos", "Tanım Boş"], ["dg-l-llm", "Dil Modeli Önerisi"]];
 
 function tipKaydet(kolon, sec, tipEl, hataEl) {
