@@ -191,6 +191,8 @@ def cikar(tanimlar):
             continue
         tekli, ikili = _tanim_kokleri(tanim)
         satirlar.append((set(parcalar(ad)), tekli, ikili))
+    satirlar_ad = [ps for ps, _t, _i in satirlar]
+    onay = onaylilar()
     n = len(satirlar)
     if n < EN_AZ_KOLON:
         return {}
@@ -207,6 +209,10 @@ def cikar(tanimlar):
     sozcukler = set()
     for _p, tekli, _i in satirlar:
         sozcukler.update(tekli.values())
+    # Temel sozluk anlamlari da yalin bicim kaynagi: "adedi" -> "adet"
+    # sozlukte "adet" hic gecmese de.
+    for v in TEMEL.values():
+        sozcukler.update(_kucuk(k) for k in v.split())
     # Temel kisaltmalarin anlam kokleri (FLAG -> bayrak, TXN -> islem):
     # IKI KELIMELIK ifadeye giremez ("yoksa bayragi" NO icin secilmesin;
     # "bayrak" FLAG'in). Tek kelime olarak serbest: GLN "gelen" olabilir,
@@ -223,19 +229,19 @@ def cikar(tanimlar):
             # baskasinin anlamini kapmasin (IN, CP'nin "karsi taraf"ini).
             continue
         icinde = Counter()
-        birlikte = None               # bu parcanin HER kolonunda gecen parcalar
         for ps, tekli, ikili in satirlar:
             if parca in ps:
                 icinde.update(set(tekli) | set(ikili))
-                birlikte = set(ps) if birlikte is None else birlikte & ps
-        # Her zaman birlikte gectigi TEMEL kisaltmanin anlami bu parcanin
-        # anlami olamaz (NO_TXN_FLAG: "bayrak" FLAG'in, NO'nun degil).
-        yasak = set(_kok(k) for p in (birlikte or ()) if p != parca
-                    for k in temel_anlam(p).split())
+        # Kolonlarinin YARISINDAN FAZLASINDA birlikte gectigi bilinen
+        # (temel / onayli) kisaltmanin anlami bu parcanin anlami olamaz:
+        # NO_TXN_FLAG'de "bayrak" FLAG'in; DISTINCT_BNK_ADT'de "farkli"
+        # DISTINCT'in, "banka" BNK'nin (kullanici bildirimi: ADT "farkli"
+        # geliyordu).
+        yasak = yasak_kokler(satirlar_ad, parca, onay)
         # Aday puanlari: ayirt = destek - disaridaki pay.
         puan = {}
         for k, say in icinde.items():
-            if any(x in yasak for x in k.split(" ")):
+            if _yasakli(k.split(" "), yasak):
                 continue
             destek = say / float(adet)
             if destek < DESTEK_ESIK:
@@ -293,6 +299,41 @@ def cikar(tanimlar):
                             "ayirt": round(ayirt, 3)}
             break
     return sonuc
+
+
+BIRLIKTE_ESIK = 0.5
+
+
+def bilinen_anlam(parca, onay=None):
+    """Kesin bilinen anlam: onayli hafiza, yoksa temel sozluk."""
+    onay = onaylilar() if onay is None else onay
+    return onay.get(parca) or temel_anlam(parca)
+
+
+def birlikte_bilinenler(parca_kumeleri, parca, esik=BIRLIKTE_ESIK, onay=None):
+    """parca'nin kolonlarinin en az esik kadarinda birlikte gecen ve
+    anlami KESIN bilinen kisaltmalar: {KISA: anlam}."""
+    onay = onaylilar() if onay is None else onay
+    icinde = [ps for ps in parca_kumeleri if parca in ps]
+    if not icinde:
+        return {}
+    say = Counter(p for ps in icinde for p in ps if p != parca)
+    return {p: bilinen_anlam(p, onay) for p, n in say.items()
+            if n / float(len(icinde)) >= esik and bilinen_anlam(p, onay)}
+
+
+def yasak_kokler(parca_kumeleri, parca, onay=None):
+    """Bu parcaya verilemeyecek anlam kokleri (birlikte gecen bilinen
+    kisaltmalarin anlamlari)."""
+    return set(_sade(k) for a in birlikte_bilinenler(parca_kumeleri, parca, onay=onay).values()
+               for k in a.split() if len(k) >= 3)
+
+
+def _yasakli(kelimeler, yasak):
+    """Kelimelerden biri yasak bir anlamla BASLIYOR mu ("gunun" -> "gun",
+    "adedi" -> "adet" degil). Kok 5 harfle kesildigi icin kisa kelimeler
+    ("gun") esitlikle yakalanmiyordu."""
+    return any(_sade(k).startswith(y) for k in kelimeler for y in yasak)
 
 
 _YUMUSAK = {"d": "t", "ğ": "k", "b": "p", "c": "ç", "g": "k"}
@@ -448,9 +489,17 @@ def _dm_girdisi(tanimlar):
             continue
         if parca not in cikan and parca.isalpha() and len(parca) > 6:
             continue        # uzun duz kelime (BAHIS, SEHIR...) kisaltma degil
+        ornek = _ornekler(tanimlar, parca)
+        # Orneklerdeki DIGER kisaltmalarin kesin anlamlari: model hangi
+        # kelimenin baska kisaltmaya ait oldugunu gorsun.
+        bilinen = {}
+        for ad, _t in ornek:
+            for p in parcalar(ad):
+                if p != parca and bilinen_anlam(p, onay):
+                    bilinen[p] = bilinen_anlam(p, onay)
         girdi.append({"kisaltma": parca,
                       "anlam": (cikan.get(parca) or {}).get("anlam", ""),
-                      "ornekler": _ornekler(tanimlar, parca)})
+                      "ornekler": ornek, "bilinen": bilinen})
     return girdi[:EN_COK]
 
 
@@ -520,7 +569,15 @@ def oneriler(tanimlar, bekle=0.0):
                        "kolon": c["kolon"], "destek": c["destek"]}
     say = Counter(p for ad, t in (tanimlar or {}).items() if str(t or "").strip()
                   for p in set(parcalar(ad)))
+    kumeler = [set(parcalar(ad)) for ad, t in (tanimlar or {}).items()
+               if str(t or "").strip()]
+    onay = onaylilar()
     for kisa, d in dm.items():
+        # KAPI: dil modeli de birlikte gectigi bilinen kisaltmanin anlamini
+        # verdiyse (ADT -> "farkli", DISTINCT'in) kabul edilmez.
+        if d.get("anlam") and _yasakli(d["anlam"].split(),
+                                       yasak_kokler(kumeler, kisa, onay)):
+            d = {"anlam": "", "karar": "emin_degil"}
         if kisa in cikti and cikti[kisa]["kaynak"] == "temel":
             continue
         onceki = cikti.get(kisa) or {"kolon": int(say.get(kisa, 0)), "destek": None}

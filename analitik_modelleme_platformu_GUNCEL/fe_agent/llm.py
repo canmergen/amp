@@ -1168,8 +1168,14 @@ KURALLAR:
   - Birlikte gectigi BASKA bir kisaltmanin anlamini verme. Ornek:
     IN_CP_CNT kolonunda CP "karsi taraf"tir; IN "karsi taraf" DEGIL,
     "gelen"dir.
+  - "bilinen" satiri ornek kolon adlarindaki DIGER kisaltmalarin kesin
+    anlamlaridir. O kelimeler bu kisaltmanin anlami OLAMAZ; onerilen
+    anlam bunlardan biriyse karar "duzelt" ya da "emin_degil" olmali.
+    Ornek: DISTINCT_BNK_ADT "Farkli banka adedi", bilinen DISTINCT=farkli,
+    BNK=banka -> ADT "adet".
   - Tanimdaki hangi kelimenin bu kisaltmaya karsilik geldigini kolon
-    adindaki SIRAYLA eslestirerek bul.
+    adindaki SIRAYLA eslestirerek bul; bilinenleri cikardiktan sonra
+    kalan kelime adaydir.
   - Emin degilsen "emin_degil" de; tahmin uydurma. Yanlis anlam bos
     anlamdan kotudur.
 
@@ -1192,6 +1198,8 @@ KISALTMA_PARCA = 25
 
 def _kisaltma_satiri(g):
     s = "- %s | onerilen: %s" % (g["kisaltma"], g.get("anlam") or "(bos)")
+    if g.get("bilinen"):
+        s += "\n    bilinen: " + ", ".join("%s=%s" % kv for kv in sorted(g["bilinen"].items()))
     for ad, t in g.get("ornekler") or []:
         s += "\n    %s: %s" % (ad, t)
     return s

@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Avatar ve adım başlığı bir kademe küçüldü**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **Kısaltma: birlikte geçen kısaltmanın anlamı verilmez**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py` (backend yeniden başlatılmalı)
+
+- Bir kısaltmanın kolonlarının yarısından fazlasında birlikte geçen ve
+  anlamı kesin bilinen (temel / onaylı) kısaltmanın anlamı o kısaltmaya
+  verilmez: DISTINCT_BNK_ADT'de "farklı" DISTINCT'in, "banka" BNK'nin
+  -> ADT "adet". Karşılaştırma kelime başıyla (gün -> günün de yakalanır).
+- Dil modeline her kısaltma için "bilinen" satırı gider (örnek kolonlardaki
+  diğer kısaltmaların kesin anlamları); model bunları kullanamaz.
+  Model yine de birinin anlamını verirse kod kapısı onu düşürür.
+- Yalın hal: temel sözlükteki kelimeler de kaynak (adedi -> adet,
+  sözlükte "adet" geçmese de).
+
+Önceki tur: **Avatar ve adım başlığı bir kademe küçüldü**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
 
 - Sohbet avatarı 48px -> 42px; adım bloğu başlığı 15px -> 14px. Alt
   adım başlığı (01.2.1 ...) 13px kaldı.
