@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Gri yazı kaldırıldı**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **Logo ve avatar büyütüldü**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
+
+- Sol üst logo 59px -> 72px yükseklik (üst barın neredeyse tamamı).
+- Sohbet avatarı 34px -> 48px.
+
+Önceki tur: **Gri yazı kaldırıldı**. Değiştir: `webapp/style.css` (yalnız sayfa yenileme)
 
 - İkincil yazılar (açıklamalar, notlar, tip sütunu, sağ panel etiketleri)
   açık temada siyah, koyu temada beyaz (`--metin-soluk` = ana metin).

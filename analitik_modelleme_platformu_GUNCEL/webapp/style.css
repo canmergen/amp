@@ -162,7 +162,7 @@
      Eskiden min(78%, 720px) idi ve kartlar kendi genişliklerini
      koyduğu için ekranda üç farklı blok eni yan yana duruyordu. */
   --balon-en:     100%;
-  --avatar-en:    34px;          /* sohbet avatarı: bot / kullanıcı */
+  --avatar-en:    48px;          /* sohbet avatarı (34px'ti; kullanıcı kararı: görsel seçilmiyordu) */
   --avatar-ara:   10px;          /* avatar ile blok arası */
   /* Ardisik balonlar arasindaki SABIT dikey aralik. Bot/kullanici,
      balon/kart ayrimi gozetmeden hepsi ayni bosluga sahip. */
@@ -282,7 +282,9 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   gap: clamp(11px, 1.6vw, 22px);
 }
 #ustbar-sol { display: flex; align-items: center; gap: var(--b-4); flex-shrink: 0; }
-#banner { height: calc(var(--ustbar-h) - 19px); width: auto; display: block; }
+/* Logo buyutuldu (kullanici karari): bar yuksekliginin neredeyse tamami
+   (59px -> 72px); ust ve alttan 3'er px pay. */
+#banner { height: calc(var(--ustbar-h) - 6px); width: auto; display: block; }
 
 #baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
