@@ -652,8 +652,7 @@ def _veri_sec_formu(durum, veri=None):
         "buton": "Devam Et",
         "alanlar": [{"ad": "veri_seti", "etiket": "Baz Veri Seti",
                      "placeholder": "Baz veri seti ara…",
-                     "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik "
-                              "ve tüm değişkenler bu tabloda",
+                     "ipucu": "Hedef, kimlik ve tüm değişkenleri içeren tablo",
                      "deger": veri or durum.get("veri_seti") or ""}],
         "sablon": "veri seti {veri_seti}",
     }
@@ -808,9 +807,9 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
     durum["_secim_alani"] = {
         "tip": "form",
         "baslik": "Baz Veri Seti ve Baz Sözlük",
-        "aciklama": "Modellemeye girecek baz veri setini seçin. Baz sözlük "
-                    "varsa onu da seçin; yoksa boş bırakın, kolon tanımları "
-                    "Sözlük Tanımları adımında oluşturulur.",
+        "aciklama": "Modellemeye girecek baz veri setini seçin. Sözlüğünüz "
+                    "varsa onu da seçin; yoksa alanı boş bırakın, kolon "
+                    "tanımları Sözlük Tanımları adımında oluşturulur.",
         # Dugme etiketi SONRAKI EKRANIN adini soylemeli: bu form
         # gonderildiginde "Girdi doğrulama tamamlandı" karti aciliyor.
         # Eski etiket analizin burada basladigini ima ediyordu; oysa
@@ -819,13 +818,11 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
         "alanlar": [
             {"ad": "veri_seti", "etiket": "Baz Veri Seti",
              "placeholder": "Baz veri seti ara…",
-             "ipucu": "Modellemeye girecek tek tablo: hedef, kimlik ve tüm "
-                      "değişkenler bu tabloda",
+             "ipucu": "Hedef, kimlik ve tüm değişkenleri içeren tablo",
              "deger": veri or durum.get("veri_seti") or ""},
-            {"ad": "sozluk", "etiket": "Baz Sözlük (Opsiyonel)",
+            {"ad": "sozluk", "etiket": "Baz Sözlük (İsteğe Bağlı)",
              "placeholder": "Sözlük tablosu ara…", "zorunlu": False,
-             "ipucu": "Baz veri setindeki kolonların adını ve açıklamasını "
-                      "taşıyan tablo; yoksa boş bırakın",
+             "ipucu": "Kolon adlarını ve açıklamalarını içeren tablo",
              "deger": sozluk or durum.get("sozluk") or ""},
         ],
         "sablon": "veri seti {veri_seti} ve sözlük {sozluk}",
@@ -958,7 +955,7 @@ def _kaynak_sozluk_formu(durum, secili=None):
     tablolar = list(durum.get("ham_tablolar") or [])
     secili = secili or durum.get("kaynak_sozlukler") or {}
     alanlar = [{"ad": "sozluk_%d" % i,
-                "etiket": "%s Tablosunun Sözlüğü (Opsiyonel)" % t,
+                "etiket": "%s Tablosunun Sözlüğü (İsteğe Bağlı)" % t,
                 "placeholder": "Kaynak sözlük ara…", "zorunlu": False,
                 "deger": secili.get(t) or ""}
                for i, t in enumerate(tablolar)]
@@ -2687,20 +2684,20 @@ def _tanimlar_formu(durum, meta=None):
                      "yenileyince yeniden denenir.")
         donem_maddeler = [str(p["donem_hata"])]
     else:
-        donem_not = "Dönem kolonu bulunamadı."
+        donem_not = "Uygun dönem kolonu bulunamadı."
         donem_maddeler = list(p.get("donem_nedenler") or [])
 
     segment_aday = [k for k in _segment_adaylari(
         durum, haric={m.get("target"), m.get("id"), m.get("donem")}) if k in kolonlar]
     segment_liste = _ekle(segment_aday, m.get("segment"))
-    segment_not = "" if segment_aday else "Segment olabilecek (2–20 değerli) kolon bulunamadı."
+    segment_not = "" if segment_aday else "2 ile 20 arası farklı değer alan kolon bulunamadı."
 
     hedef_not = ("" if hedef_aday else
-                 "Veri setinde 0/1 değerli kolon bulunamadı; tüm kolonlar "
+                 "Yalnızca 0 ve 1 değeri alan kolon bulunamadı; tüm kolonlar "
                  "listeleniyor.")
     kimlik_not = ("" if kimlik_aday else
-                  "Veri setinde tekrarsız kolon bulunamadı; tüm kolonlar "
-                  "listeleniyor.")
+                  "Her satırda farklı değer alan kolon bulunamadı; tüm "
+                  "kolonlar listeleniyor.")
 
     durum["_secim_alani"] = {
         "tip": "form",
@@ -2709,11 +2706,10 @@ def _tanimlar_formu(durum, meta=None):
         # sohbet balonunda ("Devam etmek için hedef değişken ve kimlik
         # kolonu bilgisine ihtiyacım var...") sonra kartta yaziyordu;
         # kullanici ayni cumleyi iki kez okuyordu.
-        "aciklama": "Hedef değişkeni ve kimlik kolonunu veri setinin "
-                    "kolonları arasından seçin. Dönem ve segment kolonu "
-                    "zorunlu değil; dönem verirseniz zamansal bölme "
-                    "kurulabilir ve stabilite ölçülebilir, segment verirseniz "
-                    "segmentler ayrı görülür.",
+        "aciklama": "Hedef değişkeni ve kimlik kolonunu seçin. Dönem ve "
+                    "segment kolonu isteğe bağlıdır: dönem seçilirse veri "
+                    "zamana göre bölünebilir ve stabilite ölçülebilir; segment "
+                    "seçilirse sonuçlar segment bazında da gösterilir.",
         # "ipucu" KALDIRILDI. Kartta uc acilir liste duruyor; altina bir
         # de "target <kolon> id <kolon>" ornek satiri koymak, formu
         # doldurmanin yaninda bir de yazarak girme yolu varmis izlenimi
@@ -2729,19 +2725,21 @@ def _tanimlar_formu(durum, meta=None):
         "alanlar": [
             {"ad": "target", "etiket": "Hedef Değişken", "kaynak": "kolon",
              "deger": m.get("target") or "", "secenekler": hedef_liste,
-             "ipucu": "Yalnızca 0/1 değerli kolonlar", "not": hedef_not},
+             "ipucu": "0 ve 1 değeri alan kolonlar listelenir", "not": hedef_not},
             {"ad": "id", "etiket": "Kimlik Kolonu", "kaynak": "kolon",
              "deger": m.get("id") or "", "secenekler": kimlik_liste,
-             "ipucu": "Yalnızca tekrarsız kolonlar", "not": kimlik_not},
-            {"ad": "donem", "etiket": "Dönem Kolonu (Opsiyonel)",
+             "ipucu": "Her satırda farklı değer alan kolonlar listelenir",
+             "not": kimlik_not},
+            {"ad": "donem", "etiket": "Dönem Kolonu (İsteğe Bağlı)",
              "kaynak": "kolon", "zorunlu": False,
              "deger": m.get("donem") or "", "secenekler": donem_liste,
-             "ipucu": "Dönem bilgisi taşıyan kolonlar: 202501 (sayı, metin ya da kategori), 2025-01, tarih",
+             "ipucu": "Dönem bilgisi içeren kolonlar listelenir (202501, 2025-01 ya da tarih)",
              "not": donem_not, "not_maddeler": donem_maddeler},
-            {"ad": "segment", "etiket": "Segment Kolonu (Opsiyonel)",
+            {"ad": "segment", "etiket": "Segment Kolonu (İsteğe Bağlı)",
              "kaynak": "kolon", "zorunlu": False,
              "deger": m.get("segment") or "", "secenekler": segment_liste,
-             "ipucu": "2–20 farklı değer taşıyan kolonlar", "not": segment_not,
+             "ipucu": "2 ile 20 arası farklı değer alan kolonlar listelenir",
+             "not": segment_not,
              "bilgi": SEGMENT_BILGI},
         ],
         "sablon": "target {target} id {id} donem {donem} segment {segment}",

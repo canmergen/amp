@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Başlangıçlar birleşti: A-C → "Baz Veri Seti Mevcut", B-D → "Kaynak Tablolar Mevcut"**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `webapp/app.js`
+Bu tur: **Açılır listeler hep yukarı; başlangıç ve form metinleri sadeleşti**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`
+
+- Bütün açılır listeler alanın ÜSTÜNE açılır; üstte yer yoksa sohbet
+  kaydırılarak yer açılır.
+- Metinler: karşılama, iki başlangıç kartı, Baz Veri Seti ve Baz Sözlük
+  formu, kaynak sözlük formu, Modelleme Tanımları formu ve alan altı
+  açıklamaları yeniden yazıldı; "(Opsiyonel)" → "(İsteğe Bağlı)".
+
+---
+
+Önceki tur: **Başlangıçlar birleşti: A-C → "Baz Veri Seti Mevcut", B-D → "Kaynak Tablolar Mevcut"**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `webapp/app.js`
 
 - Başlangıç ekranında iki kart. Sözlük her ikisinde İSTEĞE BAĞLI:
     A: "Baz Sözlük (Opsiyonel)" boş bırakılabilir.

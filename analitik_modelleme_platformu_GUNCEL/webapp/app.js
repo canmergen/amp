@@ -5709,20 +5709,17 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
 
     /* Liste asagi sigmiyorsa yukari acilir; yine de tasiyorsa sohbet
        kaydirilir — kart her zaman en altta oldugu icin gerekli. */
+    /* LİSTE HER ZAMAN YUKARI AÇILIR (kullanıcı kararı: "bir yukarı bir
+       aşağı açılıyor, hep yukarı açılmalı"). Alanın üstünde yer yoksa
+       sohbet kaydırılarak yer açılır. */
     function konumla() {
-        liste.classList.remove("yukari");
+        liste.classList.add("yukari");
         if (!sohbetEl) return;
         const g = giris.getBoundingClientRect();
         const alan = sohbetEl.getBoundingClientRect();
-        const asagi = alan.bottom - g.bottom;
         const yukari = g.top - alan.top;
         const gerekli = Math.min(LISTE_YUKSEKLIGI, liste.scrollHeight + 8);
-        if (asagi < gerekli && yukari > asagi) {
-            liste.classList.add("yukari");
-            return;
-        }
-        const tasma = (g.bottom + gerekli) - alan.bottom;
-        if (tasma > 0) sohbetEl.scrollTop += tasma + 8;
+        if (yukari < gerekli) sohbetEl.scrollTop -= (gerekli - yukari + 8);
     }
 
     function ac(filtre) {

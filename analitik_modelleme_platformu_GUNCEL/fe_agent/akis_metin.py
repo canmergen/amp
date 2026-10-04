@@ -9,7 +9,7 @@ import re
 
 
 KARSILAMA = """**Akıllı Modelleme Platformu'na hoş geldiniz.**
-Çalışma, soldaki iş akışında yer alan beş faz boyunca adım adım ilerler. Her adımda önce yapılacak işlem açıklanır; onayınızla uygulanır ve sonuçları kayıt altına alınır. Başlamak için verinizin mevcut durumuna uygun çalışma başlangıcını seçin."""
+Çalışma, soldaki iş akışındaki beş fazda adım adım ilerler. Her adımda önce ne yapılacağı açıklanır, onayınızla uygulanır ve sonucu kayda geçer. Başlamak için verinizin durumuna uygun başlangıcı seçin."""
 
 # ===========================================================================
 # SERBEST SORU
@@ -64,14 +64,13 @@ ACIK_MODLAR = ("A", "B")
 
 MOD_SECENEKLERI = [
     {"deger": "A", "baslik": "Baz Veri Seti Mevcut",
-     "aciklama": "Baz veri setini seçersiniz; baz sözlük varsa onu da seçersiniz. "
-                 "Sözlükte tanımı olmayan kolonlar (sözlük yoksa tümü) onaylı "
-                 "tanımlardan ve yapay zekâ önerileriyle tanımlanır."},
+     "aciklama": "Modellemeye girecek tablo hazır. Sözlüğü varsa onu da "
+                 "seçersiniz; tanımı olmayan kolonlar onaylı tanımlardan ve "
+                 "yapay zekâ önerilerinden doldurulur."},
     {"deger": "B", "baslik": "Kaynak Tablolar Mevcut",
-     "aciklama": "Baz veri seti kaynak tablolar birleştirilerek oluşturulur; "
-                 "kaynak tabloların sözlükleri varsa seçilir. Tanımı olmayan "
-                 "kolonlar onaylı tanımlardan ve yapay zekâ önerileriyle "
-                 "tanımlanır."},
+     "aciklama": "Baz veri seti, seçeceğiniz kaynak tablolar birleştirilerek "
+                 "oluşturulur. Tabloların sözlükleri varsa onları da "
+                 "seçersiniz; tanımı olmayan kolonlar aynı şekilde doldurulur."},
 ]
 for _s in MOD_SECENEKLERI:
     _s["kapali"] = _s["deger"] not in ACIK_MODLAR
