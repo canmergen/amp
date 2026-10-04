@@ -4950,6 +4950,7 @@ const BLOK_TAMAM_METNI = {
     kurulum: "Girdiler Onaylandı",
     tanimlar: "Modelleme Tanımları Onaylandı",
     sozluk_tanim: "Sözlük Tanımları Kaydedildi",
+    tanim_kontrol: "Sözlük Tanımları Kontrol Edildi",
     teyit: "Değişken Listesi Kaydedildi",
     bolme: "Bölme Uygulandı",
     veri_profili: "Veri Profili Çıkarıldı",
@@ -6169,6 +6170,9 @@ function dogrulamaKartiEkle(alan, blok) {
     const kDurumlar = [];            /* {kolon, oneri, tr, giris, kutu} */
     const kGorulen = new Set();
     let kTbody = null, kSar = null, kDurumEl = null, kHataEl = null, kToplu = null;
+    /* Sözlük Tanım Kontrolü adımında (kontrol.bekle) devam düğmesi kontrol
+       bitene kadar kapalı: adımın işi bu kontrol. */
+    let kontrolBekliyor = !!(kontrol && kontrol.bekle && kontrol.toplam);
     if (kontrol) {
         const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
         const kbas = elYap("div", "dg-tablo-baslik", kontrol.baslik || "Sözlükteki Tanımların Kontrolü");
@@ -6178,11 +6182,15 @@ function dogrulamaKartiEkle(alan, blok) {
         kDurumEl = elYap("div", "dg-not dg-kontrol-durum", "");
         kart.appendChild(kDurumEl);
         kHataEl = elYap("div", "dg-oneri-hata");
-        kHataEl.hidden = true;
+        kHataEl.textContent = tireSade(kontrol.hata || "");
+        kHataEl.hidden = !kontrol.hata;
         kart.appendChild(kHataEl);
+        if (!kontrol.toplam && !(kontrol.satirlar || []).length && !kontrol.hata) {
+            kDurumEl.textContent = "Sözlükte kontrol edilecek tanım bulunmadı.";
+        } else kDurumEl.hidden = true;
 
         const kUst = elYap("div", "dg-tablo-ust");
-        kUst.appendChild(dgLejant([["dg-l-llm", "Dil Modeli Önerisi"],
+        kUst.appendChild(dgLejant([["dg-l-bos", "Boş"], ["dg-l-llm", "Dil Modeli Önerisi"],
                                    ["dg-l-eklendi", "Uygulandı"],
                                    ["dg-l-eklenmedi", "Uygulanmadı"]]));
         kToplu = elYap("div", "dg-toplu");
@@ -6287,17 +6295,19 @@ function dogrulamaKartiEkle(alan, blok) {
                 + ftBinlik(toplam) + " kolon).";
         else if (durumK === "calisiyor")
             metin = "Tanım kontrolü sürüyor: " + ftBinlik(kayit.kontrol_biten || 0) + " / "
-                + ftBinlik(toplam) + " kolon. Beklemeden devam edebilirsiniz; kontrol "
-                + "edilmemiş tanımlar olduğu gibi kalır.";
+                + ftBinlik(toplam) + " kolon. " + (kontrol.bekle
+                ? "Kontrol bitince devam edebilirsiniz; önerilen düzeltmeler geldikçe listeye eklenir."
+                : "Beklemeden devam edebilirsiniz; kontrol edilmemiş tanımlar olduğu gibi kalır.");
         else if (durumK === "bitti")
             metin = ftBinlik(toplam) + " tanım kontrol edildi; " + (n
                 ? ftBinlik(n) + " tanım için düzeltme önerildi."
                 : "düzeltme gereken tanım bulunmadı.");
         if (kDurumEl) { kDurumEl.textContent = metin; kDurumEl.hidden = !metin; }
-        if (kHataEl) {
-            kHataEl.textContent = tireSade(kayit.kontrol_hata || "");
-            kHataEl.hidden = !kayit.kontrol_hata;
+        if (kHataEl && kayit.kontrol_hata) {
+            kHataEl.textContent = tireSade(kayit.kontrol_hata);
+            kHataEl.hidden = false;
         }
+        kontrolBekliyor = !!kontrol.bekle && (durumK === "bekliyor" || durumK === "calisiyor");
         durumTazele();
     }
 
@@ -6372,6 +6382,11 @@ function dogrulamaKartiEkle(alan, blok) {
         /* Aciklamasi bos "sözlüğe ekle" satiri varsa kaydetmek anlamsiz:
            dugme pasif ve NEDENI ekranda yaziyor. */
         if (oneriBekliyor) return;          // kilit mesajı ekranda kalsın
+        if (kontrolBekliyor) {
+            birincil.disabled = true;
+            gerekce.hidden = true;
+            return;
+        }
         birincil.disabled = eksikSayisi > 0;
         gerekce.hidden = eksikSayisi === 0;
         gerekce.textContent = eksikSayisi > 0 ? DG_EKSIK_NOTU : "";
@@ -6411,6 +6426,7 @@ function dogrulamaKartiEkle(alan, blok) {
         // Karar verildi: öneri yoklaması sürerse boşuna istek gider.
         if (oneriZaman) { clearTimeout(oneriZaman); oneriZaman = null; }
         oneriBekliyor = false;
+        kontrolBekliyor = false;
         girdileriKilitle(true);
         const eskiRozet = rozet ? rozet.textContent : "";
         if (rozet && ozet) rozet.textContent = rozetMetni(ozet);
@@ -6502,15 +6518,19 @@ function dogrulamaKartiEkle(alan, blok) {
                 if (k.durum === "calisiyor" || kontrolSuruyor)
                     oneriZaman = setTimeout(() => oneriYokla(isId),
                                             DG_ONERI_ARALIK);
-                else if (k.durum === "yok" && kontrol && kDurumEl && !kDurumlar.length) {
+                else if (k.durum === "yok" && kontrol && kDurumEl) {
+                    kontrolBekliyor = false;
+                    durumTazele();
                     kDurumEl.textContent = "Tanım kontrolünün sonucu alınamadı "
-                        + "(sunucu yeniden başlamış olabilir).";
+                        + "(sunucu yeniden başlamış olabilir). Geri Dön ile adımı "
+                        + "yeniden açarak kontrolü tekrar başlatabilirsiniz.";
                     kDurumEl.hidden = false;
                 }
             })
             .catch(() => {
                 // Yoklama basarisiz: kullaniciyi kilitli birakma, kendi
                 // yazabilsin. Sessiz degil — hata satiri zaten varsa durur.
+                kontrolBekliyor = false;
                 if (kart.isConnected) oneriKilidi(true);
             });
     }
@@ -6535,7 +6555,9 @@ function dogrulamaKartiEkle(alan, blok) {
         karar.kontrol = kDurumlar.map(k => ({
             kolon: k.kolon, aciklama: k.giris.value.trim(), uygula: k.kutu.checked }));
         const duzelt = karar.kontrol.filter(k => k.uygula && k.aciklama).length;
-        const ozet = dogrulamaOzetMetni(karar.haric.length, karar.ekle.length, duzelt);
+        const ozet = (!durumlar.length && kontrol)
+            ? (duzelt ? ftBinlik(duzelt) + " tanım düzeltildi" : "Düzeltme uygulanmadı")
+            : dogrulamaOzetMetni(karar.haric.length, karar.ekle.length, duzelt);
         kartiKilitle(ozet);
         /* Sessiz gider (ikinci parametre false): kullanici bir cumle
            yazmadi, bir form doldurdu. */

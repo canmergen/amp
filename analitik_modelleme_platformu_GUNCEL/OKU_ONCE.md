@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sözlük Tanımları: yeni renkler, mevcut tanımların kontrolü, çoklu model (orkestra), onaylı tanım hafızası**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/tanim_hafiza.py` (YENİ), `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+Bu tur: **Tanım kontrolü ayrı adım: 01.2.4 Sözlük Tanım Kontrolü**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `webapp/app.js`
+
+- Sıra (A ve B modu): 01.2.3 Sözlük Tanımları (yalnız boş tanımlar) →
+  onay → 01.2.4 Sözlük Tanım Kontrolü (dolu tanımlar) → 01.3 Değişken
+  Kontrolü. Önceki tur kontrol bölümü 01.2.3 kartının altındaydı; artık
+  orada yok.
+- 01.2.4 açılınca kontrol başlar; düzeltme önerileri geldikçe listeye
+  eklenir, kontrol bitene kadar devam düğmesi kapalıdır. 01.2.3'te
+  eklediğiniz tanımlar yeniden kontrol edilmez.
+- Kontrol grupları 3'erli paralel çalışır (1.000+ tanımda süre kısalır).
+- Eski çalışmalar: 01.2.3'ün ilerisindeki çalışmaların adım konumu
+  otomatik bir kaydırılır (yeni adım araya girdiği için); o çalışmalarda
+  01.2.4 atlanmış sayılır, Geri Dön ile açılabilir.
+
+---
+
+Önceki tur: **Sözlük Tanımları: yeni renkler, mevcut tanımların kontrolü, çoklu model (orkestra), onaylı tanım hafızası**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/tanim_hafiza.py` (YENİ), `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
 
 - Renkler: karar öncesi sarı = açıklama boş, mavi = dil modeli önerisi
   (değiştirilmemiş), renksiz = sizin yazdığınız. Onaydan sonra yeşil =

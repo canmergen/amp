@@ -12,6 +12,7 @@ from fe_agent.akis_faz01 import (
     kurulum_uygula, mod_girdi, mod_plan, mod_uygula,
     kaynak_sozluk_girdi, kaynak_sozluk_uygula,
     sozluk_tanim_plan, sozluk_tanim_uygula,
+    tanim_kontrol_plan, tanim_kontrol_uygula,
     sozluk_uret_plan, sozluk_uret_uygula, tanimlar_girdi,
     tanimlar_uygula, teyit_girdi, teyit_uygula, veri_sec_girdi,
     veri_sec_plan, veri_sec_uygula,
@@ -104,6 +105,16 @@ ADIMLAR = {
                     "kimlik ve dönem kolonunun tanımı zorunludur.",
         "girdi": None, "plan": sozluk_tanim_plan,
         "uygula": sozluk_tanim_uygula},
+
+    # Bos tanimlar onaylandiktan SONRA dolu tanimlarin kontrolu
+    # (kullanici karari). Kart dogrulama kartinin kontrol bolumudur.
+    "tanim_kontrol": {
+        "baslik": "Sözlük Tanım Kontrolü",
+        "aciklama": "Sözlükte tanımı bulunan kolonların tanımları birden "
+                    "fazla dil modeliyle kontrol edilir; düzeltme önerileri "
+                    "mevcut tanımla karşılaştırmalı listelenir.",
+        "girdi": None, "plan": tanim_kontrol_plan,
+        "uygula": tanim_kontrol_uygula},
 
     "tanimlar": {
         "baslik": "Modelleme Tanımları",
@@ -218,13 +229,14 @@ FAZ01_ADIMLARI = {
     # SOZLUK TANIMLARI, MODELLEME TANIMLARINDAN SONRA. Hedef, kimlik ve
     # donem kolonunun sozlukte tanimli olmasi zorunlu; hangi kolonlar
     # oldugu tanimlar adiminda belli oluyor.
-    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "teyit", "bolme"],
+    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "tanim_kontrol",
+           "teyit", "bolme"],
     # B: nihai veri seti YOK; kaynak tablolar ve HER BIRININ SOZLUGU hazir.
     # Sozlukler birlestirmeden ONCE eslenir, nihai sozluk birlestirmede
     # bunlardan kurulur. Kaynagi tanimsiz kolonlar icin A gibi
     # sozluk_tanim adimi var.
     "B":  ["mod", "ham_veri", "kaynak_sozluk", "birlestirme", "tanimlar",
-           "sozluk_tanim", "teyit", "bolme"],
+           "sozluk_tanim", "tanim_kontrol", "teyit", "bolme"],
     # C ve D'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
     # tanimsiz kolon kalmiyor ve ayri bir "sozluk_tanim" adimina gerek
     # yok. Zorunlu tanim kurali orada yapisi geregi saglaniyor.
@@ -247,6 +259,7 @@ ADIM_GRUPLARI = {
     "kurulum":     "veri_sozluk",
     "tanimlar":    "veri_sozluk",
     "sozluk_tanim": "veri_sozluk",
+    "tanim_kontrol": "veri_sozluk",
     # C modu: veri seti secimi + sozluk uretimi + modelleme tanimlari
     "veri_sec":    "veri_sozluk",
     "sozluk_uret": "veri_sozluk",

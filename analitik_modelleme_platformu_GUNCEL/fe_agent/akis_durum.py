@@ -210,6 +210,8 @@ def yeni_durum():
         "mod": None,                 # "A" | "B" | "C" | "D"
         # Mod harflerinin hangi duzene gore yazildigi (bkz. MOD_GOCU).
         "_mod_surumu": MOD_SURUMU,
+        # Adim listesinin hangi duzene gore sayildigi (bkz. _sira_goc).
+        "_sira_surumu": SIRA_SURUMU,
         "ham_tablolar": [],          # Mod B ve D
         "kaynak_sozlukler": {},      # Mod B: {kaynak tablo: sozluk}
         "birlestirme": {},           # plan + ozet
@@ -316,6 +318,28 @@ def _mod_goc(durum):
     return durum
 
 
+# Surum 2'de A ve B modunda "sozluk_tanim" ile "teyit" arasina
+# "tanim_kontrol" adimi girdi. Adim konumu kayitta SAYI (durum["i"])
+# olarak durdugu icin eski bir calisma sozluk_tanim'in ilerisindeyse bir
+# adim GERIDE acilirdi; konum bir kaydirilir.
+SIRA_SURUMU = 2
+_SIRA_GOCU = {"A": 3, "B": 5}      # eski listede sozluk_tanim'in yeri
+
+
+def _sira_goc(durum):
+    if durum.get("_sira_surumu", 1) >= SIRA_SURUMU:
+        return durum
+    yer = _SIRA_GOCU.get(durum.get("mod"))
+    try:
+        i = int(durum.get("i"))
+    except (TypeError, ValueError):
+        i = None
+    if yer is not None and i is not None and i > yer:
+        durum["i"] = i + 1
+    durum["_sira_surumu"] = SIRA_SURUMU
+    return durum
+
+
 def _eski_mod_kartlari(secenekler):
     return (isinstance(secenekler, list) and len(secenekler) == 3 and all(
         isinstance(x, dict) and x.get("deger") in ("A", "B", "C")
@@ -370,7 +394,7 @@ def durum_yukle(oturum_id):
         raise DurumOkunamadi("Oturum kaydı beklenen biçimde değil (%s)." % yol)
 
     durum["_oturum_id"] = oturum_id
-    return _mod_goc(durum)
+    return _sira_goc(_mod_goc(durum))
 
 def durum_yukle_guvenli(oturum_id):
     """(durum, hata) doner. Bozuk kayitta hata metni dolu gelir ve durum
