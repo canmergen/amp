@@ -6923,7 +6923,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const ust = elYap("div", "dg-tablo-ust");
     /* "Önerilen": temel sözlük, sözlükten çıkarım ya da dil modeli
        (kaynağı satırın Kaynak sütununda yazar). */
-    ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"], ["dg-l-llm", "Önerilen"],
+    /* RENKLER AKIŞIN GERİ KALANIYLA AYNI (Sözlük Tanımları kartı): boş
+       sarı, dil modeli mavi, onaylı mor, kullanıcının yazdığı yeşil;
+       sözlükten gelen (dil modeli farklı/emin değil/bekliyor) renksiz. */
+    ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"], ["dg-l-sozluk", "Sözlükten"],
+                              ["dg-l-llm", "Dil Modeli Önerisi"],
                               ["dg-l-hafiza", "Hafızada Onaylı"],
                               ["dg-l-eklendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
@@ -6950,7 +6954,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const sar = elYap("div", "dg-tablo-sar");
     const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
     const th = document.createElement("thead"), hr = document.createElement("tr");
-    ["Kısaltma", "Anlam", "Kaynak", "Hafızaya Kaydet"].forEach(h => hr.appendChild(elYap("th", "", h)));
+    /* İKİ KAYNAK AYRI SÜTUNDA (kullanıcı kararı): sözlüğün ve dil
+       modelinin dediği yan yana; Anlam'a daha mantıklı olan yazılır,
+       kullanıcı düzenler. */
+    ["Kısaltma", "Sözlükte", "Dil Modeli", "Anlam", "Not", "Hafızaya Kaydet"]
+        .forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
     tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
@@ -6970,6 +6978,19 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 "Örnek kolonlar:\n\n" + orn.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n"),
                 r.kisaltma + " örnekleri"));
             tr.appendChild(tdK);
+            /* Kaynak sütunları (salt okunur). Seçilen kaynak işaretlenir. */
+            const tdS = elYap("td", "dg-kaynak-deger" + (r.secilen === "sozluk" ? " secili" : ""));
+            tdS.appendChild(elYap("span", "dg-secim-isaret", "✓"));
+            tdS.appendChild(document.createTextNode(r.sozlukten ? tireSade(r.sozlukten) : BOS_SIMGE));
+            if (r.onceki_sozluk) tdS.appendChild(elYap("div", "dg-tip", "önceki sözlüklerden"));
+            tr.appendChild(tdS);
+            const dmMetin = { bekliyor: "bekleniyor…", emin_degil: "emin değil", yok: BOS_SIMGE };
+            const tdD = elYap("td", "dg-kaynak-deger" + (r.secilen === "dil_modeli" ? " secili" : "")
+                    + (r.dm_durum && r.dm_durum !== "var" ? " dg-kaynak-yok" : ""));
+            tdD.appendChild(elYap("span", "dg-secim-isaret", "✓"));
+            tdD.appendChild(document.createTextNode(r.dm_durum && r.dm_durum !== "var"
+                ? dmMetin[r.dm_durum] || BOS_SIMGE : tireSade(r.dil_modeli || "")));
+            tr.appendChild(tdD);
             const tdA = elYap("td", "dg-aciklama-hucre");
             const g = document.createElement("input");
             g.type = "text"; g.className = "dg-giris";
@@ -6980,7 +7001,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             if (r.bekliyor) tr.classList.add("dg-bekliyor");
             tdA.appendChild(g); tr.appendChild(tdA);
             const tdKy = elYap("td", "dg-tip", r.onayli
-                ? "Onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || ""));
+                ? "Hafızada onaylı" + (r.kanit ? " · " + r.kanit : "") : (r.kanit || ""));
             /* ŞÜPHELİ ANLAM SİLİNMEZ, SÖYLENİR (kullanıcı kararı). */
             if (r.uyari) {
                 tdKy.appendChild(elYap("div", "dg-kisa-uyari", tireSade(r.uyari)));
@@ -6994,13 +7015,22 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             tdI.appendChild(kutu); tr.appendChild(tdI);
             const vurgu = () => {
                 const m = g.value.trim();
-                tr.classList.toggle("dg-bos", !m);
-                /* Hafızada onaylı: mor (tanım satırlarındaki "Onaylı Tanım" ile aynı). */
-                tr.classList.toggle("dg-hafiza-renk", !!m && !!r.onayli && m === String(r.anlam || "").trim());
-                tr.classList.toggle("dg-llm", !!m && !r.onayli && m === String(r.cikarilan || "").trim());
-                /* KULLANICI DEĞİŞTİRDİ (kullanıcı kararı): gelen anlamdan
-                   farklıysa yeşil; geri yazınca eski rengine döner. */
-                tr.classList.toggle("dg-eklendi", !!m && m !== String(r.anlam || "").trim());
+                const ayni = v => !!m && m === tireSade(String(v || "")).trim();
+                /* Renk, Anlam'daki değerin NEREDEN geldiğine göre: kullanıcı
+                   sözlükteki ya da dil modelindeki değeri yazarsa o kaynağın
+                   rengine döner; başka bir şey yazarsa yeşil. */
+                let tur = "";
+                if (!m) tur = "bos";
+                else if (r.onayli && ayni(r.anlam)) tur = "hafiza";
+                else if (r.dm_durum === "var" && ayni(r.dil_modeli)) tur = "llm";
+                else if (ayni(r.sozlukten)) tur = "sozluk";
+                else tur = "eklendi";
+                tr.classList.toggle("dg-bos", tur === "bos");
+                tr.classList.toggle("dg-hafiza-renk", tur === "hafiza");
+                tr.classList.toggle("dg-llm", tur === "llm");
+                tr.classList.toggle("dg-eklendi", tur === "eklendi");
+                tdS.classList.toggle("secili", tur === "sozluk" || (tur === "llm" && ayni(r.sozlukten)));
+                tdD.classList.toggle("secili", tur === "llm");
             };
             g.addEventListener("input", vurgu);
             vurgu();

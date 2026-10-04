@@ -954,7 +954,10 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
     cikti = {}
     for kisa, c in cikan.items():
         cikti[kisa] = {"anlam": c["anlam"], "kaynak": "sozluk",
-                       "kolon": c["kolon"], "destek": c["destek"], "ornek": 0}
+                       "kolon": c["kolon"], "destek": c["destek"], "ornek": 0,
+                       # IKI KAYNAK AYRI (kullanici karari: kartta sozlugun ve
+                       # dil modelinin dedigi ayri sutunlarda).
+                       "istatistik": c["anlam"]}
     # Kapi icin: birlikte gectigi parcalarin anlamlari (onayli + ogrenilen
     # + dil modelinin verdigi).
     son_anlam = dict(cikan and {k: v["anlam"] for k, v in cikan.items()})
@@ -1037,6 +1040,13 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
                                  "seçilen anlam farklı, kontrol edin." % yalin_anlam(genel))
         if uyari and kisa in cikti:
             cikti[kisa]["uyari"] = " ".join(dict.fromkeys(uyari))
+        # Dil modelinin karari (kartta ayri sutun): sozluklu karar, yoksa
+        # sozluksuz genel anlam; emin olamadiysa bos + karar.
+        if kisa in cikti:
+            dm_anlam = d.get("anlam") or (yalin_anlam(genel) if genel else "")
+            cikti[kisa]["dm_anlam"] = dm_anlam
+            cikti[kisa]["dm_karar"] = d.get("karar") if d.get("anlam") else (
+                "genel" if dm_anlam else "emin_degil")
     # ONCEKI CALISMALARDAN OGRENILEN: bu sozlukten ogrenilemeyen (ya da
     # anlami bos kalan) kisaltma, kolon adlarinda geciyorsa ogrenilmis
     # bilgiden doldurulur.
@@ -1051,6 +1061,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             continue
         o = ogr[kisa]
         cikti[kisa] = {"anlam": o["anlam"], "kaynak": "onceki", "kolon": int(adet),
+                       "istatistik": o["anlam"],
                        "destek": None, "ornek": 0,
                        "onceki": "%s, %d kolon" % (o["veri_seti"] or "önceki sözlük", o["kolon"])}
     return cikti, durum
@@ -1164,13 +1175,13 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                        key=lambda k: (-(oner.get(k) or {}).get("kolon", 0), k)):
         o = oner.get(kisa) or {}
         parca = []
+        kaynak_ad = ""
         if o:
-            ad = _KANIT.get(o["kaynak"], "")
+            # Kaynak adi kartta AYRI sutunlarda (Sozlukte / Dil Modeli)
+            # gorundugu icin Not'a yazilmaz; Excel'de kullanilir.
+            kaynak_ad = _KANIT.get(o["kaynak"], "")
             if o.get("ornek") and o["kaynak"] != "sozluk":
-                ad += " (%d örnekle)" % o["ornek"]
-            parca.append(ad)
-            if kisa in bekleyen and kisa not in onay:
-                parca.append("dil modeli kontrolü bekleniyor")
+                kaynak_ad += " (%d örnekle)" % o["ornek"]
             if o.get("genel_uyumlu"):
                 parca.append("sözlüğe bakmadan verilen genel anlamla aynı")
             elif o.get("genel") == "" and o["kaynak"] not in ("sozluk", "onceki"):
@@ -1190,10 +1201,23 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                          "cikarilan": o.get("anlam") or "",
                          "kaynak": o.get("kaynak") or "",
                          "onayli": kisa in onay, "kanit": " · ".join(p for p in parca if p),
+                         "kaynak_ad": kaynak_ad,
                          "sozluk_uyumsuz": bool(o.get("sozluk_uyumsuz")),
                          # Onayli satirda uyari gosterilmez (kullanici karar verdi).
                          "uyari": "" if kisa in onay else (o.get("uyari") or ""),
                          "bekliyor": kisa in bekleyen and kisa not in onay,
+                         # Kartta iki kaynak ayri sutunda; Anlam'a hangisinin
+                         # yazildigi "secilen" (renk de buna gore).
+                         "sozlukten": o.get("istatistik") or "",
+                         "onceki_sozluk": o.get("kaynak") == "onceki",
+                         "dil_modeli": o.get("dm_anlam") or "",
+                         "dm_durum": ("bekliyor" if kisa in bekleyen else
+                                      ("yok" if "dm_karar" not in o else
+                                       ("emin_degil" if not o.get("dm_anlam") else "var"))),
+                         "secilen": ("hafiza" if kisa in onay else
+                                     "" if not anlam else
+                                     "dil_modeli" if o.get("kaynak") in
+                                     ("dil_modeli", "dil_modeli_dogruladi", "genel") else "sozluk"),
                          "ornekler": kanit_ornekleri(tanimlar, kisa, anlam)})
     return satirlar[:EN_COK], durum
 
@@ -1234,7 +1258,8 @@ def rapor_satirlari(tanimlar, veri_seti=""):
         ist = "; ".join("%s (%%%d, ayırt %%%d)" % (a["anlam"], round(a["destek"] * 100),
                                                   round(a["ayirt"] * 100))
                         for a in (aday.get(kisa) or {}).get("adaylar", [])[:ADAY_SAYISI])
-        kanit = r_["kanit"] + ((" · UYARI: " + r_["uyari"]) if r_.get("uyari") else "")
+        kanit = " · ".join(x for x in (r_.get("kaynak_ad"), r_["kanit"]) if x) \
+            + ((" · UYARI: " + r_["uyari"]) if r_.get("uyari") else "")
         satir = [kisa, anlam, kanit, "Evet" if r_["onayli"] else "Hayır",
                  len(kolonlar), len(tasiyan) if anlam else None, ist]
         for i in range(RAPOR_ORNEK):

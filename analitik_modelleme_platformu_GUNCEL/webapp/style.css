@@ -3017,6 +3017,7 @@ span.bolme-cip { cursor: default; }
   border: 1px solid var(--kenar); flex: 0 0 auto;
 }
 .dg-l-bos { background: var(--dg-bos); }
+.dg-l-sozluk { background: var(--yuzey); box-shadow: inset 0 0 0 1px var(--kenar); }
 .dg-l-llm { background: var(--dg-llm); }
 .dg-l-eklendi { background: var(--dg-eklendi); }
 .dg-l-eklenmedi { background: var(--dg-eklenmedi); }
@@ -3026,10 +3027,20 @@ span.bolme-cip { cursor: default; }
    önerilen tanım düzenlenebilir, kutu içeriğe göre uzar. */
 .dg-kontrol-bas { margin-top: var(--b-4); }
 /* Kısaltma (+ örnekler "i") | Anlam | Kaynak | Hafızaya Kaydet */
-.dg-kisaltma-tablo th:nth-child(1) { width: 18%; }
-.dg-kisaltma-tablo th:nth-child(2) { width: auto; }
-.dg-kisaltma-tablo th:nth-child(3) { width: 30%; }
-.dg-kisaltma-tablo th:nth-child(4) { width: 80px; white-space: normal; }
+/* Kısaltma | Sözlükte | Dil Modeli | Anlam | Kaynak | Hafızaya Kaydet */
+.dg-kisaltma-tablo th:nth-child(1) { width: 13%; }
+.dg-kisaltma-tablo th:nth-child(2) { width: 15%; }
+.dg-kisaltma-tablo th:nth-child(3) { width: 15%; }
+.dg-kisaltma-tablo th:nth-child(4) { width: auto; }
+.dg-kisaltma-tablo th:nth-child(5) { width: 22%; }
+.dg-kisaltma-tablo th:nth-child(6) { width: 76px; white-space: normal; }
+/* Kaynak değerleri salt okunur; Anlam'daki değer hangi kaynaktan
+   geliyorsa onun önünde ✓ görünür. */
+.dg-kisaltma-tablo td.dg-kaynak-deger { color: var(--metin); }
+.dg-kisaltma-tablo .dg-secim-isaret { display: inline-block; width: 1.1em; visibility: hidden;
+  color: var(--metin); }
+.dg-kisaltma-tablo td.dg-kaynak-deger.secili .dg-secim-isaret { visibility: visible; }
+.dg-kisaltma-tablo td.dg-kaynak-yok { color: var(--metin-soluk); }
 .dg-kisaltma-tablo td.dg-kisaltma-ad .bolme-info { margin-left: 4px; vertical-align: middle; }
 .dg-kisaltma-tablo td.dg-ekle-hucre { text-align: center; }
 /* Kolon Adı Önerileri: Mevcut Ad | Yeni Ad | Uygula */

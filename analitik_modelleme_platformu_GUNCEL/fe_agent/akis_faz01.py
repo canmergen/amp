@@ -1442,6 +1442,12 @@ def _kisaltma_kaynagi(durum):
 
 KISALTMA_BASLIK = "Kısaltma Sözlüğü"
 KISALTMA_BILGI = (
+    "Tabloda iki kaynak yan yana: Sözlükte (sözlükteki açıklamalardan "
+    "çıkan anlam) ve Dil Modeli (dil modelinin kararı). Anlam'a daha "
+    "mantıklı olanı yazılır, önündeki ✓ hangisi olduğunu gösterir; "
+    "düzenleyebilirsiniz. Satır rengi Anlam'daki değerin kaynağıdır: "
+    "renksiz sözlükten, mavi dil modeli, mor hafızada onaylı, yeşil sizin "
+    "yazdığınız, sarı boş.\n\n"
     "Anlamın önceliği: kısaltmanın bankacılık ve veri bilimindeki genel "
     "anlamı. Sözlüğünüzdeki açıklamalar kanıttır ama hatalı olabilir; "
     "genel anlam sözlükteki kullanımla çelişirse satırda \"sözlükteki "

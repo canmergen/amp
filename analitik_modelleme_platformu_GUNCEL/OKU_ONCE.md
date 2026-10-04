@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma sonuçları geldikçe kartta açılıyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma kartında sözlük ve dil modeli ayrı sütunlarda**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
+
+- Sütunlar: Kısaltma | Sözlükte | Dil Modeli | Anlam | Not | Hafızaya
+  Kaydet. Sözlükte ve Dil Modeli salt okunur; Anlam'a daha mantıklı olan
+  yazılır (seçim mantığı aynı), önündeki ✓ hangisinden geldiğini
+  gösterir. Dil Modeli sütunu: değer, "bekleniyor…", "emin değil" ya da ∅.
+- Renkler akışın geri kalanıyla aynı (Sözlük Tanımları kartı): sarı boş,
+  renksiz sözlükten, mavi dil modeli, mor hafızada onaylı, yeşil sizin
+  yazdığınız. Anlam'a sözlükteki ya da dil modelindeki değeri yazarsanız
+  satır o kaynağın rengine, ✓ da o sütuna geçer.
+- Kaynak sütunu "Not" oldu: yalnız ek bilgi (genel anlamla uyum, kolon
+  yüzdesi) ve uyarılar. Kaynak adı Excel'in Kaynak sütununda kaldı.
+
+Önceki tur: **Kısaltma sonuçları geldikçe kartta açılıyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 - Dil modeli kontrolü artık 8'er kısaltmalık parçalar halinde; her parça
   bitince sonucu hemen karta düşer (eskiden 12'lik parçaların hepsi
