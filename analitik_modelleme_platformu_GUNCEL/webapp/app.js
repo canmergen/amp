@@ -5550,7 +5550,15 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
 
     if (etiket) {
         const lbl = document.createElement("label");
-        lbl.textContent = tireSade(etiket);
+        /* TEK SATIR ETİKET (kullanıcı bildirimi: "yazılar iç içe, sıra
+           yamuk"). Uzun etiket iki satıra sarınca o alanın kutusu
+           diğerlerinden aşağıda kalıyordu. "(İsteğe Bağlı)" küçük ve soluk
+           ayrı parça; sığmazsa etiket "…" ile kısalır, tamamı ipucunda. */
+        const tam = tireSade(etiket);
+        const m = tam.match(/^(.*?)\s*\((İsteğe Bağlı)\)$/);
+        lbl.textContent = m ? m[1] : tam;
+        if (m) lbl.appendChild(elYap("span", "combo-etiket-ek", " (" + m[2] + ")"));
+        lbl.title = tam;
         lbl.htmlFor = girisId;
         kok.appendChild(lbl);
     }

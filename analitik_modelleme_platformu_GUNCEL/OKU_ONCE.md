@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Roller dil modeline iletiliyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`
+Bu tur: **Form alanları hizalı**. Değiştir: `webapp/app.js`, `webapp/style.css`
+
+- Form alanları eşit sütunlu ızgarada; genişlik yetmezse 2x2'ye iner.
+- Alan etiketi tek satır; "(İsteğe Bağlı)" küçük ve soluk. Sığmazsa "…"
+  ile kısalır, tamamı ipucunda. Aynı satırdaki kutular hep aynı hizada.
+
+---
+
+Önceki tur: **Roller dil modeline iletiliyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`
 
 - 01.2.2'de seçilen hedef / kimlik / dönem / segment kolonları açıklama
   önerisinde ve tanım kontrolünde modele "ROL: kimlik kolonu" gibi
