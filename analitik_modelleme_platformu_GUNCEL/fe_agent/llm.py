@@ -1192,6 +1192,10 @@ ONCELIK SIRASI (kullanici karari):
   3. Genel anlami olmayan, kuruma ozgu kisaltmalarda anlami ornek
      tanimlardan cikar: "bu kisaltma gecen kolonlarda kullanici hep su
      kelimeyi yazmis, demek ki bundan bahsediyor".
+  "genel (sozluksuz)": baska bir modelin sozlugu GORMEDEN, yalniz kolon
+  adlarindan verdigi genel anlam. Verdigin anlam onunla AYNI ANLAMDAYSA
+  (es anlamli kelime de olur: adet / sayi) "genel_uyumlu": true; farkliysa
+  false; genel anlam "(bilinmiyor)" ise alani yazma.
 
 Her kisaltma icin karar ver:
   "dogru"     : "sozlukten" gelen aday dogru
@@ -1218,7 +1222,7 @@ KURALLAR:
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "KISALTMA", "karar": "dogru|duzelt|emin_degil",
-  "anlam": "...", "sozluk_uyumsuz": false}]}""" + SINIRLAYICI_KURALI
+  "anlam": "...", "sozluk_uyumsuz": false, "genel_uyumlu": true}]}""" + SINIRLAYICI_KURALI
 
 SISTEM_HAKEM_KISALTMA = """Sen bir bankacilik ve veri bilimi sozlugu
 editorusun. Her kisaltma icin ornek kolonlar ve iki modelin onerdigi
@@ -1228,11 +1232,55 @@ anlami yoksa ornek kolon adlari ve tanimlariyla en tutarli anlami sec ya
 da dogrusunu yaz; kisaltmanin kendi anlami (baglam ifadesi degil), yalin
 halde, tamamen Turkce, 1-5 kelime. Birlikte gectigi baska bir
 kisaltmanin anlamini verme. Sozlukteki kullanim verdigin anlamla
-celisiyorsa "sozluk_uyumsuz": true. Emin degilsen karar "emin_degil".
+celisiyorsa "sozluk_uyumsuz": true. "genel (sozluksuz)" anlam verilmisse
+(sozlugu gormeden verilen genel anlam), senin anlamin onunla ayni anlamda
+mi: "genel_uyumlu": true / false. Emin degilsen karar "emin_degil".
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "KISALTMA", "karar": "dogru|duzelt|emin_degil",
-  "anlam": "...", "sozluk_uyumsuz": false}]}""" + SINIRLAYICI_KURALI
+  "anlam": "...", "sozluk_uyumsuz": false, "genel_uyumlu": true}]}""" + SINIRLAYICI_KURALI
+
+# SOZLUKSUZ (KOR) GENEL ANLAM (kullanici karari: "sadece sozluge
+# guvenmemeli"): model once sozlugu, istatistigi ve aciklamalari GORMEDEN
+# yalniz kisaltmayi ve gectigi birkac kolon adini gorur; kendi genel
+# bilgisinden anlam verir. Sozluklu karar bu cevapla karsilastirilir.
+SISTEM_KISALTMA_KOR = """Sen bir bankacilik ve veri bilimi uzmanisin. Kolon
+adlarinda gecen KISALTMALAR ve her birinin gectigi birkac kolon adi
+verilecek. Aciklama YOK; yalniz kendi genel bilgini kullan.
+
+Her kisaltma icin bankacilik / veri bilimi / Ingilizce kolon adlandirma
+geleneklerindeki YAYGIN anlamini yaz: kisaltmanin kendi anlami, yalin
+halde, tamamen Turkce, 1-5 kelime. Kolon adlarindaki diger parcalar
+yalniz baglamdir; onlarin anlamini bu kisaltmaya katma.
+
+Kuruma ozgu gorunen ya da yaygin bir anlami olmayan kisaltmada TAHMIN
+ETME: "anlam" alanini BOS birak.
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "KISALTMA", "anlam": "..."}]}""" + SINIRLAYICI_KURALI
+
+
+def _kor_satiri(g):
+    adlar = [ad for ad, _t in (g.get("ornekler") or [])[:6]]
+    return "- %s | kolonlar: %s" % (g["kisaltma"], ", ".join(adlar) or "-")
+
+
+def _kor_oku(veri, girdi):
+    """{KISA: anlam ya da "" (bilmiyor)}; cevap vermediklerine anahtar yok."""
+    gecerli = {g["kisaltma"] for g in girdi}
+    cikti = {}
+    for k in (veri.get("kolonlar") or []):
+        if not isinstance(k, dict):
+            continue
+        ad = str(k.get("ad") or k.get("kisaltma") or "").strip().upper()
+        if ad not in gecerli:
+            continue
+        anlam = re.sub(r"\s+", " ", str(k.get("anlam") or "")).strip().strip(".")
+        if anlam[:1].isupper() and anlam[1:2].islower():
+            anlam = {"I": "ı", "İ": "i"}.get(anlam[0], anlam[0].lower()) + anlam[1:]
+        cikti[ad] = anlam
+    return cikti
+
 
 # Parca basina kisaltma: 25'te istem uzun oluyordu (8 ornek x tanim) ve
 # 90 sn zaman asimina takilma riski vardi; parcalar AYNI ANDA calisir.
@@ -1242,6 +1290,8 @@ _KISALTMA_HAVUZ = futures.ThreadPoolExecutor(max_workers=3)
 
 def _kisaltma_satiri(g):
     s = "- %s | sozlukten: %s" % (g["kisaltma"], g.get("anlam") or "(bos)")
+    if g.get("genel") is not None:
+        s += " | genel (sozluksuz): %s" % (g["genel"] or "(bilinmiyor)")
     if g.get("kolon"):
         s += " | %d kolonda geciyor" % g["kolon"]
     if g.get("adaylar"):
@@ -1257,7 +1307,7 @@ def _kisaltma_satiri(g):
     return s
 
 
-def _kisaltma_oku(veri, girdi, uyumsuz=None):
+def _kisaltma_oku(veri, girdi, uyumsuz=None, genel_uyum=None):
     """Model cevabi -> {KISA: anlam ya da None (emin degil)}.
     uyumsuz (dict): model "sozluk_uyumsuz" dediyse {KISA: True} eklenir."""
     oneri = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
@@ -1285,6 +1335,8 @@ def _kisaltma_oku(veri, girdi, uyumsuz=None):
         cikti[ad] = anlam or None
         if uyumsuz is not None and anlam and k.get("sozluk_uyumsuz") in (True, "true", "evet"):
             uyumsuz[ad] = True
+        if genel_uyum is not None and anlam and k.get("genel_uyumlu") is not None:
+            genel_uyum[ad] = k.get("genel_uyumlu") in (True, "true", "evet")
     return cikti
 
 
@@ -1302,6 +1354,16 @@ def kisaltma_dogrula(girdi, orkestra=None):
         """Bir parca: (sonuc, cevap_geldi_mi). Sozlukle uyumsuz bulunan
         anlamlar bayrak'a yazilir."""
         sonuc_ = {}
+        # 1) KOR: sozluk yok, yalniz kolon adlari (bkz. SISTEM_KISALTMA_KOR).
+        mk, vk = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA_KOR,
+                                _veri_blogu("KISALTMALAR:", "\n".join(_kor_satiri(g) for g in blok)),
+                                0.1)
+        kor = _kor_oku(vk, blok) if mk else {}
+        for k_, v_ in kor.items():
+            genel_[k_] = v_
+        blok = [dict(g, genel=kor.get(g["kisaltma"])) if g["kisaltma"] in kor else g
+                for g in blok]
+        # 2) SOZLUKLU karar (genel anlam da satirda).
         govde = _veri_blogu("KISALTMALAR:", "\n".join(_kisaltma_satiri(g) for g in blok))
         m1, v1 = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA, govde, 0.1)
         m2, v2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KISALTMA, govde, 0.1,
@@ -1309,8 +1371,9 @@ def kisaltma_dogrula(girdi, orkestra=None):
         if not m1 and not m2:
             return sonuc_, False
         ua, uc, uh = {}, {}, {}
-        a = _kisaltma_oku(v1, blok, ua) if m1 else {}
-        c = _kisaltma_oku(v2, blok, uc) if m2 else {}
+        ga, gc, gh = {}, {}, {}
+        a = _kisaltma_oku(v1, blok, ua, ga) if m1 else {}
+        c = _kisaltma_oku(v2, blok, uc, gc) if m2 else {}
         ayrisan = []
         for g in blok:
             k = g["kisaltma"]
@@ -1327,6 +1390,9 @@ def kisaltma_dogrula(girdi, orkestra=None):
             sonuc_[k] = son
             if son and (ua.get(k) or uc.get(k)):
                 bayrak_[k] = True
+            # Iki model de "genel anlamla uyumlu" demediyse uyumsuz sayilir.
+            if son and (k in ga or k in gc):
+                uyum_[k] = bool(ga.get(k, True) and gc.get(k, True))
         if ayrisan:
             satir = []
             for g, x, y in ayrisan:
@@ -1334,16 +1400,20 @@ def kisaltma_dogrula(girdi, orkestra=None):
                              % (x or "emin değil", y or "emin değil"))
             mh, vh = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_KISALTMA,
                                     _veri_blogu("KISALTMALAR:", "\n".join(satir)), 0.1)
-            h = _kisaltma_oku(vh, [g for g, _x, _y in ayrisan], uh) if mh else {}
+            h = _kisaltma_oku(vh, [g for g, _x, _y in ayrisan], uh, gh) if mh else {}
             for g, x, y in ayrisan:
                 sonuc_[g["kisaltma"]] = h.get(g["kisaltma"])   # hakem yoksa emin degil
                 if h.get(g["kisaltma"]) and uh.get(g["kisaltma"]):
                     bayrak_[g["kisaltma"]] = True
+                if h.get(g["kisaltma"]) and g["kisaltma"] in gh:
+                    uyum_[g["kisaltma"]] = gh[g["kisaltma"]]
         return sonuc_, True
 
     bloklar = [girdi[b:b + KISALTMA_PARCA] for b in range(0, len(girdi), KISALTMA_PARCA)]
     sonuc, hic_cevap, dusen = {}, True, 0
     bayrak_ = {}          # GENEL ANLAM sozlukteki kullanimla celisiyor
+    genel_ = {}           # sozluksuz (kor) genel anlam; "" = bilinmiyor
+    uyum_ = {}            # secilen anlam kor genel anlamla ayni anlamda mi
     for f in [_KISALTMA_HAVUZ.submit(parca_, b) for b in bloklar]:
         try:
             s_, geldi = f.result()
@@ -1367,6 +1437,14 @@ def kisaltma_dogrula(girdi, orkestra=None):
             cikti[k] = {"anlam": anlam, "karar": "duzeltildi"}
         if anlam and bayrak_.get(k):
             cikti[k]["sozluk_uyumsuz"] = True
+    # Kor genel anlam her kisaltmaya eklenir (secilen anlamla karsilastirma
+    # kisaltma.oneriler'de; model "genel_uyumlu" demediyse metin karsilastirmasi).
+    for k, genel in genel_.items():
+        if k not in cikti:
+            continue          # sozluklu karar gelmedi: kisaltma kontrol edilmemis sayilir
+        cikti[k]["genel"] = genel
+        if k in uyum_:
+            cikti[k]["genel_uyumlu"] = uyum_[k]
     return cikti, (None if not dusen else
                    "%d parçadan %d tanesi için dil modeli cevap vermedi."
                    % (len(bloklar), dusen))

@@ -6238,7 +6238,8 @@ function dogrulamaKartiEkle(alan, blok) {
        düğmeleri adım kartında gizlenir. */
     const adimModu = alan.adim || "";
     const kisaErisim = alan.kisaltma
-        ? kisaltmaBolumuEkle(kart, alan.kisaltma, !!(blok && blok.kilit), !!adimModu) : null;
+        ? kisaltmaBolumuEkle(kart, alan.kisaltma, !!(blok && blok.kilit), !!adimModu,
+                             () => durumTazele()) : null;
     /* Kolon Adı Önerileri: açıklamada anlamı geçen ama adda olmayan
        kısaltmalar için yeni ad (yalnız AMP kopyalarında uygulanır). */
     const kolonAdErisim = (alan.kolon_ad && (alan.kolon_ad.satirlar || []).length)
@@ -6556,6 +6557,16 @@ function dogrulamaKartiEkle(alan, blok) {
         if (kontrolBekliyor) {
             birincil.disabled = true;
             gerekce.hidden = true;
+            return;
+        }
+        /* KISALTMA SÖZLÜĞÜ (kullanıcı kararı): dil modeli kontrolü bitmeden
+           onaylanamaz; yalnız sözlükten çıkan anlamlar çalışmaya girmesin.
+           Beklemek istemeyen "Kısaltmaları Onaylamadan Devam Et"i kullanır. */
+        if (adimModu === "kisaltma" && kisaErisim && kisaErisim.bekliyor()) {
+            birincil.disabled = true;
+            gerekce.hidden = false;
+            gerekce.textContent = "Dil modeli kontrolü bitince onaylanabilir. Beklemek "
+                + "istemezseniz \"Kısaltmaları Onaylamadan Devam Et\" ile geçebilirsiniz.";
             return;
         }
         birincil.disabled = eksikSayisi > 0;
@@ -6895,7 +6906,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
     };
 }
 
-function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda) {
+function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     let kilitli = ilkKilit;
     const topluBtn = [];
     const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
@@ -7007,13 +7018,21 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda) {
        güncellenir. Kullanıcının elle değiştirdiği satır EZİLMEZ. */
     let yoklamaSayisi = 0;
     function yokla() {
-        if (kilitli || yoklamaSayisi++ > 120 || !document.body.contains(tb)) return;
+        if (kilitli || !document.body.contains(tb)) return;
+        if (yoklamaSayisi++ > 120) {
+            /* 10 dakikada bitmedi: onay kilidi açılır, not yazar. */
+            ka.dm = "zaman_asimi";
+            durumEl.textContent += " Dil modeli kontrolü 10 dakikada bitmedi; liste kural tabanlı.";
+            if (degisti) degisti();
+            return;
+        }
         fetch(getWebAppBackendUrl("kisaltma_alani") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
             .then(r => r.json())
             .then(d => {
                 const yeni = d && d.kisaltma;
                 if (!yeni) return setTimeout(yokla, 5000);
                 ka.not = yeni.not || "";
+                ka.dm = yeni.dm;
                 const elle = {};
                 satirlar.forEach(x => {
                     if (x.g.value.trim() !== String(x.r.anlam || "").trim() || x.kutu.checked !== !!x.r.onayli)
@@ -7025,6 +7044,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda) {
                     if (e) { x.g.value = e.anlam; x.kutu.checked = e.kutu; x.g.dispatchEvent(new Event("input")); }
                 });
                 if (yeni.dm === "calisiyor") setTimeout(yokla, 5000);
+                if (degisti) degisti();
             })
             .catch(() => setTimeout(yokla, 8000));
     }
@@ -7061,7 +7081,9 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda) {
             kilitli = k;
             satirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; });
             topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
-        }
+        },
+        /* Dil modeli kontrolü sürüyor mu (adım kartında onay kilidi). */
+        bekliyor: () => ka.dm === "calisiyor"
     };
 }
 

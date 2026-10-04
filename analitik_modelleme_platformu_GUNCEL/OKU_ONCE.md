@@ -1,6 +1,32 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst bar eski hâline döndü: "Akıllı Modelleme Platformu"**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltmada sözlüğe bakmadan genel anlam + kontrol bitmeden onay yok**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+
+1) Sözlüksüz (kör) genel anlam
+- Dil modeline önce yalnız kısaltma ve geçtiği en çok 6 kolon adı gider
+  (açıklama, sözlük önerisi, istatistik gitmez). Model genel anlamı kendi
+  bilgisinden verir; kuruma özgü kısaltmada boş bırakır.
+- Sonra bugünkü sözlüklü karar verilir; bu genel anlam da satırda
+  modele gider ve model "genel anlamla aynı anlamda mı" der.
+- Kaynak sütunu:
+  - aynıysa: "sözlüğe bakmadan verilen genel anlamla aynı"
+  - farklıysa uyarı: "Sözlüğe bakmadan verilen genel anlam: X; seçilen
+    anlam farklı, kontrol edin."
+  - genel anlam yoksa: "genel bir anlamı yok (kuruma özgü), sözlükten
+    çıkarıldı"
+  - sözlükle karar verilemediyse genel anlam gelir ("Dil modelinin genel
+    bilgisi"); sözlük istatistiği farklıysa uyarıda yazar.
+- Maliyet: 12 kısaltmalık parça başına 1 dil modeli çağrısı daha.
+
+2) Onay kilidi
+- 01.2.4'te "Kısaltmaları Onayla ve Devam Et" dil modeli kontrolü bitene
+  kadar kapalı; altında sebebi yazar. Kontrol sürerken Kaynak'ta
+  "dil modeli kontrolü bekleniyor" yazar. "Kısaltmaları Onaylamadan Devam
+  Et" her zaman açık. Kontrol 10 dakikada bitmezse kilit açılır.
+
+3) Yüzde eki düzeltildi: "%86'inde" -> "%86'sında", "%100'ünde".
+
+Önceki tur: **Üst bar eski hâline döndü: "Akıllı Modelleme Platformu"**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py` (backend yeniden başlatılmalı)
 
 - KATIB denemesinin üç turu geri alındı; webapp dosyaları o denemeden
   önceki hâliyle birebir aynı. katib_*.png görselleri kullanılmıyor.

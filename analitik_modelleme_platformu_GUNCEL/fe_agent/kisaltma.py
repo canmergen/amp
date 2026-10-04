@@ -750,9 +750,9 @@ def tutarsizliklar(tanimlar, anlamlar=None):
                 if pay < 1.0 and not tasir(ad, anlam):
                     cikti.setdefault(ad, []).append({
                         "tur": "tanimda_yok", "kisaltma": kisa, "anlam": anlam, "yeni_ad": "",
-                        "gerekce": "Kolon adındaki %s, sözlükteki %d kolonun %%%d'inde '%s' "
+                        "gerekce": "Kolon adındaki %s, sözlükteki %d kolonun %s '%s' "
                                    "anlamında kullanılmış; bu açıklamada '%s' geçmiyor."
-                                   % (kisa, adet, round(pay * 100), anlam, anlam)})
+                                   % (kisa, adet, yuzdesinde(pay * 100), anlam, anlam)})
                 continue
             if genel(anlam) or not tasir(ad, anlam):
                 continue
@@ -942,6 +942,10 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
     for kisa, d in dm.items():
         if kisa in onay:
             continue
+        # SOZLUKSUZ GENEL ANLAM (llm.SISTEM_KISALTMA_KOR): None = sorulmadi,
+        # "" = model genel bir anlam bilmiyor (kuruma ozgu).
+        genel = d.get("genel")
+        genel_uyumlu = d.get("genel_uyumlu")
         if d.get("anlam"):
             d = dict(d, anlam=yalin_anlam(d["anlam"]))
         onceki = cikti.get(kisa) or {"kolon": int(parca_say.get(kisa, 0)),
@@ -977,6 +981,19 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         # yazar; o kolonlarin tanimlari 01.2.6'da duzeltilmeye aday.
         if d.get("sozluk_uyumsuz") and kisa in cikti and cikti[kisa].get("anlam"):
             cikti[kisa]["sozluk_uyumsuz"] = True
+        elif d["karar"] == "emin_degil" and genel:
+            # Sozlukle karar verilemedi ama genel anlam var: genel anlam
+            # gelir (genel anlam once), sozluk istatistigi uyarida.
+            istat = (cikan.get(kisa) or {}).get("anlam", "")
+            cikti[kisa] = dict(onceki, anlam=yalin_anlam(genel), kaynak="genel",
+                               sozlukten=istat)
+            # Sozluk istatistigi genel anlamla AYNIYSA iki bagimsiz kaynak
+            # uyusuyor: uyari yok.
+            if not (istat and _ayni_anlam(yalin_anlam(istat), yalin_anlam(genel))):
+                uyari.append("Sözlükteki kullanımla doğrulanamadı; anlam, sözlüğe "
+                             "bakmadan verilen genel anlam"
+                             + (" (sözlük istatistiği: \"%s\")" % istat if istat else "")
+                             + ", kontrol edin.")
         elif d["karar"] == "emin_degil" and kisa in cikti:
             # Dil modeli emin olamadi: istatistik tahmini UYARIYLA kalir
             # (kullanici karari: bos kalmamali, soylenmeli).
@@ -984,6 +1001,17 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             if cikti[kisa].get("anlam"):
                 uyari.append("Dil modeli emin olamadı; anlam yalnız sözlük "
                              "istatistiğinden, kontrol edin.")
+        # Secilen anlam SOZLUKSUZ genel anlamla karsilastirilir.
+        if kisa in cikti and genel is not None:
+            cikti[kisa]["genel"] = yalin_anlam(genel) if genel else ""
+            mevcut = cikti[kisa].get("anlam") or ""
+            if genel and mevcut and cikti[kisa].get("kaynak") != "genel":
+                if genel_uyumlu is None or _ayni_anlam(yalin_anlam(genel), mevcut):
+                    genel_uyumlu = _ayni_anlam(yalin_anlam(genel), mevcut) or bool(genel_uyumlu)
+                cikti[kisa]["genel_uyumlu"] = bool(genel_uyumlu)
+                if not genel_uyumlu:
+                    uyari.append("Sözlüğe bakmadan verilen genel anlam: \"%s\"; "
+                                 "seçilen anlam farklı, kontrol edin." % yalin_anlam(genel))
         if uyari and kisa in cikti:
             cikti[kisa]["uyari"] = " ".join(dict.fromkeys(uyari))
     # ONCEKI CALISMALARDAN OGRENILEN: bu sozlukten ogrenilemeyen (ya da
@@ -1003,6 +1031,27 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
                        "destek": None, "ornek": 0,
                        "onceki": "%s, %d kolon" % (o["veri_seti"] or "önceki sözlük", o["kolon"])}
     return cikti, durum
+
+
+_BIRLER_EK = {1: "inde", 2: "sinde", 3: "ünde", 4: "ünde", 5: "inde", 6: "sında",
+              7: "sinde", 8: "inde", 9: "unda"}
+_ONLAR_EK = {1: "unda", 2: "sinde", 3: "unda", 4: "ında", 5: "sinde", 6: "ında",
+             7: "inde", 8: "inde", 9: "ında"}
+
+
+def yuzdesinde(n):
+    """%86 -> "%86'sında", %100 -> "%100'ünde" (Turkce bulunma eki sayinin
+    okunusuna gore; eskiden hep "'inde" yaziliyordu: "%86'inde")."""
+    n = int(round(n))
+    if n == 0:
+        ek = "ında"
+    elif n % 10:
+        ek = _BIRLER_EK[n % 10]
+    elif n % 100:
+        ek = _ONLAR_EK[(n // 10) % 10]
+    else:
+        ek = "ünde"                       # yuz
+    return "%%%d'%s" % (n, ek)
 
 
 def _metin_uyarilari(anlam):
@@ -1047,6 +1096,7 @@ _KANIT = {
     "dil_modeli": "Dil modeli önerdi",
     "emin_degil": "Dil modeli emin olamadı",
     "onceki": "Önceki sözlüklerden öğrenildi",
+    "genel": "Dil modelinin genel bilgisi",
 }
 
 
@@ -1093,6 +1143,12 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
             if o.get("ornek") and o["kaynak"] != "sozluk":
                 ad += " (%d örnekle)" % o["ornek"]
             parca.append(ad)
+            if durum == "calisiyor" and o["kaynak"] in ("sozluk", "onceki"):
+                parca.append("dil modeli kontrolü bekleniyor")
+            if o.get("genel_uyumlu"):
+                parca.append("sözlüğe bakmadan verilen genel anlamla aynı")
+            elif o.get("genel") == "" and o["kaynak"] not in ("sozluk", "onceki"):
+                parca.append("genel bir anlamı yok (kuruma özgü), sözlükten çıkarıldı")
             if o.get("sozluk_uyumsuz"):
                 parca.append("genel anlam; sözlükteki kullanım farklı")
             if o.get("onceki"):
@@ -1100,7 +1156,7 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
             if o.get("sozlukten"):
                 parca.append("istatistik: %s" % o["sozlukten"])
             if o.get("destek") is not None:
-                parca.append("%d kolonun %%%d'inde" % (o["kolon"], round(o["destek"] * 100)))
+                parca.append("%d kolonun %s" % (o["kolon"], yuzdesinde(o["destek"] * 100)))
             elif o.get("kolon"):
                 parca.append("%d kolonda" % o["kolon"])
         anlam = onay.get(kisa) or o.get("anlam") or ""
