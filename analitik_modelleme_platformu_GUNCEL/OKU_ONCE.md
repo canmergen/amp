@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kodda ve istemlerde veri içeriği yok**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/aralik.py`, `fe_agent/birlestirme.py`, `fe_agent/niyet_kural.py`, `webapp/app.js` (backend yeniden başlatılmalı)
+Bu tur: **Birlikte geçen parçalar tek kısaltma + "anlaşılmaz kısaltma" kararı**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+1) Birlikte geçen parçalar tek kısaltma: iki parça kolon adlarında
+   neredeyse hep yan yana geçiyorsa (her birinin geçtiği kolonların en az
+   %90'ında, en az 3 kolonda) "<A>_<B>" tek kısaltma sayılır, anlamı
+   birlikte verilir. Kolon adı değişmez. Pencere / sayı araya girerse
+   birleşmez.
+2) Yeni karar "anlam doğru ama kısaltma anlaşılmıyor": ünlüleri atılmış
+   uzun birleşik, birden çok okunuşlu ya da yaygın olmayan kısaltmaya
+   okunur karşılık önerilir; anlam aynı kalır. Önerilen kısaltma artık
+   çok parçalı olabilir: en çok 4 parça ("_" ile), parça başına 8, toplam
+   24 karakter. 01.2.5'te kolon adlarına uygulanır (yalnız platform
+   kopyalarında). Satır sarı (öneri var); lejant buna göre.
+3) Teslim notlarındaki (bu dosya) veri örnekleri genel yer tutucularla
+   değiştirildi (<KOLON>, <KISA>, <VERI_SETI>, <anlam>).
+
+Önceki tur: **Kodda ve istemlerde veri içeriği yok**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/aralik.py`, `fe_agent/birlestirme.py`, `fe_agent/niyet_kural.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
 - Dil modeli istemlerindeki, gerçek bir sözlükten alınmış kolon adı,
   kısaltma ve tanım örnekleri kaldırıldı; kurallar soyut kalıp olarak
@@ -20,18 +36,18 @@ Bu tur: **Kodda ve istemlerde veri içeriği yok**. Değiştir: `fe_agent/llm.py
 
 Önceki tur: **Kısaltma sonuçlarının gözden geçirmesinden çıkan 6 düzeltme**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
-1) Kendini açıklayan kelime (BAHIS, KRIPTO, ODEME): anlamı kelimenin
+1) Kendini açıklayan kelime (<KISA>, <KISA>, <KISA>): anlamı kelimenin
    kendisiyse (Türkçe) listeye girmez.
 2) "Yanlış kısaltma" kararı yalnız kısaltmanın BİLİNEN bir genel anlamı
-   varsa ve bu anlam başka bir kavramsa. Eş anlamlı / yakın anlam (IN =
+   varsa ve bu anlam başka bir kavramsa. Eş anlamlı / yakın anlam (<KISA> =
    giriş / gelen) bu değil. Önerilen yeni kısaltma aynı anlamda zaten
-   varsa (IN -> GLN) hata sayılmaz: karar "sözlük doğru", uyarı yok.
-3) Genel anlam yokken (X2, TMSNCFRST) "yanlış kısaltma" verilmez; anlam
+   varsa (<KISA> -> <KISA>) hata sayılmaz: karar "sözlük doğru", uyarı yok.
+3) Genel anlam yokken (<KISA>, <KISA>) "yanlış kısaltma" verilmez; anlam
    tam yazılır ("önceki eş dönem", "ilk işlemden bu yana geçen süre").
-   TMSNC gibi birleşik İngilizce kalıplar doğru kısaltma sayılır; karşılık
-   kısaltmalara tutarlı çift önerilir (TSF / TSL).
-4) Birlikte ifade oluşturan kısaltmalar (PER_DAY = günlük ortalama):
-   her birine kendi anlamı (PER = başına, DAY = gün); istem kuralı.
+   <KISA> gibi birleşik İngilizce kalıplar doğru kısaltma sayılır; karşılık
+   kısaltmalara tutarlı çift önerilir (<KISA> / <KISA>).
+4) Birlikte ifade oluşturan kısaltmalar (<KOLON> = günlük ortalama):
+   her birine kendi anlamı (<KISA> = başına, <KISA> = gün); istem kuralı.
 5) Renk: sarı yalnız sözlükteki anlam değiştiyse (dil modeli doğru, ikisi
    de yanlış, yanlış kısaltma), boşsa ya da uyarı varsa. "Sözlük doğru" ve
    "ikisi aynı" renksiz. Lejant: Sözlük Doğru / Sözlük Değişti, Boş ya da
@@ -88,44 +104,44 @@ Değişken Kontrolü ve sonraki adımlar değişmedi (CSS .dg-kart kapsamında).
   kısa açıklama var (KISALTMA_ACIKLAMA).
 - Lejant: "Sözlük ve Genel Aynı" / "Sözlük ve Genel Farklı".
 
-Önceki tur: **H00 / H06 / H12 / H18 tek kısaltma: H = saat**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
+Önceki tur: **<KISA> / <KISA> / <KISA> / <KISA> tek kısaltma: <KISA> = saat**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py` (backend yeniden başlatılmalı)
 
-- 1-2 harf + en az 2 rakamlı parça (H00, H18, M12) artık "harf kısaltması +
-  değer" sayılır: kısaltma H, anlamı "saat"; sayı değerdir. Kartta dört
-  ayrı satır yerine tek H satırı. TOP1, X2 gibi tek rakamlılar değişmedi.
+- 1-2 harf + en az 2 rakamlı parça (<KISA>, <KISA>, M12) artık "harf kısaltması +
+  değer" sayılır: kısaltma <KISA>, anlamı "saat"; sayı değerdir. Kartta dört
+  ayrı satır yerine tek <KISA> satırı. <KISA>, <KISA> gibi tek rakamlılar değişmedi.
 - İstemlere kural: sayıyla birleşik kısaltmada yalnız harf kısmının anlamı
   ("saat 00" değil "saat"), yeni kısaltma önerilmez.
-- Aynı yeni kısaltma birden fazla kısaltmaya önerilirse (H00..H18 -> HR)
+- Aynı yeni kısaltma birden fazla kısaltmaya önerilirse (<KISA>..<KISA> -> <KISA>)
   ya da kolon adlarında zaten başka bir kısaltmaysa öneri düşürülür,
   satırda uyarı yazar.
-- Kolon adı önerisinde kalıp korunur: H yerine HOUR kabul edilirse
-  H00 -> HOUR00.
+- Kolon adı önerisinde kalıp korunur: <KISA> yerine <YENI> kabul edilirse
+  <KISA>00 -> <YENI>00.
 
 Önceki tur: **Önerilen kısaltma kolon adlarının dilinde**. Değiştir: `fe_agent/llm.py` (backend yeniden başlatılmalı; bir önceki turun dosyaları kopyalanmadıysa onlar da)
 
 - Dil modeline her parçada "ADLANDIRMA KALIBI" gider: kolon adlarında en
-  sık geçen 20 kısaltma (TXN, CNT, AMT ...). Yeni kısaltma aynı dilde ve
+  sık geçen 20 kısaltma (<KISA>, <KISA>, <KISA> ...). Yeni kısaltma aynı dilde ve
   kalıpta önerilir: İngilizce adlarda yaygın İngilizce kısaltma (önceki eş
-  dönem -> PREV); Türkçe anlamın harflerinden kısaltma üretilmez ("en çok"
-  -> ENCO yanlış). Türkçe adlandırılmış veri setinde Türkçe kısaltma.
+  dönem -> <KISA>); Türkçe anlamın harflerinden kısaltma üretilmez ("en çok"
+  -> <KISA> yanlış). Türkçe adlandırılmış veri setinde Türkçe kısaltma.
 - Gerekçe Türkçe karakterlerle yazılır ("Sozlukte" değil "Sözlükte").
 - Not: yeni kısaltma yalnız "sözlük doğru ama kolon adında yanlış
-  kısaltma" kararında önerilir; ekrandaki TOP1 = ENCO önerisi bir önceki
+  kısaltma" kararında önerilir; ekrandaki <KISA> = <KISA> önerisi bir önceki
   sürümün davranışı (orada her "yanıltıcı" kısaltmaya öneriliyordu).
 
 Önceki tur: **Kısaltma kararı: "sözlük doğru ama kolon adında yanlış kısaltma"**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı; bir önceki turun dosyaları da kopyalanmadıysa onlar da: `webapp/style.css`, `webapp/backend.py`)
 
 Karar seçenekleri (Not sütununda gerekçesiyle):
 - ikisi aynı (eş anlamlı dahil) -> o anlam
-- sözlük doğru, genel anlam uymuyor -> Anlam = sözlükteki (IN: "giriş"
+- sözlük doğru, genel anlam uymuyor -> Anlam = sözlükteki (<KISA>: "giriş"
   değil "gelen")
 - dil modeli doğru, sözlükteki tanımlar yanlış -> Anlam = genel anlam;
   tanımlar 01.2.6'da düzeltilmeye aday
 - sözlük doğru ama kolon adında yanlış kısaltma seçilmiş (YENİ) ->
-  X2'nin anlamı genel anlam kalır ("kare"); Önerilen Kısaltma = PREV,
-  altında "= önceki eş dönem". Onayda kısaltma sözlüğüne X2 = kare,
-  PREV = önceki eş dönem yazılır. 01.2.5 bu kolonları PREV ile adlandırır.
-  Bu veri setinin kontrollerinde (kolon adı önerileri, 01.2.6) X2'li
+  <KISA>'nin anlamı genel anlam kalır ("kare"); Önerilen Kısaltma = <KISA>,
+  altında "= önceki eş dönem". Onayda kısaltma sözlüğüne <KISA> = kare,
+  <KISA> = önceki eş dönem yazılır. 01.2.5 bu kolonları <KISA> ile adlandırır.
+  Bu veri setinin kontrollerinde (kolon adı önerileri, 01.2.6) <KISA>'li
   kolonlar "önceki eş dönem" anlamıyla değerlendirilir; 01.2.6'ya kolonun
   yeni adı da gider.
   Önerilen kısaltmayı boşaltırsanız Anlam sözlükteki anlama döner.
@@ -146,15 +162,15 @@ Karar seçenekleri (Not sütununda gerekçesiyle):
 Önceki tur: **Kısaltmada açık karar (hangisi doğru) + yanıltıcı kısaltmaya yeni kısaltma**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 1) Açık karar
-- Dil Modeli sütunu artık SÖZLÜĞE BAKMADAN verilen genel anlam (X2 =
+- Dil Modeli sütunu artık SÖZLÜĞE BAKMADAN verilen genel anlam (<KISA> =
   "kare"). Kuruma özgü kısaltmada "genel anlamı yok".
 - İki model (anlaşamazsa hakem) örnek kolonlara bakıp karar verir: ikisi
   aynı / sözlük doğru / dil modeli doğru / ikisi de yanlış (doğrusunu
   yazar). Karar ve tek cümle gerekçe Not sütununda.
 - İstem kuralları: genel anlam kolon adlarının yapısına uymuyorsa ve
-  sözlük tutarlıysa sözlük doğrudur (X2 = önceki eş dönem); pencereye
-  bağlı anlam sayısız yazılır; adı bilinen ölçüde özel ad (HHI =
-  Herfindahl-Hirschman endeksi). Özel adın büyük harfi korunur.
+  sözlük tutarlıysa sözlük doğrudur (<KISA> = önceki eş dönem); pencereye
+  bağlı anlam sayısız yazılır; adı bilinen ölçüde özel ad (<KISA> =
+  <özel adlı ölçü>). Özel adın büyük harfi korunur.
 - Renk: model "ikisi aynı" derse (eş anlamlı dahil) mavi.
 
 2) Yeni kısaltma
@@ -165,8 +181,8 @@ Karar seçenekleri (Not sütununda gerekçesiyle):
   öneri adımı durdurur. Kabul edilen yeni kısaltma kısaltma sözlüğüne
   aynı anlamla girer (Hafızaya Kaydet işaretliyse hafızaya da).
 - 01.2.5 Kolon Adı Önerileri: eski kısaltmanın geçtiği kolonlar yeni
-  kısaltmayla önerilir (TXN_GDN_14D_X2_RATIO_CNT ->
-  TXN_GDN_14D_PREV_RATIO_CNT); yalnız AMP kopyalarında uygulanır.
+  kısaltmayla önerilir (<KOLON> ->
+  <KOLON>); yalnız AMP kopyalarında uygulanır.
 - Kolon Adı Önerileri artık yalnız bu veri setinin kolonlarını listeler
   (eskiden onaylı tanım hafızasındaki başka veri setlerinin kolonları da
   girebiliyordu).
@@ -274,13 +290,13 @@ Karar seçenekleri (Not sütununda gerekçesiyle):
 - Eskiden anlam sessizce siliniyordu; artık kalıyor ve Kaynak sütununda
   turuncu uyarı yazıyor (satırın solunda turuncu çizgi):
   - anlam, birlikte geçtiği başka bir kısaltmanın anlamını da içeriyor
-    (TMSNCFRST "ilk işlemden bu yana geçen süre", TXN "işlem")
+    (<KISA> "ilk işlemden bu yana geçen süre", <KISA> "işlem")
   - dil modeli emin olamadı: sözlük istatistiğinin anlamı uyarıyla kalır
   - anlam tamamen Türkçe değil ya da 6 kelimeden uzun
-- Eş anlamlı kısaltmalar (aynı anlamı veren iki kısaltma, ör. NUM ve CNT
+- Eş anlamlı kısaltmalar (aynı anlamı veren iki kısaltma, ör. NUM ve <KISA>
   "adet") uyarı almaz.
 - Tek boş kalan durum: dil modeli anlam yerine kısaltmanın kendisini
-  verdiyse (SCORE -> "score"); istatistik anlamı varsa o uyarıyla gelir.
+  verdiyse (<KISA> -> "score"); istatistik anlamı varsa o uyarıyla gelir.
 - Uyarılı anlamlar kalıcı öğrenmeye girmez; siz onaylarsanız (hafızaya
   kaydederseniz) girer. Excel'de Kaynak sütununa "UYARI: ..." eklenir.
 - Yalın hâl: "borcu" -> "borç" (harç, amaç, güç, kazanç, sayaç ... aynı);
@@ -314,7 +330,7 @@ Karar seçenekleri (Not sütununda gerekçesiyle):
 
 3) Tanım kontrolünde beklenen tanım
 - Her satıra ad parçalarının onaylı anlamları gider ("AD PARCALARI
-  (onayli): TXN=işlem · GDN=giden · AMT=tutar · AVG=ortalama"). Model
+  (onayli): <KISA>=işlem · <KISA>=giden · <KISA>=tutar · <KISA>=ortalama"). Model
   beklenen tanımı bunlarla kurar; bir parçanın anlamı tanımda yoksa ya
   da farklıysa düzeltme önerir ve gerekçede o kısaltmayı yazar.
 - Açıklama önerilerine ve kontrole giden "KISALTMALAR (kesin)" listesi
@@ -328,7 +344,7 @@ denendi).
 Önceki tur: **Bekleme azaltıldı: kayıtlı tanım ve öneriler doğrudan gelir**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
 - Rol kolonu (kimlik, hedef, dönem, segment) AYNI veri setinde onaylanmış
-  tanımla doğrudan dolar (SM_ID). Başka veri setinden gelen tanım rol
+  tanımla doğrudan dolar (<KIMLIK_KOLONU>). Başka veri setinden gelen tanım rol
   kolonuna konmaz.
 - Öneri önbelleği: PROJE_HAFIZASI/ONERI_ONBELLEGI.parquet (onaylı değil).
   Dil modelinin bir veri setinin kolonu için verdiği son öneri saklanır;
@@ -343,24 +359,24 @@ denendi).
 Önceki tur: **Kısaltma düzeltmeleri + açıklama/kolon adı tutarsızlıkları + kolon yeniden adlandırma**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/amp.py`, `fe_agent/amp_pandas.py`, `fe_agent/amp_spark.py`, `fe_agent/xlsx_yaz.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css` (backend yeniden başlatılmalı)
 
 1) Kısaltma çıkarımı
-- Atama artık BÜTÜN adaylar üzerinden en güçlüden zayıfa (SUM'un zayıf
-  "karşı" adayı CP'nin "karşı taraf"ından önce atanıyordu).
+- Atama artık BÜTÜN adaylar üzerinden en güçlüden zayıfa (<KISA>'un zayıf
+  "karşı" adayı <KISA>'nin "<anlam>"ından önce atanıyordu).
 - İki kelimelik ifade, başka bir kısaltmanın en güçlü tek kelime adayını
-  içeriyorsa seçilmez (HIGH -> yüksek, BNK -> banka, NO -> yok, BY ->
-  bazında, ACTIVE -> aktif).
-- Harfleri sırayla tutan güçlü aday öne geçer (BNK-banka, ADT-adet).
+  içeriyorsa seçilmez (<KISA> -> yüksek, <KISA> -> banka, <KISA> -> yok, <KISA> ->
+  bazında, <KISA> -> aktif).
+- Harfleri sırayla tutan güçlü aday öne geçer (<KISA>-<anlam>).
 - İki harfli kelimeler aday ("ay", "en çok"); "arası" anlam sayılmaz.
-- Yalın hâl: karşı, arası, sonu, altı, üstü ... kesilmez (SUM "karş").
+- Yalın hâl: karşı, arası, sonu, altı, üstü ... kesilmez (<KISA> "karş").
 - Dil modeli kontrolü: parça 12 kısaltma, parçalar aynı anda; örnek 6,
   açıklama 120 karakter (zaman aşımı riski azaldı). Hata sebebi kartta.
 
 2) Tutarsızlık raporu (`kisaltma.tutarsizliklar`, kod tarafında)
 - Adda Yok: açıklamada bir kısaltmanın anlamı geçiyor, adda o kısaltma da
   aynı anlamı veren başka kısaltma da yok (ör. "farklı banka adedi",
-  adda DISTINCT yok -> TXN_GDN_3D_DISTINCT_BNK_ADT önerilir). PER_DAY
-  "günlük ortalama" işaretlenmez (PER "ortalama" der). Genel kelimeler
+  adda <KISA> yok -> <KOLON> önerilir). <KOLON>
+  "günlük ortalama" işaretlenmez (<KISA> "ortalama" der). Genel kelimeler
   (tanımların %30'undan fazlası) ve adda aynen geçen parçanın yanındaki
-  kelimeler (HHI "yoğunlaşması hhi") sayılmaz.
+  kelimeler (<KISA> "<anlam>sı hhi") sayılmaz.
 - Açıklamada Yok: adda kısaltma var, açıklamada anlamı yok.
 - 01.2.4 kontrolüne düzeltme önerisi olarak, Excel'e ikinci sayfa
   ("Tutarsızlıklar") olarak gelir.
@@ -407,7 +423,7 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
   oran, payı -> pay, entropisi -> entropi, tutarının -> tutar, işlemleri
   -> işlem, dönemi -> dönem, hesabı -> hesap. Sıfat / yapım ekleri
   (-li, -ci, -ki, -siz) ve kredi, bilgi, yeni gibi kelimeler kesilmez.
-- Çok kelimeli anlamlara dokunulmaz (hafta sonu, değişim katsayısı:
+- Çok kelimeli anlamlara dokunulmaz (<anlam>, değişim katsayısı:
   son kelimenin eki birleşik adın parçası).
 - Aynı kural dil modelinin verdiği anlamlara da uygulanır; dil modeline
   "doğru ama ekliyse düzelt, yalın yaz" kuralı eklendi.
@@ -445,7 +461,7 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
   kısaltmanın anlamı o kısaltmanın geçtiği tanımlı kolonların en az
   %85'inde geçiyorsa (en az 5 kolon), geçmeyen tanım işaretlenir.
   01.2.4 kontrolünde bu tanım denetçiler "uygun" dese bile satır olarak
-  gelir; gerekçe: "Kolon adındaki GLN, sözlükteki 412 kolonun %99'unda
+  gelir; gerekçe: "Kolon adındaki <KISA>, sözlükteki 412 kolonun %99'unda
   'gelen' anlamında kullanılmış; bu tanımda 'gelen' geçmiyor." Düzeltmeyi
   dil modeli yazar (pencere / ölçü korunur); yazamazsa satır mevcut
   tanımla gelir, kullanıcı düzenler.
@@ -462,8 +478,8 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
 - Aynı kısaltma başka sözlükte farklı anlamla çıkarsa daha çok kolonla
   öğrenilen kalır; aynı anlamsa kolon sayısı büyüğü tutulur.
 - Sözlüğü olmayan / az tanımlı çalışmada: bu dosya dil modeline tahmini
-  kısaltma olarak gider (TXN -> işlem) ve kartta "Önceki sözlüklerden
-  öğrenildi · HAVALE_EFT_NTT, 908 kolon" diye görünür. Kartta veri
+  kısaltma olarak gider (<KISA> -> işlem) ve kartta "Önceki sözlüklerden
+  öğrenildi · <VERI_SETI>, 908 kolon" diye görünür. Kartta veri
   setinin tanımsız kolon adları da sayılır.
 - Öncelik: onaylı hafıza > bu çalışmada öğrenilen > önceki çalışmalardan
   öğrenilen.
@@ -478,8 +494,8 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
   tanım bir sonraki öğrenmenin girdisi.
 - İstatistik bütün tanımlar üzerinden; atama en güçlü kanıttan başlar ve
   bir kısaltma, kolonlarının yarısından fazlasında birlikte geçtiği
-  kısaltmaya verilmiş anlamı alamaz (IN, CP'nin "karşı taraf"ını almaz,
-  "gelen" olur; ADT, BNK'nin "banka"sını almaz, "adedi" olur).
+  kısaltmaya verilmiş anlamı alamaz (<KISA>, <KISA>'nin "<anlam>"ını almaz,
+  "gelen" olur; <KISA>, <KISA>'nin "banka"sını almaz, "adedi" olur).
 - Dil modeline her kısaltma için: en güçlü 3 aday ve yüzdeleri, örnek
   kolonlardaki diğer kısaltmaların anlamları ve çeşitli seçilmiş en çok
   8 örnek kolon (her yeni örnek, öncekilerde olmayan kısaltmaları
@@ -495,8 +511,8 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
 
 - Bir kısaltmanın kolonlarının yarısından fazlasında birlikte geçen ve
   anlamı kesin bilinen (temel / onaylı) kısaltmanın anlamı o kısaltmaya
-  verilmez: DISTINCT_BNK_ADT'de "farklı" DISTINCT'in, "banka" BNK'nin
-  -> ADT "adet". Karşılaştırma kelime başıyla (gün -> günün de yakalanır).
+  verilmez: <KOLON>'de "farklı" <KISA>'in, "banka" <KISA>'nin
+  -> <KISA> "adet". Karşılaştırma kelime başıyla (gün -> günün de yakalanır).
 - Dil modeline her kısaltma için "bilinen" satırı gider (örnek kolonlardaki
   diğer kısaltmaların kesin anlamları); model bunları kullanamaz.
   Model yine de birinin anlamını verirse kod kapısı onu düşürür.
@@ -531,14 +547,14 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
 
 Önceki tur: **Kısaltma önerileri iyileştirildi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js` (backend yeniden başlatılmalı)
 
-- Temel sözlük (`kisaltma.TEMEL`): IN gelen, OUT giden, SUM toplam, DAY
-  gün, MONTH ay, HIGH yüksek, LOW düşük, BY bazında, PER başına, TOP1 en
-  büyük (1. sıradaki), H00/H06... saat dilimi, TMSNCFRST/TMSNCLST ... sabit
-  ve kesin. İki anlamlı olanlar (NO, CURR, MON, VOL) bilerek yok.
+- Temel sözlük (`kisaltma.TEMEL`): <KISA> gelen, <KISA> giden, <KISA> toplam, <KISA>
+  gün, <KISA> ay, <KISA> yüksek, <KISA> düşük, <KISA> bazında, <KISA> başına, <KISA> en
+  büyük (1. sıradaki), <KISA>/<KISA>... saat dilimi, <KISA>/<KISA> ... sabit
+  ve kesin. İki anlamlı olanlar (<KISA>, CURR, MON, VOL) bilerek yok.
 - Çıkarım kuralı: temel kısaltmalar yarışmaz; bir anlamı en güçlü
   kanıtla alan kısaltmadan sonrakiler ikinci adaya geçer (yoksa boş);
   bir kısaltmanın her kolonunda birlikte geçen temel kısaltmanın anlamı
-  ona verilmez (NO_TXN_FLAG: "bayrak" FLAG'in); ekli biçim, yalın hali
+  ona verilmez (<KOLON>: "bayrak" <KISA>'in); ekli biçim, yalın hali
   sözlükte de geçiyorsa yalına iner (adedi -> adet).
 - Dil modeli kontrolü (`llm.kisaltma_dogrula`): liste, kısaltma başına 4
   örnek kolonla iki modele sorulur, anlaşamazlarsa hakem. 01.2.3'te arka
@@ -597,7 +613,7 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
 - Türkçe kapısı (`llm.turkce_sorunu`): İngilizce kelime ya da Türkçe
   karakteri eksik yazılmış kelime ("musteri", "islem", "gunde" ...)
   bulursa tanım "tamamen Türkçe değil" sayılır. Büyük harfli kısaltmalar
-  (TXN, AMT) sayılmaz. Kelime listesiyle çalışır; listede olmayan bir
+  (<KISA>, <KISA>) sayılmaz. Kelime listesiyle çalışır; listede olmayan bir
   karaktersiz kelimeyi yakalamayabilir.
 - 01.2.3 öneriler: Türkçe olmayan öneri ayrı bir çağrıyla anlam
   korunarak Türkçeye çevrilir; çevrilemezse öneri gösterilmez. Türkçe
@@ -749,12 +765,12 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
 
 ---
 
-Önceki tur: **Kısaltma sözlüğü (TXN, GLN, GDN ...) + onaylı kısaltma hafızası**. Değiştir: `fe_agent/kisaltma.py` (YENİ), `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
+Önceki tur: **Kısaltma sözlüğü (<KISA>, <KISA>, <KISA> ...) + onaylı kısaltma hafızası**. Değiştir: `fe_agent/kisaltma.py` (YENİ), `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `fe_agent/llm.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`
 
 - Çıkarım (dil modeli yok): kolon adı parçalara bölünür; bir kelime,
   adında o parça geçen kolonların tanımlarında sık (≥ %60), geçmeyenlerde
   belirgin seyrekse (fark ≥ 0,3) parçanın anlamı sayılır. En az 3 kolon.
-  İki kelimelik anlam (HS → hafta sonu) iki kelimesi de parçaya özgüyse.
+  İki kelimelik anlam (<KISA> → <anlam>) iki kelimesi de parçaya özgüyse.
   Kaynak: sözlüğün çalışma kopyası + onaylı tanım hafızası.
 - 01.2.4 kartının başında "Kısaltma Sözlüğü": Kısaltma | Anlam
   (düzenlenebilir) | Kaynak (ör. "Sözlükten: 120 kolonun %98'inde") |
@@ -804,10 +820,10 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
 - Kontrol ve hakem istemlerine "ANLAM KORUNUR" kuralı: öneri pencereyi,
   yönü, tutar/adet ayrımını, oranın payını ve paydasını değiştiremez;
   tanım kolon adıyla tutarlıysa yalnızca aynı anlam daha açık yazılır.
-  Örnek doğru/yanlış (180D_360D_AMT_RATIO) istemde.
+  Örnek doğru/yanlış (<KOLON>) istemde.
 - Tüm sözlük istemlerine kolon adı kalıpları: <A>D_<B>D_..._RATIO = son A
-  günün son B güne oranı (aralık değil); AMT tutar, CNT adet, AVG ortalama.
-- Kural tabanlı son kapı: RATIO kolonunda "A-B gün arası" diyen öneri ve
+  günün son B güne oranı (aralık değil); <KISA> tutar, <KISA> adet, <KISA> ortalama.
+- Kural tabanlı son kapı: <KISA> kolonunda "A-B gün arası" diyen öneri ve
   kolon adındaki pencere sayısını (180, 360) düşüren öneri listelenmez.
 - Mevcut çalışma: 01.2.4'te Geri Dön; kontrol yeni kurallarla baştan çalışır.
 
@@ -916,7 +932,7 @@ AMP_SOZLUK artık doğrudan teyit satırlarından altı alanla yazılır
       [l["id"] for l in dataiku.api_client().get_default_project().list_llms()]
 - Açıklama önerisi (sözlükte tanımı olmayan kolonlar): isteğe veri setinin
   adı ve sözlüğünüzden adı en çok benzeyen 10 tanımlı kolon örnek olarak
-  ekleniyor (TXN_GDN_3D_… için diğer TXN_GDN_3D_… açıklamaları). Ham veri
+  ekleniyor (aynı ön ekli kolon için diğer aynı ön ekli kolonların açıklamaları). Ham veri
   gitmiyor, yalnızca sözlükteki açıklama metinleri. C/D modunda sözlük
   olmadığı için yalnızca veri setinin adı gidiyor.
 
@@ -1383,7 +1399,7 @@ Yapıştır: fe_agent `akis_metin.py`, `akis_faz01.py` · webapp `app.js` (JS), 
 
 Önceki tur: **tam veriye dokunan işler Spark'ta (kümede); Flow nesnelerini webapp kurar**.
 
-Neden: gerçek veri ~135 milyon satır × 1.040 kolon (FPD_TXN_FEATS_2025 ≈ 19,3 M,
+Neden: gerçek veri ~135 milyon satır × 1.040 kolon (<VERI_SETI> ≈ 19,3 M,
 _2026 ≈ 116 M). Bu hacim webapp'in makinesine indirilemez; DuckDB yolu kaldırıldı.
 
 Kütüphaneden (fe_agent) SİLİN: `veri_kaynak.py`, `profil_duck.py`, `amp_duck.py`
@@ -1449,7 +1465,7 @@ pandas'ta; küçük tablolar içindir.
 Önceki tur: **seçilen tabloların satır × kolon sayısı**. Yapıştır (fe_agent): `akis_faz01.py`
 
 - Kaynak tablo özeti her tablo için kesin satır ve kolon sayısını yazıyor:
-  "• FPD_TXN_FEATS_2025 · 1.234.567 satır × 1.040 kolon". Başlıkta toplam
+  "• <VERI_SETI> · 1.234.567 satır × 1.040 kolon". Başlıkta toplam
   satır var; yanıltıcı olan "toplam kolon" kaldırıldı.
 - Alt alta ekleme mesajı tablo adlarını tekrar saymıyor; baz veri setinin
   satır × kolon sayısını ve kayıt yerini yazıyor.
@@ -1459,7 +1475,7 @@ pandas'ta; küçük tablolar içindir.
 Önceki tur: **aynı kolonlu tablolar alt alta ekleniyor; birleştirme sonucu klasöre yazılıyor**.
 Yapıştır (fe_agent): `akis_faz01.py`, `akis_sohbet.py`, `akis_durum.py`, `veri_kaynak.py` · (webapp) `backend.py`
 
-- Seçilen tabloların hepsi aynı kolonlara sahipse (ör. FPD_TXN_FEATS_2025 ve
+- Seçilen tabloların hepsi aynı kolonlara sahipse (ör. <VERI_SETI> ve
   _2026) yapay zekâya sorulmaz: DuckDB ile alt alta eklenir, onay beklenmez.
   Kolon sırası farklı olabilir; adla eşlenir.
 - Birleştirme sonucu (alt alta ya da yapay zekâ planıyla yan yana) Flow'daki
@@ -2044,7 +2060,7 @@ Bilinmesi gerekenler:
 
 - Aday yoksa not yalnızca "Dönem kolonu bulunamadı." Altında adı dönem/tarih
   olan kolonlar ayrı maddelerde, neden seçilemedikleriyle (en fazla 5).
-- Ad eşleşmesi parça parça: MONTH_CNT gibi sayaç/tutar kolonları listelenmez;
+- Ad eşleşmesi parça parça: <KOLON> gibi sayaç/tutar kolonları listelenmez;
   TARIHI, DONEMI gibi ekli adlar listelenir.
 - Alan sözleşmesi: form alanında yeni "not_maddeler" listesi.
 
@@ -2155,7 +2171,7 @@ Yapıştır: `akis_durum.py` → `akis_panel.py` → `akis_faz01.py` (fe_agent);
 - «Bölme birimi» ve «Bölme kolonu» satırları kalktı. Kural otomatik: kimlik
   kolonu var VE aynı kimliğin birden fazla satırı olabiliyorsa (dönem kolonu
   var ya da kimlik bazlı tekrar ölçüldü) kayıtlar rastgele bölmede ve CV
-  parçalarında bir arada tutulur; özet satırı "Aynı SM_ID: bir arada
+  parçalarında bir arada tutulur; özet satırı "Aynı <KIMLIK_KOLONU>: bir arada
   tutulur" diye yazar. Aksi halde kimlik = satır, gruplama yok.
 - Seed satırı her modda görünür. Çoklu tekrarda yeni «Kullanılacak seed'ler»
   alanı: boşsa ana seed'den türetilir (42 → 42, 43, 44), elle yazılırsa
@@ -2348,8 +2364,8 @@ birinin sözlüğü hazır. «Kaynak Sözlükleri» adımında her tabloya sözl
 seçilir (aynı sözlük birden çok tabloya seçilebilir). Birleştirme bitince
 nihai sözlük (MODELLEME_SOZLUK) köken kütüğünden otomatik kurulur:
 kaynak kolon tanımını aynen alır; toplama kolonu "Kart işlem tutarı (TL)
-— toplam, son 3 ay (KART_ISLEM.TUTAR)" gibi türetilir; kayıt sayısı
-kolonları "KART_ISLEM tablosundaki kayıt sayısı, son 6 ay" olur. Kaynağında
+— toplam, son 3 ay (<VERI_SETI>.TUTAR)" gibi türetilir; kayıt sayısı
+kolonları "<VERI_SETI> tablosundaki kayıt sayısı, son 6 ay" olur. Kaynağında
 tanımı olmayan kolonlar «Sözlük Tanımları» adımında listelenir.
 
 ## 2. Rozetler

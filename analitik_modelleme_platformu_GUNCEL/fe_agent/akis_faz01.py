@@ -1446,8 +1446,9 @@ KISALTMA_ACIKLAMA = (
     "Kolon adlarındaki kısaltmaların anlamı. LLM Sözlük: sözlükteki "
     "açıklamalardan çıkan anlam. LLM Genel: dil modelinin sözlüğe bakmadan "
     "verdiği genel anlam. Anlam: dil modelinin ikisi arasında karar verdiği "
-    "anlam; düzenleyebilirsiniz. Önerilen Kısaltma: kolon adında yanlış "
-    "kısaltma seçilmişse yerine önerilen kısaltma. Seç: işaretlenenler proje "
+    "anlam; düzenleyebilirsiniz. Önerilen Kısaltma: kolon adındaki "
+    "kısaltma yanlış seçilmiş ya da anlaşılmıyorsa yerine önerilen okunur "
+    "kısaltma (birden çok parçalı olabilir). Seç: işaretlenenler proje "
     "genelindeki hafızaya kaydedilir. Karar, gerekçe ve örnekler "
     "kısaltmanın yanındaki i simgesinde.")
 
@@ -1534,7 +1535,7 @@ def _kolon_ad_alani(durum):
                                                {}) if oneri else t["yeni_ad"]
             gerekce.append(t["gerekce"])
         for eski, yeni in sorted(yeni_kisa.items()):
-            if eski in kisaltma_mod.parcalar(oneri or ad):
+            if _kisaltma_degistir(oneri or ad, eski, yeni) != (oneri or ad):
                 oneri = _kisaltma_degistir(oneri or ad, eski, yeni)
                 gerekce.append("%s yerine %s: bu kolonlarda '%s' anlamında kullanılmış; "
                                "%s genelde '%s' demek (Kısaltma Sözlüğü'nde kabul edildi)."
@@ -1676,7 +1677,8 @@ def kisaltma_plan(durum):
     return ""
 
 
-_YENI_KISA_KALIP = re.compile(r"^[A-Z][A-Z0-9]{1,7}$")
+# En cok 4 parca ("_" ile), parca basina en cok 8, toplam en cok 24.
+_YENI_KISA_KALIP = re.compile(r"^(?=.{2,24}$)[A-Z][A-Z0-9]{0,7}(_[A-Z0-9]{1,8}){0,3}$")
 
 
 def kisaltma_uygula(durum):
@@ -1709,8 +1711,8 @@ def kisaltma_uygula(durum):
             continue
         ya = str(s_.get("yeni_anlam") or "").strip() or sozluk.get(kisa, "")
         if not _YENI_KISA_KALIP.match(y):
-            hatalar.append("%s: '%s' geçersiz (harfle başlamalı; 2-8 karakter, yalnız "
-                           "A-Z ve 0-9)." % (kisa, y))
+            hatalar.append("%s: '%s' geçersiz (harfle başlamalı; yalnız A-Z, 0-9 ve _; "
+                           "en çok 4 parça, parça başına 8, toplam 24 karakter)." % (kisa, y))
         elif y == kisa:
             continue
         elif not ya:

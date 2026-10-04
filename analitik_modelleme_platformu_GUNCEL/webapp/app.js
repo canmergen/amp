@@ -6936,7 +6936,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        yanlış, yanlış kısaltma), boşsa ya da uyarı varsa; "sözlük doğru" ve
        "ikisi aynı" renksiz (kullanıcı kararı). */
     ust.appendChild(dgLejant([["dg-l-renksiz", "Sözlük Doğru"],
-                              ["dg-l-dikkat", "Sözlük Değişti, Boş ya da Uyarılı"],
+                              ["dg-l-dikkat", "Sözlük Değişti, Öneri Var, Boş ya da Uyarılı"],
                               ["dg-l-duzenlendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
@@ -7024,7 +7024,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const tdY = elYap("td", "dg-aciklama-hucre");
             const y = document.createElement("input");
             y.type = "text"; y.className = "dg-giris dg-yeni-kisa";
-            y.value = r.yeni_kisaltma || ""; y.maxLength = 8;
+            y.value = r.yeni_kisaltma || ""; y.maxLength = 24;
             y.disabled = kilitli || !!r.bekliyor;
             y.setAttribute("aria-label", r.kisaltma + " için önerilen kısaltma");
             tdY.appendChild(y);
@@ -7032,7 +7032,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const yAnlam = elYap("div", "dg-tip", r.yeni_anlam ? "= " + tireSade(r.yeni_anlam) : "");
             tdY.appendChild(yAnlam);
             y.addEventListener("input", () => {
-                const b = y.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                const b = y.value.toUpperCase().replace(/[^A-Z0-9_]/g, "");
                 if (b !== y.value) y.value = b;
                 yAnlam.textContent = y.value && (r.yeni_anlam || r.sozlukten)
                     ? "= " + tireSade(r.yeni_anlam || r.sozlukten) : "";

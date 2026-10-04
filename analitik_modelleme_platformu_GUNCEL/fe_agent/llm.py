@@ -1217,9 +1217,17 @@ kavram. Es anlamli, daha genel ya da yakin anlamlar bu durum degildir.
 Ayni anlami tasiyan baska bir kisaltmanin da bulunmasi yanlislik degildir.
 "kisaltma_yanlis" SECILIRSE: "anlam" kisaltmanin GENEL anlamidir (kisaltma
 sozlugunde o kalir), "yeni_kisaltma" bu kolonlarin gercek anlamini
-tasiyan daha acik, yaygin bir kisaltmadir (BUYUK harf, 2-8 karakter,
-yalniz A-Z ve 0-9, "diger kisaltmalar"dakilerden biri olmasin),
-"yeni_anlam" de onun anlamidir (sozluktaki kullanim). Diger secimlerde
+tasiyan daha acik, yaygin bir kisaltmadir, "yeni_anlam" de onun anlamidir
+(sozluktaki kullanim).
+"anlasilmaz" YALNIZ su durumda: anlam DOGRU ama kisaltma okuyan icin
+anlasilmiyor: unluleri atilmis uzun birlesik kisaltma, birden cok yaygin
+okunusu olan belirsiz kisaltma ya da yaygin kullanima uymayan kisaltma.
+Yaygin kullanilan, okunur kisaltmalar bu durum DEGILDIR; emin degilsen
+secme. Secilirse "anlam" dogru anlamdir, "yeni_kisaltma" ayni anlamin
+YAYGIN ve okunur karsiligi, "yeni_anlam" ayni anlam.
+YENI KISALTMA BICIMI: BUYUK harf, yalniz A-Z, 0-9 ve parca ayiraci "_";
+en cok 4 parca, parca basina en cok 8, toplam en cok 24 karakter;
+"diger kisaltmalar"dakilerden biri olmasin. Diger secimlerde
 "yeni_kisaltma" ve "yeni_anlam" BOS.
 
 YENI KISALTMANIN DILI: kolon adlari hangi dilde ve kalipta kisaltilmissa
@@ -1252,6 +1260,8 @@ Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
                      genel anlami baska bir kavram. anlam = genel anlam,
                      yeni_kisaltma = bu kolonlarin anlamini tasiyan yaygin
                      kisaltma, yeni_anlam = sozlukteki anlam
+  "anlasilmaz"     : anlam dogru ama kisaltma okunur / yaygin degil;
+                     okunur karsiligini oner (asagiya bak)
   "yeni"           : ikisi de yanlis; dogru anlami "anlam" alanina yaz
   "emin_degil"     : karar verilemiyor
 "anlam"   : secilen anlam (daha dogru yazimi varsa onu yaz)
@@ -1262,7 +1272,7 @@ Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "KISALTMA",
-  "secim": "ayni|sozluk|genel|kisaltma_yanlis|yeni|emin_degil",
+  "secim": "ayni|sozluk|genel|kisaltma_yanlis|anlasilmaz|yeni|emin_degil",
   "anlam": "...", "gerekce": "...", "yeni_kisaltma": "", "yeni_anlam": ""}]}""" + SINIRLAYICI_KURALI
 
 SISTEM_HAKEM_KISALTMA = """Sen bir bankacilik ve veri bilimi sozlugu
@@ -1270,13 +1280,14 @@ editorusun. Her kisaltma icin iki aday anlam (sozlukte / genel), ornek
 kolonlar ve iki modelin farkli kararlari verilecek. Ornek kolonlara
 bakarak SON KARARI ver (secim, anlam, gerekce, yeni_kisaltma; anlamlari
 asagidaki gibi).
-  "ayni" / "sozluk" / "genel" / "kisaltma_yanlis" / "yeni" / "emin_degil"
+  "ayni" / "sozluk" / "genel" / "kisaltma_yanlis" / "anlasilmaz" / "yeni" /
+  "emin_degil"
 
 """ + _KISALTMA_KURALLARI + """
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "KISALTMA",
-  "secim": "ayni|sozluk|genel|kisaltma_yanlis|yeni|emin_degil",
+  "secim": "ayni|sozluk|genel|kisaltma_yanlis|anlasilmaz|yeni|emin_degil",
   "anlam": "...", "gerekce": "...", "yeni_kisaltma": "", "yeni_anlam": ""}]}""" + SINIRLAYICI_KURALI
 
 # SOZLUKSUZ (KOR) GENEL ANLAM (kullanici karari: "sadece sozluge
@@ -1347,8 +1358,10 @@ def _kisaltma_satiri(g):
     return s
 
 
-_SECIMLER = ("ayni", "sozluk", "genel", "kisaltma_yanlis", "yeni", "emin_degil")
-_YENI_KISA = re.compile(r"^[A-Z][A-Z0-9]{1,7}$")
+_SECIMLER = ("ayni", "sozluk", "genel", "kisaltma_yanlis", "anlasilmaz", "yeni",
+             "emin_degil")
+# Yeni kisaltma: en cok 4 parca ("_" ile), parca basina en cok 8, toplam 24.
+_YENI_KISA = re.compile(r"^(?=.{2,24}$)[A-Z][A-Z0-9]{0,7}(_[A-Z0-9]{1,8}){0,3}$")
 
 
 def _kucult(anlam):
@@ -1379,13 +1392,15 @@ def _kisaltma_oku(veri, girdi, ek=None):
             secim = "emin_degil"
         if secim.startswith("kisaltma"):
             secim = "kisaltma_yanlis"
+        if secim.startswith("anlas"):
+            secim = "anlasilmaz"
         anlam = _kucult(k.get("anlam"))
         if secim not in _SECIMLER:
             # Eski bicim (karar: dogru / duzelt / emin_degil).
             karar = str(k.get("karar") or "").strip().lower()
             secim = ("sozluk" if karar.startswith(("dogru", "doğru")) else
                      "emin_degil" if karar.startswith("emin") else "yeni")
-        yeni = re.sub(r"[^A-Z0-9]", "", str(k.get("yeni_kisaltma") or "").upper())
+        yeni = re.sub(r"[^A-Z0-9_]", "", str(k.get("yeni_kisaltma") or "").upper()).strip("_")
         yeni = yeni if _YENI_KISA.match(yeni) and yeni != ad else ""
         yeni_anlam = _kucult(k.get("yeni_anlam")) or soz
         if secim == "kisaltma_yanlis" and not (yeni and yeni_anlam and gen):
@@ -1395,12 +1410,20 @@ def _kisaltma_oku(veri, girdi, ek=None):
             # anlam yoksa bu kolonlardaki anlam TAM yazilir, oneri yok.
             anlam = yeni_anlam or (anlam if anlam != gen else "") or soz
             secim = "sozluk" if (soz and _ayni_metin(anlam, soz)) else "yeni"
-        if secim != "kisaltma_yanlis":
+        if secim == "anlasilmaz":
+            # Anlam dogru; yeni kisaltma ayni anlamin okunur karsiligi.
+            anlam = anlam or soz or gen
+            yeni_anlam = anlam
+            if not (yeni and anlam):
+                secim = "sozluk" if soz and _ayni_metin(anlam or soz, soz) else "ayni"
+                yeni, yeni_anlam = "", ""
+        if secim not in ("kisaltma_yanlis", "anlasilmaz"):
             yeni, yeni_anlam = "", ""
         if secim == "emin_degil":
             anlam = ""
         elif not anlam:
             anlam = {"sozluk": soz, "genel": gen, "ayni": soz or gen,
+                     "anlasilmaz": soz or gen,
                      "kisaltma_yanlis": gen}.get(secim, "")
             if not anlam:
                 continue            # anlamsiz cevap: bu model cevap vermemis say
@@ -1460,7 +1483,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
             elif (x is None and y is None) or (x and y and _ayni_metin(x, y)):
                 son, e = x, dict(ea.get(k) or {})
                 if e and not e.get("yeni_kisaltma") \
-                        and (ec.get(k) or {}).get("secim") == "kisaltma_yanlis":
+                        and (ec.get(k) or {}).get("secim") in ("kisaltma_yanlis", "anlasilmaz"):
                     e = dict(ec.get(k))
             else:
                 ayrisan.append((g, x, y))

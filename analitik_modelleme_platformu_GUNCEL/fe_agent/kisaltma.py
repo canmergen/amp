@@ -95,19 +95,72 @@ def _kok(kelime):
     return s[:5] if len(s) > 5 else s
 
 
-def parcalar(ad):
-    """Kolon adinin kisaltma adaylari (buyuk harf). Pencereler ve sayilar
-    atlanir."""
+def _ham_parcalar(ad):
+    """Ham sira: kisaltma adaylari ve aralarindaki pencere / sayi yerine
+    None (ifade tespitinde komsuluk bozulmasin)."""
     cikti = []
     for p in re.split(r"[^A-Za-z0-9ÇĞİÖŞÜçğıöşü]+", str(ad or "")):
         p = p.upper().translate(_TR_SADE)
+        if not p:
+            continue
         if len(p) < 2 or _PENCERE.match(p):
+            cikti.append(None)
             continue
         m = _SAYILI.match(p)
         if m:
             p = m.group(1)
         cikti.append(p)
     return cikti
+
+
+# BIRLIKTE GECEN PARCALAR TEK KISALTMA (kullanici karari): iki parca
+# kolon adlarinda neredeyse hep YAN YANA geciyorsa (her birinin
+# gectigi kolonlarin en az IFADE_PAY kadarinda) tek kisaltma sayilir
+# ("<A>_<B>"); anlami birlikte verilir. Kolon adi degismez.
+IFADE_PAY = 0.9
+_IFADE_KAYIT = {}         # kolon adi -> birlestirilmis parca listesi
+_IFADE_KILIT = threading.Lock()
+
+
+def ifadeleri_hazirla(adlar):
+    """Verilen kolon adlari icin ifade (yan yana parca) tespiti; sonuc
+    kolon adina gore kaydedilir, parcalar() onu kullanir."""
+    adlar = [str(a) for a in (adlar or ())]
+    hamlar = {ad: _ham_parcalar(ad) for ad in adlar}
+    tek, cift = Counter(), Counter()
+    for ham in hamlar.values():
+        tek.update(set(p for p in ham if p))
+        cift.update(set((a, b) for a, b in zip(ham, ham[1:]) if a and b and a != b))
+    ifade = {(a, b) for (a, b), n in cift.items()
+             if n >= EN_AZ_KOLON and n >= IFADE_PAY * tek[a] and n >= IFADE_PAY * tek[b]}
+    sonuc = {}
+    for ad, ham in hamlar.items():
+        cikti, i = [], 0
+        while i < len(ham):
+            p = ham[i]
+            if p and i + 1 < len(ham) and (p, ham[i + 1]) in ifade:
+                cikti.append(p + "_" + ham[i + 1])
+                i += 2
+                continue
+            if p:
+                cikti.append(p)
+            i += 1
+        sonuc[ad] = cikti
+    with _IFADE_KILIT:
+        if len(_IFADE_KAYIT) > 200000:
+            _IFADE_KAYIT.clear()
+        _IFADE_KAYIT.update(sonuc)
+    return ifade
+
+
+def parcalar(ad):
+    """Kolon adinin kisaltma adaylari (buyuk harf). Pencereler ve sayilar
+    atlanir. Ifade tespiti yapilmis kolonda yan yana parcalar tek
+    kisaltmadir (bkz. ifadeleri_hazirla)."""
+    kayit = _IFADE_KAYIT.get(str(ad or ""))
+    if kayit is not None:
+        return list(kayit)
+    return [p for p in _ham_parcalar(ad) if p]
 
 
 def _tanim_kokleri(tanim):
@@ -165,6 +218,7 @@ def _parca_istatistigi(tanimlar):
     agirlik : satirlarla ayni sirada; onayli tanim ONAY_AGIRLIK, ham 1.
     parca_say AGIRLIKSIZ kolon sayisidir (kartta gorunen)."""
     onayli = _onayli_tanimlar()
+    ifadeleri_hazirla(list(tanimlar or {}))
     satirlar, agirlik = [], []
     for ad, tanim in (tanimlar or {}).items():
         if not str(tanim or "").strip():
@@ -764,6 +818,7 @@ def tutarsizliklar(tanimlar, anlamlar=None):
                    fazlasinda gecen) sayilmaz.
 
     Doner: {kolon: [{"tur", "kisaltma", "anlam", "gerekce", "yeni_ad"}]}"""
+    ifadeleri_hazirla(list(tanimlar or {}))
     if anlamlar is None:
         oner, _d = oneriler(tanimlar, 0.0)
         anlamlar = {k: o["anlam"] for k, o in oner.items() if o["anlam"]}
@@ -1277,6 +1332,7 @@ def kanit_ornekleri(tanimlar, kisa, anlam, adet=KANIT_ORNEK):
 _KARAR_AD = {"ayni": "ikisi aynı", "sozluk": "sözlük doğru, genel anlam uymuyor",
              "genel": "dil modeli doğru, sözlükteki tanımlar yanlış",
              "kisaltma_yanlis": "sözlük doğru ama kolon adında yanlış kısaltma seçilmiş",
+             "anlasilmaz": "anlam doğru ama kısaltma anlaşılmıyor",
              "yeni": "ikisi de yanlış, düzeltildi",
              "emin_degil": "karar verilemedi"}
 
@@ -1295,6 +1351,8 @@ def _uyum(o, bekliyor):
         return "ayni"
     if secim in ("genel", "yeni", "kisaltma_yanlis"):
         return "farkli" if soz else ""
+    if secim == "anlasilmaz":
+        return "farkli"           # oneri var: karar sizde (sari)
     if not soz or not dm:
         return ""
     if o.get("dm_karar") == "dogru" or _ayni_anlam(yalin_anlam(soz), yalin_anlam(dm)):
