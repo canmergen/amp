@@ -249,7 +249,7 @@ def adaylar(tanimlar):
             goruldu.add(anahtar)
             bicimler = yuzey[anahtar]
             anlam = min(bicimler, key=lambda y: (len(y), -bicimler[y]))
-            anlam = " ".join(_yalin(k, sozcukler) for k in anlam.split(" "))
+            anlam = yalin_anlam(anlam)
             ayirt, destek = puan[anahtar]
             adaylar_.append({"anlam": anlam, "destek": round(destek, 3),
                              "ayirt": round(ayirt, 3)})
@@ -296,28 +296,67 @@ def cikar(tanimlar, aday=None):
 
 
 _YUMUSAK = {"d": "t", "ğ": "k", "b": "p", "c": "ç", "g": "k"}
+_UNLU = set("aeıioöuü")
+# Sonu i/ı/u/ü ile biten ama EK OLMAYAN kelimeler (kesilmez).
+_YALIN_ISTISNA = {"kredi", "bilgi", "yeni", "eski", "ilgili", "ikili", "mali",
+                  "resmi", "nakdi", "gayri", "tekli", "ilk", "fiili", "hissi",
+                  "ölçü", "süreli", "güncel", "ortalama", "sayı"}
+# Bu eklerle biten kelime sifattir ya da yapim ekidir; kesilmez.
+_SIFAT_EKI = ("li", "lı", "lu", "lü", "ci", "cı", "cu", "cü", "çi", "çı", "çu",
+              "çü", "ki", "si" + "z", "sız", "suz", "süz")
+
+
+def _yalin_kelime(k, sozcukler=()):
+    """Tek kelimeyi yalin hale getirir (kural tabanli Turkce ek atma):
+    bayragi -> bayrak, skoru -> skor, adedi -> adet, orani -> oran,
+    entropisi -> entropi, tutarinin -> tutar, islemleri -> islem.
+    Yalin hali sozlukte geciyorsa o tercih edilir."""
+    k = str(k or "")
+    if len(k) < 4 or k in _YALIN_ISTISNA:
+        return k
+    aday = k
+    # 1) cogul + iyelik / tamlayan: "islemlerin", "islemleri", "islemler"
+    for ek in ("larının", "lerinin", "ların", "lerin", "ları", "leri", "lar", "ler"):
+        if aday.endswith(ek) and len(aday) - len(ek) >= 3:
+            aday = aday[:-len(ek)]
+            break
+    # 2) tamlayan eki unluden sonra: "tutarının" -> "tutarı"
+    for ek in ("nın", "nin", "nun", "nün"):
+        if aday.endswith(ek) and len(aday) > 5 and aday[-4] in _UNLU:
+            aday = aday[:-3]
+            break
+    # 3) iyelik "-sı" unluden sonra: "entropisi" -> "entropi", "ödemesi"
+    if len(aday) > 5 and aday[-2] == "s" and aday[-1] in "ıiuü" and aday[-3] in _UNLU:
+        aday = aday[:-2]
+    # 4) "-ğı" -> "k": "bayrağı" -> "bayrak", "yoğunluğu" -> "yoğunluk"
+    elif len(aday) >= 4 and aday[-2] == "ğ" and aday[-1] in "ıiuü":
+        aday = aday[:-2] + "k"
+    # 5) unsuzden sonra iyelik "-ı": "skoru" -> "skor", "adedi" -> "adet"
+    elif len(aday) >= 4 and aday[-1] in "ıiuü" and aday[-2] not in _UNLU \
+            and not aday.endswith(_SIFAT_EKI) and aday not in _YALIN_ISTISNA:
+        govde = aday[:-1]
+        if len(govde) >= 4 and govde[-1] in "bcd":
+            govde = govde[:-1] + _YUMUSAK[govde[-1]]
+        aday = govde
+    return aday if len(aday) >= 2 else k
 
 
 def _yalin(kelime, sozcukler):
-    """Ekli bicimi YALNIZ yalin hali sozlukte de geciyorsa yalina indirir
-    (adedi -> adet, orani -> oran, bayragi -> bayrak, entropisi ->
-    entropi). Sozlukte yalin hali yoksa dokunulmaz: "kredi" -> "kred"
-    gibi bozulmalar boylece olmaz; kalanlari dil modeli kontrolu duzeltir."""
-    k = str(kelime or "")
-    adaylar = []
-    if len(k) > 5 and k[-3:-2] and k.endswith(("sı", "si", "su", "sü")):
-        adaylar.append(k[:-2])
-    if len(k) >= 4 and k.endswith(("ı", "i", "u", "ü")):
-        govde = k[:-1]
-        adaylar.append(govde)
-        if govde and govde[-1] in _YUMUSAK:
-            adaylar.append(govde[:-1] + _YUMUSAK[govde[-1]])
-    for a in adaylar:
-        if a in sozcukler:
-            return a
-    # Yumusama: "adedi" -> "adet" sozlukte hic gecmese de, "adet" yalin
-    # bicimi baska bir kokle (ade) ayni ise kabul edilmez; bilerek kati.
-    return k
+    """Anlam kelimesini yalin hale getirir (bkz. _yalin_kelime). Eskiden
+    yalnizca yalin hali sozlukte de geciyorsa iniyordu; sozlukte hep
+    "skoru", "bayragi" diye gecen kelimeler ekli kaliyordu (kullanici
+    bildirimi)."""
+    return _yalin_kelime(kelime, sozcukler)
+
+
+def yalin_anlam(anlam):
+    """Anlam metni: TEK kelimeyse yalina iner. Cok kelimeli anlamlar
+    (hafta sonu, degisim katsayisi, karsi taraf) birlesik addir; son
+    kelimenin eki anlamin parcasidir, dokunulmaz."""
+    a = str(anlam or "").strip()
+    if not a or " " in a:
+        return a
+    return _yalin_kelime(a)
 
 
 
@@ -712,6 +751,8 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
     for kisa, d in dm.items():
         if kisa in onay:
             continue
+        if d.get("anlam"):
+            d = dict(d, anlam=yalin_anlam(d["anlam"]))
         onceki = cikti.get(kisa) or {"kolon": int(parca_say.get(kisa, 0)),
                                      "destek": None}
         onceki["ornek"] = d.get("ornek", 0)

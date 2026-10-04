@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma örnekleri "i" simgesinde**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme; önceki turun `fe_agent/kisaltma.py` dosyası gerekli)
+Bu tur: **Kısaltma anlamları yalın hâlde**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py` (backend yeniden başlatılmalı)
+
+- Tek kelimelik anlamlar kural tabanlı yalına iner (sözlükte yalın hâli
+  geçmese de): bayrağı -> bayrak, skoru -> skor, adedi -> adet, oranı ->
+  oran, payı -> pay, entropisi -> entropi, tutarının -> tutar, işlemleri
+  -> işlem, dönemi -> dönem, hesabı -> hesap. Sıfat / yapım ekleri
+  (-li, -ci, -ki, -siz) ve kredi, bilgi, yeni gibi kelimeler kesilmez.
+- Çok kelimeli anlamlara dokunulmaz (hafta sonu, değişim katsayısı:
+  son kelimenin eki birleşik adın parçası).
+- Aynı kural dil modelinin verdiği anlamlara da uygulanır; dil modeline
+  "doğru ama ekliyse düzelt, yalın yaz" kuralı eklendi.
+
+Önceki tur: **Kısaltma örnekleri "i" simgesinde**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme; önceki turun `fe_agent/kisaltma.py` dosyası gerekli)
 
 - Ayrı "Örnek Kolon" sütunu kaldırıldı; örnek kolonlar (en çok 3, kolon
   adı + sözlükteki açıklama) kısaltmanın yanındaki "i" simgesinde.

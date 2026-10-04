@@ -1174,8 +1174,10 @@ Her kisaltma icin karar ver:
   "emin_degil": orneklerden kisaltmanin anlami cikarilamiyor
 
 KURALLAR:
-  - anlam, KISALTMANIN KENDI anlamidir; yalin halde (adedi degil adet,
-    orani degil oran), tamamen Turkce, 1-4 kelime.
+  - anlam, KISALTMANIN KENDI anlamidir; YALIN halde (adedi degil adet,
+    orani degil oran, skoru degil skor, bayragi degil bayrak), tamamen
+    Turkce, 1-4 kelime. Onerilen anlam dogru ama ekliyse karar "duzelt"
+    ve yalin halini yaz.
   - Birlikte gectigi BASKA bir kisaltmanin anlamini verme. Ornek:
     IN_CP_CNT kolonunda CP "karsi taraf"tir; IN "karsi taraf" DEGIL,
     "gelen"dir.
