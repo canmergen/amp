@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sol panel İş Akışı alt adımları**. Değiştir: `webapp/app.js`, `webapp/style.css`
+Bu tur: **Sözlük önerileri sade yazılsın**. Değiştir: `fe_agent/llm.py`
+
+- Tüm sözlük istemlerine (açıklama, kontrol, hakem) "SADE YAZ" kuralı:
+  kısa, tek anlamlı, tekrarsız, kurumun yazım tarzı uzunluğunda; tanımlar
+  sonra değişken üretiminde de dil modeline girdi olacak. Örnek UZUN /
+  SADE oran tanımı istemde.
+- Kural kapısı: en az 4 kelimelik dolu bir tanım yerine 1,3 katından uzun
+  öneri listelenmez (boş / tek kelimelik tanımların düzeltmesi etkilenmez).
+
+---
+
+Önceki tur: **Sol panel İş Akışı alt adımları**. Değiştir: `webapp/app.js`, `webapp/style.css`
 
 - Gruplu satırın (01.2 Veri ve Model Tanımları) altında alt adımlar
   numarasıyla listeleniyor: 01.2.1 … 01.2.4. Tamamlandı / aktif /

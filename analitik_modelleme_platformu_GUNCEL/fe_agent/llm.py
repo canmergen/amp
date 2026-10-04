@@ -348,7 +348,16 @@ KOLON ADI KALIPLARI:
     SON A GUNDEKI degerin SON B GUNDEKI degere ORANI. "A ile B. gun arasi"
     bir zaman araligi DEGILDIR.
   - AMT: tutar, CNT: adet, AVG: ortalama, RATIO: oran.
-  - Diger kisaltmalarin anlamini ORNEK / ONAYLI TANIMLARDAN cikar."""
+  - Diger kisaltmalarin anlamini ORNEK / ONAYLI TANIMLARDAN cikar.
+
+SADE YAZ: tanim kisa ve tek anlamli olsun; ayni ifadeyi tekrar etme,
+gereksiz kelime ekleme. Kurumun YAZIM TARZINDAKI uzunluga ve kalibina
+uy. Bu tanimlar sonra degisken uretiminde de dil modeline girdi
+olacak: kisa, net ve tutarli olmasi onemli. Ornek (oran kolonu):
+  UZUN : Son 180 gunde bahis sirketlerine giden islem tutarinin son 360
+         gunde bahis sirketlerine giden islem tutarina orani
+  SADE : Son 180 gunde bahis sirketlerine giden islem tutarinin son 360
+         gundekine orani"""
 
 SISTEM_SOZLUK = """Sen bir bankacilik veri sozlugu uzmanisin. Sana kolonlarin
 adi, tipi ve dagilim ozeti verilecek. Her kolonun ne anlama geldigini yaz.
@@ -866,7 +875,7 @@ anlami daha acik ve dogru Turkceyle yazabilirsin. Ornek:
   ad      : TXN_GDN_BAHIS_180D_360D_AMT_RATIO
   mevcut  : Son 180 gun / 360 gun bahis sirketlerine giden islem tutari orani
   DOGRU   : Son 180 gunde bahis sirketlerine giden islem tutarinin son 360
-            gundeki tutara orani
+            gundekine orani
   YANLIS  : 180-360 gun arasi bahis sirketlerine giden islem tutari orani
             (anlam degisti: oran bir zaman araligina donustu)
 Mevcut tanim kolon adiyla CELISIYORSA kolon adi esas alinir.
@@ -924,6 +933,18 @@ def _anlam_degisti(ad, mevcut, oneri):
     if dogrulanan and not dogrulanan <= set(re.findall(r"\d+", str(oneri or ""))):
         return True
     return False
+
+
+# Sade yazim kapisi: dolu ve anlamli bir tanimin (en az 4 kelime)
+# yerine onerilen metin ondan bu kat fazla kelimeyse oneri listelenmez.
+# Bos / tek kelimelik tanimlarin duzeltmesi bu kapiya takilmaz.
+UZUNLUK_KATI = 1.3
+
+
+def _fazla_uzun(mevcut, oneri):
+    n_m = len(str(mevcut or "").split())
+    n_o = len(str(oneri or "").split())
+    return n_m >= 4 and n_o > n_m * UZUNLUK_KATI
 
 
 def _kontrol_satiri(p):
@@ -1016,7 +1037,7 @@ def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):
         oneri = tarza_uydur(oneri, tarz)[:300]
         if not oneri or _ayni_metin(oneri, mevcut[ad]):
             continue
-        if _anlam_degisti(ad, mevcut[ad], oneri):
+        if _anlam_degisti(ad, mevcut[ad], oneri) or _fazla_uzun(mevcut[ad], oneri):
             continue
         duzeltmeler[ad] = {"mevcut": mevcut[ad], "oneri": oneri,
                            "gerekce": gerekce or "", "modeller": " + ".join(adlar)}
