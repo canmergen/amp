@@ -2078,6 +2078,8 @@ function dgRenk(tr, metin, oneri, karar) {
     tr.classList.toggle("dg-hafiza-renk", !karar && !!m && !!o && m === o && hafiza);
     tr.classList.toggle("dg-eklendi", karar === "evet");
     tr.classList.toggle("dg-eklenmedi", karar === "hayir");
+    /* Kullanıcının yazdığı / değiştirdiği metin (01.2 kartlarında yeşil). */
+    tr.classList.toggle("dg-duzenlendi", !karar && !!m && m !== o);
 }
 /* Renk açıklaması: küçük renk kutuları + kısa etiket. */
 function dgLejant(ogeler) {
@@ -2090,11 +2092,13 @@ function dgLejant(ogeler) {
     });
     return kap;
 }
-const DG_LEJANT_KARAR = [["dg-l-bos", "Sözlükte Boş (SB)"],
-                         ["dg-l-hafiza", "Onaylı Tanım (OT)"],
-                         ["dg-l-llm", "Dil Modeli Önerisi (DMÖ)"],
-                         ["dg-l-eklendi", "Sözlüğe Eklendi (SEN)"],
-                         ["dg-l-eklenmedi", "Sözlüğe Eklenmedi (SENM)"]];
+/* 01.2 SADE RENK (kullanıcı kararı: "renk cümbüşü"): 01.2 kartlarında
+   üç anlam var. Renksiz: öneri / normal durum. Sarı: dikkat gerektiren
+   (boş, farklı, uyarılı). Yeşil: sizin yazdığınız ya da değiştirdiğiniz.
+   Onaylı tanım "OT" çipiyle, seçim kutuyla belli; ayrı renk yok. */
+const DG_LEJANT_KARAR = [["dg-l-renksiz", "Dil Modeli Önerisi"],
+                         ["dg-l-dikkat", "Boş"],
+                         ["dg-l-duzenlendi", "Düzenlendi"]];
 const DG_LEJANT_TEYIT = [["dg-l-bos", "Tanım Boş"], ["dg-l-llm", "Dil Modeli Önerisi"]];
 
 function tipKaydet(kolon, sec, tipEl, hataEl) {
@@ -6289,9 +6293,9 @@ function dogrulamaKartiEkle(alan, blok) {
         } else kDurumEl.hidden = true;
 
         const kUst = elYap("div", "dg-tablo-ust");
-        kUst.appendChild(dgLejant([["dg-l-bos", "Boş"], ["dg-l-llm", "Dil Modeli Önerisi"],
-                                   ["dg-l-eklendi", "Uygulandı"],
-                                   ["dg-l-eklenmedi", "Uygulanmadı"]]));
+        kUst.appendChild(dgLejant([["dg-l-renksiz", "Dil Modeli Önerisi"],
+                                   ["dg-l-dikkat", "Boş"],
+                                   ["dg-l-duzenlendi", "Düzenlendi"]]));
         kToplu = elYap("div", "dg-toplu");
         [[true, "Tümünü Uygula"], [false, "Tümünü Temizle"]].forEach(([deger, etiket]) => {
             const b = elYap("button", "dg-toplu-btn", etiket);
@@ -6808,7 +6812,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
     hataEl.hidden = true;
     kart.appendChild(hataEl);
     const ust = elYap("div", "dg-tablo-ust");
-    ust.appendChild(dgLejant([["dg-l-llm", "Önerilen"], ["dg-l-eklendi", "Kaydedildi / Düzenlendi"]]));
+    ust.appendChild(dgLejant([["dg-l-renksiz", "Önerilen"], ["dg-l-duzenlendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
     const satirlar = [];
     [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([d, e]) => {
@@ -6853,8 +6857,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
             tdI.appendChild(kutu); tr.appendChild(tdI);
             const vurgu = () => {
                 const m = g.value.trim();
-                tr.classList.toggle("dg-llm", !r.kayitli && m === String(r.oneri || "").trim());
-                tr.classList.toggle("dg-eklendi", !!r.kayitli || (!!m && m !== String(r.oneri || "").trim()));
+                tr.classList.toggle("dg-duzenlendi", !!m && m !== String(r.oneri || "").trim());
             };
             g.addEventListener("input", () => { vurgu(); if (g.value.trim()) kutu.checked = true; });
             vurgu();
@@ -6926,16 +6929,12 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const ust = elYap("div", "dg-tablo-ust");
     /* "Önerilen": temel sözlük, sözlükten çıkarım ya da dil modeli
        (kaynağı satırın Kaynak sütununda yazar). */
-    /* RENK = SÖZLÜK İLE DİL MODELİ AYNI MI (kullanıcı kararı): aynı
-       düşündükleri mavi, farklı düşündükleri kırmızı; karşılaştırma yoksa
-       (dil modeli bekliyor / emin değil / sözlükte yok) renksiz. Anlam'a
-       hangisinin yazıldığını ✓ gösterir. Boş sarı, onaylı mor, kullanıcının
-       yazdığı yeşil (akışın geri kalanıyla aynı). */
-    ust.appendChild(dgLejant([["dg-l-bos", "Anlam Boş"],
-                              ["dg-l-llm", "Sözlük ve Genel Aynı"],
-                              ["dg-l-farkli", "Sözlük ve Genel Farklı"],
-                              ["dg-l-hafiza", "Hafızada Onaylı"],
-                              ["dg-l-eklendi", "Düzenlendi"]]));
+    /* 01.2 SADE RENK: renksiz aynı / normal, sarı dikkat (anlam boş,
+       sözlük ve genel farklı, uyarılı), yeşil sizin düzenlediğiniz. Anlam'a
+       hangisinin yazıldığını ✓ gösterir; hafızada onaylı olan "Seç" işaretli. */
+    ust.appendChild(dgLejant([["dg-l-renksiz", "Sözlük ve Genel Aynı"],
+                              ["dg-l-dikkat", "Boş, Farklı ya da Uyarılı"],
+                              ["dg-l-duzenlendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
     kaydetBtn.type = "button";
@@ -7068,7 +7067,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 tr.classList.toggle("dg-hafiza-renk", tur === "hafiza");
                 tr.classList.toggle("dg-llm", tur === "ayni");
                 tr.classList.toggle("dg-farkli", tur === "farkli");
-                tr.classList.toggle("dg-eklendi", tur === "eklendi");
+                tr.classList.toggle("dg-duzenlendi", tur === "eklendi");
                 tdS.classList.toggle("secili", sozDen);
                 tdD.classList.toggle("secili", dmDen);
             };

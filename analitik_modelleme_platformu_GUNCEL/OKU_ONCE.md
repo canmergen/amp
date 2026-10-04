@@ -1,6 +1,20 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma durum bilgisi tablonun altında, bilgi kutusu olarak**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme)
+Bu tur: **01.2 kartlarında sade renk**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme)
+
+01.2 Veri ve Model Tanımları kartlarında (Sözlük Tanımları, Kısaltma
+Sözlüğü, Kolon Adı Önerileri, Sözlük Tanım Kontrolü) yalnız üç anlam:
+- renksiz: öneri / normal durum (dil modeli önerisi, onaylı tanım, sözlük
+  ve genel aynı)
+- sarı: dikkat gerektiren (boş, sözlük ve genel farklı, uyarılı, eksik)
+- yeşil: sizin yazdığınız / değiştirdiğiniz
+Kaldırılanlar: mavi, mor, kırmızı satır, camgöbeği bilgi kutusu (gri
+oldu), sarı/kırmızı/mor çipler (ince kenarlıklı, renksiz), yeşil Excel
+düğmesi (ikincil düğme gibi), yeşil kapsam çubuğu (tam iken siyah/beyaz).
+Karar sonrası seçilmeyen satır kırmızı yerine soluk. Lejantlar buna göre.
+Değişken Kontrolü ve sonraki adımlar değişmedi (CSS .dg-kart kapsamında).
+
+Önceki tur: **Kısaltma durum bilgisi tablonun altında, bilgi kutusu olarak**. Değiştir: `webapp/app.js`, `webapp/style.css` (yalnız sayfa yenileme)
 
 - "43 kısaltma; 0 tanesi hafızada onaylı. Dil modeli kontrolü sürüyor …"
   satırı tablonun altına, onay düğmesinin üstüne taşındı.
