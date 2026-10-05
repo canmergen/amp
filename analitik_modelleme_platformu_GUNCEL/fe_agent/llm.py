@@ -1352,29 +1352,59 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 # yalniz ornek tanimlara bakar ve kisaltmanin tanimlarda neyin kisaltmasi
 # oldugunu yazar. Karar adimi bu cevapla genel anlami karsilastirir.
 SISTEM_KISALTMA_SOZLUK = """Sen bir veri sozlugu okuyucususun. Kolon
-adlarinda gecen KISALTMALAR ve her birinin gectigi ornek kolon adlari ile
-kullanicinin sozlugundeki TANIMLARI verilecek. GENEL BILGINI KULLANMA;
-yalniz verilen tanimlara bak.
+adlarinda gecen KISALTMALAR ve her birinin gectigi ornek kolonlar
+verilecek. Her ornek icin: kolon adi, sozlukteki TANIM, adin DIGER
+parcalarinin anlamlari ve "kalan": tanimdan diger parcalarin karsiligi
+olan kelimeler cikarildiktan sonra kalan ifade.
 
-Her kisaltma icin: kolon adindaki parcalarin sirasini tanimdaki
-kelimelerle eslestir ve bu kisaltmanin harflerine KARSILIK GELEN ifadeyi
-bul. Tek bir ornege takilma; orneklerin ortak karsiligini TAM yaz:
-yalin halde, Turkce, 1-6 kelime; pencere ve sayi katma. Birkac kelimenin
-bitistirildigi kisaltmada her harf grubunu karsila. "onayli kisaltmalar"
-satirindaki kelimeler baska kisaltmalarindir, bu kisaltmaya yukleme.
-Tanimlardan cikmiyorsa "anlam" alanini BOS birak.
+YONTEM (ELEME): bir kolonun tanimi, adindaki parcalarin anlamlarinin
+birlesimidir. Diger parcalarin karsiligini tanimdan dusunce geriye kalan
+ifade BU kisaltmanin anlamidir. "kalan" otomatik cikarilmistir; eksik ya
+da fazla kelime kalmis olabilir, tanimin tamamina bakarak duzelt.
+Sayi + birim parcalari (orn. <N>D) zaman penceresidir ("son N gun");
+pencere ve sayi anlama katilmaz. Kisaltmanin harflerini kalan ifadeyle
+eslestir (birkac kelimenin bitistirildigi kalipta her harf grubu bir
+kelimeye karsilik gelir; yaygin Ingilizce acilimlar eslestirmeye yardim
+eder ama ANLAM TANIMDAN gelir). Orneklerin ortak karsiligini TAM ve
+anlasilir yaz: yalin halde, Turkce, 1-6 kelime. Tanimlardan cikmiyorsa
+"anlam" alanini BOS birak.
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "KISALTMA", "anlam": "..."}]}""" + SINIRLAYICI_KURALI
 
 
-def _sozluk_satiri(g):
+_KOK_HARF = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosuCGIOSU")
+
+
+def _kok5(kelime):
+    k = re.sub(r"[^\w]", "", str(kelime)).replace("I", "ı").replace("İ", "i").lower()
+    k = k.translate(_KOK_HARF)
+    return k[:5]
+
+
+def _kalan(tanim, diger_anlamlar):
+    """Tanimdan diger parcalarin anlamlarindaki kelimelerin (kok
+    eslesmesiyle) cikarilmis hali."""
+    kokler = {_kok5(w) for a in diger_anlamlar for w in str(a).split() if len(_kok5(w)) >= 3}
+    kalan = [w for w in str(tanim).split() if _kok5(w) not in kokler]
+    return " ".join(kalan)
+
+
+def _sozluk_satiri(g, anlamlar=None):
+    """Sozluk okumasi satiri: her ornekte diger parcalarin anlamlari ve
+    elemeden kalan ifade. anlamlar: {PARCA: anlam} (onayli + genel)."""
+    from fe_agent import kisaltma as _kisa
+    anlamlar = dict(anlamlar or {})
+    anlamlar.update(g.get("bilinen") or {})
     s = "- %s | %d kolonda geciyor" % (g["kisaltma"], int(g.get("kolon") or 0))
-    if g.get("bilinen"):
-        s += "\n    onayli kisaltmalar: " + ", ".join(
-            "%s=%s" % kv for kv in sorted(g["bilinen"].items()))
     for ad, t in (g.get("ornekler") or [])[:8]:
-        s += "\n    %s: %s" % (ad, str(t)[:180])
+        diger = [(p, anlamlar.get(p, "")) for p in dict.fromkeys(_kisa.parcalar(ad))
+                 if p != g["kisaltma"]]
+        s += "\n    kolon: %s\n      tanim: %s" % (ad, str(t)[:180])
+        if diger:
+            s += "\n      diger parcalar: " + ", ".join(
+                "%s=%s" % (p, a or "?") for p, a in diger)
+            s += "\n      kalan: %s" % _kalan(t, [a for _p, a in diger if a])[:180]
     return s
 
 
@@ -1550,23 +1580,18 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
     def parca_(blok):
         """Bir parca: (sonuc, cevap_geldi_mi)."""
         sonuc_ = {}
-        # 1) KOR (yalniz kolon adlari) ve SOZLUK OKUMASI (yalniz tanimlar)
-        # ayni anda.
-        with futures.ThreadPoolExecutor(max_workers=2) as havuz_:
-            f_kor = havuz_.submit(
-                ork.json_cagir, ork.modeller("kisaltma_genel"), SISTEM_KISALTMA_KOR,
-                _veri_blogu("KISALTMALAR:", "\n".join(_kor_satiri(g) for g in blok)),
-                0.1, (), KISALTMA_ZAMAN_ASIMI)
-            f_soz = havuz_.submit(
-                ork.json_cagir, ork.modeller("kisaltma_sozluk"), SISTEM_KISALTMA_SOZLUK,
-                _veri_blogu("KISALTMALAR:", "\n".join(_sozluk_satiri(g) for g in blok)),
-                0.1, (), KISALTMA_ZAMAN_ASIMI)
-            mk, vk = f_kor.result()
-            ms, vs = f_soz.result()
-        kor = _kor_oku(vk, blok) if mk else {}
+        # 1) Genel anlamlar ONCEDEN alindi (asagida, butun parcalar icin).
+        # SOZLUK OKUMASI eleme yontemiyle: diger parcalarin anlamlari
+        # (onayli, yoksa genel) tanimdan cikarilir, kalan bu kisaltmanindir.
+        kor = {g["kisaltma"]: genel_[g["kisaltma"]] for g in blok if g["kisaltma"] in genel_}
+        # Genel anlami bos olan parcada sozluk kelime sayimi kullanilir.
+        eleme = {g_["kisaltma"]: g_["anlam"] for g_ in girdi if g_.get("anlam")}
+        eleme.update({k_: v_ for k_, v_ in genel_.items() if v_})
+        ms, vs = ork.json_cagir(
+            ork.modeller("kisaltma_sozluk"), SISTEM_KISALTMA_SOZLUK,
+            _veri_blogu("KISALTMALAR:", "\n".join(_sozluk_satiri(g, eleme) for g in blok)),
+            0.1, (), KISALTMA_ZAMAN_ASIMI)
         soz = _kor_oku(vs, blok) if ms else {}
-        for k_, v_ in kor.items():
-            genel_[k_] = v_
         for k_, v_ in soz.items():
             sozluk_[k_] = v_
         blok = [dict(g, **({"genel": kor[g["kisaltma"]]} if g["kisaltma"] in kor else {}),
@@ -1670,6 +1695,18 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
         return cikti_
 
     # PARCA BITTIKCE: her parcanin sonucu ara() ile hemen birakilir.
+    # ONCE butun parcalarin genel anlami (sozluk okumasindaki eleme diger
+    # parcalarin anlamina dayanir; parcalar farkli bloklarda olabilir).
+    def kor_(blok):
+        mk_, vk_ = ork.json_cagir(ork.modeller("kisaltma_genel"), SISTEM_KISALTMA_KOR,
+                                  _veri_blogu("KISALTMALAR:", "\n".join(_kor_satiri(g) for g in blok)),
+                                  0.1, (), KISALTMA_ZAMAN_ASIMI)
+        return _kor_oku(vk_, blok) if mk_ else {}
+    for f in futures.as_completed([_KISALTMA_HAVUZ.submit(kor_, b) for b in bloklar]):
+        try:
+            genel_.update(f.result())
+        except Exception:
+            pass
     isler = {_KISALTMA_HAVUZ.submit(parca_, b): b for b in bloklar}
     for f in futures.as_completed(isler):
         blok = isler[f]

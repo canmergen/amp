@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kodda veri örneği kalmadı**. Değiştir: `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı; yalnız yorum)
+Bu tur: **LLM Sözlük eleme ile okuyor**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Önce bütün kısaltmaların genel anlamı alınır. Sonra her örnek kolon
+  için tanımdan, adın diğer parçalarının anlamları düşülür; geriye
+  kalan ifade ("kalan") modele bu kısaltmanın adayı olarak verilir.
+  Model anlamı kalan ifadeden ve tanımdan kendisi çıkarır.
+- Genel anlamı boş olan parçada sözlük kelime sayımından gelen aday
+  kullanılır. Hiçbiri yoksa parça "?" görünür ve tanımdan düşülmez.
+
+Önceki tur: **Kodda veri örneği kalmadı**. Değiştir: `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı; yalnız yorum)
 
 - Türkçe ek atma kurallarının yorumlarındaki, veriden gelen örnek
   kelimeler genel örnek ve yer tutucularla değiştirildi. Kodda hiçbir
