@@ -103,7 +103,7 @@ SONRAKI_FAZLAR = [
 ]
 
 # Faz 01'in ozeti moddan bagimsiz: karsilama kartiyla ayni tanim
-FAZ01_OZET = "Veri, hedef ve modelleme çerçevesinin hazırlanması"
+FAZ01_OZET = "Veri seti, sözlük, kolon rolleri ve örneklem tasarımı"
 
 # ===========================================================================
 # ADIM ADLARI - TEK KAYNAK
@@ -114,11 +114,13 @@ FAZ01_OZET = "Veri, hedef ve modelleme çerçevesinin hazırlanması"
 # karari: is akisi ve sohbet ayni ifadeleri kullanmali).
 ADIM_ADI = {
     "mod":    "Başlangıç Seçimi",
-    "teyit":  "Değişken Kontrolü",
+    "teyit":  "Değişken Listesi ve Tip Kontrolü",
+    "tanimlar": "Kolon Rolleri",
+    "sozluk_tanim": "Eksik Sözlük Tanımları",
     "bolme":  "Örneklem ve Doğrulama Tasarımı",
 }
-# Gruplu blogun ortak basligi: kurulum + modelleme tanimlari (+ sozluk).
-GRUP_ADI_VERI_SOZLUK = "Veri, Sözlük ve Model Tanımları"
+# Gruplu blogun ortak basligi: kurulum + kolon rolleri + sozluk adimlari.
+GRUP_ADI_VERI_SOZLUK = "Veri Seti, Sözlük ve Kolon Rolleri"
 
 # norm (kucuk harf, Turkce karaktersiz) uzerinde calisir.
 # "onceki adim\w*": akisin kendi onerdigi "önceki adıma dön" cumlesi

@@ -1623,7 +1623,7 @@ alt adim basligi bir kademe asagida. */
    başlığından bir kademe SESSİZ: hiyerarşi görünsün, iki kırmızı
    başlık yan yana gelmesin. */
 /* ---- HER ALT BÖLÜM KENDİ KUTUSUNDA ----
-   "veri seti ve değişken sözlüğü dışına bir kutu, modelleme tanımları
+   "veri seti ve değişken sözlüğü dışına bir kutu, kolon rolleri
    dışına kutu, sözlük tanımları dışına kutu; üçünün toplamında da en
    dışarda veri seti ve sözlük kutusu."
 
@@ -3029,7 +3029,7 @@ span.bolme-cip { cursor: default; }
 }
 .dg-tablo-ust .dg-lejant { margin: 0; }
 
-/* SÜREÇ DIŞI SATIR (Değişken Kontrolü): üstü çizili ve soluk; alanlar
+/* SÜREÇ DIŞI SATIR (Değişken Listesi ve Tip Kontrolü): üstü çizili ve soluk; alanlar
    kilitli. Öneri renkleri bu satırda gösterilmez. Kutu hücresi çizilmez:
    kilitli olmayan satırda işaret oradan kaldırılır. */
 .dg-tablo tr.dg-disi > td { background: var(--yuzey-alt) !important; }
@@ -3315,14 +3315,14 @@ span.bolme-cip { cursor: default; }
 
 /* ==================== 01.2 RENK ====================
    renkler kalsın ama az olsun ("renk cümbüşü" de
-   "hiç renk yok" da kötü). 01.2 Veri, Sözlük ve Model Tanımları kartlarında
+   "hiç renk yok" da kötü). 01.2 Veri Seti, Sözlük ve Kolon Rolleri kartlarında
    (.dg-kart) dört anlam:
      mavi : dil modelinin önerisi (dokunulmamış)
      mor  : hafızada onaylı (daha önce onaylanmış)
      sarı : dikkat gerektiren (boş, farklı, öneri var, uyarılı)
      yeşil: sizin yazdığınız / değiştirdiğiniz
    Karar sonrası seçilmeyen satır solar (kırmızı yok). Kırmızı yalnız
-   birincil düğme ve hata metninde. Değişken Kontrolü ve sonrası bu
+   birincil düğme ve hata metninde. Değişken Listesi ve Tip Kontrolü ve sonrası bu
    bloktan etkilenmez. */
 .dg-kart .dg-tablo tr.dg-llm > td { background: var(--dg-llm); }
 .dg-kart .dg-tablo tr.dg-hafiza-renk > td { background: var(--dg-hafiza); }

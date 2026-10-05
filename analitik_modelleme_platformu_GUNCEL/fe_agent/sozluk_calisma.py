@@ -386,7 +386,7 @@ def veri_setiyle_esitle(tablo, kolonlar):
       - Ayni kolon icin birden fazla satir varsa tek satir kalir
         (aciklamasi dolu olan tercih edilir).
       - Veri setinde olup sozlukte olmayan kolon, aciklamasi BOS bir satir
-        olarak eklenir; "Sözlük Tanımları" adiminda tanimsiz listelenir.
+        olarak eklenir; "Eksik Sözlük Tanımları" adiminda tanimsiz listelenir.
       - Satirlar veri setinin kolon sirasina dizilir.
     Doner: (yeni_tablo, {"dusen", "eklenen", "duzeltilen", "cift"})."""
     tablo, tanim_kolon = _tanim_kolonu_garanti(tablo.reset_index(drop=True))

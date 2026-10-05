@@ -516,7 +516,7 @@ def modelleme_kaynagi(durum):
             raise AdimHatasi(
                 "Bu çalışmanın AMP_VERISETI'si eski ortak veri setinde duruyor "
                 "ve başka bir çalışma tarafından değiştirilmiş. «Değişken "
-                "Kontrolü» adımına dönüp kaydedin; AMP_VERISETI bu çalışmanın "
+                "Listesi ve Tip Kontrolü» adımına dönüp kaydedin; AMP_VERISETI bu çalışmanın "
                 "kendi klasörüne yeniden yazılır.")
         return str(amp), True
     return durum.get("veri_seti"), False
@@ -2062,7 +2062,7 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
         raise AdimHatasi(
             "Bölmeyi kalıcı hale getiremedim: kimlik kolonu yok ve bölme "
             "etiketleri ne veri setine ne de çalışma klasörüne yazılabildi. "
-            "Modelleme tanımlarında bir kimlik kolonu belirtirseniz bölme "
+            "Kolon Rolleri adımında bir kimlik kolonu belirtirseniz bölme "
             "kimlik üzerinden sabitlenebilir.")
 
     # _SPLIT bir degisken degildir; degisken havuzunun disinda kalmali.
@@ -2669,8 +2669,8 @@ BOLME_SATIR_BILGI = {
         + OOS2_ACIKLAMA),
     "donem_kolon": (
         "Kayıtların hangi döneme (ay, çeyrek…) ait olduğunu söyleyen "
-        "kolon. Zamansal bölme bu kolona göre yapılır. «Modelleme "
-        "Tanımları» adımında seçildi; burada değiştirilmez."),
+        "kolon. Zamansal bölme bu kolona göre yapılır. «Kolon "
+        "Rolleri» adımında seçildi; burada değiştirilmez."),
     "test_donem": (
         "Hangi dönemlerin Validasyon (OOT) olacağı. «Son 1 dönem» seçilirse en "
         "yeni dönem Validasyon (OOT), öncekilerin tamamı eğitim olur. Daha "
@@ -2730,7 +2730,7 @@ BOLME_SATIR_BILGI = {
         "önerilir."),
     "bolme_kolon": (
         "Kimlik bazlı bölmede bir arada tutulacak kayıtları tanımlayan "
-        "kolon (müşteri numarası gibi). «Modelleme Tanımları» adımında "
+        "kolon (müşteri numarası gibi). «Kolon Rolleri» adımında "
         "seçildi; burada değiştirilmez."),
     "segment_katmanla": (
         "Hedef dağılımı korunurken segmentler de ayrıca korunsun mu.\n\n"

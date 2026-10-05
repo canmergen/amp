@@ -1654,7 +1654,7 @@ def _adim_gorunen_adi(anahtar):
 
 def _faz_konumu(mod, anahtar):
     """Adimin FAZ ICINDEKI yeri, sol paneldeki sayimla ayni: gruplu adimlar
-    (Veri, Sözlük ve Model Tanımları gibi) tek adim sayilir. 18 butun fazlarin toplami, ekranda hic
+    (Veri Seti, Sözlük ve Kolon Rolleri gibi) tek adim sayilir. 18 butun fazlarin toplami, ekranda hic
     gorunmeyen bir sayi. Doner: {faz_no, faz_baslik, faz_adim_no,
     faz_toplam} ya da {}."""
     try:
@@ -2620,8 +2620,8 @@ def degisken_excel_endpoint():
         durum = _durum_al(anahtar)
         if not akis.teyit_kaydedildi_mi(durum):
             return Response(
-                "Değişken listesi henüz kaydedilmedi. Sohbetteki Sözlük "
-                "Teyidi adımında listeyi kaydettikten sonra indirebilirsiniz.",
+                "Değişken listesi henüz kaydedilmedi. Sohbetteki Değişken "
+                "Listesi ve Tip Kontrolü adımında listeyi kaydettikten sonra indirebilirsiniz.",
                 status=409, mimetype="text/plain; charset=utf-8")
         veri = akis.teyit_excel(durum, genis=genis)
     except Exception as e:

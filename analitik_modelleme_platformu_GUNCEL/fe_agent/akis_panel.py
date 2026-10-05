@@ -901,7 +901,7 @@ def _kayit_yeri(durum, anahtar):
     Kullanici "sonradan da cekebileyim" dedi; adin ne oldugunu bilmek
     yetmiyor, akistaki veri setine mi yoksa PROJE_HAFIZASI icindeki
     klasore mi yazildigi da lazim. Teyit kaydedilmeden once bos kalir
-    ve kart "«Değişken Kontrolü» adımından sonra dolar" notunu gosterir."""
+    ve kart "«Değişken Listesi ve Tip Kontrolü» adımından sonra dolar" notunu gosterir."""
     from fe_agent import akis_faz01
     kayit = ((durum or {}).get("amp_cikti") or {}).get(anahtar)
     return akis_faz01.amp_nerede(kayit)
@@ -1151,7 +1151,7 @@ def _duzenleme_notu(durum, kopya_mi):
         return ""
     if not sozluk_calisma.sozluk_adi(durum):
         return ("Sözlük henüz bağlanmadı; tanımlar salt okunur. "
-                "«Veri, Sözlük ve Model Tanımları» adımında bir sözlük seçin.")
+                "«Veri Seti, Sözlük ve Kolon Rolleri» adımında bir sözlük seçin.")
     return ("Sözlük çalışma kopyası oluşturulamadı (proje hafızasına "
             "yazılamıyor); tanımlar salt okunur. Orijinal sözlüğe "
             "hiçbir koşulda yazılmaz.")

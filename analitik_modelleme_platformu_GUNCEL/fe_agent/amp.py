@@ -162,7 +162,7 @@ def amp_bolme_yaz(durum, bolme):
     kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
     if not (kayit.get("dosya") or kayit.get("dataset")):
         raise AdimHatasi("AMP_VERISETI henüz oluşturulmadı; önce «Değişken "
-                         "Kontrolü» adımını kaydedin.")
+                         "Listesi ve Tip Kontrolü» adımını kaydedin.")
     istek = {"donusum": {}, "dusen": [],
              "hedef": (durum.get("meta") or {}).get("target"), "bolme": bolme,
              # Segment kolonu: set x segment sayimi (01.4 segment tablosu)

@@ -594,7 +594,7 @@ function fazlariYukle(liste) {
 }
 
 /* GRUPLU ADIMLAR SOL PANELDE TEK SATIR. "Veri Seti ve
-   Değişken Sözlüğü", "Modelleme Tanımları" ve "Sözlük Tanımları" sohbette
+   Değişken Sözlüğü", "Kolon Rolleri" ve "Eksik Sözlük Tanımları" sohbette
    zaten TEK blok. Satır grubun adını taşır. Adım listesinin kendisi (FAZLAR)
    DOKUNULMADAN kalır: geri dönüş, transkript kırpma ve blok eşleme hep
    tam listeye bakıyor. */
@@ -742,8 +742,8 @@ function fazlariCiz() {
         const liste = document.createElement("ol");
         liste.className = "faz-adimlar";
         liste.id = "faz-adimlar-" + fi;
-        /* GRUP SATIRININ ALT ADIMLARI. Grup satırı (01.2 Veri ve Model
-           Tanımları) kalır; altında her adım kendi numarasıyla (01.2.1,
+        /* GRUP SATIRININ ALT ADIMLARI. Grup satırı (01.2 Veri Seti, Sözlük ve Kolon
+           Rolleri) kalır; altında her adım kendi numarasıyla (01.2.1,
            01.2.2 ...) aynı kurallarla — tamamlandı / aktif / tıklanabilir
            — listelenir. */
         const satirKur = (a) => {
@@ -4627,7 +4627,7 @@ function transkriptiKirp(adim) {
     if (hedef === undefined) return false;
 
     /* GRUPLU BLOKTA KIRPMA ALT BÖLÜM DÜZEYİNDE. Üç adım tek blokta
-       duruyor; "Modelleme Tanımları"na dönünce o bloğun tamamını silmek
+       duruyor; "Kolon Rolleri"na dönünce o bloğun tamamını silmek
        "Veri Seti ve Değişken Sözlüğü" seçimini de ekrandan kaldırırdı.
        Önce hedefin kendisi ve sonrası olan alt bölümler silinir; blokta
        hiç alt bölüm kalmazsa satırın tamamı aşağıdaki döngüde gider. */
@@ -4751,11 +4751,11 @@ function balonIcerikYap(rol, metin, hataMi) {
    Başlık ve Geri Dön kabın kendisinde durur, içine giren kartlarda
    değil (bkz. style.css: .adim-blok > .secim-kart çerçevesizdir). */
 /* ---- GRUPLU BLOK ----
-   Ardışık adımlar (veri seti seçimi → modelleme tanımları → sözlük
+   Ardışık adımlar (veri seti seçimi → kolon rolleri → sözlük
    tanımları) sohbette TEK blok olarak görünür. Blok başlığı GRUP adını
    ("Veri ve Sözlük") taşır; her adım bloğun içinde kendi ALT BAŞLIĞINI
    ve kendi "Geri Dön" düğmesini taşır. Sol paneldeki iş akışında
-   adımlar AYRI kalır, yani yalnızca modelleme tanımlarına dönmek
+   adımlar AYRI kalır, yani yalnızca Kolon Rolleri adımına dönmek
    mümkün. Gruplama GÖRSELDİR: adım sırası ve geri dönüş hedefi
    değişmez. */
 function grupKabiAl(blok) {
@@ -4883,8 +4883,8 @@ const BLOK_TAMAM_METNI = {
     veri_sec: "Baz Veri Seti Seçildi",
     sozluk_uret: "Baz Sözlük Oluşturuldu",
     kurulum: "Girdiler Onaylandı",
-    tanimlar: "Modelleme Tanımları Onaylandı",
-    sozluk_tanim: "Sözlük Tanımları Kaydedildi",
+    tanimlar: "Kolon Rolleri Onaylandı",
+    sozluk_tanim: "Eksik Sözlük Tanımları Kaydedildi",
     veri_icerik: "Veri Seti ve Sözlük İçeriği Onaylandı",
     kisaltma: "Kısaltmalar Onaylandı",
     birlesik: "Birleştirmeler Belirlendi",
@@ -6753,9 +6753,9 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
         const kayitli = (liste || []).filter(r => r.kayitli).length;
         durumEl.textContent = adimda
             ? ftBinlik((liste || []).length) + " kolon için ad önerisi. Uygula işaretli adlar "
-              + "Değişken Kontrolü kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır."
+              + "Değişken Listesi ve Tip Kontrolü kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır."
             : ftBinlik((liste || []).length) + " kolon için ad önerisi; "
-              + ftBinlik(kayitli) + " tanesi kaydedildi. Kaydedilen adlar Değişken Kontrolü "
+              + ftBinlik(kayitli) + " tanesi kaydedildi. Kaydedilen adlar Değişken Listesi ve Tip Kontrolü "
               + "kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır.";
     }
     ciz(ka.satirlar);
@@ -7801,7 +7801,7 @@ function bolmeSatirCiz(sat, al, pasif) {
     const govde = elYap("div", "bolme-satir-govde");
     if (!(sat.alanlar || []).length) {
         /* Veriden gelen, bu adımda seçilemeyen değer: Dönem Kolonu,
-           Bölme Kolonu. Modelleme Tanımları adımında belirlendi. */
+           Bölme Kolonu. Kolon Rolleri adımında belirlendi. */
         const kutu = elYap("div", "bolme-cipler");
         kutu.appendChild(elYap("span", "bolme-cip salt", sat.salt || sat.oneri || "-"));
         govde.appendChild(kutu);
@@ -8652,7 +8652,7 @@ function teyitKartiEkle(alan, blok) {
             kutu.className = "dg-ekle";
             kutu.checked = !!sat.disi;
             kutu.setAttribute("aria-label", ad + " süreç dışı bırakılsın");
-            /* HEDEF / KİMLİK / DÖNEM KİLİTLİ: modelleme tanımlarında
+            /* HEDEF / KİMLİK / DÖNEM KİLİTLİ: Kolon Rolleri adımında
                seçildiler; süreç dışı bırakılmaları modeli hedefsiz ya da
                bölmeyi kimliksiz bırakırdı. Kutu gizlenmiyor, KİLİTLİ
                gösteriliyor ve sebebi ipucunda yazıyor - "neden
@@ -8968,7 +8968,7 @@ function secimAlaniEkle(alan, blok) {
     const bas = document.createElement("div");
     bas.className = "secim-baslik";
     /* GRUPLU BLOKTA KART BASLIGI YOK: adımın adı zaten bloğun ALT
-       BAŞLIĞINDA yazıyor ("Modelleme Tanımları"). Satır DURUYOR: sağındaki
+       BAŞLIĞINDA yazıyor ("Kolon Rolleri"). Satır DURUYOR: sağındaki
        "✓ Girdiler Onaylandı" göstergesi ona yaslı. */
     bas.textContent = kartBasligiGerekli(alan, blok) ? tireSade(alan.baslik) : "";
     basSatir.appendChild(bas);
@@ -9943,7 +9943,7 @@ function calismaAltSatiri(c) {
     const zaman = tarihBicim(c.zaman);
     if (zaman) parca.push(zaman);
     /* ADIM NUMARASI (sol paneldeki gibi): "01 Çalışma Kurulumu · 01.3
-       Değişken Kontrolü".
+       Değişken Listesi ve Tip Kontrolü".
 */
     if (c.adim && c.faz_no) {
         parca.push(c.faz_no + " " + tireSade(c.faz_baslik || "")

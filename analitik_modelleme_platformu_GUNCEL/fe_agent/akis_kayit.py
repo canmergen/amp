@@ -101,7 +101,7 @@ ADIMLAR = {
         "uygula": kaynak_sozluk_uygula},
 
     "sozluk_tanim": {
-        "baslik": "Sözlük Tanımları",
+        "baslik": ADIM_ADI["sozluk_tanim"],
         "aciklama": "Sözlükte tanımı bulunmayan kolonlar için açıklama "
                     "yazılır ya da kolonlar süreç dışına alınır. Hedef, "
                     "kimlik ve dönem kolonunun tanımı zorunludur.",
@@ -156,7 +156,7 @@ ADIMLAR = {
         "uygula": tanim_kontrol_uygula},
 
     "tanimlar": {
-        "baslik": "Modelleme Tanımları",
+        "baslik": ADIM_ADI["tanimlar"],
         "aciklama": "Hedef değişken, kimlik kolonu ve dönem kolonu "
                     "belirlenir; hedefin tipi ve dağılımı çıkarılır.",
         # plan=None: FORMUN KENDISI ONAYDIR. Ayri bir "Doğru mu?" ozeti

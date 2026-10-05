@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **AMP_VERISETI ile AMP_SOZLUK birebir aynı kolonlar**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Adım adları yaptıkları işe göre**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/amp.py`, `fe_agent/sozluk_calisma.py`, `webapp/app.js`, `webapp/backend.py`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- 01 Çalışma Kurulumu alt yazısı: "Veri seti, sözlük, kolon rolleri ve
+  örneklem tasarımı".
+- 01.2 grup adı: "Veri Seti, Sözlük ve Kolon Rolleri".
+- 01.2.2 "Kolon Rolleri" (hedef, kimlik, dönem, segment); düğme "Kolon
+  Rollerini Onayla".
+- 01.2.3 "Eksik Sözlük Tanımları".
+- 01.3 "Değişken Listesi ve Tip Kontrolü".
+- Adlar tek kaynaktan (akis_metin.ADIM_ADI) okunur; ipuçları, uyarılar ve
+  rozetler yeni adları kullanır.
+
+Önceki tur: **AMP_VERISETI ile AMP_SOZLUK birebir aynı kolonlar**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - AMP_SOZLUK yalnız AMP_VERISETI'ndeki kolonları, aynı ad ve sırayla,
   açıklamalarıyla içerir. AMP_VERISETI'ne yazılmayan süreç dışı kolonlar

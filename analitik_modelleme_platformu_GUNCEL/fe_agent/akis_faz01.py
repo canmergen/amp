@@ -789,7 +789,7 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
         "baslik": "Baz Veri Seti ve Baz Sözlük",
         "aciklama": "Modellemeye girecek baz veri setini seçin. Sözlüğünüz "
                     "varsa onu da seçin; yoksa alanı boş bırakın, kolon "
-                    "tanımları Sözlük Tanımları adımında oluşturulur.",
+                    "tanımları Eksik Sözlük Tanımları adımında oluşturulur.",
         # Dugme etiketi SONRAKI EKRANIN adini soylemeli: bu form
         # gonderildiginde "Girdi doğrulama tamamlandı" karti aciliyor.
         #  Oysa
@@ -944,8 +944,8 @@ def _kaynak_sozluk_formu(durum, secili=None):
         "aciklama": "Sözlüğü olan kaynak tabloların sözlüğünü seçin; olmayanları "
                     "boş bırakın. Aynı sözlük birden fazla tablo için "
                     "seçilebilir. Baz sözlük birleştirmeden sonra seçilen "
-                    "sözlüklerden kurulur; tanımı olmayan kolonlar Sözlük "
-                    "Tanımları adımında tanımlanır.",
+                    "sözlüklerden kurulur; tanımı olmayan kolonlar Eksik "
+                    "Sözlük Tanımları adımında tanımlanır.",
         "bos_deger": "-",
         "buton": "Sözlükleri Onayla",
         "alanlar": alanlar,
@@ -1003,7 +1003,7 @@ def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
 def kaynak_sozluk_uygula(durum):
     adlar = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
     if not adlar:
-        return ("Kaynak sözlük seçilmedi; kolon tanımları Sözlük Tanımları "
+        return ("Kaynak sözlük seçilmedi; kolon tanımları Eksik Sözlük Tanımları "
                 "adımında oluşturulacak.")
     return "Kaynak sözlükleri kaydedildi: %s" % ", ".join(adlar)
 
@@ -1062,7 +1062,7 @@ def kaynak_sozlugunden_kur(durum, baz, kutuk):
     Her kolon icin kutuk "hangi tablonun hangi kolonundan, hangi
     fonksiyon ve pencereyle" geldigini soyluyor; tanim o tablonun
     sozlugunden okunuyor. Kaynakta tanimi olmayan kolon sozluge
-    YAZILMAZ: "Sözlük Tanımları" adiminda tanimsiz olarak listelenir.
+    YAZILMAZ: "Eksik Sözlük Tanımları" adiminda tanimsiz olarak listelenir.
     Doner: (tablo_df, ozet_sozlugu)."""
     esleme = durum.get("kaynak_sozlukler") or {}
     haritalar, okunamayan = {}, []
@@ -1128,7 +1128,7 @@ def _mod_b_sozlugu(durum, baz, kutuk):
              % (_sayi(oz["toplam"]), _sayi(oz["tanimli"]),
                 _sayi(oz["turetilen"]), _nerede(None, yedek)))
     if tanimsiz:
-        metin += ("\n  Kaynağında tanımı olmayan %s kolon «Sözlük "
+        metin += ("\n  Kaynağında tanımı olmayan %s kolon «Eksik Sözlük "
                   "Tanımları» adımında listelenecek." % _sayi(tanimsiz))
     if oz["okunamayan"]:
         metin += "\n\n%s" % _liste("Okunamayan sözlükler:", oz["okunamayan"], 6)
@@ -1656,7 +1656,7 @@ KOLON_AD_BILGI = (
     "ekler; "
     "değiştirebilirsiniz.\n\n"
     "Uygulanan adlar YALNIZ platformun kopyalarında geçerli olur: "
-    "AMP_VERISETI ve AMP_SOZLUK (Değişken Kontrolü kaydedilince). Girdi veri "
+    "AMP_VERISETI ve AMP_SOZLUK (Değişken Listesi ve Tip Kontrolü kaydedilince). Girdi veri "
     "setiniz ve sözlüğünüz değişmez; eski ad -> yeni ad eşlemesi çalışma "
     "klasörüne KOLON_AD_ESLEME olarak yazılır. Hedef, kimlik, dönem ve "
     "segment kolonları yeniden adlandırılmaz.")
@@ -2490,7 +2490,7 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
     alan = {
         "tip": "dogrulama",
         # Kart artik kendi adimi
-        # olan "Sözlük Tanımları" blogunun icinde duruyor ve alt baslik
+        # olan "Eksik Sözlük Tanımları" blogunun icinde duruyor ve alt baslik
         # zaten o adin kendisi; kart ayrica "Girdi doğrulama tamamlandı"
         # diye ikinci bir baslik tasirsa ayni sey iki kere yaziliyor.
         "baslik": "",
@@ -3048,7 +3048,7 @@ def veri_icerik_ozeti(durum):
     ozet.append({"etiket": "Analiz Dışı Kolon", "deger": _sayi(len(haric)),
                  "alt": alt, "bilgi": _ad_listesi(haric)})
     ozet.append({"etiket": "Sözlüğe Eklenen Tanım", "deger": _sayi(len(eklenen)),
-                 "alt": ["Sözlük Tanımları adımında yazılan açıklamalar"],
+                 "alt": ["Eksik Sözlük Tanımları adımında yazılan açıklamalar"],
                  "bilgi": _ad_listesi(eklenen)})
     e = durum.get("_sozluk_esitleme")
     if isinstance(e, dict):
@@ -3439,7 +3439,7 @@ def _tanimlar_formu(durum, meta=None):
 
     durum["_secim_alani"] = {
         "tip": "form",
-        "baslik": "Modelleme Tanımları",
+        "baslik": ADIM_ADI["tanimlar"],
         # ACIKLAMA ADIMIN METNINI DE TASIR.
         #
         "aciklama": "Hedef değişkeni ve kimlik kolonunu seçin. Dönem ve "
@@ -3448,7 +3448,7 @@ def _tanimlar_formu(durum, meta=None):
                     "seçilirse sonuçlar segment bazında da gösterilir.",
         # Kartta uc acilir liste duruyor. Yazarak girme yolu DURUYOR (bkz. TANIM_KALIP), yalniz
         # reklami yapilmiyor.
-        "buton": "Tanımları Onayla",
+        "buton": "Kolon Rollerini Onayla",
         "kolonlar": kolonlar,
         # ALAN BAZLI LISTE. "secenekler" varsa on yuz o alanda YALNIZCA
         # onu gosterir; yoksa ortak "kolonlar" listesine duser (eski
@@ -3622,7 +3622,7 @@ def tanimlar_uygula(durum):
 
     NEDEN BURADA, PLANDA DEGIL: bu adimin ayri bir "plan" asamasi YOK.
     Form doldurulup onaylandiginda karar verilmis oluyor; ustune bir de
-    "Modelleme tanımları: ...
+    "Kolon rolleri: ...
 
     METIN DONDURMEZ — yalnizca DIKKAT EDILMESI GEREKEN bir sey varsa
     yazar. Sonraki adimin (bolme) dayandigi `_donemler` burada
@@ -4158,10 +4158,10 @@ def platform_disi_kolonlar(durum):
     return disi
 
 TIP_KILIT_SEBEBI = {
-    "target": "hedef değişken - tipi modelleme tanımlarında belirlendi",
-    "id": "kimlik kolonu - tipi modelleme tanımlarında belirlendi",
+    "target": "hedef değişken - tipi Kolon Rolleri adımında belirlendi",
+    "id": "kimlik kolonu - tipi Kolon Rolleri adımında belirlendi",
     "donem": "dönem kolonu - yalnızca tarihe çevrilebilir",
-    "segment": "segment kolonu - tipi modelleme tanımlarında belirlendi",
+    "segment": "segment kolonu - tipi Kolon Rolleri adımında belirlendi",
 }
 
 
