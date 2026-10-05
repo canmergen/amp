@@ -1434,11 +1434,9 @@ def _kisaltma_kaynagi(durum):
 KISALTMA_BASLIK = "Kısaltma Sözlüğü"
 # Kartta basligin altinda.
 KISALTMA_ACIKLAMA = (
-    "Kolon adlarındaki her kısaltmanın ne anlama geldiği belirlenir. Dil "
-    "modeli her kısaltmayı bir kez sözlükteki açıklamalara bakarak, bir kez "
-    "de sözlüğe bakmadan yorumlar ve ikisini karşılaştırarak kararını verir. "
-    "Kararları onaylayın ya da düzeltin; onaylanan anlamlar sonraki "
-    "adımlarda kolon adı önerileri ve tanım kontrolünde kullanılır.")
+    "Kolon adlarındaki kısaltmaların anlamını dil modeli önerir; siz "
+    "onaylar ya da düzeltirsiniz. Onaylanan anlamlar sonraki adımlarda "
+    "kullanılır.")
 # Sutunlarin aciklamasi basliktaki i'de.
 KISALTMA_SUTUNLAR = (
     "LLM Sözlük: dil modelinin sözlükteki açıklamalardan okuduğu anlam.\n\n"
@@ -1470,12 +1468,17 @@ def _kisaltma_alani(durum, bekle=0.0):
     kaynak = _kisaltma_kaynagi(durum)
     satirlar, dm = kisaltma_mod.kart_satirlari(kaynak, bekle, durum.get("veri_seti") or "")
     notu = {"hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
+    ilerleme = None
     if dm == "calisiyor":
         # PARCA BITTIKCE: biten kisaltmalar duzenlenebilir, bekleyenler kilitli.
         bekleyen = sum(1 for r_ in satirlar if r_.get("bekliyor"))
-        notu = ("Dil modeli kontrolü sürüyor: %d / %d kısaltmanın sonucu geldi. "
-                "Sonucu gelen satırları düzenleyebilirsiniz; kilitli satırlar "
-                "sonuç gelince açılır." % (len(satirlar) - bekleyen, len(satirlar)))
+        try:
+            gecen = kisaltma_mod.dogrulama_bilgisi(
+                kaynak, durum.get("veri_seti") or "").get("gecen")
+        except Exception:
+            gecen = None
+        ilerleme = {"biten": len(satirlar) - bekleyen, "toplam": len(satirlar),
+                    "gecen": gecen or 0}
     if dm == "hata":
         try:
             sebep = kisaltma_mod.dogrulama_bilgisi(_kisaltma_kaynagi(durum),
@@ -1486,7 +1489,7 @@ def _kisaltma_alani(durum, bekle=0.0):
             pass
     return {"baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
             "sutunlar": KISALTMA_SUTUNLAR,
-            "satirlar": satirlar, "not": notu, "dm": dm}
+            "satirlar": satirlar, "not": notu, "dm": dm, "ilerleme": ilerleme}
 
 
 # ---------------------------------------------------------------------------

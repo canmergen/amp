@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Adım adları yaptıkları işe göre**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/amp.py`, `fe_agent/sozluk_calisma.py`, `webapp/app.js`, `webapp/backend.py`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü: sade açıklama ve sayaçlı ilerleme satırı**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Başlığın altındaki açıklama iki kısa cümle.
+- "N kısaltma; M tanesi onaylı tanım. Dil modeli kontrolü sürüyor…"
+  kutusu kalktı. Dil modeli çalışırken tablonun altında veri seti
+  yüklenirken çıkan satırla aynı biçimde tek satır görünür: "Dil Modeli
+  Çalışıyor · biten / toplam Kısaltma · süre". Süre kontrolün sunucuda
+  başladığı andan sayılır; sayfa yenilense de sıfırlanmaz. Bitince satır
+  kaybolur. Bilgi kutusu yalnız hata ya da boş liste olunca görünür.
+
+Önceki tur: **Adım adları yaptıkları işe göre**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/amp.py`, `fe_agent/sozluk_calisma.py`, `webapp/app.js`, `webapp/backend.py`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - 01 Çalışma Kurulumu alt yazısı: "Veri seti, sözlük, kolon rolleri ve
   örneklem tasarımı".

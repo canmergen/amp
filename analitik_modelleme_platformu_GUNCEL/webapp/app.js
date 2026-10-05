@@ -7004,6 +7004,32 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* DURUM BİLGİSİ: tablonun altında, onay düğmesinin
        üstünde, bilgilendirme kutusu olarak; aşağıda tablodan sonra eklenir. */
     const durumEl = elYap("div", "dg-bilgi-kutu", "");
+    durumEl.hidden = true;
+    /* İLERLEME: veri seti yüklenirken çıkan işlem satırı gibi tek ince
+       satır; süre sunucudaki başlangıçtan sayılır, saniyede bir artar. */
+    const ilerEl = elYap("div", "islem-satiri dg-ilerleme");
+    ilerEl.setAttribute("role", "status");
+    const ilerMetin = elYap("span", "islem-sure", "");
+    ilerEl.appendChild(ilerMetin);
+    let ilerGecen = (ka.ilerleme && ka.ilerleme.gecen) || 0;
+    function ilerYaz() {
+        const il = ka.ilerleme;
+        const acik = ka.dm === "calisiyor" && !!il && !kilitli;
+        ilerEl.classList.toggle("gorunur", acik);
+        if (acik) ilerMetin.textContent = "Dil Modeli Çalışıyor · " + ftBinlik(il.biten || 0)
+            + " / " + ftBinlik(il.toplam || 0) + " Kısaltma · " + sureBicim(ilerGecen);
+    }
+    let ilerBagli = false;
+    const ilerSayac = setInterval(() => {
+        if (kart.isConnected) ilerBagli = true;
+        if (ka.dm !== "calisiyor" || (ilerBagli && !kart.isConnected)) {
+            clearInterval(ilerSayac);
+            ilerYaz();
+            return;
+        }
+        ilerGecen += 1;
+        ilerYaz();
+    }, 1000);
     const hataEl = elYap("div", "dg-oneri-hata");
     hataEl.hidden = true;
     kart.appendChild(hataEl);
@@ -7063,6 +7089,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const tb = document.createElement("tbody");
     tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
     kart.appendChild(durumEl);
+    kart.appendChild(ilerEl);
 
     function ciz(liste) {
         tb.textContent = "";
@@ -7226,11 +7253,12 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             satirlar.push({ r, g, kutu, y, ya, ay });
             tb.appendChild(tr);
         });
-        const onayli = (liste || []).filter(r => r.onayli).length;
-        durumEl.textContent = ((liste || []).length
-            ? ftBinlik((liste || []).length) + " kısaltma; " + ftBinlik(onayli) + " tanesi onaylı tanım."
-            : "Kolon adlarından güvenilir bir kısaltma çıkarılamadı.")
-            + (ka.not ? " " + tireSade(ka.not) : "");
+        /* Bilgi kutusu yalnız söylenecek bir şey varsa (liste boş, hata). */
+        durumEl.textContent = [(liste || []).length ? ""
+            : "Kolon adlarından güvenilir bir kısaltma çıkarılamadı.",
+            ka.not ? tireSade(ka.not) : ""].filter(Boolean).join(" ");
+        durumEl.hidden = !durumEl.textContent;
+        ilerYaz();
         sar.hidden = ust.hidden = !(liste || []).length;
     }
     ciz(ka.satirlar);
@@ -7244,7 +7272,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         if (yoklamaSayisi++ > 200) {
             /* 10 dakikada bitmedi: onay kilidi açılır, not yazar. */
             ka.dm = "zaman_asimi";
-            durumEl.textContent += " Dil modeli kontrolü 10 dakikada bitmedi; liste kural tabanlı.";
+            durumEl.textContent = (durumEl.textContent + " Dil modeli kontrolü 10 dakikada bitmedi; "
+                                   + "liste kural tabanlı.").trim();
+            durumEl.hidden = false;
+            ilerYaz();
             if (degisti) degisti();
             return;
         }
@@ -7255,6 +7286,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 if (!yeni) return setTimeout(yokla, 3000);
                 ka.not = yeni.not || "";
                 ka.dm = yeni.dm;
+                ka.ilerleme = yeni.ilerleme || null;
+                if (ka.ilerleme) ilerGecen = ka.ilerleme.gecen || ilerGecen;
                 const elle = {};
                 satirlar.forEach(x => {
                     if (x.r.bekliyor) return;
@@ -7324,6 +7357,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                                     x.y.disabled = k || !!x.r.bekliyor; x.ya.disabled = k || !!x.r.bekliyor;
                                     if (x.ay) x.ay.disabled = k || !!x.r.bekliyor; });
             topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
+            ilerYaz();
         },
         /* Dil modeli kontrolü sürüyor mu (adım kartında onay kilidi). */
         bekliyor: () => ka.dm === "calisiyor"

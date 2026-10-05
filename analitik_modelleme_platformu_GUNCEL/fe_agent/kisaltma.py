@@ -1323,13 +1323,15 @@ def bekleyenler(tanimlar, veri_seti=""):
 
 
 def dogrulama_bilgisi(tanimlar, veri_seti=""):
-    """Kart ve Excel icin: {"durum", "hata", "sure"} (baslatmaz degil:
-    gerekiyorsa baslatir)."""
+    """Kart ve Excel icin: {"durum", "hata", "sure", "gecen"} (gerekiyorsa
+    baslatir). gecen: calisan kontrolun baslangicindan beri gecen sn."""
     imza = dogrulamayi_baslat(tanimlar, veri_seti)
     with _DM_KILIT:
         k = dict(_DM.get(imza) or {})
+    gecen = (int(time.time() - k["zaman"])
+             if k.get("durum") == "calisiyor" and k.get("zaman") else None)
     return {"durum": k.get("durum", "yok"), "hata": k.get("hata", ""),
-            "sure": k.get("sure")}
+            "sure": k.get("sure"), "gecen": gecen}
 
 
 def dogrulama_sonucu(tanimlar, bekle=0.0, veri_seti=""):
