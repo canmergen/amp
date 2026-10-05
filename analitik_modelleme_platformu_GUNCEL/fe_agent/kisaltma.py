@@ -129,6 +129,7 @@ def _ham_parcalar(ad):
 # olur (bkz. birlesik_onerileri).
 IFADE_PAY = 0.9
 BIRLESIK_EN_COK = 40      # dil modeline giden en cok aday cift
+BIRLESIK_ORNEK = 3        # kartta birlestirme basina "i"de gosterilen ornek kolon
 
 
 def ifade_adaylari(adlar, tek_taraf=False):
@@ -1201,8 +1202,21 @@ def birlesik_onerileri(tanimlar, veri_seti=""):
             oner[ad] = {"anlam": onay[ad], "gerekce": "", "parcalar": ad.split("_"),
                         "kolon": int(n), "ayri": ""}
     cikti = []
+    tanimli_d = {a: str(tanimlar[a]) for a in tanimli}
     for ad, o in sorted(oner.items(), key=lambda x: (-int(x[1].get("kolon") or 0), x[0])):
+        # KARAR ICIN ORNEK (kullanici karari): parcalarin yan yana gectigi
+        # en cok BIRLESIK_ORNEK kolon ve sozlukteki aciklamalari; cesitli
+        # secilir (her yeni ornek, oncekilerde olmayan parcalari getirir).
+        havuz = [(kol, t, set(parcalar(kol))) for kol, t in tanimli_d.items()
+                 if yan_yana(kol, ad)]
+        ornek, gorulen = [], set(ad.split("_"))
+        while havuz and len(ornek) < BIRLESIK_ORNEK:
+            en = max(range(len(havuz)), key=lambda i: (len(havuz[i][2] - gorulen), -i))
+            kol, t, ps = havuz.pop(en)
+            ornek.append({"kolon": kol, "tanim": t[:200]})
+            gorulen |= ps
         cikti.append({"kisaltma": ad, "parcalar": o.get("parcalar") or ad.split("_", 1),
+                      "ornekler": ornek,
                       "yeni_kisaltma": o.get("yeni_kisaltma") or "", "oy": o.get("oy") or 0,
                       "ayri": o.get("ayri") or "", "anlam": onay.get(ad) or o.get("anlam") or "",
                       "oneri_anlam": o.get("anlam") or "",

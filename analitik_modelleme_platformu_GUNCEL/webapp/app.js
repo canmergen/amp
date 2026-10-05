@@ -7066,7 +7066,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const iMetni = [r.oy ? (r.oy > 1 ? "İki dil modeli de önerdi." : "Bir dil modeli önerdi.") : "",
                             r.gerekce ? "Gerekçe: " + r.gerekce : "",
                             r.kolon ? ftBinlik(r.kolon) + " kolonda yan yana" : "",
-                            r.onayli ? "Onaylı tanım (hafızada)" : ""].filter(Boolean).join("\n\n");
+                            r.onayli ? "Onaylı tanım (hafızada)" : "",
+                            /* Karar için en çok üç örnek kolon ve açıklaması. */
+                            (r.ornekler || []).length ? "Örnek kolonlar:\n\n"
+                                + r.ornekler.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n") : ""]
+                .filter(Boolean).join("\n\n");
             if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kisaltma));
             tr.appendChild(tdK);
             tr.appendChild(elYap("td", "dg-kaynak-deger", r.ayri ? tireSade(r.ayri) : BOS_SIMGE));

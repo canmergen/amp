@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Onaylı kısaltmalar açıklama isteminde doğru eşleşir; yanlış kısaltma notu; sayıdan ayırma önerisi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Birleştirme önerilerinde i içinde örnek kolonlar**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Birleştirme Önerileri'nde Kısaltmalar hücresindeki i: kaç modelin
+  önerdiği ve gerekçenin altında, parçaların yan yana geçtiği en çok 3
+  örnek kolon ve sözlükteki açıklamaları (çeşitli seçilir). Elle eklenen
+  birleştirmede örnek, onaydan sonra kart yeniden açılınca gelir.
+
+Önceki tur: **Onaylı kısaltmalar açıklama isteminde doğru eşleşir; yanlış kısaltma notu; sayıdan ayırma önerisi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 1) Açıklama önerisi / tanım kontrolü istemindeki KISALTMALAR blokları
    Kısaltma Sözlüğü'nün eşleştirmesiyle kurulur: sayı değerli kalıp
