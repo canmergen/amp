@@ -1,6 +1,27 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma işlerinde model seçimi: hızlı model kullanılmaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Birleştirme ayrı adım (01.2.5)**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+Yeni sıra: 01.2.4 Kısaltma Sözlüğü, 01.2.5 Kısaltma Birleştirme, 01.2.6
+Kolon Adı Önerileri, 01.2.7 Sözlük Tanım Kontrolü.
+1) Birleştirme sorusu artık Kısaltma Sözlüğü onaylandıktan SONRA,
+   ONAYLANAN anlamlarla dil modeline gider (önce sözlük işiyle birlikte,
+   onaylanmamış anlamlarla gidiyordu). Kısaltma Sözlüğü kartında
+   birleştirme bölümü yok.
+2) Kısaltma Birleştirme kartı: öneriler (Ayrı Anlamlar sizin onayladığınız
+   anlamlardan), birlikte anlam, önerilen kısaltma, Birleştir; elle ekleme
+   satırı. Öneriler gelene kadar onay kilitli; "Birleştirmeden Devam Et"
+   ile geçilebilir.
+3) Kolon adlarında hep yan yana geçen kısaltma yoksa (ve hafızada bu veri
+   setine uyan birleştirme yoksa) adım kendiliğinden geçilir.
+4) Onaylanan birleştirmeler bu çalışmanın kısaltma sözlüğüne girer,
+   hafızaya yazılır; önerilen kısaltma 01.2.6'da kolon adlarına uygulanır.
+   Geri dönüp yeniden onaylanırsa ya da adım atlanırsa önceki
+   birleştirmeler çıkarılır.
+5) Kayıtlı çalışmalar bir kerelik göçle yeni sıraya taşınır (Kısaltma
+   Sözlüğü'nün ilerisindeki çalışma bir adım kaydırılır).
+
+Önceki tur: **Kısaltma işlerinde model seçimi: hızlı model kullanılmaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Kısaltma Sözlüğü ve birleştirme önerilerinde Qwen Flash kullanılmaz.
   LLM Genel (sözlüksüz): Llama 3.1 70B. LLM Sözlük + LLM Karar: Qwen 3

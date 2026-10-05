@@ -14,6 +14,7 @@ from fe_agent.akis_faz01 import (
     sozluk_tanim_plan, sozluk_tanim_uygula,
     tanim_kontrol_plan, tanim_kontrol_uygula,
     kisaltma_plan, kisaltma_uygula, kolon_ad_plan, kolon_ad_uygula,
+    birlesik_plan, birlesik_uygula,
     sozluk_uret_plan, sozluk_uret_uygula, tanimlar_girdi,
     tanimlar_uygula, teyit_girdi, teyit_uygula, veri_sec_girdi,
     veri_sec_plan, veri_sec_uygula,
@@ -118,6 +119,15 @@ ADIMLAR = {
                     "kullanımdan gelir; sonraki adımlar onaylanan anlamları "
                     "kullanır.",
         "girdi": None, "plan": kisaltma_plan, "uygula": kisaltma_uygula},
+
+    # Kisaltmalar ONAYLANDIKTAN SONRA (kullanici karari): birlestirme
+    # onerileri onaylanan anlamlarla verilir.
+    "birlesik": {
+        "baslik": "Kısaltma Birleştirme",
+        "aciklama": "Kolon adlarında hep yan yana geçen ve ayrı anlamları "
+                    "yan yana okununca anlamı karışan kısaltmalar, onaylanan "
+                    "anlamlarla birleştirilmeye önerilir; kabul sizindir.",
+        "girdi": None, "plan": birlesik_plan, "uygula": birlesik_uygula},
 
     "kolon_ad": {
         "baslik": "Kolon Adı Önerileri",
@@ -249,14 +259,14 @@ FAZ01_ADIMLARI = {
     # SOZLUK TANIMLARI, MODELLEME TANIMLARINDAN SONRA. Hedef, kimlik ve
     # donem kolonunun sozlukte tanimli olmasi zorunlu; hangi kolonlar
     # oldugu tanimlar adiminda belli oluyor.
-    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "kisaltma",
+    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "kisaltma", "birlesik",
            "kolon_ad", "tanim_kontrol", "teyit", "bolme"],
     # B: nihai veri seti YOK; kaynak tablolar ve HER BIRININ SOZLUGU hazir.
     # Sozlukler birlestirmeden ONCE eslenir, nihai sozluk birlestirmede
     # bunlardan kurulur. Kaynagi tanimsiz kolonlar icin A gibi
     # sozluk_tanim adimi var.
     "B":  ["mod", "ham_veri", "kaynak_sozluk", "birlestirme", "tanimlar",
-           "sozluk_tanim", "kisaltma", "kolon_ad", "tanim_kontrol", "teyit",
+           "sozluk_tanim", "kisaltma", "birlesik", "kolon_ad", "tanim_kontrol", "teyit",
            "bolme"],
     # C ve D'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
     # tanimsiz kolon kalmiyor ve ayri bir "sozluk_tanim" adimina gerek
@@ -281,6 +291,7 @@ ADIM_GRUPLARI = {
     "tanimlar":    "veri_sozluk",
     "sozluk_tanim": "veri_sozluk",
     "kisaltma": "veri_sozluk",
+    "birlesik": "veri_sozluk",
     "kolon_ad": "veri_sozluk",
     "tanim_kontrol": "veri_sozluk",
     # C modu: veri seti secimi + sozluk uretimi + modelleme tanimlari

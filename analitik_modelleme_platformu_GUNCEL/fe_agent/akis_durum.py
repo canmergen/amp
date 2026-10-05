@@ -324,11 +324,14 @@ def _mod_goc(durum):
 # adim GERIDE acilirdi; konum bir kaydirilir.
 # Surum 3'te sozluk_tanim ile tanim_kontrol arasina "kisaltma" ve
 # "kolon_ad" adimlari girdi (iki adim).
-SIRA_SURUMU = 3
-# surum -> (eklenen adim sayisi, {mod: sozluk_tanim'in o surumdeki yeri})
+# Surum 4'te kisaltma ile kolon_ad arasina "birlesik" (Kisaltma
+# Birlestirme) girdi; yer kisaltma'nin konumu.
+SIRA_SURUMU = 4
+# surum -> (eklenen adim sayisi, {mod: eklenen adimdan ONCEKI adimin yeri})
 _SIRA_GOCLERI = {
     2: (1, {"A": 3, "B": 5}),
     3: (2, {"A": 3, "B": 5}),
+    4: (1, {"A": 4, "B": 6}),
 }
 
 

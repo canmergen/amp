@@ -3066,11 +3066,12 @@ span.bolme-cip { cursor: default; }
 .dg-kisaltma-tablo .dg-sayi-ayir input { margin: 0 2px 0 0; vertical-align: middle; }
 /* Birleştirme: Kısaltmalar | Ayrı Anlamlar | Birlikte Anlam | Önerilen Kısaltma | Birleştir */
 .dg-birlesik { margin-top: var(--b-4); }
-.dg-birlesik-tablo th:nth-child(1) { width: 18%; }
-.dg-birlesik-tablo th:nth-child(2) { width: 22%; }
+.dg-birlesik-tablo th { white-space: normal; }
+.dg-birlesik-tablo th:nth-child(1) { width: 17%; }
+.dg-birlesik-tablo th:nth-child(2) { width: 20%; }
 .dg-birlesik-tablo th:nth-child(3) { width: auto; }
-.dg-birlesik-tablo th:nth-child(4) { width: 140px; white-space: normal; }
-.dg-birlesik-tablo th:nth-child(5) { width: 80px; }
+.dg-birlesik-tablo th:nth-child(4) { width: 130px; }
+.dg-birlesik-tablo th:nth-child(5) { width: 76px; }
 .dg-birlesik-ekle { display: flex; flex-wrap: wrap; gap: var(--b-2); margin-top: var(--b-2); align-items: center; }
 .dg-birlesik-ekle .dg-giris { flex: 1 1 140px; min-width: 120px; width: auto; }
 .dg-birlesik-ekle .dg-toplu-btn { flex: 0 0 auto; }

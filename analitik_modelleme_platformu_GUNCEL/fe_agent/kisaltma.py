@@ -1116,16 +1116,11 @@ def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
         if k_ and k_.get("durum") == "calisiyor":
             k_["sonuc"] = dict(sonuc or k_.get("sonuc") or {})
             k_["bekleyen"] = set()
-    birlesik, birlesik_hata = {}, ""
-    if sonuc is not None:
-        try:
-            birlesik = _birlesik_sor(tanimlar or {}, girdi, sonuc)
-        except Exception as e:
-            birlesik, birlesik_hata = {}, str(e)[:200]
+    # Birlestirme sorusu BURADA DEGIL: kisaltmalar onaylandiktan sonra
+    # ayri adimda, onaylanan anlamlarla (bkz. birlesik_baslat).
     with _DM_KILIT:
         _DM[imza] = {"durum": "bitti" if sonuc is not None else "hata",
-                     "sonuc": sonuc or {}, "zaman": time.time(), "birlesik": birlesik,
-                     "birlesik_hata": birlesik_hata,
+                     "sonuc": sonuc or {}, "zaman": time.time(),
                      "hata": str(hata or ""), "sure": round(time.time() - _DM.get(imza, {}).get("zaman", time.time()))}
     # KALICI YAZMA BURADA DEGIL: 01.2.4 tamamlaninca, DUZELTILMIS calisma
     # kopyasindan yapilir (bkz. kalici_ogren). Ham sozlukten ogrenilen
@@ -1151,17 +1146,18 @@ def _birlesik_girdisi(tanimlar, anlamlar):
     return girdi
 
 
-def _birlesik_sor(tanimlar, girdi, sonuc):
-    """Dil modeline birlestirme sorusu: {"A_B": {"anlam", "gerekce",
-    "parcalar", "ayri"}} (yalniz birlestirme onerilenler)."""
-    anlamlar = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
-    anlamlar.update({k: v.get("anlam") for k, v in (sonuc or {}).items() if v.get("anlam")})
-    anlamlar.update(onaylilar())
+def _birlesik_sor(tanimlar, anlamlar):
+    """Dil modeline birlestirme sorusu, KULLANICININ ONAYLADIGI anlamlarla
+    (01.2.5; kullanici karari: onaylanmamis anlamlarla birlestirme
+    onerilmez). Doner: {"A_B": {"anlam", "yeni_kisaltma", "gerekce", "oy",
+    "parcalar", "kolon", "ayri"}} (yalniz birlestirme onerilenler)."""
     ciftler = _birlesik_girdisi(tanimlar, anlamlar)
     if not ciftler:
         return {}
     from fe_agent import llm as llm_mod
-    yaygin = [g["kisaltma"] for g in sorted(girdi, key=lambda g: -int(g.get("kolon") or 0))][:20]
+    say = Counter(p for ad, t in (tanimlar or {}).items() if str(t or "").strip()
+                  for p in set(parcalar(ad)))
+    yaygin = [p for p, _n in say.most_common(20)]
     kalip = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n"
              % ", ".join(yaygin)) if yaygin else ""
     oner, hata = llm_mod.kisaltma_birlesik(ciftler, kalip=kalip)
@@ -1179,15 +1175,52 @@ def _birlesik_sor(tanimlar, girdi, sonuc):
 BOS_ANLAM = "?"
 
 
-def birlesik_onerileri(tanimlar, veri_seti=""):
-    """Kart icin: (oneriler, hazir). oneriler: [{"kisaltma": "A_B",
-    "parcalar", "ayri", "anlam", "gerekce", "kolon", "onayli"}]. Hafizada
+_BIR = {}                 # imza -> {"durum", "sonuc", "hata", "zaman"}
+
+
+def birlesik_adaylari_var(tanimlar):
+    tanimli = [ad for ad, t in (tanimlar or {}).items() if str(t or "").strip()]
+    return bool(ifade_adaylari(tanimli, tek_taraf=True)) or bool(birlesik_hafiza(tanimli))
+
+
+def birlesik_baslat(tanimlar, anlamlar):
+    """Birlestirme sorusunu arka planda baslatir (ayni anlamlar icin bir
+    kez). Doner: imza."""
+    anlamlar = {k: v for k, v in (anlamlar or {}).items() if v and "_" not in k}
+    tanimli = sorted(ad for ad, t in (tanimlar or {}).items() if str(t or "").strip())
+    imza = "%d|%s" % (len(tanimli), "|".join("%s=%s" % kv for kv in sorted(anlamlar.items())))
+    with _DM_KILIT:
+        k = _BIR.get(imza)
+        if k and k["durum"] in ("calisiyor", "bitti"):
+            return imza
+        _BIR[imza] = {"durum": "calisiyor", "sonuc": {}, "hata": "", "zaman": time.time()}
+        if len(_BIR) > 20:
+            for eski in sorted(_BIR, key=lambda x: _BIR[x]["zaman"])[:len(_BIR) - 20]:
+                if _BIR[eski]["durum"] != "calisiyor":
+                    _BIR.pop(eski, None)
+
+    def is_():
+        try:
+            sonuc, hata = _birlesik_sor(dict(tanimlar or {}), anlamlar), ""
+        except Exception as e:
+            sonuc, hata = {}, str(e)[:200]
+        with _DM_KILIT:
+            _BIR[imza] = {"durum": "bitti" if not hata else "hata", "sonuc": sonuc,
+                          "hata": hata, "zaman": time.time()}
+    threading.Thread(target=is_, daemon=True).start()
+    return imza
+
+
+def birlesik_onerileri(tanimlar, anlamlar):
+    """Kart icin: (oneriler, durum, hata). durum "calisiyor" / "bitti" /
+    "hata". oneriler: [{"kisaltma": "A_B", "parcalar", "ayri", "anlam",
+    "yeni_kisaltma", "gerekce", "kolon", "onayli", "ornekler"}]. Hafizada
     onayli birlestirme (hafizada "A_B" anahtari) dil modeli onermese de
     listelenir, isaretli gelir."""
-    imza = dogrulamayi_baslat(tanimlar, veri_seti)
+    imza = birlesik_baslat(tanimlar, anlamlar)
     with _DM_KILIT:
-        k = dict(_DM.get(imza) or {})
-    oner = dict(k.get("birlesik") or {})
+        k = dict(_BIR.get(imza) or {})
+    oner = dict(k.get("sonuc") or {})
     onay = onaylilar()
     tanimli = [ad for ad, t in (tanimlar or {}).items() if str(t or "").strip()]
     aday = ifade_adaylari(tanimli)
@@ -1218,11 +1251,14 @@ def birlesik_onerileri(tanimlar, veri_seti=""):
         cikti.append({"kisaltma": ad, "parcalar": o.get("parcalar") or ad.split("_", 1),
                       "ornekler": ornek,
                       "yeni_kisaltma": o.get("yeni_kisaltma") or "", "oy": o.get("oy") or 0,
-                      "ayri": o.get("ayri") or "", "anlam": onay.get(ad) or o.get("anlam") or "",
+                      "ayri": o.get("ayri") or " + ".join(
+                          (anlamlar or {}).get(p) or BOS_ANLAM
+                          for p in (o.get("parcalar") or ad.split("_"))),
+                      "anlam": onay.get(ad) or o.get("anlam") or "",
                       "oneri_anlam": o.get("anlam") or "",
                       "gerekce": o.get("gerekce") or "", "kolon": int(o.get("kolon") or 0),
                       "onayli": ad in onay})
-    return cikti, k.get("durum") != "calisiyor", k.get("birlesik_hata") or ""
+    return cikti, k.get("durum") or "yok", k.get("hata") or ""
 
 
 def dogrulamayi_baslat(tanimlar, veri_seti=""):

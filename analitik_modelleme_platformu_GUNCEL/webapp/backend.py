@@ -2703,6 +2703,18 @@ def kisaltma_alani_endpoint():
         return jsonify(_hata_govdesi("kisaltma_alani", e)), 200
 
 
+@app.route("/birlesik_alani")
+def birlesik_alani_endpoint():
+    """Kisaltma Birlestirme yoklamasi: dil modelinin onerileri gelince
+    karttaki satirlar guncellenir (beklemez; durum kaydedilmez)."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True, "birlesik": akis.birlesik_alani(durum)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("birlesik_alani", e)), 200
+
+
 @app.route("/kolon_ad_kaydet", methods=["POST"])
 def kolon_ad_kaydet_endpoint():
     """Kolon Adi Onerileri: uygulanacak yeni adlar durumda saklanir;
