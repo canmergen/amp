@@ -6940,10 +6940,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* Sarı yalnız sözlükteki anlam DEĞİŞTİYSE (dil modeli doğru, ikisi de
        yanlış, yanlış kısaltma), boşsa ya da uyarı varsa; "sözlük doğru" ve
        "ikisi aynı" renksiz (kullanıcı kararı). */
-    ust.appendChild(dgLejant([["dg-l-llm", "Sözlük Doğru"],
-                              ["dg-l-hafiza", "Hafızada Onaylı"],
-                              ["dg-l-dikkat", "Sözlük Değişti, Öneri Var, Boş ya da Uyarılı"],
-                              ["dg-l-duzenlendi", "Düzenlendi"]]));
+    /* İKİ RENK (kullanıcı kararı): mor hafızada onaylı, sarı sizin
+       düzenlediğiniz; diğer satırlar renksiz. Uyarılar "i"de. */
+    ust.appendChild(dgLejant([["dg-l-hafiza", "Hafızada Onaylı"],
+                              ["dg-l-dikkat", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
     kaydetBtn.type = "button";
@@ -7094,13 +7094,16 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             kutu.checked = !!r.onayli || !!r.elle; kutu.disabled = kilitli;
             kutu.setAttribute("aria-label", r.kisaltma + " birleştir");
             tdI.appendChild(kutu); tr.appendChild(tdI);
-            /* Öneri sarı (karar sizde); düzenlenirse yeşil. */
+            /* Kısaltma Sözlüğü ile aynı: mor hafızada onaylı, sarı
+               düzenlendi (elle eklenen ya da değiştirilen); öneri renksiz. */
             const vurgu = () => {
-                const ell = !!r.elle || g.value.trim() !== tireSade(r.anlam || "").trim();
+                const ell = !!r.elle || g.value.trim() !== tireSade(r.anlam || "").trim()
+                    || y.value !== String(r.yeni_kisaltma || "");
                 tr.classList.toggle("dg-duzenlendi", ell);
-                tr.classList.toggle("dg-farkli", !ell && !r.onayli);
+                tr.classList.toggle("dg-hafiza-renk", !ell && !!r.onayli);
             };
             g.addEventListener("input", vurgu);
+            y.addEventListener("input", vurgu);
             vurgu();
             bSatirlar.push({ r, g, kutu, y });
             bTb.appendChild(tr);
@@ -7130,7 +7133,6 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                sayının anlamı kayboluyordu): adlardaki biçimler altta. */
             if ((r.sayili || []).length)
                 tdK.appendChild(elYap("div", "dg-tip", r.sayili.join(" · ")));
-            if (r.uyari) tr.classList.add("dg-uyarili");
             tr.appendChild(tdK);
             /* Kaynak sütunları (salt okunur). Seçilen kaynak işaretlenir. */
             const tdS = elYap("td", "dg-kaynak-deger" + (r.secilen === "sozluk" ? " secili" : "")
@@ -7243,10 +7245,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 else if (dmDen || sozDen || ayni(r.anlam))
                     tur = r.uyum === "ayni" ? "ayni" : r.uyum === "farkli" ? "farkli" : "";
                 else tur = "eklendi";
-                tr.classList.toggle("dg-bos", tur === "bos");
+                /* Yalnız iki renk: hafızada onaylı ve düzenlendi. */
                 tr.classList.toggle("dg-hafiza-renk", tur === "hafiza");
-                tr.classList.toggle("dg-llm", tur === "ayni");
-                tr.classList.toggle("dg-farkli", tur === "farkli");
                 tr.classList.toggle("dg-duzenlendi", tur === "eklendi");
                 tdS.classList.toggle("secili", sozDen);
                 tdD.classList.toggle("secili", dmDen);

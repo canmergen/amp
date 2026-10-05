@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma anlamları: kelime sayımı dil modeline gitmez; birleştirme önerilerinde yeni kısaltma**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü'nde yalnız iki renk**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
+
+- Kısaltma Sözlüğü ve Birleştirme tablolarında yalnız mor (Hafızada
+  Onaylı) ve sarı (Düzenlendi: LLM Karar, önerilen kısaltma ya da onun
+  anlamı elle değişti; elle eklenen birleştirme). "Sözlük Doğru" ve
+  "Sözlük Değişti, Öneri Var, Boş ya da Uyarılı" renkleri ve lejantı
+  kaldırıldı; uyarılar i'de. Diğer 01.2 kartları değişmedi.
+
+Önceki tur: **Kısaltma anlamları: kelime sayımı dil modeline gitmez; birleştirme önerilerinde yeni kısaltma**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Sebep (ekran görüntülerinden): LLM Sözlük'te çıkan tek kelimelik ve ters
 anlamlar (yan yana geçen iki parçada anlamların yer değiştirmesi, birleşik
