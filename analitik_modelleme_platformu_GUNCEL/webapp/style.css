@@ -1367,7 +1367,7 @@ button.ozet-kart:focus-visible {
 /* Birincil dugme neden pasif: gerekce EKRANDA yazar */
 .dg-gerekce {
   font-size: var(--fs-kucuk); color: var(--amber); font-weight: var(--fw-kalin);
-  margin-bottom: var(--b-2);
+  margin-bottom: var(--b-2); text-align: center;
 }
 .dg-dugmeler { align-items: center; }
 /* SÖZLEŞME7 §4: doğrulama kartının birincil düğmesi diğer birincil
@@ -3357,7 +3357,3 @@ span.bolme-cip { cursor: default; }
 .dg-kart .excel-btn:disabled {
   background: var(--yuzey); color: var(--metin); border-color: var(--kenar); opacity: .55;
 }
-
-/* Veri Seti ve Sözlük İçeriği: açıklamanın altında kısa metin satırları. */
-.dg-metin-satirlar { margin: 4px 0 var(--b-3); display: flex; flex-direction: column; gap: 4px; }
-.dg-metin-satir { color: var(--metin); font-size: var(--fs-govde); line-height: 1.5; }

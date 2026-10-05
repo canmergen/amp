@@ -5832,18 +5832,6 @@ function dogrulamaKartiEkle(alan, blok) {
         });
         kart.appendChild(oz);
     }
-    /* KISA METİN SATIRLARI (Veri Seti ve Sözlük İçeriği): çıkarılan
-       adlar tek "i"de, ilk satırın yanında. */
-    if ((alan.metin_satirlar || []).length) {
-        const mk = elYap("div", "dg-metin-satirlar");
-        alan.metin_satirlar.forEach((m, i) => {
-            const sat = elYap("div", "dg-metin-satir", tireSade(m));
-            if (i === 0 && alan.metin_bilgi)
-                sat.appendChild(bolmeBilgiSimgesi(tireSade(alan.metin_bilgi), "Çıkarılan Kolonlar"));
-            mk.appendChild(sat);
-        });
-        kart.appendChild(mk);
-    }
     if (alan.uyari) kart.appendChild(elYap("div", "dg-oneri-hata", tireSade(alan.uyari)));
 
     /* ---- 4) Kapsam: ince dolu/bos cubuk + kapsam.metin ---- */

@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü'nde İptal; 01.2.4 sade metin**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.4 dört blok ve her blokta i; onay notu ortalı**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Veri Seti ve Sözlük İçeriği yine dört blok: Analize Giren Kolon,
+  Analiz Dışı Kolon, Sözlüğe Eklenen Tanım, Sözlükten Çıkarılan Satır.
+  Her bloğun altında tek satır kısa açıklama; "i"sinde alanın anlamı ve
+  varsa ilgili kolon adları.
+- Onay düğmelerinin üstündeki not (ör. "Dil modeli kontrolü bitince
+  onaylanabilir…") bütün kartlarda ortalı.
+
+Önceki tur: **Kısaltma Sözlüğü'nde İptal; 01.2.4 sade metin**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Kısaltma Sözlüğü'nün ilerleme satırı akıştaki işlem satırıyla aynı:
   "İşlem Devam Ediyor · biten / toplam Kısaltma · süre · İptal". Sayılar
