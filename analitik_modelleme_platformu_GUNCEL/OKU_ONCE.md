@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü'nde yalnız iki renk**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
+Bu tur: **Düzenlendi bütün akışta yeşil**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
+
+- Kısaltma Sözlüğü ve Birleştirme tablolarında düzenlenen satır sarı
+  yerine yeşil; diğer kartlarla aynı. Bu iki tabloda renkler: mor
+  Hafızada Onaylı, yeşil Düzenlendi.
+
+Önceki tur: **Kısaltma Sözlüğü'nde yalnız iki renk**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
 
 - Kısaltma Sözlüğü ve Birleştirme tablolarında yalnız mor (Hafızada
   Onaylı) ve sarı (Düzenlendi: LLM Karar, önerilen kısaltma ya da onun

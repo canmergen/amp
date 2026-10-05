@@ -6940,10 +6940,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* Sarı yalnız sözlükteki anlam DEĞİŞTİYSE (dil modeli doğru, ikisi de
        yanlış, yanlış kısaltma), boşsa ya da uyarı varsa; "sözlük doğru" ve
        "ikisi aynı" renksiz (kullanıcı kararı). */
-    /* İKİ RENK (kullanıcı kararı): mor hafızada onaylı, sarı sizin
-       düzenlediğiniz; diğer satırlar renksiz. Uyarılar "i"de. */
+    /* İKİ RENK (kullanıcı kararı): mor hafızada onaylı, yeşil sizin
+       düzenlediğiniz (bütün akışta aynı); diğer satırlar renksiz.
+       Uyarılar "i"de. */
     ust.appendChild(dgLejant([["dg-l-hafiza", "Hafızada Onaylı"],
-                              ["dg-l-dikkat", "Düzenlendi"]]));
+                              ["dg-l-duzenlendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
     kaydetBtn.type = "button";
@@ -7094,7 +7095,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             kutu.checked = !!r.onayli || !!r.elle; kutu.disabled = kilitli;
             kutu.setAttribute("aria-label", r.kisaltma + " birleştir");
             tdI.appendChild(kutu); tr.appendChild(tdI);
-            /* Kısaltma Sözlüğü ile aynı: mor hafızada onaylı, sarı
+            /* Kısaltma Sözlüğü ile aynı: mor hafızada onaylı, yeşil
                düzenlendi (elle eklenen ya da değiştirilen); öneri renksiz. */
             const vurgu = () => {
                 const ell = !!r.elle || g.value.trim() !== tireSade(r.anlam || "").trim()

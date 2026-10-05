@@ -3422,10 +3422,9 @@ span.bolme-cip { cursor: default; }
 .dg-kart .dg-tablo tr.dg-farkli .dg-giris,
 .dg-kart .dg-tablo tr.dg-uyarili .dg-giris,
 .dg-kart .dg-tablo tr.dg-duzenlendi .dg-giris { background: transparent; }
-/* Kısaltma Sözlüğü ve Birleştirme: düzenlenen satır SARI (kullanıcı
-   kararı); burada yalnız mor (hafızada onaylı) ve sarı var. */
-.dg-kart .dg-kisaltma-tablo tr.dg-duzenlendi > td,
-.dg-kart .dg-birlesik-tablo tr.dg-duzenlendi > td { background: var(--dg-bos); }
+/* Kısaltma Sözlüğü ve Birleştirme: yalnız mor (hafızada onaylı) ve
+   yeşil (düzenlendi); düzenlendi bütün akışta yeşil (kullanıcı kararı:
+   renk birliği). */
 .dg-l-renksiz { background: var(--yuzey); }
 .dg-l-dikkat { background: var(--dg-bos); }
 .dg-l-duzenlendi { background: var(--dg-eklendi); }
