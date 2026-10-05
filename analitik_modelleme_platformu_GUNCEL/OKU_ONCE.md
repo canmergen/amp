@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü'nde elle düzenleme: yeni kısaltmanın anlamı, elle birleştirme ve birleştirmeye yeni kısaltma**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2 renkleri dört anlamla geri geldi + Kısaltma Sözlüğü'nde küçük yeşil Excel İndir**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; backend yeniden başlatma gerekmez, sayfayı yenileyin)
+
+1) 01.2 kartlarında renksiz yerine dört renk: mavi dil modeli önerisi
+   (dokunulmamış), mor hafızada onaylı, sarı dikkat (boş, farklı, öneri
+   var, uyarılı), yeşil sizin yazdığınız / değiştirdiğiniz. Kırmızı yok;
+   seçilmeyen satır karar sonrası solar. Lejantlar buna göre (Sözlük
+   Tanımları, Tanım Kontrolü, Kısaltma Sözlüğü, Kolon Adı Önerileri).
+2) Kısaltma Sözlüğü'nde ayrı şeritteki "Örnekleriyle Excel Olarak İndir"
+   yerine başlığın sağında sağ paneldeki gibi küçük yeşil "Excel İndir";
+   içerik aynı.
+3) Önerilen kısaltma ya da anlamı elle değiştirilen satır da yeşil.
+
+Önceki tur: **Kısaltma Sözlüğü'nde elle düzenleme: yeni kısaltmanın anlamı, elle birleştirme ve birleştirmeye yeni kısaltma**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 1) Önerilen Kısaltma sütununda, kısaltma doluyken altında yeni
    kısaltmanın ANLAMI düzenlenebilir kutu (eskiden salt okunur yazıydı).

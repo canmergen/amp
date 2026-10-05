@@ -2092,11 +2092,11 @@ function dgLejant(ogeler) {
     });
     return kap;
 }
-/* 01.2 SADE RENK (kullanıcı kararı: "renk cümbüşü"): 01.2 kartlarında
-   üç anlam var. Renksiz: öneri / normal durum. Sarı: dikkat gerektiren
-   (boş, farklı, uyarılı). Yeşil: sizin yazdığınız ya da değiştirdiğiniz.
-   Onaylı tanım "OT" çipiyle, seçim kutuyla belli; ayrı renk yok. */
-const DG_LEJANT_KARAR = [["dg-l-renksiz", "Dil Modeli Önerisi"],
+/* 01.2 RENK (kullanıcı kararı: renk olsun ama az): mavi dil modeli
+   önerisi, mor hafızada onaylı, sarı dikkat (boş, farklı, uyarılı),
+   yeşil sizin yazdığınız ya da değiştirdiğiniz. */
+const DG_LEJANT_KARAR = [["dg-l-llm", "Dil Modeli Önerisi"],
+                         ["dg-l-hafiza", "Onaylı Tanım"],
                          ["dg-l-dikkat", "Boş"],
                          ["dg-l-duzenlendi", "Düzenlendi"]];
 const DG_LEJANT_TEYIT = [["dg-l-bos", "Tanım Boş"], ["dg-l-llm", "Dil Modeli Önerisi"]];
@@ -6293,7 +6293,8 @@ function dogrulamaKartiEkle(alan, blok) {
         } else kDurumEl.hidden = true;
 
         const kUst = elYap("div", "dg-tablo-ust");
-        kUst.appendChild(dgLejant([["dg-l-renksiz", "Dil Modeli Önerisi"],
+        kUst.appendChild(dgLejant([["dg-l-llm", "Dil Modeli Önerisi"],
+                                   ["dg-l-hafiza", "Onaylı Tanım"],
                                    ["dg-l-dikkat", "Boş"],
                                    ["dg-l-duzenlendi", "Düzenlendi"]]));
         kToplu = elYap("div", "dg-toplu");
@@ -6812,7 +6813,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
     hataEl.hidden = true;
     kart.appendChild(hataEl);
     const ust = elYap("div", "dg-tablo-ust");
-    ust.appendChild(dgLejant([["dg-l-renksiz", "Önerilen"], ["dg-l-duzenlendi", "Düzenlendi"]]));
+    ust.appendChild(dgLejant([["dg-l-llm", "Önerilen"], ["dg-l-duzenlendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
     const satirlar = [];
     [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([d, e]) => {
@@ -6858,6 +6859,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
             const vurgu = () => {
                 const m = g.value.trim();
                 tr.classList.toggle("dg-duzenlendi", !!m && m !== String(r.oneri || "").trim());
+                tr.classList.toggle("dg-llm", !!m && m === String(r.oneri || "").trim());
             };
             g.addEventListener("input", () => { vurgu(); if (g.value.trim()) kutu.checked = true; });
             vurgu();
@@ -6938,7 +6940,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* Sarı yalnız sözlükteki anlam DEĞİŞTİYSE (dil modeli doğru, ikisi de
        yanlış, yanlış kısaltma), boşsa ya da uyarı varsa; "sözlük doğru" ve
        "ikisi aynı" renksiz (kullanıcı kararı). */
-    ust.appendChild(dgLejant([["dg-l-renksiz", "Sözlük Doğru"],
+    ust.appendChild(dgLejant([["dg-l-llm", "Sözlük Doğru"],
+                              ["dg-l-hafiza", "Hafızada Onaylı"],
                               ["dg-l-dikkat", "Sözlük Değişti, Öneri Var, Boş ya da Uyarılı"],
                               ["dg-l-duzenlendi", "Düzenlendi"]]));
     const toplu = elYap("div", "dg-toplu");
@@ -6959,9 +6962,13 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* EXCEL (kullanıcı kararı): önerilen anlamlar örnek kolonları ve
        anlamı taşımayan (çelişen) örneklerle birlikte indirilir; dosya
        çalışma klasörüne de yazılır. Son sütun kullanıcının kararı için. */
-    const kisaExcel = excelSeridiYap("kisaltma", "Örnekleriyle Excel Olarak İndir", "");
+    /* Sağ paneldeki gibi küçük yeşil "Excel İndir", başlığın sağında
+       (kullanıcı kararı: ayrı şeritte garip duruyordu). İçerik aynı:
+       kısaltmalar, kararlar ve örnek kolonlar. */
+    const kisaExcel = excelSeridiYap("kisaltma", "Excel İndir",
+        "Kısaltmalar, kararlar ve örnek kolonlarıyla");
     kisaExcel.ac(true);
-    kart.insertBefore(kisaExcel.el, ust);
+    kb.appendChild(kisaExcel.el);
     const sar = elYap("div", "dg-tablo-sar");
     const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
     const th = document.createElement("thead"), hr = document.createElement("tr");
@@ -7222,6 +7229,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 else if (r.onayli && ayni(r.anlam)) tur = "hafiza";
                 /* Kaynaklardan biri ya da DİL MODELİNİN KARARI (ikisi de
                    yanlışsa yazdığı anlam, dokunulmamış) ise renk uyuma göre. */
+                /* Önerilen kısaltma ya da anlamı elle değiştiyse de yeşil. */
+                else if (y.value !== String(r.yeni_kisaltma || "")
+                         || (y.value && ya.value.trim() !== tireSade(r.yeni_anlam || "").trim()))
+                    tur = "eklendi";
                 else if (dmDen || sozDen || ayni(r.anlam))
                     tur = r.uyum === "ayni" ? "ayni" : r.uyum === "farkli" ? "farkli" : "";
                 else tur = "eklendi";
@@ -7234,6 +7245,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 tdD.classList.toggle("secili", dmDen);
             };
             g.addEventListener("input", vurgu);
+            y.addEventListener("input", vurgu);
+            ya.addEventListener("input", vurgu);
             vurgu();
             satirlar.push({ r, g, kutu, y, ya });
             tb.appendChild(tr);

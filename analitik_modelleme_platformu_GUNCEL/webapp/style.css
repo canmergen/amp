@@ -3396,20 +3396,19 @@ span.bolme-cip { cursor: default; }
    ad ve çip alt alta sarabilir. */
 .dg-tablo td.dg-kolon:has(.dg-rol) { white-space: normal; overflow-wrap: anywhere; }
 
-/* ==================== 01.2 SADE RENK ====================
-   Kullanıcı kararı ("her yerde farklı renk, renk cümbüşü"): 01.2 Veri ve
-   Model Tanımları kartlarında (doğrulama kartları, .dg-kart) yalnız üç
-   anlam kalır:
-     renksiz : öneri / normal durum (dil modeli önerisi, onaylı tanım,
-               sözlük ve genel aynı, uygulanacak)
-     sarı    : dikkat gerektiren (boş, sözlük ve genel farklı, uyarılı,
-               eksik açıklama)
-     yeşil   : sizin yazdığınız / değiştirdiğiniz
-   Karar sonrası seçilmeyen satır solar (kırmızı yok). Çipler, bilgi
-   kutusu ve Excel düğmesi siyah-beyaz. Kırmızı yalnız birincil düğme ve
-   hata metninde. Değişken Kontrolü ve sonrası bu bloktan etkilenmez. */
-.dg-kart .dg-tablo tr.dg-llm > td,
-.dg-kart .dg-tablo tr.dg-hafiza-renk > td,
+/* ==================== 01.2 RENK ====================
+   Kullanıcı kararı: renkler kalsın ama az olsun ("renk cümbüşü" de
+   "hiç renk yok" da kötü). 01.2 Veri ve Model Tanımları kartlarında
+   (.dg-kart) dört anlam:
+     mavi : dil modelinin önerisi (dokunulmamış)
+     mor  : hafızada onaylı (daha önce onaylanmış)
+     sarı : dikkat gerektiren (boş, farklı, öneri var, uyarılı)
+     yeşil: sizin yazdığınız / değiştirdiğiniz
+   Karar sonrası seçilmeyen satır solar (kırmızı yok). Kırmızı yalnız
+   birincil düğme ve hata metninde. Değişken Kontrolü ve sonrası bu
+   bloktan etkilenmez. */
+.dg-kart .dg-tablo tr.dg-llm > td { background: var(--dg-llm); }
+.dg-kart .dg-tablo tr.dg-hafiza-renk > td { background: var(--dg-hafiza); }
 .dg-kart .dg-tablo tr.dg-eklendi > td,
 .dg-kart .dg-tablo tr.dg-eklenmedi > td { background: transparent; }
 .dg-kart .dg-tablo tr.dg-eklenmedi > td { opacity: .5; }
@@ -3417,6 +3416,8 @@ span.bolme-cip { cursor: default; }
 .dg-kart .dg-tablo tr.dg-uyarili > td { background: var(--dg-bos); }
 .dg-kart .dg-satir.dg-uyarili td:first-child { box-shadow: none; }
 .dg-kart .dg-tablo tr.dg-duzenlendi > td { background: var(--dg-eklendi); }
+.dg-kart .dg-tablo tr.dg-llm .dg-giris,
+.dg-kart .dg-tablo tr.dg-hafiza-renk .dg-giris,
 .dg-kart .dg-tablo tr.dg-farkli .dg-giris,
 .dg-kart .dg-tablo tr.dg-uyarili .dg-giris,
 .dg-kart .dg-tablo tr.dg-duzenlendi .dg-giris { background: transparent; }
@@ -3432,11 +3433,9 @@ span.bolme-cip { cursor: default; }
 /* Bilgi kutusu ve kapsam çubuğu. */
 .dg-kart .dg-bilgi-kutu { background: var(--yuzey-alt); border-left-color: var(--kenar-guclu); }
 .dg-kart .dg-cubuk-dolu.dg-tam { background: var(--metin); }
-/* Excel düğmesi ikincil düğme gibi (yeşil "düzenlendi" ile karışmasın). */
-.dg-kart .excel-btn {
-  background: var(--yuzey); color: var(--metin); border-color: var(--kenar-guclu);
-}
-.dg-kart .excel-btn:hover:not(:disabled) { background: var(--yuzey-alt); }
+/* Excel düğmesi sağ paneldeki gibi yeşil ve küçük (kullanıcı kararı);
+   Kısaltma Sözlüğü'nde başlığın sağında. */
+.dg-kart .dg-tablo-bas .excel-serit { margin-left: auto; }
 .dg-kart .excel-btn:disabled {
   background: var(--yuzey); color: var(--metin); border-color: var(--kenar); opacity: .55;
 }
