@@ -1282,6 +1282,16 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
                 if not genel_uyumlu and not d0_secim:
                     uyari.append("Sözlüğe bakmadan verilen genel anlam: \"%s\"; "
                                  "seçilen anlam farklı, kontrol edin." % yalin_anlam(genel))
+        # "IKISI AYNI" AMA YAZIMLAR FARKLI (kullanici bildirimi: farkli iki
+        # anlam ayni sayiliyordu): model es anlamli saymis olabilir; kod
+        # es anlamliligi bilemez, satir sarı olur ve soylenir.
+        soz_ = d0_sozluk or (cikan.get(kisa) or {}).get("anlam", "")
+        ayni_farkli = bool(d0_secim == "ayni" and genel and soz_
+                           and not _ayni_anlam(yalin_anlam(soz_), yalin_anlam(genel)))
+        if ayni_farkli:
+            uyari.append("Dil modeli iki anlamı aynı saydı ama farklılar (sözlük: \"%s\", "
+                         "genel: \"%s\"); eş anlamlı mı, hangisi doğru, kontrol edin."
+                         % (yalin_anlam(soz_), yalin_anlam(genel)))
         if d0_red and not d0_yeni:
             # Bicime uymayan oneri gizli dusmez, soylenir.
             uyari.append("Dil modelinin önerdiği kısaltma (%s) biçime uymadığı için "
@@ -1308,6 +1318,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             # LLM SOZLUK (kullanici bildirimi: sutun dil modeli diyordu ama
             # kelime sayimini gosteriyordu): modelin tanimlardan okudugu anlam.
             cikti[kisa]["dm_sozluk"] = yalin_anlam(d0_sozluk) if d0_sozluk else ""
+            cikti[kisa]["ayni_farkli"] = ayni_farkli
     # AYNI YENI KISALTMA BIRDEN FAZLA KISALTMAYA onerildiyse (ayri anlamlar
     # tek kisaltmaya inemez) ya da zaten kolon adlarinda baska bir kisaltma
     # olarak geciyorsa oneri dusurulur, satirda uyari yazar.
@@ -1477,6 +1488,8 @@ def _uyum(o, bekliyor):
     # "sozluk dogru" kararlarinda yapacak bir sey yok, renksiz. Sozlukte
     # anlam yoksa degisen bir sey de yok.
     secim = o.get("secim")
+    if secim == "ayni" and o.get("ayni_farkli"):
+        return "farkli"           # yazimlar farkli: kontrol (sari)
     if secim in ("ayni", "sozluk"):
         return "ayni"
     if secim in ("genel", "yeni", "kisaltma_yanlis"):
@@ -1537,6 +1550,10 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
             elif o.get("dm_sozluk") and o.get("istatistik") \
                     and not _ayni_anlam(o["dm_sozluk"], o["istatistik"]):
                 parca.append("kelime sayımı: %s" % o["istatistik"])
+            # LLM Sozluk sutununun kaynagi acikca: model cevap verdi ama
+            # sozluk anlamini yazmadiysa sutunda kelime sayimi var.
+            if not o.get("dm_sozluk") and o.get("dm_karar") is not None:
+                parca.append("LLM Sözlük: dil modeli sözlük anlamı vermedi, kelime sayımı gösteriliyor")
             if o.get("destek") is not None:
                 parca.append("%d kolonun %s" % (o["kolon"], yuzdesinde(o["destek"] * 100)))
             elif o.get("kolon"):

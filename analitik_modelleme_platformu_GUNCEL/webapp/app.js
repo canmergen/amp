@@ -7833,8 +7833,14 @@ function bolmeBilgiSimgesi(metin, baslik) {
     };
     const kaydirinca = (e) => {
         if (e.target === tip || tip.contains(e.target)) return;
+        if (!kap.isConnected) return gizle();
         if (acikMi()) yerlestir();
     };
+    /* SİMGE SAYFADAN KALKARSA BALON DA KALKAR (kullanıcı bildirimi: balon
+       sol üstte takılı kalıyordu). Tablo yenilenince (örn. dil modeli
+       sonucu gelince) simge silinir ama gövdeye taşınmış balon kalıyor,
+       konumu da boş simgeye göre sol üste düşüyordu. */
+    let bekci = null;
     /* BALON SAYFA GÖVDESİNDE AÇILIR (kullanıcı bildirimi: "i kısmına
        bastığımda yazı okunmuyor"). Onaylanmış kart soluk çiziliyor
        (opacity) ve balon kartın içindeyken o saydamlığı alıp arkasındaki
@@ -7850,9 +7856,12 @@ function bolmeBilgiSimgesi(metin, baslik) {
         tip.scrollTop = 0;
         yerlestir();
         window.addEventListener("scroll", kaydirinca, true);
+        clearInterval(bekci);
+        bekci = setInterval(() => { if (!kap.isConnected) gizle(); }, 300);
     };
     const gizle = () => {
         clearTimeout(kapat);
+        clearInterval(bekci);
         tip.style.display = "";
         if (tip.parentNode !== kap) kap.appendChild(tip);
         window.removeEventListener("scroll", kaydirinca, true);

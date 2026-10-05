@@ -1,6 +1,20 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Önerilen Kısaltma boş kalıyordu: düzeltme**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **"İkisi aynı" ama farklı anlamlar + takılı kalan i balonu**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı). Önceki iki turun dosyaları da (özellikle `fe_agent/akis_faz01.py`) kopyalanmış olmalı.
+
+1) Dil modeli "ikisi aynı" dediği hâlde LLM Sözlük ile LLM Genel'in
+   yazımı farklıysa satır sarı olur ve uyarı yazar (eş anlamlı mı,
+   hangisi doğru). Kod eş anlamlılığı bilemediği için karar kullanıcıda.
+   İstemde "aynı" tanımı daraltıldı: yalnız eş anlamlılar; yakın, birlikte
+   geçen, biri öbürünü içeren ya da aynı ifadenin parçaları olan anlamlar
+   aynı değildir.
+2) i balonunda LLM Sözlük'ün kaynağı yazar: dil modeli sözlük anlamını
+   vermediyse "kelime sayımı gösteriliyor".
+3) i balonu sol üstte takılı kalmıyor: tablo yenilenince (dil modeli
+   sonucu gelince) simge silinip gövdeye taşınmış balon kalıyordu; simge
+   sayfadan kalkınca balon da kapanır.
+
+Önceki tur: **Önerilen Kısaltma boş kalıyordu: düzeltme**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Sebep (sahte modelle eski kodda yeniden üretildi): iki model aynı anlamı
 farklı kelimelerle yazınca karar hakeme gidiyor, hakem modellerin

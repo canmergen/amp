@@ -1257,7 +1257,10 @@ TAM anlami yaz; tanimlardan cikmiyorsa bos birak. Asagidaki karar
 "sozluk_anlam" ile "genel" arasindadir ("sozlukte" adayi yalniz ipucu).
 
 Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
-  "ayni"           : iki aday ayni anlamda (es anlamli da olur: adet / sayi)
+  "ayni"           : iki aday AYNI KAVRAM (yalniz es anlamli kelimeler).
+                     Yakin, birlikte gecen, biri digerini iceren ya da
+                     ayni ifadenin farkli parcalari olan anlamlar AYNI
+                     DEGILDIR; o zaman hangisinin dogru oldugunu sec
   "sozluk"         : genel anlam YANLIS (senin bilgin bu kisaltmaya uymuyor
                      ya da kuruma ozgu kisaltma); sozlukteki anlam dogru
   "genel"          : genel anlam dogru; sozlukteki TANIMLAR yanlis ya da
