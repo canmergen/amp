@@ -16,9 +16,7 @@ from fe_agent.akis_durum import (
 # ===========================================================================
 # KAYNAK SECIMI
 # ===========================================================================
-# Faz 03 (kural / kesif) plan bos gelirse _ENRICHED HIC olusmaz. Eski kod
-# dogrudan onu okuyup yakalanmamis istisna firlatiyordu; kullanici sohbet
-# balonunda backend traceback'i goruyordu. Artik kaynak once kontrol edilir.
+# Faz 03 (kural / kesif) plan bos gelirse _ENRICHED HIC olusmaz.Artik kaynak once kontrol edilir.
 def _kaynak(durum):
     """Doner: (dataset_adi | None, zenginlestirilmis_mi)"""
     zengin = "%s_ENRICHED" % durum.get("veri_seti")
@@ -72,7 +70,7 @@ def kalite_uygula(durum):
         s = pd.to_numeric(df[c], errors="coerce").replace([np.inf, -np.inf], np.nan)
         if s.isna().mean() > 0.5:
             eksik.append(c); continue
-        # BOS HUCRE AYRI DEGER (kullanici karari): bir deger + bos iki
+        # BOS HUCRE AYRI DEGER: bir deger + bos iki
         # deger sayilir; yalnizca hepsi ayni (ya da hepsi bos) sabittir.
         if s.nunique(dropna=True) + (1 if s.isna().any() else 0) <= 1:
             sabit.append(c); continue

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """fe_agent/aralik.py - HEDEFE GORE ARALIK (BINLEME) ONERISI.  (SFA'nin parcasi)
 
-AMAC (kullanici karari): degiskenin degerlerini duzeltmek DEGIL, hedef
+AMAC: degiskenin degerlerini duzeltmek DEGIL, hedef
 oranina bakarak daha iyi bir model yapisi onermek. Ornek: yas 18-35 %2,35,
 35-40 %2,20, 40+ %1,90 -> "batma orani yasla azaliyor, uc araliga bolunsun".
 Hassas degiskenlerde (yas, cinsiyet ...) ham kullanim yerine kaba aralik ya
 da modelden cikarma onerilir.
 
-KURALLAR (kullanici karari)
+KURALLAR
   - Egilim: artan, azalan, U (ortada dusuk, uclarda yuksek) ya da ters U.
     U ancak tek yonlu egilimden belirgin daha fazla bilgi tasiyorsa
     (IV en az %10 fazla) secilir.
@@ -18,7 +18,7 @@ KURALLAR (kullanici karari)
     Dogrulama / test setlerinde yalnizca egilimin ayni sirada kalip
     kalmadigi KONTROL edilir (karar icin kullanilmaz).
 
-EKSIK DEGER IKI GORUNUMDE (kullanici karari: "null imp önce sonra")
+EKSIK DEGER IKI GORUNUMDE
   ayri    : eksikler kendi araliginda (doldurmadan once).
   dolu    : eksikler egitim medyaniyla doldurulmus; medyanin dustugu
             araliga eklenir (SFA'nin uyguladigi doldurma).
@@ -249,9 +249,7 @@ def en_iyi_araliklar(ince, toplam):
 def esit_frekans_kesimleri(x, k):
     """Esit sikliga EN YAKIN, ayni degeri iki araliga bolmeyen kesimler.
 
-    Yuzdelik sinirlar yigilmis dagilimda (degerlerin yarisi 0 olan sayim
-    degiskenleri gibi) cakisiyor ve aralik sayisi 2-3'e dusuyordu; SFA bu
-    degiskenleri "IV güvenilmez" sayiyordu (1.038 degiskenin 576'si).
+
     Burada tekil degerler sirayla toplanir; biriken satir hedefe ulasinca
     kesilir, hedef kalan satir / kalan aralik olarak yeniden hesaplanir.
     Boylece yigin kendi araligini alir, gerisi esit bolunur.

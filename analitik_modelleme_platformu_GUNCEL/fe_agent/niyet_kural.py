@@ -24,7 +24,7 @@ def normalize(metin):
 #
 # Olumsuzluk ekleri (-mi/-ma/-maz/-miyorum) ile niyet eki (-mak istiyorum)
 # AYRI ele alinir: "onaylamiyorum" ret, "onaylamak istiyorum" onaydir.
-# Gecmiste `\bonaylam\w*` ikisini de ret sayiyordu.
+#
 RET_KALIPLARI = [
     # onayla- + olumsuzluk. DIKKAT: "onaylamak" (niyet eki) ve "onaylamadan"
     # (zarf-fiil) buraya GIRMEMELI; ikisi de ret degildir.
@@ -39,7 +39,7 @@ RET_KALIPLARI = [
     r"\bdevam etme(?:yelim|sin)?\b", r"\bdevam etmiyor\w*",
     r"\bgecmeyelim\b", r"\byapmayalim\b", r"\byapma\b",
     # Webapp butonunun ETIKETI "Degistir" (mesaji "hayir"). Kullanici ayni
-    # kelimeyi YAZDIGINDA da ayni sey olmali; eskiden LLM'e dusuyordu.
+    # kelimeyi YAZDIGINDA da ayni sey olmali.
     r"\bdegistir\w*\b", r"\bduzelt\w*\b", r"\bbaska\s+bir\b",
     # "iptal" ancak bir eylemle birlikteyken rettir:
     # "iptal edilen kartlar" bir FILTRE tarifidir, ret degil.
@@ -174,11 +174,10 @@ def _aday_deger(orijinal, bas, son, gecerli_adlar):
 def _alan_bul(orijinal, norm, kaliplar, gecerli_adlar=None):
     """Kalibin TUM eslesmelerini dener.
 
-    Eskiden ilk eslesmede yakalanan deger dolgu kelime cikinca `continue`
-    bir sonraki KALIBA geciyordu ve alan tamamen kayboluyordu. Simdi ayni
+    Simdi ayni
     kalibin sonraki eslesmesine, oradan da dolgu kelimenin ardindaki
     kelimeye bakiliyor ("veri seti olarak <VERI_SETI>").
-    """
+"""
     for k in kaliplar:
         for m in re.finditer(k, norm):
             bas, son = m.span(1)

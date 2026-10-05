@@ -10,11 +10,9 @@ Iki yolun sonuc sozlugu ayni bicimde; cagiran taraf motoru bilmez.
   amp_yaz       : Degisken Kontrolu onayinda tip donusumleri + surec disi
                   kolonlar (KAYNAK TABLODAN, bir kez).
   amp_bolme_yaz : Orneklem ve Dogrulama'da _SPLIT; KAYNAK AMP_VERISETI'nin
-                  KENDISI (kullanici karari: AMP olustuktan sonra yalnizca
-                  AMP_VERISETI ve AMP_SOZLUK kullanilir).
+                  KENDISI.
 
-CALISMAYA OZEL (kullanici karari: "her çalışma bir folder açıyor, oraya bu
-dataseti kaydetmek lazım"): pandas yolunda AMP_VERISETI calismanin
+CALISMAYA OZEL: pandas yolunda AMP_VERISETI calismanin
 PROJE_HAFIZASI klasorune Parquet yazilir (/<calisma>/AMP_VERISETI.parquet).
 Spark yolunda Dataiku kurali geregi cikti bir veri setidir; adi calismaya
 ozeldir (AMP_VERISETI_V8), baska bir calisma onu ezemez.

@@ -807,7 +807,7 @@ def _sfa(durum):
         ("Tam tablo", _m(s.get("tablo_dataset"))),
     ]))
 
-    # SFA eleme yapmaz (kullanici karari); esik yalnizca sizinti icin.
+    # SFA eleme yapmaz; esik yalnizca sizinti icin.
     bloklar.append(_p(
         "Tek değişken analizi eleme adımı değildir: IV ve C-value her "
         "değişken için ölçülür, düşük değer tek başına çıkarma sebebi "
@@ -1009,8 +1009,7 @@ def _eleme(durum):
             bloklar.append(en_iyi)
 
     # ADIM ADIM KARAR IZI: hangi kontrol kac degisken eledi, geriye kac
-    # kaldi. Toplam sayilar ayri tablolarda duruyor; izi olmadan "neden
-    # bu kadar dustu" sorusu cevapsiz kaliyordu.
+    # kaldi. Toplam sayilar ayri tablolarda duruyor.
     iz = _karar_izi(k, sc)
     if iz:
         bloklar.append({
@@ -1235,8 +1234,7 @@ def _set_performans_tablosu(durum):
 def _validasyon_kapisi(durum):
     """Eski 'Validasyon Sonuclari' bolumunun icerigi.
 
-    AYRI BIR BOLUM DEGIL, performansin ALT BLOGU: "validasyon" adli bir
-    bolum, bagimsiz validasyonun yapilmis oldugu izlenimini veriyordu.
+
     Platformun esik kontrolu GELISTIRICININ kendi kontrolu; validatorun
     isini yapmaz."""
     kayit = _sz(durum, "validasyon")
@@ -1718,9 +1716,7 @@ def _tabloya_satir(bolum, kolonlar, satir):
     """Bolumun ilk uygun tablosuna satir EKLER; yoksa yeni tablo acar.
 
     NEDEN: "Doküman durumu" satiri statu tablosuna bagli oldugu icin ancak
-    ikinci gecte uretilebiliyor. Ayri bir blok olarak eklenince kunyenin
-    sonunda BASLIKSIZ, tek satirlik ikinci bir "Alan | Değer" tablosu
-    olusuyordu - ekranda kopuk, Word'de de oyle. Satir asil kunye
+    ikinci gecte uretilebiliyor. Satir asil kunye
     tablosuna ait; oraya yaziyoruz.
 
     Duzenlenmis bolumde hicbir sey yapilmaz: o bolumun govdesi artik
@@ -1890,9 +1886,7 @@ def dokuman_bolum_kaydet(durum, anahtar, metin):
     bolum = next((b for b in govde["bolumler"] if b["anahtar"] == anahtar),
                  None)
     # TESLIM OZETI DE DONER: tam govde zaten uretildi, teslim durumu da
-    # onunla birlikte hesaplandi. Gondermeyince on yuz son blokeri kapatan
-    # kaydin ardindan "Bloker: 0" yazarken damgayi hala "TASLAK" gosteriyor
-    # ve kullanici dokumani tazeleyene kadar yanlis okuyordu. Bolumleri
+    # onunla birlikte hesaplandi. Bolumleri
     # tekrar gondermiyoruz; yalniz kok ozet alanlari.
     return {"tamam": True, "bolum": bolum,
             "teslim": {a: govde.get(a) for a in TESLIM_OZET_ALANLARI}}
@@ -1907,9 +1901,7 @@ DOSYA_ADI = "model_gelistirme_dokumani.docx"
 def dokuman_word(durum):
     """Dokumanin .docx karsiligi (ham baytlar).
 
-    Bolum numarasi basliga YAZILIR: ekranda numara ayri bir sutunda
-    duruyor, Word'de o sutun yok ve numarasiz basliklar sirayi
-    kaybettiriyordu. Kunye ve Ek numarasizdir, basligi oldugu gibi gider.
+    Kunye ve Ek numarasizdir, basligi oldugu gibi gider.
 
     Damga BASLIK SAYFASININ hemen altinda kalin bir paragraftir ve 20.
     bolumde tekrarlanir: dokumanin ilk sayfasini goren de son bolumunu

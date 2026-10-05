@@ -118,7 +118,7 @@ def _pii_deger_mi(s):
                 return None
         except Exception:
             pass
-    # TAM KOLON (kullanici karari: orneklem yok). Desen oranlari butun
+    # TAM KOLON. Desen oranlari butun
     # degerler uzerinden; ayni deger tekrar tekrar denenmesin diye tekil
     # degerler bir kez denetlenip tekrar sayilariyla agirliklandiriliyor.
     # Sonuc tum degerleri tek tek denetlemekle birebir ayni.
@@ -197,7 +197,7 @@ def _ornek_guvenli_mi(s, satir, kol=None):
     # ONDALIKLI sayilar haric: bakiye/gelir/tutar alanlari dogal olarak
     # ~%100 tekildir ama kimlik degildir. Bunlarin DAGILIM OZETI (min,
     # p25, medyan, maks) sozluk aciklamasi icin degerli ve kisisel veri
-    # icermez; engellenmesi LLM'i bu kolonlarda korlestiriyordu.
+    # icermez.
     tekil = int(s.nunique(dropna=True))
     if satir and tekil / max(satir, 1) > KIMLIK_ESIK and not _ondalikli_mi(s):
         return False, "kimlik benzeri"

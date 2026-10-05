@@ -269,9 +269,7 @@ def _ad_uret(tablo, kolon, fn, pencere, kullanilan=None):
 # ---------------------------------------------------------------------------
 # YURUTME
 # ---------------------------------------------------------------------------
-# Metin kolonlarda "bos" anlamina gelen yazimlar. Dataiku'dan metin ya da
-# kategori olarak gelen donem kolonunda tek bir "NULL" hucresi, kolonun
-# sayisal donem olarak taninmasini engelliyordu.
+# Metin kolonlarda "bos" anlamina gelen yazimlar.
 DONEM_BOS_YAZIMLAR = frozenset(("", "nan", "none", "null", "na", "n/a",
                                 "nat", "-", "?"))
 # "2025M01", "2025/01", "2025_1", "2025 01" -> yil + ay
@@ -287,8 +285,7 @@ def donem_degeri(x):
     hucre yuzunden 202501.0), metin ("202501", " 202501 ") ya da kategori
     olarak gelebilir. Bolme donemleri metin olarak karsilastiriyor; bu
     yazimlarin HEPSI ayni "202501" metnine iner. Bos hucre "nan" metnine
-    DONUSMEZ: eskiden "nan" metin siralamasinda en sona dusup "son donem"
-    sayiliyor ve donemi bos satirlar test setine gidiyordu."""
+    DONUSMEZ:"""
     if x is None:
         return None
     try:
@@ -406,9 +403,7 @@ def _donem_coz(s):
         ay, bicim = _yil_ay_coz(s)
         if ay is not None:
             return ay, bicim
-        # Yalnizca TARIHE BENZEYEN metin tarih sayilir (bkz. tarih_metni_mi):
-        # tarih cozucusu "045" gibi kodlari da tarih sanip kolonu donem
-        # adayi yapiyordu (kullanici bildirimi).
+        #
         d = pd.to_datetime(s, errors="coerce").where(tarih_metni_mi(s))
         if d.notna().any():
             return d.dt.year * 12 + d.dt.month, "tarih"

@@ -46,16 +46,13 @@ Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 #   D  veri seti YOK,    sozluk YOK     (eski C)
 # Eski kayitlardaki B/C, okunurken C/D'ye cevriliyor
 # (bkz. akis_durum.MOD_GOCU).
-# KART METNI (kullanici karari): BASLIK elinizde NE MEVCUT, ACIKLAMA neyin
+# KART METNI: BASLIK elinizde NE MEVCUT, ACIKLAMA neyin
 # mevcut OLMADIGI ve bu adimlarla nasil olusturulacagi.
 #
-# ACIK MODLAR (kullanici karari: "şu anda hangileri açıksa onları seçebileyim
-# diğerlerini seçmeme izin verme"). Buyuk veri (Spark) yoluyla uctan uca
+# ACIK MODLAR. Buyuk veri (Spark) yoluyla uctan uca
 # denenmis baslangiclar acik; digerleri kartta soluk ve tiklanamaz durur,
 # yazarak secilmeye calisilirsa da reddedilir. Acmak icin bu listeye ekleyin.
-# IKI BASLANGIC (kullanici karari: "sozluk olup olmamasina gore akis
-# degismeyecek; sozluk varsa daha kolay ilerleyecek, yoksa sifirdan
-# olusturacak. A-C ve B-D birlestirilsin"). Sozluk her iki baslangicta da
+# IKI BASLANGIC. Sozluk her iki baslangicta da
 # ISTEGE BAGLI: secilmezse butun kolonlar 01.2.3 Sozluk Tanimlari kartinda
 # onayli tanim hafizasi + dil modeli onerileriyle tanimlanir.
 # C ve D YALNIZ ESKI CALISMALAR icin duruyor (kendi adim listeleriyle
@@ -125,9 +122,7 @@ GRUP_ADI_VERI_SOZLUK = "Veri ve Model Tanımları"
 
 # norm (kucuk harf, Turkce karaktersiz) uzerinde calisir.
 # "onceki adim\w*": akisin kendi onerdigi "önceki adıma dön" cumlesi
-# normalize edilince "onceki adima don" oluyor; duz "onceki adim"
-# alternatifinden sonraki \b "adima" icinde sinir bulamadigi icin
-# ESLESMIYORDU ve kullanici geri gidemiyordu.
+# normalize edilince "onceki adima don" oluyor.
 GERI_KALIP = re.compile(r"\b(geri|onceki adim\w*|bir onceki|geri don\w*)\b")
 
 SECIM_KALIP = re.compile(r"\d+")

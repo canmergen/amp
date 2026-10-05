@@ -6,8 +6,7 @@
      kuruslu boyutta bulanik cizilir. Bu yuzden TUM boyutlar tam piksel.
      Yeni bir boyut eklersen de tam piksel ver.
 
-     OKUNAN METIN KUCULMEDI (kullanici karari: "yazı fazla küçüldü,
-     %92 çok az oldu ama %100 de çok"). Govde 12px ve kart basligi 13px
+     OKUNAN METIN KUCULMEDI. Govde 12px ve kart basligi 13px
      OLDUGU GIBI KALDI; yalnizca okunmasi gerekmeyen iki boyut bir
      kademe indi: buyuk harfli etiketler 12->11, urun adi 15->14.
      Kucultme asil BOSLUK OLCEGINDE yapildi (asagidaki blok).
@@ -30,8 +29,7 @@
   --etiket-aralik: .02em;
 
   /* ===== BILESEN SISTEMI - kose, bosluk, yukseklik, golge =====
-     BOSLUK OLCEGI %95'E CEKILDI (kullanici karari: "sanki %95'miş gibi
-     tasarlasaydık daha iyi olurdu"). Her deger yine TAM PIKSEL:
+     BOSLUK OLCEGI %95'E CEKILDI. Her deger yine TAM PIKSEL:
      round(x * .95). */
   --r:         6px;      /* kart, balon, buton, giris kutusu */
   --r-kucuk:   5px;      /* sekme, cip, liste ogesi, ic alan */
@@ -51,8 +49,7 @@
   /* Adim blogu cercevesinin kalinligi. RENK ICIN AYRI DEGISKEN YOK:
      "--kirmizi-cerceve: var(--kirmizi)" yazmak ise yaramiyor - ozel
      ozellik degeri tanimlandigi yerde (:root) cozuluyor ve koyu temada
-     "#kabuk.koyu" icindeki yeni --kirmizi'yi GORMUYOR; cerceve iki
-     temada da acik temanin kirmizisinda kaliyordu. Kural dogrudan
+     "#kabuk.koyu" icindeki yeni --kirmizi'yi GORMUYOR. Kural dogrudan
      var(--kirmizi) okuyor. */
   --blok-cerceve: 3px;
 
@@ -63,10 +60,7 @@
   --kenar-guclu:  #BFC5CE;
   --kenar-acik:   #EDEFF2;
   /* Yalnizca 3 yapisal ayrac: ust bar alti, sol panel sagi, sag panel solu.
-     TAM SIYAH, koyu temada TAM BEYAZ (kullanici karari: arada koyu
-     kirmizi denendi, "siyah ve beyaz daha mantıklıydı"). Saydam gri
-     DEGIL: saydam gri, --yuzey ile --yuzey-alt arasindaki zaten hafif
-     farkin uzerinde kayboluyordu.
+     TAM SIYAH, koyu temada TAM BEYAZ.
      Kalinlik 2px. Kullanici "1.5 olmalı gibi" dedi ama 1.5px KENARLIK
      DIYE BIR SEY YOK: Chrome border-width'i tam piksele YUVARLIYOR ve
      1.5px her ekran olceginde (dPR 1 / 1.25 / 1.5 / 2 olculdu) 1px'e
@@ -83,16 +77,14 @@
   --tutamak-tasma: calc((var(--tutamak-en) - var(--ayrac-kalinlik)) / 2);
 
   --metin:        #000000;
-  /* GRI YAZI YOK (kullanici karari: "gri komple kaldirilsin, light
-     mode icin siyah, dark mode icin beyaz"). Ikincil metin de ana metin
+  /* GRI YAZI YOK. Ikincil metin de ana metin
      renginde; ayrim boyut ve kalinlikla. Degisken adi korunuyor ki
      kullanan 100+ kural tek yerden degissin.
      TEK ISTISNA yer tutucu (placeholder): bos kutudaki "Açıklama",
      "Kolon ara..." tam siyah olursa doldurulmus deger gibi okunur. */
   --metin-soluk:  #000000;
   --yer-tutucu:   rgba(0,0,0,.45);
-  /* GECILEN ADIMIN BASLIGI (kullanici karari: "asama gecince gri dursa
-     daha iyi"). Iki temada ayni gri: beyazda 4.54:1, siyahta 4.6:1. */
+  /* GECILEN ADIMIN BASLIGI. Iki temada ayni gri: beyazda 4.54:1, siyahta 4.6:1. */
   --metin-tamam:  #767676;
   --metin-asil:   #000000;     /* gecilen blokta secilenlerin rengi */
 
@@ -143,15 +135,11 @@
      330/400 degerleri kullanicinin tutamaklarla OLCTUGU degerler. */
   --panel-en:   clamp(224px, 24vw, 330px);
   /* Sag panel: dar ekranda 328px, genis ekranda en fazla 480px */
-  /* PANEL DARALTILDI (kullanıcı kararı): 32vw geniş ekranda 480px'e
-     kadar çıkıp sohbeti sıkıştırıyordu. Alt sınır --ft-en + gövde
+  /* Alt sınır --ft-en + gövde
      dolgusu kadar: sözlük tablosu hâlâ kaydırmasız sığıyor. */
   --analiz-en:  clamp(340px, 31vw, 460px);   /* SFA ekranı için hafif genişletildi */
   /* Ust bar yuksekligi; logo buna gore olceklenir.
-     70px'ti: sekiz sayfa once kartlara dorduncu satir (.ozet-alt)
-     eklenince icerik 75px'e cikti ve son satir barin altindan
-     TASIYORDU (overflow gorunur oldugu icin kirpilmiyor, alttaki
-     panelin uzerine biniyordu). Olculen ihtiyac 75px; 78px pay
+     Olculen ihtiyac 75px; 78px pay
      birakiyor. Dorduncu satiri buyutursen burayi da buyut.
      Alt ayrac border-box'tan yiyor: 1.5px'te icerige 76.5px kaliyor,
      olculen 75px ihtiyacin uzerinde. */
@@ -164,10 +152,9 @@
      Icerik kisa olsa da genislik korunur; ekranda tek bir ritim kalir,
      balonlar icerige gore surekli daralip genislemez. */
   /* BLOKLAR EŞİT VE TAM GENİŞLİK: sohbet sütununun tamamını kaplarlar.
-     Eskiden min(78%, 720px) idi ve kartlar kendi genişliklerini
-     koyduğu için ekranda üç farklı blok eni yan yana duruyordu. */
+*/
   --balon-en:     100%;
-  --avatar-en:    42px;          /* sohbet avatarı: 34 küçük, 48 fazla büyük kaldı (kullanıcı kararı) */
+  --avatar-en:    42px;          /* sohbet avatarı: 34 küçük, 48 fazla büyük kaldı */
   --avatar-ara:   10px;          /* avatar ile blok arası */
   /* Ardisik balonlar arasindaki SABIT dikey aralik. Bot/kullanici,
      balon/kart ayrimi gozetmeden hepsi ayni bosluga sahip. */
@@ -179,8 +166,7 @@
 
 /* -------- KOYU TEMA -------- */
 #kabuk.koyu {
-  /* KOYU TEMA YENIDEN (kullanici karari: "siyah ya da beyaz olmali,
-     renkler koyu temada cok kotu, gri arka planlar kayboluyor").
+  /* KOYU TEMA YENIDEN.
      Ilke: zemin ve kartlar SIYAH, ayrim kenarlikla; "gri zemin" isteyen
      yerler (tablo basligi, ic kutu, deger cipi) siyahtan GORUNUR bicimde
      ayrisan tek bir gri (#1A1A1A / #141414). Vurgu renkleri acik
@@ -227,9 +213,7 @@
   --sari-koyu:    #FFFFFF;
   --sari-acik:    #1F1A06;
 }
-/* Acik temada --zemin (#F4F5F7) GRI bir yuzey olarak kullanilan yerler
-   koyu temada siyah zeminle birlesip kayboluyordu (kullanici bildirimi:
-   sag ustteki Calisma / Ozet sekmesi). Koyu temada gorunur gri. */
+/* Koyu temada gorunur gri. */
 #kabuk.koyu #sekmeler,
 #kabuk.koyu .secenek-rozet { background: var(--kenar-acik); }
 
@@ -252,11 +236,9 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   font-family: var(--font);
 }
 [hidden] { display: none !important; }
-/* TABLO HUCRELERININ YAZI RENGI ACIKCA VERILIR (kullanici bildirimi:
-   koyu temada sozluk tablosundaki degisken adi beyaza donmuyordu).
+/* TABLO HUCRELERININ YAZI RENGI ACIKCA VERILIR.
    Hucre rengi miras kalinca Dataiku sayfasinin kendi stilindeki bir
-   "td" kurali (koyu gri) araya giriyor olabilir; test ortaminda bu stil
-   yok ve ad beyaz gorunuyordu. Ozgulluk (0,0,2): duz "td" kuralini
+   "td" kurali (koyu gri) araya giriyor olabilir. Ozgulluk (0,0,2): duz "td" kuralini
    yener, sinifli kendi kurallarimizi (.dg-tip, .dg-tablo th ...) yenmez. */
 :where(#kabuk) table td, :where(#kabuk) table th { color: var(--metin); }
 
@@ -288,7 +270,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   gap: clamp(11px, 1.6vw, 22px);
 }
 #ustbar-sol { display: flex; align-items: center; gap: var(--b-4); flex-shrink: 0; }
-/* Logo buyutuldu (kullanici karari): bar yuksekliginin neredeyse tamami
+/* Logo buyutuldu: bar yuksekliginin neredeyse tamami
    (59px -> 72px); ust ve alttan 3'er px pay. */
 #banner { height: calc(var(--ustbar-h) - 6px); width: auto; display: block; }
 
@@ -299,10 +281,8 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   white-space: nowrap; color: var(--kirmizi);
 }
 /* Seçili veri seti ve sözlük: başlığın yanında iki küçük çip.
-   Üst şerit kaldırıldı (dört kartın dördü de başka bir panelin
-   tekrarıydı); geriye kalan tek kimlik bilgisi bu iki ad. */
-/* ÜST BARDA SOLUK GRİ YOK (kullanıcı kararı: "üst bardaki yazı
-   renkleri koyu gri duruyor, siyah beyaz yapalım direkt"). Şeritteki
+    Geriye kalan tek kimlik bilgisi bu iki ad. */
+/* ÜST BARDA SOLUK GRİ YOK. Şeritteki
    her metin --metin okuyor: açık temada tam siyah, koyu temada tam
    beyaz. Hiyerarşiyi renk değil, KIRMIZI ETİKETLER ve yazı boyutu
    taşıyor. */
@@ -380,13 +360,11 @@ button.ozet-kart:focus-visible {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 /* Genişlikler varsayılandayken sıfırlanacak bir şey yok: düğme pasif.
-   Etkin duran ama hiçbir şey yapmayan bir düğme "ne sıfırlanıyor"
-   sorusunu doğuruyordu. */
+*/
 /* Pasif düğme SOLUKLUKLA anlatılıyor, gri metinle değil: üst barda
    soluk gri metin kalmadı. */
 
-/* Yeni çalışma düğmesi: Dataiku'nun kendi REFRESH düğmesi bunun hemen
-   üstünde duruyor ve ikon tek başına ikisini ayırt etmiyordu. Görünür
+/* Görünür
    etiket ve daha geniş gövde kasıtlı: komşusuna benzemesin. */
 #sifirla-btn, #calismalar-btn {
   display: flex; align-items: center; gap: 5px;
@@ -458,8 +436,7 @@ button.ozet-kart:focus-visible {
 .cekmece-btn { display: none; }
 
 /* "Yeni Çalışma" düğmesiyle AYNI kutu: aynı yükseklik, kenar, yarıçap ve
-   zemin. Rozet çıplak metinken komşusunun yanında hizasız duruyordu ve
-   ikisi tek bir öbek gibi okunmuyordu. Tıklanabilir DEĞİL (düğme değil,
+   zemin. Tıklanabilir DEĞİL (düğme değil,
    span) — imleç de değişmiyor, bu yüzden düğme sanılmıyor. */
 #durum-rozet {
   display: inline-flex; align-items: center; gap: 6px;
@@ -616,8 +593,7 @@ button.ozet-kart:focus-visible {
   display: flex; align-items: center; justify-content: center;
   font-size: 8px; font-weight: var(--fw-kalin);
 }
-/* Tamamlanan adim: yesil isaret VE yesil kalin yazi. Yazi ince kalinca
-   isaretle ayni oge gibi okunmuyordu. */
+/* Tamamlanan adim: yesil isaret VE yesil kalin yazi. */
 .faz-adimlar li.tamam { color: var(--yesil); font-weight: var(--fw-kalin); }
 .faz-adimlar li.tamam > .adim-isaret {
   background: var(--yesil); border-color: var(--yesil); color: #fff;
@@ -766,8 +742,7 @@ button.ozet-kart:focus-visible {
   border-radius: 0 var(--r-kucuk) var(--r-kucuk) 0;
   font-size: var(--fs-kucuk); line-height: 1.45; color: var(--metin);
 }
-/* Ilk cumle KALIN ama RENKSIZ: vurguyu kalinlik veriyor, serit zaten
-   kirmizi - yazinin da kirmizi olmasi ayni seyi iki kez soyluyordu. */
+
 .sistem-notu strong { color: var(--metin); font-weight: var(--fw-kalin); }
 .sistem-notu p { margin: 0; }
 .sistem-notu p + p { margin-top: 3px; }
@@ -825,12 +800,9 @@ button.ozet-kart:focus-visible {
 }
 
 /* Kart açıklaması: KART DEĞİL ASİSTAN söylüyor, o yüzden balon
-   (kullanıcı kararı: "bubble içinde olacaktı").
 
-   KIRMIZI ÇUBUK YOK: balonun altındaki kart zaten kendi çubuğunu
-   taşıyor, ikisi üst üste gelince blok kırmızı çerçevelerle
-   kuşatılmış görünüyordu (kullanıcı geri bildirimi: "kırmızılı
-   bloklarla çevrelemişsin"). Vurgu tek yerde: tıklanabilir kartlarda. */
+
+   Vurgu tek yerde: tıklanabilir kartlarda. */
 .kart-balon { margin-bottom: var(--b-3); }
 .satir.bot .balon.kart-balon { padding-left: var(--b-4); }
 .satir.bot .balon.kart-balon::before { display: none; }
@@ -915,9 +887,7 @@ button.ozet-kart:focus-visible {
    yapisik — kart ile balon ayni sutunda basliyor. */
 /* VERI TABLOSU TASIYAN KART BALON GENISLIGINDE DEGIL.
    Sohbet balonlari (bot/kullanici) tek ve sabit genislikte — ekranda
-   ritim onunla kuruluyor. Ama dogrulama karti bir MESAJ degil, bes
-   kolonlu bir karar tablosu: 720px'e sikistirilinca kategori listesi
-   "Davraniss" diye, aciklama kutusu yarim gorunuyordu. Tablo tasiyan
+   ritim onunla kuruluyor. Tablo tasiyan
    kart sohbet sutununun tamamini kullanir; hizasi yine sola yapisik,
    yani balonla ayni noktadan baslar. */
 .secim-kart.dg-kart { width: 100%; }
@@ -948,8 +918,7 @@ button.ozet-kart:focus-visible {
   gap: var(--b-3);
 }
 /* DUGME DEGIL: bir <span>. Imleci degismez, hover'i yok, basilamaz.
-   Eskiden bu bilgi "Seçildi ✓" diye birincil dugmenin uzerine
-   yaziliyordu ve basilabilir gorunuyordu. Yeni renk YOK: notr durumda
+   Yeni renk YOK: notr durumda
    --metin-soluk, hazir durumda mevcut --yesil ailesi. */
 .secim-durum {
   flex-shrink: 0; white-space: nowrap;
@@ -975,7 +944,7 @@ button.ozet-kart:focus-visible {
   border-left: 2px solid var(--kenar-guclu);
 }
 
-/* Izgara (kullanıcı bildirimi: "yazılar iç içe, sıra yamuk"): eşit
+/* Izgara: eşit
    sütunlar; genişlik yetmezse 2x2'ye iner. Etiketler tek satır olduğu
    için aynı satırdaki bütün kutular aynı hizada. */
 .secim-govde {
@@ -983,8 +952,7 @@ button.ozet-kart:focus-visible {
   gap: var(--b-3); margin-bottom: var(--b-4); align-items: start;
 }
 .secim-govde .combo { min-width: 0; }
-/* Etiket SOLA hizalı (kullanıcı kararı: ortalı denendi, "sola dayalı
-   daha iyiymiş"). Dar ekranda etiket
+/* Etiket SOLA hizalı. Dar ekranda etiket
    "…" ile kesilmesin diye alt satıra geçebilir; subgrid sayesinde bütün
    etiketler aynı satır yüksekliğini paylaşır (alta yaslı), kutular yine
    aynı hizada kalır. */
@@ -1047,8 +1015,7 @@ button.ozet-kart:focus-visible {
    acilmiyor; gorunur tek acma yolu bu (klavye: ArrowDown). */
 .combo { position: relative; }
 /* Giriş + ok düğmesi + açılır liste TEK kapsayıcıda; konumlandırma
-   buna göre yapılır. Açıklama satırı (.alan-not) dışarıda kalır, yoksa
-   .combo uzayıp ok düğmesini ve listeyi aşağı kaydırıyordu. */
+   buna göre yapılır. */
 .combo-alan { position: relative; }
 
 .combo-ok {
@@ -1069,14 +1036,13 @@ button.ozet-kart:focus-visible {
 .combo-liste {
   position: absolute; z-index: 20; top: 100%; left: 0; right: 0;
   margin: var(--b-1) 0 0; padding: var(--b-1); list-style: none;
-  /* INCE KIRMIZI CERCEVE (kullanici karari): koyu temada siyah liste
-     siyah zeminle birlesiyordu; iki temada da ayni cerceve. */
+  /* iki temada da ayni cerceve. */
   background: var(--yuzey); border: 1px solid var(--kirmizi);
   border-radius: var(--r); box-shadow: var(--golge-2);
   max-height: 208px; overflow-y: auto; display: none;
 }
 .combo-liste.acik { display: block; }
-/* TAM AD GORUNSUN (kullanici bildirimi: "tam adları gözükmüyor"). Liste
+/* TAM AD GORUNSUN. Liste
    kutunun genisligine kilitli degil: en uzun kolon adina gore genisler
    (en az kutu kadar, en cok 560px); daha uzun ad satir icinde kirilir. */
 .combo-liste {
@@ -1174,7 +1140,7 @@ button.ozet-kart:focus-visible {
 /* Genisligi ve sol hizasi .secim-kart'tan gelir (--balon-en):
    dogrulama karti da balonla ayni sutunda, ayni genislikte durur.
    Bes kolonlu karar tablosu bu genislige table-layout:fixed ile
-   sigiyor; --govde-en ile genisletme KALDIRILDI. */
+   sigiyor. */
 
 .dg-bas {
   display: flex; align-items: center; justify-content: space-between;
@@ -1301,7 +1267,7 @@ button.ozet-kart:focus-visible {
 /* Kısaltma Sözlüğü: şüpheli anlam uyarısı (anlam silinmez). */
 .dg-kisa-uyari { color: var(--amber); margin-top: 2px; }
 /* Kısaltma Sözlüğü durum bilgisi: tablonun altında, onay düğmesinin
-   üstünde, bilgilendirme kutusu (kullanıcı kararı). */
+   üstünde, bilgilendirme kutusu. */
 .dg-bilgi-kutu {
   font-size: var(--fs-kucuk); color: var(--metin); line-height: 1.5;
   margin: var(--b-3) 0 var(--b-2); padding: var(--b-2) var(--b-3);
@@ -1315,8 +1281,7 @@ button.ozet-kart:focus-visible {
 .dg-satir.dg-uyarili td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
 
 /* TEYIT TABLOSU DÖRT KOLON: Değişken | Tip | Sözlük Tanımı | Süreç
-   Dışı. Tip değişikliği ve null oranı kaldırıldı (SFA adımında
-   görülüyor). Yukarıdaki genişlikler doğrulama kartının dört kolonu
+   Dışı. Yukarıdaki genişlikler doğrulama kartının dört kolonu
    içindi; burada 3. sıra açıklama, ayrıca tanımlanıyor. */
 .teyit-kart .dg-tablo th:nth-child(1) { width: 30%; }
 .teyit-kart .dg-tablo th:nth-child(2) { width: 12%; }
@@ -1430,8 +1395,7 @@ button.ozet-kart:focus-visible {
 }
 
 /* -------- Çalışıyor göstergesi -------- */
-/* Tek basina ziplayan nokta "dondu" hissi veriyordu: adim adi,
-   gecen sure ve iptal dugmesi ayni balonda. */
+
 .balon.calisiyor { min-width: 15rem; }
 .calisma-ust { display: flex; align-items: center; gap: var(--b-2); }
 .calisma-adim {
@@ -1472,23 +1436,19 @@ button.ozet-kart:focus-visible {
   padding-right: calc(var(--sohbet-yan) + 6px);   /* #sohbet scrollbar payi */
   flex-shrink: 0;
 }
-/* ---- Adım bloğu ----
-   Onay düğmeleri sohbetin altındaki ortak şeritten blokların İÇİNE
-   taşındı (#aksiyonlar kaldırıldı). Blok = başlık satırı + gövde +
+/* Blok = başlık satırı + gövde +
    (onay bekliyorsa) düğme satırı. */
-/* EN DIŞTAKİ BLOK MARKA KIRMIZISI ÇERÇEVE TAŞIR (kullanıcı kararı):
+/* EN DIŞTAKİ BLOK MARKA KIRMIZISI ÇERÇEVE TAŞIR:
    iş akışının her adımı ekranda nerede başlayıp nerede bittiği belli
-   olsun. Nötr gri çerçeve arka plan dokusunda kayboluyordu.
-   Kalınlık 3px ve renk markanın KENDİ kırmızısı - açılmış ton
-   uzaktan gri gibi okunuyordu. */
+   olsun.
+*/
 .adim-blok {
   border: var(--blok-cerceve) solid var(--kirmizi);
   border-radius: var(--r);
   background: var(--yuzey); box-shadow: var(--golge-1);
   padding: var(--b-3) var(--b-4) var(--b-4);
 }
-/* ---- BLOK DURUMU (kullanıcı kararı: "tamamlandı rengi ayrı, cevap
-   bekliyor rengi ayrı olmalı") ----
+/* ---- BLOK DURUMU ----
    Kırmızı çerçeve artık YALNIZCA yanıt bekleyen bloğun. Geçilmiş
    bloklar gri çerçeveye ve sessiz başlığa iner; içerik soluklaştırılmaz,
    okunur kalır. Kalınlık aynı: durum değişince yerleşim kaymasın. */
@@ -1500,9 +1460,7 @@ button.ozet-kart:focus-visible {
 .alt-bolum.durum-bekliyor { border: 2px solid var(--kirmizi); }
 .alt-bolum.durum-bekliyor > .alt-bas .alt-ad { color: var(--kirmizi); }
 .alt-bolum.durum-tamam > .alt-bas .alt-ad { color: var(--metin-tamam); }
-/* GECILEN BLOKTA METIN GRI, SECILENLER TAM RENK (kullanici karari:
-   "geride kalanlar gri olmali, sadece secilen kisimlar haric; A
-   secildiyse o siyah kalsin"). Renk degiskeni blok icinde yeniden
+/* GECILEN BLOKTA METIN GRI, SECILENLER TAM RENK. Renk degiskeni blok icinde yeniden
    tanimlaniyor: --metin / --metin-soluk okuyan butun yazilar griye
    doner, kirmizi / yesil durum renkleri ve cipler degismez.
    Secilenler: secilen baslangic karti, form kutularindaki secilmis
@@ -1519,7 +1477,7 @@ button.ozet-kart:focus-visible {
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
   border-radius: 999px; padding: 1px 9px; border: 1px solid;
 }
-/* AÇIK ZEMİN + KOYU YAZI (kullanıcı kararı): okunurluk her ekranda
+/* AÇIK ZEMİN + KOYU YAZI: okunurluk her ekranda
    garanti. Kırmızıda kontrast 4,9:1, sarıda 4,6:1. */
 .blok-durum.bekliyor {
   color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi);
@@ -1536,8 +1494,7 @@ button.ozet-kart:focus-visible {
 
 /* GRUPLU BLOK BİR KAP: içinde her adım kendi kartında duruyor
    (bkz. .alt-bolum). Kap soluk zemine geçiyor ki beyaz iç kartlar
-   ondan ayrılsın; kabın kendi gölgesi kalkıyor - iç kartlar zaten
-   kenarlıkla ayrışıyor, iki katman gölge kağıt yığınına benziyordu. */
+   ondan ayrılsın. */
 .adim-blok.gruplu {
   background: var(--yuzey-alt);
   box-shadow: none;
@@ -1555,17 +1512,14 @@ button.ozet-kart:focus-visible {
   display: flex; align-items: center; gap: var(--b-3);
   margin-bottom: var(--b-3);
 }
-/* Adım adı MARKA KIRMIZISI: iş akışı başlıkları ekranın omurgası,
-   soluk gri kalınca blok "kapalı" gibi duruyordu. */
-/* BÜYÜK HARFE ÇEVRİLMİYOR (kullanıcı kararı): adım adları kayıt
+
+/* BÜYÜK HARFE ÇEVRİLMİYOR: adım adları kayıt
    defterinde zaten Başlık Büyük Harfi ile yazılı ("Modelleme
-   Tanımları"). uppercase ile "MODELLEME TANIMLARI" oluyor ve aynı
-   bloktaki kart başlığıyla ("Modelleme tanımları") iki ayrı yazım
-   biçimi yan yana geliyordu. */
+   Tanımları"). */
 .blok-ad {
   flex: 1 1 auto; min-width: 0;
   /* Avatar 48px'e buyuyunce 12px baslik yaninda kucuk kaldi
-     (kullanici bildirimi); alt adim basligi bir kademe asagida. */
+alt adim basligi bir kademe asagida. */
   font-size: var(--fs-blok); font-weight: var(--fw-kalin);
   letter-spacing: .01em;
   color: var(--kirmizi);
@@ -1573,7 +1527,7 @@ button.ozet-kart:focus-visible {
 }
 
 /* ---- Teyit kartındaki süzgeç satırı ----
-   ARAMA · NULL EŞİĞİ · SIRALAMA yan yana (kullanıcı kararı). Arama
+   ARAMA · NULL EŞİĞİ · SIRALAMA yan yana. Arama
    kalan genişliği alır; eşik ve sıralama sabit ve dar. Dar blokta
    sarabilir - kilitlemek, sıralama listesini ekran dışına iterdi. */
 .dg-filtreler {
@@ -1616,8 +1570,7 @@ button.ozet-kart:focus-visible {
 
 /* ---- Teyit kartındaki arama ----
    Kart sohbet bloğunun içinde; genişliği bloğun eni belirliyor.
-   Kendi kuralı yoksa tarayıcının varsayılan <input> genişliği (~150px)
-   geçerli oluyordu ve placeholder yarıda kesiliyordu. */
+*/
 .dg-arama {
   width: 100%; box-sizing: border-box;
   margin: var(--b-3) 0 var(--b-2);
@@ -1634,13 +1587,10 @@ button.ozet-kart:focus-visible {
 .dg-arama:disabled { background: var(--yuzey-alt); cursor: not-allowed; }
 
 /* ---- Alt başlıktaki durum rozeti ----
-   Kartın "✓ Girdiler hazır" göstergesi buraya taşınıyor; kartın kendi
-   başlık satırında tek başına bir satır kaplayıp alt başlık ile gövde
-   arasında büyük bir boşluk bırakıyordu. */
+   Kartın "✓ Girdiler hazır" göstergesi buraya taşınıyor. */
 /* YUVA BIRDEN FAZLA OGE TASIYOR: "✓ Girdiler hazır" rozetinin yanına
    Excel indirme düğmesi de buraya geliyor (bkz. rozetYuvasinaEkle).
-   gap OLMADAN ikisi bitişik duruyor ve düğme rozetin dibine giriyordu
-   (kullanıcı bildirimi). wrap: dar panelde alt satıra inerken de
+    Wrap: dar panelde alt satıra inerken de
    aralarındaki boşluk korunsun. */
 .alt-rozet {
   flex: 0 0 auto;
@@ -1672,19 +1622,16 @@ button.ozet-kart:focus-visible {
    kendi alt başlığını ve kendi Geri Dön'ünü taşır. Alt başlık, blok
    başlığından bir kademe SESSİZ: hiyerarşi görünsün, iki kırmızı
    başlık yan yana gelmesin. */
-/* ---- HER ALT BÖLÜM KENDİ KUTUSUNDA (kullanıcı kararı) ----
+/* ---- HER ALT BÖLÜM KENDİ KUTUSUNDA ----
    "veri seti ve değişken sözlüğü dışına bir kutu, modelleme tanımları
    dışına kutu, sözlük tanımları dışına kutu; üçünün toplamında da en
    dışarda veri seti ve sözlük kutusu."
 
-   Eskiden alt bölümler yalnızca ince bir çizgiyle ayrılıyordu: üç adım
-   tek bir uzun kağıt gibi akıyor, nerede bitip nerede başladıkları
-   ancak başlık okunarak anlaşılıyordu. Artık hiyerarşi görünüyor -
+   Artık hiyerarşi görünüyor -
    dıştaki kap grup, içteki kartlar adımlar.
 
    İÇ KART DIŞ KAPTAN AÇIK: dış kap soluk zemine geçiyor (aşağıda),
-   iç kartlar beyaz kalıyor. Tersi - iç kartları gölgelemek - üst üste
-   binmiş iki kağıt gibi durup derinliği bozuyordu. */
+   iç kartlar beyaz kalıyor. */
 .alt-bolum {
   border: 1px solid var(--kenar); border-radius: var(--r);
   background: var(--yuzey);
@@ -1706,8 +1653,7 @@ button.ozet-kart:focus-visible {
    küçük: alt başlık da bir kademe sessiz. */
 .alt-bas .blok-geri { padding: 4px 9px; }
 
-/* ---- Geri Dön ----
-   Metin düğmesiydi ve görünmüyordu. Artık DOLU bir ikincil düğme:
+/* Artık DOLU bir ikincil düğme:
    kendi zemini, belirgin kenarı, koyu yazısı ve bir ← oku var.
    KIRMIZI DEĞİL: başlık zaten kırmızı ve bloğun altındaki "Onayla ve
    Uygula" dolu kırmızı; üçüncü bir kırmızı, asıl eylemin hangisi
@@ -1766,11 +1712,8 @@ button.ozet-kart:focus-visible {
 }
 .adim-blok > .balon:empty,
 .alt-bolum > .balon:empty { display: none; }
-/* ADIM METNİ DÜZ YAZI (kullanıcı kararı: "kutu içine alma yazılarımı").
-   Yukarıdaki iki kural bunu zaten istiyordu ama ".satir.bot .balon"
-   daha yüksek öncelikli olduğu için çerçeve, zemin, gölge ve sol kırmızı
-   çubuk geri geliyordu; metin blok içinde ikinci bir kutu gibi
-   duruyordu. Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
+/* ADIM METNİ DÜZ YAZI.
+Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
    Hata balonu kutulu kalır: arıza bildirimi metinden ayrışmalı. */
 .satir.bot .adim-blok .balon:not(.hata) {
   border: 0; background: none; box-shadow: none;
@@ -1865,8 +1808,7 @@ button.ozet-kart:focus-visible {
 }
 
 /* ==================== SÜRÜKLEME TUTAMAKLARI ====================
-   İki panelin genişliği kullanıcıya açık (kullanıcı kararı: "sola sağa
-   çekebileyim diğer bloğu tamamen silmeden").
+   İki panelin genişliği kullanıcıya açık.
 
    TUTAMAK AYRACIN ÜSTÜNDE DURUR, yer kaplamaz: iki panel arasına 6px'lik
    bir sütun eklemek üç sütunlu hizayı bozardı. Bunun yerine sıfır
@@ -1874,9 +1816,7 @@ button.ozet-kart:focus-visible {
    yakalama alanı 7px. İnce bir çizgiyi fareyle tutturmak zor; 7px
    tutturulabilir ama gözle görünmez.
 
-   Tutamak yalnızca ÜZERİNE GELİNCE ve SÜRÜKLENİRKEN renkleniyor:
-   sürekli görünen iki dikey kırmızı çizgi, ekranda üçüncü bir ayraç
-   gibi duruyordu. */
+*/
 .tutamak {
   /* 7px GERCEK kutu, NEGATIF MARGIN ile yer kaplamıyor: net genişlik
      -3 + 7 - 4 = 0. Böylece üç sütunun hizası zerre değişmiyor ama
@@ -1913,9 +1853,7 @@ button.ozet-kart:focus-visible {
 
 .tutamak:focus-visible { outline: none; }
 .tutamak:focus-visible::after { opacity: 1; }
-/* Sürükleme sırasında tüm sayfada imleç col-resize ve metin seçilmez:
-   fare tutamaktan kayınca imlecin değişmesi "bıraktım mı" hissi
-   veriyordu. */
+
 #kabuk.genislik-suruklemede { cursor: col-resize; user-select: none; }
 #kabuk.genislik-suruklemede #sohbet-alani,
 #kabuk.genislik-suruklemede #panel,
@@ -1953,11 +1891,9 @@ button.ozet-kart:focus-visible {
   cursor: pointer; color: var(--metin-soluk); white-space: normal;
 }
 .analiz-sekme:hover { background: var(--kenar-acik); color: var(--metin); }
-/* Backend'e henüz baglanmamis sekmeler bir sure SOLUK gosteriliyordu
-   (opacity: .7). Tek bagli sekme VALIDASYON oldugu icin o tek basina koyu
-   kaliyor ve sekme seridi bozuk gorunuyordu. Bilgi zaten iki yerden
+/*Bilgi zaten iki yerden
    veriliyor: sekmenin title'i ("Hazirlaniyor - ...") ve tiklaninca cikan
-   "Hazirlaniyor" karti. Bu yuzden renk/opaklik farki kaldirildi; tum
+   "Hazirlaniyor" karti.  Tum
    sekme etiketleri ayni tonda. .hazir-degil sinifi title'i tasiyan
    semantik isaret olarak duruyor. */
 .analiz-sekme.aktif {
@@ -1986,10 +1922,7 @@ button.ozet-kart:focus-visible {
 /* "Hazırlanıyor" notu: sekmenin verisi henüz bağlı değil */
 .iskele-kart.hazirlaniyor { border-style: dashed; background: var(--yuzey-alt); }
 
-/* ---- Katlanabilir özet kartı (sözlük teyidi adımı) ----
-   Ölçüm (1440x900, 1.042 kolon): iki özet kartı açıkken değişken
-   tablosunun başlığı y=869'a düşüyordu — 900 piksellik pencerede 31
-   piksel. Bölme öncesi tanımların düzeltileceği ekranda tablo kaydırma
+/* Bölme öncesi tanımların düzeltileceği ekranda tablo kaydırma
    ardında kalamaz. Kartlar silinmedi, katlandı.
    Katlıyken kart kendi özetini başlıkta taşır; başlık bir <button>,
    çünkü klavyeyle de açılıp kapanabilmeli. */
@@ -2125,18 +2058,14 @@ button.ozet-kart:focus-visible {
    onay kutusu; başlık ve satırlar aynı ızgara şablonunu paylaşır. */
 :root {
   --ft-satir-h: 26px;
-  /* Sekiz kolon 720px istiyordu; dört kolonda satır dar panele
+  /* dört kolonda satır dar panele
      sığıyor ve yatay kaydırma çoğu ekranda hiç gerekmiyor. */
   /* --ft-en, ızgaranın GERÇEK asgari genişliğiyle AYNI olmalı.
-     430px yazıyordu ama ızgara 26+110+68+150+62 = 416 + dört boşluk
-     (4x6=24) = 440px istiyordu. Varsayılan panel genişliğinde
-     (.ft-govde iç genişliği 430px) NULL % sütununun 10 pikseli
-     kesiliyordu: ekranda "%" görünüp sayı görünmüyordu. Asgariler
+Asgariler
      aşağıda kısıldı; yeni toplam 26+96+68+134+52 = 376 + 24 = 400.
      400 SEÇİLDİ, 416 DEĞİL: .ft-govde dikey kaydırma çubuğunu da
      taşıyor ve .ft-tablo'nun iç genişliği 1440px pencerede 406px
-     kalıyor. 416 asgari, satırı çubuğun altından 10px taşırıyordu —
-     kesilme kaybolmuyor, yalnızca yatay kaydırmaya dönüşüyordu. */
+     kalıyor. */
   /* Satırın en az genişliği: 84 + 58 + 104 + iki boşluk = 258px.
      Daraltılmış panelin en dar halinde (312px - 32px dolgu = 280px)
      yatay kaydırma olmadan sığıyor. */
@@ -2146,10 +2075,8 @@ button.ozet-kart:focus-visible {
 .ft-kart { padding: var(--b-3); }
 /* Başlık şeridi TEK SATIR: sayılar ve sözlük adı aynı satırda,
    aralarında nokta ayracı. Uzun sözlük adı kırpılır (min-width: 0). */
-/* Sayaç · kaynak · Excel düğmesi AYNI ŞERİTTE (kullanıcı kararı:
-   "excel olarak indir kısmı da üstteki yazının yanında yer almalı").
-   center hizası: düğme metinle aynı satırda oturmalı, baseline ile
-   düğmenin alt kenarı metne yapışıyordu. */
+/* Sayaç · kaynak · Excel düğmesi AYNI ŞERİTTE.
+*/
 .ft-ust {
   display: flex; align-items: center; flex-wrap: wrap;
   gap: 5px; margin-bottom: var(--b-2);
@@ -2165,7 +2092,7 @@ button.ozet-kart:focus-visible {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
 
-/* ARAMA · NULL EŞİĞİ · SIRALAMA TEK SATIRDA (kullanıcı kararı).
+/* ARAMA · NULL EŞİĞİ · SIRALAMA TEK SATIRDA.
    Arama kalan genişliği alır; eşik ve sıralama sabit ve dar. Panel
    daraldığında satır sarmalar - üst üste binmektense alt alta düşsün. */
 .ft-filtreler {
@@ -2173,8 +2100,7 @@ button.ozet-kart:focus-visible {
   gap: var(--b-2); margin-bottom: var(--b-2);
 }
 /* Arama TEK SATIR (uzun yer tutucu metni sığsın), tip süzgeci ve
-   sıralama altında YAN YANA eşit paylı. Üçünü tek satıra dizmek
-   daraltılmış panelde her birini okunamaz hale getiriyordu. */
+   sıralama altında YAN YANA eşit paylı. */
 .ft-filtre-alt { display: flex; gap: var(--b-2); }
 .ft-filtre-alt > * { flex: 1 1 0; min-width: 0; }
 .ft-tip-suzgec:disabled { opacity: .55; cursor: default; }
@@ -2183,9 +2109,7 @@ button.ozet-kart:focus-visible {
   background: var(--yuzey); border: 1px solid var(--kenar);
   border-radius: var(--r-kucuk); height: var(--btn-h-kucuk); padding: 0 var(--b-2);
 }
-/* DİKEY kapsayıcıda flex-basis YÜKSEKLİĞE uyguluyor: eski "flex: 1 1
-   150px" arama kutusunu devasa bir bloğa çeviriyordu (.ft-filtreler
-   artık column). Kutu kendi yüksekliğinde kalmalı, genişlikte esnesin. */
+/* Kutu kendi yüksekliğinde kalmalı, genişlikte esnesin. */
 .ft-ara { flex: 0 0 auto; width: 100%; min-width: 0; }
 .ft-ara:focus, .ft-secim:focus, .ft-esik-kutu:focus, .ft-sirala:focus,
 .ft-tip-suzgec:focus {
@@ -2234,8 +2158,7 @@ button.ozet-kart:focus-visible {
 .ft-satir {
   display: grid;
   /* ÜÇ SÜTUN: DEĞİŞKEN / TİP / SÖZLÜK TANIMI. Izgarada bir zamanlar
-     NULL için dördüncü bir 52px'lik iz vardı; sütun panelden kaldırıldı
-     ama iz kaldı ve her satırın sağında 58px boşluk yiyordu. Panel
+     NULL için dördüncü bir 52px'lik iz vardı. Panel
      daraltıldığı için (bkz. --analiz-en) bu boşluğun bedeli görünür
      hale geldi. */
   grid-template-columns: 26px minmax(84px, 1.3fr) 58px minmax(104px, 2.2fr);
@@ -2250,7 +2173,7 @@ button.ozet-kart:focus-visible {
 .ft-tablo.salt-okunur .ft-satir {
   grid-template-columns: minmax(84px, 1.3fr) 58px minmax(104px, 2.2fr);
 }
-/* METİN KIRPILMAZ (kullanıcı kararı): uzun ad ve tanım alt satıra kayar. */
+/* METİN KIRPILMAZ: uzun ad ve tanım alt satıra kayar. */
 .ft-hucre {
   min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.35;
   font-size: var(--fs-govde); color: var(--metin);
@@ -2369,9 +2292,7 @@ button.ozet-kart:focus-visible {
 
 /* ==================== Bölme kartının ortak parçaları ====================
    Özet, uyarı, kısıt ve kilit blokları: iki panelin de üstünde/altında
-   duran, panelden bağımsız parçalar. Form düzeni (aşama şeritleri,
-   etiket-kontrol satırları) KALDIRILDI: ayarlar artık panel içindeki
-   çip şeritleriyle seçiliyor (bkz. Bölme Stratejisi kartı). */
+   duran, panelden bağımsız parçalar. */
 /* Özet satırı: kaydedilmiş hal net, tahmini hal kesikli çerçeveli */
 .bf-ozet {
   margin-top: var(--b-3); padding: var(--b-2);
@@ -2427,8 +2348,7 @@ button.ozet-kart:focus-visible {
 .bf-kisit { font-size: var(--fs-govde); color: var(--metin); line-height: 1.5; }
 
 /* ---- Bölme kartı: tek liste, özet çubuğu, bilgi simgesi ----
-   (kullanıcı kararı: iki sütun yerine tek liste; önerilen değerler
-   seçili gelir, sapan satır kehribar, üstte "veri nasıl bölünecek"). */
+*/
 .bolme-ozet {
   margin-top: var(--b-3); padding: var(--b-3) var(--b-4);
   background: var(--yuzey-alt); border: 1px solid var(--kenar);
@@ -2450,7 +2370,7 @@ button.ozet-kart:focus-visible {
 }
 /* Parça yazısından DAR OLAMAZ: flex-basis auto + flex-shrink 0. Yüzde
    yalnızca kalan alanın paylaşımını belirler; yazı hiçbir zaman
-   kırpılmaz (kullanıcı kararı). Dar ekranda çubuk sarılır. */
+   kırpılmaz. Dar ekranda çubuk sarılır. */
 .bolme-cubuk { flex-wrap: wrap; row-gap: 2px; height: auto; min-height: 26px; }
 .bolme-cubuk > span {
   display: flex; align-items: center; justify-content: center;
@@ -2484,9 +2404,7 @@ button.ozet-kart:focus-visible {
 .bolme-kisit-im { color: var(--amber); font-weight: var(--fw-kalin); }
 .bolme-kisit-metin { color: var(--metin); }
 
-/* ---- Ayar grupları ve satırlar ----
-   ETİKET ÜSTTE, DEĞER ALTTA: iki sütunlu bir satır dar panelde
-   etiketle kontrolü birbirine yapıştırıyordu. */
+
 .bolme-ayarlar { margin-top: var(--b-3); }
 .bolme-grup-baslik {
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
@@ -2604,7 +2522,7 @@ button.ozet-kart:focus-visible {
   border-color: var(--kirmizi); color: var(--kirmizi);
 }
 /* Seçili çip: kırmızı çerçeve + kırmızı yazı, DOLU KIRMIZI DEĞİL.
-   On küsur satırın tamamı dolu kırmızı olunca panel okunmuyordu. */
+*/
 .bolme-cip.secili {
   border-color: var(--kirmizi); color: var(--kirmizi);
   background: var(--yuzey); font-weight: var(--fw-kalin);
@@ -2636,9 +2554,7 @@ span.bolme-cip { cursor: default; }
 .bf-yuzde-satir { font-size: var(--fs-kucuk); color: var(--metin-soluk); }
 
 /* ---- Açılır alanlar: "Öneri gerekçesi" ve "Detaylar ve Terimler" ----
-   İKİSİ DE VARSAYILAN KAPALI. Uzun gerekçe metni eskiden seçim
-   ekranının üstünde duruyor ve ekranın dörtte birini yiyordu; asıl
-   karar olan "hangi panel" aşağı kayıyordu. */
+   İKİSİ DE VARSAYILAN KAPALI. */
 .bolme-acilir { margin-top: var(--b-4); }
 .bolme-acilir-bas {
   display: inline-flex; align-items: center; gap: var(--b-2);
@@ -2814,8 +2730,7 @@ span.bolme-cip { cursor: default; }
   color: var(--metin); margin-bottom: var(--b-2);
 }
 .dok-tablo { margin-bottom: var(--b-3); overflow-x: auto; }
-/* Bölüm tablosu iki kolonlu da olabiliyor: ilk kolona sabit %38 vermek
-   "Alan / Değer" tablosunu dengesiz gösteriyordu. */
+
 .dok-tablo .panel-tablo { table-layout: auto; }
 .dok-tablo .panel-tablo td { white-space: normal; }
 /* "Bu adım henüz çalışmadı." - veri yok, hata da yok */
@@ -2947,7 +2862,7 @@ span.bolme-cip { cursor: default; }
    altında. İkisi de aynı uca gidiyor; görünürlüğü "kaydedildi mi"
    belirliyor (hidden özniteliği). */
 /* ---- Excel düğmesi ----
-   İKİ DURUMLU YEŞİL (kullanıcı kararı): "basılabildiğinde koyu yeşil,
+   İKİ DURUMLU YEŞİL: "basılabildiğinde koyu yeşil,
    basılmadığında açık yeşil". Yeşil, Excel'in kendi rengi - marka
    kırmızısındaki birincil düğmeyle yarışmıyor, ama gri bir ikincil
    düğmeden çok daha görünür; bu bir çıktı alma işi ve kullanıcı onu
@@ -2983,8 +2898,7 @@ span.bolme-cip { cursor: default; }
 }
 .excel-hata[hidden] { display: none; }
 
-/* SATIR RENKLERİ (kullanıcı kararı: "kırmızı hata varmış gibi
-   gösteriyor"). Karar öncesi: sarı = açıklama boş, mavi = dil modeli
+/* SATIR RENKLERİ. Karar öncesi: sarı = açıklama boş, mavi = dil modeli
    önerisi. Karar sonrası: yeşil = sözlüğe eklendi / düzeltme uygulandı,
    kırmızı = eklenmedi. Kullanıcının yazdığı metin renksiz. Zemin açık
    ton; metin okunur kalır. Hücre bazında boyanıyor: tablo satırı
@@ -3045,9 +2959,8 @@ span.bolme-cip { cursor: default; }
 .dg-kontrol-bas { margin-top: var(--b-4); }
 /* Kısaltma (+ örnekler "i") | Anlam | Kaynak | Hafızaya Kaydet */
 /* Kısaltma | Sözlükte | Dil Modeli | Anlam | Kaynak | Hafızaya Kaydet */
-/* LLM Karar en geniş sütun (kullanıcı bildirimi: uzun anlam kesiliyordu). */
-/* Kısaltma sütunu geniş (kullanıcı bildirimi: uzun kısaltmada "i" alt
-   satıra düşüyordu); ad ile "i" aynı satırda kalır. */
+/* LLM Karar en geniş sütun. */
+/* Kısaltma sütunu geniş; ad ile "i" aynı satırda kalır. */
 .dg-kisaltma-tablo th:nth-child(1) { width: 19%; }
 .dg-kisaltma-tablo th:nth-child(2) { width: 14%; }
 .dg-kisaltma-tablo th:nth-child(3) { width: 13%; }
@@ -3055,12 +2968,11 @@ span.bolme-cip { cursor: default; }
 .dg-kisaltma-tablo th:nth-child(5) { width: 150px; white-space: normal; }
 .dg-kisaltma-tablo th:nth-child(6) { width: 64px; }
 .dg-kisaltma-tablo .dg-yeni-kisa { text-transform: uppercase; }
-/* Kaynak değerleri salt okunur (✓ işareti kaldırıldı: kullanıcı kararı). */
+
 .dg-kisaltma-tablo td.dg-kaynak-deger { color: var(--metin); }
 .dg-kisaltma-tablo td.dg-kaynak-yok { color: var(--metin-soluk); }
 .dg-kisaltma-tablo td.dg-kisaltma-ad .bolme-info { margin-left: 4px; vertical-align: middle; }
-/* Kısaltma adı kırpılmaz (kullanıcı bildirimi: uzun kısaltmalar kesik
-   görünüyordu); sığmazsa alt satıra geçer. */
+/* Kısaltma adı kırpılmaz; sığmazsa alt satıra geçer. */
 .dg-kisaltma-tablo td.dg-kisaltma-ad,
 .dg-birlesik-tablo td.dg-kisaltma-ad { white-space: nowrap; overflow: visible; }
 /* Alttaki biçimler ve "sayıdan ayır" satırı sarabilir. */
@@ -3132,7 +3044,7 @@ span.bolme-cip { cursor: default; }
 /* Kart gönderildikten sonra toplu düğmeler de kapalı görünür. */
 .teyit-kart.kilitli .dg-toplu-btn { opacity: .5; pointer-events: none; }
 
-/* Toplu düğmeler HER ZAMAN SAĞDA (kullanıcı kararı): satır dar gelip
+/* Toplu düğmeler HER ZAMAN SAĞDA: satır dar gelip
    alta kaydığında da sola düşmesin. */
 .dg-tablo-ust .dg-toplu { margin-left: auto; }
 
@@ -3198,7 +3110,7 @@ span.bolme-cip { cursor: default; }
 }
 .islem-iptal:disabled { color: var(--metin-soluk); cursor: default; text-decoration: none; }
 
-/* ONAY DÜĞMELERİ ORTADA (kullanıcı kararı): kartların ana düğmesi
+/* ONAY DÜĞMELERİ ORTADA: kartların ana düğmesi
    (Girdileri Doğrula, Tanımları Onayla, Kaydet ve Devam Et, Bu Ayarları
    Seç ...) ve blok onay düğmeleri yatayda ortalanır. */
 .secim-kart > .secim-onay { display: block; margin-left: auto; margin-right: auto; }
@@ -3207,7 +3119,7 @@ span.bolme-cip { cursor: default; }
 .bolme-alt-acilirlar:empty { display: none; }
 .bolme-alt-dugmeler { margin-left: auto; margin-right: auto; }
 
-/* FAZ BİTTİ AYRACI (kullanıcı kararı): faz bitince sohbette ince bir
+/* FAZ BİTTİ AYRACI: faz bitince sohbette ince bir
    çizgi, ortasında kırmızı "01 Çalışma Kurulumu Tamamlandı". */
 .faz-bitti {
   display: flex; align-items: center; gap: var(--b-3);
@@ -3251,7 +3163,7 @@ span.bolme-cip { cursor: default; }
   background: none; border: 0; padding: 0; font: inherit; color: var(--metin);
   cursor: pointer; text-align: left; word-break: break-all;
 }
-/* Alti cizgi yok: kolon adlarindaki "_" cizginin altinda kayboluyordu */
+
 .aralik-ad-link:hover, .aralik-satir.acik .aralik-ad-link { color: var(--kirmizi); }
 .aralik-rozet {
   display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: var(--r-kucuk);
@@ -3402,7 +3314,7 @@ span.bolme-cip { cursor: default; }
 .dg-tablo td.dg-kolon:has(.dg-rol) { white-space: normal; overflow-wrap: anywhere; }
 
 /* ==================== 01.2 RENK ====================
-   Kullanıcı kararı: renkler kalsın ama az olsun ("renk cümbüşü" de
+   renkler kalsın ama az olsun ("renk cümbüşü" de
    "hiç renk yok" da kötü). 01.2 Veri ve Model Tanımları kartlarında
    (.dg-kart) dört anlam:
      mavi : dil modelinin önerisi (dokunulmamış)
@@ -3427,8 +3339,7 @@ span.bolme-cip { cursor: default; }
 .dg-kart .dg-tablo tr.dg-uyarili .dg-giris,
 .dg-kart .dg-tablo tr.dg-duzenlendi .dg-giris { background: transparent; }
 /* Kısaltma Sözlüğü ve Birleştirme: yalnız mor (hafızada onaylı) ve
-   yeşil (düzenlendi); düzenlendi bütün akışta yeşil (kullanıcı kararı:
-   renk birliği). */
+   yeşil (düzenlendi); düzenlendi bütün akışta yeşil. */
 .dg-l-renksiz { background: var(--yuzey); }
 .dg-l-dikkat { background: var(--dg-bos); }
 .dg-l-duzenlendi { background: var(--dg-eklendi); }
@@ -3441,7 +3352,7 @@ span.bolme-cip { cursor: default; }
 /* Bilgi kutusu ve kapsam çubuğu. */
 .dg-kart .dg-bilgi-kutu { background: var(--yuzey-alt); border-left-color: var(--kenar-guclu); }
 .dg-kart .dg-cubuk-dolu.dg-tam { background: var(--metin); }
-/* Excel düğmesi sağ paneldeki gibi yeşil ve küçük (kullanıcı kararı);
+/* Excel düğmesi sağ paneldeki gibi yeşil ve küçük;
    Kısaltma Sözlüğü'nde başlığın sağında. */
 .dg-kart .dg-tablo-bas .excel-serit { margin-left: auto; }
 .dg-kart .excel-btn:disabled {

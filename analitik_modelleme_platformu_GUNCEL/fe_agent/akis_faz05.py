@@ -20,8 +20,7 @@ from fe_agent.akis_durum import (
 # ===========================================================================
 # KAYNAK SECIMI
 # ===========================================================================
-# Degisken uretimi hic calismadiysa _ENRICHED olusmaz; dogrudan okumak
-# yakalanmamis istisna uretiyordu.
+# Degisken uretimi hic calismadiysa _ENRICHED olusmaz.
 def _kaynak(durum):
     """Doner: (dataset_adi | None, zenginlestirilmis_mi)"""
     zengin = "%s_ENRICHED" % durum.get("veri_seti")

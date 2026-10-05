@@ -72,7 +72,7 @@ def _sayi_ad(liste, en_fazla=3):
 
 def _kolon_sayisi(durum):
     """Plan metni icin kolon sayisi. Once durum, sonra sinirli sema okumasi."""
-    # Teyitten sonra tek kaynak AMP_VERISETI (kullanici karari)
+    # Teyitten sonra tek kaynak AMP_VERISETI
     amp = (durum.get("amp_cikti") or {}).get("veri") or {}
     if amp.get("kolon"):
         return int(amp["kolon"])
@@ -90,11 +90,8 @@ def _meta_kolonlar(durum):
 
     target/id/donem'in yaninda SPLIT_KOLON da korunur: kimlik kolonu yoksa
     (ya da kimlik listesi cok buyukse) gelistirme/test bolmesi veri setine
-    bu kolonla KALICI yaziliyor. bolme_hazirla onu haric_kolonlar'a da
-    ekledigi icin eskiden baz setten dusuyordu; sonraki her adim
-    maskeler() icinde AdimHatasi aliyor ve calisma kurtarilamaz bicimde
-    kilitleniyordu (kimlik listesi esigini asan buyuk veri setlerinde).
-    """
+    bu kolonla KALICI yaziliyor.
+"""
     m = durum.get("meta") or {}
     korunan = {x for x in (m.get("target"), m.get("id"), m.get("donem")) if x}
     if ((durum.get("bolme") or {}).get("kalici") == "kolon"
@@ -198,8 +195,7 @@ def _kayit_metni(yazildi, yedek):
 
 
 def veri_profili_plan(durum):
-    """ONAY SORULMAZ (kullanici karari: "başlama desem başlamayacak da ne
-    alaka, otomatik başlasın"). Bolme kaydedilince profil, SFA ve aralik
+    """ONAY SORULMAZ. Bolme kaydedilince profil, SFA ve aralik
     onerileri art arda calisir; ilk durak aralik kararidir.
 
     Metin yalnizca "Geri Dön" ile bu adima donulunce gorunur (otomatik
@@ -546,13 +542,11 @@ def _psi_olculur_mu(durum):
       rastgele -> test ayni donemden gelir; olculen sey BOLMENIN
                   dengesizligidir ve ~0 beklenir. Sifirdan uzak cikmasi
                   bolmenin kendisinde bir sorun oldugunu soyler.
-    Eskiden rastgele bolmede adim tamamen atlaniyordu; o kontrolu de
+     O kontrolu de
     kaybetmemek icin artik olculuyor, plan metni hangi soruyu
     cevapladigini yaziyor."""
     b = durum.get("bolme") or {}
-    # Satir SAYIMINA baglanmiyoruz: sayim yalnizca bolme adimi calisinca
-    # yaziliyor ve ona bagli kalmak, bolmesi belli ama sayimi kaydedilmemis
-    # bir oturumda adimi sessizce atlatiyordu. Zamansal bolme ayrica
+    # Zamansal bolme ayrica
     # deterministiktir, kalici kayit bile gerektirmez. Test setinin fiilen
     # bos olup olmadigi maske hesaplandiktan SONRA denetleniyor.
     if (bolme_ayarlari(durum)["test_tanim"] == "zamansal"
@@ -617,10 +611,9 @@ def _dusurulecek_kume(durum):
     Teshis listelerine ek olarak durum["haric_kolonlar"] da buraya girer:
     surec disinda tutulan (Mod A'da sozlukte karsiligi olmayan) kolonlar
     profilden de haric tutuldugu icin hicbir teshis listesinde gorunmez;
-    yalnizca teshislere bakan eski surum bu kolonlari final modele
-    sokuyordu. Hedef / kimlik / donem kolonlari asla dusurulmez.
+    Hedef / kimlik / donem kolonlari asla dusurulmez.
     Doner: (tum_dusurulecek, teshis_kaynakli, sozlukte_tanimsiz)
-    """
+"""
     t = (durum.get("profil") or {}).get("profil_teshis") or {}
     st = durum.get("stabilite") or {}
     korunan = _meta_kolonlar(durum)

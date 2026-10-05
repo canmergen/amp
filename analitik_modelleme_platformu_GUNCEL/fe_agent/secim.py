@@ -38,8 +38,7 @@ def yari_sabit_ele(df, adaylar, esik=QUASI_ESIK):
 def korelasyon_ele(df, adaylar, oncelik=None, esik=KORELASYON_ESIK):
     """Birbirine cok benzeyen ciftlerden dusuk oncelikli olani duser.
     oncelik: {kolon: skor} — yuksek skorlu tutulur (orn. IV)."""
-    # TUM ADAYLAR (kullanici karari: orneklem yok). Eskiden ilk 800 aday
-    # karsilastiriliyordu; sonrakiler hic bakilmadan geciyordu.
+    # TUM ADAYLAR.
     adaylar = list(adaylar)
     if len(adaylar) < 2:
         return {}, len(adaylar)
@@ -112,7 +111,7 @@ def mi_skorla(df, adaylar, y, binary=True):
     except Exception:
         return {}
 
-    # TAM VERI (kullanici karari: orneklem yok).
+    # TAM VERI.
     X = _sayisal(df, adaylar).fillna(0)
     t = pd.to_numeric(y, errors="coerce").fillna(0)
 
@@ -139,7 +138,7 @@ def onem_skorla(df, adaylar, y, binary=True):
     t = pd.to_numeric(y, errors="coerce").fillna(0)
     if binary:
         t = (t > 0).astype(int)
-    # TAM VERI (kullanici karari: orneklem yok).
+    # TAM VERI.
 
     Model = RandomForestClassifier if binary else RandomForestRegressor
     model = Model(n_estimators=150, max_depth=8, n_jobs=-1, random_state=42)

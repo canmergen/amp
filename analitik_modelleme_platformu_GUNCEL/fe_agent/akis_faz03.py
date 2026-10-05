@@ -79,8 +79,7 @@ def _adim_temizle(durum, *kaynaklar):
 def _kaynaga_yaz(durum, kaynak, adlar):
     """Uretilen degiskeni KIM uretti: kural tabanli mi, AI kesfi mi?
 
-    durum["uretilen"] duz bir ad listesi; hangi degiskenin hangi yoldan
-    geldigini tutmuyordu. Ust serit "kural kac tane, AI kac tane, bunlarin
+    durum["uretilen"] duz bir ad listesi. Ust serit "kural kac tane, AI kac tane, bunlarin
     kaci finalde kaldi" diye sorunca bu ayrim gerekli oldu."""
     harita = durum.get("uretilen_kaynak")
     if not isinstance(harita, dict):
@@ -367,9 +366,7 @@ def kural_uygula(durum, secim=None):
                 % (_sayi(len(uretilen)), hedef, str(e)[:120]))
     # Bu yazma _yaz() uzerinden GECMIYOR (hedef dataset yoksa farkli bir
     # hata metni gerekiyor), dolayisiyla onbellek iptalini kendisi yapar.
-    # Eskiden her `uygula` adimindan sonra onbellek KOMPLE bosaltiliyordu
-    # ve bu kacak gorunmuyordu; o toptan bosaltma kaldirildi (kullanici
-    # sikayeti: adimlar dakikalarca suruyordu).
+    #
     onbellek_temizle(hedef)      # tablo degisti; bayat kopya okunmasin
 
     durum["uretilen"] = sorted(set(durum.get("uretilen") or []) | set(uretilen))
@@ -477,8 +474,7 @@ def kesif_uygula(durum, secim=None):
     hipotez = _secimi_uygula(durum.get("hipotez") or [], secim)
     hedef = "%s_ENRICHED" % durum["veri_seti"]
 
-    # IDEMPOTANS: bu adimin onceki turda urettigi kolonlarin kaydini sil ve
-    # veri setinden de dusur; aksi halde secim degisince eski kolonlar
+    # aksi halde secim degisince eski kolonlar
     # tabloda kalir, durum["uretilen"] ile tablo birbirini tutmaz.
     silinen = _adim_temizle(durum, KESIF_KAYNAK)
 
@@ -523,9 +519,7 @@ def kesif_uygula(durum, secim=None):
                 % (_sayi(len(uretilen)), hedef, str(e)[:120]))
     # Bu yazma _yaz() uzerinden GECMIYOR (hedef dataset yoksa farkli bir
     # hata metni gerekiyor), dolayisiyla onbellek iptalini kendisi yapar.
-    # Eskiden her `uygula` adimindan sonra onbellek KOMPLE bosaltiliyordu
-    # ve bu kacak gorunmuyordu; o toptan bosaltma kaldirildi (kullanici
-    # sikayeti: adimlar dakikalarca suruyordu).
+    #
     onbellek_temizle(hedef)      # tablo degisti; bayat kopya okunmasin
 
     durum["uretilen"] = sorted(set(durum.get("uretilen") or []) | set(uretilen))

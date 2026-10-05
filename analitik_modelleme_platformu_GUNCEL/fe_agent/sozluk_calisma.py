@@ -164,7 +164,7 @@ def _temiz_anahtar(oturum_anahtari):
     return re.sub(r"[^A-Za-z0-9_-]", "", str(oturum_anahtari or ""))
 
 
-# AMP_SOZLUK (kullanici karari): Degisken Kontrolu kaydedildikten sonra
+# AMP_SOZLUK: Degisken Kontrolu kaydedildikten sonra
 # sozlugun TEK kaynagi calisma klasorundeki AMP_SOZLUK'tur. Dosya varsa
 # butun okumalar ve yazmalar ona gider; teyit oncesine donulunce silinir ve
 # calisma kopyasina geri donulur.
@@ -286,9 +286,7 @@ def _kategori_kolonu_garanti(tablo):
 
     KOLON TIPI ZORLANIYOR: kategorisi hic girilmemis bir sozluk CSV'ye
     yazilip geri okundugunda kolon bastan asagi bos oldugu icin float64
-    gelir. Pandas o kolona metin yazmayi reddediyor ("Invalid value
-    'Finansal' for dtype 'float64'") ve ilk kategori duzenlemesi
-    coküyordu."""
+    gelir."""
     kolon = kategori_kolonu_bul(tablo)
     if kolon is None:
         tablo = tablo.copy()
@@ -339,7 +337,7 @@ def kopya_kur(durum, tablo=None):
         if tablo is None or not len(tablo.columns):
             return None, "Sözlük okunamadığı için çalışma kopyası çıkarılamadı."
         tablo, _ = _kategori_kolonu_garanti(tablo)
-        # VERI SETIYLE ESITLEME (kullanici karari): kopyada yalnizca veri
+        # VERI SETIYLE ESITLEME: kopyada yalnizca veri
         # setindeki kolonlar durur. Orijinal sozluge dokunulmaz.
         kolonlar = _veri_seti_kolonlari(durum)
         rapor = None
@@ -363,9 +361,7 @@ def kopya_kur(durum, tablo=None):
 # ---------------------------------------------------------------------------
 # VERI SETIYLE ESITLEME
 # ---------------------------------------------------------------------------
-# Kullanici karari: "sozlukte veri setinden farkli ve fazla kolon varsa o
-# satirlar sozlukten dusurulmeli; veri setinde olup sozlukte olmayan kolon
-# da sozluge eklenmeli". Yalnizca CALISMA KOPYASINDA yapilir; kurumsal
+# Yalnizca CALISMA KOPYASINDA yapilir; kurumsal
 # sozluk tablosu okunur, asla yazilmaz.
 KAYNAK_ESITLEME = "veri seti eşitlemesi"
 
@@ -495,13 +491,8 @@ def calisma_df(durum):
 def _kopyayi_kurtar(durum):
     """Sozluk BAGLI ama calisma kopyasi yoksa kopyayi yeniden cikarir.
 
-    NEDEN GEREKLI (kullanici bildirimi: "sağ paneldeki değişken sözlük
-    tanımlarına bakarken sözlük çalışma kopyası yok, tanım salt okunur
-    yazıyor"): kopya yalnizca sozluk baglanirken bir kez cikariliyordu.
-    O dosya sonradan kaybolursa (proje hafizasi temizlendi, kopya adimi
-    atlanmis eski bir oturum, yazma o anda basarisiz olmustu) panel
-    sessizce SALT OKUNUR'a dusuyor ve geri donus yolu kalmiyordu -
-    kullanici tanimi duzenleyemiyor ama sebebini de degistiremiyor.
+
+
 
     Kopya ORIJINALDEN yeniden cikariliyor: kaybolan kopyadaki
     duzenlemeler zaten kayip, yeniden kurmak durumu kotulestirmiyor.
@@ -559,13 +550,10 @@ def kaynak_etiketi(durum):
     """Ust seritte ve panelde gorunen sozluk adi. Sozluk hic baglanmadiysa
     None - cagiran taraf "seçilmedi" yazar.
 
-    NEDEN "(çalışma kopyası)" EKI KALDIRILDI
-      Etiket bir sure "<AD>  (çalışma kopyası)" doneruyordu. Kopya bir
+    Kopya bir
       UYGULAMA DETAYI: kullanicinin kartta gormek istedigi sey, uzerinde
       calisilan sozlugun adi ve NEREDEN geldigi. "Orijinal yazilmaz"
-      guvencesi sohbetteki adim metninde duruyor; duzenlemenin acik olup
-      olmadigini ise feature tablosunun 'duzenlenebilir' alani tasiyor -
-      bu etiketin o isi ikinci kez yapmasi gerekmiyordu."""
+      guvencesi sohbetteki adim metninde duruyor."""
     return sozluk_adi(durum)
 
 
@@ -937,9 +925,7 @@ def _kaynak_etiketi_yaz(oturum_anahtari, durum):
 def calisma_kopyasi_sil(oturum_anahtari):
     """Oturumun sozluk calisma kopyasini ve degisiklik kutugunu siler.
 
-    "Yeni calisma" durumu sifirliyor ama kopya diskte kaliyordu; yeni
-    calisma ayni sozlugu bagladigi anda onceki calismanin kategori
-    duzenlemelerini sessizce devraliyordu. Surec ici onbellek de
+Surec ici onbellek de
     dusurulur, aksi halde silinen dosya okunmaya devam ederdi.
 
     Doner: silinen yol listesi. Dosya hic olusmamis olabilir; bu bir

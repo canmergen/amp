@@ -31,13 +31,12 @@ TASARIM KARARI - "GUVENLIYSE ONAYLANSIN"
 import numpy as np
 import pandas as pd
 
-# ORNEKLEM YOK (kullanici karari): teklifler de onay da TAM KOLONLA
+# ORNEKLEM YOK: teklifler de onay da TAM KOLONLA
 # hesaplanir (bkz. akis_faz01._tip_secenekleri).
 
 # Sayisal bir kolonun "kategorik" olarak modellenmesi ancak sinirli
 # sayida farkli deger varsa anlamli. Ustunde kalan kolonlar kilitli
-# gosterilir; aksi halde tek tiklamayla 40.000 seviyeli bir kategorik
-# uretilebiliyordu.
+# gosterilir.
 KATEGORI_SEVIYE_SINIRI = 50
 
 # Kilitli secenegin yaninda gosterilecek ornek deger sayisi.
@@ -52,8 +51,7 @@ ORNEK_DEGER = 3
 # olabilir, ondalikli bir virgul-uc de. Bu yuzden secenek "sayısal" degil,
 # "sayısal - ondalık ayırıcı nokta": kullanici hedefi degil, YOLU seciyor.
 DONUSUMLER = {
-    # BICIM KORUNUR (kullanici karari: "202501 tarihe çevrilmeli ama yine
-    # 202501 formatında olmalı"). Degerler DEGISMEZ; yalnizca kolonun tipi
+    # BICIM KORUNUR. Degerler DEGISMEZ; yalnizca kolonun tipi
     # "tarih" (donem) olarak isaretlenir ve her degerin gecerli bir yil-ay
     # oldugu tam kolonla denetlenir. tarih_ym6 ise degeri gercek tarihe
     # (2025-01-01) cevirir ve yazimi bozar.
@@ -121,9 +119,7 @@ def gecerli_kod(kod):
 # CEVIRME
 # ---------------------------------------------------------------------------
 def _metin(seri, tam_sayi=None):
-    """Dolu degerleri kirpilmis metin olarak. Sayisal kaynakta
-    float 20240131.0 -> "20240131": .0 kuyrugu tarih kaliplarini
-    tutturmuyordu.
+    """Dolu degerleri kirpilmis metin olarak.
 
     tam_sayi: kolonun TAMAMI icin "sonlu degerlerin hepsi tam sayi mi"
     karari. Verilmezse seriden hesaplanir. Profil isi kolonu PARCA PARCA
@@ -173,9 +169,7 @@ def cevir(seri, kod, tam_sayi=None):
             temiz = (m.str.replace(".", "", regex=False)
                       .str.replace(",", ".", regex=False))
         yeni = pd.to_numeric(temiz, errors="coerce")
-        # BINLIK AYIRICI UCERLI GRUP OLMALI (kullanici bildirimi: "15.01.2024"
-        # tarihine "sayısal - ondalık virgül" oneriliyordu; noktalar
-        # silinince 15012024 sayisi kaliyordu). Binlik ayirici tasiyan
+        # BINLIK AYIRICI UCERLI GRUP OLMALI. Binlik ayirici tasiyan
         # deger ancak 1.234 / 1.234.567,50 gibi dogru gruplanmissa sayidir.
         ayiricili = m.str.contains(binlik, regex=False)
         gecerli = m.str.match(_BINLIK_KALIP[kod])
@@ -281,10 +275,8 @@ def denetle(seri, kod):
 def secenekler(seri, tip, yalniz_uygun=False):
     """Bir kolonun donusum listesi.
 
-    yalniz_uygun=True: YALNIZCA uygulanabilir secenekler (kullanici
-    karari: "yapamıyorsam hiç seçenek olarak görmemeliyim"). Seri TAM
-    KOLON olmali; ornekle uygun gorunup tam kolonda takilan secenek,
-    secildikten sonra hata veriyordu."""
+    yalniz_uygun=True: YALNIZCA uygulanabilir secenekler. Seri TAM
+    KOLON olmali."""
     cikti = []
     for kod in ADAYLAR.get(tip, []):
         uygun, sebep = denetle(seri, kod)

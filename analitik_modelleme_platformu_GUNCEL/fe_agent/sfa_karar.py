@@ -12,9 +12,7 @@ KULLANICI KARARLARI
 
 KARAR ALANLARI (her degisken)
   tip            "yok" | tip_donusum kodu ("kategorik_metin", "sayisal_nokta",
-                   "sayisal_virgul"). TIP KARARI YALNIZCA SFA'DA (kullanici
-                   karari: "degiskenlerin butun durumuna orada karar
-                   verecegiz"). Kural onerir, kullanici degistirir; dil
+                   "sayisal_virgul"). TIP KARARI YALNIZCA SFA'DA. Kural onerir, kullanici degistirir; dil
                    modeli tipi degistirmez (tipin cevabi verinin kendisinde).
                    Tip degisince degiskenin SFA detayi yeni tiple yeniden
                    hesaplanir (akis_faz02.sfa_tip_degistir).
@@ -52,7 +50,7 @@ from fe_agent import tip_donusum
 KARAR_DOSYA = "sfa_kararlar.json"
 GRAFIK_ARALIK = 20          # grafikteki ince aralik sayisi (ornek ekranla ayni)
 KATEGORI_GOSTER = 19        # grafikte en cok kategori; gerisi "Diğer"
-KIRPMA = 0.05               # winsor: train %5 ve %95 (kullanici karari)
+KIRPMA = 0.05               # winsor: train %5 ve %95
 CARPIK_ESIK = 2.0           # varsayilan log donusumu icin carpiklik esigi
 AYKIRI_ESIK = 0.005         # uc cit disindaki pay bunu gecerse winsor
 

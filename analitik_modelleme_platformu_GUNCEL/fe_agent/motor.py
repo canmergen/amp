@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """fe_agent/motor.py - TAM VERIYE DOKUNAN ISIN MOTORU: pandas mi, Spark mi.
 
-KURAL (kullanici karari: "her şey sparkta olmasın, verinin yapısına göre
-seçelim"): karar veri setinin Dataiku'daki DOSYA BOYUTUNA gore verilir.
+KURAL: karar veri setinin Dataiku'daki DOSYA BOYUTUNA gore verilir.
 Boyut "basic:SIZE" metriginden okunur; Dataiku dosyalari listeleyip
 toplar, tabloyu okumaz (kullanicinin ortaminda 24,85 GB'lik veri setinde
 0,4 saniye).

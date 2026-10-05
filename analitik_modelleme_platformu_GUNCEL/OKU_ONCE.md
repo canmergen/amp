@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma sütunu genişledi, i alt satıra düşmüyor**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
+Bu tur: **Kısaltma hafızası JSON; kod yorumları sadeleşti**. Değiştir: `fe_agent/` altındaki bütün .py dosyaları, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+1) Onaylı kısaltma hafızası `PROJE_HAFIZASI/KISALTMA_HAFIZASI.json`:
+   `{"kisaltmalar": {"<KISA>": "<anlam>", ...}, "notlar": {"<KISA>":
+   "yanlış kısaltma: <YENİ> = <anlam>"}}`. Eski `KISALTMA_HAFIZASI.parquet`
+   ilk okumada bir kez JSON'a aktarılır ve silinir. Kullanıcı / tarih
+   bilgisi tutulmaz.
+2) Kod yorumlarından kişi / kurum bilgisi ve geçmiş anlatımları
+   ("kullanıcı kararı / bildirimi", alıntılanan konuşmalar, "eskiden",
+   "...yordu", "kaldırıldı") çıkarıldı; yorumlar yalnız kodun ne yaptığını
+   ve neden öyle olduğunu anlatır. Kod satırları ve ekranda görünen
+   metinler değişmedi (sözdizimi ağacı karşılaştırmasıyla doğrulandı);
+   tek istisna bir istem satırındaki "(kullanıcı kararı)" ifadesi.
+3) Bu dosyadaki (teslim notu) kullanıcı adı örnekleri yer tutucuyla
+   değiştirildi.
+
+Önceki tur: **Kısaltma sütunu genişledi, i alt satıra düşmüyor**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
 
 - Kısaltma Sözlüğü'nde Kısaltma sütunu %14'ten %19'a; LLM Sözlük %14,
   LLM Genel %13. Kısaltma adı ile i aynı satırda kalır (sarmaz); altındaki
@@ -2538,7 +2554,7 @@ Yapıştır: `akis_durum.py` → `akis_faz01.py` → `akis_kayit.py` → `akis_f
 
 - B ve D'de «Birleştirme Planı» adımı önce "Birleştirme sonucuna ne ad
   verelim?" diye soruyor (varsayılan: son verilen ad ya da MODELLEME_BAZ).
-- Tablo iki yere yazılıyor: `PROJE_HAFIZASI/cmergen_03/<AD>.csv` (çalışmanın
+- Tablo iki yere yazılıyor: `PROJE_HAFIZASI/<kullanici>_03/<AD>.csv` (çalışmanın
   kalıcı kopyası) ve akıştaki `<AD>` veri seti.
 - Ortak veri setlerinin son sahibi `VERI_SETI_SAHIPLERI.json`'da
   (AMP_VERISETI_SAHIBI.txt'nin yerini aldı). Başka çalışma aynı veri setinin
@@ -2552,7 +2568,7 @@ Bu tur: **sade kayıt yeri** ve **ortak AMP_VERISETI hatası**.
 Yapıştır: `akis_durum.py` → `akis_faz01.py`
 
 - Bir çalışmanın her dosyası tek klasörde:
-  `PROJE_HAFIZASI/cmergen_03/AMP_VERISETI.csv`, `AMP_SOZLUK.csv`,
+  `PROJE_HAFIZASI/<kullanici>_03/AMP_VERISETI.csv`, `AMP_SOZLUK.csv`,
   `sozluk_calisma.csv`. AMP klasörü, tarih damgası ve SON.txt yok.
   Eski çalışmalar eski yerlerine yazmaya devam eder.
 - AMP_VERISETI veri seti tüm çalışmaların ortak veri seti; en son kimin
@@ -2633,13 +2649,13 @@ boyunca korunur.
 ## 4. Çalışma adları
 | | Eski | Yeni |
 |---|---|---|
-| Durum dosyası | `oturum_u3f9a2c41d07be58a_ck2m9x1qz.json` | `oturum_cmergen_03.json` |
-| Sözlük kopyası | `u3f9a2c41d07be58a_ck2m9x1qz/` | `cmergen_03/` |
-| AMP klasörü | `AMP/2026-09-21_1809_u3f9…_ck2m…/` | `AMP/cmergen_03/` |
+| Durum dosyası | `oturum_u3f9a2c41d07be58a_ck2m9x1qz.json` | `oturum_<kullanici>_03.json` |
+| Sözlük kopyası | `u3f9a2c41d07be58a_ck2m9x1qz/` | `<kullanici>_03/` |
+| AMP klasörü | `AMP/2026-09-21_1809_u3f9…_ck2m…/` | `AMP/<kullanici>_03/` |
 
-`cmergen` = Dataiku login'i; `03` = kullanıcının kaçıncı çalışması (sunucu
+`<kullanici>` = Dataiku login'i; `03` = kullanıcının kaçıncı çalışması (sunucu
 veriyor). Login'de nokta/@ gibi karakter varsa 4 haneli özet eklenir
-(`can.mergen` → `can-mergen-4f1a`) ki iki kullanıcı aynı ada düşmesin.
+(`ad.soyad` → `ad-soyad-4f1a`) ki iki kullanıcı aynı ada düşmesin.
 Eski dosyalar yeniden adlandırılmadı, olduğu gibi okunuyor.
 
 ## 5. Yeni Çalışma silmiyor + Çalışmalarım

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """fe_agent/tablo_io.py - klasore yazilan tablolarin BICIMI (Parquet).
 
-Kullanici karari: "csv yerine hep parquet olarak kaydedelim". Parquet
+Parquet
 tipleri korur (CSV'de "045" geri okununca 45 oluyor, tarih metne donuyor),
 sikistirilmis ve kolon bazli okunabilir.
 

@@ -5,9 +5,8 @@ NEDEN GEREKLI
     Klasorde iki tur dosya BIRIKIR ve hicbiri kendiliginden silinmez:
       /oturum_<anahtar>.json          her kullanicinin calismasi
       /senaryo_<is>_<oturum>_*.json   senaryo konfig/sonuc alisverisi
-    Webapp banka geneline acildiginda bunlar suresiz buyur. Ayrica eski
-    surumde oturum kimligi her sayfa yuklemesinde YENIDEN uretiliyordu;
-    o donemden kalma yetim dosyalar da burada duruyor olabilir.
+    Webapp genis kullanima acildiginda bunlar suresiz buyur. Yetim
+    oturum dosyalari da burada duruyor olabilir.
 
     CSV yedekleri (/analitik_baz_set.csv gibi) yalnizca dataset yazimi
     BASARISIZ olunca olusur; varlıklari bir sorunun isaretidir, silmeden

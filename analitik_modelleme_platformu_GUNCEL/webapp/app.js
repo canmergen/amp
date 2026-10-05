@@ -1,6 +1,5 @@
 /* YÜKLEME HATASI GÖRÜNÜR OLSUN. Bu dosyada bir hata atılırsa geri kalan
-   kod çalışmaz ve ekran sessizce BOŞ kalır (kullanıcı bildirimi:
-   "refresh bütün ekranı boşalttı"). Hata artık sohbet alanına yazılıyor;
+   kod çalışmaz ve ekran sessizce BOŞ kalır. Hata artık sohbet alanına yazılıyor;
    en sık sebebi index.html / style.css / app.js'in farklı sürümlerde
    yapıştırılmış olması. */
 window.addEventListener("error", function (olay) {
@@ -46,9 +45,7 @@ function depoYaz(anahtar, deger) {
     return yazildi;
 }
 
-/* ÇALIŞMA KİMLİĞİNİ SUNUCU VERİR. Eskiden burada rastgele bir kimlik
-   ("ck2m9x1qz") üretiliyordu ve PROJE_HAFIZASI'nda okunmayan dosya
-   adlarına dönüşüyordu. Artık kimlik çalışmanın SIRA NUMARASI ("03");
+/* ÇALIŞMA KİMLİĞİNİ SUNUCU VERİR. Artık kimlik çalışmanın SIRA NUMARASI ("03");
    kayıtlı değilse boş gider ve /karsilama kullanıcının en son
    çalışmasını açıp numarasını döndürür (bkz. oturumAyarla).
    Tarayıcıda eski bir kimlik kayıtlıysa o çalışma aynen açılır.
@@ -77,9 +74,7 @@ let sonYanitMetni = null;
 /* Calismanin nerede saklandigi ve sifirlama dugmesinin adi: metinlerde
    tek kaynaktan kullanilir (backend: fe_agent.akis_durum.HAFIZA_FOLDER). */
 const HAFIZA_KLASORU = "PROJE_HAFIZASI";
-/* Sembol metne DAHIL: kullanici dugmeyi ekranda ikonuyla ariyor, "Yeni
-   calisma baslat" yazisi tek basina Dataiku'nun REFRESH dugmesini de
-   tarif ediyordu. */
+
 const YENI_CALISMA_ETIKETI = "⟳ Yeni Çalışma";
 const CALISMALARIM_ETIKETI = "Arşiv";
 
@@ -101,8 +96,7 @@ const fazEl       = document.getElementById("faz-listesi");
 const sozlukCipEl = document.getElementById("sozluk-cip");
 const seritEl     = document.getElementById("ozet-serit");
 const bannerEl    = document.getElementById("banner");
-/* Ortak aksiyon şeridi KALDIRILDI: düğmeler blokların içine taşındı
-   (bkz. blokBasligiEkle / blokOnayEkle). Kalan iki referans giriş
+/* Kalan iki referans giriş
    bölgesinin kilidi için. */
 const girisBolge  = document.getElementById("giris-bolge");
 const kabukEl     = document.getElementById("kabuk");
@@ -124,7 +118,7 @@ let mesgul = false;
 
 /* Hata olursa tiklanan kart grubunu / secim kartini eski haline dondurur */
 let geriAlKilit = null;
-/* KONTROLDEN GEÇMEDEN ONAY YOK (kullanıcı kararı). Form kartı
+/* KONTROLDEN GEÇMEDEN ONAY YOK. Form kartı
    gönderilince "Kontrol Ediliyor…" der; "✓ Girdiler Onaylandı" ancak
    sunucu girdiyi KABUL EDİNCE yazılır (bkz. gonderimSonucu). Reddederse
    (tablo yok, sözlükte kolon adı ya da açıklama kolonu yok...) kart
@@ -144,7 +138,7 @@ let aktifAnalizSekme = "ozet";
    durmasaydi kullanicinin actigi kart bir sonraki yanitta kendiliginden
    kapanirdi. Oturumluktur, localStorage'a YAZILMAZ. */
 /* "ozet" = VERİ & SÖZLÜK sekmesi (data-tab degeri bu).
-   EKSİK DEĞER sekmesi kaldirildi; ayni panel govdesi artik "hazirlik"
+    Ayni panel govdesi artik "hazirlik"
    anahtariyla geliyor (bkz. akis_panel.hazirlik_paneli). */
 /* UC SEKME: "degisken" (DEĞİŞKEN ANALİZİ: dağılım + SFA + eksik değer)
    ve "bolme" (BÖLME & VALİDASYON). */
@@ -245,9 +239,7 @@ temaUygula();
 /* ==================== Durum rozeti ==================== */
 /* Rozet son isteğin sonucunu gosterir; backend cokse yesil kalmaz. */
 /* Rozet OTURUMUN DURUMUNU gosterir: webapp arka uca ulasabiliyor mu?
-   Eskiden "İşlem sürüyor" da buraya yaziliyordu; o istek-ici bir durum,
-   oturumun saglikli olup olmadigiyla ilgisi yok ve her tikta rozet
-   oynadigi icin "baglanti mi koptu?" izlenimi veriyordu. Mesguliyet
+   Mesguliyet
    zaten gonder dugmesinin ve aksiyonlarin kilitlenmesinden belli. */
 const ROZET_METIN = {
     hazir:  "Oturum Aktif",
@@ -321,8 +313,7 @@ document.addEventListener("keydown", e => {
    için (CSS'teki #panel ve #analiz-panel kuralları, çekmece medya
    sorguları dahil) yapıda başka hiçbir şey değişmiyor.
 
-   PANEL TAMAMEN KAPANMIYOR (kullanıcı kararı: "diğer bloğu tamamen
-   silmeden"). Üç sınır birden korunuyor:
+   PANEL TAMAMEN KAPANMIYOR. Üç sınır birden korunuyor:
      - her panelin kendi alt sınırı (PANEL_SINIR / ANALIZ_SINIR),
      - her panelin üst sınırı,
      - ortadaki sohbet sütununa kalan SOHBET_TABAN.
@@ -341,8 +332,7 @@ const SOHBET_TABAN = 420;
    sürüklenecek bir sütun kalmıyor (bkz. style.css medya sorguları). */
 const SURUKLEME_ESIGI = 945;
 
-/* Üst çubuktaki "panel genişliklerini sıfırla" düğmesi KALDIRILDI
-   (kullanıcı kararı). index.html eski sürümde kalırsa düğme burada
+/* index.html eski sürümde kalırsa düğme burada
    sökülüyor; tek panel çift tıklamayla varsayılana döner. */
 const genislikBtn = null;
 { const eski = document.getElementById("genislik-btn"); if (eski) eski.remove(); }
@@ -409,8 +399,7 @@ function tutamakKur(tutamak, taraf, el) {
     let surukleniyor = false;
     let basX = 0, basEn = 0;
 
-    /* Ölçü etiketi (piksel, "varsayılan") KALDIRILDI (kullanıcı kararı):
-       sürüklerken ekranda sayı yazmıyor. Yalnızca ne işe yaradığını
+    /* Yalnızca ne işe yaradığını
        söyleyen ipucu kalıyor. Eski bir sürümden kalmış etiket sökülür. */
     tutamak.querySelectorAll(".tutamak-olcu").forEach(x => x.remove());
     tutamak.title = (taraf === "sol" ? "İş akışı paneli" : "Analiz paneli")
@@ -433,7 +422,7 @@ function tutamakKur(tutamak, taraf, el) {
         tutamak.classList.add("suruklenirken");
         kabukEl.classList.add("genislik-suruklemede");
         /* Fare tutamaktan kaysa bile olaylar buraya gelmeye devam etsin;
-           yoksa hizli surukleyisde birakma olayi kaciriliyordu. */
+*/
         try { tutamak.setPointerCapture(e.pointerId); } catch (x) { /* yok say */ }
         e.preventDefault();
     });
@@ -508,25 +497,19 @@ const KENDI_DUGMELI_KARTLAR = ["dogrulama", "bolme"];
 
 /* ---- Sohbet kutusunun kilidi ----
    Ekranda bir kart, form ya da seçenek takımı varken kullanıcı bir
-   CÜMLE yazmıyor; bir form dolduruyor. Kutu o sırada açık durunca iki
-   ayrı "devam etme yolu" görünüyordu ve yazılan cümle çoğu zaman adıma
-   ait bilgi içermediği için akış hiç ilerlemiyordu.
+   CÜMLE yazmıyor; bir form dolduruyor.
 
    SORU SORMA YOLU KAPANMIYOR: akış her an serbest soru kabul ediyor
    (akis_sohbet._soru_mu). Kutu kilitliyken bunu tamamen kapatmak gerçek
    bir yeteneği yok ederdi; kilidin yanındaki "Soru Sor" düğmesi kutuyu
    o tur için açar. */
-/* Sohbet kutusu BÖLME STRATEJİSİ adımına kadar KAPALI (kullanıcı
-   kararı: "buradaki bu hareketten sonra devreye direkt alınmalı,
-   beklenme mantığına gerek yok").
+/* Sohbet kutusu BÖLME STRATEJİSİ adımına kadar KAPALI.
 
    Neden o adıma kadar kapalı: kurulum, tanımlar, sözlük ve bölme
    adımlarında karar bir cümleyle değil, bloktaki kartla veriliyor.
-   Kutu açık durunca ekranda iki ayrı "devam etme yolu" görünüyor ve
-   yazılan cümle çoğu zaman adıma ait bilgi içermediği için akış hiç
-   ilerlemiyordu.
 
-   Neden DEĞİŞKEN MÜHENDİSLİĞİ'NDE açık (kullanıcı kararı): faz 01 ve
+
+   Neden DEĞİŞKEN MÜHENDİSLİĞİ'NDE açık: faz 01 ve
    02 boyunca her karar kartta veriliyor ve kartın soracağı her şey
    kartın içinde yazılı. Değişken üretimi ise kullanıcının yön vermesi
    gereken ilk adım - "şu değişkeni de üret", "bunu neden elediniz"
@@ -587,7 +570,7 @@ function kutuKilitNotu(kilit) {
 function kutuGuncelle(bekleyen) {
     if (bekleyen === undefined) return;       // hata yanitinda durumu koru
     /* "<" : kutu Değişken Mühendisliği adımının KENDİSİNDE açılıyor
-       (kullanıcı kararı: "Değişken Mühendisliği kısmında açılacak").
+
        O adıma gelindiğinde kullanıcı zaten yön vermeye başlıyor;
        kutuyu bir adım daha geciktirmek onu sessiz bırakırdı. */
     const kilit = aktifAdim < sohbetAcilisSirasi();
@@ -610,10 +593,9 @@ function fazlariYukle(liste) {
     FAZLAR.forEach(f => f.adimlar.forEach(a => { DUZ_ADIMLAR[a.sira] = a; }));
 }
 
-/* GRUPLU ADIMLAR SOL PANELDE TEK SATIR (kullanıcı kararı). "Veri Seti ve
+/* GRUPLU ADIMLAR SOL PANELDE TEK SATIR. "Veri Seti ve
    Değişken Sözlüğü", "Modelleme Tanımları" ve "Sözlük Tanımları" sohbette
-   zaten TEK blok; iş akışında üç ayrı satır olarak durunca aynı iş üç kez
-   sayılıyordu. Satır grubun adını taşır. Adım listesinin kendisi (FAZLAR)
+   zaten TEK blok. Satır grubun adını taşır. Adım listesinin kendisi (FAZLAR)
    DOKUNULMADAN kalır: geri dönüş, transkript kırpma ve blok eşleme hep
    tam listeye bakıyor. */
 function fazOgeleri(f) {
@@ -644,8 +626,7 @@ function fazOgeleri(f) {
     return ogeler;
 }
 
-/* ADIM NUMARASI (kullanıcı kararı: faz altındaki işler 01.1, 01.2 ...
-   diye adlandırılsın). Numara sol paneldeki SATIR sırasıdır; gruplu
+/* ADIM NUMARASI. Numara sol paneldeki SATIR sırasıdır; gruplu
    satırın içindeki adımlar alt numara alır (01.2.1, 01.2.2). İş akışı,
    sohbet başlıkları, Arşiv ve "kaldığı yerden yüklendi" mesajı aynı
    numarayı kullanır. Doner: {fazIdx, faz, kod, altKod} ya da null. */
@@ -669,7 +650,7 @@ function numarali(kod, baslik) {
     return kod ? kod + " " + b : b;
 }
 
-/* ANALİTİK SÜREÇ HEP AÇIK (kullanıcı kararı: "açıp kapatılamamalı").
+/* ANALİTİK SÜREÇ HEP AÇIK.
    Başlık düğme değil. index.html eski sürümde kalırsa düğme burada
    pasifleştirilir: ok gizlenir, tıklama bir şey yapmaz. */
 const surecBlok = document.getElementById("surec-blok");
@@ -761,8 +742,7 @@ function fazlariCiz() {
         const liste = document.createElement("ol");
         liste.className = "faz-adimlar";
         liste.id = "faz-adimlar-" + fi;
-        /* GRUP SATIRININ ALT ADIMLARI (kullanıcı kararı: "bütün akış sol
-           tarafta yer almalı"). Grup satırı (01.2 Veri ve Model
+        /* GRUP SATIRININ ALT ADIMLARI. Grup satırı (01.2 Veri ve Model
            Tanımları) kalır; altında her adım kendi numarasıyla (01.2.1,
            01.2.2 ...) aynı kurallarla — tamamlandı / aktif / tıklanabilir
            — listelenir. */
@@ -848,8 +828,7 @@ function aktifFaziAc() {
 
 
 /* ==================== Üst özet kartları ==================== */
-/* Veri seti adi ARTIK kart degil, basligin yanindaki cip: dort kartin
-   biri onun icin harcaniyordu, oysa ad tek satirlik bir kimlik bilgisi.
+/*
    Secim yoksa cip hic cizilmez - bos cip "veri seti yok" demiyor,
    "bir sey bozuldu" izlenimi veriyor. */
 const cipEl = document.getElementById("veri-seti-cip");
@@ -950,7 +929,7 @@ const DOK = {
 };
 
 /* Künye ve Ekler NUMARASIZDIR (no = null); aradaki 20 bölüm numaralıdır.
-   Numarayı koşulsuz yazsaydık bu iki bölüm "null. Künye" diye çiziliyordu. */
+   Numarayı koşulsuz yazsaydık bu iki bölüm "null. */
 function dokBolumAdi(b) {
     return b && b.no ? b.no + ". " + b.baslik : ((b && b.baslik) || "");
 }
@@ -971,9 +950,7 @@ function dokStatuSay(statu) {
 }
 
 /* Çağrı kutusu KOŞULU: bölüm kullanıcıya ait ve kullanıcı henüz yazmamış.
-   "İçerik boş mu" diye BAKMIYORUZ: platform 18. bölüme (kisit) kendi
-   bulduğu açık maddeleri otomatik bir tablo olarak ekliyor, bu yüzden o
-   bölüm hiç yazılmamışken bile dolu görünüyordu ve çağrı kaybolmuştu.
+   "İçerik boş mu" diye BAKMIYORUZ: platform 18.
    `karma` bölümlerde çağrı çizilmez — platform payı zaten yazılı, geri
    kalanı "Tamamlanması gerekenler" kutusu söyler. */
 function dokCagriGerek(b) {
@@ -1082,7 +1059,7 @@ function dokDuzenleYap(b) {
     alan.value = DOK.taslak;
     alan.disabled = DOK.kaydediyor;
     /* Ad dokBolumAdi'dan: künye ve ek NUMARASIZ (no = null) ve burada
-       elle birleştirmek ekran okuyucuya "null. Künye metni" dedirtiyordu. */
+       elle birleştirmek ekran okuyucuya "null. */
     alan.setAttribute("aria-label", tireSade(dokBolumAdi(b)) + " metni");
     alan.oninput = () => { DOK.taslak = alan.value; };
     kutu.appendChild(alan);
@@ -1196,8 +1173,7 @@ function dokBolumYap(b) {
     }
     ust.appendChild(sol);
 
-    // Düzenleme açıkken başlık aksiyonları çizilmez: Kaydet/Vazgeç zaten
-    // kutunun altında ve iki ayrı "çıkış" yolu karışıklık yaratıyordu.
+    //
     if (DOK.duzenlenen !== b.anahtar) {
         const aksiyon = elYap("div", "dok-aksiyon");
 
@@ -1260,8 +1236,7 @@ function dokDamgaTazele() {
 
        /dokuman_bolum tek bölüm kaydında teslim özetini de döndürüyor ve
        dokBolumYaz onu köke yazıyor; damga bu yüzden kaydın hemen ardından
-       doğru. "Bayat damga" diye bir ara hâl YOK — eskiden uç yalnız bölümü
-       döndürdüğü için gerekiyordu, uç düzelince gerekçesi kalktı. */
+       doğru. "Bayat damga" diye bir ara hâl YOK — */
     const taslak = (g.teslim_durumu || "") !== "hazir";
     dokDamgaEl.hidden = false;
     dokDamgaEl.className = "dok-damga " + (taslak ? "taslak" : "hazir");
@@ -1270,8 +1245,7 @@ function dokDamgaTazele() {
 }
 
 /* Uyarı şeridi üç sayıyı birden gösterir: bloker · eksik · kısmi.
-   Tek sayılı "N bölüm eksik" şeridi, teslimi ENGELLEYEN bir bölümle
-   yalnızca yarım kalmış bir bölümü aynı tonda gösteriyordu. */
+*/
 function dokUyariTazele() {
     if (!dokUyariEl) return;
     const g = DOK.govde;
@@ -1378,9 +1352,7 @@ function dokIndirmeHataYaz(mesaj) {
     dokIndirmeHataEl.hidden = !mesaj;
 }
 
-/* Yeni sekmede AÇMIYORUZ: Dataiku webapp'i iframe içinde çalışıyor,
-   açılan sekme çoğu kurulumda boş kalıyor ve hata hâlinde kullanıcı
-   sunucunun düz metin yanıtını ham sayfa olarak görüyordu. */
+
 function dokDosyaIndir(veri, ad) {
     const adres = URL.createObjectURL(veri);
     const bag = document.createElement("a");
@@ -1641,12 +1613,9 @@ function panelCiz(v) {
         analizGovde.appendChild(kart);
     }
 
-    /* KARTLAR HER ZAMAN ACIK (kullanici karari). Bir sure "sozluk
-       teyidi" adiminda katli aciliyorlardi: iki kart acikken tablo
-       basligi ekranin altina kayiyordu. Ama teyit artik SOHBET
+    /* KARTLAR HER ZAMAN ACIK. Ama teyit artik SOHBET
        BLOGUNDA yapiliyor; sag panel yalnizca aciklama veriyor, orada
-       gizlenecek bir karar yok. Katlama hem bilgiyi saklayip hem de
-       fazladan bir tiklama istiyordu. */
+       gizlenecek bir karar yok. */
     (v.kartlar || []).forEach(k => {
         const kart = elYap("div", "iskele-kart");
         kart.appendChild(elYap("div", "iskele-baslik", k.baslik));
@@ -1665,18 +1634,16 @@ function panelCiz(v) {
 
     // Feature tablosu kartlardan SONRA gelir: kartlar veri setinin ozeti,
     // tablo tek tek kolonlar. Once genel, sonra ayrinti.
-    /* SAG PANEL SALT OKUNUR (kullanici karari). Degisken listesi burada
+    /* SAG PANEL SALT OKUNUR. Degisken listesi burada
        yalnizca GORULUYOR; isaretleme ve tanim duzenleme sohbetteki
-       sozluk teyidi kartinda yapiliyor. Ayni karari iki yerden
-       vermek, hangisinin gecerli oldugunu belirsizlestiriyordu. */
+       sozluk teyidi kartinda yapiliyor. */
     if (v.feature_tablo) featureTabloCiz(ftSaltOku(v.feature_tablo));
     if (v.tablo) panelTabloCiz(v.tablo);
 }
 
 
 /* ==================== Feature tablosu ==================== */
-/* VERİ & SÖZLÜK sekmesinde 1.000'in uzerinde satir olabiliyor. Tum
-   satirlari DOM'a basmak paneli kilitliyordu; yalnizca gorunen pencere
+/* VERİ & SÖZLÜK sekmesinde 1.000'in uzerinde satir olabiliyor.  Yalnizca gorunen pencere
    + tampon ciziliyor, kalani bos yer tutucu yukseklik.
 
    Satir yuksekligi SABIT: sanallastirmanin tek varsayimi bu. Degeri
@@ -1695,7 +1662,7 @@ const FT_VARSAYILAN_YUKSEKLIK = 360;
    acilista hangi kutunun isaretli gelecegini bilmek icin okunuyor. */
 const FT_DISI = "süreç dışı";
 
-/* ÜÇ KOLON (kullanıcı kararı): "sağ barda da değişken, tip, sözlük
+/* ÜÇ KOLON: "sağ barda da değişken, tip, sözlük
    tanımı yer alsın sadece". NULL %% kolonu, süreç dışı kararının
    VERİLDİĞİ yere - sohbetteki teyit tablosuna - taşındı; orada onay
    kutusunun hemen solunda duruyor. Satır gövdesi null_oran'ı taşımaya
@@ -1804,8 +1771,7 @@ function ftSuz() {
         if (tip && String(s.tip || "").trim() !== tip) return false;
         if (esik !== null && isFinite(esik)) {
             /* null_oran bilinmiyorsa esigi GECTIGI soylenemez: kolon
-               eleniyor. Aksi halde profillenmemis kolonlar "eşiği aşan"
-               listesine sizip yanlis is emri uretiyordu. */
+               eleniyor. */
             if (s.null_oran === null || s.null_oran === undefined) return false;
             if (Number(s.null_oran) <= esik) return false;
         }
@@ -1818,9 +1784,7 @@ function ftSuz() {
         const yon = FT.yon;
         sonuc = sonuc.slice().sort((a, b) => {
             const x = a[alan], y = b[alan];
-            /* Bos deger yonden BAGIMSIZ olarak sona gider: azalan
-               siralamada ∅ yiginini once gostermek tabloyu okunmaz
-               yapiyordu. */
+            
             const xBos = x === null || x === undefined || x === "";
             const yBos = y === null || y === undefined || y === "";
             if (xBos && yBos) return 0;
@@ -1878,9 +1842,8 @@ function excelSeridiYap(tur, etiket, ipucu) {
 
     const btn = document.createElement("button");
     btn.type = "button";
-    /* YEŞİL ve İKİ DURUMLU (kullanıcı kararı): basılabildiğinde koyu
-       yeşil, basılamadığında açık yeşil. Şerit artık GİZLENMİYOR -
-       gizli bir düğme "bu özellik yok" diye okunuyordu; kilitli ama
+    /* YEŞİL ve İKİ DURUMLU: basılabildiğinde koyu
+       yeşil, basılamadığında açık yeşil.  Kilitli ama
        görünür düğme "henüz değil" diyor ve ipucunda neden yazıyor. */
     btn.className = "excel-btn";
     btn.innerHTML = EXCEL_SIMGESI;
@@ -2006,10 +1969,7 @@ function haricKaydet(kolon, kutu, hataEl) {
             teyitHatasi(hataEl, (d && d.hata) || "Süreç dışı listesi yazılamadı.");
             return;
         }
-        /* Kartın özet satırı ("1.042 değişken · 2 süreç dışı · …") uçtan
-           taze geliyor ama DOM'a yazılmıyordu: kullanıcı kutuyu
-           işaretliyor, sağ paneldeki sayı değişiyor, BAKTIĞI karttaki
-           sayı eskisinde kalıyordu. */
+        
         const oz = document.querySelector(".teyit-kart .teyit-ozet");
         if (oz && d.ozet) oz.textContent = tireSade(d.ozet);
         /* Uç, hedef/kimlik/dönem kolonunu listeden ÇIKARMIŞ olabilir
@@ -2049,7 +2009,7 @@ function haricKaydet(kolon, kutu, hataEl) {
    üstünde yazar. Böylece ekranda görünen tip ile veri setindeki tip
    hiçbir anda ayrışmıyor - kullanıcı "değiştirmemde sorun yoksa
    onaylansın" dediği için onay bu uçta veriliyor. */
-/* SATIR RENGİ (kullanıcı kararı: "kırmızı hata varmış gibi gösteriyor").
+/* SATIR RENGİ.
      karar öncesi : SARI  = açıklama boş
                     MAVİ  = dil modelinin önerisi (değiştirilmemiş)
                     renksiz = kullanıcının yazdığı / değiştirdiği metin
@@ -2092,7 +2052,7 @@ function dgLejant(ogeler) {
     });
     return kap;
 }
-/* 01.2 RENK (kullanıcı kararı: renk olsun ama az): mavi dil modeli
+/* 01.2 RENK: mavi dil modeli
    önerisi, mor onaylı tanım (hafızada), sarı boş,
    yeşil sizin yazdığınız ya da değiştirdiğiniz. */
 const DG_LEJANT_KARAR = [["dg-l-llm", "Dil Modeli Önerisi"],
@@ -2330,12 +2290,10 @@ function ftTipSecenekleri() {
         .concat(tipler.map(t => ({ deger: t, etiket: t })));
 }
 
-/* SAG PANEL: ARAMA + TIP SUZGECI + SIRALAMA (kullanıcı kararı).
+/* SAG PANEL: ARAMA + TIP SUZGECI + SIRALAMA.
    "bu kısımda sort filter yok onları da eklememiz lazım buraya"
 
-   NULL EŞİĞİ BURADA YOK: null sütunu panelden kaldırıldı, eşik
-   süzgecini görünmeyen bir sütuna bağlamak kullanıcıya nedenini
-   göstermeden satır gizlerdi. Null'a göre süzme ve sıralama sohbetteki
+   Null'a göre süzme ve sıralama sohbetteki
    sözlük teyidi kartında (orada sütun duruyor).
 
    Panel bir KARAR yüzeyi değil, bakma yüzeyi: bu üç kontrol de listeyi
@@ -2364,8 +2322,7 @@ function ftFiltreCiz() {
     });
     tip.classList.add("ft-tip-suzgec");
     tip.setAttribute("aria-label", "Tipe göre süz");
-    /* Tek tip varsa süzecek bir şey yok: kutu görünür ama pasif -
-       gizlemek "filtre neden yok?" sorusunu doğuruyordu. */
+    
     tip.disabled = tipler.length <= 2;
     if (tip.disabled) tip.title = "Listede tek tip var; süzmeye gerek yok.";
     alt.appendChild(tip);
@@ -2486,8 +2443,7 @@ function ftBaslikCiz() {
 /* SOZLUK TANIMI hucresi duzenlenebilir (SOZLESME7 §5). Yazilan yer
    sozlugun CALISMA KOPYASI; orijinal sozluk degismez.
    Taslak: tablo sanallastirilmis ve her tazelemede yeniden ciziliyor;
-   henuz gonderilmemis metin FT.taslak'ta duruyor, yoksa arada gelen bir
-   backend yaniti kullanicinin yazdigini siliyordu. */
+*/
 function ftTanimHucresi(s) {
     const h = elYap("span", "ft-hucre ft-tanim");
     h.setAttribute("role", "cell");
@@ -2499,8 +2455,7 @@ function ftTanimHucresi(s) {
 
     if (!(FT.veri && FT.veri.duzenlenebilir)) {
         h.textContent = degerGoster(s.tanim);
-        /* SEBEBI ARKA UC YAZIYOR: "çalışma kopyası yok" tek başına
-           kullanıcıya ne yapacağını söylemiyordu (kullanıcı bildirimi).
+        /*
            Sözlük hiç bağlanmadıysa hangi adımda bağlanacağı, kopya
            çıkarılamadıysa nedeni yazıyor. */
         h.title = tireSade((FT.veri && FT.veri.duzenleme_notu)
@@ -2509,7 +2464,7 @@ function ftTanimHucresi(s) {
     }
 
     /* TEXTAREA: tanım tamamı okunabilsin diye satır kaydırarak uzar
-       (kullanıcı kararı: "tamamen okunabilir düzeyde olmalı"). */
+*/
     const giris = document.createElement("textarea");
     giris.rows = 1;
     giris.className = "ft-tanim-giris";
@@ -2594,8 +2549,7 @@ function ftSatirCiz(s, i) {
     return satir;
 }
 
-/* SATIRLAR DEĞİŞKEN YÜKSEKLİKTE (kullanıcı kararı: sözlük tanımı tamamen
-   okunabilmeli, kırpılmamalı). Sabit yükseklikli sanal pencere yerine
+/* SATIRLAR DEĞİŞKEN YÜKSEKLİKTE. Sabit yükseklikli sanal pencere yerine
    PARÇA PARÇA çizim: ilk FT_PARCA satır çizilir, kaydırma sona
    yaklaştıkça bir parça daha eklenir. 1.042 satırın hepsi bir anda DOM'a
    basılmıyor; uzun tanım alt satıra kayıyor. */
@@ -2611,8 +2565,7 @@ function ftSatirEkle(adet) {
     const bas = FT.gosterilen || 0;
     const son = Math.min(n, bas + adet);
     if (son <= bas) return;
-    // Tek parcada baglaniyor: satir satir appendChild her seferinde
-    // yerlesimi yeniden hesaplatiyordu.
+    //
     const parca = document.createDocumentFragment();
     for (let i = bas; i < son; i++)
         parca.appendChild(ftSatirCiz(FT.suzulmus[i], i));
@@ -2685,8 +2638,7 @@ function ftDetayCiz() {
         satirlar.push(["Tekil Değer", ftBinlik(s.tekil)]);
     if (s.ornek !== null && s.ornek !== undefined && s.ornek !== "")
         satirlar.push(["Örnek Değer", degerGoster(s.ornek)]);
-    // IV / C yalnizca SFA calistiysa var; yoksa satir HIC cizilmiyor -
-    // bos "∅" kullaniciya "hesaplandi ama sifir" diye okunuyordu.
+    // IV / C yalnizca SFA calistiysa var.
     if (s.iv !== null && s.iv !== undefined) satirlar.push(["IV", ftOndalik(s.iv)]);
     if (s.c !== null && s.c !== undefined) satirlar.push(["C-value", ftOndalik(s.c)]);
 
@@ -2738,8 +2690,7 @@ function ftTazele() {
 }
 
 /* Baslik seridinin son parcasi: sozlugun CALISMA KOPYASI oldugu
-   etiketin kendisinde yaziyor (arka uc oyle gonderiyor). "Sözlük: "
-   oneki kaldirildi - serit tek satir, her kelime yer tutuyor. */
+   etiketin kendisinde yaziyor (arka uc oyle gonderiyor). */
 function ftKaynakMetni() {
     const k = FT.veri && FT.veri.sozluk_kaynak;
     return k ? tireSade(k) : "Sözlük seçilmedi";
@@ -2760,8 +2711,7 @@ function ftSaltOku(t) {
 
 function featureTabloCiz(t) {
     /* Bu cizim YENI backend verisiyle mi, yoksa sekmeye geri donuldugu
-       icin mi? Ayni govde tekrar ciziliyorsa yazma hatalari SILINMEZ:
-       kullanici baska sekmedeyken donen hatayi hic gormeden kaybediyordu.
+       icin mi?
        Yeni govde geldiyse hatalar gecersiz - panel zaten sunucudaki son
        hali gosteriyor. */
     if (FT.veri !== t) {
@@ -2775,8 +2725,7 @@ function featureTabloCiz(t) {
     FT.veri = t;
 
     /* KAYNAKTA hic kolon yoksa (yeni calisma, veri seti henuz secilmedi)
-       tablo HIC cizilmez. Arama kutusu, kategori/durum filtreleri ve
-       esik alani bos bir tablonun ustunde duruyordu; kullanicinin ilk
+       tablo HIC cizilmez.  Kullanicinin ilk
        gordugu ekran, hicbir seyi olmayan bir filtre takimiydi.
        DIKKAT: bu kontrol SUZME ONCESI satir sayisina bakar — kullanici
        filtreyle 0 satira dusurduyse takim kalmali, yoksa filtreyi geri
@@ -2788,11 +2737,8 @@ function featureTabloCiz(t) {
     }
     if (!t.duzenlenebilir) { FT.topluHata = ""; FT.topluNot = ""; }
 
-    /* SUZME CIZIMDEN ONCE. Eskiden ftSuz() cizimin SONUNDA cagriliyordu;
-       ftTopluCiz() ise ortasinda, yani FT.suzulmus HENUZ DOLMADAN
-       okunuyordu. Ilk boyamada toplu satir "0 / 0 değişken süreç dışı"
-       yaziyordu — 1.002 kolon süreç dışıyken. Sonraki ftTazele()'lerde
-       duzeliyordu, bu yuzden testlerde gorunmedi; kullanicinin gordugu
+    /* SUZME CIZIMDEN ONCE.
+kullanicinin gordugu
        ILK ekran yanlisti. */
     ftSuz();
 
@@ -2800,8 +2746,7 @@ function featureTabloCiz(t) {
 
     /* TEK SATIR serit: "1.042 degisken \u00b7 2 surec disi \u00b7 <sozluk>"
        Kaynak etiketi hep gorunur: hangi sozlugun anlatildigi belli olsun.
-       "(calisma kopyasi)" eki KALDIRILDI (kullanici karari) - kopya bir
-       uygulama detayi; sozlugun nereden geldigini kartlardaki "Köken"
+        Sozlugun nereden geldigini kartlardaki "Köken"
        satiri anlatiyor. */
     const ust = elYap("div", "ft-ust");
     const sayac = elYap("span", "ft-sayac");
@@ -2823,9 +2768,8 @@ function featureTabloCiz(t) {
            yönlendirirdi. */
         "Sohbetteki listeyi kaydettikten sonra indirebilirsiniz.");
     ftExcel.ac(!!t.excel_hazir);
-    /* ÜST ŞERİDİN YANINDA (kullanıcı kararı): "excel olarak indir kısmı
-       da üstteki yazının yanında yer almalı". Kendi satırında dururken
-       sayaçla arasında boş bir şerit kalıyordu. */
+    /* ÜST ŞERİDİN YANINDA: "excel olarak indir kısmı
+       da üstteki yazının yanında yer almalı". */
     ust.appendChild(ftExcel.el);
 
     kok.appendChild(ftFiltreCiz());
@@ -2879,8 +2823,7 @@ function featureTabloCiz(t) {
    Bolme IKI ASAMA ve EN FAZLA UC SET (egitim / val / test):
 
      1) test nasil ayrilsin?  -> test_tanim
-          "zamansal": son N donem test olur. Bu set ZATEN OOT'dur; ayri
-                      bir OOT seti YOKTUR (eski oot_var ekseni kaldirildi).
+          "zamansal": son N donem test olur. Bu set ZATEN OOT'dur.
           "rastgele": test_oran kadar rastgele ayrilir.
      2) kalan train nasil kullanilsin? -> train_kullanimi
           full / val / full_cv / val_cv — arka ucun TEK alani. Eksen
@@ -2907,7 +2850,7 @@ const BF_TRAIN_BASLIK = {
    yerde yazilmasi ikisinin ayrisması demekti. Eski bir gövdede
    "secenekler" duz dizi olarak gelirse bu liste devreye giriyor.
    YABANCI TERIM YOK: ekranda kullaniciya gosterilen her sey Turkce
-   (kullanici karari). */
+*/
 const BF_ETIKET = {
     rastgele: "Rastgele", zamansal: "Zamansal",
     satir: "Satır", kimlik: "Kimlik",
@@ -2929,8 +2872,7 @@ const BF_GECERSIZ_BIRLESIM =
 /* Bir alanin ekran adi ve tek cumlelik aciklamasi: ONCE arka uctan
    (akis_panel.bolme_formu her alana "etiket" ve "aciklama" koyuyor),
    yoksa yedek listeden. Aciklama, terimin Turkcesini bilmeyen
-   kullanici icin var (kullanici karari: "türkçesini bilmeyebilir
-   bazıları"). */
+   kullanici icin var. */
 const BF_ALAN_YEDEK = {
     test_tanim: "Bölme Türü", oot_adet: "Test Dönem Sayısı",
     test_oran: "Test Oranı",
@@ -3028,10 +2970,7 @@ function bfAlanlar(f) {
     const valHam = d("val_var", "kullanma");
     const valVar = (valHam === true || valHam === "kullan");
     const cv = d("cv", "kfold");
-    /* ORAN TASLAKTA HEP KESİR. Arka uç yüzde gönderiyor (20), ekran
-       yüzde gösteriyor, ama taslakta ve gövdede tek biçim olmalı:
-       yoksa "değişti mi" karşılaştırması 20 ile 0.2'yi kıyaslayıp her
-       çizimde "değişti" diyordu. */
+    /* ORAN TASLAKTA HEP KESİR. */
     const oran = (k, yedek) => {
         let v = Number(d(k, yedek));
         if (!isFinite(v) || v <= 0) return yedek;
@@ -3063,8 +3002,7 @@ function bfAlanlar(f) {
    icin de kullaniliyor: taslak sunucudaki degerlerden farkli mi? */
 function bfGovdeDen(a) {
     /* Secim anahtarlari OLDUGU GIBI gidiyor; oot_tanim'i on yuz
-       KURMUYOR (eskiden kuruyordu ve "son N dönem" kurali iki yerde
-       yazili oluyordu). */
+       KURMUYOR. */
     return {
         test_tanim: a.test_tanim,
         oot_adet: String(a.oot_adet),
@@ -3141,9 +3079,7 @@ function bfYerelOzet() {
     const p = bfPaylar();
 
     /* ZAMANSAL BOLMEDE EGITIM YUZDESI YAZILMAZ. Test donem bazli
-       ayrildigi icin orani onceden bilinmiyor; 1 - test - dogrulama
-       hesabi test payini 0 sayip "eğitim %100" yaziyordu - acikca
-       yanlis bir sayi (kendi ekran kontrolumde yakalandi). */
+       ayrildigi icin orani onceden bilinmiyor. */
     if (bfZamansalMi()) {
         const parcalar = ["Validasyon (OOT): " + bfDonemEtiketi()];
         if (p.val) parcalar.push("Test (OOS): eğitimin " + bfYuzde(p.val) + "'i");
@@ -3190,8 +3126,7 @@ function bfUyariListesi() {
 }
 
 
-/* Sayi alanlari oninput DEGIL onchange dinliyor: yarim yazilmis bir sayi
-   ("0,") her tusta ozeti ve uyarilari oynatiyordu. */
+
 function bfSayiKutusu(ad, deger, ek, pasif, degisti) {
     const i = document.createElement("input");
     i.type = "number";
@@ -3226,8 +3161,7 @@ function bfSecimKutusu(ad, secenekler, deger, pasif, degisti) {
 
 /* Bir form alani: etiket + kontrol + (varsa) aciklama + (varsa) not.
 
-   ACIKLAMA SATIRI KULLANICI KARARI: "türkçesini bilmeyebilir bazıları
-   ona da dikkat edelim". Terimin Turkcesi etikette, ne demek oldugu
+   ACIKLAMA SATIRI Terimin Turkcesi etikette, ne demek oldugu
    hemen altinda tek cumlede yaziyor; gerektiginde cumle sektorde
    yaygin karsiligi da soyluyor. */
 
@@ -3420,7 +3354,7 @@ function bfUyariKutusuCiz(kok) {
 /* Veriden doğan KISITLAR: seçilemeyen seçenek ve SEBEBİ. Uyarıdan
    farkı: uyarı yapılan bir seçimin sonucunu, kısıt yapılamayacak bir
    seçimi anlatır. Kullanıcı "kısıtlar dahilinde seçim yapabilmeli"
-   (kullanıcı kararı) - bunun için önce kısıtı görmesi gerekiyor. */
+- bunun için önce kısıtı görmesi gerekiyor. */
 function bfKisitCiz(kok, kisitlar) {
     const liste = kisitlar || (BF.veri && BF.veri.kisitlar) || [];
     if (!liste.length) return;
@@ -3432,9 +3366,7 @@ function bfKisitCiz(kok, kisitlar) {
 }
 
 /* Not: "Özel Ayarlar" formu artık gruplar halinde değil, iki kartın
-   ORTAK satır listesinden çiziliyor (bkz. bolmeSatirOzelCiz). Grup
-   kurgusu kaldırıldı - iki kart aynı satırları aynı sırada göstermek
-   zorunda ve gruplar bu hizayı bozuyordu. */
+   ORTAK satır listesinden çiziliyor (bkz. bolmeSatirOzelCiz). */
 
 function bfTazele() {
     bolmeGovdeTazele();
@@ -3495,7 +3427,7 @@ function bfKaydet(secenek) {
             BF.kilitAcik = false;
             BF.zorlaOnay = false;
             /* "Önerilen ayarlar uygulandı." / "Bölme ayarları kaydedildi."
-               yazılmaz (kullanıcı kararı: "saçma duruyor"). */
+               yazılmaz. */
             BF.not = "";
             /* Sohbetteki bolme karti aciksa taze govdeyi o da alir:
                ozet, uyarilar ve kisitlar ayara bagli. */
@@ -3541,7 +3473,7 @@ function bolmeFormuCiz(f) {
    Secim YALNIZCA on yuzde tutulur; /analiz govdesine parametre GECMEZ
    (bkz. SOZLESME2 §7). Bu turda DAGILIM ve ILISKILER hala iskele:
    secilen setin yalnizca ADINI gosterirler. */
-/* ETIKETLER TURKCE (kullanici karari): ekranda yabancı terim yok. */
+/* ETIKETLER TURKCE: ekranda yabancı terim yok. */
 const SET_SECENEKLERI = [
     { anahtar: "tumu",  etiket: "Tümü" },
     { anahtar: "train", etiket: "Train (MS)" },
@@ -3555,8 +3487,7 @@ const SET_SECENEKLERI = [
 const TEST_OOS2 = "Validasyon (OOT)";
 
 /* Secicinin GORUNDUGU sekmeler. VERİ & SÖZLÜK ve HAZIRLIK her zaman tum
-   satirlarda calisiyor; orada pasif gri bir secici birakmak "burada da
-   secilebilir ama simdi olmaz" diye okunuyordu - hic cizilmiyor.
+   satirlarda calisiyor.
    VALİDASYON da listede yok: final metrikleri test setinde, sonda bir
    kez olculur; secilecek bir sey yok. */
 /* DEĞİŞKEN ANALİZİ'nde secici DAĞILIM bolumune uygulanir; SFA her zaman
@@ -3663,7 +3594,7 @@ function analizCiz(tab) {
 }
 
 /* ==================== SFA ekranı (Değişken Analizi sekmesi) ====================
-   Kullanıcı kararı: SFA eleme yeri değil; her değişken için ölçütler,
+   SFA eleme yeri değil; her değişken için ölçütler,
    özellik dağılımı + hedef (1) oranı grafiği (çift eksen, örnek ekrandaki
    gibi) ve yapay zekânın verdiği, kullanıcının değiştirebildiği karar
    (Kullan, Eksik Doldurma, Aykırı Değer, Dönüşüm, Ayrıklaştırma, Yorum).
@@ -3933,7 +3864,7 @@ function sfaDetayCiz(td, ozet, yenidenCiz) {
     td.appendChild(sfaKararFormu(v, ozet, yenidenCiz));
 }
 
-/* Çift eksenli tek grafik (kullanıcı kararı, örnek ekrandaki gibi):
+/* Çift eksenli tek grafik:
    çubuk = aralıktaki popülasyon payı (sol eksen), nokta + ince çizgi =
    aralıktaki hedef (1) oranı (sağ eksen), kesikli = doğrusal eğilim,
    noktalı = log eğilim. Eksik aralığı en solda, taralı. */
@@ -4086,8 +4017,7 @@ function sfaKararFormu(v, ozet, yenidenCiz) {
         alanlar[anahtar] = sel;
         return sel;
     };
-    /* TİP KARARI YALNIZCA BURADA (kullanıcı kararı: "değişkenlerin
-       bütün durumuna orada karar vereceğiz"). Seçenekler verinin tam
+    /* TİP KARARI YALNIZCA BURADA. Seçenekler verinin tam
        kolonla izin verdiği dönüşümler; ilk seçenek kaynak tip. Tip
        değişince sunucu değişkenin SFA'sını yeni tiple yeniden hesaplar,
        form yeni tipin kararıyla yeniden çizilir. */
@@ -4454,9 +4384,7 @@ function analizSekmeAc(tab) {
         panel.classList.add("acik");
 }
 
-/* ---- Panel genisligi SABIT ----
-   Suruklenebilir tutamaklar KALDIRILDI (kullanici istegi): iki panel de
-   CSS'teki clamp() degerinde duruyor. Degisken teyit tablosu varsayilan
+/* Degisken teyit tablosu varsayilan
    genislige zaten sigiyor (bkz. --ft-en), yani surukleme artik hicbir
    ekranda gerekli degil. */
 
@@ -4477,8 +4405,7 @@ function teyitKilitle(durum) {
     TEYIT.dugmeler.forEach(b => { if (b) b.disabled = durum; });
 }
 
-/* Sağ paneldeki ikiz "Teyit Et" düğmesi ARTIK ÇİZİLMİYOR (kullanıcı
-   kararı): "sözlük teyidi sağ panelden değil sohbet sekmesinden
+/* Sağ paneldeki ikiz "Teyit Et" düğmesi ARTIK ÇİZİLMİYOR: "sözlük teyidi sağ panelden değil sohbet sekmesinden
    yapılmalı, sağ blok sadece açıklama vermeli". Düğme, teyit kararı
    sağ panelde verilirken anlamlıydı; karar sohbet bloğuna taşınınca
    aynı ekranda iki ayrı yerde duran iki onay düğmesi kaldı ve hangisinin
@@ -4498,10 +4425,7 @@ function teyitPanelGuncelle(alan, bekleyen) {
     }
 }
 
-/* İkiz düğmenin tıklama bağlantısı da KALDIRILDI: şerit hiç açılmıyor,
-   ama bağlantı dursaydı görünmeyen bir düğme hâlâ adımı ilerletebilir
-   hâlde kalırdı (betikten, erişilebilirlik aracından veya ileride şeridi
-   yanlışlıkla açan bir değişiklikten sonra). */
+
 
 analizSekme.forEach(s => {
     const bagli = BAGLI_SEKMELER.indexOf(s.dataset.tab) !== -1;
@@ -4528,11 +4452,7 @@ function htmlKacir(s) {
 
 /* Girintili "  Etiket : Değer" satırları bir ÇIKTI LİSTESİ'dir, düz
    metin değil: arka uç bir adımın sonucunu böyle yazıyor (kaydedilen
-   tablo yolları, birleştirme sayıları, model özeti...). Boşlukla
-   hizalanmış metin olarak basılınca sütunlar font genişliğine bağlı
-   kalıyor, uzun dosya yolları sarıldığında hizalama tamamen bozuluyor
-   ve blok "terminal çıktısı" gibi duruyordu (kullanıcı kararı: "daha
-   düzgün bir tasarımda oluşturulmalı").
+   tablo yolları, birleştirme sayıları, model özeti...).
 
    Etiket-değer ızgarası hem hizayı garanti ediyor hem de uzun yolların
    kendi hücresinde sarılmasına izin veriyor. Girintili ama İKİ NOKTASI
@@ -4567,16 +4487,12 @@ function metinBicimle(metin) {
         cikti += ciktiSatirlariBicimle(kume);
         kume = [];
     };
-    /* Izgaranın kendi üst/alt boşluğu var: hemen ardından gelen TEK boş
-       satır yutuluyor, yoksa metinle liste arasında iki kat boşluk
-       kalıyordu. */
+    
     let yeniKapandi = false;
     satirlar.forEach((satir, i) => {
         const e = CIKTI_SATIRI.exec(satir);
         if (e) {
-            /* Izgaranın ÜSTÜNDEKİ tek boş satır da yutuluyor: arka uç
-               metinle listeyi boş satırla ayırıyor, ızgaranın kendi üst
-               boşluğuyla üst üste binince iki kat aralık oluyordu. */
+            
             if (!kume.length) cikti = cikti.replace(/\n$/, "");
             kume.push({ ad: kalin(e[1]), deger: kalin(e[2]) });
             yeniKapandi = false;
@@ -4600,15 +4516,12 @@ function metinBicimle(metin) {
 /* Bot balonu bir "balon-sutun" kutusunun icinde durur. Secenek kartlari
    da ayni kutuya eklenir; boylece kartlar balonun genisligini alir.
 
-   AVATAR GERI GELDI (kullanici istegi): akisi ilerleten tarafin bir
-   robot oldugu gorunur olsun. Bir kez kaldirilmisti, cunku o zaman
-   balonlar --balon-en kadardi ve avatarin actigi 32px'lik girinti iki
-   tarafi ortaya dogru itiyordu. Artik bloklar SUTUNUN TAMAMINI
+Artik bloklar SUTUNUN TAMAMINI
    kapliyor ve her iki tarafta da avatar var; genislik farki kalmadi.
 
    Gorsel YUKLENMEZSE (folder'da yok, ag hatasi) <img> kendini gizler:
    kirik resim ikonu, olmayan bir seyin yerini tutmaktan kotudur. */
-/* ROBOT GÖRSELLERİ (kullanıcı kararı): sohbetteki İLK robot (karşılama)
+/* ROBOT GÖRSELLERİ: sohbetteki İLK robot (karşılama)
    el sallayan görsel, normal konuşmada konuşan görsel, arkada iş
    sürerken düşünen görsel (bkz. calismaGostergesi). */
 function avatarYap(rol) {
@@ -4624,10 +4537,7 @@ function avatarYap(rol) {
 }
 /* ---- Blok başlığı: solda adım adı, SAĞ ÜSTTE "Geri Dön" ----
    Onay düğmeleri sohbetin ALTINDAKI ortak şeritten blokların İÇİNE
-   taşındı. Ortak şerit her zaman ekranın en altındaydı: kullanıcı
-   transkriptte yukarı çıkıp üç adım önceki bloğu okurken düğmeler
-   görüş alanından çıkıyor, hangi bloğa ait oldukları da belirsiz
-   kalıyordu. Şimdi her blok kendi kararını taşıyor.
+   taşındı. Şimdi her blok kendi kararını taşıyor.
 
    GERİ DÖN NEDEN BAŞLIKTA: bir eylem değil, bir NAVİGASYON. Onayla
    ve Değiştir bu bloğa ait kararlar, aşağıda dururlar; Geri Dön
@@ -4656,8 +4566,7 @@ function geriDugmesiYap(b) {
 
 /* Kartın kendi başlığı ÇİZİLSİN Mİ?
    Her adım bloğu zaten üstünde adımın adını taşıyor (blokBasligiEkle).
-   Kart da aynı adı yazınca adım adı iki
-   kez tekrar ediyordu. Gruplu blokta ad alt başlıkta duruyor, tekli
+   Gruplu blokta ad alt başlıkta duruyor, tekli
    blokta blok başlığında; ikisinde de kart başlığı fazlalık. Bu yüzden
    kart başlığı YALNIZCA bloğun başlığından farklıysa çiziliyor —
    sohbet dışında (blok yokken) kart tek başına durduğu için yazılır. */
@@ -4675,9 +4584,7 @@ function blokBasligiEkle(kap, blok) {
 
     const bas = elYap("div", "blok-bas");
     /* AVATAR BURADA, balonYap'ta değil: başlık satırını kartlar
-       (doğrulama, teyit, form) da kullanıyor. Avatar yalnızca balon
-       tarafına eklenince kartlar avatarsız kalıyordu, oysa adımı
-       yürüten asistan orada da aynı asistan. */
+       (doğrulama, teyit, form) da kullanıyor. */
     bas.appendChild(avatarYap("bot"));
     const konum = b.kod === undefined ? adimKonumu(b.adim) : null;
     bas.appendChild(elYap("span", "blok-ad",
@@ -4693,26 +4600,18 @@ function blokBasligiEkle(kap, blok) {
        aynı işareti taşımalı, ikisi de birer adım bloğu. */
     if (b.adim) kap.dataset.adim = b.adim;
 
-    /* HER BLOKTA GERİ DÖN, ilk adım dahil. Eskiden adım 0'da
-       çizilmiyordu ve "Çalışma Başlangıcı"na dönmenin yolu kalmıyordu;
+    /* HER BLOKTA GERİ DÖN, ilk adım dahil.
        oysa oraya dönmek çalışma modunu değiştirmek demek. */
     if (b.adim && b.geri !== false) bas.appendChild(geriDugmesiYap(b));
     kap.appendChild(bas);
     return bas;
 }
 
-/* ---- Geri dönüşte transkripti GERİ SAR ----
-   Kullanıcı "Veri ve Sözlük" adımına dönünce eskiden o adımın bloğu
-   sohbetin EN ALTINA yeniden ekleniyordu: sonraki adımların blokları
-   (modelleme tanımları, sözlük teyidi, bölme) yerinde
-   kalıyor, dönülen adım ise onların ALTINDA beliriyordu. Ekran "en son
-   burada kaldın" demeyi bırakıp yanlış bir sıra gösteriyordu.
+/*
 
-   KIRPMA ADIM SIRASINA GÖRE, blok bulmaya göre DEĞİL. İlk denemede
-   hedef adımın kendi bloğu aranıyordu; ama "kurulum" ve "tanımlar" gibi
+   KIRPMA ADIM SIRASINA GÖRE, blok bulmaya göre DEĞİL.  Ama "kurulum" ve "tanımlar" gibi
    adımlar bilerek metin döndürmüyor (karar kartın içinde) ve F5 sonrası
-   transkriptte hiç blok bırakmıyorlar. Blok aranınca hedef bulunamıyor,
-   hiçbir şey silinmiyordu. Artık sıra numarası karşılaştırılıyor:
+   transkriptte hiç blok bırakmıyorlar. Artık sıra numarası karşılaştırılıyor:
    hedefe EŞİT ya da ondan SONRAKİ ilk blok ve sonrası siliniyor. */
 function adimSirasiHaritasi() {
     const harita = {};
@@ -4768,8 +4667,7 @@ function transkriptiKirp(adim) {
     if (kesim === -1) return false;          // hedef zaten en yeni adım
 
     /* KESİM NOKTASININ ÜSTÜNE DOKUNULMAZ.
-       Önce buradan geriye doğru kullanıcı satırları da siliniyordu
-       ("o adıma verilen girdiler" varsayımıyla). Ama bir kullanıcı
+       Ama bir kullanıcı
        satırının HANGİ adıma ait olduğu DOM'da yazmıyor: ölçümde,
        "Bölme Stratejisi" adımına dönerken önceki iki adımın kullanıcı
        mesajları da silindi. Artık yalnızca hedef adımın bloğundan
@@ -4811,9 +4709,7 @@ function blokOnayEkle(kap) {
         if (mesgul) return;
         satir.remove();
         /* "DEĞİŞTİR" = AYNI ADIMA DÖNÜŞ, Geri Dön ile aynı yol.
-           Düz bir "hayır" mesajı olarak gidince adım yeniden açılıyor
-           ama transkriptte AYNI BAŞLIKLI ikinci bir blok beliriyordu,
-           araya da "Değiştir seçildi" ayracı giriyordu. Adım anahtarı
+           Adım anahtarı
            gövdede gidince hem arka uç hem ön yüz o adımdan geri sarıyor:
            tek blok kalıyor ve yeni hâliyle yeniden doluyor. */
         const adim = (kap && kap.dataset) ? kap.dataset.adim : "";
@@ -4848,10 +4744,7 @@ function balonIcerikYap(rol, metin, hataMi) {
 /* ---- ADIM BLOĞU: bir adımın BÜTÜN ekranları TEK çerçevede ----
    İş akışı adım adım ilerliyor ve ekran da adım adım gruplanıyor. Ama
    bir adım birden fazla ekran üretebiliyor: "Veri ve Sözlük" önce
-   seçim formunu, sonra girdi doğrulama kartını gösteriyor. İkisi ayrı
-   blok olarak çizilince ekranda üst üste AYNI başlıklı ("VERİ VE
-   SÖZLÜK") ve aynı Geri Dön'ü taşıyan iki kutu duruyordu; adım
-   tekrarlanmış gibi görünüyordu.
+   seçim formunu, sonra girdi doğrulama kartını gösteriyor.
 
    Bu fonksiyon o adımın AÇIK kabını döndürür: sohbetin en altındaki
    blok aynı adıma aitse ona eklenir, değilse yeni blok kurulur.
@@ -4899,9 +4792,7 @@ function grupKabiAl(blok) {
         bas.appendChild(elYap("span", "alt-ad",
                               numarali(konum ? konum.altKod : "", blok.baslik)));
         /* ROZET YUVASI: kartın "✓ Girdiler Onaylandı" göstergesi buraya
-           taşınıyor. Kartın kendi başlık satırında kalınca alt başlık
-           ile gövde metni arasında koca bir boşluk oluşuyordu; rozet
-           tek başına bir satır kaplıyordu. */
+           taşınıyor. */
         bas.appendChild(elYap("span", "alt-rozet"));
         if (blok.geri !== false) bas.appendChild(geriDugmesiYap(blok));
         bolum.appendChild(bas);
@@ -4913,7 +4804,7 @@ function grupKabiAl(blok) {
     return bolum;
 }
 
-/* ---- FAZ BİTTİ AYRACI (kullanıcı kararı) ----
+/* ---- FAZ BİTTİ AYRACI ----
    Bir faz bitince sohbete ince bir çizgi ve ortasında kırmızı
    "01 Çalışma Kurulumu Tamamlandı" yazısı basılır. Yeni açılan blok
    sohbetteki son bloktan daha SONRAKİ bir faza aitse aradaki fazlar
@@ -4970,8 +4861,7 @@ function adimKabiAl(blok) {
 }
 
 /* ---- BLOK DURUMU: BEKLENİYOR / TAMAMLANDI ----
-   Kullanıcı bildirimi: bütün bloklar aynı kırmızı çerçeveyle durunca
-   "şu an hangisindeyim, neyi cevaplıyorum" anlaşılmıyordu. Artık:
+   Artık:
      - AKTİF ADIMIN bloğu (ya da gruplu blokta aktif adımın bölümü)
        kırmızı çerçeve + "● Yanıtınız Bekleniyor" etiketi,
      - geçilmiş bloklar gri çerçeve, sessiz başlık ve "✓ Tamamlandı".
@@ -4979,13 +4869,12 @@ function adimKabiAl(blok) {
    Kart kendi "✓ Girdiler Onaylandı" rozetini taşıyorsa ikinci bir
    "Tamamlandı" yazılmaz: aynı şeyi iki kez söylemesin. */
 const BLOK_BEKLIYOR = "● Yanıtınız Bekleniyor";
-/* YANIT VERİLDİ, SUNUCU İŞLİYOR (kullanıcı kararı): "Yanıtınız
+/* YANIT VERİLDİ, SUNUCU İŞLİYOR: "Yanıtınız
    Bekleniyor" o sırada yanlış - yanıt zaten verildi. Blok SARI olur,
    kartın kendi rozeti boş kalır; tek etiket bu. */
 const BLOK_KONTROL = "● Kontrol Ediliyor";
 const BLOK_TAMAM = "✓ Tamamlandı";
-/* AÇIKLAMALI ONAY (kullanıcı kararı: "Tamamlandı" neyin tamamlandığını
-   söylemiyordu). Adım başına kısa, geçmiş zamanlı bir onay; listede
+/* AÇIKLAMALI ONAY. Adım başına kısa, geçmiş zamanlı bir onay; listede
    olmayan adımda genel "Tamamlandı" kalır. */
 const BLOK_TAMAM_METNI = {
     ham_veri: "Kaynak Tablolar Seçildi",
@@ -5042,7 +4931,7 @@ function blokDurumEtiketi(bas, durum, adim) {
 }
 
 function sinifAyarla(el, durum) {
-    /* Çerçeve kontrol sırasında da KIRMIZI kalır (kullanıcı kararı);
+    /* Çerçeve kontrol sırasında da KIRMIZI kalır;
        sarı yalnızca başlıktaki "Kontrol Ediliyor" etiketi. */
     el.classList.toggle("durum-bekliyor", durum === "bekliyor" || durum === "kontrol");
     el.classList.toggle("durum-tamam", durum === "tamam");
@@ -5110,9 +4999,7 @@ function balonYap(rol, metin, hataMi) {
 }
 
 /* Sistem bildirimi: "Önceki çalışmanız kaldığı yerden yüklendi."
-   BALON DEĞİL. Bunu asistan söylemiyor, uygulama söylüyor; bot balonu
-   olarak basılınca başında robot avatarıyla duruyordu ve akışı yürüten
-   asistanın bir cümlesi gibi görünüyordu. İnce, nötr bir şerit. */
+   BALON DEĞİL. Bunu asistan söylemiyor, uygulama söylüyor. İnce, nötr bir şerit. */
 function sistemNotuEkle(metin) {
     const not = elYap("div", "sistem-notu");
     not.setAttribute("role", "status");
@@ -5123,8 +5010,7 @@ function sistemNotuEkle(metin) {
 }
 
 /* ==================== Otomatik kaydırma ====================
-   KULLANICI KARARI: "veri geldikçe otomatik en aşağı atıyor ... işlemleri
-   kendim görmek adına yukarı kaydırıyorum". Kurallar:
+   Kurallar:
    - Yeni içerik gelince sohbet EN ALTA değil, YENİ İÇERİĞİN BAŞINA
      kaydırılır. Zincirleme adımlarda (02.1 çıktısı, ardından 02.2 kartı)
      ilk gelen çıktı ekranda kalır; altındakine kullanıcı kendisi iner.
@@ -5190,7 +5076,7 @@ function sureBicim(sn) {
     return d + ":" + (s < 10 ? "0" : "") + s;
 }
 
-/* İŞLEM SATIRI (kullanıcı kararı): ayrı bir "yükleniyor" kartı YOK.
+/* İŞLEM SATIRI: ayrı bir "yükleniyor" kartı YOK.
    Durumu başlıktaki "● Kontrol Ediliyor" etiketi anlatıyor; aktif adımın
    bloğunun EN ALTINA tek ince satır gelir: "İşlem Devam Ediyor · 0:12 · İptal".
    Satır ilk ISLEM_GECIKME_MS boyunca görünmez: kısa işlemlerde ekranda
@@ -5233,7 +5119,7 @@ function calismaGostergesi(iptalEt) {
     };
     /* DÜŞÜNEN ROBOT: işlem sürerken çalışan bloğun başlığındaki robot
        geçici olarak düşünen hâle geçer. "İşlem Devam Ediyor" satırına
-       görsel konmaz (kullanıcı kararı). */
+       görsel konmaz. */
     satir.append(sure, iptal);
     (kap || sohbetEl).appendChild(satir);
     const blokAvatar = kap && kap.parentElement
@@ -5297,8 +5183,7 @@ function secenekEkle(secenekler, kilit, secili) {
         }
         kart.appendChild(govde);
 
-        /* KAPALI SEÇENEK (kullanıcı kararı: henüz açılmamış başlangıçlar
-           seçilemesin). Soluk durur, tıklanamaz, sağında "Şu An Kapalı". */
+        /* KAPALI SEÇENEK. Soluk durur, tıklanamaz, sağında "Şu An Kapalı". */
         if (s.kapali) {
             kart.classList.add("kapali");
             kart.appendChild(elYap("span", "secenek-kapali", "Şu An Kapalı"));
@@ -5467,16 +5352,12 @@ function kolonlariHazirla(alan) {
    YALNIZCA listedeki veri setleri kabul edilir. Liste okunamadiysa elle
    yazmaya izin verilir; tablo varligi backend'de kontrol edilir. */
 
-/* "SECILDI" DUGMESI YOK. Eskiden kart gonderildikten sonra birincil
-   dugmenin uzerine bu yaziliyordu: bir durum bilgisi, dugme kiligindaydi
-   — basilabilir gorunuyor, basilinca hicbir sey olmuyordu. Yerine baslik
+/* "SECILDI" DUGMESI YOK. Yerine baslik
    satirinin saginda .secim-durum gostergesi var (bir <span>; dugme degil,
    imleci degismez), gonderildikten sonra birincil dugme GIZLENIR. */
-/* ROZETLER BAŞLIK BÜYÜK HARFİYLE (kullanıcı kararı: "Girdiler hazır"
-   değil "Girdiler Hazır"). Sabit metinler burada öyle yazılı; arka
+/* ROZETLER BAŞLIK BÜYÜK HARFİYLE. Sabit metinler burada öyle yazılı; arka
    uçtan gelen rozet metinleri rozetMetni() ile aynı biçime çevriliyor. */
-/* GÖNDERİLMİŞ KART: "✓ Girdiler Onaylandı" (kullanıcı kararı; "Girdiler
-   Hazır" belirsizdi: hazır ama gönderilmemiş mi, onaylanmış mı?). Rozet
+/* GÖNDERİLMİŞ KART: "✓ Girdiler Onaylandı". Rozet
    YALNIZCA gönderimden sonra çıkar; dolu ama gönderilmemiş kart "2/2
    Seçildi" der ve düğmesi durur. */
 const SECIM_HAZIR = "✓ Girdiler Onaylandı";
@@ -5547,8 +5428,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
     const zorunlu = (s.zorunlu === false) ? false : true;
     const eslesmeYok = s.bos_mesaji || kaynak.eslesme_yok;
     /* Listede GOSTERILMEYECEK adlar (ör. listeye zaten eklenmiş tablolar;
-       kullanıcı bildirimi: "önceden seçtiğim tekrardan seçim kısmında
-       gözüküyor"). Fonksiyon: her çizimde güncel liste okunur. */
+       ). Fonksiyon: her çizimde güncel liste okunur. */
     const haricAl = typeof s.haric === "function" ? s.haric : () => [];
 
     const no = ++KOMBO_SAYAC;
@@ -5560,16 +5440,14 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
 
     if (etiket) {
         const lbl = document.createElement("label");
-        /* TEK SATIR ETİKET (kullanıcı bildirimi: "yazılar iç içe, sıra
-           yamuk"). Uzun etiket iki satıra sarınca o alanın kutusu
-           diğerlerinden aşağıda kalıyordu. "(İsteğe Bağlı)" küçük ve soluk
+        /* TEK SATIR ETİKET. "(İsteğe Bağlı)" küçük ve soluk
            ayrı parça; sığmazsa etiket "…" ile kısalır, tamamı ipucunda. */
         const tam = tireSade(etiket);
         const m = tam.match(/^(.*?)\s*\((İsteğe Bağlı)\)$/);
         lbl.textContent = m ? m[1] : tam;
         if (m) lbl.appendChild(elYap("span", "combo-etiket-ek", " (" + m[2] + ")"));
         lbl.title = tam;
-        /* ZORUNLU ALAN: etiketin yanında kırmızı yıldız (kullanıcı kararı).
+        /* ZORUNLU ALAN: etiketin yanında kırmızı yıldız.
            Diğerleri isteğe bağlı; ayrıca yazılmıyor. */
         if (zorunlu) {
             const y = elYap("span", "combo-zorunlu", "*");
@@ -5594,8 +5472,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
     giris.setAttribute("aria-required", zorunlu ? "true" : "false");
 
     /* ALAN KAPSAYICISI: giris + ok dugmesi + acilir liste.
-       Ok dugmesi `bottom: 1px` ile, liste `top: 100%` ile konumlaniyor
-       ve ikisi de .combo'ya gore olculuyordu. Alanin ALTINA bir aciklama
+       Alanin ALTINA bir aciklama
        satiri ("Yalnızca 0/1 değerli kolonlar") eklenince .combo uzadi:
        ok dugmesi o satirin hizasina kaydi, liste de onun altindan
        acilmaya basladi. Kapsayici sayesinde ikisi de ALANA gore
@@ -5636,8 +5513,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
     }
 
     /* Listedeki adin yazim farkini duzelten arama (buyuk/kucuk harf).
-       ftSade kullaniliyor: duz toLowerCase Turkce'de "I" harfini "i"
-       yapiyor, yani "ISTANBUL" kolonu "ıstanbul" yazilinca bulunmuyordu.
+
        ftSade once Turkce harfleri ASCII'ye katliyor, iki taraf da ayni
        kurala giriyor. */
     function bul(ad) {
@@ -5670,9 +5546,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         giris.title = hatali ? kaynak.uyari : "";
     }
 
-    /* kaydir=false: FARE ile vurgulama listeyi KAYDIRMAZ (kullanici
-       bildirimi: yukari kaydirip yarim gorunen ustteki ada gelince liste
-       kendiliginden asagi kayiyor, fare baska bir adin uzerine dusuyordu).
+    /* kaydir=false: FARE ile vurgulama listeyi KAYDIRMAZ.
        Yalniz klavye (ok tuslari, Home/End) vurguyu gorunur alana getirir. */
     function vurgula(i, kaydir = true) {
         vurguIndeks = i;
@@ -5737,8 +5611,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
 
     /* Liste asagi sigmiyorsa yukari acilir; yine de tasiyorsa sohbet
        kaydirilir — kart her zaman en altta oldugu icin gerekli. */
-    /* LİSTE HER ZAMAN YUKARI AÇILIR (kullanıcı kararı: "bir yukarı bir
-       aşağı açılıyor, hep yukarı açılmalı"). Alanın üstünde yer yoksa
+    /* LİSTE HER ZAMAN YUKARI AÇILIR. Alanın üstünde yer yoksa
        sohbet kaydırılarak yer açılır. */
     function konumla() {
         liste.classList.add("yukari");
@@ -5866,7 +5739,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
    veri seti / sozluk / kolon adi YOK. */
 const DG_EKSIK_NOTU = "Sözlüğe eklenecek kolonların ve uygulanacak düzeltmelerin "
     + "açıklaması boş olamaz.";
-/* Öneriler akarken açıklama alanları KİLİTLİ (kullanıcı kararı): yarım
+/* Öneriler akarken açıklama alanları KİLİTLİ: yarım
    dolmuş bir listede yazmaya başlayıp üstüne öneri düşmesi, yazılanın
    kaybolması demek olurdu. */
 const DG_ONERI_NOTU = "Açıklama önerileri hazırlanıyor: %s / %s kolon. "
@@ -5917,8 +5790,7 @@ function dogrulamaKartiEkle(alan, blok) {
     if (kartBasligiGerekli(alan, blok)) kart.appendChild(basSatir);
 
     /* ---- 2) Aciklama ---- */
-    /* SOZLESME7 §2: arka uc kart aciklamasini artik GONDERMIYOR (baslik
-       zaten ayni seyi soyluyordu). Gelmezse hic cizilmez. */
+    /* Gelmezse hic cizilmez. */
     if (alan.aciklama) {
         const ack = document.createElement("div");
         ack.className = "secim-aciklama dg-aciklama";
@@ -5999,7 +5871,7 @@ function dogrulamaKartiEkle(alan, blok) {
 
     if (tanimsiz) {
         const varsayilan = tanimsiz.varsayilan === "ekle" ? "ekle" : "haric";
-        /* SOZLESME7 §2: KATEGORI kolonu tamamen kaldirildi. Tanimsiz bir
+        /* Tanimsiz bir
            kolona kategori atamak, kolonun ne oldugunu bilmeden onu bir
            kovaya koymaktir; govde de artik "kategoriler" gondermiyor. */
 
@@ -6034,15 +5906,12 @@ function dogrulamaKartiEkle(alan, blok) {
                 toplu.appendChild(b);
                 topluBtnleri.push(b);
             });
-        /* Toplu düğmeler TABLONUN HEMEN ÜSTÜNDE (kullanıcı kararı: başlık
-           satırında notların üstünde kalıp tablodan kopuyordu). Aşağıda,
+        /* Toplu düğmeler TABLONUN HEMEN ÜSTÜNDE. Aşağıda,
            tablodan hemen önce ekleniyor. */
         kart.appendChild(tbas);
 
         /* SOZLESME7 §2: eski UC not satiri (tanimsiz.aciklama,
-           kapsam_notu, oneri_notu) TEK satira indi. Uc ayri soluk
-           paragraf karti uzatiyordu ve ucu de ayni seyi soyluyordu:
-           "tanimsizlar disarida kalir, oneriler dogrulanmamistir".
+           kapsam_notu, oneri_notu) TEK satira indi.
            Arka uc artik yalnizca tanimsiz["not"] gonderiyor. */
         if (tanimsiz["not"]) {
             const nt = document.createElement("div");
@@ -6059,9 +5928,7 @@ function dogrulamaKartiEkle(alan, blok) {
             zn.textContent = tireSade(tanimsiz.zorunlu_not);
             kart.appendChild(zn);
         }
-        /* Öneri alınamayan grup varsa NEDENİ burada. Sessiz kalınca
-           "model hiçbir şey öneremedi" ile "model hiç çağrılamadı" aynı
-           görünüyordu; kullanıcı boş açıklamaların neden boş olduğunu
+        /* Öneri alınamayan grup varsa NEDENİ burada.  Kullanıcı boş açıklamaların neden boş olduğunu
            bilmeli. */
         if (tanimsiz.oneri_hata) {
             const oh = document.createElement("div");
@@ -6086,7 +5953,7 @@ function dogrulamaKartiEkle(alan, blok) {
            "Değişken"; "İşlem" degil "Sözlüğe Ekle" — kolon basligi da
            kutunun ne anlama geldigini soylemeli. Baslik Buyuk Harfi
            (§1): tablo basliklarinda her kelime buyuk baslar. */
-        /* Kolon başlığı "Seç" (kullanıcı kararı; eskiden "Sözlüğe Ekle"). */
+        /* Kolon başlığı "Seç". */
         ["Değişken", "Tip", "Açıklama", "Seç"].forEach(h => {
             const th = document.createElement("th");
             th.textContent = h;
@@ -6182,7 +6049,7 @@ function dogrulamaKartiEkle(alan, blok) {
             girisler.push(giris);
 
             /* SOZLUGE EKLE: isaretli -> sozluge eklenir, isaretsiz ->
-               haric tutulur. Iki durumlu dugme KALDIRILDI; "basmam mi
+               haric tutulur. "basmam mi
                gerekiyor" belirsizligi ondandi. Kutu kendi durumunu
                gosterir, etiket okumaya gerek yok. */
             const tdI = document.createElement("td");
@@ -6238,7 +6105,7 @@ function dogrulamaKartiEkle(alan, blok) {
        çıkarılır; kullanıcı anlamı düzeltip proje genelindeki onaylı
        kısaltma hafızasına kaydeder. Kayıt adım akışından BAĞIMSIZ
        (kendi düğmesi, /kisaltma_kaydet). */
-    /* AYRI ADIMLAR (kullanıcı kararı): 01.2.4 Kısaltma Sözlüğü ve 01.2.5
+    /* AYRI ADIMLAR: 01.2.4 Kısaltma Sözlüğü ve 01.2.5
        Kolon Adı Önerileri kendi kartlarında; karar birincil düğmeyle
        adımla birlikte gider (alan.adim). Bölümlerin kendi kaydet
        düğmeleri adım kartında gizlenir. */
@@ -6255,7 +6122,7 @@ function dogrulamaKartiEkle(alan, blok) {
         ? kolonAdBolumuEkle(kart, alan.kolon_ad, !!(blok && blok.kilit), !!adimModu) : null;
 
     /* ---- 5b) Sözlükteki tanımların kontrolü ----
-       Kullanıcı kararı: sözlükte tanımı OLAN kolonların tanımı da birden
+       sözlükte tanımı OLAN kolonların tanımı da birden
        fazla dil modeliyle denetlenir; yalnızca düzeltilmesi önerilenler
        "Mevcut Tanım / Önerilen Tanım" karşılaştırmasıyla listelenir.
        Satırlar arka plandaki işten yoklamayla gelir (bkz. kontrolIsle);
@@ -6268,7 +6135,7 @@ function dogrulamaKartiEkle(alan, blok) {
     /* Sözlük Tanım Kontrolü adımında (kontrol.bekle) devam düğmesi kontrol
        bitene kadar kapalı: adımın işi bu kontrol. */
     let kontrolBekliyor = !!(kontrol && kontrol.bekle && kontrol.toplam && !kontrol.baslamadi);
-    /* İSTEĞE BAĞLI KONTROL (kullanıcı kararı): kart "Tanımları Kontrol
+    /* İSTEĞE BAĞLI KONTROL: kart "Tanımları Kontrol
        Et" ile açılır; basılmadıkça hiçbir dil modeli çağrılmaz. "Kontrol
        Etmeden Devam Et" her zaman açık (sürerken de: kontrol durdurulur). */
     let kBaslaBtn = null;
@@ -6436,8 +6303,7 @@ function dogrulamaKartiEkle(alan, blok) {
     gerekce.hidden = true;
     kart.appendChild(gerekce);
 
-    /* YALNIZ BIRINCIL DUGME. "Seçimi Düzenle" ve "Geri" kaldirildi:
-       ikisi de ayni yere, veri seti secim formuna goturuyordu. */
+    /* YALNIZ BIRINCIL DUGME. */
     const dugmeler = document.createElement("div");
     dugmeler.className = "onay-dugmeler dg-dugmeler";
 
@@ -6536,10 +6402,7 @@ function dogrulamaKartiEkle(alan, blok) {
 
         /* EKRANDA GORUNMEYEN KOLONLAR DA SAYILIR. EN_FAZLA_TANIMSIZ
            asildiginda kalan kolonlar tabloya cizilmiyor ama arka uc
-           onlari VARSAYILAN islemle (hariç) uyguluyor. Etiket yalnizca
-           gorunen satirlari sayarsa, 900 tanimsiz kolonlu bir sette
-           "200 Kolonu Hariç Tut" yazip 900'unu hariç tutardi — dugmenin
-           uzerindeki sayi yaptigi isle tutmuyordu. */
+           onlari VARSAYILAN islemle (hariç) uyguluyor. */
         const gizliHaric = (alan.tanimsiz && alan.tanimsiz.kalan) || 0;
         const toplamHaric = haricSayisi + gizliHaric;
 
@@ -6570,7 +6433,7 @@ function dogrulamaKartiEkle(alan, blok) {
             gerekce.hidden = true;
             return;
         }
-        /* KISALTMA SÖZLÜĞÜ (kullanıcı kararı): dil modeli kontrolü bitmeden
+        /* KISALTMA SÖZLÜĞÜ: dil modeli kontrolü bitmeden
            onaylanamaz; yalnız sözlükten çıkan anlamlar çalışmaya girmesin.
            Beklemek istemeyen "Kısaltmaları Onaylamadan Devam Et"i kullanır. */
         if (adimModu === "birlesik" && birErisim && birErisim.bekliyor()) {
@@ -6614,9 +6477,7 @@ function dogrulamaKartiEkle(alan, blok) {
        Kayit sirasinda kart kilitlenir. Dugmenin uzerine "SECILDI"
        gibi bir DURUM YAZILMAZ: etiket ne yaptigini soylemeye devam
        eder, kilidi kartin sonuk gorunumu ve pasif dugme anlatir. */
-    /* Karar verildikten sonra rozet NE YAPILDIGINI yazar. Eskiden arka uç
-       bunu ayrı bir sohbet balonu olarak basıyordu ("Veri seti ve sözlük
-       bağlandı. 2 kolon sözlüğe eklendi.") — kartın hemen altında, aynı
+    /* Karar verildikten sonra rozet NE YAPILDIGINI yazar. 2 kolon sözlüğe eklendi.") — kartın hemen altında, aynı
        kararın tekrarı olarak. Bilgi kaybolmadı, kartın içine taşındı. */
     /* Karar verilince satırlar yeşil / kırmızı olur; geri alınınca
        karar öncesi renklerine döner (bkz. dgRenk). */
@@ -6930,12 +6791,12 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
 }
 
 /* ==================== 01.2.5 Kısaltma Birleştirme ====================
-   AYRI ADIM (kullanıcı kararı): kısaltmalar 01.2.4'te onaylandıktan
+   AYRI ADIM: kısaltmalar 01.2.4'te onaylandıktan
    SONRA, onaylanan anlamlarla dil modeli hep yan yana geçen parçalar için
    birleştirme önerir; kullanıcı kabul eder ya da kendisi ekler. */
 function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     let kilitli = ilkKilit;
-    /* BİRLEŞTİRME ÖNERİLERİ (kullanıcı kararı): her parça ayrı kısaltma;
+    /* BİRLEŞTİRME ÖNERİLERİ: her parça ayrı kısaltma;
        hep yan yana geçen ve anlamı karışan parçalar için dil modeli
        birleştirme önerir, kabul kullanıcının. Yalnız öneri varsa görünür. */
     const bSar = elYap("div", "dg-birlesik");
@@ -6955,7 +6816,7 @@ function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     bTh.appendChild(bHr); bTablo.appendChild(bTh);
     const bTb = document.createElement("tbody");
     bTablo.appendChild(bTb); bSar.appendChild(bTablo);
-    /* ELLE BİRLEŞTİRME (kullanıcı kararı): dil modeli önermese de
+    /* ELLE BİRLEŞTİRME: dil modeli önermese de
        kullanıcı yan yana geçen kısaltmaları birleştirebilir, birlikte
        anlamını ve isterse yerine geçecek kısaltmayı yazar. Parçaların
        kolon adlarında yan yana geçtiği onayda denetlenir. */
@@ -7128,14 +6989,13 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const topluBtn = [];
     const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
     const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Kısaltma Sözlüğü");
-    /* "i" YERİNE KISA AÇIKLAMA başlığın altında (kullanıcı kararı). */
+    /* "i" YERİNE KISA AÇIKLAMA başlığın altında. */
     kb.appendChild(kbas);
     kart.appendChild(kb);
-    /* Sütunların açıklaması başlıktaki "i"de (kullanıcı kararı: isteyen
-       okusun); başlığın altında yalnız adımın ne yaptığı. */
+    /* Sütunların açıklaması başlıktaki "i"de; başlığın altında yalnız adımın ne yaptığı. */
     if (ka.sutunlar) kbas.appendChild(bolmeBilgiSimgesi(tireSade(ka.sutunlar), "Sütunlar"));
     if (ka.aciklama) kart.appendChild(elYap("div", "dg-kisa-aciklama", tireSade(ka.aciklama)));
-    /* DURUM BİLGİSİ (kullanıcı kararı): tablonun altında, onay düğmesinin
+    /* DURUM BİLGİSİ: tablonun altında, onay düğmesinin
        üstünde, bilgilendirme kutusu olarak; aşağıda tablodan sonra eklenir. */
     const durumEl = elYap("div", "dg-bilgi-kutu", "");
     const hataEl = elYap("div", "dg-oneri-hata");
@@ -7150,8 +7010,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        onaylı olan "Seç" işaretli. */
     /* Sarı yalnız sözlükteki anlam DEĞİŞTİYSE (dil modeli doğru, ikisi de
        yanlış, yanlış kısaltma), boşsa ya da uyarı varsa; "sözlük doğru" ve
-       "ikisi aynı" renksiz (kullanıcı kararı). */
-    /* RENK VE ADLAR BÜTÜN AKIŞTA AYNI (kullanıcı kararı): mavi dil modeli
+       "ikisi aynı" renksiz. */
+    /* RENK VE ADLAR BÜTÜN AKIŞTA AYNI: mavi dil modeli
        önerisi, mor onaylı tanım (hafızada), sarı boş, yeşil düzenlendi.
        Dil modeli sonucu olmayan (kelime sayımı) satır renksiz. Uyarılar
        "i"de. */
@@ -7171,11 +7031,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     if (!adimda) toplu.appendChild(kaydetBtn);
     ust.appendChild(toplu);
     kart.appendChild(ust);
-    /* EXCEL (kullanıcı kararı): önerilen anlamlar örnek kolonları ve
+    /* EXCEL: önerilen anlamlar örnek kolonları ve
        anlamı taşımayan (çelişen) örneklerle birlikte indirilir; dosya
        çalışma klasörüne de yazılır. Son sütun kullanıcının kararı için. */
     /* Sağ paneldeki gibi küçük yeşil "Excel İndir", başlığın sağında
-       (kullanıcı kararı: ayrı şeritte garip duruyordu). İçerik aynı:
+İçerik aynı:
        kısaltmalar, kararlar ve örnek kolonlar. */
     const kisaExcel = excelSeridiYap("kisaltma", "Excel İndir",
         "Kısaltmalar, kararlar ve örnek kolonlarıyla");
@@ -7184,12 +7044,12 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const sar = elYap("div", "dg-tablo-sar");
     const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
     const th = document.createElement("thead"), hr = document.createElement("tr");
-    /* İKİ KAYNAK AYRI SÜTUNDA (kullanıcı kararı): sözlüğün ve dil
+    /* İKİ KAYNAK AYRI SÜTUNDA: sözlüğün ve dil
        modelinin dediği yan yana; Anlam'a daha mantıklı olan yazılır,
        kullanıcı düzenler. */
-    /* Not sütunu kaldırıldı (kullanıcı kararı: çok yer kaplıyor); karar,
+    /* karar,
        gerekçe ve uyarılar kısaltmanın yanındaki "i"de. */
-    /* Anlam sütunu "LLM Karar" (kullanıcı kararı): değer, dil modellerinin
+    /* Anlam sütunu "LLM Karar": değer, dil modellerinin
        iki kaynak arasındaki kararıdır; düzenlenebilir. */
     ["Kısaltma", "LLM Sözlük", "LLM Genel", "LLM Karar", "Önerilen Kısaltma", "Seç"]
         .forEach(h => hr.appendChild(elYap("th", "", h)));
@@ -7203,8 +7063,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         satirlar.length = 0;
         (liste || []).forEach(r => {
             const tr = elYap("tr", "dg-satir");
-            /* ÖRNEKLER KISALTMANIN YANINDA "i" (kullanıcı kararı: ayrı
-               sütun gereksiz). Anlamı onaylatan kolon adları ve sözlükteki
+            /* ÖRNEKLER KISALTMANIN YANINDA "i". Anlamı onaylatan kolon adları ve sözlükteki
                açıklamaları; tanımı anlamı taşıyan yoksa herhangi örnekler
                gelir, kullanıcı çelişkiyi görür. */
             const tdK = elYap("td", "dg-kolon dg-kisaltma-ad", r.kisaltma);
@@ -7216,12 +7075,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 + orn.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n") : ""]
                 .filter(Boolean).join("\n\n");
             if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kisaltma));
-            /* SAYI DEĞERLİ KALIP (kullanıcı bildirimi: harf kısmına inince
-               sayının anlamı kayboluyordu): adlardaki biçimler altta. */
+            /* SAYI DEĞERLİ KALIP: adlardaki biçimler altta. */
             let ay = null;
             if ((r.sayili || []).length) {
                 tdK.appendChild(elYap("div", "dg-tip", r.sayili.join(" · ")));
-                /* SAYIDAN AYIR önerisi (kullanıcı kararı): <K><NN> ->
+                /* SAYIDAN AYIR önerisi: <K><NN> ->
                    <K>_<NN>; kabul edilirse Kolon Adı Önerileri'nde
                    uygulanır. Öneri olarak işaretli gelir. */
                 const lab = elYap("label", "dg-tip dg-sayi-ayir");
@@ -7247,7 +7105,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             else if (!r.bekliyor && r.sozluk_kaynak === "istatistik")
                 tdS.appendChild(elYap("div", "dg-tip", "kelime sayımı"));
             tr.appendChild(tdS);
-            /* Genel anlamı yok / emin değil / sonuç yok: ∅ (kullanıcı kararı);
+            /* Genel anlamı yok / emin değil / sonuç yok: ∅;
                hangisi olduğu "i"deki kararda yazar. */
             const dmMetin = { bekliyor: "bekleniyor…", emin_degil: BOS_SIMGE,
                               bilinmiyor: BOS_SIMGE, yok: BOS_SIMGE };
@@ -7259,10 +7117,9 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const tdA = elYap("td", "dg-aciklama-hucre");
             const g = document.createElement("input");
             g.type = "text"; g.className = "dg-giris";
-            /* Dil modeli sonucu gelmemiş satır kilitli (kullanıcı kararı):
+            /* Dil modeli sonucu gelmemiş satır kilitli:
                sonuç gelince yoklama satırı açar. */
-            /* Sonucu gelmemiş satırda karar boş görünür (kullanıcı
-               bildirimi: önce kelime sayımı yazıyor, sonra değişiyordu). */
+            /* Sonucu gelmemiş satırda karar boş görünür. */
             g.value = r.bekliyor ? "" : tireSade(r.anlam || "");
             g.disabled = kilitli || !!r.bekliyor;
             if (r.bekliyor) g.placeholder = "bekleniyor…";
@@ -7288,7 +7145,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             y.disabled = kilitli || !!r.bekliyor;
             y.setAttribute("aria-label", r.kisaltma + " için önerilen kısaltma");
             tdY.appendChild(y);
-            /* YENİ KISALTMANIN ANLAMI DÜZENLENEBİLİR (kullanıcı kararı): eski
+            /* YENİ KISALTMANIN ANLAMI DÜZENLENEBİLİR: eski
                kısaltma LLM Karar'daki anlamda kalır, bu kolonların anlamı
                yeni kısaltmaya geçer. Örn. eski kısaltmaya genel anlamını,
                yeni kısaltmaya sözlükteki kullanımı yazılır. Kutu yalnız
@@ -7372,7 +7229,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     }
     ciz(ka.satirlar);
 
-    /* YOKLAMA (kullanıcı bildirimi: bekleme): kart beklemeden gelir; dil
+    /* YOKLAMA: kart beklemeden gelir; dil
        modeli kontrolü sürüyorsa 5 sn'de bir sorulur, bitince satırlar
        güncellenir. Kullanıcının elle değiştirdiği satır EZİLMEZ. */
     let yoklamaSayisi = 0;
@@ -7395,9 +7252,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const elle = {};
                 satirlar.forEach(x => {
                     if (x.r.bekliyor) return;
-                    /* Karşılaştırma ekrandaki biçimle (tireSade); eskiden tire
-                       içeren anlam "elle değişti" sayılıyor, gelen önerilen
-                       kısaltma eski boş değerle eziliyordu. Yalnız gerçekten
+                    /* Karşılaştırma ekrandaki biçimle (tireSade). Yalnız gerçekten
                        değişen alan korunur. */
                     const anlamElle = x.g.value.trim() !== tireSade(x.r.anlam || "").trim();
                     const yeniElle = x.y.value !== String(x.r.yeni_kisaltma || "")
@@ -7471,7 +7326,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
 
 /* ==================== Aralık Önerileri kartı ====================
    SFA'nın aralık ve eksik işareti önerileri; sözlük tanımları kartıyla
-   aynı düzen (kullanıcı kararı): satır başına "Uygula" kutusu, Tümünü Seç /
+   aynı düzen: satır başına "Uygula" kutusu, Tümünü Seç /
    Tümünü Temizle, tek birincil düğme. Öneri metninin altında metrik
    kontrolleri (✓ / ✗) ve yapay zekâ seçildiyse gerekçesi yazar. */
 /* ---- tip: sfa_karar ----
@@ -7567,10 +7422,7 @@ function sfaKartiEkle(alan, blok) {
    birincil dugme. Asil is sag panelde yapiliyor; kart cizilince
    alan.hedef sekmesi ACILIR ki kullanici nereye bakacagini aramasin. */
 /* ==================== Bölme Stratejisi kartı ====================
-   EKRAN SIRASI (kullanıcı kararı: "daha basitçe sadece seçimli yan yana
-   iki kutuda bir seçim ... altta da genel olarak açıklamalar ... detay
-   istenirse bakılabilir tarzda açılabilir bir opsiyonlu sekmeyle, eğer
-   istenmiyorsa zaten otomatik kapalı"):
+   EKRAN SIRASI:
 
      1. yan yana İKİ SEÇİM KUTUSU  (Önerilen / Özel) - sayfanın merkezi
      2. seçilenin KISA ÖZETİ
@@ -7579,7 +7431,7 @@ function sfaKartiEkle(alan, blok) {
      5. tek birincil düğme
 
    Önceki sürümde 1. sırada üç paragraf metin, 2. sırada seçim vardı;
-   kullanıcı karar vermeden önce okumak zorunda kalıyordu. Uzun anlatım
+   Uzun anlatım
    (gerekçe maddeleri, kısıtlar, terim karşılıkları) 4. maddedeki açılır
    alana taşındı - kaybolmadı, ikinci plana alındı.
 
@@ -7607,8 +7459,7 @@ function bolmeOzellestirildi() { return bfDegisti(); }
 
 /* ---- TEK LİSTE, ÖNERİLEN DEĞERLER ÖNCEDEN SEÇİLİ ----
 
-   Kullanıcı kararı: iki sütun (Önerilen / Özel) aynı 14 satırı iki kez
-   çiziyordu. Şimdi TEK liste: her satırda seçenekler çip olarak yan
+   Şimdi TEK liste: her satırda seçenekler çip olarak yan
    yana, önerilen olan seçili ve yeşil noktayla işaretli. Değiştirmek
    için tıklamak yeterli. Önerilenden sapan satır kehribar renkte ve
    yanında "önerilene dön". Üstte "Veri Bölme Stratejisi" çubuğu her
@@ -7720,7 +7571,7 @@ function bolmeOzetCubukCiz(kok, alan) {
     const sag = elYap("span", "bolme-ozet-sag");
     sag.appendChild(elYap("span", "bolme-rozet " + (fark ? "ozel" : "oneri"),
         fark ? "Önerilenden " + fark + " fark" : "Önerilen ayarlar"));
-    /* ÖNERİ GEREKÇESİ ayrı bir açılır düğme değil (kullanıcı kararı):
+    /* ÖNERİ GEREKÇESİ ayrı bir açılır düğme değil:
        rozetin yanındaki "i" simgesinde. */
     const o = alan.oneri || {};
     const maddeler = (o.gerekce || []).map(x => "• " + tireSade(x));
@@ -7730,7 +7581,7 @@ function bolmeOzetCubukCiz(kok, alan) {
     kutu.appendChild(bas);
 
     const a = BF.alan;
-    /* HEDEF ORANI ÇUBUKTA (kullanıcı kararı): "Hedef Dağılımı: Korunsun"
+    /* HEDEF ORANI ÇUBUKTA: "Hedef Dağılımı: Korunsun"
        seçiliyse her setin hedef oranı parçanın içinde yazar. Bölme
        uygulandıysa setlerin gerçek oranı, değilse genel oran (katmanlı
        bölmede her set onu taşır). Zamansal bölmede dönem setlerinin oranı
@@ -7760,7 +7611,7 @@ function bolmeOzetCubukCiz(kok, alan) {
         const p = bfPaylar();
         const cubuk = elYap("div", "bolme-cubuk");
         const yz = v => Math.round(100 * v);
-        /* TAM AD, KISALTMA YOK (kullanıcı kararı). Parça yüzdeyle
+        /* TAM AD, KISALTMA YOK. Parça yüzdeyle
            orantılı büyür ama yazısından dar olamaz (bolmeCubukParca). */
         if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), "Train (MS) %" + yz(p.train), hedefYaz("egitim")));
         if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), "Test (OOS) %" + yz(p.val), hedefYaz("val")));
@@ -7924,9 +7775,7 @@ function bolmeAyarlariCiz(alan, pasif) {
     return kok;
 }
 
-/* Satır görünür mü? KARŞILIĞI OLMAYAN SATIR HİÇ ÇİZİLMEZ: "Validasyon
-   büyüklüğü" validasyon seti kapalıyken, "Validasyon (OOT) dönemi" rastgele
-   bölmede ekranda duruyor ve ikisi de hiçbir şeyi değiştirmiyordu.
+/* Satır görünür mü?
    Koşul taslaktan hesaplanıyor. */
 function bolmeSatirGorunur(sat) {
     const k = sat.kosul;
@@ -7995,15 +7844,11 @@ function bolmeBilgiSimgesi(metin, baslik) {
     kap.appendChild(tip);
     /* Tıklama da açar (dokunmatik ekran): odak simgede kalır. */
     kap.onclick = (e) => { e.stopPropagation(); kap.focus(); };
-    /* KONUM SABİT (position: fixed) ve JS ile hesaplanıyor: akış içinde
-       çizilen balon kartı uzatıp sayfayı aşağı-yukarı oynatıyordu
-       (kullanıcı bildirimi). Aşağıya sığmazsa simgenin ÜSTÜNE açılır;
+    /* Aşağıya sığmazsa simgenin ÜSTÜNE açılır;
        sağ kenar simgenin sağına hizalı, ekrandan taşmaz. */
-    /* UZUN METİN KAYDIRILABİLİR (kullanıcı bildirimi: "yazı uzunsa aşağı
-       kaydıramıyorum, kaydırmaya çalıştığımda kutu kayboluyor"). Balonun
+    /* UZUN METİN KAYDIRILABİLİR. Balonun
        yüksekliği sınırlı ve kendi içinde kayıyor (style.css .bolme-tip).
-       Eskiden fare simgeden balona geçerken aradaki boşlukta balon
-       kapanıyordu; kapanma kısa bir gecikmeyle yapılıyor, fare balona
+        Kapanma kısa bir gecikmeyle yapılıyor, fare balona
        girerse iptal ediliyor. Tekerlek balonun içindeyken yalnızca
        balonu kaydırıyor; balon açıkken sayfa kayarsa (simge yerinden
        oynar) balon simgeye yeniden hizalanıyor. */
@@ -8027,15 +7872,9 @@ function bolmeBilgiSimgesi(metin, baslik) {
         if (!kap.isConnected) return gizle();
         if (acikMi()) yerlestir();
     };
-    /* SİMGE SAYFADAN KALKARSA BALON DA KALKAR (kullanıcı bildirimi: balon
-       sol üstte takılı kalıyordu). Tablo yenilenince (örn. dil modeli
-       sonucu gelince) simge silinir ama gövdeye taşınmış balon kalıyor,
-       konumu da boş simgeye göre sol üste düşüyordu. */
+    /* SİMGE SAYFADAN KALKARSA BALON DA KALKAR. */
     let bekci = null;
-    /* BALON SAYFA GÖVDESİNDE AÇILIR (kullanıcı bildirimi: "i kısmına
-       bastığımda yazı okunmuyor"). Onaylanmış kart soluk çiziliyor
-       (opacity) ve balon kartın içindeyken o saydamlığı alıp arkasındaki
-       yazıyla karışıyordu. Açılınca body'ye taşınır, kapanınca geri
+    /* BALON SAYFA GÖVDESİNDE AÇILIR. Açılınca body'ye taşınır, kapanınca geri
        döner. */
     const ac = () => {
         clearTimeout(kapat);
@@ -8080,8 +7919,7 @@ function bolmeBilgiSimgesi(metin, baslik) {
 /* ---- ÇİP ALANI ----
 
    Bir ayarın değer tarafı. Açılır liste yerine seçilebilir çip şeridi
-   (kullanıcı kararı: "Dropdown kullanımını çok azalt ... mümkün olan
-   her şey segmented selection / selectable chip olsun").
+
 
    Üç biçim:
      secenekler <= CIP_EN_COK      -> çip şeridi
@@ -8131,9 +7969,7 @@ function bfCipKabi(kutu, notMetni) {
 }
 
 /* TASLAKTAN KİLİTLENEN ALANLARDA ARKA UCUN "kilitli" BAYRAĞI OKUNMAZ.
-   O bayrak SON KAYDEDİLEN hâle göre hesaplanmış aynı kuraldır, yani
-   kullanıcı "Rastgele"ye bastığı anda bayat olur: Test Büyüklüğü
-   çipleri, sunucuya gidip dönülene kadar tıklanamaz kalıyordu.
+
    Gerçekten dışarıdan gelen kısıtlar (dönem kolonu yok gibi) bu yoldan
    gelmez; arka uç o durumda seçenek listesini BOŞ gönderir. */
 const BF_TASLAK_ALANLARI = ["oot_adet", "test_oran", "val_oran",
@@ -8165,8 +8001,7 @@ function bfCipAlani(ad, al, pasif) {
         ? BF.alan[ad] : k.deger;
     const deger = bfKiyasDeger(ad, ham);
 
-    /* TEK SEÇENEK ya da sabit: salt okunur çip. Tıklayınca tek satır
-       açılan bir liste "seçim var" izlenimi verip boşuna uğraştırıyordu. */
+    /* TEK SEÇENEK ya da sabit: salt okunur çip. */
     if (k.sabit || secenekler.length === 1) {
         const kutu = elYap("div", "bolme-cipler");
         const secili = secenekler.find(o => bfKiyasDeger(ad, o.anahtar) === deger)
@@ -8225,8 +8060,7 @@ function bfMetinAlani(ad, k, kapali, ipucu) {
 
 /* YÜZDE: hazır çipler (%10 %20 %30) + "Özel" -> 1-99 arası serbest kutu.
    Satır karşılığı ("≈ 2.000 satır") ÖN YÜZDE hesaplanıyor ve yazarken
-   anında güncelleniyor; eskiden listeyle birlikte yerinde donup
-   kalıyordu. */
+   anında güncelleniyor. */
 function bfCipYuzde(ad, k, kapali, not) {
     const enAz = (k.en_az === undefined || k.en_az === null) ? 1 : Number(k.en_az);
     const enCok = (k.en_cok === undefined || k.en_cok === null) ? 99 : Number(k.en_cok);
@@ -8276,8 +8110,7 @@ function bfCipYuzde(ad, k, kapali, not) {
         satirYaz(simdi);
         if (!kapali) {
             /* "input": satır karşılığı yazarken anında değişsin.
-               "change": değer taslağa ancak alandan çıkınca yazılsın,
-               yoksa her tuşta gövde yeniden çizilip odak kayıyordu. */
+*/
             i.oninput = () => satirYaz(Number(i.value));
             i.onchange = () => {
                 let v = Math.round(Number(i.value));
@@ -8352,9 +8185,7 @@ function bfCipSayi(ad, k, kapali, not, hazirHam) {
 }
 
 /* ---- ÖNERİ GEREKÇESİ ----
-   VARSAYILAN KAPALI ve SOL PANELİN İÇİNDE. Eskiden seçim ekranının
-   üstünde duruyordu ve ekranın dörtte birini metin yiyordu; asıl karar
-   olan "hangi panel" aşağı kayıyordu. */
+   VARSAYILAN KAPALI ve SOL PANELİN İÇİNDE. */
 function bolmeGerekceCiz(kok, alan) {
     const o = alan.oneri || {};
     const maddeler = o.gerekce || [];
@@ -8392,8 +8223,7 @@ function bolmeGerekceCiz(kok, alan) {
 
 /* ---- "Detaylar ve Terimler" ----
    VARSAYILAN KAPALI, her iki panelin altında, SORU-CEVAP biçiminde.
-   Satır başına "?" düğmesi KALDIRILDI (kullanıcı kararı: "her satıra ?
-   koyunca görüntü yardım dokümanına dönüyor"). İsteyen buradan okur. */
+   İsteyen buradan okur. */
 function bolmeSozlukCiz(kok, alan, panelAnahtari) {
     const sz = alan.sozluk || {};
     const sorular = sz.sorular || [];
@@ -8452,7 +8282,7 @@ function bolmeGovdeCiz(kok) {
 
     /* Alt satır: yalnızca düğmeler. "Öneri gerekçesi" rozetin yanındaki,
        "Detaylar ve Terimler" giriş cümlesinin yanındaki "i"de
-       (kullanıcı kararı: ayrı açılır düğme yok). */
+*/
     const alt = elYap("div", "bolme-alt");
 
     if (!BOLME.gonderildi) {
@@ -8547,8 +8377,7 @@ function bolmeKartiEkle(alan, blok) {
 
     /* KART DÜZEYİNDE "DEVAM ET" DÜĞMESİ YOK. Karar hangi panelin
        seçildiği; onu da o panelin kendi "Bu Ayarları Seç" düğmesi
-       veriyor. Altta ikinci bir düğme, hangi ayarın uygulandığını
-       düğmenin üstünde söylemeyen ikinci bir yol açıyordu. */
+       veriyor. */
     const gecmisten = !!(blok && blok.kilit);
 
     BOLME.kart = kart;
@@ -8558,7 +8387,7 @@ function bolmeKartiEkle(alan, blok) {
     BOLME.durumEl = durumEl;
     BOLME.onayBtn = null;
     BOLME.gonderildi = false;
-    /* AÇILIR ALANLAR VARSAYILAN KAPALI (kullanıcı kararı). */
+    /* AÇILIR ALANLAR VARSAYILAN KAPALI. */
     BOLME.gerekceAcik = false;
     BOLME.sozlukAcik = {};
     BOLME.ozelAcik = {};
@@ -8666,15 +8495,14 @@ function teyitKartiEkle(alan, blok) {
     }
 
     /* ---- DEĞİŞKEN LİSTESİ ----
-       Teyit artık SOHBETTE yapılıyor (kullanıcı kararı): eskiden kart
-       kullanıcıyı sağ panele gönderiyordu, karar orada veriliyordu.
+       Teyit artık SOHBETTE yapılıyor:
        Sağ panel yalnızca açıklama gösteriyor; gözden geçirme ve süreç
        dışı işaretleme burada. Açıklama ve işaret DEĞİŞTİĞİ ANDA
        kaydedilir (panelin kullandığı uçların aynısı), düğme yalnızca
        adımı ilerletir. */
     const dg = alan.degiskenler || null;
     /* EXCEL İNDİRME ŞERİDİ - listenin ÜSTÜNDE, Excel simgesiyle.
-       KAYDEDİLENE KADAR GİZLİ (kullanıcı kararı): "kaydedildikten sonra
+       KAYDEDİLENE KADAR GİZLİ: "kaydedildikten sonra
        istenirse excel formatında indirilebilir halde olsun". Kaydedilmemiş
        bir liste, kullanıcının henüz vermediği kararı dosyaya yazmak
        olurdu - o dosya da ekibe gidip "karar buydu" diye okunurdu.
@@ -8695,8 +8523,7 @@ function teyitKartiEkle(alan, blok) {
         }
 
         /* ARAMA · TİP · SIRALAMA TEK SATIRDA. NULL EŞİĞİ, TİP DEĞİŞİKLİĞİ VE
-           NULL ORANI KOLONU KALDIRILDI (kullanıcı kararı: "zaten sfa
-           adımında göreceğiz"). Burada yalnızca değişken, tip, sözlük
+           Burada yalnızca değişken, tip, sözlük
            tanımı ve süreç dışı kararı var. */
         const filtreKap = elYap("div", "dg-filtreler");
 
@@ -8707,7 +8534,7 @@ function teyitKartiEkle(alan, blok) {
         ara.setAttribute("aria-label", "Değişken adı veya tanımda ara");
         filtreKap.appendChild(ara);
 
-        /* TİP SÜZGECİ (kullanıcı kararı): "Tip: Tümü" ve listedeki
+        /* TİP SÜZGECİ: "Tip: Tümü" ve listedeki
            tipler. Tek tip varsa kutu görünür ama pasif - gizlemek
            "filtre neden yok?" sorusunu doğururdu. */
         const tipSec = document.createElement("select");
@@ -8748,8 +8575,7 @@ function teyitKartiEkle(alan, blok) {
         hataEl.hidden = true;
         kart.appendChild(hataEl);
 
-        /* TOPLU SÜREÇ DIŞI (kullanıcı kararı: null oranına göre süzüp
-           tek tek işaretlemek zorunda kalıyordu). Düğmeler FİLTREDE
+        /* TOPLU SÜREÇ DIŞI. Düğmeler FİLTREDE
            GÖRÜNEN satırlara uygulanır; kilitli satırlara dokunmaz. Tek
            istekle gider; sonuçta kutular sunucunun listesine göre kurulur. */
         const ust = elYap("div", "dg-tablo-ust");
@@ -8836,7 +8662,7 @@ function teyitKartiEkle(alan, blok) {
                    neden işaretli geldiği ipucunda yazıyor. */
                 kutu.title = tireSade(sat.disi_sebebi);
             }
-            /* SÜREÇ DIŞI SATIR ÇİZİLİR (kullanıcı kararı): satırın üstü
+            /* SÜREÇ DIŞI SATIR ÇİZİLİR: satırın üstü
                çizili, tip ve tanım alanları kilitli - süreç dışı bir
                kolonda yapılacak bir şey yok. Kilitli olmayan satırda kutu
                açık kalır: işaret kaldırılınca satır geri açılır. */
@@ -9005,7 +8831,7 @@ function teyitKartiEkle(alan, blok) {
     } else {
         /* Kart ve panel dugmesi AYNI karari paylasiyor: biri basilinca
            ikisi de kilitlenir, ikinci bir istek gitmez. */
-        /* Sag paneldeki ikiz dugme kaldirildi; liste yalnizca kartin
+        /* liste yalnizca kartin
            kendi dugmesini tasiyor (bkz. teyitPanelGuncelle). */
         TEYIT.dugmeler = [onayBtn];
         TEYIT.gonderildi = false;
@@ -9050,9 +8876,7 @@ function teyitKartiEkle(alan, blok) {
 
             /* GÖNDERİM KAYDI. Sunucu adımı geri çevirirse (ör. AMP_VERISETI
                yazılamadı) aynı adımın kartı uyarıyla YENİDEN gelir.
-               Kayıt yokken eski kart kilitli hâliyle ekranda kalıyor,
-               yenisi altına ekleniyordu: liste iki kez görünüyordu
-               (kullanıcı bildirimi). gonderimSonucu eski kartı, rozetini
+                GonderimSonucu eski kartı, rozetini
                ve başlıktaki Excel düğmesini kaldırır. */
             bekleyenGonderim = { kart: kart, durumEl: durumEl,
                                  adim: (blok && blok.adim) || "",
@@ -9073,9 +8897,7 @@ function teyitKartiEkle(alan, blok) {
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     rozetiBasligaTasi(blok, durumEl);
     /* Excel düğmesi BLOK BAŞLIK SATIRINDA, "✓ Girdiler Onaylandı" rozetinin
-       yanında (kullanıcı kararı). Kart gövdesinde, listenin üstünde
-       dururken hem kendi satırını yiyordu hem de kaydettikten sonra
-       kullanıcının baktığı yer başlık satırıydı. */
+       yanında. */
     rozetYuvasinaEkle(blok, excelSerit.el);
     sohbetKaydir();
     if (gecmisten) return;
@@ -9104,10 +8926,7 @@ function rozetYuvasinaEkle(blok, el) {
 function rozetiBasligaTasi(blok, el) {
     if (!el || !blok) return;
     /* KART KENDI BASLIK SATIRINI ÇİZDİYSE rozet orada kalır: yanında
-       başlık var, tek başına bir satır kaplamıyor. Taşıma yalnızca
-       başlık satırı çizilmediğinde gerekli - o zaman rozet boş bir
-       satırda asılı kalıyor ve alt başlık ile gövde arasında devasa
-       bir boşluk açılıyordu (kullanıcı şikayeti).
+       başlık var, tek başına bir satır kaplamıyor.
        el.isConnected: başlık satırı karta eklenmediyse rozet hâlâ
        DOM dışında duruyor demektir. */
     if (el.isConnected) return;
@@ -9120,10 +8939,7 @@ function rozetiBasligaTasi(blok, el) {
 }
 
 /* Kart aciklamasi KARTIN ICINDE DUZ METIN olarak duruyor. Bir ara
-   balona alinmisti; iki sorun cikti (kullanici geri bildirimi):
-   ekrandaki her adim bloguna ikinci bir cerceve ekliyordu ve gercek
-   UYARILARI (ornegin "PERIOD tek değer taşıyor") sirandan bir
-   aciklamadan ayirt edilemez hale getiriyordu. */
+   balona alinmisti. */
 function secimAlaniEkle(alan, blok) {
     if (!alan) return;
 
@@ -9146,9 +8962,7 @@ function secimAlaniEkle(alan, blok) {
     const bas = document.createElement("div");
     bas.className = "secim-baslik";
     /* GRUPLU BLOKTA KART BASLIGI YOK: adımın adı zaten bloğun ALT
-       BAŞLIĞINDA yazıyor ("Modelleme Tanımları"). Kart bir de kendi
-       başlığını ("Modelleme tanımları") basınca aynı ad iki kez, üstelik
-       iki ayrı yazım biçimiyle görünüyordu. Satır DURUYOR: sağındaki
+       BAŞLIĞINDA yazıyor ("Modelleme Tanımları"). Satır DURUYOR: sağındaki
        "✓ Girdiler Onaylandı" göstergesi ona yaslı. */
     bas.textContent = kartBasligiGerekli(alan, blok) ? tireSade(alan.baslik) : "";
     basSatir.appendChild(bas);
@@ -9168,7 +8982,7 @@ function secimAlaniEkle(alan, blok) {
     if (alan.aciklama)
         kart.appendChild(elYap("div", "secim-aciklama", tireSade(alan.aciklama)));
 
-    /* SOZLESME7 §3: karttaki ornek satir KALDIRILDI. Arka uc "ipucu"
+    /* Arka uc "ipucu"
        alanini artik gondermiyor; gelse de cizilmez. */
 
     /* Birincil dugme etiketi ARKA UCTAN gelir (akis_faz01._kurulum_formu
@@ -9232,8 +9046,7 @@ function secimAlaniEkle(alan, blok) {
         ekleBtn.textContent = "+";
         satir.appendChild(ekleBtn);
 
-        /* SECILENLER USTTE, ARAMA ALTTA (kullanici karari: "seçilen
-           tabloları yukarı atması gerekmiyor mu"). Liste yukaridan
+        /* SECILENLER USTTE, ARAMA ALTTA. Liste yukaridan
            asagiya birikir; yeni ekleme listenin sonuna, arama kutusunun
            hemen ustune duser. */
         kart.appendChild(rozetler);
@@ -9338,7 +9151,7 @@ function secimAlaniEkle(alan, blok) {
         const combolar = {};
         const zorunluAlan = {};
         const alanlar = alan.alanlar || [];
-        /* HEP TEK SATIR (kullanıcı kararı: "aynı satırda olmalı"): sütun
+        /* HEP TEK SATIR: sütun
            sayısı alan sayısı kadar, eşit genişlik. */
         govde.style.gridTemplateColumns =
             "repeat(" + Math.max(1, alanlar.length) + ", minmax(0, 1fr))";
@@ -9352,10 +9165,7 @@ function secimAlaniEkle(alan, blok) {
             kolonlariHazirla(alan);
 
         /* Durum gostergesi: kac alan dolu, kac alan bekleniyor.
-           SAYIMA YALNIZ ZORUNLU ALANLAR GIRER. Opsiyonel alan (ör. dönem
-           kolonu) bosken de "geçerli" sayildigi icin paydaya katilinca
-           hicbir sey secilmemisken "1/3 seçildi" yaziyordu — kullanici
-           doldurmadigi bir alani doldurmus gorunuyordu. Düğmenin
+           SAYIMA YALNIZ ZORUNLU ALANLAR GIRER. Düğmenin
            etkinligi yine BUTUN alanlarin gecerliligine bakar: opsiyonel
            alana gecersiz bir deger yazilmissa form yine kilitli kalmali. */
         function durumTazele() {
@@ -9374,9 +9184,7 @@ function secimAlaniEkle(alan, blok) {
             /* Her alan kendi kaynagini kullanir: veri seti mi, kolon mu?
                ALAN BAZLI LISTE: a.secenekler geldiyse o alanda YALNIZCA
                o liste gosterilir. Hedef degisken 0/1 kolonlarla, kimlik
-               kolonu tekrarsiz kolonlarla sinirli; ikisini de veri
-               setinin 1.042 kolonunun tamami arasindan sectirmek,
-               hedefle kimligin yer degistirmesine izin veriyordu. */
+               kolonu tekrarsiz kolonlarla sinirli. */
             const combo = comboYap(a.etiket, durumTazele, a.deger, {
                 kaynak: a.kaynak || "dataset",
                 zorunlu: a.zorunlu,
@@ -9394,8 +9202,7 @@ function secimAlaniEkle(alan, blok) {
             if (altMetin) {
                 const alt = elYap("div",
                     "alan-not" + (a["not"] ? " alan-not-uyari" : ""), altMetin);
-                /* NOT AYRINTISI "i" SİMGESİNDE (kullanıcı kararı: ayrıntı
-                   doğrudan görünmesin). Kısa not ("Dönem kolonu
+                /* NOT AYRINTISI "i" SİMGESİNDE. Kısa not ("Dönem kolonu
                    bulunamadı.") yerinde kalır; kolon kolon nedenler
                    simgenin üzerine gelince açılır. */
                 const maddeler = Array.isArray(a.not_maddeler) ? a.not_maddeler : [];
@@ -9478,18 +9285,14 @@ function yanitUygula(d, metin) {
     if (geriHedefi && !hataMi) transkriptiKirp(geriHedefi);
     geriHedefi = null;
     /* FAZ LİSTESİ BLOKLARDAN ÖNCE. Mod seçilince adım listesi değişiyor;
-       eski listeyle çizilen yeni blok numarasız kalıyor ve faz ayracı
-       adımı bulamayıp bütün fazları "Tamamlandı" basıyordu (kullanıcı
-       bildirimi). */
+*/
     if (d.fazlar) fazlariYukle(d.fazlar);
     /* Secili veri setinin adi bu iki govdeden okunuyor; kolon kaynakli
        form cizilmeden ONCE guncellenmeli. */
     if (d.ozet)  SON_OZET  = d.ozet;
     if (d.detay) SON_DETAY = d.detay;
     /* BOS METIN BALON ACMAZ. Bir adim yalnizca form/kart gonderiyorsa
-       (metin "") eskiden ici bos bir bot balonu çiziliyordu:
-       asistan bir sey söylemiş gibi görünüyor, ama söylediği hiçbir şey
-       yok. Kullanıcı o noktada ekranda henüz konuşmamış da olabiliyor
+       (metin "") Kullanıcı o noktada ekranda henüz konuşmamış da olabiliyor
        (kart tıklaması sessiz gidiyor), o yüzden akış kesintisiz devam
        ediyormuş gibi görünmeli.
        Hata metni HER ZAMAN balon açar: hatanın görünmemesi en kötüsü. */
@@ -9521,18 +9324,12 @@ function yanitUygula(d, metin) {
 
     /* BLOK, METİN OLMASA DA KURULUR.
        Adım metin döndürmeyebilir (ekranda zaten kendini anlatan bir
-       kart ya da seçenek takımı var). O durumda blok hiç kurulmayınca
-       seçenekler kök seviyede, BAŞLIKSIZ ve Geri Dön'süz kalıyordu:
-       "Çalışma Başlangıcı"na dönünce ekranda sadece üç kart duruyor,
-       hangi adımda olunduğu ve oradan nasıl çıkılacağı görünmüyordu.
+       kart ya da seçenek takımı var).
        Metin yoksa boş gövdeli blok kurulur; seçenekler onun içine
        girer (secenekEkle son .balon-sutun'u arar). */
     /* BİTEN ADIMIN METNİ KENDİ BLOĞUNA. Bir tur ilerlerken dönen metin
        iki parçadır: biten adımın özeti ve yeni adımın giriş metni.
-       Eskiden ikisi tek dizeydi ve tamamı YENİ adımın bloğuna
-       yazılıyordu: "Dönem kolonunda tek değer var" uyarısı MODELLEME
-       TANIMLARI adımının çıktısıyken SÖZLÜK TANIMLARI bloğunun içinde
-       görünüyordu. Arka uç ayrımı gövdede gönderiyor (backend: govde
+       Arka uç ayrımı gövdede gönderiyor (backend: govde
        ["tamamlanan"]); metin burada kendi adımının bloğuna düşüyor. */
     /* Bir turda birden fazla adım bitebilir (bölme → profil → SFA →
        aralık kartı, onaysız zincir): her birinin metni kendi bloğuna. */
@@ -9561,9 +9358,7 @@ function yanitUygula(d, metin) {
 
            KAP NULL OLABİLİR: gövde `adim_anahtari` taşımıyorsa (eski
            arka uç, hata yolu) adım bloğu kurulamaz. O zaman düğmeler
-           sade bir satıra konur. Eskiden burada blokOnayEkle(null)
-           çağrılıyor ve TypeError atıyordu; yanitUygula yarıda kalınca
-           panel şeridi ve kartlar hiç çizilmiyordu. */
+           sade bir satıra konur. */
         const kap = adimKabiAl(metinBlok)
             || balonEkle("bot", "", false, null).querySelector(".balon-sutun");
         if (metinBlok.onay && kap) blokOnayEkle(kap);
@@ -9617,9 +9412,7 @@ function gonderimSonucu(g, d) {
     const kap = g.kart.parentElement;
     const reddedildi = d && d.bekleyen === "girdi" && d.adim_anahtari === g.adim;
     if (reddedildi) {
-        /* ÖNCEKİ RET UYARISI KALKAR. Her yeni denemede aynı uyarı bir kez
-           daha ekleniyor, blokta üst üste üç "AMP_VERISETI Flow'da tanımlı
-           değil" satırı birikiyordu (kullanıcı bildirimi). Geçerli olan
+        /* ÖNCEKİ RET UYARISI KALKAR. Geçerli olan
            yalnızca son denemenin uyarısı. */
         if (kap) kap.querySelectorAll(":scope > .balon.red-uyari").forEach(b => b.remove());
         const onceki = new Set(kap ? kap.querySelectorAll(":scope > .balon") : []);
@@ -9678,12 +9471,7 @@ function sunucudanTazele() {
         .catch(() => false);
 }
 
-/* ---- İptal / zaman aşımı sonrası GERÇEKTEN bekleme ----
-   Eskiden balon "güncel durum kontrol ediliyor" yazıyor ve
-   sunucudanTazele() BİR KEZ, hemen çağrılıyordu. Sunucudaki adım 90
-   saniye sürüyorsa o tek kontrol hiçbir şey bulmuyor, sonucu da kimse
-   bildirmiyordu: cümle bir şey vaat edip yerine getirmiyordu (kullanıcı
-   şikayeti: "hiçbir şey kontrol etmiyoruz ki biz").
+/*
 
    Artık gerçekten yoklanıyor: artan aralıklarla, toplam ~50 saniye.
    Yeni bir sonuç gelirse balon KALDIRILIR - yerini gerçek yanıt alır.
@@ -9691,8 +9479,7 @@ function sunucudanTazele() {
    asılı kalmaz. */
 const YOKLAMA_ARALIKLARI = [1200, 2500, 4000, 7000, 11000, 15000];
 
-/* UZUN İŞLER (kullanıcı bildirimi: 135 milyon satırlık veride iş 5
-   dakikayı aşınca ekran vazgeçip başa dönüyordu). Kısa aralıklar bitince
+/* UZUN İŞLER. Kısa aralıklar bitince
    yoklama DURMAZ: iş bitene kadar 20 saniyede bir, en fazla 3 saat
    (sunucudaki iş süresi sınırıyla aynı: amp_is_sure) sürer. */
 const UZUN_YOKLAMA_ARALIGI = 20000;
@@ -9746,10 +9533,7 @@ function gonder(metinDisaridan, etiket, ekGovde) {
 
     sayfaAc("calisma");
     /* etiket === false: kart tiklamasi. Ekranda kullanici balonu
-       BASILMIYOR; backend'e de "sessiz" diye bildiriliyor ki kayitli
-       oturum yeniden yuklendiginde gecmiste "A" gibi tek harflik bir
-       kullanici balonu belirmesin. Canli oturumda gizlenen sey, gecmis
-       cizilirken ortaya cikiyordu. */
+       BASILMIYOR. */
     const sessiz = (etiket === false);
     kaydirmaBaslat();
     if (!sessiz) balonEkle("kullanici", etiket || metin);
@@ -9835,8 +9619,7 @@ function gonder(metinDisaridan, etiket, ekGovde) {
         const analizdeYaziyor = analizPanel
             && analizPanel.contains(document.activeElement);
         if (yeniOdak && document.contains(yeniOdak)) {
-            /* preventScroll: odak almak tarayıcıyı o elemana (çoğu zaman
-               kartın en altındaki düğmeye) kaydırıyordu. */
+            
             try { yeniOdak.focus({ preventScroll: true }); }
             catch (err) { kutuEl.focus({ preventScroll: true }); }
         } else if (!analizdeYaziyor) {
@@ -9846,8 +9629,7 @@ function gonder(metinDisaridan, etiket, ekGovde) {
     });
 }
 
-/* Aksiyon butonlari kullanici balonu BASMAZ: "Onayla ve Uygula" yazisi
-   kullanici yazmis gibi gorunuyordu. Yerine sohbete sessiz bir ayrac
+/* Yerine sohbete sessiz bir ayrac
    (aksiyon izi) dusuyor - bu bir balon degil, ince bir ayrac satiri. */
 const AKSIYON_IZLERI = {
     onayla:   "✓ Onaylandı",
@@ -9929,9 +9711,7 @@ function gecilenBloklariCiz(liste) {
 }
 
 /* REDDEDİLMİŞ FORMLAR GEÇMİŞTEN ÇİZİLMEZ. Girdi reddedilince aynı adım
-   aynı formu (aynı başlıkla) yeniden gönderiyor; F5 sonrası eski form
-   kilitli, yani "✓ Girdiler Onaylandı" rozetiyle çiziliyordu - oysa o
-   girdi kontrolden geçmemişti. Aynı adımda aynı başlıklı daha yeni bir
+   aynı formu (aynı başlıkla) yeniden gönderiyor. Aynı adımda aynı başlıklı daha yeni bir
    form varsa eskisinin kartı düşülür; uyarı metni yerinde kalır. */
 function reddedilenFormlariAyikla(liste) {
     const baslik = g => (g && g.rol === "bot" && g.adim && g.ekran
@@ -9959,8 +9739,7 @@ function gecmisiCiz(gecmis, sonMetin) {
        ikinci kez cizilmemeli. Ondan ONCEKI ekranlari ise gecmisten
        gelmeli: bir adim birden fazla ekran uretebiliyor (once veri
        seti formu, sonra girdi dogrulama karti) ve canli yanit yalnizca
-       SONUNCUSUNU tasiyor. Adimin ortasinda F5 atilinca ilk kart
-       kayboluyordu. */
+       SONUNCUSUNU tasiyor. */
     const aktifAnahtar = (DUZ_ADIMLAR[aktifAdim] || {}).anahtar || "";
     let sonAktif = -1;
     for (let i = liste.length - 1; i >= 0; i--) {
@@ -10067,9 +9846,7 @@ function calismaAc(kimlik) {
         if (d.devam) {
             /* ADIM LISTESI GECMISTEN ONCE YUKLENIR. gecmisiCiz, gecilmis
                adimlarin bloklarini DUZ_ADIMLAR ve aktifAdim uzerinden
-               kuruyor; bunlar normalde yanitUygula'da (yani gecmisten
-               SONRA) doluyordu ve liste bos oldugu icin tek bir eski
-               blok bile cizilemiyordu. */
+               kuruyor. */
             if (d.fazlar) fazlariYukle(d.fazlar);
             if (d.adim_no !== undefined) aktifAdim = d.adim_no;
             // Bilgi satiri en ustte; kartlar son yanitin altinda kalsin.
@@ -10160,8 +9937,8 @@ function calismaAltSatiri(c) {
     const zaman = tarihBicim(c.zaman);
     if (zaman) parca.push(zaman);
     /* ADIM NUMARASI (sol paneldeki gibi): "01 Çalışma Kurulumu · 01.3
-       Değişken Kontrolü". Veri seti adı bu satırdan kaldırıldı
-       (kullanıcı kararı). */
+       Değişken Kontrolü".
+*/
     if (c.adim && c.faz_no) {
         parca.push(c.faz_no + " " + tireSade(c.faz_baslik || "")
                    + " · " + numarali(c.adim_kodu, c.adim));
@@ -10202,8 +9979,7 @@ function calismalarCiz(d) {
             oge.title = "Bu çalışmayı kaldığı yerden aç";
             oge.onclick = () => calismayaGec(c.calisma_id);
         }
-        /* SAĞDAKİ DÜĞMELER: Aç ve Sil (kullanıcı kararı: "Kopyala" yerine
-           "Aç"; listeden silinebilsin). Satırın kendisine tıklamak da açar;
+        /* SAĞDAKİ DÜĞMELER: Aç ve Sil. Satırın kendisine tıklamak da açar;
            Aç düğmesi bunu görünür kılıyor. */
         const satir = elYap("div", "calisma-satir");
         satir.appendChild(oge);
@@ -10228,8 +10004,7 @@ function calismalarCiz(d) {
     gizliKlasorleriCiz(d.gizli);
 }
 
-/* LİSTEDE GÖRÜNMEYEN KLASÖRLER (kullanıcı bildirimi: "arşiv kısmında
-   bütün folderlar gözükmüyor"). PROJE_HAFIZASI'nda olup listede olmayan
+/* LİSTEDE GÖRÜNMEYEN KLASÖRLER. PROJE_HAFIZASI'nda olup listede olmayan
    v-klasörleri nedeniyle yazılır: boş klasör, çalışma dosyası silinmiş
    artık dosyalar, başlanmamış çalışma. "Temizle" klasörü kalıcı siler
    (onaylı, Sil ile aynı uç). */
@@ -10274,7 +10049,7 @@ function calismaSilOnayi(dugmeler, c) {
     onayla.onclick = () => {
         onayla.disabled = reddet.disabled = true;
         soru.textContent = "Siliniyor…";
-        /* BEKLETMEZ (kullanıcı kararı): açık olmayan çalışmanın satırı
+        /* BEKLETMEZ: açık olmayan çalışmanın satırı
            hemen kalkar, silme arkada sürer. Başarısız olursa satır hata
            mesajıyla geri gelir. Açık çalışma silinirken ekran ondan
            ayrılacağı için yanıt beklenir. */
@@ -10308,8 +10083,7 @@ function calismaSil(kimlik, hataysa, satir) {
         }
         /* Açık çalışma silindiyse en son çalışmaya (yoksa yeni boş
            çalışmaya) geçilir. Değilse YALNIZCA O SATIR kaldırılır; liste
-           yeniden istenmez (kullanıcı bildirimi: "her sil tuşuna
-           bastığımda arşiv ekranı kapanıp tekrar açılıyor"). */
+           yeniden istenmez. */
         if (ARSIV_ONBELLEK && ARSIV_ONBELLEK.calismalar)
             ARSIV_ONBELLEK.calismalar = ARSIV_ONBELLEK.calismalar
                 .filter(x => x.calisma_id !== kimlik);
@@ -10370,7 +10144,7 @@ function calismayaGec(kimlik, zorla) {
     calismaAc(kimlik).finally(() => { kilitle(false); });
 }
 
-/* Düğmenin adı "Arşiv" (kullanıcı kararı). index.html eski sürümde
+/* Düğmenin adı "Arşiv". index.html eski sürümde
    kalsa da doğru ad görünsün diye burada da yazılıyor. */
 if (calismalarBtn) {
     const etiket = calismalarBtn.querySelector(".sifirla-etiket");
@@ -10391,8 +10165,7 @@ if (calismalarBtn && calismalarListe) {
 
 const sifirlaBtn = document.getElementById("sifirla-btn");
 
-/* YENİ ÇALIŞMA ONAYSIZ (kullanıcı kararı: onay adımı "iyice saçmalaştı",
-   tamamen kaldırıldı). Basınca yeni çalışma hemen açılır; açık çalışma
+/* YENİ ÇALIŞMA ONAYSIZ. Basınca yeni çalışma hemen açılır; açık çalışma
    SİLİNMEZ, Arşiv'den geri açılır. index.html eski kalsa da eski onay
    kutusu burada sökülür. */
 { const eski = document.getElementById("yeni-onay"); if (eski) eski.remove(); }
@@ -10404,7 +10177,7 @@ sifirlaBtn.onclick = (e) => {
 };
 
 
-/* AÇILIŞ: soru SORULMAZ (kullanıcı kararı). Tarayıcıda kayıtlı çalışma
+/* AÇILIŞ: soru SORULMAZ. Tarayıcıda kayıtlı çalışma
    ya da kullanıcının en son çalışması doğrudan açılır; başka bir
    çalışmaya "Arşiv" düğmesinden geçilir. Dosyanın SONUNDA
    çağrılıyor: kullandığı Arşiv sabitleri aşağıda tanımlı. */

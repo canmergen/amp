@@ -3,15 +3,13 @@
 
 NEDEN VAR
   Veri setleri tek makinenin bellegine sigmayacak kadar buyuk; tam tabloyu
-  webapp'te pandas'a okumak mumkun degil (kullanici karari: "python ile
-  çalıştırmamam lazım, pyspark kullanmak zorundayız"). Bu yuzden 1. fazin
+  webapp'te pandas'a okumak mumkun degil. Bu yuzden 1. fazin
   tam veriye bakan butun kontrolleri (tek deger, hedef/kimlik/donem
   adaylari, tip donusumu uygunlugu, kisisel veri deseni, null orani,
   tekrarlanan satir) TEK bir PySpark isinde, bir kez hesaplanip profil
   dosyasina yaziliyor. Webapp yalnizca bu dosyayi okur.
 
-KESIN SAYIM, ORNEKLEM YOK (kullanici karari: "hepsi kesin olmalı, sayımda
-1-2 fark bile kabul değil")
+KESIN SAYIM, ORNEKLEM YOK
   Her kolonun TEKIL DEGERLERI ve her degerin SATIR SAYISI tam tablodan
   cikarilir (Spark'ta groupBy; yaklasik sayim kullanilmaz). Buradaki
   kurallarin hepsi "deger basina" denetimdir: bir kolonda "kac satir
@@ -144,7 +142,7 @@ def _tarih_coz(seri):
     """Metin -> tarih, HER DEGER KENDI BASINA cozulur.
 
     pandas 2'de bicimsiz to_datetime ilk degerin bicimini tahmin edip
-    butun seriye uyguluyor; sonuc satir sirasina bagli kaliyordu. Profil
+    butun seriye uyguluyor. Profil
     parca parca calistigi icin sira sabit degil; deger basina cozum hem
     sirasiz hem de kesin (ayni deger her yerde ayni sonucu verir)."""
     if int(pd.__version__.split(".")[0]) >= 2:
@@ -184,8 +182,7 @@ def gorev_plani(ozet, ad_pii):
     """Bir kolonda deger basina hangi denetimlerin gerektigi.
 
     ozet: birinci gecisin sayilari (tur, dolu, tekil, min, max, ...).
-    ad_pii: kolon ADI kisisel veri mi (o zaman deger deseni hic
-    denetlenmez; eski yol da once ada bakiyordu).
+
     Doner: {"donusum": [kod...], "pii": bool, "donem": bool, "metin": bool,
             "tam_sayi": bool|None}"""
     tur = ozet["tur"]
@@ -419,7 +416,7 @@ def donem_karari(ozet):
 
 
 def donem_adayi_mi(ozet, satir):
-    """Donem adayi kurali (kullanici karari): en az iki deger, kimlik gibi
+    """Donem adayi kurali: en az iki deger, kimlik gibi
     her satirda farkli degil, taninan donem bicimi ve dolu hucrelerin en
     az %95'i donem olarak cozuluyor."""
     tekil_bos = int(ozet["tekil"]) + (1 if ozet["bos"] else 0)
@@ -487,9 +484,7 @@ def profil_kur(veri_seti, satir, duplicate, ozetler, motor):
 
         # HEDEF: yalnizca 0/1; bos disi degerler tam olarak {0, 1}. Sabit
         # kolon (hepsi 0) hedef olamaz: modellenecek olay yok.
-        # Mantiksal kolon da iki degeri birden tasimali: hepsi True olan
-        # kolonda modellenecek olay yok (eski yol bool kolonda buna
-        # bakmiyordu).
+        #
         if tur in SAYISAL_TURLER and tekil_bos <= 3 \
                 and oz.get("degerler") is not None:
             if {float(v) for v, _n in oz["degerler"]} == {0.0, 1.0}:

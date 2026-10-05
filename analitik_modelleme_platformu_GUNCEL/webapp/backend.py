@@ -228,7 +228,7 @@ def _yedek_kimlik():
 # ---------------------------------------------------------------------------
 # CALISMA ADLARI
 # ---------------------------------------------------------------------------
-# YENI AD: v1, v2, v3 ... (kullanici karari: "v1 v2 gibi basitçe").
+# YENI AD: v1, v2, v3 ....
 # Bir calismanin HER SEYI tek klasorde:
 #     PROJE_HAFIZASI/v3/calisma.json        <- kayit
 #     PROJE_HAFIZASI/v3/sozluk_calisma.csv
@@ -255,7 +255,7 @@ class CalismaErisimYok(Exception):
 
 
 def _kullanici_on_eki():
-    """ONCEKI TURUN bicimi ("cmergen_03") icin kullanicinin ad kismi.
+    """Eski bicim ("<kullanici>_03") icin kullanicinin ad kismi.
     Yeni calismalar bunu KULLANMAZ; yalnizca eski kayitlari bulmak icin."""
     ad, _ = _kullanici_adi()
     if not ad:
@@ -328,8 +328,7 @@ def _calisma_kaydi_yaz(kayit):
 
 def _v_silindi_mi(calisma):
     """Calisma YOK mu? Silinen numara artik kayittan TAMAMEN cikiyor ve
-    yeniden verilebiliyor (kullanici karari: "sildim ama hala v7 ile
-    başlıyor, v1 geri dönmeli"). Eski surumun "silindi" isaretli
+    yeniden verilebiliyor. Eski surumun "silindi" isaretli
     girdileri de silinmis sayilir.
 
     Kayitta olmayan ve klasorunde calisma dosyasi da olmayan bir v-numara
@@ -382,10 +381,7 @@ def _calisma_id(kaynak):
     """Istemciden gelen ham calisma kimligini normalize eder.
 
     Iki ad da kabul edilir: uygulamanin eski uclari "oturum_id" yolluyor,
-    yeni sozluk uclari "calisma_id". Tek ada zorlamak, hangi ucun hangi
-    adi kullandigini hatirlamayi gerektiriyor ve yanlis ad sessizce
-    "ana" oturumuna dusuyordu — yani kullanici baskasinin degil ama
-    KENDI baska oturumunun sozlugunu duzenleyebiliyordu."""
+    yeni sozluk uclari "calisma_id"."""
     kaynak = kaynak or {}
     return (_temiz(kaynak.get("oturum_id"))
             or _temiz(kaynak.get("calisma_id"))
@@ -483,11 +479,9 @@ def _okuyabilir_mi(istemci, proje_key, login, gruplar, yonetici):
 
     ONEMLI: get_permissions() cogu kurulumda yalnizca proje yoneticisine
     aciktir; backend kimligi o projede yonetici degilse istisna atar.
-    Eskiden bu durumda False donuluyordu ve proje SESSIZCE listeden
-    dusuyordu — kullanicinin erisebildigi tablolari hic gormemesinin
-    sebebi buydu. Artik "belirsiz" olarak isaretlenir; ne yapilacagina
+    Artik "belirsiz" olarak isaretlenir; ne yapilacagina
     _dataset_adlari karar verir ve sonuc kullaniciya raporlanir.
-    """
+"""
     if yonetici:
         return True
     try:
@@ -652,9 +646,8 @@ def kolonlar_endpoint():
     """Bir veri setinin kolon adlari.
 
     Modelleme tanimlari formu (hedef / kimlik / donem) bu listeden secim
-    yaptirir; eskiden dataset listesinde arama yapiyordu ve kullanici
-    hedef degiskenini hic secemiyordu.
-    """
+    yaptirir.
+"""
     veri_seti = (request.args.get("veri_seti") or "").strip()
     if not veri_seti:
         return jsonify({"kolonlar": [], "hata": "Veri seti belirtilmedi."})
@@ -748,13 +741,13 @@ def _analiz_verisi(durum):
         kod = _hata_kaydet("validasyon.panel", e)
         veri["validasyon"] = {"hata": "Validasyon paneli hesaplanamadı (%s)." % kod}
 
-    # UC SEKME (kullanici karari: panel fazla bolunmustu):
+    # UC SEKME:
     #   ozet      VERİ & SÖZLÜK
     #   degisken  DEĞİŞKEN ANALİZİ  -> "sfa" + "eksik" + /dagilim
     #   bolme     BÖLME & VALİDASYON -> "bolme" + "validasyon"
     # Fonksiyon ADLA ve try icinde aliniyor: kutuphane (fe_agent) webapp'ten
     # eski kalirsa yalnizca o bolum hata yazar; karsilama cokmez
-    # (kullanici bildirimi: "Karşılama yüklenemedi").
+    #
     for anahtar, ad, fonk in (
             ("ozet", "VERİ & SÖZLÜK", "veri_sozluk_paneli"),
             ("eksik", "Eksik değer", "eksik_paneli"),
@@ -815,9 +808,7 @@ def _cerceve_metni_mi(metin):
     """Bu metin bir TRANSKRIPT SATIRI mi, yoksa adimin cercevesi mi?
 
     Mod adiminin metni KARSILAMA'dir ve adim her yeniden acildiginda
-    (F5, "Geri Dön") canli durumdan yeniden ciziliyor. Bir de gecmise
-    yazilinca ekranda IKI KEZ beliriyordu: biri gecmisten gelen duz
-    balon, biri adim blogunun icinden. Cerceve metni gecmise girmez."""
+    (F5, "Geri Dön") canli durumdan yeniden ciziliyor. Cerceve metni gecmise girmez."""
     return (metin or "").strip() == (akis.KARSILAMA or "").strip()
 
 
@@ -833,10 +824,7 @@ def _ekran_sadelestir(alan):
     """Saklanacak kart govdesinden YENIDEN URETILEBILIR agir alanlari atar.
 
     Teyit kartinin her satiri tip donusum TEKLIFLERINI tasiyor (kolon
-    basina alti secenek, her biri etiket + sebep). 1.042 kolonda bu tek
-    basina yarim megabaytin ustune cikiyor ve butun kart govdesi
-    EKRAN_SINIRI'ni asarak saklanmadan atiliyordu — yani F5'ten sonra
-    teyit blogu bos kaliyordu. Teklifler YALNIZCA secim yapilirken
+    basina alti secenek, her biri etiket + sebep). Teklifler YALNIZCA secim yapilirken
     gerekli; gecmisten cizilen kart kilitli ve salt okunur, orada
     secilmis donusumun ETIKETI yetiyor (satirdaki 'donusum_etiket').
     Bu yuzden liste saklanmadan once dusuruluyor."""
@@ -871,9 +859,7 @@ def _gecmise_ekle(durum, rol, metin, adim=None, baslik=None, ekran=None):
     dursaydi, F5'ten sonra gecmisten cizilen bloklarda dugme kaybolurdu —
     kullanicinin en cok geri donmek isteyecegi eski bloklarda.
 
-    KART GOVDESI DE SAKLANIR: adimin kartlari (form, dogrulama karti,
-    secenek kartlari) yalnizca ekranda yasiyordu; F5'ten sonra blok bos
-    kaliyor, kullanici "seçimlerim nereye gitti?" diyordu. Govde burada
+Govde burada
     duruyor ve blok yeniden cizilirken AYNEN geri geliyor. Buyuk govdeler
     icin ust sinir var: oturum dosyasi sinirsiz buyumemeli."""
     if rol == "bot" and not adim and _cerceve_metni_mi(metin):
@@ -904,7 +890,7 @@ def _gecmisi_kirp_boyuta(gecmis):
     "Geri Dön" her zaman durur, yalnizca kart gorseli sadelestirilir."""
     if _ekran_boyutu(gecmis) <= TRANSKRIPT_SINIRI:
         return gecmis
-    for kayit in gecmis:                    # en eskiden baslayarak
+    for kayit in gecmis:                    # en
         if "ekran" in kayit:
             kayit.pop("ekran", None)
             kayit["ekran_atlandi"] = True
@@ -917,10 +903,7 @@ def _dogrulama_satirlarini_isle(alan, karar):
     """Girdi dogrulama kartinin SATIR KARARLARINI govdeye yazar.
 
     Kart 200 satir tasiyor; her satirda bir "sözlüğe ekle" kutusu ve bir
-    aciklama kutusu var. Kullanicinin isaretledikleri ve yazdiklari
-    yalnizca tarayicida duruyordu: kart govdesi arka uctan CIKTIGI
-    haliyle (hepsi isaretsiz, aciklamalar dil modeli onerisi) saklaniyor
-    ve F5'ten sonra "hic secim yapmamisim gibi" aciliyordu. Karar
+    aciklama kutusu var. Karar
     govdesi ({"haric": [...], "ekle": [{kolon, aciklama}]}) satirlara
     burada isleniyor."""
     tanimsiz = (alan or {}).get("tanimsiz")
@@ -975,7 +958,7 @@ def _biten_adimi_guncelle(durum, tamam, rozet=None, karar=None):
     """Biten adimin transkriptteki kart govdelerini SON haliyle gunceller.
 
     Uc sey gonderildikleri an dogru degildir ve karar verilince degisir;
-    ucu de tarayicida oluyordu, hicbir yere yazilmiyordu:
+
 
       1) FORM DEGERLERI. Form govdesi bos gonderilir, kullanici
          tarayicida doldurur. Akis tarafi adimi bitirirken formu mevcut
@@ -1033,10 +1016,8 @@ def _gecmise_ekle_bolerek(durum, cevap, adim, ekran=None, rozet=None,
     """Bir turun cevabini IKI transkript satirina boler.
 
     Bir tur ilerlerken donen metin iki parcadir: BITEN adimin ozeti ve
-    YENI adimin giris metni. Tek satir halinde yeni adimin anahtariyla
-    yaziliyordu; sonuc, F5'ten sonra biten adimin hic blogu olmamasiydi
-    (bkz. akis_sohbet._tamamlandi_yaz). Blok olmayinca sag ustundeki
-    "Geri Dön" de olmuyor ve kullanici yalnizca son adimi goruyordu.
+    YENI adimin giris metni.  Sonuc, F5'ten sonra biten adimin hic blogu olmamasiydi
+    (bkz. akis_sohbet._tamamlandi_yaz).
 
     Metin biten adimin ozetiyle BASLIYORSA ikiye ayrilir; aksi halde
     tek satir olarak yazilir ve ozet kendi satirini alir. Kart govdesi
@@ -1070,9 +1051,7 @@ def _karsilama_govdesi(durum):
 
     ilk_soru() cagrisi SART: A/B/C kartlarini durum["_secenekler"]'e
     yazan o. DONDURDUGU METIN DE KULLANILIR: mod adiminin metni artik
-    KARSILAMA'nin kendisi. Eskiden burada KARSILAMA ayrica ekleniyordu;
-    adim da kendi metnini dondurunce ayni paragraf IKI KEZ basiliyordu
-    (biri gecmisten, biri adim blogundan)."""
+    KARSILAMA'nin kendisi."""
     metin = akis.ilk_soru(durum)
     govde = _yanit(durum, metin or akis.KARSILAMA)
     govde["metin"] = govde["cevap"]      # JS karsilamada "metin" bekliyor
@@ -1094,9 +1073,7 @@ _SECIM_JETONLARI = {"a", "b", "c", "d", "1", "2", "3", "4",
 def _gecmis_temizle(gecmis):
     """Eski oturumlardaki kart tiklamalarini ekran transkriptinden eler.
 
-    ADIM ANAHTARSIZ cerceve metni (KARSILAMA) de elenir: eski
-    oturumlarda blogu olmadan duruyor ve F5'ten sonra ikinci bir
-    karsilama paragrafi olarak beliriyordu. Anahtarli olani KALIR:
+    Anahtarli olani KALIR:
     o, "Çalışma Başlangıcı" blogunun govdesidir ve adim gecildikten
     sonra blok icinde durmasi gerekir; canli cizimle cakismasi
     gecmisiCiz'deki son-satir elemesiyle onleniyor."""
@@ -1118,11 +1095,9 @@ def _surdurme_govdesi(durum):
     """Kayitli oturum: son yanit ve acik form/kartlar yeniden kurulur.
     Adim TEKRAR CALISTIRILMAZ; yalnizca kayitli durum gosterilir."""
     # KARSILAMA'YA DUSULMEZ.
-    # Eskiden son yanit bossa KARSILAMA basiliyordu; ama bir adimin bos
+    #  Ama bir adimin bos
     # metin dondurmesi NORMAL (karar kartin ya da secenek takiminin
-    # icinde). Sonuc: kullanici "Veri ve Sözlük" adiminda F5 atinca
-    # ekrana ikinci bir karsilama paragrafi geliyordu, hem de basliksiz
-    # bir balon olarak. Metin yoksa ekrani adimin kendi karti kurar;
+    # icinde). Metin yoksa ekrani adimin kendi karti kurar;
     # "kaldigi yerden yuklendi" seridi zaten ayrica basiliyor.
     metin = durum.get("_son_cevap") or ""
     # Kisaltma Sozlugu her yuklemede guncel koddan ve guncel hafizadan
@@ -1158,8 +1133,7 @@ def _devam_bilgi(durum):
     i = durum.get("i") or 0
     bilgi = {"adim_no": min(i + 1, len(sira)), "toplam": len(sira)}
     if 0 <= i < len(sira):
-        # Sol paneldeki ad (gruplu adimda grubun adi): mesaj "Adım 3/7 -
-        # Modelleme Tanımları" deyip listede o satir bulunmuyordu.
+        #
         bilgi["adim"] = _adim_gorunen_adi(sira[i])
         # Faz ici sira (Arşiv ile ayni): "Adım 5/18" yerine "01 Çalışma
         # Kurulumu · Adım 3/4".
@@ -1174,9 +1148,7 @@ def _devam_bilgi(durum):
 def _gecmisi_kirp(durum, hedef):
     """Geri donuste EKRAN GECMISINI de geri sarar.
 
-    On yuz transkripti hedef adimdan itibaren siliyor (app.js
-    transkriptiKirp), ama arka uctaki `_gecmis` dokunulmadan kaliyordu:
-    F5'ten sonra kullanicinin az once sildigi bloklar geri geliyordu.
+
     Iki taraf ayni kurali uygular: hedefe ESIT ya da ondan SONRAKI
     adima ait ilk kayittan itibaren her sey duser."""
     sira = akis.adim_sirasi(durum.get("mod"))
@@ -1209,11 +1181,7 @@ def _silinmis_v_mi(anahtar):
 def _kaydet(anahtar, durum):
     """Durumu kaydeder ve son islem zamanini damgalar.
 
-    SILINMIS CALISMAYA YAZILMAZ (kullanici bildirimi: "arşivden silsem de
-    silinmemeye başladı"): silme sirasinda suren bir istek (adim, oneri,
-    kart kaydi) bitince calisma.json'u yeniden yaratiyordu; Arşiv listesi
-    de klasorunde calisma.json duran ama kayitta olmayan calismayi geri
-    aliyordu (bkz. _calisma_kimlikleri, yetim)."""
+"""
     if _silinmis_v_mi(anahtar):
         _hata_kaydet("kaydet:silinmis", RuntimeError(
             "%s silinmiş; kayıt yazılmadı." % anahtar))
@@ -1224,10 +1192,7 @@ def _kaydet(anahtar, durum):
 
 
 # ARSIV HIZI: her calismanin yaninda kucuk bir ozet dosyasi. Arşiv listesi
-# yalnizca bunlari okur; sohbet gecmisini tasiyan (MB'larca) calisma
-# dosyasini her acilista calisma basina okumak listeyi dakikalarca
-# bekletiyordu (kullanici bildirimi: "arşive bastığımda açılmıyor ya da
-# çok yavaş açılıyor").
+# yalnizca bunlari okur.
 OZET_DOSYA = "ozet.json"
 
 
@@ -1387,10 +1352,7 @@ def mesaj_endpoint():
 
         durum["_tur_no"] = gelen_tur if gelen_tur > son_tur else son_tur + 1
         durum["_son_cevap"] = cevap
-        # Kart tiklamasi ("A", "evet", secenek degeri...) sohbet
-        # gecmisine YAZILMAZ: canli oturumda kullanici balonu
-        # basilmiyor, ama gecmis yeniden cizilince tek harflik balonlar
-        # ortaya cikiyordu — kullanicinin hic gormedigi mesajlar.
+        #
         # Denetim izi `kutuk`te duruyor; `_gecmis` yalnizca EKRAN
         # transkriptidir.
         if not bool(istek.get("sessiz")):
@@ -1404,9 +1366,7 @@ def mesaj_endpoint():
         govde = _yanit(durum, cevap)
         # BITEN ADIMIN METNI KENDI BLOGUNA. Bir tur ilerlerken donen metin
         # iki parcadir: biten adimin ozeti ve yeni adimin giris metni.
-        # Canli cizimde bu ayrim yoktu; ornegin "Dönem kolonunda tek değer
-        # var" uyarisi MODELLEME TANIMLARI adiminin ciktisiyken SÖZLÜK
-        # TANIMLARI blogunun icinde gorunuyordu. Transkript bu ayrimi
+        # Canli cizimde bu ayrim yoktu. Transkript bu ayrimi
         # zaten yapiyor (bkz. _gecmise_ekle_bolerek); on yuz de ayni
         # ayrimla cizsin diye govdeye ekleniyor.
         # Bir turda birden fazla adim bitebilir: hepsi SIRAYLA ayrilir.
@@ -1438,8 +1398,7 @@ def mesaj_endpoint():
                               dogrulama if isinstance(dogrulama, dict) else None)
         # ICINDE BULUNULAN adimin formu da her turda guncellenir.
         # Bir adim birden fazla ekran uretebiliyor (once form, sonra
-        # girdi dogrulama karti); form gonderildigi an bostu ve adimin
-        # ORTASINDA F5 atilinca o kart bos aciliyordu. Kullanici formu
+        # girdi dogrulama karti). Kullanici formu
         # doldurdugu icin degerler artik durumda; forma geri yaziliyor.
         _dolu, _secili = akis.mevcut_ekran(durum)
         _biten_adimi_guncelle(
@@ -1530,9 +1489,7 @@ def oneriler_endpoint():
 def sifirla_endpoint():
     """YENI CALISMA ACAR; MEVCUT CALISMA SILINMEZ.
 
-    Eskiden ayni dosyanin uzerine bos durum yaziliyordu: yanlislikla
-    basilan "Yeni Çalışma" saatlerce suren calismayi geri donussuz
-    siliyordu. Artik yeni bir sira numarasi aliniyor; eski calisma
+    Artik yeni bir sira numarasi aliniyor; eski calisma
     PROJE_HAFIZASI'nda duruyor ve "Çalışmalarım" listesinden kaldigi
     yerden acilabiliyor.
 
@@ -1611,7 +1568,7 @@ def _calisma_kimlikleri(yollar=None):
     v = [k for k, d in kayit.items()
          if _v_mi(k) and (d or {}).get("sahip") == ben
          and not (d or {}).get("silindi")]
-    # KAYITTA OLMAYAN KLASORLER (kullanici bildirimi: "hepsi gözükmüyor").
+    # KAYITTA OLMAYAN KLASORLER.
     # Klasorunde calisma dosyasi duran ama CALISMALAR.json'da girdisi
     # olmayan v-calisma listeye geri alinir (sahibi bu kullaniciysa) ve
     # kayda yeniden yazilir; boylece acilabilir ya da duzgun silinebilir.
@@ -1697,8 +1654,7 @@ def _adim_gorunen_adi(anahtar):
 
 def _faz_konumu(mod, anahtar):
     """Adimin FAZ ICINDEKI yeri, sol paneldeki sayimla ayni: gruplu adimlar
-    (Veri ve Model Tanımları gibi) tek adim sayilir. Kullanici bildirimi:
-    Arşiv "Adım 5/18" diyordu; 18 butun fazlarin toplami, ekranda hic
+    (Veri ve Model Tanımları gibi) tek adim sayilir. 18 butun fazlarin toplami, ekranda hic
     gorunmeyen bir sayi. Doner: {faz_no, faz_baslik, faz_adim_no,
     faz_toplam} ya da {}."""
     try:
@@ -1712,7 +1668,7 @@ def _faz_konumu(mod, anahtar):
             if anahtar in f["adimlar"]:
                 grup, _ = akis.adim_grubu(anahtar)
                 sira = ogeler.index(grup or anahtar) + 1
-                # ADIM NUMARASI (kullanici karari): sol paneldeki satir
+                # ADIM NUMARASI: sol paneldeki satir
                 # sirasi, "01.3" gibi. On yuz Arşiv ve "yuklendi"
                 # mesajinda bununla yaziyor.
                 return {"faz_no": f["no"], "faz_baslik": f["baslik"],
@@ -1811,7 +1767,7 @@ def _calismalar(en_fazla=CALISMA_LISTE_SINIRI, aktif=None):
 
 def _gizli_klasorler(gosterilen):
     """PROJE_HAFIZASI'nda olup Arşiv'de GÖRÜNMEYEN v-klasörleri ve nedeni
-    (kullanici bildirimi: "arşiv kısmında bütün folderlar gözükmüyor").
+
 
       Boş klasör              : içinde dosya yok (eski silmelerden kalan)
       Çalışma dosyası yok     : calisma.json silinmiş, artık dosyalar kalmış
@@ -2015,10 +1971,8 @@ def calisma_sil_endpoint():
         mevcut = _calisma_id(istek)
         hafiza = _hafiza()
 
-        # HIZ (kullanici bildirimi: "yavaş siliyor"): her folder islemi
-        # Dataiku'ya ayri bir istek. Eskiden ~20 istek sirayla gidiyordu
-        # (kayit 3 kez okunuyor, klasorun TAMAMI iki kez listeleniyor,
-        # dosyalar tek tek siliniyordu). Simdi: kayit 1 okuma, klasor 1
+        # HIZ: her folder islemi
+        # Dataiku'ya ayri bir istek. Simdi: kayit 1 okuma, klasor 1
         # silme, 1 kontrol, kayit 1 yazma; sahiplik temizligi arka planda.
         if _v_mi(hedef):
             kayit = _calisma_kaydi_oku(kati=True)
@@ -2027,9 +1981,7 @@ def calisma_sil_endpoint():
                 raise CalismaErisimYok("Bu çalışma başka bir kullanıcıya ait.")
             anahtar = hedef
             # ONCE KAYITTAN CIKAR, SONRA KLASORU SIL: kayitta olmayan
-            # calismaya artik hicbir istek yazamaz (bkz. _kaydet). Eskiden
-            # tersiydi; klasor silinirken biten bir istek calisma.json'u
-            # yeniden yaratiyor ve calisma Arşiv'e geri donuyordu.
+            # calismaya artik hicbir istek yazamaz (bkz. _kaydet).
             girdi = kayit.pop(hedef, None)
             _calisma_kaydi_yaz(kayit)
             kalan = _klasoru_sil(hafiza, anahtar)
@@ -2418,9 +2370,7 @@ def bolme_kaydet_endpoint():
                                     or "Bölme ayarları kaydedilemedi."})
 
         # Sohbetteki bolme karti ACIKSA yerinde tazeleniyor: ozet,
-        # uyarilar ve kisitlar ayara bagli. Tazelenmezse kullanici
-        # kaydettigi ayari kartta goremiyor ve ikinci kez kaydetmeye
-        # calisiyordu (bkz. akis_faz01.bolme_kartini_tazele).
+        # uyarilar ve kisitlar ayara bagli.
         mod = istek.get("mod")
         if mod in ("oneri", "ozel"):
             durum["_bolme_mod"] = mod
@@ -2841,8 +2791,7 @@ def haric_kolonlar_endpoint():
             secili = sorted(set(secili) | set(eksik))
 
         durum["haric_kolonlar"] = secili
-        # Kart govdesi de tazelenir: aksi halde adimin ortasinda F5
-        # atilinca isaretlenen kutular bosalmis gorunuyordu.
+        #
         akis.teyit_kartini_tazele(durum)
         _kaydet(anahtar, durum)
         # Teyit kartinin ozet satiri ("N değişken · M süreç dışı · ...")

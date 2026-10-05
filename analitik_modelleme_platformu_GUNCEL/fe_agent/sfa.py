@@ -31,7 +31,7 @@ def iv_bandi(iv):
 
 
 def donusumler(x, tr_x):
-    """Bes C-value donusumu (kullanici karari). Parametreler train'den.
+    """Bes C-value donusumu. Parametreler train'den.
     Tek degiskenli AUC sira tabanli oldugu icin tekduze donusumler (log,
     ustel, sira) ham C-value'yu DEGISTIRMEZ; kirpma uclari esitledigi icin
     az da olsa degistirebilir. Hepsi yine de hesaplanip gosterilir."""
@@ -130,9 +130,7 @@ def _binle(s, bin_sayisi=BIN_SAYISI, ogren_maske=None):
     uygulanir. Doner: (gruplar, gerceklesen_bin_sayisi); basarisizsa (None, 0).
 
     Sinirlar esit sikliga en yakin ve ayni degeri iki bine bolmeyecek
-    sekilde kurulur (aralik.esit_frekans_kesimleri). Eskiden yuzdelik
-    sinirlar yigilmis dagilimda cakisiyor, gerceklesen bin sayisi 2-3'e
-    dusuyor ve IV "güvenilmez" sayiliyordu. Tekil deger sayisi bin
+    sekilde kurulur (aralik.esit_frekans_kesimleri). Tekil deger sayisi bin
     sayisindan azsa her deger kendi binidir."""
     from fe_agent.aralik import esit_frekans_kesimleri
     ogren = s if ogren_maske is None else s[ogren_maske]
@@ -391,8 +389,7 @@ def sfa_calistir(df, target, adaylar, train_maske=None):
         if c is not None and c > SIZINTI_ESIK:
             sizinti.append(kol)
 
-        # ELEME YOK (kullanici karari: "sfa bir eleme yeri değil, IV ve
-        # C-value düşük diye eleyemezsin"). Sonuc kolonu yalnizca olculup
+        # ELEME YOK. Sonuc kolonu yalnizca olculup
         # olculemedigini soyler; degiskenin modele nasil girecegi SFA
         # kararlarinda (sfa_karar.py) verilir.
         kayit_c = {k: (None if v is None else round(v, 4)) for k, v in c_ler.items()}

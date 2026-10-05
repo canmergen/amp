@@ -91,8 +91,7 @@ def _bos_ozet(ad, tur, satir):
 
 def _tt_ozetleri(tt, tur):
     """Birinci gecis sayilari TEKIL DEGER TABLOSUNDAN (k, v, adet): tek
-    groupBy. Genis tabloda kolon basina ayri toplam ifadesi Spark'in sorgu
-    planini sisiriyordu (1.042 kolonda 119 sn, 10.000 satirda bile); bu
+    groupBy.  Bu
     sorgunun boyutu kolon sayisiyla BUYUMEZ. Sayimlar degere gore adetle
     agirlikli oldugu icin sonuc satir satir sayimla birebir aynidir."""
     from pyspark.sql import functions as F
@@ -235,7 +234,7 @@ def _kantiller(tt, tur, dolular):
 # 3) DEGER BASINA DENETIM - YURUTUCUDE PYTHON YOK
 # ===========================================================================
 # Kurumdaki Spark yurutuculeri code env'siz imajla aciliyor (Python/pandas
-# yok; kullanici: "önceden spark okuyabiliyordum", kendi kodu saf Spark).
+# yok.Kendi kodu saf Spark).
 # Bu yuzden yurutucude Python calistiran hicbir sey (rdd.map, UDF, surucu
 # listesinden createDataFrame) KULLANILMAZ:
 #   - Tekil degeri SURUCU_SINIRI'nin altindaki kolon: tekil degerler ve
@@ -420,8 +419,7 @@ def _grup_isle(tt, indeks, tur, adlar, ozetler, satir):
     (tipik tabloda neredeyse hepsi) degerleri partiler halinde TEK
     sorguyla surucuye alinir; listeler, kantiller, deger denetimleri ve
     donem degerleri yerel motorla ayni Python fonksiyonlariyla hesaplanir.
-    Kolon basina ayri Spark isi calistirmak genis tabloda her isin sabit
-    maliyetini binlerce kez odetiyordu. Yalnizca cok tekilli kolonlar
+    Yalnizca cok tekilli kolonlar
     Spark ifadeleriyle islenir."""
     from pyspark.sql import functions as F
     from fe_agent import sozluk as sozluk_mod

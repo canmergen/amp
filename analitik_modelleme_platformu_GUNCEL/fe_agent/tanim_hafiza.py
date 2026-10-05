@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """fe_agent/tanim_hafiza.py - ONAYLI TANIM HAFIZASI (proje geneli).
 
-Kullanici karari: "belleginde buyuk bir sozluk kutuphanesi olusturulsun,
-disarda sadece kullanicinin onayladiklariyla ilgili; benzer mantikta bir
-sey gelirse daha dogru yazabilsin, kafasina gore yazmasindan ziyade oraya
-da baksin."
+
 
 NE GIRER - yalnizca bir kullanicinin ONAYLADIGI tanimlar:
   * Sozluk Tanimlari kartinda "Sozluge Ekle" ile onaylanan aciklama
@@ -180,8 +177,7 @@ def arka_planda_ekle(kayitlar, veri_seti="", kullanici=""):
 
 
 # ---------------------------------------------------------------------------
-# ONERI ONBELLEGI (kullanici karari: "onceden kayitliysa direkt oneremez mi;
-# az da olsa bekleme yasaniyor"). ONAYLI DEGIL: dil modelinin bir veri
+# ONERI ONBELLEGI. ONAYLI DEGIL: dil modelinin bir veri
 # setinin bir kolonu icin verdigi SON oneri. Ayni veri setinin ayni kolonu
 # tekrar geldiginde dil modeli cagrilmaz, bu oneri "Dil Modeli Onerisi"
 # olarak gelir. Baska veri setinde kullanilmaz (onay hafizasi degil).

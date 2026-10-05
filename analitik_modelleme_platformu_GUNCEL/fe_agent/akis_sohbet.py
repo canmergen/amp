@@ -56,18 +56,10 @@ def _girdi_cagir(adim, durum, mesaj, yeniden_sor=False):
 def _uygula(adim, durum, secimli=False, secim=None):
     """Adimi calistirir.
 
-    ONBELLEK TOPTAN BOSALTILMIYOR (kullanici sikayeti: "veri seti ve
-    değişken sözlüğü 1.30 dk'dan fazladır çalışmadı").
+    ONBELLEK TOPTAN BOSALTILMIYOR.
 
-    Eskiden her `uygula` adimindan sonra veri onbellegi KOMPLE
-    bosaltiliyordu; gerekcesi "uygula adimlari veri setini degistirir"
-    idi. Ama adimlarin cogu veri setine hic dokunmuyor ve DOKUNANLAR
-    zaten kendi iptalini yapiyor:
-      - akis_durum._yaz()          -> onbellek_temizle(dataset_adi)
-      - akis_faz03 dogrudan yazma  -> onbellek_temizle(hedef)
-      - mod degisikligi / birlestirme -> onbellek_temizle()
-    Toptan bosaltma bu hedefli iptallerin uzerine biniyordu ve tek
-    etkisi, bir sonraki adimin 1.042 kolonluk tabloyu BASTAN okumasiydi.
+    gerekcesi "uygula adimlari veri setini degistirir"
+    idi.
     Gercek bir Dataiku tablosunda bu adim basina onlarca saniye."""
     return adim["uygula"](durum, secim) if secimli else adim["uygula"](durum)
 
@@ -110,7 +102,7 @@ def _adima_gir(durum, yeniden_sor=False):
 
     yeniden_sor=True: kullanici bu adima DEGISTIRMEK icin geldi (geri
     donus ya da "Degistir"). Bilgi durumda tam olsa bile form yeniden
-    acilir; aksi halde kullanici onaydan baska cikis bulamiyordu."""
+    acilir."""
     sira = adim_sirasi(durum.get("mod"))
     adim = ADIMLAR[sira[durum["i"]]]
 
@@ -122,9 +114,7 @@ def _adima_gir(durum, yeniden_sor=False):
                 durum, "Devam etmek için seçim yapmanız gerekiyor.")
         # FORMUN KENDISI ONAYDIR. plan=None olan adimda ayri bir "Doğru mu?"
         # asamasi YOK: kullanici formu doldurup onay dugmesine bastiginda
-        # zaten onaylamistir. Iki asamali onay, ayni karari iki kez
-        # sordurmaktan baska bir sey yapmiyordu ve ozetledigi bilgi sag
-        # panelde zaten duruyor.
+        # zaten onaylamistir.
         # (girdi=None + plan=var olan adimlar bu daldan GECMEZ; onlar
         #  eskisi gibi plan gosterip onay bekler.)
         if not yeniden_sor and adim.get("plan") is None:
@@ -141,8 +131,7 @@ def _adima_gir(durum, yeniden_sor=False):
 
     durum["bekleyen"] = "onay"
     metin = adim["plan"](durum)
-    # KARAR GEREKTIRMEYEN PLAN (kullanici karari: "zırt pırt onay
-    # almamalı"): plan fonksiyonu ortada secilecek bir sey olmadigini
+    # KARAR GEREKTIRMEYEN PLAN: plan fonksiyonu ortada secilecek bir sey olmadigini
     # _plan_otomatik ile bildirirse onay beklenmeden uygulanir. Ornek: ayni
     # kolonlara sahip tablolar alt alta eklenir; sorulacak bir sey yok.
     if not yeniden_sor and durum.pop("_plan_otomatik", False):
@@ -229,8 +218,7 @@ def _soru_turu(durum, mesaj, anahtar, adim, secenekler, alan):
     """Serbest soru turu: cevabi doner ve EKRANI korur.
 
     Cevapla birlikte onceki secenek kartlari / form YENIDEN gonderilir.
-    Aksi halde kartlar cevabin yukarisinda kalip (tiklanmissa) kilitli
-    kaliyor ve kullanicinin secim yapacak alani kalmiyordu."""
+"""
     cevap = _soru_isle(durum, mesaj, anahtar, adim)
     durum["_secenekler"] = secenekler or []
     durum["_secim_alani"] = alan
@@ -274,14 +262,7 @@ def _hedefe_don(durum, hedef):
     if yeni > int(durum.get("i") or 0):
         return None
 
-    # EKRAN ONCE TEMIZLENIR. Bu fonksiyon _mesaj_isle'den ONCE calisiyor
-    # ve her turun basindaki temizligi ATLIYORDU: onceki turun
-    # `_secim_alani`/`_secenekler` degerleri durumda kaliyor, donulen
-    # adim kendi kartini kurmazsa (ornegin "mod" adimi kart degil SECENEK
-    # kullanir) ESKI KART yaniyla birlikte geri gonderiliyordu. Ekranda
-    # basligi "Çalışma Başlangıcı" olan bir blogun icinde "Veri seti ve
-    # değişken sözlüğü" formu duruyordu; ustelik kart var sayildigi icin
-    # adim metni de basliksiz kaliyordu.
+    # EKRAN ONCE TEMIZLENIR.
     durum["_secenekler"] = []
     durum["_secim_alani"] = None
     # Onceki turun yapilandirilmis karari da tasinmamali.
@@ -290,14 +271,13 @@ def _hedefe_don(durum, hedef):
     durum["i"] = yeni
     _validasyonu_tazele(durum, sira)
     # TEYIT VE ONCESI: AMP_VERISETI / AMP_SOZLUK ve sonrasi silinir, akis
-    # buradan yeniden yapilir (kullanici karari; bkz. amp_gecersiz_kil).
+    # buradan yeniden yapilir.
     not_metni = ""
     if "teyit" in sira and yeni <= sira.index("teyit"):
         from fe_agent.akis_faz01 import amp_gecersiz_kil
         not_metni = amp_gecersiz_kil(durum)
     # yeniden_sor=True: bilgi durumda tam olsa bile form yeniden acilir.
-    # Aksi halde kullanici donduğu adimda degistirecek bir sey bulamiyor,
-    # adim kendini uygulayip bir sonrakine geciyordu.
+    #
     cevap = _adima_gir(durum, yeniden_sor=True)
     return _birlestir(not_metni, cevap) if not_metni else cevap
 
@@ -358,8 +338,7 @@ def _birlestir(*parcalar):
 def _biten_ekran(durum, anahtar, adim):
     """Biten adimin DOLU formu ve secilen secenek.
 
-    F5'ten sonra adimin kartlari yeniden kurulamiyordu: kart govdeleri
-    EKRANDA yasiyor, oturumda degil. Arka uc her turda gonderdigi kart
+    Arka uc her turda gonderdigi kart
     govdesini transkripte de yaziyor (backend._gecmise_ekle), ama form
     govdesi GONDERILDIGI AN bostur; degerleri kullanici tarayicida
     dolduruyor. Bu fonksiyon adimin formunu MEVCUT DEGERLERLE yeniden
@@ -396,8 +375,7 @@ def mevcut_ekran(durum):
 
     Bir adim birden fazla ekran uretebiliyor (once form, sonra girdi
     dogrulama karti). Kullanici formu doldurdugunda degerler tarayicida
-    kaliyor; transkriptteki form satiri bos gonderildigi haliyle
-    duruyordu ve F5'ten sonra o kart bos aciliyordu. Arka uc her turda
+    kaliyor. Arka uc her turda
     bunu cagirip transkriptteki formu guncelliyor, yani adimin ORTASINDA
     yenilense bile kart dolu geri geliyor."""
     anahtar = adim_anahtari(durum)
@@ -410,10 +388,7 @@ def _tamamlandi_yaz(durum, anahtar, cikti):
     """Biten adimin ozetini KENDI anahtariyla isaretler.
 
     Bir tur ilerlerken donen metin iki parcadir: biten adimin ozeti ve
-    yeni adimin giris metni. Ikisi tek dizede birlesip EKRAN
-    TRANSKRIPTINE yeni adimin anahtariyla yaziliyordu. Sonuc: F5'ten
-    sonra biten adimin blogu hic olusmuyor, dolayisiyla sag ustundeki
-    "Geri Dön" de kaybolup kullanici geriye donemez hale geliyordu.
+    yeni adimin giris metni.
     Arka uc bu isareti okuyup iki AYRI transkript satiri yaziyor."""
     dolu, secili = _biten_ekran(durum, anahtar, ADIMLAR.get(anahtar, {}))
     kayit = {
@@ -425,10 +400,7 @@ def _tamamlandi_yaz(durum, anahtar, cikti):
     }
     durum["_tamamlanan"] = kayit
     # BIR TURDA BIRDEN FAZLA ADIM BITEBILIR (bolme -> profil -> SFA ->
-    # aralik karti, onaysiz zincir). Hepsi SIRAYLA tutulur; tek kayit
-    # tutulunca yalnizca sonuncusu kendi blogunu aliyor, digerlerinin
-    # metni yeni adimin bloguna dusuyordu (kullanici bildirimi: bolme
-    # sonucu "Aralık Önerileri" blogunda gorundu).
+    # aralik karti, onaysiz zincir). Hepsi SIRAYLA tutulur.
     durum.setdefault("_tamamlananlar", []).append(kayit)
 
 
@@ -449,8 +421,7 @@ def _onayi_uygula(durum, adim, anahtar, secim=None):
     durum["i"] += 1
     _tamamlandi_yaz(durum, anahtar, cikti)
     # BOS PARCALAR ATILIR. Adimlar artik bilerek "" donebiliyor (sonuc
-    # zaten kartta ya da sag panelde gorunuyor); duz birlestirme o
-    # durumda bos satirlardan ibaret bir balon uretiyordu.
+    # zaten kartta ya da sag panelde gorunuyor).
     return _birlestir(cikti, _adima_gir(durum))
 
 
@@ -536,16 +507,13 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
             durum["i"] += 1
             _tamamlandi_yaz(durum, anahtar, cikti)
             sonraki = _adima_gir(durum)
-            # Cikti bos olabilir (mod secimi): bos dizeyi "\n\n" ile
-            # birlestirmek balonun basina bos satir koyuyordu.
+            #
             return (cikti + "\n\n" + sonraki) if (cikti or "").strip() \
                 else sonraki
 
         # FORMUN KENDISI ONAYDIR (plan=None). Kullanici formu doldurdu ve
         # onay dugmesine basti; ayri bir "Doğru mu?" asamasi yok.
-        # _adima_gir'deki ayni kural, girdinin MESAJLA geldigi bu yolda da
-        # gecerli olmali — yoksa form doldurulunca adim plan=None'a
-        # carpiyor ve "beklenmeyen hata" veriyordu.
+        #
         if adim.get("plan") is None:
             return _onayi_uygula(durum, adim, anahtar)
 
@@ -554,8 +522,7 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
 
     # 4) SECIMLI adimda numara vermek ONAYDIR.
     # Plan metni "bir kismini secmek icin numaralarini belirtin (ornegin
-    # 1, 3, 5)" diyor; bu mesaj hicbir onay kalibiyla eslesmedigi icin
-    # LLM'e dusuyor ve adim hic ilerlemiyordu.
+    # 1, 3, 5)" diyor.
     secim = None
     if (durum.get("bekleyen") == "onay" and anahtar in SECIMLI
             and sonuc["aksiyon"] not in ("ret", "adim_tekrar")):
@@ -569,17 +536,14 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
 
     if sonuc["aksiyon"] == "ret":
         # Girdili adimda "Değiştir": ayni adimin formunu dolu haliyle yeniden
-        # ac. bekleyen HER KOSULDA "girdi"ye cekilir; aksi halde form
-        # acilmadan onay bekleniyor gorunup kullanici cikissiz kaliyordu.
+        # ac. bekleyen HER KOSULDA "girdi"ye cekilir.
         if adim.get("girdi") is not None:
             durum["bekleyen"] = "girdi"
             _, istem = _girdi_cagir(adim, durum, "", yeniden_sor=True)
             return "Seçimi güncelleyebilirsiniz.\n\n" + (
                 istem or "Yeni değerleri yazabilirsiniz.")
         # Girdisi OLMAYAN adimda (plan + onay) "Değiştir": adimin plani
-        # yeniden gosterilir. Eskiden "yazabilirsiniz" diyordu; ama
-        # sohbet kutusu Degisken Muhendisligi'ne kadar KAPALI, yani
-        # kullaniciya yapamayacagi bir sey soyleniyordu. Cikis yolu
+        # yeniden gosterilir. Cikis yolu
         # blogun sag ustundeki Geri Dön ve sag paneldeki ayar ekrani.
         return _adima_gir(durum, yeniden_sor=True)
 

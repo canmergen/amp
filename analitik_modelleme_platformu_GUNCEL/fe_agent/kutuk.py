@@ -20,11 +20,10 @@ SUTUNLAR = ["KOSU_ID", "ZAMAN", "FEATURE", "KAYNAK", "IFADE", "KAYNAK_KOLONLAR",
             "ONEM", "MODEL_TOPLAM_DELTA_AUC", "VERI_SETI", "HEDEF", "TARIH"]
 
 # Kalite adimi hic calismadiysa ya da degisken hicbir kalite listesinde
-# gecmiyorsa kullanilan ucuncu durum. "FAIL (?)" yaziyorduk; elenmemis
-# degiskeni elenmis gostermek yaniltiyordu.
+# gecmiyorsa kullanilan ucuncu durum. "FAIL (?)" yaziyorduk.
 KALITE_YOK = "DEGERLENDIRILMEDI"
 
-# SECIM siralama onceligi (alfabetik sira secilenleri en alta atiyordu).
+#
 _SECIM_SIRA = {"SECILDI": 0, "ELENDI": 1, "-": 2}
 
 

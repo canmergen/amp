@@ -2,7 +2,7 @@
 """fe_agent/spark_is.py - tam veriye dokunan isleri Dataiku'da PySpark ile
 calistirma (webapp tarafi).
 
-NEDEN SPARK (kullanici karari): gercek veri 135 milyon satir x 1.040 kolon.
+NEDEN SPARK: gercek veri 135 milyon satir x 1.040 kolon.
 Bu hacim webapp'in makinesine indirilemez; veri kumede, oldugu yerde
 islenir. Webapp yalnizca sonuc dosyalarini (profil, set sayilari) okur.
 
@@ -335,7 +335,7 @@ def hata_ozeti(is_):
 def tanim_al(is_adi, ad_eki=None):
     """ISLER[is_adi]; ad_eki verilirse recipe ve ciktilar CALISMAYA OZEL
     adlarla ("compute_AMP_VERISETI_V8", "AMP_VERISETI_V8", "AMP_SONUC_V8").
-    Kullanici karari: her calismanin AMP_VERISETI'si kendine ait; baska bir
+    Her calismanin AMP_VERISETI'si kendine ait; baska bir
     calisma onu ezemez. Dataiku'da bir veri seti yalnizca tek recipe'in
     ciktisi olabildigi icin recipe de calismaya ozel."""
     tanim = dict(ISLER[is_adi])

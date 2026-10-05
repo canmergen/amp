@@ -55,8 +55,7 @@ ADIMLAR = {
         "baslik": "Kaynak Tablolar",
         "aciklama": "Baz veri setini oluşturacak kaynak tablolar seçilir; "
                     "boyutları ve kolon sayıları çıkarılır.",
-        # plan=None: FORMUN KENDISI ONAYDIR (kullanici karari: "zırt pırt
-        # onay almamalı seçmişiz işte"). Tablolar secilince birlestirme
+        # plan=None: FORMUN KENDISI ONAYDIR. Tablolar secilince birlestirme
         # plani dogrudan cikarilir; arada "Planı çıkarayım mı?" yok.
         "girdi": ham_veri_girdi, "plan": None, "uygula": ham_veri_uygula},
     "birlestirme": {
@@ -108,7 +107,7 @@ ADIMLAR = {
         "girdi": None, "plan": sozluk_tanim_plan,
         "uygula": sozluk_tanim_uygula},
 
-    # ADIM SIRASI (kullanici karari): bos tanimlar -> kisaltma sozlugu ->
+    # ADIM SIRASI: bos tanimlar -> kisaltma sozlugu ->
     # kolon adi onerileri -> dolu tanimlarin kontrolu. Her adim bir
     # oncekinin ONAYLADIGI bilgiyi kullanir; hatali sozluk kisaltmayi,
     # kisaltma da sozlugu "dogrulamasin".
@@ -120,7 +119,7 @@ ADIMLAR = {
                     "kullanır.",
         "girdi": None, "plan": kisaltma_plan, "uygula": kisaltma_uygula},
 
-    # Kisaltmalar ONAYLANDIKTAN SONRA (kullanici karari): birlestirme
+    # Kisaltmalar ONAYLANDIKTAN SONRA: birlestirme
     # onerileri onaylanan anlamlarla verilir.
     "birlesik": {
         "baslik": "Kısaltma Birleştirme",
@@ -137,7 +136,7 @@ ADIMLAR = {
         "girdi": None, "plan": kolon_ad_plan, "uygula": kolon_ad_uygula},
 
     # Bos tanimlar onaylandiktan SONRA dolu tanimlarin kontrolu
-    # (kullanici karari). Kart dogrulama kartinin kontrol bolumudur.
+    # Kart dogrulama kartinin kontrol bolumudur.
     "tanim_kontrol": {
         "baslik": "Sözlük Tanım Kontrolü",
         "aciklama": "Sözlükte tanımı bulunan kolonların tanımları birden "
@@ -281,7 +280,7 @@ FAZ01_ADIMLARI = {
 # ===========================================================================
 # Ardisik adimlar sohbette TEK BLOK olarak gorunur; her adim blogun
 # icinde kendi ALT BASLIGINI ve kendi "Geri Dön" dugmesini tasir. Sol
-# paneldeki is akisinda adimlar AYRI kalir (kullanici karari): boylece
+# paneldeki is akisinda adimlar AYRI kalir: boylece
 # yalnizca modelleme tanimlarina donmek mumkun oluyor.
 #
 # Gruplama yalnizca GORSELDIR; adim sirasi, sayimi ve geri donus hedefi

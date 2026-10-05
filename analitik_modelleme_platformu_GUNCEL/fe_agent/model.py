@@ -96,10 +96,7 @@ def karsilastir(df, target, baz_kolonlar, yeni_kolonlar,
     dolu bir maske gelebilir.
 
     egitim_maske: platformun `egitim` seti. Rastgele bolmede tekrarli olcum
-    YALNIZCA bu satirlarda yapilir. Eskiden tum tablo train_test_split ile
-    yeniden bolunuyordu; bunun iki sonucu vardi: platformun ayirdigi test ve
-    OOT satirlari egitime giriyordu, ve kimlik bazli bolme yok sayildigi icin
-    ayni musteri hem egitimde hem testte kalip delta AUC'yi sisiriyordu.
+    YALNIZCA bu satirlarda yapilir.
 
     grup: satir basina grup anahtari (kimlik). Verilirse tekrarli bolme
     GRUPLU yapilir; ayni kimlik iki tarafa birden dusmez."""
@@ -130,9 +127,7 @@ def karsilastir(df, target, baz_kolonlar, yeni_kolonlar,
     # korunur ama sonuca "kapsam" olarak YAZILIR: sizinti sinirinin
     # olmadigi bir olcum sessizce dogru gorunmemeli.
     # Zamansal bolmede maske GELIR ama kullanilmaz; sinir zaten OOT
-    # maskesidir. Eski metin her iki durumda da "maske bildirilmedi"
-    # diyordu ve dogru calisan bir olcumu validatore sizinti riski gibi
-    # gosteriyordu. Uc durum artik ayri yaziliyor.
+    # maskesidir. Uc durum artik ayri yaziliyor.
     if _zamansal_mi(bolme_turu):
         kapsam = "eğitim satırları (sınır test maskesiyle çiziliyor)"
     elif egitim_maske is None:

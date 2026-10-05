@@ -337,9 +337,7 @@ def birlestirme_plan_oner(semalar, meta=None, max_kolon_goster=60):
 # ===========================================================================
 # LLM #2 — SOZLUK ACIKLAMASI  (Mod A ve B)
 # ===========================================================================
-# KOLON ADI KALIPLARI (kullanici bildirimi: iki pencereli oran kolonunda
-# modeller "son A gun / B gun orani" tanimini "A-B gun arasi" diye yeniden
-# yazip anlamini degistirdi). Aciklama, kontrol ve hakem
+# KOLON ADI KALIPLARI. Aciklama, kontrol ve hakem
 # istemlerinin hepsine eklenir.
 AD_KALIP_KURALI = """
 KOLON ADI KALIPLARI (genel kaliplardir; bu veri setinde gecerli olup
@@ -382,8 +380,7 @@ olacak: kisa, net ve tutarli olmasi onemli. Ornek kalip (oran kolonu;
   UZUN : Son <A> günde <X> değerinin son <B> günde <X> değerine oranı
   SADE : Son <A> günde <X> değerinin son <B> gündekine oranı
 """ + """
-TAMAMEN TURKCE YAZ (kullanici karari; bu kural YAZIM TARZINDAN ve
-orneklerden ONCE gelir):
+TAMAMEN TURKCE YAZ (bu kural YAZIM TARZINDAN ve orneklerden ONCE gelir):
   - Turkce karakterleri HER ZAMAN dogru kullan: ç, ğ, ı, İ, ö, ş, ü.
     "Musteri islem tutari" YANLIS, "Müşteri işlem tutarı" DOGRU.
   - Ingilizce kelime YAZMA; Turkce karsiligini yaz (transaction -> işlem,
@@ -422,10 +419,7 @@ Emin olamadigin kolon icin tahmin yaz ama kategoriyi "diger" birak.""" \
     + AD_KALIP_KURALI + SINIRLAYICI_KURALI
 
 
-# Dagilim ozetinin promptta kirpildigi sinir. 130'du: tanimsiz kolonlar
-# icin uretilen turetilmis ozet (en sik 10 etiket + oran) bu sinira
-# sigmiyordu ve modele ancak ilk 6-7 etiket ulasiyordu — yani ozeti
-# hesaplayip yarisini atiyorduk. 10 etiket + oranlari ~260 karakter.
+# Dagilim ozetinin promptta kirpildigi sinir. 10 etiket + oranlari ~260 karakter.
 EN_UZUN_DAGILIM = 400
 
 
@@ -508,8 +502,7 @@ def _baglamli_govde(adlar, kolon_metni, baglam, kolon_basligi="KOLONLAR"):
     # orneklerle celisirse kullanilmaz (bkz. AD_KALIP_KURALI).
     # Eslestirme Kisaltma Sozlugu'nunkiyle ayni (kisaltma.ad_anlamlari):
     # sayi degerli kalipta sayi korunur, kabul edilen birlestirme tek
-    # anlamla gider (eskiden parcalar "_"den bolunup aranıyor, ikisi de
-    # kaciyordu).
+    # anlamla gider.
     # Ust bloktaki (kesin) bir eslesmenin kapsadigi parcalar alt bloklarda
     # tekrar gitmez (birlestirme kesinse parcalari tahmini gitmez).
     from fe_agent import kisaltma as _kisa
@@ -650,9 +643,7 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
 
     kategoriler: modelin secebilecegi kategori listesi. Verilmezse
     SOZLUK_KATEGORILERI kullanilir. NEDEN PARAMETRE: sabit liste kurumun
-    kendi sozlugundeki kategorilerle ortusmeyebilir; oyle bir sozlukte
-    model ne onerirse onersin "diger"e dusuyordu ve kategori onerisi
-    ise yaramaz hale geliyordu.
+    kendi sozlugundeki kategorilerle ortusmeyebilir.
 
     Kolonlar parca parca gonderilir; 1000+ kolonda tek istek baglam
     penceresine sigmaz ve cikti kesilir. Parcalar sessizce dusurulmez."""
@@ -723,8 +714,7 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
 # ===========================================================================
 # ORKESTRA — sozluk aciklamasini ve tanim kontrolunu BIRDEN FAZLA MODELLE
 # ===========================================================================
-# Kullanici karari: "oneri kismi orchestrator ile kurulmali, bir suru llm
-# var elimizde". Tek modelin tek cevabi yerine roller:
+# Tek modelin tek cevabi yerine roller:
 #
 #   ACIKLAMA (sozlukte tanimi olmayan kolonlar)
 #     yazarlar : iki model AYNI girdiyle bagimsiz aday yazar (paralel)
@@ -749,8 +739,7 @@ ORKESTRA = {
     "hakem": ("qwen_thinking", "llama"),
     "tarayici": ("qwen_flash", "llama"),
     "denetci": ("llama", "qwen_thinking"),
-    # KISALTMA ISLERI (kullanici karari: "cok onemli kisim, zayif model
-    # zayif sonuc uretir"): hizli model (qwen_flash) kullanilmaz. Anlami
+    # KISALTMA ISLERI: hizli model (qwen_flash) kullanilmaz. Anlami
     # tanimlardan harf harf eslestirmek muhakeme istedigi icin karar ve
     # hakem dusunen model; ikinci goz Llama. Genel anlam (sozluksuz) Llama.
     "kisaltma_genel": ("llama", "qwen_thinking"),
@@ -937,8 +926,7 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
     for kayit in sonuc.values():
         kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)[:300]
     # TURKCE KAPISI: tamamen Turkce olmayan oneri yeniden yazdirilir;
-    # yazilamazsa oneri GOSTERILMEZ (kullanici karari: oneriler tamamen
-    # Turkce olmali). Kolon onerisiz kalir, aciklamayi kullanici yazar.
+    # yazilamazsa oneri GOSTERILMEZ. Kolon onerisiz kalir, aciklamayi kullanici yazar.
     sorunlu = [dict(p, kaynak=sonuc[p["ad"]]["aciklama"]) for p in profiller
                if p["ad"] in sonuc and turkce_sorunu(sonuc[p["ad"]]["aciklama"])]
     if sorunlu:
@@ -1095,9 +1083,7 @@ def _kontrol_oku(veri, gecerli):
 
 
 # ===========================================================================
-# TURKCE KAPISI (kullanici karari: "tamamen Turkce olmali; sozluge Turkce
-# olmayan yazilmis tanimlar da Turkce olarak onerilmeli, model hic oneri
-# vermeyecekse bile Turkce degilse yeniden Turkceye cevirerek onermeli")
+# TURKCE KAPISI
 # ===========================================================================
 _TR_OZEL_HARF = set("çğıöşüÇĞİÖŞÜ")
 _KELIME = re.compile(r"[^\W\d_]+", re.UNICODE)
@@ -1210,10 +1196,9 @@ def turkcelestir(kayitlar, baglam=None, orkestra=None):
 
 
 # ===========================================================================
-# KISALTMA KONTROLU (kullanici karari: "kendisi de iyilesemez mi")
+# KISALTMA KONTROLU
 # ===========================================================================
-# KARAR ISTEMI (kullanici karari: "kisaltma bazinda hangisi dogru hangisi
-# degil karar versin"): iki aday var - sozlukteki kullanim ve sozlugu
+# KARAR ISTEMI: iki aday var - sozlukteki kullanim ve sozlugu
 # gormeden verilen genel anlam; model hangisinin dogru oldugunu gerekcesiyle
 # soyler. Yaniltici kisaltmaya daha acik bir kisaltma da onerir.
 _KISALTMA_KURALLARI = """KURALLAR:
@@ -1342,8 +1327,7 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
   "sozluk_anlam": "...", "anlam": "...", "gerekce": "...", "yeni_kisaltma": "",
   "yeni_anlam": ""}]}""" + SINIRLAYICI_KURALI
 
-# SOZLUKSUZ (KOR) GENEL ANLAM (kullanici karari: "sadece sozluge
-# guvenmemeli"): model once sozlugu, istatistigi ve aciklamalari GORMEDEN
+# SOZLUKSUZ (KOR) GENEL ANLAM: model once sozlugu, istatistigi ve aciklamalari GORMEDEN
 # yalniz kisaltmayi ve gectigi birkac kolon adini gorur; kendi genel
 # bilgisinden anlam verir. Sozluklu karar bu cevapla karsilastirilir.
 SISTEM_KISALTMA_KOR = """Sen bir bankacilik ve veri bilimi uzmanisin. Kolon
@@ -1384,17 +1368,14 @@ def _kor_oku(veri, girdi):
     return cikti
 
 
-# Parca basina kisaltma: 25'te istem uzun oluyordu (8 ornek x tanim) ve
-# 90 sn zaman asimina takilma riski vardi; parcalar AYNI ANDA calisir.
+# parcalar AYNI ANDA calisir.
 # 8: parca bittikce kart guncellenir; kucuk parca = daha sik guncelleme.
 KISALTMA_PARCA = 6         # dusunen model icin daha kucuk parca
 _KISALTMA_HAVUZ = futures.ThreadPoolExecutor(max_workers=3)
 
 
 def _kisaltma_satiri(g):
-    """Karar istemindeki satir. KELIME SAYIMI GITMEZ (kullanici bildirimi:
-    model sayimin tek kelimelik adayini kopyaliyor, yan yana gecen iki
-    parcanin anlamlarini ters veriyordu); model anlami tanimlardan okur.
+    """Karar istemindeki satir. KELIME SAYIMI GITMEZ; model anlami tanimlardan okur.
     Diger kisaltmalardan yalniz kullanicinin ONAYLADIKLARI gider."""
     s = "- %s" % g["kisaltma"]
     if g.get("genel") is not None:
@@ -1427,7 +1408,7 @@ def _oneri_notu(e):
 
 def _hakem_tamamla(veri, ea, ec):
     """Hakem oneri karari verip kisaltma yazmadiysa ayni karari veren
-    modelin onerisi kullanilir (eskiden oneri sessizce dusuyordu)."""
+    modelin onerisi kullanilir."""
     for k in ((veri or {}).get("kolonlar") or []):
         if not isinstance(k, dict) or str(k.get("yeni_kisaltma") or "").strip():
             continue
@@ -1478,22 +1459,20 @@ def _kisaltma_oku(veri, girdi, ek=None):
             secim = ("sozluk" if karar.startswith(("dogru", "doğru")) else
                      "emin_degil" if karar.startswith("emin") else "yeni")
         # Bosluk / tire / nokta parca ayiracidir ("<A> <B>" -> "<A>_<B>");
-        # eskiden silinip parcalar bitisiyordu ve oneri bicime uymuyordu.
+        #
         ham_yeni = str(k.get("yeni_kisaltma") or "").strip()
         yeni = re.sub(r"[\s\-./]+", "_", ham_yeni.upper())
         yeni = re.sub(r"_+", "_", re.sub(r"[^A-Z0-9_]", "", yeni)).strip("_")
         red = ""
         if yeni and (not _YENI_KISA.match(yeni) or yeni == ad):
             red, yeni = (ham_yeni if yeni != ad else ""), ""
-        # SOZLUKTEKI ANLAM modelin tanimlardan okudugu (kullanici bildirimi:
-        # kelime sayimi tek kelimeye iniyordu); yoksa sayim adayi.
+        # SOZLUKTEKI ANLAM modelin tanimlardan okudugu; yoksa sayim adayi.
         soz_dm = _kucult(k.get("sozluk_anlam"))
         soz = soz_dm or soz
         yeni_anlam = _kucult(k.get("yeni_anlam")) or soz
         if secim == "kisaltma_yanlis" and not (yeni and yeni_anlam and gen):
             # "Yanlis kisaltma" ancak kisaltmanin BILINEN bir genel anlami
-            # varsa olur (kullanici bildirimi: genel anlami olmayan
-            # kisaltmalarda bu karar verilip anlam kirik kaliyordu). Genel
+            # varsa olur. Genel
             # anlam yoksa bu kolonlardaki anlam TAM yazilir, oneri yok.
             anlam = yeni_anlam or (anlam if anlam != gen else "") or soz
             secim = "sozluk" if (soz and _ayni_metin(anlam, soz)) else "yeni"
@@ -1549,7 +1528,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
         blok = [dict(g, genel=kor.get(g["kisaltma"])) if g["kisaltma"] in kor else g
                 for g in blok]
         # 2) KARAR: hangi aday dogru. Adlandirma kalibi (yeni kisaltmanin
-        # dili icin; kullanici karari: "hangi dildeyse o baglamda").
+        # dili icin.).
         govde = _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(_kisaltma_satiri(g) for g in blok))
         m1, v1 = ork.json_cagir(ork.modeller("kisaltma_1"), SISTEM_KISALTMA, govde, 0.1,
                                 zaman_asimi=KISALTMA_ZAMAN_ASIMI)
@@ -1644,8 +1623,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                     cikti_[k]["genel_uyumlu"] = e["secim"] in ("ayni", "genel")
         return cikti_
 
-    # PARCA BITTIKCE (kullanici karari: "hepsini yapinca iletmek yerine
-    # yaptikca"): her parcanin sonucu ara() ile hemen birakilir.
+    # PARCA BITTIKCE: her parcanin sonucu ara() ile hemen birakilir.
     isler = {_KISALTMA_HAVUZ.submit(parca_, b): b for b in bloklar}
     for f in futures.as_completed(isler):
         blok = isler[f]
@@ -1670,9 +1648,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                               % (len(bloklar), dusen))
 
 
-# BIRLESTIRME ONERISI (kullanici karari: her parca ayri kisaltmadir; anlam
-# karisiyorsa birlikte ele alinip birlestirme ONERILIR, kullanici kabul
-# eder). Yalniz kolon adlarinda hep yan yana gecen ciftler sorulur.
+# BIRLESTIRME ONERISI. Yalniz kolon adlarinda hep yan yana gecen ciftler sorulur.
 SISTEM_KISALTMA_BIRLESIK = """Sen bir bankacilik ve veri bilimi sozlugu
 uzmanisin. Kolon adlarinda HEP YAN YANA gecen kisaltma ciftleri verilecek:
 her parcanin tek basina anlami ve ciftin gectigi ornek kolon adlari ile
@@ -1731,8 +1707,7 @@ def _birlesik_oku(veri, gecerli):
 def kisaltma_birlesik(ciftler, orkestra=None, kalip=""):
     """ciftler: [{"ad": "A_B", "parcalar": [A, B], "anlamlar": [a, b],
     "kolon", "ornekler"}]. Iki model sorulur; BIRI "birlestir" derse oneri
-    olur (kullanici karari: mantikli birlesimi dil modeli onersin, kabul
-    kullanicinin; oneri isaretsiz gelir). "oy": kac model onerdi.
+    olur. "oy": kac model onerdi.
     Doner: ({"A_B": {"anlam", "yeni_kisaltma", "gerekce", "oy"}}, hata)."""
     if not ciftler:
         return {}, None
@@ -2026,7 +2001,7 @@ def aralik_degerlendir(adaylar, parca=ARALIK_PARCA, ilerleme=None):
 # ===========================================================================
 # SFA KARARI — HER DEGISKEN MODELE HANGI HALIYLE GIRSIN
 # ===========================================================================
-# Kullanici karari: metrikleri kod hesaplar, her degisken icin karari dil
+# metrikleri kod hesaplar, her degisken icin karari dil
 # modeli verir; SFA eleme yeri degildir. Degiskenler parca parca gider
 # (SFA_PARCA) ama her degisken icin AYRI karar ve gerekce istenir.
 SISTEM_SFA = """Sen kredi riski skorkart modellemesinde deneyimli bir analistsin.
