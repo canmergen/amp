@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltmalarda düşünen model yok; LLM Sözlük ayrı okuma**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **PROJE_HAFIZASI'ndaki bütün hafıza dosyaları JSON**. Değiştir: `fe_agent/tablo_io.py`, `fe_agent/tanim_hafiza.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- TANIM_HAFIZASI, ONERI_ONBELLEGI ve KISALTMA_OGRENILEN de JSON
+  (kayıt başına bir nesne, okunur girintili). KISALTMA_HAFIZASI zaten
+  JSON'du. İlk okumada eski .parquet (ya da .csv) bir kez JSON'a
+  aktarılır ve silinir.
+- Çalışma klasörlerindeki veri tabloları (AMP_VERISETI, AMP_SOZLUK vb.)
+  Parquet kalır.
+
+Önceki tur: **Kısaltmalarda düşünen model yok; LLM Sözlük ayrı okuma**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 1) Kısaltma Sözlüğü ve Kısaltma Birleştirme'de Qwen 3 Thinking
    kullanılmaz. LLM Genel, LLM Sözlük, karar (1. model) ve hakem Llama

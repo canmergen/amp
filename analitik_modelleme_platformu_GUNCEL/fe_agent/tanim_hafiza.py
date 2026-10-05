@@ -11,7 +11,7 @@ NE GIRER - yalnizca bir kullanicinin ONAYLADIGI tanimlar:
 Onaylanmamis model onerisi ve kurumun sozlugundeki mevcut tanimlar
 GIRMEZ (sozluk zaten ayrica ornek olarak okunuyor).
 
-NEREDE - PROJE_HAFIZASI/TANIM_HAFIZASI.parquet. Calisma klasorlerinin
+NEREDE - PROJE_HAFIZASI/TANIM_HAFIZASI.json. Calisma klasorlerinin
 (v1, v2 ...) DISINDA, kokte: calisma silinse de hafiza kalir. Girdi
 veri setine ve girdi sozlugune hicbir kosulda yazilmaz.
 
@@ -32,7 +32,7 @@ import pandas as pd
 from fe_agent import tablo_io
 from fe_agent.akis_durum import _folder
 
-DOSYA = "/TANIM_HAFIZASI.parquet"
+DOSYA = "/TANIM_HAFIZASI.json"
 KOLONLAR = ["KOLON", "ACIKLAMA", "VERI_SETI", "KAYNAK", "KULLANICI", "TARIH"]
 
 KAYNAK_LLM = "dil modeli önerisi onaylandı"
@@ -182,7 +182,7 @@ def arka_planda_ekle(kayitlar, veri_seti="", kullanici=""):
 # tekrar geldiginde dil modeli cagrilmaz, bu oneri "Dil Modeli Onerisi"
 # olarak gelir. Baska veri setinde kullanilmaz (onay hafizasi degil).
 # ---------------------------------------------------------------------------
-ONERI_DOSYA = "/ONERI_ONBELLEGI.parquet"
+ONERI_DOSYA = "/ONERI_ONBELLEGI.json"
 ONERI_KOLONLAR = ["KOLON", "VERI_SETI", "ACIKLAMA", "MODELLER", "TARIH"]
 _ONERI_ONBELLEK = {"zaman": 0.0, "df": None}
 

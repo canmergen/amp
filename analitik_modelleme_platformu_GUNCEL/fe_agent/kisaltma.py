@@ -644,7 +644,7 @@ def _bos():
 
 def _var_mi(dosya=DOSYA):
     klasor = _folder()
-    yollar_ = [dosya] if str(dosya).endswith(".json") else tablo_io.aday_yollar(dosya)
+    yollar_ = [dosya] if dosya == DOSYA else tablo_io.aday_yollar(dosya)
     for yol in yollar_:
         try:
             if (klasor.get_path_details(yol) or {}).get("exists"):
@@ -799,14 +799,14 @@ def kaydet(satirlar, kullanici=""):
 # ---------------------------------------------------------------------------
 # OGRENILMIS BILGI
 # ---------------------------------------------------------------------------
-# PROJE_HAFIZASI/KISALTMA_OGRENILEN.parquet: sozluklu her calismada
+# PROJE_HAFIZASI/KISALTMA_OGRENILEN.json: sozluklu her calismada
 # istatistik + dil modeli kontrolunden GECEN anlamlar KENDILIGINDEN yazilir
 # (onay istemez; onayli hafizadan ayri). Sozlugu olmayan ya da az tanimli
 # sonraki calismalarda "tahmini" olarak kullanilir. Ayni kisaltma baska
 # sozlukte farkli anlamla cikarsa DAHA COK KOLONLA ogrenilen kalir.
 # Onayli hafiza her zaman bunun onune gecer. Girdi veri setine ve
 # sozluge hicbir kosulda yazilmaz.
-OGRENILEN_DOSYA = "/KISALTMA_OGRENILEN.parquet"
+OGRENILEN_DOSYA = "/KISALTMA_OGRENILEN.json"
 OGRENILEN_KOLONLAR = ["KISALTMA", "ANLAM", "KOLON", "VERI_SETI", "KAYNAK", "TARIH"]
 _OGR_ONBELLEK = {"zaman": 0.0, "df": None}
 
