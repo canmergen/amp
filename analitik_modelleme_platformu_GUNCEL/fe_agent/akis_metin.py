@@ -118,7 +118,7 @@ ADIM_ADI = {
     "bolme":  "Örneklem ve Doğrulama Tasarımı",
 }
 # Gruplu blogun ortak basligi: kurulum + modelleme tanimlari (+ sozluk).
-GRUP_ADI_VERI_SOZLUK = "Veri ve Model Tanımları"
+GRUP_ADI_VERI_SOZLUK = "Veri, Sözlük ve Model Tanımları"
 
 # norm (kucuk harf, Turkce karaktersiz) uzerinde calisir.
 # "onceki adim\w*": akisin kendi onerdigi "önceki adıma dön" cumlesi

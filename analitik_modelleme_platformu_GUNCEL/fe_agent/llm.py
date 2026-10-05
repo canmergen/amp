@@ -1684,7 +1684,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                               "yeni_anlam": e.get("yeni_anlam") or "",
                               "sozluk_anlam": sozluk_.get(k) or e.get("sozluk_anlam") or "",
                               "yeni_red": e.get("yeni_red") or ""})
-            # Genel anlam sozlukle celisiyor (01.2.6'da tanimlar duzeltilmeye aday).
+            # Genel anlam sozlukle celisiyor (01.2.8'de tanimlar duzeltilmeye aday).
             if anlam and oneri.get(k) and e.get("secim") in ("genel", "yeni") \
                     and not _ayni_metin(anlam, oneri[k]):
                 cikti_[k]["sozluk_uyumsuz"] = True

@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **LLM Sözlük eleme ile okuyor**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.4 Veri Seti ve Sözlük İçeriği adımı; sol panel adı "Veri, Sözlük ve Model Tanımları"**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_metin.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/amp.py`, `webapp/app.js`, `webapp/backend.py`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Sözlük Tanımları'ndan sonra yeni onaylı adım: veri seti ile sözlüğün
+  eşitlenmiş içeriği özetlenir. Analize giren kolon, analiz dışı kolon
+  (sözlükte tanımı yok ya da başka nedenle dışarıda), sözlüğe eklenen
+  tanım ve sözlükten çıkarılan satır (veri setinde yok) sayıları; adlar
+  her sayının "i" balonunda. "Onayla ve Devam Et" ile Kısaltma
+  Sözlüğü'ne geçilir.
+- Sonraki adımların numarası birer kaydı: 01.2.5 Kısaltma Sözlüğü,
+  01.2.6 Kısaltma Birleştirme, 01.2.7 Kolon Adı Önerileri, 01.2.8 Sözlük
+  Tanım Kontrolü. Açık çalışmalar kaldıkları adımda açılır.
+- Sol paneldeki grup adı "Veri, Sözlük ve Model Tanımları".
+
+Önceki tur: **LLM Sözlük eleme ile okuyor**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Önce bütün kısaltmaların genel anlamı alınır. Sonra her örnek kolon
   için tanımdan, adın diğer parçalarının anlamları düşülür; geriye

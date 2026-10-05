@@ -315,12 +315,15 @@ def _mod_goc(durum):
 # "kolon_ad" adimlari girdi (iki adim).
 # Surum 4'te kisaltma ile kolon_ad arasina "birlesik" (Kisaltma
 # Birlestirme) girdi; yer kisaltma'nin konumu.
-SIRA_SURUMU = 4
+# Surum 5'te sozluk_tanim ile kisaltma arasina "veri_icerik" (Veri Seti ve
+# Sozluk Icerigi) girdi; yer sozluk_tanim'in konumu.
+SIRA_SURUMU = 5
 # surum -> (eklenen adim sayisi, {mod: eklenen adimdan ONCEKI adimin yeri})
 _SIRA_GOCLERI = {
     2: (1, {"A": 3, "B": 5}),
     3: (2, {"A": 3, "B": 5}),
     4: (1, {"A": 4, "B": 6}),
+    5: (1, {"A": 3, "B": 5}),
 }
 
 

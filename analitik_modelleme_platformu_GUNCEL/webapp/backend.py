@@ -1414,7 +1414,7 @@ def mesaj_endpoint():
 
 @app.route("/tanim_kontrol_baslat", methods=["POST"])
 def tanim_kontrol_baslat_endpoint():
-    """01.2.6 Sozluk Tanim Kontrolu ISTEGE BAGLI: kullanici "Tanımları
+    """01.2.8 Sozluk Tanim Kontrolu ISTEGE BAGLI: kullanici "Tanımları
     Kontrol Et" deyince arka plan kontrolu baslar. Kartin govdesi hem
     durumda hem de transkriptte tazelenir (F5'te baslamis haliyle acilsin)."""
     try:
@@ -1654,7 +1654,7 @@ def _adim_gorunen_adi(anahtar):
 
 def _faz_konumu(mod, anahtar):
     """Adimin FAZ ICINDEKI yeri, sol paneldeki sayimla ayni: gruplu adimlar
-    (Veri ve Model Tanımları gibi) tek adim sayilir. 18 butun fazlarin toplami, ekranda hic
+    (Veri, Sözlük ve Model Tanımları gibi) tek adim sayilir. 18 butun fazlarin toplami, ekranda hic
     gorunmeyen bir sayi. Doner: {faz_no, faz_baslik, faz_adim_no,
     faz_toplam} ya da {}."""
     try:

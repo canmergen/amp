@@ -742,7 +742,7 @@ BOLME_ADIMI = sol_panel_adi("bolme")
 _AKIS_ADLARI = []
 for _a in (["mod", "ham_veri", "birlestirme", "kurulum", "veri_sec",
             "kaynak_sozluk", "sozluk_uret", "tanimlar", "sozluk_tanim",
-            "kisaltma", "birlesik", "kolon_ad", "tanim_kontrol", "teyit", "bolme"]
+            "veri_icerik", "kisaltma", "birlesik", "kolon_ad", "tanim_kontrol", "teyit", "bolme"]
            + [a for a in adim_sirasi(None) if a != "mod"]):
     if sol_panel_adi(_a) not in _AKIS_ADLARI:
         _AKIS_ADLARI.append(sol_panel_adi(_a))
@@ -1151,7 +1151,7 @@ def _duzenleme_notu(durum, kopya_mi):
         return ""
     if not sozluk_calisma.sozluk_adi(durum):
         return ("Sözlük henüz bağlanmadı; tanımlar salt okunur. "
-                "«Veri ve Model Tanımları» adımında bir sözlük seçin.")
+                "«Veri, Sözlük ve Model Tanımları» adımında bir sözlük seçin.")
     return ("Sözlük çalışma kopyası oluşturulamadı (proje hafızasına "
             "yazılamıyor); tanımlar salt okunur. Orijinal sözlüğe "
             "hiçbir koşulda yazılmaz.")

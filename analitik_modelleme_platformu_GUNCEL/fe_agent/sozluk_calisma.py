@@ -347,6 +347,7 @@ def kopya_kur(durum, tablo=None):
                 "dusen": len(rapor["dusen"]), "eklenen": len(rapor["eklenen"]),
                 "duzeltilen": len(rapor["duzeltilen"]), "cift": rapor["cift"],
                 "dusen_ornek": rapor["dusen"][:20],
+                "dusen_liste": rapor["dusen"][:1000],
                 "eklenen_ornek": rapor["eklenen"][:20]}
         # Kopya TEYIT ONCESININ tablosudur: AMP_SOZLUK'un ustune yazilmaz.
         yol, hata = _kopya_yaz(oturum, tablo, _calisma_kopyasi_yolu(oturum))

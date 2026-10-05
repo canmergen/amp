@@ -4885,6 +4885,7 @@ const BLOK_TAMAM_METNI = {
     kurulum: "Girdiler Onaylandı",
     tanimlar: "Modelleme Tanımları Onaylandı",
     sozluk_tanim: "Sözlük Tanımları Kaydedildi",
+    veri_icerik: "Veri Seti ve Sözlük İçeriği Onaylandı",
     kisaltma: "Kısaltmalar Onaylandı",
     birlesik: "Birleştirmeler Belirlendi",
     kolon_ad: "Kolon Adları Belirlendi",
@@ -5810,6 +5811,8 @@ function dogrulamaKartiEkle(alan, blok) {
             const et = document.createElement("div");
             et.className = "dg-ozet-etiket";
             et.textContent = tireSade(o.etiket);
+            /* Sayının arkasındaki adlar "i" içinde. */
+            if (o.bilgi) et.appendChild(bolmeBilgiSimgesi(o.bilgi, o.etiket));
             blok.appendChild(et);
 
             const dg = document.createElement("div");
@@ -5829,6 +5832,7 @@ function dogrulamaKartiEkle(alan, blok) {
         });
         kart.appendChild(oz);
     }
+    if (alan.uyari) kart.appendChild(elYap("div", "dg-oneri-hata", tireSade(alan.uyari)));
 
     /* ---- 4) Kapsam: ince dolu/bos cubuk + kapsam.metin ---- */
     if (alan.kapsam) {
@@ -6100,12 +6104,12 @@ function dogrulamaKartiEkle(alan, blok) {
         }
     }
 
-    /* ---- 5a) Kısaltma Sözlüğü (01.2.4) ----
+    /* ---- 5a) Kısaltma Sözlüğü (01.2.5) ----
        Kolon adı kısaltmaları sözlükten kural tabanlı
        çıkarılır; kullanıcı anlamı düzeltip proje genelindeki onaylı
        kısaltma hafızasına kaydeder. Kayıt adım akışından BAĞIMSIZ
        (kendi düğmesi, /kisaltma_kaydet). */
-    /* AYRI ADIMLAR: 01.2.4 Kısaltma Sözlüğü ve 01.2.5
+    /* AYRI ADIMLAR: 01.2.5 Kısaltma Sözlüğü ve 01.2.7
        Kolon Adı Önerileri kendi kartlarında; karar birincil düğmeyle
        adımla birlikte gider (alan.adim). Bölümlerin kendi kaydet
        düğmeleri adım kartında gizlenir. */
@@ -6640,6 +6644,8 @@ function dogrulamaKartiEkle(alan, blok) {
         if (adimModu === "kisaltma") {
             const n = (karar.kisaltma || []).filter(k => k.anlam).length;
             ozet = ftBinlik(n) + " kısaltmanın anlamı onaylandı";
+        } else if (adimModu === "veri_icerik") {
+            ozet = "Veri seti ve sözlük içeriği onaylandı";
         } else if (adimModu === "birlesik") {
             const n = (karar.birlesik || []).filter(k => k.kabul && k.anlam).length;
             ozet = n ? ftBinlik(n) + " birleştirme onaylandı" : "Birleştirme yapılmadı";
@@ -6790,8 +6796,8 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
     };
 }
 
-/* ==================== 01.2.5 Kısaltma Birleştirme ====================
-   AYRI ADIM: kısaltmalar 01.2.4'te onaylandıktan
+/* ==================== 01.2.6 Kısaltma Birleştirme ====================
+   AYRI ADIM: kısaltmalar 01.2.5'te onaylandıktan
    SONRA, onaylanan anlamlarla dil modeli hep yan yana geçen parçalar için
    birleştirme önerir; kullanıcı kabul eder ya da kendisi ekler. */
 function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
@@ -6894,7 +6900,7 @@ function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             g.setAttribute("aria-label", r.kisaltma + " birlikte anlamı");
             tdA.appendChild(g); tr.appendChild(tdA);
             /* Birleştirmenin yerine geçecek kısaltma (isteğe bağlı); doluysa
-               01.2.5'te bu parçaların geçtiği kolon adlarına uygulanır. */
+               01.2.7'de bu parçaların geçtiği kolon adlarına uygulanır. */
             const tdY = elYap("td", "dg-aciklama-hucre");
             const y = document.createElement("input");
             y.type = "text"; y.className = "dg-giris dg-yeni-kisa"; y.maxLength = 24;
