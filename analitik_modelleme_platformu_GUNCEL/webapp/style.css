@@ -2992,7 +2992,6 @@ span.bolme-cip { cursor: default; }
 .dg-birlesik-ekle { display: flex; flex-wrap: wrap; gap: var(--b-2); margin-top: var(--b-2); align-items: center; }
 .dg-birlesik-ekle .dg-giris { flex: 1 1 140px; min-width: 120px; width: auto; }
 .dg-birlesik-ekle .dg-toplu-btn { flex: 0 0 auto; }
-.dg-kisaltma-tablo .dg-yeni-anlam { margin-top: 4px; }
 .dg-birlesik-tablo td.dg-ekle-hucre { text-align: center; }
 .dg-birlesik-tablo td.dg-kaynak-deger { color: var(--metin); }
 .dg-kisaltma-tablo td.dg-ekle-hucre { text-align: center; }

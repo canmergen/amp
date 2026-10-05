@@ -1391,6 +1391,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         d0_yeni_anlam = d.get("yeni_anlam") or ""
         d0_sozluk = d.get("sozluk_anlam") or ""
         d0_red = d.get("yeni_red") or ""
+        d0_oneri_g = d.get("oneri_gerekce") or ""
         if d.get("anlam"):
             d = dict(d, anlam=yalin_anlam(d["anlam"]))
         onceki = cikti.get(kisa) or {"kolon": int(parca_say.get(kisa, 0)),
@@ -1488,6 +1489,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             cikti[kisa]["gerekce"] = d0_gerekce
             cikti[kisa]["yeni_kisaltma"] = d0_yeni
             cikti[kisa]["yeni_anlam"] = yalin_anlam(d0_yeni_anlam) if d0_yeni_anlam else ""
+            cikti[kisa]["oneri_gerekce"] = d0_oneri_g
             # LLM SOZLUK: modelin tanimlardan okudugu anlam.
             cikti[kisa]["dm_sozluk"] = yalin_anlam(d0_sozluk) if d0_sozluk else ""
             cikti[kisa]["ayni_farkli"] = ayni_farkli
@@ -1702,9 +1704,10 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                 parca.append("Karar: %s%s" % (_KARAR_AD.get(o["secim"], o["secim"]),
                                               (". " + o["gerekce"]) if o.get("gerekce") else ""))
                 if o.get("yeni_kisaltma"):
-                    parca.append("Önerilen: %s = %s; bu kolonlar Kolon Adı Önerileri "
+                    parca.append("Önerilen: %s = %s%s; bu kolonlar Kolon Adı Önerileri "
                                  "adımında %s ile adlandırılır"
                                  % (o["yeni_kisaltma"], o.get("yeni_anlam") or "",
+                                    (" (%s)" % o["oneri_gerekce"]) if o.get("oneri_gerekce") else "",
                                     o["yeni_kisaltma"]))
             else:
                 if o.get("genel_uyumlu"):

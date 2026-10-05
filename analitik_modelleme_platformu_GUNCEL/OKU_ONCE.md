@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **LLM Sözlük: karşılanmayan kelime kuralı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Önerilen kısaltma LLM Karar'dan; karar tanımları okuyarak**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- LLM Karar, sözlük ile genel anlam arasında örnek tanımları okuyarak
+  hangisinin daha mantıklı olduğuna karar verir; genel anlam sözlüğe
+  bakmadan yapılmış tahmindir. Karşılanmayan kelime kuralı karar ve
+  hakem istemlerinde de var.
+- Karar artık yeni kısaltma önermez; "kısaltma yanlış seçilmiş" ve
+  "anlaşılmıyor" seçenekleri kalktı.
+- Karar kesinleşince ayrı bir çağrı yapılır: modele kısaltma, LLM
+  Karar'daki anlam ve örnek tanımlar gider (genel anlam gitmez). Model
+  kısaltmanın bu anlamı okuyana anlatıp anlatmadığına karar verir;
+  anlatmıyorsa okunur bir kısaltma önerir. Sayıyla birleşik geçen
+  kısaltmaya öneri yapılmaz.
+- Kod; mevcut kısaltmayla aynı, yalnız ünlüleri atılmış hali ya da kolon
+  adlarında başka bir kısaltma olan öneriyi gösterilmeden düşer.
+- Önerilen kısaltmanın anlamı LLM Karar'ın anlamıdır; kartta ikinci
+  anlam kutusu kalktı. Önerinin gerekçesi kısaltmanın "i"sinde.
+
+Önceki tur: **LLM Sözlük: karşılanmayan kelime kuralı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Sözlük okuma istemine kural eklendi: tanımda kalan ve adın başka bir
   parçasının karşılamadığı her anlamlı kelime bu kısaltmanın anlamına
