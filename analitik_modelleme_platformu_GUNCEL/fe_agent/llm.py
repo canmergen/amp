@@ -1294,22 +1294,15 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
   "secim": "ayni|sozluk|genel|yeni|emin_degil",
   "sozluk_anlam": "...", "anlam": "...", "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
 
-# KISALTMA ONERISI: karar KESINLESTIKTEN sonra ayri cagri. Modele yalniz
-# kisaltma, LLM Karar'daki anlam ve ornek tanimlar gider; genel anlam
-# gitmez (oneri baska bir okumanin harflerinden uretilmesin).
+# KISALTMA ONERISI: karar KESINLESTIKTEN sonra ayri cagri. Yalniz anlami
+# adindan cikarilamayan kisaltmalar sorulur (genel anlam bos ya da LLM
+# Karar'dan farkli). Modele yalniz kisaltma, LLM Karar'daki anlam ve
+# adlandirma kalibi gider; genel anlam ve tanimlar gitmez.
 SISTEM_KISALTMA_ONERI = """Sen bir veri sozlugu editorusun. Kolon
-adlarinda gecen KISALTMALAR, her birinin KESINLESMIS anlami ve ornek
-kolonlar ile tanimlari verilecek.
-
-Her kisaltma icin ornek tanimlari okuyup karar ver: kolon adlarini
-okuyan biri bu kisaltmadan bu anlami cikarabilir mi?
-  "hayir": kisaltma bu anlamin yaygin, okunur kisaltmasi ya da kelimenin
-           kendisi; oneri GEREKMEZ. Emin degilsen bunu sec.
-  "evet" : kisaltma bu anlami okuyana anlatmiyor (kuruma ozgu, unluleri
-           atilmis uzun birlesik kalip, yaygin okunusu baska bir kavram
-           ya da birden cok yaygin okunusu var); daha okunur bir kisaltma
-           oner.
-"evet" secersen "yeni_kisaltma":
+adlarinda gecen KISALTMALAR ve her birinin KESINLESMIS anlami verilecek.
+Bu kisaltmalar anlamlarini okuyana anlatmiyor; her biri icin daha okunur
+bir kisaltma oner.
+"yeni_kisaltma":
   - VERILEN ANLAMIN kisaltmasidir; baska bir anlamin harflerinden
     uretilmez.
   - Kolon adlarinin dilinde ve kalibinda (bkz. "ADLANDIRMA KALIBI"):
@@ -1321,20 +1314,24 @@ okuyan biri bu kisaltmadan bu anlami cikarabilir mi?
     basina 8, toplam 24 karakter.
   - Birbirinin karsiligi olan anlamlara (ilk / son, gelen / giden gibi)
     oneriler tutarli bir cift olsun.
-Kisaltma kolon adlarinda sayiyla birlesik geciyorsa oneri yapma.
+Okunur bir kisaltma bulamiyorsan "yeni_kisaltma" alanini BOS birak.
 "gerekce": tek kisa cumle, Turkce karakterlerle.
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
-{"kolonlar": [{"ad": "KISALTMA", "oneri": "evet|hayir", "yeni_kisaltma": "",
-  "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
+{"kolonlar": [{"ad": "KISALTMA", "yeni_kisaltma": "", "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
 
 
 def _oneri_satiri(g, anlam):
-    s = "- %s | anlam: %s | %d kolonda geciyor" % (g["kisaltma"], anlam,
-                                                   int(g.get("kolon") or 0))
-    for ad, t in (g.get("ornekler") or [])[:4]:
-        s += "\n    %s: %s" % (ad, str(t)[:160])
-    return s
+    return "- %s | anlam: %s" % (g["kisaltma"], anlam)
+
+
+def _oneri_gerekli(g, anlam, genel):
+    """Anlam adindan cikarilamiyor mu: genel anlam yok ("") ya da LLM
+    Karar'dan farkli. genel None ise genel anlam cagrisi cevap vermemistir;
+    oneri yapilmaz. Sayiyla birlesik gecen kisaltmaya oneri yapilmaz."""
+    if not anlam or genel is None or _sayili_mi(g):
+        return False
+    return not genel or not _ayni_metin(genel, anlam)
 
 
 def _iskelet(k):
@@ -1356,7 +1353,7 @@ def _oneri_oku(veri, girdi, kullanilan):
         if not isinstance(k, dict):
             continue
         ad = str(k.get("ad") or k.get("kisaltma") or "").strip().upper()
-        if ad not in gecerli or not str(k.get("oneri") or "").lower().startswith("e"):
+        if ad not in gecerli:
             continue
         yeni = re.sub(r"[\s\-./]+", "_", str(k.get("yeni_kisaltma") or "").strip().upper())
         yeni = re.sub(r"_+", "_", re.sub(r"[^A-Z0-9_]", "", yeni)).strip("_")
@@ -1659,9 +1656,10 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                 sonuc_[k] = h.get(k)               # hakem yoksa emin degil
                 ek_[k] = eh.get(k) or {"secim": "emin_degil", "gerekce": "Modeller anlaşamadı.",
                                        "yeni_kisaltma": "", "yeni_anlam": ""}
-        # 3) ONERI: karar kesinlesti; okunur kisaltma gerekip gerekmedigine
-        # model ornek tanimlara bakarak karar verir. Anlam LLM Karar'inkidir.
-        sor = [g for g in blok if sonuc_.get(g["kisaltma"]) and not _sayili_mi(g)]
+        # 3) ONERI: karar kesinlesti; anlami adindan cikarilamayan
+        # kisaltmalara okunur karsilik. Anlam LLM Karar'inkidir.
+        sor = [g for g in blok
+               if _oneri_gerekli(g, sonuc_.get(g["kisaltma"]), genel_.get(g["kisaltma"]))]
         if sor:
             mo, vo = ork.json_cagir(
                 ork.modeller("kisaltma_1"), SISTEM_KISALTMA_ONERI,

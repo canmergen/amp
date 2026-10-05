@@ -8,11 +8,12 @@ Bu tur: **Önerilen kısaltma LLM Karar'dan; karar tanımları okuyarak**. Deği
   hakem istemlerinde de var.
 - Karar artık yeni kısaltma önermez; "kısaltma yanlış seçilmiş" ve
   "anlaşılmıyor" seçenekleri kalktı.
-- Karar kesinleşince ayrı bir çağrı yapılır: modele kısaltma, LLM
-  Karar'daki anlam ve örnek tanımlar gider (genel anlam gitmez). Model
-  kısaltmanın bu anlamı okuyana anlatıp anlatmadığına karar verir;
-  anlatmıyorsa okunur bir kısaltma önerir. Sayıyla birleşik geçen
-  kısaltmaya öneri yapılmaz.
+- Karar kesinleşince ayrı bir çağrı yapılır; modele yalnız kısaltma,
+  LLM Karar'daki anlam ve adlandırma kalıbı gider (genel anlam ve
+  tanımlar gitmez). Öneri yalnız anlamı adından çıkarılamayan kısaltmaya
+  yapılır: LLM Genel bilmiyorsa ya da LLM Karar'dan farklı anlam
+  veriyorsa. LLM Genel'in LLM Karar'la aynı anlamı verdiği kısaltmaya ve
+  sayıyla birleşik geçen kısaltmaya öneri yapılmaz.
 - Kod; mevcut kısaltmayla aynı, yalnız ünlüleri atılmış hali ya da kolon
   adlarında başka bir kısaltma olan öneriyi gösterilmeden düşer.
 - Önerilen kısaltmanın anlamı LLM Karar'ın anlamıdır; kartta ikinci
