@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü: sade açıklama ve sayaçlı ilerleme satırı**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **LLM Sözlük: karşılanmayan kelime kuralı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Sözlük okuma istemine kural eklendi: tanımda kalan ve adın başka bir
+  parçasının karşılamadığı her anlamlı kelime bu kısaltmanın anlamına
+  dahildir. Adda o kelimeyi karşılayan bir parça varsa (anlamı bilinmese
+  de harfleri kelimeyle eşleşiyorsa) kelime o parçaya bırakılır. Tek
+  örnekte geçen kelime ortak anlama katılmaz. Kuralda yalnız yer tutucu
+  örnek var, veri yok.
+- Eleme iki harfli kelimeleri de düşer.
+
+Önceki tur: **Kısaltma Sözlüğü: sade açıklama ve sayaçlı ilerleme satırı**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Başlığın altındaki açıklama iki kısa cümle.
 - "N kısaltma; M tanesi onaylı tanım. Dil modeli kontrolü sürüyor…"

@@ -1369,6 +1369,20 @@ eder ama ANLAM TANIMDAN gelir). Orneklerin ortak karsiligini TAM ve
 anlasilir yaz: yalin halde, Turkce, 1-6 kelime. Tanimlardan cikmiyorsa
 "anlam" alanini BOS birak.
 
+KARSILANMAYAN KELIME: Kalan ifadedeki her anlamli kelime (zaman
+penceresi ve baglac/ek gibi dolgu kelimeler disinda) adin bir parcasina
+ait olmalidir. Bir kelimeyi baska bir parca karsilamiyorsa o kelime BU
+kisaltmanin anlamina dahildir. Ornek kalip: tanimda "<TUR> <NITELIK>"
+geciyor.
+- Adda <NITELIK> karsiligi bir parca YOKSA anlam "<TUR> <NITELIK>" olur;
+  yalniz "<TUR>" yazmak eksiktir.
+- Adda <NITELIK> karsiligi bir parca VARSA anlam yalniz "<TUR>" olur.
+Bir parcanin anlami "?" ise (bilinmiyor) onu da hesaba kat: harfleri
+kalan bir kelimeyle eslesiyorsa (Turkce ya da Ingilizce kisaltmasi
+gibi), o kelime o parcaya aittir; BU kisaltmaya yazma. Karsilanmayan kelime
+kisaltmanin orneklerinin cogunda geciyorsa anlama dahildir; yalniz tek
+ornekte geciyorsa o ornege ozgudur, ortak anlama katma.
+
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "KISALTMA", "anlam": "..."}]}""" + SINIRLAYICI_KURALI
 
@@ -1385,7 +1399,7 @@ def _kok5(kelime):
 def _kalan(tanim, diger_anlamlar):
     """Tanimdan diger parcalarin anlamlarindaki kelimelerin (kok
     eslesmesiyle) cikarilmis hali."""
-    kokler = {_kok5(w) for a in diger_anlamlar for w in str(a).split() if len(_kok5(w)) >= 3}
+    kokler = {_kok5(w) for a in diger_anlamlar for w in str(a).split() if len(_kok5(w)) >= 2}
     kalan = [w for w in str(tanim).split() if _kok5(w) not in kokler]
     return " ".join(kalan)
 
