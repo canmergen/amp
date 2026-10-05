@@ -1,6 +1,27 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü'nde ✓ kaldırıldı, "bekleniyor" hizası düzeldi**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
+Bu tur: **Onaylı kısaltmalar açıklama isteminde doğru eşleşir; yanlış kısaltma notu; sayıdan ayırma önerisi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+1) Açıklama önerisi / tanım kontrolü istemindeki KISALTMALAR blokları
+   Kısaltma Sözlüğü'nün eşleştirmesiyle kurulur: sayı değerli kalıp
+   sayısıyla (<K><NN>_<MM> = <anlam> <NN>-<MM>), kabul edilen birleştirme
+   tek anlamla gider. Kesin bloğun kapsadığı parçalar alt bloklarda
+   tekrar gitmez. Eskiden kolon adı "_"den bölünüp aranıyordu; ikisi de
+   bulunmuyordu.
+2) Yeni kısaltma kabul edilen ve anlamı eskisinden farklı olan satır
+   (yanlış kısaltma) Seç ile kaydedilirse hafızadaki KAYNAK'a not düşer
+   ("yanlış kısaltma: <YENİ> = <anlam>"). Sonraki çalışmalarda bu
+   kısaltma "kesin" değil "KISALTMALAR (dikkat)" bloğunda gider: genel
+   anlamı ve bir veri setindeki kullanımı; model kolon adı ve örneklerden
+   seçer. Bu çalışmada 01.2.4'te karar verildiyse o karar kesindir.
+3) Sayıdan ayırma önerisi: sayı değerli kısaltmanın satırında "Sayıdan
+   ayır (<K><NN> -> <K>_<NN>)" kutusu, öneri olarak işaretli. 01.2.5'te
+   kolon adlarına uygulanır (yeni kısaltma da kabul edildiyse ona).
+   Ayrılmış biçimde (<K>_<NN>) tek harf de kısaltma sayılır; anlam
+   sayısıyla eşleşir.
+
+
+Önceki tur: **Kısaltma Sözlüğü'nde ✓ kaldırıldı, "bekleniyor" hizası düzeldi**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
 
 - LLM Sözlük ve LLM Genel hücrelerindeki ✓ işareti kaldırıldı. Kayma da
   bundandı: işaret gizliyken de yer kaplıyordu; dar sütunda metin alt

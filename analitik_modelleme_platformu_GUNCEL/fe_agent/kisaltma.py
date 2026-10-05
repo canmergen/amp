@@ -95,13 +95,20 @@ def _kok(kelime):
     return s[:5] if len(s) > 5 else s
 
 
+_YALIN_SAYI = re.compile(r"^\d{2,}$")
+
+
 def _ham_parcalar(ad):
     """Ham sira: kisaltma adaylari ve aralarindaki pencere / sayi yerine
-    None (ifade tespitinde komsuluk bozulmasin)."""
+    None (ifade tespitinde komsuluk bozulmasin). Tek harf, ardindan
+    yalniz rakamdan olusan parca geliyorsa sayi degerli kalibin harf
+    kismidir (<K>_<NN>; 01.2.4'te sayidan ayrilmis bicim) ve kisaltmadir."""
+    ham = [p.upper().translate(_TR_SADE)
+           for p in re.split(r"[^A-Za-z0-9ÇĞİÖŞÜçğıöşü]+", str(ad or "")) if p]
     cikti = []
-    for p in re.split(r"[^A-Za-z0-9ÇĞİÖŞÜçğıöşü]+", str(ad or "")):
-        p = p.upper().translate(_TR_SADE)
-        if not p:
+    for i, p in enumerate(ham):
+        if len(p) == 1 and p.isalpha() and i + 1 < len(ham) and _YALIN_SAYI.match(ham[i + 1]):
+            cikti.append(p)
             continue
         if len(p) < 2 or _PENCERE.match(p):
             cikti.append(None)
@@ -182,27 +189,32 @@ def parcalar(ad):
 
 def _ham_bicimler(ad):
     """Kolon adinin parcalari ADDAKI haliyle: [(bicim, kisaltma, sayi)].
-    Sayi degerli kalipta (<K><NN>) kisaltma harf kismi, sayi deger; hemen
-    ardindan yalniz rakamdan olusan parca gelirse aralik sayilir
-    (<K><NN>_<MM> -> sayi "<NN>-<MM>")."""
+    Sayi degerli kalipta (<K><NN> ya da sayidan ayrilmis <K>_<NN>)
+    kisaltma harf kismi, sayi deger; ardindan yalniz rakamdan olusan
+    parca gelirse aralik sayilir (<K><NN>_<MM> -> sayi "<NN>-<MM>")."""
     ham = [p for p in re.split(r"[^A-Za-z0-9ÇĞİÖŞÜçğıöşü]+", str(ad or "")) if p]
     cikti, i = [], 0
     while i < len(ham):
         p = ham[i]
         u = p.upper().translate(_TR_SADE)
         i += 1
-        if len(u) < 2 or _PENCERE.match(u):
+        m = _SAYILI.match(u)
+        if m:
+            k, sayilar = m.group(1), [m.group(2)]
+        elif len(u) == 1 and u.isalpha() and i < len(ham) and _YALIN_SAYI.match(ham[i]):
+            k, sayilar = u, [ham[i]]
+            p = "%s_%s" % (p, ham[i])
+            i += 1
+        elif len(u) < 2 or _PENCERE.match(u):
             cikti.append((p, None, ""))       # komsulugu bozar (birlestirme yok)
             continue
-        m = _SAYILI.match(u)
-        if not m:
+        else:
             cikti.append((p, u, ""))
             continue
-        sayi = m.group(2)
-        if i < len(ham) and re.match(r"^\d{2,}$", ham[i]):
-            p, sayi = "%s_%s" % (p, ham[i]), "%s-%s" % (sayi, ham[i])
+        if i < len(ham) and _YALIN_SAYI.match(ham[i]):
+            p, sayilar = "%s_%s" % (p, ham[i]), sayilar + [ham[i]]
             i += 1
-        cikti.append((p, m.group(1), sayi))
+        cikti.append((p, k, "-".join(sayilar)))
     return cikti
 
 
@@ -671,6 +683,32 @@ def _oku_ham(dosya=DOSYA, kolonlar=None):
         if k not in df.columns:
             df[k] = ""
     return df[kolonlar].fillna("").astype(str), None
+
+
+# YANLIS KISALTMA NOTU (kullanici karari): yeni kisaltma kabul edilen
+# satir hafizaya kaydedilirken eski kisaltma genel anlamiyla durur; KAYNAK
+# sutununa "bu kolonlarda baska anlamda kullanildi" notu yazilir. Sonraki
+# calismalarda istemde "kesin" degil "dikkat" olarak gider.
+KAYNAK_YANLIS = "yanlış kısaltma"
+
+
+def onayli_notlar():
+    """{KISA: (yeni_kisaltma, o kolonlardaki anlam)}: hafizadaki yanlis
+    kisaltma notlari."""
+    onaylilar()
+    df = _ONBELLEK["df"]
+    if df is None or df.empty:
+        return {}
+    cikti = {}
+    for k, kay in zip(df["KISALTMA"].str.upper(), df["KAYNAK"].astype(str)):
+        if kay.startswith(KAYNAK_YANLIS + ":"):
+            yeni, _, anlam = kay[len(KAYNAK_YANLIS) + 1:].strip().partition("=")
+            cikti[k] = (yeni.strip(), anlam.strip())
+    return cikti
+
+
+def yanlis_notu(yeni, anlam):
+    return "%s: %s = %s" % (KAYNAK_YANLIS, yeni, anlam)
 
 
 def onaylilar():

@@ -355,6 +355,12 @@ olmadiklarini ORNEK TANIMLARDAN ve KISALTMALAR blogundan dogrula, varsayma):
   - KISALTMALAR (tahmini) blogu sozlukteki aciklamalardan OGRENILMISTIR:
     kolon adi, dagilim ve orneklerle tutarliysa kullan, celisiyorsa
     kullanma.
+  - KISALTMALAR (dikkat) blogundaki kisaltmanin iki anlami olabilir
+    (genel anlami ve bir veri setinde kullanildigi anlam); hangisi
+    oldugunu kolon adi ve ornek tanimlardan sec, emin degilsen genel
+    ifade kullan.
+  - Kisaltma bloklarinda sayili kalip (<K><NN>) sayisiyla verilir; sayiyi
+    tanimda koru.
   - Diger kisaltmalarin anlamini ORNEK / ONAYLI TANIMLARDAN cikar.
 
 ROL verilen kolonlar (kullanicinin modelleme tanimlarinda sectigi):
@@ -500,19 +506,33 @@ def _baglamli_govde(adlar, kolon_metni, baglam, kolon_basligi="KOLONLAR"):
     # KESIN (onayli + temel sozluk) ve TAHMINI (sozlukten cikarilan / dil
     # modelinin onerdigi) ayri bloklarda: tahmini anlam kolon adi ve
     # orneklerle celisirse kullanilmaz (bkz. AD_KALIP_KURALI).
+    # Eslestirme Kisaltma Sozlugu'nunkiyle ayni (kisaltma.ad_anlamlari):
+    # sayi degerli kalipta sayi korunur, kabul edilen birlestirme tek
+    # anlamla gider (eskiden parcalar "_"den bolunup aranıyor, ikisi de
+    # kaciyordu).
+    # Ust bloktaki (kesin) bir eslesmenin kapsadigi parcalar alt bloklarda
+    # tekrar gitmez (birlestirme kesinse parcalari tahmini gitmez).
+    from fe_agent import kisaltma as _kisa
+    gorulen = set()
+    kapsanan = {a: set() for a in adlar}
     for anahtar, baslik in (("kisaltmalar", "KISALTMALAR (kesin)"),
-                            ("kisaltmalar_tahmini", "KISALTMALAR (tahmini)")):
+                            ("kisaltmalar_tahmini", "KISALTMALAR (tahmini)"),
+                            ("kisaltmalar_dikkat", "KISALTMALAR (dikkat)")):
         kisaltmalar = baglam.get(anahtar) or {}
         if not kisaltmalar:
             continue
         gecen = []
         for a in adlar:
-            for p in re.split(r"[^A-Za-z0-9]+", _normalize_ad_parcali(a)):
-                if p in kisaltmalar and p not in gecen:
-                    gecen.append(p)
+            for bicim, anlam in _kisa.ad_anlamlari(_normalize_ad_parcali(a), kisaltmalar):
+                parca = set(bicim.split("_"))
+                if parca & kapsanan[a]:
+                    continue
+                kapsanan[a] |= parca
+                if bicim not in gorulen:
+                    gorulen.add(bicim)
+                    gecen.append((bicim, anlam))
         if gecen:
-            ek.append(baslik + ":\n" + "\n".join(
-                "- %s: %s" % (p, kisaltmalar[p]) for p in gecen))
+            ek.append(baslik + ":\n" + "\n".join("- %s: %s" % kv for kv in gecen))
     hafiza = baglam.get("hafiza") or {}
     if hafiza:
         # Rolu olan kolonda (kimlik, hedef ...) ayni adli onayli tanim

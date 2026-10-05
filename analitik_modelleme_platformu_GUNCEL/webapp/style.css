@@ -3062,6 +3062,8 @@ span.bolme-cip { cursor: default; }
 .dg-kisaltma-tablo td.dg-kisaltma-ad,
 .dg-birlesik-tablo td.dg-kisaltma-ad { white-space: normal; overflow-wrap: anywhere; }
 .dg-kisaltma-tablo td.dg-kisaltma-ad .dg-tip { font-weight: normal; }
+.dg-kisaltma-tablo .dg-sayi-ayir { display: block; margin-top: 2px; cursor: pointer; }
+.dg-kisaltma-tablo .dg-sayi-ayir input { margin: 0 2px 0 0; vertical-align: middle; }
 /* Birleştirme: Kısaltmalar | Ayrı Anlamlar | Birlikte Anlam | Önerilen Kısaltma | Birleştir */
 .dg-birlesik { margin-top: var(--b-4); }
 .dg-birlesik-tablo th:nth-child(1) { width: 18%; }

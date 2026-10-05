@@ -1404,7 +1404,30 @@ def _aciklama_baglami(durum):
         baglam["kisaltmalar"] = dict(baglam["kisaltmalar"], **onayli)
         baglam["kisaltmalar_tahmini"] = {
             k: v for k, v in baglam["kisaltmalar_tahmini"].items() if k not in onayli}
+    # YANLIS KISALTMA NOTU: hafizada genel anlamiyla duran ama bir veri
+    # setinde baska anlamda kullanilmis kisaltma kesin degil DIKKAT olarak
+    # gider (bu calismada 01.2.4'te karar verildiyse o karar kesindir).
+    try:
+        notlar = kisaltma_mod.onayli_notlar()
+    except Exception:
+        notlar = {}
+    dikkat = {}
+    for k, (y, a) in notlar.items():
+        if onayli and k in onayli:
+            continue
+        genel = baglam["kisaltmalar"].pop(k, None) or onayli_hafiza_anlami(k)
+        dikkat[k] = ("genel anlamı '%s'; bir veri setinde '%s' anlamında kullanıldı "
+                     "(yerine %s önerildi). Hangisi olduğunu kolon adı ve "
+                     "örneklerden doğrula." % (genel or "?", a, y))
+    baglam["kisaltmalar_dikkat"] = dikkat
     return baglam
+
+
+def onayli_hafiza_anlami(kisa):
+    try:
+        return kisaltma_mod.onaylilar().get(kisa, "")
+    except Exception:
+        return ""
 
 
 def _kalici_kisaltma_ogren(durum):
@@ -1565,12 +1588,13 @@ def _kolon_ad_alani(durum):
         veri_kolon = set()
     # 01.2.4'te kabul edilen YENI KISALTMALAR (eski -> yeni).
     yeni_kisa = dict(durum.get("kisaltma_yeni") or {})
+    sayi_ayir = list(durum.get("kisaltma_sayi_ayir") or [])
     anlamlar = dict(durum.get("kisaltma_sozluk") or {})
     # Birlestirme anahtari ("<A>_<B>") parca degil: degisim adin kendisinde
     # aranir.
     degisen = {ad for ad in veri_kolon
-               if any(_kisaltma_degistir(ad, e, y) != ad for e, y in yeni_kisa.items())} \
-        if yeni_kisa else set()
+               if any(_kisaltma_degistir(ad, e, y) != ad for e, y in yeni_kisa.items())
+               or any(_sayi_ayir(ad, k) != ad for k in sayi_ayir)}
     satirlar = []
     for ad in sorted(set(tut) | set(kayitli) | degisen):
         if ad in korunan or (veri_kolon and ad not in veri_kolon):
@@ -1596,11 +1620,25 @@ def _kolon_ad_alani(durum):
                                    "%s genelde '%s' demek (Kısaltma Sözlüğü'nde kabul edildi)."
                                    % (eski, yeni, anlamlar.get(yeni, ""), eski,
                                       anlamlar.get(eski, "")))
+        for k in sayi_ayir:
+            # Yeni kisaltma da kabul edildiyse ayirma yeni kisaltmaya uygulanir.
+            k_ = yeni_kisa.get(k, k)
+            if _sayi_ayir(oneri or ad, k_) != (oneri or ad):
+                oneri = _sayi_ayir(oneri or ad, k_)
+                gerekce.append("%s sayıdan ayrıldı (%s<sayı> -> %s_<sayı>; Kısaltma "
+                               "Sözlüğü'nde kabul edildi)." % (k_, k_, k_))
         if not oneri and ad not in kayitli:
             continue
         satirlar.append({"kolon": ad, "oneri": oneri, "yeni_ad": kayitli.get(ad) or oneri,
                          "kayitli": ad in kayitli, "gerekce": " ".join(gerekce)})
     return {"baslik": KOLON_AD_BASLIK, "bilgi": KOLON_AD_BILGI, "satirlar": satirlar}
+
+
+def _sayi_ayir(ad, kisa):
+    """Sayi degerli kalipta harf kismini sayidan ayirir: <K><NN> ->
+    <K>_<NN> (buyuk / kucuk harf korunur)."""
+    return re.sub(r"(?<![A-Za-z0-9])(%s)(\d{2,})(?![A-Za-z0-9])" % re.escape(kisa),
+                  r"\1_\2", str(ad), flags=re.I)
 
 
 def _kisaltma_degistir(ad, eski, yeni):
@@ -1727,6 +1765,10 @@ def kisaltma_plan(durum):
                 if r_["kisaltma"] == kisa:
                     r_["yeni_kisaltma"] = y
                     r_["yeni_anlam"] = onceki.get(y) or r_.get("yeni_anlam") or ""
+        ayir = set(durum.get("kisaltma_sayi_ayir") or [])
+        for r_ in alan["satirlar"]:
+            if r_.get("sayili"):
+                r_["sayi_ayir"] = r_["kisaltma"] in ayir
     durum["_secim_alani"] = _adim_karti(
         "kisaltma", {"kisaltma": alan}, KISALTMA_DUGME,
         "Kısaltmaları Onaylamadan Devam Et")
@@ -1748,6 +1790,7 @@ def kisaltma_uygula(durum):
         durum.pop("kisaltma_sozluk", None)
         durum.pop("kisaltma_yeni", None)
         durum.pop("kisaltma_birlesik", None)
+        durum.pop("kisaltma_sayi_ayir", None)
         return ""
     satirlar = [s for s in (karar.get("kisaltma") or []) if isinstance(s, dict)]
     sozluk = {
@@ -1825,8 +1868,22 @@ def kisaltma_uygula(durum):
     durum["kisaltma_sozluk"] = sozluk
     durum["kisaltma_yeni"] = yeni
     durum["kisaltma_birlesik"] = birlesik
+    # SAYIDAN AYIRMA (kullanici karari): sayi degerli kalipta harf kismi
+    # sayidan "_" ile ayrilir (<K><NN> -> <K>_<NN>); 01.2.5'te uygulanir.
+    durum["kisaltma_sayi_ayir"] = sorted(
+        str(s_.get("kisaltma") or "").strip().upper() for s_ in satirlar
+        if s_.get("sayi_ayir") and str(s_.get("kisaltma") or "").strip())
     # Hafizaya kaydedilen satirin yeni kisaltmasi da kendi anlamiyla kaydedilir.
-    kayit = list(satirlar) + birlesik_kayit
+    # Eski kisaltmanin anlami bu kolonlardakinden FARKLIYSA (yanlis
+    # kisaltma) kaydina not dusulur: sonraki calismalarda "dikkat".
+    kayit = []
+    for s_ in satirlar:
+        kisa = str(s_.get("kisaltma") or "").strip().upper()
+        if s_.get("kaydet") and kisa in yeni and not kisaltma_mod._ayni_anlam(
+                sozluk.get(kisa, ""), yeni_anlam.get(yeni[kisa], "")):
+            s_ = dict(s_, kaynak=kisaltma_mod.yanlis_notu(yeni[kisa], yeni_anlam[yeni[kisa]]))
+        kayit.append(s_)
+    kayit += birlesik_kayit
     for s_ in satirlar + oneri_satir:
         kisa = str(s_.get("kisaltma") or "").strip().upper()
         if s_.get("kaydet") and kisa in yeni:
@@ -1933,10 +1990,12 @@ def kisaltma_kaydet(durum, satirlar):
         if isinstance(s, dict) and str(s.get("kisaltma") or "").strip():
             temiz.append({"kisaltma": s.get("kisaltma"), "anlam": s.get("anlam"),
                           "kaydet": bool(s.get("kaydet")),
-                          "kaynak": kisaltma_mod.KAYNAK_ONAY
-                          if str(s.get("anlam") or "").strip()
-                          == str(s.get("cikarilan") or "").strip()
-                          else kisaltma_mod.KAYNAK_KULLANICI})
+                          # Yanlis kisaltma notu varsa o yazilir.
+                          "kaynak": s.get("kaynak") or (
+                              kisaltma_mod.KAYNAK_ONAY
+                              if str(s.get("anlam") or "").strip()
+                              == str(s.get("cikarilan") or "").strip()
+                              else kisaltma_mod.KAYNAK_KULLANICI)})
     _onay, hata = kisaltma_mod.kaydet(temiz, durum.get("_kullanici_ad") or "")
     alan = _kisaltma_alani(durum)
     secim = durum.get("_secim_alani")

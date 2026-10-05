@@ -7135,8 +7135,23 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kisaltma));
             /* SAYI DEĞERLİ KALIP (kullanıcı bildirimi: harf kısmına inince
                sayının anlamı kayboluyordu): adlardaki biçimler altta. */
-            if ((r.sayili || []).length)
+            let ay = null;
+            if ((r.sayili || []).length) {
                 tdK.appendChild(elYap("div", "dg-tip", r.sayili.join(" · ")));
+                /* SAYIDAN AYIR önerisi (kullanıcı kararı): <K><NN> ->
+                   <K>_<NN>; kabul edilirse Kolon Adı Önerileri'nde
+                   uygulanır. Öneri olarak işaretli gelir. */
+                const lab = elYap("label", "dg-tip dg-sayi-ayir");
+                ay = document.createElement("input");
+                ay.type = "checkbox";
+                ay.checked = r.sayi_ayir === undefined ? true : !!r.sayi_ayir;
+                ay.disabled = kilitli || !!r.bekliyor;
+                lab.appendChild(ay);
+                const orn = r.sayili.find(b => !/^[A-Z]+_/.test(b)) || r.sayili[0];
+                lab.appendChild(document.createTextNode(" Sayıdan ayır ("
+                    + orn + " → " + orn.replace(/^([A-Z]+)_?/, "$1_") + ")"));
+                tdK.appendChild(lab);
+            }
             tr.appendChild(tdK);
             /* Kaynak sütunları (salt okunur). Seçilen kaynak işaretlenir. */
             const tdS = elYap("td", "dg-kaynak-deger" + (r.secilen === "sozluk" ? " secili" : "")
@@ -7176,7 +7191,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const sayiliYaz = () => {
                 const a = g.value.trim();
                 sayiliEl.textContent = a && (r.sayili || []).length
-                    ? r.sayili.slice(0, 1).map(b => b + " = " + a + " " + b.replace(/^[A-Z]+/, "").replace(/_/g, "-")).join("")
+                    ? r.sayili.slice(0, 1).map(b => b + " = " + a + " " + b.replace(/^[A-Z]+_?/, "").replace(/_/g, "-")).join("")
                       + (r.sayili.length > 1 ? " …" : "") : "";
             };
             if ((r.sayili || []).length) { tdA.appendChild(sayiliEl); g.addEventListener("input", sayiliYaz); sayiliYaz(); }
@@ -7262,7 +7277,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             y.addEventListener("input", vurgu);
             ya.addEventListener("input", vurgu);
             vurgu();
-            satirlar.push({ r, g, kutu, y, ya });
+            satirlar.push({ r, g, kutu, y, ya, ay });
             tb.appendChild(tr);
         });
         const onayli = (liste || []).filter(r => r.onayli).length;
@@ -7305,8 +7320,9 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                     const anlamElle = x.g.value.trim() !== tireSade(x.r.anlam || "").trim();
                     const yeniElle = x.y.value !== String(x.r.yeni_kisaltma || "")
                         || x.ya.value.trim() !== tireSade(x.r.yeni_anlam || "").trim();
-                    if (anlamElle || yeniElle || x.kutu.checked !== !!x.r.onayli)
-                        elle[x.r.kisaltma] = { anlam: anlamElle ? x.g.value : null, kutu: x.kutu.checked,
+                    const ayElle = x.ay ? x.ay.checked : null;
+                    if (anlamElle || yeniElle || x.kutu.checked !== !!x.r.onayli || x.ay)
+                        elle[x.r.kisaltma] = { anlam: anlamElle ? x.g.value : null, kutu: x.kutu.checked, ay: ayElle,
                                                yeni: yeniElle ? x.y.value : null,
                                                yeniAnlam: yeniElle ? x.ya.value : null };
                 });
@@ -7315,6 +7331,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                     const e = elle[x.r.kisaltma];
                     if (e) { if (e.anlam !== null) x.g.value = e.anlam;
                              x.kutu.checked = e.kutu;
+                             if (x.ay && e.ay !== null && e.ay !== undefined) x.ay.checked = e.ay;
                              if (e.yeni !== null) { x.y.value = e.yeni; x.ya.value = e.yeniAnlam;
                                                     x.ya.hidden = !x.y.value; }
                              x.g.dispatchEvent(new Event("input")); }
@@ -7371,7 +7388,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             anlam: x.r.bekliyor ? String(x.r.anlam || "").trim() : x.g.value.trim(),
             cikarilan: x.r.cikarilan || "", kaydet: x.kutu.checked,
             yeni_kisaltma: x.y.value.trim(),
-            yeni_anlam: x.y.value.trim() ? x.ya.value.trim() : "" })),
+            yeni_anlam: x.y.value.trim() ? x.ya.value.trim() : "",
+            sayi_ayir: !!(x.ay && x.ay.checked) })),
         birlesik: () => bSatirlar.map(x => ({ kisaltma: x.r.kisaltma, anlam: x.g.value.trim(),
             kabul: x.kutu.checked, yeni_kisaltma: x.y.value.trim() })),
         kilitle: k => {
@@ -7379,7 +7397,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             bSatirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; x.y.disabled = k; });
             [eK, eA, eY, eB].forEach(x => { x.disabled = k; });
             satirlar.forEach(x => { x.g.disabled = k || !!x.r.bekliyor; x.kutu.disabled = k || !!x.r.bekliyor;
-                                    x.y.disabled = k || !!x.r.bekliyor; x.ya.disabled = k || !!x.r.bekliyor; });
+                                    x.y.disabled = k || !!x.r.bekliyor; x.ya.disabled = k || !!x.r.bekliyor;
+                                    if (x.ay) x.ay.disabled = k || !!x.r.bekliyor; });
             topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
         },
         /* Dil modeli kontrolü sürüyor mu (adım kartında onay kilidi). */
