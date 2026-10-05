@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.4 Veri Seti ve Sözlük İçeriği adımı; sol panel adı "Veri, Sözlük ve Model Tanımları"**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_metin.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/amp.py`, `webapp/app.js`, `webapp/backend.py`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **AMP_VERISETI ile AMP_SOZLUK birebir aynı kolonlar**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- AMP_SOZLUK yalnız AMP_VERISETI'ndeki kolonları, aynı ad ve sırayla,
+  açıklamalarıyla içerir. AMP_VERISETI'ne yazılmayan süreç dışı kolonlar
+  sözlükte de yer almaz. Yazımdan sonra veri setindeki kolon sayısı ile
+  sözlükteki satır sayısı karşılaştırılır; tutmazsa sözlük yazılmaz ve
+  neden yazılır.
+- Örneklem ve Doğrulama Tasarımı'nda AMP_VERISETI'ne eklenen _SPLIT
+  kolonu AMP_SOZLUK'a da açıklamasıyla eklenir.
+- Kolon Adı Önerileri'nde adı değiştirilen kolonların açıklaması ve
+  kategorisi AMP_SOZLUK'a boş yazılıyordu; sözlük tablosu artık adlar
+  değişmeden önce kurulup en son yeniden adlandırılıyor.
+
+Önceki tur: **01.2.4 Veri Seti ve Sözlük İçeriği adımı; sol panel adı "Veri, Sözlük ve Model Tanımları"**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_metin.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/amp.py`, `webapp/app.js`, `webapp/backend.py`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Sözlük Tanımları'ndan sonra yeni onaylı adım: veri seti ile sözlüğün
   eşitlenmiş içeriği özetlenir. Analize giren kolon, analiz dışı kolon

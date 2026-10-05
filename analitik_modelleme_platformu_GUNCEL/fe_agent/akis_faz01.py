@@ -4421,13 +4421,20 @@ def amp_ciktilarini_yaz(durum):
     oz = amp_mod.amp_yaz(durum, _profil(durum))
     onbellek_temizle()
     sonuc["veri"] = _amp_veri_kaydi(oz)
-    _yeniden_ad_isle(durum, oz.get("yeniden_ad") or {})
+    esleme = oz.get("yeniden_ad") or {}
+    # Sozluk tablosu kolon ozeti yeni adlara cevrilmeden ONCE kurulur:
+    # tanim ve kategori calisma kopyasinda eski adla duruyor.
+    try:
+        tablo, hata = _amp_sozluk_tablosu(durum, esleme, oz.get("kolon")), ""
+    except Exception as e:
+        tablo, hata = None, str(e)[:300]
+    _yeniden_ad_isle(durum, esleme)
     # Tablo _SPLIT'siz yeniden yazildi: onceki bolme artik gecersiz.
     b = durum.get("bolme") or {}
     for k in BOLME_KALICI_ALANLARI:
         b.pop(k, None)
     durum["bolme"] = b
-    return _amp_sozluk_ve_kayit(durum, sonuc)
+    return _amp_sozluk_ve_kayit(durum, sonuc, tablo, hata)
 
 
 def _yeniden_ad_isle(durum, esleme):
@@ -4470,34 +4477,77 @@ def _amp_veri_kaydi(oz):
             "dusen_kolon": len(oz.get("dusen") or [])}
 
 
-def _amp_sozluk_ve_kayit(durum, sonuc):
+def _amp_sozluk_tablosu(durum, esleme, veri_kolon=None):
+    """AMP_SOZLUK tablosu: AMP_VERISETI'ndeki kolonlarin BIREBIR aynisi
+    (ayni adlar, ayni sira) ve aciklamalari. AMP_VERISETI'nden dusen
+    surec disi kolonlar sozlukte de yer almaz. Kolon ozeti eski adlardayken
+    cagrilir; yeniden adlandirma en son uygulanir.
+
+    veri_kolon: AMP_VERISETI'nin kolon sayisi (biliniyorsa); tutmazsa
+    AdimHatasi."""
+    t_satirlar, _d = teyit_satirlari(durum)
+    dusen = set(amp_mod.dusen_kolonlar(durum, [r_["kolon"] for r_ in t_satirlar]))
+    t_satirlar = [r_ for r_ in t_satirlar if str(r_["kolon"]) not in dusen]
+    satirlar = [[r_["kolon"], r_["tip"],
+                 _DISI_METNI[bool(r_.get("kaynak_tip") and r_.get("tip") != r_.get("kaynak_tip"))],
+                 r_["tanim"], r_.get("null_oran"), _DISI_METNI[bool(r_.get("disi"))]]
+                for r_ in t_satirlar]
+    tablo = pd.DataFrame(satirlar, columns=list(AMP_SOZLUK_KOLONLARI[:6]))
+    from fe_agent import akis_panel
+    harita, _kat, _adet, _kopya = akis_panel._sozluk_kayitlari(durum)
+    tablo["KATEGORI"] = [
+        ("" if (harita.get(str(k)) or (None, ""))[1] == sozluk_calisma.KATEGORISIZ
+         else (harita.get(str(k)) or (None, ""))[1]) for k in tablo["DEGISKEN"]]
+    tablo = tablo[list(AMP_SOZLUK_KOLONLARI)]
+    if esleme:
+        tablo["DEGISKEN"] = [esleme.get(str(k), k) for k in tablo["DEGISKEN"]]
+    if veri_kolon is not None and int(veri_kolon) != len(tablo):
+        raise AdimHatasi(
+            "AMP_SOZLUK ile AMP_VERISETI eşleşmedi: veri setinde %s kolon, "
+            "sözlükte %s satır var." % (_sayi(veri_kolon), _sayi(len(tablo))))
+    return tablo
+
+
+SPLIT_ACIKLAMA = ("Kaydın örneklem seti: train, val ya da test; hiçbir sete "
+                  "girmeyen kayıtta disarida. Örneklem ve Doğrulama Tasarımı "
+                  "adımında platform tarafından eklenir.")
+
+
+def _amp_sozluk_split_ekle(durum):
+    """Bolme AMP_VERISETI'ne _SPLIT kolonunu ekledi: AMP_SOZLUK'a da ayni
+    satir girer (onceki _SPLIT satiri degistirilir). Doner: not metni
+    ("" ise sorun yok)."""
+    yol = sozluk_calisma.amp_sozluk_yolu((durum or {}).get("_oturum_id"))
+    try:
+        tablo = sozluk_calisma._oku_yoldan(yol) if yol else None
+    except Exception:
+        tablo = None
+    if tablo is None:
+        return ("AMP_SOZLUK okunamadı; %s satırı sözlüğe eklenemedi." % SPLIT_KOLON)
+    tablo = tablo[tablo["DEGISKEN"].astype(str) != SPLIT_KOLON]
+    satir = {"DEGISKEN": SPLIT_KOLON, "TIP": "kategorik",
+             "TIP_DEGISIKLIGI": _DISI_METNI[False], "ACIKLAMA": SPLIT_ACIKLAMA,
+             "NULL_ORANI": 0.0, "SUREC_DISI": _DISI_METNI[True], "KATEGORI": ""}
+    tablo = pd.concat([tablo, pd.DataFrame([satir])[list(tablo.columns)]],
+                      ignore_index=True)
+    yeni_yol = sozluk_calisma.amp_sozluk_yaz(durum, tablo)
+    if not yeni_yol:
+        return ("AMP_SOZLUK yazılamadı; %s satırı sözlüğe eklenemedi." % SPLIT_KOLON)
+    sozluk_kayit = (durum.get("amp_cikti") or {}).get("sozluk")
+    if isinstance(sozluk_kayit, dict):
+        sozluk_kayit["satir"] = int(len(tablo))
+    return ""
+
+
+def _amp_sozluk_ve_kayit(durum, sonuc, tablo, hata=""):
     """AMP_SOZLUK'u CALISMA KLASORUNE yazar ve durumu kaydeder.
 
     Bundan sonra sozlugun TEK kaynagi AMP_SOZLUK'tur:
     okuma da yazma da (sag paneldeki tanim / kategori duzenlemeleri) bu
     dosyaya gider (bkz. sozluk_calisma.kopya_yolu). Kategori de tasinir."""
-    try:
-        #
-        t_satirlar, _d = teyit_satirlari(durum)
-        satirlar = [[r_["kolon"], r_["tip"],
-                     _DISI_METNI[bool(r_.get("kaynak_tip") and r_.get("tip") != r_.get("kaynak_tip"))],
-                     r_["tanim"], r_.get("null_oran"), _DISI_METNI[bool(r_.get("disi"))]]
-                    for r_ in t_satirlar]
-        tablo = pd.DataFrame(satirlar, columns=list(AMP_SOZLUK_KOLONLARI[:6]))
-        from fe_agent import akis_panel
-        harita, _kat, _adet, _kopya = akis_panel._sozluk_kayitlari(durum)
-        tablo["KATEGORI"] = [
-            ("" if (harita.get(str(k)) or (None, ""))[1] == sozluk_calisma.KATEGORISIZ
-             else (harita.get(str(k)) or (None, ""))[1]) for k in tablo["DEGISKEN"]]
-        tablo = tablo[list(AMP_SOZLUK_KOLONLARI)]
-        # KOLON YENIDEN ADLANDIRMA: AMP_SOZLUK, AMP_VERISETI'yle ayni adlari
-        # tasir (kategori eski adla bulunduktan SONRA).
-        esleme = durum.get("_amp_yeniden_ad") or {}
-        if esleme:
-            tablo["DEGISKEN"] = [esleme.get(str(k), k) for k in tablo["DEGISKEN"]]
-    except Exception as e:
+    if tablo is None:
         sonuc["sozluk"] = {"ad": AMP_SOZLUK_ADI, "dataset": None,
-                           "dosya": None, "hata": str(e)[:120]}
+                           "dosya": None, "hata": hata or "sözlük tablosu kurulamadı"}
     else:
         yol = sozluk_calisma.amp_sozluk_yaz(durum, tablo)
         sonuc["sozluk"] = {"ad": AMP_SOZLUK_ADI, "dataset": None,
@@ -5053,6 +5103,9 @@ def _bolme_uygula_spark(durum):
     # Surec disi kolonlar teyitte dustu; bolme yeni kolon dusurmez.
     kayit["dusen_kolon"] = eski.get("dusen_kolon", kayit["dusen_kolon"])
     durum["amp_cikti"]["veri"] = kayit
+    split_notu = _amp_sozluk_split_ekle(durum)
+    if split_notu:
+        notlar.append(split_notu)
 
     disarida = int((setler.get(amp_mod.DISARIDA) or {}).get("satir") or 0)
     if tarif["tur"] == "hazir":
