@@ -1467,17 +1467,25 @@ def _kisaltma_alani(durum, bekle=0.0):
     kaynak = _kisaltma_kaynagi(durum)
     satirlar, dm = kisaltma_mod.kart_satirlari(kaynak, bekle, durum.get("veri_seti") or "")
     notu = {"hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
+    if dm == "bitti":
+        try:
+            bilgi = kisaltma_mod.dogrulama_bilgisi(kaynak, durum.get("veri_seti") or "")
+        except Exception:
+            bilgi = {}
+        if bilgi.get("iptal") and bilgi.get("kalan"):
+            notu = ("Dil modeli kontrolü durduruldu; sonucu gelmeyen %d kısaltmanın "
+                    "anlamı sözlükteki kelime sayımından geldi." % bilgi["kalan"])
     ilerleme = None
     if dm == "calisiyor":
         # PARCA BITTIKCE: biten kisaltmalar duzenlenebilir, bekleyenler kilitli.
-        bekleyen = sum(1 for r_ in satirlar if r_.get("bekliyor"))
+        # Sayilar yalniz dil modeline sorulan kisaltmalardan.
         try:
-            gecen = kisaltma_mod.dogrulama_bilgisi(
-                kaynak, durum.get("veri_seti") or "").get("gecen")
+            bilgi = kisaltma_mod.dogrulama_bilgisi(kaynak, durum.get("veri_seti") or "")
         except Exception:
-            gecen = None
-        ilerleme = {"biten": len(satirlar) - bekleyen, "toplam": len(satirlar),
-                    "gecen": gecen or 0}
+            bilgi = {}
+        toplam = int(bilgi.get("toplam") or 0)
+        ilerleme = {"biten": max(0, toplam - int(bilgi.get("bekleyen") or 0)),
+                    "toplam": toplam, "gecen": bilgi.get("gecen") or 0}
     if dm == "hata":
         try:
             sebep = kisaltma_mod.dogrulama_bilgisi(_kisaltma_kaynagi(durum),
@@ -2020,6 +2028,12 @@ def kisaltma_excel(durum):
 
 def kisaltma_alani(durum):
     """On yuz yoklamasi icin (beklemez)."""
+    return _kisaltma_alani(durum, 0.0)
+
+
+def kisaltma_iptal(durum):
+    """Kisaltma Sozlugu: suren dil modeli kontrolunu durdurur."""
+    kisaltma_mod.dogrulama_iptal(_kisaltma_kaynagi(durum), durum.get("veri_seti") or "")
     return _kisaltma_alani(durum, 0.0)
 
 
@@ -3010,11 +3024,8 @@ def sozluk_tanim_uygula(durum):
 # ---------------------------------------------------------------------------
 VERI_ICERIK_BASLIK = "Veri Seti ve Sözlük İçeriği"
 VERI_ICERIK_ACIKLAMA = (
-    "Veri seti ile sözlük birbirine eşitlendi. Sözlükte olup veri setinde "
-    "olmayan satırlar sözlüğün çalışma kopyasından çıkarıldı; veri setinde "
-    "olup sözlükte tanımı olmayan ve sözlüğe eklemediğiniz kolonlar analiz "
-    "dışında tutulur. Sonraki adımlar yalnız hem veri setinde hem sözlükte "
-    "tanımlı olan kolonlarla çalışır. Girdi veri seti ve sözlük değişmez.")
+    "Veri seti ile sözlük eşitlendi; sonraki adımlar yalnız ikisinde de "
+    "olan kolonlarla çalışır. Girdi veri seti ve sözlük değişmez.")
 VERI_ICERIK_DUGME = {"bos": "Onayla ve Devam Et"}
 VERI_ICERIK_LISTE = 300
 
@@ -3029,56 +3040,52 @@ def _ad_listesi(adlar):
 
 
 def veri_icerik_ozeti(durum):
-    """Kartin ozet bloklari: [{etiket, deger, alt, bilgi}] ve uyari metni."""
+    """Kartin metin satirlari, cikarilan adlar (i balonu) ve uyari.
+    Doner: (satirlar, bilgi, uyari)."""
     veri = sozluk_calisma._veri_seti_kolonlari(durum)
     kume = set(veri)
-    haric = {str(k) for k in (durum.get("haric_kolonlar") or [])} & kume
+    korunan = {str(v) for v in (durum.get("meta") or {}).values() if v}
+    haric = ({str(k) for k in (durum.get("haric_kolonlar") or [])} & kume) - korunan
     tanimsiz = {str(k) for k in (durum.get("_aciklamasiz") or [])} & kume
     tanimsiz_haric = haric & tanimsiz
     diger_haric = haric - tanimsiz
     eklenen = {str(k) for k in (durum.get("_sozluge_eklenen") or [])} & kume
     tanimsiz_kalan = tanimsiz - haric
-    giren = len(kume) - len(haric)
-
-    ozet = [{"etiket": "Analize Giren Kolon", "deger": _sayi(giren),
-             "alt": ["Veri setinde var ve sözlükte tanımlı"]}]
-    alt = ["%s kolonun sözlükte tanımı yok" % _sayi(len(tanimsiz_haric))]
-    if diger_haric:
-        alt.append("%s kolon sözlükte tanımlı ama analiz dışında (tek değerli, "
-                   "hazır bölme kolonu ya da sonraki adımlarda çıkarılan)"
-                   % _sayi(len(diger_haric)))
-    ozet.append({"etiket": "Analiz Dışı Kolon", "deger": _sayi(len(haric)),
-                 "alt": alt, "bilgi": _ad_listesi(haric)})
-    ozet.append({"etiket": "Sözlüğe Eklenen Tanım", "deger": _sayi(len(eklenen)),
-                 "alt": ["Eksik Sözlük Tanımları adımında yazılan açıklamalar"],
-                 "bilgi": _ad_listesi(eklenen)})
     e = durum.get("_sozluk_esitleme")
-    if isinstance(e, dict):
-        alt = ["Sözlükte var, veri setinde yok"]
-        if e.get("duzeltilen"):
-            alt.append("%s satırın adı veri setindeki yazıma çevrildi"
-                       % _sayi(e["duzeltilen"]))
-        if e.get("cift"):
-            alt.append("%s tekrarlanan satır teke indirildi" % _sayi(e["cift"]))
+    e = e if isinstance(e, dict) else {}
+    dusen_say = int(e.get("dusen") or 0)
+
+    satirlar = ["%s kolon analize giriyor." % _sayi(len(kume) - len(haric))]
+    if haric:
+        neden = []
+        if tanimsiz_haric:
+            neden.append("%s kolonun sözlükte tanımı yok" % _sayi(len(tanimsiz_haric)))
+        if diger_haric:
+            neden.append("%s kolon tek değerli ya da hazır bölme kolonu"
+                         % _sayi(len(diger_haric)))
+        satirlar.append("%s kolon analiz dışında: %s." % (_sayi(len(haric)), ", ".join(neden)))
+    if eklenen:
+        satirlar.append("%s kolonun tanımı sözlüğe eklendi." % _sayi(len(eklenen)))
+    if dusen_say:
+        satirlar.append("Veri setinde olmayan %s satır sözlükten çıkarıldı."
+                        % _sayi(dusen_say))
+    bilgi = []
+    if haric:
+        bilgi.append("Analiz dışı kolonlar: " + _ad_listesi(haric))
+    if dusen_say:
         dusen = e.get("dusen_liste") or e.get("dusen_ornek") or []
-        bilgi = _ad_listesi(dusen)
-        if len(dusen) < int(e.get("dusen") or 0):
-            bilgi += " (ilk %s ad gösteriliyor)" % _sayi(len(dusen))
-        ozet.append({"etiket": "Sözlükten Çıkarılan Satır",
-                     "deger": _sayi(e.get("dusen") or 0), "alt": alt,
-                     "bilgi": bilgi})
-    uyari = ""
-    if tanimsiz_kalan:
-        uyari = ("Şu kolonlar analizde ama sözlükte tanımı yok: %s"
-                 % _ad_listesi(tanimsiz_kalan))
-    return ozet, uyari
+        bilgi.append("Sözlükten çıkarılan satırlar: " + _ad_listesi(dusen)
+                     + (" (ilk %s ad)" % _sayi(len(dusen)) if len(dusen) < dusen_say else ""))
+    uyari = ("Şu kolonlar analizde ama sözlükte tanımı yok: %s"
+             % _ad_listesi(tanimsiz_kalan)) if tanimsiz_kalan else ""
+    return satirlar, "\n\n".join(bilgi), uyari
 
 
 def veri_icerik_plan(durum):
-    ozet, uyari = veri_icerik_ozeti(durum)
+    satirlar, bilgi, uyari = veri_icerik_ozeti(durum)
     durum["_secim_alani"] = _adim_karti(
-        "veri_icerik", {"ozet": ozet, "aciklama": VERI_ICERIK_ACIKLAMA,
-                        "uyari": uyari},
+        "veri_icerik", {"aciklama": VERI_ICERIK_ACIKLAMA, "metin_satirlar": satirlar,
+                        "metin_bilgi": bilgi, "uyari": uyari},
         VERI_ICERIK_DUGME, "")
     return ""
 

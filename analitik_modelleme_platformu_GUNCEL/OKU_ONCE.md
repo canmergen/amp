@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Önerilen kısaltma LLM Karar'dan; karar tanımları okuyarak**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü'nde İptal; 01.2.4 sade metin**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Kısaltma Sözlüğü'nün ilerleme satırı akıştaki işlem satırıyla aynı:
+  "İşlem Devam Ediyor · biten / toplam Kısaltma · süre · İptal". Sayılar
+  yalnız dil modeline sorulan kısaltmalardan. İptal dil modeli
+  kontrolünü durdurur: gelen sonuçlar kalır, gelmeyenlerin anlamı
+  sözlükteki kelime sayımından gelir ve bu not olarak yazılır.
+- 01.2.4 Veri Seti ve Sözlük İçeriği: dört kutu yerine kısa metin
+  satırları (analize giren, analiz dışı ve nedeni, eklenen tanım,
+  sözlükten çıkarılan satır). Çıkarılan adlar ilk satırdaki tek "i"de.
+  Rol kolonları (hedef, kimlik, dönem, segment) analiz dışı sayılmaz.
+
+Önceki tur: **Önerilen kısaltma LLM Karar'dan; karar tanımları okuyarak**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - LLM Karar, sözlük ile genel anlam arasında örnek tanımları okuyarak
   hangisinin daha mantıklı olduğuna karar verir; genel anlam sözlüğe

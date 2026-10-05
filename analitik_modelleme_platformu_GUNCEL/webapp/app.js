@@ -5832,6 +5832,18 @@ function dogrulamaKartiEkle(alan, blok) {
         });
         kart.appendChild(oz);
     }
+    /* KISA METİN SATIRLARI (Veri Seti ve Sözlük İçeriği): çıkarılan
+       adlar tek "i"de, ilk satırın yanında. */
+    if ((alan.metin_satirlar || []).length) {
+        const mk = elYap("div", "dg-metin-satirlar");
+        alan.metin_satirlar.forEach((m, i) => {
+            const sat = elYap("div", "dg-metin-satir", tireSade(m));
+            if (i === 0 && alan.metin_bilgi)
+                sat.appendChild(bolmeBilgiSimgesi(tireSade(alan.metin_bilgi), "Çıkarılan Kolonlar"));
+            mk.appendChild(sat);
+        });
+        kart.appendChild(mk);
+    }
     if (alan.uyari) kart.appendChild(elYap("div", "dg-oneri-hata", tireSade(alan.uyari)));
 
     /* ---- 4) Kapsam: ince dolu/bos cubuk + kapsam.metin ---- */
@@ -7005,18 +7017,33 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        üstünde, bilgilendirme kutusu olarak; aşağıda tablodan sonra eklenir. */
     const durumEl = elYap("div", "dg-bilgi-kutu", "");
     durumEl.hidden = true;
-    /* İLERLEME: veri seti yüklenirken çıkan işlem satırı gibi tek ince
-       satır; süre sunucudaki başlangıçtan sayılır, saniyede bir artar. */
+    /* İLERLEME: akıştaki işlem satırının aynısı ("İşlem Devam Ediyor ·
+       süre · İptal"); süre sunucudaki başlangıçtan sayılır. İptal dil
+       modeli kontrolünü durdurur, gelen sonuçlar kalır. */
     const ilerEl = elYap("div", "islem-satiri dg-ilerleme");
     ilerEl.setAttribute("role", "status");
     const ilerMetin = elYap("span", "islem-sure", "");
-    ilerEl.appendChild(ilerMetin);
+    const ilerIptal = elYap("button", "islem-iptal", "İptal");
+    ilerIptal.type = "button";
+    ilerIptal.title = "Dil modeli kontrolünü durdur; sonucu gelen kısaltmalar kalır";
+    ilerIptal.onclick = () => {
+        ilerIptal.disabled = true;
+        ilerIptal.textContent = "İptal ediliyor…";
+        fetch(getWebAppBackendUrl("kisaltma_iptal"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({}))
+        })
+        .then(r => r.json())
+        .then(() => yokla())
+        .catch(() => { ilerIptal.disabled = false; ilerIptal.textContent = "İptal"; });
+    };
+    ilerEl.append(ilerMetin, ilerIptal);
     let ilerGecen = (ka.ilerleme && ka.ilerleme.gecen) || 0;
     function ilerYaz() {
         const il = ka.ilerleme;
         const acik = ka.dm === "calisiyor" && !!il && !kilitli;
         ilerEl.classList.toggle("gorunur", acik);
-        if (acik) ilerMetin.textContent = "Dil Modeli Çalışıyor · " + ftBinlik(il.biten || 0)
+        if (acik) ilerMetin.textContent = "İşlem Devam Ediyor · " + ftBinlik(il.biten || 0)
             + " / " + ftBinlik(il.toplam || 0) + " Kısaltma · " + sureBicim(ilerGecen);
     }
     let ilerBagli = false;

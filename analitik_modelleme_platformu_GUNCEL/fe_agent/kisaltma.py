@@ -1147,6 +1147,8 @@ def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
     # Birlestirme sorusu BURADA DEGIL: kisaltmalar onaylandiktan sonra
     # ayri adimda, onaylanan anlamlarla (bkz. birlesik_baslat).
     with _DM_KILIT:
+        if (_DM.get(imza) or {}).get("iptal"):
+            return                      # kullanici durdurdu; o anki sonuc kalir
         _DM[imza] = {"durum": "bitti" if sonuc is not None else "hata",
                      "sonuc": sonuc or {}, "zaman": time.time(),
                      "hata": str(hata or ""), "sure": round(time.time() - _DM.get(imza, {}).get("zaman", time.time()))}
@@ -1302,6 +1304,7 @@ def dogrulamayi_baslat(tanimlar, veri_seti=""):
         if k and k["durum"] in ("calisiyor", "bitti"):
             return imza
         _DM[imza] = {"durum": "calisiyor", "sonuc": {}, "zaman": time.time(),
+                     "toplam": len(girdi),
                      "bekleyen": set(g["kisaltma"] for g in girdi)}
         if len(_DM) > 20:                       # eski kayitlari kirp
             for eski in sorted(_DM, key=lambda x: _DM[x]["zaman"])[:len(_DM) - 20]:
@@ -1322,16 +1325,36 @@ def bekleyenler(tanimlar, veri_seti=""):
         return set(k.get("bekleyen") or ())
 
 
+def dogrulama_iptal(tanimlar, veri_seti=""):
+    """Suren dil modeli kontrolunu durdurur: o ana kadar gelen sonuclar
+    kalir, gelmeyen kisaltmalar sozluk sayimiyla gosterilir. Sunucuda
+    baslamis cagrilar arka planda bitebilir; sonuclari kullanilmaz.
+    Doner: durduruldu mu."""
+    imza = _imza(_dm_girdisi(tanimlar))
+    with _DM_KILIT:
+        k = _DM.get(imza)
+        if not k or k.get("durum") != "calisiyor":
+            return False
+        _DM[imza] = {"durum": "bitti", "sonuc": dict(k.get("sonuc") or {}),
+                     "zaman": time.time(), "hata": "", "iptal": True,
+                     "kalan": len(k.get("bekleyen") or ()),
+                     "sure": round(time.time() - k.get("zaman", time.time()))}
+    return True
+
+
 def dogrulama_bilgisi(tanimlar, veri_seti=""):
     """Kart ve Excel icin: {"durum", "hata", "sure", "gecen"} (gerekiyorsa
     baslatir). gecen: calisan kontrolun baslangicindan beri gecen sn."""
     imza = dogrulamayi_baslat(tanimlar, veri_seti)
     with _DM_KILIT:
         k = dict(_DM.get(imza) or {})
-    gecen = (int(time.time() - k["zaman"])
-             if k.get("durum") == "calisiyor" and k.get("zaman") else None)
+    calisiyor = k.get("durum") == "calisiyor"
+    gecen = int(time.time() - k["zaman"]) if calisiyor and k.get("zaman") else None
     return {"durum": k.get("durum", "yok"), "hata": k.get("hata", ""),
-            "sure": k.get("sure"), "gecen": gecen}
+            "sure": k.get("sure"), "gecen": gecen,
+            "iptal": bool(k.get("iptal")), "kalan": int(k.get("kalan") or 0),
+            "toplam": int(k.get("toplam") or 0) if calisiyor else 0,
+            "bekleyen": len(k.get("bekleyen") or ()) if calisiyor else 0}
 
 
 def dogrulama_sonucu(tanimlar, bekle=0.0, veri_seti=""):
