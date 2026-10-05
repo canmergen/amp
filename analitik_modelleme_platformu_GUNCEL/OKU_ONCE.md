@@ -1,6 +1,28 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü açıklaması: ne yaptığı başlık altında, sütunlar i'de**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü'nde elle düzenleme: yeni kısaltmanın anlamı, elle birleştirme ve birleştirmeye yeni kısaltma**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+1) Önerilen Kısaltma sütununda, kısaltma doluyken altında yeni
+   kısaltmanın ANLAMI düzenlenebilir kutu (eskiden salt okunur yazıydı).
+   Böylece eski kısaltmaya LLM Karar'da genel anlamı, yeni kısaltmaya bu
+   kolonlardaki anlamı yazılabilir; dil modeli önermese de. Eski
+   kısaltma sözlükte kendi anlamında kalır, bu veri setinin kontrollerinde
+   yeni kısaltmanın anlamı kullanılır, kolon adları 01.2.5'te değişir.
+2) Birleştirme bölümü her zaman görünür. Dil modelinin önerilerine ek
+   olarak kullanıcı "Birleştirme Ekle" satırından 2-4 kısaltmayı
+   birleştirir (A_B, boşluk ya da + ile de yazılabilir), birlikte anlamı
+   ve isterse yerine geçecek kısaltmayı yazar. Onayda parçaların bu veri
+   setinin en az bir kolon adında bu sırayla yan yana geçtiği denetlenir;
+   geçmiyorsa adım durur ve sebebi yazar.
+3) Birleştirmeye de Önerilen Kısaltma yazılabilir; 01.2.5'te bu
+   parçaların yan yana geçtiği kolon adlarına uygulanır (gerekçe: daha
+   okunur kısaltma).
+4) Hafızaya kaydedilen elle birleştirmeler sonraki çalışmalarda bu
+   bölümde işaretli gelir; işaret kaldırılırsa hafızadan silinir.
+5) 01.2.6'ya giden ad parçalarında 2-4 parçalı birleştirmeler tek anlamla
+   verilir (en uzun eşleşme önce).
+
+Önceki tur: **Kısaltma Sözlüğü açıklaması: ne yaptığı başlık altında, sütunlar i'de**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Başlığın altında yalnız adımın ne yaptığı (düz metin, kartın yazı
   tipiyle). Bir önceki denemedeki madde listesi kaldırıldı.

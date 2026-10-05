@@ -135,6 +135,40 @@ def ifade_adaylari(adlar):
             if n >= EN_AZ_KOLON and n >= IFADE_PAY * tek[a] and n >= IFADE_PAY * tek[b]}
 
 
+BIRLESIK_EN_COK_PARCA = 4
+
+
+def birlesik_anahtar(metin):
+    """Kullanicinin yazdigi birlestirme ("<A> <B>", "<A>+<B>", "<a>_<b>")
+    -> "<A>_<B>". 2-4 parca degilse ""."""
+    ps = [p.upper().translate(_TR_SADE)
+          for p in re.split(r"[^A-Za-z0-9ÇĞİÖŞÜçğıöşü]+", str(metin or "")) if p]
+    return "_".join(ps) if 2 <= len(ps) <= BIRLESIK_EN_COK_PARCA else ""
+
+
+def yan_yana(ad, anahtar):
+    """Birlestirmenin parcalari kolon adinda bitisik ve bu sirayla geciyor mu
+    (araya pencere / sayi girmeden)."""
+    ps = [p for p in str(anahtar or "").split("_") if p]
+    ham = _ham_parcalar(ad)
+    n = len(ps)
+    return n >= 2 and any(ham[i:i + n] == ps for i in range(len(ham) - n + 1))
+
+
+def birlesik_hafiza(adlar, onay=None):
+    """Hafizadaki birlestirmelerden ("_"li anahtar) bu kolon adlarinda yan
+    yana gecenler: {anahtar: kolon_sayisi}."""
+    onay = onaylilar() if onay is None else onay
+    cikti = {}
+    for k in onay:
+        if "_" not in k or len(k.split("_")) > BIRLESIK_EN_COK_PARCA:
+            continue
+        n = sum(1 for ad in adlar if yan_yana(ad, k))
+        if n:
+            cikti[k] = n
+    return cikti
+
+
 def parcalar(ad):
     """Kolon adinin kisaltma adaylari (buyuk harf). Pencereler ve sayilar
     atlanir; her parca ayri kisaltmadir."""
@@ -181,12 +215,19 @@ def ad_anlamlari(ad, anlamlar):
         if k is None:
             i += 1
             continue
-        if i + 1 < len(bicim) and bicim[i + 1][1] and not n and not bicim[i + 1][2]:
-            ortak = "%s_%s" % (k, bicim[i + 1][1])
-            if anlamlar.get(ortak):
-                cikti.append(("%s_%s" % (b, bicim[i + 1][0]), anlamlar[ortak]))
-                i += 2
+        bulundu = False
+        for m in range(BIRLESIK_EN_COK_PARCA, 1, -1):
+            grup = bicim[i:i + m]
+            if len(grup) < m or any(g[1] is None or g[2] for g in grup):
                 continue
+            ortak = "_".join(g[1] for g in grup)
+            if anlamlar.get(ortak):
+                cikti.append(("_".join(g[0] for g in grup), anlamlar[ortak]))
+                i += m
+                bulundu = True
+                break
+        if bulundu:
+            continue
         if anlamlar.get(k):
             cikti.append((b, ("%s %s" % (anlamlar[k], n)) if n else anlamlar[k]))
         i += 1
@@ -1104,6 +1145,11 @@ def birlesik_onerileri(tanimlar, veri_seti=""):
         if ad in onay and ad not in oner:
             oner[ad] = {"anlam": onay[ad], "gerekce": "", "parcalar": [a, b], "kolon": int(n),
                         "ayri": ""}
+    # Kullanicinin ELLE ekleyip hafizaya kaydettigi birlestirmeler.
+    for ad, n in birlesik_hafiza(tanimli, onay).items():
+        if ad not in oner:
+            oner[ad] = {"anlam": onay[ad], "gerekce": "", "parcalar": ad.split("_"),
+                        "kolon": int(n), "ayri": ""}
     cikti = []
     for ad, o in sorted(oner.items(), key=lambda x: (-int(x[1].get("kolon") or 0), x[0])):
         cikti.append({"kisaltma": ad, "parcalar": o.get("parcalar") or ad.split("_", 1),
@@ -1514,7 +1560,8 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
     bekleyen = bekleyenler(tanimlar, veri_seti) if durum == "calisiyor" else set()
     # Hafizadaki BIRLESTIRMELER ("<A>_<B>") ayri bolumde (birlesik_onerileri).
     tanimli = [ad for ad, t in (tanimlar or {}).items() if str(t or "").strip()]
-    ciftler = {"%s_%s" % ab for ab in ifade_adaylari(tanimli)}
+    ciftler = {"%s_%s" % ab for ab in ifade_adaylari(tanimli)} \
+        | set(birlesik_hafiza(tanimli, onay))
     satirlar = []
     for kisa in sorted((set(oner) | set(onay)) - ciftler,
                        key=lambda k: (-(oner.get(k) or {}).get("kolon", 0), k)):
