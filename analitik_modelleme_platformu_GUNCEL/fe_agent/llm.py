@@ -739,16 +739,16 @@ ORKESTRA = {
     "hakem": ("qwen_thinking", "llama"),
     "tarayici": ("qwen_flash", "llama"),
     "denetci": ("llama", "qwen_thinking"),
-    # KISALTMA ISLERI: hizli model (qwen_flash) kullanilmaz. Anlami
-    # tanimlardan harf harf eslestirmek muhakeme istedigi icin karar ve
-    # hakem dusunen model; ikinci goz Llama. Genel anlam (sozluksuz) Llama.
-    "kisaltma_genel": ("llama", "qwen_thinking"),
-    "kisaltma_1": ("qwen_thinking", "llama"),
-    "kisaltma_2": ("llama", "qwen_thinking"),
-    "kisaltma_hakem": ("qwen_thinking", "llama"),
+    # KISALTMA ISLERI: dusunen model kullanilmaz (yavas). Genel anlam,
+    # sozluk okumasi, karar ve hakem Llama; ikinci karar Qwen Flash.
+    "kisaltma_genel": ("llama", "qwen_flash"),
+    "kisaltma_sozluk": ("llama", "qwen_flash"),
+    "kisaltma_1": ("llama", "qwen_flash"),
+    "kisaltma_2": ("qwen_flash", "llama"),
+    "kisaltma_hakem": ("llama", "qwen_flash"),
 }
 # Dusunen model yavas: kisaltma cagrilarinda zaman asimi daha uzun.
-KISALTMA_ZAMAN_ASIMI = 240.0
+KISALTMA_ZAMAN_ASIMI = 120.0
 MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_thinking": "Qwen 3 Thinking",
                 "qwen_flash": "Qwen Flash"}
 ORKESTRA_DUSME_SINIRI = 2
@@ -1261,6 +1261,8 @@ Anlam alanlari her durumda Turkce kalir."""
 
 SISTEM_KISALTMA = """Sen bir bankacilik ve veri bilimi sozlugu uzmanisin.
 Kolon adlarinda gecen KISALTMALAR verilecek. Her biri icin:
+  sozlukte: baska bir modelin genel bilgisini kullanmadan YALNIZ
+            sozlukteki tanimlara bakarak okudugu anlam
   genel   : baska bir modelin sozlugu GORMEDEN, yalniz kolon adlarina
             bakarak verdigi genel anlam ("(bilinmiyor)" olabilir)
   ornekler: kisaltmanin gectigi cesitli kolon adlari ve kullanicinin
@@ -1268,12 +1270,9 @@ Kolon adlarinda gecen KISALTMALAR verilecek. Her biri icin:
   "onayli kisaltmalar" satiri (varsa): ornek kolonlardaki diger
             kisaltmalarin kullanicinin onayladigi anlamlari
 
-ONCE "sozluk_anlam" alanini doldur, genel bilgini KARISTIRMADAN: ornek
-tanimlarin HEPSINI oku; kolon adindaki parcalarin sirasini tanimdaki
-kelimelerle eslestir ve bu kisaltmanin harflerine KARSILIK GELEN ifadeyi
-bul. Tek bir ornegin kelimesine takilma; orneklerin ortak karsiligini
-TAM yaz. Tanimlardan cikmiyorsa bos birak. Asagidaki karar "sozluk_anlam"
-(sozlukteki anlam) ile "genel" arasindadir.
+"sozluk_anlam": "sozlukte" adayi ornek tanimlarla uyusuyorsa AYNEN yaz;
+eksik ya da yanlissa tanimlara bakarak duzelt. Asagidaki karar
+"sozluk_anlam" (sozlukteki anlam) ile "genel" arasindadir.
 
 Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
   "ayni"           : iki aday AYNI KAVRAM (yalniz es anlamli kelimeler).
@@ -1349,6 +1348,36 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "KISALTMA", "anlam": "..."}]}""" + SINIRLAYICI_KURALI
 
 
+# SOZLUK OKUMASI (LLM Sozluk sutunu): model genel bilgisini kullanmadan
+# yalniz ornek tanimlara bakar ve kisaltmanin tanimlarda neyin kisaltmasi
+# oldugunu yazar. Karar adimi bu cevapla genel anlami karsilastirir.
+SISTEM_KISALTMA_SOZLUK = """Sen bir veri sozlugu okuyucususun. Kolon
+adlarinda gecen KISALTMALAR ve her birinin gectigi ornek kolon adlari ile
+kullanicinin sozlugundeki TANIMLARI verilecek. GENEL BILGINI KULLANMA;
+yalniz verilen tanimlara bak.
+
+Her kisaltma icin: kolon adindaki parcalarin sirasini tanimdaki
+kelimelerle eslestir ve bu kisaltmanin harflerine KARSILIK GELEN ifadeyi
+bul. Tek bir ornege takilma; orneklerin ortak karsiligini TAM yaz:
+yalin halde, Turkce, 1-6 kelime; pencere ve sayi katma. Birkac kelimenin
+bitistirildigi kisaltmada her harf grubunu karsila. "onayli kisaltmalar"
+satirindaki kelimeler baska kisaltmalarindir, bu kisaltmaya yukleme.
+Tanimlardan cikmiyorsa "anlam" alanini BOS birak.
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "KISALTMA", "anlam": "..."}]}""" + SINIRLAYICI_KURALI
+
+
+def _sozluk_satiri(g):
+    s = "- %s | %d kolonda geciyor" % (g["kisaltma"], int(g.get("kolon") or 0))
+    if g.get("bilinen"):
+        s += "\n    onayli kisaltmalar: " + ", ".join(
+            "%s=%s" % kv for kv in sorted(g["bilinen"].items()))
+    for ad, t in (g.get("ornekler") or [])[:8]:
+        s += "\n    %s: %s" % (ad, str(t)[:180])
+    return s
+
+
 def _kor_satiri(g):
     adlar = [ad for ad, _t in (g.get("ornekler") or [])[:6]]
     return "- %s | kolonlar: %s" % (g["kisaltma"], ", ".join(adlar) or "-")
@@ -1370,7 +1399,7 @@ def _kor_oku(veri, girdi):
 
 # parcalar AYNI ANDA calisir.
 # 8: parca bittikce kart guncellenir; kucuk parca = daha sik guncelleme.
-KISALTMA_PARCA = 6         # dusunen model icin daha kucuk parca
+KISALTMA_PARCA = 8         # dusunen model icin daha kucuk parca
 _KISALTMA_HAVUZ = futures.ThreadPoolExecutor(max_workers=3)
 
 
@@ -1378,6 +1407,8 @@ def _kisaltma_satiri(g):
     """Karar istemindeki satir. KELIME SAYIMI GITMEZ; model anlami tanimlardan okur.
     Diger kisaltmalardan yalniz kullanicinin ONAYLADIKLARI gider."""
     s = "- %s" % g["kisaltma"]
+    if g.get("sozluk_llm") is not None:
+        s += " | sozlukte: %s" % (g["sozluk_llm"] or "(tanimlardan cikmadi)")
     if g.get("genel") is not None:
         s += " | genel: %s" % (g["genel"] or "(bilinmiyor)")
     if g.get("kolon"):
@@ -1436,7 +1467,8 @@ def _kucult(anlam):
 def _kisaltma_oku(veri, girdi, ek=None):
     """Model cevabi -> {KISA: anlam ya da None (emin degil)}.
     ek (dict): {KISA: {"secim", "gerekce", "yeni_kisaltma"}} doldurulur."""
-    aday = {g["kisaltma"]: (g.get("anlam") or "", g.get("genel") or "") for g in girdi}
+    aday = {g["kisaltma"]: (g.get("sozluk_llm") or g.get("anlam") or "", g.get("genel") or "")
+            for g in girdi}
     cikti = {}
     for k in (veri.get("kolonlar") or []):
         if not isinstance(k, dict):
@@ -1518,14 +1550,27 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
     def parca_(blok):
         """Bir parca: (sonuc, cevap_geldi_mi)."""
         sonuc_ = {}
-        # 1) KOR: sozluk yok, yalniz kolon adlari (bkz. SISTEM_KISALTMA_KOR).
-        mk, vk = ork.json_cagir(ork.modeller("kisaltma_genel"), SISTEM_KISALTMA_KOR,
-                                _veri_blogu("KISALTMALAR:", "\n".join(_kor_satiri(g) for g in blok)),
-                                0.1, zaman_asimi=KISALTMA_ZAMAN_ASIMI)
+        # 1) KOR (yalniz kolon adlari) ve SOZLUK OKUMASI (yalniz tanimlar)
+        # ayni anda.
+        with futures.ThreadPoolExecutor(max_workers=2) as havuz_:
+            f_kor = havuz_.submit(
+                ork.json_cagir, ork.modeller("kisaltma_genel"), SISTEM_KISALTMA_KOR,
+                _veri_blogu("KISALTMALAR:", "\n".join(_kor_satiri(g) for g in blok)),
+                0.1, (), KISALTMA_ZAMAN_ASIMI)
+            f_soz = havuz_.submit(
+                ork.json_cagir, ork.modeller("kisaltma_sozluk"), SISTEM_KISALTMA_SOZLUK,
+                _veri_blogu("KISALTMALAR:", "\n".join(_sozluk_satiri(g) for g in blok)),
+                0.1, (), KISALTMA_ZAMAN_ASIMI)
+            mk, vk = f_kor.result()
+            ms, vs = f_soz.result()
         kor = _kor_oku(vk, blok) if mk else {}
+        soz = _kor_oku(vs, blok) if ms else {}
         for k_, v_ in kor.items():
             genel_[k_] = v_
-        blok = [dict(g, genel=kor.get(g["kisaltma"])) if g["kisaltma"] in kor else g
+        for k_, v_ in soz.items():
+            sozluk_[k_] = v_
+        blok = [dict(g, **({"genel": kor[g["kisaltma"]]} if g["kisaltma"] in kor else {}),
+                     **({"sozluk_llm": soz[g["kisaltma"]]} if g["kisaltma"] in soz else {}))
                 for g in blok]
         # 2) KARAR: hangi aday dogru. Adlandirma kalibi (yeni kisaltmanin
         # dili icin.).
@@ -1592,6 +1637,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
     kalip_ = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n"
               % ", ".join(yaygin)) if yaygin else ""
     genel_ = {}           # sozluksuz (kor) genel anlam; "" = bilinmiyor
+    sozluk_ = {}          # yalniz tanimlardan okunan anlam; "" = cikmadi
     ek_ = {}              # secim / gerekce / yeni_kisaltma
     oneri = {g["kisaltma"]: g.get("anlam") or "" for g in girdi}
 
@@ -1611,7 +1657,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
             cikti_[k].update({"secim": e.get("secim") or "", "gerekce": e.get("gerekce") or "",
                               "yeni_kisaltma": e.get("yeni_kisaltma") or "",
                               "yeni_anlam": e.get("yeni_anlam") or "",
-                              "sozluk_anlam": e.get("sozluk_anlam") or "",
+                              "sozluk_anlam": sozluk_.get(k) or e.get("sozluk_anlam") or "",
                               "yeni_red": e.get("yeni_red") or ""})
             # Genel anlam sozlukle celisiyor (01.2.6'da tanimlar duzeltilmeye aday).
             if anlam and oneri.get(k) and e.get("secim") in ("genel", "yeni") \

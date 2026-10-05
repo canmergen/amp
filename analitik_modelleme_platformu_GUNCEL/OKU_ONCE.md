@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma hafızası JSON; kod yorumları sadeleşti**. Değiştir: `fe_agent/` altındaki bütün .py dosyaları, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltmalarda düşünen model yok; LLM Sözlük ayrı okuma**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+1) Kısaltma Sözlüğü ve Kısaltma Birleştirme'de Qwen 3 Thinking
+   kullanılmaz. LLM Genel, LLM Sözlük, karar (1. model) ve hakem Llama
+   3.1 70B; karar (2. model) Qwen Flash. Zaman aşımı 120 sn, çağrı başına
+   8 kısaltma.
+2) LLM Sözlük ayrı ve kısa bir çağrı: model genel bilgisini kullanmadan
+   yalnız örnek tanımlara bakar, kısaltmanın tanımlarda neyin kısaltması
+   olduğunu yazar ("tanımlardan çıkmadı" olabilir). LLM Genel ile aynı
+   anda çalışır. Karar adımı bu iki cevabı karşılaştırır; sözlük
+   cevabı uygunsa aynen kullanır.
+
+Önceki tur: **Kısaltma hafızası JSON; kod yorumları sadeleşti**. Değiştir: `fe_agent/` altındaki bütün .py dosyaları, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 1) Onaylı kısaltma hafızası `PROJE_HAFIZASI/KISALTMA_HAFIZASI.json`:
    `{"kisaltmalar": {"<KISA>": "<anlam>", ...}, "notlar": {"<KISA>":
