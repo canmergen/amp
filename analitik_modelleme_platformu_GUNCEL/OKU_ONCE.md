@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Birleştirme ayrı adım (01.2.5)**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma sütunu genişledi, i alt satıra düşmüyor**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
+
+- Kısaltma Sözlüğü'nde Kısaltma sütunu %14'ten %19'a; LLM Sözlük %14,
+  LLM Genel %13. Kısaltma adı ile i aynı satırda kalır (sarmaz); altındaki
+  biçimler ve "Sayıdan ayır" satırı sarabilir. Birleştirme tablosunda da
+  aynı.
+
+Önceki tur: **Kısaltma Birleştirme ayrı adım (01.2.5)**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni sıra: 01.2.4 Kısaltma Sözlüğü, 01.2.5 Kısaltma Birleştirme, 01.2.6
 Kolon Adı Önerileri, 01.2.7 Sözlük Tanım Kontrolü.

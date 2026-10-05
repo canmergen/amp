@@ -3046,9 +3046,11 @@ span.bolme-cip { cursor: default; }
 /* Kısaltma (+ örnekler "i") | Anlam | Kaynak | Hafızaya Kaydet */
 /* Kısaltma | Sözlükte | Dil Modeli | Anlam | Kaynak | Hafızaya Kaydet */
 /* LLM Karar en geniş sütun (kullanıcı bildirimi: uzun anlam kesiliyordu). */
-.dg-kisaltma-tablo th:nth-child(1) { width: 14%; }
-.dg-kisaltma-tablo th:nth-child(2) { width: 15%; }
-.dg-kisaltma-tablo th:nth-child(3) { width: 14%; }
+/* Kısaltma sütunu geniş (kullanıcı bildirimi: uzun kısaltmada "i" alt
+   satıra düşüyordu); ad ile "i" aynı satırda kalır. */
+.dg-kisaltma-tablo th:nth-child(1) { width: 19%; }
+.dg-kisaltma-tablo th:nth-child(2) { width: 14%; }
+.dg-kisaltma-tablo th:nth-child(3) { width: 13%; }
 .dg-kisaltma-tablo th:nth-child(4) { width: auto; }
 .dg-kisaltma-tablo th:nth-child(5) { width: 150px; white-space: normal; }
 .dg-kisaltma-tablo th:nth-child(6) { width: 64px; }
@@ -3060,7 +3062,10 @@ span.bolme-cip { cursor: default; }
 /* Kısaltma adı kırpılmaz (kullanıcı bildirimi: uzun kısaltmalar kesik
    görünüyordu); sığmazsa alt satıra geçer. */
 .dg-kisaltma-tablo td.dg-kisaltma-ad,
-.dg-birlesik-tablo td.dg-kisaltma-ad { white-space: normal; overflow-wrap: anywhere; }
+.dg-birlesik-tablo td.dg-kisaltma-ad { white-space: nowrap; overflow: visible; }
+/* Alttaki biçimler ve "sayıdan ayır" satırı sarabilir. */
+.dg-kisaltma-tablo td.dg-kisaltma-ad .dg-tip,
+.dg-birlesik-tablo td.dg-kisaltma-ad .dg-tip { white-space: normal; overflow-wrap: anywhere; }
 .dg-kisaltma-tablo td.dg-kisaltma-ad .dg-tip { font-weight: normal; }
 .dg-kisaltma-tablo .dg-sayi-ayir { display: block; margin-top: 2px; cursor: pointer; }
 .dg-kisaltma-tablo .dg-sayi-ayir input { margin: 0 2px 0 0; vertical-align: middle; }
