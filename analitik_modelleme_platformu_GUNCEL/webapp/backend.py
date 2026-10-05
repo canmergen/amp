@@ -2666,6 +2666,18 @@ def kisaltma_iptal_endpoint():
         return jsonify(_hata_govdesi("kisaltma_iptal", e)), 200
 
 
+@app.route("/birlesik_iptal", methods=["POST"])
+def birlesik_iptal_endpoint():
+    """Kisaltma Birlestirme: suren dil modeli sorusunu durdurur."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True, "birlesik": akis.birlesik_iptal(durum)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("birlesik_iptal", e)), 200
+
+
 @app.route("/birlesik_alani")
 def birlesik_alani_endpoint():
     """Kisaltma Birlestirme yoklamasi: dil modelinin onerileri gelince

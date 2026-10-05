@@ -1235,10 +1235,34 @@ def birlesik_baslat(tanimlar, anlamlar):
         except Exception as e:
             sonuc, hata = {}, str(e)[:200]
         with _DM_KILIT:
+            if (_BIR.get(imza) or {}).get("iptal"):
+                return                  # kullanici durdurdu; sonuc kullanilmaz
             _BIR[imza] = {"durum": "bitti" if not hata else "hata", "sonuc": sonuc,
                           "hata": hata, "zaman": time.time()}
     threading.Thread(target=is_, daemon=True).start()
     return imza
+
+
+def birlesik_bilgisi(tanimlar, anlamlar):
+    """{"gecen": calisan sorunun baslangicindan beri gecen sn, "iptal"}."""
+    imza = birlesik_baslat(tanimlar, anlamlar)
+    with _DM_KILIT:
+        k = dict(_BIR.get(imza) or {})
+    calisiyor = k.get("durum") == "calisiyor"
+    return {"gecen": int(time.time() - k["zaman"]) if calisiyor and k.get("zaman") else 0,
+            "iptal": bool(k.get("iptal"))}
+
+
+def birlesik_iptal(tanimlar, anlamlar):
+    """Suren birlestirme sorusunu durdurur; oneri gelmez, elle ekleme acik."""
+    imza = birlesik_baslat(tanimlar, anlamlar)
+    with _DM_KILIT:
+        k = _BIR.get(imza)
+        if not k or k.get("durum") != "calisiyor":
+            return False
+        _BIR[imza] = {"durum": "bitti", "sonuc": {}, "hata": "", "iptal": True,
+                      "zaman": time.time()}
+    return True
 
 
 def birlesik_onerileri(tanimlar, anlamlar):

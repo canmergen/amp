@@ -1545,15 +1545,29 @@ def _birlesik_alani(durum):
     for b_ in birlesik:
         if b_["kisaltma"] in (durum.get("kisaltma_yeni") or {}):
             b_["yeni_kisaltma"] = durum["kisaltma_yeni"][b_["kisaltma"]]
+    try:
+        bilgi = kisaltma_mod.birlesik_bilgisi(kaynak, anlamlar)
+    except Exception:
+        bilgi = {}
     notu = ("Birleştirme önerileri alınamadı: %s" % hata if hata else
+            "Dil modeli durduruldu; birleştirmeyi kendiniz ekleyebilirsiniz."
+            if bilgi.get("iptal") else
             "" if dm == "calisiyor" or birlesik else
             "Dil modeli birleştirilmesi gereken kısaltma bulmadı; kendiniz ekleyebilirsiniz.")
     return {"baslik": BIRLESIK_BASLIK, "aciklama": BIRLESIK_ACIKLAMA,
-            "satirlar": birlesik, "dm": dm, "not": notu, "anlamlar": anlamlar}
+            "satirlar": birlesik, "dm": dm, "not": notu, "anlamlar": anlamlar,
+            "gecen": bilgi.get("gecen") or 0}
 
 
 def birlesik_alani(durum):
     """On yuz yoklamasi icin (beklemez)."""
+    return _birlesik_alani(durum)
+
+
+def birlesik_iptal(durum):
+    """Kisaltma Birlestirme: suren dil modeli sorusunu durdurur."""
+    kaynak = _kisaltma_kaynagi(durum)
+    kisaltma_mod.birlesik_iptal(kaynak, _birlesik_anlamlari(durum, kaynak))
     return _birlesik_alani(durum)
 
 

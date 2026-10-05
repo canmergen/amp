@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.4 dört blok ve her blokta i; onay notu ortalı**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Birleştirme'de işlem satırı ve İptal**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Dil modeli birleştirme önerilerini hazırlarken kartta akıştaki işlem
+  satırı görünür: "İşlem Devam Ediyor · süre · İptal". Süre sunucudaki
+  başlangıçtan sayılır. İptal öneriyi durdurur; birleştirme elle
+  eklenebilir.
+- "N birleştirme." kutusu kalktı; not (öneri yok, alınamadı,
+  durduruldu) yalnız gerektiğinde başlığın altında.
+
+Önceki tur: **01.2.4 dört blok ve her blokta i; onay notu ortalı**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Veri Seti ve Sözlük İçeriği yine dört blok: Analize Giren Kolon,
   Analiz Dışı Kolon, Sözlüğe Eklenen Tanım, Sözlükten Çıkarılan Satır.

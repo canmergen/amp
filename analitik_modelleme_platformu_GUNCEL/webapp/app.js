@@ -6939,15 +6939,52 @@ function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     }
 
     birlesikCiz(ka.satirlar);
+    /* Bilgi kutusu yalnız zaman aşımında. */
     const durumEl = elYap("div", "dg-bilgi-kutu", "");
-    const durumYaz = () => {
-        durumEl.textContent = ka.dm === "calisiyor"
-            ? "Dil modeli onaylanan anlamlarla birleştirme önerilerini hazırlıyor; gelince listede görünür."
-            : (bSatirlar.length ? ftBinlik(bSatirlar.length) + " birleştirme." : "Birleştirme önerisi yok.")
-              + (ka.not ? " " + tireSade(ka.not) : "");
+    /* İLERLEME: akıştaki işlem satırının aynısı ("İşlem Devam Ediyor ·
+       süre · İptal"); süre sunucudaki başlangıçtan sayılır. */
+    const ilerEl = elYap("div", "islem-satiri dg-ilerleme");
+    ilerEl.setAttribute("role", "status");
+    const ilerMetin = elYap("span", "islem-sure", "");
+    const ilerIptal = elYap("button", "islem-iptal", "İptal");
+    ilerIptal.type = "button";
+    ilerIptal.title = "Dil modelinin birleştirme önerilerini durdur; kendiniz ekleyebilirsiniz";
+    ilerIptal.onclick = () => {
+        ilerIptal.disabled = true;
+        ilerIptal.textContent = "İptal ediliyor…";
+        fetch(getWebAppBackendUrl("birlesik_iptal"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({}))
+        })
+        .then(r => r.json())
+        .then(() => yokla())
+        .catch(() => { ilerIptal.disabled = false; ilerIptal.textContent = "İptal"; });
     };
+    ilerEl.append(ilerMetin, ilerIptal);
+    let ilerGecen = ka.gecen || 0;
+    const durumYaz = () => {
+        const acik = ka.dm === "calisiyor" && !kilitli;
+        ilerEl.classList.toggle("gorunur", acik);
+        if (acik) ilerMetin.textContent = "İşlem Devam Ediyor · " + sureBicim(ilerGecen);
+        /* Not (öneri yok / alınamadı / durduruldu) üstte bNot'ta. */
+        durumEl.textContent = ka.dm === "zaman_asimi"
+            ? "Dil modeli 10 dakikada cevap vermedi; birleştirmeyi kendiniz ekleyebilirsiniz." : "";
+        durumEl.hidden = !durumEl.textContent;
+    };
+    let ilerBagli = false;
+    const ilerSayac = setInterval(() => {
+        if (kart.isConnected) ilerBagli = true;
+        if (ka.dm !== "calisiyor" || (ilerBagli && !kart.isConnected)) {
+            clearInterval(ilerSayac);
+            durumYaz();
+            return;
+        }
+        ilerGecen += 1;
+        durumYaz();
+    }, 1000);
     durumYaz();
     kart.appendChild(durumEl);
+    kart.appendChild(ilerEl);
     /* YOKLAMA: dil modeli sürerken 3 sn'de bir; elle değişen satır ezilmez. */
     let yoklamaSayisi = 0;
     function yokla() {
@@ -6965,6 +7002,7 @@ function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                         bElle[x.r.kisaltma] = { anlam: x.g.value, kutu: x.kutu.checked, yeni: x.y.value };
                 });
                 ka.not = yeni.not || ""; ka.dm = yeni.dm; ka.anlamlar = yeni.anlamlar || ka.anlamlar;
+                if (yeni.gecen) ilerGecen = yeni.gecen;
                 birlesikCiz(yeni.satirlar);
                 bSatirlar.forEach(x => {
                     const e = bElle[x.r.kisaltma];
@@ -6985,6 +7023,7 @@ function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             kilitli = k;
             bSatirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; x.y.disabled = k; });
             [eK, eA, eY, eB].forEach(x => { x.disabled = k; });
+            durumYaz();
         },
         bekliyor: () => ka.dm === "calisiyor"
     };
