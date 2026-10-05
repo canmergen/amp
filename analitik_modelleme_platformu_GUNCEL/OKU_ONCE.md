@@ -1,10 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü açıklaması madde madde**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü açıklaması: ne yaptığı başlık altında, sütunlar i'de**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
-- Başlığın altındaki açıklama tek paragraf yerine giriş cümlesi + sütun
-  başına bir madde. Açıklama metninde "- " ile başlayan satırlar kartta
-  madde listesi olur.
+- Başlığın altında yalnız adımın ne yaptığı (düz metin, kartın yazı
+  tipiyle). Bir önceki denemedeki madde listesi kaldırıldı.
+- Sütunların açıklaması "Kısaltma Sözlüğü" başlığının yanındaki i
+  balonunda ("Sütunlar"), her sütun ayrı paragraf.
 
 Önceki tur: **"İkisi aynı" ama farklı anlamlar + takılı kalan i balonu**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı). Önceki iki turun dosyaları da (özellikle `fe_agent/akis_faz01.py`) kopyalanmış olmalı.
 

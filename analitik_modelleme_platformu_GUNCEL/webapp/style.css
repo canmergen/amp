@@ -1309,8 +1309,6 @@ button.ozet-kart:focus-visible {
   border-radius: var(--r-kucuk);
 }
 .dg-kisa-aciklama { color: var(--metin); font-size: var(--fs-kucuk); margin: 2px 0 6px; line-height: 1.45; }
-.dg-kisa-liste { margin: 2px 0 0; padding-left: 18px; }
-.dg-kisa-liste li { margin: 1px 0; }
 /* Dil modeli sonucu gelmemiş kısaltma satırı: kilitli, soluk. */
 .dg-satir.dg-bekliyor td { opacity: .55; }
 .dg-satir.dg-bekliyor .dg-giris { cursor: not-allowed; }

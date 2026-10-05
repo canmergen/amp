@@ -1443,16 +1443,23 @@ def _kisaltma_kaynagi(durum):
 KISALTMA_BASLIK = "Kısaltma Sözlüğü"
 # Kartta basligin altinda (kullanici karari: "i" yerine kisa aciklama).
 KISALTMA_ACIKLAMA = (
-    "Kolon adlarındaki kısaltmaların anlamı; adlardaki her parça ayrı kısaltmadır.\n"
-    "- LLM Sözlük: dil modelinin sözlükteki açıklamalardan okuduğu anlam.\n"
-    "- LLM Genel: dil modelinin sözlüğe bakmadan verdiği genel anlam.\n"
-    "- LLM Karar: dil modellerinin ikisi arasında karar verdiği anlam; "
-    "düzenleyebilirsiniz.\n"
-    "- Önerilen Kısaltma: kolon adındaki kısaltma yanlış seçilmiş ya da "
-    "anlaşılmıyorsa yerine önerilen okunur kısaltma (birden çok parçalı "
-    "olabilir).\n"
-    "- Seç: işaretlenenler proje genelindeki hafızaya kaydedilir.\n"
-    "- Karar, gerekçe ve örnekler kısaltmanın yanındaki i simgesinde.")
+    "Kolon adlarındaki her kısaltmanın ne anlama geldiği belirlenir. Dil "
+    "modeli her kısaltmayı bir kez sözlükteki açıklamalara bakarak, bir kez "
+    "de sözlüğe bakmadan yorumlar ve ikisini karşılaştırarak kararını verir. "
+    "Kararları onaylayın ya da düzeltin; onaylanan anlamlar sonraki "
+    "adımlarda kolon adı önerileri ve tanım kontrolünde kullanılır.")
+# Sutunlarin aciklamasi basliktaki i'de (kullanici karari: isteyen okusun).
+KISALTMA_SUTUNLAR = (
+    "LLM Sözlük: dil modelinin sözlükteki açıklamalardan okuduğu anlam.\n\n"
+    "LLM Genel: dil modelinin sözlüğe bakmadan verdiği genel anlam.\n\n"
+    "LLM Karar: dil modellerinin ikisi arasında karar verdiği anlam; "
+    "düzenleyebilirsiniz.\n\n"
+    "Önerilen Kısaltma: kolon adındaki kısaltma yanlış seçilmiş ya da "
+    "anlaşılmıyorsa yerine önerilen okunur kısaltma; birden çok parçalı "
+    "olabilir.\n\n"
+    "Seç: işaretlenenler proje genelindeki hafızaya kaydedilir.\n\n"
+    "Her kısaltmanın kararı, gerekçesi ve örnek kolonları kısaltmanın "
+    "yanındaki simgede.")
 BIRLESIK_ACIKLAMA = (
     "Kolon adlarında hep yan yana geçen ve ayrı anlamları yan yana "
     "okununca anlamı karışan kısaltmalar için dil modelinin birleştirme "
@@ -1496,6 +1503,7 @@ def _kisaltma_alani(durum, bekle=0.0):
             if b_["kisaltma"] in onceki:
                 b_["onayli"], b_["anlam"] = True, onceki[b_["kisaltma"]]
     return {"baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
+            "sutunlar": KISALTMA_SUTUNLAR,
             "satirlar": satirlar, "not": notu, "dm": dm,
             "birlesik": birlesik, "birlesik_aciklama": BIRLESIK_ACIKLAMA}
 
