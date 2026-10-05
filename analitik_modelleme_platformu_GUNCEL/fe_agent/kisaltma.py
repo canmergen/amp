@@ -1671,7 +1671,7 @@ RAPOR_CELISEN = 3        # anlami TASIMAYAN ornek kolon (sozluk hatasi adayi)
 
 RAPOR_KOLONLARI = (
     ["Kısaltma", "LLM Karar", "LLM Sözlük", "LLM Genel", "Karar", "Gerekçe",
-     "Önerilen Kısaltma", "Kaynak", "Hafızada Onaylı",
+     "Önerilen Kısaltma", "Kaynak", "Onaylı Tanım",
      "Geçtiği Tanımlı Kolon", "Anlamı Taşıyan Kolon", "İstatistik Adayları"]
     + sum([["Örnek %d Kolon" % i, "Örnek %d Açıklama" % i]
            for i in range(1, RAPOR_ORNEK + 1)], [])

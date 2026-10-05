@@ -2093,7 +2093,7 @@ function dgLejant(ogeler) {
     return kap;
 }
 /* 01.2 RENK (kullanıcı kararı: renk olsun ama az): mavi dil modeli
-   önerisi, mor hafızada onaylı, sarı dikkat (boş, farklı, uyarılı),
+   önerisi, mor onaylı tanım (hafızada), sarı boş,
    yeşil sizin yazdığınız ya da değiştirdiğiniz. */
 const DG_LEJANT_KARAR = [["dg-l-llm", "Dil Modeli Önerisi"],
                          ["dg-l-hafiza", "Onaylı Tanım"],
@@ -6940,11 +6940,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* Sarı yalnız sözlükteki anlam DEĞİŞTİYSE (dil modeli doğru, ikisi de
        yanlış, yanlış kısaltma), boşsa ya da uyarı varsa; "sözlük doğru" ve
        "ikisi aynı" renksiz (kullanıcı kararı). */
-    /* İKİ RENK (kullanıcı kararı): mor hafızada onaylı, yeşil sizin
-       düzenlediğiniz (bütün akışta aynı); diğer satırlar renksiz.
-       Uyarılar "i"de. */
-    ust.appendChild(dgLejant([["dg-l-hafiza", "Hafızada Onaylı"],
-                              ["dg-l-duzenlendi", "Düzenlendi"]]));
+    /* RENK VE ADLAR BÜTÜN AKIŞTA AYNI (kullanıcı kararı): mavi dil modeli
+       önerisi, mor onaylı tanım (hafızada), sarı boş, yeşil düzenlendi.
+       Dil modeli sonucu olmayan (kelime sayımı) satır renksiz. Uyarılar
+       "i"de. */
+    ust.appendChild(dgLejant(DG_LEJANT_KARAR));
     const toplu = elYap("div", "dg-toplu");
     const kaydetBtn = elYap("button", "dg-toplu-btn dg-kisaltma-kaydet", "Seçilenleri Hafızaya Kaydet");
     kaydetBtn.type = "button";
@@ -7066,7 +7066,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const iMetni = [r.oy ? (r.oy > 1 ? "İki dil modeli de önerdi." : "Bir dil modeli önerdi.") : "",
                             r.gerekce ? "Gerekçe: " + r.gerekce : "",
                             r.kolon ? ftBinlik(r.kolon) + " kolonda yan yana" : "",
-                            r.onayli ? "Hafızada onaylı" : ""].filter(Boolean).join("\n\n");
+                            r.onayli ? "Onaylı tanım (hafızada)" : ""].filter(Boolean).join("\n\n");
             if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kisaltma));
             tr.appendChild(tdK);
             tr.appendChild(elYap("td", "dg-kaynak-deger", r.ayri ? tireSade(r.ayri) : BOS_SIMGE));
@@ -7095,13 +7095,16 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             kutu.checked = !!r.onayli || !!r.elle; kutu.disabled = kilitli;
             kutu.setAttribute("aria-label", r.kisaltma + " birleştir");
             tdI.appendChild(kutu); tr.appendChild(tdI);
-            /* Kısaltma Sözlüğü ile aynı: mor hafızada onaylı, yeşil
-               düzenlendi (elle eklenen ya da değiştirilen); öneri renksiz. */
+            /* Akıştaki renkler: mavi dil modeli önerisi, mor onaylı tanım,
+               sarı boş, yeşil düzenlendi (elle eklenen ya da değiştirilen). */
             const vurgu = () => {
-                const ell = !!r.elle || g.value.trim() !== tireSade(r.anlam || "").trim()
-                    || y.value !== String(r.yeni_kisaltma || "");
+                const bos = !g.value.trim();
+                const ell = !bos && (!!r.elle || g.value.trim() !== tireSade(r.anlam || "").trim()
+                    || y.value !== String(r.yeni_kisaltma || ""));
+                tr.classList.toggle("dg-bos", bos);
                 tr.classList.toggle("dg-duzenlendi", ell);
-                tr.classList.toggle("dg-hafiza-renk", !ell && !!r.onayli);
+                tr.classList.toggle("dg-hafiza-renk", !bos && !ell && !!r.onayli);
+                tr.classList.toggle("dg-llm", !bos && !ell && !r.onayli);
             };
             g.addEventListener("input", vurgu);
             y.addEventListener("input", vurgu);
@@ -7124,7 +7127,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const tdK = elYap("td", "dg-kolon dg-kisaltma-ad", r.kisaltma);
             const orn = r.ornekler || [];
             /* Eski Not sütununun içeriği (karar, gerekçe, uyarı) + örnekler. */
-            const notMetni = [r.onayli ? "Hafızada onaylı" : "", r.kanit || "",
+            const notMetni = [r.onayli ? "Onaylı tanım (hafızada)" : "", r.kanit || "",
                               r.uyari ? "Uyarı: " + r.uyari : ""].filter(Boolean).join("\n\n");
             const iMetni = [notMetni, orn.length ? "Örnek kolonlar:\n\n"
                 + orn.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n") : ""]
@@ -7246,8 +7249,13 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 else if (dmDen || sozDen || ayni(r.anlam))
                     tur = r.uyum === "ayni" ? "ayni" : r.uyum === "farkli" ? "farkli" : "";
                 else tur = "eklendi";
-                /* Yalnız iki renk: hafızada onaylı ve düzenlendi. */
+                /* Akıştaki dört renk. Dokunulmamış değer dil modelinden
+                   geldiyse mavi; yalnız kelime sayımıysa renksiz. */
+                const dmSonuc = !!r.secim || /^(dil_modeli|genel)/.test(r.kaynak || "");
+                tr.classList.toggle("dg-bos", tur === "bos");
                 tr.classList.toggle("dg-hafiza-renk", tur === "hafiza");
+                tr.classList.toggle("dg-llm", (tur === "ayni" || tur === "farkli" || tur === "") && !r.bekliyor
+                                              && !!m && dmSonuc);
                 tr.classList.toggle("dg-duzenlendi", tur === "eklendi");
                 tdS.classList.toggle("secili", sozDen);
                 tdD.classList.toggle("secili", dmDen);
@@ -7261,7 +7269,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         });
         const onayli = (liste || []).filter(r => r.onayli).length;
         durumEl.textContent = ((liste || []).length
-            ? ftBinlik((liste || []).length) + " kısaltma; " + ftBinlik(onayli) + " tanesi hafızada onaylı."
+            ? ftBinlik((liste || []).length) + " kısaltma; " + ftBinlik(onayli) + " tanesi onaylı tanım."
             : "Kolon adlarından güvenilir bir kısaltma çıkarılamadı.")
             + (ka.not ? " " + tireSade(ka.not) : "");
         sar.hidden = ust.hidden = !(liste || []).length;

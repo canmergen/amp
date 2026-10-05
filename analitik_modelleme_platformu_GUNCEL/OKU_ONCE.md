@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Düzenlendi bütün akışta yeşil**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
+Bu tur: **Renk ve adlar akışta aynı**. Değiştir: `webapp/app.js`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı; kisaltma.py yalnız Excel sütun adı)
+
+- Kısaltma Sözlüğü ve Birleştirme de diğer 01.2 kartlarıyla aynı dört
+  renk ve adla: mavi Dil Modeli Önerisi, mor Onaylı Tanım, sarı Boş,
+  yeşil Düzenlendi. Dil modeli sonucu olmayan (yalnız kelime sayımı)
+  satır renksiz.
+- "Hafızada onaylı" her yerde "Onaylı Tanım" (lejant, i, bilgi kutusu,
+  Excel sütunu).
+
+Önceki tur: **Düzenlendi bütün akışta yeşil**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
 
 - Kısaltma Sözlüğü ve Birleştirme tablolarında düzenlenen satır sarı
   yerine yeşil; diğer kartlarla aynı. Bu iki tabloda renkler: mor
