@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Birleştirme önerilerinde i içinde örnek kolonlar**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma işlerinde model seçimi: hızlı model kullanılmaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Kısaltma Sözlüğü ve birleştirme önerilerinde Qwen Flash kullanılmaz.
+  LLM Genel (sözlüksüz): Llama 3.1 70B. LLM Sözlük + LLM Karar: Qwen 3
+  Thinking ve Llama ayrı ayrı; ayrışırlarsa hakem Qwen 3 Thinking.
+  Birleştirme sorusu: Qwen 3 Thinking ve Llama. Biri cevap veremezse
+  diğerine düşer.
+- Düşünen model yavaş: kısaltma çağrılarında zaman aşımı 240 sn (genel
+  90 sn), parça başına kısaltma 6 (önce 8).
+- Diğer işler (açıklama önerisi, tanım kontrolü) değişmedi.
+
+Önceki tur: **Birleştirme önerilerinde i içinde örnek kolonlar**. Değiştir: `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Birleştirme Önerileri'nde Kısaltmalar hücresindeki i: kaç modelin
   önerdiği ve gerekçenin altında, parçaların yan yana geçtiği en çok 3

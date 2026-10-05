@@ -749,7 +749,17 @@ ORKESTRA = {
     "hakem": ("qwen_thinking", "llama"),
     "tarayici": ("qwen_flash", "llama"),
     "denetci": ("llama", "qwen_thinking"),
+    # KISALTMA ISLERI (kullanici karari: "cok onemli kisim, zayif model
+    # zayif sonuc uretir"): hizli model (qwen_flash) kullanilmaz. Anlami
+    # tanimlardan harf harf eslestirmek muhakeme istedigi icin karar ve
+    # hakem dusunen model; ikinci goz Llama. Genel anlam (sozluksuz) Llama.
+    "kisaltma_genel": ("llama", "qwen_thinking"),
+    "kisaltma_1": ("qwen_thinking", "llama"),
+    "kisaltma_2": ("llama", "qwen_thinking"),
+    "kisaltma_hakem": ("qwen_thinking", "llama"),
 }
+# Dusunen model yavas: kisaltma cagrilarinda zaman asimi daha uzun.
+KISALTMA_ZAMAN_ASIMI = 240.0
 MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_thinking": "Qwen 3 Thinking",
                 "qwen_flash": "Qwen Flash"}
 ORKESTRA_DUSME_SINIRI = 2
@@ -774,10 +784,11 @@ class Orkestra(object):
     def modeller(self, rol):
         return [m for m in self.roller.get(rol, ()) if self.uygun_mu(m)]
 
-    def cagir(self, ad, sistem, govde, sicaklik=0.2):
+    def cagir(self, ad, sistem, govde, sicaklik=0.2, zaman_asimi=None):
         """Tek model cagrisi; ham metin doner, basarisizsa firlatir."""
         try:
-            ham = _cagir(sistem, govde, model=MODELLER[ad], sicaklik=sicaklik)
+            ham = _cagir(sistem, govde, model=MODELLER[ad], sicaklik=sicaklik,
+                         zaman_asimi=zaman_asimi)
             with self._kilit:
                 self._hata[ad] = 0
             return ham
@@ -787,14 +798,14 @@ class Orkestra(object):
                 self._son[ad] = _hata_metni(e)
             raise
 
-    def json_cagir(self, adlar, sistem, govde, sicaklik=0.2, haric=()):
+    def json_cagir(self, adlar, sistem, govde, sicaklik=0.2, haric=(), zaman_asimi=None):
         """adlar sirasiyla dener; ilk OKUNABILIR JSON'u doner.
         Doner: (model, veri). Hicbiri olmazsa (None, {})."""
         for ad in adlar:
             if ad in haric or not self.uygun_mu(ad):
                 continue
             try:
-                veri = _json_ayristir(self.cagir(ad, sistem, govde, sicaklik),
+                veri = _json_ayristir(self.cagir(ad, sistem, govde, sicaklik, zaman_asimi),
                                       {}, dict)
             except Exception:
                 continue
@@ -1376,7 +1387,7 @@ def _kor_oku(veri, girdi):
 # Parca basina kisaltma: 25'te istem uzun oluyordu (8 ornek x tanim) ve
 # 90 sn zaman asimina takilma riski vardi; parcalar AYNI ANDA calisir.
 # 8: parca bittikce kart guncellenir; kucuk parca = daha sik guncelleme.
-KISALTMA_PARCA = 8
+KISALTMA_PARCA = 6         # dusunen model icin daha kucuk parca
 _KISALTMA_HAVUZ = futures.ThreadPoolExecutor(max_workers=3)
 
 
@@ -1529,9 +1540,9 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
         """Bir parca: (sonuc, cevap_geldi_mi)."""
         sonuc_ = {}
         # 1) KOR: sozluk yok, yalniz kolon adlari (bkz. SISTEM_KISALTMA_KOR).
-        mk, vk = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA_KOR,
+        mk, vk = ork.json_cagir(ork.modeller("kisaltma_genel"), SISTEM_KISALTMA_KOR,
                                 _veri_blogu("KISALTMALAR:", "\n".join(_kor_satiri(g) for g in blok)),
-                                0.1)
+                                0.1, zaman_asimi=KISALTMA_ZAMAN_ASIMI)
         kor = _kor_oku(vk, blok) if mk else {}
         for k_, v_ in kor.items():
             genel_[k_] = v_
@@ -1540,9 +1551,10 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
         # 2) KARAR: hangi aday dogru. Adlandirma kalibi (yeni kisaltmanin
         # dili icin; kullanici karari: "hangi dildeyse o baglamda").
         govde = _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(_kisaltma_satiri(g) for g in blok))
-        m1, v1 = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA, govde, 0.1)
-        m2, v2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KISALTMA, govde, 0.1,
-                                haric=(m1,) if m1 else ())
+        m1, v1 = ork.json_cagir(ork.modeller("kisaltma_1"), SISTEM_KISALTMA, govde, 0.1,
+                                zaman_asimi=KISALTMA_ZAMAN_ASIMI)
+        m2, v2 = ork.json_cagir(ork.modeller("kisaltma_2"), SISTEM_KISALTMA, govde, 0.1,
+                                haric=(m1,) if m1 else (), zaman_asimi=KISALTMA_ZAMAN_ASIMI)
         if not m1 and not m2:
             return sonuc_, False
         ea, ec, eh = {}, {}, {}
@@ -1581,8 +1593,9 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                                 _oneri_notu(ea.get(k)), (ea.get(k) or {}).get("gerekce", ""),
                                 y or "emin değil", (ec.get(k) or {}).get("secim", ""),
                                 _oneri_notu(ec.get(k)), (ec.get(k) or {}).get("gerekce", "")))
-            mh, vh = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_KISALTMA,
-                                    _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(satir)), 0.1)
+            mh, vh = ork.json_cagir(ork.modeller("kisaltma_hakem"), SISTEM_HAKEM_KISALTMA,
+                                    _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(satir)), 0.1,
+                                    zaman_asimi=KISALTMA_ZAMAN_ASIMI)
             if mh:
                 _hakem_tamamla(vh, ea, ec)
             h = _kisaltma_oku(vh, [g for g, _x, _y in ayrisan], eh) if mh else {}
@@ -1726,8 +1739,10 @@ def kisaltma_birlesik(ciftler, orkestra=None, kalip=""):
     ork = orkestra or Orkestra()
     govde = _veri_blogu("CIFTLER:", kalip + "\n".join(_birlesik_satiri(g) for g in ciftler))
     gecerli = {g["ad"] for g in ciftler}
-    m1, v1 = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA_BIRLESIK, govde, 0.1)
-    m2, v2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KISALTMA_BIRLESIK, govde, 0.1,
+    m1, v1 = ork.json_cagir(ork.modeller("kisaltma_1"), SISTEM_KISALTMA_BIRLESIK, govde, 0.1,
+                            zaman_asimi=KISALTMA_ZAMAN_ASIMI)
+    m2, v2 = ork.json_cagir(ork.modeller("kisaltma_2"), SISTEM_KISALTMA_BIRLESIK, govde, 0.1,
+                            zaman_asimi=KISALTMA_ZAMAN_ASIMI,
                             haric=(m1,) if m1 else ())
     if not m1 and not m2:
         return {}, "Birleştirme önerileri için dil modeline ulaşılamadı."
