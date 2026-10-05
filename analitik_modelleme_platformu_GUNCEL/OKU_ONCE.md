@@ -1,6 +1,33 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2 renkleri dört anlamla geri geldi + Kısaltma Sözlüğü'nde küçük yeşil Excel İndir**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; backend yeniden başlatma gerekmez, sayfayı yenileyin)
+Bu tur: **Kısaltma anlamları: kelime sayımı dil modeline gitmez; birleştirme önerilerinde yeni kısaltma**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+Sebep (ekran görüntülerinden): LLM Sözlük'te çıkan tek kelimelik ve ters
+anlamlar (yan yana geçen iki parçada anlamların yer değiştirmesi, birleşik
+kalıp kısaltmalarda tek kelime) kelime sayımının adaylarıydı. Karar
+istemine "sozlukte" adayı, istatistik satırı ve "diğer kısaltmalar"
+(sayımdan gelen anlamlarla) gidiyordu; model bunları kopyalıyor, ters
+anlamı başka kısaltmanınki sanıyordu. Ayrıca "başka kısaltmanın anlamını
+verme" kuralı birleşik kalıpların açılımını kırpıyordu.
+1) Karar istemine kelime sayımı gitmez. Model anlamı örnek tanımlardan
+   okur: kolon adındaki parça sırasını tanımdaki kelimelerle eşleştirip
+   kısaltmanın harflerine karşılık gelen ifadeyi tam yazar. Örnek kolon
+   8 (önce 6), tanım 180 karakter (önce 120).
+2) "Diğer kısaltmalar" satırı yalnız hafızada ONAYLI anlamlarla gider.
+3) Kurallar: birleşik kalıpta her harf grubu karşılanır, açılım tam ve
+   anlaşılır yazılır; açılımın anlaşılır olması için gereken tamamlayıcı
+   kelime kalabilir; başka kısaltmanın anlamı bu kısaltmanın yerine
+   verilmez.
+4) Birleştirme adayları: parçalardan birinin geçtiği kolonların %90'ında
+   yan yana olması yeter (önce ikisinin de). İki modelden biri önerirse
+   listede çıkar (önce ikisi birden gerekiyordu); işaretsiz gelir, kabul
+   kullanıcının. Model birlikte anlamla birlikte okunur yeni kısaltma da
+   önerir (Önerilen Kısaltma'ya dolu gelir). i'de kaç modelin önerdiği.
+5) Öneri yoksa nedeni bölümde yazar ("dil modeli bulmadı" / "alınamadı:
+   sebep").
+6) LLM Karar sütunu genişledi.
+
+Önceki tur: **01.2 renkleri dört anlamla geri geldi + Kısaltma Sözlüğü'nde küçük yeşil Excel İndir**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; backend yeniden başlatma gerekmez, sayfayı yenileyin)
 
 1) 01.2 kartlarında renksiz yerine dört renk: mavi dil modeli önerisi
    (dokunulmamış), mor hafızada onaylı, sarı dikkat (boş, farklı, öneri

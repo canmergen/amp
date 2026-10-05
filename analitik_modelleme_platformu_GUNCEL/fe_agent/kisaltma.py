@@ -124,13 +124,18 @@ IFADE_PAY = 0.9
 BIRLESIK_EN_COK = 40      # dil modeline giden en cok aday cift
 
 
-def ifade_adaylari(adlar):
-    """Hep yan yana gecen parca ciftleri: {(A, B): birlikte_gectigi_kolon}."""
+def ifade_adaylari(adlar, tek_taraf=False):
+    """Hep yan yana gecen parca ciftleri: {(A, B): birlikte_gectigi_kolon}.
+    tek_taraf: parcalardan BIRININ gectigi kolonlarin IFADE_PAY kadarinda
+    yan yana olmasi yeter (dil modeline giden birlestirme adaylari)."""
     tek, cift = Counter(), Counter()
     for ad in adlar or ():
         ham = _ham_parcalar(ad)
         tek.update(set(p for p in ham if p))
         cift.update(set((a, b) for a, b in zip(ham, ham[1:]) if a and b and a != b))
+    if tek_taraf:
+        return {(a, b): n for (a, b), n in cift.items()
+                if n >= EN_AZ_KOLON and (n >= IFADE_PAY * tek[a] or n >= IFADE_PAY * tek[b])}
     return {(a, b): n for (a, b), n in cift.items()
             if n >= EN_AZ_KOLON and n >= IFADE_PAY * tek[a] and n >= IFADE_PAY * tek[b]}
 
@@ -986,7 +991,7 @@ def celiskiler(tanimlar, anlamlar=None):
 # ---------------------------------------------------------------------------
 # DIL MODELI - arka planda, onbellekli
 # ---------------------------------------------------------------------------
-ORNEK_SAYISI = 6          # kisaltma basina modele giden en cok ornek kolon
+ORNEK_SAYISI = 8          # kisaltma basina modele giden en cok ornek kolon
 DM_BEKLE_SN = 25.0        # kart kurulurken sonucu en cok bu kadar bekler
 _DM = {}                  # imza -> {"durum", "sonuc", "zaman"}
 _DM_KILIT = threading.Lock()
@@ -1024,14 +1029,15 @@ def _dm_girdisi(tanimlar):
         if parca not in aday and parca.isalpha() and len(parca) > 6:
             continue        # uzun duz kelime kisaltma degil
         ornek = _ornekler(tanimlar, parca)
-        # Orneklerdeki DIGER kisaltmalarin anlamlari (onayli ya da
-        # ogrenilen): model hangi kelimenin baska kisaltmaya ait oldugunu
-        # gorsun.
+        # Orneklerdeki DIGER kisaltmalarin YALNIZ ONAYLI anlamlari
+        # (kullanici bildirimi: kelime sayiminin anlamlari da gidiyordu ve
+        # yan yana gecen iki parcanin anlamlari ters ciktiginda model
+        # yanlis anlami "baskasinin" sanip digerini seciyordu).
         diger = {}
         for ad, _t in ornek:
             for p in parcalar(ad):
-                if p != parca and (onay.get(p) or (cikan.get(p) or {}).get("anlam")):
-                    diger[p] = onay.get(p) or cikan[p]["anlam"]
+                if p != parca and onay.get(p):
+                    diger[p] = onay[p]
         girdi.append({"kisaltma": parca, "kolon": int(adet),
                       "anlam": (cikan.get(parca) or {}).get("anlam", ""),
                       "adaylar": (aday.get(parca) or {}).get("adaylar", [])[:ADAY_SAYISI],
@@ -1071,15 +1077,16 @@ def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
         if k_ and k_.get("durum") == "calisiyor":
             k_["sonuc"] = dict(sonuc or k_.get("sonuc") or {})
             k_["bekleyen"] = set()
-    birlesik = {}
+    birlesik, birlesik_hata = {}, ""
     if sonuc is not None:
         try:
             birlesik = _birlesik_sor(tanimlar or {}, girdi, sonuc)
-        except Exception:
-            birlesik = {}
+        except Exception as e:
+            birlesik, birlesik_hata = {}, str(e)[:200]
     with _DM_KILIT:
         _DM[imza] = {"durum": "bitti" if sonuc is not None else "hata",
                      "sonuc": sonuc or {}, "zaman": time.time(), "birlesik": birlesik,
+                     "birlesik_hata": birlesik_hata,
                      "hata": str(hata or ""), "sure": round(time.time() - _DM.get(imza, {}).get("zaman", time.time()))}
     # KALICI YAZMA BURADA DEGIL: 01.2.4 tamamlaninca, DUZELTILMIS calisma
     # kopyasindan yapilir (bkz. kalici_ogren). Ham sozlukten ogrenilen
@@ -1089,7 +1096,7 @@ def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
 def _birlesik_girdisi(tanimlar, anlamlar):
     """Hep yan yana gecen ciftler + parcalarin anlamlari + ornek kolonlar."""
     tanimli = {ad: t for ad, t in (tanimlar or {}).items() if str(t or "").strip()}
-    aday = ifade_adaylari(list(tanimli))
+    aday = ifade_adaylari(list(tanimli), tek_taraf=True)
     girdi = []
     for (a, b), n in sorted(aday.items(), key=lambda x: (-x[1], x[0]))[:BIRLESIK_EN_COK]:
         ornek = []
@@ -1115,7 +1122,12 @@ def _birlesik_sor(tanimlar, girdi, sonuc):
     if not ciftler:
         return {}
     from fe_agent import llm as llm_mod
-    oner, _h = llm_mod.kisaltma_birlesik(ciftler)
+    yaygin = [g["kisaltma"] for g in sorted(girdi, key=lambda g: -int(g.get("kolon") or 0))][:20]
+    kalip = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n"
+             % ", ".join(yaygin)) if yaygin else ""
+    oner, hata = llm_mod.kisaltma_birlesik(ciftler, kalip=kalip)
+    if hata:
+        raise RuntimeError(hata)
     cikti = {}
     for g in ciftler:
         o = (oner or {}).get(g["ad"])
@@ -1153,11 +1165,12 @@ def birlesik_onerileri(tanimlar, veri_seti=""):
     cikti = []
     for ad, o in sorted(oner.items(), key=lambda x: (-int(x[1].get("kolon") or 0), x[0])):
         cikti.append({"kisaltma": ad, "parcalar": o.get("parcalar") or ad.split("_", 1),
+                      "yeni_kisaltma": o.get("yeni_kisaltma") or "", "oy": o.get("oy") or 0,
                       "ayri": o.get("ayri") or "", "anlam": onay.get(ad) or o.get("anlam") or "",
                       "oneri_anlam": o.get("anlam") or "",
                       "gerekce": o.get("gerekce") or "", "kolon": int(o.get("kolon") or 0),
                       "onayli": ad in onay})
-    return cikti, k.get("durum") != "calisiyor"
+    return cikti, k.get("durum") != "calisiyor", k.get("birlesik_hata") or ""
 
 
 def dogrulamayi_baslat(tanimlar, veri_seti=""):

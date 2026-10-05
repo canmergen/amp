@@ -6991,6 +6991,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     bSar.appendChild(elYap("div", "dg-tablo-baslik dg-birlesik-baslik", "Birleştirme Önerileri"));
     const bAck = elYap("div", "dg-kisa-aciklama", "");
     bSar.appendChild(bAck);
+    /* Öneri yoksa nedeni (dil modeli bulmadı / alınamadı). */
+    const bNot = elYap("div", "dg-not", "");
+    bNot.hidden = true;
+    bSar.appendChild(bNot);
     const bTablo = elYap("table", "dg-tablo dg-birlesik-tablo");
     const bTh = document.createElement("thead"), bHr = document.createElement("tr");
     ["Kısaltmalar", "Ayrı Anlamlar", "Birlikte Anlam", "Önerilen Kısaltma", "Birleştir"]
@@ -7052,11 +7056,14 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         bTb.textContent = "";
         bSatirlar.length = 0;
         bAck.textContent = tireSade(ka.birlesik_aciklama || "");
+        bNot.textContent = tireSade(ka.birlesik_not || "");
+        bNot.hidden = !ka.birlesik_not;
         const tum = sonBirlesik.concat(bEklenen.filter(b => !sonBirlesik.some(x => x.kisaltma === b.kisaltma)));
         tum.forEach(r => {
             const tr = elYap("tr", "dg-satir");
             const tdK = elYap("td", "dg-kolon dg-kisaltma-ad", (r.parcalar || []).join(" + "));
-            const iMetni = [r.gerekce ? "Gerekçe: " + r.gerekce : "",
+            const iMetni = [r.oy ? (r.oy > 1 ? "İki dil modeli de önerdi." : "Bir dil modeli önerdi.") : "",
+                            r.gerekce ? "Gerekçe: " + r.gerekce : "",
                             r.kolon ? ftBinlik(r.kolon) + " kolonda yan yana" : "",
                             r.onayli ? "Hafızada onaylı" : ""].filter(Boolean).join("\n\n");
             if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kisaltma));
@@ -7313,6 +7320,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                         bElle[x.r.kisaltma] = { anlam: x.g.value, kutu: x.kutu.checked, yeni: x.y.value };
                 });
                 ka.birlesik_aciklama = yeni.birlesik_aciklama || ka.birlesik_aciklama;
+                ka.birlesik_not = yeni.birlesik_not || "";
                 birlesikCiz(yeni.birlesik);
                 bSatirlar.forEach(x => {
                     const e = bElle[x.r.kisaltma];

@@ -1193,21 +1193,25 @@ _KISALTMA_KURALLARI = """KURALLAR:
     yukleme ya da ifadeyi parcalara bolup dagitma. Parcalarin kendi
     anlamlari genel anlamlariysa "genel" sec.
   - Birkac kelimenin kisaltilip bitistirildigi (ya da unluleri atilmis)
-    kalip kisaltmalari DOGRU kisaltmalardir; anlamin TAMAMINI yaz, tek
-    kelimeye indirme.
+    kalip kisaltmalari DOGRU kisaltmalardir; HER harf grubunu karsila ve
+    acilimin TAMAMINI anlasilir bir Turkce ifadeyle yaz; tek kelimeye ya
+    da bir parcasina indirme.
   - Kisaltma kolon adlarinda sayiyla birlesik geciyorsa (harf + sayi
     degeri) yalniz HARF kisminin anlamini yaz; sayi o kalibin degeridir,
     anlama katilmaz. Bu kisaltma icin yeni kisaltma onerme.
   - Adi bilinen bir olcu ya da yontemse OZEL ADINI yaz, aciklamasini
     degil.
   - anlam, KISALTMANIN KENDI anlamidir; baglam ifadesi DEGIL: tanimlarda
-    kisaltmanin yanindaki kelimeler (pencere, yon, istatistik) anlama
-    katilmaz.
+    kisaltmanin yanindaki pencere, yon ve istatistik kelimeleri anlama
+    katilmaz. Ama acilimin anlasilir olmasi icin gereken tamamlayici
+    kelime (bir eylemin nesnesi gibi) kalabilir; anlami yarim birakma.
   - YALIN halde (adedi degil adet, orani degil oran, skoru degil skor),
     tamamen Turkce (ozel adlar haric), 1-5 kelime. Birden cok kelimeyi
     birlestiren kisaltmada anlamin tamamini yaz.
-  - Birlikte gectigi BASKA bir kisaltmanin anlamini verme: "diger
-    kisaltmalar" satirindaki kelimeler baska kisaltmalarindir.
+  - Birlikte gectigi BASKA bir kisaltmanin anlamini bu kisaltmanin
+    YERINE verme ("onayli kisaltmalar" satirindakiler kesin baska
+    kisaltmalarindir). Kisaltmanin harflerine hangi kelimelerin karsilik
+    geldigine bak.
   - Emin degilsen "emin_degil"; tahmin uydurma. Yanlis anlam bos anlamdan
     kotudur.
 
@@ -1227,7 +1231,7 @@ secme. Secilirse "anlam" dogru anlamdir, "yeni_kisaltma" ayni anlamin
 YAYGIN ve okunur karsiligi, "yeni_anlam" ayni anlam.
 YENI KISALTMA BICIMI: BUYUK harf, yalniz A-Z, 0-9 ve parca ayiraci "_";
 en cok 4 parca, parca basina en cok 8, toplam en cok 24 karakter;
-"diger kisaltmalar"dakilerden biri olmasin. Diger secimlerde
+"onayli kisaltmalar"dakilerden biri olmasin. Diger secimlerde
 "yeni_kisaltma" ve "yeni_anlam" BOS.
 
 YENI KISALTMANIN DILI: kolon adlari hangi dilde ve kalipta kisaltilmissa
@@ -1241,20 +1245,19 @@ Anlam alanlari her durumda Turkce kalir."""
 
 SISTEM_KISALTMA = """Sen bir bankacilik ve veri bilimi sozlugu uzmanisin.
 Kolon adlarinda gecen KISALTMALAR verilecek. Her biri icin:
-  sozlukte : kullanicinin sozlugundeki aciklamalardan KELIME SAYIMIYLA
-             cikan aday ("(bos)" olabilir). Kaba bir ipucudur: tek kelimeye
-             inmis, eksik ya da yanlis olabilir
-  genel    : baska bir modelin sozlugu GORMEDEN, yalniz kolon adlarina
-             bakarak verdigi genel anlam ("(bilinmiyor)" olabilir)
-Ayrica "istatistik" satirinda aday kelimeler ve yuzdeleri, "diger
-kisaltmalar" satirinda ornek kolonlardaki diger kisaltmalarin anlamlari ve
-kisaltmanin gectigi cesitli ORNEK kolon adlari ile sozlukteki tanimlari.
+  genel   : baska bir modelin sozlugu GORMEDEN, yalniz kolon adlarina
+            bakarak verdigi genel anlam ("(bilinmiyor)" olabilir)
+  ornekler: kisaltmanin gectigi cesitli kolon adlari ve kullanicinin
+            sozlugundeki TANIMLARI
+  "onayli kisaltmalar" satiri (varsa): ornek kolonlardaki diger
+            kisaltmalarin kullanicinin onayladigi anlamlari
 
-ONCE "sozluk_anlam" alanini doldur: ORNEK KOLONLARIN TANIMLARINA bakarak
-bu kisaltmanin sozlukte hangi anlamda kullanildigi (genel bilgini
-karistirmadan). Kelime sayimi adayi eksik ya da tek kelimeyse tanimlardan
-TAM anlami yaz; tanimlardan cikmiyorsa bos birak. Asagidaki karar
-"sozluk_anlam" ile "genel" arasindadir ("sozlukte" adayi yalniz ipucu).
+ONCE "sozluk_anlam" alanini doldur, genel bilgini KARISTIRMADAN: ornek
+tanimlarin HEPSINI oku; kolon adindaki parcalarin sirasini tanimdaki
+kelimelerle eslestir ve bu kisaltmanin harflerine KARSILIK GELEN ifadeyi
+bul. Tek bir ornegin kelimesine takilma; orneklerin ortak karsiligini
+TAM yaz. Tanimlardan cikmiyorsa bos birak. Asagidaki karar "sozluk_anlam"
+(sozlukteki anlam) ile "genel" arasindadir.
 
 Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
   "ayni"           : iki aday AYNI KAVRAM (yalniz es anlamli kelimeler).
@@ -1288,12 +1291,12 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
   "yeni_anlam": ""}]}""" + SINIRLAYICI_KURALI
 
 SISTEM_HAKEM_KISALTMA = """Sen bir bankacilik ve veri bilimi sozlugu
-editorusun. Her kisaltma icin iki aday anlam (sozlukte / genel), ornek
-kolonlar ve iki modelin farkli kararlari verilecek. Ornek kolonlara
-bakarak SON KARARI ver (sozluk_anlam, secim, anlam, gerekce,
-yeni_kisaltma; anlamlari asagidaki gibi). "sozluk_anlam": ornek kolonlarin
-TANIMLARINA gore kisaltmanin sozlukteki anlami (tam yaz; "sozlukte" adayi
-kelime sayimidir, eksik olabilir).
+editorusun. Her kisaltma icin genel anlam (sozluge bakmadan), ornek
+kolonlar ile tanimlari ve iki modelin farkli kararlari verilecek. Ornek
+kolonlara bakarak SON KARARI ver (sozluk_anlam, secim, anlam, gerekce,
+yeni_kisaltma; anlamlari asagidaki gibi). "sozluk_anlam": ornek
+tanimlarin hepsine bakarak bu kisaltmanin harflerine karsilik gelen
+ifade, TAM yazilir.
 Modellerin onerdigi kisaltmalar satirda "onerilen kisaltma" olarak
 yazar; "kisaltma_yanlis" ya da "anlasilmaz" secersen "yeni_kisaltma"
 alanini MUTLAKA doldur (uygunsa onerilenlerden birini al).
@@ -1358,21 +1361,20 @@ _KISALTMA_HAVUZ = futures.ThreadPoolExecutor(max_workers=3)
 
 
 def _kisaltma_satiri(g):
-    s = "- %s | sozlukte: %s" % (g["kisaltma"], g.get("anlam") or "(bos)")
+    """Karar istemindeki satir. KELIME SAYIMI GITMEZ (kullanici bildirimi:
+    model sayimin tek kelimelik adayini kopyaliyor, yan yana gecen iki
+    parcanin anlamlarini ters veriyordu); model anlami tanimlardan okur.
+    Diger kisaltmalardan yalniz kullanicinin ONAYLADIKLARI gider."""
+    s = "- %s" % g["kisaltma"]
     if g.get("genel") is not None:
         s += " | genel: %s" % (g["genel"] or "(bilinmiyor)")
     if g.get("kolon"):
         s += " | %d kolonda geciyor" % g["kolon"]
-    if g.get("adaylar"):
-        s += "\n    istatistik: " + "; ".join(
-            "%s (tanimlarin %%%d'inde, digerlerinden %%%d fazla)"
-            % (a["anlam"], round(a["destek"] * 100), round(a["ayirt"] * 100))
-            for a in g["adaylar"])
     if g.get("bilinen"):
-        s += "\n    diger kisaltmalar: " + ", ".join(
+        s += "\n    onayli kisaltmalar: " + ", ".join(
             "%s=%s" % kv for kv in sorted(g["bilinen"].items()))
-    for ad, t in (g.get("ornekler") or [])[:6]:
-        s += "\n    %s: %s" % (ad, str(t)[:120])
+    for ad, t in (g.get("ornekler") or [])[:8]:
+        s += "\n    %s: %s" % (ad, str(t)[:180])
     return s
 
 
@@ -1650,13 +1652,18 @@ Her cift icin karar ver:
   "birlestir" : ayri anlamlar yan yana okununca anlam KARISIYOR, yanlis ya
                 da eksik kaliyor; iki parca birlikte TEK bir kavram
                 anlatiyor
-Emin degilsen "ayri" sec. "birlestir" secersen "anlam" ciftin BIRLIKTE
-anlamidir: yalin, tamamen Turkce (ozel adlar haric), 1-5 kelime, pencere
-ve sayi icermez. "gerekce": tek kisa cumle, Turkce karakterlerle.
+Emin degilsen "ayri" sec. "birlestir" secersen:
+  "anlam"         : ciftin BIRLIKTE anlami; yalin, tamamen Turkce (ozel
+                    adlar haric), 1-5 kelime, pencere ve sayi icermez
+  "yeni_kisaltma" : birlesik ifadenin daha okunur TEK kisaltmasi (yoksa
+                    bos). Kolon adlarinin dilinde ve kalibinda (bkz.
+                    "ADLANDIRMA KALIBI"); BUYUK harf, A-Z, 0-9, "_"; en cok
+                    4 parca, parca basina 8, toplam 24 karakter
+"gerekce": tek kisa cumle, Turkce karakterlerle.
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "A_B", "karar": "ayri|birlestir", "anlam": "",
-  "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
+  "yeni_kisaltma": "", "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
 
 
 def _birlesik_satiri(g):
@@ -1678,21 +1685,26 @@ def _birlesik_oku(veri, gecerli):
             continue
         karar = str(k.get("karar") or "").strip().lower()
         anlam = _kucult(k.get("anlam"))
+        yeni = re.sub(r"[\s\-./]+", "_", str(k.get("yeni_kisaltma") or "").strip().upper())
+        yeni = re.sub(r"_+", "_", re.sub(r"[^A-Z0-9_]", "", yeni)).strip("_")
+        if not _YENI_KISA.match(yeni) or yeni == ad:
+            yeni = ""
         cikti[ad] = {"birlestir": karar.startswith("birle") and bool(anlam), "anlam": anlam,
+                     "yeni_kisaltma": yeni,
                      "gerekce": re.sub(r"\s+", " ", str(k.get("gerekce") or "")).strip()[:240]}
     return cikti
 
 
-def kisaltma_birlesik(ciftler, orkestra=None):
+def kisaltma_birlesik(ciftler, orkestra=None, kalip=""):
     """ciftler: [{"ad": "A_B", "parcalar": [A, B], "anlamlar": [a, b],
-    "kolon", "ornekler"}]. Iki model sorulur; YALNIZ IKISI DE "birlestir"
-    derse oneri olur (yalanci birlestirme olmasin). Tek model cevap
-    verdiyse onun karari gecer.
-    Doner: ({"A_B": {"anlam", "gerekce"}}, hata)."""
+    "kolon", "ornekler"}]. Iki model sorulur; BIRI "birlestir" derse oneri
+    olur (kullanici karari: mantikli birlesimi dil modeli onersin, kabul
+    kullanicinin; oneri isaretsiz gelir). "oy": kac model onerdi.
+    Doner: ({"A_B": {"anlam", "yeni_kisaltma", "gerekce", "oy"}}, hata)."""
     if not ciftler:
         return {}, None
     ork = orkestra or Orkestra()
-    govde = _veri_blogu("CIFTLER:", "\n".join(_birlesik_satiri(g) for g in ciftler))
+    govde = _veri_blogu("CIFTLER:", kalip + "\n".join(_birlesik_satiri(g) for g in ciftler))
     gecerli = {g["ad"] for g in ciftler}
     m1, v1 = ork.json_cagir(ork.modeller("tarayici"), SISTEM_KISALTMA_BIRLESIK, govde, 0.1)
     m2, v2 = ork.json_cagir(ork.modeller("denetci"), SISTEM_KISALTMA_BIRLESIK, govde, 0.1,
@@ -1703,9 +1715,11 @@ def kisaltma_birlesik(ciftler, orkestra=None):
     b = _birlesik_oku(v2, gecerli) if m2 else None
     cikti = {}
     for ad in gecerli:
-        oylar = [x.get(ad) for x in (a, b) if x is not None]
-        if oylar and all(o and o["birlestir"] for o in oylar):
-            cikti[ad] = {"anlam": oylar[0]["anlam"], "gerekce": oylar[0]["gerekce"]}
+        evet = [o for o in (x.get(ad) for x in (a, b) if x is not None) if o and o["birlestir"]]
+        if evet:
+            yeni = next((o["yeni_kisaltma"] for o in evet if o["yeni_kisaltma"]), "")
+            cikti[ad] = {"anlam": evet[0]["anlam"], "gerekce": evet[0]["gerekce"],
+                         "yeni_kisaltma": yeni, "oy": len(evet)}
     return cikti, None
 
 

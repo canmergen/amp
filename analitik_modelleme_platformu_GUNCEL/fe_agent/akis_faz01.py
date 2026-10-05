@@ -1479,9 +1479,10 @@ def _kisaltma_alani(durum, bekle=0.0):
     kaynak = _kisaltma_kaynagi(durum)
     satirlar, dm = kisaltma_mod.kart_satirlari(kaynak, bekle, durum.get("veri_seti") or "")
     try:
-        birlesik, _hazir = kisaltma_mod.birlesik_onerileri(kaynak, durum.get("veri_seti") or "")
+        birlesik, _hazir, birlesik_hata = kisaltma_mod.birlesik_onerileri(
+            kaynak, durum.get("veri_seti") or "")
     except Exception:
-        birlesik = []
+        birlesik, birlesik_hata = [], ""
     notu = {"hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
     if dm == "calisiyor":
         # PARCA BITTIKCE: biten kisaltmalar duzenlenebilir, bekleyenler kilitli.
@@ -1513,11 +1514,16 @@ def _kisaltma_alani(durum, bekle=0.0):
                                  "anlam": anlam, "oneri_anlam": "", "gerekce": "",
                                  "kolon": 0, "onayli": True, "elle": True})
     for b_ in birlesik:
-        b_["yeni_kisaltma"] = (durum.get("kisaltma_yeni") or {}).get(b_["kisaltma"], "")
+        if b_["kisaltma"] in (durum.get("kisaltma_yeni") or {}):
+            b_["yeni_kisaltma"] = durum["kisaltma_yeni"][b_["kisaltma"]]
     return {"baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
             "sutunlar": KISALTMA_SUTUNLAR,
             "satirlar": satirlar, "not": notu, "dm": dm,
-            "birlesik": birlesik, "birlesik_aciklama": BIRLESIK_ACIKLAMA}
+            "birlesik": birlesik, "birlesik_aciklama": BIRLESIK_ACIKLAMA,
+            "birlesik_not": ("Birleştirme önerileri alınamadı: %s" % birlesik_hata
+                             if birlesik_hata else
+                             "" if dm == "calisiyor" or birlesik else
+                             "Dil modeli birleştirilmesi gereken kısaltma bulmadı.")}
 
 
 KOLON_AD_BASLIK = "Kolon Adı Önerileri"
