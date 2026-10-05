@@ -410,8 +410,8 @@ def adaylar(tanimlar):
                     if not zayif:
                         liste.append(k)
                     elif zayif == "tamlama" and k.split(" ")[1] in tekli:
-                        # "dagilimi entropisi": anlam tamlamanin BASI
-                        # (entropi), niteleyen degil (dagilim).
+                        # Iki kelimesi de ekli tamlama: anlam tamlamanin
+                        # BASI, niteleyen degil.
                         liste.append(k.split(" ")[1])
                     break
             liste.append(en_iyi)
@@ -434,8 +434,8 @@ def adaylar(tanimlar):
 def _ifade_zayif(bicimler):
     """Iki kelimelik aday ifade kisaltma anlami OLAMAZ mi:
       - kelimelerden biri Turkce degil (shrink)
-      - iki kelime de ekli (tamlama: "dagilimi entropisi" = dagilimin
-        entropisi; bu bir aciklamadir, kisaltmanin anlami tek kelimedir)."""
+      - iki kelime de ekli (tamlama: "<A>i <B>si" = <A>in <B>si; bu bir
+        aciklamadir, kisaltmanin anlami tek kelimedir)."""
     yuz = max(bicimler, key=lambda y: bicimler[y])
     kelimeler = yuz.split(" ")
     try:
@@ -562,7 +562,8 @@ _UYUM = {"a": "ı", "ı": "ı", "e": "i", "i": "i", "o": "u", "u": "u", "ö": "�
 
 def _uyumlu_ek(govde, unlu):
     """Iyelik ekinin unlusu govdenin son unlusune uyuyor mu (dortlu unlu
-    uyumu)? "skor"+"u" evet; "entrop"+"i" HAYIR: entropi zaten yalin
+    uyumu)? "skor"+"u" evet; "<kok>"+"i" govdenin son unlusu "o" iken HAYIR:
+    kelime zaten yalin
 """
     for h in reversed(govde):
         if h in _UYUM:
@@ -579,7 +580,7 @@ _C_KOK = {"borç", "harç", "amaç", "güç", "kazanç", "sayaç", "ilaç", "ağ
 def _yalin_kelime(k, sozcukler=()):
     """Tek kelimeyi yalin hale getirir (kural tabanli Turkce ek atma):
     bayragi -> bayrak, skoru -> skor, adedi -> adet, orani -> oran,
-    entropisi -> entropi, tutarinin -> tutar, islemleri -> islem.
+    tutarinin -> tutar, odemesi -> odeme.
     Yalin hali sozlukte geciyorsa o tercih edilir."""
     k = str(k or "")
     if len(k) < 4 or k in _YALIN_ISTISNA:
@@ -595,7 +596,7 @@ def _yalin_kelime(k, sozcukler=()):
         if aday.endswith(ek) and len(aday) > 5 and aday[-4] in _UNLU:
             aday = aday[:-3]
             break
-    # 3) iyelik "-sı" unluden sonra: "entropisi" -> "entropi", "ödemesi"
+    # 3) iyelik "-sı" unluden sonra: "ödemesi" -> "ödeme"
     if len(aday) > 5 and aday[-2] == "s" and aday[-1] in "ıiuü" and aday[-3] in _UNLU \
             and _uyumlu_ek(aday[:-2], aday[-1]):
         aday = aday[:-2]

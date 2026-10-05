@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **PROJE_HAFIZASI'ndaki bütün hafıza dosyaları JSON**. Değiştir: `fe_agent/tablo_io.py`, `fe_agent/tanim_hafiza.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kodda veri örneği kalmadı**. Değiştir: `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı; yalnız yorum)
+
+- Türkçe ek atma kurallarının yorumlarındaki, veriden gelen örnek
+  kelimeler genel örnek ve yer tutucularla değiştirildi. Kodda hiçbir
+  kısaltma için sabit anlam yazılı değil; anlamlar dil modelinden ve
+  sizin onayınızdan gelir.
+
+Önceki tur: **PROJE_HAFIZASI'ndaki bütün hafıza dosyaları JSON**. Değiştir: `fe_agent/tablo_io.py`, `fe_agent/tanim_hafiza.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - TANIM_HAFIZASI, ONERI_ONBELLEGI ve KISALTMA_OGRENILEN de JSON
   (kayıt başına bir nesne, okunur girintili). KISALTMA_HAFIZASI zaten
