@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **"İkisi aynı" ama farklı anlamlar + takılı kalan i balonu**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı). Önceki iki turun dosyaları da (özellikle `fe_agent/akis_faz01.py`) kopyalanmış olmalı.
+Bu tur: **Kısaltma Sözlüğü açıklaması madde madde**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Başlığın altındaki açıklama tek paragraf yerine giriş cümlesi + sütun
+  başına bir madde. Açıklama metninde "- " ile başlayan satırlar kartta
+  madde listesi olur.
+
+Önceki tur: **"İkisi aynı" ama farklı anlamlar + takılı kalan i balonu**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı). Önceki iki turun dosyaları da (özellikle `fe_agent/akis_faz01.py`) kopyalanmış olmalı.
 
 1) Dil modeli "ikisi aynı" dediği hâlde LLM Sözlük ile LLM Genel'in
    yazımı farklıysa satır sarı olur ve uyarı yazar (eş anlamlı mı,

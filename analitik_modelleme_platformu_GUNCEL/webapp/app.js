@@ -6910,6 +6910,25 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
     };
 }
 
+/* Kısa açıklama: "- " ile başlayan satırlar madde listesi olur (kullanıcı
+   kararı: tek paragraf okunmuyordu); diğer satırlar düz metin. */
+function kisaAciklamaYap(metin) {
+    const kap = elYap("div", "dg-kisa-aciklama");
+    let liste = null;
+    String(metin || "").split("\n").forEach(satir => {
+        const t = satir.trim();
+        if (!t) return;
+        if (t.startsWith("- ")) {
+            if (!liste) { liste = elYap("ul", "dg-kisa-liste"); kap.appendChild(liste); }
+            liste.appendChild(elYap("li", "", tireSade(t.slice(2))));
+        } else {
+            liste = null;
+            kap.appendChild(elYap("div", "", tireSade(t)));
+        }
+    });
+    return kap;
+}
+
 function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     let kilitli = ilkKilit;
     const topluBtn = [];
@@ -6918,7 +6937,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* "i" YERİNE KISA AÇIKLAMA başlığın altında (kullanıcı kararı). */
     kb.appendChild(kbas);
     kart.appendChild(kb);
-    if (ka.aciklama) kart.appendChild(elYap("div", "dg-kisa-aciklama", tireSade(ka.aciklama)));
+    if (ka.aciklama) kart.appendChild(kisaAciklamaYap(ka.aciklama));
     /* DURUM BİLGİSİ (kullanıcı kararı): tablonun altında, onay düğmesinin
        üstünde, bilgilendirme kutusu olarak; aşağıda tablodan sonra eklenir. */
     const durumEl = elYap("div", "dg-bilgi-kutu", "");

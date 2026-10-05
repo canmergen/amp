@@ -1443,15 +1443,16 @@ def _kisaltma_kaynagi(durum):
 KISALTMA_BASLIK = "Kısaltma Sözlüğü"
 # Kartta basligin altinda (kullanici karari: "i" yerine kisa aciklama).
 KISALTMA_ACIKLAMA = (
-    "Kolon adlarındaki kısaltmaların anlamı; adlardaki her parça ayrı "
-    "kısaltmadır. LLM Sözlük: dil modelinin sözlükteki açıklamalardan "
-    "okuduğu anlam. LLM Genel: dil modelinin sözlüğe bakmadan verdiği genel "
-    "anlam. LLM Karar: dil modellerinin ikisi arasında karar verdiği anlam; "
-    "düzenleyebilirsiniz. Önerilen Kısaltma: kolon adındaki kısaltma yanlış "
-    "seçilmiş ya da anlaşılmıyorsa yerine önerilen okunur kısaltma (birden "
-    "çok parçalı olabilir). Seç: işaretlenenler proje genelindeki hafızaya "
-    "kaydedilir. Karar, gerekçe ve örnekler kısaltmanın yanındaki i "
-    "simgesinde.")
+    "Kolon adlarındaki kısaltmaların anlamı; adlardaki her parça ayrı kısaltmadır.\n"
+    "- LLM Sözlük: dil modelinin sözlükteki açıklamalardan okuduğu anlam.\n"
+    "- LLM Genel: dil modelinin sözlüğe bakmadan verdiği genel anlam.\n"
+    "- LLM Karar: dil modellerinin ikisi arasında karar verdiği anlam; "
+    "düzenleyebilirsiniz.\n"
+    "- Önerilen Kısaltma: kolon adındaki kısaltma yanlış seçilmiş ya da "
+    "anlaşılmıyorsa yerine önerilen okunur kısaltma (birden çok parçalı "
+    "olabilir).\n"
+    "- Seç: işaretlenenler proje genelindeki hafızaya kaydedilir.\n"
+    "- Karar, gerekçe ve örnekler kısaltmanın yanındaki i simgesinde.")
 BIRLESIK_ACIKLAMA = (
     "Kolon adlarında hep yan yana geçen ve ayrı anlamları yan yana "
     "okununca anlamı karışan kısaltmalar için dil modelinin birleştirme "
