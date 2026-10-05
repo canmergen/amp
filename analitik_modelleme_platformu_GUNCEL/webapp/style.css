@@ -3053,12 +3053,8 @@ span.bolme-cip { cursor: default; }
 .dg-kisaltma-tablo th:nth-child(5) { width: 150px; white-space: normal; }
 .dg-kisaltma-tablo th:nth-child(6) { width: 64px; }
 .dg-kisaltma-tablo .dg-yeni-kisa { text-transform: uppercase; }
-/* Kaynak değerleri salt okunur; Anlam'daki değer hangi kaynaktan
-   geliyorsa onun önünde ✓ görünür. */
+/* Kaynak değerleri salt okunur (✓ işareti kaldırıldı: kullanıcı kararı). */
 .dg-kisaltma-tablo td.dg-kaynak-deger { color: var(--metin); }
-.dg-kisaltma-tablo .dg-secim-isaret { display: inline-block; width: 1.1em; visibility: hidden;
-  color: var(--metin); }
-.dg-kisaltma-tablo td.dg-kaynak-deger.secili .dg-secim-isaret { visibility: visible; }
 .dg-kisaltma-tablo td.dg-kaynak-yok { color: var(--metin-soluk); }
 .dg-kisaltma-tablo td.dg-kisaltma-ad .bolme-info { margin-left: 4px; vertical-align: middle; }
 /* Kısaltma adı kırpılmaz (kullanıcı bildirimi: uzun kısaltmalar kesik

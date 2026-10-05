@@ -6935,8 +6935,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* "Önerilen": temel sözlük, sözlükten çıkarım ya da dil modeli
        (kaynağı satırın Kaynak sütununda yazar). */
     /* 01.2 SADE RENK: renksiz aynı / normal, sarı dikkat (anlam boş,
-       sözlük ve genel farklı, uyarılı), yeşil sizin düzenlediğiniz. Anlam'a
-       hangisinin yazıldığını ✓ gösterir; hafızada onaylı olan "Seç" işaretli. */
+       sözlük ve genel farklı, uyarılı), yeşil sizin düzenlediğiniz; hafızada
+       onaylı olan "Seç" işaretli. */
     /* Sarı yalnız sözlükteki anlam DEĞİŞTİYSE (dil modeli doğru, ikisi de
        yanlış, yanlış kısaltma), boşsa ya da uyarı varsa; "sözlük doğru" ve
        "ikisi aynı" renksiz (kullanıcı kararı). */
@@ -7141,7 +7141,6 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             /* Kaynak sütunları (salt okunur). Seçilen kaynak işaretlenir. */
             const tdS = elYap("td", "dg-kaynak-deger" + (r.secilen === "sozluk" ? " secili" : "")
                     + (r.bekliyor || !r.sozlukten ? " dg-kaynak-yok" : ""));
-            tdS.appendChild(elYap("span", "dg-secim-isaret", "✓"));
             /* LLM Sözlük: dil modelinin tanımlardan okuduğu anlam. Sonucu
                yoksa sözlükteki kelime sayımı (altında belirtilir). */
             tdS.appendChild(document.createTextNode(r.bekliyor ? "bekleniyor…"
@@ -7156,7 +7155,6 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                               bilinmiyor: BOS_SIMGE, yok: BOS_SIMGE };
             const tdD = elYap("td", "dg-kaynak-deger" + (r.secilen === "dil_modeli" ? " secili" : "")
                     + (r.dm_durum && r.dm_durum !== "var" ? " dg-kaynak-yok" : ""));
-            tdD.appendChild(elYap("span", "dg-secim-isaret", "✓"));
             tdD.appendChild(document.createTextNode(r.dm_durum && r.dm_durum !== "var"
                 ? dmMetin[r.dm_durum] || BOS_SIMGE : tireSade(r.dil_modeli || "")));
             tr.appendChild(tdD);

@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Renk ve adlar akışta aynı**. Değiştir: `webapp/app.js`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı; kisaltma.py yalnız Excel sütun adı)
+Bu tur: **Kısaltma Sözlüğü'nde ✓ kaldırıldı, "bekleniyor" hizası düzeldi**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (yalnız ön yüz; sayfayı yenileyin)
+
+- LLM Sözlük ve LLM Genel hücrelerindeki ✓ işareti kaldırıldı. Kayma da
+  bundandı: işaret gizliyken de yer kaplıyordu; dar sütunda metin alt
+  satıra düşüp "bekleniyor…" iki sütunda farklı yükseklikte görünüyordu.
+
+Önceki tur: **Renk ve adlar akışta aynı**. Değiştir: `webapp/app.js`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı; kisaltma.py yalnız Excel sütun adı)
 
 - Kısaltma Sözlüğü ve Birleştirme de diğer 01.2 kartlarıyla aynı dört
   renk ve adla: mavi Dil Modeli Önerisi, mor Onaylı Tanım, sarı Boş,
