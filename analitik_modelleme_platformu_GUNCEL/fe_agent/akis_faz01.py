@@ -2576,7 +2576,7 @@ def _oneri_sonucunu_tasi(durum):
     tanim_hafiza.oneri_ekle(
         {k: v for k, v in (kayit["oneriler"] or {}).items()
          if isinstance(v, dict) and v.get("kaynak") != "hafiza"},
-        durum.get("veri_seti") or "")
+        durum.get("veri_seti") or "", amp_klasor_adi(durum))
 
 
 def _kontrol_alani(durum, kontrol_sayisi):
@@ -2943,7 +2943,8 @@ def sozluk_tanim_plan(durum):
         # satir "Dil Modeli Onerisi" olarak gelir.
         try:
             for ad, k in tanim_hafiza.oneri_bul(
-                    [g for g in gosterilen if g not in hazir], veri_seti).items():
+                    [g for g in gosterilen if g not in hazir], veri_seti,
+                    amp_klasor_adi(durum)).items():
                 hazir[ad] = {"aciklama": k["aciklama"], "kaynak": "llm",
                              "modeller": k.get("modeller") or ""}
         except Exception:

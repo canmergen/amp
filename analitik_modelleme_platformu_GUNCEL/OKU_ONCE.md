@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sözlük tanımı doğru kabul; 01.2.4 ve Sözlük Tanım Kontrolü kalktı; kolon adı tanıma göre tamamlanır**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/amp.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Öneri önbelleği çalışmanın klasöründe**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- ONERI_ONBELLEGI.json (dil modelinin onaysız açıklama önerileri)
+  artık çalışmanın kendi klasöründe (PROJE_HAFIZASI/<çalışma>/). Kökteki
+  eski dosya ilk yeni yazımda bir kez silinir.
+- PROJE_HAFIZASI kökünde yalnız çalışmalar arası ortak dosyalar kalır:
+  CALISMALAR.json, TANIM_HAFIZASI.json (onaylı tanımlar),
+  KISALTMA_HAFIZASI.json (onaylı kısaltmalar), KISALTMA_OGRENILEN.json.
+
+Önceki tur: **Sözlük tanımı doğru kabul; 01.2.4 ve Sözlük Tanım Kontrolü kalktı; kolon adı tanıma göre tamamlanır**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/amp.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Akış: 01.2.1 Baz Veri Seti ve Baz Sözlük, 01.2.2 Kolon Rolleri, 01.2.3
   Eksik Sözlük Tanımları, 01.2.4 Kısaltma Sözlüğü, 01.2.5 Kısaltma

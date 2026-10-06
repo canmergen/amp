@@ -177,19 +177,24 @@ def arka_planda_ekle(kayitlar, veri_seti="", kullanici=""):
 
 
 # ---------------------------------------------------------------------------
-# ONERI ONBELLEGI. ONAYLI DEGIL: dil modelinin bir veri
-# setinin bir kolonu icin verdigi SON oneri. Ayni veri setinin ayni kolonu
-# tekrar geldiginde dil modeli cagrilmaz, bu oneri "Dil Modeli Onerisi"
-# olarak gelir. Baska veri setinde kullanilmaz (onay hafizasi degil).
+# ONERI ONBELLEGI. ONAYLI DEGIL: dil modelinin bir kolon icin verdigi SON
+# oneri. CALISMAYA OZELDIR: calismanin kendi klasorunde durur; ayni
+# calisma yeniden acildiginda dil modeli tekrar cagrilmaz, oneri "Dil
+# Modeli Onerisi" olarak gelir. Calismalar arasi bilgi yalniz onayli
+# tanim hafizasindadir (TANIM_HAFIZASI).
 # ---------------------------------------------------------------------------
-ONERI_DOSYA = "/ONERI_ONBELLEGI.json"
+ONERI_AD = "ONERI_ONBELLEGI.json"
 ONERI_KOLONLAR = ["KOLON", "VERI_SETI", "ACIKLAMA", "MODELLER", "TARIH"]
-_ONERI_ONBELLEK = {"zaman": 0.0, "df": None}
+_ONERI_ONBELLEK = {}      # yol -> {"zaman", "df"}
 
 
-def _oneri_oku():
+def _oneri_yolu(klasor):
+    return "/%s/%s" % (str(klasor).strip("/"), ONERI_AD)
+
+
+def _oneri_oku(yol):
     try:
-        df = tablo_io.klasorden_oku(_folder(), ONERI_DOSYA)
+        df = tablo_io.klasorden_oku(_folder(), yol)
     except Exception:
         return pd.DataFrame(columns=ONERI_KOLONLAR)
     for k in ONERI_KOLONLAR:
@@ -198,14 +203,17 @@ def _oneri_oku():
     return df[ONERI_KOLONLAR].fillna("").astype(str)
 
 
-def oneri_bul(adlar, veri_seti):
-    """{kolon: {"aciklama", "modeller"}} - yalniz AYNI veri setinin onerileri."""
-    if not adlar or not veri_seti:
+def oneri_bul(adlar, veri_seti, klasor):
+    """{kolon: {"aciklama", "modeller"}} - bu calismanin, AYNI veri setinin
+    onerileri. klasor: calismanin PROJE_HAFIZASI icindeki klasoru."""
+    if not adlar or not veri_seti or not klasor:
         return {}
+    yol = _oneri_yolu(klasor)
     simdi = time.time()
-    if _ONERI_ONBELLEK["df"] is None or simdi - _ONERI_ONBELLEK["zaman"] > ONBELLEK_OMRU_SN:
-        _ONERI_ONBELLEK.update(zaman=simdi, df=_oneri_oku())
-    df = _ONERI_ONBELLEK["df"]
+    k = _ONERI_ONBELLEK.get(yol)
+    if not k or simdi - k["zaman"] > ONBELLEK_OMRU_SN:
+        k = _ONERI_ONBELLEK[yol] = {"zaman": simdi, "df": _oneri_oku(yol)}
+    df = k["df"]
     if df is None or df.empty:
         return {}
     df = df[(df["VERI_SETI"] == str(veri_seti)) & df["KOLON"].isin(set(map(str, adlar)))
@@ -214,18 +222,20 @@ def oneri_bul(adlar, veri_seti):
             for _i, r in df.iterrows()}
 
 
-def oneri_ekle(oneriler, veri_seti):
+def oneri_ekle(oneriler, veri_seti, klasor):
     """oneriler: {kolon: {"aciklama", "modeller"}}. Ayni (kolon, veri seti)
-    guncellenir. Arka planda; hata akisi durdurmaz."""
+    guncellenir; calismanin klasorune yazilir. Arka planda; hata akisi
+    durdurmaz."""
     temiz = {str(k): v for k, v in (oneriler or {}).items()
              if isinstance(v, dict) and str(v.get("aciklama") or "").strip()}
-    if not temiz or not veri_seti:
+    if not temiz or not veri_seti or not klasor:
         return
+    yol = _oneri_yolu(klasor)
 
     def is_():
         with _KILIT:
             try:
-                df = _oneri_oku()
+                df = _oneri_oku(yol)
                 df = df[~((df["VERI_SETI"] == str(veri_seti)) & df["KOLON"].isin(set(temiz)))]
                 zaman = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 yeni = pd.DataFrame([{"KOLON": k, "VERI_SETI": str(veri_seti),
@@ -234,8 +244,29 @@ def oneri_ekle(oneriler, veri_seti):
                                       "TARIH": zaman} for k, v in temiz.items()],
                                     columns=ONERI_KOLONLAR)
                 df = pd.concat([df, yeni], ignore_index=True)
-                tablo_io.klasore_yaz(_folder(), ONERI_DOSYA, df)
-                _ONERI_ONBELLEK.update(zaman=time.time(), df=df)
+                tablo_io.klasore_yaz(_folder(), yol, df)
+                _ONERI_ONBELLEK[yol] = {"zaman": time.time(), "df": df}
             except Exception:
                 pass
+            _kok_onbellegi_sil()
     threading.Thread(target=is_, daemon=True).start()
+
+
+def _kok_onbellegi_sil():
+    """PROJE_HAFIZASI kokunde kalmis eski oneri onbellegi (calismaya ozel
+    olmayan bicim) bir kez silinir; onbellek onayli bilgi tasimaz."""
+    if _KOK_SILINDI:
+        return
+    _KOK_SILINDI.append(True)
+    try:
+        klasor = _folder()
+        for yol in ("/" + ONERI_AD, "/ONERI_ONBELLEGI.parquet", "/ONERI_ONBELLEGI.csv"):
+            try:
+                klasor.delete_path(yol)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+_KOK_SILINDI = []
