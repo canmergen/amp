@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklama önerileri hızlandı: hakem düşünmeyen model, çıktı sınırı, kısa zaman aşımı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Model hız testi (`llm.karsilastir`) sonucu hemen yazar ve en çok birkaç dakika sürer**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (notebook çekirdeği yeniden başlatılmalı)
+
+- Her model bitince sonucu (süre, dönen kayıt, hata, örnek açıklamalar)
+  hemen yazılır; önceden her şey en sonda yazılıyordu.
+- Varsayılan yalnız açıklama görevi denenir; SFA da denensin diye
+  `llm.karsilastir(gorevler=("sozluk", "sfa"))`.
+- Tek çağrı en çok 45 sn sürer, yeniden deneme yok (`zaman_asimi=`
+  ile değişir). Test bitince platformun kendi ayarları geri gelir.
+
+Önceki tur: **Açıklama önerileri hızlandı: hakem düşünmeyen model, çıktı sınırı, kısa zaman aşımı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Hakem (iki yazarın açıklaması anlamca çelişince karar veren model)
   artık Llama 70B, ulaşılamazsa Qwen Flash. Düşünen Qwen modeli cevaptan

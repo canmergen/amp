@@ -2137,7 +2137,7 @@ def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None):
 # ===========================================================================
 # Test yardimcisi
 # ===========================================================================
-def karsilastir(modeller=None, tekrar=1):
+def karsilastir(modeller=None, tekrar=1, gorevler=("sozluk",), zaman_asimi=45.0):
     """Notebook'ta calistir: modelleri AYNI iki gorevle karsilastirir.
 
       sozluk : 6 ornek kolon icin aciklama (Turkce kalitesi, JSON)
@@ -2145,7 +2145,11 @@ def karsilastir(modeller=None, tekrar=1):
 
     Her model icin sure (sn), JSON okunabildi mi, kac kayit dondu ve
     ornek ciktilar yazilir. Doner: {model_adi: sonuc}. Veri okunmaz;
-    girdiler asagida sabit."""
+    girdiler asagida sabit.
+
+    Varsayilan yalniz "sozluk" (aciklama) gorevi; SFA da denensin diye
+    gorevler=("sozluk", "sfa"). Her model bitince sonucu HEMEN yazilir.
+    Tek cagri en cok zaman_asimi sn surer (yeniden deneme yok)."""
     modeller = modeller or MODELLER
     kolonlar = [
         # Kurgusal ornek (hicbir gercek veri setinden alinmadi).
@@ -2193,20 +2197,27 @@ def karsilastir(modeller=None, tekrar=1):
          "kural": {"kullan": "hayir", "eksik": "yok", "aykiri": "yok",
                    "donusum": "yok", "ayriklastirma": "yok"}},
     ]
-    global VARSAYILAN_MODEL
+    global VARSAYILAN_MODEL, ZAMAN_ASIMI, DENEME_SAYISI
     eski = VARSAYILAN_MODEL
+    eski_sure, eski_deneme = ZAMAN_ASIMI, DENEME_SAYISI
+    ZAMAN_ASIMI, DENEME_SAYISI = float(zaman_asimi), 1
     sonuclar = {}
+    print("Deneniyor: %s | görev: %s | çağrı sınırı %g sn"
+          % (", ".join(modeller), ", ".join(gorevler), zaman_asimi), flush=True)
     try:
         for ad, model in modeller.items():
             VARSAYILAN_MODEL = model
             kayit = {}
-            for gorev in ("sozluk", "sfa"):
+            for gorev in gorevler:
                 sureler, adetler, hatalar, ornek = [], [], [], None
                 for _ in range(max(1, int(tekrar))):
+                    print("  %s · %s başladı ..." % (ad, gorev), flush=True)
                     t0 = time.time()
                     if gorev == "sozluk":
-                        sonuc, hata = sozluk_aciklama_uret(kolonlar, parca=len(kolonlar),
-                                                           baglam=baglam)
+                        sonuc, hata = sozluk_aciklama_uret(
+                            kolonlar, parca=len(kolonlar), baglam=baglam, model=model,
+                            en_cok=aciklama_token_siniri(len(kolonlar))
+                            if model != QWEN else None)
                     else:
                         sonuc, hata = sfa_karar_ver(sfa_girdi)
                     sureler.append(round(time.time() - t0, 1))
@@ -2218,21 +2229,26 @@ def karsilastir(modeller=None, tekrar=1):
                                 "beklenen": len(kolonlar) if gorev == "sozluk" else len(sfa_girdi),
                                 "hata": hatalar, "ornek": ornek}
             sonuclar[ad] = kayit
+            _karsilastirma_yaz(ad, modeller[ad], kayit)
     finally:
         VARSAYILAN_MODEL = eski
-    for ad, kayit in sonuclar.items():
-        print("=" * 70)
-        print(ad, "->", modeller[ad])
-        for gorev, k in kayit.items():
-            print("  %-6s sure %s sn | kayit %s/%s | hata: %s"
-                  % (gorev, k["sure_sn"], k["kayit"], k["beklenen"], k["hata"] or "-"))
-        for kolon, v in ((kayit["sozluk"]["ornek"]) or {}).items():
-            print("    %-24s %s" % (kolon, v.get("aciklama")))
-        for kolon, v in ((kayit["sfa"]["ornek"]) or {}).items():
-            print("    %-12s kullan=%s eksik=%s donusum=%s ayrik=%s | %s" % (
-                kolon, v.get("kullan"), v.get("eksik"), v.get("donusum"),
-                v.get("ayriklastirma"), str(v.get("gerekce") or "")[:90]))
+        ZAMAN_ASIMI, DENEME_SAYISI = eski_sure, eski_deneme
     return sonuclar
+
+
+def _karsilastirma_yaz(ad, model, kayit):
+    print("=" * 70)
+    print(ad, "->", model)
+    for gorev, k in kayit.items():
+        print("  %-6s sure %s sn | kayit %s/%s | hata: %s"
+              % (gorev, k["sure_sn"], k["kayit"], k["beklenen"], k["hata"] or "-"))
+    for kolon, v in (((kayit.get("sozluk") or {}).get("ornek")) or {}).items():
+        print("    %-24s %s" % (kolon, v.get("aciklama")))
+    for kolon, v in (((kayit.get("sfa") or {}).get("ornek")) or {}).items():
+        print("    %-12s kullan=%s eksik=%s donusum=%s ayrik=%s | %s" % (
+            kolon, v.get("kullan"), v.get("eksik"), v.get("donusum"),
+            v.get("ayriklastirma"), str(v.get("gerekce") or "")[:90]))
+    print("", flush=True)
 
 
 def test(model=None):
