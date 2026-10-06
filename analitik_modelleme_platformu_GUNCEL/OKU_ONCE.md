@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **"İşlem Devam Ediyor" satırı ve düşünen avatar hemen görünür**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Açıklama önerileri hızlandı: hakem düşünmeyen model, çıktı sınırı, kısa zaman aşımı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Hakem (iki yazarın açıklaması anlamca çelişince karar veren model)
+  artık Llama 70B, ulaşılamazsa Qwen Flash. Düşünen Qwen modeli cevaptan
+  önce uzun muhakeme üretiyordu ve bu kapatılamıyor.
+- Çıktı sınırı: açıklama ve hakem çağrılarında model en çok "200 + kolon
+  başına 200" token yazabilir; JSON'dan sonra açıklama ya da gereksiz
+  uzunluk yok. Düşünen modele sınır konmaz (muhakemesi de sınırdan yer).
+- Zaman aşımı: açıklama önerilerinde tek çağrı 45 sn (önceden 90 sn +
+  bir yeniden deneme). Takılan yazar bırakılır, diğer yazarın cevabı
+  kullanılır; hakem cevap vermezse ilk yazarın adayı geçer.
+- Ayarlar `llm.py` başında: `ACIKLAMA_ZAMAN_ASIMI`, `ACIKLAMA_DENEME`,
+  `ACIKLAMA_TOKEN_TABAN`, `ACIKLAMA_TOKEN_KOLON`, `ORKESTRA["hakem"]`.
+- Modellerin süresini ölçmek için Dataiku notebook'unda:
+  `from fe_agent import llm; llm.karsilastir()`.
+
+Önceki tur: **"İşlem Devam Ediyor" satırı ve düşünen avatar hemen görünür**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Bir karar gönderilince işlem satırı ve düşünen avatar 2,5 sn yerine
   0,25 sn sonra görünür (anında dönen işlemlerde ekran yanıp sönmesin

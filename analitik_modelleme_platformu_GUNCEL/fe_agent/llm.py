@@ -102,17 +102,22 @@ def _veri_blogu(baslik, govde):
     return "%s\n%s\n%s\n%s" % (baslik, VERI_BAS, govde, VERI_SON)
 
 
-def _tek_cagri(sistem, kullanici, model, sicaklik):
+def _tek_cagri(sistem, kullanici, model, sicaklik, en_cok=None):
     proje = dataiku.api_client().get_default_project()
     comp = proje.get_llm(model or VARSAYILAN_MODEL).new_completion()
     comp.with_message(sistem, role="system")
     comp.with_message(kullanici, role="user")
     comp.settings["temperature"] = sicaklik   # dusuk = daha kararli JSON
+    # CIKTI SINIRI: model yalniz cevabi yazsin (JSON'dan sonra aciklama,
+    # gereksiz uzunluk yok). Dusunen modelde kullanilmaz: muhakemesi de
+    # bu sinirdan yer.
+    if en_cok:
+        comp.settings["maxOutputTokens"] = int(en_cok)
     return comp.execute().text or ""
 
 
 def _cagir(sistem, kullanici, model=None, sicaklik=0.2,
-           zaman_asimi=None, deneme=None, havuz=None):
+           zaman_asimi=None, deneme=None, havuz=None, en_cok=None):
     """Tek LLM cagrisi: zaman asimi + sinirli yeniden deneme.
 
     Basarisizlikta istisna firlatir; oneri fonksiyonlari bunu yakalayip
@@ -129,6 +134,8 @@ def _cagir(sistem, kullanici, model=None, sicaklik=0.2,
             def _is(sistem=sistem, kullanici=kullanici, model=model,
                     sicaklik=sicaklik, basladi=basladi):
                 basladi.set()
+                if en_cok and model != QWEN:
+                    return _tek_cagri(sistem, kullanici, model, sicaklik, en_cok=en_cok)
                 return _tek_cagri(sistem, kullanici, model, sicaklik)
 
             is_parcasi = (havuz or _HAVUZ).submit(_is)
@@ -664,7 +671,7 @@ def tarza_uydur(metin, tarz):
 
 
 def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
-                         model=None):
+                         model=None, zaman_asimi=None, deneme=None, en_cok=None):
     """profiller: sozluk.profil_cikar() ciktisi
     Doner: (aciklamalar, hata)
       aciklamalar: {kolon_adi: {"aciklama": ..., "kategori": ...}}
@@ -711,7 +718,8 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
                                         "\n".join(satirlar), baglam)
         try:
             ham = _cagir(sistem, _veri_blogu(baslik, govde), model=model,
-                         sicaklik=0.3)
+                         sicaklik=0.3, zaman_asimi=zaman_asimi, deneme=deneme,
+                         en_cok=en_cok)
             veri = _json_ayristir(ham, {}, dict)
         except Exception as e:
             dusen_parca += 1
@@ -771,7 +779,9 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
 # kart ustunde hangi modelin kullanilamadigi yazar.
 ORKESTRA = {
     "yazarlar": ("llama", "qwen_flash"),
-    "hakem": ("qwen_thinking", "llama"),
+    # HAKEM DUSUNMEYEN MODEL: dusunen model cevaptan once uzun muhakeme
+    # uretiyor ve kapatilamiyor (yavas).
+    "hakem": ("llama", "qwen_flash"),
     "tarayici": ("qwen_flash", "llama"),
     "denetci": ("llama", "qwen_thinking"),
     # KISALTMA SOZLUGU: dusunen model kullanilmaz (yavas). Okuma ve
@@ -781,6 +791,17 @@ ORKESTRA = {
 }
 # Dusunen model yavas: kisaltma cagrilarinda zaman asimi daha uzun.
 KISALTMA_ZAMAN_ASIMI = 120.0
+# ACIKLAMA ONERILERI: iki yazar paralel calistigi icin takilan model
+# erken birakilir (yeniden deneme yok), digerinin cevabi kullanilir.
+ACIKLAMA_ZAMAN_ASIMI = 45.0
+ACIKLAMA_DENEME = 1
+# Cikti siniri (token): sabit pay + kolon basina pay.
+ACIKLAMA_TOKEN_TABAN = 200
+ACIKLAMA_TOKEN_KOLON = 200
+
+
+def aciklama_token_siniri(kolon_sayisi):
+    return ACIKLAMA_TOKEN_TABAN + ACIKLAMA_TOKEN_KOLON * max(1, int(kolon_sayisi or 1))
 MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_thinking": "Qwen 3 Thinking",
                 "qwen_flash": "Qwen Flash"}
 ORKESTRA_DUSME_SINIRI = 2
@@ -807,11 +828,13 @@ class Orkestra(object):
     def modeller(self, rol):
         return [m for m in self.roller.get(rol, ()) if self.uygun_mu(m)]
 
-    def cagir(self, ad, sistem, govde, sicaklik=0.2, zaman_asimi=None):
+    def cagir(self, ad, sistem, govde, sicaklik=0.2, zaman_asimi=None, deneme=None,
+              en_cok=None):
         """Tek model cagrisi; ham metin doner, basarisizsa firlatir."""
         try:
             ham = _cagir(sistem, govde, model=MODELLER[ad], sicaklik=sicaklik,
-                         zaman_asimi=zaman_asimi, havuz=self.havuz)
+                         zaman_asimi=zaman_asimi, havuz=self.havuz, deneme=deneme,
+                         en_cok=en_cok)
             with self._kilit:
                 self._hata[ad] = 0
             return ham
@@ -821,15 +844,16 @@ class Orkestra(object):
                 self._son[ad] = _hata_metni(e)
             raise
 
-    def json_cagir(self, adlar, sistem, govde, sicaklik=0.2, haric=(), zaman_asimi=None):
+    def json_cagir(self, adlar, sistem, govde, sicaklik=0.2, haric=(), zaman_asimi=None,
+                   deneme=None, en_cok=None):
         """adlar sirasiyla dener; ilk OKUNABILIR JSON'u doner.
         Doner: (model, veri). Hicbiri olmazsa (None, {})."""
         for ad in adlar:
             if ad in haric or not self.uygun_mu(ad):
                 continue
             try:
-                veri = _json_ayristir(self.cagir(ad, sistem, govde, sicaklik, zaman_asimi),
-                                      {}, dict)
+                veri = _json_ayristir(self.cagir(ad, sistem, govde, sicaklik, zaman_asimi,
+                                                 deneme, en_cok), {}, dict)
             except Exception:
                 continue
             if veri.get("kolonlar"):
@@ -941,8 +965,10 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
 
     def yaz(ad):
         try:
-            sonuc, hata = sozluk_aciklama_uret(profiller, parca=len(profiller),
-                                               baglam=baglam, model=MODELLER[ad])
+            sonuc, hata = sozluk_aciklama_uret(
+                profiller, parca=len(profiller), baglam=baglam, model=MODELLER[ad],
+                zaman_asimi=ACIKLAMA_ZAMAN_ASIMI, deneme=ACIKLAMA_DENEME,
+                en_cok=aciklama_token_siniri(len(profiller)))
         except Exception as e:
             sonuc, hata = {}, _hata_metni(e)
         with ork._kilit:
@@ -996,7 +1022,10 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
         baslik, govde = _baglamli_govde([p["ad"] for p in tartisma],
                                         "\n".join(satirlar), baglam)
         hakem, veri = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_ACIKLAMA,
-                                     _veri_blogu(baslik, govde), 0.1)
+                                     _veri_blogu(baslik, govde), 0.1,
+                                     zaman_asimi=ACIKLAMA_ZAMAN_ASIMI,
+                                     deneme=ACIKLAMA_DENEME,
+                                     en_cok=aciklama_token_siniri(len(tartisma)))
         secilen = {}
         for k in (veri.get("kolonlar") or []):
             if isinstance(k, dict) and str(k.get("aciklama") or "").strip():
