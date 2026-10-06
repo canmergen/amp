@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü'nde onaylanan ad değişimi ikinci kez onaylatılmaz**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **LLM Karar en açıklayıcı anlam; okunur kısaltmaya öneri yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- LLM Karar iki adayı ve örnek tanımları birlikte değerlendirip en
+  açıklayıcı anlamı yazar; adaylardan birinde ölçünün / yöntemin özel
+  adı geçiyorsa onu kullanır. Özel ad ile kısa açıklaması "aynı kavram"
+  sayılır.
+- Kısaltma önerisi: karar genel anlamla aynı kavram dediyse (ikisi aynı /
+  genel anlam) kısaltma okunur sayılır, öneri sorulmaz. Öneri isteminde:
+  mevcut kısaltma kolon adlarının dilinde yaygın kısaltma, kelimenin
+  kendisi ya da standart bir ölçü kısaltmasıysa öneri yapılmaz; adlar
+  İngilizce ise Türkçe kelimelerden kısaltma üretilmez.
+
+Önceki tur: **Kısaltma Sözlüğü'nde onaylanan ad değişimi ikinci kez onaylatılmaz**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Kısaltma Sözlüğü'nde onaylanan yeni kısaltmaların (sayı değerli
   biçimler dahil) kolon adına uygulanması Kolon Adı Önerileri'nde

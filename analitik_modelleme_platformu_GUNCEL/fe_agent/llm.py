@@ -1216,7 +1216,12 @@ _KISALTMA_KURALLARI = """KURALLAR:
     degeri) yalniz HARF kisminin anlamini yaz; sayi o kalibin degeridir,
     anlama katilmaz. Bu kisaltma icin yeni kisaltma onerme.
   - Adi bilinen bir olcu ya da yontemse OZEL ADINI yaz, aciklamasini
-    degil.
+    degil; aday anlamlardan birinde ozel ad geciyorsa onu kullan.
+  - EN ACIKLAYICI ANLAM: "anlam" alani iki adaydan birinin kopyasi
+    olmak zorunda degildir. "sozlukte" ve "genel" adaylarini ve ornek
+    tanimlari BIRLIKTE degerlendir; tanimlarla celismeyen, kisaltmanin
+    neyi ifade ettigini en acik anlatan ifadeyi yaz (ozel ad varsa ozel
+    ad; ikisi ayni kavramsa daha acik olani).
   - anlam, KISALTMANIN KENDI anlamidir; baglam ifadesi DEGIL: tanimlarda
     kisaltmanin yanindaki pencere, yon ve istatistik kelimeleri anlama
     katilmaz. Ama acilimin anlasilir olmasi icin gereken tamamlayici
@@ -1258,7 +1263,8 @@ eksik ya da yanlissa tanimlara bakarak duzelt. Asagidaki karar
 "sozluk_anlam" (sozlukteki anlam) ile "genel" arasindadir.
 
 Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
-  "ayni"           : iki aday AYNI KAVRAM (yalniz es anlamli kelimeler).
+  "ayni"           : iki aday AYNI KAVRAM (es anlamli ya da biri digerinin
+                     ozel adi / kisa aciklamasi).
                      Yakin, birlikte gecen, biri digerini iceren ya da
                      ayni ifadenin farkli parcalari olan anlamlar AYNI
                      DEGILDIR; o zaman hangisinin dogru oldugunu sec
@@ -1302,14 +1308,19 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 # adlandirma kalibi gider; genel anlam ve tanimlar gitmez.
 SISTEM_KISALTMA_ONERI = """Sen bir veri sozlugu editorusun. Kolon
 adlarinda gecen KISALTMALAR ve her birinin KESINLESMIS anlami verilecek.
-Bu kisaltmalar anlamlarini okuyana anlatmiyor; her biri icin daha okunur
-bir kisaltma oner.
+Bu kisaltmalarin anlamlari adlarindan cikarilamayabilir; her biri icin
+daha okunur bir kisaltma GEREKIYORSA oner.
+ONERI YAPMA ("yeni_kisaltma" BOS): mevcut kisaltma kolon adlarinin
+dilinde bu anlamin yaygin kisaltmasi, kelimenin kendisi ya da bilinen
+bir olcunun / yontemin standart kisaltmasiysa. Okunur bir kisaltmayi
+baska dile cevirmek ya da kisaltmak oneri DEGILDIR.
 "yeni_kisaltma":
   - VERILEN ANLAMIN kisaltmasidir; baska bir anlamin harflerinden
     uretilmez.
-  - Kolon adlarinin dilinde ve kalibinda (bkz. "ADLANDIRMA KALIBI"):
-    adlar Ingilizce kisaltmalarla yaziliysa anlamin YAYGIN Ingilizce
-    kisaltmasi, Turkce ise Turkce kisaltma.
+  - Kolon adlarinin dilinde ve kalibinda (bkz. "ADLANDIRMA KALIBI").
+    Anlam Turkce verilir; adlar Ingilizce kisaltmalarla yaziliysa Turkce
+    kelimelerden kisaltma URETME, anlamin YAYGIN Ingilizce kisaltmasini
+    yaz. Adlar Turkce kisaltmalarla yaziliysa Turkce kisaltma oner.
   - Mevcut kisaltmanin aynisi ya da yalniz unlulerinin atilmis hali
     olamaz; okuyana yeni bir sey anlatmali.
   - BUYUK harf, A-Z, 0-9 ve parca ayiraci "_"; en cok 4 parca, parca
@@ -1331,13 +1342,19 @@ def _oneri_satiri(g, anlam):
     return "- %s | anlam: %s" % (g["kisaltma"], anlam)
 
 
-def _oneri_gerekli(g, anlam, genel):
-    """Anlam adindan cikarilamiyor mu: genel anlam yok ("") ya da LLM
-    Karar'dan farkli. genel None ise genel anlam cagrisi cevap vermemistir;
-    oneri yapilmaz. Sayiyla birlesik gecen kisaltmaya oneri yapilmaz."""
+def _oneri_gerekli(g, anlam, genel, secim=""):
+    """Anlam adindan cikarilamiyor mu: genel anlam yok ("") ya da genel
+    anlam LLM Karar'dan BASKA bir kavram. Karar genel anlamla ayni kavram
+    dediyse ("ayni" / "genel") kisaltma okunurdur, oneri yapilmaz. genel
+    None ise genel anlam cagrisi cevap vermemistir; oneri yapilmaz.
+    Sayiyla birlesik gecen kisaltmaya oneri yapilmaz."""
     if not anlam or genel is None or _sayili_mi(g):
         return False
-    return not genel or not _ayni_metin(genel, anlam)
+    if not genel:
+        return True
+    if secim in ("ayni", "genel"):
+        return False
+    return not _ayni_metin(genel, anlam)
 
 
 def _iskelet(k):
@@ -1665,7 +1682,8 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
         # 3) ONERI: karar kesinlesti; anlami adindan cikarilamayan
         # kisaltmalara okunur karsilik. Anlam LLM Karar'inkidir.
         sor = [g for g in blok
-               if _oneri_gerekli(g, sonuc_.get(g["kisaltma"]), genel_.get(g["kisaltma"]))]
+               if _oneri_gerekli(g, sonuc_.get(g["kisaltma"]), genel_.get(g["kisaltma"]),
+                                 (ek_.get(g["kisaltma"]) or {}).get("secim") or "")]
         # Sayi degerli bicimler (<K><NN> ...) her zaman ayri ayri sorulur.
         bicim_sor = [({"kisaltma": b, "kolon": 0}, "%s %s" % (sonuc_[g["kisaltma"]], n),
                       g["kisaltma"])
