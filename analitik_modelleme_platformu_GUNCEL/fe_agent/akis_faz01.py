@@ -1957,10 +1957,8 @@ def kisaltma_plan(durum):
                 if r_["kisaltma"] == kisa:
                     r_["yeni_kisaltma"] = y
                     r_["yeni_anlam"] = onceki.get(y) or r_.get("yeni_anlam") or ""
-        ayir = set(durum.get("kisaltma_sayi_ayir") or [])
-        for r_ in alan["satirlar"]:
-            if r_.get("sayili"):
-                r_["sayi_ayir"] = r_["kisaltma"] in ayir
+                    if r_.get("bicim") and onceki.get(y):
+                        r_["anlam"] = onceki[y]
     durum["_secim_alani"] = _adim_karti(
         "kisaltma", {"kisaltma": alan}, KISALTMA_DUGME,
         "Kısaltmaları Onaylamadan Devam Et")
@@ -1983,7 +1981,12 @@ def kisaltma_uygula(durum):
         durum.pop("kisaltma_yeni", None)
         durum.pop("kisaltma_sayi_ayir", None)
         return ""
-    satirlar = [s for s in (karar.get("kisaltma") or []) if isinstance(s, dict)]
+    tum = [s for s in (karar.get("kisaltma") or []) if isinstance(s, dict)]
+    # SAYI DEGERLI BICIM satirlari (<K><NN> ...) kisaltma degil: yalniz
+    # onerilen kisaltmalari kolon adina uygulanir; sozluge ve hafizaya
+    # ayri kisaltma olarak girmez.
+    satirlar = [s for s in tum if not s.get("bicim")]
+    bicimler = [s for s in tum if s.get("bicim")]
     sozluk = {
         str(s.get("kisaltma")).strip(): str(s.get("anlam") or "").strip()
         for s in satirlar
@@ -1995,7 +1998,7 @@ def kisaltma_uygula(durum):
     # tasir. Gecersiz ya da baska anlamda kullanilan kisaltma
     # adimi durdurur.
     yeni, yeni_anlam = {}, {}
-    for s_ in satirlar + oneri_satir:
+    for s_ in satirlar + oneri_satir + bicimler:
         kisa = str(s_.get("kisaltma") or "").strip().upper()
         y = str(s_.get("yeni_kisaltma") or "").strip().upper()
         if not kisa or not y:
@@ -2023,11 +2026,7 @@ def kisaltma_uygula(durum):
     durum["kisaltma_sozluk"] = sozluk
     durum["kisaltma_yeni"] = yeni
     # Birlestirmeler 01.2.5'te yeniden verilir (onceki kararlar kartta gelir).
-    # SAYIDAN AYIRMA: sayi degerli kalipta harf kismi
-    # sayidan "_" ile ayrilir (<K><NN> -> <K>_<NN>); 01.2.6'da uygulanir.
-    durum["kisaltma_sayi_ayir"] = sorted(
-        str(s_.get("kisaltma") or "").strip().upper() for s_ in satirlar
-        if s_.get("sayi_ayir") and str(s_.get("kisaltma") or "").strip())
+    durum["kisaltma_sayi_ayir"] = []
     # Hafizaya kaydedilen satirin yeni kisaltmasi da kendi anlamiyla kaydedilir.
     # Eski kisaltmanin anlami bu kolonlardakinden FARKLIYSA (yanlis
     # kisaltma) kaydina not dusulur: sonraki calismalarda "dikkat".

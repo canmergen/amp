@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Tanım hafızası çalışmaya özel**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Sayı değerli biçimler ayrı satır, ayrı kısaltma önerisi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Kısaltma Sözlüğü'nde "Sayıdan ayır" kutusu kalktı. Sayı değerli her
+  biçim (<K><NN>_<MM>) ana kısaltmanın altında ayrı satırdır; anlamı
+  "<LLM Karar anlamı> <değer>", düzenlenebilir.
+- Dil modeli her biçime ayrı, okunur bir kısaltma önerir (öneri
+  çağrısında; LLM Karar'ın anlamı ve değerle). Yalnız ünlü ya da alt çizgi
+  farkı olan öneri elenir.
+- Biçim satırları kısaltma sözlüğüne ve hafızaya ayrı kısaltma olarak
+  girmez; kabul edilen önerileri Kolon Adı Önerileri'nde kolon adlarına
+  uygulanır.
+
+Önceki tur: **Tanım hafızası çalışmaya özel**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - TANIM_HAFIZASI.json (onaylanan tanımlar) artık çalışmanın klasöründe
   (PROJE_HAFIZASI/<çalışma>/). Tablo değişebileceği için bir çalışmanın

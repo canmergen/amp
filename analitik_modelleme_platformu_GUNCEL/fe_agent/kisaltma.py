@@ -251,6 +251,17 @@ def ad_anlamlari(ad, anlamlar):
     return list(dict.fromkeys(cikti))
 
 
+def sayili_degerler(tanimlar, kisa, adet=20):
+    """Kisaltmanin kolon adlarinda sayi degeriyle gectigi bicimler ve
+    degerleri: [(bicim, deger)], ornegin (<K>00_06, "00-06")."""
+    gorulen = {}
+    for ad in tanimlar or {}:
+        for b, k, n in _ham_bicimler(ad):
+            if k and k == kisa and n and b.upper() not in gorulen:
+                gorulen[b.upper()] = n
+    return sorted(gorulen.items())[:adet]
+
+
 def sayili_bicimler(tanimlar, kisa, adet=8):
     """Kisaltmanin kolon adlarinda sayi degeriyle gectigi bicimler
     (<K>00, <K>06 ...); kartta kisaltmanin altinda gosterilir."""
@@ -1105,6 +1116,7 @@ def _dm_girdisi(tanimlar):
                 if p != parca and onay.get(p):
                     diger[p] = onay[p]
         girdi.append({"kisaltma": parca, "kolon": int(adet),
+                      "bicimler": sayili_degerler(tanimlar, parca),
                       "anlam": (cikan.get(parca) or {}).get("anlam", ""),
                       "adaylar": (aday.get(parca) or {}).get("adaylar", [])[:ADAY_SAYISI],
                       "ornekler": ornek, "bilinen": diger})
@@ -1523,6 +1535,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
         d0_sozluk = d.get("sozluk_anlam") or ""
         d0_red = d.get("yeni_red") or ""
         d0_oneri_g = d.get("oneri_gerekce") or ""
+        d0_bicim = d.get("bicim_oneri") or {}
         if d.get("anlam"):
             d = dict(d, anlam=yalin_anlam(d["anlam"]))
         onceki = cikti.get(kisa) or {"kolon": int(parca_say.get(kisa, 0)),
@@ -1621,6 +1634,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
             cikti[kisa]["yeni_kisaltma"] = d0_yeni
             cikti[kisa]["yeni_anlam"] = yalin_anlam(d0_yeni_anlam) if d0_yeni_anlam else ""
             cikti[kisa]["oneri_gerekce"] = d0_oneri_g
+            cikti[kisa]["bicim_oneri"] = d0_bicim
             # LLM SOZLUK: modelin tanimlardan okudugu anlam.
             cikti[kisa]["dm_sozluk"] = yalin_anlam(d0_sozluk) if d0_sozluk else ""
             cikti[kisa]["ayni_farkli"] = ayni_farkli
@@ -1903,7 +1917,25 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                                      "dil_modeli" if o.get("kaynak") in
                                      ("dil_modeli", "dil_modeli_dogruladi", "genel") else "sozluk"),
                          "ornekler": kanit_ornekleri(tanimlar, kisa, anlam)})
-    return satirlar[:EN_COK], durum
+        # SAYI DEGERLI BICIMLER AYRI SATIR: her biri kendi anlamiyla
+        # (<anlam> <deger>) ve dil modelinin ona ozel onerdigi kisaltmayla.
+        bo = o.get("bicim_oneri") or {}
+        for b, n in sayili_degerler(tanimlar, kisa):
+            e = bo.get(b) or {}
+            satirlar.append({"kisaltma": b, "bicim": kisa, "deger": n,
+                             "anlam": ("%s %s" % (anlam, n)).strip() if anlam else "",
+                             "cikarilan": "", "kaynak": "bicim", "onayli": False,
+                             "kanit": ("%s kısaltmasının %s değeri." % (kisa, n))
+                                      + ((" Önerilen kısaltma: " + e["gerekce"])
+                                         if e.get("gerekce") else ""),
+                             "kaynak_ad": "", "sozluk_uyumsuz": False, "uyari": "",
+                             "bekliyor": kisa in bekleyen and kisa not in onay,
+                             "sozlukten": "", "sozluk_kaynak": "", "istatistik": "",
+                             "sayili": [], "onceki_sozluk": False, "dil_modeli": "",
+                             "dm_durum": "yok", "yeni_kisaltma": e.get("yeni_kisaltma") or "",
+                             "yeni_anlam": "", "secim": "", "gerekce": "", "uyum": "",
+                             "secilen": "", "ornekler": []})
+    return satirlar[:EN_COK * 3], durum
 
 
 # ---------------------------------------------------------------------------

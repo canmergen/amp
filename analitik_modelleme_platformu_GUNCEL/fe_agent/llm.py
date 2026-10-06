@@ -1316,6 +1316,10 @@ bir kisaltma oner.
     basina 8, toplam 24 karakter.
   - Birbirinin karsiligi olan anlamlara (ilk / son, gelen / giden gibi)
     oneriler tutarli bir cift olsun.
+SAYI DEGERLI BICIMLER (<K><NN>_<MM> gibi, anlami "<anlam> <deger>") ayri
+satirlardir: her birine o degeri de okunur anlatan AYRI bir kisaltma oner
+(degerin kendisi ya da anlattigi donemin adi kisaltmada yer alabilir).
+Ayni kalibin bicimlerine tutarli oneriler ver.
 Okunur bir kisaltma bulamiyorsan "yeni_kisaltma" alanini BOS birak.
 "gerekce": tek kisa cumle, Turkce karakterlerle.
 
@@ -1662,16 +1666,34 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
         # kisaltmalara okunur karsilik. Anlam LLM Karar'inkidir.
         sor = [g for g in blok
                if _oneri_gerekli(g, sonuc_.get(g["kisaltma"]), genel_.get(g["kisaltma"]))]
-        if sor:
+        # Sayi degerli bicimler (<K><NN> ...) her zaman ayri ayri sorulur.
+        bicim_sor = [({"kisaltma": b, "kolon": 0}, "%s %s" % (sonuc_[g["kisaltma"]], n),
+                      g["kisaltma"])
+                     for g in blok if sonuc_.get(g["kisaltma"])
+                     for b, n in (g.get("bicimler") or [])]
+        if sor or bicim_sor:
+            satir = [_oneri_satiri(g, sonuc_[g["kisaltma"]]) for g in sor] \
+                + [_oneri_satiri(g, a) for g, a, _k in bicim_sor]
             mo, vo = ork.json_cagir(
                 ork.modeller("kisaltma_1"), SISTEM_KISALTMA_ONERI,
-                _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(
-                    _oneri_satiri(g, sonuc_[g["kisaltma"]]) for g in sor)),
+                _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(satir)),
                 0.1, zaman_asimi=KISALTMA_ZAMAN_ASIMI)
-            for k, (yeni, gerekce) in (_oneri_oku(vo, sor, kullanilan_) if mo else {}).items():
-                e = dict(ek_.get(k) or {})
-                e.update(yeni_kisaltma=yeni, yeni_anlam=sonuc_[k], oneri_gerekce=gerekce)
-                ek_[k] = e
+            cevap = _oneri_oku(vo, sor + [g for g, _a, _k in bicim_sor], kullanilan_) if mo else {}
+            for g in sor:
+                k = g["kisaltma"]
+                if k in cevap:
+                    e = dict(ek_.get(k) or {})
+                    e.update(yeni_kisaltma=cevap[k][0], yeni_anlam=sonuc_[k],
+                             oneri_gerekce=cevap[k][1])
+                    ek_[k] = e
+            for g, a, ana in bicim_sor:
+                b = g["kisaltma"]
+                if b in cevap:
+                    e = dict(ek_.get(ana) or {})
+                    bo = dict(e.get("bicim_oneri") or {})
+                    bo[b] = {"yeni_kisaltma": cevap[b][0], "gerekce": cevap[b][1], "anlam": a}
+                    e["bicim_oneri"] = bo
+                    ek_[ana] = e
         return sonuc_, True
 
     bloklar = [girdi[b:b + KISALTMA_PARCA] for b in range(0, len(girdi), KISALTMA_PARCA)]
@@ -1704,7 +1726,8 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                               "yeni_anlam": e.get("yeni_anlam") or "",
                               "sozluk_anlam": sozluk_.get(k) or e.get("sozluk_anlam") or "",
                               "yeni_red": e.get("yeni_red") or "",
-                              "oneri_gerekce": e.get("oneri_gerekce") or ""})
+                              "oneri_gerekce": e.get("oneri_gerekce") or "",
+                              "bicim_oneri": e.get("bicim_oneri") or {}})
             # Genel anlam sozlukle celisiyor (kartta uyari olarak gosterilir).
             if anlam and oneri.get(k) and e.get("secim") in ("genel", "yeni") \
                     and not _ayni_metin(anlam, oneri[k]):
