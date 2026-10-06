@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.3 açıklama kutusu tam metni gösterir; Qwen Flash yeniden yazıyor; kimlik kolonunda birim uydurulmaz**. Değiştir: `fe_agent/llm.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.3 açıklama kutusu gerçekten büyüyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Kutu öneri gelince ölçülüyor, hemen ardından yanına "i" eklenip
+  daraldığı için son kelime alt satıra kayıp gizli kalıyordu. Artık
+  kutunun genişliği her değiştiğinde ("i" eklenince, pencere daralınca)
+  yükseklik yeniden ölçülür.
+- Yükseklik hesabına kenarlık da katıldı (son satırın altı 2 px
+  kırpılıyordu).
+
+Önceki tur: **01.2.3 açıklama kutusu tam metni gösterir; Qwen Flash yeniden yazıyor; kimlik kolonunda birim uydurulmaz**. Değiştir: `fe_agent/llm.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Açıklama kutusu tek satırdı, uzun açıklama kesik görünüyordu; artık
   içeriğe göre uzar (Enter yeni satır açmaz).

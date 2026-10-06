@@ -6073,10 +6073,21 @@ function dogrulamaKartiEkle(alan, blok) {
             const giris = document.createElement("textarea");
             giris.rows = 1;
             giris.className = "dg-giris dg-metin";
+            /* Yükseklik = içerik + kenarlık; genişlik değişince ("i"
+               eklenince, pencere daralınca) yeniden ölçülür. */
             giris._boyla = () => {
+                if (!giris.isConnected) return;
                 giris.style.height = "auto";
-                if (giris.scrollHeight) giris.style.height = giris.scrollHeight + "px";
+                const kenar = giris.offsetHeight - giris.clientHeight;
+                if (giris.scrollHeight) giris.style.height = (giris.scrollHeight + kenar) + "px";
             };
+            if (window.ResizeObserver) {
+                let sonEn = 0;
+                new ResizeObserver(g => {
+                    const en = g[0].contentRect.width;
+                    if (en !== sonEn) { sonEn = en; giris._boyla(); }
+                }).observe(giris);
+            }
             giris.addEventListener("keydown", e => { if (e.key === "Enter") e.preventDefault(); });
             /* GERİ DÖNÜŞTE önceki onaylı metin gelir ve model önerisi
                onu EZMEZ. Vurgu, satırdaki metnin öneriyle aynı olup
