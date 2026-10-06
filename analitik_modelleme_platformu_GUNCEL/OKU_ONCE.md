@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Düşünen (thinking) Qwen modeli tamamen çıkarıldı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Açıklama önerilerinde hızlı hakem her satırı veriyle doğrular**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Hız uğruna kalite düşmüştü: hakem yalnız çelişen satırlarda çalışınca
+  uyumlu sayılan satırlarda daha uzun aday seçiliyordu ve adaylardaki
+  tahmin (yanlış birim) ya da eksik (değer aralığı) düzeltilmiyordu.
+- Artık her satır hızlı hakemden (Llama 70B, yoksa Qwen Flash) geçer.
+  Hakem istemi sıkılaştırıldı:
+  - KONU: birim (müşteri, hesap, işlem, kayıt ...) yalnız kolon adından,
+    veri seti adından ya da örnek / onaylı tanımlardan çıkıyorsa yazılır;
+    çıkmıyorsa adaylar ne derse desin yazılmaz.
+  - DEĞERLER: dağılımdan kesin çıkan bilgi (değer aralığı, her satırda
+    farklı mı / tekrar ediyor mu, bayrakta 1'in anlamı, kategorik
+    sınıflar) adaylarda olmasa da eklenir.
+  - Adla ya da dağılımla çelişen bilgi atılır; hiçbir aday doğru değilse
+    hakem kendisi yazar.
+- Hakem cevap vermezse: adaylar uyumluysa en uzunu ("hakemsiz, adaylar
+  uyumlu"), çelişiyorsa ilk yazarınki geçer.
+
+Önceki tur: **Düşünen (thinking) Qwen modeli tamamen çıkarıldı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Model listesinde yalnız Llama 3.1 70B ve Qwen Flash kaldı. Düşünen
   model hakemlikten önceki turda çıkmıştı; son kullanıldığı yer

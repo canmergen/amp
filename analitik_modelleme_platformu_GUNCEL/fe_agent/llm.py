@@ -926,9 +926,22 @@ def _anlamca_celisir(a, b):
 
 SISTEM_HAKEM_ACIKLAMA = """Sen bir bankacilik veri sozlugu editorusun. Her
 kolon icin farkli dil modellerinin yazdigi ADAY aciklamalar verilecek.
+Adaylar YANLIS ya da EKSIK olabilir; senin isin onlari kolonun kendi
+bilgileriyle (ad, tip, tekil / satir, dagilim, ROL, VERI SETI adi,
+ornek ve onayli tanimlar) DOGRULAMAK ve en dogru aciklamayi yazmak.
 
-Her kolon icin en dogru aciklamayi sec ya da adaylari birlestirerek daha
-dogru bir aciklama yaz. Karar verirken:
+DOGRULA:
+  - KONU: aciklamadaki birim (musteri, hesap, islem, kayit ...) yalniz
+    kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
+    cikiyorsa yazilir. Cikmiyorsa adaylar ne derse desin o birimi YAZMA;
+    VERI SETI adinin anlattigi kaydi ya da genel bir ifade kullan.
+  - DEGERLER: dagilim ozetinden KESIN cikan bilgiyi aciklamaya ekle,
+    adaylarda olmasa da: deger araligi (min-maks), her satirda farkli mi
+    yoksa tekrar ediyor mu, bayrakta 1'in anlami, kategorik siniflar.
+  - Adaylarda olup dagilimla ya da adla celisen bilgi atilir.
+  - Hicbir aday dogru degilse kendin yaz.
+
+Sonra en dogru aciklamayi sec ya da adaylari birlestirerek yaz:
   - kolon adi, tipi ve dagilim ozetiyle CELISEN aday elenir
     (ornek: dagilim 0/1 iken "tutar" diyen aday yanlistir)
   - ONAYLI TANIMLAR en guvenilir kaynaktir; AYNI ADLI kolon varsa onu esas al
@@ -995,19 +1008,10 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
         liste = adaylar.get(p["ad"]) or []
         if not liste:
             continue
-        if len(liste) == 1 or all(_ayni_metin(liste[0][1], m) for _a, m in liste[1:]):
-            sonuc[p["ad"]] = {"aciklama": liste[0][1],
-                              "modeller": " + ".join(MODEL_ADLARI.get(a, a)
-                                                     for a, _m in liste)}
-        elif not any(_anlamca_celisir(liste[0][1], m) for _a, m in liste[1:]):
-            # Adaylar ayni olcumu anlatiyor: hakem cagrilmaz, en
-            # aciklayici (en uzun) aday alinir.
-            secilen = max(liste, key=lambda am: len(am[1]))
-            sonuc[p["ad"]] = {"aciklama": secilen[1],
-                              "modeller": "%s (adaylar uyumlu)" % " + ".join(
-                                  MODEL_ADLARI.get(a, a) for a, _m in liste)}
-        else:
-            tartisma.append(p)
+        # HER SATIR HAKEMDEN GECER (hizli model): adaylari kolonun
+        # dagilimi ve veri seti adiyla dogrulayip en dogru aciklamayi
+        # yazar. Hakem cevap vermezse asagidaki yedek secim gecer.
+        tartisma.append(p)
 
     if tartisma:
         satirlar = []
@@ -1035,6 +1039,14 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
                     "modeller": "%s (hakem: %s)" % (
                         " + ".join(MODEL_ADLARI.get(a, a) for a, _m in liste),
                         MODEL_ADLARI.get(hakem, hakem))}
+            elif len(liste) > 1 and not any(_anlamca_celisir(liste[0][1], m)
+                                            for _a, m in liste[1:]):
+                # Hakem yok, adaylar ayni olcumu anlatiyor: en aciklayici
+                # (en uzun) aday.
+                uzun = max(liste, key=lambda am: len(am[1]))
+                sonuc[p["ad"]] = {"aciklama": uzun[1],
+                                  "modeller": "%s (hakemsiz, adaylar uyumlu)" % " + ".join(
+                                      MODEL_ADLARI.get(a, a) for a, _m in liste)}
             else:
                 # Hakem karar veremedi: ilk yazarin adayi (yazar sirasi
                 # ORKESTRA["yazarlar"]'daki tercih sirasidir).
