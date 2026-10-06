@@ -5120,6 +5120,36 @@ function aktifBlokKabi() {
     return kap;
 }
 
+/* DÜŞÜNEN AVATAR: bir işlem sürerken (sohbet isteği, açıklama
+   önerileri, kısaltma okuması) bulunduğu bloğun avatarı düşünen hâle
+   geçer. Aynı blokta birden fazla işlem sürebildiği için sayaçla tutulur;
+   son işlem bitince eski görsel geri gelir. */
+function avatarDusunsun(el, acik) {
+    const blok = el && el.closest ? el.closest(".adim-blok") : null;
+    const av = blok ? blok.querySelector(".balon-avatar.bot") : null;
+    if (!av || av.classList.contains("karsilama")) return;
+    const n = Math.max(0, (Number(av.dataset.dusun) || 0) + (acik ? 1 : -1));
+    av.dataset.dusun = String(n);
+    if (n > 0) {
+        if (!av.dataset.normal) av.dataset.normal = av.src;
+        av.src = GORSEL.dusunme;
+    } else if (av.dataset.normal) {
+        av.src = av.dataset.normal;
+        delete av.dataset.normal;
+    }
+}
+
+/* Kart içi işlem satırları için: durum değişince avatara bildirir. */
+function dusunmeIzleyici(el) {
+    let acik = false;
+    return function (yeni) {
+        yeni = !!yeni;
+        if (yeni === acik || (yeni && !el.isConnected)) return;
+        acik = yeni;
+        avatarDusunsun(el, yeni);
+    };
+}
+
 function calismaGostergesi(iptalEt) {
     const kap = aktifBlokKabi();
     const satir = elYap("div", "islem-satiri");
@@ -5140,9 +5170,7 @@ function calismaGostergesi(iptalEt) {
        görsel konmaz. */
     satir.append(sure, iptal);
     (kap || sohbetEl).appendChild(satir);
-    const blokAvatar = kap && kap.parentElement
-        ? kap.parentElement.querySelector(".balon-avatar.bot") : null;
-    const eskiAvatar = blokAvatar ? blokAvatar.src : null;
+    const dusun = dusunmeIzleyici(satir);
 
     let gecen = 0;
     const yaz = () => { sure.textContent = "İşlem Devam Ediyor · " + sureBicim(gecen); };
@@ -5150,15 +5178,15 @@ function calismaGostergesi(iptalEt) {
     const sayac = setInterval(() => { gecen += 1; yaz(); }, 1000);
     const goster = setTimeout(() => {
         satir.classList.add("gorunur");
-        if (blokAvatar && !blokAvatar.classList.contains("karsilama")) blokAvatar.src = GORSEL.dusunme;
+        dusun(true);
         if (!kap) sohbetKaydir();
     }, ISLEM_GECIKME_MS);
     return {
         kaldir() {
             clearInterval(sayac);
             clearTimeout(goster);
+            dusun(false);
             satir.remove();
-            if (blokAvatar && eskiAvatar && blokAvatar.src !== eskiAvatar) blokAvatar.src = eskiAvatar;
         }
     };
 }
@@ -6335,11 +6363,14 @@ function dogrulamaKartiEkle(alan, blok) {
         oIlerMetin.textContent = "İşlem Devam Ediyor · Açıklama Önerileri · "
             + ftBinlik(oBiten) + " / " + ftBinlik(oToplam) + " Kolon · " + sureBicim(gecen);
     }
+    const oDusun = dusunmeIzleyici(kart);
     function oIlerGoster(acik) {
         oIler.classList.toggle("gorunur", acik);
+        oDusun(acik && kart.isConnected);
         if (acik && !oSayac) {
             oSayac = setInterval(() => {
-                if (!kart.isConnected) { clearInterval(oSayac); oSayac = null; return; }
+                if (!kart.isConnected) { clearInterval(oSayac); oSayac = null; oDusun(false); return; }
+                oDusun(true);
                 oIlerYaz();
             }, 1000);
         } else if (!acik && oSayac) { clearInterval(oSayac); oSayac = null; }
@@ -6867,10 +6898,12 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        (yoklamayla ileri geri oynamaz). */
     let ilerBas = Date.now() - ((ka.ilerleme && ka.ilerleme.gecen) || 0) * 1000;
     let ilerSabit = !!ka.ilerleme;
+    const ilerDusun = dusunmeIzleyici(kart);
     function ilerYaz() {
         const il = ka.ilerleme;
         const acik = ka.dm === "calisiyor" && !!il && !kilitli;
         ilerEl.classList.toggle("gorunur", acik);
+        ilerDusun(acik && kart.isConnected);
         if (acik) {
             const oneri = il.asama === "oneri";
             ilerMetin.textContent = "İşlem Devam Ediyor · "

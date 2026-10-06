@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Model hız testi (`llm.karsilastir`) sonucu hemen yazar ve en çok birkaç dakika sürer**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (notebook çekirdeği yeniden başlatılmalı)
+Bu tur: **Açıklama önerileri ve kısaltma okuması sürerken de avatar düşünen hâle geçer**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Avatar yalnız sohbet isteği sürerken değişiyordu; 01.2.3'teki açıklama
+  önerileri ve Kısaltma Sözlüğü okuması kartın kendi işlem satırını
+  kullandığı için avatar değişmiyordu. Üç işlem satırı da artık aynı
+  yardımcıyı kullanıyor.
+- Aynı blokta birden fazla işlem sürerse avatar son işlem bitince eski
+  hâline döner.
+
+Önceki tur: **Model hız testi (`llm.karsilastir`) sonucu hemen yazar ve en çok birkaç dakika sürer**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (notebook çekirdeği yeniden başlatılmalı)
 
 - Her model bitince sonucu (süre, dönen kayıt, hata, örnek açıklamalar)
   hemen yazılır; önceden her şey en sonda yazılıyordu.
