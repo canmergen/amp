@@ -394,9 +394,28 @@ TAMAMEN TURKCE YAZ (bu kural YAZIM TARZINDAN ve orneklerden ONCE gelir):
 SISTEM_SOZLUK = """Sen bir bankacilik veri sozlugu uzmanisin. Sana kolonlarin
 adi, tipi ve dagilim ozeti verilecek. Her kolonun ne anlama geldigini yaz.
 
+NASIL CIKARIRSIN: kolon adinin parcalarini (kisaltmalar, pencereler)
+VE icerigini birlikte oku. Icerik ipuclari: tekil deger sayisi satir
+sayisina esitse her satirda farkli bir deger (kimlik ya da sira);
+yalniz 0/1 ise bayrak (1'in neyi gosterdigini yaz); min/maks ve
+ceyrekler birimi ve olcegi gosterir (oran 0-1, tutar, adet, gun);
+kategorik etiketler ne siniflandirildigini gosterir. Adla icerik
+celisirse icerige uy.
+
+KIM OKUYACAK: bu tanimlar ileride hem analistin hem de dil modelinin
+degisken uretirken ve elerken tek bilgi kaynagi olacak. Tanim, kolon
+adini ve veriyi gormeyen birinin kolonu dogru kullanabilecegi kadar
+ACIK olsun.
+
 Her kolon icin:
-  aciklama : tek cumle, Turkce, teknik ama anlasilir. Kolon adini tekrar
-             etme; ne olctugunu anlat.
+  aciklama : Turkce, bir ya da iki cumle (en cok ~200 karakter). Su
+             bilgileri iceriyorsa yaz: hangi birimin (musteri, hesap,
+             islem ...) neyi oldugu; olcu ve birimi (tutar, adet, oran,
+             gun ...); zaman penceresi; degerlerin anlami (bayrakta 1,
+             kodlarda siniflar, kimlik / sira numarasi oldugu). Kolon
+             adini tekrar etme; ne olctugunu anlat. Adindan ve
+             iceriginden kesin cikmiyorsa "muhtemelen" ile yaz;
+             uydurma ayrinti ekleme.
   kategori : sunlardan biri: kimlik, demografi, gelir, bakiye, islem,
              gecikme, urun, kanal, davranis, zaman, hedef, diger
 
@@ -410,7 +429,8 @@ bunlar en guvenilir kaynaktir. AYNI ADLI kolon varsa o tanimi esas al;
 benzer adli kolonlarda ayni kalibi ve kisaltma anlamlarini kullan.
 
 YAZIM TARZI verilirse (kurumun sozlugundeki tanimlardan cikarildi):
-uzunluk, noktalama ve buyuk/kucuk harf kullanimini ona gore ayarla.
+noktalama ve buyuk/kucuk harf kullanimini ona gore ayarla. Uzunlukta
+tarz kisa olsa bile yukaridaki bilgiler eksik kalmasin.
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme veya aciklama YAZMA.
 {"kolonlar": [{"ad": "...", "aciklama": "...", "kategori": "..."}]}
@@ -466,9 +486,16 @@ def benzer_ornekler(adlar, tanimlar, adet=ORNEK_TANIM_SAYISI):
 
 def _profil_satiri(p):
     """Bir kolonun modele giden TURETILMIS ozeti (ham deger yok)."""
-    s = "- %s | %s | null %%%s | %s tekil" % (
-        p["ad"], p.get("tip", ""), round(float(p.get("null_oran") or 0) * 100, 1),
-        p.get("tekil", ""))
+    tekil = p.get("tekil", "")
+    satir = int(p.get("satir") or 0)
+    if satir and tekil != "" and int(tekil) >= satir:
+        tekil = "%s tekil (her satirda farkli)" % tekil
+    elif satir and tekil != "":
+        tekil = "%s tekil / %s satir" % (tekil, satir)
+    else:
+        tekil = "%s tekil" % tekil
+    s = "- %s | %s | null %%%s | %s" % (
+        p["ad"], p.get("tip", ""), round(float(p.get("null_oran") or 0) * 100, 1), tekil)
     if p.get("dagilim"):
         s += "\n    dagilim: %s" % str(p["dagilim"])[:EN_UZUN_DAGILIM]
     elif p.get("not"):
@@ -832,7 +859,12 @@ dogru bir aciklama yaz. Karar verirken:
     (ornek: dagilim 0/1 iken "tutar" diyen aday yanlistir)
   - ONAYLI TANIMLAR en guvenilir kaynaktir; AYNI ADLI kolon varsa onu esas al
   - ORNEK TANIMLAR ve YAZIM TARZI kurumun yazim bicimidir, ona uy
-  - tek cumle, Turkce, kolon adini tekrar etme
+  - icerikle tutarli adaylar arasinda EN ACIKLAYICI olani sec: hangi
+    birimin neyi, olcu / birim, pencere, degerlerin anlami (bayrakta 1,
+    kimlik / sira numarasi). Tanim, kolonu ve veriyi gormeyen birinin
+    (dil modeli dahil) dogru kullanabilecegi kadar acik olsun
+  - bir ya da iki cumle (en cok ~200 karakter), Turkce, kolon adini
+    tekrar etme; kesin degilse "muhtemelen" ile
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + AD_KALIP_KURALI \
@@ -1159,7 +1191,7 @@ yeniden yazmak.
     ve paydasi AYNEN kalir; yeni bilgi EKLEME, bilgi CIKARMA
   - Turkce karakterleri dogru kullan, Ingilizce kelimeleri Turkce yaz
   - kaynak tanim kolon adiyla ACIKCA celisiyorsa kolon adi esas alinir
-  - tek cumle, kolon adini tekrar etme
+  - kaynak kac cumleyse o kadar, kolon adini tekrar etme
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + AD_KALIP_KURALI \

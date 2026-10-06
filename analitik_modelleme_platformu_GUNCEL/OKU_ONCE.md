@@ -1,6 +1,21 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Alt adımlı bloklarda (01.2 ...) yanıt bekleyen bloğun kırmızı halkası geri geldi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Eksik sözlük tanımı önerileri adı ve içeriği birlikte okuyup daha açıklayıcı yazılır**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Açıklama istemi: model kolon adının parçalarını ve içeriğini birlikte
+  okur (her satırda farklı değer = kimlik / sıra; yalnız 0/1 = bayrak;
+  min/maks ve çeyrekler = birim ve ölçek; kategorik etiketler = sınıf).
+  Ad ile içerik çelişirse içeriğe uyar.
+- Tanım, ileride analistin ve dil modelinin değişken üretirken ve
+  elerken tek kaynağı olacak biçimde yazılır: hangi birimin neyi, ölçü ve
+  birim, pencere, değerlerin anlamı; bir ya da iki cümle (en çok ~200
+  karakter). Kesin değilse "muhtemelen" ile. Yazım tarzı yalnız noktalama
+  ve büyük/küçük harfi belirler, bilgiyi kısaltmaz.
+- Modele giden özette tekil sayısı satır sayısıyla birlikte gider
+  ("her satırda farklı" ya da "N tekil / M satır").
+- Hakem modeli içerikle tutarlı adaylardan en açıklayıcısını seçer.
+
+Önceki tur: **Alt adımlı bloklarda (01.2 ...) yanıt bekleyen bloğun kırmızı halkası geri geldi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Yanıt bekleyen bloğun çevresindeki açık kırmızı halka yalnız tek
   adımlı bloklarda (01.1 gibi) görünüyordu; alt adımlı blokların kap

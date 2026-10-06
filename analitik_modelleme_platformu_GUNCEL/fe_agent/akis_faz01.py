@@ -1301,7 +1301,7 @@ def _oneri_profilleri(prof, kolonlar, profil):
             oran = 0.0
         tekil = k.get("tekil")
         kayit = {"ad": ad, "tip": tip, "null_oran": round(oran, 4),
-                 "tekil": 0 if tekil is None else int(tekil)}
+                 "tekil": 0 if tekil is None else int(tekil), "satir": satir}
 
         kp = kol.get(ad)
         if kp is not None:
