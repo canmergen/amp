@@ -848,6 +848,15 @@ function cipYaz(el, ad) {
    yenisi bir huni: veri neydi, neler elendi, ne uretildi, modele ne girdi. */
 function ozetGuncelle(o) {
     if (!o || !o.kartlar) return;
+    /* EKRANDAKI YAZININ AYNISI IPUCU OLARAK CIKMAZ: satirin tamami
+       gorunuyorsa ipucu yok; yalniz sigmayip "…" ile kesildiyse ustune
+       gelince tamami gorunur. */
+    const kesikIpucu = el => {
+        el.addEventListener("mouseenter", () => {
+            if (el.scrollWidth > el.clientWidth) el.title = el.textContent;
+            else el.removeAttribute("title");
+        });
+    };
     /* Cipler ARTIK cizilmiyor: VERİ ve SÖZLÜK kartlari ayni bilgiyi
        tasiyor ve ustune tiklanabiliyor. Alanlar govdede duruyor cunku
        seciliVeriSeti() onlari okuyor. */
@@ -873,7 +882,7 @@ function ozetGuncelle(o) {
         const degerMetin = degerGoster(k.deger);
         const deger = elYap("span",
             "ozet-deger" + (degerMetin === BOS_SIMGE ? " bos" : ""), degerMetin);
-        deger.title = degerMetin;
+        kesikIpucu(deger);
         kart.appendChild(deger);
 
         /* Üst şerit satırları BAŞLIK BÜYÜK HARFİ ile: "kural tabanlı
@@ -882,7 +891,7 @@ function ozetGuncelle(o) {
         [["ozet-ust", k.ust], ["ozet-alt", k.alt]].forEach(([sinif, ham]) => {
             const metin = baslikBuyuk(ham);
             const el = elYap("span", sinif, metin);
-            if (!k.ipucu) el.title = metin;   // kart ipucusu varsa o kazansin
+            if (!k.ipucu) kesikIpucu(el);   // kart ipucusu varsa o kazansin
             kart.appendChild(el);
         });
 

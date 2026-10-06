@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Arayüz fontu Source Sans 3 (Dataiku'nun fontu, gömülü); kesilen üst bant metni kısaldı**. Değiştir: `webapp/style.css`, `fe_agent/akis_panel.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Üst bantta ekrandaki yazının aynısı ipucu olarak çıkmıyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Üst bant kartlarının değer ve alt satırlarında üzerine gelince aynı
+  yazıyı gösteren ipucu kaldırıldı. Yalnız satır sığmayıp "…" ile
+  kesildiyse üzerine gelince tamamı görünür.
+- Kartın kendi ek bilgisi (dolu kartlarda ayrıntı ipucu) aynen duruyor.
+
+Önceki tur: **Arayüz fontu Source Sans 3 (Dataiku'nun fontu, gömülü); kesilen üst bant metni kısaldı**. Değiştir: `webapp/style.css`, `fe_agent/akis_panel.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Inter ve IBM Plex Sans çıkarıldı; yerine Source Sans 3 (Source Sans
   Pro'nun güncel sürümü) 400 ve 700, Latin + Türkçe harfler gömüldü.
