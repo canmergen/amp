@@ -1,6 +1,20 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklama önerilerinde hızlı hakem her satırı veriyle doğrular**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Açıklama önerilerinin hakemi yine düşünen model (yalnız orada)**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Hızlı hakem, sıkılaştırılmış isteme rağmen tanımı olmayan kolonlarda
+  birim uydurdu ve değer aralığını eklemedi. Düşünen Qwen modeli yalnız
+  01.2.3 açıklama önerilerinin hakemi olarak geri geldi (rol
+  `aciklama_hakem`; cevap veremezse Llama).
+- Her satır hakemden geçer; hakem istemindeki doğrulama kuralları (konu
+  tahmin edilmez, dağılım bilgisi eklenir) kaldı.
+- Düşünen hakemde çıktı sınırı yok (muhakemesi de sınırdan yer); zaman
+  aşımı 120 sn, yeniden deneme yok. Yazarlar yine hızlı (45 sn, çıktı
+  sınırlı).
+- Diğer bütün işler (Kısaltma Sözlüğü, SFA, Türkçe kapısı ...) hızlı
+  modellerde.
+
+Önceki tur: **Açıklama önerilerinde hızlı hakem her satırı veriyle doğrular**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Hız uğruna kalite düşmüştü: hakem yalnız çelişen satırlarda çalışınca
   uyumlu sayılan satırlarda daha uzun aday seçiliyordu ve adaylardaki

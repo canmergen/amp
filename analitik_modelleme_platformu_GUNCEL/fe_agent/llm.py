@@ -34,11 +34,13 @@ LLAMA = "openai:dataiku-llama-31-70b-instruct-gptq-int4:meta-llama-31-70b-instru
 # Id yazimi ekrandaki baglanti / model adindan; Dataiku'da dogrulamak icin:
 #   [l["id"] for l in dataiku.api_client().get_default_project().list_llms()]
 QWEN_FLASH = "openai:dataiku-qwen38-flash-next-fp8:qwen38-flash-next-fp8"
+QWEN  = "openai:dataiku-qwen3-30b-a3b-thinking-2507-fp8:qwen3-30b-a3b-thinking-2507-fp8"
 
 # Karsilastirma testinin (karsilastir) denedigi modeller.
-# Dusunen (thinking) model kullanilmiyor: cevaptan once uzun muhakeme
-# uretiyor, kapatilamiyor ve kaliteye belirgin katki gorulmedi.
-MODELLER = {"llama": LLAMA, "qwen_flash": QWEN_FLASH}
+# Dusunen (thinking) model YALNIZ aciklama onerilerinin hakemi: tanimi
+# olmayan kolonda dagilimdan cikarim yapip adaylari duzeltmede hizli
+# modellerden belirgin iyi. Yavas oldugu icin baska yerde kullanilmaz.
+MODELLER = {"llama": LLAMA, "qwen_flash": QWEN_FLASH, "qwen_thinking": QWEN}
 
 # Varsayilan: Llama. Instruct-tuned oldugu icin JSON formatina daha sadik.
 VARSAYILAN_MODEL = LLAMA
@@ -134,7 +136,7 @@ def _cagir(sistem, kullanici, model=None, sicaklik=0.2,
             def _is(sistem=sistem, kullanici=kullanici, model=model,
                     sicaklik=sicaklik, basladi=basladi):
                 basladi.set()
-                if en_cok:
+                if en_cok and model != QWEN:
                     return _tek_cagri(sistem, kullanici, model, sicaklik, en_cok=en_cok)
                 return _tek_cagri(sistem, kullanici, model, sicaklik)
 
@@ -780,6 +782,8 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
 ORKESTRA = {
     "yazarlar": ("llama", "qwen_flash"),
     "hakem": ("llama", "qwen_flash"),
+    # Aciklama onerilerinin hakemi: dusunen model; cevap veremezse hizli.
+    "aciklama_hakem": ("qwen_thinking", "llama"),
     "tarayici": ("qwen_flash", "llama"),
     "denetci": ("llama", "qwen_flash"),
     # KISALTMA SOZLUGU: okuma ve standart onerisi tek model; cevap
@@ -793,6 +797,8 @@ KISALTMA_ZAMAN_ASIMI = 120.0
 # erken birakilir (yeniden deneme yok), digerinin cevabi kullanilir.
 ACIKLAMA_ZAMAN_ASIMI = 45.0
 ACIKLAMA_DENEME = 1
+# Dusunen hakem cevaptan once muhakeme yazar: suresi daha uzun.
+ACIKLAMA_HAKEM_ZAMAN_ASIMI = 120.0
 # Cikti siniri (token): sabit pay + kolon basina pay.
 ACIKLAMA_TOKEN_TABAN = 200
 ACIKLAMA_TOKEN_KOLON = 200
@@ -800,7 +806,8 @@ ACIKLAMA_TOKEN_KOLON = 200
 
 def aciklama_token_siniri(kolon_sayisi):
     return ACIKLAMA_TOKEN_TABAN + ACIKLAMA_TOKEN_KOLON * max(1, int(kolon_sayisi or 1))
-MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_flash": "Qwen Flash"}
+MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_flash": "Qwen Flash",
+                "qwen_thinking": "Qwen 3 Thinking"}
 ORKESTRA_DUSME_SINIRI = 2
 _ORKESTRA_HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
 
@@ -1022,9 +1029,9 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
             satirlar.append(s)
         baslik, govde = _baglamli_govde([p["ad"] for p in tartisma],
                                         "\n".join(satirlar), baglam)
-        hakem, veri = ork.json_cagir(ork.modeller("hakem"), SISTEM_HAKEM_ACIKLAMA,
+        hakem, veri = ork.json_cagir(ork.modeller("aciklama_hakem"), SISTEM_HAKEM_ACIKLAMA,
                                      _veri_blogu(baslik, govde), 0.1,
-                                     zaman_asimi=ACIKLAMA_ZAMAN_ASIMI,
+                                     zaman_asimi=ACIKLAMA_HAKEM_ZAMAN_ASIMI,
                                      deneme=ACIKLAMA_DENEME,
                                      en_cok=aciklama_token_siniri(len(tartisma)))
         secilen = {}
