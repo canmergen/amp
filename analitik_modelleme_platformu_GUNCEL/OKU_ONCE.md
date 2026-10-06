@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **İşlem satırındaki süre ileri geri oynamıyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **"İşlem Devam Ediyor" satırı ve düşünen avatar hemen görünür**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Bir karar gönderilince işlem satırı ve düşünen avatar 2,5 sn yerine
+  0,25 sn sonra görünür (anında dönen işlemlerde ekran yanıp sönmesin
+  diye kısa bir bekleme kaldı).
+- Avatar görselleri sayfa açılırken önceden yüklenir; ilk kullanımda
+  sunucudan inmeyi beklediği için avatar geç değişiyordu.
+
+Önceki tur: **İşlem satırındaki süre ileri geri oynamıyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - 01.2.3 ve Kısaltma Sözlüğü'nün işlem satırında süre her saniye
   artırılıyor, her yoklamada da sunucunun bildirdiği süreyle üzerine

@@ -87,6 +87,13 @@ const GORSEL = {
     zeminAcik:  getWebAppBackendUrl("gorsel/zemin_acik"),
     zeminKoyu:  getWebAppBackendUrl("gorsel/zemin_koyu"),
 };
+/* ÖNCEDEN YÜKLE: avatar görselleri ilk kullanımda sunucudan inerken
+   avatar geç değişiyordu; açılışta tarayıcı önbelleğine alınır. */
+const GORSEL_ON = [GORSEL.bot, GORSEL.dusunme, GORSEL.karsilama, GORSEL.user].map(u => {
+    const i = new Image();
+    i.src = u;
+    return i;
+});
 
 const sohbetEl    = document.getElementById("sohbet");
 const sohbetAlan  = document.getElementById("sohbet-alani");
@@ -5089,9 +5096,10 @@ function sureBicim(sn) {
 /* İŞLEM SATIRI: ayrı bir "yükleniyor" kartı YOK.
    Durumu başlıktaki "● Kontrol Ediliyor" etiketi anlatıyor; aktif adımın
    bloğunun EN ALTINA tek ince satır gelir: "İşlem Devam Ediyor · 0:12 · İptal".
-   Satır ilk ISLEM_GECIKME_MS boyunca görünmez: kısa işlemlerde ekranda
-   hiçbir şey zıplamaz, yalnızca etiket değişir. Her adımda aynı. */
-const ISLEM_GECIKME_MS = 2500;
+   Satır ve düşünen avatar ilk ISLEM_GECIKME_MS boyunca görünmez: anında
+   dönen işlemlerde ekran yanıp sönmez. Kısa tutuldu: daha uzun gecikme
+   işlemin başladığını geç gösteriyordu. Her adımda aynı. */
+const ISLEM_GECIKME_MS = 250;
 
 function aktifBlokKabi() {
     const aktif = (DUZ_ADIMLAR[aktifAdim] || {}).anahtar || "";
