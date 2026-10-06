@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.3'te kapsam (oran) çubuğu kaldırıldı**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Açıklama önerilerinde hakem yalnız anlamca çelişen satırlarda çalışır**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- İki yazar model farklı cümle kursa da aynı ölçümü anlatıyorsa hakem
+  çağrılmaz; daha açıklayıcı (uzun) aday alınır. Kartta "Öneren"
+  ipucunda "(adaylar uyumlu)" yazar.
+- Hakem yalnız adaylar ANLAMCA çeliştiğinde çağrılır (kod karar verir):
+  - içerdikleri sayılar farklı (pencere, değer, aralık);
+  - ölçü türü farklı (biri tutar, diğeri adet / oran / süre / bayrak /
+    kimlik / skor);
+  - zıt kelimeler (giriş / çıkış, gelen / giden, alış / satış, borç /
+    alacak, ilk / son, artış / azalış, en çok / en az, en yüksek / en
+    düşük, açık / kapalı).
+
+Önceki tur: **01.2.3'te kapsam (oran) çubuğu kaldırıldı**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Kart doğrudan "Sözlükte Tanımı Bulunmayan Kolonlar" tablosuyla başlar;
   kapsam oranı sağ panelde.

@@ -857,6 +857,52 @@ def _ayni_metin(a, b):
     return sade(a) == sade(b)
 
 
+# ANLAMCA CELISKI (hakem yalniz bunlarda): iki aday ayni olcumu
+# anlatiyorsa farkli cumle kurmalari celiski degildir.
+#   - sayilar farkli (pencere, deger, aralik)
+#   - olcu turu farkli (biri tutar, digeri adet ...)
+#   - zit kelimeler (biri giris, digeri cikis ...)
+_OLCU_KOKLERI = {
+    "tutar": ("tutar", "miktar", "bakiye", "hacim"),
+    "adet": ("adet", "aded", "sayi", "sayis", "frekans"),
+    "oran": ("oran", "yuzde", "pay"),
+    "sure": ("gun", "sure", "ay", "yil", "saat", "hafta"),
+    "bayrak": ("bayrak", "isaret", "flag"),
+    "kimlik": ("kimlik", "numara", "kod", "anahtar"),
+    "skor": ("skor", "puan", "derece"),
+}
+_ZIT_KOKLER = [("giris", "cikis"), ("gelen", "giden"), ("alis", "satis"),
+               ("borc", "alacak"), ("ilk", "son"), ("artis", "azalis"),
+               ("en cok", "en az"), ("en yuksek", "en dusuk"), ("acik", "kapali")]
+
+
+def _sade_kucuk(x):
+    return str(x or "").translate(str.maketrans("ÇĞİIÖŞÜçğıöşü", "cgiiosucgiosu")).lower()
+
+
+def _anlamca_celisir(a, b):
+    """Iki aday aciklama ayni olcumu mu anlatiyor? Celisiyorsa True."""
+    sa, sb = _sade_kucuk(a), _sade_kucuk(b)
+    if set(re.findall(r"\d+", sa)) != set(re.findall(r"\d+", sb)):
+        return True
+    ka = re.findall(r"[a-z]+", sa)
+    kb = re.findall(r"[a-z]+", sb)
+
+    def turler(kel):
+        return {t for t, kokler in _OLCU_KOKLERI.items()
+                if any(w.startswith(k) for w in kel for k in kokler)}
+    ta, tb = turler(ka), turler(kb)
+    if ta and tb and not (ta & tb):
+        return True
+    for x, y in _ZIT_KOKLER:
+        def var(metin, kok):
+            return re.search(r"\b" + kok, metin) is not None
+        if (var(sa, x) and var(sb, y) and not var(sa, y) and not var(sb, x)) or \
+                (var(sa, y) and var(sb, x) and not var(sa, x) and not var(sb, y)):
+            return True
+    return False
+
+
 SISTEM_HAKEM_ACIKLAMA = """Sen bir bankacilik veri sozlugu editorusun. Her
 kolon icin farkli dil modellerinin yazdigi ADAY aciklamalar verilecek.
 
@@ -930,6 +976,13 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
             sonuc[p["ad"]] = {"aciklama": liste[0][1],
                               "modeller": " + ".join(MODEL_ADLARI.get(a, a)
                                                      for a, _m in liste)}
+        elif not any(_anlamca_celisir(liste[0][1], m) for _a, m in liste[1:]):
+            # Adaylar ayni olcumu anlatiyor: hakem cagrilmaz, en
+            # aciklayici (en uzun) aday alinir.
+            secilen = max(liste, key=lambda am: len(am[1]))
+            sonuc[p["ad"]] = {"aciklama": secilen[1],
+                              "modeller": "%s (adaylar uyumlu)" % " + ".join(
+                                  MODEL_ADLARI.get(a, a) for a, _m in liste)}
         else:
             tartisma.append(p)
 
