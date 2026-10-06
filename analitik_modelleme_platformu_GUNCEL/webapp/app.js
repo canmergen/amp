@@ -5752,8 +5752,8 @@ const DG_EKSIK_NOTU = "Sözlüğe eklenecek kolonların ve uygulanacak düzeltme
 /* Öneriler akarken açıklama alanları KİLİTLİ: yarım
    dolmuş bir listede yazmaya başlayıp üstüne öneri düşmesi, yazılanın
    kaybolması demek olurdu. */
-const DG_ONERI_NOTU = "Açıklama önerileri hazırlanıyor: %s / %s kolon. "
-    + "Öneriler tamamlanana kadar açıklamalar düzenlenemez.";
+const DG_ONERI_NOTU = "Öneriler gelince açıklamalar düzenlenebilir. Beklemek "
+    + "istemezseniz İptal ile durdurup kendiniz yazabilirsiniz.";
 const DG_ONERI_ARALIK = 1500;      // yoklama aralığı (ms)
 const DG_KALIP = {
     haric: "%s Kolonu Hariç Tut ve Devam Et",
@@ -6308,6 +6308,45 @@ function dogrulamaKartiEkle(alan, blok) {
         durumTazele();
     }
 
+    /* ---- 5c) İşlem satırı: açıklama önerileri sürerken süre ve İptal
+       (Kısaltma Sözlüğü'ndekiyle aynı). İptal önerileri durdurur, gelenler
+       kalır, kart kilidi açılır. ---- */
+    const oIler = elYap("div", "islem-satiri dg-ilerleme");
+    oIler.setAttribute("role", "status");
+    const oIlerMetin = elYap("span", "islem-sure", "");
+    const oIptal = elYap("button", "islem-iptal", "İptal");
+    oIptal.type = "button";
+    oIptal.title = "Dil modelini durdur; gelen öneriler kalır";
+    oIler.append(oIlerMetin, oIptal);
+    kart.appendChild(oIler);
+    let oGecen = 0, oSayac = null, oBiten = 0, oToplam = 0;
+    function oIlerYaz() {
+        oIlerMetin.textContent = "İşlem Devam Ediyor · Açıklama Önerileri · "
+            + ftBinlik(oBiten) + " / " + ftBinlik(oToplam) + " Kolon · " + sureBicim(oGecen);
+    }
+    function oIlerGoster(acik) {
+        oIler.classList.toggle("gorunur", acik);
+        if (acik && !oSayac) {
+            oSayac = setInterval(() => {
+                if (!kart.isConnected) { clearInterval(oSayac); oSayac = null; return; }
+                oGecen += 1; oIlerYaz();
+            }, 1000);
+        } else if (!acik && oSayac) { clearInterval(oSayac); oSayac = null; }
+        if (acik) oIlerYaz();
+    }
+    oIptal.onclick = () => {
+        if (!alan.oneri_is) return;
+        oIptal.disabled = true;
+        oIptal.textContent = "İptal ediliyor…";
+        fetch(getWebAppBackendUrl("oneri_iptal"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({ is: String(alan.oneri_is) }))
+        })
+        .then(r => r.json())
+        .then(() => { clearTimeout(oneriZaman); oneriYokla(String(alan.oneri_is)); })
+        .catch(() => { oIptal.disabled = false; oIptal.textContent = "İptal"; });
+    };
+
     /* ---- 6) Gerekce satiri + dugmeler ---- */
     const gerekce = document.createElement("div");
     gerekce.className = "dg-gerekce";
@@ -6517,17 +6556,19 @@ function dogrulamaKartiEkle(alan, blok) {
        yarım dolmuş bir listede yazmaya başlayıp üstüne öneri düşmesi
        yazılanın kaybolması demek olurdu. */
     let oneriZaman = null;
-    function oneriKilidi(acik, biten, toplam) {
+    function oneriKilidi(acik, biten, toplam, gecen) {
         oneriBekliyor = !acik;
         girisler.forEach(g => { g.disabled = !acik; });
         topluBtnleri.forEach(b => { b.disabled = !acik; });
         if (!acik) {
             birincil.disabled = true;
             gerekce.hidden = false;
-            gerekce.textContent = DG_ONERI_NOTU
-                .replace("%s", ftBinlik(biten || 0))
-                .replace("%s", ftBinlik(toplam || 0));
+            gerekce.textContent = DG_ONERI_NOTU;
+            oBiten = biten || 0; oToplam = toplam || 0;
+            if (gecen !== undefined && gecen !== null) oGecen = gecen;
+            oIlerGoster(true);
         } else {
+            oIlerGoster(false);
             durumTazele();
         }
     }
@@ -6590,7 +6631,7 @@ function dogrulamaKartiEkle(alan, blok) {
                 const kontrolSuruyor = k.kontrol_durum === "bekliyor"
                     || k.kontrol_durum === "calisiyor";
                 if (k.durum === "calisiyor") {
-                    oneriKilidi(false, k.biten, k.toplam);
+                    oneriKilidi(false, k.biten, k.toplam, k.gecen);
                 } else if (oneriBekliyor) {
                     // "bitti" ya da "yok": her iki durumda da kilit acilir.
                     oneriKilidi(true);

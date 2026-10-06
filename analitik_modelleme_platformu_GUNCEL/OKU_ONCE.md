@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.3 Eksik Sözlük Tanımları'nda Baz Veri Seti / Baz Sözlük kutuları kaldırıldı**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.3 hızlandı (sonraki adımın işi önceden başlamıyor); açıklama önerilerinde işlem satırı ve İptal**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- ADIMLAR ÖNCEDEN ÇALIŞMAZ: Kısaltma Sözlüğü'nün okuması artık 01.2.3'te
+  arka planda başlamaz, yalnız 01.2.4 açılınca başlar. Önceden başladığı
+  için model sunucusu o okumayla meşgul oluyor, 01.2.3'ün açıklama
+  önerileri sırada bekliyordu.
+- 01.2.3 kartında öneriler sürerken işlem satırı: "İşlem Devam Ediyor ·
+  Açıklama Önerileri · x / y Kolon · süre" ve İptal. İptal önerileri
+  hemen durdurur, gelenler kalır, açıklamalar yazılabilir hale gelir;
+  dil modelinde süren çağrının geç gelen cevabı kullanılmaz.
+- Yeni uç: `/oneri_iptal`.
+
+Önceki tur: **01.2.3 Eksik Sözlük Tanımları'nda Baz Veri Seti / Baz Sözlük kutuları kaldırıldı**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Kart kapsam çubuğuyla başlar; veri seti ve sözlük bilgisi sağ panelde
   (daha ayrıntılı) duruyor.

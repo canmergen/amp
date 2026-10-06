@@ -1356,10 +1356,10 @@ def _aciklama_baglami(durum):
         baglam["hafiza"] = tanim_hafiza.tanimlar(amp_klasor_adi(durum))
     except Exception:
         baglam["hafiza"] = {}
-    # KISALTMALAR: kesin (bu sozlukten okunanlar) ve tahmini (sozluk
-    # istatistigi, baska calismalar). Kisaltma Sozlugu'nun OKUMASI burada
-    # ARKA PLANDA baslar (tanimli kolonlarin hepsi); sonucu 01.2.4'e
-    # yetisir, 01.2.3'te eklenen tanimlar orada okunur.
+    # KISALTMALAR: kesin (bu sozlukten daha once okunanlar) ve tahmini
+    # (sozluk istatistigi, baska calismalar). ADIMLAR ONCEDEN CALISMAZ:
+    # Kisaltma Sozlugu'nun okumasi burada BASLAMAZ (01.2.4 acilinca
+    # baslar); burada yalniz kayitli okuma sonuclari kullanilir.
     try:
         kaynak = dict(baglam["hafiza"])
         kaynak.update(baglam["tanimlar"])
@@ -1367,7 +1367,6 @@ def _aciklama_baglami(durum):
         kume = set(adlar)
         okunacak = {ad: t for ad, t in kaynak.items()
                     if (not kume or ad in kume) and str(t or "").strip()}
-        kisaltma_okuma.baslat(okunacak, amp_klasor_adi(durum), adlar)
         baglam["kisaltmalar"], baglam["kisaltmalar_tahmini"] = \
             kisaltma_okuma.baglam_kisaltmalari(okunacak)
     except Exception:
@@ -2166,7 +2165,7 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
             son_hata = "%s: %s" % (type(e).__name__, str(e)[:120])
         with _ONERI_KILIT:
             kayit = _ONERI_ISLER.get(is_id)
-            if kayit is None:
+            if kayit is None or kayit.get("iptal"):
                 return
             kayit["oneriler"].update(yeni)
             kayit["biten"] = min(bas + len(grup), len(profiller))
@@ -2273,15 +2272,24 @@ def oneri_isi_durumu(is_id):
                 "kontrol_biten": kayit.get("kontrol_biten") or 0,
                 "kontrol_hata": kayit.get("kontrol_hata") or "",
                 "duzeltmeler": dict(kayit.get("duzeltmeler") or {}),
-                "model_notu": kayit.get("model_notu") or ""}
+                "model_notu": kayit.get("model_notu") or "",
+                "iptal": bool(kayit.get("iptal")),
+                "gecen": int(max(0, datetime.datetime.now().timestamp()
+                                 - (kayit.get("baslangic") or 0)))}
 
 
-def oneri_isi_iptal(is_id):
-    """Kullanici adimdan ayrildi: isci bir sonraki grupta durur."""
+def oneri_isi_iptal(is_id, kullanici=False):
+    """Isi durdurur: isci bir sonraki grupta durur. kullanici=True (kartta
+    Iptal): is HEMEN bitmis sayilir, kart kilidi acilir; dil modelinde
+    suren cagrinin cevabi kullanilmaz."""
     with _ONERI_KILIT:
         kayit = _ONERI_ISLER.get(str(is_id or ""))
         if kayit is not None:
             kayit["iptal"] = True
+            if kullanici and kayit["durum"] == "calisiyor":
+                kayit["durum"] = "bitti"
+                kayit["hata"] = ("Öneriler durduruldu; gelmeyen açıklamaları kendiniz "
+                                 "yazabilir ya da kolonları hariç tutabilirsiniz.")
 
 
 def _oneri_sonucunu_tasi(durum):

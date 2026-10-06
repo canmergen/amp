@@ -2669,6 +2669,18 @@ def kisaltma_oneri_endpoint():
         return jsonify(_hata_govdesi("kisaltma_oneri", e)), 200
 
 
+@app.route("/oneri_iptal", methods=["POST"])
+def oneri_iptal_endpoint():
+    """Eksik Sozluk Tanimlari: suren aciklama onerilerini durdurur; gelen
+    oneriler kalir, kart kilidi acilir. Oturum dosyasi yazilmaz."""
+    try:
+        istek = request.get_json(force=True) or {}
+        akis.oneri_isi_iptal(istek.get("is"), kullanici=True)
+        return jsonify({"tamam": True})
+    except Exception as e:
+        return jsonify(_hata_govdesi("oneri_iptal", e)), 200
+
+
 @app.route("/kisaltma_iptal", methods=["POST"])
 def kisaltma_iptal_endpoint():
     """Kisaltma Sozlugu: suren okumayi / oneriyi durdurur; gelen
