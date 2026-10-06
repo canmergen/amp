@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklama önerilerini tek model yazar (Qwen Flash), hakem yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **"ResizeObserver loop" hata kutusu giderildi**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- 01.2.3 açıklama kutusunun yüksekliği genişlik değişince aynı karede
+  yeniden ölçülüyordu; tarayıcı zararsız bir uyarı veriyor, genel hata
+  yakalayıcı bunu "Arayüz yüklenirken bir hata oluştu" diye
+  gösteriyordu. Ölçüm artık bir sonraki karede yapılır; bu uyarı hata
+  kutusuna düşmez.
+
+Önceki tur: **Açıklama önerilerini tek model yazar (Qwen Flash), hakem yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - 01.2.3 açıklama önerilerini yalnız Qwen Flash yazar; cevap vermezse
   Llama 70B yazar. Hakem çağrılmaz; tek çağrı olduğu için en hızlı düzen.

@@ -3,6 +3,8 @@
    en sık sebebi index.html / style.css / app.js'in farklı sürümlerde
    yapıştırılmış olması. */
 window.addEventListener("error", function (olay) {
+    /* Tarayıcının zararsız ResizeObserver uyarısı hata değildir. */
+    if (/ResizeObserver loop/i.test((olay && olay.message) || "")) return;
     try {
         const alan = document.getElementById("sohbet");
         if (!alan || document.getElementById("yukleme-hatasi")) return;
@@ -6083,9 +6085,14 @@ function dogrulamaKartiEkle(alan, blok) {
             };
             if (window.ResizeObserver) {
                 let sonEn = 0;
+                /* Ölçüm bir sonraki karede: aynı karede yükseklik
+                   değiştirmek tarayıcıya "ResizeObserver loop" uyarısı
+                   verdiriyordu. */
                 new ResizeObserver(g => {
                     const en = g[0].contentRect.width;
-                    if (en !== sonEn) { sonEn = en; giris._boyla(); }
+                    if (en === sonEn) return;
+                    sonEn = en;
+                    requestAnimationFrame(() => giris._boyla());
                 }).observe(giris);
             }
             giris.addEventListener("keydown", e => { if (e.key === "Enter") e.preventDefault(); });
