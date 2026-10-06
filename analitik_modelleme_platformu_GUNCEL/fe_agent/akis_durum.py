@@ -320,7 +320,11 @@ def _mod_goc(durum):
 # Surum 6'da "veri_icerik", surum 7'de "tanim_kontrol" CIKTI. Cikan adimda
 # yer, cikan adimin o surumdeki konumudur: ilerisindeki adimlar bir geri
 # kayar, cikan adimda duran calisma bir sonraki adimda acilir.
-SIRA_SURUMU = 7
+# Surum 8'de "birlesik" CIKTI; "kisaltma" ve "kolon_ad" yeniden yazildi
+# (Kisaltma Sozlugu / Yeni Kolon Adlari). Bu uc adimdan birinde duran
+# calisma Kisaltma Sozlugu'nden YENIDEN ACILIR (eski kartlar yeni adimlara
+# uymaz; bkz. _YENIDEN_ACILAN).
+SIRA_SURUMU = 8
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
@@ -330,6 +334,17 @@ _SIRA_GOCLERI = {
     5: (1, {"A": 3, "B": 5}),
     6: (-1, {"A": 4, "B": 6}),
     7: (-1, {"A": 7, "B": 9}),
+    8: (-1, {"A": 5, "B": 7}),
+}
+# surum -> {mod: (ilk, son)}: bu surumden onceki sirada [ilk, son]
+# araligindaki adimda duran calisma "ilk" adimda yeniden acilir.
+_YENIDEN_ACILAN = {
+    8: {"A": (4, 6), "B": (6, 8)},
+}
+# Yeniden acilan calismada eski kararlar temizlenir.
+_YENIDEN_ACILAN_ALANLAR = {
+    8: ("kisaltma_birlesik", "kisaltma_sayi_ayir", "_kolon_ad_imza",
+        "kisaltma_kararlari", "kisaltma_esleme", "_kolon_ad_karari"),
 }
 
 
@@ -342,6 +357,12 @@ def _sira_goc(durum):
     except (TypeError, ValueError):
         i = None
     for hedef in range(int(surum) + 1, SIRA_SURUMU + 1):
+        aralik = _YENIDEN_ACILAN.get(hedef, {}).get(durum.get("mod"))
+        if aralik and i is not None and aralik[0] <= i <= aralik[1]:
+            i = aralik[0]
+            durum["_goc_yeniden_gir"] = True
+            for alan in _YENIDEN_ACILAN_ALANLAR.get(hedef, ()):
+                durum.pop(alan, None)
         adet, yerler = _SIRA_GOCLERI.get(hedef, (0, {}))
         yer = yerler.get(durum.get("mod"))
         if yer is not None and i is not None and i > yer:

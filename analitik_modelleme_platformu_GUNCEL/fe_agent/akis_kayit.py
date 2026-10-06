@@ -13,7 +13,6 @@ from fe_agent.akis_faz01 import (
     kaynak_sozluk_girdi, kaynak_sozluk_uygula,
     sozluk_tanim_plan, sozluk_tanim_uygula,
     kisaltma_plan, kisaltma_uygula, kolon_ad_plan, kolon_ad_uygula,
-    birlesik_plan, birlesik_uygula,
     sozluk_uret_plan, sozluk_uret_uygula, tanimlar_girdi,
     tanimlar_uygula, teyit_girdi, teyit_uygula, veri_sec_girdi,
     veri_sec_plan, veri_sec_uygula,
@@ -106,31 +105,21 @@ ADIMLAR = {
         "girdi": None, "plan": sozluk_tanim_plan,
         "uygula": sozluk_tanim_uygula},
 
-    # ADIM SIRASI: bos tanimlar -> kisaltma sozlugu ->
-    # kolon adi onerileri -> dolu tanimlarin kontrolu. Her adim bir
-    # oncekinin ONAYLADIGI bilgiyi kullanir; hatali sozluk kisaltmayi,
-    # kisaltma da sozlugu "dogrulamasin".
+    # ADIM SIRASI: bos tanimlar -> kisaltma sozlugu -> yeni kolon adlari.
+    # SOZLUK KESIN DOGRUDUR: kisaltmalarin anlami tanimlardan okunur;
+    # kolon adlari onaylanan kisaltmalarla kodla yeniden yazilir.
     "kisaltma": {
         "baslik": ADIM_ADI["kisaltma"],
-        "aciklama": "Kolon adlarındaki kısaltmaların anlamları onaylanır; "
-                    "anlaşılmayan kısaltmanın yerine önerilen kısaltma kolon "
-                    "adlarına ve sözlükteki adlara uygulanır.",
+        "aciklama": "Kolon adlarındaki parçaların anlamı sözlükteki "
+                    "tanımlardan okunur; her anlam için kolon adlarında "
+                    "kullanılacak kısaltma seçilir.",
         "girdi": None, "plan": kisaltma_plan, "uygula": kisaltma_uygula},
-
-    # Kisaltmalar ONAYLANDIKTAN SONRA: birlestirme
-    # onerileri onaylanan anlamlarla verilir.
-    "birlesik": {
-        "baslik": "Kısaltma Birleştirme",
-        "aciklama": "Kolon adlarında hep yan yana geçen ve ayrı anlamları "
-                    "yan yana okununca anlamı karışan kısaltmalar, onaylanan "
-                    "anlamlarla birleştirilmeye önerilir; kabul sizindir.",
-        "girdi": None, "plan": birlesik_plan, "uygula": birlesik_uygula},
 
     "kolon_ad": {
         "baslik": ADIM_ADI["kolon_ad"],
-        "aciklama": "Açıklamasında bir kısaltmanın anlamı geçen ama adında "
-                    "o kısaltma bulunmayan kolonlar için yeni ad önerilir; "
-                    "uygulanan adlar yalnız platformun kopyalarında geçerli olur.",
+        "aciklama": "Kolon adları Kısaltma Sözlüğü'nde seçilen kısaltmalarla "
+                    "yeniden yazılır; yeni adlar yalnız platformun "
+                    "kopyalarında geçerli olur.",
         "girdi": None, "plan": kolon_ad_plan, "uygula": kolon_ad_uygula},
 
     "tanimlar": {
@@ -247,13 +236,13 @@ FAZ01_ADIMLARI = {
     # donem kolonunun sozlukte tanimli olmasi zorunlu; hangi kolonlar
     # oldugu tanimlar adiminda belli oluyor.
     "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "kisaltma",
-           "birlesik", "kolon_ad", "teyit", "bolme"],
+           "kolon_ad", "teyit", "bolme"],
     # B: nihai veri seti YOK; kaynak tablolar ve HER BIRININ SOZLUGU hazir.
     # Sozlukler birlestirmeden ONCE eslenir, nihai sozluk birlestirmede
     # bunlardan kurulur. Kaynagi tanimsiz kolonlar icin A gibi
     # sozluk_tanim adimi var.
     "B":  ["mod", "ham_veri", "kaynak_sozluk", "birlestirme", "tanimlar",
-           "sozluk_tanim", "kisaltma", "birlesik", "kolon_ad", "teyit",
+           "sozluk_tanim", "kisaltma", "kolon_ad", "teyit",
            "bolme"],
     # C ve D'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
     # tanimsiz kolon kalmiyor ve ayri bir "sozluk_tanim" adimina gerek
@@ -278,7 +267,6 @@ ADIM_GRUPLARI = {
     "tanimlar":    "veri_sozluk",
     "sozluk_tanim": "veri_sozluk",
     "kisaltma": "veri_sozluk",
-    "birlesik": "veri_sozluk",
     "kolon_ad": "veri_sozluk",
     # C modu: veri seti secimi + sozluk uretimi + modelleme tanimlari
     "veri_sec":    "veri_sozluk",

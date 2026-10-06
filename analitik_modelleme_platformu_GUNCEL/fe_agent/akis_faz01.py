@@ -20,6 +20,7 @@ from fe_agent import sozluk as sozluk_mod
 from fe_agent import sozluk_calisma
 from fe_agent import tanim_hafiza
 from fe_agent import kisaltma as kisaltma_mod
+from fe_agent import kisaltma_okuma
 from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
@@ -715,7 +716,7 @@ def sozluk_uret_uygula(durum):
     except Exception:
         _hafiza = {}
     try:
-        _kisa, _kisa_t = kisaltma_mod.birlesik(_hafiza)
+        _kisa, _kisa_t = kisaltma_okuma.baglam_kisaltmalari(_hafiza)
     except Exception:
         _kisa, _kisa_t = {}, {}
     aciklamalar, llm_hata = llm_mod.sozluk_aciklama_uret(
@@ -1355,15 +1356,20 @@ def _aciklama_baglami(durum):
         baglam["hafiza"] = tanim_hafiza.tanimlar(amp_klasor_adi(durum))
     except Exception:
         baglam["hafiza"] = {}
-    # KISALTMALAR: kesin (onayli) ve tahmini (sozlukten ogrenilen /
-    # dil modelinden). Dil modeli kisaltma kontrolu burada ARKA PLANDA
-    # baslar; sonucu 01.2.4'teki Kisaltma Sozlugu kartina yetisir.
+    # KISALTMALAR: kesin (bu sozlukten okunanlar) ve tahmini (sozluk
+    # istatistigi, baska calismalar). Kisaltma Sozlugu'nun OKUMASI burada
+    # ARKA PLANDA baslar (tanimli kolonlarin hepsi); sonucu 01.2.4'e
+    # yetisir, 01.2.3'te eklenen tanimlar orada okunur.
     try:
         kaynak = dict(baglam["hafiza"])
         kaynak.update(baglam["tanimlar"])
-        kisaltma_mod.dogrulamayi_baslat(kaynak, durum.get("veri_seti") or "")
+        adlar = _veri_kolonlari(durum)
+        kume = set(adlar)
+        okunacak = {ad: t for ad, t in kaynak.items()
+                    if (not kume or ad in kume) and str(t or "").strip()}
+        kisaltma_okuma.baslat(okunacak, amp_klasor_adi(durum), adlar)
         baglam["kisaltmalar"], baglam["kisaltmalar_tahmini"] = \
-            kisaltma_mod.birlesik(kaynak)
+            kisaltma_okuma.baglam_kisaltmalari(okunacak)
     except Exception:
         baglam["kisaltmalar"], baglam["kisaltmalar_tahmini"] = {}, {}
     # 01.2.4'te onaylanan anlamlar KESIN (tanim kontrolu bunlarla yapilir).
@@ -1399,11 +1405,21 @@ def onayli_hafiza_anlami(kisa):
 
 
 def _kalici_kisaltma_ogren(durum):
-    """Kolon Adi Onerileri tamamlaninca: calisma kopyasi + onayli tanimlardan
-    kalici kisaltma ogrenmesi (arka planda; bkz. kisaltma.kalici_ogren)."""
+    """KENDINI GELISTIRME: bu veri setinin sozlugunden okunan anlamlar
+    (tek anlamli kisaltmalar) ogrenilmis bilgiye yazilir
+    (KISALTMA_OGRENILEN.json; onaysiz). Sonraki calismalarda sozlugun
+    aciklamadigi parcalar icin tahmini kaynak olur. Hata akisi durdurmaz."""
     try:
-        kisaltma_mod.kalici_ogren(_kisaltma_kaynagi(durum),
-                                  durum.get("veri_seti") or "")
+        kolonlar, adlar = _kisaltma_girdisi(durum)
+        kayit = {}
+        for s in kisaltma_okuma.tablo(kolonlar, adlar)["satirlar"]:
+            if s["bolum"] != "sozluk" or not s["anlam"]:
+                continue
+            for k in s["kisaltmalar"]:
+                if not s["cok_anlamli"].get(k["kisaltma"]):
+                    kayit[k["kisaltma"]] = {"anlam": s["anlam"], "kolon": k["kolon"],
+                                            "kaynak": "sozluk"}
+        kisaltma_mod.ogrenilenleri_kaydet(kayit, durum.get("veri_seti") or "")
     except Exception:
         pass
 
@@ -1420,9 +1436,7 @@ def _kisaltma_kaynagi(durum):
         kaynak.update(_sozluk_tanimlari(sozluk_oku(durum)))
     except Exception:
         pass
-    # Veri setinin TANIMSIZ kolonlari da (bos tanimla): sozlugu olmayan veri
-    # setinde kolon adlarindaki kisaltmalar onceki calismalardan ogrenilen
-    # bilgiyle kartta gorunsun. Bos tanim istatistige girmez.
+    # Veri setinin TANIMSIZ kolonlari da (bos tanimla).
     try:
         for k in (_profil(durum).get("kolonlar") or []):
             kaynak.setdefault(str(k.get("ad")), "")
@@ -1431,263 +1445,119 @@ def _kisaltma_kaynagi(durum):
     return kaynak
 
 
-KISALTMA_BASLIK = "Kısaltma Sözlüğü"
+def _veri_kolonlari(durum):
+    try:
+        return [str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or [])]
+    except Exception:
+        return []
+
+
+def _kisaltma_girdisi(durum):
+    """Okumaya giden {kolon: tanim} (yalniz bu veri setinin tanimli
+    kolonlari, HEPSI) ve veri setinin butun kolon adlari."""
+    adlar = _veri_kolonlari(durum)
+    kume = set(adlar)
+    kolonlar = {ad: t for ad, t in _kisaltma_kaynagi(durum).items()
+                if (not kume or ad in kume) and str(t or "").strip()}
+    return kolonlar, adlar
+
+
+def _kisaltma_isi(durum):
+    """Okuma isini baslatir (zaten calisiyor / bittiyse ayni is).
+    Doner: (imza, kolonlar, adlar)."""
+    kolonlar, adlar = _kisaltma_girdisi(durum)
+    imza = kisaltma_okuma.baslat(kolonlar, amp_klasor_adi(durum), adlar)
+    durum["_kisaltma_imza"] = imza
+    return imza, kolonlar, adlar
+
+
+KISALTMA_BASLIK = ADIM_ADI["kisaltma"]
 # Kartta basligin altinda.
 KISALTMA_ACIKLAMA = (
-    "Kolon adlarındaki kısaltmaların anlamını dil modeli önerir. "
-    "Seçtiğiniz satırın anlamı onaylanır; önerilen kısaltma yazılıysa o "
-    "kısaltmanın geçtiği kolon adları ve sözlükteki adlar onunla değişir.")
+    "Kolon adlarındaki her parçanın anlamı sözlükteki tanımlardan okunur; her "
+    "satır bir anlam. Seçtiğiniz satırın anlamı onaylanır ve Önerilen Kısaltma "
+    "yazılıysa bu anlamın geçtiği kolon adlarına uygulanır.")
 # Sutunlarin aciklamasi basliktaki i'de.
 KISALTMA_SUTUNLAR = (
-    "LLM Karar: dil modelinin sözlükteki açıklamalara (LLM Sözlük) ve "
-    "kendi genel bilgisine (LLM Genel) bakarak verdiği anlam; "
-    "düzenleyebilirsiniz. İki kaynağın ne dediği kısaltmanın 'i'sinde.\n\n"
-    "Önerilen Kısaltma: anlamı adından çıkarılamayan kısaltma (LLM Genel "
-    "bilmiyor ya da LLM Karar'dan farklı anlam veriyor) için dil modelinin "
-    "LLM Karar'daki anlamdan önerdiği daha okunur kısaltma; anlamı LLM "
-    "Karar'daki anlamdır. Kendiniz de yazabilirsiniz.\n\n"
-    "Seç: işaretli satırın anlamı onaylanır ve kısaltma hafızasına "
-    "kaydedilir; önerilen kısaltma yazılıysa kolon adlarına ve sözlükteki "
-    "adlara uygulanır. İşaretsiz satır onaylanmaz.\n\n"
-    "Her kısaltmanın kararı, gerekçesi ve örnek kolonları kısaltmanın "
-    "yanındaki simgede.")
-BIRLESIK_ACIKLAMA = (
-    "Kolon adlarında yan yana geçen kısaltmalar ayrı anlamlarıyla "
-    "okununca anlam karışıyorsa birlikte tek anlam alabilir. Dil modelinin "
-    "önerileri aşağıda; kendiniz de ekleyebilirsiniz. Birleştir "
-    "işaretlenenler bu çalışmada birlikte anlamıyla kullanılır ve hafızaya "
-    "kaydedilir; önerilen kısaltma yazılırsa bu parçaların geçtiği kolon "
-    "adlarına ve sözlükteki adlara uygulanır.")
+    "Anlam: kolon adındaki parçanın, kolonun sözlükteki tanımında karşılık "
+    "geldiği ifade. Tanımdan aynen okunur; dil modelinin genel bilgisi "
+    "kullanılmaz. Okuma hatalıysa düzenleyebilirsiniz.\n\n"
+    "Adlarda Geçen: bu anlam için kolon adlarında kullanılan kısaltmalar ve "
+    "kaç kolonda geçtikleri. Aynı anlama giden farklı kısaltmalar aynı satırda; "
+    "iki anlamda kullanılan kısaltma iki satırda görünür. \"Adda Yok\": anlam "
+    "tanımda geçiyor, kolon adında karşılığı yok.\n\n"
+    "Önerilen Kısaltma: bu anlam için kolon adlarında kullanılacak tek "
+    "kısaltma; boşsa mevcut kısaltma kalır. Dil modeli kolon adlarının "
+    "dilinde ve kalıbında önerir; önceki çalışmalarda bu anlam için seçilen "
+    "kısaltma varsa o gelir. Kendiniz de yazabilirsiniz.\n\n"
+    "Sözlükte Karşılığı Bulunamayan Parçalar: hiçbir tanımda karşılığı "
+    "bulunmayan parçalar. Anlamı yalnız burada başka çalışmalardan gelir ve "
+    "öyle işaretlidir.\n\n"
+    "Seç: işaretli satırın anlamı onaylanır ve kısaltma hafızasına yazılır; "
+    "önerilen kısaltma kolon adlarına ve sözlükteki adlara uygulanır (Yeni "
+    "Kolon Adları adımında önizlenir). İşaretsiz satırda ad değişmez; "
+    "sözlükten okunan anlam yine bu çalışmada kullanılır.")
 
 
-def _kisaltma_alani(durum, bekle=0.0):
-    """bekle: dil modeli kisaltma kontrolunun sonucu icin en cok beklenen
-    sure (sn). Kontrol 01.2.3'te arka planda basladigi icin cogu zaman
-    hazirdir; yetismezse kural tabanli liste gelir ve not yazilir."""
-    kaynak = _kisaltma_kaynagi(durum)
-    satirlar, dm = kisaltma_mod.kart_satirlari(kaynak, bekle, durum.get("veri_seti") or "")
-    notu = {"hata": "Dil modeli kontrolü yapılamadı; liste kural tabanlı."}.get(dm, "")
-    if dm == "bitti":
-        try:
-            bilgi = kisaltma_mod.dogrulama_bilgisi(kaynak, durum.get("veri_seti") or "")
-        except Exception:
-            bilgi = {}
-        if bilgi.get("iptal") and bilgi.get("kalan"):
-            notu = ("Dil modeli kontrolü durduruldu; sonucu gelmeyen %d kısaltmanın "
-                    "anlamı sözlükteki kelime sayımından geldi." % bilgi["kalan"])
-    ilerleme = None
-    if dm == "calisiyor":
-        # PARCA BITTIKCE: biten kisaltmalar duzenlenebilir, bekleyenler kilitli.
-        # Sayilar yalniz dil modeline sorulan kisaltmalardan.
-        try:
-            bilgi = kisaltma_mod.dogrulama_bilgisi(kaynak, durum.get("veri_seti") or "")
-        except Exception:
-            bilgi = {}
-        toplam = int(bilgi.get("toplam") or 0)
-        ilerleme = {"biten": max(0, toplam - int(bilgi.get("bekleyen") or 0)),
-                    "toplam": toplam, "gecen": bilgi.get("gecen") or 0}
-    if dm == "hata":
-        try:
-            sebep = kisaltma_mod.dogrulama_bilgisi(_kisaltma_kaynagi(durum),
-                                                   durum.get("veri_seti") or "").get("hata")
-            if sebep:
-                notu += " Sebep: %s" % sebep
-        except Exception:
-            pass
-    return {"baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
-            "sutunlar": KISALTMA_SUTUNLAR,
-            "satirlar": satirlar, "not": notu, "dm": dm, "ilerleme": ilerleme}
-
-
-# ---------------------------------------------------------------------------
-# 01.2.5 KISALTMA BIRLESTIRME (ayri adim.Kisaltmalar
-# onaylanmadan birlestirme onerilmez). Dil modeli ONAYLANAN anlamlarla
-# hep yan yana gecen parcalar icin birlestirme onerir; kullanici kabul
-# eder ya da kendisi ekler.
-# ---------------------------------------------------------------------------
-BIRLESIK_BASLIK = "Kısaltma Birleştirme"
-BIRLESIK_DUGME = {"bos": "Birleştirmeleri Onayla ve Devam Et"}
-
-
-def _birlesik_anlamlari(durum, kaynak):
-    """Birlestirme sorusuna giden parca anlamlari: 01.2.4'te onaylananlar;
-    adim atlandiysa onerilen + onayli."""
-    onayli = _onayli_anlamlar(durum)
-    if onayli is not None:
-        return {k: v for k, v in onayli.items() if "_" not in k}
-    try:
-        kesin, tahmini = kisaltma_mod.birlesik(kaynak)
-    except Exception:
-        kesin, tahmini = {}, {}
-    return dict(tahmini, **kesin)
-
-
-def _birlesik_alani(durum):
-    kaynak = _kisaltma_kaynagi(durum)
-    anlamlar = _birlesik_anlamlari(durum, kaynak)
-    try:
-        birlesik, dm, hata = kisaltma_mod.birlesik_onerileri(kaynak, anlamlar)
-    except Exception as e:
-        birlesik, dm, hata = [], "hata", str(e)[:200]
-    # Geri donuste bu calismada verilen birlestirme kararlari korunur.
-    onceki = durum.get("kisaltma_birlesik")
+def _kisaltma_alani(durum):
+    """01.2.4 kartinin Kisaltma Sozlugu bolumu (beklemez). Okuma ya da
+    oneriler surerken satirlar kilitli gelir, yoklamayla tazelenir."""
+    imza, kolonlar, adlar = _kisaltma_isi(durum)
+    d = kisaltma_okuma.durum(imza)
+    t = kisaltma_okuma.tablo(kolonlar, adlar)
+    satirlar = t["satirlar"]
+    # Geri donuste bu calismada verilen kararlar kartta korunur.
+    onceki = durum.get("kisaltma_kararlari")
     if isinstance(onceki, dict):
-        for b_ in birlesik:
-            if b_["kisaltma"] in onceki:
-                b_["onayli"], b_["anlam"] = True, onceki[b_["kisaltma"]]
-        var = {b_["kisaltma"] for b_ in birlesik}
-        for ad, anlam in onceki.items():
-            if ad not in var:
-                birlesik.append({"kisaltma": ad, "parcalar": ad.split("_"),
-                                 "ayri": " + ".join(anlamlar.get(p) or "?" for p in ad.split("_")),
-                                 "anlam": anlam, "oneri_anlam": "", "gerekce": "",
-                                 "kolon": 0, "onayli": True, "elle": True})
-    for b_ in birlesik:
-        if b_["kisaltma"] in (durum.get("kisaltma_yeni") or {}):
-            b_["yeni_kisaltma"] = durum["kisaltma_yeni"][b_["kisaltma"]]
-    try:
-        bilgi = kisaltma_mod.birlesik_bilgisi(kaynak, anlamlar)
-    except Exception:
-        bilgi = {}
-    notu = ("Birleştirme önerileri alınamadı: %s" % hata if hata else
-            "Dil modeli durduruldu; birleştirmeyi kendiniz ekleyebilirsiniz."
-            if bilgi.get("iptal") else
-            "" if dm == "calisiyor" or birlesik else
-            "Dil modeli birleştirilmesi gereken kısaltma bulmadı; kendiniz ekleyebilirsiniz.")
-    return {"baslik": BIRLESIK_BASLIK, "aciklama": BIRLESIK_ACIKLAMA,
-            "satirlar": birlesik, "dm": dm, "not": notu, "anlamlar": anlamlar,
-            "gecen": bilgi.get("gecen") or 0}
+        for s in satirlar:
+            k = onceki.get(s["anahtar"])
+            if isinstance(k, dict):
+                s["anlam"] = k.get("anlam") or s["anlam"]
+                s["oneri"] = k.get("oneri") or ""
+                s["secili"] = bool(k.get("secili"))
+    calisiyor = d.get("durum") == "calisiyor"
+    notlar = []
+    if not calisiyor:
+        if d.get("iptal"):
+            notlar.append("Dil modeli durduruldu; okunan kolonlar listede.")
+        if d.get("okunmayan"):
+            notlar.append("%s kolonun tanımı okunamadı; bu kolonların parçaları başka "
+                          "kolonlarda okunmadıysa \"Sözlükte Karşılığı Bulunamayan "
+                          "Parçalar\" bölümünde." % _sayi(d["okunmayan"]))
+        if d.get("hata"):
+            notlar.append("Sebep: %s" % d["hata"])
+    ilerleme = None
+    if calisiyor:
+        oneri = d.get("asama") == "oneri"
+        ilerleme = {"asama": d.get("asama"), "gecen": d.get("gecen") or 0,
+                    "biten": d.get("oneri_biten" if oneri else "biten") or 0,
+                    "toplam": d.get("oneri_toplam" if oneri else "toplam") or 0}
+    return {"surum": 2, "baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
+            "sutunlar": KISALTMA_SUTUNLAR, "satirlar": satirlar,
+            "dm": "calisiyor" if calisiyor else ("hata" if d.get("durum") == "hata" else "bitti"),
+            "ilerleme": ilerleme, "not": " ".join(notlar),
+            "ozet": {"okunan": t["okunan"], "tanimli": t["tanimli"], "dil": t["dil"]}}
 
 
-def birlesik_alani(durum):
-    """On yuz yoklamasi icin (beklemez)."""
-    return _birlesik_alani(durum)
-
-
-def birlesik_iptal(durum):
-    """Kisaltma Birlestirme: suren dil modeli sorusunu durdurur."""
-    kaynak = _kisaltma_kaynagi(durum)
-    kisaltma_mod.birlesik_iptal(kaynak, _birlesik_anlamlari(durum, kaynak))
-    return _birlesik_alani(durum)
-
-
-def birlesik_plan(durum):
-    try:
-        aday = kisaltma_mod.birlesik_adaylari_var(_kisaltma_kaynagi(durum))
-    except Exception:
-        aday = False
-    if not aday and not durum.get("kisaltma_birlesik"):
-        durum["_plan_otomatik"] = True
-        durum["_secim_alani"] = None
-        return ("Kolon adlarında hep yan yana geçen kısaltma bulunmadı; bu adım "
-                "atlandı.")
-    durum["_secim_alani"] = _adim_karti(
-        "birlesik", {"birlesik": _birlesik_alani(durum)}, BIRLESIK_DUGME,
-        "Birleştirmeden Devam Et")
-    return ""
-
-
-def _birlesik_temizle(durum):
-    """Onceki birlestirmelerin bu calismanin sozlugunden cikarilmasi."""
-    sozluk = durum.get("kisaltma_sozluk")
-    yeni = durum.get("kisaltma_yeni")
-    for ad in list((durum.get("kisaltma_birlesik") or {})):
-        if isinstance(sozluk, dict):
-            sozluk.pop(ad, None)
-        y = yeni.pop(ad, None) if isinstance(yeni, dict) else None
-        if y and isinstance(sozluk, dict):
-            sozluk.pop(y, None)
-    durum["kisaltma_birlesik"] = {}
-
-
-def birlesik_uygula(durum):
-    """Isaretlenen birlestirmeler bu calismanin kisaltma sozlugune girer
-    ("<A>_<B>" = birlikte anlam) ve hafizaya yazilir; isaretlenmeyen
-    hafizadan da kalkar. Onerilen kisaltma yazildiysa 01.2.6'da kolon
-    adlarina uygulanir. Parcalar bu veri setinin en az bir kolon adinda
-    yan yana gecmeli."""
-    karar = durum.pop("_dogrulama_karari", None)
-    _birlesik_temizle(durum)
-    if not isinstance(karar, dict) or karar.get("atla"):
-        return ""
-    try:
-        veri_adlari = [str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or [])]
-    except Exception:
-        veri_adlari = []
-    sozluk = durum.get("kisaltma_sozluk")
-    sozluk = dict(sozluk) if isinstance(sozluk, dict) else {}
-    yeni = dict(durum.get("kisaltma_yeni") or {})
-    hatalar, birlesik, kayit = [], {}, []
-    for b_ in karar.get("birlesik") or []:
-        if not isinstance(b_, dict):
-            continue
-        ad = kisaltma_mod.birlesik_anahtar(b_.get("kisaltma"))
-        anlam = str(b_.get("anlam") or "").strip()
-        if not ad:
-            if str(b_.get("kisaltma") or "").strip() and b_.get("kabul"):
-                hatalar.append("Birleştirme '%s': 2-4 kısaltma olmalı."
-                               % str(b_.get("kisaltma")).strip())
-            continue
-        kabul = bool(b_.get("kabul"))
-        kayit.append({"kisaltma": ad, "anlam": anlam, "cikarilan": anlam, "kaydet": kabul})
-        if not kabul:
-            continue
-        if not anlam:
-            hatalar.append("Birleştirme %s: birlikte anlam boş." % ad)
-            continue
-        if veri_adlari and not any(kisaltma_mod.yan_yana(k, ad) for k in veri_adlari):
-            hatalar.append("Birleştirme %s: bu parçalar hiçbir kolon adında bu sırayla "
-                           "yan yana geçmiyor." % ad)
-            continue
-        birlesik[ad] = anlam
-        y = str(b_.get("yeni_kisaltma") or "").strip().upper()
-        if not y or y == ad:
-            kayit[-1]["yeni"] = ""
-            continue
-        if not _YENI_KISA_KALIP.match(y):
-            hatalar.append("%s: '%s' geçersiz (harfle başlamalı; yalnız A-Z, 0-9 ve _; "
-                           "en çok 4 parça, parça başına 8, toplam 24 karakter)." % (ad, y))
-        elif y in sozluk and not kisaltma_mod._ayni_anlam(sozluk[y], anlam):
-            hatalar.append("%s: '%s' bu veri setinde zaten '%s' anlamında kullanılıyor."
-                           % (ad, y, sozluk[y]))
-        elif y in yeni.values():
-            hatalar.append("%s: '%s' birden fazla kısaltma için önerilmiş." % (ad, y))
-        else:
-            yeni[ad] = y
-            sozluk[y] = anlam
-            # Hafizada anlam yeni kisaltmayla; A_B -> YENI degisimi not edilir.
-            kayit[-1].update(anlam="", yeni=y)
-            kayit.append({"kisaltma": y, "anlam": anlam, "cikarilan": anlam, "kaydet": True})
-    if hatalar:
-        raise AdimHatasi("Şu birleştirmeler kullanılamadı; düzeltin ya da işareti "
-                         "kaldırın:\n" + "\n".join(hatalar))
-    sozluk.update(birlesik)
-    if birlesik or isinstance(durum.get("kisaltma_sozluk"), dict):
-        durum["kisaltma_sozluk"] = sozluk
-    durum["kisaltma_yeni"] = yeni
-    durum["kisaltma_birlesik"] = birlesik
-    _alan, hata = kisaltma_kaydet(durum, kayit)
-    if hata:
-        return ("Birleştirmeler bu çalışmada kullanılacak ama hafızaya "
-                "kaydedilemedi: %s" % hata)
-    return ""
-
-
+# ---------------------------------------------------------------------------
+# 01.2.5 YENI KOLON ADLARI (yalniz kod): Kisaltma Sozlugu'nde secilen
+# kisaltmalar kolon bazli eslemeyle adlara uygulanir.
+# ---------------------------------------------------------------------------
 KOLON_AD_BASLIK = ADIM_ADI["kolon_ad"]
+KOLON_AD_ACIKLAMA = ("Kolon adları Kısaltma Sözlüğü'nde seçilenlerle yeniden yazıldı. "
+                     "İşaretini kaldırdığınız kolon eski adıyla kalır; yeni adı "
+                     "düzenleyebilirsiniz.")
 KOLON_AD_BILGI = (
-    "Sözlükteki tanım doğru kabul edilir; ad tanımı eksiksiz yansıtmalıdır. "
-    "Öneriler: 1) Tanımda geçen ama adın hiçbir parçasının karşılamadığı "
-    "kavram, dil modeliyle bulunup ada eklenir (önce onaylı kısaltmalardan; "
-    "yoksa yeni bir kısaltmayla). Mevcut parçalar silinmez, sırası "
-    "değişmez; bu kodla denetlenir; uygulamak için işaretleyin. 2) "
-    "Kısaltmalar ve Kolon Adları adımında onaylanan yeni kısaltmalar (sayı "
-    "değerli biçimler dahil): ikinci onay istenmez, otomatik uygulanır. Önerilen adı değiştirebilirsiniz."
-    "\n\n"
-    "Uygulanan adlar YALNIZ platformun kopyalarında geçerli olur: "
-    "AMP_VERISETI ve AMP_SOZLUK (Değişken Listesi ve Tip Kontrolü kaydedilince). Girdi veri "
-    "setiniz ve sözlüğünüz değişmez; eski ad -> yeni ad eşlemesi çalışma "
-    "klasörüne KOLON_AD_ESLEME olarak yazılır. Hedef, kimlik, dönem ve "
-    "segment kolonları yeniden adlandırılmaz.")
+    "Yeni adları kod üretir: seçilen satırın önerilen kısaltması o anlamın "
+    "geçtiği parçaların yerine geçer; tanımda olup adda olmayan bir anlam "
+    "seçildiyse kısaltması tanımdaki sırasına göre eklenir. Parçaların anlamı "
+    "her kolonun kendi tanımından okunduğu için iki anlamda kullanılan bir "
+    "kısaltma her kolonda kendi anlamına göre değişir. Tanımı olmayan "
+    "kolonlarda yalnız tek anlamlı kısaltmalar değişir.\n\n"
+    "Yeni adlar YALNIZ platformun kopyalarında geçerli olur: AMP_VERISETI ve "
+    "AMP_SOZLUK. Girdi veri setiniz ve sözlüğünüz değişmez; eski ad -> yeni ad "
+    "eşlemesi çalışma klasörüne KOLON_AD_ESLEME olarak yazılır. Hedef, kimlik, "
+    "dönem ve segment kolonları ve süreç dışı kolonlar yeniden adlandırılmaz.")
 _AD_KALIP = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 
 
@@ -1695,251 +1565,69 @@ def _korunan_kolonlar(durum):
     return {str(v) for v in (durum.get("meta") or {}).values() if v}
 
 
-def _kolon_ad_onayli(durum):
-    """Kolon adi tamamlamada kullanilacak kisaltmalar: Kisaltma Sozlugu'nde
-    onaylananlar (birlestirme ve yeni kisaltmalar dahil)."""
-    onayli = dict(_onayli_anlamlar(durum) or {})
-    onayli.update(durum.get("kisaltma_sozluk") or {})
-    return {k: v for k, v in onayli.items() if v and "_" not in k}
-
-
-def _kolon_ad_llm(durum, kaynak=None, veri_kolon=None):
-    """Kolon adi tamamlama isini baslatir / durumunu okur. Sozlukte tanimi
-    olan, rol kolonu ve analiz disi olmayan her kolon sorulur."""
-    kaynak = kaynak if kaynak is not None else _kisaltma_kaynagi(durum)
-    if veri_kolon is None:
-        veri_kolon = set(str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or []))
-    korunan = _korunan_kolonlar(durum)
-    haric = set(map(str, durum.get("haric_kolonlar") or []))
-    onayli = _kolon_ad_onayli(durum)
-    adlar = sorted(ad for ad in veri_kolon
-                   if ad not in korunan and ad not in haric and str(kaynak.get(ad) or "").strip())
-    girdi = [{"ad": ad, "tanim": str(kaynak.get(ad) or ""),
-              "parcalar": kisaltma_mod.ad_anlamlari(ad, onayli)} for ad in adlar]
-    say = Counter(p for ad in adlar for p in kisaltma_mod.parcalar(ad))
-    kalip = ", ".join(k for k, _n in say.most_common(20))
-    imza = kisaltma_mod.kolon_ad_baslat(girdi, onayli, kalip)
-    durum["_kolon_ad_imza"] = imza
-    return kisaltma_mod.kolon_ad_durumu(imza)
-
-
 def _kolon_ad_alani(durum):
-    """01.2.6 adiminda kolon adi onerileri: dil modelinin tamamladigi adlar
-    (tanimda olup adda karsiligi olmayan kavram), kabul edilen yeni
-    kisaltmalar, sayidan ayirma ve daha once kaydedilmis adlar. Dil modeli
-    kullanilamadiysa eksik parcalar koddan (adda_yok) bulunur."""
-    kaynak = _kisaltma_kaynagi(durum)
-    kayitli = dict(durum.get("kolon_yeni_ad") or {})
-    korunan = _korunan_kolonlar(durum)
-    # Yalniz BU veri setinin kolonlari (kaynak, onayli tanim hafizasindaki
-    # baska veri setlerinin kolonlarini da iceriyor).
-    try:
-        veri_kolon = set(str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or []))
-    except Exception:
-        veri_kolon = set()
-    try:
-        dm = _kolon_ad_llm(durum, kaynak, veri_kolon)
-    except Exception as e:
-        dm = {"durum": "hata", "sonuc": {}, "hata": str(e)[:200]}
-    llm_sonuc = dm.get("sonuc") or {}
-    tut = {}
-    if dm.get("durum") == "hata":
-        try:
-            tut = kisaltma_mod.tutarsizliklar(kaynak, _onayli_anlamlar(durum))
-        except Exception:
-            tut = {}
-    # 01.2.4'te kabul edilen YENI KISALTMALAR (eski -> yeni).
-    yeni_kisa = dict(durum.get("kisaltma_yeni") or {})
-    sayi_ayir = list(durum.get("kisaltma_sayi_ayir") or [])
-    anlamlar = dict(durum.get("kisaltma_sozluk") or {})
-    # Birlestirme anahtari ("<A>_<B>") parca degil: degisim adin kendisinde
-    # aranir.
-    degisen = {ad for ad in veri_kolon
-               if any(_kisaltma_degistir(ad, e, y) != ad for e, y in yeni_kisa.items())
-               or any(_sayi_ayir(ad, k) != ad for k in sayi_ayir)}
-    satirlar = []
-    for ad in sorted(set(tut) | set(kayitli) | degisen | set(llm_sonuc)):
-        if ad in korunan or (veri_kolon and ad not in veri_kolon):
-            continue
-        oneri = ""
-        gerekce = []
-        yeni_kisaltmalar = []
-        t_ = llm_sonuc.get(ad)
-        if t_:
-            oneri = t_["yeni_ad"]
-            ekl = ", ".join("%s (%s%s)" % (k, a, ", yeni kısaltma" if yeni_mi else "")
-                            for k, a, yeni_mi in t_.get("eklenen") or [])
-            gerekce.append("Tanımda olup adda karşılığı olmayan kavram eklendi: %s.%s"
-                           % (ekl, (" " + t_["gerekce"]) if t_.get("gerekce") else ""))
-            yeni_kisaltmalar = [[k, a] for k, a, yeni_mi in t_.get("eklenen") or [] if yeni_mi]
-        for t in tut.get(ad, []):
-            if t["tur"] != "adda_yok":
-                continue
-            # Birden cok eksik kisaltma: oneriler sirayla birlestirilir.
-            oneri = kisaltma_mod._yeni_ad_oner(oneri, t["kisaltma"], t["anlam"],
-                                               str(kaynak.get(ad) or ""),
-                                               {}) if oneri else t["yeni_ad"]
-            gerekce.append(t["gerekce"])
-        for eski, yeni in sorted(yeni_kisa.items()):
-            if _kisaltma_degistir(oneri or ad, eski, yeni) != (oneri or ad):
-                oneri = _kisaltma_degistir(oneri or ad, eski, yeni)
-                if kisaltma_mod._ayni_anlam(anlamlar.get(yeni, ""), anlamlar.get(eski, "")):
-                    gerekce.append("%s yerine daha okunur %s ('%s'; Kısaltmalar ve Kolon Adları'nda "
-                                   "kabul edildi)." % (eski, yeni, anlamlar.get(yeni, "")))
-                else:
-                    gerekce.append("%s yerine %s: bu kolonlarda '%s' anlamında kullanılmış; "
-                                   "%s genelde '%s' demek (Kısaltmalar ve Kolon Adları'nda kabul edildi)."
-                                   % (eski, yeni, anlamlar.get(yeni, ""), eski,
-                                      anlamlar.get(eski, "")))
-        for k in sayi_ayir:
-            # Yeni kisaltma da kabul edildiyse ayirma yeni kisaltmaya uygulanir.
-            k_ = yeni_kisa.get(k, k)
-            if _sayi_ayir(oneri or ad, k_) != (oneri or ad):
-                oneri = _sayi_ayir(oneri or ad, k_)
-                gerekce.append("%s sayıdan ayrıldı (%s<sayı> -> %s_<sayı>; Kısaltma "
-                               "Sözlüğü'nde kabul edildi)." % (k_, k_, k_))
-        if not oneri and ad not in kayitli:
-            continue
-        # Yalniz Kisaltma Sozlugu'nde onaylanan degisim varsa ikinci onay
-        # istenmez: satir otomatik uygulanir.
-        temel = _onayli_ad(durum, ad)
-        otomatik = bool(oneri) and oneri == temel and temel != ad
-        satirlar.append({"kolon": ad, "oneri": oneri, "yeni_ad": kayitli.get(ad) or oneri,
-                         "kayitli": ad in kayitli or otomatik, "otomatik": otomatik,
-                         "temel_ad": temel if temel != ad else "",
-                         "gerekce": " ".join(gerekce),
-                         "yeni_kisaltmalar": yeni_kisaltmalar})
-    notu = ""
-    if dm.get("durum") == "hata":
-        notu = ("Dil modeli kullanılamadı; eksik parçalar yalnız onaylı kısaltmaların "
-                "anlamlarından arandı. %s" % (dm.get("hata") or "")).strip()
-    elif dm.get("iptal") and dm.get("kalan"):
-        notu = ("Dil modeli durduruldu; %s kolon sorulmadan kaldı."
-                % _sayi(dm.get("kalan") or 0))
-    calisiyor = dm.get("durum") == "calisiyor"
-    return {"baslik": KOLON_AD_BASLIK, "bilgi": KOLON_AD_BILGI, "satirlar": satirlar,
-            "dm": dm.get("durum"), "not": notu,
-            "ilerleme": ({"biten": dm.get("biten") or 0, "toplam": dm.get("toplam") or 0,
-                          "gecen": dm.get("gecen") or 0} if calisiyor else None)}
+    kararlar = {a: {"kisa": k.get("kisa") or "", "anlam": k.get("anlam") or ""}
+                for a, k in (durum.get("kisaltma_kararlari") or {}).items()
+                if isinstance(k, dict) and k.get("secili") and k.get("kisa")}
+    sozluk = durum.get("kisaltma_sozluk") or {}
+    genel = {eski: (yeni, sozluk.get(yeni, "")) for eski, yeni
+             in (durum.get("kisaltma_yeni") or {}).items()}
+    satirlar = kisaltma_okuma.yeni_adlar(
+        _veri_kolonlari(durum), durum.get("kisaltma_esleme") or {}, kararlar, genel,
+        _korunan_kolonlar(durum), durum.get("haric_kolonlar") or [])
+    # Geri donuste bu calismada verilen karar korunur.
+    onceki = durum.get("_kolon_ad_karari")
+    for s in satirlar:
+        s["secili"] = not s["sorun"]
+        if isinstance(onceki, dict) and s["kolon"] in onceki:
+            k = onceki[s["kolon"]]
+            s["secili"] = bool(k.get("uygula"))
+            if k.get("yeni_ad"):
+                s["yeni_ad"] = k["yeni_ad"]
+    return {"surum": 2, "baslik": KOLON_AD_BASLIK, "bilgi": KOLON_AD_BILGI,
+            "aciklama": KOLON_AD_ACIKLAMA, "satirlar": satirlar}
 
 
-def kolon_ad_alani(durum):
-    """On yuz yoklamasi icin (beklemez)."""
-    return _kolon_ad_alani(durum)
-
-
-def kolon_ad_iptal(durum):
-    """Kolon Adi Onerileri: suren dil modeli isini durdurur."""
-    imza = durum.get("_kolon_ad_imza")
-    if imza:
-        kisaltma_mod.kolon_ad_iptal(imza)
-    return _kolon_ad_alani(durum)
-
-
-def _sayi_ayir(ad, kisa):
-    """Sayi degerli kalipta harf kismini sayidan ayirir: <K><NN> ->
-    <K>_<NN> (buyuk / kucuk harf korunur)."""
-    return re.sub(r"(?<![A-Za-z0-9])(%s)(\d{2,})(?![A-Za-z0-9])" % re.escape(kisa),
-                  r"\1_\2", str(ad), flags=re.I)
-
-
-def _kisaltma_degistir(ad, eski, yeni):
-    """Kolon adinda butun parca olarak gecen kisaltmayi degistirir
-    (buyuk / kucuk harf korunur): A_ESKI_B -> A_YENI_B."""
-    def _d(m):
-        return yeni.lower() if m.group(0).islower() else yeni
-    # Sayi degerli kalip: <K>00 -> <YENI>00 (rakamlar korunur; bkz.
-    # kisaltma._SAYILI).
-    return re.sub(r"(?<![A-Za-z0-9])%s(?=\d{2,}(?![A-Za-z0-9])|(?![A-Za-z0-9]))"
-                  % re.escape(eski), _d, str(ad), flags=re.I)
-
-
-def _onayli_ad(durum, ad):
-    """Kolon adinin yalniz Kisaltma Sozlugu'nde onaylanan yeni kisaltmalarla
-    (sayi degerli bicimler dahil) degismis hali; degisim yoksa ad."""
-    yeni_ad = str(ad)
-    for eski, yeni in sorted((durum.get("kisaltma_yeni") or {}).items(),
-                             key=lambda kv: -len(kv[0])):
-        yeni_ad = _kisaltma_degistir(yeni_ad, eski, yeni)
-    return yeni_ad
-
-
-def _onayli_adlari_ekle(durum, esleme):
-    """Kisaltma Sozlugu'nde onaylanan degisimi olan ve eslemede olmayan her
-    kolona onayli adi ekler (rol ve surec disi kolonlar haric)."""
+def _kolon_adlarini_denetle(durum, satirlar):
+    """[{"kolon", "yeni_ad", "uygula"}] -> ({eski: yeni}, [hata]).
+    Kurallar: harfle baslar, yalniz harf/rakam/_; yeniden adlandirilmayan
+    baska bir kolonun adi olamaz; iki kolon ayni yeni adi alamaz; rol
+    kolonlari ve surec disi kolonlar adlandirilmaz."""
     korunan = _korunan_kolonlar(durum)
     haric = set(map(str, durum.get("haric_kolonlar") or []))
-    try:
-        mevcut = [str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or [])]
-    except Exception:
-        mevcut = []
-    for ad in mevcut:
-        if ad in esleme or ad in korunan or ad in haric:
-            continue
-        yeni = _onayli_ad(durum, ad)
-        if yeni != ad and _AD_KALIP.match(yeni) and yeni not in mevcut:
-            esleme[ad] = yeni
-    return esleme
-
-
-def kolon_ad_kaydet(durum, satirlar):
-    """Kart: uygulanacak kolon adlarini durum["kolon_yeni_ad"]'a yazar.
-    satirlar: [{"kolon", "yeni_ad", "uygula"}]. Doner: (alan, hata).
-    Kurallar: harfle baslar, yalniz harf/rakam/_; mevcut baska bir kolonun
-    adi olamaz; iki kolon ayni yeni adi alamaz; rol kolonlari ve surec
-    disi kolonlar adlandirilmaz."""
-    korunan = _korunan_kolonlar(durum)
-    try:
-        mevcut = set(str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or []))
-    except Exception:
-        mevcut = set()
-    haric = set(map(str, durum.get("haric_kolonlar") or []))
-    esleme = dict(durum.get("kolon_yeni_ad") or {})
-    hatalar = []
+    mevcut = set(_veri_kolonlari(durum))
+    esleme, hatalar = {}, []
     for s_ in satirlar or []:
         if not isinstance(s_, dict):
             continue
         ad = str(s_.get("kolon") or "").strip()
         yeni = str(s_.get("yeni_ad") or "").strip()
-        if not ad:
+        if not ad or not s_.get("uygula") or not yeni or yeni == ad:
             continue
-        if not s_.get("uygula") or not yeni or yeni == ad:
-            # Uygulanmayan satirda Kisaltma Sozlugu'nde onaylanan degisim
-            # yine uygulanir.
-            yeni = _onayli_ad(durum, ad)
-            if yeni == ad:
-                esleme.pop(ad, None)
-                continue
         if ad in korunan:
             hatalar.append("%s: hedef / kimlik / dönem / segment kolonu yeniden adlandırılmaz." % ad)
         elif ad in haric:
             hatalar.append("%s: süreç dışı kolon; yeniden adlandırılmaz." % ad)
         elif not _AD_KALIP.match(yeni):
             hatalar.append("%s: '%s' geçersiz (harfle başlamalı; yalnız harf, rakam, _)." % (ad, yeni))
-        elif yeni in mevcut and yeni != ad:
-            hatalar.append("%s: '%s' veri setinde zaten başka bir kolonun adı." % (ad, yeni))
         else:
             esleme[ad] = yeni
-    _onayli_adlari_ekle(durum, esleme)
-    # Ayni yeni adi alan iki kolon.
+    kalan = mevcut - set(esleme)
     sayim = Counter(esleme.values())
     for ad, yeni in list(esleme.items()):
-        if sayim[yeni] > 1:
+        if yeni in kalan:
+            hatalar.append("%s: '%s' veri setinde zaten başka bir kolonun adı." % (ad, yeni))
+            esleme.pop(ad)
+        elif sayim[yeni] > 1:
             hatalar.append("%s: '%s' adını birden fazla kolon alıyor." % (ad, yeni))
             esleme.pop(ad)
-    durum["kolon_yeni_ad"] = esleme
-    alan = _kolon_ad_alani(durum)
-    secim = durum.get("_secim_alani")
-    if isinstance(secim, dict) and "kolon_ad" in secim:
-        secim["kolon_ad"] = alan
-    return alan, ("\n".join(hatalar) or None)
+    return esleme, hatalar
 
 
 def _onayli_anlamlar(durum):
-    """01.2.4'te ONAYLANAN kisaltma anlamlari (+ proje genelindeki onayli
-    hafiza; adimdaki karar ustune yazar). Adim henuz gecilmediyse ya da
-    atlandiysa None: cagiranlar varsayilan (onerilen + onayli) anlamlari
-    kullanir."""
+    """01.2.4'te kesinlesen kisaltma anlamlari (sozlukten okunanlar +
+    secilenler; proje genelindeki onayli hafiza altta). Adim henuz
+    gecilmediyse None: cagiranlar varsayilan anlamlari kullanir."""
     sozluk = durum.get("kisaltma_sozluk")
     if not isinstance(sozluk, dict):
         return None
@@ -1948,10 +1636,6 @@ def _onayli_anlamlar(durum):
     except Exception:
         anlamlar = {}
     anlamlar.update({str(k): str(v) for k, v in sozluk.items() if str(v or "").strip()})
-    # YANLIS SECILMIS KISALTMA: sozlukte genel anlamiyla durur ama BU veri
-    # setinin kolonlarinda yeni kisaltmanin anlamini (sozlukteki kullanim)
-    # tasir. Kolon adi uygulansa da uygulanmasa
-    # da kontroller bu anlamla yapilir.
     for eski, y in (durum.get("kisaltma_yeni") or {}).items():
         if anlamlar.get(y):
             anlamlar[eski] = anlamlar[y]
@@ -1959,13 +1643,9 @@ def _onayli_anlamlar(durum):
 
 
 # ---------------------------------------------------------------------------
-# 01.2.4 KISALTMA SOZLUGU  ve  01.2.6 KOLON ADI ONERILERI  (ayri adimlar)
+# ADIM KARTLARI
 # ---------------------------------------------------------------------------
-# once bos tanimlar, sonra kisaltma sozlugu onaylanir,
-# sonra onaylanan sozlukle kolon adi onerileri, en son dolu tanimlarin
-# kontrolu. Ikisi de istege bagli: gosterilecek satir yoksa adim kendiliginden
-# gecer; kartta "... Devam Et" ile atlanabilir.
-KISALTMA_DUGME = {"bos": "Seçilenleri Onayla, Adlara Uygula ve Devam Et"}
+KISALTMA_DUGME = {"bos": "Seçilenleri Onayla ve Devam Et"}
 KOLON_AD_DUGME = {"bos": "Seçilen Adları Uygula ve Devam Et"}
 
 
@@ -1980,121 +1660,102 @@ def _adim_karti(adim, alanlar, dugme, atla):
 
 def kisaltma_plan(durum):
     try:
-        alan = _kisaltma_alani(durum, 0.0)
+        alan = _kisaltma_alani(durum)
     except Exception:
         alan = None
-    if not alan or not alan.get("satirlar"):
+    if not alan or (not alan["satirlar"] and alan["dm"] != "calisiyor"):
         durum["_plan_otomatik"] = True
         durum["_secim_alani"] = None
         durum.pop("kisaltma_sozluk", None)
-        return ("Kolon adlarında anlamı çıkarılabilen bir kısaltma bulunmadı; "
-                "bu adım atlandı.")
-    # Geri donuste bu calismada onaylanan anlamlar kartta korunur.
-    onceki = durum.get("kisaltma_sozluk")
-    if isinstance(onceki, dict):
-        for r_ in alan["satirlar"]:
-            if r_["kisaltma"] in onceki and not r_.get("onayli"):
-                r_["anlam"] = onceki[r_["kisaltma"]]
-            if r_["kisaltma"] in onceki:
-                r_["secili"] = True
-        for kisa, y in (durum.get("kisaltma_yeni") or {}).items():
-            for r_ in alan["satirlar"]:
-                if r_["kisaltma"] == kisa:
-                    r_["yeni_kisaltma"] = y
-                    r_["yeni_anlam"] = onceki.get(y) or r_.get("yeni_anlam") or ""
-                    if r_.get("bicim"):
-                        r_["secili"] = True
-                        if onceki.get(y):
-                            r_["anlam"] = onceki[y]
+        return ("Kolon adlarında sözlükle eşlenecek bir parça bulunmadı; bu adım "
+                "atlandı.")
     durum["_secim_alani"] = _adim_karti(
         "kisaltma", {"kisaltma": alan}, KISALTMA_DUGME,
         "Kısaltmaları Onaylamadan Devam Et")
     return ""
 
 
-# En cok 4 parca ("_" ile), parca basina en cok 8, toplam en cok 24.
-_YENI_KISA_KALIP = re.compile(r"^(?=.{2,24}$)[A-Z][A-Z0-9]{0,7}(_[A-Z0-9]{1,8}){0,3}$")
-
-
 def kisaltma_uygula(durum):
-    """Karttaki anlami DOLU her satir bu calismanin kisaltma sozlugune
-    girer (durum["kisaltma_sozluk"]); sonraki adimlar (kolon adi
-    onerileri, tanim kontrolu) bu anlamlari kullanir. "Hafızaya Kaydet"
-    isaretli olanlar ayrica proje genelindeki onayli hafizaya yazilir,
-    isareti kaldirilan onayli kisaltma hafizadan silinir."""
+    """Sozlukten okunan anlamlar bu calismanin kisaltma sozlugune girer
+    (durum["kisaltma_sozluk"]; sonraki adimlar bunlari KESIN kullanir).
+    Secilen satirin anlami onaylanir: kisaltma hafizasina yazilir ve
+    onerilen kisaltmasi 01.2.5'te kolon adlarina uygulanir. Sozlukte
+    karsiligi bulunamayan parcanin anlami yalniz seciliyse kullanilir."""
     karar = durum.pop("_dogrulama_karari", None)
-    if not isinstance(karar, dict) or karar.get("atla"):
-        durum.pop("kisaltma_sozluk", None)
-        durum.pop("kisaltma_yeni", None)
-        durum.pop("kisaltma_sayi_ayir", None)
-        return ""
-    tum = [s for s in (karar.get("kisaltma") or []) if isinstance(s, dict)]
-    # SAYI DEGERLI BICIM satirlari (<K><NN> ...) kisaltma degil: yalniz
-    # onerilen kisaltmalari kolon adina uygulanir; sozluge ve hafizaya
-    # ayri kisaltma olarak girmez.
-    satirlar = [s for s in tum if not s.get("bicim")]
-    # SEC: yalniz isaretli satirin anlami onaylanir ve onerilen kisaltmasi
-    # kolon adlarina uygulanir; isaretsiz satir onaylanmaz.
-    secili = [s for s in satirlar if s.get("kaydet")]
-    bicimler = [s for s in tum if s.get("bicim") and s.get("kaydet")]
-    sozluk = {
-        str(s.get("kisaltma")).strip(): str(s.get("anlam") or "").strip()
-        for s in secili
-        if str(s.get("kisaltma") or "").strip() and str(s.get("anlam") or "").strip()}
-    hatalar = []
-    oneri_satir = []
-    # YENI KISALTMA (yaniltici ya da anlasilmaz kisaltma / birlestirme
-    # yerine; 01.2.6'da kolon adina uygulanir). Yeni kisaltma KENDI anlamini
-    # tasir. Gecersiz ya da baska anlamda kullanilan kisaltma
-    # adimi durdurur.
-    yeni, yeni_anlam = {}, {}
-    for s_ in secili + oneri_satir + bicimler:
-        kisa = str(s_.get("kisaltma") or "").strip().upper()
-        y = str(s_.get("yeni_kisaltma") or "").strip().upper()
-        if not kisa or not y:
-            continue
-        ya = str(s_.get("yeni_anlam") or "").strip() or sozluk.get(kisa, "")
-        if not _YENI_KISA_KALIP.match(y):
-            hatalar.append("%s: '%s' geçersiz (harfle başlamalı; yalnız A-Z, 0-9 ve _; "
-                           "en çok 4 parça, parça başına 8, toplam 24 karakter)." % (kisa, y))
-        elif y == kisa:
-            continue
-        elif not ya:
-            hatalar.append("%s: '%s' için anlam yok." % (kisa, y))
-        elif y in sozluk and y not in yeni.values() \
-                and not kisaltma_mod._ayni_anlam(sozluk[y], ya):
-            hatalar.append("%s: '%s' bu veri setinde zaten '%s' anlamında kullanılıyor."
-                           % (kisa, y, sozluk[y]))
-        elif y in yeni.values():
-            hatalar.append("%s: '%s' birden fazla kısaltma için önerilmiş." % (kisa, y))
-        else:
-            yeni[kisa], yeni_anlam[y] = y, ya
+    _imza, kolonlar, adlar = _kisaltma_isi(durum)
+    t = kisaltma_okuma.tablo(kolonlar, adlar)
+    satirlar = {s["anahtar"]: s for s in t["satirlar"]}
+    gelen = {}
+    if isinstance(karar, dict) and not karar.get("atla"):
+        gelen = {str(g.get("anahtar")): g for g in (karar.get("kisaltma") or [])
+                 if isinstance(g, dict) and str(g.get("anahtar")) in satirlar}
+    sahip = {}
+    for s in satirlar.values():
+        for k in s["kisaltmalar"]:
+            sahip.setdefault(k["kisaltma"], set()).add(s["anahtar"])
+    hatalar, kararlar, verilen = [], {}, {}
+    for a, s in satirlar.items():
+        g = gelen.get(a) or {}
+        anlam = str(g.get("anlam") if g.get("anlam") is not None else s["anlam"] or "").strip()
+        secili = bool(g.get("secili"))
+        ham = str(g.get("oneri") or "").strip()
+        oneri = llm_mod.kisaltma_temizle(ham) if ham else ""
+        mevcut = [k["kisaltma"] for k in s["kisaltmalar"]]
+        ad_ = anlam or ", ".join(mevcut)
+        if secili:
+            if ham and not oneri:
+                hatalar.append("%s: '%s' geçersiz kısaltma (yalnız A-Z, 0-9 ve _; en çok 4 "
+                               "parça, parça başına 8, toplam 24 karakter)." % (ad_, ham))
+            elif oneri and oneri not in mevcut and sahip.get(oneri, set()) - {a}:
+                hatalar.append("%s: '%s' bu veri setinde başka bir anlam için kullanılıyor."
+                               % (ad_, oneri))
+            elif oneri and verilen.get(oneri, a) != a:
+                hatalar.append("%s: '%s' birden fazla anlam için yazılmış." % (ad_, oneri))
+            if not anlam:
+                hatalar.append("%s: anlam boş." % ad_)
+            if not mevcut and not oneri:
+                hatalar.append("%s: adlara eklenecek kısaltma boş; Önerilen Kısaltma'yı "
+                               "yazın ya da işareti kaldırın." % ad_)
+            if oneri:
+                verilen[oneri] = a
+        kisa = oneri or (mevcut[0] if len(mevcut) == 1 else "")
+        kararlar[a] = {"anlam": anlam, "oneri": oneri, "secili": secili,
+                       "kisa": kisa if secili else ""}
     if hatalar:
-        raise AdimHatasi("Şu kısaltmalar kullanılamadı; düzeltin ya da boşaltın:\n"
-                         + "\n".join(hatalar))
-    sozluk.update(yeni_anlam)
+        raise AdimHatasi("Şu satırlar uygulanamadı; düzeltin ya da işaretini "
+                         "kaldırın:\n" + "\n".join(hatalar))
+    sozluk, yeni, kayit = {}, {}, []
+    for a, s in satirlar.items():
+        k = kararlar[a]
+        mevcut = [x["kisaltma"] for x in s["kisaltmalar"]]
+        tek = [m for m in mevcut if not s["cok_anlamli"].get(m)]
+        if k["anlam"] and (s["bolum"] == "sozluk" or k["secili"]):
+            for m in tek:
+                sozluk[m] = k["anlam"]
+        if not k["secili"] or not k["anlam"]:
+            continue
+        kaynak = (kisaltma_mod.KAYNAK_ONAY if s["bolum"] == "sozluk" and k["anlam"] == s["anlam"]
+                  else kisaltma_mod.KAYNAK_KULLANICI)
+        if k["oneri"]:
+            sozluk[k["oneri"]] = k["anlam"]
+            for m in tek:
+                if m != k["oneri"]:
+                    yeni[m] = k["oneri"]
+                    kayit.append({"kisaltma": m, "anlam": "", "yeni": k["oneri"],
+                                  "kaydet": True, "kaynak": kaynak})
+            kayit.append({"kisaltma": k["oneri"], "anlam": k["anlam"], "kaydet": True,
+                          "kaynak": kaynak})
+        else:
+            for m in tek:
+                kayit.append({"kisaltma": m, "anlam": k["anlam"], "kaydet": True,
+                              "kaynak": kaynak})
     durum["kisaltma_sozluk"] = sozluk
     durum["kisaltma_yeni"] = yeni
-    # Birlestirmeler 01.2.5'te yeniden verilir (onceki kararlar kartta gelir).
-    durum["kisaltma_sayi_ayir"] = []
-    # HAFIZA: onaylanan satirin onerilen kisaltmasi DOLUYSA anlam yeni
-    # kisaltmayla yazilir ve ESKI -> YENI degisimi not edilir (sonraki
-    # calismalarda kolon adlari buna gore degisir); BOSSA anlam
-    # kisaltmanin kendisiyle yazilir. Isareti kaldirilan satir hafizadan
-    # silinir. Bicim satirinin (<K><NN> ...) yalniz degisimi yazilir.
-    kayit = []
-    for s_ in satirlar + [b_ for b_ in tum if b_.get("bicim")]:
-        kisa = str(s_.get("kisaltma") or "").strip().upper()
-        if not s_.get("kaydet"):
-            kayit.append(dict(s_, kaydet=False))
-        elif kisa in yeni:
-            kayit.append({"kisaltma": kisa, "anlam": "", "yeni": yeni[kisa], "kaydet": True})
-            if not s_.get("bicim"):
-                kayit.append({"kisaltma": yeni[kisa], "anlam": yeni_anlam[yeni[kisa]],
-                              "cikarilan": yeni_anlam[yeni[kisa]], "kaydet": True})
-        elif not s_.get("bicim"):
-            kayit.append(dict(s_, yeni=""))
-    _alan, hata = kisaltma_kaydet(durum, kayit)
+    durum["kisaltma_kararlari"] = kararlar
+    durum["kisaltma_esleme"] = t["esleme"]
+    durum.pop("_kolon_ad_karari", None)
+    hata = kisaltma_kaydet(durum, kayit)
+    _kalici_kisaltma_ogren(durum)
     if hata:
         return ("Kısaltmalar bu çalışmada kullanılacak ama hafızaya "
                 "kaydedilemedi: %s" % hata)
@@ -2106,15 +1767,13 @@ def kolon_ad_plan(durum):
         alan = _kolon_ad_alani(durum)
     except Exception:
         alan = None
-    if not alan or (not alan.get("satirlar") and alan.get("dm") != "calisiyor"):
+    if not alan or not alan["satirlar"]:
         durum["_plan_otomatik"] = True
         durum["_secim_alani"] = None
-        # Adim gecti: kalici kisaltma ogrenmesi (onaylanan tanimlardan).
-        _kalici_kisaltma_ogren(durum)
-        return ("Adı tanımıyla uyuşmayan kolon bulunmadı; bu adım atlandı.")
+        return "Değişecek kolon adı yok; bu adım atlandı."
     durum["_secim_alani"] = _adim_karti(
         "kolon_ad", {"kolon_ad": alan}, KOLON_AD_DUGME,
-        "Önerileri Uygulamadan Devam Et")
+        "Yeni Adları Uygulamadan Devam Et")
     return ""
 
 
@@ -2123,67 +1782,32 @@ def kolon_ad_uygula(durum):
     (yalniz AMP kopyalarinda uygulanir). Gecersiz ad varsa adim gecmez."""
     karar = durum.pop("_dogrulama_karari", None)
     if not isinstance(karar, dict) or karar.get("atla"):
-        # Oneriler uygulanmaz; Kisaltma Sozlugu'nde onaylanan degisimler
-        # yine uygulanir.
-        durum["kolon_yeni_ad"] = _onayli_adlari_ekle(durum, {})
-        _kalici_kisaltma_ogren(durum)
+        durum["kolon_yeni_ad"] = {}
+        durum["_kolon_ad_karari"] = {}
         return ""
-    satirlar = karar.get("kolon_ad") or []
-    _alan, hata = kolon_ad_kaydet(durum, satirlar)
-    if hata:
+    satirlar = [s for s in (karar.get("kolon_ad") or []) if isinstance(s, dict)]
+    esleme, hatalar = _kolon_adlarini_denetle(durum, satirlar)
+    if hatalar:
         raise AdimHatasi("Şu kolon adları uygulanamadı; düzeltip yeniden "
-                         "deneyin:\n" + hata)
-    _kolon_ad_yeni_kisaltmalar(durum)
-    # Adim gecti: kalici kisaltma ogrenmesi (onaylanan tanimlardan).
-    _kalici_kisaltma_ogren(durum)
+                         "deneyin:\n" + "\n".join(hatalar))
+    durum["kolon_yeni_ad"] = esleme
+    durum["_kolon_ad_karari"] = {str(s.get("kolon")): {"uygula": bool(s.get("uygula")),
+                                                     "yeni_ad": str(s.get("yeni_ad") or "")}
+                                 for s in satirlar if s.get("kolon")}
     return ""
 
 
-def _kolon_ad_yeni_kisaltmalar(durum):
-    """Uygulanan adlarda dil modelinin onerdigi YENI kisaltma kaldiysa bu
-    calismanin kisaltma sozlugune ve hafizaya yazilir."""
-    imza = durum.get("_kolon_ad_imza")
-    if not imza:
-        return
-    sonuc = kisaltma_mod.kolon_ad_durumu(imza).get("sonuc") or {}
-    sozluk = dict(durum.get("kisaltma_sozluk") or {})
-    kayit = []
-    for eski, yeni in (durum.get("kolon_yeni_ad") or {}).items():
-        parcalar_ = {p.upper() for p in str(yeni).split("_")}
-        for k, a, yeni_mi in (sonuc.get(eski) or {}).get("eklenen") or []:
-            if yeni_mi and k in parcalar_ and k not in sozluk:
-                sozluk[k] = a
-                kayit.append({"kisaltma": k, "anlam": a, "cikarilan": a, "kaydet": True})
-    if kayit:
-        durum["kisaltma_sozluk"] = sozluk
-        try:
-            kisaltma_kaydet(durum, kayit)
-        except Exception:
-            pass
-
-
-KISALTMA_EXCEL_ADI = "kisaltma_onerileri.xlsx"
+KISALTMA_EXCEL_ADI = "kisaltma_sozlugu.xlsx"
 
 
 def kisaltma_excel(durum):
-    """Kisaltma onerileri + ornekleri .xlsx (bayt). Ayni dosya calismanin
-    klasorune de yazilir: PROJE_HAFIZASI/<calisma>/KISALTMA_ONERILERI.xlsx.
-    Girdi veri setine ve sozluge yazilmaz.
+    """Kisaltma Sozlugu + kolon eslemeleri .xlsx (bayt). Ayni dosya
+    calismanin klasorune de yazilir: PROJE_HAFIZASI/<calisma>/
+    KISALTMA_SOZLUGU.xlsx. Girdi veri setine ve sozluge yazilmaz.
     Doner: (bayt, klasordeki_yol ya da None)."""
-    kaynak = _kisaltma_kaynagi(durum)
-    satirlar = kisaltma_mod.rapor_satirlari(kaynak, durum.get("veri_seti") or "")
-    # IKINCI SAYFA: aciklama ile kolon adi arasindaki tutarsizliklar.
-    tut = []
-    for ad, liste in sorted(kisaltma_mod.tutarsizliklar(kaynak).items()):
-        for t in liste:
-            tut.append([ad, str(kaynak.get(ad) or "")[:300],
-                        "Adda Yok" if t["tur"] == "adda_yok" else "Açıklamada Yok",
-                        t["kisaltma"], t["anlam"], t["gerekce"], t["yeni_ad"] or None, None])
-    veri = xlsx_yaz.sayfalar_xlsx([
-        ("Kısaltmalar", kisaltma_mod.RAPOR_KOLONLARI, satirlar),
-        ("Tutarsızlıklar", ["Kolon", "Açıklama", "Tür", "Kısaltma", "Anlam",
-                            "Gerekçe", "Önerilen Yeni Ad", "Karar"], tut)])
-    yol = "/%s/KISALTMA_ONERILERI.xlsx" % amp_klasor_adi(durum)
+    kolonlar, adlar = _kisaltma_girdisi(durum)
+    veri = xlsx_yaz.sayfalar_xlsx(kisaltma_okuma.excel_sayfalari(kolonlar, adlar))
+    yol = "/%s/KISALTMA_SOZLUGU.xlsx" % amp_klasor_adi(durum)
     try:
         from fe_agent.akis_durum import _folder as _klasor
         _klasor().upload_stream(yol, veri)
@@ -2194,42 +1818,32 @@ def kisaltma_excel(durum):
 
 def kisaltma_alani(durum):
     """On yuz yoklamasi icin (beklemez)."""
-    return _kisaltma_alani(durum, 0.0)
+    return _kisaltma_alani(durum)
 
 
 def kisaltma_tek_oneri(durum, kisa, anlam):
-    """Kartta LLM Karar duzenlenince o satirin onerisi yeni anlamla:
+    """Kartta anlam duzenlenince o satirin onerisi yeni anlamla:
     {"kisaltma", "yeni_kisaltma", "gerekce", "hata"}. Adlandirma dili ve
     kalibi bu veri setinin kisaltmalarindan."""
-    kaynak = _kisaltma_kaynagi(durum)
-    try:
-        oner, _d = kisaltma_mod.oneriler(kaynak, 0.0, durum.get("veri_seti") or "")
-    except Exception:
-        oner = {}
-    anlamlar = {k: o.get("anlam") or "" for k, o in oner.items()}
-    try:
-        anlamlar.update(kisaltma_mod.onaylilar())
-    except Exception:
-        pass
-    agirlik = Counter(p for ad, t in kaynak.items() if str(t or "").strip()
-                      for p in set(kisaltma_mod.parcalar(ad)))
-    kalip = ", ".join(p for p, _n in agirlik.most_common(20))
-    yeni, gerekce, hata = llm_mod.kisaltma_tek_oneri(
-        kisa, anlam, kalip, llm_mod.adlandirma_dili(anlamlar, agirlik), set(agirlik))
+    kolonlar, adlar = _kisaltma_girdisi(durum)
+    t = kisaltma_okuma.tablo(kolonlar, adlar)
+    kullanilan = {k["kisaltma"] for s in t["satirlar"] for k in s["kisaltmalar"]}
+    yeni, gerekce, hata = llm_mod.kisaltma_tek_oneri(kisa, anlam, t["kalip"], t["dil"],
+                                                     kullanilan)
     return {"kisaltma": str(kisa or "").strip().upper(), "yeni_kisaltma": yeni,
             "gerekce": gerekce, "hata": hata or ""}
 
 
 def kisaltma_iptal(durum):
-    """Kisaltma Sozlugu: suren dil modeli kontrolunu durdurur."""
-    kisaltma_mod.dogrulama_iptal(_kisaltma_kaynagi(durum), durum.get("veri_seti") or "")
-    return _kisaltma_alani(durum, 0.0)
+    """Kisaltma Sozlugu: suren okumayi / oneriyi durdurur; gelenler kalir."""
+    imza, _k, _a = _kisaltma_isi(durum)
+    kisaltma_okuma.iptal(imza)
+    return _kisaltma_alani(durum)
 
 
 def kisaltma_alani_tazele(durum):
-    """Kayitli oturum geri yuklenirken acik kartin Kisaltma Sozlugu bolumu
-    YENIDEN kurulur. Beklemez: dil modeli kontrolu
-    surerse kartta not yazar."""
+    """Kayitli oturum geri yuklenirken acik kartin Kisaltma Sozlugu / Yeni
+    Kolon Adlari bolumu guncel koddan YENIDEN kurulur (beklemez)."""
     secim = durum.get("_secim_alani")
     if not (isinstance(secim, dict)
             and (secim.get("kisaltma") is not None or secim.get("kolon_ad") is not None
@@ -2237,36 +1851,28 @@ def kisaltma_alani_tazele(durum):
         return False
     try:
         if secim.get("kisaltma") is not None:
-            secim["kisaltma"] = _kisaltma_alani(durum, 0.0)
-        if secim.get("birlesik") is not None:
-            secim["birlesik"] = _birlesik_alani(durum)
+            secim["kisaltma"] = _kisaltma_alani(durum)
         if secim.get("kolon_ad") is not None:
             secim["kolon_ad"] = _kolon_ad_alani(durum)
+        secim.pop("birlesik", None)
         return True
     except Exception:
         return False
 
 
 def kisaltma_kaydet(durum, satirlar):
-    """Kart: secilen kisaltmalari onayli hafizaya yazar / kaldirir.
-    Doner: (yeni kart alani, hata)."""
-    temiz = []
-    for s in satirlar or []:
-        if isinstance(s, dict) and str(s.get("kisaltma") or "").strip():
-            temiz.append({"kisaltma": s.get("kisaltma"), "anlam": s.get("anlam"),
-                          "kaydet": bool(s.get("kaydet")), "yeni": s.get("yeni") or "",
-                          # Yanlis kisaltma notu varsa o yazilir.
-                          "kaynak": s.get("kaynak") or (
-                              kisaltma_mod.KAYNAK_ONAY
-                              if str(s.get("anlam") or "").strip()
-                              == str(s.get("cikarilan") or "").strip()
-                              else kisaltma_mod.KAYNAK_KULLANICI)})
+    """Secilen kisaltmalari onayli hafizaya yazar. satirlar: [{"kisaltma",
+    "anlam", "yeni", "kaydet", "kaynak"}]. Isareti kaldirilan satir hafizadan
+    SILINMEZ (baska calismanin onayi kalir). Doner: hata ya da None."""
+    temiz = [{"kisaltma": s.get("kisaltma"), "anlam": s.get("anlam") or "",
+              "kaydet": True, "yeni": s.get("yeni") or "",
+              "kaynak": s.get("kaynak") or kisaltma_mod.KAYNAK_ONAY}
+             for s in satirlar or []
+             if isinstance(s, dict) and s.get("kaydet") and str(s.get("kisaltma") or "").strip()]
+    if not temiz:
+        return None
     _onay, hata = kisaltma_mod.kaydet(temiz, durum.get("_kullanici_ad") or "")
-    alan = _kisaltma_alani(durum)
-    secim = durum.get("_secim_alani")
-    if isinstance(secim, dict) and secim.get("kisaltma") is not None:
-        secim["kisaltma"] = alan
-    return alan, hata
+    return hata
 
 
 def _sozluk_tanimlari(sz):
@@ -3333,7 +2939,7 @@ def _kontrol_karti(durum, adlar, hata, basladi):
         "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
         "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
         # Kisaltma sozlugu ve kolon adi onerileri artik ayri adimlar
-        # (01.2.4 - 01.2.6); bu kart yalniz tanim kontrolu.
+        # (01.2.4 - 01.2.5); bu kart yalniz tanim kontrolu.
         "buton_kalip": dict(KONTROL_DUGME),
         "oneri_is": (durum.get("_kontrol_is") or "") if basladi else "",
         "oneri_toplam": 0,

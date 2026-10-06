@@ -125,8 +125,8 @@ ADIM_ADI = {
     "teyit":  "Değişken Listesi ve Tip Kontrolü",
     "tanimlar": "Kolon Rolleri",
     "sozluk_tanim": "Eksik Sözlük Tanımları",
-    "kisaltma": "Kısaltmalar ve Kolon Adları",
-    "kolon_ad": "Kolon Adı Tamamlama",
+    "kisaltma": "Kısaltma Sözlüğü",
+    "kolon_ad": "Yeni Kolon Adları",
     "bolme":  "Örneklem ve Doğrulama Tasarımı",
 }
 # Gruplu blogun ortak basligi: kurulum + kolon rolleri + sozluk adimlari.

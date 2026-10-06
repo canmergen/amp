@@ -1,6 +1,106 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kart kararı yalnız kendi adımında uygulanır**. Değiştir: `fe_agent/akis_sohbet.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma adımları yeniden kuruldu: 01.2.4 Kısaltma Sözlüğü (anlamlar yalnız sözlükten) ve 01.2.5 Yeni Kolon Adları (kodla); Kısaltma Birleştirme kaldırıldı**. Değiştir: `fe_agent/kisaltma_okuma.py` (YENİ), `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `fe_agent/amp.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+Sıra (A ve B): ... 01.2.3 Sözlük Tanımları, 01.2.4 Kısaltma Sözlüğü,
+01.2.5 Yeni Kolon Adları, sonra teyit ve bölme.
+
+SÖZLÜK KESİN DOĞRUDUR. Kısaltmanın anlamı yalnız kolonun sözlükteki
+tanımından okunur. Dil modelinin genel bilgisiyle anlam tahmini, iki
+modelin karar vermesi, hakem ve kelime sayımıyla aday üretme kaldırıldı.
+
+01.2.4 Kısaltma Sözlüğü
+- Okuma: tanımı olan HER kolon okunur (örnekleme yok). Dil modeli adın
+  her parçasının tanımdaki karşılığını tanımdan AYNEN yazar; yan yana
+  birkaç parça tek ifadeye karşılık geliyorsa birlikte. Tanımda geçip
+  adda karşılığı olmayan kavramları da, adda hangi parçadan sonra
+  geleceğiyle yazar.
+- Kod her eşlemeyi doğrular: ifade tanımda aynı sırayla geçmeli (yalnız
+  kelime sonundaki ekin atılmasına izin var), parçalar adın ardışık
+  parçaları olmalı. Tanımda geçmeyen ifade düşer; tanım "<N> günlük"
+  derken "son <N> gün" yazılırsa kabul edilmez.
+- Okuma 01.2.3'te arka planda başlar; 01.2.3'te eklenen tanımlar
+  01.2.4'te okunur. Sonuç çalışma klasöründe KISALTMA_OKUMA.json'da
+  (kolon + tanım özetiyle): aynı tanım ikinci kez okunmaz. Okuma ve
+  öneriler sürerken kartta işlem satırı ve İptal var; satırlar kilitli
+  gelir ve kendiliğinden dolar.
+- Tablo: her satır bir ANLAM. Aynı anlama giden kısaltmalar aynı
+  satırda, kaç kolonda geçtikleriyle. İki anlamda kullanılan kısaltma
+  iki satırda, turuncu işaretli. Tanımda olup adda olmayan kavram
+  "Adda Yok · N" ile satır olur.
+- Hiçbir tanımda karşılığı bulunamayan parçalar (tek harfler dahil,
+  yalnız rakamdan oluşanlar hariç) ayrı bölümde en üstte. Anlam yalnız
+  burada hafızadan gelir ve "Başka Çalışmadan" rozetiyle işaretlidir.
+- Önerilen Kısaltma: dil modelinin yazdığı tek sütun. Her anlam için
+  tek kısaltma:
+  - okunur mevcut kısaltma kalır ("<KISA> kalır");
+  - eş anlamlılardan biri seçilir;
+  - iki anlamlı ya da okunmayan kısaltmaya yeni kısaltma önerilir.
+  Öneri kolon adlarının dilinde ve kalıbındadır. Hafızada bu anlam için
+  daha önce seçilmiş kısaltma varsa o gelir. Kod denetler: biçim
+  kuralları, başka bir anlamın kısaltması olamaz, iki anlama aynı
+  kısaltma verilemez, dil İngilizce iken Türkçe kelimeden türetilmiş
+  öneri düşer. Anlam düzenlenince o satırın önerisi yeniden gelir.
+- Seç: seçilen satırın anlamı kısaltma hafızasına yazılır. Önerilen
+  Kısaltma doluysa anlam onun altına yazılır ve eski → yeni değişimi
+  `degisimler`e kaydedilir; boşsa anlam kısaltmanın altına yazılır.
+  İşaretsiz satırda ad değişmez; sözlükten okunan anlam yine bu
+  çalışmada kullanılır. Karşılığı bulunamayan parçanın anlamı yalnız
+  seçiliyse kullanılır. Tümünü Seç yalnız uygulanabilir satırları
+  işaretler.
+- Geçersiz seçim adımı geçirmez ve hangi satır olduğu yazılır: anlam
+  boş, kısaltma başka bir anlamın, aynı kısaltma iki anlama, adda
+  olmayan kavrama kısaltma yazılmamış.
+- Excel: Kısaltma Sözlüğü, Kolon Eşlemeleri ve Adda Olmayan Kavramlar
+  sayfaları; çalışma klasörüne KISALTMA_SOZLUGU.xlsx olarak da yazılır.
+
+01.2.5 Yeni Kolon Adları
+- Dil modeli yok; adları kod üretir. Parçanın anlamı her kolonun kendi
+  tanımından okunduğu için iki anlamlı kısaltma her kolonda kendi
+  anlamına göre değişir.
+- Seçilen "adda yok" kavramın kısaltması tanımdaki sırasına göre
+  eklenir. Kolonun eşlenmeyen parçalarında yalnız tek anlamlı
+  kısaltmaların değişimi uygulanır. Küçük harfli ad küçük harfli kalır.
+- Kart bir önizleme: Eski Ad | Yeni Ad | Uygula; neyin neden
+  değiştiği "i"de. Geçersiz ad, başka bir kolonun adı ya da iki kolonun
+  aynı adı alması "Sorunlu" olarak ve işaretsiz gelir. İşaretsiz kolon
+  eski adıyla kalır; yeni ad düzenlenebilir.
+- Rol kolonları (hedef, kimlik, dönem, segment) ve süreç dışı kolonlar
+  yeniden adlandırılmaz.
+- Yeni adlar yalnız AMP_VERISETI ve AMP_SOZLUK'te geçerli; eski ↔ yeni
+  eşleme çalışma klasöründe KOLON_AD_ESLEME. Girdi veri seti ve sözlük
+  değişmez.
+
+İstemler
+- Kolon adı parçaları, tanım kontrolü ve Türkçeleştirme istemlerinden
+  "son N gün" gibi kalıp varsayımları ve pencere örnekleri çıkarıldı.
+  Zaman penceresi tanımdaki ifadesiyle korunur.
+- Adında karşılığı olmayan kavramın satırı modele "mevcut: -" olarak
+  gider ("yok" kelimesi kısaltma diye geri yazılmasın).
+
+Eski çalışmalar
+- Sıra sürümü 8. Kısaltma Sözlüğü, Kısaltma Birleştirme ya da Kolon Adı
+  Önerileri adımında duran çalışma açılınca Kısaltma Sözlüğü'nden, yeni
+  kartla yeniden açılır; o adımların eski kararları temizlenir.
+- Daha ilerideki çalışmalar bir adım geri kayar ve kararlarını korur.
+  Geçmişteki eski kartlar "önceki sürüm" notuyla görünür.
+
+Kaldırılanlar
+- Kısaltma Birleştirme adımı.
+- LLM Genel / LLM Sözlük sütunları, aday oylaması ve hakem.
+- Kolon adı tamamlama işi.
+- `/kisaltma_kaydet`, `/kolon_ad_alani`, `/kolon_ad_iptal`,
+  `/kolon_ad_kaydet`, `/birlesik_alani` ve `/birlesik_iptal` uçları.
+
+Bilinen sınırlar
+- Anlam kartta tanımdaki yazılışla görünür. Kelimenin yalın hali ancak
+  tanımlarda tek başına geçiyorsa yalın yazılır; geçmiyorsa ekli hali
+  görünür.
+- Dil modeli bir kolonu okuyamazsa sayısı kartta yazar. O kolonun
+  parçaları başka kolonlarda da okunmadıysa "Sözlükte Karşılığı
+  Bulunamayan Parçalar"da listelenir.
+
+Önceki tur: **Kart kararı yalnız kendi adımında uygulanır**. Değiştir: `fe_agent/akis_sohbet.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Karar kartları (01.2.3 ve sonrası) gönderdikleri karara kendi
   adımlarını ekler. Arka uç kararı yalnız o adım şu an ekrandaysa
