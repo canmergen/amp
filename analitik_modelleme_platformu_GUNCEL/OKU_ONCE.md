@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Yazarken tablo yenilenmez; önerilen kısaltmanın dili onaylı kısaltmalarla belirlenir**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.1 Başlangıç Seçimi'ne C · Otomatik Pilot (şu an kapalı)**. Değiştir: `fe_agent/akis_metin.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Başlangıç kartına A ve B gibi üçüncü seçenek eklendi: "Otomatik
+  Pilot". Başta veri seti ve varsa sözlük kullanıcı tarafından seçilir;
+  sonraki tüm adımlarda kararları yapay zekâ verir ve hiç durmadan final
+  modele kadar uçtan uca ilerler.
+- Şimdilik kapalı: soluk durur, tıklanamaz, sağında "Şu An Kapalı"
+  etiketi var. Yazarak ("C" ya da "3") seçilmeye çalışılırsa kapalı
+  olduğu söylenir.
+- İç değeri "P"dir, kartta "C" rozetiyle görünür; "C" değeri eski
+  çalışmaların başlangıcına ait olduğu için onlar etkilenmez.
+
+Önceki tur: **Yazarken tablo yenilenmez; önerilen kısaltmanın dili onaylı kısaltmalarla belirlenir**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - 01.2.4, 01.2.5 ve 01.2.6 kartlarında dil modeli sürerken yapılan
   yoklama, kullanıcı tablodaki bir kutudayken tabloyu yeniden çizmez;

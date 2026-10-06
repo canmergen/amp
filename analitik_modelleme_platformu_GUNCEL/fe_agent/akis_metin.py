@@ -68,6 +68,12 @@ MOD_SECENEKLERI = [
      "aciklama": "Baz veri seti, seçeceğiniz kaynak tablolar birleştirilerek "
                  "oluşturulur. Tabloların sözlükleri varsa onları da "
                  "seçersiniz; tanımı olmayan kolonlar aynı şekilde doldurulur."},
+    # OTOMATIK PILOT (su an kapali). Deger "P": "C" harfi eski
+    # calismalarin baslangicina ait; kartta "C" rozetiyle gorunur.
+    {"deger": "P", "rozet": "C", "baslik": "Otomatik Pilot",
+     "aciklama": "Başta veri setini ve varsa sözlüğünü siz seçersiniz; sonraki "
+                 "tüm adımlarda kararları yapay zekâ verir ve hiç durmadan final "
+                 "modele kadar uçtan uca ilerler. Her karar gerekçesiyle kayda geçer."},
 ]
 for _s in MOD_SECENEKLERI:
     _s["kapali"] = _s["deger"] not in ACIK_MODLAR
@@ -79,6 +85,8 @@ SOZLUK_URETEN_MODLAR = ("C", "D")    # sozluk dil modeliyle uretiliyor
 
 # Kart tiklamasi harf ("B") ya da sira ("2") gonderebilir.
 MOD_SIRA = {str(i + 1): s["deger"] for i, s in enumerate(MOD_SECENEKLERI)}
+# Kartta gorunen rozet harfi ("C") de o secenegi secer.
+MOD_SIRA.update({s["rozet"]: s["deger"] for s in MOD_SECENEKLERI if s.get("rozet")})
 
 # LLM baglami ve ozet icin okunur adlar
 MOD_ADLARI = {s["deger"]: s["baslik"] for s in MOD_SECENEKLERI}
@@ -132,7 +140,7 @@ GERI_KALIP = re.compile(r"\b(geri|onceki adim\w*|bir onceki|geri don\w*)\b")
 SECIM_KALIP = re.compile(r"\d+")
 
 # Yalnizca tek basina "A", "mod b", "3" gibi girdiler mod secimi sayilir.
-MOD_KALIP = re.compile(r"^\s*(mod\s*)?([abcd1234])\s*$", re.I)
+MOD_KALIP = re.compile(r"^\s*(mod\s*)?([abcdp1234])\s*$", re.I)
 
 # norm (kucuk harf, Turkce karaktersiz) uzerinde calisir
 SORU_KALIP = re.compile(
