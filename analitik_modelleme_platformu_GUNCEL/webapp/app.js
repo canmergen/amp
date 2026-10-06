@@ -6319,17 +6319,20 @@ function dogrulamaKartiEkle(alan, blok) {
     oIptal.title = "Dil modelini durdur; gelen öneriler kalır";
     oIler.append(oIlerMetin, oIptal);
     kart.appendChild(oIler);
-    let oGecen = 0, oSayac = null, oBiten = 0, oToplam = 0;
+    /* SÜRE: başlangıç anı bir kez sabitlenir (sunucunun bildirdiği geçen
+       süreden), sonra saatten hesaplanır; yoklama ile ileri geri oynamaz. */
+    let oBas = Date.now(), oBasSabit = false, oSayac = null, oBiten = 0, oToplam = 0;
     function oIlerYaz() {
+        const gecen = Math.max(0, Math.floor((Date.now() - oBas) / 1000));
         oIlerMetin.textContent = "İşlem Devam Ediyor · Açıklama Önerileri · "
-            + ftBinlik(oBiten) + " / " + ftBinlik(oToplam) + " Kolon · " + sureBicim(oGecen);
+            + ftBinlik(oBiten) + " / " + ftBinlik(oToplam) + " Kolon · " + sureBicim(gecen);
     }
     function oIlerGoster(acik) {
         oIler.classList.toggle("gorunur", acik);
         if (acik && !oSayac) {
             oSayac = setInterval(() => {
                 if (!kart.isConnected) { clearInterval(oSayac); oSayac = null; return; }
-                oGecen += 1; oIlerYaz();
+                oIlerYaz();
             }, 1000);
         } else if (!acik && oSayac) { clearInterval(oSayac); oSayac = null; }
         if (acik) oIlerYaz();
@@ -6565,7 +6568,10 @@ function dogrulamaKartiEkle(alan, blok) {
             gerekce.hidden = false;
             gerekce.textContent = DG_ONERI_NOTU;
             oBiten = biten || 0; oToplam = toplam || 0;
-            if (gecen !== undefined && gecen !== null) oGecen = gecen;
+            if (!oBasSabit && gecen !== undefined && gecen !== null) {
+                oBas = Date.now() - gecen * 1000;
+                oBasSabit = true;
+            }
             oIlerGoster(true);
         } else {
             oIlerGoster(false);
@@ -6849,7 +6855,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         .catch(() => { ilerIptal.disabled = false; ilerIptal.textContent = "İptal"; });
     };
     ilerEl.append(ilerMetin, ilerIptal);
-    let ilerGecen = (ka.ilerleme && ka.ilerleme.gecen) || 0;
+    /* SÜRE: başlangıç anı bir kez sabitlenir, sonra saatten hesaplanır
+       (yoklamayla ileri geri oynamaz). */
+    let ilerBas = Date.now() - ((ka.ilerleme && ka.ilerleme.gecen) || 0) * 1000;
+    let ilerSabit = !!ka.ilerleme;
     function ilerYaz() {
         const il = ka.ilerleme;
         const acik = ka.dm === "calisiyor" && !!il && !kilitli;
@@ -6859,7 +6868,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             ilerMetin.textContent = "İşlem Devam Ediyor · "
                 + (oneri ? "Kısaltma Önerileri · " : "Tanımlar Okunuyor · ")
                 + ftBinlik(il.biten || 0) + " / " + ftBinlik(il.toplam || 0)
-                + (oneri ? " Anlam" : " Kolon") + " · " + sureBicim(ilerGecen);
+                + (oneri ? " Anlam" : " Kolon") + " · "
+                + sureBicim(Math.max(0, Math.floor((Date.now() - ilerBas) / 1000)));
         }
     }
     let ilerBagli = false;
@@ -6870,7 +6880,6 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             ilerYaz();
             return;
         }
-        ilerGecen += 1;
         ilerYaz();
     }, 1000);
     const satirlar = [];
@@ -7180,7 +7189,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 ka.dm = yeni.dm;
                 ka.ozet = yeni.ozet || ka.ozet;
                 ka.ilerleme = yeni.ilerleme || null;
-                if (ka.ilerleme) ilerGecen = ka.ilerleme.gecen || ilerGecen;
+                if (ka.ilerleme && !ilerSabit) {
+                    ilerBas = Date.now() - (ka.ilerleme.gecen || 0) * 1000;
+                    ilerSabit = true;
+                }
                 ciz(yeni.satirlar);
                 if (yeni.dm === "calisiyor") setTimeout(yokla, 3000);
                 if (degisti) degisti();

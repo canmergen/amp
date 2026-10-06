@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklama önerilerinde hakem yalnız anlamca çelişen satırlarda çalışır**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **İşlem satırındaki süre ileri geri oynamıyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- 01.2.3 ve Kısaltma Sözlüğü'nün işlem satırında süre her saniye
+  artırılıyor, her yoklamada da sunucunun bildirdiği süreyle üzerine
+  yazılıyordu; ikisi farklı olduğu için süre ileri geri oynuyordu.
+  Artık başlangıç anı bir kez sabitleniyor, süre saatten hesaplanıyor.
+
+Önceki tur: **Açıklama önerilerinde hakem yalnız anlamca çelişen satırlarda çalışır**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - İki yazar model farklı cümle kursa da aynı ölçümü anlatıyorsa hakem
   çağrılmaz; daha açıklayıcı (uzun) aday alınır. Kartta "Öneren"
