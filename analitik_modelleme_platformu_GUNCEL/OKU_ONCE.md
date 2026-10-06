@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Arayüz fontu Inter (gömülü); IBM Plex Sans alternatif olarak gömülü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Arayüz fontu Source Sans 3 (Dataiku'nun fontu, gömülü); kesilen üst bant metni kısaldı**. Değiştir: `webapp/style.css`, `fe_agent/akis_panel.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Inter ve IBM Plex Sans çıkarıldı; yerine Source Sans 3 (Source Sans
+  Pro'nun güncel sürümü) 400 ve 700, Latin + Türkçe harfler gömüldü.
+  SIL Open Font License 1.1. Yüklenemezse Segoe UI / Calibri.
+- Ölçek: küçük ve etiket 11px, gövde 12.5px, başlık 13px, büyük 14px,
+  adım bloğu başlığı 13.5px.
+- Üst bantta Eleme Sonuçları'nın boş halindeki alt satır
+  "Üretimden Sonra Başlar" oldu (önceki uzun metin dar ekranda
+  kesiliyordu).
+
+Önceki tur: **Arayüz fontu Inter (gömülü); IBM Plex Sans alternatif olarak gömülü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Inter ve IBM Plex Sans (400 ve 700, Latin + Türkçe harfler)
   style.css'in başına gömüldü; dış kaynağa bağlanmaz, makinede kurulu

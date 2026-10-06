@@ -269,7 +269,7 @@ def _eleme_karti(durum):
         # tanesi kaldi, hangi adimda dustu. Bos hal de onu soylesin.
         return {"deger": BOS_DEGER, "bos": True,
                 "ust": "kaç değişken, nerede elendi",
-                "alt": "üretim bittikten sonra eleme adımları başlar"}
+                "alt": "üretimden sonra başlar"}
 
     # Uretilenler ANCAK bir elemeye girdikten sonra huni girisine sayilir;
     #
