@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Adım bloğu başlığı ve avatar küçüldü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Arayüz fontu Segoe UI; yazı ölçeği buna göre ayarlandı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Font Calibri yerine Segoe UI (her Windows'ta kurulu; yoksa Calibri).
+- Ölçek: küçük ve etiket 10.5px, gövde 12px, başlık 12.5px, büyük
+  13.5px, adım bloğu başlığı 13px.
+
+Önceki tur: **Adım bloğu başlığı ve avatar küçüldü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Avatarın yanındaki adım başlığı (01.1 ...) 14px yerine 13px
   (`--fs-blok`), avatar 42px yerine 40px (`--avatar-en`).

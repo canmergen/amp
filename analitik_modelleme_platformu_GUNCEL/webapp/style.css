@@ -1,31 +1,24 @@
 :root {
   /* ===== YAZI OLCEGI - tum arayuz yalnizca bu degerleri kullanir =====
-     Tek font: Calibri (urun adindaki font).
-     Olcek, onceki tasarimin %80 zoom halidir; ama tarayici zoom'u
-     boyutlari kuruslu yapar (14px -> 11.2px) ve Calibri Windows'ta
-     kuruslu boyutta bulanik cizilir. Bu yuzden TUM boyutlar tam piksel.
-     Yeni bir boyut eklersen de tam piksel ver.
-
-     OKUNAN METIN KUCULMEDI. Govde 12px ve kart basligi 13px
-     OLDUGU GIBI KALDI; yalnizca okunmasi gerekmeyen iki boyut bir
-     kademe indi: buyuk harfli etiketler 12->11, urun adi 15->14.
-     Kucultme asil BOSLUK OLCEGINDE yapildi (asagidaki blok).
-     Calibri'de yalnizca 3 agirlik var: 300 (Light), 400 (Regular),
-     700 (Bold). Bu yuzden yalnizca --fw-normal ve --fw-kalin kullanilir.
+     Tek font: Segoe UI (her Windows'ta kurulu; yoksa Calibri).
+     Segoe UI'in kucuk harfleri Calibri'ninkinden iri; olcek buna gore
+     yarim piksel adimlarla ayarlandi (govde 12px kaldi). Segoe UI
+     kesirli boyutta da net cizilir.
+     Yalnizca --fw-normal (400) ve --fw-kalin (700) kullanilir.
      Buyuk harf CSS ile DEGIL, HTML/Python'da yazilir (Turkce I/İ). */
-  --fs-kucuk:  11px;     /* faz no, sayac, durum cipi */
-  --fs-etiket: 11px;     /* BUYUK HARFLI kirmizi etiketler: ANALİTİK SÜREÇ, VERİ SETİ... */
+  --fs-kucuk:  10.5px;   /* faz no, sayac, durum cipi */
+  --fs-etiket: 10.5px;   /* BUYUK HARFLI kirmizi etiketler: ANALİTİK SÜREÇ, VERİ SETİ... */
   --fs-govde:  12px;     /* metin, butonlar */
-  --fs-baslik: 13px;     /* kart/faz basliklari, ozet degerleri */
-  --fs-buyuk:  14px;     /* urun adi, sayfa basligi */
+  --fs-baslik: 12.5px;   /* kart/faz basliklari, ozet degerleri */
+  --fs-buyuk:  13.5px;   /* urun adi, sayfa basligi */
   --fs-blok:   13px;     /* adim blogu basligi (01.1 ...): 40px avatarla orantili */
 
   --fw-normal: 400;
   --fw-kalin:  700;
 
-  --font: Calibri, "Segoe UI", system-ui, -apple-system, sans-serif;
-  /* Buyuk harf araligi: az tutuldu, Calibri'nin dar buyuk harfleri
-     acildikca seyrek ve farkli bir font gibi gorunuyor */
+  --font: "Segoe UI", Calibri, system-ui, -apple-system, sans-serif;
+  /* Buyuk harf araligi: az tutuldu; harfler acildikca seyrek ve
+     farkli bir font gibi gorunuyor */
   --etiket-aralik: .02em;
 
   /* ===== BILESEN SISTEMI - kose, bosluk, yukseklik, golge =====
