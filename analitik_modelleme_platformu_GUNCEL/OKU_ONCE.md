@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Arayüz fontu Segoe UI; yazı ölçeği buna göre ayarlandı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Arayüz fontu Inter (gömülü); IBM Plex Sans alternatif olarak gömülü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Inter ve IBM Plex Sans (400 ve 700, Latin + Türkçe harfler)
+  style.css'in başına gömüldü; dış kaynağa bağlanmaz, makinede kurulu
+  olması gerekmez. İkisi de SIL Open Font License 1.1.
+- Varsayılan Inter; yüklenemezse Segoe UI / Calibri. Plex'e geçmek için
+  `--font` satırında "AMP Inter" yerine "AMP Plex".
+- Ölçek Inter'e göre: küçük ve etiket 10px, gövde 11px, başlık 12px,
+  büyük 13px, adım bloğu başlığı 12.5px.
+
+Önceki tur: **Arayüz fontu Segoe UI; yazı ölçeği buna göre ayarlandı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Font Calibri yerine Segoe UI (her Windows'ta kurulu; yoksa Calibri).
 - Ölçek: küçük ve etiket 10.5px, gövde 12px, başlık 12.5px, büyük
