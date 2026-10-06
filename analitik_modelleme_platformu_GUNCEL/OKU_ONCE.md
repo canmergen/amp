@@ -1,6 +1,30 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Birleştirme'de işlem satırı ve İptal**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Sözlük tanımı doğru kabul; 01.2.4 ve Sözlük Tanım Kontrolü kalktı; kolon adı tanıma göre tamamlanır**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/amp.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Akış: 01.2.1 Baz Veri Seti ve Baz Sözlük, 01.2.2 Kolon Rolleri, 01.2.3
+  Eksik Sözlük Tanımları, 01.2.4 Kısaltma Sözlüğü, 01.2.5 Kısaltma
+  Birleştirme, 01.2.6 Kolon Adı Önerileri. Veri Seti ve Sözlük İçeriği ile
+  Sözlük Tanım Kontrolü adımları yok; açık çalışmalar kaldıkları yerden
+  açılır (kalkan adımda duran çalışma bir sonraki adımda).
+- Sözlükte olup veri setinde olmayan satırlar çalışma kopyasından
+  çıkarılır; sayısı Eksik Sözlük Tanımları kartında Baz Sözlük bloğunda,
+  adların tamamı "i"de.
+- Sözlükteki tanım doğru kabul edilir. LLM Karar genel anlamı yalnız
+  tanımlardan bir anlam çıkmıyorsa kullanır.
+- Kolon Adı Önerileri: dil modeli her kolonun adını, tanımını ve onaylı
+  kısaltmaları görür; tanımda olup adda karşılığı olmayan kavramı ada
+  ekler (önce onaylı kısaltmalardan, yoksa yeni kısaltmayla). Kod, eski
+  parçaların aynı sırada durduğunu, yalnız 1-3 parça eklendiğini ve
+  eklenen her parçanın onaylı ya da geçerli yeni bir kısaltma olduğunu
+  denetler; geçmeyen öneri gösterilmez. Kart "İşlem Devam Ediyor · biten /
+  toplam Kolon · süre · İptal" satırıyla öneriler geldikçe dolar.
+  Uygulanan addaki yeni kısaltma kısaltma sözlüğüne ve hafızaya yazılır.
+  Onaylanan kısaltmaların kalıcı öğrenilmesi bu adım bitince çalışır.
+- Kartın kendi rozeti başlığa taşındığında adımın genel rozeti ikinci
+  kez çizilmez.
+
+Önceki tur: **Kısaltma Birleştirme'de işlem satırı ve İptal**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Dil modeli birleştirme önerilerini hazırlarken kartta akıştaki işlem
   satırı görünür: "İşlem Devam Ediyor · süre · İptal". Süre sunucudaki

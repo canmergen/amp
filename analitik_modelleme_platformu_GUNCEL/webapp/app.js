@@ -4885,11 +4885,9 @@ const BLOK_TAMAM_METNI = {
     kurulum: "Girdiler Onaylandı",
     tanimlar: "Kolon Rolleri Onaylandı",
     sozluk_tanim: "Eksik Sözlük Tanımları Kaydedildi",
-    veri_icerik: "Veri Seti ve Sözlük İçeriği Onaylandı",
     kisaltma: "Kısaltmalar Onaylandı",
     birlesik: "Birleştirmeler Belirlendi",
     kolon_ad: "Kolon Adları Belirlendi",
-    tanim_kontrol: "Sözlük Tanımları Kontrol Edildi",
     teyit: "Değişken Listesi Kaydedildi",
     bolme: "Bölme Uygulandı",
     veri_profili: "Veri Profili Çıkarıldı",
@@ -4914,8 +4912,11 @@ function blokTamamMetni(adim) {
 function blokDurumEtiketi(bas, durum, adim) {
     if (!bas) return;
     let et = bas.querySelector(":scope > .blok-durum");
+    /* Kartın kendi rozeti başlığa taşındıysa (ör. "46 Kısaltmanın Anlamı
+       Onaylandı") adımın genel "Tamamlandı" rozeti ikinci kez çizilmez. */
     const onayliRozet = durum === "tamam"
-        && bas.querySelector(":scope > .alt-rozet .onayli");
+        && [...bas.querySelectorAll(":scope > .alt-rozet > *")]
+            .some(x => x.classList.contains("onayli") || x.textContent.trim());
     const metin = durum === "bekliyor" ? BLOK_BEKLIYOR
         : durum === "kontrol" ? BLOK_KONTROL
         : (durum === "tamam" && !onayliRozet ? blokTamamMetni(adim) : "");
@@ -6104,12 +6105,12 @@ function dogrulamaKartiEkle(alan, blok) {
         }
     }
 
-    /* ---- 5a) Kısaltma Sözlüğü (01.2.5) ----
+    /* ---- 5a) Kısaltma Sözlüğü (01.2.4) ----
        Kolon adı kısaltmaları sözlükten kural tabanlı
        çıkarılır; kullanıcı anlamı düzeltip proje genelindeki onaylı
        kısaltma hafızasına kaydeder. Kayıt adım akışından BAĞIMSIZ
        (kendi düğmesi, /kisaltma_kaydet). */
-    /* AYRI ADIMLAR: 01.2.5 Kısaltma Sözlüğü ve 01.2.7
+    /* AYRI ADIMLAR: 01.2.4 Kısaltma Sözlüğü ve 01.2.6
        Kolon Adı Önerileri kendi kartlarında; karar birincil düğmeyle
        adımla birlikte gider (alan.adim). Bölümlerin kendi kaydet
        düğmeleri adım kartında gizlenir. */
@@ -6122,8 +6123,10 @@ function dogrulamaKartiEkle(alan, blok) {
                              () => durumTazele()) : null;
     /* Kolon Adı Önerileri: açıklamada anlamı geçen ama adda olmayan
        kısaltmalar için yeni ad (yalnız AMP kopyalarında uygulanır). */
-    const kolonAdErisim = (alan.kolon_ad && (alan.kolon_ad.satirlar || []).length)
-        ? kolonAdBolumuEkle(kart, alan.kolon_ad, !!(blok && blok.kilit), !!adimModu) : null;
+    const kolonAdErisim = (alan.kolon_ad && ((alan.kolon_ad.satirlar || []).length
+                                             || alan.kolon_ad.dm === "calisiyor"))
+        ? kolonAdBolumuEkle(kart, alan.kolon_ad, !!(blok && blok.kilit), !!adimModu,
+                            () => durumTazele()) : null;
 
     /* ---- 5b) Sözlükteki tanımların kontrolü ----
        sözlükte tanımı OLAN kolonların tanımı da birden
@@ -6440,6 +6443,13 @@ function dogrulamaKartiEkle(alan, blok) {
         /* KISALTMA SÖZLÜĞÜ: dil modeli kontrolü bitmeden
            onaylanamaz; yalnız sözlükten çıkan anlamlar çalışmaya girmesin.
            Beklemek istemeyen "Kısaltmaları Onaylamadan Devam Et"i kullanır. */
+        if (adimModu === "kolon_ad" && kolonAdErisim && kolonAdErisim.bekliyor()) {
+            birincil.disabled = true;
+            gerekce.hidden = false;
+            gerekce.textContent = "Dil modelinin önerileri gelince onaylanabilir. Beklemek "
+                + "istemezseniz İptal ile durdurabilir ya da \"Ad Değiştirmeden Devam Et\" ile geçebilirsiniz.";
+            return;
+        }
         if (adimModu === "birlesik" && birErisim && birErisim.bekliyor()) {
             birincil.disabled = true;
             gerekce.hidden = false;
@@ -6644,8 +6654,6 @@ function dogrulamaKartiEkle(alan, blok) {
         if (adimModu === "kisaltma") {
             const n = (karar.kisaltma || []).filter(k => k.anlam).length;
             ozet = ftBinlik(n) + " kısaltmanın anlamı onaylandı";
-        } else if (adimModu === "veri_icerik") {
-            ozet = "Veri seti ve sözlük içeriği onaylandı";
         } else if (adimModu === "birlesik") {
             const n = (karar.birlesik || []).filter(k => k.kabul && k.anlam).length;
             ozet = n ? ftBinlik(n) + " birleştirme onaylandı" : "Birleştirme yapılmadı";
@@ -6683,7 +6691,7 @@ function dogrulamaKartiEkle(alan, blok) {
     yeniOdak = birincil;
 }
 
-function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
+function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     let kilitli = ilkKilit;
     const topluBtn = [];
     const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
@@ -6720,6 +6728,46 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
     tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
+    /* İLERLEME: akıştaki işlem satırının aynısı; dil modeli kolon adlarını
+       tamamlarken görünür. İptal gelen önerileri bırakır. */
+    const ilerEl = elYap("div", "islem-satiri dg-ilerleme");
+    ilerEl.setAttribute("role", "status");
+    const ilerMetin = elYap("span", "islem-sure", "");
+    const ilerIptal = elYap("button", "islem-iptal", "İptal");
+    ilerIptal.type = "button";
+    ilerIptal.title = "Dil modelini durdur; gelen öneriler kalır";
+    ilerIptal.onclick = () => {
+        ilerIptal.disabled = true;
+        ilerIptal.textContent = "İptal ediliyor…";
+        fetch(getWebAppBackendUrl("kolon_ad_iptal"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({}))
+        })
+        .then(r => r.json())
+        .then(() => yokla())
+        .catch(() => { ilerIptal.disabled = false; ilerIptal.textContent = "İptal"; });
+    };
+    ilerEl.append(ilerMetin, ilerIptal);
+    kart.appendChild(ilerEl);
+    let ilerGecen = (ka.ilerleme && ka.ilerleme.gecen) || 0;
+    function ilerYaz() {
+        const il = ka.ilerleme;
+        const acik = ka.dm === "calisiyor" && !!il && !kilitli;
+        ilerEl.classList.toggle("gorunur", acik);
+        if (acik) ilerMetin.textContent = "İşlem Devam Ediyor · " + ftBinlik(il.biten || 0)
+            + " / " + ftBinlik(il.toplam || 0) + " Kolon · " + sureBicim(ilerGecen);
+    }
+    let ilerBagli = false;
+    const ilerSayac = setInterval(() => {
+        if (kart.isConnected) ilerBagli = true;
+        if (ka.dm !== "calisiyor" || (ilerBagli && !kart.isConnected)) {
+            clearInterval(ilerSayac);
+            ilerYaz();
+            return;
+        }
+        ilerGecen += 1;
+        ilerYaz();
+    }, 1000);
 
     function ciz(liste) {
         tb.textContent = "";
@@ -6751,14 +6799,46 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
             tb.appendChild(tr);
         });
         const kayitli = (liste || []).filter(r => r.kayitli).length;
-        durumEl.textContent = adimda
+        durumEl.textContent = (adimda
             ? ftBinlik((liste || []).length) + " kolon için ad önerisi. Uygula işaretli adlar "
               + "Değişken Listesi ve Tip Kontrolü kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır."
             : ftBinlik((liste || []).length) + " kolon için ad önerisi; "
               + ftBinlik(kayitli) + " tanesi kaydedildi. Kaydedilen adlar Değişken Listesi ve Tip Kontrolü "
-              + "kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır.";
+              + "kaydedilince AMP_VERISETI ve AMP_SOZLUK'ta uygulanır.")
+            + (ka.not ? " " + tireSade(ka.not) : "");
+        sar.hidden = ust.hidden = !(liste || []).length;
+        ilerYaz();
     }
     ciz(ka.satirlar);
+
+    /* YOKLAMA: dil modeli sürerken 3 sn'de bir; elle değişen satır ezilmez. */
+    let yoklamaSayisi = 0;
+    function yokla() {
+        if (kilitli || !document.body.contains(tb)) return;
+        if (yoklamaSayisi++ > 400) { ka.dm = "zaman_asimi"; ilerYaz(); if (degisti) degisti(); return; }
+        fetch(getWebAppBackendUrl("kolon_ad_alani") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+            .then(r => r.json())
+            .then(d => {
+                const yeni = d && d.kolon_ad;
+                if (!yeni) return setTimeout(yokla, 3000);
+                const elle = {};
+                satirlar.forEach(x => {
+                    if (x.g.value.trim() !== String(x.r.yeni_ad || "").trim() || x.kutu.checked !== !!x.r.kayitli)
+                        elle[x.r.kolon] = { ad: x.g.value, kutu: x.kutu.checked };
+                });
+                ka.not = yeni.not || ""; ka.dm = yeni.dm; ka.ilerleme = yeni.ilerleme || null;
+                if (ka.ilerleme) ilerGecen = ka.ilerleme.gecen || ilerGecen;
+                ciz(yeni.satirlar);
+                satirlar.forEach(x => {
+                    const e = elle[x.r.kolon];
+                    if (e) { x.g.value = e.ad; x.kutu.checked = e.kutu; x.g.dispatchEvent(new Event("input")); }
+                });
+                if (yeni.dm === "calisiyor") setTimeout(yokla, 3000);
+                if (degisti) degisti();
+            })
+            .catch(() => setTimeout(yokla, 8000));
+    }
+    if (ka.dm === "calisiyor") setTimeout(yokla, 3000);
 
     kaydetBtn.onclick = () => {
         kaydetBtn.disabled = true;
@@ -6792,12 +6872,15 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda) {
             kilitli = k;
             satirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; });
             topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
-        }
+            ilerYaz();
+        },
+        /* Dil modeli kolon adlarını tamamlıyor mu (adım kartında onay kilidi). */
+        bekliyor: () => ka.dm === "calisiyor"
     };
 }
 
-/* ==================== 01.2.6 Kısaltma Birleştirme ====================
-   AYRI ADIM: kısaltmalar 01.2.5'te onaylandıktan
+/* ==================== 01.2.5 Kısaltma Birleştirme ====================
+   AYRI ADIM: kısaltmalar 01.2.4'te onaylandıktan
    SONRA, onaylanan anlamlarla dil modeli hep yan yana geçen parçalar için
    birleştirme önerir; kullanıcı kabul eder ya da kendisi ekler. */
 function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
@@ -6900,7 +6983,7 @@ function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             g.setAttribute("aria-label", r.kisaltma + " birlikte anlamı");
             tdA.appendChild(g); tr.appendChild(tdA);
             /* Birleştirmenin yerine geçecek kısaltma (isteğe bağlı); doluysa
-               01.2.7'de bu parçaların geçtiği kolon adlarına uygulanır. */
+               01.2.6'da bu parçaların geçtiği kolon adlarına uygulanır. */
             const tdY = elYap("td", "dg-aciklama-hucre");
             const y = document.createElement("input");
             y.type = "text"; y.className = "dg-giris dg-yeni-kisa"; y.maxLength = 24;

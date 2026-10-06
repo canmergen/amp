@@ -317,13 +317,19 @@ def _mod_goc(durum):
 # Birlestirme) girdi; yer kisaltma'nin konumu.
 # Surum 5'te sozluk_tanim ile kisaltma arasina "veri_icerik" (Veri Seti ve
 # Sozluk Icerigi) girdi; yer sozluk_tanim'in konumu.
-SIRA_SURUMU = 5
-# surum -> (eklenen adim sayisi, {mod: eklenen adimdan ONCEKI adimin yeri})
+# Surum 6'da "veri_icerik", surum 7'de "tanim_kontrol" CIKTI. Cikan adimda
+# yer, cikan adimin o surumdeki konumudur: ilerisindeki adimlar bir geri
+# kayar, cikan adimda duran calisma bir sonraki adimda acilir.
+SIRA_SURUMU = 7
+# surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
+# ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
     2: (1, {"A": 3, "B": 5}),
     3: (2, {"A": 3, "B": 5}),
     4: (1, {"A": 4, "B": 6}),
     5: (1, {"A": 3, "B": 5}),
+    6: (-1, {"A": 4, "B": 6}),
+    7: (-1, {"A": 7, "B": 9}),
 }
 
 

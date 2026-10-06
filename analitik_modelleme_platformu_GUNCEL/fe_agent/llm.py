@@ -1231,10 +1231,11 @@ _KISALTMA_KURALLARI = """KURALLAR:
   - Emin degilsen "emin_degil"; tahmin uydurma. Yanlis anlam bos anlamdan
     kotudur.
 
-TANIMLARI OKU: karari ornek kolonlarin TANIMLARINI okuyarak ver;
-hangi aday tanimlarla daha mantikli uyusuyorsa o dogrudur. "genel"
-sozlugu gormeden yapilmis bir tahmindir; tanimlar acikca baska bir
-sey anlatiyorsa "genel" secme. Tanimda kalan ve adin baska bir parcasinin
+TANIMLARI OKU: sozlukteki TANIMLAR DOGRUDUR; karari ornek kolonlarin
+tanimlarini okuyarak ver. Anlam her zaman tanimlarin anlattigidir.
+"genel" sozlugu gormeden yapilmis bir tahmindir: YALNIZ tanimlardan bu
+kisaltma icin bir anlam cikmiyorsa ya da genel anlam tanimlarla ayni
+kavramsa kullanilir; tanimlar baska bir sey anlatiyorsa "genel" secme. Tanimda kalan ve adin baska bir parcasinin
 karsilamadigi anlamli kelime bu kisaltmanin anlamina dahildir (ornek
 kalip: tanimda "<TUR> <NITELIK>" geciyor ve adda <NITELIK> karsiligi
 parca yoksa anlam "<TUR> <NITELIK>"; varsa yalniz "<TUR>").
@@ -1261,11 +1262,12 @@ Ornek kolonlara bakarak HANGI ADAYIN DOGRU OLDUGUNA karar ver:
                      Yakin, birlikte gecen, biri digerini iceren ya da
                      ayni ifadenin farkli parcalari olan anlamlar AYNI
                      DEGILDIR; o zaman hangisinin dogru oldugunu sec
-  "sozluk"         : genel anlam YANLIS (senin bilgin bu kisaltmaya uymuyor
-                     ya da kuruma ozgu kisaltma); sozlukteki anlam dogru
-  "genel"          : genel anlam dogru; sozlukteki TANIMLAR yanlis ya da
-                     eksik (kolonlar gercekte genel anlami olcuyor)
-  "yeni"           : ikisi de yanlis; dogru anlami "anlam" alanina yaz
+  "sozluk"         : tanimlar genel anlamdan baska bir kavram anlatiyor
+                     (ya da kuruma ozgu kisaltma); sozlukteki anlam dogru
+  "genel"          : tanimlardan bu kisaltma icin bir anlam CIKMIYOR;
+                     genel anlam kullanilir
+  "yeni"           : "sozlukte" adayi tanimlari yanlis ya da eksik okumus;
+                     tanimlara gore dogru anlami "anlam" alanina yaz
   "emin_degil"     : karar verilemiyor
 "sozluk_anlam" : tanimlara gore anlam (yukariya bak)
 "anlam"   : secilen anlam (daha dogru yazimi varsa onu yaz)
@@ -1703,7 +1705,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                               "sozluk_anlam": sozluk_.get(k) or e.get("sozluk_anlam") or "",
                               "yeni_red": e.get("yeni_red") or "",
                               "oneri_gerekce": e.get("oneri_gerekce") or ""})
-            # Genel anlam sozlukle celisiyor (01.2.8'de tanimlar duzeltilmeye aday).
+            # Genel anlam sozlukle celisiyor (kartta uyari olarak gosterilir).
             if anlam and oneri.get(k) and e.get("secim") in ("genel", "yeni") \
                     and not _ayni_metin(anlam, oneri[k]):
                 cikti_[k]["sozluk_uyumsuz"] = True
@@ -1748,6 +1750,151 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
     return kur(list(sonuc)), (None if not dusen else
                               "%d parçadan %d tanesi için dil modeli cevap vermedi."
                               % (len(bloklar), dusen))
+
+
+# KOLON ADI TAMAMLAMA. Sozlukteki tanim DOGRU kabul edilir: tanimda gecen
+# ama adin hicbir parcasinin karsilamadigi kavram ada eklenir. Model yalniz
+# EKLEME onerir; kod eski parcalarin ayni sirada durdugunu, eklenen
+# parcanin onayli bir kisaltma ya da gecerli yeni bir kisaltma oldugunu
+# denetler (bkz. kolon_ad_ekleme).
+SISTEM_KOLON_AD = """Sen bir veri sozlugu editorusun. Kolonlar verilecek: her
+biri icin kolon adi, sozlukteki TANIM ve adin parcalarinin onayli
+anlamlari ("?" = anlami bilinmiyor). Ayrica ONAYLI KISALTMALAR listesi ve
+ADLANDIRMA KALIBI verilir.
+
+TANIM DOGRUDUR; adin tanimi eksiksiz yansitmasi istenir. Her kolon icin
+tanimda gecen ve adin HICBIR parcasinin karsilamadigi ANLAMLI bir kavram
+var mi bak:
+  - Sayi + birim parcalari (orn. <N>D) zaman penceresini karsilar.
+  - Baglac, ek ve yapilan / olan / son gibi dolgu kelimeler kavram
+    degildir.
+  - Bir parcanin anlaminin icinde gecen kelime karsilanmistir.
+  - Anlami "?" olan parca, harfleri bir kavramla eslesiyorsa o kavrami
+    karsilar.
+Karsilanmayan kavram varsa "yeni_ad" alanina adin TAMAMLANMIS halini yaz:
+  - Mevcut parcalari SILME, DEGISTIRME, SIRASINI BOZMA; yalniz araya ya da
+    sona yeni parca EKLE.
+  - Eklenen parca once ONAYLI KISALTMALAR listesinden secilir. Listede
+    yoksa adlandirma kalibina uygun (ayni dilde, BUYUK harf, A-Z ve 0-9,
+    en cok 8 karakter) yeni bir kisaltma yaz ve "yeni_kisaltmalar"
+    alanina anlamiyla ekle.
+  - Yeri: ayni kalipta diger kolonlarda bu tur parca nerede duruyorsa
+    (ornegin bir istatistigin niteleyicisi, niteledigi parcanin hemen
+    onunde).
+Eksik kavram yoksa ya da emin degilsen "yeni_ad" BOS kalir.
+"gerekce": hangi kavramin eksik oldugu, tek kisa cumle, Turkce karakterlerle.
+
+CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
+{"kolonlar": [{"ad": "KOLON_ADI", "yeni_ad": "",
+  "yeni_kisaltmalar": [{"kisaltma": "", "anlam": ""}], "gerekce": ""}]}""" + SINIRLAYICI_KURALI
+
+KOLON_AD_PARCA = 30
+_KOLON_AD_HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
+
+
+def _kolon_ad_satiri(g):
+    parca = " · ".join("%s=%s" % (b, a or "?") for b, a in (g.get("parcalar") or []))
+    return "- %s\n    tanim: %s\n    parcalar: %s" % (g["ad"], str(g.get("tanim") or "")[:220],
+                                                     parca or "-")
+
+
+def kolon_ad_ekleme(eski, yeni, onayli, yeni_kisaltmalar=None):
+    """Modelin onerdigi adi denetler. Doner: (ad, [(kisaltma, anlam,
+    yeni_mi)]) ya da None. Kosullar: eski adin butun parcalari ayni sirada
+    duruyor, yalniz 1-3 parca eklenmis; eklenen her parca onayli bir
+    kisaltma ya da anlami verilmis gecerli yeni bir kisaltma. Ad eski
+    adin harf buyuklugune cevrilir."""
+    eski_p = [p for p in str(eski or "").split("_") if p]
+    yeni_s = re.sub(r"[\s\-./]+", "_", str(yeni or "").strip())
+    yeni_p = [p for p in re.sub(r"[^A-Za-z0-9_]", "", yeni_s).split("_") if p]
+    if not eski_p or len(yeni_p) <= len(eski_p):
+        return None
+    onayli = {str(k).upper(): v for k, v in (onayli or {}).items()}
+    yeniler = {}
+    for y in yeni_kisaltmalar or []:
+        if isinstance(y, dict) and str(y.get("kisaltma") or "").strip():
+            yeniler[str(y["kisaltma"]).strip().upper()] = str(y.get("anlam") or "").strip()
+    j, eklenen = 0, []
+    for p in yeni_p:
+        if j < len(eski_p) and p.upper() == eski_p[j].upper():
+            j += 1
+            continue
+        P = p.upper()
+        if P in onayli:
+            eklenen.append((P, onayli[P], False))
+        elif yeniler.get(P) and re.match(r"^[A-Z][A-Z0-9]{0,7}$", P):
+            eklenen.append((P, yeniler[P], True))
+        else:
+            return None
+    if j != len(eski_p) or not 1 <= len(eklenen) <= 3:
+        return None
+    kucuk = str(eski) == str(eski).lower()
+    # Eski parcalar oldugu gibi (harf buyuklugu korunur).
+    k, cikti = 0, []
+    for p in yeni_p:
+        if k < len(eski_p) and p.upper() == eski_p[k].upper():
+            cikti.append(eski_p[k]); k += 1
+        else:
+            cikti.append(p.lower() if kucuk else p.upper())
+    return "_".join(cikti), eklenen
+
+
+def kolon_ad_tamamla(girdi, onayli, kalip="", ara=None, iptal=None, orkestra=None):
+    """girdi: [{"ad", "tanim", "parcalar": [(bicim, anlam)]}]; onayli:
+    {KISALTMA: anlam}. Doner: ({ad: {"yeni_ad", "eklenen", "gerekce"}},
+    hata). ara(parca_sonucu, adlar) her parca bitince cagrilir; iptal()
+    True donerse kalan parcalar sorulmaz."""
+    if not girdi:
+        return {}, None
+    ork = orkestra or Orkestra()
+    liste = "ONAYLI KISALTMALAR: " + ", ".join(
+        "%s=%s" % kv for kv in sorted(onayli.items())) + "\n"
+    kalip_ = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n" % kalip
+              if kalip else "")
+
+    def parca_(blok):
+        if iptal and iptal():
+            return {}, True
+        m, v = ork.json_cagir(ork.modeller("kisaltma_1"), SISTEM_KOLON_AD,
+                              _veri_blogu("KOLONLAR:", kalip_ + liste
+                                          + "\n".join(_kolon_ad_satiri(g) for g in blok)),
+                              0.1, zaman_asimi=KISALTMA_ZAMAN_ASIMI)
+        if not m:
+            return {}, False
+        gecerli = {g["ad"] for g in blok}
+        cikti = {}
+        for k in ((v or {}).get("kolonlar") or []):
+            if not isinstance(k, dict):
+                continue
+            ad = str(k.get("ad") or "").strip()
+            if ad not in gecerli or not str(k.get("yeni_ad") or "").strip():
+                continue
+            sonuc = kolon_ad_ekleme(ad, k.get("yeni_ad"), onayli, k.get("yeni_kisaltmalar"))
+            if sonuc:
+                cikti[ad] = {"yeni_ad": sonuc[0], "eklenen": sonuc[1],
+                             "gerekce": re.sub(r"\s+", " ", str(k.get("gerekce") or "")).strip()[:240]}
+        return cikti, True
+
+    bloklar = [girdi[b:b + KOLON_AD_PARCA] for b in range(0, len(girdi), KOLON_AD_PARCA)]
+    sonuc, dusen = {}, 0
+    isler = {_KOLON_AD_HAVUZ.submit(parca_, b): b for b in bloklar}
+    for f in futures.as_completed(isler):
+        try:
+            s_, geldi = f.result()
+        except Exception:
+            s_, geldi = {}, False
+        if not geldi:
+            dusen += 1
+        sonuc.update(s_)
+        if ara is not None:
+            try:
+                ara(s_, [g["ad"] for g in isler[f]])
+            except Exception:
+                pass
+    if dusen == len(bloklar):
+        return None, "Kolon adı tamamlama için dil modeline ulaşılamadı."
+    return sonuc, ("%d parçadan %d tanesi için dil modeli cevap vermedi." % (len(bloklar), dusen)
+                   if dusen else None)
 
 
 # BIRLESTIRME ONERISI. Yalniz kolon adlarinda hep yan yana gecen ciftler sorulur.

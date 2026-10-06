@@ -12,10 +12,8 @@ from fe_agent.akis_faz01 import (
     kurulum_uygula, mod_girdi, mod_plan, mod_uygula,
     kaynak_sozluk_girdi, kaynak_sozluk_uygula,
     sozluk_tanim_plan, sozluk_tanim_uygula,
-    tanim_kontrol_plan, tanim_kontrol_uygula,
     kisaltma_plan, kisaltma_uygula, kolon_ad_plan, kolon_ad_uygula,
     birlesik_plan, birlesik_uygula,
-    veri_icerik_plan, veri_icerik_uygula,
     sozluk_uret_plan, sozluk_uret_uygula, tanimlar_girdi,
     tanimlar_uygula, teyit_girdi, teyit_uygula, veri_sec_girdi,
     veri_sec_plan, veri_sec_uygula,
@@ -108,15 +106,6 @@ ADIMLAR = {
         "girdi": None, "plan": sozluk_tanim_plan,
         "uygula": sozluk_tanim_uygula},
 
-    # Sozluk Tanimlari kararindan sonra veri seti ile sozlugun esitlenmis
-    # icerigi onaylanir.
-    "veri_icerik": {
-        "baslik": "Veri Seti ve Sözlük İçeriği",
-        "aciklama": "Veri setindeki her kolonun sözlükte, sözlükteki her "
-                    "satırın veri setinde olduğu içerik özetlenir ve "
-                    "onaylanır.",
-        "girdi": None, "plan": veri_icerik_plan, "uygula": veri_icerik_uygula},
-
     # ADIM SIRASI: bos tanimlar -> kisaltma sozlugu ->
     # kolon adi onerileri -> dolu tanimlarin kontrolu. Her adim bir
     # oncekinin ONAYLADIGI bilgiyi kullanir; hatali sozluk kisaltmayi,
@@ -144,16 +133,6 @@ ADIMLAR = {
                     "o kısaltma bulunmayan kolonlar için yeni ad önerilir; "
                     "uygulanan adlar yalnız platformun kopyalarında geçerli olur.",
         "girdi": None, "plan": kolon_ad_plan, "uygula": kolon_ad_uygula},
-
-    # Bos tanimlar onaylandiktan SONRA dolu tanimlarin kontrolu
-    # Kart dogrulama kartinin kontrol bolumudur.
-    "tanim_kontrol": {
-        "baslik": "Sözlük Tanım Kontrolü",
-        "aciklama": "Sözlükte tanımı bulunan kolonların tanımları birden "
-                    "fazla dil modeliyle kontrol edilir; düzeltme önerileri "
-                    "mevcut tanımla karşılaştırmalı listelenir.",
-        "girdi": None, "plan": tanim_kontrol_plan,
-        "uygula": tanim_kontrol_uygula},
 
     "tanimlar": {
         "baslik": ADIM_ADI["tanimlar"],
@@ -268,15 +247,14 @@ FAZ01_ADIMLARI = {
     # SOZLUK TANIMLARI, MODELLEME TANIMLARINDAN SONRA. Hedef, kimlik ve
     # donem kolonunun sozlukte tanimli olmasi zorunlu; hangi kolonlar
     # oldugu tanimlar adiminda belli oluyor.
-    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "veri_icerik", "kisaltma",
-           "birlesik", "kolon_ad", "tanim_kontrol", "teyit", "bolme"],
+    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "kisaltma",
+           "birlesik", "kolon_ad", "teyit", "bolme"],
     # B: nihai veri seti YOK; kaynak tablolar ve HER BIRININ SOZLUGU hazir.
     # Sozlukler birlestirmeden ONCE eslenir, nihai sozluk birlestirmede
     # bunlardan kurulur. Kaynagi tanimsiz kolonlar icin A gibi
     # sozluk_tanim adimi var.
     "B":  ["mod", "ham_veri", "kaynak_sozluk", "birlestirme", "tanimlar",
-           "sozluk_tanim", "veri_icerik", "kisaltma", "birlesik", "kolon_ad",
-           "tanim_kontrol", "teyit",
+           "sozluk_tanim", "kisaltma", "birlesik", "kolon_ad", "teyit",
            "bolme"],
     # C ve D'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
     # tanimsiz kolon kalmiyor ve ayri bir "sozluk_tanim" adimina gerek
@@ -300,11 +278,9 @@ ADIM_GRUPLARI = {
     "kurulum":     "veri_sozluk",
     "tanimlar":    "veri_sozluk",
     "sozluk_tanim": "veri_sozluk",
-    "veri_icerik": "veri_sozluk",
     "kisaltma": "veri_sozluk",
     "birlesik": "veri_sozluk",
     "kolon_ad": "veri_sozluk",
-    "tanim_kontrol": "veri_sozluk",
     # C modu: veri seti secimi + sozluk uretimi + modelleme tanimlari
     "veri_sec":    "veri_sozluk",
     "sozluk_uret": "veri_sozluk",

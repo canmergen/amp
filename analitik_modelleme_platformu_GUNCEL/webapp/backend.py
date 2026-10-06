@@ -1414,7 +1414,7 @@ def mesaj_endpoint():
 
 @app.route("/tanim_kontrol_baslat", methods=["POST"])
 def tanim_kontrol_baslat_endpoint():
-    """01.2.8 Sozluk Tanim Kontrolu ISTEGE BAGLI: kullanici "Tanımları
+    """Sozluk Tanim Kontrolu (akista adim olarak yok) ISTEGE BAGLI: kullanici "Tanımları
     Kontrol Et" deyince arka plan kontrolu baslar. Kartin govdesi hem
     durumda hem de transkriptte tazelenir (F5'te baslamis haliyle acilsin)."""
     try:
@@ -2664,6 +2664,30 @@ def kisaltma_iptal_endpoint():
         return jsonify({"tamam": True, "kisaltma": akis.kisaltma_iptal(durum)})
     except Exception as e:
         return jsonify(_hata_govdesi("kisaltma_iptal", e)), 200
+
+
+@app.route("/kolon_ad_alani")
+def kolon_ad_alani_endpoint():
+    """Kolon Adi Onerileri yoklamasi: dil modelinin tamamladigi adlar
+    geldikce karttaki satirlar guncellenir (beklemez)."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True, "kolon_ad": akis.kolon_ad_alani(durum)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("kolon_ad_alani", e)), 200
+
+
+@app.route("/kolon_ad_iptal", methods=["POST"])
+def kolon_ad_iptal_endpoint():
+    """Kolon Adi Onerileri: suren dil modeli isini durdurur; gelenler kalir."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True, "kolon_ad": akis.kolon_ad_iptal(durum)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("kolon_ad_iptal", e)), 200
 
 
 @app.route("/birlesik_iptal", methods=["POST"])

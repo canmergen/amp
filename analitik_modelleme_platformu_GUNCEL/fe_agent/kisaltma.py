@@ -102,7 +102,7 @@ def _ham_parcalar(ad):
     """Ham sira: kisaltma adaylari ve aralarindaki pencere / sayi yerine
     None (ifade tespitinde komsuluk bozulmasin). Tek harf, ardindan
     yalniz rakamdan olusan parca geliyorsa sayi degerli kalibin harf
-    kismidir (<K>_<NN>; 01.2.5'te sayidan ayrilmis bicim) ve kisaltmadir."""
+    kismidir (<K>_<NN>; 01.2.4'te sayidan ayrilmis bicim) ve kisaltmadir."""
     ham = [p.upper().translate(_TR_SADE)
            for p in re.split(r"[^A-Za-z0-9ÇĞİÖŞÜçğıöşü]+", str(ad or "")) if p]
     cikti = []
@@ -220,7 +220,7 @@ def _ham_bicimler(ad):
 
 
 def ad_anlamlari(ad, anlamlar):
-    """Kolon adinin parcalari ve anlamlari (01.2.8'e giden AD PARCALARI):
+    """Kolon adinin parcalari ve anlamlari (tanim kontrolune giden AD PARCALARI):
     [(addaki bicim, anlam)]. Kabul edilen birlestirme ("<A>_<B>" anahtari)
     yan yana iki parcayi tek anlamla verir; sayi degerli kalipta sayi
     anlamda korunur."""
@@ -882,7 +882,7 @@ def ogrenilenleri_kaydet(kayitlar, veri_seti=""):
 
 
 def kalici_ogren(tanimlar, veri_seti="", bekle=300.0):
-    """KENDINI GELISTIRME: 01.2.8 tamamlaninca (duzeltmeler uygulandiktan ya da
+    """KENDINI GELISTIRME: Kolon Adi Onerileri tamamlaninca (duzeltmeler uygulandiktan ya da
     kontrol atlandiktan sonra) DUZELTILMIS calisma kopyasi + onayli
     tanimlar uzerinde ogrenme calisir ve dil modeli kontrolunden gecen
     anlamlar (dogrulanan / modellerin anlastigi) ogrenilmis bilgiye yazilir.
@@ -1054,7 +1054,7 @@ def tutarsizliklar(tanimlar, anlamlar=None):
 
 
 def celiskiler(tanimlar, anlamlar=None):
-    """01.2.8 kontrolu icin: {kolon: [gerekce, ...]} (bkz. tutarsizliklar)."""
+    """Tanim kontrolu icin: {kolon: [gerekce, ...]} (bkz. tutarsizliklar)."""
     return {ad: [t["gerekce"] for t in liste]
             for ad, liste in tutarsizliklar(tanimlar, anlamlar).items()}
 
@@ -1152,7 +1152,7 @@ def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
         _DM[imza] = {"durum": "bitti" if sonuc is not None else "hata",
                      "sonuc": sonuc or {}, "zaman": time.time(),
                      "hata": str(hata or ""), "sure": round(time.time() - _DM.get(imza, {}).get("zaman", time.time()))}
-    # KALICI YAZMA BURADA DEGIL: 01.2.8 tamamlaninca, DUZELTILMIS calisma
+    # KALICI YAZMA BURADA DEGIL: Kolon Adi Onerileri tamamlaninca, DUZELTILMIS calisma
     # kopyasindan yapilir (bkz. kalici_ogren). Ham sozlukten ogrenilen
     # dosyaya yazilmaz.
 
@@ -1178,7 +1178,7 @@ def _birlesik_girdisi(tanimlar, anlamlar):
 
 def _birlesik_sor(tanimlar, anlamlar):
     """Dil modeline birlestirme sorusu, KULLANICININ ONAYLADIGI anlamlarla
-    (01.2.6.Onaylanmamis anlamlarla birlestirme
+    (01.2.5.Onaylanmamis anlamlarla birlestirme
     onerilmez). Doner: {"A_B": {"anlam", "yeni_kisaltma", "gerekce", "oy",
     "parcalar", "kolon", "ayri"}} (yalniz birlestirme onerilenler)."""
     ciftler = _birlesik_girdisi(tanimlar, anlamlar)
@@ -1241,6 +1241,91 @@ def birlesik_baslat(tanimlar, anlamlar):
                           "hata": hata, "zaman": time.time()}
     threading.Thread(target=is_, daemon=True).start()
     return imza
+
+
+# ---------------------------------------------------------------------------
+# KOLON ADI TAMAMLAMA (arka plan): tanimda gecen ama adda karsiligi olmayan
+# kavram ada eklenir (bkz. llm.kolon_ad_tamamla). Sonuclar parca bittikce
+# yazilir; kart yoklayarak alir.
+# ---------------------------------------------------------------------------
+_KAD = {}                 # imza -> {"durum", "sonuc", "bekleyen", "toplam", ...}
+
+
+def _kad_imza(girdi, onayli):
+    import hashlib
+    metin = "|".join("%s=%s" % (g["ad"], g.get("tanim") or "") for g in girdi) \
+        + "#" + "|".join("%s=%s" % kv for kv in sorted((onayli or {}).items()))
+    return hashlib.md5(metin.encode("utf-8")).hexdigest()
+
+
+def kolon_ad_baslat(girdi, onayli, kalip=""):
+    """Kolon adi tamamlamayi arka planda baslatir (ayni girdi icin bir kez).
+    Doner: imza."""
+    imza = _kad_imza(girdi, onayli)
+    with _DM_KILIT:
+        k = _KAD.get(imza)
+        if k and k["durum"] in ("calisiyor", "bitti"):
+            return imza
+        _KAD[imza] = {"durum": "calisiyor", "sonuc": {}, "hata": "", "zaman": time.time(),
+                      "toplam": len(girdi), "bekleyen": set(g["ad"] for g in girdi)}
+        if len(_KAD) > 10:
+            for eski in sorted(_KAD, key=lambda x: _KAD[x]["zaman"])[:len(_KAD) - 10]:
+                if _KAD[eski]["durum"] != "calisiyor":
+                    _KAD.pop(eski, None)
+
+    def ara(parca, adlar):
+        with _DM_KILIT:
+            k_ = _KAD.get(imza)
+            if not k_ or k_.get("durum") != "calisiyor":
+                return
+            k_["sonuc"].update(parca)
+            k_["bekleyen"] = set(k_.get("bekleyen") or ()) - set(adlar)
+
+    def iptal():
+        with _DM_KILIT:
+            return (_KAD.get(imza) or {}).get("durum") != "calisiyor"
+
+    def is_():
+        try:
+            from fe_agent import llm as llm_mod
+            sonuc, hata = llm_mod.kolon_ad_tamamla(girdi, onayli, kalip, ara=ara, iptal=iptal)
+        except Exception as e:
+            sonuc, hata = None, "%s: %s" % (type(e).__name__, str(e)[:160])
+        with _DM_KILIT:
+            k_ = _KAD.get(imza) or {}
+            if k_.get("iptal"):
+                return
+            _KAD[imza] = {"durum": "bitti" if sonuc is not None else "hata",
+                          "sonuc": dict(sonuc or k_.get("sonuc") or {}), "hata": str(hata or ""),
+                          "zaman": time.time(), "toplam": len(girdi), "bekleyen": set(),
+                          "sure": round(time.time() - k_.get("zaman", time.time()))}
+    threading.Thread(target=is_, daemon=True).start()
+    return imza
+
+
+def kolon_ad_durumu(imza):
+    """{"durum", "sonuc", "hata", "gecen", "toplam", "biten", "iptal"}."""
+    with _DM_KILIT:
+        k = dict(_KAD.get(imza) or {})
+    calisiyor = k.get("durum") == "calisiyor"
+    toplam = int(k.get("toplam") or 0)
+    return {"durum": k.get("durum", "yok"), "sonuc": dict(k.get("sonuc") or {}),
+            "hata": k.get("hata", ""), "iptal": bool(k.get("iptal")),
+            "kalan": int(k.get("kalan") or 0),
+            "gecen": int(time.time() - k["zaman"]) if calisiyor and k.get("zaman") else 0,
+            "toplam": toplam,
+            "biten": toplam - len(k.get("bekleyen") or ()) if calisiyor else toplam}
+
+
+def kolon_ad_iptal(imza):
+    """Suren tamamlamayi durdurur; gelen oneriler kalir."""
+    with _DM_KILIT:
+        k = _KAD.get(imza)
+        if not k or k.get("durum") != "calisiyor":
+            return False
+        _KAD[imza] = dict(k, durum="bitti", iptal=True, bekleyen=set(),
+                          kalan=len(k.get("bekleyen") or ()))
+    return True
 
 
 def birlesik_bilgisi(tanimlar, anlamlar):
@@ -1470,7 +1555,7 @@ def oneriler(tanimlar, bekle=0.0, veri_seti=""):
                                sozlukten=(cikan.get(kisa) or {}).get("anlam", ""))
         # GENEL ANLAM ONCE: dil modeli kisaltmanin genel
         # anlaminin sozlukteki kullanimla celistigini soylediyse kartta
-        # yazar; o kolonlarin tanimlari 01.2.8'de duzeltilmeye aday.
+        # yazar; o kolonlarin tanimlari sozlukle uyusmuyor.
         if d.get("sozluk_uyumsuz") and kisa in cikti and cikti[kisa].get("anlam"):
             cikti[kisa]["sozluk_uyumsuz"] = True
         elif d["karar"] == "emin_degil" and genel:
@@ -1690,10 +1775,10 @@ def kanit_ornekleri(tanimlar, kisa, anlam, adet=KANIT_ORNEK):
 
 
 _KARAR_AD = {"ayni": "ikisi aynı", "sozluk": "sözlük doğru, genel anlam uymuyor",
-             "genel": "dil modeli doğru, sözlükteki tanımlar yanlış",
+             "genel": "tanımlardan anlam çıkmadı, genel anlam kullanıldı",
              "kisaltma_yanlis": "sözlük doğru ama kolon adında yanlış kısaltma seçilmiş",
              "anlasilmaz": "anlam doğru ama kısaltma anlaşılmıyor",
-             "yeni": "ikisi de yanlış, düzeltildi",
+             "yeni": "tanımlara göre düzeltildi",
              "emin_degil": "karar verilemedi"}
 
 
@@ -1806,7 +1891,7 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                                        ("bilinmiyor" if o.get("genel_bilinmiyor") else
                                         ("emin_degil" if not o.get("dm_anlam") else "var")))),
                          # YANILTICI KISALTMA icin dil modelinin onerdigi daha
-                         # acik kisaltma (01.2.7'de kolon adina uygulanir).
+                         # acik kisaltma (01.2.6'da kolon adina uygulanir).
                          "yeni_kisaltma": "" if kisa in onay else (o.get("yeni_kisaltma") or ""),
                          "yeni_anlam": "" if kisa in onay else (o.get("yeni_anlam") or ""),
                          "secim": o.get("secim") or "",
