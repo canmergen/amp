@@ -71,6 +71,14 @@ DENEME_BEKLEME = 2.0      # yeniden denemeden once beklenen saniye
 # calistirip duvar saati ile siniryoruz. Havuz kapatilmaz — takilan cagri
 # shutdown'i bloklamasin.
 _HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
+# ARKA PLAN ISLERI AYRI KUYRUKTA: kisaltma kontrolu, birlestirme ve kolon
+# adi tamamlama (Orkestra(arka=True)) kullanicinin bekledigi cagrilarin
+# (aciklama onerisi, tek kisaltma onerisi ...) onunu tikamaz.
+_ARKA_HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
+# Zaman asimi KUYRUKTA BEKLEME SURESINI SAYMAZ; cagri calismaya basladigi
+# andan itibaren olculur. Kuyrukta bundan uzun bekleyen cagri yine dusurulur
+# (takilmis cagrilar havuzu kilitlemesin).
+KUYRUK_EN_COK = 600.0
 
 # ---------------------------------------------------------------------------
 # PROMPT SINIRLAYICILARI
@@ -104,7 +112,7 @@ def _tek_cagri(sistem, kullanici, model, sicaklik):
 
 
 def _cagir(sistem, kullanici, model=None, sicaklik=0.2,
-           zaman_asimi=None, deneme=None):
+           zaman_asimi=None, deneme=None, havuz=None):
     """Tek LLM cagrisi: zaman asimi + sinirli yeniden deneme.
 
     Basarisizlikta istisna firlatir; oneri fonksiyonlari bunu yakalayip
@@ -116,8 +124,17 @@ def _cagir(sistem, kullanici, model=None, sicaklik=0.2,
     son_hata = None
     for i in range(deneme):
         try:
-            is_parcasi = _HAVUZ.submit(_tek_cagri, sistem, kullanici,
-                                       model, sicaklik)
+            basladi = threading.Event()
+
+            def _is(sistem=sistem, kullanici=kullanici, model=model,
+                    sicaklik=sicaklik, basladi=basladi):
+                basladi.set()
+                return _tek_cagri(sistem, kullanici, model, sicaklik)
+
+            is_parcasi = (havuz or _HAVUZ).submit(_is)
+            if not basladi.wait(KUYRUK_EN_COK):
+                is_parcasi.cancel()
+                raise futures.TimeoutError()
             return is_parcasi.result(timeout=zaman_asimi)
         except futures.TimeoutError:
             son_hata = TimeoutError(
@@ -785,7 +802,9 @@ _ORKESTRA_HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
 class Orkestra(object):
     """Bir oneri isi boyunca model sagligini tutar (is basina bir tane)."""
 
-    def __init__(self, roller=None):
+    def __init__(self, roller=None, arka=False):
+        # arka=True: arka plan isi; cagrilar ayri kuyruktan (_ARKA_HAVUZ).
+        self.havuz = _ARKA_HAVUZ if arka else _HAVUZ
         self.roller = dict(ORKESTRA)
         self.roller.update(roller or {})
         self._hata = {}            # model -> ust uste hata sayisi
@@ -804,7 +823,7 @@ class Orkestra(object):
         """Tek model cagrisi; ham metin doner, basarisizsa firlatir."""
         try:
             ham = _cagir(sistem, govde, model=MODELLER[ad], sicaklik=sicaklik,
-                         zaman_asimi=zaman_asimi)
+                         zaman_asimi=zaman_asimi, havuz=self.havuz)
             with self._kilit:
                 self._hata[ad] = 0
             return ham
@@ -1715,7 +1734,7 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None, bilinen=None):
     ara(sonuc_parcasi, kisaltmalar): her parca bitince cagrilir."""
     if not girdi:
         return {}, None
-    ork = orkestra or Orkestra()
+    ork = orkestra or Orkestra(arka=True)
 
     def parca_(blok):
         """Bir parca: (sonuc, cevap_geldi_mi)."""
@@ -2028,7 +2047,7 @@ def kolon_ad_tamamla(girdi, onayli, kalip="", ara=None, iptal=None, orkestra=Non
     True donerse kalan parcalar sorulmaz."""
     if not girdi:
         return {}, None
-    ork = orkestra or Orkestra()
+    ork = orkestra or Orkestra(arka=True)
     liste = "ONAYLI KISALTMALAR: " + ", ".join(
         "%s=%s" % kv for kv in sorted(onayli.items())) + "\n"
     kalip_ = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n" % kalip
@@ -2147,7 +2166,7 @@ def kisaltma_birlesik(ciftler, orkestra=None, kalip=""):
     Doner: ({"A_B": {"anlam", "yeni_kisaltma", "gerekce", "oy"}}, hata)."""
     if not ciftler:
         return {}, None
-    ork = orkestra or Orkestra()
+    ork = orkestra or Orkestra(arka=True)
     govde = _veri_blogu("CIFTLER:", kalip + "\n".join(_birlesik_satiri(g) for g in ciftler))
     gecerli = {g["ad"] for g in ciftler}
     m1, v1 = ork.json_cagir(ork.modeller("kisaltma_1"), SISTEM_KISALTMA_BIRLESIK, govde, 0.1,

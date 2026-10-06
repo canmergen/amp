@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Eksik sözlük tanımı önerileri adı ve içeriği birlikte okuyup daha açıklayıcı yazılır**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Arka plan dil modeli işleri ayrı kuyrukta; zaman aşımı kuyrukta beklemeyi saymaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Dil modeli çağrıları iki kuyruğa ayrıldı: kullanıcının beklediği
+  çağrılar (açıklama önerisi, tek kısaltma önerisi, ...) ve arka plan
+  işleri (kısaltma kontrolü, birleştirme, kolon adı tamamlama). 01.2.3'te
+  arka planda başlayan kısaltma kontrolü artık açıklama önerilerinin
+  önünü tıkamaz.
+- Tek çağrının zaman aşımı (90 sn; kısaltmada 120 sn) çağrı çalışmaya
+  başladığı andan sayılır; önceden kuyrukta beklenen süre de sayılıyordu
+  ve çağrı modele hiç gitmeden zaman aşımına düşebiliyordu. Kuyrukta 10
+  dakikadan uzun bekleyen çağrı yine düşürülür.
+
+Önceki tur: **Eksik sözlük tanımı önerileri adı ve içeriği birlikte okuyup daha açıklayıcı yazılır**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Açıklama istemi: model kolon adının parçalarını ve içeriğini birlikte
   okur (her satırda farklı değer = kimlik / sıra; yalnız 0/1 = bayrak;
