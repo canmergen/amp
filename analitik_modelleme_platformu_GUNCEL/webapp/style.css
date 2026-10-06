@@ -2975,9 +2975,42 @@ span.bolme-cip { cursor: default; }
 .dg-kontrol-bas { margin-top: var(--b-4); }
 /* Kısaltma Sözlüğü: Anlam (Sözlükten) | Adlarda Geçen | Önerilen Kısaltma | Seç */
 .dg-kisaltma-tablo th:nth-child(1) { width: auto; }
-.dg-kisaltma-tablo th:nth-child(2) { width: 26%; white-space: normal; }
-.dg-kisaltma-tablo th:nth-child(3) { width: 136px; white-space: normal; }
-.dg-kisaltma-tablo th:nth-child(4) { width: 48px; }
+.dg-kisaltma-tablo th:nth-child(2) { width: 22%; white-space: normal; }
+.dg-kisaltma-tablo th:nth-child(3) { width: 92px; }
+.dg-kisaltma-tablo th:nth-child(4) { width: 124px; white-space: normal; }
+.dg-kisaltma-tablo th:nth-child(5) { width: 44px; }
+/* Tür seçimi: tablo seçim kutusuyla aynı görünüm. */
+.dg-tur-sec {
+  width: 100%; height: var(--btn-h-kucuk); padding: 0 var(--b-1);
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin);
+  font-size: var(--fs-kucuk); font-family: inherit; outline: none;
+}
+.dg-tur-sec:focus { border-color: var(--kirmizi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
+.dg-tur-sec:disabled { opacity: .6; }
+/* Ad Kalıbı satırı: tür çipleri sırayla, aralarında "_"; oklarla taşınır. */
+.dg-kalip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--b-1);
+  margin: var(--b-2) 0; font-size: var(--fs-kucuk);
+}
+.dg-kalip-etiket {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-weight: var(--fw-kalin); margin-right: var(--b-1);
+}
+.dg-kalip-cip {
+  display: inline-flex; align-items: center; gap: 2px;
+  border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin); padding: 0 2px;
+  font-weight: var(--fw-kalin); white-space: nowrap;
+}
+.dg-kalip-ok {
+  border: 0; background: transparent; color: var(--metin); cursor: pointer;
+  font: inherit; font-weight: var(--fw-kalin); padding: 0 4px; line-height: 18px;
+  border-radius: 3px;
+}
+.dg-kalip-ok:hover:not(:disabled) { background: var(--yuzey-alt); }
+.dg-kalip-ok:disabled { opacity: .3; cursor: default; }
+.dg-kalip-ayrac { color: var(--metin); font-weight: var(--fw-kalin); }
 .dg-kisaltma-tablo .dg-yeni-kisa { text-transform: uppercase; }
 .dg-kisaltma-tablo .dg-yeni-kisa::placeholder { text-transform: none; }
 .dg-kisaltma-tablo td.dg-ekle-hucre { text-align: center; }

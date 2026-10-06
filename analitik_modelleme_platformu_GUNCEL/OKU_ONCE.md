@@ -1,6 +1,61 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma adımları yeniden kuruldu: 01.2.4 Kısaltma Sözlüğü (anlamlar yalnız sözlükten) ve 01.2.5 Yeni Kolon Adları (kodla); Kısaltma Birleştirme kaldırıldı**. Değiştir: `fe_agent/kisaltma_okuma.py` (YENİ), `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `fe_agent/amp.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Ad ilkesi: anlam türü + Ad Kalıbı + kurum standardı; parantez, bölünen anlam, gereksiz "adda yok" düzeltildi; okuma hızlandı**. Değiştir: `fe_agent/kisaltma_okuma.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+Amaç: herkesin aynı şekilde okuyacağı genel bir kolon adı ilkesi. Aynı
+anlam her yerde aynı kısaltmayla yazılır, parçalar her adda aynı
+sırada durur.
+
+Anlam türü ve Ad Kalıbı
+- Kısaltma Sözlüğü'ne Tür sütunu eklendi: anlamın kolon adındaki
+  görevi. Türler: Konu, Yön, Nitelik, Pencere, Ölçü, İstatistik, Diğer.
+  Türü dil modeli önerir (önerilen kısaltmayla aynı çağrıda); önceki
+  çalışmalarda onaylanan tür varsa o gelir. Değiştirilebilir.
+- Tablonun üstünde Ad Kalıbı satırı: türlerin adda duracağı sıra
+  (varsayılan Konu, Yön, Nitelik, Pencere, Ölçü, İstatistik, Diğer).
+  Oklarla değiştirilebilir.
+- 01.2.5 Yeni Kolon Adları her kolonun parçalarını türlerinin kalıptaki
+  sırasına dizer:
+  - aynı türdeki parçalar adda geçtikleri sırayla kalır;
+  - türü bilinmeyen parça önündeki parçaya bağlı kalır (en baştaysa
+    arkasındakine);
+  - tanımı okunmayan kolonun sırası değişmez.
+  Sırası değişen kolonun "i"sinde "Sıra ad kalıbına göre düzenlendi"
+  yazar. Rakamla başlayan bir parça başa gelirse o kolon Sorunlu ve
+  işaretsiz gelir.
+
+Kurum standardı
+- Kalıp ve seçilen satırların türü KISALTMA_HAFIZASI.json'a yazılır
+  ("kalip", "turler"; kurum geneli). Kısaltma hafızası her yazıldığında
+  bu iki alan korunur.
+- Hafızada bir anlam için seçilmiş kısaltma varsa sonraki çalışmalarda
+  Önerilen Kısaltma'ya o gelir ve satır SEÇİLİ gelir (mor, "Onaylı").
+  "i"de "kurum standardı" yazar.
+
+Düzeltmeler
+- Parantez: tanımdan alınan ifadede açılıp kapanmayan parantez,
+  kapanışı hemen ardındaysa tamamlanır; değilse atılır. "<X> (<Y>" artık
+  "<X> (<Y>)".
+- Bölünen anlamlar: parantez içindeki açıklama anlamın anahtarına
+  girmez; "<X>" ile "<X> (<Y>)" aynı satırda toplanır.
+- "Adda yok" süzgeci: kavramın başındaki ve sonundaki yardımcı kelimeler
+  (yapılan, edilen, olan, ile, için ...) atılır; yalnız bunlardan oluşan
+  ifade kavram sayılmaz.
+- Karşılığı bulunamayan parçalar kolon bazında hesaplanır. Başka bir
+  kolonda yalnız çok parçalı bir grubun içinde eşlenen parça, tek
+  başına geçtiği kolonda da listeye girer.
+- Tümünü Seç yalnız uygulanabilir satırları işaretler.
+
+Hız ve düzenleme
+- Okumada aynı anda çalışan çağrı 3'ten 6'ya çıktı, arka plan dil modeli
+  kuyruğu 4'ten 8'e. Model sunucusu zaman aşımına düşürürse
+  `kisaltma_okuma.OKUMA_PARALEL` azaltılabilir.
+- Okuma sürerken satırlar düzenlenebilir. Yazılanlar ve seçimler
+  tablonun tazelenmesinde kaybolmaz. Onay, sayımlar kesin olsun diye
+  okuma bitince verilir; beklemeden geçmek için İptal ya da "Kısaltmaları
+  Onaylamadan Devam Et".
+
+Önceki tur: **Kısaltma adımları yeniden kuruldu: 01.2.4 Kısaltma Sözlüğü (anlamlar yalnız sözlükten) ve 01.2.5 Yeni Kolon Adları (kodla); Kısaltma Birleştirme kaldırıldı**. Değiştir: `fe_agent/kisaltma_okuma.py` (YENİ), `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `fe_agent/amp.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Sıra (A ve B): ... 01.2.3 Sözlük Tanımları, 01.2.4 Kısaltma Sözlüğü,
 01.2.5 Yeni Kolon Adları, sonra teyit ve bölme.

@@ -1477,6 +1477,17 @@ KISALTMA_ACIKLAMA = (
     "Kolon adlarındaki her parçanın anlamı sözlükteki tanımlardan okunur; her "
     "satır bir anlam. Seçtiğiniz satırın anlamı onaylanır ve Önerilen Kısaltma "
     "yazılıysa bu anlamın geçtiği kolon adlarına uygulanır.")
+# Ad kalibinin aciklamasi kalip satirindaki i'de.
+KISALTMA_KALIP_BILGI = (
+    "Ad Kalıbı, kolon adında parçaların hangi sırayla duracağını belirler. "
+    "Her anlamın bir türü var (Tür sütunu); Yeni Kolon Adları adımında her "
+    "kolonun parçaları türlerinin buradaki sırasına dizilir. Aynı türdeki "
+    "parçalar adda geçtikleri sırayla kalır; türü bilinmeyen parça önündeki "
+    "parçaya bağlı kalır. Kolon adı rakamla başlayamaz: rakamla başlayan bir "
+    "parça (çoğunlukla pencere) başa gelirse o kolon Sorunlu işaretlenir.\n\n"
+    "Kalıp ve onayladığınız satırların türü kurum geneli kısaltma hafızasına "
+    "yazılır; sonraki çalışmalarda varsayılan olarak gelir. Sırayı oklarla "
+    "değiştirebilirsiniz.")
 # Sutunlarin aciklamasi basliktaki i'de.
 KISALTMA_SUTUNLAR = (
     "Anlam: kolon adındaki parçanın, kolonun sözlükteki tanımında karşılık "
@@ -1486,10 +1497,15 @@ KISALTMA_SUTUNLAR = (
     "kaç kolonda geçtikleri. Aynı anlama giden farklı kısaltmalar aynı satırda; "
     "iki anlamda kullanılan kısaltma iki satırda görünür. \"Adda Yok\": anlam "
     "tanımda geçiyor, kolon adında karşılığı yok.\n\n"
+    "Tür: anlamın kolon adındaki görevi (konu, yön, nitelik, pencere, ölçü, "
+    "istatistik, diğer). Kolon adları Ad Kalıbı'ndaki tür sırasına göre "
+    "dizilir. Dil modeli önerir; önceki çalışmalarda onaylanan tür varsa o "
+    "gelir. Değiştirebilirsiniz.\n\n"
     "Önerilen Kısaltma: bu anlam için kolon adlarında kullanılacak tek "
     "kısaltma; boşsa mevcut kısaltma kalır. Dil modeli kolon adlarının "
     "dilinde ve kalıbında önerir; önceki çalışmalarda bu anlam için seçilen "
-    "kısaltma varsa o gelir. Kendiniz de yazabilirsiniz.\n\n"
+    "kısaltma (kurum standardı) varsa o gelir ve satır seçili gelir. Kendiniz "
+    "de yazabilirsiniz.\n\n"
     "Sözlükte Karşılığı Bulunamayan Parçalar: hiçbir tanımda karşılığı "
     "bulunmayan parçalar. Anlamı yalnız burada başka çalışmalardan gelir ve "
     "öyle işaretlidir.\n\n"
@@ -1515,6 +1531,7 @@ def _kisaltma_alani(durum):
                 s["anlam"] = k.get("anlam") or s["anlam"]
                 s["oneri"] = k.get("oneri") or ""
                 s["secili"] = bool(k.get("secili"))
+                s["tur"] = k.get("tur") or s.get("tur") or ""
     calisiyor = d.get("durum") == "calisiyor"
     notlar = []
     if not calisiyor:
@@ -1534,6 +1551,11 @@ def _kisaltma_alani(durum):
                     "toplam": d.get("oneri_toplam" if oneri else "toplam") or 0}
     return {"surum": 2, "baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
             "sutunlar": KISALTMA_SUTUNLAR, "satirlar": satirlar,
+            "turler": [{"kod": k, "ad": e, "aciklama": kisaltma_mod.TUR_ACIKLAMA[k]}
+                       for k, e in kisaltma_mod.TURLER],
+            "ad_kalibi": kisaltma_mod.kalip_temizle(durum.get("kisaltma_kalip")
+                                                    or t["ad_kalibi"]),
+            "kalip_bilgi": KISALTMA_KALIP_BILGI,
             "dm": "calisiyor" if calisiyor else ("hata" if d.get("durum") == "hata" else "bitti"),
             "ilerleme": ilerleme, "not": " ".join(notlar),
             "ozet": {"okunan": t["okunan"], "tanimli": t["tanimli"], "dil": t["dil"]}}
@@ -1550,7 +1572,9 @@ KOLON_AD_ACIKLAMA = ("Kolon adları Kısaltma Sözlüğü'nde seçilenlerle yeni
 KOLON_AD_BILGI = (
     "Yeni adları kod üretir: seçilen satırın önerilen kısaltması o anlamın "
     "geçtiği parçaların yerine geçer; tanımda olup adda olmayan bir anlam "
-    "seçildiyse kısaltması tanımdaki sırasına göre eklenir. Parçaların anlamı "
+    "seçildiyse kısaltması eklenir. Sonra parçalar Kısaltma Sözlüğü'ndeki Ad "
+    "Kalıbı'na göre türlerinin sırasına dizilir (aynı türdekiler adda "
+    "geçtikleri sırayla). Parçaların anlamı "
     "her kolonun kendi tanımından okunduğu için iki anlamda kullanılan bir "
     "kısaltma her kolonda kendi anlamına göre değişir. Tanımı olmayan "
     "kolonlarda yalnız tek anlamlı kısaltmalar değişir.\n\n"
@@ -1574,7 +1598,8 @@ def _kolon_ad_alani(durum):
              in (durum.get("kisaltma_yeni") or {}).items()}
     satirlar = kisaltma_okuma.yeni_adlar(
         _veri_kolonlari(durum), durum.get("kisaltma_esleme") or {}, kararlar, genel,
-        _korunan_kolonlar(durum), durum.get("haric_kolonlar") or [])
+        _korunan_kolonlar(durum), durum.get("haric_kolonlar") or [],
+        durum.get("kisaltma_turleri") or {}, durum.get("kisaltma_kalip") or [])
     # Geri donuste bu calismada verilen karar korunur.
     onceki = durum.get("_kolon_ad_karari")
     for s in satirlar:
@@ -1693,9 +1718,16 @@ def kisaltma_uygula(durum):
     for s in satirlar.values():
         for k in s["kisaltmalar"]:
             sahip.setdefault(k["kisaltma"], set()).add(s["anahtar"])
+    tur_kodlari = set(kisaltma_mod.VARSAYILAN_KALIP)
+    kalip = kisaltma_mod.kalip_temizle(durum.get("kisaltma_kalip") or t["ad_kalibi"])
+    if isinstance(karar, dict) and not karar.get("atla") and karar.get("kalip"):
+        kalip = kisaltma_mod.kalip_temizle(karar["kalip"])
     hatalar, kararlar, verilen = [], {}, {}
     for a, s in satirlar.items():
         g = gelen.get(a) or {}
+        tur = str(g.get("tur") or s.get("tur") or "").strip()
+        if tur not in tur_kodlari:
+            tur = ""
         anlam = str(g.get("anlam") if g.get("anlam") is not None else s["anlam"] or "").strip()
         secili = bool(g.get("secili"))
         ham = str(g.get("oneri") or "").strip()
@@ -1720,7 +1752,7 @@ def kisaltma_uygula(durum):
                 verilen[oneri] = a
         kisa = oneri or (mevcut[0] if len(mevcut) == 1 else "")
         kararlar[a] = {"anlam": anlam, "oneri": oneri, "secili": secili,
-                       "kisa": kisa if secili else ""}
+                       "kisa": kisa if secili else "", "tur": tur}
     if hatalar:
         raise AdimHatasi("Şu satırlar uygulanamadı; düzeltin ya da işaretini "
                          "kaldırın:\n" + "\n".join(hatalar))
@@ -1753,8 +1785,17 @@ def kisaltma_uygula(durum):
     durum["kisaltma_yeni"] = yeni
     durum["kisaltma_kararlari"] = kararlar
     durum["kisaltma_esleme"] = t["esleme"]
+    # AD ILKESI: 01.2.5 parcalari bu turlere ve kaliba gore dizer.
+    durum["kisaltma_turleri"] = {a: k["tur"] for a, k in kararlar.items() if k["tur"]}
+    durum["kisaltma_kalip"] = kalip
     durum.pop("_kolon_ad_karari", None)
     hata = kisaltma_kaydet(durum, kayit)
+    # Kalip ve SECILEN satirlarin turu kurum geneli hafizaya.
+    if isinstance(karar, dict) and not karar.get("atla"):
+        ilke_hata = kisaltma_mod.ad_ilkesi_kaydet(
+            kalip, {kisaltma_okuma.anahtar(k["anlam"]): k["tur"] for k in kararlar.values()
+                    if k["secili"] and k["anlam"] and k["tur"]})
+        hata = hata or ilke_hata
     _kalici_kisaltma_ogren(durum)
     if hata:
         return ("Kısaltmalar bu çalışmada kullanılacak ama hafızaya "
@@ -1828,10 +1869,10 @@ def kisaltma_tek_oneri(durum, kisa, anlam):
     kolonlar, adlar = _kisaltma_girdisi(durum)
     t = kisaltma_okuma.tablo(kolonlar, adlar)
     kullanilan = {k["kisaltma"] for s in t["satirlar"] for k in s["kisaltmalar"]}
-    yeni, gerekce, hata = llm_mod.kisaltma_tek_oneri(kisa, anlam, t["kalip"], t["dil"],
-                                                     kullanilan)
+    yeni, gerekce, tur, hata = llm_mod.kisaltma_tek_oneri(kisa, anlam, t["kalip"], t["dil"],
+                                                          kullanilan)
     return {"kisaltma": str(kisa or "").strip().upper(), "yeni_kisaltma": yeni,
-            "gerekce": gerekce, "hata": hata or ""}
+            "gerekce": gerekce, "tur": tur, "hata": hata or ""}
 
 
 def kisaltma_iptal(durum):

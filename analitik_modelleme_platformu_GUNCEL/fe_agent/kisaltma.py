@@ -618,8 +618,92 @@ def _hafiza_yaz(df):
     for anahtar in ("degisimler", "notlar"):
         if not govde[anahtar]:
             govde.pop(anahtar)
+    # AD ILKESI (kalip ve anlam turleri) ayni dosyada; burada korunur.
+    govde.update(_ad_ilkesi_ham())
     _folder().upload_stream(DOSYA, json.dumps(govde, ensure_ascii=False, indent=2,
                                               sort_keys=True).encode("utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# AD ILKESI (kurum geneli): kolon adinda parcalarin sirasi (kalip) ve her
+# anlamin turu. KISALTMA_HAFIZASI.json'da "kalip" ve "turler" altinda.
+# ---------------------------------------------------------------------------
+TURLER = [
+    ("konu", "Konu"),
+    ("yon", "Yön"),
+    ("nitelik", "Nitelik"),
+    ("pencere", "Pencere"),
+    ("olcu", "Ölçü"),
+    ("istatistik", "İstatistik"),
+    ("diger", "Diğer"),
+]
+TUR_ACIKLAMA = {
+    "konu": "ölçümün konusu olan varlık ya da olay",
+    "yon": "hareketin yönü",
+    "nitelik": "ölçümü daraltan alt küme ya da özellik (tür, kanal, taraf, zaman dilimi ...)",
+    "pencere": "zaman penceresi ya da dönem",
+    "olcu": "ölçülen büyüklük (tutar, adet, süre ...)",
+    "istatistik": "ölçüme uygulanan hesap (ortalama, en büyük, oran, toplam, fark ...)",
+    "diger": "bayrak, düzey ya da yukarıdakilere girmeyen",
+}
+VARSAYILAN_KALIP = [t for t, _e in TURLER]
+
+
+def _ad_ilkesi_ham():
+    try:
+        with _folder().get_download_stream(DOSYA) as akis:
+            govde = json.loads(akis.read().decode("utf-8") or "{}")
+    except Exception:
+        return {}
+    if not isinstance(govde, dict):
+        return {}
+    return {k: govde[k] for k in ("kalip", "turler") if govde.get(k)}
+
+
+def kalip_temizle(kalip):
+    """Gecerli turlerden olusan, her turu bir kez iceren sira; eksik
+    turler varsayilan sirayla sona eklenir."""
+    gecerli = set(VARSAYILAN_KALIP)
+    cikti = []
+    for t in kalip or []:
+        t = str(t or "").strip()
+        if t in gecerli and t not in cikti:
+            cikti.append(t)
+    return cikti + [t for t in VARSAYILAN_KALIP if t not in cikti]
+
+
+def ad_ilkesi():
+    """{"kalip": [tur, ...], "turler": {anlam_anahtari: tur}}."""
+    ham = _ad_ilkesi_ham()
+    turler = {str(k): str(v) for k, v in (ham.get("turler") or {}).items()
+              if str(v) in VARSAYILAN_KALIP}
+    return {"kalip": kalip_temizle(ham.get("kalip")), "turler": turler}
+
+
+def ad_ilkesi_kaydet(kalip=None, turler=None):
+    """Kalibi ve anlam turlerini hafizaya yazar (turler eklenir /
+    guncellenir, silinmez). Doner: hata ya da None."""
+    with _KILIT:
+        try:
+            with _folder().get_download_stream(DOSYA) as akis:
+                govde = json.loads(akis.read().decode("utf-8") or "{}")
+        except Exception:
+            govde = {}
+        if not isinstance(govde, dict):
+            govde = {}
+        if kalip:
+            govde["kalip"] = kalip_temizle(kalip)
+        if turler:
+            mevcut = dict(govde.get("turler") or {})
+            mevcut.update({str(k): str(v) for k, v in turler.items()
+                           if str(k).strip() and str(v) in VARSAYILAN_KALIP})
+            govde["turler"] = mevcut
+        try:
+            _folder().upload_stream(DOSYA, json.dumps(
+                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+        except Exception as e:
+            return "Ad ilkesi hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
 
 
 def _hafiza_oku():

@@ -37,7 +37,8 @@ from fe_agent import llm as llm_mod
 from fe_agent.akis_durum import _folder
 
 OKUMA_PARCA = 15          # dil modeline tek cagrida giden kolon
-OKUMA_PARALEL = 3         # ayni anda calisan okuma cagrisi
+OKUMA_PARALEL = 6         # ayni anda calisan okuma cagrisi (model sunucusu
+                          # zaman asimina dusurursa azaltin)
 ONERI_PARCA = 40          # standart onerisinde tek cagridaki anlam
 ORNEK_ADET = 3            # satirin "i"sinde gosterilen ornek kolon
 KALIP_ADET = 20           # ADLANDIRMA KALIBI'na giden en sik kisaltma
@@ -48,7 +49,7 @@ _AD_KALIP = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 
 _KILIT = threading.Lock()
 _SONUC = {}               # (kolon, tanim_ozeti) -> {"g": [[parca, ifade, bas, son]], "y": [[ifade, sonra]]}
-_ONERI = {}               # oneri anahtari -> [kisaltma, gerekce]
+_ONERI = {}               # oneri anahtari -> [kisaltma, gerekce, tur]
 _ISLER = {}               # imza -> is kaydi
 _YUKLENEN = set()         # KISALTMA_OKUMA.json'u okunan calisma klasorleri
 _HAVUZ = futures.ThreadPoolExecutor(max_workers=OKUMA_PARALEL)
@@ -95,15 +96,39 @@ def tanimdan(ifade, tanim):
                 break
         else:
             # Tanimdaki yazilis (araya giren isaretler dahil: "00-06").
-            return tanim[tm[i].start():tm[i + n - 1].end()]
+            return _parantez_dengele(tanim, tm[i].start(), tm[i + n - 1].end())
     return ""
+
+
+def _parantez_dengele(tanim, bas, son):
+    """Tanimdan kesilen ifadede acilip kapanmayan parantez: hemen
+    ardindan (yalniz bosluk / isaret araya girerek) kapaniyorsa kapanis
+    dahil edilir; yoksa yarim parantez atilir."""
+    metin = tanim[bas:son]
+    if metin.count("(") > metin.count(")"):
+        m = re.match(r"[^\w(]*?\)", tanim[son:])
+        if m:
+            return tanim[bas:son + m.end()].strip()
+    if metin.count(")") > metin.count("("):
+        m = re.search(r"\([^\w)]*?$", tanim[:bas])
+        if m:
+            return tanim[m.start():son].strip()
+    if metin.count("(") != metin.count(")"):
+        metin = re.sub(r"\s+", " ", metin.replace("(", " ").replace(")", " ")).strip()
+    return metin
 
 
 def anahtar(ifade):
     """Anlamin karsilastirma anahtari: kucuk harf, Turkce harfler sade,
-    her kelime yalin (cogul / iyelik / tamlayan eki atilir)."""
+    her kelime yalin (cogul / iyelik / tamlayan eki atilir). Parantez
+    icindeki aciklama (disarida kelime varsa) anahtara girmez: "<X>" ile
+    "<X> (<Y>)" ayni anlamdir."""
+    metin = str(ifade or "")
+    dis = re.sub(r"\([^()]*\)?", " ", metin)
+    if _kelimeler(dis):
+        metin = dis
     return " ".join(kisa_mod._sade(kisa_mod._yalin_kelime(kisa_mod._kucuk(w)))
-                    for w in _kelimeler(ifade))
+                    for w in _kelimeler(metin))
 
 
 def _gorunen(ifade, sozcukler=()):
@@ -118,6 +143,33 @@ def _gorunen(ifade, sozcukler=()):
         y = kisa_mod._yalin_kelime(k)
         return y if y != k and y in sozcukler else k
     return _KELIME.sub(kelime, str(ifade or "").strip())
+
+
+# Kavram tasimayan yardimci kelimeler (sade, kucuk harf). "Adda yok"
+# ifadesinin basinda / sonunda olanlar kirpilir; yalniz bunlardan olusan
+# ifade kavram sayilmaz.
+_YARDIMCI = {"ve", "veya", "ya", "ile", "icin", "gibi", "gore", "kadar", "olan",
+             "olarak", "olmayan", "yapilan", "yapilmis", "yapan", "yapildigi",
+             "edilen", "edilmis", "eden", "bir", "bu", "su", "o", "de", "da", "ki",
+             "mi", "her", "tum", "tarafindan", "uzerinden", "itibaren", "ait",
+             "iliskin", "dair", "olup", "olan", "yani"}
+
+
+def _kavram_kirp(ifade):
+    """Ifadenin basindaki ve sonundaki yardimci kelimeleri atar; kalan
+    tanimdaki yazilisiyla doner (hic kalmazsa "")."""
+    m = list(_KELIME.finditer(str(ifade or "")))
+    i, j = 0, len(m)
+    while i < j and kisa_mod._sade(kisa_mod._kucuk(m[i].group(0))) in _YARDIMCI:
+        i += 1
+    while j > i and kisa_mod._sade(kisa_mod._kucuk(m[j - 1].group(0))) in _YARDIMCI:
+        j -= 1
+    if i >= j:
+        return ""
+    metin = str(ifade)[m[i].start():m[j - 1].end()]
+    if metin.count("(") != metin.count(")"):
+        metin = re.sub(r"\s+", " ", metin.replace("(", " ").replace(")", " ")).strip()
+    return metin
 
 
 def _ayni_kelimeler(a, b):
@@ -174,7 +226,7 @@ def esleme_oku(veri, blok):
         for e in (k.get("adda_yok") or []):
             if not isinstance(e, dict):
                 continue
-            ifade = tanimdan(e.get("ifade"), tanim)
+            ifade = _kavram_kirp(tanimdan(e.get("ifade"), tanim))
             if not ifade or any(_ayni_kelimeler(ifade, g[1]) for g in gruplar) \
                     or any(_ayni_kelimeler(ifade, x[0]) for x in eksik):
                 continue
@@ -206,8 +258,8 @@ def _dosyadan_yukle(klasor):
         if isinstance(k, dict) and k.get("t"):
             _SONUC.setdefault((ad, k["t"]), {"g": k.get("g") or [], "y": k.get("y") or []})
     for a, v in (govde.get("oneriler") or {}).items():
-        if isinstance(v, list) and len(v) == 2:
-            _ONERI.setdefault(a, v)
+        if isinstance(v, list) and len(v) in (2, 3):
+            _ONERI.setdefault(a, (list(v) + [""])[:3])
 
 
 def _dosyaya_yaz(klasor, girdi):
@@ -315,6 +367,13 @@ def iptal(imza):
 # ---------------------------------------------------------------------------
 # ANLAM TABLOSU
 # ---------------------------------------------------------------------------
+def ad_ilkesi():
+    try:
+        return kisa_mod.ad_ilkesi()
+    except Exception:
+        return {"kalip": list(kisa_mod.VARSAYILAN_KALIP), "turler": {}}
+
+
 def _hafiza():
     """(onayli {KISA: anlam}, ogrenilen {KISA: anlam}, standart {anahtar: KISA})."""
     try:
@@ -450,15 +509,20 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
                                  not s["kisaltmalar"],
                                  -sum(k["kolon"] for k in s["kisaltmalar"]) - s["adda_yok"],
                                  s["anlam"]))
-    _onerileri_uygula(satirlar, dil, standart, onay)
+    ilke = ad_ilkesi()
+    _onerileri_uygula(satirlar, dil, standart, onay, ilke["turler"])
     return {"satirlar": satirlar, "esleme": esleme, "okunan": len(esleme),
-            "tanimli": len(girdi), "dil": dil, "kalip": kalip}
+            "tanimli": len(girdi), "dil": dil, "kalip": kalip,
+            "ad_kalibi": ilke["kalip"]}
 
 
-def _onerileri_uygula(satirlar, dil, standart, onay):
-    """Her satirin onerisini (hafiza standardi ya da dil modeli) denetleyip
-    yazar. Oneri baska bir anlamin kullandigi kisaltma olamaz; iki anlam ayni
-    kisaltmayi alamaz (buyuk satir once)."""
+def _onerileri_uygula(satirlar, dil, standart, onay, turler=None):
+    """Her satirin onerisini (hafiza standardi ya da dil modeli) ve turunu
+    (hafiza ya da dil modeli) denetleyip yazar. Oneri baska bir anlamin
+    kullandigi kisaltma olamaz; iki anlam ayni kisaltmayi alamaz (buyuk
+    satir once). KURUM STANDARDI: hafizadaki standart gelen satir onayli
+    (varsayilan secili) gelir."""
+    turler = turler or {}
     sahip = {}                                   # KISA -> mevcut anlamlari
     for s in satirlar:
         for k in s["kisaltmalar"]:
@@ -474,6 +538,13 @@ def _onerileri_uygula(satirlar, dil, standart, onay):
         o = _ONERI.get(_oneri_anahtari(s, dil))
         if o and o[0]:
             adaylar_.append((o[0], o[1], "dil_modeli"))
+        a_ = anahtar(s["anlam"]) if s["anlam"] else ""
+        if a_ and turler.get(a_):
+            s["tur"], s["tur_kaynak"] = turler[a_], "hafiza"
+        elif o and len(o) > 2 and o[2]:
+            s["tur"], s["tur_kaynak"] = o[2], "dil_modeli"
+        else:
+            s["tur"], s["tur_kaynak"] = "", ""
         oneri, gerekce, kaynak = "", "", ""
         for aday, ger, kay in adaylar_:
             if llm_mod.oneri_gecerli(aday, s["anlam"], kullanilan, dil, mevcut):
@@ -487,6 +558,7 @@ def _onerileri_uygula(satirlar, dil, standart, onay):
         s["oneri"], s["oneri_gerekce"], s["oneri_kaynak"] = oneri, gerekce, kaynak
         s["onayli"] = bool(s["anlam"]) and (
             (s["bolum"] == "bulunamadi" and s["kaynak"] == "hafiza")
+            or kaynak == "hafiza"
             or (bool(mevcut) and not oneri
                 and all(anahtar(onay.get(k, "")) == s["anahtar"] for k in mevcut)))
 
@@ -496,8 +568,10 @@ def _onerileri_hazirla(k, ork):
     parca). Hafizada standardi olan satir sorulmaz."""
     t = tablo(dict(k["girdi"]), k["adlar"])
     _onay, _ogr, standart = _hafiza()
+    turler = ad_ilkesi()["turler"]
     sor = [s for s in t["satirlar"]
-           if s["anlam"] and not standart.get(anahtar(s["anlam"]))
+           if s["anlam"] and not (standart.get(anahtar(s["anlam"]))
+                                  and turler.get(anahtar(s["anlam"])))
            and _oneri_anahtari(s, t["dil"]) not in _ONERI]
     k["oneri_toplam"] = len(sor)
     for i in range(0, len(sor), ONERI_PARCA):
@@ -511,9 +585,9 @@ def _onerileri_hazirla(k, ork):
         cevap, hata = llm_mod.kisaltma_standart(istek, t["dil"], t["kalip"], ork)
         with _KILIT:
             for j, s in enumerate(grup):
-                kisa, gerekce = cevap.get(j + 1, ("", ""))
+                kisa, gerekce, tur = cevap.get(j + 1, ("", "", ""))
                 if not hata:
-                    _ONERI[_oneri_anahtari(s, t["dil"])] = [kisa, gerekce]
+                    _ONERI[_oneri_anahtari(s, t["dil"])] = [kisa, gerekce, tur]
             k["oneri_biten"] += len(grup)
             if hata:
                 k["hata"] = hata
@@ -565,23 +639,36 @@ def _ayrac_parcalar(ad):
     return toklar, ayrac
 
 
-def yeni_ad(ad, esleme, kararlar, genel):
+def yeni_ad(ad, esleme, kararlar, genel, turler=None, kalip=None):
     """Tek kolonun yeni adi ve degisiklikler.
     esleme: bu kolonun {"g", "y"} kaydi (yoksa None: tanimsiz kolon).
     kararlar: {anahtar: {"kisa": standart ya da "", "anlam"}} (yalniz
     secilenler). genel: {KISA: (YENI, anlam)} tek anlamli kisaltmalarin
-    degisimi; eslenmemis parcalara uygulanir. Doner: (yeni_ad,
-    [degisiklik])."""
+    degisimi; eslenmemis parcalara uygulanir.
+    turler: {anahtar: tur} (butun anlamlar; karsiligi bulunamayan parca
+    "?PARCA"); kalip: tur sirasi. Ikisi verilir ve kolonun tanimi
+    okunduysa AD KALIBI uygulanir: parcalar turlerinin kaliptaki sirasina
+    dizilir, ayni turdekiler adda gectigi sirayla kalir; turu bilinmeyen
+    parca onundeki parcaya (basta ise arkasindakine) yapisik kalir.
+    Doner: (yeni_ad, [degisiklik])."""
     toklar, ayrac = _ayrac_parcalar(ad)
     ust = [_ust(t) for t in toklar]
+    turler = turler or {}
+    kucuk = str(ad) == str(ad).lower()
+
+    def yaz(metin):
+        return metin.lower() if kucuk else metin
+
     degistir = {}                         # bas -> (son, yeni, etiket)
-    ekle = {}                             # sonra gelecegi parca indeksi -> [(yeni, etiket)]
+    grup = {}                             # bas -> (son, tur)
+    ekle = {}                             # sonra gelecegi parca indeksi -> [(yeni, etiket, tur)]
     if esleme:
         for parca, a, bas, son in esleme.get("g") or []:
+            if bas >= len(ust) or "_".join(ust[bas:son + 1]) != parca:
+                continue
+            grup[bas] = (son, turler.get(a) or "")
             karar = kararlar.get(a)
             if not karar or not karar["kisa"] or karar["kisa"] == parca:
-                continue
-            if bas >= len(ust) or "_".join(ust[bas:son + 1]) != parca:
                 continue
             degistir[bas] = (son, karar["kisa"], "%s → %s (%s)" % (parca, karar["kisa"], karar["anlam"]))
         for a, sonra in esleme.get("y") or []:
@@ -599,12 +686,13 @@ def yeni_ad(ad, esleme, kararlar, genel):
             if yer == -1 and sonra:
                 yer = len(ust) - 1
             ekle.setdefault(yer, []).append(
-                (karar["kisa"], "+ %s (%s)" % (karar["kisa"], karar["anlam"])))
+                (karar["kisa"], "+ %s (%s)" % (karar["kisa"], karar["anlam"]),
+                 turler.get(a) or ""))
     # Tanimi olmayan kolonda (ya da tanimli kolonun eslenmeyen
     # parcalarinda) yalniz tek anlamli kisaltmalarin degisimi uygulanir.
     dolu = set()
-    for _p, _a, bas, son in (esleme or {}).get("g") or []:
-        dolu.update(range(bas, son + 1))
+    for b_, (s_, _t) in grup.items():
+        dolu.update(range(b_, s_ + 1))
     for kisa in sorted(genel, key=lambda x: -len(x.split("_"))):
         yeni, anlam = genel[kisa]
         hedef = kisa.split("_")
@@ -614,37 +702,86 @@ def yeni_ad(ad, esleme, kararlar, genel):
                 break
             dolu.update(range(aralik[0], aralik[1] + 1))
             degistir[aralik[0]] = (aralik[1], yeni, "%s → %s (%s)" % (kisa, yeni, anlam))
-    if not degistir and not ekle:
-        return ad, []
-    kucuk = str(ad) == str(ad).lower()
+            grup.setdefault(aralik[0], (aralik[1], turler.get("?" + kisa) or ""))
+    # Karsiligi bulunamayan tek parcanin turu ("?PARCA" satiri).
+    for i, p in enumerate(ust):
+        if i not in dolu and turler.get("?" + p):
+            grup.setdefault(i, (i, turler["?" + p]))
 
-    def yaz(metin):
-        return metin.lower() if kucuk else metin
-
-    parcala_ = [ayrac[0]]
-    etiketler = []
-    for yeni_, etiket in ekle.get(-1, []):
-        parcala_.append(yaz(yeni_) + "_")
+    # BIRIMLER: (konum, tur, metin); degisen ve eklenenler etiketli.
+    birimler, etiketler = [], []
+    for yeni_, etiket, tur in ekle.get(-1, []):
+        birimler.append((-0.5, tur, yaz(yeni_), (), ""))
         etiketler.append(etiket)
     i = 0
     while i < len(toklar):
         if i in degistir:
             son, yeni_, etiket = degistir[i]
-            parcala_.append(yaz(yeni_))
+            metin = yaz(yeni_)
             etiketler.append(etiket)
         else:
-            son = i
-            parcala_.append(toklar[i])
+            son = grup[i][0] if i in grup else i
+            metin = toklar[i]
+        tur = grup[i][1] if i in grup else ""
+        birimler.append((i, tur, metin, tuple(range(i, son + 1)), ayrac[son + 1]))
         for idx in range(i, son + 1):
-            for yeni_, etiket in ekle.get(idx, []):
-                parcala_.append("_" + yaz(yeni_))
+            for yeni_, etiket, tur_e in ekle.get(idx, []):
+                birimler.append((idx + 0.5, tur_e, yaz(yeni_), (), ""))
                 etiketler.append(etiket)
-        parcala_.append(ayrac[son + 1])
         i = son + 1
-    return "".join(parcala_), etiketler
+
+    def ozgun():
+        """Ozgun sira, ozgun ayraclarla (degisen parca yerinde)."""
+        cikti = [ayrac[0]]
+        for konum, _t, metin, kapsam, sonra_ayrac in birimler:
+            if kapsam:
+                # Degismeyen cok parcali grupta ic ayraclar ozgun kalir.
+                if kapsam[0] not in degistir and len(kapsam) > 1:
+                    metin = "".join(toklar[k] + (ayrac[k + 1] if k < kapsam[-1] else "")
+                                    for k in kapsam)
+                cikti.append(metin + sonra_ayrac)
+            else:
+                # Eklenen: onundeki parcadan sonra "_" ile (en basta ise arkasina).
+                if konum < 0:
+                    cikti.append(metin + "_")
+                else:
+                    son_ = cikti.pop()
+                    ic = son_.rstrip("_- .")
+                    cikti.append(ic + "_" + metin + son_[len(ic):])
+        return "".join(cikti)
+
+    sonuc = ozgun()
+    # AD KALIBI
+    if esleme and kalip and any(b[1] for b in birimler):
+        sira = {t: n for n, t in enumerate(kalip)}
+        bloklar = []                       # [tur, konum, [metin]]
+        bekleyen = []
+        for konum, tur, metin, kapsam, _a in sorted(birimler, key=lambda b: b[0]):
+            if kapsam and kapsam[0] not in degistir and len(kapsam) > 1:
+                metin = "".join(toklar[k] + (ayrac[k + 1] if k < kapsam[-1] else "")
+                                for k in kapsam)
+            if tur:
+                bloklar.append([tur, konum, bekleyen + [metin]])
+                bekleyen = []
+            elif bloklar:
+                bloklar[-1][2].append(metin)
+            else:
+                bekleyen.append(metin)
+        if bekleyen:
+            bloklar.append(["", len(toklar), bekleyen])
+        dizili = sorted(bloklar, key=lambda b: (sira.get(b[0], len(kalip)), b[1]))
+        if [b[1] for b in dizili] != [b[1] for b in bloklar]:
+            ayr = Counter(a for a in ayrac[1:-1] if a).most_common(1)
+            ayr = ayr[0][0] if ayr else "_"
+            sonuc = ayrac[0] + ayr.join(ayr.join(b[2]) for b in dizili) + ayrac[-1]
+            etiketler.append("Sıra ad kalıbına göre düzenlendi")
+    if sonuc == str(ad):
+        return ad, []
+    return sonuc, etiketler
 
 
-def yeni_adlar(adlar, esleme, kararlar, genel, korunan=(), haric=()):
+def yeni_adlar(adlar, esleme, kararlar, genel, korunan=(), haric=(), turler=None,
+               kalip=None):
     """Degisen kolonlar: [{"kolon", "yeni_ad", "degisim": [..], "sorun"}].
     Sorunlu satir (gecersiz ad, ayni adi alan iki kolon, baska kolonun
     adi) isaretli gelmez."""
@@ -655,7 +792,7 @@ def yeni_adlar(adlar, esleme, kararlar, genel, korunan=(), haric=()):
         ad = str(ad)
         if ad in korunan or ad in haric:
             continue
-        yeni, degisim = yeni_ad(ad, (esleme or {}).get(ad), kararlar, genel)
+        yeni, degisim = yeni_ad(ad, (esleme or {}).get(ad), kararlar, genel, turler, kalip)
         if yeni != ad:
             satirlar.append({"kolon": ad, "yeni_ad": yeni, "degisim": degisim, "sorun": ""})
     kalan = mevcut - {s["kolon"] for s in satirlar}
@@ -674,7 +811,7 @@ def yeni_adlar(adlar, esleme, kararlar, genel, korunan=(), haric=()):
 # EXCEL
 # ---------------------------------------------------------------------------
 EXCEL_SOZLUK = ["Anlam (Sözlükten)", "Kısaltmalar (Kolon Sayısı)", "Adda Yok (Kolon)",
-                "Önerilen Kısaltma", "Öneri Gerekçesi", "Durum"]
+                "Tür", "Önerilen Kısaltma", "Öneri Gerekçesi", "Durum"]
 EXCEL_ESLEME = ["Kolon", "Tanım", "Parça", "Tanımdaki İfade"]
 EXCEL_EKSIK = ["Kolon", "Tanım", "Tanımda Olup Adda Olmayan", "Hangi Parçadan Sonra"]
 
@@ -685,7 +822,8 @@ def excel_sayfalari(kolonlar, tum_adlar=()):
                  "ogrenilen": "Başka Çalışmadan (öğrenilen)", "": "Sözlükte Bulunamadı"}
     s1 = [[s["anlam"] or None,
            ", ".join("%s (%d)" % (k["kisaltma"], k["kolon"]) for k in s["kisaltmalar"]) or None,
-           s["adda_yok"] or None, s["oneri"] or None, s["oneri_gerekce"] or None,
+           s["adda_yok"] or None, dict(kisa_mod.TURLER).get(s.get("tur"), None),
+           s["oneri"] or None, s["oneri_gerekce"] or None,
            durum_adi.get(s["kaynak"], "")] for s in t["satirlar"]]
     girdi = dict(_girdi(kolonlar))
     s2, s3 = [], []

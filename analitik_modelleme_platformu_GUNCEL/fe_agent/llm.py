@@ -74,7 +74,7 @@ _HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
 # ARKA PLAN ISLERI AYRI KUYRUKTA: kisaltma kontrolu, birlestirme ve kolon
 # adi tamamlama (Orkestra(arka=True)) kullanicinin bekledigi cagrilarin
 # (aciklama onerisi, tek kisaltma onerisi ...) onunu tikamaz.
-_ARKA_HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
+_ARKA_HAVUZ = futures.ThreadPoolExecutor(max_workers=8)
 # Zaman asimi KUYRUKTA BEKLEME SURESINI SAYMAZ; cagri calismaya basladigi
 # andan itibaren olculur. Kuyrukta bundan uzun bekleyen cagri yine dusurulur
 # (takilmis cagrilar havuzu kilitlemesin).
@@ -1323,9 +1323,17 @@ Her satir icin kolon adlarinda kullanilacak TEK bir kisaltma yaz
   - BUYUK harf, A-Z, 0-9 ve parca ayiraci "_"; en cok 4 parca, parca
     basina 8, toplam 24 karakter.
 "gerekce": tek kisa cumle, Turkce karakterlerle.
+"tur": anlamin kolon adindaki gorevi; asagidaki TURLER listesinden
+tam olarak biri (kodu yaz). Yalniz ANLAMA bak.
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
-{"kolonlar": [{"no": 1, "kisaltma": "...", "gerekce": "..."}]}""" + SINIRLAYICI_KURALI
+{"kolonlar": [{"no": 1, "kisaltma": "...", "gerekce": "...", "tur": "..."}]}"""
+
+
+def _tur_blogu():
+    from fe_agent import kisaltma as kisa_mod
+    return "\n\nTURLER (kod: aciklama):\n" + "\n".join(
+        "  %s: %s" % (t, kisa_mod.TUR_ACIKLAMA[t]) for t, _e in kisa_mod.TURLER)
 
 
 def _standart_satiri(s):
@@ -1342,12 +1350,13 @@ def _standart_satiri(s):
 def kisaltma_standart(satirlar, dil="", kalip="", orkestra=None):
     """STANDART (tek grup). satirlar: [{"no", "anlam", "mevcut": [(k, n)],
     "baska": [(k, anlam)], "adda_yok": n}]. Doner: ({no: (kisaltma,
-    gerekce)}, hata); kisaltma bicim olarak temizlenmistir, anlamsal
-    denetim cagiranda."""
+    gerekce, tur)}, hata); kisaltma bicim olarak temizlenmistir, anlamsal
+    denetim cagiranda; tur gecerli bir tur kodu ya da ""."""
     ork = orkestra or Orkestra(arka=True)
     kalip_ = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n"
               % kalip) if kalip else ""
-    m, v = ork.json_cagir(ork.modeller("kisaltma_oneri"), SISTEM_KISALTMA_STANDART,
+    m, v = ork.json_cagir(ork.modeller("kisaltma_oneri"),
+                          SISTEM_KISALTMA_STANDART + _tur_blogu() + SINIRLAYICI_KURALI,
                           _veri_blogu("ANLAMLAR:", dil_satiri(dil) + kalip_
                                       + "\n".join(_standart_satiri(s) for s in satirlar)),
                           0.1, zaman_asimi=KISALTMA_ZAMAN_ASIMI)
@@ -1361,9 +1370,16 @@ def kisaltma_standart(satirlar, dil="", kalip="", orkestra=None):
             no = int(k.get("no"))
         except (TypeError, ValueError):
             continue
+        tur = str(k.get("tur") or "").strip().lower()
         cikti[no] = (kisaltma_temizle(k.get("kisaltma")),
-                     re.sub(r"\s+", " ", str(k.get("gerekce") or "")).strip()[:240])
+                     re.sub(r"\s+", " ", str(k.get("gerekce") or "")).strip()[:240],
+                     tur if tur in _TUR_KODLARI() else "")
     return cikti, None
+
+
+def _TUR_KODLARI():
+    from fe_agent import kisaltma as kisa_mod
+    return set(kisa_mod.VARSAYILAN_KALIP)
 
 
 def kisaltma_temizle(metin):
@@ -1376,20 +1392,20 @@ def kisaltma_temizle(metin):
 
 def kisaltma_tek_oneri(kisa, anlam, kalip="", dil="", kullanilan=(), orkestra=None):
     """Kartta anlam duzenlenince o satirin onerisi yeni anlamla. Doner:
-    (yeni, gerekce, hata); mevcut kisaltma kalacaksa yeni bos."""
+    (yeni, gerekce, tur, hata); mevcut kisaltma kalacaksa yeni bos."""
     kisa, anlam = str(kisa or "").strip().upper(), str(anlam or "").strip()
     if not anlam:
-        return "", "", None
+        return "", "", "", None
     cevap, hata = kisaltma_standart(
         [{"no": 1, "anlam": anlam, "mevcut": [(kisa, 0)] if kisa else []}],
         dil, kalip, orkestra or Orkestra())
     if hata:
-        return "", "", hata
-    yeni, gerekce = cevap.get(1, ("", ""))
+        return "", "", "", hata
+    yeni, gerekce, tur = cevap.get(1, ("", "", ""))
     if not oneri_gecerli(yeni, anlam, set(kullanilan or ()) - {kisa}, dil,
                          [kisa] if kisa else []):
-        return "", "", None
-    return ("" if yeni == kisa else yeni), gerekce, None
+        return "", "", tur, None
+    return ("" if yeni == kisa else yeni), gerekce, tur, None
 
 
 def oneri_gecerli(yeni, anlam, kullanilan, dil, mevcut=()):
