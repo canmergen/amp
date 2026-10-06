@@ -2961,12 +2961,10 @@ span.bolme-cip { cursor: default; }
 /* Kısaltma | Sözlükte | Dil Modeli | Anlam | Kaynak | Hafızaya Kaydet */
 /* LLM Karar en geniş sütun. */
 /* Kısaltma sütunu geniş; ad ile "i" aynı satırda kalır. */
-.dg-kisaltma-tablo th:nth-child(1) { width: 19%; }
-.dg-kisaltma-tablo th:nth-child(2) { width: 14%; }
-.dg-kisaltma-tablo th:nth-child(3) { width: 13%; }
-.dg-kisaltma-tablo th:nth-child(4) { width: auto; }
-.dg-kisaltma-tablo th:nth-child(5) { width: 150px; white-space: normal; }
-.dg-kisaltma-tablo th:nth-child(6) { width: 64px; }
+.dg-kisaltma-tablo th:nth-child(1) { width: 18%; }
+.dg-kisaltma-tablo th:nth-child(2) { width: auto; }
+.dg-kisaltma-tablo th:nth-child(3) { width: 160px; white-space: normal; }
+.dg-kisaltma-tablo th:nth-child(4) { width: 64px; }
 .dg-kisaltma-tablo .dg-yeni-kisa { text-transform: uppercase; }
 
 .dg-kisaltma-tablo td.dg-kaynak-deger { color: var(--metin); }
@@ -3359,3 +3357,4 @@ span.bolme-cip { cursor: default; }
 /* Kısaltma Sözlüğü: sayı değerli biçim satırı ana kısaltmanın altında, girintili. */
 .dg-kisaltma-tablo .dg-bicim { padding-left: 22px; font-weight: normal; }
 .dg-kisaltma-tablo .dg-bicim-satir td { border-top: 1px dashed var(--kenar); }
+.dg-kisaltma-tablo td.dg-aciklama-hucre .dg-giris { width: 100%; box-sizing: border-box; }

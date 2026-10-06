@@ -111,11 +111,10 @@ ADIMLAR = {
     # oncekinin ONAYLADIGI bilgiyi kullanir; hatali sozluk kisaltmayi,
     # kisaltma da sozlugu "dogrulamasin".
     "kisaltma": {
-        "baslik": "Kısaltma Sözlüğü",
-        "aciklama": "Kolon adlarındaki kısaltmaların anlamları onaylanır. "
-                    "Anlamlar dil modelinin genel bilgisinden ve sözlükteki "
-                    "kullanımdan gelir; sonraki adımlar onaylanan anlamları "
-                    "kullanır.",
+        "baslik": ADIM_ADI["kisaltma"],
+        "aciklama": "Kolon adlarındaki kısaltmaların anlamları onaylanır; "
+                    "anlaşılmayan kısaltmanın yerine önerilen kısaltma kolon "
+                    "adlarına ve sözlükteki adlara uygulanır.",
         "girdi": None, "plan": kisaltma_plan, "uygula": kisaltma_uygula},
 
     # Kisaltmalar ONAYLANDIKTAN SONRA: birlestirme
@@ -128,7 +127,7 @@ ADIMLAR = {
         "girdi": None, "plan": birlesik_plan, "uygula": birlesik_uygula},
 
     "kolon_ad": {
-        "baslik": "Kolon Adı Önerileri",
+        "baslik": ADIM_ADI["kolon_ad"],
         "aciklama": "Açıklamasında bir kısaltmanın anlamı geçen ama adında "
                     "o kısaltma bulunmayan kolonlar için yeni ad önerilir; "
                     "uygulanan adlar yalnız platformun kopyalarında geçerli olur.",

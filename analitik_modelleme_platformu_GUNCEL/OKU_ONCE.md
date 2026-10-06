@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **LLM Karar en açıklayıcı anlam; okunur kısaltmaya öneri yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.4 Kısaltmalar ve Kolon Adları: sade tablo, Seç = onay + adlara uygulama**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Adım adları: 01.2.4 Kısaltmalar ve Kolon Adları, 01.2.6 Kolon Adı
+  Tamamlama.
+- Kısaltma tablosu: Kısaltma | LLM Karar | Önerilen Kısaltma | Seç. LLM
+  Sözlük ve LLM Genel kısaltmanın "i"sinde.
+- Seç: işaretli satırın anlamı onaylanır (kısaltma sözlüğüne ve
+  hafızaya girer); önerilen kısaltma yazılıysa o kısaltmanın geçtiği kolon
+  adları ve sözlükteki adlar onunla değişir (AMP_VERISETI / AMP_SOZLUK).
+  İşaretsiz satır onaylanmaz, uygulanmaz. Sayı değerli biçim satırları da
+  seçilerek uygulanır (hafızaya ayrı girmez). Düğme: "Seçilenleri Onayla,
+  Adlara Uygula ve Devam Et".
+- Kolon Adı Tamamlama yalnız tanımda olup adda olmayan kavramın eklenmesi
+  için onay ister; 01.2.4'te seçilen değişimler orada otomatik uygulanır.
+- Öneri, Türkçe anlamın büyük harfle yazılmış / kısaltılmış hali ise
+  (harfleri anlamda sırayla geçiyor ve anlamın en az yarısı uzunluğunda)
+  kodla elenir.
+
+Önceki tur: **LLM Karar en açıklayıcı anlam; okunur kısaltmaya öneri yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - LLM Karar iki adayı ve örnek tanımları birlikte değerlendirip en
   açıklayıcı anlamı yazar; adaylardan birinde ölçünün / yöntemin özel

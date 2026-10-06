@@ -1849,8 +1849,8 @@ def kart_satirlari(tanimlar, bekle=0.0, veri_seti=""):
                 parca.append("Karar: %s%s" % (_KARAR_AD.get(o["secim"], o["secim"]),
                                               (". " + o["gerekce"]) if o.get("gerekce") else ""))
                 if o.get("yeni_kisaltma"):
-                    parca.append("Önerilen: %s = %s%s; bu kolonlar Kolon Adı Önerileri "
-                                 "adımında %s ile adlandırılır"
+                    parca.append("Önerilen: %s = %s%s; seçilirse bu kısaltmanın geçtiği "
+                                 "kolon adları %s ile değişir"
                                  % (o["yeni_kisaltma"], o.get("yeni_anlam") or "",
                                     (" (%s)" % o["oneri_gerekce"]) if o.get("oneri_gerekce") else "",
                                     o["yeni_kisaltma"]))

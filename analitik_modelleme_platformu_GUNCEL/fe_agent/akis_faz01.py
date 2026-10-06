@@ -1434,21 +1434,21 @@ def _kisaltma_kaynagi(durum):
 KISALTMA_BASLIK = "Kısaltma Sözlüğü"
 # Kartta basligin altinda.
 KISALTMA_ACIKLAMA = (
-    "Kolon adlarındaki kısaltmaların anlamını dil modeli önerir; siz "
-    "onaylar ya da düzeltirsiniz. Onaylanan anlamlar sonraki adımlarda "
-    "kullanılır.")
+    "Kolon adlarındaki kısaltmaların anlamını dil modeli önerir. "
+    "Seçtiğiniz satırın anlamı onaylanır; önerilen kısaltma yazılıysa o "
+    "kısaltmanın geçtiği kolon adları ve sözlükteki adlar onunla değişir.")
 # Sutunlarin aciklamasi basliktaki i'de.
 KISALTMA_SUTUNLAR = (
-    "LLM Sözlük: dil modelinin sözlükteki açıklamalardan okuduğu anlam.\n\n"
-    "LLM Genel: dil modelinin sözlüğe bakmadan verdiği genel anlam.\n\n"
-    "LLM Karar: dil modellerinin ikisi arasında karar verdiği anlam; "
-    "düzenleyebilirsiniz.\n\n"
+    "LLM Karar: dil modelinin sözlükteki açıklamalara (LLM Sözlük) ve "
+    "kendi genel bilgisine (LLM Genel) bakarak verdiği anlam; "
+    "düzenleyebilirsiniz. İki kaynağın ne dediği kısaltmanın 'i'sinde.\n\n"
     "Önerilen Kısaltma: anlamı adından çıkarılamayan kısaltma (LLM Genel "
     "bilmiyor ya da LLM Karar'dan farklı anlam veriyor) için dil modelinin "
     "LLM Karar'daki anlamdan önerdiği daha okunur kısaltma; anlamı LLM "
-    "Karar'daki anlamdır. Kendiniz de yazabilirsiniz. Kolon adları Kolon Adı Önerileri adımında "
-    "değişir.\n\n"
-    "Seç: işaretlenenler proje genelindeki hafızaya kaydedilir.\n\n"
+    "Karar'daki anlamdır. Kendiniz de yazabilirsiniz.\n\n"
+    "Seç: işaretli satırın anlamı onaylanır ve kısaltma hafızasına "
+    "kaydedilir; önerilen kısaltma yazılıysa kolon adlarına ve sözlükteki "
+    "adlara uygulanır. İşaretsiz satır onaylanmaz.\n\n"
     "Her kısaltmanın kararı, gerekçesi ve örnek kolonları kısaltmanın "
     "yanındaki simgede.")
 BIRLESIK_ACIKLAMA = (
@@ -1456,8 +1456,8 @@ BIRLESIK_ACIKLAMA = (
     "okununca anlam karışıyorsa birlikte tek anlam alabilir. Dil modelinin "
     "önerileri aşağıda; kendiniz de ekleyebilirsiniz. Birleştir "
     "işaretlenenler bu çalışmada birlikte anlamıyla kullanılır ve hafızaya "
-    "kaydedilir; önerilen kısaltma yazılırsa Kolon Adı Önerileri adımında "
-    "bu parçaların geçtiği kolon adlarına uygulanır.")
+    "kaydedilir; önerilen kısaltma yazılırsa bu parçaların geçtiği kolon "
+    "adlarına ve sözlükteki adlara uygulanır.")
 
 
 def _kisaltma_alani(durum, bekle=0.0):
@@ -1670,15 +1670,15 @@ def birlesik_uygula(durum):
     return ""
 
 
-KOLON_AD_BASLIK = "Kolon Adı Önerileri"
+KOLON_AD_BASLIK = ADIM_ADI["kolon_ad"]
 KOLON_AD_BILGI = (
     "Sözlükteki tanım doğru kabul edilir; ad tanımı eksiksiz yansıtmalıdır. "
     "Öneriler: 1) Tanımda geçen ama adın hiçbir parçasının karşılamadığı "
     "kavram, dil modeliyle bulunup ada eklenir (önce onaylı kısaltmalardan; "
     "yoksa yeni bir kısaltmayla). Mevcut parçalar silinmez, sırası "
-    "değişmez; bu kodla denetlenir; uygulamak için işaretleyin. 2) Kısaltma "
-    "Sözlüğü'nde onaylanan yeni kısaltmalar (sayı değerli biçimler dahil): "
-    "ikinci onay istenmez, otomatik uygulanır. Önerilen adı değiştirebilirsiniz."
+    "değişmez; bu kodla denetlenir; uygulamak için işaretleyin. 2) "
+    "Kısaltmalar ve Kolon Adları adımında onaylanan yeni kısaltmalar (sayı "
+    "değerli biçimler dahil): ikinci onay istenmez, otomatik uygulanır. Önerilen adı değiştirebilirsiniz."
     "\n\n"
     "Uygulanan adlar YALNIZ platformun kopyalarında geçerli olur: "
     "AMP_VERISETI ve AMP_SOZLUK (Değişken Listesi ve Tip Kontrolü kaydedilince). Girdi veri "
@@ -1781,11 +1781,11 @@ def _kolon_ad_alani(durum):
             if _kisaltma_degistir(oneri or ad, eski, yeni) != (oneri or ad):
                 oneri = _kisaltma_degistir(oneri or ad, eski, yeni)
                 if kisaltma_mod._ayni_anlam(anlamlar.get(yeni, ""), anlamlar.get(eski, "")):
-                    gerekce.append("%s yerine daha okunur %s ('%s'; Kısaltma Sözlüğü'nde "
+                    gerekce.append("%s yerine daha okunur %s ('%s'; Kısaltmalar ve Kolon Adları'nda "
                                    "kabul edildi)." % (eski, yeni, anlamlar.get(yeni, "")))
                 else:
                     gerekce.append("%s yerine %s: bu kolonlarda '%s' anlamında kullanılmış; "
-                                   "%s genelde '%s' demek (Kısaltma Sözlüğü'nde kabul edildi)."
+                                   "%s genelde '%s' demek (Kısaltmalar ve Kolon Adları'nda kabul edildi)."
                                    % (eski, yeni, anlamlar.get(yeni, ""), eski,
                                       anlamlar.get(eski, "")))
         for k in sayi_ayir:
@@ -1962,7 +1962,7 @@ def _onayli_anlamlar(durum):
 # sonra onaylanan sozlukle kolon adi onerileri, en son dolu tanimlarin
 # kontrolu. Ikisi de istege bagli: gosterilecek satir yoksa adim kendiliginden
 # gecer; kartta "... Devam Et" ile atlanabilir.
-KISALTMA_DUGME = {"bos": "Kısaltmaları Onayla ve Devam Et"}
+KISALTMA_DUGME = {"bos": "Seçilenleri Onayla, Adlara Uygula ve Devam Et"}
 KOLON_AD_DUGME = {"bos": "Seçilen Adları Uygula ve Devam Et"}
 
 
@@ -1992,13 +1992,17 @@ def kisaltma_plan(durum):
         for r_ in alan["satirlar"]:
             if r_["kisaltma"] in onceki and not r_.get("onayli"):
                 r_["anlam"] = onceki[r_["kisaltma"]]
+            if r_["kisaltma"] in onceki:
+                r_["secili"] = True
         for kisa, y in (durum.get("kisaltma_yeni") or {}).items():
             for r_ in alan["satirlar"]:
                 if r_["kisaltma"] == kisa:
                     r_["yeni_kisaltma"] = y
                     r_["yeni_anlam"] = onceki.get(y) or r_.get("yeni_anlam") or ""
-                    if r_.get("bicim") and onceki.get(y):
-                        r_["anlam"] = onceki[y]
+                    if r_.get("bicim"):
+                        r_["secili"] = True
+                        if onceki.get(y):
+                            r_["anlam"] = onceki[y]
     durum["_secim_alani"] = _adim_karti(
         "kisaltma", {"kisaltma": alan}, KISALTMA_DUGME,
         "Kısaltmaları Onaylamadan Devam Et")
@@ -2026,10 +2030,13 @@ def kisaltma_uygula(durum):
     # onerilen kisaltmalari kolon adina uygulanir; sozluge ve hafizaya
     # ayri kisaltma olarak girmez.
     satirlar = [s for s in tum if not s.get("bicim")]
-    bicimler = [s for s in tum if s.get("bicim")]
+    # SEC: yalniz isaretli satirin anlami onaylanir ve onerilen kisaltmasi
+    # kolon adlarina uygulanir; isaretsiz satir onaylanmaz.
+    secili = [s for s in satirlar if s.get("kaydet")]
+    bicimler = [s for s in tum if s.get("bicim") and s.get("kaydet")]
     sozluk = {
         str(s.get("kisaltma")).strip(): str(s.get("anlam") or "").strip()
-        for s in satirlar
+        for s in secili
         if str(s.get("kisaltma") or "").strip() and str(s.get("anlam") or "").strip()}
     hatalar = []
     oneri_satir = []
@@ -2038,7 +2045,7 @@ def kisaltma_uygula(durum):
     # tasir. Gecersiz ya da baska anlamda kullanilan kisaltma
     # adimi durdurur.
     yeni, yeni_anlam = {}, {}
-    for s_ in satirlar + oneri_satir + bicimler:
+    for s_ in secili + oneri_satir + bicimler:
         kisa = str(s_.get("kisaltma") or "").strip().upper()
         y = str(s_.get("yeni_kisaltma") or "").strip().upper()
         if not kisa or not y:

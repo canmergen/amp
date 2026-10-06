@@ -6652,7 +6652,7 @@ function dogrulamaKartiEkle(alan, blok) {
         if (kolonAdErisim) karar.kolon_ad = kolonAdErisim.deger();
         let ozet;
         if (adimModu === "kisaltma") {
-            const n = (karar.kisaltma || []).filter(k => k.anlam).length;
+            const n = (karar.kisaltma || []).filter(k => k.anlam && k.kaydet && !k.bicim).length;
             ozet = ftBinlik(n) + " kısaltmanın anlamı onaylandı";
         } else if (adimModu === "birlesik") {
             const n = (karar.birlesik || []).filter(k => k.kabul && k.anlam).length;
@@ -6789,7 +6789,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             kutu.checked = !!r.kayitli; kutu.disabled = kilitli || !!r.otomatik;
             /* Kısaltma Sözlüğü'nde onaylanan değişim: ikinci onay yok. */
             if (r.otomatik) {
-                kutu.title = "Kısaltma Sözlüğü'nde onaylandı; otomatik uygulanır";
+                kutu.title = "Kısaltmalar ve Kolon Adları adımında onaylandı; otomatik uygulanır";
                 tdI.title = kutu.title;
             }
             tdI.appendChild(kutu); tr.appendChild(tdI);
@@ -7225,7 +7225,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        gerekçe ve uyarılar kısaltmanın yanındaki "i"de. */
     /* Anlam sütunu "LLM Karar": değer, dil modellerinin
        iki kaynak arasındaki kararıdır; düzenlenebilir. */
-    ["Kısaltma", "LLM Sözlük", "LLM Genel", "LLM Karar", "Önerilen Kısaltma", "Seç"]
+    /* LLM Sözlük ve LLM Genel tabloda değil, kısaltmanın "i"sinde. */
+    ["Kısaltma", "LLM Karar", "Önerilen Kısaltma", "Seç"]
         .forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
@@ -7244,7 +7245,13 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const tdK = elYap("td", "dg-kolon dg-kisaltma-ad", r.kisaltma);
             const orn = r.ornekler || [];
             /* Eski Not sütununun içeriği (karar, gerekçe, uyarı) + örnekler. */
-            const notMetni = [r.onayli ? "Onaylı tanım (hafızada)" : "", r.kanit || "",
+            const kaynakMetni = r.bicim ? "" : [
+                "LLM Sözlük: " + (r.bekliyor ? "bekleniyor" : r.sozlukten
+                    ? tireSade(r.sozlukten) + (r.sozluk_kaynak === "istatistik" ? " (kelime sayımı)" : "")
+                    : "tanımlardan çıkmadı"),
+                "LLM Genel: " + (r.bekliyor ? "bekleniyor" : r.dm_durum === "var"
+                    ? tireSade(r.dil_modeli || "") : "bilinmiyor")].join("\n");
+            const notMetni = [kaynakMetni, r.onayli ? "Onaylı tanım (hafızada)" : "", r.kanit || "",
                               r.uyari ? "Uyarı: " + r.uyari : ""].filter(Boolean).join("\n\n");
             const iMetni = [notMetni, orn.length ? "Örnek kolonlar:\n\n"
                 + orn.map(o => o.kolon + ": " + tireSade(o.tanim)).join("\n\n") : ""]
@@ -7263,10 +7270,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             /* Biçim satırının kaynak hücreleri boş: anlamı ana kısaltmadan. */
             tdS.appendChild(document.createTextNode(r.bicim ? "" : r.bekliyor ? "bekleniyor…"
                 : r.sozlukten ? tireSade(r.sozlukten) : BOS_SIMGE));
-            if (r.onceki_sozluk) tdS.appendChild(elYap("div", "dg-tip", "önceki sözlüklerden"));
-            else if (!r.bekliyor && r.sozluk_kaynak === "istatistik")
-                tdS.appendChild(elYap("div", "dg-tip", "kelime sayımı"));
-            tr.appendChild(tdS);
+            /* Kaynak hücreleri tabloya eklenmez (değerleri "i"de); renk
+               hesabı için tutulur. */
             /* Genel anlamı yok / emin değil / sonuç yok: ∅;
                hangisi olduğu "i"deki kararda yazar. */
             const dmMetin = { bekliyor: "bekleniyor…", emin_degil: BOS_SIMGE,
@@ -7275,7 +7280,6 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                     + (r.dm_durum && r.dm_durum !== "var" ? " dg-kaynak-yok" : ""));
             tdD.appendChild(document.createTextNode(r.bicim ? "" : r.dm_durum && r.dm_durum !== "var"
                 ? dmMetin[r.dm_durum] || BOS_SIMGE : tireSade(r.dil_modeli || "")));
-            tr.appendChild(tdD);
             const tdA = elYap("td", "dg-aciklama-hucre");
             const g = document.createElement("input");
             g.type = "text"; g.className = "dg-giris";
@@ -7308,9 +7312,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const tdI = elYap("td", "dg-ekle-hucre");
             const kutu = document.createElement("input");
             kutu.type = "checkbox"; kutu.className = "dg-ekle";
-            kutu.checked = !!r.onayli; kutu.disabled = kilitli || !!r.bekliyor;
-            /* Biçim satırı hafızaya ayrı kaydedilmez. */
-            if (r.bicim) kutu.hidden = true;
+            kutu.checked = !!r.onayli || !!r.secili; kutu.disabled = kilitli || !!r.bekliyor;
+            kutu.setAttribute("aria-label", r.kisaltma + " onaylansın ve adlara uygulansın");
             tdI.appendChild(kutu); tr.appendChild(tdI);
             const vurgu = () => {
                 const m = g.value.trim();
@@ -7390,7 +7393,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                        değişen alan korunur. */
                     const anlamElle = x.g.value.trim() !== tireSade(x.r.anlam || "").trim();
                     const yeniElle = x.y.value !== String(x.r.yeni_kisaltma || "");
-                    if (anlamElle || yeniElle || x.kutu.checked !== !!x.r.onayli)
+                    if (anlamElle || yeniElle || x.kutu.checked !== (!!x.r.onayli || !!x.r.secili))
                         elle[x.r.kisaltma] = { anlam: anlamElle ? x.g.value : null, kutu: x.kutu.checked,
                                                yeni: yeniElle ? x.y.value : null };
                 });

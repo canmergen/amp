@@ -1366,10 +1366,26 @@ def _sayili_mi(g):
     return any(kalip.search(str(ad)) for ad, _t in (g.get("ornekler") or []))
 
 
-def _oneri_oku(veri, girdi, kullanilan):
+_TR_BUYUK = str.maketrans("çğıöşüÇĞİÖŞÜ", "CGIOSUCGIOSU")
+
+
+def _anlamdan_turetilmis(yeni, anlam):
+    """Oneri yalniz anlamin (Turkce) kelimelerinin buyuk harfle yazilmis /
+    kisaltilmis hali mi: harfleri anlamin harflerinde sirayla geciyor ve
+    anlamin en az yarisi kadar uzun. Bu, okunur bir kisaltma degil
+    anlamin kendisidir."""
+    y = re.sub(r"[^A-Z]", "", str(yeni or "").upper())
+    a = re.sub(r"[^A-Z]", "", str(anlam or "").translate(_TR_BUYUK).upper())
+    if not y or not a:
+        return False
+    it = iter(a)
+    return all(h in it for h in y) and len(y) >= 0.5 * len(a)
+
+
+def _oneri_oku(veri, girdi, kullanilan, anlamlar=None):
     """{KISA: (yeni_kisaltma, gerekce)}; gecersiz ya da anlamsiz oneri
-    (mevcutla ayni, yalniz unluleri atilmis hali, baska bir kisaltma)
-    dusurulur."""
+    (mevcutla ayni, yalniz unluleri atilmis hali, baska bir kisaltma,
+    Turkce anlamin kendisi) dusurulur."""
     gecerli = {g["kisaltma"] for g in girdi}
     cikti = {}
     for k in ((veri or {}).get("kolonlar") or []):
@@ -1381,7 +1397,8 @@ def _oneri_oku(veri, girdi, kullanilan):
         yeni = re.sub(r"[\s\-./]+", "_", str(k.get("yeni_kisaltma") or "").strip().upper())
         yeni = re.sub(r"_+", "_", re.sub(r"[^A-Z0-9_]", "", yeni)).strip("_")
         if (not _YENI_KISA.match(yeni) or yeni == ad or _iskelet(yeni) == _iskelet(ad)
-                or yeni in kullanilan):
+                or yeni in kullanilan
+                or _anlamdan_turetilmis(yeni, (anlamlar or {}).get(ad))):
             continue
         cikti[ad] = (yeni, re.sub(r"\s+", " ", str(k.get("gerekce") or "")).strip()[:240])
     return cikti
@@ -1696,7 +1713,10 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                 ork.modeller("kisaltma_1"), SISTEM_KISALTMA_ONERI,
                 _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(satir)),
                 0.1, zaman_asimi=KISALTMA_ZAMAN_ASIMI)
-            cevap = _oneri_oku(vo, sor + [g for g, _a, _k in bicim_sor], kullanilan_) if mo else {}
+            anlam_ = {g["kisaltma"]: sonuc_[g["kisaltma"]] for g in sor}
+            anlam_.update({g["kisaltma"]: a for g, a, _k in bicim_sor})
+            cevap = _oneri_oku(vo, sor + [g for g, _a, _k in bicim_sor], kullanilan_,
+                               anlam_) if mo else {}
             for g in sor:
                 k = g["kisaltma"]
                 if k in cevap:
