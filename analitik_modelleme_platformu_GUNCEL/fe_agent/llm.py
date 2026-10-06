@@ -429,10 +429,15 @@ DOGRULA (yazmadan once her iddiayi kolonun bilgileriyle kontrol et):
     kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
     cikiyorsa yazilir; cikmiyorsa birim UYDURMA, VERI SETI adinin
     anlattigi kaydi ya da genel bir ifade kullan.
-  - DEGERLER: dagilim ozetinden KESIN cikan bilgiyi yaz: deger araligi
-    (min-maks), her satirda farkli mi yoksa tekrar ediyor mu (tekil
-    sayisi satir sayisindan azsa degerler tekrar ediyor), bayrakta 1'in
-    anlami, kategorik siniflar.
+  - ISTATISTIK YALNIZ CIKARIM ICIN: dagilim, tekil sayisi ve satir
+    sayisindan kolonun NE oldugunu cikar (adet, tutar, oran, bayrak,
+    kimlik, sira numarasi, kod ...) ama bu sayilari ACIKLAMAYA YAZMA:
+    deger araligi (X ile Y arasi), tekil / farkli deger sayisi, satir
+    sayisi, "cogunlukla 0", "degerler tekrar eder" gibi ifadeler tanim
+    degildir; veri degisince yanlis olur.
+  - ANLAMI TANIMLAYAN bilgiyi yaz: ne olculdugu, birimi, zaman penceresi,
+    bayrakta 1'in anlami, kategorik siniflarin anlami, bicim (ornegin
+    YYYYAA biciminde donem).
   - Adla ya da dagilimla celisen bilgi yazma.
 
 KIM OKUYACAK: bu tanimlar ileride hem analistin hem de dil modelinin
@@ -672,6 +677,52 @@ def _tr_buyuk(metin):
     return str(metin).replace("i", "İ").replace("ı", "I").upper()
 
 
+# TANIMDA ISTATISTIK OLMAZ: veri dosyasina bagli ifadeler (aralik, tekil
+# / satir sayisi, "cogunlukla 0", tekrar) aciklamadan cumle parcasi olarak
+# atilir. Bicim ("202506 biciminde") ve bayrak anlami ("1 degeri ...")
+# kalir.
+_ISTATISTIK = [
+    re.compile(r"\d[\d.,]*\s*(ile|ila|-|–)\s*-?\d[\d.,]*\s*(aras|aral)", re.I),
+    re.compile(r"(çoğunlukla|cogunlukla|genellikle|çoğu)\s+(değer\w*\s+)?-?\d", re.I),
+    re.compile(r"değerler(i)?\s+(sık\s+)?tekrar", re.I),
+    re.compile(r"\d[\d.,]*\s*(satır|satir|kayıt)\w*\s*(da|de|ta|te)\b", re.I),
+    re.compile(r"\d[\d.,]*\s*(farklı|farkli|tekil)\s+değer", re.I),
+    re.compile(r"(min|maks|medyan|ortanca)\w*\s*[:=]?\s*-?\d", re.I),
+]
+
+
+_ARALIK_IFADE = re.compile(
+    r"-?\d[\d.,]*\s*(ile|ila|-|–)\s*-?\d[\d.,]*\s*(arası(nda)?|aralığında)\s*", re.I)
+
+
+def istatistik_temizle(metin):
+    """Aciklamadan istatistik iceren cumle parcalarini (; ve , ile
+    ayrilan) atar; hepsi istatistikse metni oldugu gibi birakir."""
+    m = str(metin or "").strip()
+    parca = re.split(r"(\s*[;,]\s*)", m)
+    kalan = []
+    for i in range(0, len(parca), 2):
+        p = parca[i]
+        if any(k.search(p) for k in _ISTATISTIK):
+            # Aralik bir anlam parcasinin icindeyse ("X-Y arasi <ne>")
+            # yalniz aralik atilir, anlam kalir.
+            p = _ARALIK_IFADE.sub(" ", p)
+            p = re.sub(r"\s+", " ", p).strip()
+            if len(p.split()) < 2 or any(k.search(p) for k in _ISTATISTIK):
+                continue
+        if kalan and i > 0:
+            kalan.append(parca[i - 1])
+        kalan.append(p)
+    sonuc = "".join(kalan).strip(" ;,")
+    # "... ve" / "... ile" gibi kesik sonlari temizle
+    sonuc = re.sub(r"\s+(ve|ile|veya)$", "", sonuc).strip(" ;,")
+    if not sonuc:
+        return m
+    if m.endswith(".") and not sonuc.endswith("."):
+        sonuc += "."
+    return sonuc
+
+
 def tarza_uydur(metin, tarz):
     """Olculebilen tarz kurallarini metne uygular (nokta, bas harf)."""
     m = re.sub(r"\s+", " ", str(metin or "")).strip()
@@ -756,7 +807,7 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
                 continue
             kategori = str(k.get("kategori", "")).strip().lower()
             sonuc[ad] = {
-                "aciklama": str(k.get("aciklama", "")).strip()[:300],
+                "aciklama": istatistik_temizle(str(k.get("aciklama", "")).strip())[:300],
                 "kategori": kategori if kategori in izinli else yedek_kategori,
             }
 
@@ -962,9 +1013,11 @@ DOGRULA:
     kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
     cikiyorsa yazilir. Cikmiyorsa adaylar ne derse desin o birimi YAZMA;
     VERI SETI adinin anlattigi kaydi ya da genel bir ifade kullan.
-  - DEGERLER: dagilim ozetinden KESIN cikan bilgiyi aciklamaya ekle,
-    adaylarda olmasa da: deger araligi (min-maks), her satirda farkli mi
-    yoksa tekrar ediyor mu, bayrakta 1'in anlami, kategorik siniflar.
+  - ISTATISTIK YALNIZ CIKARIM ICIN: dagilimdan kolonun ne oldugunu
+    cikar ama sayilari (deger araligi, tekil / satir sayisi, "cogunlukla
+    0", "degerler tekrar eder") aciklamaya YAZMA; adaylarda varsa at.
+    Anlami tanimlayan bilgiyi (bayrakta 1'in anlami, sinif anlamlari,
+    bicim) yaz.
   - Adaylarda olup dagilimla ya da adla celisen bilgi atilir.
   - Hicbir aday dogru degilse kendin yaz.
 
@@ -1120,7 +1173,7 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
         secilen = {}
         for k in (veri.get("kolonlar") or []):
             if isinstance(k, dict) and str(k.get("aciklama") or "").strip():
-                secilen[str(k.get("ad"))] = str(k["aciklama"]).strip()[:300]
+                secilen[str(k.get("ad"))] = istatistik_temizle(str(k["aciklama"]).strip())[:300]
         for p in tartisma:
             liste = adaylar[p["ad"]]
             if p["ad"] in secilen:

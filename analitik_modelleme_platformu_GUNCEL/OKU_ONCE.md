@@ -1,6 +1,20 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **"ResizeObserver loop" hata kutusu giderildi**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Açıklamalara istatistik yazılmaz (yalnız çıkarım için kullanılır)**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Yazar istemi: dağılım, tekil ve satır sayısı kolonun NE olduğunu
+  çıkarmak için kullanılır ama açıklamaya yazılmaz; değer aralığı
+  ("X ile Y arası"), tekil / farklı değer sayısı, satır sayısı,
+  "çoğunlukla 0", "değerler tekrar eder" tanım değildir, veri değişince
+  yanlış olur. Anlamı tanımlayan bilgi yazılır: ne ölçüldüğü, birim,
+  pencere, bayrakta 1'in anlamı, sınıf anlamları, biçim (YYYYAA gibi).
+  Aynı kural hakem isteminde de (`ACIKLAMA_HAKEMLI = True` iken).
+- Kod son kontrol (`llm.istatistik_temizle`): model yine de yazarsa
+  istatistik içeren cümle parçaları (";" ve "," ile ayrılan) atılır;
+  aralık bir anlam parçasının içindeyse yalnız aralık silinir. Biçim ve
+  bayrak anlamı kalır. Dil modeli çağrısı yok, süre değişmez.
+
+Önceki tur: **"ResizeObserver loop" hata kutusu giderildi**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - 01.2.3 açıklama kutusunun yüksekliği genişlik değişince aynı karede
   yeniden ölçülüyordu; tarayıcı zararsız bir uyarı veriyor, genel hata
