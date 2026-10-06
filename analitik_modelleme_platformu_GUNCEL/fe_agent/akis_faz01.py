@@ -2329,13 +2329,6 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
     Baslik, sayilar ve karar satirlari kartin ICINDE; adim ayrica metin
     dondurmez (bkz. kurulum_plan)."""
     kolon = int(profil.get("kolon") or 0)
-    sayisal = int(profil.get("sayisal") or 0)
-    tarih = int(profil.get("tarih") or 0)
-    kategorik = max(kolon - sayisal - tarih, 0)
-    tip_alt = "%s sayısal · %s kategorik" % (_sayi(sayisal), _sayi(kategorik))
-    if tarih:
-        tip_alt += " · %s tarih" % _sayi(tarih)
-
     eslesen = int(profil.get("eslesen") or 0)
     kapsam = profil.get("kapsam")
 
@@ -2350,16 +2343,14 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         # kart bir karar karti, blok durumu zaten "Yanıtınız Bekleniyor"
         # / "Tamamlandı" diyor.
         "rozet": "",
-        "ozet": [
-            {"etiket": "Baz Veri Seti", "deger": durum.get("veri_seti") or "",
-             "alt": ["%s satır · %s kolon"
-                     % (_sayi(profil.get("satir") or 0), _sayi(kolon)),
-                     tip_alt]},
-            _baz_sozluk_ozeti(durum, profil),
-        ],
+        # BAZ VERI SETI / BAZ SOZLUK kutulari YOK: ayni bilgi (daha
+        # ayrintili) sag panelde. Cikarilan sozluk satirlarinin sayisi
+        # kapsam satirinda.
+        "ozet": [],
         "kapsam": {"yuzde": kapsam, "tanimli": eslesen, "toplam": kolon,
-                   "metin": "%%%s: %s / %s kolon tanımlı"
-                            % (_ond(kapsam), _sayi(eslesen), _sayi(kolon))},
+                   "metin": "%%%s: %s / %s kolon tanımlı%s"
+                            % (_ond(kapsam), _sayi(eslesen), _sayi(kolon),
+                               _cikan_sozluk_notu(durum))},
         "tanimsiz": None,
         "buton_kalip": {
             "haric": "%s Kolonu Hariç Tut ve Devam Et",
@@ -2563,32 +2554,13 @@ def _zorunlu_etiketler(durum):
     return harita
 
 
-def _baz_sozluk_ozeti(durum, profil):
-    """Eksik Sozluk Tanimlari kartindaki Baz Sozluk blogu. Sozlukte olup
-    veri setinde olmayan satirlar calisma kopyasindan cikarilmistir
-    (sozluk_calisma.veri_setiyle_esitle); sayisi ve adlari burada."""
-    if durum.get("_sozluksuz"):
-        return {"etiket": "Baz Sözlük", "deger": "Seçilmedi",
-                "alt": ["Tanımlar bu adımda oluşturulur"]}
-    alt = ["%s tanım" % _sayi(profil.get("sozluk_satir") or 0)]
+def _cikan_sozluk_notu(durum):
+    """Kapsam satirina: veri setinde olmadigi icin sozlugun calisma
+    kopyasindan cikarilan satir sayisi (girdi sozluk degismez)."""
     e = durum.get("_sozluk_esitleme")
-    e = e if isinstance(e, dict) else {}
-    dusen_say = int(e.get("dusen") or 0)
-    bilgi = ("Sözlükte bulunan ama veri setinde karşılığı olmayan satırlar "
-             "sözlüğün çalışma kopyasından çıkarılır; girdi sözlük değişmez.")
-    if dusen_say:
-        alt.append("%s satır çıkarıldı (veri setinde yok)" % _sayi(dusen_say))
-        dusen = e.get("dusen_liste") or e.get("dusen_ornek") or []
-        bilgi += "\n\nÇıkarılan satırlar: " + _ad_listesi(dusen)
-        if len(dusen) < dusen_say:
-            bilgi += " (ilk %s ad gösteriliyor)" % _sayi(len(dusen))
-    if e.get("duzeltilen"):
-        bilgi += ("\n\nAdı yalnız büyük/küçük harf ya da Türkçe karakterle farklı olan "
-                  "%s satır silinmedi, veri setindeki yazıma çevrildi." % _sayi(e["duzeltilen"]))
-    if e.get("cift"):
-        bilgi += "\n\nAynı kolon için tekrarlanan %s satır teke indirildi." % _sayi(e["cift"])
-    return {"etiket": "Baz Sözlük", "deger": durum.get("sozluk") or "", "alt": alt,
-            "bilgi": bilgi if (dusen_say or e.get("duzeltilen") or e.get("cift")) else ""}
+    n = int((e or {}).get("dusen") or 0) if isinstance(e, dict) else 0
+    return (" · sözlükteki %s satır veri setinde olmadığı için çalışma kopyasından "
+            "çıkarıldı" % _sayi(n)) if n and not durum.get("_sozluksuz") else ""
 
 
 def sozluk_tanim_plan(durum):
@@ -2875,18 +2847,6 @@ def sozluk_tanim_uygula(durum):
     tanim_hafiza.arka_planda_ekle(hafiza, durum.get("veri_seti") or "",
                                   durum.get("_kullanici_ad") or "", amp_klasor_adi(durum))
     return (metin + kopya_not).strip()
-
-
-AD_LISTESI_EN_COK = 1000
-
-
-def _ad_listesi(adlar):
-    """i balonu icin ad listesi; cok uzunsa ilk AD_LISTESI_EN_COK ad ve kalan sayisi."""
-    adlar = sorted(str(a) for a in adlar)
-    metin = ", ".join(adlar[:AD_LISTESI_EN_COK])
-    if len(adlar) > AD_LISTESI_EN_COK:
-        metin += " ve %s ad daha" % _sayi(len(adlar) - AD_LISTESI_EN_COK)
-    return metin
 
 
 def _tanim_duzeltmelerini_uygula(durum, satirlar, is_duzeltmeleri):

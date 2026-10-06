@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü'nde İptal hemen durdurur**. Değiştir: `fe_agent/kisaltma_okuma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.3 Eksik Sözlük Tanımları'nda Baz Veri Seti / Baz Sözlük kutuları kaldırıldı**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Kart kapsam çubuğuyla başlar; veri seti ve sözlük bilgisi sağ panelde
+  (daha ayrıntılı) duruyor.
+- Sözlükte olup veri setinde olmadığı için çalışma kopyasından çıkarılan
+  satır sayısı kapsam satırına taşındı. Çıkarılan satırların adları artık
+  kartta listelenmiyor; sağ panelde yalnız sayısı var.
+
+Önceki tur: **Kısaltma Sözlüğü'nde İptal hemen durdurur**. Değiştir: `fe_agent/kisaltma_okuma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - İptal'e basınca iş, dil modelinde o an süren çağrıların bitmesini
   beklemeden durur; kart hemen "durduruldu" durumuna geçer. Süren
