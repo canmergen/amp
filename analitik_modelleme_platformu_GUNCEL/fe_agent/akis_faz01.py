@@ -2336,10 +2336,6 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
 
     Baslik, sayilar ve karar satirlari kartin ICINDE; adim ayrica metin
     dondurmez (bkz. kurulum_plan)."""
-    kolon = int(profil.get("kolon") or 0)
-    eslesen = int(profil.get("eslesen") or 0)
-    kapsam = profil.get("kapsam")
-
     alan = {
         "tip": "dogrulama",
         # Kart artik kendi adimi
@@ -2351,14 +2347,12 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         # kart bir karar karti, blok durumu zaten "Yanıtınız Bekleniyor"
         # / "Tamamlandı" diyor.
         "rozet": "",
-        # BAZ VERI SETI / BAZ SOZLUK kutulari YOK: ayni bilgi (daha
-        # ayrintili) sag panelde. Cikarilan sozluk satirlarinin sayisi
-        # kapsam satirinda.
+        # BAZ VERI SETI / BAZ SOZLUK kutulari ve KAPSAM CUBUGU YOK: ayni
+        # bilgi (daha ayrintili) sag panelde. Cikarilan sozluk satirlarinin
+        # sayisi kartin aciklamasinda.
         "ozet": [],
-        "kapsam": {"yuzde": kapsam, "tanimli": eslesen, "toplam": kolon,
-                   "metin": "%%%s: %s / %s kolon tanımlı%s"
-                            % (_ond(kapsam), _sayi(eslesen), _sayi(kolon),
-                               _cikan_sozluk_notu(durum))},
+        "kapsam": None,
+        "aciklama": _cikan_sozluk_notu(durum),
         "tanimsiz": None,
         "buton_kalip": {
             "haric": "%s Kolonu Hariç Tut ve Devam Et",
@@ -2567,8 +2561,9 @@ def _cikan_sozluk_notu(durum):
     kopyasindan cikarilan satir sayisi (girdi sozluk degismez)."""
     e = durum.get("_sozluk_esitleme")
     n = int((e or {}).get("dusen") or 0) if isinstance(e, dict) else 0
-    return (" · sözlükteki %s satır veri setinde olmadığı için çalışma kopyasından "
-            "çıkarıldı" % _sayi(n)) if n and not durum.get("_sozluksuz") else ""
+    return ("Sözlükteki %s satır veri setinde olmadığı için sözlüğün çalışma "
+            "kopyasından çıkarıldı; girdi sözlüğünüz değişmedi." % _sayi(n)) \
+        if n and not durum.get("_sozluksuz") else ""
 
 
 def sozluk_tanim_plan(durum):

@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.3 hızlandı (sonraki adımın işi önceden başlamıyor); açıklama önerilerinde işlem satırı ve İptal**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.3'te kapsam (oran) çubuğu kaldırıldı**. Değiştir: `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Kart doğrudan "Sözlükte Tanımı Bulunmayan Kolonlar" tablosuyla başlar;
+  kapsam oranı sağ panelde.
+- Sözlükte olup veri setinde olmadığı için çalışma kopyasından çıkarılan
+  satır varsa sayısı kartın üstünde tek cümleyle yazar.
+
+Önceki tur: **01.2.3 hızlandı (sonraki adımın işi önceden başlamıyor); açıklama önerilerinde işlem satırı ve İptal**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - ADIMLAR ÖNCEDEN ÇALIŞMAZ: Kısaltma Sözlüğü'nün okuması artık 01.2.3'te
   arka planda başlamaz, yalnız 01.2.4 açılınca başlar. Önceden başladığı
