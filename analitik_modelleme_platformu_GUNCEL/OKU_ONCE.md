@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Arka plan dil modeli işleri ayrı kuyrukta; zaman aşımı kuyrukta beklemeyi saymaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kart kararı yalnız kendi adımında uygulanır**. Değiştir: `fe_agent/akis_sohbet.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Karar kartları (01.2.3 ve sonrası) gönderdikleri karara kendi
+  adımlarını ekler. Arka uç kararı yalnız o adım şu an ekrandaysa
+  uygular; başka bir adıma ait karar gelirse (eski kart, ikinci sekme,
+  geç gelen istek) uygulanmaz, ekrandaki adım olduğu gibi kalır ve not
+  yazılır. Bir adımın kullanıcı onaylamadan geçmesi bu yoldan olamaz.
+
+Önceki tur: **Arka plan dil modeli işleri ayrı kuyrukta; zaman aşımı kuyrukta beklemeyi saymaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Dil modeli çağrıları iki kuyruğa ayrıldı: kullanıcının beklediği
   çağrılar (açıklama önerisi, tek kısaltma önerisi, ...) ve arka plan

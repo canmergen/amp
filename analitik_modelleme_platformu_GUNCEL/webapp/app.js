@@ -5774,6 +5774,8 @@ function dogrulamaOzetMetni(haricSayisi, ekleSayisi, duzeltSayisi) {
 }
 
 function dogrulamaKartiEkle(alan, blok) {
+    /* Kartın ait olduğu adım: karar yalnız bu adım ekrandayken uygulanır. */
+    const kartAdim = (blok && blok.adim) || "";
     const kart = document.createElement("div");
     kart.className = "secim-kart dg-kart";
 
@@ -6339,7 +6341,7 @@ function dogrulamaKartiEkle(alan, blok) {
             if (mesgul || kart.classList.contains("kilitli")) return;
             const ozet = "Tanım kontrolü yapılmadan devam edildi";
             kartiKilitle(ozet);
-            gonder(ozet, false, { dogrulama: { kontrol: [], atla: true } });
+            gonder(ozet, false, { dogrulama: { kontrol: [], atla: true, adim: kartAdim } });
         };
         dugmeler.appendChild(atlaBtn);
         /* Başlamadan önce ana düğmenin yapacağı bir şey yok. */
@@ -6354,7 +6356,7 @@ function dogrulamaKartiEkle(alan, blok) {
                 : adimModu === "birlesik" ? "Kısaltmalar birleştirilmeden devam edildi"
                 : "Kısaltmalar onaylanmadan devam edildi";
             kartiKilitle(ozet);
-            gonder(ozet, false, { dogrulama: { atla: true } });
+            gonder(ozet, false, { dogrulama: { atla: true, adim: kartAdim } });
         };
         dugmeler.appendChild(atlaBtn);
     }
@@ -6675,6 +6677,7 @@ function dogrulamaKartiEkle(alan, blok) {
         kartiKilitle(ozet);
         /* Sessiz gider (ikinci parametre false): kullanici bir cumle
            yazmadi, bir form doldurdu. */
+        karar.adim = kartAdim;
         gonder(ozet, false, { dogrulama: karar });
     };
 

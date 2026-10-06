@@ -450,6 +450,17 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
     # kalibina uymaz, mesaj serbest soru sanilir ve adim hic ilerlemez.
     if durum.get("_dogrulama_karari") is not None \
             and durum.get("bekleyen") == "onay":
+        # KARAR YALNIZ KENDI ADIMINDA UYGULANIR: kart hangi adima aitse
+        # ("adim") o adim su an ekranda degilse (eski kart, ikinci sekme,
+        # gec gelen istek) uygulanmaz; ekrandaki adim oldugu gibi kalir.
+        karar_adim = durum["_dogrulama_karari"].get("adim")
+        if karar_adim and karar_adim != anahtar:
+            durum.pop("_dogrulama_karari", None)
+            durum["_secenekler"] = onceki_secenekler
+            durum["_secim_alani"] = onceki_alan
+            return ("Bu karar «%s» adımına ait; şu an «%s» adımındasınız. "
+                    "Karar uygulanmadı, ekrandaki adımdan devam edin."
+                    % (adim_basligi(karar_adim), adim.get("baslik", anahtar)))
         return _onayi_uygula(durum, adim, anahtar)
 
     # 1) Acik soru: geri/onay/girdi kontrollerinden ONCE LLM'e.
