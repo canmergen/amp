@@ -1060,6 +1060,35 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
                 sonuc[p["ad"]] = {"aciklama": liste[0][1],
                                   "modeller": MODEL_ADLARI.get(liste[0][0], liste[0][0])}
 
+    # KAYNAK BILGISI (kartta aciklamanin "i"si): modele giden ozet ve
+    # baglam, adaylar, hangi modelin yazip hangisinin hakem oldugu.
+    baglam_metni = ""
+    try:
+        _b, govde = _baglamli_govde([p["ad"] for p in profiller], "", baglam)
+        baglam_metni = govde.rsplit("\n\nKOLONLAR:", 1)[0].strip() \
+            if "KOLONLAR:" in govde and govde.strip() != "KOLONLAR:" else ""
+    except Exception:
+        baglam_metni = ""
+    for p in profiller:
+        kayit = sonuc.get(p["ad"])
+        if not kayit:
+            continue
+        liste = adaylar.get(p["ad"]) or []
+        yazan = {a for a, _m in liste}
+        yazamayan = [a for a in yazarlar if a not in yazan]
+        parca = ["DİL MODELİNE GİDEN KOLON ÖZETİ (ham veri gitmez):",
+                 _profil_satiri(p).lstrip("- ")]
+        if baglam_metni:
+            parca += ["", "BAĞLAM (aynı gruptaki kolonlar için):", baglam_metni]
+        parca += ["", "ADAYLAR:"] + ["- %s: %s" % (MODEL_ADLARI.get(a, a), m)
+                                      for a, m in liste]
+        if yazamayan:
+            parca.append("Yanıt vermeyen yazar: " + ", ".join(
+                "%s (%s)" % (MODEL_ADLARI.get(a, a), str(ork._son.get(a) or "boş cevap")[:80])
+                for a in yazamayan))
+        parca += ["", "SEÇİLEN: " + str(kayit.get("modeller") or "")]
+        kayit["kaynak_bilgi"] = "\n".join(parca)[:3000]
+
     for kayit in sonuc.values():
         kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)[:300]
     # TURKCE KAPISI: tamamen Turkce olmayan oneri yeniden yazdirilir;

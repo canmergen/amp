@@ -2157,7 +2157,8 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
                     # YALNIZ ACIKLAMA (+ hangi modellerden geldigi):
                     # kategori alani bilerek okunmuyor.
                     yeni[str(ad)] = {"aciklama": aciklama[:300],
-                                     "modeller": kayit_s.get("modeller") or ""}
+                                     "modeller": kayit_s.get("modeller") or "",
+                                     "kaynak_bilgi": kayit_s.get("kaynak_bilgi") or ""}
         except Exception as e:
             # Bu grup onerisiz kalir, digerleri gelir. AMA SESSIZ DEGIL:
             # sayac ve son hata kart ustunde yaziliyor.

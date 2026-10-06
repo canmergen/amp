@@ -6095,7 +6095,11 @@ function dogrulamaKartiEkle(alan, blok) {
                 durumTazele();
             });
             giris._vurgu();
-            tdA.appendChild(giris);
+            /* Açıklama kutusu + öneri gelince "i": açıklamanın nereden
+               geldiği (modele giden özet, bağlam, adaylar, modeller). */
+            const kapA = elYap("div", "dg-anlam-kap");
+            kapA.appendChild(giris);
+            tdA.appendChild(kapA);
             tr.appendChild(tdA);
             girisler.push(giris);
 
@@ -6637,6 +6641,10 @@ function dogrulamaKartiEkle(alan, blok) {
             }
             g.dataset.oneriMetin = tireSade(ack);
             if (k.modeller) g.title = "Öneren: " + tireSade(k.modeller);
+            if (k.kaynak_bilgi && g.parentElement
+                    && !g.parentElement.querySelector(".bolme-info"))
+                g.parentElement.appendChild(bolmeBilgiSimgesi(
+                    tireSade(k.kaynak_bilgi), s.kolon + " açıklamasının kaynağı"));
             if (k.kaynak === "hafiza" && satirElemanlari[i]
                     && !satirElemanlari[i].querySelector(".dg-hafiza")) {
                 hafizaCipi(satirElemanlari[i].querySelector(".dg-kolon"),

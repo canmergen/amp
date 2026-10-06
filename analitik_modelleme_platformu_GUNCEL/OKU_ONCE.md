@@ -1,6 +1,17 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklama önerilerinin hakemi yine düşünen model (yalnız orada)**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.3'te her açıklama önerisinin kaynağı "i"de**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Öneri gelen açıklamanın yanında "i": dil modeline giden kolon özeti
+  (tip, boş oranı, tekil / satır, dağılım, rol), bağlam (veri seti adı,
+  yazım tarzı, kısaltmalar, örnek ve onaylı tanımlar), yazarların
+  adayları, yanıt vermeyen yazar ve sebebi, seçenin kim olduğu (hakem).
+- Bir açıklamadaki bilginin nereden geldiği (örneğin sözlükteki benzer
+  adlı bir örnek tanım) buradan görülür.
+- Bağlam bloğu aynı gruptaki kolonlar için ortaktır (modele grup olarak
+  gider).
+
+Önceki tur: **Açıklama önerilerinin hakemi yine düşünen model (yalnız orada)**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Hızlı hakem, sıkılaştırılmış isteme rağmen tanımı olmayan kolonlarda
   birim uydurdu ve değer aralığını eklemedi. Düşünen Qwen modeli yalnız
