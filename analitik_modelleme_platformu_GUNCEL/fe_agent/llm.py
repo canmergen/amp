@@ -30,14 +30,15 @@ from fe_agent import ifade as ifade_mod
 #   openai:<baglanti_adi>:<model_adi>
 # Model adinda nokta YOK (dropdown'da gorunen isimle ayni degil).
 LLAMA = "openai:dataiku-llama-31-70b-instruct-gptq-int4:meta-llama-31-70b-instruct-gptq-int4"
-QWEN  = "openai:dataiku-qwen3-30b-a3b-thinking-2507-fp8:qwen3-30b-a3b-thinking-2507-fp8"
 # LLM Connections'a sonradan eklenen model (dropdown: qwen38-flash-next-fp8).
 # Id yazimi ekrandaki baglanti / model adindan; Dataiku'da dogrulamak icin:
 #   [l["id"] for l in dataiku.api_client().get_default_project().list_llms()]
 QWEN_FLASH = "openai:dataiku-qwen38-flash-next-fp8:qwen38-flash-next-fp8"
 
 # Karsilastirma testinin (karsilastir) denedigi modeller.
-MODELLER = {"llama": LLAMA, "qwen_thinking": QWEN, "qwen_flash": QWEN_FLASH}
+# Dusunen (thinking) model kullanilmiyor: cevaptan once uzun muhakeme
+# uretiyor, kapatilamiyor ve kaliteye belirgin katki gorulmedi.
+MODELLER = {"llama": LLAMA, "qwen_flash": QWEN_FLASH}
 
 # Varsayilan: Llama. Instruct-tuned oldugu icin JSON formatina daha sadik.
 VARSAYILAN_MODEL = LLAMA
@@ -109,8 +110,7 @@ def _tek_cagri(sistem, kullanici, model, sicaklik, en_cok=None):
     comp.with_message(kullanici, role="user")
     comp.settings["temperature"] = sicaklik   # dusuk = daha kararli JSON
     # CIKTI SINIRI: model yalniz cevabi yazsin (JSON'dan sonra aciklama,
-    # gereksiz uzunluk yok). Dusunen modelde kullanilmaz: muhakemesi de
-    # bu sinirdan yer.
+    # gereksiz uzunluk yok).
     if en_cok:
         comp.settings["maxOutputTokens"] = int(en_cok)
     return comp.execute().text or ""
@@ -134,7 +134,7 @@ def _cagir(sistem, kullanici, model=None, sicaklik=0.2,
             def _is(sistem=sistem, kullanici=kullanici, model=model,
                     sicaklik=sicaklik, basladi=basladi):
                 basladi.set()
-                if en_cok and model != QWEN:
+                if en_cok:
                     return _tek_cagri(sistem, kullanici, model, sicaklik, en_cok=en_cok)
                 return _tek_cagri(sistem, kullanici, model, sicaklik)
 
@@ -779,17 +779,15 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
 # kart ustunde hangi modelin kullanilamadigi yazar.
 ORKESTRA = {
     "yazarlar": ("llama", "qwen_flash"),
-    # HAKEM DUSUNMEYEN MODEL: dusunen model cevaptan once uzun muhakeme
-    # uretiyor ve kapatilamiyor (yavas).
     "hakem": ("llama", "qwen_flash"),
     "tarayici": ("qwen_flash", "llama"),
-    "denetci": ("llama", "qwen_thinking"),
-    # KISALTMA SOZLUGU: dusunen model kullanilmaz (yavas). Okuma ve
-    # standart onerisi tek model; cevap veremezse siradaki.
+    "denetci": ("llama", "qwen_flash"),
+    # KISALTMA SOZLUGU: okuma ve standart onerisi tek model; cevap
+    # veremezse siradaki.
     "kisaltma_okuma": ("llama", "qwen_flash"),
     "kisaltma_oneri": ("llama", "qwen_flash"),
 }
-# Dusunen model yavas: kisaltma cagrilarinda zaman asimi daha uzun.
+# Kisaltma cagrilari daha uzun cikti yazar: zaman asimi daha uzun.
 KISALTMA_ZAMAN_ASIMI = 120.0
 # ACIKLAMA ONERILERI: iki yazar paralel calistigi icin takilan model
 # erken birakilir (yeniden deneme yok), digerinin cevabi kullanilir.
@@ -802,8 +800,7 @@ ACIKLAMA_TOKEN_KOLON = 200
 
 def aciklama_token_siniri(kolon_sayisi):
     return ACIKLAMA_TOKEN_TABAN + ACIKLAMA_TOKEN_KOLON * max(1, int(kolon_sayisi or 1))
-MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_thinking": "Qwen 3 Thinking",
-                "qwen_flash": "Qwen Flash"}
+MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_flash": "Qwen Flash"}
 ORKESTRA_DUSME_SINIRI = 2
 _ORKESTRA_HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
 
@@ -2216,8 +2213,7 @@ def karsilastir(modeller=None, tekrar=1, gorevler=("sozluk",), zaman_asimi=45.0)
                     if gorev == "sozluk":
                         sonuc, hata = sozluk_aciklama_uret(
                             kolonlar, parca=len(kolonlar), baglam=baglam, model=model,
-                            en_cok=aciklama_token_siniri(len(kolonlar))
-                            if model != QWEN else None)
+                            en_cok=aciklama_token_siniri(len(kolonlar)))
                     else:
                         sonuc, hata = sfa_karar_ver(sfa_girdi)
                     sureler.append(round(time.time() - t0, 1))
@@ -2316,7 +2312,7 @@ def soru_cevapla(soru, baglam, gecmis=None):
     except Exception as e:
         return None, _hata_metni(e)
 
-    # Thinking modelleri (Qwen) muhakemeyi <think> icinde donduruyor; at.
+    # Bir model muhakemeyi <think> icinde dondurebilir; at.
     # Tek yer: _think_temizle — acilissiz </think> durumu da orada.
     metin = _think_temizle(ham)
 

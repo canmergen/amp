@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklama önerileri ve kısaltma okuması sürerken de avatar düşünen hâle geçer**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Düşünen (thinking) Qwen modeli tamamen çıkarıldı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Model listesinde yalnız Llama 3.1 70B ve Qwen Flash kaldı. Düşünen
+  model hakemlikten önceki turda çıkmıştı; son kullanıldığı yer
+  (akıştan çıkarılmış tanım kontrolünün denetçi rolü) Qwen Flash oldu.
+- Hız testi (`llm.karsilastir()`) artık iki modeli dener.
+- Bir model cevabında <think> bloğu döndürürse temizleme kodu yerinde
+  duruyor.
+
+Önceki tur: **Açıklama önerileri ve kısaltma okuması sürerken de avatar düşünen hâle geçer**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Avatar yalnız sohbet isteği sürerken değişiyordu; 01.2.3'teki açıklama
   önerileri ve Kısaltma Sözlüğü okuması kartın kendi işlem satırını
