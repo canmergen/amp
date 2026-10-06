@@ -1,6 +1,23 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.3 açıklama kutusu gerçekten büyüyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Açıklama önerilerini tek model yazar (Qwen Flash), hakem yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- 01.2.3 açıklama önerilerini yalnız Qwen Flash yazar; cevap vermezse
+  Llama 70B yazar. Hakem çağrılmaz; tek çağrı olduğu için en hızlı düzen.
+- Hakem istemindeki doğrulama kuralları yazar istemine taşındı:
+  - birim (müşteri, hesap, işlem, kayıt ...) yalnız kolon adından,
+    veri seti adından ya da örnek / onaylı tanımlardan çıkıyorsa
+    yazılır, uydurulmaz;
+  - dağılımdan kesin çıkan bilgi yazılır: değer aralığı, değerlerin
+    tekrar edip etmediği (tekil sayısı satır sayısından azsa), bayrakta
+    1'in anlamı, kategorik sınıflar;
+  - adla ya da dağılımla çelişen bilgi yazılmaz.
+- Açıklamanın "i"sinde yazan model ("tek yazar, hakem yok") ve varsa
+  yanıt vermeyen model görünür.
+- Eski düzene (iki yazar paralel + düşünen hakem) dönmek için `llm.py`
+  başında `ACIKLAMA_HAKEMLI = True`. Yazar sırası `ACIKLAMA_YAZARLARI`.
+
+Önceki tur: **01.2.3 açıklama kutusu gerçekten büyüyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Kutu öneri gelince ölçülüyor, hemen ardından yanına "i" eklenip
   daraldığı için son kelime alt satıra kayıp gizli kalıyordu. Artık

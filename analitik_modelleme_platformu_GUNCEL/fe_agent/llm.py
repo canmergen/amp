@@ -424,6 +424,17 @@ ceyrekler birimi ve olcegi gosterir (oran 0-1, tutar, adet, gun);
 kategorik etiketler ne siniflandirildigini gosterir. Adla icerik
 celisirse icerige uy.
 
+DOGRULA (yazmadan once her iddiayi kolonun bilgileriyle kontrol et):
+  - KONU: aciklamadaki birim (musteri, hesap, islem, kayit ...) yalniz
+    kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
+    cikiyorsa yazilir; cikmiyorsa birim UYDURMA, VERI SETI adinin
+    anlattigi kaydi ya da genel bir ifade kullan.
+  - DEGERLER: dagilim ozetinden KESIN cikan bilgiyi yaz: deger araligi
+    (min-maks), her satirda farkli mi yoksa tekrar ediyor mu (tekil
+    sayisi satir sayisindan azsa degerler tekrar ediyor), bayrakta 1'in
+    anlami, kategorik siniflar.
+  - Adla ya da dagilimla celisen bilgi yazma.
+
 KIM OKUYACAK: bu tanimlar ileride hem analistin hem de dil modelinin
 degisken uretirken ve elerken tek bilgi kaynagi olacak. Tanim, kolon
 adini ve veriyi gormeyen birinin kolonu dogru kullanabilecegi kadar
@@ -804,6 +815,10 @@ ACIKLAMA_ZAMAN_ASIMI = 45.0
 ACIKLAMA_DENEME = 1
 # Dusunen hakem cevaptan once muhakeme yazar: suresi daha uzun.
 ACIKLAMA_HAKEM_ZAMAN_ASIMI = 120.0
+# ACIKLAMA DUZENI: False -> tek yazar (ACIKLAMA_YAZARLARI sirasiyla ilk
+# cevap veren), hakem yok. True -> iki yazar paralel + dusunen hakem.
+ACIKLAMA_HAKEMLI = False
+ACIKLAMA_YAZARLARI = ("qwen_flash", "llama")
 # Cikti siniri (token): sabit pay + kolon basina pay.
 ACIKLAMA_TOKEN_TABAN = 200
 ACIKLAMA_TOKEN_KOLON = 200
@@ -970,6 +985,67 @@ CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
     + SINIRLAYICI_KURALI
 
 
+def _aciklama_tek_yazar(profiller, baglam, ork, tarz):
+    """TEK YAZAR (ACIKLAMA_HAKEMLI=False): aciklamayi ACIKLAMA_YAZARLARI
+    sirasiyla ilk cevap veren model yazar; hakem yok. Doner: (sonuc, hata)."""
+    sonuc, son_hata, denenen = {}, "", []
+    for ad in ACIKLAMA_YAZARLARI:
+        if not ork.uygun_mu(ad):
+            continue
+        denenen.append(ad)
+        try:
+            cevap, hata = sozluk_aciklama_uret(
+                profiller, parca=len(profiller), baglam=baglam, model=MODELLER[ad],
+                zaman_asimi=ACIKLAMA_ZAMAN_ASIMI, deneme=ACIKLAMA_DENEME,
+                en_cok=aciklama_token_siniri(len(profiller)))
+        except Exception as e:
+            cevap, hata = {}, _hata_metni(e)
+        with ork._kilit:
+            if cevap:
+                ork._hata[ad] = 0
+            else:
+                ork._hata[ad] = ork._hata.get(ad, 0) + 1
+                m = re.search(r"son hata: (.*)\)$", str(hata or ""))
+                ork._son[ad] = (m.group(1) if m else hata) or "boş cevap"
+        for kolon, k in (cevap or {}).items():
+            metin = str((k or {}).get("aciklama") or "").strip()
+            if metin and kolon not in sonuc:
+                sonuc[kolon] = {"aciklama": metin[:300], "modeller": MODEL_ADLARI.get(ad, ad),
+                                "_yazar": ad}
+        if all(p["ad"] in sonuc for p in profiller):
+            break
+        son_hata = hata or son_hata
+    if not sonuc:
+        return {}, "Dil modeli açıklama döndürmedi (%s)." % (son_hata or "boş cevap")
+    baglam_metni = ""
+    try:
+        _b, govde = _baglamli_govde([p["ad"] for p in profiller], "", baglam)
+        baglam_metni = govde.rsplit("\n\nKOLONLAR:", 1)[0].strip() \
+            if "KOLONLAR:" in govde and govde.strip() != "KOLONLAR:" else ""
+    except Exception:
+        pass
+    for p in profiller:
+        kayit = sonuc.get(p["ad"])
+        if not kayit:
+            continue
+        yazan = kayit.pop("_yazar")
+        parca = ["DİL MODELİNE GİDEN KOLON ÖZETİ (ham veri gitmez):",
+                 _profil_satiri(p).lstrip("- ")]
+        if baglam_metni:
+            parca += ["", "BAĞLAM (aynı gruptaki kolonlar için):", baglam_metni]
+        once = [a for a in denenen[:denenen.index(yazan)]]
+        if once:
+            parca.append("")
+            parca.append("Yanıt vermeyen model: " + ", ".join(
+                "%s (%s)" % (MODEL_ADLARI.get(a, a), str(ork._son.get(a) or "boş cevap")[:80])
+                for a in once))
+        parca += ["", "YAZAN: %s (tek yazar, hakem yok)" % MODEL_ADLARI.get(yazan, yazan)]
+        kayit["kaynak_bilgi"] = "\n".join(parca)[:3000]
+    for kayit in sonuc.values():
+        kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)[:300]
+    return _turkce_kapisi(sonuc, profiller, baglam, ork)
+
+
 def aciklama_orkestra(profiller, baglam=None, orkestra=None):
     """Tanimsiz kolonlar icin coklu model aciklamasi (tek grup).
 
@@ -984,6 +1060,8 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
         yazarlar = ork.modeller("hakem")[:1]
     if not yazarlar:
         return {}, "Kullanılabilir dil modeli kalmadı."
+    if not ACIKLAMA_HAKEMLI:
+        return _aciklama_tek_yazar(profiller, baglam, ork, tarz)
 
     def yaz(ad):
         try:
@@ -1096,8 +1174,13 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
 
     for kayit in sonuc.values():
         kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)[:300]
-    # TURKCE KAPISI: tamamen Turkce olmayan oneri yeniden yazdirilir;
-    # yazilamazsa oneri GOSTERILMEZ. Kolon onerisiz kalir, aciklamayi kullanici yazar.
+    return _turkce_kapisi(sonuc, profiller, baglam, ork)
+
+
+def _turkce_kapisi(sonuc, profiller, baglam, ork):
+    """TURKCE KAPISI: tamamen Turkce olmayan oneri yeniden yazdirilir;
+    yazilamazsa oneri GOSTERILMEZ. Kolon onerisiz kalir, aciklamayi
+    kullanici yazar. Doner: (sonuc, None)."""
     sorunlu = [dict(p, kaynak=sonuc[p["ad"]]["aciklama"]) for p in profiller
                if p["ad"] in sonuc and turkce_sorunu(sonuc[p["ad"]]["aciklama"])]
     if sorunlu:
