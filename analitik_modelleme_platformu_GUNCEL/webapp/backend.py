@@ -2653,6 +2653,20 @@ def kisaltma_alani_endpoint():
         return jsonify(_hata_govdesi("kisaltma_alani", e)), 200
 
 
+@app.route("/kisaltma_oneri", methods=["POST"])
+def kisaltma_oneri_endpoint():
+    """Kisaltma kartinda LLM Karar duzenlenince o satirin onerilen
+    kisaltmasi yeni anlamla (durum kaydedilmez)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        sonuc = akis.kisaltma_tek_oneri(durum, istek.get("kisaltma"), istek.get("anlam"))
+        return jsonify(dict(sonuc, tamam=not sonuc.get("hata")))
+    except Exception as e:
+        return jsonify(_hata_govdesi("kisaltma_oneri", e)), 200
+
+
 @app.route("/kisaltma_iptal", methods=["POST"])
 def kisaltma_iptal_endpoint():
     """Kisaltma Sozlugu: suren dil modeli kontrolunu durdurur; gelen

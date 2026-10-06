@@ -7308,6 +7308,35 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const b = y.value.toUpperCase().replace(/[^A-Z0-9_]/g, "");
                 if (b !== y.value) y.value = b;
             });
+            /* LLM KARAR DÜZENLENİNCE ÖNERİ YENİDEN: kutudan çıkılınca o
+               satırın önerisi yeni anlamla, adlandırma dilinde sorulur.
+               Önerilen Kısaltma elle değiştirildiyse ona dokunulmaz. */
+            let yOto = String(r.yeni_kisaltma || ""), sonAnlam = g.value.trim(), oneriNo = 0;
+            g.addEventListener("change", () => {
+                const anlam = g.value.trim();
+                if (anlam === sonAnlam || y.value !== yOto) return;
+                sonAnlam = anlam;
+                const no = ++oneriNo;
+                if (!anlam || anlam === tireSade(r.anlam || "").trim()) {
+                    yOto = String(r.yeni_kisaltma || ""); y.value = yOto; y.placeholder = "";
+                    vurgu();
+                    return;
+                }
+                y.value = ""; yOto = ""; y.placeholder = "öneri güncelleniyor…";
+                fetch(getWebAppBackendUrl("kisaltma_oneri"), {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(ftKimlikGovdesi({ kisaltma: r.kisaltma, anlam: anlam }))
+                })
+                .then(c => c.json())
+                .then(c => {
+                    if (no !== oneriNo || y.value !== "") return;
+                    y.placeholder = c && c.hata ? "öneri alınamadı" : "";
+                    yOto = String((c && c.yeni_kisaltma) || "");
+                    y.value = yOto;
+                    vurgu();
+                })
+                .catch(() => { if (no === oneriNo) y.placeholder = "öneri alınamadı"; });
+            });
             tr.appendChild(tdY);
             const tdI = elYap("td", "dg-ekle-hucre");
             const kutu = document.createElement("input");

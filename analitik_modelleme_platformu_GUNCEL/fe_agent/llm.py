@@ -1891,6 +1891,28 @@ def _kolon_ad_satiri(g):
                                                      parca or "-")
 
 
+def kisaltma_tek_oneri(kisa, anlam, kalip="", dil="", kullanilan=(), orkestra=None):
+    """Tek kisaltma (ya da sayi degerli bicim) icin, kullanicinin
+    duzenledigi anlamdan okunur kisaltma onerisi. Doner: (yeni, gerekce,
+    hata); oneri gerekmiyorsa yeni bos."""
+    kisa, anlam = str(kisa or "").strip().upper(), str(anlam or "").strip()
+    if not kisa or not anlam:
+        return "", "", None
+    ork = orkestra or Orkestra()
+    g = {"kisaltma": kisa, "kolon": 0}
+    kalip_ = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n" % kalip
+              if kalip else "")
+    m, v = ork.json_cagir(ork.modeller("kisaltma_1"), SISTEM_KISALTMA_ONERI,
+                          _veri_blogu("KISALTMALAR:", dil_satiri(dil) + kalip_
+                                      + _oneri_satiri(g, anlam)),
+                          0.1, zaman_asimi=KISALTMA_ZAMAN_ASIMI)
+    if not m:
+        return "", "", "Dil modeline ulaşılamadı."
+    cevap = _oneri_oku(v, [g], set(kullanilan or ()) - {kisa}, {kisa: anlam}, dil)
+    yeni, gerekce = cevap.get(kisa, ("", ""))
+    return yeni, gerekce, None
+
+
 def kolon_ad_ekleme(eski, yeni, onayli, yeni_kisaltmalar=None):
     """Modelin onerdigi adi denetler. Doner: (ad, [(kisaltma, anlam,
     yeni_mi)]) ya da None. Kosullar: eski adin butun parcalari ayni sirada

@@ -2192,6 +2192,29 @@ def kisaltma_alani(durum):
     return _kisaltma_alani(durum, 0.0)
 
 
+def kisaltma_tek_oneri(durum, kisa, anlam):
+    """Kartta LLM Karar duzenlenince o satirin onerisi yeni anlamla:
+    {"kisaltma", "yeni_kisaltma", "gerekce", "hata"}. Adlandirma dili ve
+    kalibi bu veri setinin kisaltmalarindan."""
+    kaynak = _kisaltma_kaynagi(durum)
+    try:
+        oner, _d = kisaltma_mod.oneriler(kaynak, 0.0, durum.get("veri_seti") or "")
+    except Exception:
+        oner = {}
+    anlamlar = {k: o.get("anlam") or "" for k, o in oner.items()}
+    try:
+        anlamlar.update(kisaltma_mod.onaylilar())
+    except Exception:
+        pass
+    agirlik = Counter(p for ad, t in kaynak.items() if str(t or "").strip()
+                      for p in set(kisaltma_mod.parcalar(ad)))
+    kalip = ", ".join(p for p, _n in agirlik.most_common(20))
+    yeni, gerekce, hata = llm_mod.kisaltma_tek_oneri(
+        kisa, anlam, kalip, llm_mod.adlandirma_dili(anlamlar, agirlik), set(agirlik))
+    return {"kisaltma": str(kisa or "").strip().upper(), "yeni_kisaltma": yeni,
+            "gerekce": gerekce, "hata": hata or ""}
+
+
 def kisaltma_iptal(durum):
     """Kisaltma Sozlugu: suren dil modeli kontrolunu durdurur."""
     kisaltma_mod.dogrulama_iptal(_kisaltma_kaynagi(durum), durum.get("veri_seti") or "")

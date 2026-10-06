@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Önerilen kısaltmanın dili kolon adlarının diliyle aynı**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **LLM Karar düzenlenince önerilen kısaltma yeni anlamla güncellenir**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- 01.2.4 kartında bir satırın LLM Karar kutusu değiştirilip kutudan
+  çıkılınca, o satırın Önerilen Kısaltma'sı yeni anlamla dil modeline
+  yeniden sorulur (`/kisaltma_oneri`). Beklerken kutuda
+  "öneri güncelleniyor…" yazar.
+- Öneri, ana akıştaki kurallarla üretilir: aynı adlandırma dili ve
+  kalıbı satırı, aynı eleme (geçersiz, mevcutla aynı, ünlüleri atılmış
+  hali, veri setinde zaten kullanılan bir kısaltma; dil İngilizceyse
+  Türkçe anlamdan türetilmiş kısaltma). Gerekmiyorsa kutu boş kalır.
+- Önerilen Kısaltma elle değiştirildiyse dokunulmaz. Anlam ilk haline
+  döndürülürse ilk öneri geri gelir; anlam silinirse istek gitmez.
+- Sayı değerli biçim satırları da kendi anlamlarıyla aynı şekilde
+  güncellenir. Durum kaydedilmez; seçim "Seçilenleri Onayla" ile
+  her zamanki gibi kaydedilir.
+
+Önceki tur: **Önerilen kısaltmanın dili kolon adlarının diliyle aynı**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Adlandırma dili koddan belirlenir: bir kısaltmanın harfleri (ilk harf
   dahil) Türkçe anlamının harflerinde sırayla geçiyorsa Türkçe kelimeden
