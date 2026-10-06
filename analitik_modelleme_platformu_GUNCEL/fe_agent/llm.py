@@ -1380,7 +1380,36 @@ def _anlamdan_turetilmis(yeni, anlam):
     if not y or not a:
         return False
     it = iter(a)
-    return all(h in it for h in y) and len(y) >= 0.5 * len(a)
+    if all(h in it for h in y) and len(y) >= 0.5 * len(a):
+        return True
+    return _turkce_turetilmis(yeni, anlam)
+
+
+def _turkce_turetilmis(yeni, anlam):
+    """Oneri anlamin TURKCE kelimelerinden mi kisaltilmis: harfleri (ilk
+    harf ilk harfle) anlamin harflerinde sirayla geciyor, ya da bir parcasi
+    anlamdaki bir kelimeyle basliyor ya da o kelimenin kisaltmasi. Dil
+    Ingilizce iken bu oneriler dusurulur."""
+    a_kel = [re.sub(r"[^A-Z]", "", w) for w in
+             str(anlam or "").translate(_TR_BUYUK).upper().split()]
+    a_kel = [w for w in a_kel if len(w) >= 2]
+    if not a_kel:
+        return False
+    tum = "".join(a_kel)
+    y = re.sub(r"[^A-Z]", "", str(yeni or "").upper())
+
+    def sirali(harf, kaynak):
+        it = iter(kaynak)
+        return bool(harf) and harf[0] == kaynak[0] and all(h in it for h in harf)
+
+    if len(y) >= 2 and sirali(y, tum):
+        return True
+    for p in re.split(r"[_0-9]+", str(yeni or "").upper()):
+        if len(p) < 2:
+            continue
+        if any(p.startswith(w) or sirali(p, w) for w in a_kel):
+            return True
+    return False
 
 
 def adlandirma_dili(anlamlar, agirlik=None):
@@ -1643,7 +1672,7 @@ def _kisaltma_oku(veri, girdi, ek=None):
     return cikti
 
 
-def kisaltma_dogrula(girdi, orkestra=None, ara=None):
+def kisaltma_dogrula(girdi, orkestra=None, ara=None, bilinen=None):
     """girdi: [{"kisaltma", "anlam" (sozlukten, bos olabilir),
     "ornekler": [(kolon, tanim)]}].
     1) sozlugu gormeden genel anlam (kor), 2) iki model hangi adayin dogru
@@ -1818,9 +1847,15 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
             pass
     # Adlandirma dili: genel anlam (yoksa sozluk sayimi) ile kisaltmanin
     # harfleri karsilastirilir (bkz. adlandirma_dili).
-    dil_ = adlandirma_dili({g["kisaltma"]: genel_.get(g["kisaltma"]) or g.get("anlam") or ""
-                            for g in girdi},
-                           {g["kisaltma"]: g.get("kolon") or 1 for g in girdi})
+    # bilinen: {KISA: (anlam, kolon)} - modele sorulmayan (onayli)
+    # kisaltmalar da dile katilir; yalniz sorulanlara bakmak dili
+    # yaniltir.
+    dil_anlam = {k: a for k, (a, _n) in (bilinen or {}).items()}
+    dil_agirlik = {k: n for k, (_a, n) in (bilinen or {}).items()}
+    for g in girdi:
+        dil_anlam[g["kisaltma"]] = genel_.get(g["kisaltma"]) or g.get("anlam") or ""
+        dil_agirlik[g["kisaltma"]] = g.get("kolon") or 1
+    dil_ = adlandirma_dili(dil_anlam, dil_agirlik)
     isler = {_KISALTMA_HAVUZ.submit(parca_, b): b for b in bloklar}
     for f in futures.as_completed(isler):
         blok = isler[f]

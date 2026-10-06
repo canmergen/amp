@@ -6826,6 +6826,11 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             .then(d => {
                 const yeni = d && d.kolon_ad;
                 if (!yeni) return setTimeout(yokla, 3000);
+                /* Kullanıcı tablodaki bir kutudayken yeniden çizilmez. */
+                if (tb.contains(document.activeElement)) {
+                    yoklamaSayisi--;
+                    return setTimeout(yokla, 1500);
+                }
                 const elle = {};
                 satirlar.forEach(x => {
                     if (x.g.value.trim() !== String(x.r.yeni_ad || "").trim() || x.kutu.checked !== !!x.r.kayitli)
@@ -7083,6 +7088,11 @@ function birlesikBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             .then(d => {
                 const yeni = d && d.birlesik;
                 if (!yeni) return setTimeout(yokla, 3000);
+                /* Kullanıcı tablodaki bir kutudayken yeniden çizilmez. */
+                if (bTb.contains(document.activeElement)) {
+                    yoklamaSayisi--;
+                    return setTimeout(yokla, 1500);
+                }
                 const bElle = {};
                 bSatirlar.forEach(x => {
                     if (x.g.value.trim() !== tireSade(x.r.anlam || "").trim() || x.kutu.checked !== !!x.r.onayli
@@ -7311,6 +7321,9 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             /* LLM KARAR DÜZENLENİNCE ÖNERİ YENİDEN: kutudan çıkılınca o
                satırın önerisi yeni anlamla, adlandırma dilinde sorulur.
                Önerilen Kısaltma elle değiştirildiyse ona dokunulmaz. */
+            /* Kutu boşaltılmaz: yeni öneri gelene kadar eski değer durur;
+               bu arada kullanıcı Önerilen Kısaltma'ya girdiyse ya da
+               yazdıysa gelen öneri yazılmaz. */
             let yOto = String(r.yeni_kisaltma || ""), sonAnlam = g.value.trim(), oneriNo = 0;
             g.addEventListener("change", () => {
                 const anlam = g.value.trim();
@@ -7319,23 +7332,32 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const no = ++oneriNo;
                 if (!anlam || anlam === tireSade(r.anlam || "").trim()) {
                     yOto = String(r.yeni_kisaltma || ""); y.value = yOto; y.placeholder = "";
+                    y.title = "";
                     vurgu();
                     return;
                 }
-                y.value = ""; yOto = ""; y.placeholder = "öneri güncelleniyor…";
+                const bekleyen = y.value;
+                y.title = "Öneri güncelleniyor…";
+                if (!bekleyen) y.placeholder = "öneri güncelleniyor…";
                 fetch(getWebAppBackendUrl("kisaltma_oneri"), {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(ftKimlikGovdesi({ kisaltma: r.kisaltma, anlam: anlam }))
                 })
                 .then(c => c.json())
                 .then(c => {
-                    if (no !== oneriNo || y.value !== "") return;
-                    y.placeholder = c && c.hata ? "öneri alınamadı" : "";
+                    if (no !== oneriNo) return;
+                    y.title = ""; y.placeholder = "";
+                    if (y.value !== bekleyen || document.activeElement === y) return;
+                    if (c && c.hata) { y.placeholder = "öneri alınamadı"; return; }
                     yOto = String((c && c.yeni_kisaltma) || "");
                     y.value = yOto;
                     vurgu();
                 })
-                .catch(() => { if (no === oneriNo) y.placeholder = "öneri alınamadı"; });
+                .catch(() => {
+                    if (no !== oneriNo) return;
+                    y.title = "";
+                    y.placeholder = y.value ? "" : "öneri alınamadı";
+                });
             });
             tr.appendChild(tdY);
             const tdI = elYap("td", "dg-ekle-hucre");
@@ -7411,6 +7433,13 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             .then(d => {
                 const yeni = d && d.kisaltma;
                 if (!yeni) return setTimeout(yokla, 3000);
+                /* YAZARKEN TABLO YENİDEN ÇİZİLMEZ: kullanıcı tablodaki bir
+                   kutudaysa güncelleme kutudan çıkana kadar bekler (imleç ve
+                   yazı kesilmez). Bekleme süre sınırına sayılmaz. */
+                if (tb.contains(document.activeElement)) {
+                    yoklamaSayisi--;
+                    return setTimeout(yokla, 1500);
+                }
                 ka.not = yeni.not || "";
                 ka.dm = yeni.dm;
                 ka.ilerleme = yeni.ilerleme || null;

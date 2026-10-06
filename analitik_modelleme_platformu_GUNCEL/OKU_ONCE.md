@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kolon adlarındaki her kısaltma kartta; hafızaya kısaltma değişimleri yazılır**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Yazarken tablo yenilenmez; önerilen kısaltmanın dili onaylı kısaltmalarla belirlenir**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- 01.2.4, 01.2.5 ve 01.2.6 kartlarında dil modeli sürerken yapılan
+  yoklama, kullanıcı tablodaki bir kutudayken tabloyu yeniden çizmez;
+  kutudan çıkınca güncellenir. Yazı ve imleç kesilmez.
+- LLM Karar düzenlenince öneri yenilenirken Önerilen Kısaltma kutusu
+  boşaltılmaz; bu arada kutuya girildiyse ya da yazıldıysa gelen öneri
+  yazılmaz.
+- Adlandırma dili artık modele sorulan kısaltmalarla birlikte bu kolon
+  adlarında geçen ONAYLI kısaltmalara da bakılarak belirlenir (önceden
+  yalnız onaylanmamışlara bakılıyordu; onaylılar çoğunlukla İngilizce
+  olduğunda dil yanlışlıkla Türkçe çıkabiliyordu).
+- Dil İngilizce iken Türkçe kelimelerden kısaltılmış öneriler (anlamın
+  harflerinden sırayla kısaltılmış ya da bir parçası anlamdaki bir
+  kelimeyle başlayan) düşürülür.
+
+Önceki tur: **Kolon adlarındaki her kısaltma kartta; hafızaya kısaltma değişimleri yazılır**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - 01.2.4'te kolon adlarında geçen HER kısaltma gelir ve dil modeline
   sorulur: 3 kolon eşiği, 300'lük üst sınır ve "6 harften uzun kelime"

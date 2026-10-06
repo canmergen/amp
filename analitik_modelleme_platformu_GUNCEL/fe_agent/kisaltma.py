@@ -1191,7 +1191,12 @@ def _dm_calis(imza, girdi, tanimlar=None, veri_seti=""):
             k["bekleyen"] = set(k.get("bekleyen") or ()) - set(anahtarlar)
     try:
         from fe_agent import llm as llm_mod
-        sonuc, hata = llm_mod.kisaltma_dogrula(girdi, ara=ara)
+        # Adlandirma dili icin onayli kisaltmalar da (bu kolon adlarinda gecenler).
+        bilinen = {}
+        if tanimlar:
+            say = Counter(p for ad in tanimlar for p in set(parcalar(ad)))
+            bilinen = {k: (a, say[k]) for k, a in onaylilar().items() if say.get(k)}
+        sonuc, hata = llm_mod.kisaltma_dogrula(girdi, ara=ara, bilinen=bilinen)
     except Exception as e:
         sonuc, hata = None, "%s: %s" % (type(e).__name__, str(e)[:160])
     ornek_say = {g["kisaltma"]: len(g["ornekler"]) for g in girdi}
