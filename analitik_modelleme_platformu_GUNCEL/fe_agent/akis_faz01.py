@@ -711,7 +711,7 @@ def sozluk_uret_uygula(durum):
     # baglam olarak gider; boylece sozluksuz veri setinde de kurumun
     # kisaltma anlamlari ve yazimi kullanilir.
     try:
-        _hafiza = tanim_hafiza.tanimlar()
+        _hafiza = tanim_hafiza.tanimlar(amp_klasor_adi(durum))
     except Exception:
         _hafiza = {}
     try:
@@ -1352,7 +1352,7 @@ def _aciklama_baglami(durum):
     # genelindeki tanim hafizasindan (yalniz kullanicinin onayladiklari).
     baglam["tarz"] = llm_mod.yazim_tarzi(baglam["tanimlar"])
     try:
-        baglam["hafiza"] = tanim_hafiza.tanimlar()
+        baglam["hafiza"] = tanim_hafiza.tanimlar(amp_klasor_adi(durum))
     except Exception:
         baglam["hafiza"] = {}
     # KISALTMALAR: kesin (onayli) ve tahmini (sozlukten ogrenilen /
@@ -1413,7 +1413,7 @@ def _kisaltma_kaynagi(durum):
     adimda eklenenler dahil) + onayli tanim hafizasi."""
     kaynak = {}
     try:
-        kaynak.update(tanim_hafiza.tanimlar())
+        kaynak.update(tanim_hafiza.tanimlar(amp_klasor_adi(durum)))
     except Exception:
         pass
     try:
@@ -2930,7 +2930,7 @@ def sozluk_tanim_plan(durum):
         try:
             hazir = {ad: {"aciklama": k["aciklama"], "kaynak": "hafiza",
                           "hafiza_veri_seti": k.get("veri_seti") or ""}
-                     for ad, k in tanim_hafiza.bul(gosterilen, veri_seti).items()
+                     for ad, k in tanim_hafiza.bul(gosterilen, veri_seti, amp_klasor_adi(durum)).items()
                      if (ad not in roller or (k.get("veri_seti") or "") == veri_seti)
                      # TURKCE KAPISI: tamamen Turkce olmayan onayli tanim
                      # dogrudan doldurulmaz; dil modeli onu ONAYLI TANIM
@@ -3147,10 +3147,10 @@ def sozluk_tanim_uygula(durum):
                  "bırakıldı:\n" + "\n".join("  • %s: %s" % (a, n)
                                              for a, n in basarisiz))
 
-    # ONAYLI TANIM HAFIZASI: kullanicinin onayladigi tanimlar proje
-    # genelindeki kutuphaneye (arka planda; yazilamazsa onay etkilenmez).
+    # ONAYLI TANIM HAFIZASI: kullanicinin onayladigi tanimlar calismanin
+    # hafizasina (arka planda; yazilamazsa onay etkilenmez).
     tanim_hafiza.arka_planda_ekle(hafiza, durum.get("veri_seti") or "",
-                                  durum.get("_kullanici_ad") or "")
+                                  durum.get("_kullanici_ad") or "", amp_klasor_adi(durum))
     return (metin + kopya_not).strip()
 
 
@@ -3315,7 +3315,7 @@ def tanim_kontrol_baslat(durum):
         #           cagrilmadan, onayli tanim DOGRUDAN oneri olarak gelir
         #   kalan : hafizada yok -> dil modeli kontrolu
         try:
-            hafiza = tanim_hafiza.bul(adlar, durum.get("veri_seti"))
+            hafiza = tanim_hafiza.bul(adlar, durum.get("veri_seti"), amp_klasor_adi(durum))
         except Exception:
             hafiza = {}
         ayni, hazir, kalan = [], {}, []
@@ -3390,7 +3390,7 @@ def tanim_kontrol_uygula(durum):
     hafiza, hatalar = _tanim_duzeltmelerini_uygula(
         durum, satirlar, kayit.get("duzeltmeler") or {})
     tanim_hafiza.arka_planda_ekle(hafiza, durum.get("veri_seti") or "",
-                                  durum.get("_kullanici_ad") or "")
+                                  durum.get("_kullanici_ad") or "", amp_klasor_adi(durum))
     _kalici_kisaltma_ogren(durum)
     if not hatalar:
         return ""

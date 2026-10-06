@@ -303,11 +303,10 @@ ONAY_AGIRLIK = 3
 
 
 def _onayli_tanimlar():
-    try:
-        from fe_agent import tanim_hafiza
-        return tanim_hafiza.tanimlar()
-    except Exception:
-        return {}
+    """Sozlukteki tanim dogru kabul edildigi icin onayli tanim ayrica
+    agirliklandirilmaz; calismada onaylanan tanimlar zaten sozlugun
+    calisma kopyasinda (kisaltma kaynagi) yer alir."""
+    return {}
 
 
 def _parca_istatistigi(tanimlar):

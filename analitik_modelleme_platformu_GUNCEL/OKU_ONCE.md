@@ -1,13 +1,23 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Öneri önbelleği çalışmanın klasöründe**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Tanım hafızası çalışmaya özel**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- TANIM_HAFIZASI.json (onaylanan tanımlar) artık çalışmanın klasöründe
+  (PROJE_HAFIZASI/<çalışma>/). Tablo değişebileceği için bir çalışmanın
+  onayı başka çalışmaya taşınmaz; çalışma yeniden açıldığında kullanılır.
+- PROJE_HAFIZASI kökünde kalanlar: CALISMALAR.json, KISALTMA_HAFIZASI.json,
+  KISALTMA_OGRENILEN.json. Kökteki eski TANIM_HAFIZASI.json artık
+  okunmaz; onaylı kayıt içerdiği için platform silmez.
+- Kısaltma istatistiğinde onaylı tanımlara verilen ek ağırlık kalktı:
+  sözlükteki tanım doğru kabul edilir; çalışmada onaylanan tanımlar zaten
+  sözlüğün çalışma kopyasında.
+
+Önceki tur: **Öneri önbelleği çalışmanın klasöründe**. Değiştir: `fe_agent/tanim_hafiza.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - ONERI_ONBELLEGI.json (dil modelinin onaysız açıklama önerileri)
   artık çalışmanın kendi klasöründe (PROJE_HAFIZASI/<çalışma>/). Kökteki
   eski dosya ilk yeni yazımda bir kez silinir.
-- PROJE_HAFIZASI kökünde yalnız çalışmalar arası ortak dosyalar kalır:
-  CALISMALAR.json, TANIM_HAFIZASI.json (onaylı tanımlar),
-  KISALTMA_HAFIZASI.json (onaylı kısaltmalar), KISALTMA_OGRENILEN.json.
+- Kökte yalnız çalışmalar arası ortak dosyalar kalır.
 
 Önceki tur: **Sözlük tanımı doğru kabul; 01.2.4 ve Sözlük Tanım Kontrolü kalktı; kolon adı tanıma göre tamamlanır**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/amp.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 

@@ -822,11 +822,12 @@ def tanim_yaz(durum, kolon, tanim):
     if metin:
         try:
             from fe_agent import tanim_hafiza
+            from fe_agent.akis_faz01 import amp_klasor_adi
             tanim_hafiza.arka_planda_ekle(
                 [{"kolon": ad, "aciklama": metin,
                   "kaynak": tanim_hafiza.KAYNAK_PANEL}],
                 (durum or {}).get("veri_seti") or "",
-                (durum or {}).get("_kullanici_ad") or "")
+                (durum or {}).get("_kullanici_ad") or "", amp_klasor_adi(durum))
         except Exception:
             pass
     return True, ""
