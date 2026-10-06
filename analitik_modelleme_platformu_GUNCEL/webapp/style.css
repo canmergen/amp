@@ -18,7 +18,7 @@
   --fs-govde:  12px;     /* metin, butonlar */
   --fs-baslik: 13px;     /* kart/faz basliklari, ozet degerleri */
   --fs-buyuk:  14px;     /* urun adi, sayfa basligi */
-  --fs-blok:   14px;     /* adim blogu basligi (01.1 ...): 42px avatarla orantili */
+  --fs-blok:   13px;     /* adim blogu basligi (01.1 ...): 40px avatarla orantili */
 
   --fw-normal: 400;
   --fw-kalin:  700;
@@ -154,7 +154,7 @@
   /* BLOKLAR EŞİT VE TAM GENİŞLİK: sohbet sütununun tamamını kaplarlar.
 */
   --balon-en:     100%;
-  --avatar-en:    42px;          /* sohbet avatarı: 34 küçük, 48 fazla büyük kaldı */
+  --avatar-en:    40px;          /* sohbet avatarı: 34 küçük, 48 fazla büyük kaldı */
   --avatar-ara:   10px;          /* avatar ile blok arası */
   /* Ardisik balonlar arasindaki SABIT dikey aralik. Bot/kullanici,
      balon/kart ayrimi gozetmeden hepsi ayni bosluga sahip. */

@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.1 Başlangıç Seçimi'ne C · Otomatik Pilot (şu an kapalı)**. Değiştir: `fe_agent/akis_metin.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Adım bloğu başlığı ve avatar küçüldü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Avatarın yanındaki adım başlığı (01.1 ...) 14px yerine 13px
+  (`--fs-blok`), avatar 42px yerine 40px (`--avatar-en`).
+
+Önceki tur: **01.1 Başlangıç Seçimi'ne C · Otomatik Pilot (şu an kapalı)**. Değiştir: `fe_agent/akis_metin.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Başlangıç kartına A ve B gibi üçüncü seçenek eklendi: "Otomatik
   Pilot". Başta veri seti ve varsa sözlük kullanıcı tarafından seçilir;
