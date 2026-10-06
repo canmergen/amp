@@ -298,9 +298,19 @@ def baslat(kolonlar, klasor="", tum_adlar=()):
     with _KILIT:
         _dosyadan_yukle(klasor)
         k = _ISLER.get(imza)
-        if k and k["durum"] in ("calisiyor", "bitti"):
+        # Kullanicinin iptal ettigi is yeniden baslamaz; baska bir okuma
+        # yuzunden durdurulmus is kaldigi yerden (okunmayanlarla) baslar.
+        if k and (k["durum"] == "calisiyor"
+                  or (k["durum"] == "bitti" and (not k["iptal"] or k.get("kullanici")))):
             return imza
         eksik = [(ad, t) for ad, t in girdi if (ad, _ozet(t)) not in _SONUC]
+        # Ayni calismada daha once baslamis okuma (girdisi degistigi icin
+        # baska imzali) durdurulur: ayni kolonlar iki kez okunmasin. Surmekte
+        # olan cagrilarinin cevabi yine saklanir.
+        if klasor:
+            for x in _ISLER.values():
+                if x["durum"] == "calisiyor" and x["klasor"] == klasor:
+                    x["iptal"] = True
         _ISLER[imza] = {"durum": "calisiyor", "asama": "okuma", "girdi": girdi,
                         "adlar": adlar, "klasor": klasor, "toplam": len(girdi),
                         "biten": len(girdi) - len(eksik), "oneri_toplam": 0,
@@ -317,26 +327,25 @@ def _calis(imza, eksik):
 
         def oku(blok):
             if k["iptal"]:
-                return blok, None, "iptal"
+                return
             veri, hata = llm_mod.kisaltma_esle(
                 [{"ad": ad, "parcalar": parcalar(ad), "tanim": t} for ad, t in blok], ork)
-            return blok, veri, hata
-
-        bloklar = [eksik[i:i + OKUMA_PARCA] for i in range(0, len(eksik), OKUMA_PARCA)]
-        for f in futures.as_completed([_HAVUZ.submit(oku, b) for b in bloklar]):
-            blok, veri, hata = f.result()
-            if hata == "iptal":
-                continue
+            # Sonuc burada saklanir: iptalden sonra donen cevap da bosa
+            # gitmez (sonraki okumada bu kolonlar yeniden sorulmaz).
             sonuc = esleme_oku(veri, blok) if not hata else {}
             with _KILIT:
                 for ad, t in blok:
                     if ad in sonuc:
                         _SONUC[(ad, _ozet(t))] = sonuc[ad]
-                    else:
+                    elif not k["iptal"]:
                         k["okunmayan"] += 1
-                k["biten"] += len(blok)
-                if hata:
-                    k["hata"] = hata
+                if not k["iptal"]:
+                    k["biten"] += len(blok)
+                    if hata:
+                        k["hata"] = hata
+
+        bloklar = [eksik[i:i + OKUMA_PARCA] for i in range(0, len(eksik), OKUMA_PARCA)]
+        _bekle([_HAVUZ.submit(oku, b) for b in bloklar], k)
         if not k["iptal"]:
             k["asama"] = "oneri"
             _onerileri_hazirla(k, ork)
@@ -346,6 +355,15 @@ def _calis(imza, eksik):
         k["hata"] = "%s: %s" % (type(e).__name__, str(e)[:200])
     finally:
         _dosyaya_yaz(k["klasor"], k["girdi"])
+
+
+def _bekle(isler, k):
+    """Isler bitene ya da iptal edilene kadar bekler. IPTAL ANINDA DONER:
+    dil modelinde suren cagrilar arkada biter (cevaplari saklanir) ama is
+    onlari beklemez."""
+    kalan = set(isler)
+    while kalan and not k["iptal"]:
+        _bitti, kalan = futures.wait(kalan, timeout=1.0)
 
 
 def durum(imza):
@@ -359,9 +377,16 @@ def durum(imza):
 
 
 def iptal(imza):
+    """Isi ve ayni calisma klasorunde suren diger okumalari durdurur
+    (01.2.3'te baslayan okuma dahil)."""
     k = _ISLER.get(imza or "")
-    if k and k["durum"] == "calisiyor":
-        k["iptal"] = True
+    if not k:
+        return
+    with _KILIT:
+        for x in _ISLER.values():
+            if x["durum"] == "calisiyor" and (x is k or (k["klasor"] and x["klasor"] == k["klasor"])):
+                x["iptal"] = True
+                x["kullanici"] = True
 
 
 # ---------------------------------------------------------------------------
@@ -582,7 +607,11 @@ def _onerileri_hazirla(k, ork):
                   "mevcut": [(x["kisaltma"], x["kolon"]) for x in s["kisaltmalar"]],
                   "baska": [(kisa, ", ".join(a)) for kisa, a in s["cok_anlamli"].items()],
                   "adda_yok": s["adda_yok"]} for j, s in enumerate(grup)]
-        cevap, hata = llm_mod.kisaltma_standart(istek, t["dil"], t["kalip"], ork)
+        f = _HAVUZ.submit(llm_mod.kisaltma_standart, istek, t["dil"], t["kalip"], ork)
+        _bekle([f], k)
+        if k["iptal"]:
+            return
+        cevap, hata = f.result()
         with _KILIT:
             for j, s in enumerate(grup):
                 kisa, gerekce, tur = cevap.get(j + 1, ("", "", ""))

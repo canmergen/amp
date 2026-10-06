@@ -1,6 +1,21 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Ad ilkesi: anlam türü + Ad Kalıbı + kurum standardı; parantez, bölünen anlam, gereksiz "adda yok" düzeltildi; okuma hızlandı**. Değiştir: `fe_agent/kisaltma_okuma.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü'nde İptal hemen durdurur**. Değiştir: `fe_agent/kisaltma_okuma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- İptal'e basınca iş, dil modelinde o an süren çağrıların bitmesini
+  beklemeden durur; kart hemen "durduruldu" durumuna geçer. Süren
+  çağrılar arkada biter ve cevapları kaydedilir, o kolonlar bir daha
+  okunmaz.
+- İptal, aynı çalışmada süren bütün okumaları durdurur (01.2.3'te
+  arka planda başlayan okuma dahil). Eskiden yalnız kartın gösterdiği iş
+  duruyordu, diğeri dil modelini meşgul etmeye devam ediyordu.
+- 01.2.4 açılınca 01.2.3'te başlamış okuma kendiliğinden durur, kalan
+  kolonları 01.2.4'ün okuması okur. Aynı kolonların iki kez okunması
+  (yavaşlığın bir sebebi) önlendi.
+- Kullanıcının iptal ettiği okuma, kart tazelenince kendiliğinden yeniden
+  başlamaz.
+
+Önceki tur: **Ad ilkesi: anlam türü + Ad Kalıbı + kurum standardı; parantez, bölünen anlam, gereksiz "adda yok" düzeltildi; okuma hızlandı**. Değiştir: `fe_agent/kisaltma_okuma.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Amaç: herkesin aynı şekilde okuyacağı genel bir kolon adı ilkesi. Aynı
 anlam her yerde aynı kısaltmayla yazılır, parçalar her adda aynı
