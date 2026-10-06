@@ -1676,8 +1676,9 @@ KOLON_AD_BILGI = (
     "Öneriler: 1) Tanımda geçen ama adın hiçbir parçasının karşılamadığı "
     "kavram, dil modeliyle bulunup ada eklenir (önce onaylı kısaltmalardan; "
     "yoksa yeni bir kısaltmayla). Mevcut parçalar silinmez, sırası "
-    "değişmez; bu kodla denetlenir. 2) Kısaltma Sözlüğü'nde kabul edilen "
-    "yeni kısaltmalar ve sayıdan ayırma. Önerilen adı değiştirebilirsiniz."
+    "değişmez; bu kodla denetlenir; uygulamak için işaretleyin. 2) Kısaltma "
+    "Sözlüğü'nde onaylanan yeni kısaltmalar (sayı değerli biçimler dahil): "
+    "ikinci onay istenmez, otomatik uygulanır. Önerilen adı değiştirebilirsiniz."
     "\n\n"
     "Uygulanan adlar YALNIZ platformun kopyalarında geçerli olur: "
     "AMP_VERISETI ve AMP_SOZLUK (Değişken Listesi ve Tip Kontrolü kaydedilince). Girdi veri "
@@ -1796,8 +1797,14 @@ def _kolon_ad_alani(durum):
                                "Sözlüğü'nde kabul edildi)." % (k_, k_, k_))
         if not oneri and ad not in kayitli:
             continue
+        # Yalniz Kisaltma Sozlugu'nde onaylanan degisim varsa ikinci onay
+        # istenmez: satir otomatik uygulanir.
+        temel = _onayli_ad(durum, ad)
+        otomatik = bool(oneri) and oneri == temel and temel != ad
         satirlar.append({"kolon": ad, "oneri": oneri, "yeni_ad": kayitli.get(ad) or oneri,
-                         "kayitli": ad in kayitli, "gerekce": " ".join(gerekce),
+                         "kayitli": ad in kayitli or otomatik, "otomatik": otomatik,
+                         "temel_ad": temel if temel != ad else "",
+                         "gerekce": " ".join(gerekce),
                          "yeni_kisaltmalar": yeni_kisaltmalar})
     notu = ""
     if dm.get("durum") == "hata":
@@ -1844,6 +1851,34 @@ def _kisaltma_degistir(ad, eski, yeni):
                   % re.escape(eski), _d, str(ad), flags=re.I)
 
 
+def _onayli_ad(durum, ad):
+    """Kolon adinin yalniz Kisaltma Sozlugu'nde onaylanan yeni kisaltmalarla
+    (sayi degerli bicimler dahil) degismis hali; degisim yoksa ad."""
+    yeni_ad = str(ad)
+    for eski, yeni in sorted((durum.get("kisaltma_yeni") or {}).items(),
+                             key=lambda kv: -len(kv[0])):
+        yeni_ad = _kisaltma_degistir(yeni_ad, eski, yeni)
+    return yeni_ad
+
+
+def _onayli_adlari_ekle(durum, esleme):
+    """Kisaltma Sozlugu'nde onaylanan degisimi olan ve eslemede olmayan her
+    kolona onayli adi ekler (rol ve surec disi kolonlar haric)."""
+    korunan = _korunan_kolonlar(durum)
+    haric = set(map(str, durum.get("haric_kolonlar") or []))
+    try:
+        mevcut = [str(k.get("ad")) for k in (_profil(durum).get("kolonlar") or [])]
+    except Exception:
+        mevcut = []
+    for ad in mevcut:
+        if ad in esleme or ad in korunan or ad in haric:
+            continue
+        yeni = _onayli_ad(durum, ad)
+        if yeni != ad and _AD_KALIP.match(yeni) and yeni not in mevcut:
+            esleme[ad] = yeni
+    return esleme
+
+
 def kolon_ad_kaydet(durum, satirlar):
     """Kart: uygulanacak kolon adlarini durum["kolon_yeni_ad"]'a yazar.
     satirlar: [{"kolon", "yeni_ad", "uygula"}]. Doner: (alan, hata).
@@ -1866,8 +1901,12 @@ def kolon_ad_kaydet(durum, satirlar):
         if not ad:
             continue
         if not s_.get("uygula") or not yeni or yeni == ad:
-            esleme.pop(ad, None)
-            continue
+            # Uygulanmayan satirda Kisaltma Sozlugu'nde onaylanan degisim
+            # yine uygulanir.
+            yeni = _onayli_ad(durum, ad)
+            if yeni == ad:
+                esleme.pop(ad, None)
+                continue
         if ad in korunan:
             hatalar.append("%s: hedef / kimlik / dönem / segment kolonu yeniden adlandırılmaz." % ad)
         elif ad in haric:
@@ -1878,6 +1917,7 @@ def kolon_ad_kaydet(durum, satirlar):
             hatalar.append("%s: '%s' veri setinde zaten başka bir kolonun adı." % (ad, yeni))
         else:
             esleme[ad] = yeni
+    _onayli_adlari_ekle(durum, esleme)
     # Ayni yeni adi alan iki kolon.
     sayim = Counter(esleme.values())
     for ad, yeni in list(esleme.items()):
@@ -2062,7 +2102,7 @@ def kolon_ad_plan(durum):
         return ("Adı tanımıyla uyuşmayan kolon bulunmadı; bu adım atlandı.")
     durum["_secim_alani"] = _adim_karti(
         "kolon_ad", {"kolon_ad": alan}, KOLON_AD_DUGME,
-        "Ad Değiştirmeden Devam Et")
+        "Önerileri Uygulamadan Devam Et")
     return ""
 
 
@@ -2071,7 +2111,9 @@ def kolon_ad_uygula(durum):
     (yalniz AMP kopyalarinda uygulanir). Gecersiz ad varsa adim gecmez."""
     karar = durum.pop("_dogrulama_karari", None)
     if not isinstance(karar, dict) or karar.get("atla"):
-        durum["kolon_yeni_ad"] = {}
+        # Oneriler uygulanmaz; Kisaltma Sozlugu'nde onaylanan degisimler
+        # yine uygulanir.
+        durum["kolon_yeni_ad"] = _onayli_adlari_ekle(durum, {})
         _kalici_kisaltma_ogren(durum)
         return ""
     satirlar = karar.get("kolon_ad") or []

@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sayı değerli biçimler ayrı satır, ayrı kısaltma önerisi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü'nde onaylanan ad değişimi ikinci kez onaylatılmaz**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Kısaltma Sözlüğü'nde onaylanan yeni kısaltmaların (sayı değerli
+  biçimler dahil) kolon adına uygulanması Kolon Adı Önerileri'nde
+  otomatiktir: satır işaretli ve kilitli gelir; satır işaretsiz
+  gönderilse ya da adım "Önerileri Uygulamadan Devam Et" ile geçilse de
+  uygulanır.
+- Onay yalnız bu adımda ilk kez çıkan öneriler için istenir (tanımda olup
+  adda karşılığı olmayan kavramın eklenmesi).
+
+Önceki tur: **Sayı değerli biçimler ayrı satır, ayrı kısaltma önerisi**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Kısaltma Sözlüğü'nde "Sayıdan ayır" kutusu kalktı. Sayı değerli her
   biçim (<K><NN>_<MM>) ana kısaltmanın altında ayrı satırdır; anlamı

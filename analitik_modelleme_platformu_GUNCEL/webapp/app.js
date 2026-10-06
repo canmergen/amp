@@ -6341,7 +6341,7 @@ function dogrulamaKartiEkle(alan, blok) {
         atlaBtn.type = "button";
         atlaBtn.onclick = () => {
             if (mesgul || kart.classList.contains("kilitli")) return;
-            const ozet = adimModu === "kolon_ad" ? "Kolon adları değiştirilmeden devam edildi"
+            const ozet = adimModu === "kolon_ad" ? "Kolon adı önerileri uygulanmadan devam edildi"
                 : adimModu === "birlesik" ? "Kısaltmalar birleştirilmeden devam edildi"
                 : "Kısaltmalar onaylanmadan devam edildi";
             kartiKilitle(ozet);
@@ -6447,7 +6447,7 @@ function dogrulamaKartiEkle(alan, blok) {
             birincil.disabled = true;
             gerekce.hidden = false;
             gerekce.textContent = "Dil modelinin önerileri gelince onaylanabilir. Beklemek "
-                + "istemezseniz İptal ile durdurabilir ya da \"Ad Değiştirmeden Devam Et\" ile geçebilirsiniz.";
+                + "istemezseniz İptal ile durdurabilir ya da \"Önerileri Uygulamadan Devam Et\" ile geçebilirsiniz.";
             return;
         }
         if (adimModu === "birlesik" && birErisim && birErisim.bekliyor()) {
@@ -6711,7 +6711,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([d, e]) => {
         const b = elYap("button", "dg-toplu-btn", e);
         b.type = "button"; b.disabled = kilitli;
-        b.onclick = () => satirlar.forEach(x => { x.kutu.checked = d; });
+        b.onclick = () => satirlar.forEach(x => { if (!x.r.otomatik) x.kutu.checked = d; });
         toplu.appendChild(b);
         topluBtn.push(b);
     });
@@ -6786,7 +6786,12 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const tdI = elYap("td", "dg-ekle-hucre");
             const kutu = document.createElement("input");
             kutu.type = "checkbox"; kutu.className = "dg-ekle";
-            kutu.checked = !!r.kayitli; kutu.disabled = kilitli;
+            kutu.checked = !!r.kayitli; kutu.disabled = kilitli || !!r.otomatik;
+            /* Kısaltma Sözlüğü'nde onaylanan değişim: ikinci onay yok. */
+            if (r.otomatik) {
+                kutu.title = "Kısaltma Sözlüğü'nde onaylandı; otomatik uygulanır";
+                tdI.title = kutu.title;
+            }
             tdI.appendChild(kutu); tr.appendChild(tdI);
             const vurgu = () => {
                 const m = g.value.trim();
@@ -6870,7 +6875,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         /* Kart kilitlenince / Geri Al ile açılınca. */
         kilitle: k => {
             kilitli = k;
-            satirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; });
+            satirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k || !!x.r.otomatik; });
             topluBtn.concat([kaydetBtn]).forEach(b => { b.disabled = k; });
             ilerYaz();
         },
