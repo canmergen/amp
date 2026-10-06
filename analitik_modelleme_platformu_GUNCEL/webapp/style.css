@@ -1510,6 +1510,11 @@ button.ozet-kart:focus-visible {
   background: var(--yuzey-alt);
   box-shadow: none;
 }
+/* Yanit bekleyen gruplu blok da diger bloklar gibi kirmizi halkayla
+   (ustteki kural golgeyi sifirliyordu). */
+.adim-blok.gruplu.durum-bekliyor {
+  box-shadow: 0 0 0 4px var(--kirmizi-halka, rgba(213,17,21,.14));
+}
 /* Blok içindeki balon kendi çerçevesini bırakır: çerçeve artık bloğun. */
 .adim-blok > .balon {
   border: 0; background: none; box-shadow: none;

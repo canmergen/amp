@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst bantta ekrandaki yazının aynısı ipucu olarak çıkmıyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Alt adımlı bloklarda (01.2 ...) yanıt bekleyen bloğun kırmızı halkası geri geldi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Yanıt bekleyen bloğun çevresindeki açık kırmızı halka yalnız tek
+  adımlı bloklarda (01.1 gibi) görünüyordu; alt adımlı blokların kap
+  kuralı gölgeyi sıfırlıyordu. Artık bekleyen her blokta var.
+
+Önceki tur: **Üst bantta ekrandaki yazının aynısı ipucu olarak çıkmıyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üst bant kartlarının değer ve alt satırlarında üzerine gelince aynı
   yazıyı gösteren ipucu kaldırıldı. Yalnız satır sığmayıp "…" ile
