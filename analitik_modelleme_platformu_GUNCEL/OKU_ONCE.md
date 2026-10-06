@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.4 Kısaltmalar ve Kolon Adları: sade tablo, Seç = onay + adlara uygulama**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Önerilen kısaltmanın dili kolon adlarının diliyle aynı**. Değiştir: `fe_agent/llm.py`, `fe_agent/kisaltma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Adlandırma dili koddan belirlenir: bir kısaltmanın harfleri (ilk harf
+  dahil) Türkçe anlamının harflerinde sırayla geçiyorsa Türkçe kelimeden
+  kısaltılmış sayılır, değilse İngilizce; kolon sayısıyla ağırlıklı
+  çoğunluk dili belirler.
+- Dil, kısaltma önerisi, birleştirme önerisi ve kolon adı tamamlama
+  çağrılarına "ADLANDIRMA DILI" satırıyla gider; öneri LLM Karar'daki
+  anlamın o dildeki kısaltmasıdır.
+- Türkçe anlamın kendisi olan öneriyi eleyen kural yalnız dil İngilizce
+  iken çalışır.
+
+Önceki tur: **01.2.4 Kısaltmalar ve Kolon Adları: sade tablo, Seç = onay + adlara uygulama**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `fe_agent/llm.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Adım adları: 01.2.4 Kısaltmalar ve Kolon Adları, 01.2.6 Kolon Adı
   Tamamlama.

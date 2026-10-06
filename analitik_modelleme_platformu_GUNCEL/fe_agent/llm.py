@@ -1317,10 +1317,11 @@ baska dile cevirmek ya da kisaltmak oneri DEGILDIR.
 "yeni_kisaltma":
   - VERILEN ANLAMIN kisaltmasidir; baska bir anlamin harflerinden
     uretilmez.
-  - Kolon adlarinin dilinde ve kalibinda (bkz. "ADLANDIRMA KALIBI").
-    Anlam Turkce verilir; adlar Ingilizce kisaltmalarla yaziliysa Turkce
-    kelimelerden kisaltma URETME, anlamin YAYGIN Ingilizce kisaltmasini
-    yaz. Adlar Turkce kisaltmalarla yaziliysa Turkce kisaltma oner.
+  - "ADLANDIRMA DILI" satirindaki dilde ve "ADLANDIRMA KALIBI"ndaki
+    bicimde. Anlam her zaman Turkce verilir. Dil Ingilizce ise anlamin
+    Ingilizce karsiliginin YAYGIN kisaltmasini yaz; Turkce kelimelerden
+    kisaltma URETME. Dil Turkce ise anlamin Turkce kelimelerinden okunur
+    bir kisaltma yaz.
   - Mevcut kisaltmanin aynisi ya da yalniz unlulerinin atilmis hali
     olamaz; okuyana yeni bir sey anlatmali.
   - BUYUK harf, A-Z, 0-9 ve parca ayiraci "_"; en cok 4 parca, parca
@@ -1382,7 +1383,32 @@ def _anlamdan_turetilmis(yeni, anlam):
     return all(h in it for h in y) and len(y) >= 0.5 * len(a)
 
 
-def _oneri_oku(veri, girdi, kullanilan, anlamlar=None):
+def adlandirma_dili(anlamlar, agirlik=None):
+    """Kolon adlarindaki kisaltmalarin dili: "Ingilizce" / "Turkce" / "".
+    Bir kisaltma, harfleri (ilk harf dahil) Turkce anlaminin harflerinde
+    sirayla geciyorsa Turkce kelimeden turetilmis sayilir; degilse
+    Ingilizce. Kolon sayisiyla agirlikli cogunluk karar verir."""
+    tr = en = 0
+    for k, a in (anlamlar or {}).items():
+        harf = re.sub(r"[^A-Z]", "", str(k or "").upper())
+        kaynak = re.sub(r"[^A-Z]", "", str(a or "").translate(_TR_BUYUK).upper())
+        if len(harf) < 2 or "_" in str(k) or not kaynak:
+            continue
+        w = int((agirlik or {}).get(k) or 1)
+        it = iter(kaynak)
+        if harf[0] == kaynak[0] and all(h in it for h in harf):
+            tr += w
+        else:
+            en += w
+    return "Ingilizce" if en > tr else "Turkce" if tr > en else ""
+
+
+def dil_satiri(dil):
+    return ("ADLANDIRMA DILI: %s (kolon adlarindaki kisaltmalarin cogu %s "
+            "kelimelerden kisaltilmis)\n" % (dil, dil)) if dil else ""
+
+
+def _oneri_oku(veri, girdi, kullanilan, anlamlar=None, dil=""):
     """{KISA: (yeni_kisaltma, gerekce)}; gecersiz ya da anlamsiz oneri
     (mevcutla ayni, yalniz unluleri atilmis hali, baska bir kisaltma,
     Turkce anlamin kendisi) dusurulur."""
@@ -1398,7 +1424,8 @@ def _oneri_oku(veri, girdi, kullanilan, anlamlar=None):
         yeni = re.sub(r"_+", "_", re.sub(r"[^A-Z0-9_]", "", yeni)).strip("_")
         if (not _YENI_KISA.match(yeni) or yeni == ad or _iskelet(yeni) == _iskelet(ad)
                 or yeni in kullanilan
-                or _anlamdan_turetilmis(yeni, (anlamlar or {}).get(ad))):
+                or (dil == "Ingilizce"
+                    and _anlamdan_turetilmis(yeni, (anlamlar or {}).get(ad)))):
             continue
         cikti[ad] = (yeni, re.sub(r"\s+", " ", str(k.get("gerekce") or "")).strip()[:240])
     return cikti
@@ -1711,12 +1738,12 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
                 + [_oneri_satiri(g, a) for g, a, _k in bicim_sor]
             mo, vo = ork.json_cagir(
                 ork.modeller("kisaltma_1"), SISTEM_KISALTMA_ONERI,
-                _veri_blogu("KISALTMALAR:", kalip_ + "\n".join(satir)),
+                _veri_blogu("KISALTMALAR:", dil_satiri(dil_) + kalip_ + "\n".join(satir)),
                 0.1, zaman_asimi=KISALTMA_ZAMAN_ASIMI)
             anlam_ = {g["kisaltma"]: sonuc_[g["kisaltma"]] for g in sor}
             anlam_.update({g["kisaltma"]: a for g, a, _k in bicim_sor})
             cevap = _oneri_oku(vo, sor + [g for g, _a, _k in bicim_sor], kullanilan_,
-                               anlam_) if mo else {}
+                               anlam_, dil_) if mo else {}
             for g in sor:
                 k = g["kisaltma"]
                 if k in cevap:
@@ -1789,6 +1816,11 @@ def kisaltma_dogrula(girdi, orkestra=None, ara=None):
             genel_.update(f.result())
         except Exception:
             pass
+    # Adlandirma dili: genel anlam (yoksa sozluk sayimi) ile kisaltmanin
+    # harfleri karsilastirilir (bkz. adlandirma_dili).
+    dil_ = adlandirma_dili({g["kisaltma"]: genel_.get(g["kisaltma"]) or g.get("anlam") or ""
+                            for g in girdi},
+                           {g["kisaltma"]: g.get("kolon") or 1 for g in girdi})
     isler = {_KISALTMA_HAVUZ.submit(parca_, b): b for b in bloklar}
     for f in futures.as_completed(isler):
         blok = isler[f]
@@ -1836,9 +1868,9 @@ Karsilanmayan kavram varsa "yeni_ad" alanina adin TAMAMLANMIS halini yaz:
   - Mevcut parcalari SILME, DEGISTIRME, SIRASINI BOZMA; yalniz araya ya da
     sona yeni parca EKLE.
   - Eklenen parca once ONAYLI KISALTMALAR listesinden secilir. Listede
-    yoksa adlandirma kalibina uygun (ayni dilde, BUYUK harf, A-Z ve 0-9,
-    en cok 8 karakter) yeni bir kisaltma yaz ve "yeni_kisaltmalar"
-    alanina anlamiyla ekle.
+    yoksa "ADLANDIRMA DILI" satirindaki dilde ve kaliba uygun (BUYUK
+    harf, A-Z ve 0-9, en cok 8 karakter) yeni bir kisaltma yaz ve
+    "yeni_kisaltmalar" alanina anlamiyla ekle.
   - Yeri: ayni kalipta diger kolonlarda bu tur parca nerede duruyorsa
     (ornegin bir istatistigin niteleyicisi, niteledigi parcanin hemen
     onunde).
@@ -1912,6 +1944,11 @@ def kolon_ad_tamamla(girdi, onayli, kalip="", ara=None, iptal=None, orkestra=Non
         "%s=%s" % kv for kv in sorted(onayli.items())) + "\n"
     kalip_ = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n" % kalip
               if kalip else "")
+    agirlik = {}
+    for g in girdi:
+        for p in str(g["ad"]).upper().split("_"):
+            agirlik[p] = agirlik.get(p, 0) + 1
+    kalip_ = dil_satiri(adlandirma_dili(onayli, agirlik)) + kalip_
 
     def parca_(blok):
         if iptal and iptal():
@@ -1975,8 +2012,8 @@ Emin degilsen "ayri" sec. "birlestir" secersen:
   "anlam"         : ciftin BIRLIKTE anlami; yalin, tamamen Turkce (ozel
                     adlar haric), 1-5 kelime, pencere ve sayi icermez
   "yeni_kisaltma" : birlesik ifadenin daha okunur TEK kisaltmasi (yoksa
-                    bos). Kolon adlarinin dilinde ve kalibinda (bkz.
-                    "ADLANDIRMA KALIBI"); BUYUK harf, A-Z, 0-9, "_"; en cok
+                    bos). "ADLANDIRMA DILI" satirindaki dilde ve
+                    "ADLANDIRMA KALIBI"ndaki bicimde; BUYUK harf, A-Z, 0-9, "_"; en cok
                     4 parca, parca basina 8, toplam 24 karakter
 "gerekce": tek kisa cumle, Turkce karakterlerle.
 

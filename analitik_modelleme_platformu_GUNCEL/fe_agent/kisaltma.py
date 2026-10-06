@@ -1201,6 +1201,7 @@ def _birlesik_sor(tanimlar, anlamlar):
     yaygin = [p for p, _n in say.most_common(20)]
     kalip = ("ADLANDIRMA KALIBI (kolon adlarinda en sik gecen kisaltmalar): %s\n"
              % ", ".join(yaygin)) if yaygin else ""
+    kalip = llm_mod.dil_satiri(llm_mod.adlandirma_dili(anlamlar, say)) + kalip
     oner, hata = llm_mod.kisaltma_birlesik(ciftler, kalip=kalip)
     if hata:
         raise RuntimeError(hata)
