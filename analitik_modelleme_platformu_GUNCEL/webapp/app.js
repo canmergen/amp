@@ -6068,9 +6068,16 @@ function dogrulamaKartiEkle(alan, blok) {
                ustune yazabilir. Oneri yoksa (oneri_kaynak "yok") bos. */
             const tdA = document.createElement("td");
             tdA.className = "dg-aciklama-hucre";
-            const giris = document.createElement("input");
-            giris.type = "text";
-            giris.className = "dg-giris";
+            /* ÇOK SATIRLI: uzun açıklama tek satırlık kutuda kesik
+               görünüyordu; kutu içeriğe göre uzar. Enter yeni satır açmaz. */
+            const giris = document.createElement("textarea");
+            giris.rows = 1;
+            giris.className = "dg-giris dg-metin";
+            giris._boyla = () => {
+                giris.style.height = "auto";
+                if (giris.scrollHeight) giris.style.height = giris.scrollHeight + "px";
+            };
+            giris.addEventListener("keydown", e => { if (e.key === "Enter") e.preventDefault(); });
             /* GERİ DÖNÜŞTE önceki onaylı metin gelir ve model önerisi
                onu EZMEZ. Vurgu, satırdaki metnin öneriyle aynı olup
                olmadığına göre (bkz. dgRenk). */
@@ -6090,11 +6097,13 @@ function dogrulamaKartiEkle(alan, blok) {
                 dgRenk(tr, giris.value, giris.dataset.oneriMetin || "", karar);
             };
             giris.addEventListener("input", () => {
+                giris._boyla();
                 giris._vurgu();
                 if (kart.classList.contains("kilitli")) return;
                 durumTazele();
             });
             giris._vurgu();
+            requestAnimationFrame(() => giris._boyla());
             /* Açıklama kutusu + öneri gelince "i": açıklamanın nereden
                geldiği (modele giden özet, bağlam, adaylar, modeller). */
             const kapA = elYap("div", "dg-anlam-kap");
@@ -6631,6 +6640,7 @@ function dogrulamaKartiEkle(alan, blok) {
             const ack = k && k.aciklama ? String(k.aciklama) : "";
             if (!ack) return;
             g.value = tireSade(ack);
+            if (g._boyla) g._boyla();
             g.dataset.dolduruldu = "1";
             /* Sözlük seçilmediyse öneri gelen satır "Sözlüğe Ekle" işaretli
                olur (zorunlu / kilitli satırlar kendi kuralında kalır). */

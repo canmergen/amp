@@ -136,7 +136,9 @@ def _cagir(sistem, kullanici, model=None, sicaklik=0.2,
             def _is(sistem=sistem, kullanici=kullanici, model=model,
                     sicaklik=sicaklik, basladi=basladi):
                 basladi.set()
-                if en_cok and model != QWEN:
+                # Sinir yalniz Llama'da: Qwen modelleri cevaptan once
+                # muhakeme yazabiliyor, sinira takilip JSON'a sira gelmiyor.
+                if en_cok and model == LLAMA:
                     return _tek_cagri(sistem, kullanici, model, sicaklik, en_cok=en_cok)
                 return _tek_cagri(sistem, kullanici, model, sicaklik)
 
@@ -384,8 +386,11 @@ KOLON ADI PARCALARI (anlam varsayma; yalniz asagidaki kaynaklardan al):
 
 ROL verilen kolonlar (kullanicinin modelleme tanimlarinda sectigi):
   - kimlik kolonu : satiri tekil tanimlayan anahtar. Neyin kimligi
-                    oldugunu adindan ve ornek tanimlardan cikararak kimlik
-                    olarak yaz; bir islem, olay ya da tutar anlatma.
+                    oldugunu adindan, VERI SETI adindan ve ornek
+                    tanimlardan cikararak kimlik olarak yaz; bir islem,
+                    olay ya da tutar anlatma. Bunlardan cikmiyorsa birim
+                    (musteri, hesap ...) UYDURMA: VERI SETI adinin
+                    anlattigi kaydin tekil kimligi olarak yaz.
   - hedef degisken: modelin tahmin ettigi 0/1 olay. 1 degerinin neyi
                     ifade ettigini adindan ve ornek tanimlardan cikararak
                     yaz.

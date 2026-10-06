@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.3'te her açıklama önerisinin kaynağı "i"de**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.3 açıklama kutusu tam metni gösterir; Qwen Flash yeniden yazıyor; kimlik kolonunda birim uydurulmaz**. Değiştir: `fe_agent/llm.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Açıklama kutusu tek satırdı, uzun açıklama kesik görünüyordu; artık
+  içeriğe göre uzar (Enter yeni satır açmaz).
+- Çıktı sınırı yalnız Llama'ya uygulanır. Qwen Flash cevaptan önce
+  muhakeme yazabildiği için sınıra takılıp "okunabilir JSON döndürmedi"
+  diye düşüyordu.
+- Kimlik kolonu kuralı (yazar istemi): neyin kimliği olduğu kolon
+  adından, veri seti adından ya da örnek tanımlardan çıkmıyorsa birim
+  (müşteri, hesap ...) uydurulmaz; veri setinin anlattığı kaydın tekil
+  kimliği olarak yazılır.
+
+Önceki tur: **01.2.3'te her açıklama önerisinin kaynağı "i"de**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Öneri gelen açıklamanın yanında "i": dil modeline giden kolon özeti
   (tip, boş oranı, tekil / satır, dağılım, rol), bağlam (veri seti adı,
