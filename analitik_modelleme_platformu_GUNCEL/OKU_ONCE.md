@@ -1,6 +1,33 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **LLM Karar düzenlenince önerilen kısaltma yeni anlamla güncellenir**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kolon adlarındaki her kısaltma kartta; hafızaya kısaltma değişimleri yazılır**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- 01.2.4'te kolon adlarında geçen HER kısaltma gelir ve dil modeline
+  sorulur: 3 kolon eşiği, 300'lük üst sınır ve "6 harften uzun kelime"
+  elemesi kalktı. Sayı ve harften oluşan parçalar (gün/ay penceresi
+  gibi) ve tek başına duran tek harfler de kısaltmadır; yalnız rakamdan
+  oluşan parça kısaltma sayılmaz. Tanımı olmayan kolonlarda geçen
+  kısaltmalar da gelir (dil modeline kolon adlarıyla gider).
+- Anlamı çıkmayan kısaltma da kartta kalır, LLM Karar boş gelir.
+- 3 kolon koşulu yalnız kelime sayımı (istatistik anlam adayı) ve
+  birleştirme adayı içindir; kartta görünmeyi etkilemez.
+- Kartta yalnız bu veri setinin kolon adlarında geçen kısaltmalar
+  gösterilir (önceden hafızadaki tüm onaylı kısaltmalar da geliyordu).
+- KISALTMA_HAFIZASI.json'a "degisimler" ({ESKI: YENI}) eklendi.
+  Seçilen satırın Önerilen Kısaltma'sı doluysa anlam yeni kısaltmayla
+  yazılır ve eski → yeni değişimi not edilir; boşsa anlam kısaltmanın
+  kendisiyle yazılır. Sayı değerli biçim satırlarının yalnız değişimi
+  yazılır. Seçilmeyen satır hafızadan silinir (değişimi de).
+  01.2.5'te kabul edilen birleştirmenin önerilen kısaltması da aynı
+  kuralla yazılır.
+- Sonraki çalışmalarda değişimi not edilmiş kısaltma onaylı gelir
+  (anlamı yeni kısaltmanınki), Önerilen Kısaltma hafızadaki yeni
+  kısaltmayla dolu ve seçili gelir; "i"de değişim yazar. Kolon adları
+  01.2.6'da buna göre değişir.
+- "Yanlış kısaltma" notu artık yazılmıyor; eski dosyalardaki notlar
+  okunmaya devam eder.
+
+Önceki tur: **LLM Karar düzenlenince önerilen kısaltma yeni anlamla güncellenir**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - 01.2.4 kartında bir satırın LLM Karar kutusu değiştirilip kutudan
   çıkılınca, o satırın Önerilen Kısaltma'sı yeni anlamla dil modeline

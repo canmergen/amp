@@ -1642,6 +1642,7 @@ def birlesik_uygula(durum):
         birlesik[ad] = anlam
         y = str(b_.get("yeni_kisaltma") or "").strip().upper()
         if not y or y == ad:
+            kayit[-1]["yeni"] = ""
             continue
         if not _YENI_KISA_KALIP.match(y):
             hatalar.append("%s: '%s' geçersiz (harfle başlamalı; yalnız A-Z, 0-9 ve _; "
@@ -1654,6 +1655,8 @@ def birlesik_uygula(durum):
         else:
             yeni[ad] = y
             sozluk[y] = anlam
+            # Hafizada anlam yeni kisaltmayla; A_B -> YENI degisimi not edilir.
+            kayit[-1].update(anlam="", yeni=y)
             kayit.append({"kisaltma": y, "anlam": anlam, "cikarilan": anlam, "kaydet": True})
     if hatalar:
         raise AdimHatasi("Şu birleştirmeler kullanılamadı; düzeltin ya da işareti "
@@ -2074,21 +2077,23 @@ def kisaltma_uygula(durum):
     durum["kisaltma_yeni"] = yeni
     # Birlestirmeler 01.2.5'te yeniden verilir (onceki kararlar kartta gelir).
     durum["kisaltma_sayi_ayir"] = []
-    # Hafizaya kaydedilen satirin yeni kisaltmasi da kendi anlamiyla kaydedilir.
-    # Eski kisaltmanin anlami bu kolonlardakinden FARKLIYSA (yanlis
-    # kisaltma) kaydina not dusulur: sonraki calismalarda "dikkat".
+    # HAFIZA: onaylanan satirin onerilen kisaltmasi DOLUYSA anlam yeni
+    # kisaltmayla yazilir ve ESKI -> YENI degisimi not edilir (sonraki
+    # calismalarda kolon adlari buna gore degisir); BOSSA anlam
+    # kisaltmanin kendisiyle yazilir. Isareti kaldirilan satir hafizadan
+    # silinir. Bicim satirinin (<K><NN> ...) yalniz degisimi yazilir.
     kayit = []
-    for s_ in satirlar:
+    for s_ in satirlar + [b_ for b_ in tum if b_.get("bicim")]:
         kisa = str(s_.get("kisaltma") or "").strip().upper()
-        if s_.get("kaydet") and kisa in yeni and not kisaltma_mod._ayni_anlam(
-                sozluk.get(kisa, ""), yeni_anlam.get(yeni[kisa], "")):
-            s_ = dict(s_, kaynak=kisaltma_mod.yanlis_notu(yeni[kisa], yeni_anlam[yeni[kisa]]))
-        kayit.append(s_)
-    for s_ in satirlar + oneri_satir:
-        kisa = str(s_.get("kisaltma") or "").strip().upper()
-        if s_.get("kaydet") and kisa in yeni:
-            kayit.append({"kisaltma": yeni[kisa], "anlam": yeni_anlam[yeni[kisa]],
-                          "cikarilan": yeni_anlam[yeni[kisa]], "kaydet": True})
+        if not s_.get("kaydet"):
+            kayit.append(dict(s_, kaydet=False))
+        elif kisa in yeni:
+            kayit.append({"kisaltma": kisa, "anlam": "", "yeni": yeni[kisa], "kaydet": True})
+            if not s_.get("bicim"):
+                kayit.append({"kisaltma": yeni[kisa], "anlam": yeni_anlam[yeni[kisa]],
+                              "cikarilan": yeni_anlam[yeni[kisa]], "kaydet": True})
+        elif not s_.get("bicim"):
+            kayit.append(dict(s_, yeni=""))
     _alan, hata = kisaltma_kaydet(durum, kayit)
     if hata:
         return ("Kısaltmalar bu çalışmada kullanılacak ama hafızaya "
@@ -2249,7 +2254,7 @@ def kisaltma_kaydet(durum, satirlar):
     for s in satirlar or []:
         if isinstance(s, dict) and str(s.get("kisaltma") or "").strip():
             temiz.append({"kisaltma": s.get("kisaltma"), "anlam": s.get("anlam"),
-                          "kaydet": bool(s.get("kaydet")),
+                          "kaydet": bool(s.get("kaydet")), "yeni": s.get("yeni") or "",
                           # Yanlis kisaltma notu varsa o yazilir.
                           "kaynak": s.get("kaynak") or (
                               kisaltma_mod.KAYNAK_ONAY
