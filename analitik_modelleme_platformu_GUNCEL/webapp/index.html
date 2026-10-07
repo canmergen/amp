@@ -26,7 +26,8 @@
 
     <!-- ORTA: ÇALIŞMA KARTI (eski "Arşiv" düğmesi): açık çalışmanın adını,
          veri setini ve sözlüğünü gösterir; basınca kayıtlı çalışmalar
-         listesi açılır (app.js: calismalarAc, calismaKartiGuncelle). -->
+         listesi açılır (app.js: calismalarAc, calismaKartiGuncelle).
+         Yanında Yeni Çalışma: çalışma yönetimi tek yerde. -->
     <div id="ustbar-orta">
       <div id="calismalar-kap">
         <button id="calismalar-btn" class="calisma-kart" type="button"
@@ -44,6 +45,23 @@
           </svg>
         </button>
         <div id="calismalar-liste" role="menu" hidden></div>
+      </div>
+      <!-- Yeni Çalışma ONAYSIZ: basınca yeni çalışma açılır; açık çalışma
+           silinmez, Arşiv'den geri açılır. -->
+      <div id="yeni-kap">
+      <button id="sifirla-btn" type="button"
+              title="Yeni Çalışma (mevcut çalışma silinmez, Arşiv'den geri açılır)"
+              aria-label="Yeni Çalışma (mevcut çalışma silinmez)">
+        <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
+             focusable="false">
+          <path d="M12.532 5.887 A5 5 0 1 1 9.294 3.170"
+                fill="none" stroke="currentColor" stroke-width="1.45"
+                stroke-linecap="round"/>
+          <polygon points="10.550,3.507 7.662,4.234 8.414,1.432"
+                   fill="currentColor"/>
+        </svg>
+        <span class="sifirla-etiket">Yeni Çalışma</span>
+      </button>
       </div>
     </div>
 
@@ -86,23 +104,6 @@
              kendi REFRESH ikonu da tek oklu.
              stroke/fill currentColor: düğmenin rengini izler, koyu temada
              ayrıca kural gerekmez. -->
-        <!-- Yeni Çalışma ONAYSIZ: basınca yeni çalışma açılır; açık çalışma
-             silinmez, Arşiv'den geri açılır. -->
-        <div id="yeni-kap">
-        <button id="sifirla-btn" type="button"
-                title="Yeni Çalışma (mevcut çalışma silinmez, Arşiv'den geri açılır)"
-                aria-label="Yeni Çalışma (mevcut çalışma silinmez)">
-          <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
-               focusable="false">
-            <path d="M12.532 5.887 A5 5 0 1 1 9.294 3.170"
-                  fill="none" stroke="currentColor" stroke-width="1.45"
-                  stroke-linecap="round"/>
-            <polygon points="10.550,3.507 7.662,4.234 8.414,1.432"
-                     fill="currentColor"/>
-          </svg>
-          <span class="sifirla-etiket">Yeni Çalışma</span>
-        </button>
-        </div>
         <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
       </div>
 

@@ -441,6 +441,8 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 }
 .ck-alt:empty { display: none; }
 .ck-ok { flex-shrink: 0; margin-left: var(--b-1); }
+/* Yeni Çalışma, çalışma kartının yanında ve onunla aynı boyda. */
+#ustbar-orta #sifirla-btn { height: 40px; padding: 0 var(--b-4); border-radius: var(--r); }
 
 /* Dar barda çalışma kartının veri seti satırı gizlenir (ipucunda kalır). */
 @media (max-width: 1100px) { .ck-alt { display: none; } }
@@ -469,6 +471,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 #durum-rozet.hata { color: var(--kirmizi); }
 
 #sekmeler {
+  min-width: 240px;   /* sağ satır kısaldı; sekmeler yine rahat okunsun */
   display: flex; gap: 2px; padding: 2px;
   background: var(--zemin); border: 1px solid var(--kenar); border-radius: var(--r);
 }

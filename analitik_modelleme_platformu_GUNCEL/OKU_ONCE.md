@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst barda yine "Oturum Aktif"; kullanıcı adı kaldırıldı**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/index.html`, `OKU_ONCE.md` (backend yeniden başlatılmalı: `/kim` ucu kaldırıldı)
+Bu tur: **Yeni Çalışma, çalışma kartının yanına alındı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Üst barda çalışma kartı (Arşiv) ile Yeni Çalışma yan yana, aynı
+  boyda. Sağda tema ve Oturum Aktif; altında ÇALIŞMA / ÖZET.
+
+Önceki tur: **Üst barda yine "Oturum Aktif"; kullanıcı adı kaldırıldı**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/index.html`, `OKU_ONCE.md` (backend yeniden başlatılmalı: `/kim` ucu kaldırıldı)
 
 - Sağ üstteki etiket yine "● Oturum Aktif" (bağlantı koparsa "Bağlantı
   Yok"). Kullanıcı adı gösterilmiyor; `/kim` ucu kaldırıldı.
