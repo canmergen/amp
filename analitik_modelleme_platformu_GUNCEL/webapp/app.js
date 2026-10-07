@@ -107,11 +107,9 @@ const sozlukCipEl = document.getElementById("sozluk-cip");
 /* Sonuç kartları (ÜRETİM · ELEME · MODEL): eski üst şerit; artık sağ
    bloğun Değişkenler ve Bölme & Model sekmelerinde çiziliyor (bkz. sonucCiz). */
 let SONUC_KARTLARI = [];
-/* Üst bar ortası için: açık çalışmanın veri seti / sözlüğü, son yanıtın
-   "bekleyen" durumu ve Dataiku kullanıcı adı (bkz. calismaKartiGuncelle,
-   akisDurumGuncelle, rozetGuncelle). */
+/* Üst bar için: açık çalışmanın veri seti / sözlüğü ve Dataiku
+   kullanıcı adı (bkz. calismaKartiGuncelle, rozetGuncelle). */
 const CALISMA_VERI = { veri: "", sozluk: "" };
-let SON_BEKLEYEN = null;
 let KULLANICI_ADI = "";
 const bannerEl    = document.getElementById("banner");
 /* Kalan iki referans giriş
@@ -802,17 +800,14 @@ function fazlariCiz() {
                 dug.type = "button";
                 dug.className = "adim-git";
                 dug.textContent = numarali(a.kod, a.baslik);
-                dug.title = (a.sira === aktifAdim
-                             ? "\"" + tireSade(a.baslik) + "\" adımını yeniden aç"
-                             : "\"" + tireSade(a.baslik) + "\" adımına dön")
+                dug.title = "\"" + tireSade(a.baslik) + "\" bloğuna git"
                     + (a.aciklama ? ": " + tireSade(a.aciklama) : "");
-                /* Blok başlığındaki Geri Dön ile AYNI yol: transkript
-                   o adımdan geri sarılır. Ayraç basılmıyor, silinecek
-                   satırların arasında kalırdı. */
-                dug.onclick = () => {
-                    if (mesgul) return;
-                    gonder("geri dön", false, { adim: a.anahtar });
-                };
+                /* YALNIZ GEZİNME: tıklama adıma GERİ DÖNMEZ, sohbet o
+                   adımın bloğuna kayar ve blok kısa süre vurgulanır. Adıma
+                   geri dönmek bloğun kendi "Geri Dön" düğmesiyle yapılır
+                   (kullanıcı kararı: listeye basmak kararları
+                   sıfırlamamalı). */
+                dug.onclick = () => adimBloguneGit(a.anahtar, a.adimlar);
                 li.appendChild(dug);
             } else {
                 li.title = (a.aciklama ? tireSade(a.aciklama) + ", " : "")
@@ -836,6 +831,27 @@ function fazlariCiz() {
         kok.appendChild(liste);
         fazEl.appendChild(kok);
     });
+}
+
+/* Sohbette bir adımın bloğunu bulur ve oraya kaydırır. Gruplu adımlar
+   tek blokta alt bölüm olarak durur (.alt-bolum[data-adim]); tek
+   adımlar kendi bloğundadır (.adim-blok[data-adim]). Aynı adım birden
+   çok kez görülmüşse (geri dönüş) en sonuncusu. Grup satırına basılınca
+   grubun ilk bulunan adımı. */
+function adimBloguneGit(anahtar, grupAdimlari) {
+    const adaylar = [anahtar].concat(grupAdimlari || []).filter(Boolean);
+    let hedef = null;
+    for (let i = 0; i < adaylar.length && !hedef; i++) {
+        const sec = '.alt-bolum[data-adim="' + adaylar[i] + '"], .adim-blok[data-adim="' + adaylar[i] + '"]';
+        const hepsi = sohbetEl.querySelectorAll(sec);
+        if (hepsi.length) hedef = hepsi[hepsi.length - 1];
+    }
+    if (!hedef) return;
+    hedef.scrollIntoView({ block: "start", behavior: "smooth" });
+    hedef.classList.remove("blok-vurgu");
+    void hedef.offsetWidth;            // animasyon yeniden başlasın
+    hedef.classList.add("blok-vurgu");
+    setTimeout(() => hedef.classList.remove("blok-vurgu"), 1600);
 }
 
 function aktifFaziAc() {
@@ -5301,20 +5317,11 @@ function calismaGostergesi(iptalEt) {
 }
 
 
-/* ==================== Üst bar: çalışma kartı ve akış durumu ====================
-   ÇALIŞMA KARTI: eski Arşiv düğmesi. Açık çalışmanın adı ("v3") ile
-   seçili veri seti ve sözlük görünür; basınca kayıtlı çalışmalar listesi
-   açılır (calismalarAc değişmedi).
-
-   AKIŞ DURUMU: aktif adımın numarası ve adı, durum rozeti ve ilerleme.
-     - Bir iş sürüyorsa ("İşlem Devam Ediyor" satırı ekrandaysa: sohbet
-       isteği, açıklama önerileri, kısaltma okuması) rozet sarı, satırın
-       metni ve süresi burada da görünür; İptal o satırın İptal'ine basar.
-       Kaynak tek: sohbetteki görünür .islem-satiri. Böylece yeni bir iş
-       türü eklense de burası ayrıca bağlanmaz.
-     - Değilse ve akış kullanıcıdan girdi/onay bekliyorsa kırmızı
-       "Yanıtınız Bekleniyor".
-   Basınca sohbet aktif adımın bloğuna iner. */
+/* ==================== Üst bar: çalışma kartı ====================
+   Eski Arşiv düğmesi. Açık çalışmanın adı ("v3") ile seçili veri seti ve
+   sözlük görünür; basınca kayıtlı çalışmalar listesi açılır (calismalarAc
+   değişmedi). Aktif adım üst barda TEKRAR EDİLMEZ: sol paneldeki iş
+   akışında zaten görünüyor. */
 function calismaKartiGuncelle() {
     const btn = document.getElementById("calismalar-btn");
     if (!btn) return;
@@ -5334,73 +5341,7 @@ function calismaKartiGuncelle() {
     }
 }
 
-const ISLEM_ON_EK = "İşlem Devam Ediyor · ";
-
-function akisDurumGuncelle() {
-    const kok = document.getElementById("akis-durum");
-    if (!kok) return;
-    const adim = DUZ_ADIMLAR[aktifAdim];
-    if (!adim) { kok.hidden = true; return; }
-    kok.hidden = false;
-
-    const konum = adimKonumu(adim.anahtar);
-    const adEl = kok.querySelector(".ad-adim");
-    const metin = numarali(konum ? konum.altKod : "", adim.baslik);
-    if (adEl.textContent !== metin) { adEl.textContent = metin; adEl.title = metin; }
-
-    /* Görünür son işlem satırı */
-    const satirlar = sohbetEl ? sohbetEl.querySelectorAll(".islem-satiri.gorunur") : [];
-    const satir = satirlar.length ? satirlar[satirlar.length - 1] : null;
-    const rozet = kok.querySelector(".ad-rozet");
-    const is = kok.querySelector(".ad-is");
-    const iptal = kok.querySelector(".ad-iptal");
-    kok.classList.toggle("calisiyor", !!satir);
-    if (satir) {
-        const ham = ((satir.querySelector(".islem-sure") || {}).textContent || "").trim();
-        /* Rozet işin kendisini yazar ("Açıklama Önerileri · 2 / 3 Kolon ·
-           0:14"); sarı renk "işlem devam ediyor" demek. Tam metin ipucunda. */
-        const kisa = ham.indexOf(ISLEM_ON_EK) === 0 ? ham.slice(ISLEM_ON_EK.length) : ham;
-        rozet.hidden = false;
-        rozet.className = "ad-rozet calisiyor";
-        rozet.textContent = "● " + (kisa || "İşlem Devam Ediyor");
-        rozet.title = ham || "İşlem Devam Ediyor";
-        is.hidden = true;
-        const asil = satir.querySelector(".islem-iptal");
-        iptal.hidden = !asil;
-        iptal.disabled = !!(asil && asil.disabled);
-        iptal.onclick = (e) => { e.stopPropagation(); if (asil && !asil.disabled) asil.click(); };
-    } else {
-        is.hidden = true;
-        iptal.hidden = true;
-        const bekliyor = SON_BEKLEYEN === "girdi" || SON_BEKLEYEN === "onay";
-        rozet.hidden = !bekliyor;
-        rozet.className = "ad-rozet";
-        rozet.textContent = "● Yanıtınız Bekleniyor";
-        rozet.title = "Akış bu adımda sizin kararınızı bekliyor";
-    }
-
-    const hepsi = DUZ_ADIMLAR.filter(Boolean);
-    const biten = hepsi.filter(a => a.sira < aktifAdim).length;
-    kok.querySelector(".ad-say").textContent = biten + " / " + hepsi.length + " Adım";
-    kok.querySelector(".ad-cubuk i").style.width =
-        (hepsi.length ? Math.round(100 * biten / hepsi.length) : 0) + "%";
-}
-
 {
-    const kok = document.getElementById("akis-durum");
-    if (kok) {
-        const git = () => {
-            const kap = aktifBlokKabi();
-            if (kap) kap.scrollIntoView({ block: "start", behavior: "smooth" });
-        };
-        kok.addEventListener("click", git);
-        kok.addEventListener("keydown", e => {
-            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); git(); }
-        });
-    }
-    /* İşlem satırları kendi sayaçlarıyla güncelleniyor; üst bar her saniye
-       onları okur (yalnız birkaç DOM sorgusu). */
-    setInterval(akisDurumGuncelle, 1000);
     calismaKartiGuncelle();
 }
 
@@ -9573,8 +9514,6 @@ function yanitUygula(d, metin) {
     /* Sohbet kutusu: kart/form ekrandayken KILITLI. Kullanıcı o anda
        bir cümle yazmıyor, bir form dolduruyor. */
     kutuGuncelle(d.bekleyen);
-    if (d.bekleyen !== undefined) SON_BEKLEYEN = d.bekleyen;
-    akisDurumGuncelle();
     /* Panelin altindaki teyit dugmesi: yalniz adim "teyit" ve
        bekleyen "girdi" iken gorunur. */
     teyitPanelGuncelle(d.secim_alani, d.bekleyen);

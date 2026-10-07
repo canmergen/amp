@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst bar yenilendi; sağ blok hızlandı, sekmeler üçe indi**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni `/kim` ucu)
+Bu tur: **İş akışında tıklama yalnız gezinir; üst bardaki akış durumu kaldırıldı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Sol paneldeki İŞ AKIŞI'nda bir adıma basmak artık o adıma GERİ
+  DÖNMEZ: sohbet o adımın bloğuna kayar ve blok kısa süre vurgulanır.
+  Adıma geri dönmek için bloğun kendi "Geri Dön" düğmesi kullanılır.
+- Üst bardaki akış durumu (aktif adım, rozet, ilerleme) kaldırıldı: aynı
+  bilgi sol panelde zaten var. Üst barda logo, başlık, çalışma kartı ve
+  sağda kullanıcı etiketi kaldı.
+
+Önceki tur: **Üst bar yenilendi; sağ blok hızlandı, sekmeler üçe indi**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni `/kim` ucu)
 
 - Üst bar:
   - Logo biraz küçüldü (72 → 66 px), başlık ve birim adı yerinde.
