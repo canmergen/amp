@@ -111,14 +111,18 @@ let SONUC_KARTLARI = [];
    ustSekmeGuncelle bunları okuyor. */
 const PANELDE_KARAR = { sfa_karar: "degisken" };
 const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
+/* Üst bardaki kutu -> sayfa (ustSekmeGuncelle, kutu tıklamaları). */
+const UST_SAYFA = { akis: "calisma", dokuman: "ozet", sohbet: "sohbet", dashboard: "dashboard" };
 const bannerEl    = document.getElementById("banner");
 /* Kalan iki referans giriş
    bölgesinin kilidi için. */
 const girisBolge  = document.getElementById("giris-bolge");
 const kabukEl     = document.getElementById("kabuk");
 
-const sayfalar    = { calisma: document.getElementById("sayfa-calisma"),
-                      ozet:    document.getElementById("sayfa-ozet") };
+const sayfalar    = { calisma:   document.getElementById("sayfa-calisma"),
+                      ozet:      document.getElementById("sayfa-ozet"),
+                      sohbet:    document.getElementById("sayfa-sohbet"),
+                      dashboard: document.getElementById("sayfa-dashboard") };
 const sekmeler    = Array.from(document.querySelectorAll(".sekme"));
 
 const analizGovde = document.getElementById("analiz-govde");
@@ -276,7 +280,9 @@ function rozetGuncelle(kod) {
 
 /* ==================== Sayfa geçişi ==================== */
 function sayfaAc(ad) {
-    Object.keys(sayfalar).forEach(k => sayfalar[k].classList.toggle("gizli", k !== ad));
+    Object.keys(sayfalar).forEach(k => {
+        if (sayfalar[k]) sayfalar[k].classList.toggle("gizli", k !== ad);
+    });
     sekmeler.forEach(s => s.classList.toggle("aktif", s.dataset.sayfa === ad));
     cekmeceKapat();
     cekmeceButonlari.forEach(b => { b.hidden = (ad !== "calisma"); });
@@ -4423,9 +4429,9 @@ function analizSekmeAc(tab) {
        analizGuncelle yeniden çizer). Aynı sekmeyi açmak için baştan
        çizmek, büyük tablolarda açılışı yavaşlatıyordu. */
     if (tab !== aktifAnalizSekme || !analizGovde.childElementCount) analizCiz(tab);
-    /* Analiz alanı çalışma sayfasının içinde: ÖZET açıksa önce oraya
-       dönülür. Sonra alan üst barın altından iner. */
-    if (sayfalar.calisma && sayfalar.calisma.classList.contains("gizli")) sayfaAc("calisma");
+    /* Analiz alanı çalışma sayfasının içinde: başka sayfa açıksa önce
+       oraya dönülür. Sonra alan açılır (animasyonsuz). */
+    if (acikSayfa() !== "calisma") sayfaAc("calisma");
     analizAcikYaz(true);
 }
 
@@ -4452,15 +4458,19 @@ function analizAcikYaz(acik) {
     ustSekmeGuncelle();
 }
 
-/* Üst bardaki seçili sekme: ÖZET sayfası açıksa ÖZET; analiz alanı
-   açıksa o sekme; değilse AKIŞ. */
+/* Üst bardaki seçili kutu: açık sayfa ÇALIŞMA ise analiz alanı açıksa o
+   sekme, değilse AKIŞ; öteki sayfalarda o sayfanın kutusu. */
+function acikSayfa() {
+    return Object.keys(sayfalar).find(k => sayfalar[k] && !sayfalar[k].classList.contains("gizli"))
+        || "calisma";
+}
 function ustSekmeGuncelle() {
-    const ozetAcik = !!(sayfalar.ozet && !sayfalar.ozet.classList.contains("gizli"));
+    const sayfa = acikSayfa();
     document.querySelectorAll(".ust-sekme").forEach(b => {
         let aktif;
-        if (b.dataset.ust === "dokuman") aktif = ozetAcik;
-        else if (b.dataset.ust === "akis") aktif = !ozetAcik && !ANALIZ_DAR.acik;
-        else aktif = !ozetAcik && ANALIZ_DAR.acik && b.dataset.tab === aktifAnalizSekme;
+        if (b.dataset.ust === "akis") aktif = sayfa === "calisma" && !ANALIZ_DAR.acik;
+        else if (b.dataset.ust) aktif = sayfa === UST_SAYFA[b.dataset.ust];
+        else aktif = sayfa === "calisma" && ANALIZ_DAR.acik && b.dataset.tab === aktifAnalizSekme;
         b.classList.toggle("aktif", aktif);
         if (aktif) b.setAttribute("aria-current", "page");
         else b.removeAttribute("aria-current");
@@ -4496,11 +4506,12 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
     }
 }
 
-/* AKIŞ ve ÖZET sekmeleri. Esc analiz alanını kapatır (AKIŞ'a döner). */
+/* AKIŞ, ÖZET, SOHBET, DASHBOARD kutuları. Esc analiz alanını kapatır
+   (AKIŞ'a döner). */
 document.querySelectorAll(".ust-sekme[data-ust]").forEach(b => {
     b.onclick = () => {
         analizDaralt(true);
-        sayfaAc(b.dataset.ust === "dokuman" ? "ozet" : "calisma");
+        sayfaAc(UST_SAYFA[b.dataset.ust] || "calisma");
     };
 });
 document.addEventListener("keydown", e => {

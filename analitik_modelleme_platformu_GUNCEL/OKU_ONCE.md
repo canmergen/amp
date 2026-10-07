@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sayfa sekmeleri üst barda; analiz alanı üstten inip bütün ekranı kaplar**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Üst bar kümeler hâlinde: MODEL AKIŞI kümesi, SOHBET ve DASHBOARD blokları; sağda 2 × 2**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Üst bar yüksekliği 64 px (`--ustbar-h`).
+- Ortada MODEL AKIŞI kümesi: solda küme adı, içinde ayrı kutular AKIŞ ·
+  VERİ & SÖZLÜK · DEĞİŞKENLER · BÖLME & MODEL · ÖZET. Hemen sağında
+  ayrı bloklar SOHBET ve DASHBOARD. Seçili kutu kırmızı zeminli.
+- Sağda 2 × 2: üstte Arşiv ve Yeni Çalışma, altta tema ve Oturum Aktif.
+- Geçişler animasyonsuz, doğrudan: analiz alanı aşağı inmez, hemen açılır.
+- SOHBET ve DASHBOARD şimdilik yalnız sayfa iskeleti ("Bu bölüm
+  hazırlanıyor"); içerikleri ayrıca kurulacak.
+- Dar barda (≤ 1366 px) kutular sıkılaşır, yazı bir punto küçülür.
+
+Önceki tur: **Sayfa sekmeleri üst barda; analiz alanı üstten inip bütün ekranı kaplar**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üst barın ortasında sekmeler: AKIŞ · VERİ & SÖZLÜK · DEĞİŞKENLER ·
   BÖLME & MODEL · ÖZET. Sağda tema, Arşiv, Yeni Çalışma, Oturum Aktif.

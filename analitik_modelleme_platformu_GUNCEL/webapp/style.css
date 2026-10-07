@@ -154,7 +154,7 @@
      birakiyor. Dorduncu satiri buyutursen burayi da buyut.
      Alt ayrac border-box'tan yiyor: 1.5px'te icerige 76.5px kaliyor,
      olculen 75px ihtiyacin uzerinde. */
-  --ustbar-h:   78px;
+  --ustbar-h:   64px;
   --sohbet-yan: 19px;
 
   /* SOHBETIN TEK GENISLIGI. Ust sinir degil, SABIT genislik: bot
@@ -325,11 +325,10 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 }
 
 #ustbar-sag {
-  margin-left: auto;   /* ortadaki şerit kaldırıldı: sağa yaslanır */
+  margin-left: auto;
   display: flex; flex-direction: column;
   align-items: stretch; justify-content: center; gap: 5px; flex-shrink: 0;
 }
-.ustbar-sag-satir { display: flex; align-items: center; justify-content: center; gap: var(--b-2); }
 
 #tema-btn, .cekmece-btn {
   display: flex; align-items: center; justify-content: center;
@@ -414,26 +413,67 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .calisma-alt { font-size: var(--fs-kucuk); }
 .calisma-bos { padding: var(--b-2) var(--b-3); }
 .calisma-hata { color: var(--kirmizi); }
-/* ==================== ÜST BAR: SAYFA SEKMELERİ ====================
-   AKIŞ · VERİ & SÖZLÜK · DEĞİŞKENLER · BÖLME & MODEL · ÖZET. Barın
-   ortasında, kalan genişliği kaplar. Seçili sekme kırmızı; altında
-   barın ayracına oturan kalın çizgi. */
+/* ==================== ÜST BAR: SAYFA KÜMELERİ ====================
+   MODEL AKIŞI kümesi (başlık + beş kutu) ve yanında ayrı SOHBET ve
+   DASHBOARD blokları. Her küme ince kenarlı bir kutu; içindeki her sekme
+   ayrı küçük kutu. Seçili kutu kırmızı zeminli. */
 #ust-sekmeler {
-  flex: 1; min-width: 0; align-self: stretch;
-  display: flex; align-items: stretch; justify-content: center;
-  gap: var(--b-1); padding: 0 var(--b-3);
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: var(--b-3); padding: 0 var(--b-3);
+}
+.ust-kume {
+  display: flex; align-items: center; gap: 4px; min-width: 0;
+  padding: 4px; border: 1px solid var(--kenar); border-radius: var(--r);
+  background: var(--zemin);
+}
+.ust-kume-ad {
+  padding: 0 var(--b-3) 0 var(--b-2); white-space: nowrap;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  letter-spacing: var(--etiket-aralik); color: var(--kirmizi);
+  border-right: 1px solid var(--kenar); margin-right: 2px; align-self: stretch;
+  display: flex; align-items: center;
 }
 .ust-sekme {
-  flex: 0 1 auto; min-width: 0; padding: 0 clamp(10px, 1.4vw, 22px);
-  border: none; background: none; cursor: pointer;
-  font-family: var(--font); font-size: var(--fs-baslik); font-weight: var(--fw-kalin);
+  height: 30px; padding: 0 clamp(8px, 1vw, 14px); min-width: 0;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey); cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-govde); font-weight: var(--fw-kalin);
   letter-spacing: var(--etiket-aralik); color: var(--metin); white-space: nowrap;
-  border-bottom: 3px solid transparent; margin-bottom: calc(-1 * var(--ayrac-kalinlik));
-  transition: background .12s, color .12s;
+  transition: background .12s, color .12s, border-color .12s;
 }
-.ust-sekme:hover { background: var(--kirmizi-acik); color: var(--kirmizi); }
-.ust-sekme.aktif { color: var(--kirmizi); border-bottom-color: var(--kirmizi); background: var(--kirmizi-acik); }
-.ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: -3px; }
+.ust-sekme:hover { border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik); }
+.ust-sekme.aktif, .ust-sekme.aktif:hover {
+  background: var(--kirmizi); border-color: var(--kirmizi); color: #fff;
+}
+.ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: 1px; }
+.ust-kume.tekli .ust-sekme { padding: 0 clamp(12px, 1.4vw, 20px); }
+.ust-sekme { flex-shrink: 0; }   /* yazı kesilmesin: dar barda aşağıdaki sıkı düzen */
+/* Dar bar (≤ 1366 px): kutular sıkılaşır, yazı bir punto küçülür. */
+@media (max-width: 1366px) {
+  #ust-sekmeler { gap: var(--b-2); padding: 0 var(--b-2); }
+  .ust-kume { gap: 3px; padding: 3px; }
+  .ust-kume-ad { padding: 0 var(--b-2) 0 var(--b-1); }
+  .ust-sekme, .ust-kume.tekli .ust-sekme { padding: 0 7px; font-size: var(--fs-kucuk); }
+}
+
+/* Sağ: 2 × 2 (Arşiv | Yeni Çalışma / tema | Oturum Aktif). */
+.ustbar-sag-izgara {
+  display: grid; grid-template-columns: auto auto; gap: 4px;
+  align-items: stretch;
+}
+.ustbar-sag-izgara > * { width: 100%; justify-content: center; }
+.ustbar-sag-izgara #calismalar-btn, .ustbar-sag-izgara #sifirla-btn { width: 100%; justify-content: center; }
+.ustbar-sag-izgara #tema-btn { width: 100%; }
+.ustbar-sag-izgara #durum-rozet { justify-content: center; }
+
+/* Sohbet ve Dashboard sayfa iskeleti (içerik ayrıca kurulacak). */
+.bos-sayfa {
+  height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: var(--b-1);
+}
+.bos-sayfa-ad { font-size: var(--fs-buyuk); font-weight: var(--fw-kalin); }
+.bos-sayfa-not { font-size: var(--fs-govde); }
 
 @media (max-width: 1024px) { #baslik-blok { display: none; } }
 
@@ -1796,17 +1836,17 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 #gonder:disabled { opacity: .4; cursor: not-allowed; }
 
 /* ==================== ANALİZ ALANI ====================
-   Üst bardaki VERİ & SÖZLÜK / DEĞİŞKENLER / BÖLME & MODEL sekmeleri
-   açar: alan üst barın ALTINDAN aşağı iner ve bütün alanı (sol panel ve
-   sohbet dahil) kaplar. AKIŞ seçiliyken (#kabuk.analiz-dar) yukarıda,
-   görünmez. Akışta yer kaplamaz: sohbet her zaman tam genişlikte. */
+   Üst bardaki VERİ & SÖZLÜK / DEĞİŞKENLER / BÖLME & MODEL kutuları
+   açar: alan üst barın altındaki bütün alanı (sol panel ve sohbet dahil)
+   kaplar. AKIŞ seçiliyken (#kabuk.analiz-dar) gizli. Akışta yer
+   kaplamaz: sohbet her zaman tam genişlikte. */
 #analiz-panel {
   position: fixed; top: var(--ustbar-h); left: 0; right: 0; bottom: 0; z-index: 38;
   background: var(--yuzey-alt);
   display: flex; flex-direction: column; overflow: hidden;
-  transform: translateY(0); transition: transform .14s ease-out, visibility .14s;
 }
-#kabuk.analiz-dar #analiz-panel { transform: translateY(-100%); visibility: hidden; }
+/* Doğrudan geçiş: kayma / animasyon yok. */
+#kabuk.analiz-dar #analiz-panel { display: none; }
 #analiz-icerik {
   flex: 1; min-height: 0; width: 100%; max-width: 1440px; margin: 0 auto;
   display: flex; flex-direction: column; overflow: hidden;

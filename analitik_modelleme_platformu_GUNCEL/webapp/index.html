@@ -24,18 +24,28 @@
       </div>
     </div>
 
-    <!-- ORTA: SAYFA SEKMELERİ. AKIŞ ana ekrandır (iş akışı + sohbet).
-         VERİ & SÖZLÜK, DEĞİŞKENLER, BÖLME & MODEL basınca analiz alanı
-         üst barın altından aşağı iner ve bütün alanı kaplar (app.js:
-         analizSekmeAc / analizAcikYaz). ÖZET doküman sayfasıdır.
-         Üç analiz sekmesi .analiz-sekme sınıfını taşır: sekme mantığı
-         (aktif, çizim) eskisi gibi o sınıfa bağlı. -->
+    <!-- ORTA: SAYFA KÜMELERİ.
+         MODEL AKIŞI kümesi: AKIŞ (iş akışı + adım kartları), VERİ & SÖZLÜK,
+         DEĞİŞKENLER, BÖLME & MODEL (analiz alanı, üst barın altındaki bütün
+         alanı kaplar) ve ÖZET (doküman). Üç analiz kutusu .analiz-sekme
+         sınıfını taşır: sekme mantığı (aktif, çizim) o sınıfa bağlı.
+         SOHBET ve DASHBOARD ayrı bloklar: kendi sayfalarına geçer
+         (app.js: sayfaAc, ustSekmeGuncelle). -->
     <nav id="ust-sekmeler" aria-label="Sayfalar">
-      <button class="ust-sekme" data-ust="akis" type="button">AKIŞ</button>
-      <button class="ust-sekme analiz-sekme" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
-      <button class="ust-sekme analiz-sekme" data-tab="degisken" type="button">DEĞİŞKENLER</button>
-      <button class="ust-sekme analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; MODEL</button>
-      <button class="ust-sekme" data-ust="dokuman" type="button">ÖZET</button>
+      <div class="ust-kume">
+        <span class="ust-kume-ad">MODEL AKIŞI</span>
+        <button class="ust-sekme" data-ust="akis" type="button">AKIŞ</button>
+        <button class="ust-sekme analiz-sekme" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
+        <button class="ust-sekme analiz-sekme" data-tab="degisken" type="button">DEĞİŞKENLER</button>
+        <button class="ust-sekme analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; MODEL</button>
+        <button class="ust-sekme" data-ust="dokuman" type="button">ÖZET</button>
+      </div>
+      <div class="ust-kume tekli">
+        <button class="ust-sekme" data-ust="sohbet" type="button">SOHBET</button>
+      </div>
+      <div class="ust-kume tekli">
+        <button class="ust-sekme" data-ust="dashboard" type="button">DASHBOARD</button>
+      </div>
     </nav>
 
     <!-- Üst şerit (ÜRETİM · ELEME · MODEL SONUÇLARI) ARTIK BURADA DEĞİL:
@@ -43,7 +53,10 @@
          (app.js: sonucCiz). -->
 
     <div id="ustbar-sag">
-      <div class="ustbar-sag-satir">
+      <!-- SAĞ: 2 × 2. Üstte Arşiv ve Yeni Çalışma, altta tema (mod geçişi)
+           ve Oturum Aktif. Dar ekrandaki iş akışı çekmece düğmesi üst
+           satırın başında (geniş ekranda gizli). -->
+      <div class="ustbar-sag-izgara">
         <!-- Dar ekranda panelleri çekmece olarak açar; geniş ekranda gizli -->
         <button id="panel-btn" class="cekmece-btn" type="button"
                 title="İş akışı panelini aç/kapat" aria-label="İş akışı panelini aç/kapat"
@@ -54,19 +67,6 @@
             <path d="M3 6h18M3 12h18M3 18h18"></path>
           </svg>
         </button>
-        <button id="tema-btn" type="button" title="Koyu tema" aria-label="Tema değiştir"></button>
-        <!-- Dataiku'nun kendi REFRESH düğmesi bunun hemen üstünde duruyor ve
-             karıştırılınca gerçek veri kaybı yaşandı: bu yüzden yalnız ikon
-             değil, görünür etiket de taşır.
-             İKON NEDEN SVG, KARAKTER DEĞİL: ⟳ / ↻ gibi karakterler fonttan
-             fonta değişiyor (bazı sistemlerde tek oklu, bazılarında kutu
-             çıkıyor). Buradaki SVG her ortamda aynı çiziliyor.
-             NEDEN TEK OKLU: sohbet metninde geçen "sağ üstteki ⟳ Yeni
-             Çalışma" ifadesindeki karakter tek oklu; düğmedeki ikon iki
-             oklu olunca metin ile düğme aynı şeyi göstermiyordu. Dataiku'nun
-             kendi REFRESH ikonu da tek oklu.
-             stroke/fill currentColor: düğmenin rengini izler, koyu temada
-             ayrıca kural gerekmez. -->
         <!-- ARŞİV: PROJE_HAFIZASI'ndaki kayıtlı çalışmalar. Birine basınca
              o çalışma kaldığı yerden açılır (app.js: calismalarAc). -->
         <div id="calismalar-kap">
@@ -100,6 +100,19 @@
           <span class="sifirla-etiket">Yeni Çalışma</span>
         </button>
         </div>
+        <button id="tema-btn" type="button" title="Koyu tema" aria-label="Tema değiştir"></button>
+        <!-- Dataiku'nun kendi REFRESH düğmesi bunun hemen üstünde duruyor ve
+             karıştırılınca gerçek veri kaybı yaşandı: bu yüzden yalnız ikon
+             değil, görünür etiket de taşır.
+             İKON NEDEN SVG, KARAKTER DEĞİL: ⟳ / ↻ gibi karakterler fonttan
+             fonta değişiyor (bazı sistemlerde tek oklu, bazılarında kutu
+             çıkıyor). Buradaki SVG her ortamda aynı çiziliyor.
+             NEDEN TEK OKLU: sohbet metninde geçen "sağ üstteki ⟳ Yeni
+             Çalışma" ifadesindeki karakter tek oklu; düğmedeki ikon iki
+             oklu olunca metin ile düğme aynı şeyi göstermiyordu. Dataiku'nun
+             kendi REFRESH ikonu da tek oklu.
+             stroke/fill currentColor: düğmenin rengini izler, koyu temada
+             ayrıca kural gerekmez. -->
         <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
       </div>
 
@@ -192,6 +205,22 @@
       </div>
     </aside>
 
+  </div>
+
+  <!-- ===================== SOHBET ve DASHBOARD =====================
+       Üst bardaki ayrı bloklar. İçerikleri ayrıca kurulacak; şimdilik
+       yalnız sayfa iskeleti. -->
+  <div id="sayfa-sohbet" class="sayfa gizli">
+    <div class="bos-sayfa">
+      <div class="bos-sayfa-ad">Sohbet</div>
+      <div class="bos-sayfa-not">Bu bölüm hazırlanıyor.</div>
+    </div>
+  </div>
+  <div id="sayfa-dashboard" class="sayfa gizli">
+    <div class="bos-sayfa">
+      <div class="bos-sayfa-ad">Dashboard</div>
+      <div class="bos-sayfa-not">Bu bölüm hazırlanıyor.</div>
+    </div>
   </div>
 
   <!-- ===================== SAYFA 2: MODEL GELİŞTİRME DOKÜMANI =====
