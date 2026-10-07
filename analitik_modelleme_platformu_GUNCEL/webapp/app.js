@@ -103,7 +103,9 @@ const kutuEl      = document.getElementById("kutu");
 const gonderEl    = document.getElementById("gonder");
 const fazEl       = document.getElementById("faz-listesi");
 const sozlukCipEl = document.getElementById("sozluk-cip");
-const seritEl     = document.getElementById("ozet-serit");
+/* Sonuç kartları (ÜRETİM · ELEME · MODEL): eski üst şerit; artık sağ
+   bloğun SONUÇLAR sekmesinde çiziliyor (bkz. sonucCiz). */
+let SONUC_KARTLARI = [];
 const bannerEl    = document.getElementById("banner");
 /* Kalan iki referans giriş
    bölgesinin kilidi için. */
@@ -151,7 +153,7 @@ let aktifAnalizSekme = "ozet";
    anahtariyla geliyor (bkz. akis_panel.hazirlik_paneli). */
 /* UC SEKME: "degisken" (DEĞİŞKEN ANALİZİ: dağılım + SFA + eksik değer)
    ve "bolme" (BÖLME & VALİDASYON). */
-const BAGLI_SEKMELER = ["ozet", "degisken", "bolme"];
+const BAGLI_SEKMELER = ["ozet", "degisken", "bolme", "sonuc"];
 
 /* Dataset listesi: "yukleniyor" | "hazir" | "bos" | "hata"
    "bos": liste okundu ama proje icinde dataset yok -> elle yazmaya izin ver */
@@ -850,61 +852,52 @@ function cipYaz(el, ad) {
     el.hidden = !metin;
 }
 
-/* Ust serit: BASTAN SONA ne oldugunu anlatan dort kart.
-   Bicim eskisiyle ayni (kirmizi etiket, koyu deger, iki gri alt satir,
-   ulasilmamis deger ∅); degisen sey ICERIK. Eski kartlar
-   (AŞAMA/KAPSAM/HEDEF/DEĞİŞKEN SETİ) baska panellerin tekrariydi;
-   yenisi bir huni: veri neydi, neler elendi, ne uretildi, modele ne girdi. */
+/* Sonuç kartları (ÜRETİM · ELEME · MODEL): eskiden üst şeritte
+   duruyordu; akışın çoğunda ∅ gösterip sürekli yer kapladığı için sağ
+   bloğun SONUÇLAR sekmesine taşındı. Burada yalnız saklanır, sekme
+   açıksa yeniden çizilir. */
 function ozetGuncelle(o) {
     if (!o || !o.kartlar) return;
-    /* EKRANDAKI YAZININ AYNISI IPUCU OLARAK CIKMAZ: satirin tamami
-       gorunuyorsa ipucu yok; yalniz sigmayip "…" ile kesildiyse ustune
-       gelince tamami gorunur. */
-    const kesikIpucu = el => {
-        el.addEventListener("mouseenter", () => {
-            if (el.scrollWidth > el.clientWidth) el.title = el.textContent;
-            else el.removeAttribute("title");
-        });
-    };
     /* Cipler ARTIK cizilmiyor: VERİ ve SÖZLÜK kartlari ayni bilgiyi
        tasiyor ve ustune tiklanabiliyor. Alanlar govdede duruyor cunku
        seciliVeriSeti() onlari okuyor. */
     cipYaz(cipEl, null);
     cipYaz(sozlukCipEl, null);
-    if (!seritEl) return;
+    SONUC_KARTLARI = o.kartlar;
+    if (aktifAnalizSekme === "sonuc") analizCiz("sonuc");
+}
 
-    seritEl.innerHTML = "";
-    o.kartlar.forEach(k => {
-        /* "hedef" dolu kart TIKLANABILIR: sag panelde ilgili sekmeyi
-           acar. Hazir olmayan kartta hedef gelmez, tiklama da yoktur —
-           yarim bir panel acmaktansa kart ne bekledigini yazar. */
+/* SONUÇLAR sekmesi: üretim, eleme ve model sonuçları alt alta.
+   Biçim eski üst şeritteki gibi (kırmızı etiket, koyu değer, iki alt
+   satır, ulaşılmamış değer ∅). "hedef" dolu kart TIKLANABİLİR: ilgili
+   sekmeyi açar. Hazır olmayan kartta hedef gelmez, tıklama da yoktur —
+   yarım bir sekme açmaktansa kart ne beklediğini yazar. */
+function sonucCiz() {
+    if (!SONUC_KARTLARI.length) {
+        analizGovde.appendChild(elYap("div", "set-not",
+            "Sonuçlar akış ilerledikçe burada görünür."));
+        return;
+    }
+    SONUC_KARTLARI.forEach(k => {
         const tiklanir = !!k.hedef;
-        const kart = elYap(tiklanir ? "button" : "div",
-                           "ozet-kart" + (tiklanir ? " tiklanir" : ""));
+        const kart = elYap(tiklanir ? "button" : "div", "sonuc-kart");
         if (tiklanir) {
             kart.type = "button";
             kart.onclick = () => { sayfaAc("calisma"); analizSekmeAc(k.hedef); };
         }
         if (k.ipucu) kart.title = k.ipucu;
         kart.appendChild(elYap("span", "ozet-etiket", tireSade(k.etiket)));
-
         const degerMetin = degerGoster(k.deger);
-        const deger = elYap("span",
-            "ozet-deger" + (degerMetin === BOS_SIMGE ? " bos" : ""), degerMetin);
-        kesikIpucu(deger);
-        kart.appendChild(deger);
-
-        /* Üst şerit satırları BAŞLIK BÜYÜK HARFİ ile: "kural tabanlı
-           üretim + AI keşfi" -> "Kural Tabanlı Üretim + AI Keşfi".
-           Kısaltmalar (AI, SFA, KS, OOT) ve sayılar korunur. */
+        kart.appendChild(elYap("span",
+            "ozet-deger" + (degerMetin === BOS_SIMGE ? " bos" : ""), degerMetin));
+        /* Satırlar BAŞLIK BÜYÜK HARFİ ile: "kural tabanlı üretim + AI
+           keşfi" -> "Kural Tabanlı Üretim + AI Keşfi". Kısaltmalar (AI,
+           SFA, KS, OOT) ve sayılar korunur. */
         [["ozet-ust", k.ust], ["ozet-alt", k.alt]].forEach(([sinif, ham]) => {
             const metin = baslikBuyuk(ham);
-            const el = elYap("span", sinif, metin);
-            if (!k.ipucu) kesikIpucu(el);   // kart ipucusu varsa o kazansin
-            kart.appendChild(el);
+            if (metin) kart.appendChild(elYap("span", sinif, metin));
         });
-
-        seritEl.appendChild(kart);
+        analizGovde.appendChild(kart);
     });
 }
 
@@ -3599,6 +3592,7 @@ function analizCiz(tab) {
         ftOdakGeriVer(odak);
         return;
     }
+    if (tab === "sonuc") { sonucCiz(); return; }
     setSeciciCiz(tab);
     if (tab === "bolme") {
         panelBolumBasligi("Bölme");
@@ -4406,7 +4400,7 @@ function analizSekmeAc(tab) {
 }
 
 /* ==================== Sağ blok: dar şerit / geniş hâl ====================
-   Blok varsayılan olarak DAR ŞERİT: yalnız üç sekmenin adı görünür,
+   Blok varsayılan olarak DAR ŞERİT: yalnız dört sekmenin adı görünür,
    sohbet boşalan yeri kullanır (style.css: #kabuk.analiz-dar).
 
    NE ZAMAN GENİŞLER
@@ -4467,6 +4461,9 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
 {
     const kapat = document.getElementById("analiz-kapat");
     if (kapat) kapat.onclick = () => analizDaralt(true);
+    /* Şeritteki ‹ düğmesi: son açık sekmeyle genişletir. */
+    const genislet = document.getElementById("analiz-genislet");
+    if (genislet) genislet.onclick = () => analizSekmeAc(aktifAnalizSekme);
 }
 
 /* Degisken teyit tablosu varsayilan

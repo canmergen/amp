@@ -1,10 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sağ blok varsayılan olarak dar şerit; SFA'da kendiliğinden açılır**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Üst şerit kaldırıldı, sonuçlar sağ blokta SONUÇLAR sekmesinde; şerit yazısı ve aç/kapat düğmeleri düzeldi**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Üst bardaki ÜRETİM · ELEME · MODEL SONUÇLARI kartları kaldırıldı;
+  aynı üç kart sağ bloğun dördüncü sekmesi SONUÇLAR'da alt alta durur.
+  Biçim ve tıklanınca ilgili sekmeyi açma davranışı aynı.
+- Şeritteki sekme adları artık aşağıdan yukarı okunur; dört sekme
+  aynı boyda, ekran kısaysa hepsi aynı oranda kısalır.
+- Aç/kapat: geniş hâlde bloğun üstünde "ANALİZ" başlığı ve sağında
+  belirgin "Daralt ›" düğmesi var. Şeritte en üstte "‹" düğmesi bloğu
+  son açık sekmeyle genişletir. Sekme adına basmak da açar; açık
+  sekmeye yeniden basmak daraltır.
+
+Önceki tur: **Sağ blok varsayılan olarak dar şerit; SFA'da kendiliğinden açılır**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Sağ blok (Veri & Sözlük / Değişken Analizi / Bölme & Validasyon)
-  artık başlangıçta ince bir şerit: yalnız üç sekmenin adı görünür,
-  adlar 90° dönük düz yazı, üçü aynı boyda. Sohbet boşalan yeri kullanır.
+  artık başlangıçta ince bir şerit: yalnız sekme adları görünür,
+  adlar 90° dönük düz yazı, hepsi aynı boyda. Sohbet boşalan yeri kullanır.
 - Bir ada basınca blok sağdan sola bugünkü boyutuna genişler ve o
   sekme açılır. Açık sekmeye yeniden basmak ya da sekmelerin sağındaki
   › düğmesi bloğu şeride indirir. Sürükleyerek genişlik ayarı aynen
