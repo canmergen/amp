@@ -142,9 +142,9 @@
      orada vw degeri kazaniyor. Min degerler olculu artirildi: cekmece
      esigi 944/864px ve orada iki panel yan yana duruyor — min'ler fazla
      buyurse sohbet sutunu okunamayacak kadar daralir. */
-  /* Sol panel: dar ekranda 224px, genis ekranda 330px.
-     330/400 degerleri kullanicinin tutamaklarla OLCTUGU degerler. */
-  --panel-en:   clamp(224px, 24vw, 330px);
+  /* Sol panel: ekranın %27'si, 250-400 px arası. Sağ blok yan sütun
+     olmaktan çıkınca sohbet çok genişliyordu; sol panel biraz büyüdü. */
+  --panel-en:   clamp(250px, 27vw, 400px);
   /* Sag panel: dar ekranda 328px, genis ekranda en fazla 480px */
   /* Alt sınır --ft-en + gövde
      dolgusu kadar: sözlük tablosu hâlâ kaydırmasız sığıyor. */

@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sağ 2 × 2'de satırlar yer değiştirdi**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Sol panel biraz genişledi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Sol panel (Analitik Süreç + İş Akışı) ekranın %27'si, 250-400 px
+  arası (önce %24, 224-330 px). 1440 px ekranda ~330 → ~389 px; sohbet
+  o kadar daralır.
+- Tutamakla genişliği daha önce elle ayarladıysanız o ayar geçerli
+  kalır; tutamağa çift tıklayınca yeni varsayılana döner.
+
+Önceki tur: **Sağ 2 × 2'de satırlar yer değiştirdi**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üstte tema (mod geçişi) ve Oturum Aktif, altta Arşiv ve Yeni Çalışma.
 
