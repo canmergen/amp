@@ -24,9 +24,49 @@
       </div>
     </div>
 
+    <!-- ORTA: çalışma kartı + akış durumu.
+         ÇALIŞMA KARTI eski "Arşiv" düğmesidir: açık çalışmanın adını, veri
+         setini ve sözlüğünü gösterir; basınca kayıtlı çalışmalar listesi
+         açılır (app.js: calismalarAc, calismaKartiGuncelle).
+         AKIŞ DURUMU: aktif adım, "Yanıtınız Bekleniyor" / "İşlem Devam
+         Ediyor", ilerleme. Basınca sohbet o adımın bloğuna iner; iş
+         sürerken süre ve İptal burada da görünür (app.js: akisDurumGuncelle). -->
+    <div id="ustbar-orta">
+      <div id="calismalar-kap">
+        <button id="calismalar-btn" class="calisma-kart" type="button"
+                title="Kayıtlı çalışmalarınız: açın ya da silin" aria-haspopup="true"
+                aria-expanded="false" aria-controls="calismalar-liste">
+          <span class="ck-kare" aria-hidden="true"></span>
+          <span class="ck-metin">
+            <span class="ck-ad">Çalışma</span>
+            <span class="ck-alt"></span>
+          </span>
+          <svg class="ck-ok" viewBox="0 0 24 24" width="14" height="14" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path>
+          </svg>
+        </button>
+        <div id="calismalar-liste" role="menu" hidden></div>
+      </div>
+      <div id="akis-durum" role="button" tabindex="0" hidden
+           title="Aktif adımın bloğuna git">
+        <span class="ad-adim"></span>
+        <span class="ad-rozet" hidden></span>
+        <span class="ad-is" hidden></span>
+        <span class="ad-cubuk" aria-hidden="true"><i></i></span>
+        <span class="ad-say"></span>
+        <button class="ad-iptal" type="button" hidden>İptal</button>
+        <svg class="ad-ok" viewBox="0 0 24 24" width="14" height="14" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+      </div>
+    </div>
+
     <!-- Üst şerit (ÜRETİM · ELEME · MODEL SONUÇLARI) ARTIK BURADA DEĞİL:
          akışın çoğunda ∅ gösterip sürekli yer kaplıyordu. Kartlar sağ
-         bloğun SONUÇLAR sekmesinde çizilir (app.js: sonucCiz). -->
+         bloğun Değişkenler ve Bölme & Model sekmelerinde çizilir
+         (app.js: sonucCiz). -->
 
     <div id="ustbar-sag">
       <div class="ustbar-sag-satir">
@@ -62,25 +102,6 @@
              kendi REFRESH ikonu da tek oklu.
              stroke/fill currentColor: düğmenin rengini izler, koyu temada
              ayrıca kural gerekmez. -->
-        <!-- ARŞİV: PROJE_HAFIZASI'ndaki kayıtlı çalışmalar. Birine
-             basınca o çalışma kaldığı yerden açılır. "Yeni Çalışma"
-             artık hiçbir şeyi silmediği için yanlışlıkla basılsa da
-             önceki çalışmaya buradan dönülür. Liste açılınca sunucudan
-             istenir (app.js: calismalarAc). -->
-        <div id="calismalar-kap">
-          <button id="calismalar-btn" type="button"
-                  title="Kayıtlı çalışmalarınız: açın ya da silin" aria-haspopup="true"
-                  aria-expanded="false" aria-controls="calismalar-liste">
-            <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
-                 focusable="false">
-              <path d="M1.75 4.25v8a1 1 0 0 0 1 1h10.5a1 1 0 0 0 1-1v-6.5a1 1 0 0 0-1-1H8L6.5 3.25H2.75a1 1 0 0 0-1 1z"
-                    fill="none" stroke="currentColor" stroke-width="1.45"
-                    stroke-linejoin="round"/>
-            </svg>
-            <span class="sifirla-etiket">Arşiv</span>
-          </button>
-          <div id="calismalar-liste" role="menu" hidden></div>
-        </div>
         <!-- Yeni Çalışma ONAYSIZ: basınca yeni çalışma açılır; açık çalışma
              silinmez, Arşiv'den geri açılır. -->
         <div id="yeni-kap">
@@ -98,6 +119,9 @@
           <span class="sifirla-etiket">Yeni Çalışma</span>
         </button>
         </div>
+        <!-- KULLANICI ETİKETİ: oturum durumu (yeşil nokta) + Dataiku
+             kullanıcı adı. Bağlantı koparsa nokta kırmızı, yazı "Bağlantı
+             Yok" (app.js: rozetGuncelle). -->
         <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
       </div>
 
@@ -180,9 +204,9 @@
            tarafında). Üstte tek bir aç/kapa düğmesi (kapalıyken ‹,
            açıkken ›), altında dört sekme adı 90° dönük. Blok açılınca
            içerik şeridin SAĞINA açılır (app.js: analizAcikYaz).
-           DEĞİŞKEN ANALİZİ = dağılım + SFA + eksik değer;
-           BÖLME & VALİDASYON = bölme özeti + validasyon sonuçları;
-           SONUÇLAR = üretim, eleme ve model sonuçları (eski üst şerit). -->
+           VERİ & SÖZLÜK = veri seti, sözlük, kolon tablosu;
+           DEĞİŞKENLER = dağılım + SFA + eksik değer + üretim ve eleme;
+           BÖLME & MODEL = bölme + validasyon + model sonucu. -->
       <nav id="analiz-serit" aria-label="Analiz sekmeleri">
         <button id="analiz-ac-kapa" type="button" title="Bloğu aç"
                 aria-label="Analiz panelini aç" aria-controls="analiz-icerik">
@@ -194,9 +218,8 @@
         </button>
         <div id="analiz-sekmeler">
           <button class="analiz-sekme aktif" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
-          <button class="analiz-sekme" data-tab="degisken" type="button">DEĞİŞKEN ANALİZİ</button>
-          <button class="analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; VALİDASYON</button>
-          <button class="analiz-sekme" data-tab="sonuc" type="button">SONUÇLAR</button>
+          <button class="analiz-sekme" data-tab="degisken" type="button">DEĞİŞKENLER</button>
+          <button class="analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; MODEL</button>
         </div>
       </nav>
 

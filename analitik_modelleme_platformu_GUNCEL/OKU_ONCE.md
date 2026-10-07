@@ -1,6 +1,30 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sağ bloğun sekme şeridi içeriğin soluna alındı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Üst bar yenilendi; sağ blok hızlandı, sekmeler üçe indi**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni `/kim` ucu)
+
+- Üst bar:
+  - Logo biraz küçüldü (72 → 66 px), başlık ve birim adı yerinde.
+  - Ortada ÇALIŞMA KARTI: açık çalışmanın adı (v3), veri seti ve
+    sözlük. Eski "Arşiv" düğmesi budur; basınca kayıtlı çalışmalar
+    listesi açılır.
+  - Yanında AKIŞ DURUMU: aktif adımın numarası ve adı, "● Yanıtınız
+    Bekleniyor" rozeti, ilerleme çubuğu ve "biten / toplam Adım". Basınca
+    sohbet o adımın bloğuna iner. Bir iş sürerken (sohbet isteği,
+    açıklama önerileri, kısaltma okuması) rozet sarı olur, işin metni ve
+    süresi görünür; İptal sohbetteki İptal'in aynısıdır.
+  - Sağda "Oturum Aktif" yerine Dataiku kullanıcı adı (yeşil nokta);
+    bağlantı koparsa "Bağlantı Yok". Ad backend'in `/kim` ucundan gelir;
+    gelmezse "Oturum Aktif" yazar.
+  - Dar ekranda önce ilerleme çubuğu, sonra veri seti satırı, en son
+    akış durumu gizlenir.
+- Sağ blok:
+  - Açılıp kapanma hızlandı: geçiş 0,25 → 0,12 sn; aynı sekme yeniden
+    açılınca baştan çizilmiyor (büyük tablolarda asıl yavaşlık buydu).
+  - SONUÇLAR sekmesi kalktı: üretim ve eleme sonuçları DEĞİŞKENLER
+    sekmesinin, model sonucu BÖLME & MODEL sekmesinin sonunda.
+  - Sekme adları: VERİ & SÖZLÜK · DEĞİŞKENLER · BÖLME & MODEL.
+
+Önceki tur: **Sağ bloğun sekme şeridi içeriğin soluna alındı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Blok açıldığında dikey sekme şeridi bloğun sol kenarında (sohbet
   tarafında) kalır, içerik şeridin sağına açılır. Davranış aynı.

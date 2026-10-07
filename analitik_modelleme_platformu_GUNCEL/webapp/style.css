@@ -150,7 +150,7 @@
      dolgusu kadar: sözlük tablosu hâlâ kaydırmasız sığıyor. */
   --analiz-en:  clamp(340px, 31vw, 460px);   /* SFA ekranı için hafif genişletildi */
   --analiz-dar-en: 44px;      /* sağ blok daraltılmış şerit genişliği */
-  --analiz-dar-sekme: 156px;  /* şeritteki her sekmenin boyu: dördü eşit */
+  --analiz-dar-sekme: 170px;  /* şeritteki her sekmenin boyu: hepsi eşit */
   /* Ust bar yuksekligi; logo buna gore olceklenir.
      Olculen ihtiyac 75px; 78px pay
      birakiyor. Dorduncu satiri buyutursen burayi da buyut.
@@ -283,9 +283,10 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   gap: clamp(11px, 1.6vw, 22px);
 }
 #ustbar-sol { display: flex; align-items: center; gap: var(--b-4); flex-shrink: 0; }
-/* Logo buyutuldu: bar yuksekliginin neredeyse tamami
-   (59px -> 72px); ust ve alttan 3'er px pay. */
-#banner { height: calc(var(--ustbar-h) - 6px); width: auto; display: block; }
+/* Logo bar yüksekliğinin büyük kısmı (66px); üst ve alttan 6'şar px pay.
+   Ortaya çalışma kartı ve akış durumu girdiği için 72px'ten biraz
+   küçültüldü, okunurluğu korunuyor. */
+#banner { height: calc(var(--ustbar-h) - 12px); width: auto; display: block; }
 
 #baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
@@ -311,7 +312,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   margin-top: 2px; white-space: nowrap;
 }
 
-/* Sonuç kartının satırları (SONUÇLAR sekmesi, .sonuc-kart).
+/* Sonuç kartının satırları (.sonuc-kart).
    Eski üst şerit kaldırıldı; satır sınıfları orada da aynıydı. */
 .ozet-etiket { display: block; margin-bottom: 2px; }
 .ozet-deger {
@@ -390,7 +391,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .calisma-dugme.onayla:hover:not(:disabled) { background: var(--kirmizi); color: #fff; opacity: .9; }
 .calisma-sil-soru { font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--kirmizi); white-space: nowrap; }
 #calismalar-liste {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 50;
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 50;
   width: min(400px, 92vw); max-height: 60vh; overflow-y: auto;
   padding: var(--b-1);
   background: var(--yuzey); border: 1px solid var(--kenar);
@@ -416,6 +417,87 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .calisma-alt { font-size: var(--fs-kucuk); }
 .calisma-bos { padding: var(--b-2) var(--b-3); }
 .calisma-hata { color: var(--kirmizi); }
+/* ==================== ÜST BAR ORTASI ====================
+   Çalışma kartı (eski Arşiv düğmesi) + akış durumu. */
+#ustbar-orta {
+  flex: 1; min-width: 0; display: flex; align-items: center;
+  gap: var(--b-3); padding: 0 var(--b-2);
+}
+#calismalar-btn.calisma-kart {
+  height: auto; min-height: 40px; padding: 4px var(--b-3) 4px 5px; gap: var(--b-2);
+  border-radius: var(--r); text-align: left; max-width: 300px;
+}
+.ck-kare {
+  width: 30px; height: 30px; border-radius: var(--r-kucuk); flex-shrink: 0;
+  background: var(--kirmizi); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+}
+.ck-metin { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.ck-ad { font-size: var(--fs-baslik); font-weight: var(--fw-kalin); }
+.ck-alt {
+  font-size: var(--fs-kucuk); font-weight: var(--fw-normal);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ck-alt:empty { display: none; }
+.ck-ok { flex-shrink: 0; margin-left: var(--b-1); }
+
+#akis-durum {
+  flex: 1 1 auto; min-width: 0; max-width: 720px;
+  display: flex; align-items: center; gap: var(--b-3);
+  height: 40px; padding: 0 var(--b-3) 0 var(--b-4);
+  border: 1px solid var(--kenar-acik); border-radius: var(--r);
+  background: var(--yuzey-alt); cursor: pointer; white-space: nowrap;
+}
+#akis-durum[hidden] { display: none; }
+#akis-durum:hover, #akis-durum:focus-visible {
+  outline: none; border-color: var(--kirmizi-halka); background: var(--kirmizi-acik);
+}
+.ad-adim {
+  font-size: var(--fs-baslik); font-weight: var(--fw-kalin);
+  overflow: hidden; text-overflow: ellipsis; flex: 0 0 auto; max-width: 280px;
+}
+/* Rozet: "● Yanıtınız Bekleniyor" ya da (iş sürerken) işin kendisi:
+   "Açıklama Önerileri · 2 / 3 Kolon · 0:14". Sığmazsa kısalır; adım adı
+   önceliklidir. */
+.ad-rozet {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  border-radius: 10px; padding: 1px var(--b-2);
+  color: var(--kirmizi); background: var(--kirmizi-acik); border: 1px solid var(--kirmizi);
+}
+.ad-rozet.calisiyor { color: var(--amber); background: var(--amber-acik); border-color: var(--amber-halka); }
+.ad-rozet[hidden], .ad-is[hidden], .ad-iptal[hidden] { display: none; }
+.ad-is {
+  flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--amber);
+}
+.ad-cubuk {
+  flex: 0 1 140px; min-width: 40px; height: 6px; margin-left: auto;
+  border-radius: 3px; background: var(--kenar-acik); overflow: hidden;
+}
+.ad-cubuk i { display: block; height: 100%; width: 0; background: var(--kirmizi); }
+.ad-say { flex-shrink: 0; font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); }
+.ad-iptal {
+  flex-shrink: 0; border: none; background: none; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  color: var(--metin); text-decoration: underline;
+}
+.ad-iptal:hover { color: var(--kirmizi); }
+.ad-ok { flex-shrink: 0; }
+/* İş sürerken ilerleme çubuğu ve adım sayısı yer açar: işin metni ve
+   süresi daha önemli. İptal sağa yaslanır. */
+#akis-durum.calisiyor .ad-cubuk, #akis-durum.calisiyor .ad-say { display: none; }
+#akis-durum.calisiyor .ad-iptal { margin-left: auto; }
+/* Dar bar: önce ilerleme, sonra akış durumunun tamamı gizlenir; çalışma
+   kartı kalır. */
+@media (max-width: 1366px) { .ad-cubuk, .ad-say { display: none; } }
+/* Dar barda çalışma kartının veri seti satırı gizlenir (ipucunda kalır):
+   akış durumunun rozetine yer açılır. */
+@media (max-width: 1280px) { .ck-alt { display: none; } }
+@media (max-width: 1100px) { #akis-durum { display: none !important; } }
+@media (max-width: 1024px) { #baslik-blok { display: none; } }
+
 /* Çekmece düğmeleri yalnızca panelin gizlendiği dar ekranlarda görünür */
 .cekmece-btn { display: none; }
 
@@ -1867,13 +1949,13 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 
 /* ==================== SAĞ BLOK: SEKME ŞERİDİ ====================
    Şerit HER ZAMAN GÖRÜNÜR, bloğun SOL kenarında (sohbet tarafında):
-   üstte tek aç/kapa düğmesi (kapalıyken ‹, açıkken ›), altında dört
-   sekme adı. Blok kapalıyken (#kabuk.analiz-dar, app.js: analizAcikYaz)
+   üstte tek aç/kapa düğmesi (kapalıyken ‹, açıkken ›), altında
+   sekme adları. Blok kapalıyken (#kabuk.analiz-dar, app.js: analizAcikYaz)
    yalnız şerit kalır; açılınca içerik şeridin SAĞINA açılır.
 
    SEKME ADI 90° DÖNÜK DÜZ YAZI: writing-mode: vertical-rl satırı
    olduğu gibi çevirir (harfler alt alta dizilmez); rotate(180deg) ile
-   yazı AŞAĞIDAN YUKARI okunur. Dört sekme aynı boyda; ekran kısaysa
+   yazı AŞAĞIDAN YUKARI okunur. Sekmeler aynı boyda; ekran kısaysa
    hepsi aynı oranda kısalır. */
 #analiz-serit {
   flex: 0 0 var(--analiz-dar-en); width: var(--analiz-dar-en);
@@ -1915,7 +1997,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 }
 
 @media (min-width: 945px) {
-  #analiz-panel { transition: width .25s ease; }
+  #analiz-panel { transition: width .12s ease-out; }   /* kısa: açılış beklenmesin */
   #kabuk.genislik-suruklemede #analiz-panel { transition: none; }
   #kabuk.analiz-dar #analiz-panel { width: var(--analiz-dar-en); }
   #kabuk.analiz-dar #analiz-icerik,
@@ -1936,7 +2018,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   #analiz-serit { border-right: 1px solid var(--kenar); }
 }
 
-/* ---- SONUÇLAR sekmesi: eski üst şeridin üç kartı alt alta ----
+/* ---- Sonuç kartları (Değişkenler ve Bölme & Model sekmelerinin sonunda) ----
    Biçim şeritteki gibi: kırmızı etiket, koyu değer, iki alt satır;
    ulaşılmamış değer ∅. "hedef" taşıyan kart tıklanınca ilgili sekmeyi
    açar. */

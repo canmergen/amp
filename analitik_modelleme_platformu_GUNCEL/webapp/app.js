@@ -59,6 +59,7 @@ function oturumAyarla(kimlik) {
     if (!kimlik || kimlik === OTURUM_ID) return;
     OTURUM_ID = String(kimlik);
     depoYaz(OTURUM_DEPO_ANAHTARI, OTURUM_ID);
+    calismaKartiGuncelle();
 }
 
 /* Idempotenslik: backend'in isledigi son tur numarasi. Her mesaj
@@ -104,8 +105,14 @@ const gonderEl    = document.getElementById("gonder");
 const fazEl       = document.getElementById("faz-listesi");
 const sozlukCipEl = document.getElementById("sozluk-cip");
 /* Sonuç kartları (ÜRETİM · ELEME · MODEL): eski üst şerit; artık sağ
-   bloğun SONUÇLAR sekmesinde çiziliyor (bkz. sonucCiz). */
+   bloğun Değişkenler ve Bölme & Model sekmelerinde çiziliyor (bkz. sonucCiz). */
 let SONUC_KARTLARI = [];
+/* Üst bar ortası için: açık çalışmanın veri seti / sözlüğü, son yanıtın
+   "bekleyen" durumu ve Dataiku kullanıcı adı (bkz. calismaKartiGuncelle,
+   akisDurumGuncelle, rozetGuncelle). */
+const CALISMA_VERI = { veri: "", sozluk: "" };
+let SON_BEKLEYEN = null;
+let KULLANICI_ADI = "";
 const bannerEl    = document.getElementById("banner");
 /* Kalan iki referans giriş
    bölgesinin kilidi için. */
@@ -153,7 +160,7 @@ let aktifAnalizSekme = "ozet";
    anahtariyla geliyor (bkz. akis_panel.hazirlik_paneli). */
 /* UC SEKME: "degisken" (DEĞİŞKEN ANALİZİ: dağılım + SFA + eksik değer)
    ve "bolme" (BÖLME & VALİDASYON). */
-const BAGLI_SEKMELER = ["ozet", "degisken", "bolme", "sonuc"];
+const BAGLI_SEKMELER = ["ozet", "degisken", "bolme"];
 
 /* Dataset listesi: "yukleniyor" | "hazir" | "bos" | "hata"
    "bos": liste okundu ama proje icinde dataset yok -> elle yazmaya izin ver */
@@ -259,7 +266,10 @@ const ROZET_METIN = {
 
 function rozetGuncelle(kod) {
     if (!durumRozet) return;
-    const metin = ROZET_METIN[kod] || ROZET_METIN.hazir;
+    /* Hazırken kullanıcı adı yazar (üst bardaki kullanıcı etiketi);
+       ad gelmediyse eski "Oturum Aktif" metni. */
+    const metin = (kod !== "hata" && KULLANICI_ADI)
+        ? KULLANICI_ADI : (ROZET_METIN[kod] || ROZET_METIN.hazir);
     const nokta = durumRozet.querySelector(".nokta-yesil");
     durumRozet.textContent = "";
     if (nokta) durumRozet.appendChild(nokta);
@@ -854,9 +864,14 @@ function cipYaz(el, ad) {
 
 /* Sonuç kartları (ÜRETİM · ELEME · MODEL): eskiden üst şeritte
    duruyordu; akışın çoğunda ∅ gösterip sürekli yer kapladığı için sağ
-   bloğun SONUÇLAR sekmesine taşındı. Burada yalnız saklanır, sekme
+   bloğun Değişkenler ve Bölme & Model sekmelerine taşındı. Burada yalnız saklanır, sekme
    açıksa yeniden çizilir. */
 function ozetGuncelle(o) {
+    if (o) {
+        CALISMA_VERI.veri = o.veri_seti_cip || "";
+        CALISMA_VERI.sozluk = o.sozluk_cip || "";
+        calismaKartiGuncelle();
+    }
     if (!o || !o.kartlar) return;
     /* Cipler ARTIK cizilmiyor: VERİ ve SÖZLÜK kartlari ayni bilgiyi
        tasiyor ve ustune tiklanabiliyor. Alanlar govdede duruyor cunku
@@ -864,21 +879,25 @@ function ozetGuncelle(o) {
     cipYaz(cipEl, null);
     cipYaz(sozlukCipEl, null);
     SONUC_KARTLARI = o.kartlar;
-    if (aktifAnalizSekme === "sonuc") analizCiz("sonuc");
+    if (aktifAnalizSekme === "degisken" || aktifAnalizSekme === "bolme")
+        analizCiz(aktifAnalizSekme);
 }
 
-/* SONUÇLAR sekmesi: üretim, eleme ve model sonuçları alt alta.
-   Biçim eski üst şeritteki gibi (kırmızı etiket, koyu değer, iki alt
-   satır, ulaşılmamış değer ∅). "hedef" dolu kart TIKLANABİLİR: ilgili
-   sekmeyi açar. Hazır olmayan kartta hedef gelmez, tıklama da yoktur —
-   yarım bir sekme açmaktansa kart ne beklediğini yazar. */
-function sonucCiz() {
-    if (!SONUC_KARTLARI.length) {
+/* SONUÇ KARTLARI: ayrı bir sekme değil (az veri taşıyordu). Üretim ve
+   eleme DEĞİŞKENLER sekmesinin, model sonucu BÖLME & MODEL sekmesinin
+   sonunda çizilir. on_ekler: hangi kartlar ("ÜRETİM", "ELEME", "MODEL";
+   kartın etiketinin başı). Biçim eski üst şeritteki gibi (kırmızı etiket,
+   koyu değer, iki alt satır, ulaşılmamış değer ∅). "hedef" dolu kart
+   TIKLANABİLİR: ilgili sekmeyi açar. */
+function sonucCiz(on_ekler) {
+    const kartlar = SONUC_KARTLARI.filter(k => on_ekler.some(
+        o => String(k.etiket || "").toLocaleUpperCase("tr").indexOf(o) === 0));
+    if (!kartlar.length) {
         analizGovde.appendChild(elYap("div", "set-not",
-            "Sonuçlar akış ilerledikçe burada görünür."));
+            "Sonuç akış ilerledikçe burada görünür."));
         return;
     }
-    SONUC_KARTLARI.forEach(k => {
+    kartlar.forEach(k => {
         const tiklanir = !!k.hedef;
         const kart = elYap(tiklanir ? "button" : "div", "sonuc-kart");
         if (tiklanir) {
@@ -3589,16 +3608,19 @@ function analizCiz(tab) {
         if (ANALIZ_VERI.sfa && ANALIZ_VERI.sfa.aralik) aralikCiz();
         panelBolumBasligi("Eksik Değer");
         panelCiz(ANALIZ_VERI.eksik);
+        panelBolumBasligi("Üretim ve Eleme");
+        sonucCiz(["ÜRETİM", "ELEME"]);
         ftOdakGeriVer(odak);
         return;
     }
-    if (tab === "sonuc") { sonucCiz(); return; }
     setSeciciCiz(tab);
     if (tab === "bolme") {
         panelBolumBasligi("Bölme");
         panelCiz(ANALIZ_VERI.bolme);
         panelBolumBasligi("Validasyon");
         validasyonCiz(ANALIZ_VERI.validasyon);
+        panelBolumBasligi("Model Sonucu");
+        sonucCiz(["MODEL"]);
         return;
     }
     panelCiz(ANALIZ_VERI[tab]);
@@ -4388,7 +4410,10 @@ function analizSekmeAc(tab) {
     const hedef = Array.from(analizSekme).find(x => x.dataset.tab === tab);
     if (!hedef) return;
     analizSekme.forEach(x => x.classList.toggle("aktif", x === hedef));
-    analizCiz(tab);
+    /* HIZ: blok kapalıyken içerik zaten çizili duruyor (veri gelince
+       analizGuncelle yeniden çizer). Aynı sekmeyi açmak için baştan
+       çizmek, büyük tablolarda açılışı yavaşlatıyordu. */
+    if (tab !== aktifAnalizSekme || !analizGovde.childElementCount) analizCiz(tab);
     /* Dar ekranda analiz paneli cekmece: kart tiklandiysa acilsin,
        yoksa hicbir sey olmuyormus gibi gorunuyor. */
     const panel = document.getElementById("analiz-panel");
@@ -4400,7 +4425,7 @@ function analizSekmeAc(tab) {
 }
 
 /* ==================== Sağ blok: dar şerit / geniş hâl ====================
-   Blok varsayılan olarak DAR ŞERİT: yalnız dört sekmenin adı görünür,
+   Blok varsayılan olarak DAR ŞERİT: yalnız sekme adları görünür,
    sohbet boşalan yeri kullanır (style.css: #kabuk.analiz-dar).
 
    NE ZAMAN GENİŞLER
@@ -5274,6 +5299,122 @@ function calismaGostergesi(iptalEt) {
         }
     };
 }
+
+
+/* ==================== Üst bar: çalışma kartı ve akış durumu ====================
+   ÇALIŞMA KARTI: eski Arşiv düğmesi. Açık çalışmanın adı ("v3") ile
+   seçili veri seti ve sözlük görünür; basınca kayıtlı çalışmalar listesi
+   açılır (calismalarAc değişmedi).
+
+   AKIŞ DURUMU: aktif adımın numarası ve adı, durum rozeti ve ilerleme.
+     - Bir iş sürüyorsa ("İşlem Devam Ediyor" satırı ekrandaysa: sohbet
+       isteği, açıklama önerileri, kısaltma okuması) rozet sarı, satırın
+       metni ve süresi burada da görünür; İptal o satırın İptal'ine basar.
+       Kaynak tek: sohbetteki görünür .islem-satiri. Böylece yeni bir iş
+       türü eklense de burası ayrıca bağlanmaz.
+     - Değilse ve akış kullanıcıdan girdi/onay bekliyorsa kırmızı
+       "Yanıtınız Bekleniyor".
+   Basınca sohbet aktif adımın bloğuna iner. */
+function calismaKartiGuncelle() {
+    const btn = document.getElementById("calismalar-btn");
+    if (!btn) return;
+    const kare = btn.querySelector(".ck-kare");
+    const ad = btn.querySelector(".ck-ad");
+    const alt = btn.querySelector(".ck-alt");
+    const vMi = /^v\d+$/i.test(OTURUM_ID || "");
+    if (kare) kare.textContent = vMi ? OTURUM_ID : "—";
+    if (ad) ad.textContent = OTURUM_ID ? (vMi ? "Çalışma " + OTURUM_ID : "Çalışma") : "Çalışma";
+    if (alt) {
+        const parca = [CALISMA_VERI.veri, CALISMA_VERI.sozluk]
+            .map(x => tireSade(String(x || "")).trim()).filter(Boolean);
+        alt.textContent = parca.length ? parca.join(" · ") : "Veri seti seçilmedi";
+        alt.title = alt.textContent;
+        btn.title = (ad ? ad.textContent : "Çalışma") + " · " + alt.textContent
+            + " — kayıtlı çalışmalarınız: açın ya da silin";
+    }
+}
+
+const ISLEM_ON_EK = "İşlem Devam Ediyor · ";
+
+function akisDurumGuncelle() {
+    const kok = document.getElementById("akis-durum");
+    if (!kok) return;
+    const adim = DUZ_ADIMLAR[aktifAdim];
+    if (!adim) { kok.hidden = true; return; }
+    kok.hidden = false;
+
+    const konum = adimKonumu(adim.anahtar);
+    const adEl = kok.querySelector(".ad-adim");
+    const metin = numarali(konum ? konum.altKod : "", adim.baslik);
+    if (adEl.textContent !== metin) { adEl.textContent = metin; adEl.title = metin; }
+
+    /* Görünür son işlem satırı */
+    const satirlar = sohbetEl ? sohbetEl.querySelectorAll(".islem-satiri.gorunur") : [];
+    const satir = satirlar.length ? satirlar[satirlar.length - 1] : null;
+    const rozet = kok.querySelector(".ad-rozet");
+    const is = kok.querySelector(".ad-is");
+    const iptal = kok.querySelector(".ad-iptal");
+    kok.classList.toggle("calisiyor", !!satir);
+    if (satir) {
+        const ham = ((satir.querySelector(".islem-sure") || {}).textContent || "").trim();
+        /* Rozet işin kendisini yazar ("Açıklama Önerileri · 2 / 3 Kolon ·
+           0:14"); sarı renk "işlem devam ediyor" demek. Tam metin ipucunda. */
+        const kisa = ham.indexOf(ISLEM_ON_EK) === 0 ? ham.slice(ISLEM_ON_EK.length) : ham;
+        rozet.hidden = false;
+        rozet.className = "ad-rozet calisiyor";
+        rozet.textContent = "● " + (kisa || "İşlem Devam Ediyor");
+        rozet.title = ham || "İşlem Devam Ediyor";
+        is.hidden = true;
+        const asil = satir.querySelector(".islem-iptal");
+        iptal.hidden = !asil;
+        iptal.disabled = !!(asil && asil.disabled);
+        iptal.onclick = (e) => { e.stopPropagation(); if (asil && !asil.disabled) asil.click(); };
+    } else {
+        is.hidden = true;
+        iptal.hidden = true;
+        const bekliyor = SON_BEKLEYEN === "girdi" || SON_BEKLEYEN === "onay";
+        rozet.hidden = !bekliyor;
+        rozet.className = "ad-rozet";
+        rozet.textContent = "● Yanıtınız Bekleniyor";
+        rozet.title = "Akış bu adımda sizin kararınızı bekliyor";
+    }
+
+    const hepsi = DUZ_ADIMLAR.filter(Boolean);
+    const biten = hepsi.filter(a => a.sira < aktifAdim).length;
+    kok.querySelector(".ad-say").textContent = biten + " / " + hepsi.length + " Adım";
+    kok.querySelector(".ad-cubuk i").style.width =
+        (hepsi.length ? Math.round(100 * biten / hepsi.length) : 0) + "%";
+}
+
+{
+    const kok = document.getElementById("akis-durum");
+    if (kok) {
+        const git = () => {
+            const kap = aktifBlokKabi();
+            if (kap) kap.scrollIntoView({ block: "start", behavior: "smooth" });
+        };
+        kok.addEventListener("click", git);
+        kok.addEventListener("keydown", e => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); git(); }
+        });
+    }
+    /* İşlem satırları kendi sayaçlarıyla güncelleniyor; üst bar her saniye
+       onları okur (yalnız birkaç DOM sorgusu). */
+    setInterval(akisDurumGuncelle, 1000);
+    calismaKartiGuncelle();
+}
+
+/* Dataiku kullanıcı adı (/kim): üst bardaki kullanıcı etiketi. Gelmezse
+   etiket "Oturum Aktif" yazmaya devam eder. */
+fetch(getWebAppBackendUrl("kim"))
+    .then(r => r.json())
+    .then(d => {
+        if (d && d.kullanici) {
+            KULLANICI_ADI = String(d.kullanici);
+            if (durumRozet && !durumRozet.classList.contains("hata")) rozetGuncelle("hazir");
+        }
+    })
+    .catch(() => { /* ad gelmezse eski metin kalır */ });
 
 
 /* ==================== Seçenek kartları ==================== */
@@ -9432,6 +9573,8 @@ function yanitUygula(d, metin) {
     /* Sohbet kutusu: kart/form ekrandayken KILITLI. Kullanıcı o anda
        bir cümle yazmıyor, bir form dolduruyor. */
     kutuGuncelle(d.bekleyen);
+    if (d.bekleyen !== undefined) SON_BEKLEYEN = d.bekleyen;
+    akisDurumGuncelle();
     /* Panelin altindaki teyit dugmesi: yalniz adim "teyit" ve
        bekleyen "girdi" iken gorunur. */
     teyitPanelGuncelle(d.secim_alani, d.bekleyen);
@@ -10201,12 +10344,15 @@ function calismayaGec(kimlik, zorla) {
     calismaAc(kimlik).finally(() => { kilitle(false); });
 }
 
-/* Düğmenin adı "Arşiv". index.html eski sürümde
-   kalsa da doğru ad görünsün diye burada da yazılıyor. */
+/* Düğme artık üst bardaki ÇALIŞMA KARTI (bkz. calismaKartiGuncelle):
+   adı ve ipucu oradan yazılıyor. index.html eski sürümde kalırsa eski
+   "Arşiv" etiketi doğru adla görünsün. */
 if (calismalarBtn) {
     const etiket = calismalarBtn.querySelector(".sifirla-etiket");
-    if (etiket) etiket.textContent = CALISMALARIM_ETIKETI;
-    calismalarBtn.title = "Kayıtlı çalışmalarınız: açın ya da silin";
+    if (etiket) {
+        etiket.textContent = CALISMALARIM_ETIKETI;
+        calismalarBtn.title = "Kayıtlı çalışmalarınız: açın ya da silin";
+    }
 }
 
 if (calismalarBtn && calismalarListe) {
