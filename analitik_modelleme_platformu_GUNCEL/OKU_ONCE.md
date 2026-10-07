@@ -1,6 +1,23 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Birim çıkmayan kolonda açıklamaya özne yazılmaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Yazı boyutları tek ölçeğe bağlandı**. Değiştir: `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Bütün arayüzde üç yazı boyutu var: küçük 12 px (etiket, rozet, sayaç,
+  üst bar düğmeleri), gövde 13,5 px (metin, buton, tablo), başlık 15 px
+  (kart / faz / blok başlıkları, özet değerleri, ürün adı). Arada kalan
+  10 / 11 / 12,5 / 14 / 14,5 px değerleri kaldırıldı.
+- Üst bar: sekmeler ile Arşiv / Yeni Çalışma / Oturum Aktif aynı boyutta
+  (12 px). 1280–1920 px genişliklerde tek sırada sığıyor; dar ekranda
+  yazı artık küçülmüyor, yalnız boşluk daralıyor.
+- SFA tablolarındaki küçük rozetler (kaynak, kontrol, gerekçe başlığı)
+  10 px'ten 12 px'e çıktı.
+- Boyutu verilmemiş buton / giriş kutuları tarayıcının kendi boyutunu
+  değil, çevresindeki yazının boyutunu alır.
+- Sabit kalanlar: kutusuna göre boyutlanan ikon karakterleri (×, +, ok,
+  i) ve dağılım grafiğinin eksen yazıları (10 px; büyütülürse çubuk
+  etiketleri üst üste biniyor).
+
+Önceki tur: **Birim çıkmayan kolonda açıklamaya özne yazılmaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Kolon adından, verisinden ya da onaylı / örnek tanımlardan kimin ya
   da neyin olduğu (müşteri, hesap, işlem ...) çıkmıyorsa birim yazılmaz;

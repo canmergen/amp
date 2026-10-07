@@ -24,13 +24,17 @@
      genislikte (#kabuk: tabular-nums).
      Yalnizca --fw-normal (400) ve --fw-kalin (700) kullanilir.
      Buyuk harf CSS ile DEGIL, HTML/Python'da yazilir (Turkce I/İ). */
-  /* Bir punto büyütüldü (sohbet alanı genişleyince yazı küçük kalıyordu). */
-  --fs-kucuk:  12px;     /* faz no, sayac, durum cipi */
-  --fs-etiket: 12px;     /* BUYUK HARFLI kirmizi etiketler: ANALİTİK SÜREÇ, VERİ SETİ... */
-  --fs-govde:  13.5px;   /* metin, butonlar */
-  --fs-baslik: 14px;     /* kart/faz basliklari, ozet degerleri */
-  --fs-buyuk:  15px;     /* urun adi, sayfa basligi */
-  --fs-blok:   14.5px;   /* adim blogu basligi (01.1 ...): 40px avatarla orantili */
+  /* UC BOYUT: kucuk (12) / govde (13.5) / baslik (15). Arayuzdeki her
+     yazi bunlardan birini kullanir; ara deger (10, 11, 12.5, 14, 14.5)
+     yazilmaz. Yalnizca ikon karakterleri (×, +, ok, i) kutularina gore
+     sabit px alir. --fs-etiket, --fs-buyuk, --fs-blok eski adlar: ayni
+     uc degere baglidir. */
+  --fs-kucuk:  12px;     /* etiket, rozet, sayac, ust bar dugmeleri */
+  --fs-govde:  13.5px;   /* metin, butonlar, tablolar */
+  --fs-baslik: 15px;     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
+  --fs-etiket: var(--fs-kucuk);
+  --fs-buyuk:  var(--fs-baslik);
+  --fs-blok:   var(--fs-baslik);
 
   --fw-normal: 400;
   --fw-kalin:  700;
@@ -246,6 +250,10 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 #kabuk *, #kabuk button, #kabuk input, #kabuk textarea {
   font-family: var(--font);
 }
+/* Form ogeleri tarayicinin kendi boyutunu (13.33px) almasin: boyut
+   verilmemisse cevresinden alir. :where ile ozgulluk 0, sinifla verilen
+   boyutlari ezmez. */
+:where(#kabuk) :where(button, input, select, textarea) { font-size: inherit; }
 [hidden] { display: none !important; }
 /* TABLO HUCRELERININ YAZI RENGI ACIKCA VERILIR.
    Hucre rengi miras kalinca Dataiku sayfasinin kendi stilindeki bir
@@ -354,7 +362,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border: 1px solid var(--kenar); background: var(--yuzey);
   border-radius: var(--r-kucuk); cursor: pointer; color: var(--metin);
   flex-shrink: 0; font-family: var(--font);
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin); white-space: nowrap;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); white-space: nowrap;
 }
 /* SVG ikon: yüksekliği düğmenin metin satırına oturur. width/height
    birlikte verilmezse Safari intrinsic boyut uydurup ikonu şişiriyor. */
@@ -431,10 +439,10 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   background: var(--kenar-acik);
 }
 .ust-kume-ad, .ust-sekme {
-  /* Üst bar yazısı genel ölçekten bağımsız (12.5px): bar 64 px ve kutular
-     tek sırada sığmalı. */
+  /* Üst bar düğmeleri küçük boyutta (sağdaki Arşiv / Yeni Çalışma /
+     Oturum Aktif ile aynı): kutular tek sırada sığmalı. */
   height: 30px; padding: 0 11px; white-space: nowrap;
-  font-family: var(--font); font-size: 12.5px; font-weight: var(--fw-kalin);
+  font-family: var(--font); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
   letter-spacing: var(--etiket-aralik);
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border-radius: var(--r-kucuk);
@@ -464,13 +472,13 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border-color: var(--kenar); border-style: dashed;
 }
 .ust-sekme.kapali svg { width: 12px; height: 12px; flex-shrink: 0; }
-/* Dar bar: ≤ 1536 px kutular sıkılaşır, ≤ 1366 px yazı da küçülür. */
+/* Dar bar: ≤ 1536 px kutular sıkılaşır, ≤ 1366 px daha da sıkılaşır. */
 @media (max-width: 1536px) {
   #ust-sekmeler { gap: 4px; padding: 0 var(--b-2); }
   .ust-kume-ad, .ust-sekme { padding: 0 8px; }
 }
 @media (max-width: 1366px) {
-  .ust-kume-ad, .ust-sekme { padding: 0 6px; font-size: 11px; }
+  .ust-kume-ad, .ust-sekme { padding: 0 6px; }
 }
 
 /* Sağ: 2 × 2 (tema | Oturum Aktif / Arşiv | Yeni Çalışma). */
@@ -504,7 +512,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   height: 22px; padding: 0 var(--b-2); flex-shrink: 0;
   border: 1px solid var(--kenar); background: var(--yuzey);
   border-radius: var(--r-kucuk);
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin); color: var(--metin); white-space: nowrap;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin); white-space: nowrap;
 }
 .nokta-yesil {
   width: 6px; height: 6px; border-radius: 50%;
@@ -891,7 +899,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .secenek.kapali { cursor: not-allowed; opacity: .4; }
 .secenek-kapali {
   align-self: center; flex-shrink: 0; white-space: nowrap;
-  font-size: var(--fs-kucuk, 11px); color: var(--metin-soluk);
+  font-size: var(--fs-kucuk); color: var(--metin-soluk);
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk); padding: 1px 6px;
 }
 .secenek.secili {
@@ -2437,7 +2445,7 @@ Asgariler
 .bolme-cubuk > span.iki-satir {
   flex-direction: column; height: 38px; line-height: 1.2;
 }
-.bolme-cubuk-alt { font-weight: var(--fw-normal, 400); opacity: .92; font-size: .95em; }
+.bolme-cubuk-alt { font-weight: var(--fw-normal, 400); opacity: .92; }
 .bolme-cubuk-egitim { background: #3B5F9E; }
 .bolme-cubuk-val    { background: #6E8FCF; }
 .bolme-cubuk-gap    { background: var(--kenar-guclu); color: var(--metin); }
@@ -3239,7 +3247,7 @@ span.bolme-cip { cursor: default; }
 .aralik-ad-link:hover, .aralik-satir.acik .aralik-ad-link { color: var(--kirmizi); }
 .aralik-rozet {
   display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: var(--r-kucuk);
-  font-size: 10px; font-weight: var(--fw-kalin); vertical-align: 1px;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); vertical-align: 1px;
 }
 .aralik-rozet.hassas { background: var(--kirmizi-acik); color: var(--kirmizi); }
 .aralik-rozet.uyari { background: var(--amber-acik); color: var(--amber); }
@@ -3265,13 +3273,13 @@ span.bolme-cip { cursor: default; }
 .aralik-karar-oneri { font-size: var(--fs-kucuk); line-height: 1.45; min-width: 14rem; }
 .aralik-kontroller { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .aralik-kontrol {
-  font-size: 10px; padding: 0 5px; border-radius: var(--r-kucuk); white-space: nowrap;
+  font-size: var(--fs-kucuk); padding: 0 5px; border-radius: var(--r-kucuk); white-space: nowrap;
 }
 .aralik-kontrol.gecti { background: var(--yesil-acik); color: var(--yesil); }
 .aralik-kontrol.kaldi { background: var(--amber-acik); color: var(--amber); }
 .aralik-gerekce { margin-top: 4px; color: var(--metin); }
 .aralik-gerekce-bas {
-  font-size: 10px; font-weight: var(--fw-kalin); color: var(--kirmizi);
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--kirmizi);
   background: var(--kirmizi-acik); border-radius: var(--r-kucuk); padding: 0 5px;
 }
 .aralik-kontrol.notr { background: var(--kenar-acik); color: var(--metin-soluk); }
@@ -3302,7 +3310,7 @@ span.bolme-cip { cursor: default; }
 .aralik-karar-hucre { font-size: var(--fs-kucuk); }
 .aralik-kaynak {
   display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px;
-  font-size: 10px; line-height: 16px; background: var(--kenar-acik); color: var(--metin-soluk);
+  font-size: var(--fs-kucuk); line-height: 16px; background: var(--kenar-acik); color: var(--metin-soluk);
   white-space: nowrap;
 }
 .aralik-kaynak.yapay_zeka { background: var(--yesil-acik); color: var(--yesil); }

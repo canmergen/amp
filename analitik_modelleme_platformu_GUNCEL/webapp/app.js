@@ -12,7 +12,7 @@ window.addEventListener("error", function (olay) {
         kutu.id = "yukleme-hatasi";
         kutu.setAttribute("role", "alert");
         kutu.style.cssText = "margin:12px;padding:10px 14px;border:1px solid #D51115;"
-            + "border-radius:6px;background:#FDF1F1;color:#D51115;font-size:13px;line-height:1.5";
+            + "border-radius:6px;background:#FDF1F1;color:#D51115;font-size:13.5px;line-height:1.5";
         kutu.textContent = "Arayüz yüklenirken bir hata oluştu: "
             + ((olay && olay.message) || "bilinmeyen hata")
             + ". webapp'teki index.html, style.css ve app.js dosyalarının aynı "
