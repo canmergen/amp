@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Logo ve ürün adı sağ alt köşeye taşındı (sabit)**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Sağ bloğun sekme şeridi hep görünür; tek aç/kapa sembolü**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- "ANALİZ" başlığı ve "Daralt" yazısı kaldırıldı.
+- Dikey sekme şeridi blok açıkken de yerinde kalır; içerik şeridin
+  soluna açılır. Açık sekme şeritte kırmızı görünür.
+- Şeridin üstünde tek düğme: kapalıyken ‹ (aç), açıkken › (kapat).
+  Sekme adına basmak o sekmeyi açar; açık sekmeye yeniden basmak kapatır.
+- Üstteki yatay sekme satırı kaldırıldı (aynı sekmeler şeritte).
+
+Önceki tur: **Logo ve ürün adı sağ alt köşeye taşındı (sabit)**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üst barın solundaki logo + "Akıllı Modelleme Platformu" + birim adı
   bloğu görünümü değişmeden sağ alt köşede sabit duruyor; sağ blok

@@ -1811,8 +1811,10 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   width: var(--analiz-en); flex-shrink: 0;
   background: var(--yuzey-alt);
   border-left: var(--ayrac-kalinlik) solid var(--ayrac);
-  display: flex; flex-direction: column; overflow: hidden;
+  /* Satır: solda içerik, en sağda HER ZAMAN GÖRÜNÜR sekme şeridi. */
+  display: flex; flex-direction: row; overflow: hidden;
 }
+#analiz-icerik { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ==================== SÜRÜKLEME TUTAMAKLARI ====================
    İki panelin genişliği kullanıcıya açık.
@@ -1881,99 +1883,76 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 #analiz-alt[hidden] { display: none; }
 #analiz-alt .secim-onay { width: 100%; }
 
-/* Sekmeler 4 sutunlu izgara: esit genislikte ve ortali. */
-#analiz-sekmeler {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--b-1);
-  padding: var(--b-2) var(--b-5) var(--b-3);
-  border-bottom: 1px solid var(--kenar); background: var(--yuzey);
-  flex-shrink: 0;
-}
-/* Dort sekme: ad dar panelde kesilmesin, gerekirse iki satira sarilir. */
-.analiz-sekme {
-  min-width: 0; min-height: 24px; padding: 2px var(--b-2);
-  text-align: center; line-height: 1.2;
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin); letter-spacing: .02em;
-  border: 1px solid transparent; background: none; border-radius: var(--r-kucuk);
-  cursor: pointer; color: var(--metin-soluk); white-space: normal;
-}
-.analiz-sekme:hover { background: var(--kenar-acik); color: var(--metin); }
-/*Bilgi zaten iki yerden
-   veriliyor: sekmenin title'i ("Hazirlaniyor - ...") ve tiklaninca cikan
-   "Hazirlaniyor" karti.  Tum
-   sekme etiketleri ayni tonda. .hazir-degil sinifi title'i tasiyan
-   semantik isaret olarak duruyor. */
-.analiz-sekme.aktif {
-  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
-}
-
-/* ---- Başlık satırı: blok adı + Daralt (geniş), Genişlet (şerit) ---- */
-#analiz-bas {
-  display: flex; align-items: center; gap: var(--b-2);
-  padding: var(--b-3) var(--b-5) 0; background: var(--yuzey); flex-shrink: 0;
-}
-.analiz-bas-ad {
-  font-size: var(--fs-etiket); font-weight: var(--fw-kalin);
-  letter-spacing: var(--etiket-aralik); color: var(--kirmizi);
-}
-#analiz-kapat, #analiz-genislet {
-  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
-  background: var(--yuzey); color: var(--metin); cursor: pointer;
-  font-family: inherit; font-size: var(--fs-govde); font-weight: var(--fw-kalin);
-}
-#analiz-kapat { margin-left: auto; height: var(--btn-h); padding: 0 var(--b-3) 0 var(--b-4); }
-#analiz-kapat:hover, #analiz-genislet:hover {
-  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
-}
-#analiz-genislet { display: none; }
-/* Dar ekranda blok zaten çekmece: başlık satırının işi yok. */
-@media (max-width: 944px) { #analiz-bas { display: none; } }
-
-/* ==================== SAĞ BLOK: DAR ŞERİT ====================
-   Varsayılan hâl (app.js: analizAcikYaz). Blok yalnız dört sekme adını
-   gösteren ince bir şerittir; içerik gizli, sohbet boşalan yeri
-   kullanır. Ada ya da üstteki ‹ düğmesine basınca, ya da kararı sağ
-   blokta verilen bir adım gelince (şu an SFA) blok sağdan sola
-   genişleyip --analiz-en'e döner.
+/* ==================== SAĞ BLOK: SEKME ŞERİDİ ====================
+   Şerit HER ZAMAN GÖRÜNÜR, bloğun en sağında: üstte tek aç/kapa düğmesi
+   (kapalıyken ‹, açıkken ›), altında dört sekme adı. Blok kapalıyken
+   (#kabuk.analiz-dar, app.js: analizAcikYaz) yalnız şerit kalır; açılınca
+   içerik şeridin SOLUNA açılır, şerit yerinden oynamaz.
 
    SEKME ADI 90° DÖNÜK DÜZ YAZI: writing-mode: vertical-rl satırı
    olduğu gibi çevirir (harfler alt alta dizilmez); rotate(180deg) ile
    yazı AŞAĞIDAN YUKARI okunur. Dört sekme aynı boyda; ekran kısaysa
-   hepsi aynı oranda kısalır.
+   hepsi aynı oranda kısalır. Şeridin altı sağ alt köşedeki logo
+   bloğuna (#imza) yer bırakır. */
+#analiz-serit {
+  flex: 0 0 var(--analiz-dar-en); width: var(--analiz-dar-en);
+  display: flex; flex-direction: column; gap: var(--b-2);
+  padding: var(--b-3) 5px calc(var(--imza-h) + var(--b-3));
+  background: var(--yuzey-alt);
+}
+#analiz-ac-kapa {
+  flex-shrink: 0; width: 100%; height: 30px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin); cursor: pointer;
+}
+#analiz-ac-kapa svg { transition: transform .2s ease; }
+/* Açıkken ok sağa döner: "kapat". */
+#kabuk:not(.analiz-dar) #analiz-ac-kapa svg { transform: rotate(180deg); }
+#analiz-ac-kapa:hover {
+  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
+}
+#analiz-sekmeler {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column; align-items: stretch; gap: var(--b-2);
+}
+.analiz-sekme {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  flex: 0 1 var(--analiz-dar-sekme); min-height: 0;
+  padding: 2px 0; white-space: nowrap; overflow: hidden;
+  font-size: var(--fs-kucuk);   /* kısa ekranda en uzun ad da sığsın */
+  font-weight: var(--fw-kalin); letter-spacing: .02em; text-align: center;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin-soluk); cursor: pointer;
+}
+.analiz-sekme:hover,
+.analiz-sekme.aktif:hover {
+  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
+}
+.analiz-sekme.aktif {
+  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
+}
 
-   Yalnız geniş ekranda: dar ekranda blok zaten çekmece. */
 @media (min-width: 945px) {
   #analiz-panel { transition: width .25s ease; }
   #kabuk.genislik-suruklemede #analiz-panel { transition: none; }
   #kabuk.analiz-dar #analiz-panel { width: var(--analiz-dar-en); }
-  #kabuk.analiz-dar #analiz-govde,
-  #kabuk.analiz-dar #analiz-alt,
-  #kabuk.analiz-dar .analiz-bas-ad,
-  #kabuk.analiz-dar #analiz-kapat,
+  #kabuk.analiz-dar #analiz-icerik,
   #kabuk.analiz-dar #tutamak-sag { display: none; }
-  #kabuk.analiz-dar #analiz-bas { padding: var(--b-3) 5px 0; background: var(--yuzey-alt); }
-  #kabuk.analiz-dar #analiz-genislet { display: inline-flex; width: 100%; height: 30px; }
-  #kabuk.analiz-dar #analiz-sekmeler {
-    display: flex; flex-direction: column; align-items: stretch;
-    gap: var(--b-2); padding: var(--b-2) 5px var(--b-3);
-    flex: 1; min-height: 0; border-bottom: none; background: var(--yuzey-alt);
-  }
-  #kabuk.analiz-dar .analiz-sekme {
-    writing-mode: vertical-rl; transform: rotate(180deg);
-    flex: 0 1 var(--analiz-dar-sekme); min-height: 0;
-    padding: 2px 0; white-space: nowrap; overflow: hidden;
-    font-size: var(--fs-kucuk);   /* kısa ekranda en uzun ad da sığsın */
-    border: 1px solid var(--kenar); background: var(--yuzey);
-  }
-  #kabuk.analiz-dar .analiz-sekme:hover,
-  #kabuk.analiz-dar .analiz-sekme.aktif:hover {
-    background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
-  }
-  /* Şeritte "aktif" vurgusu yok: içerik kapalıyken seçili görünen bir
-     sekme, açık bir şey varmış izlenimi veriyordu. */
+  /* Açıkken içerikle şerit arasında ince ayraç. */
+  #kabuk:not(.analiz-dar) #analiz-serit { border-left: 1px solid var(--kenar); }
+  /* Kapalıyken "aktif" vurgusu yok: içerik kapalıyken seçili görünen
+     bir sekme, açık bir şey varmış izlenimi veriyordu. */
   #kabuk.analiz-dar .analiz-sekme.aktif {
     background: var(--yuzey); color: var(--metin-soluk); border-color: var(--kenar);
   }
+  #kabuk.analiz-dar .analiz-sekme.aktif:hover {
+    background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
+  }
+}
+/* Dar ekranda blok çekmece: içerik + şerit birlikte açılır. */
+@media (max-width: 944px) {
+  #analiz-serit { border-left: 1px solid var(--kenar); }
 }
 
 /* ---- SONUÇLAR sekmesi: eski üst şeridin üç kartı alt alta ----
@@ -3495,6 +3474,3 @@ span.bolme-cip { cursor: default; }
 }
 #analiz-govde { padding-bottom: calc(var(--imza-h) + var(--b-4)); }
 #analiz-alt { margin-bottom: var(--imza-h); }
-@media (min-width: 945px) {
-  #kabuk.analiz-dar #analiz-sekmeler { padding-bottom: calc(var(--imza-h) + var(--b-3)); }
-}

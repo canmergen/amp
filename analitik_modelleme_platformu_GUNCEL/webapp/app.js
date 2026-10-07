@@ -4413,7 +4413,7 @@ function analizSekmeAc(tab) {
        buraya eklenir.
 
    NE ZAMAN DARALIR
-     - Kullanıcı açık sekmeye ya da daraltma düğmesine basınca.
+     - Kullanıcı açık sekmeye ya da şeridin üstündeki › düğmesine basınca.
      - Kendiliğinden açıldığı adım geçince (SFA onaylanıp akış ilerleyince).
 
    Kullanıcı kendiliğinden açılan bloğu kapattıysa AYNI ADIMDA tekrar
@@ -4429,6 +4429,13 @@ function analizAcikYaz(acik) {
     kabukEl.classList.toggle("analiz-dar", !ANALIZ_DAR.acik);
     analizSekme.forEach(s =>
         s.setAttribute("aria-expanded", ANALIZ_DAR.acik ? "true" : "false"));
+    const dugme = document.getElementById("analiz-ac-kapa");
+    if (dugme) {
+        const etiket = ANALIZ_DAR.acik ? "Analiz panelini kapat" : "Analiz panelini aç";
+        dugme.setAttribute("aria-label", etiket);
+        dugme.setAttribute("aria-expanded", ANALIZ_DAR.acik ? "true" : "false");
+        dugme.title = ANALIZ_DAR.acik ? "Bloğu kapat" : "Bloğu aç";
+    }
 }
 
 function analizDaralt(kullanici) {
@@ -4487,13 +4494,15 @@ if (imzaEl && typeof ResizeObserver !== "undefined") {
 window.addEventListener("resize", imzaYerAc);
 imzaYerAc();
 
-{
-    const kapat = document.getElementById("analiz-kapat");
-    if (kapat) kapat.onclick = () => analizDaralt(true);
-    /* Şeritteki ‹ düğmesi: son açık sekmeyle genişletir. */
-    const genislet = document.getElementById("analiz-genislet");
-    if (genislet) genislet.onclick = () => analizSekmeAc(aktifAnalizSekme);
-}
+/* Şeridin üstündeki tek aç/kapa düğmesi: kapalıyken son açık sekmeyle
+   açar, açıkken kapatır. Dar ekranda (çekmece) kapatmak çekmeceyi
+   kapatmak demek. */
+const analizAcKapaEl = document.getElementById("analiz-ac-kapa");
+if (analizAcKapaEl) analizAcKapaEl.onclick = () => {
+    if (getComputedStyle(analizPanel).position === "fixed") { cekmeceKapat(); return; }
+    if (ANALIZ_DAR.acik) analizDaralt(true);
+    else analizSekmeAc(aktifAnalizSekme);
+};
 
 /* Degisken teyit tablosu varsayilan
    genislige zaten sigiyor (bkz. --ft-en), yani surukleme artik hicbir

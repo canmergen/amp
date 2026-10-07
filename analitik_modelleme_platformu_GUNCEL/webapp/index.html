@@ -164,51 +164,42 @@
          title="Sürükleyerek genişliği ayarlayın (çift tıklama: varsayılan)"></div>
 
     <aside id="analiz-panel">
+      <!-- İÇERİK: açık sekmenin gövdesi. Blok kapalıyken gizli. -->
+      <div id="analiz-icerik">
+        <div id="analiz-govde"></div>
 
+        <!-- Sözlük teyidi adımında panelin ALTINDA duran ikinci birincil
+             düğme: kullanıcı değişken listesini burada gözden geçiriyor,
+             onay için sohbete dönmek zorunda kalmamalı. Sohbetteki kartla
+             AYNI düğmedir; biri basılınca ikisi de kilitlenir. -->
+        <div id="analiz-alt" hidden>
+          <button id="analiz-teyit" class="secim-onay" type="button"></button>
+        </div>
+      </div>
 
-      <!-- BAŞLIK SATIRI: geniş hâlde solda blok adı, sağda "Daralt"
-           düğmesi; dar şeritte yalnız genişletme düğmesi
-           (app.js: analizDaralt / analizAcikYaz). -->
-      <div id="analiz-bas">
-        <span class="analiz-bas-ad">ANALİZ</span>
-        <button id="analiz-kapat" type="button" title="Bloğu şeride indir"
-                aria-label="Analiz panelini daralt">
-          <span class="analiz-kapat-etiket">Daralt</span>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
-               stroke="currentColor" stroke-width="2.4"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 6l6 6-6 6"></path>
-          </svg>
-        </button>
-        <button id="analiz-genislet" type="button" title="Bloğu genişlet"
-                aria-label="Analiz panelini genişlet">
+      <!-- ŞERİT: HER ZAMAN GÖRÜNÜR, bloğun en sağında. Üstte tek bir
+           aç/kapa düğmesi (kapalıyken ‹, açıkken ›), altında dört sekme
+           adı 90° dönük. Blok açılınca içerik şeridin SOLUNA açılır;
+           şerit yerinde kalır (app.js: analizAcikYaz).
+           DEĞİŞKEN ANALİZİ = dağılım + SFA + eksik değer;
+           BÖLME & VALİDASYON = bölme özeti + validasyon sonuçları;
+           SONUÇLAR = üretim, eleme ve model sonuçları (eski üst şerit). -->
+      <nav id="analiz-serit" aria-label="Analiz sekmeleri">
+        <button id="analiz-ac-kapa" type="button" title="Bloğu aç"
+                aria-label="Analiz panelini aç" aria-controls="analiz-icerik">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
                stroke="currentColor" stroke-width="2.4"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 6l-6 6 6 6"></path>
           </svg>
         </button>
-      </div>
-
-      <!-- DÖRT SEKME. DEĞİŞKEN ANALİZİ = dağılım + SFA + eksik değer;
-           BÖLME & VALİDASYON = bölme özeti + validasyon sonuçları;
-           SONUÇLAR = üretim, eleme ve model sonuçları (eski üst şerit). -->
-      <div id="analiz-sekmeler">
-        <button class="analiz-sekme aktif" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
-        <button class="analiz-sekme" data-tab="degisken" type="button">DEĞİŞKEN ANALİZİ</button>
-        <button class="analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; VALİDASYON</button>
-        <button class="analiz-sekme" data-tab="sonuc" type="button">SONUÇLAR</button>
-      </div>
-
-      <div id="analiz-govde"></div>
-
-      <!-- Sözlük teyidi adımında panelin ALTINDA duran ikinci birincil
-           düğme: kullanıcı değişken listesini burada gözden geçiriyor,
-           onay için sohbete dönmek zorunda kalmamalı. Sohbetteki kartla
-           AYNI düğmedir; biri basılınca ikisi de kilitlenir. -->
-      <div id="analiz-alt" hidden>
-        <button id="analiz-teyit" class="secim-onay" type="button"></button>
-      </div>
+        <div id="analiz-sekmeler">
+          <button class="analiz-sekme aktif" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
+          <button class="analiz-sekme" data-tab="degisken" type="button">DEĞİŞKEN ANALİZİ</button>
+          <button class="analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; VALİDASYON</button>
+          <button class="analiz-sekme" data-tab="sonuc" type="button">SONUÇLAR</button>
+        </div>
+      </nav>
     </aside>
 
   </div>
