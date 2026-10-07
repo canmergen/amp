@@ -1,6 +1,30 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **İş akışında alt adımlar üst adımla aynı boyutta**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Dil modeli istemleri doğru Türkçeyle yeniden yazıldı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- 14 istem (sözlük açıklaması, hakem, tanım kontrolü, hakem kontrolü,
+  Türkçeleştirme, kısaltma okuma, kısaltma standardı, kısaltma çelişkisi,
+  aralık, SFA, birleştirme planı, dönüşüm planı, keşif, ortak kolon adı
+  kuralları) ve güvenlik kuralı Türkçe karakterlerle, düzgün cümlelerle
+  yazıldı. Kurallar ve anlamları DEĞİŞMEDİ; yalnızca dil düzeldi.
+- Modele giden etiketler de Türkçe: VERİ SETİ, ÖRNEK TANIMLAR, BAĞLAM VE
+  KOLONLAR, dağılım, AD PARÇALARI, YENİ AD, DEĞİŞKENLER, denetçi, aralık
+  ve SFA satırları, yazım tarzı satırı. Kartın "i" bilgisindeki kolon
+  özeti de bu yüzden artık Türkçe karakterli.
+- DEĞİŞMEYENLER (kod bunları okuyor): JSON anahtarları (aciklama,
+  kategori, durum, karar, kullan, eksik, donusum ...) ve seçenek değerleri
+  ("duzelt", "uygun", "hayir", "isaret", "ustel", "diger" ...). İstemler
+  bunları aynen yazmasını söylüyor.
+- Güvence: model bir seçenek değerini Türkçe karakterle yazarsa ("hayır",
+  "düzelt", "diğer", "işlem", "tüm") kod onu beklenen yazıma çevirir;
+  önceden böyle bir değer sessizce varsayılana düşerdi (örnek: SFA'da
+  "hayır" → "evet").
+- Türkçe kapısında iki hatalı işaret düzeltildi: doğru Türkçe "verilen"
+  kelimesi "Türkçe karakter eksik", "1'in" gibi ekler de "İngilizce
+  ifade" sayılıyordu; bu yüzden doğru açıklamalar yeniden yazdırılıyor ya
+  da düşürülüyordu.
+
+Önceki tur: **İş akışında alt adımlar üst adımla aynı boyutta**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - 01.2.1, 01.2.2 ... satırları 12 px'ti, üst satırlar (01.1, 01.2 ...)
   13,5 px. Hepsi 13,5 px; kademe girinti ve sol çizgiyle anlaşılır.
