@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Dil modeli istemleri doğru Türkçeyle yeniden yazıldı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Açıklama istemi baştan kuruldu; kod artık cümle kesmiyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Yazar ve hakem istemi aynı kural metnini kullanır (tek yerde; biri
+  düzeltilince öbürü eski kalmaz). Yapı: görev, girdi, anlamı nasıl
+  çıkarırsın (3 madde), tanımı nasıl yazarsın (8 madde), doğru ve yanlış
+  tanım örnekleri (yer tutuculu). Yazar istemi yaklaşık 7.100 karakterden
+  4.600 karaktere indi.
+- Kod modelin yazdığı açıklamadan parça SİLMİYOR (istatistik, tahmin
+  sözcüğü, veri seti adı). Silmek cümleyi yarım bırakıyordu. Böyle bir
+  ifade varsa açıklama olduğu gibi gelir, kolonun yanında amber
+  "Kontrol Et" çipi çıkar; nedeni çipin ipucunda. Yarım kalmış cümle
+  (bağlaçla biten) ve 240 karakteri aşan açıklama da işaretlenir.
+- 300 karakterde kelime ortasından kesme kaldırıldı (öneri, hakem,
+  Türkçeleştirme, tanım kontrolü ve onaylı tanım yolları).
+- Nokta: açıklama her zaman noktayla biter; yalnızca sözlükteki
+  tanımların çoğu noktasızsa nokta konmaz. Önceden sözlükte belirgin
+  tarz yoksa kimi açıklama noktalı kimi noktasız geliyordu.
+
+Önceki tur: **Dil modeli istemleri doğru Türkçeyle yeniden yazıldı**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - 14 istem (sözlük açıklaması, hakem, tanım kontrolü, hakem kontrolü,
   Türkçeleştirme, kısaltma okuma, kısaltma standardı, kısaltma çelişkisi,

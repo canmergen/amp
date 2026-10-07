@@ -428,85 +428,94 @@ TAMAMEN TÜRKÇE YAZ (bu kural YAZIM TARZINDAN ve örneklerden ÖNCE gelir):
     yazılmış olsa bile sen doğru Türkçeyle yaz; onlardan yalnızca ANLAMI
     ve kalıbı al."""
 
-SISTEM_SOZLUK = """Sen bir bankacılık veri sözlüğü uzmanısın. Sana
-kolonların adı, tipi ve dağılım özeti verilecek. Her kolonun ne anlama
-geldiğini yaz.
+# YAZAR VE HAKEMIN ORTAK KURALLARI: tek metin, iki istem de bunu kullanir
+# (biri duzeltilip digeri eski kalmasin).
+_ACIKLAMA_KURALLARI = """
+ANLAMI NASIL ÇIKARIRSIN
+  1. Kolon adını parçalarına ayır. Her parçanın anlamını yalnızca
+     KISALTMALAR, ONAYLI TANIMLAR ve ÖRNEK TANIMLAR bloklarından al:
+     "kesin" bloktaki anlam kesindir; "tahmini" bloktaki anlamı kolon
+     adıyla ve dağılımla tutarlıysa kullan; "dikkat" bloğundaki iki
+     anlamlı kısaltmada örneklere uyanı seç. Bu bloklarda olmayan anlamı
+     (zaman yönü, aralık, birim ...) uydurma. Sayı içeren parçanın sayısı
+     tanımda aynen kalır.
+  2. Dağılımdan kolonun türünü çıkar: her satırda farklı değer = kimlik
+     ya da sıra numarası; yalnızca 0 ve 1 = bayrak; 0 ile 1 arası
+     ondalık = oran; az sayıda etiket = kod / sınıf; diğer sayılar =
+     tutar, adet ya da gün (adındaki parçaya bak). Ad ile dağılım
+     çelişirse dağılıma uy.
+  3. ROL verilmişse tanım rolü anlatır:
+       kimlik kolonu  : neyin kimliği olduğu; çıkmıyorsa
+                        "Tekil kimlik numarası."
+       hedef değişken : 1 değerinin hangi olayı gösterdiği.
+       dönem kolonu   : dönem ve biçimi ("YYYYAA biçiminde dönem.").
+       segment kolonu : alt grup ve sınıfları.
 
-NASIL ÇIKARIRSIN: kolon adının parçalarını (kısaltmalar, pencereler) VE
-içeriğini birlikte oku. İçerik ipuçları: tekil değer sayısı satır
-sayısına eşitse her satırda farklı bir değer vardır (kimlik ya da sıra);
-yalnızca 0/1 ise bayraktır (1'in neyi gösterdiğini yaz); en küçük / en
-büyük değer ve çeyrekler birimi ve ölçeği gösterir (0-1 arası oran,
-tutar, adet, gün); kategorik etiketler neyin sınıflandırıldığını
-gösterir. Adla içerik çelişirse içeriğe uy.
+TANIMI NASIL YAZARSIN
+  1. Bir tam cümle ya da tam bir ad öbeği; gerekirse noktalı virgülle
+     eklenen ikinci kısım. En çok 200 karakter. Yarım bırakma; tanım
+     noktayla biter.
+  2. Sıra: zaman penceresi + (biliniyorsa) kimin / neyin + ne ölçüldüğü
+     + birim ya da değerlerin anlamı.
+  3. Birim (müşteri, hesap, işlem ...) yalnızca kolon adından, VERİ SETİ
+     adından ya da örnek / onaylı tanımlardan çıkıyorsa yazılır.
+     Çıkmıyorsa "kayıt", "satır", "gözlem" gibi genel özne de yazma;
+     tamlamayı baştan öznesiz kur.
+  4. Sayısal istatistik yazma: değer aralığı, en küçük / en büyük,
+     tekil değer sayısı, "çoğunlukla 0", "her satırda farklı",
+     "değerler tekrar eder". Bunlar yalnızca senin çıkarımın içindir.
+     Biçim ("YYYYAA biçiminde") ve kod anlamları ("1: var, 0: yok")
+     istatistik değildir; yazılır.
+  5. Veri seti adını ve kolon adını yazma. "muhtemelen", "büyük
+     olasılıkla", "kesinlikle", "belki", "tahminen", "sanırım" yazma;
+     emin olmadığın ayrıntıyı hiç yazma, tanımı emin olduğun kadarıyla
+     kur.
+  6. Tamamen Türkçe yaz, Türkçe karakterlerle (ç, ğ, ı, İ, ö, ş, ü).
+     İngilizce kelimeyi ve kısaltmayı Türkçe aç (amount: tutar, count:
+     adet, ratio: oran, balance: bakiye). Kaynak tanımlar karaktersiz ya
+     da İngilizce olsa bile sen doğru Türkçe yaz.
+  7. ONAYLI TANIMLARDA "AYNI AD" işaretli kolon varsa o tanımı esas al
+     (ROL verilen kolon hariç; onda rol kuralı geçer). Örnek ve onaylı
+     tanımların kalıbına ve kısaltma anlamlarına uy; onları kopyalama.
+  8. YAZIM TARZI verilmişse noktalama ve büyük / küçük harfte ona uy.
 
-DOĞRULA (yazmadan önce her iddiayı kolonun bilgileriyle kontrol et):
-  - KONU: açıklamadaki birim (müşteri, hesap, işlem, kayıt ...) yalnızca
-    kolon adından, VERİ SETİ adından ya da örnek / onaylı tanımlardan
-    çıkıyorsa yazılır. Çıkmıyorsa BİRİM YAZMA: ne uydur ne de "kayıt",
-    "satır", "gözlem" gibi genel bir özne kullan; yalnızca kolonun ne
-    olduğunu yaz. Tamlamayı BAŞTAN öznesiz kur; özne silinince yarım
-    kalan cümle (son eki ortada kalan ad) YANLIŞTIR:
-      YANLIŞ: "Kaydın tekil kimliği", "Kayıtların sıra numarası",
-              "Tekil kimliği"
-      DOĞRU : "Tekil kimlik numarası", "Sıra numarası"
-  - VERİ SETİ ADINI YAZMA: ad yalnızca tablonun konusunu anlamak
-    içindir; açıklamada ne ham hâli ne çözülmüş / boşluklu hâli geçer.
-    Tanım veri setinden bağımsız okunmalı.
-  - KESİNLİK / TAHMİN SÖZCÜĞÜ YAZMA: "muhtemelen", "büyük olasılıkla",
-    "kesinlikle", "belki", "tahminen", "sanırım" gibi sözcükler tanımda
-    yer almaz; tanım düz cümledir. Emin olmadığın ayrıntıyı yazma.
-  - İSTATİSTİK YALNIZCA ÇIKARIM İÇİNDİR: dağılım, tekil değer sayısı ve
-    satır sayısından kolonun NE olduğunu çıkar (adet, tutar, oran,
-    bayrak, kimlik, sıra numarası, kod ...) ama bu sayıları AÇIKLAMAYA
-    YAZMA: değer aralığı ("X ile Y arası"), tekil / farklı değer sayısı,
-    satır sayısı, "çoğunlukla 0", "değerler tekrar eder" gibi ifadeler
-    tanım değildir; veri değişince yanlış olur.
-  - ANLAMI TANIMLAYAN bilgiyi yaz: ne ölçüldüğü, birimi, zaman penceresi,
-    bayrakta 1'in anlamı, kategorik sınıfların anlamı, biçim (örneğin
-    "YYYYAA biçiminde dönem").
-  - Adla ya da dağılımla çelişen bilgi yazma.
+DOĞRU TANIM ÖRNEKLERİ (köşeli parantezler yer tutucudur; kalıbı göster,
+içeriği kopyalama):
+  bayrak : "Son 6 ayda [olay] olup olmadığını gösteren bayrak; 1: var, 0: yok."
+  tutar  : "Son 3 aydaki [işlem türü] işlemlerinin toplam tutarı."
+  adet   : "Son 12 aydaki [olay] sayısı."
+  oran   : "[Pay] değerinin [payda] değerine oranı."
+  kimlik : "Tekil kimlik numarası."
+  dönem  : "YYYYAA biçiminde dönem."
+  kod    : "[Nitelik] kodu; 1: [sınıf A], 2: [sınıf B]."
+YANLIŞ TANIM ÖRNEKLERİ:
+  "Kaydın tekil kimliği."              (genel özne)
+  "Tekil kimliği"                      (yarım tamlama, nokta yok)
+  "[Ölçü], 18 ile 75 arasında."        (istatistik)
+  "Muhtemelen başvuru dönemi."         (tahmin sözcüğü)
+  "[Ölçü] ve"                          (yarım cümle)
+"""
 
-KİM OKUYACAK: bu tanımlar ileride hem analistin hem de dil modelinin
-değişken üretirken ve elerken tek bilgi kaynağı olacak. Tanım, kolon
-adını ve veriyi görmeyen birinin kolonu doğru kullanabileceği kadar AÇIK
-olsun.
 
-Her kolon için:
-  aciklama : Türkçe, bir ya da iki cümle (en çok ~200 karakter). Şu
-             bilgileri içeriyorsa yaz: birim (müşteri, hesap, işlem ...)
-             KONU kuralına göre çıkıyorsa hangi birimin neyi olduğu,
-             çıkmıyorsa yalnızca ne olduğu; ölçü ve birimi (tutar, adet,
-             oran, gün ...); zaman penceresi; değerlerin anlamı (bayrakta
-             1, kodlarda sınıflar, kimlik / sıra numarası olduğu). Kolon
-             adını tekrar etme; ne ölçtüğünü anlat. Adından ve
-             içeriğinden kesin çıkmayan ayrıntıyı yazma; uydurma
-             ayrıntı ekleme.
-  kategori : şunlardan biri, aynen bu yazımla: kimlik, demografi, gelir,
-             bakiye, islem, gecikme, urun, kanal, davranis, zaman, hedef,
-             diger
+def _sozluk_sistemi(kategoriler):
+    return ("""Sen bir bankacılık veri sözlüğü uzmanısın. Görevin: her kolon
+için, kolonu ve veriyi hiç görmemiş bir analistin (ve değişken üreten
+dil modelinin) onu doğru kullanabileceği kısa bir tanım yazmak.
 
-ÖRNEK TANIMLAR verilirse (kurumun kendi sözlüğündeki, adı benzeyen
-kolonlar): yazım tarzına, cümle yapısına ve kolon adlarındaki
-kısaltmaların ve pencerelerin anlamına UY. Örnekleri kopyalama; her
-kolonu kendi adına ve dağılımına göre yaz. VERİ SETİ adı verilirse
-tablonun konusunu ondan da çıkar; adı açıklamaya yazma.
+GİRDİ: KOLONLAR bloğunda her kolonun adı, tipi, boş oranı, tekil değer
+sayısı, dağılım özeti ve varsa ROL'ü. Varsa bağlam blokları: VERİ SETİ
+(tablonun adı; yalnızca konuyu anlamak için), YAZIM TARZI, KISALTMALAR
+(kesin / tahmini / dikkat), ONAYLI TANIMLAR, ÖRNEK TANIMLAR.
+""" + _ACIKLAMA_KURALLARI + """
+ÇIKTI: Yalnızca şu JSON; muhakeme ya da açıklama yazma. JSON
+anahtarlarını aynen yaz. "kategori" şunlardan biri, aynen bu yazımla:
+%s. Emin olamadığın kolonda kategori "diger" olur; tanımı yine emin
+olduğun kadarıyla yaz.
+{"kolonlar": [{"ad": "...", "aciklama": "...", "kategori": "..."}]}"""
+            % ", ".join(kategoriler)) + SINIRLAYICI_KURALI
 
-ONAYLI TANIMLAR verilirse (kullanıcıların daha önce onayladığı
-tanımlar): bunlar en güvenilir kaynaktır. AYNI ADLI kolon varsa o tanımı
-esas al; benzer adlı kolonlarda aynı kalıbı ve kısaltma anlamlarını
-kullan.
 
-YAZIM TARZI verilirse (kurumun sözlüğündeki tanımlardan çıkarıldı):
-noktalama ve büyük / küçük harf kullanımını ona göre ayarla. Tarz kısa
-olsa bile yukarıdaki bilgiler eksik kalmasın.
-
-ÇIKTI KURALI: Cevabın YALNIZCA şu JSON olsun. Muhakeme ya da açıklama
-YAZMA. JSON anahtarlarını ve kategori değerini aynen yaz.
-{"kolonlar": [{"ad": "...", "aciklama": "...", "kategori": "..."}]}
-
-Emin olamadığın kolon için de açıklama yaz ama kategoriyi "diger" bırak.""" \
-    + AD_KALIP_KURALI + SINIRLAYICI_KURALI
+SISTEM_SOZLUK = _sozluk_sistemi(SOZLUK_KATEGORILERI)
 
 
 # Dagilim ozetinin promptta kirpildigi sinir. 10 etiket + oranlari ~260 karakter.
@@ -709,59 +718,33 @@ def _tr_buyuk(metin):
     return str(metin).replace("i", "İ").replace("ı", "I").upper()
 
 
-# TANIMDA ISTATISTIK OLMAZ: veri dosyasina bagli ifadeler (aralik, tekil
-# / satir sayisi, "cogunlukla 0", tekrar) aciklamadan cumle parcasi olarak
-# atilir. Bicim ("202506 biciminde") ve bayrak anlami ("1 degeri ...")
-# kalir.
+# ACIKLAMA KONTROLU: kod modelin yazdigi metni BUDAMAZ. Parca silmek
+# cumleyi yarim birakiyordu ("Musterinin yasi (yil)."). Kural disi bir
+# ifade varsa metin oldugu gibi gelir, kartta "Kontrol Et" isaretiyle.
+ACIKLAMA_EN_UZUN = 240     # istem 200 diyor; bunun uzeri isaretlenir
+
+# Veri dosyasina bagli ifadeler (aralik, tekil / satir sayisi,
+# "cogunlukla 0", tekrar). Bicim ("YYYYAA biciminde") ve kod anlami
+# ("1: var") istatistik degildir.
 _ISTATISTIK = [
-    re.compile(r"\d[\d.,]*\s*(ile|ila|-|–)\s*-?\d[\d.,]*\s*(aras|aral)", re.I),
+    re.compile(r"\d[\d.,]*\s*(?:\S+\s+)?(ile|ila|-|–)\s*-?\d[\d.,]*\s*(?:\S+\s+)?(aras|aral)", re.I),
     re.compile(r"(çoğunlukla|cogunlukla|genellikle|çoğu)\s+(değer\w*\s+)?-?\d", re.I),
     re.compile(r"değerler(i)?\s+(sık\s+)?tekrar", re.I),
     re.compile(r"\d[\d.,]*\s*(satır|satir|kayıt)\w*\s*(da|de|ta|te)\b", re.I),
     re.compile(r"\d[\d.,]*\s*(farklı|farkli|tekil)\s+değer", re.I),
+    re.compile(r"her\s+(satır|kayıt)\w*\s+farklı", re.I),
     re.compile(r"(min|maks|medyan|ortanca)\w*\s*[:=]?\s*-?\d", re.I),
 ]
 
-
-_ARALIK_IFADE = re.compile(
-    r"-?\d[\d.,]*\s*(ile|ila|-|–)\s*-?\d[\d.,]*\s*(arası(nda)?|aralığında)\s*", re.I)
-
-
-def istatistik_temizle(metin):
-    """Aciklamadan istatistik iceren cumle parcalarini (; ve , ile
-    ayrilan) atar; hepsi istatistikse metni oldugu gibi birakir."""
-    m = str(metin or "").strip()
-    parca = re.split(r"(\s*[;,]\s*)", m)
-    kalan = []
-    for i in range(0, len(parca), 2):
-        p = parca[i]
-        if any(k.search(p) for k in _ISTATISTIK):
-            # Aralik bir anlam parcasinin icindeyse ("X-Y arasi <ne>")
-            # yalniz aralik atilir, anlam kalir.
-            p = _ARALIK_IFADE.sub(" ", p)
-            p = re.sub(r"\s+", " ", p).strip()
-            if len(p.split()) < 2 or any(k.search(p) for k in _ISTATISTIK):
-                continue
-        if kalan and i > 0:
-            kalan.append(parca[i - 1])
-        kalan.append(p)
-    sonuc = "".join(kalan).strip(" ;,")
-    # "... ve" / "... ile" gibi kesik sonlari temizle
-    sonuc = re.sub(r"\s+(ve|ile|veya)$", "", sonuc).strip(" ;,")
-    if not sonuc:
-        return m
-    if m.endswith(".") and not sonuc.endswith("."):
-        sonuc += "."
-    return sonuc
-
-
-# Kesinlik / tahmin sozcukleri: tanimda yer almaz (istem de yasakliyor;
-# model yine yazarsa burada atilir).
+# Kesinlik / tahmin sozcukleri: tanimda yer almaz.
 _TAHMIN_SOZ = re.compile(
     r"\b(?:muhtemelen|b[üu]y[üu]k\s+(?:olas[ıi]l[ıi]kla|ihtimalle)|"
     r"y[üu]ksek\s+(?:olas[ıi]l[ıi]kla|ihtimalle)|olas[ıi]l[ıi]kla|"
-    r"kesinlikle|belki\s+de|belki|tahminen|san[ıi]r[ıi]m|galiba)\b[,]?\s*",
+    r"kesinlikle|belki\s+de|belki|tahminen|san[ıi]r[ıi]m|galiba)\b",
     re.I)
+
+# Yarim kalmis cumle: baglac / edatla biten metin.
+_YARIM_SON = re.compile(r"\b(ve|ile|veya|ya da|ya|için|gibi|olan)\s*[.;,]?$", re.I)
 
 
 def _veri_seti_deseni(veri_seti):
@@ -776,41 +759,52 @@ def _veri_seti_deseni(veri_seti):
 
 
 def aciklama_temizle(metin, veri_seti=None):
-    """Onerilen aciklamanin son kontrolu (dil modeli cagrisi yok):
-      1) istatistik iceren parcalar atilir (istatistik_temizle),
-      2) veri seti adi (ham ya da cozulmus) atilir,
-      3) kesinlik / tahmin sozcukleri ("muhtemelen", "kesinlikle" ...) atilir.
-    Genel ozne ("Kaydin" ...) burada SILINMEZ: silinince tamlama yarim
-    kaliyor ("Tekil kimligi"); oznesiz yazim istemde.
-    Bas harf buyutulur. Temizlik metni bosaltirsa ilk adimin sonucu kalir."""
-    m = istatistik_temizle(metin)
-    t = m
-    desen = _veri_seti_deseni(veri_seti)
-    if desen:
-        t = desen.sub("", t)
-    t = _TAHMIN_SOZ.sub("", t)
-    t = re.sub(r"\s+", " ", t).strip(" ,;")
+    """Yalniz bicim: bosluklar sadelesir, bas harf buyur. Metinden hicbir
+    parca SILINMEZ (bkz. aciklama_sorunlari). veri_seti eski cagrilarla
+    uyum icin duruyor."""
+    t = re.sub(r"\s+", " ", str(metin or "")).strip()
     t = re.sub(r"\s+([,.;])", r"\1", t)
-    t = re.sub(r"[,;]+\.", ".", t)
-    if len(t.split()) < 2:
-        return m
     if t[:1].islower():
         t = _tr_buyuk(t[:1]) + t[1:]
     return t
 
 
+def aciklama_sorunlari(metin, veri_seti=None):
+    """Aciklamadaki kural disi durumlar (kartta "Kontrol Et" ipucu).
+    Doner: [kisa metin, ...]; sorun yoksa bos liste."""
+    m = str(metin or "").strip()
+    if not m:
+        return []
+    sorun = []
+    if any(k.search(m) for k in _ISTATISTIK):
+        sorun.append("sayısal istatistik içeriyor (değer aralığı, tekil sayısı ...)")
+    if _TAHMIN_SOZ.search(m):
+        sorun.append("tahmin sözcüğü içeriyor (muhtemelen, kesinlikle ...)")
+    desen = _veri_seti_deseni(veri_seti)
+    if desen and desen.search(m):
+        sorun.append("veri seti adı geçiyor")
+    if _YARIM_SON.search(m):
+        sorun.append("cümle yarım kalmış")
+    if len(m) > ACIKLAMA_EN_UZUN:
+        sorun.append("uzun (%d karakter)" % len(m))
+    return sorun
+
+
 def tarza_uydur(metin, tarz):
-    """Olculebilen tarz kurallarini metne uygular (nokta, bas harf)."""
+    """Olculebilen tarz kurallarini metne uygular (nokta, bas harf).
+    Tanim noktayla biter; yalniz sozlukte tanimlarin cogu noktasizsa
+    nokta konmaz. Tarz yoksa (sozluk yok / az tanim) da nokta konur."""
     m = re.sub(r"\s+", " ", str(metin or "")).strip()
-    if not m or not tarz:
+    if not m:
         return m
-    if tarz.get("nokta") is True and not m.endswith((".", "!", "?")):
-        m += "."
-    elif tarz.get("nokta") is False:
+    tarz = tarz or {}
+    if tarz.get("nokta") is False:
         m = m.rstrip(".").rstrip()
+    elif not m.endswith((".", "!", "?")):
+        m = m.rstrip(" ,;:") + "."
     if tarz.get("tum_buyuk"):
         m = _tr_buyuk(m)
-    elif tarz.get("buyuk_bas") is True and m[:1].islower():
+    elif tarz.get("buyuk_bas") is not False and m[:1].islower():
         m = _tr_buyuk(m[:1]) + m[1:]
     return m
 
@@ -838,13 +832,7 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
     izinli = izinli or list(SOZLUK_KATEGORILERI)
     # Model listedekinden birini secemezse duseceği kovayi garanti ediyoruz.
     yedek_kategori = "diger" if "diger" in izinli else ""
-    sistem = SISTEM_SOZLUK
-    if kategoriler:
-        sistem = sistem.replace(
-            "  kategori : şunlardan biri, aynen bu yazımla: kimlik, demografi, gelir,\n"
-            "             bakiye, islem, gecikme, urun, kanal, davranis, zaman, hedef,\n"
-            "             diger",
-            "  kategori : şunlardan biri, aynen bu yazımla: %s" % ", ".join(izinli))
+    sistem = _sozluk_sistemi(izinli) if kategoriler else SISTEM_SOZLUK
 
     sonuc = {}
     gecerli_adlar = {p["ad"] for p in profiller}
@@ -884,8 +872,7 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
                 continue
             kategori = _secenek(k.get("kategori"))
             sonuc[ad] = {
-                "aciklama": aciklama_temizle(str(k.get("aciklama", "")).strip(),
-                                             (baglam or {}).get("veri_seti"))[:300],
+                "aciklama": aciklama_temizle(str(k.get("aciklama", "")).strip()),
                 "kategori": kategori if kategori in izinli else yedek_kategori,
             }
 
@@ -1081,50 +1068,23 @@ def _anlamca_celisir(a, b):
 
 
 SISTEM_HAKEM_ACIKLAMA = """Sen bir bankacılık veri sözlüğü editörüsün. Her
-kolon için farklı dil modellerinin yazdığı ADAY açıklamalar verilecek.
-Adaylar YANLIŞ ya da EKSİK olabilir; senin işin onları kolonun kendi
-bilgileriyle (ad, tip, tekil / satır sayısı, dağılım, ROL, VERİ SETİ adı,
-örnek ve onaylı tanımlar) DOĞRULAMAK ve en doğru açıklamayı yazmak.
+kolon için farklı dil modellerinin yazdığı ADAY açıklamalar verilecek
+(KOLONLAR bloğunda "aday A", "aday B" ...). Adaylar yanlış ya da eksik
+olabilir. Görevin: adayları kolonun kendi bilgileriyle (ad, tip, tekil
+değer sayısı, dağılım, ROL, bağlam blokları) doğrulamak ve aşağıdaki
+kurallara TAM uyan tek bir tanım yazmak.
 
-DOĞRULA:
-  - KONU: açıklamadaki birim (müşteri, hesap, işlem, kayıt ...) yalnızca
-    kolon adından, VERİ SETİ adından ya da örnek / onaylı tanımlardan
-    çıkıyorsa yazılır. Çıkmıyorsa adaylar ne derse desin BİRİM YAZMA;
-    "kayıt", "satır", "gözlem" gibi genel bir özne de kullanma, yalnızca
-    kolonun ne olduğunu yaz. Adaydaki özneyi silip kalanını bırakma;
-    tamlamayı baştan öznesiz kur:
-      YANLIŞ: "Kaydın tekil kimliği", "Kayıtların sıra numarası",
-              "Tekil kimliği"
-      DOĞRU : "Tekil kimlik numarası", "Sıra numarası"
-  - VERİ SETİ ADINI YAZMA (ham ya da çözülmüş hâli); adaylarda varsa at.
-  - KESİNLİK / TAHMİN SÖZCÜĞÜ YAZMA ("muhtemelen", "büyük olasılıkla",
-    "kesinlikle", "belki", "tahminen"); adaylarda varsa at.
-  - İSTATİSTİK YALNIZCA ÇIKARIM İÇİNDİR: dağılımdan kolonun ne olduğunu
-    çıkar ama sayıları (değer aralığı, tekil / satır sayısı, "çoğunlukla
-    0", "değerler tekrar eder") açıklamaya YAZMA; adaylarda varsa at.
-    Anlamı tanımlayan bilgiyi (bayrakta 1'in anlamı, sınıf anlamları,
-    biçim) yaz.
-  - Adaylarda olup dağılımla ya da adla çelişen bilgi atılır.
-  - Hiçbir aday doğru değilse kendin yaz.
-
-Sonra en doğru açıklamayı seç ya da adayları birleştirerek yaz:
-  - kolon adı, tipi ve dağılım özetiyle ÇELİŞEN aday elenir (örnek:
-    dağılım 0/1 iken "tutar" diyen aday yanlıştır)
-  - ONAYLI TANIMLAR en güvenilir kaynaktır; AYNI ADLI kolon varsa onu
-    esas al
-  - ÖRNEK TANIMLAR ve YAZIM TARZI kurumun yazım biçimidir, ona uy
-  - içerikle tutarlı adaylar arasında EN AÇIKLAYICI olanı seç: (KONU
-    kuralına göre çıkıyorsa) hangi birimin neyi olduğu, ölçü / birim,
-    pencere, değerlerin anlamı (bayrakta 1, kimlik / sıra numarası).
-    Tanım, kolonu ve veriyi görmeyen birinin (dil modeli dahil) doğru
-    kullanabileceği kadar açık olsun
-  - bir ya da iki cümle (en çok ~200 karakter), Türkçe; kolon adını
-    tekrar etme, emin olmadığın ayrıntıyı yazma
-
-ÇIKTI KURALI: Cevabın YALNIZCA şu JSON olsun. Muhakeme YAZMA. JSON
-anahtarlarını aynen yaz.
-{"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + AD_KALIP_KURALI \
-    + SINIRLAYICI_KURALI
+NASIL KARAR VERİRSİN
+  - Kolon adıyla, tipiyle ya da dağılımla çelişen aday elenir (örnek:
+    dağılım 0/1 iken "tutar" diyen aday yanlıştır).
+  - Kalan adaylardan en doğru ve en açıklayıcı olanı al ya da adayları
+    birleştir; sonra kurallara göre YENİDEN YAZ. Adaydaki kural dışı
+    parçayı (istatistik, tahmin sözcüğü, veri seti adı, genel özne)
+    silip kalanını bırakma; tanımı baştan tam kur.
+  - Hiçbir aday doğru değilse tanımı kendin yaz.
+""" + _ACIKLAMA_KURALLARI + """
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. JSON anahtarlarını aynen yaz.
+{"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + SINIRLAYICI_KURALI
 
 
 def _aciklama_tek_yazar(profiller, baglam, ork, tarz):
@@ -1152,7 +1112,7 @@ def _aciklama_tek_yazar(profiller, baglam, ork, tarz):
         for kolon, k in (cevap or {}).items():
             metin = str((k or {}).get("aciklama") or "").strip()
             if metin and kolon not in sonuc:
-                sonuc[kolon] = {"aciklama": metin[:300], "modeller": MODEL_ADLARI.get(ad, ad),
+                sonuc[kolon] = {"aciklama": metin, "modeller": MODEL_ADLARI.get(ad, ad),
                                 "_yazar": ad}
         if all(p["ad"] in sonuc for p in profiller):
             break
@@ -1184,7 +1144,7 @@ def _aciklama_tek_yazar(profiller, baglam, ork, tarz):
         parca += ["", "YAZAN: %s (tek yazar, hakem yok)" % MODEL_ADLARI.get(yazan, yazan)]
         kayit["kaynak_bilgi"] = "\n".join(parca)[:3000]
     for kayit in sonuc.values():
-        kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)[:300]
+        kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)
     return _turkce_kapisi(sonuc, profiller, baglam, ork)
 
 
@@ -1262,8 +1222,7 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
         secilen = {}
         for k in (veri.get("kolonlar") or []):
             if isinstance(k, dict) and str(k.get("aciklama") or "").strip():
-                secilen[str(k.get("ad"))] = aciklama_temizle(
-                    str(k["aciklama"]).strip(), (baglam or {}).get("veri_seti"))[:300]
+                secilen[str(k.get("ad"))] = aciklama_temizle(str(k["aciklama"]).strip())
         for p in tartisma:
             liste = adaylar[p["ad"]]
             if p["ad"] in secilen:
@@ -1316,7 +1275,7 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
         kayit["kaynak_bilgi"] = "\n".join(parca)[:3000]
 
     for kayit in sonuc.values():
-        kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)[:300]
+        kayit["aciklama"] = tarza_uydur(kayit["aciklama"], tarz)
     return _turkce_kapisi(sonuc, profiller, baglam, ork)
 
 
@@ -1334,6 +1293,12 @@ def _turkce_kapisi(sonuc, profiller, baglam, ork):
                 sonuc[p["ad"]]["modeller"] += " (Türkçe: %s)" % MODEL_ADLARI.get(model, model)
             else:
                 sonuc.pop(p["ad"], None)
+    # KONTROL ET: kural disi ifade metinden silinmez, isaretlenir.
+    veri_seti = (baglam or {}).get("veri_seti")
+    for kayit in sonuc.values():
+        sorun = aciklama_sorunlari(kayit.get("aciklama"), veri_seti)
+        if sorun:
+            kayit["uyari"] = "; ".join(sorun)
     return sonuc, None
 
 
@@ -1479,7 +1444,7 @@ def _kontrol_oku(veri, gecerli):
         durum = _secenek(k.get("durum") or k.get("karar"))
         cikti[str(k["ad"])] = {
             "durum": "duzelt" if durum.startswith("duzelt") else "uygun",
-            "oneri": str(k.get("oneri") or k.get("aciklama") or "").strip()[:300],
+            "oneri": str(k.get("oneri") or k.get("aciklama") or "").strip(),
             "gerekce": str(k.get("gerekce") or "").strip()[:200]}
     return cikti
 
@@ -1594,7 +1559,7 @@ def turkcelestir(kayitlar, baglam=None, orkestra=None):
         if not isinstance(k, dict) or str(k.get("ad")) not in kaynak:
             continue
         ad = str(k["ad"])
-        metin = tarza_uydur(str(k.get("aciklama") or "").strip(), tarz)[:300]
+        metin = tarza_uydur(str(k.get("aciklama") or "").strip(), tarz)
         if not metin or turkce_sorunu(metin) \
                 or _anlam_degisti(ad, kaynak[ad], metin) \
                 or _fazla_uzun(kaynak[ad], metin):
@@ -1942,7 +1907,7 @@ def tanim_kontrol_orkestra(kayitlar, baglam=None, orkestra=None):
                 continue
             oneri = a.get("oneri") or b.get("oneri")
             gerekce = a.get("gerekce") or b.get("gerekce")
-        oneri = tarza_uydur(oneri, tarz)[:300]
+        oneri = tarza_uydur(oneri, tarz)
         if not oneri or _ayni_metin(oneri, mevcut[ad]):
             continue
         if _anlam_degisti(ad, mevcut[ad], oneri) or _fazla_uzun(mevcut[ad], oneri):
@@ -1983,7 +1948,7 @@ def _celiski_duzelt(p, baglam, ork):
     for k in (veri.get("kolonlar") or []):
         if isinstance(k, dict) and str(k.get("ad")) == p["ad"]:
             metin = tarza_uydur(str(k.get("aciklama") or "").strip(),
-                                (baglam or {}).get("tarz"))[:300]
+                                (baglam or {}).get("tarz"))
             mevcut = str(p.get("mevcut") or "")
             if not metin or turkce_sorunu(metin) or _ayni_metin(metin, mevcut) \
                     or _anlam_degisti(p["ad"], mevcut, metin):

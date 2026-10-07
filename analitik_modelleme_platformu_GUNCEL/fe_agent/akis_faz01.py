@@ -2076,7 +2076,7 @@ def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
             continue
         # YALNIZ ACIKLAMA: modelin donebilecegi kategori alani bilerek
         # okunmuyor (bkz. fonksiyon acikmasi).
-        oneriler[ad] = {"aciklama": aciklama[:300]}
+        oneriler[ad] = {"aciklama": aciklama}
 
     durum["_tanimsiz_oneri"] = oneriler
     durum["_tanimsiz_oneri_kolonlar"] = kolonlar
@@ -2156,9 +2156,10 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
                 if aciklama:
                     # YALNIZ ACIKLAMA (+ hangi modellerden geldigi):
                     # kategori alani bilerek okunmuyor.
-                    yeni[str(ad)] = {"aciklama": aciklama[:300],
+                    yeni[str(ad)] = {"aciklama": aciklama,
                                      "modeller": kayit_s.get("modeller") or "",
-                                     "kaynak_bilgi": kayit_s.get("kaynak_bilgi") or ""}
+                                     "kaynak_bilgi": kayit_s.get("kaynak_bilgi") or "",
+                                     "uyari": kayit_s.get("uyari") or ""}
         except Exception as e:
             # Bu grup onerisiz kalir, digerleri gelir. AMA SESSIZ DEGIL:
             # sayac ve son hata kart ustunde yaziliyor.

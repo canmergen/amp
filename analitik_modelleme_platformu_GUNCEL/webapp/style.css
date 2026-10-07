@@ -2985,6 +2985,9 @@ span.bolme-cip { cursor: default; }
 .dg-tablo tr.dg-hafiza-renk .dg-giris { background: transparent; }
 .dg-l-hafiza { background: var(--dg-hafiza); }
 .dg-rol.dg-hafiza { background: var(--dg-hafiza); color: var(--metin); }
+/* Önerilen açıklamada kural dışı ifade: rol çiplerinden ayrılsın diye
+   zeminsiz, amber çerçeveli; nedeni ipucunda. */
+.dg-rol.dg-uyari { background: transparent; color: var(--amber); border: 1px solid var(--amber); cursor: help; }
 .dg-tablo tr.dg-eklendi > td { background: var(--dg-eklendi); }
 .dg-tablo tr.dg-eklenmedi > td { background: var(--dg-eklenmedi); }
 .dg-tablo tr.dg-farkli > td { background: var(--dg-eklenmedi); }
@@ -3430,6 +3433,10 @@ span.bolme-cip { cursor: default; }
 .dg-kart .dg-rol.dg-rol-zorunlu,
 .dg-kart .dg-rol.dg-hafiza {
   background: transparent; color: var(--metin); border: 1px solid var(--kenar-guclu);
+}
+/* "Kontrol Et" rol çipine benzemesin: amber zemin ve yazı. */
+.dg-kart .dg-rol.dg-uyari {
+  background: var(--amber-acik); color: var(--amber); border: 1px solid var(--amber); cursor: help;
 }
 /* Bilgi kutusu ve kapsam çubuğu. */
 .dg-kart .dg-bilgi-kutu { background: var(--yuzey-alt); border-left-color: var(--kenar-guclu); }

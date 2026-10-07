@@ -6824,6 +6824,18 @@ function dogrulamaKartiEkle(alan, blok) {
                     && !g.parentElement.querySelector(".bolme-info"))
                 g.parentElement.appendChild(bolmeBilgiSimgesi(
                     tireSade(k.kaynak_bilgi), s.kolon + " açıklamasının kaynağı"));
+            /* KONTROL ET: model kural dışı bir ifade yazdıysa metin
+               budanmaz (yarım cümle kalıyordu); satır işaretlenir, nedeni
+               ipucunda. */
+            if (k.uyari && satirElemanlari[i]
+                    && !satirElemanlari[i].querySelector(".dg-uyari")) {
+                const td = satirElemanlari[i].querySelector(".dg-kolon");
+                if (td) {
+                    const c = elYap("span", "dg-rol dg-uyari", "Kontrol Et");
+                    c.title = "Önerilen açıklamayı kontrol edin: " + tireSade(k.uyari) + ".";
+                    td.appendChild(c);
+                }
+            }
             if (k.kaynak === "hafiza" && satirElemanlari[i]
                     && !satirElemanlari[i].querySelector(".dg-hafiza")) {
                 hafizaCipi(satirElemanlari[i].querySelector(".dg-kolon"),
