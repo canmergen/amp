@@ -24,12 +24,13 @@
      genislikte (#kabuk: tabular-nums).
      Yalnizca --fw-normal (400) ve --fw-kalin (700) kullanilir.
      Buyuk harf CSS ile DEGIL, HTML/Python'da yazilir (Turkce I/İ). */
-  --fs-kucuk:  11px;     /* faz no, sayac, durum cipi */
-  --fs-etiket: 11px;     /* BUYUK HARFLI kirmizi etiketler: ANALİTİK SÜREÇ, VERİ SETİ... */
-  --fs-govde:  12.5px;   /* metin, butonlar */
-  --fs-baslik: 13px;     /* kart/faz basliklari, ozet degerleri */
-  --fs-buyuk:  14px;     /* urun adi, sayfa basligi */
-  --fs-blok:   13.5px;   /* adim blogu basligi (01.1 ...): 40px avatarla orantili */
+  /* Bir punto büyütüldü (sohbet alanı genişleyince yazı küçük kalıyordu). */
+  --fs-kucuk:  12px;     /* faz no, sayac, durum cipi */
+  --fs-etiket: 12px;     /* BUYUK HARFLI kirmizi etiketler: ANALİTİK SÜREÇ, VERİ SETİ... */
+  --fs-govde:  13.5px;   /* metin, butonlar */
+  --fs-baslik: 14px;     /* kart/faz basliklari, ozet degerleri */
+  --fs-buyuk:  15px;     /* urun adi, sayfa basligi */
+  --fs-blok:   14.5px;   /* adim blogu basligi (01.1 ...): 40px avatarla orantili */
 
   --fw-normal: 400;
   --fw-kalin:  700;
@@ -430,8 +431,10 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   background: var(--kenar-acik);
 }
 .ust-kume-ad, .ust-sekme {
-  height: 30px; padding: 0 12px; white-space: nowrap;
-  font-family: var(--font); font-size: var(--fs-govde); font-weight: var(--fw-kalin);
+  /* Üst bar yazısı genel ölçekten bağımsız (12.5px): bar 64 px ve kutular
+     tek sırada sığmalı. */
+  height: 30px; padding: 0 11px; white-space: nowrap;
+  font-family: var(--font); font-size: 12.5px; font-weight: var(--fw-kalin);
   letter-spacing: var(--etiket-aralik);
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border-radius: var(--r-kucuk);
@@ -461,10 +464,13 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border-color: var(--kenar); border-style: dashed;
 }
 .ust-sekme.kapali svg { width: 12px; height: 12px; flex-shrink: 0; }
-/* Dar bar (≤ 1366 px): kutular sıkılaşır, yazı bir punto küçülür. */
-@media (max-width: 1366px) {
+/* Dar bar: ≤ 1536 px kutular sıkılaşır, ≤ 1366 px yazı da küçülür. */
+@media (max-width: 1536px) {
   #ust-sekmeler { gap: 4px; padding: 0 var(--b-2); }
-  .ust-kume-ad, .ust-sekme { padding: 0 7px; font-size: var(--fs-kucuk); }
+  .ust-kume-ad, .ust-sekme { padding: 0 8px; }
+}
+@media (max-width: 1366px) {
+  .ust-kume-ad, .ust-sekme { padding: 0 6px; font-size: 11px; }
 }
 
 /* Sağ: 2 × 2 (tema | Oturum Aktif / Arşiv | Yeni Çalışma). */

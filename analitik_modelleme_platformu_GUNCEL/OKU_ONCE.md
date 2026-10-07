@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklama önerilerinde veri seti adı ve "muhtemelen / kesinlikle" gibi sözcükler yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Yazılar bir punto büyüdü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Genel yazı ölçeği bir punto büyüdü: gövde 12,5 → 13,5 px, başlık
+  13 → 14, küçük ve etiket 11 → 12, büyük 14 → 15, blok başlığı
+  13,5 → 14,5. Bütün arayüz (sohbet kartları, sol panel, tablolar,
+  analiz alanı) bu değerleri kullanıyor.
+- Üst bardaki kutuların yazısı ayrı tutuldu (12,5 px; 1366 px ve altında
+  11 px): bar 64 px ve kutular tek sırada sığmalı. 1536 px ve altında
+  kutular sıkılaşıyor.
+
+Önceki tur: **Açıklama önerilerinde veri seti adı ve "muhtemelen / kesinlikle" gibi sözcükler yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Yazar (ve hakem) istemi: veri seti adı yalnız konuyu anlamak için
   kullanılır, açıklamaya yazılmaz (ham ya da çözülmüş hâli). Kesinlik /
