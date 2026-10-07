@@ -7179,24 +7179,34 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         "Kısaltma sözlüğü, kolon eşlemeleri ve adda olmayan kavramlar");
     kisaExcel.ac(true);
     kb.appendChild(kisaExcel.el);
-    const sar = elYap("div", "dg-tablo-sar");
-    const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
-    const th = document.createElement("thead"), hr = document.createElement("tr");
-    ["Anlam (Sözlükten)", "Adlarda Geçen", "Tür", "Önerilen Kısaltma", "Seç"]
-        .forEach(h => hr.appendChild(elYap("th", "", h)));
-    th.appendChild(hr); tablo.appendChild(th);
-    const tb = document.createElement("tbody");
-    tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
+    /* İKİ AYRI TABLO, her biri kendi kaydırmasıyla: üstte sözlükte
+       karşılığı bulunamayan parçalar, altta sözlükten okunan anlamlar.
+       Biri uzun olsa da diğeri yerinde durur, aşağı inmek gerekmez. */
+    function tabloKur(ilkSutun) {
+        const kap = elYap("div", "dg-kisa-tablo-kap");
+        const bas = elYap("div", "dg-kisa-tablo-baslik", "");
+        const sar_ = elYap("div", "dg-tablo-sar dg-kisa-sar");
+        const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
+        const th = document.createElement("thead"), hr = document.createElement("tr");
+        [ilkSutun, "Adlarda Geçen", "Tür", "Önerilen Kısaltma", "Seç"]
+            .forEach(h => hr.appendChild(elYap("th", "", h)));
+        th.appendChild(hr); tablo.appendChild(th);
+        const govde = document.createElement("tbody");
+        tablo.appendChild(govde); sar_.appendChild(tablo);
+        kap.append(bas, sar_);
+        kart.appendChild(kap);
+        return { kap: kap, bas: bas, tb: govde };
+    }
+    const tBul = tabloKur("Anlam");
+    const tSoz = tabloKur("Anlam (Sözlükten)");
+    const tb = tSoz.tb;                     // yoklama / odak kontrolü için
+    const sar = { set hidden(v) { tBul.kap.hidden = v; tSoz.kap.hidden = v; } };
     kart.appendChild(durumEl);
     kart.appendChild(ilerEl);
 
-    function bolumBasi(metin, ipucu) {
-        const tr = elYap("tr", "dg-bolum-satir");
-        const td = elYap("td", "", metin);
-        td.colSpan = 5;
-        if (ipucu) td.appendChild(bolmeBilgiSimgesi(ipucu, metin));
-        tr.appendChild(td);
-        tb.appendChild(tr);
+    function basYaz(t, metin, ipucu) {
+        t.bas.textContent = metin;
+        if (ipucu) t.bas.appendChild(bolmeBilgiSimgesi(ipucu, metin));
     }
 
     function duzenKaydet(x) {
@@ -7204,7 +7214,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                                tur: x.t.value };
     }
 
-    function satirCiz(r) {
+    function satirCiz(r, hedef) {
         /* Okuma sürerken tablo görünür ama KİLİTLİ: izlenir, dokunulmaz. */
         const calisiyor = ka.dm === "calisiyor";
         /* Sayı değerli parçanın ailesi (H00, H00_06): harf kısmının (H)
@@ -7364,23 +7374,20 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         kutu.addEventListener("change", () => { duzenKaydet(x); if (degisti) degisti(); });
         vurgu();
         satirlar.push(x);
-        tb.appendChild(tr);
+        hedef.appendChild(tr);
     }
 
     function ciz(liste) {
-        tb.textContent = "";
+        tBul.tb.textContent = "";
+        tSoz.tb.textContent = "";
         satirlar.length = 0;
         const bul = (liste || []).filter(r => r.bolum === "bulunamadi");
         const soz = (liste || []).filter(r => r.bolum !== "bulunamadi");
-        if (bul.length) {
-            bolumBasi("Sözlükte Karşılığı Bulunamayan Parçalar · " + ftBinlik(bul.length),
-                      "Hiçbir tanımda karşılığı yok; anlamını yazıp seçebilirsiniz.");
-            bul.forEach(satirCiz);
-        }
-        if (soz.length) {
-            if (bul.length) bolumBasi("Sözlükten Okunan Anlamlar · " + ftBinlik(soz.length), "");
-            soz.forEach(satirCiz);
-        }
+        basYaz(tBul, "Sözlükte Karşılığı Bulunamayan Parçalar · " + ftBinlik(bul.length),
+               "Hiçbir tanımda karşılığı yok; anlamını yazıp seçebilirsiniz.");
+        basYaz(tSoz, "Sözlükten Okunan Anlamlar · " + ftBinlik(soz.length), "");
+        bul.forEach(r => satirCiz(r, tBul.tb));
+        soz.forEach(r => satirCiz(r, tSoz.tb));
         const ozet = ka.ozet || {};
         /* OKUMA SÜRERKEN TABLO GÖRÜNÜR AMA KİLİTLİ: her pakette sayılar
            güncellenir; satırlar okuma (ve öneriler) bitince düzenlenir. */
@@ -7395,6 +7402,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         durumEl.hidden = !durumEl.textContent;
         ilerYaz();
         sar.hidden = ust.hidden = !(liste || []).length;
+        tBul.kap.hidden = tBul.kap.hidden || !bul.length;
+        tSoz.kap.hidden = tSoz.kap.hidden || !soz.length;
         if (ozet.tanimli) kbas.title = ftBinlik(ozet.okunan || 0) + " / " + ftBinlik(ozet.tanimli)
             + " tanımlı kolon okundu" + (ozet.dil ? " · adlandırma dili: " + ozet.dil : "");
     }
@@ -7419,7 +7428,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             .then(d => {
                 const yeni = d && d.kisaltma;
                 if (!yeni) return setTimeout(yokla, 3000);
-                if (tb.contains(document.activeElement)) {
+                if (tBul.tb.contains(document.activeElement)
+                        || tb.contains(document.activeElement)) {
                     yoklamaSayisi--;
                     return setTimeout(yokla, 1500);
                 }

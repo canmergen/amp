@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü yazıları sadeleşti**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü iki ayrı tabloda**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- "Sözlükte Karşılığı Bulunamayan Parçalar" ve "Sözlükten Okunan
+  Anlamlar" artık iki ayrı tablo; her birinin başlığı, sütun başlıkları
+  ve kendi kaydırması var (en çok 300 px). Biri uzun olsa da diğeri
+  yerinde durur. Sütun genişlikleri iki tabloda aynı.
+- Tablolardan biri boşsa gösterilmez. Lejant ve Tümünü Seç / Temizle
+  iki tablonun üstünde, ikisine birlikte uygulanır.
+
+Önceki tur: **Kısaltma Sözlüğü yazıları sadeleşti**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Başlık altındaki açıklama paragrafı kaldırıldı; yalnız üç kısa
   adımlık yönerge kaldı.

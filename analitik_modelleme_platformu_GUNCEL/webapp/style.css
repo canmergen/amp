@@ -3085,6 +3085,14 @@ span.bolme-cip { cursor: default; }
 }
 .dg-kisa-cip.dg-cok-anlamli { border-color: var(--amber); color: var(--amber); }
 .dg-kisa-cip.dg-adda-yok { border-style: dashed; font-weight: var(--fw-normal); color: var(--metin-soluk); }
+/* Kısaltma Sözlüğü: iki ayrı tablo, her biri kendi kaydırmasıyla. */
+.dg-kisa-tablo-kap { margin-bottom: var(--b-3); }
+.dg-kisa-tablo-baslik {
+  display: flex; align-items: center; gap: 4px;
+  font-weight: var(--fw-kalin); color: var(--metin); margin: 0 0 var(--b-1);
+}
+.dg-kisa-sar { max-height: 300px; margin-bottom: 0; }
+.dg-kisaltma-tablo { table-layout: fixed; }
 /* Bölüm başlığı satırı (Sözlükte Karşılığı Bulunamayan Parçalar ...). */
 .dg-tablo tr.dg-bolum-satir > td {
   background: var(--yuzey-alt); color: var(--metin);
