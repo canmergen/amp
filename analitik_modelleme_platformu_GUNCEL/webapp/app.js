@@ -4395,6 +4395,7 @@ function dagilimGovdeCiz(govde, d) {
 function analizGuncelle(veri) {
     if (!veri) return;
     ANALIZ_VERI = veri;
+    ustBilgiGuncelle();
     /* Bölme uygulandıysa sohbetteki bölme kartının çubuğu setlerin
        GERÇEK hedef oranlarını yazsın (yalnızca bu iki alan alınır;
        kullanıcının taslağına dokunulmaz). */
@@ -5339,6 +5340,56 @@ function calismaKartiGuncelle() {
 
 {
     calismaKartiGuncelle();
+}
+
+/* ---- Üst bar: veri bilgisi (Satır × Kolon · Hedef · Motor) ----
+   Kaynak: sağ bloğun "Veri Seti" kartı (ANALIZ_VERI.ozet). Değer yoksa
+   "—" ve ipucunda hangi adımdan sonra dolacağı (kartın notu). Değerin
+   " · " ya da "  (" sonrası küçük alt satıra iner: "%50,00 · 5.000 /
+   10.000" -> değer "%50,00", alt "5.000 / 10.000". */
+function ustBilgiGuncelle() {
+    const kok = document.getElementById("ustbar-bilgi");
+    if (!kok) return;
+    const kartlar = (ANALIZ_VERI && ANALIZ_VERI.ozet && ANALIZ_VERI.ozet.kartlar) || [];
+    const kart = kartlar.find(k => String(k.baslik || "").toLocaleLowerCase("tr") === "veri seti") || {};
+    const satir = {};
+    (kart.satirlar || []).forEach(x => {
+        satir[String(x.etiket || "").toLocaleLowerCase("tr")] = x.deger;
+    });
+    const bos = v => v === null || v === undefined || v === "" || v === "-";
+    const bol = v => {
+        const m = String(v);
+        let i = m.indexOf("  (");
+        if (i !== -1) return [m.slice(0, i), m.slice(i + 2).replace(/^\(|\)$/g, "")];
+        i = m.indexOf(" · ");
+        if (i !== -1) return [m.slice(0, i), m.slice(i + 3)];
+        return [m, ""];
+    };
+    const yaz = (alan, deger, alt) => {
+        const h = kok.querySelector('.ub-hucre[data-alan="' + alan + '"]');
+        if (!h) return;
+        h.querySelector(".ub-deger").textContent = deger;
+        h.querySelector(".ub-alt").textContent = alt || "";
+        h.title = deger + (alt ? " · " + alt : "");
+    };
+    const boyut = satir["satır × kolon"];
+    if (bos(boyut)) yaz("boyut", "—", ""); else { const p = bol(boyut); yaz("boyut", p[0], p[1]); }
+    const hedef = satir["hedef değişken"], oran = satir["hedef oranı"];
+    yaz("hedef", bos(hedef) ? "—" : String(hedef), bos(oran) ? "" : bol(oran)[0]);
+    const motor = satir["motor"];
+    yaz("motor", bos(motor) ? "—" : String(motor), "");
+    kok.title = kart.not ? kart.not + " Basınca: Veri & Sözlük."
+                         : "Veri setinin ayrıntısı: Veri & Sözlük sekmesi";
+}
+{
+    const kok = document.getElementById("ustbar-bilgi");
+    if (kok) {
+        const ac = () => analizSekmeAc("ozet");
+        kok.addEventListener("click", ac);
+        kok.addEventListener("keydown", e => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ac(); }
+        });
+    }
 }
 
 
