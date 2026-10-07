@@ -662,15 +662,6 @@ def kolonlar_endpoint():
                         "hata_kodu": kod})
 
 
-@app.route("/kim")
-def kim_endpoint():
-    """Ust bardaki kullanici etiketi icin: sayfayi acan kisinin Dataiku
-    login'i. Cozulemezse bos doner; arayuz "Oturum Aktif" yazmaya devam
-    eder."""
-    login, _ = _kullanici_adi()
-    return jsonify({"kullanici": login or ""})
-
-
 @app.route("/tani")
 def tani_endpoint():
     """Kurulum tanilama: kimlik hangi yoldan cozuluyor, kapsam ne?

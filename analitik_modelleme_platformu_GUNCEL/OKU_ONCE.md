@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **İş akışında tıklama yalnız gezinir; üst bardaki akış durumu kaldırıldı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Üst barda yine "Oturum Aktif"; kullanıcı adı kaldırıldı**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/index.html`, `OKU_ONCE.md` (backend yeniden başlatılmalı: `/kim` ucu kaldırıldı)
+
+- Sağ üstteki etiket yine "● Oturum Aktif" (bağlantı koparsa "Bağlantı
+  Yok"). Kullanıcı adı gösterilmiyor; `/kim` ucu kaldırıldı.
+
+Önceki tur: **İş akışında tıklama yalnız gezinir; üst bardaki akış durumu kaldırıldı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Sol paneldeki İŞ AKIŞI'nda bir adıma basmak artık o adıma GERİ
   DÖNMEZ: sohbet o adımın bloğuna kayar ve blok kısa süre vurgulanır.

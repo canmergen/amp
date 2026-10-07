@@ -107,10 +107,9 @@ const sozlukCipEl = document.getElementById("sozluk-cip");
 /* Sonuç kartları (ÜRETİM · ELEME · MODEL): eski üst şerit; artık sağ
    bloğun Değişkenler ve Bölme & Model sekmelerinde çiziliyor (bkz. sonucCiz). */
 let SONUC_KARTLARI = [];
-/* Üst bar için: açık çalışmanın veri seti / sözlüğü ve Dataiku
-   kullanıcı adı (bkz. calismaKartiGuncelle, rozetGuncelle). */
+/* Üst bardaki çalışma kartı için: açık çalışmanın veri seti ve sözlüğü
+   (bkz. calismaKartiGuncelle). */
 const CALISMA_VERI = { veri: "", sozluk: "" };
-let KULLANICI_ADI = "";
 const bannerEl    = document.getElementById("banner");
 /* Kalan iki referans giriş
    bölgesinin kilidi için. */
@@ -264,10 +263,7 @@ const ROZET_METIN = {
 
 function rozetGuncelle(kod) {
     if (!durumRozet) return;
-    /* Hazırken kullanıcı adı yazar (üst bardaki kullanıcı etiketi);
-       ad gelmediyse eski "Oturum Aktif" metni. */
-    const metin = (kod !== "hata" && KULLANICI_ADI)
-        ? KULLANICI_ADI : (ROZET_METIN[kod] || ROZET_METIN.hazir);
+    const metin = ROZET_METIN[kod] || ROZET_METIN.hazir;
     const nokta = durumRozet.querySelector(".nokta-yesil");
     durumRozet.textContent = "";
     if (nokta) durumRozet.appendChild(nokta);
@@ -5345,17 +5341,6 @@ function calismaKartiGuncelle() {
     calismaKartiGuncelle();
 }
 
-/* Dataiku kullanıcı adı (/kim): üst bardaki kullanıcı etiketi. Gelmezse
-   etiket "Oturum Aktif" yazmaya devam eder. */
-fetch(getWebAppBackendUrl("kim"))
-    .then(r => r.json())
-    .then(d => {
-        if (d && d.kullanici) {
-            KULLANICI_ADI = String(d.kullanici);
-            if (durumRozet && !durumRozet.classList.contains("hata")) rozetGuncelle("hazir");
-        }
-    })
-    .catch(() => { /* ad gelmezse eski metin kalır */ });
 
 
 /* ==================== Seçenek kartları ==================== */
