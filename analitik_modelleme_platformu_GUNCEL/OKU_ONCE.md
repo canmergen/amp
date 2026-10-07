@@ -1,15 +1,9 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst bara veri bilgisi eklendi: Satır × Kolon · Hedef · Motor**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Üst bardaki Satır × Kolon · Hedef · Motor hücreleri geri alındı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
-- Çalışma kartı ve Yeni Çalışma'nın sağında, kalan genişliği dolduran
-  üç hücre: SATIR × KOLON (altında süreç dışı sayısı varsa), HEDEF
-  (hedef kolon, altında hedef oranı), MOTOR (Pandas / Spark).
-- Değerler sağ bloğun Veri & Sözlük sekmesindeki "Veri Seti" kartından
-  okunur; henüz yoksa "—", ipucunda hangi adımdan sonra dolacağı.
-  Basınca Veri & Sözlük açılır.
-- Dar ekranda önce çalışma kartının veri seti satırı (1366 px), sonra
-  Motor hücresi (1280 px), en son üç hücre birden (1100 px) gizlenir.
+- Üst bar bir önceki hâlinde: logo, başlık, çalışma kartı ve Yeni
+  Çalışma; sağda tema, Oturum Aktif, ÇALIŞMA / ÖZET.
 
 Önceki tur: **Yeni Çalışma, çalışma kartının yanına alındı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
