@@ -1,6 +1,32 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü: iki tablo hep görünür, geçişler canlı**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Kısaltma Sözlüğü: okuma hızlandı (örneklemsiz), karar gerekenler ayrıldı**. Değiştir: `fe_agent/kisaltma_okuma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Okuma dalgalar hâlinde: her dalgadan önce kod, dil modeli çağırmadan
+  çözebildiği kolonları çözer, yalnız kalanlar modele gider. Örneklem
+  yok; her kolon kendi tanımıyla doğrulanır.
+  - Kalıp aktarımı: yalnız sayıları farklı kolonlar (ad ve tanımda
+    sayılar dışında aynı) bir kalıp; kalıptan bir kolon okununca
+    eşlemesi diğerlerine, sayılar o kolonun tanımındakiyle değiştirilip
+    taşınır ve her ifade o kolonun tanımında doğrulanır.
+  - Bilinen eşleme: okunmuş kolonlardan öğrenilen parça → ifade
+    eşlemeleri, ifade bu kolonun tanımında geçiyorsa uygulanır. Adın
+    her parçası böyle çözülmeli VE tanımda eşlenmeyen kavram kalmamalı
+    (kalırsa "adda yok" kaçmasın diye kolon modele gider).
+  - Dil modeline kalıp başına bir kolon gider (en çok kolonu temsil eden
+    önce); dalga başına en çok 90 kolon.
+  - İlerleme satırında kodla çözülen kolon sayısı: "(N kod ile)".
+- Tablo üçe ayrıldı:
+  - Sözlükte Karşılığı Bulunamayan Parçalar;
+  - Karar Gerekenler: birden çok kısaltma, başka anlamda da kullanılan
+    kısaltma, çıkarılan eşleme, adda olmayan kavram ya da önerilen yeni
+    kısaltma olan satırlar;
+  - Sorunsuz (katlanmış, başlığa basınca açılır): tek kısaltmalı,
+    çelişkisiz, değişiklik önerilmeyen satırlar; SEÇİLİ gelir (seçilince
+    yalnız anlam onaylanır, kolon adı değişmez).
+- Üç tablo hep görünür; tabloya yeni giren satır vurgulanır.
+
+Önceki tur: **Kısaltma Sözlüğü: iki tablo hep görünür, geçişler canlı**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - İki tablo okuma başladığı andan itibaren birlikte görünür; boş olan
   tablo gizlenmez, "Henüz yok." / "Okunuyor…" yazar. Önceden boş tablo

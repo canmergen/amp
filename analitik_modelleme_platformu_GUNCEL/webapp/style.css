@@ -3092,6 +3092,11 @@ span.bolme-cip { cursor: default; }
   font-weight: var(--fw-kalin); color: var(--metin); margin: 0 0 var(--b-1);
 }
 .dg-kisa-sar { max-height: 280px; margin-bottom: 0; }
+.dg-kisa-ac {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font: inherit; font-weight: var(--fw-kalin); color: var(--metin);
+}
+.dg-kisa-ac:hover { color: var(--kirmizi); }
 .dg-tablo tr.dg-bos-tablo > td { color: var(--metin-soluk); text-align: center; padding: var(--b-3); }
 /* Tabloya yeni giren satır (canlı geçiş): kısa yeşil vurgu. */
 .dg-tablo tr.dg-yeni-gelen > td { animation: dg-yeni-gelen 2.5s ease-out; }

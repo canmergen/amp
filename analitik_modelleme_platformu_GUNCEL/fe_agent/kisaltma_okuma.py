@@ -327,6 +327,133 @@ def baslat(kolonlar, klasor="", tum_adlar=()):
     return imza
 
 
+# ---------------------------------------------------------------------------
+# KODLA OKUMA (dil modeli cagrisi yok; her kolon kendi tanimiyla dogrulanir)
+# ---------------------------------------------------------------------------
+_SAYI = re.compile(r"\d+")
+
+
+def _kalip_anahtari(ad, tanim):
+    """Yalniz sayilari farkli kolonlar (pencere) ayni kalipta: ad ve tanim
+    sayilar '#' yapilarak karsilastirilir."""
+    return (_SAYI.sub("#", str(ad).upper()),
+            _SAYI.sub("#", re.sub(r"\s+", " ", str(tanim).strip().lower())))
+
+
+def _tanim_konumu(ifade, tanim, dolu):
+    """tanimdan() ile ayni eslesme kurali; tanimdaki kelime konumlariyla
+    (bas, son) ve yazilisla doner. dolu: baska parcaya ayrilmis kelime
+    konumlari (cakisan eslesme kabul edilmez). Yoksa None."""
+    iw = [kisa_mod._sade(w) for w in _kelimeler(ifade)]
+    tm = list(_KELIME.finditer(str(tanim or "")))
+    ts = [kisa_mod._sade(m.group(0)) for m in tm]
+    n = len(iw)
+    if not n or n > len(ts):
+        return None
+    for i in range(len(ts) - n + 1):
+        if any(x in dolu for x in range(i, i + n)):
+            continue
+        for j in range(n):
+            a, b = iw[j], ts[i + j]
+            if a == b:
+                continue
+            if a.isdigit() or b.isdigit() or len(a) < 3 or not b.startswith(a):
+                break
+        else:
+            return i, i + n - 1, _parantez_dengele(str(tanim), tm[i].start(), tm[i + n - 1].end())
+    return None
+
+
+def _bilgi(sonuclar):
+    """Okunmus kolonlardan {parca: [(sayi, ifade), ...]} (en sik once)."""
+    say = Counter()
+    for r in sonuclar:
+        for parca, ifade, _b, _s in (r or {}).get("g") or []:
+            say[(parca, ifade)] += 1
+    bilgi = {}
+    for (parca, ifade), n in say.items():
+        bilgi.setdefault(parca, []).append((n, ifade))
+    for v in bilgi.values():
+        v.sort(key=lambda x: -x[0])
+    return bilgi
+
+
+def _artan_kavram_var(tanim, dolu):
+    """Eslenmemis tanim kelimeleri arasinda kavram (yardimci kelime, sayi
+    ya da 2 harften kisa olmayan) kaldi mi. Kaldiysa "adda yok" kavrami
+    olabilir: kolon dil modeline gider."""
+    for i, m in enumerate(_KELIME.finditer(str(tanim or ""))):
+        if i in dolu:
+            continue
+        w = kisa_mod._sade(kisa_mod._kucuk(m.group(0)))
+        if w.isdigit() or len(w) <= 2 or w in _YARDIMCI or w in kisa_mod._DURAK:
+            continue
+        return True
+    return False
+
+
+def kodla_oku(ad, tanim, bilgi):
+    """Kolonun her parcasi, baska kolonlarda okunmus bir ifadeyle bu
+    kolonun tanimindan karsilaniyorsa sonucu kod uretir (dil modeli yok).
+    Tanimda karsilanmayan kavram kalirsa ya da bir parca cozulemezse None."""
+    toklar = [_ust(p) for p in parcalar(ad)]
+    dolu_ad, dolu_tanim, g = set(), set(), []
+    # Once cok parcali bilinen gruplar (en uzun once), sonra tek parca.
+    for m in range(kisa_mod.BIRLESIK_EN_COK_PARCA, 0, -1):
+        for i in range(len(toklar) - m + 1):
+            if any(x in dolu_ad for x in range(i, i + m)):
+                continue
+            parca = "_".join(toklar[i:i + m])
+            if all(t.isdigit() for t in toklar[i:i + m]):
+                continue
+            for _n, ifade in bilgi.get(parca, []):
+                yer = _tanim_konumu(ifade, tanim, dolu_tanim)
+                if yer:
+                    dolu_ad.update(range(i, i + m))
+                    dolu_tanim.update(range(yer[0], yer[1] + 1))
+                    g.append([parca, yer[2], i, i + m - 1])
+                    break
+    if any(i not in dolu_ad and not t.isdigit() for i, t in enumerate(toklar)):
+        return None
+    if _artan_kavram_var(tanim, dolu_tanim):
+        return None
+    g.sort(key=lambda x: x[2])
+    return {"g": g, "y": []}
+
+
+def kaliptan_oku(ad, tanim, ornek_ad, ornek_tanim, ornek):
+    """Ayni kaliptaki (yalniz sayilari farkli) okunmus kolonun eslemesini
+    bu kolona tasir: ifadelerdeki sayilar bu kolonun tanimindaki karsiligiyla
+    degisir ve her ifade bu kolonun taniminda dogrulanir. Olmazsa None."""
+    a_s, b_s = _SAYI.findall(str(ornek_tanim)), _SAYI.findall(str(tanim))
+    if len(a_s) != len(b_s):
+        return None
+    harita = {}
+    for x, y in zip(a_s, b_s):
+        if harita.setdefault(x, y) != y:
+            return None
+    toklar = [_ust(p) for p in parcalar(ad)]
+
+    def cevir(ifade):
+        return _SAYI.sub(lambda m: harita.get(m.group(0), m.group(0)), ifade)
+    g = []
+    for _p, ifade, bas, son in (ornek or {}).get("g") or []:
+        yeni = tanimdan(cevir(ifade), tanim)
+        if not yeni or son >= len(toklar):
+            return None
+        g.append(["_".join(toklar[bas:son + 1]), yeni, bas, son])
+    y = []
+    for ifade, sonra in (ornek or {}).get("y") or []:
+        yeni = tanimdan(cevir(ifade), tanim)
+        if not yeni:
+            return None
+        y.append([yeni, cevir(sonra) if sonra else ""])
+    return {"g": g, "y": y}
+
+
+DALGA = OKUMA_PARCA * OKUMA_PARALEL   # bir dalgada dil modeline giden en cok kolon
+
+
 def _calis(imza, eksik):
     k = _ISLER[imza]
     try:
@@ -351,8 +478,48 @@ def _calis(imza, eksik):
                     if hata:
                         k["hata"] = hata
 
-        bloklar = [eksik[i:i + OKUMA_PARCA] for i in range(0, len(eksik), OKUMA_PARCA)]
-        _bekle([_HAVUZ.submit(oku, b) for b in bloklar], k)
+        # DALGALAR: her dalgadan once kod, okunmus kolonlardan ogrenilen
+        # eslemelerle ve ayni kaliptaki kolonlardan cozebildigini cozer;
+        # dil modeline yalniz kalanlar (kalip basina bir kolon) gider.
+        bekleyen = dict(eksik)
+        kalip = {}
+        for ad, t in eksik:
+            kalip.setdefault(_kalip_anahtari(ad, t), []).append(ad)
+        while bekleyen and not k["iptal"]:
+            with _KILIT:
+                okunmus = {ad: _SONUC.get((ad, _ozet(t))) for ad, t in k["girdi"]}
+                bilgi = _bilgi(okunmus.values())
+                for ad, t in list(bekleyen.items()):
+                    r = None
+                    for o in kalip.get(_kalip_anahtari(ad, t), []):
+                        if o != ad and okunmus.get(o):
+                            r = kaliptan_oku(ad, t, o, dict(k["girdi"])[o], okunmus[o])
+                            if r:
+                                break
+                    r = r or kodla_oku(ad, t, bilgi)
+                    if r is not None:
+                        _SONUC[(ad, _ozet(t))] = r
+                        okunmus[ad] = r
+                        del bekleyen[ad]
+                        k["biten"] += 1
+                        k["kodla"] = k.get("kodla", 0) + 1
+            if not bekleyen:
+                break
+            # Kalip basina bir temsilci; en cok kolonu temsil eden once.
+            temsil, gorulen = [], set()
+            for ad, t in sorted(bekleyen.items(),
+                                key=lambda at: -len(kalip.get(_kalip_anahtari(*at), []))):
+                anah = _kalip_anahtari(ad, t)
+                if anah in gorulen:
+                    continue
+                gorulen.add(anah)
+                temsil.append((ad, t))
+                if len(temsil) >= DALGA:
+                    break
+            for ad, _t in temsil:
+                bekleyen.pop(ad, None)
+            bloklar = [temsil[i:i + OKUMA_PARCA] for i in range(0, len(temsil), OKUMA_PARCA)]
+            _bekle([_HAVUZ.submit(oku, b) for b in bloklar], k)
         if not k["iptal"]:
             k["asama"] = "oneri"
             _onerileri_hazirla(k, ork)
@@ -380,7 +547,8 @@ def durum(imza):
     return {"durum": k["durum"], "asama": k["asama"], "biten": k["biten"],
             "toplam": k["toplam"], "oneri_biten": k["oneri_biten"],
             "oneri_toplam": k["oneri_toplam"], "gecen": int(time.time() - k["zaman"]),
-            "iptal": k["iptal"], "hata": k["hata"], "okunmayan": k["okunmayan"]}
+            "iptal": k["iptal"], "hata": k["hata"], "okunmayan": k["okunmayan"],
+            "kodla": k.get("kodla", 0)}
 
 
 def iptal(imza):
@@ -595,6 +763,20 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
     satirlar = _aileleri_diz(satirlar, aile)
     ilke = ad_ilkesi()
     _onerileri_uygula(satirlar, dil, standart, onay, ilke["turler"])
+    # GRUP: kartta uc tablo. SORUNSUZ: tek kisaltma, baska anlamda
+    # kullanilmiyor, cikarilan esleme yok, adda olmayan kavram yok ve
+    # kisaltma degisikligi onerilmiyor; secilince yalniz anlam onaylanir,
+    # ad degismez. Bu yuzden secili gelir ve kartta katlanir.
+    for s_ in satirlar:
+        if s_["bolum"] == "bulunamadi":
+            s_["grup"] = "bulunamadi"
+        elif (len(s_["kisaltmalar"]) == 1 and not s_["cok_anlamli"]
+              and not s_.get("cikarilan") and not s_["adda_yok"] and not s_.get("oneri")
+              and s_["anlam"]):
+            s_["grup"] = "sorunsuz"
+            s_["onayli"] = True
+        else:
+            s_["grup"] = "karar"
     return {"satirlar": satirlar, "esleme": esleme, "okunan": len(esleme),
             "tanimli": len(girdi), "dil": dil, "kalip": kalip,
             "ad_kalibi": ilke["kalip"]}

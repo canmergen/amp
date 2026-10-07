@@ -7109,7 +7109,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             ilerMetin.textContent = "İşlem Devam Ediyor · "
                 + (oneri ? "Kısaltma Önerileri · " : "Tanımlar Okunuyor · ")
                 + ftBinlik(il.biten || 0) + " / " + ftBinlik(il.toplam || 0)
-                + (oneri ? " Anlam" : " Kolon") + " · "
+                + (oneri ? " Anlam" : " Kolon")
+                + (!oneri && il.kodla ? " (" + ftBinlik(il.kodla) + " kod ile)" : "") + " · "
                 + sureBicim(Math.max(0, Math.floor((Date.now() - ilerBas) / 1000)));
         }
     }
@@ -7197,17 +7198,22 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         kart.appendChild(kap);
         return { kap: kap, bas: bas, tb: govde };
     }
+    /* ÜÇ TABLO: karşılığı bulunamayanlar, karar gerekenler, sorunsuzlar
+       (katlanmış; tek kısaltmalı, çelişkisiz, seçili gelir, ad değişmez). */
     const tBul = tabloKur("Anlam");
     const tSoz = tabloKur("Anlam (Sözlükten)");
+    const tSor = tabloKur("Anlam (Sözlükten)");
+    let sorunsuzAcik = false;
+    tSor.sar = tSor.kap.querySelector(".dg-kisa-sar");
     const tb = tSoz.tb;                     // yoklama / odak kontrolü için
-    const sar = { set hidden(v) { tBul.kap.hidden = v; tSoz.kap.hidden = v; } };
+    const sar = { set hidden(v) { tBul.kap.hidden = v; tSoz.kap.hidden = v; tSor.kap.hidden = v; } };
     kart.appendChild(durumEl);
     kart.appendChild(ilerEl);
 
     /* CANLI GEÇİŞ: bir yoklamadan diğerine tabloya yeni giren satır
        (ör. anlamı okununca karşılıksızlardan sözlüğe geçen parça) kısa
        süre vurgulanır. İlk çizimde vurgu yok. */
-    const oncekiAnahtar = { bul: null, soz: null };
+    const oncekiAnahtar = { bul: null, soz: null, sor: null };
     function yeniGelenleriVurgula(t, ad) {
         const simdi = new Set();
         t.tb.querySelectorAll("tr[data-anahtar]").forEach(tr => {
@@ -7402,20 +7408,38 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     function ciz(liste) {
         tBul.tb.textContent = "";
         tSoz.tb.textContent = "";
+        tSor.tb.textContent = "";
         satirlar.length = 0;
         const bul = (liste || []).filter(r => r.bolum === "bulunamadi");
         const soz = (liste || []).filter(r => r.bolum !== "bulunamadi");
+        const sor = soz.filter(r => r.grup === "sorunsuz");
+        const kar = soz.filter(r => r.grup !== "sorunsuz");
         basYaz(tBul, "Sözlükte Karşılığı Bulunamayan Parçalar · " + ftBinlik(bul.length),
                "Hiçbir tanımda karşılığı yok; anlamını yazıp seçebilirsiniz.");
-        basYaz(tSoz, "Sözlükten Okunan Anlamlar · " + ftBinlik(soz.length), "");
+        basYaz(tSoz, "Karar Gerekenler · " + ftBinlik(kar.length),
+               "Aynı anlam için birden çok kısaltma, başka anlamda da kullanılan "
+               + "kısaltma, önerilen yeni kısaltma ya da adda olmayan kavram.");
+        /* Sorunsuzlar başlığı aç / kapa düğmesi. */
+        tSor.bas.textContent = "";
+        const ac = elYap("button", "dg-kisa-ac", (sorunsuzAcik ? "▾ " : "▸ ")
+                         + "Sorunsuz · " + ftBinlik(sor.length));
+        ac.type = "button";
+        ac.title = "Tek kısaltmalı, çelişkisiz satırlar; seçili gelir, kolon adı değişmez.";
+        ac.onclick = () => { sorunsuzAcik = !sorunsuzAcik; ciz(liste); };
+        tSor.bas.appendChild(ac);
+        tSor.sar.hidden = !sorunsuzAcik;
         bul.forEach(r => satirCiz(r, tBul.tb));
-        soz.forEach(r => satirCiz(r, tSoz.tb));
-        /* İki tablo HEP görünür (boşken de): okuma sürerken parçaların
+        kar.forEach(r => satirCiz(r, tSoz.tb));
+        sor.forEach(r => satirCiz(r, tSor.tb));
+        /* Tablolar HEP görünür (boşken de): okuma sürerken parçaların
            birinden diğerine geçişi canlı izlenir. */
-        if (!bul.length) bosSatir(tBul, ka.dm === "calisiyor" ? "Henüz yok." : "Karşılığı bulunamayan parça yok.");
-        if (!soz.length) bosSatir(tSoz, ka.dm === "calisiyor" ? "Okunuyor…" : "Sözlükten anlam okunamadı.");
+        const bos = ka.dm === "calisiyor";
+        if (!bul.length) bosSatir(tBul, bos ? "Henüz yok." : "Karşılığı bulunamayan parça yok.");
+        if (!kar.length) bosSatir(tSoz, bos ? "Okunuyor…" : "Karar gereken satır yok.");
+        if (!sor.length) bosSatir(tSor, bos ? "Okunuyor…" : "Sorunsuz satır yok.");
         yeniGelenleriVurgula(tBul, "bul");
         yeniGelenleriVurgula(tSoz, "soz");
+        yeniGelenleriVurgula(tSor, "sor");
         const ozet = ka.ozet || {};
         /* OKUMA SÜRERKEN TABLO GÖRÜNÜR AMA KİLİTLİ: her pakette sayılar
            güncellenir; satırlar okuma (ve öneriler) bitince düzenlenir. */
@@ -7455,7 +7479,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const yeni = d && d.kisaltma;
                 if (!yeni) return setTimeout(yokla, 3000);
                 if (tBul.tb.contains(document.activeElement)
-                        || tb.contains(document.activeElement)) {
+                        || tb.contains(document.activeElement)
+                        || tSor.tb.contains(document.activeElement)) {
                     yoklamaSayisi--;
                     return setTimeout(yokla, 1500);
                 }

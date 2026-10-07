@@ -1525,7 +1525,8 @@ def _kisaltma_alani(durum):
         oneri = d.get("asama") == "oneri"
         ilerleme = {"asama": d.get("asama"), "gecen": d.get("gecen") or 0,
                     "biten": d.get("oneri_biten" if oneri else "biten") or 0,
-                    "toplam": d.get("oneri_toplam" if oneri else "toplam") or 0}
+                    "toplam": d.get("oneri_toplam" if oneri else "toplam") or 0,
+                    "kodla": d.get("kodla") or 0}
     return {"surum": 2, "baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
             "yonerge": KISALTMA_YONERGE,
             "sutunlar": KISALTMA_SUTUNLAR, "satirlar": satirlar,
