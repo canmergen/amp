@@ -14,8 +14,8 @@ Bu tur: **Yazı boyutları tek ölçeğe bağlandı**. Değiştir: `webapp/style
 - Boyutu verilmemiş buton / giriş kutuları tarayıcının kendi boyutunu
   değil, çevresindeki yazının boyutunu alır.
 - Sabit kalanlar: kutusuna göre boyutlanan ikon karakterleri (×, +, ok,
-  i) ve dağılım grafiğinin eksen yazıları (10 px; büyütülürse çubuk
-  etiketleri üst üste biniyor).
+  i) ve dağılım grafiğinin eksen yazıları (10 px; grafik alanı dar,
+  bu turda dokunulmadı).
 
 Önceki tur: **Birim çıkmayan kolonda açıklamaya özne yazılmaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
