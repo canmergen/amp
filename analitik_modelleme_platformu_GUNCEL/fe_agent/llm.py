@@ -389,13 +389,14 @@ ROL verilen kolonlar (kullanicinin modelleme tanimlarinda sectigi):
                     oldugunu adindan, VERI SETI adindan ve ornek
                     tanimlardan cikararak kimlik olarak yaz; bir islem,
                     olay ya da tutar anlatma. Bunlardan cikmiyorsa birim
-                    (musteri, hesap ...) UYDURMA: VERI SETI adinin
-                    anlattigi kaydin tekil kimligi olarak yaz.
+                    (musteri, hesap ...) UYDURMA ve "kayit", "satir" gibi
+                    genel ozne de yazma: "Tekil kimlik numarasi" yaz.
   - hedef degisken: modelin tahmin ettigi 0/1 olay. 1 degerinin neyi
                     ifade ettigini adindan ve ornek tanimlardan cikararak
                     yaz.
-  - donem kolonu  : gozlemin ait oldugu donem; bicimini degerlerden cikar.
-  - segment kolonu: gozlemin ait oldugu alt grup.
+  - donem kolonu  : donem bilgisi; bicimini degerlerden cikar
+                    ("YYYYAA biciminde donem").
+  - segment kolonu: alt grup (segment) bilgisi; siniflari yaz.
 Bu tanimlar sonra yeni degisken uretiminde kullanilacak; rolu dogru yansit.
 
 TEK ANLAMLI YAZ: ayni ifadeyi tekrar etme, gereksiz kelime ekleme. Bu
@@ -428,8 +429,12 @@ DOGRULA (yazmadan once her iddiayi kolonun bilgileriyle kontrol et):
   - KONU: aciklamadaki birim (musteri, hesap, islem, kayit ...) yalniz
     kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
     cikiyorsa yazilir; cikmiyorsa BIRIM YAZMA: ne uydur ne de "kayit",
-    "satir" gibi genel bir ozne kullan; yalniz kolonun ne oldugunu yaz
-    ("Tekil kimlik numarasi", "Sira numarasi").
+    "satir", "gozlem" gibi genel bir ozne kullan; yalniz kolonun ne
+    oldugunu yaz. Tamlamayi BASTAN oznesiz kur; ozne silinince yarim
+    kalan cumle (son eki ortada kalan ad) YANLISTIR:
+      YANLIS: "Kaydin tekil kimligi", "Kayitlarin sira numarasi",
+              "Tekil kimligi"
+      DOGRU : "Tekil kimlik numarasi", "Sira numarasi"
   - VERI SETI ADINI YAZMA: ad yalniz tablonun konusunu anlamak icindir;
     aciklamada ne ham hali ne cozulmus / bosluklu hali gecer. Tanim veri
     setinden bagimsiz okunmali.
@@ -454,8 +459,9 @@ ACIK olsun.
 
 Her kolon icin:
   aciklama : Turkce, bir ya da iki cumle (en cok ~200 karakter). Su
-             bilgileri iceriyorsa yaz: hangi birimin (musteri, hesap,
-             islem ...) neyi oldugu; olcu ve birimi (tutar, adet, oran,
+             bilgileri iceriyorsa yaz: birim (musteri, hesap, islem
+             ...) KONU kuralina gore cikiyorsa hangi birimin neyi
+             oldugu, cikmiyorsa yalniz ne oldugu; olcu ve birimi (tutar, adet, oran,
              gun ...); zaman penceresi; degerlerin anlami (bayrakta 1,
              kodlarda siniflar, kimlik / sira numarasi oldugu). Kolon
              adini tekrar etme; ne olctugunu anlat. Adindan ve
@@ -751,21 +757,13 @@ def _veri_seti_deseni(veri_seti):
     return re.compile(r"\b" + govde + r"(?:['’][^\s,.;]*)?\b\s*", re.I)
 
 
-# Birim cikmadiginda modelin yine de basa koydugu genel ozne ("Kaydin",
-# "Kayitlarin", "Satirin" ...): birim yazilmaz kurali geregi atilir.
-# Yalniz cumle BASINDAKI iyelik hali; "Kayit tarihi" gibi anlamli kullanim
-# etkilenmez.
-_GENEL_OZNE = re.compile(
-    r"^(?:kayd[ıi]n[ıi]n|kayd[ıi]n|kay[ıi]tlar[ıi]n|sat[ıi]r[ıi]n|"
-    r"sat[ıi]rlar[ıi]n)\s+", re.I)
-
-
 def aciklama_temizle(metin, veri_seti=None):
     """Onerilen aciklamanin son kontrolu (dil modeli cagrisi yok):
       1) istatistik iceren parcalar atilir (istatistik_temizle),
       2) veri seti adi (ham ya da cozulmus) atilir,
-      3) kesinlik / tahmin sozcukleri ("muhtemelen", "kesinlikle" ...) atilir,
-      4) bastaki genel ozne ("Kaydin", "Kayitlarin" ...) atilir.
+      3) kesinlik / tahmin sozcukleri ("muhtemelen", "kesinlikle" ...) atilir.
+    Genel ozne ("Kaydin" ...) burada SILINMEZ: silinince tamlama yarim
+    kaliyor ("Tekil kimligi"); oznesiz yazim istemde.
     Bas harf buyutulur. Temizlik metni bosaltirsa ilk adimin sonucu kalir."""
     m = istatistik_temizle(metin)
     t = m
@@ -774,8 +772,8 @@ def aciklama_temizle(metin, veri_seti=None):
         t = desen.sub("", t)
     t = _TAHMIN_SOZ.sub("", t)
     t = re.sub(r"\s+", " ", t).strip(" ,;")
-    t = _GENEL_OZNE.sub("", t)
     t = re.sub(r"\s+([,.;])", r"\1", t)
+    t = re.sub(r"[,;]+\.", ".", t)
     if len(t.split()) < 2:
         return m
     if t[:1].islower():
@@ -1073,8 +1071,12 @@ DOGRULA:
   - KONU: aciklamadaki birim (musteri, hesap, islem, kayit ...) yalniz
     kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
     cikiyorsa yazilir. Cikmiyorsa adaylar ne derse desin BIRIM YAZMA:
-    "kayit", "satir" gibi genel bir ozne de kullanma; yalniz kolonun ne
-    oldugunu yaz ("Tekil kimlik numarasi").
+    "kayit", "satir", "gozlem" gibi genel bir ozne de kullanma; yalniz
+    kolonun ne oldugunu yaz. Adaydaki ozneyi silip kalanini birakma;
+    tamlamayi bastan oznesiz kur:
+      YANLIS: "Kaydin tekil kimligi", "Kayitlarin sira numarasi",
+              "Tekil kimligi"
+      DOGRU : "Tekil kimlik numarasi", "Sira numarasi"
   - VERI SETI ADINI YAZMA (ham ya da cozulmus hali); adaylarda varsa at.
   - KESINLIK / TAHMIN SOZCUGU YAZMA ("muhtemelen", "buyuk olasilikla",
     "kesinlikle", "belki", "tahminen"); adaylarda varsa at.
@@ -1091,8 +1093,8 @@ Sonra en dogru aciklamayi sec ya da adaylari birlestirerek yaz:
     (ornek: dagilim 0/1 iken "tutar" diyen aday yanlistir)
   - ONAYLI TANIMLAR en guvenilir kaynaktir; AYNI ADLI kolon varsa onu esas al
   - ORNEK TANIMLAR ve YAZIM TARZI kurumun yazim bicimidir, ona uy
-  - icerikle tutarli adaylar arasinda EN ACIKLAYICI olani sec: hangi
-    birimin neyi, olcu / birim, pencere, degerlerin anlami (bayrakta 1,
+  - icerikle tutarli adaylar arasinda EN ACIKLAYICI olani sec: (KONU
+    kuralina gore cikiyorsa) hangi birimin neyi, olcu / birim, pencere, degerlerin anlami (bayrakta 1,
     kimlik / sira numarasi). Tanim, kolonu ve veriyi gormeyen birinin
     (dil modeli dahil) dogru kullanabilecegi kadar acik olsun
   - bir ya da iki cumle (en cok ~200 karakter), Turkce, kolon adini

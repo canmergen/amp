@@ -1,6 +1,23 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Yazı boyutları tek ölçeğe bağlandı**. Değiştir: `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Açıklamada özne sorunu istemde çözüldü; kod artık özne silmiyor**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Sorunun kaynağı istemin kendisiydi: kimlik kolonu kuralı birim
+  çıkmayınca "veri setinin anlattığı kaydın tekil kimliği olarak yaz"
+  diyordu; açıklama tarifi ve hakem seçimi de her zaman "hangi birimin
+  neyi" kalıbını istiyordu. Bu üç yer düzeltildi: birim yalnız KONU
+  kuralına göre çıkıyorsa yazılır, çıkmıyorsa yalnız kolonun ne olduğu.
+- Dönem ve segment rol tarifindeki "gözlemin ait olduğu ..." kalıbı da
+  öznesiz yazıldı.
+- KONU kuralına (yazar ve hakem istemi) yanlış / doğru örnek eklendi:
+  özneli ya da öznesi silinip eki ortada kalmış cümle yanlış; tamlama
+  baştan öznesiz kurulur.
+- Kod tarafındaki "baştaki Kaydın / Kayıtların sözcüğünü sil" adımı
+  kaldırıldı: sildiğinde "Tekil kimliği" gibi yarım tamlama bırakıyordu.
+  Ek dil modeli çağrısı yok; tek çağrıda doğru yazım istemle sağlanır.
+- Temizlik sonrası cümle sonunda ",." kalması düzeltildi.
+
+Önceki tur: **Yazı boyutları tek ölçeğe bağlandı**. Değiştir: `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Bütün arayüzde üç yazı boyutu var: küçük 12 px (etiket, rozet, sayaç,
   üst bar düğmeleri), gövde 13,5 px (metin, buton, tablo), başlık 15 px
