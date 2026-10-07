@@ -440,14 +440,28 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
     satir = {}                  # anahtar -> birikim
     kisa_anlam = {}             # KISA -> Counter(anahtar)
     esleme = {}
+    # AYNI KELIMEYE IKI PARCA: bir kolonda iki parca ayni anlama
+    # eslenmisse (ornek: olcu kisaltmasi da hesap kisaltmasi da tanimdaki
+    # olcu kelimesine) biri yanlistir. Sozlugun genelinde bu anlamla en cok
+    # eslenen parca kalir; digeri o kolonda eslenmemis sayilir.
+    genel_say = Counter()
+    for ad, tanim in girdi.items():
+        r = _SONUC.get((ad, _ozet(tanim)))
+        for parca, ifade, _b, _s in (r or {}).get("g") or []:
+            genel_say[(parca, anahtar(ifade))] += 1
     for ad, tanim in sorted(girdi.items()):
         r = _SONUC.get((ad, _ozet(tanim)))
         if r is None:
             continue
         e = {"g": [], "y": []}
+        en_iyi = {}
+        for parca, ifade, _b, _s in r.get("g") or []:
+            a = anahtar(ifade)
+            if a and genel_say[(parca, a)] > genel_say[(en_iyi.get(a), a)]:
+                en_iyi[a] = parca
         for parca, ifade, bas, son in r.get("g") or []:
             a = anahtar(ifade)
-            if not a:
+            if not a or en_iyi.get(a) != parca:
                 continue
             s = satir.setdefault(a, {"ifade": Counter(), "kisa": {}, "adda_yok": 0,
                                      "ornek": []})

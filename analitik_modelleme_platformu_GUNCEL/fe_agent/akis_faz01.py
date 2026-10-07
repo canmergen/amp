@@ -1484,9 +1484,17 @@ KISALTMA_KALIP_BILGI = (
     "parçalar adda geçtikleri sırayla kalır; türü bilinmeyen parça önündeki "
     "parçaya bağlı kalır. Kolon adı rakamla başlayamaz: rakamla başlayan bir "
     "parça (çoğunlukla pencere) başa gelirse o kolon Sorunlu işaretlenir.\n\n"
-    "Kalıp ve onayladığınız satırların türü kurum geneli kısaltma hafızasına "
-    "yazılır; sonraki çalışmalarda varsayılan olarak gelir. Sırayı oklarla "
-    "değiştirebilirsiniz.")
+    "Sıra sabittir, değiştirilmez. Onayladığınız satırların türü kurum "
+    "geneli kısaltma hafızasına yazılır; sonraki çalışmalarda varsayılan "
+    "olarak gelir.")
+# Kartin ustunde: ne yapilacagi uc adimda.
+KISALTMA_YONERGE = [
+    "Tanımlar okunurken bekleyin; tablo okuma bitince açılır.",
+    "Her satırda anlamı kontrol edin; gerekiyorsa düzeltin. Sözlükte "
+    "karşılığı bulunamayan parçaların anlamını siz yazın.",
+    "Bir anlam için tek kısaltma kullanılsın istiyorsanız Önerilen "
+    "Kısaltma'yı yazın ve satırı seçin. Seçilen satırlar bir sonraki adımda "
+    "kolon adlarına uygulanır; seçilmeyen satır adları değiştirmez."]
 # Sutunlarin aciklamasi basliktaki i'de.
 KISALTMA_SUTUNLAR = (
     "Anlam: kolon adındaki parçanın, kolonun sözlükteki tanımında karşılık "
@@ -1549,11 +1557,12 @@ def _kisaltma_alani(durum):
                     "biten": d.get("oneri_biten" if oneri else "biten") or 0,
                     "toplam": d.get("oneri_toplam" if oneri else "toplam") or 0}
     return {"surum": 2, "baslik": KISALTMA_BASLIK, "aciklama": KISALTMA_ACIKLAMA,
+            "yonerge": KISALTMA_YONERGE,
             "sutunlar": KISALTMA_SUTUNLAR, "satirlar": satirlar,
             "turler": [{"kod": k, "ad": e, "aciklama": kisaltma_mod.TUR_ACIKLAMA[k]}
                        for k, e in kisaltma_mod.TURLER],
-            "ad_kalibi": kisaltma_mod.kalip_temizle(durum.get("kisaltma_kalip")
-                                                    or t["ad_kalibi"]),
+            # AD KALIBI SABIT: kullanici degistirmez.
+            "ad_kalibi": list(kisaltma_mod.VARSAYILAN_KALIP),
             "kalip_bilgi": KISALTMA_KALIP_BILGI,
             "dm": "calisiyor" if calisiyor else ("hata" if d.get("durum") == "hata" else "bitti"),
             "ilerleme": ilerleme, "not": " ".join(notlar),
@@ -1598,7 +1607,7 @@ def _kolon_ad_alani(durum):
     satirlar = kisaltma_okuma.yeni_adlar(
         _veri_kolonlari(durum), durum.get("kisaltma_esleme") or {}, kararlar, genel,
         _korunan_kolonlar(durum), durum.get("haric_kolonlar") or [],
-        durum.get("kisaltma_turleri") or {}, durum.get("kisaltma_kalip") or [])
+        durum.get("kisaltma_turleri") or {}, list(kisaltma_mod.VARSAYILAN_KALIP))
     # Geri donuste bu calismada verilen karar korunur.
     onceki = durum.get("_kolon_ad_karari")
     for s in satirlar:
@@ -1718,9 +1727,8 @@ def kisaltma_uygula(durum):
         for k in s["kisaltmalar"]:
             sahip.setdefault(k["kisaltma"], set()).add(s["anahtar"])
     tur_kodlari = set(kisaltma_mod.VARSAYILAN_KALIP)
-    kalip = kisaltma_mod.kalip_temizle(durum.get("kisaltma_kalip") or t["ad_kalibi"])
-    if isinstance(karar, dict) and not karar.get("atla") and karar.get("kalip"):
-        kalip = kisaltma_mod.kalip_temizle(karar["kalip"])
+    # AD KALIBI SABIT: karttan gelen sira kullanilmaz.
+    kalip = list(kisaltma_mod.VARSAYILAN_KALIP)
     hatalar, kararlar, verilen = [], {}, {}
     for a, s in satirlar.items():
         g = gelen.get(a) or {}
@@ -1792,7 +1800,7 @@ def kisaltma_uygula(durum):
     # Kalip ve SECILEN satirlarin turu kurum geneli hafizaya.
     if isinstance(karar, dict) and not karar.get("atla"):
         ilke_hata = kisaltma_mod.ad_ilkesi_kaydet(
-            kalip, {kisaltma_okuma.anahtar(k["anlam"]): k["tur"] for k in kararlar.values()
+            None, {kisaltma_okuma.anahtar(k["anlam"]): k["tur"] for k in kararlar.values()
                     if k["secili"] and k["anlam"] and k["tur"]})
         hata = hata or ilke_hata
     _kalici_kisaltma_ogren(durum)

@@ -7067,6 +7067,12 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     }
     if (ka.sutunlar) kbas.appendChild(bolmeBilgiSimgesi(tireSade(ka.sutunlar), "Sütunlar"));
     if (ka.aciklama) kart.appendChild(elYap("div", "dg-kisa-aciklama", tireSade(ka.aciklama)));
+    /* YÖNERGE: kartta ne yapılacağı üç adımda. */
+    if (ka.yonerge && ka.yonerge.length) {
+        const yl = elYap("ol", "dg-yonerge");
+        ka.yonerge.forEach(m => yl.appendChild(elYap("li", "", tireSade(m))));
+        kart.appendChild(yl);
+    }
     const durumEl = elYap("div", "dg-bilgi-kutu", "");
     durumEl.hidden = true;
     /* İLERLEME: akıştaki işlem satırının aynısı; süre sunucudaki
@@ -7122,7 +7128,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     /* KULLANICI DEĞİŞİKLİKLERİ: yoklamayla tablo yeniden çizilince
        yazdıklarınız ve seçimleriniz kaybolmasın (anahtar -> alanlar). */
     const duzen = {};
-    /* AD KALIBI: türlerin kolon adındaki sırası; oklarla değişir. */
+    /* AD KALIBI: türlerin kolon adındaki sırası. SABİT: kullanıcı
+       değiştirmez, yalnız bilgi olarak görünür. */
     const turAdi = {};
     (ka.turler || []).forEach(t => { turAdi[t.kod] = t.ad; });
     const kalip = (ka.ad_kalibi || []).slice();
@@ -7133,16 +7140,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         if (ka.kalip_bilgi) et.appendChild(bolmeBilgiSimgesi(tireSade(ka.kalip_bilgi), "Ad Kalıbı"));
         kalipEl.appendChild(et);
         kalip.forEach((t, i) => {
-            const cip = elYap("span", "dg-kalip-cip");
-            const sol = elYap("button", "dg-kalip-ok", "‹");
-            sol.type = "button"; sol.disabled = kilitli || i === 0;
-            sol.title = "Sola al"; sol.setAttribute("aria-label", (turAdi[t] || t) + " sola");
-            sol.onclick = () => { kalip.splice(i - 1, 0, kalip.splice(i, 1)[0]); kalipCiz(); };
-            const sag = elYap("button", "dg-kalip-ok", "›");
-            sag.type = "button"; sag.disabled = kilitli || i === kalip.length - 1;
-            sag.title = "Sağa al"; sag.setAttribute("aria-label", (turAdi[t] || t) + " sağa");
-            sag.onclick = () => { kalip.splice(i + 1, 0, kalip.splice(i, 1)[0]); kalipCiz(); };
-            cip.append(sol, elYap("span", "", turAdi[t] || t), sag);
+            const cip = elYap("span", "dg-kalip-cip dg-kalip-sabit", turAdi[t] || t);
             kalipEl.appendChild(cip);
             if (i < kalip.length - 1) kalipEl.appendChild(elYap("span", "dg-kalip-ayrac", "_"));
         });
@@ -7388,13 +7386,21 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             soz.forEach(satirCiz);
         }
         const ozet = ka.ozet || {};
-        durumEl.textContent = [
-            (liste || []).length || ka.dm === "calisiyor" ? ""
+        /* OKUMA SÜRERKEN TABLO KAPALI: her pakette sayılar ve sıra
+           değişiyordu; tablo okuma (ve öneriler) bitince açılır. O sırada
+           yalnız ilerleme ve şu ana kadar bulunanların sayısı görünür. */
+        const okunuyor = ka.dm === "calisiyor";
+        durumEl.textContent = okunuyor
+            ? "Tablo okuma bitince açılır. Şu ana kadar " + ftBinlik(soz.length)
+              + " anlam okundu; " + ftBinlik(bul.length)
+              + " parçanın sözlükte karşılığı bulunamadı."
+            : [(liste || []).length ? ""
                 : "Kolon adlarında sözlükle eşlenecek bir parça bulunmadı.",
-            ka.not ? tireSade(ka.not) : ""].filter(Boolean).join(" ");
+               ka.not ? tireSade(ka.not) : ""].filter(Boolean).join(" ");
         durumEl.hidden = !durumEl.textContent;
         ilerYaz();
-        sar.hidden = ust.hidden = !(liste || []).length;
+        sar.hidden = ust.hidden = okunuyor || !(liste || []).length;
+        kalipEl.hidden = okunuyor;
         if (ozet.tanimli) kbas.title = ftBinlik(ozet.okunan || 0) + " / " + ftBinlik(ozet.tanimli)
             + " tanımlı kolon okundu" + (ozet.dil ? " · adlandırma dili: " + ozet.dil : "");
     }

@@ -3056,13 +3056,11 @@ span.bolme-cip { cursor: default; }
   background: var(--yuzey); color: var(--metin); padding: 0 2px;
   font-weight: var(--fw-kalin); white-space: nowrap;
 }
-.dg-kalip-ok {
-  border: 0; background: transparent; color: var(--metin); cursor: pointer;
-  font: inherit; font-weight: var(--fw-kalin); padding: 0 4px; line-height: 18px;
-  border-radius: 3px;
-}
-.dg-kalip-ok:hover:not(:disabled) { background: var(--yuzey-alt); }
-.dg-kalip-ok:disabled { opacity: .3; cursor: default; }
+/* Ad Kalıbı sabit: çipler düğme değil, yalnız sırayı gösterir. */
+.dg-kalip-cip.dg-kalip-sabit { padding: 1px 8px; background: var(--yuzey-alt); }
+/* Kısaltma Sözlüğü yönergesi: numaralı üç adım. */
+.dg-yonerge { margin: 0 0 var(--b-2); padding-left: 20px; color: var(--metin); line-height: 1.5; }
+.dg-yonerge li { margin: 1px 0; }
 .dg-kalip-ayrac { color: var(--metin); font-weight: var(--fw-kalin); }
 .dg-kisaltma-tablo .dg-yeni-kisa { text-transform: uppercase; }
 .dg-kisaltma-tablo .dg-yeni-kisa::placeholder { text-transform: none; }

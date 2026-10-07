@@ -1,6 +1,24 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü: sayı değerli parçanın harf kısmı ve aralıklı hâli de satır**. Değiştir: `fe_agent/kisaltma_okuma.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü sadeleşti: okuma sürerken tablo kapalı, ad kalıbı sabit, yönerge, okuma kontrolü**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma_okuma.py`, `fe_agent/llm.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Okuma (ve kısaltma önerileri) sürerken tablo gösterilmez; yalnız
+  ilerleme satırı ve "şu ana kadar N anlam okundu; M parçanın sözlükte
+  karşılığı bulunamadı" görünür. Tablo okuma bitince açılır (sayılar
+  artık gözünüzün önünde değişmez).
+- Kartın üstünde üç adımlık yönerge.
+- Ad Kalıbı SABİT: Konu_Yön_Nitelik_Pencere_Ölçü_İstatistik_Diğer.
+  Oklar kaldırıldı; karttan gelen sıra ve hafızadaki eski sıra
+  kullanılmaz. Satırların Tür seçimi duruyor (parçanın kalıptaki yerini
+  belirler) ve onaylananlar hafızaya yazılmaya devam ediyor.
+- Okuma kontrolü: bir kolonda iki parça aynı anlama eşlenmişse (örnek:
+  hem ölçü hem hesap kısaltması tanımdaki ölçü kelimesine) yalnız
+  sözlüğün genelinde o anlamla en çok eşlenen parça kalır; diğeri o
+  kolonda eşlenmemiş sayılır. Okuma istemine de kural eklendi: her
+  parça tanımdaki KENDİ kelimesine eşlenir, yanındaki ölçü kelimesine
+  değil; iki parça aynı kelimeye eşlenmez.
+
+Önceki tur: **Kısaltma Sözlüğü: sayı değerli parçanın harf kısmı ve aralıklı hâli de satır**. Değiştir: `fe_agent/kisaltma_okuma.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Kolon adında 1-2 harf + en az 2 rakamdan oluşan bir parça (<K><NN>)
   varsa "Sözlükte Karşılığı Bulunamayan Parçalar" bölümünde üç düzey

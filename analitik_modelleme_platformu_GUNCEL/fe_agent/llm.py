@@ -1595,7 +1595,13 @@ yazmak:
   - Yalnızca rakamdan oluşan parça tek başına yazılmaz; bir parçayla
     birlikte bir ifadeye karşılık geliyorsa o grupta yer alır.
   - Her parça en çok bir grupta yer alır; iki grubun ifadesi aynı
-    kelimeleri paylaşmaz.
+    kelimeleri paylaşmaz. İki farklı parçayı aynı kelimeye eşleme.
+  - Her parça tanımda KENDİ karşılığı olan kelimeye eşlenir, yanındaki
+    başka bir kavramın kelimesine değil. Bir hesabı (toplam, ortalama, en
+    büyük ...), bir zaman birimini ya da bir niteliği gösteren parça,
+    tanımda hemen yanında duran ölçü kelimesine (ör. tutar, adet)
+    eşlenmez: tanımda kendi kelimesi varsa ona eşlenir, yoksa listeye
+    konmaz.
 
 "adda_yok": tanımda geçen, adın HİÇBİR parçasının karşılamadığı ve tek
 başına anlam taşıyan kavramlar (tanımdan aynen). Bağlaç, ek, edat ve
