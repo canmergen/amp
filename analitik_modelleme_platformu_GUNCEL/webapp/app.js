@@ -6820,10 +6820,6 @@ function dogrulamaKartiEkle(alan, blok) {
             }
             g.dataset.oneriMetin = tireSade(ack);
             if (k.modeller) g.title = "Öneren: " + tireSade(k.modeller);
-            if (k.kaynak_bilgi && g.parentElement
-                    && !g.parentElement.querySelector(".bolme-info"))
-                g.parentElement.appendChild(bolmeBilgiSimgesi(
-                    tireSade(k.kaynak_bilgi), s.kolon + " açıklamasının kaynağı"));
             /* KONTROL ET: model kural dışı bir ifade yazdıysa metin
                budanmaz (yarım cümle kalıyordu); satır işaretlenir, nedeni
                ipucunda. */

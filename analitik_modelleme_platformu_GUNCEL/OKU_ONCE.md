@@ -1,6 +1,13 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklama istemi baştan kuruldu; kod artık cümle kesmiyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.3'te açıklamanın yanındaki "i" kaldırıldı**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Eksik Sözlük Tanımları kartında önerilen açıklamanın yanında çıkan
+  "açıklamanın kaynağı" simgesi (modele giden özet, bağlam, yazan model)
+  artık gösterilmiyor. Öneren model bilgisi açıklama kutusunun ipucunda
+  (üzerine gelince) duruyor; "Kontrol Et" çipi değişmedi.
+
+Önceki tur: **Açıklama istemi baştan kuruldu; kod artık cümle kesmiyor**. Değiştir: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Yazar ve hakem istemi aynı kural metnini kullanır (tek yerde; biri
   düzeltilince öbürü eski kalmaz). Yapı: görev, girdi, anlamı nasıl
