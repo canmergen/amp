@@ -149,8 +149,6 @@
   /* Alt sınır --ft-en + gövde
      dolgusu kadar: sözlük tablosu hâlâ kaydırmasız sığıyor. */
   --analiz-en:  clamp(340px, 31vw, 460px);   /* SFA ekranı için hafif genişletildi */
-  --analiz-dar-en: 44px;      /* sağ blok daraltılmış şerit genişliği */
-  --analiz-dar-sekme: 170px;  /* şeritteki her sekmenin boyu: hepsi eşit */
   /* Ust bar yuksekligi; logo buna gore olceklenir.
      Olculen ihtiyac 75px; 78px pay
      birakiyor. Dorduncu satiri buyutursen burayi da buyut.
@@ -227,7 +225,6 @@
   --sari-acik:    #1F1A06;
 }
 /* Koyu temada gorunur gri. */
-#kabuk.koyu #sekmeler,
 #kabuk.koyu .secenek-rozet { background: var(--kenar-acik); }
 
 * { box-sizing: border-box; }
@@ -391,7 +388,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .calisma-dugme.onayla:hover:not(:disabled) { background: var(--kirmizi); color: #fff; opacity: .9; }
 .calisma-sil-soru { font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--kirmizi); white-space: nowrap; }
 #calismalar-liste {
-  position: absolute; top: calc(100% + 4px); left: 0; z-index: 50;
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 50;
   width: min(400px, 92vw); max-height: 60vh; overflow-y: auto;
   padding: var(--b-1);
   background: var(--yuzey); border: 1px solid var(--kenar);
@@ -417,35 +414,27 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .calisma-alt { font-size: var(--fs-kucuk); }
 .calisma-bos { padding: var(--b-2) var(--b-3); }
 .calisma-hata { color: var(--kirmizi); }
-/* ==================== ÜST BAR ORTASI ====================
-   Çalışma kartı (eski Arşiv düğmesi). */
-#ustbar-orta {
-  flex: 1; min-width: 0; display: flex; align-items: center;
-  gap: var(--b-3); padding: 0 var(--b-2);
+/* ==================== ÜST BAR: SAYFA SEKMELERİ ====================
+   AKIŞ · VERİ & SÖZLÜK · DEĞİŞKENLER · BÖLME & MODEL · ÖZET. Barın
+   ortasında, kalan genişliği kaplar. Seçili sekme kırmızı; altında
+   barın ayracına oturan kalın çizgi. */
+#ust-sekmeler {
+  flex: 1; min-width: 0; align-self: stretch;
+  display: flex; align-items: stretch; justify-content: center;
+  gap: var(--b-1); padding: 0 var(--b-3);
 }
-#calismalar-btn.calisma-kart {
-  height: auto; min-height: 40px; padding: 4px var(--b-3) 4px 5px; gap: var(--b-2);
-  border-radius: var(--r); text-align: left; max-width: 300px;
+.ust-sekme {
+  flex: 0 1 auto; min-width: 0; padding: 0 clamp(10px, 1.4vw, 22px);
+  border: none; background: none; cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-baslik); font-weight: var(--fw-kalin);
+  letter-spacing: var(--etiket-aralik); color: var(--metin); white-space: nowrap;
+  border-bottom: 3px solid transparent; margin-bottom: calc(-1 * var(--ayrac-kalinlik));
+  transition: background .12s, color .12s;
 }
-.ck-kare {
-  width: 30px; height: 30px; border-radius: var(--r-kucuk); flex-shrink: 0;
-  background: var(--kirmizi); color: #fff;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
-}
-.ck-metin { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.ck-ad { font-size: var(--fs-baslik); font-weight: var(--fw-kalin); }
-.ck-alt {
-  font-size: var(--fs-kucuk); font-weight: var(--fw-normal);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.ck-alt:empty { display: none; }
-.ck-ok { flex-shrink: 0; margin-left: var(--b-1); }
-/* Yeni Çalışma, çalışma kartının yanında ve onunla aynı boyda. */
-#ustbar-orta #sifirla-btn { height: 40px; padding: 0 var(--b-4); border-radius: var(--r); }
+.ust-sekme:hover { background: var(--kirmizi-acik); color: var(--kirmizi); }
+.ust-sekme.aktif { color: var(--kirmizi); border-bottom-color: var(--kirmizi); background: var(--kirmizi-acik); }
+.ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: -3px; }
 
-/* Dar barda çalışma kartının veri seti satırı gizlenir (ipucunda kalır). */
-@media (max-width: 1100px) { .ck-alt { display: none; } }
 @media (max-width: 1024px) { #baslik-blok { display: none; } }
 
 /* Çekmece düğmeleri yalnızca panelin gizlendiği dar ekranlarda görünür */
@@ -469,21 +458,6 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 #durum-rozet.mesgul .nokta-yesil { background: var(--sari); }
 #durum-rozet.hata   .nokta-yesil { background: var(--kirmizi); }
 #durum-rozet.hata { color: var(--kirmizi); }
-
-#sekmeler {
-  min-width: 240px;   /* sağ satır kısaldı; sekmeler yine rahat okunsun */
-  display: flex; gap: 2px; padding: 2px;
-  background: var(--zemin); border: 1px solid var(--kenar); border-radius: var(--r);
-}
-.sekme {
-  flex: 1; height: 22px; padding: 0 var(--b-5);
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin); letter-spacing: var(--etiket-aralik);
-  border: none; background: none; border-radius: var(--r-kucuk);
-  cursor: pointer; color: var(--metin); white-space: nowrap;
-  transition: background .15s, color .15s;
-}
-.sekme:hover:not(.aktif) { background: var(--yuzey); }
-.sekme.aktif { background: var(--kirmizi); color: #fff; }
 
 /* ==================== SAYFA KABI ==================== */
 .sayfa { flex: 1; min-height: 0; width: 100%; }
@@ -1821,15 +1795,22 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 #gonder:hover:not(:disabled) { opacity: .85; }
 #gonder:disabled { opacity: .4; cursor: not-allowed; }
 
-/* ==================== SAĞ: ANALİZ PANELİ ==================== */
+/* ==================== ANALİZ ALANI ====================
+   Üst bardaki VERİ & SÖZLÜK / DEĞİŞKENLER / BÖLME & MODEL sekmeleri
+   açar: alan üst barın ALTINDAN aşağı iner ve bütün alanı (sol panel ve
+   sohbet dahil) kaplar. AKIŞ seçiliyken (#kabuk.analiz-dar) yukarıda,
+   görünmez. Akışta yer kaplamaz: sohbet her zaman tam genişlikte. */
 #analiz-panel {
-  width: var(--analiz-en); flex-shrink: 0;
+  position: fixed; top: var(--ustbar-h); left: 0; right: 0; bottom: 0; z-index: 38;
   background: var(--yuzey-alt);
-  border-left: var(--ayrac-kalinlik) solid var(--ayrac);
-  /* Satır: solda (sohbet tarafında) HER ZAMAN GÖRÜNÜR sekme şeridi, sağda içerik. */
-  display: flex; flex-direction: row; overflow: hidden;
+  display: flex; flex-direction: column; overflow: hidden;
+  transform: translateY(0); transition: transform .14s ease-out, visibility .14s;
 }
-#analiz-icerik { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+#kabuk.analiz-dar #analiz-panel { transform: translateY(-100%); visibility: hidden; }
+#analiz-icerik {
+  flex: 1; min-height: 0; width: 100%; max-width: 1440px; margin: 0 auto;
+  display: flex; flex-direction: column; overflow: hidden;
+}
 
 /* ==================== SÜRÜKLEME TUTAMAKLARI ====================
    İki panelin genişliği kullanıcıya açık.
@@ -1885,7 +1866,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 
 /* Dar ekranda paneller ÇEKMECEYE dönüşüyor (aşağıdaki medya
    sorguları): orada sürüklenecek bir sütun yok. */
-@media (max-width: 944px) { #tutamak-sag { display: none; } }
+
 @media (max-width: 864px) { #tutamak-sol { display: none; } }
 
 /* Sözlük teyidi düğmesi: panelin ALTINDA sabit şerit. Gövde kayarken
@@ -1896,78 +1877,11 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   border-top: 1px solid var(--kenar); background: var(--yuzey);
 }
 #analiz-alt[hidden] { display: none; }
-#analiz-alt .secim-onay { width: 100%; }
-
-/* ==================== SAĞ BLOK: SEKME ŞERİDİ ====================
-   Şerit HER ZAMAN GÖRÜNÜR, bloğun SOL kenarında (sohbet tarafında):
-   üstte tek aç/kapa düğmesi (kapalıyken ‹, açıkken ›), altında
-   sekme adları. Blok kapalıyken (#kabuk.analiz-dar, app.js: analizAcikYaz)
-   yalnız şerit kalır; açılınca içerik şeridin SAĞINA açılır.
-
-   SEKME ADI 90° DÖNÜK DÜZ YAZI: writing-mode: vertical-rl satırı
-   olduğu gibi çevirir (harfler alt alta dizilmez); rotate(180deg) ile
-   yazı AŞAĞIDAN YUKARI okunur. Sekmeler aynı boyda; ekran kısaysa
-   hepsi aynı oranda kısalır. */
-#analiz-serit {
-  flex: 0 0 var(--analiz-dar-en); width: var(--analiz-dar-en);
-  display: flex; flex-direction: column; gap: var(--b-2);
-  padding: var(--b-3) 5px;
-  background: var(--yuzey-alt);
-}
-#analiz-ac-kapa {
-  flex-shrink: 0; width: 100%; height: 30px; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
-  background: var(--yuzey); color: var(--metin); cursor: pointer;
-}
-#analiz-ac-kapa svg { transition: transform .2s ease; }
-/* Açıkken ok sağa döner: "kapat". */
-#kabuk:not(.analiz-dar) #analiz-ac-kapa svg { transform: rotate(180deg); }
-#analiz-ac-kapa:hover {
-  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
-}
-#analiz-sekmeler {
-  flex: 1; min-height: 0;
-  display: flex; flex-direction: column; align-items: stretch; gap: var(--b-2);
-}
-.analiz-sekme {
-  writing-mode: vertical-rl; transform: rotate(180deg);
-  flex: 0 1 var(--analiz-dar-sekme); min-height: 0;
-  padding: 2px 0; white-space: nowrap; overflow: hidden;
-  font-size: var(--fs-kucuk);   /* kısa ekranda en uzun ad da sığsın */
-  font-weight: var(--fw-kalin); letter-spacing: .02em; text-align: center;
-  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
-  background: var(--yuzey); color: var(--metin-soluk); cursor: pointer;
-}
-.analiz-sekme:hover,
-.analiz-sekme.aktif:hover {
-  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
-}
-.analiz-sekme.aktif {
-  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
-}
-
-@media (min-width: 945px) {
-  #analiz-panel { transition: width .12s ease-out; }   /* kısa: açılış beklenmesin */
-  #kabuk.genislik-suruklemede #analiz-panel { transition: none; }
-  #kabuk.analiz-dar #analiz-panel { width: var(--analiz-dar-en); }
-  #kabuk.analiz-dar #analiz-icerik,
-  #kabuk.analiz-dar #tutamak-sag { display: none; }
-  /* Açıkken içerikle şerit arasında ince ayraç. */
-  #kabuk:not(.analiz-dar) #analiz-serit { border-right: 1px solid var(--kenar); }
-  /* Kapalıyken "aktif" vurgusu yok: içerik kapalıyken seçili görünen
-     bir sekme, açık bir şey varmış izlenimi veriyordu. */
-  #kabuk.analiz-dar .analiz-sekme.aktif {
-    background: var(--yuzey); color: var(--metin-soluk); border-color: var(--kenar);
-  }
-  #kabuk.analiz-dar .analiz-sekme.aktif:hover {
-    background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
-  }
-}
-/* Dar ekranda blok çekmece: içerik + şerit birlikte açılır. */
-@media (max-width: 944px) {
-  #analiz-serit { border-right: 1px solid var(--kenar); }
-}
+/* Alan artık tam genişlik: düğme sağa yaslı, makul genişlikte. */
+#analiz-alt { display: flex; justify-content: flex-end; }
+#analiz-alt[hidden] { display: none; }
+#analiz-alt .secim-onay { min-width: 240px; }
+#analiz-alt .secim-onay[hidden] { display: none; }
 
 /* ---- Sonuç kartları (Değişkenler ve Bölme & Model sekmelerinin sonunda) ----
    Biçim şeritteki gibi: kırmızı etiket, koyu değer, iki alt satır;
@@ -2913,17 +2827,6 @@ span.bolme-cip { cursor: default; }
   background: rgba(0,0,0,.35);
 }
 
-
-@media (max-width: 944px) {
-  #analiz-btn { display: flex; }
-  #analiz-panel {
-    position: fixed; top: var(--ustbar-h); right: 0; bottom: 0; z-index: 40;
-    width: min(var(--analiz-en), 92vw);
-    transform: translateX(101%); transition: transform .2s ease;
-    box-shadow: var(--golge-2);
-  }
-  #analiz-panel.acik { transform: none; }
-}
 
 @media (max-width: 864px) {
   #panel-btn { display: flex; }

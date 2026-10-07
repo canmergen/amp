@@ -24,50 +24,22 @@
       </div>
     </div>
 
-    <!-- ORTA: ÇALIŞMA KARTI (eski "Arşiv" düğmesi): açık çalışmanın adını,
-         veri setini ve sözlüğünü gösterir; basınca kayıtlı çalışmalar
-         listesi açılır (app.js: calismalarAc, calismaKartiGuncelle).
-         Yanında Yeni Çalışma: çalışma yönetimi tek yerde. -->
-    <div id="ustbar-orta">
-      <div id="calismalar-kap">
-        <button id="calismalar-btn" class="calisma-kart" type="button"
-                title="Kayıtlı çalışmalarınız: açın ya da silin" aria-haspopup="true"
-                aria-expanded="false" aria-controls="calismalar-liste">
-          <span class="ck-kare" aria-hidden="true"></span>
-          <span class="ck-metin">
-            <span class="ck-ad">Çalışma</span>
-            <span class="ck-alt"></span>
-          </span>
-          <svg class="ck-ok" viewBox="0 0 24 24" width="14" height="14" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round"
-               stroke-linejoin="round" aria-hidden="true">
-            <path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path>
-          </svg>
-        </button>
-        <div id="calismalar-liste" role="menu" hidden></div>
-      </div>
-      <!-- Yeni Çalışma ONAYSIZ: basınca yeni çalışma açılır; açık çalışma
-           silinmez, Arşiv'den geri açılır. -->
-      <div id="yeni-kap">
-      <button id="sifirla-btn" type="button"
-              title="Yeni Çalışma (mevcut çalışma silinmez, Arşiv'den geri açılır)"
-              aria-label="Yeni Çalışma (mevcut çalışma silinmez)">
-        <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
-             focusable="false">
-          <path d="M12.532 5.887 A5 5 0 1 1 9.294 3.170"
-                fill="none" stroke="currentColor" stroke-width="1.45"
-                stroke-linecap="round"/>
-          <polygon points="10.550,3.507 7.662,4.234 8.414,1.432"
-                   fill="currentColor"/>
-        </svg>
-        <span class="sifirla-etiket">Yeni Çalışma</span>
-      </button>
-      </div>
-    </div>
+    <!-- ORTA: SAYFA SEKMELERİ. AKIŞ ana ekrandır (iş akışı + sohbet).
+         VERİ & SÖZLÜK, DEĞİŞKENLER, BÖLME & MODEL basınca analiz alanı
+         üst barın altından aşağı iner ve bütün alanı kaplar (app.js:
+         analizSekmeAc / analizAcikYaz). ÖZET doküman sayfasıdır.
+         Üç analiz sekmesi .analiz-sekme sınıfını taşır: sekme mantığı
+         (aktif, çizim) eskisi gibi o sınıfa bağlı. -->
+    <nav id="ust-sekmeler" aria-label="Sayfalar">
+      <button class="ust-sekme" data-ust="akis" type="button">AKIŞ</button>
+      <button class="ust-sekme analiz-sekme" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
+      <button class="ust-sekme analiz-sekme" data-tab="degisken" type="button">DEĞİŞKENLER</button>
+      <button class="ust-sekme analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; MODEL</button>
+      <button class="ust-sekme" data-ust="dokuman" type="button">ÖZET</button>
+    </nav>
 
     <!-- Üst şerit (ÜRETİM · ELEME · MODEL SONUÇLARI) ARTIK BURADA DEĞİL:
-         akışın çoğunda ∅ gösterip sürekli yer kaplıyordu. Kartlar sağ
-         bloğun Değişkenler ve Bölme & Model sekmelerinde çizilir
+         kartlar Değişkenler ve Bölme & Model sekmelerinde çizilir
          (app.js: sonucCiz). -->
 
     <div id="ustbar-sag">
@@ -80,15 +52,6 @@
                stroke="currentColor" stroke-width="2.3"
                stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 6h18M3 12h18M3 18h18"></path>
-          </svg>
-        </button>
-        <button id="analiz-btn" class="cekmece-btn" type="button"
-                title="Analiz panelini aç/kapat" aria-label="Analiz panelini aç/kapat"
-                aria-expanded="false" aria-controls="analiz-panel">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
-               stroke="currentColor" stroke-width="2.3"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 19V10M10 19V5M16 19v-6M22 19H2"></path>
           </svg>
         </button>
         <button id="tema-btn" type="button" title="Koyu tema" aria-label="Tema değiştir"></button>
@@ -104,13 +67,42 @@
              kendi REFRESH ikonu da tek oklu.
              stroke/fill currentColor: düğmenin rengini izler, koyu temada
              ayrıca kural gerekmez. -->
+        <!-- ARŞİV: PROJE_HAFIZASI'ndaki kayıtlı çalışmalar. Birine basınca
+             o çalışma kaldığı yerden açılır (app.js: calismalarAc). -->
+        <div id="calismalar-kap">
+          <button id="calismalar-btn" type="button"
+                  title="Kayıtlı çalışmalarınız: açın ya da silin" aria-haspopup="true"
+                  aria-expanded="false" aria-controls="calismalar-liste">
+            <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
+                 focusable="false">
+              <path d="M1.75 4.25v8a1 1 0 0 0 1 1h10.5a1 1 0 0 0 1-1v-6.5a1 1 0 0 0-1-1H8L6.5 3.25H2.75a1 1 0 0 0-1 1z"
+                    fill="none" stroke="currentColor" stroke-width="1.45"
+                    stroke-linejoin="round"/>
+            </svg>
+            <span class="sifirla-etiket">Arşiv</span>
+          </button>
+          <div id="calismalar-liste" role="menu" hidden></div>
+        </div>
+        <!-- Yeni Çalışma ONAYSIZ: basınca yeni çalışma açılır; açık çalışma
+             silinmez, Arşiv'den geri açılır. -->
+        <div id="yeni-kap">
+        <button id="sifirla-btn" type="button"
+                title="Yeni Çalışma (mevcut çalışma silinmez, Arşiv'den geri açılır)"
+                aria-label="Yeni Çalışma (mevcut çalışma silinmez)">
+          <svg class="sifirla-ikon" viewBox="0 0 16 16" aria-hidden="true"
+               focusable="false">
+            <path d="M12.532 5.887 A5 5 0 1 1 9.294 3.170"
+                  fill="none" stroke="currentColor" stroke-width="1.45"
+                  stroke-linecap="round"/>
+            <polygon points="10.550,3.507 7.662,4.234 8.414,1.432"
+                     fill="currentColor"/>
+          </svg>
+          <span class="sifirla-etiket">Yeni Çalışma</span>
+        </button>
+        </div>
         <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
       </div>
 
-      <div id="sekmeler">
-        <button class="sekme aktif" data-sayfa="calisma" type="button">ÇALIŞMA</button>
-        <button class="sekme" data-sayfa="ozet" type="button">ÖZET</button>
-      </div>
     </div>
   </header>
 
@@ -175,35 +167,12 @@
       </div>
     </main>
 
-    <!-- SÜRÜKLEME TUTAMAĞI (sohbet <-> analiz paneli) -->
-    <div id="tutamak-sag" class="tutamak" role="separator"
-         aria-orientation="vertical" tabindex="0"
-         aria-label="Analiz panelinin genişliği"
-         title="Sürükleyerek genişliği ayarlayın (çift tıklama: varsayılan)"></div>
 
     <aside id="analiz-panel">
-      <!-- ŞERİT: HER ZAMAN GÖRÜNÜR, bloğun SOL kenarında (sohbet
-           tarafında). Üstte tek bir aç/kapa düğmesi (kapalıyken ‹,
-           açıkken ›), altında dört sekme adı 90° dönük. Blok açılınca
-           içerik şeridin SAĞINA açılır (app.js: analizAcikYaz).
-           VERİ & SÖZLÜK = veri seti, sözlük, kolon tablosu;
-           DEĞİŞKENLER = dağılım + SFA + eksik değer + üretim ve eleme;
-           BÖLME & MODEL = bölme + validasyon + model sonucu. -->
-      <nav id="analiz-serit" aria-label="Analiz sekmeleri">
-        <button id="analiz-ac-kapa" type="button" title="Bloğu aç"
-                aria-label="Analiz panelini aç" aria-controls="analiz-icerik">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
-               stroke="currentColor" stroke-width="2.4"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M15 6l-6 6 6 6"></path>
-          </svg>
-        </button>
-        <div id="analiz-sekmeler">
-          <button class="analiz-sekme aktif" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
-          <button class="analiz-sekme" data-tab="degisken" type="button">DEĞİŞKENLER</button>
-          <button class="analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; MODEL</button>
-        </div>
-      </nav>
+      <!-- ANALİZ ALANI: üst bardaki VERİ & SÖZLÜK / DEĞİŞKENLER /
+           BÖLME & MODEL sekmelerinden biri seçilince üst barın altından
+           aşağı iner, bütün alanı kaplar (style.css: #analiz-panel).
+           AKIŞ'a basınca yukarı kapanır. -->
 
       <!-- İÇERİK: açık sekmenin gövdesi. Blok kapalıyken gizli. -->
       <div id="analiz-icerik">
@@ -215,6 +184,10 @@
              AYNI düğmedir; biri basılınca ikisi de kilitlenir. -->
         <div id="analiz-alt" hidden>
           <button id="analiz-teyit" class="secim-onay" type="button"></button>
+          <!-- SFA: kararlar bu alanda verildiği için "Kararları Onayla"
+               burada da var; sohbetteki kartın düğmesine basar
+               (app.js: analizAltGuncelle). -->
+          <button id="analiz-sfa-onay" class="secim-onay" type="button" hidden></button>
         </div>
       </div>
     </aside>

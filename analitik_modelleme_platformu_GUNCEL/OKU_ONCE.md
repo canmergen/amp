@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst bardaki Satır × Kolon · Hedef · Motor hücreleri geri alındı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Sayfa sekmeleri üst barda; analiz alanı üstten inip bütün ekranı kaplar**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Üst barın ortasında sekmeler: AKIŞ · VERİ & SÖZLÜK · DEĞİŞKENLER ·
+  BÖLME & MODEL · ÖZET. Sağda tema, Arşiv, Yeni Çalışma, Oturum Aktif.
+  Sağ üstteki ÇALIŞMA / ÖZET düğmeleri ve çalışma kartı kalktı.
+- AKIŞ ana ekran (iş akışı + sohbet); sohbet artık tam genişlikte.
+- VERİ & SÖZLÜK, DEĞİŞKENLER, BÖLME & MODEL: analiz alanı üst barın
+  altından aşağı iner, sol panel dahil bütün alanı kaplar. Sekmeler
+  arasında doğrudan geçilir; AKIŞ'a basınca (ya da Esc) alan kapanır,
+  sohbet kaldığı yerde durur. Sağdaki dikey şerit kalktı.
+- ÖZET doküman sayfasıdır (eski ÖZET).
+- SFA gelince DEĞİŞKENLER kendiliğinden açılır; alanın altında
+  "Kararları Onayla" durur (sohbetteki kartın düğmesiyle aynı karar).
+  Onaylanıp akış ilerleyince AKIŞ'a dönülür. SFA sırasında AKIŞ'a
+  dönülürse aynı adımda alan tekrar kendiliğinden açılmaz.
+
+Önceki tur: **Üst bardaki Satır × Kolon · Hedef · Motor hücreleri geri alındı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üst bar bir önceki hâlinde: logo, başlık, çalışma kartı ve Yeni
   Çalışma; sağda tema, Oturum Aktif, ÇALIŞMA / ÖZET.

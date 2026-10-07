@@ -59,7 +59,6 @@ function oturumAyarla(kimlik) {
     if (!kimlik || kimlik === OTURUM_ID) return;
     OTURUM_ID = String(kimlik);
     depoYaz(OTURUM_DEPO_ANAHTARI, OTURUM_ID);
-    calismaKartiGuncelle();
 }
 
 /* Idempotenslik: backend'in isledigi son tur numarasi. Her mesaj
@@ -107,9 +106,11 @@ const sozlukCipEl = document.getElementById("sozluk-cip");
 /* Sonuç kartları (ÜRETİM · ELEME · MODEL): eski üst şerit; artık sağ
    bloğun Değişkenler ve Bölme & Model sekmelerinde çiziliyor (bkz. sonucCiz). */
 let SONUC_KARTLARI = [];
-/* Üst bardaki çalışma kartı için: açık çalışmanın veri seti ve sözlüğü
-   (bkz. calismaKartiGuncelle). */
-const CALISMA_VERI = { veri: "", sozluk: "" };
+/* Analiz alanı durumu ve kararı alanda verilen adımlar (bkz. "Üst bar
+   sekmeleri ve analiz alanı"). Burada tanımlı: sayfaAc ilk çağrıldığında
+   ustSekmeGuncelle bunları okuyor. */
+const PANELDE_KARAR = { sfa_karar: "degisken" };
+const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
 const bannerEl    = document.getElementById("banner");
 /* Kalan iki referans giriş
    bölgesinin kilidi için. */
@@ -282,6 +283,7 @@ function sayfaAc(ad) {
     /* ÖZET her açılışta tazelenir: doküman akışın son durumundan üretiliyor
        ve sekme kapalıyken değişmiş olabilir. */
     if (ad === "ozet") dokumanGetir();
+    ustSekmeGuncelle();
 }
 sekmeler.forEach(s => { s.onclick = () => sayfaAc(s.dataset.sayfa); });
 
@@ -403,7 +405,7 @@ function genislikKirp(taraf, istenen) {
     const oteki = taraf === "sol" ? analizPanel : panelEl;
     /* Karşı panelin O ANKİ genişliği sabit kabul ediliyor: tek tutamak
        sürükleniyor, öteki yerinde duruyor. */
-    const otekiEn = oteki ? suankiEn(oteki) : 0;
+    const otekiEn = oteki && getComputedStyle(oteki).position !== "fixed" ? suankiEn(oteki) : 0;
     const enCokYer = kabukEl.clientWidth - otekiEn - SOHBET_TABAN;
     const enCok = Math.min(sinir.enCok, Math.max(sinir.enAz, enCokYer));
     return Math.round(Math.max(sinir.enAz, Math.min(enCok, istenen)));
@@ -879,11 +881,6 @@ function cipYaz(el, ad) {
    bloğun Değişkenler ve Bölme & Model sekmelerine taşındı. Burada yalnız saklanır, sekme
    açıksa yeniden çizilir. */
 function ozetGuncelle(o) {
-    if (o) {
-        CALISMA_VERI.veri = o.veri_seti_cip || "";
-        CALISMA_VERI.sozluk = o.sozluk_cip || "";
-        calismaKartiGuncelle();
-    }
     if (!o || !o.kartlar) return;
     /* Cipler ARTIK cizilmiyor: VERİ ve SÖZLÜK kartlari ayni bilgiyi
        tasiyor ve ustune tiklanabiliyor. Alanlar govdede duruyor cunku
@@ -4426,53 +4423,48 @@ function analizSekmeAc(tab) {
        analizGuncelle yeniden çizer). Aynı sekmeyi açmak için baştan
        çizmek, büyük tablolarda açılışı yavaşlatıyordu. */
     if (tab !== aktifAnalizSekme || !analizGovde.childElementCount) analizCiz(tab);
-    /* Dar ekranda analiz paneli cekmece: kart tiklandiysa acilsin,
-       yoksa hicbir sey olmuyormus gibi gorunuyor. */
-    const panel = document.getElementById("analiz-panel");
-    if (panel && getComputedStyle(panel).position === "fixed")
-        panel.classList.add("acik");
-    /* Geniş ekranda blok dar şeritteyse genişlesin: sekme açmak isteyen
-       her yol (şerit adı, kart düğmesi, SFA) içeriği görmek istiyor. */
+    /* Analiz alanı çalışma sayfasının içinde: ÖZET açıksa önce oraya
+       dönülür. Sonra alan üst barın altından iner. */
+    if (sayfalar.calisma && sayfalar.calisma.classList.contains("gizli")) sayfaAc("calisma");
     analizAcikYaz(true);
 }
 
-/* ==================== Sağ blok: dar şerit / geniş hâl ====================
-   Blok varsayılan olarak DAR ŞERİT: yalnız sekme adları görünür,
-   sohbet boşalan yeri kullanır (style.css: #kabuk.analiz-dar).
+/* ==================== Üst bar sekmeleri ve analiz alanı ====================
+   Üst barda: AKIŞ · VERİ & SÖZLÜK · DEĞİŞKENLER · BÖLME & MODEL · ÖZET.
+   AKIŞ ana ekran (iş akışı + sohbet). Üç analiz sekmesinden birine
+   basınca analiz alanı üst barın altından iner ve bütün alanı kaplar
+   (style.css: #analiz-panel); AKIŞ'a basınca yukarı kapanır
+   (#kabuk.analiz-dar). ÖZET doküman sayfasıdır.
 
-   NE ZAMAN GENİŞLER
-     - Kullanıcı şeritteki bir ada basınca (o sekmede açılır).
-     - Kararı SAĞ BLOKTA verilen bir adım gelince kendiliğinden. Bu
-       adımlar kartın tipiyle tanınıyor: PANELDE_KARAR. Şu an yalnız SFA
-       (değişken kararları Değişken Analizi'nde veriliyor). Kararı
-       sohbetteki kartta verilen adımlar bloğu AÇMAZ: "zırt pırt"
-       açılması istenmedi. Yeni böyle bir adım eklenirse tek satır
-       buraya eklenir.
-
-   NE ZAMAN DARALIR
-     - Kullanıcı açık sekmeye ya da şeridin üstündeki › düğmesine basınca.
-     - Kendiliğinden açıldığı adım geçince (SFA onaylanıp akış ilerleyince).
-
-   Kullanıcı kendiliğinden açılan bloğu kapattıysa AYNI ADIMDA tekrar
-   açılmaz (kapatilanAdim); adı basarak her zaman açabilir.
-
-   Dar ekranda (çekmece düzeni) şerit yok; buradaki sınıf orada etkisiz,
-   çekmece eski davranışıyla çalışır. */
-const PANELDE_KARAR = { sfa_karar: "degisken" };
-const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
+   KENDİLİĞİNDEN AÇILMA: kararı ANALİZ ALANINDA verilen adım gelince.
+   Adım kartın tipiyle tanınıyor: PANELDE_KARAR. Şu an yalnız SFA
+   (değişken kararları DEĞİŞKENLER'de veriliyor); o sırada alanın altında
+   "Kararları Onayla" da durur (analizAltGuncelle). Kararı sohbetteki
+   kartta verilen adımlar alanı AÇMAZ. Adım geçince (SFA onaylanınca)
+   alan kapanır, AKIŞ'a dönülür. Kullanıcı SFA sırasında AKIŞ'a dönerse
+   aynı adımda alan tekrar kendiliğinden açılmaz (kapatilanAdim). */
+/* PANELDE_KARAR ve ANALIZ_DAR dosyanın başında tanımlı (sayfaAc ilk
+   çağrıldığında da hazır olsunlar). */
 
 function analizAcikYaz(acik) {
     ANALIZ_DAR.acik = !!acik;
     kabukEl.classList.toggle("analiz-dar", !ANALIZ_DAR.acik);
-    analizSekme.forEach(s =>
-        s.setAttribute("aria-expanded", ANALIZ_DAR.acik ? "true" : "false"));
-    const dugme = document.getElementById("analiz-ac-kapa");
-    if (dugme) {
-        const etiket = ANALIZ_DAR.acik ? "Analiz panelini kapat" : "Analiz panelini aç";
-        dugme.setAttribute("aria-label", etiket);
-        dugme.setAttribute("aria-expanded", ANALIZ_DAR.acik ? "true" : "false");
-        dugme.title = ANALIZ_DAR.acik ? "Bloğu kapat" : "Bloğu aç";
-    }
+    ustSekmeGuncelle();
+}
+
+/* Üst bardaki seçili sekme: ÖZET sayfası açıksa ÖZET; analiz alanı
+   açıksa o sekme; değilse AKIŞ. */
+function ustSekmeGuncelle() {
+    const ozetAcik = !!(sayfalar.ozet && !sayfalar.ozet.classList.contains("gizli"));
+    document.querySelectorAll(".ust-sekme").forEach(b => {
+        let aktif;
+        if (b.dataset.ust === "dokuman") aktif = ozetAcik;
+        else if (b.dataset.ust === "akis") aktif = !ozetAcik && !ANALIZ_DAR.acik;
+        else aktif = !ozetAcik && ANALIZ_DAR.acik && b.dataset.tab === aktifAnalizSekme;
+        b.classList.toggle("aktif", aktif);
+        if (aktif) b.setAttribute("aria-current", "page");
+        else b.removeAttribute("aria-current");
+    });
 }
 
 function analizDaralt(kullanici) {
@@ -4491,8 +4483,10 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
             ANALIZ_DAR.otoAdim = adim;
             if (ANALIZ_DAR.kapatilanAdim !== adim) analizSekmeAc(tab);
         }
+        analizAltGuncelle(alan.tip);
         return;
     }
+    analizAltGuncelle(null);
     /* Aynı adımda kart taşımayan bir yanıt (ör. ara mesaj) bloğu
        kapatmaz; yalnız adım değişince kapanır. */
     if (ANALIZ_DAR.otoAdim && adim !== ANALIZ_DAR.otoAdim) {
@@ -4502,15 +4496,46 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
     }
 }
 
-/* Şeridin üstündeki tek aç/kapa düğmesi: kapalıyken son açık sekmeyle
-   açar, açıkken kapatır. Dar ekranda (çekmece) kapatmak çekmeceyi
-   kapatmak demek. */
-const analizAcKapaEl = document.getElementById("analiz-ac-kapa");
-if (analizAcKapaEl) analizAcKapaEl.onclick = () => {
-    if (getComputedStyle(analizPanel).position === "fixed") { cekmeceKapat(); return; }
-    if (ANALIZ_DAR.acik) analizDaralt(true);
-    else analizSekmeAc(aktifAnalizSekme);
-};
+/* AKIŞ ve ÖZET sekmeleri. Esc analiz alanını kapatır (AKIŞ'a döner). */
+document.querySelectorAll(".ust-sekme[data-ust]").forEach(b => {
+    b.onclick = () => {
+        analizDaralt(true);
+        sayfaAc(b.dataset.ust === "dokuman" ? "ozet" : "calisma");
+    };
+});
+document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && ANALIZ_DAR.acik) analizDaralt(true);
+});
+
+/* SFA sırasında analiz alanının altındaki "Kararları Onayla": sohbetteki
+   SFA kartının birincil düğmesine basar (tek karar, iki düğme). Kart
+   kendi düğmesini SFA_ONAY_DUGMESI'ne kaydeder (sfaKartiEkle). */
+let SFA_ONAY_DUGMESI = null;
+function analizAltGuncelle(tip) {
+    const alt = document.getElementById("analiz-alt");
+    const teyit = document.getElementById("analiz-teyit");
+    const sfa = document.getElementById("analiz-sfa-onay");
+    if (!alt || !sfa) return;
+    const goster = tip === "sfa_karar" && SFA_ONAY_DUGMESI && SFA_ONAY_DUGMESI.isConnected;
+    sfa.hidden = !goster;
+    if (teyit) teyit.hidden = !!goster;
+    if (goster) {
+        alt.hidden = false;
+        sfa.textContent = SFA_ONAY_DUGMESI.textContent;
+        sfa.disabled = SFA_ONAY_DUGMESI.disabled;
+    } else if (teyit) {
+        alt.hidden = true;
+    }
+}
+{
+    const sfa = document.getElementById("analiz-sfa-onay");
+    if (sfa) sfa.onclick = () => {
+        if (SFA_ONAY_DUGMESI && !SFA_ONAY_DUGMESI.disabled) {
+            SFA_ONAY_DUGMESI.click();
+            sfa.disabled = true;
+        }
+    };
+}
 
 /* Degisken teyit tablosu varsayilan
    genislige zaten sigiyor (bkz. --ft-en), yani surukleme artik hicbir
@@ -4561,15 +4586,7 @@ analizSekme.forEach(s => {
         s.classList.add("hazir-degil");
         s.title = "Hazırlanıyor - bu sekmenin verisi henüz bağlı değil";
     }
-    s.onclick = () => {
-        /* Geniş hâlde açık sekmeye yeniden basmak bloğu şeride indirir. */
-        if (ANALIZ_DAR.acik && s.classList.contains("aktif")
-            && window.innerWidth >= SURUKLEME_ESIGI) {
-            analizDaralt(true);
-            return;
-        }
-        analizSekmeAc(s.dataset.tab);
-    };
+    s.onclick = () => analizSekmeAc(s.dataset.tab);
 });
 analizCiz("ozet");
 analizAcikYaz(false);
@@ -5313,33 +5330,6 @@ function calismaGostergesi(iptalEt) {
 }
 
 
-/* ==================== Üst bar: çalışma kartı ====================
-   Eski Arşiv düğmesi. Açık çalışmanın adı ("v3") ile seçili veri seti ve
-   sözlük görünür; basınca kayıtlı çalışmalar listesi açılır (calismalarAc
-   değişmedi). Aktif adım üst barda TEKRAR EDİLMEZ: sol paneldeki iş
-   akışında zaten görünüyor. */
-function calismaKartiGuncelle() {
-    const btn = document.getElementById("calismalar-btn");
-    if (!btn) return;
-    const kare = btn.querySelector(".ck-kare");
-    const ad = btn.querySelector(".ck-ad");
-    const alt = btn.querySelector(".ck-alt");
-    const vMi = /^v\d+$/i.test(OTURUM_ID || "");
-    if (kare) kare.textContent = vMi ? OTURUM_ID : "—";
-    if (ad) ad.textContent = OTURUM_ID ? (vMi ? "Çalışma " + OTURUM_ID : "Çalışma") : "Çalışma";
-    if (alt) {
-        const parca = [CALISMA_VERI.veri, CALISMA_VERI.sozluk]
-            .map(x => tireSade(String(x || "")).trim()).filter(Boolean);
-        alt.textContent = parca.length ? parca.join(" · ") : "Veri seti seçilmedi";
-        alt.title = alt.textContent;
-        btn.title = (ad ? ad.textContent : "Çalışma") + " · " + alt.textContent
-            + " — kayıtlı çalışmalarınız: açın ya da silin";
-    }
-}
-
-{
-    calismaKartiGuncelle();
-}
 
 
 
@@ -7468,7 +7458,7 @@ function sfaKartiEkle(alan, blok) {
     kart.appendChild(hata);
 
     const dugmeler = elYap("div", "onay-dugmeler dg-dugmeler");
-    const ac = elYap("button", "secim-onay ikincil", "Değişken Analizini Aç");
+    const ac = elYap("button", "secim-onay ikincil", "Değişkenler Sekmesini Aç");
     ac.type = "button";
     ac.onclick = () => analizSekmeAc("degisken");
     const birincil = elYap("button", "secim-onay dg-birincil", alan.buton || "Kararları Onayla");
@@ -7476,10 +7466,14 @@ function sfaKartiEkle(alan, blok) {
     dugmeler.appendChild(ac);
     dugmeler.appendChild(birincil);
     kart.appendChild(dugmeler);
+    /* Analiz alanının altındaki ikiz düğme buna basar (analizAltGuncelle). */
+    SFA_ONAY_DUGMESI = birincil;
 
     function kilitle(evet) {
         kart.classList.toggle("kilitli", evet);
         birincil.disabled = evet;
+        const ikiz = document.getElementById("analiz-sfa-onay");
+        if (ikiz && SFA_ONAY_DUGMESI === birincil) ikiz.disabled = evet;
     }
     birincil.onclick = () => {
         if (mesgul || birincil.disabled) return;
@@ -10268,15 +10262,12 @@ function calismayaGec(kimlik, zorla) {
     calismaAc(kimlik).finally(() => { kilitle(false); });
 }
 
-/* Düğme artık üst bardaki ÇALIŞMA KARTI (bkz. calismaKartiGuncelle):
-   adı ve ipucu oradan yazılıyor. index.html eski sürümde kalırsa eski
-   "Arşiv" etiketi doğru adla görünsün. */
+/* Düğmenin adı "Arşiv". index.html eski sürümde
+   kalsa da doğru ad görünsün diye burada da yazılıyor. */
 if (calismalarBtn) {
     const etiket = calismalarBtn.querySelector(".sifirla-etiket");
-    if (etiket) {
-        etiket.textContent = CALISMALARIM_ETIKETI;
-        calismalarBtn.title = "Kayıtlı çalışmalarınız: açın ya da silin";
-    }
+    if (etiket) etiket.textContent = CALISMALARIM_ETIKETI;
+    calismalarBtn.title = "Kayıtlı çalışmalarınız: açın ya da silin";
 }
 
 if (calismalarBtn && calismalarListe) {
