@@ -151,6 +151,9 @@
   --analiz-en:  clamp(340px, 31vw, 460px);   /* SFA ekranı için hafif genişletildi */
   --analiz-dar-en: 44px;      /* sağ blok daraltılmış şerit genişliği */
   --analiz-dar-sekme: 156px;  /* şeritteki her sekmenin boyu: dördü eşit */
+  --imza-h: 78px;             /* sağ alt köşedeki logo bloğunun yüksekliği */
+  --imza-en: 0px;             /* JS ölçer (imzaYerAc); blok genişliği */
+  --imza-tasma: 0px;          /* JS: bloğun sağ blok dışına taşan kısmı */
   /* Ust bar yuksekligi; logo buna gore olceklenir.
      Olculen ihtiyac 75px; 78px pay
      birakiyor. Dorduncu satiri buyutursen burayi da buyut.
@@ -282,10 +285,25 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border-bottom: var(--ayrac-kalinlik) solid var(--ayrac); flex-shrink: 0;
   gap: clamp(11px, 1.6vw, 22px);
 }
-#ustbar-sol { display: flex; align-items: center; gap: var(--b-4); flex-shrink: 0; }
-/* Logo buyutuldu: bar yuksekliginin neredeyse tamami
-   (59px -> 72px); ust ve alttan 3'er px pay. */
-#banner { height: calc(var(--ustbar-h) - 6px); width: auto; display: block; }
+/* ==================== İMZA: sağ alt köşedeki logo bloğu ====================
+   Logo + ürün adı + birim adı. Eskiden üst barın solundaydı; üst bar
+   yeniden tasarlanacağı için SAĞ ALT KÖŞEYE SABİTLENDİ. position: fixed:
+   sağ blok açılıp kapansa, sohbet kaysa da yeri ve boyu değişmez.
+   Görünümü üst bardaki ile aynı: logo, ince ayraç, kırmızı ürün adı,
+   koyu birim adı. Üstüne binmesin diye sohbet kutusu ve sağ blok bu
+   kadar yer bırakır (aşağıda --imza-h / --imza-tasma). */
+#imza {
+  position: fixed; right: 0; bottom: 0; z-index: 35;
+  height: var(--imza-h); max-width: 100vw;
+  display: flex; align-items: center; gap: var(--b-4);
+  padding: 0 var(--b-5) 0 var(--b-4);
+  background: var(--yuzey);
+  border-top: var(--ayrac-kalinlik) solid var(--ayrac);
+  border-left: var(--ayrac-kalinlik) solid var(--ayrac);
+  overflow: hidden;
+}
+/* Logo bloğun neredeyse tamamı; üst ve alttan 3'er px pay. */
+#banner { height: calc(var(--imza-h) - 6px); width: auto; display: block; }
 
 #baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
@@ -1944,6 +1962,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
     writing-mode: vertical-rl; transform: rotate(180deg);
     flex: 0 1 var(--analiz-dar-sekme); min-height: 0;
     padding: 2px 0; white-space: nowrap; overflow: hidden;
+    font-size: var(--fs-kucuk);   /* kısa ekranda en uzun ad da sığsın */
     border: 1px solid var(--kenar); background: var(--yuzey);
   }
   #kabuk.analiz-dar .analiz-sekme:hover,
@@ -2901,7 +2920,6 @@ span.bolme-cip { cursor: default; }
   background: rgba(0,0,0,.35);
 }
 
-@media (max-width: 1024px) { #baslik-blok { display: none; } }
 
 @media (max-width: 944px) {
   #analiz-btn { display: flex; }
@@ -3464,3 +3482,19 @@ span.bolme-cip { cursor: default; }
 /* Kısaltma Sözlüğü / Yeni Kolon Adları: giriş kutusu hücreyi doldurur. */
 .dg-kisaltma-tablo td.dg-aciklama-hucre .dg-giris,
 .dg-kolonad-tablo td.dg-aciklama-hucre .dg-giris { width: 100%; box-sizing: border-box; }
+
+
+/* ---- İmzaya yer bırakma (bkz. #imza) ----
+   Sohbet kutusu: bloğun sohbet sütununa taşan kısmı kadar sağdan
+   (--imza-tasma, JS ölçer) ve bloğun boyu kadar alttan yer. Sağ blok:
+   içerik ve şerit bloğun altında kalmasın. */
+#giris-bolge {
+  padding-right: max(calc(var(--sohbet-yan) + 6px), calc(var(--imza-tasma) + var(--b-4)));
+  min-height: var(--imza-h);
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+#analiz-govde { padding-bottom: calc(var(--imza-h) + var(--b-4)); }
+#analiz-alt { margin-bottom: var(--imza-h); }
+@media (min-width: 945px) {
+  #kabuk.analiz-dar #analiz-sekmeler { padding-bottom: calc(var(--imza-h) + var(--b-3)); }
+}

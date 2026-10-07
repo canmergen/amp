@@ -8,21 +8,9 @@
 <div id="kabuk" lang="tr">
 
   <header id="ustbar">
-    <div id="ustbar-sol">
-      <img id="banner" alt="">
-      <div id="baslik-blok">
-        <!-- Çipler: seçili veri seti ve sözlük. JS doldurur, seçim yoksa
-             gizli kalır. Üst barda kalan TEK bilgi bunlar; aşama sol
-             panelde, kapsam/hedef sağ panelde, değişken seti özet
-             sayfasında zaten var. -->
-        <div id="urun-adi-satir">
-          <div id="urun-adi">Akıllı Modelleme Platformu</div>
-          <span id="veri-seti-cip" class="ust-cip" hidden></span>
-          <span id="sozluk-cip" class="ust-cip" hidden></span>
-        </div>
-        <div id="urun-alt">Bireysel Krediler Analitik ve Tahsis BI</div>
-      </div>
-    </div>
+    <!-- Logo ve ürün adı ARTIK ÜST BARDA DEĞİL: sağ alt köşede sabit
+         duruyor (#imza, sayfanın en sonunda). Üst bar yeniden
+         tasarlanacak. -->
 
     <!-- Üst şerit (ÜRETİM · ELEME · MODEL SONUÇLARI) ARTIK BURADA DEĞİL:
          akışın çoğunda ∅ gösterip sürekli yer kaplıyordu. Kartlar sağ
@@ -256,6 +244,26 @@
       <div id="dok-uyari" class="dok-uyari" hidden></div>
 
       <div id="dok-bolumler"></div>
+    </div>
+  </div>
+
+  <!-- İMZA: logo + ürün adı + birim adı. SAĞ ALT KÖŞEDE SABİT
+       (position: fixed): sağ blok açılıp kapansa, sayfa kaysa da yeri ve
+       boyu değişmez. Sohbet kutusu ve sağ blok altında bunun kadar yer
+       bırakılır (style.css: --imza-en / --imza-h, app.js: imzaYerAc). -->
+  <div id="imza">
+    <img id="banner" alt="">
+    <div id="baslik-blok">
+      <!-- Çipler: seçili veri seti ve sözlük. JS doldurur, seçim yoksa
+           gizli kalır. Üst barda kalan TEK bilgi bunlar; aşama sol
+           panelde, kapsam/hedef sağ panelde, değişken seti özet
+           sayfasında zaten var. -->
+      <div id="urun-adi-satir">
+        <div id="urun-adi">Akıllı Modelleme Platformu</div>
+        <span id="veri-seti-cip" class="ust-cip" hidden></span>
+        <span id="sozluk-cip" class="ust-cip" hidden></span>
+      </div>
+      <div id="urun-alt">Bireysel Krediler Analitik ve Tahsis BI</div>
     </div>
   </div>
 

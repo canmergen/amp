@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst şerit kaldırıldı, sonuçlar sağ blokta SONUÇLAR sekmesinde; şerit yazısı ve aç/kapat düğmeleri düzeldi**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Logo ve ürün adı sağ alt köşeye taşındı (sabit)**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Üst barın solundaki logo + "Akıllı Modelleme Platformu" + birim adı
+  bloğu görünümü değişmeden sağ alt köşede sabit duruyor; sağ blok
+  açılıp kapansa da, sohbet kaysa da yeri ve boyu değişmez.
+- Sohbet kutusu bloğun yanında biter, sağ bloğun içeriği ve dar
+  şerit bloğun üstünde kalır; hiçbir şey altına girmez.
+- Üst barda şimdilik yalnız sağdaki düğmeler var; üst bar yeniden
+  tasarlanacak.
+- Şeritteki sekme adları bir punto küçüldü: kısa ekranda da en uzun ad
+  sığıyor.
+
+Önceki tur: **Üst şerit kaldırıldı, sonuçlar sağ blokta SONUÇLAR sekmesinde; şerit yazısı ve aç/kapat düğmeleri düzeldi**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üst bardaki ÜRETİM · ELEME · MODEL SONUÇLARI kartları kaldırıldı;
   aynı üç kart sağ bloğun dördüncü sekmesi SONUÇLAR'da alt alta durur.
