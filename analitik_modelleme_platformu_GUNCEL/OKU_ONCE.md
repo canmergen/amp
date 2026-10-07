@@ -1,6 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **01.2.3 not satırlarının solundaki gri çizgi kaldırıldı**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Yazı ölçeği iki boyuta indi: metin 13,5 px, başlık 15 px**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Açıklama, not, ipucu, alan etiketi, rozet, çip, tablo başlığı, buton,
+  lejant: hepsi 13,5 px. Önceki 12 px'lik "küçük" boyut kaldırıldı
+  (kart notları ve alan altı ipuçları ile kart açıklamaları arasındaki
+  fark buradan geliyordu).
+- Başlıklar 15 px (ürün adı, adım bloğu, faz, kart başlıkları, özet
+  değerleri).
+- Tek istisna üst bar: sekmeler ile Arşiv / Yeni Çalışma / Oturum Aktif
+  12 px (--fs-ustbar); 13,5 px'te bar 1280 px genişlikte tek sıraya
+  sığmıyor. 1280–1920 px'te taşma yok.
+- Durum çipi yüksekliği 18 → 20 px (büyüyen yazı sığsın diye).
+
+Önceki tur: **01.2.3 not satırlarının solundaki gri çizgi kaldırıldı**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - "Sözlükte Tanımı Bulunmayan Kolonlar" başlığının altındaki bilgi
   satırı ve zorunlu tanım uyarısı artık sol çizgisiz, başlıkla aynı

@@ -24,15 +24,17 @@
      genislikte (#kabuk: tabular-nums).
      Yalnizca --fw-normal (400) ve --fw-kalin (700) kullanilir.
      Buyuk harf CSS ile DEGIL, HTML/Python'da yazilir (Turkce I/İ). */
-  /* UC BOYUT: kucuk (12) / govde (13.5) / baslik (15). Arayuzdeki her
-     yazi bunlardan birini kullanir; ara deger (10, 11, 12.5, 14, 14.5)
-     yazilmaz. Yalnizca ikon karakterleri (×, +, ok, i) kutularina gore
-     sabit px alir. --fs-etiket, --fs-buyuk, --fs-blok eski adlar: ayni
-     uc degere baglidir. */
-  --fs-kucuk:  12px;     /* etiket, rozet, sayac, ust bar dugmeleri */
-  --fs-govde:  13.5px;   /* metin, butonlar, tablolar */
+  /* IKI BOYUT: metin (13.5) / baslik (15). Arayuzdeki her yazi (aciklama,
+     not, ipucu, etiket, rozet, tablo, buton) metin boyutundadir; yalniz
+     basliklar buyuktur. Tek istisna ust bar dugmeleri (--fs-ustbar):
+     sekmeler 64 px'lik barda tek sirada sigmali. Ikon karakterleri (×, +,
+     ok, i) kutularina gore sabit px alir. --fs-kucuk, --fs-etiket,
+     --fs-buyuk, --fs-blok eski adlar: ayni iki degere baglidir. */
+  --fs-govde:  13.5px;   /* her metin */
   --fs-baslik: 15px;     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
-  --fs-etiket: var(--fs-kucuk);
+  --fs-ustbar: 12px;     /* yalniz ust bar sekmeleri ve sagdaki dugmeler */
+  --fs-kucuk:  var(--fs-govde);
+  --fs-etiket: var(--fs-govde);
   --fs-buyuk:  var(--fs-baslik);
   --fs-blok:   var(--fs-baslik);
 
@@ -362,7 +364,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border: 1px solid var(--kenar); background: var(--yuzey);
   border-radius: var(--r-kucuk); cursor: pointer; color: var(--metin);
   flex-shrink: 0; font-family: var(--font);
-  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); white-space: nowrap;
+  font-size: var(--fs-ustbar); font-weight: var(--fw-kalin); white-space: nowrap;
 }
 /* SVG ikon: yüksekliği düğmenin metin satırına oturur. width/height
    birlikte verilmezse Safari intrinsic boyut uydurup ikonu şişiriyor. */
@@ -442,7 +444,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   /* Üst bar düğmeleri küçük boyutta (sağdaki Arşiv / Yeni Çalışma /
      Oturum Aktif ile aynı): kutular tek sırada sığmalı. */
   height: 30px; padding: 0 11px; white-space: nowrap;
-  font-family: var(--font); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
   letter-spacing: var(--etiket-aralik);
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border-radius: var(--r-kucuk);
@@ -512,7 +514,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   height: 22px; padding: 0 var(--b-2); flex-shrink: 0;
   border: 1px solid var(--kenar); background: var(--yuzey);
   border-radius: var(--r-kucuk);
-  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin); white-space: nowrap;
+  font-size: var(--fs-ustbar); font-weight: var(--fw-kalin); color: var(--metin); white-space: nowrap;
 }
 .nokta-yesil {
   width: 6px; height: 6px; border-radius: 50%;
@@ -2036,7 +2038,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 /* -------- Durum çipi (validasyon ve ileride tüm durumlar) -------- */
 .cip {
   display: inline-flex; align-items: center; gap: 4px;
-  height: 18px; padding: 0 var(--b-2);
+  height: 20px; padding: 0 var(--b-2);
   border-radius: var(--r-kucuk);
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); letter-spacing: .05em;
   white-space: nowrap;
