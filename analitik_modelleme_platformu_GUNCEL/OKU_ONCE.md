@@ -1,6 +1,11 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Logo üst bara geri döndü; sağ alt köşedeki blok kaldırıldı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Sağ bloğun sekme şeridi içeriğin soluna alındı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Blok açıldığında dikey sekme şeridi bloğun sol kenarında (sohbet
+  tarafında) kalır, içerik şeridin sağına açılır. Davranış aynı.
+
+Önceki tur: **Logo üst bara geri döndü; sağ alt köşedeki blok kaldırıldı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üst barın solu eski hâlinde: logo, ince ayraç, "Akıllı Modelleme
   Platformu" ve birim adı. Sağ alt köşedeki sabit blok ve ona yer

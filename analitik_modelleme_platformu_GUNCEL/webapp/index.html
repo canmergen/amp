@@ -176,23 +176,10 @@
          title="Sürükleyerek genişliği ayarlayın (çift tıklama: varsayılan)"></div>
 
     <aside id="analiz-panel">
-      <!-- İÇERİK: açık sekmenin gövdesi. Blok kapalıyken gizli. -->
-      <div id="analiz-icerik">
-        <div id="analiz-govde"></div>
-
-        <!-- Sözlük teyidi adımında panelin ALTINDA duran ikinci birincil
-             düğme: kullanıcı değişken listesini burada gözden geçiriyor,
-             onay için sohbete dönmek zorunda kalmamalı. Sohbetteki kartla
-             AYNI düğmedir; biri basılınca ikisi de kilitlenir. -->
-        <div id="analiz-alt" hidden>
-          <button id="analiz-teyit" class="secim-onay" type="button"></button>
-        </div>
-      </div>
-
-      <!-- ŞERİT: HER ZAMAN GÖRÜNÜR, bloğun en sağında. Üstte tek bir
-           aç/kapa düğmesi (kapalıyken ‹, açıkken ›), altında dört sekme
-           adı 90° dönük. Blok açılınca içerik şeridin SOLUNA açılır;
-           şerit yerinde kalır (app.js: analizAcikYaz).
+      <!-- ŞERİT: HER ZAMAN GÖRÜNÜR, bloğun SOL kenarında (sohbet
+           tarafında). Üstte tek bir aç/kapa düğmesi (kapalıyken ‹,
+           açıkken ›), altında dört sekme adı 90° dönük. Blok açılınca
+           içerik şeridin SAĞINA açılır (app.js: analizAcikYaz).
            DEĞİŞKEN ANALİZİ = dağılım + SFA + eksik değer;
            BÖLME & VALİDASYON = bölme özeti + validasyon sonuçları;
            SONUÇLAR = üretim, eleme ve model sonuçları (eski üst şerit). -->
@@ -212,6 +199,19 @@
           <button class="analiz-sekme" data-tab="sonuc" type="button">SONUÇLAR</button>
         </div>
       </nav>
+
+      <!-- İÇERİK: açık sekmenin gövdesi. Blok kapalıyken gizli. -->
+      <div id="analiz-icerik">
+        <div id="analiz-govde"></div>
+
+        <!-- Sözlük teyidi adımında panelin ALTINDA duran ikinci birincil
+             düğme: kullanıcı değişken listesini burada gözden geçiriyor,
+             onay için sohbete dönmek zorunda kalmamalı. Sohbetteki kartla
+             AYNI düğmedir; biri basılınca ikisi de kilitlenir. -->
+        <div id="analiz-alt" hidden>
+          <button id="analiz-teyit" class="secim-onay" type="button"></button>
+        </div>
+      </div>
     </aside>
 
   </div>

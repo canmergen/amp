@@ -1793,7 +1793,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   width: var(--analiz-en); flex-shrink: 0;
   background: var(--yuzey-alt);
   border-left: var(--ayrac-kalinlik) solid var(--ayrac);
-  /* Satır: solda içerik, en sağda HER ZAMAN GÖRÜNÜR sekme şeridi. */
+  /* Satır: solda (sohbet tarafında) HER ZAMAN GÖRÜNÜR sekme şeridi, sağda içerik. */
   display: flex; flex-direction: row; overflow: hidden;
 }
 #analiz-icerik { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
@@ -1866,10 +1866,10 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 #analiz-alt .secim-onay { width: 100%; }
 
 /* ==================== SAĞ BLOK: SEKME ŞERİDİ ====================
-   Şerit HER ZAMAN GÖRÜNÜR, bloğun en sağında: üstte tek aç/kapa düğmesi
-   (kapalıyken ‹, açıkken ›), altında dört sekme adı. Blok kapalıyken
-   (#kabuk.analiz-dar, app.js: analizAcikYaz) yalnız şerit kalır; açılınca
-   içerik şeridin SOLUNA açılır, şerit yerinden oynamaz.
+   Şerit HER ZAMAN GÖRÜNÜR, bloğun SOL kenarında (sohbet tarafında):
+   üstte tek aç/kapa düğmesi (kapalıyken ‹, açıkken ›), altında dört
+   sekme adı. Blok kapalıyken (#kabuk.analiz-dar, app.js: analizAcikYaz)
+   yalnız şerit kalır; açılınca içerik şeridin SAĞINA açılır.
 
    SEKME ADI 90° DÖNÜK DÜZ YAZI: writing-mode: vertical-rl satırı
    olduğu gibi çevirir (harfler alt alta dizilmez); rotate(180deg) ile
@@ -1921,7 +1921,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   #kabuk.analiz-dar #analiz-icerik,
   #kabuk.analiz-dar #tutamak-sag { display: none; }
   /* Açıkken içerikle şerit arasında ince ayraç. */
-  #kabuk:not(.analiz-dar) #analiz-serit { border-left: 1px solid var(--kenar); }
+  #kabuk:not(.analiz-dar) #analiz-serit { border-right: 1px solid var(--kenar); }
   /* Kapalıyken "aktif" vurgusu yok: içerik kapalıyken seçili görünen
      bir sekme, açık bir şey varmış izlenimi veriyordu. */
   #kabuk.analiz-dar .analiz-sekme.aktif {
@@ -1933,7 +1933,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 }
 /* Dar ekranda blok çekmece: içerik + şerit birlikte açılır. */
 @media (max-width: 944px) {
-  #analiz-serit { border-left: 1px solid var(--kenar); }
+  #analiz-serit { border-right: 1px solid var(--kenar); }
 }
 
 /* ---- SONUÇLAR sekmesi: eski üst şeridin üç kartı alt alta ----
