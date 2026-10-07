@@ -285,18 +285,19 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border-bottom: var(--ayrac-kalinlik) solid var(--ayrac); flex-shrink: 0;
   gap: clamp(11px, 1.6vw, 22px);
 }
-/* ==================== İMZA: sağ alt köşedeki logo bloğu ====================
-   Logo + ürün adı + birim adı. Eskiden üst barın solundaydı; üst bar
-   yeniden tasarlanacağı için SAĞ ALT KÖŞEYE SABİTLENDİ. position: fixed:
+#ustbar-sol { display: flex; align-items: center; flex-shrink: 0; }
+
+/* ==================== İMZA: sağ alt köşedeki logo görseli ====================
+   Eskiden üst barın solunda, ürün adının yanındaydı; SAĞ ALT KÖŞEYE
+   SABİTLENDİ (ürün adı ve birim adı üst barda kaldı). position: fixed:
    sağ blok açılıp kapansa, sohbet kaysa da yeri ve boyu değişmez.
-   Görünümü üst bardaki ile aynı: logo, ince ayraç, kırmızı ürün adı,
-   koyu birim adı. Üstüne binmesin diye sohbet kutusu ve sağ blok bu
-   kadar yer bırakır (aşağıda --imza-h / --imza-tasma). */
+   Üstüne binmesin diye sohbet kutusu ve sağ blok bu kadar yer bırakır
+   (aşağıda --imza-h / --imza-tasma). */
 #imza {
   position: fixed; right: 0; bottom: 0; z-index: 35;
   height: var(--imza-h); max-width: 100vw;
-  display: flex; align-items: center; gap: var(--b-4);
-  padding: 0 var(--b-5) 0 var(--b-4);
+  display: flex; align-items: center;
+  padding: 0 var(--b-4);
   background: var(--yuzey);
   border-top: var(--ayrac-kalinlik) solid var(--ayrac);
   border-left: var(--ayrac-kalinlik) solid var(--ayrac);
@@ -305,7 +306,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 /* Logo bloğun neredeyse tamamı; üst ve alttan 3'er px pay. */
 #banner { height: calc(var(--imza-h) - 6px); width: auto; display: block; }
 
-#baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
+#baslik-blok { line-height: 1.3; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
 #urun-adi {
   font-weight: var(--fw-kalin); font-size: var(--fs-buyuk); letter-spacing: -.01em;
