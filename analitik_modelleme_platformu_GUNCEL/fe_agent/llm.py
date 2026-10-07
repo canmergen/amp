@@ -427,12 +427,12 @@ celisirse icerige uy.
 DOGRULA (yazmadan once her iddiayi kolonun bilgileriyle kontrol et):
   - KONU: aciklamadaki birim (musteri, hesap, islem, kayit ...) yalniz
     kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
-    cikiyorsa yazilir; cikmiyorsa birim UYDURMA, genel bir ifade kullan
-    ("kayit", "islem").
+    cikiyorsa yazilir; cikmiyorsa BIRIM YAZMA: ne uydur ne de "kayit",
+    "satir" gibi genel bir ozne kullan; yalniz kolonun ne oldugunu yaz
+    ("Tekil kimlik numarasi", "Sira numarasi").
   - VERI SETI ADINI YAZMA: ad yalniz tablonun konusunu anlamak icindir;
     aciklamada ne ham hali ne cozulmus / bosluklu hali gecer. Tanim veri
-    setinden bagimsiz okunmali ("X tablosundaki kaydin ..." degil,
-    "Kaydin ...").
+    setinden bagimsiz okunmali.
   - KESINLIK / TAHMIN SOZCUGU YAZMA: "muhtemelen", "buyuk olasilikla",
     "kesinlikle", "belki", "tahminen", "sanirim" gibi sozcukler tanimda
     yer almaz; tanim duz cumle olur. Emin olmadigin ayrintiyi yazma.
@@ -751,11 +751,21 @@ def _veri_seti_deseni(veri_seti):
     return re.compile(r"\b" + govde + r"(?:['’][^\s,.;]*)?\b\s*", re.I)
 
 
+# Birim cikmadiginda modelin yine de basa koydugu genel ozne ("Kaydin",
+# "Kayitlarin", "Satirin" ...): birim yazilmaz kurali geregi atilir.
+# Yalniz cumle BASINDAKI iyelik hali; "Kayit tarihi" gibi anlamli kullanim
+# etkilenmez.
+_GENEL_OZNE = re.compile(
+    r"^(?:kayd[ıi]n[ıi]n|kayd[ıi]n|kay[ıi]tlar[ıi]n|sat[ıi]r[ıi]n|"
+    r"sat[ıi]rlar[ıi]n)\s+", re.I)
+
+
 def aciklama_temizle(metin, veri_seti=None):
     """Onerilen aciklamanin son kontrolu (dil modeli cagrisi yok):
       1) istatistik iceren parcalar atilir (istatistik_temizle),
       2) veri seti adi (ham ya da cozulmus) atilir,
-      3) kesinlik / tahmin sozcukleri ("muhtemelen", "kesinlikle" ...) atilir.
+      3) kesinlik / tahmin sozcukleri ("muhtemelen", "kesinlikle" ...) atilir,
+      4) bastaki genel ozne ("Kaydin", "Kayitlarin" ...) atilir.
     Bas harf buyutulur. Temizlik metni bosaltirsa ilk adimin sonucu kalir."""
     m = istatistik_temizle(metin)
     t = m
@@ -764,6 +774,7 @@ def aciklama_temizle(metin, veri_seti=None):
         t = desen.sub("", t)
     t = _TAHMIN_SOZ.sub("", t)
     t = re.sub(r"\s+", " ", t).strip(" ,;")
+    t = _GENEL_OZNE.sub("", t)
     t = re.sub(r"\s+([,.;])", r"\1", t)
     if len(t.split()) < 2:
         return m
@@ -1061,8 +1072,9 @@ ornek ve onayli tanimlar) DOGRULAMAK ve en dogru aciklamayi yazmak.
 DOGRULA:
   - KONU: aciklamadaki birim (musteri, hesap, islem, kayit ...) yalniz
     kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
-    cikiyorsa yazilir. Cikmiyorsa adaylar ne derse desin o birimi YAZMA;
-    genel bir ifade kullan ("kayit", "islem").
+    cikiyorsa yazilir. Cikmiyorsa adaylar ne derse desin BIRIM YAZMA:
+    "kayit", "satir" gibi genel bir ozne de kullanma; yalniz kolonun ne
+    oldugunu yaz ("Tekil kimlik numarasi").
   - VERI SETI ADINI YAZMA (ham ya da cozulmus hali); adaylarda varsa at.
   - KESINLIK / TAHMIN SOZCUGU YAZMA ("muhtemelen", "buyuk olasilikla",
     "kesinlikle", "belki", "tahminen"); adaylarda varsa at.

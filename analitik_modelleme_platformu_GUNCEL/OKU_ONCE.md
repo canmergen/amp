@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Yazılar bir punto büyüdü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Birim çıkmayan kolonda açıklamaya özne yazılmaz**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Kolon adından, verisinden ya da onaylı / örnek tanımlardan kimin ya
+  da neyin olduğu (müşteri, hesap, işlem ...) çıkmıyorsa birim yazılmaz;
+  "kayıt", "satır" gibi genel özne de kullanılmaz. Yalnız kolonun ne
+  olduğu yazılır: "Tekil kimlik numarası", "Sıra numarası".
+- Kod son kontrolü: model yine cümleye "Kaydın", "Kayıtların",
+  "Satırların" gibi bir özneyle başlarsa o sözcük atılır. "Kayıt
+  tarihi" gibi anlamlı kullanım etkilenmez.
+
+Önceki tur: **Yazılar bir punto büyüdü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Genel yazı ölçeği bir punto büyüdü: gövde 12,5 → 13,5 px, başlık
   13 → 14, küçük ve etiket 11 → 12, büyük 14 → 15, blok başlığı
