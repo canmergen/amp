@@ -417,7 +417,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    MODEL AKIŞI kümesi (başlık + beş kutu) ve yanında ayrı SOHBET ve
    DASHBOARD blokları. Renkler: gri zemin üstünde beyaz kutular, üstüne
    gelince açık kırmızı, seçili kutu kırmızı. Küme başlığı kutularla
-   AYNI yazı tipi ve puntoda, açık kırmızı zeminde kırmızı yazı.
+   AYNI yazı tipi ve puntoda, kutusuz kırmızı yazı (düğme sanılmasın).
    Kutular arası 2 px, kümeler arası 6 px: yapışık değil, dağınık da değil. */
 #ust-sekmeler {
   flex: 1; min-width: 0;
@@ -437,8 +437,12 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border-radius: var(--r-kucuk);
 }
 .ust-kume-ad {
-  color: var(--kirmizi); background: var(--kirmizi-acik);
-  border: 1px solid var(--kirmizi-halka); margin-right: 2px;
+  /* Düğme değil, kümenin ADI: kutusuz, kırmızı yazı; sağında ince ayraç
+     ile kutulardan ayrılır. Kutu görünümündeyken yanındaki AKIŞ ile iki
+     ayrı sekme gibi okunuyordu. */
+  color: var(--kirmizi); background: none; border: none; border-radius: 0;
+  padding: 0 10px 0 8px; margin-right: 3px;
+  box-shadow: 1px 0 0 var(--kenar);
 }
 .ust-sekme {
   flex-shrink: 0; cursor: pointer; color: var(--metin);

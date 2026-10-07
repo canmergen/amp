@@ -1,6 +1,12 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst bar kümeleri sıkılaştı; SOHBET ve DASHBOARD kapalı görünür**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **"MODEL AKIŞI" başlığı düğme görünümünden çıktı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Küme başlığı artık kutusuz kırmızı yazı; sağındaki ince ayraçla
+  kutulardan ayrılıyor. Kutu içindeyken yanındaki AKIŞ ile iki ayrı
+  sekme gibi okunuyordu.
+
+Önceki tur: **Üst bar kümeleri sıkılaştı; SOHBET ve DASHBOARD kapalı görünür**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - "MODEL AKIŞI" başlığı kutularla aynı yazı tipi ve puntoda; açık
   kırmızı zeminde kırmızı yazı.
