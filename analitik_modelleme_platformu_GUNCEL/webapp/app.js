@@ -6712,9 +6712,8 @@ function dogrulamaKartiEkle(alan, blok) {
         if (adimModu === "kisaltma" && kisaErisim && kisaErisim.bekliyor()) {
             birincil.disabled = true;
             gerekce.hidden = false;
-            gerekce.textContent = "Tanımlar okunup öneriler gelince onaylanabilir. Beklemek "
-                + "istemezseniz İptal ile durdurabilir ya da \"Kısaltmaları Onaylamadan "
-                + "Devam Et\" ile geçebilirsiniz.";
+            gerekce.textContent = "Okuma bitince onaylanabilir. Beklemek istemezseniz "
+                + "İptal'e basın ya da onaylamadan devam edin.";
             return;
         }
         birincil.disabled = eksikSayisi > 0;
@@ -7226,31 +7225,25 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         kap.appendChild(g);
         const notlar = [];
         if (r.kaynak === "hafiza")
-            notlar.push("Bu parçanın sözlükte karşılığı yok; anlam başka bir çalışmada onaylanmış (kısaltma hafızası).");
+            notlar.push("Anlam önceki bir çalışmada onaylandı.");
         else if (r.kaynak === "ogrenilen")
-            notlar.push("Bu parçanın sözlükte karşılığı yok; anlam başka bir çalışmanın sözlüğünden öğrenilmiş.");
-        else if (r.bolum === "bulunamadi")
-            notlar.push("Bu parçanın hiçbir tanımda karşılığı bulunamadı; anlamını yazabilirsiniz.");
+            notlar.push("Anlam başka bir çalışmanın sözlüğünden.");
         Object.keys(r.cok_anlamli || {}).forEach(k => {
-            notlar.push(k + " başka anlamda da kullanılıyor: " + r.cok_anlamli[k].join(", ")
-                        + ". Kolon adları tek anlamlı olsun diye bu anlama farklı kısaltma önerilir.");
+            notlar.push(k + " başka anlamda da var: " + r.cok_anlamli[k].join(", ") + ".");
         });
         (r.cikarilan || []).forEach(c => {
-            notlar.push(c.kisaltma + " " + ftBinlik(c.kolon) + " kolonda bu anlama eşlenmişti; "
-                        + "sözlüğün genelinde çok daha sık \"" + c.anlam + "\" anlamında "
-                        + "kullanıldığı için okuma hatası sayıldı ve bu satırdan çıkarıldı.");
+            notlar.push(c.kisaltma + " (" + ftBinlik(c.kolon) + " kolon) çıkarıldı: çoğunlukla \""
+                        + c.anlam + "\" anlamında.");
         });
         if (r.adda_yok)
-            notlar.push(ftBinlik(r.adda_yok) + " kolonun tanımında geçiyor, adında karşılığı yok. "
-                        + "Seçilirse kısaltması bu kolonların adına tanımdaki sırasıyla eklenir.");
+            notlar.push(ftBinlik(r.adda_yok) + " kolonun tanımında var, adında yok; seçilirse adına eklenir.");
         if (r.oneri_kaynak === "hafiza")
-            notlar.push("Önerilen kısaltma kurum standardı: önceki çalışmalarda bu anlam için seçildi.");
+            notlar.push("Önerilen kısaltma kurum standardı.");
         else if (r.oneri_gerekce)
-            notlar.push("Önerilen kısaltma: " + r.oneri_gerekce + " (dil modeli)");
+            notlar.push("Öneri: " + r.oneri_gerekce);
         const orn = r.ornekler || [];
         if (orn.length)
-            notlar.push("Örnek kolonlar (tanımdaki ifade):\n\n"
-                        + orn.map(o => o.kolon + ": " + o.tanim + "\n→ " + o.ifade).join("\n\n"));
+            notlar.push("Örnek:\n" + orn.map(o => o.kolon + ": " + o.tanim).join("\n"));
         if (notlar.length) kap.appendChild(bolmeBilgiSimgesi(tireSade(notlar.join("\n\n")),
                                                              r.anlam || mevcut.join(", ")));
         tdA.appendChild(kap);
@@ -7381,9 +7374,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         const soz = (liste || []).filter(r => r.bolum !== "bulunamadi");
         if (bul.length) {
             bolumBasi("Sözlükte Karşılığı Bulunamayan Parçalar · " + ftBinlik(bul.length),
-                      "Bu parçalar hiçbir kolonun tanımında karşılık bulmadı. Anlamı varsa "
-                      + "başka çalışmalardan gelir ve satırında yazar; kendiniz de "
-                      + "yazabilirsiniz. Seçilmeyen satırın anlamı bu çalışmada kullanılmaz.");
+                      "Hiçbir tanımda karşılığı yok; anlamını yazıp seçebilirsiniz.");
             bul.forEach(satirCiz);
         }
         if (soz.length) {
@@ -7396,10 +7387,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         const okunuyor = ka.dm === "calisiyor";
         topluBtn.forEach(b => { b.disabled = kilitli || okunuyor; });
         durumEl.textContent = okunuyor
-            ? "Okuma sürüyor: tablo her pakette güncellenir, okuma bitince "
-              + "düzenlenebilir. Şu ana kadar " + ftBinlik(soz.length)
-              + " anlam okundu; " + ftBinlik(bul.length)
-              + " parçanın sözlükte karşılığı bulunamadı."
+            ? "Okunuyor: " + ftBinlik(soz.length) + " anlam, " + ftBinlik(bul.length)
+              + " karşılıksız parça."
             : [(liste || []).length ? ""
                 : "Kolon adlarında sözlükle eşlenecek bir parça bulunmadı.",
                ka.not ? tireSade(ka.not) : ""].filter(Boolean).join(" ");

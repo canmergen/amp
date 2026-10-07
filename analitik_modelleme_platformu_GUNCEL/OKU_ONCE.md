@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü: okuma sürerken tablo görünür ama kilitli**. Değiştir: `webapp/app.js`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü yazıları sadeleşti**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Başlık altındaki açıklama paragrafı kaldırıldı; yalnız üç kısa
+  adımlık yönerge kaldı.
+- Başlıktaki "i" (sütunlar) beş kısa satıra, Ad Kalıbı "i"si iki
+  cümleye indi. Karşılığı bulunamayan bölümün "i"si tek cümle.
+- Satır "i"leri kısaldı; karşılığı bulunamayan satırlarda bölüm
+  başlığını tekrar eden not kaldırıldı (bu satırlarda "i" artık yalnız
+  söyleyecek bir şey varsa çıkar). Örnek kolonlar tek satır.
+- Okuma sürerken altta "Okunuyor: N anlam, M karşılıksız parça",
+  düğme notu "Okuma bitince onaylanabilir ..." olarak kısaldı.
+
+Önceki tur: **Kısaltma Sözlüğü: okuma sürerken tablo görünür ama kilitli**. Değiştir: `webapp/app.js`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Önceki turda okuma sürerken tablo gizleniyordu; artık görünür ve her
   pakette güncellenir, ama anlam, tür, önerilen kısaltma, seç kutuları

@@ -1471,56 +1471,25 @@ def _kisaltma_isi(durum):
 
 
 KISALTMA_BASLIK = ADIM_ADI["kisaltma"]
-# Kartta basligin altinda.
-KISALTMA_ACIKLAMA = (
-    "Kolon adlarındaki her parçanın anlamı sözlükteki tanımlardan okunur; her "
-    "satır bir anlam. Seçtiğiniz satırın anlamı onaylanır ve Önerilen Kısaltma "
-    "yazılıysa bu anlamın geçtiği kolon adlarına uygulanır.")
+# Kartta basligin altinda: yalniz yonerge (ayri aciklama paragrafi yok).
+KISALTMA_ACIKLAMA = ""
 # Ad kalibinin aciklamasi kalip satirindaki i'de.
 KISALTMA_KALIP_BILGI = (
-    "Ad Kalıbı, kolon adında parçaların hangi sırayla duracağını belirler. "
-    "Her anlamın bir türü var (Tür sütunu); Yeni Kolon Adları adımında her "
-    "kolonun parçaları türlerinin buradaki sırasına dizilir. Aynı türdeki "
-    "parçalar adda geçtikleri sırayla kalır; türü bilinmeyen parça önündeki "
-    "parçaya bağlı kalır. Kolon adı rakamla başlayamaz: rakamla başlayan bir "
-    "parça (çoğunlukla pencere) başa gelirse o kolon Sorunlu işaretlenir.\n\n"
-    "Sıra sabittir, değiştirilmez. Onayladığınız satırların türü kurum "
-    "geneli kısaltma hafızasına yazılır; sonraki çalışmalarda varsayılan "
-    "olarak gelir.")
+    "Yeni kolon adlarında parçalar bu sırayla dizilir; sıra sabittir. "
+    "Parçanın yeri Tür sütunundan gelir.")
 # Kartin ustunde: ne yapilacagi uc adimda.
 KISALTMA_YONERGE = [
-    "Tanımlar okunurken tablo güncellenir ve kilitlidir; okuma bitince "
-    "düzenlenebilir.",
-    "Her satırda anlamı kontrol edin; gerekiyorsa düzeltin. Sözlükte "
-    "karşılığı bulunamayan parçaların anlamını siz yazın.",
-    "Bir anlam için tek kısaltma kullanılsın istiyorsanız Önerilen "
-    "Kısaltma'yı yazın ve satırı seçin. Seçilen satırlar bir sonraki adımda "
-    "kolon adlarına uygulanır; seçilmeyen satır adları değiştirmez."]
+    "Okuma bitene kadar tablo kilitlidir.",
+    "Anlamları kontrol edin; karşılığı bulunamayan parçaların anlamını yazın.",
+    "Değişmesini istediğiniz kısaltmayı Önerilen Kısaltma'ya yazıp satırı "
+    "seçin; bir sonraki adımda kolon adlarına uygulanır."]
 # Sutunlarin aciklamasi basliktaki i'de.
 KISALTMA_SUTUNLAR = (
-    "Anlam: kolon adındaki parçanın, kolonun sözlükteki tanımında karşılık "
-    "geldiği ifade. Tanımdan aynen okunur; dil modelinin genel bilgisi "
-    "kullanılmaz. Okuma hatalıysa düzenleyebilirsiniz.\n\n"
-    "Adlarda Geçen: bu anlam için kolon adlarında kullanılan kısaltmalar ve "
-    "kaç kolonda geçtikleri. Aynı anlama giden farklı kısaltmalar aynı satırda; "
-    "iki anlamda kullanılan kısaltma iki satırda görünür. \"Adda Yok\": anlam "
-    "tanımda geçiyor, kolon adında karşılığı yok.\n\n"
-    "Tür: anlamın kolon adındaki görevi (konu, yön, nitelik, pencere, ölçü, "
-    "istatistik, diğer). Kolon adları Ad Kalıbı'ndaki tür sırasına göre "
-    "dizilir. Dil modeli önerir; önceki çalışmalarda onaylanan tür varsa o "
-    "gelir. Değiştirebilirsiniz.\n\n"
-    "Önerilen Kısaltma: bu anlam için kolon adlarında kullanılacak tek "
-    "kısaltma; boşsa mevcut kısaltma kalır. Dil modeli kolon adlarının "
-    "dilinde ve kalıbında önerir; önceki çalışmalarda bu anlam için seçilen "
-    "kısaltma (kurum standardı) varsa o gelir ve satır seçili gelir. Kendiniz "
-    "de yazabilirsiniz.\n\n"
-    "Sözlükte Karşılığı Bulunamayan Parçalar: hiçbir tanımda karşılığı "
-    "bulunmayan parçalar. Anlamı yalnız burada başka çalışmalardan gelir ve "
-    "öyle işaretlidir.\n\n"
-    "Seç: işaretli satırın anlamı onaylanır ve kısaltma hafızasına yazılır; "
-    "önerilen kısaltma kolon adlarına ve sözlükteki adlara uygulanır (Yeni "
-    "Kolon Adları adımında önizlenir). İşaretsiz satırda ad değişmez; "
-    "sözlükten okunan anlam yine bu çalışmada kullanılır.")
+    "Anlam: parçanın, kolonun tanımındaki karşılığı.\n"
+    "Adlarda Geçen: bu anlamın kısaltmaları ve kaç kolonda geçtiği.\n"
+    "Tür: parçanın yeni addaki yeri.\n"
+    "Önerilen Kısaltma: boşsa mevcut kısaltma kalır.\n"
+    "Seç: anlam onaylanır, kısaltma kolon adlarına uygulanır.")
 
 
 def _kisaltma_alani(durum):
