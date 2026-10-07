@@ -467,7 +467,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   .ust-kume-ad, .ust-sekme { padding: 0 7px; font-size: var(--fs-kucuk); }
 }
 
-/* Sağ: 2 × 2 (Arşiv | Yeni Çalışma / tema | Oturum Aktif). */
+/* Sağ: 2 × 2 (tema | Oturum Aktif / Arşiv | Yeni Çalışma). */
 .ustbar-sag-izgara {
   display: grid; grid-template-columns: auto auto; gap: 4px;
   align-items: stretch;

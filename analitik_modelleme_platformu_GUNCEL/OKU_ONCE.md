@@ -1,6 +1,10 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **"MODEL AKIŞI" başlığı düğme görünümünden çıktı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Sağ 2 × 2'de satırlar yer değiştirdi**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Üstte tema (mod geçişi) ve Oturum Aktif, altta Arşiv ve Yeni Çalışma.
+
+Önceki tur: **"MODEL AKIŞI" başlığı düğme görünümünden çıktı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Küme başlığı artık kutusuz kırmızı yazı; sağındaki ince ayraçla
   kutulardan ayrılıyor. Kutu içindeyken yanındaki AKIŞ ile iki ayrı

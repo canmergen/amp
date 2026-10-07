@@ -56,8 +56,8 @@
          (app.js: sonucCiz). -->
 
     <div id="ustbar-sag">
-      <!-- SAĞ: 2 × 2. Üstte Arşiv ve Yeni Çalışma, altta tema (mod geçişi)
-           ve Oturum Aktif. Dar ekrandaki iş akışı çekmece düğmesi üst
+      <!-- SAĞ: 2 × 2. Üstte tema (mod geçişi) ve Oturum Aktif, altta
+           Arşiv ve Yeni Çalışma. Dar ekrandaki iş akışı çekmece düğmesi üst
            satırın başında (geniş ekranda gizli). -->
       <div class="ustbar-sag-izgara">
         <!-- Dar ekranda panelleri çekmece olarak açar; geniş ekranda gizli -->
@@ -70,6 +70,20 @@
             <path d="M3 6h18M3 12h18M3 18h18"></path>
           </svg>
         </button>
+        <button id="tema-btn" type="button" title="Koyu tema" aria-label="Tema değiştir"></button>
+        <!-- Dataiku'nun kendi REFRESH düğmesi bunun hemen üstünde duruyor ve
+             karıştırılınca gerçek veri kaybı yaşandı: bu yüzden yalnız ikon
+             değil, görünür etiket de taşır.
+             İKON NEDEN SVG, KARAKTER DEĞİL: ⟳ / ↻ gibi karakterler fonttan
+             fonta değişiyor (bazı sistemlerde tek oklu, bazılarında kutu
+             çıkıyor). Buradaki SVG her ortamda aynı çiziliyor.
+             NEDEN TEK OKLU: sohbet metninde geçen "sağ üstteki ⟳ Yeni
+             Çalışma" ifadesindeki karakter tek oklu; düğmedeki ikon iki
+             oklu olunca metin ile düğme aynı şeyi göstermiyordu. Dataiku'nun
+             kendi REFRESH ikonu da tek oklu.
+             stroke/fill currentColor: düğmenin rengini izler, koyu temada
+             ayrıca kural gerekmez. -->
+        <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
         <!-- ARŞİV: PROJE_HAFIZASI'ndaki kayıtlı çalışmalar. Birine basınca
              o çalışma kaldığı yerden açılır (app.js: calismalarAc). -->
         <div id="calismalar-kap">
@@ -103,20 +117,6 @@
           <span class="sifirla-etiket">Yeni Çalışma</span>
         </button>
         </div>
-        <button id="tema-btn" type="button" title="Koyu tema" aria-label="Tema değiştir"></button>
-        <!-- Dataiku'nun kendi REFRESH düğmesi bunun hemen üstünde duruyor ve
-             karıştırılınca gerçek veri kaybı yaşandı: bu yüzden yalnız ikon
-             değil, görünür etiket de taşır.
-             İKON NEDEN SVG, KARAKTER DEĞİL: ⟳ / ↻ gibi karakterler fonttan
-             fonta değişiyor (bazı sistemlerde tek oklu, bazılarında kutu
-             çıkıyor). Buradaki SVG her ortamda aynı çiziliyor.
-             NEDEN TEK OKLU: sohbet metninde geçen "sağ üstteki ⟳ Yeni
-             Çalışma" ifadesindeki karakter tek oklu; düğmedeki ikon iki
-             oklu olunca metin ile düğme aynı şeyi göstermiyordu. Dataiku'nun
-             kendi REFRESH ikonu da tek oklu.
-             stroke/fill currentColor: düğmenin rengini izler, koyu temada
-             ayrıca kural gerekmez. -->
-        <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
       </div>
 
     </div>
