@@ -1264,6 +1264,9 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   margin: var(--b-1) 0 var(--b-3); padding-left: var(--b-2);
   border-left: 2px solid var(--kenar-guclu);
 }
+/* 01.2.3 kartının iki not satırı (bilgi ve zorunlu tanım uyarısı):
+   soldaki çizgi yok. */
+.dg-not.dg-cizgisiz { border-left: 0; padding-left: 0; }
 /* Otomatik işaretleme uyarısı: sözlükte açıklaması olmayan kolonlar
    süreç dışı işaretli açılır. Bilgilendirme notundan DAHA GÖRÜNÜR
    olmalı - kullanıcı adına verilmiş bir karar var ve geri alınabilir

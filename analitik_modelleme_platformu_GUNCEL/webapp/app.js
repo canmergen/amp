@@ -6119,7 +6119,7 @@ function dogrulamaKartiEkle(alan, blok) {
            Arka uc artik yalnizca tanimsiz["not"] gonderiyor. */
         if (tanimsiz["not"]) {
             const nt = document.createElement("div");
-            nt.className = "dg-not";
+            nt.className = "dg-not dg-cizgisiz";
             nt.textContent = tireSade(tanimsiz["not"]);
             kart.appendChild(nt);
         }
@@ -6128,7 +6128,7 @@ function dogrulamaKartiEkle(alan, blok) {
            kullanıcı SEBEBİNİ de okusun. */
         if (tanimsiz.zorunlu_not) {
             const zn = document.createElement("div");
-            zn.className = "dg-not dg-zorunlu-not";
+            zn.className = "dg-not dg-zorunlu-not dg-cizgisiz";
             zn.textContent = tireSade(tanimsiz.zorunlu_not);
             kart.appendChild(zn);
         }
