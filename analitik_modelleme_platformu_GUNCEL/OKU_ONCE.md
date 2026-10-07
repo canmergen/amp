@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklamada özne sorunu istemde çözüldü; kod artık özne silmiyor**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **İş akışında alt adımlar üst adımla aynı boyutta**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- 01.2.1, 01.2.2 ... satırları 12 px'ti, üst satırlar (01.1, 01.2 ...)
+  13,5 px. Hepsi 13,5 px; kademe girinti ve sol çizgiyle anlaşılır.
+- Gelinmemiş alt adımlar, içinde bulunulan grup satırının kalınlığını
+  miras alıp kalın görünüyordu; gelinmemiş üst adımlar ise normaldi.
+  Gelinmemiş her adım artık normal kalınlıkta; tamamlanan ve çalışan
+  adım kalın (değişmedi).
+
+Önceki tur: **Açıklamada özne sorunu istemde çözüldü; kod artık özne silmiyor**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Sorunun kaynağı istemin kendisiydi: kimlik kolonu kuralı birim
   çıkmayınca "veri setinin anlattığı kaydın tekil kimliği olarak yaz"

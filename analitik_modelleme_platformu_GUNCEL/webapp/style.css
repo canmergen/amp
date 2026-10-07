@@ -640,7 +640,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .faz-adimlar li {
   display: flex; align-items: center; gap: var(--b-2);
   padding: 4px 5px; border-radius: var(--r-kucuk);
-  font-size: var(--fs-govde); color: var(--metin); cursor: default;
+  font-size: var(--fs-govde); font-weight: var(--fw-normal); color: var(--metin); cursor: default;
 }
 .adim-isaret {
   flex-shrink: 0; width: 11px; height: 11px;
@@ -684,14 +684,16 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 }
 
 /* Grup satırının alt adımları (01.2.1, 01.2.2 ...): grup satırının
-   altında, aynı işaret ve renk kurallarıyla, bir kademe içeride. */
+   altında, aynı işaret ve renk kurallarıyla, bir kademe içeride.
+   Yazı boyutu üst satırla AYNI (gövde); kademe girinti ve çizgiyle
+   anlaşılır, küçük punto ile değil. */
 .faz-adimlar li.grup-satir { flex-wrap: wrap; }
 .faz-adimlar li.grup-satir:hover { background: none; }
 .faz-alt-adimlar {
   list-style: none; flex: 1 0 100%; margin: 3px 0 0 5px;
   padding: 0 0 0 var(--b-3); border-left: 1px solid var(--kenar);
 }
-.faz-alt-adimlar li { font-size: var(--fs-kucuk); padding: 3px 5px; }
+.faz-alt-adimlar li { padding: 3px 5px; }
 
 /* ==================== ORTA: ÇALIŞMA ALANI ==================== */
 #sohbet-alani {
