@@ -2990,6 +2990,13 @@ span.bolme-cip { cursor: default; }
 .dg-tablo tr.dg-hafiza-renk .dg-giris { background: transparent; }
 .dg-l-hafiza { background: var(--dg-hafiza); }
 .dg-rol.dg-hafiza { background: var(--dg-hafiza); color: var(--metin); }
+/* Kısaltma Sözlüğü: sayı değerli parçanın ailesi (H00, H00_06) harf
+   kısmının (H) satırının altında girintili; başında ağaç çizgisi. */
+.dg-alt-satir .dg-anlam-kap { position: relative; padding-left: 22px; }
+.dg-alt-satir .dg-anlam-kap::before {
+  content: ""; position: absolute; left: 6px; top: 0; height: 50%; width: 10px;
+  border-left: 1px solid var(--kenar-guclu); border-bottom: 1px solid var(--kenar-guclu);
+}
 /* Önerilen açıklamada kural dışı ifade: rol çiplerinden ayrılsın diye
    zeminsiz, amber çerçeveli; nedeni ipucunda. */
 .dg-rol.dg-uyari { background: transparent; color: var(--amber); border: 1px solid var(--amber); cursor: help; }

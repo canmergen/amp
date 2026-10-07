@@ -7210,7 +7210,9 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     function satirCiz(r) {
         /* Okuma sürerken de düzenlenebilir; onay okuma bitince. */
         const calisiyor = false;
-        const tr = elYap("tr", "dg-satir");
+        /* Sayı değerli parçanın ailesi (H00, H00_06): harf kısmının (H)
+           satırının altında girintili. */
+        const tr = elYap("tr", "dg-satir" + (r.ust ? " dg-alt-satir" : ""));
         const dz = duzen[r.anahtar] || null;
         const mevcut = (r.kisaltmalar || []).map(k => k.kisaltma);
         /* ANLAM: tanımdan okunan ifade; düzenlenebilir. Okuma örnekleri,

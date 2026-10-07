@@ -1,6 +1,22 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Yazı ölçeği iki boyuta indi: metin 13,5 px, başlık 15 px**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Kısaltma Sözlüğü: sayı değerli parçanın harf kısmı ve aralıklı hâli de satır**. Değiştir: `fe_agent/kisaltma_okuma.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Kolon adında 1-2 harf + en az 2 rakamdan oluşan bir parça (<K><NN>)
+  varsa "Sözlükte Karşılığı Bulunamayan Parçalar" bölümünde üç düzey
+  görünür: harf kısmı <K> (üst satır), <K><NN> ve ardından yalnız
+  rakamdan oluşan parça geliyorsa aralıklı hâl <K><NN>_<MM>. Üyeler <K>
+  satırının hemen altında, adlarına göre sıralı ve girintili (ağaç
+  çizgisiyle). Önceden yalnız <K><NN> görünüyordu; aralığın ikinci
+  sayısı yalnız rakam olduğu için atlanıyordu.
+- Her satır ayrı anlam ve ayrı önerilen kısaltma alır. Önerilen
+  kısaltma yazılırsa yeni adlarda en uzun eşleşme önce uygulanır:
+  <K><NN>_<MM> için yazılan, aynı kolonda <K><NN> için yazılandan
+  önce gelir.
+- Sözlükten anlamı okunmuş üye (Sözlükten Okunan Anlamlar bölümünde)
+  tekrar eklenmez.
+
+Önceki tur: **Yazı ölçeği iki boyuta indi: metin 13,5 px, başlık 15 px**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Açıklama, not, ipucu, alan etiketi, rozet, çip, tablo başlığı, buton,
   lejant: hepsi 13,5 px. Önceki 12 px'lik "küçük" boyut kaldırıldı

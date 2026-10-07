@@ -46,6 +46,11 @@ KALIP_ADET = 20           # ADLANDIRMA KALIBI'na giden en sik kisaltma
 _PARCA = re.compile(r"[A-Za-z0-9ÇĞİÖŞÜçğıöşü]+")
 _KELIME = re.compile(r"[0-9A-Za-zÇĞİÖŞÜçğıöşü]+")
 _AD_KALIP = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+# SAYI DEGERLI PARCA AILESI: 1-2 harf + en az 2 rakam (<K><NN>), ardindan
+# yalniz rakamdan olusan parca gelirse aralik (<K><NN>_<MM>). Kartta harf
+# kismi <K> ust satir, <K><NN> ve <K><NN>_<MM> onun altinda girintili.
+_SAYILI = re.compile(r"^([A-Z]{1,2})(\d{2,})$")
+_YALIN_SAYI = re.compile(r"^\d+$")
 
 _KILIT = threading.Lock()
 _SONUC = {}               # (kolon, tanim_ozeti) -> {"g": [[parca, ifade, bas, son]], "y": [[ifade, sonra]]}
@@ -500,12 +505,26 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
     # (tek basina anlami bilinmiyor) burada. Anlam hafizadan, isaretli.
     adlar = sorted(set(map(str, tum_adlar or ())) | set(girdi))
     say = Counter()
+    aile = {}                   # harf kismi -> {uye kisaltma}
     for ad in adlar:
         toklar = [_ust(x) for x in parcalar(ad)]
         kapsanan = set()
         for _p, _a, bas, son in (esleme.get(ad) or {}).get("g") or []:
             kapsanan.update(range(bas, son + 1))
-        for p in {t for i, t in enumerate(toklar) if i not in kapsanan}:
+        gorulen = {t for i, t in enumerate(toklar) if i not in kapsanan}
+        # Sayi degerli parcanin ailesi: harf kismi (<K>) ve aralikli hali
+        # (<K><NN>_<MM>) da ayri satir; sozlukte okunmus olan eklenmez.
+        for i, t in enumerate(toklar):
+            m = _SAYILI.match(t)
+            if not m:
+                continue
+            uyeler = [t]
+            if i + 1 < len(toklar) and _YALIN_SAYI.match(toklar[i + 1]):
+                uyeler.append(t + "_" + toklar[i + 1])
+                gorulen.add(uyeler[-1])
+            gorulen.add(m.group(1))
+            aile.setdefault(m.group(1), set()).update(uyeler)
+        for p in gorulen:
             if not p.isdigit() and p not in kisa_anlam:
                 say[p] += 1
     for p, n in say.items():
@@ -534,11 +553,37 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
                                  not s["kisaltmalar"],
                                  -sum(k["kolon"] for k in s["kisaltmalar"]) - s["adda_yok"],
                                  s["anlam"]))
+    satirlar = _aileleri_diz(satirlar, aile)
     ilke = ad_ilkesi()
     _onerileri_uygula(satirlar, dil, standart, onay, ilke["turler"])
     return {"satirlar": satirlar, "esleme": esleme, "okunan": len(esleme),
             "tanimli": len(girdi), "dil": dil, "kalip": kalip,
             "ad_kalibi": ilke["kalip"]}
+
+
+def _aileleri_diz(satirlar, aile):
+    """Karsiligi bulunamayan sayi degerli parcalar (<K><NN>, <K><NN>_<MM>)
+    harf kismi <K>'nin satirinin hemen altina, adlarina gore sirali dizilir
+    ve "ust" alani <K> satirinin anahtarini tasir. <K> satiri yoksa (harf
+    kismi sozlukte okunmus) uyeler kendi sirasinda kalir."""
+    bul = {s["anahtar"]: s for s in satirlar if s["bolum"] == "bulunamadi"}
+    alt = {}
+    for k, uyeler in aile.items():
+        if "?" + k not in bul:
+            continue
+        cocuk = sorted((bul["?" + u] for u in uyeler if "?" + u in bul),
+                       key=lambda s: s["kisaltmalar"][0]["kisaltma"])
+        for s in cocuk:
+            s["ust"] = "?" + k
+        alt["?" + k] = cocuk
+    tasinan = {s["anahtar"] for c in alt.values() for s in c}
+    cikti = []
+    for s in satirlar:
+        if s["anahtar"] in tasinan:
+            continue
+        cikti.append(s)
+        cikti.extend(alt.get(s["anahtar"], []))
+    return cikti
 
 
 def _onerileri_uygula(satirlar, dil, standart, onay, turler=None):
