@@ -1,6 +1,14 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Ürün adı ve birim adı üst bara döndü; sağ altta yalnız logo görseli**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Logo üst bara geri döndü; sağ alt köşedeki blok kaldırıldı**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Üst barın solu eski hâlinde: logo, ince ayraç, "Akıllı Modelleme
+  Platformu" ve birim adı. Sağ alt köşedeki sabit blok ve ona yer
+  bırakan boşluklar kaldırıldı; sohbet kutusu yine tam genişlikte.
+- Sağ bloğun şeridi, aç/kapa sembolü, SONUÇLAR sekmesi ve SFA'da
+  kendiliğinden açılma aynen duruyor.
+
+Önceki tur: **Ürün adı ve birim adı üst bara döndü; sağ altta yalnız logo görseli**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - "Akıllı Modelleme Platformu" ve birim adı üst barın solunda duruyor.
 - Sağ alt köşede sabit duran yalnız logo görseli; sohbet kutusu onun

@@ -4465,35 +4465,6 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
     }
 }
 
-/* ==================== İmza (sağ alt köşedeki logo bloğu) ====================
-   Blok sabit duruyor (style.css: #imza). Sohbet kutusu, bloğun sağ blok
-   dışına taşan kısmı kadar sağdan boşluk bırakır: sağ blok dar şeritteyken
-   bu taşma büyür, genişken çoğu zaman sıfırdır. Taşma burada ölçülüp
-   --imza-tasma'ya yazılıyor; blok ya da sağ blok boyut değiştirdikçe
-   (açılıp kapanma, sürükleme, pencere, logo yüklenmesi) tazeleniyor. */
-const imzaEl = document.getElementById("imza");
-let imzaKare = 0;
-function imzaYerAc() {
-    if (imzaKare) return;
-    imzaKare = requestAnimationFrame(() => {
-        imzaKare = 0;
-        if (!imzaEl) return;
-        const imzaEn = Math.round(imzaEl.getBoundingClientRect().width);
-        /* Çekmece düzeninde (dar ekran) sağ blok akışta yer kaplamıyor. */
-        const panelEn = analizPanel && getComputedStyle(analizPanel).position !== "fixed"
-            ? Math.round(analizPanel.getBoundingClientRect().width) : 0;
-        kabukEl.style.setProperty("--imza-en", imzaEn + "px");
-        kabukEl.style.setProperty("--imza-tasma", Math.max(0, imzaEn - panelEn) + "px");
-    });
-}
-if (imzaEl && typeof ResizeObserver !== "undefined") {
-    const izle = new ResizeObserver(imzaYerAc);
-    izle.observe(imzaEl);
-    if (analizPanel) izle.observe(analizPanel);
-}
-window.addEventListener("resize", imzaYerAc);
-imzaYerAc();
-
 /* Şeridin üstündeki tek aç/kapa düğmesi: kapalıyken son açık sekmeyle
    açar, açıkken kapatır. Dar ekranda (çekmece) kapatmak çekmeceyi
    kapatmak demek. */
