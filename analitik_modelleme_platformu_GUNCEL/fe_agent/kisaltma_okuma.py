@@ -42,6 +42,8 @@ OKUMA_PARALEL = 6         # ayni anda calisan okuma cagrisi (model sunucusu
 ONERI_PARCA = 40          # standart onerisinde tek cagridaki anlam
 ORNEK_ADET = 3            # satirin "i"sinde gosterilen ornek kolon
 KALIP_ADET = 20           # ADLANDIRMA KALIBI'na giden en sik kisaltma
+BASKIN_ORAN = 3           # capraz kontrol: bir parca baska anlamla en az bu
+                          # kat daha cok kolonda eslenmisse azinlik eslemesi duser
 
 _PARCA = re.compile(r"[A-Za-z0-9ÇĞİÖŞÜçğıöşü]+")
 _KELIME = re.compile(r"[0-9A-Za-zÇĞİÖŞÜçğıöşü]+")
@@ -449,19 +451,39 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
         r = _SONUC.get((ad, _ozet(tanim)))
         for parca, ifade, _b, _s in (r or {}).get("g") or []:
             genel_say[(parca, anahtar(ifade))] += 1
+    secilen = {}                # kolon -> {anlam: kalan parca}
+    for ad, tanim in girdi.items():
+        r = _SONUC.get((ad, _ozet(tanim)))
+        en_iyi = {}
+        for parca, ifade, _b, _s in (r or {}).get("g") or []:
+            a = anahtar(ifade)
+            if a and genel_say[(parca, a)] > genel_say[(en_iyi.get(a), a)]:
+                en_iyi[a] = parca
+        secilen[ad] = en_iyi
+    # CAPRAZ KONTROL: ayni parca sozlugun genelinde baska bir anlamla en az
+    # BASKIN_ORAN kat daha cok kolonda eslenmisse, azinlikta kalan esleme
+    # okuma hatasi sayilir ve duser (satirin "i"sinde yazar). Oranlar
+    # birbirine yakinsa parca gercekten iki anlamlidir; ikisi de kalir ve
+    # "baska anlamda da kullaniliyor" notu cikar.
+    temiz = Counter((p, a) for en_iyi in secilen.values() for a, p in en_iyi.items())
+    parca_anlam = {}
+    for (p, a), n in temiz.items():
+        parca_anlam.setdefault(p, Counter())[a] = n
+    dusen = {}                  # (parca, anlam) -> (kolon sayisi, baskin anlam)
+    for p, c in parca_anlam.items():
+        baskin, nb = c.most_common(1)[0]
+        for a, n in c.items():
+            if a != baskin and nb >= BASKIN_ORAN * n:
+                dusen[(p, a)] = (n, baskin)
     for ad, tanim in sorted(girdi.items()):
         r = _SONUC.get((ad, _ozet(tanim)))
         if r is None:
             continue
         e = {"g": [], "y": []}
-        en_iyi = {}
-        for parca, ifade, _b, _s in r.get("g") or []:
-            a = anahtar(ifade)
-            if a and genel_say[(parca, a)] > genel_say[(en_iyi.get(a), a)]:
-                en_iyi[a] = parca
+        en_iyi = secilen.get(ad) or {}
         for parca, ifade, bas, son in r.get("g") or []:
             a = anahtar(ifade)
-            if not a or en_iyi.get(a) != parca:
+            if not a or en_iyi.get(a) != parca or (parca, a) in dusen:
                 continue
             s = satir.setdefault(a, {"ifade": Counter(), "kisa": {}, "adda_yok": 0,
                                      "ornek": []})
@@ -507,10 +529,13 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
             baska = [b for b in kisa_anlam.get(kisa, {}) if b != a]
             if baska:
                 cok[kisa] = [anlam_adi[b] for b in baska]
+        cikan = [{"kisaltma": p_, "kolon": n_, "anlam": anlam_adi.get(b_, b_)}
+                 for (p_, a_), (n_, b_) in sorted(dusen.items()) if a_ == a]
         satirlar.append({
             "anahtar": a, "anlam": anlam_adi[a], "bolum": "sozluk", "kaynak": "sozluk",
             "kisaltmalar": [{"kisaltma": k, "kolon": len(v)} for k, v in kisalar],
-            "adda_yok": s["adda_yok"], "cok_anlamli": cok, "ornekler": s["ornek"]})
+            "adda_yok": s["adda_yok"], "cok_anlamli": cok, "ornekler": s["ornek"],
+            "cikarilan": cikan})
 
     # SOZLUKTE KARSILIGI BULUNAMAYAN PARCALAR: bir kolonun adinda o
     # kolonun eslemesinin kapsamadigi (tanimsiz kolonda hepsi) ve hicbir

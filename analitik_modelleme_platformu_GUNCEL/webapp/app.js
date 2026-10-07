@@ -7235,6 +7235,11 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             notlar.push(k + " başka anlamda da kullanılıyor: " + r.cok_anlamli[k].join(", ")
                         + ". Kolon adları tek anlamlı olsun diye bu anlama farklı kısaltma önerilir.");
         });
+        (r.cikarilan || []).forEach(c => {
+            notlar.push(c.kisaltma + " " + ftBinlik(c.kolon) + " kolonda bu anlama eşlenmişti; "
+                        + "sözlüğün genelinde çok daha sık \"" + c.anlam + "\" anlamında "
+                        + "kullanıldığı için okuma hatası sayıldı ve bu satırdan çıkarıldı.");
+        });
         if (r.adda_yok)
             notlar.push(ftBinlik(r.adda_yok) + " kolonun tanımında geçiyor, adında karşılığı yok. "
                         + "Seçilirse kısaltması bu kolonların adına tanımdaki sırasıyla eklenir.");

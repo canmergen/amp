@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü sadeleşti: okuma sürerken tablo kapalı, ad kalıbı sabit, yönerge, okuma kontrolü**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma_okuma.py`, `fe_agent/llm.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü: çapraz kontrol**. Değiştir: `fe_agent/kisaltma_okuma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Bir parça sözlüğün genelinde bir anlamla, başka bir anlamla
+  eşlendiğinden en az 3 kat daha çok kolonda eşlenmişse azınlıktaki
+  eşleme okuma hatası sayılır ve düşer (örnek: bir parça 30 kolonda A,
+  2 kolonda B anlamına okunmuşsa B satırından çıkar). Hangi parçanın
+  kaç kolonda çıkarıldığı ve neden, satırın "i"sinde yazar.
+- Oranlar yakınsa (3 kattan az) parça gerçekten iki anlamlı sayılır;
+  ikisi de kalır ve "başka anlamda da kullanılıyor" notu çıkar.
+- Sıra: önce aynı kolonda aynı anlama eşlenen iki parçadan biri elenir,
+  sonra çapraz kontrol temizlenmiş sayılarla yapılır.
+
+Önceki tur: **Kısaltma Sözlüğü sadeleşti: okuma sürerken tablo kapalı, ad kalıbı sabit, yönerge, okuma kontrolü**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/kisaltma_okuma.py`, `fe_agent/llm.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Okuma (ve kısaltma önerileri) sürerken tablo gösterilmez; yalnız
   ilerleme satırı ve "şu ana kadar N anlam okundu; M parçanın sözlükte
