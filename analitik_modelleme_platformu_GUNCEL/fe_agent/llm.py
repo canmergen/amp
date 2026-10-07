@@ -427,8 +427,15 @@ celisirse icerige uy.
 DOGRULA (yazmadan once her iddiayi kolonun bilgileriyle kontrol et):
   - KONU: aciklamadaki birim (musteri, hesap, islem, kayit ...) yalniz
     kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
-    cikiyorsa yazilir; cikmiyorsa birim UYDURMA, VERI SETI adinin
-    anlattigi kaydi ya da genel bir ifade kullan.
+    cikiyorsa yazilir; cikmiyorsa birim UYDURMA, genel bir ifade kullan
+    ("kayit", "islem").
+  - VERI SETI ADINI YAZMA: ad yalniz tablonun konusunu anlamak icindir;
+    aciklamada ne ham hali ne cozulmus / bosluklu hali gecer. Tanim veri
+    setinden bagimsiz okunmali ("X tablosundaki kaydin ..." degil,
+    "Kaydin ...").
+  - KESINLIK / TAHMIN SOZCUGU YAZMA: "muhtemelen", "buyuk olasilikla",
+    "kesinlikle", "belki", "tahminen", "sanirim" gibi sozcukler tanimda
+    yer almaz; tanim duz cumle olur. Emin olmadigin ayrintiyi yazma.
   - ISTATISTIK YALNIZ CIKARIM ICIN: dagilim, tekil sayisi ve satir
     sayisindan kolonun NE oldugunu cikar (adet, tutar, oran, bayrak,
     kimlik, sira numarasi, kod ...) ama bu sayilari ACIKLAMAYA YAZMA:
@@ -452,15 +459,16 @@ Her kolon icin:
              gun ...); zaman penceresi; degerlerin anlami (bayrakta 1,
              kodlarda siniflar, kimlik / sira numarasi oldugu). Kolon
              adini tekrar etme; ne olctugunu anlat. Adindan ve
-             iceriginden kesin cikmiyorsa "muhtemelen" ile yaz;
-             uydurma ayrinti ekleme.
+             iceriginden kesin cikmayan ayrintiyi yazma; uydurma
+             ayrinti ekleme.
   kategori : sunlardan biri: kimlik, demografi, gelir, bakiye, islem,
              gecikme, urun, kanal, davranis, zaman, hedef, diger
 
 ORNEK TANIMLAR verilirse (kurumun kendi sozlugundeki, adi benzeyen
 kolonlar): yazim tarzina, cumle yapisina ve kolon adlarindaki
 kisaltmalarin ve pencerelerin anlamina UY. Ornekleri kopyalama; her kolonu kendi adi ve
-dagilimina gore yaz. VERI SETI adi verilirse tablonun konusunu ondan da cikar.
+dagilimina gore yaz. VERI SETI adi verilirse tablonun konusunu ondan da cikar;
+adi aciklamaya yazma.
 
 ONAYLI TANIMLAR verilirse (kullanicilarin daha once onayladigi tanimlar):
 bunlar en guvenilir kaynaktir. AYNI ADLI kolon varsa o tanimi esas al;
@@ -723,6 +731,47 @@ def istatistik_temizle(metin):
     return sonuc
 
 
+# Kesinlik / tahmin sozcukleri: tanimda yer almaz (istem de yasakliyor;
+# model yine yazarsa burada atilir).
+_TAHMIN_SOZ = re.compile(
+    r"\b(?:muhtemelen|b[üu]y[üu]k\s+(?:olas[ıi]l[ıi]kla|ihtimalle)|"
+    r"y[üu]ksek\s+(?:olas[ıi]l[ıi]kla|ihtimalle)|olas[ıi]l[ıi]kla|"
+    r"kesinlikle|belki\s+de|belki|tahminen|san[ıi]r[ıi]m|galiba)\b[,]?\s*",
+    re.I)
+
+
+def _veri_seti_deseni(veri_seti):
+    """Veri seti adinin aciklamada gecebilecek hallerini yakalayan desen:
+    ham ("AD_PARCA_PARCA") ve cozulmus ("Ad Parca Parca") hali, sonundaki
+    ek ("'nin", "'daki") dahil. Ad 3 harften kisaysa None (yanlis eslesme)."""
+    parca = [x for x in re.split(r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+", str(veri_seti or "")) if x]
+    if not parca or len("".join(parca)) < 3:
+        return None
+    govde = r"[\s_\-]*".join(re.escape(x) for x in parca)
+    return re.compile(r"\b" + govde + r"(?:['’][^\s,.;]*)?\b\s*", re.I)
+
+
+def aciklama_temizle(metin, veri_seti=None):
+    """Onerilen aciklamanin son kontrolu (dil modeli cagrisi yok):
+      1) istatistik iceren parcalar atilir (istatistik_temizle),
+      2) veri seti adi (ham ya da cozulmus) atilir,
+      3) kesinlik / tahmin sozcukleri ("muhtemelen", "kesinlikle" ...) atilir.
+    Bas harf buyutulur. Temizlik metni bosaltirsa ilk adimin sonucu kalir."""
+    m = istatistik_temizle(metin)
+    t = m
+    desen = _veri_seti_deseni(veri_seti)
+    if desen:
+        t = desen.sub("", t)
+    t = _TAHMIN_SOZ.sub("", t)
+    t = re.sub(r"\s+", " ", t).strip(" ,;")
+    t = re.sub(r"\s+([,.;])", r"\1", t)
+    if len(t.split()) < 2:
+        return m
+    if t[:1].islower():
+        t = _tr_buyuk(t[:1]) + t[1:]
+    return t
+
+
 def tarza_uydur(metin, tarz):
     """Olculebilen tarz kurallarini metne uygular (nokta, bas harf)."""
     m = re.sub(r"\s+", " ", str(metin or "")).strip()
@@ -807,7 +856,8 @@ def sozluk_aciklama_uret(profiller, parca=40, kategoriler=None, baglam=None,
                 continue
             kategori = str(k.get("kategori", "")).strip().lower()
             sonuc[ad] = {
-                "aciklama": istatistik_temizle(str(k.get("aciklama", "")).strip())[:300],
+                "aciklama": aciklama_temizle(str(k.get("aciklama", "")).strip(),
+                                             (baglam or {}).get("veri_seti"))[:300],
                 "kategori": kategori if kategori in izinli else yedek_kategori,
             }
 
@@ -1012,7 +1062,10 @@ DOGRULA:
   - KONU: aciklamadaki birim (musteri, hesap, islem, kayit ...) yalniz
     kolon adindan, VERI SETI adindan ya da ornek / onayli tanimlardan
     cikiyorsa yazilir. Cikmiyorsa adaylar ne derse desin o birimi YAZMA;
-    VERI SETI adinin anlattigi kaydi ya da genel bir ifade kullan.
+    genel bir ifade kullan ("kayit", "islem").
+  - VERI SETI ADINI YAZMA (ham ya da cozulmus hali); adaylarda varsa at.
+  - KESINLIK / TAHMIN SOZCUGU YAZMA ("muhtemelen", "buyuk olasilikla",
+    "kesinlikle", "belki", "tahminen"); adaylarda varsa at.
   - ISTATISTIK YALNIZ CIKARIM ICIN: dagilimdan kolonun ne oldugunu
     cikar ama sayilari (deger araligi, tekil / satir sayisi, "cogunlukla
     0", "degerler tekrar eder") aciklamaya YAZMA; adaylarda varsa at.
@@ -1031,7 +1084,7 @@ Sonra en dogru aciklamayi sec ya da adaylari birlestirerek yaz:
     kimlik / sira numarasi). Tanim, kolonu ve veriyi gormeyen birinin
     (dil modeli dahil) dogru kullanabilecegi kadar acik olsun
   - bir ya da iki cumle (en cok ~200 karakter), Turkce, kolon adini
-    tekrar etme; kesin degilse "muhtemelen" ile
+    tekrar etme; emin olmadigin ayrintiyi yazma
 
 CIKTI KURALI: Cevabin SADECE su JSON olsun. Muhakeme YAZMA.
 {"kolonlar": [{"ad": "...", "aciklama": "..."}]}""" + AD_KALIP_KURALI \
@@ -1173,7 +1226,8 @@ def aciklama_orkestra(profiller, baglam=None, orkestra=None):
         secilen = {}
         for k in (veri.get("kolonlar") or []):
             if isinstance(k, dict) and str(k.get("aciklama") or "").strip():
-                secilen[str(k.get("ad"))] = istatistik_temizle(str(k["aciklama"]).strip())[:300]
+                secilen[str(k.get("ad"))] = aciklama_temizle(
+                    str(k["aciklama"]).strip(), (baglam or {}).get("veri_seti"))[:300]
         for p in tartisma:
             liste = adaylar[p["ad"]]
             if p["ad"] in secilen:

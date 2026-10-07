@@ -1,6 +1,18 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Sol panel biraz genişledi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Açıklama önerilerinde veri seti adı ve "muhtemelen / kesinlikle" gibi sözcükler yok**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Yazar (ve hakem) istemi: veri seti adı yalnız konuyu anlamak için
+  kullanılır, açıklamaya yazılmaz (ham ya da çözülmüş hâli). Kesinlik /
+  tahmin sözcükleri ("muhtemelen", "büyük olasılıkla", "kesinlikle",
+  "belki", "tahminen", "sanırım") yazılmaz; emin olunmayan ayrıntı hiç
+  yazılmaz. Eski "kesin değilse muhtemelen ile yaz" kuralı kalktı.
+- Kod son kontrolü (`llm.aciklama_temizle`): model yine yazarsa veri seti
+  adı (eki dahil, ör. "…'ndeki") ve bu sözcükler atılır, baş harf
+  büyütülür. İstatistik temizliği (`istatistik_temizle`) aynen sürüyor.
+- Önceden üretilmiş öneriler değişmez; yeni üretilenlerde geçerli.
+
+Önceki tur: **Sol panel biraz genişledi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Sol panel (Analitik Süreç + İş Akışı) ekranın %27'si, 250-400 px
   arası (önce %24, 224-330 px). 1440 px ekranda ~330 → ~389 px; sohbet
