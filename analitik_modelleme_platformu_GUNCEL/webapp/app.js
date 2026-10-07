@@ -7206,8 +7206,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     }
 
     function satirCiz(r) {
-        /* Okuma sürerken de düzenlenebilir; onay okuma bitince. */
-        const calisiyor = false;
+        /* Okuma sürerken tablo görünür ama KİLİTLİ: izlenir, dokunulmaz. */
+        const calisiyor = ka.dm === "calisiyor";
         /* Sayı değerli parçanın ailesi (H00, H00_06): harf kısmının (H)
            satırının altında girintili. */
         const tr = elYap("tr", "dg-satir" + (r.ust ? " dg-alt-satir" : ""));
@@ -7391,12 +7391,13 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             soz.forEach(satirCiz);
         }
         const ozet = ka.ozet || {};
-        /* OKUMA SÜRERKEN TABLO KAPALI: her pakette sayılar ve sıra
-           değişiyordu; tablo okuma (ve öneriler) bitince açılır. O sırada
-           yalnız ilerleme ve şu ana kadar bulunanların sayısı görünür. */
+        /* OKUMA SÜRERKEN TABLO GÖRÜNÜR AMA KİLİTLİ: her pakette sayılar
+           güncellenir; satırlar okuma (ve öneriler) bitince düzenlenir. */
         const okunuyor = ka.dm === "calisiyor";
+        topluBtn.forEach(b => { b.disabled = kilitli || okunuyor; });
         durumEl.textContent = okunuyor
-            ? "Tablo okuma bitince açılır. Şu ana kadar " + ftBinlik(soz.length)
+            ? "Okuma sürüyor: tablo her pakette güncellenir, okuma bitince "
+              + "düzenlenebilir. Şu ana kadar " + ftBinlik(soz.length)
               + " anlam okundu; " + ftBinlik(bul.length)
               + " parçanın sözlükte karşılığı bulunamadı."
             : [(liste || []).length ? ""
@@ -7404,8 +7405,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                ka.not ? tireSade(ka.not) : ""].filter(Boolean).join(" ");
         durumEl.hidden = !durumEl.textContent;
         ilerYaz();
-        sar.hidden = ust.hidden = okunuyor || !(liste || []).length;
-        kalipEl.hidden = okunuyor;
+        sar.hidden = ust.hidden = !(liste || []).length;
         if (ozet.tanimli) kbas.title = ftBinlik(ozet.okunan || 0) + " / " + ftBinlik(ozet.tanimli)
             + " tanımlı kolon okundu" + (ozet.dil ? " · adlandırma dili: " + ozet.dil : "");
     }

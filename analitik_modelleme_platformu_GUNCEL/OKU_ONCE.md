@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü: çapraz kontrol**. Değiştir: `fe_agent/kisaltma_okuma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Kısaltma Sözlüğü: okuma sürerken tablo görünür ama kilitli**. Değiştir: `webapp/app.js`, `fe_agent/akis_faz01.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Önceki turda okuma sürerken tablo gizleniyordu; artık görünür ve her
+  pakette güncellenir, ama anlam, tür, önerilen kısaltma, seç kutuları
+  ve Tümünü Seç / Temizle kilitlidir. Okuma (ve öneriler) bitince
+  hepsi açılır. Tablonun altında "okuma sürüyor; N anlam okundu, M
+  parçanın karşılığı bulunamadı" yazar. "i" ipuçları okuma sırasında da
+  açılır.
+- Yönergenin ilk maddesi buna göre güncellendi.
+
+Önceki tur: **Kısaltma Sözlüğü: çapraz kontrol**. Değiştir: `fe_agent/kisaltma_okuma.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Bir parça sözlüğün genelinde bir anlamla, başka bir anlamla
   eşlendiğinden en az 3 kat daha çok kolonda eşlenmişse azınlıktaki

@@ -1489,7 +1489,8 @@ KISALTMA_KALIP_BILGI = (
     "olarak gelir.")
 # Kartin ustunde: ne yapilacagi uc adimda.
 KISALTMA_YONERGE = [
-    "Tanımlar okunurken bekleyin; tablo okuma bitince açılır.",
+    "Tanımlar okunurken tablo güncellenir ve kilitlidir; okuma bitince "
+    "düzenlenebilir.",
     "Her satırda anlamı kontrol edin; gerekiyorsa düzeltin. Sözlükte "
     "karşılığı bulunamayan parçaların anlamını siz yazın.",
     "Bir anlam için tek kısaltma kullanılsın istiyorsanız Önerilen "
