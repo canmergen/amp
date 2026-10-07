@@ -1,6 +1,16 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü iki ayrı tabloda**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Kısaltma Sözlüğü: iki tablo hep görünür, geçişler canlı**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- İki tablo okuma başladığı andan itibaren birlikte görünür; boş olan
+  tablo gizlenmez, "Henüz yok." / "Okunuyor…" yazar. Önceden boş tablo
+  gizlendiği için biri dolmadan diğeri görünmüyordu.
+- Her yoklamada (3 sn) tabloya yeni giren satır yaklaşık 2,5 sn yeşil
+  vurgulanır (solunda yeşil çizgi). Bir parçanın anlamı okununca üst
+  tablodan çıkıp alt tabloda vurgulu belirdiği görülür. İlk çizimde
+  vurgu yok.
+
+Önceki tur: **Kısaltma Sözlüğü iki ayrı tabloda**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - "Sözlükte Karşılığı Bulunamayan Parçalar" ve "Sözlükten Okunan
   Anlamlar" artık iki ayrı tablo; her birinin başlığı, sütun başlıkları

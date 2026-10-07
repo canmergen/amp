@@ -3091,7 +3091,16 @@ span.bolme-cip { cursor: default; }
   display: flex; align-items: center; gap: 4px;
   font-weight: var(--fw-kalin); color: var(--metin); margin: 0 0 var(--b-1);
 }
-.dg-kisa-sar { max-height: 300px; margin-bottom: 0; }
+.dg-kisa-sar { max-height: 280px; margin-bottom: 0; }
+.dg-tablo tr.dg-bos-tablo > td { color: var(--metin-soluk); text-align: center; padding: var(--b-3); }
+/* Tabloya yeni giren satır (canlı geçiş): kısa yeşil vurgu. */
+.dg-tablo tr.dg-yeni-gelen > td { animation: dg-yeni-gelen 2.5s ease-out; }
+.dg-tablo tr.dg-yeni-gelen > td:first-child { animation-name: dg-yeni-gelen-ilk; }
+@keyframes dg-yeni-gelen { 0%, 30% { background: var(--yesil-acik); } }
+@keyframes dg-yeni-gelen-ilk {
+  0%, 30% { background: var(--yesil-acik); box-shadow: inset 3px 0 0 var(--yesil); }
+  100% { box-shadow: inset 3px 0 0 transparent; }
+}
 .dg-kisaltma-tablo { table-layout: fixed; }
 /* Bölüm başlığı satırı (Sözlükte Karşılığı Bulunamayan Parçalar ...). */
 .dg-tablo tr.dg-bolum-satir > td {

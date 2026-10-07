@@ -7204,6 +7204,27 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     kart.appendChild(durumEl);
     kart.appendChild(ilerEl);
 
+    /* CANLI GEÇİŞ: bir yoklamadan diğerine tabloya yeni giren satır
+       (ör. anlamı okununca karşılıksızlardan sözlüğe geçen parça) kısa
+       süre vurgulanır. İlk çizimde vurgu yok. */
+    const oncekiAnahtar = { bul: null, soz: null };
+    function yeniGelenleriVurgula(t, ad) {
+        const simdi = new Set();
+        t.tb.querySelectorAll("tr[data-anahtar]").forEach(tr => {
+            simdi.add(tr.dataset.anahtar);
+            if (oncekiAnahtar[ad] && !oncekiAnahtar[ad].has(tr.dataset.anahtar))
+                tr.classList.add("dg-yeni-gelen");
+        });
+        oncekiAnahtar[ad] = simdi;
+    }
+    function bosSatir(t, metin) {
+        const tr = elYap("tr", "dg-bos-tablo");
+        const td = elYap("td", "", metin);
+        td.colSpan = 5;
+        tr.appendChild(td);
+        t.tb.appendChild(tr);
+    }
+
     function basYaz(t, metin, ipucu) {
         t.bas.textContent = metin;
         if (ipucu) t.bas.appendChild(bolmeBilgiSimgesi(ipucu, metin));
@@ -7367,6 +7388,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             });
         });
         const x = { r, g, y, kutu, t: ts };
+        tr.dataset.anahtar = r.anahtar;
         const kaydet = () => { duzenKaydet(x); vurgu(); };
         g.addEventListener("input", kaydet);
         y.addEventListener("input", kaydet);
@@ -7388,6 +7410,12 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         basYaz(tSoz, "Sözlükten Okunan Anlamlar · " + ftBinlik(soz.length), "");
         bul.forEach(r => satirCiz(r, tBul.tb));
         soz.forEach(r => satirCiz(r, tSoz.tb));
+        /* İki tablo HEP görünür (boşken de): okuma sürerken parçaların
+           birinden diğerine geçişi canlı izlenir. */
+        if (!bul.length) bosSatir(tBul, ka.dm === "calisiyor" ? "Henüz yok." : "Karşılığı bulunamayan parça yok.");
+        if (!soz.length) bosSatir(tSoz, ka.dm === "calisiyor" ? "Okunuyor…" : "Sözlükten anlam okunamadı.");
+        yeniGelenleriVurgula(tBul, "bul");
+        yeniGelenleriVurgula(tSoz, "soz");
         const ozet = ka.ozet || {};
         /* OKUMA SÜRERKEN TABLO GÖRÜNÜR AMA KİLİTLİ: her pakette sayılar
            güncellenir; satırlar okuma (ve öneriler) bitince düzenlenir. */
@@ -7401,9 +7429,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                ka.not ? tireSade(ka.not) : ""].filter(Boolean).join(" ");
         durumEl.hidden = !durumEl.textContent;
         ilerYaz();
-        sar.hidden = ust.hidden = !(liste || []).length;
-        tBul.kap.hidden = tBul.kap.hidden || !bul.length;
-        tSoz.kap.hidden = tSoz.kap.hidden || !soz.length;
+        sar.hidden = ust.hidden = !(liste || []).length && ka.dm !== "calisiyor";
         if (ozet.tanimli) kbas.title = ftBinlik(ozet.okunan || 0) + " / " + ftBinlik(ozet.tanimli)
             + " tanımlı kolon okundu" + (ozet.dil ? " · adlandırma dili: " + ozet.dil : "");
     }
