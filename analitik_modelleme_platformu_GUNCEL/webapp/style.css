@@ -149,6 +149,8 @@
   /* Alt sınır --ft-en + gövde
      dolgusu kadar: sözlük tablosu hâlâ kaydırmasız sığıyor. */
   --analiz-en:  clamp(340px, 31vw, 460px);   /* SFA ekranı için hafif genişletildi */
+  --analiz-dar-en: 40px;      /* sağ blok daraltılmış şerit genişliği */
+  --analiz-dar-sekme: 172px;  /* şeritteki her sekmenin boyu: üçü eşit */
   /* Ust bar yuksekligi; logo buna gore olceklenir.
      Olculen ihtiyac 75px; 78px pay
      birakiyor. Dorduncu satiri buyutursen burayi da buyut.
@@ -1893,7 +1895,8 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 /* Sekmeler 3 sutunlu izgara: her genislikte duzenli 2 satir (3 + 3),
    esit genislikte ve ortali. Yeni sekme eklenirse ayni izgaraya oturur. */
 #analiz-sekmeler {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--b-1);
+  /* Son sütun: daraltma düğmesi (#analiz-kapat). */
+  display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: var(--b-1);
   padding: var(--b-4) var(--b-5) var(--b-3);
   border-bottom: 1px solid var(--kenar); background: var(--yuzey);
   flex-shrink: 0;
@@ -1914,6 +1917,59 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
    semantik isaret olarak duruyor. */
 .analiz-sekme.aktif {
   background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
+}
+
+#analiz-kapat {
+  align-self: center; width: 24px; height: 24px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin); cursor: pointer;
+}
+#analiz-kapat:hover { background: var(--kenar-acik); }
+/* Dar ekranda blok zaten çekmece; daraltma düğmesinin işi yok. */
+@media (max-width: 944px) { #analiz-kapat { display: none; } }
+
+/* ==================== SAĞ BLOK: DAR ŞERİT ====================
+   Varsayılan hâl (app.js: analizAcikYaz). Blok yalnız üç sekme adını
+   gösteren ince bir şerittir; içerik gizli, sohbet boşalan yeri
+   kullanır. Ada basınca ya da kararı sağ blokta verilen bir adım
+   gelince (şu an SFA) blok sağdan sola genişleyip --analiz-en'e döner.
+
+   SEKME ADI 90° DÖNÜK DÜZ YAZI: writing-mode: vertical-rl harfleri alt
+   alta dizmez, satırı olduğu gibi saat yönünde çevirir; "VERİ & SÖZLÜK"
+   tek parça okunur. Üç sekme aynı boyda (--analiz-dar-sekme).
+
+   Yalnız geniş ekranda: dar ekranda blok zaten çekmece. */
+@media (min-width: 945px) {
+  #analiz-panel { transition: width .25s ease; }
+  #kabuk.genislik-suruklemede #analiz-panel { transition: none; }
+  #kabuk.analiz-dar #analiz-panel { width: var(--analiz-dar-en); }
+  #kabuk.analiz-dar #analiz-govde,
+  #kabuk.analiz-dar #analiz-alt,
+  #kabuk.analiz-dar #analiz-kapat,
+  #kabuk.analiz-dar #tutamak-sag { display: none; }
+  #kabuk.analiz-dar #analiz-sekmeler {
+    display: flex; flex-direction: column; align-items: stretch;
+    gap: var(--b-2); padding: var(--b-3) 4px;
+    flex: 1; border-bottom: none; background: var(--yuzey-alt);
+  }
+  #kabuk.analiz-dar .analiz-sekme {
+    writing-mode: vertical-rl;
+    flex: 0 0 var(--analiz-dar-sekme); min-height: 0;
+    padding: var(--b-2) 0; white-space: nowrap;
+    border: 1px solid var(--kenar); background: var(--yuzey);
+  }
+  #kabuk.analiz-dar .analiz-sekme:hover {
+    background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
+  }
+  /* Şeritte "aktif" vurgusu yok: içerik kapalıyken seçili görünen bir
+     sekme, açık bir şey varmış izlenimi veriyordu. */
+  #kabuk.analiz-dar .analiz-sekme.aktif {
+    background: var(--yuzey); color: var(--metin-soluk); border-color: var(--kenar);
+  }
+  #kabuk.analiz-dar .analiz-sekme.aktif:hover {
+    background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-halka);
+  }
 }
 
 #analiz-govde { flex: 1; overflow-y: auto; padding: var(--b-4) var(--b-5) var(--b-6); }

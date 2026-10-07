@@ -4400,6 +4400,73 @@ function analizSekmeAc(tab) {
     const panel = document.getElementById("analiz-panel");
     if (panel && getComputedStyle(panel).position === "fixed")
         panel.classList.add("acik");
+    /* Geniş ekranda blok dar şeritteyse genişlesin: sekme açmak isteyen
+       her yol (şerit adı, kart düğmesi, SFA) içeriği görmek istiyor. */
+    analizAcikYaz(true);
+}
+
+/* ==================== Sağ blok: dar şerit / geniş hâl ====================
+   Blok varsayılan olarak DAR ŞERİT: yalnız üç sekmenin adı görünür,
+   sohbet boşalan yeri kullanır (style.css: #kabuk.analiz-dar).
+
+   NE ZAMAN GENİŞLER
+     - Kullanıcı şeritteki bir ada basınca (o sekmede açılır).
+     - Kararı SAĞ BLOKTA verilen bir adım gelince kendiliğinden. Bu
+       adımlar kartın tipiyle tanınıyor: PANELDE_KARAR. Şu an yalnız SFA
+       (değişken kararları Değişken Analizi'nde veriliyor). Kararı
+       sohbetteki kartta verilen adımlar bloğu AÇMAZ: "zırt pırt"
+       açılması istenmedi. Yeni böyle bir adım eklenirse tek satır
+       buraya eklenir.
+
+   NE ZAMAN DARALIR
+     - Kullanıcı açık sekmeye ya da daraltma düğmesine basınca.
+     - Kendiliğinden açıldığı adım geçince (SFA onaylanıp akış ilerleyince).
+
+   Kullanıcı kendiliğinden açılan bloğu kapattıysa AYNI ADIMDA tekrar
+   açılmaz (kapatilanAdim); adı basarak her zaman açabilir.
+
+   Dar ekranda (çekmece düzeni) şerit yok; buradaki sınıf orada etkisiz,
+   çekmece eski davranışıyla çalışır. */
+const PANELDE_KARAR = { sfa_karar: "degisken" };
+const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
+
+function analizAcikYaz(acik) {
+    ANALIZ_DAR.acik = !!acik;
+    kabukEl.classList.toggle("analiz-dar", !ANALIZ_DAR.acik);
+    analizSekme.forEach(s =>
+        s.setAttribute("aria-expanded", ANALIZ_DAR.acik ? "true" : "false"));
+}
+
+function analizDaralt(kullanici) {
+    if (kullanici && ANALIZ_DAR.otoAdim)
+        ANALIZ_DAR.kapatilanAdim = ANALIZ_DAR.otoAdim;
+    analizAcikYaz(false);
+}
+
+/* Her sunucu yanıtında çağrılır (hata yanıtı hariç). alan: secim_alani,
+   adim: adim_anahtari, bekleyen: "girdi" / "onay" / null. */
+function analizOtoGuncelle(alan, adim, bekleyen) {
+    if (bekleyen === undefined || !adim) return;
+    const tab = alan && PANELDE_KARAR[alan.tip];
+    if (tab && bekleyen === "girdi") {
+        if (ANALIZ_DAR.otoAdim !== adim) {
+            ANALIZ_DAR.otoAdim = adim;
+            if (ANALIZ_DAR.kapatilanAdim !== adim) analizSekmeAc(tab);
+        }
+        return;
+    }
+    /* Aynı adımda kart taşımayan bir yanıt (ör. ara mesaj) bloğu
+       kapatmaz; yalnız adım değişince kapanır. */
+    if (ANALIZ_DAR.otoAdim && adim !== ANALIZ_DAR.otoAdim) {
+        ANALIZ_DAR.otoAdim = null;
+        ANALIZ_DAR.kapatilanAdim = null;
+        analizDaralt(false);
+    }
+}
+
+{
+    const kapat = document.getElementById("analiz-kapat");
+    if (kapat) kapat.onclick = () => analizDaralt(true);
 }
 
 /* Degisken teyit tablosu varsayilan
@@ -4451,9 +4518,18 @@ analizSekme.forEach(s => {
         s.classList.add("hazir-degil");
         s.title = "Hazırlanıyor - bu sekmenin verisi henüz bağlı değil";
     }
-    s.onclick = () => analizSekmeAc(s.dataset.tab);
+    s.onclick = () => {
+        /* Geniş hâlde açık sekmeye yeniden basmak bloğu şeride indirir. */
+        if (ANALIZ_DAR.acik && s.classList.contains("aktif")
+            && window.innerWidth >= SURUKLEME_ESIGI) {
+            analizDaralt(true);
+            return;
+        }
+        analizSekmeAc(s.dataset.tab);
+    };
 });
 analizCiz("ozet");
+analizAcikYaz(false);
 
 
 /* ==================== Metin biçimlendirme ==================== */
@@ -9354,6 +9430,9 @@ function yanitUygula(d, metin) {
        bekleyen "girdi" iken gorunur. */
     teyitPanelGuncelle(d.secim_alani, d.bekleyen);
     analizGuncelle(d.analiz);
+    /* Sağ blok: kararı blokta verilen adımda (SFA) kendiliğinden genişler,
+       adım geçince şeride döner. */
+    if (!hataMi) analizOtoGuncelle(d.secim_alani, d.adim_anahtari, d.bekleyen);
     ozetGuncelle(d.ozet);
     rozetGuncelle(hataMi ? "hata" : "hazir");
 }

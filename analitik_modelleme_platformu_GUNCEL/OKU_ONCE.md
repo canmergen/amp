@@ -1,6 +1,25 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Açıklamalara istatistik yazılmaz (yalnız çıkarım için kullanılır)**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Sağ blok varsayılan olarak dar şerit; SFA'da kendiliğinden açılır**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Sağ blok (Veri & Sözlük / Değişken Analizi / Bölme & Validasyon)
+  artık başlangıçta ince bir şerit: yalnız üç sekmenin adı görünür,
+  adlar 90° dönük düz yazı, üçü aynı boyda. Sohbet boşalan yeri kullanır.
+- Bir ada basınca blok sağdan sola bugünkü boyutuna genişler ve o
+  sekme açılır. Açık sekmeye yeniden basmak ya da sekmelerin sağındaki
+  › düğmesi bloğu şeride indirir. Sürükleyerek genişlik ayarı aynen
+  çalışır.
+- Kendiliğinden açılma yalnız kararı sağ blokta verilen adımda: 02.2
+  SFA gelince Değişken Analizi sekmesinde açılır, SFA onaylanıp akış
+  ilerleyince şeride döner. Kullanıcı SFA sırasında kapatırsa aynı
+  adımda tekrar açılmaz. Kararı sohbetteki kartta verilen adımlar bloğu
+  açmaz. Yeni böyle bir adım için `app.js` içinde `PANELDE_KARAR`'a kart
+  tipi eklenir.
+- Kartlardaki "Değişken Analizini Aç" düğmesi ve üst şeritteki
+  tıklanabilir kartlar bloğu da genişletir.
+- Dar ekranda (945 px altı) eski çekmece davranışı değişmedi.
+
+Önceki tur: **Açıklamalara istatistik yazılmaz (yalnız çıkarım için kullanılır)**. Değiştir: `fe_agent/llm.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Yazar istemi: dağılım, tekil ve satır sayısı kolonun NE olduğunu
   çıkarmak için kullanılır ama açıklamaya yazılmaz; değer aralığı

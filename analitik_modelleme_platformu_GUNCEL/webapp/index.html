@@ -185,6 +185,17 @@
         <button class="analiz-sekme aktif" data-tab="ozet" type="button">VERİ &amp; SÖZLÜK</button>
         <button class="analiz-sekme" data-tab="degisken" type="button">DEĞİŞKEN ANALİZİ</button>
         <button class="analiz-sekme" data-tab="bolme" type="button">BÖLME &amp; VALİDASYON</button>
+        <!-- DAR ŞERİT: blok varsayılan olarak yalnız sekme adlarını gösteren
+             ince bir şerittir; ada basınca genişler. Bu düğme geniş hâli
+             tekrar şeride indirir (app.js: analizDaralt). -->
+        <button id="analiz-kapat" type="button" title="Daralt"
+                aria-label="Analiz panelini daralt">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+               stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+        </button>
       </div>
 
       <div id="analiz-govde"></div>
