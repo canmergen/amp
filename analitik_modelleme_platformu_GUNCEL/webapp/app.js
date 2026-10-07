@@ -4510,6 +4510,7 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
    (AKIŞ'a döner). */
 document.querySelectorAll(".ust-sekme[data-ust]").forEach(b => {
     b.onclick = () => {
+        if (b.classList.contains("kapali")) return;   // henüz açılmadı
         analizDaralt(true);
         sayfaAc(UST_SAYFA[b.dataset.ust] || "calisma");
     };

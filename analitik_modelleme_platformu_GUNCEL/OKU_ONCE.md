@@ -1,6 +1,15 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Üst bar kümeler hâlinde: MODEL AKIŞI kümesi, SOHBET ve DASHBOARD blokları; sağda 2 × 2**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Üst bar kümeleri sıkılaştı; SOHBET ve DASHBOARD kapalı görünür**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- "MODEL AKIŞI" başlığı kutularla aynı yazı tipi ve puntoda; açık
+  kırmızı zeminde kırmızı yazı.
+- Renkler: gri küme zemini, beyaz kutular, üstüne gelince açık kırmızı,
+  seçili kutu kırmızı. Kutular arası 2 px, kümeler arası 6 px.
+- SOHBET ve DASHBOARD kapalı: gri zemin, soluk gri yazı, kesik kenar ve
+  kilit ikonu; tıklanmaz, ipucunda "henüz kapalı: hazırlanıyor".
+
+Önceki tur: **Üst bar kümeler hâlinde: MODEL AKIŞI kümesi, SOHBET ve DASHBOARD blokları; sağda 2 × 2**. Değiştir: `webapp/app.js`, `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üst bar yüksekliği 64 px (`--ustbar-h`).
 - Ortada MODEL AKIŞI kümesi: solda küme adı, içinde ayrı kutular AKIŞ ·

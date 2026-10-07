@@ -29,8 +29,9 @@
          DEĞİŞKENLER, BÖLME & MODEL (analiz alanı, üst barın altındaki bütün
          alanı kaplar) ve ÖZET (doküman). Üç analiz kutusu .analiz-sekme
          sınıfını taşır: sekme mantığı (aktif, çizim) o sınıfa bağlı.
-         SOHBET ve DASHBOARD ayrı bloklar: kendi sayfalarına geçer
-         (app.js: sayfaAc, ustSekmeGuncelle). -->
+         SOHBET ve DASHBOARD ayrı bloklar; içerikleri hazırlanana kadar
+         KAPALI (.kapali: gri, kilitli, tıklanmaz). Açılınca .kapali sınıfı
+         kaldırılır, kendi sayfalarına geçer (app.js: sayfaAc). -->
     <nav id="ust-sekmeler" aria-label="Sayfalar">
       <div class="ust-kume">
         <span class="ust-kume-ad">MODEL AKIŞI</span>
@@ -41,10 +42,12 @@
         <button class="ust-sekme" data-ust="dokuman" type="button">ÖZET</button>
       </div>
       <div class="ust-kume tekli">
-        <button class="ust-sekme" data-ust="sohbet" type="button">SOHBET</button>
+        <button class="ust-sekme kapali" data-ust="sohbet" type="button" aria-disabled="true"
+                title="Sohbet henüz kapalı: hazırlanıyor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>SOHBET</button>
       </div>
       <div class="ust-kume tekli">
-        <button class="ust-sekme" data-ust="dashboard" type="button">DASHBOARD</button>
+        <button class="ust-sekme kapali" data-ust="dashboard" type="button" aria-disabled="true"
+                title="Dashboard henüz kapalı: hazırlanıyor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>DASHBOARD</button>
       </div>
     </nav>
 
