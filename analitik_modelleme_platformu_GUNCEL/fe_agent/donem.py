@@ -116,6 +116,25 @@ def kaliplar(adlar, tanimlar):
     return cikti
 
 
+def parca_listesi(adlar, tanimlar, ornek=2):
+    """Kolon adlarindaki BUTUN parcalar (donem degerleri ve yalniz rakam
+    haric): [{"parca", "kolon", "ornekler": [(kolon, tanim)]}], cok gecen
+    once. Kullanici bildigi anlami yazar (istege bagli)."""
+    tanimlar = tanimlar or {}
+    kolonlar = {}
+    for ad in adlar:
+        for p in dict.fromkeys(_toklar(ad)):
+            if _YALIN_SAYI.match(p) or _donem_parcasi(p):
+                continue
+            kolonlar.setdefault(p, []).append(ad)
+    cikti = []
+    for p, liste in kolonlar.items():
+        ornekler = [(a, str(tanimlar.get(a) or "").strip()[:200]) for a in liste[:ornek]]
+        cikti.append({"parca": p, "kolon": len(liste), "ornekler": ornekler})
+    cikti.sort(key=lambda x: (-x["kolon"], x["parca"]))
+    return cikti
+
+
 # ---------------------------------------------------------------------------
 # KURUM HAFIZASI
 # ---------------------------------------------------------------------------

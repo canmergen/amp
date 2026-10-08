@@ -1,6 +1,21 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- "+ Dönem Kalıbı Ekle": listede olmayan dönem parçası kalıbı ve
+  anlamıyla elle eklenir. Kalıp büyük harfe çevrilir; adlarda aynen
+  geçiyorsa kaç kolonda geçtiği yazar, geçmiyorsa "Adlarda yok".
+  Kalıp ve anlamı ikisi de boş bırakılan satır yok sayılır; aynı kalıp
+  iki satırda olamaz. Geri Dön'de elle eklenenler korunur.
+- "Kolon Adlarındaki Parçalar": kolon adlarındaki bütün parçalar (dönem
+  değerleri ve yalnız rakam hariç), kaç kolonda geçtiği, iki örnek
+  kolon (tanımı üzerine gelince) ve anlam kutusu; arama kutusuyla
+  süzülür. Anlam isteğe bağlı; onaylı kısaltma hafızasında anlamı olan
+  parça "Hafızadan" ile dolu gelir. Yazılan anlamlar bu çalışmada kesin
+  bilgi olur (parca_bilgisi) ve hafızadakinden farklıysa onaylı kısaltma
+  hafızasına yazılır.
+
+Önceki tur: **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni yapı (konuşulan plan): 01.2.1–01.2.3 aynı; 01.2.4 Dönem Bilgisi
 (bu tur); sonra 01.2.5 Açıklama Düzenleme (sonraki tur), Kısaltma
