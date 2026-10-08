@@ -3106,6 +3106,8 @@ span.bolme-cip { cursor: default; }
 .dg-donem-kalip { font-weight: var(--fw-kalin); margin-right: 4px; }
 .dg-donem-anlam { width: 100%; resize: vertical; min-height: 44px; font: inherit; }
 .dg-donem-soru { color: var(--amber); font-weight: var(--fw-kalin); margin-top: 4px; }
+.dg-donem-not { color: var(--metin-soluk); margin-top: 4px; }
+.dg-donem-tablo .dg-rozet-kucuk + .dg-rozet-kucuk { margin-left: 4px; }
 .dg-donem-ekle { margin: var(--b-2) 0 var(--b-3); }
 .dg-donem-kalip-giris { width: 100%; text-transform: uppercase; }
 /* Kolon adlarındaki kısaltmalar: düz liste, sütunlara akar. */

@@ -1638,40 +1638,56 @@ def kisaltma_esle(girdi, orkestra=None):
 # ===========================================================================
 # DONEM BILGISI (01.2.4)
 # ===========================================================================
+# Donem yorumu ve taramasinin ortak anlam kurallari.
+_DONEM_ANLAM_KURALLARI = """
+  - Anlamı YALNIZCA örnek tanımlardan ve değerlerin birbirine göre
+    durumundan çıkar. Genel bilgiyle tahmin etme.
+  - "anlam": parçanın KENDİSİNİN taşıdığı bilgi, tek kısa cümle; harf ve
+    sayının neyi gösterdiğini açık yaz (ör. "<sayı> + [harf]: <sayı>
+    [birim]lık pencere"). Tanımda geçip adda karşılığı olmayan bilgiyi
+    (ör. "son", "önceki", "ortalama" gibi; adda bunu gösteren ayrı bir
+    parça yoksa) anlama YAZMA; "not"a yaz (ör. "Tanımlarda 'son'
+    geçiyor ama adda karşılığı yok."). Değerlere özel bir durum varsa
+    (ör. bir değer diğerlerinden farklı kullanılıyorsa) onu anlama yaz.
+  - "soru": tanımlardan kesin çıkmayan bir nokta varsa kullanıcıya tek,
+    somut bir soru; yoksa boş. Belirsiz noktayı "anlam"a tahminle YAZMA;
+    soruya yaz.
+  - "not": yalnızca yukarıdaki ad / tanım farkı için; yoksa boş.
+  - Tamamen Türkçe, Türkçe karakterlerle yaz.
+"""
+
+
 SISTEM_DONEM = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon adlarında
 dönem (zaman penceresi, saat dilimi, karşılaştırma dönemi) bilgisi taşıyan
 parça KALIPLARI verilecek. Her kalıp için: adlarda geçen değerleri (kaç
 kolonda geçtiğiyle) ve birkaç örnek kolonun adı ile sözlükteki tanımı.
 
 Görevin her kalıbın ne anlama geldiğini, tanımlardan okuyarak yazmak.
-  - Anlamı YALNIZCA örnek tanımlardan ve değerlerin birbirine göre
-    durumundan çıkar. Genel bilgiyle tahmin etme.
-  - "anlam": kalıbın genel anlamı, tek kısa cümle; harf ve sayının neyi
-    gösterdiğini açık yaz (ör. "<sayı> + harf: son <sayı> günlük pencere"
-    gibi). Değerlere özel bir durum varsa (ör. bir değer diğerlerinden
-    farklı kullanılıyorsa) onu da yaz.
+""" + _DONEM_ANLAM_KURALLARI + """
   - "donem": kalıp gerçekten dönem / zaman bilgisi taşıyorsa true, değilse
     false. Yanındaki-parça adayları için özellikle dikkat et: yalnızca
     dönemle ilgiliyse (ör. önceki dönem, karşılaştırma dönemi) true.
-  - "soru": tanımlardan kesin çıkmayan bir nokta varsa kullanıcıya tek,
-    somut bir soru (ör. "Önceki dönem hangi pencereyi gösteriyor?"); yoksa
-    boş. Belirsiz noktayı "anlam"a tahminle YAZMA; soruya yaz.
-  - Tamamen Türkçe, Türkçe karakterlerle yaz.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kalıbı AYNEN yaz.
-{"kolonlar": [{"ad": "...", "donem": true, "anlam": "...", "soru": ""}]}""" \
+{"kolonlar": [{"ad": "...", "donem": true, "anlam": "...", "soru": "", "not": ""}]}""" \
     + SINIRLAYICI_KURALI
+
+
+def _donem_metni(x):
+    return re.sub(r"\s+", " ", str(x or "")).strip()
 
 
 def donem_yorumla(kaliplar, orkestra=None):
     """kaliplar: [{"kalip", "tur", "degerler": [(deger, kolon)],
     "ornekler": [(kolon, tanim)]}]. Doner: ({kalip: {"donem", "anlam",
-    "soru", "model"}}, hata)."""
+    "soru", "not", "model"}}, hata)."""
     if not kaliplar:
         return {}, None
     ork = orkestra or Orkestra(arka=True)
     tur_adi = {"sayi_harf": "sayı + harf", "harf_sayi": "harf + sayı",
-               "aralik": "harf + sayı aralığı", "komsu": "dönem parçasının yanındaki parça (aday)"}
+               "aralik": "harf + sayı aralığı", "harf_sayi_harf": "harf + sayı + harf",
+               "komsu": "dönem parçasının yanındaki parça (aday)",
+               "hafiza": "önceki çalışmada onaylanmış kalıp"}
     satirlar = []
     for k in kaliplar:
         s = "- KALIP: %s (%s)\n  DEĞERLER: %s" % (
@@ -1694,11 +1710,80 @@ def donem_yorumla(kaliplar, orkestra=None):
         if isinstance(donem, str):
             donem = _secenek(donem) in ("true", "evet", "1")
         sonuc[str(x["ad"])] = {
-            "donem": bool(donem),
-            "anlam": re.sub(r"\s+", " ", str(x.get("anlam") or "")).strip(),
-            "soru": re.sub(r"\s+", " ", str(x.get("soru") or "")).strip(),
+            "donem": bool(donem), "anlam": _donem_metni(x.get("anlam")),
+            "soru": _donem_metni(x.get("soru")), "not": _donem_metni(x.get("not")),
             "model": MODEL_ADLARI.get(model, model)}
     return sonuc, None
+
+
+# TARAMA: bicimi donem olmayan (rakamsiz) kisaltmalar arasindan donem
+# bilgisi tasiyanlari bulur. Liste parcalara bolunur (TARAMA_PARCA), her
+# parca ayri cagri; ayni anda en cok TARAMA_ES_ZAMANLI cagri.
+TARAMA_PARCA = 150
+TARAMA_ES_ZAMANLI = 3
+
+SISTEM_DONEM_TARA = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon
+adlarında geçen KISALTMALAR verilecek; her biri için kaç kolonda geçtiği
+ve bir örnek kolonun adı ile sözlükteki tanımı.
+
+Görevin bu kısaltmalardan DÖNEM BİLGİSİ taşıyanları bulmak: zaman
+penceresi, dönem başından bugüne, önceki / sonraki dönem, karşılaştırma
+dönemi, gün / saat dilimi, vade ya da süre dilimi gibi zamanı ya da
+dönemi gösteren kısaltmalar. Konu, ürün, kanal, işlem türü, ölçü ya da
+istatistik gösteren kısaltmaları YAZMA. Emin olmadığın ama dönemle
+ilgili olabilecek kısaltmayı yaz ve "soru"ya neden emin olmadığını sor.
+""" + _DONEM_ANLAM_KURALLARI + """
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. Yalnızca dönem bilgisi taşıyan
+kısaltmaları yaz; "ad" alanına kısaltmayı AYNEN yaz. Hiçbiri değilse
+{"kolonlar": []} yaz.
+{"kolonlar": [{"ad": "...", "anlam": "...", "soru": "", "not": ""}]}""" \
+    + SINIRLAYICI_KURALI
+
+
+def _donem_tara_parca(parca):
+    ork = Orkestra(arka=True)
+    satirlar = []
+    for x in parca:
+        ad, tanim = x.get("ornek") or ("", "")
+        s = "- KISALTMA: %s (%d kolon)" % (x["parca"], x["kolon"])
+        if ad:
+            s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim)[:200])
+        satirlar.append(s)
+    model, veri = ork.json_cagir(ork.modeller("donem"), SISTEM_DONEM_TARA,
+                                 _veri_blogu("KISALTMALAR:", "\n".join(satirlar)), 0.1,
+                                 zaman_asimi=DONEM_ZAMAN_ASIMI)
+    if not model:
+        return {}, _orkestra_hatasi(ork, "dönem taraması")
+    gecerli = {x["parca"] for x in parca}
+    sonuc = {}
+    for x in veri.get("kolonlar") or []:
+        if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
+            continue
+        sonuc[str(x["ad"])] = {
+            "anlam": _donem_metni(x.get("anlam")), "soru": _donem_metni(x.get("soru")),
+            "not": _donem_metni(x.get("not")), "model": MODEL_ADLARI.get(model, model)}
+    return sonuc, None
+
+
+def donem_tara(liste):
+    """liste: [{"parca", "kolon", "ornek": (kolon, tanim)}]. Doner:
+    ({parca: {"anlam", "soru", "not", "model"}}, hata). Bir parca cevapsiz
+    kalirsa digerlerinin sonucu yine doner; hata metninde yazar."""
+    if not liste:
+        return {}, None
+    from concurrent.futures import ThreadPoolExecutor
+    parcalar = [liste[i:i + TARAMA_PARCA] for i in range(0, len(liste), TARAMA_PARCA)]
+    sonuc, hatalar = {}, []
+    with ThreadPoolExecutor(max_workers=TARAMA_ES_ZAMANLI) as ex:
+        for s_, h in ex.map(_donem_tara_parca, parcalar):
+            sonuc.update(s_)
+            if h:
+                hatalar.append(h)
+    hata = None
+    if hatalar:
+        hata = "Dönem taraması %d / %d bölümde cevapsız kaldı: %s" % (
+            len(hatalar), len(parcalar), hatalar[0])
+    return sonuc, hata
 
 
 def _orkestra_hatasi(ork, is_adi):

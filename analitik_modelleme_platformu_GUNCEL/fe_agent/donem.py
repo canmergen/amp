@@ -6,9 +6,16 @@ Kod yalniz KALIP bulur, anlam vermez (anlam kodda yazili degil):
   - harf_sayi : 1-2 harf + en az 2 rakam (<H><NN>); kalip adi harf + "<NN>"
   - aralik    : harf_sayi parcasinin ardindan yalniz rakam gelirse
                 (<H><NN>_<MM>); kalip adi harf + "<NN>_<NN>"
+  - harf_sayi_harf : 1-3 harf + sayi + 1-3 harf (<H><N><H>); kalip adi
+                harf + "<N>" + harf
+  - hafiza    : kurum hafizasindaki (onceki calismalarda onaylanip
+                "Hafizaya Kaydet" ile yazilan) kalip adlarda geciyorsa;
+                sistem boylece yeni kaliplari ogrenir
   - komsu     : donem parcasinin hemen yaninda en az KOMSU_EN_AZ kolonda
                 gecen, rakamsiz parca; geciklerinin cogu donem parcasinin
                 yanindaysa aday olur. Donemle ilgili mi dil modeli soyler.
+Rakamsiz donem kisaltmalari bicimden bulunamaz: geri kalan butun
+kisaltmalari dil modeli tarar (tarama), donem bilgisi tasiyanlari onerir.
 Anlami dil modeli tanimlardan okuyarak onerir (arka planda), kullanici
 onaylar ya da duzeltir. Onaylanan anlam bu calismanin donem bilgisi olur
 ve sonraki adimlarda (aciklama duzenleme, kisaltma, kolon adlari) baglam
@@ -35,6 +42,7 @@ KOMSU_PAY = 0.6           # ... ve geciklerinin en az bu kadari donem yaninda
 
 _SAYI_HARF = re.compile(r"^(\d+)([A-Z]{1,3})$")
 _HARF_SAYI = re.compile(r"^([A-Z]{1,2})(\d{2,})$")
+_HARF_SAYI_HARF = re.compile(r"^([A-Z]{1,3})(\d+)([A-Z]{1,3})$")
 _YALIN_SAYI = re.compile(r"^\d+$")
 
 _KILIT = threading.Lock()
@@ -53,13 +61,31 @@ def _donem_parcasi(t):
     m = _HARF_SAYI.match(t)
     if m:
         return "harf_sayi", m.group(1) + "<NN>"
+    m = _HARF_SAYI_HARF.match(t)
+    if m:
+        return "harf_sayi_harf", m.group(1) + "<N>" + m.group(3)
     return None
 
 
-def kaliplar(adlar, tanimlar):
+def kalip_deseni(kalip):
+    """Kalip adini derlenmis desene cevirir: <N> sayi, <NN> en az iki
+    basamakli sayi, gerisi aynen. Gecersizse None."""
+    k = re.sub(r"\s+", "", str(kalip or "")).upper()
+    if not k:
+        return None
+    desen = re.escape(k).replace("<NN>", r"\d{2,}").replace("<N>", r"\d+")
+    try:
+        return re.compile("^" + desen + "$")
+    except re.error:
+        return None
+
+
+def kaliplar(adlar, tanimlar, ek=None):
     """Kolon adlarindan donem kaliplari: [{"kalip", "tur", "kolon",
     "degerler": [(deger, kolon sayisi)], "ornekler": [(kolon, tanim)]}].
-    Siralama: kolon sayisi (cok olan once)."""
+    ek: hafizadaki kalip adlari; adlarda gecen (yerlesik bicimlerin
+    bulmadigi) her biri "hafiza" turuyle eklenir. Siralama: kolon sayisi
+    (cok olan once)."""
     tanimlar = tanimlar or {}
     bilgi = {}                      # kalip -> {"tur", "deger": Counter, "kolonlar": set}
     toplam = Counter()              # parca -> gectigi kolon sayisi
@@ -96,6 +122,18 @@ def kaliplar(adlar, tanimlar):
             for ad in adlar:
                 if q in _toklar(ad):
                     ekle(q, "komsu", q, ad)
+    # Hafizadaki kaliplar (tek parca ya da <P>_<NN> ikilisi olarak).
+    desenler = [(k, kalip_deseni(k)) for k in (ek or []) if k not in bilgi]
+    desenler = [(k, r) for k, r in desenler if r is not None]
+    if desenler:
+        for ad in adlar:
+            t = _toklar(ad)
+            adaylar = list(t) + [t[i] + "_" + t[i + 1] for i in range(len(t) - 1)
+                                 if _YALIN_SAYI.match(t[i + 1])]
+            for k, r in desenler:
+                for p in adaylar:
+                    if r.match(p):
+                        ekle(k, "hafiza", p, ad)
 
     cikti = []
     for kalip, b in bilgi.items():
@@ -151,17 +189,26 @@ def parca_listesi(adlar, tanimlar, ornek=2):
 
 def kalip_adlarda(kalip, parcalar):
     """Elle yazilan kalibin kolon adlarindaki karsiliklari: [(parca,
-    kolon sayisi)]. <N> sayi, <NN> en az iki basamakli sayi; yoksa parca
-    aynen aranir. parcalar: parca_listesi ciktisi."""
-    k = re.sub(r"\s+", "", str(kalip or "")).upper()
-    if not k:
-        return []
-    desen = re.escape(k).replace("<NN>", r"\d{2,}").replace("<N>", r"\d+")
-    try:
-        r = re.compile("^" + desen + "$")
-    except re.error:
+    kolon sayisi)]. parcalar: parca_listesi ciktisi."""
+    r = kalip_deseni(kalip)
+    if r is None:
         return []
     return [(x["parca"], x["kolon"]) for x in parcalar if r.match(x["parca"])]
+
+
+def tarama_listesi(adlar, tanimlar, kalip_listesi):
+    """Dil modelinin taracagi kisaltmalar: kolon adlarindaki, bicimi donem
+    olmayan ve hicbir kalibin degeri olmayan butun parcalar (yalniz rakam
+    haric): [{"parca", "kolon", "ornek": (kolon, tanim)}]."""
+    tanimlar = tanimlar or {}
+    kapsanan = {d for k in kalip_listesi for d, _n in k["degerler"]}
+    cikti = []
+    for x in parca_listesi(adlar, tanimlar, ornek=1):
+        if x["donem"] or x["parca"] in kapsanan:
+            continue
+        cikti.append({"parca": x["parca"], "kolon": x["kolon"],
+                      "ornek": x["ornekler"][0] if x["ornekler"] else ("", "")})
+    return cikti
 
 
 # ---------------------------------------------------------------------------
@@ -214,35 +261,47 @@ def hafizaya_yaz(kayitlar):
 # ---------------------------------------------------------------------------
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
-def _imza(liste):
-    ham = json.dumps([[k["kalip"], k["degerler"], k["ornekler"]] for k in liste],
-                     ensure_ascii=False)
+def _imza(liste, tara):
+    ham = json.dumps([[k["kalip"], k["degerler"], k["ornekler"]] for k in liste]
+                     + [x["parca"] for x in tara], ensure_ascii=False)
     return hashlib.sha1(ham.encode("utf-8")).hexdigest()[:16]
 
 
-def baslat(liste):
-    """Hafizada olmayan kaliplar icin modeli arka planda calistirir.
-    Doner: imza."""
-    imza = _imza(liste)
+def baslat(liste, tara=None):
+    """Arka planda: hafizada olmayan kaliplari dil modeline yorumlatir ve
+    kalan kisaltmalari donem bilgisi icin taratir. Doner: imza."""
+    tara = tara or []
+    imza = _imza(liste, tara)
     with _KILIT:
         k = _ISLER.get(imza)
         if k and k["durum"] in ("calisiyor", "bitti"):
             return imza
-        _ISLER[imza] = {"durum": "calisiyor", "sonuc": {}, "hata": "", "zaman": time.time()}
+        _ISLER[imza] = {"durum": "calisiyor", "sonuc": {}, "bulunan": {}, "hata": "",
+                        "zaman": time.time()}
     haf = hafiza()
     # Hafizada anlami olan kalip sorulmaz.
     sorulacak = [x for x in liste if x["kalip"] not in haf]
 
     def calis():
         k = _ISLER[imza]
+        hatalar = []
         try:
-            sonuc, hata = llm_mod.donem_yorumla(sorulacak)
-            k["sonuc"], k["hata"] = sonuc, hata or ""
+            if sorulacak:
+                sonuc, hata = llm_mod.donem_yorumla(sorulacak)
+                k["sonuc"] = sonuc
+                if hata:
+                    hatalar.append(hata)
+            if tara:
+                bulunan, hata = llm_mod.donem_tara(tara)
+                k["bulunan"] = bulunan
+                if hata:
+                    hatalar.append(hata)
+            k["hata"] = " ".join(hatalar)
             k["durum"] = "bitti"
         except Exception as e:
             k["hata"] = "%s: %s" % (type(e).__name__, str(e)[:200])
             k["durum"] = "hata"
-    if sorulacak:
+    if sorulacak or tara:
         threading.Thread(target=calis, daemon=True).start()
     else:
         _ISLER[imza]["durum"] = "bitti"
@@ -252,6 +311,7 @@ def baslat(liste):
 def durum(imza):
     k = _ISLER.get(imza or "")
     if not k:
-        return {"durum": "yok", "sonuc": {}, "hata": "", "gecen": 0}
-    return {"durum": k["durum"], "sonuc": dict(k["sonuc"]), "hata": k["hata"],
+        return {"durum": "yok", "sonuc": {}, "bulunan": {}, "hata": "", "gecen": 0}
+    return {"durum": k["durum"], "sonuc": dict(k["sonuc"]),
+            "bulunan": dict(k.get("bulunan") or {}), "hata": k["hata"],
             "gecen": int(time.time() - k["zaman"])}

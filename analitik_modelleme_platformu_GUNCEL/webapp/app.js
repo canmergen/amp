@@ -7580,7 +7580,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const ilerSayac = setInterval(() => {
         const acik = da.dm === "calisiyor" && !kilitli && kart.isConnected;
         ilerEl.classList.toggle("gorunur", acik);
-        if (acik) ilerMetin.textContent = "Dil modeli dönem kalıplarını yorumluyor · "
+        if (acik) ilerMetin.textContent = "Dil modeli dönem kalıplarını yorumluyor ve kısaltmaları tarıyor · "
             + sureBicim(Math.max(0, Math.floor((Date.now() - ilerBas) / 1000)));
         if (da.dm !== "calisiyor" && kart.isConnected) clearInterval(ilerSayac);
     }, 1000);
@@ -7655,8 +7655,11 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         g.setAttribute("aria-label", (r.kalip || "Kalıp") + " anlamı");
         tdA.appendChild(g);
         if (r.soru) tdA.appendChild(elYap("div", "dg-donem-soru", "Soru: " + tireSade(r.soru)));
+        if (r.not) tdA.appendChild(elYap("div", "dg-donem-not", "Not: " + tireSade(r.not)));
         if (r.kaynak === "hafiza")
             tdA.appendChild(elYap("span", "dg-rozet-kucuk", "Hafızadan"));
+        if (r.tur === "tarama")
+            tdA.appendChild(elYap("span", "dg-rozet-kucuk", "Dil Modeli Buldu"));
         if (r.model) g.title = "Öneren: " + tireSade(r.model);
         tr.appendChild(tdA);
         /* HAFIZAYA KAYDET */

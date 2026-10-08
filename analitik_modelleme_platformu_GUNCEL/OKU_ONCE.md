@@ -1,6 +1,25 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taraması**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- Yeni biçim: harf + sayı + harf (ör. <H><N><H>); aynı harflerle olanlar
+  tek kalıpta toplanır (harf + "<N>" + harf).
+- Hafızadan öğrenme: "Hafızaya Kaydet" ile yazılan her kalıp sonraki
+  çalışmalarda kolon adlarında aranır ve geçiyorsa satır olarak gelir
+  ("Hafızadan"); dil modeline yeniden sorulmaz. Elle eklenen ya da
+  taramada bulunan kalıp da böylece kalıcı olur.
+- Dil modeli taraması: biçimi dönem olmayan (rakamsız) bütün kısaltmalar,
+  her biri bir örnek kolon ve tanımıyla, 150'lik bölümler halinde (en çok
+  3 eş zamanlı çağrı) dil modeline verilir; dönem bilgisi taşıyanlar
+  "Dil Modeli Buldu" etiketiyle tabloya gelir. Yanlış bulunanın anlamını
+  boşaltın; kullanılmaz. Bir bölüm cevapsız kalırsa diğerleri yine gelir,
+  kartta not düşer.
+- İstem düzeltmesi: dönem anlamına yalnız parçanın kendisinin taşıdığı
+  bilgi yazılır; tanımda geçip adda karşılığı olmayan bilgi (ör. "son")
+  anlama değil "Not:" satırına yazılır. Önceki istemdeki örnek bu hatayı
+  öğretiyordu, düzeltildi.
+
+Önceki tur: **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Elle eklenen kalıp kolon adlarında geçmiyorsa ("Adlarda yok") onay
   düğmesi kapanır ve sebebi yazar; arka uç da reddeder. <N> / <NN>
@@ -9,7 +28,7 @@ Bu tur: **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değ
   parçası) bu adımın işi değil; kısaltma sözlüğü yeniden kurulunca
   orada eklenecek.
 
-Önceki tur: **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce: **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "Dönem Değil" sütunu kalktı, yerine "Hafızaya Kaydet": işaretli satırın
   anlamı kısaltma hafızasına yazılır, sonraki çalışmalarda dolu gelir.
@@ -29,7 +48,7 @@ Bu tur: **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değ
   DONEM_BILGISI.json'u varsa anlamlı kayıtları bir kez buraya taşınır ve
   dosya silinir. Kısaltma ve ad ilkesi yazımları bu bölümü korur.
 
-Daha önce: **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (2): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "+ Dönem Kalıbı Ekle": listede olmayan dönem parçası kalıbı ve
   anlamıyla elle eklenir. Kalıp büyük harfe çevrilir; adlarda aynen
@@ -44,7 +63,7 @@ Daha önce: **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tab
   bilgi olur (parca_bilgisi) ve hafızadakinden farklıysa onaylı kısaltma
   hafızasına yazılır.
 
-Daha önce (2): **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (3): **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni yapı (konuşulan plan): 01.2.1–01.2.3 aynı; 01.2.4 Dönem Bilgisi
 (bu tur); sonra 01.2.5 Açıklama Düzenleme (sonraki tur), Kısaltma
