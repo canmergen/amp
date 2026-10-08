@@ -6715,10 +6715,12 @@ function dogrulamaKartiEkle(alan, blok) {
         /* DÖNEM BİLGİSİ: model yorumu bitmeden ve anlamı boş satır
            kaldıkça onaylanamaz. */
         if (adimModu === "donem" && donErisim) {
-            const bek = donErisim.bekliyor(), eks = donErisim.eksik();
-            birincil.disabled = bek || eks > 0;
-            gerekce.hidden = !(bek || eks > 0);
+            const bek = donErisim.bekliyor(), eks = donErisim.eksik(), yok = donErisim.adlardaYok();
+            birincil.disabled = bek || eks > 0 || yok > 0;
+            gerekce.hidden = !(bek || eks > 0 || yok > 0);
             gerekce.textContent = bek ? "Dil modeli yorumunu bitirince onaylanabilir."
+                : yok > 0 ? ftBinlik(yok) + " satırdaki kalıp kolon adlarında geçmiyor: bu adımda "
+                    + "yalnız adlarda geçen dönem parçaları eklenir."
                 : eks > 0 ? ftBinlik(eks) + " satırda kalıp ya da anlam boş: elle eklenen ve "
                     + "hafızaya kaydedilecek satırda ikisi de dolu olmalı."
                 : "";
@@ -7718,13 +7720,13 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     }
     const ekleBtn = elYap("button", "dg-toplu-btn dg-donem-ekle", "+ Dönem Kalıbı Ekle");
     ekleBtn.type = "button";
-    ekleBtn.title = "Listede olmayan bir dönem parçasını kalıbı ve anlamıyla ekleyin.";
+    ekleBtn.title = "Kolon adlarında geçen ama listede olmayan bir dönem parçasını kalıbı ve anlamıyla ekleyin.";
     ekleBtn.onclick = () => elleEkle("");
     sar.after(ekleBtn);
 
     /* ---- KOLON ADLARINDAKİ KISALTMALAR: düz liste (dönem değerleri
        hariç). Tıklanan kısaltma elle dönem satırı olarak eklenir. */
-    const liste = parcalar.filter(p => !p.donem);
+    const liste = parcalar.filter(p => !p.donem && !p.ikili);
     const listeOgeleri = [];
     function listeBoya() {
         const tabloda = new Set(satirlar.map(x => (x.kg ? x.kg.value.trim().toUpperCase() : x.r.kalip)));
@@ -7791,6 +7793,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
            kaydedilecek satırda anlam boş. */
         eksik: () => satirlar.filter(x => !bosElle(x) && ((x.kg && (!x.kg.value.trim() || !x.g.value.trim()))
                                      || (x.kutu.checked && !x.g.value.trim()))).length,
+        /* Onayı durduran: elle yazılan kalıp kolon adlarında geçmiyor. */
+        adlardaYok: () => satirlar.filter(x => x.kg && x.kg.value.trim()
+                                          && !adlardaBul(x.kg.value).length).length,
         bos: () => satirlar.filter(x => !x.kg && !x.g.value.trim()).length,
         kilitle: k => {
             kilitli = k;

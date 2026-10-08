@@ -121,22 +121,47 @@ def kaliplar(adlar, tanimlar):
 
 def parca_listesi(adlar, tanimlar, ornek=2):
     """Kolon adlarindaki BUTUN parcalar (yalniz rakam haric): [{"parca",
-    "kolon", "donem": donem kalibina uyuyor mu, "ornekler": [(kolon,
-    tanim)]}], alfabetik."""
+    "kolon", "donem": donem kalibina uyuyor mu, "ikili": aralik ikilisi mi,
+    "ornekler": [(kolon, tanim)]}], alfabetik. Ardindan yalniz rakam gelen
+    parca ikili olarak da girer (<P>_<NN>; elle yazilan aralik kalibi
+    adlarda aranabilsin)."""
     tanimlar = tanimlar or {}
-    kolonlar = {}
+    kolonlar, ikililer = {}, set()
     for ad in adlar:
-        for p in dict.fromkeys(_toklar(ad)):
+        t = _toklar(ad)
+        gorulen = []
+        for i, p in enumerate(t):
             if _YALIN_SAYI.match(p):
                 continue
+            gorulen.append(p)
+            if i + 1 < len(t) and _YALIN_SAYI.match(t[i + 1]):
+                gorulen.append(p + "_" + t[i + 1])
+                ikililer.add(p + "_" + t[i + 1])
+        for p in dict.fromkeys(gorulen):
             kolonlar.setdefault(p, []).append(ad)
     cikti = []
     for p, liste in kolonlar.items():
         ornekler = [(a, str(tanimlar.get(a) or "").strip()[:200]) for a in liste[:ornek]]
-        cikti.append({"parca": p, "kolon": len(liste), "donem": bool(_donem_parcasi(p)),
+        cikti.append({"parca": p, "kolon": len(liste), "ikili": p in ikililer,
+                      "donem": p in ikililer or bool(_donem_parcasi(p)),
                       "ornekler": ornekler})
     cikti.sort(key=lambda x: x["parca"])
     return cikti
+
+
+def kalip_adlarda(kalip, parcalar):
+    """Elle yazilan kalibin kolon adlarindaki karsiliklari: [(parca,
+    kolon sayisi)]. <N> sayi, <NN> en az iki basamakli sayi; yoksa parca
+    aynen aranir. parcalar: parca_listesi ciktisi."""
+    k = re.sub(r"\s+", "", str(kalip or "")).upper()
+    if not k:
+        return []
+    desen = re.escape(k).replace("<NN>", r"\d{2,}").replace("<N>", r"\d+")
+    try:
+        r = re.compile("^" + desen + "$")
+    except re.error:
+        return []
+    return [(x["parca"], x["kolon"]) for x in parcalar if r.match(x["parca"])]
 
 
 # ---------------------------------------------------------------------------

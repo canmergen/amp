@@ -1657,8 +1657,9 @@ DONEM_YONERGE = [
     "her birinin anlamını tanımlardan okuyarak önerir.",
     "Anlamı kontrol edin, gerekiyorsa düzeltin; sorusu olan satırda "
     "cevabı anlamın içine yazın. Anlamı boş satır kullanılmaz.",
-    "Listede olmayan dönem parçasını alttaki kısaltmalara tıklayarak ya "
-    "da \"+ Dönem Kalıbı Ekle\" ile ekleyin."]
+    "Kolon adlarında geçen ama listede olmayan dönem parçasını alttaki "
+    "kısaltmalara tıklayarak ya da \"+ Dönem Kalıbı Ekle\" ile ekleyin; "
+    "adlarda geçmeyen kalıp eklenmez."]
 DONEM_SUTUNLAR = (
     "Kalıp: kolon adındaki dönem parçasının biçimi (<N> sayı, <NN> iki "
     "basamaklı sayı).\n"
@@ -1689,7 +1690,7 @@ def _parca_alani(durum):
     eklenen kalibin adlarda kac kolonda gectigi de buradan sayilir."""
     adlar, tanimlar = _donem_kaynak(durum)
     return [{"parca": x["parca"], "kolon": x["kolon"], "donem": x["donem"],
-             "ornekler": [a for a, _t in x["ornekler"]]}
+             "ikili": x["ikili"], "ornekler": [a for a, _t in x["ornekler"]]}
             for x in donem_mod.parca_listesi(adlar, tanimlar)]
 
 
@@ -1805,6 +1806,11 @@ def donem_uygula(durum):
             hatalar.append("%s: birden fazla satırda." % kalip)
             continue
         gorulen.add(kalip)
+        # Bu adim yalniz kolon adlarinda gecen donem parcalari icindir.
+        if elle and not donem_mod.kalip_adlarda(kalip, alan.get("parcalar") or []):
+            hatalar.append("%s: kolon adlarında geçmiyor; bu adımda yalnız adlarda "
+                           "geçen dönem parçaları eklenir." % kalip)
+            continue
         if not anlam and (elle or kaydet):
             hatalar.append("%s: anlam boş." % kalip)
             continue
