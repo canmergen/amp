@@ -1,6 +1,31 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kısaltma Sözlüğü: okuma hızlandı (örneklemsiz), karar gerekenler ayrıldı**. Değiştir: `fe_agent/kisaltma_okuma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+Yeni yapı (konuşulan plan): 01.2.1–01.2.3 aynı; 01.2.4 Dönem Bilgisi
+(bu tur); sonra 01.2.5 Açıklama Düzenleme (sonraki tur), Kısaltma
+Sözlüğü ve Kolon Adları ve Sözlük (yeniden kurulacak). Bu turda eski
+Kısaltma Sözlüğü ve Yeni Kolon Adları 01.2.5 / 01.2.6 olarak yerinde.
+
+- Kod kolon adlarından dönem KALIPLARINI bulur, anlam vermez:
+  sayı + harf (<N>D, <N>M ...), harf + sayı (H<NN>), aralık
+  (H<NN>_<NN>) ve dönem parçasının yanında sürekli geçen parçalar
+  (aday; dönemle ilgili mi dil modeli söyler).
+- Dil modeli (düşünen model önce) her kalıbın anlamını örnek tanımlardan
+  okuyarak önerir; kesin çıkmayan nokta için anlama tahmin yazmaz, satırda
+  soru sorar. Model yorumlarken tablo görünür ama kilitlidir.
+- Kartta her satır: kalıp (örnek kolonlar "i"de), adlarda geçen değerler
+  ve kolon sayıları, düzenlenebilir anlam, "Dönem Değil" kutusu. Anlamı
+  boş satır kaldıkça onay düğmesi kapalı.
+- Onaylanan anlamlar çalışmaya (donem_bilgisi) ve kurum hafızasına
+  (PROJE_HAFIZASI/DONEM_BILGISI.json) yazılır; sonraki çalışmada hafızadaki
+  kalıp modele sorulmaz, "Önceki Çalışmadan" ile gelir.
+- Kalıp bulunmazsa adım kendiliğinden atlanır.
+- Kayıtlı çalışmalar: Eksik Sözlük Tanımları'ndan ilerideki çalışmalar
+  bir adım kaydırılır (adım sırası sürüm 9); yarım çalışma kaldığı adımda
+  açılır.
+
+Önceki tur: **Kısaltma Sözlüğü: okuma hızlandı (örneklemsiz), karar gerekenler ayrıldı**. Değiştir: `fe_agent/kisaltma_okuma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Okuma dalgalar hâlinde: her dalgadan önce kod, dil modeli çağırmadan
   çözebildiği kolonları çözer, yalnız kalanlar modele gider. Örneklem

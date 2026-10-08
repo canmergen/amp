@@ -3097,6 +3097,16 @@ span.bolme-cip { cursor: default; }
   font: inherit; font-weight: var(--fw-kalin); color: var(--metin);
 }
 .dg-kisa-ac:hover { color: var(--kirmizi); }
+/* Dönem Bilgisi tablosu */
+.dg-donem-tablo { table-layout: fixed; }
+.dg-donem-tablo th:nth-child(1) { width: 140px; }
+.dg-donem-tablo th:nth-child(2) { width: 28%; }
+.dg-donem-tablo th:nth-child(4) { width: 96px; text-align: center; }
+.dg-donem-sar { max-height: 460px; }
+.dg-donem-kalip { font-weight: var(--fw-kalin); margin-right: 4px; }
+.dg-donem-anlam { width: 100%; resize: vertical; min-height: 44px; font: inherit; }
+.dg-donem-soru { color: var(--amber); font-weight: var(--fw-kalin); margin-top: 4px; }
+.dg-tablo tr.dg-donem-degil > td { opacity: .55; }
 .dg-tablo tr.dg-bos-tablo > td { color: var(--metin-soluk); text-align: center; padding: var(--b-3); }
 /* Tabloya yeni giren satır (canlı geçiş): kısa yeşil vurgu. */
 .dg-tablo tr.dg-yeni-gelen > td { animation: dg-yeni-gelen 2.5s ease-out; }

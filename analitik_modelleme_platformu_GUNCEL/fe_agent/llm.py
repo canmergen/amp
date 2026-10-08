@@ -922,7 +922,11 @@ ORKESTRA = {
     # veremezse siradaki.
     "kisaltma_okuma": ("llama", "qwen_flash"),
     "kisaltma_oneri": ("llama", "qwen_flash"),
+    # DONEM BILGISI: kalip yorumu (az sayida, onemli karar): dusunen model
+    # once; cevap veremezse siradaki.
+    "donem": ("qwen_thinking", "llama", "qwen_flash"),
 }
+DONEM_ZAMAN_ASIMI = 150.0
 # Kisaltma cagrilari daha uzun cikti yazar: zaman asimi daha uzun.
 KISALTMA_ZAMAN_ASIMI = 120.0
 # ACIKLAMA ONERILERI: iki yazar paralel calistigi icin takilan model
@@ -1629,6 +1633,72 @@ def kisaltma_esle(girdi, orkestra=None):
     if not m:
         return {}, _orkestra_hatasi(ork, "okuma")
     return v, None
+
+
+# ===========================================================================
+# DONEM BILGISI (01.2.4)
+# ===========================================================================
+SISTEM_DONEM = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon adlarında
+dönem (zaman penceresi, saat dilimi, karşılaştırma dönemi) bilgisi taşıyan
+parça KALIPLARI verilecek. Her kalıp için: adlarda geçen değerleri (kaç
+kolonda geçtiğiyle) ve birkaç örnek kolonun adı ile sözlükteki tanımı.
+
+Görevin her kalıbın ne anlama geldiğini, tanımlardan okuyarak yazmak.
+  - Anlamı YALNIZCA örnek tanımlardan ve değerlerin birbirine göre
+    durumundan çıkar. Genel bilgiyle tahmin etme.
+  - "anlam": kalıbın genel anlamı, tek kısa cümle; harf ve sayının neyi
+    gösterdiğini açık yaz (ör. "<sayı> + harf: son <sayı> günlük pencere"
+    gibi). Değerlere özel bir durum varsa (ör. bir değer diğerlerinden
+    farklı kullanılıyorsa) onu da yaz.
+  - "donem": kalıp gerçekten dönem / zaman bilgisi taşıyorsa true, değilse
+    false. Yanındaki-parça adayları için özellikle dikkat et: yalnızca
+    dönemle ilgiliyse (ör. önceki dönem, karşılaştırma dönemi) true.
+  - "soru": tanımlardan kesin çıkmayan bir nokta varsa kullanıcıya tek,
+    somut bir soru (ör. "Önceki dönem hangi pencereyi gösteriyor?"); yoksa
+    boş. Belirsiz noktayı "anlam"a tahminle YAZMA; soruya yaz.
+  - Tamamen Türkçe, Türkçe karakterlerle yaz.
+
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kalıbı AYNEN yaz.
+{"kolonlar": [{"ad": "...", "donem": true, "anlam": "...", "soru": ""}]}""" \
+    + SINIRLAYICI_KURALI
+
+
+def donem_yorumla(kaliplar, orkestra=None):
+    """kaliplar: [{"kalip", "tur", "degerler": [(deger, kolon)],
+    "ornekler": [(kolon, tanim)]}]. Doner: ({kalip: {"donem", "anlam",
+    "soru", "model"}}, hata)."""
+    if not kaliplar:
+        return {}, None
+    ork = orkestra or Orkestra(arka=True)
+    tur_adi = {"sayi_harf": "sayı + harf", "harf_sayi": "harf + sayı",
+               "aralik": "harf + sayı aralığı", "komsu": "dönem parçasının yanındaki parça (aday)"}
+    satirlar = []
+    for k in kaliplar:
+        s = "- KALIP: %s (%s)\n  DEĞERLER: %s" % (
+            k["kalip"], tur_adi.get(k["tur"], k["tur"]),
+            ", ".join("%s (%d kolon)" % (d, n) for d, n in k["degerler"][:20]))
+        for ad, tanim in k["ornekler"]:
+            s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim)[:240])
+        satirlar.append(s)
+    model, veri = ork.json_cagir(ork.modeller("donem"), SISTEM_DONEM,
+                                 _veri_blogu("KALIPLAR:", "\n".join(satirlar)), 0.1,
+                                 zaman_asimi=DONEM_ZAMAN_ASIMI)
+    if not model:
+        return {}, _orkestra_hatasi(ork, "dönem bilgisi")
+    gecerli = {k["kalip"] for k in kaliplar}
+    sonuc = {}
+    for x in veri.get("kolonlar") or []:
+        if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
+            continue
+        donem = x.get("donem")
+        if isinstance(donem, str):
+            donem = _secenek(donem) in ("true", "evet", "1")
+        sonuc[str(x["ad"])] = {
+            "donem": bool(donem),
+            "anlam": re.sub(r"\s+", " ", str(x.get("anlam") or "")).strip(),
+            "soru": re.sub(r"\s+", " ", str(x.get("soru") or "")).strip(),
+            "model": MODEL_ADLARI.get(model, model)}
+    return sonuc, None
 
 
 def _orkestra_hatasi(ork, is_adi):

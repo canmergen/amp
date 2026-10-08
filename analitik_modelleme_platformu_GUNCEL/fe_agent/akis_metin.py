@@ -125,6 +125,7 @@ ADIM_ADI = {
     "teyit":  "Değişken Listesi ve Tip Kontrolü",
     "tanimlar": "Kolon Rolleri",
     "sozluk_tanim": "Eksik Sözlük Tanımları",
+    "donem": "Dönem Bilgisi",
     "kisaltma": "Kısaltma Sözlüğü",
     "kolon_ad": "Yeni Kolon Adları",
     "bolme":  "Örneklem ve Doğrulama Tasarımı",

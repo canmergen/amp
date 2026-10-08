@@ -2655,6 +2655,18 @@ def kisaltma_alani_endpoint():
         return jsonify(_hata_govdesi("kisaltma_alani", e)), 200
 
 
+@app.route("/donem_alani")
+def donem_alani_endpoint():
+    """Donem Bilgisi yoklamasi: dil modeli yorumu surerken karttaki
+    satirlar guncellenir (beklemez; durum kaydedilmez)."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True, "donem": akis.donem_alani(durum)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("donem_alani", e)), 200
+
+
 @app.route("/kisaltma_oneri", methods=["POST"])
 def kisaltma_oneri_endpoint():
     """Kisaltma Sozlugu'nde anlam duzenlenince o satirin onerilen

@@ -324,7 +324,9 @@ def _mod_goc(durum):
 # (Kisaltma Sozlugu / Yeni Kolon Adlari). Bu uc adimdan birinde duran
 # calisma Kisaltma Sozlugu'nden YENIDEN ACILIR (eski kartlar yeni adimlara
 # uymaz; bkz. _YENIDEN_ACILAN).
-SIRA_SURUMU = 8
+# Surum 9'da sozluk_tanim ile kisaltma arasina "donem" (Donem Bilgisi)
+# girdi; yer sozluk_tanim'in konumu.
+SIRA_SURUMU = 9
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
@@ -335,6 +337,7 @@ _SIRA_GOCLERI = {
     6: (-1, {"A": 4, "B": 6}),
     7: (-1, {"A": 7, "B": 9}),
     8: (-1, {"A": 5, "B": 7}),
+    9: (1, {"A": 3, "B": 5}),
 }
 # surum -> {mod: (ilk, son)}: bu surumden onceki sirada [ilk, son]
 # araligindaki adimda duran calisma "ilk" adimda yeniden acilir.

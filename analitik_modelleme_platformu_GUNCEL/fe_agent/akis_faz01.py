@@ -21,6 +21,7 @@ from fe_agent import sozluk_calisma
 from fe_agent import tanim_hafiza
 from fe_agent import kisaltma as kisaltma_mod
 from fe_agent import kisaltma_okuma
+from fe_agent import donem as donem_mod
 from fe_agent import tip_donusum
 from fe_agent import xlsx_yaz
 from fe_agent import profil as profil_mod
@@ -1647,6 +1648,133 @@ def _onayli_anlamlar(durum):
 
 
 # ---------------------------------------------------------------------------
+# 01.2.4 DONEM BILGISI: kolon adlarindaki donem kaliplari; anlami dil modeli
+# tanimlardan onerir, kullanici onaylar. Aciklama duzenlemesinin baglami.
+# ---------------------------------------------------------------------------
+DONEM_BASLIK = ADIM_ADI["donem"]
+DONEM_YONERGE = [
+    "Kolon adlarında dönem bilgisi taşıyan parçalar aşağıda; dil modeli "
+    "her birinin anlamını tanımlardan okuyarak önerir.",
+    "Anlamı kontrol edin, gerekiyorsa düzeltin; sorusu olan satırda "
+    "cevabı anlamın içine yazın.",
+    "Onaylanan anlamlar sonraki adımlarda açıklamaları ve kolon adlarını "
+    "yazarken kullanılır."]
+DONEM_SUTUNLAR = (
+    "Kalıp: kolon adındaki dönem parçasının biçimi (<N> sayı, <NN> iki "
+    "basamaklı sayı).\n"
+    "Adlarda Geçen: bu kalıpta geçen değerler ve kaç kolonda geçtiği.\n"
+    "Anlam: kalıbın anlamı; dil modeli önerir, siz onaylarsınız.\n"
+    "Dönem Değil: parça dönem bilgisi taşımıyorsa işaretleyin.")
+DONEM_DUGME = {"bos": "Dönem Bilgisini Onayla ve Devam Et"}
+
+
+def _donem_girdisi(durum):
+    adlar = _veri_kolonlari(durum)
+    try:
+        tanimlar = _kisaltma_kaynagi(durum)
+    except Exception:
+        tanimlar = {}
+    return donem_mod.kaliplar(adlar, tanimlar)
+
+
+def _donem_alani(durum):
+    """01.2.4 kartinin verisi (beklemez). Model surerken satirlar kilitli
+    gelir, yoklamayla tazelenir."""
+    liste = _donem_girdisi(durum)
+    imza = donem_mod.baslat(liste) if liste else ""
+    d = donem_mod.durum(imza)
+    sonuc = d["sonuc"]
+    haf = donem_mod.hafiza()
+    onceki = {str(x.get("kalip")): x for x in (durum.get("donem_bilgisi_karari") or [])
+              if isinstance(x, dict)}
+    calisiyor = d["durum"] == "calisiyor"
+    satirlar = []
+    for k in liste:
+        kalip = k["kalip"]
+        m = sonuc.get(kalip) or {}
+        h = haf.get(kalip) or {}
+        o = onceki.get(kalip)
+        if o is not None:
+            anlam, kaynak = str(o.get("anlam") or ""), "duzenlendi"
+            donem_degil = bool(o.get("donem_degil"))
+        elif h:
+            anlam, kaynak, donem_degil = h.get("anlam") or "", "hafiza", not h.get("donem", True)
+        else:
+            anlam, kaynak = m.get("anlam") or "", ("model" if m else "")
+            donem_degil = bool(m) and not m.get("donem", True)
+        # Yanindaki-parca adayi: model donemle ilgisiz dediyse gosterilmez.
+        if k["tur"] == "komsu" and donem_degil and o is None and kaynak != "hafiza":
+            continue
+        satirlar.append({
+            "kalip": kalip, "tur": k["tur"], "kolon": k["kolon"],
+            "degerler": [{"deger": v, "kolon": n} for v, n in k["degerler"]],
+            "ornekler": [{"kolon": a, "tanim": t[:240]} for a, t in k["ornekler"]],
+            "anlam": anlam, "soru": "" if kaynak in ("hafiza", "duzenlendi") else m.get("soru", ""),
+            "kaynak": kaynak, "model": m.get("model", ""), "donem_degil": donem_degil})
+    notlar = []
+    if d["hata"]:
+        notlar.append("Dil modeli cevap vermedi; anlamları kendiniz yazabilirsiniz. (%s)"
+                      % d["hata"][:200])
+    return {"baslik": DONEM_BASLIK, "yonerge": DONEM_YONERGE, "sutunlar": DONEM_SUTUNLAR,
+            "satirlar": satirlar,
+            "dm": "calisiyor" if calisiyor else ("hata" if d["durum"] == "hata" else "bitti"),
+            "ilerleme": {"gecen": d["gecen"]} if calisiyor else None,
+            "not": " ".join(notlar)}
+
+
+def donem_alani(durum):
+    """On yuz yoklamasi icin (beklemez)."""
+    return _donem_alani(durum)
+
+
+def donem_plan(durum):
+    try:
+        alan = _donem_alani(durum)
+    except Exception:
+        alan = None
+    if not alan or not alan["satirlar"]:
+        durum["_plan_otomatik"] = True
+        durum["_secim_alani"] = None
+        durum["donem_bilgisi"] = {}
+        return ("Kolon adlarında dönem bilgisi taşıyan parça bulunmadı; bu adım "
+                "atlandı.")
+    durum["_secim_alani"] = _adim_karti("donem", {"donem": alan}, DONEM_DUGME, "")
+    return ""
+
+
+def donem_uygula(durum):
+    """Onaylanan donem anlamlari bu calismanin donem bilgisine
+    (durum["donem_bilgisi"]: {kalip: anlam}) ve kurum hafizasina yazilir."""
+    karar = durum.pop("_dogrulama_karari", None)
+    alan = _donem_alani(durum)
+    gecerli = {s_["kalip"] for s_ in alan["satirlar"]}
+    gelen = []
+    if isinstance(karar, dict):
+        gelen = [g for g in (karar.get("donem") or [])
+                 if isinstance(g, dict) and str(g.get("kalip")) in gecerli]
+    hatalar = []
+    bilgi, hafiza_kayit, kayit = {}, {}, []
+    for g in gelen:
+        kalip = str(g["kalip"])
+        anlam = re.sub(r"\s+", " ", str(g.get("anlam") or "")).strip()
+        degil = bool(g.get("donem_degil"))
+        if not degil and not anlam:
+            hatalar.append("%s: anlam boş; yazın ya da 'Dönem Değil' işaretleyin." % kalip)
+            continue
+        kayit.append({"kalip": kalip, "anlam": anlam, "donem_degil": degil})
+        hafiza_kayit[kalip] = {"anlam": anlam, "donem": not degil}
+        if not degil:
+            bilgi[kalip] = anlam
+    if hatalar:
+        raise AdimHatasi("Şu satırlar onaylanamadı:\n" + "\n".join(hatalar))
+    durum["donem_bilgisi"] = bilgi
+    durum["donem_bilgisi_karari"] = kayit
+    hata = donem_mod.hafizaya_yaz(hafiza_kayit)
+    metin = "%d dönem kalıbı onaylandı." % len(bilgi)
+    return metin + (" " + hata if hata else "")
+
+
+# ---------------------------------------------------------------------------
 # ADIM KARTLARI
 # ---------------------------------------------------------------------------
 KISALTMA_DUGME = {"bos": "Seçilenleri Onayla ve Devam Et"}
@@ -1866,9 +1994,11 @@ def kisaltma_alani_tazele(durum):
     secim = durum.get("_secim_alani")
     if not (isinstance(secim, dict)
             and (secim.get("kisaltma") is not None or secim.get("kolon_ad") is not None
-                 or secim.get("birlesik") is not None)):
+                 or secim.get("birlesik") is not None or secim.get("donem") is not None)):
         return False
     try:
+        if secim.get("donem") is not None:
+            secim["donem"] = _donem_alani(durum)
         if secim.get("kisaltma") is not None:
             secim["kisaltma"] = _kisaltma_alani(durum)
         if secim.get("kolon_ad") is not None:
