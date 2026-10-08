@@ -1,6 +1,26 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+- "Dönem Değil" sütunu kalktı, yerine "Hafızaya Kaydet": işaretli satırın
+  anlamı kısaltma hafızasına yazılır, sonraki çalışmalarda dolu gelir.
+  Hafızadan gelen satır işaretli gelir; işareti kaldırmak hafızadaki
+  kaydı silmez. Anlamı boş satır bu çalışmada kullanılmaz (onayı
+  durdurmaz); elle eklenen ya da hafızaya kaydedilecek satırda kalıp ve
+  anlam dolu olmalı. Dil modeli bir kalıba "dönem değil" derse satır
+  anlamı boş gelir ve altında bu yazar.
+- "Adlarda Geçen" artık bütün değerleri gösterir ("+N" yok). Elle
+  yazılan kalıpta <N> (sayı) ve <NN> (en az iki basamak) da aranır.
+- "Kolon Adlarındaki Parçalar" tablosu (anlam kutuları, arama) kalktı;
+  yerine "Kolon Adlarındaki Kısaltmalar": dönem değerleri hariç bütün
+  kısaltmalar alfabetik düz liste. Tıklanan kısaltma dönem tablosuna elle
+  satır olarak eklenir (zaten tablodaysa o satıra gidilir).
+- Dönem hafızası ayrı dosyada değil: PROJE_HAFIZASI/KISALTMA_HAFIZASI.json
+  içinde "donem" bölümü ({kalıp: anlam}). Önceki sürümün
+  DONEM_BILGISI.json'u varsa anlamlı kayıtları bir kez buraya taşınır ve
+  dosya silinir. Kısaltma ve ad ilkesi yazımları bu bölümü korur.
+
+Önceki tur: **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "+ Dönem Kalıbı Ekle": listede olmayan dönem parçası kalıbı ve
   anlamıyla elle eklenir. Kalıp büyük harfe çevrilir; adlarda aynen
@@ -15,7 +35,7 @@ Bu tur: **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda
   bilgi olur (parca_bilgisi) ve hafızadakinden farklıysa onaylı kısaltma
   hafızasına yazılır.
 
-Önceki tur: **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce: **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni yapı (konuşulan plan): 01.2.1–01.2.3 aynı; 01.2.4 Dönem Bilgisi
 (bu tur); sonra 01.2.5 Açıklama Düzenleme (sonraki tur), Kısaltma

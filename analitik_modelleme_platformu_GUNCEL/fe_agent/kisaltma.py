@@ -20,7 +20,9 @@ Bu modulde kalanlar:
    her zaman hafizanin onune gecer; hafiza yalniz sozlugun aciklamadigi
    parcalar ve anlam basina standart kisaltma icin kullanilir. Girdi veri
    setine ve sozluge hicbir kosulda yazilmaz. OKUMA HATASI YAZMAYI
-   DURDURUR: dosya var ama okunamiyorsa ustune yazilmaz.
+   DURDURUR: dosya var ama okunamiyorsa ustune yazilmaz. Ayni dosyada
+   "kalip" / "turler" (ad ilkesi) ve "donem" (01.2.4 donem bilgisi) de
+   durur.
 
 3) OGRENILEN - PROJE_HAFIZASI/KISALTMA_OGRENILEN.json: her calismada
    sozlukten okunan (tek anlamli) kisaltmalar kendiliginden yazilir
@@ -618,8 +620,12 @@ def _hafiza_yaz(df):
     for anahtar in ("degisimler", "notlar"):
         if not govde[anahtar]:
             govde.pop(anahtar)
-    # AD ILKESI (kalip ve anlam turleri) ayni dosyada; burada korunur.
+    # AD ILKESI (kalip ve anlam turleri) ve DONEM BILGISI ayni dosyada;
+    # burada korunur.
     govde.update(_ad_ilkesi_ham())
+    donem = _donem_ham()
+    if donem:
+        govde["donem"] = donem
     _folder().upload_stream(DOSYA, json.dumps(govde, ensure_ascii=False, indent=2,
                                               sort_keys=True).encode("utf-8"))
 
@@ -703,6 +709,60 @@ def ad_ilkesi_kaydet(kalip=None, turler=None):
                 govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
         except Exception as e:
             return "Ad ilkesi hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
+
+
+# ---------------------------------------------------------------------------
+# DONEM BILGISI (kurum geneli): 01.2.4'te "Hafizaya Kaydet" isaretli donem
+# kaliplarinin anlami. KISALTMA_HAFIZASI.json'da "donem" altinda:
+# {kalip: anlam}.
+# ---------------------------------------------------------------------------
+def _govde_oku():
+    """Doner: (govde, hata). Dosya yoksa ({}, None)."""
+    try:
+        with _folder().get_download_stream(DOSYA) as akis:
+            govde = json.loads(akis.read().decode("utf-8") or "{}")
+    except Exception as e:
+        if _var_mi(DOSYA) is False:
+            return {}, None
+        return None, "Kısaltma hafızası okunamadı (%s)." % str(e)[:120]
+    if not isinstance(govde, dict):
+        return None, "Kısaltma hafızası okunamadı (biçim)."
+    return govde, None
+
+
+def _donem_ham():
+    govde, _h = _govde_oku()
+    donem = (govde or {}).get("donem")
+    if not isinstance(donem, dict):
+        return {}
+    return {str(k): str(v) for k, v in donem.items() if str(v or "").strip()}
+
+
+def donem_hafizasi():
+    """{kalip: anlam} - hafizadaki donem bilgisi."""
+    return _donem_ham()
+
+
+def donem_kaydet(kayitlar):
+    """kayitlar: {kalip: anlam}; eklenir / guncellenir, silinmez.
+    Dosya var ama okunamiyorsa ustune yazilmaz. Doner: hata ya da None."""
+    kayitlar = {str(k).strip(): str(v).strip() for k, v in (kayitlar or {}).items()
+                if str(k).strip() and str(v or "").strip()}
+    if not kayitlar:
+        return None
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Dönem bilgisi hafızaya yazılamadı: " + hata
+        donem = dict(govde.get("donem") or {})
+        donem.update(kayitlar)
+        govde["donem"] = dict(sorted(donem.items()))
+        try:
+            _folder().upload_stream(DOSYA, json.dumps(
+                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+        except Exception as e:
+            return "Dönem bilgisi hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
 
 

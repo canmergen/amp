@@ -10,9 +10,11 @@ Kod yalniz KALIP bulur, anlam vermez (anlam kodda yazili degil):
                 gecen, rakamsiz parca; geciklerinin cogu donem parcasinin
                 yanindaysa aday olur. Donemle ilgili mi dil modeli soyler.
 Anlami dil modeli tanimlardan okuyarak onerir (arka planda), kullanici
-onaylar ya da duzeltir. Onaylanan anlam kurum hafizasina
-(DONEM_BILGISI.json) yazilir ve sonraki adimlarda (aciklama duzenleme,
-kisaltma, kolon adlari) baglam olur. Girdi veri seti ve sozluge yazilmaz."""
+onaylar ya da duzeltir. Onaylanan anlam bu calismanin donem bilgisi olur
+ve sonraki adimlarda (aciklama duzenleme, kisaltma, kolon adlari) baglam
+olur; "Hafizaya Kaydet" isaretli olanlar kurum hafizasina
+(KISALTMA_HAFIZASI.json, "donem" altinda) yazilir. Girdi veri seti ve
+sozluge yazilmaz."""
 
 import hashlib
 import json
@@ -21,11 +23,12 @@ import threading
 import time
 from collections import Counter
 
+from fe_agent import kisaltma as kisaltma_mod
 from fe_agent import kisaltma_okuma
 from fe_agent import llm as llm_mod
 from fe_agent.akis_durum import _folder
 
-DOSYA = "/DONEM_BILGISI.json"
+ESKI_DOSYA = "/DONEM_BILGISI.json"   # onceki surum; bir kez hafizaya tasinip silinir
 ORNEK_ADET = 3            # kalip basina modele ve karta giden ornek kolon
 KOMSU_EN_AZ = 3           # komsu aday: en az bu kadar kolonda
 KOMSU_PAY = 0.6           # ... ve geciklerinin en az bu kadari donem yaninda
@@ -117,51 +120,70 @@ def kaliplar(adlar, tanimlar):
 
 
 def parca_listesi(adlar, tanimlar, ornek=2):
-    """Kolon adlarindaki BUTUN parcalar (donem degerleri ve yalniz rakam
-    haric): [{"parca", "kolon", "ornekler": [(kolon, tanim)]}], cok gecen
-    once. Kullanici bildigi anlami yazar (istege bagli)."""
+    """Kolon adlarindaki BUTUN parcalar (yalniz rakam haric): [{"parca",
+    "kolon", "donem": donem kalibina uyuyor mu, "ornekler": [(kolon,
+    tanim)]}], alfabetik."""
     tanimlar = tanimlar or {}
     kolonlar = {}
     for ad in adlar:
         for p in dict.fromkeys(_toklar(ad)):
-            if _YALIN_SAYI.match(p) or _donem_parcasi(p):
+            if _YALIN_SAYI.match(p):
                 continue
             kolonlar.setdefault(p, []).append(ad)
     cikti = []
     for p, liste in kolonlar.items():
         ornekler = [(a, str(tanimlar.get(a) or "").strip()[:200]) for a in liste[:ornek]]
-        cikti.append({"parca": p, "kolon": len(liste), "ornekler": ornekler})
-    cikti.sort(key=lambda x: (-x["kolon"], x["parca"]))
+        cikti.append({"parca": p, "kolon": len(liste), "donem": bool(_donem_parcasi(p)),
+                      "ornekler": ornekler})
+    cikti.sort(key=lambda x: x["parca"])
     return cikti
 
 
 # ---------------------------------------------------------------------------
-# KURUM HAFIZASI
+# KURUM HAFIZASI: KISALTMA_HAFIZASI.json "donem" bolumu ({kalip: anlam})
 # ---------------------------------------------------------------------------
-def hafiza():
-    """{kalip: {"anlam", "donem", "tarih"}} (yoksa {})."""
+_TASINDI = []
+
+
+def _eskiyi_tasi():
+    """Onceki surumun DONEM_BILGISI.json'u varsa anlamli kayitlari bir kez
+    kisaltma hafizasina tasinir, dosya silinir. Yazilamazsa dosya kalir."""
+    if _TASINDI:
+        return
     try:
-        with _folder().get_download_stream(DOSYA) as akis:
+        with _folder().get_download_stream(ESKI_DOSYA) as akis:
             govde = json.loads(akis.read().decode("utf-8") or "{}")
     except Exception:
+        _TASINDI.append(True)
+        return
+    kayit = {}
+    for k, v in (govde.items() if isinstance(govde, dict) else []):
+        if isinstance(v, dict) and v.get("donem", True) and str(v.get("anlam") or "").strip():
+            kayit[str(k)] = str(v["anlam"]).strip()
+    if kayit and kisaltma_mod.donem_kaydet(kayit):
+        return
+    try:
+        _folder().delete_path(ESKI_DOSYA)
+    except Exception:
+        pass
+    _TASINDI.append(True)
+
+
+def hafiza():
+    """{kalip: anlam} (yoksa {})."""
+    try:
+        _eskiyi_tasi()
+    except Exception:
+        pass
+    try:
+        return kisaltma_mod.donem_hafizasi()
+    except Exception:
         return {}
-    return govde if isinstance(govde, dict) else {}
 
 
 def hafizaya_yaz(kayitlar):
-    """kayitlar: {kalip: {"anlam", "donem"}}. Doner: hata ya da None."""
-    with _KILIT:
-        govde = hafiza()
-        tarih = time.strftime("%Y-%m-%d %H:%M")
-        for k, v in (kayitlar or {}).items():
-            govde[str(k)] = {"anlam": str(v.get("anlam") or ""),
-                             "donem": bool(v.get("donem", True)), "tarih": tarih}
-        try:
-            _folder().upload_stream(DOSYA, json.dumps(
-                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
-        except Exception as e:
-            return "Dönem bilgisi hafızaya yazılamadı (%s)." % str(e)[:120]
-    return None
+    """kayitlar: {kalip: anlam}. Doner: hata ya da None."""
+    return kisaltma_mod.donem_kaydet(kayitlar)
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +205,7 @@ def baslat(liste):
             return imza
         _ISLER[imza] = {"durum": "calisiyor", "sonuc": {}, "hata": "", "zaman": time.time()}
     haf = hafiza()
-    # Hafizada karari olan kalip (anlami ya da "donem degil") sorulmaz.
+    # Hafizada anlami olan kalip sorulmaz.
     sorulacak = [x for x in liste if x["kalip"] not in haf]
 
     def calis():

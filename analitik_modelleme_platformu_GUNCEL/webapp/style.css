@@ -3101,24 +3101,29 @@ span.bolme-cip { cursor: default; }
 .dg-donem-tablo { table-layout: fixed; }
 .dg-donem-tablo th:nth-child(1) { width: 140px; }
 .dg-donem-tablo th:nth-child(2) { width: 28%; }
-.dg-donem-tablo th:nth-child(4) { width: 96px; text-align: center; }
+.dg-donem-tablo th:nth-child(4) { width: 110px; text-align: center; }
 .dg-donem-sar { max-height: 460px; }
 .dg-donem-kalip { font-weight: var(--fw-kalin); margin-right: 4px; }
 .dg-donem-anlam { width: 100%; resize: vertical; min-height: 44px; font: inherit; }
 .dg-donem-soru { color: var(--amber); font-weight: var(--fw-kalin); margin-top: 4px; }
-.dg-tablo tr.dg-donem-degil > td { opacity: .55; }
 .dg-donem-ekle { margin: var(--b-2) 0 var(--b-3); }
 .dg-donem-kalip-giris { width: 100%; text-transform: uppercase; }
+/* Kolon adlarındaki kısaltmalar: düz liste, sütunlara akar. */
 .dg-parca-baslik { margin-top: var(--b-3); }
-.dg-parca-ara { width: 100%; max-width: 360px; margin: 0 0 var(--b-2); }
-.dg-parca-tablo { table-layout: fixed; }
-.dg-tablo.dg-parca-tablo th:nth-child(1) { width: 16%; }
-.dg-tablo.dg-parca-tablo th:nth-child(2) { width: 13%; }
-.dg-tablo.dg-parca-tablo th:nth-child(3) { width: 31%; }
-.dg-tablo.dg-parca-tablo th:nth-child(4) { width: 40%; }
-.dg-parca-tablo .dg-giris { width: 100%; }
-.dg-parca-ornek > div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--metin-soluk); }
-.dg-parca-sar { max-height: 360px; }
+.dg-parca-liste {
+  list-style: disc; margin: 0; padding: var(--b-2) var(--b-3) var(--b-2) calc(var(--b-3) + 14px);
+  columns: 150px; column-gap: var(--b-4);
+  max-height: 320px; overflow-y: auto;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+}
+.dg-parca-liste li { break-inside: avoid; color: var(--metin-soluk); }
+.dg-parca-oge {
+  border: 0; background: none; padding: 1px 0; cursor: pointer;
+  font: inherit; color: var(--metin); text-align: left;
+}
+.dg-parca-oge:hover:not(:disabled) { color: var(--kirmizi); text-decoration: underline; }
+.dg-parca-oge:disabled { cursor: default; color: var(--metin-soluk); }
+.dg-parca-oge.dg-parca-tabloda { color: var(--metin-soluk); font-weight: var(--fw-kalin); }
 .dg-tablo tr.dg-bos-tablo > td { color: var(--metin-soluk); text-align: center; padding: var(--b-3); }
 /* Tabloya yeni giren satır (canlı geçiş): kısa yeşil vurgu. */
 .dg-tablo tr.dg-yeni-gelen > td { animation: dg-yeni-gelen 2.5s ease-out; }

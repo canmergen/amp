@@ -1656,15 +1656,17 @@ DONEM_YONERGE = [
     "Kolon adlarında dönem bilgisi taşıyan parçalar aşağıda; dil modeli "
     "her birinin anlamını tanımlardan okuyarak önerir.",
     "Anlamı kontrol edin, gerekiyorsa düzeltin; sorusu olan satırda "
-    "cevabı anlamın içine yazın.",
-    "Onaylanan anlamlar sonraki adımlarda açıklamaları ve kolon adlarını "
-    "yazarken kullanılır."]
+    "cevabı anlamın içine yazın. Anlamı boş satır kullanılmaz.",
+    "Listede olmayan dönem parçasını alttaki kısaltmalara tıklayarak ya "
+    "da \"+ Dönem Kalıbı Ekle\" ile ekleyin."]
 DONEM_SUTUNLAR = (
     "Kalıp: kolon adındaki dönem parçasının biçimi (<N> sayı, <NN> iki "
     "basamaklı sayı).\n"
-    "Adlarda Geçen: bu kalıpta geçen değerler ve kaç kolonda geçtiği.\n"
+    "Adlarda Geçen: bu kalıpta geçen bütün değerler ve kaç kolonda geçtiği.\n"
     "Anlam: kalıbın anlamı; dil modeli önerir, siz onaylarsınız.\n"
-    "Dönem Değil: parça dönem bilgisi taşımıyorsa işaretleyin.")
+    "Hafızaya Kaydet: işaretli satırın anlamı kısaltma hafızasına yazılır, "
+    "sonraki çalışmalarda dolu gelir. İşareti kaldırmak hafızadaki kaydı "
+    "silmez.")
 DONEM_DUGME = {"bos": "Dönem Bilgisini Onayla ve Devam Et"}
 
 
@@ -1683,26 +1685,12 @@ def _donem_girdisi(durum):
 
 
 def _parca_alani(durum):
-    """Kolon adlarindaki butun parcalar ve anlamlari (istege bagli):
-    once bu calismada yazilan, yoksa onayli kisaltma hafizasi."""
+    """Kolon adlarindaki butun parcalar (yalniz liste; anlam yok). Elle
+    eklenen kalibin adlarda kac kolonda gectigi de buradan sayilir."""
     adlar, tanimlar = _donem_kaynak(durum)
-    onceki = durum.get("parca_bilgisi") or {}
-    try:
-        haf = kisaltma_mod.onaylilar()
-    except Exception:
-        haf = {}
-    cikti = []
-    for x in donem_mod.parca_listesi(adlar, tanimlar):
-        p = x["parca"]
-        if p in onceki:
-            anlam, kaynak = onceki[p], "duzenlendi"
-        elif haf.get(p):
-            anlam, kaynak = haf[p], "hafiza"
-        else:
-            anlam, kaynak = "", ""
-        cikti.append({"parca": p, "kolon": x["kolon"], "anlam": anlam, "kaynak": kaynak,
-                      "ornekler": [{"kolon": a, "tanim": t} for a, t in x["ornekler"]]})
-    return cikti
+    return [{"parca": x["parca"], "kolon": x["kolon"], "donem": x["donem"],
+             "ornekler": [a for a, _t in x["ornekler"]]}
+            for x in donem_mod.parca_listesi(adlar, tanimlar)]
 
 
 def _donem_alani(durum):
@@ -1720,25 +1708,28 @@ def _donem_alani(durum):
     for k in liste:
         kalip = k["kalip"]
         m = sonuc.get(kalip) or {}
-        h = haf.get(kalip) or {}
+        h = haf.get(kalip) or ""
         o = onceki.get(kalip)
+        soru = ""
         if o is not None:
-            anlam, kaynak = str(o.get("anlam") or ""), "duzenlendi"
-            donem_degil = bool(o.get("donem_degil"))
+            anlam = "" if o.get("donem_degil") else str(o.get("anlam") or "")
+            kaynak, kaydet = "duzenlendi", bool(o.get("kaydet"))
         elif h:
-            anlam, kaynak, donem_degil = h.get("anlam") or "", "hafiza", not h.get("donem", True)
+            anlam, kaynak, kaydet = h, "hafiza", True
         else:
-            anlam, kaynak = m.get("anlam") or "", ("model" if m else "")
-            donem_degil = bool(m) and not m.get("donem", True)
-        # Yanindaki-parca adayi: model donemle ilgisiz dediyse gosterilmez.
-        if k["tur"] == "komsu" and donem_degil and o is None and kaynak != "hafiza":
-            continue
+            # Yanindaki-parca adayi: model donemle ilgisiz dediyse gosterilmez.
+            if m and not m.get("donem", True) and k["tur"] == "komsu":
+                continue
+            anlam = (m.get("anlam") or "") if m.get("donem", True) else ""
+            kaynak, kaydet = ("model" if m else ""), False
+            soru = m.get("soru", "") if m.get("donem", True) else \
+                (m.get("soru") or "Dil modeline göre dönem bilgisi taşımıyor.")
         satirlar.append({
             "kalip": kalip, "tur": k["tur"], "kolon": k["kolon"],
             "degerler": [{"deger": v, "kolon": n} for v, n in k["degerler"]],
             "ornekler": [{"kolon": a, "tanim": t[:240]} for a, t in k["ornekler"]],
-            "anlam": anlam, "soru": "" if kaynak in ("hafiza", "duzenlendi") else m.get("soru", ""),
-            "kaynak": kaynak, "model": m.get("model", ""), "donem_degil": donem_degil})
+            "anlam": anlam, "soru": soru, "kaynak": kaynak, "model": m.get("model", ""),
+            "kaydet": kaydet, "hafizada": bool(h)})
     # Kullanicinin elle ekledigi kaliplar (geri donuste korunur).
     tespit = {s_["kalip"] for s_ in satirlar}
     for kalip, o in onceki.items():
@@ -1746,7 +1737,8 @@ def _donem_alani(durum):
             satirlar.append({"kalip": kalip, "tur": "elle", "kolon": 0, "degerler": [],
                              "ornekler": [], "anlam": str(o.get("anlam") or ""), "soru": "",
                              "kaynak": "duzenlendi", "model": "",
-                             "donem_degil": bool(o.get("donem_degil")), "elle": True})
+                             "kaydet": bool(o.get("kaydet")), "hafizada": bool(haf.get(kalip)),
+                             "elle": True})
     notlar = []
     if d["hata"]:
         notlar.append("Dil modeli cevap vermedi; anlamları kendiniz yazabilirsiniz. (%s)"
@@ -1783,8 +1775,9 @@ def donem_plan(durum):
 
 
 def donem_uygula(durum):
-    """Onaylanan donem anlamlari bu calismanin donem bilgisine
-    (durum["donem_bilgisi"]: {kalip: anlam}) ve kurum hafizasina yazilir."""
+    """Anlami dolu satirlar bu calismanin donem bilgisine
+    (durum["donem_bilgisi"]: {kalip: anlam}) yazilir; "Hafizaya Kaydet"
+    isaretli olanlar kisaltma hafizasina da. Anlami bos satir kullanilmaz."""
     karar = durum.pop("_dogrulama_karari", None)
     alan = _donem_alani(durum)
     gecerli = {s_["kalip"] for s_ in alan["satirlar"]}
@@ -1796,12 +1789,14 @@ def donem_uygula(durum):
     hatalar = []
     bilgi, hafiza_kayit, kayit = {}, {}, []
     gorulen = set()
+    bos = 0
     for g in gelen:
-        kalip = re.sub(r"\s+", "", str(g.get("kalip") or "")).upper() if g.get("elle") \
+        elle = bool(g.get("elle"))
+        kalip = re.sub(r"\s+", "", str(g.get("kalip") or "")).upper() if elle \
             else str(g["kalip"])
         anlam = re.sub(r"\s+", " ", str(g.get("anlam") or "")).strip()
-        degil = bool(g.get("donem_degil"))
-        if g.get("elle") and not kalip and not anlam:
+        kaydet = bool(g.get("kaydet"))
+        if elle and not kalip and not anlam:
             continue                      # bos birakilmis elle satir
         if not kalip:
             hatalar.append("Elle eklenen satırda kalıp boş.")
@@ -1810,47 +1805,27 @@ def donem_uygula(durum):
             hatalar.append("%s: birden fazla satırda." % kalip)
             continue
         gorulen.add(kalip)
-        if not degil and not anlam:
-            hatalar.append("%s: anlam boş; yazın ya da 'Dönem Değil' işaretleyin." % kalip)
+        if not anlam and (elle or kaydet):
+            hatalar.append("%s: anlam boş." % kalip)
             continue
-        kayit.append({"kalip": kalip, "anlam": anlam, "donem_degil": degil,
-                      "elle": bool(g.get("elle"))})
-        hafiza_kayit[kalip] = {"anlam": anlam, "donem": not degil}
-        if not degil:
-            bilgi[kalip] = anlam
+        kayit.append({"kalip": kalip, "anlam": anlam, "kaydet": kaydet, "elle": elle})
+        if not anlam:
+            bos += 1
+            continue
+        bilgi[kalip] = anlam
+        if kaydet:
+            hafiza_kayit[kalip] = anlam
     if hatalar:
         raise AdimHatasi("Şu satırlar onaylanamadı:\n" + "\n".join(hatalar))
-    # KOLON ADI PARCALARI: kullanicinin yazdigi anlamlar (istege bagli).
-    # Bu calismada kesin bilgi; hafizadakinden farkli olanlar onayli
-    # kisaltma hafizasina yazilir.
-    parca_gecerli = {x["parca"]: x for x in alan.get("parcalar") or []}
-    parca_bilgi, parca_kayit = {}, []
-    if isinstance(karar, dict):
-        for g in karar.get("parca") or []:
-            if not isinstance(g, dict):
-                continue
-            p = str(g.get("parca") or "").strip().upper()
-            anlam = re.sub(r"\s+", " ", str(g.get("anlam") or "")).strip()
-            if p not in parca_gecerli or not anlam:
-                continue
-            parca_bilgi[p] = anlam
-            x = parca_gecerli[p]
-            if not (x.get("kaynak") == "hafiza" and x.get("anlam") == anlam):
-                parca_kayit.append({"kisaltma": p, "anlam": anlam, "kaydet": True,
-                                    "kaynak": kisaltma_mod.KAYNAK_KULLANICI})
     durum["donem_bilgisi"] = bilgi
     durum["donem_bilgisi_karari"] = kayit
-    durum["parca_bilgisi"] = parca_bilgi
-    hata = donem_mod.hafizaya_yaz(hafiza_kayit)
-    if parca_kayit:
-        try:
-            _s, h2 = kisaltma_mod.kaydet(parca_kayit)
-        except Exception as e:
-            h2 = "Kısaltma hafızasına yazılamadı (%s)." % str(e)[:120]
-        hata = hata or h2
+    durum.pop("parca_bilgisi", None)
+    hata = donem_mod.hafizaya_yaz(hafiza_kayit) if hafiza_kayit else None
     metin = "%d dönem kalıbı onaylandı" % len(bilgi)
-    if parca_bilgi:
-        metin += "; %d kısaltmanın anlamı yazıldı" % len(parca_bilgi)
+    if hafiza_kayit and not hata:
+        metin += ", %d tanesi hafızaya kaydedildi" % len(hafiza_kayit)
+    if bos:
+        metin += "; anlamı boş %d kalıp kullanılmayacak" % bos
     return metin + "." + (" " + hata if hata else "")
 
 
