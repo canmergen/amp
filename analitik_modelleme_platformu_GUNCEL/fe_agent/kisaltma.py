@@ -2,7 +2,7 @@
 """fe_agent/kisaltma.py - KOLON ADI KISALTMALARI: hafiza (proje geneli),
 sozluk istatistigi ve ortak yardimcilar.
 
-Kisaltma Sozlugu (01.2.4) ve Yeni Kolon Adlari (01.2.5) kisaltma_okuma'da:
+Kisaltma Sozlugu (01.2.7) ve Yeni Kolon Adlari (01.2.8) kisaltma_okuma'da:
 anlamlar yalniz sozlukteki tanimlardan okunur (SOZLUK KESIN DOGRUDUR).
 Bu modulde kalanlar:
 
@@ -21,7 +21,7 @@ Bu modulde kalanlar:
    parcalar ve anlam basina standart kisaltma icin kullanilir. Girdi veri
    setine ve sozluge hicbir kosulda yazilmaz. OKUMA HATASI YAZMAYI
    DURDURUR: dosya var ama okunamiyorsa ustune yazilmaz. Ayni dosyada
-   "kalip" / "turler" (ad ilkesi) ve "donem" (01.2.4 donem bilgisi) de
+   "kalip" / "turler" (ad ilkesi) ve "donem" (01.2.5 donem bilgisi) de
    durur.
 
 3) OGRENILEN - PROJE_HAFIZASI/KISALTMA_OGRENILEN.json: her calismada

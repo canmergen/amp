@@ -742,7 +742,8 @@ BOLME_ADIMI = sol_panel_adi("bolme")
 _AKIS_ADLARI = []
 for _a in (["mod", "ham_veri", "birlestirme", "kurulum", "veri_sec",
             "kaynak_sozluk", "sozluk_uret", "tanimlar", "sozluk_tanim",
-            "donem", "kisaltma", "kolon_ad", "teyit", "bolme"]
+            "sozluk_kontrol", "donem", "aciklama", "kisaltma", "kolon_ad", "teyit",
+            "bolme"]
            + [a for a in adim_sirasi(None) if a != "mod"]):
     if sol_panel_adi(_a) not in _AKIS_ADLARI:
         _AKIS_ADLARI.append(sol_panel_adi(_a))

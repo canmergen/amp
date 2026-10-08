@@ -125,11 +125,35 @@ ADIM_ADI = {
     "teyit":  "Değişken Listesi ve Tip Kontrolü",
     "tanimlar": "Kolon Rolleri",
     "sozluk_tanim": "Eksik Sözlük Tanımları",
+    "sozluk_kontrol": "Sözlük ve Kolon Adı Kontrolü",
     "donem": "Dönem Bilgisi",
+    "aciklama": "Açıklama Düzenleme",
     "kisaltma": "Kısaltma Sözlüğü",
     "kolon_ad": "Yeni Kolon Adları",
     "bolme":  "Örneklem ve Doğrulama Tasarımı",
 }
+# SOZLUK VE KOLON ADI KONTROLU: baslangic secimi gibi iki kartli secim.
+# "yap": Donem Bilgisi, Aciklama Duzenleme, Kisaltma Sozlugu ve Yeni
+# Kolon Adlari sirayla calisir. "atla": dort adim kendiliginden atlanir;
+# aciklamalar ve kolon adlari oldugu gibi kalir. Iki durumda da sonuc
+# yalniz AMP_VERISETI ve AMP_SOZLUK'a (Degisken Listesi ve Tip Kontrolu
+# onaylaninca) yazilir.
+KONTROL_ADIMLARI = ("donem", "aciklama", "kisaltma", "kolon_ad")
+KONTROL_SECENEKLERI = [
+    {"deger": "yap", "rozet": "A", "baslik": "Sözlük ve Kolon Adları Kontrol Edilsin",
+     "aciklama": "Dönem bilgisi, açıklamalar, kısaltmalar ve kolon adları sırayla "
+                 "kontrol edilip düzeltilir. Düzeltmeler yalnız platformun "
+                 "kopyalarına (AMP_VERISETI, AMP_SOZLUK) yazılır."},
+    {"deger": "atla", "rozet": "B", "baslik": "Kontrol Edilmeden Geçilsin",
+     "aciklama": "Açıklamalar ve kolon adları olduğu gibi kalır; bu dört adım "
+                 "atlanır ve Değişken Listesi ve Tip Kontrolü'ne geçilir."},
+]
+KONTROL_SORUSU = ("Sözlükteki açıklamalar ve kolon adları kontrol edilsin mi? "
+                  "Girdi veri setiniz ve sözlüğünüz iki durumda da değişmez.")
+# Kartta gorunen harf ("A", "B") ya da sira ("1", "2") da secer.
+KONTROL_SIRA = {"a": "yap", "1": "yap", "b": "atla", "2": "atla",
+                "yap": "yap", "atla": "atla"}
+
 # Gruplu blogun ortak basligi: kurulum + kolon rolleri + sozluk adimlari.
 GRUP_ADI_VERI_SOZLUK = "Veri Seti, Sözlük ve Kolon Rolleri"
 

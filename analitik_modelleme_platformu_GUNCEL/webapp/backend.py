@@ -2667,6 +2667,66 @@ def donem_alani_endpoint():
         return jsonify(_hata_govdesi("donem_alani", e)), 200
 
 
+@app.route("/aciklama_alani")
+def aciklama_alani_endpoint():
+    """Aciklama Duzenleme yoklamasi: "son" sirasindan sonra degisen
+    satirlar, toplu sorular ve sayaclar (beklemez; durum kaydedilmez)."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True,
+                        "aciklama": akis.aciklama_alani(durum, request.args.get("son") or 0)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("aciklama_alani", e)), 200
+
+
+@app.route("/aciklama_islem", methods=["POST"])
+def aciklama_islem_endpoint():
+    """Aciklama Duzenleme kartindan gelen islem: kullanicinin notu (kolon
+    yeniden kontrol edilir), toplu soru cevabi, aileye uygulama, durdurma ve
+    devam. Kayit calisma klasorundedir; oturum dosyasi yazilmaz."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        islem = str(istek.get("islem") or "")
+        if islem == "not":
+            sonuc = akis.aciklama_not_kaydet(durum, istek.get("kolon"), istek.get("metin"))
+        elif islem == "parca":
+            sonuc = akis.aciklama_parca_cevapla(durum, istek.get("parca"), istek.get("cevap"))
+        elif islem == "aile":
+            sonuc = akis.aciklama_aileye_uygula(durum, istek.get("kolon"),
+                                                istek.get("uygula", True) is not False)
+        elif islem == "iptal":
+            sonuc = akis.aciklama_iptal(durum)
+        elif islem == "devam":
+            sonuc = akis.aciklama_devam(durum)
+        else:
+            return jsonify({"tamam": False, "hata": "Bilinmeyen işlem."})
+        return jsonify(dict(sonuc, tamam=not sonuc.get("hata")))
+    except Exception as e:
+        return jsonify(_hata_govdesi("aciklama_islem", e)), 200
+
+
+@app.route("/aciklama_excel")
+def aciklama_excel_endpoint():
+    """Onerilen sozlugu .xlsx olarak indirir (ayni dosya calismanin
+    PROJE_HAFIZASI klasorune de yazilir). Hata halinde duz metin."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        veri, _yol = akis.aciklama_excel(durum)
+    except Exception as e:
+        kod = _hata_kaydet("aciklama_excel", e)
+        return Response(
+            "Önerilen sözlük Excel olarak oluşturulamadı (hata kodu: %s)." % kod,
+            status=500, mimetype="text/plain; charset=utf-8")
+    return Response(veri, mimetype=XLSX_MIME, headers={
+        "Content-Disposition": 'attachment; filename="%s"' % akis.ACIKLAMA_EXCEL_ADI,
+        "Cache-Control": "no-store",
+    })
+
+
 @app.route("/kisaltma_oneri", methods=["POST"])
 def kisaltma_oneri_endpoint():
     """Kisaltma Sozlugu'nde anlam duzenlenince o satirin onerilen

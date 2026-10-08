@@ -248,6 +248,18 @@ def adim_basligi(anahtar):
     return adim.get("baslik") or ""
 
 
+def _aciklamayi_geri_al(durum, sira, yeni):
+    """Aciklama Duzenleme'ye ya da oncesine donuldu: onaylanan duzeltmeler
+    sozlugun calisma kopyasindan geri alinir; adim yeniden onaylaninca
+    yeniden yazilir (kullanicinin notlari ve sonuclar korunur)."""
+    if "aciklama" in sira and yeni <= sira.index("aciklama"):
+        try:
+            from fe_agent.akis_faz01 import aciklama_geri_al
+            aciklama_geri_al(durum)
+        except Exception:
+            pass
+
+
 def _hedefe_don(durum, hedef):
     """Belirli bir adima DOGRUDAN donus (blok sag ustundeki Geri Dön).
 
@@ -276,6 +288,7 @@ def _hedefe_don(durum, hedef):
     if "teyit" in sira and yeni <= sira.index("teyit"):
         from fe_agent.akis_faz01 import amp_gecersiz_kil
         not_metni = amp_gecersiz_kil(durum)
+    _aciklamayi_geri_al(durum, sira, yeni)
     # yeniden_sor=True: bilgi durumda tam olsa bile form yeniden acilir.
     #
     cevap = _adima_gir(durum, yeniden_sor=True)
@@ -475,6 +488,7 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
         durum["i"] -= 1
         sira = adim_sirasi(durum.get("mod"))
         _validasyonu_tazele(durum, sira)
+        _aciklamayi_geri_al(durum, sira, durum["i"])
         return ("\"%s\" adımına dönüyorum.\n\n"
                 % ADIMLAR[sira[durum["i"]]]["baslik"]) \
             + _adima_gir(durum, yeniden_sor=True)

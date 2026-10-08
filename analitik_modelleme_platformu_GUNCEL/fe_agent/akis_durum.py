@@ -101,7 +101,17 @@ SAHIP_DOSYA = "/VERI_SETI_SAHIPLERI.json"
 # test) ve ikisinin ayrismamasi gerekiyor. Bunlar PLATFORMUN KENDI
 # kolon adlari; baska bir kurumun veri setinden gelmiyorlar.
 AMP_SOZLUK_KOLONLARI = ("DEGISKEN", "TIP", "TIP_DEGISIKLIGI", "ACIKLAMA",
-                        "NULL_ORANI", "SUREC_DISI", "KATEGORI")
+                        "NULL_ORANI", "SUREC_DISI", "KATEGORI",
+                        # Aciklama Duzenleme ve Yeni Kolon Adlari: eski ad,
+                        # duzenleme oncesi aciklama ve anlam karti.
+                        "ESKI_AD", "ACIKLAMA_ORIJINAL", "KONU", "YON", "NITELIK",
+                        "PENCERE", "OLCU", "ISTATISTIK", "KARSILASTIRMA",
+                        "DEGER_ANLAMI")
+# Anlam karti alani -> AMP_SOZLUK kolonu (llm.KART_ALANLARI sirasiyla).
+AMP_KART_KOLONLARI = (("konu", "KONU"), ("yon", "YON"), ("nitelik", "NITELIK"),
+                      ("pencere", "PENCERE"), ("olcu", "OLCU"),
+                      ("istatistik", "ISTATISTIK"), ("karsilastirma", "KARSILASTIRMA"),
+                      ("deger_anlami", "DEGER_ANLAMI"))
 
 LINEAGE_ADI = "MODELLEME_LINEAGE"
 
@@ -326,7 +336,12 @@ def _mod_goc(durum):
 # uymaz; bkz. _YENIDEN_ACILAN).
 # Surum 9'da sozluk_tanim ile kisaltma arasina "donem" (Donem Bilgisi)
 # girdi; yer sozluk_tanim'in konumu.
-SIRA_SURUMU = 9
+# Surum 10'da sozluk_tanim ile donem arasina "sozluk_kontrol" (Sozluk ve
+# Kolon Adi Kontrolu) girdi; yer sozluk_tanim'in konumu. Surum 11'de donem
+# ile kisaltma arasina "aciklama" (Aciklama Duzenleme) girdi; yer donem'in
+# (surum 10'daki) konumu. Bu adimlarin ilerisindeki eski calismada secim
+# yok: kontrol yapilmis sayilir.
+SIRA_SURUMU = 11
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
@@ -338,6 +353,8 @@ _SIRA_GOCLERI = {
     7: (-1, {"A": 7, "B": 9}),
     8: (-1, {"A": 5, "B": 7}),
     9: (1, {"A": 3, "B": 5}),
+    10: (1, {"A": 3, "B": 5}),
+    11: (1, {"A": 5, "B": 7}),
 }
 # surum -> {mod: (ilk, son)}: bu surumden onceki sirada [ilk, son]
 # araligindaki adimda duran calisma "ilk" adimda yeniden acilir.

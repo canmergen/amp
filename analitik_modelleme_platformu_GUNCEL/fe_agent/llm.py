@@ -925,7 +925,11 @@ ORKESTRA = {
     # DONEM BILGISI: kalip yorumu (az sayida, onemli karar): dusunen model
     # once; cevap veremezse siradaki.
     "donem": ("qwen_thinking", "llama", "qwen_flash"),
+    # ACIKLAMA DUZENLEME: butun kolonlar (cok sayida cagri): hizli model
+    # once; cevap veremezse siradaki.
+    "aciklama_duzen": ("qwen_flash", "llama"),
 }
+ACIKLAMA_DUZEN_ZAMAN_ASIMI = 150.0
 DONEM_ZAMAN_ASIMI = 150.0
 # Kisaltma cagrilari daha uzun cikti yazar: zaman asimi daha uzun.
 KISALTMA_ZAMAN_ASIMI = 120.0
@@ -989,9 +993,11 @@ class Orkestra(object):
             raise
 
     def json_cagir(self, adlar, sistem, govde, sicaklik=0.2, haric=(), zaman_asimi=None,
-                   deneme=None, en_cok=None):
+                   deneme=None, en_cok=None, bos_olabilir=False):
         """adlar sirasiyla dener; ilk OKUNABILIR JSON'u doner.
-        Doner: (model, veri). Hicbiri olmazsa (None, {})."""
+        bos_olabilir=True: {"kolonlar": []} de gecerli cevaptir (ornek:
+        taramada aranan sey yok). Doner: (model, veri). Hicbiri olmazsa
+        (None, {})."""
         for ad in adlar:
             if ad in haric or not self.uygun_mu(ad):
                 continue
@@ -1000,7 +1006,7 @@ class Orkestra(object):
                                                  deneme, en_cok), {}, dict)
             except Exception:
                 continue
-            if veri.get("kolonlar"):
+            if veri.get("kolonlar") or (bos_olabilir and isinstance(veri.get("kolonlar"), list)):
                 return ad, veri
             with self._kilit:
                 self._hata[ad] = self._hata.get(ad, 0) + 1
@@ -1751,7 +1757,7 @@ def _donem_tara_parca(parca):
         satirlar.append(s)
     model, veri = ork.json_cagir(ork.modeller("donem"), SISTEM_DONEM_TARA,
                                  _veri_blogu("KISALTMALAR:", "\n".join(satirlar)), 0.1,
-                                 zaman_asimi=DONEM_ZAMAN_ASIMI)
+                                 zaman_asimi=DONEM_ZAMAN_ASIMI, bos_olabilir=True)
     if not model:
         return {}, _orkestra_hatasi(ork, "dönem taraması")
     gecerli = {x["parca"] for x in parca}
@@ -1790,6 +1796,184 @@ def _orkestra_hatasi(ork, is_adi):
     son = "; ".join("%s: %s" % (MODEL_ADLARI.get(a, a), h)
                     for a, h in sorted(ork._son.items()) if h)
     return ("Dil modeli %s için cevap vermedi%s." % (is_adi, (" (%s)" % son[:300]) if son else ""))
+
+
+# ---------------------------------------------------------------------------
+# ACIKLAMA DUZENLEME (01.2.6): her kolonun sozluk aciklamasi, anlami
+# degistirilmeden duzeltilir. Kaynak sirasi: kullanici notu > aile notu >
+# onayli parca anlamlari > orijinal. Belirsizlik soru, ad / dagilim
+# celiskisi not olarak doner; aciklama tahminle degistirilmez.
+# ---------------------------------------------------------------------------
+KART_ALANLARI = ("konu", "yon", "nitelik", "pencere", "olcu", "istatistik",
+                 "karsilastirma", "deger_anlami")
+ACIKLAMA_DUZEN_EN_UZUN = 250
+ACIKLAMA_DUZEN_TOKEN_TABAN = 400
+ACIKLAMA_DUZEN_TOKEN_KOLON = 350
+
+SISTEM_ACIKLAMA_DUZEN = """Sen bir bankacılık veri sözlüğü editörüsün. Görevin:
+her kolonun sözlükteki açıklamasını ANLAMINI DEĞİŞTİRMEDEN düzeltmek.
+Düzeltilmiş açıklama, kolonu ve veriyi hiç görmemiş bir analistin ve
+değişken üreten bir dil modelinin kolonu doğru anlayacağı, tam ve açık bir
+Türkçe cümle olmalı.
+
+GİRDİ: KOLONLAR bloğunda her kolon için şu satırlar (yalnız dolu olanlar):
+  AD           : kolonun adı
+  ORİJİNAL     : sözlükteki açıklama (boş olabilir)
+  KULLANICI    : kullanıcının bu kolon için yazdığı not ya da düzeltme.
+                 KESİNDİR.
+  AİLE NOTU    : kullanıcının aynı kalıptaki kardeş kolon için yazdığı
+                 düzeltme. KESİNDİR; bu kolonun kendi parçalarına
+                 (dönemine) uyarlanarak uygulanır.
+  PARÇALAR     : adın parçalarının onaylı anlamları (dönem bilgisi, onaylı
+                 kısaltmalar, kullanıcının parça cevapları). KESİNDİR.
+  KARDEŞLER    : adı yalnız dönem parçasıyla ayrılan kolonlar ve
+                 açıklamaları (yalnız bağlam).
+  DAĞILIM      : tip, boş oranı, tekil değer sayısı, dağılım özeti (yalnız
+                 bağlam).
+  ROL          : kolonun modellemedeki rolü (varsa).
+  DÜZELTİLECEK : önceki cevabındaki kural dışı durumlar (varsa); bunları
+                 düzelt.
+
+ANLAMIN KAYNAĞI (sırasıyla): KULLANICI, AİLE NOTU, PARÇALAR, ORİJİNAL.
+  - KULLANICI notundaki hiçbir bilgiyi atma; ORİJİNAL notla çelişiyorsa
+    nota uy.
+  - KULLANICI notu yoksa ORİJİNAL'deki anlam bilgisinin hiçbirini atma.
+  - Bu dört kaynakta olmayan anlamı (yön, birim, karşılaştırma dönemi,
+    hesap türü, kimin ya da neyin ölçüldüğü ...) EKLEME; genel bilgiyle
+    tahmin etme.
+
+NASIL DÜZELTİRSİN
+  1. Kısaltmaları ve İngilizce terimleri PARÇALAR'daki anlamla ya da açık
+     Türkçe karşılığıyla aç.
+  2. Dönemi açık yaz ("<sayı> günlük", "<sayı> aylık" gibi; PARÇALAR'daki
+     anlamla).
+  3. Yarım ya da bozuk cümleyi tamamla; sırayı düzenle: zaman penceresi +
+     kimin / neyin + ne ölçüldüğü + uygulanan hesap ya da karşılaştırma +
+     birim ya da değerlerin anlamı.
+  4. Yazım, noktalama ve Türkçe karakter hatalarını düzelt (ç, ğ, ı, İ, ö,
+     ş, ü).
+  5. Değer aralığı, en küçük / en büyük, tekil değer sayısı gibi sayısal
+     istatistik EKLEME. Biçim ("YYYYAA biçiminde") ve kod anlamları
+     ("1: var, 0: yok") istatistik değildir.
+  6. "muhtemelen", "büyük olasılıkla", "belki", "tahminen", "sanırım"
+     yazma. Veri seti adını ve kolon adını açıklamaya yazma.
+  7. Tek tam cümle ya da tam ad öbeği; gerekirse noktalı virgülle ikinci
+     kısım. En çok 250 karakter; noktayla biter.
+
+BELİRSİZLİK VE ÇELİŞKİ (açıklamayı tahminle değiştirme; bildir):
+  - "soru": bir bilgi birden fazla anlama gelebiliyorsa (ör. "değişim"
+    fark mı oran mı belli değil) ya da açıklama ile ad veya kardeş
+    kolonlar çelişiyor ve hangisinin doğru olduğu kaynaklardan
+    çıkmıyorsa kullanıcıya TEK, somut bir soru yaz. Belirsiz bilgiyi
+    açıklamaya tahminle yazma; açıklamayı kesin olan kadarıyla kur. Soru
+    yoksa boş.
+  - "parca": soru adın belirli bir parçası hakkındaysa o parçayı adda
+    yazıldığı gibi yaz; değilse boş.
+  - "ad_notu": ad ile açıklama uyuşmuyorsa yaz: açıklamada olup adda
+    karşılığı olmayan bilgi (ör. "Açıklamada 'son' var; adda karşılığı
+    yok.") ya da adda olup açıklamada karşılığı olmayan parça. Açıklamayı
+    bu yüzden değiştirme; kolon adı sonraki adımda açıklamaya göre
+    düzeltilir. Uyumluysa boş.
+  - "dagilim_notu": DAĞILIM açıklamayla çelişiyorsa yaz (ör. açıklama
+    tutar diyor, değerler yalnız 0 ve 1); açıklamayı dağılıma göre
+    değiştirme. Çelişki yoksa boş.
+
+ANLAM KARTI ("kart"): düzeltilmiş açıklamanın parçaları. Her alana
+açıklamadaki ifadeyi yaz; açıklamada karşılığı yoksa boş bırak. Karttaki
+her bilgi açıklamada geçmeli.
+  konu          : ölçümün konusu olan varlık ya da olay
+  yon           : hareketin yönü (gelen / giden, giriş / çıkış ...)
+  nitelik       : ölçümü daraltan özellik (tür, kanal, ürün, zaman dilimi ...)
+  pencere       : zaman penceresi ya da dönem
+  olcu          : ölçülen büyüklük (tutar, adet, gün ...)
+  istatistik    : uygulanan hesap (toplam, ortalama, en büyük, oran ...)
+  karsilastirma : karşılaştırma (önceki döneme göre, iki pencerenin oranı ...)
+  deger_anlami  : değerlerin anlamı (1: var, 0: yok; birim ...)
+
+KARAR ("karar"): ne yaptığını tek kısa cümleyle yaz. Açıklama zaten doğru
+ve tamsa "Aynen alındı."; değiştirdiysen "Netleştirildi: <neyi
+değiştirdiğin>."; kullanıcı notunu işlediysen "Notunuz işlendi: <kısaca>.".
+
+ÖRNEKLER (köşeli parantezler yer tutucudur; kalıbı göster, içeriği
+kopyalama):
+  ORİJİNAL "[kısaltma] tutarı son 3G"; PARÇALAR "[kısaltma]: [anlam]; 3G:
+  3 günlük pencere"
+    -> aciklama "Son 3 günlük [anlam] tutarı.", karar "Netleştirildi:
+       kısaltma ve dönem açıldı."
+  ORİJİNAL "[konu] değişimi"; adda [parça] var, anlamı yok
+    -> aciklama "[Konu] değişimi.", soru "'Değişim' fark mı, oran mı?",
+       parca "[parça]"
+  KULLANICI "[konu] değerinin önceki 3 günlük değere oranı"; PARÇALAR "3G:
+  3 günlük pencere"
+    -> aciklama "3 günlük [konu] değerinin önceki 3 günlük değere oranı.",
+       karar "Notunuz işlendi: karşılaştırma oran olarak yazıldı."
+
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN
+yaz; her kolon için bir kayıt.
+{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "kart": {"konu": "", "yon": "", "nitelik": "", "pencere": "", "olcu": "", "istatistik": "", "karsilastirma": "", "deger_anlami": ""}, "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": ""}]}""" \
+    + SINIRLAYICI_KURALI
+
+
+def _kirp(metin, en_cok):
+    m = re.sub(r"\s+", " ", str(metin or "")).strip()
+    return m if len(m) <= en_cok else m[:en_cok - 1] + "…"
+
+
+def _aciklama_duzen_satiri(g):
+    s = ["- AD: %s" % g["kolon"],
+         "  ORİJİNAL: %s" % (_kirp(g.get("orijinal"), 500) or "(boş)")]
+    if str(g.get("not") or "").strip():
+        s.append("  KULLANICI: %s" % _kirp(g["not"], 500))
+    an = g.get("aile_notu") or {}
+    if str(an.get("not") or "").strip():
+        s.append("  AİLE NOTU: %s için kullanıcı: %s" % (an.get("kolon", ""), _kirp(an["not"], 400)))
+    if g.get("parcalar"):
+        s.append("  PARÇALAR: %s" % "; ".join(
+            "%s: %s" % (p, _kirp(a, 160)) for p, a in g["parcalar"]))
+    if g.get("kardesler"):
+        s.append("  KARDEŞLER: %s" % " | ".join(
+            "%s: %s" % (k, _kirp(t, 160) or "(boş)") for k, t in g["kardesler"]))
+    if g.get("dagilim"):
+        s.append("  DAĞILIM: %s" % _kirp(g["dagilim"], 300))
+    if g.get("rol"):
+        s.append("  ROL: %s" % g["rol"])
+    if g.get("duzeltilecek"):
+        s.append("  DÜZELTİLECEK: %s" % "; ".join(g["duzeltilecek"]))
+    return "\n".join(s)
+
+
+def aciklama_duzenle(girdiler, orkestra=None):
+    """girdiler: [{"kolon", "orijinal", "not", "aile_notu", "parcalar":
+    [(parca, anlam)], "kardesler": [(kolon, aciklama)], "dagilim", "rol",
+    "duzeltilecek": [metin]}]. Doner: ({kolon: {"aciklama", "karar",
+    "kart", "soru", "parca", "ad_notu", "dagilim_notu", "model"}}, hata).
+    Kodun denetimi (sayi, donem, Turkce) cagiranda (aciklama_duzen)."""
+    if not girdiler:
+        return {}, None
+    ork = orkestra or Orkestra(arka=True)
+    govde = _veri_blogu("KOLONLAR:", "\n".join(_aciklama_duzen_satiri(g) for g in girdiler))
+    model, veri = ork.json_cagir(
+        ork.modeller("aciklama_duzen"), SISTEM_ACIKLAMA_DUZEN, govde, 0.1,
+        zaman_asimi=ACIKLAMA_DUZEN_ZAMAN_ASIMI,
+        en_cok=ACIKLAMA_DUZEN_TOKEN_TABAN + ACIKLAMA_DUZEN_TOKEN_KOLON * len(girdiler))
+    if not model:
+        return {}, _orkestra_hatasi(ork, "açıklama düzenleme")
+    gecerli = {str(g["kolon"]) for g in girdiler}
+    sonuc = {}
+    for x in veri.get("kolonlar") or []:
+        if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
+            continue
+        kart = x.get("kart") if isinstance(x.get("kart"), dict) else {}
+        sonuc[str(x["ad"])] = {
+            "aciklama": _donem_metni(x.get("aciklama")),
+            "karar": _donem_metni(x.get("karar")),
+            "kart": {a: _donem_metni(kart.get(a)) for a in KART_ALANLARI},
+            "soru": _donem_metni(x.get("soru")),
+            "parca": _donem_metni(x.get("parca")),
+            "ad_notu": _donem_metni(x.get("ad_notu")),
+            "dagilim_notu": _donem_metni(x.get("dagilim_notu")),
+            "model": MODEL_ADLARI.get(model, model)}
+    return sonuc, None
 
 
 SISTEM_KISALTMA_STANDART = """Sen bir veri sözlüğü editörüsün. Kolon

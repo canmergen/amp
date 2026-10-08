@@ -1,10 +1,13 @@
-"""KISALTMA SOZLUGU (01.2.4) ve YENI KOLON ADLARI (01.2.5).
+"""KISALTMA SOZLUGU (01.2.7) ve YENI KOLON ADLARI (01.2.8).
+
+Okunan tanimlar Aciklama Duzenleme (01.2.6) onaylandiysa DUZELTILMIS
+aciklamalardir (sozlugun calisma kopyasi).
 
 SOZLUK KESIN DOGRUDUR. Kolon adlarindaki kisaltmalarin anlami yalniz
 sozlukteki tanimlardan okunur; genel bilgiyle tahmin, aday oylamasi ve
 hakem yoktur.
 
-1) OKUMA (arka planda; 01.2.3'te baslar): tanimi olan HER kolon icin dil
+1) OKUMA (arka planda; adimin karti acilinca baslar): tanimi olan HER kolon icin dil
    modeli adin her parcasini (ya da yan yana birkac parcayi birlikte)
    tanimdaki ifadeyle esler ve tanimda olup adda karsiligi olmayan
    kavramlari yazar (llm.kisaltma_esle). Kod her eslemeyi dogrular: ifade
@@ -553,7 +556,7 @@ def durum(imza):
 
 def iptal(imza):
     """Isi ve ayni calisma klasorunde suren diger okumalari durdurur
-    (01.2.3'te baslayan okuma dahil)."""
+    (onceki adimda baslamis okuma dahil)."""
     k = _ISLER.get(imza or "")
     if not k:
         return

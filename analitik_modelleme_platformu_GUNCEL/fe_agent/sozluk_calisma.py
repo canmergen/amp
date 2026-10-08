@@ -862,6 +862,80 @@ def tanim_duzelt(durum, kolon, tanim, oneri=None, geri_al=False):
     return True, ""
 
 
+# Aciklama Duzenleme (01.2.6) onayi ve geri alinmasi.
+KAYNAK_ACIKLAMA_DUZEN = "açıklama düzenleme (kullanıcı onayladı)"
+KAYNAK_ACIKLAMA_GERI = "açıklama düzenlemesi geri alındı"
+
+
+def tanimlar_tam(durum):
+    """Calisma tablosundaki {kolon: aciklama} (BOS aciklamalar dahil)."""
+    tablo = kopya_oku((durum or {}).get("_oturum_id"))
+    if tablo is None:
+        return {}
+    ad_kol = degisken_kolonu_bul(tablo)
+    ack_kol = tanim_kolonu_bul(tablo)
+    if ad_kol is None:
+        return {}
+    cikti = {}
+    for i, ad in zip(tablo.index, tablo[ad_kol].astype(str)):
+        ham = tablo.at[i, ack_kol] if ack_kol is not None else ""
+        cikti[ad.strip()] = "" if ham is None or (isinstance(ham, float) and pd.isna(ham)) \
+            else str(ham).strip()
+    return cikti
+
+
+def tanim_toplu_yaz(durum, degisiklik, kaynak):
+    """{kolon: aciklama} tek okuma-yazmayla calisma tablosuna yazilir;
+    kutuge her degisen satir duser. Orijinal sozluge ASLA yazilmaz.
+    Doner: hata metni ya da None (degisiklik yoksa None)."""
+    oturum = (durum or {}).get("_oturum_id")
+    degisiklik = {str(k).strip(): str(v or "").strip() for k, v in (degisiklik or {}).items()
+                  if str(k).strip()}
+    if not degisiklik:
+        return None
+    if kopya_oku(oturum) is None:
+        _kopyayi_kurtar(durum)
+    try:
+        tablo = kopya_oku(oturum)
+        if tablo is None:
+            return ("Sözlüğün çalışma kopyası bulunamadı; açıklamalar yazılamadı. "
+                    "Orijinal sözlüğe hiçbir koşulda yazılmaz.")
+        ad_kol = degisken_kolonu_bul(tablo)
+        tablo, kat_kol = _kategori_kolonu_garanti(tablo)
+        tablo, ack_kol = _tanim_kolonu_garanti(tablo)
+        adlar = tablo[ad_kol].astype(str).str.strip()
+        kutuk, eklenen = [], []
+        for kolon, metin in degisiklik.items():
+            maske = adlar == kolon
+            if int(maske.sum()):
+                ham = tablo.loc[maske, ack_kol].iloc[0]
+                eski = "" if ham is None or (isinstance(ham, float) and pd.isna(ham)) else str(ham)
+                if eski.strip() == metin:
+                    continue
+                tablo.loc[maske, ack_kol] = metin
+            else:
+                eski = ""
+                satir = {c: "" for c in tablo.columns}
+                satir[ad_kol], satir[ack_kol] = kolon, metin
+                eklenen.append(satir)
+            kutuk.append({"ALAN": "sozluk", "ANAHTAR": kolon, "ESKI": eski,
+                          "YENI": metin, "KAYNAK": kaynak})
+        if eklenen:
+            tablo = pd.concat([tablo, pd.DataFrame(eklenen)], ignore_index=True)
+    except Exception as e:
+        return "Sözlük çalışma kopyasına açıklamalar işlenemedi (%s)." % str(e)[:140]
+    if not kutuk:
+        return None
+    _yol, hata = _kopya_yaz(oturum, tablo)
+    if hata:
+        return hata
+    try:
+        kutuk_mod.degisiklik_dus(oturum, kutuk)
+    except Exception:
+        pass
+    return None
+
+
 def satir_ekle(durum, kolon, aciklama, kategori="", oneri=None):
     """Sozlukte tanimi olmayan bir kolona tanim yazar.
 

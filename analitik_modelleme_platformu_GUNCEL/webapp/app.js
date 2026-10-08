@@ -1878,9 +1878,10 @@ const EXCEL_SIMGESI =
    DOKUMAN_DOSYA_ADI ile aynı gerekçe). */
 const EXCEL_ADLARI = { liste: "degisken_listesi.xlsx",
                        sozluk: "degisken_sozlugu.xlsx",
-                       kisaltma: "kisaltma_onerileri.xlsx" };
+                       kisaltma: "kisaltma_onerileri.xlsx",
+                       aciklama: "onerilen_sozluk.xlsx" };
 /* Tür -> uç. Kısaltma raporu kendi ucundan gelir (teyit kapısı yok). */
-const EXCEL_UCLARI = { kisaltma: "kisaltma_excel" };
+const EXCEL_UCLARI = { kisaltma: "kisaltma_excel", aciklama: "aciklama_excel" };
 
 function excelSeridiYap(tur, etiket, ipucu) {
     const el = elYap("div", "excel-serit");
@@ -6340,6 +6341,10 @@ function dogrulamaKartiEkle(alan, blok) {
     /* Dönem Bilgisi (01.2.4) */
     const donErisim = alan.donem
         ? donemBolumuEkle(kart, alan.donem, !!(blok && blok.kilit), () => durumTazele()) : null;
+    /* Açıklama Düzenleme (01.2.6) */
+    const acikErisim = alan.aciklama_duzen
+        ? aciklamaBolumuEkle(kart, alan.aciklama_duzen, !!(blok && blok.kilit), () => durumTazele())
+        : null;
     const kisaErisim = alan.kisaltma
         ? kisaltmaBolumuEkle(kart, alan.kisaltma, !!(blok && blok.kilit), !!adimModu,
                              () => durumTazele()) : null;
@@ -6612,6 +6617,7 @@ function dogrulamaKartiEkle(alan, blok) {
         atlaBtn.onclick = () => {
             if (mesgul || kart.classList.contains("kilitli")) return;
             const ozet = adimModu === "kolon_ad" ? "Yeni adlar uygulanmadan devam edildi"
+                : adimModu === "aciklama" ? "Açıklamalar değiştirilmeden devam edildi"
                 : "Kısaltmalar onaylanmadan devam edildi";
             kartiKilitle(ozet);
             gonder(ozet, false, { dogrulama: { atla: true, adim: kartAdim } });
@@ -6726,6 +6732,24 @@ function dogrulamaKartiEkle(alan, blok) {
                 : "";
             return;
         }
+        /* AÇIKLAMA DÜZENLEME: dil modeli düzenlerken onaylanamaz (Durdur
+           ile durdurulursa düzenlenmeyenlerin orijinali kalır). Cevapsız
+           soru onayı durdurmaz; bilgi olarak yazar. */
+        if (adimModu === "aciklama" && acikErisim) {
+            const bek = acikErisim.bekliyor(), s = acikErisim.sayac();
+            const durdu = acikErisim.durduruldu();
+            birincil.disabled = bek;
+            gerekce.textContent = bek
+                ? "Dil modeli " + ftBinlik(Number(s.bekleyen || 0)) + " kolonu düzenliyor; bitince "
+                  + "onaylanabilir. Beklemek istemezseniz Durdur'a basın."
+                : durdu ? ftBinlik(Number(s.bekleyen || 0)) + " kolon düzenlenmedi; onaylarsanız "
+                  + "orijinal açıklamaları kalır."
+                : Number(s.soru || 0) > 0 ? ftBinlik(Number(s.soru)) + " kolonda cevapsız soru var; "
+                  + "o kolonlarda açıklama yalnız kesin bilgiyle yazıldı."
+                : "";
+            gerekce.hidden = !gerekce.textContent;
+            return;
+        }
         if (adimModu === "kisaltma" && kisaErisim && kisaErisim.bekliyor()) {
             birincil.disabled = true;
             gerekce.hidden = false;
@@ -6751,6 +6775,7 @@ function dogrulamaKartiEkle(alan, blok) {
         if (kisaErisim) kisaErisim.kilitle(kilit);
         if (kolonAdErisim) kolonAdErisim.kilitle(kilit);
         if (donErisim) donErisim.kilitle(kilit);
+        if (acikErisim) acikErisim.kilitle(kilit);
         birincil.disabled = kilit;
     }
 
@@ -6920,6 +6945,13 @@ function dogrulamaKartiEkle(alan, blok) {
        kategori geciyor. */
     birincil.onclick = () => {
         if (mesgul || birincil.disabled) return;
+        /* Alanı bırakmadan onaya basılan not önce kaydedilip kontrol edilir. */
+        if (adimModu === "aciklama" && acikErisim && acikErisim.kaydedilmemis() > 0) {
+            birincil.disabled = true;
+            gerekce.hidden = false;
+            gerekce.textContent = "Notunuz kontrol ediliyor; bitince onaylayın.";
+            return;
+        }
         const karar = { haric: [], ekle: [] };
         durumlar.forEach((s, i) => {
             const ack = girisler[i] ? girisler[i].value.trim() : "";
@@ -6940,8 +6972,12 @@ function dogrulamaKartiEkle(alan, blok) {
         }
         if (kolonAdErisim) karar.kolon_ad = kolonAdErisim.deger();
         if (donErisim) karar.donem = donErisim.deger();
+        if (acikErisim) karar.aciklama = true;
         let ozet;
-        if (adimModu === "donem") {
+        if (adimModu === "aciklama") {
+            const s = acikErisim ? acikErisim.sayac() : {};
+            ozet = ftBinlik(Number(s.degisen || 0)) + " açıklama düzeltildi";
+        } else if (adimModu === "donem") {
             const n = (karar.donem || []).filter(k => k.anlam).length;
             const h = (karar.donem || []).filter(k => k.anlam && k.kaydet).length;
             ozet = ftBinlik(n) + " dönem kalıbı onaylandı" + (h ? ", " + ftBinlik(h) + " tanesi hafızaya" : "");
@@ -7003,6 +7039,11 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         return bos;
     }
     if (ka.bilgi) kbas.appendChild(bolmeBilgiSimgesi(tireSade(ka.bilgi), ka.baslik || "Yeni Kolon Adları"));
+    /* Önerilen sözlük: düzeltilmiş açıklamalar ve önerilen yeni adlar. */
+    const adExcel = excelSeridiYap("aciklama", "Önerilen Sözlüğü İndir",
+        "Eski ve önerilen yeni adlar, orijinal ve düzeltilmiş açıklamalar, anlam kartı");
+    adExcel.ac(true);
+    kb.appendChild(adExcel.el);
     if (ka.aciklama) kart.appendChild(elYap("div", "dg-kisa-aciklama", tireSade(ka.aciklama)));
     const ust = elYap("div", "dg-tablo-ust");
     ust.appendChild(dgLejant([["dg-l-llm", "Yeni Ad"], ["dg-l-dikkat", "Sorunlu"],
@@ -7028,7 +7069,8 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         const tr = elYap("tr", "dg-satir");
         const tdK = elYap("td", "dg-kolon", r.kolon);
         /* Neyin değiştiği ve varsa sorun "i"de. */
-        const iMetni = [(r.degisim || []).join("\n"), r.sorun ? "Sorun: " + r.sorun : ""]
+        const iMetni = [(r.degisim || []).join("\n"), r.sorun ? "Sorun: " + r.sorun : "",
+                        r.aciklama_notu ? "Açıklama Düzenleme notu: " + r.aciklama_notu : ""]
             .filter(Boolean).join("\n\n");
         if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kolon));
         tr.appendChild(tdK);
@@ -7538,6 +7580,501 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         },
         /* Okuma / öneriler sürüyor mu (adım kartında onay kilidi). */
         bekliyor: () => ka.dm === "calisiyor"
+    };
+}
+
+/* ==================== 01.2.6 Açıklama Düzenleme ====================
+   Her kolonun açıklaması, anlamı değiştirilmeden dil modeliyle düzeltilir.
+   Satırlar arka plandaki işten yoklamayla gelir; satır, düzenlemesi
+   bitince açılır. "Sizin Düzenlemeniz"e yazılan not alandan çıkınca
+   kaydedilir ve o kolon beklemeden yeniden kontrol edilir. Aynı parça
+   hakkındaki sorular "Toplu Sorular"da bir kez sorulur. Kart geçmişten
+   çizilirse onaylanan hal salt okunur gelir. */
+const ACK_SAYFA = 150;
+const ACK_YOKLAMA = 2500;
+const ACK_KART_ADLARI = [["konu", "Konu"], ["yon", "Yön"], ["nitelik", "Nitelik"],
+                         ["pencere", "Dönem"], ["olcu", "Ölçü"], ["istatistik", "İstatistik"],
+                         ["karsilastirma", "Karşılaştırma"], ["deger_anlami", "Değer Anlamı"]];
+const ACK_SUZGECLER = [["tumu", "Tümü", "toplam"], ["degisen", "Değişen", "degisen"],
+                       ["soru", "Soru Var", "soru"], ["ad", "Ad / Dağılım Notu", "ad"],
+                       ["kontrol", "Kontrol Gereken", "kontrol"],
+                       ["elle", "Düzenledikleriniz", "elle"], ["hata", "Düzenlenemedi", "hata"]];
+
+function ackSade(m) {
+    return String(m || "").replace(/\s+/g, " ").trim();
+}
+
+function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
+    let kilitli = ilkKilit;
+    const veriler = new Map();        // kolon -> satır verisi (sunucudan)
+    const sira = [];                  // kolonların veri setindeki sırası
+    const el = new Map();             // kolon -> satır elemanları
+    let son = 0, dm = ilkKilit ? "bitti" : "calisiyor", sayac = {}, sorular = [];
+    let hataMetni = "", saltOkunur = !!ilkKilit, ilerleme = null, atlandi = false;
+    let suzgec = "tumu", arama = "", gosterilen = ACK_SAYFA;
+    let yoklamaZaman = null, yuklendi = false;
+
+    /* ---- Başlık, yönerge, Excel ---- */
+    const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
+    const kbas = elYap("div", "dg-tablo-baslik", aa.baslik || "Açıklama Düzenleme");
+    if (aa.sutunlar) kbas.appendChild(bolmeBilgiSimgesi(tireSade(aa.sutunlar), "Sütunlar"));
+    kb.appendChild(kbas);
+    const excel = excelSeridiYap("aciklama", "Önerilen Sözlüğü İndir",
+        "Orijinal ve düzeltilmiş açıklamalar, notlarınız ve anlam kartı");
+    excel.ac(true);
+    kb.appendChild(excel.el);
+    kart.appendChild(kb);
+    if (aa.yonerge && aa.yonerge.length) {
+        const yl = elYap("ol", "dg-yonerge");
+        aa.yonerge.forEach(m => yl.appendChild(elYap("li", "", tireSade(m))));
+        kart.appendChild(yl);
+    }
+    if (aa.uyari) kart.appendChild(elYap("div", "dg-oneri-hata", tireSade(aa.uyari)));
+
+    /* ---- İlerleme: süre, sayı, Durdur / Devam ---- */
+    const ilerEl = elYap("div", "islem-satiri dg-ilerleme dg-acik-ilerleme");
+    ilerEl.setAttribute("role", "status");
+    const ilerMetin = elYap("span", "islem-sure", "");
+    const durdurBtn = elYap("button", "dg-toplu-btn", "Durdur");
+    durdurBtn.type = "button";
+    durdurBtn.title = "Dil modelini durdur; düzenlenen satırlar kalır";
+    ilerEl.append(ilerMetin, durdurBtn);
+    kart.appendChild(ilerEl);
+    const durumEl = elYap("div", "dg-bilgi-kutu dg-acik-durum", "");
+    durumEl.hidden = true;
+    const devamBtn = elYap("button", "dg-toplu-btn", "Kaldığı Yerden Devam Et");
+    devamBtn.type = "button";
+    kart.appendChild(durumEl);
+    let ilerBas = Date.now(), ilerSabit = false;
+    const ilerSayac = setInterval(() => {
+        if (!kart.isConnected) { clearInterval(ilerSayac); return; }
+        ilerYaz();
+    }, 1000);
+
+    /* ---- Toplu sorular ---- */
+    const soruKap = elYap("div", "dg-acik-sorular");
+    soruKap.hidden = true;
+    kart.appendChild(soruKap);
+
+    /* ---- Süzgeçler + arama ---- */
+    const ust = elYap("div", "dg-tablo-ust dg-acik-ust");
+    const suzKap = elYap("div", "dg-acik-suzgec");
+    const suzBtn = {};
+    ACK_SUZGECLER.forEach(([k, et]) => {
+        const b = elYap("button", "dg-acik-cip", et);
+        b.type = "button";
+        b.onclick = () => { suzgec = k; gosterilen = ACK_SAYFA; suzgecCiz(); tabloCiz(); };
+        suzBtn[k] = b;
+        suzKap.appendChild(b);
+    });
+    const ara = document.createElement("input");
+    ara.type = "search"; ara.className = "dg-giris dg-acik-ara";
+    ara.placeholder = "Kolon ya da açıklama ara…";
+    ara.setAttribute("aria-label", "Açıklama ara");
+    ara.addEventListener("input", () => {
+        arama = ara.value.trim().toLocaleLowerCase("tr");
+        gosterilen = ACK_SAYFA;
+        tabloCiz();
+    });
+    ust.append(suzKap, ara);
+    kart.appendChild(ust);
+
+    /* ---- Tablo ---- */
+    const sar = elYap("div", "dg-tablo-sar dg-acik-sar");
+    const tablo = elYap("table", "dg-tablo dg-acik-tablo");
+    const th = document.createElement("thead"), hr = document.createElement("tr");
+    ["Kolon", "Orijinal", "Sizin Düzenlemeniz", "Düzeltilmiş Açıklama"]
+        .forEach(h => hr.appendChild(elYap("th", "", h)));
+    th.appendChild(hr); tablo.appendChild(th);
+    const tb = document.createElement("tbody");
+    tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
+    const dahaBtn = elYap("button", "dg-toplu-btn dg-acik-daha", "");
+    dahaBtn.type = "button";
+    dahaBtn.hidden = true;
+    dahaBtn.onclick = () => { gosterilen += ACK_SAYFA; tabloCiz(); };
+    kart.appendChild(dahaBtn);
+    const bosEl = elYap("div", "dg-not dg-cizgisiz", "Satırlar yükleniyor…");
+    kart.appendChild(bosEl);
+
+    /* ---- Sunucu işlemleri ---- */
+    function islem(govde) {
+        return fetch(getWebAppBackendUrl("aciklama_islem"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi(govde))
+        }).then(r => r.json());
+    }
+    durdurBtn.onclick = () => {
+        durdurBtn.disabled = true;
+        islem({ islem: "iptal" }).then(() => yoklaHemen()).catch(() => {})
+            .finally(() => { durdurBtn.disabled = false; });
+    };
+    devamBtn.onclick = () => {
+        devamBtn.disabled = true;
+        islem({ islem: "devam" }).then(d => {
+            if (d && d.hata) durumYaz(d.hata, true);
+            yoklaHemen();
+        }).catch(() => {}).finally(() => { devamBtn.disabled = false; });
+    };
+
+    function bekliyorMu(v) {
+        return v.durum === "bekliyor" || v.durum === "isleniyor" || v.durum === "yok";
+    }
+
+    /* ---- Satır ---- */
+    function satirKur(v) {
+        const tr = elYap("tr", "dg-satir dg-acik-satir");
+        const tdK = elYap("td", "dg-kolon");
+        tdK.appendChild(elYap("div", "dg-acik-kolon", v.kolon));
+        if (v.rol) tdK.appendChild(elYap("span", "dg-rol", tireSade(v.rol)));
+        const aileEl = elYap("div", "dg-acik-aile", "");
+        tdK.appendChild(aileEl);
+        tr.appendChild(tdK);
+        const tdO = elYap("td", "dg-acik-orijinal");
+        tdO.textContent = v.orijinal ? tireSade(v.orijinal) : "(boş)";
+        tdO.classList.toggle("dg-acik-bos", !v.orijinal);
+        tr.appendChild(tdO);
+        const tdN = elYap("td", "dg-aciklama-hucre dg-acik-not-hucre");
+        let giris = null;
+        if (!saltOkunur) {
+            giris = document.createElement("textarea");
+            giris.className = "dg-giris dg-acik-giris";
+            giris.rows = 2;
+            giris.placeholder = "Not ya da düzeltme yazın…";
+            giris.value = tireSade(v.not || "");
+            giris.setAttribute("aria-label", v.kolon + " için düzenlemeniz");
+            giris.addEventListener("blur", () => notKaydet(v.kolon));
+            giris.addEventListener("input", () => { if (degisti) degisti(); });
+            tdN.appendChild(giris);
+        } else {
+            tdN.appendChild(elYap("div", "dg-acik-salt", tireSade(v.not || "")));
+        }
+        const aileBtn = elYap("button", "dg-toplu-btn dg-acik-aile-btn", "");
+        aileBtn.type = "button";
+        aileBtn.hidden = true;
+        aileBtn.onclick = () => aileyeUygula(v.kolon);
+        tdN.appendChild(aileBtn);
+        const notBilgi = elYap("div", "dg-acik-not", "");
+        notBilgi.hidden = true;
+        tdN.appendChild(notBilgi);
+        tr.appendChild(tdN);
+        const tdD = elYap("td", "dg-acik-duzeltilmis");
+        tr.appendChild(tdD);
+        const e = { tr, tdD, giris, aileBtn, aileEl, notBilgi };
+        el.set(v.kolon, e);
+        satirGuncelle(v);
+        return tr;
+    }
+
+    function duzeltilmisCiz(td, v) {
+        td.textContent = "";
+        if (v.durum === "isleniyor") {
+            td.appendChild(elYap("div", "dg-acik-bekliyor", "Dil modeli düzenliyor…"));
+            return;
+        }
+        if (bekliyorMu(v)) {
+            td.appendChild(elYap("div", "dg-acik-bekliyor", "Sırada…"));
+            return;
+        }
+        if (v.durum === "hata") {
+            const h = elYap("div", "dg-oneri-hata",
+                "Dil modeli bu kolonu düzenleyemedi; onaylarsanız "
+                + (v.not ? "notunuz" : "orijinal açıklama") + " kalır.");
+            if (v.hata) h.title = tireSade(v.hata);
+            td.appendChild(h);
+            return;
+        }
+        const m = elYap("div", "dg-acik-metin", tireSade(v.aciklama || ""));
+        if (v.model) m.title = "Öneren: " + tireSade(v.model);
+        td.appendChild(m);
+        if (v.karar) {
+            let k = tireSade(v.karar);
+            if (v.kaynak === "aile" && v.aile_kaynagi)
+                k += " (" + v.aile_kaynagi + " kolonundan sayılar değiştirilerek aktarıldı)";
+            td.appendChild(elYap("div", "dg-acik-karar", k));
+        }
+        if (v.soru) td.appendChild(elYap("div", "dg-donem-soru",
+            "Soru: " + tireSade(v.soru) + (v.parca ? " (Toplu Sorular: " + v.parca + ")" : "")));
+        if (v.ad_notu) td.appendChild(elYap("div", "dg-acik-not", "Ad: " + tireSade(v.ad_notu)));
+        if (v.dagilim_notu) td.appendChild(elYap("div", "dg-acik-not",
+                                                  "Dağılım: " + tireSade(v.dagilim_notu)));
+        (v.kontrol || []).forEach(k => td.appendChild(elYap("div", "dg-acik-kontrol",
+                                                             "Kontrol: " + tireSade(k))));
+        const kartV = v.kart || {};
+        const alanlar = ACK_KART_ADLARI.filter(([a]) => kartV[a]);
+        if (alanlar.length) {
+            const kk = elYap("div", "dg-acik-kart");
+            alanlar.forEach(([a, et]) => {
+                const c = elYap("span", "dg-acik-kart-oge");
+                c.appendChild(elYap("span", "dg-acik-kart-et", et + ":"));
+                c.appendChild(document.createTextNode(" " + tireSade(kartV[a])));
+                kk.appendChild(c);
+            });
+            td.appendChild(kk);
+        }
+    }
+
+    function satirGuncelle(v) {
+        const e = el.get(v.kolon);
+        if (!e) return;
+        const kilit = kilitli || saltOkunur || bekliyorMu(v);
+        if (e.giris) {
+            if (document.activeElement !== e.giris && ackSade(e.giris.value) !== ackSade(v.not))
+                e.giris.value = tireSade(v.not || "");
+            e.giris.disabled = kilit;
+        }
+        duzeltilmisCiz(e.tdD, v);
+        const degisen = v.durum === "hazir" && ackSade(v.aciklama) !== ackSade(v.orijinal);
+        e.tr.classList.toggle("dg-acik-degisti", degisen);
+        e.tr.classList.toggle("dg-acik-sorulu", !!v.soru && v.durum === "hazir");
+        e.tr.classList.toggle("dg-acik-kontrollu", !!(v.kontrol || []).length && v.durum === "hazir");
+        e.tr.classList.toggle("dg-duzenlendi", !!v.not);
+        const aile = Number(v.aile_boyu || 1);
+        e.aileEl.textContent = aile > 1 ? "Aile: " + ftBinlik(aile) + " kolon" : "";
+        e.aileEl.title = aile > 1 ? "Adı yalnız sayılarla ayrılan kolonlar" : "";
+        /* Notu aileye uygula / geri al */
+        if (!saltOkunur && aile > 1 && v.not) {
+            e.aileBtn.hidden = false;
+            e.aileBtn.dataset.uygula = v.aileye_uygulandi ? "0" : "1";
+            e.aileBtn.textContent = v.aileye_uygulandi
+                ? "Ailedeki " + ftBinlik(aile - 1) + " Kolondan Geri Al"
+                : "Ailedeki " + ftBinlik(aile - 1) + " Kolona da Uygula";
+            e.aileBtn.disabled = kilit;
+        } else e.aileBtn.hidden = true;
+        e.notBilgi.hidden = !v.aile_notu_kaynagi;
+        e.notBilgi.textContent = v.aile_notu_kaynagi
+            ? v.aile_notu_kaynagi + " kolonundaki notunuz bu kolona da uygulandı." : "";
+    }
+
+    function notKaydet(kolon) {
+        const e = el.get(kolon), v = veriler.get(kolon);
+        if (!e || !e.giris || !v || kilitli || saltOkunur) return;
+        const metin = e.giris.value.trim();
+        if (ackSade(metin) === ackSade(v.not)) return;
+        v.not = metin;
+        v.durum = "isleniyor";
+        satirGuncelle(v);
+        islem({ islem: "not", kolon: kolon, metin: metin })
+            .then(d => {
+                if (d && d.hata) durumYaz(d.hata, true);
+                yoklaHemen();
+            })
+            .catch(() => yoklaHemen());
+        if (degisti) degisti();
+    }
+
+    function aileyeUygula(kolon) {
+        const e = el.get(kolon);
+        if (!e || kilitli) return;
+        e.aileBtn.disabled = true;
+        islem({ islem: "aile", kolon: kolon, uygula: e.aileBtn.dataset.uygula !== "0" })
+            .then(d => {
+                if (d && d.hata) durumYaz(d.hata, true);
+                yoklaHemen();
+            })
+            .catch(() => yoklaHemen());
+    }
+
+    /* ---- Süzgeç ---- */
+    function uyar(v) {
+        const hazir = v.durum === "hazir";
+        if (suzgec === "degisen" && !(hazir && ackSade(v.aciklama) !== ackSade(v.orijinal))) return false;
+        if (suzgec === "soru" && !(hazir && v.soru)) return false;
+        if (suzgec === "ad" && !(hazir && (v.ad_notu || v.dagilim_notu))) return false;
+        if (suzgec === "kontrol" && !(hazir && (v.kontrol || []).length)) return false;
+        if (suzgec === "elle" && !v.not) return false;
+        if (suzgec === "hata" && v.durum !== "hata") return false;
+        if (!arama) return true;
+        return [v.kolon, v.orijinal, v.aciklama, v.not].join(" ")
+            .toLocaleLowerCase("tr").includes(arama);
+    }
+
+    function tabloCiz() {
+        /* Yazılan alan ekranda kalsın: odak tablodaysa yeniden çizim beklenir. */
+        if (tb.contains(document.activeElement)) return;
+        const uyan = sira.map(k => veriler.get(k)).filter(v => v && uyar(v));
+        tb.textContent = "";
+        uyan.slice(0, gosterilen).forEach(v => {
+            const e = el.get(v.kolon);
+            tb.appendChild(e ? e.tr : satirKur(v));
+        });
+        const kalan = uyan.length - Math.min(uyan.length, gosterilen);
+        dahaBtn.hidden = kalan <= 0;
+        dahaBtn.textContent = "Daha Fazla Göster (" + ftBinlik(kalan) + " satır daha)";
+        bosEl.hidden = !(yuklendi && !uyan.length);
+        bosEl.textContent = sira.length ? "Bu süzgece uyan satır yok."
+            : atlandi ? "Açıklamalar değiştirilmeden geçildi." : "Düzenlenecek kolon yok.";
+        if (!yuklendi) { bosEl.hidden = false; bosEl.textContent = "Satırlar yükleniyor…"; }
+    }
+
+    function suzgecCiz() {
+        ACK_SUZGECLER.forEach(([k, et, sk]) => {
+            const b = suzBtn[k];
+            const n = Number(sayac[sk] || 0);
+            b.textContent = et + " · " + ftBinlik(n);
+            b.classList.toggle("secili", suzgec === k);
+            b.hidden = k !== "tumu" && !n && suzgec !== k;
+        });
+    }
+
+    /* ---- Toplu sorular ---- */
+    function sorulariCiz() {
+        soruKap.textContent = "";
+        const liste = saltOkunur ? [] : (sorular || []);
+        soruKap.hidden = !liste.length;
+        if (!liste.length) return;
+        const acik = liste.filter(s => s.soru_kolon > 0 && !s.cevap).length;
+        const bas = elYap("div", "dg-kisa-tablo-baslik",
+                          "Toplu Sorular · " + ftBinlik(acik) + " cevapsız");
+        bas.appendChild(bolmeBilgiSimgesi(
+            "Aynı parça hakkındaki sorular bir kez sorulur. Cevabınız o parçanın geçtiği "
+            + "bütün kolonlara kesin bilgi olarak verilir ve o kolonlar yeniden düzenlenir.",
+            "Toplu Sorular"));
+        soruKap.appendChild(bas);
+        liste.forEach(s => {
+            const kutu = elYap("div", "dg-acik-soru");
+            const ust_ = elYap("div", "dg-acik-soru-ust");
+            ust_.appendChild(elYap("span", "dg-donem-kalip", s.parca));
+            ust_.appendChild(elYap("span", "dg-acik-soru-sayi",
+                ftBinlik(s.kolon_sayisi) + " kolonda geçiyor"
+                + (s.soru_kolon ? " · " + ftBinlik(s.soru_kolon) + " kolonda soru" : "")));
+            if (s.cevap) ust_.appendChild(elYap("span", "dg-rozet-kucuk", "Cevaplandı"));
+            kutu.appendChild(ust_);
+            (s.sorular || []).forEach(q => kutu.appendChild(elYap("div", "dg-donem-soru", tireSade(q))));
+            if ((s.ornek || []).length)
+                kutu.appendChild(elYap("div", "dg-acik-ornek", "Örnek: " + s.ornek.join(", ")));
+            const satir = elYap("div", "dg-acik-soru-giris");
+            const g = document.createElement("input");
+            g.type = "text"; g.className = "dg-giris";
+            g.value = tireSade(s.cevap || "");
+            g.placeholder = "Cevabınız (" + s.parca + " ne demek?)";
+            g.disabled = kilitli;
+            g.setAttribute("aria-label", s.parca + " için cevabınız");
+            const b = elYap("button", "dg-toplu-btn", s.cevap ? "Cevabı Güncelle" : "Cevabı Uygula");
+            b.type = "button";
+            b.disabled = kilitli;
+            b.onclick = () => {
+                const cevap = g.value.trim();
+                if (!cevap && !s.cevap) return;
+                b.disabled = true;
+                islem({ islem: "parca", parca: s.parca, cevap: cevap })
+                    .then(d => {
+                        if (d && d.hata) durumYaz(d.hata, true);
+                        else durumYaz(s.parca + " için cevabınız " + ftBinlik(d.kolon_sayisi || 0)
+                                      + " kolona uygulandı; bu kolonlar yeniden düzenleniyor.", false);
+                        yoklaHemen();
+                    })
+                    .catch(() => yoklaHemen())
+                    .finally(() => { b.disabled = false; });
+            };
+            satir.append(g, b);
+            kutu.appendChild(satir);
+            soruKap.appendChild(kutu);
+        });
+    }
+
+    function durumYaz(metin, hata) {
+        durumEl.textContent = tireSade(metin || "");
+        durumEl.classList.toggle("dg-acik-hata", !!hata);
+        durumEl.hidden = !metin;
+    }
+
+    function ilerYaz() {
+        const calisiyor = dm === "calisiyor" && !saltOkunur;
+        ilerEl.classList.toggle("gorunur", calisiyor && !kilitli);
+        if (!calisiyor) return;
+        const p = ilerleme || {};
+        const gecen = Math.max(0, Math.floor((Date.now() - ilerBas) / 1000));
+        ilerMetin.textContent = "Dil modeli açıklamaları düzenliyor · "
+            + ftBinlik(Number(sayac.hazir || 0)) + " / " + ftBinlik(Number(sayac.toplam || 0))
+            + " kolon hazır · " + sureBicim(gecen);
+        if (p.gecen !== undefined && !ilerSabit) { ilerBas = Date.now() - p.gecen * 1000; ilerSabit = true; }
+    }
+
+    /* ---- Yoklama ---- */
+    function isle(a) {
+        dm = a.dm || "bitti";
+        saltOkunur = !!a.salt_okunur || !!ilkKilit;
+        atlandi = !!a.atlandi;
+        sayac = a.sayac || {};
+        sorular = a.sorular || [];
+        hataMetni = a.hata || "";
+        ilerleme = a.ilerleme || null;
+        if (!ilerleme) ilerSabit = false;
+        (a.satirlar || []).forEach(v => {
+            if (!veriler.has(v.kolon)) sira.push(v.kolon);
+            veriler.set(v.kolon, v);
+            satirGuncelle(v);
+        });
+        son = Math.max(son, Number(a.son || 0));
+        yuklendi = true;
+        suzgecCiz();
+        tabloCiz();
+        sorulariCiz();
+        if (dm === "iptal") {
+            durumYaz("Durduruldu: " + ftBinlik(Number(sayac.bekleyen || 0)) + " kolon düzenlenmedi. "
+                     + "Onaylarsanız bu kolonların orijinal açıklaması kalır.", false);
+            durumEl.appendChild(devamBtn);
+        } else if (hataMetni && Number(sayac.hata || 0)) {
+            durumYaz(hataMetni, true);
+            devamBtn.textContent = "Düzenlenemeyenleri Yeniden Dene";
+            durumEl.appendChild(devamBtn);
+        } else if (durumEl.contains(devamBtn)) durumYaz("", false);
+        ilerYaz();
+        if (degisti) degisti();
+    }
+
+    function zamanla(ms) {
+        if (yoklamaZaman) clearTimeout(yoklamaZaman);
+        yoklamaZaman = setTimeout(yokla, ms);
+    }
+    function yoklaHemen() { zamanla(300); }
+    function yokla() {
+        yoklamaZaman = null;
+        if (!kart.isConnected) return;
+        fetch(getWebAppBackendUrl("aciklama_alani") + "?oturum_id=" + encodeURIComponent(OTURUM_ID)
+              + "&son=" + encodeURIComponent(String(saltOkunur ? 0 : son)))
+            .then(r => r.json())
+            .then(d => {
+                const a = d && d.aciklama;
+                if (!a) { durumYaz((d && d.hata) || "Satırlar alınamadı.", true); zamanla(8000); return; }
+                isle(a);
+                const surer = !saltOkunur && (dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0)
+                    && dm !== "iptal";
+                if (surer) zamanla(ACK_YOKLAMA);
+            })
+            .catch(() => zamanla(8000));
+    }
+    /* İlk yoklama kart sayfaya eklendikten sonra (bu fonksiyon döndüğünde
+       kart henüz DOM'da değil). */
+    zamanla(0);
+
+    /* Kaydedilmemiş notlar (alan bırakılmadan onaya basıldıysa). */
+    function kaydedilmemis() {
+        let n = 0;
+        el.forEach((e, kolon) => {
+            const v = veriler.get(kolon);
+            if (e.giris && v && ackSade(e.giris.value) !== ackSade(v.not)) {
+                n++;
+                notKaydet(kolon);
+            }
+        });
+        return n;
+    }
+
+    return {
+        bekliyor: () => !saltOkunur && dm !== "iptal"
+            && (dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0),
+        durduruldu: () => dm === "iptal",
+        sayac: () => Object.assign({}, sayac),
+        kaydedilmemis: kaydedilmemis,
+        kilitle: k => {
+            kilitli = k;
+            veriler.forEach(v => satirGuncelle(v));
+            sorulariCiz();
+            durdurBtn.disabled = k;
+            devamBtn.disabled = k;
+            ilerYaz();
+        }
     };
 }
 

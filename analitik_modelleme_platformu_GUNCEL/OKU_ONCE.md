@@ -1,6 +1,59 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taraması**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **Yeni adımlar: Sözlük ve Kolon Adı Kontrolü (seçim) ve Açıklama Düzenleme**. Değiştir: `fe_agent/aciklama_duzen.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_sohbet.py`, `fe_agent/akis.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/kisaltma_okuma.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+
+Yeni sıra (A; B'de aynı adımlar Eksik Sözlük Tanımları'ndan sonra):
+01.2.4 Sözlük ve Kolon Adı Kontrolü -> 01.2.5 Dönem Bilgisi -> 01.2.6
+Açıklama Düzenleme -> 01.2.7 Kısaltma Sözlüğü -> 01.2.8 Yeni Kolon Adları
+-> 01.3 Değişken Listesi ve Tip Kontrolü. Eski çalışmalar kaldıkları
+adımda açılır (göç, sürüm 11); bu adımların ilerisindeki eski çalışmada
+seçim yok, kontrol yapılmış sayılır.
+
+- Sözlük ve Kolon Adı Kontrolü: başlangıç seçimi gibi iki kart. A
+  "Kontrol Edilsin": sonraki dört adım sırayla çalışır. B "Kontrol
+  Edilmeden Geçilsin": dört adım kendiliğinden atlanır, açıklamalar ve
+  kolon adları olduğu gibi kalır. Bu adıma dönülüp seçim değiştirilebilir.
+- Açıklama Düzenleme: her kolonun açıklaması anlamı değiştirilmeden
+  dil modeliyle düzeltilir (kısaltma ve dönem açılır, yarım cümle
+  tamamlanır, Türkçe düzelir). Anlamın kaynağı sırasıyla: sizin notunuz
+  > aileye uyguladığınız not > onaylı parça anlamları (Dönem Bilgisi,
+  onaylı kısaltmalar, Toplu Sorular cevapları) > orijinal. Dil modeli
+  tahmin etmez: belirsizlik "Soru", ad ya da dağılım çelişkisi "Ad" /
+  "Dağılım" notu olarak gelir. Her satırda karar ve anlam kartı (konu,
+  yön, nitelik, dönem, ölçü, istatistik, karşılaştırma, değer anlamı).
+  - Satır düzenlemesi bitince açılır. "Sizin Düzenlemeniz"e yazılan not
+    alandan çıkınca kaydedilir ve o kolon beklemeden yeniden kontrol
+    edilir.
+  - Toplu Sorular: aynı ad parçası hakkındaki sorular parça başına bir
+    kez; cevap o parçanın geçtiği bütün kolonlara kesin bilgi olarak
+    verilir ve o kolonlar yeniden düzenlenir.
+  - Aile: adı yalnız sayılarla ayrılan kolonlar. Orijinal açıklaması da
+    yalnız bu sayılarla ayrılan kardeş, düzeltmeyi sayılar değiştirilerek
+    KODLA alır (dil modeli çağrısı yok). Notunuzu "Ailedeki N Kolona da
+    Uygula" ile kardeşlere verebilirsiniz.
+  - Kod denetimi: notunuzdaki ve anlam kartındaki sayılar açıklamada
+    yoksa, cümle yarım ya da Türkçe karakter eksikse kolon bir kez
+    yeniden sorulur; kalan sorun satırda "Kontrol" olarak yazar.
+  - Durdur: düzenlenen satırlar kalır; onaylanırsa düzenlenmeyenlerin
+    orijinali (notunuz varsa notunuz) kalır.
+  - Onay: düzeltilmiş açıklamalar sözlüğün ÇALIŞMA KOPYASINA yazılır;
+    Kısaltma Sözlüğü ve Yeni Kolon Adları bunları okur. Bu adıma ya da
+    öncesine dönülünce yazılanlar geri alınır (notlar ve sonuçlar
+    kalır; aynı girdi yeniden işlenmez).
+  - Kayıt: PROJE_HAFIZASI/<çalışma>/ACIKLAMA_DUZENLEME.json.
+- Önerilen Sözlük (Excel): eski ve önerilen yeni ad, orijinal ve
+  düzeltilmiş açıklama, karar, notlar, anlam kartı. Açıklama
+  Düzenleme ve Yeni Kolon Adları kartlarında; çalışma klasörüne de
+  ONERILEN_SOZLUK.xlsx olarak yazılır.
+- AMP_SOZLUK'a yeni kolonlar: ESKI_AD, ACIKLAMA_ORIJINAL (düzenleme
+  öncesi), KONU, YON, NITELIK, PENCERE, OLCU, ISTATISTIK,
+  KARSILASTIRMA, DEGER_ANLAMI. AMP_VERISETI ve AMP_SOZLUK yine yalnız
+  01.3 Değişken Listesi ve Tip Kontrolü onaylanınca yazılır; girdi veri
+  seti ve sözlük değişmez.
+- Düzeltme: Dönem Bilgisi taramasında dönem kısaltması olmayan bölümün
+  boş cevabı ("hiçbiri") hata sayılıyordu; artık geçerli cevap.
+
+Önceki tur: **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taraması**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Yeni biçim: harf + sayı + harf (ör. <H><N><H>); aynı harflerle olanlar
   tek kalıpta toplanır (harf + "<N>" + harf).
@@ -19,7 +72,7 @@ Bu tur: **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taramas�
   anlama değil "Not:" satırına yazılır. Önceki istemdeki örnek bu hatayı
   öğretiyordu, düzeltildi.
 
-Önceki tur: **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce: **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Elle eklenen kalıp kolon adlarında geçmiyorsa ("Adlarda yok") onay
   düğmesi kapanır ve sebebi yazar; arka uç da reddeder. <N> / <NN>
@@ -28,7 +81,7 @@ Bu tur: **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taramas�
   parçası) bu adımın işi değil; kısaltma sözlüğü yeniden kurulunca
   orada eklenecek.
 
-Daha önce: **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (2): **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "Dönem Değil" sütunu kalktı, yerine "Hafızaya Kaydet": işaretli satırın
   anlamı kısaltma hafızasına yazılır, sonraki çalışmalarda dolu gelir.
@@ -48,7 +101,7 @@ Daha önce: **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, ha
   DONEM_BILGISI.json'u varsa anlamlı kayıtları bir kez buraya taşınır ve
   dosya silinir. Kısaltma ve ad ilkesi yazımları bu bölümü korur.
 
-Daha önce (2): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (3): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "+ Dönem Kalıbı Ekle": listede olmayan dönem parçası kalıbı ve
   anlamıyla elle eklenir. Kalıp büyük harfe çevrilir; adlarda aynen
@@ -63,7 +116,7 @@ Daha önce (2): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek
   bilgi olur (parca_bilgisi) ve hafızadakinden farklıysa onaylı kısaltma
   hafızasına yazılır.
 
-Daha önce (3): **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (4): **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni yapı (konuşulan plan): 01.2.1–01.2.3 aynı; 01.2.4 Dönem Bilgisi
 (bu tur); sonra 01.2.5 Açıklama Düzenleme (sonraki tur), Kısaltma
