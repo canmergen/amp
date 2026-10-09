@@ -44,6 +44,8 @@ GORSELLER = {
     "dusunme":    "robot_think.png",
     "user":       "robot_llm_person.png",
     "zemin_acik": "llm_chat_light.png",
+    # Sayfanin tamamini kaplayan cerceveli arka plan (style.css: --arka-plan)
+    "arka_plan":  "amp_background.png",
 }
 
 _MIME = {".png": "image/png", ".jpg": "image/jpeg",

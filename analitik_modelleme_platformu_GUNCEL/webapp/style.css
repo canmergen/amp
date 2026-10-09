@@ -185,8 +185,43 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
+/* ARKA PLAN: cerceveli gorsel sayfanin TAMAMINI kaplar (gerilerek; kirpilirsa
+   cerceve kenarlari ekrandan tasar). Uygulama cercevenin IC ALANINDA durur.
+   Ic alanin sinirlari gorselde olculdu (1672 x 941 piksel): ic cizgi solda
+   69, sagda 1602, ustte 72; altta 860, ama alt ortadaki suslemenin
+   kivilcimlari 823'e kadar iceri uzaniyor, uygulama onlarin ustunde biter.
+   Gorsel gerildigi icin sinirlar ekranin eni (vw) ve boyu (vh) oraninda. */
+:root {
+  --cerceve-sol: calc(69 / 1672 * 100vw);
+  --cerceve-sag: calc((1672 - 1602) / 1672 * 100vw);
+  --cerceve-ust: calc(72 / 941 * 100vh);
+  --cerceve-alt: calc((941 - 823) / 941 * 100vh);
+  --cerceve-ara: 8px;          /* cizgi ile uygulama arasi */
+}
+body {
+  background-color: #FEFEFA;   /* gorselin ic zemini; gorsel gelmezse */
+  background-image: var(--arka-plan, none);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 #kabuk {
-  display: flex; flex-direction: column; height: 100vh;
+  display: flex; flex-direction: column;
+  /* Cercevenin ic alani. transform: icindeki position:fixed ogeler
+     (analiz paneli, dar ekran cekmecesi ve perdesi) ekrana degil
+     kabuga gore yerlesir. */
+  position: fixed;
+  top: calc(var(--cerceve-ust) + var(--cerceve-ara));
+  bottom: calc(var(--cerceve-alt) + var(--cerceve-ara));
+  left: calc(var(--cerceve-sol) + var(--cerceve-ara));
+  right: calc(var(--cerceve-sag) + var(--cerceve-ara));
+  transform: translateZ(0);
+  overflow: hidden;
+  /* Ust bar esikleri pencereye degil KABUGUN enine bakar (@container):
+     kabuk cerceve yuzunden pencereden dar. */
+  container-type: inline-size; container-name: kabuk;
+  border: 1px solid var(--kenar);
   background: var(--zemin); color: var(--metin);
   font-family: var(--font);
   font-size: var(--fs-govde);
@@ -456,13 +491,14 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border-color: transparent; box-shadow: none;
 }
 .ust-sekme.kapali svg { width: 12px; height: 12px; flex-shrink: 0; }
-/* Dar bar: ≤ 1536 px kutular sıkılaşır, ≤ 1366 px daha da sıkılaşır. */
-@media (max-width: 1536px) {
+/* Dar bar (KABUK eni): ≤ 1536 px kutular sıkılaşır, ≤ 1366 px daha da,
+   ≤ 1240 px en sıkı (kapalı sekmelerin kilit simgesi gizlenir). */
+@container kabuk (max-width: 1536px) {
   #ust-sekmeler { gap: 6px; padding: 0 var(--b-2); }
   .ust-kume-ad, .ust-sekme { padding: 0 9px; }
   .ust-kume-ad { padding: 0 11px 0 7px; }
 }
-@media (max-width: 1366px) {
+@container kabuk (max-width: 1366px) {
   #ust-sekmeler { gap: 4px; }
   .ust-kume { padding: 0 3px; gap: 2px; }
   .ust-kume-ad, .ust-sekme { padding: 0 7px; letter-spacing: .02em; }
@@ -483,7 +519,14 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .bos-sayfa-ad { font-size: var(--fs-buyuk); font-weight: var(--fw-kalin); }
 .bos-sayfa-not { font-size: var(--fs-govde); }
 
-@media (max-width: 1024px) { #baslik-blok { display: none; } }
+@container kabuk (max-width: 1240px) {
+  #ust-sekmeler { gap: 3px; padding: 0 4px; }
+  .ust-kume { padding: 0 2px; gap: 1px; }
+  .ust-kume-ad, .ust-sekme { padding: 0 5px; letter-spacing: 0; }
+  .ust-kume-ad { padding: 0 7px 0 4px; }
+  .ust-sekme.kapali svg { display: none; }
+}
+@container kabuk (max-width: 1120px) { #baslik-blok { display: none; } }
 
 /* Çekmece düğmeleri yalnızca panelin gizlendiği dar ekranlarda görünür */
 .cekmece-btn { display: none; }
