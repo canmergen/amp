@@ -2670,6 +2670,20 @@ def donem_alani_endpoint():
         return jsonify(_hata_govdesi("donem_alani", e)), 200
 
 
+@app.route("/donem_hafiza_ekle", methods=["POST"])
+def donem_hafiza_ekle_endpoint():
+    """Kolon adlarinda gecmeyen donem kalibini yalniz hafizaya yazar
+    (calisma ve oturum dosyasi degismez)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        tamam, mesaj = akis.donem_hafiza_ekle(durum, istek.get("kalip"), istek.get("anlam"))
+        return jsonify({"tamam": tamam, "mesaj": mesaj})
+    except Exception as e:
+        return jsonify(_hata_govdesi("donem_hafiza_ekle", e)), 200
+
+
 @app.route("/aciklama_alani")
 def aciklama_alani_endpoint():
     """Aciklama Duzenleme yoklamasi: "son" sirasindan sonra degisen

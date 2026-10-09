@@ -1686,8 +1686,12 @@ DONEM_DUGME = {"bos": "Dönem Bilgisini Onayla ve Devam Et"}
 
 def _donem_kaynak(durum):
     # ROL KOLONLARI (hedef, kimlik, donem, segment) degisken degil; adlari
-    # donem kalibi ya da kisaltma olarak taranmaz.
+    # donem kalibi ya da kisaltma olarak taranmaz. Degerleri donem bicimli
+    # (202501 gibi) DONEM ADAYI kolonlar da oyle: dönem kolonu secilmemis
+    # olsa bile adlari bir degiskenin donem parcasi degildir. Aday listesi
+    # profilde hazirsa kullanilir (burada hesaplanmaz).
     roller = set(zorunlu_tanimlar(durum))
+    roller.update(map(str, (durum.get("profil") or {}).get("donem_adaylari") or []))
     adlar = [a for a in _veri_kolonlari(durum) if a not in roller]
     try:
         tanimlar = _kisaltma_kaynagi(durum)
@@ -1739,11 +1743,19 @@ def _donem_alani(durum):
         hafiza). ONERI ayri gider: on yuz duzenlenmis satiri buna gore
         boyar. CIKAR: kullanicinin cikardigi satir (onceki kararda)."""
         o = onceki.get(kalip)
+        b = bh.get(kalip) or {}
+        # YALNIZ IKILI ICINDE GECEN kalip (tek basina 0 kolon): satir uyari
+        # tasir (on yuz sari gosterir). Kendiliginden CIKARILMAZ: hep ayni
+        # parcanin yaninda gecen bir kisaltma da kendi anlamini tasiyabilir.
+        uyari = ""
+        if b.get("birlikte") and not b.get("tek"):
+            uyari = ("Kolon adlarında yalnız %s içinde geçiyor, tek başına geçmiyor. "
+                     "Orada dönem bilgisi değilse çıkarın." %
+                     ", ".join(ik for ik, _n in b["birlikte"]))
         anlam, cikar = oneri, varsayilan_cikar
         if o is not None:
             anlam = "" if o.get("donem_degil") else str(o.get("anlam") or "")
             cikar = bool(o.get("cikar"))
-        b = bh.get(kalip) or {}
         birlikte = b.get("birlikte") or []
         gecerli = {ik for ik, _n in birlikte}
         haric = o.get("haric") if (o is not None and "haric" in o) else haric_oneri
@@ -1753,7 +1765,7 @@ def _donem_alani(durum):
              "kaynak": kaynak, "model": model, "cikar": cikar,
              "hafizada": bool(haf.get(kalip)), "birlikte": birlikte,
              "tek": b.get("tek", kolon), "haric": sorted(set(haric or ()) & gecerli),
-             "haric_oneri": sorted(set(haric_oneri or ()) & gecerli)}
+             "haric_oneri": sorted(set(haric_oneri or ()) & gecerli), "uyari": uyari}
         r.update(ek)
         satirlar.append(r)
 
@@ -1917,6 +1929,31 @@ def donem_uygula(durum):
     if cikan:
         metin += "; %d kalıp çıkarıldı" % cikan
     return metin + "." + (" " + hata if hata else "")
+
+
+def donem_hafiza_ekle(durum, kalip, anlam):
+    """KOLON ADLARINDA GECMEYEN donem kalibini yalniz hafizaya yazar; bu
+    calismayi etkilemez. Adinda bu kalip gecen bir veri seti geldiginde
+    tabloya hafizadan, anlamiyla gelir. Adlarda geciyorsa reddedilir (tabloya
+    eklenmeli). Doner: (tamam, mesaj)."""
+    kalip = re.sub(r"\s+", "", str(kalip or "")).upper()
+    anlam = re.sub(r"\s+", " ", str(anlam or "")).strip()
+    if not kalip or not anlam:
+        return False, "Kalıp ve anlam ikisi de dolu olmalı."
+    if donem_mod.kalip_deseni(kalip) is None:
+        return False, "%s geçerli bir kalıp değil." % kalip
+    yt = donem_mod.yer_tutucu_hatasi(kalip, anlam)
+    if yt:
+        return False, "%s: %s" % (kalip, yt)
+    adlar, tanimlar = _donem_kaynak(durum)
+    if donem_mod.kalip_adlarda(kalip, donem_mod.parca_listesi(adlar, tanimlar)):
+        return False, ("%s bu veri setinin kolon adlarında geçiyor; tabloya ekleyin "
+                       "(onaylayınca hafızaya da yazılır)." % kalip)
+    hata = donem_mod.hafizaya_yaz({kalip: anlam})
+    if hata:
+        return False, hata
+    return True, ("%s hafızaya eklendi. Adında bu kalıp geçen bir veri setinde "
+                  "tabloya anlamıyla gelir." % kalip)
 
 
 # ---------------------------------------------------------------------------

@@ -3212,6 +3212,10 @@ span.bolme-cip { cursor: default; }
 .dg-birlikte-cip:disabled { cursor: default; opacity: .6; }
 .dg-birlikte-cip.haric { text-decoration: line-through; border-style: dashed; color: var(--metin-tamam); }
 .dg-donem-tek { color: var(--metin); }
+.dg-donem-hafiza { margin-left: 4px; padding: 0 var(--b-2); }
+.dg-donem-bilgi { margin: var(--b-2) 0 0; color: var(--yesil); font-weight: var(--fw-kalin); }
+.dg-donem-bilgi.hata { color: var(--kirmizi); }
+.dg-donem-bilgi[hidden] { display: none; }
 /* Kolon adlarındaki kısaltmalar: düz liste, sütunlara akar. */
 .dg-parca-baslik { margin-top: var(--b-3); }
 .dg-parca-liste {
