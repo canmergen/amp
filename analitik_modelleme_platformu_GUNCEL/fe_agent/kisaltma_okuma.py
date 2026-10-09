@@ -734,7 +734,9 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
                 gorulen.add(uyeler[-1])
             gorulen.add(m.group(1))
             aile.setdefault(m.group(1), set()).update(uyeler)
-        for p in gorulen:
+        # SIRALI: kumenin dolasma sirasi her surecte degisir; sayac
+        # (ve satirlarin eklenme sirasi) her seferinde ayni olsun.
+        for p in sorted(gorulen):
             if not p.isdigit() and p not in kisa_anlam:
                 say[p] += 1
     for p, n in say.items():
@@ -757,12 +759,18 @@ def tablo(kolonlar, tum_adlar=(), dil_kalip=None):
             if s["anlam"] and not s["cok_anlamli"].get(k["kisaltma"]):
                 anlamlar[k["kisaltma"]] = s["anlam"]
     dil = llm_mod.adlandirma_dili(anlamlar, agirlik)
-    kalip = ", ".join(k for k, _n in agirlik.most_common(KALIP_ADET))
+    # Kolon sayisi esit kisaltmalar ada gore: kalip her seferinde ayni.
+    kalip = ", ".join(k for k, _n in sorted(agirlik.items(),
+                                            key=lambda kv: (-kv[1], kv[0]))[:KALIP_ADET])
 
+    # SON OLCUT KISALTMA ADI (sonra anahtar): kolon sayisi ve anlami esit
+    # satirlar her seferinde ayni sirada gelir.
     satirlar.sort(key=lambda s: (s["bolum"] != "bulunamadi",
                                  not s["kisaltmalar"],
                                  -sum(k["kolon"] for k in s["kisaltmalar"]) - s["adda_yok"],
-                                 s["anlam"]))
+                                 s["anlam"],
+                                 ",".join(k["kisaltma"] for k in s["kisaltmalar"]),
+                                 s["anahtar"]))
     satirlar = _aileleri_diz(satirlar, aile)
     ilke = ad_ilkesi()
     _onerileri_uygula(satirlar, dil, standart, onay, ilke["turler"])
