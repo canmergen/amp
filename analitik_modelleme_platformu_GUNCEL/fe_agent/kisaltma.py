@@ -626,6 +626,9 @@ def _hafiza_yaz(df):
     donem = _donem_ham()
     if donem:
         govde["donem"] = donem
+    haric = _donem_haric_ham()
+    if haric:
+        govde["donem_haric"] = haric
     _folder().upload_stream(DOSYA, json.dumps(govde, ensure_ascii=False, indent=2,
                                               sort_keys=True).encode("utf-8"))
 
@@ -713,9 +716,9 @@ def ad_ilkesi_kaydet(kalip=None, turler=None):
 
 
 # ---------------------------------------------------------------------------
-# DONEM BILGISI (kurum geneli): 01.2.4.1'de "Hafizaya Kaydet" isaretli donem
-# kaliplarinin anlami. KISALTMA_HAFIZASI.json'da "donem" altinda:
-# {kalip: anlam}.
+# DONEM BILGISI (kurum geneli): 01.2.4.1'de onaylanan donem kaliplarinin
+# anlami. KISALTMA_HAFIZASI.json'da "donem" altinda: {kalip: anlam};
+# kalibin donem sayilmadigi ikililer "donem_haric" altinda: {kalip: [ikili]}.
 # ---------------------------------------------------------------------------
 def _govde_oku():
     """Doner: (govde, hata). Dosya yoksa ({}, None)."""
@@ -744,9 +747,26 @@ def donem_hafizasi():
     return _donem_ham()
 
 
-def donem_kaydet(kayitlar):
-    """kayitlar: {kalip: anlam}; eklenir / guncellenir, silinmez.
-    Dosya var ama okunamiyorsa ustune yazilmaz. Doner: hata ya da None."""
+def _donem_haric_ham(govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    haric = (govde or {}).get("donem_haric")
+    if not isinstance(haric, dict):
+        return {}
+    return {str(k): sorted({str(x) for x in v if str(x).strip()})
+            for k, v in haric.items() if isinstance(v, list) and v}
+
+
+def donem_haric_hafizasi():
+    """{kalip: [ikili]} - kalibin donem sayilmadigi ikililer."""
+    return _donem_haric_ham()
+
+
+def donem_kaydet(kayitlar, haric=None):
+    """kayitlar: {kalip: anlam}; eklenir / guncellenir, silinmez. haric:
+    {kalip: [ikili]}; verilen kaliplarin haric listesi bununla degisir (bos
+    liste kaldirir). Dosya var ama okunamiyorsa ustune yazilmaz. Doner: hata
+    ya da None."""
     kayitlar = {str(k).strip(): str(v).strip() for k, v in (kayitlar or {}).items()
                 if str(k).strip() and str(v or "").strip()}
     if not kayitlar:
@@ -758,6 +778,18 @@ def donem_kaydet(kayitlar):
         donem = dict(govde.get("donem") or {})
         donem.update(kayitlar)
         govde["donem"] = dict(sorted(donem.items()))
+        if haric is not None:
+            h = _donem_haric_ham(govde)
+            for k in kayitlar:
+                liste = sorted({str(x) for x in (haric.get(k) or []) if str(x).strip()})
+                if liste:
+                    h[k] = liste
+                else:
+                    h.pop(k, None)
+            if h:
+                govde["donem_haric"] = dict(sorted(h.items()))
+            else:
+                govde.pop("donem_haric", None)
         try:
             _folder().upload_stream(DOSYA, json.dumps(
                 govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))

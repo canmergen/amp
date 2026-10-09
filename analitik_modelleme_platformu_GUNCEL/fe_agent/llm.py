@@ -1645,6 +1645,17 @@ def kisaltma_esle(girdi, orkestra=None):
 # DONEM BILGISI (01.2.4.1)
 # ===========================================================================
 # Donem yorumu ve taramasinin ortak anlam kurallari.
+_DONEM_BIRLIKTE_KURALI = """
+BİRLİKTE GEÇİŞ: bazı kalıp / kısaltmaların altında "BİRLİKTE" satırı var:
+kolon adlarında hep yan yana geçtiği başka bir kısaltmayla oluşan
+ikililer (SOLDAKİ_SAĞDAKİ) ve kaç kolonda geçtikleri; kaç kolonda tek
+başına geçtiği de yazar. Bir ikili birlikte tek bir anlam taşıyabilir
+(ör. birlikte bir birim ya da oran gösterir). Parçayı TEK BAŞINA geçtiği
+kolonlara göre değerlendir; içinde dönem anlamı TAŞIMADIĞI ikilileri
+"haric" listesine AYNEN yaz. Tek başına hiç geçmiyorsa ya da tek başına
+dönem değilse dönem sayma.
+"""
+
 _DONEM_ANLAM_KURALLARI = """
 DÖNEM NEDİR: verinin hangi zaman aralığından ya da diliminden alındığını
 gösteren parça (zaman penceresi, gün / saat dilimi, dönem başından bugüne,
@@ -1670,7 +1681,7 @@ DÖNEM DEĞİLDİR:
     soruya yaz.
   - "not": yalnızca yukarıdaki ad / tanım farkı için; yoksa boş.
   - Tamamen Türkçe, Türkçe karakterlerle yaz.
-"""
+""" + _DONEM_BIRLIKTE_KURALI
 
 
 SISTEM_DONEM = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon adlarında
@@ -1687,7 +1698,7 @@ Görevin her kalıbın ne anlama geldiğini, tanımlardan okuyarak yazmak.
     dönemle ilgiliyse (ör. önceki dönem, karşılaştırma dönemi) true.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kalıbı AYNEN yaz.
-{"kolonlar": [{"ad": "...", "donem": true, "anlam": "...", "soru": "", "not": ""}]}""" \
+{"kolonlar": [{"ad": "...", "donem": true, "anlam": "...", "soru": "", "not": "", "haric": []}]}""" \
     + SINIRLAYICI_KURALI
 
 
@@ -1711,15 +1722,20 @@ def donem_yorumla(kaliplar, orkestra=None):
         s = "- KALIP: %s (%s)\n  DEĞERLER: %s" % (
             k["kalip"], tur_adi.get(k["tur"], k["tur"]),
             ", ".join("%s (%d kolon)" % (d, n) for d, n in k["degerler"][:20]))
+        if k.get("birlikte"):
+            s += "\n  BİRLİKTE: %s | tek başına: %d kolon" % (
+                ", ".join("%s (%d kolon)" % (ik, n) for ik, n in k["birlikte"]), int(k.get("tek") or 0))
         for ad, tanim in k["ornekler"]:
             s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim)[:240])
+        for ik, (oad, otanim) in sorted((k.get("birlikte_ornek") or {}).items()):
+            s += "\n  ÖRNEK (%s): %s: %s" % (ik, oad, str(otanim)[:240])
         satirlar.append(s)
     model, veri = ork.json_cagir(ork.modeller("donem"), SISTEM_DONEM,
                                  _veri_blogu("KALIPLAR:", "\n".join(satirlar)), 0.1,
                                  zaman_asimi=DONEM_ZAMAN_ASIMI)
     if not model:
         return {}, _orkestra_hatasi(ork, "dönem bilgisi")
-    gecerli = {k["kalip"] for k in kaliplar}
+    gecerli = {k["kalip"]: {ik for ik, _n in (k.get("birlikte") or [])} for k in kaliplar}
     sonuc = {}
     for x in veri.get("kolonlar") or []:
         if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
@@ -1727,10 +1743,12 @@ def donem_yorumla(kaliplar, orkestra=None):
         donem = x.get("donem")
         if isinstance(donem, str):
             donem = _secenek(donem) in ("true", "evet", "1")
+        haric = x.get("haric") if isinstance(x.get("haric"), list) else []
         sonuc[str(x["ad"])] = {
             "donem": bool(donem), "anlam": _donem_metni(x.get("anlam")),
             "soru": _donem_metni(x.get("soru")), "not": _donem_metni(x.get("not")),
-            "model": MODEL_ADLARI.get(model, model)}
+            "model": MODEL_ADLARI.get(model, model),
+            "haric": sorted({str(h).strip().upper() for h in haric} & gecerli[str(x["ad"])])}
     return sonuc, None
 
 
@@ -1755,7 +1773,7 @@ ilgili olabilecek kısaltmayı yaz ve "soru"ya neden emin olmadığını sor.
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. Yalnızca dönem bilgisi taşıyan
 kısaltmaları yaz; "ad" alanına kısaltmayı AYNEN yaz. Hiçbiri değilse
 {"kolonlar": []} yaz.
-{"kolonlar": [{"ad": "...", "anlam": "...", "soru": "", "not": ""}]}""" \
+{"kolonlar": [{"ad": "...", "anlam": "...", "soru": "", "not": "", "haric": []}]}""" \
     + SINIRLAYICI_KURALI
 
 
@@ -1765,28 +1783,40 @@ def _donem_tara_parca(parca):
     for x in parca:
         ad, tanim = x.get("ornek") or ("", "")
         s = "- KISALTMA: %s (%d kolon)" % (x["parca"], x["kolon"])
+        birlikte = x.get("birlikte") or []
+        if birlikte:
+            s += "\n  BİRLİKTE: %s | tek başına: %d kolon" % (
+                ", ".join("%s (%d kolon)" % (ik, n) for ik, n in birlikte), int(x.get("tek") or 0))
         if ad:
-            s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim)[:200])
+            s += "\n  ÖRNEK%s: %s: %s" % (" (tek başına)" if birlikte and x.get("tek") else "",
+                                         ad, str(tanim)[:200])
+        for ik, (oad, otanim) in sorted((x.get("birlikte_ornek") or {}).items()):
+            s += "\n  ÖRNEK (%s): %s: %s" % (ik, oad, str(otanim)[:200])
         satirlar.append(s)
     model, veri = ork.json_cagir(ork.modeller("donem"), SISTEM_DONEM_TARA,
                                  _veri_blogu("KISALTMALAR:", "\n".join(satirlar)), 0.1,
                                  zaman_asimi=DONEM_ZAMAN_ASIMI, bos_olabilir=True)
     if not model:
         return {}, _orkestra_hatasi(ork, "dönem taraması")
-    gecerli = {x["parca"] for x in parca}
+    gecerli = {x["parca"]: {ik for ik, _n in (x.get("birlikte") or [])} for x in parca}
     sonuc = {}
     for x in veri.get("kolonlar") or []:
         if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
             continue
-        sonuc[str(x["ad"])] = {
+        ad = str(x["ad"])
+        haric = x.get("haric") if isinstance(x.get("haric"), list) else []
+        sonuc[ad] = {
             "anlam": _donem_metni(x.get("anlam")), "soru": _donem_metni(x.get("soru")),
-            "not": _donem_metni(x.get("not")), "model": MODEL_ADLARI.get(model, model)}
+            "not": _donem_metni(x.get("not")), "model": MODEL_ADLARI.get(model, model),
+            # Yalniz listede olan ikililer gecer.
+            "haric": sorted({str(h).strip().upper() for h in haric} & gecerli[ad])}
     return sonuc, None
 
 
 def donem_tara(liste):
-    """liste: [{"parca", "kolon", "ornek": (kolon, tanim)}]. Doner:
-    ({parca: {"anlam", "soru", "not", "model"}}, hata). Bir parca cevapsiz
+    """liste: [{"parca", "kolon", "ornek": (kolon, tanim), "birlikte",
+    "tek", "birlikte_ornek"}]. Doner: ({parca: {"anlam", "soru", "not",
+    "model", "haric"}}, hata). Bir parca cevapsiz
     kalirsa digerlerinin sonucu yine doner; hata metninde yazar."""
     if not liste:
         return {}, None

@@ -41,6 +41,8 @@ ESKI_DOSYA = "/DONEM_BILGISI.json"   # onceki surum; bir kez hafizaya tasinip si
 ORNEK_ADET = 3            # kalip basina modele ve karta giden ornek kolon
 KOMSU_EN_AZ = 3           # komsu aday: en az bu kadar kolonda
 KOMSU_PAY = 0.6           # ... ve geciklerinin en az bu kadari donem yaninda
+BIRLIKTE_EN_AZ = 3        # birlikte gecis: ikili en az bu kadar kolonda yan yana
+BIRLIKTE_ADET = 3         # parca basina gosterilen en cok ikili
 
 _SAYI_HARF = re.compile(r"^(\d+)([A-Z]{1,3})$")
 _HARF_SAYI = re.compile(r"^([A-Z]{1,2})(\d{2,})$")
@@ -104,6 +106,76 @@ def yer_tutucu_hatasi(kalip, anlam):
                 "yerine değeri yazın." % ", ".join(kotu))
     return ("Anlamda geçersiz yer tutucu: %s. Bu kalıpta kullanılabilenler: %s."
             % (", ".join(kotu), ", ".join(sorted(x for x in izinli if not x.startswith("<")))))
+
+
+# ---------------------------------------------------------------------------
+# BIRLIKTE GECIS: harf parcalarinin kolon adlarinda yan yana gectigi ikililer
+# (yalniz sayim; anlam yok). Bir kisaltma bir ikilinin icinde baska bir
+# anlam tasiyabilir (ornegin ikili birlikte bir birim gosterir). Kullanici
+# o ikiliyi "haric" isaretlerse kalip o ikilinin icinde donem sayilmaz;
+# tek basina gectigi yerlerde donem kalir.
+# ---------------------------------------------------------------------------
+def _harf_parcasi(p):
+    return bool(p) and not _YALIN_SAYI.match(p) and not _donem_parcasi(p)
+
+
+def haric_mi(t, i, haric):
+    """t[i] haric tutulan bir ikilinin (sol_sag) icinde mi?"""
+    if not haric:
+        return False
+    return ((i > 0 and t[i - 1] + "_" + t[i] in haric)
+            or (i + 1 < len(t) and t[i] + "_" + t[i + 1] in haric))
+
+
+def birlikte_haritasi(adlar, tanimlar=None):
+    """{parca: {"birlikte": [[ikili, kolon]], "tek": tek basina gectigi
+    kolon, "ornek_tek": (kolon, tanim) | None, "ornekler": {ikili: (kolon,
+    tanim)}}}. Yalniz en az BIRLIKTE_EN_AZ kolonda yan yana gectigi ikilisi
+    olan harf parcalari; ikili adi soldaki_sagdaki."""
+    tanimlar = tanimlar or {}
+    toks = [(ad, _toklar(ad)) for ad in adlar]
+    cift = {}
+    for _ad, t in toks:
+        gor = {}
+        for i, p in enumerate(t):
+            if not _harf_parcasi(p):
+                continue
+            for j in (i - 1, i + 1):
+                if 0 <= j < len(t) and _harf_parcasi(t[j]):
+                    gor.setdefault(p, set()).add(t[min(i, j)] + "_" + t[max(i, j)])
+        for p, ikililer in gor.items():
+            c = cift.setdefault(p, Counter())
+            for ik in ikililer:
+                c[ik] += 1
+    cikti = {}
+    for p, c in cift.items():
+        sec = [ik for ik, n in sorted(c.items(), key=lambda kv: (-kv[1], kv[0]))
+               if n >= BIRLIKTE_EN_AZ][:BIRLIKTE_ADET]
+        if sec:
+            cikti[p] = {"birlikte": [[ik, c[ik]] for ik in sec], "tek": 0,
+                        "ornek_tek": None, "ornekler": {}}
+    for ad, t in toks:
+        tanim = str(tanimlar.get(ad) or "").strip()
+        gorulen = set()
+        for i, p in enumerate(t):
+            b = cikti.get(p)
+            if not b or p in gorulen:
+                continue
+            gorulen.add(p)
+            secili = {ik for ik, _n in b["birlikte"]}
+            # Kolonda parcanin secili ikililerin disinda bir gecisi varsa tek.
+            tek = any(not haric_mi(t, j, secili) for j, q in enumerate(t) if q == p)
+            if tek:
+                b["tek"] += 1
+                if tanim and b["ornek_tek"] is None:
+                    b["ornek_tek"] = (ad, tanim)
+            for j, q in enumerate(t):
+                if q != p:
+                    continue
+                for ik in sorted(secili):
+                    if haric_mi(t, j, {ik}) and tanim and ik not in b["ornekler"]:
+                        b["ornekler"][ik] = (ad, tanim)
+    return cikti
 
 
 def kalip_deseni(kalip):
@@ -197,6 +269,12 @@ def kaliplar(adlar, tanimlar, ek=None):
             ornek.append((ad, tanim))
         cikti.append({"kalip": kalip, "tur": b["tur"], "kolon": len(b["kolonlar"]),
                       "degerler": degerler, "ornekler": ornek})
+    # Yer tutucusuz (tek parca) kaliplarin birlikte gectigi ikililer.
+    bh = birlikte_haritasi(adlar, tanimlar)
+    for k in cikti:
+        b = bh.get(k["kalip"]) if "<" not in k["kalip"] else None
+        if b:
+            k.update(birlikte=b["birlikte"], tek=b["tek"], birlikte_ornek=dict(b["ornekler"]))
     cikti.sort(key=lambda k: (-k["kolon"], k["kalip"]))
     return cikti
 
@@ -208,6 +286,7 @@ def parca_listesi(adlar, tanimlar, ornek=2):
     parca ikili olarak da girer (<P>_<NN>; elle yazilan aralik kalibi
     adlarda aranabilsin)."""
     tanimlar = tanimlar or {}
+    bh = birlikte_haritasi(adlar, tanimlar)
     kolonlar, ikililer = {}, set()
     for ad in adlar:
         t = _toklar(ad)
@@ -224,9 +303,11 @@ def parca_listesi(adlar, tanimlar, ornek=2):
     cikti = []
     for p, liste in kolonlar.items():
         ornekler = [(a, str(tanimlar.get(a) or "").strip()[:200]) for a in liste[:ornek]]
+        b = bh.get(p) or {}
         cikti.append({"parca": p, "kolon": len(liste), "ikili": p in ikililer,
                       "donem": p in ikililer or bool(_donem_parcasi(p)),
-                      "ornekler": ornekler})
+                      "ornekler": ornekler, "birlikte": b.get("birlikte") or [],
+                      "tek": b.get("tek", len(liste))})
     cikti.sort(key=lambda x: x["parca"])
     return cikti
 
@@ -243,15 +324,23 @@ def kalip_adlarda(kalip, parcalar):
 def tarama_listesi(adlar, tanimlar, kalip_listesi):
     """Dil modelinin taracagi kisaltmalar: kolon adlarindaki, bicimi donem
     olmayan ve hicbir kalibin degeri olmayan butun parcalar (yalniz rakam
-    haric): [{"parca", "kolon", "ornek": (kolon, tanim)}]."""
+    haric): [{"parca", "kolon", "ornek": (kolon, tanim), "birlikte":
+    [[ikili, kolon]], "tek", "birlikte_ornek": {ikili: (kolon, tanim)}}].
+    Birlikte gectigi ikilisi varsa ornek tek basina gectigi kolondan."""
     tanimlar = tanimlar or {}
     kapsanan = {d for k in kalip_listesi for d, _n in k["degerler"]}
+    bh = birlikte_haritasi(adlar, tanimlar)
     cikti = []
     for x in parca_listesi(adlar, tanimlar, ornek=1):
         if x["donem"] or x["parca"] in kapsanan:
             continue
-        cikti.append({"parca": x["parca"], "kolon": x["kolon"],
-                      "ornek": x["ornekler"][0] if x["ornekler"] else ("", "")})
+        b = bh.get(x["parca"]) or {}
+        ornek = x["ornekler"][0] if x["ornekler"] else ("", "")
+        if b.get("ornek_tek"):
+            ornek = b["ornek_tek"]
+        cikti.append({"parca": x["parca"], "kolon": x["kolon"], "ornek": ornek,
+                      "birlikte": b.get("birlikte") or [], "tek": b.get("tek", x["kolon"]),
+                      "birlikte_ornek": dict(b.get("ornekler") or {})})
     return cikti
 
 
@@ -297,21 +386,32 @@ def hafiza():
         return {}
 
 
-def hafizaya_yaz(kayitlar):
-    """kayitlar: {kalip: anlam}. Doner: hata ya da None."""
-    return kisaltma_mod.donem_kaydet(kayitlar)
+def hafiza_haric():
+    """{kalip: [ikili]}: hafizada kalibin donem sayilmadigi ikililer."""
+    try:
+        return kisaltma_mod.donem_haric_hafizasi()
+    except Exception:
+        return {}
+
+
+def hafizaya_yaz(kayitlar, haric=None):
+    """kayitlar: {kalip: anlam}; haric: {kalip: [ikili]} (bu kaliplarin
+    hafizadaki haric listesi bununla degisir). Doner: hata ya da None."""
+    return kisaltma_mod.donem_kaydet(kayitlar, haric)
 
 
 # ---------------------------------------------------------------------------
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
 # Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
-ISTEM_SURUMU = 2
+ISTEM_SURUMU = 3
 
 
 def _imza(liste, tara):
-    ham = json.dumps([ISTEM_SURUMU] + [[k["kalip"], k["degerler"], k["ornekler"]] for k in liste]
-                     + [x["parca"] for x in tara], ensure_ascii=False)
+    ham = json.dumps([ISTEM_SURUMU] + [[k["kalip"], k["degerler"], k["ornekler"],
+                                         k.get("birlikte") or []] for k in liste]
+                     + [[x["parca"], x.get("birlikte") or []] for x in tara],
+                     ensure_ascii=False)
     return hashlib.sha1(ham.encode("utf-8")).hexdigest()[:16]
 
 

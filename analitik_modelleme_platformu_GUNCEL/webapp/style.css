@@ -3183,6 +3183,17 @@ span.bolme-cip { cursor: default; }
 .dg-donem-cikanlar-liste { display: flex; flex-wrap: wrap; gap: 2px var(--b-3); }
 .dg-donem-geri { text-decoration: line-through; text-decoration-color: var(--metin-tamam); }
 .dg-donem-geri:hover:not(:disabled) { text-decoration: underline; }
+/* Birlikte geçtiği ikililer: çip tıklanır; hariç olan üstü çizili. */
+.dg-donem-birlikte {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  margin-top: var(--b-2);
+}
+.dg-donem-birlikte-bas { display: inline-flex; align-items: center; gap: 4px; font-weight: var(--fw-kalin); }
+.dg-birlikte-cip { cursor: pointer; font: inherit; font-weight: var(--fw-kalin); }
+.dg-birlikte-cip:hover:not(:disabled) { border-color: var(--kirmizi); color: var(--kirmizi); }
+.dg-birlikte-cip:disabled { cursor: default; opacity: .6; }
+.dg-birlikte-cip.haric { text-decoration: line-through; border-style: dashed; color: var(--metin-tamam); }
+.dg-donem-tek { color: var(--metin); }
 /* Kolon adlarındaki kısaltmalar: düz liste, sütunlara akar. */
 .dg-parca-baslik { margin-top: var(--b-3); }
 .dg-parca-liste {
