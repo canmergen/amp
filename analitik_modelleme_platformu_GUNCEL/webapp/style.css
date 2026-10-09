@@ -188,15 +188,15 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 /* ARKA PLAN: cerceveli gorsel sayfanin TAMAMINI kaplar (gerilerek; kirpilirsa
    cerceve kenarlari ekrandan tasar). Uygulama cercevenin IC ALANINDA durur.
    Ic alanin sinirlari gorselde olculdu (1672 x 941 piksel): ic cizgi solda
-   69, sagda 1602, ustte 72; altta 860, ama alt ortadaki suslemenin
-   kivilcimlari 823'e kadar iceri uzaniyor, uygulama onlarin ustunde biter.
+   69, sagda 1602, ustte 72, altta 860. Alt ortadaki suslemenin kivilcimlari
+   (823 - 856) uygulamanin altinda kalir (kullanici karari: alan once).
    Gorsel gerildigi icin sinirlar ekranin eni (vw) ve boyu (vh) oraninda. */
 :root {
   --cerceve-sol: calc(69 / 1672 * 100vw);
   --cerceve-sag: calc((1672 - 1602) / 1672 * 100vw);
   --cerceve-ust: calc(72 / 941 * 100vh);
-  --cerceve-alt: calc((941 - 823) / 941 * 100vh);
-  --cerceve-ara: 8px;          /* cizgi ile uygulama arasi */
+  --cerceve-alt: calc((941 - 860) / 941 * 100vh);
+  --cerceve-ara: 2px;          /* cizgi ile uygulama arasi */
 }
 body {
   background-color: #FEFEFA;   /* gorselin ic zemini; gorsel gelmezse */
