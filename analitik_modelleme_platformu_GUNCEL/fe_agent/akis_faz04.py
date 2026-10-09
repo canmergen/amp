@@ -9,6 +9,7 @@ Kontrolu (eksik, sabit ve kararlilik Faz 03'te denetleniyor).
 import numpy as np
 import pandas as pd
 from fe_agent import secim as secim_mod
+from fe_agent import sfa_karar
 
 from fe_agent.akis_durum import (
     _dataset_okunur_mu, _df_oku, _liste, _nerede, _ond, _sayi, _yaz, maskeler,
@@ -58,6 +59,13 @@ def _baz_ayrimi(durum, df):
     return ham, ur, kaynak
 
 
+def _sayisal_df(durum, df):
+    """Aralik kolonlarinin metin etiketleri sira numarasina cevrilir
+    (baz setteki etiketler degismez)."""
+    from fe_agent.akis_faz02 import aralik_siralari
+    return sfa_karar.aralik_kodla(df, aralik_siralari(durum))
+
+
 # Hedefle bu esigin ustunde (mutlak) korelasyonu olan degisken sizinti
 # supheli sayilir.
 SIZINTI_ESIK = 0.95
@@ -85,7 +93,7 @@ def kalite_uygula(durum):
         return _KAYNAK_YOK % durum.get("veri_seti")
     not_metni = "" if baz_mi else ("\n\n" + _BAZ_YOK % kaynak)
 
-    df = _df_oku(kaynak)
+    df = _sayisal_df(durum, _df_oku(kaynak))
     y = pd.to_numeric(df[durum["meta"]["target"]], errors="coerce")
     tr, _ = maskeler(durum, df)
     ham, ur, kaynak_ad = _baz_ayrimi(durum, df)
@@ -165,7 +173,7 @@ def secim_uygula(durum):
 
     not_metni = "" if baz_mi else ("\n\n" + _BAZ_YOK % kaynak)
 
-    df = _df_oku(kaynak)
+    df = _sayisal_df(durum, _df_oku(kaynak))
     adaylar = [c for c in (_adaylar(durum) or []) if c in df.columns]
     if not adaylar:
         durum["secim"] = {"secilen": 0, "secilen_liste": []}

@@ -33,6 +33,14 @@ def _kaynak(durum):
     return None, False
 
 
+def _aralik_sira(durum):
+    from fe_agent.akis_faz02 import aralik_siralari
+    try:
+        return aralik_siralari(durum)
+    except Exception:
+        return {}
+
+
 def _baz_kolonlari(durum):
     """Baz model: analitik baz setteki HAM kaynakli degiskenler, Sizinti
     Kontrolu'nun supheli bulduklari haric. Uretilenler aday setten girer."""
@@ -117,7 +125,10 @@ def model_uygula(durum):
     not_metni = "" if zengin else \
         ("\n\n" + _ZENGIN_YOK % kaynak)
 
-    df = _df_oku(kaynak)
+    # Aralik kolonlari sira numarasiyla (baz setteki etiketler degismez).
+    from fe_agent import sfa_karar
+    from fe_agent.akis_faz02 import aralik_siralari
+    df = sfa_karar.aralik_kodla(_df_oku(kaynak), aralik_siralari(durum))
     s = setler(durum, df)
 
     # Tekrarli olcum YALNIZCA egitim satirlarinda yapilir; test ve OOT
@@ -172,8 +183,13 @@ def model_uygula(durum):
                  "aralığı tamamen sıfırın altında.")
 
     nan_not = ""
+    cev = sonuc.get("cevrilemeyen_kolonlar") or []
+    if cev:
+        nan_not += ("\n\nSayıya çevrilemeyen %s kolon (metin kategori) modele "
+                    "alınmadı: %s." % (_sayi(len(cev)), ", ".join(cev[:6])
+                                       + (" +%s" % _sayi(len(cev) - 6) if len(cev) > 6 else "")))
     if int(sonuc.get("hedef_nan_dusen") or 0) > 0:
-        nan_not = ("\n\nHedefi boş olan %s satır eğitimden ve testten "
+        nan_not += ("\n\nHedefi boş olan %s satır eğitimden ve testten "
                    "düşürüldü (0 sınıfına yazılmadı)."
                    % _sayi(sonuc["hedef_nan_dusen"]))
 
@@ -290,6 +306,9 @@ def algoritma_uygula(durum):
         "target": durum["meta"]["target"],
         "baz_kolonlar": _baz_kolonlari(durum),
         "yeni_kolonlar": (durum.get("secim") or {}).get("secilen_liste") or [],
+        # Aralik kolonlari metin etiket tasir; senaryo bunlari bu siraya
+        # gore sayiya cevirmeli (sfa_karar.aralik_kodla).
+        "aralik_sira": _aralik_sira(durum),
         "bolme": _bolme_ozeti(durum),
         "meta": durum.get("meta") or {},
         "adaylar": ALGORITMALAR,
@@ -514,6 +533,9 @@ def final_uygula(durum):
         "target": durum["meta"]["target"],
         "baz_kolonlar": _baz_kolonlari(durum),
         "yeni_kolonlar": (durum.get("secim") or {}).get("secilen_liste") or [],
+        # Aralik kolonlari metin etiket tasir; senaryo bunlari bu siraya
+        # gore sayiya cevirmeli (sfa_karar.aralik_kodla).
+        "aralik_sira": _aralik_sira(durum),
         "bolme": _bolme_ozeti(durum),
         "meta": durum.get("meta") or {},
         "algoritma": _algoritma_adi(durum),

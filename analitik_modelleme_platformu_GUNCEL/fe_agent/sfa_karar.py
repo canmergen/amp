@@ -517,6 +517,23 @@ def _ek(adlar):
     return "".join("_" + a for a in adlar)
 
 
+def aralik_kodla(df, sira):
+    """Aralik kolonlarinin metin etiketlerini SIRA NUMARASINA cevirir (model
+    ve secim icin; baz setteki etiketler degismez). sira: {kolon:
+    [etiket, ...]} (aralik sirasiyla). Listede olmayan etiket ("Eksik",
+    egitimde gorulmemis "Diğer") bos olur; model bos degeri kendisi isler.
+    Doner: yeni df (kolonlar sayisal)."""
+    sira = {k: v for k, v in (sira or {}).items() if k in df.columns and v}
+    if not sira:
+        return df
+    df = df.copy(deep=False)
+    for kol, etiketler in sira.items():
+        harita = {str(e): float(i) for i, e in enumerate(etiketler)}
+        df[kol] = df[kol].astype(object).map(
+            lambda v: harita.get(str(v)) if v is not None else None).astype(float)
+    return df
+
+
 def uygula(df, tr, kararlar, detay):
     """Kararlari baz sete uygular (yerinde degil, yeni df doner).
     Parametreler (medyan, kirpma sinirlari, donusum olcekleri) TRAIN'den.

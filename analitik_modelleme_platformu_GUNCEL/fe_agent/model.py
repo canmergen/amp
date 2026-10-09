@@ -151,6 +151,18 @@ def karsilastir(df, target, baz_kolonlar, yeni_kolonlar,
     kolonlar = sorted(baz_kume | set(yeni))
     # fillna(0) YOK: eksiklik sinyali modele birakilir
     X_tum = df.loc[gecerli, kolonlar].apply(pd.to_numeric, errors="coerce")
+    # SAYIYA CEVRILEMEYEN kolon (metin kategori) tamamen bos kalir ve
+    # modeli durdurur; disarida birakilir ve raporlanir. (Aralik kolonlari
+    # cagiran tarafta sira numarasina cevrilmis gelir.)
+    cevrilemeyen = [k for k in kolonlar if not X_tum[k].notna().any()]
+    if cevrilemeyen:
+        X_tum = X_tum.drop(columns=cevrilemeyen)
+        baz = [k for k in baz if k not in cevrilemeyen]
+        yeni = [k for k in yeni if k not in cevrilemeyen]
+        kolonlar = [k for k in kolonlar if k not in cevrilemeyen]
+        if not baz:
+            return {"hata": "baz kolonların hiçbiri sayıya çevrilemedi (%s)"
+                            % ", ".join(cevrilemeyen[:5])}
 
     # --- Bolme: TUR disaridan gelir ---
     zamansal = _zamansal_mi(bolme_turu)
@@ -252,6 +264,7 @@ def karsilastir(df, target, baz_kolonlar, yeni_kolonlar,
         "hedef_nan_dusen": hedef_nan,
         "baz_kolon": len(baz),
         "yeni_kolon": len(yeni),
+        "cevrilemeyen_kolonlar": list(cevrilemeyen),
         # KARSILASTIRILABILIR MI: yeni kolon yoksa baz ve zengin model
         # AYNI modeldir. O zaman delta mekanik olarak sifir, guven araligi
         # da [0,0] cikar. Bunu "katki gurultuden ayirt edilemiyor" diye

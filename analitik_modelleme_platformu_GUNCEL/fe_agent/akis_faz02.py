@@ -757,6 +757,26 @@ def baz_plan(durum):
                _sayi(ko["isaret"]), durum["veri_seti"]))
 
 
+def aralik_siralari(durum):
+    """{baz setteki aralik kolonu: [etiket, ...]}: modelin ve secimin
+    etiketleri sira numarasina cevirmesi icin. Baz set kaydinda yoksa
+    (eski calisma) SFA detayindan kurulur."""
+    bz = durum.get("baz") or {}
+    if isinstance(bz.get("aralik_sira"), dict):
+        return bz["aralik_sira"]
+    detay = sfa_detay_oku(durum)
+    kaynak = bz.get("kaynak") or {}
+    sira = {}
+    for kol in (bz.get("kolonlar") or []) + (bz.get("uretilen_kolonlar") or []):
+        if not str(kol).endswith("_ARALIK"):
+            continue
+        ad = kaynak.get(kol) or str(kol)[:-len("_ARALIK")]
+        et = (detay.get(ad) or {}).get("etiketler")
+        if et:
+            sira[kol] = [str(e) for e in et]
+    return sira
+
+
 def _uretilen_dusus_sebebi(durum, ad, sfa_dusen):
     """Uretilen degisken baz sete neden girmedi (katalog ve panel icin)."""
     p = durum.get("profil") or {}
@@ -816,6 +836,15 @@ def baz_uygula(durum):
     sfa_dusen = set(rapor["dusen"])
     uretilen_dusen = {a: _uretilen_dusus_sebebi(durum, a, sfa_dusen)
                       for a in sorted(uretilen - kalan)}
+    # ARALIK SIRASI: aralik kolonlari metin etiket tasir ("0 - 1", "2 - 8");
+    # model ve secim bunlari bu siraya gore sayiya cevirir.
+    detay = sfa_detay_oku(durum)
+    aralik_sira = {}
+    for c in tum_kolonlar:
+        if str(c).endswith("_ARALIK"):
+            et = (detay.get(kaynak[c]) or {}).get("etiketler")
+            if et:
+                aralik_sira[c] = [str(e) for e in et]
 
     # Hedef veri seti akista tanimli degilse adim COKMESIN: hesap korunur,
     # tablo yedek dosyaya yazilir ve kullaniciya acik bir uyari verilir.
@@ -839,7 +868,7 @@ def baz_uygula(durum):
                     "doldurma_degerleri": doldurma, "dusen": dusur,
                     "kolon": int(df.shape[1]), "kolonlar": baz_kolonlar,
                     "uretilen_kolonlar": uretilen_kolonlar, "kaynak": kaynak,
-                    "uretilen_dusen": uretilen_dusen}
+                    "uretilen_dusen": uretilen_dusen, "aralik_sira": aralik_sira}
 
     if not yazildi:
         durum["baz"]["hata"] = ("'%s' veri setine yazılamadı" % baz_ds)
