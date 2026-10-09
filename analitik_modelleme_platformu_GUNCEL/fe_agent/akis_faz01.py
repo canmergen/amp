@@ -1670,7 +1670,9 @@ DONEM_YONERGE = [
     "kısaltmalara tıklayarak ya da \"+ Dönem Kalıbı Ekle\" ile ekleyin; "
     "adlarda geçmeyen kalıp eklenmez.",
     "Onaylayınca tabloda kalan bütün satırlar bu çalışmanın dönem "
-    "bilgisi olur ve hafızaya kaydedilir; sonraki çalışmalarda dolu gelir."]
+    "bilgisi olur ve hafızaya kaydedilir (eklenir ya da güncellenir); "
+    "sonraki çalışmalarda dolu gelir. Hafızadan gelip çıkardığınız kalıp "
+    "hafızadan da silinir; bu tabloda olmayan kayıtlara dokunulmaz."]
 DONEM_SUTUNLAR = (
     "Kalıp: kolon adındaki dönem parçasının biçimi (<N> sayı, <NN> iki "
     "basamaklı sayı).\n"
@@ -1679,8 +1681,8 @@ DONEM_SUTUNLAR = (
     "rengi: mavi dil modeli önerisi, mor hafızadan, yeşil sizin "
     "düzenlediğiniz, sarı eksik ya da kontrol gerektiren.\n"
     "Çıkar: satırı dönem bilgisinden çıkarır; çıkarılan satır kullanılmaz "
-    "ve hafızaya yazılmaz. Hafızada zaten kayıtlı bir kalıbı çıkarmak "
-    "hafızadaki kaydı silmez.")
+    "ve hafızaya yazılmaz. Hafızadan gelen (mor) bir kalıbı çıkarırsanız "
+    "onaylayınca hafızadan da silinir.")
 DONEM_DUGME = {"bos": "Dönem Bilgisini Onayla ve Devam Et"}
 
 
@@ -1856,8 +1858,11 @@ def donem_plan(durum):
 
 def donem_uygula(durum):
     """Tabloda kalan (cikarilmamis) her satir bu calismanin donem bilgisine
-    (durum["donem_bilgisi"]: {kalip: anlam}) ve kisaltma hafizasina yazilir.
-    Cikarilan satir kullanilmaz, hafizaya yazilmaz; geri donuste cikarilmis
+    (durum["donem_bilgisi"]: {kalip: anlam}) ve kisaltma hafizasina yazilir
+    (eklenir ya da guncellenir). Cikarilan satir kullanilmaz, hafizaya
+    yazilmaz; hafizada duruyorsa HAFIZADAN DA SILINIR (kullanici karari:
+    hafizada yalniz onaylananlar durur). Bu tabloda olmayan, daha once
+    onaylanmis kayitlara dokunulmaz. Geri donuste cikarilan satir cikarilmis
     olarak gelir. Kalan satirda anlam bos ya da yer tutucusu gecersizse
     onaylanmaz."""
     karar = durum.pop("_dogrulama_karari", None)
@@ -1877,6 +1882,7 @@ def donem_uygula(durum):
     bilgi, kayit, haric_harita = {}, [], {}
     gorulen = set()
     cikan = 0
+    cikan_kaliplar = []
     for g in gelen:
         elle = bool(g.get("elle"))
         cikar = bool(g.get("cikar"))
@@ -1904,6 +1910,7 @@ def donem_uygula(durum):
             kayit.append({"kalip": kalip, "anlam": anlam, "elle": False, "cikar": True,
                           "haric": haric})
             cikan += 1
+            cikan_kaliplar.append(kalip)
             continue
         if not anlam:
             hatalar.append("%s: anlam boş; anlamını yazın ya da satırı çıkarın." % kalip)
@@ -1923,12 +1930,16 @@ def donem_uygula(durum):
     durum["donem_bilgisi_karari"] = kayit
     durum.pop("parca_bilgisi", None)
     hata = donem_mod.hafizaya_yaz(bilgi, haric_harita) if bilgi else None
+    silinen, sil_hata = donem_mod.hafizadan_sil(cikan_kaliplar)
     metin = "%d dönem kalıbı onaylandı" % len(bilgi)
     if bilgi and not hata:
         metin += " ve hafızaya kaydedildi"
     if cikan:
         metin += "; %d kalıp çıkarıldı" % cikan
-    return metin + "." + (" " + hata if hata else "")
+        if silinen:
+            metin += ", bunların %d tanesi hafızadan da silindi" % silinen
+    hatalar = " ".join(h for h in (hata, sil_hata) if h)
+    return metin + "." + (" " + hatalar if hatalar else "")
 
 
 def donem_hafiza_ekle(durum, kalip, anlam):

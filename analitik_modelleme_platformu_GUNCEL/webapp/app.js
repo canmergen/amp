@@ -8476,7 +8476,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         cikBtn.type = "button";
         cikBtn.disabled = kilitli || calisiyor;
         cikBtn.title = r.elle ? "Elle eklenen satırı sil"
-            : "Dönem bilgisinden çıkar: kullanılmaz ve hafızaya yazılmaz. Tablonun altından geri alınabilir.";
+            : r.kaynak === "hafiza"
+                ? "Dönem bilgisinden çıkar: kullanılmaz ve onaylayınca hafızadan da silinir. Tablonun altından geri alınabilir."
+                : "Dönem bilgisinden çıkar: kullanılmaz ve hafızaya yazılmaz. Tablonun altından geri alınabilir.";
         cikBtn.setAttribute("aria-label", (r.kalip || "Kalıp") + " çıkar");
         tdS.appendChild(cikBtn);
         tr.appendChild(tdS);
@@ -8544,7 +8546,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         cikListe.textContent = "";
         cikBas.textContent = "Çıkarılanlar · " + ftBinlik(cikanlar.length);
         cikBas.appendChild(bolmeBilgiSimgesi("Çıkarılan kalıplar dönem bilgisi olarak kullanılmaz "
-            + "ve hafızaya yazılmaz. Geri almak için üzerine tıklayın.", "Çıkarılanlar"));
+            + "ve hafızaya yazılmaz. Hafızadan gelen kalıp onaylayınca hafızadan da silinir. "
+            + "Geri almak için üzerine tıklayın.", "Çıkarılanlar"));
         const k = kilitli || da.dm === "calisiyor";
         cikanlar.forEach(c => {
             const b = elYap("button", "dg-parca-oge dg-donem-geri", c.r.kalip);
@@ -8552,8 +8555,12 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             b.disabled = k;
             const anlam = (duzen[c.anah] && duzen[c.anah].anlam !== undefined)
                 ? duzen[c.anah].anlam : (c.r.anlam || "");
+            const hafizada = c.r.kaynak === "hafiza";
             b.title = (anlam ? tireSade(anlam) + "\n" : "")
-                + (c.r.soru ? "Dil modeli: " + tireSade(c.r.soru) + "\n" : "") + "Tıklayın: geri al";
+                + (c.r.soru ? "Dil modeli: " + tireSade(c.r.soru) + "\n" : "")
+                + (hafizada ? "Onaylayınca hafızadan silinir.\n" : "") + "Tıklayın: geri al";
+            /* Hafızadan gelen kalıp onayla hafızadan da silinir: görünür yazılır. */
+            if (hafizada) b.appendChild(elYap("span", "dg-donem-sil-not", "hafızadan silinecek"));
             b.onclick = () => geriAl(c.anah);
             cikListe.appendChild(b);
         });

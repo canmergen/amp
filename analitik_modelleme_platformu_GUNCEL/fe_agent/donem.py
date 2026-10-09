@@ -400,6 +400,12 @@ def hafizaya_yaz(kayitlar, haric=None):
     return kisaltma_mod.donem_kaydet(kayitlar, haric)
 
 
+def hafizadan_sil(kaliplar):
+    """Cikarilan kaliplari hafizadan siler (yalniz bunlari).
+    Doner: (silinen sayisi, hata ya da None)."""
+    return kisaltma_mod.donem_sil(kaliplar)
+
+
 # ---------------------------------------------------------------------------
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------

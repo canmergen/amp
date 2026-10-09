@@ -3203,6 +3203,11 @@ span.bolme-cip { cursor: default; }
 .dg-donem-cikanlar-liste { display: flex; flex-wrap: wrap; gap: 2px var(--b-3); }
 .dg-donem-geri { text-decoration: line-through; text-decoration-color: var(--metin-tamam); }
 .dg-donem-geri:hover:not(:disabled) { text-decoration: underline; }
+.dg-donem-sil-not {
+    display: inline-block; margin-left: 6px;
+    font-size: 0.85em; color: var(--amber);
+}
+.dg-donem-geri .dg-donem-sil-not { text-decoration: none; }
 /* Birlikte geçtiği ikililer: çip tıklanır; hariç olan üstü çizili. */
 .dg-donem-birlikte {
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px;

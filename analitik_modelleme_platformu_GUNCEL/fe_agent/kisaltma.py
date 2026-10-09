@@ -798,6 +798,41 @@ def donem_kaydet(kayitlar, haric=None):
     return None
 
 
+def donem_sil(kaliplar):
+    """Kullanicinin Donem Bilgisi'nde CIKARDIGI, hafizada duran kaliplari
+    (ve haric listelerini) siler. Yalniz verilen kaliplar silinir; hafizadaki
+    diger kayitlara dokunulmaz. Dosya var ama okunamiyorsa ustune yazilmaz.
+    Doner: (silinen sayisi, hata ya da None)."""
+    kaliplar = {str(k).strip() for k in (kaliplar or ()) if str(k).strip()}
+    if not kaliplar:
+        return 0, None
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return 0, "Dönem bilgisi hafızadan silinemedi: " + hata
+        donem = dict(govde.get("donem") or {})
+        silinen = sorted(k for k in kaliplar if k in donem)
+        h = _donem_haric_ham(govde)
+        h_silinen = [k for k in kaliplar if k in h]
+        if not silinen and not h_silinen:
+            return 0, None
+        for k in silinen:
+            donem.pop(k, None)
+        for k in h_silinen:
+            h.pop(k, None)
+        govde["donem"] = dict(sorted(donem.items()))
+        if h:
+            govde["donem_haric"] = dict(sorted(h.items()))
+        else:
+            govde.pop("donem_haric", None)
+        try:
+            _folder().upload_stream(DOSYA, json.dumps(
+                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+        except Exception as e:
+            return 0, "Dönem bilgisi hafızadan silinemedi (%s)." % str(e)[:120]
+    return len(silinen), None
+
+
 def _hafiza_oku():
     """Doner: (df[KOLONLAR], hata). JSON yoksa eski Parquet bir kez JSON'a
     aktarilir ve silinir."""
