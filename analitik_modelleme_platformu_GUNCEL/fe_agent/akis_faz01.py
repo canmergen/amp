@@ -1663,23 +1663,32 @@ DONEM_YONERGE = [
     "modelinin diğer kısaltmalar arasından bulduğu (\"Dil Modeli Buldu\"). "
     "Dil modeli her birinin anlamını tanımlardan okuyarak önerir.",
     "Anlamı kontrol edin, gerekiyorsa düzeltin; sorusu olan satırda "
-    "cevabı anlamın içine yazın. Anlamı boş satır kullanılmaz.",
+    "cevabı anlamın içine yazın. Dönem bilgisi olmayan satırı \"Çıkar\" "
+    "ile çıkarın; çıkardığınızı tablonun altındaki listeden geri "
+    "alabilirsiniz.",
     "Kolon adlarında geçen ama listede olmayan dönem parçasını alttaki "
     "kısaltmalara tıklayarak ya da \"+ Dönem Kalıbı Ekle\" ile ekleyin; "
-    "adlarda geçmeyen kalıp eklenmez."]
+    "adlarda geçmeyen kalıp eklenmez.",
+    "Onaylayınca tabloda kalan bütün satırlar bu çalışmanın dönem "
+    "bilgisi olur ve hafızaya kaydedilir; sonraki çalışmalarda dolu gelir."]
 DONEM_SUTUNLAR = (
     "Kalıp: kolon adındaki dönem parçasının biçimi (<N> sayı, <NN> iki "
     "basamaklı sayı).\n"
     "Adlarda Geçen: bu kalıpta geçen bütün değerler ve kaç kolonda geçtiği.\n"
-    "Anlam: kalıbın anlamı; dil modeli önerir, siz onaylarsınız.\n"
-    "Hafızaya Kaydet: işaretli satırın anlamı kısaltma hafızasına yazılır, "
-    "sonraki çalışmalarda dolu gelir. İşareti kaldırmak hafızadaki kaydı "
-    "silmez.")
+    "Anlam: kalıbın anlamı; dil modeli önerir, siz onaylarsınız. Satır "
+    "rengi: mavi dil modeli önerisi, mor hafızadan, yeşil sizin "
+    "düzenlediğiniz, sarı eksik ya da kontrol gerektiren.\n"
+    "Çıkar: satırı dönem bilgisinden çıkarır; çıkarılan satır kullanılmaz "
+    "ve hafızaya yazılmaz. Hafızada zaten kayıtlı bir kalıbı çıkarmak "
+    "hafızadaki kaydı silmez.")
 DONEM_DUGME = {"bos": "Dönem Bilgisini Onayla ve Devam Et"}
 
 
 def _donem_kaynak(durum):
-    adlar = _veri_kolonlari(durum)
+    # ROL KOLONLARI (hedef, kimlik, donem, segment) degisken degil; adlari
+    # donem kalibi ya da kisaltma olarak taranmaz.
+    roller = set(zorunlu_tanimlar(durum))
+    adlar = [a for a in _veri_kolonlari(durum) if a not in roller]
     try:
         tanimlar = _kisaltma_kaynagi(durum)
     except Exception:
@@ -1716,32 +1725,45 @@ def _donem_alani(durum):
               if isinstance(x, dict)}
     calisiyor = d["durum"] == "calisiyor"
     satirlar = []
+
+    def satir(kalip, tur, kolon, degerler, ornekler, oneri, kaynak, soru, notu,
+              model, varsayilan_cikar=False, **ek):
+        """ANLAM: onceki karar varsa o; yoksa oneri (dil modeli ya da
+        hafiza). ONERI ayri gider: on yuz duzenlenmis satiri buna gore
+        boyar. CIKAR: kullanicinin cikardigi satir (onceki kararda)."""
+        o = onceki.get(kalip)
+        anlam, cikar = oneri, varsayilan_cikar
+        if o is not None:
+            anlam = "" if o.get("donem_degil") else str(o.get("anlam") or "")
+            cikar = bool(o.get("cikar"))
+        r = {"kalip": kalip, "tur": tur, "kolon": kolon, "degerler": degerler,
+             "ornekler": ornekler, "anlam": anlam, "oneri": oneri,
+             "soru": soru if anlam == oneri else "", "not": notu if anlam == oneri else "",
+             "kaynak": kaynak, "model": model, "cikar": cikar,
+             "hafizada": bool(haf.get(kalip))}
+        r.update(ek)
+        satirlar.append(r)
+
     for k in liste:
         kalip = k["kalip"]
         m = sonuc.get(kalip) or {}
         h = haf.get(kalip) or ""
-        o = onceki.get(kalip)
-        soru, notu = "", ""
-        if o is not None:
-            anlam = "" if o.get("donem_degil") else str(o.get("anlam") or "")
-            kaynak, kaydet = "duzenlendi", bool(o.get("kaydet"))
-        elif h:
-            anlam, kaynak, kaydet = h, "hafiza", True
-        else:
-            # Yanindaki-parca adayi: model donemle ilgisiz dediyse gosterilmez.
-            if m and not m.get("donem", True) and k["tur"] == "komsu":
-                continue
-            anlam = (m.get("anlam") or "") if m.get("donem", True) else ""
-            kaynak, kaydet = ("model" if m else ""), False
-            soru = m.get("soru", "") if m.get("donem", True) else \
-                (m.get("soru") or "Dil modeline göre dönem bilgisi taşımıyor.")
-            notu = m.get("not", "")
-        satirlar.append({
-            "kalip": kalip, "tur": k["tur"], "kolon": k["kolon"],
-            "degerler": [{"deger": v, "kolon": n} for v, n in k["degerler"]],
-            "ornekler": [{"kolon": a, "tanim": t[:240]} for a, t in k["ornekler"]],
-            "anlam": anlam, "soru": soru, "not": notu, "kaynak": kaynak,
-            "model": m.get("model", ""), "kaydet": kaydet, "hafizada": bool(h)})
+        degerler = [{"deger": v, "kolon": n} for v, n in k["degerler"]]
+        ornekler = [{"kolon": a, "tanim": t[:240]} for a, t in k["ornekler"]]
+        if h:
+            satir(kalip, k["tur"], k["kolon"], degerler, ornekler, h, "hafiza", "", "", "")
+            continue
+        donem_mi = m.get("donem", True)
+        # Yanindaki-parca adayi: model donemle ilgisiz dediyse gosterilmez.
+        if m and not donem_mi and k["tur"] == "komsu" and kalip not in onceki:
+            continue
+        # Model donem degil dediyse satir CIKARILMIS gelir (altta geri
+        # alinabilir); bos anlamla tabloda kalip onayi durdurmasin.
+        satir(kalip, k["tur"], k["kolon"], degerler, ornekler,
+              (m.get("anlam") or "") if donem_mi else "", "model" if m else "",
+              m.get("soru", "") if donem_mi else
+              (m.get("soru") or "Dil modeline göre dönem bilgisi taşımıyor."),
+              m.get("not", ""), m.get("model", ""), varsayilan_cikar=bool(m) and not donem_mi)
     # TARAMA: dil modelinin rakamsiz kisaltmalar arasindan buldugu donem
     # parcalari (kalip = kisaltmanin kendisi).
     tara_bilgi = {x["parca"]: x for x in tara}
@@ -1749,19 +1771,11 @@ def _donem_alani(durum):
         x = tara_bilgi.get(p_)
         if not x:
             continue
-        o = onceki.get(p_)
-        if o is not None:
-            anlam, kaynak, kaydet = str(o.get("anlam") or ""), "duzenlendi", bool(o.get("kaydet"))
-        else:
-            anlam, kaynak, kaydet = b.get("anlam", ""), "model", False
         orn_ad, orn_tanim = x["ornek"]
-        satirlar.append({
-            "kalip": p_, "tur": "tarama", "kolon": x["kolon"],
-            "degerler": [{"deger": p_, "kolon": x["kolon"]}],
-            "ornekler": [{"kolon": orn_ad, "tanim": str(orn_tanim)[:240]}] if orn_ad else [],
-            "anlam": anlam, "soru": "" if o is not None else b.get("soru", ""),
-            "not": "" if o is not None else b.get("not", ""), "kaynak": kaynak,
-            "model": b.get("model", ""), "kaydet": kaydet, "hafizada": False})
+        satir(p_, "tarama", x["kolon"], [{"deger": p_, "kolon": x["kolon"]}],
+              [{"kolon": orn_ad, "tanim": str(orn_tanim)[:240]}] if orn_ad else [],
+              b.get("anlam", ""), "model", b.get("soru", ""), b.get("not", ""),
+              b.get("model", ""))
     # Onceki kararda olup artik listede olmayan (tarama sonucu bu surecte
     # bellekte yok) satir korunur; kullanicinin karari kaybolmaz.
     tespit = {s_["kalip"] for s_ in satirlar}
@@ -1769,21 +1783,13 @@ def _donem_alani(durum):
         if not o.get("elle") and kalip not in tespit and kalip in tara_bilgi \
                 and d["durum"] != "calisiyor":
             x = tara_bilgi[kalip]
-            satirlar.append({
-                "kalip": kalip, "tur": "tarama", "kolon": x["kolon"],
-                "degerler": [{"deger": kalip, "kolon": x["kolon"]}], "ornekler": [],
-                "anlam": str(o.get("anlam") or ""), "soru": "", "not": "",
-                "kaynak": "duzenlendi", "model": "", "kaydet": bool(o.get("kaydet")),
-                "hafizada": False})
+            satir(kalip, "tarama", x["kolon"], [{"deger": kalip, "kolon": x["kolon"]}], [],
+                  "", "", "", "", "")
     # Kullanicinin elle ekledigi kaliplar (geri donuste korunur).
     tespit = {s_["kalip"] for s_ in satirlar}
     for kalip, o in onceki.items():
         if o.get("elle") and kalip not in tespit:
-            satirlar.append({"kalip": kalip, "tur": "elle", "kolon": 0, "degerler": [],
-                             "ornekler": [], "anlam": str(o.get("anlam") or ""), "soru": "",
-                             "not": "", "kaynak": "duzenlendi", "model": "",
-                             "kaydet": bool(o.get("kaydet")), "hafizada": bool(haf.get(kalip)),
-                             "elle": True})
+            satir(kalip, "elle", 0, [], [], "", "", "", "", "", elle=True)
     notlar = []
     if d["hata"]:
         notlar.append("Dil modeli cevap vermedi; anlamları kendiniz yazabilirsiniz. (%s)"
@@ -1822,9 +1828,11 @@ def donem_plan(durum):
 
 
 def donem_uygula(durum):
-    """Anlami dolu satirlar bu calismanin donem bilgisine
-    (durum["donem_bilgisi"]: {kalip: anlam}) yazilir; "Hafizaya Kaydet"
-    isaretli olanlar kisaltma hafizasina da. Anlami bos satir kullanilmaz."""
+    """Tabloda kalan (cikarilmamis) her satir bu calismanin donem bilgisine
+    (durum["donem_bilgisi"]: {kalip: anlam}) ve kisaltma hafizasina yazilir.
+    Cikarilan satir kullanilmaz, hafizaya yazilmaz; geri donuste cikarilmis
+    olarak gelir. Kalan satirda anlam bos ya da yer tutucusu gecersizse
+    onaylanmaz."""
     karar = durum.pop("_dogrulama_karari", None)
     if _kontrol_atlandi(durum):
         durum["donem_bilgisi"] = {}
@@ -1837,17 +1845,17 @@ def donem_uygula(durum):
         gelen = [g for g in (karar.get("donem") or [])
                  if isinstance(g, dict) and (str(g.get("kalip")) in gecerli or g.get("elle"))]
     hatalar = []
-    bilgi, hafiza_kayit, kayit = {}, {}, []
+    bilgi, kayit = {}, []
     gorulen = set()
-    bos = 0
+    cikan = 0
     for g in gelen:
         elle = bool(g.get("elle"))
+        cikar = bool(g.get("cikar"))
         kalip = re.sub(r"\s+", "", str(g.get("kalip") or "")).upper() if elle \
             else str(g["kalip"])
         anlam = re.sub(r"\s+", " ", str(g.get("anlam") or "")).strip()
-        kaydet = bool(g.get("kaydet"))
-        if elle and not kalip and not anlam:
-            continue                      # bos birakilmis elle satir
+        if elle and (cikar or (not kalip and not anlam)):
+            continue                      # cikarilan ya da bos birakilmis elle satir
         if not kalip:
             hatalar.append("Elle eklenen satırda kalıp boş.")
             continue
@@ -1860,27 +1868,30 @@ def donem_uygula(durum):
             hatalar.append("%s: kolon adlarında geçmiyor; bu adımda yalnız adlarda "
                            "geçen dönem parçaları eklenir." % kalip)
             continue
-        if not anlam and (elle or kaydet):
-            hatalar.append("%s: anlam boş." % kalip)
+        if cikar:
+            kayit.append({"kalip": kalip, "anlam": anlam, "elle": False, "cikar": True})
+            cikan += 1
             continue
-        kayit.append({"kalip": kalip, "anlam": anlam, "kaydet": kaydet, "elle": elle})
         if not anlam:
-            bos += 1
+            hatalar.append("%s: anlam boş; anlamını yazın ya da satırı çıkarın." % kalip)
             continue
+        yt = donem_mod.yer_tutucu_hatasi(kalip, anlam)
+        if yt:
+            hatalar.append("%s: %s" % (kalip, yt))
+            continue
+        kayit.append({"kalip": kalip, "anlam": anlam, "elle": elle, "cikar": False})
         bilgi[kalip] = anlam
-        if kaydet:
-            hafiza_kayit[kalip] = anlam
     if hatalar:
         raise AdimHatasi("Şu satırlar onaylanamadı:\n" + "\n".join(hatalar))
     durum["donem_bilgisi"] = bilgi
     durum["donem_bilgisi_karari"] = kayit
     durum.pop("parca_bilgisi", None)
-    hata = donem_mod.hafizaya_yaz(hafiza_kayit) if hafiza_kayit else None
+    hata = donem_mod.hafizaya_yaz(bilgi) if bilgi else None
     metin = "%d dönem kalıbı onaylandı" % len(bilgi)
-    if hafiza_kayit and not hata:
-        metin += ", %d tanesi hafızaya kaydedildi" % len(hafiza_kayit)
-    if bos:
-        metin += "; anlamı boş %d kalıp kullanılmayacak" % bos
+    if bilgi and not hata:
+        metin += " ve hafızaya kaydedildi"
+    if cikan:
+        metin += "; %d kalıp çıkarıldı" % cikan
     return metin + "." + (" " + hata if hata else "")
 
 

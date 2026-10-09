@@ -5,12 +5,14 @@ Kod yalniz KALIP bulur, anlam vermez (anlam kodda yazili degil):
   - sayi_harf : sayi + 1-3 harf (<N><H>); kalip adi "<N>" + harf kismi
   - harf_sayi : 1-2 harf + en az 2 rakam (<H><NN>); kalip adi harf + "<NN>"
   - aralik    : harf_sayi parcasinin ardindan yalniz rakam gelirse
-                (<H><NN>_<MM>); kalip adi harf + "<NN>_<NN>"
+                (<H><NN>_<MM>); kalip adi harf + "<NN>_<NN>". Bu gecis
+                harf_sayi kalibina AYRICA yazilmaz: aralik kalibi zaten
+                kapsiyor (harf_sayi yalniz adlarda tek basina gecerse cikar)
   - harf_sayi_harf : 1-3 harf + sayi + 1-3 harf (<H><N><H>); kalip adi
                 harf + "<N>" + harf
-  - hafiza    : kurum hafizasindaki (onceki calismalarda onaylanip
-                "Hafizaya Kaydet" ile yazilan) kalip adlarda geciyorsa;
-                sistem boylece yeni kaliplari ogrenir
+  - hafiza    : kurum hafizasindaki (onceki calismalarda onaylanan)
+                kalip adlarda geciyorsa; sistem boylece yeni kaliplari
+                ogrenir
   - komsu     : donem parcasinin hemen yaninda en az KOMSU_EN_AZ kolonda
                 gecen, rakamsiz parca; geciklerinin cogu donem parcasinin
                 yanindaysa aday olur. Donemle ilgili mi dil modeli soyler.
@@ -19,8 +21,8 @@ kisaltmalari dil modeli tarar (tarama), donem bilgisi tasiyanlari onerir.
 Anlami dil modeli tanimlardan okuyarak onerir (arka planda), kullanici
 onaylar ya da duzeltir. Onaylanan anlam bu calismanin donem bilgisi olur
 ve sonraki adimlarda (aciklama duzenleme, kisaltma, kolon adlari) baglam
-olur; "Hafizaya Kaydet" isaretli olanlar kurum hafizasina
-(KISALTMA_HAFIZASI.json, "donem" altinda) yazilir. Girdi veri seti ve
+olur ve kurum hafizasina (KISALTMA_HAFIZASI.json, "donem" altinda)
+yazilir; kullanicinin cikardigi satirlar kullanilmaz. Girdi veri seti ve
 sozluge yazilmaz."""
 
 import hashlib
@@ -67,6 +69,43 @@ def _donem_parcasi(t):
     return None
 
 
+def _araligin_basi(t, i):
+    """t[i] harf + sayi parcasi ve ardindan yalniz rakam geliyor mu
+    (<H><NN>_<MM> araliginin ilk yarisi)?"""
+    d = _donem_parcasi(t[i])
+    return bool(d and d[0] == "harf_sayi" and i + 1 < len(t)
+                and _YALIN_SAYI.match(t[i + 1]))
+
+
+# YER TUTUCU: anlamda kalibin sayilarini gosteren isaret. <N> icin "N"
+# ya da "<N>", <NN> icin "NN" ya da "<NN>" yazilir; baska bicim (ornegin
+# "Nn", "n") ya da kalipta olmayan yer tutucu hata sayilir.
+_YT_ADAY = re.compile(r"(?<![0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]{1,2}\s*>|[Nn]{1,2})"
+                      r"(?![0-9A-Za-zÇĞİÖŞÜçğıöşü])")
+
+
+def yer_tutucu_hatasi(kalip, anlam):
+    """Anlamdaki gecersiz yer tutucular icin hata metni; yoksa ""."""
+    k = re.sub(r"\s+", "", str(kalip or "")).upper()
+    izinli = set()
+    if "<NN>" in k:
+        izinli.update({"NN", "<NN>"})
+    if "<N>" in k:
+        izinli.update({"N", "<N>"})
+    kotu = []
+    for m in _YT_ADAY.finditer(str(anlam or "")):
+        y = re.sub(r"\s+", "", m.group(1))
+        if y not in izinli and y not in kotu:
+            kotu.append(y)
+    if not kotu:
+        return ""
+    if not izinli:
+        return ("Anlamda yer tutucu var (%s) ama kalıpta sayı yer tutucusu yok; "
+                "yerine değeri yazın." % ", ".join(kotu))
+    return ("Anlamda geçersiz yer tutucu: %s. Bu kalıpta kullanılabilenler: %s."
+            % (", ".join(kotu), ", ".join(sorted(x for x in izinli if not x.startswith("<")))))
+
+
 def kalip_deseni(kalip):
     """Kalip adini derlenmis desene cevirir: <N> sayi, <NN> en az iki
     basamakli sayi, gerisi aynen. Gecersizse None."""
@@ -107,9 +146,12 @@ def kaliplar(adlar, tanimlar, ek=None):
             if not d:
                 continue
             tur, kalip = d
-            ekle(kalip, tur, p, ad)
-            if tur == "harf_sayi" and i + 1 < len(t) and _YALIN_SAYI.match(t[i + 1]):
+            if _araligin_basi(t, i):
+                # Aralik kalibi bu gecisi kapsiyor; harf_sayi'ya ayrica
+                # yazilirsa ayni degerler iki satirda gorunur.
                 ekle(kalip + "_<NN>", "aralik", p + "_" + t[i + 1], ad)
+            else:
+                ekle(kalip, tur, p, ad)
             for j in (i - 1, i + 1):
                 if 0 <= j < len(t):
                     q = t[j]
@@ -128,8 +170,10 @@ def kaliplar(adlar, tanimlar, ek=None):
     if desenler:
         for ad in adlar:
             t = _toklar(ad)
-            adaylar = list(t) + [t[i] + "_" + t[i + 1] for i in range(len(t) - 1)
-                                 if _YALIN_SAYI.match(t[i + 1])]
+            # Araligin basi olan parca tek basina aday degil (bkz. aralik).
+            adaylar = [p for i, p in enumerate(t) if not _araligin_basi(t, i)] + \
+                [t[i] + "_" + t[i + 1] for i in range(len(t) - 1)
+                 if _YALIN_SAYI.match(t[i + 1])]
             for k, r in desenler:
                 for p in adaylar:
                     if r.match(p):
@@ -261,8 +305,12 @@ def hafizaya_yaz(kayitlar):
 # ---------------------------------------------------------------------------
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
+# Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
+ISTEM_SURUMU = 2
+
+
 def _imza(liste, tara):
-    ham = json.dumps([[k["kalip"], k["degerler"], k["ornekler"]] for k in liste]
+    ham = json.dumps([ISTEM_SURUMU] + [[k["kalip"], k["degerler"], k["ornekler"]] for k in liste]
                      + [x["parca"] for x in tara], ensure_ascii=False)
     return hashlib.sha1(ham.encode("utf-8")).hexdigest()[:16]
 

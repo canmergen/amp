@@ -3166,6 +3166,23 @@ span.bolme-cip { cursor: default; }
 .dg-donem-tablo .dg-rozet-kucuk + .dg-rozet-kucuk { margin-left: 4px; }
 .dg-donem-ekle { margin: var(--b-2) 0 var(--b-3); }
 .dg-donem-kalip-giris { width: 100%; text-transform: uppercase; }
+/* Kontrol notu (yer tutucu): sorudaki gibi kehribar, satır sarı. */
+.dg-donem-kontrol { color: var(--amber); font-weight: var(--fw-kalin); margin-top: 4px; }
+.dg-donem-kontrol[hidden] { display: none; }
+.dg-donem-cikar { padding: 0 var(--b-3); }
+/* Çıkarılanlar: tablonun altında tek satır; kalıba tıklayınca geri gelir. */
+.dg-donem-cikanlar {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--b-3);
+  margin: var(--b-2) 0 0; padding: var(--b-2) var(--b-3);
+  border: 1px dashed var(--kenar-guclu); border-radius: var(--r-kucuk);
+}
+.dg-donem-cikanlar[hidden] { display: none; }
+.dg-donem-cikanlar-bas {
+  display: inline-flex; align-items: center; gap: 4px; font-weight: var(--fw-kalin);
+}
+.dg-donem-cikanlar-liste { display: flex; flex-wrap: wrap; gap: 2px var(--b-3); }
+.dg-donem-geri { text-decoration: line-through; text-decoration-color: var(--metin-tamam); }
+.dg-donem-geri:hover:not(:disabled) { text-decoration: underline; }
 /* Kolon adlarındaki kısaltmalar: düz liste, sütunlara akar. */
 .dg-parca-baslik { margin-top: var(--b-3); }
 .dg-parca-liste {

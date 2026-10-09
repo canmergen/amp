@@ -1646,6 +1646,16 @@ def kisaltma_esle(girdi, orkestra=None):
 # ===========================================================================
 # Donem yorumu ve taramasinin ortak anlam kurallari.
 _DONEM_ANLAM_KURALLARI = """
+DÖNEM NEDİR: verinin hangi zaman aralığından ya da diliminden alındığını
+gösteren parça (zaman penceresi, gün / saat dilimi, dönem başından bugüne,
+önceki / karşılaştırma dönemi).
+DÖNEM DEĞİLDİR:
+  - Bir zaman birimi BAŞINA oran ya da birim gösteren parça ("… başına"):
+    pencere değil birimdir.
+  - Zamanı ÖLÇEN parça (geçen süre, gün sayısı gibi): ölçüdür.
+  - Bir parça hem dönem hem başka bilgi taşıyorsa (ör. pencere ile bir
+    eşik sayısı) "anlam"a YALNIZ dönem kısmını yaz; kalanını "not"a yaz.
+
   - Anlamı YALNIZCA örnek tanımlardan ve değerlerin birbirine göre
     durumundan çıkar. Genel bilgiyle tahmin etme.
   - "anlam": parçanın KENDİSİNİN taşıdığı bilgi, tek kısa cümle; harf ve
@@ -1670,8 +1680,10 @@ kolonda geçtiğiyle) ve birkaç örnek kolonun adı ile sözlükteki tanımı.
 
 Görevin her kalıbın ne anlama geldiğini, tanımlardan okuyarak yazmak.
 """ + _DONEM_ANLAM_KURALLARI + """
+  - Yer tutucu: anlamda kalıptaki <N> için "N", <NN> için "NN" yaz;
+    başka bir yer tutucu biçimi kullanma.
   - "donem": kalıp gerçekten dönem / zaman bilgisi taşıyorsa true, değilse
-    false. Yanındaki-parça adayları için özellikle dikkat et: yalnızca
+    false (yukarıdaki "DÖNEM DEĞİLDİR" maddeleri false). Yanındaki-parça adayları için özellikle dikkat et: yalnızca
     dönemle ilgiliyse (ör. önceki dönem, karşılaştırma dönemi) true.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kalıbı AYNEN yaz.
@@ -1736,7 +1748,8 @@ Görevin bu kısaltmalardan DÖNEM BİLGİSİ taşıyanları bulmak: zaman
 penceresi, dönem başından bugüne, önceki / sonraki dönem, karşılaştırma
 dönemi, gün / saat dilimi, vade ya da süre dilimi gibi zamanı ya da
 dönemi gösteren kısaltmalar. Konu, ürün, kanal, işlem türü, ölçü ya da
-istatistik gösteren kısaltmaları YAZMA. Emin olmadığın ama dönemle
+istatistik gösteren kısaltmaları ve aşağıdaki "DÖNEM DEĞİLDİR"
+maddelerine girenleri YAZMA. Emin olmadığın ama dönemle
 ilgili olabilecek kısaltmayı yaz ve "soru"ya neden emin olmadığını sor.
 """ + _DONEM_ANLAM_KURALLARI + """
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. Yalnızca dönem bilgisi taşıyan
