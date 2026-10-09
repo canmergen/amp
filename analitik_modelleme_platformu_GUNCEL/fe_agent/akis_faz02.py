@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_faz02.py - Faz 02 - Veri Anlama ve Hazirlama: profil, SFA, stabilite, baz set.
+"""fe_agent/akis_faz02.py - Veri Profili (Faz 02'nin ilk adimi) ve Faz 03 -
+Veri Anlama ve Hazirlama: SFA, stabilite, baz set.
 
-akis.py bolundu; bu dosya o bolumun aynisidir.
+SIRA: Veri Profili ham kolonlarla calisir (kusurlu kolonlardan degisken
+uretilmesin diye uretimden once). SFA, stabilite ve baz set ise uretimden
+SONRA, eldeki butun degiskenlerle (ham + uretilen; _ENRICHED) calisir.
 """
 
 
@@ -12,7 +15,7 @@ from fe_agent import sfa as sfa_mod
 from fe_agent import sfa_karar
 
 from fe_agent.akis_durum import (
-    SPLIT_KOLON, _df_oku, _liste, _nerede, _ond, _sayi, _yaz,
+    SPLIT_KOLON, _dataset_okunur_mu, _df_oku, _liste, _nerede, _ond, _sayi, _yaz,
     bolme_ayarlari, kolon_ozeti_cikar, kolon_ozeti_tamamla, maskeler,
     modelleme_df, setler, set_basligi, sozluk_oku,
 )
@@ -188,21 +191,87 @@ def _atlanan_notu(ozet, baslik):
 
 
 # ===========================================================================
-# FAZ 02-05 — her modda ayni (onceki surumden degismedi)
+# ANALIZ TABLOSU: ham + uretilen degiskenler
+# ===========================================================================
+def kusurlu_kolonlar(durum):
+    """Veri Profili'nin kusurlu buldugu ham kolonlar (asiri bos, sabit,
+    kimlik benzeri, kardinalitesi asiri yuksek). Bunlardan degisken
+    uretilmez; Analitik Baz Set'te duserler."""
+    t = (durum.get("profil") or {}).get("profil_teshis") or {}
+    return sorted(set(t.get("cok_bos") or []) | set(t.get("sabit") or [])
+                  | set(t.get("kimlik_gibi") or [])
+                  | set(t.get("yuksek_kardinalite") or []))
+
+
+def uretilenler(durum):
+    return [str(x) for x in (durum.get("uretilen") or []) if x]
+
+
+def zengin_adi(durum):
+    return "%s_ENRICHED" % durum.get("veri_seti")
+
+
+def analiz_df(durum):
+    """Faz 03'un tablosu: degisken uretildiyse _ENRICHED (ham + uretilen),
+    uretilmediyse modelleme tablosu. Uretilen kolondaki sonsuz deger (ornek:
+    sifira bolme) bos sayilir; profil onu eksik deger olarak gorur."""
+    uretilen = uretilenler(durum)
+    zengin = zengin_adi(durum)
+    if not uretilen or not _dataset_okunur_mu(zengin):
+        return modelleme_df(durum)
+    df = _df_oku(zengin).copy(deep=False)
+    for k in uretilen:
+        if k in df.columns and pd.api.types.is_numeric_dtype(df[k]):
+            df[k] = df[k].replace([np.inf, -np.inf], np.nan)
+    return df
+
+
+def _uretilen_profili(durum, df):
+    """Uretilen degiskenlerin teshisi: asiri bos ve sabit olanlar olculmez,
+    baz sette duser. (Uretilen degisken kimlik ya da kategori olamaz;
+    yalniz bu iki teshis gecerli.)"""
+    uretilen = [k for k in uretilenler(durum) if k in df.columns]
+    if not uretilen:
+        return {}
+    _tablo, t = sfa_mod.profil_cikar(df[uretilen])
+    cok_bos = sorted(set(t.get("cok_bos") or []))
+    sabit = sorted(set(t.get("sabit") or []))
+    kusur = set(cok_bos) | set(sabit)
+    return {"cok_bos": cok_bos, "sabit": sabit,
+            "temiz": [k for k in uretilen if k not in kusur]}
+
+
+def analiz_adaylari(durum):
+    """SFA ve stabilitenin olctugu degiskenler: profilde temiz cikan ham
+    kolonlar + kusursuz uretilen degiskenler."""
+    p = durum.get("profil") or {}
+    ham = list((p.get("profil_teshis") or {}).get("temiz") or [])
+    ur = list((p.get("uretilen_teshis") or {}).get("temiz") or [])
+    gorulen, sonuc = set(), []
+    for k in ham + ur:
+        if k not in gorulen:
+            gorulen.add(k)
+            sonuc.append(k)
+    return sonuc
+
+
+# ===========================================================================
+# FAZ 02-05 — her modda ayni
 # ===========================================================================
 def _kayit_metni(yazildi, yedek):
     return ("%s veri seti" % yazildi) if yazildi else ("PROJE_HAFIZASI%s" % yedek)
 
 
 def veri_profili_plan(durum):
-    """ONAY SORULMAZ. Bolme kaydedilince profil, SFA ve aralik
-    onerileri art arda calisir; ilk durak aralik kararidir.
+    """ONAY SORULMAZ. Bolme kaydedilince profil calisir; ilk durak Kural
+    Tabanli Degisken Uretimi'nin planidir.
 
     Metin yalnizca "Geri Dön" ile bu adima donulunce gorunur (otomatik
     calismada kullanilmaz)."""
     durum["_plan_otomatik"] = True
-    return ("Veri profili yeniden çıkarılacak; ardından SFA yeniden "
-            "hesaplanır ve SFA kararları sıfırlanır. Onaylıyor musunuz?")
+    return ("Veri profili yeniden çıkarılacak; değişken üretimi ve SFA bu "
+            "profile göre yeniden yapılır, SFA kararları sıfırlanır. "
+            "Onaylıyor musunuz?")
 
 def veri_profili_uygula(durum):
     df = modelleme_df(durum)
@@ -243,7 +312,8 @@ def veri_profili_uygula(durum):
             "  Kimlik Benzeri : %s\n"
             "  Kardinalitesi Aşırı Yüksek : %s\n"
             "  Kayıt : %s\n"
-            "Kusurlu kolonlar Analitik Baz Set adımında düşürülür."
+            "Kusurlu kolonlardan değişken üretilmez; Analitik Baz Set "
+            "adımında düşürülürler."
             % (_sayi(len(tablo)), _sayi(len(teshis["temiz"])),
                _sayi_ad(teshis["cok_bos"]), _sayi_ad(teshis["sabit"]),
                _sayi_ad(teshis["kimlik_gibi"]), _sayi_ad(teshis["yuksek_kardinalite"]),
@@ -337,7 +407,7 @@ def sfa_tip_degistir(durum, kol, kod):
     kodlar = [o["kod"] for o in (eski.get("tip_secenekleri") or [])]
     kod = kod if kod in kodlar else None
     target = durum["meta"]["target"]
-    df = modelleme_df(durum)
+    df = analiz_df(durum)
     s = setler(durum, df)
     tr = s["egitim"]
     alt = df[[kol, target]].copy()
@@ -375,11 +445,16 @@ def _sfa_hesapla(durum):
     eski = (durum.get("sfa") or {}).get("ai_is")
     if eski:
         sfa_karar.ai_durdur(eski)
-    df = modelleme_df(durum)
+    # Eldeki BUTUN degiskenler: ham + uretilen (_ENRICHED). Uretilenler
+    # burada profillenir; bos ya da sabit olanlar olculmez.
+    df = analiz_df(durum)
+    p = durum.get("profil") or {}
+    p["uretilen_teshis"] = _uretilen_profili(durum, df)
+    durum["profil"] = p
     target = durum["meta"]["target"]
     s = setler(durum, df)
     tr = s["egitim"]
-    adaylar = (durum.get("profil", {}).get("profil_teshis") or {}).get("temiz") or []
+    adaylar = analiz_adaylari(durum)
 
     # TIP KARARI SFA'DA: secenekler ve kural onerisi AMP kolonunun TAM
     # verisiyle; oneri varsa SFA o degiskeni yeni tipiyle olcer.
@@ -445,9 +520,16 @@ def _sfa_ozet_metni(durum):
     ne yapilacagi. Ayrinti sagdaki Değişken Analizi sekmesinde."""
     s = durum.get("sfa") or {}
     b = s.get("iv_bantlari") or {}
-    return ("Tek değişken analizi tamamlandı. Train (MS) setindeki %s satırda her "
-            "değişkenin hedefle ilişkisi ölçüldü; eleme yapılmadı.\n"
+    ut = (durum.get("profil") or {}).get("uretilen_teshis") or {}
+    ur_satir = ""
+    if uretilenler(durum):
+        kusur = sorted(set(ut.get("cok_bos") or []) | set(ut.get("sabit") or []))
+        ur_satir = ("  Üretilen Değişken : %s ölçüldü · boş ya da sabit olduğu için "
+                    "ölçülmeyen %s\n" % (_sayi(len(ut.get("temiz") or [])), _sayi_ad(kusur)))
+    return ("Tek değişken analizi tamamlandı. Train (MS) setindeki %s satırda ham "
+            "ve üretilen her değişkenin hedefle ilişkisi ölçüldü; eleme yapılmadı.\n"
             "  Ölçülen Değişken : %s\n"
+            "%s"
             "  IV Dağılımı : güçlü %s · orta %s · zayıf %s · etkisiz %s\n"
             "  Sızıntı Şüphesi : %s\n"
             "  Hassas Değişken : %s\n"
@@ -456,7 +538,7 @@ def _sfa_ozet_metni(durum):
             "tıklayınca grafik, ölçütler ve karar formu açılır, istediğinizi "
             "değiştirebilirsiniz."
             % (_sayi(s.get("train_satir") or 0), _sayi(s.get("analiz_edilen") or 0),
-               _sayi(b.get("güçlü", 0)), _sayi(b.get("orta", 0)),
+               ur_satir, _sayi(b.get("güçlü", 0)), _sayi(b.get("orta", 0)),
                _sayi(b.get("zayıf", 0)), _sayi(b.get("etkisiz", 0)),
                _sayi_ad(s.get("sizinti")), _adlar(s.get("hassas"))))
 
@@ -568,13 +650,14 @@ def stabilite_uygula(durum):
         durum["stabilite"] = {"atlandi": True}
         return "Stabilite atlandı: karşılaştırılacak Validasyon (OOT) / Test (OOS) seti yok."
 
-    df = modelleme_df(durum)
+    df = analiz_df(durum)
     s = setler(durum, df)
     if not int(s["test"].sum()):
         durum["stabilite"] = {"atlandi": True}
         return ("Stabilite analizi atlandı; %s setinde satır yok."
                 % set_basligi("test", bolme_ayarlari(durum)["test_tanim"]))
-    adaylar = (durum.get("profil", {}).get("profil_teshis") or {}).get("temiz") or []
+    # Ham + uretilen (SFA ile ayni kume).
+    adaylar = analiz_adaylari(durum)
 
     tablo, ozet = sfa_mod.stabilite_calistir(df, adaylar, s["egitim"],
                                              s[hedef_set])
@@ -611,16 +694,20 @@ def _dusurulecek_kume(durum):
     Teshis listelerine ek olarak durum["haric_kolonlar"] da buraya girer:
     surec disinda tutulan (Mod A'da sozlukte karsiligi olmayan) kolonlar
     profilden de haric tutuldugu icin hicbir teshis listesinde gorunmez;
-    Hedef / kimlik / donem kolonlari asla dusurulmez.
+    Hedef / kimlik / donem kolonlari asla dusurulmez. Uretilen
+    degiskenlerden bos ve sabit olanlar da duser (SFA adiminda bulunur).
     Doner: (tum_dusurulecek, teshis_kaynakli, sozlukte_tanimsiz)
 """
-    t = (durum.get("profil") or {}).get("profil_teshis") or {}
+    p = durum.get("profil") or {}
+    t = p.get("profil_teshis") or {}
+    ut = p.get("uretilen_teshis") or {}
     st = durum.get("stabilite") or {}
     korunan = _meta_kolonlar(durum)
 
     teshis = set(
         (t.get("cok_bos") or []) + (t.get("sabit") or []) +
         (t.get("kimlik_gibi") or []) + (t.get("yuksek_kardinalite") or []) +
+        (ut.get("cok_bos") or []) + (ut.get("sabit") or []) +
         (st.get("kayan") or [])) - korunan
     tanimsiz = set(durum.get("haric_kolonlar") or []) - korunan - teshis
     return sorted(teshis | tanimsiz), sorted(teshis), sorted(tanimsiz)
@@ -640,14 +727,17 @@ def _karar_ozeti(durum):
 
 
 def baz_plan(durum):
-    t = (durum.get("profil") or {}).get("profil_teshis") or {}
+    p = durum.get("profil") or {}
+    t = p.get("profil_teshis") or {}
+    ut = p.get("uretilen_teshis") or {}
     st = durum.get("stabilite") or {}
 
     dusur, _teshis, tanimsiz = _dusurulecek_kume(durum)
     durum["_dusurulecek"] = dusur
     ko = _karar_ozeti(durum)
-    return ("Analitik baz set oluşturulacak; değişken üretimi ve modelleme bu "
-            "dondurulmuş sette yapılır.\n"
+    return ("Analitik baz set ham ve üretilen değişkenlerle oluşturulacak; "
+            "sızıntı kontrolü, aday değişken seti ve modelleme bu dondurulmuş "
+            "sette yapılır.\n"
             "  Düşürülecek : %s kolon\n"
             "  Düşürme Sebebi : eksik %s · sabit %s · kimlik %s · kardinalite %s · "
             "kararsız %s · süreç dışı %s\n"
@@ -658,7 +748,8 @@ def baz_plan(durum):
             "  Kayıt : %s_BAZ veri seti\n"
             "Oluşturayım mı?"
             % (_sayi(len(dusur)),
-               _sayi(len(t.get("cok_bos") or [])), _sayi(len(t.get("sabit") or [])),
+               _sayi(len(set(t.get("cok_bos") or []) | set(ut.get("cok_bos") or []))),
+               _sayi(len(set(t.get("sabit") or []) | set(ut.get("sabit") or []))),
                _sayi(len(t.get("kimlik_gibi") or [])),
                _sayi(len(t.get("yuksek_kardinalite") or [])),
                _sayi(len(st.get("kayan") or [])), _sayi(len(tanimsiz)),
@@ -666,8 +757,23 @@ def baz_plan(durum):
                _sayi(ko["isaret"]), durum["veri_seti"]))
 
 
+def _uretilen_dusus_sebebi(durum, ad, sfa_dusen):
+    """Uretilen degisken baz sete neden girmedi (katalog ve panel icin)."""
+    p = durum.get("profil") or {}
+    ut = p.get("uretilen_teshis") or {}
+    if ad in (ut.get("cok_bos") or []):
+        return "eksik"
+    if ad in (ut.get("sabit") or []):
+        return "sabit"
+    if ad in ((durum.get("stabilite") or {}).get("kayan") or []):
+        return "kararsiz"
+    if ad in sfa_dusen:
+        return "sfa"
+    return "diger"
+
+
 def baz_uygula(durum):
-    df = modelleme_df(durum)
+    df = analiz_df(durum)
     tr, _ = maskeler(durum, df)
 
     # Plan adimi atlanmis olabilir; kumeyi burada da hesapla (savunma).
@@ -695,8 +801,21 @@ def baz_uygula(durum):
             doldurma[k] = round(float(med), 4)
 
     m = durum["meta"]
-    baz_kolonlar = [c for c in df.columns
-                    if c not in (m.get("target"), m.get("id"), m.get("donem"))]
+    # Bolme etiketi (_SPLIT) baz sette KORUNUR ama degisken degildir;
+    # modelin degisken listesine girmez.
+    tum_kolonlar = [c for c in df.columns
+                    if c not in (m.get("target"), m.get("id"), m.get("donem"), SPLIT_KOLON)]
+    # KAYNAK: baz setteki her kolonun SFA donusumunden onceki adi. Ham ve
+    # uretilen ayri tutulur: Faz 05 baz modeli hamdan gelenlerle kurar,
+    # uretilenler aday setten girer.
+    kaynak = {c: rapor.get("kaynak", {}).get(c, c) for c in tum_kolonlar}
+    uretilen = set(uretilenler(durum))
+    baz_kolonlar = [c for c in tum_kolonlar if kaynak[c] not in uretilen]
+    uretilen_kolonlar = [c for c in tum_kolonlar if kaynak[c] in uretilen]
+    kalan = {kaynak[c] for c in uretilen_kolonlar}
+    sfa_dusen = set(rapor["dusen"])
+    uretilen_dusen = {a: _uretilen_dusus_sebebi(durum, a, sfa_dusen)
+                      for a in sorted(uretilen - kalan)}
 
     # Hedef veri seti akista tanimli degilse adim COKMESIN: hesap korunur,
     # tablo yedek dosyaya yazilir ve kullaniciya acik bir uyari verilir.
@@ -711,11 +830,16 @@ def baz_uygula(durum):
         pass
     yazildi, yedek = _yaz(baz_ds, df, "/analitik_baz_set.parquet")
 
-    durum["haric_kolonlar"] = sorted(set(durum.get("haric_kolonlar") or []) | set(dusur))
+    # Dusen kolonlar durum["haric_kolonlar"]'a YAZILMAZ: o liste Faz 01'in
+    # (AMP veri seti) ve uretimin girdisi; geri donulup uretim yeniden
+    # yapilinca kararsiz ya da SFA'da dusen ham kolonlar uretimden
+    # sessizce cikmasin. Dusenler burada, "dusen"de.
     durum["baz"] = {"yeni_kolonlar": yeni_kolonlar, "sfa_degisen": rapor["degisen"],
                     "dataset": yazildi, "doldurma": "medyan (Train (MS))",
-                    "doldurma_degerleri": doldurma,
-                    "kolon": int(df.shape[1]), "kolonlar": baz_kolonlar}
+                    "doldurma_degerleri": doldurma, "dusen": dusur,
+                    "kolon": int(df.shape[1]), "kolonlar": baz_kolonlar,
+                    "uretilen_kolonlar": uretilen_kolonlar, "kaynak": kaynak,
+                    "uretilen_dusen": uretilen_dusen}
 
     if not yazildi:
         durum["baz"]["hata"] = ("'%s' veri setine yazılamadı" % baz_ds)
@@ -728,11 +852,12 @@ def baz_uygula(durum):
                 % (baz_ds, yedek, _sayi(len(dusur)), _sayi(len(doldurma))))
 
     return ("Analitik baz set hazır.\n"
-            "  Kolon : %s\n"
+            "  Kolon : %s  (ham %s · üretilen %s)\n"
             "  Düşürülen : %s kolon\n"
             "  Doldurulan : %s kolon  (Train (MS) medyanı)\n"
             "  SFA Kararıyla Girmeyen : %s\n"
             "  Yeni Hâliyle Giren : %s\n"
             "  Kayıt : %s veri seti"
-            % (_sayi(df.shape[1]), _sayi(len(dusur)), _sayi(len(doldurma)),
+            % (_sayi(df.shape[1]), _sayi(len(baz_kolonlar)), _sayi(len(uretilen_kolonlar)),
+               _sayi(len(dusur)), _sayi(len(doldurma)),
                _sayi_ad(rapor["dusen"]), _sayi_ad(yeni_kolonlar), baz_ds))

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_faz04.py - Faz 04 - Degisken Degerlendirme: kalite kontrolu ve aday set.
+"""fe_agent/akis_faz04.py - Faz 04 - Degisken Degerlendirme: sizinti kontrolu ve aday set.
 
-akis.py bolundu; bu dosya o bolumun aynisidir.
+Analitik baz set (ham + uretilen, SFA kararlariyla) uzerinde calisir.
+Adim anahtari "kalite" eski calismalar icin korunuyor; adim artik Sizinti
+Kontrolu (eksik, sabit ve kararlilik Faz 03'te denetleniyor).
 """
 
 import numpy as np
@@ -16,84 +18,130 @@ from fe_agent.akis_durum import (
 # ===========================================================================
 # KAYNAK SECIMI
 # ===========================================================================
-# Faz 03 (kural / kesif) plan bos gelirse _ENRICHED HIC olusmaz.Artik kaynak once kontrol edilir.
+# Analitik baz set ham ve uretilen degiskenleri birlikte, SFA kararlariyla
+# tasir; bu faz onu okur. Baz set yazilamadiysa _ENRICHED, o da yoksa
+# modelleme veri seti.
 def _kaynak(durum):
-    """Doner: (dataset_adi | None, zenginlestirilmis_mi)"""
-    zengin = "%s_ENRICHED" % durum.get("veri_seti")
-    if _dataset_okunur_mu(zengin):
-        return zengin, True
-    baz = (durum.get("baz") or {}).get("dataset") or durum.get("veri_seti")
+    """Doner: (dataset_adi | None, baz_set_mi)"""
+    baz = (durum.get("baz") or {}).get("dataset")
     if baz and _dataset_okunur_mu(baz):
-        return baz, False
+        return baz, True
+    for ad in ("%s_ENRICHED" % durum.get("veri_seti"), durum.get("veri_seti")):
+        if ad and _dataset_okunur_mu(ad):
+            return ad, False
     return None, False
 
 
-_KAYNAK_YOK = ("Bu adımı çalıştıramadım: ne %s_ENRICHED ne de baz veri seti "
-               "okunabiliyor.\n\nDeğişken üretimi adımlarında (kural tabanlı "
-               "üretim / AI keşfi) hiçbir değişken üretilmediyse "
-               "zenginleştirilmiş veri seti oluşmaz. Önceki adıma dönüp "
-               "üretim yapabilir ya da bu adımı geçebilirsiniz.")
+_KAYNAK_YOK = ("Bu adımı çalıştıramadım: ne analitik baz set ne de %s veri "
+               "seti okunabiliyor. Analitik Baz Set adımına dönüp yeniden "
+               "çalıştırabilir ya da bu adımı geçebilirsiniz.")
 
-_ZENGIN_YOK = ("NOT: %s_ENRICHED veri seti bulunamadı (değişken üretimi "
-               "yapılmamış olabilir); hesaplamayı %s veri seti üzerinde "
-               "yaptım.")
+_BAZ_YOK = ("NOT: Analitik baz set okunamadı; hesaplamayı %s veri seti "
+            "üzerinde yaptım (SFA kararları uygulanmamış olabilir).")
+
+
+def _baz_ayrimi(durum, df):
+    """(ham kaynakli kolonlar, uretilen kaynakli kolonlar, {kolon: kaynak}).
+    Baz set kaydi yoksa (eski calisma) uretilen adlari dogrudan aranir."""
+    bz = durum.get("baz") or {}
+    m = durum.get("meta") or {}
+    meta = {m.get("target"), m.get("id"), m.get("donem")}
+    kaynak = dict(bz.get("kaynak") or {})
+    if "uretilen_kolonlar" in bz:
+        ham = [c for c in (bz.get("kolonlar") or []) if c in df.columns]
+        ur = [c for c in (bz.get("uretilen_kolonlar") or []) if c in df.columns]
+        return ham, ur, kaynak
+    uretilen = set(durum.get("uretilen") or [])
+    ur = [c for c in df.columns if c in uretilen]
+    ham = [c for c in (bz.get("kolonlar") or [c for c in df.columns if c not in meta])
+           if c in df.columns and c not in uretilen]
+    return ham, ur, kaynak
+
+
+# Hedefle bu esigin ustunde (mutlak) korelasyonu olan degisken sizinti
+# supheli sayilir.
+SIZINTI_ESIK = 0.95
 
 
 def kalite_plan(durum):
-    return ("Üretilen %s değişkeni teknik kalite kontrolünden geçireceğim:\n\n"
-            "  • eksik değer ve sonsuz sayı\n"
-            "  • sabit ya da neredeyse sabit dağılım\n"
-            "  • hedefle aşırı korelasyon: sızıntı riski\n\n"
-            "Geçemeyenler aday sete alınmaz. Çalıştıralım mı?"
-            % _sayi(len(durum.get("uretilen", []))))
+    bz = durum.get("baz") or {}
+    ham = len(bz.get("kolonlar") or [])
+    ur = len(bz.get("uretilen_kolonlar") or [])
+    return ("Analitik baz setteki %s değişkende (ham %s · üretilen %s) sızıntı "
+            "kontrolü yapacağım: Train (MS) satırlarında hedefle korelasyonu "
+            "mutlak değerce %s üstünde olan değişken sızıntı şüphelisi sayılır; "
+            "aday sete ve modele alınmaz.\n\n"
+            "Eksik değer, sabitlik ve kararlılık Veri Anlama ve Hazırlama "
+            "fazında bütün değişkenler için zaten denetlendi. Çalıştıralım mı?"
+            % (_sayi(ham + ur), _sayi(ham), _sayi(ur), _ond(SIZINTI_ESIK, 2)))
+
 
 def kalite_uygula(durum):
-    kaynak, zengin = _kaynak(durum)
+    kaynak, baz_mi = _kaynak(durum)
+    bos = {"eksik": [], "sabit": [], "kararsiz": [], "sfa": [], "sizinti": [],
+           "gecti": [], "aday": [], "ham_sizinti": []}
     if kaynak is None:
-        durum["kalite"] = {"eksik": [], "sabit": [], "sizinti": [], "gecti": []}
+        durum["kalite"] = bos
         return _KAYNAK_YOK % durum.get("veri_seti")
-
-    not_metni = "" if zengin else \
-        ("\n\n" + _ZENGIN_YOK % (durum.get("veri_seti"), kaynak))
+    not_metni = "" if baz_mi else ("\n\n" + _BAZ_YOK % kaynak)
 
     df = _df_oku(kaynak)
     y = pd.to_numeric(df[durum["meta"]["target"]], errors="coerce")
-    yeni = [c for c in durum.get("uretilen", []) if c in df.columns]
+    tr, _ = maskeler(durum, df)
+    ham, ur, kaynak_ad = _baz_ayrimi(durum, df)
 
-    if not yeni:
-        durum["kalite"] = {"eksik": [], "sabit": [], "sizinti": [], "gecti": []}
-        return ("Kalite kapısından geçirilecek üretilmiş değişken bulamadım; "
-                "bu adımda eleme yapılmadı.%s" % not_metni)
-
-    eksik, sabit, sizinti = [], [], []
-    for c in yeni:
+    sizinti = []
+    for c in ham + ur:
+        if not pd.api.types.is_numeric_dtype(df[c]):
+            continue
         s = pd.to_numeric(df[c], errors="coerce").replace([np.inf, -np.inf], np.nan)
-        if s.isna().mean() > 0.5:
-            eksik.append(c); continue
-        # BOS HUCRE AYRI DEGER: bir deger + bos iki
-        # deger sayilir; yalnizca hepsi ayni (ya da hepsi bos) sabittir.
-        if s.nunique(dropna=True) + (1 if s.isna().any() else 0) <= 1:
-            sabit.append(c); continue
-        kor = s.corr(y)
-        if kor is not None and not pd.isna(kor) and abs(kor) > 0.95:
+        kor = s[tr].corr(y[tr])
+        if kor is not None and not pd.isna(kor) and abs(kor) > SIZINTI_ESIK:
             sizinti.append(c)
+    sz = set(sizinti)
 
-    elendi = set(eksik) | set(sabit) | set(sizinti)
-    durum["kalite"] = {"eksik": eksik, "sabit": sabit, "sizinti": sizinti,
-                       "gecti": [c for c in yeni if c not in elendi]}
+    # Uretilen degiskenlerin hikayesi KAYNAK ADIYLA (panel ve katalog
+    # uretilen adlarla calisir): Faz 03'te dusenler sebebiyle, sizinti
+    # supheliler ve gecenler. Aday set baz setteki adlarla kurulur.
+    dusen = (durum.get("baz") or {}).get("uretilen_dusen") or {}
+    aday = [c for c in ur if c not in sz]
+    gecti = sorted({kaynak_ad.get(c, c) for c in aday})
+    sizinti_kaynak = sorted({kaynak_ad.get(c, c) for c in ur if c in sz} - set(gecti))
+    durum["kalite"] = {
+        "eksik": sorted(a for a, n in dusen.items() if n == "eksik"),
+        "sabit": sorted(a for a, n in dusen.items() if n == "sabit"),
+        "kararsiz": sorted(a for a, n in dusen.items() if n == "kararsiz"),
+        "sfa": sorted(a for a, n in dusen.items() if n in ("sfa", "diger")),
+        "sizinti": sizinti_kaynak, "gecti": gecti, "aday": aday,
+        "ham_sizinti": [c for c in ham if c in sz]}
 
-    return ("Kalite kapısı sonucu: %s değişkenin %s tanesi geçti.\n\n%s\n\n%s\n\n%s%s"
-            % (_sayi(len(yeni)), _sayi(len(yeni) - len(elendi)),
-               _liste("Eksik değer oranı yüksek:", eksik),
-               _liste("Tek değerli:", sabit),
-               _liste("Sızıntı şüpheli:", sizinti), not_metni))
+    return ("Sızıntı kontrolü tamamlandı (Train (MS), |r| > %s).\n"
+            "  Ham Değişken : %s · sızıntı şüphelisi %s\n"
+            "  Üretilen Değişken : %s · sızıntı şüphelisi %s\n"
+            "  Aday Sete Girecek Üretilen : %s\n"
+            "Sızıntı şüphelileri aday sete ve modele alınmaz.%s"
+            % (_ond(SIZINTI_ESIK, 2), _sayi(len(ham)), _sayi_ad_(sorted(c for c in ham if c in sz)),
+               _sayi(len(ur)), _sayi_ad_(sorted(c for c in ur if c in sz)),
+               _sayi(len(aday)), not_metni))
+
+
+def _sayi_ad_(liste, en_fazla=3):
+    if not liste:
+        return "0"
+    ek = " +%s" % _sayi(len(liste) - en_fazla) if len(liste) > en_fazla else ""
+    return "%s · %s%s" % (_sayi(len(liste)), ", ".join(liste[:en_fazla]), ek)
+
+def _adaylar(durum):
+    k = durum.get("kalite") or {}
+    return k.get("aday") if "aday" in k else (k.get("gecti") or [])
+
 
 def secim_plan(durum):
-    aday = len((durum.get("kalite") or {}).get("gecti") or [])
+    aday = len(_adaylar(durum) or [])
     b = durum.get("bolme") or {}
     bolme_ad = ("zamansal: %s dönemi hariç" % b.get("oot_deger")) \
         if b.get("tur") == "zamansal" else "rastgele bölmenin eğitim payı"
-    return ("Kaliteyi geçen %s değişkeni seçim hattından geçireceğim:\n\n"
+    return ("Sızıntı kontrolünü geçen %s üretilen değişkeni seçim hattından geçireceğim:\n\n"
             "  1. Yarı-sabit eleme: tek değerin payı %%%s üstündeyse düşer\n"
             "  2. Fazlalık eleme: |r| > %s olan çiftte IV'si düşük düşer\n"
             "  3. Karşılıklı bilgi: skor hesaplanır, eleme yapılmaz\n"
@@ -110,17 +158,15 @@ def secim_plan(durum):
                _ond(secim_mod.ONEM_ORAN * 100, 2), bolme_ad))
 
 def secim_uygula(durum):
-    kaynak, zengin = _kaynak(durum)
+    kaynak, baz_mi = _kaynak(durum)
     if kaynak is None:
         durum["secim"] = {"secilen": 0, "secilen_liste": []}
         return _KAYNAK_YOK % durum.get("veri_seti")
 
-    not_metni = "" if zengin else \
-        ("\n\n" + _ZENGIN_YOK % (durum.get("veri_seti"), kaynak))
+    not_metni = "" if baz_mi else ("\n\n" + _BAZ_YOK % kaynak)
 
     df = _df_oku(kaynak)
-    adaylar = [c for c in ((durum.get("kalite") or {}).get("gecti") or [])
-               if c in df.columns]
+    adaylar = [c for c in (_adaylar(durum) or []) if c in df.columns]
     if not adaylar:
         durum["secim"] = {"secilen": 0, "secilen_liste": []}
         return "Seçim hattına girecek aday değişken kalmadı.%s" % not_metni
@@ -129,10 +175,14 @@ def secim_uygula(durum):
     # SIZINTI SINIRI: MI ve model onem skoru test/OOT satirlarini gormemeli.
     # train_maske gecilmezse secim modulu tum veriye duser.
     tr, _ = maskeler(durum, df)
+    # IV'ler SFA donusumunden onceki adla; baz setteki ada tasinir.
+    iv = (durum.get("sfa") or {}).get("iv_skorlari") or {}
+    kaynak_ad = (durum.get("baz") or {}).get("kaynak") or {}
+    oncelik = {c: iv.get(kaynak_ad.get(c, c)) for c in adaylar
+               if iv.get(kaynak_ad.get(c, c)) is not None}
     tablo, oz = secim_mod.calistir(
         df, durum["meta"]["target"], adaylar,
-        oncelik=(durum.get("sfa") or {}).get("iv_skorlari"), binary=binary,
-        train_maske=tr)
+        oncelik=oncelik or None, binary=binary, train_maske=tr)
 
     yazildi, yedek = _yaz("%s_SECIM" % durum["veri_seti"], tablo, "/secim_tablosu.parquet")
     durum["secim"] = oz

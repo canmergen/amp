@@ -520,9 +520,11 @@ def _ek(adlar):
 def uygula(df, tr, kararlar, detay):
     """Kararlari baz sete uygular (yerinde degil, yeni df doner).
     Parametreler (medyan, kirpma sinirlari, donusum olcekleri) TRAIN'den.
-    Doner: (df, rapor) rapor = {"dusen", "uretilen", "degisen": {ham: yeni}}."""
+    Doner: (df, rapor) rapor = {"dusen", "uretilen", "degisen": {ham: yeni},
+    "kaynak": {yeni: ham}}."""
     df = df.copy()
-    rapor = {"dusen": [], "uretilen": [], "degisen": {}, "doldurulan": 0, "tip": {}}
+    rapor = {"dusen": [], "uretilen": [], "degisen": {}, "doldurulan": 0, "tip": {},
+             "kaynak": {}}
     for ad, k in (kararlar or {}).items():
         if ad not in df.columns:
             continue
@@ -586,6 +588,7 @@ def uygula(df, tr, kararlar, detay):
                 for yeni_ad, seri in yeni_kolonlar.items():
                     df[yeni_ad] = seri
                     rapor["uretilen"].append(yeni_ad)
+                    rapor["kaynak"][yeni_ad] = ad
                 continue
             yeni_kolonlar[ad + _ek(ekler)] = x
         # Model degiskenin TEK bir halini gorur: yeni hal varsa ham kolon cikar
@@ -593,6 +596,7 @@ def uygula(df, tr, kararlar, detay):
         for yeni_ad, seri in yeni_kolonlar.items():
             df[yeni_ad] = seri
             rapor["uretilen"].append(yeni_ad)
+            rapor["kaynak"][yeni_ad] = ad
         asil = [a for a in yeni_kolonlar if not a.endswith("_EKSIK")]
         rapor["degisen"][ad] = asil[0] if asil else None
     return df, rapor

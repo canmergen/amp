@@ -6,8 +6,9 @@ Bu dosya artik yalnizca bir CEPHE (facade). Gercek kod su modullerde:
     akis_metin.py    Sabit metinler ve mesaj desenleri
     akis_durum.py    Oturum durumu, veri okuma/yazma, bicimleme
     akis_faz01.py    Faz 01 - Calisma Kurulumu
-    akis_faz02.py    Faz 02 - Veri Anlama ve Hazirlama
-    akis_faz03.py    Faz 03 - Degisken Muhendisligi
+    akis_faz02.py    Veri Profili (Faz 02'nin ilk adimi) ve Faz 03 - Veri Anlama
+                     ve Hazirlama (SFA, stabilite, baz set)
+    akis_faz03.py    Faz 02 - Degisken Muhendisligi (kural, kesif)
     akis_faz04.py    Faz 04 - Degisken Degerlendirme
     akis_faz05.py    Faz 05 - Modelleme ve Finalizasyon
     akis_kayit.py    Adim kayit defteri ve faz agaci

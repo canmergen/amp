@@ -46,17 +46,27 @@ def olustur(durum, oturum_id=None):
                          for anahtar in ("gecti", "eksik", "sabit", "sizinti"))
     gecenler = set(kalite.get("gecti") or [])
     elenen = {}
+    # Adlar URETILEN adlar; "kararsiz" ve "sfa" Veri Anlama ve Hazirlama
+    # fazinda (baz set) dusenler.
     for etiket, anahtar in (("boş değer", "eksik"), ("sabit", "sabit"),
+                            ("kararsız", "kararsiz"), ("SFA kararı", "sfa"),
                             ("sızıntı", "sizinti")):
         for k in (kalite.get(anahtar) or []):
             elenen[k] = etiket
 
     secim = {}
+    kaynak_ad = (durum.get("baz") or {}).get("kaynak") or {}
+    if not isinstance(kaynak_ad, dict):
+        kaynak_ad = {}
     for r in (durum.get("secim_tablo") or []):
         if not isinstance(r, dict) or not r.get("FEATURE"):
             atlanan += 1
             continue
-        secim[r.get("FEATURE")] = r
+        # Secim baz setteki adla; SFA donusumuyle adi degisen uretilen
+        # degisken kendi adina doner (birden cok hali varsa secilen kalir).
+        ad = kaynak_ad.get(r.get("FEATURE"), r.get("FEATURE"))
+        if ad not in secim or (r.get("SECILDI") and not secim[ad].get("SECILDI")):
+            secim[ad] = r
 
     model = durum.get("model") or {}
     delta = (model.get("delta") or {}).get("auc") if isinstance(model, dict) else None

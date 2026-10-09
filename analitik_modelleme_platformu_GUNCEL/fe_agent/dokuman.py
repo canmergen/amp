@@ -926,7 +926,10 @@ def _uretim(durum):
     baz = _sz(durum, "baz")
     if baz.get("dataset"):
         satirlar.append(("Analitik baz set", _m(baz.get("dataset"))))
-        satirlar.append(("Baz set değişkeni", _n(len(_ls(baz.get("kolonlar"))))))
+        satirlar.append(("Baz set değişkeni (ham)", _n(len(_ls(baz.get("kolonlar"))))))
+        if "uretilen_kolonlar" in baz:
+            satirlar.append(("Baz set değişkeni (üretilen)",
+                             _n(len(_ls(baz.get("uretilen_kolonlar"))))))
         satirlar.append(("Eksik değer doldurma", _m(baz.get("doldurma"))))
 
     bloklar = _bloklar(_alan_tablosu(satirlar))
@@ -981,7 +984,24 @@ def _eleme(durum):
         return []
 
     bloklar = []
-    if k:
+    if k and "aday" in k:
+        # Yeni sira: uretilen degiskenler once Veri Anlama ve Hazirlama'da
+        # (bos, sabit, kararsiz, SFA karari) sonra sizinti kontrolunde elenir.
+        gecti = len(_ls(k.get("gecti")))
+        anahtarlar = ("eksik", "sabit", "kararsiz", "sfa", "sizinti")
+        elenen = sum(len(_ls(k.get(a))) for a in anahtarlar)
+        bloklar.append(_alan_tablosu([
+            ("Üretilen değişken", _n(gecti + elenen)),
+            ("Aday sete geçen", _n(gecti)),
+            ("Eksik değer nedeniyle elenen", _n(len(_ls(k.get("eksik"))))),
+            ("Sabit dağılım nedeniyle elenen", _n(len(_ls(k.get("sabit"))))),
+            ("Kararsızlık (PSI) nedeniyle elenen", _n(len(_ls(k.get("kararsiz"))))),
+            ("SFA kararıyla elenen", _n(len(_ls(k.get("sfa"))))),
+            ("Sızıntı şüphesiyle elenen", _n(len(_ls(k.get("sizinti"))))),
+            ("Sızıntı şüphesiyle baz modelden çıkan ham değişken",
+             _n(len(_ls(k.get("ham_sizinti"))))),
+        ], baslik="Hazırlık ve sızıntı kontrolü"))
+    elif k:
         gecti = len(_ls(k.get("gecti")))
         elenen = sum(len(_ls(k.get(a))) for a in ("eksik", "sabit", "sizinti"))
         bloklar.append(_alan_tablosu([
@@ -1036,9 +1056,14 @@ def _karar_izi(k, sc):
         elenenler = [
             ("Eksik değer", "eksik oranı yarıdan fazla", len(_ls(k.get("eksik")))),
             ("Sabit dağılım", "tek değerli", len(_ls(k.get("sabit")))),
-            ("Sızıntı şüphesi", "hedefle aşırı korelasyon",
-             len(_ls(k.get("sizinti")))),
         ]
+        if "aday" in k:
+            elenenler += [
+                ("Kararsızlık", "PSI eşiğinin üstünde", len(_ls(k.get("kararsiz")))),
+                ("SFA kararı", "modele girmeyecek", len(_ls(k.get("sfa")))),
+            ]
+        elenenler.append(("Sızıntı şüphesi", "hedefle aşırı korelasyon",
+                          len(_ls(k.get("sizinti")))))
         kalan = gecti + sum(e[2] for e in elenenler)
         for ad, esik, adet in elenenler:
             kalan -= adet

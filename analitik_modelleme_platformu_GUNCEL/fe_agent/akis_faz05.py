@@ -20,26 +20,33 @@ from fe_agent.akis_durum import (
 # ===========================================================================
 # KAYNAK SECIMI
 # ===========================================================================
-# Degisken uretimi hic calismadiysa _ENRICHED olusmaz.
+# Analitik baz set ham ve uretilen degiskenleri SFA kararlariyla birlikte
+# tasir; model onu okur. Yazilamadiysa _ENRICHED, o da yoksa veri seti.
 def _kaynak(durum):
-    """Doner: (dataset_adi | None, zenginlestirilmis_mi)"""
-    zengin = "%s_ENRICHED" % durum.get("veri_seti")
-    if _dataset_okunur_mu(zengin):
-        return zengin, True
-    baz = (durum.get("baz") or {}).get("dataset") or durum.get("veri_seti")
+    """Doner: (dataset_adi | None, baz_set_mi)"""
+    baz = (durum.get("baz") or {}).get("dataset")
     if baz and _dataset_okunur_mu(baz):
-        return baz, False
+        return baz, True
+    for ad in ("%s_ENRICHED" % durum.get("veri_seti"), durum.get("veri_seti")):
+        if ad and _dataset_okunur_mu(ad):
+            return ad, False
     return None, False
 
 
-_KAYNAK_YOK = ("Bu adımı çalıştıramadım: ne %s_ENRICHED ne de baz veri seti "
-               "okunabiliyor.\n\nDeğişken üretimi adımlarında hiçbir değişken "
-               "üretilmediyse zenginleştirilmiş veri seti oluşmaz. Önceki "
-               "adıma dönebilir ya da bu adımı geçebilirsiniz.")
+def _baz_kolonlari(durum):
+    """Baz model: analitik baz setteki HAM kaynakli degiskenler, Sizinti
+    Kontrolu'nun supheli bulduklari haric. Uretilenler aday setten girer."""
+    sizinti = set((durum.get("kalite") or {}).get("ham_sizinti") or [])
+    return [c for c in ((durum.get("baz") or {}).get("kolonlar") or [])
+            if c not in sizinti]
 
-_ZENGIN_YOK = ("NOT: %s_ENRICHED veri seti bulunamadı; %s veri setiyle "
-               "çalıştım. Yeni değişken üretilmediği için karşılaştırma "
-               "yalnızca baz değişkenleri kapsıyor olabilir.")
+
+_KAYNAK_YOK = ("Bu adımı çalıştıramadım: ne analitik baz set ne de %s veri "
+               "seti okunabiliyor. Analitik Baz Set adımına dönebilir ya da "
+               "bu adımı geçebilirsiniz.")
+
+_ZENGIN_YOK = ("NOT: Analitik baz set okunamadı; %s veri setiyle çalıştım "
+               "(SFA kararları uygulanmamış olabilir).")
 
 
 def _guven_metni(delta, std, ga, basamak=4):
@@ -78,7 +85,7 @@ def _bolme_ozeti(durum):
 
 
 def model_plan(durum):
-    baz = (durum.get("baz") or {}).get("kolonlar") or []
+    baz = _baz_kolonlari(durum)
     yeni = (durum.get("secim") or {}).get("secilen_liste") or []
     b = durum.get("bolme") or {}
     bolme_ad = ("zamansal - test dönemi %s" % b.get("oot_deger")) \
@@ -108,7 +115,7 @@ def model_uygula(durum):
         return _KAYNAK_YOK % durum.get("veri_seti")
 
     not_metni = "" if zengin else \
-        ("\n\n" + _ZENGIN_YOK % (durum.get("veri_seti"), kaynak))
+        ("\n\n" + _ZENGIN_YOK % kaynak)
 
     df = _df_oku(kaynak)
     s = setler(durum, df)
@@ -124,7 +131,7 @@ def model_uygula(durum):
 
     sonuc = model_mod.karsilastir(
         df, durum["meta"]["target"],
-        baz_kolonlar=(durum.get("baz") or {}).get("kolonlar") or [],
+        baz_kolonlar=_baz_kolonlari(durum),
         yeni_kolonlar=(durum.get("secim") or {}).get("secilen_liste") or [],
         oot_maske=s["test"],
         # Bolme TURU acikca bildirilir; modul maskenin dolulugundan cikarim
@@ -245,7 +252,7 @@ def _hiperparametre_secimi(durum):
 
 
 def algoritma_plan(durum):
-    baz = len((durum.get("baz") or {}).get("kolonlar") or [])
+    baz = len(_baz_kolonlari(durum))
     yeni = len((durum.get("secim") or {}).get("secilen_liste") or [])
     b = durum.get("bolme") or {}
     bolme_ad = ("zamansal - test dönemi %s" % b.get("oot_deger")) \
@@ -281,7 +288,7 @@ def algoritma_uygula(durum):
     konfig = {
         "veri_seti": kaynak,
         "target": durum["meta"]["target"],
-        "baz_kolonlar": (durum.get("baz") or {}).get("kolonlar") or [],
+        "baz_kolonlar": _baz_kolonlari(durum),
         "yeni_kolonlar": (durum.get("secim") or {}).get("secilen_liste") or [],
         "bolme": _bolme_ozeti(durum),
         "meta": durum.get("meta") or {},
@@ -356,7 +363,7 @@ def final_plan(durum):
                 "Final modeli eğitip kaydedeyim mi?")
 
     yeni = len((durum.get("secim") or {}).get("secilen_liste") or [])
-    baz = len((durum.get("baz") or {}).get("kolonlar") or [])
+    baz = len(_baz_kolonlari(durum))
 
     return ("Son adım: seçilen modeli tam veriyle eğitip kullanıma hazır "
             "hale getireceğim.\n\n"
@@ -505,7 +512,7 @@ def final_uygula(durum):
         "veri_seti": kaynak,
         "cikti_onek": durum["veri_seti"],
         "target": durum["meta"]["target"],
-        "baz_kolonlar": (durum.get("baz") or {}).get("kolonlar") or [],
+        "baz_kolonlar": _baz_kolonlari(durum),
         "yeni_kolonlar": (durum.get("secim") or {}).get("secilen_liste") or [],
         "bolme": _bolme_ozeti(durum),
         "meta": durum.get("meta") or {},
@@ -594,7 +601,7 @@ def katalog_uygula(durum):
     return ("Katalog oluşturuldu: %s kayıt, %s tanesi seçili.\n\n"
             "ÇALIŞMA ÖZETİ\n"
             "  Veri seti      : %s\n  Hedef          : %s\n"
-            "  Üretilen       : %s değişken\n  Kaliteyi geçen : %s\n"
+            "  Üretilen       : %s değişken\n  Sızıntıyı geçen: %s\n"
             "  Seçilen        : %s\n  Model katkısı  : Δ ROC-AUC %s\n\n"
             "ÇIKTILAR\n  %s\n  PROJE_HAFIZASI/uretim_kodu.py%s%s\n\n"
             "Çalışma tamamlandı."

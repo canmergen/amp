@@ -26,13 +26,13 @@ belirler ve yeni değişken üretiminde kullanılır.
 - Hedef değişken: modelin tahmin edeceği değişken.
 - Veri bölme stratejisi: verinin geliştirme ve test kümelerine ayrılma şekli.
 - Analitik baz set: Veri Anlama ve Hazırlama fazının sonunda temizlenmiş \
-ve sabitlenmiş veri seti.
+ve sabitlenmiş veri seti; ham ve üretilen değişkenlerin ikisini de içerir.
 - Aday değişken: üretilen ve henüz değerlendirilmemiş yeni değişken.
 - Değişken seti: modele girecek değişkenlerin listesi.
 - Değişken kataloğu: kabul edilen değişkenlerin kaynağı, dönüşümü, kodu \
 ve model katkısının kaydı.
-- Beş faz: Çalışma Kurulumu, Veri Anlama ve Hazırlama, Değişken \
-Mühendisliği, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
+- Beş faz: Çalışma Kurulumu, Değişken Mühendisliği, Veri Anlama ve \
+Hazırlama, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 
 # ===========================================================================
 # ADIM 1.1 — CALISMA BASLANGICI  (her secimde ilk adim)
@@ -95,15 +95,20 @@ MOD_ADLARI.update({
     "C": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil (eski)",
     "D": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut Değil (eski)"})
 
+# SIRA (kullanici karari): once degiskenler uretilir, sonra veri anlama ve
+# hazirlama ELDEKI BUTUN degiskenlere (ham + uretilen) yapilir: SFA ve PSI
+# final veriye olculur. Veri Profili uretimden once kalir: bos, sabit ve
+# kimlik benzeri kolonlardan degisken uretilmesin. Adim anahtarlari
+# degismedi (kayitli calismalar icin); "kalite" artik Sizinti Kontrolu.
 SONRAKI_FAZLAR = [
-    {"no": "02", "baslik": "Veri Anlama ve Hazırlama",
-     "ozet": "Profil, kalite, SFA ve stabilite",
-     "adimlar": ["veri_profili", "sfa", "stabilite", "baz"]},
-    {"no": "03", "baslik": "Değişken Mühendisliği",
-     "ozet": "Kural tabanlı ve AI destekli üretim",
-     "adimlar": ["kural", "kesif"]},
+    {"no": "02", "baslik": "Değişken Mühendisliği",
+     "ozet": "Profil, kural tabanlı ve AI destekli üretim",
+     "adimlar": ["veri_profili", "kural", "kesif"]},
+    {"no": "03", "baslik": "Veri Anlama ve Hazırlama",
+     "ozet": "SFA, stabilite ve analitik baz set",
+     "adimlar": ["sfa", "stabilite", "baz"]},
     {"no": "04", "baslik": "Değişken Değerlendirme",
-     "ozet": "Kalite, ilişkiler ve aday değişken seti",
+     "ozet": "Sızıntı kontrolü ve aday değişken seti",
      "adimlar": ["kalite", "secim"]},
     {"no": "05", "baslik": "Modelleme ve Finalizasyon",
      "ozet": "Model seçimi, katkı ölçümü ve doğrulama",

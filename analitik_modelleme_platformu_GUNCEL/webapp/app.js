@@ -556,15 +556,15 @@ const KENDI_DUGMELI_KARTLAR = ["dogrulama", "bolme"];
 
 
    Neden DEĞİŞKEN MÜHENDİSLİĞİ'NDE açık: faz 01 ve
-   02 boyunca her karar kartta veriliyor ve kartın soracağı her şey
-   kartın içinde yazılı. Değişken üretimi ise kullanıcının yön vermesi
+   Veri Profili boyunca her karar kartta veriliyor ve kartın soracağı her
+   şey kartın içinde yazılı. Değişken üretimi ise kullanıcının yön vermesi
    gereken ilk adım - "şu değişkeni de üret", "bunu neden elediniz"
    soruları tam orada başlıyor.
 
    SEBEP KUTUNUN İÇİNDE YAZIYOR: boş ve pasif bir kutu "bozuk mu?"
    diye düşündürüyor. Kilit notu hem kapalı olduğunu hem NE ZAMAN
    açılacağını söylüyor. */
-const SOHBET_ACILIS_ADIMI = "kural";    // Faz 03 - Değişken Mühendisliği
+const SOHBET_ACILIS_ADIMI = "kural";    // Faz 02 - Değişken Mühendisliği (2.2)
 /* Kilit metni artık PLACEHOLDER DEĞİL, kutunun üstüne binen bir katman.
    Sebep: placeholder düz metindir, içindeki adım adı kalın yazılamaz.
    Katman <strong> taşıyabiliyor. Düz hâli title ve ekran okuyucu için
@@ -5191,7 +5191,7 @@ const BLOK_TAMAM_METNI = {
     baz: "Analitik Baz Set Hazırlandı",
     kural: "Kural Tabanlı Değişkenler Üretildi",
     kesif: "AI Değişken Keşfi Yapıldı",
-    kalite: "Kalite Kontrolü Yapıldı",
+    kalite: "Sızıntı Kontrolü Yapıldı",
     secim: "Aday Değişken Seti Belirlendi",
     model: "Modeller Karşılaştırıldı",
     algoritma: "Algoritma Seçildi",

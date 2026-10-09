@@ -341,7 +341,10 @@ def _mod_goc(durum):
 # ile kisaltma arasina "aciklama" (Aciklama Duzenleme) girdi; yer donem'in
 # (surum 10'daki) konumu. Bu adimlarin ilerisindeki eski calismada secim
 # yok: kontrol yapilmis sayilir.
-SIRA_SURUMU = 11
+# Surum 12'de Faz 02 ile Faz 03 yer degistirdi: Veri Profili'nden sonra
+# once Kural Tabanli Uretim ve AI Kesfi, sonra SFA, Stabilite ve Analitik
+# Baz Set. Adim sayisi ayni, yerler degisti (bkz. _faz_sirasi_goc).
+SIRA_SURUMU = 12
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
@@ -368,6 +371,44 @@ _YENIDEN_ACILAN_ALANLAR = {
 }
 
 
+# Surum 12: eski sirada SFA ile Aday Degisken Seti arasindaki bir adimda
+# duran calisma Kural Tabanli Degisken Uretimi'nde YENIDEN ACILIR. Eski
+# uretim analitik baz set (SFA donusumleri uygulanmis, doldurulmus) uzerinden
+# yapilmisti; yeni sirada ham veriden yapilir ve SFA uretilenleri de olcer.
+# Faz 05'teki calisma oldugu gibi kalir: o fazin girdileri eski sirada
+# kendi icinde tutarli uretildi.
+_FAZ_SIRASI_TEMIZLENEN = ("sfa", "stabilite", "baz", "plan", "hipotez", "uretilen",
+                          "uretilen_kaynak", "kod_bloklari", "kalite", "secim",
+                          "secim_tablo", "_kesif_ad_elenen", "_dusurulecek")
+
+
+def _faz_sirasi_goc(durum, i):
+    """Surum 12 gocu. Doner: yeni konum."""
+    if i is None:
+        return i
+    try:
+        from fe_agent.akis_kayit import FAZ01_ADIMLARI
+    except Exception:
+        return i
+    faz01 = FAZ01_ADIMLARI.get(durum.get("mod"))
+    if not faz01:
+        return i
+    profil = len(faz01)                       # Veri Profili'nin yeri
+    # Eski sira: profil, sfa, stabilite, baz, kural, kesif, kalite, secim
+    if profil + 1 <= i <= profil + 7:
+        i = profil + 1                        # yeni sirada kural
+        durum["_goc_yeniden_gir"] = True
+        for alan in _FAZ_SIRASI_TEMIZLENEN:
+            durum.pop(alan, None)
+        ogr = durum.get("ogrenilen_donusum")
+        if isinstance(ogr, dict):
+            ogr.pop("kural", None)
+        p = durum.get("profil")
+        if isinstance(p, dict):
+            p.pop("uretilen_teshis", None)
+    return i
+
+
 def _sira_goc(durum):
     surum = durum.get("_sira_surumu", 1)
     if surum >= SIRA_SURUMU:
@@ -387,6 +428,8 @@ def _sira_goc(durum):
         yer = yerler.get(durum.get("mod"))
         if yer is not None and i is not None and i > yer:
             i += adet
+        if hedef == 12:
+            i = _faz_sirasi_goc(durum, i)
     if i is not None:
         durum["i"] = i
     durum["_sira_surumu"] = SIRA_SURUMU
@@ -740,7 +783,7 @@ def _dataset_var_mi(ad):
 def _dataset_okunur_mu(ad):
     """Dataset GERCEKTEN okunabiliyor ve en az bir satir iceriyor mu?
 
-    Faz 03 hic degisken uretmezse _ENRICHED yazilmaz ama flow'da tanimli
+    Degisken uretimi hic calismazsa _ENRICHED yazilmaz ama flow'da tanimli
     kalabilir; _dataset_var_mi True doner ve okuma aninda adim coker.
     Bu kontrol tek satirlik bir okuma denemesi yapar.
     """

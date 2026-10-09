@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_faz03.py - Faz 03 - Degisken Muhendisligi: kural tabanli uretim ve AI kesfi.
+"""fe_agent/akis_faz03.py - Faz 02 - Degisken Muhendisligi: kural tabanli uretim ve AI kesfi.
 
-akis.py bolundu; bu dosya o bolumun aynisidir.
+KAYNAK: Faz 01'in modelleme tablosu (AMP veri seti); Veri Profili'nin
+kusurlu buldugu kolonlar (bos, sabit, kimlik benzeri, asiri kardinalite)
+uretime girmez. Sonuc _ENRICHED (ham + uretilen); Faz 03 (SFA, stabilite,
+baz set) bu tabloyla calisir. Uretim degisince SFA kararlari gecersizdir.
 """
 
 import dataiku
@@ -13,7 +16,7 @@ from fe_agent import ifade as ifade_mod
 from fe_agent.akis_durum import (
     sozluk_oku,
     _dataset_var_mi, _df_oku, _folder, _liste, _sayi, maskeler,
-    modelleme_df,
+    modelleme_df, modelleme_kaynagi,
 )
 
 try:                                     # _df_oku onbellegi (akis_durum)
@@ -42,6 +45,29 @@ def _meta_yasak(durum):
     kullanilmaz. llm.py zaten eliyor; bu ikinci savunma katmani."""
     m = durum.get("meta") or {}
     return {x for x in (m.get("target"), m.get("id"), m.get("donem")) if x}
+
+
+def _kusurlu(durum):
+    from fe_agent.akis_faz02 import kusurlu_kolonlar
+    return set(kusurlu_kolonlar(durum))
+
+
+def _sfa_gecersiz(durum):
+    """Uretim degisti: SFA (ve kararlari) eski degisken kumesine aitti;
+    Faz 03'e gelince yeniden hesaplanir."""
+    eski = (durum.pop("sfa", None) or {}).get("ai_is")
+    if eski:
+        from fe_agent import sfa_karar
+        sfa_karar.ai_durdur(eski)
+
+
+def _kaynak_ad(durum):
+    """Uretim kodunun okudugu tablo: modelleme kaynagi (AMP veri seti)."""
+    try:
+        ad, _amp = modelleme_kaynagi(durum)
+    except Exception:
+        ad = None
+    return ad or durum["veri_seti"]
 
 
 def _blok_kaynak(blok):
@@ -112,8 +138,7 @@ def _uretim_kodu_yaz(durum, hedef):
         return False, None
     try:
         script = ifade_mod.script_olustur(
-            kaynak_dataset=(durum.get("baz") or {}).get("dataset")
-            or durum["veri_seti"],
+            kaynak_dataset=_kaynak_ad(durum),
             hedef_dataset=hedef, doldurma=None,
             # script_olustur 2'li blok bekliyor; kaynak alani atilir.
             bloklar=[(b[0], b[1]) for b in bloklar])
@@ -125,9 +150,10 @@ def _uretim_kodu_yaz(durum, hedef):
 
 def kural_plan(durum):
     sz = sozluk_oku(durum)   # CSV yedegini de okur
+    # Kusurlu ham kolonlardan (Veri Profili) degisken uretilmez.
+    haric = sorted(set(durum.get("haric_kolonlar") or []) | _kusurlu(durum))
     plan, hata = llm_mod.gelenekse_plan_oner(
-        sozluk_df=sz, haric=durum.get("haric_kolonlar", []),
-        meta=durum.get("meta", {}))
+        sozluk_df=sz, haric=haric, meta=durum.get("meta", {}))
     durum["plan"] = plan or []
 
     if hata:
@@ -279,20 +305,17 @@ def kural_uygula(durum, secim=None):
     # kayitlarini da temizleyip kullaniciya bildiriyoruz.
     silinen_kural = _adim_temizle(durum, KURAL_KAYNAK)
     silinen_kesif = _adim_temizle(durum, KESIF_KAYNAK)
+    _sfa_gecersiz(durum)
 
     if not plan:
         return ("Bu adımda üretim yapılmadı." +
                 _yeniden_notu(silinen_kural, silinen_kesif))
 
-    # Hazirlik tablosu varsa ondan okunur; tip donusumleri oraya ZATEN
-    # islenmis halde yazildi (baz_uygula modelleme_df ile okuyor).
-    # Hazirlik yoksa ham tabloya dusuluyor ve donusumler OKUMADA
-    # uygulanmali - yoksa kullanicinin teyitte cevirdigi kolon burada
-    # eski tipiyle gorunurdu.
-    _baz = (durum.get("baz") or {}).get("dataset")
-    df = _df_oku(_baz) if _baz else modelleme_df(durum)
+    # Kaynak modelleme tablosu (tip donusumleri okumada uygulanmis);
+    # baz set artik uretimden SONRA kuruluyor.
+    df = modelleme_df(durum)
     tr, _te = maskeler(durum, df)            # LEAKAGE SINIRI
-    yasak = _meta_yasak(durum)
+    yasak = _meta_yasak(durum) | _kusurlu(durum)
     ogrenilen = {}
 
     uretilen, kod_satirlari, elenen = {}, [], []
@@ -402,21 +425,23 @@ def _yeniden_notu(silinen_kural, silinen_kesif):
                         "%s kural tabanlı kolonun kaydı silindi ve yerine "
                         "yenisi yazıldı." % _sayi(len(silinen_kural)))
     if silinen_kesif:
-        parcalar.append("Kaynak baz setten yeniden kurulduğu için keşif "
+        parcalar.append("Tablo yeniden kurulduğu için keşif "
                         "adımında üretilen %s kolon veri setinden düştü; "
                         "kayıtları da temizlendi. Keşif adımına gelince "
                         "yeniden üretilecekler." % _sayi(len(silinen_kesif)))
     return ("\n\n" + "\n".join(parcalar)) if parcalar else ""
 
 def kesif_plan(durum):
-    baz = (durum.get("baz") or {}).get("dataset") or durum["veri_seti"]
-    kolonlar = list(_df_oku(baz, limit=SEMA_LIMITI).columns)
+    # Kusurlu ham kolonlar (Veri Profili) dil modeline gitmez; ifadede
+    # gecerse dogrulamada reddedilir. SFA henuz yok (uretimden sonra).
+    kusurlu = _kusurlu(durum)
+    kolonlar = [k for k in modelleme_df(durum, limit=SEMA_LIMITI).columns
+                if k not in kusurlu]
     sz = sozluk_oku(durum)   # CSV yedegini de okur
     yasak = _meta_yasak(durum)
 
     ham, hata = llm_mod.kesif_ifade_oner(
-        sozluk_df=sz, kolonlar=kolonlar, meta=durum.get("meta", {}),
-        sfa_ozet=(durum.get("sfa") or {}).get("en_iyi"))
+        sozluk_df=sz, kolonlar=kolonlar, meta=durum.get("meta", {}))
 
     if hata:
         # Hatayi yutma: kullaniciya goster, adimi ilerletme.
@@ -477,6 +502,7 @@ def kesif_uygula(durum, secim=None):
     # aksi halde secim degisince eski kolonlar
     # tabloda kalir, durum["uretilen"] ile tablo birbirini tutmaz.
     silinen = _adim_temizle(durum, KESIF_KAYNAK)
+    _sfa_gecersiz(durum)
 
     if not hipotez:
         mesaj = "Bu adımda üretim yapılmadı."
@@ -487,9 +513,10 @@ def kesif_uygula(durum, secim=None):
         _uretim_kodu_yaz(durum, hedef)
         return mesaj
 
-    kaynak = hedef if _dataset_var_mi(hedef) else \
-        ((durum.get("baz") or {}).get("dataset") or durum["veri_seti"])
-    df = _df_oku(kaynak)
+    # Kural adimi bir sey urettiyse _ENRICHED ustune eklenir; yoksa
+    # modelleme tablosundan kurulur.
+    df = _df_oku(hedef) if (durum.get("uretilen") and _dataset_var_mi(hedef)) \
+        else modelleme_df(durum)
     eski = [c for c in silinen if c in df.columns]
     if eski:
         df = df.drop(columns=eski)

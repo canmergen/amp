@@ -186,7 +186,8 @@ ADIMLAR = {
     "veri_profili": {
         "baslik": "Veri Profili ve Kalite",
         "aciklama": "Dataset seviyesinde inceleme: eksik değer, tekil sayısı, "
-                    "kardinalite, sabit ve kimlik benzeri kolonlar.",
+                    "kardinalite, sabit ve kimlik benzeri kolonlar. Kusurlu "
+                    "kolonlardan değişken üretilmez.",
         "girdi": None, "plan": veri_profili_plan, "uygula": veri_profili_uygula},
     "sfa": {
         "baslik": "Tek Değişken Analizi (SFA)",
@@ -222,9 +223,10 @@ ADIMLAR = {
         "girdi": None, "plan": kesif_plan, "uygula": kesif_uygula},
 
     "kalite": {
-        "baslik": "Değişken Kalite Kontrolü",
-        "aciklama": "Üretilen değişkenler eksik değer, sonsuz sayı, sabitlik "
-                    "ve sızıntı riski açısından denetlenir.",
+        "baslik": "Sızıntı Kontrolü",
+        "aciklama": "Analitik baz setteki değişkenlerin hedefle aşırı ilişkisi "
+                    "(sızıntı riski) ölçülür; şüpheliler aday sete ve modele "
+                    "alınmaz.",
         "girdi": None, "plan": kalite_plan, "uygula": kalite_uygula},
     "secim": {
         "baslik": "Aday Değişken Seti",

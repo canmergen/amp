@@ -125,19 +125,33 @@ def _uretim_kumeleri(durum):
     return kumeler
 
 
-def _eleme_noktalari(durum):
-    """Elemenin iki noktasi, SIRASIYLA: [(ad, hayatta kalanlar kumesi)].
+# Eleme noktasinin cumle icindeki hali ("hazırlıkta −3").
+NOKTA_ADI = {"hazırlık": "hazırlıkta", "sızıntı": "sızıntı kontrolünde",
+             "kalite": "kalitede", "seçim": "seçimde"}
 
-    Once kalite kontrolu, sonra aday set secimi. Hangi degiskenin
-    NEREDE elendigini soyleyebilmek icin ikisi ayri ayri gerekiyor;
-    tek bir "final" kumesi "nerede gitti" sorusunu cevaplamiyor."""
+
+def _eleme_noktalari(durum):
+    """Uretilen degiskenlerin elendigi noktalar, SIRASIYLA:
+    [(ad, hayatta kalanlar kumesi)] - kumeler URETILEN ADLARLA.
+
+    Once Veri Anlama ve Hazirlama (bos, sabit, kararsiz ya da SFA
+    karariyla dusenler; baz set), sonra sizinti kontrolu, sonra aday set
+    secimi. Baz sette SFA donusumuyle adi degisen degisken uretilen adina
+    cevrilir. Hangi degiskenin NEREDE elendigini soyleyebilmek icin her
+    nokta ayri gerekiyor."""
     noktalar = []
+    bz = durum.get("baz") or {}
+    kaynak = bz.get("kaynak") or {}
+    if "uretilen_kolonlar" in bz:
+        noktalar.append(("hazırlık", {kaynak.get(c, c)
+                                      for c in bz.get("uretilen_kolonlar") or []}))
     gecti = (durum.get("kalite") or {}).get("gecti")
     if isinstance(gecti, (list, tuple, set)):
-        noktalar.append(("kalite", set(gecti)))
+        noktalar.append(("sızıntı" if "aday" in (durum.get("kalite") or {})
+                         else "kalite", set(gecti)))
     secilen = (durum.get("secim") or {}).get("secilen_liste")
     if isinstance(secilen, (list, tuple, set)):
-        noktalar.append(("seçim", set(secilen)))
+        noktalar.append(("seçim", {kaynak.get(c, c) for c in secilen}))
     return noktalar
 
 
@@ -166,12 +180,14 @@ def _uretim_karti(durum):
 
     parcalar = ["%s %s" % (KAYNAK_ADI[k], _sayi(len(v)))
                 for k, v in _kaynak_sirali(kumeler)]
-    baz = _liste_adet((durum.get("baz") or {}).get("kolonlar"))
+    # Uretim, Veri Profili'nde temiz cikan ham kolonlar uzerine yapilir.
+    temiz = _liste_adet(((durum.get("profil") or {}).get("profil_teshis") or {})
+                        .get("temiz"))
     return {
         "deger": _sayi(uretilen),
         "ust": " · ".join(parcalar) if parcalar else "kaynak kırılımı yok",
-        "alt": ("baz setteki %s değişken üzerine üretildi" % _sayi(baz)
-                if baz else "baz set üzerine üretildi"),
+        "alt": ("veri setindeki %s değişken üzerine üretildi" % _sayi(temiz)
+                if temiz else "veri seti üzerine üretildi"),
         "ipucu": ("Kural tabanlı üretim ve AI keşfi adımlarında toplam %s "
                   "yeni değişken üretildi. Eleme bu kartta değil, ELEME "
                   "kartında." % _sayi(uretilen)),
@@ -198,8 +214,7 @@ def _nerede_elendi(kumeler, noktalar):
         if onceki is None:
             break
         dusen = len(onceki - kalan)
-        parcalar.append("%sde −%s" % (ad, _sayi(dusen))
-                        if ad == "kalite" else "%sde −%s" % (ad, _sayi(dusen)))
+        parcalar.append("%s −%s" % (NOKTA_ADI.get(ad, ad), _sayi(dusen)))
         onceki = onceki & kalan
     return " · ".join(parcalar) if parcalar else None
 
@@ -214,7 +229,7 @@ def _eleme_ipucu(kumeler, noktalar):
         for ad, kalan in noktalar:
             dusen = len(onceki - kalan)
             onceki = onceki & kalan
-            adimlar.append("%sde %s elendi" % (ad, _sayi(dusen)))
+            adimlar.append("%s %s elendi" % (NOKTA_ADI.get(ad, ad), _sayi(dusen)))
         satirlar.append("%s: %s üretildi, %s - geriye %s kaldı"
                         % (KAYNAK_ADI[k], _sayi(len(v)), ", ".join(adimlar),
                            _sayi(len(onceki))))
@@ -226,7 +241,7 @@ def _eleme_karti(durum):
 
     Iki koldan gelir ve tek hunide birlesir:
       ham kolonlar        -> profil -> SFA
-      uretilen degiskenler -> kalite -> aday set secimi
+      uretilen degiskenler -> hazirlik (Faz 03) -> sizinti -> aday set secimi
     """
     p = durum.get("profil") or {}
     t = p.get("profil_teshis") or {}
@@ -257,7 +272,8 @@ def _eleme_karti(durum):
     noktalar = _eleme_noktalari(durum)
     kalite_gecen = _liste_adet((durum.get("kalite") or {}).get("gecti"))
     if kalite_gecen is not None:
-        basamaklar.append(("kalite", kalite_gecen))
+        basamaklar.append(("sızıntı" if "aday" in (durum.get("kalite") or {})
+                           else "kalite", kalite_gecen))
     secilen = (durum.get("secim") or {}).get("secilen")
     if secilen is not None:
         basamaklar.append(("final", _tam(secilen, 0)))
@@ -482,7 +498,15 @@ def detay(durum):
             ("Toplam Üretilen", _sayi(uretilen)),
         ] + [(ad, _sayi(n)) for ad, n in blok.items()]))
 
-    if k:
+    if k and "aday" in k:
+        bolumler.append(_bolum("SIZINTI KONTROLÜ", [
+            ("Geçen Üretilen", _sayi(len(k.get("gecti") or []))),
+            ("Hazırlıkta Düşen Üretilen",
+             _sayi(sum(len(k.get(a) or []) for a in ("eksik", "sabit", "kararsiz", "sfa")))),
+            ("Sızıntı Şüphelisi", _sayi(len(k.get("sizinti") or [])
+                                        + len(k.get("ham_sizinti") or []))),
+        ]))
+    elif k:
         bolumler.append(_bolum("KALİTE KONTROLÜ", [
             ("Geçen", _sayi(len(k.get("gecti") or []))),
             ("Elenen", _sayi(uretilen - len(k.get("gecti") or []))),
@@ -1410,8 +1434,11 @@ def eksik_paneli(durum):
 # --------------------------------------------------------------------------
 # Bolme degistirilince gecersiz kalan adimlarin durum anahtarlari.
 # Profil BURADA YOK: profil tum satirlarda olculuyor, bolmeden etkilenmiyor.
-BOLME_BAGIMLI = ("sfa", "stabilite", "baz", "kalite", "secim", "model",
+# "uretilen": kural tabanli uretim winsor / sira parametrelerini Train
+# (MS)'den ogreniyor; uretim de bolmeye bagli.
+BOLME_BAGIMLI = ("uretilen", "sfa", "stabilite", "baz", "kalite", "secim", "model",
                  "final")
+BOLME_BAGIMLI_ADI = {"uretilen": "Değişken Üretimi"}
 
 
 def _bolme_kilidi(durum):
@@ -1437,7 +1464,8 @@ def _bolme_kilidi(durum):
     return True, ("Bölme uygulandı ve sonraki adımlar bu bölme üzerinde "
                   "çalıştı (%s). Bölmeyi değiştirmek bu analizleri geçersiz "
                   "kılar; devam etmeden önce onayınızı isterim."
-                  % ", ".join(ADIMLAR.get(k, {}).get("baslik") or k
+                  % ", ".join(BOLME_BAGIMLI_ADI.get(k)
+                              or ADIMLAR.get(k, {}).get("baslik") or k
                               for k in calisan))
 
 
