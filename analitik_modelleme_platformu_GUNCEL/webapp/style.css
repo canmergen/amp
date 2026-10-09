@@ -67,11 +67,7 @@
   --kirmizi-koyu: #A00D10;
   --kirmizi-acik: #FDF1F1;
   --kirmizi-halka: rgba(213,17,21,.16);
-  /* Adim blogu cercevesinin kalinligi. RENK ICIN AYRI DEGISKEN YOK:
-     "--kirmizi-cerceve: var(--kirmizi)" yazmak ise yaramiyor - ozel
-     ozellik degeri tanimlandigi yerde (:root) cozuluyor ve koyu temada
-     "#kabuk.koyu" icindeki yeni --kirmizi'yi GORMUYOR. Kural dogrudan
-     var(--kirmizi) okuyor. */
+  /* Adim blogu cercevesinin kalinligi. Renk dogrudan var(--kirmizi). */
   --blok-cerceve: 3px;
 
   --zemin:        #F4F5F7;
@@ -81,7 +77,7 @@
   --kenar-guclu:  #BFC5CE;
   --kenar-acik:   #EDEFF2;
   /* Yalnizca 3 yapisal ayrac: ust bar alti, sol panel sagi, sag panel solu.
-     TAM SIYAH, koyu temada TAM BEYAZ.
+     TAM SIYAH.
      Kalinlik 2px. Kullanici "1.5 olmalı gibi" dedi ama 1.5px KENARLIK
      DIYE BIR SEY YOK: Chrome border-width'i tam piksele YUVARLIYOR ve
      1.5px her ekran olceginde (dPR 1 / 1.25 / 1.5 / 2 olculdu) 1px'e
@@ -185,58 +181,6 @@
   --govde-en:     100%;
 }
 
-/* -------- KOYU TEMA -------- */
-#kabuk.koyu {
-  /* KOYU TEMA YENIDEN.
-     Ilke: zemin ve kartlar SIYAH, ayrim kenarlikla; "gri zemin" isteyen
-     yerler (tablo basligi, ic kutu, deger cipi) siyahtan GORUNUR bicimde
-     ayrisan tek bir gri (#1A1A1A / #141414). Vurgu renkleri acik
-     temadakilerle AYNI aileden, neon degil: kirmizi marka kirmizisina
-     yakin (#E5262B, siyahta 4.6:1), yesil / kehribar sakin. */
-  --kirmizi:      #E5262B;
-  --kirmizi-koyu: #C81E23;
-  --kirmizi-acik: #1F0B0C;
-  --kirmizi-halka: rgba(229,38,43,.30);
-
-  --zemin:        #000000;
-  --yuzey:        #000000;
-  --yuzey-alt:    #141414;
-  --kenar:        #333333;
-  --kenar-guclu:  #4D4D4D;
-  --kenar-acik:   #1F1F1F;
-  --ayrac:        #FFFFFF;
-
-  --metin:        #FFFFFF;
-  --metin-soluk:  #FFFFFF;
-  --metin-asil:   #FFFFFF;
-  --yer-tutucu:   rgba(255,255,255,.45);
-
-  --user-zemin:   #1A1A1A;
-
-  --gonder-zemin: #FFFFFF;
-  --gonder-metin: #000000;
-
-  --golge-1:   0 1px 2px rgba(0,0,0,.6);
-  --ust-golge: none;
-  --golge-2:   0 5px 13px rgba(0,0,0,.7);
-
-  --yesil:        #34B86E;
-  --yesil-acik:   #0B1F14;
-  --excel-koyu:    #17794A;   /* beyaz yazi ile 5.4:1 */
-  --excel-en-koyu: #1E9159;
-  --excel-acik:    #0E2418;
-  --excel-kenar:   #245A3B;
-  --excel-halka:   rgba(46,158,96,.35);
-  --excel-pasif-yazi: #5FD69A;
-  --amber:        #E8A23A;
-  --amber-acik:   #1F1709;
-  --amber-halka:  rgba(232,162,58,.40);
-  --sari:         #EAB308;
-  --sari-koyu:    #FFFFFF;
-  --sari-acik:    #1F1A06;
-}
-/* Koyu temada gorunur gri. */
-#kabuk.koyu .secenek-rozet { background: var(--kenar-acik); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
@@ -277,7 +221,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 /* Kirmizi etiketler: ANALİTİK SÜREÇ, İŞ AKIŞI, VERİ SETİ, SÖZLÜK...,
    dokuman bolum basliklari. Urun adiyla ayni font, agirlik ve renk.
-   Renk dogrudan --kirmizi: koyu temada otomatik acik kirmiziya doner.
+   Renk dogrudan --kirmizi.
    Hizalamayi bulunduklari kutu belirler. */
 .panel-baslik, .ozet-etiket, .dok-bolum-baslik {
   font-size: var(--fs-etiket); font-weight: var(--fw-kalin);
@@ -303,7 +247,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 #baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
 /* ÜRÜN LOGOSU baştan yerinde, yazı gizli: sayfa açılırken önce yazı
    sonra logo görünmesin. Yazı yalnız görsel yüklenemezse (.yazili)
-   gelir. Açık temada siyah, koyu temada beyaz yazılı logo görünür. */
+   gelir. */
 #urun-logo-kap { display: flex; align-items: center; }
 #baslik-blok:not(.yazili) .urun-yazi { display: none; }
 #baslik-blok.yazili #urun-logo-kap { display: none; }
@@ -318,9 +262,6 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   object-fit: contain; object-position: left center;
   transform: translateY(3px);
 }
-#urun-logo-koyu { display: none; }
-#kabuk.koyu #urun-logo-acik { display: none; }
-#kabuk.koyu #urun-logo-koyu { display: block; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
 #urun-adi {
   font-weight: var(--fw-kalin); font-size: var(--fs-buyuk); letter-spacing: -.01em;
@@ -329,8 +270,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 /* Seçili veri seti ve sözlük: başlığın yanında iki küçük çip.
     Geriye kalan tek kimlik bilgisi bu iki ad. */
 /* ÜST BARDA SOLUK GRİ YOK. Şeritteki
-   her metin --metin okuyor: açık temada tam siyah, koyu temada tam
-   beyaz. Hiyerarşiyi renk değil, KIRMIZI ETİKETLER ve yazı boyutu
+   her metin --metin okuyor: tam siyah. Hiyerarşiyi renk değil, KIRMIZI ETİKETLER ve yazı boyutu
    taşıyor. */
 .ust-cip {
   max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -365,7 +305,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   align-items: stretch; justify-content: center; gap: 5px; flex-shrink: 0;
 }
 
-#tema-btn, .cekmece-btn {
+.cekmece-btn {
   display: flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; padding: 0;
   border: 1px solid var(--kenar); background: var(--yuzey);
@@ -373,8 +313,8 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   box-shadow: var(--ust-golge);
   transition: background .12s, color .12s, border-color .12s;
 }
-#tema-btn svg, .cekmece-btn svg { width: 13px; height: 13px; }
-#tema-btn:hover, .cekmece-btn:hover {
+.cekmece-btn svg { width: 13px; height: 13px; }
+.cekmece-btn:hover {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 /* Genişlikler varsayılandayken sıfırlanacak bir şey yok: düğme pasif.
@@ -529,16 +469,11 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   .ust-kume-ad { padding: 0 9px 0 5px; }
 }
 
-/* Sağ: 2 × 2 (tema | Oturum Aktif / Arşiv | Yeni Çalışma). Satırlar
-   24 px, aralık 4 px: iki satır 52 px, 64 px'lik barda dengeli. */
+/* Sağ: tek satır (Arşiv | Yeni Çalışma), barın dikey ortasında. */
 .ustbar-sag-izgara {
-  display: grid; grid-template-columns: auto auto; gap: 4px;
-  align-items: stretch;
+  display: flex; align-items: center; gap: 4px;
 }
-.ustbar-sag-izgara > * { width: 100%; justify-content: center; }
-.ustbar-sag-izgara #calismalar-btn, .ustbar-sag-izgara #sifirla-btn { width: 100%; justify-content: center; }
-.ustbar-sag-izgara #tema-btn { width: 100%; }
-.ustbar-sag-izgara #durum-rozet { justify-content: center; }
+.ustbar-sag-izgara #calismalar-btn, .ustbar-sag-izgara #sifirla-btn { justify-content: center; }
 
 /* Sohbet ve Dashboard sayfa iskeleti (içerik ayrıca kurulacak). */
 .bos-sayfa {
@@ -553,25 +488,6 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 /* Çekmece düğmeleri yalnızca panelin gizlendiği dar ekranlarda görünür */
 .cekmece-btn { display: none; }
 
-/* Durum: "Yeni Çalışma" ile aynı yükseklik ve yazı, ama DÜĞME DEĞİL
-   (span, tıklanmaz). Düğmelerden ayrışsın diye kenarsız, yuvarlak ve
-   açık yeşil zeminli bir durum hapı; bağlantı yoksa kırmızıya döner. */
-#durum-rozet {
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 24px; padding: 0 var(--b-3); flex-shrink: 0;
-  border: 1px solid transparent; background: var(--yesil-acik);
-  border-radius: 999px;
-  font-size: var(--fs-ustbar); font-weight: var(--fw-kalin); color: var(--metin); white-space: nowrap;
-  letter-spacing: .01em;
-}
-.nokta-yesil {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--yesil); display: inline-block; flex-shrink: 0;
-}
-/* Rozet son isteğin sonucunu gösterir: backend cevap vermiyorsa yeşil kalmaz */
-#durum-rozet.mesgul .nokta-yesil { background: var(--sari); }
-#durum-rozet.hata   .nokta-yesil { background: var(--kirmizi); }
-#durum-rozet.hata { color: var(--kirmizi); background: var(--kirmizi-acik); }
 
 /* ==================== SAYFA KABI ==================== */
 .sayfa { flex: 1; min-height: 0; width: 100%; }
@@ -640,8 +556,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    Kutu içi sarı zemin (--sari-acik) + sarı/kehribar yazı; solda kalın
    sarı çubuk. Yazı için --sari DEĞİL --amber kullanılıyor: #EAB308
    dolgu olarak iyi ama beyaz zeminde metin olunca kontrast ~1,9:1,
-   okunmuyor. --amber aynı sarı/kehribar ailesinden, okunabilir ve koyu
-   temada kendi karşılığına (#F5B042) dönüşüyor. */
+   okunmuyor. --amber aynı sarı/kehribar ailesinden ve okunabilir. */
 .faz.aktif > .faz-bas {
   background: var(--amber-acik); color: var(--amber);
   font-weight: var(--fw-kalin);
@@ -725,8 +640,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    RENK NEDEN --sari DEGIL: isaretin dolgusu #EAB308 ve bu bir DOLGU
    olarak iyi duruyor, ama ayni sari beyaz zeminde METIN olunca kontrast
    ~1,9:1 — okunmuyor. --amber ayni sari/kehribar ailesinden ama
-   okunabilir, ve koyu temada zaten kendi karsiligina (#F5B042)
-   donusuyor. Isaret degismedi. */
+   okunabilir. Isaret degismedi. */
 .faz-adimlar li.aktif { color: var(--amber); font-weight: var(--fw-kalin); }
 .faz-adimlar li.aktif > .adim-isaret {
   background: var(--sari); border-color: var(--sari); color: #000;
@@ -862,9 +776,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    Rengi gri değil PLATFORM KIRMIZISI: bu şerit oturumun kaldığı yerden
    yüklendiğini soyluyor, kullanicinin gozunden kacmamasi gerekiyor.
    Seritte SECIM KIRMIZISI (--kirmizi) kullaniliyor - secili kart, aktif
-   sekme ve birincil dugmeyle ayni ton; --kirmizi ve --kirmizi-acik
-   dogrudan okunuyor ki koyu temada #kabuk.koyu icindeki degerler
-   gecerli olsun (bkz. :root notu). */
+   sekme ve birincil dugmeyle ayni ton (--kirmizi, --kirmizi-acik). */
 .sistem-notu {
   margin: 0 0 var(--balon-ara);
   padding: var(--b-2) var(--b-3);
@@ -1265,9 +1177,8 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 /* -------- Girdi doğrulama kartı (secim_alani.tip = "dogrulama") --------
    YENI RENK DEGISKENI YOK: kart yalnizca mevcut paleti kullanir
-   (--kirmizi, --amber, --yesil, --metin-soluk, --kenar...), bu yuzden
-   koyu tema #kabuk.koyu altindaki degisken devriyle kendiliginden
-   calisir. Onek: .dg-* ; govde mevcut .secim-* yapisini surdurur. */
+   (--kirmizi, --amber, --yesil, --metin-soluk, --kenar...).
+   Onek: .dg-* ; govde mevcut .secim-* yapisini surdurur. */
 /* Genisligi ve sol hizasi .secim-kart'tan gelir (--balon-en):
    dogrulama karti da balonla ayni sutunda, ayni genislikte durur.
    Bes kolonlu karar tablosu bu genislige table-layout:fixed ile
@@ -1618,9 +1529,6 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 }
 .blok-durum.kontrol {
   color: #A16207; background: #FEF9C3; border-color: #A16207;
-}
-#kabuk.koyu .blok-durum.kontrol {
-  color: #F5C518; background: #2A2210; border-color: #F5C518;
 }
 .blok-durum.tamam {
   color: var(--yesil); background: var(--yesil-acik); border-color: var(--yesil);
@@ -2361,7 +2269,7 @@ Asgariler
 
 /* SÖZLÜK TANIMI hücresi düzenlenebilir: kutu satır yüksekliğine
    sığsın diye 20px ve ince kenarlı. Yeni renk yok; mevcut yüzey/kenar
-   değişkenleri koyu temada kendiliğinden dönüyor. */
+   değişkenleri. */
 .ft-tanim-giris {
   display: block; width: 100%; min-width: 0; min-height: 20px; padding: 1px 4px;
   resize: none; overflow: hidden; line-height: 1.35;
@@ -3049,17 +2957,6 @@ span.bolme-cip { cursor: default; }
   --bilgi-zemin: rgba(13,148,136,.09);
   --bilgi-kenar: #0D9488;
 }
-/* Koyu yüzeyde aynı tonlar biraz daha belirgin. */
-#kabuk.koyu {
-  /* Siyah zeminde dolgun ama camurlasmayan tonlar (saydamlik dusuk). */
-  --dg-bos: rgba(234,179,8,.14);
-  --dg-llm: rgba(59,130,246,.17);
-  --dg-hafiza: rgba(139,92,246,.20);
-  --dg-eklendi: rgba(34,197,94,.15);
-  --dg-eklenmedi: rgba(239,68,68,.17);
-  --bilgi-zemin: rgba(45,212,191,.12);
-  --bilgi-kenar: #2DD4BF;
-}
 .dg-tablo tr.dg-bos > td { background: var(--dg-bos); }
 .dg-tablo tr.dg-llm > td { background: var(--dg-llm); }
 .dg-tablo tr.dg-hafiza-renk > td { background: var(--dg-hafiza); }
@@ -3363,7 +3260,6 @@ span.bolme-cip { cursor: default; }
 
 /* ==================== DAĞILIM sekmesi ==================== */
 :root { --grafik-seri: #2B5DB8; }
-#kabuk.koyu { --grafik-seri: #5B8DEF; }   /* koyu yüzeyde doğrulandı */
 .dag-kap { display: flex; flex-direction: column; gap: var(--b-3); }
 .dag-govde { display: flex; flex-direction: column; gap: var(--b-3); }
 .dag-not { font-size: var(--fs-kucuk); color: var(--metin-soluk); }
@@ -3519,7 +3415,6 @@ span.bolme-cip { cursor: default; }
 
 /* ==================== Aralık detayı: açıklama, ölçütler, grafik ==================== */
 :root { --aralik-seri-2: #EB6834; }
-#kabuk.koyu { --aralik-seri-2: #D95926; }   /* koyu yüzeyde doğrulandı */
 .aralik-aciklama { font-size: var(--fs-govde); line-height: 1.5; color: var(--metin); margin-bottom: var(--b-3); }
 .aralik-bolum {
   font-size: var(--fs-etiket); letter-spacing: var(--etiket-aralik); text-transform: uppercase;

@@ -15,13 +15,11 @@
              gizli kalır. Üst barda kalan TEK bilgi bunlar; aşama sol
              panelde, kapsam/hedef sağ panelde, değişken seti özet
              sayfasında zaten var. -->
-        <!-- ÜRÜN LOGOSU: açık temada siyah, koyu temada beyaz yazılı
-             görsel (style.css: #kabuk.koyu). Yazı baştan gizli; yalnız
+        <!-- ÜRÜN LOGOSU (siyah yazılı görsel). Yazı baştan gizli; yalnız
              görsel yüklenemezse gelir (app.js: logoYukle). alt boş: görsel
              gelene kadar tarayıcı yerine alt metni yazmasın; ad kapta. -->
         <div id="urun-logo-kap" role="img" aria-label="Akıllı Modelleme Platformu">
           <img id="urun-logo-acik" class="urun-logo" alt="">
-          <img id="urun-logo-koyu" class="urun-logo" alt="">
         </div>
         <div id="urun-adi-satir" class="urun-yazi">
           <div id="urun-adi">Akıllı Modelleme Platformu</div>
@@ -64,9 +62,8 @@
          (app.js: sonucCiz). -->
 
     <div id="ustbar-sag">
-      <!-- SAĞ: 2 × 2. Üstte tema (mod geçişi) ve Oturum Aktif, altta
-           Arşiv ve Yeni Çalışma. Dar ekrandaki iş akışı çekmece düğmesi üst
-           satırın başında (geniş ekranda gizli). -->
+      <!-- SAĞ: tek satır, Arşiv ve Yeni Çalışma. Dar ekrandaki iş akışı
+           çekmece düğmesi satırın başında (geniş ekranda gizli). -->
       <div class="ustbar-sag-izgara">
         <!-- Dar ekranda panelleri çekmece olarak açar; geniş ekranda gizli -->
         <button id="panel-btn" class="cekmece-btn" type="button"
@@ -78,7 +75,6 @@
             <path d="M3 6h18M3 12h18M3 18h18"></path>
           </svg>
         </button>
-        <button id="tema-btn" type="button" title="Koyu tema" aria-label="Tema değiştir"></button>
         <!-- Dataiku'nun kendi REFRESH düğmesi bunun hemen üstünde duruyor ve
              karıştırılınca gerçek veri kaybı yaşandı: bu yüzden yalnız ikon
              değil, görünür etiket de taşır.
@@ -89,9 +85,7 @@
              Çalışma" ifadesindeki karakter tek oklu; düğmedeki ikon iki
              oklu olunca metin ile düğme aynı şeyi göstermiyordu. Dataiku'nun
              kendi REFRESH ikonu da tek oklu.
-             stroke/fill currentColor: düğmenin rengini izler, koyu temada
-             ayrıca kural gerekmez. -->
-        <span id="durum-rozet"><i class="nokta-yesil"></i> Oturum Aktif</span>
+             stroke/fill currentColor: düğmenin rengini izler. -->
         <!-- ARŞİV: PROJE_HAFIZASI'ndaki kayıtlı çalışmalar. Birine basınca
              o çalışma kaldığı yerden açılır (app.js: calismalarAc). -->
         <div id="calismalar-kap">

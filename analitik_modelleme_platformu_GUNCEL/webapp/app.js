@@ -83,13 +83,11 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 const GORSEL = {
     banner:     getWebAppBackendUrl("gorsel/banner"),
     logoAcik:   getWebAppBackendUrl("gorsel/logo_acik"),
-    logoKoyu:   getWebAppBackendUrl("gorsel/logo_koyu"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
     user:       getWebAppBackendUrl("gorsel/user"),
     zeminAcik:  getWebAppBackendUrl("gorsel/zemin_acik"),
-    zeminKoyu:  getWebAppBackendUrl("gorsel/zemin_koyu"),
 };
 /* ÖNCEDEN YÜKLE: avatar görselleri ilk kullanımda sunucudan inerken
    avatar geç değişiyordu; açılışta tarayıcı önbelleğine alınır. */
@@ -129,7 +127,6 @@ const sekmeler    = Array.from(document.querySelectorAll(".sekme"));
 
 const analizGovde = document.getElementById("analiz-govde");
 const analizSekme = Array.from(document.querySelectorAll(".analiz-sekme"));
-const durumRozet = document.getElementById("durum-rozet");
 
 let FAZLAR = [];
 let DUZ_ADIMLAR = [];          // sira -> {anahtar, no, baslik, aciklama}
@@ -180,20 +177,15 @@ const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 bannerEl.src = GORSEL.banner;
 bannerEl.onerror = () => { bannerEl.style.display = "none"; };
 
-/* ÜRÜN LOGOSU: iki görsel de yüklenir, tema hangisinin görüneceğini CSS
-   ile seçer (geçişte bekleme yok). Logo alanı baştan yerinde, yazı gizli;
-   biri yüklenemezse başlık bloğu yazıya döner: "Akıllı Modelleme
-   Platformu" ve birim adı. */
+/* ÜRÜN LOGOSU: logo alanı baştan yerinde, yazı gizli; görsel
+   yüklenemezse başlık bloğu yazıya döner: "Akıllı Modelleme Platformu"
+   ve birim adı. */
 (function logoYukle() {
     const blok = document.getElementById("baslik-blok");
-    const acik = document.getElementById("urun-logo-acik");
-    const koyu = document.getElementById("urun-logo-koyu");
-    if (!blok || !acik || !koyu) return;
-    const yaziya = () => { blok.classList.add("yazili"); };
-    [[acik, GORSEL.logoAcik], [koyu, GORSEL.logoKoyu]].forEach(([el, url]) => {
-        el.onerror = yaziya;
-        el.src = url;
-    });
+    const logo = document.getElementById("urun-logo-acik");
+    if (!blok || !logo) return;
+    logo.onerror = () => { blok.classList.add("yazili"); };
+    logo.src = GORSEL.logoAcik;
 })();
 
 
@@ -248,57 +240,9 @@ function baslikBuyuk(s) {
 }
 
 
-/* ==================== Tema ==================== */
-/* Dataiku artifact'inda localStorage calismadigi icin tercih degiskende
-   tutuluyor; sayfa yenilenince acik temaya doner.
-   Ikon o an gecilecek temayi gosterir: aydinlikta ay, karanlikta gunes. */
-let koyuTema = false;
-const temaBtn = document.getElementById("tema-btn");
-
-const AY_IKON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" '
-    + 'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" '
-    + 'stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>';
-
-const GUNES_IKON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" '
-    + 'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" '
-    + 'stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"></circle>'
-    + '<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4'
-    + 'M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
-
-function temaUygula() {
-    kabukEl.classList.toggle("koyu", koyuTema);
-    temaBtn.innerHTML = koyuTema ? GUNES_IKON : AY_IKON;
-    temaBtn.title = koyuTema ? "Açık tema" : "Koyu tema";
-    sohbetAlan.style.setProperty(
-        "--sohbet-gorsel",
-        "url('" + (koyuTema ? GORSEL.zeminKoyu : GORSEL.zeminAcik) + "')");
-}
-temaBtn.onclick = () => { koyuTema = !koyuTema; temaUygula(); };
-
-[GORSEL.zeminAcik, GORSEL.zeminKoyu].forEach(u => { const i = new Image(); i.src = u; });
-temaUygula();
-
-
-/* ==================== Durum rozeti ==================== */
-/* Rozet son isteğin sonucunu gosterir; backend cokse yesil kalmaz. */
-/* Rozet OTURUMUN DURUMUNU gosterir: webapp arka uca ulasabiliyor mu?
-   Mesguliyet
-   zaten gonder dugmesinin ve aksiyonlarin kilitlenmesinden belli. */
-const ROZET_METIN = {
-    hazir:  "Oturum Aktif",
-    hata:   "Bağlantı Yok"
-};
-
-function rozetGuncelle(kod) {
-    if (!durumRozet) return;
-    const metin = ROZET_METIN[kod] || ROZET_METIN.hazir;
-    const nokta = durumRozet.querySelector(".nokta-yesil");
-    durumRozet.textContent = "";
-    if (nokta) durumRozet.appendChild(nokta);
-    durumRozet.appendChild(document.createTextNode(" " + metin));
-    durumRozet.classList.toggle("hata", kod === "hata");
-    durumRozet.title = aktifMod ? ("Çalışma modu: " + aktifMod) : "Çalışma modu seçilmedi";
-}
+/* ==================== Sohbet zemini ==================== */
+/* Tek tema (açık); koyu tema kaldırıldı. */
+sohbetAlan.style.setProperty("--sohbet-gorsel", "url('" + GORSEL.zeminAcik + "')");
 
 
 /* ==================== Sayfa geçişi ==================== */
@@ -6068,8 +6012,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
    dondurdugunde balon hic acilmiyor, ekranda "TAMAM" benzeri bir
    gurultu satiri kalmiyor.
 
-   Yeni renk degiskeni TANIMLANMIYOR; kart mevcut paletle ciziliyor,
-   koyu tema #kabuk.koyu degisken devriyle kendiliginden calisiyor.
+   Yeni renk degiskeni TANIMLANMIYOR; kart mevcut paletle ciziliyor.
    Ekrandaki her ad kullanicinin kendi verisinden gelir; sabit ornek
    veri seti / sozluk / kolon adi YOK. */
 const DG_EKSIK_NOTU = "Sözlüğe eklenecek kolonların ve uygulanacak düzeltmelerin "
@@ -10780,7 +10723,6 @@ function yanitUygula(d, metin) {
        adım geçince şeride döner. */
     if (!hataMi) analizOtoGuncelle(d.secim_alani, d.adim_anahtari, d.bekleyen);
     ozetGuncelle(d.ozet);
-    rozetGuncelle(hataMi ? "hata" : "hazir");
 }
 
 
@@ -10983,7 +10925,6 @@ function gonder(metinDisaridan, etiket, ekGovde) {
         bekleyenGonderim = null;
         if (istekDurumu === "sifirla") return;   // sifirlama ekrani zaten kuruyor
         kartlariGeriAl();
-        rozetGuncelle("hata");
 
         if (istekDurumu === "zamanasimi") {
             durumuYokla(balonEkle("bot",
@@ -11255,7 +11196,6 @@ function calismaAc(kimlik) {
         yanitUygula(d, metin);
     })
     .catch(e => {
-        rozetGuncelle("hata");
         balonEkle("bot", "Bağlantı hatası: " + e, true);
     });
 }
@@ -11309,7 +11249,6 @@ function sifirlaUygula() {
         sayfaAc("calisma");
     })
     .catch(e => {
-        rozetGuncelle("hata");
         balonEkle("bot", "Oturum sıfırlanamadı: " + e, true);
     })
     .finally(() => { kilitle(false); });
