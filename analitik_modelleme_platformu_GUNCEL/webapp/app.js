@@ -89,6 +89,7 @@ const GORSEL = {
     user:       getWebAppBackendUrl("gorsel/user"),
     zeminAcik:  getWebAppBackendUrl("gorsel/zemin_acik"),
     arkaPlan:   getWebAppBackendUrl("gorsel/arka_plan"),
+    kurumLogo:  getWebAppBackendUrl("gorsel/kurum_logo"),
 };
 /* ÖNCEDEN YÜKLE: avatar görselleri ilk kullanımda sunucudan inerken
    avatar geç değişiyordu; açılışta tarayıcı önbelleğine alınır. */
@@ -245,6 +246,13 @@ function baslikBuyuk(s) {
 /* Çerçeveli görsel sayfanın tamamını kaplar; uygulama çerçevenin iç
    alanında durur (style.css: --arka-plan, #kabuk). */
 document.documentElement.style.setProperty("--arka-plan", "url('" + GORSEL.arkaPlan + "')");
+(function kurumLogosu() {
+    const el = document.getElementById("kurum-logo");
+    if (!el) return;
+    el.onload = () => { el.hidden = false; };
+    el.onerror = () => { el.hidden = true; };
+    el.src = GORSEL.kurumLogo;
+})();
 
 /* ==================== Sohbet zemini ==================== */
 /* Tek tema (açık); koyu tema kaldırıldı. */

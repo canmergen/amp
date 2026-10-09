@@ -185,21 +185,33 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
-/* ARKA PLAN: cerceveli gorsel sayfanin TAMAMINI kaplar (gerilerek; kirpilirsa
-   cerceve kenarlari ekrandan tasar). Uygulama cercevenin IC ALANINDA durur.
-   Ic alanin sinirlari gorselde olculdu (1672 x 941 piksel): ic cizgi solda
-   69, sagda 1602, ustte 72, altta 860. Alt ortadaki suslemenin kivilcimlari
-   (823 - 856) uygulamanin altinda kalir (kullanici karari: alan once).
-   Gorsel gerildigi icin sinirlar ekranin eni (vw) ve boyu (vh) oraninda. */
+/* ARKA PLAN: cerceveli gorsel sayfanin TAMAMINI kaplar. Gorsel 2:1
+   (tarayici alaninin tipik orani): gerilme cogu ekranda %1 - 5, cizim
+   yamulmaz. Dis kenarda bosluk yok. Uygulama cercevenin IC ALANINDA durur.
+   Ic alanin sinirlari gorselde olculdu (1774 x 887 piksel): ic cizgi solda
+   54, sagda 1719, ustte 57, altta 820. Alt ortadaki suslemenin kivilcimlari
+   (801 - 816) uygulamanin altinda kalir (kullanici karari: alan once).
+   Sinirlar ekranin eni (vw) ve boyu (vh) oraninda. */
 :root {
-  --cerceve-sol: calc(69 / 1672 * 100vw);
-  --cerceve-sag: calc((1672 - 1602) / 1672 * 100vw);
-  --cerceve-ust: calc(72 / 941 * 100vh);
-  --cerceve-alt: calc((941 - 860) / 941 * 100vh);
+  --cerceve-sol: calc(54 / 1774 * 100vw);
+  --cerceve-sag: calc((1774 - 1719) / 1774 * 100vw);
+  --cerceve-ust: calc(57 / 887 * 100vh);
+  --cerceve-alt: calc((887 - 820) / 887 * 100vh);
   --cerceve-ara: 2px;          /* cizgi ile uygulama arasi */
 }
+/* KURUM LOGOSU: ust bantta iki elin arasindaki bos yuva (gorselde x 799 -
+   972, bant 0 - 57; ortasi gorselin ortasi). Logo yuvanin %88 enine ve
+   bandin %55 boyuna sigar, orani korunur. */
+#kurum-logo {
+  position: fixed; left: 50%; top: calc(57 / 2 / 887 * 100vh);
+  transform: translate(-50%, -50%);
+  height: calc(57 / 887 * 100vh * 0.55);
+  max-width: calc(174 / 1774 * 100vw * 0.88);
+  width: auto; object-fit: contain;
+  pointer-events: none; user-select: none;
+}
 body {
-  background-color: #FEFEFA;   /* gorselin ic zemini; gorsel gelmezse */
+  background-color: #FEFEFE;   /* gorselin ic zemini; gorsel gelmezse */
   background-image: var(--arka-plan, none);
   background-size: 100% 100%;
   background-position: center;
