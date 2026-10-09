@@ -1,6 +1,45 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Yeni adımlar: Sözlük ve Kolon Adı Kontrolü (seçim) ve Açıklama Düzenleme**. Değiştir: `fe_agent/aciklama_duzen.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_sohbet.py`, `fe_agent/akis.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/kisaltma_okuma.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Bu tur: **01.2.4'ün alt adımları 01.2.4.1 – 01.2.4.4; üst bar tasarımı; sohbet notu ortada; avatar ve blok başlığı büyüdü**. Değiştir: `fe_agent/akis_kayit.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md`; yalnız yorumlardaki adım numaraları: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/aciklama_duzen.py`, `fe_agent/amp.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma_okuma.py`, `fe_agent/kisaltma.py`, `fe_agent/donem.py` (backend yeniden başlatılmalı: iş akışı ağacı alt adım bilgisini arka uçtan alıyor)
+
+Yeni numaralar (A ve B modunda aynı):
+01.2.4 Sözlük ve Kolon Adı Kontrolü
+  01.2.4.1 Dönem Bilgisi
+  01.2.4.2 Açıklama Düzenleme
+  01.2.4.3 Kısaltma Sözlüğü
+  01.2.4.4 Yeni Kolon Adları
+01.3 Değişken Listesi ve Tip Kontrolü
+Adım sırası, geri dönüş, kayıtlar ve eski çalışmalar değişmedi; yalnız
+numara ve görünüm değişti.
+
+- Sol panel: 01.2.4'ün alt adımları karar verilene kadar kapalı.
+  «Sözlük ve Kolon Adları Kontrol Edilsin» (A) seçilince açılır ve akış
+  01.2.4.1 Dönem Bilgisi'ne geçer. «Kontrol Edilmeden Geçilsin» (B)
+  seçilirse kapalı kalır. 01.2.4'e geri dönülünce yeniden kapanır.
+- 01.2.4 satırının sağındaki ok (›) alt adımları elle açıp kapatır. B
+  seçildiyse alt adımlar gri ve kesik işaretli görünür ("atlandı"),
+  tıklanmaz.
+- Sohbet: B seçilince dört alt adımın "atlandı" satırları gösterilmez;
+  01.2.4 bloğu bunu zaten yazıyor. Alt adım bloklarının başlıkları
+  01.2.4.1 ... 01.2.4.4.
+- Sohbet kilit notu ("Sohbet, Değişken Mühendisliği adımında açılır...")
+  kutunun ortasında; iki yandaki boşluk eşit.
+- Sohbet blok başlığındaki avatar 40 → 42 px, yanındaki blok başlığı
+  (ör. "01.2 Veri Seti, Sözlük ve Kolon Rolleri") 15 → 16,5 px. Alt
+  adım başlıkları (01.2.1 ...) 15 px kaldı.
+- Üst bar (içerik ve yerleşim aynı):
+  - Sekme kümeleri aynı yükseklikte (40 px), segment görünümünde:
+    kutuların kendi kenarı yok, gri kümenin içinde ince gölgeli beyaz
+    yüzeyler; üstüne gelince açık kırmızı, seçili kutu kırmızı.
+  - MODEL AKIŞI ile kutular arasındaki ayraç kısa ince çizgi.
+  - SOHBET ve DASHBOARD: tek kesik kenar (önce iç içe iki kenar vardı),
+    gri zemin, kilit ikonu, tıklanmaz.
+  - Sağdaki 2 × 2: düğmeler 22 → 24 px, sekmelerle aynı gölge. Oturum
+    Aktif artık düğmeye benzemiyor: açık yeşil zeminli yuvarlak durum
+    rozeti; bağlantı yoksa kırmızı.
+  - 1024 – 1920 px genişliklerde taşma yok; koyu temada da denendi.
+
+Önceki tur: **Yeni adımlar: Sözlük ve Kolon Adı Kontrolü (seçim) ve Açıklama Düzenleme**. Değiştir: `fe_agent/aciklama_duzen.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_sohbet.py`, `fe_agent/akis.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/kisaltma_okuma.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni sıra (A; B'de aynı adımlar Eksik Sözlük Tanımları'ndan sonra):
 01.2.4 Sözlük ve Kolon Adı Kontrolü -> 01.2.5 Dönem Bilgisi -> 01.2.6
@@ -53,7 +92,7 @@ seçim yok, kontrol yapılmış sayılır.
 - Düzeltme: Dönem Bilgisi taramasında dönem kısaltması olmayan bölümün
   boş cevabı ("hiçbiri") hata sayılıyordu; artık geçerli cevap.
 
-Önceki tur: **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taraması**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce: **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taraması**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Yeni biçim: harf + sayı + harf (ör. <H><N><H>); aynı harflerle olanlar
   tek kalıpta toplanır (harf + "<N>" + harf).
@@ -72,7 +111,7 @@ seçim yok, kontrol yapılmış sayılır.
   anlama değil "Not:" satırına yazılır. Önceki istemdeki örnek bu hatayı
   öğretiyordu, düzeltildi.
 
-Daha önce: **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (2): **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Elle eklenen kalıp kolon adlarında geçmiyorsa ("Adlarda yok") onay
   düğmesi kapanır ve sebebi yazar; arka uç da reddeder. <N> / <NN>
@@ -81,7 +120,7 @@ Daha önce: **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. 
   parçası) bu adımın işi değil; kısaltma sözlüğü yeniden kurulunca
   orada eklenecek.
 
-Daha önce (2): **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (3): **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "Dönem Değil" sütunu kalktı, yerine "Hafızaya Kaydet": işaretli satırın
   anlamı kısaltma hafızasına yazılır, sonraki çalışmalarda dolu gelir.
@@ -101,7 +140,7 @@ Daha önce (2): **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi
   DONEM_BILGISI.json'u varsa anlamlı kayıtları bir kez buraya taşınır ve
   dosya silinir. Kısaltma ve ad ilkesi yazımları bu bölümü korur.
 
-Daha önce (3): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (4): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "+ Dönem Kalıbı Ekle": listede olmayan dönem parçası kalıbı ve
   anlamıyla elle eklenir. Kalıp büyük harfe çevrilir; adlarda aynen
@@ -116,7 +155,7 @@ Daha önce (3): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek
   bilgi olur (parca_bilgisi) ve hafızadakinden farklıysa onaylı kısaltma
   hafızasına yazılır.
 
-Daha önce (4): **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (5): **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni yapı (konuşulan plan): 01.2.1–01.2.3 aynı; 01.2.4 Dönem Bilgisi
 (bu tur); sonra 01.2.5 Açıklama Düzenleme (sonraki tur), Kısaltma

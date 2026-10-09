@@ -1,6 +1,6 @@
-"""KISALTMA SOZLUGU (01.2.7) ve YENI KOLON ADLARI (01.2.8).
+"""KISALTMA SOZLUGU (01.2.4.3) ve YENI KOLON ADLARI (01.2.4.4).
 
-Okunan tanimlar Aciklama Duzenleme (01.2.6) onaylandiysa DUZELTILMIS
+Okunan tanimlar Aciklama Duzenleme (01.2.4.2) onaylandiysa DUZELTILMIS
 aciklamalardir (sozlugun calisma kopyasi).
 
 SOZLUK KESIN DOGRUDUR. Kolon adlarindaki kisaltmalarin anlami yalniz

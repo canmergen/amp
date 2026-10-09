@@ -131,7 +131,7 @@ def amp_yaz(durum, prof):
         "dusen": dusen_kolonlar(durum, list(kolonlar)),
         "hedef": (durum.get("meta") or {}).get("target"),
         "bolme": None,
-        # Kullanicinin onayladigi kolon adlari (01.2.5 Yeni Kolon Adlari);
+        # Kullanicinin onayladigi kolon adlari (01.2.4.4 Yeni Kolon Adlari);
         # rol ve surec disi kolonlar haric. Girdi tabloya dokunulmaz.
         "yeniden_ad": yeniden_ad_esleme(durum, list(kolonlar)),
     }

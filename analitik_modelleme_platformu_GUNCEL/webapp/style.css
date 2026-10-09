@@ -29,14 +29,16 @@
      basliklar buyuktur. Tek istisna ust bar dugmeleri (--fs-ustbar):
      sekmeler 64 px'lik barda tek sirada sigmali. Ikon karakterleri (×, +,
      ok, i) kutularina gore sabit px alir. --fs-kucuk, --fs-etiket,
-     --fs-buyuk, --fs-blok eski adlar: ayni iki degere baglidir. */
+     --fs-buyuk eski adlar: ayni iki degere baglidir. TEK ISTISNA
+     --fs-blok: sohbetteki blok basligi (avatarin yanindaki "01.2 ...")
+     baslik boyutundan 1,5 px buyuk; alt adim basliklari (.alt-ad) 15. */
   --fs-govde:  13.5px;   /* her metin */
   --fs-baslik: 15px;     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
   --fs-ustbar: 12px;     /* yalniz ust bar sekmeleri ve sagdaki dugmeler */
   --fs-kucuk:  var(--fs-govde);
   --fs-etiket: var(--fs-govde);
   --fs-buyuk:  var(--fs-baslik);
-  --fs-blok:   var(--fs-baslik);
+  --fs-blok:   16.5px;    /* yalniz sohbet blok basligi (.blok-ad) */
 
   --fw-normal: 400;
   --fw-kalin:  700;
@@ -57,6 +59,7 @@
   --serit:     3px;      /* kart solundaki marka vurgu cubugu */
   --halka:     2px;      /* odak ve hover halkasi kalinligi */
   --golge-1:   0 1px 2px rgba(16,24,40,.06);
+  --ust-golge: 0 1px 2px rgba(16,24,40,.10);   /* üst bar kutuları */
   --golge-2:   0 5px 13px rgba(16,24,40,.10);
 
   /* ===== RENK - zemin notr, kirmizi yalnizca vurgu ===== */
@@ -172,7 +175,7 @@
   /* BLOKLAR EŞİT VE TAM GENİŞLİK: sohbet sütununun tamamını kaplarlar.
 */
   --balon-en:     100%;
-  --avatar-en:    40px;          /* sohbet avatarı: 34 küçük, 48 fazla büyük kaldı */
+  --avatar-en:    42px;          /* sohbet avatarı: 34 küçük, 48 fazla büyük kaldı; yazılar büyüyünce 40 → 42 */
   --avatar-ara:   10px;          /* avatar ile blok arası */
   /* Ardisik balonlar arasindaki SABIT dikey aralik. Bot/kullanici,
      balon/kart ayrimi gozetmeden hepsi ayni bosluga sahip. */
@@ -214,6 +217,7 @@
   --gonder-metin: #000000;
 
   --golge-1:   0 1px 2px rgba(0,0,0,.6);
+  --ust-golge: none;
   --golge-2:   0 5px 13px rgba(0,0,0,.7);
 
   --yesil:        #34B86E;
@@ -343,11 +347,13 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 #tema-btn, .cekmece-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; padding: 0;
+  width: 24px; height: 24px; padding: 0;
   border: 1px solid var(--kenar); background: var(--yuzey);
   border-radius: var(--r-kucuk); cursor: pointer; color: var(--metin); flex-shrink: 0;
+  box-shadow: var(--ust-golge);
+  transition: background .12s, color .12s, border-color .12s;
 }
-#tema-btn svg, .cekmece-btn svg { width: 12px; height: 12px; }
+#tema-btn svg, .cekmece-btn svg { width: 13px; height: 13px; }
 #tema-btn:hover, .cekmece-btn:hover {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
@@ -359,12 +365,14 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 /* Görünür
    etiket ve daha geniş gövde kasıtlı: komşusuna benzemesin. */
 #sifirla-btn, #calismalar-btn {
-  display: flex; align-items: center; gap: 5px;
-  height: 22px; padding: 0 var(--b-2);
+  display: flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 var(--b-3);
   border: 1px solid var(--kenar); background: var(--yuzey);
   border-radius: var(--r-kucuk); cursor: pointer; color: var(--metin);
   flex-shrink: 0; font-family: var(--font);
   font-size: var(--fs-ustbar); font-weight: var(--fw-kalin); white-space: nowrap;
+  letter-spacing: .01em; box-shadow: var(--ust-golge);
+  transition: background .12s, color .12s, border-color .12s;
 }
 /* SVG ikon: yüksekliği düğmenin metin satırına oturur. width/height
    birlikte verilmezse Safari intrinsic boyut uydurup ikonu şişiriyor. */
@@ -429,61 +437,80 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    DASHBOARD blokları. Renkler: gri zemin üstünde beyaz kutular, üstüne
    gelince açık kırmızı, seçili kutu kırmızı. Küme başlığı kutularla
    AYNI yazı tipi ve puntoda, kutusuz kırmızı yazı (düğme sanılmasın).
-   Kutular arası 2 px, kümeler arası 6 px: yapışık değil, dağınık da değil. */
+
+   SEGMENT GÖRÜNÜMÜ: kutuların kendi kenarı yok, gri kümenin içinde ince
+   gölgeli beyaz yüzeyler; böylece "kutu içinde kutu" kalabalığı yerine
+   tek bir çizgi okunuyor. Bütün kümeler AYNI yükseklikte (40 px),
+   kümeler arası 8 px. Sağdaki 2 × 2 düğmeleri de aynı gölge ve
+   yarıçapı taşır. */
 #ust-sekmeler {
   flex: 1; min-width: 0;
   display: flex; align-items: center; justify-content: center;
-  gap: 6px; padding: 0 var(--b-3);
+  gap: 8px; padding: 0 var(--b-3);
 }
 .ust-kume {
-  display: flex; align-items: stretch; gap: 2px; min-width: 0;
-  padding: 3px; border: 1px solid var(--kenar); border-radius: var(--r);
+  display: flex; align-items: center; gap: 3px; min-width: 0;
+  height: 40px; padding: 0 4px;
+  border: 1px solid var(--kenar); border-radius: 9px;
   background: var(--kenar-acik);
 }
 .ust-kume-ad, .ust-sekme {
   /* Üst bar düğmeleri küçük boyutta (sağdaki Arşiv / Yeni Çalışma /
      Oturum Aktif ile aynı): kutular tek sırada sığmalı. */
-  height: 30px; padding: 0 11px; white-space: nowrap;
+  height: 30px; padding: 0 12px; white-space: nowrap;
   font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
-  letter-spacing: var(--etiket-aralik);
+  letter-spacing: .04em;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  border-radius: var(--r-kucuk);
+  border-radius: var(--r);
 }
 .ust-kume-ad {
-  /* Düğme değil, kümenin ADI: kutusuz, kırmızı yazı; sağında ince ayraç
-     ile kutulardan ayrılır. Kutu görünümündeyken yanındaki AKIŞ ile iki
-     ayrı sekme gibi okunuyordu. */
+  /* Düğme değil, kümenin ADI: kutusuz, kırmızı yazı; sağında kısa ince
+     ayraç ile kutulardan ayrılır. Kutu görünümündeyken yanındaki AKIŞ
+     ile iki ayrı sekme gibi okunuyordu. */
+  position: relative;
   color: var(--kirmizi); background: none; border: none; border-radius: 0;
-  padding: 0 10px 0 8px; margin-right: 3px;
-  box-shadow: 1px 0 0 var(--kenar);
+  padding: 0 13px 0 9px; margin-right: 3px;
+}
+.ust-kume-ad::after {
+  content: ""; position: absolute; right: 0; top: 7px; bottom: 7px;
+  width: 1px; background: var(--kenar-guclu);
 }
 .ust-sekme {
   flex-shrink: 0; cursor: pointer; color: var(--metin);
-  border: 1px solid var(--kenar); background: var(--yuzey);
-  transition: background .12s, color .12s, border-color .12s;
+  border: 1px solid transparent; background: var(--yuzey);
+  box-shadow: var(--ust-golge);
+  transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
 }
 .ust-sekme:hover { border-color: var(--kirmizi-halka); color: var(--kirmizi); background: var(--kirmizi-acik); }
 .ust-sekme.aktif, .ust-sekme.aktif:hover {
   background: var(--kirmizi); border-color: var(--kirmizi); color: #fff;
+  box-shadow: 0 1px 3px var(--kirmizi-halka);
 }
 .ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: 1px; }
 /* KAPALI blok (SOHBET, DASHBOARD henüz yok): gri zemin, soluk gri yazı,
-   kilit ikonu; tıklanmaz. */
+   kesik kenar ve kilit ikonu; tıklanmaz. Kesik kenar kümenin kendisinde,
+   içteki kutu kenarsız: iki kenar iç içe görünmesin. */
+.ust-kume:has(> .ust-sekme.kapali) { border-style: dashed; border-color: var(--kenar-guclu); }
 .ust-sekme.kapali, .ust-sekme.kapali:hover {
-  cursor: not-allowed; color: #8A9099; background: var(--kenar-acik);
-  border-color: var(--kenar); border-style: dashed;
+  cursor: not-allowed; color: #8A9099; background: transparent;
+  border-color: transparent; box-shadow: none;
 }
 .ust-sekme.kapali svg { width: 12px; height: 12px; flex-shrink: 0; }
 /* Dar bar: ≤ 1536 px kutular sıkılaşır, ≤ 1366 px daha da sıkılaşır. */
 @media (max-width: 1536px) {
-  #ust-sekmeler { gap: 4px; padding: 0 var(--b-2); }
-  .ust-kume-ad, .ust-sekme { padding: 0 8px; }
+  #ust-sekmeler { gap: 6px; padding: 0 var(--b-2); }
+  .ust-kume-ad, .ust-sekme { padding: 0 9px; }
+  .ust-kume-ad { padding: 0 11px 0 7px; }
 }
 @media (max-width: 1366px) {
-  .ust-kume-ad, .ust-sekme { padding: 0 6px; }
+  #ust-sekmeler { gap: 4px; }
+  .ust-kume { padding: 0 3px; gap: 2px; }
+  .ust-kume-ad, .ust-sekme { padding: 0 7px; letter-spacing: .02em; }
+  .ust-kume-ad { padding: 0 9px 0 5px; }
 }
 
-/* Sağ: 2 × 2 (tema | Oturum Aktif / Arşiv | Yeni Çalışma). */
+/* Sağ: 2 × 2 (tema | Oturum Aktif / Arşiv | Yeni Çalışma). Satırlar
+   24 px, aralık 4 px: iki satır 52 px, 64 px'lik barda dengeli. */
 .ustbar-sag-izgara {
   display: grid; grid-template-columns: auto auto; gap: 4px;
   align-items: stretch;
@@ -506,15 +533,16 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 /* Çekmece düğmeleri yalnızca panelin gizlendiği dar ekranlarda görünür */
 .cekmece-btn { display: none; }
 
-/* "Yeni Çalışma" düğmesiyle AYNI kutu: aynı yükseklik, kenar, yarıçap ve
-   zemin. Tıklanabilir DEĞİL (düğme değil,
-   span) — imleç de değişmiyor, bu yüzden düğme sanılmıyor. */
+/* Durum: "Yeni Çalışma" ile aynı yükseklik ve yazı, ama DÜĞME DEĞİL
+   (span, tıklanmaz). Düğmelerden ayrışsın diye kenarsız, yuvarlak ve
+   açık yeşil zeminli bir durum hapı; bağlantı yoksa kırmızıya döner. */
 #durum-rozet {
   display: inline-flex; align-items: center; gap: 6px;
-  height: 22px; padding: 0 var(--b-2); flex-shrink: 0;
-  border: 1px solid var(--kenar); background: var(--yuzey);
-  border-radius: var(--r-kucuk);
+  height: 24px; padding: 0 var(--b-3); flex-shrink: 0;
+  border: 1px solid transparent; background: var(--yesil-acik);
+  border-radius: 999px;
   font-size: var(--fs-ustbar); font-weight: var(--fw-kalin); color: var(--metin); white-space: nowrap;
+  letter-spacing: .01em;
 }
 .nokta-yesil {
   width: 6px; height: 6px; border-radius: 50%;
@@ -523,7 +551,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 /* Rozet son isteğin sonucunu gösterir: backend cevap vermiyorsa yeşil kalmaz */
 #durum-rozet.mesgul .nokta-yesil { background: var(--sari); }
 #durum-rozet.hata   .nokta-yesil { background: var(--kirmizi); }
-#durum-rozet.hata { color: var(--kirmizi); }
+#durum-rozet.hata { color: var(--kirmizi); background: var(--kirmizi-acik); }
 
 /* ==================== SAYFA KABI ==================== */
 .sayfa { flex: 1; min-height: 0; width: 100%; }
@@ -696,6 +724,30 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   padding: 0 0 0 var(--b-3); border-left: 1px solid var(--kenar);
 }
 .faz-alt-adimlar li { padding: 3px 5px; }
+
+/* ALT ADIMLI SATIR (01.2.4 → 01.2.4.1 ...): sağdaki ok alt adımları
+   açar/kapatır; açıkken aşağı döner. Alt adımlar bir kademe daha
+   içeride, aynı işaret ve renk kurallarıyla. */
+.faz-adimlar li > .alt-ok {
+  flex-shrink: 0; margin-left: auto;
+  width: 18px; height: 18px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: var(--r-kucuk); background: none;
+  color: inherit; font: inherit; font-weight: var(--fw-kalin);
+  line-height: 1; cursor: pointer; transition: transform .15s, background .15s;
+}
+.faz-adimlar li > .alt-ok.acik { transform: rotate(90deg); }
+.faz-adimlar li > .alt-ok:hover { background: var(--kenar-acik); }
+.faz-adimlar li > .alt-ok:focus-visible {
+  outline: 2px solid var(--kirmizi); outline-offset: 1px;
+}
+/* Atlanan alt adım («Kontrol Edilmeden Geçilsin»): gri, kesik
+   çizgili işaret; tıklanmaz. */
+.faz-adimlar li.atlandi { color: var(--metin-tamam); }
+.faz-adimlar li.atlandi > .adim-isaret { border-style: dashed; }
+
+/* Sohbette atlanan alt adımın bloğu görünmez. */
+.alt-bolum.alt-gizli { display: none; }
 
 /* ==================== ORTA: ÇALIŞMA ALANI ==================== */
 #sohbet-alani {
@@ -1833,6 +1885,9 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 #giris-bolge.kilitli #giris {
   background: var(--yuzey-alt); border-style: dashed;
   box-shadow: none;
+  /* Gönder düğmesi gizli: iki yandaki boşluk eşit ki not kutunun tam
+     ortasında dursun. */
+  padding: 2px var(--b-4);
 }
 #giris-bolge.kilitli #kutu { cursor: not-allowed; }
 
@@ -1843,6 +1898,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   flex: 1; padding: 5px 0;
   font-size: var(--fs-govde); line-height: 1.5;
   color: var(--metin-soluk);
+  text-align: center;
   user-select: none;
 }
 .kutu-kilit-not strong {
@@ -3126,7 +3182,7 @@ span.bolme-cip { cursor: default; }
 .dg-parca-oge:hover:not(:disabled) { color: var(--kirmizi); text-decoration: underline; }
 .dg-parca-oge:disabled { cursor: default; color: var(--metin-soluk); }
 .dg-parca-oge.dg-parca-tabloda { color: var(--metin-soluk); font-weight: var(--fw-kalin); }
-/* Açıklama Düzenleme (01.2.6) */
+/* Açıklama Düzenleme (01.2.4.2) */
 .dg-acik-ust { display: flex; align-items: center; justify-content: space-between;
   gap: var(--b-2); flex-wrap: wrap; margin: var(--b-2) 0; }
 .dg-acik-suzgec { display: flex; flex-wrap: wrap; gap: var(--b-1); }

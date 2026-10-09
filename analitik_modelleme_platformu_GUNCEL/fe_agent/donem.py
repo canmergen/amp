@@ -1,4 +1,4 @@
-"""fe_agent/donem.py - 01.2.5 DONEM BILGISI.
+"""fe_agent/donem.py - 01.2.4.1 DONEM BILGISI.
 
 Aciklama duzenlemesinden ONCE kolon adlarindaki donem bilgisi netlesir.
 Kod yalniz KALIP bulur, anlam vermez (anlam kodda yazili degil):

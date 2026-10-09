@@ -718,7 +718,7 @@ def fazlar_endpoint():
         durum = _durum_al(anahtar)
         mod = durum.get("mod")
         return jsonify({
-            "fazlar": akis.faz_agaci(mod),
+            "fazlar": akis.faz_agaci(mod, durum),
             "toplam": len(akis.adim_sirasi(mod)),
             "mod": mod,
         })
@@ -796,7 +796,7 @@ def _yanit(durum, metin):
         # Sag panel sekmelerinin verisi
         "analiz": _analiz_verisi(durum),
         # Mod secilince faz agaci degisir; her yanitta guncel halini gonderiyoruz
-        "fazlar": akis.faz_agaci(mod),
+        "fazlar": akis.faz_agaci(mod, durum),
         "ozet": akis.ozet(durum),
         "detay": akis.detay(durum),
         # Idempotenslik: islenmis son tur numarasi (bkz. mesaj_endpoint)

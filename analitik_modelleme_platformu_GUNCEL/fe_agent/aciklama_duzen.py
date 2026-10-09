@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/aciklama_duzen.py - ACIKLAMA DUZENLEME (01.2.6).
+"""fe_agent/aciklama_duzen.py - ACIKLAMA DUZENLEME (01.2.4.2).
 
 NE YAPAR
   Her kolonun sozluk aciklamasi ANLAMI DEGISTIRILMEDEN duzeltilir:
@@ -159,7 +159,7 @@ def toklar(ad):
 
 def donem_konumlari(t, desenler=()):
     """Ad parcalarindan onayli donem kalibina uyanlarin sirasi. desenler:
-    01.2.5'te onaylanan kaliplarin derlenmis desenleri; aralik kalibi
+    01.2.4.1'de onaylanan kaliplarin derlenmis desenleri; aralik kalibi
     (<P><NN>_<NN>) iki parcayi birlikte kapsar."""
     konum = set()
     for i, p in enumerate(t):

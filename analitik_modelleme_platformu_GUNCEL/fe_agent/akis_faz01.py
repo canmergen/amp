@@ -1360,7 +1360,7 @@ def _aciklama_baglami(durum):
         baglam["hafiza"] = {}
     # KISALTMALAR: kesin (bu sozlukten daha once okunanlar) ve tahmini
     # (sozluk istatistigi, baska calismalar). ADIMLAR ONCEDEN CALISMAZ:
-    # Kisaltma Sozlugu'nun okumasi burada BASLAMAZ (01.2.4 acilinca
+    # Kisaltma Sozlugu'nun okumasi burada BASLAMAZ (01.2.4.3 acilinca
     # baslar); burada yalniz kayitli okuma sonuclari kullanilir.
     try:
         kaynak = dict(baglam["hafiza"])
@@ -1373,7 +1373,7 @@ def _aciklama_baglami(durum):
             kisaltma_okuma.baglam_kisaltmalari(okunacak)
     except Exception:
         baglam["kisaltmalar"], baglam["kisaltmalar_tahmini"] = {}, {}
-    # 01.2.4'te onaylanan anlamlar KESIN (tanim kontrolu bunlarla yapilir).
+    # 01.2.4.3'te onaylanan anlamlar KESIN (tanim kontrolu bunlarla yapilir).
     onayli = _onayli_anlamlar(durum)
     if onayli:
         baglam["kisaltmalar"] = dict(baglam["kisaltmalar"], **onayli)
@@ -1381,7 +1381,7 @@ def _aciklama_baglami(durum):
             k: v for k, v in baglam["kisaltmalar_tahmini"].items() if k not in onayli}
     # YANLIS KISALTMA NOTU: hafizada genel anlamiyla duran ama bir veri
     # setinde baska anlamda kullanilmis kisaltma kesin degil DIKKAT olarak
-    # gider (bu calismada 01.2.4'te karar verildiyse o karar kesindir).
+    # gider (bu calismada 01.2.4.3'te karar verildiyse o karar kesindir).
     try:
         notlar = kisaltma_mod.onayli_notlar()
     except Exception:
@@ -1495,7 +1495,7 @@ KISALTMA_SUTUNLAR = (
 
 
 def _kisaltma_alani(durum):
-    """01.2.7 kartinin Kisaltma Sozlugu bolumu (beklemez). Okuma ya da
+    """01.2.4.3 kartinin Kisaltma Sozlugu bolumu (beklemez). Okuma ya da
     oneriler surerken satirlar kilitli gelir, yoklamayla tazelenir."""
     imza, kolonlar, adlar = _kisaltma_isi(durum)
     d = kisaltma_okuma.durum(imza)
@@ -1543,7 +1543,7 @@ def _kisaltma_alani(durum):
 
 
 # ---------------------------------------------------------------------------
-# 01.2.5 YENI KOLON ADLARI (yalniz kod): Kisaltma Sozlugu'nde secilen
+# 01.2.4.4 YENI KOLON ADLARI (yalniz kod): Kisaltma Sozlugu'nde secilen
 # kisaltmalar kolon bazli eslemeyle adlara uygulanir.
 # ---------------------------------------------------------------------------
 KOLON_AD_BASLIK = ADIM_ADI["kolon_ad"]
@@ -1635,7 +1635,7 @@ def _kolon_adlarini_denetle(durum, satirlar):
 
 
 def _onayli_anlamlar(durum):
-    """01.2.7'de kesinlesen kisaltma anlamlari (sozlukten okunanlar +
+    """01.2.4.3'te kesinlesen kisaltma anlamlari (sozlukten okunanlar +
     secilenler; proje genelindeki onayli hafiza altta). Adim henuz
     gecilmediyse None: cagiranlar varsayilan anlamlari kullanir."""
     sozluk = durum.get("kisaltma_sozluk")
@@ -1653,7 +1653,7 @@ def _onayli_anlamlar(durum):
 
 
 # ---------------------------------------------------------------------------
-# 01.2.5 DONEM BILGISI: kolon adlarindaki donem kaliplari; anlami dil modeli
+# 01.2.4.1 DONEM BILGISI: kolon adlarindaki donem kaliplari; anlami dil modeli
 # tanimlardan onerir, kullanici onaylar. Aciklama duzenlemesinin baglami.
 # ---------------------------------------------------------------------------
 DONEM_BASLIK = ADIM_ADI["donem"]
@@ -1705,7 +1705,7 @@ def _parca_alani(durum):
 
 
 def _donem_alani(durum):
-    """01.2.5 kartinin verisi (beklemez). Model surerken satirlar kilitli
+    """01.2.4.1 kartinin verisi (beklemez). Model surerken satirlar kilitli
     gelir, yoklamayla tazelenir."""
     liste, tara = _donem_girdisi(durum)
     imza = donem_mod.baslat(liste, tara) if (liste or tara) else ""
@@ -1927,7 +1927,7 @@ def sozluk_kontrol_uygula(durum):
 
 
 # ---------------------------------------------------------------------------
-# 01.2.6 ACIKLAMA DUZENLEME: her kolonun aciklamasi anlami degistirilmeden
+# 01.2.4.2 ACIKLAMA DUZENLEME: her kolonun aciklamasi anlami degistirilmeden
 # duzeltilir (bkz. aciklama_duzen). Onaylanan metin sozlugun CALISMA
 # KOPYASINA yazilir; Kisaltma Sozlugu ve Yeni Kolon Adlari bunu okur.
 # Adima ya da oncesine donulunce yazilanlar geri alinir.
@@ -2461,7 +2461,7 @@ def kisaltma_uygula(durum):
     """Sozlukten okunan anlamlar bu calismanin kisaltma sozlugune girer
     (durum["kisaltma_sozluk"]; sonraki adimlar bunlari KESIN kullanir).
     Secilen satirin anlami onaylanir: kisaltma hafizasina yazilir ve
-    onerilen kisaltmasi 01.2.8'de kolon adlarina uygulanir. Sozlukte
+    onerilen kisaltmasi 01.2.4.4'te kolon adlarina uygulanir. Sozlukte
     karsiligi bulunamayan parcanin anlami yalniz seciliyse kullanilir."""
     karar = durum.pop("_dogrulama_karari", None)
     if _kontrol_atlandi(durum):
@@ -2546,7 +2546,7 @@ def kisaltma_uygula(durum):
     durum["kisaltma_yeni"] = yeni
     durum["kisaltma_kararlari"] = kararlar
     durum["kisaltma_esleme"] = t["esleme"]
-    # AD ILKESI: 01.2.5 parcalari bu turlere ve kaliba gore dizer.
+    # AD ILKESI: 01.2.4.4 parcalari bu turlere ve kaliba gore dizer.
     durum["kisaltma_turleri"] = {a: k["tur"] for a, k in kararlar.items() if k["tur"]}
     durum["kisaltma_kalip"] = kalip
     durum.pop("_kolon_ad_karari", None)
@@ -3767,7 +3767,7 @@ def _kontrol_karti(durum, adlar, hata, basladi):
         "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
         "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
         # Kisaltma sozlugu ve kolon adi onerileri artik ayri adimlar
-        # (01.2.4 - 01.2.5); bu kart yalniz tanim kontrolu.
+        # (01.2.4.3 - 01.2.4.4); bu kart yalniz tanim kontrolu.
         "buton_kalip": dict(KONTROL_DUGME),
         "oneri_is": (durum.get("_kontrol_is") or "") if basladi else "",
         "oneri_toplam": 0,
@@ -3855,7 +3855,7 @@ def tanim_kontrol_baslat(durum):
                                               _onayli_anlamlar(durum))
         except Exception:
             celiski = {}
-        # BEKLENEN TANIM: 01.2.4'te onaylanan kisaltma
+        # BEKLENEN TANIM: 01.2.4.3'te onaylanan kisaltma
         # anlamlari satir basina gider; model kolon adindan beklenen tanimi
         # bunlarla kurup mevcut tanimla karsilastirir.
         onayli = _onayli_anlamlar(durum) or {}

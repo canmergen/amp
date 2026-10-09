@@ -134,6 +134,11 @@ let DUZ_ADIMLAR = [];          // sira -> {anahtar, no, baslik, aciklama}
 let aktifAdim = 0;
 let aktifMod = null;           // "A" | "B" | "C"
 let acikFazlar = new Set();
+/* Alt adımlı satırın elle açılıp kapanması: anahtar -> {durum, acik}.
+   Yalnız kaydedildiği altDurum sürerken geçerlidir; karar değişince
+   (ör. «Sözlük ve Kolon Adları Kontrol Edilsin» seçilince) varsayılan
+   duruma döner. */
+let altAcikElle = {};
 let mesgul = false;
 
 /* Hata olursa tiklanan kart grubunu / secim kartini eski haline dondurur */
@@ -614,6 +619,22 @@ function fazlariYukle(liste) {
     FAZLAR = liste || [];
     DUZ_ADIMLAR = [];
     FAZLAR.forEach(f => f.adimlar.forEach(a => { DUZ_ADIMLAR[a.sira] = a; }));
+    altBloklariniGuncelle();
+}
+
+/* ATLANAN ALT ADIMIN BLOĞU GİZLİ. «Kontrol Edilmeden Geçilsin»
+   seçilince 01.2.4.1 - 01.2.4.4 kapalı kalır; her birinin "atlandı"
+   satırı sohbette de görünmez (kontrol bloğu bunu zaten yazıyor).
+   Karar değişince (kontrol adımına dönülünce) bloklar zaten
+   transkriptten kırpılıyor. */
+function altBlokGizle(el) {
+    const konum = adimKonumu(el.dataset.adim);
+    el.classList.toggle("alt-gizli", satirAtlandi(konum && konum.satir));
+}
+
+function altBloklariniGuncelle() {
+    if (!sohbetEl) return;
+    sohbetEl.querySelectorAll(".alt-bolum[data-adim]").forEach(altBlokGizle);
 }
 
 /* GRUPLU ADIMLAR SOL PANELDE TEK SATIR. "Veri Seti ve
@@ -623,46 +644,88 @@ function fazlariYukle(liste) {
    tam listeye bakıyor. */
 function fazOgeleri(f) {
     const ogeler = [];
+    const yer = {};                     // anahtar -> {satir, oge}
     (f.adimlar || []).forEach(a => {
         const son = ogeler[ogeler.length - 1];
         const alt = { anahtar: a.anahtar, sira: a.sira, bitis: a.sira,
-                      baslik: a.baslik, aciklama: a.aciklama };
+                      baslik: a.baslik, aciklama: a.aciklama,
+                      adimlar: [a.anahtar], cocuk: [], ust: null,
+                      altDurum: a.alt_durum || "" };
+        /* ALT ADIM (bkz. akis_kayit.ALT_ADIMLAR): üst adımın satırının
+           altına girer ve 01.2.4.1 gibi alt numara alır. Üst adım ve onu
+           taşıyan satır, alt adımların bittiği yere kadar sürer. */
+        const ust = a.ust ? yer[a.ust] : null;
+        if (ust) {
+            alt.ust = ust.satir;
+            ust.satir.cocuk.push(alt);
+            [ust.satir, ust.oge].forEach(s => {
+                s.bitis = a.sira;
+                if (s.adimlar.indexOf(a.anahtar) === -1) s.adimlar.push(a.anahtar);
+            });
+            yer[a.anahtar] = { satir: alt, oge: ust.oge };
+            return;
+        }
         if (a.grup && son && son.grup === a.grup) {
             son.bitis = a.sira;          // gruba katıl
             son.adimlar.push(a.anahtar);
             son.alt.push(alt);
+            yer[a.anahtar] = { satir: alt, oge: son };
             return;
         }
-        ogeler.push({
+        const oge = {
             anahtar: a.anahtar, sira: a.sira, bitis: a.sira,
             grup: a.grup || "",
             baslik: a.grup ? (a.grup_baslik || a.baslik) : a.baslik,
             aciklama: a.aciklama,
             adimlar: [a.anahtar],
             alt: [alt]
-        });
+        };
+        ogeler.push(oge);
+        yer[a.anahtar] = { satir: alt, oge: oge };
     });
+    const kodla = (s, kod) => {
+        s.kod = kod;
+        s.cocuk.forEach((c, k) => kodla(c, kod + "." + (k + 1)));
+    };
     ogeler.forEach((o, i) => {
         o.kod = f.no + "." + (i + 1);
-        o.alt.forEach((x, j) => { x.kod = o.kod + "." + (j + 1); });
+        /* Tek adımlı satırın adımı satırın numarasını taşır. */
+        if (o.alt.length > 1) o.alt.forEach((x, j) => kodla(x, o.kod + "." + (j + 1)));
+        else kodla(o.alt[0], o.kod);
     });
     return ogeler;
 }
 
+function adimSatiriBul(satirlar, anahtar) {
+    for (let i = 0; i < satirlar.length; i++) {
+        if (satirlar[i].anahtar === anahtar) return satirlar[i];
+        const ic = adimSatiriBul(satirlar[i].cocuk || [], anahtar);
+        if (ic) return ic;
+    }
+    return null;
+}
+
+/* Alt adımın üst adımında «Kontrol Edilmeden Geçilsin» seçildiyse
+   adım atlanmıştır: sol panelde tıklanmaz, sohbetteki bloğu gizlenir. */
+function satirAtlandi(s) {
+    return !!(s && s.ust && s.ust.altDurum === "atlandi");
+}
+
 /* ADIM NUMARASI. Numara sol paneldeki SATIR sırasıdır; gruplu
-   satırın içindeki adımlar alt numara alır (01.2.1, 01.2.2). İş akışı,
-   sohbet başlıkları, Arşiv ve "kaldığı yerden yüklendi" mesajı aynı
-   numarayı kullanır. Doner: {fazIdx, faz, kod, altKod} ya da null. */
+   satırın içindeki adımlar alt numara alır (01.2.1, 01.2.2), alt
+   adımlar bir kademe daha (01.2.4.1). İş akışı, sohbet başlıkları,
+   Arşiv ve "kaldığı yerden yüklendi" mesajı aynı numarayı kullanır.
+   Doner: {fazIdx, faz, kod, altKod, satir} ya da null. */
 function adimKonumu(anahtar) {
     if (!anahtar) return null;
     for (let fi = 0; fi < FAZLAR.length; fi++) {
         const ogeler = fazOgeleri(FAZLAR[fi]);
         for (let oi = 0; oi < ogeler.length; oi++) {
-            const j = ogeler[oi].adimlar.indexOf(anahtar);
-            if (j === -1) continue;
+            if (ogeler[oi].adimlar.indexOf(anahtar) === -1) continue;
             const kod = ogeler[oi].kod;
+            const satir = adimSatiriBul(ogeler[oi].alt, anahtar);
             return { fazIdx: fi, faz: FAZLAR[fi], kod: kod,
-                     altKod: ogeler[oi].adimlar.length > 1 ? kod + "." + (j + 1) : kod };
+                     altKod: satir ? satir.kod : kod, satir: satir };
         }
     }
     return null;
@@ -771,6 +834,16 @@ function fazlariCiz() {
            — listelenir. */
         const satirKur = (a) => {
             const li = document.createElement("li");
+            /* ATLANAN ALT ADIM: «Kontrol Edilmeden Geçilsin» seçildi.
+               Tamamlandı sayılmaz ve tıklanmaz (sohbetteki bloğu gizli). */
+            if (satirAtlandi(a)) {
+                li.className = "atlandi";
+                li.title = tireSade(a.baslik) + ": atlandı (Sözlük ve Kolon Adı "
+                    + "Kontrolü'nde «Kontrol Edilmeden Geçilsin» seçildi)";
+                li.appendChild(elYap("span", "adim-isaret"));
+                li.appendChild(elYap("span", "", numarali(a.kod, a.baslik)));
+                return li;
+            }
             // Grup satırı: aktif adım grubun HERHANGİ bir adımıysa aktif.
             const tamamlandi = a.bitis < aktifAdim;
             const aktif = aktifAdim >= a.sira && aktifAdim <= a.bitis;
@@ -822,13 +895,50 @@ function fazlariCiz() {
             }
             return li;
         };
+        /* ALT ADIMLI SATIR (01.2.4 ve altında 01.2.4.1 ...). Alt adımlar
+           karar verilene kadar KAPALI, «Sözlük ve Kolon Adları Kontrol
+           Edilsin» seçilince AÇIK; «Kontrol Edilmeden Geçilsin»de kapalı
+           kalır. Satırın sağındaki ok elle açıp kapatır. */
+        const altlariEkle = (li, x) => {
+            if (!x.cocuk || !x.cocuk.length) return;
+            const elle = altAcikElle[x.anahtar];
+            const acik = (elle && elle.durum === x.altDurum)
+                ? elle.acik : x.altDurum === "acik";
+            li.classList.add("grup-satir", "ust-satir");
+            const ok = document.createElement("button");
+            ok.type = "button";
+            ok.className = "alt-ok" + (acik ? " acik" : "");
+            ok.textContent = "›";
+            ok.title = acik ? "Alt adımları gizle" : "Alt adımları göster";
+            ok.setAttribute("aria-expanded", acik ? "true" : "false");
+            ok.onclick = (e) => {
+                e.stopPropagation();
+                altAcikElle[x.anahtar] = { durum: x.altDurum, acik: !acik };
+                fazlariCiz();
+            };
+            li.appendChild(ok);
+            if (!acik) return;
+            const ic = elYap("ol", "faz-alt-adimlar");
+            x.cocuk.forEach(c => {
+                const cli = satirKur(c);
+                altlariEkle(cli, c);
+                ic.appendChild(cli);
+            });
+            li.appendChild(ic);
+        };
         adimlar.forEach(a => {
             const li = satirKur(a);
             if (a.alt && a.alt.length > 1) {
                 li.classList.add("grup-satir");
                 const altListe = elYap("ol", "faz-alt-adimlar");
-                a.alt.forEach(x => altListe.appendChild(satirKur(x)));
+                a.alt.forEach(x => {
+                    const xli = satirKur(x);
+                    altlariEkle(xli, x);
+                    altListe.appendChild(xli);
+                });
                 li.appendChild(altListe);
+            } else if (a.alt && a.alt.length === 1) {
+                altlariEkle(li, a.alt[0]);
             }
             liste.appendChild(li);
         });
@@ -4955,6 +5065,7 @@ function grupKabiAl(blok) {
     if (!bolum) {
         bolum = elYap("div", "alt-bolum");
         bolum.dataset.adim = blok.adim;
+        altBlokGizle(bolum);
         const bas = elYap("div", "alt-bas");
         bas.appendChild(elYap("span", "alt-ad",
                               numarali(konum ? konum.altKod : "", blok.baslik)));
@@ -6334,14 +6445,14 @@ function dogrulamaKartiEkle(alan, blok) {
         }
     }
 
-    /* ---- 5a) Kısaltma Sözlüğü (01.2.4) ve Yeni Kolon Adları (01.2.5) ----
+    /* ---- 5a) Kısaltma Sözlüğü (01.2.4.3) ve Yeni Kolon Adları (01.2.4.4) ----
        Ayrı adımlar, kendi kartlarında; karar birincil düğmeyle adımla
        birlikte gider (alan.adim). */
     const adimModu = alan.adim || "";
-    /* Dönem Bilgisi (01.2.4) */
+    /* Dönem Bilgisi (01.2.4.1) */
     const donErisim = alan.donem
         ? donemBolumuEkle(kart, alan.donem, !!(blok && blok.kilit), () => durumTazele()) : null;
-    /* Açıklama Düzenleme (01.2.6) */
+    /* Açıklama Düzenleme (01.2.4.2) */
     const acikErisim = alan.aciklama_duzen
         ? aciklamaBolumuEkle(kart, alan.aciklama_duzen, !!(blok && blok.kilit), () => durumTazele())
         : null;
@@ -7019,7 +7130,7 @@ function dogrulamaKartiEkle(alan, blok) {
     yeniOdak = birincil;
 }
 
-/* ==================== 01.2.5 Yeni Kolon Adları ====================
+/* ==================== 01.2.4.4 Yeni Kolon Adları ====================
    Kolon adlarını KOD üretir (Kısaltma Sözlüğü'nde seçilenlerle); kart bir
    önizlemedir: işareti kaldırılan kolon eski adıyla kalır, yeni ad
    düzenlenebilir. Karar birincil düğmeyle adımla birlikte gider. */
@@ -7110,7 +7221,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     };
 }
 
-/* ==================== 01.2.4 Kısaltma Sözlüğü ====================
+/* ==================== 01.2.4.3 Kısaltma Sözlüğü ====================
    SÖZLÜK KESİN DOĞRUDUR: kolon adlarındaki parçaların anlamı tanımlardan
    okunur; tablonun her satırı bir ANLAM. Aynı anlama giden kısaltmalar
    aynı satırda, iki anlamda kullanılan kısaltma iki satırda görünür.
@@ -7583,7 +7694,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     };
 }
 
-/* ==================== 01.2.6 Açıklama Düzenleme ====================
+/* ==================== 01.2.4.2 Açıklama Düzenleme ====================
    Her kolonun açıklaması, anlamı değiştirilmeden dil modeliyle düzeltilir.
    Satırlar arka plandaki işten yoklamayla gelir; satır, düzenlemesi
    bitince açılır. "Sizin Düzenlemeniz"e yazılan not alandan çıkınca
@@ -8078,7 +8189,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     };
 }
 
-/* ==================== 01.2.4 Dönem Bilgisi ====================
+/* ==================== 01.2.4.1 Dönem Bilgisi ====================
    Kolon adlarındaki dönem parçalarının kalıpları (kod bulur, anlam
    vermez); anlamı dil modeli tanımlardan okuyarak önerir, kullanıcı
    onaylar ya da düzeltir. "Hafızaya Kaydet" işaretli satırlar kısaltma

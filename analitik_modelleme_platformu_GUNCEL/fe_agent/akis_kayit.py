@@ -322,6 +322,34 @@ def adim_grubu(anahtar):
         return None, ""
     return grup, GRUP_BASLIKLARI.get(grup, "")
 
+# ===========================================================================
+# ALT ADIMLAR
+# ===========================================================================
+# Sozluk ve Kolon Adi Kontrolu'nun dort adimi sol panelde ve sohbet
+# basliklarinda kontrolun ALTINDA gorunur (01.2.4.1 - 01.2.4.4). Kontrol
+# yapilsin secilene kadar kapali durur; yapilmasin secilirse atlanir ve
+# kapali kalir. Yalnizca GORSELDIR: adim sirasi, sayimi ve geri donus
+# hedefi degismez.
+ALT_ADIMLAR = {
+    "donem": "sozluk_kontrol",
+    "aciklama": "sozluk_kontrol",
+    "kisaltma": "sozluk_kontrol",
+    "kolon_ad": "sozluk_kontrol",
+}
+
+
+def alt_adim_durumu(ust, durum, sira):
+    """Ust adimin alt adimlari: "acik" (kontrol yapilacak), "atlandi"
+    (kontrol yapilmayacak) ya da "" (karar yok; kapali). Karar ust adim
+    gecildiginde gecerlidir: ust adima donulunce alt adimlar yeniden
+    kapanir. sira: ust adimin adim_sirasi icindeki yeri."""
+    durum = durum or {}
+    if int(durum.get("i") or 0) <= sira:
+        return ""
+    if ust == "sozluk_kontrol":
+        return {"yap": "acik", "atla": "atlandi"}.get(durum.get("sozluk_kontrol"), "")
+    return "acik"
+
 SECIMLI = {"kural", "kesif"}
 
 def adim_sirasi(mod=None):
@@ -336,21 +364,29 @@ def fazlar(mod=None):
              "adimlar": FAZ01_ADIMLARI.get(mod, FAZ01_ADIMLARI[None])}] + \
         SONRAKI_FAZLAR
 
-def faz_agaci(mod=None):
+def faz_agaci(mod=None, durum=None):
+    """Sol panelin agaci. durum verilirse alt adimli adimlar alt
+    adimlarinin acik mi kapali mi oldugunu da tasir (bkz. ALT_ADIMLAR)."""
+    ustler = set(ALT_ADIMLAR.values())
     cikti, sayac = [], 0
     for f in fazlar(mod):
         adimlar = []
         for a in f["adimlar"]:
             sayac += 1
             grup, grup_baslik = adim_grubu(a)
-            adimlar.append({"anahtar": a, "sira": sayac - 1,
-                            "no": "%s.%d" % (f["no"].lstrip("0"), len(adimlar) + 1),
-                            "baslik": ADIMLAR[a]["baslik"],
-                            "aciklama": ADIMLAR[a].get("aciklama", ""),
-                            # Blok grubu: on yuz ardisik adimlari tek
-                            # blokta, alt basliklarla ciziyor.
-                            "grup": grup or "",
-                            "grup_baslik": grup_baslik})
+            oge = {"anahtar": a, "sira": sayac - 1,
+                   "no": "%s.%d" % (f["no"].lstrip("0"), len(adimlar) + 1),
+                   "baslik": ADIMLAR[a]["baslik"],
+                   "aciklama": ADIMLAR[a].get("aciklama", ""),
+                   # Blok grubu: on yuz ardisik adimlari tek
+                   # blokta, alt basliklarla ciziyor.
+                   "grup": grup or "",
+                   "grup_baslik": grup_baslik,
+                   # Alt adimsa ust adiminin anahtari.
+                   "ust": ALT_ADIMLAR.get(a, "")}
+            if a in ustler:
+                oge["alt_durum"] = alt_adim_durumu(a, durum, sayac - 1)
+            adimlar.append(oge)
         cikti.append({"no": f["no"], "baslik": f["baslik"],
                       "ozet": f["ozet"], "adimlar": adimlar})
     return cikti

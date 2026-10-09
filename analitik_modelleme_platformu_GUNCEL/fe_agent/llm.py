@@ -1579,7 +1579,7 @@ def turkcelestir(kayitlar, baglam=None, orkestra=None):
 
 
 # ===========================================================================
-# KISALTMA SOZLUGU (01.2.4)
+# KISALTMA SOZLUGU (01.2.4.3)
 # ===========================================================================
 # SOZLUK KESIN DOGRUDUR. Dil modeli iki is yapar:
 #   1) OKUMA: her kolonun adini tanimiyla esler; adin her parcasinin
@@ -1642,7 +1642,7 @@ def kisaltma_esle(girdi, orkestra=None):
 
 
 # ===========================================================================
-# DONEM BILGISI (01.2.4)
+# DONEM BILGISI (01.2.4.1)
 # ===========================================================================
 # Donem yorumu ve taramasinin ortak anlam kurallari.
 _DONEM_ANLAM_KURALLARI = """
@@ -1799,7 +1799,7 @@ def _orkestra_hatasi(ork, is_adi):
 
 
 # ---------------------------------------------------------------------------
-# ACIKLAMA DUZENLEME (01.2.6): her kolonun sozluk aciklamasi, anlami
+# ACIKLAMA DUZENLEME (01.2.4.2): her kolonun sozluk aciklamasi, anlami
 # degistirilmeden duzeltilir. Kaynak sirasi: kullanici notu > aile notu >
 # onayli parca anlamlari > orijinal. Belirsizlik soru, ad / dagilim
 # celiskisi not olarak doner; aciklama tahminle degistirilmez.
