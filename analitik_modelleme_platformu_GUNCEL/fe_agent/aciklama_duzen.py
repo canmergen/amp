@@ -50,6 +50,7 @@ PARALEL = 4            # ayni anda calisan cagri (arka plan)
 KARDES_ADET = 3        # baglama giden kardes kolon
 YAZMA_ARALIGI = 5.0    # sn: kayit dosyasi en cok bu siklikla yazilir
 EN_UZUN = 280          # bunun uzerindeki aciklama kartta isaretlenir
+IPTAL_YOKLAMA = 0.3    # sn: isci iptali bu aralikla yoklar
 
 _KILIT = threading.RLock()
 _DEPOLAR = {}          # klasor -> _Depo
@@ -90,6 +91,9 @@ class _Depo(object):
         self.son_imza = {}          # kolon -> son girdinin imzasi
         self.bekleyen = OrderedDict()
         self.ucusta = {}            # kolon -> islenen girdinin imzasi
+        self.dalgada = set()        # ucustakilerden arka plan isinin aldiklari
+        self.nesil = 0              # her iptalde artar; eski isci kendini bilir
+        self.gec = {}               # iptalde yolda kalan kolon -> imza (sonucu gelecek)
         self.sira = {}              # kolon -> son degisikligin sirasi (yoklama farki)
         self.sayac = 0
         self.calisiyor = False
@@ -342,9 +346,10 @@ def _bicimle(g, ham):
     return r
 
 
-def _isle(girdiler, ork):
+def _isle(girdiler, ork, durdu=None):
     """Bir grup kolonu dil modeline duzenletir; kod denetiminden gecmeyenler
-    bir kez daha sorulur. Doner: ({kolon: sonuc}, hata)."""
+    bir kez daha sorulur (is iptal edildiyse ikinci soru sorulmaz).
+    Doner: ({kolon: sonuc}, hata)."""
     try:
         ham, hata = llm_mod.aciklama_duzenle([_llm_girdisi(g) for g in girdiler], ork)
     except Exception as e:
@@ -362,7 +367,7 @@ def _isle(girdiler, ork):
         sonuc[g["kolon"]] = r
         if yen:
             yeniden.append((g, r, yen))
-    if yeniden and not hata:
+    if yeniden and not hata and not (durdu and durdu()):
         try:
             ham2, _h2 = llm_mod.aciklama_duzenle(
                 [_llm_girdisi(g, yen) for g, _r, yen in yeniden], ork)
@@ -393,13 +398,21 @@ def _sakla(d, girdiler, sonuc, hata):
     with _KILIT:
         for g in girdiler:
             kolon = g["kolon"]
-            d.ucusta.pop(kolon, None)
+            if d.ucusta.get(kolon) == g["imza"]:
+                d.ucusta.pop(kolon, None)
+                d.dalgada.discard(kolon)
+            if d.gec.get(kolon) == g["imza"]:
+                d.gec.pop(kolon, None)
             r = sonuc.get(kolon) or _hata_sonucu(hata)
             r["imza"] = g["imza"]
-            # Bu arada girdisi degisen kolonun eski sonucu yazilmaz.
+            # Bu arada girdisi degisen kolonun eski sonucu yazilmaz. Iptalden
+            # sonra gelen sonuc da yazilir (duzenlenen satir kalir); ayni
+            # girdinin sonucu zaten varsa bitenler iki kez sayilmaz.
             if d.son_imza.get(kolon) == g["imza"]:
+                onceki = d.sonuclar.get(kolon) or {}
+                if onceki.get("imza") != g["imza"] or onceki.get("kaynak") == "hata":
+                    d.biten_is += 1
                 d.sonuclar[kolon] = r
-                d.biten_is += 1
                 if d.bekleyen.get(kolon, {}).get("imza") == g["imza"]:
                     d.bekleyen.pop(kolon, None)
             d.dokun(kolon)
@@ -448,7 +461,8 @@ def _dalga_sec(d):
     for kolon, g in d.bekleyen.items():
         if len(secilen) >= PARCA * PARALEL:
             break
-        if kolon in d.ucusta:
+        # Iptalde yolda kalan ayni girdinin cevabi gelecek: yeniden sorulmaz.
+        if kolon in d.ucusta or d.gec.get(kolon) == g["imza"]:
             continue
         giden = aile_giden.get(g.get("aile")) or []
         if any(_aktarilabilir(x, g) is not None for x in giden):
@@ -458,17 +472,38 @@ def _dalga_sec(d):
     return secilen, aktarilan
 
 
-def _calis(d):
+def _dalga_sonucu(d, grup, f):
+    """Havuzdaki grubun sonucu (iptalden sonra gelse de saklanir; kuyrukta
+    beklerken iptal edilen grup hic islenmez, satirlari zaten bekleyende)."""
+    if f.cancelled():
+        with _KILIT:
+            for g in grup:
+                if d.gec.get(g["kolon"]) == g["imza"]:
+                    d.gec.pop(g["kolon"], None)
+        return
+    try:
+        sonuc, hata = f.result()
+    except Exception as e:
+        sonuc, hata = {}, "%s: %s" % (type(e).__name__, str(e)[:200])
+    _sakla(d, grup, sonuc, hata)
+
+
+def _calis(d, nesil):
     ork = llm_mod.Orkestra(arka=True)
+
+    def durdu():
+        with _KILIT:
+            return d.iptal or d.nesil != nesil
     try:
         while True:
             with _KILIT:
-                if d.iptal or not d.bekleyen:
+                if d.iptal or d.nesil != nesil or not d.bekleyen:
                     break
                 dalga, aktarilan = _dalga_sec(d)
                 for g in dalga:
                     d.bekleyen.pop(g["kolon"], None)
                     d.ucusta[g["kolon"]] = g["imza"]
+                    d.dalgada.add(g["kolon"])
                     d.dokun(g["kolon"])
                 if not dalga and not aktarilan:
                     # Hepsi baska yolda (oncelikli is) isleniyor.
@@ -480,21 +515,27 @@ def _calis(d):
                 continue
             if dalga:
                 gruplar = [dalga[i:i + PARCA] for i in range(0, len(dalga), PARCA)]
-                isler = {_HAVUZ.submit(_isle, grup, ork): grup for grup in gruplar}
-                for f in futures.as_completed(isler):
-                    grup = isler[f]
-                    try:
-                        sonuc, hata = f.result()
-                    except Exception as e:
-                        sonuc, hata = {}, "%s: %s" % (type(e).__name__, str(e)[:200])
-                    _sakla(d, grup, sonuc, hata)
+                kalan = set()
+                for grup in gruplar:
+                    f = _HAVUZ.submit(_isle, grup, ork, durdu)
+                    f.add_done_callback(lambda f, grup=grup: _dalga_sonucu(d, grup, f))
+                    kalan.add(f)
+                # Iptal edilince dalganin bitmesi beklenmez: kuyruktaki gruplar
+                # iptal edilir, suren cagrilarin sonucu gelince saklanir.
+                while kalan:
+                    _bitti, kalan = futures.wait(kalan, timeout=IPTAL_YOKLAMA)
+                    if kalan and durdu():
+                        for f in kalan:
+                            f.cancel()
+                        break
             kaydet(d)
     except Exception as e:
         with _KILIT:
             d.hata = "%s: %s" % (type(e).__name__, str(e)[:200])
     finally:
         with _KILIT:
-            d.calisiyor = False
+            if d.nesil == nesil:
+                d.calisiyor = False
         kaydet(d, zorla=True)
 
 
@@ -562,16 +603,31 @@ def girdileri_ver(klasor, girdiler, oncelikli=(), devam=True, hatalari_yenile=Fa
             d.calisiyor = True
             d.basla = time.time()
             d.biten_is = 0
-            threading.Thread(target=_calis, args=(d,), daemon=True).start()
+            threading.Thread(target=_calis, args=(d, d.nesil), daemon=True).start()
     for g in tek:
         _ONCELIK_HAVUZ.submit(_tek_isle, d, g)
     return giren
 
 
 def iptal(klasor):
+    """Isi hemen durdurur: arka plan isinin ucustaki satirlari bekleyene
+    doner (durum hemen "durduruldu" olur), isci dalganin bitmesini
+    beklemez. Suren cagrinin sonucu sonradan gelirse yine saklanir."""
     d = depo(klasor)
     with _KILIT:
         d.iptal = True
+        d.nesil += 1
+        d.calisiyor = False
+        for kolon in sorted(d.dalgada, reverse=True):
+            imza_ = d.ucusta.pop(kolon, None)
+            g = d.girdiler.get(kolon)
+            if g is not None and imza_ == g["imza"] == d.son_imza.get(kolon) \
+                    and kolon not in d.bekleyen:
+                d.bekleyen[kolon] = g
+                d.bekleyen.move_to_end(kolon, last=False)
+                d.gec[kolon] = imza_
+            d.dokun(kolon)
+        d.dalgada.clear()
 
 
 def is_durumu(klasor):
@@ -580,6 +636,7 @@ def is_durumu(klasor):
         calisiyor = d.calisiyor or bool(d.ucusta)
         return {"calisiyor": calisiyor, "bekleyen": len(d.bekleyen),
                 "ucusta": len(d.ucusta), "iptal": d.iptal, "hata": d.hata,
+                "gelecek": len(d.gec),
                 "biten": d.biten_is,
                 "toplam": d.biten_is + len(d.bekleyen) + len(d.ucusta),
                 "gecen": int(time.time() - d.basla) if calisiyor and d.basla else 0}

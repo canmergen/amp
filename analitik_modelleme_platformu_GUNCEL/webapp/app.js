@@ -5550,7 +5550,13 @@ function secenekEkle(secenekler, kilit, secili) {
 
     if (sutun) {
         sutun.classList.add("secenekli");
-        sutun.appendChild(kok);
+        /* GRUPLU BLOKTA kartlar adımın KENDİ alt bölümüne girer (sondaki
+           alt bölüm, bu adımınki). Kök bloğa eklenince "Geri Dön" alt
+           bölümü silerken eski kartlar kalıyor, yenileri onların yanına
+           ekleniyordu (01.2.4'te seçim kartları görünmüyordu). */
+        const bolumler = sutun.classList.contains("gruplu")
+            ? sutun.querySelectorAll(":scope > .alt-bolum") : [];
+        (bolumler.length ? bolumler[bolumler.length - 1] : sutun).appendChild(kok);
     } else {
         sohbetEl.appendChild(kok);
     }
@@ -6865,7 +6871,7 @@ function dogrulamaKartiEkle(alan, blok) {
                 : "";
             return;
         }
-        /* AÇIKLAMA DÜZENLEME: dil modeli düzenlerken onaylanamaz (Durdur
+        /* AÇIKLAMA DÜZENLEME: dil modeli düzenlerken onaylanamaz (İptal
            ile durdurulursa düzenlenmeyenlerin orijinali kalır). Cevapsız
            soru onayı durdurmaz; bilgi olarak yazar. */
         if (adimModu === "aciklama" && acikErisim) {
@@ -6874,7 +6880,7 @@ function dogrulamaKartiEkle(alan, blok) {
             birincil.disabled = bek;
             gerekce.textContent = bek
                 ? "Dil modeli " + ftBinlik(Number(s.bekleyen || 0)) + " kolonu düzenliyor; bitince "
-                  + "onaylanabilir. Beklemek istemezseniz Durdur'a basın."
+                  + "onaylanabilir. Beklemek istemezseniz İptal'e basın."
                 : durdu ? ftBinlik(Number(s.bekleyen || 0)) + " kolon düzenlenmedi; onaylarsanız "
                   + "orijinal açıklamaları kalır."
                 : Number(s.soru || 0) > 0 ? ftBinlik(Number(s.soru)) + " kolonda cevapsız soru var; "
@@ -7764,14 +7770,15 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     }
     if (aa.uyari) kart.appendChild(elYap("div", "dg-oneri-hata", tireSade(aa.uyari)));
 
-    /* ---- İlerleme: süre, sayı, Durdur / Devam ---- */
+    /* ---- İlerleme: süre, sayı, İptal / Devam (Kısaltma Sözlüğü'ndeki
+       işlem satırının aynısı) ---- */
     const ilerEl = elYap("div", "islem-satiri dg-ilerleme dg-acik-ilerleme");
     ilerEl.setAttribute("role", "status");
     const ilerMetin = elYap("span", "islem-sure", "");
-    const durdurBtn = elYap("button", "dg-toplu-btn", "Durdur");
-    durdurBtn.type = "button";
-    durdurBtn.title = "Dil modelini durdur; düzenlenen satırlar kalır";
-    ilerEl.append(ilerMetin, durdurBtn);
+    const iptalBtn = elYap("button", "islem-iptal", "İptal");
+    iptalBtn.type = "button";
+    iptalBtn.title = "Dil modelini durdur; düzenlenen satırlar kalır";
+    ilerEl.append(ilerMetin, iptalBtn);
     kart.appendChild(ilerEl);
     const durumEl = elYap("div", "dg-bilgi-kutu dg-acik-durum", "");
     durumEl.hidden = true;
@@ -7836,10 +7843,13 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             body: JSON.stringify(ftKimlikGovdesi(govde))
         }).then(r => r.json());
     }
-    durdurBtn.onclick = () => {
-        durdurBtn.disabled = true;
-        islem({ islem: "iptal" }).then(() => yoklaHemen()).catch(() => {})
-            .finally(() => { durdurBtn.disabled = false; });
+    /* İptal sunucuda hemen işler; yanıt gelince durum beklemeden yoklanır.
+       Düğme, iş yeniden başlayana dek "İptal ediliyor…" kalır. */
+    function iptalSifirla() { iptalBtn.disabled = kilitli; iptalBtn.textContent = "İptal"; }
+    iptalBtn.onclick = () => {
+        iptalBtn.disabled = true;
+        iptalBtn.textContent = "İptal ediliyor…";
+        islem({ islem: "iptal" }).then(() => yokla()).catch(() => iptalSifirla());
     };
     devamBtn.onclick = () => {
         devamBtn.disabled = true;
@@ -8143,9 +8153,14 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         suzgecCiz();
         tabloCiz();
         sorulariCiz();
+        if (dm !== "calisiyor") iptalSifirla();
         if (dm === "iptal") {
-            durumYaz("Durduruldu: " + ftBinlik(Number(sayac.bekleyen || 0)) + " kolon düzenlenmedi. "
-                     + "Onaylarsanız bu kolonların orijinal açıklaması kalır.", false);
+            const gelecek = Number(a.gelecek || 0);
+            durumYaz("Dil modeli durduruldu; " + ftBinlik(Number(sayac.bekleyen || 0))
+                     + " kolon düzenlenmedi. Onaylarsanız bu kolonların orijinal açıklaması kalır."
+                     + (gelecek ? " İptal anında gönderilmiş " + ftBinlik(gelecek)
+                        + " kolonun cevabı gelirse tabloya eklenir." : ""),
+                     false);
             durumEl.appendChild(devamBtn);
         } else if (hataMetni && Number(sayac.hata || 0)) {
             durumYaz(hataMetni, true);
@@ -8173,7 +8188,11 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                 isle(a);
                 const surer = !saltOkunur && (dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0)
                     && dm !== "iptal";
+                /* İptal anında yolda olan cevaplar sonradan gelir; gelene dek
+                   seyrek yoklanır (sayılar ve onay gerekçesi güncel kalsın). */
                 if (surer) zamanla(ACK_YOKLAMA);
+                else if (!saltOkunur && dm === "iptal" && Number(a.gelecek || 0) > 0)
+                    zamanla(ACK_YOKLAMA * 2);
             })
             .catch(() => zamanla(8000));
     }
@@ -8204,7 +8223,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             kilitli = k;
             veriler.forEach(v => satirGuncelle(v));
             sorulariCiz();
-            durdurBtn.disabled = k;
+            iptalBtn.disabled = k || iptalBtn.textContent !== "İptal";
             devamBtn.disabled = k;
             ilerYaz();
         }

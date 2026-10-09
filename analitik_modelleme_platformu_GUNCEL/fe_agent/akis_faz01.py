@@ -2290,8 +2290,11 @@ def aciklama_alani(durum, son=0):
         sira = d.sayac
     dm = "calisiyor" if is_["calisiyor"] else ("iptal" if is_["iptal"] and is_["bekleyen"]
                                                else "bitti")
+    # gelecek: iptal aninda yolda olan cagrilar; sonuclari gelince satirlar
+    # duzenlenmis olur, kart o zamana dek yoklamayi surdurur.
     return {"dm": dm, "son": sira, "satirlar": satirlar, "sorular": sorular,
             "sayac": sayac, "hata": is_["hata"], "salt_okunur": False,
+            "gelecek": is_["gelecek"] if dm == "iptal" else 0,
             "ilerleme": {"biten": is_["biten"], "toplam": is_["toplam"],
                          "gecen": is_["gecen"]} if is_["calisiyor"] else None}
 
@@ -2409,7 +2412,7 @@ def aciklama_uygula(durum):
     if is_["calisiyor"] or (is_["bekleyen"] and not is_["iptal"]):
         raise AdimHatasi(
             "Dil modeli %s kolonu henüz düzenlemedi. Bitmesini bekleyin ya da "
-            "«Durdur»a basın; durdurulursa düzenlenmeyen kolonların orijinal "
+            "«İptal»e basın; iptal edilirse düzenlenmeyen kolonların orijinal "
             "açıklaması kalır." % _sayi(is_["bekleyen"] + is_["ucusta"]))
     onay, yazilacak, sayi = {}, {}, Counter()
     with aciklama_mod._KILIT:
