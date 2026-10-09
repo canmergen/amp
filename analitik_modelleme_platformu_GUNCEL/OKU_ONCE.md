@@ -1,9 +1,10 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Logo büyüdü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Bu tur: **Logo büyüdü ve biraz aşağı indi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
-- Logo yüksekliği 42 → 52 px (soldaki robot görseliyle aynı).
-- Genişliği ekranın %14'üyle sınırlı (en az 150, en çok 320 px): 1280 px
+- Logo yüksekliği 42 → 56 px; ortanın 3 px altında (barın üstünden 6 px
+  aşağıda başlar, alttaki ayraca değmeden biter).
+- Genişliği ekranın %15'iyle sınırlı (en az 150, en çok 340 px): 1280 px
   ekranda sekme kümelerine yer kalır; sınırı aşan logo oranı korunarak
   küçülür. 1280 – 1920 px'te sekmeler sıkışmıyor.
 

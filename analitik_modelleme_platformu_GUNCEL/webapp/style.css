@@ -306,14 +306,15 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 #urun-logo-kap { display: none; }
 #baslik-blok.logolu #urun-logo-kap { display: flex; align-items: center; }
 #baslik-blok.logolu .urun-yazi { display: none; }
-/* Logo robot görseliyle aynı yükseklikte (bar - 12 px = 52 px); 42 px'te
-   alt satırdaki birim adı okunmuyordu. Genişlik ekranın %14'üyle sınırlı:
-   dar ekranda (1280 px) sekme kümelerine yer kalsın; sınırı aşan logo
-   oranı korunarak küçülür. */
+/* Logo 56 px (bar - 8 px) ve ortanın 3 px altında: barın içerik alanı
+   62 px (alttaki 2 px ayraç hariç), logo 6 - 62 px arasında durur, ayraca
+   değmez. Genişlik ekranın %15'iyle sınırlı: dar ekranda (1280 px) sekme
+   kümelerine yer kalsın; sınırı aşan logo oranı korunarak küçülür. */
 .urun-logo {
-  display: block; height: calc(var(--ustbar-h) - 12px); width: auto;
-  max-width: clamp(150px, 14vw, 320px);
+  display: block; height: calc(var(--ustbar-h) - 8px); width: auto;
+  max-width: clamp(150px, 15vw, 340px);
   object-fit: contain; object-position: left center;
+  transform: translateY(3px);
 }
 #urun-logo-koyu { display: none; }
 #kabuk.koyu #urun-logo-acik { display: none; }
