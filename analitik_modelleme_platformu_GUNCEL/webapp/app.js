@@ -82,6 +82,8 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
     banner:     getWebAppBackendUrl("gorsel/banner"),
+    logoAcik:   getWebAppBackendUrl("gorsel/logo_acik"),
+    logoKoyu:   getWebAppBackendUrl("gorsel/logo_koyu"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
@@ -177,6 +179,23 @@ const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
 bannerEl.src = GORSEL.banner;
 bannerEl.onerror = () => { bannerEl.style.display = "none"; };
+
+/* ÜRÜN LOGOSU: iki görsel de yüklenir, tema hangisinin görüneceğini CSS
+   ile seçer (geçişte bekleme yok). Biri yüklenemezse başlık bloğu yazıya
+   döner: "Akıllı Modelleme Platformu" ve birim adı. */
+(function logoYukle() {
+    const blok = document.getElementById("baslik-blok");
+    const acik = document.getElementById("urun-logo-acik");
+    const koyu = document.getElementById("urun-logo-koyu");
+    if (!blok || !acik || !koyu) return;
+    let yuklenen = 0;
+    const yaziya = () => { blok.classList.remove("logolu"); };
+    [[acik, GORSEL.logoAcik], [koyu, GORSEL.logoKoyu]].forEach(([el, url]) => {
+        el.onload = () => { if (++yuklenen === 2) blok.classList.add("logolu"); };
+        el.onerror = yaziya;
+        el.src = url;
+    });
+})();
 
 
 /* ==================== Metin yardımcıları ==================== */

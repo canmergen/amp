@@ -301,6 +301,18 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 #banner { height: calc(var(--ustbar-h) - 12px); width: auto; display: block; }
 
 #baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
+/* ÜRÜN LOGOSU: iki görsel de yüklenince (.logolu) yazının yerini alır;
+   açık temada siyah, koyu temada beyaz yazılı olan görünür. */
+#urun-logo-kap { display: none; }
+#baslik-blok.logolu #urun-logo-kap { display: flex; align-items: center; }
+#baslik-blok.logolu .urun-yazi { display: none; }
+.urun-logo {
+  display: block; height: calc(var(--ustbar-h) - 22px); width: auto; max-width: 280px;
+  object-fit: contain;
+}
+#urun-logo-koyu { display: none; }
+#kabuk.koyu #urun-logo-acik { display: none; }
+#kabuk.koyu #urun-logo-koyu { display: block; }
 #urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
 #urun-adi {
   font-weight: var(--fw-kalin); font-size: var(--fs-buyuk); letter-spacing: -.01em;

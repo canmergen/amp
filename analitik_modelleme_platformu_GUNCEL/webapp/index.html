@@ -15,12 +15,19 @@
              gizli kalır. Üst barda kalan TEK bilgi bunlar; aşama sol
              panelde, kapsam/hedef sağ panelde, değişken seti özet
              sayfasında zaten var. -->
-        <div id="urun-adi-satir">
+        <!-- ÜRÜN LOGOSU: açık temada siyah, koyu temada beyaz yazılı
+             görsel (style.css: #kabuk.koyu). Görsel yüklenemezse altındaki
+             yazı geri gelir (app.js: logoYukle). -->
+        <div id="urun-logo-kap">
+          <img id="urun-logo-acik" class="urun-logo" alt="Akıllı Modelleme Platformu">
+          <img id="urun-logo-koyu" class="urun-logo" alt="Akıllı Modelleme Platformu">
+        </div>
+        <div id="urun-adi-satir" class="urun-yazi">
           <div id="urun-adi">Akıllı Modelleme Platformu</div>
           <span id="veri-seti-cip" class="ust-cip" hidden></span>
           <span id="sozluk-cip" class="ust-cip" hidden></span>
         </div>
-        <div id="urun-alt">Bireysel Krediler Analitik ve Tahsis BI</div>
+        <div id="urun-alt" class="urun-yazi">Bireysel Krediler Analitik ve Tahsis BI</div>
       </div>
     </div>
 
