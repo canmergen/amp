@@ -181,17 +181,16 @@ bannerEl.src = GORSEL.banner;
 bannerEl.onerror = () => { bannerEl.style.display = "none"; };
 
 /* ÜRÜN LOGOSU: iki görsel de yüklenir, tema hangisinin görüneceğini CSS
-   ile seçer (geçişte bekleme yok). Biri yüklenemezse başlık bloğu yazıya
-   döner: "Akıllı Modelleme Platformu" ve birim adı. */
+   ile seçer (geçişte bekleme yok). Logo alanı baştan yerinde, yazı gizli;
+   biri yüklenemezse başlık bloğu yazıya döner: "Akıllı Modelleme
+   Platformu" ve birim adı. */
 (function logoYukle() {
     const blok = document.getElementById("baslik-blok");
     const acik = document.getElementById("urun-logo-acik");
     const koyu = document.getElementById("urun-logo-koyu");
     if (!blok || !acik || !koyu) return;
-    let yuklenen = 0;
-    const yaziya = () => { blok.classList.remove("logolu"); };
+    const yaziya = () => { blok.classList.add("yazili"); };
     [[acik, GORSEL.logoAcik], [koyu, GORSEL.logoKoyu]].forEach(([el, url]) => {
-        el.onload = () => { if (++yuklenen === 2) blok.classList.add("logolu"); };
         el.onerror = yaziya;
         el.src = url;
     });
