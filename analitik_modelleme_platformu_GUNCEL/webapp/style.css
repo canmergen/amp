@@ -199,15 +199,16 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   --cerceve-alt: calc((887 - 820) / 887 * 100vh);
   --cerceve-ara: 2px;          /* cizgi ile uygulama arasi */
 }
-/* KURUM LOGOSU: ust bantta iki elin arasindaki bos yuva (gorselde x 799 -
-   972, bant 0 - 57; ortasi gorselin ortasi). Logo yuvanin %88 enine ve
-   bandin %55 boyuna sigar, orani korunur. */
+/* KURUM LOGOSU: ust bantta iki elin arasindaki bos alan. Gorselde
+   hicbir cizime (parmak uclari, kirmizi susler) binmeyen en buyuk kutu
+   olculdu: x 781 - 980, y 26.5 - 48.5 (ortasi 880.5, 37.5). Logo bu kutuya
+   orani korunarak sigar (object-fit: contain). */
 #kurum-logo {
-  position: fixed; left: 50%; top: calc(57 / 2 / 887 * 100vh);
+  position: fixed;
+  left: calc(880.5 / 1774 * 100vw); top: calc(37.5 / 887 * 100vh);
+  width: calc(200 / 1774 * 100vw); height: calc(22.3 / 887 * 100vh);
   transform: translate(-50%, -50%);
-  height: calc(57 / 887 * 100vh * 0.55);
-  max-width: calc(174 / 1774 * 100vw * 0.88);
-  width: auto; object-fit: contain;
+  object-fit: contain;
   pointer-events: none; user-select: none;
 }
 body {
