@@ -625,15 +625,18 @@ body::before {
 
 /* ANALİTİK SÜREÇ ve İŞ AKIŞI: ayrı balonlar (beyaz kart, açık kırmızı
    ince kenar, yuvarlak köşe). */
-/* PANELİ DARALT / AÇ (sağ üst). Satır sıfır yükseklikte ve yapışkan:
-   düğme ilk balonun sağ üst köşesine biner, panel kaysa da yerinde
-   kalır. */
+/* PANELİ DARALT / AÇ: balonların ÜSTÜNDE kendi satırında, sağa yaslı.
+   Satır yapışkan: panel kaysa da düğme yerinde kalır (zemin panelle
+   aynı, altından kayan içerik görünmez). */
 .panel-ust-sira {
-  position: sticky; top: 0; z-index: 3; height: 0;
+  position: sticky; top: calc(-1 * var(--b-5)); z-index: 3;
+  margin: calc(-1 * var(--b-5)) calc(-1 * var(--b-4)) var(--b-2);
+  padding: var(--b-2) var(--b-4) 0;
+  background: var(--yuzey-alt);
   display: flex; justify-content: flex-end;
 }
 #panel-daralt {
-  margin: 7px 7px 0 0;
+  margin: 0;
   width: 26px; height: 26px; padding: 0;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--pembe-kenar); border-radius: 7px;
@@ -652,7 +655,7 @@ body::before {
     display: flex; flex-direction: column; align-items: center; gap: var(--b-3);
   }
   #panel.daraltilmis > :not(.panel-ust-sira):not(#panel-dikey-ad) { display: none; }
-  #panel.daraltilmis .panel-ust-sira { position: static; height: auto; }
+  #panel.daraltilmis .panel-ust-sira { position: static; margin: 0; padding: 0; background: none; }
   #panel.daraltilmis #panel-daralt { margin: 0; }
   #panel.daraltilmis #panel-daralt svg { transform: rotate(180deg); }
   #panel.daraltilmis #panel-dikey-ad {
