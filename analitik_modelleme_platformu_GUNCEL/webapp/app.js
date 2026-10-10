@@ -103,8 +103,8 @@ const kutuEl      = document.getElementById("kutu");
 const gonderEl    = document.getElementById("gonder");
 const fazEl       = document.getElementById("faz-listesi");
 const sozlukCipEl = document.getElementById("sozluk-cip");
-/* Sonuç kartları (ÜRETİM · ELEME · MODEL): eski üst şerit; artık sağ
-   bloğun Değişkenler ve Bölme & Model sekmelerinde çiziliyor (bkz. sonucCiz). */
+/* Sonuç kartları (ÜRETİM · ELEME · MODEL): eski üst şerit; artık GENEL
+   BAKIŞ sekmesinde çiziliyor (bkz. sonucCiz). */
 let SONUC_KARTLARI = [];
 /* Analiz alanı durumu ve kararı alanda verilen adımlar (bkz. "Sol bar
    sekmeleri ve analiz alanı"). Burada tanımlı: sayfaAc ilk çağrıldığında
@@ -161,11 +161,12 @@ let aktifAnalizSekme = "ozet";
    Panel her backend yanitinda BASTAN ciziliyor; bu harita cizim disinda
    durmasaydi kullanicinin actigi kart bir sonraki yanitta kendiliginden
    kapanirdi. Oturumluktur, localStorage'a YAZILMAZ. */
-/* "ozet" = VERİ & SÖZLÜK sekmesi (data-tab degeri bu).
+/* "ozet" = GENEL BAKIŞ sekmesi (data-tab degeri bu; eski VERİ & SÖZLÜK
+   ile BÖLME & MODEL birlesti).
     Ayni panel govdesi artik "hazirlik"
    anahtariyla geliyor (bkz. akis_panel.hazirlik_paneli). */
-/* UC SEKME: "degisken" (DEĞİŞKEN ANALİZİ: dağılım + SFA + eksik değer)
-   ve "bolme" (BÖLME & VALİDASYON). */
+/* IKI SEKME: "ozet" (GENEL BAKIŞ) ve "degisken" (DEĞİŞKENLER: liste +
+   dağılım + SFA + eksik değer). "bolme" verisi GENEL BAKIŞ'ta çizilir. */
 const BAGLI_SEKMELER = ["ozet", "degisken", "bolme"];
 
 /* Dataset listesi: "yukleniyor" | "hazir" | "bos" | "hata"
@@ -1075,7 +1076,7 @@ function cipYaz(el, ad) {
 
 /* Sonuç kartları (ÜRETİM · ELEME · MODEL): eskiden üst şeritte
    duruyordu; akışın çoğunda ∅ gösterip sürekli yer kapladığı için sağ
-   bloğun Değişkenler ve Bölme & Model sekmelerine taşındı. Burada yalnız saklanır, sekme
+   bloğun GENEL BAKIŞ sekmesine taşındı. Burada yalnız saklanır, sekme
    açıksa yeniden çizilir. */
 function ozetGuncelle(o) {
     if (!o || !o.kartlar) return;
@@ -1085,13 +1086,12 @@ function ozetGuncelle(o) {
     cipYaz(cipEl, null);
     cipYaz(sozlukCipEl, null);
     SONUC_KARTLARI = o.kartlar;
-    if (aktifAnalizSekme === "degisken" || aktifAnalizSekme === "bolme")
-        analizCiz(aktifAnalizSekme);
+    if (aktifAnalizSekme === "ozet") analizCiz(aktifAnalizSekme);
 }
 
-/* SONUÇ KARTLARI: ayrı bir sekme değil (az veri taşıyordu). Üretim ve
-   eleme DEĞİŞKENLER sekmesinin, model sonucu BÖLME & MODEL sekmesinin
-   sonunda çizilir. on_ekler: hangi kartlar ("ÜRETİM", "ELEME", "MODEL";
+/* SONUÇ KARTLARI: ayrı bir sekme değil (az veri taşıyordu). GENEL
+   BAKIŞ'ta: üretim ve eleme "Değişken Sayıları", model "Model Sonucu"
+   başlığı altında. on_ekler: hangi kartlar ("ÜRETİM", "ELEME", "MODEL";
    kartın etiketinin başı). Biçim eski üst şeritteki gibi (kırmızı etiket,
    koyu değer, iki alt satır, ulaşılmamış değer ∅). "hedef" dolu kart
    TIKLANABİLİR: ilgili sekmeyi açar. */
@@ -1854,7 +1854,10 @@ function panelCiz(v) {
        gizlenecek bir karar yok. */
     (v.kartlar || []).forEach(k => {
         const kart = elYap("div", "iskele-kart");
-        kart.appendChild(elYap("div", "iskele-baslik", k.baslik));
+        const bas = elYap("div", "iskele-baslik", k.baslik);
+        /* Kaynak, kayıt yeri gibi ikincil bilgiler satır değil "i"de. */
+        if (k.bilgi) bas.appendChild(bolmeBilgiSimgesi(tireSade(k.bilgi), k.baslik));
+        kart.appendChild(bas);
         if (k["not"]) kart.appendChild(elYap("div", "panel-not", k["not"]));
         (k.satirlar || []).forEach(s => {
             const satir = elYap("div", "iskele-satir");
@@ -3804,7 +3807,32 @@ function analizCiz(tab) {
     const odak = ftOdakAnahtari();
     aktifAnalizSekme = tab;
     analizGovde.innerHTML = "";
+    /* GENEL BAKIŞ ("ozet"): ÇALIŞMA DÜZEYİ, her bilgi bir sayı ya da özet.
+       Veri seti ve sözlük kartları, değişken sayıları (üretim / eleme),
+       bölme, validasyon ve model sonucu. Değişken listesi burada değil. */
+    if (tab === "ozet") {
+        const o = ANALIZ_VERI.ozet;
+        panelBolumBasligi("Veri Seti ve Sözlük");
+        panelCiz(o ? Object.assign({}, o, { feature_tablo: null }) : o);
+        panelBolumBasligi("Değişken Sayıları");
+        sonucCiz(["ÜRETİM", "ELEME"]);
+        panelBolumBasligi("Bölme");
+        panelCiz(ANALIZ_VERI.bolme);
+        panelBolumBasligi("Validasyon");
+        validasyonCiz(ANALIZ_VERI.validasyon);
+        panelBolumBasligi("Model Sonucu");
+        sonucCiz(["MODEL"]);
+        ftOdakGeriVer(odak);
+        return;
+    }
+    /* DEĞİŞKENLER: DEĞİŞKEN DÜZEYİ. Önce değişken listesi (kolonlar, roller,
+       tanımlar, Excel), sonra dağılım, SFA ve eksik değer. */
     if (tab === "degisken") {
+        const o = ANALIZ_VERI.ozet;
+        panelBolumBasligi("Değişken Listesi");
+        if (o && o.feature_tablo) featureTabloCiz(ftSaltOku(o.feature_tablo));
+        else analizGovde.appendChild(elYap("div", "set-not",
+            "Değişken listesi veri seti seçildikten sonra burada görünür."));
         /* Kume secici yalnizca Dağılım bolumune uygulanir: basligin altinda. */
         panelBolumBasligi("Dağılım");
         setSeciciCiz(tab);
@@ -3815,21 +3843,10 @@ function analizCiz(tab) {
         if (ANALIZ_VERI.sfa && ANALIZ_VERI.sfa.aralik) aralikCiz();
         panelBolumBasligi("Eksik Değer");
         panelCiz(ANALIZ_VERI.eksik);
-        panelBolumBasligi("Üretim ve Eleme");
-        sonucCiz(["ÜRETİM", "ELEME"]);
         ftOdakGeriVer(odak);
         return;
     }
     setSeciciCiz(tab);
-    if (tab === "bolme") {
-        panelBolumBasligi("Bölme");
-        panelCiz(ANALIZ_VERI.bolme);
-        panelBolumBasligi("Validasyon");
-        validasyonCiz(ANALIZ_VERI.validasyon);
-        panelBolumBasligi("Model Sonucu");
-        sonucCiz(["MODEL"]);
-        return;
-    }
     panelCiz(ANALIZ_VERI[tab]);
     ftOdakGeriVer(odak);
 }
@@ -4628,8 +4645,8 @@ function analizSekmeAc(tab) {
 }
 
 /* ==================== Sol bar sekmeleri ve analiz alanı ====================
-   Sol barda (MODEL PLATFORMU kümesi): MODEL AKIŞI · VERİ & SÖZLÜK ·
-   DEĞİŞKENLER · BÖLME & MODEL · ÖZET. Kodda MODEL AKIŞI = "akis" (AKIŞ).
+   Sol barda (MODEL PLATFORMU kümesi): MODEL AKIŞI · GENEL BAKIŞ ·
+   DEĞİŞKENLER · ÖZET. Kodda MODEL AKIŞI = "akis" (AKIŞ).
    AKIŞ ana ekran (iş akışı + sohbet). Üç analiz sekmesinden birine
    basınca analiz alanı sol barın sağındaki bütün alanı kaplar
    (style.css: #analiz-panel); AKIŞ'a basınca yukarı kapanır
@@ -8843,13 +8860,13 @@ function sfaKartiEkle(alan, blok) {
         if (calisiyor)
             durum.textContent = "Yapay zekâ karar veriyor · " + biten.toLocaleString("tr-TR")
                 + " / " + toplam.toLocaleString("tr-TR") + " değişken. Kararlar geldikçe "
-                + "Değişken Analizi sekmesine düşer; beklemeden onaylarsanız kalan "
+                + "Değişkenler sekmesine düşer; beklemeden onaylarsanız kalan "
                 + "değişkenlerde kural tabanlı karar geçerli olur.";
         else if (d && d.durum === "bitti")
             durum.textContent = "Yapay zekâ " + biten.toLocaleString("tr-TR") + " değişken için "
-                + "karar verdi. Kararları Değişken Analizi sekmesinde inceleyip değiştirebilirsiniz.";
+                + "karar verdi. Kararları Değişkenler sekmesinde inceleyip değiştirebilirsiniz.";
         else
-            durum.textContent = "Kararlar Değişken Analizi sekmesinde; inceleyip "
+            durum.textContent = "Kararlar Değişkenler sekmesinde; inceleyip "
                 + "değiştirebilirsiniz.";
         hata.hidden = !(d && d.hata);
         hata.textContent = (d && d.hata) ? tireSade(d.hata) : "";

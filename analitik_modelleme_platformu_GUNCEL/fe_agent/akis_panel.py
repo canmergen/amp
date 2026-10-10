@@ -668,6 +668,13 @@ def baslik_bicimi(metin):
     return " ".join(cikti)
 
 
+def _bilgi_metni(bilgiler):
+    """Kart basligindaki "i" balonunun metni: [(etiket, deger)] -> satirlar.
+    Bos degerli satir yazilmaz; hic dolu yoksa None."""
+    satirlar = ["%s: %s" % (e, d) for e, d in bilgiler if d not in (None, "")]
+    return "\n".join(satirlar) or None
+
+
 def _kart(baslik, tanimlar):
     """tanimlar: [(etiket, deger, "dolduran adim")]
 
@@ -1030,35 +1037,47 @@ def veri_paneli(durum):
     veri_adimi = _veri_adimi(durum)
     # Tek kartta,
     # boyut/tip satirlarindan SONRA geliyor.
-    veri_kart = _kart("Veri Seti", [
-        # HAM AD DEGIL platformun adi; hangi tablodan gelindigi
-        # "Köken" satirinda, cumle icinde yaziyor.
+    # SADE KART (kullanici karari): yalniz analiz icin gereken satirlar.
+    # Kaynak / kayit yeri / dosya boyutu / motor satir degil, basliktaki
+    # "i" balonunda. Hedef tipi hedef oraniyla tek satir. Kimlik bazli
+    # tekrar yalniz varsa (0'dan buyukse) gosterilir.
+    hedef_tipi = _hedef_tipi(p)
+    hedef_orani = _hedef_orani(p)
+    if hedef_orani and hedef_tipi:
+        hedef_orani = "%s · %s" % (hedef_tipi, hedef_orani)
+    elif hedef_tipi:
+        hedef_orani = hedef_tipi          # iki sinifli olmayan hedef: oran yok
+    satirlar = [
+        # HAM AD DEGIL platformun adi; hangi tablodan gelindigi "i"de.
         ("Veri Seti", PLATFORM_VERI_ADI if durum.get("veri_seti") else None,
          veri_adimi),
-        ("Köken", _veri_kokeni(durum), veri_adimi),
-        ("Kayıt Yeri", _kayit_yeri(durum, "veri"), KAYIT_ADIMI),
         ("Satır × Kolon", boyut, veri_adimi),
-        # Veri setinin Dataiku'daki dosya boyutu ve tam veri islerinin
-        # motoru (bkz. motor.py). Sohbette ayrica yazilmaz (kullanici
-        # karari: secim zaten yapildi, ozet sag panelde).
-        ("Dosya Boyutu", motor_mod.boyut_metni(p.get("dosya_boyutu"))
-         if p.get("motor") else None, veri_adimi),
-        ("Motor", motor_mod.AD.get(p.get("motor")), veri_adimi),
         ("Sayısal / Kategorik / Tarih", _tip_dagilimi(p, durum), veri_adimi),
-        ("Tekrarlı Satır", _duplicate_metni(p), veri_adimi),
-        ("Kimlik Bazlı Tekrar",
-         None if kimlik_dup is None else _sayi(kimlik_dup), TANIM_ADIMI),
         # Null orani veri seti profilinden (tam tablo), secimle birlikte dolar.
         ("Toplam Null Oranı", _yuzde(p.get("null_oran"), 2), veri_adimi),
+        ("Tekrarlı Satır", _duplicate_metni(p), veri_adimi),
+    ]
+    if kimlik_dup:
+        satirlar.append(("Kimlik Bazlı Tekrar", _sayi(kimlik_dup), TANIM_ADIMI))
+    satirlar += [
         ("Hedef Değişken",
          (durum.get("meta") or {}).get("target"), TANIM_ADIMI),
-        #
-        # Oran sayilarla birlikte: "%3,21 · 12.345 / 384.567".
-        ("Hedef Tipi", _hedef_tipi(p), TANIM_ADIMI),
-        ("Hedef Oranı", _hedef_orani(p), TANIM_ADIMI),
+        # Oran sayilarla birlikte: "binary · %3,21 · 12.345 / 384.567".
+        ("Hedef Oranı", hedef_orani, TANIM_ADIMI),
         ("Dönem Aralığı", _donem_araligi(p, durum), TANIM_ADIMI),
         ("Segment", _segment_metni(p, durum), TANIM_ADIMI),
-    ])
+    ]
+    veri_kart = _kart("Veri Seti", satirlar)
+    bilgi = _bilgi_metni([
+        ("Kaynak", _veri_kokeni(durum)),
+        ("Kayıt yeri", _kayit_yeri(durum, "veri")),
+        # Veri setinin Dataiku'daki dosya boyutu ve tam veri islerinin
+        # motoru (bkz. motor.py).
+        ("Dosya boyutu", motor_mod.boyut_metni(p.get("dosya_boyutu"))
+         if p.get("motor") else None),
+        ("Motor", motor_mod.AD.get(p.get("motor")))])
+    if bilgi:
+        veri_kart["bilgi"] = bilgi
 
     kartlar = [veri_kart]
     if not satir:
@@ -1295,20 +1314,22 @@ def _sozluk_karti(durum):
             "  · %s süreç dışı" % _sayi(len(disi)) if disi else "")
 
     sozluk_adimi = _sozluk_adimi(durum)
-    return _kart("Değişken Sözlüğü", [
-        # HAM AD DEGIL platformun adi; hangi sozlukten gelindigi
-        # "Köken" satirinda, cumle icinde yaziyor.
+    kart = _kart("Değişken Sözlüğü", [
+        # HAM AD DEGIL platformun adi; hangi sozlukten gelindigi "i"de.
         ("Sözlük",
          PLATFORM_SOZLUK_ADI if sozluk_calisma.sozluk_adi(durum) else None,
          sozluk_adimi),
-        ("Köken", _sozluk_kokeni(durum), sozluk_adimi),
-        ("Kayıt Yeri", _kayit_yeri(durum, "sozluk"), KAYIT_ADIMI),
         ("Tanım Sayısı", tanim_sayisi,
          sozluk_adimi),
         ("Kapsam", _yuzde_dogrudan(kapsam, 1), sozluk_adimi),
         ("Sözlükte Olmayan Değişken Sayısı",
          _sayi(len(tanimsiz)) if kolonlar else None, sozluk_adimi),
     ] + _esitleme_satiri(durum, sozluk_adimi))
+    bilgi = _bilgi_metni([("Kaynak", _sozluk_kokeni(durum)),
+                          ("Kayıt yeri", _kayit_yeri(durum, "sozluk"))])
+    if bilgi:
+        kart["bilgi"] = bilgi
+    return kart
 
 
 def _esitleme_satiri(durum, sozluk_adimi):
