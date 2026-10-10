@@ -590,12 +590,13 @@ body::before {
 #tema-btn .tema-anahtar span, #cerceve-btn .tema-anahtar span {
   width: 20px; height: 18px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 11px; line-height: 1; opacity: .45;
+  color: var(--metin); opacity: .45;
 }
+#tema-btn .tema-anahtar svg, #cerceve-btn .tema-anahtar svg { width: 12px; height: 12px; display: block; }
 #kabuk:not(.koyu) #tema-btn .tema-gunes,
 #kabuk.koyu #tema-btn .tema-ay,
 :root:not(.cercevesiz) #cerceve-btn .cerceve-acik,
-:root.cercevesiz #cerceve-btn .cerceve-kapali { background: var(--yuzey); opacity: 1; box-shadow: var(--golge-1); }
+:root.cercevesiz #cerceve-btn .cerceve-kapali { background: var(--yuzey); color: var(--kirmizi); opacity: 1; box-shadow: var(--golge-1); }
 
 /* Sohbet ve Dashboard sayfa iskeleti (içerik ayrıca kurulacak). */
 .bos-sayfa {
