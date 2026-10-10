@@ -11420,24 +11420,39 @@ function calismaAltSatiri(c) {
     return parca.join(" · ");
 }
 
-/* AÇIKLAMA "i" DÜĞMESİNDE: liste sol barın eninde (dar); açıklama satırı
-   (son adım, tarih, neden) satırda değil, i'ye basınca satırın altında
-   açılır. Yeniden basınca kapanır. */
-function calismaBilgiEkle(satir, dugmeler, metin, hataMi) {
-    if (!metin) return;
-    const acik = elYap("div", "calisma-aciklama" + (hataMi ? " calisma-hata" : ""), metin);
-    const i = elYap("button", "calisma-bilgi", "i");
-    i.type = "button";
-    i.title = "Açıklama";
-    i.setAttribute("aria-expanded", "false");
-    i.onclick = e => {
-        e.stopPropagation();
-        const ac = !satir.classList.contains("bilgi-acik");
-        satir.classList.toggle("bilgi-acik", ac);
-        i.setAttribute("aria-expanded", ac ? "true" : "false");
-    };
-    dugmeler.prepend(i);
-    satir.appendChild(acik);
+/* ARŞİV SATIRI (sade): solda çalışmanın adı (açık olanda "Açık"), sağda
+   çöp kutusu ikonu. Satıra basınca çalışma açılır; son adım ve tarih
+   satırın üstüne gelince görünür (title). Silme onayı aynı satırda:
+   "Silinsin mi?" + Sil / Vazgeç. */
+const COP_IKON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"></path></svg>';
+
+function arsivSatiri(ad, aciklama, aktif, acilabilir, ac, silBilgi, silBaslik) {
+    const satir = elYap("div", "calisma-satir" + (aktif ? " aktif" : ""));
+    const oge = document.createElement("button");
+    oge.type = "button";
+    oge.className = "calisma-oge";
+    oge.setAttribute("role", "menuitem");
+    oge.appendChild(elYap("span", "calisma-ad", ad));
+    if (aktif) oge.appendChild(elYap("span", "calisma-etiket", "Açık"));
+    oge.disabled = !acilabilir;
+    oge.title = (aciklama ? aciklama + "\n" : "")
+        + (aktif ? "Şu an bu çalışmadasınız" : acilabilir ? "Tıklayın: kaldığı yerden aç" : "");
+    if (acilabilir && ac) oge.onclick = ac;
+    satir.appendChild(oge);
+    const dugmeler = elYap("div", "calisma-dugmeler");
+    if (silBilgi) {
+        const sil = elYap("button", "calisma-cop");
+        sil.type = "button";
+        sil.innerHTML = COP_IKON;
+        sil.title = silBaslik;
+        sil.setAttribute("aria-label", silBaslik);
+        sil.onclick = () => calismaSilOnayi(dugmeler, silBilgi);
+        dugmeler.appendChild(sil);
+    }
+    satir.appendChild(dugmeler);
+    return satir;
 }
 
 function calismalarCiz(d) {
@@ -11448,94 +11463,56 @@ function calismalarCiz(d) {
         return;
     }
     const liste = d.calismalar || [];
-    if (!liste.length) {
-        calismalarListe.appendChild(elYap("div", "calisma-bos",
-            "Kayıtlı çalışma yok."));
-        gizliKlasorleriCiz(d.gizli);
-        return;
-    }
+    if (!liste.length)
+        calismalarListe.appendChild(elYap("div", "calisma-bos", "Kayıtlı çalışma yok."));
     liste.forEach(c => {
         const aktif = c.calisma_id === OTURUM_ID;
-        const oge = document.createElement("button");
-        oge.type = "button";
-        oge.className = "calisma-oge" + (aktif ? " aktif" : "");
-        oge.setAttribute("role", "menuitem");
-        const ad = elYap("div", "calisma-ad", c.ad || ("Çalışma " + c.calisma_id));
-        if (aktif) ad.appendChild(elYap("span", "calisma-etiket", "AÇIK"));
-        oge.appendChild(ad);
         const alt = c.hata ? c.hata
             : (c.baslamis === false ? "Henüz başlanmadı" : calismaAltSatiri(c));
-        oge.disabled = !!c.hata || aktif;
-        if (!oge.disabled) {
-            oge.title = "Bu çalışmayı kaldığı yerden aç";
-            oge.onclick = () => calismayaGec(c.calisma_id);
-        }
-        /* SAĞDAKİ DÜĞMELER: Aç ve Sil. Satırın kendisine tıklamak da açar;
-           Aç düğmesi bunu görünür kılıyor. */
-        const satir = elYap("div", "calisma-satir");
-        satir.appendChild(oge);
-        const dugmeler = elYap("div", "calisma-dugmeler");
-        const ac = elYap("button", "calisma-dugme", aktif ? "Açık" : "Aç");
-        ac.type = "button";
-        ac.disabled = oge.disabled;
-        ac.title = aktif ? "Şu an bu çalışmadasınız" : "Bu çalışmayı kaldığı yerden aç";
-        if (!ac.disabled) ac.onclick = () => calismayaGec(c.calisma_id);
-        dugmeler.appendChild(ac);
         /* Hiç başlamamış (boş) açık çalışmada silinecek bir şey yok. */
-        if (c.baslamis !== false || c.hata) {
-            const sil = elYap("button", "calisma-dugme sil", "Sil");
-            sil.type = "button";
-            sil.title = "Bu çalışmayı kalıcı olarak sil";
-            sil.onclick = () => calismaSilOnayi(dugmeler, c);
-            dugmeler.appendChild(sil);
-        }
-        satir.appendChild(dugmeler);
-        calismaBilgiEkle(satir, dugmeler, alt, !!c.hata);
-        calismalarListe.appendChild(satir);
+        const silinir = c.baslamis !== false || c.hata;
+        calismalarListe.appendChild(arsivSatiri(
+            c.ad || ("Çalışma " + c.calisma_id), tireSade(alt || ""), aktif,
+            !c.hata && !aktif, () => calismayaGec(c.calisma_id),
+            silinir ? c : null, "Bu çalışmayı kalıcı olarak sil"));
     });
     gizliKlasorleriCiz(d.gizli);
 }
 
-/* LİSTEDE GÖRÜNMEYEN KLASÖRLER. PROJE_HAFIZASI'nda olup listede olmayan
-   v-klasörleri nedeniyle yazılır: boş klasör, çalışma dosyası silinmiş
-   artık dosyalar, başlanmamış çalışma. "Temizle" klasörü kalıcı siler
-   (onaylı, Sil ile aynı uç). */
+/* LİSTEDE GÖRÜNMEYEN KLASÖRLER: PROJE_HAFIZASI'nda olup listede olmayan
+   v-klasörleri (çalışma dosyası silinmiş artık dosyalar, başlanmamış
+   çalışma). Nedeni satırın üstüne gelince görünür; çöp kutusu klasörü
+   kalıcı siler (onaylı, Sil ile aynı uç). Boş klasör listelenmez. */
 function gizliKlasorleriCiz(gizli) {
     if (!gizli || !gizli.length) return;
     calismalarListe.appendChild(elYap("div", "calisma-gizli-baslik",
-        "Listede Görünmeyen Klasörler (" + gizli.length + ")"));
+        "Diğer Klasörler · " + gizli.length));
     gizli.forEach(g => {
-        const satir = elYap("div", "calisma-satir calisma-gizli");
-        const oge = elYap("div", "calisma-oge");
-        oge.appendChild(elYap("div", "calisma-ad", g.ad));
-        satir.appendChild(oge);
-        const dugmeler = elYap("div", "calisma-dugmeler");
-        const sil = elYap("button", "calisma-dugme sil", "Temizle");
-        sil.type = "button";
-        sil.title = g.ad + " klasörünü kalıcı olarak sil";
-        sil.onclick = () => calismaSilOnayi(dugmeler, { calisma_id: g.ad });
-        dugmeler.appendChild(sil);
-        satir.appendChild(dugmeler);
-        calismaBilgiEkle(satir, dugmeler, tireSade(g.neden || ""), false);
+        const satir = arsivSatiri(g.ad, tireSade(g.neden || ""), false, false, null,
+            { calisma_id: g.ad }, g.ad + " klasörünü kalıcı olarak sil");
+        satir.classList.add("calisma-gizli");
         calismalarListe.appendChild(satir);
     });
 }
 
-/* SİLME ONAYI AYNI YERDE (Yeni Çalışma ile aynı düzen): Aç ve Sil
-   gizlenir, yerinde "Silinsin mi?" ile solda Onayla, sağda Reddet
-   belirir. Silme geri alınamaz; tek tıkla olmamalı. */
+/* SİLME ONAYI AYNI SATIRDA: ad ve çöp kutusu gizlenir, yerinde
+   "Silinsin mi?" ile Sil / İptal belirir. Silme geri alınamaz; tek
+   tıkla olmamalı. */
 function calismaSilOnayi(dugmeler, c) {
     const satir = dugmeler.closest(".calisma-satir");
     const eski = Array.from(dugmeler.children);
     eski.forEach(d => { d.hidden = true; });
+    if (satir) satir.classList.add("onayda");
     const soru = elYap("span", "calisma-sil-soru", "Silinsin mi?");
-    const onayla = elYap("button", "calisma-dugme onayla", "Onayla");
-    const reddet = elYap("button", "calisma-dugme", "Reddet");
+    soru.title = c.calisma_id + " kalıcı olarak silinir";
+    const onayla = elYap("button", "calisma-dugme onayla", "Sil");
+    const reddet = elYap("button", "calisma-dugme", "İptal");
     onayla.type = reddet.type = "button";
     onayla.title = c.calisma_id + " kalıcı olarak silinir; geri alınamaz";
     const geriGetir = () => {
         [soru, onayla, reddet].forEach(d => d.remove());
         eski.forEach(d => { d.hidden = false; });
+        if (satir) satir.classList.remove("onayda");
     };
     reddet.onclick = geriGetir;
     onayla.onclick = () => {

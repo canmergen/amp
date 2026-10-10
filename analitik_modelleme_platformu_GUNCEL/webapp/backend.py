@@ -1776,7 +1776,6 @@ def _gizli_klasorler(gosterilen):
     """PROJE_HAFIZASI'nda olup Arşiv'de GÖRÜNMEYEN v-klasörleri ve nedeni
 
 
-      Boş klasör              : içinde dosya yok (eski silmelerden kalan)
       Çalışma dosyası yok     : calisma.json silinmiş, artık dosyalar kalmış
       Başlanmamış çalışma     : açılmış ama hiçbir adım yapılmamış
     Başka kullanıcının çalışması listelenmez. Doner: [{ad, neden, dosya}]."""
@@ -1802,10 +1801,11 @@ def _gizli_klasorler(gosterilen):
     for ad in sorted(adlar - set(gosterilen), key=lambda k: int(k[1:])):
         icerik = dosyalar.get(ad) or []
         sahip = (kayit.get(ad) or {}).get("sahip")
+        # BOS KLASOR LISTELENMEZ: icinde veri yok, numarasi yeni calismaya
+        # zaten yeniden verilir (_yeni_calisma_id dosyasi olmayan klasoru bos
+        # sayar). Dataiku bazi depolarda bos klasoru silmiyor; listede
+        # kalinca "Temizle" silinmis gorunup geri geliyordu.
         if not icerik:
-            if sahip and sahip != ben:
-                continue
-            cikti.append({"ad": ad, "neden": "Boş klasör", "dosya": 0})
             continue
         if "calisma.json" not in icerik:
             if sahip and sahip != ben:
@@ -1936,6 +1936,10 @@ def _klasoru_sil(hafiza, kimlik):
         hafiza.delete_path("/%s" % kimlik)
     except Exception as e:
         _hata_kaydet("calisma_sil:klasor", e)
+        try:
+            hafiza.delete_path("/%s/" % kimlik)     # bazi depolar klasoru boyle ister
+        except Exception:
+            pass
     kalan = _klasor_dosyalari(hafiza, kimlik)
     if not kalan:
         return []
