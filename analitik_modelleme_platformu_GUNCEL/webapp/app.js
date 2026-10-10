@@ -8340,11 +8340,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     if (da.sutunlar) kbas.appendChild(bolmeBilgiSimgesi(tireSade(da.sutunlar), "Sütunlar"));
     kb.appendChild(kbas);
     kart.appendChild(kb);
-    if (da.yonerge && da.yonerge.length) {
-        const yl = elYap("ol", "dg-yonerge");
-        da.yonerge.forEach(m => yl.appendChild(elYap("li", "", tireSade(m))));
-        kart.appendChild(yl);
-    }
+    /* Yönerge tek paragraf (kullanıcı kararı: madde madde uzundu). */
+    if (da.yonerge && da.yonerge.length)
+        kart.appendChild(elYap("p", "dg-yonerge-p", tireSade(da.yonerge.join(" "))));
     kart.appendChild(dgLejant([["dg-l-llm", "Dil Modeli Önerisi"], ["dg-l-hafiza", "Hafızadan"],
                                ["dg-l-duzenlendi", "Düzenlendi"],
                                ["dg-l-dikkat", "Eksik ya da Kontrol"]]));
@@ -8359,14 +8357,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const durumEl = elYap("div", "dg-bilgi-kutu", "");
     durumEl.hidden = true;
     kart.appendChild(durumEl);
-    /* "Yalnız Hafızaya Ekle" sonucu (yeniden çizimde kaybolmaz). */
+    /* Bilgi satırı yeri ("+ Dönem Kalıbı Ekle" bunun altına gelir). */
     const bilgiEl = elYap("div", "dg-donem-bilgi", "");
     bilgiEl.hidden = true;
-    function bilgiYaz(m, hata) {
-        bilgiEl.textContent = tireSade(m || "");
-        bilgiEl.classList.toggle("hata", !!hata);
-        bilgiEl.hidden = !m;
-    }
     const ilerEl = elYap("div", "islem-satiri dg-ilerleme");
     ilerEl.setAttribute("role", "status");
     const ilerMetin = elYap("span", "islem-sure", "");
@@ -8405,6 +8398,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
 
     const satirlar = [];              // tabloda görünen satırlar
     const cikanlar = [];              // çıkarılanlar: {r, anah}
+    const olasilar = [];              // emin olunamayanlar (tabloda değil): {r, anah}
     const duzen = {};                 // anahtar -> {anlam, kalip, cikar}: yoklamada kaybolmasın
     const anahtarOf = r => r.elle ? (r.id || ("elle:" + r.kalip)) : r.kalip;
     const cikarildi = (r, anah) => (duzen[anah] && duzen[anah].cikar !== undefined)
@@ -8483,34 +8477,13 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const bulunan = adlardaBul(k);
             degerCiz(tdD, bulunan);
             if (k && !bulunan.length) {
-                tdD.appendChild(elYap("span", "dg-kisa-cip dg-adda-yok", "Adlarda yok"));
-                /* ADLARDA GEÇMEYEN KALIP: bu çalışmaya eklenemez ama yalnız
-                   hafızaya yazılabilir; adında geçen bir veri seti geldiğinde
-                   tabloya anlamıyla gelir. Yazılınca satır silinir. */
-                const hb = elYap("button", "dg-toplu-btn dg-donem-hafiza", "Yalnız Hafızaya Ekle");
-                hb.type = "button";
-                hb.disabled = kilitli || da.dm === "calisiyor";
-                hb.title = "Bu çalışmayı etkilemez; kalıp anlamıyla hafızaya yazılır, adında bu "
-                    + "kalıp geçen bir veri setinde tabloya hazır gelir.";
-                hb.onclick = () => {
-                    const anlamV = g.value.trim();
-                    if (!anlamV) { bilgiYaz("Önce anlamı yazın.", true); g.focus(); return; }
-                    const yt = donemYerTutucuHatasi(k, anlamV);
-                    if (yt) { bilgiYaz(k.toUpperCase() + ": " + yt, true); return; }
-                    hb.disabled = true;
-                    fetch(getWebAppBackendUrl("donem_hafiza_ekle"), {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ oturum_id: OTURUM_ID, kalip: k, anlam: anlamV })
-                    })
-                    .then(r => r.json())
-                    .then(d => {
-                        const ok = !!(d && d.tamam);
-                        bilgiYaz((d && (d.mesaj || d.hata)) || "Hafızaya yazılamadı.", !ok);
-                        if (ok) cikBtn.onclick(); else hb.disabled = false;
-                    })
-                    .catch(() => { bilgiYaz("Hafızaya yazılamadı (bağlantı).", true); hb.disabled = false; });
-                };
-                tdD.appendChild(hb);
+                /* ADLARDA GEÇMEYEN KALIP: bu çalışmada bir kolonu etkilemez;
+                   onaylayınca anlamıyla hafızaya yazılır, adında geçen bir
+                   veri seti geldiğinde tabloya hazır gelir. */
+                const c = elYap("span", "dg-kisa-cip dg-adda-yok", "Adlarda yok · hafızaya yazılır");
+                c.title = "Bu çalışmadaki kolon adlarında geçmiyor. Onaylayınca anlamıyla hafızaya "
+                    + "yazılır; adında bu kalıp geçen bir veri setinde tabloya hazır gelir.";
+                tdD.appendChild(c);
             }
         }
         if (kg) elleSay(); else degerCiz(tdD, r.degerler || []);
@@ -8610,6 +8583,35 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         if (tr) { tr.scrollIntoView({ block: "nearest" }); const t = tr.querySelector("textarea"); if (t) t.focus(); }
         if (degisti) degisti();
     }
+    /* OLASI DÖNEM KALIPLARI: dönem olduğu kesin olmayanlar (dil modelinin
+       sorusu var ya da kalıp yalnız bir ikilinin içinde geçiyor). Tabloya
+       baştan girmez; tıklanınca tabloya alınır. */
+    const olaKap = elYap("div", "dg-donem-cikanlar dg-donem-olasilar");
+    const olaBas = elYap("span", "dg-donem-cikanlar-bas", "");
+    const olaListe = elYap("span", "dg-donem-cikanlar-liste");
+    olaKap.appendChild(olaBas);
+    olaKap.appendChild(olaListe);
+    sar.after(olaKap);
+    function olasilariCiz() {
+        olaListe.textContent = "";
+        olaBas.textContent = "Olası Dönem Kalıpları · " + ftBinlik(olasilar.length);
+        olaBas.appendChild(bolmeBilgiSimgesi("Dönem bilgisi olduğu kesin olmayan kalıplar: dil "
+            + "modeli emin olamadı ya da kalıp kolon adlarında yalnız başka bir parçayla yan yana "
+            + "geçiyor. Dönemse üzerine tıklayın; tabloya gelir, anlamını kontrol edersiniz. "
+            + "Tabloya almadıklarınız kullanılmaz ve hafızaya yazılmaz.", "Olası Dönem Kalıpları"));
+        const k = kilitli || da.dm === "calisiyor";
+        olasilar.forEach(c => {
+            const b = elYap("button", "dg-parca-oge dg-donem-geri", c.r.kalip);
+            b.type = "button";
+            b.disabled = k;
+            b.title = (c.r.anlam ? tireSade(c.r.anlam) + "\n" : "")
+                + (c.r.soru ? "Dil modeli: " + tireSade(c.r.soru) + "\n" : "")
+                + (c.r.uyari ? tireSade(c.r.uyari) + "\n" : "") + "Tıklayın: tabloya al";
+            b.onclick = () => geriAl(c.anah);
+            olaListe.appendChild(b);
+        });
+        olaKap.hidden = !olasilar.length;
+    }
     function cikanlariCiz() {
         cikListe.textContent = "";
         cikBas.textContent = "Çıkarılanlar · " + ftBinlik(cikanlar.length);
@@ -8642,10 +8644,12 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         tb.textContent = "";
         satirlar.length = 0;
         cikanlar.length = 0;
+        olasilar.length = 0;
         (liste || []).forEach(r => {
             const anah = anahtarOf(r);
             if (cikarildi(r, anah)) {
-                if (!r.elle) cikanlar.push({ r, anah });   // elle satır çıkarılınca silinir
+                if (r.olasi) olasilar.push({ r, anah });     // olası: tabloya alınmadı
+                else if (!r.elle) cikanlar.push({ r, anah }); // elle satır çıkarılınca silinir
                 return;
             }
             satirCiz(r);
@@ -8653,12 +8657,17 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         elleYeni.forEach(satirCiz);
         if (!satirlar.length) {
             const tr = elYap("tr", "dg-bos-tablo");
-            const td = elYap("td", "", (liste || []).length
-                ? "Bütün satırlar çıkarıldı; onaylarsanız dönem bilgisi boş kalır."
-                : "Dönem bilgisi taşıyan parça bulunmadı.");
+            const td = elYap("td", "", da.dm === "calisiyor"
+                ? "Dil modeli kalıpları değerlendiriyor; dönem olduğu kesin olanlar burada görünecek."
+                : olasilar.length && !cikanlar.length
+                    ? "Kesin dönem kalıbı bulunmadı; aşağıdaki olası kalıplardan dönem olanları tabloya alın."
+                    : (liste || []).length
+                        ? "Bütün satırlar çıkarıldı; onaylarsanız dönem bilgisi boş kalır."
+                        : "Dönem bilgisi taşıyan parça bulunmadı.");
             td.colSpan = 4; tr.appendChild(td); tb.appendChild(tr);
         }
         cikanlariCiz();
+        olasilariCiz();
         durumEl.textContent = da.not ? tireSade(da.not) : "";
         durumEl.hidden = !durumEl.textContent;
         listeBoya();
@@ -8667,7 +8676,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         if (kilitli || da.dm === "calisiyor") return;
         const k = (kalip || "").toUpperCase();
         /* Çıkarılanlardaysa geri alınır; tabloda zaten varsa o satıra gidilir. */
-        const cik = k && cikanlar.find(c => c.r.kalip === k);
+        const cik = k && (cikanlar.find(c => c.r.kalip === k) || olasilar.find(c => c.r.kalip === k));
         if (cik) { geriAl(cik.anah); return; }
         const var_ = k && satirlar.find(x => (x.kg ? x.kg.value.trim().toUpperCase() : x.r.kalip) === k);
         if (var_) { (var_.g || var_.kg).focus(); var_.tr.scrollIntoView({ block: "nearest" }); return; }
@@ -8684,7 +8693,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     }
     const ekleBtn = elYap("button", "dg-toplu-btn dg-donem-ekle", "+ Dönem Kalıbı Ekle");
     ekleBtn.type = "button";
-    ekleBtn.title = "Kolon adlarında geçen ama listede olmayan bir dönem parçasını kalıbı ve anlamıyla ekleyin.";
+    ekleBtn.title = "Listede olmayan bir dönem kalıbını anlamıyla ekleyin. Kolon adlarında geçmese de "
+        + "onaylayınca hafızaya yazılır ve sonraki çalışmalarda kullanılır.";
     ekleBtn.onclick = () => elleEkle("");
     bilgiEl.after(ekleBtn);
 
@@ -8746,6 +8756,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         ekleBtn.disabled = k;
         listeOgeleri.forEach(o => { o.b.disabled = k; });
         cikListe.querySelectorAll("button").forEach(b => { b.disabled = k; });
+        olaListe.querySelectorAll("button").forEach(b => { b.disabled = k; });
     }
     kilitDurumu();
     /* Elle satır: kalıp ve anlam ikisi de boşsa yok sayılır. */

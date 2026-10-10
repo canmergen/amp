@@ -1658,21 +1658,15 @@ def _onayli_anlamlar(durum):
 # ---------------------------------------------------------------------------
 DONEM_BASLIK = ADIM_ADI["donem"]
 DONEM_YONERGE = [
-    "Kolon adlarında dönem bilgisi taşıyan parçalar aşağıda: biçiminden "
-    "bulunanlar, önceki çalışmalarda hafızaya kaydedilenler ve dil "
-    "modelinin diğer kısaltmalar arasından bulduğu (\"Dil Modeli Buldu\"). "
-    "Dil modeli her birinin anlamını tanımlardan okuyarak önerir.",
-    "Anlamı kontrol edin, gerekiyorsa düzeltin; sorusu olan satırda "
-    "cevabı anlamın içine yazın. Dönem bilgisi olmayan satırı \"Çıkar\" "
-    "ile çıkarın; çıkardığınızı tablonun altındaki listeden geri "
-    "alabilirsiniz.",
-    "Kolon adlarında geçen ama listede olmayan dönem parçasını alttaki "
-    "kısaltmalara tıklayarak ya da \"+ Dönem Kalıbı Ekle\" ile ekleyin; "
-    "adlarda geçmeyen kalıp eklenmez.",
-    "Onaylayınca tabloda kalan bütün satırlar bu çalışmanın dönem "
-    "bilgisi olur ve hafızaya kaydedilir (eklenir ya da güncellenir); "
-    "sonraki çalışmalarda dolu gelir. Hafızadan gelip çıkardığınız kalıp "
-    "hafızadan da silinir; bu tabloda olmayan kayıtlara dokunulmaz."]
+    "Tabloda kolon adlarındaki dönem parçalarından yalnız dönem bilgisi "
+    "olduğu kesin olanlar var: hafızadan gelenler ve dil modelinin "
+    "tanımlardan doğruladıkları. Emin olunamayanlar altta \"Olası Dönem "
+    "Kalıpları\" listesinde; dönemse üzerine tıklayıp tabloya alın. "
+    "Anlamları kontrol edip gerekirse düzeltin, dönem olmayanı \"Çıkar\" "
+    "ile çıkarın. Listede olmayan bir kalıbı \"+ Dönem Kalıbı Ekle\" ile "
+    "anlamıyla siz de ekleyebilirsiniz; kolon adlarında geçmese de "
+    "hafızaya yazılır ve sonraki çalışmalarda kullanılır. Onaylayınca "
+    "tablodaki satırlar hafızaya kaydedilir."]
 DONEM_SUTUNLAR = (
     "Kalıp: kolon adındaki dönem parçasının biçimi (<N> sayı, <NN> iki "
     "basamaklı sayı).\n"
@@ -1740,7 +1734,7 @@ def _donem_alani(durum):
     satirlar = []
 
     def satir(kalip, tur, kolon, degerler, ornekler, oneri, kaynak, soru, notu,
-              model, varsayilan_cikar=False, haric_oneri=(), **ek):
+              model, varsayilan_cikar=False, haric_oneri=(), olasi=False, **ek):
         """ANLAM: onceki karar varsa o; yoksa oneri (dil modeli ya da
         hafiza). ONERI ayri gider: on yuz duzenlenmis satiri buna gore
         boyar. CIKAR: kullanicinin cikardigi satir (onceki kararda)."""
@@ -1754,7 +1748,13 @@ def _donem_alani(durum):
             uyari = ("Kolon adlarında yalnız %s içinde geçiyor, tek başına geçmiyor. "
                      "Orada dönem bilgisi değilse çıkarın." %
                      ", ".join(ik for ik, _n in b["birlikte"]))
-        anlam, cikar = oneri, varsayilan_cikar
+        # OLASI: dönem olduğu kesin olmayan satır (dil modelinin sorusu var
+        # ya da kalıp yalnız ikili içinde geçiyor). Tabloya baştan girmez;
+        # kartta "Olası Dönem Kalıpları" listesinde durur, kullanıcı alırsa
+        # tabloya gelir. Hafızadan gelen (önceden onaylanmış) olası sayılmaz.
+        if uyari and kaynak != "hafiza":
+            olasi = True
+        anlam, cikar = oneri, (varsayilan_cikar or olasi)
         if o is not None:
             anlam = "" if o.get("donem_degil") else str(o.get("anlam") or "")
             cikar = bool(o.get("cikar"))
@@ -1767,7 +1767,8 @@ def _donem_alani(durum):
              "kaynak": kaynak, "model": model, "cikar": cikar,
              "hafizada": bool(haf.get(kalip)), "birlikte": birlikte,
              "tek": b.get("tek", kolon), "haric": sorted(set(haric or ()) & gecerli),
-             "haric_oneri": sorted(set(haric_oneri or ()) & gecerli), "uyari": uyari}
+             "haric_oneri": sorted(set(haric_oneri or ()) & gecerli), "uyari": uyari,
+             "olasi": bool(olasi)}
         r.update(ek)
         satirlar.append(r)
 
@@ -1781,18 +1782,25 @@ def _donem_alani(durum):
             satir(kalip, k["tur"], k["kolon"], degerler, ornekler, h, "hafiza", "", "", "",
                   haric_oneri=haf_haric.get(kalip) or ())
             continue
+        # YALNIZ KESİN OLANLAR TABLOYA (kullanıcı kararı: önce ekleyip sonra
+        # çıkarmak yok). Dil modeli henüz bakmadıysa satır gösterilmez; dönem
+        # değil dediyse hiç gösterilmez; sorusu varsa OLASI listesine gider.
+        # Dil modeli cevap vermediyse biçimden bulunanlar olası gelir.
+        # Kullanıcının önceki kararı (geri dönüş) her durumda korunur.
         donem_mi = m.get("donem", True)
-        # Yanindaki-parca adayi: model donemle ilgisiz dediyse gosterilmez.
-        if m and not donem_mi and k["tur"] == "komsu" and kalip not in onceki:
+        if not m:
+            if calisiyor and kalip not in onceki:
+                continue
+            satir(kalip, k["tur"], k["kolon"], degerler, ornekler, "", "", "", "", "",
+                  olasi=True)
             continue
-        # Model donem degil dediyse satir CIKARILMIS gelir (altta geri
-        # alinabilir); bos anlamla tabloda kalip onayi durdurmasin.
+        if not donem_mi:
+            if kalip not in onceki or onceki[kalip].get("cikar"):
+                continue
         satir(kalip, k["tur"], k["kolon"], degerler, ornekler,
-              (m.get("anlam") or "") if donem_mi else "", "model" if m else "",
-              m.get("soru", "") if donem_mi else
-              (m.get("soru") or "Dil modeline göre dönem bilgisi taşımıyor."),
-              m.get("not", ""), m.get("model", ""), varsayilan_cikar=bool(m) and not donem_mi,
-              haric_oneri=m.get("haric") or ())
+              (m.get("anlam") or "") if donem_mi else "", "model",
+              m.get("soru", ""), m.get("not", ""), m.get("model", ""),
+              haric_oneri=m.get("haric") or (), olasi=bool(m.get("soru")))
     # TARAMA: dil modelinin rakamsiz kisaltmalar arasindan buldugu donem
     # parcalari (kalip = kisaltmanin kendisi).
     tara_bilgi = {x["parca"]: x for x in tara}
@@ -1804,7 +1812,8 @@ def _donem_alani(durum):
         satir(p_, "tarama", x["kolon"], [{"deger": p_, "kolon": x["kolon"]}],
               [{"kolon": orn_ad, "tanim": str(orn_tanim)[:240]}] if orn_ad else [],
               b.get("anlam", ""), "model", b.get("soru", ""), b.get("not", ""),
-              b.get("model", ""), haric_oneri=b.get("haric") or ())
+              b.get("model", ""), haric_oneri=b.get("haric") or (),
+              olasi=bool(b.get("soru")))
     # Onceki kararda olup artik listede olmayan (tarama sonucu bu surecte
     # bellekte yok) satir korunur; kullanicinin karari kaybolmaz.
     tespit = {s_["kalip"] for s_ in satirlar}
@@ -1898,10 +1907,12 @@ def donem_uygula(durum):
             hatalar.append("%s: birden fazla satırda." % kalip)
             continue
         gorulen.add(kalip)
-        # Bu adim yalniz kolon adlarinda gecen donem parcalari icindir.
-        if elle and not donem_mod.kalip_adlarda(kalip, alan.get("parcalar") or []):
-            hatalar.append("%s: kolon adlarında geçmiyor; bu adımda yalnız adlarda "
-                           "geçen dönem parçaları eklenir." % kalip)
+        # ELLE EKLENEN, ADLARDA GEÇMEYEN kalıp da kabul (kullanıcı kararı):
+        # bu çalışmada bir kolonu etkilemez, hafızaya yazılır; adında geçen
+        # bir veri seti gelince tabloya anlamıyla gelir. Biçimi geçerli olmalı.
+        if elle and not donem_mod.kalip_adlarda(kalip, alan.get("parcalar") or []) \
+                and donem_mod.kalip_deseni(kalip) is None:
+            hatalar.append("%s: geçerli bir kalıp değil (harf, rakam, <N> ya da <NN>)." % kalip)
             continue
         # HARIC: yalniz kalibin gercekten birlikte gectigi ikililer gecer.
         ikililer = {ik for ik, _n in (bh.get(kalip) or {}).get("birlikte") or []}

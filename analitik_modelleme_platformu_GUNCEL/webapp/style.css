@@ -3253,6 +3253,10 @@ span.bolme-cip { cursor: default; }
 /* Kısaltma Sözlüğü yönergesi: numaralı üç adım. */
 .dg-yonerge { margin: 0 0 var(--b-2); padding-left: 20px; color: var(--metin); line-height: 1.5; }
 .dg-yonerge li { margin: 1px 0; }
+.dg-yonerge-p { margin: 0 0 var(--b-2); color: var(--metin); line-height: 1.55; }
+/* Olası dönem kalıpları: çıkarılanlar listesiyle aynı yapı, kesik kenarlı
+   çiplerle "henüz tabloda değil" olduğu belli. */
+
 .dg-kalip-ayrac { color: var(--metin); font-weight: var(--fw-kalin); }
 .dg-kisaltma-tablo .dg-yeni-kisa { text-transform: uppercase; }
 .dg-kisaltma-tablo .dg-yeni-kisa::placeholder { text-transform: none; }
@@ -3324,6 +3328,10 @@ span.bolme-cip { cursor: default; }
     font-size: 0.85em; color: var(--amber);
 }
 .dg-donem-geri .dg-donem-sil-not { text-decoration: none; }
+/* Olası kalıp: üstü çizili değil (çıkarılmadı, henüz alınmadı); kesik
+   kenarlı ve önünde "+": tıklanınca tabloya gelir. */
+.dg-donem-olasilar .dg-donem-geri { text-decoration: none; border-style: dashed; }
+.dg-donem-olasilar .dg-donem-geri::before { content: "+ "; color: var(--kirmizi); font-weight: var(--fw-kalin); }
 /* Birlikte geçtiği ikililer: çip tıklanır; hariç olan üstü çizili. */
 .dg-donem-birlikte {
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
@@ -3335,7 +3343,6 @@ span.bolme-cip { cursor: default; }
 .dg-birlikte-cip:disabled { cursor: default; opacity: .6; }
 .dg-birlikte-cip.haric { text-decoration: line-through; border-style: dashed; color: var(--metin-tamam); }
 .dg-donem-tek { color: var(--metin); }
-.dg-donem-hafiza { margin-left: 4px; padding: 0 var(--b-2); }
 .dg-donem-bilgi { margin: var(--b-2) 0 0; color: var(--yesil); font-weight: var(--fw-kalin); }
 .dg-donem-bilgi.hata { color: var(--kirmizi); }
 .dg-donem-bilgi[hidden] { display: none; }
