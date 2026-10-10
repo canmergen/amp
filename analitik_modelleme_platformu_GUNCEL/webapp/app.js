@@ -11400,6 +11400,26 @@ function calismaAltSatiri(c) {
     return parca.join(" · ");
 }
 
+/* AÇIKLAMA "i" DÜĞMESİNDE: liste sol barın eninde (dar); açıklama satırı
+   (son adım, tarih, neden) satırda değil, i'ye basınca satırın altında
+   açılır. Yeniden basınca kapanır. */
+function calismaBilgiEkle(satir, dugmeler, metin, hataMi) {
+    if (!metin) return;
+    const acik = elYap("div", "calisma-aciklama" + (hataMi ? " calisma-hata" : ""), metin);
+    const i = elYap("button", "calisma-bilgi", "i");
+    i.type = "button";
+    i.title = "Açıklama";
+    i.setAttribute("aria-expanded", "false");
+    i.onclick = e => {
+        e.stopPropagation();
+        const ac = !satir.classList.contains("bilgi-acik");
+        satir.classList.toggle("bilgi-acik", ac);
+        i.setAttribute("aria-expanded", ac ? "true" : "false");
+    };
+    dugmeler.prepend(i);
+    satir.appendChild(acik);
+}
+
 function calismalarCiz(d) {
     calismalarListe.innerHTML = "";
     if (!d || d.hata) {
@@ -11425,7 +11445,6 @@ function calismalarCiz(d) {
         oge.appendChild(ad);
         const alt = c.hata ? c.hata
             : (c.baslamis === false ? "Henüz başlanmadı" : calismaAltSatiri(c));
-        if (alt) oge.appendChild(elYap("div", "calisma-alt" + (c.hata ? " calisma-hata" : ""), alt));
         oge.disabled = !!c.hata || aktif;
         if (!oge.disabled) {
             oge.title = "Bu çalışmayı kaldığı yerden aç";
@@ -11451,6 +11470,7 @@ function calismalarCiz(d) {
             dugmeler.appendChild(sil);
         }
         satir.appendChild(dugmeler);
+        calismaBilgiEkle(satir, dugmeler, alt, !!c.hata);
         calismalarListe.appendChild(satir);
     });
     gizliKlasorleriCiz(d.gizli);
@@ -11468,7 +11488,6 @@ function gizliKlasorleriCiz(gizli) {
         const satir = elYap("div", "calisma-satir calisma-gizli");
         const oge = elYap("div", "calisma-oge");
         oge.appendChild(elYap("div", "calisma-ad", g.ad));
-        oge.appendChild(elYap("div", "calisma-alt", tireSade(g.neden || "")));
         satir.appendChild(oge);
         const dugmeler = elYap("div", "calisma-dugmeler");
         const sil = elYap("button", "calisma-dugme sil", "Temizle");
@@ -11477,6 +11496,7 @@ function gizliKlasorleriCiz(gizli) {
         sil.onclick = () => calismaSilOnayi(dugmeler, { calisma_id: g.ad });
         dugmeler.appendChild(sil);
         satir.appendChild(dugmeler);
+        calismaBilgiEkle(satir, dugmeler, tireSade(g.neden || ""), false);
         calismalarListe.appendChild(satir);
     });
 }
