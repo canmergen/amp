@@ -8369,9 +8369,14 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const durumEl = elYap("div", "dg-bilgi-kutu", "");
     durumEl.hidden = true;
     kart.appendChild(durumEl);
-    /* Bilgi satırı yeri ("+ Dönem Kalıbı Ekle" bunun altına gelir). */
+    /* "Yalnız Hafızaya Ekle" sonucu (yeniden çizimde kaybolmaz). */
     const bilgiEl = elYap("div", "dg-donem-bilgi", "");
     bilgiEl.hidden = true;
+    function bilgiYaz(m, hata) {
+        bilgiEl.textContent = tireSade(m || "");
+        bilgiEl.classList.toggle("hata", !!hata);
+        bilgiEl.hidden = !m;
+    }
     const ilerEl = elYap("div", "islem-satiri dg-ilerleme");
     ilerEl.setAttribute("role", "status");
     const ilerMetin = elYap("span", "islem-sure", "");
@@ -8496,6 +8501,32 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 c.title = "Bu çalışmadaki kolon adlarında geçmiyor. Onaylayınca anlamıyla hafızaya "
                     + "yazılır; adında bu kalıp geçen bir veri setinde tabloya hazır gelir.";
                 tdD.appendChild(c);
+                /* YALNIZ HAFIZAYA EKLE: onayı beklemeden şimdi hafızaya yazar
+                   (bu çalışmayı etkilemez); yazılınca satır tablodan kalkar. */
+                const hb = elYap("button", "dg-toplu-btn dg-donem-hafiza", "Yalnız Hafızaya Ekle");
+                hb.type = "button";
+                hb.disabled = kilitli || da.dm === "calisiyor";
+                hb.title = "Bu çalışmayı etkilemez; kalıp anlamıyla hafızaya yazılır, adında bu "
+                    + "kalıp geçen bir veri setinde tabloya hazır gelir.";
+                hb.onclick = () => {
+                    const anlamV = g.value.trim();
+                    if (!anlamV) { bilgiYaz("Önce anlamı yazın.", true); g.focus(); return; }
+                    const yt = donemYerTutucuHatasi(k, anlamV);
+                    if (yt) { bilgiYaz(k.toUpperCase() + ": " + yt, true); return; }
+                    hb.disabled = true;
+                    fetch(getWebAppBackendUrl("donem_hafiza_ekle"), {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ oturum_id: OTURUM_ID, kalip: k, anlam: anlamV })
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                        const ok = !!(d && d.tamam);
+                        bilgiYaz((d && (d.mesaj || d.hata)) || "Hafızaya yazılamadı.", !ok);
+                        if (ok) cikBtn.onclick(); else hb.disabled = false;
+                    })
+                    .catch(() => { bilgiYaz("Hafızaya yazılamadı (bağlantı).", true); hb.disabled = false; });
+                };
+                tdD.appendChild(hb);
             }
         }
         if (kg) elleSay(); else degerCiz(tdD, r.degerler || []);

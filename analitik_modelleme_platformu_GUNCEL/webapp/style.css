@@ -3249,6 +3249,7 @@ span.bolme-cip { cursor: default; }
 /* Kısaltma Sözlüğü yönergesi: numaralı üç adım. */
 .dg-yonerge { margin: 0 0 var(--b-2); padding-left: 20px; color: var(--metin); line-height: 1.5; }
 .dg-yonerge li { margin: 1px 0; }
+.dg-donem-hafiza { margin-left: 4px; padding: 0 var(--b-2); }
 .dg-yonerge-p { margin: 0 0 var(--b-2); color: var(--metin); line-height: 1.55; }
 /* Olası dönem kalıpları: çıkarılanlar listesiyle aynı yapı, kesik kenarlı
    çiplerle "henüz tabloda değil" olduğu belli. */
