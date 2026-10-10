@@ -161,12 +161,12 @@ let aktifAnalizSekme = "ozet";
    Panel her backend yanitinda BASTAN ciziliyor; bu harita cizim disinda
    durmasaydi kullanicinin actigi kart bir sonraki yanitta kendiliginden
    kapanirdi. Oturumluktur, localStorage'a YAZILMAZ. */
-/* "ozet" = GENEL BAKIŞ sekmesi (data-tab degeri bu; eski VERİ & SÖZLÜK
+/* "ozet" = GÖSTERGE PANELİ sekmesi (data-tab degeri bu; eski VERİ & SÖZLÜK
    ile BÖLME & MODEL birlesti).
     Ayni panel govdesi artik "hazirlik"
    anahtariyla geliyor (bkz. akis_panel.hazirlik_paneli). */
-/* IKI SEKME: "ozet" (GENEL BAKIŞ) ve "degisken" (DEĞİŞKENLER: liste +
-   dağılım + SFA + eksik değer). "bolme" verisi GENEL BAKIŞ'ta çizilir. */
+/* IKI SEKME: "ozet" (GÖSTERGE PANELİ) ve "degisken" (DEĞİŞKENLER: liste +
+   dağılım + SFA + eksik değer). "bolme" verisi GÖSTERGE PANELİ'ta çizilir. */
 const BAGLI_SEKMELER = ["ozet", "degisken", "bolme"];
 
 /* Dataset listesi: "yukleniyor" | "hazir" | "bos" | "hata"
@@ -1076,7 +1076,7 @@ function cipYaz(el, ad) {
 
 /* Sonuç kartları (ÜRETİM · ELEME · MODEL): eskiden üst şeritte
    duruyordu; akışın çoğunda ∅ gösterip sürekli yer kapladığı için sağ
-   bloğun GENEL BAKIŞ sekmesine taşındı. Burada yalnız saklanır, sekme
+   bloğun GÖSTERGE PANELİ sekmesine taşındı. Burada yalnız saklanır, sekme
    açıksa yeniden çizilir. */
 function ozetGuncelle(o) {
     if (!o || !o.kartlar) return;
@@ -3818,7 +3818,7 @@ function analizCiz(tab) {
     const odak = ftOdakAnahtari();
     aktifAnalizSekme = tab;
     analizGovde.innerHTML = "";
-    /* GENEL BAKIŞ ("ozet"): ÇALIŞMA DÜZEYİ, her bilgi bir sayı ya da özet.
+    /* GÖSTERGE PANELİ ("ozet"): ÇALIŞMA DÜZEYİ, her bilgi bir sayı ya da özet.
        Veri seti ve sözlük kartları, değişken sayıları (üretim / eleme),
        bölme, validasyon ve model sonucu. Değişken listesi burada değil. */
     if (tab === "ozet") {
@@ -4921,7 +4921,7 @@ function analizSekmeAc(tab) {
 }
 
 /* ==================== Sol bar sekmeleri ve analiz alanı ====================
-   Sol barda (MODEL PLATFORMU kümesi): MODEL AKIŞI · GENEL BAKIŞ ·
+   Sol barda (MODEL PLATFORMU kümesi): MODEL AKIŞI · GÖSTERGE PANELİ ·
    DEĞİŞKENLER · ÖZET. Kodda MODEL AKIŞI = "akis" (AKIŞ).
    AKIŞ ana ekran (iş akışı + sohbet). Üç analiz sekmesinden birine
    basınca analiz alanı sol barın sağındaki bütün alanı kaplar
