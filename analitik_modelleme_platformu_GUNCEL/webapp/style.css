@@ -454,10 +454,10 @@ body::before {
   transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
 }
 .ust-sekme:hover { border-color: var(--kirmizi-halka); color: var(--kirmizi); background: var(--kirmizi-acik); }
-/* Seçili sekmenin KÜMESİ kırmızı; içinde seçili sekme açık kırmızı
-   zeminli kırmızı yazı, seçilmeyenler beyaz (kullanıcı kararı). */
-/* Seçili sekme beyazdan net ayrılsın: biraz koyu pembe zemin ve solda
-   3 px kırmızı çizgi. */
+/* Seçili sekmenin KÜMESİ kırmızı; içinde seçili sekme pembe zeminli
+   kırmızı yazı, seçilmeyenler beyaz (kullanıcı kararı). Seçili sekme
+   beyazdan net ayrılsın diye zemin biraz koyu pembe ve solda 3 px
+   kırmızı çizgi. */
 .ust-sekme.aktif, .ust-sekme.aktif:hover {
   background: #FADADB; border-color: #FADADB; color: var(--kirmizi);
   box-shadow: inset 3px 0 0 var(--kirmizi), 0 1px 3px rgba(0,0,0,.18);
@@ -575,18 +575,19 @@ body::before {
   outline: none; background: var(--kenar-acik);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
-/* ÇALIŞILAN FAZ KIRMIZI, GEÇİLEN FAZ YEŞİL.
-   Kutu içi açık kırmızı zemin + kırmızı yazı; solda kalın kırmızı
-   çubuk (kullanıcı kararı: ekran tek renk ailesinde kalsın; eskiden
-   sarı/kehribardı). */
+/* ÇALIŞILAN FAZ SARI, GEÇİLEN FAZ YEŞİL.
+   Kutu içi sarı zemin (--sari-acik) + sarı/kehribar yazı; solda kalın
+   sarı çubuk. Yazı için --sari DEĞİL --amber kullanılıyor: #EAB308
+   dolgu olarak iyi ama beyaz zeminde metin olunca kontrast ~1,9:1,
+   okunmuyor. --amber aynı sarı/kehribar ailesinden ve okunabilir. */
 .faz.aktif > .faz-bas {
-  background: var(--kirmizi-acik); color: var(--kirmizi);
+  background: var(--amber-acik); color: var(--amber);
   font-weight: var(--fw-kalin);
 }
-.faz.aktif > .faz-bas .faz-ozet { color: var(--kirmizi); }
+.faz.aktif > .faz-bas .faz-ozet { color: var(--amber); }
 .faz.aktif > .faz-bas::before {
   content: ""; position: absolute; left: 0; top: 0; bottom: 0;
-  width: var(--serit); background: var(--kirmizi);
+  width: var(--serit); background: var(--sari);
 }
 /* Geçilen faz: aynı kutu yeşile döner. */
 .faz.tamam > .faz-bas { background: var(--yesil-acik); color: var(--yesil); }
@@ -651,19 +652,22 @@ body::before {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .faz-adimlar li.tamam:hover { background: var(--yesil-acik); }
-.faz-adimlar li.aktif:hover { background: var(--kirmizi-acik); }
+.faz-adimlar li.aktif:hover { background: var(--sari-acik); }
 /* Gelinmemiş adım tıklanmaz: imleç de öyle söylesin. */
 .faz-adimlar li:not(.tamam):not(.aktif) { cursor: not-allowed; }
 .faz-adimlar li .adim-git:focus-visible {
   outline: 2px solid var(--kirmizi); outline-offset: 2px; border-radius: 2px;
 }
 .faz-adimlar li .adim-git:disabled { cursor: not-allowed; opacity: .5; }
-/* Calisan adim: yazi da isaretle ayni aileden (kirmizi), kalin.
-   Eskiden sari/kehribardi; aktif fazla birlikte kirmiziya gecti. */
-.faz-adimlar li.aktif { color: var(--kirmizi); font-weight: var(--fw-kalin); }
+/* Calisan adim: yazi da isaretle ayni aileden, kalin.
+   RENK NEDEN --sari DEGIL: isaretin dolgusu #EAB308 ve bu bir DOLGU
+   olarak iyi duruyor, ama ayni sari beyaz zeminde METIN olunca kontrast
+   ~1,9:1 — okunmuyor. --amber ayni sari/kehribar ailesinden ama
+   okunabilir. Isaret degismedi. */
+.faz-adimlar li.aktif { color: var(--amber); font-weight: var(--fw-kalin); }
 .faz-adimlar li.aktif > .adim-isaret {
-  background: var(--kirmizi); border-color: var(--kirmizi); color: #fff;
-  box-shadow: 0 0 0 var(--halka) var(--kirmizi-acik);
+  background: var(--sari); border-color: var(--sari); color: #000;
+  box-shadow: 0 0 0 var(--halka) var(--sari-acik);
 }
 
 /* Grup satırının alt adımları (01.2.1, 01.2.2 ...): grup satırının
