@@ -34,7 +34,7 @@
      baslik boyutundan 1,5 px buyuk; alt adim basliklari (.alt-ad) 15. */
   --fs-govde:  13.5px;   /* her metin */
   --fs-baslik: 15px;     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
-  --fs-ustbar: 12px;     /* yalniz ust bar sekmeleri ve sagdaki dugmeler */
+  --fs-ustbar: 12px;     /* yalniz sol bar sekmeleri ve alttaki dugmeler */
   --fs-kucuk:  var(--fs-govde);
   --fs-etiket: var(--fs-govde);
   --fs-buyuk:  var(--fs-baslik);
@@ -155,12 +155,6 @@
   /* Alt sınır --ft-en + gövde
      dolgusu kadar: sözlük tablosu hâlâ kaydırmasız sığıyor. */
   --analiz-en:  clamp(340px, 31vw, 460px);   /* SFA ekranı için hafif genişletildi */
-  /* Ust bar yuksekligi; logo buna gore olceklenir.
-     Olculen ihtiyac 75px; 78px pay
-     birakiyor. Dorduncu satiri buyutursen burayi da buyut.
-     Alt ayrac border-box'tan yiyor: 1.5px'te icerige 76.5px kaliyor,
-     olculen 75px ihtiyacin uzerinde. */
-  --ustbar-h:   64px;
   /* Sol bar (sayfa kümeleri + Arşiv / Yeni Çalışma) eni. En uzun
      etiket (BÖLME & MODEL) dolgusuyla birlikte rahat sığar. */
   --sol-bar-en: 200px;
@@ -188,13 +182,44 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
-/* Iki satir, iki sutun: ustte bar (iki sutunu kaplar), altta solda sol
-   bar, saginda acik sayfa. Sayfalarin hepsi ayni hucrede; gizli olanlar
-   display:none oldugu icin hucrede tek sayfa kalir. */
+/* ARKA PLAN: cerceveli gorsel sayfanin TAMAMINI kaplar. Gorsel 2:1
+   (tarayici alaninin tipik orani): gerilme cogu ekranda %1 - 5, cizim
+   yamulmaz. Dis kenarda bosluk yok. Uygulama cercevenin IC ALANINDA durur.
+   Ic alanin sinirlari gorselde olculdu (1774 x 887 piksel): ic cizgi solda
+   54, sagda 1719, ustte 57, altta 820. Sinirlar ekranin eni (vw) ve boyu
+   (vh) oraninda. --kabuk-*: uygulama kabugunun ekrandaki kenarlari;
+   ekrana gore yerlesen (position: fixed) paneller de bunlari kullanir. */
+:root {
+  --cerceve-sol: calc(54 / 1774 * 100vw);
+  --cerceve-sag: calc((1774 - 1719) / 1774 * 100vw);
+  --cerceve-ust: calc(57 / 887 * 100vh);
+  --cerceve-alt: calc((887 - 820) / 887 * 100vh);
+  --cerceve-ara: 2px;          /* cizgi ile uygulama arasi */
+  --kabuk-ust: calc(var(--cerceve-ust) + var(--cerceve-ara));
+  --kabuk-alt: calc(var(--cerceve-alt) + var(--cerceve-ara));
+  --kabuk-sol: calc(var(--cerceve-sol) + var(--cerceve-ara));
+  --kabuk-sag: calc(var(--cerceve-sag) + var(--cerceve-ara));
+}
+body {
+  background-color: #FEFEFE;   /* gorselin ic zemini; gorsel gelmezse */
+  background-image: var(--arka-plan, none);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Cercevenin ic alani. Iki sutun: solda sol bar, saginda acik sayfa.
+   Sayfalarin hepsi ayni hucrede; gizli olanlar display:none oldugu icin
+   hucrede tek sayfa kalir. Ust bar yok: logo sol barin tepesinde. */
 #kabuk {
-  display: grid; height: 100vh;
+  display: grid;
+  position: fixed;
+  top: var(--kabuk-ust); bottom: var(--kabuk-alt);
+  left: var(--kabuk-sol); right: var(--kabuk-sag);
+  overflow: hidden;
+  border: 1px solid var(--kenar);
   grid-template-columns: var(--sol-bar-en) minmax(0, 1fr);
-  grid-template-rows: var(--ustbar-h) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   background: var(--zemin); color: var(--metin);
   font-family: var(--font);
   font-size: var(--fs-govde);
@@ -237,60 +262,16 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   color: var(--kirmizi);
 }
 
-/* ==================== ÜST BAR ==================== */
-#ustbar {
-  grid-column: 1 / -1; grid-row: 1;
-  display: flex; align-items: stretch;
-  padding: 0 clamp(11px, 1.6vw, 21px);
-  height: var(--ustbar-h);
-  background: var(--yuzey);
-  border-bottom: var(--ayrac-kalinlik) solid var(--ayrac); flex-shrink: 0;
-  gap: clamp(11px, 1.6vw, 22px);
+/* ==================== SOL BAR LOGOSU ==================== */
+/* Robotlu kurum görseli sol barın tepesinde, barın eninde; oranı
+   korunarak sığar. Görsel yüklenemezse gizlenir (app.js). */
+#sol-bar-logo {
+  flex-shrink: 0; padding: var(--b-3) var(--b-3) 0;
+  display: flex; justify-content: center;
 }
-#ustbar-sol { display: flex; align-items: center; gap: var(--b-4); flex-shrink: 0; }
-/* Logo bar yüksekliğinin büyük kısmı (66px); üst ve alttan 6'şar px pay.
-   Ortaya çalışma kartı ve akış durumu girdiği için 72px'ten biraz
-   küçültüldü, okunurluğu korunuyor. */
-#banner { height: calc(var(--ustbar-h) - 12px); width: auto; display: block; }
-
-#baslik-blok { border-left: 1px solid var(--kenar); padding-left: var(--b-4); line-height: 1.3; }
-/* ÜRÜN LOGOSU baştan yerinde, yazı gizli: sayfa açılırken önce yazı
-   sonra logo görünmesin. Yazı yalnız görsel yüklenemezse (.yazili)
-   gelir. */
-#urun-logo-kap { display: flex; align-items: center; }
-#baslik-blok:not(.yazili) .urun-yazi { display: none; }
-#baslik-blok.yazili #urun-logo-kap { display: none; }
-/* Logo 56 px (bar - 8 px) ve ortanın 3 px altında: barın içerik alanı
-   62 px (alttaki 2 px ayraç hariç), logo 6 - 62 px arasında durur, ayraca
-   değmez. Kutu genişliği SABİT, ekranın %15'i (150 - 340 px): görsel
-   gelince sekmeler kaymaz; dar ekranda (1280 px) sekme kümelerine yer
-   kalır. Logo kutuya oranı korunarak, sola yaslı sığar. */
-.urun-logo {
-  display: block; height: calc(var(--ustbar-h) - 8px);
-  width: clamp(150px, 15vw, 340px);
-  object-fit: contain; object-position: left center;
-  transform: translateY(3px);
-}
-#urun-adi-satir { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
-#urun-adi {
-  font-weight: var(--fw-kalin); font-size: var(--fs-buyuk); letter-spacing: -.01em;
-  white-space: nowrap; color: var(--kirmizi);
-}
-/* Seçili veri seti ve sözlük: başlığın yanında iki küçük çip.
-    Geriye kalan tek kimlik bilgisi bu iki ad. */
-/* ÜST BARDA SOLUK GRİ YOK. Şeritteki
-   her metin --metin okuyor: tam siyah. Hiyerarşiyi renk değil, KIRMIZI ETİKETLER ve yazı boyutu
-   taşıyor. */
-.ust-cip {
-  max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  padding: 1px var(--b-2); border: 1px solid var(--kenar);
-  border-radius: var(--r-kucuk); background: var(--kenar-acik);
-  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin);
-}
-.ust-cip[hidden] { display: none; }
-#urun-alt {
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin); color: var(--metin);
-  margin-top: 2px; white-space: nowrap;
+#banner {
+  display: block; width: 100%; height: auto; max-height: 84px;
+  object-fit: contain;
 }
 
 /* Sonuç kartının satırları (.sonuc-kart).
@@ -412,7 +393,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    eninde. Sığmazsa (çok kısa ekran) yalnız kümeler kayar, alttaki
    Arşiv / Yeni Çalışma yerinde kalır. */
 #sol-bar {
-  grid-column: 1; grid-row: 2; min-height: 0;
+  grid-column: 1; grid-row: 1; min-height: 0;
   /* Arşiv listesi bardan taşarak açılır: sayfa panellerinin üstünde */
   position: relative; z-index: 45;
   display: flex; flex-direction: column;
@@ -492,7 +473,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 
 /* ==================== SAYFA KABI ==================== */
-.sayfa { grid-column: 2; grid-row: 2; min-height: 0; min-width: 0; }
+.sayfa { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; }
 .sayfa.gizli { display: none !important; }   /* #sayfa-calisma'nin display:flex'ini ezer */
 #sayfa-calisma { display: flex; background: var(--yuzey); }
 
@@ -1858,7 +1839,10 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
    kaplar. AKIŞ seçiliyken (#kabuk.analiz-dar) gizli. Akışta yer
    kaplamaz: sohbet her zaman tam genişlikte. */
 #analiz-panel {
-  position: fixed; top: var(--ustbar-h); left: var(--sol-bar-en); right: 0; bottom: 0; z-index: 38;
+  position: fixed; z-index: 38;
+  /* Kabuğun içinde, sol barın sağı (kabuk kenarı 1 px) */
+  top: calc(var(--kabuk-ust) + 1px); bottom: calc(var(--kabuk-alt) + 1px);
+  left: calc(var(--kabuk-sol) + 1px + var(--sol-bar-en)); right: calc(var(--kabuk-sag) + 1px);
   background: var(--yuzey-alt);
   display: flex; flex-direction: column; overflow: hidden;
 }
@@ -2880,7 +2864,9 @@ span.bolme-cip { cursor: default; }
 /* -------- Dar ekran (kirilma noktalari da 0,8 ile olceklendi) -------- */
 /* Paneller GIZLENMIYOR: ust bardaki dugmelerle acilan cekmeceye donuyor. */
 #cekmece-perde {
-  position: fixed; inset: var(--ustbar-h) 0 0 var(--sol-bar-en); z-index: 39;
+  position: fixed; z-index: 39;
+  top: var(--kabuk-ust); bottom: var(--kabuk-alt);
+  left: calc(var(--kabuk-sol) + var(--sol-bar-en)); right: var(--kabuk-sag);
   background: rgba(0,0,0,.35);
 }
 
@@ -2888,8 +2874,10 @@ span.bolme-cip { cursor: default; }
 @media (max-width: 864px) {
   #panel-btn { display: flex; }
   #panel {
-    position: fixed; top: var(--ustbar-h); left: var(--sol-bar-en); bottom: 0; z-index: 40;
-    width: min(var(--panel-en), calc(100vw - var(--sol-bar-en)));
+    position: fixed; z-index: 40;
+    top: calc(var(--kabuk-ust) + 1px); bottom: calc(var(--kabuk-alt) + 1px);
+    left: calc(var(--kabuk-sol) + 1px + var(--sol-bar-en));
+    width: min(var(--panel-en), calc(100vw - var(--kabuk-sol) - var(--kabuk-sag) - var(--sol-bar-en)));
     transform: translateX(-101%); transition: transform .2s ease;
     box-shadow: var(--golge-2);
   }

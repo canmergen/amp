@@ -82,12 +82,12 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
     banner:     getWebAppBackendUrl("gorsel/banner"),
-    logoAcik:   getWebAppBackendUrl("gorsel/logo_acik"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
     user:       getWebAppBackendUrl("gorsel/user"),
     zeminAcik:  getWebAppBackendUrl("gorsel/zemin_acik"),
+    arkaPlan:   getWebAppBackendUrl("gorsel/arka_plan"),
 };
 /* ÖNCEDEN YÜKLE: avatar görselleri ilk kullanımda sunucudan inerken
    avatar geç değişiyordu; açılışta tarayıcı önbelleğine alınır. */
@@ -106,12 +106,12 @@ const sozlukCipEl = document.getElementById("sozluk-cip");
 /* Sonuç kartları (ÜRETİM · ELEME · MODEL): eski üst şerit; artık sağ
    bloğun Değişkenler ve Bölme & Model sekmelerinde çiziliyor (bkz. sonucCiz). */
 let SONUC_KARTLARI = [];
-/* Analiz alanı durumu ve kararı alanda verilen adımlar (bkz. "Üst bar
+/* Analiz alanı durumu ve kararı alanda verilen adımlar (bkz. "Sol bar
    sekmeleri ve analiz alanı"). Burada tanımlı: sayfaAc ilk çağrıldığında
    ustSekmeGuncelle bunları okuyor. */
 const PANELDE_KARAR = { sfa_karar: "degisken" };
 const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
-/* Üst bardaki kutu -> sayfa (ustSekmeGuncelle, kutu tıklamaları). */
+/* Sol bardaki kutu -> sayfa (ustSekmeGuncelle, kutu tıklamaları). */
 const UST_SAYFA = { akis: "calisma", dokuman: "ozet", sohbet: "sohbet", dashboard: "dashboard" };
 const bannerEl    = document.getElementById("banner");
 /* Kalan iki referans giriş
@@ -177,16 +177,10 @@ const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 bannerEl.src = GORSEL.banner;
 bannerEl.onerror = () => { bannerEl.style.display = "none"; };
 
-/* ÜRÜN LOGOSU: logo alanı baştan yerinde, yazı gizli; görsel
-   yüklenemezse başlık bloğu yazıya döner: "Akıllı Modelleme Platformu"
-   ve birim adı. */
-(function logoYukle() {
-    const blok = document.getElementById("baslik-blok");
-    const logo = document.getElementById("urun-logo-acik");
-    if (!blok || !logo) return;
-    logo.onerror = () => { blok.classList.add("yazili"); };
-    logo.src = GORSEL.logoAcik;
-})();
+/* ==================== Sayfa arka planı ==================== */
+/* Çerçeveli görsel sayfanın tamamını kaplar; uygulama çerçevenin iç
+   alanında durur (style.css: --arka-plan, #kabuk). */
+document.documentElement.style.setProperty("--arka-plan", "url('" + GORSEL.arkaPlan + "')");
 
 
 /* ==================== Metin yardımcıları ==================== */
@@ -4532,7 +4526,7 @@ function analizAcikYaz(acik) {
     ustSekmeGuncelle();
 }
 
-/* Üst bardaki seçili kutu: açık sayfa ÇALIŞMA ise analiz alanı açıksa o
+/* Sol bardaki seçili kutu: açık sayfa ÇALIŞMA ise analiz alanı açıksa o
    sekme, değilse AKIŞ; öteki sayfalarda o sayfanın kutusu. */
 function acikSayfa() {
     return Object.keys(sayfalar).find(k => sayfalar[k] && !sayfalar[k].classList.contains("gizli"))

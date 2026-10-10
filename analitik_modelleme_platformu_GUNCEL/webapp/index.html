@@ -7,35 +7,13 @@
      olduğundan bu yeterli. -->
 <div id="kabuk" lang="tr">
 
-  <header id="ustbar">
-    <div id="ustbar-sol">
-      <img id="banner" alt="">
-      <div id="baslik-blok">
-        <!-- Çipler: seçili veri seti ve sözlük. JS doldurur, seçim yoksa
-             gizli kalır. Üst barda kalan TEK bilgi bunlar; aşama sol
-             panelde, kapsam/hedef sağ panelde, değişken seti özet
-             sayfasında zaten var. -->
-        <!-- ÜRÜN LOGOSU (siyah yazılı görsel). Yazı baştan gizli; yalnız
-             görsel yüklenemezse gelir (app.js: logoYukle). alt boş: görsel
-             gelene kadar tarayıcı yerine alt metni yazmasın; ad kapta. -->
-        <div id="urun-logo-kap" role="img" aria-label="Akıllı Modelleme Platformu">
-          <img id="urun-logo-acik" class="urun-logo" alt="">
-        </div>
-        <div id="urun-adi-satir" class="urun-yazi">
-          <div id="urun-adi">Akıllı Modelleme Platformu</div>
-          <span id="veri-seti-cip" class="ust-cip" hidden></span>
-          <span id="sozluk-cip" class="ust-cip" hidden></span>
-        </div>
-        <div id="urun-alt" class="urun-yazi">Bireysel Krediler Analitik ve Tahsis BI</div>
-      </div>
-    </div>
-  </header>
-
   <!-- ===================== SOL BAR =====================
-       Sayfa kümeleri (Model Akışı, Sohbet, Dashboard) ve altta Arşiv /
-       Yeni Çalışma. Üst barda yalnız logo kalır. Sol bar üst barın
-       altında, ekranın tam boyunda; sayfalar sağında açılır. -->
+       En üstte robotlu kurum görseli, altında sayfa kümeleri (Model Akışı,
+       Sohbet, Dashboard), en altta Arşiv / Yeni Çalışma. Üst bar yok:
+       sol bar çerçevenin içinde tam boyda; sayfalar sağında açılır. -->
   <aside id="sol-bar">
+
+    <div id="sol-bar-logo"><img id="banner" alt=""></div>
 
     <!-- SAYFA KÜMELERİ (sol barda alt alta).
          MODEL AKIŞI kümesi: AKIŞ (iş akışı + adım kartları), VERİ & SÖZLÜK,
@@ -191,8 +169,8 @@
 
     <aside id="analiz-panel">
       <!-- ANALİZ ALANI: sol bardaki VERİ & SÖZLÜK / DEĞİŞKENLER /
-           BÖLME & MODEL sekmelerinden biri seçilince üst barın altından
-           aşağı iner, bütün alanı kaplar (style.css: #analiz-panel).
+           BÖLME & MODEL sekmelerinden biri seçilince sol barın sağındaki
+           bütün alanı kaplar (style.css: #analiz-panel).
            AKIŞ'a basınca yukarı kapanır. -->
 
       <!-- İÇERİK: açık sekmenin gövdesi. Blok kapalıyken gizli. -->

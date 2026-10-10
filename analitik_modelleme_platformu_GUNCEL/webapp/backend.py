@@ -32,10 +32,8 @@ GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 # Mantiksal ad -> folder'daki gercek dosya adi.
 # Gorsel degistirmek istersen SADECE burayi duzenle, JS'e dokunma.
 GORSELLER = {
-    # Ust bar solu
+    # Sol barin tepesindeki robotlu gorsel
     "banner":     "robot_header.png",
-    # Ust bar: urun logosu
-    "logo_acik":  "katib_siyah_logo.png",
     # Sohbetteki ilk (karsilama) mesajin robotu
     "karsilama":  "robot_welcome.png",
     # Normal konusma
@@ -44,6 +42,8 @@ GORSELLER = {
     "dusunme":    "robot_think.png",
     "user":       "robot_llm_person.png",
     "zemin_acik": "llm_chat_light.png",
+    # Sayfanin tamamini kaplayan cerceveli arka plan (style.css: --arka-plan)
+    "arka_plan":  "amp_background.png",
 }
 
 _MIME = {".png": "image/png", ".jpg": "image/jpeg",
