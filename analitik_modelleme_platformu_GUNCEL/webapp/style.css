@@ -2463,6 +2463,28 @@ Asgariler
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 
+/* VERİ ÖNİZLEME: değişken listesi kutusuyla aynı boyda (yükseklik JS'te
+   ölçülür); tablo kutunun içinde iki yönde kayar, başlık satırı yapışkan. */
+.vo-kart { display: flex; flex-direction: column; padding: var(--b-3); min-height: 120px; }
+.vo-sar { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid var(--kenar); }
+.vo-tablo { border-collapse: separate; border-spacing: 0; font-size: var(--fs-kucuk); }
+.vo-tablo th, .vo-tablo td {
+  padding: 4px var(--b-2); white-space: nowrap; text-align: left;
+  border-bottom: 1px solid var(--kenar-acik);
+  max-width: 220px; overflow: hidden; text-overflow: ellipsis;
+}
+.vo-tablo th {
+  position: sticky; top: 0; z-index: 1; background: var(--yuzey);
+  font-weight: var(--fw-kalin); border-bottom: 1px solid var(--kenar);
+}
+.vo-tablo .vo-no { color: var(--metin-soluk); text-align: right; width: 1%; }
+.vo-tablo td.vo-bos { color: var(--metin-soluk); }
+.vo-tablo .vo-donem-kol { background: var(--sari-acik); }
+.vo-tablo th.vo-donem-kol { background: var(--sari-acik); }
+.vo-tablo tr.vo-grup td {
+  background: var(--kenar-acik); font-weight: var(--fw-kalin); color: var(--metin);
+  position: sticky; left: 0;
+}
 .ft-govde {
   position: relative; height: var(--ft-govde-h); overflow-y: auto;
   min-width: var(--ft-en);

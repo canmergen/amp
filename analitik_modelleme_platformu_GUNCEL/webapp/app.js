@@ -3829,6 +3829,9 @@ function analizCiz(tab) {
        tanımlar, Excel), sonra dağılım, SFA ve eksik değer. */
     if (tab === "degisken") {
         const o = ANALIZ_VERI.ozet;
+        panelBolumBasligi("Veri Önizleme");
+        const onizKap = elYap("div", "iskele-kart vo-kart");
+        analizGovde.appendChild(onizKap);
         panelBolumBasligi("Değişken Listesi");
         if (o && o.feature_tablo) featureTabloCiz(ftSaltOku(o.feature_tablo));
         else analizGovde.appendChild(elYap("div", "set-not",
@@ -3843,6 +3846,7 @@ function analizCiz(tab) {
         if (ANALIZ_VERI.sfa && ANALIZ_VERI.sfa.aralik) aralikCiz();
         panelBolumBasligi("Eksik Değer");
         panelCiz(ANALIZ_VERI.eksik);
+        onizlemeCiz(onizKap);
         ftOdakGeriVer(odak);
         return;
     }
@@ -4604,6 +4608,94 @@ function dagilimGovdeCiz(govde, d) {
     }
 }
 
+/* ==================== VERİ ÖNİZLEME (Değişkenler sekmesinin üstü) ====
+   Veri setinin BÜTÜN kolonları, ilk 10 satır; dönem kolonu seçildiyse her
+   dönemin ilk 10 satırı (dönem başlıklarıyla, zaman sırasında). Kutunun
+   yüksekliği altındaki Değişken Listesi kutusuyla aynı; içinde iki yönde
+   kayar. Veri tek kez istenir; analiz verisi yenilenince sıfırlanır. */
+const ONIZLEME = { veri: null, istek: 0 };
+function onizlemeSifirla() { ONIZLEME.veri = null; ONIZLEME.istek++; }
+
+function onizlemeCiz(kap) {
+    /* Yükseklik: değişken listesi kartıyla aynı (çizildikten sonra ölçülür). */
+    const boyla = () => {
+        const ft = analizGovde.querySelector(".ft-kart");
+        if (ft && ft.offsetHeight) kap.style.height = ft.offsetHeight + "px";
+    };
+    const ciz = d => {
+        kap.textContent = "";
+        if (!d || d.hata || d.tamam === false) {
+            kap.appendChild(elYap("div", "dag-not dag-hata",
+                tireSade((d && (d.hata || d.metin)) || "Önizleme okunamadı.")));
+            boyla(); return;
+        }
+        const kol = d.kolonlar || [];
+        if (!kol.length) {
+            kap.appendChild(elYap("div", "dag-not", tireSade(d.not || "Veri seti seçildikten sonra dolar.")));
+            boyla(); return;
+        }
+        const ust = elYap("div", "ft-ust");
+        ust.appendChild(elYap("span", "ft-sayac", ftBinlik(kol.length) + " kolon"));
+        ust.appendChild(elYap("span", "ft-ayrac", "\u00b7"));
+        ust.appendChild(elYap("span", "ft-kaynak", d.donem
+            ? "Dönem kolonu " + d.donem + " · " + ftBinlik((d.gruplar || []).length)
+              + " dönem · her dönemin ilk 10 satırı"
+            : "ilk 10 satır"));
+        kap.appendChild(ust);
+        const sar = elYap("div", "vo-sar");
+        const t = elYap("table", "vo-tablo");
+        const th = document.createElement("thead"), hr = document.createElement("tr");
+        hr.appendChild(elYap("th", "vo-no", "#"));
+        kol.forEach(k => {
+            const h = elYap("th", k === d.donem ? "vo-donem-kol" : "", k);
+            h.title = k;
+            hr.appendChild(h);
+        });
+        th.appendChild(hr); t.appendChild(th);
+        const tb = document.createElement("tbody");
+        const satirlar = d.satirlar || [];
+        const satirYaz = (r, no) => {
+            const tr = document.createElement("tr");
+            tr.appendChild(elYap("td", "vo-no", String(no)));
+            r.forEach((v, i) => {
+                const td = elYap("td", (v === null ? "vo-bos" : "")
+                    + (kol[i] === d.donem ? " vo-donem-kol" : ""), v === null ? BOS_SIMGE : v);
+                if (v !== null && v.length > 24) td.title = v;
+                tr.appendChild(td);
+            });
+            tb.appendChild(tr);
+        };
+        if (d.donem && (d.gruplar || []).length) {
+            let i = 0;
+            d.gruplar.forEach(g => {
+                const gr = elYap("tr", "vo-grup");
+                const td = elYap("td", "", (g.donem === null ? "Dönemi boş" : g.donem)
+                    + " · " + ftBinlik(g.satir) + " satır" + (g.satir > g.gosterilen
+                        ? " · ilk " + g.gosterilen + " gösteriliyor" : ""));
+                td.colSpan = kol.length + 1;
+                gr.appendChild(td); tb.appendChild(gr);
+                for (let n = 1; n <= g.gosterilen; n++, i++) satirYaz(satirlar[i] || [], n);
+            });
+        } else {
+            satirlar.forEach((r, n) => satirYaz(r, n + 1));
+        }
+        t.appendChild(tb); sar.appendChild(t); kap.appendChild(sar);
+        boyla();
+    };
+    if (ONIZLEME.veri) { ciz(ONIZLEME.veri); return; }
+    kap.appendChild(elYap("div", "dag-not", "Önizleme yükleniyor…"));
+    boyla();
+    const istek = ++ONIZLEME.istek;
+    fetch(getWebAppBackendUrl("veri_onizleme") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+        .then(r => r.json())
+        .then(d => {
+            if (istek !== ONIZLEME.istek) return;
+            if (d && d.tamam !== false && !d.hata) ONIZLEME.veri = d;
+            if (kap.isConnected) ciz(d);
+        })
+        .catch(e => { if (kap.isConnected) ciz({ hata: "Önizleme okunamadı: " + e }); });
+}
+
 function analizGuncelle(veri) {
     if (!veri) return;
     ANALIZ_VERI = veri;
@@ -4621,6 +4713,7 @@ function analizGuncelle(veri) {
        önbelleği boşalır; sekme açıksa yeniden istenir. */
     dagilimSifirla();
     aralikSifirla();
+    onizlemeSifirla();
     // Acik sekme backend verisine bagliysa yeniden ciz
     if (BAGLI_SEKMELER.indexOf(aktifAnalizSekme) !== -1)
         analizCiz(aktifAnalizSekme);

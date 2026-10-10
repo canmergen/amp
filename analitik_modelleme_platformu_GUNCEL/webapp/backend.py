@@ -2315,6 +2315,67 @@ def dagilim_endpoint():
         return jsonify(_hata_govdesi("dagilim", e, "Dağılım hesaplanamadı."))
 
 
+# VERI ONIZLEME (Degiskenler sekmesinin ustu): veri setinin BUTUN kolonlari,
+# ilk 10 satir. Donem kolonu secildiyse HER DONEMIN ilk 10 satiri, donemler
+# zaman sirasinda. Orneklem degil: tablo sirasindaki ilk satirlar, yalniz
+# gostermek icin (hicbir hesapta kullanilmaz).
+ONIZLEME_SATIR = 10
+
+
+def _onizleme_degeri(v):
+    import pandas as pd
+    try:
+        if v is None or (not isinstance(v, str) and pd.isna(v)):
+            return None
+    except (TypeError, ValueError):
+        pass
+    if isinstance(v, float) and float(v).is_integer():
+        return str(int(v))
+    return str(v)
+
+
+@app.route("/veri_onizleme")
+def veri_onizleme_endpoint():
+    try:
+        anahtar = _oturum_anahtari(_temiz(request.args.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        if not durum.get("veri_seti"):
+            return jsonify({"tamam": True, "kolonlar": [], "satirlar": [],
+                            "not": "Veri seti seçildikten sonra dolar."})
+        import pandas as pd
+        donem = str((durum.get("meta") or {}).get("donem") or "")
+        df = akis.modelleme_df(durum, limit=-1 if donem else ONIZLEME_SATIR)
+        kolonlar = [str(c) for c in df.columns]
+        gruplar, parcalar = [], []
+        if donem and donem in df.columns:
+            from fe_agent.birlestirme import donem_serisi, donem_sirala
+            seri = donem_serisi(df[donem])
+            for d in donem_sirala(pd.unique(seri.dropna())):
+                maske = seri == d
+                parca = df[maske.values].head(ONIZLEME_SATIR)
+                gruplar.append({"donem": d, "satir": int(maske.sum()),
+                                "gosterilen": int(len(parca))})
+                parcalar.append(parca)
+            bos = int(seri.isna().sum())
+            if bos:
+                parca = df[seri.isna().values].head(ONIZLEME_SATIR)
+                gruplar.append({"donem": None, "satir": bos, "gosterilen": int(len(parca))})
+                parcalar.append(parca)
+            goster = pd.concat(parcalar) if parcalar else df.head(0)
+        else:
+            donem = ""
+            goster = df.head(ONIZLEME_SATIR)
+        satirlar = [[_onizleme_degeri(v) for v in r]
+                    for r in goster.itertuples(index=False, name=None)]
+        return jsonify({"tamam": True, "kolonlar": kolonlar, "satirlar": satirlar,
+                        "donem": donem or None, "gruplar": gruplar,
+                        "toplam_satir": int(len(df)) if donem else None})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("veri_onizleme", e, "Önizleme okunamadı."))
+
+
 @app.route("/calismalar")
 def calismalar_endpoint():
     """Çalışmalarım listesi. Hicbir calismayi DEGISTIRMEZ; secilen
