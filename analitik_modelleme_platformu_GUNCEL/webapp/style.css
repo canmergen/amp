@@ -185,56 +185,10 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
-/* ARKA PLAN: cerceveli gorsel sayfanin TAMAMINI kaplar. Gorsel 2:1
-   (tarayici alaninin tipik orani): gerilme cogu ekranda %1 - 5, cizim
-   yamulmaz. Dis kenarda bosluk yok. Uygulama cercevenin IC ALANINDA durur.
-   Ic alanin sinirlari gorselde olculdu (1774 x 887 piksel): ic cizgi solda
-   54, sagda 1719, ustte 57, altta 820. Alt ortadaki suslemenin kivilcimlari
-   (801 - 816) uygulamanin altinda kalir (kullanici karari: alan once).
-   Sinirlar ekranin eni (vw) ve boyu (vh) oraninda. */
-:root {
-  --cerceve-sol: calc(54 / 1774 * 100vw);
-  --cerceve-sag: calc((1774 - 1719) / 1774 * 100vw);
-  --cerceve-ust: calc(57 / 887 * 100vh);
-  --cerceve-alt: calc((887 - 820) / 887 * 100vh);
-  --cerceve-ara: 2px;          /* cizgi ile uygulama arasi */
-}
-/* KURUM LOGOSU: ust bandin tam ortasinda (gorselde y 28.5; bant 0 - 57),
-   iki parmak ucunun arasinda. O yukseklikte bos aralik x 799 - 972 (174
-   px, ortasi 885.5); logo iki yandan ~6 px pay birakacak ene (162 px)
-   orani korunarak sigar (object-fit: contain). */
-#kurum-logo {
-  position: fixed;
-  left: calc(885.5 / 1774 * 100vw); top: calc(28.5 / 887 * 100vh);
-  width: calc(162 / 1774 * 100vw); height: calc(18 / 887 * 100vh);
-  transform: translate(-50%, -50%);
-  object-fit: contain;
-  pointer-events: none; user-select: none;
-}
-body {
-  background-color: #FEFEFE;   /* gorselin ic zemini; gorsel gelmezse */
-  background-image: var(--arka-plan, none);
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
 #kabuk {
-  display: flex; flex-direction: column;
-  /* Cercevenin ic alani. transform: icindeki position:fixed ogeler
-     (analiz paneli, dar ekran cekmecesi ve perdesi) ekrana degil
-     kabuga gore yerlesir. */
-  position: fixed;
-  top: calc(var(--cerceve-ust) + var(--cerceve-ara));
-  bottom: calc(var(--cerceve-alt) + var(--cerceve-ara));
-  left: calc(var(--cerceve-sol) + var(--cerceve-ara));
-  right: calc(var(--cerceve-sag) + var(--cerceve-ara));
-  transform: translateZ(0);
-  overflow: hidden;
-  /* Ust bar esikleri pencereye degil KABUGUN enine bakar (@container):
-     kabuk cerceve yuzunden pencereden dar. */
+  display: flex; flex-direction: column; height: 100vh;
+  /* Ust bar esikleri KABUGUN enine bakar (@container). */
   container-type: inline-size; container-name: kabuk;
-  border: 1px solid var(--kenar);
   background: var(--zemin); color: var(--metin);
   font-family: var(--font);
   font-size: var(--fs-govde);

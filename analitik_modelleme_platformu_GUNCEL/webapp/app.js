@@ -88,8 +88,6 @@ const GORSEL = {
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
     user:       getWebAppBackendUrl("gorsel/user"),
     zeminAcik:  getWebAppBackendUrl("gorsel/zemin_acik"),
-    arkaPlan:   getWebAppBackendUrl("gorsel/arka_plan"),
-    kurumLogo:  getWebAppBackendUrl("gorsel/kurum_logo"),
 };
 /* ÖNCEDEN YÜKLE: avatar görselleri ilk kullanımda sunucudan inerken
    avatar geç değişiyordu; açılışta tarayıcı önbelleğine alınır. */
@@ -241,53 +239,6 @@ function baslikBuyuk(s) {
     }).join("");
 }
 
-
-/* ==================== Sayfa arka planı ==================== */
-/* Çerçeveli görsel sayfanın tamamını kaplar; uygulama çerçevenin iç
-   alanında durur (style.css: --arka-plan, #kabuk). */
-document.documentElement.style.setProperty("--arka-plan", "url('" + GORSEL.arkaPlan + "')");
-/* KURUM LOGOSU: dosyanin kenarlarinda saydam bosluk olabilir (yazi ortada
-   ince bir serit). Bosluk logoyu yuvada kucultmesin diye yuklenince saydam
-   kenarlar kirpilir; kirpilmis hali gosterilir. Kirpma yapilamazsa (tarayici
-   izin vermezse) dosya oldugu gibi gosterilir. */
-(function kurumLogosu() {
-    const el = document.getElementById("kurum-logo");
-    if (!el) return;
-    const ham = new Image();
-    ham.onload = () => {
-        let src = GORSEL.kurumLogo;
-        try {
-            const w = ham.naturalWidth, h = ham.naturalHeight;
-            const c = document.createElement("canvas");
-            c.width = w; c.height = h;
-            const g = c.getContext("2d");
-            g.drawImage(ham, 0, 0);
-            const a = g.getImageData(0, 0, w, h).data;
-            let x0 = w, y0 = h, x1 = -1, y1 = -1;
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    if (a[(y * w + x) * 4 + 3] > 20) {
-                        if (x < x0) x0 = x;
-                        if (x > x1) x1 = x;
-                        if (y < y0) y0 = y;
-                        if (y > y1) y1 = y;
-                    }
-                }
-            }
-            if (x1 >= x0 && y1 >= y0 && (x1 - x0 + 1 < w || y1 - y0 + 1 < h)) {
-                const k = document.createElement("canvas");
-                k.width = x1 - x0 + 1; k.height = y1 - y0 + 1;
-                k.getContext("2d").drawImage(c, x0, y0, k.width, k.height, 0, 0, k.width, k.height);
-                src = k.toDataURL("image/png");
-            }
-        } catch (e) { /* kirpilamadi: dosya oldugu gibi */ }
-        el.onload = () => { el.hidden = false; };
-        el.onerror = () => { el.hidden = true; };
-        el.src = src;
-    };
-    ham.onerror = () => { el.hidden = true; };
-    ham.src = GORSEL.kurumLogo;
-})();
 
 /* ==================== Sohbet zemini ==================== */
 /* Tek tema (açık); koyu tema kaldırıldı. */
