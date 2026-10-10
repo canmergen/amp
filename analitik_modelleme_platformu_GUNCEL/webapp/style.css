@@ -200,6 +200,18 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   --kabuk-sol: calc(var(--cerceve-sol) + var(--cerceve-ara));
   --kabuk-sag: calc(var(--cerceve-sag) + var(--cerceve-ara));
 }
+/* KURUM LOGOSU: ust bandin tam ortasinda (gorselde y 28.5; bant 0 - 57),
+   iki parmak ucunun arasinda. O yukseklikte bos aralik x 799 - 972 (174
+   px, ortasi 885.5); logo iki yandan ~6 px pay birakacak ene (162 px)
+   orani korunarak sigar (object-fit: contain). */
+#kurum-logo {
+  position: fixed;
+  left: calc(885.5 / 1774 * 100vw); top: calc(28.5 / 887 * 100vh);
+  width: calc(162 / 1774 * 100vw); height: calc(18 / 887 * 100vh);
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  pointer-events: none; user-select: none;
+}
 body {
   background-color: #FEFEFE;   /* gorselin ic zemini; gorsel gelmezse */
   background-image: var(--arka-plan, none);
