@@ -519,6 +519,46 @@ body::before {
 
 /* ANALİTİK SÜREÇ ve İŞ AKIŞI: ayrı balonlar (beyaz kart, açık kırmızı
    ince kenar, yuvarlak köşe). */
+/* PANELİ DARALT / AÇ (sağ üst). Satır sıfır yükseklikte ve yapışkan:
+   düğme ilk balonun sağ üst köşesine biner, panel kaysa da yerinde
+   kalır. */
+.panel-ust-sira {
+  position: sticky; top: 0; z-index: 3; height: 0;
+  display: flex; justify-content: flex-end;
+}
+#panel-daralt {
+  margin: 7px 7px 0 0;
+  width: 26px; height: 26px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid #F3C6C7; border-radius: 7px;
+  background: var(--yuzey); color: var(--kirmizi); cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+#panel-daralt svg { width: 15px; height: 15px; transition: transform .15s; }
+#panel-daralt:hover { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
+#panel-daralt:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
+#panel-dikey-ad { display: none; }
+@media (min-width: 865px) {
+  /* Daraltılmış panel: ince şerit; içerik gizli, düğme ve dikey ad kalır.
+     Genişlik tutamağı da gizlenir (sürüklenecek panel yok). */
+  #panel.daraltilmis {
+    width: 44px; padding: var(--b-3) 0; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; gap: var(--b-3);
+  }
+  #panel.daraltilmis > :not(.panel-ust-sira):not(#panel-dikey-ad) { display: none; }
+  #panel.daraltilmis .panel-ust-sira { position: static; height: auto; }
+  #panel.daraltilmis #panel-daralt { margin: 0; }
+  #panel.daraltilmis #panel-daralt svg { transform: rotate(180deg); }
+  #panel.daraltilmis #panel-dikey-ad {
+    display: block; writing-mode: vertical-rl; transform: rotate(180deg);
+    padding: 0; border: 0; background: none; cursor: pointer;
+    font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
+    letter-spacing: .08em; color: var(--kirmizi);
+  }
+  #sayfa-calisma:has(#panel.daraltilmis) #tutamak-sol { display: none; }
+}
+@media (max-width: 864px) { .panel-ust-sira { display: none; } }
+
 .panel-blok {
   margin-bottom: var(--b-4);
   padding: var(--b-4);

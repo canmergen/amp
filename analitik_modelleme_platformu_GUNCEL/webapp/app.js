@@ -302,6 +302,35 @@ sekmeler.forEach(s => { s.onclick = () => sayfaAc(s.dataset.sayfa); });
 /* Dar ekranda sol/sag panel gizlenmiyor; sol bardaki dugmeyle acilan
    cekmeceye donusuyor. */
 const panelEl     = document.getElementById("panel");
+
+/* PANELİ DARALT / AÇ (sağ üstteki düğme): İş akışı paneli ince şeride
+   iner ya da açılır. Seçim bu tarayıcıda hatırlanır; okunamazsa panel
+   açık başlar. */
+const PANEL_DARALT_ANAHTAR = "amp_panel_daraltilmis";
+function panelDaralt(daralt, kaydet) {
+    if (!panelEl) return;
+    panelEl.classList.toggle("daraltilmis", daralt);
+    const btn = document.getElementById("panel-daralt");
+    if (btn) {
+        const metin = daralt ? "Paneli aç" : "Paneli kapat";
+        btn.title = metin;
+        btn.setAttribute("aria-label", metin);
+        btn.setAttribute("aria-expanded", daralt ? "false" : "true");
+    }
+    if (kaydet) {
+        try { localStorage.setItem(PANEL_DARALT_ANAHTAR, daralt ? "1" : "0"); }
+        catch (e) { /* depolama kapalı: yalnız bu oturum */ }
+    }
+}
+(function panelDaraltKur() {
+    const btn = document.getElementById("panel-daralt");
+    const ad = document.getElementById("panel-dikey-ad");
+    if (btn) btn.onclick = () => panelDaralt(!panelEl.classList.contains("daraltilmis"), true);
+    if (ad) ad.onclick = () => panelDaralt(false, true);
+    let ilk = false;
+    try { ilk = localStorage.getItem(PANEL_DARALT_ANAHTAR) === "1"; } catch (e) { ilk = false; }
+    panelDaralt(ilk, false);
+})();
 const analizPanel = document.getElementById("analiz-panel");
 const perdeEl     = document.getElementById("cekmece-perde");
 const panelBtn    = document.getElementById("panel-btn");

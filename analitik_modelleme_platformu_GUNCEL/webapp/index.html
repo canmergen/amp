@@ -112,6 +112,20 @@
   <div id="sayfa-calisma" class="sayfa">
 
     <aside id="panel">
+      <!-- PANELİ DARALT / AÇ: sağ üstte. Daraltılınca panel ince bir
+           şeride iner; şeritte aynı düğme ve dikey "İŞ AKIŞI" adı kalır,
+           ikisine basınca da açılır. Seçim tarayıcıda hatırlanır
+           (app.js: panelDaralt). Dar ekranda (çekmece) gizli. -->
+      <div class="panel-ust-sira">
+        <button id="panel-daralt" type="button" aria-controls="panel" aria-expanded="true"
+                title="Paneli kapat" aria-label="Paneli kapat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"></path>
+          </svg>
+        </button>
+      </div>
+      <button id="panel-dikey-ad" type="button" tabindex="-1" aria-hidden="true">İŞ AKIŞI</button>
       <!-- AÇILIR KAPANIR. Çalışma başlayınca (başlangıç seçiminden sonra)
            kendiliğinden kapanır; iki paragraf İŞ AKIŞI'nın yerini
            yiyordu. Başlığa basınca açılır; kullanıcının seçimi o
