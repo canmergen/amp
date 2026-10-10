@@ -586,13 +586,21 @@ body::before {
 /* KAPALI blok (SOHBET, DASHBOARD henüz yok): gri zemin, soluk gri yazı,
    kesik kenar ve kilit ikonu; tıklanmaz. Kesik kenar kümenin kendisinde,
    içteki kutu kenarsız: iki kenar iç içe görünmesin. */
-.ust-kume:has(> .ust-sekme.kapali) { border-style: dashed; border-color: var(--kenar-guclu); }
+.ust-kume.tekli:has(> .ust-sekme.kapali) { border-style: dashed; border-color: var(--kenar-guclu); }
 .ust-sekme.kapali, .ust-sekme.kapali:hover {
   cursor: not-allowed; color: #8A9099; background: transparent;
   border-color: transparent; box-shadow: none;
 }
 /* Her sekmenin önünde ince çizgili ikon; kapalı sekmelerde kilit sağda. */
 .ust-sekme svg.ikon, .ust-kume-ad svg.ikon { width: 15px; height: 15px; flex-shrink: 0; }
+/* Küme İÇİNDEKİ kapalı sekme (Model Platformu > KATIB'LE SOHBET): küme
+   kenarı kesilmez, kesik kenar sekmenin kendisinde; soluk zemin. */
+#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
+#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
+  color: #8A9099; background: var(--yuzey); opacity: .75;
+  border: 1px dashed var(--kenar-guclu); box-shadow: none;
+}
+#kabuk.koyu #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali { color: #7D848D; }
 .ust-sekme.kapali svg.kilit { width: 12px; height: 12px; flex-shrink: 0; margin-left: auto; }
 
 /* Alt: Arşiv ve Yeni Çalışma alt alta, barın eninde, sola yaslı. */
