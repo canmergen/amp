@@ -372,9 +372,18 @@ function panelDaralt(daralt, kaydet) {
 }
 (function panelDaraltKur() {
     const btn = document.getElementById("panel-daralt");
-    const ad = document.getElementById("panel-dikey-ad");
     if (btn) btn.onclick = () => panelDaralt(!panelEl.classList.contains("daraltilmis"), true);
-    if (ad) ad.onclick = () => panelDaralt(false, true);
+    /* Kapalı şeritteki iki ad: panel açılır ve o bölümün BAŞINA gelinir
+       (Analitik Süreç -> panelin en üstü, İş Akışı -> iş akışı balonu). */
+    document.querySelectorAll(".panel-dikey-ad").forEach(ad => {
+        ad.onclick = () => {
+            panelDaralt(false, true);
+            const hedef = document.getElementById(ad.dataset.hedef);
+            if (!hedef) return;
+            if (ad.dataset.hedef === "surec-blok") panelEl.scrollTop = 0;
+            else hedef.scrollIntoView({ block: "start" });
+        };
+    });
     let ilk = false;
     try { ilk = localStorage.getItem(PANEL_DARALT_ANAHTAR) === "1"; } catch (e) { ilk = false; }
     panelDaralt(ilk, false);

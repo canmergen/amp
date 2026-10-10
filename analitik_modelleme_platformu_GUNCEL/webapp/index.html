@@ -127,8 +127,9 @@
 
     <aside id="panel">
       <!-- PANELİ DARALT / AÇ: balonların üstünde, sağda. Daraltılınca panel
-           ince bir şeride iner; şeritte aynı düğme ve dikey "ANALİTİK SÜREÇ
-           & İŞ AKIŞI" adı kalır,
+           ince bir şeride iner; şeritte aynı düğme ve iki ayrı dikey ad
+           ("ANALİTİK SÜREÇ", "İŞ AKIŞI") kalır; ada basınca panel açılır ve o
+           bölümün başına gelinir,
            ikisine basınca da açılır. Seçim tarayıcıda hatırlanır
            (app.js: panelDaralt). Dar ekranda (çekmece) gizli. -->
       <div class="panel-ust-sira">
@@ -140,7 +141,10 @@
           </svg>
         </button>
       </div>
-      <button id="panel-dikey-ad" type="button" tabindex="-1" aria-hidden="true">ANALİTİK SÜREÇ &amp; İŞ AKIŞI</button>
+      <div id="panel-dikey-adlar">
+        <button class="panel-dikey-ad" type="button" data-hedef="surec-blok" title="Analitik Süreç'i aç">ANALİTİK SÜREÇ</button>
+        <button class="panel-dikey-ad" type="button" data-hedef="is-akisi-blok" title="İş Akışı'nı aç">İŞ AKIŞI</button>
+      </div>
       <!-- AÇILIR KAPANIR. Çalışma başlayınca (başlangıç seçiminden sonra)
            kendiliğinden kapanır; iki paragraf İŞ AKIŞI'nın yerini
            yiyordu. Başlığa basınca açılır; kullanıcının seçimi o
@@ -164,7 +168,7 @@
         </div>
       </section>
 
-      <section class="panel-blok">
+      <section id="is-akisi-blok" class="panel-blok">
         <div class="panel-baslik">İŞ AKIŞI</div>
         <div id="faz-listesi"></div>
       </section>

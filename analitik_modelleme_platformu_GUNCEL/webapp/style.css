@@ -671,7 +671,7 @@ body::before {
 #panel-daralt svg { width: 15px; height: 15px; transition: transform .15s; }
 #panel-daralt:hover { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
 #panel-daralt:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
-#panel-dikey-ad { display: none; }
+#panel-dikey-adlar { display: none; }
 @media (min-width: 865px) {
   /* Daraltılmış panel: ince şerit; içerik gizli, düğme ve dikey ad kalır.
      Genişlik tutamağı da gizlenir (sürüklenecek panel yok). */
@@ -679,21 +679,36 @@ body::before {
     width: 44px; padding: var(--b-3) 0; overflow: hidden;
     display: flex; flex-direction: column; align-items: center; gap: var(--b-3);
   }
-  #panel.daraltilmis > :not(.panel-ust-sira):not(#panel-dikey-ad) { display: none; }
+  #panel.daraltilmis > :not(.panel-ust-sira):not(#panel-dikey-adlar) { display: none; }
   #panel.daraltilmis .panel-ust-sira { position: static; margin: 0; padding: 0; background: none; }
   #panel.daraltilmis #panel-daralt { margin: 0; }
   #panel.daraltilmis #panel-daralt svg { transform: rotate(180deg); }
-  #panel.daraltilmis #panel-dikey-ad {
+  /* İki ayrı dikey ad: üstte ANALİTİK SÜREÇ, altında İŞ AKIŞI; aralarında
+     kısa ince çizgi. Her biri kendi bölümünü açar. */
+  #panel.daraltilmis #panel-dikey-adlar {
+    display: flex; flex-direction: column; align-items: center; gap: var(--b-2);
+  }
+  #panel.daraltilmis .panel-dikey-ad {
     display: block; writing-mode: vertical-rl; transform: rotate(180deg);
-    padding: 0; border: 0; background: none; cursor: pointer;
+    padding: 6px 3px; border: 0; border-radius: 6px; background: none; cursor: pointer;
     font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
     letter-spacing: .08em; color: var(--kirmizi);
+  }
+  #panel.daraltilmis .panel-dikey-ad:hover { background: var(--kirmizi-acik); }
+  #panel.daraltilmis .panel-dikey-ad + .panel-dikey-ad {
+    border-top: 0; position: relative; margin-top: var(--b-2);
+  }
+  #panel.daraltilmis .panel-dikey-ad + .panel-dikey-ad::after {
+    content: ""; position: absolute; left: 50%; width: 14px; height: 1px;
+    bottom: calc(-1 * var(--b-2) - 1px); transform: translateX(-50%);
+    background: var(--kenar-guclu);
   }
   #sayfa-calisma:has(#panel.daraltilmis) #tutamak-sol { display: none; }
 }
 @media (max-width: 864px) { .panel-ust-sira { display: none; } }
 
 .panel-blok {
+  scroll-margin-top: 40px;   /* yapışkan kapatma satırının altında kalmasın */
   margin-bottom: var(--b-4);
   padding: var(--b-4);
   background: var(--yuzey);
