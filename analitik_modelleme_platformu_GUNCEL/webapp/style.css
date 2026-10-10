@@ -67,7 +67,12 @@
   --kirmizi-koyu: #A00D10;
   --kirmizi-acik: #FDF1F1;
   --kirmizi-halka: rgba(213,17,21,.16);
-  --pembe-secili:  #FADADB;     /* sol barda seçili sekme zemini */
+  --pembe-secili:  #FBE4E5;     /* sol barda seçili sekme zemini */
+  /* Sol barda seçili küme: marka kırmızısının yumuşatılmış tonu (tam
+     kırmızı %45 opak çerçevenin yanında bağırıyordu). */
+  --kume-secili:       #C24E52;
+  --kume-secili-kenar: #B5454A;
+  --kume-secili-yazi:  #A3262A;
   --pembe-kenar:   #F3C6C7;     /* panel balonlarının ince kenarı */
   /* Adim blogu cercevesinin kalinligi. Renk dogrudan var(--kirmizi). */
   --blok-cerceve: 3px;
@@ -258,6 +263,8 @@
   background: var(--pembe-secili); border-color: var(--pembe-secili); color: #FF8F92;
 }
 #kabuk.koyu .ust-sekme.kapali, #kabuk.koyu .ust-sekme.kapali:hover { color: #7D848D; }
+#kabuk.koyu .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali) { color: var(--metin); }
+#kabuk.koyu .ust-sekme.aktif, #kabuk.koyu .ust-sekme.aktif:hover { box-shadow: inset 3px 0 0 var(--kirmizi); }
 /* Koyu temada çerçeve görseli koyu zeminin üstünde daha da sönük durur. */
 body:has(#kabuk.koyu) { background-color: #0B0C0F; }
 
@@ -564,16 +571,19 @@ body::before {
    beyazdan net ayrılsın diye zemin biraz koyu pembe ve solda 3 px
    kırmızı çizgi. */
 .ust-sekme.aktif, .ust-sekme.aktif:hover {
-  background: var(--pembe-secili); border-color: var(--pembe-secili); color: var(--kirmizi);
-  box-shadow: inset 3px 0 0 var(--kirmizi), 0 1px 3px rgba(0,0,0,.18);
+  background: var(--pembe-secili); border-color: var(--pembe-secili); color: var(--kume-secili-yazi);
+  box-shadow: inset 3px 0 0 var(--kume-secili-yazi);
 }
 .ust-kume:has(> .ust-sekme.aktif) {
-  background: var(--kirmizi); border-color: var(--kirmizi);
+  background: var(--kume-secili); border-color: var(--kume-secili-kenar);
 }
+/* Seçili kümedeki sekmeler gölgesiz, yazı tam siyah değil: sakin. */
+.ust-kume:has(> .ust-sekme.aktif) .ust-sekme { box-shadow: none; }
+.ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali) { color: #3A3F45; }
 .ust-kume:has(> .ust-sekme.aktif) .ust-kume-ad { color: #fff; }
 .ust-kume:has(> .ust-sekme.aktif) .ust-kume-ad::after { background: rgba(255,255,255,.45); }
 .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):hover {
-  background: var(--yuzey); border-color: var(--yuzey); color: var(--kirmizi);
+  background: var(--yuzey); border-color: var(--yuzey); color: var(--kume-secili-yazi);
 }
 .ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: 1px; }
 /* KAPALI blok (SOHBET, DASHBOARD henüz yok): gri zemin, soluk gri yazı,

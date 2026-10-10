@@ -86,8 +86,6 @@ const GORSEL = {
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
     user:       getWebAppBackendUrl("gorsel/user"),
-    zeminAcik:  getWebAppBackendUrl("gorsel/zemin_acik"),
-    zeminKoyu:  getWebAppBackendUrl("gorsel/zemin_koyu"),
     arkaPlan:   getWebAppBackendUrl("gorsel/arka_plan"),
     kurumLogo:  getWebAppBackendUrl("gorsel/kurum_logo"),
 };
@@ -280,7 +278,8 @@ function baslikBuyuk(s) {
 
 /* ==================== Renk modu (açık / koyu) ==================== */
 /* Sol bardaki Renk Modu düğmesi. Koyu modda #kabuk.koyu renk
-   değişkenlerini devralır, sohbet zemini koyu görsele geçer. Seçim bu
+   değişkenlerini devralır. Sohbet alanında zemin görseli yok (kullanıcı
+   kararı: kalabalık duruyordu). Seçim bu
    tarayıcıda hatırlanır; okunamazsa açık başlar. */
 const TEMA_ANAHTAR = "amp_renk_modu";
 let koyuTema = false;
@@ -292,9 +291,6 @@ function temaUygula(kaydet) {
         temaBtn.title = koyuTema ? "Açık moda geç" : "Koyu moda geç";
         temaBtn.setAttribute("aria-pressed", koyuTema ? "true" : "false");
     }
-    sohbetAlan.style.setProperty(
-        "--sohbet-gorsel",
-        "url('" + (koyuTema ? GORSEL.zeminKoyu : GORSEL.zeminAcik) + "')");
     if (kaydet) {
         try { localStorage.setItem(TEMA_ANAHTAR, koyuTema ? "koyu" : "acik"); }
         catch (e) { /* depolama kapalı: yalnız bu oturum */ }
@@ -302,7 +298,6 @@ function temaUygula(kaydet) {
 }
 if (temaBtn) temaBtn.onclick = () => { koyuTema = !koyuTema; temaUygula(true); };
 try { koyuTema = localStorage.getItem(TEMA_ANAHTAR) === "koyu"; } catch (e) { koyuTema = false; }
-[GORSEL.zeminAcik, GORSEL.zeminKoyu].forEach(u => { const i = new Image(); i.src = u; });
 temaUygula(false);
 
 /* ==================== Arka plan (açık / kapalı) ==================== */
