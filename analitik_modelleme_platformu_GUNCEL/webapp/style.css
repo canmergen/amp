@@ -2463,28 +2463,44 @@ Asgariler
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 
-/* VERİ ÖNİZLEME: değişken listesi kutusuyla aynı boyda (yükseklik JS'te
-   ölçülür); tablo kutunun içinde iki yönde kayar, başlık satırı yapışkan. */
-.vo-kart { display: flex; flex-direction: column; padding: var(--b-3); min-height: 120px; }
-.vo-sar { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid var(--kenar); }
-.vo-tablo { border-collapse: separate; border-spacing: 0; font-size: var(--fs-kucuk); }
+/* VERİ ÖNİZLEME: Değişken Listesi ile aynı kart düzeni (şerit, arama,
+   süzgeçler). Tablo kutusu en fazla listenin kaydırma penceresi +
+   başlık satırı kadar uzar; az satırda kendi boyunda kalır. İçinde iki
+   yönde kayar, başlık satırı ve dönem satırları yapışkan. */
+.vo-kart { padding: var(--b-3); }
+.vo-sar {
+  margin-top: var(--b-3); overflow: auto;
+  max-height: calc(var(--ft-govde-h) + 30px);
+}
+.vo-tablo { border-collapse: separate; border-spacing: 0; }
 .vo-tablo th, .vo-tablo td {
   padding: 4px var(--b-2); white-space: nowrap; text-align: left;
   border-bottom: 1px solid var(--kenar-acik);
   max-width: 220px; overflow: hidden; text-overflow: ellipsis;
+  font-size: var(--fs-govde); color: var(--metin); line-height: 1.35;
 }
 .vo-tablo th {
-  position: sticky; top: 0; z-index: 1; background: var(--yuzey);
-  font-weight: var(--fw-kalin); border-bottom: 1px solid var(--kenar);
+  position: sticky; top: 0; z-index: 2; background: var(--yuzey);
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  letter-spacing: var(--etiket-aralik); color: var(--metin-soluk);
+  border-bottom: 1px solid var(--kenar);
 }
+.vo-tablo th.vo-bas { cursor: pointer; }
+.vo-tablo th.vo-bas:hover { color: var(--kirmizi); }
+.vo-tablo th.vo-bas:focus-visible {
+  outline: none; color: var(--kirmizi);
+  box-shadow: inset 0 0 0 var(--halka) var(--kirmizi-halka);
+}
+.vo-tablo tbody tr:not(.vo-grup):hover td { background: var(--kenar-acik); }
 .vo-tablo .vo-no { color: var(--metin-soluk); text-align: right; width: 1%; }
 .vo-tablo td.vo-bos { color: var(--metin-soluk); }
 .vo-tablo .vo-donem-kol { background: var(--sari-acik); }
-.vo-tablo th.vo-donem-kol { background: var(--sari-acik); }
 .vo-tablo tr.vo-grup td {
   background: var(--kenar-acik); font-weight: var(--fw-kalin); color: var(--metin);
-  position: sticky; left: 0;
+  max-width: none;
 }
+/* Dönem adı yatay kaydırmada solda kalsın. */
+.vo-grup-ad { position: sticky; left: var(--b-2); }
 .ft-govde {
   position: relative; height: var(--ft-govde-h); overflow-y: auto;
   min-width: var(--ft-en);

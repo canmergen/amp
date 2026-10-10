@@ -2321,6 +2321,13 @@ def dagilim_endpoint():
 # gostermek icin (hicbir hesapta kullanilmaz).
 ONIZLEME_SATIR = 10
 
+# Son onizleme calisma basina bellekte: Excel ayni satirlari yeniden okumadan
+# yazsin (donem varsa okuma butun tabloyu taradigi icin pahali). Bellekte
+# yoksa (backend yeniden basladi) yeniden hesaplanir; icerik imzasi
+# ekrandakiyle tutmazsa Excel yazilmaz.
+_ONIZLEME_ONBELLEK = {}
+_ONIZLEME_KILIT = threading.Lock()
+
 
 def _onizleme_degeri(v):
     import pandas as pd
@@ -2334,6 +2341,64 @@ def _onizleme_degeri(v):
     return str(v)
 
 
+def _onizleme_excel_degeri(v):
+    """Excel hucresi: sayi kolonu SAYI olarak yazilir (metin-sayi uyarisi
+    olmasin); 15 haneyi asan tam sayi Excel'de son haneleri yitirdigi icin
+    metin kalir. Bos -> None, digerleri metin."""
+    import numbers
+    if _onizleme_degeri(v) is None:
+        return None
+    if isinstance(v, bool) or type(v).__name__ == "bool_":
+        return str(v)
+    if isinstance(v, numbers.Integral):
+        return int(v) if abs(int(v)) < 10 ** 15 else str(int(v))
+    if isinstance(v, numbers.Real):
+        f = float(v)
+        if f != f or f in (float("inf"), float("-inf")):
+            return str(v)
+        if f.is_integer() and abs(f) >= 10 ** 15:
+            return str(int(f))
+        return f
+    return _onizleme_degeri(v)
+
+
+def _onizleme_hesapla(durum):
+    """{kolonlar, satirlar (ekran metni), excel (tipli), donem, gruplar,
+    imza}. Veri ve sozluge yazmaz; yalniz okur."""
+    import pandas as pd
+    donem = str((durum.get("meta") or {}).get("donem") or "")
+    df = akis.modelleme_df(durum, limit=-1 if donem else ONIZLEME_SATIR)
+    kolonlar = [str(c) for c in df.columns]
+    gruplar, parcalar = [], []
+    if donem and donem in df.columns:
+        from fe_agent.birlestirme import donem_serisi, donem_sirala
+        seri = donem_serisi(df[donem])
+        for d in donem_sirala(pd.unique(seri.dropna())):
+            maske = seri == d
+            parca = df[maske.values].head(ONIZLEME_SATIR)
+            gruplar.append({"donem": d, "satir": int(maske.sum()),
+                            "gosterilen": int(len(parca))})
+            parcalar.append(parca)
+        bos = int(seri.isna().sum())
+        if bos:
+            parca = df[seri.isna().values].head(ONIZLEME_SATIR)
+            gruplar.append({"donem": None, "satir": bos,
+                            "gosterilen": int(len(parca))})
+            parcalar.append(parca)
+        goster = pd.concat(parcalar) if parcalar else df.head(0)
+    else:
+        donem = ""
+        goster = df.head(ONIZLEME_SATIR)
+    hamlar = list(goster.itertuples(index=False, name=None))
+    satirlar = [[_onizleme_degeri(v) for v in r] for r in hamlar]
+    excel = [[_onizleme_excel_degeri(v) for v in r] for r in hamlar]
+    imza = hashlib.md5(json.dumps([kolonlar, satirlar], ensure_ascii=False)
+                       .encode("utf-8")).hexdigest()
+    return {"kolonlar": kolonlar, "satirlar": satirlar, "excel": excel,
+            "donem": donem or None, "gruplar": gruplar, "imza": imza,
+            "toplam_satir": int(len(df)) if donem else None}
+
+
 @app.route("/veri_onizleme")
 def veri_onizleme_endpoint():
     try:
@@ -2342,38 +2407,61 @@ def veri_onizleme_endpoint():
         if not durum.get("veri_seti"):
             return jsonify({"tamam": True, "kolonlar": [], "satirlar": [],
                             "not": "Veri seti seçildikten sonra dolar."})
-        import pandas as pd
-        donem = str((durum.get("meta") or {}).get("donem") or "")
-        df = akis.modelleme_df(durum, limit=-1 if donem else ONIZLEME_SATIR)
-        kolonlar = [str(c) for c in df.columns]
-        gruplar, parcalar = [], []
-        if donem and donem in df.columns:
-            from fe_agent.birlestirme import donem_serisi, donem_sirala
-            seri = donem_serisi(df[donem])
-            for d in donem_sirala(pd.unique(seri.dropna())):
-                maske = seri == d
-                parca = df[maske.values].head(ONIZLEME_SATIR)
-                gruplar.append({"donem": d, "satir": int(maske.sum()),
-                                "gosterilen": int(len(parca))})
-                parcalar.append(parca)
-            bos = int(seri.isna().sum())
-            if bos:
-                parca = df[seri.isna().values].head(ONIZLEME_SATIR)
-                gruplar.append({"donem": None, "satir": bos, "gosterilen": int(len(parca))})
-                parcalar.append(parca)
-            goster = pd.concat(parcalar) if parcalar else df.head(0)
-        else:
-            donem = ""
-            goster = df.head(ONIZLEME_SATIR)
-        satirlar = [[_onizleme_degeri(v) for v in r]
-                    for r in goster.itertuples(index=False, name=None)]
-        return jsonify({"tamam": True, "kolonlar": kolonlar, "satirlar": satirlar,
-                        "donem": donem or None, "gruplar": gruplar,
-                        "toplam_satir": int(len(df)) if donem else None})
+        sonuc = _onizleme_hesapla(durum)
+        with _ONIZLEME_KILIT:
+            _ONIZLEME_ONBELLEK[anahtar] = sonuc
+        govde = {k: v for k, v in sonuc.items() if k != "excel"}
+        govde["tamam"] = True
+        return jsonify(govde)
     except CalismaErisimYok as e:
         return jsonify({"tamam": False, "hata": str(e)})
     except Exception as e:
         return jsonify(_hata_govdesi("veri_onizleme", e, "Önizleme okunamadı."))
+
+
+@app.route("/veri_onizleme_excel", methods=["POST"])
+def veri_onizleme_excel_endpoint():
+    """Veri Onizleme'yi .xlsx olarak indirir: "Tümü" sayfasi ekrandaki
+    butun onizleme satirlari ve kolonlari, "Filtrelenmiş" sayfasi arama,
+    tip, donem suzgeci ve siralamadan sonra ekranda gorunen hali (ayni
+    kolon ve satir sirasi). Hata hâlinde duz metin doner (bkz.
+    /degisken_excel)."""
+    from fe_agent import xlsx_yaz
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        with _ONIZLEME_KILIT:
+            sonuc = _ONIZLEME_ONBELLEK.get(anahtar)
+        if not sonuc or sonuc.get("imza") != istek.get("imza"):
+            durum = _durum_al(anahtar)
+            sonuc = _onizleme_hesapla(durum)
+            with _ONIZLEME_KILIT:
+                _ONIZLEME_ONBELLEK[anahtar] = sonuc
+            if sonuc.get("imza") != istek.get("imza"):
+                return Response(
+                    "Veri önizlemesi ekranda gördüğünüzden farklı (veri "
+                    "değişmiş). Sayfayı yenileyip yeniden indirin.",
+                    status=409, mimetype="text/plain; charset=utf-8")
+        kolonlar, excel = sonuc["kolonlar"], sonuc["excel"]
+        yer = {k: i for i, k in enumerate(kolonlar)}
+        sk = [yer[k] for k in (istek.get("kolonlar") or []) if k in yer]
+        ss = [int(i) for i in (istek.get("satirlar") or [])
+              if isinstance(i, int) and 0 <= i < len(excel)]
+        veri = xlsx_yaz.sayfalar_xlsx([
+            ("Tümü", kolonlar, excel),
+            ("Filtrelenmiş", [kolonlar[i] for i in sk],
+             [[excel[r][i] for i in sk] for r in ss]),
+        ])
+    except CalismaErisimYok as e:
+        return Response(str(e), status=403, mimetype="text/plain; charset=utf-8")
+    except Exception as e:
+        kod = _hata_kaydet("veri_onizleme_excel", e)
+        return Response(
+            "Veri önizlemesi Excel olarak oluşturulamadı (hata kodu: %s)." % kod,
+            status=500, mimetype="text/plain; charset=utf-8")
+    return Response(veri, mimetype=XLSX_MIME, headers={
+        "Content-Disposition": 'attachment; filename="veri_onizleme.xlsx"',
+        "Cache-Control": "no-store"})
 
 
 @app.route("/calismalar")
@@ -2669,7 +2757,7 @@ XLSX_MIME = ("application/vnd.openxmlformats-officedocument."
              "spreadsheetml.sheet")
 
 
-@app.route("/degisken_excel")
+@app.route("/degisken_excel", methods=["GET", "POST"])
 def degisken_excel_endpoint():
     """Değişken listesini .xlsx olarak indirir.
 
@@ -2680,19 +2768,29 @@ def degisken_excel_endpoint():
     liste, kullanıcının henüz vermediği kararı dosyaya yazmak olurdu;
     o dosya da ekibe gidip "karar buydu" diye okunurdu.
 
+    POST + "suzulmus" (değişken adları, ekrandaki sırayla): iki sayfa -
+    "Tümü" ve paneldeki arama/tip/sıralamadan sonra görünen
+    "Filtrelenmiş" hâli.
+
     Hata hâlinde JSON DEĞİL düz metin döner (bkz. /dokuman_word):
     tarayıcı buraya bir indirme olarak geliyor."""
-    tur = (request.args.get("tur") or "liste").strip()
+    istek = (request.get_json(force=True, silent=True) or {}) \
+        if request.method == "POST" else request.args
+    tur = (istek.get("tur") or "liste").strip()
     genis = tur != "sozluk"
+    suzulmus = istek.get("suzulmus") if request.method == "POST" else None
     try:
-        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
         durum = _durum_al(anahtar)
         if not akis.teyit_kaydedildi_mi(durum):
             return Response(
                 "Değişken listesi henüz kaydedilmedi. Sohbetteki Değişken "
                 "Listesi ve Tip Kontrolü adımında listeyi kaydettikten sonra indirebilirsiniz.",
                 status=409, mimetype="text/plain; charset=utf-8")
-        veri = akis.teyit_excel(durum, genis=genis)
+        if isinstance(suzulmus, list):
+            veri = akis.teyit_excel_suzulmus(durum, suzulmus, genis=genis)
+        else:
+            veri = akis.teyit_excel(durum, genis=genis)
     except Exception as e:
         kod = _hata_kaydet("degisken_excel", e)
         return Response(

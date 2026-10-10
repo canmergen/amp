@@ -5062,6 +5062,19 @@ def teyit_excel(durum, genis=True):
         yuzde_sutunlari=yuzde)
 
 
+def teyit_excel_suzulmus(durum, adlar, genis=True):
+    """Iki sayfali .xlsx: "Tümü" (teyit_excel ile ayni satirlar) ve
+    "Filtrelenmiş" (panelde arama/suzme/siralamadan sonra gorunen
+    degiskenler, ekrandaki sirayla). Listede olmayan ad atlanir."""
+    kolonlar, satirlar, _yuzde = _excel_satirlari(durum, genis)
+    yer = {}
+    for r in satirlar:
+        yer.setdefault(str(r[0]), r)
+    suzulmus = [yer[str(a)] for a in (adlar or []) if str(a) in yer]
+    return xlsx_yaz.sayfalar_xlsx([("Tümü", kolonlar, satirlar),
+                                   ("Filtrelenmiş", kolonlar, suzulmus)])
+
+
 def amp_klasor_adi(durum):
     """Calismanin kayit klasoru: "v3".
 

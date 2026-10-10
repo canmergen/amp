@@ -2073,11 +2073,15 @@ const EXCEL_SIMGESI =
 const EXCEL_ADLARI = { liste: "degisken_listesi.xlsx",
                        sozluk: "degisken_sozlugu.xlsx",
                        kisaltma: "kisaltma_onerileri.xlsx",
-                       aciklama: "onerilen_sozluk.xlsx" };
+                       aciklama: "onerilen_sozluk.xlsx",
+                       onizleme: "veri_onizleme.xlsx" };
 /* Tür -> uç. Kısaltma raporu kendi ucundan gelir (teyit kapısı yok). */
-const EXCEL_UCLARI = { kisaltma: "kisaltma_excel", aciklama: "aciklama_excel" };
+const EXCEL_UCLARI = { kisaltma: "kisaltma_excel", aciklama: "aciklama_excel",
+                       onizleme: "veri_onizleme_excel" };
 
-function excelSeridiYap(tur, etiket, ipucu) {
+/* govdeFn verilirse indirme POST: gövde o an ekranda görünen süzülmüş
+   hâli taşır, dosyada "Tümü" ve "Filtrelenmiş" iki ayrı sayfa olur. */
+function excelSeridiYap(tur, etiket, ipucu, govdeFn) {
     const el = elYap("div", "excel-serit");
 
     const btn = document.createElement("button");
@@ -2106,9 +2110,14 @@ function excelSeridiYap(tur, etiket, ipucu) {
             btn.disabled = false;
             btn.lastChild.nodeValue = eski;
         };
-        fetch(getWebAppBackendUrl(EXCEL_UCLARI[tur] || "degisken_excel")
-              + "?tur=" + encodeURIComponent(tur)
-              + "&oturum_id=" + encodeURIComponent(OTURUM_ID))
+        const uc = getWebAppBackendUrl(EXCEL_UCLARI[tur] || "degisken_excel");
+        (govdeFn
+            ? fetch(uc, { method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(Object.assign(
+                              { tur: tur, oturum_id: OTURUM_ID }, govdeFn())) })
+            : fetch(uc + "?tur=" + encodeURIComponent(tur)
+                    + "&oturum_id=" + encodeURIComponent(OTURUM_ID)))
             .then(r => {
                 /* Uç hata hâlinde .xlsx değil DÜZ METİN dönüyor; onu
                    dosya diye indirmek açılmayan bir tablo vermekti. */
@@ -3006,7 +3015,9 @@ kullanicinin gordugu
            (akis_kayit.ADIMLAR) geliyor. Burada sabitlenseydi, adım
            yeniden adlandırıldığında bu ipucu sessizce yanlış bir yere
            yönlendirirdi. */
-        "Sohbetteki listeyi kaydettikten sonra indirebilirsiniz.");
+        "Sohbetteki listeyi kaydettikten sonra indirebilirsiniz.",
+        /* İki sayfa: Tümü + panelde arama/tip/sıralamadan sonra görünen. */
+        () => ({ suzulmus: FT.suzulmus.map(s => s.feature) }));
     ftExcel.ac(!!t.excel_hazir);
     /* ÜST ŞERİDİN YANINDA: "excel olarak indir kısmı
        da üstteki yazının yanında yer almalı". */
@@ -4610,81 +4621,253 @@ function dagilimGovdeCiz(govde, d) {
 
 /* ==================== VERİ ÖNİZLEME (Değişkenler sekmesinin üstü) ====
    Veri setinin BÜTÜN kolonları, ilk 10 satır; dönem kolonu seçildiyse her
-   dönemin ilk 10 satırı (dönem başlıklarıyla, zaman sırasında). Kutunun
-   yüksekliği altındaki Değişken Listesi kutusuyla aynı; içinde iki yönde
-   kayar. Veri tek kez istenir; analiz verisi yenilenince sıfırlanır. */
+   dönemin ilk 10 satırı (dönem başlıklarıyla, zaman sırasında). Görünüş
+   Değişken Listesi ile aynı: üst şerit (sayaç · kaynak · Excel), arama,
+   tip / dönem süzgeci ve sıralama, başlığı yapışkan tablo. Tablonun en
+   yüksekliği listenin kaydırma penceresi kadar; az satırda kendi boyunda
+   kalır (altta boşluk bırakmaz). Veri tek kez istenir; analiz verisi
+   yenilenince sıfırlanır. Arama/süzme/sıralama yalnız ekranı daraltır,
+   veriye dokunmaz. */
 const ONIZLEME = { veri: null, istek: 0 };
 function onizlemeSifirla() { ONIZLEME.veri = null; ONIZLEME.istek++; }
 
-function onizlemeCiz(kap) {
-    /* Yükseklik: değişken listesi kartıyla aynı (çizildikten sonra ölçülür). */
-    const boyla = () => {
-        const ft = analizGovde.querySelector(".ft-kart");
-        if (ft && ft.offsetHeight) kap.style.height = ft.offsetHeight + "px";
+/* Süzgeç durumu çizimler arasında korunur (FT ile aynı mantık). */
+const VO = { arama: "", tip: "", donem: "", kolSira: "", satirKol: null, yon: 1 };
+const VO_BOS_DONEM = "__bos__";
+const VO_KOL_SIRALAMA = [
+    { deger: "",  etiket: "Sırala: tablo sırası" },
+    { deger: "a", etiket: "Kolon A→Z" },
+    { deger: "z", etiket: "Kolon Z→A" }
+];
+
+/* Sözlük tanımı ve tip: Değişken Listesi'nin satırlarından (aynı kaynak). */
+function voSozlukHaritasi() {
+    const h = new Map();
+    ((FT.veri && FT.veri.satirlar) || []).forEach(s => h.set(String(s.feature), s));
+    return h;
+}
+
+/* Sayı gibi okunuyorsa sayı olarak, değilse Türkçe alfabeyle karşılaştır;
+   boş değer her iki yönde de sonda. */
+function voKarsilastir(x, y, yon) {
+    const xb = x === null || x === undefined || x === "";
+    const yb = y === null || y === undefined || y === "";
+    if (xb && yb) return 0;
+    if (xb) return 1;
+    if (yb) return -1;
+    const nx = Number(x), ny = Number(y);
+    if (isFinite(nx) && isFinite(ny)) return (nx - ny) * yon;
+    return String(x).localeCompare(String(y), "tr") * yon;
+}
+
+/* Görünen kolonlar (indis) ve satır grupları ({etiket, g, satirlar: [indis]}). */
+function voSuz(d) {
+    const kol = d.kolonlar || [];
+    const harita = voSozlukHaritasi();
+    const aranan = ftSade(VO.arama).trim();
+    const donemIdx = d.donem ? kol.indexOf(d.donem) : -1;
+    let kolIdx = [];
+    kol.forEach((k, i) => {
+        /* Dönem kolonu hep görünür: süzülen kolonların hangi döneme ait
+           olduğu satırda okunabilsin. */
+        if (i === donemIdx) { kolIdx.push(i); return; }
+        const s = harita.get(k);
+        if (aranan && ftSade(k).indexOf(aranan) === -1
+            && ftSade(s && s.tanim).indexOf(aranan) === -1) return;
+        if (VO.tip && String((s && s.tip) || "").trim() !== VO.tip) return;
+        kolIdx.push(i);
+    });
+    if (VO.kolSira) {
+        const yon = VO.kolSira === "z" ? -1 : 1;
+        kolIdx.sort((a, b) => {
+            if (a === donemIdx) return -1;
+            if (b === donemIdx) return 1;
+            return kol[a].localeCompare(kol[b], "tr") * yon;
+        });
+    }
+    const satirlar = d.satirlar || [];
+    const sirala = idx => {
+        const k = VO.satirKol === null ? -1 : kol.indexOf(VO.satirKol);
+        if (k === -1) return idx;
+        return idx.slice().sort((a, b) =>
+            voKarsilastir((satirlar[a] || [])[k], (satirlar[b] || [])[k], VO.yon) || a - b);
     };
+    const gruplar = [];
+    if (d.donem && (d.gruplar || []).length) {
+        let bas = 0;
+        d.gruplar.forEach(g => {
+            const idx = [];
+            for (let n = 0; n < g.gosterilen; n++) idx.push(bas + n);
+            bas += g.gosterilen;
+            const anahtar = g.donem === null ? VO_BOS_DONEM : String(g.donem);
+            if (VO.donem && VO.donem !== anahtar) return;
+            gruplar.push({ g: g, satirlar: sirala(idx) });
+        });
+    } else {
+        gruplar.push({ g: null, satirlar: sirala(satirlar.map((_, i) => i)) });
+    }
+    return { kolIdx, gruplar };
+}
+
+function onizlemeCiz(kap) {
     const ciz = d => {
         kap.textContent = "";
         if (!d || d.hata || d.tamam === false) {
             kap.appendChild(elYap("div", "dag-not dag-hata",
                 tireSade((d && (d.hata || d.metin)) || "Önizleme okunamadı.")));
-            boyla(); return;
+            return;
         }
         const kol = d.kolonlar || [];
         if (!kol.length) {
             kap.appendChild(elYap("div", "dag-not", tireSade(d.not || "Veri seti seçildikten sonra dolar.")));
-            boyla(); return;
+            return;
         }
-        const ust = elYap("div", "ft-ust");
-        ust.appendChild(elYap("span", "ft-sayac", ftBinlik(kol.length) + " kolon"));
-        ust.appendChild(elYap("span", "ft-ayrac", "\u00b7"));
-        ust.appendChild(elYap("span", "ft-kaynak", d.donem
-            ? "Dönem kolonu " + d.donem + " · " + ftBinlik((d.gruplar || []).length)
-              + " dönem · her dönemin ilk 10 satırı"
-            : "ilk 10 satır"));
-        kap.appendChild(ust);
-        const sar = elYap("div", "vo-sar");
-        const t = elYap("table", "vo-tablo");
-        const th = document.createElement("thead"), hr = document.createElement("tr");
-        hr.appendChild(elYap("th", "vo-no", "#"));
-        kol.forEach(k => {
-            const h = elYap("th", k === d.donem ? "vo-donem-kol" : "", k);
-            h.title = k;
-            hr.appendChild(h);
-        });
-        th.appendChild(hr); t.appendChild(th);
-        const tb = document.createElement("tbody");
         const satirlar = d.satirlar || [];
-        const satirYaz = (r, no) => {
-            const tr = document.createElement("tr");
-            tr.appendChild(elYap("td", "vo-no", String(no)));
-            r.forEach((v, i) => {
-                const td = elYap("td", (v === null ? "vo-bos" : "")
-                    + (kol[i] === d.donem ? " vo-donem-kol" : ""), v === null ? BOS_SIMGE : v);
-                if (v !== null && v.length > 24) td.title = v;
-                tr.appendChild(td);
-            });
-            tb.appendChild(tr);
+        /* Önceki veride olmayan dönem seçimi / sıralama kolonu düşer. */
+        const donemler = (d.gruplar || []).map(g => g.donem === null ? VO_BOS_DONEM : String(g.donem));
+        if (!d.donem || donemler.indexOf(VO.donem) === -1) VO.donem = "";
+        if (VO.satirKol !== null && kol.indexOf(VO.satirKol) === -1) VO.satirKol = null;
+        let suz = voSuz(d);
+
+        /* ---- Üst şerit: sayaç · kaynak · Excel ---- */
+        const ust = elYap("div", "ft-ust");
+        const sayac = elYap("span", "ft-sayac");
+        const kaynak = elYap("span", "ft-kaynak");
+        ust.appendChild(sayac);
+        ust.appendChild(elYap("span", "ft-ayrac", "·"));
+        ust.appendChild(kaynak);
+        const excel = excelSeridiYap("onizleme", "Excel İndir", "",
+            () => ({
+                imza: d.imza,
+                kolonlar: suz.kolIdx.map(i => kol[i]),
+                satirlar: [].concat.apply([], suz.gruplar.map(gr => gr.satirlar))
+            }));
+        excel.ac(!!d.imza);
+        ust.appendChild(excel.el);
+        kap.appendChild(ust);
+
+        /* ---- Arama + tip / dönem süzgeci + kolon sıralaması ---- */
+        const filtre = elYap("div", "ft-filtreler");
+        const ara = document.createElement("input");
+        ara.type = "search";
+        ara.className = "ft-ara";
+        ara.placeholder = "Kolon adı veya sözlük tanımında ara…";
+        ara.setAttribute("aria-label", "Kolon adı veya sözlük tanımında ara");
+        ara.value = VO.arama;
+        let zamanlayici = null;
+        ara.oninput = () => {
+            clearTimeout(zamanlayici);
+            zamanlayici = setTimeout(() => { VO.arama = ara.value; tazele(); }, 150);
         };
+        filtre.appendChild(ara);
+        const alt = elYap("div", "ft-filtre-alt");
+        const tipler = ftTipSecenekleri();
+        const tip = ftSecim("", tipler, tipler.some(o => o.deger === VO.tip) ? VO.tip : "",
+                            v => { VO.tip = v; tazele(); });
+        if (tip.value !== VO.tip) VO.tip = tip.value;
+        tip.classList.add("ft-tip-suzgec");
+        tip.setAttribute("aria-label", "Tipe göre süz");
+        tip.disabled = tipler.length <= 2;
+        if (tip.disabled) tip.title = tipler.length <= 1
+            ? "Tip bilgisi Değişken Listesi dolunca gelir."
+            : "Listede tek tip var; süzmeye gerek yok.";
+        alt.appendChild(tip);
         if (d.donem && (d.gruplar || []).length) {
-            let i = 0;
-            d.gruplar.forEach(g => {
-                const gr = elYap("tr", "vo-grup");
-                const td = elYap("td", "", (g.donem === null ? "Dönemi boş" : g.donem)
-                    + " · " + ftBinlik(g.satir) + " satır" + (g.satir > g.gosterilen
-                        ? " · ilk " + g.gosterilen + " gösteriliyor" : ""));
-                td.colSpan = kol.length + 1;
-                gr.appendChild(td); tb.appendChild(gr);
-                for (let n = 1; n <= g.gosterilen; n++, i++) satirYaz(satirlar[i] || [], n);
-            });
-        } else {
-            satirlar.forEach((r, n) => satirYaz(r, n + 1));
+            const ds = ftSecim("", [{ deger: "", etiket: "Dönem: tümü" }].concat(
+                d.gruplar.map(g => ({ deger: g.donem === null ? VO_BOS_DONEM : String(g.donem),
+                                      etiket: g.donem === null ? "Dönemi boş" : String(g.donem) }))),
+                VO.donem, v => { VO.donem = v; tazele(); });
+            ds.classList.add("ft-tip-suzgec");
+            ds.setAttribute("aria-label", "Döneme göre süz");
+            alt.appendChild(ds);
         }
-        t.appendChild(tb); sar.appendChild(t); kap.appendChild(sar);
-        boyla();
+        const sira = ftSecim("", VO_KOL_SIRALAMA, VO.kolSira, v => { VO.kolSira = v; tazele(); });
+        sira.classList.add("ft-sirala");
+        sira.setAttribute("aria-label", "Kolonları sırala");
+        alt.appendChild(sira);
+        filtre.appendChild(alt);
+        kap.appendChild(filtre);
+
+        const sar = elYap("div", "vo-sar");
+        kap.appendChild(sar);
+
+        function tabloCiz() {
+            sar.textContent = "";
+            const { kolIdx, gruplar } = suz;
+            sayac.textContent = (kolIdx.length < kol.length
+                ? ftBinlik(kolIdx.length) + " / " : "") + ftBinlik(kol.length) + " kolon";
+            const gs = gruplar.reduce((t, gr) => t + gr.satirlar.length, 0);
+            kaynak.textContent = d.donem
+                ? "Dönem kolonu " + d.donem + " · "
+                  + (VO.donem ? "1 / " : "") + ftBinlik((d.gruplar || []).length)
+                  + " dönem · her dönemin ilk 10 satırı · " + ftBinlik(gs) + " satır"
+                : "ilk 10 satır";
+            kaynak.title = kaynak.textContent;
+            const aramaKolon = kolIdx.filter(i => kol[i] !== d.donem);
+            if (!aramaKolon.length && (VO.arama || VO.tip)) {
+                sar.appendChild(elYap("div", "ft-bos", "Aramayla eşleşen kolon yok."));
+                return;
+            }
+            const t = elYap("table", "vo-tablo");
+            const th = document.createElement("thead"), hr = document.createElement("tr");
+            hr.appendChild(elYap("th", "vo-no", "#"));
+            kolIdx.forEach(i => {
+                const k = kol[i];
+                const ok = VO.satirKol === k ? (VO.yon === 1 ? " ▲" : " ▼") : "";
+                const h = elYap("th", "vo-bas" + (k === d.donem ? " vo-donem-kol" : ""), k + ok);
+                h.title = k + " · satırları bu kolona göre sırala";
+                h.tabIndex = 0;
+                const sirala = () => {
+                    if (VO.satirKol === k) VO.yon = -VO.yon;
+                    else { VO.satirKol = k; VO.yon = 1; }
+                    tazele();
+                };
+                h.onclick = sirala;
+                h.onkeydown = ev => {
+                    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); sirala(); }
+                };
+                hr.appendChild(h);
+            });
+            th.appendChild(hr); t.appendChild(th);
+            const tb = document.createElement("tbody");
+            gruplar.forEach(gr => {
+                if (gr.g) {
+                    const g = gr.g;
+                    const tr = elYap("tr", "vo-grup");
+                    const td = document.createElement("td");
+                    td.appendChild(elYap("span", "vo-grup-ad",
+                        (g.donem === null ? "Dönemi boş" : g.donem)
+                        + " · " + ftBinlik(g.satir) + " satır" + (g.satir > g.gosterilen
+                            ? " · ilk " + g.gosterilen + " gösteriliyor" : "")));
+                    td.colSpan = kolIdx.length + 1;
+                    tr.appendChild(td); tb.appendChild(tr);
+                }
+                gr.satirlar.forEach((ri, n) => {
+                    const r = satirlar[ri] || [];
+                    const tr = document.createElement("tr");
+                    tr.appendChild(elYap("td", "vo-no", String(n + 1)));
+                    kolIdx.forEach(i => {
+                        const v = r[i] === undefined ? null : r[i];
+                        const td = elYap("td", (v === null ? "vo-bos" : "")
+                            + (kol[i] === d.donem ? " vo-donem-kol" : ""), v === null ? BOS_SIMGE : v);
+                        if (v !== null && v.length > 24) td.title = v;
+                        tr.appendChild(td);
+                    });
+                    tb.appendChild(tr);
+                });
+            });
+            t.appendChild(tb); sar.appendChild(t);
+        }
+        function tazele() {
+            suz = voSuz(d);
+            const x = sar.scrollLeft;
+            tabloCiz();
+            sar.scrollLeft = x;
+        }
+        tabloCiz();
     };
     if (ONIZLEME.veri) { ciz(ONIZLEME.veri); return; }
     kap.appendChild(elYap("div", "dag-not", "Önizleme yükleniyor…"));
-    boyla();
     const istek = ++ONIZLEME.istek;
     fetch(getWebAppBackendUrl("veri_onizleme") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
         .then(r => r.json())
