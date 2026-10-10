@@ -83,17 +83,14 @@
   --kenar:        #DDE1E6;          /* kart, balon, form kenarlari */
   --kenar-guclu:  #BFC5CE;
   --kenar-acik:   #EDEFF2;
-  /* Yalnizca 3 yapisal ayrac: ust bar alti, sol panel sagi, sag panel solu.
-     TAM SIYAH.
-     Kalinlik 2px. Kullanici "1.5 olmalı gibi" dedi ama 1.5px KENARLIK
-     DIYE BIR SEY YOK: Chrome border-width'i tam piksele YUVARLIYOR ve
-     1.5px her ekran olceginde (dPR 1 / 1.25 / 1.5 / 2 olculdu) 1px'e
-     dusuyor - yani hicbir sey degismemis olurdu. 2px gercekten
-     ciziliyor ve istenen yerde duruyor: 1px'ten kalin, 3px'ten ince.
-     (Kesirli deger ancak kenarlik yerine sozde ogeyle cizilirse
-     tutuyor; o da dPR 1'de gri ve bulanik bir cizgi demek.) */
-  --ayrac:        rgba(0,0,0,.45);   /* uc blok arasi siyah ayrac; arka planla ayni %45 opaklik */
-  --ayrac-kalinlik: 2px;
+  /* UC BLOK ARASI AYRAC (sol bar | is akisi | sohbet): arka plandaki
+     cercevenin ic cizgisiyle AYNI. O cizgi gorselde tam siyah ve 4 piksel
+     kalin (1774 genislikte olculdu: x 51-55, y 54-58) ve gorsel %45
+     opaklikta; ayrac da siyah, %45 opak ve ekran enine gore ayni oranda
+     kalin (1920 px ekranda ~4 px, 1366'da ~3 px; tarayici tam piksele
+     yuvarlar). */
+  --ayrac:        rgba(0,0,0,.45);
+  --ayrac-kalinlik: calc(4 / 1774 * 100vw);
   /* Tutamagin ayracin iki yanina tastigi pay: yakalama kutusu ayraca
      ORTALI dursun diye. 8px - 2px = 6, iki yana 3'er. Kalinlik
      degisirse kendiliginden duzeliyor. */
