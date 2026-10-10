@@ -85,7 +85,7 @@
      ciziliyor ve istenen yerde duruyor: 1px'ten kalin, 3px'ten ince.
      (Kesirli deger ancak kenarlik yerine sozde ogeyle cizilirse
      tutuyor; o da dPR 1'de gri ve bulanik bir cizgi demek.) */
-  --ayrac:        #000000;
+  --ayrac:        transparent;   /* siyah ayraclar kaldirildi (kalinlik hizalama icin duruyor) */
   --ayrac-kalinlik: 2px;
   /* Tutamagin ayracin iki yanina tastigi pay: yakalama kutusu ayraca
      ORTALI dursun diye. 8px - 2px = 6, iki yana 3'er. Kalinlik
@@ -205,19 +205,24 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    px, ortasi 885.5); logo iki yandan ~6 px pay birakacak ene (162 px)
    orani korunarak sigar (object-fit: contain). */
 #kurum-logo {
-  position: fixed;
+  position: fixed; z-index: 1;
   left: calc(885.5 / 1774 * 100vw); top: calc(28.5 / 887 * 100vh);
   width: calc(162 / 1774 * 100vw); height: calc(18 / 887 * 100vh);
   transform: translate(-50%, -50%);
   object-fit: contain;
   pointer-events: none; user-select: none;
 }
-body {
-  background-color: #FEFEFE;   /* gorselin ic zemini; gorsel gelmezse */
+/* Gorsel %35 opaklikta (kullanici karari: tam renkte goz yoruyordu).
+   Opaklik yalniz arka plan katmaninda; kurum logosu ve uygulama tam
+   renkte. */
+body { background-color: #FEFEFE; }   /* gorselin ic zemini; gorsel gelmezse */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image: var(--arka-plan, none);
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
+  opacity: .35;
 }
 
 /* Cercevenin ic alani. Iki sutun: solda sol bar, saginda acik sayfa.
@@ -225,7 +230,7 @@ body {
    hucrede tek sayfa kalir. Ust bar yok: logo sol barin tepesinde. */
 #kabuk {
   display: grid;
-  position: fixed;
+  position: fixed; z-index: 1;
   top: var(--kabuk-ust); bottom: var(--kabuk-alt);
   left: var(--kabuk-sol); right: var(--kabuk-sag);
   overflow: hidden;
@@ -409,7 +414,7 @@ body {
   /* Arşiv listesi bardan taşarak açılır: sayfa panellerinin üstünde */
   position: relative; z-index: 45;
   display: flex; flex-direction: column;
-  background: var(--yuzey);
+  background: var(--kirmizi-acik);
   border-right: var(--ayrac-kalinlik) solid var(--ayrac);
 }
 #ust-sekmeler {
@@ -461,7 +466,9 @@ body {
   cursor: not-allowed; color: #8A9099; background: transparent;
   border-color: transparent; box-shadow: none;
 }
-.ust-sekme.kapali svg { width: 12px; height: 12px; flex-shrink: 0; }
+/* Her sekmenin önünde ince çizgili ikon; kapalı sekmelerde kilit sağda. */
+.ust-sekme svg.ikon { width: 15px; height: 15px; flex-shrink: 0; }
+.ust-sekme.kapali svg.kilit { width: 12px; height: 12px; flex-shrink: 0; margin-left: auto; }
 
 /* Alt: Arşiv ve Yeni Çalışma alt alta, barın eninde, sola yaslı. */
 .sol-bar-dugmeler {
@@ -497,7 +504,15 @@ body {
   padding: var(--b-5) var(--b-4) 22px; overflow-y: auto;
 }
 
-.panel-blok { margin-bottom: var(--b-6); }
+/* ANALİTİK SÜREÇ ve İŞ AKIŞI: ayrı balonlar (beyaz kart, açık kırmızı
+   ince kenar, yuvarlak köşe). */
+.panel-blok {
+  margin-bottom: var(--b-4);
+  padding: var(--b-4);
+  background: var(--yuzey);
+  border: 1px solid #F3C6C7; border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16,24,40,.05);
+}
 .panel-blok:last-child { margin-bottom: 0; }
 .panel-baslik { margin-bottom: var(--b-3); }
 .panel-metin {
