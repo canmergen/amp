@@ -4547,7 +4547,8 @@ function analizSekmeAc(tab) {
 }
 
 /* ==================== Sol bar sekmeleri ve analiz alanı ====================
-   Sol barda: AKIŞ · VERİ & SÖZLÜK · DEĞİŞKENLER · BÖLME & MODEL · ÖZET.
+   Sol barda (MODEL PLATFORMU kümesi): MODEL AKIŞI · VERİ & SÖZLÜK ·
+   DEĞİŞKENLER · BÖLME & MODEL · ÖZET. Kodda MODEL AKIŞI = "akis" (AKIŞ).
    AKIŞ ana ekran (iş akışı + sohbet). Üç analiz sekmesinden birine
    basınca analiz alanı sol barın sağındaki bütün alanı kaplar
    (style.css: #analiz-panel); AKIŞ'a basınca yukarı kapanır
