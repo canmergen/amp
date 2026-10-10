@@ -42,6 +42,8 @@ GORSELLER = {
     "dusunme":    "robot_think.png",
     "user":       "robot_llm_person.png",
     "zemin_acik": "llm_chat_light.png",
+    # Koyu renk modunda sohbet zemini
+    "zemin_koyu": "llm_chat_dark.png",
     # Sayfanin tamamini kaplayan cerceveli arka plan (style.css: --arka-plan)
     "arka_plan":  "amp_background.png",
     # Arka plan cercevesinin ust bandindaki kurum logosu (style.css: #kurum-logo)

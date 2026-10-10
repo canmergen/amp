@@ -67,6 +67,8 @@
   --kirmizi-koyu: #A00D10;
   --kirmizi-acik: #FDF1F1;
   --kirmizi-halka: rgba(213,17,21,.16);
+  --pembe-secili:  #FADADB;     /* sol barda seçili sekme zemini */
+  --pembe-kenar:   #F3C6C7;     /* panel balonlarının ince kenarı */
   /* Adim blogu cercevesinin kalinligi. Renk dogrudan var(--kirmizi). */
   --blok-cerceve: 3px;
 
@@ -178,6 +180,78 @@
   --govde-en:     100%;
 }
 
+
+/* -------- KOYU TEMA -------- */
+#kabuk.koyu {
+  /* KOYU TEMA YENIDEN.
+     Ilke: zemin ve kartlar SIYAH, ayrim kenarlikla; "gri zemin" isteyen
+     yerler (tablo basligi, ic kutu, deger cipi) siyahtan GORUNUR bicimde
+     ayrisan tek bir gri (#1A1A1A / #141414). Vurgu renkleri acik
+     temadakilerle AYNI aileden, neon degil: kirmizi marka kirmizisina
+     yakin (#E5262B, siyahta 4.6:1), yesil / kehribar sakin. */
+  --kirmizi:      #E5262B;
+  --kirmizi-koyu: #C81E23;
+  --kirmizi-acik: #1F0B0C;
+  --kirmizi-halka: rgba(229,38,43,.30);
+
+  --zemin:        #000000;
+  --yuzey:        #000000;
+  --yuzey-alt:    #141414;
+  --kenar:        #333333;
+  --kenar-guclu:  #4D4D4D;
+  --kenar-acik:   #1F1F1F;
+  --ayrac:        transparent;
+
+  --metin:        #FFFFFF;
+  --metin-soluk:  #FFFFFF;
+  --metin-asil:   #FFFFFF;
+  --yer-tutucu:   rgba(255,255,255,.45);
+
+  --user-zemin:   #1A1A1A;
+
+  --gonder-zemin: #FFFFFF;
+  --gonder-metin: #000000;
+
+  --golge-1:   0 1px 2px rgba(0,0,0,.6);
+  --ust-golge: none;
+  --golge-2:   0 5px 13px rgba(0,0,0,.7);
+
+  --yesil:        #34B86E;
+  --yesil-acik:   #0B1F14;
+  --excel-koyu:    #17794A;   /* beyaz yazi ile 5.4:1 */
+  --excel-en-koyu: #1E9159;
+  --excel-acik:    #0E2418;
+  --excel-kenar:   #245A3B;
+  --excel-halka:   rgba(46,158,96,.35);
+  --excel-pasif-yazi: #5FD69A;
+  --amber:        #E8A23A;
+  --amber-acik:   #1F1709;
+  --amber-halka:  rgba(232,162,58,.40);
+  --sari:         #EAB308;
+  --sari-koyu:    #FFFFFF;
+  --sari-acik:    #1F1A06;
+}
+/* Koyu temada gorunur gri. */
+#kabuk.koyu .secenek-rozet { background: var(--kenar-acik); }
+/* Koyu temada sonradan eklenen, sabit renkli parçalar. */
+#kabuk.koyu {
+  --pembe-secili:  #3A1416;     /* sol barda seçili sekme zemini */
+  --pembe-kenar:   #5A2124;     /* panel balonlarının ince kenarı */
+  --dg-bos: rgba(234,179,8,.14);
+  --dg-llm: rgba(59,130,246,.17);
+  --dg-hafiza: rgba(139,92,246,.20);
+  --dg-eklendi: rgba(34,197,94,.15);
+  --dg-eklenmedi: rgba(239,68,68,.17);
+  --bilgi-zemin: rgba(45,212,191,.12);
+  --bilgi-kenar: #2DD4BF;
+  --grafik-seri: #5B8DEF;
+  --aralik-seri-2: #D95926;
+}
+#kabuk.koyu .blok-durum.kontrol {
+  color: #F5C518; background: #2A2210; border-color: #F5C518;
+}
+/* Koyu temada çerçeve görseli koyu zeminin üstünde daha da sönük durur. */
+body:has(#kabuk.koyu) { background-color: #111111; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
@@ -333,7 +407,7 @@ body::before {
 
 /* Görünür
    etiket ve daha geniş gövde kasıtlı: komşusuna benzemesin. */
-#sifirla-btn, #calismalar-btn {
+#sifirla-btn, #calismalar-btn, #tema-btn {
   display: flex; align-items: center; gap: 6px;
   height: 24px; padding: 0 var(--b-3);
   border: 1px solid var(--kenar); background: var(--yuzey);
@@ -459,7 +533,7 @@ body::before {
    beyazdan net ayrılsın diye zemin biraz koyu pembe ve solda 3 px
    kırmızı çizgi. */
 .ust-sekme.aktif, .ust-sekme.aktif:hover {
-  background: #FADADB; border-color: #FADADB; color: var(--kirmizi);
+  background: var(--pembe-secili); border-color: var(--pembe-secili); color: var(--kirmizi);
   box-shadow: inset 3px 0 0 var(--kirmizi), 0 1px 3px rgba(0,0,0,.18);
 }
 .ust-kume:has(> .ust-sekme.aktif) {
@@ -468,7 +542,7 @@ body::before {
 .ust-kume:has(> .ust-sekme.aktif) .ust-kume-ad { color: #fff; }
 .ust-kume:has(> .ust-sekme.aktif) .ust-kume-ad::after { background: rgba(255,255,255,.45); }
 .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):hover {
-  background: #fff; border-color: #fff; color: var(--kirmizi);
+  background: var(--yuzey); border-color: var(--yuzey); color: var(--kirmizi);
 }
 .ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: 1px; }
 /* KAPALI blok (SOHBET, DASHBOARD henüz yok): gri zemin, soluk gri yazı,
@@ -487,10 +561,23 @@ body::before {
 .sol-bar-dugmeler {
   display: flex; flex-direction: column; align-items: stretch; gap: 6px;
 }
-.sol-bar-dugmeler #calismalar-btn, .sol-bar-dugmeler #sifirla-btn {
+.sol-bar-dugmeler #calismalar-btn, .sol-bar-dugmeler #sifirla-btn, .sol-bar-dugmeler #tema-btn {
   width: 100%; height: 32px; justify-content: flex-start;
 }
 .sol-bar-dugmeler .cekmece-btn { align-self: flex-start; }
+/* RENK MODU: solda ad, sağda güneş / ay anahtarı; geçerli mod dolu
+   zeminli, öteki soluk. */
+#tema-btn .tema-anahtar {
+  margin-left: auto; display: inline-flex; gap: 2px; padding: 2px;
+  border-radius: 999px; background: var(--kenar-acik);
+}
+#tema-btn .tema-anahtar span {
+  width: 20px; height: 18px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; line-height: 1; opacity: .45;
+}
+#kabuk:not(.koyu) #tema-btn .tema-gunes,
+#kabuk.koyu #tema-btn .tema-ay { background: var(--yuzey); opacity: 1; box-shadow: var(--golge-1); }
 
 /* Sohbet ve Dashboard sayfa iskeleti (içerik ayrıca kurulacak). */
 .bos-sayfa {
@@ -530,7 +617,7 @@ body::before {
   margin: 7px 7px 0 0;
   width: 26px; height: 26px; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid #F3C6C7; border-radius: 7px;
+  border: 1px solid var(--pembe-kenar); border-radius: 7px;
   background: var(--yuzey); color: var(--kirmizi); cursor: pointer;
   transition: background .12s, border-color .12s;
 }
@@ -563,7 +650,7 @@ body::before {
   margin-bottom: var(--b-4);
   padding: var(--b-4);
   background: var(--yuzey);
-  border: 1px solid #F3C6C7; border-radius: 12px;
+  border: 1px solid var(--pembe-kenar); border-radius: 12px;
   box-shadow: 0 1px 2px rgba(16,24,40,.05);
 }
 .panel-blok:last-child { margin-bottom: 0; }

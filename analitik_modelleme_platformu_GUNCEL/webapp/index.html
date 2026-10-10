@@ -72,6 +72,12 @@
              stroke/fill currentColor: düğmenin rengini izler. -->
         <!-- ARŞİV: PROJE_HAFIZASI'ndaki kayıtlı çalışmalar. Birine basınca
              o çalışma kaldığı yerden açılır (app.js: calismalarAc). -->
+        <!-- RENK MODU: açık (güneş) / koyu (ay). Basınca öteki moda geçer;
+             seçim bu tarayıcıda hatırlanır (app.js: temaUygula). -->
+        <button id="tema-btn" type="button" title="Koyu moda geç" aria-pressed="false">
+          <span class="sifirla-etiket">Renk Modu</span>
+          <span class="tema-anahtar" aria-hidden="true"><span class="tema-gunes">☀️</span><span class="tema-ay">🌙</span></span>
+        </button>
         <div id="calismalar-kap">
           <button id="calismalar-btn" type="button"
                   title="Kayıtlı çalışmalarınız: açın ya da silin" aria-haspopup="true"
