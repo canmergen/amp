@@ -683,26 +683,25 @@ body::before {
   #panel.daraltilmis .panel-ust-sira { position: static; margin: 0; padding: 0; background: none; }
   #panel.daraltilmis #panel-daralt { margin: 0; }
   #panel.daraltilmis #panel-daralt svg { transform: rotate(180deg); }
-  /* İki ayrı dikey ad: üstte ANALİTİK SÜREÇ, altında İŞ AKIŞI; aralarında
-     kısa ince çizgi. Her biri kendi bölümünü açar. */
+  /* İki ayrı DÜĞME: üstte ANALİTİK SÜREÇ, altında İŞ AKIŞI. Yazı yatay
+     yazının saat yönünün tersine 90° döndürülmüş hâli (aşağıdan yukarı
+     okunur). Her biri kendi bölümünü açar. */
   #panel.daraltilmis #panel-dikey-adlar {
     display: flex; flex-direction: column; align-items: center; gap: var(--b-2);
   }
   #panel.daraltilmis .panel-dikey-ad {
     display: block; writing-mode: vertical-rl; transform: rotate(180deg);
-    padding: 6px 3px; border: 0; border-radius: 6px; background: none; cursor: pointer;
+    width: 30px; padding: 12px 0;
+    border: 1px solid var(--pembe-kenar); border-radius: 8px;
+    background: var(--yuzey); box-shadow: var(--ust-golge); cursor: pointer;
     font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
-    letter-spacing: .08em; color: var(--kirmizi);
+    letter-spacing: .08em; color: var(--kirmizi); white-space: nowrap;
+    transition: background .12s, border-color .12s;
   }
-  #panel.daraltilmis .panel-dikey-ad:hover { background: var(--kirmizi-acik); }
-  #panel.daraltilmis .panel-dikey-ad + .panel-dikey-ad {
-    border-top: 0; position: relative; margin-top: var(--b-2);
+  #panel.daraltilmis .panel-dikey-ad:hover {
+    background: var(--kirmizi-acik); border-color: var(--kirmizi);
   }
-  #panel.daraltilmis .panel-dikey-ad + .panel-dikey-ad::after {
-    content: ""; position: absolute; left: 50%; width: 14px; height: 1px;
-    bottom: calc(-1 * var(--b-2) - 1px); transform: translateX(-50%);
-    background: var(--kenar-guclu);
-  }
+  #panel.daraltilmis .panel-dikey-ad:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
   #sayfa-calisma:has(#panel.daraltilmis) #tutamak-sol { display: none; }
 }
 @media (max-width: 864px) { .panel-ust-sira { display: none; } }
