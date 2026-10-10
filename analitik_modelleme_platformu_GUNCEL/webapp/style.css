@@ -206,6 +206,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    orani korunarak sigar (object-fit: contain). */
 #kurum-logo {
   position: fixed; z-index: 1;
+  opacity: .35;   /* arka planla ayni solukluk (kullanici karari) */
   left: calc(885.5 / 1774 * 100vw); top: calc(28.5 / 887 * 100vh);
   width: calc(162 / 1774 * 100vw); height: calc(18 / 887 * 100vh);
   transform: translate(-50%, -50%);
@@ -213,7 +214,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   pointer-events: none; user-select: none;
 }
 /* Gorsel %35 opaklikta (kullanici karari: tam renkte goz yoruyordu).
-   Opaklik yalniz arka plan katmaninda; kurum logosu ve uygulama tam
+   Ustteki kurum logosu da ayni oranda soluk (#kurum-logo); uygulama tam
    renkte. */
 body { background-color: #FEFEFE; }   /* gorselin ic zemini; gorsel gelmezse */
 body::before {
