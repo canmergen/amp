@@ -306,7 +306,7 @@ try { koyuTema = localStorage.getItem(TEMA_ANAHTAR) === "koyu"; } catch (e) { ko
 temaUygula(false);
 
 /* ==================== Arka plan (açık / kapalı) ==================== */
-/* Sol bardaki Arka Plan düğmesi: çerçeveli görseli ve üst banttaki
+/* Sol bardaki Çerçeve düğmesi: çerçeveli görseli ve üst banttaki
    logoyu gizler / gösterir; kapalıyken uygulama ekranın tamamını
    kullanır (style.css: :root.cercevesiz). Seçim bu tarayıcıda
    hatırlanır; okunamazsa açık başlar. */
@@ -317,7 +317,7 @@ const cerceveBtn = document.getElementById("cerceve-btn");
 function cerceveUygula(kaydet) {
     document.documentElement.classList.toggle("cercevesiz", cerceveKapali);
     if (cerceveBtn) {
-        cerceveBtn.title = cerceveKapali ? "Arka planı aç" : "Arka planı kapat";
+        cerceveBtn.title = cerceveKapali ? "Çerçeveyi aç" : "Çerçeveyi kapat";
         cerceveBtn.setAttribute("aria-pressed", cerceveKapali ? "false" : "true");
     }
     if (kaydet) {

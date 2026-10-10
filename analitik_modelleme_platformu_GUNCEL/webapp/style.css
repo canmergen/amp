@@ -295,7 +295,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   object-fit: contain;
   pointer-events: none; user-select: none;
 }
-/* ARKA PLAN KAPALI (:root.cercevesiz, sol bardaki Arka Plan düğmesi):
+/* ÇERÇEVE KAPALI (:root.cercevesiz, sol bardaki Çerçeve düğmesi):
    görsel ve üst banttaki logo gizlenir, uygulama ekranın tamamını
    kullanır (--kabuk-* sıfır; ekrana göre yerleşen paneller de izler). */
 :root.cercevesiz {
