@@ -2458,6 +2458,8 @@ Asgariler
   letter-spacing: var(--etiket-aralik); color: var(--metin-soluk); cursor: pointer;
 }
 .ft-bas:hover { color: var(--kirmizi); }
+/* Başlık: etiket + Excel tarzı süzgeç düğmesi yan yana. */
+.ft-baslik .ft-bas { display: flex; align-items: center; gap: 4px; }
 .ft-bas:focus-visible {
   outline: none; color: var(--kirmizi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
@@ -3844,3 +3846,97 @@ span.bolme-cip { cursor: default; }
   100% { box-shadow: 0 0 0 3px transparent; }
 }
 .blok-vurgu { animation: blok-vurgu-anim 1.6s ease-out; border-radius: var(--r); }
+
+/* ==================== EXCEL TARZI KOLON SÜZGECİ ====================
+   Başlıktaki süzgeç düğmesi, açılır menü (sıralama, koşul, değer
+   listesi) ve etkin süzgeç çipleri. Değişken Listesi ve Veri Önizleme
+   ortak; renkler tema değişkenlerinden. */
+.sz-etiket { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.vo-bas-ic { display: inline-flex; align-items: center; gap: 4px; }
+.sz-btn {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; padding: 0; cursor: pointer;
+  color: var(--metin-soluk); background: transparent;
+  border: 1px solid transparent; border-radius: var(--r-kucuk);
+}
+.sz-btn:hover { color: var(--kirmizi); border-color: var(--kenar); background: var(--yuzey); }
+.sz-btn:focus-visible { outline: none; box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
+.sz-btn.aktif { color: #FFFFFF; background: var(--kirmizi); border-color: var(--kirmizi); }
+
+.sz-menu {
+  position: fixed; z-index: 1000; width: 280px; max-width: calc(100vw - 16px);
+  display: flex; flex-direction: column; gap: var(--b-2);
+  padding: var(--b-3); background: var(--yuzey); color: var(--metin);
+  border: 1px solid var(--kenar); border-radius: var(--r); box-shadow: var(--golge-2);
+  font-size: var(--fs-govde); text-transform: none; letter-spacing: normal; font-weight: normal;
+}
+.sz-baslik {
+  font-weight: var(--fw-kalin); color: var(--metin);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sz-bolum {
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin-soluk);
+  letter-spacing: var(--etiket-aralik); text-transform: uppercase;
+  padding-top: var(--b-2); border-top: 1px solid var(--kenar-acik);
+}
+.sz-sirala { display: flex; gap: var(--b-2); }
+.sz-sirala .sz-mini {
+  flex: 1 1 0; min-width: 0; height: auto; min-height: var(--btn-h-kucuk);
+  padding: 3px 6px; white-space: normal; line-height: 1.2;
+}
+.sz-kosul { display: flex; flex-direction: column; gap: 6px; }
+.sz-kosul .ft-secim { width: 100%; }
+.sz-giris[hidden] { display: none; }
+.sz-mini {
+  font-family: var(--font); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  height: var(--btn-h-kucuk); padding: 0 var(--b-3); cursor: pointer; white-space: nowrap;
+  color: var(--metin); background: var(--yuzey);
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+}
+.sz-mini:hover:not(:disabled) { border-color: var(--kirmizi); color: var(--kirmizi); }
+.sz-mini:disabled { opacity: .5; cursor: default; }
+.sz-mini.sz-birincil { color: #FFFFFF; background: var(--kirmizi); border-color: var(--kirmizi); }
+.sz-mini.sz-birincil:hover { color: #FFFFFF; filter: brightness(.92); }
+.sz-liste {
+  max-height: 220px; overflow: auto;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk); padding: 2px 0;
+}
+.sz-satir {
+  display: flex; align-items: center; gap: 6px; padding: 3px var(--b-2);
+  cursor: pointer; line-height: 1.3;
+}
+.sz-satir:hover { background: var(--kenar-acik); }
+.sz-satir input { margin: 0; flex: 0 0 auto; accent-color: var(--kirmizi); }
+.sz-tum { font-weight: var(--fw-kalin); border-bottom: 1px solid var(--kenar-acik); }
+.sz-ad { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sz-bos .sz-ad { color: var(--metin-soluk); font-style: italic; }
+.sz-adet { flex: 0 0 auto; font-size: var(--fs-kucuk); color: var(--metin-soluk); }
+.sz-not { padding: 4px var(--b-2); font-size: var(--fs-kucuk); color: var(--metin-soluk); }
+.sz-hata { font-size: var(--fs-kucuk); color: var(--kirmizi); }
+.sz-hata[hidden] { display: none; }
+.sz-alt { display: flex; align-items: center; gap: 6px; padding-top: var(--b-2); border-top: 1px solid var(--kenar-acik); }
+.sz-bosluk { flex: 1 1 auto; }
+
+/* Etkin süzgeç çipleri: tek tıkla kaldırılır; "Filtreleri Temizle" hepsini. */
+.sz-ciplar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: var(--b-2); }
+.sz-ciplar[hidden] { display: none; }
+.sz-cip-baslik { font-size: var(--fs-kucuk); color: var(--metin-soluk); }
+.sz-cip {
+  display: inline-flex; align-items: center; gap: 2px; max-width: 320px;
+  padding: 1px 2px 1px 8px; font-size: var(--fs-kucuk); color: var(--kume-secili-yazi, var(--kirmizi));
+  background: var(--kirmizi-acik); border: 1px solid var(--kirmizi-halka); border-radius: 999px;
+}
+.sz-cip-ad { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sz-cip-kaldir {
+  width: 18px; height: 18px; padding: 0; line-height: 1; cursor: pointer;
+  font-size: 14px; color: inherit; background: transparent; border: 0; border-radius: 50%;
+}
+.sz-cip-kaldir:hover { background: var(--kirmizi-halka); }
+.sz-temizle {
+  font-family: var(--font); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  padding: 0 4px; cursor: pointer; color: var(--kirmizi); background: transparent; border: 0;
+  text-decoration: underline;
+}
+/* Sayısal kolonlar sağa yaslı (Excel gibi). */
+.vo-tablo td.vo-sayi { text-align: right; font-variant-numeric: tabular-nums; }
+.vo-tablo th.vo-sayi { text-align: right; }

@@ -1921,6 +1921,7 @@ const FT_ALANLAR = [
 const FT = {
     arama: "", nullEsik: "",
     tip: "",                  // panel tip suzgeci ("" = tumu)
+    kolonSz: {},              // alan -> Excel tarzi kolon suzgeci (bkz. szMenuAc)
     sira: null, yon: 1,
     /* ISARETLI = SUREC DISI. Eski "toplu kategori icin secim" anlami
        kalktı; kutu artik dogrudan bir karar. */
@@ -1994,14 +1995,21 @@ function ftBasaSar() {
 }
 
 /* ---- Suzme ve siralama ---- */
-function ftSuz() {
+/* Arama, tip, null eşiği ve kolon süzgeçleri. haricAlan verilirse o
+   kolonun süzgeci atlanır: süzgeç menüsünün değer listesi, Excel'deki
+   gibi DİĞER süzgeçlerden geçen satırlardan kurulur. */
+function ftSuzListe(haricAlan) {
     const liste = (FT.veri && FT.veri.satirlar) || [];
     const aranan = ftSade(FT.arama).trim();
     const esik = FT.nullEsik === "" ? null : Number(FT.nullEsik) / 100;
 
     const tip = String(FT.tip || "").trim();
+    const kolonSz = Object.keys(FT.kolonSz)
+        .filter(a => a !== haricAlan && szAktif(FT.kolonSz[a]))
+        .map(a => [a, FT.kolonSz[a]]);
 
-    let sonuc = liste.filter(s => {
+    return liste.filter(s => {
+        for (const [a, sz] of kolonSz) if (!szUyar(s[a], sz)) return false;
         if (aranan && ftSade(s.feature).indexOf(aranan) === -1
             && ftSade(s.tanim).indexOf(aranan) === -1) return false;
         /* TIP SUZGECI tam esleme: "sayısal" secildiginde "sayısal"
@@ -2016,6 +2024,10 @@ function ftSuz() {
         }
         return true;
     });
+}
+
+function ftSuz() {
+    let sonuc = ftSuzListe(null);
 
     if (FT.sira) {
         const alan = FT.sira;
@@ -2539,6 +2551,343 @@ function ftTipSecenekleri() {
         .concat(tipler.map(t => ({ deger: t, etiket: t })));
 }
 
+/* ==================== EXCEL TARZI KOLON SÜZGECİ ====================
+   Değişken Listesi ve Veri Önizleme başlıklarındaki ▾ düğmesi: Excel'in
+   otomatik süzgeci gibi bir menü açar - sıralama, koşula göre süzme
+   (metin: içerir / ile başlar ...; sayı: > < arasında ...) ve aranabilir
+   değer listesi (Tümünü Seç, her değerin satır sayısı, "(Boş)").
+   Listede yalnız DİĞER süzgeçlerden geçen satırların değerleri çıkar
+   (Excel'de de öyle). Süzgeç yalnız ekranı daraltır, veriye dokunmaz.
+
+   Süzgeç nesnesi: { secili: Set(anahtar) | null, kosul: {op, a, b, sayisal} | null } */
+const SZ_BOS = "\u0000bos";
+const SZ_SAYI = /^-?\d+(\.\d+)?([eE][-+]?\d+)?$/;
+const SZ_SIMGE =
+    '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"'
+    + ' stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + '<path d="M3 5h18l-7 8.5V19l-4 2v-7.5L3 5z"/></svg>';
+const SZ_KOSUL_METIN = [
+    { deger: "", etiket: "Koşul yok" },
+    { deger: "icerir", etiket: "İçerir" }, { deger: "icermez", etiket: "İçermez" },
+    { deger: "baslar", etiket: "İle başlar" }, { deger: "biter", etiket: "İle biter" },
+    { deger: "esit", etiket: "Eşittir" }, { deger: "esit_degil", etiket: "Eşit değildir" },
+    { deger: "bos", etiket: "Boş" }, { deger: "dolu", etiket: "Dolu" }
+];
+const SZ_KOSUL_SAYI = [
+    { deger: "", etiket: "Koşul yok" },
+    { deger: "esit", etiket: "Eşittir (=)" }, { deger: "esit_degil", etiket: "Eşit değildir (≠)" },
+    { deger: "buyuk", etiket: "Büyüktür (>)" }, { deger: "buyuk_esit", etiket: "Büyük veya eşit (≥)" },
+    { deger: "kucuk", etiket: "Küçüktür (<)" }, { deger: "kucuk_esit", etiket: "Küçük veya eşit (≤)" },
+    { deger: "arasinda", etiket: "Arasında (uçlar dahil)" },
+    { deger: "bos", etiket: "Boş" }, { deger: "dolu", etiket: "Dolu" }
+];
+const SZ_KISA = { icerir: "içerir", icermez: "içermez", baslar: "ile başlar",
+    biter: "ile biter", esit: "=", esit_degil: "≠", buyuk: ">", buyuk_esit: "≥",
+    kucuk: "<", kucuk_esit: "≤", arasinda: "arasında", bos: "boş", dolu: "dolu" };
+
+function szBosMu(v) { return v === null || v === undefined || v === ""; }
+function szAnahtar(v) { return szBosMu(v) ? SZ_BOS : String(v); }
+function szSayiMi(v) { return SZ_SAYI.test(String(v).trim()); }
+/* Virgüllü ondalık da kabul: "1,5" -> 1.5 */
+function szSayi(s) {
+    const t = String(s === null || s === undefined ? "" : s).trim().replace(",", ".");
+    return t === "" ? NaN : Number(t);
+}
+/* Kolon sayısal mı: dolu değerlerinin TAMAMI sayı gibi okunuyorsa. */
+function szSayisalMi(degerler) {
+    let dolu = 0;
+    for (const v of degerler) {
+        if (szBosMu(v)) continue;
+        if (!szSayiMi(v)) return false;
+        dolu++;
+    }
+    return dolu > 0;
+}
+
+function szKosulUyar(v, k) {
+    if (!k || !k.op) return true;
+    const bos = szBosMu(v);
+    if (k.op === "bos") return bos;
+    if (k.op === "dolu") return !bos;
+    if (bos) return k.op === "icermez" || k.op === "esit_degil";
+    if (k.sayisal) {
+        const x = Number(v), a = szSayi(k.a), b = szSayi(k.b);
+        if (!isFinite(x)) return false;
+        switch (k.op) {
+            case "esit": return x === a;
+            case "esit_degil": return x !== a;
+            case "buyuk": return x > a;
+            case "buyuk_esit": return x >= a;
+            case "kucuk": return x < a;
+            case "kucuk_esit": return x <= a;
+            case "arasinda": return x >= Math.min(a, b) && x <= Math.max(a, b);
+        }
+        return true;
+    }
+    const s = ftSade(v), a = ftSade(k.a);
+    switch (k.op) {
+        case "icerir": return s.indexOf(a) !== -1;
+        case "icermez": return s.indexOf(a) === -1;
+        case "baslar": return s.startsWith(a);
+        case "biter": return s.endsWith(a);
+        case "esit": return s === a;
+        case "esit_degil": return s !== a;
+    }
+    return true;
+}
+function szUyar(v, sz) {
+    if (!sz) return true;
+    if (sz.secili && !sz.secili.has(szAnahtar(v))) return false;
+    return szKosulUyar(v, sz.kosul);
+}
+function szAktif(sz) { return !!(sz && (sz.secili || (sz.kosul && sz.kosul.op))); }
+function szDegerAdi(k) { return k === SZ_BOS ? "(Boş)" : k; }
+
+/* Çip metni: "TİP: sayısal, kategorik" / "BAKIYE: > 1000" */
+function szOzet(sz) {
+    const p = [];
+    const k = sz.kosul;
+    if (k && k.op) {
+        if (k.op === "bos" || k.op === "dolu") p.push(SZ_KISA[k.op]);
+        else if (k.op === "arasinda") p.push(k.a + " – " + k.b);
+        else p.push(SZ_KISA[k.op] + " " + k.a);
+    }
+    if (sz.secili) {
+        const d = [...sz.secili].map(szDegerAdi);
+        p.push(d.length <= 3 ? d.join(", ") : ftBinlik(d.length) + " değer");
+    }
+    return p.join(" · ");
+}
+
+/* Başlıktaki ▾ düğmesi. Tık sıralamaya gitmesin diye yayılım durur. */
+function szDugme(etiket, aktif, ac) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "sz-btn" + (aktif ? " aktif" : "");
+    b.innerHTML = SZ_SIMGE;
+    b.title = etiket + " · süz ve sırala" + (aktif ? " (süzgeç açık)" : "");
+    b.setAttribute("aria-label", etiket + " kolonunu süz ve sırala");
+    b.setAttribute("aria-haspopup", "dialog");
+    b.onclick = ev => { ev.stopPropagation(); ac(b); };
+    b.onkeydown = ev => ev.stopPropagation();
+    return b;
+}
+
+let SZ_MENU = null;
+function szMenuKapat() {
+    if (!SZ_MENU) return;
+    SZ_MENU.remove();
+    SZ_MENU = null;
+    document.removeEventListener("mousedown", szDisTik, true);
+    document.removeEventListener("keydown", szTus, true);
+}
+function szDisTik(ev) { if (SZ_MENU && !SZ_MENU.contains(ev.target)) szMenuKapat(); }
+function szTus(ev) { if (ev.key === "Escape") { ev.stopPropagation(); szMenuKapat(); } }
+
+/* o: { baslik, degerler (diğer süzgeçlerden geçen satırların değerleri),
+        sayisal, mevcut (süzgeç | undefined), sirala(yon), uygula(sz | null) } */
+const SZ_LISTE_SINIRI = 2000;
+function szMenuAc(dugme, o) {
+    const ayniDugme = SZ_MENU && SZ_MENU._dugme === dugme;
+    szMenuKapat();
+    if (ayniDugme) return;                 // ikinci tık kapatır
+    const sayac = new Map();
+    o.degerler.forEach(v => { const k = szAnahtar(v); sayac.set(k, (sayac.get(k) || 0) + 1); });
+    const anahtarlar = [...sayac.keys()].sort((a, b) => {
+        if (a === SZ_BOS) return 1;
+        if (b === SZ_BOS) return -1;
+        if (o.sayisal) return Number(a) - Number(b);
+        return a.localeCompare(b, "tr");
+    });
+    const mevcut = o.mevcut || {};
+    const secim = new Set(mevcut.secili ? anahtarlar.filter(k => mevcut.secili.has(k)) : anahtarlar);
+
+    const m = elYap("div", "sz-menu");
+    m.setAttribute("role", "dialog");
+    m.setAttribute("aria-label", o.baslik + " süzgeci");
+    m._dugme = dugme;
+    m.appendChild(elYap("div", "sz-baslik", o.baslik));
+
+    /* ---- Sıralama ---- */
+    const sir = elYap("div", "sz-sirala");
+    [[1, o.sayisal ? "Küçükten Büyüğe" : "A → Z"], [-1, o.sayisal ? "Büyükten Küçüğe" : "Z → A"]]
+        .forEach(([yon, et]) => {
+            const b = elYap("button", "sz-mini", (yon === 1 ? "↑ " : "↓ ") + et);
+            b.type = "button";
+            b.onclick = () => { szMenuKapat(); o.sirala(yon); };
+            sir.appendChild(b);
+        });
+    m.appendChild(sir);
+
+    /* ---- Koşul ---- */
+    m.appendChild(elYap("div", "sz-bolum", o.sayisal ? "Sayı Koşulu" : "Metin Koşulu"));
+    const kosulKap = elYap("div", "sz-kosul");
+    const op = document.createElement("select");
+    op.className = "ft-secim";
+    op.setAttribute("aria-label", "Koşul");
+    (o.sayisal ? SZ_KOSUL_SAYI : SZ_KOSUL_METIN).forEach(x => {
+        const e = document.createElement("option");
+        e.value = x.deger; e.textContent = x.etiket; op.appendChild(e);
+    });
+    const k0 = mevcut.kosul || {};
+    op.value = k0.op || "";
+    const giris = ph => {
+        const g = document.createElement("input");
+        g.type = "text"; g.className = "ft-ara sz-giris"; g.placeholder = ph;
+        g.onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); uygula(); } };
+        return g;
+    };
+    const ga = giris(o.sayisal ? "Değer" : "Metin"), gb = giris("ve");
+    ga.value = k0.a || ""; gb.value = k0.b || "";
+    kosulKap.appendChild(op); kosulKap.appendChild(ga); kosulKap.appendChild(gb);
+    const girisGoster = () => {
+        ga.hidden = !op.value || op.value === "bos" || op.value === "dolu";
+        gb.hidden = op.value !== "arasinda";
+    };
+    op.onchange = () => { girisGoster(); if (!ga.hidden) ga.focus(); };
+    girisGoster();
+    m.appendChild(kosulKap);
+
+    /* ---- Değer listesi ---- */
+    m.appendChild(elYap("div", "sz-bolum", "Değerler"));
+    const ara = document.createElement("input");
+    ara.type = "search"; ara.className = "ft-ara sz-ara";
+    ara.placeholder = "Değerlerde ara…";
+    ara.setAttribute("aria-label", "Değerlerde ara");
+    m.appendChild(ara);
+    const liste = elYap("div", "sz-liste");
+    m.appendChild(liste);
+    let gorunen = anahtarlar;
+    const listeCiz = () => {
+        liste.textContent = "";
+        const q = ftSade(ara.value).trim();
+        gorunen = q ? anahtarlar.filter(k => ftSade(szDegerAdi(k)).indexOf(q) !== -1) : anahtarlar;
+        const tum = elYap("label", "sz-satir sz-tum");
+        const tk = document.createElement("input");
+        tk.type = "checkbox";
+        const secili = gorunen.filter(k => secim.has(k)).length;
+        tk.checked = gorunen.length > 0 && secili === gorunen.length;
+        tk.indeterminate = secili > 0 && secili < gorunen.length;
+        tk.onchange = () => {
+            gorunen.forEach(k => tk.checked ? secim.add(k) : secim.delete(k));
+            listeCiz();
+        };
+        tum.appendChild(tk);
+        tum.appendChild(elYap("span", "sz-ad", q ? "(Arama Sonuçlarının Tümü)" : "(Tümünü Seç)"));
+        tum.appendChild(elYap("span", "sz-adet", ftBinlik(gorunen.length)));
+        liste.appendChild(tum);
+        gorunen.slice(0, SZ_LISTE_SINIRI).forEach(k => {
+            const s = elYap("label", "sz-satir" + (k === SZ_BOS ? " sz-bos" : ""));
+            const c = document.createElement("input");
+            c.type = "checkbox";
+            c.checked = secim.has(k);
+            c.onchange = () => {
+                c.checked ? secim.add(k) : secim.delete(k);
+                const n = gorunen.filter(x => secim.has(x)).length;
+                tk.checked = n === gorunen.length;
+                tk.indeterminate = n > 0 && n < gorunen.length;
+            };
+            s.appendChild(c);
+            const ad = elYap("span", "sz-ad", szDegerAdi(k));
+            ad.title = szDegerAdi(k);
+            s.appendChild(ad);
+            s.appendChild(elYap("span", "sz-adet", ftBinlik(sayac.get(k))));
+            liste.appendChild(s);
+        });
+        if (gorunen.length > SZ_LISTE_SINIRI)
+            liste.appendChild(elYap("div", "sz-not", "İlk " + ftBinlik(SZ_LISTE_SINIRI)
+                + " değer gösteriliyor; aramayla daraltın."));
+        if (!gorunen.length) liste.appendChild(elYap("div", "sz-not", "Eşleşen değer yok."));
+    };
+    let zam = null;
+    ara.oninput = () => { clearTimeout(zam); zam = setTimeout(listeCiz, 120); };
+    ara.onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); clearTimeout(zam); listeCiz(); uygula(); } };
+    listeCiz();
+
+    const hata = elYap("div", "sz-hata");
+    hata.hidden = true;
+    m.appendChild(hata);
+
+    /* ---- Alt düğmeler ---- */
+    const alt = elYap("div", "sz-alt");
+    const temizle = elYap("button", "sz-mini", "Süzgeci Kaldır");
+    temizle.type = "button";
+    temizle.disabled = !szAktif(o.mevcut);
+    temizle.onclick = () => { szMenuKapat(); o.uygula(null); };
+    const iptal = elYap("button", "sz-mini", "İptal");
+    iptal.type = "button";
+    iptal.onclick = szMenuKapat;
+    const tamam = elYap("button", "sz-mini sz-birincil", "Uygula");
+    tamam.type = "button";
+    alt.appendChild(temizle);
+    alt.appendChild(elYap("span", "sz-bosluk"));
+    alt.appendChild(iptal);
+    alt.appendChild(tamam);
+    m.appendChild(alt);
+
+    function uygula() {
+        const hataYaz = t => { hata.textContent = t; hata.hidden = false; };
+        let kosul = null;
+        if (op.value) {
+            kosul = { op: op.value, a: ga.value.trim(), b: gb.value.trim(), sayisal: !!o.sayisal };
+            const degerGerek = op.value !== "bos" && op.value !== "dolu";
+            if (degerGerek && kosul.a === "") return hataYaz("Koşul için bir değer yazın.");
+            if (op.value === "arasinda" && kosul.b === "") return hataYaz("Aralığın iki ucunu da yazın.");
+            if (o.sayisal && degerGerek && (!isFinite(szSayi(kosul.a))
+                || (op.value === "arasinda" && !isFinite(szSayi(kosul.b)))))
+                return hataYaz("Sayı koşulu için sayı yazın (ondalık ayırıcı nokta ya da virgül).");
+        }
+        /* Arama açıkken Uygula: Excel'deki gibi yalnız arama sonuçlarından
+           işaretli olanlar kalır. */
+        const q = ftSade(ara.value).trim();
+        const kume = q ? gorunen.filter(k => secim.has(k)) : anahtarlar.filter(k => secim.has(k));
+        if (!kume.length) return hataYaz("En az bir değer işaretleyin.");
+        const secili = (!q && kume.length === anahtarlar.length) ? null : new Set(kume);
+        szMenuKapat();
+        o.uygula(secili || kosul ? { secili: secili, kosul: kosul } : null);
+    }
+    tamam.onclick = uygula;
+
+    /* Tema değişkenleri #kabuk altında tanımlı: menü oraya eklenir. */
+    (document.getElementById("kabuk") || document.body).appendChild(m);
+    const r = dugme.getBoundingClientRect();
+    const en = m.offsetWidth, boy = m.offsetHeight;
+    let x = r.left, y = r.bottom + 4;
+    if (x + en > window.innerWidth - 8) x = Math.max(8, window.innerWidth - en - 8);
+    if (y + boy > window.innerHeight - 8) y = Math.max(8, r.top - boy - 4);
+    m.style.left = x + "px";
+    m.style.top = y + "px";
+    SZ_MENU = m;
+    document.addEventListener("mousedown", szDisTik, true);
+    document.addEventListener("keydown", szTus, true);
+    ara.focus();
+}
+
+/* Etkin süzgeç çipleri + "Filtreleri Temizle". ogeler: [{etiket, kaldir}] */
+function szCiplarCiz(kap, ogeler, hepsiniTemizle) {
+    kap.textContent = "";
+    kap.hidden = !ogeler.length;
+    if (!ogeler.length) return;
+    kap.appendChild(elYap("span", "sz-cip-baslik", "Süzgeçler:"));
+    ogeler.forEach(x => {
+        const c = elYap("span", "sz-cip");
+        const t = elYap("span", "sz-cip-ad", x.etiket);
+        t.title = x.etiket;
+        c.appendChild(t);
+        const k = elYap("button", "sz-cip-kaldir", "×");
+        k.type = "button";
+        k.title = "Bu süzgeci kaldır";
+        k.setAttribute("aria-label", x.etiket + " süzgecini kaldır");
+        k.onclick = x.kaldir;
+        c.appendChild(k);
+        kap.appendChild(c);
+    });
+    const t = elYap("button", "sz-temizle", "Filtreleri Temizle");
+    t.type = "button";
+    t.onclick = hepsiniTemizle;
+    kap.appendChild(t);
+}
+
 /* SAG PANEL: ARAMA + TIP SUZGECI + SIRALAMA.
    "bu kısımda sort filter yok onları da eklememiz lazım buraya"
 
@@ -2672,8 +3021,20 @@ function ftBaslikCiz() {
         h.setAttribute("data-alan", a.alan);
         h.tabIndex = 0;
         const ok = FT.sira === a.alan ? (FT.yon === 1 ? " ▲" : " ▼") : "";
-        h.textContent = etiket + ok;
+        h.appendChild(elYap("span", "sz-etiket", etiket + ok));
         h.title = etiket + " sütununa göre sırala";
+        /* Excel tarzı süzgeç düğmesi (▾): sıralama, koşul, değer listesi. */
+        h.appendChild(szDugme(etiket, szAktif(FT.kolonSz[a.alan]), b => szMenuAc(b, {
+            baslik: etiket,
+            degerler: ftSuzListe(a.alan).map(s => s[a.alan]),
+            sayisal: false,
+            mevcut: FT.kolonSz[a.alan],
+            sirala: yon => { FT.sira = a.alan; FT.yon = yon; ftBasaSar(); ftTazele(); },
+            uygula: sz => {
+                if (sz) FT.kolonSz[a.alan] = sz; else delete FT.kolonSz[a.alan];
+                ftBasaSar(); ftTazele();
+            }
+        })));
         const sirala = () => {
             if (FT.sira === a.alan) FT.yon = -FT.yon;
             else { FT.sira = a.alan; FT.yon = 1; }
@@ -2915,6 +3276,7 @@ function ftTazele() {
     const odak = ftOdakAnahtari();
     ftSuz();
     FT.dom.sayac.textContent = ftSayacMetni();
+    ftCiplarCiz();
     FT.dom.kaynak.textContent = ftKaynakMetni();
     FT.dom.kaynak.title = FT.dom.kaynak.textContent;
 
@@ -2936,6 +3298,36 @@ function ftTazele() {
     ftPencereCiz();
     ftDetayCiz();
     ftOdakGeriVer(odak);
+}
+
+/* Etkin süzgeç çipleri: arama, tip ve kolon süzgeçleri; her biri tek
+   tıkla kalkar, "Filtreleri Temizle" hepsini kaldırır (sıralama kalır). */
+function ftCiplarCiz() {
+    if (!FT.dom || !FT.dom.ciplar) return;
+    const kok = FT.dom.kok;
+    const ogeler = [];
+    const ad = alan => {
+        const i = FT_ALANLAR.findIndex(a => a.alan === alan);
+        return ((FT.veri && FT.veri.kolonlar) || [])[i]
+            || (FT_ALANLAR[i] || {}).baslik || alan;
+    };
+    if (FT.arama.trim()) ogeler.push({ etiket: "Arama: " + FT.arama.trim(), kaldir: () => {
+        FT.arama = ""; const g = kok.querySelector('[data-ft-odak="ara"]'); if (g) g.value = "";
+        ftBasaSar(); ftTazele(); } });
+    if (FT.tip) ogeler.push({ etiket: "Tip: " + FT.tip, kaldir: () => {
+        FT.tip = ""; const g = kok.querySelector(".ft-tip-suzgec"); if (g) g.value = "";
+        ftBasaSar(); ftTazele(); } });
+    Object.keys(FT.kolonSz).forEach(a => {
+        if (!szAktif(FT.kolonSz[a])) return;
+        ogeler.push({ etiket: ad(a) + ": " + szOzet(FT.kolonSz[a]), kaldir: () => {
+            delete FT.kolonSz[a]; ftBasaSar(); ftTazele(); } });
+    });
+    szCiplarCiz(FT.dom.ciplar, ogeler, () => {
+        FT.arama = ""; FT.tip = ""; FT.kolonSz = {};
+        const g = kok.querySelector('[data-ft-odak="ara"]'); if (g) g.value = "";
+        const t = kok.querySelector(".ft-tip-suzgec"); if (t) t.value = "";
+        ftBasaSar(); ftTazele();
+    });
 }
 
 /* Baslik seridinin son parcasi: sozlugun CALISMA KOPYASI oldugu
@@ -3018,12 +3410,17 @@ kullanicinin gordugu
         "Sohbetteki listeyi kaydettikten sonra indirebilirsiniz.",
         /* İki sayfa: Tümü + panelde arama/tip/sıralamadan sonra görünen. */
         () => ({ suzulmus: FT.suzulmus.map(s => s.feature) }));
-    ftExcel.ac(!!t.excel_hazir);
+    /* Panel listesi salt okunur bir görünüm: Excel her zaman açık
+       (Veri Önizleme ile aynı). Sohbetteki karar listesinin Excel'i
+       kaydetme kapısına bağlı kalır. */
+    ftExcel.ac(true);
     /* ÜST ŞERİDİN YANINDA: "excel olarak indir kısmı
        da üstteki yazının yanında yer almalı". */
     ust.appendChild(ftExcel.el);
 
     kok.appendChild(ftFiltreCiz());
+    const ciplar = elYap("div", "sz-ciplar");
+    kok.appendChild(ciplar);
 
     let toplu = null;
     if (t.duzenlenebilir) { toplu = ftTopluCiz(); kok.appendChild(toplu); }
@@ -3053,7 +3450,8 @@ kullanicinin gordugu
     detay.hidden = true;
     kok.appendChild(detay);
 
-    FT.dom = { kok, sayac, kaynak, baslik, toplu, not, hata, govde, yer, detay };
+    FT.dom = { kok, sayac, kaynak, baslik, toplu, not, hata, govde, yer, detay, ciplar };
+    ftCiplarCiz();
     analizGovde.appendChild(kok);
 
     sayac.textContent = ftSayacMetni();
@@ -4632,7 +5030,8 @@ const ONIZLEME = { veri: null, istek: 0 };
 function onizlemeSifirla() { ONIZLEME.veri = null; ONIZLEME.istek++; }
 
 /* Süzgeç durumu çizimler arasında korunur (FT ile aynı mantık). */
-const VO = { arama: "", tip: "", donem: "", kolSira: "", satirKol: null, yon: 1 };
+const VO = { arama: "", tip: "", donem: "", kolSira: "", satirKol: null, yon: 1,
+             kolonSz: {} };      // kolon adı -> Excel tarzı satır süzgeci
 const VO_BOS_DONEM = "__bos__";
 const VO_KOL_SIRALAMA = [
     { deger: "",  etiket: "Sırala: tablo sırası" },
@@ -4686,6 +5085,8 @@ function voSuz(d) {
         });
     }
     const satirlar = d.satirlar || [];
+    const uyar = voSatirSuzgeci(d, null);
+    const satirSuzulu = voSatirSuzuluMu(d);
     const sirala = idx => {
         const k = VO.satirKol === null ? -1 : kol.indexOf(VO.satirKol);
         if (k === -1) return idx;
@@ -4701,12 +5102,53 @@ function voSuz(d) {
             bas += g.gosterilen;
             const anahtar = g.donem === null ? VO_BOS_DONEM : String(g.donem);
             if (VO.donem && VO.donem !== anahtar) return;
-            gruplar.push({ g: g, satirlar: sirala(idx) });
+            const kalan = idx.filter(uyar);
+            /* Satır süzgeci açıkken hiç satırı kalmayan dönem gizlenir. */
+            if (satirSuzulu && !kalan.length) return;
+            gruplar.push({ g: g, satirlar: sirala(kalan) });
         });
     } else {
-        gruplar.push({ g: null, satirlar: sirala(satirlar.map((_, i) => i)) });
+        gruplar.push({ g: null, satirlar: sirala(satirlar.map((_, i) => i).filter(uyar)) });
     }
-    return { kolIdx, gruplar };
+    return { kolIdx, gruplar, satirSuzulu };
+}
+
+/* Kolon süzgeçlerinden satır sınaması (haricKolon atlanır). */
+function voSatirSuzgeci(d, haricKolon) {
+    const kol = d.kolonlar || [], satirlar = d.satirlar || [];
+    const liste = Object.keys(VO.kolonSz)
+        .filter(k => k !== haricKolon && szAktif(VO.kolonSz[k]) && kol.indexOf(k) !== -1)
+        .map(k => [kol.indexOf(k), VO.kolonSz[k]]);
+    return ri => {
+        const r = satirlar[ri] || [];
+        for (const [i, sz] of liste) if (!szUyar(r[i] === undefined ? null : r[i], sz)) return false;
+        return true;
+    };
+}
+function voSatirSuzuluMu(d) {
+    const kol = d.kolonlar || [];
+    return Object.keys(VO.kolonSz).some(k => szAktif(VO.kolonSz[k]) && kol.indexOf(k) !== -1);
+}
+/* Süzgeç menüsünün değer listesi: seçili dönem(ler)de, DİĞER kolon
+   süzgeçlerinden geçen satırların bu kolondaki değerleri. */
+function voAdayDegerler(d, k) {
+    const kol = d.kolonlar || [], satirlar = d.satirlar || [];
+    const ki = kol.indexOf(k);
+    const uyar = voSatirSuzgeci(d, k);
+    const sonuc = [];
+    const ekle = ri => { if (uyar(ri)) { const v = (satirlar[ri] || [])[ki]; sonuc.push(v === undefined ? null : v); } };
+    if (d.donem && (d.gruplar || []).length) {
+        let bas = 0;
+        d.gruplar.forEach(g => {
+            const anahtar = g.donem === null ? VO_BOS_DONEM : String(g.donem);
+            if (!VO.donem || VO.donem === anahtar)
+                for (let n = 0; n < g.gosterilen; n++) ekle(bas + n);
+            bas += g.gosterilen;
+        });
+    } else {
+        satirlar.forEach((_, ri) => ekle(ri));
+    }
+    return sonuc;
 }
 
 function onizlemeCiz(kap) {
@@ -4727,6 +5169,9 @@ function onizlemeCiz(kap) {
         const donemler = (d.gruplar || []).map(g => g.donem === null ? VO_BOS_DONEM : String(g.donem));
         if (!d.donem || donemler.indexOf(VO.donem) === -1) VO.donem = "";
         if (VO.satirKol !== null && kol.indexOf(VO.satirKol) === -1) VO.satirKol = null;
+        Object.keys(VO.kolonSz).forEach(k => { if (kol.indexOf(k) === -1) delete VO.kolonSz[k]; });
+        /* Sayısal kolon: sağa yaslı, süzgeçte sayı koşulları. Bir kez. */
+        if (!d._sayisal) d._sayisal = kol.map((_, i) => szSayisalMi(satirlar.map(r => r[i])));
         let suz = voSuz(d);
 
         /* ---- Üst şerit: sayaç · kaynak · Excel ---- */
@@ -4787,21 +5232,42 @@ function onizlemeCiz(kap) {
         alt.appendChild(sira);
         filtre.appendChild(alt);
         kap.appendChild(filtre);
+        const ciplar = elYap("div", "sz-ciplar");
+        kap.appendChild(ciplar);
 
         const sar = elYap("div", "vo-sar");
         kap.appendChild(sar);
 
+        function ciplarCiz() {
+            const ogeler = [];
+            if (VO.arama.trim()) ogeler.push({ etiket: "Kolon araması: " + VO.arama.trim(),
+                kaldir: () => { VO.arama = ""; ciz(d); } });
+            if (VO.tip) ogeler.push({ etiket: "Tip: " + VO.tip, kaldir: () => { VO.tip = ""; ciz(d); } });
+            if (VO.donem) ogeler.push({ etiket: "Dönem: " + (VO.donem === VO_BOS_DONEM ? "Dönemi boş" : VO.donem),
+                kaldir: () => { VO.donem = ""; ciz(d); } });
+            Object.keys(VO.kolonSz).forEach(k => {
+                if (!szAktif(VO.kolonSz[k])) return;
+                ogeler.push({ etiket: k + ": " + szOzet(VO.kolonSz[k]),
+                    kaldir: () => { delete VO.kolonSz[k]; tazele(); } });
+            });
+            szCiplarCiz(ciplar, ogeler, () => {
+                VO.arama = ""; VO.tip = ""; VO.donem = ""; VO.kolonSz = {}; ciz(d);
+            });
+        }
         function tabloCiz() {
             sar.textContent = "";
             const { kolIdx, gruplar } = suz;
             sayac.textContent = (kolIdx.length < kol.length
                 ? ftBinlik(kolIdx.length) + " / " : "") + ftBinlik(kol.length) + " kolon";
             const gs = gruplar.reduce((t, gr) => t + gr.satirlar.length, 0);
-            kaynak.textContent = d.donem
+            kaynak.textContent = (d.donem
                 ? "Dönem kolonu " + d.donem + " · "
                   + (VO.donem ? "1 / " : "") + ftBinlik((d.gruplar || []).length)
-                  + " dönem · her dönemin ilk 10 satırı · " + ftBinlik(gs) + " satır"
-                : "ilk 10 satır";
+                  + " dönem · her dönemin ilk 10 satırı · "
+                : "ilk 10 satır · ")
+                + (suz.satirSuzulu ? ftBinlik(gs) + " / " + ftBinlik(satirlar.length)
+                                   : ftBinlik(gs)) + " satır";
+            ciplarCiz();
             kaynak.title = kaynak.textContent;
             const aramaKolon = kolIdx.filter(i => kol[i] !== d.donem);
             if (!aramaKolon.length && (VO.arama || VO.tip)) {
@@ -4814,7 +5280,19 @@ function onizlemeCiz(kap) {
             kolIdx.forEach(i => {
                 const k = kol[i];
                 const ok = VO.satirKol === k ? (VO.yon === 1 ? " ▲" : " ▼") : "";
-                const h = elYap("th", "vo-bas" + (k === d.donem ? " vo-donem-kol" : ""), k + ok);
+                const h = elYap("th", "vo-bas" + (k === d.donem ? " vo-donem-kol" : "")
+                                + (d._sayisal[i] ? " vo-sayi" : ""));
+                const ic = elYap("span", "vo-bas-ic");
+                ic.appendChild(elYap("span", "sz-etiket", k + ok));
+                ic.appendChild(szDugme(k, szAktif(VO.kolonSz[k]), b => szMenuAc(b, {
+                    baslik: k,
+                    degerler: voAdayDegerler(d, k),
+                    sayisal: d._sayisal[i],
+                    mevcut: VO.kolonSz[k],
+                    sirala: yon => { VO.satirKol = k; VO.yon = yon; tazele(); },
+                    uygula: sz => { if (sz) VO.kolonSz[k] = sz; else delete VO.kolonSz[k]; tazele(); }
+                })));
+                h.appendChild(ic);
                 h.title = k + " · satırları bu kolona göre sırala";
                 h.tabIndex = 0;
                 const sirala = () => {
@@ -4838,7 +5316,8 @@ function onizlemeCiz(kap) {
                     td.appendChild(elYap("span", "vo-grup-ad",
                         (g.donem === null ? "Dönemi boş" : g.donem)
                         + " · " + ftBinlik(g.satir) + " satır" + (g.satir > g.gosterilen
-                            ? " · ilk " + g.gosterilen + " gösteriliyor" : "")));
+                            ? " · ilk " + g.gosterilen + " gösteriliyor" : "")
+                        + (suz.satirSuzulu ? " · süzgeçle " + ftBinlik(gr.satirlar.length) : "")));
                     td.colSpan = kolIdx.length + 1;
                     tr.appendChild(td); tb.appendChild(tr);
                 }
@@ -4849,7 +5328,8 @@ function onizlemeCiz(kap) {
                     kolIdx.forEach(i => {
                         const v = r[i] === undefined ? null : r[i];
                         const td = elYap("td", (v === null ? "vo-bos" : "")
-                            + (kol[i] === d.donem ? " vo-donem-kol" : ""), v === null ? BOS_SIMGE : v);
+                            + (kol[i] === d.donem ? " vo-donem-kol" : "")
+                            + (d._sayisal[i] ? " vo-sayi" : ""), v === null ? BOS_SIMGE : v);
                         if (v !== null && v.length > 24) td.title = v;
                         tr.appendChild(td);
                     });
@@ -4857,6 +5337,7 @@ function onizlemeCiz(kap) {
                 });
             });
             t.appendChild(tb); sar.appendChild(t);
+            if (!gs) sar.appendChild(elYap("div", "ft-bos", "Süzgeçlerle eşleşen satır yok."));
         }
         function tazele() {
             suz = voSuz(d);

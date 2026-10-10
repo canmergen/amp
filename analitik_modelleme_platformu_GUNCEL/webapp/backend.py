@@ -2764,7 +2764,7 @@ def degisken_excel_endpoint():
     tur=liste  -> sohbetteki karar tablosunun aynısı (dört kolon)
     tur=sozluk -> sağ paneldeki açıklama tablosu (üç kolon)
 
-    KAPI: sözlük teyidi KAYDEDİLMEDEN indirilemez. Kaydedilmemiş bir
+    KAPI (yalnız tur=liste): sözlük teyidi KAYDEDİLMEDEN indirilemez. Kaydedilmemiş bir
     liste, kullanıcının henüz vermediği kararı dosyaya yazmak olurdu;
     o dosya da ekibe gidip "karar buydu" diye okunurdu.
 
@@ -2782,7 +2782,9 @@ def degisken_excel_endpoint():
     try:
         anahtar = _oturum_anahtari(istek.get("oturum_id"))
         durum = _durum_al(anahtar)
-        if not akis.teyit_kaydedildi_mi(durum):
+        # Sag paneldeki liste (tur=sozluk) salt okunur bir gorunum; kapi
+        # yalniz sohbetteki karar listesi (tur=liste) icin.
+        if genis and not akis.teyit_kaydedildi_mi(durum):
             return Response(
                 "Değişken listesi henüz kaydedilmedi. Sohbetteki Değişken "
                 "Listesi ve Tip Kontrolü adımında listeyi kaydettikten sonra indirebilirsiniz.",
