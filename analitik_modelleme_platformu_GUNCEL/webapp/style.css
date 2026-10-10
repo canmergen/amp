@@ -2367,17 +2367,28 @@ Asgariler
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
 
-/* ARAMA · NULL EŞİĞİ · SIRALAMA TEK SATIRDA.
-   Arama kalan genişliği alır; eşik ve sıralama sabit ve dar. Panel
-   daraldığında satır sarmalar - üst üste binmektense alt alta düşsün. */
+/* ARAMA · TİP · (DÖNEM) · SIRALAMA TEK SATIRDA, YAN YANA.
+   "değişken arama kısmı alttaki barla birleşsin, arama yanına tip
+   kısmı gelsin, diğerleri de yana devam etsin". Arama kalan genişliği
+   alır; süzgeçler sabit genişlikte. Dar ekranda satır sarmalar. */
 .ft-filtreler {
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: row; flex-wrap: wrap; align-items: center;
   gap: var(--b-2); margin-bottom: var(--b-2);
 }
-/* Arama TEK SATIR (uzun yer tutucu metni sığsın), tip süzgeci ve
-   sıralama altında YAN YANA eşit paylı. */
-.ft-filtre-alt { display: flex; gap: var(--b-2); }
-.ft-filtre-alt > * { flex: 1 1 0; min-width: 0; }
+/* Alt kap düzeni bozmaz: içindekiler doğrudan aynı satırın öğeleri. */
+.ft-filtre-alt { display: contents; }
+.ft-filtreler > .ft-ara { flex: 1 1 260px; width: auto; }
+.ft-filtreler .ft-tip-suzgec { flex: 0 1 200px; min-width: 120px; }
+.ft-filtreler .ft-sirala { flex: 0 1 180px; min-width: 120px; max-width: 200px; }
+/* Dataiku sayfasının genel form stili (kenar boşluğu, yükseklik, satır
+   yüksekliği) kutuları kaydırıyordu: kendi kutularımızda sıfırlanır. */
+.ft-ara, .ft-secim, .ft-sirala, .ft-tip-suzgec, .sz-giris, .sz-ara {
+  margin: 0; box-sizing: border-box; line-height: normal; vertical-align: middle;
+  box-shadow: none;
+}
+.sz-menu .ft-ara { width: 100%; }
+.sz-satir { margin: 0; }
+.sz-satir input[type="checkbox"] { margin: 0; width: auto; height: auto; }
 .ft-tip-suzgec:disabled { opacity: .55; cursor: default; }
 .ft-ara, .ft-secim, .ft-esik-kutu, .ft-sirala, .ft-tip-suzgec {
   font-family: var(--font); font-size: var(--fs-govde); color: var(--metin);
