@@ -161,6 +161,9 @@
      Alt ayrac border-box'tan yiyor: 1.5px'te icerige 76.5px kaliyor,
      olculen 75px ihtiyacin uzerinde. */
   --ustbar-h:   64px;
+  /* Sol bar (sayfa kümeleri + Arşiv / Yeni Çalışma) eni. En uzun
+     etiket (BÖLME & MODEL) dolgusuyla birlikte rahat sığar. */
+  --sol-bar-en: 200px;
   --sohbet-yan: 19px;
 
   /* SOHBETIN TEK GENISLIGI. Ust sinir degil, SABIT genislik: bot
@@ -185,10 +188,13 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
+/* Iki satir, iki sutun: ustte bar (iki sutunu kaplar), altta solda sol
+   bar, saginda acik sayfa. Sayfalarin hepsi ayni hucrede; gizli olanlar
+   display:none oldugu icin hucrede tek sayfa kalir. */
 #kabuk {
-  display: flex; flex-direction: column; height: 100vh;
-  /* Ust bar esikleri KABUGUN enine bakar (@container). */
-  container-type: inline-size; container-name: kabuk;
+  display: grid; height: 100vh;
+  grid-template-columns: var(--sol-bar-en) minmax(0, 1fr);
+  grid-template-rows: var(--ustbar-h) minmax(0, 1fr);
   background: var(--zemin); color: var(--metin);
   font-family: var(--font);
   font-size: var(--fs-govde);
@@ -233,6 +239,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 /* ==================== ÜST BAR ==================== */
 #ustbar {
+  grid-column: 1 / -1; grid-row: 1;
   display: flex; align-items: stretch;
   padding: 0 clamp(11px, 1.6vw, 21px);
   height: var(--ustbar-h);
@@ -301,10 +308,11 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-#ustbar-sag {
-  margin-left: auto;
-  display: flex; flex-direction: column;
-  align-items: stretch; justify-content: center; gap: 5px; flex-shrink: 0;
+/* SOL BAR ALTI: Arşiv ve Yeni Çalışma, ince çizgiyle sayfa kümelerinden
+   ayrılır. */
+#sol-bar-alt {
+  flex-shrink: 0; padding: var(--b-3);
+  border-top: 1px solid var(--kenar);
 }
 
 .cekmece-btn {
@@ -346,9 +354,9 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 
-/* ÇALIŞMALARIM açılır listesi. Düğmenin altında, sağa yaslı; üst
-   barın altındaki panellerin (sohbet z-index 1, çekmeceler 40)
-   üstünde kalmalı. */
+/* ÇALIŞMALARIM açılır listesi. Sol barın sağına, düğmenin alt kenarına
+   hizalı açılır; sayfa panellerinin (sohbet z-index 1, analiz alanı 38,
+   çekmeceler 40) üstünde kalmalı (sol bar z-index 45). */
 #calismalar-kap, #yeni-kap { position: relative; flex-shrink: 0; }
 /* Arşiv satırı: çalışma bilgisi + Aç / Sil (silmede yerinde onay) */
 .calisma-satir { display: flex; align-items: center; gap: var(--b-1); }
@@ -368,8 +376,8 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .calisma-dugme.onayla:hover:not(:disabled) { background: var(--kirmizi); color: #fff; opacity: .9; }
 .calisma-sil-soru { font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--kirmizi); white-space: nowrap; }
 #calismalar-liste {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 50;
-  width: min(400px, 92vw); max-height: 60vh; overflow-y: auto;
+  position: absolute; left: calc(100% + var(--b-3) + 6px); bottom: 0; z-index: 50;
+  width: min(400px, calc(100vw - var(--sol-bar-en) - 16px)); max-height: 60vh; overflow-y: auto;
   padding: var(--b-1);
   background: var(--yuzey); border: 1px solid var(--kenar);
   border-radius: var(--r); box-shadow: var(--golge-2);
@@ -394,51 +402,54 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .calisma-alt { font-size: var(--fs-kucuk); }
 .calisma-bos { padding: var(--b-2) var(--b-3); }
 .calisma-hata { color: var(--kirmizi); }
-/* ==================== ÜST BAR: SAYFA KÜMELERİ ====================
-   MODEL AKIŞI kümesi (başlık + beş kutu) ve yanında ayrı SOHBET ve
-   DASHBOARD blokları. Renkler: gri zemin üstünde beyaz kutular, üstüne
-   gelince açık kırmızı, seçili kutu kırmızı. Küme başlığı kutularla
-   AYNI yazı tipi ve puntoda, kutusuz kırmızı yazı (düğme sanılmasın).
-
-   SEGMENT GÖRÜNÜMÜ: kutuların kendi kenarı yok, gri kümenin içinde ince
-   gölgeli beyaz yüzeyler; böylece "kutu içinde kutu" kalabalığı yerine
-   tek bir çizgi okunuyor. Bütün kümeler AYNI yükseklikte (40 px),
-   kümeler arası 8 px. Sağdaki 2 × 2 düğmeleri de aynı gölge ve
-   yarıçapı taşır. */
+/* ==================== SOL BAR: SAYFA KÜMELERİ ====================
+   Sol bar üst barın altında, ekranın tam boyunda; sayfa kümeleri alt
+   alta. MODEL AKIŞI kümesi (başlık + beş kutu) ve altında ayrı SOHBET
+   ve DASHBOARD blokları. Renkler: gri küme zemini üstünde beyaz kutular,
+   üstüne gelince açık kırmızı, seçili kutu kırmızı. Küme başlığı
+   kutularla AYNI yazı tipi ve puntoda, kutusuz kırmızı yazı (düğme
+   sanılmasın), altında ince ayraç. Kutular sola yaslı ve kümenin
+   eninde. Sığmazsa (çok kısa ekran) yalnız kümeler kayar, alttaki
+   Arşiv / Yeni Çalışma yerinde kalır. */
+#sol-bar {
+  grid-column: 1; grid-row: 2; min-height: 0;
+  /* Arşiv listesi bardan taşarak açılır: sayfa panellerinin üstünde */
+  position: relative; z-index: 45;
+  display: flex; flex-direction: column;
+  background: var(--yuzey);
+  border-right: var(--ayrac-kalinlik) solid var(--ayrac);
+}
 #ust-sekmeler {
-  flex: 1; min-width: 0;
-  display: flex; align-items: center; justify-content: center;
-  gap: 8px; padding: 0 var(--b-3);
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: var(--b-4) var(--b-3);
 }
 .ust-kume {
-  display: flex; align-items: center; gap: 3px; min-width: 0;
-  height: 40px; padding: 0 4px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+  padding: 4px;
   border: 1px solid var(--kenar); border-radius: 9px;
   background: var(--kenar-acik);
 }
 .ust-kume-ad, .ust-sekme {
-  /* Üst bar düğmeleri küçük boyutta (sağdaki Arşiv / Yeni Çalışma /
-     Oturum Aktif ile aynı): kutular tek sırada sığmalı. */
-  height: 30px; padding: 0 12px; white-space: nowrap;
+  height: 32px; padding: 0 12px; white-space: nowrap;
   font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
   letter-spacing: .04em;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  display: flex; align-items: center; justify-content: flex-start; gap: 7px;
   border-radius: var(--r);
 }
 .ust-kume-ad {
-  /* Düğme değil, kümenin ADI: kutusuz, kırmızı yazı; sağında kısa ince
-     ayraç ile kutulardan ayrılır. Kutu görünümündeyken yanındaki AKIŞ
-     ile iki ayrı sekme gibi okunuyordu. */
-  position: relative;
+  /* Düğme değil, kümenin ADI: kutusuz, kırmızı yazı; altında kısa ince
+     ayraç ile kutulardan ayrılır. */
+  position: relative; height: 28px;
   color: var(--kirmizi); background: none; border: none; border-radius: 0;
-  padding: 0 13px 0 9px; margin-right: 3px;
+  padding: 0 8px; margin-bottom: 3px;
 }
 .ust-kume-ad::after {
-  content: ""; position: absolute; right: 0; top: 7px; bottom: 7px;
-  width: 1px; background: var(--kenar-guclu);
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: 0;
+  height: 1px; background: var(--kenar-guclu);
 }
 .ust-sekme {
-  flex-shrink: 0; cursor: pointer; color: var(--metin);
+  flex-shrink: 0; cursor: pointer; color: var(--metin); text-align: left;
   border: 1px solid transparent; background: var(--yuzey);
   box-shadow: var(--ust-golge);
   transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
@@ -458,25 +469,15 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   border-color: transparent; box-shadow: none;
 }
 .ust-sekme.kapali svg { width: 12px; height: 12px; flex-shrink: 0; }
-/* Dar bar (KABUK eni): ≤ 1536 px kutular sıkılaşır, ≤ 1366 px daha da,
-   ≤ 1240 px en sıkı (kapalı sekmelerin kilit simgesi gizlenir). */
-@container kabuk (max-width: 1536px) {
-  #ust-sekmeler { gap: 6px; padding: 0 var(--b-2); }
-  .ust-kume-ad, .ust-sekme { padding: 0 9px; }
-  .ust-kume-ad { padding: 0 11px 0 7px; }
-}
-@container kabuk (max-width: 1366px) {
-  #ust-sekmeler { gap: 4px; }
-  .ust-kume { padding: 0 3px; gap: 2px; }
-  .ust-kume-ad, .ust-sekme { padding: 0 7px; letter-spacing: .02em; }
-  .ust-kume-ad { padding: 0 9px 0 5px; }
-}
 
-/* Sağ: tek satır (Arşiv | Yeni Çalışma), barın dikey ortasında. */
-.ustbar-sag-izgara {
-  display: flex; align-items: center; gap: 4px;
+/* Alt: Arşiv ve Yeni Çalışma alt alta, barın eninde, sola yaslı. */
+.sol-bar-dugmeler {
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
 }
-.ustbar-sag-izgara #calismalar-btn, .ustbar-sag-izgara #sifirla-btn { justify-content: center; }
+.sol-bar-dugmeler #calismalar-btn, .sol-bar-dugmeler #sifirla-btn {
+  width: 100%; height: 32px; justify-content: flex-start;
+}
+.sol-bar-dugmeler .cekmece-btn { align-self: flex-start; }
 
 /* Sohbet ve Dashboard sayfa iskeleti (içerik ayrıca kurulacak). */
 .bos-sayfa {
@@ -486,21 +487,12 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .bos-sayfa-ad { font-size: var(--fs-buyuk); font-weight: var(--fw-kalin); }
 .bos-sayfa-not { font-size: var(--fs-govde); }
 
-@container kabuk (max-width: 1240px) {
-  #ust-sekmeler { gap: 3px; padding: 0 4px; }
-  .ust-kume { padding: 0 2px; gap: 1px; }
-  .ust-kume-ad, .ust-sekme { padding: 0 5px; letter-spacing: 0; }
-  .ust-kume-ad { padding: 0 7px 0 4px; }
-  .ust-sekme.kapali svg { display: none; }
-}
-@container kabuk (max-width: 1120px) { #baslik-blok { display: none; } }
-
 /* Çekmece düğmeleri yalnızca panelin gizlendiği dar ekranlarda görünür */
 .cekmece-btn { display: none; }
 
 
 /* ==================== SAYFA KABI ==================== */
-.sayfa { flex: 1; min-height: 0; width: 100%; }
+.sayfa { grid-column: 2; grid-row: 2; min-height: 0; min-width: 0; }
 .sayfa.gizli { display: none !important; }   /* #sayfa-calisma'nin display:flex'ini ezer */
 #sayfa-calisma { display: flex; background: var(--yuzey); }
 
@@ -1861,12 +1853,12 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 #gonder:disabled { opacity: .4; cursor: not-allowed; }
 
 /* ==================== ANALİZ ALANI ====================
-   Üst bardaki VERİ & SÖZLÜK / DEĞİŞKENLER / BÖLME & MODEL kutuları
-   açar: alan üst barın altındaki bütün alanı (sol panel ve sohbet dahil)
+   Sol bardaki VERİ & SÖZLÜK / DEĞİŞKENLER / BÖLME & MODEL kutuları
+   açar: alan üst barın altında, sol barın sağındaki bütün alanı (sol panel ve sohbet dahil)
    kaplar. AKIŞ seçiliyken (#kabuk.analiz-dar) gizli. Akışta yer
    kaplamaz: sohbet her zaman tam genişlikte. */
 #analiz-panel {
-  position: fixed; top: var(--ustbar-h); left: 0; right: 0; bottom: 0; z-index: 38;
+  position: fixed; top: var(--ustbar-h); left: var(--sol-bar-en); right: 0; bottom: 0; z-index: 38;
   background: var(--yuzey-alt);
   display: flex; flex-direction: column; overflow: hidden;
 }
@@ -2888,7 +2880,7 @@ span.bolme-cip { cursor: default; }
 /* -------- Dar ekran (kirilma noktalari da 0,8 ile olceklendi) -------- */
 /* Paneller GIZLENMIYOR: ust bardaki dugmelerle acilan cekmeceye donuyor. */
 #cekmece-perde {
-  position: fixed; inset: var(--ustbar-h) 0 0 0; z-index: 39;
+  position: fixed; inset: var(--ustbar-h) 0 0 var(--sol-bar-en); z-index: 39;
   background: rgba(0,0,0,.35);
 }
 
@@ -2896,8 +2888,8 @@ span.bolme-cip { cursor: default; }
 @media (max-width: 864px) {
   #panel-btn { display: flex; }
   #panel {
-    position: fixed; top: var(--ustbar-h); left: 0; bottom: 0; z-index: 40;
-    width: min(var(--panel-en), 86vw);
+    position: fixed; top: var(--ustbar-h); left: var(--sol-bar-en); bottom: 0; z-index: 40;
+    width: min(var(--panel-en), calc(100vw - var(--sol-bar-en)));
     transform: translateX(-101%); transition: transform .2s ease;
     box-shadow: var(--golge-2);
   }

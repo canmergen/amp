@@ -262,7 +262,7 @@ sekmeler.forEach(s => { s.onclick = () => sayfaAc(s.dataset.sayfa); });
 
 
 /* ==================== Dar ekran çekmeceleri ==================== */
-/* Dar ekranda sol/sag panel gizlenmiyor; ust bardaki dugmelerle acilan
+/* Dar ekranda sol/sag panel gizlenmiyor; sol bardaki dugmeyle acilan
    cekmeceye donusuyor. */
 const panelEl     = document.getElementById("panel");
 const analizPanel = document.getElementById("analiz-panel");
@@ -379,7 +379,8 @@ function genislikKirp(taraf, istenen) {
     /* Karşı panelin O ANKİ genişliği sabit kabul ediliyor: tek tutamak
        sürükleniyor, öteki yerinde duruyor. */
     const otekiEn = oteki && getComputedStyle(oteki).position !== "fixed" ? suankiEn(oteki) : 0;
-    const enCokYer = kabukEl.clientWidth - otekiEn - SOHBET_TABAN;
+    /* Yer: çalışma sayfasının eni (sol bar hariç). */
+    const enCokYer = sayfalar.calisma.clientWidth - otekiEn - SOHBET_TABAN;
     const enCok = Math.min(sinir.enCok, Math.max(sinir.enAz, enCokYer));
     return Math.round(Math.max(sinir.enAz, Math.min(enCok, istenen)));
 }
@@ -4508,10 +4509,10 @@ function analizSekmeAc(tab) {
     analizAcikYaz(true);
 }
 
-/* ==================== Üst bar sekmeleri ve analiz alanı ====================
-   Üst barda: AKIŞ · VERİ & SÖZLÜK · DEĞİŞKENLER · BÖLME & MODEL · ÖZET.
+/* ==================== Sol bar sekmeleri ve analiz alanı ====================
+   Sol barda: AKIŞ · VERİ & SÖZLÜK · DEĞİŞKENLER · BÖLME & MODEL · ÖZET.
    AKIŞ ana ekran (iş akışı + sohbet). Üç analiz sekmesinden birine
-   basınca analiz alanı üst barın altından iner ve bütün alanı kaplar
+   basınca analiz alanı sol barın sağındaki bütün alanı kaplar
    (style.css: #analiz-panel); AKIŞ'a basınca yukarı kapanır
    (#kabuk.analiz-dar). ÖZET doküman sayfasıdır.
 
@@ -11165,8 +11166,8 @@ function devamMetni(bilgi) {
     const satirlar = [bas];
     if (parcalar.length) satirlar.push(parcalar.join(" · "));
     satirlar.push("Çalışma, Dataiku'daki " + HAFIZA_KLASORU + " klasöründe sizin "
-                  + "kullanıcı adınıza kayıtlı. Sıfırdan başlamak için sağ "
-                  + "üstteki **" + YENI_CALISMA_ETIKETI + "** düğmesini kullanın; "
+                  + "kullanıcı adınıza kayıtlı. Sıfırdan başlamak için sol "
+                  + "alttaki **" + YENI_CALISMA_ETIKETI + "** düğmesini kullanın; "
                   + "bu çalışma silinmez, **" + CALISMALARIM_ETIKETI
                   + "** listesinden geri açılır.");
     return satirlar.join("\n");

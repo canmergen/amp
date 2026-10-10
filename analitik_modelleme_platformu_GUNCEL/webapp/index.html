@@ -29,10 +29,17 @@
         <div id="urun-alt" class="urun-yazi">Bireysel Krediler Analitik ve Tahsis BI</div>
       </div>
     </div>
+  </header>
 
-    <!-- ORTA: SAYFA KÜMELERİ.
+  <!-- ===================== SOL BAR =====================
+       Sayfa kümeleri (Model Akışı, Sohbet, Dashboard) ve altta Arşiv /
+       Yeni Çalışma. Üst barda yalnız logo kalır. Sol bar üst barın
+       altında, ekranın tam boyunda; sayfalar sağında açılır. -->
+  <aside id="sol-bar">
+
+    <!-- SAYFA KÜMELERİ (sol barda alt alta).
          MODEL AKIŞI kümesi: AKIŞ (iş akışı + adım kartları), VERİ & SÖZLÜK,
-         DEĞİŞKENLER, BÖLME & MODEL (analiz alanı, üst barın altındaki bütün
+         DEĞİŞKENLER, BÖLME & MODEL (analiz alanı, sol barın sağındaki bütün
          alanı kaplar) ve ÖZET (doküman). Üç analiz kutusu .analiz-sekme
          sınıfını taşır: sekme mantığı (aktif, çizim) o sınıfa bağlı.
          SOHBET ve DASHBOARD ayrı bloklar; içerikleri hazırlanana kadar
@@ -57,14 +64,10 @@
       </div>
     </nav>
 
-    <!-- Üst şerit (ÜRETİM · ELEME · MODEL SONUÇLARI) ARTIK BURADA DEĞİL:
-         kartlar Değişkenler ve Bölme & Model sekmelerinde çizilir
-         (app.js: sonucCiz). -->
-
-    <div id="ustbar-sag">
-      <!-- SAĞ: tek satır, Arşiv ve Yeni Çalışma. Dar ekrandaki iş akışı
-           çekmece düğmesi satırın başında (geniş ekranda gizli). -->
-      <div class="ustbar-sag-izgara">
+    <div id="sol-bar-alt">
+      <!-- ALT: Arşiv ve Yeni Çalışma alt alta. Dar ekrandaki iş akışı
+           çekmece düğmesi en üstte (geniş ekranda gizli). -->
+      <div class="sol-bar-dugmeler">
         <!-- Dar ekranda panelleri çekmece olarak açar; geniş ekranda gizli -->
         <button id="panel-btn" class="cekmece-btn" type="button"
                 title="İş akışı panelini aç/kapat" aria-label="İş akışı panelini aç/kapat"
@@ -75,13 +78,13 @@
             <path d="M3 6h18M3 12h18M3 18h18"></path>
           </svg>
         </button>
-        <!-- Dataiku'nun kendi REFRESH düğmesi bunun hemen üstünde duruyor ve
-             karıştırılınca gerçek veri kaybı yaşandı: bu yüzden yalnız ikon
-             değil, görünür etiket de taşır.
+        <!-- Dataiku'nun kendi REFRESH düğmesiyle karıştırılınca (düğme eskiden
+             üst barda, onun hemen altındaydı) gerçek veri kaybı yaşandı: bu
+             yüzden yalnız ikon değil, görünür etiket de taşır.
              İKON NEDEN SVG, KARAKTER DEĞİL: ⟳ / ↻ gibi karakterler fonttan
              fonta değişiyor (bazı sistemlerde tek oklu, bazılarında kutu
              çıkıyor). Buradaki SVG her ortamda aynı çiziliyor.
-             NEDEN TEK OKLU: sohbet metninde geçen "sağ üstteki ⟳ Yeni
+             NEDEN TEK OKLU: sohbet metninde geçen "sol alttaki ⟳ Yeni
              Çalışma" ifadesindeki karakter tek oklu; düğmedeki ikon iki
              oklu olunca metin ile düğme aynı şeyi göstermiyordu. Dataiku'nun
              kendi REFRESH ikonu da tek oklu.
@@ -122,7 +125,7 @@
       </div>
 
     </div>
-  </header>
+  </aside>
 
   <!-- ===================== SAYFA 1: ÇALIŞMA ===================== -->
   <div id="sayfa-calisma" class="sayfa">
@@ -187,7 +190,7 @@
 
 
     <aside id="analiz-panel">
-      <!-- ANALİZ ALANI: üst bardaki VERİ & SÖZLÜK / DEĞİŞKENLER /
+      <!-- ANALİZ ALANI: sol bardaki VERİ & SÖZLÜK / DEĞİŞKENLER /
            BÖLME & MODEL sekmelerinden biri seçilince üst barın altından
            aşağı iner, bütün alanı kaplar (style.css: #analiz-panel).
            AKIŞ'a basınca yukarı kapanır. -->
@@ -213,7 +216,7 @@
   </div>
 
   <!-- ===================== SOHBET ve DASHBOARD =====================
-       Üst bardaki ayrı bloklar. İçerikleri ayrıca kurulacak; şimdilik
+       Sol bardaki ayrı bloklar. İçerikleri ayrıca kurulacak; şimdilik
        yalnız sayfa iskeleti. -->
   <div id="sayfa-sohbet" class="sayfa gizli">
     <div class="bos-sayfa">
