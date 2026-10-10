@@ -595,7 +595,7 @@ body::before {
   border-color: transparent; box-shadow: none;
 }
 /* Her sekmenin önünde ince çizgili ikon; kapalı sekmelerde kilit sağda. */
-.ust-sekme svg.ikon { width: 15px; height: 15px; flex-shrink: 0; }
+.ust-sekme svg.ikon, .ust-kume-ad svg.ikon { width: 15px; height: 15px; flex-shrink: 0; }
 .ust-sekme.kapali svg.kilit { width: 12px; height: 12px; flex-shrink: 0; margin-left: auto; }
 
 /* Alt: Arşiv ve Yeni Çalışma alt alta, barın eninde, sola yaslı. */
