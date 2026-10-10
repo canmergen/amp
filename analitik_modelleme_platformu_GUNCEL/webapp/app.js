@@ -165,10 +165,11 @@ let aktifAnalizSekme = "ozet";
    ile BÖLME & MODEL birlesti).
     Ayni panel govdesi artik "hazirlik"
    anahtariyla geliyor (bkz. akis_panel.hazirlik_paneli). */
-/* SEKMELER: "ozet" (GÖSTERGE PANELİ), "veri" (VERİ VE SÖZLÜK: veri seti
-   önizlemesi + sözlük listesi), "degisken" (DAĞILIM VE SFA) ve "kontrol"
-   (DEĞİŞKEN KONTROLLERİ: eksik değer). "bolme" verisi GÖSTERGE PANELİ'nde. */
-const BAGLI_SEKMELER = ["ozet", "veri", "degisken", "kontrol", "bolme"];
+/* SEKMELER: "ozet" (GÖSTERGE PANELİ) ve "degisken" (DEĞİŞKENLER). Değişkenler
+   kendi seçim panelinde üç görünüme ayrılır (DG.alt): "veri" (Veri ve
+   Sözlük), "dagilim" (Dağılım ve SFA), "kontrol" (Değişken Kontrolleri).
+   "bolme" verisi GÖSTERGE PANELİ'nde çizilir. */
+const BAGLI_SEKMELER = ["ozet", "degisken", "bolme"];
 
 /* Dataset listesi: "yukleniyor" | "hazir" | "bos" | "hata"
    "bos": liste okundu ama proje icinde dataset yok -> elle yazmaya izin ver */
@@ -4211,6 +4212,67 @@ function setSeciciCiz(tab) {
 }
 
 
+/* ==================== DEĞİŞKENLER SEÇİM PANELİ ====================
+   Model Akışı'ndaki panel (ANALİTİK SÜREÇ / İŞ AKIŞI) gibi: balonda üç
+   seçim, sağ üstte daralt düğmesi; daraltılınca 44 px şeritte üç dikey
+   düğme kalır ve görünüm şeritten de değiştirilir. Seçim ve daraltma
+   tarayıcıda hatırlanır. */
+const DG_ALT_ANAHTAR = "amp_dg_alt";
+const DG_DARALT_ANAHTAR = "amp_dg_panel_daraltilmis";
+const DG_ALTLAR = ["veri", "dagilim", "kontrol"];
+const DG = { alt: "veri" };
+try {
+    const a = localStorage.getItem(DG_ALT_ANAHTAR);
+    if (DG_ALTLAR.indexOf(a) !== -1) DG.alt = a;
+} catch (e) { /* depolama kapalı */ }
+const dgPanelEl = document.getElementById("dg-panel");
+
+function dgDagilimAcik() { return aktifAnalizSekme === "degisken" && DG.alt === "dagilim"; }
+function dgPanelGoster(goster) {
+    if (!dgPanelEl) return;
+    dgPanelEl.hidden = !goster;
+    dgPanelEl.querySelectorAll("[data-alt]").forEach(b => {
+        const aktif = b.dataset.alt === DG.alt;
+        b.classList.toggle("aktif", aktif);
+        if (aktif) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current");
+    });
+}
+function dgDaralt(daralt, kaydet) {
+    if (!dgPanelEl) return;
+    dgPanelEl.classList.toggle("daraltilmis", daralt);
+    const btn = document.getElementById("dg-panel-daralt");
+    if (btn) {
+        const metin = daralt ? "Paneli aç" : "Paneli kapat";
+        btn.title = metin;
+        btn.setAttribute("aria-label", metin);
+        btn.setAttribute("aria-expanded", daralt ? "false" : "true");
+    }
+    if (kaydet) {
+        try { localStorage.setItem(DG_DARALT_ANAHTAR, daralt ? "1" : "0"); } catch (e) { /* yok */ }
+    }
+}
+/* Görünüm seç: Değişkenler sekmesi açık değilse açılır. */
+function dgAc(alt) {
+    if (DG_ALTLAR.indexOf(alt) === -1) return;
+    DG.alt = alt;
+    try { localStorage.setItem(DG_ALT_ANAHTAR, alt); } catch (e) { /* yok */ }
+    if (aktifAnalizSekme === "degisken" && !kabukEl.classList.contains("analiz-dar")) {
+        analizCiz("degisken");
+        analizGovde.scrollTop = 0;
+    } else {
+        analizSekmeAc("degisken");
+    }
+}
+(function dgKur() {
+    if (!dgPanelEl) return;
+    dgPanelEl.querySelectorAll("[data-alt]").forEach(b => { b.onclick = () => dgAc(b.dataset.alt); });
+    const btn = document.getElementById("dg-panel-daralt");
+    if (btn) btn.onclick = () => dgDaralt(!dgPanelEl.classList.contains("daraltilmis"), true);
+    let ilk = false;
+    try { ilk = localStorage.getItem(DG_DARALT_ANAHTAR) === "1"; } catch (e) { ilk = false; }
+    dgDaralt(ilk, false);
+})();
+
 function analizCiz(tab) {
     /* Panel bastan ciziliyor; feature tablosunda yaziyor olabilir.
        Odak ve imlec yeri ayni kontrole geri veriliyor. */
@@ -4239,7 +4301,8 @@ function analizCiz(tab) {
        AMP_VERISETI) ve sözlük listesi (AMP_SOZLUK). Başlıklar tablonun
        adını taşır; her sunucu yanıtında yeniden okunur (adımlar
        ilerledikçe son hâl). */
-    if (tab === "veri") {
+    dgPanelGoster(tab === "degisken");
+    if (tab === "degisken" && DG.alt === "veri") {
         const o = ANALIZ_VERI.ozet;
         const veriBaslik = elYap("div", "panel-bolum-baslik",
             "Veri Seti" + (ONIZLEME.veri && ONIZLEME.veri.kaynak_ad
@@ -4257,7 +4320,7 @@ function analizCiz(tab) {
         return;
     }
     /* DAĞILIM VE SFA: değişken düzeyinde dağılım ve tek değişken analizi. */
-    if (tab === "degisken") {
+    if (tab === "degisken" && DG.alt === "dagilim") {
         /* Kume secici yalnizca Dağılım bolumune uygulanir: basligin altinda. */
         panelBolumBasligi("Dağılım");
         setSeciciCiz(tab);
@@ -4270,7 +4333,7 @@ function analizCiz(tab) {
         return;
     }
     /* DEĞİŞKEN KONTROLLERİ: şimdilik eksik değer. */
-    if (tab === "kontrol") {
+    if (tab === "degisken") {
         panelBolumBasligi("Eksik Değer");
         panelCiz(ANALIZ_VERI.eksik);
         ftOdakGeriVer(odak);
@@ -4348,7 +4411,7 @@ function aralikCiz() {
     if (!ARALIK.liste) {
         kap.appendChild(elYap("div", "dag-not", "SFA sonuçları yükleniyor…"));
         sfaGetir("sfa_degiskenler").then(d => {
-            if (istek !== ARALIK.istek || aktifAnalizSekme !== "degisken") return;
+            if (istek !== ARALIK.istek || !dgDagilimAcik()) return;
             ARALIK.liste = (d && d.degiskenler) || [];
             ARALIK.hata = (d && d.tamam === false) ? d.hata : "";
             analizCiz("degisken");
@@ -4821,7 +4884,7 @@ function dagilimCiz() {
     const kap = elYap("div", "dag-kap");
     analizGovde.appendChild(kap);
     const istek = ++DAGILIM.istek;
-    const hala = () => istek === DAGILIM.istek && aktifAnalizSekme === "degisken";
+    const hala = () => istek === DAGILIM.istek && dgDagilimAcik();
 
     if (!DAGILIM.kolonlar) {
         kap.appendChild(elYap("div", "dag-not", "Değişken listesi yükleniyor…"));
@@ -5477,7 +5540,10 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
     if (tab && bekleyen === "girdi") {
         if (ANALIZ_DAR.otoAdim !== adim) {
             ANALIZ_DAR.otoAdim = adim;
-            if (ANALIZ_DAR.kapatilanAdim !== adim) analizSekmeAc(tab);
+            if (ANALIZ_DAR.kapatilanAdim !== adim) {
+                if (tab === "degisken") DG.alt = "dagilim";    // SFA kararları
+                analizSekmeAc(tab);
+            }
         }
         analizAltGuncelle(alan.tip);
         return;
@@ -9635,9 +9701,9 @@ function sfaKartiEkle(alan, blok) {
     kart.appendChild(hata);
 
     const dugmeler = elYap("div", "onay-dugmeler dg-dugmeler");
-    const ac = elYap("button", "secim-onay ikincil", "Dağılım ve SFA Sekmesini Aç");
+    const ac = elYap("button", "secim-onay ikincil", "Dağılım ve SFA'yı Aç");
     ac.type = "button";
-    ac.onclick = () => analizSekmeAc("degisken");
+    ac.onclick = () => dgAc("dagilim");
     const birincil = elYap("button", "secim-onay dg-birincil", alan.buton || "Kararları Onayla");
     birincil.type = "button";
     dugmeler.appendChild(ac);
@@ -9667,13 +9733,13 @@ function sfaKartiEkle(alan, blok) {
         if (calisiyor)
             durum.textContent = "Yapay zekâ karar veriyor · " + biten.toLocaleString("tr-TR")
                 + " / " + toplam.toLocaleString("tr-TR") + " değişken. Kararlar geldikçe "
-                + "Dağılım ve SFA sekmesine düşer; beklemeden onaylarsanız kalan "
+                + "Değişkenler > Dağılım ve SFA bölümüne düşer; beklemeden onaylarsanız kalan "
                 + "değişkenlerde kural tabanlı karar geçerli olur.";
         else if (d && d.durum === "bitti")
             durum.textContent = "Yapay zekâ " + biten.toLocaleString("tr-TR") + " değişken için "
-                + "karar verdi. Kararları Dağılım ve SFA sekmesinde inceleyip değiştirebilirsiniz.";
+                + "karar verdi. Kararları Değişkenler > Dağılım ve SFA bölümünde inceleyip değiştirebilirsiniz.";
         else
-            durum.textContent = "Kararlar Değişkenler sekmesinde; inceleyip "
+            durum.textContent = "Kararlar Değişkenler > Dağılım ve SFA bölümünde; inceleyip "
                 + "değiştirebilirsiniz.";
         hata.hidden = !(d && d.hata);
         hata.textContent = (d && d.hata) ? tireSade(d.hata) : "";
@@ -9690,7 +9756,7 @@ function sfaKartiEkle(alan, blok) {
                     sonBiten = d.biten;
                     /* Açık bir karar formu varsa dokunulmaz: kullanıcının
                        kaydetmediği seçimler silinmesin. */
-                    if (aktifAnalizSekme === "degisken" && ARALIK.liste && !ARALIK.acik) {
+                    if (dgDagilimAcik() && ARALIK.liste && !ARALIK.acik) {
                         ARALIK.liste = null;
                         ARALIK.detay = {};
                         analizCiz("degisken");

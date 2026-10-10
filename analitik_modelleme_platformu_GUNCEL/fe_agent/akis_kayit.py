@@ -195,7 +195,7 @@ ADIMLAR = {
                     "dönüşümle C-value, hedefe göre aralıklar). Eleme "
                     "yapılmaz; yapay zekâ her değişkenin modele hangi "
                     "hâliyle gireceğine karar verir, kararlar sağdaki "
-                    "Dağılım ve SFA sekmesinde değiştirilebilir.",
+                    "Değişkenler > Dağılım ve SFA bölümünde değiştirilebilir.",
         # plan=None: karar kartinin "Kararları Onayla" dugmesi onaydir.
         "girdi": sfa_girdi, "plan": None, "uygula": sfa_uygula,
         # Kartin mesaji ("sfa kararları: ...") soru sanilip dil modeline gitmesin

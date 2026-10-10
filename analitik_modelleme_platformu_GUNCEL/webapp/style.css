@@ -2081,12 +2081,13 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   top: calc(var(--kabuk-ust) + 1px); bottom: calc(var(--kabuk-alt) + 1px);
   left: calc(var(--kabuk-sol) + 1px + var(--sol-bar-en)); right: calc(var(--kabuk-sag) + 1px);
   background: var(--yuzey-alt);
-  display: flex; flex-direction: column; overflow: hidden;
+  /* SATIR: solda (yalnız Değişkenler'de) seçim paneli, sağda içerik. */
+  display: flex; flex-direction: row; overflow: hidden;
 }
 /* Doğrudan geçiş: kayma / animasyon yok. */
 #kabuk.analiz-dar #analiz-panel { display: none; }
 #analiz-icerik {
-  flex: 1; min-height: 0; width: 100%; max-width: 1440px; margin: 0 auto;
+  flex: 1; min-height: 0; min-width: 0; width: auto; max-width: 1440px; margin: 0 auto;
   display: flex; flex-direction: column; overflow: hidden;
 }
 
@@ -3964,6 +3965,87 @@ span.bolme-cip { cursor: default; }
 .vo-tablo td.vo-sayi { text-align: right; font-variant-numeric: tabular-nums; }
 .vo-tablo th.vo-sayi { text-align: right; }
 
-/* Uzun sekme adı (DEĞİŞKEN KONTROLLERİ) 200 px'lik sol bara sığsın:
-   harf aralığı ve iç boşluk biraz daraltılır, yazı küçültülmez. */
-#sol-bar .ust-sekme.sekme-uzun { letter-spacing: 0; gap: 5px; padding-right: 8px; }
+/* ==================== DEĞİŞKENLER SEÇİM PANELİ ====================
+   Model Akışı'ndaki #panel ile aynı görünüm: aynı genişlik, zemin, ayraç
+   çizgisi, balon ve daralt düğmesi; daraltılınca 44 px şerit ve dikey
+   düğmeler. */
+#dg-panel {
+  width: var(--panel-en); flex-shrink: 0;
+  background: var(--yuzey-alt);
+  border-right: var(--ayrac-kalinlik) solid var(--ayrac);
+  padding: var(--b-5) var(--b-4) 22px; overflow-y: auto;
+}
+#dg-panel[hidden] { display: none; }
+.panel-daralt-btn {
+  margin: 0; width: 26px; height: 26px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--pembe-kenar); border-radius: 7px;
+  background: var(--yuzey); color: var(--kirmizi); cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.panel-daralt-btn svg { width: 15px; height: 15px; transition: transform .15s; }
+.panel-daralt-btn:hover { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
+.panel-daralt-btn:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
+#dg-dikey-adlar { display: none; }
+
+.dg-secimler { display: flex; flex-direction: column; gap: 6px; }
+.dg-secim {
+  display: flex; align-items: flex-start; gap: 9px; width: 100%; margin: 0;
+  padding: 9px 10px; text-align: left; cursor: pointer;
+  font-family: var(--font); color: var(--metin);
+  background: var(--yuzey); border: 1px solid var(--kenar-acik); border-radius: 9px;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.dg-secim svg.ikon { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: var(--metin-soluk); }
+.dg-secim-yazi { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dg-secim-ad {
+  font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
+  letter-spacing: var(--etiket-aralik); text-transform: uppercase;
+}
+.dg-secim-acik { font-size: var(--fs-kucuk); color: var(--metin-soluk); line-height: 1.35; }
+.dg-secim:hover { border-color: var(--kirmizi-halka); background: var(--kirmizi-acik); color: var(--kirmizi); }
+.dg-secim:hover svg.ikon { color: var(--kirmizi); }
+.dg-secim:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
+/* Seçili: sol bardaki seçili sekmeyle aynı dil (pembe zemin, kırmızı
+   yazı, solda kırmızı çizgi). */
+.dg-secim.aktif, .dg-secim.aktif:hover {
+  background: var(--pembe-secili); border-color: var(--pembe-secili);
+  color: var(--kume-secili-yazi); box-shadow: inset 3px 0 0 var(--kume-secili-yazi);
+}
+.dg-secim.aktif svg.ikon { color: var(--kume-secili-yazi); }
+
+@media (min-width: 865px) {
+  #dg-panel.daraltilmis {
+    width: 44px; padding: var(--b-3) 0; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; gap: var(--b-3);
+  }
+  #dg-panel.daraltilmis[hidden] { display: none; }
+  #dg-panel.daraltilmis > :not(.panel-ust-sira):not(#dg-dikey-adlar) { display: none; }
+  #dg-panel.daraltilmis .panel-ust-sira { position: static; margin: 0; padding: 0; background: none; }
+  #dg-panel.daraltilmis .panel-daralt-btn svg { transform: rotate(180deg); }
+  #dg-panel.daraltilmis #dg-dikey-adlar {
+    display: flex; flex-direction: column; align-items: center; gap: var(--b-2);
+  }
+  .dg-dikey {
+    display: block; writing-mode: vertical-rl; transform: rotate(180deg);
+    width: 30px; padding: 12px 0; margin: 0;
+    border: 1px solid var(--pembe-kenar); border-radius: 8px;
+    background: var(--yuzey); box-shadow: var(--ust-golge); cursor: pointer;
+    font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
+    letter-spacing: .08em; color: var(--kirmizi); white-space: nowrap;
+    transition: background .12s, border-color .12s;
+  }
+  .dg-dikey:hover { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
+  .dg-dikey.aktif { background: var(--pembe-secili); border-color: var(--kume-secili-yazi); color: var(--kume-secili-yazi); }
+  .dg-dikey:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
+}
+/* Dar ekran: panel üstte yatay şerit, üç seçim yan yana. */
+@media (max-width: 864px) {
+  #analiz-panel { flex-direction: column; }
+  #dg-panel { width: auto; padding: var(--b-2); border-right: 0;
+              border-bottom: var(--ayrac-kalinlik) solid var(--ayrac); overflow: visible; }
+  #dg-panel .panel-baslik, .dg-secim-acik { display: none; }
+  .dg-blok { padding: var(--b-2); margin: 0; }
+  .dg-secimler { flex-direction: row; }
+  .dg-secim { flex: 1 1 0; align-items: center; }
+}
