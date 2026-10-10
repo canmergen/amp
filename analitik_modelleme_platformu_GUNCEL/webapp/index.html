@@ -21,8 +21,9 @@
     <!-- SAYFA KÜMELERİ (sol barda alt alta).
          MODEL PLATFORMU kümesi: MODEL AKIŞI (iş akışı + adım kartları), GENEL
          BAKIŞ (çalışma düzeyi: veri seti, sözlük, değişken sayıları, bölme,
-         validasyon, model sonucu), DEĞİŞKENLER (değişken düzeyi: liste,
-         dağılım, SFA, eksik değer) ve ÖZET (doküman). İki analiz kutusu .analiz-sekme
+         validasyon, model sonucu), VERİ VE SÖZLÜK (veri seti önizlemesi +
+         sözlük listesi), DAĞILIM VE SFA, DEĞİŞKEN KONTROLLERİ (eksik değer)
+         ve ÖZET (doküman). İki analiz kutusu .analiz-sekme
          sınıfını taşır: sekme mantığı (aktif, çizim) o sınıfa bağlı.
          SOHBET ve DASHBOARD ayrı bloklar; içerikleri hazırlanana kadar
          KAPALI (.kapali: gri, kilitli, tıklanmaz). Açılınca .kapali sınıfı
@@ -32,7 +33,9 @@
         <span class="ust-kume-ad"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"></rect><path d="M12 8V4.5"></path><circle cx="12" cy="3.5" r="1"></circle><circle cx="9" cy="13" r="1.2"></circle><circle cx="15" cy="13" r="1.2"></circle><path d="M9.5 16.5h5M2 13v3M22 13v3"></path></svg>MODEL PLATFORMU</span>
         <button class="ust-sekme" data-ust="akis" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M6.5 10v4a3 3 0 0 0 3 3H14"></path></svg>MODEL AKIŞI</button>
         <button class="ust-sekme analiz-sekme" data-tab="ozet" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17.5a9 9 0 1 1 17 0"></path><path d="M12 13.5l4.5-4.5"></path><circle cx="12" cy="13.5" r="1.3"></circle><path d="M3 20.5h18"></path></svg>GÖSTERGE PANELİ</button>
-        <button class="ust-sekme analiz-sekme" data-tab="degisken" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>DEĞİŞKENLER</button>
+        <button class="ust-sekme analiz-sekme" data-tab="veri" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path></svg>VERİ VE SÖZLÜK</button>
+        <button class="ust-sekme analiz-sekme" data-tab="degisken" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-7M21 20H3"></path></svg>DAĞILIM VE SFA</button>
+        <button class="ust-sekme analiz-sekme sekme-uzun" data-tab="kontrol" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg>DEĞİŞKEN KONTROLLERİ</button>
         <button class="ust-sekme" data-ust="dokuman" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h6"></path></svg>ÖZET</button>
         <!-- KATIB'LE SOHBET (model platformu içi): içerik hazırlanana kadar kilitli. -->
         <button class="ust-sekme kapali" data-ust="model_sohbet" type="button" aria-disabled="true"

@@ -595,12 +595,16 @@ body::before {
 .ust-sekme svg.ikon, .ust-kume-ad svg.ikon { width: 15px; height: 15px; flex-shrink: 0; }
 /* Küme İÇİNDEKİ kapalı sekme (Model Platformu > KATIB'LE SOHBET): küme
    kenarı kesilmez, kesik kenar sekmenin kendisinde; soluk zemin. */
+/* Diğer sekmeler gibi BEYAZ zeminli, ama kapalı olduğu soluk gri yazı,
+   kilit simgesi ve tıklanmazlıktan anlaşılır (gri zemin seçili gibi
+   duruyordu). */
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
-  color: #8A9099; background: var(--yuzey); opacity: .75;
-  border: 1px dashed var(--kenar-guclu); box-shadow: none;
+  color: #A0A6AD; background: var(--yuzey); opacity: 1;
+  border-color: transparent; box-shadow: var(--ust-golge);
 }
-#kabuk.koyu #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali { color: #7D848D; }
+#kabuk.koyu #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
+#kabuk.koyu #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover { color: #6B7178; }
 .ust-sekme.kapali svg.kilit { width: 12px; height: 12px; flex-shrink: 0; margin-left: auto; }
 
 /* Alt: Arşiv ve Yeni Çalışma alt alta, barın eninde, sola yaslı. */
@@ -3959,3 +3963,7 @@ span.bolme-cip { cursor: default; }
 /* Sayısal kolonlar sağa yaslı (Excel gibi). */
 .vo-tablo td.vo-sayi { text-align: right; font-variant-numeric: tabular-nums; }
 .vo-tablo th.vo-sayi { text-align: right; }
+
+/* Uzun sekme adı (DEĞİŞKEN KONTROLLERİ) 200 px'lik sol bara sığsın:
+   harf aralığı ve iç boşluk biraz daraltılır, yazı küçültülmez. */
+#sol-bar .ust-sekme.sekme-uzun { letter-spacing: 0; gap: 5px; padding-right: 8px; }

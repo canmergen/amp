@@ -2394,7 +2394,19 @@ def _onizleme_hesapla(durum):
     excel = [[_onizleme_excel_degeri(v) for v in r] for r in hamlar]
     imza = hashlib.md5(json.dumps([kolonlar, satirlar], ensure_ascii=False)
                        .encode("utf-8")).hexdigest()
+    # Gosterilen tablonun adi: teyitten sonra AMP_VERISETI (son hal),
+    # oncesinde kullanicinin sectigi veri seti.
+    try:
+        ad, amp_mi = akis.modelleme_kaynagi(durum)
+    except Exception:
+        ad, amp_mi = durum.get("veri_seti"), False
+    if amp_mi:
+        kaynak_ad = ((durum.get("amp_cikti") or {}).get("veri") or {}).get("ad") \
+            or akis.AMP_VERI_ADI
+    else:
+        kaynak_ad = str(ad or "")
     return {"kolonlar": kolonlar, "satirlar": satirlar, "excel": excel,
+            "kaynak_ad": kaynak_ad, "amp": bool(amp_mi),
             "donem": donem or None, "gruplar": gruplar, "imza": imza,
             "toplam_satir": int(len(df)) if donem else None}
 

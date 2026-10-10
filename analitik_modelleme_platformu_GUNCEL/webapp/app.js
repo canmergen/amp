@@ -165,9 +165,10 @@ let aktifAnalizSekme = "ozet";
    ile BÖLME & MODEL birlesti).
     Ayni panel govdesi artik "hazirlik"
    anahtariyla geliyor (bkz. akis_panel.hazirlik_paneli). */
-/* IKI SEKME: "ozet" (GÖSTERGE PANELİ) ve "degisken" (DEĞİŞKENLER: liste +
-   dağılım + SFA + eksik değer). "bolme" verisi GÖSTERGE PANELİ'ta çizilir. */
-const BAGLI_SEKMELER = ["ozet", "degisken", "bolme"];
+/* SEKMELER: "ozet" (GÖSTERGE PANELİ), "veri" (VERİ VE SÖZLÜK: veri seti
+   önizlemesi + sözlük listesi), "degisken" (DAĞILIM VE SFA) ve "kontrol"
+   (DEĞİŞKEN KONTROLLERİ: eksik değer). "bolme" verisi GÖSTERGE PANELİ'nde. */
+const BAGLI_SEKMELER = ["ozet", "veri", "degisken", "kontrol", "bolme"];
 
 /* Dataset listesi: "yukleniyor" | "hazir" | "bos" | "hata"
    "bos": liste okundu ama proje icinde dataset yok -> elle yazmaya izin ver */
@@ -4234,17 +4235,29 @@ function analizCiz(tab) {
         ftOdakGeriVer(odak);
         return;
     }
-    /* DEĞİŞKENLER: DEĞİŞKEN DÜZEYİ. Önce değişken listesi (kolonlar, roller,
-       tanımlar, Excel), sonra dağılım, SFA ve eksik değer. */
-    if (tab === "degisken") {
+    /* VERİ VE SÖZLÜK: modelleme tablosunun O ANKİ hâli (teyitten sonra
+       AMP_VERISETI) ve sözlük listesi (AMP_SOZLUK). Başlıklar tablonun
+       adını taşır; her sunucu yanıtında yeniden okunur (adımlar
+       ilerledikçe son hâl). */
+    if (tab === "veri") {
         const o = ANALIZ_VERI.ozet;
-        panelBolumBasligi("Veri Önizleme");
+        const veriBaslik = elYap("div", "panel-bolum-baslik",
+            "Veri Seti" + (ONIZLEME.veri && ONIZLEME.veri.kaynak_ad
+                           ? " · " + ONIZLEME.veri.kaynak_ad : ""));
+        analizGovde.appendChild(veriBaslik);
         const onizKap = elYap("div", "iskele-kart vo-kart");
         analizGovde.appendChild(onizKap);
-        panelBolumBasligi("Değişken Listesi");
+        const sk = o && o.feature_tablo && o.feature_tablo.sozluk_kaynak;
+        panelBolumBasligi("Sözlük" + (sk ? " · " + sk : ""));
         if (o && o.feature_tablo) featureTabloCiz(ftSaltOku(o.feature_tablo));
         else analizGovde.appendChild(elYap("div", "set-not",
-            "Değişken listesi veri seti seçildikten sonra burada görünür."));
+            "Sözlük listesi veri seti seçildikten sonra burada görünür."));
+        onizlemeCiz(onizKap, veriBaslik);
+        ftOdakGeriVer(odak);
+        return;
+    }
+    /* DAĞILIM VE SFA: değişken düzeyinde dağılım ve tek değişken analizi. */
+    if (tab === "degisken") {
         /* Kume secici yalnizca Dağılım bolumune uygulanir: basligin altinda. */
         panelBolumBasligi("Dağılım");
         setSeciciCiz(tab);
@@ -4253,9 +4266,13 @@ function analizCiz(tab) {
         analizGovde.appendChild(elYap("div", "set-not", SFA_SET_NOTU));
         panelCiz(ANALIZ_VERI.sfa);
         if (ANALIZ_VERI.sfa && ANALIZ_VERI.sfa.aralik) aralikCiz();
+        ftOdakGeriVer(odak);
+        return;
+    }
+    /* DEĞİŞKEN KONTROLLERİ: şimdilik eksik değer. */
+    if (tab === "kontrol") {
         panelBolumBasligi("Eksik Değer");
         panelCiz(ANALIZ_VERI.eksik);
-        onizlemeCiz(onizKap);
         ftOdakGeriVer(odak);
         return;
     }
@@ -5017,7 +5034,7 @@ function dagilimGovdeCiz(govde, d) {
     }
 }
 
-/* ==================== VERİ ÖNİZLEME (Değişkenler sekmesinin üstü) ====
+/* ==================== VERİ SETİ ÖNİZLEMESİ (Veri ve Sözlük sekmesi) ====
    Veri setinin BÜTÜN kolonları, ilk 10 satır; dönem kolonu seçildiyse her
    dönemin ilk 10 satırı (dönem başlıklarıyla, zaman sırasında). Görünüş
    Değişken Listesi ile aynı: üst şerit (sayaç · kaynak · Excel), arama,
@@ -5151,8 +5168,10 @@ function voAdayDegerler(d, k) {
     return sonuc;
 }
 
-function onizlemeCiz(kap) {
+function onizlemeCiz(kap, baslikEl) {
     const ciz = d => {
+        if (baslikEl && d && d.kaynak_ad)
+            baslikEl.textContent = "Veri Seti · " + d.kaynak_ad;
         kap.textContent = "";
         if (!d || d.hata || d.tamam === false) {
             kap.appendChild(elYap("div", "dag-not dag-hata",
@@ -9616,7 +9635,7 @@ function sfaKartiEkle(alan, blok) {
     kart.appendChild(hata);
 
     const dugmeler = elYap("div", "onay-dugmeler dg-dugmeler");
-    const ac = elYap("button", "secim-onay ikincil", "Değişkenler Sekmesini Aç");
+    const ac = elYap("button", "secim-onay ikincil", "Dağılım ve SFA Sekmesini Aç");
     ac.type = "button";
     ac.onclick = () => analizSekmeAc("degisken");
     const birincil = elYap("button", "secim-onay dg-birincil", alan.buton || "Kararları Onayla");
@@ -9648,11 +9667,11 @@ function sfaKartiEkle(alan, blok) {
         if (calisiyor)
             durum.textContent = "Yapay zekâ karar veriyor · " + biten.toLocaleString("tr-TR")
                 + " / " + toplam.toLocaleString("tr-TR") + " değişken. Kararlar geldikçe "
-                + "Değişkenler sekmesine düşer; beklemeden onaylarsanız kalan "
+                + "Dağılım ve SFA sekmesine düşer; beklemeden onaylarsanız kalan "
                 + "değişkenlerde kural tabanlı karar geçerli olur.";
         else if (d && d.durum === "bitti")
             durum.textContent = "Yapay zekâ " + biten.toLocaleString("tr-TR") + " değişken için "
-                + "karar verdi. Kararları Değişkenler sekmesinde inceleyip değiştirebilirsiniz.";
+                + "karar verdi. Kararları Dağılım ve SFA sekmesinde inceleyip değiştirebilirsiniz.";
         else
             durum.textContent = "Kararlar Değişkenler sekmesinde; inceleyip "
                 + "değiştirebilirsiniz.";

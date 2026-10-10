@@ -534,7 +534,7 @@ def _sfa_ozet_metni(durum):
             "  Sızıntı Şüphesi : %s\n"
             "  Hassas Değişken : %s\n"
             "Yapay zekâ her değişkenin modele hangi hâliyle gireceğine karar "
-            "veriyor. Kararlar Değişkenler sekmesinde; değişken adına "
+            "veriyor. Kararlar Dağılım ve SFA sekmesinde; değişken adına "
             "tıklayınca grafik, ölçütler ve karar formu açılır, istediğinizi "
             "değiştirebilirsiniz."
             % (_sayi(s.get("train_satir") or 0), _sayi(s.get("analiz_edilen") or 0),
