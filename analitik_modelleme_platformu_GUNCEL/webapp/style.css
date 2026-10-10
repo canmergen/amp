@@ -87,7 +87,7 @@
      ciziliyor ve istenen yerde duruyor: 1px'ten kalin, 3px'ten ince.
      (Kesirli deger ancak kenarlik yerine sozde ogeyle cizilirse
      tutuyor; o da dPR 1'de gri ve bulanik bir cizgi demek.) */
-  --ayrac:        transparent;   /* siyah ayraclar kaldirildi (kalinlik hizalama icin duruyor) */
+  --ayrac:        rgba(0,0,0,.45);   /* uc blok arasi siyah ayrac; arka planla ayni %45 opaklik */
   --ayrac-kalinlik: 2px;
   /* Tutamagin ayracin iki yanina tastigi pay: yakalama kutusu ayraca
      ORTALI dursun diye. 8px - 2px = 6, iki yana 3'er. Kalinlik
@@ -201,7 +201,7 @@
   --kenar:        #2C3138;
   --kenar-guclu:  #3D434B;
   --kenar-acik:   #22262C;
-  --ayrac:        transparent;
+  --ayrac:        rgba(255,255,255,.45);   /* koyu zeminde acik ayrac, ayni opaklik */
 
   --metin:        #E6E8EB;
   --metin-soluk:  #E6E8EB;

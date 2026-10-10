@@ -1,13 +1,19 @@
 # Akıllı Modelleme Platformu — teslim notu
 
-Bu tur: **Kapalı panel şeridinde Analitik Süreç ve İş Akışı iki ayrı düğme**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin). Not: önceki turların `webapp/index.html` ve `webapp/app.js` dosyaları da güncel olmalı.
+Bu tur: **Üç blok yine çizgiyle ayrılıyor; çizgi arka planla aynı %45 opaklıkta**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+
+- Sol bar | iş akışı paneli | sohbet arasında 2 px siyah çizgi, %45
+  opaklıkta (arka plan görseliyle aynı). Koyu temada aynı opaklıkta açık
+  renk (siyah çizgi koyu zeminde görünmüyordu).
+
+Önceki tur: **Kapalı panel şeridinde Analitik Süreç ve İş Akışı iki ayrı düğme**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin). Not: önceki turların `webapp/index.html` ve `webapp/app.js` dosyaları da güncel olmalı.
 
 - Panel kapalıyken şeritte » düğmesinin altında iki ayrı kenarlı düğme:
   ANALİTİK SÜREÇ ve İŞ AKIŞI. Yazı saat yönünün tersine 90° döndürülmüş
   (aşağıdan yukarı okunur). Her biri paneli kendi bölümünün başından açar.
   Panel açıkken görünmezler.
 
-Önceki tur: **01.2.4.1 Dönem Bilgisi: tek paragraf yönerge, yalnız kesin kalıplar tabloda, "Olası Dönem Kalıpları", elle her kalıp eklenebilir**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: fe_agent değişti)
+Daha önce: **01.2.4.1 Dönem Bilgisi: tek paragraf yönerge, yalnız kesin kalıplar tabloda, "Olası Dönem Kalıpları", elle her kalıp eklenebilir**. Değiştir: `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: fe_agent değişti)
 
 - Yönerge dört madde yerine tek kısa paragraf.
 - Tabloya yalnız dönem olduğu kesin olanlar gelir: hafızadan gelenler ve
@@ -26,23 +32,23 @@ Bu tur: **Kapalı panel şeridinde Analitik Süreç ve İş Akışı iki ayrı d
   Kalıp biçimi geçersizse (harf, rakam, <N>, <NN> dışı) onaylanmaz.
 - Önceki kararınız (geri dönüşte) her durumda korunur.
 
-Daha önce: **Kapalı panel şeridinde iki ayrı ad: Analitik Süreç ve İş Akışı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (2): **Kapalı panel şeridinde iki ayrı ad: Analitik Süreç ve İş Akışı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Panel kapalıyken şeritte üstte "ANALİTİK SÜREÇ", altında "İŞ AKIŞI"
   (aralarında kısa çizgi). Analitik Süreç'e basınca panel açılır ve en
   baştan (Analitik Süreç balonu) başlar; İş Akışı'na basınca panel açılır
   ve doğrudan İş Akışı balonunun başına gelir.
 
-Daha önce (2): **"Model Platformu" başlığının önünde robot ikonu**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (3): **"Model Platformu" başlığının önünde robot ikonu**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Sol bardaki küme başlığına sekme ikonlarıyla aynı ince çizgi stilinde
   robot başı (anten, iki göz, ağız) eklendi; başlıkla aynı renk.
 
-Daha önce (3): **Sol bardaki "Arka Plan" düğmesinin adı "Çerçeve"**. Değiştir: `webapp/index.html`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (4): **Sol bardaki "Arka Plan" düğmesinin adı "Çerçeve"**. Değiştir: `webapp/index.html`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Düğme yazısı "Çerçeve"; üstüne gelince "Çerçeveyi kapat / aç". İşlevi aynı.
 
-Daha önce (4): **Arşiv listesi yukarı açılıyor, sol barın eninde; açıklamalar "i" düğmesinde**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (5): **Arşiv listesi yukarı açılıyor, sol barın eninde; açıklamalar "i" düğmesinde**. Değiştir: `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Liste Arşiv düğmesinin üstüne doğru, sol barın eninde açılıyor; yandaki
   iş akışı paneline taşmıyor.
@@ -52,19 +58,19 @@ Daha önce (4): **Arşiv listesi yukarı açılıyor, sol barın eninde; açıkl
 - Silme onayı dar listede iki satır: üstte "Silinsin mi?", altında
   Onayla / Reddet.
 
-Daha önce (5): **Panel kapatma düğmesi balonların üstünde; kapalı şeritte "ANALİTİK SÜREÇ & İŞ AKIŞI"**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (6): **Panel kapatma düğmesi balonların üstünde; kapalı şeritte "ANALİTİK SÜREÇ & İŞ AKIŞI"**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - « düğmesi artık Analitik Süreç balonunun içinde değil, balonların üstünde
   kendi satırında, sağda. Panel kaysa da yerinde kalır.
 - Panel kapalıyken dikey yazı "İŞ AKIŞI" yerine "ANALİTİK SÜREÇ & İŞ AKIŞI".
 
-Daha önce (6): **Renk Modu ve Arka Plan anahtarlarında emoji yerine çizgi ikonlar**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (7): **Renk Modu ve Arka Plan anahtarlarında emoji yerine çizgi ikonlar**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Renk Modu: güneş / ay; Arka Plan: resim / üstü çizili çerçeve. Sekme
   ikonlarıyla aynı ince çizgi stili; geçerli seçenek beyaz zeminde kırmızı,
   öteki soluk.
 
-Daha önce (7): **Koyu tema yeniden düzenlendi; Arka Plan aç / kapa düğmesi**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (8): **Koyu tema yeniden düzenlendi; Arka Plan aç / kapa düğmesi**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Koyu tema katmanlı: sayfa zemini en koyu (#0F1115), paneller bir ton
   açık, kartlar bir ton daha açık; eski temada hepsi aynı siyahtı ve
@@ -78,7 +84,7 @@ Daha önce (7): **Koyu tema yeniden düzenlendi; Arka Plan aç / kapa düğmesi*
   kapalı). Kapalıyken çerçeveli görsel ve üst banttaki logo gizlenir,
   uygulama ekranın tamamını kullanır. Seçim bu tarayıcıda hatırlanır.
 
-Daha önce (8): **Renk Modu (açık / koyu) geri geldi: sol barda Arşiv'in üstünde**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: görsel listesine `zemin_koyu` eklendi)
+Daha önce (9): **Renk Modu (açık / koyu) geri geldi: sol barda Arşiv'in üstünde**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: görsel listesine `zemin_koyu` eklendi)
 
 - Sol barın altında Arşiv'in üstünde "Renk Modu" düğmesi; sağında güneş /
   ay anahtarı, geçerli mod dolu zeminli. Basınca öteki moda geçer; seçim
@@ -89,7 +95,7 @@ Daha önce (8): **Renk Modu (açık / koyu) geri geldi: sol barda Arşiv'in üst
   Sonradan eklenen sol bar, panel balonları ve seçili sekme rengi de koyu
   karşılıklarına döner. Çerçeve görseli koyu zeminde daha sönük durur.
 
-Daha önce (9): **İş akışı paneli açılıp kapanır (sağ üstte düğme)**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (10): **İş akışı paneli açılıp kapanır (sağ üstte düğme)**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Analitik Süreç ve İş Akışı'nın bulunduğu panelin sağ üstünde « düğmesi:
   basınca panel 44 px'lik ince şeride iner, sohbet genişler. Şeritte »
@@ -97,13 +103,13 @@ Daha önce (9): **İş akışı paneli açılıp kapanır (sağ üstte düğme)*
 - Düğme panel kaysa da sağ üstte durur. Seçim bu tarayıcıda hatırlanır
   (sayfa yenilenince aynı kalır). Dar ekranda (çekmece) düğme gizli.
 
-Daha önce (10): **İş akışında aktif faz ve adım yine sarı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (11): **İş akışında aktif faz ve adım yine sarı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Kullanıcı kararı: kırmızı "sorun var" gibi okunuyor, sarı "devam ediyor"
   demek. Çalışılan faz ve adım önceki sarı/kehribar görünümüne döndü.
   Sol bardaki seçili sekme görünümü (koyu pembe + solda kırmızı çizgi) kaldı.
 
-Daha önce (11): **Seçili sekme daha belirgin; iş akışında aktif faz ve adım kırmızı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (12): **Seçili sekme daha belirgin; iş akışında aktif faz ve adım kırmızı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Sol barda seçili sekme: biraz daha koyu pembe zemin (#FADADB) ve solda
   3 px kırmızı çizgi; beyaz sekmelerden net ayrılıyor.
@@ -111,23 +117,23 @@ Daha önce (11): **Seçili sekme daha belirgin; iş akışında aktif faz ve ad�
   kırmızı kutu, kırmızı yazı, solda kırmızı çubuk; aktif adımın işareti
   kırmızı dolu. Geçilen faz ve adımlar yeşil kaldı.
 
-Daha önce (12): **Arka plan %45, sol barda seçili küme kırmızı, seçili sekme açık kırmızı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (13): **Arka plan %45, sol barda seçili küme kırmızı, seçili sekme açık kırmızı**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Çerçeveli arka plan ve üst banttaki kurum logosu %35 yerine %45 opaklıkta.
 - Sol barda seçili sekmenin bulunduğu küme (Model Platformu) kırmızı zeminli,
   başlığı beyaz. İçinde seçili sekme açık kırmızı zemin + kırmızı yazı,
   seçilmeyenler beyaz. Kapalı Sohbet / Dashboard blokları değişmedi.
 
-Daha önce (13): **Sol bar adları: küme "Model Platformu", ilk sekme "Model Akışı"**. Değiştir: `webapp/index.html`, `webapp/app.js` (yalnız yorum), `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (14): **Sol bar adları: küme "Model Platformu", ilk sekme "Model Akışı"**. Değiştir: `webapp/index.html`, `webapp/app.js` (yalnız yorum), `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Küme başlığı MODEL AKIŞI → MODEL PLATFORMU; ilk sekme AKIŞ → MODEL AKIŞI.
   Sekmenin işlevi aynı (iş akışı + sohbet ekranı).
 
-Daha önce (14): **Üst banttaki kurum logosu da arka planla aynı oranda soluk**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (15): **Üst banttaki kurum logosu da arka planla aynı oranda soluk**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - `kurum_logo.png` %35 opaklıkta, çerçeveyle aynı solukluk. Uygulama tam renkte.
 
-Daha önce (15): **Sekme ikonları, soluk arka plan, panel balonları, siyah çizgiler kalktı, sol bar açık kırmızı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (16): **Sekme ikonları, soluk arka plan, panel balonları, siyah çizgiler kalktı, sol bar açık kırmızı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Sol bardaki her sekmenin önünde ince çizgili ikon: Akış (akış şeması),
   Veri & Sözlük (veritabanı), Değişkenler (ayar çubukları), Bölme & Model
@@ -141,13 +147,13 @@ Daha önce (15): **Sekme ikonları, soluk arka plan, panel balonları, siyah çi
   (genişlik tutamağı yerinde: üstüne gelince kırmızı çizgi görünür).
 - Sol barın zemini açık kırmızı.
 
-Daha önce (16): **Kurum logosu çerçevenin üst bandında, iki parmağın arasında yine**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: görsel listesine `kurum_logo` geri eklendi)
+Daha önce (17): **Kurum logosu çerçevenin üst bandında, iki parmağın arasında yine**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: görsel listesine `kurum_logo` geri eklendi)
 
 - `kurum_logo.png` önceki yerinde: üst bandın tam ortası, iki parmak
   ucunun arasında, iki yandan ~6 px pay (1920 x 950 ekranda ~175 x 19 px).
   Saydam kenarlar yüklenince kırpılır; görsel yoksa gizlenir.
 
-Daha önce (17): **Çerçeveli arka plan geri geldi, üst bar kalktı, robotlu görsel sol barın tepesinde**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: görsel listesi değişti)
+Daha önce (18): **Çerçeveli arka plan geri geldi, üst bar kalktı, robotlu görsel sol barın tepesinde**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: görsel listesi değişti)
 
 - `amp_background.png` (LLM_WEBAPP_GORSEL) yine sayfanın tamamını
   kaplıyor; uygulama çerçevenin iç çizgisinin içinde (2:1 görselde ölçülen
@@ -159,7 +165,7 @@ Daha önce (17): **Çerçeveli arka plan geri geldi, üst bar kalktı, robotlu g
   alanına göre yerleşiyor (style.css: --kabuk-*).
 - `katib_siyah_logo.png` artık kullanılmıyor (görsel listesinden çıktı).
 
-Daha önce (18): **Sayfa kümeleri ve Arşiv / Yeni Çalışma sol bara taşındı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (19): **Sayfa kümeleri ve Arşiv / Yeni Çalışma sol bara taşındı**. Değiştir: `webapp/index.html`, `webapp/style.css`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Üst barda yalnız logo kaldı. Model Akışı (Akış, Veri & Sözlük,
   Değişkenler, Bölme & Model, Özet), Sohbet ve Dashboard üst barın
@@ -174,7 +180,7 @@ Daha önce (18): **Sayfa kümeleri ve Arşiv / Yeni Çalışma sol bara taşınd
   "sol alttaki" oldu. Üst barın dar ekran ayarları (sekme sıkıştırma,
   logoyu gizleme) kaldırıldı: üst barda artık sekme yok.
 
-Daha önce (19): **Arka plan çerçevesi ve kurum logosu kaldırıldı**. Değiştir: `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatma şart değil; sayfayı yenileyin)
+Daha önce (20): **Arka plan çerçevesi ve kurum logosu kaldırıldı**. Değiştir: `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatma şart değil; sayfayı yenileyin)
 
 - Kullanıcı kararı: ekranın arkasında çerçeve olmayacak. Uygulama yeniden
   ekranın tamamını kullanıyor (1920 x 950: önce yüksekliğin %86'sı, şimdi %100).
@@ -184,13 +190,13 @@ Daha önce (19): **Arka plan çerçevesi ve kurum logosu kaldırıldı**. Deği�
   kalmaları zarar vermez. Üst bar eşikleri (@container) yerinde kaldı,
   kabuk artık ekran eninde olduğu için eskisi gibi davranıyor.
 
-Daha önce (20): **Kurum logosu bandın ortasında, iki yandan payla**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (21): **Kurum logosu bandın ortasında, iki yandan payla**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Logo bandın dikey ortasına alındı (önce aşağıdaydı) ve iki parmak
   ucunun arasına, iki yandan ~6 px pay bırakacak kadar küçültüldü
   (1920 x 950 ekranda ~175 x 19 px). Kırmızı süslere ve parmaklara değmiyor.
 
-Daha önce (21): **Kurum logosunun saydam kenarları sayfada kırpılıyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (22): **Kurum logosunun saydam kenarları sayfada kırpılıyor**. Değiştir: `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Sorun: klasördeki `kurum_logo.png`'nin kenarlarında geniş saydam boşluk
   varsa (yazı dosyanın ortasında ince bir şerit) logo yuvada küçük
@@ -199,13 +205,13 @@ Daha önce (21): **Kurum logosunun saydam kenarları sayfada kırpılıyor**. De
   dosya boşluklu da olsa kırpılmış da olsa logo aynı büyüklükte (1920 px
   ekranda ~216 x 24 px). Kırpma yapılamazsa dosya olduğu gibi gösterilir.
 
-Daha önce (22): **Kurum logosu büyüdü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (23): **Kurum logosu büyüdü**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Logo, iki elin arasında hiçbir çizime (parmak uçları, kırmızı süsler)
   binmeyen en büyük alana sığdırıldı: önceki boyutun yaklaşık %30 üstü
   (1920 px ekranda ~200 x 22 px), parmak uçlarının hemen altında.
 
-Daha önce (23): **Yeni ince çerçeve (2:1) ve üst bantta kurum logosu**. Değiştir: `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni görsel adı). Klasöre: `amp_background.png` (yeni çerçeve, 1774 x 887) ve `kurum_logo.png` (boşlukları kırpılmış logo) `LLM_WEBAPP_GORSEL`'e yüklendi.
+Daha önce (24): **Yeni ince çerçeve (2:1) ve üst bantta kurum logosu**. Değiştir: `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni görsel adı). Klasöre: `amp_background.png` (yeni çerçeve, 1774 x 887) ve `kurum_logo.png` (boşlukları kırpılmış logo) `LLM_WEBAPP_GORSEL`'e yüklendi.
 
 - Çerçeve görseli 2:1: tarayıcı alanına yakın oran, gerilme çoğu ekranda
   %1 - 5; çizim yamulmaz. Bant görsel yüksekliğinin %6,4'ü.
@@ -216,7 +222,7 @@ Daha önce (23): **Yeni ince çerçeve (2:1) ve üst bantta kurum logosu**. Değ
   Dosya yüklenemezse logo gizlenir. Kodda kurum adı geçmez
   (`GORSELLER["kurum_logo"]`).
 
-Daha önce (24): **Uygulama alanı büyüdü: alt çizgiye kadar, çerçeveyle arası 2 px**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (25): **Uygulama alanı büyüdü: alt çizgiye kadar, çerçeveyle arası 2 px**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Uygulama artık alt iç çizgiye (görselde 860) kadar uzanıyor; alt
   ortadaki süslemenin kıvılcımları uygulamanın altında kalıyor.
@@ -224,7 +230,7 @@ Daha önce (24): **Uygulama alanı büyüdü: alt çizgiye kadar, çerçeveyle a
 - 1920 x 950 ekranda alan 1745 x 742'den 1757 x 791'e çıktı (yükseklik
   ekranın %78'inden %83'üne). Üst bar sekmeleri 1024 – 1920 px'te taşmıyor.
 
-Daha önce (25): **Sayfanın tamamında çerçeveli arka plan; uygulama çerçevenin iç alanında**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni görsel adı)
+Daha önce (26): **Sayfanın tamamında çerçeveli arka plan; uygulama çerçevenin iç alanında**. Değiştir: `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni görsel adı)
 
 - `LLM_WEBAPP_GORSEL` klasöründeki `amp_background.png` sayfanın tamamını
   kaplıyor (gerilerek: çerçeve her ekranda kenarlara oturur; kırpılsaydı
@@ -241,7 +247,7 @@ Daha önce (25): **Sayfanın tamamında çerçeveli arka plan; uygulama çerçev
   bloğu 1120 px altında gizlenir. 1024 – 1920 px pencerede sekmeler
   taşmıyor.
 
-Daha önce (26): **Aralık kararlı değişkenlerde 5.1 Model Karşılaştırması hatası düzeltildi**. Değiştir: `fe_agent/sfa_karar.py`, `fe_agent/akis_faz02.py`, `fe_agent/akis_faz04.py`, `fe_agent/akis_faz05.py`, `fe_agent/model.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (27): **Aralık kararlı değişkenlerde 5.1 Model Karşılaştırması hatası düzeltildi**. Değiştir: `fe_agent/sfa_karar.py`, `fe_agent/akis_faz02.py`, `fe_agent/akis_faz04.py`, `fe_agent/akis_faz05.py`, `fe_agent/model.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Sorun: SFA "aralık" kararı verdiğinde baz sette metin etiketli `_ARALIK`
   kolonu oluşuyordu ("0 - 1", "2 - 8"). Model bu kolonu sayıya çeviremeyip
@@ -263,7 +269,7 @@ Daha önce (26): **Aralık kararlı değişkenlerde 5.1 Model Karşılaştırmas
   kategori) varsa model durmaz: kolon modele alınmaz ve sonuçta adıyla
   yazılır.
 
-Daha önce (27): **Koyu tema ve "Oturum Aktif" kaldırıldı**. Değiştir: `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: görsel listesi değişti)
+Daha önce (28): **Koyu tema ve "Oturum Aktif" kaldırıldı**. Değiştir: `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `webapp/backend.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı: görsel listesi değişti)
 
 - Üst bardaki tema düğmesi ve koyu tema kaldırıldı: uygulama yalnız açık
   temayla açılır. Koyu temanın renkleri, beyaz logo ve koyu sohbet zemini
@@ -274,7 +280,7 @@ Daha önce (27): **Koyu tema ve "Oturum Aktif" kaldırıldı**. Değiştir: `web
 - Sağ üst tek satır: Arşiv ve Yeni Çalışma (dar ekranda başta iş akışı
   düğmesi).
 
-Daha önce (28): **Dönem Bilgisi: hafızadan gelip çıkarılan kalıp hafızadan da silinir**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (29): **Dönem Bilgisi: hafızadan gelip çıkarılan kalıp hafızadan da silinir**. Değiştir: `fe_agent/kisaltma.py`, `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Hafızada yalnız onaylananlar durur: Dönem Bilgisi'nde hafızadan gelen
   (mor) bir kalıbı "Çıkar"la çıkarırsanız, adımı onaylayınca kalıp ve
@@ -286,7 +292,7 @@ Daha önce (28): **Dönem Bilgisi: hafızadan gelip çıkarılan kalıp hafızad
   silinecek" etiketiyle görünür; Çıkar düğmesinin açıklaması da bunu yazar.
 - Onay mesajı kaç kalıbın hafızadan silindiğini söyler.
 
-Daha önce (29): **Faz sırası değişti: önce Değişken Mühendisliği, sonra Veri Anlama ve Hazırlama (SFA ve PSI bütün değişkenlere)**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_faz02.py`, `fe_agent/akis_faz03.py`, `fe_agent/akis_faz04.py`, `fe_agent/akis_faz05.py`, `fe_agent/akis_panel.py`, `fe_agent/sfa_karar.py`, `fe_agent/kutuk.py`, `fe_agent/dokuman.py`, `fe_agent/akis.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (30): **Faz sırası değişti: önce Değişken Mühendisliği, sonra Veri Anlama ve Hazırlama (SFA ve PSI bütün değişkenlere)**. Değiştir: `fe_agent/akis_metin.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_faz02.py`, `fe_agent/akis_faz03.py`, `fe_agent/akis_faz04.py`, `fe_agent/akis_faz05.py`, `fe_agent/akis_panel.py`, `fe_agent/sfa_karar.py`, `fe_agent/kutuk.py`, `fe_agent/dokuman.py`, `fe_agent/akis.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Yeni sıra:
   - 02 Değişken Mühendisliği: 2.1 Veri Profili ve Kalite, 2.2 Kural
@@ -330,7 +336,7 @@ Daha önce (29): **Faz sırası değişti: önce Değişken Mühendisliği, sonr
   kararı verdiğinde baz sette metin etiketli `_ARALIK` kolonu oluşur;
   5.1 Model Karşılaştırması bu kolonları sayıya çeviremez ve hata verir.
 
-Daha önce (30): **Geri Dön sonrası 01.2.4 seçimi yeniden çıkıyor; Açıklama Düzenleme'de "Durdur" yerine "İptal", iptal anında işliyor**. Değiştir: `fe_agent/aciklama_duzen.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (31): **Geri Dön sonrası 01.2.4 seçimi yeniden çıkıyor; Açıklama Düzenleme'de "Durdur" yerine "İptal", iptal anında işliyor**. Değiştir: `fe_agent/aciklama_duzen.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Geri Dön ile 01.2.4 Sözlük ve Kolon Adı Kontrolü'ne dönünce A / B seçim
   kartları yeniden çıkıyor. Sebep: alt adımlı blokta kartlar adımın kendi
@@ -356,7 +362,7 @@ Daha önce (30): **Geri Dön sonrası 01.2.4 seçimi yeniden çıkıyor; Açıkl
   beklenmiyor. Devam hemen basılırsa yeni gruplar bu çağrılar bitene dek
   sırada bekleyebilir.
 
-Daha önce (31): **Açılışta önce yazı sonra logo görünmüyor**. Değiştir: `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (32): **Açılışta önce yazı sonra logo görünmüyor**. Değiştir: `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Logo alanı baştan yerinde, "Akıllı Modelleme Platformu" yazısı gizli;
   yazı yalnız logo görseli yüklenemezse gelir. Önceden yazı, iki görsel
@@ -366,7 +372,7 @@ Daha önce (31): **Açılışta önce yazı sonra logo görünmüyor**. Değişt
 - Görselin alt metni boş (ad kapta): yüklenirken tarayıcı yerine yazı
   basmaz.
 
-Daha önce (32): **Dönem Bilgisi: adlarda geçmeyen kalıbı yalnız hafızaya ekleme; yalnız ikili içinde geçen kalıba uyarı; dönem adayı kolonlar taranmaz**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (33): **Dönem Bilgisi: adlarda geçmeyen kalıbı yalnız hafızaya ekleme; yalnız ikili içinde geçen kalıba uyarı; dönem adayı kolonlar taranmaz**. Değiştir: `fe_agent/akis_faz01.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Adlarda geçmeyen kalıp (ör. YEAR) bu çalışmaya yine eklenmez; "Adlarda
   yok" yazan elle satırda artık "Yalnız Hafızaya Ekle" düğmesi var.
@@ -383,7 +389,7 @@ Daha önce (32): **Dönem Bilgisi: adlarda geçmeyen kalıbı yalnız hafızaya 
   taranmaz (ör. PERIOD gibi tek kolonluk satır gelmez). Rol kolonları
   zaten taranmıyordu.
 
-Daha önce (33): **Logo büyüdü ve biraz aşağı indi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
+Daha önce (34): **Logo büyüdü ve biraz aşağı indi**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatma gerekmez; sayfayı yenileyin)
 
 - Logo yüksekliği 42 → 56 px; ortanın 3 px altında (barın üstünden 6 px
   aşağıda başlar, alttaki ayraca değmeden biter).
@@ -391,7 +397,7 @@ Daha önce (33): **Logo büyüdü ve biraz aşağı indi**. Değiştir: `webapp/
   ekranda sekme kümelerine yer kalır; sınırı aşan logo oranı korunarak
   küçülür. 1280 – 1920 px'te sekmeler sıkışmıyor.
 
-Daha önce (34): **Üst barda ürün adı yerine logo (açık / koyu tema)**. Değiştir: `webapp/backend.py`, `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni görsel adları)
+Daha önce (35): **Üst barda ürün adı yerine logo (açık / koyu tema)**. Değiştir: `webapp/backend.py`, `webapp/index.html`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı: yeni görsel adları)
 
 - Üst barın solundaki "Akıllı Modelleme Platformu" ve birim adı yazısının
   yerinde artık logo görseli var: açık temada `katib_siyah_logo.png`,
@@ -403,7 +409,7 @@ Daha önce (34): **Üst barda ürün adı yerine logo (açık / koyu tema)**. De
   genişlik.
 - Görsellerden biri yüklenemezse eski yazı geri gelir.
 
-Daha önce (35): **Dönem Bilgisi: birlikte geçen ikililer ve "Hariç"**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (36): **Dönem Bilgisi: birlikte geçen ikililer ve "Hariç"**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/kisaltma.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Örnek: "DAY" bazı kolonlarda tek başına (gün bilgisi), bazılarında
 "PER_DAY" içinde (gün başına) geçiyor; ikisi ayrı şey.
@@ -425,7 +431,7 @@ Daha önce (35): **Dönem Bilgisi: birlikte geçen ikililer ve "Hariç"**. Deği
   dönem saymaz (ör. PER_DAY'li kolonda DAY dönem bilgisi olarak gitmez).
 - PER_DAY'in kendi anlamı ("gün başına") Kısaltma Sözlüğü'nde ele alınır.
 
-Daha önce (36): **Dönem Bilgisi: "Çıkar", kalan her satır otomatik hafızaya, renkler, yer tutucu kontrolü**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `fe_agent/llm.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (37): **Dönem Bilgisi: "Çıkar", kalan her satır otomatik hafızaya, renkler, yer tutucu kontrolü**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `fe_agent/llm.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "Hafızaya Kaydet" kalktı, yerine "Çıkar" geldi. Dönem bilgisi olmayan
   satırı Çıkar ile çıkarın; çıkarılanlar tablonun altında "Çıkarılanlar"
@@ -455,7 +461,7 @@ Daha önce (36): **Dönem Bilgisi: "Çıkar", kalan her satır otomatik hafızay
   parça). Hem dönem hem başka bilgi taşıyan parçada anlama yalnız dönem
   kısmı yazılır, kalanı nota. Eski yorumlar bir kez yeniden üretilir.
 
-Daha önce (37): **Kısaltma Sözlüğü'nde satır sırası her seferinde aynı**. Değiştir: `fe_agent/kisaltma_okuma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (38): **Kısaltma Sözlüğü'nde satır sırası her seferinde aynı**. Değiştir: `fe_agent/kisaltma_okuma.py`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "Bulunamadı" listesinde kolon sayısı ve anlamı eşit satırların sırası
   backend her yeniden başladığında değişebiliyordu: kolon adlarındaki
@@ -472,7 +478,7 @@ Daha önce (37): **Kısaltma Sözlüğü'nde satır sırası her seferinde aynı
   çıkıyordu. Dönem, açıklama ve uçtan uca testlerin çıktısı da farklı
   tohumlarda aynı.
 
-Daha önce (38): **01.2.4'ün alt adımları 01.2.4.1 – 01.2.4.4; üst bar tasarımı; sohbet notu ortada; avatar ve blok başlığı büyüdü**. Değiştir: `fe_agent/akis_kayit.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md`; yalnız yorumlardaki adım numaraları: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/aciklama_duzen.py`, `fe_agent/amp.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma_okuma.py`, `fe_agent/kisaltma.py`, `fe_agent/donem.py` (backend yeniden başlatılmalı: iş akışı ağacı alt adım bilgisini arka uçtan alıyor)
+Daha önce (39): **01.2.4'ün alt adımları 01.2.4.1 – 01.2.4.4; üst bar tasarımı; sohbet notu ortada; avatar ve blok başlığı büyüdü**. Değiştir: `fe_agent/akis_kayit.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md`; yalnız yorumlardaki adım numaraları: `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/aciklama_duzen.py`, `fe_agent/amp.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/kisaltma_okuma.py`, `fe_agent/kisaltma.py`, `fe_agent/donem.py` (backend yeniden başlatılmalı: iş akışı ağacı alt adım bilgisini arka uçtan alıyor)
 
 Yeni numaralar (A ve B modunda aynı):
 01.2.4 Sözlük ve Kolon Adı Kontrolü
@@ -511,7 +517,7 @@ numara ve görünüm değişti.
     rozeti; bağlantı yoksa kırmızı.
   - 1024 – 1920 px genişliklerde taşma yok; koyu temada da denendi.
 
-Daha önce (39): **Yeni adımlar: Sözlük ve Kolon Adı Kontrolü (seçim) ve Açıklama Düzenleme**. Değiştir: `fe_agent/aciklama_duzen.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_sohbet.py`, `fe_agent/akis.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/kisaltma_okuma.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (40): **Yeni adımlar: Sözlük ve Kolon Adı Kontrolü (seçim) ve Açıklama Düzenleme**. Değiştir: `fe_agent/aciklama_duzen.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_durum.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_sohbet.py`, `fe_agent/akis.py`, `fe_agent/sozluk_calisma.py`, `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/kisaltma_okuma.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni sıra (A; B'de aynı adımlar Eksik Sözlük Tanımları'ndan sonra):
 01.2.4 Sözlük ve Kolon Adı Kontrolü -> 01.2.5 Dönem Bilgisi -> 01.2.6
@@ -564,7 +570,7 @@ seçim yok, kontrol yapılmış sayılır.
 - Düzeltme: Dönem Bilgisi taramasında dönem kısaltması olmayan bölümün
   boş cevabı ("hiçbiri") hata sayılıyordu; artık geçerli cevap.
 
-Daha önce (40): **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taraması**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (41): **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli taraması**. Değiştir: `fe_agent/donem.py`, `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Yeni biçim: harf + sayı + harf (ör. <H><N><H>); aynı harflerle olanlar
   tek kalıpta toplanır (harf + "<N>" + harf).
@@ -583,7 +589,7 @@ Daha önce (40): **Dönem Bilgisi: yeni biçim, hafızadan öğrenme, dil modeli
   anlama değil "Not:" satırına yazılır. Önceki istemdeki örnek bu hatayı
   öğretiyordu, düzeltildi.
 
-Daha önce (41): **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (42): **Dönem Bilgisi yalnız kolon adlarında geçen parçalar için**. Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - Elle eklenen kalıp kolon adlarında geçmiyorsa ("Adlarda yok") onay
   düğmesi kapanır ve sebebi yazar; arka uç da reddeder. <N> / <NN>
@@ -592,7 +598,7 @@ Daha önce (41): **Dönem Bilgisi yalnız kolon adlarında geçen parçalar içi
   parçası) bu adımın işi değil; kısaltma sözlüğü yeniden kurulunca
   orada eklenecek.
 
-Daha önce (42): **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (43): **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listesi, hafıza tek dosyada**. Değiştir: `fe_agent/donem.py`, `fe_agent/kisaltma.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "Dönem Değil" sütunu kalktı, yerine "Hafızaya Kaydet": işaretli satırın
   anlamı kısaltma hafızasına yazılır, sonraki çalışmalarda dolu gelir.
@@ -612,7 +618,7 @@ Daha önce (42): **Dönem Bilgisi sadeleşti: Hafızaya Kaydet, kısaltma listes
   DONEM_BILGISI.json'u varsa anlamlı kayıtları bir kez buraya taşınır ve
   dosya silinir. Kısaltma ve ad ilkesi yazımları bu bölümü korur.
 
-Daha önce (43): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (44): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar tek tabloda** (bu turda sadeleştirildi, aşağıya bakın). Değiştir: `fe_agent/donem.py`, `fe_agent/akis_faz01.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 - "+ Dönem Kalıbı Ekle": listede olmayan dönem parçası kalıbı ve
   anlamıyla elle eklenir. Kalıp büyük harfe çevrilir; adlarda aynen
@@ -627,7 +633,7 @@ Daha önce (43): **Dönem Bilgisi: elle kalıp ekleme ve bütün kısaltmalar te
   bilgi olur (parca_bilgisi) ve hafızadakinden farklıysa onaylı kısaltma
   hafızasına yazılır.
 
-Daha önce (44): **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
+Daha önce (45): **Yeni adım: 01.2.4 Dönem Bilgisi**. Değiştir: `fe_agent/donem.py` (YENİ), `fe_agent/llm.py`, `fe_agent/akis_faz01.py`, `fe_agent/akis_kayit.py`, `fe_agent/akis_metin.py`, `fe_agent/akis_panel.py`, `fe_agent/akis_durum.py`, `fe_agent/akis.py`, `webapp/backend.py`, `webapp/app.js`, `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatılmalı)
 
 Yeni yapı (konuşulan plan): 01.2.1–01.2.3 aynı; 01.2.4 Dönem Bilgisi
 (bu tur); sonra 01.2.5 Açıklama Düzenleme (sonraki tur), Kısaltma
