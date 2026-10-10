@@ -182,61 +182,59 @@
 
 
 /* -------- KOYU TEMA -------- */
+/* KATMANLI KOYU TEMA (eski tam siyah temanın sorunları giderildi).
+   Eski temada zemin, kart ve panel aynı siyahtı; ayrım yalnız kenardaydı,
+   yazılar saf beyazdı ve göz yoruyordu. Şimdi üç katman: sayfa zemini en
+   koyu, paneller bir ton açık, kartlar bir ton daha açık. Metin kırık
+   beyaz (#E6E8EB). Gri metin yok (açık temadaki ilke: --metin-soluk =
+   --metin). Vurgu renkleri açık temadakilerle aynı aile, koyu zeminde
+   okunur tonda; kırmızı marka kırmızısına yakın. */
 #kabuk.koyu {
-  /* KOYU TEMA YENIDEN.
-     Ilke: zemin ve kartlar SIYAH, ayrim kenarlikla; "gri zemin" isteyen
-     yerler (tablo basligi, ic kutu, deger cipi) siyahtan GORUNUR bicimde
-     ayrisan tek bir gri (#1A1A1A / #141414). Vurgu renkleri acik
-     temadakilerle AYNI aileden, neon degil: kirmizi marka kirmizisina
-     yakin (#E5262B, siyahta 4.6:1), yesil / kehribar sakin. */
-  --kirmizi:      #E5262B;
-  --kirmizi-koyu: #C81E23;
-  --kirmizi-acik: #1F0B0C;
-  --kirmizi-halka: rgba(229,38,43,.30);
+  --kirmizi:      #E5363A;
+  --kirmizi-koyu: #C42A2E;
+  --kirmizi-acik: #2A1517;
+  --kirmizi-halka: rgba(229,54,58,.30);
 
-  --zemin:        #000000;
-  --yuzey:        #000000;
-  --yuzey-alt:    #141414;
-  --kenar:        #333333;
-  --kenar-guclu:  #4D4D4D;
-  --kenar-acik:   #1F1F1F;
+  --zemin:        #0F1115;
+  --yuzey:        #181B20;
+  --yuzey-alt:    #13161A;
+  --kenar:        #2C3138;
+  --kenar-guclu:  #3D434B;
+  --kenar-acik:   #22262C;
   --ayrac:        transparent;
 
-  --metin:        #FFFFFF;
-  --metin-soluk:  #FFFFFF;
-  --metin-asil:   #FFFFFF;
-  --yer-tutucu:   rgba(255,255,255,.45);
+  --metin:        #E6E8EB;
+  --metin-soluk:  #E6E8EB;
+  --metin-asil:   #F5F6F7;
+  --yer-tutucu:   rgba(230,232,235,.42);
 
-  --user-zemin:   #1A1A1A;
+  --user-zemin:   #22262C;
 
-  --gonder-zemin: #FFFFFF;
-  --gonder-metin: #000000;
+  --gonder-zemin: #E6E8EB;
+  --gonder-metin: #0F1115;
 
-  --golge-1:   0 1px 2px rgba(0,0,0,.6);
-  --ust-golge: none;
-  --golge-2:   0 5px 13px rgba(0,0,0,.7);
+  --golge-1:   0 1px 2px rgba(0,0,0,.5);
+  --ust-golge: 0 1px 2px rgba(0,0,0,.35);
+  --golge-2:   0 6px 16px rgba(0,0,0,.55);
 
-  --yesil:        #34B86E;
-  --yesil-acik:   #0B1F14;
+  --yesil:        #3CC07A;
+  --yesil-acik:   #10261A;
   --excel-koyu:    #17794A;   /* beyaz yazi ile 5.4:1 */
   --excel-en-koyu: #1E9159;
   --excel-acik:    #0E2418;
   --excel-kenar:   #245A3B;
   --excel-halka:   rgba(46,158,96,.35);
   --excel-pasif-yazi: #5FD69A;
-  --amber:        #E8A23A;
-  --amber-acik:   #1F1709;
-  --amber-halka:  rgba(232,162,58,.40);
+  --amber:        #F2B33D;
+  --amber-acik:   #2A2210;
+  --amber-halka:  rgba(242,179,61,.40);
   --sari:         #EAB308;
-  --sari-koyu:    #FFFFFF;
-  --sari-acik:    #1F1A06;
-}
-/* Koyu temada gorunur gri. */
-#kabuk.koyu .secenek-rozet { background: var(--kenar-acik); }
-/* Koyu temada sonradan eklenen, sabit renkli parçalar. */
-#kabuk.koyu {
-  --pembe-secili:  #3A1416;     /* sol barda seçili sekme zemini */
-  --pembe-kenar:   #5A2124;     /* panel balonlarının ince kenarı */
+  --sari-koyu:    #0F1115;
+  --sari-acik:    #2A2408;
+
+  /* Sonradan eklenen sabit renkli parçaların koyu karşılıkları */
+  --pembe-secili:  #3D1B1E;     /* sol barda seçili sekme zemini */
+  --pembe-kenar:   #44262A;     /* panel balonlarının ince kenarı */
   --dg-bos: rgba(234,179,8,.14);
   --dg-llm: rgba(59,130,246,.17);
   --dg-hafiza: rgba(139,92,246,.20);
@@ -245,13 +243,23 @@
   --bilgi-zemin: rgba(45,212,191,.12);
   --bilgi-kenar: #2DD4BF;
   --grafik-seri: #5B8DEF;
-  --aralik-seri-2: #D95926;
+  --aralik-seri-2: #E0703F;
 }
+/* Koyu temada görünür gri. */
+#kabuk.koyu .secenek-rozet { background: var(--kenar-acik); }
 #kabuk.koyu .blok-durum.kontrol {
   color: #F5C518; background: #2A2210; border-color: #F5C518;
 }
+/* SOL BAR (koyu): seçili küme düz kırmızı yerine koyu bordo; içindeki
+   sekmeler kart tonunda, seçili sekme bordo zemin + açık kırmızı yazı +
+   solda kırmızı çizgi. Tam kırmızı blok koyu zeminde göz alıyordu. */
+#kabuk.koyu .ust-kume:has(> .ust-sekme.aktif) { background: #4A1A1D; border-color: #6B2328; }
+#kabuk.koyu .ust-sekme.aktif, #kabuk.koyu .ust-sekme.aktif:hover {
+  background: var(--pembe-secili); border-color: var(--pembe-secili); color: #FF8F92;
+}
+#kabuk.koyu .ust-sekme.kapali, #kabuk.koyu .ust-sekme.kapali:hover { color: #7D848D; }
 /* Koyu temada çerçeve görseli koyu zeminin üstünde daha da sönük durur. */
-body:has(#kabuk.koyu) { background-color: #111111; }
+body:has(#kabuk.koyu) { background-color: #0B0C0F; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
@@ -287,6 +295,14 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   object-fit: contain;
   pointer-events: none; user-select: none;
 }
+/* ARKA PLAN KAPALI (:root.cercevesiz, sol bardaki Arka Plan düğmesi):
+   görsel ve üst banttaki logo gizlenir, uygulama ekranın tamamını
+   kullanır (--kabuk-* sıfır; ekrana göre yerleşen paneller de izler). */
+:root.cercevesiz {
+  --kabuk-ust: 0px; --kabuk-alt: 0px; --kabuk-sol: 0px; --kabuk-sag: 0px;
+}
+:root.cercevesiz body::before, :root.cercevesiz #kurum-logo { display: none; }
+:root.cercevesiz #kabuk { border: none; }
 /* Gorsel %45 opaklikta (kullanici karari: tam renkte goz yoruyordu).
    Ustteki kurum logosu da ayni oranda soluk (#kurum-logo); uygulama tam
    renkte. */
@@ -407,7 +423,7 @@ body::before {
 
 /* Görünür
    etiket ve daha geniş gövde kasıtlı: komşusuna benzemesin. */
-#sifirla-btn, #calismalar-btn, #tema-btn {
+#sifirla-btn, #calismalar-btn, #tema-btn, #cerceve-btn {
   display: flex; align-items: center; gap: 6px;
   height: 24px; padding: 0 var(--b-3);
   border: 1px solid var(--kenar); background: var(--yuzey);
@@ -423,7 +439,7 @@ body::before {
   width: 14px; height: 14px; display: block; flex-shrink: 0;
   color: inherit;   /* currentColor hover kırmızısını da izlesin */
 }
-#sifirla-btn:hover, #calismalar-btn:hover, #calismalar-btn[aria-expanded="true"] {
+#sifirla-btn:hover, #calismalar-btn:hover, #tema-btn:hover, #cerceve-btn:hover, #calismalar-btn[aria-expanded="true"] {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 
@@ -561,23 +577,25 @@ body::before {
 .sol-bar-dugmeler {
   display: flex; flex-direction: column; align-items: stretch; gap: 6px;
 }
-.sol-bar-dugmeler #calismalar-btn, .sol-bar-dugmeler #sifirla-btn, .sol-bar-dugmeler #tema-btn {
+.sol-bar-dugmeler #calismalar-btn, .sol-bar-dugmeler #sifirla-btn, .sol-bar-dugmeler #tema-btn, .sol-bar-dugmeler #cerceve-btn {
   width: 100%; height: 32px; justify-content: flex-start;
 }
 .sol-bar-dugmeler .cekmece-btn { align-self: flex-start; }
 /* RENK MODU: solda ad, sağda güneş / ay anahtarı; geçerli mod dolu
    zeminli, öteki soluk. */
-#tema-btn .tema-anahtar {
+#tema-btn .tema-anahtar, #cerceve-btn .tema-anahtar {
   margin-left: auto; display: inline-flex; gap: 2px; padding: 2px;
   border-radius: 999px; background: var(--kenar-acik);
 }
-#tema-btn .tema-anahtar span {
+#tema-btn .tema-anahtar span, #cerceve-btn .tema-anahtar span {
   width: 20px; height: 18px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 11px; line-height: 1; opacity: .45;
 }
 #kabuk:not(.koyu) #tema-btn .tema-gunes,
-#kabuk.koyu #tema-btn .tema-ay { background: var(--yuzey); opacity: 1; box-shadow: var(--golge-1); }
+#kabuk.koyu #tema-btn .tema-ay,
+:root:not(.cercevesiz) #cerceve-btn .cerceve-acik,
+:root.cercevesiz #cerceve-btn .cerceve-kapali { background: var(--yuzey); opacity: 1; box-shadow: var(--golge-1); }
 
 /* Sohbet ve Dashboard sayfa iskeleti (içerik ayrıca kurulacak). */
 .bos-sayfa {

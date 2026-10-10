@@ -78,6 +78,14 @@
           <span class="sifirla-etiket">Renk Modu</span>
           <span class="tema-anahtar" aria-hidden="true"><span class="tema-gunes">☀️</span><span class="tema-ay">🌙</span></span>
         </button>
+        <!-- ARKA PLAN: çerçeveli görsel açık (🖼️) / kapalı (🚫). Kapalıyken
+             görsel ve üst banttaki logo gizlenir, uygulama ekranın
+             tamamını kullanır. Seçim bu tarayıcıda hatırlanır
+             (app.js: cerceveUygula). -->
+        <button id="cerceve-btn" type="button" title="Arka planı kapat" aria-pressed="true">
+          <span class="sifirla-etiket">Arka Plan</span>
+          <span class="tema-anahtar" aria-hidden="true"><span class="cerceve-acik">🖼️</span><span class="cerceve-kapali">🚫</span></span>
+        </button>
         <div id="calismalar-kap">
           <button id="calismalar-btn" type="button"
                   title="Kayıtlı çalışmalarınız: açın ya da silin" aria-haspopup="true"
