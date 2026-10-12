@@ -24,7 +24,6 @@ def normalize(metin):
 #
 # Olumsuzluk ekleri (-mi/-ma/-maz/-miyorum) ile niyet eki (-mak istiyorum)
 # AYRI ele alinir: "onaylamiyorum" ret, "onaylamak istiyorum" onaydir.
-#
 RET_KALIPLARI = [
     # onayla- + olumsuzluk. DIKKAT: "onaylamak" (niyet eki) ve "onaylamadan"
     # (zarf-fiil) buraya GIRMEMELI; ikisi de ret degildir.
@@ -174,10 +173,9 @@ def _aday_deger(orijinal, bas, son, gecerli_adlar):
 def _alan_bul(orijinal, norm, kaliplar, gecerli_adlar=None):
     """Kalibin TUM eslesmelerini dener.
 
-    Simdi ayni
-    kalibin sonraki eslesmesine, oradan da dolgu kelimenin ardindaki
-    kelimeye bakiliyor ("veri seti olarak <VERI_SETI>").
-"""
+    Yakalanan deger dolgu kelimeyse ardindaki kelimeye, o da uymazsa ayni
+    kalibin sonraki eslesmesine bakilir ("veri seti olarak <VERI_SETI>").
+    """
     for k in kaliplar:
         for m in re.finditer(k, norm):
             bas, son = m.span(1)

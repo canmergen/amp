@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """fe_agent/tanim_hafiza.py - ONAYLI TANIM HAFIZASI (calismaya ozel).
 
-
-
 NE GIRER - yalnizca bir kullanicinin ONAYLADIGI tanimlar:
   * Sozluk Tanimlari kartinda "Sozluge Ekle" ile onaylanan aciklama
     (dil modeli onerisi ya da kullanicinin yazdigi)

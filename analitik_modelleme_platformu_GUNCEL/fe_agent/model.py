@@ -122,12 +122,11 @@ def karsilastir(df, target, baz_kolonlar, yeni_kolonlar,
     # testten de dusurulur ve kac satir dustugu raporlanir.
     gecerli = y_ham.notna()
 
-    # Zamansal bolmede kapsam OOT maskesiyle zaten ciziliyor; rastgele
-    # bolmede kapsami egitim maskesi cizer. Maske gelmezse eski davranis
-    # korunur ama sonuca "kapsam" olarak YAZILIR: sizinti sinirinin
-    # olmadigi bir olcum sessizce dogru gorunmemeli.
-    # Zamansal bolmede maske GELIR ama kullanilmaz; sinir zaten OOT
-    # maskesidir. Uc durum artik ayri yaziliyor.
+    # Zamansal bolmede kapsam OOT maskesiyle ciziliyor; egitim maskesi
+    # gelse de kullanilmaz. Rastgele bolmede kapsami egitim maskesi cizer.
+    # Maske gelmezse tum satirlar kullanilir ve bu sonuca "kapsam" olarak
+    # YAZILIR: sizinti sinirinin olmadigi bir olcum sessizce dogru
+    # gorunmemeli.
     if _zamansal_mi(bolme_turu):
         kapsam = "eğitim satırları (sınır test maskesiyle çiziliyor)"
     elif egitim_maske is None:

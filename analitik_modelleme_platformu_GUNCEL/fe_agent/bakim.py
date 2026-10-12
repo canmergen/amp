@@ -36,8 +36,8 @@ from fe_agent.akis_durum import HAFIZA_FOLDER
 
 
 # Silinebilir kabul edilen desenler ------------------------------------------
-# Yeni calismalar (v1, v2 ...) kaydini kendi klasorunde tutar:
-# /v3/calisma.json. Onceki bicim kokte: /oturum_<anahtar>.json.
+# Calismalar (v1, v2 ...) kaydini kendi klasorunde tutar:
+# /v3/calisma.json. Eski kayitlar kokte durur: /oturum_<anahtar>.json.
 OTURUM_DESENI = re.compile(r"^/(oturum_.+\.json|v\d+/calisma\.json)$")
 SENARYO_DESENI = re.compile(r"^/senaryo_.+_(konfig|sonuc)\.json$")
 
@@ -45,12 +45,11 @@ SENARYO_DESENI = re.compile(r"^/senaryo_.+_(konfig|sonuc)\.json$")
 # kopyasi ve kategori degisiklik kutugu klasorun KOKUNDE degil, oturum
 # adini tasiyan bir alt klasorde durur: /<oturum_anahtari>/....
 #
-# NEDEN AYRI DESEN: asagidaki korumali desen butun CSV'leri dokunulmaz
-# sayiyor. O kural KOKTEKI yedekler icin konmustu (dataset yazimi
-# basarisiz olunca tek kopya o dosyada kaliyor). Oturum alt klasorundeki
-# CSV'ler ise her oturumda yeniden uretilir; korumali sayilirsa her
-# kullanicinin her oturumu klasorde kalici bir iz birakir ve PROJE_HAFIZASI
-# hicbir zaman temizlenemez.
+# NEDEN AYRI DESEN: asagidaki korumali desen KOKTEKI tablo yedeklerini
+# dokunulmaz sayar (dataset yazimi basarisiz olunca tek kopya o dosyada
+# kalir). Oturum alt klasorundeki dosyalar ise her oturumda yeniden
+# uretilir; korumali sayilirsa her kullanicinin her oturumu klasorde
+# kalici bir iz birakir ve PROJE_HAFIZASI hicbir zaman temizlenemez.
 OTURUM_DOSYASI_DESENI = re.compile(
     r"^/[^/]+/(sozluk_calisma|sozluk_degisiklik)\.(csv|parquet)$")
 

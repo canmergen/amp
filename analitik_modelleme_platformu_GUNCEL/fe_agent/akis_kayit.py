@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_kayit.py - Adim kayit defteri ve faz agaci.
-
-akis.py bolundu; bu dosya o bolumun aynisidir.
-"""
+"""fe_agent/akis_kayit.py - Adim kayit defteri ve faz agaci."""
 
 from fe_agent.akis_metin import (
     ADIM_ADI, FAZ01_OZET, GRUP_ADI_VERI_SOZLUK, SONRAKI_FAZLAR)
@@ -46,9 +43,9 @@ ADIMLAR = {
         # NOT: "plan" burada BILEREK duruyor ama pratikte CAGRILMIYOR.
         # mod_girdi bos mesajla asla True donmedigi icin _adima_gir plana
         # ulasamiyor; secim yapilinca da "otomatik" bayragi dogrudan
-        # uygula'ya gidiyor. Kayit, her adimin plan alani tasidigi
-        # varsayimini bozmamak icin birakildi (mod_plan zaten mod_uygula
-        # ozetini donuyor, yani yanlislikla cagrilirsa da dogru metni verir).
+        # uygula'ya gidiyor. Alan, her adimin plan alani tasidigi
+        # varsayimini korur (mod_plan mod_uygula ozetini doner, yani
+        # yanlislikla cagrilirsa da dogru metni verir).
         "girdi": mod_girdi, "plan": mod_plan, "uygula": mod_uygula},
 
     "ham_veri": {
@@ -84,9 +81,9 @@ ADIMLAR = {
         "baslik": "Baz Veri Seti ve Baz Sözlük",
         "aciklama": "Analiz edilecek veri seti ve değişken sözlüğü "
                     "seçilir; kapsam oranı hesaplanır.",
-        # plan=None: FORMUN KENDISI ONAYDIR. Tanimsiz kolon karari artik
-        # bu adimda DEGIL, "sozluk_tanim" adiminda ve modelleme
-        # tanimlarindan SONRA veriliyor (hedef/kimlik/donem kolonunun
+        # plan=None: FORMUN KENDISI ONAYDIR. Tanimsiz kolon karari bu
+        # adimda DEGIL, "sozluk_tanim" adiminda ve modelleme
+        # tanimlarindan SONRA verilir (hedef/kimlik/donem kolonunun
         # tanimi zorunlu, hangileri oldugu once bilinmeli).
         "girdi": kurulum_girdi, "plan": None, "uygula": kurulum_uygula},
 

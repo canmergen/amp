@@ -146,8 +146,8 @@ def amp_ham_kaynagi(durum):
 def amp_ham_yaz(durum, df=None):
     """Secilen veri setinin BIREBIR kopyasini AMP_VERISETI_HAM'a yazar.
 
-    NEDEN: "hazır veri seti ve sözlük seçildikten sonra AMP_VERISETI ve
-    AMP_SOZLUK harici hiçbir şey kullanılmaz". Kullanicinin tablosu
+    NEDEN: veri seti ve sozluk secildikten sonra yalniz AMP_VERISETI ve
+    AMP_SOZLUK kullanilir. Kullanicinin tablosu
     YALNIZ burada, bir kez okunur; profil, onizleme, dagilim, teyit ve
     AMP_VERISETI'nin kendisi bu kopyadan okunur. Donusum, dusurme, ad
     degisikligi YOK (onlar teyitte, amp_yaz).

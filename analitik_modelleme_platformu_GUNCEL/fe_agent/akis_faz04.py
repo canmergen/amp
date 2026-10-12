@@ -2,8 +2,8 @@
 """fe_agent/akis_faz04.py - Faz 04 - Degisken Degerlendirme: sizinti kontrolu ve aday set.
 
 Analitik baz set (ham + uretilen, SFA kararlariyla) uzerinde calisir.
-Adim anahtari "kalite" eski calismalar icin korunuyor; adim artik Sizinti
-Kontrolu (eksik, sabit ve kararlilik Faz 03'te denetleniyor).
+Adim anahtari "kalite" kayitli calismalarla uyumludur; adim Sizinti
+Kontrolu yapar (eksik, sabit ve kararlilik Faz 03'te denetlenir).
 """
 
 import numpy as np

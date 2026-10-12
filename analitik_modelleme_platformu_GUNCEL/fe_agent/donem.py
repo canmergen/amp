@@ -37,7 +37,7 @@ from fe_agent import kisaltma_okuma
 from fe_agent import llm as llm_mod
 from fe_agent.akis_durum import _folder
 
-ESKI_DOSYA = "/DONEM_BILGISI.json"   # onceki surum; bir kez hafizaya tasinip silinir
+ESKI_DOSYA = "/DONEM_BILGISI.json"   # eski bicim; bir kez hafizaya tasinip silinir
 ORNEK_ADET = 3            # kalip basina modele ve karta giden ornek kolon
 KOMSU_EN_AZ = 3           # komsu aday: en az bu kadar kolonda
 KOMSU_PAY = 0.6           # ... ve geciklerinin en az bu kadari donem yaninda
@@ -351,7 +351,7 @@ _TASINDI = []
 
 
 def _eskiyi_tasi():
-    """Onceki surumun DONEM_BILGISI.json'u varsa anlamli kayitlari bir kez
+    """Eski DONEM_BILGISI.json dosyasi varsa anlamli kayitlari bir kez
     kisaltma hafizasina tasinir, dosya silinir. Yazilamazsa dosya kalir."""
     if _TASINDI:
         return

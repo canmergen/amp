@@ -109,7 +109,7 @@ def _sayfa_adi(ad):
 
 def _genislikler(kolonlar, satirlar):
     """Kolon genisligi BASLIK ve ILK SATIRLARA gore. Butun satirlari
-    taramak 1.042 satirda gereksiz; ilk 200 satir bicim icin yeterli."""
+    taramak buyuk tabloda gereksiz; ilk 200 satir bicim icin yeterli."""
     gen = []
     for i, bas in enumerate(kolonlar):
         en = len(str(bas or ""))
@@ -208,8 +208,8 @@ def _sayfa(kolonlar, satirlar, yuzde_sutunlari):
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
         '<worksheet xmlns="http://schemas.openxmlformats.org/'
         'spreadsheetml/2006/main">',
-        # Baslik satiri kaydirmada sabit kalsin: 1.042 satirda hangi
-        # kolona baktigini hatirlamak gerekmiyor.
+        # Baslik satiri kaydirmada sabit kalir; uzun tabloda hangi kolona
+        # bakildigi gorunur.
         '<sheetViews><sheetView workbookViewId="0">'
         '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft"'
         ' state="frozen"/></sheetView></sheetViews>',
@@ -256,7 +256,7 @@ def tablo_xlsx(kolonlar, satirlar, sayfa_adi="Sayfa1", yuzde_sutunlari=()):
     yuzde = set(int(i) for i in (yuzde_sutunlari or ()))
 
     tampon = io.BytesIO()
-    # ZIP_DEFLATED: 1.042 satirlik tablo sikistirilmadan gereksiz buyuk.
+    # ZIP_DEFLATED: buyuk tablo sikistirilmadan gereksiz yer kaplar.
     with zipfile.ZipFile(tampon, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("[Content_Types].xml", ICERIK_TURLERI)
         z.writestr("_rels/.rels", KOK_ILISKI)

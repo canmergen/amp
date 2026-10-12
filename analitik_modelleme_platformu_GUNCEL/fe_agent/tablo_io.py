@@ -8,7 +8,7 @@ sikistirilmis ve kolon bazli okunabilir.
   yaz  : her zaman .parquet. Yol ".csv" ile verilse de ".parquet" yazilir.
          Parquet motoru (pyarrow) kurulu degilse CSV'ye DUSER - uygulama
          durmasin; o durumda code env'e pyarrow eklenmeli.
-  oku  : once .parquet, yoksa .csv (bu surumden ONCE yazilmis calismalar).
+  oku  : once .parquet, yoksa .csv (eski bicimde yazilmis calismalar).
 
 JSON: yol ".json" ile biterse tablo okunur bicimde (satir basina bir
 kayit) JSON yazilir; PROJE_HAFIZASI'ndaki hafiza dosyalari boyledir.

@@ -120,8 +120,7 @@ def _tablo(blok):
     baslik = blok.get("baslik")
     if baslik:
         # Tablonun basligi bir ARA BASLIKTIR: bolum basliginin altinda,
-        # kendi basina bir alt bolum acar. Ayri bir "tablo basligi" stili
-        # tanimlamak ayni isi yapan ikinci bir seviye demekti.
+        # kendi basina bir alt bolum acar.
         parcalar.append(_paragraf(baslik, stil=_STILLER["alt_baslik"]))
 
     izgara = "".join('<w:gridCol w:w="%d"/>' % genislik for _ in kolonlar)

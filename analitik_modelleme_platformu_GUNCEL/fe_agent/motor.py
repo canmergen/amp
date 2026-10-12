@@ -3,8 +3,7 @@
 
 KURAL: karar veri setinin Dataiku'daki DOSYA BOYUTUNA gore verilir.
 Boyut "basic:SIZE" metriginden okunur; Dataiku dosyalari listeleyip
-toplar, tabloyu okumaz (kullanicinin ortaminda 24,85 GB'lik veri setinde
-0,4 saniye).
+toplar, tabloyu okumaz.
 
   toplam boyut <= sinir  -> pandas  (webapp icinde, saniyeler)
   toplam boyut >  sinir  -> Spark   (Dataiku PySpark recipe'i)

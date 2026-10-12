@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """fe_agent/akis.py - Akıllı Modelleme Platformu akis orkestratoru.
 
-Bu dosya artik yalnizca bir CEPHE (facade). Gercek kod su modullerde:
+Bu dosya yalnizca bir CEPHE (facade). Gercek kod su modullerde:
 
     akis_metin.py    Sabit metinler ve mesaj desenleri
     akis_durum.py    Oturum durumu, veri okuma/yazma, bicimleme
@@ -32,8 +32,8 @@ GEC IMPORT ile cagirir (modul seviyesinde yazilsa dongu olurdu).
 Yeni bir adim eklerken: ilgili faz dosyasina plan/uygula fonksiyonlarini
 yaz, sonra akis_kayit.py icindeki ADIMLAR sozlugune kaydet.
 
-webapp backend'i yalnizca bu dosyayi import eder; bolunme oncesi
-kullanilan tum isimler burada aynen durur.
+webapp backend'i yalnizca bu dosyayi import eder; kullandigi tum isimler
+burada yeniden ihrac edilir.
 """
 
 # flake8: noqa: F401  (bilerek yeniden ihrac ediliyor)

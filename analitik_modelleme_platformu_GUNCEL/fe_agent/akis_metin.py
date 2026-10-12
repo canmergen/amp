@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_metin.py - Kullaniciya gosterilen sabit metinler ve mesaj desenleri.
-
-akis.py bolundu; bu dosya o bolumun aynisidir.
-"""
+"""fe_agent/akis_metin.py - Kullaniciya gosterilen sabit metinler ve mesaj desenleri."""
 
 import re
 
@@ -59,11 +56,11 @@ Hazırlama, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 
 # DORT BASLANGIC. Harf = ekranda gorunen harf = ic anahtar.
 #   A  veri seti hazir,  sozluk hazir
-#   B  veri seti YOK,    kaynak tablolar VE sozlukleri hazir (yeni:
-#                        tablolar ve sozlukler birlestirilir)
-#   C  veri seti hazir,  sozluk YOK     (eski B)
-#   D  veri seti YOK,    sozluk YOK     (eski C)
-# Eski kayitlardaki B/C, okunurken C/D'ye cevriliyor
+#   B  veri seti YOK,    kaynak tablolar VE sozlukleri hazir
+#                        (tablolar ve sozlukler birlestirilir)
+#   C  veri seti hazir,  sozluk YOK
+#   D  veri seti YOK,    sozluk YOK
+# Eski kayitlardaki B/C degerleri okunurken C/D'ye cevrilir
 # (bkz. akis_durum.MOD_GOCU).
 # KART METNI: BASLIK elinizde NE MEVCUT, ACIKLAMA neyin
 # mevcut OLMADIGI ve bu adimlarla nasil olusturulacagi.
@@ -74,8 +71,8 @@ Hazırlama, Değişken Değerlendirme, Modelleme ve Finalizasyon."""
 # IKI BASLANGIC. Sozluk her iki baslangicta da
 # ISTEGE BAGLI: secilmezse butun kolonlar 01.2.3 Sozluk Tanimlari kartinda
 # onayli tanim hafizasi + dil modeli onerileriyle tanimlanir.
-# C ve D YALNIZ ESKI CALISMALAR icin duruyor (kendi adim listeleriyle
-# acilmaya devam eder); yeni calismada secilemez.
+# C ve D yalniz eski calismalar icindir (kendi adim listeleriyle
+# acilir); yeni calismada secilemez.
 ACIK_MODLAR = ("A", "B")
 
 MOD_SECENEKLERI = [
@@ -114,11 +111,11 @@ MOD_ADLARI.update({
     "C": "Baz Veri Seti Mevcut - Baz Sözlük Mevcut Değil (eski)",
     "D": "Kaynak Tablolar Mevcut - Kaynak Sözlükler Mevcut Değil (eski)"})
 
-# SIRA (kullanici karari): once degiskenler uretilir, sonra veri anlama ve
+# SIRA: once degiskenler uretilir, sonra veri anlama ve
 # hazirlama ELDEKI BUTUN degiskenlere (ham + uretilen) yapilir: SFA ve PSI
 # final veriye olculur. Veri Profili uretimden once kalir: bos, sabit ve
 # kimlik benzeri kolonlardan degisken uretilmesin. Adim anahtarlari
-# degismedi (kayitli calismalar icin); "kalite" artik Sizinti Kontrolu.
+# kayitli calismalarla uyumludur; "kalite" anahtari Sizinti Kontrolu adimidir.
 SONRAKI_FAZLAR = [
     {"no": "02", "baslik": "Değişken Mühendisliği",
      "ozet": "Profil, kural tabanlı ve AI destekli üretim",
@@ -141,9 +138,8 @@ FAZ01_OZET = "Veri seti, sözlük, kolon rolleri ve örneklem tasarımı"
 # ADIM ADLARI - TEK KAYNAK
 # ===========================================================================
 # Ayni ad sol paneldeki is akisinda, sohbet blogunun basliginda, kart
-# basliginda ve uyari cumlelerinde geciyor. Ayri ayri yazilinca biri
-# degisip otekiler eskidigi icin hepsi buradan okunuyor (kullanici
-# karari: is akisi ve sohbet ayni ifadeleri kullanmali).
+# basliginda ve uyari cumlelerinde geciyor; tutarli kalmasi icin hepsi
+# buradan okunur.
 ADIM_ADI = {
     "mod":    "Başlangıç Seçimi",
     "teyit":  "Değişken Listesi ve Tip Kontrolü",

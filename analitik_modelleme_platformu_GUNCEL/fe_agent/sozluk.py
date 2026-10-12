@@ -10,7 +10,7 @@ GIZLILIK NOTU
   (ornek, dagilim, min/maks) prompt'a girmez; yalnizca tip ve istatistik
   SAYILARI (null orani, tekil sayisi) gider:
     - kolon adi kisisel veri sozlugune uyanlar (TCKN, AD_SOYAD, ADRES,
-      TELEFON, IBAN, KART_NO …)
+      TELEFON, IBAN, KART_NO gibi)
     - degerleri kisisel veri desenine uyanlar (11 haneli TC kimlik, IBAN,
       05xx/+90 telefon, 16 haneli kart, e-posta)
     - kimlik benzeri kolonlar (tekil oran cok yuksek — satir sayisindan
@@ -96,7 +96,7 @@ def _pii_ad_mi(kol):
         if t not in PII_TOKEN:
             continue
         if t in ZAYIF_TOKEN and not (kume & KISI_TOKEN) and len(tokenler) > 1:
-            continue          # URUN_ADI, SUBE_ADI … PII degil
+            continue          # URUN_ADI, SUBE_ADI gibi adlar PII degil
         return t
     return None
 

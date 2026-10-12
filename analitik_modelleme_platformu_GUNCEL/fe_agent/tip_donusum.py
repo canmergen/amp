@@ -303,9 +303,9 @@ def uygula(df, donusumler):
     if not donusumler:
         return df, uygulanan, atlanan
     # SIG KOPYA: yalnizca butun kolonlar degistiriliyor, hucre ici
-    # yazma yok. Derin kopya, her okumada 1.042 kolonluk tabloyu
-    # bastan olusturmak demekti - bu fonksiyon artik her modelleme
-    # okumasinda calisiyor (bkz. akis_durum.modelleme_df).
+    # yazma yok. Bu fonksiyon her modelleme okumasinda calisir (bkz.
+    # akis_durum.modelleme_df); derin kopya her okumada genis tabloyu
+    # bastan olustururdu.
     yeni_df = df.copy(deep=False)
     for kolon, kod in donusumler.items():
         if kolon not in yeni_df.columns:
