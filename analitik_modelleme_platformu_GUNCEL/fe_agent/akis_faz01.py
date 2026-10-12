@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_faz01.py - Faz 01 - Calisma Kurulumu: mod, veri, sozluk, tanimlar, bolme.
-
-akis.py bolundu; bu dosya o bolumun aynisidir.
-"""
+"""fe_agent/akis_faz01.py - Faz 01 - Calisma Kurulumu: mod, veri, sozluk, tanimlar, bolme."""
 
 import datetime
 import json
@@ -113,10 +110,10 @@ def _donem_neden_maddeleri(nedenler):
 def _donem_adaylarini_hazirla(durum):
     """Profilde donem adaylari yoksa BIR KEZ hesaplayip yazar; profili doner.
 
-    Bu liste veri seti secilirken (_temel_profil) cikariliyor. O surumden
-    ONCE baslamis calismalarin profilinde yok. Artik eksikse tablodan
-    hesaplaniyor. Okuma onbellekten gelir; tablo okunamazsa liste bos
-    kalir ve form "aday bulunamadi" der - tum kolonlara DUSULMEZ."""
+    Liste veri seti secilirken (_temel_profil) cikarilir; profilde eksikse
+    ya da surumu farkliysa tablodan hesaplanir. Okuma onbellekten gelir;
+    tablo okunamazsa liste bos kalir ve form "aday bulunamadi" der - tum
+    kolonlara DUSULMEZ."""
     p = durum.get("profil") or {}
     if (isinstance(p.get("donem_adaylari"), list)
             and p.get("donem_adaylari_surum") == DONEM_ADAY_SURUMU):
@@ -291,7 +288,7 @@ def _mod_yerlestir(durum, yeni_mod):
 
 def mod_girdi(durum, mesaj):
     m = MOD_KALIP.search(mesaj or "")
-    # Eski oturumlarda kalmis onay bekleme alani: artik onay sorulmuyor.
+    # Eski oturumlardan kalan onay bekleme alani temizlenir.
     durum.pop("_mod_onay", None)
     eski_mod = durum.get("mod") or durum.get("_onceki_mod")
 
@@ -324,29 +321,19 @@ def mod_girdi(durum, mesaj):
     return True, None
 
 def mod_uygula(durum):
-    """Mod secildikten sonra EK METIN YOK — dogrudan sonraki adima gecilir.
+    """Mod secildikten sonra EK METIN YOK; dogrudan sonraki adima gecilir.
 
-    Cikti ne uretilecegini degil, sonraki
-    adimin sorusunu gostermeli.
-
-    MODELLEME_BAZ ve MODELLEME_SOZLUK yine her zaman uretiliyor; uretildikleri
-    adimda zaten adlariyla raporlaniyorlar."""
+    MODELLEME_BAZ ve MODELLEME_SOZLUK her zaman uretilir; uretildikleri
+    adimda adlariyla raporlanir."""
     return ""
 
 def mod_plan(durum):
-    """OLU KOD — su an hicbir yerden CAGRILMIYOR.
-
-    Baslangic secimi otomatik adim oldugu icin ayri onay plani yok;
-    ADIMLAR kaydi bir plan fonksiyonu bekledigi icin ozeti dondurur.
-    akis_sohbet._adima_gir() plani yalnizca girdi fonksiyonu True
-    dondugunde cagiriyor; mod_girdi ise bos mesajla ASLA True donmuyor
-    (mesajda mod deseni yoksa mod=None yapip False donuyor). Dolayisiyla
-    bu fonksiyona giden bir yol yok.
-
-    KALDIRILMADI: akis_kayit.ADIMLAR["mod"]["plan"] hala buraya referans
-    veriyor. Kaydi duzenleyen taraf ya bu referansi mod_uygula'ya cevirip
-    fonksiyonu silmeli ya da adimi 'otomatik' olmayan bir adima
-    cevirmelidir."""
+    """Baslangic secimi otomatik adim oldugu icin ayri onay plani yok;
+    akis_kayit.ADIMLAR["mod"]["plan"] bir plan fonksiyonu bekledigi icin
+    ozeti dondurur. Pratikte cagrilmaz: akis_sohbet._adima_gir() plani
+    yalnizca girdi fonksiyonu True dondugunde cagirir; mod_girdi ise bos
+    mesajla True donmez (mesajda mod deseni yoksa mod=None yapip False
+    doner)."""
     return mod_uygula(durum)
 
 # ===========================================================================
@@ -357,8 +344,7 @@ def mod_plan(durum):
 TABLO_ADI_KALIP = re.compile(r"^[\w.\-]+$", re.UNICODE)
 
 
-# TEK SATIR, KALIN DEGIL. "En az iki tablo" kurali ayri gri satirda degil, ayni
-# cumlede.
+# Tek satir, kalin degil; "en az iki tablo" kurali ayni cumlede.
 KAYNAK_TABLO_METNI = (
     "Baz veri setini oluşturacak kaynak tabloları seçin (en az iki tablo). "
     "Kolonları aynı olan tablolar (ör. yıllara bölünmüş aynı tablo) alt alta "
@@ -493,7 +479,7 @@ def birlestirme_plan(durum):
     kisa_to_tam, tam_to_kisa = _ad_haritasi(list(semalar.keys()))
     llm_semalar = {tam_to_kisa[t]: k for t, k in semalar.items()}
 
-    # llm.birlestirme_plan_oner artik (plan, hata) donuyor. Hata YUTULMAZ:
+    # llm.birlestirme_plan_oner (plan, hata) doner. Hata YUTULMAZ:
     # kullaniciya gosterilir ve adim ilerlemez.
     ham_plan, llm_hata = llm_mod.birlestirme_plan_oner(
         llm_semalar, meta=durum.get("meta", {}))
@@ -726,17 +712,15 @@ def sozluk_uret_plan(durum):
 def sozluk_uret_uygula(durum):
     prof = _profil(durum)
 
-    # NOT: burada ayrica 'haric' listesi VERILMIYOR. Kimlik/PII korumasi tek
+    # Burada ayrica 'haric' listesi VERILMIYOR. Kimlik/PII korumasi tek
     # yerde, sozluk.py icindeki _ornek_guvenli_mi()'de toplanmistir (kolon
-    # adi deseni, deger deseni, tekil oran, uzun metin).  Sozluk_uret adimi
-    # tanimlar adimindan ONCE geldigi icin meta["id"] daima bostu — olu kod.
+    # adi deseni, deger deseni, tekil oran, uzun metin).
     profiller = sozluk_mod.profil_cikar_profilden(prof)
 
-    # llm.sozluk_aciklama_uret artik (aciklamalar, hata) donuyor.
-    # Sozluk yok (C/D): baglam yalnizca veri setinin adi.
-    # Sozluk yok: ONAYLI tanimlar ve ONAYLI kisaltmalar (proje hafizasi)
-    # baglam olarak gider; boylece sozluksuz veri setinde de kurumun
-    # kisaltma anlamlari ve yazimi kullanilir.
+    # llm.sozluk_aciklama_uret (aciklamalar, hata) doner.
+    # Sozluk yok: veri setinin adi, ONAYLI tanimlar ve ONAYLI kisaltmalar
+    # (proje hafizasi) baglam olarak gider; boylece sozluksuz veri setinde
+    # de kurumun kisaltma anlamlari ve yazimi kullanilir.
     try:
         _hafiza = tanim_hafiza.tanimlar(amp_klasor_adi(durum))
     except Exception:
@@ -778,8 +762,8 @@ def sozluk_uret_uygula(durum):
     durum["sozluk_uretim"] = oz
 
     # Sozluk burada da BAGLANIYOR (Mod B/C). Calisma kopyasi Mod A ile
-    # ayni sekilde cikarilmali; aksi halde uretilen sozlukte kategori
-    # duzenlenemez ve panel "çalışma kopyası yok" derdi.
+    # ayni sekilde cikarilir; uretilen sozlukte kategori duzenleme bu
+    # kopyaya dayanir.
     kopya_not = _calisma_kopyasi_kur(durum, tablo)
 
     p = durum.get("profil") or {}
@@ -817,10 +801,8 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
         "aciklama": "Modellemeye girecek baz veri setini seçin. Sözlüğünüz "
                     "varsa onu da seçin; yoksa alanı boş bırakın, kolon "
                     "tanımları Eksik Sözlük Tanımları adımında oluşturulur.",
-        # Dugme etiketi SONRAKI EKRANIN adini soylemeli: bu form
-        # gonderildiginde "Girdi doğrulama tamamlandı" karti aciliyor.
-        #  Oysa
-        # analiz bu adimdan cok sonra basliyor.
+        # Dugme etiketi SONRAKI EKRANIN adini soyler: bu form
+        # gonderildiginde "Girdi doğrulama tamamlandı" karti acilir.
         "buton": "Girdileri Doğrula",
         "alanlar": [
             {"ad": "veri_seti", "etiket": "Baz Veri Seti",
@@ -908,13 +890,9 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     sozluk = a.get("sozluk") or (durum.get("sozluk")
                                  if a and not a.get("veri_seti") else None)
 
-    # METIN YOK, YALNIZ FORM. Formun kendi basligi ("Veri seti ve değişken
-    # sözlüğü") ve aciklamasi ("Analiz edilecek veri setini ve değişken
-    # sözlüğünü seçin.") ayni seyi zaten soyluyor; ustune bir de balon
-    # basmak ayni cumleyi iki kere yazmakti. Ustelik kullanici bu noktada
-    # ekranda henuz bir sey SOYLEMEDI (A/B/C kart tiklamasi sessiz gidiyor),
-    # yani asistanin cevap veriyormus gibi balon acmasi yanlis: akis ayni
-    # sohbette KESINTISIZ devam etmeli.
+    # METIN YOK, YALNIZ FORM: formun basligi ve aciklamasi ne istendigini
+    # soyler. A/B/C kart tiklamasi sessiz gider; akis ayni sohbette
+    # KESINTISIZ devam eder.
     if yeniden_sor:
         _kurulum_formu(durum, veri or durum.get("veri_seti"),
                        sozluk or durum.get("sozluk"))
@@ -1166,12 +1144,8 @@ def _mod_b_sozlugu(durum, baz, kutuk):
 # ---------------------------------------------------------------------------
 # GIRDI DOGRULAMA  —  tanimsiz kolonlar icin satir satir karar
 # ---------------------------------------------------------------------------
-# 1.002 tanimsiz
-# kolonlu bir sette bu, 802 kolonun kullaniciya gosterilmeden surec
-# disina alinmasi demekti. Artik tanimsiz kolonlarin HEPSI listeleniyor.
-#
-# Sabit, ESKI OTURUMLARI ve disaridan cagiranlari kirmamak icin duruyor;
-# sozluk_tanim_plan onu ARTIK KULLANMIYOR.
+# Tanimsiz kolonlarin HEPSI listelenir; sozluk_tanim_plan bu siniri
+# kullanmaz. Sabit eski oturumlar ve disaridan cagiranlar icin duruyor.
 EN_FAZLA_TANIMSIZ = 200
 
 # Dil modeline TEK cagrida gonderilen kolon sayisi. Kolonlar bu boyda
@@ -1204,17 +1178,8 @@ KONTROL_BILGI = (
 EN_SIK_ETIKET = 10
 EN_UZUN_ETIKET = 40
 
-# Kartin ustunde HER ZAMAN gorunen TEK not satiri.
-#
-# NEDEN TEK SATIR: burada uc ayri not vardi — varsayilan islemi anlatan
-# cumle, "yalnizca tanimsiz kolonlar incelendi" kapsam notu ve "oneriler
-# dil modelinden geldi, N kolon incelendi" uyarisi.Uc cumlenin tasidigi bilgi
-# (varsayilan haric, kapsam yalnizca tanimsizlar, oneriler dogrulanmamis,
-# kac kolon incelendi) tek satirda duruyor.
-# Kartin ustundeki TEK not satiri. "yalnizca tanimsiz N kolon
-# incelendi" ifadesi EN_FAZLA_TANIMSIZ sinirindan kalmaydi; sinir
-# kalkti, tanimsiz kolonlarin HEPSI listeleniyor. Not artik kac kolonun
-# karara acildigini yaziyor.
+# Kartin ustunde HER ZAMAN gorunen TEK not satiri: kac kolonun karara
+# acildigi, varsayilan islem ve onerilerin dogrulanmamis oldugu.
 TANIMSIZ_NOT_KALIP = ("Tanımı bulunmayan %s kolon aşağıda listelendi; "
                       "varsayılan olarak analiz dışında tutulurlar. "
                       "Açıklama önerileri dil modeli tarafından üretildi, "
@@ -1348,9 +1313,8 @@ def _oneri_profilleri(prof, kolonlar, profil):
 def _dagilim_metni(kayit):
     """Turetilmis ozetin prompta yazilan hali.
 
-    llm.sozluk_aciklama_uret'in arayuzu DEGISMIYOR; o fonksiyon profilden
-    yalnizca `dagilim` (ya da `not`) alanini prompta yaziyor. Ozet modele
-    bu alandan ulasiyor. Icinde ham satir yok: sayisalda min/maks/ceyrek,
+    llm.sozluk_aciklama_uret profilden yalnizca `dagilim` (ya da `not`)
+    alanini prompta yazar; ozet modele bu alandan ulasir. Icinde ham satir yok: sayisalda min/maks/ceyrek,
     kategorikte en sik etiket oranlari, tarihte aralik."""
     if kayit.get("ceyrekler"):
         q = kayit["ceyrekler"]
@@ -1809,8 +1773,7 @@ def _donem_alani(durum):
             satir(kalip, k["tur"], k["kolon"], degerler, ornekler, h, "hafiza", "", "", "",
                   haric_oneri=haf_haric.get(kalip) or ())
             continue
-        # YALNIZ KESİN OLANLAR TABLOYA (kullanıcı kararı: önce ekleyip sonra
-        # çıkarmak yok). Dil modeli henüz bakmadıysa satır gösterilmez; dönem
+        # YALNIZ KESİN OLANLAR TABLOYA. Dil modeli henüz bakmadıysa satır gösterilmez; dönem
         # değil dediyse hiç gösterilmez; sorusu varsa OLASI listesine gider.
         # Dil modeli cevap vermediyse biçimden bulunanlar olası gelir.
         # Kullanıcının önceki kararı (geri dönüş) her durumda korunur.
@@ -1896,8 +1859,8 @@ def donem_uygula(durum):
     """Tabloda kalan (cikarilmamis) her satir bu calismanin donem bilgisine
     (durum["donem_bilgisi"]: {kalip: anlam}) ve kisaltma hafizasina yazilir
     (eklenir ya da guncellenir). Cikarilan satir kullanilmaz, hafizaya
-    yazilmaz; hafizada duruyorsa HAFIZADAN DA SILINIR (kullanici karari:
-    hafizada yalniz onaylananlar durur). Bu tabloda olmayan, daha once
+    yazilmaz; hafizada duruyorsa HAFIZADAN DA SILINIR (hafizada yalniz
+    onaylananlar durur). Bu tabloda olmayan, daha once
     onaylanmis kayitlara dokunulmaz. Geri donuste cikarilan satir cikarilmis
     olarak gelir. Kalan satirda anlam bos ya da yer tutucusu gecersizse
     onaylanmaz."""
@@ -1934,7 +1897,7 @@ def donem_uygula(durum):
             hatalar.append("%s: birden fazla satırda." % kalip)
             continue
         gorulen.add(kalip)
-        # ELLE EKLENEN, ADLARDA GEÇMEYEN kalıp da kabul (kullanıcı kararı):
+        # ELLE EKLENEN, ADLARDA GEÇMEYEN kalıp da kabul edilir:
         # bu çalışmada bir kolonu etkilemez, hafızaya yazılır; adında geçen
         # bir veri seti gelince tabloya anlamıyla gelir. Biçimi geçerli olmalı.
         if elle and not donem_mod.kalip_adlarda(kalip, alan.get("parcalar") or []) \
@@ -3001,10 +2964,8 @@ def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
         grup = profiller[bas:bas + ONERI_GRUP]
         grup_sayisi += 1
         try:
-            # parca=len(grup): llm.py'nin kendi parcalamasi devreye
-            # girmesin; grup tek cagri olsun. Cagri yalnizca bu grubun
-            # profilleriyle kuruluyor, onceki grubun kolonlari
-            # gonderilmiyor — baglam tasinmiyor.
+            # Cagri yalnizca bu grubun profilleriyle kuruluyor, onceki
+            # grubun kolonlari gonderilmiyor; baglam tasinmiyor.
             sonuc, _hata = llm_mod.aciklama_orkestra(grup, baglam)
         except Exception as e:
             # Bu grup onerisiz kalir, digerleri gelir. Sayaci kart ustunde yaziyoruz.
@@ -3288,10 +3249,8 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
     dondurmez (bkz. kurulum_plan)."""
     alan = {
         "tip": "dogrulama",
-        # Kart artik kendi adimi
-        # olan "Eksik Sözlük Tanımları" blogunun icinde duruyor ve alt baslik
-        # zaten o adin kendisi; kart ayrica "Girdi doğrulama tamamlandı"
-        # diye ikinci bir baslik tasirsa ayni sey iki kere yaziliyor.
+        # Kart "Eksik Sözlük Tanımları" adiminin blogunun icinde durur ve
+        # alt baslik o adin kendisidir; kart ayrica baslik tasimaz.
         "baslik": "",
         # ROZET YOK. Girdiler bir onceki adimda onaylandi; bu
         # kart bir karar karti, blok durumu zaten "Yanıtınız Bekleniyor"
@@ -3310,8 +3269,7 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
             "karma": "Seçimleri Uygula ve Devam Et",
             "bos": "Devam Et",
         },
-        # Kartta yalnizca birincil dugme
-        # kaliyor.
+        # Kartta yalnizca birincil dugme var.
     }
 
     if not gosterilen:
@@ -3331,7 +3289,7 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         aciklama = str(oneri.get("aciklama") or "")
         rol = zorunlu_rol.get(ad)
         onceki = kararlar.get(ad) if isinstance(kararlar.get(ad), dict) else None
-        # KATEGORI ALANI YOK. Kart dort kolona iniyor:
+        # KATEGORI ALANI YOK. Kart dort kolon:
         # Degisken | Tip | Aciklama | Sozluge Ekle.
         satir = {
             "kolon": ad,
@@ -3395,13 +3353,12 @@ def _kapsami_cikar(durum, taze=False):
     listesini kurar. taze=True: profil isi veri seti icin YENIDEN calisir
     (veri seti secimi onaylandiginda: tablo o arada degismis olabilir).
 
-    Artik sozluk tanimlari adimi
-    modelleme tanimlarindan SONRA geldigi icin (hedef/kimlik/donem
-    kolonlarinin tanimi zorunlu, hangileri oldugu once bilinmeli) profil
-    daha erken, veri seti secilir secilmez cikariliyor: `tanimlar` adimi
-    hedef ve kimlik adaylarini bu profilden okuyor."""
-    # SECIM TAZELENDIGINDE TABLO YENIDEN OKUNUR. Onbellek artik uzun
-    # yasiyor (bkz. akis_durum.ONBELLEK_OMRU_SN); kullanici veri setini
+    Sozluk tanimlari adimi modelleme tanimlarindan SONRA gelir
+    (hedef/kimlik/donem kolonlarinin tanimi zorunlu, hangileri oldugu
+    once bilinmeli); profil ise veri seti secilir secilmez cikarilir:
+    `tanimlar` adimi hedef ve kimlik adaylarini bu profilden okur."""
+    # SECIM TAZELENDIGINDE TABLO YENIDEN OKUNUR. Onbellek uzun
+    # yasar (bkz. akis_durum.ONBELLEK_OMRU_SN); kullanici veri setini
     # Dataiku'da yeniden olusturup adimi tekrar calistirdiginda bayat
     # kopyayi okumamak icin bu iki kayit acikca dusuruluyor. Maliyeti
     # YOK: bu fonksiyon zaten profili ilk kez cikaran taraf, tabloyu
@@ -3457,11 +3414,8 @@ def _kapsam_hesapla(durum, prof, sz):
 
 def _tanim_listesi(durum):
     """Sozluk tanimlari kartinin kolonlari: ORIJINAL sozlukte tanimsiz
-    olanlarin tamami (sonradan eklenenler dahil).
-
-    cunku liste
-    onceki onaydan sonra "hala tanimsiz olanlar"a inmisti. Artik ilk
-    liste ve onceki kararlar (eklendi + aciklamasi / haric) geri gelir."""
+    olanlarin tamami (sonradan eklenenler dahil). Geri donuste ilk liste
+    ve onceki kararlar (eklendi + aciklamasi / haric) geri gelir."""
     ilk = durum.get("_aciklamasiz_ilk")
     if isinstance(ilk, list):
         return [str(k) for k in ilk]
@@ -3538,9 +3492,7 @@ def sozluk_tanim_plan(durum):
     kolonlari tanimsizsa listenin BASINA alinir ve isaretleri
     kaldirilamaz.
 
-    TANIMSIZ KOLONLARIN HEPSI LISTELENIR. 1.000 tanimsiz
-    kolonlu bir sette bu, 800 kolonun kullaniciya hic gosterilmeden
-    surec disina alinmasi demekti.
+    TANIMSIZ KOLONLARIN HEPSI LISTELENIR.
 
     ONERILER ARKA PLANDA. Kart HEMEN aciliyor; dil modeli onerileri
     grup grup uretiliyor ve on yuz yoklayarak satirlari dolduruyor
@@ -3580,8 +3532,7 @@ def sozluk_tanim_plan(durum):
         # satir hafizadaki metinle dolu gelir ve kaynagi kartta yazar.
         # ROLU OLAN KOLON (kimlik, hedef, donem, segment) yalniz AYNI VERI
         # SETINDE onaylanmis tanimla dogrudan dolar. Baska veri setinden
-        # gelen tanim rol kolonuna konmaz: kimlik kolonuna baska tablodan
-        # islem anlatan bir tanim gelmisti.
+        # gelen tanim rol kolonuna konmaz.
         roller = _zorunlu_etiketler(durum)
         veri_seti = durum.get("veri_seti") or ""
         try:
@@ -3680,10 +3631,9 @@ def _karar_oku(durum, tanimsiz):
 
     Govde HIC gelmezse (eski istemci ya da kullanici yazarak onayladi)
     VARSAYILAN islem uygulanir: hepsi haric. Karar govdesinde adi hic
-    gecmeyen kolonlar da (EN_FAZLA_TANIMSIZ sinirinin ustunde kalanlar
-    dahil) ayni varsayilana duSER.
+    gecmeyen kolonlar da ayni varsayilana duSER.
 
-    "ekle" satirlari YALNIZ aciklama tasiyor. Kategori kartta artik
+    "ekle" satirlari YALNIZ aciklama tasiyor. Kategori kartta
     sorulmuyor (tanimsiz bir kolona kategori atamak, kolonun ne oldugunu
     bilmeden onu bir kovaya koymaktir); govdede kategori gelse bile
     okunmuyor ve satir_ekle'ye bos kategori gidiyor."""
@@ -3712,10 +3662,9 @@ def _karar_oku(durum, tanimsiz):
 def kurulum_uygula(durum):
     """Veri seti ve sozluk secildi: kapsami cikar, calisma kopyasini kur.
 
-    ADIM BOLUNDU.
-    o is artik `sozluk_tanim` adiminda ve MODELLEME TANIMLARINDAN SONRA
-    yapiliyor, cunku hedef/kimlik/donem kolonlarinin tanimi zorunlu ve
-    hangileri oldugu once bilinmeli.
+    Tanimsiz kolon karari `sozluk_tanim` adiminda, MODELLEME
+    TANIMLARINDAN SONRA verilir: hedef/kimlik/donem kolonlarinin tanimi
+    zorunlu ve hangileri oldugu once bilinmeli.
 
     Burada yalnizca profil cikariliyor (tanimlar adimi hedef ve kimlik
     adaylarini buradan okuyor) ve sozluk calisma kopyasi kuruluyor.
@@ -3785,7 +3734,6 @@ def sozluk_tanim_uygula(durum):
             basarisiz.append((satir["kolon"], neden))
             haric.append(satir["kolon"])
 
-    #
     haric = sorted(set(haric) | platform_disi_kolonlar(durum))
     durum["haric_kolonlar"] = haric
     durum["_aciklamasiz"] = [k for k in tanimsiz if k not in set(eklenen)]
@@ -3796,9 +3744,7 @@ def sozluk_tanim_uygula(durum):
     durum["_sozluge_eklenen"] = sorted(
         set(str(k) for k in (durum.get("_sozluge_eklenen") or [])) | set(eklenen))
 
-    # METIN DONDURMEZ. "Veri seti ve sözlük bağlandı. 2 kolon sözlüğe
-    # eklendi." diye ayri bir paragraf basmak, hemen ustundeki karttaki
-    # kararin tekrariydi; karttaki rozet zaten ne yapildigini yaziyor.
+    # METIN DONDURMEZ: karttaki rozet ne yapildigini yazar.
     # Yalnizca ISTENENDEN FARKLI bir sey olduysa (bir tanim yazilamadi,
     # calisma kopyasi kurulamadi) metin doner — sessiz kalirsa kullanici
     # kolonun neden sureç disinda kaldigini bilemez.
@@ -3905,7 +3851,7 @@ def _kontrol_karti(durum, adlar, hata, basladi):
     return {
         "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [],
         "kapsam": None, "tanimsiz": None, "kontrol": kontrol,
-        # Kisaltma sozlugu ve kolon adi onerileri artik ayri adimlar
+        # Kisaltma sozlugu ve kolon adi onerileri ayri adimlardadir
         # (01.2.4.3 - 01.2.4.4); bu kart yalniz tanim kontrolu.
         "buton_kalip": dict(KONTROL_DUGME),
         "oneri_is": (durum.get("_kontrol_is") or "") if basladi else "",
@@ -4169,20 +4115,17 @@ def _tanimlar_formu(durum, meta=None):
         "tip": "form",
         "baslik": ADIM_ADI["tanimlar"],
         # ACIKLAMA ADIMIN METNINI DE TASIR.
-        #
         "aciklama": "Hedef değişkeni ve kimlik kolonunu seçin. Dönem ve "
                     "segment kolonu isteğe bağlıdır: dönem seçilirse veri "
                     "zamana göre bölünebilir ve stabilite ölçülebilir; segment "
                     "seçilirse sonuçlar segment bazında da gösterilir.",
-        # Kartta uc acilir liste duruyor. Yazarak girme yolu DURUYOR (bkz. TANIM_KALIP), yalniz
-        # reklami yapilmiyor.
+        # Kartta acilir listeler var. Yazarak girme yolu da calisir (bkz.
+        # TANIM_KALIP), yalniz kartta gosterilmez.
         "buton": "Kolon Rollerini Onayla",
         "kolonlar": kolonlar,
         # ALAN BAZLI LISTE. "secenekler" varsa on yuz o alanda YALNIZCA
         # onu gosterir; yoksa ortak "kolonlar" listesine duser (eski
-        # istemciyle uyum). Donem kolonu filtrelenmiyor: donem sayisal da
-        # olabilir metin de, tek kural "az sayida farkli deger" olurdu ve
-        # bu kural yillik/aylik setlerde yaniltici.
+        # istemciyle uyum).
         "alanlar": [
             {"ad": "target", "etiket": "Hedef Değişken", "kaynak": "kolon",
              "deger": m.get("target") or "", "secenekler": hedef_liste,
@@ -4253,11 +4196,9 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
         except Exception:
             pass
 
-    # ADAY DISI SECIM REDDEDILIR. Form artik yalnizca uygun kolonlari
-    # listeliyor, ama serbest yazarak da girilebiliyor ("target X id Y").
-    # Kontrol yalnizca listede olmasi yetmedigi icin burada tekrarlaniyor:
-    # kullanicinin hedefle kimligi yer degistirmesi, platformun sonradan
-    # "pozitif oran %0,00" diye rapor ettigi asil hataydi.
+    # ADAY DISI SECIM REDDEDILIR. Form yalnizca uygun kolonlari
+    # listeler, ama serbest yazarak da girilebilir ("target X id Y");
+    # kontrol bu yuzden burada tekrarlanir.
     p = _donem_adaylarini_hazirla(durum)
     aday_kurali = [
         ("target", p.get("hedef_adaylari"), "hedef değişken",
@@ -4308,7 +4249,7 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
 def _hedef_sayilari(kp):
     """Hedef kolonu icin (sayisal tekil deger sayisi, pozitif satir sayisi).
 
-    Eski yol: y = pd.to_numeric(df[hedef]); y.nunique(), (y > 0).sum().
+    Karsiligi: y = pd.to_numeric(df[hedef]); y.nunique(), (y > 0).sum().
     Sayisal kolonda bu sayilar profilde zaten var. Metin kolonda deger
     listesinden (en fazla 50 seviye) sayiya cevrilerek bulunur; listesi
     olmayan (cok seviyeli) metin kolonu iki sinifli olamaz."""
@@ -4349,12 +4290,11 @@ def tanimlar_uygula(durum):
     """Tanimlari uygular ve hedefin tipini/dagilimini cikarir.
 
     NEDEN BURADA, PLANDA DEGIL: bu adimin ayri bir "plan" asamasi YOK.
-    Form doldurulup onaylandiginda karar verilmis oluyor; ustune bir de
-    "Kolon rolleri: ...
+    Form doldurulup onaylandiginda karar verilmis olur.
 
     METIN DONDURMEZ — yalnizca DIKKAT EDILMESI GEREKEN bir sey varsa
     yazar. Sonraki adimin (bolme) dayandigi `_donemler` burada
-    hesaplaniyor; hesap kaybolmadi, yalnizca anlatimi kalkti."""
+    hesaplanir."""
     m = durum["meta"]
     prof = _profil(durum)
     kol = profil_mod.kolonlar(prof)
@@ -4421,8 +4361,8 @@ def tanimlar_uygula(durum):
             p["donem_adet"] = len(donemler)
         donem_not = "%s: %s farklı dönem" % (donem, _sayi(len(donemler)))
 
-        # TEK DEGERLI DONEM KOLONU DONEM KOLONU DEGILDIR (kullanici
-        # karari). Bir tek degeri olan kolon ne zamansal bolme kurar, ne
+        # TEK DEGERLI DONEM KOLONU DONEM KOLONU DEGILDIR. Bir tek degeri
+        # olan kolon ne zamansal bolme kurar, ne
         # stabilite olcer, ne de modele bilgi tasir - her satirda ayni
         # sabiti tekrar eder.
         #
@@ -4493,10 +4433,9 @@ def tanimlar_uygula(durum):
 #   ne zaman ve hangi listeyle teyit edildigini.
 #
 # NEDEN plan=None
-#   Formun kendisi onaydir (bkz. akis_sohbet._adima_gir). Kart zaten
-#   "son kez gozden gecirin" diyor; ustune bir de "Doğru mu?" ozeti
-#   basmak ayni onayi ikinci kez sormakti.
-# TEYIT KARTI ARTIK SOHBETTE.  Karar sohbette, sag panel yalnizca aciklama
+#   Formun kendisi onaydir (bkz. akis_sohbet._adima_gir). Kart
+#   "son kez gozden gecirin" diyor; ayrica ozet onayi sorulmaz.
+# TEYIT KARTI SOHBETTE. Karar sohbette, sag panel yalnizca aciklama
 # veriyor. Liste kartin icinde: aciklamalar duzenlenebilir, surec disi
 # birakilacak kolonlar isaretlenebilir.
 TEYIT_ACIKLAMASI = ("Değişken listesini ve sözlük tanımlarını son kez "
@@ -4533,7 +4472,7 @@ def _teyit_sayilari(durum):
 def tanimsiz_kolonlari_isaretle(durum):
     """Aciklamasi olmayan kolonlari SUREC DISI olarak isaretler.
 
-    Yani varsayilan DUSUR, ama karar
+    Varsayilan DUSUR, ama karar
     kullanicinin: kutuyu kaldirirsa kolon veri setinde kalir.
 
     BIR KEZ CALISIR. Kart her tazelendiginde yeniden isaretleseydi,
@@ -4594,9 +4533,8 @@ def tek_degerlileri_isaretle(durum):
     deger ve hic bos yok, ya da butun satirlar bos. Bir bayrak kolonu (1 = var, bos = yok) tam da boyledir ve
     modele bilgi tasir. Bu yuzden nunique(dropna=False).
 
-    tanimsiz_kolonlari_isaretle gibi BIR KEZ calisir ve kilitli DEGILDIR:
-    kullanici kutuyu kaldirirsa karar onundur, sonraki cizimde geri
-    isaretlenmez. Hedef / kimlik / donem otomatik dusurulmez.
+    Her cizimde uygulanir; kullanici kutuyu kaldiramaz. Hedef / kimlik /
+    donem otomatik dusurulmez.
 
     Doner: yeni isaretlenen kolon adlari."""
     # KILITLI: her cizimde uygulanir; kullanici kutuyu
@@ -4759,11 +4697,6 @@ def teyit_ozeti(durum):
         _sayi(degisken), _sayi(haric), _sayi(tanimli))
 
 
-# Tip seceneklerinin TAM KOLONLA hesaplanmis hali; kart her tazelendiginde
-# (her kutu isaretlemesinde) 1.000 kolon yeniden taranmasin.
-# Anahtar: (veri_seti, kolon, kaynak_tip).
-
-
 def _tip_secenekleri(durum, kolonlar, ad, kaynak_tip):
     """Kolonun UYGULANABILIR donusumleri (tam kolon, rol kilidi dusulmus).
 
@@ -4812,11 +4745,10 @@ def _donem_kolonunu_disla(durum, kolon):
       2. kullanicinin bu kolon icin sectigi tip donusumunu iptal eder -
          disarida kalan bir kolonu cevirmenin anlami yok ve donusum
          dogrulamasi adimi bosuna durdururdu,
-      3. PLATFORMUN kendi eklettigi sozluk aciklamasini siler. Kullanici
-         "otomatik sözlük açıklaması varsa kaldırılmalı" dedi: surec
+      3. PLATFORMUN kendi eklettigi sozluk aciklamasini siler: surec
          disinda kalan bir kolon icin platformun yazdirdigi tanimi
-         sozlukte birakmak, artik kullanilmayan bir degiskeni tarif eden
-         bir satir demekti.
+         sozlukte birakmak, kullanilmayan bir degiskeni tarif eden
+         bir satir demektir.
 
          YALNIZCA PLATFORMUN EKLEDIGI SILINIR (durum["_sozluge_eklenen"]
          listesi). Kullanicinin KENDI sozlugunde bastan duran tanima
@@ -4860,7 +4792,7 @@ def _donem_tek_deger_mi(durum, ad):
 def zorunlu_disi_kolonlar(durum):
     """SUREC DISINDA KALMAK ZORUNDA olan kolonlar (kilitli).
 
-    Su an tek uye: tek deger tasidigi icin dusurulen donem kolonu.
+    Tek deger tasidigi icin dusurulen donem kolonu ve tek degerli kolonlar.
 """
     ad = str((durum or {}).get("_donem_dusuruldu") or "").strip()
     disi = {ad} if ad else set()
@@ -4959,8 +4891,7 @@ def teyit_satirlari(durum):
     satirlar = []
     for r in tablo.get("satirlar") or []:
         ad = str(r.get("feature") or "")
-        # Secilmis donusum varsa gosterilen tip ZATEN hedef tip olmali;
-        #
+        # Secilmis donusum varsa gosterilen tip ZATEN hedef tip olmali
         # (_tip_ozetini_tazele bunu kolon_ozet'e de yaziyor, ama tablo
         # baska bir kaynaktan gelirse diye burada da garanti ediliyor.)
         kod = secilen.get(ad) or ""
@@ -4984,7 +4915,7 @@ def teyit_satirlari(durum):
             # on yuzde.
             "null_oran": r.get("null_oran"),
             # "disi": isaretli ise kolon SUREC DISI. Dogrulama kartinda
-            # kutu "sozluge ekle" demekti; burada tam tersi karar.
+            # kutu "sozluge ekle" demektir; burada tam tersi karar.
             "disi": ad in haric,
             # SUREC DISI BIRAKILAMAZ: hedef / kimlik / donem modelleme
             # tanimlarinda secildi.
@@ -5026,8 +4957,7 @@ def teyit_kartini_tazele(durum, kolon=None, tanim=None):
     NEDEN GEREKLI
       Kartin govdesi durum["_secim_alani"]'nda duruyor ve /durum onu
       OLDUGU GIBI donuyor. Ama karttaki uc karar - tip degisikligi,
-      surec disi isareti, sozluk tanimi - kendi uclarindan geliyor;
-
+      surec disi isareti, sozluk tanimi - kendi uclarindan geliyor.
 
     NEDEN KART BASTAN URETILMIYOR
       _teyit_karti her cagrildiginda 1.042 kolon icin alti donusum
@@ -5132,12 +5062,10 @@ def amp_klasor_adi(durum):
         PROJE_HAFIZASI/v3/sozluk_calisma.parquet
         PROJE_HAFIZASI/v3/profil.json
 
-    Ayri bir AMP klasoru, tarih damgasi ya da SON.txt yok. Klasor adi
-    "Çalışmalarım" listesindeki numarayla ayni.
+    Klasor adi "Çalışmalarım" listesindeki numarayla ayni.
 
-    ESKI KAYITLAR: daha once "AMP/2026-09-21_1809_.../" altina yazmis bir
-    calisma (durumda _amp_klasor dolu) ayni yere yazmaya devam eder;
-    kullanici dosyalarini iki farkli yerde aramasin."""
+    ESKI KAYITLAR: durumda _amp_klasor dolu olan calisma AMP/<_amp_klasor>/
+    altina yazmaya devam eder."""
     eski = (durum or {}).get("_amp_klasor") if isinstance(durum, dict) else None
     if eski:
         return "%s/%s" % (AMP_KLASOR, eski)
@@ -5558,9 +5486,8 @@ def teyit_girdi(durum, mesaj, yeniden_sor=False):
 def teyit_uygula(durum):
     """Teyit ANINI kaydeder ve AMP ciktilarini YAZAR.
 
-    Artik AMP_VERISETI ve
-    AMP_SOZLUK gercekten yaziliyor; nereye yazildigi kullaniciya
-    soylenmeli - "kaydedildi" deyip yeri sylememek, dosyayi aramaya
+    AMP_VERISETI ve AMP_SOZLUK burada yazilir; nereye yazildigi
+    kullaniciya soylenir - "kaydedildi" deyip yeri sylememek, dosyayi aramaya
     birakmak olurdu.
 
     durum["teyit"] denetim kaydidir: TMD'nin veri bolumu bu satiri
@@ -5572,7 +5499,7 @@ def teyit_uygula(durum):
     # calistirilabiliyor). Adimi gecmeden once hepsi bir kez daha
     # denetleniyor; takilan varsa adim GECMEZ - bolme sirasinda sessizce
     # atlanan bir donusum, kullanicinin gordugu tiple modelin gordugu
-    # tipin ayrismasi demekti.
+    # tipin ayrismasi demektir.
     _tip_secimlerini_dogrula(durum)
 
     degisken, haric, tanimli = _teyit_sayilari(durum)
@@ -5642,7 +5569,7 @@ def _tip_secimlerini_dogrula(durum):
 # EKRAN SIRASI: once SEC, sonra ozeti gor, istersen
 # detayi ac.
 # TEK PARAGRAF, KART ICINDE DUZ METIN. Balon ya da ikinci bir kutu
-# YOK; iki cumle arasindaki bos satir da kalkti.
+# YOK.
 # BASLIK ALTINDA TEK CUMLE. Ekranin geri kalani secimin kendisi.
 BOLME_ACIKLAMA = (
     "Veri üç sete ayrılır: modelin öğrendiği Train (MS), model ayarlarının "
@@ -5653,9 +5580,8 @@ BOLME_ACIKLAMA = (
 
 # SUTUN BASLIKLARI. Mod SECIMI DEGIL: iki sutun ayni anda ekranda
 # duruyor.
-# IKI ALTERNATIF: birbirinin gercek alternatifi iki panel. "Sizin
-# seçiminiz" ve "Tavsiye edilir" rozeti KALKTI - adi zaten "Önerilen
-# Ayarlar", ikinci kez soylemek gereksizdi.
+# IKI ALTERNATIF: birbirinin gercek alternatifi iki panel. Rozet yok;
+# adi zaten "Önerilen Ayarlar".
 BOLME_PANELLERI = (
     {"anahtar": "oneri", "etiket": "Önerilen Ayarlar",
      "aciklama": "Veri yapısına göre hazırlandı."},
@@ -5712,10 +5638,8 @@ def bolme_karti(durum, mod=None):
     herhangi bir yerden basmak onu secer. Panel kaybolmuyor, icerik
     degismiyor, accordion'a donusmuyor.
 
-    Acilir listeler mumkun oldugunca CIP'lere cevrildi; acilir liste
-    yalnizca secenek sayisi gercekten fazla oldugunda (kolon secimi).
-
-    Simdi sol panelin altinda, kapali bir acilir alanda.
+    Secenekler mumkun oldugunca CIP; acilir liste yalnizca secenek
+    sayisi gercekten fazla oldugunda (kolon secimi).
 
     Oneri durum["bolme"]'ye BAKMAZ (bkz. akis_durum.bolme_onerisi)."""
     oneri = bolme_onerisi(durum)
