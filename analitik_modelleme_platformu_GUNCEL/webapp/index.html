@@ -207,34 +207,13 @@
 
 
     <aside id="analiz-panel">
-      <!-- DEĞİŞKENLER SEÇİM PANELİ: yalnız DEĞİŞKENLER sekmesinde görünür.
-           Model Akışı'ndaki ANALİTİK SÜREÇ / İŞ AKIŞI paneliyle aynı düzen:
-           balon içinde seçimler, sağ üstte daralt düğmesi; daraltılınca
-           ince şeritte üç dikey düğme kalır ve görünüm oradan da seçilir
-           (app.js: dgPanel). -->
-      <aside id="dg-panel" hidden>
-        <div class="panel-ust-sira">
-          <button id="dg-panel-daralt" class="panel-daralt-btn" type="button" aria-controls="dg-panel"
-                  aria-expanded="true" title="Paneli kapat" aria-label="Paneli kapat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"></path>
-            </svg>
-          </button>
-        </div>
-        <div id="dg-dikey-adlar">
-          <button class="dg-dikey" type="button" data-alt="veri">VERİ VE SÖZLÜK</button>
-          <button class="dg-dikey" type="button" data-alt="dagilim">DAĞILIM VE SFA</button>
-          <button class="dg-dikey" type="button" data-alt="kontrol">DEĞİŞKEN KONTROLLERİ</button>
-        </div>
-        <section class="panel-blok dg-blok">
-          <div class="panel-baslik">DEĞİŞKENLER</div>
-          <div class="dg-secimler">
-          <button class="dg-secim" type="button" data-alt="veri"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path></svg><span class="dg-secim-yazi"><span class="dg-secim-ad">Veri ve Sözlük</span><span class="dg-secim-acik">Veri seti ve sözlük tabloları</span></span></button>
-          <button class="dg-secim" type="button" data-alt="dagilim"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-7M21 20H3"></path></svg><span class="dg-secim-yazi"><span class="dg-secim-ad">Dağılım ve SFA</span><span class="dg-secim-acik">Değişken dağılımı, tek değişken analizi</span></span></button>
-          <button class="dg-secim" type="button" data-alt="kontrol"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg><span class="dg-secim-yazi"><span class="dg-secim-ad">Değişken Kontrolleri</span><span class="dg-secim-acik">Eksik değer ve değişken kontrolleri</span></span></button>
-          </div>
-        </section>
+      <!-- DEĞİŞKENLER SEÇİM ŞERİDİ: yalnız DEĞİŞKENLER sekmesinde görünür.
+           Hep kapalı (açılmaz): ince şeritte üç dikey düğme; basılan görünüm
+           sağda açılır (app.js: dgAc). -->
+      <aside id="dg-panel" hidden aria-label="Değişkenler görünümleri">
+        <button class="dg-dikey" type="button" data-alt="veri">VERİ VE SÖZLÜK</button>
+        <button class="dg-dikey" type="button" data-alt="dagilim">DAĞILIM VE SFA</button>
+        <button class="dg-dikey" type="button" data-alt="kontrol">DEĞİŞKEN KONTROLLERİ</button>
       </aside>
       <!-- ANALİZ ALANI: sol bardaki GÖSTERGE PANELİ / DEĞİŞKENLER
            sekmelerinden biri seçilince sol barın sağındaki

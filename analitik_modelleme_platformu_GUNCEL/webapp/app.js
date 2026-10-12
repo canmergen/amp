@@ -4212,13 +4212,12 @@ function setSeciciCiz(tab) {
 }
 
 
-/* ==================== DEĞİŞKENLER SEÇİM PANELİ ====================
-   Model Akışı'ndaki panel (ANALİTİK SÜREÇ / İŞ AKIŞI) gibi: balonda üç
-   seçim, sağ üstte daralt düğmesi; daraltılınca 44 px şeritte üç dikey
-   düğme kalır ve görünüm şeritten de değiştirilir. Seçim ve daraltma
-   tarayıcıda hatırlanır. */
+/* ==================== DEĞİŞKENLER SEÇİM ŞERİDİ ====================
+   Değişkenler sekmesinin solunda HEP KAPALI ince şerit: üç dikey düğme
+   (Veri ve Sözlük · Dağılım ve SFA · Değişken Kontrolleri). Açılan bir
+   panel yok; basılan görünüm sağda çizilir. Seçim tarayıcıda hatırlanır.
+   Şerit yalnız Değişkenler sekmesinde görünür (analizCiz başında). */
 const DG_ALT_ANAHTAR = "amp_dg_alt";
-const DG_DARALT_ANAHTAR = "amp_dg_panel_daraltilmis";
 const DG_ALTLAR = ["veri", "dagilim", "kontrol"];
 const DG = { alt: "veri" };
 try {
@@ -4237,20 +4236,6 @@ function dgPanelGoster(goster) {
         if (aktif) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current");
     });
 }
-function dgDaralt(daralt, kaydet) {
-    if (!dgPanelEl) return;
-    dgPanelEl.classList.toggle("daraltilmis", daralt);
-    const btn = document.getElementById("dg-panel-daralt");
-    if (btn) {
-        const metin = daralt ? "Paneli aç" : "Paneli kapat";
-        btn.title = metin;
-        btn.setAttribute("aria-label", metin);
-        btn.setAttribute("aria-expanded", daralt ? "false" : "true");
-    }
-    if (kaydet) {
-        try { localStorage.setItem(DG_DARALT_ANAHTAR, daralt ? "1" : "0"); } catch (e) { /* yok */ }
-    }
-}
 /* Görünüm seç: Değişkenler sekmesi açık değilse açılır. */
 function dgAc(alt) {
     if (DG_ALTLAR.indexOf(alt) === -1) return;
@@ -4263,15 +4248,9 @@ function dgAc(alt) {
         analizSekmeAc("degisken");
     }
 }
-(function dgKur() {
-    if (!dgPanelEl) return;
-    dgPanelEl.querySelectorAll("[data-alt]").forEach(b => { b.onclick = () => dgAc(b.dataset.alt); });
-    const btn = document.getElementById("dg-panel-daralt");
-    if (btn) btn.onclick = () => dgDaralt(!dgPanelEl.classList.contains("daraltilmis"), true);
-    let ilk = false;
-    try { ilk = localStorage.getItem(DG_DARALT_ANAHTAR) === "1"; } catch (e) { ilk = false; }
-    dgDaralt(ilk, false);
-})();
+if (dgPanelEl) dgPanelEl.querySelectorAll("[data-alt]").forEach(b => {
+    b.onclick = () => dgAc(b.dataset.alt);
+});
 
 function analizCiz(tab) {
     /* Panel bastan ciziliyor; feature tablosunda yaziyor olabilir.
@@ -4279,6 +4258,9 @@ function analizCiz(tab) {
     const odak = ftOdakAnahtari();
     aktifAnalizSekme = tab;
     analizGovde.innerHTML = "";
+    /* Seçim şeridi YALNIZ Değişkenler'de: her çizimin başında (erken
+       dönen Gösterge Paneli dahil) ayarlanır. */
+    dgPanelGoster(tab === "degisken");
     /* GÖSTERGE PANELİ ("ozet"): ÇALIŞMA DÜZEYİ, her bilgi bir sayı ya da özet.
        Veri seti ve sözlük kartları, değişken sayıları (üretim / eleme),
        bölme, validasyon ve model sonucu. Değişken listesi burada değil. */
@@ -4301,7 +4283,6 @@ function analizCiz(tab) {
        AMP_VERISETI) ve sözlük listesi (AMP_SOZLUK). Başlıklar tablonun
        adını taşır; her sunucu yanıtında yeniden okunur (adımlar
        ilerledikçe son hâl). */
-    dgPanelGoster(tab === "degisken");
     if (tab === "degisken" && DG.alt === "veri") {
         const o = ANALIZ_VERI.ozet;
         const veriBaslik = elYap("div", "panel-bolum-baslik",
