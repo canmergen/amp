@@ -174,9 +174,12 @@ let DATASETLER = [];
 let DATASET_DURUMU = "yukleniyor";
 const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
-bannerEl.src = GORSEL.banner;
+/* Robotlu logo: saydam kenarları kırpılır (yuvayı boşluk değil logo
+   doldursun, daha büyük görünsün). */
 bannerEl.onerror = () => { bannerEl.style.display = "none"; solBarOlcekle(); };
 bannerEl.onload = () => solBarOlcekle();
+saydamKirp(GORSEL.banner, src => { bannerEl.src = src; },
+           () => { bannerEl.style.display = "none"; solBarOlcekle(); });
 
 /* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük
    kalmasın); kırpılamazsa dosya olduğu gibi. cb(src) */
@@ -243,21 +246,16 @@ function saydamKirp(url, cb, hata) {
    (#sol-bar-ic) tasarım eninde (224 px) doğal boyuyla dizilir ve barın
    yüksekliğine sığacak oranda ölçeklenir; barın eni de aynı oranda
    değişir. Çerçeve kapanınca alan büyür, bar da aynı oranda büyür.
-   Görünüm Ayarları kapalıyken de ölçek AÇIK hâline göre (kart açılınca
-   her şey yer değiştirmesin). */
+   Görünüm Ayarları açılır pencere olduğu için ölçeği etkilemez. */
 const SOL_BAR_TASARIM_EN = 224;
 const SOL_BAR_OLCEK = { min: 0.6, max: 1.6 };
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");
     if (!bar || !ic || !bar.clientHeight) return;
-    const kart = document.getElementById("gorunum-kart");
-    const kapali = kart && kart.classList.contains("kapali");
     ic.style.transform = "none";
     ic.style.height = "auto";
-    if (kapali) kart.classList.remove("kapali");
     const dogal = ic.offsetHeight;
-    if (kapali) kart.classList.add("kapali");
     if (!dogal) return;
     const olcek = Math.max(SOL_BAR_OLCEK.min,
                            Math.min(SOL_BAR_OLCEK.max, bar.clientHeight / dogal));
@@ -427,31 +425,29 @@ try { cerceveKapali = localStorage.getItem(CERCEVE_ANAHTAR) === "kapali"; } catc
 cerceveUygula(false);
 
 
-/* ==================== Görünüm Ayarları kartı ==================== */
-/* Sol barın altında Renk Modu ve Çerçeve'yi taşıyan kart. Başlığa
-   basınca açılır / kapanır; seçim tarayıcıda hatırlanır. Kayıt yoksa
-   açık başlar (sol bar ölçeklendiği için her ekranda sığar). */
-const GORUNUM_ANAHTAR = "amp_gorunum_acik";
-(function gorunumKartKur() {
+/* ==================== Görünüm Ayarları ==================== */
+/* Sol barın altındaki "Görünüm Ayarları" başlığına basınca Renk Modu ve
+   Çerçeve, Arşiv listesi gibi YUKARI doğru açılan bir pencerede çıkar.
+   Dışarıda bir yere basınca ya da Esc ile kendiliğinden kapanır; içindeki
+   anahtarlara basmak kapatmaz. Açılır pencere sol barın düzenini
+   değiştirmez (ölçek aynı kalır). */
+(function gorunumKur() {
     const kart = document.getElementById("gorunum-kart");
     const bas = document.getElementById("gorunum-bas");
     if (!kart || !bas) return;
-    const uygula = (acik, kaydet) => {
-        kart.classList.toggle("kapali", !acik);
+    const ayarla = acik => {
+        kart.classList.toggle("acik", acik);
         bas.setAttribute("aria-expanded", acik ? "true" : "false");
-        bas.title = acik ? "Görünüm ayarlarını gizle" : "Görünüm ayarlarını göster";
-        if (kaydet) {
-            try { localStorage.setItem(GORUNUM_ANAHTAR, acik ? "1" : "0"); } catch (e) { /* yok */ }
-        }
+        bas.title = acik ? "Görünüm ayarlarını kapat" : "Görünüm ayarlarını aç";
     };
-    let acik = true;
-    try {
-        const k = localStorage.getItem(GORUNUM_ANAHTAR);
-        if (k === "1" || k === "0") acik = k === "1";
-    } catch (e) { /* depolama kapalı */ }
-    bas.onclick = () => uygula(kart.classList.contains("kapali"), true);
-    uygula(acik, false);
-    requestAnimationFrame(solBarOlcekle);
+    bas.onclick = () => ayarla(!kart.classList.contains("acik"));
+    document.addEventListener("mousedown", e => {
+        if (kart.classList.contains("acik") && !kart.contains(e.target)) ayarla(false);
+    }, true);
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && kart.classList.contains("acik")) { ayarla(false); bas.focus(); }
+    });
+    ayarla(false);
 })();
 
 /* ==================== Sayfa geçişi ==================== */

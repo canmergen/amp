@@ -4158,3 +4158,23 @@ span.bolme-cip { cursor: default; }
 #sol-bar #gorunum-govde #tema-btn, #sol-bar #gorunum-govde #cerceve-btn { height: 34px; }
 #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn { height: 36px; }
 #sol-bar .sol-bar-dugmeler { gap: 7px; }
+
+/* Görünüm Ayarları: Arşiv listesi gibi YUKARI açılan pencere; sol barın
+   düzenini değiştirmez. Kapalıyken ok yukarı (açılacağı yön), açıkken
+   aşağı. Dışarıya basınca kapanır (app.js: gorunumKur). */
+#gorunum-kart { position: relative; }
+#gorunum-govde {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 50;
+  margin: 0; padding: 2px 10px; display: none;
+  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 12px;
+  box-shadow: var(--golge-2);
+}
+#gorunum-kart.acik #gorunum-govde { display: block; }
+#gorunum-kart #gorunum-bas svg.ok, #gorunum-kart.kapali #gorunum-bas svg.ok { transform: none; }
+#gorunum-kart.acik #gorunum-bas svg.ok { transform: rotate(180deg); }
+#gorunum-kart.acik { border-color: var(--kirmizi-halka); }
+#gorunum-kart.acik #gorunum-bas { color: var(--kirmizi); }
+/* Robotlu logo daha büyük. */
+#banner { max-height: 96px; }
+#sol-bar-logo { padding: 10px 4px 2px; }
+#banner { width: 100%; max-height: 110px; }
