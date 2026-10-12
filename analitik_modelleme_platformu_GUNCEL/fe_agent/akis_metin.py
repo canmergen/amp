@@ -14,6 +14,7 @@ import re
 # cerceve metni gecmise yazilmis olabilir; okunurken yine cerceve sayilsin
 # diye tutulur (webapp/backend.py: _cerceve_metni_mi).
 KARSILAMA_ESKI = (
+    "**Merhaba, ben KATIB.** Ham veriden final modele kadar model geliştirme sürecinizi sizinle birlikte, adım adım yürütürüm.\n\nHer adımda önce ne yapacağımı ve neden yapacağımı anlatırım; hesaplamaları Python ile yaparım, kararı siz verirsiniz. Onayladığınız her sonuç kayda geçer: değişkenlerin kaynağı, dönüşümü ve seçim gerekçesi süreç boyunca izlenebilir kalır. Ara verdiğinizde çalışmanız kaldığı yerden açılır.\n\n**Süreç beş fazdan oluşur**; nerede olduğunuzu üstteki İş Akışı'ndan her an görebilirsiniz.\n  **01** Çalışma Kurulumu : Veri seti, sözlük, kolon rolleri ve örneklem tasarımı\n  **02** Değişken Mühendisliği : Profil, kural tabanlı ve AI destekli üretim\n  **03** Veri Anlama ve Hazırlama : SFA, stabilite ve analitik baz set\n  **04** Değişken Değerlendirme : Sızıntı kontrolü ve aday değişken seti\n  **05** Modelleme ve Finalizasyon : Model seçimi, katkı ölçümü ve doğrulama\n\nBaşlamak için verinizin durumuna en uygun başlangıcı seçin.",
     """**Ham veriden final modele: adım adım, izlenebilir model geliştirme.**
 Analitik süreç tek bir çalışma içinde yürütülür: veri hazırlanır, yeni değişkenler üretilip değerlendirilir, model denemeleri yapılır; en iyi model kaydedilir ve yeni değişkenlerin modele katkısı ölçülür.
 Çalışma, üstteki İş Akışı'ndaki beş fazda adım adım ilerler. Her adımda önce ne yapılacağı açıklanır; hesaplamalar Python ile yapılır, kararlar onayınızla uygulanır ve sonuçlar kayda geçer. Değişkenlerin kaynağı, dönüşümü ve seçim durumu süreç boyunca kayıtlı kalır.
@@ -132,20 +133,25 @@ FAZ01_OZET = "Veri seti, sözlük, kolon rolleri ve örneklem tasarımı"
 # ===========================================================================
 # KARSILAMA - 01.1 Baslangic Secimi blogunun metni
 # ===========================================================================
-# KATIB kendini tanitir: ne yaptigi, nasil calistigi (her adimda aciklama,
-# onay, kayit) ve bes faz. Faz adlari ve ozetleri is akisindaki tanimlarin
+# Urun duzeyinde, kisiye/ada baglanmayan metin. Eski "Analitik Surec"
+# panelinin ve eski karsilamanin butun bilgisini tasir: tek ve izlenebilir
+# akis, uretim/degerlendirme/model/pickle/katki olcumu, Python, onay,
+# kayit, bes faz. Faz adlari ve ozetleri is akisindaki tanimlarin
 # AYNISI (FAZ01_OZET, SONRAKI_FAZLAR); girintili "Etiket : Deger" satirlari
 # ekranda hizali liste olarak cizilir (app.js: metinBicimle).
 KARSILAMA = (
-    "**Merhaba, ben KATIB.** Ham veriden final modele kadar model geliştirme "
-    "sürecinizi sizinle birlikte, adım adım yürütürüm.\n\n"
-    "Her adımda önce ne yapacağımı ve neden yapacağımı anlatırım; "
-    "hesaplamaları Python ile yaparım, kararı siz verirsiniz. Onayladığınız "
-    "her sonuç kayda geçer: değişkenlerin kaynağı, dönüşümü ve seçim "
-    "gerekçesi süreç boyunca izlenebilir kalır. Ara verdiğinizde çalışmanız "
-    "kaldığı yerden açılır.\n\n"
-    "**Süreç beş fazdan oluşur**; nerede olduğunuzu üstteki İş Akışı'ndan "
-    "her an görebilirsiniz.\n"
+    "**Ham veriden final modele: tek ve izlenebilir bir model geliştirme "
+    "akışı.**\n\n"
+    "Analitik süreç baştan sona tek bir çalışma içinde yürütülür. Veri "
+    "hazırlanır, yeni değişkenler üretilir ve aday değişkenler "
+    "değerlendirilir; model denemeleri yapılır, en iyi model pickle "
+    "formatında kaydedilir ve yeni değişkenlerin modele katkısı ölçülür.\n\n"
+    "Çalışma beş fazda, adım adım ilerler. Her adımda önce ne yapılacağı "
+    "ve gerekçesi açıklanır; hesaplamalar Python ile yapılır, kritik "
+    "kararlar onayınızla uygulanır ve sonuç kayda geçer. Üretilen "
+    "değişkenlerin kaynağı, dönüşümü ve seçim durumu süreç boyunca kayıt "
+    "altında tutulur; çalışma kaldığı yerden sürdürülebilir.\n\n"
+    "**Fazlar**; ilerleme üstteki İş Akışı'nda izlenir:\n"
     + "\n".join("  **%s** %s : %s" % (f["no"], f["baslik"], f["ozet"])
                 for f in [{"no": "01", "baslik": "Çalışma Kurulumu",
                            "ozet": FAZ01_OZET}] + SONRAKI_FAZLAR)
