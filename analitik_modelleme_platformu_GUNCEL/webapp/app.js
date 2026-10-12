@@ -88,6 +88,8 @@ const GORSEL = {
     user:       getWebAppBackendUrl("gorsel/user"),
     arkaPlan:   getWebAppBackendUrl("gorsel/arka_plan"),
     kurumLogo:  getWebAppBackendUrl("gorsel/kurum_logo"),
+    katibAcik:  getWebAppBackendUrl("gorsel/katib_acik"),
+    katibKoyu:  getWebAppBackendUrl("gorsel/katib_koyu"),
 };
 /* ÖNCEDEN YÜKLE: avatar görselleri ilk kullanımda sunucudan inerken
    avatar geç değişiyordu; açılışta tarayıcı önbelleğine alınır. */
@@ -173,7 +175,103 @@ let DATASET_DURUMU = "yukleniyor";
 const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
 bannerEl.src = GORSEL.banner;
-bannerEl.onerror = () => { bannerEl.style.display = "none"; };
+bannerEl.onerror = () => { bannerEl.style.display = "none"; solBarOlcekle(); };
+bannerEl.onload = () => solBarOlcekle();
+
+/* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük
+   kalmasın); kırpılamazsa dosya olduğu gibi. cb(src) */
+function saydamKirp(url, cb, hata) {
+    const ham = new Image();
+    ham.onload = () => {
+        let src = url;
+        try {
+            const w = ham.naturalWidth, h = ham.naturalHeight;
+            const c = document.createElement("canvas");
+            c.width = w; c.height = h;
+            const g = c.getContext("2d");
+            g.drawImage(ham, 0, 0);
+            const a = g.getImageData(0, 0, w, h).data;
+            let x0 = w, y0 = h, x1 = -1, y1 = -1;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    if (a[(y * w + x) * 4 + 3] > 20) {
+                        if (x < x0) x0 = x;
+                        if (x > x1) x1 = x;
+                        if (y < y0) y0 = y;
+                        if (y > y1) y1 = y;
+                    }
+                }
+            }
+            if (x1 >= x0 && y1 >= y0 && (x1 - x0 + 1 < w || y1 - y0 + 1 < h)) {
+                const k = document.createElement("canvas");
+                k.width = x1 - x0 + 1; k.height = y1 - y0 + 1;
+                k.getContext("2d").drawImage(c, x0, y0, k.width, k.height, 0, 0, k.width, k.height);
+                src = k.toDataURL("image/png");
+            }
+        } catch (e) { /* kirpilamadi: dosya oldugu gibi */ }
+        cb(src);
+    };
+    ham.onerror = () => { if (hata) hata(); };
+    ham.src = url;
+}
+
+/* KATIB YAZI LOGOSU: açık temada siyah yazılı, koyu temada beyaz yazılı
+   görsel (CSS hangisinin görüneceğini temaya göre seçer). İkisi de
+   yüklenemezse yazı (KATIB + alt başlık) gösterilir. */
+(function katibLogolari() {
+    const yazi = document.getElementById("sol-bar-yazi");
+    const durum = { acik: null, koyu: null };
+    const bitti = () => {
+        if (durum.acik === false && durum.koyu === false && yazi) yazi.hidden = false;
+        solBarOlcekle();
+    };
+    [["acik", "katib-logo-acik", GORSEL.katibAcik], ["koyu", "katib-logo-koyu", GORSEL.katibKoyu]]
+        .forEach(([k, id, url]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            saydamKirp(url, src => {
+                el.onload = () => { el.hidden = false; durum[k] = true; bitti(); };
+                el.onerror = () => { durum[k] = false; bitti(); };
+                el.src = src;
+            }, () => { durum[k] = false; bitti(); });
+        });
+})();
+
+/* ==================== SOL BAR ÖLÇEĞİ ====================
+   Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm Ayarları,
+   Arşiv, Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
+   (#sol-bar-ic) tasarım eninde (224 px) doğal boyuyla dizilir ve barın
+   yüksekliğine sığacak oranda ölçeklenir; barın eni de aynı oranda
+   değişir. Çerçeve kapanınca alan büyür, bar da aynı oranda büyür.
+   Görünüm Ayarları kapalıyken de ölçek AÇIK hâline göre (kart açılınca
+   her şey yer değiştirmesin). */
+const SOL_BAR_TASARIM_EN = 224;
+const SOL_BAR_OLCEK = { min: 0.6, max: 1.6 };
+function solBarOlcekle() {
+    const bar = document.getElementById("sol-bar");
+    const ic = document.getElementById("sol-bar-ic");
+    if (!bar || !ic || !bar.clientHeight) return;
+    const kart = document.getElementById("gorunum-kart");
+    const kapali = kart && kart.classList.contains("kapali");
+    ic.style.transform = "none";
+    ic.style.height = "auto";
+    if (kapali) kart.classList.remove("kapali");
+    const dogal = ic.offsetHeight;
+    if (kapali) kart.classList.add("kapali");
+    if (!dogal) return;
+    const olcek = Math.max(SOL_BAR_OLCEK.min,
+                           Math.min(SOL_BAR_OLCEK.max, bar.clientHeight / dogal));
+    ic.style.height = (bar.clientHeight / olcek) + "px";
+    ic.style.transform = "scale(" + olcek + ")";
+    document.documentElement.style.setProperty("--sol-bar-en",
+        Math.round(SOL_BAR_TASARIM_EN * olcek) + "px");
+}
+window.addEventListener("resize", () => {
+    clearTimeout(solBarOlcekle._z);
+    solBarOlcekle._z = setTimeout(solBarOlcekle, 60);
+});
+requestAnimationFrame(solBarOlcekle);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(solBarOlcekle);
 
 /* ==================== Sayfa arka planı ==================== */
 /* Çerçeveli görsel sayfanın tamamını kaplar; uygulama çerçevenin iç
@@ -294,7 +392,10 @@ function temaUygula(kaydet) {
         catch (e) { /* depolama kapalı: yalnız bu oturum */ }
     }
 }
-if (temaBtn) temaBtn.onclick = () => { koyuTema = !koyuTema; temaUygula(true); };
+if (temaBtn) temaBtn.onclick = () => {
+    koyuTema = !koyuTema; temaUygula(true);
+    requestAnimationFrame(solBarOlcekle);        // logo değişti (boyu farklı olabilir)
+};
 try { koyuTema = localStorage.getItem(TEMA_ANAHTAR) === "koyu"; } catch (e) { koyuTema = false; }
 temaUygula(false);
 
@@ -318,7 +419,10 @@ function cerceveUygula(kaydet) {
         catch (e) { /* depolama kapalı: yalnız bu oturum */ }
     }
 }
-if (cerceveBtn) cerceveBtn.onclick = () => { cerceveKapali = !cerceveKapali; cerceveUygula(true); };
+if (cerceveBtn) cerceveBtn.onclick = () => {
+    cerceveKapali = !cerceveKapali; cerceveUygula(true);
+    requestAnimationFrame(solBarOlcekle);        // alan değişti: bar aynı oranda
+};
 try { cerceveKapali = localStorage.getItem(CERCEVE_ANAHTAR) === "kapali"; } catch (e) { cerceveKapali = false; }
 cerceveUygula(false);
 
@@ -326,8 +430,7 @@ cerceveUygula(false);
 /* ==================== Görünüm Ayarları kartı ==================== */
 /* Sol barın altında Renk Modu ve Çerçeve'yi taşıyan kart. Başlığa
    basınca açılır / kapanır; seçim tarayıcıda hatırlanır. Kayıt yoksa
-   ekran yeterince yüksekse açık, kısa ekranda kapalı başlar (sol bar
-   kaymasın). */
+   açık başlar (sol bar ölçeklendiği için her ekranda sığar). */
 const GORUNUM_ANAHTAR = "amp_gorunum_acik";
 (function gorunumKartKur() {
     const kart = document.getElementById("gorunum-kart");
@@ -341,13 +444,14 @@ const GORUNUM_ANAHTAR = "amp_gorunum_acik";
             try { localStorage.setItem(GORUNUM_ANAHTAR, acik ? "1" : "0"); } catch (e) { /* yok */ }
         }
     };
-    let acik = window.innerHeight >= 860;
+    let acik = true;
     try {
         const k = localStorage.getItem(GORUNUM_ANAHTAR);
         if (k === "1" || k === "0") acik = k === "1";
     } catch (e) { /* depolama kapalı */ }
     bas.onclick = () => uygula(kart.classList.contains("kapali"), true);
     uygula(acik, false);
+    requestAnimationFrame(solBarOlcekle);
 })();
 
 /* ==================== Sayfa geçişi ==================== */

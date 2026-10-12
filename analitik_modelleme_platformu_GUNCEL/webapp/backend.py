@@ -45,6 +45,10 @@ GORSELLER = {
     "arka_plan":  "amp_background.png",
     # Arka plan cercevesinin ust bandindaki kurum logosu (style.css: #kurum-logo)
     "kurum_logo": "kurum_logo.png",
+    # Sol bardaki KATIB yazi logosu: acik temada siyah yazili, koyu temada
+    # beyaz yazili (style.css: .katib-logo)
+    "katib_acik": "katib_siyah_logo.png",
+    "katib_koyu": "katib_beyaz_logo.png",
 }
 
 _MIME = {".png": "image/png", ".jpg": "image/jpeg",

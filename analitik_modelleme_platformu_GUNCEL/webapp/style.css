@@ -4127,3 +4127,34 @@ span.bolme-cip { cursor: default; }
   width: 15px; height: 15px; margin-left: auto; color: var(--sol-ok);
 }
 #sol-bar #calismalar-btn:hover svg.ok, #sol-bar #sifirla-btn:hover svg.ok { color: var(--kirmizi); }
+
+/* ---- Sol bar ölçeği ve KATIB logosu ----
+   İç kap tasarım eninde (224 px) doğal boyuyla dizilir; app.js
+   (solBarOlcekle) onu barın yüksekliğine sığacak oranda ölçekler ve
+   barın enini (--sol-bar-en) aynı orana getirir. Kaydırma yok. */
+#sol-bar { display: block; overflow: hidden; }
+#sol-bar-ic {
+  width: 224px; transform-origin: 0 0;
+  display: flex; flex-direction: column;
+}
+#sol-bar-ic #ust-sekmeler { flex: none; overflow: visible; min-height: 0; }
+#sol-bar-ic #sol-bar-alt { margin-top: auto; }
+#sol-bar-logo { gap: 6px; padding-top: 12px; }
+#banner { max-height: 70px; }
+.katib-logo {
+  display: block; width: 100%; max-width: 196px; max-height: 58px;
+  height: auto; object-fit: contain;
+}
+#kabuk.koyu #katib-logo-acik, #kabuk:not(.koyu) #katib-logo-koyu { display: none; }
+#sol-bar-yazi { display: flex; flex-direction: column; align-items: center; }
+/* Tasarım boyu kısaltıldı (ölçek büyüsün, yazı okunur kalsın). */
+#sol-bar .ust-kume-ad, #sol-bar .ust-sekme { height: 36px; }
+#sol-bar .ust-kume-ad { height: 38px; }
+#sol-bar .ust-kume { gap: 5px; padding: 5px; }
+#ust-sekmeler { gap: 8px; padding: 10px 10px 8px; }
+#banner { max-height: 60px; }
+#sol-bar-logo { gap: 4px; padding-top: 10px; }
+#gorunum-bas { height: 36px; }
+#sol-bar #gorunum-govde #tema-btn, #sol-bar #gorunum-govde #cerceve-btn { height: 34px; }
+#sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn { height: 36px; }
+#sol-bar .sol-bar-dugmeler { gap: 7px; }

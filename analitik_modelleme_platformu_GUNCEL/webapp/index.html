@@ -16,10 +16,20 @@
        sol bar çerçevenin içinde tam boyda; sayfalar sağında açılır. -->
   <aside id="sol-bar">
 
+    <!-- ÖLÇEKLİ İÇ KAP: sol barın bütün içeriği; kaydırma YOK. Kap,
+         barın yüksekliğine sığacak oranda büyütülüp küçültülür (çerçeve
+         kapanınca da aynı oranda büyür) - app.js: solBarOlcekle. -->
+    <div id="sol-bar-ic">
     <div id="sol-bar-logo">
       <img id="banner" alt="">
-      <div id="sol-bar-ad">KATIB</div>
-      <div id="sol-bar-aciklama">Bireysel Krediler Analitik ve Tahsis BI</div>
+      <!-- KATIB yazı logosu: açık temada siyah, koyu temada beyaz yazılı
+           görsel. Görsel yüklenemezse yazı gösterilir. -->
+      <img id="katib-logo-acik" class="katib-logo" alt="KATIB - Bireysel Krediler Analitik ve Tahsis BI" hidden>
+      <img id="katib-logo-koyu" class="katib-logo" alt="KATIB - Bireysel Krediler Analitik ve Tahsis BI" hidden>
+      <div id="sol-bar-yazi" hidden>
+        <div id="sol-bar-ad">KATIB</div>
+        <div id="sol-bar-aciklama">Bireysel Krediler Analitik ve Tahsis BI</div>
+      </div>
     </div>
 
     <!-- SAYFA KÜMELERİ (sol barda alt alta).
@@ -137,6 +147,7 @@
         </div>
       </div>
 
+    </div>
     </div>
   </aside>
 
