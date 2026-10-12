@@ -16,7 +16,7 @@ HESAP (hepsi KESIN; yaklasik sayim ve orneklem yok)
   4. Deger basina denetim (tip donusumu, kisisel veri deseni, donem
      yazimlari): tekil degerler surucuye alinip profil_kural'in ayni
      fonksiyonlariyla denetlenir; cok tekilli kolonda Spark ifadeleriyle.
-     YURUTUCUDE PYTHON CALISMAZ (kurumdaki yurutucu imajinda code env yok).
+     YURUTUCUDE PYTHON CALISMAZ (yurutucu imajinda code env yok).
   Kurallar profil_kural.py'de; ayni kurallar yerel motorda da calisir ve
   iki motorun ayni tabloda ayni sonucu verdigi test ediliyor.
 """
@@ -233,8 +233,7 @@ def _kantiller(tt, tur, dolular):
 # ===========================================================================
 # 3) DEGER BASINA DENETIM - YURUTUCUDE PYTHON YOK
 # ===========================================================================
-# Kurumdaki Spark yurutuculeri code env'siz imajla aciliyor (Python/pandas
-# yok.Kendi kodu saf Spark).
+# Spark yurutuculeri code env'siz imajla acilir (Python/pandas yok).
 # Bu yuzden yurutucude Python calistiran hicbir sey (rdd.map, UDF, surucu
 # listesinden createDataFrame) KULLANILMAZ:
 #   - Tekil degeri SURUCU_SINIRI'nin altindaki kolon: tekil degerler ve

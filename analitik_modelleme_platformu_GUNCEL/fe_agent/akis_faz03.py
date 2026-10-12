@@ -105,8 +105,8 @@ def _adim_temizle(durum, *kaynaklar):
 def _kaynaga_yaz(durum, kaynak, adlar):
     """Uretilen degiskeni KIM uretti: kural tabanli mi, AI kesfi mi?
 
-    durum["uretilen"] duz bir ad listesi. Ust serit "kural kac tane, AI kac tane, bunlarin
-    kaci finalde kaldi" diye sorunca bu ayrim gerekli oldu."""
+    durum["uretilen"] duz bir ad listesi; ust serit kural / AI dagilimini
+    ve finalde kalanlari bu ayrimdan okur."""
     harita = durum.get("uretilen_kaynak")
     if not isinstance(harita, dict):
         harita = {}
@@ -226,7 +226,7 @@ def _tekli(df, kolonlar, d, ogren_maske=None, kayit=None):
 
     LEAKAGE: winsorize kesim noktalari ve rank referans dagilimi YALNIZCA
     ogren_maske (train) satirlarindan ogrenilir, sonra TUM satirlara
-    uygulanir. Maske verilmezse eski davranis (tum satirlar) korunur.
+    uygulanir. Maske verilmezse tum satirlar kullanilir.
     kayit verilirse ogrenilen parametreler oraya yazilir.
     """
     y = {}
@@ -312,7 +312,7 @@ def kural_uygula(durum, secim=None):
                 _yeniden_notu(silinen_kural, silinen_kesif))
 
     # Kaynak modelleme tablosu (tip donusumleri okumada uygulanmis);
-    # baz set artik uretimden SONRA kuruluyor.
+    # baz set uretimden SONRA kurulur.
     df = modelleme_df(durum)
     tr, _te = maskeler(durum, df)            # LEAKAGE SINIRI
     yasak = _meta_yasak(durum) | _kusurlu(durum)
@@ -389,7 +389,6 @@ def kural_uygula(durum, secim=None):
                 % (_sayi(len(uretilen)), hedef, str(e)[:120]))
     # Bu yazma _yaz() uzerinden GECMIYOR (hedef dataset yoksa farkli bir
     # hata metni gerekiyor), dolayisiyla onbellek iptalini kendisi yapar.
-    #
     onbellek_temizle(hedef)      # tablo degisti; bayat kopya okunmasin
 
     durum["uretilen"] = sorted(set(durum.get("uretilen") or []) | set(uretilen))
@@ -459,8 +458,8 @@ def kesif_plan(durum):
         if o.get("ad") in yasak or (set(kullanilan) & yasak):
             reddedilen.append((o.get("ad", "?"), "hedef/kimlik kolonu kullanılamaz"))
             continue
-        # LLM'in urettigi ad sablona enjeksiyon yapabilir; ifade.py artik
-        # gecersiz adda ValueError firlatiyor. Oneriyi atla, sayisini bildir.
+        # LLM'in urettigi ad sablona enjeksiyon yapabilir; ifade.py
+        # gecersiz adda ValueError firlatir. Oneriyi atla, sayisini bildir.
         try:
             o["kod"] = ifade_mod.python_kodu(o["ad"], o["ifade"])
         except Exception as e:
@@ -499,8 +498,8 @@ def kesif_uygula(durum, secim=None):
     hipotez = _secimi_uygula(durum.get("hipotez") or [], secim)
     hedef = "%s_ENRICHED" % durum["veri_seti"]
 
-    # aksi halde secim degisince eski kolonlar
-    # tabloda kalir, durum["uretilen"] ile tablo birbirini tutmaz.
+    # Adimin onceki kayitlari once silinir; aksi halde secim degisince eski
+    # kolonlar tabloda kalir, durum["uretilen"] ile tablo birbirini tutmaz.
     silinen = _adim_temizle(durum, KESIF_KAYNAK)
     _sfa_gecersiz(durum)
 
@@ -546,7 +545,6 @@ def kesif_uygula(durum, secim=None):
                 % (_sayi(len(uretilen)), hedef, str(e)[:120]))
     # Bu yazma _yaz() uzerinden GECMIYOR (hedef dataset yoksa farkli bir
     # hata metni gerekiyor), dolayisiyla onbellek iptalini kendisi yapar.
-    #
     onbellek_temizle(hedef)      # tablo degisti; bayat kopya okunmasin
 
     durum["uretilen"] = sorted(set(durum.get("uretilen") or []) | set(uretilen))

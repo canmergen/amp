@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_faz05.py - Faz 05 - Modelleme ve Finalizasyon: karsilastirma, algoritma, final.
-
-akis.py bolundu; bu dosya o bolumun aynisidir.
-"""
+"""fe_agent/akis_faz05.py - Faz 05 - Modelleme ve Finalizasyon: karsilastirma, algoritma, final."""
 
 from fe_agent import model as model_mod
 from fe_agent import kutuk as katalog_mod
@@ -168,8 +165,8 @@ def model_uygula(durum):
     auc_ga = ga.get("auc")
     # SIRA ONEMLI: once "karsilastirma yapildi mi", sonra "sonuc anlamli mi".
     # Yeni kolon yoksa iki model aynidir; delta sifir cikar ve guven araligi
-    # [0,0] olur. Bunu gurultu yorumuna sokmak, hic yapilmamis bir olcum
-    # hakkinda istatistiksel hukum kurmak demekti.
+    # [0,0] olur. Bunu gurultu yorumuna sokmak, yapilmamis bir olcum
+    # hakkinda istatistiksel hukum kurmak olur.
     if not sonuc.get("karsilastirilabilir", True):
         yorum = ("KARŞILAŞTIRMA YAPILAMADI. %s Katkı ölçümü için önce "
                  "değişken üretimi ve seçimi çalışmalı."
@@ -237,7 +234,7 @@ def _cv_katlari(durum):
     ancak katlari kurmayi DENEYEREK anlasilir: kimlik bazli bolmede gruplu
     kat kurulamiyorsa CV kapanir ve secim yeri val'e (ya da hicbir yere)
     duser. "cv=kfold yazdiysa CV vardir" varsayimi, gruplamasiz katlarla
-    sessizce devam etmek demekti."""
+    sessizce devam etmek olur."""
     kaynak, _zengin = _kaynak(durum)
     if kaynak is None:
         return None, []
@@ -267,9 +264,8 @@ def _hiperparametre_secimi(durum):
                 " ".join(kat_notlari)
     if a["val_var"]:
         return True, "doğrulama seti", " ".join(kat_notlari)
-    # Metinde arama YAPMIYORUZ: "SABİT".lower() Turkce'de "sabit" vermez
-    # (noktali i), kural sessizce hic tetiklenmezdi. Sabit metnin kendisi
-    # karsilastiriliyor.
+    # Metinde arama yapilmaz: "SABİT".lower() Turkce'de "sabit" vermez
+    # (noktali i). Sabit metnin kendisi karsilastirilir.
     uyari = [u for u in bolme_uyarilari(durum) if u == GECERSIZ_BIRLESIM]
     return False, "-", " ".join(list(kat_notlari) + uyari[:1]).strip()
 

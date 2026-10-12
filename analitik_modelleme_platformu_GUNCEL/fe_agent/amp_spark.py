@@ -14,7 +14,7 @@ NE YAPAR (istek proje degiskeninden, bkz. amp.py)
   1. Tip donusumleri - Degisken Kontrolu'nde secilenler. Kolonun tekil
      degeri azsa (ESLEME_SINIRI) donusum pandas'taki AYNI fonksiyonla
      (tip_donusum.cevir) tekil degerler uzerinde hesaplanir ve tabloya
-     eslenir: sonuc eski yolla birebir ayni. Tekil degeri cok olan kolonda
+     eslenir. Tekil degeri cok olan kolonda
      Spark ifadesi kullanilir. Iki yolda da SON KONTROL var: dolu olup
      cevrilemeyen tek bir hucre bile varsa is DURUR (profil "hepsi
      cevrilir" demisti; sessizce bos hucre uretmek kabul edilmez).
@@ -98,7 +98,7 @@ def _yerel_ifade(c, kod, tur, tam_sayi):
 def harita_ifadesi(ciftler, anahtar, anahtar_tipi, deger_tipi):
     """Surucudeki (anahtar, deger) ciftleri -> Spark haritasi ile esleme.
 
-    YURUTUCUDE PYTHON YOK (kurumdaki Spark yurutuculerinde code env yok):
+    YURUTUCUDE PYTHON YOK (Spark yurutuculerinde code env yok):
     surucu listesinden createDataFrame yurutucude Python istiyor; harita
     ise saf Spark ifadesidir. Eslenemeyen anahtar null doner."""
     from pyspark.sql import functions as F

@@ -13,7 +13,7 @@ anlamli olabilir; burada yalnizca tek degiskenli guc raporlanir.
 import numpy as np
 import pandas as pd
 
-IV_ESIK = 0.05           # bilgi amacli (eleme YOK, kullanici karari)
+IV_ESIK = 0.05           # bilgi amacli (eleme YOK)
 C_ESIK = 0.55
 KIRPMA = 0.05            # kirpilmis C-value: train %5 ve %95 yuzdelikleri
 
@@ -271,8 +271,8 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK):
         teshisler = []
         if null_oran > null_esik:
             cok_bos.append(kol); teshisler.append("aşırı null")
-        # SABIT = tek deger; BOS HUCRE AYRI DEGER SAYILIR (kullanici
-        # karari): bir deger + bos ("A" ve bos) iki degerdir, sabit degil.
+        # SABIT = tek deger; BOS HUCRE AYRI DEGER SAYILIR: bir deger + bos
+        # ("A" ve bos) iki degerdir, sabit degil.
         if tekil + (1 if null_adet > 0 else 0) <= 1:
             sabit.append(kol); teshisler.append("sabit")
         # Kimlik benzeri: yuksek tekillik TEK BASINA yetmez. Yuvarlanmamis

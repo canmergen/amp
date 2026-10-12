@@ -27,8 +27,6 @@ EKSIK DEGER IKI GORUNUMDE
 
 HESAP SAYIM TABLOLARI UZERINDEN: ince araliklarda (en fazla 20) satir ve
 hedef sayisi bir kez cikarilir, butun birlestirme bu kucuk tabloda yapilir.
-Sayimi ureten taraf pandas (bu dosya) ya da ileride Spark olabilir; karar
-kodu ayni kalir.
 """
 
 import math
@@ -249,8 +247,7 @@ def en_iyi_araliklar(ince, toplam):
 def esit_frekans_kesimleri(x, k):
     """Esit sikliga EN YAKIN, ayni degeri iki araliga bolmeyen kesimler.
 
-
-    Burada tekil degerler sirayla toplanir; biriken satir hedefe ulasinca
+    Tekil degerler sirayla toplanir; biriken satir hedefe ulasinca
     kesilir, hedef kalan satir / kalan aralik olarak yeniden hesaplanir.
     Boylece yigin kendi araligini alir, gerisi esit bolunur.
     Doner: kesimler (her araligin DAHIL ust degeri; son aralik haric).

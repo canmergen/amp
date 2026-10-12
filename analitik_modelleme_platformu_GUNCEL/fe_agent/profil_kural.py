@@ -44,8 +44,8 @@ from fe_agent import tip_donusum
 
 PROFIL_SURUMU = 1
 
-# Kolon turleri (Spark semasindan). Kaynak tip, pandas'taki eski ayrimla
-# ayni: sayisal (bool dahil, pandas is_numeric_dtype gibi), tarih, kategorik.
+# Kolon turleri (Spark semasindan). Kaynak tip: sayisal (bool dahil,
+# pandas is_numeric_dtype gibi), tarih, kategorik.
 TUR_TAM, TUR_ONDALIK, TUR_MANTIKSAL, TUR_METIN, TUR_TARIH = (
     "tam", "ondalik", "mantiksal", "metin", "tarih")
 SAYISAL_TURLER = (TUR_TAM, TUR_ONDALIK, TUR_MANTIKSAL)
@@ -114,9 +114,9 @@ def json_deger(v):
 def seri_kur(tur, degerler):
     """Bir parcanin tekil degerleri -> kolonun kaynak tipinde pandas serisi.
 
-    Deger basina denetim (tip_donusum.cevir, donem cozucu) pandas'taki
-    eski yol ile ayni tipte seri gormeli: tam sayi int64, ondalik float64,
-    mantiksal bool, tarih datetime64, metin object."""
+    Deger basina denetim (tip_donusum.cevir, donem cozucu) kaynak tipte
+    seri gormeli: tam sayi int64, ondalik float64, mantiksal bool, tarih
+    datetime64, metin object."""
     if tur == TUR_TAM:
         return pd.Series(np.asarray(degerler, dtype="int64"))
     if tur == TUR_ONDALIK:
@@ -484,7 +484,6 @@ def profil_kur(veri_seti, satir, duplicate, ozetler, motor):
 
         # HEDEF: yalnizca 0/1; bos disi degerler tam olarak {0, 1}. Sabit
         # kolon (hepsi 0) hedef olamaz: modellenecek olay yok.
-        #
         if tur in SAYISAL_TURLER and tekil_bos <= 3 \
                 and oz.get("degerler") is not None:
             if {float(v) for v, _n in oz["degerler"]} == {0.0, 1.0}:
@@ -623,7 +622,7 @@ def normallestir(seri, tur):
 
 
 def ilk_gecis_ozeti(ad, tur, seri):
-    """Bir kolonun birinci gecis sayilari (yerel motor). DuckDB motoru ayni
+    """Bir kolonun birinci gecis sayilari (yerel motor). Spark motoru ayni
     alanlari toplu sorgu ile uretir (profil_spark)."""
     dolu = seri.dropna()
     oz = {"ad": ad, "tur": tur, "dolu": int(len(dolu)),

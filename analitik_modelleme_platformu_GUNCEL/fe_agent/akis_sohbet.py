@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_sohbet.py - Mesaj yonlendirme, adim gecisleri ve serbest soru.
-
-akis.py bolundu; bu dosya o bolumun aynisidir.
-"""
+"""fe_agent/akis_sohbet.py - Mesaj yonlendirme, adim gecisleri ve serbest soru."""
 
 import copy
 import inspect
@@ -34,7 +31,7 @@ FINAL_ADIMI = "final"
 # YARDIMCILAR
 # ===========================================================================
 def _yeniden_sor_destekli(fn):
-    """Girdi fonksiyonu yeni `yeniden_sor` parametresini taniyor mu?"""
+    """Girdi fonksiyonu `yeniden_sor` parametresini taniyor mu?"""
     try:
         return "yeniden_sor" in inspect.signature(fn).parameters
     except (TypeError, ValueError):
@@ -44,9 +41,9 @@ def _yeniden_sor_destekli(fn):
 def _girdi_cagir(adim, durum, mesaj, yeniden_sor=False):
     """adim["girdi"](durum, mesaj[, yeniden_sor]) cagrisi.
 
-    `yeniden_sor` akis_faz01'e sonradan eklendi: True verilince adim
-    mevcut degerlerle DOLU formu acar ve False doner. Imzasinda henuz
-    yoksa eski bicimde cagrilir; cagiran taraf yine de girdi bekler."""
+    `yeniden_sor` True verilince adim mevcut degerlerle DOLU formu acar
+    ve False doner. Parametreyi tanimayan fonksiyon onsuz cagrilir;
+    cagiran taraf yine de girdi bekler."""
     fn = adim["girdi"]
     if yeniden_sor and _yeniden_sor_destekli(fn):
         return fn(durum, mesaj, yeniden_sor=True)
@@ -56,11 +53,8 @@ def _girdi_cagir(adim, durum, mesaj, yeniden_sor=False):
 def _uygula(adim, durum, secimli=False, secim=None):
     """Adimi calistirir.
 
-    ONBELLEK TOPTAN BOSALTILMIYOR.
-
-    gerekcesi "uygula adimlari veri setini degistirir"
-    idi.
-    Gercek bir Dataiku tablosunda bu adim basina onlarca saniye."""
+    ONBELLEK TOPTAN BOSALTILMAZ: gercek bir Dataiku tablosunda bu, adim
+    basina onlarca saniye demektir."""
     return adim["uygula"](durum, secim) if secimli else adim["uygula"](durum)
 
 
@@ -116,12 +110,12 @@ def _adima_gir(durum, yeniden_sor=False):
         # asamasi YOK: kullanici formu doldurup onay dugmesine bastiginda
         # zaten onaylamistir.
         # (girdi=None + plan=var olan adimlar bu daldan GECMEZ; onlar
-        #  eskisi gibi plan gosterip onay bekler.)
+        #  plan gosterip onay bekler.)
         if not yeniden_sor and adim.get("plan") is None:
             return _onayi_uygula(durum, adim, sira[durum["i"]])
         if yeniden_sor:
-            # Girdi fonksiyonu `yeniden_sor`u henuz tanimiyor: bilgi tam
-            # oldugu icin True dondu. Yine de girdi bekliyoruz ki
+            # Girdi fonksiyonu `yeniden_sor`u tanimiyorsa bilgi tam
+            # oldugu icin True doner. Yine de girdi beklenir ki
             # kullanici degeri degistirebilsin.
             durum["bekleyen"] = "girdi"
             return soru or _bos_metin_yedegi(
@@ -217,8 +211,7 @@ def _soru_isle(durum, mesaj, anahtar, adim):
 def _soru_turu(durum, mesaj, anahtar, adim, secenekler, alan):
     """Serbest soru turu: cevabi doner ve EKRANI korur.
 
-    Cevapla birlikte onceki secenek kartlari / form YENIDEN gonderilir.
-"""
+    Cevapla birlikte onceki secenek kartlari / form YENIDEN gonderilir."""
     cevap = _soru_isle(durum, mesaj, anahtar, adim)
     durum["_secenekler"] = secenekler or []
     durum["_secim_alani"] = alan
@@ -290,7 +283,6 @@ def _hedefe_don(durum, hedef):
         not_metni = amp_gecersiz_kil(durum)
     _aciklamayi_geri_al(durum, sira, yeni)
     # yeniden_sor=True: bilgi durumda tam olsa bile form yeniden acilir.
-    #
     cevap = _adima_gir(durum, yeniden_sor=True)
     return _birlestir(not_metni, cevap) if not_metni else cevap
 
@@ -309,8 +301,7 @@ def mesaj_isle(durum, mesaj, dogrulama=None, hedef_adim=None):
 
     hedef_adim: sohbetteki bir blogun sag ustundeki "Geri Dön" dugmesi.
     O blogu ureten adima DOGRUDAN doner. Serbest metin "geri dön"
-    yalnizca BIR adim geri gidiyor; transkriptte yukari cikip dort adim
-    oncesine donmenin yolu yoktu."""
+    yalnizca BIR adim geri gider."""
     yedek_i = durum.get("i")
     yedek_bekleyen = durum.get("bekleyen")
     # Onceki turdan kalan "tamamlandi" isareti bu tura sizmasin: arka uc
@@ -433,8 +424,8 @@ def _onayi_uygula(durum, adim, anahtar, secim=None):
         return _birlestir(cikti, "Çalışma tamamlandı.")
     durum["i"] += 1
     _tamamlandi_yaz(durum, anahtar, cikti)
-    # BOS PARCALAR ATILIR. Adimlar artik bilerek "" donebiliyor (sonuc
-    # zaten kartta ya da sag panelde gorunuyor).
+    # BOS PARCALAR ATILIR. Adimlar bilerek "" donebilir (sonuc zaten
+    # kartta ya da sag panelde gorunur).
     return _birlestir(cikti, _adima_gir(durum))
 
 
@@ -532,13 +523,11 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
             durum["i"] += 1
             _tamamlandi_yaz(durum, anahtar, cikti)
             sonraki = _adima_gir(durum)
-            #
             return (cikti + "\n\n" + sonraki) if (cikti or "").strip() \
                 else sonraki
 
         # FORMUN KENDISI ONAYDIR (plan=None). Kullanici formu doldurdu ve
         # onay dugmesine basti; ayri bir "Doğru mu?" asamasi yok.
-        #
         if adim.get("plan") is None:
             return _onayi_uygula(durum, adim, anahtar)
 

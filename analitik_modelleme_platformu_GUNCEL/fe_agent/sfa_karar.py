@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """fe_agent/sfa_karar.py - SFA: DEGISKEN DETAYI, KARARLAR, YAPAY ZEKA KARARI.
 
-KULLANICI KARARLARI
+TEMEL KURALLAR
   - SFA bir ELEME yeri degildir: IV ya da C-value dusuk diye degisken
     elenmez. SFA'nin sorusu "degisken modele EN IYI hangi haliyle girer".
   - Metrikleri KOD hesaplar; her degisken icin nasil girecegine YAPAY ZEKA
@@ -21,7 +21,7 @@ KARAR ALANLARI (her degisken)
                    isaret : eksik isareti kolonu (<K>_EKSIK) + medyan
                    missing: kategorikte eksikler ayri "MISSING" kategorisi
   eksik_deger    sabit doldurma degeri
-  aykiri         "yok" | "winsor"   (train %5 - %95, kullanici karari)
+  aykiri         "yok" | "winsor"   (train %5 - %95)
   donusum        "yok" | "log" | "ustel" | "sira"
   ayriklastirma  "yok" | "onerilen" (SFA'nin hedefe gore araliklari)
   yorum, gerekce, kaynak ("kural" | "yapay_zeka" | "kullanici")
@@ -48,7 +48,7 @@ from fe_agent import aralik as aralik_mod
 from fe_agent import tip_donusum
 
 KARAR_DOSYA = "sfa_kararlar.json"
-GRAFIK_ARALIK = 20          # grafikteki ince aralik sayisi (ornek ekranla ayni)
+GRAFIK_ARALIK = 20          # grafikteki ince aralik sayisi
 KATEGORI_GOSTER = 19        # grafikte en cok kategori; gerisi "Diğer"
 KIRPMA = 0.05               # winsor: train %5 ve %95
 CARPIK_ESIK = 2.0           # varsayilan log donusumu icin carpiklik esigi
@@ -78,9 +78,8 @@ TIP_ADAYLARI = {
     "kategorik": ("sayisal_nokta", "sayisal_virgul"),
     "sayısal": ("kategorik_metin",),
 }
-# Sayisal bir kolonun KOD oldugunu gosteren ad parcalari (01.3'teki
-# eski kuralin aynisi). Ad + az sayida tam sayi deger birlikte varsa
-# kategorik onerilir; ad tek basina yetmez.
+# Sayisal bir kolonun KOD oldugunu gosteren ad parcalari. Ad + az sayida
+# tam sayi deger birlikte varsa kategorik onerilir; ad tek basina yetmez.
 KOD_AD_PARCALARI = {"KOD", "KODU", "CODE", "CD", "TIP", "TIPI", "TYPE",
                     "SEGMENT", "SEG", "SINIF", "CLASS", "GRUP", "GROUP",
                     "KATEGORI", "CAT", "IL", "ILCE", "SUBE", "BRANCH",
