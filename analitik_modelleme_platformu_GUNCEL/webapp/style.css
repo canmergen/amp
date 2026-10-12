@@ -4184,3 +4184,6 @@ span.bolme-cip { cursor: default; }
   font-weight: 800; color: #000;
 }
 #kabuk.koyu #sol-bar-aciklama { color: #fff; }
+/* Robot öncekinin %70'i: ölçek robot küçülünce biraz büyüdüğü için tasarım
+   boyu 76 px (ekranda önceki boyun yaklaşık %70'i). */
+#sol-bar-logo #banner { width: auto; max-width: 100%; max-height: 76px; }
