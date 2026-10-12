@@ -25,15 +25,15 @@ KARSILAMA = (
     "**Süreç nasıl ilerler?**\n"
     "Her aşamada yapılacak işlemler ve bunların amacı açıklanır. Analizler ve "
     "hesaplamalar sistem tarafından gerçekleştirilirken önemli kararlar "
-    "sizin onayınızla uygulanır.\n"
+    "sizin onayınızla uygulanır. "
     "Değişkenlerin kaynakları, uygulanan dönüşümler, seçim kararları ve "
     "analiz sonuçları çalışma boyunca kayıt altında tutulur. Böylece sürecin "
     "her adımını takip edebilir, sonuçları inceleyebilir ve çalışmanıza "
-    "kaldığınız yerden devam edebilirsiniz.\n"
+    "kaldığınız yerden devam edebilirsiniz. "
     "Çalışmanızın ilerleyişini üst bölümdeki **İş Akışı** üzerinden "
-    "görüntüleyebilirsiniz.\n"
-    "Başlamak için verinizin mevcut durumuna uygun başlangıç seçeneğini "
-    "belirleyin."
+    "görüntüleyebilirsiniz.\n\n"
+    "**Başlamak için verinizin mevcut durumuna uygun başlangıç seçeneğini "
+    "belirleyin.**"
 )
 
 # ===========================================================================
