@@ -8,15 +8,16 @@ import re
 
 
 
-KARSILAMA = """**Ham veriden final modele: adım adım, izlenebilir model geliştirme.**
-Analitik süreç tek bir çalışma içinde yürütülür: veri hazırlanır, yeni değişkenler üretilip değerlendirilir, model denemeleri yapılır; en iyi model kaydedilir ve yeni değişkenlerin modele katkısı ölçülür.
-Çalışma, üstteki İş Akışı'ndaki beş fazda adım adım ilerler. Her adımda önce ne yapılacağı açıklanır; hesaplamalar Python ile yapılır, kararlar onayınızla uygulanır ve sonuçlar kayda geçer. Değişkenlerin kaynağı, dönüşümü ve seçim durumu süreç boyunca kayıtlı kalır.
-Başlamak için verinizin durumuna uygun başlangıcı seçin."""
+# KARSILAMA: asagida, faz listesinden sonra kuruluyor (faz adlari tek kaynaktan).
 
 # ESKI KARSILAMA METINLERI: bu metinle kaydedilmis eski calismalarda adimin
 # cerceve metni gecmise yazilmis olabilir; okunurken yine cerceve sayilsin
 # diye tutulur (webapp/backend.py: _cerceve_metni_mi).
 KARSILAMA_ESKI = (
+    """**Ham veriden final modele: adım adım, izlenebilir model geliştirme.**
+Analitik süreç tek bir çalışma içinde yürütülür: veri hazırlanır, yeni değişkenler üretilip değerlendirilir, model denemeleri yapılır; en iyi model kaydedilir ve yeni değişkenlerin modele katkısı ölçülür.
+Çalışma, üstteki İş Akışı'ndaki beş fazda adım adım ilerler. Her adımda önce ne yapılacağı açıklanır; hesaplamalar Python ile yapılır, kararlar onayınızla uygulanır ve sonuçlar kayda geçer. Değişkenlerin kaynağı, dönüşümü ve seçim durumu süreç boyunca kayıtlı kalır.
+Başlamak için verinizin durumuna uygun başlangıcı seçin.""",
     """**Akıllı Modelleme Platformu'na hoş geldiniz.**
 Çalışma, soldaki iş akışındaki beş fazda adım adım ilerler. Her adımda önce ne yapılacağı açıklanır, onayınızla uygulanır ve sonucu kayda geçer. Başlamak için verinizin durumuna uygun başlangıcı seçin.""",
 )
@@ -127,6 +128,29 @@ SONRAKI_FAZLAR = [
 
 # Faz 01'in ozeti moddan bagimsiz: karsilama kartiyla ayni tanim
 FAZ01_OZET = "Veri seti, sözlük, kolon rolleri ve örneklem tasarımı"
+
+# ===========================================================================
+# KARSILAMA - 01.1 Baslangic Secimi blogunun metni
+# ===========================================================================
+# KATIB kendini tanitir: ne yaptigi, nasil calistigi (her adimda aciklama,
+# onay, kayit) ve bes faz. Faz adlari ve ozetleri is akisindaki tanimlarin
+# AYNISI (FAZ01_OZET, SONRAKI_FAZLAR); girintili "Etiket : Deger" satirlari
+# ekranda hizali liste olarak cizilir (app.js: metinBicimle).
+KARSILAMA = (
+    "**Merhaba, ben KATIB.** Ham veriden final modele kadar model geliştirme "
+    "sürecinizi sizinle birlikte, adım adım yürütürüm.\n\n"
+    "Her adımda önce ne yapacağımı ve neden yapacağımı anlatırım; "
+    "hesaplamaları Python ile yaparım, kararı siz verirsiniz. Onayladığınız "
+    "her sonuç kayda geçer: değişkenlerin kaynağı, dönüşümü ve seçim "
+    "gerekçesi süreç boyunca izlenebilir kalır. Ara verdiğinizde çalışmanız "
+    "kaldığı yerden açılır.\n\n"
+    "**Süreç beş fazdan oluşur**; nerede olduğunuzu üstteki İş Akışı'ndan "
+    "her an görebilirsiniz.\n"
+    + "\n".join("  **%s** %s : %s" % (f["no"], f["baslik"], f["ozet"])
+                for f in [{"no": "01", "baslik": "Çalışma Kurulumu",
+                           "ozet": FAZ01_OZET}] + SONRAKI_FAZLAR)
+    + "\n\nBaşlamak için verinizin durumuna en uygun başlangıcı seçin."
+)
 
 # ===========================================================================
 # ADIM ADLARI - TEK KAYNAK
