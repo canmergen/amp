@@ -17,7 +17,7 @@ Bu tur: **01.2.4 alt adımları yalnız "Kontrol Edilsin" seçilince görünür 
   listeleri "ve N kolon daha"; dönem aralığı "(202401 – 202406)";
   örnek değerler ve birleştirme planındaki adlar/gerekçeler kesilmiyor.
 - Word / Excel: çok uzun metinde (Word 20.000, Excel 32.000 karakter)
-  üç nokta yerine "[devamı ... alınmadı]" gibi açık bir not yazılır.
+  üç nokta yerine "[metnin devamı çok uzun olduğu için alınmadı]" notu yazılır.
 - Dil modeline giden istemlerdeki kısaltmalar (ekranda görünmez) aynı.
 
 Önceki tur: **Orta panel (Analitik Süreç / İş Akışı) yazıları bir kademe küçük; 01.2.4'ün aç/kapa oku satırında**. Değiştir: `webapp/style.css`, `OKU_ONCE.md` (backend yeniden başlatmaya gerek yok)
