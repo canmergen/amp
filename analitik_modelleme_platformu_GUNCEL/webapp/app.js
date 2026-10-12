@@ -487,8 +487,8 @@ function cekmeceAc(panel, buton) {
 /* İŞ AKIŞI BÖLMESİ (Jupyter'deki gezinme bölmesi gibi). Bardaki "İş
    Akışı" düğmesi faz listesini barın altında, solda bölme olarak açar;
    bölme alanın en altına kadar uzanır ve sohbet sağa kayar. Kapatılana
-   kadar AÇIK KALIR (dışarıya basmak, adıma gitmek kapatmaz): kapatmak
-   için bölmenin sağ üstündeki düğme ya da yine İş Akışı düğmesi. Seçim
+   kadar AÇIK KALIR (dışarıya basmak, adıma gitmek kapatmaz); yine İş
+   Akışı düğmesiyle kapanır. Seçim
    bu tarayıcıda hatırlanır; okunamazsa bölme kapalı başlar. */
 const AKIS_ACIK_ANAHTAR = "amp_akis_acik";
 const akisMenuEl = document.getElementById("akis-menu");
@@ -510,7 +510,6 @@ function akisMenuAc(ac, kaydet) {
     }
 }
 if (akisBtn) akisBtn.onclick = () => akisMenuAc(!sohbetAlan.classList.contains("akis-acik"), true);
-{ const k = document.getElementById("akis-kapat"); if (k) k.onclick = () => { akisMenuAc(false, true); if (akisBtn) akisBtn.focus(); }; }
 (function akisBolmeIlk() {
     let ilk = false;
     try { ilk = localStorage.getItem(AKIS_ACIK_ANAHTAR) === "1"; } catch (e) { ilk = false; }
