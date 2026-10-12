@@ -4177,3 +4177,6 @@ span.bolme-cip { cursor: default; }
 #akis-menu.acik #panel { display: block; }
 /* Tek çerçeve: içteki balonun kendi kenarı ve gölgesi yok. */
 #akis-menu #panel .panel-blok { margin: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }
+
+/* Robot logosu üst kenara yapışmasın: üstte 14 px boşluk. */
+#sol-bar-logo { padding-top: 14px; }
