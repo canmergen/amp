@@ -609,6 +609,13 @@ def modelleme_kaynagi(durum):
                 "Listesi ve Tip Kontrolü» adımına dönüp kaydedin; AMP_VERISETI bu çalışmanın "
                 "kendi klasörüne yeniden yazılır.")
         return str(amp), True
+    # TEYIT ONCESI: secim aninda alinan birebir kopya (AMP_VERISETI_HAM).
+    # Kullanicinin tablosu secimden sonra okunmaz; tip donusumleri henuz
+    # yazilmadigi icin okumada uygulanir (amp_mi=False).
+    from fe_agent import amp as amp_mod       # gec import: dongu olmasin
+    ham = amp_mod.amp_ham_kaynagi(durum)
+    if ham:
+        return str(ham), False
     return durum.get("veri_seti"), False
 
 
@@ -727,9 +734,8 @@ def modelleme_df(durum, limit=-1, kaynak=False):
     """Modelleme tablosunu, SOZLUK TEYIDINDE SECILEN TIP DONUSUMLERI
     uygulanmis halde okur.
 
-    kaynak=True: AMP_VERISETI yazilmis olsa bile KULLANICININ TABLOSUNU
-    okur. AMP ciktisini URETEN kodun kullandigi yol budur - aksi halde
-    kendi ciktisini kaynak alirdi.
+    kaynak=True: AMP_VERISETI yazilmis olsa bile TEYIT ONCESI tabloyu
+    (AMP_VERISETI_HAM; eski calismada kullanicinin tablosu) okur.
 
     NEDEN OKUMADA, YAZMADA DEGIL
       Donusumu tabloya YAZMAK iki sebeple yanlisti. Birincisi: Mod A ve
@@ -739,8 +745,12 @@ def modelleme_df(durum, limit=-1, kaynak=False):
 
     Donusum secilmemisse ek maliyet YOK: _df_oku'nun donen tablosu
     oldugu gibi geri verilir."""
-    ad, amp_mi = ((durum or {}).get("veri_seti"), False) if kaynak \
-        else modelleme_kaynagi(durum)
+    if kaynak:
+        from fe_agent import amp as amp_mod   # gec import: dongu olmasin
+        ad, amp_mi = (amp_mod.amp_ham_kaynagi(durum)
+                      or (durum or {}).get("veri_seti")), False
+    else:
+        ad, amp_mi = modelleme_kaynagi(durum)
     kopya = None if amp_mi else _calisma_kopyasi(durum, ad)
     if kopya:
         df = _dosya_oku(kopya, None if limit == -1 else limit)

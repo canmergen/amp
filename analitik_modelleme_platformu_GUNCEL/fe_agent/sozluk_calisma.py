@@ -55,6 +55,11 @@ KATEGORI_KOLONU = "KATEGORI"
 # oldugu gibi, sozlukte baska bir yazimla varsa o kolon kullanilir.
 TANIM_KOLONU = "ACIKLAMA"
 
+# Secim anindaki aciklama (kullanicinin sozlugunden geldigi hali). Teyit
+# kartinda "kullanici tanimi degistirdi mi" bunun uzerinden okunur;
+# kullanicinin sozlugu secimden sonra BIR DAHA okunmaz.
+ILK_TANIM_KOLONU = "ILK_ACIKLAMA"
+
 # Degisiklik kutugunde KAYNAK alani. Bir sozluk tanimi ya dil modelinin
 # onerdigi ve kullanicinin OLDUGU GIBI onayladigi metindir, ya da
 # kullanicinin kendi yazdigidir. Denetim acisindan ayni sey degiller:
@@ -349,6 +354,10 @@ def kopya_kur(durum, tablo=None):
                 "dusen_ornek": rapor["dusen"][:20],
                 "dusen_liste": rapor["dusen"][:5000],
                 "eklenen_ornek": rapor["eklenen"][:20]}
+        # Secim anindaki aciklama saklanir (bkz. ILK_TANIM_KOLONU).
+        tanim_kolon = tanim_kolonu_bul(tablo)
+        if tanim_kolon is not None:
+            tablo[ILK_TANIM_KOLONU] = tablo[tanim_kolon].astype(object)
         # Kopya TEYIT ONCESININ tablosudur: AMP_SOZLUK'un ustune yazilmaz.
         yol, hata = _kopya_yaz(oturum, tablo, _calisma_kopyasi_yolu(oturum))
         if yol and rapor:
@@ -482,6 +491,21 @@ def _orijinal_oku(durum):
 # ---------------------------------------------------------------------------
 # OKUMA - oturum boyunca butun sozluk okumalarinin gectigi yer
 # ---------------------------------------------------------------------------
+def ilk_sozluk_df(durum):
+    """Secim anindaki aciklamalar: DataFrame(DEGISKEN, ACIKLAMA). Calisma
+    kopyasinda ILK_ACIKLAMA yoksa (eski calisma) None."""
+    oturum = (durum or {}).get("_oturum_id")
+    yol = _calisma_kopyasi_yolu(oturum) if oturum else None
+    if not yol:
+        return None
+    tablo = _oku_onbellekli(yol)
+    if tablo is None or ILK_TANIM_KOLONU not in tablo.columns:
+        return None
+    ad = degisken_kolonu_bul(tablo)
+    return pd.DataFrame({"DEGISKEN": tablo[ad].astype(str).tolist(),
+                         "ACIKLAMA": tablo[ILK_TANIM_KOLONU].tolist()})
+
+
 def calisma_df(durum):
     """Calisma kopyasi varsa DataFrame'i, yoksa None.
 

@@ -145,8 +145,10 @@ def _donem_adaylarini_hazirla(durum):
 # calisan PySpark isinin profilinden okunur. Profil calismanin klasorunde: /<calisma>/profil.json.
 def _profil(durum, taze=False):
     """Secili veri setinin profili. Calismada ayni veri seti icin profil
-    varsa o okunur; yoksa (ya da taze=True) PySpark isi calistirilir."""
-    veri = durum.get("veri_seti")
+    varsa o okunur; yoksa (ya da taze=True) PySpark isi calistirilir.
+    Profil AMP_VERISETI_HAM'DAN cikar (secim aninda alinan birebir kopya);
+    eski calismada kopya yoksa kullanicinin tablosundan."""
+    veri = amp_mod.amp_ham_kaynagi(durum) or durum.get("veri_seti")
     p = durum.get("profil") or {}
     if not taze and p.get("_profil_veri") == veri and p.get("_profil_kosu"):
         prof = profil_mod.profil_oku(amp_klasor_adi(durum), p["_profil_kosu"])
@@ -154,8 +156,24 @@ def _profil(durum, taze=False):
             return prof
     prof = profil_mod.profil_cikar(veri, amp_klasor_adi(durum),
                                    durum.get("_oturum_id") or "")
+    ham = durum.get("amp_ham") or {}
+    if ham and veri == amp_mod.amp_ham_kaynagi(durum):
+        # Kopyanin yolu boyut olcmez: motor ve boyut secilen tablonunki;
+        # profildeki ad kullanicinin sectigi veri seti.
+        prof["motor"] = ham.get("motor") or prof.get("motor")
+        prof["dosya_boyutu"] = ham.get("dosya_boyutu")
+        prof["veri_seti"] = durum.get("veri_seti")
+        metin_yaz(profil_mod.profil_yolu(amp_klasor_adi(durum)),
+                  json.dumps(prof, ensure_ascii=False, default=str))
     _profil_isaretle(durum, prof, veri)
     return prof
+
+
+def _secim_kopyasi(durum, df=None):
+    """Veri seti SECILDI: kullanicinin tablosunun birebir kopyasi
+    (AMP_VERISETI_HAM) alinir. Bundan sonra o tablo okunmaz."""
+    onbellek_temizle(durum.get("veri_seti"))
+    return amp_mod.amp_ham_yaz(durum, df)
 
 
 def _profil_isaretle(durum, prof, veri):
@@ -531,6 +549,7 @@ def birlestirme_uygula(durum):
                                      "ozet": {"satir": oz.get("satir"),
                                               "kolon": oz.get("kolon")}})
         sahip_yaz(BAZ_ADI, durum)
+        _secim_kopyasi(durum)
         _temel_profil(durum, _profil(durum, taze=True))
         sozluk_not = ""
         if durum.get("mod") == "B":
@@ -575,7 +594,9 @@ def birlestirme_uygula(durum):
 
     # Mod B/D'de veri seti burada olusuyor ve tablo zaten bellekte;
     # profil (kolon ozeti, adaylar) ayni kurallarla buradan cikar.
-    _temel_profil(durum, _bellekten_profil(durum, baz, ad))
+    ham = _secim_kopyasi(durum, baz)
+    _temel_profil(durum, _bellekten_profil(
+        durum, baz, ham.get("dosya") or ham.get("dataset")))
 
     # Mod B: kaynak sozluklerden nihai sozluk. Ayri bir adim DEGIL: kaynak
     # sozlukler zaten secildi, kullanicinin verecegi bir karar yok.
@@ -664,6 +685,7 @@ def veri_sec_girdi(durum, mesaj, yeniden_sor=False):
     return True, None
 
 def veri_sec_plan(durum):
+    _secim_kopyasi(durum)
     p = _temel_profil(durum, _profil(durum, taze=True))
 
     return ("Veri setini okudum:\n\n"
@@ -675,6 +697,8 @@ def veri_sec_plan(durum):
 
 def veri_sec_uygula(durum):
     """Form onaydir (plan=None): secimden sonra ozet yazilir, onay sorulmaz."""
+    if not amp_mod.amp_ham_kaynagi(durum):
+        _secim_kopyasi(durum)
     p = _temel_profil(durum, _profil(durum, taze=True))
     return ("Baz veri seti seçildi.\n"
             "  Veri seti : %s\n"
@@ -1348,7 +1372,9 @@ def _aciklama_baglami(durum):
               # Modelleme tanimlarinda secilen roller (kimlik, hedef ...).
               "roller": _zorunlu_etiketler(durum)}
     try:
-        baglam["tanimlar"] = _sozluk_tanimlari(sozluk_orijinal_oku(durum))
+        # AMP_SOZLUK (calisma kopyasi); kullanicinin sozlugu secimden
+        # sonra okunmaz.
+        baglam["tanimlar"] = _sozluk_tanimlari(sozluk_oku(durum))
     except Exception:
         pass
     # YAZIM TARZI kurumun sozlugundeki tanimlardan; ONAYLI TANIMLAR proje
@@ -3382,9 +3408,18 @@ def _kapsami_cikar(durum, taze=False):
     onbellek_temizle(durum.get("veri_seti"))
     onbellek_temizle(durum.get("sozluk"))
     prof = _profil(durum, taze=taze)
+    # Secim aninda (taze) kullanicinin sozlugu okunur - AMP_SOZLUK (calisma
+    # kopyasi) ondan kurulacak. Sonrasinda YALNIZ AMP_SOZLUK okunur.
     # sozluk_orijinal_oku: Mod B'de uretilen sozluk dataset'e yazilamazsa
     # CSV yedeginden okunur (durum["sozluk"] None kalir).
-    return _kapsam_hesapla(durum, prof, sozluk_orijinal_oku(durum))
+    sz = None
+    if not taze:
+        try:
+            sz = sozluk_calisma.calisma_df(durum)
+        except Exception:
+            sz = None
+    return _kapsam_hesapla(durum, prof, sz if sz is not None
+                           else sozluk_orijinal_oku(durum))
 
 
 def _kapsam_hesapla(durum, prof, sz):
@@ -3684,7 +3719,11 @@ def kurulum_uygula(durum):
     Burada yalnizca profil cikariliyor (tanimlar adimi hedef ve kimlik
     adaylarini buradan okuyor) ve sozluk calisma kopyasi kuruluyor.
     Profil TAZE cikarilir: veri seti secimi onaylandi, tablo bir onceki
-    profilden bu yana degismis olabilir."""
+    profilden bu yana degismis olabilir.
+
+    AMP_VERISETI_HAM: secilen tablonun birebir kopyasi BURADA alinir;
+    profil ve sonraki butun okumalar o kopyadan."""
+    _secim_kopyasi(durum)
     _kapsami_cikar(durum, taze=True)
     # Calisma kopyasi sozluk baglanir baglanmaz cikarilir: satir_ekle
     # yalnizca kopyaya yazar, kopya yoksa yazacak yer yoktur.
@@ -4061,11 +4100,10 @@ def _veri_seti_kolonlari(durum):
     if isinstance(ozet, list) and ozet:
         return [str(o["ad"]) for o in ozet
                 if isinstance(o, dict) and o.get("ad")]
-    ad = durum.get("veri_seti")
-    if not ad:
+    if not durum.get("veri_seti"):
         return []
     try:
-        return [str(c) for c in _df_oku(ad, limit=SEMA_LIMITI).columns]
+        return [str(c) for c in modelleme_df(durum, limit=SEMA_LIMITI).columns]
     except Exception:
         return []
 
@@ -4202,7 +4240,7 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
             # (bkz. _veri_seti_kolonlari).
             kolonlar = set(_veri_seti_kolonlari(durum))
             if not kolonlar:
-                kolonlar = set(_df_oku(durum["veri_seti"], limit=5).columns)
+                kolonlar = set(modelleme_df(durum, limit=5).columns)
             hatali = [(k, v) for k, v in meta.items() if v not in kolonlar]
             if hatali:
                 for k, _ in hatali:
@@ -4906,10 +4944,17 @@ def teyit_satirlari(durum):
         tam = None
     # Orijinal sozluk tanimlari: kullanici bir tanimi degistirdiyse satir
     # sari gosterilir (bkz. app.js oneriVurgusu).
+    # Kaynak: AMP_SOZLUK'un secim anindaki aciklamasi (ILK_ACIKLAMA);
+    # kullanicinin sozlugu secimden sonra okunmaz. Eski calismada kolon
+    # yoksa orijinal sozluk.
     try:
-        orijinal = _tanim_haritasi(sozluk_orijinal_oku(durum))
+        ilk = sozluk_calisma.ilk_sozluk_df(durum)
+        orijinal = _tanim_haritasi(ilk if ilk is not None
+                                   else sozluk_orijinal_oku(durum))
     except Exception:
         orijinal = {}
+    # Yeni ad verilmis kolonun ilk aciklamasi ESKI adiyla durur.
+    eski_ad = {str(y): str(e) for e, y in (durum.get("_amp_yeniden_ad") or {}).items()}
     satirlar = []
     for r in tablo.get("satirlar") or []:
         ad = str(r.get("feature") or "")
@@ -4960,7 +5005,9 @@ def teyit_satirlari(durum):
             "oneri_tip": tip_oneri.get(ad, ""),
             "oneri_tip_sebebi": (durum.get("_tip_oneri_sebep") or {}).get(ad, ""),
             "oneri_tanim": tanim_oneri.get(ad, ""),
-            "tanim_orijinal": (orijinal.get(ad.upper()) or ("", ""))[0],
+            "tanim_orijinal": (orijinal.get(ad.upper())
+                               or orijinal.get(eski_ad.get(ad, ad).upper())
+                               or ("", ""))[0],
             "donusum": kod,
             # Kilitli (gecmisten cizilen) kartta acilir liste yok; orada
             # secimin ETIKETI yaziyor. Etiket satirda durmazsa, teklif

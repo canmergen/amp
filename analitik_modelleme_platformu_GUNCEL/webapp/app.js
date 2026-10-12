@@ -6570,7 +6570,8 @@ function kolonlariHazirla(alan) {
     kolonlariDuyur();
 
     fetch(getWebAppBackendUrl("kolonlar")
-          + "?veri_seti=" + encodeURIComponent(veriSeti))
+          + "?veri_seti=" + encodeURIComponent(veriSeti)
+          + "&oturum_id=" + encodeURIComponent(OTURUM_ID))
         .then(r => r.json())
         .then(d => {
             const liste = (d && d.kolonlar) || [];

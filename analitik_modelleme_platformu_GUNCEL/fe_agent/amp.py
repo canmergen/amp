@@ -7,8 +7,11 @@ pandas ile (amp_pandas), buyuk veri Dataiku'daki PySpark recipe'leriyle
 (amp_spark; recipe'leri ve ciktilarini webapp kurar, spark_is.ISLER).
 Iki yolun sonuc sozlugu ayni bicimde; cagiran taraf motoru bilmez.
 
+  amp_ham_yaz   : VERI SETI SECILDIGI AN kullanicinin tablosunun birebir
+                  kopyasi (AMP_VERISETI_HAM). Bundan sonra kullanicinin
+                  tablosu HIC okunmaz; teyide kadar her okuma bu kopyadan.
   amp_yaz       : Degisken Kontrolu onayinda tip donusumleri + surec disi
-                  kolonlar (KAYNAK TABLODAN, bir kez).
+                  kolonlar + yeni adlar (AMP_VERISETI_HAM'DAN, bir kez).
   amp_bolme_yaz : Orneklem ve Dogrulama'da _SPLIT; KAYNAK AMP_VERISETI'nin
                   KENDISI.
 
@@ -35,6 +38,9 @@ SONUC_DOSYA = "/sonuc.json"
 DISARIDA = "disarida"      # hicbir sete girmeyen satir (amp_spark ile ayni)
 BAZ_VERI_ADI = "MODELLEME_BAZ"
 AMP_VERI_ADI = "AMP_VERISETI"
+# Secim anindaki birebir kopya: pandas yolunda /<calisma>/AMP_VERISETI_HAM
+# .parquet, Spark yolunda AMP_VERISETI_<V8>_HAM veri seti.
+AMP_HAM_EKI = "HAM"
 
 
 def dusen_kolonlar(durum, adlar):
@@ -121,11 +127,72 @@ def _klasore_yaz(yol, tablo):
     return yol
 
 
+def amp_ham_yolu(durum):
+    """Pandas yolunda AMP_VERISETI_HAM'in calisma klasorundeki yeri."""
+    from fe_agent.akis_faz01 import amp_klasor_adi
+    return "/%s/%s_%s.parquet" % (amp_klasor_adi(durum), AMP_VERI_ADI, AMP_HAM_EKI)
+
+
+def amp_ham_kaynagi(durum):
+    """AMP_VERISETI_HAM'in okunacagi ad (Parquet yolu ya da veri seti);
+    yoksa ya da secili veri seti o kopyadan sonra DEGISTIYSE None
+    (secim yenilenirken bayat kopya okunmasin)."""
+    ham = (durum or {}).get("amp_ham") or {}
+    if not ham or ham.get("kaynak") != (durum or {}).get("veri_seti"):
+        return None
+    return ham.get("dosya") or ham.get("dataset") or None
+
+
+def amp_ham_yaz(durum, df=None):
+    """Secilen veri setinin BIREBIR kopyasini AMP_VERISETI_HAM'a yazar.
+
+    NEDEN: "hazır veri seti ve sözlük seçildikten sonra AMP_VERISETI ve
+    AMP_SOZLUK harici hiçbir şey kullanılmaz". Kullanicinin tablosu
+    YALNIZ burada, bir kez okunur; profil, onizleme, dagilim, teyit ve
+    AMP_VERISETI'nin kendisi bu kopyadan okunur. Donusum, dusurme, ad
+    degisikligi YOK (onlar teyitte, amp_yaz).
+
+    df: tablo zaten bellekteyse (Mod B birlestirme) yeniden okunmaz.
+    Motor secili tablonun boyutuna gore (pandas: calisma klasorunde
+    Parquet; Spark: AMP_VERISETI_<V8>_HAM veri seti).
+    Doner ve durum["amp_ham"]'a yazar: {dosya | dataset, kaynak, motor,
+    satir, kolon}."""
+    veri = durum.get("veri_seti")
+    if not veri:
+        raise AdimHatasi("Veri seti seçilmeden AMP_VERISETI oluşturulamaz.")
+    secilen, boyut = motor.sec([veri])
+    if secilen == motor.PANDAS:
+        if df is None:
+            from fe_agent.akis_durum import _calisma_kopyasi, _dosya_oku
+            kopya = _calisma_kopyasi(durum, veri)
+            df = _dosya_oku(kopya) if kopya else _df_oku(veri, onbellek=False)
+        kayit = {"dosya": _klasore_yaz(amp_ham_yolu(durum), df), "dataset": None,
+                 "motor": motor.PANDAS, "satir": int(len(df)),
+                 "kolon": int(len(df.columns))}
+    else:
+        ek = "%s_%s" % (calisma_eki(durum), AMP_HAM_EKI)
+        istek = {"donusum": {}, "dusen": [], "hedef": None, "bolme": None,
+                 "yeniden_ad": {}}
+        sonuc = _sonuc_ile_calistir("amp", [veri], istek, durum.get("_oturum_id") or "",
+                                    ad_eki=ek)
+        ad = "%s_%s" % (AMP_VERI_ADI, ek)
+        motor.unut(ad)
+        kayit = {"dosya": None, "dataset": ad, "motor": motor.SPARK,
+                 "satir": int(sonuc.get("satir") or 0),
+                 "kolon": int(sonuc.get("kolon") or 0)}
+    # Motor ve boyut SECILEN tablonunki (kopyanin yolu boyut olcmez).
+    kayit.update(kaynak=veri, dosya_boyutu=boyut)
+    durum["amp_ham"] = kayit
+    onbellek_temizle()
+    return kayit
+
+
 def amp_yaz(durum, prof):
-    """AMP_VERISETI'ni KAYNAK TABLODAN yazar (Degisken Kontrolu onayi).
+    """AMP_VERISETI'ni AMP_VERISETI_HAM'DAN yazar (Degisken Kontrolu onayi).
+    Eski calismada (HAM kopyasi yok) kaynak tablodan.
     Doner: {satir, kolon, dusen, motor, dataset | dosya}. Hata -> AdimHatasi."""
     kolonlar = profil_mod.kolonlar(prof)
-    veri = durum.get("veri_seti")
+    veri = amp_ham_kaynagi(durum) or durum.get("veri_seti")
     istek = {
         "donusum": _donusum_istegi(durum, kolonlar),
         "dusen": dusen_kolonlar(durum, list(kolonlar)),

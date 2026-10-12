@@ -653,6 +653,19 @@ def kolonlar_endpoint():
     veri_seti = (request.args.get("veri_seti") or "").strip()
     if not veri_seti:
         return jsonify({"kolonlar": [], "hata": "Veri seti belirtilmedi."})
+    # Calismada bu veri seti SECILDIYSE kolonlar AMP_VERISETI'nden okunur;
+    # kullanicinin tablosuna secimden sonra gidilmez.
+    oturum = _temiz(request.args.get("oturum_id"))
+    if oturum:
+        try:
+            durum = _durum_al(_oturum_anahtari(oturum))
+            if durum.get("veri_seti") == veri_seti and \
+                    akis.modelleme_kaynagi(durum)[0] != veri_seti:
+                return jsonify({"kolonlar": [str(c) for c in
+                                             akis.modelleme_df(durum, limit=1).columns],
+                                "veri_seti": veri_seti})
+        except Exception:
+            pass
     try:
         return jsonify({"kolonlar": _kolon_adlari(veri_seti),
                         "veri_seti": veri_seti})
@@ -2400,7 +2413,8 @@ def _onizleme_hesapla(durum):
         ad, amp_mi = akis.modelleme_kaynagi(durum)
     except Exception:
         ad, amp_mi = durum.get("veri_seti"), False
-    if amp_mi:
+    # Secimden sonra okunan tablo hep AMP_VERISETI (teyit oncesi HAM kopya).
+    if amp_mi or ad != durum.get("veri_seti"):
         kaynak_ad = ((durum.get("amp_cikti") or {}).get("veri") or {}).get("ad") \
             or akis.AMP_VERI_ADI
     else:

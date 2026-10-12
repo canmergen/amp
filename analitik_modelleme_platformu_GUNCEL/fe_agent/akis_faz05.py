@@ -27,7 +27,14 @@ def _kaynak(durum):
     baz = (durum.get("baz") or {}).get("dataset")
     if baz and _dataset_okunur_mu(baz):
         return baz, True
-    for ad in ("%s_ENRICHED" % durum.get("veri_seti"), durum.get("veri_seti")):
+    # Son care AMP_VERISETI (modelleme kaynagi); kullanicinin tablosu
+    # secimden sonra okunmaz.
+    try:
+        from fe_agent.akis_durum import modelleme_kaynagi
+        amp_ad = modelleme_kaynagi(durum)[0]
+    except Exception:
+        amp_ad = None
+    for ad in ("%s_ENRICHED" % durum.get("veri_seti"), amp_ad):
         if ad and _dataset_okunur_mu(ad):
             return ad, False
     return None, False
