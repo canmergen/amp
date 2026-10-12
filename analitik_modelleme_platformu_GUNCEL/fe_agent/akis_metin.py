@@ -13,17 +13,17 @@ import re
 KARSILAMA = (
     "**Hoş geldiniz!**\n"
     "Bu platform, ham veriden final modele kadar bütün model geliştirme "
-    "sürecini tek ve izlenebilir bir çalışmada toplar.\n\n"
+    "sürecini tek ve izlenebilir bir çalışmada toplar.\n"
     "**Neler yapılır?** Veri hazırlanır, yeni değişkenler üretilip "
     "değerlendirilir, model denemeleri yapılır. En iyi model pickle "
-    "formatında kaydedilir, yeni değişkenlerin modele katkısı ölçülür.\n\n"
+    "formatında kaydedilir, yeni değişkenlerin modele katkısı ölçülür.\n"
     "**Nasıl çalışır?** Her adımda önce ne yapılacağı ve gerekçesi "
     "açıklanır. Hesaplamalar Python ile yapılır, kritik kararlar sizin "
     "onayınızla uygulanır, her sonuç kayda geçer. Değişkenlerin kaynağı, "
     "dönüşümü ve seçim durumu süreç boyunca kayıtlı kalır; çalışma kaldığı "
-    "yerden sürdürülebilir.\n\n"
+    "yerden sürdürülebilir.\n"
     "Çalışma beş fazda adım adım ilerler; akışı üstteki **İş Akışı**'ndan "
-    "takip edebilir ve görüntüleyebilirsiniz.\n\n"
+    "takip edebilir ve görüntüleyebilirsiniz.\n"
     "Başlamak için verinizin durumuna uygun başlangıcı seçin."
 )
 

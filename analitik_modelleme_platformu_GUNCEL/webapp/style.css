@@ -4025,10 +4025,10 @@ span.bolme-cip { cursor: default; }
   font-size: 12.5px;
 }
 #sol-bar #calismalar-btn .sifirla-ikon, #sol-bar #sifirla-btn .sifirla-ikon { width: 17px; height: 17px; }
-#sol-bar #calismalar-btn svg.ok, #sol-bar #sifirla-btn svg.ok {
+#sol-bar #calismalar-btn svg.ok {
   width: 15px; height: 15px; margin-left: auto; color: var(--sol-ok);
 }
-#sol-bar #calismalar-btn:hover svg.ok, #sol-bar #sifirla-btn:hover svg.ok { color: var(--kirmizi); }
+#sol-bar #calismalar-btn:hover svg.ok { color: var(--kirmizi); }
 
 /* ---- Sol bar ölçeği ve KATIB logosu ----
    İç kap tasarım eninde (224 px) doğal boyuyla dizilir; app.js
