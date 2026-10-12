@@ -30,7 +30,7 @@ from fe_agent import ifade as ifade_mod
 #   openai:<baglanti_adi>:<model_adi>
 # Model adinda nokta YOK (dropdown'da gorunen isimle ayni degil).
 LLAMA = "openai:dataiku-llama-31-70b-instruct-gptq-int4:meta-llama-31-70b-instruct-gptq-int4"
-# LLM Connections'a sonradan eklenen model (dropdown: qwen38-flash-next-fp8).
+# Qwen Flash modeli (dropdown: qwen38-flash-next-fp8).
 # Id yazimi ekrandaki baglanti / model adindan; Dataiku'da dogrulamak icin:
 #   [l["id"] for l in dataiku.api_client().get_default_project().list_llms()]
 QWEN_FLASH = "openai:dataiku-qwen38-flash-next-fp8:qwen38-flash-next-fp8"
@@ -718,9 +718,9 @@ def _tr_buyuk(metin):
     return str(metin).replace("i", "İ").replace("ı", "I").upper()
 
 
-# ACIKLAMA KONTROLU: kod modelin yazdigi metni BUDAMAZ. Parca silmek
-# cumleyi yarim birakiyordu ("Musterinin yasi (yil)."). Kural disi bir
-# ifade varsa metin oldugu gibi gelir, kartta "Kontrol Et" isaretiyle.
+# ACIKLAMA KONTROLU: kod modelin yazdigi metni BUDAMAZ; parca silmek
+# cumleyi yarim birakir. Kural disi bir ifade varsa metin oldugu gibi
+# gelir, kartta "Kontrol Et" isaretiyle.
 ACIKLAMA_EN_UZUN = 240     # istem 200 diyor; bunun uzeri isaretlenir
 
 # Veri dosyasina bagli ifadeler (aralik, tekil / satir sayisi,
@@ -760,8 +760,8 @@ def _veri_seti_deseni(veri_seti):
 
 def aciklama_temizle(metin, veri_seti=None):
     """Yalniz bicim: bosluklar sadelesir, bas harf buyur. Metinden hicbir
-    parca SILINMEZ (bkz. aciklama_sorunlari). veri_seti eski cagrilarla
-    uyum icin duruyor."""
+    parca SILINMEZ (bkz. aciklama_sorunlari). veri_seti kullanilmaz;
+    imza uyumu icin durur."""
     t = re.sub(r"\s+", " ", str(metin or "")).strip()
     t = re.sub(r"\s+([,.;])", r"\1", t)
     if t[:1].islower():

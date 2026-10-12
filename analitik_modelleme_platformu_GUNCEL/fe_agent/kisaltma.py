@@ -4,7 +4,7 @@ sozluk istatistigi ve ortak yardimcilar.
 
 Kisaltma Sozlugu (01.2.4.3) ve Yeni Kolon Adlari (01.2.4.4) kisaltma_okuma'da:
 anlamlar yalniz sozlukteki tanimlardan okunur (SOZLUK KESIN DOGRUDUR).
-Bu modulde kalanlar:
+Bu modulde:
 
 1) ISTATISTIK (cikar) - butun tanimlar: kolon adi parcalara bolunur, her
    parca icin adinda o parca gecen tanimli kolonlarin tanimlarinda gecen
@@ -63,7 +63,7 @@ _TR_SADE = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosuCGIOSU")
 # 1-2 harf + en az 2 rakam. Harf kismi kisaltma, rakam degerdir.
 # Tek rakamlilar kisaltmanin kendisi sayilir.
 _SAYILI = re.compile(r"^([A-Z]{1,2})(\d{2,})$")
-# Anlam tasimayan baglaclar. "gun", "ay" artik DURAK DEGIL: DAY / MONTH
+# Anlam tasimayan baglaclar. "gun", "ay" durak degildir: DAY / MONTH
 # gibi kisaltmalarin anlami olabilirler; pencereli tanimlarin hepsinde
 # gectikleri icin ayirt olcusu onlari zaten eler.
 _DURAK = {"ve", "ile", "icin", "olan", "bir", "bu", "da", "de", "gore", "son",
@@ -316,7 +316,6 @@ def adaylar(tanimlar):
             continue
         # Esitlikte kisaltmanin harflerini SIRAYLA iceren kelime one gecer
         # (kisaltma harflerini sirayla tasiyan kelime).
-        #
         sirali = sorted(tekli, key=lambda k: (-tekli[k][0], -tekli[k][1],
                                               -_harf_uyumu(parca, k), len(k), k))
         liste = []
@@ -459,7 +458,6 @@ def _baskasinin(anahtar, parca, aday, pay=0.05):
             tekli = a.get("tekli") or {}
             if not tekli:
                 continue
-            #
             tepe = max(tekli.values())
             if k in tekli and tekli[k] >= tepe - 0.01 \
                     and tekli[k] >= benim.get(k, 0) - pay:

@@ -5,14 +5,13 @@ NEDEN AYRI BIR MODUL
   akis_panel.detay() ust seridin ve testlerin kullandigi KISA ozettir:
   "su an ne var". Model Risk'e giden dokuman baska bir seydir - sirasi,
   bolum iskeleti ve eksik bolumleri sabittir, kullanici duzenleyebilir ve
-  Word olarak disari cikar. Ikisini tek fonksiyona sikistirmak, ozeti
-  degistiren her dokunusun dokumani da degistirmesi demekti.
+  Word olarak disari cikar. Ayri tutulduklari icin ozeti degistiren bir
+  dokunus dokumani degistirmez.
 
-NEDEN BU TURDA LLM YOK
+NEDEN LLM YOK
   Govdenin tamami DETERMINISTIK: her sayi, oran ve esik koddan gelir.
   Model Risk'e giden bir dokumanda uydurulmus tek bir metrik butun
-  dokumani degersizlestirir. Once dogrulugu garantili govde kurulur;
-  yorum paragraflari sonraki turda bunun ETRAFINA yazilir.
+  dokumani degersizlestirir.
 
 NEDEN VERISI OLMAYAN BOLUM ATLANMAZ
   Atlanan bolum "yok" degil "gorunmez"dir. Calismanin neresinin eksik
@@ -156,8 +155,8 @@ KULLANICI_BOS_METIN = ("Bu bölümü siz yazmalısınız; hesaplanan bir karşı
 HESAPLANAMADI_METIN = ("Bu bölüm hesaplanamadı: kayıtlı çalışma verisinde "
                        "beklenmeyen bir alan var (%s).")
 
-# Listelerde ve tablolarda gosterilen en fazla satir. 1.042 kolonlu bir
-# veri setinde eksik kolon listesi dokumani tek basina yutuyor; kalan
+# Listelerde ve tablolarda gosterilen en fazla satir. Cok kolonlu bir
+# veri setinde eksik kolon listesi dokumani tek basina yutar; kalan
 # sayisi acikca yazilir, tam liste ilgili veri setinde durur.
 EN_FAZLA_SATIR = 15
 
@@ -445,7 +444,7 @@ def _metin_bloklari(metin):
 
     Duzenlenmis bolum de Word'e ayni yoldan gider; ayri bir "duzenlenmis
     bolumu ciz" dali acmak, ekranda gorunen ile dosyaya yazilanin
-    ayrisabilecegi ikinci bir kod yolu demekti."""
+    ayrisabilecegi ikinci bir kod yolu demek olurdu."""
     return [{"tur": "paragraf", "metin": p}
             for p in str(metin).split("\n\n") if p.strip()]
 
@@ -765,7 +764,7 @@ def _kalite(durum):
             # Etiket ALT BASLIK degil PARAGRAF: sozlesmenin govde bicimi
             # dort blok turu tanimliyor (paragraf/tablo/liste/bos) ve ekran
             # onlari ciziyor. Bes numarali bir tur gondermek, ekranda
-            # SESSIZCE kaybolan bir satir demekti.
+            # SESSIZCE kaybolan bir satir demek olurdu.
             bloklar.append(_p("%s:" % ad))
             bloklar.append({"tur": "liste", "ogeler": _kisa_liste(adlar)})
 
@@ -985,7 +984,7 @@ def _eleme(durum):
 
     bloklar = []
     if k and "aday" in k:
-        # Yeni sira: uretilen degiskenler once Veri Anlama ve Hazirlama'da
+        # Sira: uretilen degiskenler once Veri Anlama ve Hazirlama'da
         # (bos, sabit, kararsiz, SFA karari) sonra sizinti kontrolunde elenir.
         gecti = len(_ls(k.get("gecti")))
         anahtarlar = ("eksik", "sabit", "kararsiz", "sfa", "sizinti")
@@ -1197,7 +1196,7 @@ def _performans(durum):
     # mi". Yeni kolon yoksa baz ve zengin AYNI modeldir; delta mekanik
     # olarak sifir, guven araligi [0,0] cikar. Bunu gurultu yorumuna
     # sokmak, hic yapilmamis bir olcum hakkinda istatistiksel hukum
-    # kurmak demekti - validasyona giden bir dokumanda en pahali hata.
+    # kurmak demek olurdu - validasyona giden bir dokumanda en pahali hata.
     if not md.get("karsilastirilabilir", True):
         bloklar.append(_p((md.get("karsilastirma_notu") or "")
                           + " Tablodaki Δ ve güven aralığı değerleri bu "
@@ -1257,8 +1256,7 @@ def _set_performans_tablosu(durum):
 
 
 def _validasyon_kapisi(durum):
-    """Eski 'Validasyon Sonuclari' bolumunun icerigi.
-
+    """Platform validasyon kapisi bloklari (performans bolumunun parcasi).
 
     Platformun esik kontrolu GELISTIRICININ kendi kontrolu; validatorun
     isini yapmaz."""
@@ -1786,9 +1784,8 @@ def dokuman(durum):
     damga = DAMGA_HAZIR if hazir else DAMGA_TASLAK
 
     # --- ikinci gec: statu tablosuna bagimli bloklar -----------------------
-    # Satir kunyenin ASIL tablosuna girer. Tablo bulunamazsa (bicim
-    # degistiyse) eski davranisa duseriz: ayri blok, ama hic yazmamaktan
-    # iyi - teslim damgasi kunyede gorunmeli.
+    # Satir kunyenin ASIL tablosuna girer. Tablo bulunamazsa ayri blok
+    # olarak eklenir: teslim damgasi kunyede gorunmeli.
     if not _tabloya_satir(harita["kunye"], ["Alan", "Değer"],
                           ["Doküman durumu", damga]):
         _blok_ekle(harita["kunye"],
@@ -1831,7 +1828,7 @@ def dokuman(durum):
         "bloker_sayisi": len(bloker),
         "eksik_sayisi": eksik_sayisi,
         "kismi_sayisi": kismi_sayisi,
-        # Eski alanlar KORUNUR: on yuz ve testler bunlari okuyor.
+        # On yuz ve testler bu alanlari okur.
         "eksik_bolum": eksik_bolum,
         "hazir_mi": hazir,
     }
@@ -1874,7 +1871,7 @@ def dokuman_bolum_kaydet(durum, anahtar, metin):
     """Bir bolumun kullanici metnini durum'a yazar.
 
     BOS METIN DUZENLEMEYI SILER ve bolum hesaplanan haline doner; ayri bir
-    "sifirla" ucu acmak, ayni isi yapan ikinci bir yol demekti.
+    "sifirla" ucu acmak, ayni isi yapan ikinci bir yol demek olurdu.
 
     Doner: {"tamam": bool, "bolum": {...}} ya da {"tamam": False, "hata": ...}
     Kaydetmez - cagiran taraf durum_kaydet ile kalici hale getirir."""

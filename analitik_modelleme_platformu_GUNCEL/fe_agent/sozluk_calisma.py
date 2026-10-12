@@ -23,8 +23,7 @@ NEDEN KATEGORI KOLONU TOLERANSLI ARANIYOR
   Sozluk elle hazirlanmis bir tablodan gelmis olabilir: "Kategori",
   "KATEGORİ" (Turkce noktali I), "kategori" hepsi ayni kolondur. Adi
   birebir arayan kod her seferinde yeni bir KATEGORI kolonu acip
-  eskisini gorunmez birakir; kullanici "kategorilerim nereye gitti"
-  diye sorar.
+  mevcut kolonu gorunmez birakir.
 
 NEDEN KOPYA YOKSA ORIJINALE DUSULUYOR
   PROJE_HAFIZASI erisilemiyorsa ya da kopya henuz cikarilmadiysa
@@ -516,9 +515,6 @@ def calisma_df(durum):
 def _kopyayi_kurtar(durum):
     """Sozluk BAGLI ama calisma kopyasi yoksa kopyayi yeniden cikarir.
 
-
-
-
     Kopya ORIJINALDEN yeniden cikariliyor: kaybolan kopyadaki
     duzenlemeler zaten kayip, yeniden kurmak durumu kotulestirmiyor.
     ORIJINAL SOZLUGE YAZILMIYOR - kopya_kur yalnizca okuyor.
@@ -575,10 +571,9 @@ def kaynak_etiketi(durum):
     """Ust seritte ve panelde gorunen sozluk adi. Sozluk hic baglanmadiysa
     None - cagiran taraf "seçilmedi" yazar.
 
-    Kopya bir
-      UYGULAMA DETAYI: kullanicinin kartta gormek istedigi sey, uzerinde
-      calisilan sozlugun adi ve NEREDEN geldigi. "Orijinal yazilmaz"
-      guvencesi sohbetteki adim metninde duruyor."""
+    Calisma kopyasi bir uygulama detayidir; etiket uzerinde calisilan
+    sozlugun adini gosterir. "Orijinal yazilmaz" guvencesi sohbetteki
+    adim metninde durur."""
     return sozluk_adi(durum)
 
 
@@ -754,9 +749,8 @@ def _tanimi_isle(oturum, ad, tanim, kat):
     iki tanimi olan bir sozlukte hangi satirin okundugu'na gore farkli
     cevap cikar.
 
-    satir_ekle ile tanim_yaz ayni govdeyi paylassin diye ayrildi; iki
-    yerde iki kopya olursa biri duzeltilip digeri unutuluyor. Fark yalniz
-    kutuge dusen KAYNAK alaninda."""
+    satir_ekle ile tanim_yaz bu govdeyi paylasir; fark yalniz kutuge
+    dusen KAYNAK alanindadir."""
     try:
         tablo = kopya_oku(oturum)
         if tablo is None:
@@ -1025,8 +1019,8 @@ def _kaynak_etiketi_yaz(oturum_anahtari, durum):
 def calisma_kopyasi_sil(oturum_anahtari):
     """Oturumun sozluk calisma kopyasini ve degisiklik kutugunu siler.
 
-Surec ici onbellek de
-    dusurulur, aksi halde silinen dosya okunmaya devam ederdi.
+    Surec ici onbellek de dusurulur, aksi halde silinen dosya okunmaya
+    devam ederdi.
 
     Doner: silinen yol listesi. Dosya hic olusmamis olabilir; bu bir
     hata degildir, o yuzden sessizce gecilir."""

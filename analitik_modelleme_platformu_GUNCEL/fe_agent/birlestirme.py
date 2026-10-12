@@ -285,7 +285,7 @@ def donem_degeri(x):
     hucre yuzunden 202501.0), metin ("202501", " 202501 ") ya da kategori
     olarak gelebilir. Bolme donemleri metin olarak karsilastiriyor; bu
     yazimlarin HEPSI ayni "202501" metnine iner. Bos hucre "nan" metnine
-    DONUSMEZ:"""
+    DONUSMEZ."""
     if x is None:
         return None
     try:
@@ -312,8 +312,8 @@ def donem_serisi(s):
     Her farkli deger bir kez cevrilir: milyon satirda da hizli."""
     s = pd.Series(s)
     if pd.api.types.is_datetime64_any_dtype(s):
-        # Tarih kolonu ONCEKI metin bicimini korur ("2025-01-15"): kayitli
-        # test donemleri bu bicimde, degisirse eslesmez.
+        # Tarih kolonu metin bicimini korur ("2025-01-15"): kayitli test
+        # donemleri bu bicimde, degisirse eslesmez.
         return s.astype(str).where(s.notna(), None).astype(object)
     if isinstance(s.dtype, pd.CategoricalDtype):
         s = s.astype(object)
@@ -403,7 +403,6 @@ def _donem_coz(s):
         ay, bicim = _yil_ay_coz(s)
         if ay is not None:
             return ay, bicim
-        #
         d = pd.to_datetime(s, errors="coerce").where(tarih_metni_mi(s))
         if d.notna().any():
             return d.dt.year * 12 + d.dt.month, "tarih"

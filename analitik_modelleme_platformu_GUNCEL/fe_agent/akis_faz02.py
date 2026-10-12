@@ -339,12 +339,11 @@ def _buyuk_veri_engeli(durum, adim):
 # ===========================================================================
 # ADIM - TEK DEGISKEN ANALIZI (SFA)
 # ===========================================================================
-# KULLANICI KARARLARI
 #   - SFA eleme yeri DEGIL; soru "degisken modele en iyi hangi haliyle
 #     girer". Metrikleri kod hesaplar, her degisken icin YAPAY ZEKA karar
 #     verir (arka planda, degisken basina ayri karar); kullanici sagdaki
 #     Değişken Analizi sekmesinde her karari degistirebilir.
-#   - Aralik onerileri SFA'nin icinde (eski "Aralık Önerileri" adimi kalkti).
+#   - Aralik onerileri SFA'nin icinde.
 #   - Onay sorulmaz; adim karar kartinda durur, "Kararları Onayla" ile gecer.
 SFA_KARAR_ONEK = "sfa kararları:"
 SFA_ONAY_MESAJI = SFA_KARAR_ONEK + " onaylandı"
@@ -624,12 +623,9 @@ def _psi_olculur_mu(durum):
       rastgele -> test ayni donemden gelir; olculen sey BOLMENIN
                   dengesizligidir ve ~0 beklenir. Sifirdan uzak cikmasi
                   bolmenin kendisinde bir sorun oldugunu soyler.
-     O kontrolu de
-    kaybetmemek icin artik olculuyor, plan metni hangi soruyu
-    cevapladigini yaziyor."""
+    Iki durumda da olculur; rapor hangi soruyu cevapladigini yazar."""
     b = durum.get("bolme") or {}
-    # Zamansal bolme ayrica
-    # deterministiktir, kalici kayit bile gerektirmez. Test setinin fiilen
+    # Zamansal bolme deterministiktir, kalici kayit bile gerektirmez. Test setinin fiilen
     # bos olup olmadigi maske hesaplandiktan SONRA denetleniyor.
     if (bolme_ayarlari(durum)["test_tanim"] == "zamansal"
             or b.get("kalici") or (b.get("satir") or {}).get("test")):
@@ -850,8 +846,8 @@ def baz_uygula(durum):
     # tablo yedek dosyaya yazilir ve kullaniciya acik bir uyari verilir.
     baz_ds = "%s_BAZ" % durum["veri_seti"]
     # Veri seti Flow'da yoksa webapp kurar (kullanici Flow'a bir sey eklemez;
-    # kaynak tablonun baglantisinda Parquet). Kurulamazsa eskisi gibi yedek
-    # dosyaya yazilir ve uyari verilir.
+    # kaynak tablonun baglantisinda Parquet). Kurulamazsa yedek dosyaya
+    # yazilir ve uyari verilir.
     try:
         from fe_agent import spark_is
         spark_is.veri_seti_hazirla(baz_ds, durum["veri_seti"])
