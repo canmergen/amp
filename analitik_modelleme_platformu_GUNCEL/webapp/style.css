@@ -650,6 +650,9 @@ body::before {
 #sayfa-calisma { display: flex; background: var(--yuzey); }
 
 /* ==================== SOL PANEL ==================== */
+/* Orta panel (ANALİTİK SÜREÇ / İŞ AKIŞI) yazıları bir kademe küçük:
+   panel dar, uzun adım adları satıra sığsın. Yalnız bu panelde geçerli. */
+#panel { --fs-govde: 12.5px; --fs-baslik: 14px; }
 #panel {
   width: var(--panel-en); flex-shrink: 0;
   background: var(--yuzey-alt);
@@ -872,6 +875,13 @@ body::before {
    Yazı boyutu üst satırla AYNI (gövde); kademe girinti ve çizgiyle
    anlaşılır, küçük punto ile değil. */
 .faz-adimlar li.grup-satir { flex-wrap: wrap; }
+/* Grup / alt adımlı satırda ad kalan genişliği alır ve gerekirse
+   kısalır (tam ad title'da): sağdaki aç/kapa oku alt satıra KAYMAZ. */
+.faz-adimlar li.grup-satir > .adim-git,
+.faz-adimlar li.grup-satir > span:not(.adim-isaret) {
+  flex: 1 1 0; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .faz-adimlar li.grup-satir:hover { background: none; }
 .faz-alt-adimlar {
   list-style: none; flex: 1 0 100%; margin: 3px 0 0 5px;
