@@ -4180,3 +4180,11 @@ span.bolme-cip { cursor: default; }
 
 /* Robot logosu üst kenara yapışmasın: üstte 14 px boşluk. */
 #sol-bar-logo { padding-top: 14px; }
+
+/* İş akışı penceresi önceki boyutunun 3/5'i: en 460 → 276 px, en fazla
+   yükseklik 72vh / 680 px → 43vh / 408 px. Uzun adlar kelime
+   bölünmeden alt satıra geçer. */
+#akis-menu #panel {
+  width: min(276px, calc(100vw - var(--sol-bar-en) - var(--kabuk-sol) - var(--kabuk-sag) - 40px));
+  max-height: min(43vh, 408px);
+}
