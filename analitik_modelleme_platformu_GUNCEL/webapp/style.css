@@ -3996,3 +3996,134 @@ span.bolme-cip { cursor: default; }
   }
   .dg-dikey { writing-mode: horizontal-tb; transform: none; width: auto; padding: 6px 10px; }
 }
+
+/* ==================== SOL BAR: YENİ TASARIM ====================
+   Kullanıcının verdiği görsel: üstte logo + KATIB + alt başlık; Model
+   Platformu koyu kırmızı degrade kart, içinde büyük beyaz satırlar ve
+   sağda › oku (seçili satır pembe zemin, solda kırmızı çizgi, kırmızı
+   simge ve ok); kilitli bloklar kesik kenarlı gri; altta "Görünüm
+   Ayarları" kartı (Renk Modu, Çerçeve; yuvarlak anahtarlar) ve oklu
+   Arşiv / Yeni Çalışma kartları. Önceki kuralların ÜSTÜNE yazar. */
+:root { --sol-bar-en: 224px; }
+#sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
+#kabuk.koyu #sol-bar { --sol-ok: #6B7178; background: var(--yuzey-alt); }
+#kabuk.koyu #sol-bar-aciklama { color: #9AA0A6; }
+
+#sol-bar-logo { flex-direction: column; align-items: center; padding: var(--b-3) var(--b-3) 2px; }
+#banner { max-height: 78px; }
+#sol-bar-ad {
+  margin-top: -2px; font-family: var(--font); font-size: 26px; font-weight: 800;
+  line-height: 1; letter-spacing: .03em; color: var(--kirmizi);
+}
+#sol-bar-aciklama {
+  margin-top: 3px; text-align: center; font-size: 10.5px; line-height: 1.25;
+  font-weight: var(--fw-kalin); color: #5F6670;
+}
+
+#ust-sekmeler { gap: 10px; padding: var(--b-3) 10px; }
+#sol-bar .ust-kume { gap: 6px; padding: 6px; border-radius: 14px; }
+#sol-bar .ust-kume-ad, #sol-bar .ust-sekme {
+  height: 40px; padding: 0 12px; gap: 10px; border-radius: 10px;
+  font-size: 12.5px; letter-spacing: .03em;
+}
+#sol-bar .ust-sekme svg.ikon { width: 18px; height: 18px; }
+#sol-bar .ust-kume-ad svg.ikon { width: 20px; height: 20px; }
+#sol-bar .ust-kume-ad { height: 42px; margin-bottom: 0; font-size: 13.5px; padding: 0 10px; }
+#sol-bar .ust-kume-ad::after { display: none; }
+#sol-bar .ust-sekme svg.ok { width: 15px; height: 15px; flex-shrink: 0; margin-left: auto; color: var(--sol-ok); }
+#sol-bar .ust-sekme.kapali svg.kilit { width: 15px; height: 15px; }
+
+/* Model Platformu kartı: koyu kırmızı degrade, beyaz başlık. */
+#sol-bar .ust-kume:has(> .ust-sekme.aktif) {
+  background: linear-gradient(180deg, #E0262D 0%, #B9141B 100%);
+  border-color: #B9141B; box-shadow: 0 6px 14px rgba(185, 20, 27, .22);
+}
+#kabuk.koyu #sol-bar .ust-kume:has(> .ust-sekme.aktif) {
+  background: linear-gradient(180deg, #5C1A1F 0%, #3E1114 100%); border-color: #6B2328;
+  box-shadow: none;
+}
+#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.kapali) {
+  background: var(--yuzey); color: var(--metin); box-shadow: 0 1px 2px rgba(16, 24, 40, .08);
+}
+#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali):hover {
+  background: var(--kirmizi-acik); color: var(--metin);
+}
+#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali):hover svg { color: var(--kirmizi); }
+/* Seçili satır: pembe degrade zemin, solda kırmızı çizgi; simge ve ok kırmızı. */
+#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif,
+#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif:hover {
+  background: linear-gradient(90deg, #FCE3E4 0%, #FFF4F4 100%); color: var(--metin);
+  box-shadow: inset 4px 0 0 var(--kirmizi), 0 1px 2px rgba(16, 24, 40, .08);
+}
+#kabuk.koyu #sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif,
+#kabuk.koyu #sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif:hover {
+  background: var(--pembe-secili); color: #FFD6D7;
+  box-shadow: inset 4px 0 0 var(--kirmizi);
+}
+#sol-bar .ust-sekme.aktif svg.ikon, #sol-bar .ust-sekme.aktif svg.ok { color: var(--kirmizi); }
+/* Kart içindeki kilitli satır: beyaz zemin, soluk gri yazı ve kilit. */
+#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
+#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
+  background: var(--yuzey); color: #A0A6AD; box-shadow: 0 1px 2px rgba(16, 24, 40, .06);
+}
+/* Ayrı kilitli bloklar: açık gri zemin, kesik kenar. */
+#sol-bar .ust-kume.tekli {
+  padding: 3px; border-radius: 12px; border: 1px dashed var(--kenar-guclu);
+  background: var(--kenar-acik);
+}
+#sol-bar .ust-kume.tekli > .ust-sekme.kapali { color: #8A9099; }
+
+/* ---- Alt bölüm ---- */
+#sol-bar-alt { border-top: 0; padding: 4px 10px 10px; }
+#sol-bar .sol-bar-dugmeler { gap: 8px; }
+#gorunum-kart {
+  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 12px;
+  box-shadow: var(--golge-1);
+}
+#gorunum-bas {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 40px;
+  padding: 0 12px; margin: 0; border: 0; background: none; cursor: pointer;
+  font-family: var(--font); font-size: 12.5px; font-weight: var(--fw-kalin); color: var(--metin);
+  border-radius: 12px;
+}
+#gorunum-bas svg.ikon { width: 18px; height: 18px; flex-shrink: 0; }
+#gorunum-bas svg.ok { width: 15px; height: 15px; margin-left: auto; color: var(--sol-ok); transition: transform .15s; }
+#gorunum-kart.kapali #gorunum-bas svg.ok { transform: rotate(180deg); }
+#gorunum-bas:hover { color: var(--kirmizi); }
+#gorunum-bas:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: -2px; }
+#gorunum-govde {
+  margin: 0 8px 8px; padding: 0 8px; border: 1px solid var(--kenar-acik); border-radius: 10px;
+}
+#gorunum-kart.kapali #gorunum-govde { display: none; }
+#sol-bar #gorunum-govde #tema-btn, #sol-bar #gorunum-govde #cerceve-btn {
+  width: 100%; height: 40px; padding: 0 2px; gap: 9px; border: 0; border-radius: 0;
+  background: none; box-shadow: none; font-size: 12px; color: var(--metin);
+}
+#sol-bar #gorunum-govde #tema-btn { border-bottom: 1px solid var(--kenar-acik); }
+#sol-bar #gorunum-govde #tema-btn:hover, #sol-bar #gorunum-govde #cerceve-btn:hover {
+  background: none; color: var(--kirmizi);
+}
+#gorunum-govde svg.ikon { width: 16px; height: 16px; flex-shrink: 0; }
+/* Yuvarlak iki seçenekli anahtar: seçili olan pembe zeminli kırmızı. */
+#sol-bar #gorunum-govde .tema-anahtar { gap: 4px; padding: 0; background: none; }
+#sol-bar #gorunum-govde .tema-anahtar span {
+  width: 30px; height: 26px; opacity: 1; color: var(--sol-ok); background: var(--kenar-acik);
+}
+#sol-bar #gorunum-govde .tema-anahtar svg { width: 14px; height: 14px; }
+#kabuk:not(.koyu) #sol-bar #gorunum-govde #tema-btn .tema-gunes,
+#kabuk.koyu #sol-bar #gorunum-govde #tema-btn .tema-ay,
+:root:not(.cercevesiz) #sol-bar #gorunum-govde #cerceve-btn .cerceve-acik,
+:root.cercevesiz #sol-bar #gorunum-govde #cerceve-btn .cerceve-kapali {
+  background: var(--kirmizi-acik); color: var(--kirmizi); box-shadow: inset 0 0 0 1px var(--kirmizi-halka);
+}
+/* Arşiv ve Yeni Çalışma: oklu beyaz kartlar. */
+#sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
+  height: 40px; padding: 0 12px; gap: 10px; border-radius: 12px;
+  border: 1px solid var(--kenar); background: var(--yuzey); box-shadow: var(--golge-1);
+  font-size: 12.5px;
+}
+#sol-bar #calismalar-btn .sifirla-ikon, #sol-bar #sifirla-btn .sifirla-ikon { width: 17px; height: 17px; }
+#sol-bar #calismalar-btn svg.ok, #sol-bar #sifirla-btn svg.ok {
+  width: 15px; height: 15px; margin-left: auto; color: var(--sol-ok);
+}
+#sol-bar #calismalar-btn:hover svg.ok, #sol-bar #sifirla-btn:hover svg.ok { color: var(--kirmizi); }

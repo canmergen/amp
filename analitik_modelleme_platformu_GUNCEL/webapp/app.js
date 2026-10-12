@@ -323,6 +323,33 @@ try { cerceveKapali = localStorage.getItem(CERCEVE_ANAHTAR) === "kapali"; } catc
 cerceveUygula(false);
 
 
+/* ==================== Görünüm Ayarları kartı ==================== */
+/* Sol barın altında Renk Modu ve Çerçeve'yi taşıyan kart. Başlığa
+   basınca açılır / kapanır; seçim tarayıcıda hatırlanır. Kayıt yoksa
+   ekran yeterince yüksekse açık, kısa ekranda kapalı başlar (sol bar
+   kaymasın). */
+const GORUNUM_ANAHTAR = "amp_gorunum_acik";
+(function gorunumKartKur() {
+    const kart = document.getElementById("gorunum-kart");
+    const bas = document.getElementById("gorunum-bas");
+    if (!kart || !bas) return;
+    const uygula = (acik, kaydet) => {
+        kart.classList.toggle("kapali", !acik);
+        bas.setAttribute("aria-expanded", acik ? "true" : "false");
+        bas.title = acik ? "Görünüm ayarlarını gizle" : "Görünüm ayarlarını göster";
+        if (kaydet) {
+            try { localStorage.setItem(GORUNUM_ANAHTAR, acik ? "1" : "0"); } catch (e) { /* yok */ }
+        }
+    };
+    let acik = window.innerHeight >= 860;
+    try {
+        const k = localStorage.getItem(GORUNUM_ANAHTAR);
+        if (k === "1" || k === "0") acik = k === "1";
+    } catch (e) { /* depolama kapalı */ }
+    bas.onclick = () => uygula(kart.classList.contains("kapali"), true);
+    uygula(acik, false);
+})();
+
 /* ==================== Sayfa geçişi ==================== */
 function sayfaAc(ad) {
     Object.keys(sayfalar).forEach(k => {
