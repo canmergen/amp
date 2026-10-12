@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_durum.py - Oturum durumu, veri okuma/yazma ve bicimleme yardimcilari.
-
-akis.py bolundu; bu dosya o bolumun aynisidir.
-"""
+"""fe_agent/akis_durum.py - Oturum durumu, veri okuma/yazma ve bicimleme yardimcilari."""
 
 import datetime
 import io
@@ -16,9 +13,9 @@ from fe_agent import tablo_io
 import numpy as np
 import pandas as pd
 
-# DONEM YARDIMCILARI birlestirme.py'de. Dosyalar Dataiku'ya ELLE
-# yapistiriliyor. Eski dosyada yedek tanimlar devreye girer: uygulama
-# calisir, yalnizca donem normallestirmesi eski (daha basit) haliyle olur.
+# DONEM YARDIMCILARI birlestirme.py'de. Bu fonksiyonlari icermeyen bir
+# birlestirme.py ile yedek tanimlar devreye girer: uygulama calisir,
+# donem normallestirmesi daha basit haliyle yapilir.
 try:
     from fe_agent.birlestirme import donem_degeri, donem_serisi, donem_sirala
     BIRLESTIRME_ESKI = False
@@ -66,8 +63,6 @@ SOZLUK_ADI = "MODELLEME_SOZLUK"
 # ---------------------------------------------------------------------------
 # AMP CIKTILARI  -  platformun sozluk teyidinde KAYDETTIGI iki tablo
 # ---------------------------------------------------------------------------
-# Artik gercek ad ve gercek kayit var.
-#
 #   AMP_VERISETI : modelleme tablosu, TIP DONUSUMLERI UYGULANMIS haliyle.
 #                  Kolon DUSURULMEZ - dusurme Hazirlik adiminin isi ve
 #                  orada ayrica raporlaniyor; burasi "teyit anindaki tam
@@ -84,8 +79,7 @@ SOZLUK_ADI = "MODELLEME_SOZLUK"
 AMP_VERI_ADI = "AMP_VERISETI"
 AMP_SOZLUK_ADI = "AMP_SOZLUK"
 
-# Yeni calismalar
-# ciktilarini kendi klasorune yaziyor (bkz. akis_faz01.amp_klasor_adi).
+# Calismalar ciktilarini kendi klasorune yazar (bkz. akis_faz01.amp_klasor_adi).
 AMP_KLASOR = "AMP"
 
 # ORTAK VERI SETLERININ SAHIBI. AMP_VERISETI ve birlestirme sonucu
@@ -129,11 +123,9 @@ SET_ADLARI = ("egitim", "val", "test", "oot")
 
 # KULLANICIYA GORUNEN UC SET. Sektorde kullanilan adlar aynen kullanilir.
 #
-# "oot" ic anahtari duruyor (hep bos bir maske; bkz. bolme_ayarlari'nda
+# "oot" ic anahtari var (hep bos bir maske; bkz. bolme_ayarlari'nda
 # oot_var=False) ama AYRI BIR SET DEGIL: zamansal bolmede test setinin
-# kendisi zaten zaman disidir. Bu yuzden TEK AD kullaniliyor -
-# "OOT / Test" - ve ekranda hicbir yerde ayri bir OOT seti gecmiyor.
-# SET ADLARI (kurum karari): YALNIZCA ADLAR DEGISTI, bolme kurgusu ayni
+# kendisi zaten zaman disidir; ekranda ayri bir OOT seti gecmez.
 #
 #   egitim -> Train (MS)        modelin ogrendigi kayitlar
 #   val    -> Test (OOS)        egitim verisinden ayrilan, model ayarlarinin
@@ -145,7 +137,6 @@ SET_BASLIK = {"egitim": "Train (MS)", "val": "Test (OOS)",
               "test": "Validasyon (OOT)", "oot": "Validasyon (OOT)"}
 
 # Rastgele bolmede de nihai set Validasyon (OOT) adiyla gosterilir
-#
 TEST_BASLIK_RASTGELE = "Validasyon (OOT)"
 OOS2_ACIKLAMA = ("Rastgele bölmede Validasyon (OOT) seti zamana göre değil, "
                  "kayıtlardan rastgele ayrılır.")
@@ -197,8 +188,8 @@ def _folder():
     return dataiku.Folder(HAFIZA_FOLDER)
 
 def _yol(oturum_id):
-    """Kayit dosyasi. Yeni calismalar (v1, v2 ...) kendi klasorunde:
-    /v3/calisma.json. Onceki bicimler kokte: /oturum_<anahtar>.json."""
+    """Kayit dosyasi. Calismalar (v1, v2 ...) kendi klasorunde:
+    /v3/calisma.json. Eski kayitlar kokte: /oturum_<anahtar>.json."""
     temiz = re.sub(r"[^A-Za-z0-9_-]", "", str(oturum_id))
     if re.match(r"^v\d{1,6}$", temiz):
         return "/%s/calisma.json" % temiz
@@ -222,10 +213,10 @@ def yeni_durum():
         # rank izgarasi). Uretim koduna gomulur; tekrarlanabilirlik icin.
         "ogrenilen_donusum": {},
         "meta": {}, "bolme": {},
-        # HAZIRLIK sekmesinin veri sozlesmesi. Donusumun kendisi henuz
-        # yok; liste bos baslar ve panel "henuz donusum tanimlanmadi"
-        # der. Sekme bos bir kutu olarak degil, dolmayi bekleyen bir
-        # kart olarak gorunsun diye anahtar bastan duruyor.
+        # HAZIRLIK sekmesinin veri sozlesmesi. Liste bos baslar ve panel
+        # "henuz donusum tanimlanmadi" der. Sekme bos bir kutu olarak
+        # degil, dolmayi bekleyen bir kart olarak gorunsun diye anahtar
+        # bastan duruyor.
         "hazirlik": {"adimlar": []},
         "haric_kolonlar": [],
         "profil": {}, "sfa": {}, "stabilite": {},
@@ -247,8 +238,7 @@ def _json_uygun(deger, yol="durum"):
     """Durumu JSON'a yazmadan ONCE tip normalizasyonu.
 
     numpy sayilari Python sayisina, NaN/NaT None'a, Timestamp ISO metne
-    cevrilir. Bilinmeyen tipte SESSIZCE str()'e dusulmez - acik hata verilir;
-"""
+    cevrilir. Bilinmeyen tipte SESSIZCE str()'e dusulmez - acik hata verilir."""
     if deger is None:
         return None
     if isinstance(deger, (bool, np.bool_)):
@@ -285,11 +275,8 @@ def _json_uygun(deger, yol="durum"):
 # ---------------------------------------------------------------------------
 # MOD GOCU
 # ---------------------------------------------------------------------------
-# Surum 2'de "Veri Seti Hazır Değil, Sözlük Hazır" B olarak araya girdi;
-# eski B (veri hazir, sozluk yok) C, eski C (ikisi de yok) D oldu. Harf
-# ekranda gorundugu ve kodda moda gore adim listesi sectigi icin, eski bir
-# kaydin "B"si okunurken "C"ye cevrilmezse calisma baska bir adim
-# listesine dusup bozulurdu. Kayitta "_mod_surumu" yoksa eski duzendir.
+# Eski kayitlardaki B/C mod harfleri okunurken C/D'ye cevrilir. Kayitta
+# "_mod_surumu" yoksa eski duzendir.
 MOD_SURUMU = 2
 MOD_GOCU = {"B": "C", "C": "D"}
 
@@ -317,33 +304,9 @@ def _mod_goc(durum):
     return durum
 
 
-# Surum 2'de A ve B modunda "sozluk_tanim" ile "teyit" arasina
-# "tanim_kontrol" adimi girdi. Adim konumu kayitta SAYI (durum["i"])
-# olarak durdugu icin eski bir calisma sozluk_tanim'in ilerisindeyse bir
-# adim GERIDE acilirdi; konum bir kaydirilir.
-# Surum 3'te sozluk_tanim ile tanim_kontrol arasina "kisaltma" ve
-# "kolon_ad" adimlari girdi (iki adim).
-# Surum 4'te kisaltma ile kolon_ad arasina "birlesik" (Kisaltma
-# Birlestirme) girdi; yer kisaltma'nin konumu.
-# Surum 5'te sozluk_tanim ile kisaltma arasina "veri_icerik" (Veri Seti ve
-# Sozluk Icerigi) girdi; yer sozluk_tanim'in konumu.
-# Surum 6'da "veri_icerik", surum 7'de "tanim_kontrol" CIKTI. Cikan adimda
-# yer, cikan adimin o surumdeki konumudur: ilerisindeki adimlar bir geri
-# kayar, cikan adimda duran calisma bir sonraki adimda acilir.
-# Surum 8'de "birlesik" CIKTI; "kisaltma" ve "kolon_ad" yeniden yazildi
-# (Kisaltma Sozlugu / Yeni Kolon Adlari). Bu uc adimdan birinde duran
-# calisma Kisaltma Sozlugu'nden YENIDEN ACILIR (eski kartlar yeni adimlara
-# uymaz; bkz. _YENIDEN_ACILAN).
-# Surum 9'da sozluk_tanim ile kisaltma arasina "donem" (Donem Bilgisi)
-# girdi; yer sozluk_tanim'in konumu.
-# Surum 10'da sozluk_tanim ile donem arasina "sozluk_kontrol" (Sozluk ve
-# Kolon Adi Kontrolu) girdi; yer sozluk_tanim'in konumu. Surum 11'de donem
-# ile kisaltma arasina "aciklama" (Aciklama Duzenleme) girdi; yer donem'in
-# (surum 10'daki) konumu. Bu adimlarin ilerisindeki eski calismada secim
-# yok: kontrol yapilmis sayilir.
-# Surum 12'de Faz 02 ile Faz 03 yer degistirdi: Veri Profili'nden sonra
-# once Kural Tabanli Uretim ve AI Kesfi, sonra SFA, Stabilite ve Analitik
-# Baz Set. Adim sayisi ayni, yerler degisti (bkz. _faz_sirasi_goc).
+# Eski kayitlarda adim konumu (durum["i"]) kaydin surumundeki adim
+# listesine gore bir SAYIDIR; okunurken surum surum guncel siraya
+# kaydirilir (bkz. _sira_goc, _faz_sirasi_goc).
 SIRA_SURUMU = 12
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
@@ -371,12 +334,9 @@ _YENIDEN_ACILAN_ALANLAR = {
 }
 
 
-# Surum 12: eski sirada SFA ile Aday Degisken Seti arasindaki bir adimda
-# duran calisma Kural Tabanli Degisken Uretimi'nde YENIDEN ACILIR. Eski
-# uretim analitik baz set (SFA donusumleri uygulanmis, doldurulmus) uzerinden
-# yapilmisti; yeni sirada ham veriden yapilir ve SFA uretilenleri de olcer.
-# Faz 05'teki calisma oldugu gibi kalir: o fazin girdileri eski sirada
-# kendi icinde tutarli uretildi.
+# Surum 12 gocu: eski sirada SFA ile Aday Degisken Seti arasindaki bir
+# adimda duran calisma Kural Tabanli Degisken Uretimi'nde YENIDEN ACILIR ve
+# asagidaki alanlar temizlenir. Faz 05'teki calisma oldugu gibi kalir.
 _FAZ_SIRASI_TEMIZLENEN = ("sfa", "stabilite", "baz", "plan", "hipotez", "uretilen",
                           "uretilen_kaynak", "kod_bloklari", "kalite", "secim",
                           "secim_tablo", "_kesif_ad_elenen", "_dusurulecek")
@@ -524,10 +484,9 @@ _DF_ONBELLEK = {}
 # en fazla bu sure kadar eski icerik okunur - "Yeni Çalışma" ya da
 # sayfa yenileme yeni bir sureci baslatiyor.
 ONBELLEK_OMRU_SN = 900.0
-# KAPASITE: omur uzayinca kayitlar daha uzun yasiyor ve 1.042 kolonluk
-# bir tablo onlarca MB tutuyor. Alti kayit bu akisi rahat karsiliyor
-# (veri seti, sozluk, AMP ciktisi ve birkac sema okumasi) ve dolunca
-# artik EN ESKI kayit dusuyor - hepsi birden degil.
+# KAPASITE: 1.042 kolonluk bir tablo onlarca MB tutar. Alti kayit bu
+# akisi rahat karsilar (veri seti, sozluk, AMP ciktisi ve birkac sema
+# okumasi); dolunca EN ESKI kayit duser - hepsi birden degil.
 ONBELLEK_KAPASITE = 6
 
 def onbellek_temizle(ad=None):
@@ -560,8 +519,8 @@ def _df_oku(ad, limit=-1, onbellek=True):
     df = ds.get_dataframe() if limit is None else ds.get_dataframe(limit=limit)
 
     if onbellek:
-        # EN ESKIYI DUSUR, hepsini degil. Gercek bir
-        # Dataiku tablosunda bu, adim basina onlarca saniye demekti.
+        # EN ESKIYI DUSUR, hepsini degil: gercek bir Dataiku tablosunu
+        # yeniden okumak adim basina onlarca saniye surer.
         while len(_DF_ONBELLEK) >= ONBELLEK_KAPASITE:
             en_eski = min(_DF_ONBELLEK, key=lambda k: _DF_ONBELLEK[k][0])
             _DF_ONBELLEK.pop(en_eski, None)
@@ -575,27 +534,24 @@ def modelleme_kaynagi(durum):
     Sozluk teyidi KAYDEDILDIKTEN sonra kaynak AMP_VERISETI'dir; oncesinde
     kullanicinin sectigi tablodur.
 
-    NEDEN AMP'YE GECIYOR
-      "işlemler de bu veri setleri üzerinden yapılıyor değil mi" -
-      evet, olmali. Teyitten sonra ortada kaydedilmis, adi olan, kullanici
-      tarafindan da cekilebilen bir tablo var; sonraki fazlarin bundan
-      baska bir seyi okumasi "ekranda gordugum tablo ile modelin okudugu
-      tablo ayni mi" sorusunu acik birakirdi.
+    NEDEN AMP
+      Teyitten sonra ortada kaydedilmis, adi olan, kullanici tarafindan da
+      cekilebilen bir tablo var; sonraki fazlarin bundan baska bir seyi
+      okumasi "ekranda gordugum tablo ile modelin okudugu tablo ayni mi"
+      sorusunu acik birakirdi.
 
       Ek faydasi: AMP_VERISETI tip donusumleri ISLENMIS halde duruyor,
       yani sonraki her okumada donusumu yeniden uygulamak gerekmiyor.
 
-    TEK KAYNAK. AMP varsa
-    HER ZAMAN o okunur; kaynak tabloya geri donulmez. AMP calismaya
+    TEK KAYNAK. AMP varsa HER ZAMAN o okunur; kaynak tabloya geri donulmez. AMP calismaya
     ozeldir: pandas yolunda calisma klasorunde Parquet, Spark yolunda
     calismaya ozel veri seti (AMP_VERISETI_V8). Teyit oncesine donulurse
     AMP silinir ve adimlar oradan yeniden yapilir (bkz.
     akis_faz01.amp_gecersiz_kil).
 
-    ESKI CALISMA: AMP'yi butun calismalarin ORTAK "AMP_VERISETI" veri
-    setine yazmis bir calisma, veri seti baska bir calisma tarafindan
-    ezildiyse sessizce kaynak tabloya donmez; adim durur ve teyidin
-    yeniden kaydedilmesi istenir."""
+    ESKI CALISMA: AMP'si ORTAK "AMP_VERISETI" veri setinde duran calisma,
+    veri seti baska bir calisma tarafindan ezildiyse sessizce kaynak
+    tabloya donmez; adim durur ve teyidin yeniden kaydedilmesi istenir."""
     durum = durum or {}
     kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
     if kayit.get("dosya"):
@@ -738,10 +694,10 @@ def modelleme_df(durum, limit=-1, kaynak=False):
     (AMP_VERISETI_HAM; eski calismada kullanicinin tablosu) okur.
 
     NEDEN OKUMADA, YAZMADA DEGIL
-      Donusumu tabloya YAZMAK iki sebeple yanlisti. Birincisi: Mod A ve
-      B'de `durum["veri_seti"]` kullanicinin KENDI tablosu ve platformun
-      degismez kurali onu yazmamak. Okuma tarafinda uygulanınca uc mod da,
-      dort bolme yolu da ayni tipi goruyor ve tek bir hucre yazilmiyor.
+      Mod A ve B'de `durum["veri_seti"]` kullanicinin KENDI tablosudur ve
+      platformun degismez kurali onu yazmamak. Okuma tarafinda
+      uygulaninca butun modlar ve bolme yollari ayni tipi gorur ve tek
+      bir hucre yazilmaz.
 
     Donusum secilmemisse ek maliyet YOK: _df_oku'nun donen tablosu
     oldugu gibi geri verilir."""
@@ -971,8 +927,7 @@ def sozluk_orijinal_oku(durum):
 #   deger gostermek, sozluk uretiminde LLM'e gondermemek icin verdigimiz
 #   ugrasi bosa cikarir. sozluk.py'nin PII denetimi burada da calisir.
 # ===========================================================================
-# Ornek deger ve kisisel veri denetimi TAM KOLONLA yapilir (kullanici
-# karari: orneklem yok).
+# Ornek deger ve kisisel veri denetimi TAM KOLONLA yapilir (orneklem yok).
 ORNEK_UZUNLUK = 40
 ORNEK_MASKE = "•••"
 
@@ -1041,8 +996,8 @@ def kolon_ozeti_tamamla(profil, tablo, df=None):
     Profilde olmayan kolonlar (target/id/donem ve surec disi birakilanlar)
     ozette kalir ama UNIQUE'leri hic olculmemis olur. df verilirse bu
     bosluk TAM TABLODAN kapatilir: kimligin kac tekil degeri oldugu
-    "bu tablo musteri bazli mi, musteri-ay bazli mi" sorusunun cevabi
-    ve feature tablosunda bos gormek anlamsizdi."""
+    "bu tablo musteri bazli mi, musteri-ay bazli mi" sorusunun
+    cevabidir."""
     ozet = list((profil or {}).get("kolon_ozet") or [])
     if tablo is not None and len(tablo):
         try:
@@ -1133,7 +1088,6 @@ def bolme_ayarlari(durum):
         ham = "zamansal" if m.get("donem") else "rastgele"
     if ham == "zamansal" and not m.get("donem"):
         ham = "rastgele"
-    #
     if ham == "hazir" and not hazir_var:
         ham = "zamansal" if m.get("donem") else "rastgele"
     a["test_tanim"] = ham
@@ -1155,8 +1109,8 @@ def bolme_ayarlari(durum):
         # Surekli hedefte her farkli deger kendi katmani olur; katmanlarin
         # neredeyse tamami tek satirlik kalir ve test seti fiilen bosalir.
         # Bu yuzden katmanlama varsayilan olarak YALNIZCA binary hedefte
-        # aciktir. Hedef tipi henuz olculmemisse (profil calismamis) eski
-        # davranis korunur: hedef tanimliysa katmanla.
+        # aciktir. Hedef tipi henuz olculmemisse (profil calismamis) hedef
+        # tanimliysa katmanlanir.
         a["katmanla"] = bool(m.get("target")) and p.get("hedef_tip") != "surekli"
 
     # SEGMENT DAGILIMI AYRI KARAR.
@@ -1193,7 +1147,6 @@ def bolme_ayarlari(durum):
     a["seed"] = _tam_sayi(b.get("seed"), 42, 0)
 
     # SEED STRATEJISI: tek bolme mi, farkli seed'lerle tekrar mi
-    #
     a["seed_tur"] = b.get("seed_tur") if b.get("seed_tur") in ("sabit", "coklu") \
         else "sabit"
     a["tekrar"] = min(_tam_sayi(b.get("tekrar"), 1, 1), TEKRAR_EN_COK)
@@ -1231,9 +1184,8 @@ TRAIN_KULLANIMI = {
     "full_cv": {"val_var": False, "cv": "kfold"},
     "val_cv":  {"val_var": True,  "cv": "kfold"},
 }
-# Kisa etiketler TEK YERDEN: BOLME_SECENEK. Bu sozluk eski cagiranlar
-# icin duruyor ve ordan turetiliyor, yoksa ayni secenegin iki ayri adi
-# olurdu.
+# Kisa etiketler TEK YERDEN: BOLME_SECENEK. Bu sozluk ondan turetilir,
+# yoksa ayni secenegin iki ayri adi olurdu.
 TRAIN_KULLANIMI_BASLIK = {}
 
 
@@ -1246,17 +1198,12 @@ TRAIN_KULLANIMI_BASLIK = {}
 # sektorde yaygin karsiligini da soyluyor.
 #
 # TEK KAYNAK: hem sohbet karti hem sag panel hem de adim metinleri bu
-# sozlukten okuyor. Etiketi bir yerde degistirip digerini unutmak,
-# kullaniciya iki farkli ad gostermek demekti.
+# sozlukten okur; kullanici her yerde ayni adi gorur.
 # ---------------------------------------------------------------------------
 # EKRAN DILI: KISA ETIKET + KISA SATIR; UZUN ANLATIM DETAYDA
 # ---------------------------------------------------------------------------
-#
-#
-# Simdi:
 #   secenek altinda      -> EN FAZLA BIR KISA CUMLE
 #   sektor karsiligi     -> "Detayları göster" icindeki TERIMLER listesi
-# Terim aciklamalari KAYBOLMADI, ikinci plana alindi.
 BOLME_SECENEK = {
     "test_tanim": {
         "zamansal": ("Zamansal",
@@ -1343,7 +1290,7 @@ BOLME_ALAN_ACIKLAMA = {
 # Not: alan altindaki bu kisa cumle ANA EKRANDA CIZILMIYOR (bkz.
 # bolmeSatirCiz). Satirin ne oldugunu "?" ipucu, metodolojiyi
 # "Detaylar ve Terimler" anlatiyor. Alan aciklamalari sozlesmede
-# duruyor: eski istemci ve HAZIRLIK ozeti hala okuyor.
+# duruyor: HAZIRLIK ozeti bunlari okur.
 
 
 # BOLME_SECENEK tanimlandiktan SONRA dolduruluyor: sozluk yukarida,
@@ -1356,7 +1303,7 @@ TRAIN_KULLANIMI_BASLIK.update(
 def bolme_etiket(alan, deger):
     """Bir bolme secenegi icin kullanicinin gordugu ad. Sozlukte yoksa
     ham deger doner - eski oturumda taninmayan bir deger durabilir ve
-    bos bir etiket, ekranda kaybolan bir ayar demekti."""
+    bos bir etiket ayari ekranda kaybettirir."""
     secenek = BOLME_SECENEK.get(alan) or {}
     kayit = secenek.get(deger)
     return kayit[0] if kayit else str(deger)
@@ -1370,9 +1317,7 @@ def bolme_aciklama(alan, deger):
 
 
 def bolme_secenek_listesi(alan, secenekler, kilitliler=()):
-    """On yuze gidecek secenek listesi: anahtar + ad + aciklama + kilit.
-
-"""
+    """On yuze gidecek secenek listesi: anahtar + ad + aciklama + kilit."""
     kilitliler = set(kilitliler or ())
     return [{"anahtar": s,
              "etiket": bolme_etiket(alan, s),
@@ -1660,8 +1605,6 @@ def _setler_kimlik(df, kimlik, listeler, oot):
 # ===========================================================================
 # VERI SETINDE HAZIR DURAN BOLME
 # ---------------------------------------------------------------------------
-#
-#
 # Ekipler bolmeyi cogu zaman tabloya ONCEDEN yaziyor. Platformun bunu
 # gormezden gelip yeniden rastgele bolmesi, ayni veri uzerinde ikinci ve
 # FARKLI bir bolme uretmek demek: daha once uretilmis skorlarla
@@ -1867,7 +1810,7 @@ def _setler_hazir(durum, df, tanim):
 
     # AYRIKLIK: bir satir birden fazla sete isaretliyse (bayraklar elle
     # doldurulmus olabilir) oncelik test > oot > val > egitim. Sessizce
-    # iki sete birakmak sizinti demekti.
+    # iki sete birakmak sizinti olurdu.
     test = maske["test"]
     oot = maske["oot"] & ~test
     val = maske["val"] & ~test & ~oot
@@ -1898,7 +1841,7 @@ def setler(durum, df):
     karsilastirmasi da setleri buradan okur. Dordu de ayni indekste,
     AYRIK ve birlesimleri tum satirlar.
 
-    Setler ARTIK yeniden rastgelelestirilmez; bolme_hazirla()'nin durumda ya
+    Setler yeniden rastgelelestirilmez; bolme_hazirla()'nin durumda ya
     da veri setinde biraktigi KALICI bilgiden uretilir. Boylece farkli
     uzunlukta okunan tablolarda bile ayni satir hep ayni sette kalir."""
     b = durum.get("bolme") or {}
@@ -1926,11 +1869,9 @@ def setler(durum, df):
 
     oot = _oot_maske(durum, df, a, [])
 
-    # 1) Zamansal bolme: deterministik.
-    #
-    # KOSUL `oot_deger`E BAGLI DEGIL.  O alan yokken zamansal secim sessizce 2.
-    # Donem kolonu okunabiliyorsa zamansal dal calisir;
-    # hangi donemlerin test oldugunu _zamansal_test_donemleri belirler.
+    # 1) Zamansal bolme: deterministik. KOSUL `oot_deger`E BAGLI DEGIL:
+    # donem kolonu okunabiliyorsa zamansal dal calisir; hangi donemlerin
+    # test oldugunu _zamansal_test_donemleri belirler.
     if a["test_tanim"] == "zamansal" and m.get("donem") in df.columns:
         return _setler_zamansal(durum, df, a, oot)
 
@@ -1938,8 +1879,7 @@ def setler(durum, df):
     kimlik = b.get("kimlik_kolon") or m.get("id")
     listeler = b.get("set_kimlikleri")
     if not isinstance(listeler, dict):
-        # Eski oturumda yalnizca test kimlikleri var; val/OOT o oturumda
-        # hic ayrilmamisti, bos kalmalari dogru davranis.
+        # Eski kayitlarda yalnizca test kimlikleri vardir; val/OOT bos kalir.
         eski = b.get("test_kimlikleri")
         listeler = {"test": eski} if eski is not None else None
     if listeler and kimlik and kimlik in df.columns:
@@ -2000,8 +1940,6 @@ def maskeler(durum, df):
 def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
     """Bolmeyi BIR KEZ hesaplar ve SATIR KIMLIGI bazinda KALICI yapar.
 
-
-
     Uc kalici yol desteklenir; ucu de DORT sete birden calisir:
       1. Zamansal bolme  -> donem kolonundan her defasinda ayni setler cikar
       2. Kimlik kolonu   -> set kimlikleri durum["bolme"]["set_kimlikleri"]
@@ -2011,7 +1949,7 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
          tek kolonluk dosya olarak kaydedilir; setler() oradan okur.
 
     Doner: (egitim_maske, test_maske, notlar)  notlar = kullaniciya mesaj listesi
-"""
+    """
     b = dict(durum.get("bolme") or {})
     m = durum.get("meta") or {}
     notlar = []
@@ -2025,7 +1963,7 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
               "test_oran", "cv", "kat", "oot_adet", "oot_tanim", "seed",
               "seed_tur", "tekrar", "gap"):
         b[k] = a[k]
-    b.pop("oot_var", None)          #
+    b.pop("oot_var", None)
 
     # --- Veri setinde HAZIR duran bolme -----------------------------------
     # Hesaplanacak bir sey yok: bolme zaten tabloda yaziyor. Kalici kayit
@@ -2097,8 +2035,8 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
             b["kalici"] = "kimlik"
             b["kimlik_kolon"] = kimlik
             b["set_kimlikleri"] = listeler
-            # Eski oturumlari okuyan kod yolu icin ayni liste eski adiyla da
-            # duruyor; iki yerde tutulmasi degil, tek yerden turetilmesi.
+            # Eski kayitlari okuyan kod yolu icin ayni liste eski adiyla da
+            # yazilir.
             b["test_kimlikleri"] = listeler["test"]
             b.pop("split_kolon", None)
             notlar.append("Bölme %s kimliği üzerinden sabitlendi; aynı kimlik "
@@ -2181,8 +2119,8 @@ def _bitir(durum, s, notlar):
     b = durum["bolme"]
     test_tanim = bolme_ayarlari(durum)["test_tanim"]
     b["satir"] = {ad: int(s[ad].sum()) for ad in SET_ADLARI}
-    # train_satir / test_satir KALIYOR: ust serit, senaryo konfigi ve eski
-    # oturum dosyalari bu iki adi okuyor.
+    # train_satir / test_satir: ust serit, senaryo konfigi ve eski oturum
+    # dosyalari bu iki adi okur.
     b["train_satir"] = b["satir"]["egitim"]
     b["test_satir"] = b["satir"]["test"]
     for ad in SET_ADLARI:
@@ -2461,10 +2399,9 @@ def bolme_kaydet(durum, gelen):
     b = dict(durum.get("bolme") or {})
     gelen = dict(gelen)
 
-    # SECIM LISTESI DEGERLERI. On yuz artik ham sayi degil, listeden
-    # secilmis bir ANAHTAR gonderiyor ("son:2", "0.20", "5"). Burada
-    # tek yerde cozuluyor; asagisi degismedi ve eski istemcinin
-    # gonderdigi ham sayilar da aynen calismaya devam ediyor.
+    # SECIM LISTESI DEGERLERI. On yuz listeden secilmis bir ANAHTAR
+    # gonderir ("son:2", "0.20", "5"); burada tek yerde cozulur. Ham
+    # sayilar da kabul edilir.
     if isinstance(gelen.get("oot_adet"), str) and gelen["oot_adet"]:
         cozum = test_donem_coz(gelen["oot_adet"], durum)
         if cozum is None:
@@ -2489,9 +2426,8 @@ def bolme_kaydet(durum, gelen):
             gelen["tekrar"] = len(gelen["seedler"])
     if "gap" in gelen:
         gelen["gap"] = min(_tam_sayi(gelen["gap"], 0, 0), GAP_EN_COK)
-    # ONAY KUTUSU YERINE IKI SECENEKLI LISTE: on yuz artik "kullan" /
-    # "koru" gibi anahtarlar gonderiyor. Eski istemcinin bool'u da
-    # calismaya devam ediyor.
+    # IKI SECENEKLI LISTE: on yuz "kullan" / "koru" gibi anahtarlar
+    # gonderir; bool degerler de kabul edilir.
     if isinstance(gelen.get("val_var"), str):
         gelen["val_var"] = gelen["val_var"] == "kullan"
     if isinstance(gelen.get("katmanla"), str):
@@ -2554,12 +2490,8 @@ ONERI_EN_AZ_DONEM = 2
 # ===========================================================================
 # SECIM LISTELERI
 # ---------------------------------------------------------------------------
-#
-#
-#
-# Yerine SOMUT secenekler geliyor: "Son dönem (202412)". Secenekler
-# verinin kendisinden uretiliyor, yani yalnizca YAPILABILIR olanlar
-# listede. Tek secenek kaliyorsa acilir liste degil SABIT metin
+# SOMUT secenekler: "Son dönem (202412)". Secenekler verinin kendisinden
+# uretiliyor, yani yalnizca YAPILABILIR olanlar listede. Tek secenek kaliyorsa acilir liste degil SABIT metin
 # gosteriliyor - tiklayinca tek satir cikan bir liste, secim varmis
 # izlenimi verir.
 # ===========================================================================
@@ -2574,7 +2506,7 @@ def test_donem_secenekleri(durum):
     "Son N dönem" secenekleri: N en fazla (donem sayisi - 1) olabilir,
     egitime en az bir donem kalmali. Ustune tek tek donemler eklenmiyor;
     tek bir ortadaki donemi test yapmak zamansal bolmenin amacina
-    (gelecegi tahmin) aykiri ve kullanicinin sordugu sey degil."""
+    (gelecegi tahmin) aykiri."""
     donemler = [str(x) for x in (durum.get("_donemler") or [])]
     if len(donemler) < 2:
         return []
@@ -2636,13 +2568,10 @@ TEKRAR_EN_COK = 20
 GAP_EN_COK = 12
 
 
-# Oran ve parca
-# sayisi artik hazir bir listeden secilmiyor, serbest yaziliyor
-# Aralik asagidaki sabitlerde.
+# Oran ve parca sayisi serbest yazilir; aralik asagidaki sabitlerde.
 
 
-# Oranin kabul edildigi ARALIK. Hazir listeye (%10/%15/%20/%25/%30)
-# sikistirmaktan vazgecildi. Sinir yalnizca MATEMATIKSEL olan: %0 hic
+# Oranin kabul edildigi ARALIK. Sinir yalnizca MATEMATIKSEL olan: %0 hic
 # sinav birakmaz, %100 hic egitim birakmaz.
 ORAN_EN_AZ = 0.01
 ORAN_EN_COK = 0.99
@@ -2652,7 +2581,7 @@ def _orana_yuvarla(deger, yedek=0.20):
     """Gelen orani kabul edilen araliga kirpar.
 
     Listeye OTURTMAZ: kullanici %23 yazdiysa %25'e cekmek, ekranda
-    yazdigindan baska bir bolme uygulamak demekti. Yalnizca aralik
+    yazdigindan baska bir bolme uygulamak olurdu. Yalnizca aralik
     disina tasan ve okunamayan degerler duzeltiliyor."""
     try:
         x = float(deger)
@@ -2668,8 +2597,6 @@ def _orana_yuvarla(deger, yedek=0.20):
 # ===========================================================================
 # BOLME SATIRLARI - iki kartin ORTAK iskeleti
 # ---------------------------------------------------------------------------
-#
-#
 # Iki kart YAN YANA duruyor ve IKISI DE AYNI SATIRLARI tasiyor:
 #   sol  (Önerilen) -> satirin DEGERI, salt okunur
 #   sag  (Özel)     -> ayni satirin KONTROLU, secilebilir
@@ -2682,10 +2609,7 @@ def _orana_yuvarla(deger, yedek=0.20):
 # BOLME KARTININ ICERIGI
 # ---------------------------------------------------------------------------
 # Ana ekranda kullanici UC SEYI anlamali: ne seçiyorum -> sistem ne
-# öneriyor -> ben ne seçtim. Geri kalan her sey ikinci katmanda
-#
-#
-# Bu yuzden:
+# öneriyor -> ben ne seçtim. Geri kalan her sey ikinci katmanda:
 #   1. Her satirin yaninda "?" -> EN FAZLA IKI SATIRLIK ipucu
 #   2. En altta "Detaylar ve Terimler" -> kapsamli anlatim, varsayilan
 #      KAPALI
@@ -3111,8 +3035,7 @@ def bolme_onerisi(durum):
     ayarlar.update(TRAIN_KULLANIMI[kullanim])
 
     # ---- ozet satirlari: SADECE etiket + deger --------------------------
-    # Her satirin altinda bir aciklama cumlesi VARDI. Aciklamalar
-    # "Detayları göster" alanina tasindi.
+    # Aciklamalar "Detayları göster" alaninda.
     def _satir(alan, deger, deger_metni=None):
         return {"etiket": BOLME_ALAN_BASLIK.get(alan, alan),
                 "deger": deger_metni if deger_metni is not None
@@ -3208,8 +3131,7 @@ def _bolme_oran_ozeti(durum):
 
     Uc bolme turu uc ayri cumle gerektiriyor:
       hazir    - setler tabloda yazili, oran diye bir sey yok
-      zamansal - test DONEM bazli ayrilir; orani onceden bilinmiyor,
-                 "eğitim %100" yazmak yanlisti
+      zamansal - test DONEM bazli ayrilir; orani onceden bilinmiyor
       rastgele - oranlar biliniyor, yaklasik satir yazilabilir"""
     a = bolme_ayarlari(durum)
     satir = (durum.get("profil") or {}).get("satir")
@@ -3383,8 +3305,7 @@ def bolme_uyarilari(durum):
         uyarilar.append(GECERSIZ_BIRLESIM)
 
     # Kullanici bunu kaydederken gormeli.
-    # Zamansal testte test_oran KULLANILMIYOR (test donem bazli ayriliyor);
-    #
+    # Zamansal testte test_oran KULLANILMIYOR (test donem bazli ayriliyor).
     test_o = (0.0 if a["test_tanim"] == "zamansal"
               else float(a.get("test_oran") or 0.0))
     val_o = float(a.get("val_oran") or 0.0) if a.get("val_var") else 0.0
@@ -3401,7 +3322,6 @@ def bolme_uyarilari(durum):
     if a["birim"] == "kimlik" and not m.get("id"):
         uyarilar.append("Bölme kimlik bazlı seçilmiş ama kimlik kolonu "
                         "tanımlı değil; satır bazına düşüldü.")
-    #
     if (a["test_tanim"] == "rastgele" and m.get("donem")
             and len(durum.get("_donemler") or []) >= ONERI_EN_AZ_DONEM):
         uyarilar.append("Öneri: Dönem kolonu tanımlı görünüyor. Zaman "
@@ -3417,7 +3337,6 @@ def bolme_uyarilari(durum):
             k = ""
         if k:
             uyarilar.append(k)
-    #
     if a.get("seed_tur") == "coklu" and a["cv"] == "yok":
         uyarilar.append("Çoklu tekrar seçili ama çapraz doğrulama kapalı; "
                         "tekrar sayısının bir etkisi olmaz.")

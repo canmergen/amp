@@ -4675,7 +4675,7 @@ def tip_onerilerini_uygula(durum):
         secilen.update(oneriler)
         durum["tip_donusum"] = secilen
         _tip_ozetini_tazele(durum)
-    # Onceki surumun onerileri korunur (kart onlari da kirmizi gosterir).
+    # Daha once uretilmis oneriler korunur (kart onlari da kirmizi gosterir).
     eski = dict(durum.get("_tip_oneri") or {})
     eski.update(oneriler)
     durum["_tip_oneri"] = eski

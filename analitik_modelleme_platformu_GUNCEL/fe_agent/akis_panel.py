@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis_panel.py - Ust serit ozeti ve Ozet sayfasi govdesi.
-
-akis.py bolundu; bu dosya o bolumun aynisidir.
-"""
+"""fe_agent/akis_panel.py - Ust serit ozeti ve Ozet sayfasi govdesi."""
 
 import pandas as pd
 
@@ -60,9 +57,9 @@ def _liste_adet(x):
 def _serit_veri_sozluk_karti(durum):
     """Uzerinde calisilan tablo VE sozlugu - TEK kart.
 
-    Birlesince kart sag paneldeki
-    "VERİ & SÖZLÜK" sekmesiyle ayni adi tasiyor ve tiklayinca oraya
-    gidiyor - tiklamanin nereye goturdugu etiketten anlasiliyor.
+    Kart sag paneldeki "VERİ & SÖZLÜK" sekmesiyle ayni adi tasiyor ve
+    tiklayinca oraya gidiyor - tiklamanin nereye goturdugu etiketten
+    anlasiliyor.
 
     Tiklama veri seti BAGLANDIKTAN sonra acilir; sozluk henuz yoksa da
     sekme veri tarafini gosterebiliyor. Sozluk Mod B/C'de LLM tarafindan
@@ -168,8 +165,7 @@ def _kaynak_sirali(kumeler):
 def _uretim_karti(durum):
     """YALNIZCA uretim: kural tabanli ve AI kac degisken uretti.
 
-    Eleme bu kartta YOK. Akisin gercek sirasi once uretim, sonra eleme;
-"""
+    Eleme bu kartta YOK. Akisin gercek sirasi once uretim, sonra eleme."""
     kumeler = _uretim_kumeleri(durum)
     uretilen = _liste_adet(durum.get("uretilen"))
 
@@ -287,8 +283,7 @@ def _eleme_karti(durum):
                 "ust": "kaç değişken, nerede elendi",
                 "alt": "üretimden sonra başlar"}
 
-    # Uretilenler ANCAK bir elemeye girdikten sonra huni girisine sayilir;
-    #
+    # Uretilenler ANCAK bir elemeye girdikten sonra huni girisine sayilir.
     giris = (ham or 0) + ((uretilen or 0) if noktalar else 0)
     cikis = basamaklar[-1][1]
 
@@ -359,14 +354,12 @@ def _model_karti(durum):
 def ozet(durum):
     """Ust serit: ÜRETİM · ELEME · MODEL.
 
-    BICIM eskisiyle ayni: kirmizi etiket, koyu deger, iki gri alt satir.
+    BICIM: kirmizi etiket, koyu deger, iki gri alt satir.
 
-    Serit, dar bir kutuda uc satira
-    sigdirilmis ozet demek. Ayni bilgi sag paneldeki VERİ & SÖZLÜK
-    sekmesinde TAM ve detayli duruyor; serit artik yalnizca oradan
-    okunamayan seyi, yani akisin ILERLEYISINI gosteriyor.
-    `_serit_veri_sozluk_karti` SILINMEDI: sekmeye tiklanabilir kart
-    dondurmek gerekirse yeri hazir.
+    Serit, dar bir kutuda uc satira sigdirilmis ozettir. Veri ve sozluk
+    bilgisi sag paneldeki VERİ & SÖZLÜK sekmesinde TAM ve detayli duruyor;
+    serit yalnizca oradan okunamayan seyi, yani akisin ILERLEYISINI
+    gosteriyor.
 
     BOS HAL: deger ∅ ("bu veri henüz gelmedi"), aciklama satirlari o
     adimda ne yapilacagini yazar. Boylece ∅ tek basina bir bosluk degil,
@@ -402,7 +395,6 @@ def detay(durum):
 
     if durum.get("mod"):
         # Etiketler TEK kaynaktan (MOD_SECENEKLERI -> MOD_ADLARI) turetilir.
-        # Burada ikinci bir sozluk tutulunca A ile C ters eslesmisti.
         ad = MOD_ADLARI.get(durum["mod"], durum["mod"])
         bolumler.append(_bolum("ÇALIŞMA BAŞLANGICI",
                                [("Başlangıç", "%s - %s" % (durum["mod"], ad))]))
@@ -631,11 +623,8 @@ def _yuzde_dogrudan(x, b=2):
 # --------------------------------------------------------------------------
 # BASLIK BUYUK HARFI  -  kart basliklari ve satir etiketleri
 # --------------------------------------------------------------------------
-#
-# YALNIZCA ETIKETLER: kart notu ("Boş satırlar … adımından sonra dolar.")
-# ve adim aciklamalari CUMLEDIR, onlara dokunulmaz - kullanici bunu
-# ayrica soyledi ("Analiz edilecek veri setini de değişken sözlüğünü
-# seçin. yazısı zaten olması gerektiği gibi").
+# YALNIZCA ETIKETLER: kart notu ve adim aciklamalari CUMLEDIR, onlara
+# dokunulmaz.
 #
 # Turkce'de baglaclar kucuk kalir; ayrica kisaltmalar ve BUYUK yazilmis
 # tablo adlari (MODELLEME_BAZ) oldugu gibi birakilir - str.title() onlari
@@ -675,8 +664,8 @@ def _kart(baslik, tanimlar):
     dolacaklarini yazar. Adim adi None ise o satir icin not uretilmez.
 
     BASLIK ve ETIKETLER tek yerde Baslik Buyuk Harfine cevriliyor: her
-    kartta tek tek yazmak, ilerideki bir kartin sessizce kuralin disinda
-    kalmasi demekti."""
+    kartta tek tek yazmak, bir kartin sessizce kuralin disinda kalmasina
+    yol acardi."""
     baslik = baslik_bicimi(baslik)
     satirlar, bekleyen = [], []
     for etiket, deger, adim in tanimlar:
@@ -718,9 +707,9 @@ def _bekleyen_panel(adim, kartlar=None):
 # --------------------------------------------------------------------------
 # ADIM ADLARI SOL PANELDEN OKUNUR.
 # Kart notu "Boş satırlar «X» adımından sonra dolar" diyor; X sol
-# paneldeki is akisinda AYNEN bulunmali.
-# Artik ad, adim anahtarindan sol panelin kurallariyla (gruplu adim ->
-# grup adi) uretiliyor; biri degisince oteki de degisir.
+# paneldeki is akisinda AYNEN bulunmali. Ad, adim anahtarindan sol
+# panelin kurallariyla (gruplu adim -> grup adi) uretilir; biri degisince
+# oteki de degisir.
 def sol_panel_adi(anahtar):
     """Adimin sol paneldeki is akisinda gorunen adi.
 
@@ -786,8 +775,7 @@ def _tam(x, yedek=None):
     """Sayiya cevrilemeyen degeri PATLAMADAN yedek'e dusurur.
 
     durum JSON'dan okunur; eski bir oturum dosyasinda ya da elle
-    duzeltilmis bir kayitta sayisal alan metin gelebilir. Panelin
-    tamami .get() ile korunmusken burada ham int() kalmisti."""
+    duzeltilmis bir kayitta sayisal alan metin gelebilir."""
     if x is None:
         return yedek
     try:
@@ -822,8 +810,7 @@ def _kalan_kolonlar(durum, p):
 def _tip_dagilimi(p, durum=None):
     """'812 / 218 / 12' - sayisal / kategorik / tarih.
 
-    Tarih kolonlari kategorik artik
-    kolon - sayisal - tarih olarak hesaplanir.
+    Kategorik = kolon - sayisal - tarih.
 
     DEGISKEN KONTROLU'NDEN SONRA tabloda kalan kolonlar ve son tipleri
     sayilir: surec disi kolon duser, tipi degistirilen kolon yeni
@@ -869,18 +856,13 @@ def _donem_araligi(p, durum=None):
 # --------------------------------------------------------------------------
 # KOKEN  -  veri seti ve sozluk NEREDEN geldi
 # --------------------------------------------------------------------------
-# Artik her kart iki satir konusuyor:
-#   ad     -> uzerinde calisilan tablonun / sozlugun adi
-#   köken  -> hangi baslangicta, neyden turedigi (+ sozlukte teyit durumu)
-# PLATFORMUN KENDI ADLARI. Kart artik kaynak tablonun HAM ADINI bir
-# "ad" satirinda gostermiyor.
-#
-# Yeni duzen iki satir:
-#   ad    -> platformun uzerinde calistigi seyin ADI (her modda ayni)
+# Her kart iki satir konusuyor:
+#   ad    -> platformun uzerinde calistigi seyin ADI (her modda ayni);
+#            kaynak tablonun HAM ADI degil
 #   köken -> NEREDEN geldigi, ORIJINAL ADIYLA birlikte, cumle olarak
+#            (+ sozlukte teyit durumu)
 # Adlar akis_durum'dan geliyor: burada bir ETIKET degil, GERCEKTEN
 # yazilan tablonun adi duruyor (bkz. akis_faz01.amp_ciktilarini_yaz).
-#
 PLATFORM_VERI_ADI = AMP_VERI_ADI
 PLATFORM_SOZLUK_ADI = AMP_SOZLUK_ADI
 
@@ -923,8 +905,7 @@ KOKEN_TABLO_SINIRI = 4
 def _kayit_yeri(durum, anahtar):
     """AMP ciktisinin NEREYE yazildigi - sohbete geri donmeden bulunsun.
 
-    Kullanici "sonradan da cekebileyim" dedi; adin ne oldugunu bilmek
-    yetmiyor, akistaki veri setine mi yoksa PROJE_HAFIZASI icindeki
+    Adin ne oldugunu bilmek yetmiyor; akistaki veri setine mi yoksa PROJE_HAFIZASI icindeki
     klasore mi yazildigi da lazim. Teyit kaydedilmeden once bos kalir
     ve kart "«Değişken Listesi ve Tip Kontrolü» adımından sonra dolar" notunu gosterir."""
     from fe_agent import akis_faz01
@@ -1018,8 +999,7 @@ def veri_paneli(durum):
 
     boyut = ("%s × %s" % (_sayi(satir), _sayi(kolon))
              if satir and kolon else None)
-    #
-    amp = (durum.get("amp_cikti") or {}).get("veri") or {}
+    amp =(durum.get("amp_cikti") or {}).get("veri") or {}
     if boyut and _teyitten_sonra(durum):
         dusen = _tam(amp.get("dusen_kolon"), 0) or 0
         boyut = "%s × %s" % (_sayi(satir), _sayi(max(kolon - dusen, 0)))
@@ -1028,8 +1008,6 @@ def veri_paneli(durum):
 
     kimlik_dup = _tam(p.get("duplicate_kimlik"))
     veri_adimi = _veri_adimi(durum)
-    # Tek kartta,
-    # boyut/tip satirlarindan SONRA geliyor.
     veri_kart = _kart("Veri Seti", [
         # HAM AD DEGIL platformun adi; hangi tablodan gelindigi
         # "Köken" satirinda, cumle icinde yaziyor.
@@ -1039,8 +1017,8 @@ def veri_paneli(durum):
         ("Kayıt Yeri", _kayit_yeri(durum, "veri"), KAYIT_ADIMI),
         ("Satır × Kolon", boyut, veri_adimi),
         # Veri setinin Dataiku'daki dosya boyutu ve tam veri islerinin
-        # motoru (bkz. motor.py). Sohbette ayrica yazilmaz (kullanici
-        # karari: secim zaten yapildi, ozet sag panelde).
+        # motoru (bkz. motor.py). Sohbette ayrica yazilmaz; ozet sag
+        # panelde.
         ("Dosya Boyutu", motor_mod.boyut_metni(p.get("dosya_boyutu"))
          if p.get("motor") else None, veri_adimi),
         ("Motor", motor_mod.AD.get(p.get("motor")), veri_adimi),
@@ -1052,7 +1030,6 @@ def veri_paneli(durum):
         ("Toplam Null Oranı", _yuzde(p.get("null_oran"), 2), veri_adimi),
         ("Hedef Değişken",
          (durum.get("meta") or {}).get("target"), TANIM_ADIMI),
-        #
         # Oran sayilarla birlikte: "%3,21 · 12.345 / 384.567".
         ("Hedef Tipi", _hedef_tipi(p), TANIM_ADIMI),
         ("Hedef Oranı", _hedef_orani(p), TANIM_ADIMI),
@@ -1070,7 +1047,7 @@ def veri_paneli(durum):
 # VERI & SOZLUK sekmesi  (app.js'te data-tab="ozet")
 # --------------------------------------------------------------------------
 # NEDEN AYRI BIR FONKSIYON
-#   veri_paneli hala duruyor ve KULLANILIYOR (hazirlik_paneli ile birlikte
+#   veri_paneli ayrica KULLANILIYOR (hazirlik_paneli ile birlikte
 #   test edilebilir kucuk parca olarak). veri_sozluk_paneli onun ciktisini
 #   ALIR, uzerine sozluk kartini ve feature tablosunu ekler. Boylece iki
 #   sekme arasinda kart kopyalamak gerekmiyor.
@@ -1087,18 +1064,15 @@ def veri_paneli(durum):
 # (tam tablo dataset'te). Tabloda gorunmeyen satirlarin iv/c alani
 # sozlesme geregi null kalir.
 #
-# TABLO NEDEN DORT KOLON
-#   Bu panel artik bolme oncesi SON TEYIT yuzeyi: kullanici burada
-#   kolonu gorur, tanimini duzeltir, surec disina alir. Kategori artik hic sorulmuyor; DURUM satirin
-#   govdesinde KALIYOR (surec disi satir soluk ciziliyor) ama kendi
-#   kolonu yok. "FEATURE" basligi da "DEĞİŞKEN" oldu: ekranin geri
-#   kalani ve sozluk bu kelimeyi kullaniyor.
-# UC KOLON: "sağ barda da değişken, tip, sözlük
-# tanımı yer alsın sadece". NULL %% kolonu KARARIN VERILDIGI yere,
-# sohbetteki teyit tablosuna tasindi - surec disi birakma karari orada
-# veriliyor ve oran tam o kutunun solunda duruyor. Satir govdesi
-# null_oran'i tasimaya devam ediyor: satira tiklaninca acilan detayda
-# ve null esigi suzgecinde kullaniliyor.
+# UC KOLON: degisken, tip, sozluk tanimi.
+#   Bu panel bolme oncesi SON TEYIT yuzeyi: kullanici burada kolonu
+#   gorur, tanimini duzeltir, surec disina alir. DURUM satirin
+#   govdesinde (surec disi satir soluk ciziliyor) ama kendi kolonu yok.
+#   Baslik "DEĞİŞKEN": ekranin geri kalani ve sozluk bu kelimeyi
+#   kullaniyor. NULL %% kolonu KARARIN VERILDIGI yerde, sohbetteki teyit
+#   tablosunda - surec disi birakma karari orada veriliyor ve oran tam o
+#   kutunun solunda duruyor. Satir govdesi null_oran'i tasiyor: satira
+#   tiklaninca acilan detayda ve null esigi suzgecinde kullaniliyor.
 FEATURE_KOLONLARI = ["DEĞİŞKEN", "TİP", "SÖZLÜK TANIMI"]
 
 DURUM_TANIMLI = "tanımlı"
@@ -1128,10 +1102,8 @@ def _sozluk_kayitlari(durum):
         ad = str(r[ad_kolon]).strip()
         if not ad or ad in harita:
             continue
-        # BOS TANIM "nan" DEGILDIR. Calisma kopyasi CSV olarak
-        # saklaniyor. Tanim hucresi artik
-        # duzenlenebilir oldugu icin (kullanici yanlis bir tanimi
-        # silebilir) bu yol gercekten kullaniliyor.
+        # BOS TANIM "nan" DEGILDIR. Tanim hucresi duzenlenebilir
+        # (kullanici yanlis bir tanimi silebilir); bos hucre bos tanimdir.
         tanim = ""
         if tanim_kolon:
             ham = r[tanim_kolon]
@@ -1188,10 +1160,9 @@ def feature_tablo(durum):
     Bicimleme YAPILMAZ: null_oran ham oran (0–1), iv/c yoksa None.
     Ekranin sanallastirdigi ham veridir.
 
-    Satir govdesi tablo kolonlariyla birlikte sadelesti: kategori, tekil
-    ve ornek deger artik ne kolon ne de alan. "durum" alan olarak KALDI -
-    surec disi satiri soluk cizmek ve onay kutusunu isaretli getirmek
-    icin gerekiyor; kendi kolonu yok. iv/c SFA'dan gelir, tablonun degil
+    Satirda kategori, tekil ve ornek deger yok. "durum" alani surec disi
+    satiri soluk cizmek ve onay kutusunu isaretli getirmek icin
+    gerekiyor; kendi kolonu yok. iv/c SFA'dan gelir, tablonun degil
     satir detayinin verisidir."""
     sozluk_harita, _kategoriler, _, kopya_mi = _sozluk_kayitlari(durum)
     sfa_harita = _sfa_haritasi(durum)
@@ -1229,7 +1200,6 @@ def feature_tablo(durum):
         # deniyor (bkz. sozluk_calisma._kopyayi_kurtar); buraya False
         # dusuyorsa gercekten yazacak yer yok.
         "duzenlenebilir": bool(kopya_mi),
-        #
         "duzenleme_notu": _duzenleme_notu(durum, kopya_mi),
         # PLATFORMUN ADI, ham ad degil: hemen yanindaki kart da
         # "Sözlük: AMP_SOZLUK" diyor. Hangi sozlukten gelindigi kartin
@@ -1247,9 +1217,7 @@ def sozluk_kapsami(durum):
       tanimli  : bunlardan sozlukte DOLU bir aciklamasi olanlar
       tanimsiz : adi sozlukte hic gecmeyen YA DA aciklamasi BOS olanlar
 
-    ACIK ISIM VE TEK KAYNAK
-
-      Hepsi buradan geciyor.
+    TEK KAYNAK: kapsam hesabi yapan her yer buradan geciyor.
 
     NEDEN "ADI GECIYOR" YETMIYOR
       Sozlukte satiri olup ACIKLAMASI BOS olan kolon tanimli sayilmaz:
@@ -1277,8 +1245,8 @@ def sozluk_kapsami(durum):
 
 
 def _sozluk_karti(durum):
-    # KAPSAM CANLI HESAPLANIR ve VERI SETIYLE KARSILASTIRILIR.Uc satir da artik ayni kaynaktan
-    # (sozluk_kapsami) geliyor, dolayisiyla birlikte hareket ediyorlar.
+    # KAPSAM CANLI HESAPLANIR ve VERI SETIYLE KARSILASTIRILIR. Uc satir da
+    # ayni kaynaktan (sozluk_kapsami) geliyor, birlikte hareket ediyorlar.
     kolonlar, tanimli, tanimsiz = sozluk_kapsami(durum)
     # YALNIZCA SURECTE KALAN KOLONLAR sayilir; surec disi kolonlar
     # AMP_SOZLUK'ta isaretiyle durur ama tabloda yoktur. Kac tane oldugu
@@ -1341,9 +1309,8 @@ def teyit_adiminda_mi(durum):
 def veri_sozluk_paneli(durum):
     """VERI & SOZLUK sekmesi: veri_paneli kartlari + sozluk karti + tablo.
 
-    KARTLAR KATLANMAZ.  Sebep, iki kart acikken tablonun ekranin altina
-    kaymasiydi. Ama sozluk teyidi artik SOHBET BLOGUNDA yapiliyor; bu
-    panel yalnizca aciklama veriyor, burada gizlenecek bir karar yok."""
+    KARTLAR KATLANMAZ: sozluk teyidi SOHBET BLOGUNDA yapiliyor; bu panel
+    yalnizca aciklama veriyor, burada gizlenecek bir karar yok."""
     temel = veri_paneli(durum)
     veri = dict(temel)
     veri["kartlar"] = list(temel.get("kartlar") or []) + [_sozluk_karti(durum)]
@@ -1427,10 +1394,8 @@ def eksik_paneli(durum):
 # --------------------------------------------------------------------------
 # HAZIRLIK sekmesi
 # --------------------------------------------------------------------------
-# icerigi buraya tasindi. eksik_paneli
-# SILINMEDI: hem tek basina test ediliyor hem de bu sekme onu kaynak
-# olarak kullaniyor. Iki yerde ayni kart kodunu tutmak, birinin sessizce
-# eskimesi demekti.
+# eksik_paneli hem tek basina test ediliyor hem de bu sekme onu kaynak
+# olarak kullaniyor; ayni kart kodu iki yerde tutulmaz.
 # --------------------------------------------------------------------------
 # Bolme degistirilince gecersiz kalan adimlarin durum anahtarlari.
 # Profil BURADA YOK: profil tum satirlarda olculuyor, bolmeden etkilenmiyor.
@@ -1476,9 +1441,8 @@ def bolme_formu(durum):
     uygulanan bolme ayni kaynaktan okunmali, yoksa kullanici ekranda
     baska, veride baska bir bolme gorur.
 
-    SAYI KUTUSU YERINE SECIM LISTESI: oranlar, test
-    donemleri ve parca sayisi artik somut seceneklerden seciliyor ve
-    listeler VERIDEN uretiliyor - yalnizca yapilabilir olanlar cikiyor.
+    SECIM LISTESI: test donemleri somut seceneklerden seciliyor ve
+    liste VERIDEN uretiliyor - yalnizca yapilabilir olanlar cikiyor.
     Tek secenek kaliyorsa alan "sabit" isaretleniyor ve on yuz onu
     acilir liste degil duz metin olarak ciziyor."""
     a = bolme_ayarlari(durum)
@@ -1522,7 +1486,6 @@ def bolme_formu(durum):
     test_kilit = _kilitli_secenekler("test_tanim")
     test_secenekleri = ["zamansal", "rastgele"]
     if hazir:
-        #
         test_secenekleri.insert(0, "hazir")
     test_tanim = _alan("test_tanim", a["test_tanim"],
                        secenekler=bolme_secenek_listesi(
@@ -1547,13 +1510,10 @@ def bolme_formu(durum):
                               "kullanılmıyor.")
 
     # ---- oranlar: hazir yuzdeler --------------------------------------
-    # ORAN ARTIK SERBEST.  Sinir
-    # yalnizca matematiksel olan. Satir karsiligi on yuzde ANINDA
-    # hesaplaniyor, "yaklasik 2.000 satir" yazisi sabit kalmiyor.
-    # HAZIR CIPLER + "Özel": ekran secim ekrani gibi dursun ama serbest
-    # yazma ozgurlugu kalksin istemiyoruz. Deger
-    # hazir ciplerden birine esitse o cip secili, degilse "Özel" secili
-    # ve sayi kutusu aciliyor.
+    # ORAN SERBEST; sinir yalnizca matematiksel olan. Satir karsiligi on
+    # yuzde ANINDA hesaplaniyor.
+    # HAZIR CIPLER + "Özel": deger hazir ciplerden birine esitse o cip
+    # secili, degilse "Özel" secili ve sayi kutusu aciliyor.
     test_oran = _alan("test_oran", int(round(100 * a["test_oran"])),
                       tip="yuzde", hazir=[10, 20, 30],
                       en_az=int(round(100 * ORAN_EN_AZ)),
@@ -1583,8 +1543,8 @@ def bolme_formu(durum):
     if birim_kisit:
         birim["not"] = birim_kisit
 
-    # ONAY KUTUSU YERINE IKI SECENEKLI LISTE: "Koru / Koruma" ne
-    # secildigini okunur biçimde soyluyor.
+    # IKI SECENEKLI LISTE: "Koru / Koruma" ne secildigini okunur biçimde
+    # soyluyor.
     katmanla = _alan("katmanla", "koru" if a["katmanla"] else "koruma",
                      secenekler=[
                          {"anahtar": "koru", "etiket": "Korunsun",
@@ -1771,10 +1731,8 @@ def bolme_sozlugu():
 def bolme_ozet_karti(durum):
     """HAZIRLIK sekmesindeki SALT OKUNUR bolme ozeti.
 
-    Hazirlik sekmesi artik SECIM YAPILAN yer degil: secim "Bölme
-    Stratejisi" adiminda, sohbet kartinda yapiliyor. Burada yalnizca
-    nasil ayarlandigi yaziyor. Ayni karari iki ayri ekranda vermek,
-    kullanicinin hangisinin gecerli oldugunu bilememesi demekti."""
+    Secim "Bölme Stratejisi" adiminda, sohbet kartinda yapiliyor; burada
+    yalnizca nasil ayarlandigi yaziyor."""
     a = bolme_ayarlari(durum)
     b = durum.get("bolme") or {}
     donemler = list(durum.get("_donemler") or [])
@@ -1827,17 +1785,15 @@ def bolme_paneli(durum):
 
 
 def hazirlik_paneli(durum):
-    """ESKI HAZIRLIK sekmesi (bolme ozeti + eksik deger ozeti). Sag panel
-    uc sekmeye indi; bu fonksiyon disaridan cagiranlar
-    icin duruyor."""
+    """HAZIRLIK paneli (bolme ozeti + eksik deger ozeti). Sag panelde
+    ayri sekme olarak cizilmez; disaridan cagiranlar icin duruyor."""
     temel = eksik_paneli(durum)
     veri = dict(temel)
     veri["kartlar"] = (list(temel.get("kartlar") or [])
                        + [bolme_ozet_karti(durum)])
-    # FORM ARTIK BURADA CIZILMIYOR (bkz. bolme_ozet_karti). Alan listesi
-    # yine gonderiliyor: ust seritteki set secici "Doğrulama" dugmesini
-    # gosterip gostermeyecegini buradan okuyor ve ikinci bir kaynak
-    # tutmak iki yerin farkli sey soylemesi demekti.
+    # FORM BURADA CIZILMIYOR (bkz. bolme_ozet_karti). Alan listesi yine
+    # gonderiliyor: ust seritteki set secici "Doğrulama" dugmesini
+    # gosterip gostermeyecegini buradan okuyor.
     veri["bolme_formu"] = dict(bolme_formu(durum), sadece_ozet=True)
     return veri
 
