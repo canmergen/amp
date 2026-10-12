@@ -824,7 +824,7 @@ def _liste(baslik, satirlar, en_fazla=12):
         return baslik + "\n  (yok)"
     g = "\n".join("  • %s" % s for s in satirlar[:en_fazla])
     if len(satirlar) > en_fazla:
-        g += "\n  … ve %d tane daha" % (len(satirlar) - en_fazla)
+        g += "\n  ve %d tane daha" % (len(satirlar) - en_fazla)
     return baslik + "\n" + g
 
 def _kisa_ad(tam_ad):
@@ -979,8 +979,7 @@ ORNEK_MASKE = "•••"
 
 def _ornek_metni(deger):
     metin = str(deger).strip()
-    if len(metin) > ORNEK_UZUNLUK:
-        return metin[:ORNEK_UZUNLUK - 1] + "…"
+    # KISALTMA YOK (üç nokta hiçbir yerde gösterilmez): örnek değer tam.
     return metin
 
 
@@ -2587,7 +2586,7 @@ def test_donem_secenekleri(durum):
         elif n <= 3:
             etiket = "Son %d dönem (%s)" % (n, ", ".join(secilen))
         else:
-            etiket = "Son %d dönem (%s … %s)" % (n, secilen[0], secilen[-1])
+            etiket = "Son %d dönem (%s – %s)" % (n, secilen[0], secilen[-1])
         kalan = len(donemler) - n
         secenekler.append(_secenek(
             "son:%d" % n, etiket,
@@ -2768,7 +2767,7 @@ BOLME_SATIR_BILGI = {
         "bilgisi yoksa ya da veri tek döneme aitse kullanılır. "
         + OOS2_ACIKLAMA),
     "donem_kolon": (
-        "Kayıtların hangi döneme (ay, çeyrek…) ait olduğunu söyleyen "
+        "Kayıtların hangi döneme (ay, çeyrek gibi) ait olduğunu söyleyen "
         "kolon. Zamansal bölme bu kolona göre yapılır. «Kolon "
         "Rolleri» adımında seçildi; burada değiştirilmez."),
     "test_donem": (
@@ -2963,7 +2962,7 @@ def bolme_satir_degeri(anahtar, a, durum=None):
         if donemler:
             secilen = donemler[-adet:]
             return ("Son dönem (%s)" % secilen[0]) if adet == 1 \
-                else "Son %d dönem (%s … %s)" % (adet, secilen[0],
+                else "Son %d dönem (%s – %s)" % (adet, secilen[0],
                                                  secilen[-1])
         return "Son %d dönem" % adet
 

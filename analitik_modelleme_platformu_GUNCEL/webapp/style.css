@@ -392,13 +392,13 @@ body::before {
 .ozet-deger {
   display: block;
   font-size: var(--fs-baslik); font-weight: var(--fw-kalin); color: var(--metin);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: normal; overflow-wrap: break-word;
 }
 .ozet-deger.bos { color: var(--metin); }
 .ozet-ust, .ozet-alt {
   display: block; font-size: var(--fs-govde); color: var(--metin);
   margin-top: 1px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: normal; overflow-wrap: break-word;
 }
 
 /* SOL BAR ALTI: Arşiv ve Yeni Çalışma, ince çizgiyle sayfa kümelerinden
@@ -848,8 +848,7 @@ body::before {
 .faz-adimlar li .adim-git {
   flex: 1 1 auto; min-width: 0; text-align: left;
   padding: 0; margin: 0; border: 0; background: none;
-  font: inherit; color: inherit; cursor: pointer;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: inherit; color: inherit; cursor: pointer; white-space: normal; overflow-wrap: break-word;
 }
 .faz-adimlar li.tamam:hover { background: var(--yesil-acik); }
 .faz-adimlar li.aktif:hover { background: var(--sari-acik); }
@@ -875,13 +874,13 @@ body::before {
    Yazı boyutu üst satırla AYNI (gövde); kademe girinti ve çizgiyle
    anlaşılır, küçük punto ile değil. */
 .faz-adimlar li.grup-satir { flex-wrap: wrap; }
-/* Grup / alt adımlı satırda ad kalan genişliği alır ve gerekirse
-   kısalır (tam ad title'da): sağdaki aç/kapa oku alt satıra KAYMAZ. */
-.faz-adimlar li.grup-satir > .adim-git,
-.faz-adimlar li.grup-satir > span:not(.adim-isaret) {
-  flex: 1 1 0; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+/* Uzun adım adı KISALTILMAZ: işaretin yanında kalan genişliği alır ve
+   kelime aralarından alt satıra geçer (işaret ilk satırın hizasında). */
+.faz-adimlar li { align-items: flex-start; }
+.faz-adimlar li > .adim-isaret { margin-top: 3px; }
+.faz-adimlar li > .adim-git,
+.faz-adimlar li > span:not(.adim-isaret) { flex: 1 1 0; min-width: 0; }
+
 .faz-adimlar li.grup-satir:hover { background: none; }
 .faz-alt-adimlar {
   list-style: none; flex: 1 0 100%; margin: 3px 0 0 5px;
@@ -1226,7 +1225,7 @@ body::before {
 }
 .secim-govde .combo { min-width: 0; }
 /* Etiket SOLA hizalı. Dar ekranda etiket
-   "…" ile kesilmesin diye alt satıra geçebilir; subgrid sayesinde bütün
+   üç noktayla kesilmesin diye alt satıra geçebilir; subgrid sayesinde bütün
    etiketler aynı satır yüksekliğini paylaşır (alta yaslı), kutular yine
    aynı hizada kalır. */
 .secim-govde .combo {
@@ -1251,7 +1250,7 @@ body::before {
   display: block; font-size: var(--fs-govde); font-weight: var(--fw-kalin);
   margin-bottom: var(--b-1); color: var(--metin);
   /* Tek satır: bütün alanların kutuları aynı hizada kalsın. */
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: normal; overflow-wrap: break-word;
   line-height: 1.4;
 }
 .combo-zorunlu { color: var(--kirmizi); font-weight: var(--fw-kalin); margin-left: 3px; }
@@ -1370,8 +1369,7 @@ body::before {
   min-width: 0; max-width: 100%;
 }
 .secim-rozet > span {
-  min-width: 0; flex: 1;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; flex: 1; white-space: normal; overflow-wrap: break-word;
 }
 
 .secim-onay {
@@ -1439,8 +1437,7 @@ body::before {
 }
 /* Uzun veri seti adi blogu tasirmasin */
 .dg-ozet-deger {
-  font-size: var(--fs-baslik); font-weight: var(--fw-kalin); color: var(--metin);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--fs-baslik); font-weight: var(--fw-kalin); color: var(--metin); white-space: normal; overflow-wrap: break-word;
 }
 .dg-ozet-alt { font-size: var(--fs-kucuk); color: var(--metin-soluk); line-height: 1.5; }
 
@@ -1535,8 +1532,7 @@ body::before {
 .dg-tablo tr:last-child td { border-bottom: none; }
 /* Uzun kolon adi tabloyu tasirmasin; tamami ipucunda */
 .dg-kolon {
-  font-weight: var(--fw-kalin); color: var(--metin);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: var(--fw-kalin); color: var(--metin); white-space: normal; overflow-wrap: break-word;
 }
 .dg-tip { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
 /* Kısaltma Sözlüğü: şüpheli anlam uyarısı (anlam silinmez). */
@@ -1665,8 +1661,7 @@ body::before {
   background: var(--kenar-acik);
 }
 .aksiyon-izi span {
-  flex: 0 1 auto; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word;
 }
 
 /* -------- Çalışıyor göstergesi -------- */
@@ -1675,7 +1670,7 @@ body::before {
 .calisma-ust { display: flex; align-items: center; gap: var(--b-2); }
 .calisma-adim {
   font-weight: var(--fw-kalin); font-size: var(--fs-govde); color: var(--metin);
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; white-space: normal; overflow-wrap: break-word;
 }
 .calisma-alt {
   display: flex; align-items: center; justify-content: space-between;
@@ -1799,8 +1794,7 @@ body::before {
 alt adim basligi bir kademe asagida. */
   font-size: var(--fs-blok); font-weight: var(--fw-kalin);
   letter-spacing: .01em;
-  color: var(--kirmizi);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--kirmizi); white-space: normal; overflow-wrap: break-word;
 }
 
 /* ---- Teyit kartındaki süzgeç satırı ----
@@ -1923,8 +1917,7 @@ alt adim basligi bir kademe asagida. */
   flex: 1 1 auto; min-width: 0;
   font-size: var(--fs-baslik); font-weight: var(--fw-kalin);
   letter-spacing: .01em;
-  color: var(--metin);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--metin); white-space: normal; overflow-wrap: break-word;
 }
 /* Alt başlıktaki Geri Dön blok başlığındakiyle aynı düğme, bir tık
    küçük: alt başlık da bir kademe sessiz. */
@@ -2232,8 +2225,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 .kart-ozet {
   flex: 1 1 auto; min-width: 0; text-align: right;
   font-size: var(--fs-kucuk); font-weight: var(--fw-normal);
-  color: var(--metin-soluk);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--metin-soluk); white-space: normal; overflow-wrap: break-word;
 }
 .iskele-satir {
   display: flex; justify-content: space-between; gap: var(--b-3);
@@ -2316,9 +2308,8 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   margin: calc(-1 * var(--b-1)) 0 var(--b-2);
 }
 /* Uzun etiket taşmasın; tam metin title'da */
-.panel-etiket { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.iskele-satir > .iskele-deger { flex-shrink: 0; max-width: 62%; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap; }
+.panel-etiket { min-width: 0; white-space: normal; overflow-wrap: break-word; }
+.iskele-satir > .iskele-deger { flex-shrink: 0; max-width: 62%; white-space: normal; overflow-wrap: break-word; }
 
 .panel-tablo {
   width: 100%; border-collapse: collapse; table-layout: fixed;
@@ -2332,8 +2323,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 .panel-tablo th:last-child, .panel-tablo td:last-child { padding-right: 0; }
 .panel-tablo td {
   padding: 5px var(--b-2) 5px 0;
-  border-bottom: 1px solid var(--kenar-acik);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-bottom: 1px solid var(--kenar-acik); white-space: normal; overflow-wrap: break-word;
 }
 .panel-tablo tr:last-child td { border-bottom: none; }
 /* İlk kolon değişken adıdır: yer verilir ama taşma kırpılır */
@@ -2378,8 +2368,7 @@ Asgariler
 }
 .ft-ayrac { font-size: var(--fs-govde); color: var(--metin-soluk); flex-shrink: 0; }
 .ft-kaynak {
-  font-size: var(--fs-kucuk); color: var(--metin-soluk);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+  font-size: var(--fs-kucuk); color: var(--metin-soluk); white-space: normal; overflow-wrap: break-word; min-width: 0;
 }
 
 /* ARAMA · TİP · (DÖNEM) · SIRALAMA TEK SATIRDA, YAN YANA.
@@ -2512,7 +2501,6 @@ Asgariler
 .vo-tablo th, .vo-tablo td {
   padding: 4px var(--b-2); white-space: nowrap; text-align: left;
   border-bottom: 1px solid var(--kenar-acik);
-  max-width: 220px; overflow: hidden; text-overflow: ellipsis;
   font-size: var(--fs-govde); color: var(--metin); line-height: 1.35;
 }
 .vo-tablo th {
@@ -2582,7 +2570,7 @@ Asgariler
   padding: 0 var(--b-2); background: var(--amber-acik);
   border-left: 1px solid var(--amber-halka);
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
-  color: var(--kirmizi); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--kirmizi); white-space: normal; overflow-wrap: break-word;
 }
 
 .ft-detay {
@@ -3566,8 +3554,7 @@ span.bolme-cip { cursor: default; }
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
   background: var(--yuzey); padding: var(--b-2);
 }
-.dag-tile-deger { font-weight: var(--fw-kalin); font-variant-numeric: tabular-nums;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dag-tile-deger { font-weight: var(--fw-kalin); font-variant-numeric: tabular-nums; white-space: normal; overflow-wrap: break-word; }
 .dag-tile-etiket { font-size: var(--fs-kucuk); color: var(--metin-soluk); }
 .dag-kart {
   border: 1px solid var(--kenar); border-radius: var(--r);
@@ -3594,7 +3581,7 @@ span.bolme-cip { cursor: default; }
 }
 .dag-kat { padding: 4px 0; }
 .dag-kat-ust { display: flex; justify-content: space-between; gap: var(--b-2); font-size: var(--fs-govde); }
-.dag-kat-ad { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dag-kat-ad { white-space: normal; overflow-wrap: break-word; }
 .dag-kat-sayi { color: var(--metin-soluk); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dag-kat-cubuk { height: 6px; border-radius: 3px; background: var(--kenar-acik); margin-top: 3px; }
 .dag-kat-dolu { height: 100%; border-radius: 3px; background: var(--grafik-seri); }
@@ -3885,7 +3872,7 @@ span.bolme-cip { cursor: default; }
    Başlıktaki süzgeç düğmesi, açılır menü (sıralama, koşul, değer
    listesi) ve etkin süzgeç çipleri. Değişken Listesi ve Veri Önizleme
    ortak; renkler tema değişkenlerinden. */
-.sz-etiket { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sz-etiket { min-width: 0; }
 .vo-bas-ic { display: inline-flex; align-items: center; gap: 4px; }
 .sz-btn {
   flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
@@ -3905,8 +3892,7 @@ span.bolme-cip { cursor: default; }
   font-size: var(--fs-govde); text-transform: none; letter-spacing: normal; font-weight: normal;
 }
 .sz-baslik {
-  font-weight: var(--fw-kalin); color: var(--metin);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: var(--fw-kalin); color: var(--metin); white-space: normal; overflow-wrap: break-word;
 }
 .sz-bolum {
   font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin-soluk);
@@ -3942,7 +3928,7 @@ span.bolme-cip { cursor: default; }
 .sz-satir:hover { background: var(--kenar-acik); }
 .sz-satir input { margin: 0; flex: 0 0 auto; accent-color: var(--kirmizi); }
 .sz-tum { font-weight: var(--fw-kalin); border-bottom: 1px solid var(--kenar-acik); }
-.sz-ad { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sz-ad { flex: 1 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
 .sz-bos .sz-ad { color: var(--metin-soluk); font-style: italic; }
 .sz-adet { flex: 0 0 auto; font-size: var(--fs-kucuk); color: var(--metin-soluk); }
 .sz-not { padding: 4px var(--b-2); font-size: var(--fs-kucuk); color: var(--metin-soluk); }
@@ -3958,9 +3944,9 @@ span.bolme-cip { cursor: default; }
 .sz-cip {
   display: inline-flex; align-items: center; gap: 2px; max-width: 320px;
   padding: 1px 2px 1px 8px; font-size: var(--fs-kucuk); color: var(--kume-secili-yazi, var(--kirmizi));
-  background: var(--kirmizi-acik); border: 1px solid var(--kirmizi-halka); border-radius: 999px;
+  background: var(--kirmizi-acik); border: 1px solid var(--kirmizi-halka); border-radius: 12px;
 }
-.sz-cip-ad { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sz-cip-ad { min-width: 0; white-space: normal; overflow-wrap: break-word; }
 .sz-cip-kaldir {
   width: 18px; height: 18px; padding: 0; line-height: 1; cursor: pointer;
   font-size: 14px; color: inherit; background: transparent; border: 0; border-radius: 50%;

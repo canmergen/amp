@@ -656,7 +656,7 @@ def _veri_sec_formu(durum, veri=None):
                     "bu veri setinden oluşturulacak.",
         "buton": "Devam Et",
         "alanlar": [{"ad": "veri_seti", "etiket": "Baz Veri Seti",
-                     "placeholder": "Baz veri seti ara…",
+                     "placeholder": "Baz veri seti ara",
                      "ipucu": "Hedef, kimlik ve tüm değişkenleri içeren tablo",
                      "deger": veri or durum.get("veri_seti") or ""}],
         "sablon": "veri seti {veri_seti}",
@@ -717,7 +717,7 @@ def sozluk_uret_plan(durum):
             "  • sayısal kolonlarda dağılım özeti, kategoriklerde en sık "
             "görülen değerler\n"
             "  • bu profile bakarak yazılmış tek cümlelik açıklama\n"
-            "  • kategori etiketi (gelir, bakiye, gecikme, davranış …)\n\n"
+            "  • kategori etiketi (gelir, bakiye, gecikme, davranış gibi)\n\n"
             "Kimlik benzeri ve uzun metin kolonlarının örnek değerleri "
             "paylaşılmaz; yalnızca kolon adı ve istatistikleri kullanılır.\n\n"
             "%s kolon işlenecek, bu birkaç dakika sürebilir. Başlayalım mı?"
@@ -824,11 +824,11 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
         "buton": "Girdileri Doğrula",
         "alanlar": [
             {"ad": "veri_seti", "etiket": "Baz Veri Seti",
-             "placeholder": "Baz veri seti ara…",
+             "placeholder": "Baz veri seti ara",
              "ipucu": "Hedef, kimlik ve tüm değişkenleri içeren tablo",
              "deger": veri or durum.get("veri_seti") or ""},
             {"ad": "sozluk", "etiket": "Baz Sözlük",
-             "placeholder": "Sözlük tablosu ara…", "zorunlu": False,
+             "placeholder": "Sözlük tablosu ara", "zorunlu": False,
              "ipucu": "Kolon adlarını ve açıklamalarını içeren tablo",
              "deger": sozluk or durum.get("sozluk") or ""},
         ],
@@ -837,7 +837,8 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
 
 def _kolon_listesi_metni(kolonlar, en_fazla=8):
     kolonlar = [str(k) for k in kolonlar]
-    ek = " …" if len(kolonlar) > en_fazla else ""
+    ek = (" ve %d kolon daha" % (len(kolonlar) - en_fazla)
+          if len(kolonlar) > en_fazla else "")
     return ", ".join(kolonlar[:en_fazla]) + ek
 
 
@@ -962,7 +963,7 @@ def _kaynak_sozluk_formu(durum, secili=None):
     secili = secili or durum.get("kaynak_sozlukler") or {}
     alanlar = [{"ad": "sozluk_%d" % i,
                 "etiket": "%s Tablosunun Sözlüğü" % t,
-                "placeholder": "Kaynak sözlük ara…", "zorunlu": False,
+                "placeholder": "Kaynak sözlük ara", "zorunlu": False,
                 "deger": secili.get(t) or ""}
                for i, t in enumerate(tablolar)]
     durum["_secim_alani"] = {

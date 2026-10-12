@@ -844,7 +844,8 @@ def plan_metni(plan):
                             % (i, k["ad"], len(k["kolonlar"])))
             satirlar.append("    anahtar : %s" % " + ".join(k["anahtar"]))
             satirlar.append("    kolonlar: %s" % ", ".join(k["kolonlar"][:8])
-                            + (" …" if len(k["kolonlar"]) > 8 else ""))
+                            + (" ve %d kolon daha" % (len(k["kolonlar"]) - 8)
+                               if len(k["kolonlar"]) > 8 else ""))
         else:
             satirlar.append("%2d. %s: işlem toplama (%s değişken)"
                             % (i, k["ad"], len(k["toplamalar"])))
@@ -852,12 +853,12 @@ def plan_metni(plan):
             satirlar.append("    dönem   : %s" % (k.get("donem_kolon") or "yok"))
             for t in k["toplamalar"][:6]:
                 satirlar.append("      %-34s %s · %s"
-                                % (t["yeni_ad"][:34],
+                                % (t["yeni_ad"],
                                    FONKSIYONLAR[t["fonksiyon"]][0],
                                    PENCERE_ADI[t["pencere"]]))
             if len(k["toplamalar"]) > 6:
-                satirlar.append("      … ve %d değişken daha" % (len(k["toplamalar"]) - 6))
+                satirlar.append("      ve %d değişken daha" % (len(k["toplamalar"]) - 6))
         if k.get("gerekce"):
-            satirlar.append("    %s" % k["gerekce"][:100])
+            satirlar.append("    %s" % k["gerekce"])
 
     return "\n".join(satirlar)

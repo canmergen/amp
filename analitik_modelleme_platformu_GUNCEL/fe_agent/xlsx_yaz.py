@@ -34,7 +34,7 @@ from xml.sax.saxutils import escape
 
 # Tek hucreye sigdirilan en uzun metin. Excel'in kendi siniri 32.767;
 # bunun altinda kesiyoruz ki dosya her zaman acilsin.
-HUCRE_SINIRI = 4000
+HUCRE_SINIRI = 32000
 
 # Varsayilan ve en genis kolon genisligi (Excel "karakter" birimi).
 KOLON_GENISLIK = 18
@@ -59,7 +59,7 @@ def _temiz(metin):
     s = "".join(c for c in s
                 if c in "\t\n\r" or ord(c) >= 32)
     if len(s) > HUCRE_SINIRI:
-        s = s[:HUCRE_SINIRI - 1] + "…"
+        s = s[:HUCRE_SINIRI - 40] + " [devamı hücre sınırını aştı]"
     return escape(s)
 
 

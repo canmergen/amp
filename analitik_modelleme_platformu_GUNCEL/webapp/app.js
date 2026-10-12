@@ -133,17 +133,12 @@ let DUZ_ADIMLAR = [];          // sira -> {anahtar, no, baslik, aciklama}
 let aktifAdim = 0;
 let aktifMod = null;           // "A" | "B" | "C"
 let acikFazlar = new Set();
-/* Alt adımlı satırın elle açılıp kapanması: anahtar -> {durum, acik}.
-   Yalnız kaydedildiği altDurum sürerken geçerlidir; karar değişince
-   (ör. «Sözlük ve Kolon Adları Kontrol Edilsin» seçilince) varsayılan
-   duruma döner. */
-let altAcikElle = {};
 let mesgul = false;
 
 /* Hata olursa tiklanan kart grubunu / secim kartini eski haline dondurur */
 let geriAlKilit = null;
 /* KONTROLDEN GEÇMEDEN ONAY YOK. Form kartı
-   gönderilince "Kontrol Ediliyor…" der; "✓ Girdiler Onaylandı" ancak
+   gönderilince "Kontrol Ediliyor" der; "✓ Girdiler Onaylandı" ancak
    sunucu girdiyi KABUL EDİNCE yazılır (bkz. gonderimSonucu). Reddederse
    (tablo yok, sözlükte kolon adı ya da açıklama kolonu yok...) kart
    onaylı görünmez: yerine düzeltilebilir yeni form gelir. */
@@ -641,7 +636,7 @@ const KUTU_KILIT_SONRA =
     " adımında açılır. O ana kadar seçimler kartlar üzerinden yapılır; "
     + "gerekçeli açıklamalar kartların içinde gösterilir.";
 const KUTU_KILIT_IPUCU = KUTU_KILIT_ONCE + KUTU_KILIT_ADIM + KUTU_KILIT_SONRA;
-const KUTU_ACIK_IPUCU = "Cevabınızı ya da sorunuzu yazın…";
+const KUTU_ACIK_IPUCU = "Cevabınızı ya da sorunuzu yazın";
 
 /* Sohbetin açılacağı adımın sırası. Adım listesi moda göre değiştiği
    için sabit bir sayı yazılmıyor, her çizimde okunuyor. Adım
@@ -979,29 +974,14 @@ function fazlariCiz() {
             }
             return li;
         };
-        /* ALT ADIMLI SATIR (01.2.4 ve altında 01.2.4.1 ...). Alt adımlar
-           karar verilene kadar KAPALI, «Sözlük ve Kolon Adları Kontrol
-           Edilsin» seçilince AÇIK; «Kontrol Edilmeden Geçilsin»de kapalı
-           kalır. Satırın sağındaki ok elle açıp kapatır. */
+        /* ALT ADIMLI SATIR (01.2.4 ve altında 01.2.4.1 ...). Aç/kapa oku
+           YOK: alt adımlar yalnız «Sözlük ve Kolon Adları Kontrol
+           Edilsin» seçildiğinde (altDurum "acik") kendiliğinden listelenir;
+           seçilmediyse ya da «Kontrol Edilmeden Geçilsin» dendiyse hiç
+           görünmez. */
         const altlariEkle = (li, x) => {
-            if (!x.cocuk || !x.cocuk.length) return;
-            const elle = altAcikElle[x.anahtar];
-            const acik = (elle && elle.durum === x.altDurum)
-                ? elle.acik : x.altDurum === "acik";
+            if (!x.cocuk || !x.cocuk.length || x.altDurum !== "acik") return;
             li.classList.add("grup-satir", "ust-satir");
-            const ok = document.createElement("button");
-            ok.type = "button";
-            ok.className = "alt-ok" + (acik ? " acik" : "");
-            ok.textContent = "›";
-            ok.title = acik ? "Alt adımları gizle" : "Alt adımları göster";
-            ok.setAttribute("aria-expanded", acik ? "true" : "false");
-            ok.onclick = (e) => {
-                e.stopPropagation();
-                altAcikElle[x.anahtar] = { durum: x.altDurum, acik: !acik };
-                fazlariCiz();
-            };
-            li.appendChild(ok);
-            if (!acik) return;
             const ic = elYap("ol", "faz-alt-adimlar");
             x.cocuk.forEach(c => {
                 const cli = satirKur(c);
@@ -1309,7 +1289,7 @@ function dokDuzenleYap(b) {
     const ayak = elYap("div", "dok-ayak");
 
     const kaydet = elYap("button", "dok-dugme",
-                         DOK.kaydediyor ? "Kaydediliyor…" : "Kaydet");
+                         DOK.kaydediyor ? "Kaydediliyor" : "Kaydet");
     kaydet.type = "button";
     kaydet.disabled = DOK.kaydediyor;
     kaydet.onclick = () => dokBolumYaz(b.anahtar, alan.value);
@@ -1530,7 +1510,7 @@ function dokumanCiz() {
     if (!g) {
         if (!DOK.hata)
             dokBolumlerEl.appendChild(elYap("div", "dok-bos",
-                DOK.yukleniyor ? "Doküman hazırlanıyor…"
+                DOK.yukleniyor ? "Doküman hazırlanıyor"
                                : "Doküman henüz alınmadı."));
         return;
     }
@@ -1610,7 +1590,7 @@ function dokWordIndir() {
     dokIndirmeHataYaz("");
     const etiket = dokWordBtn.textContent;
     dokWordBtn.disabled = true;
-    dokWordBtn.textContent = "İndiriliyor…";
+    dokWordBtn.textContent = "İndiriliyor";
     const bitir = () => {
         dokWordBtn.disabled = false;
         dokWordBtn.textContent = etiket;
@@ -2119,7 +2099,7 @@ function excelSeridiYap(tur, etiket, ipucu, govdeFn) {
         hata.hidden = true;
         const eski = btn.lastChild.nodeValue;
         btn.disabled = true;
-        btn.lastChild.nodeValue = "İndiriliyor…";
+        btn.lastChild.nodeValue = "İndiriliyor";
         const bitir = () => {
             btn.disabled = false;
             btn.lastChild.nodeValue = eski;
@@ -2754,7 +2734,7 @@ function szMenuAc(dugme, o) {
     m.appendChild(elYap("div", "sz-bolum", "Değerler"));
     const ara = document.createElement("input");
     ara.type = "search"; ara.className = "ft-ara sz-ara";
-    ara.placeholder = "Değerlerde ara…";
+    ara.placeholder = "Değerlerde ara";
     ara.setAttribute("aria-label", "Değerlerde ara");
     m.appendChild(ara);
     const liste = elYap("div", "sz-liste");
@@ -2908,7 +2888,7 @@ function ftFiltreCiz() {
     ara.type = "search";
     ara.className = "ft-ara";
     ara.setAttribute("data-ft-odak", "ara");
-    ara.placeholder = "Değişken adı veya sözlük tanımında ara…";
+    ara.placeholder = "Değişken adı veya sözlük tanımında ara";
     ara.setAttribute("aria-label", "Değişken adı veya sözlük tanımında ara");
     ara.value = FT.arama;
     ara.oninput = () => { FT.arama = ara.value; ftBasaSar(); ftTazele(); };
@@ -4373,6 +4353,21 @@ function yuzdeMetni(v, basamak) {
         { minimumFractionDigits: basamak, maximumFractionDigits: basamak });
 }
 
+/* Eksen etiketini kelime aralarından satırlara böler (kelime kesilmez,
+   kısaltma yok): her satır yaklaşık `uzunluk` karakter, en çok iki satır;
+   ikinci satır sığmasa da kalan kelimeleri taşır. */
+function eksenSatirlari(metin, uzunluk) {
+    const kelimeler = String(metin || "").split(/\s+/).filter(Boolean);
+    if (!kelimeler.length) return [""];
+    const satirlar = [kelimeler[0]];
+    kelimeler.slice(1).forEach(k => {
+        const son = satirlar[satirlar.length - 1];
+        if (satirlar.length < 2 && (son + " " + k).length > uzunluk) satirlar.push(k);
+        else satirlar[satirlar.length - 1] = son + " " + k;
+    });
+    return satirlar;
+}
+
 /* Eksen etiketi için kısa sayı: 1.234.567 -> 1,2 Mn; 12.345 -> 12,3 B */
 function kisaSayi(v) {
     if (v === null || v === undefined) return "";
@@ -4390,7 +4385,7 @@ function aralikCiz() {
     analizGovde.appendChild(kap);
     const istek = ++ARALIK.istek;
     if (!ARALIK.liste) {
-        kap.appendChild(elYap("div", "dag-not", "SFA sonuçları yükleniyor…"));
+        kap.appendChild(elYap("div", "dag-not", "SFA sonuçları yükleniyor"));
         sfaGetir("sfa_degiskenler").then(d => {
             if (istek !== ARALIK.istek || !dgDagilimAcik()) return;
             ARALIK.liste = (d && d.degiskenler) || [];
@@ -4420,7 +4415,7 @@ function aralikCiz() {
 
     const ara = document.createElement("input");
     ara.className = "ft-ara aralik-ara";
-    ara.placeholder = "Değişken ara…";
+    ara.placeholder = "Değişken ara";
     ara.value = ARALIK.ara;
     ara.oninput = () => { ARALIK.ara = ara.value; tabloCiz(); };
     kap.appendChild(ara);
@@ -4499,7 +4494,7 @@ function sfaDetayCiz(td, ozet, yenidenCiz) {
     const ad = ozet.ad;
     const v = ARALIK.detay[ad];
     if (!v) {
-        td.appendChild(elYap("div", "dag-not", "Değişken yükleniyor…"));
+        td.appendChild(elYap("div", "dag-not", "Değişken yükleniyor"));
         sfaGetir("sfa_degisken", ad).then(d => {
             if (d && d.tamam) { ARALIK.detay[ad] = d.degisken; if (ARALIK.acik === ad) yenidenCiz(); }
             else { td.innerHTML = ""; td.appendChild(elYap("div", "dag-not dag-hata", (d && d.hata) || "Okunamadı.")); }
@@ -4614,7 +4609,7 @@ function sfaGrafik(binler, genelOran, kategorik, eksenAdi) {
     });
     kap.appendChild(lj);
 
-    const W = 420, H = 210, SOL = 36, SAG = 40, UST = 8, ALT = 34;
+    const W = 420, H = 210, SOL = 36, SAG = 40, UST = 8, ALT = 46;   // iki satirlik eksen etiketi
     const gw = W - SOL - SAG, gh = H - UST - ALT;
     const n = binler.length, slot = gw / n, cw = Math.max(2, Math.min(18, slot * 0.62));
     const payMax = Math.max(1e-9, ...binler.map(b => b.pay || 0)) * 1.1;
@@ -4693,8 +4688,16 @@ function sfaGrafik(binler, genelOran, kategorik, eksenAdi) {
         if (i % adim && !b.eksik) return;
         let e = b.eksik ? "Eksik" : (kategorik || b.ort === undefined || b.ort === null
             ? String(b.etiket || "") : kisaSayi(b.ort));
-        if (e.length > 9) e = e.slice(0, 8) + "…";
-        el("text", { x: X(i), y: UST + gh + 12, "text-anchor": "middle" }, "dag-eksen-yazi", e);
+        /* KISALTMA YOK: uzun etiket kelime aralarından alt satıra geçer
+           (en çok iki satır; kelime bölünmez). */
+        const t = el("text", { x: X(i), y: UST + gh + 12, "text-anchor": "middle" }, "dag-eksen-yazi", "");
+        eksenSatirlari(e, 10).forEach((parca, k) => {
+            const ts = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+            ts.setAttribute("x", X(i));
+            if (k) ts.setAttribute("dy", "1.1em");
+            ts.textContent = parca;
+            t.appendChild(ts);
+        });
     });
     el("text", { x: SOL + gw / 2, y: H - 4, "text-anchor": "middle" }, "dag-eksen-yazi", eksenAdi || "");
     /* Üzerine gelince aralığın tam bilgisi */
@@ -4807,7 +4810,7 @@ function sfaKararFormu(v, ozet, yenidenCiz) {
         Object.keys(alanlar).forEach(a => { karar[a] = alanlar[a].value; });
         kaydet.disabled = true;
         durum.textContent = tipSec.value !== (k.tip || "yok")
-            ? "SFA yeni tiple hesaplanıyor…" : "Kaydediliyor…";
+            ? "SFA yeni tiple hesaplanıyor" : "Kaydediliyor";
         fetch(getWebAppBackendUrl("sfa_karar"), {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ oturum_id: OTURUM_ID, kolon: v.ad || ozet.ad, karar: karar })
@@ -4868,7 +4871,7 @@ function dagilimCiz() {
     const hala = () => istek === DAGILIM.istek && dgDagilimAcik();
 
     if (!DAGILIM.kolonlar) {
-        kap.appendChild(elYap("div", "dag-not", "Değişken listesi yükleniyor…"));
+        kap.appendChild(elYap("div", "dag-not", "Değişken listesi yükleniyor"));
         dagilimGetir("", "")
             .then(d => {
                 if (!hala()) return;
@@ -4897,7 +4900,7 @@ function dagilimCiz() {
             analizCiz("degisken");
         }
     }, DAGILIM.kolon, { liste: DAGILIM.kolonlar, zorunlu: false,
-                        placeholder: "Değişken ara…" });
+                        placeholder: "Değişken ara" });
     kap.appendChild(combo.kok);
 
     const govde = elYap("div", "dag-govde");
@@ -4910,7 +4913,7 @@ function dagilimCiz() {
     const hazir = DAGILIM.onbellek[anahtar];
     if (hazir) { dagilimGovdeCiz(govde, hazir); return; }
 
-    govde.appendChild(elYap("div", "dag-not", "Hesaplanıyor (tüm satırlar)…"));
+    govde.appendChild(elYap("div", "dag-not", "Hesaplanıyor (tüm satırlar)"));
     dagilimGetir(DAGILIM.kolon, AKTIF_SET)
         .then(d => {
             if (!hala()) return;
@@ -5259,7 +5262,7 @@ function onizlemeCiz(kap, baslikEl) {
         const ara = document.createElement("input");
         ara.type = "search";
         ara.className = "ft-ara";
-        ara.placeholder = "Kolon adı veya sözlük tanımında ara…";
+        ara.placeholder = "Kolon adı veya sözlük tanımında ara";
         ara.setAttribute("aria-label", "Kolon adı veya sözlük tanımında ara");
         ara.value = VO.arama;
         let zamanlayici = null;
@@ -5411,7 +5414,7 @@ function onizlemeCiz(kap, baslikEl) {
         tabloCiz();
     };
     if (ONIZLEME.veri) { ciz(ONIZLEME.veri); return; }
-    kap.appendChild(elYap("div", "dag-not", "Önizleme yükleniyor…"));
+    kap.appendChild(elYap("div", "dag-not", "Önizleme yükleniyor"));
     const istek = ++ONIZLEME.istek;
     fetch(getWebAppBackendUrl("veri_onizleme") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
         .then(r => r.json())
@@ -6346,7 +6349,7 @@ function calismaGostergesi(iptalEt) {
     iptal.title = "İsteği durdur (sunucudaki işlem sürebilir)";
     iptal.onclick = () => {
         iptal.disabled = true;
-        iptal.textContent = "İptal ediliyor…";
+        iptal.textContent = "İptal ediliyor";
         if (iptalEt) iptalEt();
     };
     /* DÜŞÜNEN ROBOT: işlem sürerken çalışan bloğun başlığındaki robot
@@ -6616,8 +6619,8 @@ const COMBO_KAYNAKLARI = {
         liste: () => DATASETLER,
         durum: () => DATASET_DURUMU,
         dinleyiciler: DATASET_DINLEYICILER,
-        placeholder: "Veri seti ara…",
-        yukleniyor_mesaji: "Veri seti listesi yükleniyor…",
+        placeholder: "Veri seti ara",
+        yukleniyor_mesaji: "Veri seti listesi yükleniyor",
         hata_mesaji: "Veri seti listesi okunamadı - adı elle yazabilirsiniz; "
                      + "erişim, seçimden sonra kontrol edilir.",
         bos_durum_mesaji: "Bu projede veri seti bulunamadı - adı elle "
@@ -6629,8 +6632,8 @@ const COMBO_KAYNAKLARI = {
         liste: () => KOLONLAR,
         durum: () => KOLON_DURUMU,
         dinleyiciler: KOLON_DINLEYICILER,
-        placeholder: "Kolon ara…",
-        yukleniyor_mesaji: "Kolon listesi yükleniyor…",
+        placeholder: "Kolon ara",
+        yukleniyor_mesaji: "Kolon listesi yükleniyor",
         hata_mesaji: "Kolon listesi okunamadı - adı elle yazabilirsiniz; "
                      + "doğruluğu, seçimden sonra kontrol edilir.",
         bos_durum_mesaji: "Veri setinin kolonları okunamadı - adı elle "
@@ -6642,7 +6645,7 @@ const COMBO_KAYNAKLARI = {
         liste: () => [],
         durum: () => "bos",
         dinleyiciler: null,          // tazelenecek liste yok
-        placeholder: "Değeri yazın…",
+        placeholder: "Değeri yazın",
         yukleniyor_mesaji: "",
         hata_mesaji: "Bu alanı elle yazabilirsiniz.",
         bos_durum_mesaji: "Bu alanı elle yazabilirsiniz.",
@@ -6681,7 +6684,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
     if (etiket) {
         const lbl = document.createElement("label");
         /* TEK SATIR ETİKET. "(İsteğe Bağlı)" küçük ve soluk
-           ayrı parça; sığmazsa etiket "…" ile kısalır, tamamı ipucunda. */
+           ayrı parça; sığmazsa etiket "" ile kısalır, tamamı ipucunda. */
         const tam = tireSade(etiket);
         const m = tam.match(/^(.*?)\s*\((İsteğe Bağlı)\)$/);
         lbl.textContent = m ? m[1] : tam;
@@ -7608,7 +7611,7 @@ function dogrulamaKartiEkle(alan, blok) {
     oIptal.onclick = () => {
         if (!alan.oneri_is) return;
         oIptal.disabled = true;
-        oIptal.textContent = "İptal ediliyor…";
+        oIptal.textContent = "İptal ediliyor";
         fetch(getWebAppBackendUrl("oneri_iptal"), {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify(ftKimlikGovdesi({ is: String(alan.oneri_is) }))
@@ -7687,7 +7690,7 @@ function dogrulamaKartiEkle(alan, blok) {
             kBaslaBtn = null;
             birincil.hidden = false;
             kontrolBekliyor = true;
-            kDurumEl.textContent = "Tanım kontrolü başlıyor…";
+            kDurumEl.textContent = "Tanım kontrolü başlıyor";
             durumTazele();
             oneriYokla(String(d.oneri_is));
         })
@@ -8192,7 +8195,7 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     ilerIptal.title = "Dil modelini durdur; okunan kolonlar kalır";
     ilerIptal.onclick = () => {
         ilerIptal.disabled = true;
-        ilerIptal.textContent = "İptal ediliyor…";
+        ilerIptal.textContent = "İptal ediliyor";
         fetch(getWebAppBackendUrl("kisaltma_iptal"), {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify(ftKimlikGovdesi({}))
@@ -8475,8 +8478,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 return;
             }
             const bekleyen = y.value;
-            y.title = "Öneri güncelleniyor…";
-            if (!bekleyen) y.placeholder = "öneri güncelleniyor…";
+            y.title = "Öneri güncelleniyor";
+            if (!bekleyen) y.placeholder = "öneri güncelleniyor";
             fetch(getWebAppBackendUrl("kisaltma_oneri"), {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(ftKimlikGovdesi({ kisaltma: mevcut.length === 1 ? mevcut[0] : "",
@@ -8543,8 +8546,8 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
            birinden diğerine geçişi canlı izlenir. */
         const bos = ka.dm === "calisiyor";
         if (!bul.length) bosSatir(tBul, bos ? "Henüz yok." : "Karşılığı bulunamayan parça yok.");
-        if (!kar.length) bosSatir(tSoz, bos ? "Okunuyor…" : "Karar gereken satır yok.");
-        if (!sor.length) bosSatir(tSor, bos ? "Okunuyor…" : "Sorunsuz satır yok.");
+        if (!kar.length) bosSatir(tSoz, bos ? "Okunuyor" : "Karar gereken satır yok.");
+        if (!sor.length) bosSatir(tSor, bos ? "Okunuyor" : "Sorunsuz satır yok.");
         yeniGelenleriVurgula(tBul, "bul");
         yeniGelenleriVurgula(tSoz, "soz");
         yeniGelenleriVurgula(tSor, "sor");
@@ -8713,7 +8716,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     });
     const ara = document.createElement("input");
     ara.type = "search"; ara.className = "dg-giris dg-acik-ara";
-    ara.placeholder = "Kolon ya da açıklama ara…";
+    ara.placeholder = "Kolon ya da açıklama ara";
     ara.setAttribute("aria-label", "Açıklama ara");
     ara.addEventListener("input", () => {
         arama = ara.value.trim().toLocaleLowerCase("tr");
@@ -8737,7 +8740,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     dahaBtn.hidden = true;
     dahaBtn.onclick = () => { gosterilen += ACK_SAYFA; tabloCiz(); };
     kart.appendChild(dahaBtn);
-    const bosEl = elYap("div", "dg-not dg-cizgisiz", "Satırlar yükleniyor…");
+    const bosEl = elYap("div", "dg-not dg-cizgisiz", "Satırlar yükleniyor");
     kart.appendChild(bosEl);
 
     /* ---- Sunucu işlemleri ---- */
@@ -8748,11 +8751,11 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         }).then(r => r.json());
     }
     /* İptal sunucuda hemen işler; yanıt gelince durum beklemeden yoklanır.
-       Düğme, iş yeniden başlayana dek "İptal ediliyor…" kalır. */
+       Düğme, iş yeniden başlayana dek "İptal ediliyor" kalır. */
     function iptalSifirla() { iptalBtn.disabled = kilitli; iptalBtn.textContent = "İptal"; }
     iptalBtn.onclick = () => {
         iptalBtn.disabled = true;
-        iptalBtn.textContent = "İptal ediliyor…";
+        iptalBtn.textContent = "İptal ediliyor";
         islem({ islem: "iptal" }).then(() => yokla()).catch(() => iptalSifirla());
     };
     devamBtn.onclick = () => {
@@ -8786,7 +8789,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             giris = document.createElement("textarea");
             giris.className = "dg-giris dg-acik-giris";
             giris.rows = 2;
-            giris.placeholder = "Not ya da düzeltme yazın…";
+            giris.placeholder = "Not ya da düzeltme yazın";
             giris.value = tireSade(v.not || "");
             giris.setAttribute("aria-label", v.kolon + " için düzenlemeniz");
             giris.addEventListener("blur", () => notKaydet(v.kolon));
@@ -8815,11 +8818,11 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     function duzeltilmisCiz(td, v) {
         td.textContent = "";
         if (v.durum === "isleniyor") {
-            td.appendChild(elYap("div", "dg-acik-bekliyor", "Dil modeli düzenliyor…"));
+            td.appendChild(elYap("div", "dg-acik-bekliyor", "Dil modeli düzenliyor"));
             return;
         }
         if (bekliyorMu(v)) {
-            td.appendChild(elYap("div", "dg-acik-bekliyor", "Sırada…"));
+            td.appendChild(elYap("div", "dg-acik-bekliyor", "Sırada"));
             return;
         }
         if (v.durum === "hata") {
@@ -8950,7 +8953,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         bosEl.hidden = !(yuklendi && !uyan.length);
         bosEl.textContent = sira.length ? "Bu süzgece uyan satır yok."
             : atlandi ? "Açıklamalar değiştirilmeden geçildi." : "Düzenlenecek kolon yok.";
-        if (!yuklendi) { bosEl.hidden = false; bosEl.textContent = "Satırlar yükleniyor…"; }
+        if (!yuklendi) { bosEl.hidden = false; bosEl.textContent = "Satırlar yükleniyor"; }
     }
 
     function suzgecCiz() {
@@ -9362,7 +9365,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         g.className = "dg-giris dg-donem-anlam";
         g.rows = 2;
         g.value = dz && dz.anlam !== undefined ? dz.anlam : tireSade(r.anlam || "");
-        g.placeholder = calisiyor && !r.anlam ? "Dil modeli yorumluyor…" : "Anlamı yazın";
+        g.placeholder = calisiyor && !r.anlam ? "Dil modeli yorumluyor" : "Anlamı yazın";
         g.disabled = kilitli || calisiyor;
         g.setAttribute("aria-label", (r.kalip || "Kalıp") + " anlamı");
         tdA.appendChild(g);
@@ -10870,7 +10873,7 @@ function teyitKartiEkle(alan, blok) {
         const ara = document.createElement("input");
         ara.type = "search";
         ara.className = "dg-arama";
-        ara.placeholder = "Değişken adı veya tanımda ara…";
+        ara.placeholder = "Değişken adı veya tanımda ara";
         ara.setAttribute("aria-label", "Değişken adı veya tanımda ara");
         filtreKap.appendChild(ara);
 
@@ -11932,13 +11935,13 @@ function gonder(metinDisaridan, etiket, ekGovde) {
         if (istekDurumu === "zamanasimi") {
             durumuYokla(balonEkle("bot",
                 "İşlem sürüyor · " + sureBicim(Math.round(ISTEK_ZAMAN_ASIMI / 1000))
-                + ". Sonucu bekliyorum…", false),
+                + ". Sonucu bekliyorum", false),
                 "İşlem " + sureBicim(Math.round(ISTEK_ZAMAN_ASIMI / 1000))
                 + " içinde yanıt vermedi.");
         } else if (istekDurumu === "iptal") {
             durumuYokla(balonEkle("bot",
                 "İsteği iptal ettiniz. Sunucudaki işlem sürüyor olabilir; "
-                + "sonucu bekliyorum…", true),
+                + "sonucu bekliyorum", true),
                 "İsteği iptal ettiniz.");
         } else {
             balonEkle("bot",
@@ -12384,7 +12387,7 @@ function calismaSilOnayi(dugmeler, c) {
     reddet.onclick = geriGetir;
     onayla.onclick = () => {
         onayla.disabled = reddet.disabled = true;
-        soru.textContent = "Siliniyor…";
+        soru.textContent = "Siliniyor";
         /* BEKLETMEZ: açık olmayan çalışmanın satırı
            hemen kalkar, silme arkada sürer. Başarısız olursa satır hata
            mesajıyla geri gelir. Açık çalışma silinirken ekran ondan
@@ -12450,7 +12453,7 @@ function calismalarAc() {
         calismalarCiz(ARSIV_ONBELLEK);
     } else {
         calismalarListe.innerHTML = "";
-        calismalarListe.appendChild(elYap("div", "calisma-bos", "Yükleniyor…"));
+        calismalarListe.appendChild(elYap("div", "calisma-bos", "Yükleniyor"));
     }
     const istek = ++ARSIV_ISTEK;
     fetch(getWebAppBackendUrl("calismalar")

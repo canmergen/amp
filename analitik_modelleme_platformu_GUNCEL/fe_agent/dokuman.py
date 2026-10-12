@@ -366,7 +366,7 @@ def _kisa_liste(ogeler, en_fazla=EN_FAZLA_SATIR):
     ogeler = [str(o) for o in _ls(ogeler)]
     if len(ogeler) <= en_fazla:
         return ogeler
-    return ogeler[:en_fazla] + ["… ve %s tane daha" % _sayi(len(ogeler) - en_fazla)]
+    return ogeler[:en_fazla] + ["ve %s tane daha" % _sayi(len(ogeler) - en_fazla)]
 
 
 def _ikili_tablo(ciftler, kolonlar, basamak=3, en_fazla=EN_FAZLA_SATIR):

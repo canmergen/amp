@@ -41,7 +41,7 @@ SAYFA_GENISLIK = 9026
 # duzenlemesi ya da bozuk bir alan megabaytlarca metin tasiyabilir;
 # Word'u kilitleyen bir dosya uretmektense metni acikca kirpiyoruz.
 EN_UZUN_METIN = 20000
-KIRPMA_ISARETI = " […]"
+KIRPMA_ISARETI = " [metnin devamı çok uzun olduğu için alınmadı]"
 
 _NS = ('xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
        ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/'
