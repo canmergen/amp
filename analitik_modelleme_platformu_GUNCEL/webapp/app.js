@@ -179,11 +179,11 @@ const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 bannerEl.onerror = () => { bannerEl.style.display = "none"; solBarOlcekle(); };
 bannerEl.onload = () => solBarOlcekle();
 saydamKirp(GORSEL.banner, src => { bannerEl.src = src; },
-           () => { bannerEl.style.display = "none"; solBarOlcekle(); });
+           () => { bannerEl.style.display = "none"; solBarOlcekle(); }, true);
 
 /* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük
    kalmasın); kırpılamazsa dosya olduğu gibi. cb(src) */
-function saydamKirp(url, cb, hata) {
+function saydamKirp(url, cb, hata, beyazDa) {
     const ham = new Image();
     ham.onload = () => {
         let src = url;
@@ -197,7 +197,12 @@ function saydamKirp(url, cb, hata) {
             let x0 = w, y0 = h, x1 = -1, y1 = -1;
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
-                    if (a[(y * w + x) * 4 + 3] > 20) {
+                    const i = (y * w + x) * 4;
+                    /* beyazDa: saydam kenarın yanında beyaz / çok açık
+                       kenar da boşluk sayılır (zemini beyaz görseller). */
+                    const dolu = a[i + 3] > 20
+                        && !(beyazDa && a[i] > 240 && a[i + 1] > 240 && a[i + 2] > 240);
+                    if (dolu) {
                         if (x < x0) x0 = x;
                         if (x > x1) x1 = x;
                         if (y < y0) y0 = y;
@@ -248,7 +253,7 @@ function saydamKirp(url, cb, hata) {
    değişir. Çerçeve kapanınca alan büyür, bar da aynı oranda büyür.
    Görünüm Ayarları açılır pencere olduğu için ölçeği etkilemez. */
 const SOL_BAR_TASARIM_EN = 224;
-const SOL_BAR_OLCEK = { min: 0.6, max: 1.6 };
+const SOL_BAR_OLCEK = { min: 0.6, max: 2.0 };
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");
@@ -270,6 +275,15 @@ window.addEventListener("resize", () => {
 });
 requestAnimationFrame(solBarOlcekle);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(solBarOlcekle);
+/* Dataiku sayfası (iframe) pencere olayı olmadan da boyut değiştirebiliyor:
+   sol barın boyu her değiştiğinde yeniden ölçeklenir. */
+if (window.ResizeObserver) {
+    let sonBoy = 0;
+    new ResizeObserver(() => {
+        const bar = document.getElementById("sol-bar");
+        if (bar && bar.clientHeight !== sonBoy) { sonBoy = bar.clientHeight; solBarOlcekle(); }
+    }).observe(document.getElementById("sol-bar"));
+}
 
 /* ==================== Sayfa arka planı ==================== */
 /* Çerçeveli görsel sayfanın tamamını kaplar; uygulama çerçevenin iç

@@ -4178,3 +4178,6 @@ span.bolme-cip { cursor: default; }
 #banner { max-height: 96px; }
 #sol-bar-logo { padding: 10px 4px 2px; }
 #banner { width: 100%; max-height: 110px; }
+/* Logo üstte az boşlukla. */
+#sol-bar-logo { padding: 4px 4px 2px; gap: 2px; }
+#banner { max-height: 120px; }
