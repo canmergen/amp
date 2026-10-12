@@ -1,5 +1,5 @@
 /* ===== FONT (gomulu; dis kaynaga baglanmaz) =====
-   Source Sans 3 (Adobe): Dataiku arayuzunun kendi fontu (Source Sans
+   Source Sans 3: Dataiku arayuzunun kendi fontu (Source Sans
    Pro'nun guncel surumu); webapp Dataiku'nun icinde ayni yazi ile durur.
    400 ve 700, Latin + Turkce harfler. SIL Open Font License 1.1
    (ucretsiz, ticari kullanim serbest). Aile adi "AMP ..." : makinede
@@ -29,7 +29,7 @@
      basliklar buyuktur. Tek istisna ust bar dugmeleri (--fs-ustbar):
      sekmeler 64 px'lik barda tek sirada sigmali. Ikon karakterleri (×, +,
      ok, i) kutularina gore sabit px alir. --fs-kucuk, --fs-etiket,
-     --fs-buyuk eski adlar: ayni iki degere baglidir. TEK ISTISNA
+     --fs-buyuk takma adlardir: ayni iki degere baglidir. TEK ISTISNA
      --fs-blok: sohbetteki blok basligi (avatarin yanindaki "01.2 ...")
      baslik boyutundan 1,5 px buyuk; alt adim basliklari (.alt-ad) 15. */
   --fs-govde:  13.5px;   /* her metin */
@@ -44,13 +44,12 @@
   --fw-kalin:  700;
 
   --font: "AMP Source Sans", "Segoe UI", Calibri, system-ui, -apple-system, sans-serif;
-  /* Buyuk harf araligi: az tutuldu; harfler acildikca seyrek ve
-     farkli bir font gibi gorunuyor */
+  /* Buyuk harf araligi dar: harfler acildikca seyrek ve farkli bir
+     font gibi gorunur */
   --etiket-aralik: .02em;
 
   /* ===== BILESEN SISTEMI - kose, bosluk, yukseklik, golge =====
-     BOSLUK OLCEGI %95'E CEKILDI. Her deger yine TAM PIKSEL:
-     round(x * .95). */
+     Bosluk olceginde her deger TAM PIKSEL. */
   --r:         6px;      /* kart, balon, buton, giris kutusu */
   --r-kucuk:   5px;      /* sekme, cip, liste ogesi, ic alan */
   --b-1: 3px;  --b-2: 6px;  --b-3: 9px;  --b-4: 12px;  --b-5: 15px;  --b-6: 18px;
@@ -69,7 +68,7 @@
   --kirmizi-halka: rgba(213,17,21,.16);
   --pembe-secili:  #FBE4E5;     /* sol barda seçili sekme zemini */
   /* Sol barda seçili küme: marka kırmızısının yumuşatılmış tonu (tam
-     kırmızı %45 opak çerçevenin yanında bağırıyordu). */
+     kırmızı %45 opak çerçevenin yanında fazla baskın kalır). */
   --kume-secili:       #C24E52;
   --kume-secili-kenar: #B5454A;
   --kume-secili-yazi:  #A3262A;
@@ -146,19 +145,17 @@
   --sari-koyu:    #000000;          /* sari zemin ustundeki metin rengi */
   --sari-acik:    #FDF6D3;
 
-  /* Iki panel de bir tik genisletildi (208/19/264 ve 304/29/432 idi).
-     Uc degeri birden buyutmek gerekiyor: yalniz max buyutulurse genis
-     ekranda genisler ama 1024-1100 arasinda hicbir sey degismez, cunku
-     orada vw degeri kazaniyor. Min degerler olculu artirildi: cekmece
-     esigi 944/864px ve orada iki panel yan yana duruyor — min'ler fazla
-     buyurse sohbet sutunu okunamayacak kadar daralir. */
-  /* Sol panel: ekranın %27'si, 250-400 px arası. Sağ blok yan sütun
-     olmaktan çıkınca sohbet çok genişliyordu; sol panel biraz büyüdü. */
+  /* Panel genisliklerinde clamp'in uc degeri birlikte ayarlanir: yalniz
+     max buyutulurse genis ekranda genisler ama 1024-1100 arasinda hicbir
+     sey degismez, cunku orada vw degeri kazanir. Min degerler olculu:
+     cekmece esigi 944/864px ve orada iki panel yan yana durur; min'ler
+     fazla buyurse sohbet sutunu okunamayacak kadar daralir. */
+  /* Sol panel: ekranın %27'si, 250-400 px arası. */
   --panel-en:   clamp(250px, 27vw, 400px);
   /* Sag panel: dar ekranda 328px, genis ekranda en fazla 480px */
   /* Alt sınır --ft-en + gövde
-     dolgusu kadar: sözlük tablosu hâlâ kaydırmasız sığıyor. */
-  --analiz-en:  clamp(340px, 31vw, 460px);   /* SFA ekranı için hafif genişletildi */
+     dolgusu kadar: sözlük tablosu kaydırmasız sığar. */
+  --analiz-en:  clamp(340px, 31vw, 460px);
   /* Sol bar (sayfa kümeleri + Arşiv / Yeni Çalışma) eni. En uzun
      etiket (BÖLME & MODEL) dolgusuyla birlikte rahat sığar. */
   --sol-bar-en: 200px;
@@ -172,22 +169,19 @@
   /* BLOKLAR EŞİT VE TAM GENİŞLİK: sohbet sütununun tamamını kaplarlar.
 */
   --balon-en:     100%;
-  --avatar-en:    42px;          /* sohbet avatarı: 34 küçük, 48 fazla büyük kaldı; yazılar büyüyünce 40 → 42 */
+  --avatar-en:    42px;          /* sohbet avatarı */
   --avatar-ara:   10px;          /* avatar ile blok arası */
   /* Ardisik balonlar arasindaki SABIT dikey aralik. Bot/kullanici,
      balon/kart ayrimi gozetmeden hepsi ayni bosluga sahip. */
   --balon-ara:    var(--b-4);
-  /* Alttaki butonlar ve yazi kutusu: sohbet alaninin tamami.
-     Avatar kalktigi icin artik sol girinti yok. */
+  /* Alttaki butonlar ve yazi kutusu: sohbet alaninin tamami. */
   --govde-en:     100%;
 }
 
 
 /* -------- KOYU TEMA -------- */
-/* KATMANLI KOYU TEMA (eski tam siyah temanın sorunları giderildi).
-   Eski temada zemin, kart ve panel aynı siyahtı; ayrım yalnız kenardaydı,
-   yazılar saf beyazdı ve göz yoruyordu. Şimdi üç katman: sayfa zemini en
-   koyu, paneller bir ton açık, kartlar bir ton daha açık. Metin kırık
+/* KATMANLI KOYU TEMA. Üç katman: sayfa zemini en koyu, paneller bir
+   ton açık, kartlar bir ton daha açık. Metin kırık
    beyaz (#E6E8EB). Gri metin yok (açık temadaki ilke: --metin-soluk =
    --metin). Vurgu renkleri açık temadakilerle aynı aile, koyu zeminde
    okunur tonda; kırmızı marka kırmızısına yakın. */
@@ -234,7 +228,7 @@
   --sari-koyu:    #0F1115;
   --sari-acik:    #2A2408;
 
-  /* Sonradan eklenen sabit renkli parçaların koyu karşılıkları */
+  /* Sabit renkli parçaların koyu karşılıkları */
   --pembe-secili:  #3D1B1E;     /* sol barda seçili sekme zemini */
   --pembe-kenar:   #44262A;     /* panel balonlarının ince kenarı */
   --dg-bos: rgba(234,179,8,.14);
@@ -254,7 +248,7 @@
 }
 /* SOL BAR (koyu): seçili küme düz kırmızı yerine koyu bordo; içindeki
    sekmeler kart tonunda, seçili sekme bordo zemin + açık kırmızı yazı +
-   solda kırmızı çizgi. Tam kırmızı blok koyu zeminde göz alıyordu. */
+   solda kırmızı çizgi. Tam kırmızı blok koyu zeminde fazla göz alır. */
 #kabuk.koyu .ust-kume:has(> .ust-sekme.aktif) { background: #4A1A1D; border-color: #6B2328; }
 #kabuk.koyu .ust-sekme.aktif, #kabuk.koyu .ust-sekme.aktif:hover {
   background: var(--pembe-secili); border-color: var(--pembe-secili); color: #FF8F92;
@@ -292,7 +286,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    orani korunarak sigar (object-fit: contain). */
 #kurum-logo {
   position: fixed; z-index: 1;
-  opacity: .45;   /* arka planla ayni solukluk (kullanici karari) */
+  opacity: .45;   /* arka planla ayni solukluk */
   left: calc(885.5 / 1774 * 100vw); top: calc(28.5 / 887 * 100vh);
   width: calc(162 / 1774 * 100vw); height: calc(18 / 887 * 100vh);
   transform: translate(-50%, -50%);
@@ -309,7 +303,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 /* Çerçeve kapalıyken uygulama en dışta da bölmeleri ayıran ayraç
    çizgisiyle (aynı renk ve kalınlık) çevrelenir. */
 :root.cercevesiz #kabuk { border: var(--ayrac-kalinlik) solid var(--ayrac); }
-/* Gorsel %45 opaklikta (kullanici karari: tam renkte goz yoruyordu).
+/* Gorsel %45 opaklikta (tam renkte goz yorar).
    Ustteki kurum logosu da ayni oranda soluk (#kurum-logo); uygulama tam
    renkte. */
 body { background-color: #FEFEFE; }   /* gorselin ic zemini; gorsel gelmezse */
@@ -388,8 +382,7 @@ body::before {
   object-fit: contain;
 }
 
-/* Sonuç kartının satırları (.sonuc-kart).
-   Eski üst şerit kaldırıldı; satır sınıfları orada da aynıydı. */
+/* Sonuç kartının satırları (.sonuc-kart). */
 .ozet-etiket { display: block; margin-bottom: 2px; }
 .ozet-deger {
   display: block;
@@ -424,8 +417,7 @@ body::before {
 }
 /* Genişlikler varsayılandayken sıfırlanacak bir şey yok: düğme pasif.
 */
-/* Pasif düğme SOLUKLUKLA anlatılıyor, gri metinle değil: üst barda
-   soluk gri metin kalmadı. */
+/* Pasif düğme SOLUKLUKLA anlatılır, gri metinle değil. */
 
 /* Görünür
    etiket ve daha geniş gövde kasıtlı: komşusuna benzemesin. */
@@ -513,7 +505,7 @@ body::before {
 .calisma-bos { padding: var(--b-2) var(--b-3); }
 .calisma-hata { color: var(--kirmizi); }
 /* ==================== SOL BAR: SAYFA KÜMELERİ ====================
-   Sol bar üst barın altında, ekranın tam boyunda; sayfa kümeleri alt
+   Sol bar ekranın tam boyunda; sayfa kümeleri alt
    alta. MODEL AKIŞI kümesi (başlık + beş kutu) ve altında ayrı SOHBET
    ve DASHBOARD blokları. Renkler: gri küme zemini üstünde beyaz kutular,
    üstüne gelince açık kırmızı, seçili kutu kırmızı. Küme başlığı
@@ -566,7 +558,7 @@ body::before {
 }
 .ust-sekme:hover { border-color: var(--kirmizi-halka); color: var(--kirmizi); background: var(--kirmizi-acik); }
 /* Seçili sekmenin KÜMESİ kırmızı; içinde seçili sekme pembe zeminli
-   kırmızı yazı, seçilmeyenler beyaz (kullanıcı kararı). Seçili sekme
+   kırmızı yazı, seçilmeyenler beyaz. Seçili sekme
    beyazdan net ayrılsın diye zemin biraz koyu pembe ve solda 3 px
    kırmızı çizgi. */
 .ust-sekme.aktif, .ust-sekme.aktif:hover {
@@ -599,7 +591,7 @@ body::before {
    kenarı kesilmez, kesik kenar sekmenin kendisinde; soluk zemin. */
 /* Diğer sekmeler gibi BEYAZ zeminli, ama kapalı olduğu soluk gri yazı,
    kilit simgesi ve tıklanmazlıktan anlaşılır (gri zemin seçili gibi
-   duruyordu). */
+   durur). */
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
   color: #A0A6AD; background: var(--yuzey); opacity: 1;
@@ -807,7 +799,7 @@ body::before {
    RENK NEDEN --sari DEGIL: isaretin dolgusu #EAB308 ve bu bir DOLGU
    olarak iyi duruyor, ama ayni sari beyaz zeminde METIN olunca kontrast
    ~1,9:1 — okunmuyor. --amber ayni sari/kehribar ailesinden ama
-   okunabilir. Isaret degismedi. */
+   okunabilir. */
 .faz-adimlar li.aktif { color: var(--amber); font-weight: var(--fw-kalin); }
 .faz-adimlar li.aktif > .adim-isaret {
   background: var(--sari); border-color: var(--sari); color: #000;
@@ -889,11 +881,8 @@ body::before {
   scrollbar-gutter: stable;
 }
 
-/* Iki kenar, tek genislik. AVATAR YOK: bot metninin sola yapismasini
-   engelleyen tek sey oydu. Iki taraf artik yalnizca hizalama ve zemin
-   rengiyle ayrisiyor (GORSEL.bot / GORSEL.user sabitleri ve /gorsel/*
-   uclari duruyor — banner ayni uclari kullaniyor, balonlarda
-   cizilmiyorlar). Dikey aralik --balon-ara ile sabit. */
+/* Iki kenar, tek genislik. Iki taraf hizalama ve zemin rengiyle
+   ayrisir. Dikey aralik --balon-ara ile sabit. */
 .satir {
   display: flex; align-items: flex-start;
   margin: 0 0 var(--balon-ara);
@@ -1016,9 +1005,7 @@ body::before {
   border-color: var(--kirmizi);
 }
 
-/* Kart açıklaması: KART DEĞİL ASİSTAN söylüyor, o yüzden balon
-
-
+/* Kart açıklaması: KART DEĞİL ASİSTAN söylüyor, o yüzden balon.
    Vurgu tek yerde: tıklanabilir kartlarda. */
 .kart-balon { margin-bottom: var(--b-3); }
 .satir.bot .balon.kart-balon { padding-left: var(--b-4); }
@@ -1030,7 +1017,7 @@ body::before {
 /* Balonsuz (kok seviyesinde) secenek kartlari da ayni sutunda,
    ayni genislikte ve sola yapisik basliyor. */
 /* Kök seviyesindeki kartlar/ayraçlar da sütunun TAMAMINI kaplar:
-   avatar artık bloğun içinde, girinti açmıyor. */
+   avatar bloğun içinde, girinti açmaz. */
 #sohbet > .secenek-kok,
 #sohbet > .secim-kart,
 #sohbet > .aksiyon-izi { width: auto; margin-left: 0; }
@@ -1228,8 +1215,8 @@ body::before {
 .alan-not-liste li + li { margin-top: 2px; }
 .alan-not-liste b { color: var(--metin); font-weight: var(--fw-kalin); word-break: break-all; }
 
-/* Listeyi acan ok dugmesi. Liste artik odaklaninca kendiliginden
-   acilmiyor; gorunur tek acma yolu bu (klavye: ArrowDown). */
+/* Listeyi acan ok dugmesi. Liste odaklaninca kendiliginden acilmaz;
+   gorunur tek acma yolu bu (klavye: ArrowDown). */
 .combo { position: relative; }
 /* Giriş + ok düğmesi + açılır liste TEK kapsayıcıda; konumlandırma
    buna göre yapılır. */
@@ -1414,8 +1401,8 @@ body::before {
 }
 .dg-toplu-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Kartın TEK not satırı (SÖZLEŞME7 §2): üç ayrı soluk paragraf
-   (tablo açıklaması + kapsam notu + öneri notu) buraya indi. */
+/* Kartın TEK not satırı (SÖZLEŞME7 §2): tablo açıklaması, kapsam notu
+   ve öneri notu burada. */
 .dg-not {
   font-size: var(--fs-kucuk); color: var(--metin-soluk); line-height: 1.5;
   margin: var(--b-1) 0 var(--b-3); padding-left: var(--b-2);
@@ -1498,7 +1485,7 @@ body::before {
 
 /* TEYIT TABLOSU DÖRT KOLON: Değişken | Tip | Sözlük Tanımı | Süreç
    Dışı. Yukarıdaki genişlikler doğrulama kartının dört kolonu
-   içindi; burada 3. sıra açıklama, ayrıca tanımlanıyor. */
+   içindir; burada 3. sıra açıklama, ayrıca tanımlanıyor. */
 .teyit-kart .dg-tablo th:nth-child(1) { width: 30%; }
 .teyit-kart .dg-tablo th:nth-child(2) { width: 12%; }
 .teyit-kart .dg-tablo th:nth-child(3) { width: auto; white-space: nowrap; }
@@ -1664,7 +1651,7 @@ body::before {
   padding: var(--b-3) var(--b-4) var(--b-4);
 }
 /* ---- BLOK DURUMU ----
-   Kırmızı çerçeve artık YALNIZCA yanıt bekleyen bloğun. Geçilmiş
+   Kırmızı çerçeve YALNIZCA yanıt bekleyen bloğun. Geçilmiş
    bloklar gri çerçeveye ve sessiz başlığa iner; içerik soluklaştırılmaz,
    okunur kalır. Kalınlık aynı: durum değişince yerleşim kaymasın. */
 .adim-blok.durum-tamam { border-color: var(--kenar-guclu); box-shadow: none; }
@@ -1712,11 +1699,11 @@ body::before {
   box-shadow: none;
 }
 /* Yanit bekleyen gruplu blok da diger bloklar gibi kirmizi halkayla
-   (ustteki kural golgeyi sifirliyordu). */
+   (ustteki kural golgeyi sifirlar). */
 .adim-blok.gruplu.durum-bekliyor {
   box-shadow: 0 0 0 4px var(--kirmizi-halka, rgba(213,17,21,.14));
 }
-/* Blok içindeki balon kendi çerçevesini bırakır: çerçeve artık bloğun. */
+/* Blok içindeki balon kendi çerçevesini bırakır: çerçeve bloğundur. */
 .adim-blok > .balon {
   border: 0; background: none; box-shadow: none;
   padding: 0; width: 100%; max-width: none;
@@ -1735,8 +1722,6 @@ body::before {
    Tanımları"). */
 .blok-ad {
   flex: 1 1 auto; min-width: 0;
-  /* Avatar 48px'e buyuyunce 12px baslik yaninda kucuk kaldi
-alt adim basligi bir kademe asagida. */
   font-size: var(--fs-blok); font-weight: var(--fw-kalin);
   letter-spacing: .01em;
   color: var(--kirmizi); white-space: normal; overflow-wrap: break-word;
@@ -1803,7 +1788,7 @@ alt adim basligi bir kademe asagida. */
 .dg-arama:disabled { background: var(--yuzey-alt); cursor: not-allowed; }
 
 /* ---- Alt başlıktaki durum rozeti ----
-   Kartın "✓ Girdiler hazır" göstergesi buraya taşınıyor. */
+   Kartın "✓ Girdiler hazır" göstergesi burada durur. */
 /* YUVA BIRDEN FAZLA OGE TASIYOR: "✓ Girdiler hazır" rozetinin yanına
    Excel indirme düğmesi de buraya geliyor (bkz. rozetYuvasinaEkle).
     Wrap: dar panelde alt satıra inerken de
@@ -1839,12 +1824,7 @@ alt adim basligi bir kademe asagida. */
    başlığından bir kademe SESSİZ: hiyerarşi görünsün, iki kırmızı
    başlık yan yana gelmesin. */
 /* ---- HER ALT BÖLÜM KENDİ KUTUSUNDA ----
-   "veri seti ve değişken sözlüğü dışına bir kutu, kolon rolleri
-   dışına kutu, sözlük tanımları dışına kutu; üçünün toplamında da en
-   dışarda veri seti ve sözlük kutusu."
-
-   Artık hiyerarşi görünüyor -
-   dıştaki kap grup, içteki kartlar adımlar.
+   Hiyerarşi görünür: dıştaki kap grup, içteki kartlar adımlar.
 
    İÇ KART DIŞ KAPTAN AÇIK: dış kap soluk zemine geçiyor (aşağıda),
    iç kartlar beyaz kalıyor. */
@@ -1868,7 +1848,7 @@ alt adim basligi bir kademe asagida. */
    küçük: alt başlık da bir kademe sessiz. */
 .alt-bas .blok-geri { padding: 4px 9px; }
 
-/* Artık DOLU bir ikincil düğme:
+/* DOLU bir ikincil düğme:
    kendi zemini, belirgin kenarı, koyu yazısı ve bir ← oku var.
    KIRMIZI DEĞİL: başlık zaten kırmızı ve bloğun altındaki "Onayla ve
    Uygula" dolu kırmızı; üçüncü bir kırmızı, asıl eylemin hangisi
@@ -1919,7 +1899,7 @@ alt adim basligi bir kademe asagida. */
   margin-top: var(--b-4); padding-top: var(--b-4);
   border-top: 1px solid var(--kenar-acik);
 }
-/* Bloğun içindeki balon da çerçevesiz: çerçeve artık bloğun. */
+/* Bloğun içindeki balon da çerçevesiz: çerçeve bloğundur. */
 .adim-blok > .balon,
 .alt-bolum > .balon {
   border: 0; background: none; box-shadow: none; padding: 0;
@@ -2020,7 +2000,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 
 /* ==================== ANALİZ ALANI ====================
    Sol bardaki VERİ & SÖZLÜK / DEĞİŞKENLER / BÖLME & MODEL kutuları
-   açar: alan üst barın altında, sol barın sağındaki bütün alanı (sol panel ve sohbet dahil)
+   açar: alan sol barın sağındaki bütün alanı (sol panel ve sohbet dahil)
    kaplar. AKIŞ seçiliyken (#kabuk.analiz-dar) gizli. Akışta yer
    kaplamaz: sohbet her zaman tam genişlikte. */
 #analiz-panel {
@@ -2104,7 +2084,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   border-top: 1px solid var(--kenar); background: var(--yuzey);
 }
 #analiz-alt[hidden] { display: none; }
-/* Alan artık tam genişlik: düğme sağa yaslı, makul genişlikte. */
+/* Alan tam genişlik: düğme sağa yaslı, makul genişlikte. */
 #analiz-alt { display: flex; justify-content: flex-end; }
 #analiz-alt[hidden] { display: none; }
 #analiz-alt .secim-onay { min-width: 240px; }
@@ -2151,7 +2131,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 .iskele-kart.hazirlaniyor { border-style: dashed; background: var(--yuzey-alt); }
 
 /* Bölme öncesi tanımların düzeltileceği ekranda tablo kaydırma
-   ardında kalamaz. Kartlar silinmedi, katlandı.
+   ardında kalamaz. Kartlar katlanır.
    Katlıyken kart kendi özetini başlıkta taşır; başlık bir <button>,
    çünkü klavyeyle de açılıp kapanabilmeli. */
 .iskele-kart.kart-katlanir { padding-block: var(--b-2); }
@@ -2285,12 +2265,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   --ft-satir-h: 26px;
   /* dört kolonda satır dar panele
      sığıyor ve yatay kaydırma çoğu ekranda hiç gerekmiyor. */
-  /* --ft-en, ızgaranın GERÇEK asgari genişliğiyle AYNI olmalı.
-Asgariler
-     aşağıda kısıldı; yeni toplam 26+96+68+134+52 = 376 + 24 = 400.
-     400 SEÇİLDİ, 416 DEĞİL: .ft-govde dikey kaydırma çubuğunu da
-     taşıyor ve .ft-tablo'nun iç genişliği 1440px pencerede 406px
-     kalıyor. */
+  /* --ft-en, ızgaranın GERÇEK asgari genişliğiyle AYNI olmalı. */
   /* Satırın en az genişliği: 84 + 58 + 104 + iki boşluk = 258px.
      Daraltılmış panelin en dar halinde (312px - 32px dolgu = 280px)
      yatay kaydırma olmadan sığıyor. */
@@ -2316,10 +2291,8 @@ Asgariler
   font-size: var(--fs-kucuk); color: var(--metin-soluk); white-space: normal; overflow-wrap: break-word; min-width: 0;
 }
 
-/* ARAMA · TİP · (DÖNEM) · SIRALAMA TEK SATIRDA, YAN YANA.
-   "değişken arama kısmı alttaki barla birleşsin, arama yanına tip
-   kısmı gelsin, diğerleri de yana devam etsin". Arama kalan genişliği
-   alır; süzgeçler sabit genişlikte. Dar ekranda satır sarmalar. */
+/* ARAMA · TİP · (DÖNEM) · SIRALAMA TEK SATIRDA, YAN YANA. Arama kalan
+   genişliği alır; süzgeçler sabit genişlikte. Dar ekranda satır sarmalar. */
 .ft-filtreler {
   display: flex; flex-direction: row; flex-wrap: wrap; align-items: center;
   gap: var(--b-2); margin-bottom: var(--b-2);
@@ -2330,7 +2303,7 @@ Asgariler
 .ft-filtreler .ft-tip-suzgec { flex: 0 1 200px; min-width: 120px; }
 .ft-filtreler .ft-sirala { flex: 0 1 180px; min-width: 120px; max-width: 200px; }
 /* Dataiku sayfasının genel form stili (kenar boşluğu, yükseklik, satır
-   yüksekliği) kutuları kaydırıyordu: kendi kutularımızda sıfırlanır. */
+   yüksekliği) kutuları kaydırır: kendi kutularımızda sıfırlanır. */
 .ft-ara, .ft-secim, .ft-sirala, .ft-tip-suzgec, .sz-giris, .sz-ara {
   margin: 0; box-sizing: border-box; line-height: normal; vertical-align: middle;
   box-shadow: none;
@@ -2392,10 +2365,7 @@ Asgariler
 .ft-tablo { margin-top: var(--b-3); overflow-x: auto; }
 .ft-satir {
   display: grid;
-  /* ÜÇ SÜTUN: DEĞİŞKEN / TİP / SÖZLÜK TANIMI. Izgarada bir zamanlar
-     NULL için dördüncü bir 52px'lik iz vardı. Panel
-     daraltıldığı için (bkz. --analiz-en) bu boşluğun bedeli görünür
-     hale geldi. */
+  /* ÜÇ SÜTUN: DEĞİŞKEN / TİP / SÖZLÜK TANIMI. */
   grid-template-columns: 26px minmax(84px, 1.3fr) 58px minmax(104px, 2.2fr);
   align-items: start; gap: var(--b-2);
   min-width: var(--ft-en); min-height: var(--ft-satir-h);
@@ -3093,8 +3063,8 @@ span.bolme-cip { cursor: default; }
   scrollbar-color: var(--kenar-guclu) transparent;
 }
 
-/* -------- Dar ekran (kirilma noktalari da 0,8 ile olceklendi) -------- */
-/* Paneller GIZLENMIYOR: ust bardaki dugmelerle acilan cekmeceye donuyor. */
+/* -------- Dar ekran -------- */
+/* Paneller GIZLENMIYOR: dugmelerle acilan cekmeceye donuyor. */
 #cekmece-perde {
   position: fixed; z-index: 39;
   top: var(--kabuk-ust); bottom: var(--kabuk-alt);
@@ -3115,8 +3085,8 @@ span.bolme-cip { cursor: default; }
    altında. İkisi de aynı uca gidiyor; görünürlüğü "kaydedildi mi"
    belirliyor (hidden özniteliği). */
 /* ---- Excel düğmesi ----
-   İKİ DURUMLU YEŞİL: "basılabildiğinde koyu yeşil,
-   basılmadığında açık yeşil". Yeşil, Excel'in kendi rengi - marka
+   İKİ DURUMLU YEŞİL: basılabildiğinde koyu yeşil,
+   basılamadığında açık yeşil. Yeşil, Excel'in kendi rengi - marka
    kırmızısındaki birincil düğmeyle yarışmıyor, ama gri bir ikincil
    düğmeden çok daha görünür; bu bir çıktı alma işi ve kullanıcı onu
    arıyor. Şerit GİZLENMİYOR: kilitli hali "henüz değil" diyor. */
@@ -3739,8 +3709,7 @@ span.bolme-cip { cursor: default; }
 .dg-tablo td.dg-kolon:has(.dg-rol) { white-space: normal; overflow-wrap: anywhere; }
 
 /* ==================== 01.2 RENK ====================
-   renkler kalsın ama az olsun ("renk cümbüşü" de
-   "hiç renk yok" da kötü). 01.2 Veri Seti, Sözlük ve Kolon Rolleri kartlarında
+   Renk az ve anlamlı. 01.2 Veri Seti, Sözlük ve Kolon Rolleri kartlarında
    (.dg-kart) dört anlam:
      mavi : dil modelinin önerisi (dokunulmamış)
      mor  : hafızada onaylı (daha önce onaylanmış)
@@ -3930,13 +3899,13 @@ span.bolme-cip { cursor: default; }
   .dg-dikey { writing-mode: horizontal-tb; transform: none; width: auto; padding: 6px 10px; }
 }
 
-/* ==================== SOL BAR: YENİ TASARIM ====================
-   Kullanıcının verdiği görsel: üstte logo + KATIB + alt başlık; Model
+/* ==================== SOL BAR TASARIMI ====================
+   Üstte logo + KATIB + alt başlık; Model
    Platformu koyu kırmızı degrade kart, içinde büyük beyaz satırlar ve
    sağda › oku (seçili satır pembe zemin, solda kırmızı çizgi, kırmızı
    simge ve ok); kilitli bloklar kesik kenarlı gri; altta "Görünüm
    Ayarları" kartı (Renk Modu, Çerçeve; yuvarlak anahtarlar) ve oklu
-   Arşiv / Yeni Çalışma kartları. Önceki kuralların ÜSTÜNE yazar. */
+   Arşiv / Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE yazar. */
 :root { --sol-bar-en: 224px; }
 #sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
 #kabuk.koyu #sol-bar { --sol-ok: #6B7178; background: var(--yuzey-alt); }
@@ -4074,7 +4043,7 @@ span.bolme-cip { cursor: default; }
 #sol-bar-ic #sol-bar-alt { margin-top: auto; }
 #sol-bar-logo { gap: 6px; padding-top: 12px; }
 #banner { max-height: 70px; }
-/* Tasarım boyu kısaltıldı (ölçek büyüsün, yazı okunur kalsın). */
+/* Kısa tasarım boyu: ölçek büyür, yazı okunur kalır. */
 #sol-bar .ust-kume-ad, #sol-bar .ust-sekme { height: 36px; }
 #sol-bar .ust-kume-ad { height: 38px; }
 #sol-bar .ust-kume { gap: 5px; padding: 5px; }
@@ -4117,15 +4086,14 @@ span.bolme-cip { cursor: default; }
   font-weight: 800; color: #000;
 }
 #kabuk.koyu #sol-bar-aciklama { color: #fff; }
-/* Robot öncekinin %70'i: ölçek robot küçülünce biraz büyüdüğü için tasarım
-   boyu 76 px (ekranda önceki boyun yaklaşık %70'i). */
+/* Robot tasarım boyu 76 px. */
 #sol-bar-logo #banner { width: auto; max-width: 100%; max-height: 76px; }
 
 /* ==================== İŞ AKIŞI BARI ====================
    Sohbet alanının üstünde ince bar (Jupyter defterindeki menü çubuğu
    gibi): solda "İş Akışı" düğmesi, yanında bulunulan faz ve adım, sağda
    ilerleme. Düğme iş akışını barın altında açılır pencerede gösterir
-   (app.js: akisMenuAc). Eski sol panel yok. */
+   (app.js: akisMenuAc). */
 #akis-bar {
   position: relative; z-index: 6; flex-shrink: 0;
   display: flex; align-items: center; gap: 12px;
@@ -4169,8 +4137,8 @@ span.bolme-cip { cursor: default; }
    Orta alan ızgara: üstte bar (iki sütun boyu), altında solda bölme,
    sağda sohbet ve yazı kutusu. Bölme kapalıyken sol sütun sıfır genişlik.
    Bölme barın altından alanın en altına kadar uzanır, kendi içinde
-   kayar; bardaki İş Akışı düğmesi açıp kapatır (app.js: akisMenuAc). En: eski
-   açılır pencerenin 3/5'i (276 px). */
+   kayar; bardaki İş Akışı düğmesi açıp kapatır (app.js: akisMenuAc). En:
+   276 px. */
 #sohbet-alani {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
