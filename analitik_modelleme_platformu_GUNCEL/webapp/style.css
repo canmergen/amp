@@ -4181,3 +4181,14 @@ span.bolme-cip { cursor: default; }
 /* Logo üstte az boşlukla. */
 #sol-bar-logo { padding: 4px 4px 2px; gap: 2px; }
 #banner { max-height: 120px; }
+
+/* ---- Robotlu kurum görseli sol barın EN ALTINDA, yarı boyutta ----
+   KATIB logosu tepede tek başına kalır; ekrandaki boyutu öncekiyle aynı
+   kalsın diye tasarım boyu ölçek değişimine göre ayarlandı (robot üstten
+   kalkınca sol bar kısalıp ölçek büyüyor). */
+#sol-bar-robot { display: flex; justify-content: center; padding-top: 6px; }
+#sol-bar-robot #banner {
+  display: block; width: auto; height: auto;
+  max-width: 108px; max-height: 58px; object-fit: contain;
+}
+.katib-logo { max-width: 178.4px; max-height: 52.8px; }
