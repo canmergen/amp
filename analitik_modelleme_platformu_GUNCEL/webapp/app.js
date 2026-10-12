@@ -88,8 +88,6 @@ const GORSEL = {
     user:       getWebAppBackendUrl("gorsel/user"),
     arkaPlan:   getWebAppBackendUrl("gorsel/arka_plan"),
     kurumLogo:  getWebAppBackendUrl("gorsel/kurum_logo"),
-    katibAcik:  getWebAppBackendUrl("gorsel/katib_acik"),
-    katibKoyu:  getWebAppBackendUrl("gorsel/katib_koyu"),
 };
 /* ÖNCEDEN YÜKLE: avatar görselleri ilk kullanımda sunucudan inerken
    avatar geç değişiyordu; açılışta tarayıcı önbelleğine alınır. */
@@ -222,28 +220,6 @@ function saydamKirp(url, cb, hata, beyazDa) {
     ham.onerror = () => { if (hata) hata(); };
     ham.src = url;
 }
-
-/* KATIB YAZI LOGOSU: açık temada siyah yazılı, koyu temada beyaz yazılı
-   görsel (CSS hangisinin görüneceğini temaya göre seçer). İkisi de
-   yüklenemezse yazı (KATIB + alt başlık) gösterilir. */
-(function katibLogolari() {
-    const yazi = document.getElementById("sol-bar-yazi");
-    const durum = { acik: null, koyu: null };
-    const bitti = () => {
-        if (durum.acik === false && durum.koyu === false && yazi) yazi.hidden = false;
-        solBarOlcekle();
-    };
-    [["acik", "katib-logo-acik", GORSEL.katibAcik], ["koyu", "katib-logo-koyu", GORSEL.katibKoyu]]
-        .forEach(([k, id, url]) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            saydamKirp(url, src => {
-                el.onload = () => { el.hidden = false; durum[k] = true; bitti(); };
-                el.onerror = () => { durum[k] = false; bitti(); };
-                el.src = src;
-            }, () => { durum[k] = false; bitti(); });
-        });
-})();
 
 /* ==================== SOL BAR ÖLÇEĞİ ====================
    Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm Ayarları,

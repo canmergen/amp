@@ -4141,12 +4141,6 @@ span.bolme-cip { cursor: default; }
 #sol-bar-ic #sol-bar-alt { margin-top: auto; }
 #sol-bar-logo { gap: 6px; padding-top: 12px; }
 #banner { max-height: 70px; }
-.katib-logo {
-  display: block; width: 100%; max-width: 196px; max-height: 58px;
-  height: auto; object-fit: contain;
-}
-#kabuk.koyu #katib-logo-acik, #kabuk:not(.koyu) #katib-logo-koyu { display: none; }
-#sol-bar-yazi { display: flex; flex-direction: column; align-items: center; }
 /* Tasarım boyu kısaltıldı (ölçek büyüsün, yazı okunur kalsın). */
 #sol-bar .ust-kume-ad, #sol-bar .ust-sekme { height: 36px; }
 #sol-bar .ust-kume-ad { height: 38px; }
@@ -4182,13 +4176,11 @@ span.bolme-cip { cursor: default; }
 #sol-bar-logo { padding: 4px 4px 2px; gap: 2px; }
 #banner { max-height: 120px; }
 
-/* ---- Robotlu kurum görseli sol barın EN ALTINDA, yarı boyutta ----
-   KATIB logosu tepede tek başına kalır; ekrandaki boyutu öncekiyle aynı
-   kalsın diye tasarım boyu ölçek değişimine göre ayarlandı (robot üstten
-   kalkınca sol bar kısalıp ölçek büyüyor). */
-#sol-bar-robot { display: flex; justify-content: center; padding-top: 6px; }
-#sol-bar-robot #banner {
-  display: block; width: auto; height: auto;
-  max-width: 108px; max-height: 58px; object-fit: contain;
+
+/* ---- Sol bar logosu: en üstte robotlu görsel, altında siyah alt başlık ----
+   Açık temada siyah, koyu temada (koyu zeminde okunsun diye) beyaz. */
+#sol-bar-aciklama {
+  margin-top: 2px; text-align: center; font-size: 12.5px; line-height: 1.25;
+  font-weight: 800; color: #000;
 }
-.katib-logo { max-width: 178.4px; max-height: 52.8px; }
+#kabuk.koyu #sol-bar-aciklama { color: #fff; }
