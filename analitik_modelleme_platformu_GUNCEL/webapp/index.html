@@ -59,19 +59,8 @@
     </nav>
 
     <div id="sol-bar-alt">
-      <!-- ALT: Arşiv ve Yeni Çalışma alt alta. Dar ekrandaki iş akışı
-           çekmece düğmesi en üstte (geniş ekranda gizli). -->
+      <!-- ALT: Görünüm Ayarları, Arşiv ve Yeni Çalışma alt alta. -->
       <div class="sol-bar-dugmeler">
-        <!-- Dar ekranda panelleri çekmece olarak açar; geniş ekranda gizli -->
-        <button id="panel-btn" class="cekmece-btn" type="button"
-                title="İş akışı panelini aç/kapat" aria-label="İş akışı panelini aç/kapat"
-                aria-expanded="false" aria-controls="panel">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
-               stroke="currentColor" stroke-width="2.3"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18M3 12h18M3 18h18"></path>
-          </svg>
-        </button>
         <!-- Dataiku'nun kendi REFRESH düğmesiyle karıştırılınca (düğme eskiden
              üst barda, onun hemen altındaydı) gerçek veri kaybı yaşandı: bu
              yüzden yalnız ikon değil, görünür etiket de taşır.
@@ -149,66 +138,27 @@
   <!-- ===================== SAYFA 1: ÇALIŞMA ===================== -->
   <div id="sayfa-calisma" class="sayfa">
 
-    <aside id="panel">
-      <!-- PANELİ DARALT / AÇ: balonların üstünde, sağda. Daraltılınca panel
-           ince bir şeride iner; şeritte aynı düğme ve iki ayrı dikey ad
-           ("ANALİTİK SÜREÇ", "İŞ AKIŞI") kalır; ada basınca panel açılır ve o
-           bölümün başına gelinir,
-           ikisine basınca da açılır. Seçim tarayıcıda hatırlanır
-           (app.js: panelDaralt). Dar ekranda (çekmece) gizli. -->
-      <div class="panel-ust-sira">
-        <button id="panel-daralt" type="button" aria-controls="panel" aria-expanded="true"
-                title="Paneli kapat" aria-label="Paneli kapat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"></path>
-          </svg>
-        </button>
-      </div>
-      <div id="panel-dikey-adlar">
-        <button class="panel-dikey-ad" type="button" data-hedef="surec-blok" title="Analitik Süreç'i aç">ANALİTİK SÜREÇ</button>
-        <button class="panel-dikey-ad" type="button" data-hedef="is-akisi-blok" title="İş Akışı'nı aç">İŞ AKIŞI</button>
-      </div>
-      <!-- AÇILIR KAPANIR. Çalışma başlayınca (başlangıç seçiminden sonra)
-           kendiliğinden kapanır; iki paragraf İŞ AKIŞI'nın yerini
-           yiyordu. Başlığa basınca açılır; kullanıcının seçimi o
-           çalışma boyunca korunur (app.js: surecGuncelle). -->
-      <section id="surec-blok" class="panel-blok">
-        <!-- HEP AÇIK (kullanıcı kararı): açılıp kapatılamaz. -->
-        <div id="surec-bas" class="panel-baslik">ANALİTİK SÜREÇ</div>
-        <div id="surec-metin">
-        <p class="panel-metin">
-          Ham veriden final modele kadar olan analitik süreç tek ve izlenebilir
-          bir çalışma akışında yürütülür. Veri hazırlanır, yeni değişkenler
-          üretilir, adaylar değerlendirilir, model denemeleri yapılıp en iyi
-          model pickle formatında kaydedilir ve yeni değişkenlerin modele olan
-          katkıları ölçülür.
-        </p>
-        <p class="panel-metin">
-          Hesaplamalar Python ile gerçekleştirilir; kritik kararlar kullanıcı
-          onayıyla uygulanır. Üretilen değişkenlerin kaynağı, dönüşümü ve seçim
-          durumu süreç boyunca kayıt altında tutulur.
-        </p>
-        </div>
-      </section>
-
-      <section id="is-akisi-blok" class="panel-blok">
-        <div class="panel-baslik">İŞ AKIŞI</div>
-        <div id="faz-listesi"></div>
-      </section>
-    </aside>
-
-    <!-- SÜRÜKLEME TUTAMAĞI (sol panel <-> sohbet).
-         Panel TAMAMEN KAPANMAZ (kullanıcı kararı: "diğer bloğu tamamen
-         silmeden"): app.js'teki PANEL_SINIR alt sınırı koruyor, sohbet
-         sütununa da ayrı bir taban genişlik bırakılıyor. Dar ekranda
-         paneller çekmeceye dönüştüğü için tutamak gizlenir. -->
-    <div id="tutamak-sol" class="tutamak" role="separator"
-         aria-orientation="vertical" tabindex="0"
-         aria-label="İş akışı panelinin genişliği"
-         title="Sürükleyerek genişliği ayarlayın (çift tıklama: varsayılan)"></div>
-
+    <!-- ORTA ALAN. Üstte İŞ AKIŞI BARI (Jupyter defterindeki menü çubuğu
+         gibi): solda "İş Akışı" düğmesi, yanında bulunulan faz ve adım,
+         sağda ilerleme. Düğmeye basınca iş akışı (beş faz ve adımları)
+         barın altında açılır pencerede çıkar; dışarıya basınca, Esc ile ya
+         da bir adıma gidince kapanır (app.js: akisMenuKur). Eski sol
+         panel ve Analitik Süreç sekmesi kaldırıldı; süreç açıklaması
+         01.1 Başlangıç Seçimi metninde. -->
     <main id="sohbet-alani">
+      <div id="akis-bar">
+        <div id="akis-menu">
+          <button id="akis-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="panel"
+                  title="İş akışını göster"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M6.5 10v4a3 3 0 0 0 3 3H14"></path></svg><span>İş Akışı</span><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <aside id="panel" aria-label="İş akışı">
+            <section id="is-akisi-blok" class="panel-blok">
+              <div id="faz-listesi"></div>
+            </section>
+          </aside>
+        </div>
+        <div id="akis-konum" aria-live="polite"></div>
+        <div id="akis-ilerleme"></div>
+      </div>
       <div id="sohbet" role="log" aria-live="polite" aria-relevant="additions text"></div>
 
       <!-- ONAY DÜĞMELERİ ARTIK BURADA DEĞİL.

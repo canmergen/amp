@@ -306,7 +306,9 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   --kabuk-ust: 0px; --kabuk-alt: 0px; --kabuk-sol: 0px; --kabuk-sag: 0px;
 }
 :root.cercevesiz body::before, :root.cercevesiz #kurum-logo { display: none; }
-:root.cercevesiz #kabuk { border: none; }
+/* Çerçeve kapalıyken uygulama en dışta da bölmeleri ayıran ayraç
+   çizgisiyle (aynı renk ve kalınlık) çevrelenir. */
+:root.cercevesiz #kabuk { border: var(--ayrac-kalinlik) solid var(--ayrac); }
 /* Gorsel %45 opaklikta (kullanici karari: tam renkte goz yoruyordu).
    Ustteki kurum logosu da ayni oranda soluk (#kurum-logo); uygulama tam
    renkte. */
@@ -660,63 +662,6 @@ body::before {
   padding: var(--b-5) var(--b-4) 22px; overflow-y: auto;
 }
 
-/* ANALİTİK SÜREÇ ve İŞ AKIŞI: ayrı balonlar (beyaz kart, açık kırmızı
-   ince kenar, yuvarlak köşe). */
-/* PANELİ DARALT / AÇ: balonların ÜSTÜNDE kendi satırında, sağa yaslı.
-   Satır yapışkan: panel kaysa da düğme yerinde kalır (zemin panelle
-   aynı, altından kayan içerik görünmez). */
-.panel-ust-sira {
-  position: sticky; top: calc(-1 * var(--b-5)); z-index: 3;
-  margin: calc(-1 * var(--b-5)) calc(-1 * var(--b-4)) var(--b-2);
-  padding: var(--b-2) var(--b-4) 0;
-  background: var(--yuzey-alt);
-  display: flex; justify-content: flex-end;
-}
-#panel-daralt {
-  margin: 0;
-  width: 26px; height: 26px; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--pembe-kenar); border-radius: 7px;
-  background: var(--yuzey); color: var(--kirmizi); cursor: pointer;
-  transition: background .12s, border-color .12s;
-}
-#panel-daralt svg { width: 15px; height: 15px; transition: transform .15s; }
-#panel-daralt:hover { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
-#panel-daralt:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
-#panel-dikey-adlar { display: none; }
-@media (min-width: 865px) {
-  /* Daraltılmış panel: ince şerit; içerik gizli, düğme ve dikey ad kalır.
-     Genişlik tutamağı da gizlenir (sürüklenecek panel yok). */
-  #panel.daraltilmis {
-    width: 44px; padding: var(--b-3) 0; overflow: hidden;
-    display: flex; flex-direction: column; align-items: center; gap: var(--b-3);
-  }
-  #panel.daraltilmis > :not(.panel-ust-sira):not(#panel-dikey-adlar) { display: none; }
-  #panel.daraltilmis .panel-ust-sira { position: static; margin: 0; padding: 0; background: none; }
-  #panel.daraltilmis #panel-daralt { margin: 0; }
-  #panel.daraltilmis #panel-daralt svg { transform: rotate(180deg); }
-  /* İki ayrı DÜĞME: üstte ANALİTİK SÜREÇ, altında İŞ AKIŞI. Yazı yatay
-     yazının saat yönünün tersine 90° döndürülmüş hâli (aşağıdan yukarı
-     okunur). Her biri kendi bölümünü açar. */
-  #panel.daraltilmis #panel-dikey-adlar {
-    display: flex; flex-direction: column; align-items: center; gap: var(--b-2);
-  }
-  #panel.daraltilmis .panel-dikey-ad {
-    display: block; writing-mode: vertical-rl; transform: rotate(180deg);
-    width: 30px; padding: 12px 0;
-    border: 1px solid var(--pembe-kenar); border-radius: 8px;
-    background: var(--yuzey); box-shadow: var(--ust-golge); cursor: pointer;
-    font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
-    letter-spacing: .08em; color: var(--kirmizi); white-space: nowrap;
-    transition: background .12s, border-color .12s;
-  }
-  #panel.daraltilmis .panel-dikey-ad:hover {
-    background: var(--kirmizi-acik); border-color: var(--kirmizi);
-  }
-  #panel.daraltilmis .panel-dikey-ad:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
-  #sayfa-calisma:has(#panel.daraltilmis) #tutamak-sol { display: none; }
-}
-@media (max-width: 864px) { .panel-ust-sira { display: none; } }
 
 .panel-blok {
   scroll-margin-top: 40px;   /* yapışkan kapatma satırının altında kalmasın */
@@ -3158,18 +3103,6 @@ span.bolme-cip { cursor: default; }
 }
 
 
-@media (max-width: 864px) {
-  #panel-btn { display: flex; }
-  #panel {
-    position: fixed; z-index: 40;
-    top: calc(var(--kabuk-ust) + 1px); bottom: calc(var(--kabuk-alt) + 1px);
-    left: calc(var(--kabuk-sol) + 1px + var(--sol-bar-en));
-    width: min(var(--panel-en), calc(100vw - var(--kabuk-sol) - var(--kabuk-sag) - var(--sol-bar-en)));
-    transform: translateX(-101%); transition: transform .2s ease;
-    box-shadow: var(--golge-2);
-  }
-  #panel.acik { transform: none; }
-}
 
 @media (min-width: 945px) {
   /* Genis ekranda cekmece yok: perde asla gorunmesin */
@@ -4187,3 +4120,60 @@ span.bolme-cip { cursor: default; }
 /* Robot öncekinin %70'i: ölçek robot küçülünce biraz büyüdüğü için tasarım
    boyu 76 px (ekranda önceki boyun yaklaşık %70'i). */
 #sol-bar-logo #banner { width: auto; max-width: 100%; max-height: 76px; }
+
+/* ==================== İŞ AKIŞI BARI ====================
+   Sohbet alanının üstünde ince bar (Jupyter defterindeki menü çubuğu
+   gibi): solda "İş Akışı" düğmesi, yanında bulunulan faz ve adım, sağda
+   ilerleme. Düğme iş akışını barın altında açılır pencerede gösterir
+   (app.js: akisMenuAc). Eski sol panel yok. */
+#akis-bar {
+  position: relative; z-index: 6; flex-shrink: 0;
+  display: flex; align-items: center; gap: 12px;
+  min-height: 44px; padding: 6px 16px;
+  background: var(--yuzey);
+  border-bottom: var(--ayrac-kalinlik) solid var(--ayrac);
+}
+#akis-menu { position: relative; flex-shrink: 0; }
+#akis-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 10px 0 11px;
+  border: 1px solid var(--pembe-kenar); border-radius: 9px;
+  background: var(--yuzey); color: var(--kirmizi); cursor: pointer;
+  font-size: 13px; font-weight: 800; letter-spacing: .02em;
+  transition: background .12s, border-color .12s;
+}
+#akis-btn .ikon { width: 16px; height: 16px; flex-shrink: 0; }
+#akis-btn .ok { width: 14px; height: 14px; flex-shrink: 0; color: var(--sol-ok, #9AA0A6); transition: transform .15s; }
+#akis-btn:hover, #akis-menu.acik #akis-btn { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
+#akis-menu.acik #akis-btn .ok { transform: rotate(180deg); color: var(--kirmizi); }
+#akis-btn:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
+#akis-konum {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px;
+  font-size: 13px; line-height: 1.35;
+  white-space: normal; overflow-wrap: break-word;
+}
+#akis-konum .akis-faz { font-weight: 700; color: var(--metin); }
+#akis-konum .akis-ayrac { color: var(--sol-ok, #9AA0A6); font-weight: 700; }
+#akis-konum .akis-adim { font-weight: 700; color: var(--kirmizi); }
+#akis-ilerleme {
+  flex-shrink: 0; white-space: nowrap;
+  font-size: 12px; font-weight: 700; color: var(--metin);
+  padding: 3px 10px; border-radius: 999px; background: var(--yuzey-alt);
+}
+#akis-ilerleme:empty { display: none; }
+/* Açılır pencere: iş akışı listesi. Eski yan panel ve dar ekran çekmecesi
+   kuralları burada geçersiz. */
+#akis-menu #panel {
+  display: none;
+  position: absolute; top: calc(100% + 8px); left: 0; bottom: auto; z-index: 60;
+  width: min(460px, calc(100vw - var(--sol-bar-en) - var(--kabuk-sol) - var(--kabuk-sag) - 40px));
+  max-height: min(72vh, 680px); overflow-y: auto;
+  padding: 0; transform: none; transition: none;
+  background: var(--yuzey);
+  border: 1px solid var(--pembe-kenar); border-radius: 12px;
+  box-shadow: var(--golge-2);
+}
+#akis-menu.acik #panel { display: block; }
+/* Tek çerçeve: içteki balonun kendi kenarı ve gölgesi yok. */
+#akis-menu #panel .panel-blok { margin: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }

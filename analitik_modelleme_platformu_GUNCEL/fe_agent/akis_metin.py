@@ -8,8 +8,18 @@ import re
 
 
 
-KARSILAMA = """**Akıllı Modelleme Platformu'na hoş geldiniz.**
-Çalışma, soldaki iş akışındaki beş fazda adım adım ilerler. Her adımda önce ne yapılacağı açıklanır, onayınızla uygulanır ve sonucu kayda geçer. Başlamak için verinizin durumuna uygun başlangıcı seçin."""
+KARSILAMA = """**Ham veriden final modele: adım adım, izlenebilir model geliştirme.**
+Analitik süreç tek bir çalışma içinde yürütülür: veri hazırlanır, yeni değişkenler üretilip değerlendirilir, model denemeleri yapılır; en iyi model kaydedilir ve yeni değişkenlerin modele katkısı ölçülür.
+Çalışma, üstteki İş Akışı'ndaki beş fazda adım adım ilerler. Her adımda önce ne yapılacağı açıklanır; hesaplamalar Python ile yapılır, kararlar onayınızla uygulanır ve sonuçlar kayda geçer. Değişkenlerin kaynağı, dönüşümü ve seçim durumu süreç boyunca kayıtlı kalır.
+Başlamak için verinizin durumuna uygun başlangıcı seçin."""
+
+# ESKI KARSILAMA METINLERI: bu metinle kaydedilmis eski calismalarda adimin
+# cerceve metni gecmise yazilmis olabilir; okunurken yine cerceve sayilsin
+# diye tutulur (webapp/backend.py: _cerceve_metni_mi).
+KARSILAMA_ESKI = (
+    """**Akıllı Modelleme Platformu'na hoş geldiniz.**
+Çalışma, soldaki iş akışındaki beş fazda adım adım ilerler. Her adımda önce ne yapılacağı açıklanır, onayınızla uygulanır ve sonucu kayda geçer. Başlamak için verinizin durumuna uygun başlangıcı seçin.""",
+)
 
 # ===========================================================================
 # SERBEST SORU

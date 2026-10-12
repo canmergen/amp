@@ -828,7 +828,9 @@ def _cerceve_metni_mi(metin):
 
     Mod adiminin metni KARSILAMA'dir ve adim her yeniden acildiginda
     (F5, "Geri Dön") canli durumdan yeniden ciziliyor. Cerceve metni gecmise girmez."""
-    return (metin or "").strip() == (akis.KARSILAMA or "").strip()
+    m = (metin or "").strip()
+    return any(m == (k or "").strip()
+               for k in (akis.KARSILAMA,) + tuple(getattr(akis, "KARSILAMA_ESKI", ())))
 
 
 def _ekran_govdesi(govde):

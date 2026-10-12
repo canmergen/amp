@@ -461,43 +461,6 @@ sekmeler.forEach(s => { s.onclick = () => sayfaAc(s.dataset.sayfa); });
    cekmeceye donusuyor. */
 const panelEl     = document.getElementById("panel");
 
-/* PANELİ DARALT / AÇ (sağ üstteki düğme): İş akışı paneli ince şeride
-   iner ya da açılır. Seçim bu tarayıcıda hatırlanır; okunamazsa panel
-   açık başlar. */
-const PANEL_DARALT_ANAHTAR = "amp_panel_daraltilmis";
-function panelDaralt(daralt, kaydet) {
-    if (!panelEl) return;
-    panelEl.classList.toggle("daraltilmis", daralt);
-    const btn = document.getElementById("panel-daralt");
-    if (btn) {
-        const metin = daralt ? "Paneli aç" : "Paneli kapat";
-        btn.title = metin;
-        btn.setAttribute("aria-label", metin);
-        btn.setAttribute("aria-expanded", daralt ? "false" : "true");
-    }
-    if (kaydet) {
-        try { localStorage.setItem(PANEL_DARALT_ANAHTAR, daralt ? "1" : "0"); }
-        catch (e) { /* depolama kapalı: yalnız bu oturum */ }
-    }
-}
-(function panelDaraltKur() {
-    const btn = document.getElementById("panel-daralt");
-    if (btn) btn.onclick = () => panelDaralt(!panelEl.classList.contains("daraltilmis"), true);
-    /* Kapalı şeritteki iki ad: panel açılır ve o bölümün BAŞINA gelinir
-       (Analitik Süreç -> panelin en üstü, İş Akışı -> iş akışı balonu). */
-    document.querySelectorAll(".panel-dikey-ad").forEach(ad => {
-        ad.onclick = () => {
-            panelDaralt(false, true);
-            const hedef = document.getElementById(ad.dataset.hedef);
-            if (!hedef) return;
-            if (ad.dataset.hedef === "surec-blok") panelEl.scrollTop = 0;
-            else hedef.scrollIntoView({ block: "start" });
-        };
-    });
-    let ilk = false;
-    try { ilk = localStorage.getItem(PANEL_DARALT_ANAHTAR) === "1"; } catch (e) { ilk = false; }
-    panelDaralt(ilk, false);
-})();
 const analizPanel = document.getElementById("analiz-panel");
 const perdeEl     = document.getElementById("cekmece-perde");
 const panelBtn    = document.getElementById("panel-btn");
@@ -505,6 +468,7 @@ const analizBtn   = document.getElementById("analiz-btn");
 const cekmeceButonlari = [panelBtn, analizBtn].filter(Boolean);
 
 function cekmeceKapat() {
+    akisMenuAc(false);
     [panelEl, analizPanel].forEach(p => { if (p) p.classList.remove("acik"); });
     cekmeceButonlari.forEach(b => b.setAttribute("aria-expanded", "false"));
     if (perdeEl) perdeEl.hidden = true;
@@ -521,6 +485,31 @@ function cekmeceAc(panel, buton) {
     }
 }
 
+/* İŞ AKIŞI BARI (sohbet alanının üstünde; Jupyter defterindeki menü
+   çubuğu gibi). "İş Akışı" düğmesi faz listesini barın altında açılır
+   pencerede gösterir. Pencere içinde faz açıp kapamak pencereyi açık
+   tutar; dışarıya basınca, Esc ile ya da bir adıma gidince kapanır. */
+const akisMenuEl = document.getElementById("akis-menu");
+const akisBtn    = document.getElementById("akis-btn");
+function akisMenuAc(ac) {
+    if (!akisMenuEl || !akisBtn) return;
+    akisMenuEl.classList.toggle("acik", ac);
+    akisBtn.setAttribute("aria-expanded", ac ? "true" : "false");
+    akisBtn.title = ac ? "İş akışını kapat" : "İş akışını göster";
+    if (ac) {
+        /* Açılışta bulunulan adım görünür olsun. */
+        const aktif = panelEl && panelEl.querySelector(".faz-adimlar li.aktif");
+        if (aktif) aktif.scrollIntoView({ block: "nearest" });
+    }
+}
+if (akisBtn) akisBtn.onclick = () => akisMenuAc(!akisMenuEl.classList.contains("acik"));
+document.addEventListener("mousedown", e => {
+    if (akisMenuEl && akisMenuEl.classList.contains("acik") && !akisMenuEl.contains(e.target))
+        akisMenuAc(false);
+}, true);
+if (panelEl) panelEl.addEventListener("click", e => {
+    if (e.target.closest && e.target.closest(".adim-git")) akisMenuAc(false);
+});
 if (panelBtn)  panelBtn.onclick  = () => cekmeceAc(panelEl, panelBtn);
 if (analizBtn) analizBtn.onclick = () => cekmeceAc(analizPanel, analizBtn);
 if (perdeEl)   perdeEl.onclick   = cekmeceKapat;
@@ -608,7 +597,9 @@ function genislikSifirla() {
 /* Bir panelin istenen genişliğini üç sınıra birden oturtur. */
 function genislikKirp(taraf, istenen) {
     const sinir = taraf === "sol" ? PANEL_SINIR : ANALIZ_SINIR;
-    const oteki = taraf === "sol" ? analizPanel : panelEl;
+    /* İş akışı artık yan sütun değil (barın açılır penceresi): sağ
+       panelin karşısında sütun yok. */
+    const oteki = taraf === "sol" ? analizPanel : null;
     /* Karşı panelin O ANKİ genişliği sabit kabul ediliyor: tek tutamak
        sürükleniyor, öteki yerinde duruyor. */
     const otekiEn = oteki && getComputedStyle(oteki).position !== "fixed" ? suankiEn(oteki) : 0;
@@ -932,28 +923,7 @@ function numarali(kod, baslik) {
     return kod ? kod + " " + b : b;
 }
 
-/* ANALİTİK SÜREÇ HEP AÇIK.
-   Başlık düğme değil. index.html eski sürümde kalırsa düğme burada
-   pasifleştirilir: ok gizlenir, tıklama bir şey yapmaz. */
-const surecBlok = document.getElementById("surec-blok");
-const surecBas  = document.getElementById("surec-bas");
-
-function surecGuncelle() {
-    if (!surecBlok) return;
-    surecBlok.classList.remove("kapali");
-    if (surecBas) {
-        surecBas.onclick = null;
-        surecBas.removeAttribute("aria-expanded");
-        surecBas.removeAttribute("title");
-        surecBas.style.cursor = "default";
-        const ok = surecBas.querySelector(".surec-ok");
-        if (ok) ok.remove();
-    }
-}
-surecGuncelle();
-
 function fazlariCiz() {
-    surecGuncelle();
     fazEl.innerHTML = "";
     FAZLAR.forEach((f, fi) => {
         /* Gruplu satır tıklanınca grubun İLK adımına döner (grubun
@@ -1126,6 +1096,38 @@ function fazlariCiz() {
         kok.appendChild(liste);
         fazEl.appendChild(kok);
     });
+    akisBarGuncelle();
+}
+
+/* İŞ AKIŞI BARI YAZISI: bulunulan faz ve adım (iş akışı listesindeki
+   numara ve adla), sağda tamamlanan adım sayısı (listedeki gibi gruplu
+   sayılır). Başlangıç seçilmeden önce faz listesi yoksa boş kalır. */
+function akisBarGuncelle() {
+    const konumEl = document.getElementById("akis-konum");
+    const ilerEl = document.getElementById("akis-ilerleme");
+    if (!konumEl || !ilerEl) return;
+    konumEl.innerHTML = "";
+    ilerEl.textContent = "";
+    if (!FAZLAR || !FAZLAR.length) return;
+    let toplam = 0, tamam = 0, faz = null, adim = null;
+    FAZLAR.forEach(f => {
+        const ogeler = fazOgeleri(f);
+        toplam += ogeler.length;
+        tamam += ogeler.filter(a => a.bitis < aktifAdim).length;
+        ogeler.forEach(a => {
+            if (!adim && aktifAdim >= a.sira && aktifAdim <= a.bitis) { faz = f; adim = a; }
+        });
+    });
+    if (faz) {
+        konumEl.appendChild(elYap("span", "akis-faz", faz.no + " " + tireSade(faz.baslik)));
+        const ayrac = elYap("span", "akis-ayrac", "›");
+        ayrac.setAttribute("aria-hidden", "true");
+        konumEl.appendChild(ayrac);
+        konumEl.appendChild(elYap("span", "akis-adim", numarali(adim.kod, adim.baslik)));
+    } else if (toplam && tamam >= toplam) {
+        konumEl.appendChild(elYap("span", "akis-faz", "Bütün adımlar tamamlandı"));
+    }
+    if (toplam) ilerEl.textContent = tamam + " / " + toplam + " adım";
 }
 
 /* Sohbette bir adımın bloğunu bulur ve oraya kaydırır. Gruplu adımlar
