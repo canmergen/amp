@@ -468,7 +468,6 @@ const analizBtn   = document.getElementById("analiz-btn");
 const cekmeceButonlari = [panelBtn, analizBtn].filter(Boolean);
 
 function cekmeceKapat() {
-    akisMenuAc(false);
     [panelEl, analizPanel].forEach(p => { if (p) p.classList.remove("acik"); });
     cekmeceButonlari.forEach(b => b.setAttribute("aria-expanded", "false"));
     if (perdeEl) perdeEl.hidden = true;
@@ -485,31 +484,38 @@ function cekmeceAc(panel, buton) {
     }
 }
 
-/* İŞ AKIŞI BARI (sohbet alanının üstünde; Jupyter defterindeki menü
-   çubuğu gibi). "İş Akışı" düğmesi faz listesini barın altında açılır
-   pencerede gösterir. Pencere içinde faz açıp kapamak pencereyi açık
-   tutar; dışarıya basınca, Esc ile ya da bir adıma gidince kapanır. */
+/* İŞ AKIŞI BÖLMESİ (Jupyter'deki gezinme bölmesi gibi). Bardaki "İş
+   Akışı" düğmesi faz listesini barın altında, solda bölme olarak açar;
+   bölme alanın en altına kadar uzanır ve sohbet sağa kayar. Kapatılana
+   kadar AÇIK KALIR (dışarıya basmak, adıma gitmek kapatmaz): kapatmak
+   için bölmenin sağ üstündeki düğme ya da yine İş Akışı düğmesi. Seçim
+   bu tarayıcıda hatırlanır; okunamazsa bölme kapalı başlar. */
+const AKIS_ACIK_ANAHTAR = "amp_akis_acik";
 const akisMenuEl = document.getElementById("akis-menu");
 const akisBtn    = document.getElementById("akis-btn");
-function akisMenuAc(ac) {
-    if (!akisMenuEl || !akisBtn) return;
-    akisMenuEl.classList.toggle("acik", ac);
+function akisMenuAc(ac, kaydet) {
+    if (!akisBtn || !sohbetAlan) return;
+    sohbetAlan.classList.toggle("akis-acik", ac);
+    if (akisMenuEl) akisMenuEl.classList.toggle("acik", ac);
     akisBtn.setAttribute("aria-expanded", ac ? "true" : "false");
     akisBtn.title = ac ? "İş akışını kapat" : "İş akışını göster";
+    if (kaydet) {
+        try { localStorage.setItem(AKIS_ACIK_ANAHTAR, ac ? "1" : "0"); }
+        catch (e) { /* depolama kapalı: yalnız bu oturum */ }
+    }
     if (ac) {
         /* Açılışta bulunulan adım görünür olsun. */
         const aktif = panelEl && panelEl.querySelector(".faz-adimlar li.aktif");
         if (aktif) aktif.scrollIntoView({ block: "nearest" });
     }
 }
-if (akisBtn) akisBtn.onclick = () => akisMenuAc(!akisMenuEl.classList.contains("acik"));
-document.addEventListener("mousedown", e => {
-    if (akisMenuEl && akisMenuEl.classList.contains("acik") && !akisMenuEl.contains(e.target))
-        akisMenuAc(false);
-}, true);
-if (panelEl) panelEl.addEventListener("click", e => {
-    if (e.target.closest && e.target.closest(".adim-git")) akisMenuAc(false);
-});
+if (akisBtn) akisBtn.onclick = () => akisMenuAc(!sohbetAlan.classList.contains("akis-acik"), true);
+{ const k = document.getElementById("akis-kapat"); if (k) k.onclick = () => { akisMenuAc(false, true); if (akisBtn) akisBtn.focus(); }; }
+(function akisBolmeIlk() {
+    let ilk = false;
+    try { ilk = localStorage.getItem(AKIS_ACIK_ANAHTAR) === "1"; } catch (e) { ilk = false; }
+    akisMenuAc(ilk, false);
+})();
 if (panelBtn)  panelBtn.onclick  = () => cekmeceAc(panelEl, panelBtn);
 if (analizBtn) analizBtn.onclick = () => cekmeceAc(analizPanel, analizBtn);
 if (perdeEl)   perdeEl.onclick   = cekmeceKapat;

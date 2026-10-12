@@ -141,24 +141,32 @@
     <!-- ORTA ALAN. Üstte İŞ AKIŞI BARI (Jupyter defterindeki menü çubuğu
          gibi): solda "İş Akışı" düğmesi, yanında bulunulan faz ve adım,
          sağda ilerleme. Düğmeye basınca iş akışı (beş faz ve adımları)
-         barın altında açılır pencerede çıkar; dışarıya basınca, Esc ile ya
-         da bir adıma gidince kapanır (app.js: akisMenuKur). Eski sol
-         panel ve Analitik Süreç sekmesi kaldırıldı; süreç açıklaması
-         01.1 Başlangıç Seçimi metninde. -->
+         barın altında, solda bölme olarak açılır ve kapatılana kadar açık
+         kalır (app.js: akisMenuAc). Analitik Süreç sekmesi kaldırıldı;
+         süreç açıklaması 01.1 Başlangıç Seçimi metninde. -->
     <main id="sohbet-alani">
       <div id="akis-bar">
         <div id="akis-menu">
-          <button id="akis-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="panel"
+          <button id="akis-btn" type="button" aria-expanded="false" aria-controls="panel"
                   title="İş akışını göster"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M6.5 10v4a3 3 0 0 0 3 3H14"></path></svg><span>İş Akışı</span><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
-          <aside id="panel" aria-label="İş akışı">
-            <section id="is-akisi-blok" class="panel-blok">
-              <div id="faz-listesi"></div>
-            </section>
-          </aside>
         </div>
         <div id="akis-konum" aria-live="polite"></div>
         <div id="akis-ilerleme"></div>
       </div>
+      <!-- İŞ AKIŞI BÖLMESİ (Jupyter'deki gezinme bölmesi gibi): barın
+           altından alanın en altına kadar solda durur, sohbet sağa kayar.
+           Açık kalır; kapatmak için bölmenin sağ üstündeki düğme ya da
+           bardaki İş Akışı düğmesi. Seçim tarayıcıda hatırlanır. -->
+      <aside id="panel" aria-label="İş akışı">
+        <div class="akis-bolme-bas">
+          <span class="panel-baslik">İŞ AKIŞI</span>
+          <button id="akis-kapat" type="button" title="İş akışını kapat" aria-label="İş akışını kapat"
+                  aria-controls="panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"></path></svg></button>
+        </div>
+        <section id="is-akisi-blok" class="panel-blok">
+          <div id="faz-listesi"></div>
+        </section>
+      </aside>
       <div id="sohbet" role="log" aria-live="polite" aria-relevant="additions text"></div>
 
       <!-- ONAY DÜĞMELERİ ARTIK BURADA DEĞİL.
