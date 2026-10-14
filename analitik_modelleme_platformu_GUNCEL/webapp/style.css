@@ -324,11 +324,11 @@ body { background-color: #FEFEFE; }
 /* KATIB logosu sol barın tepesinde, barın eninde; oranı korunarak
    sığar. Görsel yüklenemezse gizlenir (app.js). */
 #sol-bar-logo {
-  flex-shrink: 0; padding: 14px 10px 2px;
+  flex-shrink: 0; padding: 14px 2px 2px;
   display: flex; flex-direction: column; align-items: center;
 }
 #katib-logo {
-  display: block; width: 100%; height: auto; max-height: 80px;
+  display: block; width: 100%; height: auto; max-height: 100px;
   object-fit: contain;
 }
 
