@@ -64,56 +64,38 @@ içindeki `VARSAYILAN_MODEL`.
 
 ## Ekran
 
-Uygulama ekranın tamamını kullanır. Alanlar (sol bar, İş Akışı bölmesi,
-çalışma alanı) zeminden boşlukla ayrılan yuvarlak köşeli kartlardır. Açık
-ve koyu tema aynı düzeni kullanır.
-
 **Sol bar**
-- Açık temada beyaz, koyu temada siyah; altta kırmızı çizgi dalgaları.
-  Dalgalar ve bütün çizimler kodla (SVG) çizilir, görsel dosyası yoktur.
 - Tepede KATIB logosu.
-- **MODEL PLATFORMU:**
+- **Model Platformu:**
   - Model Akışı
   - Gösterge Paneli
   - Değişkenler (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)
   - Özet
   - KATIB'le Sohbet (kapalı)
-- **YAKINDA:** KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
-- Seçili satır açık pembe zeminli, solunda kırmızı çizgi, ikonu kırmızı
-  kutuda.
+- Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
 - **Renk Modu:** açık / koyu tema anahtarı.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
-Sol bar kaydırmasızdır. Tasarım eni 248 px; ekran kısaysa içerik sığacak
-oranda küçülür, bar eni de aynı oranda daralır.
+Uygulama ekranın tamamını kullanır. Sol bar kaydırmasızdır; içerik
+ekranın yüksekliğine sığacak oranda ölçeklenir, bar eni de aynı oranda
+değişir.
 
 **Model Akışı**
-- Solda **İş Akışı** bölmesi: beş faz numaralı daireli dikey çizelge
-  olarak. Çalışılan faz pembe kutuda, geçilen faz yeşil. Faza basınca
-  adımları açılır; görülmüş bir adıma basınca sohbet o adımın bloğuna
-  kayar.
-- Bölme, çalışma alanının üstündeki barda bulunan **İş Akışı** düğmesiyle
-  açılıp kapanır. Seçim hatırlanır; seçim yoksa geniş ekranda (en az
-  1180 px) açık, dar ekranda kapalı başlar.
-- Çalışma alanının üstündeki bar: İş Akışı düğmesi, bulunulan yer
-  (İş Akışı › faz › adım), sağda ilerleme çubuğu ve tamamlanan / toplam adım.
-- Adımlar blok blok ilerler. Blok başlığı: küçük kırmızı adım numarası,
-  adım adı, altında adımın kısa açıklaması; sağda durum rozeti ve
-  "Geri Dön". Yanıt bekleyen blok kırmızı kenarlıdır.
-- Sohbet açılana kadar yazı kutusunun yerinde bilgi notu durur.
+- Üstte **İş Akışı** barı:
+  - solda İş Akışı düğmesi;
+  - yanında bulunulan faz ve adım;
+  - sağda tamamlanan / toplam adım.
+- İş Akışı düğmesi beş fazı ve adımları solda bir bölmede açar. Bölme
+  alanın en altına kadar uzanır ve aynı düğmeyle kapanana kadar açık kalır.
+- Listede görülmüş bir adıma basınca sohbet o adımın bloğuna kayar.
+- Adımlar sohbet alanında blok blok ilerler. Her blok kendi kararını ve
+  "Geri Dön" düğmesini taşır.
 
-**Başlangıç Seçimi (01.1)**
-- Karşılama metni (`fe_agent/akis_metin.py` → `KARSILAMA`) kartlı bölüm
-  olarak çizilir: ilk kalın başlık ve altındaki metin tanıtım kartı,
-  sonraki kalın başlıklı bölümler yan yana bilgi kutuları, gövdesi
-  olmayan son kalın satır başlangıç kartlarının üstündeki çağrı.
-  Yalnız `**...**` satırları başlık sayılır.
-- Başlangıç kartları yan yana; her kartta ikon, açıklama ve üç madde
-  (`MOD_SECENEKLERI` → `ikon`, `maddeler`):
-  - **A:** Baz Veri Seti Mevcut.
-  - **B:** Kaynak Tablolar Mevcut.
-  - **C:** Otomatik Pilot (şu an kapalı, "Yakında").
+**Başlangıçlar (01.1)**
+- **A:** Baz Veri Seti Mevcut.
+- **B:** Kaynak Tablolar Mevcut.
+- **C:** Otomatik Pilot (şu an kapalı).
 
 **Fazlar**
 1. Çalışma Kurulumu

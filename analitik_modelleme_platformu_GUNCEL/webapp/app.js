@@ -217,13 +217,14 @@ function saydamKirp(url, cb, hata, beyazDa) {
 }
 
 /* ==================== SOL BAR ÖLÇEĞİ ====================
-   Sol barın bütün içeriği (logo, sayfa kümeleri, Renk Modu, Arşiv,
-   Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
-   (#sol-bar-ic) tasarım eninde (248 px) doğal boyuyla dizilir. Ekran
-   yetmezse barın yüksekliğine sığacak oranda küçülür, barın eni de aynı
-   oranda daralır; büyük ekranda tasarım boyunda kalır. */
-const SOL_BAR_TASARIM_EN = 248;
-const SOL_BAR_OLCEK = { min: 0.6, max: 1.0 };
+   Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm Ayarları,
+   Arşiv, Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
+   (#sol-bar-ic) tasarım eninde (224 px) doğal boyuyla dizilir ve barın
+   yüksekliğine sığacak oranda ölçeklenir; barın eni de aynı oranda
+   değişir. Çerçeve kapanınca alan büyür, bar da aynı oranda büyür.
+   Görünüm Ayarları açılır pencere olduğu için ölçeği etkilemez. */
+const SOL_BAR_TASARIM_EN = 224;
+const SOL_BAR_OLCEK = { min: 0.6, max: 2.0 };
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");
@@ -376,9 +377,7 @@ function cekmeceAc(panel, buton) {
    bölme alanın en altına kadar uzanır ve sohbet sağa kayar. Kapatılana
    kadar AÇIK KALIR (dışarıya basmak, adıma gitmek kapatmaz); yine İş
    Akışı düğmesiyle kapanır. Seçim
-   bu tarayıcıda hatırlanır. Seçim yoksa geniş ekranda (en az 1180 px)
-   açık, dar ekranda kapalı başlar: dar ekranda açık bölme sohbeti fazla
-   daraltır. */
+   bu tarayıcıda hatırlanır; okunamazsa bölme kapalı başlar. */
 const AKIS_ACIK_ANAHTAR = "amp_akis_acik";
 const akisMenuEl = document.getElementById("akis-menu");
 const akisBtn    = document.getElementById("akis-btn");
@@ -400,9 +399,9 @@ function akisMenuAc(ac, kaydet) {
 }
 if (akisBtn) akisBtn.onclick = () => akisMenuAc(!sohbetAlan.classList.contains("akis-acik"), true);
 (function akisBolmeIlk() {
-    let kayit = null;
-    try { kayit = localStorage.getItem(AKIS_ACIK_ANAHTAR); } catch (e) { kayit = null; }
-    akisMenuAc(kayit === null ? window.innerWidth >= 1180 : kayit === "1", false);
+    let ilk = false;
+    try { ilk = localStorage.getItem(AKIS_ACIK_ANAHTAR) === "1"; } catch (e) { ilk = false; }
+    akisMenuAc(ilk, false);
 })();
 if (panelBtn)  panelBtn.onclick  = () => cekmeceAc(panelEl, panelBtn);
 if (analizBtn) analizBtn.onclick = () => cekmeceAc(analizPanel, analizBtn);
@@ -811,16 +810,6 @@ function adimKonumu(anahtar) {
     return null;
 }
 
-/* Adımın iş akışındaki kısa açıklaması (blok başlığının altında). */
-function adimAciklamasi(anahtar) {
-    if (!anahtar) return "";
-    for (let fi = 0; fi < FAZLAR.length; fi++) {
-        const a = (FAZLAR[fi].adimlar || []).find(x => x.anahtar === anahtar);
-        if (a) return tireSade(a.aciklama || "");
-    }
-    return "";
-}
-
 function numarali(kod, baslik) {
     const b = tireSade(baslik || "");
     return kod ? kod + " " + b : b;
@@ -1021,10 +1010,6 @@ function akisBarGuncelle() {
         });
     });
     if (faz) {
-        konumEl.appendChild(elYap("span", "akis-kok", "İş Akışı"));
-        const a0 = elYap("span", "akis-ayrac", "›");
-        a0.setAttribute("aria-hidden", "true");
-        konumEl.appendChild(a0);
         konumEl.appendChild(elYap("span", "akis-faz", faz.no + " " + tireSade(faz.baslik)));
         const ayrac = elYap("span", "akis-ayrac", "›");
         ayrac.setAttribute("aria-hidden", "true");
@@ -1033,14 +1018,7 @@ function akisBarGuncelle() {
     } else if (toplam && tamam >= toplam) {
         konumEl.appendChild(elYap("span", "akis-faz", "Bütün adımlar tamamlandı"));
     }
-    if (toplam) {
-        const cubuk = elYap("span", "ilerleme-cubuk");
-        const dolu = elYap("span", "ilerleme-dolu");
-        dolu.style.width = Math.round(100 * tamam / toplam) + "%";
-        cubuk.appendChild(dolu);
-        ilerEl.appendChild(cubuk);
-        ilerEl.appendChild(elYap("span", "ilerleme-yazi", tamam + " / " + toplam + " adım"));
-    }
+    if (toplam) ilerEl.textContent = tamam + " / " + toplam + " adım";
 }
 
 /* Sohbette bir adımın bloğunu bulur ve oraya kaydırır. Gruplu adımlar
@@ -5779,15 +5757,9 @@ function blokBasligiEkle(kap, blok) {
        (doğrulama, teyit, form) da kullanıyor. */
     bas.appendChild(avatarYap("bot"));
     const konum = b.kod === undefined ? adimKonumu(b.adim) : null;
-    /* Başlık iki katlı: üstte küçük kırmızı adım numarası, altında adın
-       kendisi; adımın kısa açıklaması varsa en altta soluk satır. */
-    const kod = b.kod !== undefined ? b.kod : (konum ? konum.kod : "");
-    const yazi = elYap("div", "blok-baslik-yazi");
-    if (kod) yazi.appendChild(elYap("span", "blok-kod", kod));
-    yazi.appendChild(elYap("span", "blok-ad", tireSade(b.baslik || "")));
-    const ack = adimAciklamasi(b.adim);
-    if (ack) yazi.appendChild(elYap("span", "blok-alt", ack));
-    bas.appendChild(yazi);
+    bas.appendChild(elYap("span", "blok-ad",
+                          numarali(b.kod !== undefined ? b.kod : (konum ? konum.kod : ""),
+                                   b.baslik)));
     /* Durum rozetinin yuvası - gruplu bloktaki .alt-bas ile AYNI sınıf.
        Kart kendi başlığını çizmediği için rozeti ("✓ Girdiler Onaylandı")
        burada durur; boşken CSS onu gizliyor. */
@@ -6211,8 +6183,7 @@ function sistemNotuEkle(metin) {
    - Ekran yalnızca AŞAĞI kaydırılır, asla yukarı çekilmez.
    - Kullanıcı istek sürerken kendisi kaydırdıysa hiç kaydırılmaz.
    - Yeni bir gönderim (kart onayı, mesaj) bu durumu sıfırlar.
-   Geçmiş yüklenirken (gönderim yokken) son adım bloğunun başına gider:
-   blok başlığı ve 01.1'deki tanıtım kartı ekranda kalır. */
+   Geçmiş yüklenirken (gönderim yokken) en alta gider. */
 const KAYDIRMA = { ilk: null, kullanici: false };
 
 function kaydirmaBaslat() {
@@ -6223,20 +6194,8 @@ function kaydirmaBaslat() {
 function sohbetKaydir() {
     if (KAYDIRMA.kullanici) return;
     const enAlt = Math.max(sohbetEl.scrollHeight - sohbetEl.clientHeight, 0);
-    let ilk = KAYDIRMA.ilk;
-    if (ilk === null) {
-        const bloklar = sohbetEl.querySelectorAll(".adim-blok");
-        let son = bloklar[bloklar.length - 1];
-        /* Bloğun hemen üstünde "kaldığı yerden yüklendi" notu varsa o da
-           görünsün. */
-        const satir = son && son.closest(".satir");
-        const once = satir && satir.previousElementSibling;
-        if (once && once.classList.contains("sistem-notu")) son = once;
-        if (son) ilk = son.getBoundingClientRect().top
-            - sohbetEl.getBoundingClientRect().top + sohbetEl.scrollTop;
-    }
-    const hedef = ilk === null ? enAlt
-        : Math.min(Math.max(ilk - 24, 0), enAlt);
+    const hedef = KAYDIRMA.ilk === null ? enAlt
+        : Math.min(Math.max(KAYDIRMA.ilk - 24, 0), enAlt);
     if (hedef > sohbetEl.scrollTop) sohbetEl.scrollTop = hedef;
 }
 
@@ -6260,8 +6219,7 @@ function balonEkle(rol, metin, hataMi, blok) {
        eklensin diye (bkz. adimKabiAl). */
     const kap = (rol === "bot" && !hataMi) ? adimKabiAl(blok) : null;
     if (kap) {
-        const hero = (blok && blok.adim === "mod") ? karsilamaYap(metin) : null;
-        kap.appendChild(hero || balonIcerikYap("bot", metin, false));
+        kap.appendChild(balonIcerikYap("bot", metin, false));
         if (blok && blok.onay) blokOnayEkle(kap);
         sohbetKaydir();
         return kap.parentElement;
@@ -6270,114 +6228,6 @@ function balonEkle(rol, metin, hataMi, blok) {
     sohbetEl.appendChild(satir);
     sohbetKaydir();
     return satir;
-}
-
-/* ==================== 01.1 karşılama bölümü ====================
-   Başlangıç Seçimi metni (backend: akis_metin.KARSILAMA) kartlı bir
-   tanıtım bölümü olarak çizilir. Yalnız kalın satırlar başlık sayılır:
-   ilki ve altındaki metin tanıtım kartının başlığı ve girişi, sonraki
-   başlıklı bölümler kartın içinde yan yana kutular, gövdesi olmayan son
-   başlık başlangıç kartlarının üstündeki çağrı olur. Metin bu düzene
-   uymazsa null döner ve düz balon çizilir. */
-const KARSILAMA_OZELLIKLER = [
-    ["katman", "Tüm süreç tek platformda"],
-    ["belge", "Kararlar kayıt altında"],
-    ["grafik", "Şeffaf ve tekrarlanabilir analizler"]
-];
-const IKON_YOL = {
-    katman: '<ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"></path>',
-    belge: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h6"></path>',
-    grafik: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>',
-    veri: '<ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"></path>',
-    kaynak: '<circle cx="12" cy="5" r="2.5"></circle><circle cx="5" cy="18" r="2.5"></circle><circle cx="19" cy="18" r="2.5"></circle><path d="M11 7.2L6.2 15.8M13 7.2l4.8 8.6M7.5 18h9"></path>',
-    pilot: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path>',
-    madde: '<path d="M20 6L9 17l-5-5"></path>',
-    kilit: '<rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path>',
-    bilgi: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path>'
-};
-function ikonYap(ad, sinif) {
-    const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    s.setAttribute("viewBox", "0 0 24 24");
-    s.setAttribute("fill", "none");
-    s.setAttribute("stroke", "currentColor");
-    s.setAttribute("stroke-width", "2");
-    s.setAttribute("stroke-linecap", "round");
-    s.setAttribute("stroke-linejoin", "round");
-    s.setAttribute("aria-hidden", "true");
-    s.setAttribute("class", sinif || "ikon");
-    s.innerHTML = IKON_YOL[ad] || "";
-    return s;
-}
-/* Tanıtım kartının sağındaki çizim: pano penceresi, sütunlar ve eğri. */
-const KARSILAMA_CIZIM = '<svg class="hero-cizim" viewBox="0 0 260 170" aria-hidden="true">'
-    + '<defs><linearGradient id="hcg1" x1="0" y1="0" x2="0" y2="1"><stop class="hc-cam-1" offset="0"/><stop class="hc-cam-2" offset="1"/></linearGradient>'
-    + '<linearGradient id="hcg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F0454A"/><stop offset="1" stop-color="#B40D12"/></linearGradient></defs>'
-    + '<g transform="translate(118 18) skewY(-8)"><rect x="0" y="0" width="112" height="118" rx="10" class="hc-cizgi" fill="url(#hcg1)" stroke-width="1.2"/>'
-    + '<circle cx="12" cy="12" r="2.6" class="hc-nokta"/><circle cx="21" cy="12" r="2.6" class="hc-nokta"/><circle cx="30" cy="12" r="2.6" class="hc-nokta"/>'
-    + '<rect x="20" y="70" width="12" height="32" rx="3" fill="url(#hcg2)" opacity=".55"/><rect x="40" y="56" width="12" height="46" rx="3" fill="url(#hcg2)" opacity=".7"/>'
-    + '<rect x="60" y="40" width="12" height="62" rx="3" fill="url(#hcg2)" opacity=".85"/><rect x="80" y="26" width="12" height="76" rx="3" fill="url(#hcg2)"/></g>'
-    + '<g transform="translate(70 40) skewY(-8)" opacity=".85"><rect x="0" y="0" width="58" height="76" rx="8" class="hc-cizgi" fill="url(#hcg1)" stroke-width="1"/></g>'
-    + '<path d="M8 150 C 60 140, 90 118, 130 122 S 210 100, 252 70" fill="none" stroke="#E5363A" stroke-width="2"/>'
-    + '<circle cx="130" cy="122" r="4" fill="#E5363A"/><circle cx="196" cy="102" r="4" fill="#E5363A"/><circle cx="252" cy="70" r="4.5" fill="#E5363A"/></svg>';
-
-function karsilamaYap(metin) {
-    const satirlar = String(metin || "").split("\n");
-    const bolumler = [];
-    satirlar.forEach(sat => {
-        const t = sat.trim();
-        const m = /^\*\*([^*]+)\*\*$/.exec(t);
-        if (m) { bolumler.push({ baslik: m[1].trim(), metin: [] }); return; }
-        if (!t) return;
-        if (!bolumler.length) bolumler.push({ baslik: "", metin: [] });
-        bolumler[bolumler.length - 1].metin.push(t);
-    });
-    if (bolumler.length < 2 || !bolumler[0].baslik) return null;
-
-    const kok = elYap("div", "karsilama");
-    const hero = elYap("div", "hero-kart");
-    const sol = elYap("div", "hero-icerik");
-    sol.appendChild(elYap("span", "hero-cizgi"));
-    sol.appendChild(elYap("div", "hero-baslik", tireSade(bolumler[0].baslik)));
-    bolumler[0].metin.forEach(p => {
-        const el = elYap("p", "hero-metin");
-        el.innerHTML = metinBicimle(tireSade(p));
-        sol.appendChild(el);
-    });
-    const ozellik = elYap("div", "hero-ozellikler");
-    KARSILAMA_OZELLIKLER.forEach(([ik, ad]) => {
-        const c = elYap("span", "hero-ozellik");
-        const yuva = elYap("span", "hero-ozellik-ikon");
-        yuva.appendChild(ikonYap(ik));
-        c.appendChild(yuva);
-        c.appendChild(elYap("span", "", ad));
-        ozellik.appendChild(c);
-    });
-    sol.appendChild(ozellik);
-    hero.appendChild(sol);
-    const cizim = elYap("div", "hero-gorsel");
-    cizim.innerHTML = KARSILAMA_CIZIM;
-    hero.appendChild(cizim);
-    kok.appendChild(hero);
-
-    const ara = bolumler.slice(1).filter(b => b.metin.length);
-    if (ara.length) {
-        const izgara = elYap("div", "karsilama-bilgi");
-        ara.forEach(b => {
-            const k = elYap("div", "karsilama-bilgi-kart");
-            k.appendChild(elYap("div", "karsilama-bilgi-baslik", tireSade(b.baslik)));
-            b.metin.forEach(p => {
-                const el = elYap("p", "karsilama-bilgi-metin");
-                el.innerHTML = metinBicimle(tireSade(p));
-                k.appendChild(el);
-            });
-            izgara.appendChild(k);
-        });
-        kok.appendChild(izgara);
-    }
-    const son = bolumler[bolumler.length - 1];
-    if (bolumler.length > 1 && !son.metin.length)
-        kok.appendChild(elYap("div", "karsilama-cagri", tireSade(son.baslik)));
-    return kok;
 }
 
 /* Calisan adimin adi: DUZ_ADIMLAR sira -> adim eslemesinden */
@@ -6495,53 +6345,6 @@ function calismaGostergesi(iptalEt) {
 
 
 /* ==================== Seçenek kartları ==================== */
-function secenekSec(kok, kart, s) {
-    if (mesgul) return;
-    const kartlar = Array.from(kok.querySelectorAll(".secenek"));
-    // Hata olursa kart grubu ESKI ACIK haline donsun
-    const onceki = kartlar.map(k => ({
-        el: k, kapali: k.disabled, secili: k.classList.contains("secili")
-    }));
-    kartlar.forEach(k => {
-        k.disabled = true;
-        k.classList.toggle("secili", k === kart);
-    });
-    geriAlKilit = () => onceki.forEach(o => {
-        o.el.disabled = o.kapali;
-        o.el.classList.toggle("secili", o.secili);
-    });
-    gonder(s.deger, false);      // false: kullanici balonu basma
-}
-
-/* Zengin kart: üstte ikon, başlık ve seçim işareti (kapalıysa "Yakında"
-   ve kilit), altında açıklama ve maddeler. */
-function zenginKartDoldur(kart, s) {
-    kart.classList.add("zengin");
-    if (s.kapali) kart.classList.add("kapali");
-    const ust = elYap("div", "zk-ust");
-    const yuva = elYap("span", "zk-ikon");
-    yuva.appendChild(ikonYap(s.ikon || "veri"));
-    ust.appendChild(yuva);
-    ust.appendChild(elYap("span", "zk-baslik", tireSade(s.baslik)));
-    if (s.kapali) {
-        ust.appendChild(elYap("span", "zk-yakinda", "Yakında"));
-        ust.appendChild(ikonYap("kilit", "zk-kilit"));
-    } else {
-        ust.appendChild(elYap("span", "zk-isaret"));
-    }
-    kart.appendChild(ust);
-    if (s.aciklama) kart.appendChild(elYap("div", "zk-aciklama", tireSade(s.aciklama)));
-    if (s.maddeler && s.maddeler.length) {
-        const liste = elYap("ul", "zk-maddeler");
-        s.maddeler.forEach(m => {
-            const li = elYap("li", "");
-            li.appendChild(ikonYap("madde", "zk-madde-ikon"));
-            li.appendChild(elYap("span", "", tireSade(m)));
-            liste.appendChild(li);
-        });
-        kart.appendChild(liste);
-    }
-}
 /* kilit/secili: GECMISTEN yeniden cizim. Kartlar tiklanmaz, secilen
    kart isaretli kalir; adim zaten tamamlandi. */
 function secenekEkle(secenekler, kilit, secili) {
@@ -6549,26 +6352,11 @@ function secenekEkle(secenekler, kilit, secili) {
 
     const kok = document.createElement("div");
     kok.className = "secenek-kok";
-    /* ZENGİN KARTLAR: seçenek ikon ve madde listesi taşıyorsa (01.1
-       başlangıçları) kartlar yan yana, ikonlu ve maddeli çizilir. */
-    const zengin = secenekler.some(s => s.ikon || (s.maddeler && s.maddeler.length));
-    if (zengin) kok.classList.add("zengin");
 
     secenekler.forEach(s => {
         const kart = document.createElement("button");
         kart.className = "secenek";
         kart.type = "button";
-        if (zengin) {
-            zenginKartDoldur(kart, s);
-            if (kilit || s.kapali) {
-                kart.disabled = true;
-                if (secili && s.deger === secili) kart.classList.add("secili");
-            } else {
-                kart.onclick = () => secenekSec(kok, kart, s);
-            }
-            kok.appendChild(kart);
-            return;
-        }
 
         const rozet = document.createElement("span");
         rozet.className = "secenek-rozet";
@@ -6603,7 +6391,23 @@ function secenekEkle(secenekler, kilit, secili) {
             kart.disabled = true;
             if (secili && s.deger === secili) kart.classList.add("secili");
         } else {
-            kart.onclick = () => secenekSec(kok, kart, s);
+            kart.onclick = () => {
+                if (mesgul) return;
+                const kartlar = Array.from(kok.querySelectorAll(".secenek"));
+                // Hata olursa kart grubu ESKI ACIK haline donsun
+                const onceki = kartlar.map(k => ({
+                    el: k, kapali: k.disabled, secili: k.classList.contains("secili")
+                }));
+                kartlar.forEach(k => {
+                    k.disabled = true;
+                    k.classList.toggle("secili", k === kart);
+                });
+                geriAlKilit = () => onceki.forEach(o => {
+                    o.el.disabled = o.kapali;
+                    o.el.classList.toggle("secili", o.secili);
+                });
+                gonder(s.deger, false);      // false: kullanici balonu basma
+            };
         }
 
         kok.appendChild(kart);
