@@ -86,8 +86,6 @@ const GORSEL = {
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
     user:       getWebAppBackendUrl("gorsel/user"),
-    arkaPlan:   getWebAppBackendUrl("gorsel/arka_plan"),
-    kurumLogo:  getWebAppBackendUrl("gorsel/kurum_logo"),
 };
 /* ÖNCEDEN YÜKLE: avatar görselleri açılışta tarayıcı önbelleğine alınır;
    ilk kullanımda sunucudan inmeleri beklenmez. */
@@ -258,54 +256,6 @@ if (window.ResizeObserver) {
     }).observe(document.getElementById("sol-bar"));
 }
 
-/* ==================== Sayfa arka planı ==================== */
-/* Çerçeveli görsel sayfanın tamamını kaplar; uygulama çerçevenin iç
-   alanında durur (style.css: --arka-plan, #kabuk). */
-document.documentElement.style.setProperty("--arka-plan", "url('" + GORSEL.arkaPlan + "')");
-/* KURUM LOGOSU: dosyanin kenarlarinda saydam bosluk olabilir (yazi ortada
-   ince bir serit). Bosluk logoyu yuvada kucultmesin diye yuklenince saydam
-   kenarlar kirpilir; kirpilmis hali gosterilir. Kirpma yapilamazsa (tarayici
-   izin vermezse) dosya oldugu gibi gosterilir. */
-(function kurumLogosu() {
-    const el = document.getElementById("kurum-logo");
-    if (!el) return;
-    const ham = new Image();
-    ham.onload = () => {
-        let src = GORSEL.kurumLogo;
-        try {
-            const w = ham.naturalWidth, h = ham.naturalHeight;
-            const c = document.createElement("canvas");
-            c.width = w; c.height = h;
-            const g = c.getContext("2d");
-            g.drawImage(ham, 0, 0);
-            const a = g.getImageData(0, 0, w, h).data;
-            let x0 = w, y0 = h, x1 = -1, y1 = -1;
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    if (a[(y * w + x) * 4 + 3] > 20) {
-                        if (x < x0) x0 = x;
-                        if (x > x1) x1 = x;
-                        if (y < y0) y0 = y;
-                        if (y > y1) y1 = y;
-                    }
-                }
-            }
-            if (x1 >= x0 && y1 >= y0 && (x1 - x0 + 1 < w || y1 - y0 + 1 < h)) {
-                const k = document.createElement("canvas");
-                k.width = x1 - x0 + 1; k.height = y1 - y0 + 1;
-                k.getContext("2d").drawImage(c, x0, y0, k.width, k.height, 0, 0, k.width, k.height);
-                src = k.toDataURL("image/png");
-            }
-        } catch (e) { /* kirpilamadi: dosya oldugu gibi */ }
-        el.onload = () => { el.hidden = false; };
-        el.onerror = () => { el.hidden = true; };
-        el.src = src;
-    };
-    ham.onerror = () => { el.hidden = true; };
-    ham.src = GORSEL.kurumLogo;
-})();
-
-
 /* ==================== Metin yardımcıları ==================== */
 /* Bos deger her yerde ∅ ile gosterilir. Uzun/orta tire (U+2014, U+2013) backend'den,
    LLM'den ya da sabit metinlerden gelse de ekranda normal tireye (-) cevrilir. */
@@ -374,65 +324,9 @@ function temaUygula(kaydet) {
         catch (e) { /* depolama kapalı: yalnız bu oturum */ }
     }
 }
-if (temaBtn) temaBtn.onclick = () => {
-    koyuTema = !koyuTema; temaUygula(true);
-    requestAnimationFrame(solBarOlcekle);        // logo değişti (boyu farklı olabilir)
-};
+if (temaBtn) temaBtn.onclick = () => { koyuTema = !koyuTema; temaUygula(true); };
 try { koyuTema = localStorage.getItem(TEMA_ANAHTAR) === "koyu"; } catch (e) { koyuTema = false; }
 temaUygula(false);
-
-/* ==================== Arka plan (açık / kapalı) ==================== */
-/* Sol bardaki Çerçeve düğmesi: çerçeveli görseli ve üst banttaki
-   logoyu gizler / gösterir; kapalıyken uygulama ekranın tamamını
-   kullanır (style.css: :root.cercevesiz). Seçim bu tarayıcıda
-   hatırlanır; okunamazsa açık başlar. */
-const CERCEVE_ANAHTAR = "amp_arka_plan";
-let cerceveKapali = false;
-const cerceveBtn = document.getElementById("cerceve-btn");
-
-function cerceveUygula(kaydet) {
-    document.documentElement.classList.toggle("cercevesiz", cerceveKapali);
-    if (cerceveBtn) {
-        cerceveBtn.title = cerceveKapali ? "Çerçeveyi aç" : "Çerçeveyi kapat";
-        cerceveBtn.setAttribute("aria-pressed", cerceveKapali ? "false" : "true");
-    }
-    if (kaydet) {
-        try { localStorage.setItem(CERCEVE_ANAHTAR, cerceveKapali ? "kapali" : "acik"); }
-        catch (e) { /* depolama kapalı: yalnız bu oturum */ }
-    }
-}
-if (cerceveBtn) cerceveBtn.onclick = () => {
-    cerceveKapali = !cerceveKapali; cerceveUygula(true);
-    requestAnimationFrame(solBarOlcekle);        // alan değişti: bar aynı oranda
-};
-try { cerceveKapali = localStorage.getItem(CERCEVE_ANAHTAR) === "kapali"; } catch (e) { cerceveKapali = false; }
-cerceveUygula(false);
-
-
-/* ==================== Görünüm Ayarları ==================== */
-/* Sol barın altındaki "Görünüm Ayarları" başlığına basınca Renk Modu ve
-   Çerçeve, Arşiv listesi gibi YUKARI doğru açılan bir pencerede çıkar.
-   Dışarıda bir yere basınca ya da Esc ile kendiliğinden kapanır; içindeki
-   anahtarlara basmak kapatmaz. Açılır pencere sol barın düzenini
-   değiştirmez (ölçek aynı kalır). */
-(function gorunumKur() {
-    const kart = document.getElementById("gorunum-kart");
-    const bas = document.getElementById("gorunum-bas");
-    if (!kart || !bas) return;
-    const ayarla = acik => {
-        kart.classList.toggle("acik", acik);
-        bas.setAttribute("aria-expanded", acik ? "true" : "false");
-        bas.title = acik ? "Görünüm ayarlarını kapat" : "Görünüm ayarlarını aç";
-    };
-    bas.onclick = () => ayarla(!kart.classList.contains("acik"));
-    document.addEventListener("mousedown", e => {
-        if (kart.classList.contains("acik") && !kart.contains(e.target)) ayarla(false);
-    }, true);
-    document.addEventListener("keydown", e => {
-        if (e.key === "Escape" && kart.classList.contains("acik")) { ayarla(false); bas.focus(); }
-    });
-    ayarla(false);
-})();
 
 /* ==================== Sayfa geçişi ==================== */
 function sayfaAc(ad) {

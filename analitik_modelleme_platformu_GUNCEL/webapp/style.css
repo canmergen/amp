@@ -68,7 +68,7 @@
   --kirmizi-halka: rgba(213,17,21,.16);
   --pembe-secili:  #FBE4E5;     /* sol barda seçili sekme zemini */
   /* Sol barda seçili küme: marka kırmızısının yumuşatılmış tonu (tam
-     kırmızı %45 opak çerçevenin yanında fazla baskın kalır). */
+     kırmızı fazla baskın kalır). */
   --kume-secili:       #C24E52;
   --kume-secili-kenar: #B5454A;
   --kume-secili-yazi:  #A3262A;
@@ -82,12 +82,9 @@
   --kenar:        #DDE1E6;          /* kart, balon, form kenarlari */
   --kenar-guclu:  #BFC5CE;
   --kenar-acik:   #EDEFF2;
-  /* UC BLOK ARASI AYRAC (sol bar | is akisi | sohbet): arka plandaki
-     cercevenin ic cizgisiyle AYNI. O cizgi gorselde tam siyah ve 4 piksel
-     kalin (1774 genislikte olculdu: x 51-55, y 54-58) ve gorsel %45
-     opaklikta; ayrac da siyah, %45 opak ve ekran enine gore ayni oranda
-     kalin (1920 px ekranda ~4 px, 1366'da ~3 px; tarayici tam piksele
-     yuvarlar). */
+  /* AYRAC: bolmeleri ayiran ve uygulamayi en dista cevreleyen cizgi.
+     Siyah, %45 opak, ekran enine gore ayni oranda kalin (1920 px ekranda
+     ~4 px, 1366'da ~3 px; tarayici tam piksele yuvarlar). */
   --ayrac:        rgba(0,0,0,.45);
   --ayrac-kalinlik: calc(4 / 1774 * 100vw);
   /* Tutamagin ayracin iki yanina tastigi pay: yakalama kutusu ayraca
@@ -256,67 +253,20 @@
 #kabuk.koyu .ust-sekme.kapali, #kabuk.koyu .ust-sekme.kapali:hover { color: #7D848D; }
 #kabuk.koyu .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali) { color: var(--metin); }
 #kabuk.koyu .ust-sekme.aktif, #kabuk.koyu .ust-sekme.aktif:hover { box-shadow: inset 3px 0 0 var(--kirmizi); }
-/* Koyu temada çerçeve görseli koyu zeminin üstünde daha da sönük durur. */
+/* Koyu temada sayfa zemini. */
 body:has(#kabuk.koyu) { background-color: #0B0C0F; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
-/* ARKA PLAN: cerceveli gorsel sayfanin TAMAMINI kaplar. Gorsel 2:1
-   (tarayici alaninin tipik orani): gerilme cogu ekranda %1 - 5, cizim
-   yamulmaz. Dis kenarda bosluk yok. Uygulama cercevenin IC ALANINDA durur.
-   Ic alanin sinirlari gorselde olculdu (1774 x 887 piksel): ic cizgi solda
-   54, sagda 1719, ustte 57, altta 820. Sinirlar ekranin eni (vw) ve boyu
-   (vh) oraninda. --kabuk-*: uygulama kabugunun ekrandaki kenarlari;
-   ekrana gore yerlesen (position: fixed) paneller de bunlari kullanir. */
-:root {
-  --cerceve-sol: calc(54 / 1774 * 100vw);
-  --cerceve-sag: calc((1774 - 1719) / 1774 * 100vw);
-  --cerceve-ust: calc(57 / 887 * 100vh);
-  --cerceve-alt: calc((887 - 820) / 887 * 100vh);
-  --cerceve-ara: 2px;          /* cizgi ile uygulama arasi */
-  --kabuk-ust: calc(var(--cerceve-ust) + var(--cerceve-ara));
-  --kabuk-alt: calc(var(--cerceve-alt) + var(--cerceve-ara));
-  --kabuk-sol: calc(var(--cerceve-sol) + var(--cerceve-ara));
-  --kabuk-sag: calc(var(--cerceve-sag) + var(--cerceve-ara));
-}
-/* KURUM LOGOSU: ust bandin tam ortasinda (gorselde y 28.5; bant 0 - 57),
-   iki parmak ucunun arasinda. O yukseklikte bos aralik x 799 - 972 (174
-   px, ortasi 885.5); logo iki yandan ~6 px pay birakacak ene (162 px)
-   orani korunarak sigar (object-fit: contain). */
-#kurum-logo {
-  position: fixed; z-index: 1;
-  opacity: .45;   /* arka planla ayni solukluk */
-  left: calc(885.5 / 1774 * 100vw); top: calc(28.5 / 887 * 100vh);
-  width: calc(162 / 1774 * 100vw); height: calc(18 / 887 * 100vh);
-  transform: translate(-50%, -50%);
-  object-fit: contain;
-  pointer-events: none; user-select: none;
-}
-/* ÇERÇEVE KAPALI (:root.cercevesiz, sol bardaki Çerçeve düğmesi):
-   görsel ve üst banttaki logo gizlenir, uygulama ekranın tamamını
-   kullanır (--kabuk-* sıfır; ekrana göre yerleşen paneller de izler). */
-:root.cercevesiz {
-  --kabuk-ust: 0px; --kabuk-alt: 0px; --kabuk-sol: 0px; --kabuk-sag: 0px;
-}
-:root.cercevesiz body::before, :root.cercevesiz #kurum-logo { display: none; }
-/* Çerçeve kapalıyken uygulama en dışta da bölmeleri ayıran ayraç
-   çizgisiyle (aynı renk ve kalınlık) çevrelenir. */
-:root.cercevesiz #kabuk { border: var(--ayrac-kalinlik) solid var(--ayrac); }
-/* Gorsel %45 opaklikta (tam renkte goz yorar).
-   Ustteki kurum logosu da ayni oranda soluk (#kurum-logo); uygulama tam
-   renkte. */
-body { background-color: #FEFEFE; }   /* gorselin ic zemini; gorsel gelmezse */
-body::before {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: var(--arka-plan, none);
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: .45;
-}
+/* Uygulama ekranın tamamını kullanır. --kabuk-*: uygulama kabuğunun
+   ekrandaki kenarları; ekrana göre yerleşen (position: fixed) paneller de
+   bunları kullanır. */
+:root { --kabuk-ust: 0px; --kabuk-alt: 0px; --kabuk-sol: 0px; --kabuk-sag: 0px; }
+body { background-color: #FEFEFE; }
 
-/* Cercevenin ic alani. Iki sutun: solda sol bar, saginda acik sayfa.
+/* Uygulama kabuğu. Iki sutun: solda sol bar, saginda acik sayfa.
+   En dışta bölmeleri ayıran ayraç çizgisiyle çevrelenir. solda sol bar, saginda acik sayfa.
    Sayfalarin hepsi ayni hucrede; gizli olanlar display:none oldugu icin
    hucrede tek sayfa kalir. Ust bar yok: logo sol barin tepesinde. */
 #kabuk {
@@ -325,7 +275,7 @@ body::before {
   top: var(--kabuk-ust); bottom: var(--kabuk-alt);
   left: var(--kabuk-sol); right: var(--kabuk-sag);
   overflow: hidden;
-  border: 1px solid var(--kenar);
+  border: var(--ayrac-kalinlik) solid var(--ayrac);
   grid-template-columns: var(--sol-bar-en) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   background: var(--zemin); color: var(--metin);
@@ -421,7 +371,7 @@ body::before {
 
 /* Görünür
    etiket ve daha geniş gövde kasıtlı: komşusuna benzemesin. */
-#sifirla-btn, #calismalar-btn, #tema-btn, #cerceve-btn {
+#sifirla-btn, #calismalar-btn, #tema-btn {
   display: flex; align-items: center; gap: 6px;
   height: 24px; padding: 0 var(--b-3);
   border: 1px solid var(--kenar); background: var(--yuzey);
@@ -437,7 +387,7 @@ body::before {
   width: 14px; height: 14px; display: block; flex-shrink: 0;
   color: inherit;   /* currentColor hover kırmızısını da izlesin */
 }
-#sifirla-btn:hover, #calismalar-btn:hover, #tema-btn:hover, #cerceve-btn:hover, #calismalar-btn[aria-expanded="true"] {
+#sifirla-btn:hover, #calismalar-btn:hover, #tema-btn:hover, #calismalar-btn[aria-expanded="true"] {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 
@@ -605,26 +555,24 @@ body::before {
 .sol-bar-dugmeler {
   display: flex; flex-direction: column; align-items: stretch; gap: 6px;
 }
-.sol-bar-dugmeler #calismalar-btn, .sol-bar-dugmeler #sifirla-btn, .sol-bar-dugmeler #tema-btn, .sol-bar-dugmeler #cerceve-btn {
+.sol-bar-dugmeler #calismalar-btn, .sol-bar-dugmeler #sifirla-btn, .sol-bar-dugmeler #tema-btn {
   width: 100%; height: 32px; justify-content: flex-start;
 }
 .sol-bar-dugmeler .cekmece-btn { align-self: flex-start; }
 /* RENK MODU: solda ad, sağda güneş / ay anahtarı; geçerli mod dolu
    zeminli, öteki soluk. */
-#tema-btn .tema-anahtar, #cerceve-btn .tema-anahtar {
+#tema-btn .tema-anahtar {
   margin-left: auto; display: inline-flex; gap: 2px; padding: 2px;
   border-radius: 999px; background: var(--kenar-acik);
 }
-#tema-btn .tema-anahtar span, #cerceve-btn .tema-anahtar span {
+#tema-btn .tema-anahtar span {
   width: 20px; height: 18px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--metin); opacity: .45;
 }
-#tema-btn .tema-anahtar svg, #cerceve-btn .tema-anahtar svg { width: 12px; height: 12px; display: block; }
+#tema-btn .tema-anahtar svg { width: 12px; height: 12px; display: block; }
 #kabuk:not(.koyu) #tema-btn .tema-gunes,
-#kabuk.koyu #tema-btn .tema-ay,
-:root:not(.cercevesiz) #cerceve-btn .cerceve-acik,
-:root.cercevesiz #cerceve-btn .cerceve-kapali { background: var(--yuzey); color: var(--kirmizi); opacity: 1; box-shadow: var(--golge-1); }
+#kabuk.koyu #tema-btn .tema-ay { background: var(--yuzey); color: var(--kirmizi); opacity: 1; box-shadow: var(--golge-1); }
 
 /* Sohbet ve Dashboard sayfa iskeleti (içerik ayrıca kurulacak). */
 .bos-sayfa {
@@ -3978,48 +3926,20 @@ span.bolme-cip { cursor: default; }
 /* ---- Alt bölüm ---- */
 #sol-bar-alt { border-top: 0; padding: 4px 10px 10px; }
 #sol-bar .sol-bar-dugmeler { gap: 8px; }
-#gorunum-kart {
-  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 12px;
-  box-shadow: var(--golge-1);
-}
-#gorunum-bas {
-  display: flex; align-items: center; gap: 10px; width: 100%; height: 40px;
-  padding: 0 12px; margin: 0; border: 0; background: none; cursor: pointer;
-  font-family: var(--font); font-size: 12.5px; font-weight: var(--fw-kalin); color: var(--metin);
-  border-radius: 12px;
-}
-#gorunum-bas svg.ikon { width: 18px; height: 18px; flex-shrink: 0; }
-#gorunum-bas svg.ok { width: 15px; height: 15px; margin-left: auto; color: var(--sol-ok); transition: transform .15s; }
-#gorunum-kart.kapali #gorunum-bas svg.ok { transform: rotate(180deg); }
-#gorunum-bas:hover { color: var(--kirmizi); }
-#gorunum-bas:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: -2px; }
-#gorunum-govde {
-  margin: 0 8px 8px; padding: 0 8px; border: 1px solid var(--kenar-acik); border-radius: 10px;
-}
-#gorunum-kart.kapali #gorunum-govde { display: none; }
-#sol-bar #gorunum-govde #tema-btn, #sol-bar #gorunum-govde #cerceve-btn {
-  width: 100%; height: 40px; padding: 0 2px; gap: 9px; border: 0; border-radius: 0;
-  background: none; box-shadow: none; font-size: 12px; color: var(--metin);
-}
-#sol-bar #gorunum-govde #tema-btn { border-bottom: 1px solid var(--kenar-acik); }
-#sol-bar #gorunum-govde #tema-btn:hover, #sol-bar #gorunum-govde #cerceve-btn:hover {
-  background: none; color: var(--kirmizi);
-}
-#gorunum-govde svg.ikon { width: 16px; height: 16px; flex-shrink: 0; }
-/* Yuvarlak iki seçenekli anahtar: seçili olan pembe zeminli kırmızı. */
-#sol-bar #gorunum-govde .tema-anahtar { gap: 4px; padding: 0; background: none; }
-#sol-bar #gorunum-govde .tema-anahtar span {
+/* Renk Modu: Arşiv ve Yeni Çalışma gibi beyaz kart; sağda güneş / ay
+   anahtarı, geçerli mod pembe zeminli kırmızı. */
+#sol-bar .tema-anahtar { gap: 4px; padding: 0; background: none; }
+#sol-bar .tema-anahtar span {
   width: 30px; height: 26px; opacity: 1; color: var(--sol-ok); background: var(--kenar-acik);
 }
-#sol-bar #gorunum-govde .tema-anahtar svg { width: 14px; height: 14px; }
-#kabuk:not(.koyu) #sol-bar #gorunum-govde #tema-btn .tema-gunes,
-#kabuk.koyu #sol-bar #gorunum-govde #tema-btn .tema-ay,
-:root:not(.cercevesiz) #sol-bar #gorunum-govde #cerceve-btn .cerceve-acik,
-:root.cercevesiz #sol-bar #gorunum-govde #cerceve-btn .cerceve-kapali {
+#sol-bar .tema-anahtar svg { width: 14px; height: 14px; }
+#kabuk:not(.koyu) #sol-bar #tema-btn .tema-gunes,
+#kabuk.koyu #sol-bar #tema-btn .tema-ay {
   background: var(--kirmizi-acik); color: var(--kirmizi); box-shadow: inset 0 0 0 1px var(--kirmizi-halka);
 }
-/* Arşiv ve Yeni Çalışma: oklu beyaz kartlar. */
-#sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
+#sol-bar #tema-btn svg.ikon { width: 17px; height: 17px; flex-shrink: 0; }
+/* Renk Modu, Arşiv ve Yeni Çalışma: beyaz kartlar. */
+#sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
   height: 40px; padding: 0 12px; gap: 10px; border-radius: 12px;
   border: 1px solid var(--kenar); background: var(--yuzey); box-shadow: var(--golge-1);
   font-size: 12.5px;
@@ -4050,26 +3970,9 @@ span.bolme-cip { cursor: default; }
 #ust-sekmeler { gap: 8px; padding: 10px 10px 8px; }
 #banner { max-height: 60px; }
 #sol-bar-logo { gap: 4px; padding-top: 10px; }
-#gorunum-bas { height: 36px; }
-#sol-bar #gorunum-govde #tema-btn, #sol-bar #gorunum-govde #cerceve-btn { height: 34px; }
-#sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn { height: 36px; }
+#sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn { height: 36px; }
 #sol-bar .sol-bar-dugmeler { gap: 7px; }
 
-/* Görünüm Ayarları: Arşiv listesi gibi YUKARI açılan pencere; sol barın
-   düzenini değiştirmez. Kapalıyken ok yukarı (açılacağı yön), açıkken
-   aşağı. Dışarıya basınca kapanır (app.js: gorunumKur). */
-#gorunum-kart { position: relative; }
-#gorunum-govde {
-  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 50;
-  margin: 0; padding: 2px 10px; display: none;
-  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 12px;
-  box-shadow: var(--golge-2);
-}
-#gorunum-kart.acik #gorunum-govde { display: block; }
-#gorunum-kart #gorunum-bas svg.ok, #gorunum-kart.kapali #gorunum-bas svg.ok { transform: none; }
-#gorunum-kart.acik #gorunum-bas svg.ok { transform: rotate(180deg); }
-#gorunum-kart.acik { border-color: var(--kirmizi-halka); }
-#gorunum-kart.acik #gorunum-bas { color: var(--kirmizi); }
 /* Robotlu logo daha büyük. */
 #banner { max-height: 96px; }
 #sol-bar-logo { padding: 10px 4px 2px; }

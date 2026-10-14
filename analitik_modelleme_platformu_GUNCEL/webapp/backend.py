@@ -41,10 +41,6 @@ GORSELLER = {
     # Arkada calisirken (islem suruyor, sure sayaci)
     "dusunme":    "robot_think.png",
     "user":       "robot_llm_person.png",
-    # Sayfanin tamamini kaplayan cerceveli arka plan (style.css: --arka-plan)
-    "arka_plan":  "amp_background.png",
-    # Arka plan cercevesinin ust bandindaki kurum logosu (style.css: #kurum-logo)
-    "kurum_logo": "kurum_logo.png",
 }
 
 _MIME = {".png": "image/png", ".jpg": "image/jpeg",

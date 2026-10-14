@@ -27,8 +27,6 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
 | `user` | `robot_llm_person.png` | Kullanıcı balonu |
-| `arka_plan` | `amp_background.png` | Çerçeveli sayfa arka planı |
-| `kurum_logo` | `kurum_logo.png` | Çerçevenin üst bandındaki logo |
 
 Görsel bulunamazsa yerinde boşluk kalır, sayfa bozulmaz.
 
@@ -75,13 +73,13 @@ içindeki `VARSAYILAN_MODEL`.
   - Özet
   - KATIB'le Sohbet (kapalı)
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
-- **Görünüm Ayarları:** Renk Modu (açık / koyu) ve Çerçeve (açık / kapalı).
-  Başlığa basınca açılır; dışarıya basınca ya da Esc ile kapanır.
+- **Renk Modu:** açık / koyu tema anahtarı.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
-Sol bar kaydırmasızdır. İçerik, ekranın yüksekliğine sığacak oranda
-ölçeklenir; bar eni de aynı oranda değişir.
+Uygulama ekranın tamamını kullanır. Sol bar kaydırmasızdır; içerik
+ekranın yüksekliğine sığacak oranda ölçeklenir, bar eni de aynı oranda
+değişir.
 
 **Model Akışı**
 - Üstte **İş Akışı** barı:
@@ -111,7 +109,6 @@ Sol bar kaydırmasızdır. İçerik, ekranın yüksekliğine sığacak oranda
 | Anahtar | Ne |
 |---|---|
 | `amp_renk_modu` | Açık / koyu tema |
-| `amp_arka_plan` | Çerçeve açık / kapalı |
 | `amp_akis_acik` | İş Akışı bölmesi açık / kapalı |
 | `amp_dg_alt` | Değişkenler'de açık görünüm |
 | `fe_agent_calisma_id` | Açık çalışmanın kimliği |
