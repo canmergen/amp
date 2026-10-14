@@ -24,21 +24,20 @@
      genislikte (#kabuk: tabular-nums).
      Yalnizca --fw-normal (400) ve --fw-kalin (700) kullanilir.
      Buyuk harf CSS ile DEGIL, HTML/Python'da yazilir (Turkce I/İ). */
-  /* IKI BOYUT: metin (13.5) / baslik (15). Arayuzdeki her yazi (aciklama,
+  /* IKI BOYUT: metin (12.5) / baslik (14). Arayuzdeki her yazi (aciklama,
      not, ipucu, etiket, rozet, tablo, buton) metin boyutundadir; yalniz
-     basliklar buyuktur. Tek istisna ust bar dugmeleri (--fs-ustbar):
-     sekmeler 64 px'lik barda tek sirada sigmali. Ikon karakterleri (×, +,
-     ok, i) kutularina gore sabit px alir. --fs-kucuk, --fs-etiket,
-     --fs-buyuk takma adlardir: ayni iki degere baglidir. TEK ISTISNA
-     --fs-blok: sohbetteki blok basligi (avatarin yanindaki "01.2 ...")
-     baslik boyutundan 1,5 px buyuk; alt adim basliklari (.alt-ad) 15. */
-  --fs-govde:  13.5px;   /* her metin */
-  --fs-baslik: 15px;     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
-  --fs-ustbar: 12px;     /* yalniz sol bar sekmeleri ve alttaki dugmeler */
+     basliklar buyuktur. Tek istisna sol bar satirlari (--fs-ustbar).
+     Ikon karakterleri (×, +, ok, i) kutularina gore sabit px alir.
+     --fs-kucuk, --fs-etiket, --fs-buyuk takma adlardir: ayni iki degere
+     baglidir. TEK ISTISNA --fs-blok: sohbetteki blok basligi (adim
+     numarasinin altindaki ad). */
+  --fs-govde:  12.5px;   /* her metin */
+  --fs-baslik: 14px;     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
+  --fs-ustbar: 13px;     /* yalniz sol bar satirlari ve alttaki dugmeler */
   --fs-kucuk:  var(--fs-govde);
   --fs-etiket: var(--fs-govde);
   --fs-buyuk:  var(--fs-baslik);
-  --fs-blok:   16.5px;    /* yalniz sohbet blok basligi (.blok-ad) */
+  --fs-blok:   19px;      /* yalniz sohbet blok basligi (.blok-ad) */
 
   --fw-normal: 400;
   --fw-kalin:  700;
@@ -50,16 +49,20 @@
 
   /* ===== BILESEN SISTEMI - kose, bosluk, yukseklik, golge =====
      Bosluk olceginde her deger TAM PIKSEL. */
-  --r:         6px;      /* kart, balon, buton, giris kutusu */
-  --r-kucuk:   5px;      /* sekme, cip, liste ogesi, ic alan */
+  --r:         10px;     /* balon, buton, giris kutusu */
+  --r-kucuk:   7px;      /* sekme, cip, liste ogesi, ic alan */
+  --r-kart:    14px;     /* adim bloklari, baslangic kartlari */
+  --r-alan:    16px;     /* sol bar, is akisi bolmesi, calisma alani */
+  --bosluk-dis: 12px;    /* ekran kenari ve alanlar arasi bosluk */
   --b-1: 3px;  --b-2: 6px;  --b-3: 9px;  --b-4: 12px;  --b-5: 15px;  --b-6: 18px;
   --btn-h:     27px;     /* tum ana butonlar */
   --btn-h-kucuk: 23px;   /* ikon butonlari, Gonder */
   --serit:     3px;      /* kart solundaki marka vurgu cubugu */
   --halka:     2px;      /* odak ve hover halkasi kalinligi */
-  --golge-1:   0 1px 2px rgba(16,24,40,.06);
-  --ust-golge: 0 1px 2px rgba(16,24,40,.10);   /* üst bar kutuları */
+  --golge-1:   0 1px 2px rgba(16,24,40,.05);
+  --ust-golge: 0 1px 2px rgba(16,24,40,.08);   /* üst bar kutuları */
   --golge-2:   0 5px 13px rgba(16,24,40,.10);
+  --golge-alan: 0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.05);
 
   /* ===== RENK - zemin notr, kirmizi yalnizca vurgu ===== */
   --kirmizi:      #D51115;
@@ -74,14 +77,12 @@
   --kume-secili-yazi:  #A3262A;
   --pembe-kenar:   #F3C6C7;     /* panel balonlarının ince kenarı */
   /* Adim blogu cercevesinin kalinligi. Renk dogrudan var(--kirmizi). */
-  --blok-cerceve: 3px;
-
-  --zemin:        #F4F5F7;
+  --zemin:        #F2F3F6;          /* ekran zemini: alanlarin arasi */
   --yuzey:        #FFFFFF;
-  --yuzey-alt:    #F9FAFB;
-  --kenar:        #DDE1E6;          /* kart, balon, form kenarlari */
-  --kenar-guclu:  #BFC5CE;
-  --kenar-acik:   #EDEFF2;
+  --yuzey-alt:    #F8F9FB;
+  --kenar:        #E3E6EB;          /* kart, balon, form kenarlari */
+  --kenar-guclu:  #C3C9D2;
+  --kenar-acik:   #EEF0F3;
   /* AYRAC: bolmeleri ayiran ve uygulamayi en dista cevreleyen cizgi.
      Siyah, %45 opak, ekran enine gore ayni oranda kalin (1920 px ekranda
      ~4 px, 1366'da ~3 px; tarayici tam piksele yuvarlar). */
@@ -104,25 +105,20 @@
   /* GECILEN ADIMIN BASLIGI. Iki temada ayni gri: beyazda 4.54:1, siyahta 4.6:1. */
   --metin-tamam:  #767676;
   --metin-asil:   #000000;     /* gecilen blokta secilenlerin rengi */
+  /* Alt baslik ve aciklama satirlari (blok basligi altindaki satir,
+     baslangic kartlarinin aciklamasi, sol bar bolum adlari). Koyu gri:
+     beyazda 7.9:1. */
+  --metin-ikincil: #475467;
+  /* Bilgi notu (kilitli yazi kutusu): mavi-gri zemin, mavi i. */
+  --bilgi-not-zemin: #F4F7FB;
+  --bilgi-not-kenar: #DCE4EF;
+  --bilgi-not-ikon:  #2F6FDB;
 
   --user-zemin:   #EEF0F3;          /* kullanici balonu: bot'tan ayrissin */
 
   --gonder-zemin: #111111;
   --gonder-metin: #FFFFFF;
 
-  /* ===== SOHBET ARKA PLANI =====
-     Gorsel JS'ten gelir. Uzerinde zemin renginde bir perde var.
-     --sohbet-perde-gucu:    acilistaki perde. 0 = gorsel tamamen gorunur,
-                             1 = gorsel hic gorunmez
-     --sohbet-perde-calisma: sohbet basladiktan sonraki (en az 2 mesaj) perde.
-                             Acilista gorsel belirgin, calisirken sakin kalir.
-                             Hep ayni kalsin istersen --sohbet-perde-gucu ile
-                             ayni degeri ver.
-     --sohbet-bulanik:       0px = bulaniklik yok; 4px, 8px... arttikca bulanir */
-  --sohbet-gorsel: none;
-  --sohbet-perde-gucu:    .42;
-  --sohbet-perde-calisma: .8;
-  --sohbet-bulanik:       0px;
 
   --yesil:        #0E8A52;
   --yesil-acik:   #E6F4EC;
@@ -153,10 +149,9 @@
   /* Alt sınır --ft-en + gövde
      dolgusu kadar: sözlük tablosu kaydırmasız sığar. */
   --analiz-en:  clamp(340px, 31vw, 460px);
-  /* Sol bar (sayfa kümeleri + Arşiv / Yeni Çalışma) eni. En uzun
-     etiket (BÖLME & MODEL) dolgusuyla birlikte rahat sığar. */
-  --sol-bar-en: 200px;
-  --sohbet-yan: 19px;
+  /* Sol bar eni: tasarım eni 248 px; kısa ekranda app.js
+     (solBarOlcekle) aynı oranda daraltır. */
+  --sol-bar-en: 248px;
 
   /* SOHBETIN TEK GENISLIGI. Ust sinir degil, SABIT genislik: bot
      balonu, kullanici balonu ve sohbete dusen kartlar (.secim-kart,
@@ -166,7 +161,7 @@
   /* BLOKLAR EŞİT VE TAM GENİŞLİK: sohbet sütununun tamamını kaplarlar.
 */
   --balon-en:     100%;
-  --avatar-en:    42px;          /* sohbet avatarı */
+  --avatar-en:    34px;          /* sohbet avatarı */
   --avatar-ara:   10px;          /* avatar ile blok arası */
   /* Ardisik balonlar arasindaki SABIT dikey aralik. Bot/kullanici,
      balon/kart ayrimi gozetmeden hepsi ayni bosluga sahip. */
@@ -188,17 +183,21 @@
   --kirmizi-acik: #2A1517;
   --kirmizi-halka: rgba(229,54,58,.30);
 
-  --zemin:        #0F1115;
-  --yuzey:        #181B20;
-  --yuzey-alt:    #13161A;
-  --kenar:        #2C3138;
-  --kenar-guclu:  #3D434B;
-  --kenar-acik:   #22262C;
+  --zemin:        #0A0B0D;
+  --yuzey:        #15171B;
+  --yuzey-alt:    #111316;
+  --kenar:        #262A31;
+  --kenar-guclu:  #3A3F47;
+  --kenar-acik:   #1E2126;
   --ayrac:        rgba(255,255,255,.45);   /* koyu zeminde acik ayrac, ayni opaklik */
 
   --metin:        #E6E8EB;
   --metin-soluk:  #E6E8EB;
   --metin-asil:   #F5F6F7;
+  --metin-ikincil: #A7AFBB;
+  --bilgi-not-zemin: rgba(47,111,219,.10);
+  --bilgi-not-kenar: rgba(47,111,219,.32);
+  --bilgi-not-ikon:  #5B8DEF;
   --yer-tutucu:   rgba(230,232,235,.42);
 
   --user-zemin:   #22262C;
@@ -209,6 +208,7 @@
   --golge-1:   0 1px 2px rgba(0,0,0,.5);
   --ust-golge: 0 1px 2px rgba(0,0,0,.35);
   --golge-2:   0 6px 16px rgba(0,0,0,.55);
+  --golge-alan: 0 1px 2px rgba(0,0,0,.4);
 
   --yesil:        #3CC07A;
   --yesil-acik:   #10261A;
@@ -243,39 +243,25 @@
 #kabuk.koyu .blok-durum.kontrol {
   color: #F5C518; background: #2A2210; border-color: #F5C518;
 }
-/* SOL BAR (koyu): seçili küme düz kırmızı yerine koyu bordo; içindeki
-   sekmeler kart tonunda, seçili sekme bordo zemin + açık kırmızı yazı +
-   solda kırmızı çizgi. Tam kırmızı blok koyu zeminde fazla göz alır. */
-#kabuk.koyu .ust-kume:has(> .ust-sekme.aktif) { background: #4A1A1D; border-color: #6B2328; }
-#kabuk.koyu .ust-sekme.aktif, #kabuk.koyu .ust-sekme.aktif:hover {
-  background: var(--pembe-secili); border-color: var(--pembe-secili); color: #FF8F92;
-}
-#kabuk.koyu .ust-sekme.kapali, #kabuk.koyu .ust-sekme.kapali:hover { color: #7D848D; }
-#kabuk.koyu .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali) { color: var(--metin); }
-#kabuk.koyu .ust-sekme.aktif, #kabuk.koyu .ust-sekme.aktif:hover { box-shadow: inset 3px 0 0 var(--kirmizi); }
 /* Koyu temada sayfa zemini. */
-body:has(#kabuk.koyu) { background-color: #0B0C0F; }
+body:has(#kabuk.koyu) { background-color: #0A0B0D; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
-/* Uygulama ekranın tamamını kullanır. --kabuk-*: uygulama kabuğunun
-   ekrandaki kenarları; ekrana göre yerleşen (position: fixed) paneller de
-   bunları kullanır. */
-:root { --kabuk-ust: 0px; --kabuk-alt: 0px; --kabuk-sol: 0px; --kabuk-sag: 0px; }
-body { background-color: #FEFEFE; }
+body { background-color: #F2F3F6; }
 
-/* Uygulama kabuğu. Iki sutun: solda sol bar, saginda acik sayfa.
-   En dışta bölmeleri ayıran ayraç çizgisiyle çevrelenir. solda sol bar, saginda acik sayfa.
+/* Uygulama kabuğu: ekranın tamamı. Iki sutun: solda sol bar, saginda
+   acik sayfa. Alanlar zeminden --bosluk-dis kadar boslukla ayrilan
+   yuvarlak koseli kartlardir; ekrana gore yerlesen (position: fixed)
+   paneller de ayni boslugu kullanir.
    Sayfalarin hepsi ayni hucrede; gizli olanlar display:none oldugu icin
    hucrede tek sayfa kalir. Ust bar yok: logo sol barin tepesinde. */
 #kabuk {
   display: grid;
-  position: fixed; z-index: 1;
-  top: var(--kabuk-ust); bottom: var(--kabuk-alt);
-  left: var(--kabuk-sol); right: var(--kabuk-sag);
+  position: fixed; z-index: 1; inset: 0;
   overflow: hidden;
-  border: var(--ayrac-kalinlik) solid var(--ayrac);
+  padding: var(--bosluk-dis); column-gap: var(--bosluk-dis);
   grid-template-columns: var(--sol-bar-en) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   background: var(--zemin); color: var(--metin);
@@ -320,18 +306,6 @@ body { background-color: #FEFEFE; }
   color: var(--kirmizi);
 }
 
-/* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde, barın eninde; oranı korunarak
-   sığar. Görsel yüklenemezse gizlenir (app.js). */
-#sol-bar-logo {
-  flex-shrink: 0; padding: 14px 2px 2px;
-  display: flex; flex-direction: column; align-items: center;
-}
-#katib-logo {
-  display: block; width: 100%; height: auto; max-height: 100px;
-  object-fit: contain;
-}
-
 /* Sonuç kartının satırları (.sonuc-kart). */
 .ozet-etiket { display: block; margin-bottom: 2px; }
 .ozet-deger {
@@ -346,13 +320,6 @@ body { background-color: #FEFEFE; }
   white-space: normal; overflow-wrap: break-word;
 }
 
-/* SOL BAR ALTI: Arşiv ve Yeni Çalışma, ince çizgiyle sayfa kümelerinden
-   ayrılır. */
-#sol-bar-alt {
-  flex-shrink: 0; padding: var(--b-3);
-  border-top: 1px solid var(--kenar);
-}
-
 .cekmece-btn {
   display: flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; padding: 0;
@@ -365,32 +332,6 @@ body { background-color: #FEFEFE; }
 .cekmece-btn:hover {
   border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
-/* Genişlikler varsayılandayken sıfırlanacak bir şey yok: düğme pasif.
-*/
-/* Pasif düğme SOLUKLUKLA anlatılır, gri metinle değil. */
-
-/* Görünür
-   etiket ve daha geniş gövde kasıtlı: komşusuna benzemesin. */
-#sifirla-btn, #calismalar-btn, #tema-btn {
-  display: flex; align-items: center; gap: 6px;
-  height: 24px; padding: 0 var(--b-3);
-  border: 1px solid var(--kenar); background: var(--yuzey);
-  border-radius: var(--r-kucuk); cursor: pointer; color: var(--metin);
-  flex-shrink: 0; font-family: var(--font);
-  font-size: var(--fs-ustbar); font-weight: var(--fw-kalin); white-space: nowrap;
-  letter-spacing: .01em; box-shadow: var(--ust-golge);
-  transition: background .12s, color .12s, border-color .12s;
-}
-/* SVG ikon: yüksekliği düğmenin metin satırına oturur. width/height
-   birlikte verilmezse Safari intrinsic boyut uydurup ikonu şişiriyor. */
-#sifirla-btn .sifirla-ikon, #calismalar-btn .sifirla-ikon {
-  width: 14px; height: 14px; display: block; flex-shrink: 0;
-  color: inherit;   /* currentColor hover kırmızısını da izlesin */
-}
-#sifirla-btn:hover, #calismalar-btn:hover, #tema-btn:hover, #calismalar-btn[aria-expanded="true"] {
-  border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
-}
-
 /* ARŞİV açılır listesi. Düğmenin ÜSTÜNE doğru, sol barın eninde açılır;
    yandaki panele taşmaz. Açıklamalar satırda değil "i" düğmesinde. */
 #calismalar-kap, #yeni-kap { position: relative; flex-shrink: 0; }
@@ -454,126 +395,6 @@ body { background-color: #FEFEFE; }
 .calisma-alt { font-size: var(--fs-kucuk); }
 .calisma-bos { padding: var(--b-2) var(--b-3); }
 .calisma-hata { color: var(--kirmizi); }
-/* ==================== SOL BAR: SAYFA KÜMELERİ ====================
-   Sol bar ekranın tam boyunda; sayfa kümeleri alt
-   alta. MODEL AKIŞI kümesi (başlık + beş kutu) ve altında ayrı SOHBET
-   ve DASHBOARD blokları. Renkler: gri küme zemini üstünde beyaz kutular,
-   üstüne gelince açık kırmızı, seçili kutu kırmızı. Küme başlığı
-   kutularla AYNI yazı tipi ve puntoda, kutusuz kırmızı yazı (düğme
-   sanılmasın), altında ince ayraç. Kutular sola yaslı ve kümenin
-   eninde. Sığmazsa (çok kısa ekran) yalnız kümeler kayar, alttaki
-   Arşiv / Yeni Çalışma yerinde kalır. */
-#sol-bar {
-  grid-column: 1; grid-row: 1; min-height: 0;
-  /* Arşiv listesi bardan taşarak açılır: sayfa panellerinin üstünde */
-  position: relative; z-index: 45;
-  display: flex; flex-direction: column;
-  background: var(--kirmizi-acik);
-  border-right: var(--ayrac-kalinlik) solid var(--ayrac);
-}
-#ust-sekmeler {
-  flex: 1; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 10px;
-  padding: var(--b-4) var(--b-3);
-}
-.ust-kume {
-  display: flex; flex-direction: column; align-items: stretch; gap: 3px;
-  padding: 4px;
-  border: 1px solid var(--kenar); border-radius: 9px;
-  background: var(--kenar-acik);
-}
-.ust-kume-ad, .ust-sekme {
-  height: 32px; padding: 0 12px; white-space: nowrap;
-  font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
-  letter-spacing: .04em;
-  display: flex; align-items: center; justify-content: flex-start; gap: 7px;
-  border-radius: var(--r);
-}
-.ust-kume-ad {
-  /* Düğme değil, kümenin ADI: kutusuz, kırmızı yazı; altında kısa ince
-     ayraç ile kutulardan ayrılır. */
-  position: relative; height: 28px;
-  color: var(--kirmizi); background: none; border: none; border-radius: 0;
-  padding: 0 8px; margin-bottom: 3px;
-}
-.ust-kume-ad::after {
-  content: ""; position: absolute; left: 8px; right: 8px; bottom: 0;
-  height: 1px; background: var(--kenar-guclu);
-}
-.ust-sekme {
-  flex-shrink: 0; cursor: pointer; color: var(--metin); text-align: left;
-  border: 1px solid transparent; background: var(--yuzey);
-  box-shadow: var(--ust-golge);
-  transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
-}
-.ust-sekme:hover { border-color: var(--kirmizi-halka); color: var(--kirmizi); background: var(--kirmizi-acik); }
-/* Seçili sekmenin KÜMESİ kırmızı; içinde seçili sekme pembe zeminli
-   kırmızı yazı, seçilmeyenler beyaz. Seçili sekme
-   beyazdan net ayrılsın diye zemin biraz koyu pembe ve solda 3 px
-   kırmızı çizgi. */
-.ust-sekme.aktif, .ust-sekme.aktif:hover {
-  background: var(--pembe-secili); border-color: var(--pembe-secili); color: var(--kume-secili-yazi);
-  box-shadow: inset 3px 0 0 var(--kume-secili-yazi);
-}
-.ust-kume:has(> .ust-sekme.aktif) {
-  background: var(--kume-secili); border-color: var(--kume-secili-kenar);
-}
-/* Seçili kümedeki sekmeler gölgesiz, yazı tam siyah değil: sakin. */
-.ust-kume:has(> .ust-sekme.aktif) .ust-sekme { box-shadow: none; }
-.ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali) { color: #3A3F45; }
-.ust-kume:has(> .ust-sekme.aktif) .ust-kume-ad { color: #fff; }
-.ust-kume:has(> .ust-sekme.aktif) .ust-kume-ad::after { background: rgba(255,255,255,.45); }
-.ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):hover {
-  background: var(--yuzey); border-color: var(--yuzey); color: var(--kume-secili-yazi);
-}
-.ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: 1px; }
-/* KAPALI blok (SOHBET, DASHBOARD henüz yok): gri zemin, soluk gri yazı,
-   kesik kenar ve kilit ikonu; tıklanmaz. Kesik kenar kümenin kendisinde,
-   içteki kutu kenarsız: iki kenar iç içe görünmesin. */
-.ust-kume.tekli:has(> .ust-sekme.kapali) { border-style: dashed; border-color: var(--kenar-guclu); }
-.ust-sekme.kapali, .ust-sekme.kapali:hover {
-  cursor: not-allowed; color: #8A9099; background: transparent;
-  border-color: transparent; box-shadow: none;
-}
-/* Her sekmenin önünde ince çizgili ikon; kapalı sekmelerde kilit sağda. */
-.ust-sekme svg.ikon, .ust-kume-ad svg.ikon { width: 15px; height: 15px; flex-shrink: 0; }
-/* Küme İÇİNDEKİ kapalı sekme (Model Platformu > KATIB'LE SOHBET): küme
-   kenarı kesilmez, kesik kenar sekmenin kendisinde; soluk zemin. */
-/* Diğer sekmeler gibi BEYAZ zeminli, ama kapalı olduğu soluk gri yazı,
-   kilit simgesi ve tıklanmazlıktan anlaşılır (gri zemin seçili gibi
-   durur). */
-#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
-#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
-  color: #A0A6AD; background: var(--yuzey); opacity: 1;
-  border-color: transparent; box-shadow: var(--ust-golge);
-}
-#kabuk.koyu #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
-#kabuk.koyu #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover { color: #6B7178; }
-.ust-sekme.kapali svg.kilit { width: 12px; height: 12px; flex-shrink: 0; margin-left: auto; }
-
-/* Alt: Arşiv ve Yeni Çalışma alt alta, barın eninde, sola yaslı. */
-.sol-bar-dugmeler {
-  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-}
-.sol-bar-dugmeler #calismalar-btn, .sol-bar-dugmeler #sifirla-btn, .sol-bar-dugmeler #tema-btn {
-  width: 100%; height: 32px; justify-content: flex-start;
-}
-.sol-bar-dugmeler .cekmece-btn { align-self: flex-start; }
-/* RENK MODU: solda ad, sağda güneş / ay anahtarı; geçerli mod dolu
-   zeminli, öteki soluk. */
-#tema-btn .tema-anahtar {
-  margin-left: auto; display: inline-flex; gap: 2px; padding: 2px;
-  border-radius: 999px; background: var(--kenar-acik);
-}
-#tema-btn .tema-anahtar span {
-  width: 20px; height: 18px; border-radius: 999px;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: var(--metin); opacity: .45;
-}
-#tema-btn .tema-anahtar svg { width: 12px; height: 12px; display: block; }
-#kabuk:not(.koyu) #tema-btn .tema-gunes,
-#kabuk.koyu #tema-btn .tema-ay { background: var(--yuzey); color: var(--kirmizi); opacity: 1; box-shadow: var(--golge-1); }
-
 /* Sohbet ve Dashboard sayfa iskeleti (içerik ayrıca kurulacak). */
 .bos-sayfa {
   height: 100%; display: flex; flex-direction: column;
@@ -589,193 +410,226 @@ body { background-color: #FEFEFE; }
 /* ==================== SAYFA KABI ==================== */
 .sayfa { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; }
 .sayfa.gizli { display: none !important; }   /* #sayfa-calisma'nin display:flex'ini ezer */
-#sayfa-calisma { display: flex; background: var(--yuzey); }
+#sayfa-calisma { display: flex; background: none; }
 
-/* ==================== SOL PANEL ==================== */
-/* Orta panel (ANALİTİK SÜREÇ / İŞ AKIŞI) yazıları bir kademe küçük:
-   panel dar, uzun adım adları satıra sığsın. Yalnız bu panelde geçerli. */
-#panel { --fs-govde: 12.5px; --fs-baslik: 14px; }
-#panel {
-  width: var(--panel-en); flex-shrink: 0;
-  background: var(--yuzey-alt);
-  border-right: var(--ayrac-kalinlik) solid var(--ayrac);
-  padding: var(--b-5) var(--b-4) 22px; overflow-y: auto;
+/* ==================== ÇALIŞMA ALANI (Model Akışı) ====================
+   Izgara, iki sütun: solda İş Akışı bölmesi (açıkken), sağda çalışma
+   kartı. Çalışma kartı üç satırdır: üstte İş Akışı barı, ortada sohbet
+   (adım blokları), altta yazı kutusu; üçü birlikte tek beyaz kart gibi
+   görünür. Bölme ondan --bosluk-dis kadar boşlukla ayrılan ayrı bir
+   karttır, alanın tam boyunda durur ve kendi içinde kayar. Bardaki İş
+   Akışı düğmesi bölmeyi açıp kapatır (app.js: akisMenuAc). */
+#sohbet-alani {
+  position: relative; flex: 1; min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
-
-
-.panel-blok {
-  scroll-margin-top: 40px;   /* yapışkan kapatma satırının altında kalmasın */
-  margin-bottom: var(--b-4);
-  padding: var(--b-4);
+#sohbet-alani.akis-acik { column-gap: var(--bosluk-dis); }
+#akis-bar, #sohbet, #giris-bolge {
+  grid-column: 2; position: relative;
   background: var(--yuzey);
-  border: 1px solid var(--pembe-kenar); border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(16,24,40,.05);
+  border: 1px solid var(--kenar);
 }
-.panel-blok:last-child { margin-bottom: 0; }
-.panel-baslik { margin-bottom: var(--b-3); }
-.panel-metin {
-  margin: 0 0 var(--b-3); font-size: var(--fs-govde); line-height: 1.5; color: var(--metin);
-  text-indent: 0;                 /* paragraf basi girintisi yok; istersen 1.5em */
+#akis-bar {
+  grid-row: 1; z-index: 6;
+  border-bottom-color: var(--kenar-acik);
+  border-radius: var(--r-alan) var(--r-alan) 0 0;
 }
-.panel-metin:last-child { margin-bottom: 0; }
+/* Kaydirma YALNIZCA burada */
+#sohbet {
+  grid-row: 2; min-height: 0; overflow-y: auto;
+  border-top: 0; border-bottom: 0;
+  padding: 20px 24px 8px;
+  scrollbar-gutter: stable;
+}
 
-/* ANALİTİK SÜREÇ: açılır kapanır başlık. Görünüşü öteki kırmızı
-   etiketlerle aynı kalsın diye düğmenin tarayıcı biçimi sıfırlanıyor;
-   ok, faz ağacındaki okla aynı dili konuşuyor (kapalı ›, açık ⌄). */
-.surec-bas {
-  display: flex; align-items: baseline; gap: var(--b-2);
-  width: 100%; padding: 0; border: none; background: none;
-  font-family: inherit; text-align: left; cursor: pointer;
+/* ---- İŞ AKIŞI BARI ----
+   Solda İş Akışı düğmesi, yanında bulunulan yer (İş Akışı › faz ›
+   adım), sağda ilerleme çubuğu ve tamamlanan / toplam adım. */
+#akis-bar {
+  display: flex; align-items: center; gap: 14px;
+  min-height: 54px; padding: 10px 20px;
 }
-.surec-bas:hover { opacity: .8; }
-.surec-bas:focus-visible {
-  outline: none; border-radius: var(--r-kucuk);
-  box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
+#akis-menu { position: relative; flex-shrink: 0; }
+#akis-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 9px 0 11px;
+  border: 1px solid var(--kenar); border-radius: 9px;
+  background: var(--yuzey); color: var(--metin); cursor: pointer;
+  font-size: 12.5px; font-weight: var(--fw-kalin);
+  transition: background .12s, border-color .12s, color .12s;
 }
-.surec-ok {
-  flex-shrink: 0; width: 8px; text-align: center;
-  transition: transform .15s; transform: rotate(90deg);
+#akis-btn .ikon { width: 15px; height: 15px; flex-shrink: 0; color: var(--kirmizi); }
+/* Ok: kapalıyken sağı (bölme açılır), açıkken solu (bölme kapanır)
+   gösterir. */
+#akis-btn .ok {
+  width: 13px; height: 13px; flex-shrink: 0; color: var(--metin-ikincil);
+  transform: rotate(-90deg); transition: transform .15s;
 }
-/* Kapalıyken yalnız başlık satırı kalır; alt boşluk da daralır ki
-   İŞ AKIŞI yukarı çıksın. */
-#surec-blok.kapali { margin-bottom: var(--b-4); }
-#surec-blok.kapali .surec-bas { margin-bottom: 0; }
-#surec-blok.kapali .surec-ok { transform: none; }
-#surec-blok.kapali #surec-metin { display: none; }
+#akis-menu.acik #akis-btn .ok { transform: rotate(90deg); color: var(--kirmizi); }
+#akis-btn:hover { border-color: var(--kirmizi-halka); background: var(--kirmizi-acik); }
+#akis-menu.acik #akis-btn { background: var(--kirmizi-acik); border-color: var(--pembe-kenar); }
+#akis-btn:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
+#akis-konum {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 2px;
+  font-size: 12.5px; line-height: 1.4;
+  white-space: normal; overflow-wrap: break-word;
+}
+#akis-konum .akis-kok {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--metin-ikincil);
+}
+/* Ev simgesi (maske: yazı rengini alır). */
+#akis-konum .akis-kok::before {
+  content: ""; width: 14px; height: 14px; flex-shrink: 0; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 10.5L12 3l9 7.5'/%3E%3Cpath d='M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 10.5L12 3l9 7.5'/%3E%3Cpath d='M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+#akis-konum .akis-faz { color: var(--metin-ikincil); }
+#akis-konum .akis-ayrac { color: var(--kenar-guclu); font-weight: var(--fw-kalin); }
+#akis-konum .akis-adim { font-weight: var(--fw-kalin); color: var(--kirmizi); }
+#akis-ilerleme {
+  flex-shrink: 0; display: flex; align-items: center; gap: 10px; white-space: nowrap;
+  font-size: 12px; font-weight: var(--fw-kalin); color: var(--metin);
+}
+#akis-ilerleme:empty { display: none; }
+.ilerleme-cubuk {
+  display: block; width: 140px; height: 6px; overflow: hidden;
+  border-radius: 999px; background: var(--kenar);
+}
+.ilerleme-dolu {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, #F0454A, var(--kirmizi));
+  transition: width .3s ease;
+}
 
-/* -------- Faz ağacı -------- */
-.faz { margin-bottom: 2px; }
-/* baseline: ok, numara, ad ve sayac ayni yazi cizgisine oturur */
-/* <button>: klavye kullanicisi de fazi acabilsin (Enter/Space dogal) */
+/* ---- İŞ AKIŞI BÖLMESİ ----
+   Beş faz dikey zaman çizelgesi: numaralı daireler bir çizgiyle bağlı.
+   Çalışılan faz pembe kutuda, numarası kırmızı dolu; geçilen faz yeşil.
+   Faza basınca adımları açılır; görülmüş adıma basınca sohbet o adımın
+   bloğuna kayar. Yazılar bölmede bir kademe küçük: uzun adım adları
+   satıra sığsın. */
+#sohbet-alani > #panel {
+  --fs-govde: 12px; --fs-baslik: 13px;
+  grid-column: 1; grid-row: 1 / -1;
+  display: none; position: relative; z-index: 2;
+  width: 280px; min-height: 0; overflow-y: auto;
+  padding: 12px 10px 16px;
+  background: var(--yuzey);
+  border: 1px solid var(--kenar); border-radius: var(--r-alan);
+  box-shadow: var(--golge-alan);
+}
+#sohbet-alani.akis-acik > #panel { display: block; }
+#is-akisi-blok { margin: 0; padding: 0; }
+/* Dar ekranda bölme sohbetin üstüne biner (sohbet daralmasın). */
+@media (max-width: 864px) {
+  #sohbet-alani, #sohbet-alani.akis-acik { grid-template-columns: 0 minmax(0, 1fr); column-gap: 0; }
+  #sohbet-alani > #panel {
+    position: absolute; top: 0; bottom: 0; left: 0;
+    box-shadow: var(--golge-2);
+  }
+}
+
+.faz { position: relative; margin-bottom: 4px; }
+/* Fazları bağlayan dikey çizgi: numara dairelerinin ortasından geçer,
+   açık fazın adım listesinin yanından da devam eder. */
+.faz:not(:last-child)::after {
+  content: ""; position: absolute; z-index: 0;
+  left: 24px; top: 44px; bottom: -6px; width: 2px;
+  border-radius: 1px; background: var(--kenar);
+}
+.faz.tamam:not(:last-child)::after { background: var(--yesil); opacity: .45; }
+/* <button>: klavye kullanicisi da fazi acabilsin (Enter/Space dogal) */
 .faz-bas {
-  position: relative; overflow: hidden;
-  display: flex; align-items: baseline; gap: var(--b-2);
-  padding: var(--b-2); border-radius: var(--r); cursor: pointer;
-  color: var(--metin);
-  width: 100%; border: none; background: none; text-align: left;
-  font-family: inherit; font-size: var(--fs-govde); line-height: 1.5;
+  position: relative; z-index: 1;
+  display: flex; align-items: flex-start; gap: 8px;
+  width: 100%; padding: 8px; margin: 0;
+  border: 1px solid transparent; border-radius: 12px;
+  background: none; color: var(--metin); text-align: left; cursor: pointer;
+  font-family: inherit; font-size: var(--fs-govde); line-height: 1.45;
+  transition: background .12s, border-color .12s;
 }
-.faz-bas:hover { background: var(--kenar-acik); }
-.faz-bas:focus-visible {
-  outline: none; background: var(--kenar-acik);
-  box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
-}
-/* ÇALIŞILAN FAZ SARI, GEÇİLEN FAZ YEŞİL.
-   Kutu içi sarı zemin (--sari-acik) + sarı/kehribar yazı; solda kalın
-   sarı çubuk. Yazı için --sari DEĞİL --amber kullanılıyor: #EAB308
-   dolgu olarak iyi ama beyaz zeminde metin olunca kontrast ~1,9:1,
-   okunmuyor. --amber aynı sarı/kehribar ailesinden ve okunabilir. */
-.faz.aktif > .faz-bas {
-  background: var(--amber-acik); color: var(--amber);
-  font-weight: var(--fw-kalin);
-}
-.faz.aktif > .faz-bas .faz-ozet { color: var(--amber); }
-.faz.aktif > .faz-bas::before {
-  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
-  width: var(--serit); background: var(--sari);
-}
-/* Geçilen faz: aynı kutu yeşile döner. */
-.faz.tamam > .faz-bas { background: var(--yesil-acik); color: var(--yesil); }
-.faz.tamam > .faz-bas .faz-ozet { color: var(--yesil); }
-.faz.tamam > .faz-bas::before {
-  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
-  width: var(--serit); background: var(--yesil);
-}
-
-.faz-ok {
-  flex-shrink: 0; width: 8px; text-align: center;
-  font-size: var(--fs-govde); transition: transform .15s;
-}
-.faz.acik .faz-ok { transform: rotate(90deg); }
-
+.faz-bas:hover { background: var(--yuzey-alt); }
+.faz-bas:focus-visible { outline: none; box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
+/* Aç / kapa oku yok: faz satırının tamamı düğme; dar bölmede faz adı
+   tek satıra sığsın. */
+.faz-ok { display: none; }
 .faz-no {
-  flex-shrink: 0; min-width: 1.4em;
-  font-size: var(--fs-govde); font-weight: var(--fw-kalin);
-  color: inherit;                 /* fazin metin rengini alir: siyah / tamamlaninca yesil */
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11.5px; font-weight: var(--fw-kalin); color: var(--metin-ikincil);
+  background: var(--yuzey); border: 1.5px solid var(--kenar-guclu);
 }
-.faz-govde { min-width: 0; flex: 1; }
-.faz-ad { font-size: var(--fs-baslik); font-weight: var(--fw-kalin); line-height: 1.35; color: inherit; }
-.faz-ozet {
-  font-size: var(--fs-govde); color: inherit;
-  margin-top: 2px; line-height: 1.45;
-}
+.faz-govde { flex: 1; min-width: 0; padding-top: 1px; }
+.faz-ad { font-size: var(--fs-baslik); font-weight: var(--fw-kalin); line-height: 1.35; color: var(--metin); }
+.faz-ozet { margin-top: 2px; font-size: 11.5px; line-height: 1.45; color: var(--metin-ikincil); }
 .faz-durum {
-  flex-shrink: 0; font-size: var(--fs-kucuk);
-  font-weight: var(--fw-kalin); cursor: help;
+  flex-shrink: 0; margin-top: 1px; padding: 1px 7px; border-radius: 999px;
+  background: var(--kenar-acik); color: var(--metin-ikincil);
+  font-size: 11px; font-weight: var(--fw-kalin); cursor: help;
 }
+.faz.aktif > .faz-bas { background: var(--kirmizi-acik); border-color: var(--pembe-kenar); }
+.faz.aktif > .faz-bas .faz-no {
+  background: var(--kirmizi); border-color: var(--kirmizi); color: #fff;
+  box-shadow: 0 0 0 4px var(--kirmizi-halka);
+}
+.faz.aktif > .faz-bas .faz-durum { background: var(--yuzey); color: var(--kirmizi); }
+.faz.tamam > .faz-bas .faz-no { background: var(--yesil-acik); border-color: var(--yesil); color: var(--yesil); }
+.faz.tamam > .faz-bas .faz-durum { background: var(--yesil-acik); color: var(--yesil); }
 
+/* Adımlar: dairelerin sağında, faz adıyla aynı hizada. */
 .faz-adimlar {
-  list-style: none; margin: 2px 0 var(--b-2) var(--b-3); padding: 0 0 0 var(--b-5);
-  display: none; border-left: 1px solid var(--kenar);
+  list-style: none; display: none;
+  margin: 4px 0 8px 40px; padding: 0;
 }
 .faz.acik .faz-adimlar { display: block; }
-
 .faz-adimlar li {
-  display: flex; align-items: center; gap: var(--b-2);
-  padding: 4px 5px; border-radius: var(--r-kucuk);
-  font-size: var(--fs-govde); font-weight: var(--fw-normal); color: var(--metin); cursor: default;
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 5px 8px; border-radius: 8px;
+  font-size: var(--fs-govde); font-weight: var(--fw-normal); line-height: 1.4;
+  color: var(--metin); cursor: default;
 }
 .adim-isaret {
-  flex-shrink: 0; width: 11px; height: 11px;
-  border: 1px solid currentColor; border-radius: 50%;
+  flex-shrink: 0; width: 12px; height: 12px; margin-top: 2px;
+  border: 1.5px solid var(--kenar-guclu); border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 8px; font-weight: var(--fw-kalin);
+  font-size: 8px; font-weight: var(--fw-kalin); line-height: 1;
 }
-/* Tamamlanan adim: yesil isaret VE yesil kalin yazi. */
-.faz-adimlar li.tamam { color: var(--yesil); font-weight: var(--fw-kalin); }
-.faz-adimlar li.tamam > .adim-isaret {
-  background: var(--yesil); border-color: var(--yesil); color: #fff;
+/* Tamamlanan adım: yeşil dolu işaret. */
+.faz-adimlar li.tamam > .adim-isaret { background: var(--yesil); border-color: var(--yesil); color: #fff; }
+/* Çalışılan adım: kırmızı kalın yazı, kırmızı dolu işaret. */
+.faz-adimlar li.aktif { color: var(--kirmizi); font-weight: var(--fw-kalin); }
+.faz-adimlar li.aktif > .adim-isaret {
+  background: var(--kirmizi); border-color: var(--kirmizi);
+  box-shadow: 0 0 0 3px var(--kirmizi-halka);
 }
-/* Tamamlanan adım TIKLANABİLİR: doğrudan o adıma döner. Düğme gibi
-   görünmüyor ama tıklanabilir olduğu imleçten ve üzerine gelince
-   beliren zeminden anlaşılıyor — liste bir gezinme aracı, düğme
-   tarlası değil. Renk ve kalınlık <li>'den miras alınır. */
+/* Görülmüş adım TIKLANABİLİR: o adımın bloğuna gider. Düğme gibi
+   görünmez; imleç ve üzerine gelince beliren zemin söyler. Renk ve
+   kalınlık <li>'den gelir. */
 .faz-adimlar li .adim-git {
   flex: 1 1 auto; min-width: 0; text-align: left;
   padding: 0; margin: 0; border: 0; background: none;
   font: inherit; color: inherit; cursor: pointer; white-space: normal; overflow-wrap: break-word;
 }
-.faz-adimlar li.tamam:hover { background: var(--yesil-acik); }
-.faz-adimlar li.aktif:hover { background: var(--sari-acik); }
+.faz-adimlar li.tamam:hover, .faz-adimlar li.aktif:hover { background: var(--yuzey-alt); }
 /* Gelinmemiş adım tıklanmaz: imleç de öyle söylesin. */
 .faz-adimlar li:not(.tamam):not(.aktif) { cursor: not-allowed; }
-.faz-adimlar li .adim-git:focus-visible {
-  outline: 2px solid var(--kirmizi); outline-offset: 2px; border-radius: 2px;
-}
+.faz-adimlar li .adim-git:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; border-radius: 2px; }
 .faz-adimlar li .adim-git:disabled { cursor: not-allowed; opacity: .5; }
-/* Calisan adim: yazi da isaretle ayni aileden, kalin.
-   RENK NEDEN --sari DEGIL: isaretin dolgusu #EAB308 ve bu bir DOLGU
-   olarak iyi duruyor, ama ayni sari beyaz zeminde METIN olunca kontrast
-   ~1,9:1 — okunmuyor. --amber ayni sari/kehribar ailesinden ama
-   okunabilir. */
-.faz-adimlar li.aktif { color: var(--amber); font-weight: var(--fw-kalin); }
-.faz-adimlar li.aktif > .adim-isaret {
-  background: var(--sari); border-color: var(--sari); color: #000;
-  box-shadow: 0 0 0 var(--halka) var(--sari-acik);
-}
-
-/* Grup satırının alt adımları (01.2.1, 01.2.2 ...): grup satırının
-   altında, aynı işaret ve renk kurallarıyla, bir kademe içeride.
-   Yazı boyutu üst satırla AYNI (gövde); kademe girinti ve çizgiyle
-   anlaşılır, küçük punto ile değil. */
-.faz-adimlar li.grup-satir { flex-wrap: wrap; }
 /* Uzun adım adı KISALTILMAZ: işaretin yanında kalan genişliği alır ve
-   kelime aralarından alt satıra geçer (işaret ilk satırın hizasında). */
-.faz-adimlar li { align-items: flex-start; }
-.faz-adimlar li > .adim-isaret { margin-top: 3px; }
+   kelime aralarından alt satıra geçer. */
 .faz-adimlar li > .adim-git,
 .faz-adimlar li > span:not(.adim-isaret) { flex: 1 1 0; min-width: 0; }
-
+/* Grup satırının alt adımları (01.2.1, 01.2.2 ...): bir kademe içeride,
+   ince çizgiyle; aynı işaret ve renk kuralları. */
+.faz-adimlar li.grup-satir { flex-wrap: wrap; }
 .faz-adimlar li.grup-satir:hover { background: none; }
 .faz-alt-adimlar {
   list-style: none; flex: 1 0 100%; margin: 3px 0 0 5px;
-  padding: 0 0 0 var(--b-3); border-left: 1px solid var(--kenar);
+  padding: 0 0 0 10px; border-left: 1px solid var(--kenar);
 }
-.faz-alt-adimlar li { padding: 3px 5px; }
-
-/* ALT ADIMLI SATIR (01.2.4 → 01.2.4.1 ...): sağdaki ok alt adımları
-   açar/kapatır; açıkken aşağı döner. Alt adımlar bir kademe daha
-   içeride, aynı işaret ve renk kurallarıyla. */
+.faz-alt-adimlar li { padding: 4px 6px; }
 .faz-adimlar li > .alt-ok {
   flex-shrink: 0; margin-left: auto;
   width: 18px; height: 18px; padding: 0;
@@ -786,48 +640,13 @@ body { background-color: #FEFEFE; }
 }
 .faz-adimlar li > .alt-ok.acik { transform: rotate(90deg); }
 .faz-adimlar li > .alt-ok:hover { background: var(--kenar-acik); }
-.faz-adimlar li > .alt-ok:focus-visible {
-  outline: 2px solid var(--kirmizi); outline-offset: 1px;
-}
+.faz-adimlar li > .alt-ok:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 1px; }
 /* Atlanan alt adım («Kontrol Edilmeden Geçilsin»): gri, kesik
    çizgili işaret; tıklanmaz. */
 .faz-adimlar li.atlandi { color: var(--metin-tamam); }
 .faz-adimlar li.atlandi > .adim-isaret { border-style: dashed; }
-
 /* Sohbette atlanan alt adımın bloğu görünmez. */
 .alt-bolum.alt-gizli { display: none; }
-
-/* ==================== ORTA: ÇALIŞMA ALANI ==================== */
-#sohbet-alani {
-  position: relative;
-  flex: 1; display: flex; flex-direction: column; min-width: 0;
-  background-color: var(--zemin);
-  background-image: var(--sohbet-gorsel);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-#sohbet-alani::before {
-  content: ""; position: absolute; inset: 0;
-  background: var(--zemin);
-  opacity: var(--sohbet-perde-gucu);
-  backdrop-filter: blur(var(--sohbet-bulanik));
-  pointer-events: none;
-  transition: opacity .5s ease;
-}
-/* Sohbet basladiginda (en az iki mesaj satiri) perde koyulasir.
-   JS gerekmez; satirlar eklenince tarayici kendisi uygular. */
-#sohbet-alani:has(.satir ~ .satir)::before {
-  opacity: max(var(--sohbet-perde-gucu), var(--sohbet-perde-calisma));
-}
-#sohbet, #giris-bolge { position: relative; z-index: 1; }
-
-/* Kaydirma YALNIZCA burada */
-#sohbet {
-  flex: 1; overflow-y: auto;
-  padding: var(--b-6) var(--sohbet-yan) var(--b-4);
-  scrollbar-gutter: stable;
-}
 
 /* Iki kenar, tek genislik. Iki taraf hizalama ve zemin rengiyle
    ayrisir. Dikey aralik --balon-ara ile sabit. */
@@ -1023,6 +842,172 @@ body { background-color: #FEFEFE; }
   font-size: var(--fs-govde); color: var(--metin-soluk);
   line-height: 1.5; margin-top: 2px;
 }
+
+/* -------- 01.1 karşılama bölümü --------
+   Başlangıç Seçimi bloğunun metni (app.js: karsilamaYap): üstte tanıtım
+   kartı (başlık, giriş, üç özellik ve sağda kodla çizilmiş pano
+   çizimi), altında yan yana bilgi kutuları, en altta başlangıç
+   kartlarına çağrı. Kartın zemini açık temada beyazdan pembeye, koyu
+   temada koyu bordo; ikisinde de arkada kırmızı çizgi dalgaları. */
+.karsilama { container-type: inline-size; display: flex; flex-direction: column; gap: 14px; }
+.hero-kart {
+  --hero-cam-1: rgba(255,255,255,.96);
+  --hero-cam-2: rgba(253,236,237,.92);
+  --hero-cizgi: rgba(213,17,21,.22);
+  --hero-nokta: #F3B6B8;
+  --hero-yazi: var(--metin);
+  --hero-ikincil: var(--metin-ikincil);
+  --hero-cip: rgba(255,255,255,.85);
+  --hero-cip-kenar: #F1D5D6;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 16px;
+  padding: 24px 26px;
+  border: 1px solid #F3DADB; border-radius: var(--r-kart);
+  background:
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 220' preserveAspectRatio='none'><defs><linearGradient id='d' x1='0' x2='1'><stop offset='0' stop-color='%23D51115' stop-opacity='0'/><stop offset='0.45' stop-color='%23D51115'/></linearGradient></defs><g fill='none' stroke='url%28%23d%29' stroke-width='0.9'><path d='M0 164.8C12 166.0 50 172.6 75 172.4C100 172.1 125 169.0 150 163.3C175 157.5 200 148.0 225 137.8C250 127.7 275 114.2 300 102.4C325 90.6 350 77.2 375 67.0C400 56.9 425 47.5 450 41.7C475 35.9 500 32.8 525 32.4C550 32.0 575 35.3 600 39.3C625 43.4 650 50.7 675 56.7C700 62.6 725 70.3 750 75.1C775 79.8 800 84.1 825 85.0C850 85.9 888 81.2 900 80.4' stroke-opacity='0.10'/><path d='M0 166.7C12 167.8 50 173.9 75 173.5C100 173.0 125 169.8 150 164.0C175 158.3 200 148.9 225 139.0C250 129.0 275 115.9 300 104.5C325 93.1 350 80.2 375 70.5C400 60.8 425 51.8 450 46.4C475 40.9 500 38.1 525 37.8C550 37.6 575 40.9 600 44.8C625 48.7 650 55.7 675 61.3C700 66.9 725 74.1 750 78.4C775 82.6 800 86.3 825 86.8C850 87.3 888 82.1 900 81.1' stroke-opacity='0.12'/><path d='M0 168.6C12 169.6 50 175.2 75 174.5C100 173.9 125 170.6 150 164.8C175 159.1 200 149.8 225 140.1C250 130.4 275 117.7 300 106.7C325 95.6 350 83.2 375 74.0C400 64.7 425 56.2 450 51.1C475 45.9 500 43.4 525 43.3C550 43.1 575 46.4 600 50.2C625 54.0 650 60.7 675 66.0C700 71.2 725 77.9 750 81.6C775 85.4 800 88.6 825 88.6C850 88.6 888 82.9 900 81.8' stroke-opacity='0.15'/><path d='M0 170.5C12 171.4 50 176.4 75 175.6C100 174.8 125 171.3 150 165.6C175 159.8 200 150.7 225 141.3C250 131.8 275 119.5 300 108.8C325 98.2 350 86.3 375 77.4C400 68.6 425 60.5 450 55.8C475 51.0 500 48.7 525 48.7C550 48.7 575 52.0 600 55.6C625 59.3 650 65.7 675 70.6C700 75.5 725 81.6 750 84.9C775 88.2 800 90.8 825 90.4C850 90.0 888 83.8 900 82.5' stroke-opacity='0.19'/><path d='M0 172.4C12 173.1 50 177.6 75 176.6C100 175.6 125 172.0 150 166.3C175 160.6 200 151.6 225 142.4C250 133.2 275 121.2 300 111.0C325 100.7 350 89.3 375 80.9C400 72.5 425 64.9 450 60.5C475 56.0 500 54.1 525 54.2C550 54.3 575 57.6 600 61.1C625 64.6 650 70.7 675 75.2C700 79.8 725 85.4 750 88.2C775 91.0 800 93.0 825 92.2C850 91.3 888 84.6 900 83.1' stroke-opacity='0.23'/><path d='M0 174.3C12 174.9 50 178.9 75 177.6C100 176.4 125 172.7 150 167.0C175 161.3 200 152.5 225 143.5C250 134.5 275 123.0 300 113.1C325 103.3 350 92.4 375 84.4C400 76.4 425 69.3 450 65.2C475 61.1 500 59.5 525 59.7C550 59.9 575 63.2 600 66.5C625 69.9 650 75.7 675 79.9C700 84.0 725 89.1 750 91.5C775 93.8 800 95.2 825 94.0C850 92.7 888 85.5 900 83.8' stroke-opacity='0.27'/><path d='M0 176.2C12 176.6 50 180.1 75 178.7C100 177.3 125 173.4 150 167.7C175 162.1 200 153.4 225 144.6C250 135.9 275 124.7 300 115.3C325 105.8 350 95.5 375 87.9C400 80.4 425 73.8 450 70.0C475 66.2 500 64.8 525 65.2C550 65.5 575 68.8 600 72.0C625 75.2 650 80.7 675 84.5C700 88.3 725 92.8 750 94.7C775 96.6 800 97.4 825 95.7C850 94.0 888 86.3 900 84.4' stroke-opacity='0.31'/><path d='M0 178.1C12 178.3 50 181.3 75 179.7C100 178.1 125 174.1 150 168.4C175 162.8 200 154.3 225 145.8C250 137.3 275 126.5 300 117.4C325 108.4 350 98.5 375 91.4C400 84.3 425 78.2 450 74.7C475 71.3 500 70.2 525 70.7C550 71.1 575 74.4 600 77.4C625 80.5 650 85.7 675 89.1C700 92.5 725 96.5 750 97.9C775 99.3 800 99.6 825 97.4C850 95.3 888 87.1 900 85.1' stroke-opacity='0.34'/><path d='M0 179.9C12 180.0 50 182.4 75 180.6C100 178.8 125 174.8 150 169.1C175 163.5 200 155.1 225 146.9C250 138.6 275 128.2 300 119.6C325 110.9 350 101.6 375 94.9C400 88.3 425 82.7 450 79.5C475 76.4 500 75.6 525 76.2C550 76.7 575 80.0 600 82.9C625 85.8 650 90.7 675 93.7C700 96.8 725 100.2 750 101.2C775 102.1 800 101.8 825 99.2C850 96.6 888 87.9 900 85.7' stroke-opacity='0.37'/><path d='M0 181.8C12 181.7 50 183.6 75 181.6C100 179.6 125 175.4 150 169.8C175 164.2 200 156.0 225 148.0C250 140.0 275 130.0 300 121.7C325 113.5 350 104.7 375 98.5C400 92.2 425 87.1 450 84.3C475 81.5 500 81.0 525 81.7C550 82.4 575 85.6 600 88.4C625 91.1 650 95.7 675 98.3C700 101.0 725 103.9 750 104.4C775 104.8 800 103.9 825 100.9C850 97.9 888 88.7 900 86.3' stroke-opacity='0.39'/><path d='M0 183.6C12 183.4 50 184.7 75 182.6C100 180.4 125 176.1 150 170.5C175 164.9 200 156.8 225 149.1C250 141.3 275 131.8 300 123.9C325 116.1 350 107.8 375 102.0C400 96.2 425 91.6 450 89.1C475 86.7 500 86.5 525 87.2C550 88.0 575 91.2 600 93.8C625 96.5 650 100.6 675 102.9C700 105.2 725 107.6 750 107.6C775 107.5 800 106.0 825 102.6C850 99.1 888 89.5 900 86.9' stroke-opacity='0.40'/><path d='M0 185.4C12 185.1 50 185.9 75 183.5C100 181.1 125 176.7 150 171.1C175 165.6 200 157.7 225 150.2C250 142.7 275 133.5 300 126.1C325 118.7 350 110.9 375 105.6C400 100.2 425 96.1 450 94.0C475 91.8 500 91.9 525 92.8C550 93.7 575 96.9 600 99.3C625 101.8 650 105.6 675 107.5C700 109.4 725 111.3 750 110.7C775 110.2 800 108.1 825 104.3C850 100.4 888 90.3 900 87.5' stroke-opacity='0.40'/><path d='M0 187.3C12 186.8 50 187.0 75 184.4C100 181.8 125 177.3 150 171.8C175 166.2 200 158.5 225 151.3C250 144.0 275 135.3 300 128.3C325 121.2 350 114.1 375 109.2C400 104.3 425 100.6 450 98.8C475 97.0 500 97.4 525 98.4C550 99.4 575 102.5 600 104.8C625 107.1 650 110.6 675 112.1C700 113.6 725 114.9 750 113.9C775 112.9 800 110.2 825 105.9C850 101.6 888 91.0 900 88.0' stroke-opacity='0.39'/><path d='M0 189.1C12 188.4 50 188.1 75 185.3C100 182.5 125 177.9 150 172.4C175 166.9 200 159.3 225 152.4C250 145.4 275 137.0 300 130.4C325 123.8 350 117.2 375 112.8C400 108.3 425 105.1 450 103.7C475 102.2 500 102.8 525 103.9C550 105.0 575 108.1 600 110.3C625 112.4 650 115.6 675 116.7C700 117.8 725 118.6 750 117.1C775 115.5 800 112.3 825 107.6C850 102.8 888 91.8 900 88.6' stroke-opacity='0.37'/><path d='M0 190.9C12 190.1 50 189.2 75 186.2C100 183.2 125 178.5 150 173.0C175 167.5 200 160.2 225 153.4C250 146.7 275 138.8 300 132.6C325 126.4 350 120.4 375 116.4C400 112.3 425 109.7 450 108.5C475 107.4 500 108.3 525 109.5C550 110.7 575 113.8 600 115.7C625 117.7 650 120.5 675 121.3C700 122.0 725 122.2 750 120.2C775 118.2 800 114.4 825 109.2C850 104.0 888 92.5 900 89.1' stroke-opacity='0.34'/><path d='M0 192.6C12 191.7 50 190.3 75 187.1C100 183.9 125 179.0 150 173.6C175 168.2 200 161.0 225 154.5C250 148.0 275 140.6 300 134.8C325 129.1 350 123.5 375 120.0C400 116.4 425 114.2 450 113.4C475 112.6 500 113.8 525 115.1C550 116.4 575 119.4 600 121.2C625 123.0 650 125.5 675 125.8C700 126.2 725 125.8 750 123.3C775 120.8 800 116.4 825 110.8C850 105.2 888 93.2 900 89.7' stroke-opacity='0.31'/><path d='M0 194.4C12 193.3 50 191.3 75 188.0C100 184.6 125 179.6 150 174.2C175 168.8 200 161.8 225 155.6C250 149.4 275 142.4 300 137.0C325 131.7 350 126.7 375 123.6C400 120.5 425 118.8 450 118.3C475 117.8 500 119.3 525 120.7C550 122.1 575 125.1 600 126.7C625 128.3 650 130.4 675 130.4C700 130.3 725 129.4 750 126.4C775 123.4 800 118.5 825 112.5C850 106.4 888 93.9 900 90.2' stroke-opacity='0.27'/><path d='M0 196.2C12 194.9 50 192.4 75 188.8C100 185.2 125 180.1 150 174.8C175 169.4 200 162.6 225 156.7C250 150.7 275 144.1 300 139.2C325 134.3 350 129.9 375 127.2C400 124.6 425 123.4 450 123.2C475 123.1 500 124.8 525 126.3C550 127.8 575 130.7 600 132.2C625 133.6 650 135.4 675 134.9C700 134.5 725 133.0 750 129.5C775 126.0 800 120.5 825 114.0C850 107.6 888 94.6 900 90.8' stroke-opacity='0.23'/><path d='M0 197.9C12 196.5 50 193.4 75 189.6C100 185.9 125 180.7 150 175.3C175 170.0 200 163.4 225 157.7C250 152.1 275 145.9 300 141.4C325 137.0 350 133.1 375 130.9C400 128.7 425 128.0 450 128.2C475 128.3 500 130.4 525 131.9C550 133.5 575 136.4 600 137.7C625 138.9 650 140.3 675 139.5C700 138.6 725 136.6 750 132.6C775 128.6 800 122.5 825 115.6C850 108.7 888 95.3 900 91.3' stroke-opacity='0.19'/><path d='M0 199.7C12 198.1 50 194.4 75 190.5C100 186.5 125 181.2 150 175.9C175 170.6 200 164.2 225 158.8C250 153.4 275 147.7 300 143.7C325 139.6 350 136.3 375 134.5C400 132.8 425 132.6 450 133.1C475 133.6 500 135.9 525 137.6C550 139.2 575 142.1 600 143.2C625 144.2 650 145.3 675 144.0C700 142.8 725 140.2 750 135.7C775 131.2 800 124.5 825 117.2C850 109.9 888 96.0 900 91.8' stroke-opacity='0.15'/><path d='M0 201.4C12 199.7 50 195.4 75 191.3C100 187.1 125 181.7 150 176.4C175 171.2 200 165.0 225 159.9C250 154.8 275 149.5 300 145.9C325 142.3 350 139.5 375 138.2C400 136.9 425 137.2 450 138.1C475 138.9 500 141.4 525 143.2C550 145.0 575 147.7 600 148.6C625 149.5 650 150.2 675 148.5C700 146.9 725 143.7 750 138.7C775 133.8 800 126.5 825 118.8C850 111.0 888 96.7 900 92.3' stroke-opacity='0.12'/><path d='M0 203.1C12 201.2 50 196.4 75 192.1C100 187.7 125 182.2 150 177.0C175 171.8 200 165.7 225 160.9C250 156.1 275 151.3 300 148.1C325 145.0 350 142.8 375 141.9C400 141.1 425 141.9 450 143.0C475 144.2 500 147.0 525 148.9C550 150.7 575 153.4 600 154.1C625 154.8 650 155.1 675 153.0C700 151.0 725 147.2 750 141.8C775 136.3 800 128.5 825 120.3C850 112.1 888 97.4 900 92.8' stroke-opacity='0.10'/></g></svg>") center / 100% 100% no-repeat,
+    linear-gradient(105deg, #FFFFFF 0%, #FFF7F7 50%, #FDEBEC 100%);
+}
+#kabuk.koyu .hero-kart {
+  --hero-cam-1: rgba(255,255,255,.10);
+  --hero-cam-2: rgba(255,255,255,.03);
+  --hero-cizgi: rgba(255,120,120,.35);
+  --hero-nokta: rgba(255,255,255,.35);
+  --hero-yazi: #FFFFFF;
+  --hero-ikincil: #E4C9CA;
+  --hero-cip: rgba(255,255,255,.06);
+  --hero-cip-kenar: rgba(255,255,255,.12);
+  border-color: rgba(229,54,58,.28);
+  background:
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 220' preserveAspectRatio='none'><defs><linearGradient id='d' x1='0' x2='1'><stop offset='0' stop-color='%23FF4A50' stop-opacity='0'/><stop offset='0.45' stop-color='%23FF4A50'/></linearGradient></defs><g fill='none' stroke='url%28%23d%29' stroke-width='0.9'><path d='M0 164.8C12 166.0 50 172.6 75 172.4C100 172.1 125 169.0 150 163.3C175 157.5 200 148.0 225 137.8C250 127.7 275 114.2 300 102.4C325 90.6 350 77.2 375 67.0C400 56.9 425 47.5 450 41.7C475 35.9 500 32.8 525 32.4C550 32.0 575 35.3 600 39.3C625 43.4 650 50.7 675 56.7C700 62.6 725 70.3 750 75.1C775 79.8 800 84.1 825 85.0C850 85.9 888 81.2 900 80.4' stroke-opacity='0.18'/><path d='M0 166.7C12 167.8 50 173.9 75 173.5C100 173.0 125 169.8 150 164.0C175 158.3 200 148.9 225 139.0C250 129.0 275 115.9 300 104.5C325 93.1 350 80.2 375 70.5C400 60.8 425 51.8 450 46.4C475 40.9 500 38.1 525 37.8C550 37.6 575 40.9 600 44.8C625 48.7 650 55.7 675 61.3C700 66.9 725 74.1 750 78.4C775 82.6 800 86.3 825 86.8C850 87.3 888 82.1 900 81.1' stroke-opacity='0.21'/><path d='M0 168.6C12 169.6 50 175.2 75 174.5C100 173.9 125 170.6 150 164.8C175 159.1 200 149.8 225 140.1C250 130.4 275 117.7 300 106.7C325 95.6 350 83.2 375 74.0C400 64.7 425 56.2 450 51.1C475 45.9 500 43.4 525 43.3C550 43.1 575 46.4 600 50.2C625 54.0 650 60.7 675 66.0C700 71.2 725 77.9 750 81.6C775 85.4 800 88.6 825 88.6C850 88.6 888 82.9 900 81.8' stroke-opacity='0.26'/><path d='M0 170.5C12 171.4 50 176.4 75 175.6C100 174.8 125 171.3 150 165.6C175 159.8 200 150.7 225 141.3C250 131.8 275 119.5 300 108.8C325 98.2 350 86.3 375 77.4C400 68.6 425 60.5 450 55.8C475 51.0 500 48.7 525 48.7C550 48.7 575 52.0 600 55.6C625 59.3 650 65.7 675 70.6C700 75.5 725 81.6 750 84.9C775 88.2 800 90.8 825 90.4C850 90.0 888 83.8 900 82.5' stroke-opacity='0.33'/><path d='M0 172.4C12 173.1 50 177.6 75 176.6C100 175.6 125 172.0 150 166.3C175 160.6 200 151.6 225 142.4C250 133.2 275 121.2 300 111.0C325 100.7 350 89.3 375 80.9C400 72.5 425 64.9 450 60.5C475 56.0 500 54.1 525 54.2C550 54.3 575 57.6 600 61.1C625 64.6 650 70.7 675 75.2C700 79.8 725 85.4 750 88.2C775 91.0 800 93.0 825 92.2C850 91.3 888 84.6 900 83.1' stroke-opacity='0.40'/><path d='M0 174.3C12 174.9 50 178.9 75 177.6C100 176.4 125 172.7 150 167.0C175 161.3 200 152.5 225 143.5C250 134.5 275 123.0 300 113.1C325 103.3 350 92.4 375 84.4C400 76.4 425 69.3 450 65.2C475 61.1 500 59.5 525 59.7C550 59.9 575 63.2 600 66.5C625 69.9 650 75.7 675 79.9C700 84.0 725 89.1 750 91.5C775 93.8 800 95.2 825 94.0C850 92.7 888 85.5 900 83.8' stroke-opacity='0.47'/><path d='M0 176.2C12 176.6 50 180.1 75 178.7C100 177.3 125 173.4 150 167.7C175 162.1 200 153.4 225 144.6C250 135.9 275 124.7 300 115.3C325 105.8 350 95.5 375 87.9C400 80.4 425 73.8 450 70.0C475 66.2 500 64.8 525 65.2C550 65.5 575 68.8 600 72.0C625 75.2 650 80.7 675 84.5C700 88.3 725 92.8 750 94.7C775 96.6 800 97.4 825 95.7C850 94.0 888 86.3 900 84.4' stroke-opacity='0.54'/><path d='M0 178.1C12 178.3 50 181.3 75 179.7C100 178.1 125 174.1 150 168.4C175 162.8 200 154.3 225 145.8C250 137.3 275 126.5 300 117.4C325 108.4 350 98.5 375 91.4C400 84.3 425 78.2 450 74.7C475 71.3 500 70.2 525 70.7C550 71.1 575 74.4 600 77.4C625 80.5 650 85.7 675 89.1C700 92.5 725 96.5 750 97.9C775 99.3 800 99.6 825 97.4C850 95.3 888 87.1 900 85.1' stroke-opacity='0.60'/><path d='M0 179.9C12 180.0 50 182.4 75 180.6C100 178.8 125 174.8 150 169.1C175 163.5 200 155.1 225 146.9C250 138.6 275 128.2 300 119.6C325 110.9 350 101.6 375 94.9C400 88.3 425 82.7 450 79.5C475 76.4 500 75.6 525 76.2C550 76.7 575 80.0 600 82.9C625 85.8 650 90.7 675 93.7C700 96.8 725 100.2 750 101.2C775 102.1 800 101.8 825 99.2C850 96.6 888 87.9 900 85.7' stroke-opacity='0.65'/><path d='M0 181.8C12 181.7 50 183.6 75 181.6C100 179.6 125 175.4 150 169.8C175 164.2 200 156.0 225 148.0C250 140.0 275 130.0 300 121.7C325 113.5 350 104.7 375 98.5C400 92.2 425 87.1 450 84.3C475 81.5 500 81.0 525 81.7C550 82.4 575 85.6 600 88.4C625 91.1 650 95.7 675 98.3C700 101.0 725 103.9 750 104.4C775 104.8 800 103.9 825 100.9C850 97.9 888 88.7 900 86.3' stroke-opacity='0.68'/><path d='M0 183.6C12 183.4 50 184.7 75 182.6C100 180.4 125 176.1 150 170.5C175 164.9 200 156.8 225 149.1C250 141.3 275 131.8 300 123.9C325 116.1 350 107.8 375 102.0C400 96.2 425 91.6 450 89.1C475 86.7 500 86.5 525 87.2C550 88.0 575 91.2 600 93.8C625 96.5 650 100.6 675 102.9C700 105.2 725 107.6 750 107.6C775 107.5 800 106.0 825 102.6C850 99.1 888 89.5 900 86.9' stroke-opacity='0.70'/><path d='M0 185.4C12 185.1 50 185.9 75 183.5C100 181.1 125 176.7 150 171.1C175 165.6 200 157.7 225 150.2C250 142.7 275 133.5 300 126.1C325 118.7 350 110.9 375 105.6C400 100.2 425 96.1 450 94.0C475 91.8 500 91.9 525 92.8C550 93.7 575 96.9 600 99.3C625 101.8 650 105.6 675 107.5C700 109.4 725 111.3 750 110.7C775 110.2 800 108.1 825 104.3C850 100.4 888 90.3 900 87.5' stroke-opacity='0.70'/><path d='M0 187.3C12 186.8 50 187.0 75 184.4C100 181.8 125 177.3 150 171.8C175 166.2 200 158.5 225 151.3C250 144.0 275 135.3 300 128.3C325 121.2 350 114.1 375 109.2C400 104.3 425 100.6 450 98.8C475 97.0 500 97.4 525 98.4C550 99.4 575 102.5 600 104.8C625 107.1 650 110.6 675 112.1C700 113.6 725 114.9 750 113.9C775 112.9 800 110.2 825 105.9C850 101.6 888 91.0 900 88.0' stroke-opacity='0.68'/><path d='M0 189.1C12 188.4 50 188.1 75 185.3C100 182.5 125 177.9 150 172.4C175 166.9 200 159.3 225 152.4C250 145.4 275 137.0 300 130.4C325 123.8 350 117.2 375 112.8C400 108.3 425 105.1 450 103.7C475 102.2 500 102.8 525 103.9C550 105.0 575 108.1 600 110.3C625 112.4 650 115.6 675 116.7C700 117.8 725 118.6 750 117.1C775 115.5 800 112.3 825 107.6C850 102.8 888 91.8 900 88.6' stroke-opacity='0.65'/><path d='M0 190.9C12 190.1 50 189.2 75 186.2C100 183.2 125 178.5 150 173.0C175 167.5 200 160.2 225 153.4C250 146.7 275 138.8 300 132.6C325 126.4 350 120.4 375 116.4C400 112.3 425 109.7 450 108.5C475 107.4 500 108.3 525 109.5C550 110.7 575 113.8 600 115.7C625 117.7 650 120.5 675 121.3C700 122.0 725 122.2 750 120.2C775 118.2 800 114.4 825 109.2C850 104.0 888 92.5 900 89.1' stroke-opacity='0.60'/><path d='M0 192.6C12 191.7 50 190.3 75 187.1C100 183.9 125 179.0 150 173.6C175 168.2 200 161.0 225 154.5C250 148.0 275 140.6 300 134.8C325 129.1 350 123.5 375 120.0C400 116.4 425 114.2 450 113.4C475 112.6 500 113.8 525 115.1C550 116.4 575 119.4 600 121.2C625 123.0 650 125.5 675 125.8C700 126.2 725 125.8 750 123.3C775 120.8 800 116.4 825 110.8C850 105.2 888 93.2 900 89.7' stroke-opacity='0.54'/><path d='M0 194.4C12 193.3 50 191.3 75 188.0C100 184.6 125 179.6 150 174.2C175 168.8 200 161.8 225 155.6C250 149.4 275 142.4 300 137.0C325 131.7 350 126.7 375 123.6C400 120.5 425 118.8 450 118.3C475 117.8 500 119.3 525 120.7C550 122.1 575 125.1 600 126.7C625 128.3 650 130.4 675 130.4C700 130.3 725 129.4 750 126.4C775 123.4 800 118.5 825 112.5C850 106.4 888 93.9 900 90.2' stroke-opacity='0.47'/><path d='M0 196.2C12 194.9 50 192.4 75 188.8C100 185.2 125 180.1 150 174.8C175 169.4 200 162.6 225 156.7C250 150.7 275 144.1 300 139.2C325 134.3 350 129.9 375 127.2C400 124.6 425 123.4 450 123.2C475 123.1 500 124.8 525 126.3C550 127.8 575 130.7 600 132.2C625 133.6 650 135.4 675 134.9C700 134.5 725 133.0 750 129.5C775 126.0 800 120.5 825 114.0C850 107.6 888 94.6 900 90.8' stroke-opacity='0.40'/><path d='M0 197.9C12 196.5 50 193.4 75 189.6C100 185.9 125 180.7 150 175.3C175 170.0 200 163.4 225 157.7C250 152.1 275 145.9 300 141.4C325 137.0 350 133.1 375 130.9C400 128.7 425 128.0 450 128.2C475 128.3 500 130.4 525 131.9C550 133.5 575 136.4 600 137.7C625 138.9 650 140.3 675 139.5C700 138.6 725 136.6 750 132.6C775 128.6 800 122.5 825 115.6C850 108.7 888 95.3 900 91.3' stroke-opacity='0.33'/><path d='M0 199.7C12 198.1 50 194.4 75 190.5C100 186.5 125 181.2 150 175.9C175 170.6 200 164.2 225 158.8C250 153.4 275 147.7 300 143.7C325 139.6 350 136.3 375 134.5C400 132.8 425 132.6 450 133.1C475 133.6 500 135.9 525 137.6C550 139.2 575 142.1 600 143.2C625 144.2 650 145.3 675 144.0C700 142.8 725 140.2 750 135.7C775 131.2 800 124.5 825 117.2C850 109.9 888 96.0 900 91.8' stroke-opacity='0.26'/><path d='M0 201.4C12 199.7 50 195.4 75 191.3C100 187.1 125 181.7 150 176.4C175 171.2 200 165.0 225 159.9C250 154.8 275 149.5 300 145.9C325 142.3 350 139.5 375 138.2C400 136.9 425 137.2 450 138.1C475 138.9 500 141.4 525 143.2C550 145.0 575 147.7 600 148.6C625 149.5 650 150.2 675 148.5C700 146.9 725 143.7 750 138.7C775 133.8 800 126.5 825 118.8C850 111.0 888 96.7 900 92.3' stroke-opacity='0.21'/><path d='M0 203.1C12 201.2 50 196.4 75 192.1C100 187.7 125 182.2 150 177.0C175 171.8 200 165.7 225 160.9C250 156.1 275 151.3 300 148.1C325 145.0 350 142.8 375 141.9C400 141.1 425 141.9 450 143.0C475 144.2 500 147.0 525 148.9C550 150.7 575 153.4 600 154.1C625 154.8 650 155.1 675 153.0C700 151.0 725 147.2 750 141.8C775 136.3 800 128.5 825 120.3C850 112.1 888 97.4 900 92.8' stroke-opacity='0.18'/></g></svg>") center / 100% 100% no-repeat,
+    radial-gradient(60% 90% at 85% 30%, rgba(229,54,58,.32), transparent 70%),
+    linear-gradient(105deg, #140809 0%, #250C0F 55%, #36101A 100%);
+}
+.hero-icerik { position: relative; flex: 1 1 auto; min-width: 0; max-width: 640px; }
+.hero-cizgi {
+  display: block; width: 28px; height: 3px; margin-bottom: 12px;
+  border-radius: 2px; background: var(--kirmizi);
+}
+.hero-baslik {
+  font-size: 20px; font-weight: var(--fw-kalin); line-height: 1.25;
+  color: var(--hero-yazi); margin-bottom: 8px;
+}
+.hero-metin {
+  margin: 0; font-size: 13px; line-height: 1.6; color: var(--hero-ikincil);
+  white-space: normal;
+}
+.hero-ozellikler { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.hero-ozellik {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border: 1px solid var(--hero-cip-kenar); border-radius: 10px;
+  background: var(--hero-cip);
+  font-size: 12px; font-weight: var(--fw-kalin); color: var(--hero-yazi);
+  white-space: nowrap;
+}
+.hero-ozellik-ikon {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--kirmizi-acik); color: var(--kirmizi);
+}
+#kabuk.koyu .hero-ozellik-ikon { background: rgba(229,54,58,.22); color: #FF8A8D; }
+.hero-ozellik-ikon svg { width: 14px; height: 14px; }
+.hero-gorsel { position: relative; flex: 0 0 260px; align-self: center; }
+.hero-cizim { display: block; width: 100%; height: auto; }
+.hero-cizim .hc-cam-1 { stop-color: var(--hero-cam-1); }
+.hero-cizim .hc-cam-2 { stop-color: var(--hero-cam-2); }
+.hero-cizim .hc-cizgi { stroke: var(--hero-cizgi); }
+.hero-cizim .hc-nokta { fill: var(--hero-nokta); }
+@container (max-width: 860px) {
+  .hero-gorsel { flex-basis: 200px; }
+}
+/* Dar blokta çizim gizlenir, metin kartın tamamını alır. */
+@container (max-width: 640px) {
+  .hero-gorsel { display: none; }
+  .hero-kart { padding: 20px; }
+}
+
+.karsilama-bilgi {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.karsilama-bilgi-kart {
+  padding: 14px 16px;
+  border: 1px solid var(--kenar); border-radius: 12px;
+  background: var(--yuzey-alt);
+}
+.karsilama-bilgi-baslik {
+  font-size: 13.5px; font-weight: var(--fw-kalin); color: var(--metin); margin-bottom: 4px;
+}
+.karsilama-bilgi-metin {
+  margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--metin-ikincil);
+  white-space: normal;
+}
+.karsilama-bilgi-metin + .karsilama-bilgi-metin { margin-top: 6px; }
+.karsilama-cagri {
+  margin-top: 6px;
+  font-size: 15px; font-weight: var(--fw-kalin); line-height: 1.35; color: var(--metin);
+}
+
+/* -------- Başlangıç kartları (zengin seçenek) --------
+   Yan yana kartlar (sığmazsa alt alta): üstte ikon kutusu, başlık ve
+   sağda seçim dairesi (kapalı kartta "Yakında" ve kilit), altında
+   açıklama, ince çizgi ve onay işaretli maddeler. */
+.secenek-kok.zengin {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  margin-top: 14px;
+}
+.secenek.zengin {
+  display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+  padding: 16px 16px 14px;
+  border-radius: var(--r-kart);
+  box-shadow: var(--golge-1);
+}
+.secenek.zengin::before { display: none; }
+.zk-ust { display: flex; align-items: center; gap: 10px; }
+.zk-ikon {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--kirmizi-acik); color: var(--kirmizi);
+}
+.zk-ikon svg { width: 18px; height: 18px; }
+.zk-baslik {
+  flex: 1 1 auto; min-width: 0;
+  font-size: 14px; font-weight: var(--fw-kalin); line-height: 1.3; color: var(--metin);
+}
+.zk-isaret {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--kenar-guclu); background: var(--yuzey);
+  transition: border-color .15s, background .15s;
+}
+.secenek.zengin:hover:not(:disabled) .zk-isaret { border-color: var(--kirmizi); }
+.secenek.zengin.secili .zk-isaret {
+  border-color: var(--kirmizi);
+  background: radial-gradient(circle, var(--kirmizi) 0 4px, var(--yuzey) 4.5px);
+}
+.zk-yakinda {
+  flex-shrink: 0; padding: 2px 8px; border-radius: 999px;
+  background: var(--kenar-acik); color: var(--metin-ikincil);
+  font-size: 11px; font-weight: var(--fw-kalin);
+}
+.zk-kilit { width: 14px; height: 14px; flex-shrink: 0; color: var(--metin-ikincil); }
+.zk-aciklama { font-size: 12.5px; line-height: 1.55; color: var(--metin-ikincil); }
+.zk-maddeler {
+  list-style: none; margin: 2px 0 0; padding: 10px 0 0;
+  border-top: 1px solid var(--kenar-acik);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.zk-maddeler li {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 12.5px; line-height: 1.4; color: var(--metin);
+}
+.zk-madde-ikon { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; color: var(--kirmizi); }
+/* Seçilen kart pembe zeminli kırmızı kenarlı; seçilmeyenler soluk. */
+.secenek.zengin.secili { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
+/* Kapalı kart (Otomatik Pilot): gri ikon ve maddeler, tıklanmaz. */
+.secenek.zengin.kapali { opacity: .62; background: var(--yuzey-alt); box-shadow: none; }
+.secenek.zengin.kapali .zk-ikon { background: var(--kenar-acik); color: var(--metin-ikincil); }
+.secenek.zengin.kapali .zk-madde-ikon { color: var(--metin-ikincil); }
 
 /* -------- Onay kutusu düğmeleri (Yeni Çalışma) -------- */
 .onceki-dugme {
@@ -1581,33 +1566,35 @@ body { background-color: #FEFEFE; }
 }
 
 /* -------- Aksiyon butonları ve yazı kutusu -------- */
+/* Çalışma kartının alt satırı (bkz. ÇALIŞMA ALANI). */
 #giris-bolge {
-  padding: var(--b-3) var(--sohbet-yan) var(--b-5);
-  padding-right: calc(var(--sohbet-yan) + 6px);   /* #sohbet scrollbar payi */
-  flex-shrink: 0;
+  grid-row: 3; flex-shrink: 0;
+  border-top: 0; border-radius: 0 0 var(--r-alan) var(--r-alan);
+  padding: 8px 30px 16px 24px;   /* sağda #sohbet kaydırma çubuğu payı */
 }
 /* Blok = başlık satırı + gövde +
    (onay bekliyorsa) düğme satırı. */
-/* EN DIŞTAKİ BLOK MARKA KIRMIZISI ÇERÇEVE TAŞIR:
-   iş akışının her adımı ekranda nerede başlayıp nerede bittiği belli
-   olsun.
-*/
+/* Her adım kendi kartında: iş akışının her adımı ekranda nerede başlayıp
+   nerede bittiği belli olsun. */
 .adim-blok {
-  border: var(--blok-cerceve) solid var(--kirmizi);
-  border-radius: var(--r);
+  border: 1px solid var(--kenar);
+  border-radius: var(--r-kart);
   background: var(--yuzey); box-shadow: var(--golge-1);
-  padding: var(--b-3) var(--b-4) var(--b-4);
+  padding: 18px 22px 22px;
 }
 /* ---- BLOK DURUMU ----
-   Kırmızı çerçeve YALNIZCA yanıt bekleyen bloğun. Geçilmiş
-   bloklar gri çerçeveye ve sessiz başlığa iner; içerik soluklaştırılmaz,
-   okunur kalır. Kalınlık aynı: durum değişince yerleşim kaymasın. */
-.adim-blok.durum-tamam { border-color: var(--kenar-guclu); box-shadow: none; }
+   Kırmızı çerçeve YALNIZCA yanıt bekleyen bloğun (ince kırmızı kenar ve
+   dışında hafif kırmızı halka). Geçilmiş bloklar gri kenarda ve sessiz
+   başlıkta kalır; içerik soluklaştırılmaz, okunur kalır. */
+.adim-blok.durum-tamam { box-shadow: none; }
 .adim-blok.durum-tamam > .blok-bas .blok-ad { color: var(--metin-tamam); }
-.adim-blok.durum-bekliyor { box-shadow: 0 0 0 4px var(--kirmizi-halka, rgba(213,17,21,.14)), var(--golge-1); }
+.adim-blok.durum-bekliyor {
+  border-color: var(--kirmizi);
+  box-shadow: 0 0 0 4px var(--kirmizi-halka), var(--golge-1);
+}
 /* Gruplu blokta aktif adımın BÖLÜMÜ ayrıca vurgulanır: aynı kapta hangi
    kartın cevap beklediği tek bakışta görünsün. */
-.alt-bolum.durum-bekliyor { border: 2px solid var(--kirmizi); }
+.alt-bolum.durum-bekliyor { border-color: var(--kirmizi); box-shadow: 0 0 0 3px var(--kirmizi-halka); }
 .alt-bolum.durum-bekliyor > .alt-bas .alt-ad { color: var(--kirmizi); }
 .alt-bolum.durum-tamam > .alt-bas .alt-ad { color: var(--metin-tamam); }
 /* GECILEN BLOKTA METIN GRI, SECILENLER TAM RENK. Renk degiskeni blok icinde yeniden
@@ -1624,13 +1611,13 @@ body { background-color: #FEFEFE; }
 }
 .blok-durum {
   flex: 0 0 auto; white-space: nowrap;
-  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
-  border-radius: 999px; padding: 1px 9px; border: 1px solid;
+  font-size: 11.5px; font-weight: var(--fw-kalin); line-height: 1.4;
+  border-radius: 999px; padding: 4px 11px; border: 1px solid;
 }
 /* AÇIK ZEMİN + KOYU YAZI: okunurluk her ekranda
    garanti. Kırmızıda kontrast 4,9:1, sarıda 4,6:1. */
 .blok-durum.bekliyor {
-  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi);
+  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--pembe-kenar);
 }
 .blok-durum.kontrol {
   color: #A16207; background: #FEF9C3; border-color: #A16207;
@@ -1659,21 +1646,36 @@ body { background-color: #FEFEFE; }
 /* Gövdesi boş blok (yalnız düğme taşıyor) balon boşluğu bırakmasın */
 .adim-blok > .balon:empty { display: none; }
 
-/* Başlık satırı: adım adı solda, Geri Dön SAĞ ÜSTTE */
+/* Başlık satırı: solda avatar ve başlık, sağ üstte durum rozeti ve
+   Geri Dön. Başlık üç katlı: küçük kırmızı adım numarası (01.1), büyük
+   adım adı, altında adımın kısa açıklaması. */
 .blok-bas {
-  display: flex; align-items: center; gap: var(--b-3);
-  margin-bottom: var(--b-3);
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px;
+  margin-bottom: 16px;
 }
-
+.blok-bas > .balon-avatar { margin-top: 2px; }
+.blok-baslik-yazi {
+  flex: 1 1 220px; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.blok-kod {
+  font-size: 12px; font-weight: var(--fw-kalin); letter-spacing: .02em;
+  color: var(--kirmizi); line-height: 1.3;
+}
 /* BÜYÜK HARFE ÇEVRİLMİYOR: adım adları kayıt
    defterinde zaten Başlık Büyük Harfi ile yazılı ("Modelleme
    Tanımları"). */
 .blok-ad {
-  flex: 1 1 auto; min-width: 0;
-  font-size: var(--fs-blok); font-weight: var(--fw-kalin);
-  letter-spacing: .01em;
-  color: var(--kirmizi); white-space: normal; overflow-wrap: break-word;
+  font-size: var(--fs-blok); font-weight: var(--fw-kalin); line-height: 1.3;
+  letter-spacing: -.005em;
+  color: var(--metin); white-space: normal; overflow-wrap: break-word;
 }
+.blok-alt {
+  font-size: 12.5px; line-height: 1.45; color: var(--metin-ikincil);
+}
+.adim-blok.durum-tamam > .blok-bas .blok-alt { color: var(--metin-tamam); }
+/* Rozet ve Geri Dön başlığın ilk satırıyla aynı hizada */
+.blok-bas > .alt-rozet, .blok-bas > .blok-durum, .blok-bas > .blok-geri { margin-top: 2px; }
 
 /* ---- Teyit kartındaki süzgeç satırı ----
    ARAMA · NULL EŞİĞİ · SIRALAMA yan yana. Arama
@@ -1777,24 +1779,25 @@ body { background-color: #FEFEFE; }
    İÇ KART DIŞ KAPTAN AÇIK: dış kap soluk zemine geçiyor (aşağıda),
    iç kartlar beyaz kalıyor. */
 .alt-bolum {
-  border: 1px solid var(--kenar); border-radius: var(--r);
+  border: 1px solid var(--kenar); border-radius: 12px;
   background: var(--yuzey);
   padding: var(--b-3) var(--b-4) var(--b-4);
 }
 .alt-bolum + .alt-bolum { margin-top: var(--b-4); }
 .alt-bas {
-  display: flex; align-items: center; gap: var(--b-3);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--b-2) var(--b-3);
   margin-bottom: var(--b-3);
 }
+/* Dar blokta ad en az 180 px kalır; rozet ve Geri Dön alt satıra iner. */
 .alt-ad {
-  flex: 1 1 auto; min-width: 0;
+  flex: 1 1 180px; min-width: 0;
   font-size: var(--fs-baslik); font-weight: var(--fw-kalin);
   letter-spacing: .01em;
   color: var(--metin); white-space: normal; overflow-wrap: break-word;
 }
 /* Alt başlıktaki Geri Dön blok başlığındakiyle aynı düğme, bir tık
    küçük: alt başlık da bir kademe sessiz. */
-.alt-bas .blok-geri { padding: 4px 9px; }
+.alt-bas .blok-geri { height: 26px; padding: 0 9px; }
 
 /* DOLU bir ikincil düğme:
    kendi zemini, belirgin kenarı, koyu yazısı ve bir ← oku var.
@@ -1804,11 +1807,11 @@ body { background-color: #FEFEFE; }
    ikincil kalıyor. */
 .blok-geri {
   flex: 0 0 auto;
-  display: inline-flex; align-items: center; gap: 5px;
-  height: var(--btn-h-kucuk); padding: 0 var(--b-3);
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px;
   font-size: var(--fs-govde); font-weight: var(--fw-kalin);
-  background: var(--yuzey-alt); color: var(--metin);
-  border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin);
+  border: 1px solid var(--kenar-guclu); border-radius: 8px;
   cursor: pointer; white-space: nowrap;
   box-shadow: var(--golge-1);
   transition: background .15s, border-color .15s, color .15s;
@@ -1895,23 +1898,20 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   width: var(--govde-en); margin: 0;
   display: flex; gap: var(--b-2); align-items: center;
   background: var(--yuzey);
-  border: 1px solid var(--kenar-guclu); border-radius: var(--r);
-  padding: 2px 2px 2px var(--b-4);
+  border: 1px solid var(--kenar-guclu); border-radius: 12px;
+  padding: 4px 4px 4px 14px;
   box-shadow: var(--golge-1);
   transition: border-color .15s, box-shadow .15s;
 }
 #giris:focus-within { border-color: var(--kirmizi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
 
 /* ---- Kilitli giriş ----
-   Ekranda kart/form varken kullanıcı cümle yazmıyor, form dolduruyor.
-   Kutu soluk ve pasif; yanındaki "Soru Sor" kilidi o tur için açar —
-   akış her an serbest soru kabul ediyor, kilit bunu yok etmemeli. */
+   Sohbet açılana kadar yazı kutusunun yerinde bilgi notu durur:
+   mavi-gri zemin, solda mavi daire içinde "i". */
 #giris-bolge.kilitli #giris {
-  background: var(--yuzey-alt); border-style: dashed;
+  background: var(--bilgi-not-zemin); border-color: var(--bilgi-not-kenar);
   box-shadow: none;
-  /* Gönder düğmesi gizli: iki yandaki boşluk eşit ki not kutunun tam
-     ortasında dursun. */
-  padding: 2px var(--b-4);
+  padding: 9px 14px;
 }
 #giris-bolge.kilitli #kutu { cursor: not-allowed; }
 
@@ -1919,11 +1919,18 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
    kutu da metin kadar yükselsin. Placeholder bu sırada boş. */
 #giris-bolge.kilitli #kutu { display: none; }
 .kutu-kilit-not {
-  flex: 1; padding: 5px 0;
+  position: relative; flex: 1; padding: 1px 0 1px 30px;
   font-size: var(--fs-govde); line-height: 1.5;
-  color: var(--metin-soluk);
-  text-align: center;
+  color: var(--metin-ikincil);
+  text-align: left;
   user-select: none;
+}
+.kutu-kilit-not::before {
+  content: "i"; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bilgi-not-ikon); color: #fff;
+  font-size: 12px; font-weight: var(--fw-kalin); line-height: 1;
 }
 .kutu-kilit-not strong {
   font-weight: var(--fw-kalin); color: var(--metin);
@@ -1953,10 +1960,12 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
    kaplamaz: sohbet her zaman tam genişlikte. */
 #analiz-panel {
   position: fixed; z-index: 38;
-  /* Kabuğun içinde, sol barın sağı (kabuk kenarı 1 px) */
-  top: calc(var(--kabuk-ust) + 1px); bottom: calc(var(--kabuk-alt) + 1px);
-  left: calc(var(--kabuk-sol) + 1px + var(--sol-bar-en)); right: calc(var(--kabuk-sag) + 1px);
+  /* Kabuğun içinde, sol barın sağı; kenarlarda kabukla aynı boşluk */
+  top: var(--bosluk-dis); bottom: var(--bosluk-dis); right: var(--bosluk-dis);
+  left: calc(2 * var(--bosluk-dis) + var(--sol-bar-en));
   background: var(--yuzey-alt);
+  border: 1px solid var(--kenar); border-radius: var(--r-alan);
+  box-shadow: var(--golge-alan);
   /* SATIR: solda (yalnız Değişkenler'de) seçim paneli, sağda içerik. */
   display: flex; flex-direction: row; overflow: hidden;
 }
@@ -2782,7 +2791,13 @@ span.bolme-cip { cursor: default; }
    Yeni renk ya da yeni kart biçimi YOK: kırmızı başlık + beyaz yüzey +
    --kenar çerçeve, panel sekmelerindeki dille aynı. Bölüm tabloları da
    panel tablosunun sınıfıyla çiziliyor. */
-#sayfa-ozet { overflow-y: auto; background: var(--zemin); }
+/* Özet, KATIB'le Sohbet ve Gösterge Paneli sayfaları da yuvarlak
+   köşeli kart. */
+#sayfa-ozet, #sayfa-sohbet, #sayfa-dashboard {
+  background: var(--yuzey-alt);
+  border: 1px solid var(--kenar); border-radius: var(--r-alan);
+}
+#sayfa-ozet { overflow-y: auto; }
 #ozet-govde { max-width: 1024px; margin: 0 auto; padding: 22px clamp(14px, 2.4vw, 35px) 45px; }
 
 /* Başlık şeridi: solda ad + tarih, sağda indirme düğmesi */
@@ -3015,8 +3030,9 @@ span.bolme-cip { cursor: default; }
 /* Paneller GIZLENMIYOR: dugmelerle acilan cekmeceye donuyor. */
 #cekmece-perde {
   position: fixed; z-index: 39;
-  top: var(--kabuk-ust); bottom: var(--kabuk-alt);
-  left: calc(var(--kabuk-sol) + var(--sol-bar-en)); right: var(--kabuk-sag);
+  top: var(--bosluk-dis); bottom: var(--bosluk-dis); right: var(--bosluk-dis);
+  left: calc(2 * var(--bosluk-dis) + var(--sol-bar-en));
+  border-radius: var(--r-alan);
   background: rgba(0,0,0,.35);
 }
 
@@ -3847,197 +3863,151 @@ span.bolme-cip { cursor: default; }
   .dg-dikey { writing-mode: horizontal-tb; transform: none; width: auto; padding: 6px 10px; }
 }
 
-/* ==================== SOL BAR TASARIMI ====================
-   Üstte logo + KATIB + alt başlık; Model
-   Platformu koyu kırmızı degrade kart, içinde büyük beyaz satırlar ve
-   sağda › oku (seçili satır pembe zemin, solda kırmızı çizgi, kırmızı
-   simge ve ok); kilitli bloklar kesik kenarlı gri; altta "Görünüm
-   Ayarları" kartı (Renk Modu, Çerçeve; yuvarlak anahtarlar) ve oklu
-   Arşiv / Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE yazar. */
-:root { --sol-bar-en: 224px; }
-#sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
-#kabuk.koyu #sol-bar { --sol-ok: #6B7178; background: var(--yuzey-alt); }
-
-
-#ust-sekmeler { gap: 10px; padding: var(--b-3) 10px; }
-#sol-bar .ust-kume { gap: 6px; padding: 6px; border-radius: 14px; }
-#sol-bar .ust-kume-ad, #sol-bar .ust-sekme {
-  height: 40px; padding: 0 12px; gap: 10px; border-radius: 10px;
-  font-size: 12.5px; letter-spacing: .03em;
+/* ==================== SOL BAR ====================
+   Ekranın solunda yuvarlak köşeli kart. Açık temada beyaz, koyu temada
+   siyah; alt kısımda kodla çizilmiş kırmızı çizgi dalgaları (SVG).
+   Tepede KATIB logosu; altında sayfa satırları: MODEL PLATFORMU
+   kümesi ve YAKINDA başlığı altında kilitli satırlar. Seçili satır açık
+   pembe zeminli, solunda kırmızı çizgi, ikonu kırmızı kutuda. En altta
+   Renk Modu, Arşiv ve Yeni Çalışma; dalgaların üstünde okunur kalsınlar
+   diye yarı saydam zeminli.
+   İç kap (#sol-bar-ic) tasarım eninde (248 px) dizilir; ekran kısaysa
+   app.js (solBarOlcekle) onu sığacak oranda küçültür ve barın enini
+   (--sol-bar-en) aynı orana getirir. Kaydırma yok. */
+#sol-bar {
+  --sol-yazi: #344054;
+  --sol-ok: #98A2B3;
+  --sol-bolum: #8A94A6;
+  --sol-ikon-zemin: #F2F4F7;
+  --sol-ikon-renk: #475467;
+  --sol-uzerinde: #F5F6F8;
+  --sol-secili: #FDECEC;
+  --sol-alt-zemin: rgba(255,255,255,.88);
+  --sol-alt-kenar: var(--kenar);
+  grid-column: 1; grid-row: 1; min-height: 0;
+  /* Arşiv listesi barın içinde yukarı doğru açılır; sayfa panellerinin üstünde */
+  position: relative; z-index: 45;
+  display: block; overflow: hidden;
+  border: 1px solid var(--kenar); border-radius: var(--r-alan);
+  box-shadow: var(--golge-alan);
+  background:
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 248 260' preserveAspectRatio='none'><g fill='none' stroke='%23D51115' stroke-width='0.85'><path d='M0 86.5C5 83.7 21 75.6 31 69.6C41 63.7 52 53.2 62 50.8C72 48.4 83 49.0 93 55.2C103 61.4 114 76.8 124 87.8C134 98.8 145 114.3 155 120.9C165 127.6 176 128.5 186 127.5C196 126.6 207 117.3 217 115.3C227 113.2 243 115.1 248 115.1' stroke-opacity='0.14'/><path d='M0 92.0C5 89.0 21 80.2 31 73.8C41 67.4 52 56.4 62 53.6C72 50.9 83 51.3 93 57.3C103 63.3 114 78.7 124 89.6C134 100.5 145 116.0 155 122.7C165 129.3 176 130.4 186 129.7C196 129.1 207 120.3 217 118.8C227 117.2 243 120.0 248 120.2' stroke-opacity='0.16'/><path d='M0 97.5C5 94.2 21 84.8 31 78.0C41 71.2 52 59.6 62 56.5C72 53.4 83 53.6 93 59.5C103 65.3 114 80.6 124 91.4C134 102.2 145 117.6 155 124.4C165 131.1 176 132.2 186 131.9C196 131.5 207 123.4 217 122.3C227 121.2 243 124.9 248 125.4' stroke-opacity='0.20'/><path d='M0 103.0C5 99.5 21 89.4 31 82.1C41 74.9 52 62.8 62 59.3C72 55.9 83 55.9 93 61.6C103 67.2 114 82.5 124 93.2C134 104.0 145 119.2 155 126.1C165 132.9 176 134.1 186 134.1C196 134.0 207 126.4 217 125.8C227 125.2 243 129.8 248 130.6' stroke-opacity='0.25'/><path d='M0 108.4C5 104.7 21 94.0 31 86.3C41 78.6 52 66.0 62 62.2C72 58.5 83 58.3 93 63.7C103 69.2 114 84.3 124 95.0C134 105.7 145 120.9 155 127.7C165 134.6 176 136.0 186 136.2C196 136.5 207 129.4 217 129.3C227 129.3 243 134.7 248 135.8' stroke-opacity='0.30'/><path d='M0 113.9C5 110.0 21 98.6 31 90.4C41 82.3 52 69.2 62 65.1C72 61.0 83 60.6 93 65.9C103 71.2 114 86.2 124 96.8C134 107.4 145 122.5 155 129.4C165 136.3 176 137.8 186 138.4C196 139.0 207 132.5 217 132.9C227 133.3 243 139.6 248 140.9' stroke-opacity='0.36'/><path d='M0 119.3C5 115.2 21 103.1 31 94.6C41 86.0 52 72.4 62 68.0C72 63.6 83 63.0 93 68.1C103 73.2 114 88.1 124 98.6C134 109.1 145 124.1 155 131.1C165 138.1 176 139.6 186 140.5C196 141.4 207 135.5 217 136.4C227 137.4 243 144.5 248 146.2' stroke-opacity='0.41'/><path d='M0 124.8C5 120.4 21 107.7 31 98.7C41 89.7 52 75.6 62 70.9C72 66.1 83 65.3 93 70.3C103 75.2 114 90.0 124 100.4C134 110.8 145 125.7 155 132.7C165 139.8 176 141.5 186 142.7C196 143.9 207 138.5 217 140.0C227 141.4 243 149.5 248 151.4' stroke-opacity='0.46'/><path d='M0 130.2C5 125.6 21 112.3 31 102.8C41 93.4 52 78.8 62 73.8C72 68.7 83 67.7 93 72.5C103 77.2 114 91.9 124 102.2C134 112.5 145 127.3 155 134.4C165 141.5 176 143.3 186 144.8C196 146.3 207 141.6 217 143.5C227 145.5 243 154.4 248 156.6' stroke-opacity='0.51'/><path d='M0 135.6C5 130.8 21 116.8 31 107.0C41 97.1 52 82.0 62 76.7C72 71.3 83 70.1 93 74.7C103 79.2 114 93.8 124 104.0C134 114.2 145 128.8 155 136.0C165 143.1 176 145.1 186 146.9C196 148.8 207 144.6 217 147.1C227 149.6 243 159.4 248 161.8' stroke-opacity='0.54'/><path d='M0 141.0C5 136.0 21 121.3 31 111.1C41 100.8 52 85.3 62 79.6C72 73.9 83 72.5 93 76.9C103 81.2 114 95.7 124 105.8C134 115.9 145 130.4 155 137.6C165 144.8 176 146.9 186 149.1C196 151.3 207 147.7 217 150.7C227 153.7 243 164.4 248 167.1' stroke-opacity='0.57'/><path d='M0 146.4C5 141.2 21 125.8 31 115.2C41 104.5 52 88.5 62 82.5C72 76.5 83 74.9 93 79.1C103 83.3 114 97.6 124 107.6C134 117.6 145 131.9 155 139.2C165 146.5 176 148.7 186 151.2C196 153.7 207 150.8 217 154.3C227 157.8 243 169.3 248 172.4' stroke-opacity='0.58'/><path d='M0 151.8C5 146.4 21 130.4 31 119.3C41 108.2 52 91.8 62 85.4C72 79.1 83 77.3 93 81.3C103 85.3 114 99.5 124 109.4C134 119.3 145 133.5 155 140.8C165 148.1 176 150.5 186 153.3C196 156.2 207 153.8 217 157.9C227 161.9 243 174.3 248 177.6' stroke-opacity='0.58'/><path d='M0 157.1C5 151.5 21 134.9 31 123.4C41 111.9 52 95.0 62 88.4C72 81.8 83 79.8 93 83.6C103 87.4 114 101.4 124 111.2C134 121.0 145 135.0 155 142.3C165 149.7 176 152.2 186 155.4C196 158.6 207 156.9 217 161.5C227 166.1 243 179.3 248 182.9' stroke-opacity='0.57'/><path d='M0 162.5C5 156.7 21 139.4 31 127.5C41 115.6 52 98.3 62 91.3C72 84.4 83 82.2 93 85.8C103 89.5 114 103.3 124 113.0C134 122.6 145 136.5 155 143.9C165 151.3 176 154.0 186 157.5C196 161.1 207 160.0 217 165.1C227 170.2 243 184.4 248 188.2' stroke-opacity='0.54'/><path d='M0 167.8C5 161.8 21 143.8 31 131.6C41 119.3 52 101.5 62 94.3C72 87.1 83 84.7 93 88.1C103 91.5 114 105.2 124 114.7C134 124.3 145 138.0 155 145.5C165 152.9 176 155.8 186 159.6C196 163.5 207 163.1 217 168.8C227 174.4 243 189.4 248 193.5' stroke-opacity='0.51'/><path d='M0 173.2C5 166.9 21 148.3 31 135.7C41 123.0 52 104.8 62 97.3C72 89.7 83 87.2 93 90.4C103 93.6 114 107.1 124 116.5C134 126.0 145 139.5 155 147.0C165 154.5 176 157.5 186 161.7C196 166.0 207 166.2 217 172.4C227 178.6 243 194.4 248 198.8' stroke-opacity='0.46'/><path d='M0 178.5C5 172.0 21 152.8 31 139.8C41 126.7 52 108.1 62 100.3C72 92.4 83 89.7 93 92.7C103 95.7 114 109.0 124 118.3C134 127.6 145 140.9 155 148.5C165 156.1 176 159.3 186 163.8C196 168.4 207 169.3 217 176.0C227 182.8 243 199.4 248 204.1' stroke-opacity='0.41'/><path d='M0 183.8C5 177.1 21 157.3 31 143.8C41 130.4 52 111.4 62 103.3C72 95.1 83 92.2 93 95.0C103 97.8 114 110.9 124 120.1C134 129.2 145 142.4 155 150.0C165 157.7 176 161.0 186 165.9C196 170.9 207 172.4 217 179.7C227 187.0 243 204.5 248 209.5' stroke-opacity='0.36'/><path d='M0 189.1C5 182.2 21 161.7 31 147.9C41 134.1 52 114.7 62 106.3C72 97.8 83 94.7 93 97.3C103 99.9 114 112.8 124 121.8C134 130.9 145 143.8 155 151.5C165 159.2 176 162.7 186 168.0C196 173.3 207 175.6 217 183.4C227 191.2 243 209.6 248 214.8' stroke-opacity='0.30'/><path d='M0 194.3C5 187.3 21 166.2 31 152.0C41 137.8 52 118.0 62 109.3C72 100.5 83 97.2 93 99.6C103 102.0 114 114.7 124 123.6C134 132.5 145 145.3 155 153.0C165 160.8 176 164.4 186 170.1C196 175.8 207 178.7 217 187.0C227 195.4 243 214.6 248 220.1' stroke-opacity='0.25'/><path d='M0 199.6C5 192.4 21 170.6 31 156.1C41 141.5 52 121.3 62 112.3C72 103.3 83 99.7 93 101.9C103 104.1 114 116.6 124 125.3C134 134.1 145 146.7 155 154.5C165 162.3 176 166.2 186 172.2C196 178.2 207 181.9 217 190.7C227 199.6 243 219.7 248 225.5' stroke-opacity='0.20'/><path d='M0 204.9C5 197.4 21 175.1 31 160.2C41 145.2 52 124.7 62 115.3C72 106.0 83 102.3 93 104.3C103 106.2 114 118.5 124 127.1C134 135.7 145 148.1 155 156.0C165 163.8 176 167.9 186 174.3C196 180.7 207 185.0 217 194.4C227 203.9 243 224.8 248 230.9' stroke-opacity='0.16'/><path d='M0 210.1C5 202.5 21 179.5 31 164.2C41 148.9 52 128.0 62 118.4C72 108.8 83 104.9 93 106.6C103 108.3 114 120.3 124 128.8C134 137.3 145 149.5 155 157.4C165 165.3 176 169.6 186 176.4C196 183.2 207 188.2 217 198.2C227 208.1 243 229.9 248 236.2' stroke-opacity='0.14'/><path d='M0 160.5C5 160.5 21 158.9 31 160.5C41 162.1 52 165.8 62 170.3C72 174.7 83 181.3 93 187.3C103 193.4 114 200.8 124 206.5C134 212.2 145 218.1 155 221.4C165 224.8 176 226.9 186 226.7C196 226.4 207 223.9 217 220.0C227 216.1 243 206.1 248 203.3' stroke-opacity='0.22'/><path d='M0 164.7C5 164.9 21 164.1 31 166.1C41 168.0 52 172.0 62 176.5C72 181.1 83 187.5 93 193.3C103 199.1 114 206.1 124 211.3C134 216.6 145 221.8 155 224.7C165 227.7 176 229.3 186 228.9C196 228.5 207 225.9 217 222.1C227 218.3 243 208.9 248 206.2' stroke-opacity='0.22'/><path d='M0 168.8C5 169.3 21 169.3 31 171.6C41 173.9 52 178.2 62 182.8C72 187.4 83 193.7 93 199.3C103 204.8 114 211.3 124 216.1C134 220.9 145 225.6 155 228.1C165 230.6 176 231.8 186 231.1C196 230.5 207 227.8 217 224.1C227 220.5 243 211.6 248 209.1' stroke-opacity='0.22'/><path d='M0 172.9C5 173.6 21 174.4 31 177.1C41 179.8 52 184.4 62 189.0C72 193.7 83 199.9 93 205.2C103 210.6 114 216.6 124 220.9C134 225.3 145 229.3 155 231.4C165 233.5 176 234.2 186 233.4C196 232.5 207 229.8 217 226.2C227 222.6 243 214.4 248 212.0' stroke-opacity='0.22'/><path d='M0 177.1C5 178.0 21 179.6 31 182.7C41 185.7 52 190.5 62 195.3C72 200.1 83 206.1 93 211.2C103 216.3 114 221.8 124 225.7C134 229.7 145 233.1 155 234.7C165 236.3 176 236.7 186 235.6C196 234.5 207 231.7 217 228.3C227 224.8 243 217.1 248 214.9' stroke-opacity='0.22'/><path d='M0 181.2C5 182.4 21 184.8 31 188.2C41 191.6 52 196.7 62 201.6C72 206.4 83 212.3 93 217.2C103 222.0 114 227.1 124 230.5C134 234.0 145 236.8 155 238.0C165 239.2 176 239.1 186 237.8C196 236.5 207 233.7 217 230.3C227 227.0 243 219.9 248 217.8' stroke-opacity='0.22'/><path d='M0 185.4C5 186.8 21 190.0 31 193.7C41 197.5 52 202.9 62 207.8C72 212.7 83 218.6 93 223.2C103 227.7 114 232.3 124 235.3C134 238.4 145 240.6 155 241.3C165 242.1 176 241.6 186 240.1C196 238.6 207 235.6 217 232.4C227 229.1 243 222.6 248 220.6' stroke-opacity='0.22'/><path d='M0 189.5C5 191.1 21 195.2 31 199.3C41 203.4 52 209.1 62 214.1C72 219.1 83 224.8 93 229.1C103 233.5 114 237.6 124 240.2C134 242.7 145 244.3 155 244.7C165 245.0 176 244.0 186 242.3C196 240.6 207 237.6 217 234.4C227 231.3 243 225.3 248 223.5' stroke-opacity='0.22'/></g></svg>") center bottom / 100% min(300px, 32%) no-repeat,
+    linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 55%, #FFF5F5 100%);
 }
-#sol-bar .ust-sekme svg.ikon { width: 18px; height: 18px; }
-#sol-bar .ust-kume-ad svg.ikon { width: 20px; height: 20px; }
-#sol-bar .ust-kume-ad { height: 42px; margin-bottom: 0; font-size: 13.5px; padding: 0 10px; }
-#sol-bar .ust-kume-ad::after { display: none; }
-#sol-bar .ust-sekme svg.ok { width: 15px; height: 15px; flex-shrink: 0; margin-left: auto; color: var(--sol-ok); }
-#sol-bar .ust-sekme.kapali svg.kilit { width: 15px; height: 15px; }
-
-/* Model Platformu kartı: koyu kırmızı degrade, beyaz başlık. */
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) {
-  background: linear-gradient(180deg, #E0262D 0%, #B9141B 100%);
-  border-color: #B9141B; box-shadow: 0 6px 14px rgba(185, 20, 27, .22);
+#kabuk.koyu #sol-bar {
+  --sol-yazi: #D0D5DD;
+  --sol-ok: #6B7280;
+  --sol-bolum: #6B7280;
+  --sol-ikon-zemin: rgba(255,255,255,.06);
+  --sol-ikon-renk: #C2C8D0;
+  --sol-uzerinde: rgba(255,255,255,.05);
+  --sol-secili: rgba(229,54,58,.16);
+  --sol-alt-zemin: rgba(16,17,21,.80);
+  --sol-alt-kenar: rgba(255,255,255,.08);
+  border-color: #1C1D22;
+  background:
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 248 260' preserveAspectRatio='none'><g fill='none' stroke='%23FF3B41' stroke-width='0.85'><path d='M0 86.5C5 83.7 21 75.6 31 69.6C41 63.7 52 53.2 62 50.8C72 48.4 83 49.0 93 55.2C103 61.4 114 76.8 124 87.8C134 98.8 145 114.3 155 120.9C165 127.6 176 128.5 186 127.5C196 126.6 207 117.3 217 115.3C227 113.2 243 115.1 248 115.1' stroke-opacity='0.22'/><path d='M0 92.0C5 89.0 21 80.2 31 73.8C41 67.4 52 56.4 62 53.6C72 50.9 83 51.3 93 57.3C103 63.3 114 78.7 124 89.6C134 100.5 145 116.0 155 122.7C165 129.3 176 130.4 186 129.7C196 129.1 207 120.3 217 118.8C227 117.2 243 120.0 248 120.2' stroke-opacity='0.25'/><path d='M0 97.5C5 94.2 21 84.8 31 78.0C41 71.2 52 59.6 62 56.5C72 53.4 83 53.6 93 59.5C103 65.3 114 80.6 124 91.4C134 102.2 145 117.6 155 124.4C165 131.1 176 132.2 186 131.9C196 131.5 207 123.4 217 122.3C227 121.2 243 124.9 248 125.4' stroke-opacity='0.31'/><path d='M0 103.0C5 99.5 21 89.4 31 82.1C41 74.9 52 62.8 62 59.3C72 55.9 83 55.9 93 61.6C103 67.2 114 82.5 124 93.2C134 104.0 145 119.2 155 126.1C165 132.9 176 134.1 186 134.1C196 134.0 207 126.4 217 125.8C227 125.2 243 129.8 248 130.6' stroke-opacity='0.38'/><path d='M0 108.4C5 104.7 21 94.0 31 86.3C41 78.6 52 66.0 62 62.2C72 58.5 83 58.3 93 63.7C103 69.2 114 84.3 124 95.0C134 105.7 145 120.9 155 127.7C165 134.6 176 136.0 186 136.2C196 136.5 207 129.4 217 129.3C227 129.3 243 134.7 248 135.8' stroke-opacity='0.46'/><path d='M0 113.9C5 110.0 21 98.6 31 90.4C41 82.3 52 69.2 62 65.1C72 61.0 83 60.6 93 65.9C103 71.2 114 86.2 124 96.8C134 107.4 145 122.5 155 129.4C165 136.3 176 137.8 186 138.4C196 139.0 207 132.5 217 132.9C227 133.3 243 139.6 248 140.9' stroke-opacity='0.54'/><path d='M0 119.3C5 115.2 21 103.1 31 94.6C41 86.0 52 72.4 62 68.0C72 63.6 83 63.0 93 68.1C103 73.2 114 88.1 124 98.6C134 109.1 145 124.1 155 131.1C165 138.1 176 139.6 186 140.5C196 141.4 207 135.5 217 136.4C227 137.4 243 144.5 248 146.2' stroke-opacity='0.61'/><path d='M0 124.8C5 120.4 21 107.7 31 98.7C41 89.7 52 75.6 62 70.9C72 66.1 83 65.3 93 70.3C103 75.2 114 90.0 124 100.4C134 110.8 145 125.7 155 132.7C165 139.8 176 141.5 186 142.7C196 143.9 207 138.5 217 140.0C227 141.4 243 149.5 248 151.4' stroke-opacity='0.69'/><path d='M0 130.2C5 125.6 21 112.3 31 102.8C41 93.4 52 78.8 62 73.8C72 68.7 83 67.7 93 72.5C103 77.2 114 91.9 124 102.2C134 112.5 145 127.3 155 134.4C165 141.5 176 143.3 186 144.8C196 146.3 207 141.6 217 143.5C227 145.5 243 154.4 248 156.6' stroke-opacity='0.75'/><path d='M0 135.6C5 130.8 21 116.8 31 107.0C41 97.1 52 82.0 62 76.7C72 71.3 83 70.1 93 74.7C103 79.2 114 93.8 124 104.0C134 114.2 145 128.8 155 136.0C165 143.1 176 145.1 186 146.9C196 148.8 207 144.6 217 147.1C227 149.6 243 159.4 248 161.8' stroke-opacity='0.80'/><path d='M0 141.0C5 136.0 21 121.3 31 111.1C41 100.8 52 85.3 62 79.6C72 73.9 83 72.5 93 76.9C103 81.2 114 95.7 124 105.8C134 115.9 145 130.4 155 137.6C165 144.8 176 146.9 186 149.1C196 151.3 207 147.7 217 150.7C227 153.7 243 164.4 248 167.1' stroke-opacity='0.83'/><path d='M0 146.4C5 141.2 21 125.8 31 115.2C41 104.5 52 88.5 62 82.5C72 76.5 83 74.9 93 79.1C103 83.3 114 97.6 124 107.6C134 117.6 145 131.9 155 139.2C165 146.5 176 148.7 186 151.2C196 153.7 207 150.8 217 154.3C227 157.8 243 169.3 248 172.4' stroke-opacity='0.85'/><path d='M0 151.8C5 146.4 21 130.4 31 119.3C41 108.2 52 91.8 62 85.4C72 79.1 83 77.3 93 81.3C103 85.3 114 99.5 124 109.4C134 119.3 145 133.5 155 140.8C165 148.1 176 150.5 186 153.3C196 156.2 207 153.8 217 157.9C227 161.9 243 174.3 248 177.6' stroke-opacity='0.85'/><path d='M0 157.1C5 151.5 21 134.9 31 123.4C41 111.9 52 95.0 62 88.4C72 81.8 83 79.8 93 83.6C103 87.4 114 101.4 124 111.2C134 121.0 145 135.0 155 142.3C165 149.7 176 152.2 186 155.4C196 158.6 207 156.9 217 161.5C227 166.1 243 179.3 248 182.9' stroke-opacity='0.83'/><path d='M0 162.5C5 156.7 21 139.4 31 127.5C41 115.6 52 98.3 62 91.3C72 84.4 83 82.2 93 85.8C103 89.5 114 103.3 124 113.0C134 122.6 145 136.5 155 143.9C165 151.3 176 154.0 186 157.5C196 161.1 207 160.0 217 165.1C227 170.2 243 184.4 248 188.2' stroke-opacity='0.80'/><path d='M0 167.8C5 161.8 21 143.8 31 131.6C41 119.3 52 101.5 62 94.3C72 87.1 83 84.7 93 88.1C103 91.5 114 105.2 124 114.7C134 124.3 145 138.0 155 145.5C165 152.9 176 155.8 186 159.6C196 163.5 207 163.1 217 168.8C227 174.4 243 189.4 248 193.5' stroke-opacity='0.75'/><path d='M0 173.2C5 166.9 21 148.3 31 135.7C41 123.0 52 104.8 62 97.3C72 89.7 83 87.2 93 90.4C103 93.6 114 107.1 124 116.5C134 126.0 145 139.5 155 147.0C165 154.5 176 157.5 186 161.7C196 166.0 207 166.2 217 172.4C227 178.6 243 194.4 248 198.8' stroke-opacity='0.69'/><path d='M0 178.5C5 172.0 21 152.8 31 139.8C41 126.7 52 108.1 62 100.3C72 92.4 83 89.7 93 92.7C103 95.7 114 109.0 124 118.3C134 127.6 145 140.9 155 148.5C165 156.1 176 159.3 186 163.8C196 168.4 207 169.3 217 176.0C227 182.8 243 199.4 248 204.1' stroke-opacity='0.61'/><path d='M0 183.8C5 177.1 21 157.3 31 143.8C41 130.4 52 111.4 62 103.3C72 95.1 83 92.2 93 95.0C103 97.8 114 110.9 124 120.1C134 129.2 145 142.4 155 150.0C165 157.7 176 161.0 186 165.9C196 170.9 207 172.4 217 179.7C227 187.0 243 204.5 248 209.5' stroke-opacity='0.54'/><path d='M0 189.1C5 182.2 21 161.7 31 147.9C41 134.1 52 114.7 62 106.3C72 97.8 83 94.7 93 97.3C103 99.9 114 112.8 124 121.8C134 130.9 145 143.8 155 151.5C165 159.2 176 162.7 186 168.0C196 173.3 207 175.6 217 183.4C227 191.2 243 209.6 248 214.8' stroke-opacity='0.46'/><path d='M0 194.3C5 187.3 21 166.2 31 152.0C41 137.8 52 118.0 62 109.3C72 100.5 83 97.2 93 99.6C103 102.0 114 114.7 124 123.6C134 132.5 145 145.3 155 153.0C165 160.8 176 164.4 186 170.1C196 175.8 207 178.7 217 187.0C227 195.4 243 214.6 248 220.1' stroke-opacity='0.38'/><path d='M0 199.6C5 192.4 21 170.6 31 156.1C41 141.5 52 121.3 62 112.3C72 103.3 83 99.7 93 101.9C103 104.1 114 116.6 124 125.3C134 134.1 145 146.7 155 154.5C165 162.3 176 166.2 186 172.2C196 178.2 207 181.9 217 190.7C227 199.6 243 219.7 248 225.5' stroke-opacity='0.31'/><path d='M0 204.9C5 197.4 21 175.1 31 160.2C41 145.2 52 124.7 62 115.3C72 106.0 83 102.3 93 104.3C103 106.2 114 118.5 124 127.1C134 135.7 145 148.1 155 156.0C165 163.8 176 167.9 186 174.3C196 180.7 207 185.0 217 194.4C227 203.9 243 224.8 248 230.9' stroke-opacity='0.25'/><path d='M0 210.1C5 202.5 21 179.5 31 164.2C41 148.9 52 128.0 62 118.4C72 108.8 83 104.9 93 106.6C103 108.3 114 120.3 124 128.8C134 137.3 145 149.5 155 157.4C165 165.3 176 169.6 186 176.4C196 183.2 207 188.2 217 198.2C227 208.1 243 229.9 248 236.2' stroke-opacity='0.22'/><path d='M0 160.5C5 160.5 21 158.9 31 160.5C41 162.1 52 165.8 62 170.3C72 174.7 83 181.3 93 187.3C103 193.4 114 200.8 124 206.5C134 212.2 145 218.1 155 221.4C165 224.8 176 226.9 186 226.7C196 226.4 207 223.9 217 220.0C227 216.1 243 206.1 248 203.3' stroke-opacity='0.35'/><path d='M0 164.7C5 164.9 21 164.1 31 166.1C41 168.0 52 172.0 62 176.5C72 181.1 83 187.5 93 193.3C103 199.1 114 206.1 124 211.3C134 216.6 145 221.8 155 224.7C165 227.7 176 229.3 186 228.9C196 228.5 207 225.9 217 222.1C227 218.3 243 208.9 248 206.2' stroke-opacity='0.35'/><path d='M0 168.8C5 169.3 21 169.3 31 171.6C41 173.9 52 178.2 62 182.8C72 187.4 83 193.7 93 199.3C103 204.8 114 211.3 124 216.1C134 220.9 145 225.6 155 228.1C165 230.6 176 231.8 186 231.1C196 230.5 207 227.8 217 224.1C227 220.5 243 211.6 248 209.1' stroke-opacity='0.35'/><path d='M0 172.9C5 173.6 21 174.4 31 177.1C41 179.8 52 184.4 62 189.0C72 193.7 83 199.9 93 205.2C103 210.6 114 216.6 124 220.9C134 225.3 145 229.3 155 231.4C165 233.5 176 234.2 186 233.4C196 232.5 207 229.8 217 226.2C227 222.6 243 214.4 248 212.0' stroke-opacity='0.35'/><path d='M0 177.1C5 178.0 21 179.6 31 182.7C41 185.7 52 190.5 62 195.3C72 200.1 83 206.1 93 211.2C103 216.3 114 221.8 124 225.7C134 229.7 145 233.1 155 234.7C165 236.3 176 236.7 186 235.6C196 234.5 207 231.7 217 228.3C227 224.8 243 217.1 248 214.9' stroke-opacity='0.35'/><path d='M0 181.2C5 182.4 21 184.8 31 188.2C41 191.6 52 196.7 62 201.6C72 206.4 83 212.3 93 217.2C103 222.0 114 227.1 124 230.5C134 234.0 145 236.8 155 238.0C165 239.2 176 239.1 186 237.8C196 236.5 207 233.7 217 230.3C227 227.0 243 219.9 248 217.8' stroke-opacity='0.35'/><path d='M0 185.4C5 186.8 21 190.0 31 193.7C41 197.5 52 202.9 62 207.8C72 212.7 83 218.6 93 223.2C103 227.7 114 232.3 124 235.3C134 238.4 145 240.6 155 241.3C165 242.1 176 241.6 186 240.1C196 238.6 207 235.6 217 232.4C227 229.1 243 222.6 248 220.6' stroke-opacity='0.35'/><path d='M0 189.5C5 191.1 21 195.2 31 199.3C41 203.4 52 209.1 62 214.1C72 219.1 83 224.8 93 229.1C103 233.5 114 237.6 124 240.2C134 242.7 145 244.3 155 244.7C165 245.0 176 244.0 186 242.3C196 240.6 207 237.6 217 234.4C227 231.3 243 225.3 248 223.5' stroke-opacity='0.35'/></g></svg>") center bottom / 100% min(300px, 32%) no-repeat,
+    radial-gradient(130% 42% at 50% 100%, rgba(229,54,58,.30), transparent 70%),
+    linear-gradient(180deg, #0B0C0F 0%, #0D0B0C 60%, #160809 100%);
 }
-#kabuk.koyu #sol-bar .ust-kume:has(> .ust-sekme.aktif) {
-  background: linear-gradient(180deg, #5C1A1F 0%, #3E1114 100%); border-color: #6B2328;
-  box-shadow: none;
-}
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.kapali) {
-  background: var(--yuzey); color: var(--metin); box-shadow: 0 1px 2px rgba(16, 24, 40, .08);
-}
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali):hover {
-  background: var(--kirmizi-acik); color: var(--metin);
-}
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali):hover svg { color: var(--kirmizi); }
-/* Seçili satır: pembe degrade zemin, solda kırmızı çizgi; simge ve ok kırmızı. */
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif,
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif:hover {
-  background: linear-gradient(90deg, #FCE3E4 0%, #FFF4F4 100%); color: var(--metin);
-  box-shadow: inset 4px 0 0 var(--kirmizi), 0 1px 2px rgba(16, 24, 40, .08);
-}
-#kabuk.koyu #sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif,
-#kabuk.koyu #sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif:hover {
-  background: var(--pembe-secili); color: #FFD6D7;
-  box-shadow: inset 4px 0 0 var(--kirmizi);
-}
-#sol-bar .ust-sekme.aktif svg.ikon, #sol-bar .ust-sekme.aktif svg.ok { color: var(--kirmizi); }
-/* Kart içindeki kilitli satır: beyaz zemin, soluk gri yazı ve kilit. */
-#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
-#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
-  background: var(--yuzey); color: #A0A6AD; box-shadow: 0 1px 2px rgba(16, 24, 40, .06);
-}
-/* Ayrı kilitli bloklar: açık gri zemin, kesik kenar. */
-#sol-bar .ust-kume.tekli {
-  padding: 3px; border-radius: 12px; border: 1px dashed var(--kenar-guclu);
-  background: var(--kenar-acik);
-}
-#sol-bar .ust-kume.tekli > .ust-sekme.kapali { color: #8A9099; }
-
-/* ---- Alt bölüm ---- */
-#sol-bar-alt { border-top: 0; padding: 4px 10px 10px; }
-#sol-bar .sol-bar-dugmeler { gap: 8px; }
-/* Renk Modu: Arşiv ve Yeni Çalışma gibi beyaz kart; sağda güneş / ay
-   anahtarı, geçerli mod pembe zeminli kırmızı. */
-#sol-bar .tema-anahtar { gap: 4px; padding: 0; background: none; }
-#sol-bar .tema-anahtar span {
-  width: 30px; height: 26px; opacity: 1; color: var(--sol-ok); background: var(--kenar-acik);
-}
-#sol-bar .tema-anahtar svg { width: 14px; height: 14px; }
-#kabuk:not(.koyu) #sol-bar #tema-btn .tema-gunes,
-#kabuk.koyu #sol-bar #tema-btn .tema-ay {
-  background: var(--kirmizi-acik); color: var(--kirmizi); box-shadow: inset 0 0 0 1px var(--kirmizi-halka);
-}
-#sol-bar #tema-btn svg.ikon { width: 17px; height: 17px; flex-shrink: 0; }
-/* Renk Modu, Arşiv ve Yeni Çalışma: beyaz kartlar. */
-#sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
-  height: 40px; padding: 0 12px; gap: 10px; border-radius: 12px;
-  border: 1px solid var(--kenar); background: var(--yuzey); box-shadow: var(--golge-1);
-  font-size: 12.5px;
-}
-#sol-bar #calismalar-btn .sifirla-ikon, #sol-bar #sifirla-btn .sifirla-ikon { width: 17px; height: 17px; }
-#sol-bar #calismalar-btn svg.ok {
-  width: 15px; height: 15px; margin-left: auto; color: var(--sol-ok);
-}
-#sol-bar #calismalar-btn:hover svg.ok { color: var(--kirmizi); }
-
-/* ---- Sol bar ölçeği ve KATIB logosu ----
-   İç kap tasarım eninde (224 px) doğal boyuyla dizilir; app.js
-   (solBarOlcekle) onu barın yüksekliğine sığacak oranda ölçekler ve
-   barın enini (--sol-bar-en) aynı orana getirir. Kaydırma yok. */
-#sol-bar { display: block; overflow: hidden; }
 #sol-bar-ic {
-  width: 224px; transform-origin: 0 0;
+  width: 248px; transform-origin: 0 0;
   display: flex; flex-direction: column;
 }
-#sol-bar-ic #ust-sekmeler { flex: none; overflow: visible; min-height: 0; }
-#sol-bar-ic #sol-bar-alt { margin-top: auto; }
-/* Kısa tasarım boyu: ölçek büyür, yazı okunur kalır. */
-#sol-bar .ust-kume-ad, #sol-bar .ust-sekme { height: 36px; }
-#sol-bar .ust-kume-ad { height: 38px; }
-#sol-bar .ust-kume { gap: 5px; padding: 5px; }
-#ust-sekmeler { gap: 8px; padding: 10px 10px 8px; }
-#sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn { height: 36px; }
-#sol-bar .sol-bar-dugmeler { gap: 7px; }
 
+/* KATIB logosu: barın eninde, oranı korunarak sığar. Görsel
+   yüklenemezse gizlenir (app.js). */
+#sol-bar-logo {
+  flex-shrink: 0; padding: 18px 8px 6px;
+  display: flex; justify-content: center;
+}
+#katib-logo {
+  display: block; width: 100%; height: auto; max-height: 96px;
+  object-fit: contain;
+}
 
+/* ---- Sayfa satırları ---- */
+#ust-sekmeler {
+  flex: none; display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 12px;
+}
+.ust-kume { display: flex; flex-direction: column; gap: 2px; }
+/* Bölüm adı (MODEL PLATFORMU, YAKINDA): küçük, aralıklı, gri; düğme
+   değil. Metin HTML'de büyük harfle yazılı. */
+.ust-kume-ad, .sol-bolum-ad {
+  display: flex; align-items: center; height: 28px; padding: 0 10px;
+  font-size: 10.5px; font-weight: var(--fw-kalin); letter-spacing: .08em;
+  color: var(--sol-bolum); white-space: nowrap;
+}
+.ust-kume-ad svg.ikon { display: none; }
+.sol-bolum-ad { margin-top: 12px; }
+.ust-sekme {
+  position: relative; flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px;
+  height: 40px; padding: 0 10px 0 6px;
+  border: 0; border-radius: 10px; background: transparent;
+  color: var(--sol-yazi); text-align: left; cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
+  white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+/* İkon kendi kutusunda: kutu SVG'nin dolgusu ve zemini. */
+.ust-sekme svg.ikon {
+  width: 28px; height: 28px; padding: 6px; flex-shrink: 0;
+  border-radius: 8px; background: var(--sol-ikon-zemin); color: var(--sol-ikon-renk);
+  transition: background .12s, color .12s;
+}
+.ust-sekme svg.ok { width: 14px; height: 14px; flex-shrink: 0; margin-left: auto; color: var(--sol-ok); }
+.ust-sekme:hover:not(.kapali):not(.aktif) { background: var(--sol-uzerinde); color: var(--metin); }
+.ust-sekme:hover:not(.kapali):not(.aktif) svg.ikon { color: var(--kirmizi); }
+.ust-sekme.aktif { background: var(--sol-secili); color: var(--metin); }
+.ust-sekme.aktif::before {
+  content: ""; position: absolute; left: -12px; top: 9px; bottom: 9px;
+  width: 3px; border-radius: 0 3px 3px 0; background: var(--kirmizi);
+}
+.ust-sekme.aktif svg.ikon { background: var(--kirmizi); color: #fff; }
+.ust-sekme.aktif svg.ok { color: var(--kirmizi); }
+.ust-sekme:focus-visible { outline: 2px solid var(--kirmizi-halka); outline-offset: 1px; }
+/* Kilitli satır (henüz hazırlanıyor): gri yazı, zeminsiz ikon, sağda
+   kilit; tıklanmaz. */
+.ust-sekme.kapali { cursor: not-allowed; color: var(--sol-ok); }
+.ust-sekme.kapali svg.ikon { background: transparent; color: var(--sol-ok); }
+.ust-sekme.kapali svg.kilit { width: 14px; height: 14px; flex-shrink: 0; margin-left: auto; }
 
-
-/* ==================== İŞ AKIŞI BARI ====================
-   Sohbet alanının üstünde ince bar (Jupyter defterindeki menü çubuğu
-   gibi): solda "İş Akışı" düğmesi, yanında bulunulan faz ve adım, sağda
-   ilerleme. Düğme iş akışını barın altında açılır pencerede gösterir
-   (app.js: akisMenuAc). */
-#akis-bar {
-  position: relative; z-index: 6; flex-shrink: 0;
-  display: flex; align-items: center; gap: 12px;
-  min-height: 44px; padding: 6px 16px;
-  background: var(--yuzey);
-  border-bottom: var(--ayrac-kalinlik) solid var(--ayrac);
+/* ---- Alt: Renk Modu, Arşiv, Yeni Çalışma ---- */
+#sol-bar-alt { flex-shrink: 0; margin-top: auto; padding: 10px 12px 12px; }
+.sol-bar-dugmeler { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+#calismalar-kap, #yeni-kap { position: relative; flex-shrink: 0; }
+#tema-btn, #calismalar-btn, #sifirla-btn {
+  width: 100%; height: 38px; padding: 0 12px;
+  display: flex; align-items: center; justify-content: flex-start; gap: 10px;
+  border: 1px solid var(--sol-alt-kenar); border-radius: 10px;
+  background: var(--sol-alt-zemin);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: var(--sol-yazi); cursor: pointer; flex-shrink: 0;
+  font-family: var(--font); font-size: var(--fs-ustbar); font-weight: var(--fw-kalin);
+  white-space: nowrap; box-shadow: var(--golge-1);
+  transition: background .12s, color .12s, border-color .12s;
 }
-#akis-menu { position: relative; flex-shrink: 0; }
-#akis-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  height: 32px; padding: 0 10px 0 11px;
-  border: 1px solid var(--pembe-kenar); border-radius: 9px;
-  background: var(--yuzey); color: var(--kirmizi); cursor: pointer;
-  font-size: 13px; font-weight: 800; letter-spacing: .02em;
-  transition: background .12s, border-color .12s;
+#tema-btn svg.ikon, #calismalar-btn .sifirla-ikon, #sifirla-btn .sifirla-ikon {
+  width: 16px; height: 16px; display: block; flex-shrink: 0; color: inherit;
 }
-#akis-btn .ikon { width: 16px; height: 16px; flex-shrink: 0; }
-#akis-btn .ok { width: 14px; height: 14px; flex-shrink: 0; color: var(--sol-ok, #9AA0A6); transition: transform .15s; }
-#akis-btn:hover, #akis-menu.acik #akis-btn { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
-#akis-menu.acik #akis-btn .ok { transform: rotate(180deg); color: var(--kirmizi); }
-#akis-btn:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
-#akis-konum {
-  flex: 1 1 auto; min-width: 0;
-  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px;
-  font-size: 13px; line-height: 1.35;
-  white-space: normal; overflow-wrap: break-word;
+#calismalar-btn svg.ok { width: 14px; height: 14px; flex-shrink: 0; margin-left: auto; color: var(--sol-ok); }
+#tema-btn:hover, #calismalar-btn:hover, #sifirla-btn:hover, #calismalar-btn[aria-expanded="true"] {
+  border-color: var(--kirmizi-halka); color: var(--kirmizi);
 }
-#akis-konum .akis-faz { font-weight: 700; color: var(--metin); }
-#akis-konum .akis-ayrac { color: var(--sol-ok, #9AA0A6); font-weight: 700; }
-#akis-konum .akis-adim { font-weight: 700; color: var(--kirmizi); }
-#akis-ilerleme {
-  flex-shrink: 0; white-space: nowrap;
-  font-size: 12px; font-weight: 700; color: var(--metin);
-  padding: 3px 10px; border-radius: 999px; background: var(--yuzey-alt);
+#calismalar-btn:hover svg.ok, #calismalar-btn[aria-expanded="true"] svg.ok { color: var(--kirmizi); }
+/* Renk Modu: sağda güneş / ay anahtarı; geçerli mod dolu zeminli. */
+#tema-btn .tema-anahtar {
+  margin-left: auto; display: inline-flex; gap: 2px; padding: 2px;
+  border-radius: 999px; background: var(--sol-ikon-zemin);
 }
-#akis-ilerleme:empty { display: none; }
-
-/* ---- İŞ AKIŞI BÖLMESİ (Jupyter'deki gezinme bölmesi gibi) ----
-   Orta alan ızgara: üstte bar (iki sütun boyu), altında solda bölme,
-   sağda sohbet ve yazı kutusu. Bölme kapalıyken sol sütun sıfır genişlik.
-   Bölme barın altından alanın en altına kadar uzanır, kendi içinde
-   kayar; bardaki İş Akışı düğmesi açıp kapatır (app.js: akisMenuAc). En:
-   276 px. */
-#sohbet-alani {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+#tema-btn .tema-anahtar span {
+  width: 26px; height: 20px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--sol-ok);
 }
-#akis-bar { grid-column: 1 / -1; grid-row: 1; }
-#sohbet { grid-column: 2; grid-row: 2; min-height: 0; }
-#giris-bolge { grid-column: 2; grid-row: 3; }
-#sohbet-alani > #panel {
-  grid-column: 1; grid-row: 2 / 4;
-  display: none; position: relative; z-index: 2;
-  width: 276px; min-height: 0; max-height: none;
-  overflow-y: auto; padding: 12px 0 16px;
-  transform: none; transition: none; box-shadow: none;
-  background: var(--yuzey-alt);
-  border: 0; border-right: var(--ayrac-kalinlik) solid var(--ayrac);
-  border-radius: 0;
-}
-#sohbet-alani.akis-acik > #panel { display: block; }
-#sohbet-alani > #panel .panel-blok {
-  margin: 0; padding: 4px 12px 0;
-  border: 0; border-radius: 0; box-shadow: none; background: none;
-}
-/* Dar ekranda bölme sohbetin üstüne biner (sohbet daralmasın). */
-@media (max-width: 864px) {
-  #sohbet-alani > #panel {
-    position: absolute; top: 0; bottom: 0; left: 0;
-    box-shadow: var(--golge-2);
-  }
-  #sohbet-alani.akis-acik > #panel { display: block; }
-  #sohbet-alani { grid-template-columns: 0 minmax(0, 1fr); }
-}
+#tema-btn .tema-anahtar svg { width: 12px; height: 12px; display: block; }
+#kabuk:not(.koyu) #tema-btn .tema-gunes,
+#kabuk.koyu #tema-btn .tema-ay { background: var(--yuzey); color: var(--kirmizi); box-shadow: var(--golge-1); }
+#kabuk.koyu #tema-btn .tema-ay { background: #2A2D33; }

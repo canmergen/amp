@@ -88,17 +88,26 @@ MOD_SECENEKLERI = [
     {"deger": "A", "baslik": "Baz Veri Seti Mevcut",
      "aciklama": "Modellemeye girecek tablo hazır. Sözlüğü varsa onu da "
                  "seçersiniz; tanımı olmayan kolonlar onaylı tanımlardan ve "
-                 "yapay zekâ önerilerinden doldurulur."},
+                 "yapay zekâ önerilerinden doldurulur.",
+     "ikon": "veri",
+     "maddeler": ["Hazır tablo ile hızlı başlangıç", "Sözlük desteği (opsiyonel)",
+                  "AI ile eksik tanım tamamlama"]},
     {"deger": "B", "baslik": "Kaynak Tablolar Mevcut",
      "aciklama": "Baz veri seti, seçeceğiniz kaynak tablolar birleştirilerek "
                  "oluşturulur. Tabloların sözlükleri varsa onları da "
-                 "seçersiniz; tanımı olmayan kolonlar aynı şekilde doldurulur."},
+                 "seçersiniz; tanımı olmayan kolonlar aynı şekilde doldurulur.",
+     "ikon": "kaynak",
+     "maddeler": ["Birden fazla kaynağı birleştirme", "Adım adım birleştirme planı",
+                  "Sözlük desteği ve AI önerileri"]},
     # OTOMATIK PILOT (su an kapali). Deger "P": "C" harfi eski
     # calismalarin baslangicina ait; kartta "C" rozetiyle gorunur.
     {"deger": "P", "rozet": "C", "baslik": "Otomatik Pilot",
      "aciklama": "Başta veri setini ve varsa sözlüğünü siz seçersiniz; sonraki "
                  "tüm adımlarda kararları yapay zekâ verir ve hiç durmadan final "
-                 "modele kadar uçtan uca ilerler. Her karar gerekçesiyle kayda geçer."},
+                 "modele kadar uçtan uca ilerler. Her karar gerekçesiyle kayda geçer.",
+     "ikon": "pilot",
+     "maddeler": ["Uçtan uca AI destekli modelleme", "En az kullanıcı girişi",
+                  "Otomatik süreç yönetimi"]},
 ]
 for _s in MOD_SECENEKLERI:
     _s["kapali"] = _s["deger"] not in ACIK_MODLAR
