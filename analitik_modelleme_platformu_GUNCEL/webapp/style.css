@@ -321,14 +321,14 @@ body { background-color: #FEFEFE; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* Robotlu kurum görseli sol barın tepesinde, barın eninde; oranı
-   korunarak sığar. Görsel yüklenemezse gizlenir (app.js). */
+/* KATIB logosu sol barın tepesinde, barın eninde; oranı korunarak
+   sığar. Görsel yüklenemezse gizlenir (app.js). */
 #sol-bar-logo {
-  flex-shrink: 0; padding: var(--b-3) var(--b-3) 0;
-  display: flex; justify-content: center;
+  flex-shrink: 0; padding: 14px 10px 2px;
+  display: flex; flex-direction: column; align-items: center;
 }
-#banner {
-  display: block; width: 100%; height: auto; max-height: 84px;
+#katib-logo {
+  display: block; width: 100%; height: auto; max-height: 80px;
   object-fit: contain;
 }
 
@@ -3857,18 +3857,7 @@ span.bolme-cip { cursor: default; }
 :root { --sol-bar-en: 224px; }
 #sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
 #kabuk.koyu #sol-bar { --sol-ok: #6B7178; background: var(--yuzey-alt); }
-#kabuk.koyu #sol-bar-aciklama { color: #9AA0A6; }
 
-#sol-bar-logo { flex-direction: column; align-items: center; padding: var(--b-3) var(--b-3) 2px; }
-#banner { max-height: 78px; }
-#sol-bar-ad {
-  margin-top: -2px; font-family: var(--font); font-size: 26px; font-weight: 800;
-  line-height: 1; letter-spacing: .03em; color: var(--kirmizi);
-}
-#sol-bar-aciklama {
-  margin-top: 3px; text-align: center; font-size: 10.5px; line-height: 1.25;
-  font-weight: var(--fw-kalin); color: #5F6670;
-}
 
 #ust-sekmeler { gap: 10px; padding: var(--b-3) 10px; }
 #sol-bar .ust-kume { gap: 6px; padding: 6px; border-radius: 14px; }
@@ -3961,36 +3950,16 @@ span.bolme-cip { cursor: default; }
 }
 #sol-bar-ic #ust-sekmeler { flex: none; overflow: visible; min-height: 0; }
 #sol-bar-ic #sol-bar-alt { margin-top: auto; }
-#sol-bar-logo { gap: 6px; padding-top: 12px; }
-#banner { max-height: 70px; }
 /* Kısa tasarım boyu: ölçek büyür, yazı okunur kalır. */
 #sol-bar .ust-kume-ad, #sol-bar .ust-sekme { height: 36px; }
 #sol-bar .ust-kume-ad { height: 38px; }
 #sol-bar .ust-kume { gap: 5px; padding: 5px; }
 #ust-sekmeler { gap: 8px; padding: 10px 10px 8px; }
-#banner { max-height: 60px; }
-#sol-bar-logo { gap: 4px; padding-top: 10px; }
 #sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn { height: 36px; }
 #sol-bar .sol-bar-dugmeler { gap: 7px; }
 
-/* Robotlu logo daha büyük. */
-#banner { max-height: 96px; }
-#sol-bar-logo { padding: 10px 4px 2px; }
-#banner { width: 100%; max-height: 110px; }
-/* Logo üstte az boşlukla. */
-#sol-bar-logo { padding: 4px 4px 2px; gap: 2px; }
-#banner { max-height: 120px; }
 
 
-/* ---- Sol bar logosu: en üstte robotlu görsel, altında siyah alt başlık ----
-   Açık temada siyah, koyu temada (koyu zeminde okunsun diye) beyaz. */
-#sol-bar-aciklama {
-  margin-top: 2px; text-align: center; font-size: 12.5px; line-height: 1.25;
-  font-weight: 800; color: #000;
-}
-#kabuk.koyu #sol-bar-aciklama { color: #fff; }
-/* Robot tasarım boyu 76 px. */
-#sol-bar-logo #banner { width: auto; max-width: 100%; max-height: 76px; }
 
 /* ==================== İŞ AKIŞI BARI ====================
    Sohbet alanının üstünde ince bar (Jupyter defterindeki menü çubuğu
@@ -4033,8 +4002,6 @@ span.bolme-cip { cursor: default; }
   padding: 3px 10px; border-radius: 999px; background: var(--yuzey-alt);
 }
 #akis-ilerleme:empty { display: none; }
-/* Robot logosu üst kenara yapışmasın: üstte 14 px boşluk. */
-#sol-bar-logo { padding-top: 14px; }
 
 /* ---- İŞ AKIŞI BÖLMESİ (Jupyter'deki gezinme bölmesi gibi) ----
    Orta alan ızgara: üstte bar (iki sütun boyu), altında solda bölme,

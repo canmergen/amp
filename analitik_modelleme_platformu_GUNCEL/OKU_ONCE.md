@@ -22,7 +22,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
-| `banner` | `robot_header.png` | Sol barın tepesindeki robot görseli |
+| `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -65,7 +65,7 @@ içindeki `VARSAYILAN_MODEL`.
 ## Ekran
 
 **Sol bar**
-- Tepede robot görseli ve "Bireysel Krediler Analitik ve Tahsis BI" yazısı.
+- Tepede KATIB logosu.
 - **Model Platformu:**
   - Model Akışı
   - Gösterge Paneli

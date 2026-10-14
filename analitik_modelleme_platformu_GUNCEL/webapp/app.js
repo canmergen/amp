@@ -81,7 +81,7 @@ const YENI_CALISMA_ETIKETI = "⟳ Yeni Çalışma";
 const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
-    banner:     getWebAppBackendUrl("gorsel/banner"),
+    katibLogo:  getWebAppBackendUrl("gorsel/katib_logo"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
@@ -111,7 +111,7 @@ const PANELDE_KARAR = { sfa_karar: "degisken" };
 const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
 /* Sol bardaki kutu -> sayfa (ustSekmeGuncelle, kutu tıklamaları). */
 const UST_SAYFA = { akis: "calisma", dokuman: "ozet", sohbet: "sohbet", dashboard: "dashboard" };
-const bannerEl    = document.getElementById("banner");
+const katibLogoEl = document.getElementById("katib-logo");
 /* Giriş bölgesinin kilidi için. */
 const girisBolge  = document.getElementById("giris-bolge");
 const kabukEl     = document.getElementById("kabuk");
@@ -167,12 +167,12 @@ let DATASETLER = [];
 let DATASET_DURUMU = "yukleniyor";
 const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
-/* Robotlu logo: saydam kenarları kırpılır (yuvayı boşluk değil logo
-   doldursun, daha büyük görünsün). */
-bannerEl.onerror = () => { bannerEl.style.display = "none"; solBarOlcekle(); };
-bannerEl.onload = () => solBarOlcekle();
-saydamKirp(GORSEL.banner, src => { bannerEl.src = src; },
-           () => { bannerEl.style.display = "none"; solBarOlcekle(); }, true);
+/* KATIB logosu: saydam ve beyaz kenarları kırpılır (yuvayı boşluk değil
+   logo doldursun). Yüklenemezse gizlenir. */
+katibLogoEl.onerror = () => { katibLogoEl.style.display = "none"; solBarOlcekle(); };
+katibLogoEl.onload = () => solBarOlcekle();
+saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
+           () => { katibLogoEl.style.display = "none"; solBarOlcekle(); }, true);
 
 /* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük
    kalmasın); kırpılamazsa dosya olduğu gibi. cb(src) */
