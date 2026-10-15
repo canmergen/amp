@@ -321,15 +321,23 @@ body { background-color: #FEFEFE; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde, barın eninde; oranı korunarak
-   sığar. Görsel yüklenemezse gizlenir (app.js). */
+/* KATIB logosu sol barın tepesinde, barın eninin %80'i; ortalı, oranı
+   korunarak sığar. Görsel yüklenemezse gizlenir (app.js). */
 #sol-bar-logo {
   flex-shrink: 0; padding: 14px 2px 2px;
   display: flex; flex-direction: column; align-items: center;
 }
 #katib-logo {
-  display: block; width: 100%; height: auto; max-height: 100px;
+  display: block; width: 80%; height: auto; max-height: 100px;
   object-fit: contain;
+}
+/* Koyu tema: logonun siyah harfleri ve alt yazısı koyu zeminde
+   kaybolmasın diye harflerin çevresine 1 px beyaz kontur. Kontur
+   görselin saydam olmayan kısmının dört yanına kaydırılmış beyaz
+   gölgeyle çizilir; açık temada yok. */
+#kabuk.koyu #katib-logo {
+  filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff)
+          drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff);
 }
 
 /* Sonuç kartının satırları (.sonuc-kart). */
