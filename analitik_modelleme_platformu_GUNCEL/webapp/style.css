@@ -321,15 +321,21 @@ body { background-color: #FEFEFE; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde, barın eninde; oranı korunarak
-   sığar. Görsel yüklenemezse gizlenir (app.js). */
+/* Sol barın tepesi: solda KATIB robotu, yanında KATIB logosu; ikisi
+   dikeyde ortalı. Logo kalan eni alır, oranı korunur. Yüklenemeyen
+   görsel gizlenir (app.js). */
 #sol-bar-logo {
-  flex-shrink: 0; padding: 14px 2px 2px;
-  display: flex; flex-direction: column; align-items: center;
+  flex-shrink: 0; padding: 12px 10px 4px;
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+  gap: 6px;
+}
+#katib-tablet {
+  display: block; flex: 0 0 auto; width: auto; height: 62px;
+  object-fit: contain;
 }
 #katib-logo {
-  display: block; width: 100%; height: auto; max-height: 100px;
-  object-fit: contain;
+  display: block; flex: 1 1 auto; min-width: 0; width: 100%; height: auto;
+  max-height: 56px; object-fit: contain;
 }
 
 /* Sonuç kartının satırları (.sonuc-kart). */
@@ -3950,13 +3956,28 @@ span.bolme-cip { cursor: default; }
 }
 #sol-bar-ic #ust-sekmeler { flex: none; overflow: visible; min-height: 0; }
 #sol-bar-ic #sol-bar-alt { margin-top: auto; }
-/* Kısa tasarım boyu: ölçek büyür, yazı okunur kalır. */
-#sol-bar .ust-kume-ad, #sol-bar .ust-sekme { height: 36px; }
-#sol-bar .ust-kume-ad { height: 38px; }
-#sol-bar .ust-kume { gap: 5px; padding: 5px; }
-#ust-sekmeler { gap: 8px; padding: 10px 10px 8px; }
-#sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn { height: 36px; }
-#sol-bar .sol-bar-dugmeler { gap: 7px; }
+/* Sıkı ölçü: satırlar 32 px, yazılar 11.5 px (küme adı 12 px), ikonlar
+   15-16 px. Bar büyük ekranda büyümediği için bu boyutlarda kalır. */
+#sol-bar .ust-kume-ad, #sol-bar .ust-sekme {
+  height: 32px; padding: 0 10px; gap: 9px; border-radius: 8px;
+  font-size: 11.5px; letter-spacing: .03em;
+}
+#sol-bar .ust-kume-ad { height: 34px; font-size: 12px; padding: 0 8px; }
+#sol-bar .ust-sekme svg.ikon { width: 15px; height: 15px; }
+#sol-bar .ust-kume-ad svg.ikon { width: 16px; height: 16px; }
+#sol-bar .ust-sekme svg.ok, #sol-bar .ust-sekme.kapali svg.kilit,
+#sol-bar #calismalar-btn svg.ok { width: 13px; height: 13px; }
+#sol-bar .ust-kume { gap: 4px; padding: 4px; border-radius: 12px; }
+#sol-bar .ust-kume.tekli { padding: 2px; border-radius: 10px; }
+#ust-sekmeler { gap: 7px; padding: 8px 10px; }
+#sol-bar-alt { padding: 4px 10px 10px; }
+#sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
+  height: 32px; padding: 0 10px; gap: 9px; border-radius: 10px; font-size: 11.5px;
+}
+#sol-bar #tema-btn svg.ikon, #sol-bar #calismalar-btn .sifirla-ikon, #sol-bar #sifirla-btn .sifirla-ikon { width: 15px; height: 15px; }
+#sol-bar .tema-anahtar span { width: 26px; height: 22px; }
+#sol-bar .tema-anahtar svg { width: 12px; height: 12px; }
+#sol-bar .sol-bar-dugmeler { gap: 6px; }
 
 
 

@@ -81,6 +81,7 @@ const YENI_CALISMA_ETIKETI = "⟳ Yeni Çalışma";
 const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
+    katibTablet: getWebAppBackendUrl("gorsel/katib_tablet"),
     katibLogo:  getWebAppBackendUrl("gorsel/katib_logo"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
@@ -111,6 +112,7 @@ const PANELDE_KARAR = { sfa_karar: "degisken" };
 const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
 /* Sol bardaki kutu -> sayfa (ustSekmeGuncelle, kutu tıklamaları). */
 const UST_SAYFA = { akis: "calisma", dokuman: "ozet", sohbet: "sohbet", dashboard: "dashboard" };
+const katibTabletEl = document.getElementById("katib-tablet");
 const katibLogoEl = document.getElementById("katib-logo");
 /* Giriş bölgesinin kilidi için. */
 const girisBolge  = document.getElementById("giris-bolge");
@@ -167,12 +169,14 @@ let DATASETLER = [];
 let DATASET_DURUMU = "yukleniyor";
 const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
-/* KATIB logosu: saydam ve beyaz kenarları kırpılır (yuvayı boşluk değil
-   logo doldursun). Yüklenemezse gizlenir. */
-katibLogoEl.onerror = () => { katibLogoEl.style.display = "none"; solBarOlcekle(); };
-katibLogoEl.onload = () => solBarOlcekle();
-saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
-           () => { katibLogoEl.style.display = "none"; solBarOlcekle(); }, true);
+/* KATIB robotu ve logosu: saydam ve beyaz kenarları kırpılır (yuvayı
+   boşluk değil görsel doldursun). Yüklenemeyen gizlenir. */
+[[katibTabletEl, GORSEL.katibTablet], [katibLogoEl, GORSEL.katibLogo]].forEach(([el, url]) => {
+    const gizle = () => { el.style.display = "none"; solBarOlcekle(); };
+    el.onerror = gizle;
+    el.onload = () => solBarOlcekle();
+    saydamKirp(url, src => { el.src = src; }, gizle, true);
+});
 
 /* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük
    kalmasın); kırpılamazsa dosya olduğu gibi. cb(src) */
@@ -217,14 +221,13 @@ function saydamKirp(url, cb, hata, beyazDa) {
 }
 
 /* ==================== SOL BAR ÖLÇEĞİ ====================
-   Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm Ayarları,
-   Arşiv, Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
-   (#sol-bar-ic) tasarım eninde (224 px) doğal boyuyla dizilir ve barın
-   yüksekliğine sığacak oranda ölçeklenir; barın eni de aynı oranda
-   değişir. Çerçeve kapanınca alan büyür, bar da aynı oranda büyür.
-   Görünüm Ayarları açılır pencere olduğu için ölçeği etkilemez. */
+   Sol barın bütün içeriği (logo, sayfa kümeleri, Renk Modu, Arşiv,
+   Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
+   (#sol-bar-ic) tasarım eninde (224 px) doğal boyuyla dizilir. Ekran
+   yetmezse barın yüksekliğine sığacak oranda küçülür, barın eni de aynı
+   oranda daralır; büyük ekranda büyümez, tasarım boyunda kalır. */
 const SOL_BAR_TASARIM_EN = 224;
-const SOL_BAR_OLCEK = { min: 0.6, max: 2.0 };
+const SOL_BAR_OLCEK = { min: 0.6, max: 1.0 };
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");

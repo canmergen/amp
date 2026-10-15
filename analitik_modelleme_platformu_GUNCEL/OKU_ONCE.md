@@ -22,7 +22,8 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
-| `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
+| `katib_tablet` | `katib_tablet.png` | Sol barın tepesinde, solda KATIB robotu |
+| `katib_logo` | `katib_logo.png` | Sol barın tepesinde, robotun yanında KATIB logosu |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -65,7 +66,7 @@ içindeki `VARSAYILAN_MODEL`.
 ## Ekran
 
 **Sol bar**
-- Tepede KATIB logosu.
+- Tepede solda KATIB robotu (`katib_tablet`), yanında KATIB logosu (`katib_logo`).
 - **Model Platformu:**
   - Model Akışı
   - Gösterge Paneli
@@ -77,9 +78,9 @@ içindeki `VARSAYILAN_MODEL`.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
-Uygulama ekranın tamamını kullanır. Sol bar kaydırmasızdır; içerik
-ekranın yüksekliğine sığacak oranda ölçeklenir, bar eni de aynı oranda
-değişir.
+Uygulama ekranın tamamını kullanır. Sol bar kaydırmasızdır ve sıkı
+ölçüdedir (satırlar 32 px, yazılar 11.5 px). Ekran yetmezse içerik sığacak
+oranda küçülür, bar eni de aynı oranda daralır; büyük ekranda büyümez.
 
 **Model Akışı**
 - Üstte **İş Akışı** barı:
