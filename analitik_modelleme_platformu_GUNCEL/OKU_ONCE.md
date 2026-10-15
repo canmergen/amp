@@ -22,8 +22,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
-| `katib_tablet` | `katib_tablet.png` | Sol barın tepesinde, solda KATIB robotu |
-| `katib_logo` | `katib_logo.png` | Sol barın tepesinde, robotun yanında KATIB logosu |
+| `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -66,7 +65,7 @@ içindeki `VARSAYILAN_MODEL`.
 ## Ekran
 
 **Sol bar**
-- Tepede solda KATIB robotu (`katib_tablet`), yanında KATIB logosu (`katib_logo`).
+- Tepede KATIB logosu.
 - **Model Platformu:**
   - Model Akışı
   - Gösterge Paneli
