@@ -278,11 +278,12 @@ function saydamKirp(url, cb, hata, beyazDa) {
 /* ==================== SOL BAR ÖLÇEĞİ ====================
    Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm, Arşiv,
    Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
-   (#sol-bar-ic) tasarım eninde (300 px) doğal boyuyla dizilir. Ekran
-   yetmezse barın yüksekliğine sığacak oranda küçülür, barın eni de aynı
-   oranda daralır; büyük ekranda büyümez, tasarım boyunda kalır. */
-const SOL_BAR_TASARIM_EN = 300;
-const SOL_BAR_OLCEK = { min: 0.6, max: 1.0 };
+   (#sol-bar-ic) tasarım eninde (340 px) doğal boyuyla dizilir ve barın
+   yüksekliğine sığacak oranda ölçeklenir; barın eni de aynı orana gelir.
+   Ekran yetmezse küçülür (en az 0,6 kat); büyük ekranda en fazla 1,15
+   kata kadar büyür. */
+const SOL_BAR_TASARIM_EN = 340;
+const SOL_BAR_OLCEK = { min: 0.6, max: 1.15 };
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");
