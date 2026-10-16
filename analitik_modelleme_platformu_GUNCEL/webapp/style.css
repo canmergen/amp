@@ -565,8 +565,9 @@ body { background-color: #FEFEFE; }
   border-radius: var(--r);
 }
 .ust-kume-ad {
-  /* Düğme değil, kümenin ADI: kutusuz, mürekkep siyahı yazı; altında
-     kısa ince ayraç ile kutulardan ayrılır. */
+  /* Kümenin ADI: kutusuz, mürekkep siyahı yazı; altında kısa ince ayraç
+     ile kutulardan ayrılır. Açılır kümede (MODEL PLATFORMU) başlık
+     kümeyi açıp kapatan düğmedir. */
   position: relative; height: 28px;
   color: var(--murekkep); background: none; border: none; border-radius: 0;
   padding: 0 8px; margin-bottom: 3px;
@@ -4099,6 +4100,21 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-sekme.aktif svg.ikon, #sol-bar .ust-sekme.aktif svg.ok { color: var(--murekkep); }
 /* #kabuk önekli: aşağıdaki 600 ağırlık kuralını ezsin. */
 #kabuk #sol-bar .ust-sekme.aktif { font-weight: var(--fw-kalin); }
+
+/* ---- Açılır küme (MODEL PLATFORMU) ----
+   Başta kapalı: yalnız başlık görünür, sağında › oku. Başlığa basınca
+   (app.js: kumeAcKapa) .acik gelir, satırlar ve başlığın altındaki çizgi
+   görünür, ok aşağı döner. Üstüne gelince hafif zemin. */
+#sol-bar .ust-kume-ad { width: 100%; cursor: pointer; text-align: left; border-radius: 8px; }
+#sol-bar .ust-kume-ad:hover { background: color-mix(in srgb, var(--murekkep) 5%, transparent); }
+#sol-bar .ust-kume-ad:focus-visible { outline: 2px solid var(--murekkep); outline-offset: -2px; }
+#sol-bar .ust-kume-ad svg.ok {
+  flex-shrink: 0; margin-left: auto; width: 16px; height: 16px;
+  color: var(--murekkep); transition: transform .15s;
+}
+#sol-bar .ust-kume.acilir:not(.acik) > .ust-sekme { display: none; }
+#sol-bar .ust-kume.acilir:not(.acik) > .ust-kume-ad::after { display: none; }
+#sol-bar .ust-kume.acilir.acik > .ust-kume-ad svg.ok { transform: rotate(90deg); }
 
 /* ==================== İŞ AKIŞI BARI ====================
    Sohbet alanının üstünde ince bar (Jupyter defterindeki menü çubuğu

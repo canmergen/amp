@@ -89,7 +89,8 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - **Ana Sayfa** (kendi sayfasını açar; içerik hazırlanıyor).
 - Ortasında **ÇALIŞMA ALANLARI** yazan çizgi; altında Model Platformu
   kümesi ve kilitli alanlar, en altta ince siyah çizgi.
-- **Model Platformu:**
+- **Model Platformu** (başta kapalı; başlığa basınca içindekiler açılır,
+  yeniden basınca kapanır):
   - Model Akışı
   - Model Göstergeleri
   - Değişkenler (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)

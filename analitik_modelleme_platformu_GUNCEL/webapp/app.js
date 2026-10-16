@@ -324,7 +324,11 @@ function solBarOlcekle() {
     if (!bar || !ic || !bar.clientHeight) return;
     ic.style.transform = "none";
     ic.style.height = "auto";
+    /* Ölçek açık hâle göre: küme açılıp kapanınca bar boyu değişmesin. */
+    const kapali = [...ic.querySelectorAll(".ust-kume.acilir:not(.acik)")];
+    kapali.forEach(k => k.classList.add("acik"));
     const dogal = ic.offsetHeight;
+    kapali.forEach(k => k.classList.remove("acik"));
     if (!dogal) return;
     const olcek = Math.max(SOL_BAR_OLCEK.min,
                            Math.min(SOL_BAR_OLCEK.max, bar.clientHeight / dogal));
@@ -5637,6 +5641,17 @@ document.querySelectorAll(".ust-sekme[data-ust]").forEach(b => {
 });
 document.addEventListener("keydown", e => {
     if (e.key === "Escape" && ANALIZ_DAR.acik) analizDaralt(true);
+});
+
+/* MODEL PLATFORMU kümesi başta kapalı; başlığa basınca içindeki sayfalar
+   açılır, yeniden basınca kapanır. */
+function kumeAcKapa(kume) {
+    const acik = kume.classList.toggle("acik");
+    const ad = kume.querySelector(".ust-kume-ad");
+    if (ad) ad.setAttribute("aria-expanded", acik ? "true" : "false");
+}
+document.querySelectorAll(".ust-kume.acilir > .ust-kume-ad").forEach(ad => {
+    ad.onclick = () => kumeAcKapa(ad.parentElement);
 });
 
 /* SFA sırasında analiz alanının altındaki "Kararları Onayla": sohbetteki
