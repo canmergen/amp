@@ -92,8 +92,6 @@
   --pembe-secili:  #FBE4E5;     /* sol barda seçili sekme zemini */
   /* Sol barda seçili küme: marka kırmızısının yumuşatılmış tonu (tam
      kırmızı fazla baskın kalır). */
-  --kume-secili:       #C24E52;
-  --kume-secili-kenar: #B5454A;
   --kume-secili-yazi:  #A3262A;
   --pembe-kenar:   #F3C6C7;     /* panel balonlarının ince kenarı */
   /* Adim blogu cercevesinin kalinligi. Renk dogrudan var(--kirmizi). */
@@ -546,10 +544,10 @@ body { background-color: #FEFEFE; }
   border-radius: var(--r);
 }
 .ust-kume-ad {
-  /* Düğme değil, kümenin ADI: kutusuz, kırmızı yazı; altında kısa ince
-     ayraç ile kutulardan ayrılır. */
+  /* Düğme değil, kümenin ADI: kutusuz, mürekkep siyahı yazı; altında
+     kısa ince ayraç ile kutulardan ayrılır. */
   position: relative; height: 28px;
-  color: var(--kirmizi); background: none; border: none; border-radius: 0;
+  color: var(--murekkep); background: none; border: none; border-radius: 0;
   padding: 0 8px; margin-bottom: 3px;
 }
 .ust-kume-ad::after {
@@ -563,25 +561,6 @@ body { background-color: #FEFEFE; }
   transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
 }
 .ust-sekme:hover { border-color: var(--kirmizi-halka); color: var(--kirmizi); background: var(--kirmizi-acik); }
-/* Seçili sekmenin KÜMESİ kırmızı; içinde seçili sekme pembe zeminli
-   kırmızı yazı, seçilmeyenler beyaz. Seçili sekme
-   beyazdan net ayrılsın diye zemin biraz koyu pembe ve solda 3 px
-   kırmızı çizgi. */
-.ust-sekme.aktif, .ust-sekme.aktif:hover {
-  background: var(--pembe-secili); border-color: var(--pembe-secili); color: var(--kume-secili-yazi);
-  box-shadow: inset 3px 0 0 var(--kume-secili-yazi);
-}
-.ust-kume:has(> .ust-sekme.aktif) {
-  background: var(--kume-secili); border-color: var(--kume-secili-kenar);
-}
-/* Seçili kümedeki sekmeler gölgesiz, yazı tam siyah değil: sakin. */
-.ust-kume:has(> .ust-sekme.aktif) .ust-sekme { box-shadow: none; }
-.ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali) { color: #3A3F45; }
-.ust-kume:has(> .ust-sekme.aktif) .ust-kume-ad { color: #fff; }
-.ust-kume:has(> .ust-sekme.aktif) .ust-kume-ad::after { background: rgba(255,255,255,.45); }
-.ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):hover {
-  background: var(--yuzey); border-color: var(--yuzey); color: var(--kume-secili-yazi);
-}
 .ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: 1px; }
 /* KAPALI blok (SOHBET, DASHBOARD henüz yok): gri zemin, soluk gri yazı,
    kesik kenar ve kilit ikonu; tıklanmaz. Kesik kenar kümenin kendisinde,
@@ -3889,8 +3868,8 @@ span.bolme-cip { cursor: default; }
 
 /* ==================== SOL BAR TASARIMI ====================
    Üstte KATIB logosu ve arkasında İstanbul çizimi; Model Platformu
-   koyu kırmızı degrade kart, içinde beyaz satırlar ve sağda › oku
-   (seçili satır pembe zemin, solda kırmızı çizgi, kırmızı simge ve ok);
+   beyaz kart, içinde düz satırlar ve sağda › oku (seçili satırın
+   görünümü aşağıda "Sayfa satırları: mürekkep dili" bölümünde);
    kilitli bloklar kesik kenarlı gri; altta Görünüm (üç mod anahtarı),
    oklu Arşiv ve Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE
    yazar. */
@@ -3913,37 +3892,10 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-sekme svg.ok { width: 15px; height: 15px; flex-shrink: 0; margin-left: auto; color: var(--sol-ok); }
 #sol-bar .ust-sekme.kapali svg.kilit { width: 15px; height: 15px; }
 
-/* Model Platformu kartı: koyu kırmızı degrade, beyaz başlık. */
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) {
-  background: linear-gradient(180deg, #E0262D 0%, #B9141B 100%);
-  border-color: #B9141B; box-shadow: 0 6px 14px rgba(185, 20, 27, .22);
-}
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.kapali) {
-  background: var(--yuzey); color: var(--metin); box-shadow: 0 1px 2px rgba(16, 24, 40, .08);
-}
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali):hover {
-  background: var(--kirmizi-acik); color: var(--metin);
-}
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme:not(.aktif):not(.kapali):hover svg { color: var(--kirmizi); }
-/* Seçili satır: pembe degrade zemin, solda kırmızı çizgi; simge ve ok kırmızı. */
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif,
-#sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif:hover {
-  background: linear-gradient(90deg, #FCE3E4 0%, #FFF4F4 100%); color: var(--metin);
-  box-shadow: inset 4px 0 0 var(--kirmizi), 0 1px 2px rgba(16, 24, 40, .08);
-}
-#kabuk.sepya #sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif,
-#kabuk.sepya #sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif:hover {
-  background: linear-gradient(90deg, #F3D8CC 0%, #FBF0E8 100%);
-}
-#kabuk.gri #sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif,
-#kabuk.gri #sol-bar .ust-kume:has(> .ust-sekme.aktif) .ust-sekme.aktif:hover {
-  background: linear-gradient(90deg, #EFD3D5 0%, #F6ECED 100%);
-}
-#sol-bar .ust-sekme.aktif svg.ikon, #sol-bar .ust-sekme.aktif svg.ok { color: var(--kirmizi); }
-/* Kart içindeki kilitli satır: beyaz zemin, soluk gri yazı ve kilit. */
+/* Kart içindeki kilitli satır: soluk gri yazı ve kilit. */
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
-  background: var(--yuzey); color: #A0A6AD; box-shadow: 0 1px 2px rgba(16, 24, 40, .06);
+  background: transparent; color: #A0A6AD; box-shadow: none;
 }
 /* Ayrı kilitli bloklar: açık gri zemin, kesik kenar. */
 #sol-bar .ust-kume.tekli {
@@ -4077,15 +4029,36 @@ span.bolme-cip { cursor: default; }
   padding: 3px; border: 1px solid var(--kenar); border-style: solid;
   background: var(--yuzey); box-shadow: var(--golge-1);
 }
-#sol-bar .ana-sayfa-kume > .ust-sekme { background: var(--yuzey); color: var(--metin); }
-#sol-bar .ana-sayfa-kume > .ust-sekme:hover { background: var(--kirmizi-acik); }
-#sol-bar .ana-sayfa-kume > .ust-sekme.aktif {
-  background: linear-gradient(90deg, var(--pembe-secili) 0%, var(--yuzey) 100%);
-  box-shadow: inset 4px 0 0 var(--kirmizi);
+
+/* ---- Sayfa satırları: mürekkep dili ----
+   Model Platformu kümesi ve ANA SAYFA her zaman aynı görünen beyaz
+   kartlar (ince kenar); seçime göre renk değiştirmez. Küme başlığı
+   (MODEL PLATFORMU) mürekkep siyahı, altında ince çizgi. Satırlar düz,
+   gölgesiz. Seçili satır dergi dilinde işaretlenir: solunda kalın siyah
+   çizgi, hafif gri zemin, kalın yazı; simge ve ok siyah. Kırmızı ve pembe
+   yok. Üstüne gelince hafif gri zemin. */
+#sol-bar .ust-kume:not(.tekli) {
+  background: var(--yuzey); border: 1px solid var(--kenar);
+  box-shadow: var(--golge-1);
 }
-
-
-
+#sol-bar .ust-kume-ad {
+  position: relative; color: var(--murekkep);
+}
+#sol-bar .ust-kume-ad::after {
+  content: ""; display: block; position: absolute;
+  left: 8px; right: 8px; bottom: 0; height: 1px; background: var(--murekkep);
+}
+#sol-bar .ust-sekme:not(.kapali) {
+  background: transparent; color: var(--metin); box-shadow: none; border-color: transparent;
+}
+#sol-bar .ust-sekme:not(.kapali):not(.aktif):hover { background: rgba(26,26,26,.05); color: var(--metin); }
+#sol-bar .ust-sekme.aktif, #sol-bar .ust-sekme.aktif:hover {
+  background: rgba(26,26,26,.06); color: var(--murekkep);
+  box-shadow: inset 3px 0 0 var(--murekkep);
+}
+#sol-bar .ust-sekme.aktif svg.ikon, #sol-bar .ust-sekme.aktif svg.ok { color: var(--murekkep); }
+/* #kabuk önekli: aşağıdaki 600 ağırlık kuralını ezsin. */
+#kabuk #sol-bar .ust-sekme.aktif { font-weight: var(--fw-kalin); }
 
 /* ==================== İŞ AKIŞI BARI ====================
    Sohbet alanının üstünde ince bar (Jupyter defterindeki menü çubuğu

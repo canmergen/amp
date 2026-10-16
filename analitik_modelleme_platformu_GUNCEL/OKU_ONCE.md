@@ -95,6 +95,9 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   - Değişkenler (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)
   - Özet
   - Model Sohbeti (kapalı)
+- Ana Sayfa ve Model Platformu beyaz, ince kenarlı kartlar; seçime göre
+  renk değiştirmez. Seçili satır: solunda kalın siyah çizgi, hafif gri
+  zemin, kalın yazı. Kırmızı ya da pembe vurgu yok.
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
