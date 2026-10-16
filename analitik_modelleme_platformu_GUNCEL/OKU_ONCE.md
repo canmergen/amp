@@ -74,9 +74,9 @@ içindeki `VARSAYILAN_MODEL`.
   - KATIB'le Sohbet (kapalı)
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
 - **Renk Modu:** üç mod: Beyaz (varsayılan), Sepya (sıcak kâğıt tonu),
-  Koyu Gri. Anahtardaki simgeye (güneş / kitap / ay) basınca o mod seçilir;
-  düğmenin başka bir yerine basınca sıradaki moda geçilir. Koyu gride
-  logonun çevresine ince beyaz kontur çizilir.
+  Gri (açık gri zemin, koyu yazı). Anahtardaki simgeye (güneş / kitap /
+  yarısı dolu daire) basınca o mod seçilir; düğmenin başka bir yerine
+  basınca sıradaki moda geçilir.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
@@ -111,7 +111,7 @@ oranda küçülür, bar eni de aynı oranda daralır; büyük ekranda büyümez.
 
 | Anahtar | Ne |
 |---|---|
-| `amp_renk_modu` | Renk modu: `acik` (Beyaz), `sepya`, `koyu` (Koyu Gri) |
+| `amp_renk_modu` | Renk modu: `acik` (Beyaz), `sepya`, `gri` |
 | `amp_akis_acik` | İş Akışı bölmesi açık / kapalı |
 | `amp_dg_alt` | Değişkenler'de açık görünüm |
 | `fe_agent_calisma_id` | Açık çalışmanın kimliği |

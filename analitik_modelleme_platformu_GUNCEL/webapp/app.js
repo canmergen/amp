@@ -304,21 +304,21 @@ function baslikBuyuk(s) {
 }
 
 
-/* ==================== Renk modu (beyaz / sepya / koyu gri) ==================== */
+/* ==================== Renk modu (beyaz / sepya / gri) ==================== */
 /* Sol bardaki Renk Modu düğmesi. Üç mod: "acik" (Beyaz), "sepya" ve
-   "koyu" (Koyu Gri). Sepya ve koyu gri modda #kabuk.sepya / #kabuk.koyu
+   "gri" (açık gri). Sepya ve gri modda #kabuk.sepya / #kabuk.gri
    renk değişkenlerini devralır. Anahtardaki bir simgeye basınca o mod
    seçilir; düğmenin başka bir yerine basınca sıradaki moda geçilir.
    Seçim bu tarayıcıda hatırlanır; okunamazsa Beyaz başlar. */
 const TEMA_ANAHTAR = "amp_renk_modu";
-const TEMA_MODLARI = ["acik", "sepya", "koyu"];
-const TEMA_ADI = { acik: "Beyaz", sepya: "Sepya", koyu: "Koyu Gri" };
+const TEMA_MODLARI = ["acik", "sepya", "gri"];
+const TEMA_ADI = { acik: "Beyaz", sepya: "Sepya", gri: "Gri" };
 let temaModu = "acik";
 const temaBtn = document.getElementById("tema-btn");
 
 function temaUygula(kaydet) {
     kabukEl.classList.toggle("sepya", temaModu === "sepya");
-    kabukEl.classList.toggle("koyu", temaModu === "koyu");
+    kabukEl.classList.toggle("gri", temaModu === "gri");
     if (temaBtn) {
         temaBtn.title = "Renk modu: " + TEMA_ADI[temaModu];
         temaBtn.setAttribute("aria-label", "Renk modu: " + TEMA_ADI[temaModu]);
