@@ -34,6 +34,9 @@ GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 GORSELLER = {
     # Sol barın tepesindeki KATIB logosu
     "katib_logo": "katib_logo.png",
+    # Logonun arkasındaki İstanbul çizimi (solda Galata, sağda tarihi
+    # yarımada ve vapur; ortası boş, logo oraya oturur)
+    "katib_arkaplan": "katib_arkaplan.png",
     # Sohbetteki ilk (karsilama) mesajin robotu
     "karsilama":  "robot_welcome.png",
     # Normal konusma

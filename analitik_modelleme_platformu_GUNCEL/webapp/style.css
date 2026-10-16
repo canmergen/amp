@@ -369,14 +369,20 @@ body { background-color: #FEFEFE; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde, barın eninin %80'i; ortalı, oranı
-   korunarak sığar. Görsel yüklenemezse gizlenir (app.js). */
+/* KATIB logosu sol barın tepesinde; arkasında barın eni boyunca İstanbul
+   çizimi (katib_arkaplan.png, 3:1). Çizimin solunda Galata, sağında
+   tarihi yarımada ve vapur var; ortadaki boşluk enin yaklaşık %30-%72'si.
+   Logo bu boşluğa ortalı oturur (barın eninin %52'si; iç kenarlarda
+   yalnız su çizgilerine değer). Yuvanın boyu çizimin oranında: 300 px
+   enin üçte biri. Çizim yüklenemezse (--logo-arkaplan yok) logo tek
+   başına durur. */
 #sol-bar-logo {
-  flex-shrink: 0; padding: 14px 2px 2px;
-  display: flex; flex-direction: column; align-items: center;
+  flex-shrink: 0; height: 100px; padding: 10px 0 0; margin-bottom: 4px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--logo-arkaplan, none) center top / 100% auto no-repeat;
 }
 #katib-logo {
-  display: block; width: 80%; height: auto; max-height: 100px;
+  display: block; width: 52%; height: auto; max-height: 64px;
   object-fit: contain;
 }
 
@@ -3901,7 +3907,7 @@ span.bolme-cip { cursor: default; }
    simge ve ok); kilitli bloklar kesik kenarlı gri; altta "Görünüm
    Ayarları" kartı (Renk Modu, Çerçeve; yuvarlak anahtarlar) ve oklu
    Arşiv / Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE yazar. */
-:root { --sol-bar-en: 224px; }
+:root { --sol-bar-en: 300px; }
 #sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
 #kabuk.sepya #sol-bar { --sol-ok: #8C7D68; background: var(--yuzey-alt); }
 #kabuk.gri #sol-bar { --sol-ok: #6B7380; background: var(--yuzey-alt); }
@@ -3988,12 +3994,12 @@ span.bolme-cip { cursor: default; }
 #sol-bar #calismalar-btn:hover svg.ok { color: var(--kirmizi); }
 
 /* ---- Sol bar ölçeği ve KATIB logosu ----
-   İç kap tasarım eninde (224 px) doğal boyuyla dizilir; app.js
+   İç kap tasarım eninde (300 px) doğal boyuyla dizilir; app.js
    (solBarOlcekle) onu barın yüksekliğine sığacak oranda ölçekler ve
    barın enini (--sol-bar-en) aynı orana getirir. Kaydırma yok. */
 #sol-bar { display: block; overflow: hidden; }
 #sol-bar-ic {
-  width: 224px; transform-origin: 0 0;
+  width: 300px; transform-origin: 0 0;
   display: flex; flex-direction: column;
 }
 #sol-bar-ic #ust-sekmeler { flex: none; overflow: visible; min-height: 0; }

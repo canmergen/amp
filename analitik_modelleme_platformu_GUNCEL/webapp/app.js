@@ -82,6 +82,7 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
     katibLogo:  getWebAppBackendUrl("gorsel/katib_logo"),
+    katibArkaplan: getWebAppBackendUrl("gorsel/katib_arkaplan"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
@@ -173,6 +174,16 @@ katibLogoEl.onerror = () => { katibLogoEl.style.display = "none"; solBarOlcekle(
 katibLogoEl.onload = () => solBarOlcekle();
 saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
            () => { katibLogoEl.style.display = "none"; solBarOlcekle(); }, true);
+/* Logonun arkasındaki İstanbul çizimi: yüklenirse logo yuvasının zemini
+   olur (style.css: --logo-arkaplan); yüklenemezse logo tek başına kalır. */
+(function () {
+    const yuva = document.getElementById("sol-bar-logo");
+    const img = new Image();
+    img.onload = () => {
+        if (yuva) yuva.style.setProperty("--logo-arkaplan", 'url("' + GORSEL.katibArkaplan + '")');
+    };
+    img.src = GORSEL.katibArkaplan;
+})();
 
 /* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük
    kalmasın); kırpılamazsa dosya olduğu gibi. cb(src) */
@@ -219,10 +230,10 @@ function saydamKirp(url, cb, hata, beyazDa) {
 /* ==================== SOL BAR ÖLÇEĞİ ====================
    Sol barın bütün içeriği (logo, sayfa kümeleri, Renk Modu, Arşiv,
    Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
-   (#sol-bar-ic) tasarım eninde (224 px) doğal boyuyla dizilir. Ekran
+   (#sol-bar-ic) tasarım eninde (300 px) doğal boyuyla dizilir. Ekran
    yetmezse barın yüksekliğine sığacak oranda küçülür, barın eni de aynı
    oranda daralır; büyük ekranda büyümez, tasarım boyunda kalır. */
-const SOL_BAR_TASARIM_EN = 224;
+const SOL_BAR_TASARIM_EN = 300;
 const SOL_BAR_OLCEK = { min: 0.6, max: 1.0 };
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");

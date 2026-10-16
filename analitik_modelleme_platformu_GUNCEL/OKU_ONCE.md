@@ -23,6 +23,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
 | `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
+| `katib_arkaplan` | `katib_arkaplan.png` | Logonun arkasındaki İstanbul çizimi (saydam, 3:1; ortası boş) |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -70,7 +71,8 @@ SIL Open Font License). Gövde 400; başlıklar ve sol bar satırları 600;
 vurgu 700. Rakamlar tablolarda eşit genişlikte.
 
 **Sol bar**
-- Tepede KATIB logosu.
+- Tepede KATIB logosu; arkasında barın eni boyunca İstanbul çizimi (solda
+  Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta.
 - **Model Platformu:**
   - Model Akışı
   - Gösterge Paneli
@@ -86,7 +88,7 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
 Uygulama ekranın tamamını kullanır. Sol bar kaydırmasızdır ve sıkı
-ölçüdedir (satırlar 32 px, yazılar 11.5 px). Ekran yetmezse içerik sığacak
+ölçüdedir (tasarım eni 300 px, satırlar 32 px, yazılar 11.5 px). Ekran yetmezse içerik sığacak
 oranda küçülür, bar eni de aynı oranda daralır; büyük ekranda büyümez.
 
 **Model Akışı**
