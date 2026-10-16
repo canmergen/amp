@@ -4043,22 +4043,44 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-kume-ad img.ikon-gorsel { width: 28px; height: 28px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
 #sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 22px; height: 22px; }
-/* Görünüm anahtarı görselle (gorunum_secenekler): görsel anahtarın zemini,
-   oranı yaklaşık 3:1. Üç simge yuvası saydam tıklama alanı; seçili mod
-   kırmızı halkalı. */
+/* Görünüm anahtarı görselle (gorunum_secenekler): görsel anahtarın zemini
+   (kırpılmış hâli 2,88:1). Üç simge yuvası görseldeki dairelerin tam
+   üstüne oturur; konumlar görselden ölçüldü (enin ve boyun yüzdesi;
+   güneş dairesi ötekilerden büyük). Seçili modun dairesi kırmızı
+   halkalı ve tam renkli; seçilmeyenler hafif soluk. */
 #sol-bar .tema-anahtar.gorselli {
-  width: 84px; height: 28px; gap: 0; padding: 0;
-  background: center / contain no-repeat; mix-blend-mode: multiply;
+  position: relative; display: block;
+  width: 89px; height: 31px; gap: 0; padding: 0; border-radius: 0;
+  background: center / 100% 100% no-repeat;
 }
 #sol-bar .tema-anahtar.gorselli span {
-  flex: 1 1 0; width: auto; height: 100%; border-radius: 50%;
-  background: transparent !important; box-shadow: none !important;
+  position: absolute; width: auto; height: auto; border-radius: 50%;
+  background: rgba(255,255,255,.45) !important; box-shadow: none !important;
+  transition: background .12s, box-shadow .12s;
 }
+#sol-bar .tema-anahtar.gorselli .tema-gunes { left: 2.6%; width: 30.6%; top: 5.9%; height: 88.2%; }
+#sol-bar .tema-anahtar.gorselli .tema-sepya { left: 36.5%; width: 27.5%; top: 10.4%; height: 79.2%; }
+#sol-bar .tema-anahtar.gorselli .tema-gri   { left: 67.6%; width: 27.8%; top: 9.9%; height: 80.2%; }
 #sol-bar .tema-anahtar.gorselli svg { display: none; }
+#sol-bar .tema-anahtar.gorselli span:hover { background: transparent !important; }
 #kabuk:not(.gri):not(.sepya) #sol-bar .tema-anahtar.gorselli .tema-gunes,
 #kabuk.sepya #sol-bar .tema-anahtar.gorselli .tema-sepya,
 #kabuk.gri #sol-bar .tema-anahtar.gorselli .tema-gri {
+  background: transparent !important;
   box-shadow: 0 0 0 2px var(--kirmizi) !important;
+}
+
+/* ANA SAYFA: MODEL PLATFORMU kümesinin üstünde tek satırlık beyaz kart
+   (kilitli blokların kesik kenarı yok). */
+#sol-bar .ust-kume.ana-sayfa-kume {
+  padding: 3px; border: 1px solid var(--kenar); border-style: solid;
+  background: var(--yuzey); box-shadow: var(--golge-1);
+}
+#sol-bar .ana-sayfa-kume > .ust-sekme { background: var(--yuzey); color: var(--metin); }
+#sol-bar .ana-sayfa-kume > .ust-sekme:hover { background: var(--kirmizi-acik); }
+#sol-bar .ana-sayfa-kume > .ust-sekme.aktif {
+  background: linear-gradient(90deg, var(--pembe-secili) 0%, var(--yuzey) 100%);
+  box-shadow: inset 4px 0 0 var(--kirmizi);
 }
 
 

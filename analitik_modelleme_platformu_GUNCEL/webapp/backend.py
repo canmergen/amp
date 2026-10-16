@@ -38,6 +38,7 @@ GORSELLER = {
     # yarımada ve vapur; ortası boş, logo oraya oturur)
     "katib_arkaplan": "katib_arkaplan.png",
     # Sol bar ikonları (çizim); yüklenemeyenin yerinde çizgi ikon kalır
+    "anasayfa":        "anasayfa.png",
     "model_platformu": "model_platformu.png",
     "model_akisi":     "model_akisi.png",
     "gosterge_paneli": "gosterge_paneli.png",

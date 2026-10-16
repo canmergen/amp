@@ -111,7 +111,7 @@ let SONUC_KARTLARI = [];
 const PANELDE_KARAR = { sfa_karar: "degisken" };
 const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
 /* Sol bardaki kutu -> sayfa (ustSekmeGuncelle, kutu tıklamaları). */
-const UST_SAYFA = { akis: "calisma", dokuman: "ozet", sohbet: "sohbet", dashboard: "dashboard" };
+const UST_SAYFA = { anasayfa: "anasayfa", akis: "calisma", dokuman: "ozet", sohbet: "sohbet", dashboard: "dashboard" };
 const katibLogoEl = document.getElementById("katib-logo");
 /* Giriş bölgesinin kilidi için. */
 const girisBolge  = document.getElementById("giris-bolge");
@@ -119,6 +119,7 @@ const kabukEl     = document.getElementById("kabuk");
 
 const sayfalar    = { calisma:   document.getElementById("sayfa-calisma"),
                       ozet:      document.getElementById("sayfa-ozet"),
+                      anasayfa:  document.getElementById("sayfa-anasayfa"),
                       sohbet:    document.getElementById("sayfa-sohbet"),
                       dashboard: document.getElementById("sayfa-dashboard") };
 const sekmeler    = Array.from(document.querySelectorAll(".sekme"));
@@ -179,6 +180,7 @@ saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
    Görsel yüklenemezse çizgi ikon yerinde kalır. Aynı görsel birden çok
    satırda kullanılabilir (KATIB'le Sohbet ve Gösterge Paneli iki yerde). */
 const SOL_BAR_IKONLARI = [
+    ['#sol-bar .ust-sekme[data-ust="anasayfa"] > svg.ikon', "anasayfa"],
     ["#sol-bar .ust-kume-ad > svg.ikon", "model_platformu"],
     ['#sol-bar .ust-sekme[data-ust="akis"] > svg.ikon', "model_akisi"],
     ['#sol-bar .ust-sekme[data-tab="ozet"] > svg.ikon', "gosterge_paneli"],
@@ -5588,7 +5590,7 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
     }
 }
 
-/* AKIŞ, ÖZET, SOHBET, DASHBOARD kutuları. Esc analiz alanını kapatır
+/* ANA SAYFA, AKIŞ, ÖZET, SOHBET, DASHBOARD kutuları. Esc analiz alanını kapatır
    (AKIŞ'a döner). */
 document.querySelectorAll(".ust-sekme[data-ust]").forEach(b => {
     b.onclick = () => {

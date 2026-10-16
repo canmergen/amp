@@ -24,6 +24,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 |---|---|---|
 | `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
 | `katib_arkaplan` | `katib_arkaplan.png` | Logonun arkasındaki İstanbul çizimi (saydam, 3:1; ortası boş) |
+| `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
 | `gosterge_paneli` | `gosterge_paneli.png` | Sol bar: Gösterge Paneli (iki satırda) |
@@ -84,6 +85,8 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 **Sol bar**
 - Tepede KATIB logosu; arkasında barın eni boyunca İstanbul çizimi (solda
   Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta.
+- **Ana Sayfa:** Model Platformu'nun üstünde ayrı satır; kendi sayfasını
+  açar (içerik hazırlanıyor).
 - **Model Platformu:**
   - Model Akışı
   - Gösterge Paneli

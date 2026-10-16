@@ -33,6 +33,11 @@
          KAPALI (.kapali: gri, kilitli, tıklanmaz). Açılınca .kapali sınıfı
          kaldırılır, kendi sayfalarına geçer (app.js: sayfaAc). -->
     <nav id="ust-sekmeler" aria-label="Sayfalar">
+      <!-- ANA SAYFA: MODEL PLATFORMU kümesinin üstünde ayrı satır; kendi
+           sayfasını açar (içerik hazırlanıyor). -->
+      <div class="ust-kume tekli ana-sayfa-kume">
+        <button class="ust-sekme" data-ust="anasayfa" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"></path></svg>ANA SAYFA<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+      </div>
       <div class="ust-kume">
         <span class="ust-kume-ad"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8 4.5v9l-8 4.5-8-4.5V7z"></path><path d="M4 7l8 4.5L20 7M12 11.5V21"></path></svg>MODEL PLATFORMU</span>
         <button class="ust-sekme" data-ust="akis" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M6.5 10v4a3 3 0 0 0 3 3H14"></path></svg>MODEL AKIŞI<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
@@ -187,9 +192,15 @@
 
   </div>
 
-  <!-- ===================== SOHBET ve DASHBOARD =====================
+  <!-- ===================== ANA SAYFA, SOHBET ve DASHBOARD =====================
        Sol bardaki ayrı bloklar. İçerikleri ayrıca kurulacak; şimdilik
        yalnız sayfa iskeleti. -->
+  <div id="sayfa-anasayfa" class="sayfa gizli">
+    <div class="bos-sayfa">
+      <div class="bos-sayfa-ad">Ana Sayfa</div>
+      <div class="bos-sayfa-not">Bu bölüm hazırlanıyor.</div>
+    </div>
+  </div>
   <div id="sayfa-sohbet" class="sayfa gizli">
     <div class="bos-sayfa">
       <div class="bos-sayfa-ad">KATIB'le Sohbet</div>
