@@ -4027,6 +4027,25 @@ span.bolme-cip { cursor: default; }
 #sol-bar .tema-anahtar svg { width: 12px; height: 12px; }
 #sol-bar .sol-bar-dugmeler { gap: 6px; }
 
+/* ---- Sol bar çizim ikonları ----
+   Satırlardaki çizimler (app.js: SOL_BAR_IKONLARI) 26 px; satır boyu
+   onları taşıyacak kadar (36 px). Beyaz zeminli çizimler sepya ve gri
+   zeminde beyaz kutu gibi durmasın diye "multiply" ile basılır: beyaz
+   kısımlar zeminin rengini alır, mürekkep çizgiler kalır. Kırmızı küme
+   başlığındaki çizim beyaz yuvarlak bir kutuda durur. Kilitli satırlarda
+   çizim soluk ve renksiz. */
+#sol-bar .ust-sekme { height: 36px; }
+#sol-bar .ust-kume-ad { height: 38px; }
+#sol-bar img.ikon-gorsel {
+  display: block; flex-shrink: 0; width: 26px; height: 26px;
+  object-fit: contain; mix-blend-mode: multiply;
+}
+#sol-bar .ust-kume-ad img.ikon-gorsel {
+  width: 28px; height: 28px; padding: 2px; border-radius: 7px;
+  background: #fff; mix-blend-mode: normal;
+}
+#sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
+
 
 
 

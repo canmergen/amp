@@ -37,6 +37,13 @@ GORSELLER = {
     # Logonun arkasındaki İstanbul çizimi (solda Galata, sağda tarihi
     # yarımada ve vapur; ortası boş, logo oraya oturur)
     "katib_arkaplan": "katib_arkaplan.png",
+    # Sol bar ikonları (çizim); yüklenemeyenin yerinde çizgi ikon kalır
+    "model_platformu": "model_platformu.png",
+    "model_akisi":     "model_akisi.png",
+    "gosterge_paneli": "gosterge_paneli.png",
+    "degiskenler":     "degiskenler.png",
+    "ozet":            "ozet.png",
+    "katible_sohbet":  "katible_sohbet.png",
     # Sohbetteki ilk (karsilama) mesajin robotu
     "karsilama":  "robot_welcome.png",
     # Normal konusma

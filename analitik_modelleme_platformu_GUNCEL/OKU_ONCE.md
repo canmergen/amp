@@ -24,12 +24,19 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 |---|---|---|
 | `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
 | `katib_arkaplan` | `katib_arkaplan.png` | Logonun arkasındaki İstanbul çizimi (saydam, 3:1; ortası boş) |
+| `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
+| `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
+| `gosterge_paneli` | `gosterge_paneli.png` | Sol bar: Gösterge Paneli (iki satırda) |
+| `degiskenler` | `degiskenler.png` | Sol bar: Değişkenler |
+| `ozet` | `ozet.png` | Sol bar: Özet |
+| `katible_sohbet` | `katible_sohbet.png` | Sol bar: KATIB'le Sohbet (iki satırda) |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
 | `user` | `robot_llm_person.png` | Kullanıcı balonu |
 
-Görsel bulunamazsa yerinde boşluk kalır, sayfa bozulmaz.
+Görsel bulunamazsa yerinde boşluk kalır, sayfa bozulmaz; sol bar ikonu
+bulunamazsa yerinde çizgi ikon kalır.
 
 **`PROJE_HAFIZASI` (managed folder):** çalışma kayıtları (Arşiv), onaylı tanım
 hafızası ve veri seti sahipliği.

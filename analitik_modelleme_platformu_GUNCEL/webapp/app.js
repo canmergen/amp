@@ -174,6 +174,38 @@ katibLogoEl.onerror = () => { katibLogoEl.style.display = "none"; solBarOlcekle(
 katibLogoEl.onload = () => solBarOlcekle();
 saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
            () => { katibLogoEl.style.display = "none"; solBarOlcekle(); }, true);
+/* SOL BAR İKONLARI: her satırın çizgi ikonu (SVG) klasördeki çizimle
+   (PNG) değiştirilir. Kenarlardaki saydam ve beyaz boşluk kırpılır.
+   Görsel yüklenemezse çizgi ikon yerinde kalır. Aynı görsel birden çok
+   satırda kullanılabilir (KATIB'le Sohbet ve Gösterge Paneli iki yerde). */
+const SOL_BAR_IKONLARI = [
+    ["#sol-bar .ust-kume-ad", "model_platformu"],
+    ['#sol-bar .ust-sekme[data-ust="akis"]', "model_akisi"],
+    ['#sol-bar .ust-sekme[data-tab="ozet"]', "gosterge_paneli"],
+    ['#sol-bar .ust-sekme[data-tab="degisken"]', "degiskenler"],
+    ['#sol-bar .ust-sekme[data-ust="dokuman"]', "ozet"],
+    ['#sol-bar .ust-sekme[data-ust="model_sohbet"]', "katible_sohbet"],
+    ['#sol-bar .ust-sekme[data-ust="sohbet"]', "katible_sohbet"],
+    ['#sol-bar .ust-sekme[data-ust="dashboard"]', "gosterge_paneli"]
+];
+(function solBarIkonlari() {
+    const kirpilmis = {};
+    SOL_BAR_IKONLARI.forEach(([secici, ad]) => {
+        const yer = document.querySelector(secici);
+        const svg = yer && yer.querySelector(":scope > svg.ikon");
+        if (!svg) return;
+        if (!kirpilmis[ad]) kirpilmis[ad] = new Promise((tamam, hata) =>
+            saydamKirp(getWebAppBackendUrl("gorsel/" + ad), tamam, hata, true));
+        kirpilmis[ad].then(src => {
+            const img = document.createElement("img");
+            img.className = "ikon-gorsel";
+            img.alt = "";
+            img.src = src;
+            svg.replaceWith(img);
+        }, () => { /* görsel yok: çizgi ikon kalır */ });
+    });
+})();
+
 /* Logonun arkasındaki İstanbul çizimi: yüklenirse logo yuvasının zemini
    olur (style.css: --logo-arkaplan); yüklenemezse logo tek başına kalır. */
 (function () {
