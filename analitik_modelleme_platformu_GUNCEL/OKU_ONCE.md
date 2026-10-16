@@ -94,10 +94,9 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
-  tonu), Gri (açık gri zemin, koyu yazı). Anahtar kodla çizilmiş üç
-  bölmeli kapsül: güneş (Beyaz), taralı sepya disk (Sepya), ay (Gri);
-  simgeye basınca o mod seçilir; seçili bölme açık pembe zeminli, simgesi
-  tam renkli. Düğmenin
+  tonu), Gri (açık gri zemin, koyu yazı). Anahtar üç bölmeli segmentli
+  düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); simgeye
+  basınca o mod seçilir; seçili bölme beyaz, simgesi kırmızı. Düğmenin
   başka bir yerine basınca sıradaki moda geçilir.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
