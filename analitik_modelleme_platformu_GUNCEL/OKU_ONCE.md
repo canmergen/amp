@@ -64,13 +64,10 @@ içindeki `VARSAYILAN_MODEL`.
 
 ## Ekran
 
-**Yazı tipleri** (`style.css` içinde gömülü; dış font sunucusuna bağlanmaz,
-ikisi de SIL Open Font License):
-- **Newsreader 600:** başlıklar (adım ve alt adım adları, iş akışı fazları,
-  seçim kartları, Gösterge Paneli ve Özet başlıkları, sol bardaki MODEL
-  PLATFORMU).
-- **Source Sans 3:** gövde yazısı, menü, düğme, form ve tablolar; sol bar
-  satırları 600.
+**Yazı tipi:** bütün arayüz tek aile, **Newsreader** (New Yorker esintili
+editoryal serif; `style.css` içinde gömülü, dış font sunucusuna bağlanmaz,
+SIL Open Font License). Gövde 400; başlıklar ve sol bar satırları 600;
+vurgu 700. Rakamlar tablolarda eşit genişlikte.
 
 **Sol bar**
 - Tepede KATIB logosu.
