@@ -198,7 +198,7 @@
 
 /* -------- RENK MODLARI --------
    Üç mod: Beyaz (varsayılan, :root değerleri), Sepya (#kabuk.sepya) ve
-   Gri (#kabuk.gri). Seçim sol bardaki Renk Modu anahtarından
+   Gri (#kabuk.gri). Seçim sol bardaki Görünüm anahtarından
    yapılır ve tarayıcıda hatırlanır (app.js: temaUygula). Her mod aynı
    değişkenleri kendi tonlarıyla yeniden tanımlar; bileşenler yalnız
    değişkenleri okur. Metin kontrastları her modda en az 4,5:1. */
@@ -3901,12 +3901,12 @@ span.bolme-cip { cursor: default; }
 }
 
 /* ==================== SOL BAR TASARIMI ====================
-   Üstte logo + KATIB + alt başlık; Model
-   Platformu koyu kırmızı degrade kart, içinde büyük beyaz satırlar ve
-   sağda › oku (seçili satır pembe zemin, solda kırmızı çizgi, kırmızı
-   simge ve ok); kilitli bloklar kesik kenarlı gri; altta "Görünüm
-   Ayarları" kartı (Renk Modu, Çerçeve; yuvarlak anahtarlar) ve oklu
-   Arşiv / Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE yazar. */
+   Üstte KATIB logosu ve arkasında İstanbul çizimi; Model Platformu
+   koyu kırmızı degrade kart, içinde beyaz satırlar ve sağda › oku
+   (seçili satır pembe zemin, solda kırmızı çizgi, kırmızı simge ve ok);
+   kilitli bloklar kesik kenarlı gri; altta Görünüm (üç mod anahtarı),
+   oklu Arşiv ve Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE
+   yazar. */
 :root { --sol-bar-en: 300px; }
 #sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
 #kabuk.sepya #sol-bar { --sol-ok: #8C7D68; background: var(--yuzey-alt); }
@@ -3968,7 +3968,7 @@ span.bolme-cip { cursor: default; }
 /* ---- Alt bölüm ---- */
 #sol-bar-alt { border-top: 0; padding: 4px 10px 10px; }
 #sol-bar .sol-bar-dugmeler { gap: 8px; }
-/* Renk Modu: Arşiv ve Yeni Çalışma gibi beyaz kart; sağda güneş / ay
+/* Görünüm: Arşiv ve Yeni Çalışma gibi beyaz kart; sağda güneş / ay
    anahtarı, geçerli mod pembe zeminli kırmızı. */
 #sol-bar .tema-anahtar { gap: 4px; padding: 0; background: none; }
 #sol-bar .tema-anahtar span {
@@ -3981,7 +3981,7 @@ span.bolme-cip { cursor: default; }
   background: var(--kirmizi-acik); color: var(--kirmizi); box-shadow: inset 0 0 0 1px var(--kirmizi-halka);
 }
 #sol-bar #tema-btn svg.ikon { width: 17px; height: 17px; flex-shrink: 0; }
-/* Renk Modu, Arşiv ve Yeni Çalışma: beyaz kartlar. */
+/* Görünüm, Arşiv ve Yeni Çalışma: beyaz kartlar. */
 #sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
   height: 40px; padding: 0 12px; gap: 10px; border-radius: 12px;
   border: 1px solid var(--kenar); background: var(--yuzey); box-shadow: var(--golge-1);
@@ -4031,20 +4031,35 @@ span.bolme-cip { cursor: default; }
    Satırlardaki çizimler (app.js: SOL_BAR_IKONLARI) 26 px; satır boyu
    onları taşıyacak kadar (36 px). Beyaz zeminli çizimler sepya ve gri
    zeminde beyaz kutu gibi durmasın diye "multiply" ile basılır: beyaz
-   kısımlar zeminin rengini alır, mürekkep çizgiler kalır. Kırmızı küme
-   başlığındaki çizim beyaz yuvarlak bir kutuda durur. Kilitli satırlarda
-   çizim soluk ve renksiz. */
+   kısımlar zeminin rengini alır, mürekkep çizgiler kalır. Kilitli
+   satırlarda çizim soluk ve renksiz. Alttaki Görünüm, Arşiv ve Yeni
+   Çalışma düğmelerinde çizim 22 px. */
 #sol-bar .ust-sekme { height: 36px; }
 #sol-bar .ust-kume-ad { height: 38px; }
 #sol-bar img.ikon-gorsel {
   display: block; flex-shrink: 0; width: 26px; height: 26px;
   object-fit: contain; mix-blend-mode: multiply;
 }
-#sol-bar .ust-kume-ad img.ikon-gorsel {
-  width: 28px; height: 28px; padding: 2px; border-radius: 7px;
-  background: #fff; mix-blend-mode: normal;
-}
+#sol-bar .ust-kume-ad img.ikon-gorsel { width: 28px; height: 28px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
+#sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 22px; height: 22px; }
+/* Görünüm anahtarı görselle (gorunum_secenekler): görsel anahtarın zemini,
+   oranı yaklaşık 3:1. Üç simge yuvası saydam tıklama alanı; seçili mod
+   kırmızı halkalı. */
+#sol-bar .tema-anahtar.gorselli {
+  width: 84px; height: 28px; gap: 0; padding: 0;
+  background: center / contain no-repeat; mix-blend-mode: multiply;
+}
+#sol-bar .tema-anahtar.gorselli span {
+  flex: 1 1 0; width: auto; height: 100%; border-radius: 50%;
+  background: transparent !important; box-shadow: none !important;
+}
+#sol-bar .tema-anahtar.gorselli svg { display: none; }
+#kabuk:not(.gri):not(.sepya) #sol-bar .tema-anahtar.gorselli .tema-gunes,
+#kabuk.sepya #sol-bar .tema-anahtar.gorselli .tema-sepya,
+#kabuk.gri #sol-bar .tema-anahtar.gorselli .tema-gri {
+  box-shadow: 0 0 0 2px var(--kirmizi) !important;
+}
 
 
 

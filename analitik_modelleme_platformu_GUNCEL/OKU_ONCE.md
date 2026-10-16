@@ -30,6 +30,10 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `degiskenler` | `degiskenler.png` | Sol bar: Değişkenler |
 | `ozet` | `ozet.png` | Sol bar: Özet |
 | `katible_sohbet` | `katible_sohbet.png` | Sol bar: KATIB'le Sohbet (iki satırda) |
+| `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
+| `gorunum_secenekler` | `gorunum_secenekler.png` | Görünüm düğmesindeki üç mod anahtarı (soldan sağa Beyaz / Sepya / Gri) |
+| `arsiv` | `arsiv.png` | Sol bar: Arşiv |
+| `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -87,10 +91,11 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   - Özet
   - KATIB'le Sohbet (kapalı)
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
-- **Renk Modu:** üç mod: Beyaz (varsayılan), Sepya (sıcak kâğıt tonu),
-  Gri (açık gri zemin, koyu yazı). Anahtardaki simgeye (güneş / kitap /
-  yarısı dolu daire) basınca o mod seçilir; düğmenin başka bir yerine
-  basınca sıradaki moda geçilir.
+- **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
+  tonu), Gri (açık gri zemin, koyu yazı). Anahtar `gorunum_secenekler.png`
+  ile çizilir (soldan sağa Beyaz / Sepya / Gri); simgeye basınca o mod
+  seçilir, seçili mod kırmızı halkalı. Düğmenin başka bir yerine basınca
+  sıradaki moda geçilir.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
@@ -125,7 +130,7 @@ oranda küçülür, bar eni de aynı oranda daralır; büyük ekranda büyümez.
 
 | Anahtar | Ne |
 |---|---|
-| `amp_renk_modu` | Renk modu: `acik` (Beyaz), `sepya`, `gri` |
+| `amp_renk_modu` | Görünüm (renk modu): `acik` (Beyaz), `sepya`, `gri` |
 | `amp_akis_acik` | İş Akışı bölmesi açık / kapalı |
 | `amp_dg_alt` | Değişkenler'de açık görünüm |
 | `fe_agent_calisma_id` | Açık çalışmanın kimliği |

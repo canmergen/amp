@@ -179,24 +179,29 @@ saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
    Görsel yüklenemezse çizgi ikon yerinde kalır. Aynı görsel birden çok
    satırda kullanılabilir (KATIB'le Sohbet ve Gösterge Paneli iki yerde). */
 const SOL_BAR_IKONLARI = [
-    ["#sol-bar .ust-kume-ad", "model_platformu"],
-    ['#sol-bar .ust-sekme[data-ust="akis"]', "model_akisi"],
-    ['#sol-bar .ust-sekme[data-tab="ozet"]', "gosterge_paneli"],
-    ['#sol-bar .ust-sekme[data-tab="degisken"]', "degiskenler"],
-    ['#sol-bar .ust-sekme[data-ust="dokuman"]', "ozet"],
-    ['#sol-bar .ust-sekme[data-ust="model_sohbet"]', "katible_sohbet"],
-    ['#sol-bar .ust-sekme[data-ust="sohbet"]', "katible_sohbet"],
-    ['#sol-bar .ust-sekme[data-ust="dashboard"]', "gosterge_paneli"]
+    ["#sol-bar .ust-kume-ad > svg.ikon", "model_platformu"],
+    ['#sol-bar .ust-sekme[data-ust="akis"] > svg.ikon', "model_akisi"],
+    ['#sol-bar .ust-sekme[data-tab="ozet"] > svg.ikon', "gosterge_paneli"],
+    ['#sol-bar .ust-sekme[data-tab="degisken"] > svg.ikon', "degiskenler"],
+    ['#sol-bar .ust-sekme[data-ust="dokuman"] > svg.ikon', "ozet"],
+    ['#sol-bar .ust-sekme[data-ust="model_sohbet"] > svg.ikon', "katible_sohbet"],
+    ['#sol-bar .ust-sekme[data-ust="sohbet"] > svg.ikon', "katible_sohbet"],
+    ['#sol-bar .ust-sekme[data-ust="dashboard"] > svg.ikon', "gosterge_paneli"],
+    ["#tema-btn > svg.ikon", "gorunum"],
+    ["#calismalar-btn > svg.sifirla-ikon", "arsiv"],
+    ["#sifirla-btn > svg.sifirla-ikon", "yeni_calisma"]
 ];
+const SOL_BAR_GORSEL = {};
+function solBarGorseli(ad) {
+    if (!SOL_BAR_GORSEL[ad]) SOL_BAR_GORSEL[ad] = new Promise((tamam, hata) =>
+        saydamKirp(getWebAppBackendUrl("gorsel/" + ad), tamam, hata, true));
+    return SOL_BAR_GORSEL[ad];
+}
 (function solBarIkonlari() {
-    const kirpilmis = {};
     SOL_BAR_IKONLARI.forEach(([secici, ad]) => {
-        const yer = document.querySelector(secici);
-        const svg = yer && yer.querySelector(":scope > svg.ikon");
+        const svg = document.querySelector(secici);
         if (!svg) return;
-        if (!kirpilmis[ad]) kirpilmis[ad] = new Promise((tamam, hata) =>
-            saydamKirp(getWebAppBackendUrl("gorsel/" + ad), tamam, hata, true));
-        kirpilmis[ad].then(src => {
+        solBarGorseli(ad).then(src => {
             const img = document.createElement("img");
             img.className = "ikon-gorsel";
             img.alt = "";
@@ -204,6 +209,14 @@ const SOL_BAR_IKONLARI = [
             svg.replaceWith(img);
         }, () => { /* görsel yok: çizgi ikon kalır */ });
     });
+    /* Görünüm anahtarı: üç simge tek görselde (soldan sağa Beyaz, Sepya,
+       Gri). Görsel anahtarın zemini olur; üç simge yuvası üstünde
+       saydam tıklama alanı olarak kalır, seçili mod halkayla gösterilir. */
+    const anahtar = document.querySelector("#tema-btn .tema-anahtar");
+    if (anahtar) solBarGorseli("gorunum_secenekler").then(src => {
+        anahtar.style.backgroundImage = 'url("' + src + '")';
+        anahtar.classList.add("gorselli");
+    }, () => { /* görsel yok: çizgi simgeler kalır */ });
 })();
 
 /* Logonun arkasındaki İstanbul çizimi: yüklenirse logo yuvasının zemini
@@ -260,7 +273,7 @@ function saydamKirp(url, cb, hata, beyazDa) {
 }
 
 /* ==================== SOL BAR ÖLÇEĞİ ====================
-   Sol barın bütün içeriği (logo, sayfa kümeleri, Renk Modu, Arşiv,
+   Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm, Arşiv,
    Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
    (#sol-bar-ic) tasarım eninde (300 px) doğal boyuyla dizilir. Ekran
    yetmezse barın yüksekliğine sığacak oranda küçülür, barın eni de aynı
@@ -348,7 +361,7 @@ function baslikBuyuk(s) {
 
 
 /* ==================== Renk modu (beyaz / sepya / gri) ==================== */
-/* Sol bardaki Renk Modu düğmesi. Üç mod: "acik" (Beyaz), "sepya" ve
+/* Sol bardaki Görünüm düğmesi. Üç mod: "acik" (Beyaz), "sepya" ve
    "gri" (açık gri). Sepya ve gri modda #kabuk.sepya / #kabuk.gri
    renk değişkenlerini devralır. Anahtardaki bir simgeye basınca o mod
    seçilir; düğmenin başka bir yerine basınca sıradaki moda geçilir.
@@ -363,8 +376,8 @@ function temaUygula(kaydet) {
     kabukEl.classList.toggle("sepya", temaModu === "sepya");
     kabukEl.classList.toggle("gri", temaModu === "gri");
     if (temaBtn) {
-        temaBtn.title = "Renk modu: " + TEMA_ADI[temaModu];
-        temaBtn.setAttribute("aria-label", "Renk modu: " + TEMA_ADI[temaModu]);
+        temaBtn.title = "Görünüm: " + TEMA_ADI[temaModu];
+        temaBtn.setAttribute("aria-label", "Görünüm: " + TEMA_ADI[temaModu]);
     }
     if (kaydet) {
         try { localStorage.setItem(TEMA_ANAHTAR, temaModu); }

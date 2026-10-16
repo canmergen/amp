@@ -44,6 +44,12 @@ GORSELLER = {
     "degiskenler":     "degiskenler.png",
     "ozet":            "ozet.png",
     "katible_sohbet":  "katible_sohbet.png",
+    "gorunum":         "gorunum.png",
+    # Görünüm düğmesindeki üç mod anahtarı: tek görsel, soldan sağa
+    # Beyaz / Sepya / Gri
+    "gorunum_secenekler": "gorunum_secenekler.png",
+    "arsiv":           "arsiv.png",
+    "yeni_calisma":    "yeni_calisma.png",
     # Sohbetteki ilk (karsilama) mesajin robotu
     "karsilama":  "robot_welcome.png",
     # Normal konusma
