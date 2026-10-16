@@ -122,6 +122,10 @@
      "Kolon ara..." tam siyah olursa doldurulmus deger gibi okunur. */
   --metin-soluk:  #000000;
   --yer-tutucu:   rgba(0,0,0,.45);
+  /* Kilitli (henüz açılmamış) sayfa satırlarının yazısı: kart içinde ve
+     ayrı bloklarda. */
+  --kilitli-yazi:      #A0A6AD;
+  --kilitli-blok-yazi: #8A9099;
   /* GECILEN ADIMIN BASLIGI. Iki temada ayni gri: beyazda 4.54:1, siyahta 4.6:1. */
   --metin-tamam:  #767676;
   --metin-asil:   #000000;     /* gecilen blokta secilenlerin rengi */
@@ -252,57 +256,74 @@
   --kume-secili-yazi: #9E0F14;
 }
 
-/* GRİ: açık gri zemin, koyu yazı. Üç katman: sayfa zemini (#D5D8DD),
-   paneller (#DDE0E4), kartlar (#E8EAED). Metin neredeyse siyah
-   (#111418, kartta 15,3:1). Kırmızı bir ton koyu (#B8121A, zeminde
-   4,7:1); yeşil, kehribar ve gri yazılar da gri zeminde okunacak kadar
-   koyulaştırıldı. Orta gri seçilmedi: orada ne siyah ne beyaz yazı
-   rahat okunur. */
+/* GRİ: koyu gri zemin, beyaz yazı (siyaha kaçmayan orta-koyu gri). Üç
+   katman: sayfa zemini (#3A3E45), paneller (#42464D), kartlar (#4A4F57).
+   Metin beyaz (kartta 8,2:1). Siyah olan her şey (yazı, mürekkep
+   çizgileri, Görünüm anahtarı) beyaza döner: --murekkep açık. Kırmızı
+   yazı açık ton (#FFB0B0, kartta 4,8:1); beyaz yazının altındaki kırmızı
+   dolgu koyu kalır (#C4161C, 6:1). Yeşil, kehribar, mavi yazılar da koyu
+   zeminde okunacak kadar açık; açık zeminli rozet ve vurgular koyu,
+   renkli tonlara döner. color-scheme: dark ile tarayıcının açılır
+   listeleri ve kaydırma çubukları da koyu çizilir. */
 #kabuk.gri {
-  --kirmizi:      #B8121A;
-  --kirmizi-koyu: #960E14;
-  --kirmizi-dolgu: #B8121A;
-  --kirmizi-acik: #F1DADC;
-  --kirmizi-halka: rgba(184,18,26,.18);
+  color-scheme: dark;
+  --murekkep:     #F2F3F5;
 
-  --zemin:        #D5D8DD;
-  --yuzey:        #E8EAED;
-  --yuzey-alt:    #DDE0E4;
-  --kenar:        #C3C7CE;
-  --kenar-guclu:  #A6ACB5;
-  --kenar-acik:   #D0D3D8;
-  --ayrac:        rgba(0,0,0,.40);
+  --kirmizi:      #FFB0B0;
+  --kirmizi-koyu: #FF9A9A;
+  --kirmizi-dolgu: #C4161C;
+  --kirmizi-acik: #5A4448;
+  --kirmizi-halka: rgba(255,140,140,.28);
 
-  --metin:        #111418;
-  --metin-soluk:  #111418;
-  --metin-asil:   #000000;
-  --metin-tamam:  #545C69;
-  --yer-tutucu:   rgba(17,20,24,.50);
+  --zemin:        #3A3E45;
+  --yuzey:        #4A4F57;
+  --yuzey-alt:    #42464D;
+  --kenar:        #60656E;
+  --kenar-guclu:  #7A808A;
+  --kenar-acik:   #555A62;
+  --ayrac:        rgba(0,0,0,.50);
 
-  --user-zemin:   #D3D6DB;
+  --metin:        #FFFFFF;
+  --metin-soluk:  #FFFFFF;
+  --metin-asil:   #FFFFFF;
+  --metin-tamam:  #C9CED5;
+  --yer-tutucu:   rgba(255,255,255,.50);
+  --kilitli-yazi:      #BAC0C8;
+  --kilitli-blok-yazi: #C3C8CF;
 
-  --golge-1:   0 1px 2px rgba(16,24,40,.08);
-  --ust-golge: 0 1px 2px rgba(16,24,40,.12);
-  --golge-2:   0 5px 13px rgba(16,24,40,.14);
+  --user-zemin:   #555A62;
 
-  --yesil:        #0B6E41;
-  --yesil-acik:   #D2E5DA;
-  --excel-acik:   #CFE6D8;
-  --excel-kenar:  #93C3A6;
-  --amber:        #8F4A06;
-  --amber-acik:   #EBDDBF;
-  --sari-acik:    #EDE3B8;
+  --gonder-zemin: #FFFFFF;
+  --gonder-metin: #2A2D33;
 
-  --pembe-secili:  #EFD3D5;
-  --pembe-kenar:   #DDB8BB;
-  --kume-secili-yazi: #960E14;
+  --golge-1:   0 1px 2px rgba(0,0,0,.20);
+  --ust-golge: 0 1px 2px rgba(0,0,0,.25);
+  --golge-2:   0 5px 13px rgba(0,0,0,.30);
+
+  --yesil:        #8FE3B3;
+  --yesil-acik:   #2F4F40;
+  --excel-acik:   #2E4A3A;
+  --excel-kenar:  #5E9277;
+  --excel-pasif-yazi: #8FE3B3;
+  --amber:        #F8C77E;
+  --amber-acik:   #5A4A30;
+  --sari-acik:    #57502F;
+  --mavi:         #A9C6FF;
+  --bilgi-zemin:  rgba(111,220,208,.14);
+  --bilgi-kenar:  #6FDCD0;
+  --grafik-seri:  #8DB0F5;
+  --aralik-seri-2: #F49A6E;
+
+  --pembe-secili:  #5E4549;
+  --pembe-kenar:   #8A5A60;
+  --kume-secili-yazi: #FFB0B0;
 }
 #kabuk.sepya .blok-durum.kontrol {
   color: #7E4106; background: #F4E2BE; border-color: #7E4106;
 }
 /* Sepya ve gri modda sayfa zemini. */
 body:has(#kabuk.sepya) { background-color: #F1E9D6; }
-body:has(#kabuk.gri) { background-color: #D5D8DD; }
+body:has(#kabuk.gri) { background-color: #3A3E45; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
@@ -567,7 +588,7 @@ body { background-color: #FEFEFE; }
    içteki kutu kenarsız: iki kenar iç içe görünmesin. */
 .ust-kume.tekli:has(> .ust-sekme.kapali) { border-style: dashed; border-color: var(--kenar-guclu); }
 .ust-sekme.kapali, .ust-sekme.kapali:hover {
-  cursor: not-allowed; color: #8A9099; background: transparent;
+  cursor: not-allowed; color: var(--kilitli-blok-yazi); background: transparent;
   border-color: transparent; box-shadow: none;
 }
 /* Her sekmenin önünde ince çizgili ikon; kapalı sekmelerde kilit sağda. */
@@ -579,7 +600,7 @@ body { background-color: #FEFEFE; }
    durur). */
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
-  color: #A0A6AD; background: var(--yuzey); opacity: 1;
+  color: var(--kilitli-yazi); background: var(--yuzey); opacity: 1;
   border-color: transparent; box-shadow: var(--ust-golge);
 }
 .ust-sekme.kapali svg.kilit { width: 12px; height: 12px; flex-shrink: 0; margin-left: auto; }
@@ -3876,7 +3897,7 @@ span.bolme-cip { cursor: default; }
 :root { --sol-bar-en: 300px; }
 #sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
 #kabuk.sepya #sol-bar { --sol-ok: #8C7D68; background: var(--yuzey-alt); }
-#kabuk.gri #sol-bar { --sol-ok: #6B7380; background: var(--yuzey-alt); }
+#kabuk.gri #sol-bar { --sol-ok: #B5BBC3; background: var(--yuzey-alt); }
 
 
 #ust-sekmeler { gap: 10px; padding: var(--b-3) 10px; }
@@ -3895,14 +3916,14 @@ span.bolme-cip { cursor: default; }
 /* Kart içindeki kilitli satır: soluk gri yazı ve kilit. */
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
 #sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
-  background: transparent; color: #A0A6AD; box-shadow: none;
+  background: transparent; color: var(--kilitli-yazi); box-shadow: none;
 }
 /* Ayrı kilitli bloklar: açık gri zemin, kesik kenar. */
 #sol-bar .ust-kume.tekli {
   padding: 3px; border-radius: 12px; border: 1px dashed var(--kenar-guclu);
   background: var(--kenar-acik);
 }
-#sol-bar .ust-kume.tekli > .ust-sekme.kapali { color: #8A9099; }
+#sol-bar .ust-kume.tekli > .ust-sekme.kapali { color: var(--kilitli-blok-yazi); }
 
 /* ---- Alt bölüm ---- */
 #sol-bar-alt { border-top: 0; padding: 4px 10px 10px; }
@@ -3968,6 +3989,18 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-kume-ad img.ikon-gorsel { width: 34px; height: 34px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
 #sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 28px; height: 28px; }
+/* Gri modda zemin koyu: çizimler (ikonlar, logo ve arkasındaki İstanbul
+   çizimi, robot) negatife çevrilir ve "lighten" ile basılır. Siyah
+   mürekkep çizgiler beyaz olur, beyaz kısımlar zeminin grisini alır;
+   hue-rotate kırmızıyı kırmızı tutar. */
+#kabuk.gri #sol-bar img.ikon-gorsel,
+#kabuk.gri #sol-bar-logo,
+#kabuk.gri #robot-alt {
+  filter: invert(1) hue-rotate(180deg); mix-blend-mode: lighten;
+}
+#kabuk.gri #sol-bar .ust-sekme.kapali img.ikon-gorsel {
+  filter: invert(1) hue-rotate(180deg) grayscale(1); opacity: .55;
+}
 /* ---- Görünüm anahtarı ----
    Dergi dilinde (New Yorker): renk yerine mürekkep. İnce siyah çerçeveli
    dikdörtgen, bölmeler ince siyah çizgiyle ayrılır; simgeler mürekkep
@@ -3989,7 +4022,7 @@ span.bolme-cip { cursor: default; }
 }
 #tema-btn .tema-anahtar span + span { border-left: 1px solid var(--murekkep); }
 #tema-btn .tema-anahtar svg { display: block; width: 13px; height: 13px; }
-#tema-btn .tema-anahtar span:hover { background: rgba(26,26,26,.08); }
+#tema-btn .tema-anahtar span:hover { background: color-mix(in srgb, var(--murekkep) 8%, transparent); }
 #kabuk:not(.gri):not(.sepya) #tema-btn .tema-gunes,
 #kabuk.sepya #tema-btn .tema-sepya,
 #kabuk.gri #tema-btn .tema-gri {
@@ -4051,9 +4084,9 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-sekme:not(.kapali) {
   background: transparent; color: var(--metin); box-shadow: none; border-color: transparent;
 }
-#sol-bar .ust-sekme:not(.kapali):not(.aktif):hover { background: rgba(26,26,26,.05); color: var(--metin); }
+#sol-bar .ust-sekme:not(.kapali):not(.aktif):hover { background: color-mix(in srgb, var(--murekkep) 5%, transparent); color: var(--metin); }
 #sol-bar .ust-sekme.aktif, #sol-bar .ust-sekme.aktif:hover {
-  background: rgba(26,26,26,.06); color: var(--murekkep);
+  background: color-mix(in srgb, var(--murekkep) 7%, transparent); color: var(--murekkep);
   box-shadow: inset 3px 0 0 var(--murekkep);
 }
 #sol-bar .ust-sekme.aktif svg.ikon, #sol-bar .ust-sekme.aktif svg.ok { color: var(--murekkep); }
