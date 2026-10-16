@@ -3931,43 +3931,43 @@ span.bolme-cip { cursor: default; }
 }
 #sol-bar-ic #ust-sekmeler { flex: none; overflow: visible; min-height: 0; }
 #sol-bar-ic #sol-bar-alt { margin-top: auto; }
-/* Sıkı ölçü: satırlar 32 px, yazılar 11.5 px (küme adı 12 px), ikonlar
+/* Sıkı ölçü: yazılar 13 px (küme adı 13.5 px), çizgi ikonları
    15-16 px. Bar büyük ekranda büyümediği için bu boyutlarda kalır. */
 #sol-bar .ust-kume-ad, #sol-bar .ust-sekme {
-  height: 32px; padding: 0 10px; gap: 9px; border-radius: 8px;
-  font-size: 11.5px; letter-spacing: .03em;
+  height: 32px; padding: 0 10px; gap: 10px; border-radius: 8px;
+  font-size: 13px; letter-spacing: .03em;
 }
-#sol-bar .ust-kume-ad { height: 34px; font-size: 12px; padding: 0 8px; }
+#sol-bar .ust-kume-ad { height: 34px; font-size: 13.5px; padding: 0 8px; }
 #sol-bar .ust-sekme svg.ikon { width: 15px; height: 15px; }
 #sol-bar .ust-kume-ad svg.ikon { width: 16px; height: 16px; }
 #sol-bar .ust-sekme svg.ok, #sol-bar .ust-sekme.kapali svg.kilit,
-#sol-bar #calismalar-btn svg.ok { width: 13px; height: 13px; }
+#sol-bar #calismalar-btn svg.ok { width: 14px; height: 14px; }
 #sol-bar .ust-kume { gap: 4px; padding: 4px; border-radius: 12px; }
 #sol-bar .ust-kume.tekli { padding: 2px; border-radius: 10px; }
 #ust-sekmeler { gap: 7px; padding: 8px 10px; }
 #sol-bar-alt { padding: 4px 10px 10px; }
 #sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
-  height: 32px; padding: 0 10px; gap: 9px; border-radius: 10px; font-size: 11.5px;
+  height: 38px; padding: 0 10px; gap: 10px; border-radius: 10px; font-size: 13px;
 }
 #sol-bar #tema-btn svg.ikon, #sol-bar #calismalar-btn .sifirla-ikon, #sol-bar #sifirla-btn .sifirla-ikon { width: 15px; height: 15px; }
 #sol-bar .sol-bar-dugmeler { gap: 6px; }
 
 /* ---- Sol bar çizim ikonları ----
-   Satırlardaki çizimler (app.js: SOL_BAR_IKONLARI) 26 px; satır boyu
-   onları taşıyacak kadar (36 px). Beyaz zeminli çizimler sepya ve gri
+   Satırlardaki çizimler (app.js: SOL_BAR_IKONLARI) 32 px (küme adında
+   34 px); satır boyu onları taşıyacak kadar (40 px). Beyaz zeminli çizimler sepya ve gri
    zeminde beyaz kutu gibi durmasın diye "multiply" ile basılır: beyaz
    kısımlar zeminin rengini alır, mürekkep çizgiler kalır. Kilitli
    satırlarda çizim soluk ve renksiz. Alttaki Görünüm, Arşiv ve Yeni
-   Çalışma düğmelerinde çizim 22 px. */
-#sol-bar .ust-sekme { height: 36px; }
-#sol-bar .ust-kume-ad { height: 38px; }
+   Çalışma düğmelerinde çizim 28 px. */
+#sol-bar .ust-sekme { height: 40px; }
+#sol-bar .ust-kume-ad { height: 42px; }
 #sol-bar img.ikon-gorsel {
-  display: block; flex-shrink: 0; width: 26px; height: 26px;
+  display: block; flex-shrink: 0; width: 32px; height: 32px;
   object-fit: contain; mix-blend-mode: multiply;
 }
-#sol-bar .ust-kume-ad img.ikon-gorsel { width: 28px; height: 28px; }
+#sol-bar .ust-kume-ad img.ikon-gorsel { width: 34px; height: 34px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
-#sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 22px; height: 22px; }
+#sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 28px; height: 28px; }
 /* ---- Görünüm anahtarı ----
    Dergi dilinde (New Yorker): renk yerine mürekkep. İnce siyah çerçeveli
    dikdörtgen, bölmeler ince siyah çizgiyle ayrılır; simgeler mürekkep
@@ -3995,7 +3995,7 @@ span.bolme-cip { cursor: default; }
 #kabuk.gri #tema-btn .tema-gri {
   background: var(--murekkep); color: var(--yuzey);
 }
-#sol-bar .sol-bar-dugmeler #tema-btn { height: 38px; }
+#sol-bar .sol-bar-dugmeler #tema-btn { height: 40px; }
 
 /* ---- Sol bar çizgileri ----
    Mürekkep siyahı ince düz çizgiler (dergi sayfasındaki bölüm çizgileri

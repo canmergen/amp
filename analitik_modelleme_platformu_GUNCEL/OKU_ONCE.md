@@ -110,7 +110,7 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
 Uygulama ekranın tamamını kullanır. Sol bar kaydırmasızdır ve sıkı
-ölçüdedir (tasarım eni 300 px, satırlar 32 px, yazılar 11.5 px). Ekran yetmezse içerik sığacak
+ölçüdedir (tasarım eni 300 px, satırlar 40 px, yazılar 13 px, çizim ikonları 32 px). Ekran yetmezse içerik sığacak
 oranda küçülür, bar eni de aynı oranda daralır; büyük ekranda büyümez.
 
 **Model Akışı**
