@@ -96,15 +96,19 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   - Değişkenler (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)
   - Özet
   - Model Sohbeti (kapalı)
-- Ana Sayfa ve Model Platformu beyaz, ince kenarlı kartlar; seçime göre
-  renk değiştirmez. Seçili satır: solunda kalın siyah çizgi, hafif gri
-  zemin, kalın yazı. Kırmızı ya da pembe vurgu yok.
-- Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
+- Sayfa satırları kartsız, düz liste; satırlarda ok yok (ok yalnız açılıp
+  kapanan Model Platformu başlığında ve Arşiv'de). Model Platformu'nun
+  alt sayfaları içeride, solunda ince kılavuz çizgisiyle. Seçili satır
+  köşesiz: solunda düz siyah çizgi, hafif zemin, kalın yazı. Kırmızı ya
+  da pembe vurgu yok.
+- KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
+  soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
   tonu), Gri (koyu gri zemin, beyaz yazı; siyah olan her şey beyaza
-  döner; logo, ikonlar ve robot renkleri değişmeden, çevrelerinde ince
-  beyaz çizgiyle görünür). Anahtar üç bölmeli segmentli
+  döner; logo ve İstanbul çizimi, ikonlar ve robot renkleri değişmeden
+  kâğıt rengi plakaların üstünde durur; kenar ve çerçeveler canlı
+  kırmızı). Anahtar üç bölmeli segmentli
   düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); ince
   siyah çerçeve ve bölme çizgileri; simgeye basınca o mod seçilir; seçili
   bölme mürekkep siyahıyla dolu, simgesi ters baskı. Düğmenin

@@ -236,7 +236,8 @@ function solBarGorseli(ad) {
 /* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük
    kalmasın); kırpılamazsa dosya olduğu gibi. cb(src)
    zeminSil: beyaz zeminli çizimin (sol bar ikonları) zemini saydam
-   yapılır; koyu (Gri) modda ikon beyaz bir kare içinde durmasın. Yalnız
+   yapılır; Gri modda ikonun altındaki kâğıt rengi plaka görünsün, beyaz
+   bir kare kalmasın. Yalnız
    kenardan başlayıp kenara bağlı beyaz alan silinir; çizginin içinde
    kalan beyazlar (sayfa, kupa, göz) olduğu gibi kalır. Zemini zaten
    saydam olan görselde hiçbir şey değişmez. */

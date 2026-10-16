@@ -87,6 +87,10 @@
      sekme, ilerleme çubuğu). Beyaz temada yazı kırmızısıyla aynı;
      modlar ikisini ayrı ayarlayabilir. */
   --kirmizi-dolgu: #D51115;
+  /* Kırmızı kenar ve çerçeveler (adım bloğu, seçili kart, odak). Beyaz
+     ve sepyada yazı kırmızısıyla aynı; gri modda yazı kırmızısı açık
+     (pembeye kaçar), çerçeve canlı kırmızı kalır. */
+  --kirmizi-cizgi: #D51115;
   --kirmizi-acik: #FDF1F1;
   --kirmizi-halka: rgba(213,17,21,.16);
   --pembe-secili:  #FBE4E5;     /* sol barda seçili sekme zemini */
@@ -122,10 +126,8 @@
      "Kolon ara..." tam siyah olursa doldurulmus deger gibi okunur. */
   --metin-soluk:  #000000;
   --yer-tutucu:   rgba(0,0,0,.45);
-  /* Kilitli (henüz açılmamış) sayfa satırlarının yazısı: kart içinde ve
-     ayrı bloklarda. */
-  --kilitli-yazi:      #A0A6AD;
-  --kilitli-blok-yazi: #8A9099;
+  /* Kilitli (henüz açılmamış) sayfa satırlarının yazısı. */
+  --kilitli-yazi:      #8A9099;
   /* GECILEN ADIMIN BASLIGI. Iki temada ayni gri: beyazda 4.54:1, siyahta 4.6:1. */
   --metin-tamam:  #767676;
   --metin-asil:   #000000;     /* gecilen blokta secilenlerin rengi */
@@ -216,6 +218,7 @@
   --kirmizi:      #C0141A;
   --kirmizi-koyu: #9E0F14;
   --kirmizi-dolgu: #C0141A;
+  --kirmizi-cizgi: #C0141A;
   --kirmizi-acik: #F5E1D6;
   --kirmizi-halka: rgba(192,20,26,.18);
 
@@ -260,8 +263,10 @@
    katman: sayfa zemini (#3A3E45), paneller (#42464D), kartlar (#4A4F57).
    Metin beyaz (kartta 8,2:1). Siyah olan her şey (yazı, mürekkep
    çizgileri, Görünüm anahtarı) beyaza döner: --murekkep açık. Kırmızı
-   yazı açık ton (#FFB0B0, kartta 4,8:1); beyaz yazının altındaki kırmızı
-   dolgu koyu kalır (#C4161C, 6:1). Yeşil, kehribar, mavi yazılar da koyu
+   yazı açık ton (#FFB0B0, kartta 4,8:1); kenar ve çerçeveler canlı
+   kırmızı (#FF7A70, kartta 3,3:1); beyaz yazının altındaki kırmızı
+   dolgu koyu kalır (#C4161C, 6:1). Sol bar çizimleri kâğıt rengi
+   plakada (--kagit). Yeşil, kehribar, mavi yazılar da koyu
    zeminde okunacak kadar açık; açık zeminli rozet ve vurgular koyu,
    renkli tonlara döner. color-scheme: dark ile tarayıcının açılır
    listeleri ve kaydırma çubukları da koyu çizilir. */
@@ -272,6 +277,8 @@
   --kirmizi:      #FFB0B0;
   --kirmizi-koyu: #FF9A9A;
   --kirmizi-dolgu: #C4161C;
+  --kirmizi-cizgi: #FF7A70;
+  --kagit:        #EEEBE4;     /* sol bar çizimlerinin plakası */
   --kirmizi-acik: #5A4448;
   --kirmizi-halka: rgba(255,140,140,.28);
 
@@ -289,7 +296,6 @@
   --metin-tamam:  #C9CED5;
   --yer-tutucu:   rgba(255,255,255,.50);
   --kilitli-yazi:      #BAC0C8;
-  --kilitli-blok-yazi: #C3C8CF;
 
   --user-zemin:   #555A62;
 
@@ -438,7 +444,7 @@ body { background-color: #FEFEFE; }
 }
 .cekmece-btn svg { width: 13px; height: 13px; }
 .cekmece-btn:hover {
-  border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
+  border-color: var(--kirmizi-cizgi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 /* Genişlikler varsayılandayken sıfırlanacak bir şey yok: düğme pasif.
 */
@@ -463,7 +469,7 @@ body { background-color: #FEFEFE; }
   color: inherit;   /* currentColor hover kırmızısını da izlesin */
 }
 #sifirla-btn:hover, #calismalar-btn:hover, #tema-btn:hover, #calismalar-btn[aria-expanded="true"] {
-  border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
+  border-color: var(--kirmizi-cizgi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 
 /* ARŞİV açılır listesi. Düğmenin ÜSTÜNE doğru, sol barın eninde açılır;
@@ -487,7 +493,7 @@ body { background-color: #FEFEFE; }
   background: none; color: var(--metin); opacity: .55; cursor: pointer;
 }
 .calisma-cop svg { width: 14px; height: 14px; }
-.calisma-cop:hover { opacity: 1; color: var(--kirmizi); border-color: var(--kirmizi); background: var(--yuzey); }
+.calisma-cop:hover { opacity: 1; color: var(--kirmizi); border-color: var(--kirmizi-cizgi); background: var(--yuzey); }
 .calisma-cop[hidden] { display: none; }
 .calisma-satir.onayda .calisma-oge { display: none; }
 .calisma-satir.onayda { padding: 3px 4px 3px var(--b-2); background: var(--kirmizi-acik); }
@@ -500,10 +506,10 @@ body { background-color: #FEFEFE; }
   font-family: inherit; font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
 }
 .calisma-dugme[hidden] { display: none; }
-.calisma-dugme:hover:not(:disabled) { border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik); }
+.calisma-dugme:hover:not(:disabled) { border-color: var(--kirmizi-cizgi); color: var(--kirmizi); background: var(--kirmizi-acik); }
 .calisma-dugme:disabled { opacity: .5; cursor: default; }
 .calisma-dugme.sil { color: var(--kirmizi); }
-.calisma-dugme.onayla { border-color: var(--kirmizi); background: var(--kirmizi-dolgu); color: #fff; }
+.calisma-dugme.onayla { border-color: var(--kirmizi-cizgi); background: var(--kirmizi-dolgu); color: #fff; }
 .calisma-dugme.onayla:hover:not(:disabled) { background: var(--kirmizi-dolgu); color: #fff; opacity: .9; }
 .calisma-sil-soru { font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--kirmizi); white-space: nowrap; }
 #calismalar-liste {
@@ -584,26 +590,13 @@ body { background-color: #FEFEFE; }
 }
 .ust-sekme:hover { border-color: var(--kirmizi-halka); color: var(--kirmizi); background: var(--kirmizi-acik); }
 .ust-sekme:focus-visible { outline: var(--halka) solid var(--kirmizi-halka); outline-offset: 1px; }
-/* KAPALI blok (SOHBET, DASHBOARD henüz yok): gri zemin, soluk gri yazı,
-   kesik kenar ve kilit ikonu; tıklanmaz. Kesik kenar kümenin kendisinde,
-   içteki kutu kenarsız: iki kenar iç içe görünmesin. */
-.ust-kume.tekli:has(> .ust-sekme.kapali) { border-style: dashed; border-color: var(--kenar-guclu); }
+/* KAPALI sayfa (henüz açılmadı): soluk yazı ve sağda kilit; tıklanmaz. */
 .ust-sekme.kapali, .ust-sekme.kapali:hover {
-  cursor: not-allowed; color: var(--kilitli-blok-yazi); background: transparent;
+  cursor: not-allowed; color: var(--kilitli-yazi); background: transparent;
   border-color: transparent; box-shadow: none;
 }
 /* Her sekmenin önünde ince çizgili ikon; kapalı sekmelerde kilit sağda. */
 .ust-sekme svg.ikon, .ust-kume-ad svg.ikon { width: 15px; height: 15px; flex-shrink: 0; }
-/* Küme İÇİNDEKİ kapalı sekme (Model Platformu > KATIB'LE SOHBET): küme
-   kenarı kesilmez, kesik kenar sekmenin kendisinde; soluk zemin. */
-/* Diğer sekmeler gibi BEYAZ zeminli, ama kapalı olduğu soluk gri yazı,
-   kilit simgesi ve tıklanmazlıktan anlaşılır (gri zemin seçili gibi
-   durur). */
-#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
-#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
-  color: var(--kilitli-yazi); background: var(--yuzey); opacity: 1;
-  border-color: transparent; box-shadow: var(--ust-golge);
-}
 .ust-sekme.kapali svg.kilit { width: 12px; height: 12px; flex-shrink: 0; margin-left: auto; }
 
 /* Alt: Arşiv ve Yeni Çalışma alt alta, barın eninde, sola yaslı. */
@@ -932,7 +925,7 @@ body { background-color: #FEFEFE; }
 .sistem-notu {
   margin: 0 0 var(--balon-ara);
   padding: var(--b-2) var(--b-3);
-  border-left: 3px solid var(--kirmizi);
+  border-left: 3px solid var(--kirmizi-cizgi);
   background: var(--kirmizi-acik);
   border-radius: 0 var(--r-kucuk) var(--r-kucuk) 0;
   font-size: var(--fs-kucuk); line-height: 1.45; color: var(--metin);
@@ -991,7 +984,7 @@ body { background-color: #FEFEFE; }
 
 .satir.bot .balon.hata {
   background: var(--kirmizi-acik); color: var(--kirmizi);
-  border-color: var(--kirmizi);
+  border-color: var(--kirmizi-cizgi);
 }
 
 /* Kart açıklaması: KART DEĞİL ASİSTAN söylüyor, o yüzden balon.
@@ -1030,7 +1023,7 @@ body { background-color: #FEFEFE; }
   width: var(--serit); background: var(--kirmizi-dolgu);
 }
 .secenek:hover:not(:disabled) {
-  border-color: var(--kirmizi);
+  border-color: var(--kirmizi-cizgi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .secenek:disabled { cursor: default; opacity: .45; }
@@ -1042,7 +1035,7 @@ body { background-color: #FEFEFE; }
 }
 .secenek.secili {
   opacity: 1; background: var(--kirmizi-acik);
-  border-color: var(--kirmizi);
+  border-color: var(--kirmizi-cizgi);
 }
 
 .secenek-rozet {
@@ -1055,7 +1048,7 @@ body { background-color: #FEFEFE; }
 }
 .secenek:hover:not(:disabled) .secenek-rozet,
 .secenek.secili .secenek-rozet {
-  background: var(--kirmizi-dolgu); border-color: var(--kirmizi); color: #fff;
+  background: var(--kirmizi-dolgu); border-color: var(--kirmizi-cizgi); color: #fff;
 }
 
 .secenek-govde { min-width: 0; flex: 1; }
@@ -1068,7 +1061,7 @@ body { background-color: #FEFEFE; }
 /* -------- Onay kutusu düğmeleri (Yeni Çalışma) -------- */
 .onceki-dugme {
   height: 26px; padding: 0 var(--b-4);
-  border: 1px solid var(--kirmizi); border-radius: var(--r-kucuk);
+  border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r-kucuk);
   background: var(--kirmizi-dolgu); color: #fff; cursor: pointer;
   font-family: inherit; font-size: var(--fs-govde); font-weight: var(--fw-kalin);
 }
@@ -1186,7 +1179,7 @@ body { background-color: #FEFEFE; }
   transition: border-color .15s, box-shadow .15s;
 }
 .combo-giris::placeholder { color: var(--yer-tutucu); }
-.combo-giris:focus { border-color: var(--kirmizi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
+.combo-giris:focus { border-color: var(--kirmizi-cizgi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
 .combo-giris:disabled { background: var(--yuzey-alt); color: var(--metin-soluk); }
 
 /* Alanın altındaki tek satırlık açıklama: listenin neye göre daraltıldığı
@@ -1230,7 +1223,7 @@ body { background-color: #FEFEFE; }
   position: absolute; z-index: 20; top: 100%; left: 0; right: 0;
   margin: var(--b-1) 0 0; padding: var(--b-1); list-style: none;
   /* iki temada da ayni cerceve. */
-  background: var(--yuzey); border: 1px solid var(--kirmizi);
+  background: var(--yuzey); border: 1px solid var(--kirmizi-cizgi);
   border-radius: var(--r); box-shadow: var(--golge-2);
   max-height: 208px; overflow-y: auto; display: none;
 }
@@ -1276,7 +1269,7 @@ body { background-color: #FEFEFE; }
   border: 1px solid var(--kenar);
 }
 .secim-yuvarlak.sil:hover:not(:disabled) {
-  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi);
+  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-cizgi);
 }
 
 .secim-rozetler { display: flex; flex-direction: column; gap: 5px; margin-bottom: var(--b-3); }
@@ -1504,7 +1497,7 @@ body { background-color: #FEFEFE; }
   transition: border-color .15s, box-shadow .15s;
 }
 .dg-tip-sec:focus {
-  border-color: var(--kirmizi);
+  border-color: var(--kirmizi-cizgi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .dg-tip-sec:disabled {
@@ -1514,7 +1507,7 @@ body { background-color: #FEFEFE; }
 /* Seçili bir dönüşüm varsa hücre işaretli görünür: listede gezerken
    hangi kolonun tipini değiştirdiğini aramak gerekmiyor. */
 .dg-tip-sec:not([data-eski=""]) {
-  border-color: var(--kirmizi); font-weight: var(--fw-kalin);
+  border-color: var(--kirmizi-cizgi); font-weight: var(--fw-kalin);
 }
 .dg-tip-sec option:disabled { color: var(--metin-soluk); }
 .dg-tip-yok { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
@@ -1533,7 +1526,7 @@ body { background-color: #FEFEFE; }
 }
 .dg-giris::placeholder { color: var(--yer-tutucu); }
 .dg-giris:focus {
-  border-color: var(--kirmizi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
+  border-color: var(--kirmizi-cizgi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .dg-giris:disabled { background: var(--yuzey-alt); color: var(--metin-soluk); }
 /* Noksan satir: "sözlüğe ekle" secili ama aciklama bos */
@@ -1605,7 +1598,7 @@ body { background-color: #FEFEFE; }
   font-size: var(--fs-govde); font-weight: var(--fw-kalin); cursor: pointer;
 }
 .calisma-iptal:hover:not(:disabled) {
-  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi);
+  background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-cizgi);
 }
 .calisma-iptal:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -1634,7 +1627,7 @@ body { background-color: #FEFEFE; }
    olsun.
 */
 .adim-blok {
-  border: var(--blok-cerceve) solid var(--kirmizi);
+  border: var(--blok-cerceve) solid var(--kirmizi-cizgi);
   border-radius: var(--r);
   background: var(--yuzey); box-shadow: var(--golge-1);
   padding: var(--b-3) var(--b-4) var(--b-4);
@@ -1648,7 +1641,7 @@ body { background-color: #FEFEFE; }
 .adim-blok.durum-bekliyor { box-shadow: 0 0 0 4px var(--kirmizi-halka, rgba(213,17,21,.14)), var(--golge-1); }
 /* Gruplu blokta aktif adımın BÖLÜMÜ ayrıca vurgulanır: aynı kapta hangi
    kartın cevap beklediği tek bakışta görünsün. */
-.alt-bolum.durum-bekliyor { border: 2px solid var(--kirmizi); }
+.alt-bolum.durum-bekliyor { border: 2px solid var(--kirmizi-cizgi); }
 .alt-bolum.durum-bekliyor > .alt-bas .alt-ad { color: var(--kirmizi); }
 .alt-bolum.durum-tamam > .alt-bas .alt-ad { color: var(--metin-tamam); }
 /* GECILEN BLOKTA METIN GRI, SECILENLER TAM RENK. Renk degiskeni blok icinde yeniden
@@ -1671,7 +1664,7 @@ body { background-color: #FEFEFE; }
 /* AÇIK ZEMİN + KOYU YAZI: okunurluk her ekranda
    garanti. Kırmızıda kontrast 4,9:1, sarıda 4,6:1. */
 .blok-durum.bekliyor {
-  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi);
+  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi-cizgi);
 }
 .blok-durum.kontrol {
   color: #A16207; background: #FEF9C3; border-color: #A16207;
@@ -1739,7 +1732,7 @@ body { background-color: #FEFEFE; }
   font-size: var(--fs-kucuk); font-family: inherit;
 }
 .dg-esik-kutu:focus {
-  outline: none; border-color: var(--kirmizi);
+  outline: none; border-color: var(--kirmizi-cizgi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .dg-sirala {
@@ -1750,7 +1743,7 @@ body { background-color: #FEFEFE; }
   font-size: var(--fs-kucuk); font-family: inherit;
 }
 .dg-sirala:focus {
-  outline: none; border-color: var(--kirmizi);
+  outline: none; border-color: var(--kirmizi-cizgi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .dg-esik-kutu:disabled, .dg-sirala:disabled {
@@ -1770,7 +1763,7 @@ body { background-color: #FEFEFE; }
   font-size: var(--fs-govde); font-family: inherit;
 }
 .dg-arama:focus {
-  outline: none; border-color: var(--kirmizi);
+  outline: none; border-color: var(--kirmizi-cizgi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .dg-arama::placeholder { color: var(--yer-tutucu); }
@@ -1857,7 +1850,7 @@ body { background-color: #FEFEFE; }
 .blok-geri .geri-ok { font-size: 13px; line-height: 1; }
 .blok-geri:hover:not(:disabled) {
   background: var(--kirmizi-acik); color: var(--kirmizi);
-  border-color: var(--kirmizi);
+  border-color: var(--kirmizi-cizgi);
 }
 .blok-geri:focus-visible {
   outline: 2px solid var(--kirmizi); outline-offset: 2px;
@@ -1917,7 +1910,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 .aksiyon:disabled { opacity: .45; cursor: not-allowed; }
 
 .aksiyon.onayla {
-  background: var(--kirmizi-dolgu); color: #fff; border: 1px solid var(--kirmizi);
+  background: var(--kirmizi-dolgu); color: #fff; border: 1px solid var(--kirmizi-cizgi);
 }
 .aksiyon.onayla:hover:not(:disabled) {
   background: var(--kirmizi-koyu); border-color: var(--kirmizi-koyu);
@@ -1941,7 +1934,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   box-shadow: var(--golge-1);
   transition: border-color .15s, box-shadow .15s;
 }
-#giris:focus-within { border-color: var(--kirmizi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
+#giris:focus-within { border-color: var(--kirmizi-cizgi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
 
 /* ---- Kilitli giriş ----
    Ekranda kart/form varken kullanıcı cümle yazmıyor, form dolduruyor.
@@ -2310,7 +2303,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 .ft-ara { flex: 0 0 auto; width: 100%; min-width: 0; }
 .ft-ara:focus, .ft-secim:focus, .ft-esik-kutu:focus, .ft-sirala:focus,
 .ft-tip-suzgec:focus {
-  outline: none; border-color: var(--kirmizi);
+  outline: none; border-color: var(--kirmizi-cizgi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .ft-sirala {
@@ -2339,7 +2332,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
 }
 .ft-mini:hover:not(:disabled) {
-  border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
+  border-color: var(--kirmizi-cizgi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 .ft-mini:disabled, .ft-secim:disabled { opacity: .5; cursor: default; }
 
@@ -2455,7 +2448,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   border-radius: var(--r-kucuk);
 }
 .ft-tanim-giris:focus {
-  outline: none; border-color: var(--kirmizi);
+  outline: none; border-color: var(--kirmizi-cizgi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .ft-tanim-giris::placeholder { color: var(--yer-tutucu); }
@@ -2511,10 +2504,10 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
 }
 .set-dugme:hover:not(:disabled) {
-  border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
+  border-color: var(--kirmizi-cizgi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 .set-dugme.secili {
-  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi);
+  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi-cizgi);
 }
 /* SFA'da seçici pasif: tıklanamaz ama hangi sete kilitli olduğu görünür */
 .set-dugme:disabled { opacity: .5; cursor: default; }
@@ -2561,7 +2554,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 }
 .bf-kilit .ft-mini { margin-top: var(--b-2); }
 .bf-zorla.onay-bekliyor {
-  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi);
+  color: var(--kirmizi); background: var(--kirmizi-acik); border-color: var(--kirmizi-cizgi);
 }
 
 
@@ -2690,7 +2683,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 }
 .bolme-info:hover .bolme-info-i, .bolme-info:focus .bolme-info-i,
 .bolme-info:focus-within .bolme-info-i {
-  border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
+  border-color: var(--kirmizi-cizgi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 .bolme-tip {
   display: none; position: fixed; z-index: 60;
@@ -2727,7 +2720,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 .bolme-alt-dugmeler { display: flex; gap: var(--b-2); margin-left: auto; }
 .bolme-kart .bolme-onay { margin-top: 0; width: auto; padding: 0 var(--b-5); }
 .bolme-kart .bolme-onay.ikincil {
-  background: var(--yuzey); color: var(--kirmizi); border: 1px solid var(--kirmizi);
+  background: var(--yuzey); color: var(--kirmizi); border: 1px solid var(--kirmizi-cizgi);
 }
 @media (max-width: 700px) {
   .bolme-satir { grid-template-columns: minmax(0, 1fr) 20px; }
@@ -2752,12 +2745,12 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   transition: border-color .15s, color .15s, background .15s;
 }
 .bolme-cip:hover:not(:disabled):not(.salt) {
-  border-color: var(--kirmizi); color: var(--kirmizi);
+  border-color: var(--kirmizi-cizgi); color: var(--kirmizi);
 }
 /* Seçili çip: kırmızı çerçeve + kırmızı yazı, DOLU KIRMIZI DEĞİL.
 */
 .bolme-cip.secili {
-  border-color: var(--kirmizi); color: var(--kirmizi);
+  border-color: var(--kirmizi-cizgi); color: var(--kirmizi);
   background: var(--yuzey); font-weight: var(--fw-kalin);
   box-shadow: inset 0 0 0 1px var(--kirmizi);
 }
@@ -2868,14 +2861,14 @@ span.bolme-cip { cursor: default; }
   border-radius: var(--r-kucuk); flex-shrink: 0;
 }
 .dok-dugme {
-  color: #fff; background: var(--kirmizi-dolgu); border: 1px solid var(--kirmizi);
+  color: #fff; background: var(--kirmizi-dolgu); border: 1px solid var(--kirmizi-cizgi);
 }
 .dok-dugme:hover:not(:disabled) { background: var(--kirmizi-koyu); border-color: var(--kirmizi-koyu); }
 .dok-mini {
   color: var(--metin); background: var(--yuzey); border: 1px solid var(--kenar);
 }
 .dok-mini:hover:not(:disabled) {
-  border-color: var(--kirmizi); color: var(--kirmizi); background: var(--kirmizi-acik);
+  border-color: var(--kirmizi-cizgi); color: var(--kirmizi); background: var(--kirmizi-acik);
 }
 .dok-dugme:disabled, .dok-mini:disabled, .dok-bag:disabled { opacity: .5; cursor: default; }
 
@@ -3010,7 +3003,7 @@ span.bolme-cip { cursor: default; }
   padding: var(--b-3);
 }
 .dok-alan:focus {
-  outline: none; border-color: var(--kirmizi);
+  outline: none; border-color: var(--kirmizi-cizgi);
   box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
 .dok-duzen-not {
@@ -3181,7 +3174,7 @@ span.bolme-cip { cursor: default; }
   background: var(--yuzey); color: var(--metin);
   font-size: var(--fs-kucuk); font-family: inherit; outline: none;
 }
-.dg-tur-sec:focus { border-color: var(--kirmizi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
+.dg-tur-sec:focus { border-color: var(--kirmizi-cizgi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
 .dg-tur-sec:disabled { opacity: .6; }
 /* Ad Kalıbı satırı: tür çipleri sırayla, aralarında "_"; oklarla taşınır. */
 .dg-kalip {
@@ -3290,7 +3283,7 @@ span.bolme-cip { cursor: default; }
 }
 .dg-donem-birlikte-bas { display: inline-flex; align-items: center; gap: 4px; font-weight: var(--fw-kalin); }
 .dg-birlikte-cip { cursor: pointer; font: inherit; font-weight: var(--fw-kalin); }
-.dg-birlikte-cip:hover:not(:disabled) { border-color: var(--kirmizi); color: var(--kirmizi); }
+.dg-birlikte-cip:hover:not(:disabled) { border-color: var(--kirmizi-cizgi); color: var(--kirmizi); }
 .dg-birlikte-cip:disabled { cursor: default; opacity: .6; }
 .dg-birlikte-cip.haric { text-decoration: line-through; border-style: dashed; color: var(--metin-tamam); }
 .dg-donem-tek { color: var(--metin); }
@@ -3355,7 +3348,7 @@ span.bolme-cip { cursor: default; }
 .dg-tablo tr.dg-acik-kontrollu > td:first-child { box-shadow: inset 3px 0 0 var(--kirmizi); }
 .dg-acik-daha { margin: var(--b-2) 0 var(--b-3); }
 .dg-acik-durum .dg-toplu-btn { margin-left: var(--b-2); }
-.dg-bilgi-kutu.dg-acik-hata { color: var(--kirmizi); border-left-color: var(--kirmizi); }
+.dg-bilgi-kutu.dg-acik-hata { color: var(--kirmizi); border-left-color: var(--kirmizi-cizgi); }
 .dg-acik-ilerleme .dg-toplu-btn { margin-left: var(--b-3); }
 .dg-acik-sorular { margin: var(--b-3) 0; }
 .dg-acik-soru {
@@ -3511,7 +3504,7 @@ span.bolme-cip { cursor: default; }
   margin: var(--b-4) 0; padding: 0 var(--b-2);
 }
 .faz-bitti::before, .faz-bitti::after {
-  content: ""; flex: 1 1 0; height: 0; border-top: 1px solid var(--kirmizi);
+  content: ""; flex: 1 1 0; height: 0; border-top: 1px solid var(--kirmizi-cizgi);
   opacity: .55;
 }
 .faz-bitti-metin {
@@ -3773,7 +3766,7 @@ span.bolme-cip { cursor: default; }
 }
 .sz-btn:hover { color: var(--kirmizi); border-color: var(--kenar); background: var(--yuzey); }
 .sz-btn:focus-visible { outline: none; box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka); }
-.sz-btn.aktif { color: #FFFFFF; background: var(--kirmizi-dolgu); border-color: var(--kirmizi); }
+.sz-btn.aktif { color: #FFFFFF; background: var(--kirmizi-dolgu); border-color: var(--kirmizi-cizgi); }
 
 .sz-menu {
   position: fixed; z-index: 1000; width: 280px; max-width: calc(100vw - 16px);
@@ -3804,9 +3797,9 @@ span.bolme-cip { cursor: default; }
   color: var(--metin); background: var(--yuzey);
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
 }
-.sz-mini:hover:not(:disabled) { border-color: var(--kirmizi); color: var(--kirmizi); }
+.sz-mini:hover:not(:disabled) { border-color: var(--kirmizi-cizgi); color: var(--kirmizi); }
 .sz-mini:disabled { opacity: .5; cursor: default; }
-.sz-mini.sz-birincil { color: #FFFFFF; background: var(--kirmizi-dolgu); border-color: var(--kirmizi); }
+.sz-mini.sz-birincil { color: #FFFFFF; background: var(--kirmizi-dolgu); border-color: var(--kirmizi-cizgi); }
 .sz-mini.sz-birincil:hover { color: #FFFFFF; filter: brightness(.92); }
 .sz-liste {
   max-height: 220px; overflow: auto;
@@ -3873,7 +3866,7 @@ span.bolme-cip { cursor: default; }
   letter-spacing: .08em; color: var(--kirmizi); white-space: nowrap;
   transition: background .12s, border-color .12s;
 }
-.dg-dikey:hover { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
+.dg-dikey:hover { background: var(--kirmizi-acik); border-color: var(--kirmizi-cizgi); }
 .dg-dikey.aktif, .dg-dikey.aktif:hover {
   background: var(--pembe-secili); border-color: var(--kume-secili-yazi); color: var(--kume-secili-yazi);
 }
@@ -3889,12 +3882,13 @@ span.bolme-cip { cursor: default; }
 }
 
 /* ==================== SOL BAR TASARIMI ====================
-   Üstte KATIB logosu ve arkasında İstanbul çizimi; Model Platformu
-   beyaz kart, içinde düz satırlar ve sağda › oku (seçili satırın
-   görünümü aşağıda "Sayfa satırları: mürekkep dili" bölümünde);
-   kilitli bloklar kesik kenarlı gri; altta Görünüm (üç mod anahtarı),
-   oklu Arşiv ve Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE
-   yazar. */
+   Üstte KATIB logosu ve arkasında İstanbul çizimi. Sayfa satırları
+   kartsız, sol barın zemininde düz liste; gruplar ince mürekkep
+   çizgileriyle ayrılır. Model Platformu'nun alt sayfaları girintili ve
+   solunda ince kılavuz çizgisi var. Seçili satır köşesiz: solunda düz
+   siyah çizgi, hafif zemin, kalın yazı (bkz. "Sayfa satırları"). Kilitli
+   satırlar kutusuz, soluk. Altta Görünüm (üç mod anahtarı), oklu Arşiv
+   ve Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE yazar. */
 :root { --sol-bar-en: 340px; }
 #sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
 #kabuk.sepya #sol-bar { --sol-ok: #8C7D68; background: var(--yuzey-alt); }
@@ -3914,17 +3908,11 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-sekme svg.ok { width: 15px; height: 15px; flex-shrink: 0; margin-left: auto; color: var(--sol-ok); }
 #sol-bar .ust-sekme.kapali svg.kilit { width: 15px; height: 15px; }
 
-/* Kart içindeki kilitli satır: soluk gri yazı ve kilit. */
-#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali,
-#sol-bar .ust-kume:not(.tekli) > .ust-sekme.kapali:hover {
-  background: transparent; color: var(--kilitli-yazi); box-shadow: none;
+/* Kilitli satırlar: kutusuz; soluk yazı ve sağda kilit. */
+#sol-bar .ust-sekme.kapali, #sol-bar .ust-sekme.kapali:hover {
+  background: transparent; color: var(--kilitli-yazi);
+  box-shadow: none; border-color: transparent;
 }
-/* Ayrı kilitli bloklar: açık gri zemin, kesik kenar. */
-#sol-bar .ust-kume.tekli {
-  padding: 3px; border-radius: 12px; border: 1px dashed var(--kenar-guclu);
-  background: var(--kenar-acik);
-}
-#sol-bar .ust-kume.tekli > .ust-sekme.kapali { color: var(--kilitli-blok-yazi); }
 
 /* ---- Alt bölüm ---- */
 #sol-bar-alt { border-top: 0; padding: 4px 10px 10px; }
@@ -3958,7 +3946,7 @@ span.bolme-cip { cursor: default; }
    Ekran yüksekliğini satır boyu belirlediği için satırlar ve aralıklar
    sıkı; yazı ve ikonlar satırın içinde büyük tutulur. */
 #sol-bar .ust-kume-ad, #sol-bar .ust-sekme {
-  height: 32px; padding: 0 10px; gap: 11px; border-radius: 8px;
+  height: 32px; padding: 0 10px; gap: 11px; border-radius: 0;
   font-size: 15px; letter-spacing: .03em;
 }
 #sol-bar .ust-kume-ad { height: 34px; font-size: 15.5px; padding: 0 8px; }
@@ -3966,8 +3954,11 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-kume-ad svg.ikon { width: 16px; height: 16px; }
 #sol-bar .ust-sekme svg.ok, #sol-bar .ust-sekme.kapali svg.kilit,
 #sol-bar #calismalar-btn svg.ok { width: 16px; height: 16px; }
-#sol-bar .ust-kume { gap: 2px; padding: 4px; border-radius: 12px; }
-#sol-bar .ust-kume.tekli { padding: 2px; border-radius: 10px; }
+/* Kümeler kart değil: zemin, kenar ve gölge yok. */
+#sol-bar .ust-kume {
+  gap: 0; padding: 0; border: 0; border-radius: 0;
+  background: transparent; box-shadow: none;
+}
 #ust-sekmeler { gap: 6px; padding: 6px 10px; }
 #sol-bar-alt { padding: 4px 10px 10px; }
 #sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
@@ -3992,22 +3983,22 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-kume-ad img.ikon-gorsel { width: 38px; height: 38px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
 #sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 30px; height: 30px; }
-/* Gri modda zemin koyu: çizimler (ikonlar, KATIB logosu ve arkasındaki
-   İstanbul çizimi, robot) renkleri değişmeden basılır; siyah çizgileri
-   koyu zeminde kaybolmasın diye çevrelerine ince beyaz çizgi çekilir
-   (dört yöne 1 px beyaz gölge). İkonların beyaz zemini app.js'te
-   saydam yapıldığı için çizgi ikonun kendi şeklini izler. */
-#kabuk.gri #sol-bar img.ikon-gorsel,
-#kabuk.gri #sol-bar-logo,
-#kabuk.gri #robot-alt {
-  mix-blend-mode: normal;
-  filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff)
-          drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff);
+/* Gri modda zemin koyu: çizimler beyaz kâğıt için çizildiği için
+   (ikonlar, KATIB logosu ve İstanbul çizimi, robot) renkleri hiç
+   değişmeden kâğıt rengi (--kagit) yuvarlak köşeli plakaların üstünde
+   durur; koyu zeminde "kâğıda basılmış çizim" gibi okunur. İkonların
+   beyaz zemini app.js'te saydam yapıldığı için plakanın rengi görünür. */
+#kabuk.gri #sol-bar img.ikon-gorsel {
+  mix-blend-mode: normal; background: var(--kagit);
+  border-radius: 6px; padding: 3px;
 }
-#kabuk.gri #sol-bar .ust-sekme.kapali img.ikon-gorsel {
-  filter: grayscale(1) drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff)
-          drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff);
-  opacity: .55;
+#kabuk.gri #sol-bar .ust-sekme.kapali img.ikon-gorsel { opacity: .6; }
+#kabuk.gri #sol-bar-logo {
+  margin: 8px 10px 6px; border-radius: 10px;
+  background-color: var(--kagit); background-position: center 6px;
+}
+#kabuk.gri #robot-alt {
+  padding: 4px 6px; border-radius: 10px; background: var(--kagit);
 }
 /* ---- Görünüm anahtarı ----
    Dergi dilinde (New Yorker): renk yerine mürekkep. İnce siyah çerçeveli
@@ -4064,48 +4055,35 @@ span.bolme-cip { cursor: default; }
 #robot-alt { display: none; width: 100%; height: auto; margin: 0 0 6px; }
 #robot-alt.yuklu { display: block; }
 
-/* ANA SAYFA: MODEL PLATFORMU kümesinin üstünde tek satırlık beyaz kart
-   (kilitli blokların kesik kenarı yok). */
-#sol-bar .ust-kume.ana-sayfa-kume {
-  padding: 3px; border: 1px solid var(--kenar); border-style: solid;
-  background: var(--yuzey); box-shadow: var(--golge-1);
-}
-
-/* ---- Sayfa satırları: mürekkep dili ----
-   Model Platformu kümesi ve ANA SAYFA her zaman aynı görünen beyaz
-   kartlar (ince kenar); seçime göre renk değiştirmez. Küme başlığı
-   (MODEL PLATFORMU) mürekkep siyahı, altında ince çizgi. Satırlar düz,
-   gölgesiz. Seçili satır dergi dilinde işaretlenir: solunda kalın siyah
-   çizgi, hafif gri zemin, kalın yazı; simge ve ok siyah. Kırmızı ve pembe
-   yok. Üstüne gelince hafif gri zemin. */
-#sol-bar .ust-kume:not(.tekli) {
-  background: var(--yuzey); border: 1px solid var(--kenar);
-  box-shadow: var(--golge-1);
-}
-#sol-bar .ust-kume-ad {
-  position: relative; color: var(--murekkep);
-}
-#sol-bar .ust-kume-ad::after {
-  content: ""; display: block; position: absolute;
-  left: 8px; right: 8px; bottom: 0; height: 1px; background: var(--murekkep);
-}
+/* ---- Sayfa satırları ----
+   Dergi dilinde düz liste. Satırlar zeminsiz ve gölgesiz; üstüne gelince
+   hafif zemin. Satırlarda › oku yok (yalnız açılıp kapanan MODEL
+   PLATFORMU başlığında ve Arşiv'de var). Seçili satır köşesiz: solunda
+   3 px düz mürekkep çizgisi, hafif zemin, kalın yazı. Kırmızı ve pembe
+   yok. */
+#sol-bar .ust-kume-ad { position: relative; color: var(--murekkep); }
 #sol-bar .ust-sekme:not(.kapali) {
   background: transparent; color: var(--metin); box-shadow: none; border-color: transparent;
 }
+#sol-bar .ust-sekme svg.ok { display: none; }
 #sol-bar .ust-sekme:not(.kapali):not(.aktif):hover { background: color-mix(in srgb, var(--murekkep) 5%, transparent); color: var(--metin); }
 #sol-bar .ust-sekme.aktif, #sol-bar .ust-sekme.aktif:hover {
   background: color-mix(in srgb, var(--murekkep) 7%, transparent); color: var(--murekkep);
   box-shadow: inset 3px 0 0 var(--murekkep);
 }
-#sol-bar .ust-sekme.aktif svg.ikon, #sol-bar .ust-sekme.aktif svg.ok { color: var(--murekkep); }
+#sol-bar .ust-sekme.aktif svg.ikon { color: var(--murekkep); }
 /* #kabuk önekli: aşağıdaki 600 ağırlık kuralını ezsin. */
 #kabuk #sol-bar .ust-sekme.aktif { font-weight: var(--fw-kalin); }
 
 /* ---- Açılır küme (MODEL PLATFORMU) ----
    Başta kapalı: yalnız başlık görünür, sağında › oku. Başlığa basınca
-   (app.js: kumeAcKapa) .acik gelir, satırlar ve başlığın altındaki çizgi
-   görünür, ok aşağı döner. Üstüne gelince hafif zemin. */
-#sol-bar .ust-kume-ad { width: 100%; cursor: pointer; text-align: left; border-radius: 8px; }
+   (app.js: kumeAcKapa) .acik gelir, alt sayfalar görünür, ok aşağı
+   döner. Alt sayfalar başlığın ikonunun hizasından içeride (girinti) ve
+   solunda ince kılavuz çizgisi var; böylece MODEL PLATFORMU'na bağlı
+   oldukları okunur. Seçili alt sayfada kılavuz çizgisi 3 px mürekkep
+   çizgisine dönüşür (aynı hizada). Alt sayfa satırları 36 px, çizimleri
+   30 px. */
+#sol-bar .ust-kume-ad { width: 100%; cursor: pointer; text-align: left; }
 #sol-bar .ust-kume-ad:hover { background: color-mix(in srgb, var(--murekkep) 5%, transparent); }
 #sol-bar .ust-kume-ad:focus-visible { outline: 2px solid var(--murekkep); outline-offset: -2px; }
 #sol-bar .ust-kume-ad svg.ok {
@@ -4113,8 +4091,16 @@ span.bolme-cip { cursor: default; }
   color: var(--murekkep); transition: transform .15s;
 }
 #sol-bar .ust-kume.acilir:not(.acik) > .ust-sekme { display: none; }
-#sol-bar .ust-kume.acilir:not(.acik) > .ust-kume-ad::after { display: none; }
 #sol-bar .ust-kume.acilir.acik > .ust-kume-ad svg.ok { transform: rotate(90deg); }
+#sol-bar .ust-kume.acilir > .ust-sekme {
+  height: 36px; margin-left: 26px; padding-left: 12px;
+  border: 0; border-left: 1px solid var(--kenar-guclu);
+}
+#sol-bar .ust-kume.acilir > .ust-sekme img.ikon-gorsel { width: 30px; height: 30px; }
+#sol-bar .ust-kume.acilir > .ust-sekme.aktif,
+#sol-bar .ust-kume.acilir > .ust-sekme.aktif:hover {
+  border-left: 3px solid var(--murekkep); padding-left: 10px; box-shadow: none;
+}
 
 /* ==================== İŞ AKIŞI BARI ====================
    Sohbet alanının üstünde ince bar (Jupyter defterindeki menü çubuğu
@@ -4139,7 +4125,7 @@ span.bolme-cip { cursor: default; }
 }
 #akis-btn .ikon { width: 16px; height: 16px; flex-shrink: 0; }
 #akis-btn .ok { width: 14px; height: 14px; flex-shrink: 0; color: var(--sol-ok, #9AA0A6); transition: transform .15s; }
-#akis-btn:hover, #akis-menu.acik #akis-btn { background: var(--kirmizi-acik); border-color: var(--kirmizi); }
+#akis-btn:hover, #akis-menu.acik #akis-btn { background: var(--kirmizi-acik); border-color: var(--kirmizi-cizgi); }
 #akis-menu.acik #akis-btn .ok { transform: rotate(180deg); color: var(--kirmizi); }
 #akis-btn:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
 #akis-konum {
