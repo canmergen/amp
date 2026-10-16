@@ -55,6 +55,8 @@
   --font: "AMP Newsreader", Georgia, "Times New Roman", serif;
   /* Başlıklar da aynı aile; 600 ağırlıkla ayrışır. */
   --font-baslik: var(--font);
+  /* Mürekkep siyahı: çizim kenarları ve sol bar çizgileri; her modda aynı. */
+  --murekkep: #1A1A1A;
   /* Newsreader'ın küçük harf boyu (x-yüksekliği) serifsiz fontlardan
      kısa; aynı piksel boyunda küçük görünmesin diye küçük harfler
      yazı boyunun %46'sına getirilir (#kabuk: font-size-adjust). */
@@ -4017,64 +4019,69 @@ span.bolme-cip { cursor: default; }
 /* ---- Görünüm anahtarı ----
    Çizim tarzı üç bölmeli kapsül: krem zemin üstünde ince çapraz tarama,
    mürekkep siyahı kenar ve bölme çizgileri; her bölmede bir daire:
-   güneş (Beyaz), taralı sepya disk (Sepya), ay (Gri). Renkler sabit:
-   anahtar üç modda da aynı görünür. Seçili modun dairesi kırmızı
-   halkalı ve tam renkli; seçilmeyenler soluk, üstüne gelince netleşir. */
+   güneş (Beyaz), taralı sepya disk (Sepya), ay (Gri). Seçili mod sol
+   bardaki seçili satırla aynı dille gösterilir: bölmenin zemini açık
+   pembe, altında kırmızı çizgi, simgesi tam renkli. Seçilmeyenler düz
+   krem zeminde, simgeleri soluk; üstüne gelince netleşir. */
 #tema-btn .tema-anahtar {
   margin-left: auto; flex-shrink: 0;
   display: inline-flex; align-items: stretch;
-  height: 30px; padding: 0 3px;
-  border: 1.4px solid #1A1A1A; border-radius: 999px;
+  height: 30px; padding: 0; overflow: hidden;
+  border: 1.4px solid var(--murekkep); border-radius: 999px;
   background:
     repeating-linear-gradient(135deg, rgba(26,26,26,.07) 0 1px, transparent 1px 3px),
     #F4EEE2;
-  box-shadow: inset 0 0 0 2px #FBF7EE;
 }
 #tema-btn .tema-anahtar span {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; padding: 0; border-radius: 0; background: none;
-  opacity: .5; filter: saturate(.55);
-  transition: opacity .12s, filter .12s;
+  width: 31px; padding: 0; border-radius: 0; background: none;
+  opacity: .45; filter: saturate(.5);
+  transition: opacity .12s, filter .12s, background .12s;
 }
-#tema-btn .tema-anahtar span + span { border-left: 1.2px solid #1A1A1A; }
-#tema-btn .tema-anahtar svg {
-  display: block; width: 22px; height: 22px; border-radius: 50%;
-  transition: box-shadow .12s;
-}
-#tema-btn .tema-anahtar span:hover { opacity: .85; filter: none; }
+#tema-btn .tema-anahtar span:first-child { padding-left: 3px; width: 34px; }
+#tema-btn .tema-anahtar span:last-child { padding-right: 3px; width: 34px; }
+#tema-btn .tema-anahtar span + span { border-left: 1.2px solid var(--murekkep); }
+#tema-btn .tema-anahtar svg { display: block; width: 22px; height: 22px; }
+#tema-btn .tema-anahtar span:hover { opacity: .8; filter: none; }
 #kabuk:not(.gri):not(.sepya) #tema-btn .tema-gunes,
 #kabuk.sepya #tema-btn .tema-sepya,
-#kabuk.gri #tema-btn .tema-gri { opacity: 1; filter: none; }
-#kabuk:not(.gri):not(.sepya) #tema-btn .tema-gunes svg,
-#kabuk.sepya #tema-btn .tema-sepya svg,
-#kabuk.gri #tema-btn .tema-gri svg { box-shadow: 0 0 0 1.5px #FBF7EE, 0 0 0 3px var(--kirmizi); }
+#kabuk.gri #tema-btn .tema-gri {
+  opacity: 1; filter: none;
+  background: #FBE4E5; box-shadow: inset 0 -2.5px 0 var(--kirmizi);
+}
 #sol-bar .sol-bar-dugmeler #tema-btn { height: 38px; }
 
 /* ---- Sol bar çizgileri ve bölüm adı ----
-   İnce mürekkep çizgisi: logo ile ANA SAYFA arasında, ANA SAYFA ile
-   ÇALIŞMA ALANLARI arasında ve robotun oturduğu masa. Bölüm adı küçük,
-   aralıklı büyük harf. */
+   Mürekkep siyahı ince düz çizgiler (dergi sayfasındaki bölüm çizgileri
+   gibi): logo ile ANA SAYFA arasında ve sayfa satırları ile alttaki
+   düğmeler arasında tek çizgi. ÇALIŞMA ALANLARI'nın üstünde, robotun
+   oturduğu masa çift çizgi (kalın + ince): önemli ayrım. Renk her modda
+   aynı. Bölüm adı küçük, aralıklı büyük harf. */
 #sol-bar .sol-cizgi {
   height: 1px; margin: 6px 12px; flex-shrink: 0;
-  background: var(--kenar-guclu);
+  background: var(--murekkep);
 }
-#sol-bar #ust-sekmeler > .sol-cizgi { margin: 2px 4px 0; }
+#sol-bar .sol-cizgi.cift {
+  height: 5px; background: none;
+  border-top: 2px solid var(--murekkep); border-bottom: 1px solid var(--murekkep);
+}
 #sol-bar .sol-bolum-ad {
-  padding: 0 6px; margin-bottom: -2px;
+  padding: 0 6px; margin: 2px 0 -1px;
   font-size: 10.5px; font-weight: var(--fw-yari); letter-spacing: .12em;
   color: var(--metin-tamam); white-space: nowrap;
 }
 
-/* ---- Alttaki robot ----
-   robot_alt.png (kırpılmış hâli ~5:1) barın eni boyunca; çizimdeki
-   masa çizgisi görselin boyunun %81'inde. Kendi çizgimiz tam oraya
-   oturur, nesneler çizginin üstünde durur. Görsel yoksa yalnız çizgi. */
-#sol-bar-robot { position: relative; margin: 0 2px 8px; }
+/* ---- ÇALIŞMA ALANLARI robotu ----
+   robot_alt.png (kırpılmış hâli ~5:1) satırların eninde; çizimdeki
+   nesnelerin (kitaplar, kupa, robotun elleri) tabanı görselin boyunun
+   %85'inde. Çift çizgi tam oraya, görselin üstüne çizilir; nesneler
+   üstünde durur. Görsel yoksa yalnız çift çizgi. */
+#sol-bar-robot { position: relative; margin: 6px 0 0; }
 #sol-bar-robot img { display: none; width: 100%; height: auto; position: relative; z-index: 1; }
 #sol-bar-robot img.yuklu { display: block; }
-#sol-bar-robot .sol-cizgi { margin: 0; }
+#sol-bar-robot .sol-cizgi { margin: 0 2px; }
 #sol-bar-robot img.yuklu + .sol-cizgi {
-  position: absolute; left: 0; right: 0; top: 81%; z-index: 0;
+  position: absolute; left: 0; right: 0; top: calc(85% - 1px); z-index: 2;
 }
 
 /* ANA SAYFA: MODEL PLATFORMU kümesinin üstünde tek satırlık beyaz kart

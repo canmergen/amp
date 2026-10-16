@@ -211,8 +211,8 @@ function solBarGorseli(ad) {
             svg.replaceWith(img);
         }, () => { /* görsel yok: çizgi ikon kalır */ });
     });
-    /* Alttaki robot (robot_alt): kenarları kırpılır; yüklenemezse
-       yalnız çizgi kalır. */
+    /* ÇALIŞMA ALANLARI robotu (robot_alt): kenarları kırpılır;
+       yüklenemezse yalnız çift çizgi kalır. */
     const robot = document.getElementById("robot-alt");
     if (robot) solBarGorseli("robot_alt").then(src => {
         robot.onload = () => solBarOlcekle();

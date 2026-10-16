@@ -34,7 +34,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
-| `robot_alt` | `robot_alt.png` | Sol bar: Görünüm'ün üstündeki çizgiye yaslanmış robot, kitaplar ve kupa |
+| `robot_alt` | `robot_alt.png` | Sol bar: ÇALIŞMA ALANLARI başlığının üstünde, çift çizgiye yaslanmış robot, kitaplar ve kupa |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -87,8 +87,9 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta.
 - Logonun altında ince çizgi, ardından **Ana Sayfa** (kendi sayfasını
   açar; içerik hazırlanıyor).
-- Çizgi ve **ÇALIŞMA ALANLARI** başlığı; altında Model Platformu kümesi ve
-  kilitli alanlar.
+- Çift çizgiye (masa) yaslanmış robot, kitaplar ve kupa (`robot_alt`);
+  çizginin altında **ÇALIŞMA ALANLARI** başlığı, altında Model Platformu
+  kümesi ve kilitli alanlar.
 - **Model Platformu:**
   - Model Akışı
   - Gösterge Paneli
@@ -96,11 +97,12 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   - Özet
   - KATIB'le Sohbet (kapalı)
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
-- Altta çizginin üstüne yaslanmış robot (`robot_alt`), altında:
+- Altta ince çizgi, altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
   tonu), Gri (açık gri zemin, koyu yazı). Anahtar kodla çizilmiş üç
   bölmeli kapsül: güneş (Beyaz), taralı sepya disk (Sepya), ay (Gri);
-  simgeye basınca o mod seçilir, seçili mod kırmızı halkalı. Düğmenin
+  simgeye basınca o mod seçilir; seçili bölme açık pembe zeminli, altında
+  kırmızı çizgi (sol bardaki seçili satırla aynı dil). Düğmenin
   başka bir yerine basınca sıradaki moda geçilir.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
