@@ -102,7 +102,8 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
   tonu), Gri (koyu gri zemin, beyaz yazı; siyah olan her şey beyaza
-  döner, çizimler negatif basılır). Anahtar üç bölmeli segmentli
+  döner; logo, ikonlar ve robot renkleri değişmeden, çevrelerinde ince
+  beyaz çizgiyle görünür). Anahtar üç bölmeli segmentli
   düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); ince
   siyah çerçeve ve bölme çizgileri; simgeye basınca o mod seçilir; seçili
   bölme mürekkep siyahıyla dolu, simgesi ters baskı. Düğmenin

@@ -197,7 +197,7 @@ const SOL_BAR_IKONLARI = [
 const SOL_BAR_GORSEL = {};
 function solBarGorseli(ad) {
     if (!SOL_BAR_GORSEL[ad]) SOL_BAR_GORSEL[ad] = new Promise((tamam, hata) =>
-        saydamKirp(getWebAppBackendUrl("gorsel/" + ad), tamam, hata, true));
+        saydamKirp(getWebAppBackendUrl("gorsel/" + ad), tamam, hata, true, true));
     return SOL_BAR_GORSEL[ad];
 }
 (function solBarIkonlari() {
@@ -234,8 +234,13 @@ function solBarGorseli(ad) {
 })();
 
 /* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük
-   kalmasın); kırpılamazsa dosya olduğu gibi. cb(src) */
-function saydamKirp(url, cb, hata, beyazDa) {
+   kalmasın); kırpılamazsa dosya olduğu gibi. cb(src)
+   zeminSil: beyaz zeminli çizimin (sol bar ikonları) zemini saydam
+   yapılır; koyu (Gri) modda ikon beyaz bir kare içinde durmasın. Yalnız
+   kenardan başlayıp kenara bağlı beyaz alan silinir; çizginin içinde
+   kalan beyazlar (sayfa, kupa, göz) olduğu gibi kalır. Zemini zaten
+   saydam olan görselde hiçbir şey değişmez. */
+function saydamKirp(url, cb, hata, beyazDa, zeminSil) {
     const ham = new Image();
     ham.onload = () => {
         let src = url;
@@ -245,7 +250,9 @@ function saydamKirp(url, cb, hata, beyazDa) {
             c.width = w; c.height = h;
             const g = c.getContext("2d");
             g.drawImage(ham, 0, 0);
-            const a = g.getImageData(0, 0, w, h).data;
+            const veri = g.getImageData(0, 0, w, h);
+            const a = veri.data;
+            if (zeminSil && beyazZeminiSil(a, w, h)) g.putImageData(veri, 0, 0);
             let x0 = w, y0 = h, x1 = -1, y1 = -1;
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
@@ -273,6 +280,33 @@ function saydamKirp(url, cb, hata, beyazDa) {
     };
     ham.onerror = () => { if (hata) hata(); };
     ham.src = url;
+}
+
+/* Kenardaki beyaz piksellerden başlayıp yalnız beyaz pikseller
+   üzerinden yayılarak bağlı beyaz zemini saydam yapar. Bir şey
+   silindiyse true. */
+function beyazZeminiSil(a, w, h) {
+    const beyaz = i => a[i + 3] > 20 && a[i] > 235 && a[i + 1] > 235 && a[i + 2] > 235;
+    const gorulen = new Uint8Array(w * h);
+    const yigin = [];
+    const ekle = (x, y) => {
+        const p = y * w + x;
+        if (!gorulen[p] && beyaz(p * 4)) { gorulen[p] = 1; yigin.push(p); }
+    };
+    for (let x = 0; x < w; x++) { ekle(x, 0); ekle(x, h - 1); }
+    for (let y = 0; y < h; y++) { ekle(0, y); ekle(w - 1, y); }
+    let silinen = 0;
+    while (yigin.length) {
+        const p = yigin.pop();
+        a[p * 4 + 3] = 0;
+        silinen++;
+        const x = p % w, y = (p - x) / w;
+        if (x > 0) ekle(x - 1, y);
+        if (x < w - 1) ekle(x + 1, y);
+        if (y > 0) ekle(x, y - 1);
+        if (y < h - 1) ekle(x, y + 1);
+    }
+    return silinen > 0;
 }
 
 /* ==================== SOL BAR ÖLÇEĞİ ====================

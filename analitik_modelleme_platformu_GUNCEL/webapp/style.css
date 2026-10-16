@@ -3991,17 +3991,22 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-kume-ad img.ikon-gorsel { width: 38px; height: 38px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
 #sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 30px; height: 30px; }
-/* Gri modda zemin koyu: çizimler (ikonlar, logo ve arkasındaki İstanbul
-   çizimi, robot) negatife çevrilir ve "lighten" ile basılır. Siyah
-   mürekkep çizgiler beyaz olur, beyaz kısımlar zeminin grisini alır;
-   hue-rotate kırmızıyı kırmızı tutar. */
+/* Gri modda zemin koyu: çizimler (ikonlar, KATIB logosu ve arkasındaki
+   İstanbul çizimi, robot) renkleri değişmeden basılır; siyah çizgileri
+   koyu zeminde kaybolmasın diye çevrelerine ince beyaz çizgi çekilir
+   (dört yöne 1 px beyaz gölge). İkonların beyaz zemini app.js'te
+   saydam yapıldığı için çizgi ikonun kendi şeklini izler. */
 #kabuk.gri #sol-bar img.ikon-gorsel,
 #kabuk.gri #sol-bar-logo,
 #kabuk.gri #robot-alt {
-  filter: invert(1) hue-rotate(180deg); mix-blend-mode: lighten;
+  mix-blend-mode: normal;
+  filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff)
+          drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff);
 }
 #kabuk.gri #sol-bar .ust-sekme.kapali img.ikon-gorsel {
-  filter: invert(1) hue-rotate(180deg) grayscale(1); opacity: .55;
+  filter: grayscale(1) drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff)
+          drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff);
+  opacity: .55;
 }
 /* ---- Görünüm anahtarı ----
    Dergi dilinde (New Yorker): renk yerine mürekkep. İnce siyah çerçeveli
