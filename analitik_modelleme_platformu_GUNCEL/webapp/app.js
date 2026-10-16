@@ -211,14 +211,14 @@ function solBarGorseli(ad) {
             svg.replaceWith(img);
         }, () => { /* görsel yok: çizgi ikon kalır */ });
     });
-    /* Görünüm anahtarı: üç simge tek görselde (soldan sağa Beyaz, Sepya,
-       Gri). Görsel anahtarın zemini olur; üç simge yuvası üstünde
-       saydam tıklama alanı olarak kalır, seçili mod halkayla gösterilir. */
-    const anahtar = document.querySelector("#tema-btn .tema-anahtar");
-    if (anahtar) solBarGorseli("gorunum_secenekler").then(src => {
-        anahtar.style.backgroundImage = 'url("' + src + '")';
-        anahtar.classList.add("gorselli");
-    }, () => { /* görsel yok: çizgi simgeler kalır */ });
+    /* Alttaki robot (robot_alt): kenarları kırpılır; yüklenemezse
+       yalnız çizgi kalır. */
+    const robot = document.getElementById("robot-alt");
+    if (robot) solBarGorseli("robot_alt").then(src => {
+        robot.onload = () => solBarOlcekle();
+        robot.src = src;
+        robot.classList.add("yuklu");
+    }, () => { /* görsel yok */ });
 })();
 
 /* Logonun arkasındaki İstanbul çizimi: yüklenirse logo yuvasının zemini

@@ -22,6 +22,8 @@
     <div id="sol-bar-logo">
       <img id="katib-logo" alt="KATIB">
     </div>
+    <!-- Logo ile sayfa satırları arasında ince çizgi. -->
+    <div class="sol-cizgi" role="separator"></div>
 
     <!-- SAYFA KÜMELERİ (sol barda alt alta).
          MODEL PLATFORMU kümesi: MODEL AKIŞI (iş akışı + adım kartları), GENEL
@@ -38,6 +40,10 @@
       <div class="ust-kume tekli ana-sayfa-kume">
         <button class="ust-sekme" data-ust="anasayfa" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"></path></svg>ANA SAYFA<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
       </div>
+      <!-- ÇALIŞMA ALANLARI: çizgi ve bölüm adı; altında Model Platformu
+           kümesi ve kilitli alanlar. -->
+      <div class="sol-cizgi" role="separator"></div>
+      <div class="sol-bolum-ad">ÇALIŞMA ALANLARI</div>
       <div class="ust-kume">
         <span class="ust-kume-ad"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8 4.5v9l-8 4.5-8-4.5V7z"></path><path d="M4 7l8 4.5L20 7M12 11.5V21"></path></svg>MODEL PLATFORMU</span>
         <button class="ust-sekme" data-ust="akis" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M6.5 10v4a3 3 0 0 0 3 3H14"></path></svg>MODEL AKIŞI<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
@@ -60,6 +66,13 @@
 
     <div id="sol-bar-alt">
       <!-- ALT: Görünüm Ayarları, Arşiv ve Yeni Çalışma alt alta. -->
+      <!-- Robot: sayfa satırları ile Görünüm arasındaki çizginin üstünde,
+           kitaplar ve kupayla masaya yaslanmış (robot_alt). Görsel
+           yüklenemezse yalnız çizgi kalır (app.js). -->
+      <div id="sol-bar-robot">
+        <img id="robot-alt" alt="">
+        <div class="sol-cizgi"></div>
+      </div>
       <div class="sol-bar-dugmeler">
         <!-- Dataiku'nun kendi REFRESH düğmesiyle karışmaması için yalnız
              ikon değil, görünür etiket de taşır.
@@ -71,14 +84,14 @@
              stroke/fill currentColor: düğmenin rengini izler. -->
         <!-- ARŞİV: PROJE_HAFIZASI'ndaki kayıtlı çalışmalar. Birine basınca
              o çalışma kaldığı yerden açılır (app.js: calismalarAc). -->
-        <!-- GÖRÜNÜM (renk modu): Beyaz (güneş), Sepya (kitap), Gri (yarısı
-             dolu daire). Simgeler klasördeki gorunum_secenekler.png ile
-             gösterilir; görsel yoksa çizgi simgeler kalır. Bir simgeye
-             basınca o mod seçilir; düğmenin başka bir yerine basınca
-             sıradaki moda geçilir. Seçim hatırlanır (app.js: temaUygula). -->
+        <!-- GÖRÜNÜM (renk modu): üç bölmeli anahtar, her bölmede çizim
+             tarzı bir daire: güneş (Beyaz), taralı sepya disk (Sepya), ay
+             (Gri). Bir simgeye basınca o mod seçilir; düğmenin başka bir
+             yerine basınca sıradaki moda geçilir. Seçim hatırlanır
+             (app.js: temaUygula). -->
         <button id="tema-btn" type="button" title="Görünüm: Beyaz">
           <svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.6 0-.5-.2-.9-.5-1.2-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.7-1.7H16a5 5 0 0 0 5-5c0-4-4-7.2-9-7.2z"></path><circle cx="7.5" cy="11.5" r="1"></circle><circle cx="10" cy="7.5" r="1"></circle><circle cx="15" cy="7.5" r="1"></circle></svg><span class="sifirla-etiket">Görünüm</span>
-          <span class="tema-anahtar" aria-hidden="true"><span class="tema-gunes" data-mod="acik" title="Beyaz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg></span><span class="tema-sepya" data-mod="sepya" title="Sepya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5h6a4 4 0 0 1 4 4V20a3 3 0 0 0-3-3H2z"></path><path d="M22 5.5h-6a4 4 0 0 0-4 4V20a3 3 0 0 1 3-3h7z"></path></svg></span><span class="tema-gri" data-mod="gri" title="Gri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"></path></svg></span></span>
+          <span class="tema-anahtar" aria-hidden="true"><span class="tema-gunes" data-mod="acik" title="Beyaz"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.6" fill="#FBF7EE" stroke="#1A1A1A" stroke-width="1.4"></circle><g fill="none" stroke="#E3141B" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.1"></circle><path d="M12 4.4v2.1M12 17.5v2.1M4.4 12h2.1M17.5 12h2.1M6.6 6.6l1.5 1.5M15.9 15.9l1.5 1.5M6.6 17.4l1.5-1.5M15.9 8.1l1.5-1.5"></path></g></svg></span><span class="tema-sepya" data-mod="sepya" title="Sepya"><svg viewBox="0 0 24 24"><defs><pattern id="tema-tarama" width="1.8" height="1.8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.8" height="1.8" fill="#D9C29E"></rect><path d="M0 0v1.8" stroke="#9A7650" stroke-width=".6"></path></pattern></defs><circle cx="12" cy="12" r="10.6" fill="#F3EAD6" stroke="#1A1A1A" stroke-width="1.4"></circle><circle cx="12" cy="12" r="5.6" fill="url(#tema-tarama)"></circle></svg></span><span class="tema-gri" data-mod="gri" title="Gri"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.6" fill="#2B2B2B" stroke="#1A1A1A" stroke-width="1.4"></circle><circle cx="11" cy="12.4" r="5.8" fill="#F3EAD6"></circle><circle cx="13.6" cy="10.2" r="5.2" fill="#2B2B2B"></circle></svg></span></span>
         </button>
         <div id="calismalar-kap">
           <button id="calismalar-btn" type="button"

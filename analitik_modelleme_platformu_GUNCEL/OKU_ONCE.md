@@ -32,9 +32,9 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `ozet` | `ozet.png` | Sol bar: Özet |
 | `katible_sohbet` | `katible_sohbet.png` | Sol bar: KATIB'le Sohbet (iki satırda) |
 | `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
-| `gorunum_secenekler` | `gorunum_secenekler.png` | Görünüm düğmesindeki üç mod anahtarı (soldan sağa Beyaz / Sepya / Gri) |
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
+| `robot_alt` | `robot_alt.png` | Sol bar: Görünüm'ün üstündeki çizgiye yaslanmış robot, kitaplar ve kupa |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -85,8 +85,10 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 **Sol bar**
 - Tepede KATIB logosu; arkasında barın eni boyunca İstanbul çizimi (solda
   Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta.
-- **Ana Sayfa:** Model Platformu'nun üstünde ayrı satır; kendi sayfasını
-  açar (içerik hazırlanıyor).
+- Logonun altında ince çizgi, ardından **Ana Sayfa** (kendi sayfasını
+  açar; içerik hazırlanıyor).
+- Çizgi ve **ÇALIŞMA ALANLARI** başlığı; altında Model Platformu kümesi ve
+  kilitli alanlar.
 - **Model Platformu:**
   - Model Akışı
   - Gösterge Paneli
@@ -94,11 +96,12 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   - Özet
   - KATIB'le Sohbet (kapalı)
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
+- Altta çizginin üstüne yaslanmış robot (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
-  tonu), Gri (açık gri zemin, koyu yazı). Anahtar `gorunum_secenekler.png`
-  ile çizilir (soldan sağa Beyaz / Sepya / Gri); simgeye basınca o mod
-  seçilir, seçili mod kırmızı halkalı. Düğmenin başka bir yerine basınca
-  sıradaki moda geçilir.
+  tonu), Gri (açık gri zemin, koyu yazı). Anahtar kodla çizilmiş üç
+  bölmeli kapsül: güneş (Beyaz), taralı sepya disk (Sepya), ay (Gri);
+  simgeye basınca o mod seçilir, seçili mod kırmızı halkalı. Düğmenin
+  başka bir yerine basınca sıradaki moda geçilir.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
