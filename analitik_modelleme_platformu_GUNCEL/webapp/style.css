@@ -55,6 +55,9 @@
   --font: "AMP Newsreader", Georgia, "Times New Roman", serif;
   /* Başlıklar da aynı aile; 600 ağırlıkla ayrışır. */
   --font-baslik: var(--font);
+  /* Mürekkep siyahı: sol bar çizgileri ve Görünüm anahtarı; her modda
+     aynı. */
+  --murekkep: #1A1A1A;
   /* Newsreader'ın küçük harf boyu (x-yüksekliği) serifsiz fontlardan
      kısa; aynı piksel boyunda küçük görünmesin diye küçük harfler
      yazı boyunun %46'sına getirilir (#kabuk: font-size-adjust). */
@@ -369,14 +372,19 @@ body { background-color: #FEFEFE; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde, 100 px yüksekliğindeki yuvada
-   ortalı; barın eninin %66'sı, oranı korunarak sığar. */
+/* KATIB logosu sol barın tepesinde; arkasında barın eni boyunca İstanbul
+   çizimi (katib_arkaplan.png, 3:1). Çizimin solunda Galata, sağında
+   tarihi yarımada ve vapur var; ortadaki boşluk enin yaklaşık %30-%72'si.
+   Logo bu boşluğa ortalı oturur (barın eninin %52'si). Yuvanın boyu
+   çizimin oranında: 300 px enin üçte biri. Çizim yüklenemezse
+   (--logo-arkaplan yok) logo tek başına durur. */
 #sol-bar-logo {
   flex-shrink: 0; height: 100px; padding: 10px 0 0; margin-bottom: 4px;
   display: flex; align-items: center; justify-content: center;
+  background: var(--logo-arkaplan, none) center top / 100% auto no-repeat;
 }
 #katib-logo {
-  display: block; width: 66%; height: auto; max-height: 72px;
+  display: block; width: 52%; height: auto; max-height: 64px;
   object-fit: contain;
 }
 
@@ -4009,32 +4017,53 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
 #sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 22px; height: 22px; }
 /* ---- Görünüm anahtarı ----
-   Segmentli düğme: açık gri yuva içinde üç eşit bölme, ince çizgi
-   simgeler: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri).
-   Seçili bölme beyaz, hafif gölgeli ve simgesi kırmızı (sol bardaki
-   beyaz satırlarla aynı dil); seçilmeyenler gri, üstüne gelince
-   koyulaşır. */
+   Dergi dilinde (New Yorker): renk yerine mürekkep. İnce siyah çerçeveli
+   dikdörtgen, bölmeler ince siyah çizgiyle ayrılır; simgeler mürekkep
+   siyahı: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri). Seçili
+   bölme mürekkeple doludur, simgesi zemin renginde (ters baskı).
+   Seçilmeyenlerin üstüne gelince hafif gri zemin. */
 #tema-btn .tema-anahtar {
   margin-left: auto; flex-shrink: 0;
-  display: inline-flex; align-items: stretch; gap: 2px;
-  height: 26px; padding: 2px;
-  border-radius: 8px; background: var(--kenar-acik);
+  display: inline-flex; align-items: stretch;
+  height: 24px; padding: 0; overflow: hidden;
+  border: 1px solid var(--murekkep); border-radius: 3px;
+  background: transparent;
 }
 #tema-btn .tema-anahtar span {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; border-radius: 6px; background: none;
-  color: var(--sol-ok);
-  transition: background .12s, color .12s, box-shadow .12s;
+  width: 28px; border-radius: 0; background: none;
+  color: var(--murekkep);
+  transition: background .12s, color .12s;
 }
-#tema-btn .tema-anahtar svg { display: block; width: 14px; height: 14px; }
-#tema-btn .tema-anahtar span:hover { color: var(--metin); }
+#tema-btn .tema-anahtar span + span { border-left: 1px solid var(--murekkep); }
+#tema-btn .tema-anahtar svg { display: block; width: 13px; height: 13px; }
+#tema-btn .tema-anahtar span:hover { background: rgba(26,26,26,.08); }
 #kabuk:not(.gri):not(.sepya) #tema-btn .tema-gunes,
 #kabuk.sepya #tema-btn .tema-sepya,
 #kabuk.gri #tema-btn .tema-gri {
-  background: var(--yuzey); color: var(--kirmizi);
-  box-shadow: 0 1px 2px rgba(16,24,40,.12), 0 0 0 1px var(--kenar);
+  background: var(--murekkep); color: var(--yuzey);
 }
 #sol-bar .sol-bar-dugmeler #tema-btn { height: 38px; }
+
+/* ---- Sol bar çizgileri ----
+   Mürekkep siyahı ince düz çizgiler (dergi sayfasındaki bölüm çizgileri
+   gibi): logonun altında ve sayfa satırlarının sonunda (Gösterge
+   Paneli'nin altında). Model Platformu'nun üstündeki çizginin ortasında
+   bölüm adı (ÇALIŞMA ALANLARI): küçük, aralıklı büyük harf; çizgi iki
+   yanından devam eder. */
+#sol-bar .sol-cizgi {
+  height: 1px; margin: 6px 12px; flex-shrink: 0;
+  background: var(--murekkep);
+}
+#sol-bar #ust-sekmeler > .sol-cizgi { margin: 4px 2px 0; }
+#sol-bar .sol-bolum-ayrac {
+  display: flex; align-items: center; gap: 8px; margin: 4px 2px 0;
+  font-size: 10.5px; font-weight: var(--fw-yari); letter-spacing: .12em;
+  color: var(--murekkep); white-space: nowrap;
+}
+#sol-bar .sol-bolum-ayrac::before, #sol-bar .sol-bolum-ayrac::after {
+  content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep);
+}
 
 /* ---- Görünüm'ün üstündeki robot ----
    robot_alt.png (kırpılmış hâli ~5:1) satırların eninde; yüklenene

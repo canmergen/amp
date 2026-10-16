@@ -23,6 +23,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
 | `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
+| `katib_arkaplan` | `katib_arkaplan.png` | Logonun arkasındaki İstanbul çizimi (saydam, 3:1; ortası boş) |
 | `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
@@ -82,9 +83,12 @@ SIL Open Font License). Gövde 400; başlıklar ve sol bar satırları 600;
 vurgu 700. Rakamlar tablolarda eşit genişlikte.
 
 **Sol bar**
-- Tepede KATIB logosu.
+- Tepede KATIB logosu; arkasında barın eni boyunca İstanbul çizimi (solda
+  Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta. Altında
+  ince siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içerik hazırlanıyor).
-- Altında Model Platformu kümesi ve kilitli alanlar.
+- Ortasında **ÇALIŞMA ALANLARI** yazan çizgi; altında Model Platformu
+  kümesi ve kilitli alanlar, en altta ince siyah çizgi.
 - **Model Platformu:**
   - Model Akışı
   - Model Göstergeleri
@@ -95,8 +99,9 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
   tonu), Gri (açık gri zemin, koyu yazı). Anahtar üç bölmeli segmentli
-  düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); simgeye
-  basınca o mod seçilir; seçili bölme beyaz, simgesi kırmızı. Düğmenin
+  düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); ince
+  siyah çerçeve ve bölme çizgileri; simgeye basınca o mod seçilir; seçili
+  bölme mürekkep siyahıyla dolu, simgesi ters baskı. Düğmenin
   başka bir yerine basınca sıradaki moda geçilir.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.

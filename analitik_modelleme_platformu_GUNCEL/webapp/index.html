@@ -16,10 +16,14 @@
          ekran yetmezse barın yüksekliğine sığacak oranda küçültülür;
          büyük ekranda büyütülmez (app.js: solBarOlcekle). -->
     <div id="sol-bar-ic">
-    <!-- LOGO: en üstte KATIB logosu. Yüklenemezse gizlenir (app.js). -->
+    <!-- LOGO: en üstte KATIB logosu; arkasında barın eni boyunca
+         İstanbul çizimi (katib_arkaplan), logo çizimin ortasındaki boş
+         alanda durur. Yüklenemeyen görsel gizlenir (app.js). -->
     <div id="sol-bar-logo">
       <img id="katib-logo" alt="KATIB">
     </div>
+    <!-- Logo ile sayfa satırları arasında ince çizgi. -->
+    <div class="sol-cizgi" role="separator"></div>
 
     <!-- SAYFA KÜMELERİ (sol barda alt alta).
          MODEL PLATFORMU kümesi: MODEL AKIŞI (iş akışı + adım kartları), GENEL
@@ -36,6 +40,9 @@
       <div class="ust-kume tekli ana-sayfa-kume">
         <button class="ust-sekme" data-ust="anasayfa" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"></path></svg>ANA SAYFA<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
       </div>
+      <!-- ÇALIŞMA ALANLARI: ortasında bölüm adı olan çizgi; altında Model
+           Platformu kümesi ve kilitli alanlar. -->
+      <div class="sol-bolum-ayrac" role="separator"><span>ÇALIŞMA ALANLARI</span></div>
       <div class="ust-kume">
         <span class="ust-kume-ad"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8 4.5v9l-8 4.5-8-4.5V7z"></path><path d="M4 7l8 4.5L20 7M12 11.5V21"></path></svg>MODEL PLATFORMU</span>
         <button class="ust-sekme" data-ust="akis" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M6.5 10v4a3 3 0 0 0 3 3H14"></path></svg>MODEL AKIŞI<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
@@ -56,6 +63,8 @@
         <button class="ust-sekme kapali" data-ust="dashboard" type="button" aria-disabled="true"
                 title="Gösterge Paneli henüz kapalı: hazırlanıyor"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>GÖSTERGE PANELİ<svg class="kilit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></button>
       </div>
+      <!-- Sayfa satırlarının sonunda ince çizgi. -->
+      <div class="sol-cizgi" role="separator"></div>
     </nav>
 
     <div id="sol-bar-alt">
