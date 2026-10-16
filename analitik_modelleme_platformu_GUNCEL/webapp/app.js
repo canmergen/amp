@@ -304,27 +304,40 @@ function baslikBuyuk(s) {
 }
 
 
-/* ==================== Renk modu (açık / koyu) ==================== */
-/* Sol bardaki Renk Modu düğmesi. Koyu modda #kabuk.koyu renk
-   değişkenlerini devralır. Sohbet alanında zemin görseli yok. Seçim bu
-   tarayıcıda hatırlanır; okunamazsa açık başlar. */
+/* ==================== Renk modu (beyaz / sepya / koyu gri) ==================== */
+/* Sol bardaki Renk Modu düğmesi. Üç mod: "acik" (Beyaz), "sepya" ve
+   "koyu" (Koyu Gri). Sepya ve koyu gri modda #kabuk.sepya / #kabuk.koyu
+   renk değişkenlerini devralır. Anahtardaki bir simgeye basınca o mod
+   seçilir; düğmenin başka bir yerine basınca sıradaki moda geçilir.
+   Seçim bu tarayıcıda hatırlanır; okunamazsa Beyaz başlar. */
 const TEMA_ANAHTAR = "amp_renk_modu";
-let koyuTema = false;
+const TEMA_MODLARI = ["acik", "sepya", "koyu"];
+const TEMA_ADI = { acik: "Beyaz", sepya: "Sepya", koyu: "Koyu Gri" };
+let temaModu = "acik";
 const temaBtn = document.getElementById("tema-btn");
 
 function temaUygula(kaydet) {
-    kabukEl.classList.toggle("koyu", koyuTema);
+    kabukEl.classList.toggle("sepya", temaModu === "sepya");
+    kabukEl.classList.toggle("koyu", temaModu === "koyu");
     if (temaBtn) {
-        temaBtn.title = koyuTema ? "Açık moda geç" : "Koyu moda geç";
-        temaBtn.setAttribute("aria-pressed", koyuTema ? "true" : "false");
+        temaBtn.title = "Renk modu: " + TEMA_ADI[temaModu];
+        temaBtn.setAttribute("aria-label", "Renk modu: " + TEMA_ADI[temaModu]);
     }
     if (kaydet) {
-        try { localStorage.setItem(TEMA_ANAHTAR, koyuTema ? "koyu" : "acik"); }
+        try { localStorage.setItem(TEMA_ANAHTAR, temaModu); }
         catch (e) { /* depolama kapalı: yalnız bu oturum */ }
     }
 }
-if (temaBtn) temaBtn.onclick = () => { koyuTema = !koyuTema; temaUygula(true); };
-try { koyuTema = localStorage.getItem(TEMA_ANAHTAR) === "koyu"; } catch (e) { koyuTema = false; }
+if (temaBtn) temaBtn.onclick = e => {
+    const simge = e.target.closest && e.target.closest("[data-mod]");
+    temaModu = simge ? simge.dataset.mod
+        : TEMA_MODLARI[(TEMA_MODLARI.indexOf(temaModu) + 1) % TEMA_MODLARI.length];
+    temaUygula(true);
+};
+try {
+    const kayit = localStorage.getItem(TEMA_ANAHTAR);
+    temaModu = TEMA_MODLARI.indexOf(kayit) !== -1 ? kayit : "acik";
+} catch (e) { temaModu = "acik"; }
 temaUygula(false);
 
 /* ==================== Sayfa geçişi ==================== */
