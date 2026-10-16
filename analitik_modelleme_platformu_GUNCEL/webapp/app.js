@@ -102,7 +102,7 @@ const kutuEl      = document.getElementById("kutu");
 const gonderEl    = document.getElementById("gonder");
 const fazEl       = document.getElementById("faz-listesi");
 const sozlukCipEl = document.getElementById("sozluk-cip");
-/* Sonuç kartları (ÜRETİM · ELEME · MODEL): GENEL BAKIŞ sekmesinde
+/* Sonuç kartları (ÜRETİM · ELEME · MODEL): MODEL GÖSTERGELERİ sekmesinde
    çizilir (bkz. sonucCiz). */
 let SONUC_KARTLARI = [];
 /* Analiz alanı durumu ve kararı alanda verilen adımlar (bkz. "Sol bar
@@ -155,12 +155,12 @@ let aktifAnalizSekme = "ozet";
    Panel her backend yanitinda BASTAN ciziliyor; bu harita cizim disinda
    durmasaydi kullanicinin actigi kart bir sonraki yanitta kendiliginden
    kapanirdi. Oturumluktur, localStorage'a YAZILMAZ. */
-/* "ozet" = GÖSTERGE PANELİ sekmesi (data-tab degeri bu). Panel govdesi
+/* "ozet" = MODEL GÖSTERGELERİ sekmesi (data-tab degeri bu). Panel govdesi
    "hazirlik" anahtariyla gelir (bkz. akis_panel.hazirlik_paneli). */
-/* SEKMELER: "ozet" (GÖSTERGE PANELİ) ve "degisken" (DEĞİŞKENLER). Değişkenler
+/* SEKMELER: "ozet" (MODEL GÖSTERGELERİ) ve "degisken" (DEĞİŞKENLER). Değişkenler
    kendi seçim panelinde üç görünüme ayrılır (DG.alt): "veri" (Veri ve
    Sözlük), "dagilim" (Dağılım ve SFA), "kontrol" (Değişken Kontrolleri).
-   "bolme" verisi GÖSTERGE PANELİ'nde çizilir. */
+   "bolme" verisi MODEL GÖSTERGELERİ'nde çizilir. */
 const BAGLI_SEKMELER = ["ozet", "degisken", "bolme"];
 
 /* Dataset listesi: "yukleniyor" | "hazir" | "bos" | "hata"
@@ -178,7 +178,8 @@ saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
 /* SOL BAR İKONLARI: her satırın çizgi ikonu (SVG) klasördeki çizimle
    (PNG) değiştirilir. Kenarlardaki saydam ve beyaz boşluk kırpılır.
    Görsel yüklenemezse çizgi ikon yerinde kalır. Aynı görsel birden çok
-   satırda kullanılabilir (KATIB'le Sohbet ve Gösterge Paneli iki yerde). */
+   satırda kullanılabilir: Model Sohbeti ile KATIB'le Sohbet aynı, Model
+   Göstergeleri ile Gösterge Paneli aynı çizimi kullanır. */
 const SOL_BAR_IKONLARI = [
     ['#sol-bar .ust-sekme[data-ust="anasayfa"] > svg.ikon', "anasayfa"],
     ["#sol-bar .ust-kume-ad > svg.ikon", "model_platformu"],
@@ -1136,7 +1137,7 @@ function cipYaz(el, ad) {
     el.hidden = !metin;
 }
 
-/* Sonuç kartları (ÜRETİM · ELEME · MODEL) sağ bloğun GÖSTERGE PANELİ
+/* Sonuç kartları (ÜRETİM · ELEME · MODEL) sağ bloğun MODEL GÖSTERGELERİ
    sekmesinde çizilir. Burada yalnız saklanır, sekme açıksa yeniden
    çizilir. */
 function ozetGuncelle(o) {
@@ -1150,7 +1151,7 @@ function ozetGuncelle(o) {
     if (aktifAnalizSekme === "ozet") analizCiz(aktifAnalizSekme);
 }
 
-/* SONUÇ KARTLARI GENEL BAKIŞ'ta çizilir: üretim ve eleme "Değişken
+/* SONUÇ KARTLARI MODEL GÖSTERGELERİ'nde çizilir: üretim ve eleme "Değişken
    Sayıları", model "Model Sonucu" başlığı altında. on_ekler: hangi kartlar
    ("ÜRETİM", "ELEME", "MODEL"; kartın etiketinin başı). Biçim: kırmızı
    etiket, koyu değer, iki alt satır, ulaşılmamış değer ∅. "hedef" dolu kart
@@ -4291,9 +4292,9 @@ function analizCiz(tab) {
     aktifAnalizSekme = tab;
     analizGovde.innerHTML = "";
     /* Seçim şeridi YALNIZ Değişkenler'de: her çizimin başında (erken
-       dönen Gösterge Paneli dahil) ayarlanır. */
+       dönen Model Göstergeleri dahil) ayarlanır. */
     dgPanelGoster(tab === "degisken");
-    /* GÖSTERGE PANELİ ("ozet"): ÇALIŞMA DÜZEYİ, her bilgi bir sayı ya da özet.
+    /* MODEL GÖSTERGELERİ ("ozet"): ÇALIŞMA DÜZEYİ, her bilgi bir sayı ya da özet.
        Veri seti ve sözlük kartları, değişken sayıları (üretim / eleme),
        bölme, validasyon ve model sonucu. Değişken listesi burada değil. */
     if (tab === "ozet") {
@@ -5516,7 +5517,7 @@ function analizSekmeAc(tab) {
 }
 
 /* ==================== Sol bar sekmeleri ve analiz alanı ====================
-   Sol barda (MODEL PLATFORMU kümesi): MODEL AKIŞI · GÖSTERGE PANELİ ·
+   Sol barda (MODEL PLATFORMU kümesi): MODEL AKIŞI · MODEL GÖSTERGELERİ ·
    DEĞİŞKENLER · ÖZET. Kodda MODEL AKIŞI = "akis" (AKIŞ).
    AKIŞ ana ekran (iş akışı + sohbet). Üç analiz sekmesinden birine
    basınca analiz alanı sol barın sağındaki bütün alanı kaplar

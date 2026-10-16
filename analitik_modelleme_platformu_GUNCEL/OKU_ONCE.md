@@ -27,10 +27,10 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
-| `gosterge_paneli` | `gosterge_paneli.png` | Sol bar: Gösterge Paneli (iki satırda) |
+| `gosterge_paneli` | `gosterge_paneli.png` | Sol bar: Model Göstergeleri ve Gösterge Paneli |
 | `degiskenler` | `degiskenler.png` | Sol bar: Değişkenler |
 | `ozet` | `ozet.png` | Sol bar: Özet |
-| `katible_sohbet` | `katible_sohbet.png` | Sol bar: KATIB'le Sohbet (iki satırda) |
+| `katible_sohbet` | `katible_sohbet.png` | Sol bar: Model Sohbeti ve KATIB'le Sohbet |
 | `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
@@ -92,10 +92,10 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   kümesi ve kilitli alanlar.
 - **Model Platformu:**
   - Model Akışı
-  - Gösterge Paneli
+  - Model Göstergeleri
   - Değişkenler (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)
   - Özet
-  - KATIB'le Sohbet (kapalı)
+  - Model Sohbeti (kapalı)
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
 - Altta ince çizgi, altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
