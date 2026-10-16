@@ -23,7 +23,6 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
 | `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
-| `katib_arkaplan` | `katib_arkaplan.png` | Logonun arkasındaki İstanbul çizimi (saydam, 3:1; ortası boş) |
 | `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
@@ -34,7 +33,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
-| `robot_alt` | `robot_alt.png` | Sol bar: ÇALIŞMA ALANLARI başlığının üstünde, çift çizgiye yaslanmış robot, kitaplar ve kupa |
+| `robot_alt` | `robot_alt.png` | Sol bar: Görünüm'ün üstünde robot, kitaplar ve kupa |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -83,13 +82,9 @@ SIL Open Font License). Gövde 400; başlıklar ve sol bar satırları 600;
 vurgu 700. Rakamlar tablolarda eşit genişlikte.
 
 **Sol bar**
-- Tepede KATIB logosu; arkasında barın eni boyunca İstanbul çizimi (solda
-  Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta.
-- Logonun altında ince çizgi, ardından **Ana Sayfa** (kendi sayfasını
-  açar; içerik hazırlanıyor).
-- Çift çizgiye (masa) yaslanmış robot, kitaplar ve kupa (`robot_alt`);
-  çizginin altında **ÇALIŞMA ALANLARI** başlığı, altında Model Platformu
-  kümesi ve kilitli alanlar.
+- Tepede KATIB logosu.
+- **Ana Sayfa** (kendi sayfasını açar; içerik hazırlanıyor).
+- Altında Model Platformu kümesi ve kilitli alanlar.
 - **Model Platformu:**
   - Model Akışı
   - Model Göstergeleri
@@ -97,12 +92,12 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   - Özet
   - Model Sohbeti (kapalı)
 - Ayrı bloklar: KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor).
-- Altta ince çizgi, altında:
+- Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
   tonu), Gri (açık gri zemin, koyu yazı). Anahtar kodla çizilmiş üç
   bölmeli kapsül: güneş (Beyaz), taralı sepya disk (Sepya), ay (Gri);
-  simgeye basınca o mod seçilir; seçili bölme açık pembe zeminli, altında
-  kırmızı çizgi (sol bardaki seçili satırla aynı dil). Düğmenin
+  simgeye basınca o mod seçilir; seçili bölme açık pembe zeminli, simgesi
+  tam renkli. Düğmenin
   başka bir yerine basınca sıradaki moda geçilir.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.

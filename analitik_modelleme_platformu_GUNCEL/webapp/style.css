@@ -55,7 +55,8 @@
   --font: "AMP Newsreader", Georgia, "Times New Roman", serif;
   /* Başlıklar da aynı aile; 600 ağırlıkla ayrışır. */
   --font-baslik: var(--font);
-  /* Mürekkep siyahı: çizim kenarları ve sol bar çizgileri; her modda aynı. */
+  /* Mürekkep siyahı: Görünüm anahtarının kenar ve bölme çizgileri; her
+     modda aynı. */
   --murekkep: #1A1A1A;
   /* Newsreader'ın küçük harf boyu (x-yüksekliği) serifsiz fontlardan
      kısa; aynı piksel boyunda küçük görünmesin diye küçük harfler
@@ -371,20 +372,14 @@ body { background-color: #FEFEFE; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde; arkasında barın eni boyunca İstanbul
-   çizimi (katib_arkaplan.png, 3:1). Çizimin solunda Galata, sağında
-   tarihi yarımada ve vapur var; ortadaki boşluk enin yaklaşık %30-%72'si.
-   Logo bu boşluğa ortalı oturur (barın eninin %52'si; iç kenarlarda
-   yalnız su çizgilerine değer). Yuvanın boyu çizimin oranında: 300 px
-   enin üçte biri. Çizim yüklenemezse (--logo-arkaplan yok) logo tek
-   başına durur. */
+/* KATIB logosu sol barın tepesinde, 100 px yüksekliğindeki yuvada
+   ortalı; barın eninin %80'i, oranı korunarak sığar. */
 #sol-bar-logo {
   flex-shrink: 0; height: 100px; padding: 10px 0 0; margin-bottom: 4px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--logo-arkaplan, none) center top / 100% auto no-repeat;
 }
 #katib-logo {
-  display: block; width: 52%; height: auto; max-height: 64px;
+  display: block; width: 80%; height: auto; max-height: 84px;
   object-fit: contain;
 }
 
@@ -4019,10 +4014,9 @@ span.bolme-cip { cursor: default; }
 /* ---- Görünüm anahtarı ----
    Çizim tarzı üç bölmeli kapsül: krem zemin üstünde ince çapraz tarama,
    mürekkep siyahı kenar ve bölme çizgileri; her bölmede bir daire:
-   güneş (Beyaz), taralı sepya disk (Sepya), ay (Gri). Seçili mod sol
-   bardaki seçili satırla aynı dille gösterilir: bölmenin zemini açık
-   pembe, altında kırmızı çizgi, simgesi tam renkli. Seçilmeyenler düz
-   krem zeminde, simgeleri soluk; üstüne gelince netleşir. */
+   güneş (Beyaz), taralı sepya disk (Sepya), ay (Gri). Seçili bölmenin
+   zemini açık pembe, simgesi tam renkli. Seçilmeyenler düz krem
+   zeminde, simgeleri soluk; üstüne gelince netleşir. */
 #tema-btn .tema-anahtar {
   margin-left: auto; flex-shrink: 0;
   display: inline-flex; align-items: stretch;
@@ -4047,42 +4041,15 @@ span.bolme-cip { cursor: default; }
 #kabuk.sepya #tema-btn .tema-sepya,
 #kabuk.gri #tema-btn .tema-gri {
   opacity: 1; filter: none;
-  background: #FBE4E5; box-shadow: inset 0 -2.5px 0 var(--kirmizi);
+  background: #FBE4E5;
 }
 #sol-bar .sol-bar-dugmeler #tema-btn { height: 38px; }
 
-/* ---- Sol bar çizgileri ve bölüm adı ----
-   Mürekkep siyahı ince düz çizgiler (dergi sayfasındaki bölüm çizgileri
-   gibi): logo ile ANA SAYFA arasında ve sayfa satırları ile alttaki
-   düğmeler arasında tek çizgi. ÇALIŞMA ALANLARI'nın üstünde, robotun
-   oturduğu masa çift çizgi (kalın + ince): önemli ayrım. Renk her modda
-   aynı. Bölüm adı küçük, aralıklı büyük harf. */
-#sol-bar .sol-cizgi {
-  height: 1px; margin: 6px 12px; flex-shrink: 0;
-  background: var(--murekkep);
-}
-#sol-bar .sol-cizgi.cift {
-  height: 5px; background: none;
-  border-top: 2px solid var(--murekkep); border-bottom: 1px solid var(--murekkep);
-}
-#sol-bar .sol-bolum-ad {
-  padding: 0 6px; margin: 2px 0 -1px;
-  font-size: 10.5px; font-weight: var(--fw-yari); letter-spacing: .12em;
-  color: var(--metin-tamam); white-space: nowrap;
-}
-
-/* ---- ÇALIŞMA ALANLARI robotu ----
-   robot_alt.png (kırpılmış hâli ~5:1) satırların eninde; çizimdeki
-   nesnelerin (kitaplar, kupa, robotun elleri) tabanı görselin boyunun
-   %85'inde. Çift çizgi tam oraya, görselin üstüne çizilir; nesneler
-   üstünde durur. Görsel yoksa yalnız çift çizgi. */
-#sol-bar-robot { position: relative; margin: 6px 0 0; }
-#sol-bar-robot img { display: none; width: 100%; height: auto; position: relative; z-index: 1; }
-#sol-bar-robot img.yuklu { display: block; }
-#sol-bar-robot .sol-cizgi { margin: 0 2px; }
-#sol-bar-robot img.yuklu + .sol-cizgi {
-  position: absolute; left: 0; right: 0; top: calc(85% - 1px); z-index: 2;
-}
+/* ---- Görünüm'ün üstündeki robot ----
+   robot_alt.png (kırpılmış hâli ~5:1) satırların eninde; yüklenene
+   kadar gizli, yüklenemezse yer kaplamaz. */
+#robot-alt { display: none; width: 100%; height: auto; margin: 0 0 6px; }
+#robot-alt.yuklu { display: block; }
 
 /* ANA SAYFA: MODEL PLATFORMU kümesinin üstünde tek satırlık beyaz kart
    (kilitli blokların kesik kenarı yok). */
