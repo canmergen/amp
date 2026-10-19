@@ -5671,22 +5671,8 @@ document.addEventListener("keydown", e => {
 
 /* ==================== ANA SAYFA ====================
    Üstteki görsel (anasayfa_aciklama) yüklenemezse yeri kapanır. Kart ve
-   sayfa simgeleri sol barın çizimleri (beyaz zemini saydam). data-git
-   düğmeleri sol bardaki ilgili satırı açar; satır kapalı Model Platformu
-   kümesindeyse küme de açılır, böylece seçili satır görünür. */
-function solBarSatirAc(secici) {
-    const b = document.querySelector("#sol-bar " + secici);
-    if (!b) return;
-    const kume = b.closest(".ust-kume.acilir");
-    if (kume && !kume.classList.contains("acik")) kumeAcKapa(kume);
-    b.click();
-}
-const ANA_SAYFA_HEDEF = {
-    akis:     () => solBarSatirAc('.ust-sekme[data-ust="akis"]'),
-    gosterge: () => solBarSatirAc('.ust-sekme[data-tab="ozet"]'),
-    degisken: () => solBarSatirAc('.ust-sekme[data-tab="degisken"]'),
-    ozet:     () => solBarSatirAc('.ust-sekme[data-ust="dokuman"]'),
-};
+   sayfa simgeleri sol barın çizimleri (beyaz zemini saydam). Ana Sayfa
+   yalnız tanıtır, sayfalar sol bardan açılır. */
 (function anaSayfaKur() {
     const kok = document.getElementById("sayfa-anasayfa");
     if (!kok) return;
@@ -5703,35 +5689,27 @@ const ANA_SAYFA_HEDEF = {
         solBarGorseli(img.dataset.asIkon).then(src => { img.src = src; },
             () => img.classList.add("yok"));
     });
-    kok.querySelectorAll("[data-git]").forEach(d => {
-        const git = ANA_SAYFA_HEDEF[d.dataset.git];
-        if (git) d.onclick = (e) => { e.stopPropagation(); git(); };
-    });
-    /* Kart açıklamaları: karta (ya da Enter / boşluk) basınca altında o
-       alanın açıklaması açılır, yeniden basınca kapanır; aynı anda tek
-       açıklama açık. Açılan açıklama görünür alana kaydırılır. */
-    const kartlar = Array.from(kok.querySelectorAll(".as-kart[data-ayrinti]"));
+    /* Kart açıklamaları: kartın "Nasıl Çalışır" / "Ne Olacak" düğmesine
+       basınca kartların altında o alanın açıklaması açılır, yeniden
+       basınca kapanır; aynı anda tek açıklama açık. Seçili kartın kenarı
+       mürekkep olur; açılan açıklama görünür alana kaydırılır. */
+    const dugmeler = Array.from(kok.querySelectorAll(".as-ayrinti-ac[data-ayrinti]"));
     const ayrintilar = Array.from(kok.querySelectorAll(".as-ayrinti[data-alan]"));
     function ayrintiAc(alan) {
-        const acik = kartlar.find(k => k.dataset.ayrinti === alan && k.classList.contains("secili"));
-        const hedef = acik ? null : alan;
-        kartlar.forEach(k => {
-            const sec = k.dataset.ayrinti === hedef;
-            k.classList.toggle("secili", sec);
-            k.setAttribute("aria-expanded", sec ? "true" : "false");
+        const acikMi = dugmeler.some(d => d.dataset.ayrinti === alan
+                                          && d.getAttribute("aria-expanded") === "true");
+        const hedef = acikMi ? null : alan;
+        dugmeler.forEach(d => {
+            const sec = d.dataset.ayrinti === hedef;
+            d.setAttribute("aria-expanded", sec ? "true" : "false");
+            const kart = d.closest(".as-kart");
+            if (kart) kart.classList.toggle("secili", sec);
         });
         ayrintilar.forEach(a => { a.hidden = a.dataset.alan !== hedef; });
         const gorunen = ayrintilar.find(a => !a.hidden);
         if (gorunen) gorunen.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
-    kartlar.forEach(k => {
-        k.onclick = () => ayrintiAc(k.dataset.ayrinti);
-        k.onkeydown = (e) => {
-            if (e.target !== k || (e.key !== "Enter" && e.key !== " ")) return;
-            e.preventDefault();
-            ayrintiAc(k.dataset.ayrinti);
-        };
-    });
+    dugmeler.forEach(d => { d.onclick = () => ayrintiAc(d.dataset.ayrinti); });
     /* Uygulama Ana Sayfa ile açılır (index.html'de görünen sayfa); sol
        barda da Ana Sayfa seçili görünsün. */
     sayfaAc("anasayfa");

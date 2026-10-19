@@ -214,7 +214,7 @@
        koddaki gerçek adlardan: faz ve adım adları fe_agent/akis_metin.py
        (SONRAKI_FAZLAR, ADIM_ADI) ve fe_agent/akis_kayit.py (adım
        başlıkları); başlangıçlar MOD_SECENEKLERI. Biri değişirse burası da
-       güncellenir. Düğmeler (data-git) sol bardaki ilgili satırı açar
+       güncellenir. Sayfalar sol bardan açılır; Ana Sayfa yalnız tanıtır
        (app.js: anaSayfaKur). -->
   <div id="sayfa-anasayfa" class="sayfa">
     <div class="ana-sayfa">
@@ -222,43 +222,42 @@
       <section class="as-hero">
         <div class="as-hero-metin">
           <h1 class="as-baslik">Veriyle Yapacağınız<br><em>Her Şey, Tek Platformda.</em></h1>
-          <p class="as-giris">Model kurun ve izleyin, verinizi gösterge panellerinde
-            analiz edin, yüklediğiniz veriyle ya da serbestçe yapay zekâ ile
-            sohbet edin.</p>
+          <p class="as-giris">Ham veriden uçtan uca model kurun, sonuçlarını izleyin
+            ve üzerine konuşun. Modelden bağımsız olarak verinizi gösterge
+            panellerinde analiz edin, yüklediğiniz veriyle ya da herhangi bir
+            konuda sohbet edin. Hepsi yapay zekâ desteğiyle, tek çalışma
+            alanında.</p>
         </div>
         <div class="as-hero-gorsel"><img id="as-hero-img" alt=""></div>
       </section>
 
-      <!-- Kartlara basınca altlarında o alanın açıklaması açılır (yeniden
-           basınca kapanır; aynı anda tek açıklama). Model Platformu'nun
-           "Akışı Aç" düğmesi açıklamayı değil Model Akışı'nı açar. -->
+      <!-- Kartların "Nasıl Çalışır" / "Ne Olacak" düğmesine basınca kartların
+           altında o alanın açıklaması açılır (yeniden basınca kapanır; aynı
+           anda tek açıklama). Sayfalar sol bardan açılır. -->
       <section class="as-bolum">
         <h2 class="as-bolum-baslik">Çalışma Alanları</h2>
         <div class="as-kartlar">
-          <article class="as-kart" data-ayrinti="model" tabindex="0" role="button" aria-expanded="false">
+          <article class="as-kart">
             <img class="as-kart-ikon" data-as-ikon="model_platformu" alt="">
             <h3>Model Platformu</h3>
             <p>Ham veriden uçtan uca model kurun, sonuçlarını izleyin ve
               yapay zekâ ile üzerine konuşun. Analizleri platform yapar,
               kararlar sizin onayınızla uygulanır.</p>
-            <span class="as-ayrinti-ac">Nasıl çalışır<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-            <button class="as-dugme birincil" type="button" data-git="akis">Akışı Aç<svg class="as-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+            <button class="as-dugme as-ayrinti-ac" type="button" data-ayrinti="model" aria-expanded="false">Nasıl Çalışır<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
           </article>
-          <article class="as-kart kapali" data-ayrinti="sohbet" tabindex="0" role="button" aria-expanded="false">
+          <article class="as-kart kapali">
             <img class="as-kart-ikon" data-as-ikon="katible_sohbet" alt="">
             <h3>KATIB'le Sohbet <span class="as-rozet">Hazırlanıyor</span></h3>
             <p>Yüklediğiniz veriyle ya da herhangi bir konuda yapay zekâ ile
               serbestçe sohbet edin; model çalışması gerekmez.</p>
-            <span class="as-ayrinti-ac">Ne olacak<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-            <button class="as-dugme" type="button" disabled>Henüz Açık Değil</button>
+            <button class="as-dugme as-ayrinti-ac" type="button" data-ayrinti="sohbet" aria-expanded="false">Ne Olacak<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
           </article>
-          <article class="as-kart kapali" data-ayrinti="gosterge" tabindex="0" role="button" aria-expanded="false">
+          <article class="as-kart kapali">
             <img class="as-kart-ikon" data-as-ikon="gosterge_paneli" alt="">
             <h3>Gösterge Paneli <span class="as-rozet">Hazırlanıyor</span></h3>
             <p>Verinizi gösterge panellerinde analiz edin, durumu izleyin ve
               dilediğiniz konuyu inceleyin; modellerden bağımsız.</p>
-            <span class="as-ayrinti-ac">Ne olacak<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-            <button class="as-dugme" type="button" disabled>Henüz Açık Değil</button>
+            <button class="as-dugme as-ayrinti-ac" type="button" data-ayrinti="gosterge" aria-expanded="false">Ne Olacak<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
           </article>
         </div>
 
@@ -326,32 +325,32 @@
         <section class="as-alt-bolum">
           <h3 class="as-alt-baslik">Model Platformu Sayfaları</h3>
           <div class="as-sayfalar">
-            <button class="as-sayfa" type="button" data-git="akis">
+            <div class="as-sayfa">
               <img class="as-sayfa-ikon" data-as-ikon="model_akisi" alt="">
               <span class="as-sayfa-metin"><b>Model Akışı</b>
                 Adımların blok blok ilerlediği çalışma alanı. Seçimler kartlar
                 üzerinden yapılır; her blok kendi kararını ve Geri Dön düğmesini
                 taşır.</span>
-            </button>
-            <button class="as-sayfa" type="button" data-git="gosterge">
+            </div>
+            <div class="as-sayfa">
               <img class="as-sayfa-ikon" data-as-ikon="gosterge_paneli" alt="">
               <span class="as-sayfa-metin"><b>Model Gösterge Paneli</b>
                 Çalışmanın sayılarla özeti: veri seti ve sözlük, değişken
                 sayıları (üretim, eleme), bölme, validasyon ve model sonucu.</span>
-            </button>
-            <button class="as-sayfa" type="button" data-git="degisken">
+            </div>
+            <div class="as-sayfa">
               <img class="as-sayfa-ikon" data-as-ikon="degiskenler" alt="">
               <span class="as-sayfa-metin"><b>Model Değişkenleri</b>
                 Değişken düzeyinde inceleme: Veri ve Sözlük, Dağılım ve SFA,
                 Değişken Kontrolleri. SFA kararları burada değiştirilebilir.</span>
-            </button>
-            <button class="as-sayfa" type="button" data-git="ozet">
+            </div>
+            <div class="as-sayfa">
               <img class="as-sayfa-ikon" data-as-ikon="ozet" alt="">
               <span class="as-sayfa-metin"><b>Model Özeti</b>
                 Model dokümanı: künye ve 20 bölüm. Akışın son durumundan her
                 açılışta yeniden üretilir; eksik ve teslimi engelleyen bölümler
                 ayrıca listelenir.</span>
-            </button>
+            </div>
             <div class="as-sayfa kapali">
               <img class="as-sayfa-ikon" data-as-ikon="katible_sohbet" alt="">
               <span class="as-sayfa-metin"><b>Model Sohbeti <span class="as-rozet">Hazırlanıyor</span></b>

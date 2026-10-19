@@ -4216,8 +4216,8 @@ span.bolme-cip { cursor: default; }
 }
 
 /* ==================== ANA SAYFA ====================
-   Platformu tanıtan ve sayfalara yönlendiren tek sütunlu sayfa (en fazla
-   1180 px, ortada); sayfa kendi içinde kayar. Sırayla:
+   Platformu tanıtan tek sütunlu sayfa (alanın tamamı); sayfa kendi
+   içinde kayar. Sırayla:
    - Üst bölüm: solda başlık ("Veriden / Daha Fazlasını Keşfedin."),
      tanıtım ve düğmeler; sağda anasayfa_aciklama görseli. Görsel
      yüklenemezse metin tek sütun kalır.
@@ -4233,36 +4233,39 @@ span.bolme-cip { cursor: default; }
    kısımları zeminin rengini alır). */
 #sayfa-anasayfa { overflow-y: auto; background: var(--yuzey); }
 .ana-sayfa {
-  max-width: 1180px; margin: 0 auto; padding: 28px 32px 56px;
+  padding: 28px 32px 56px;
   display: flex; flex-direction: column; gap: 38px;
   color: var(--metin);
 }
 .ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa p { margin: 0; }
 .ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
 
-/* Üst bölüm: solda başlık ve giriş yazısı (soldan boşluğu üstten
-   boşluğuyla aynı, 30 px; başlık iki satır, giriş yazısı başlığın
-   eninde); bloğun boyunu yazı belirler. Görsel bloğun üst, sağ ve alt
-   kenarına yapışık, bloğun tam boyunda (eni boyuna göre; saydam
-   kenarları app.js'te kırpılır). Çizimin solu yazıya değmez. Dar ekranda
-   görsel yazının altına iner. */
+/* Üst bölüm: bütün blok, eniyle orantılı bir resim gibi davranır (boyu
+   enin %24'ü; yazı boyları ve boşluklar cqw ile bloğun enine bağlı), bu
+   yüzden yakınlaştırınca ya da uzaklaştırınca blok tek parça büyür ve
+   küçülür. Görsel bloğun üst, sağ ve alt kenarına yapışık, bloğun tam
+   boyunda (saydam kenarları app.js'te kırpılır). Yazının soldan ve
+   üstten boşluğu aynı (enin %3'ü). Çizimin üst %30'u boş (yalnız
+   pencere çerçeveleri sağda): başlık oraya uzanabilir; giriş yazısı
+   aşağıda, çizimin sol ucundaki saksı ve masaya değmeyen dar sütunda
+   (enin %30'u). Dar ekranda görsel yazının altına iner. */
 .as-hero {
-  position: relative; overflow: hidden;
-  padding: 30px;
+  position: relative; overflow: hidden; container-type: inline-size;
+  aspect-ratio: 100 / 24;
   background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 14px;
   box-shadow: var(--golge-1);
 }
-.as-hero-metin { position: relative; z-index: 1; }
+.as-hero-metin { position: absolute; z-index: 1; left: 3cqw; top: 3cqw; }
 .as-hero-gorsel { position: absolute; top: 0; right: 0; bottom: 0; }
 .as-hero-gorsel img { display: block; height: 100%; width: auto; }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
-  margin-bottom: 12px; white-space: nowrap;
-  font-size: 38px; line-height: 1.08; font-weight: var(--fw-yari); letter-spacing: -.01em;
+  margin-bottom: 1.1cqw; white-space: nowrap;
+  font-size: 3.3cqw; line-height: 1.08; font-weight: var(--fw-yari); letter-spacing: -.01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
-.as-giris { max-width: 430px; font-size: 15px; line-height: 1.55; }
+.as-giris { width: 31cqw; font-size: 1.28cqw; line-height: 1.5; }
 
 /* Düğmeler */
 .as-dugme {
@@ -4276,7 +4279,7 @@ span.bolme-cip { cursor: default; }
 .as-dugme.birincil { background: var(--kirmizi-dolgu); border-color: var(--kirmizi-dolgu); color: #fff; }
 .as-dugme.birincil:hover { filter: brightness(.93); border-color: var(--kirmizi-dolgu); }
 .as-dugme:disabled { cursor: not-allowed; background: transparent; color: var(--kilitli-yazi); }
-.as-dugme:focus-visible, .as-sayfa:focus-visible { outline: 2px solid var(--murekkep); outline-offset: 2px; }
+.as-dugme:focus-visible { outline: 2px solid var(--murekkep); outline-offset: 2px; }
 .as-ok { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* Bölüm başlığı: yanında sol bardaki gibi ince mürekkep çizgisi */
@@ -4309,20 +4312,15 @@ span.bolme-cip { cursor: default; }
 .as-kart-ikon { width: 56px; height: 56px; object-fit: contain; mix-blend-mode: multiply; }
 .as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { filter: grayscale(1); opacity: .5; }
 
-/* Kart açıklamaları: kart tıklanabilir; altında "Nasıl çalışır" ile ok.
-   Seçili kartın kenarı mürekkep, oku yukarı döner. Açıklama kartların
-   altında, ince mürekkep çizgisiyle başlayan düz bir alan. */
-.as-kart[data-ayrinti] { cursor: pointer; transition: border-color .12s; }
-.as-kart[data-ayrinti]:hover { border-color: var(--kenar-guclu); }
-.as-kart[data-ayrinti]:focus-visible { outline: 2px solid var(--murekkep); outline-offset: 2px; }
-.as-kart.secili, .as-kart.secili:hover { border-color: var(--murekkep); }
-.as-ayrinti-ac {
-  display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
-  font-size: 14px; font-weight: var(--fw-yari); color: var(--murekkep);
-  border-bottom: 1px solid currentColor;
-}
-.as-acilir-ok { width: 14px; height: 14px; transition: transform .15s; }
-.as-kart.secili .as-acilir-ok { transform: rotate(180deg); }
+/* Kart açıklamaları: kartın altında "Nasıl Çalışır" / "Ne Olacak"
+   düğmesi (kartın eninde). Basılınca kartın kenarı mürekkep olur, düğme
+   dolar ve oku yukarı döner. Açıklama kartların altında, ince mürekkep
+   çizgisiyle başlayan düz bir alan. */
+.as-kart.secili { border-color: var(--murekkep); }
+.as-ayrinti-ac { align-self: stretch; }
+.as-ayrinti-ac[aria-expanded="true"] { background: var(--murekkep); border-color: var(--murekkep); color: var(--yuzey); }
+.as-acilir-ok { width: 16px; height: 16px; flex-shrink: 0; transition: transform .15s; }
+.as-ayrinti-ac[aria-expanded="true"] .as-acilir-ok { transform: rotate(180deg); }
 .as-ayrinti {
   margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--murekkep);
   display: flex; flex-direction: column; gap: 30px;
@@ -4361,11 +4359,9 @@ span.bolme-cip { cursor: default; }
 .as-sayfa {
   display: flex; align-items: flex-start; gap: 14px; padding: 16px;
   background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 12px;
-  font: inherit; color: var(--metin); text-align: left; cursor: pointer;
-  transition: border-color .12s;
+  color: var(--metin);
 }
-button.as-sayfa:hover { border-color: var(--murekkep); }
-.as-sayfa.kapali { cursor: default; }
+
 .as-sayfa-ikon { width: 44px; height: 44px; flex-shrink: 0; object-fit: contain; mix-blend-mode: multiply; }
 .as-sayfa-metin { font-size: 14.5px; line-height: 1.5; }
 .as-sayfa-metin b {
@@ -4400,9 +4396,12 @@ button.as-sayfa:hover { border-color: var(--murekkep); }
 .as-adimlar h3 { margin-bottom: 4px; font-size: 16.5px; font-weight: var(--fw-yari); }
 .as-adimlar p { font-size: 14.5px; line-height: 1.55; }
 
-/* Dar ekran: görsel yazının altına, bloğun eninde */
+/* Dar ekran: yazı üstte, görsel altında bloğun eninde */
 @media (max-width: 1100px) {
-  .as-hero { padding-bottom: 0; }
-  .as-hero-gorsel { position: static; margin: 20px -30px 0; }
+  .as-hero { aspect-ratio: auto; padding: 24px 24px 0; }
+  .as-hero-metin { position: static; }
+  .as-baslik { font-size: 32px; margin-bottom: 12px; white-space: normal; }
+  .as-giris { width: auto; font-size: 15px; }
+  .as-hero-gorsel { position: static; margin: 18px -24px 0; }
   .as-hero-gorsel img { width: 100%; height: auto; }
 }

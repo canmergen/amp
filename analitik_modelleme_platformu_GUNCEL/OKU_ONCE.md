@@ -130,19 +130,22 @@ ekranda 299 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür
 eni de aynı orana gelir; büyük ekranda büyümez. Küçültme CSS zoom ile
 yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 
-**Ana Sayfa** (uygulama bununla açılır; tek sütun, en fazla 1180 px,
-kendi içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz)
-- Üst bölüm: "Veriyle Yapacağınız / Her Şey, Tek Platformda." başlığı ve tek
-  cümlelik giriş yazısı (soldan ve üstten boşluk aynı); sağda
-  `anasayfa_aciklama` görseli bloğun üst, sağ ve alt kenarına yapışık
-  (yüklenemezse yalnız yazı kalır).
+**Ana Sayfa** (uygulama bununla açılır; alanın tamamını kaplar, kendi
+içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
+tanıtır; sayfalar sol bardan açılır.
+- Üst bölüm: "Veriyle Yapacağınız / Her Şey, Tek Platformda." başlığı ve
+  giriş yazısı; sağda `anasayfa_aciklama` görseli bloğun üst, sağ ve alt
+  kenarına yapışık (yüklenemezse yalnız yazı kalır). Blok eniyle orantılı
+  (boy = en x %24; yazı boyları blok enine bağlı), yakınlaştırınca tek
+  parça büyür. Yazı çizime değmez (piksel düzeyinde denetlendi).
 - Çalışma Alanları (üç ayrı iş): Model Platformu (model kurma, izleme ve
-  üzerine konuşma; Akışı Aç), KATIB'le Sohbet (yüklenen veriyle ya da
-  genel sohbet) ve Gösterge Paneli (modellerden bağımsız veri analizi ve
-  durum izleme); son ikisi hazırlanıyor. Bir karta basınca altında o alanın
-  açıklaması açılır, yeniden basınca kapanır (aynı anda tek açıklama).
-  Model Platformu'nun açıklaması: beş faz ve adımları, Model Platformu
-  sayfaları (basınca o sayfa açılır), güvenceler, başlarken adımları.
+  üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
+  ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
+  son ikisi hazırlanıyor. Her kartın altında **Nasıl Çalışır** / **Ne
+  Olacak** düğmesi: basınca kartların altında o alanın açıklaması açılır,
+  yeniden basınca kapanır (aynı anda tek açıklama). Model Platformu'nun
+  açıklaması: beş faz ve adımları, Model Platformu sayfaları, güvenceler,
+  başlarken adımları.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
 - Açılışta Model Akışı arka planda yüklenir; akış bir kart için analiz
