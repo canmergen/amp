@@ -4284,11 +4284,17 @@ span.bolme-cip { cursor: default; }
    (siyah satır, kırmızı satır). Görsel bloğun iç eninin %94'ünde; boyu
    kendi oranındaki boyun %95'i (dikeyde hafif basık; kırpma yok,
    saydam kenarları app.js'te kırpılır; oranı app.js --gorsel-oran
-   olarak verir). Boşluklar dar, blok dikeyde gereğinden uzun olmasın. Başlık boyu ve boşluklar cqw ile bloğun
+   olarak verir). Boşluklar dar, blok dikeyde gereğinden uzun olmasın.
+   Görselin eni %94 varsayılandır; app.js (anaSayfaSigdir) onu %40 ile
+   %100 arasında, ilk ekran (üst bölüm ve kartlar) sayfa yüksekliğini tam
+   dolduracak şekilde ayarlar; görsel tam ende de boşluk kalırsa başlık
+   büyür (--baslik-k, en çok 1,15), artanında üst bölüm uzar, içerik
+   dikeyde ortada kalır. Başlık boyu ve boşluklar cqw ile bloğun
    enine bağlı: bu yüzden yakınlaştırınca ya da uzaklaştırınca blok tek
    parça büyür ve küçülür. Tanıtım yazısı burada değil, Çalışma Alanları
    kartlarında. */
 .as-hero {
+  display: flex; flex-direction: column; justify-content: center;
   overflow: hidden; container-type: inline-size;
   padding: 2cqw 3cqw 2cqw;
   background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 14px;
@@ -4296,13 +4302,13 @@ span.bolme-cip { cursor: default; }
 }
 .as-hero-metin { margin-top: 1.5cqw; text-align: center; }
 .as-hero-gorsel img {
-  display: block; width: 94%; height: auto; margin: 0 auto;
+  display: block; width: 94%; max-width: 100%; height: auto; margin: 0 auto;
   aspect-ratio: calc(var(--gorsel-oran, 3.667) / .95);
 }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
   margin: 0; white-space: nowrap;
-  font-size: 3.2cqw; line-height: 1.2; font-weight: var(--fw-kalin); letter-spacing: .01em;
+  font-size: calc(3.2cqw * var(--baslik-k, 1)); line-height: 1.2; font-weight: var(--fw-kalin); letter-spacing: .01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }

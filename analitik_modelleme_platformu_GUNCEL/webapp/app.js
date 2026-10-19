@@ -5673,10 +5673,63 @@ document.addEventListener("keydown", e => {
         hero.onload = () => {
             if (hero.naturalHeight) hero.style.setProperty("--gorsel-oran",
                 hero.naturalWidth / hero.naturalHeight);
+            anaSayfaSigdir();
         };
         saydamKirp(getWebAppBackendUrl("gorsel/anasayfa_aciklama"),
                    src => { hero.src = src; }, yok);
     }
+    /* İLK EKRAN SIĞDIRMA: üst bölüm ve Çalışma Alanları kartları sayfanın
+       yüksekliğini tam doldurur; ne kaydırma çubuğu açılır ne altta boşluk
+       kalır. Görselin eni (dolayısıyla boyu, oranı sabit) kartların alt
+       kenarıyla sayfanın altı arasında sayfanın alt iç boşluğu kalacak
+       şekilde ayarlanır: en az bloğun
+       iç eninin %40'ı, en çok %100'ü. Görsel en çok enine ulaştıktan sonra
+       artan yükseklikle önce başlık büyür (en çok 1,15 kat), kalanı üst
+       bölüme eklenir (içerik dikeyde ortalı). Ölçüler
+       ekrandaki (yakınlaştırılmış) boyutlarla oranlanır; ölçek farkı
+       sonucu değiştirmez. Açılan kart açıklaması kartların altında kaldığı
+       için hesaba girmez. Dar ekranda (1100 px altı) yapılmaz. */
+    const heroBlok = kok.querySelector(".as-hero");
+    const kartAlani = kok.querySelector(".as-kartlar");
+    const darEkran = window.matchMedia("(max-width: 1100px)");
+    function anaSayfaSigdir() {
+        if (!hero || !heroBlok || !kartAlani) return;
+        hero.style.width = "";
+        heroBlok.style.minHeight = "";
+        heroBlok.style.removeProperty("--baslik-k");
+        if (darEkran.matches || !kok.clientHeight || !hero.naturalWidth
+            || hero.parentElement.classList.contains("yok")) return;
+        const varsayilan = 94;
+        const iR = hero.getBoundingClientRect();
+        if (!iR.height) return;
+        const olcek = iR.height / hero.offsetHeight;   /* ekran px / sayfa px */
+        /* +2 px: yuvarlamadan doğan 1 px'lik kaydırmayı önler */
+        const altPay = ((parseFloat(getComputedStyle(kok.firstElementChild).paddingBottom) || 0) + 2) * olcek;
+        const fazla = kartAlani.getBoundingClientRect().bottom + altPay
+                      - kok.getBoundingClientRect().bottom;
+        let yuzde = varsayilan * (iR.height - fazla) / iR.height;
+        yuzde = Math.max(40, Math.min(100, yuzde));
+        hero.style.width = yuzde + "%";
+        const kalanOlc = () => kok.getBoundingClientRect().bottom
+                               - (kartAlani.getBoundingClientRect().bottom + altPay);
+        if (yuzde >= 100) {
+            /* Görsel tam ende: kalan boşluğun önce bir kısmıyla başlık
+               büyür (en çok 1,15 kat), artanı üst bölüme eklenir. */
+            const baslik = heroBlok.querySelector(".as-baslik");
+            const bY = baslik ? baslik.getBoundingClientRect().height : 0;
+            let kalan = kalanOlc();
+            if (bY && kalan > 1) {
+                heroBlok.style.setProperty("--baslik-k",
+                    Math.min(1.15, 1 + kalan / bY).toFixed(3));
+                kalan = kalanOlc();
+            }
+            if (kalan > 1) heroBlok.style.minHeight =
+                (heroBlok.offsetHeight + kalan / olcek) + "px";
+        }
+    }
+    if (window.ResizeObserver) new ResizeObserver(anaSayfaSigdir).observe(kok);
+    window.addEventListener("resize", anaSayfaSigdir);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(anaSayfaSigdir);
     kok.querySelectorAll("img[data-as-ikon]").forEach(img => {
         solBarGorseli(img.dataset.asIkon).then(src => { img.src = src; },
             () => img.classList.add("yok"));

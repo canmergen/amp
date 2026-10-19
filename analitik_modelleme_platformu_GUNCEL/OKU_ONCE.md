@@ -148,9 +148,16 @@ mürekkep siyahı.
 **Ana Sayfa** (uygulama bununla açılır; alanın tamamını kaplar, kendi
 içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
 tanıtır; sayfalar sol bardan açılır.
-- Üst bölüm: üstte `anasayfa_aciklama` görseli ortada, bloğun iç
-  eninin %94'ünde; boyu kendi oranındaki boyun %95'i (dikeyde hafif
-  basık; kırpma yok, yalnız saydam kenarları kırpılır). Altında ortada iki satır başlık:
+- Üst bölüm: üstte `anasayfa_aciklama` görseli ortada; boyu kendi
+  oranındaki boyun %95'i (dikeyde hafif basık; kırpma yok, yalnız
+  saydam kenarları kırpılır).
+- İlk ekran sayfaya tam sığar: üst bölüm ve Çalışma Alanları kartları
+  sayfa yüksekliğini doldurur, kaydırma çubuğu açılmaz, altta boşluk
+  kalmaz (F11 ile ya da Dataiku içinde). app.js (anaSayfaSigdir) görselin
+  enini bloğun iç eninin %40'ı ile %100'ü arasında buna göre ayarlar;
+  görsel tam ende de yer artarsa başlık en çok 1,15 kat büyür, kalan
+  boşluk üst bölüme eklenir (içerik ortada). Kart açıklaması açılınca
+  sayfa aşağı kayar. Dar ekranda (1100 px altı) yapılmaz. Altında ortada iki satır başlık:
   "Veriyle Yapacağınız Her Şey," siyah, "Yapay Zekâ Desteğiyle Tek
   Platformda." kırmızı (kalın, harf aralığı .01em). Görsel
   yüklenemezse yalnız başlık kalır. Başlık boyu ve boşluklar blok
