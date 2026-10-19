@@ -4218,29 +4218,28 @@ span.bolme-cip { cursor: default; }
 }
 
 /* ==================== BAŞLIK VE MENÜ AĞIRLIĞI ====================
-   Başlıklar 600 (adım ve alt adım adları, iş akışı fazları, seçim
-   kartları, Gösterge Paneli ve Özet başlıkları); sol bar satırları
-   (Model Platformu başlığı dahil) ve alttaki düğmeler de 600. Gövde 400,
-   vurgu 700. #kabuk önekli: "#kabuk *" kuralının fontunu ezsin. */
+   Bütün başlıklar kalın, 700 (adım ve alt adım adları, iş akışı
+   fazları, seçim kartları, Gösterge Paneli ve Özet başlıkları, Ana
+   Sayfa başlıkları); sol bar satırları (Model Platformu başlığı dahil)
+   ve alttaki düğmeler 600. Gövde 400, vurgu 700. #kabuk önekli: "#kabuk *" kuralının fontunu ezsin. */
 #kabuk .blok-ad, #kabuk .alt-ad, #kabuk .faz-ad,
 #kabuk .secenek-baslik, #kabuk .secim-baslik,
 #kabuk .iskele-baslik, #kabuk .kart-kat-bas,
 #kabuk .panel-baslik, #kabuk .dok-bolum-baslik,
 #kabuk .dok-baslik, #kabuk .dok-cagri-baslik, #kabuk .dok-eksikler-baslik, #kabuk .dok-tablo-baslik,
 #kabuk .bos-sayfa-ad {
-  font-family: var(--font-baslik); font-weight: var(--fw-yari);
+  font-family: var(--font-baslik); font-weight: var(--fw-kalin);
   letter-spacing: 0;
 }
 /* Başlık yazı tipini alan öbür başlıklar: analiz panelindeki
-   bölüm ve tablo başlıkları, Ana Sayfa başlıkları. Ağırlıkları kendi
-   kurallarında. Başlığın içindeki rozet ve bilgi simgesi Newsreader
+   bölüm ve tablo başlıkları, Ana Sayfa başlıkları. Onlar da kalın. Başlığın içindeki rozet ve bilgi simgesi Newsreader
    kalır ("#kabuk *"). */
 #kabuk .panel-bolum-baslik, #kabuk .ft-detay-ad,
 #kabuk .bf-kilit-baslik, #kabuk .bf-kisit-baslik, #kabuk .bolme-grup-baslik,
 #kabuk .dg-tablo-baslik, #kabuk .dg-kisa-tablo-baslik, #kabuk .calisma-gizli-baslik,
 #kabuk .ana-sayfa h1, #kabuk .ana-sayfa h1 em, #kabuk .ana-sayfa h2, #kabuk .ana-sayfa h3,
 #kabuk .as-sayfa-metin > b {
-  font-family: var(--font-baslik);
+  font-family: var(--font-baslik); font-weight: var(--fw-kalin);
 }
 #kabuk #sol-bar .ust-sekme, #kabuk #sol-bar .ust-kume-ad,
 #kabuk #sol-bar #tema-btn, #kabuk #sol-bar #calismalar-btn, #kabuk #sol-bar #sifirla-btn {
