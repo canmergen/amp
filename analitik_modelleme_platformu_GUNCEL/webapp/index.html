@@ -230,33 +230,30 @@
         <div class="as-hero-gorsel"><img id="as-hero-img" alt=""></div>
       </section>
 
-      <!-- Kartların "Nasıl Çalışır" / "Ne Olacak" düğmesine basınca kartların
-           altında o alanın açıklaması açılır (yeniden basınca kapanır; aynı
-           anda tek açıklama). Sayfalar sol bardan açılır. -->
+      <!-- Karta basınca kartların altında o alanın açıklaması açılır
+           (yeniden basınca kapanır; aynı anda tek açıklama). Sayfalar sol
+           bardan açılır. -->
       <section class="as-bolum">
         <h2 class="as-bolum-baslik">Çalışma Alanları</h2>
         <div class="as-kartlar">
-          <article class="as-kart">
+          <article class="as-kart" data-ayrinti="model" role="button" tabindex="0" aria-expanded="false">
             <img class="as-kart-ikon" data-as-ikon="model_platformu" alt="">
             <h3>Model Platformu</h3>
             <p>Ham veriden uçtan uca model kurun, sonuçlarını izleyin ve
               yapay zekâ ile üzerine konuşun. Analizleri platform yapar,
               kararlar sizin onayınızla uygulanır.</p>
-            <button class="as-dugme as-ayrinti-ac" type="button" data-ayrinti="model" aria-expanded="false">Nasıl Çalışır<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
           </article>
-          <article class="as-kart kapali">
+          <article class="as-kart kapali" data-ayrinti="sohbet" role="button" tabindex="0" aria-expanded="false">
             <img class="as-kart-ikon" data-as-ikon="katible_sohbet" alt="">
             <h3>KATIB'le Sohbet <span class="as-rozet">Hazırlanıyor</span></h3>
             <p>Yüklediğiniz veriyle ya da herhangi bir konuda yapay zekâ ile
               serbestçe sohbet edin; model çalışması gerekmez.</p>
-            <button class="as-dugme as-ayrinti-ac" type="button" data-ayrinti="sohbet" aria-expanded="false">Ne Olacak<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
           </article>
-          <article class="as-kart kapali">
+          <article class="as-kart kapali" data-ayrinti="gosterge" role="button" tabindex="0" aria-expanded="false">
             <img class="as-kart-ikon" data-as-ikon="gosterge_paneli" alt="">
             <h3>Gösterge Paneli <span class="as-rozet">Hazırlanıyor</span></h3>
             <p>Verinizi gösterge panellerinde analiz edin, durumu izleyin ve
               dilediğiniz konuyu inceleyin; modellerden bağımsız.</p>
-            <button class="as-dugme as-ayrinti-ac" type="button" data-ayrinti="gosterge" aria-expanded="false">Ne Olacak<svg class="as-acilir-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
           </article>
         </div>
 

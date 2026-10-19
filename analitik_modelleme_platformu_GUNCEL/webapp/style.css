@@ -123,9 +123,10 @@
   --kenar-guclu:  #BFC5CE;
   --kenar-acik:   #EDEFF2;
   /* AYRAC: bolmeleri ayiran ve uygulamayi en dista cevreleyen cizgi.
-     Siyah, %45 opak, ekran enine gore ayni oranda kalin (1920 px ekranda
-     ~4 px, 1366'da ~3 px; tarayici tam piksele yuvarlar). */
-  --ayrac:        rgba(0,0,0,.45);
+     Murekkep siyahi (her modda ayni), ekran enine gore ayni oranda kalin
+     (1920 px ekranda ~4 px, 1366'da ~3 px; tarayici tam piksele
+     yuvarlar). */
+  --ayrac:        var(--murekkep);
   --ayrac-kalinlik: calc(4 / 1774 * 100vw / var(--olcek));
   /* Tutamagin ayracin iki yanina tastigi pay: yakalama kutusu ayraca
      ORTALI dursun diye. 8px - 2px = 6, iki yana 3'er. Kalinlik
@@ -244,7 +245,6 @@
   --kenar:        #E2D6BC;
   --kenar-guclu:  #C9B993;
   --kenar-acik:   #EDE4D0;
-  --ayrac:        rgba(60,40,20,.42);
 
   --metin:        #2B2118;
   --metin-soluk:  #2B2118;
@@ -296,7 +296,6 @@
   --kenar:        #C3C7CE;
   --kenar-guclu:  #A6ACB5;
   --kenar-acik:   #D0D3D8;
-  --ayrac:        rgba(0,0,0,.40);
 
   --metin:        #111418;
   --metin-soluk:  #111418;
@@ -4307,21 +4306,6 @@ span.bolme-cip { cursor: default; }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
 .as-giris { width: 37cqw; font-size: 1.28cqw; line-height: 1.5; }
 
-/* Düğmeler */
-.as-dugme {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 42px; padding: 0 18px; border-radius: 8px;
-  border: 1px solid var(--murekkep); background: var(--yuzey); color: var(--metin);
-  font: inherit; font-size: 15px; font-weight: var(--fw-yari); cursor: pointer;
-  transition: background .12s, filter .12s;
-}
-.as-dugme:hover:not(:disabled) { background: color-mix(in srgb, var(--murekkep) 6%, var(--yuzey)); }
-.as-dugme.birincil { background: var(--kirmizi-dolgu); border-color: var(--kirmizi-dolgu); color: #fff; }
-.as-dugme.birincil:hover { filter: brightness(.93); border-color: var(--kirmizi-dolgu); }
-.as-dugme:disabled { cursor: not-allowed; background: transparent; color: var(--kilitli-yazi); }
-.as-dugme:focus-visible { outline: 2px solid var(--murekkep); outline-offset: 2px; }
-.as-ok { width: 16px; height: 16px; flex-shrink: 0; }
-
 /* Bölüm başlığı: yanında sol bardaki gibi ince mürekkep çizgisi */
 .as-bolum-baslik {
   display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
@@ -4338,14 +4322,14 @@ span.bolme-cip { cursor: default; }
 }
 
 /* Çalışma alanı kartları: solda büyük görsel (kartın içinin %34'ü, kare
-   alan, çizim ortada), sağında üstte başlık, altında açıklama; en altta
-   kartın eninde düğme. Kartlar aynı boyda, düğmeler aynı hizada. Kenar
+   alan, çizim ortada), sağında üstte başlık, altında açıklama. Kartlar
+   aynı boyda. Kenar
    mürekkep siyahı. Başlık kartın enine göre 16 ile 22 px arası: dar
    kartta da tek satıra sığar. */
 .as-kartlar { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
 .as-kart {
   container-type: inline-size;
-  display: grid; grid-template-columns: 34% minmax(0, 1fr); grid-template-rows: auto 1fr auto;
+  display: grid; grid-template-columns: 34% minmax(0, 1fr); grid-template-rows: auto 1fr;
   column-gap: 18px; row-gap: 8px; padding: 20px 20px 18px;
   background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 12px;
   box-shadow: var(--golge-1);
@@ -4361,25 +4345,19 @@ span.bolme-cip { cursor: default; }
   font-size: clamp(16px, 5.6cqw, 22px); font-weight: var(--fw-yari);
 }
 .as-kart p { grid-column: 2; grid-row: 2; align-self: start; font-size: 15px; line-height: 1.55; }
-.as-kart .as-ayrinti-ac { grid-column: 1 / -1; grid-row: 3; margin-top: 8px; }
 .as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { filter: grayscale(1); opacity: .5; }
 
-/* Kart açıklamaları: kartın altında "Nasıl Çalışır" / "Ne Olacak"
-   düğmesi (kartın eninde). Karta (düğme dahil herhangi bir yerine)
-   basınca kart seçilir: kenarı kırmızı ve kalın, zemini hafif pembe,
-   düğme kırmızı dolar ve oku yukarı döner; yeniden basınca seçim ve
-   açıklama kalkar. Açıklama kartların altında, ince mürekkep
-   çizgisiyle başlayan düz bir alan. */
+/* Kart açıklamaları: karta basınca kart seçilir (kenarı kırmızı ve
+   kalın, zemini hafif pembe) ve altında açıklaması açılır; yeniden
+   basınca seçim ve açıklama kalkar. Açıklama kartların altında, ince
+   mürekkep çizgisiyle başlayan düz bir alan. */
 .as-kart { cursor: pointer; transition: background .12s, border-color .12s; }
 .as-kart:not(.secili):hover { background: color-mix(in srgb, var(--murekkep) 3%, var(--yuzey)); }
 .as-kart.secili {
   border-color: var(--kirmizi); box-shadow: 0 0 0 1px var(--kirmizi);
   background: color-mix(in srgb, var(--kirmizi) 5%, var(--yuzey));
 }
-.as-ayrinti-ac { align-self: stretch; }
-.as-ayrinti-ac[aria-expanded="true"] { background: var(--kirmizi); border-color: var(--kirmizi); color: #FFFFFF; }
-.as-acilir-ok { width: 16px; height: 16px; flex-shrink: 0; transition: transform .15s; }
-.as-ayrinti-ac[aria-expanded="true"] .as-acilir-ok { transform: rotate(180deg); }
+.as-kart:focus-visible { outline: 2px solid var(--murekkep); outline-offset: 2px; }
 .as-ayrinti {
   margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--murekkep);
   display: flex; flex-direction: column; gap: 30px;

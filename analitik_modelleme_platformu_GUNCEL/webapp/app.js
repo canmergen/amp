@@ -5681,29 +5681,30 @@ document.addEventListener("keydown", e => {
         solBarGorseli(img.dataset.asIkon).then(src => { img.src = src; },
             () => img.classList.add("yok"));
     });
-    /* Kart açıklamaları: karta (düğmesi dahil herhangi bir yerine)
-       basınca kart seçilir ve kartların altında o alanın açıklaması
-       açılır, yeniden basınca ikisi de kalkar; aynı anda tek kart seçili.
+    /* Kart açıklamaları: karta basınca (ya da klavyede Enter / Boşluk)
+       kart seçilir ve kartların altında o alanın açıklaması açılır,
+       yeniden basınca ikisi de kalkar; aynı anda tek kart seçili.
        Açılan açıklama görünür alana kaydırılır. */
-    const dugmeler = Array.from(kok.querySelectorAll(".as-ayrinti-ac[data-ayrinti]"));
+    const kartlar = Array.from(kok.querySelectorAll(".as-kart[data-ayrinti]"));
     const ayrintilar = Array.from(kok.querySelectorAll(".as-ayrinti[data-alan]"));
     function ayrintiAc(alan) {
-        const acikMi = dugmeler.some(d => d.dataset.ayrinti === alan
-                                          && d.getAttribute("aria-expanded") === "true");
+        const acikMi = kartlar.some(k => k.dataset.ayrinti === alan
+                                         && k.classList.contains("secili"));
         const hedef = acikMi ? null : alan;
-        dugmeler.forEach(d => {
-            const sec = d.dataset.ayrinti === hedef;
-            d.setAttribute("aria-expanded", sec ? "true" : "false");
-            const kart = d.closest(".as-kart");
-            if (kart) kart.classList.toggle("secili", sec);
+        kartlar.forEach(k => {
+            const sec = k.dataset.ayrinti === hedef;
+            k.classList.toggle("secili", sec);
+            k.setAttribute("aria-expanded", sec ? "true" : "false");
         });
         ayrintilar.forEach(a => { a.hidden = a.dataset.alan !== hedef; });
         const gorunen = ayrintilar.find(a => !a.hidden);
         if (gorunen) gorunen.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
-    dugmeler.forEach(d => {
-        const kart = d.closest(".as-kart");
-        (kart || d).onclick = () => ayrintiAc(d.dataset.ayrinti);
+    kartlar.forEach(k => {
+        k.onclick = () => ayrintiAc(k.dataset.ayrinti);
+        k.onkeydown = e => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ayrintiAc(k.dataset.ayrinti); }
+        };
     });
     /* Uygulama Ana Sayfa ile açılır (index.html'de görünen sayfa); sol
        barda da Ana Sayfa seçili görünsün. */

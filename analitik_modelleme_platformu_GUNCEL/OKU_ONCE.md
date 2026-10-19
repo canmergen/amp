@@ -139,6 +139,8 @@ oranda büyür ya da küçülür (0,6 ile 1,2 kat arası); yazılar, çizimler
 ve logo birlikte büyür, eni de aynı orana gelir. Örnek: 1366x768
 pencerede 1,13 kat (yazı ekranda 15 px, çizim 40 px). Ölçek CSS zoom
 ile verilir (transform değil): yazı ve görseller bulanıklaşmaz.
+Bölmeleri ayıran ve uygulamayı en dışta çevreleyen kalın çizgi her modda
+mürekkep siyahı.
 
 **Ana Sayfa** (uygulama bununla açılır; alanın tamamını kaplar, kendi
 içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
@@ -157,12 +159,11 @@ tanıtır; sayfalar sol bardan açılır.
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
   kartın içinin %34'ü), sağında üstte başlık, altında açıklama. Üst
-  bölümün, kartların ve düğmelerin kenarı, açıklamadaki faz ve güvence
-  sütunlarını ayıran çizgiler mürekkep siyahı. Her kartın altında **Nasıl Çalışır** / **Ne
-  Olacak** düğmesi. Karta (düğme dahil herhangi bir yerine) basınca kart
-  seçilir (kırmızı kalın kenar, hafif pembe zemin, kırmızı dolu düğme) ve
-  kartların altında o alanın açıklaması açılır; yeniden basınca ikisi de
-  kalkar (aynı anda tek kart). Model Platformu'nun
+  bölümün ve kartların kenarı, açıklamadaki faz ve güvence sütunlarını
+  ayıran çizgiler mürekkep siyahı. Kartlarda düğme yok: karta basınca
+  (klavyede Enter / Boşluk) kart seçilir (kırmızı kalın kenar, hafif
+  pembe zemin) ve kartların altında o alanın açıklaması açılır; yeniden
+  basınca ikisi de kalkar (aynı anda tek kart). Model Platformu'nun
   açıklaması: beş faz ve adımları, Model Platformu sayfaları (kenarı siyah kutular), güvenceler,
   başlarken adımları.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
