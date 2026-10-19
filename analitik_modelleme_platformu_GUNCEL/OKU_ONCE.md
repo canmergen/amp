@@ -178,18 +178,22 @@ tanıtır; sayfalar sol bardan açılır.
   (aynı anda tek kart).
 - Açıklamalar yalnız tanıtır. Her biri ortada, iki yanında çizgi olan
   başlıkla ve altında ortalı kısa girişle başlar.
-  - Model Platformu Nasıl Çalışır: giriş (beş faz, öneri ve onay); beş
-    faz kutusu yan yana (kırmızı numara, faz adı, özet, ince çizginin
-    altında numaralı adımlar); "Katkılar" alt başlığı altında dört kutu
-    (Akıllı değişken üretimi, Hız ve verimlilik, Sade ve güçlü model,
-    Her modele uygun yapı; üstte kalın kırmızı şerit, kırmızı halka
-    içinde simge; sayısal iddia yok); "Sayfalar" alt başlığı altında beş sayfa
-    kutusu (simge, ad, tek cümle; Model Sohbeti soluk ve Hazırlanıyor
-    rozetli); en sonda "Güvenceler": her modda koyu (mürekkep) zeminli
-    tek bant, yan yana dört bölme (Girdi veriniz değişmez, Tam veri
-    örneklem yok, Sızıntı sınırı korunur, Her karar kayıtlı), her birinde
-    kırmızı daire içinde simge, beyaz başlık ve kısa açıklama. Kutular
-    yer yetmezse alt satıra geçer.
+  - Model Platformu Nasıl Çalışır: giriş (beş faz, öneri ve onay);
+    ardından dört alt bölüm, her biri ortada çizgili alt başlıkla ve
+    aralarında geniş boşlukla:
+    - Beş Faz: yan yana beş kutu (kırmızı numara, faz adı, özet, ince
+      çizginin altında numaralı adımlar).
+    - Katkılar: dört kutu (Akıllı değişken üretimi, Hız ve verimlilik,
+      Sade ve güçlü model, Her modele uygun yapı); kırmızı daire içinde
+      simge, başlık ve yazı ortada; sayısal iddia yok.
+    - Sayfalar: Çalışma Alanları kartlarıyla aynı düzen: solda büyük
+      çizim, sağında ad ve tek cümle; üçerli satırlar, son satır ortada;
+      Model Sohbeti soluk ve Hazırlanıyor rozetli.
+    - Güvenceler: açık zeminli tek kutu, dört bölme ince çizgiyle
+      ayrılır; her bölmede kırmızı halka içinde simge, yanında başlık,
+      altında kısa açıklama.
+    Bütün kutular 2 px mürekkep kenarlı. 1300 px altında fazlar üçerli,
+    katkılar ve güvenceler 2x2, sayfalar ikişerli dizilir.
   - KATIB'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
