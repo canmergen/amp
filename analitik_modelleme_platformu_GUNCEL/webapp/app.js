@@ -222,7 +222,7 @@ function solBarGorseli(ad) {
     }, () => { /* görsel yok */ });
 })();
 
-/* Logonun arkasındaki İstanbul çizimi: yüklenirse logo yuvasının zemini
+/* Logonun arkasındaki bina çizimi: yüklenirse logo yuvasının zemini
    olur (style.css: --logo-arkaplan); yüklenemezse logo tek başına kalır. */
 (function () {
     const yuva = document.getElementById("sol-bar-logo");
