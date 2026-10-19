@@ -151,9 +151,9 @@ tanıtır; sayfalar sol bardan açılır.
 - Çalışma Alanları (başlık ortada, iki yanında ince çizgi; üç ayrı iş): Model Platformu (model kurma, izleme ve
   üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
-  son ikisi hazırlanıyor. Kartın üstünde enine yayılan geniş görsel
-  alanı (en:boy 2,2; sol barın çizimi sola ve alta yaslı), altında
-  başlık ve açıklama. Her kartın altında **Nasıl Çalışır** / **Ne
+  son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
+  kartın içinin %34'ü), sağında üstte başlık, altında açıklama. Üst
+  bölümün ve kartların kenarı mürekkep siyahı. Her kartın altında **Nasıl Çalışır** / **Ne
   Olacak** düğmesi: basınca kartların altında o alanın açıklaması açılır,
   yeniden basınca kapanır (aynı anda tek açıklama). Model Platformu'nun
   açıklaması: beş faz ve adımları, Model Platformu sayfaları, güvenceler,

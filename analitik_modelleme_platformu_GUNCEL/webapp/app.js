@@ -5684,7 +5684,7 @@ document.addEventListener("keydown", e => {
     /* Kart açıklamaları: kartın "Nasıl Çalışır" / "Ne Olacak" düğmesine
        basınca kartların altında o alanın açıklaması açılır, yeniden
        basınca kapanır; aynı anda tek açıklama açık. Seçili kartın kenarı
-       mürekkep olur; açılan açıklama görünür alana kaydırılır. */
+       kalınlaşır; açılan açıklama görünür alana kaydırılır. */
     const dugmeler = Array.from(kok.querySelectorAll(".as-ayrinti-ac[data-ayrinti]"));
     const ayrintilar = Array.from(kok.querySelectorAll(".as-ayrinti[data-alan]"));
     function ayrintiAc(alan) {
