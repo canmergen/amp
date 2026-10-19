@@ -27,9 +27,9 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
-| `gosterge_paneli` | `gosterge_paneli.png` | Sol bar: Model Göstergeleri ve Gösterge Paneli |
-| `degiskenler` | `degiskenler.png` | Sol bar: Değişkenler |
-| `ozet` | `ozet.png` | Sol bar: Özet |
+| `gosterge_paneli` | `gosterge_paneli.png` | Sol bar: Model Gösterge Paneli ve Gösterge Paneli |
+| `degiskenler` | `degiskenler.png` | Sol bar: Model Değişkenleri |
+| `ozet` | `ozet.png` | Sol bar: Model Özeti |
 | `katible_sohbet` | `katible_sohbet.png` | Sol bar: Model Sohbeti ve KATIB'le Sohbet |
 | `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
@@ -96,9 +96,9 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - **Model Platformu** (başta kapalı; başlığa basınca içindekiler açılır,
   yeniden basınca kapanır):
   - Model Akışı
-  - Model Göstergeleri
-  - Değişkenler (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)
-  - Özet
+  - Model Gösterge Paneli
+  - Model Değişkenleri (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)
+  - Model Özeti
   - Model Sohbeti (kapalı)
 - Sayfa satırları kartsız, düz liste; satırlarda ok yok (ok yalnız açılıp
   kapanan Model Platformu başlığında ve Arşiv'de). Model Platformu'nun
@@ -157,5 +157,5 @@ yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 |---|---|
 | `amp_renk_modu` | Görünüm (renk modu): `acik` (Beyaz), `sepya`, `gri` |
 | `amp_akis_acik` | İş Akışı bölmesi açık / kapalı |
-| `amp_dg_alt` | Değişkenler'de açık görünüm |
+| `amp_dg_alt` | Model Değişkenleri'nde açık görünüm |
 | `fe_agent_calisma_id` | Açık çalışmanın kimliği |
