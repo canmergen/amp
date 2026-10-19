@@ -4256,10 +4256,12 @@ span.bolme-cip { cursor: default; }
 /* ==================== ANA SAYFA ====================
    Platformu tanıtan tek sütunlu sayfa (alanın tamamı); sayfa kendi
    içinde kayar. Sırayla:
-   - Üst bölüm: üstte başlık ("Veriyle Yapacağınız / Her Şey, Tek
-     Platformda.") ve tanıtım yan yana; altında anasayfa_aciklama
-     görseli. Görsel yüklenemezse yalnız yazı kalır.
-   - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan.
+   - Üst bölüm: üstte ortada başlık ("Veriyle Yapacağınız / Her Şey, Tek
+     Platformda."), altında anasayfa_aciklama görseli. Görsel
+     yüklenemezse yalnız başlık kalır.
+   - Çalışma Alanları: başlığın altında tek satır ("Hepsi yapay zekâ
+     desteğiyle, tek çalışma alanında."); Model Platformu (açık) ve iki
+     hazırlanan alan, her biri kendi tanıtımıyla.
      Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır,
      yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır. Model Platformu'nun açıklamasında beş
      faz ve adımları (fazlar mürekkep çizgisinin altında ince dikey
@@ -4279,29 +4281,28 @@ span.bolme-cip { cursor: default; }
 .ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa p { margin: 0; }
 .ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
 
-/* Üst bölüm: üstte yazı, altında görsel. Yazı iki sütun: solda başlık,
-   sağda giriş yazısı (dikeyde ortalı). Görsel bloğun iç eninin tamamında,
-   kendi oranıyla (daraltma ya da kırpma yok; saydam kenarları app.js'te
-   kırpılır). Yazı boyları ve boşluklar cqw ile bloğun enine bağlı: bu
-   yüzden yakınlaştırınca ya da uzaklaştırınca blok tek parça büyür ve
-   küçülür. Dar ekranda giriş yazısı başlığın altına iner. */
+/* Üst bölüm: üstte ortada başlık, altında görsel. Görsel bloğun iç
+   eninin tamamında, kendi oranıyla (daraltma ya da kırpma yok; saydam
+   kenarları app.js'te kırpılır). Başlık boyu ve boşluklar cqw ile bloğun
+   enine bağlı: bu yüzden yakınlaştırınca ya da uzaklaştırınca blok tek
+   parça büyür ve küçülür. Tanıtım yazısı burada değil, Çalışma Alanları
+   kartlarında. */
 .as-hero {
   overflow: hidden; container-type: inline-size;
   padding: 3cqw 3cqw 2.5cqw;
   background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 14px;
   box-shadow: var(--golge-1);
 }
-.as-hero-metin { display: flex; align-items: center; justify-content: space-between; gap: 5cqw; }
+.as-hero-metin { text-align: center; }
 .as-hero-gorsel { margin-top: 2.5cqw; }
 .as-hero-gorsel img { display: block; width: 100%; height: auto; }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
-  flex: none; margin: 0; white-space: nowrap;
+  margin: 0; white-space: nowrap;
   font-size: 3.2cqw; line-height: 1.18; font-weight: var(--fw-kalin); letter-spacing: .01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
-.as-giris { flex: 0 1 46cqw; font-size: 1.3cqw; line-height: 1.55; }
 
 /* Bölüm başlığı: yanında sol bardaki gibi ince mürekkep çizgisi */
 .as-bolum-baslik {
@@ -4310,6 +4311,8 @@ span.bolme-cip { cursor: default; }
 }
 .as-bolum-baslik::before, .as-bolum-baslik::after { content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep); }
 .as-bolum-not { margin: -4px 0 18px; font-size: 15.5px; line-height: 1.6; max-width: 62em; }
+/* Çalışma Alanları başlığının altındaki tek satır (ortada) */
+.as-bolum-alt { margin: -6px 0 18px; text-align: center; font-size: 16px; color: var(--metin); }
 
 .as-rozet {
   display: inline-block; padding: 1px 9px; border-radius: 999px;
@@ -4433,8 +4436,6 @@ span.bolme-cip { cursor: default; }
 /* Dar ekran: yazı üstte, görsel altında bloğun eninde */
 @media (max-width: 1100px) {
   .as-hero { padding: 24px 24px 20px; }
-  .as-hero-metin { flex-direction: column; align-items: flex-start; gap: 12px; }
   .as-baslik { font-size: 32px; white-space: normal; }
-  .as-giris { flex: none; font-size: 15px; }
   .as-hero-gorsel { margin-top: 18px; }
 }

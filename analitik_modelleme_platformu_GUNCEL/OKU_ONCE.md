@@ -147,15 +147,16 @@ mürekkep siyahı.
 **Ana Sayfa** (uygulama bununla açılır; alanın tamamını kaplar, kendi
 içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
 tanıtır; sayfalar sol bardan açılır.
-- Üst bölüm: üstte yazı, altında görsel. Yazı iki sütun: solda
-  "Veriyle Yapacağınız / Her Şey, Tek Platformda." başlığı (kalın,
-  harf aralığı .01em), sağda giriş yazısı. Altında `anasayfa_aciklama`
-  görseli bloğun iç eninin tamamında, kendi oranıyla (daraltma ya da
-  kırpma yok; yalnız saydam kenarları kırpılır); yüklenemezse yalnız
-  yazı kalır. Yazı boyları ve boşluklar blok enine bağlı,
-  yakınlaştırınca blok tek parça büyür. Dar ekranda giriş yazısı
-  başlığın altına iner.
-- Çalışma Alanları (başlık ortada, iki yanında ince çizgi; üç ayrı iş): Model Platformu (model kurma, izleme ve
+- Üst bölüm: üstte ortada "Veriyle Yapacağınız / Her Şey, Tek
+  Platformda." başlığı (kalın, harf aralığı .01em), altında
+  `anasayfa_aciklama` görseli bloğun iç eninin tamamında, kendi
+  oranıyla (daraltma ya da kırpma yok; yalnız saydam kenarları
+  kırpılır); yüklenemezse yalnız başlık kalır. Başlık boyu ve boşluklar
+  blok enine bağlı, yakınlaştırınca blok tek parça büyür. Tanıtım
+  yazısı burada yok; Çalışma Alanları kartlarına dağıtılmıştır.
+- Çalışma Alanları (başlık ortada, iki yanında ince çizgi; altında tek
+  satır "Hepsi yapay zekâ desteğiyle, tek çalışma alanında."; üç ayrı
+  iş, her kartta kendi tanıtımı): Model Platformu (model kurma, izleme ve
   üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
