@@ -255,10 +255,32 @@
         <div class="as-ayrinti" data-alan="model" hidden>
           <header class="as-ayrinti-bas">
             <h2 class="as-bolum-baslik">Model Platformu Nasıl Çalışır</h2>
-            <p class="as-ayrinti-giris">Ham veriden final modele beş fazda ilerlersiniz. Her
-              adımda platform analizi yapar ve önerisini gerekçesiyle sunar; karar
-              sizin onayınızla uygulanır.</p>
+            <p class="as-ayrinti-giris">Model Platformu, ham veriden başlayıp doğrulanmış ve
+              belgelenmiş bir final modele kadar bütün model geliştirme sürecini tek
+              çalışma alanında yürütür. Süreç beş faza ve her fazda sıralı adımlara
+              ayrılır; her adımda platform analizi yapar ve önerisini gerekçesiyle sunar,
+              karar sizin onayınızla uygulanır.</p>
           </header>
+          <section class="as-alt-bolum">
+            <h3 class="as-alt-baslik">Genel Bakış</h3>
+            <div class="as-genel-liste">
+              <div class="as-genel">
+                <span class="as-katki-ikon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16"></path><path d="M14 6l6 6-6 6"></path></svg></span>
+                <h3>Ne yapar</h3>
+                <p>Model geliştirme sürecinin tamamını tek akışta yürütür: veri seti ve değişken sözlüğünün hazırlanması, yeni değişkenlerin üretilmesi, değişkenlerin analizi ve seçimi, modelin eğitilmesi, doğrulanması ve belgelenmesi. Her iş, bir öncekinin sonucunu kullanan sıralı adımlar olarak ilerler.</p>
+              </div>
+              <div class="as-genel">
+                <span class="as-katki-ikon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></span>
+                <h3>Nasıl ilerler</h3>
+                <p>Her adımda platform önce analizi yapar, sonucu ve önerisini gerekçesiyle gösterir. Siz inceler, gerekirse değiştirir ve onaylarsınız; onaylanmayan hiçbir karar uygulanmaz. Bir önceki karara dönmek için adımın Geri Dön düğmesi kullanılır; çalışma kaydedilir ve Arşiv'den kaldığı yerden açılır.</p>
+              </div>
+              <div class="as-genel">
+                <span class="as-katki-ikon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v4h4"></path><path d="M10 12h5"></path><path d="M10 16h5"></path></svg></span>
+                <h3>Ne üretir</h3>
+                <p>Modele hazır analitik baz set, aday değişken seti, test setinde doğrulanmış ve kaydedilmiş final model, kabul edilen değişkenlerin kaynağını ve kodunu tutan değişken kataloğu ve künye ile 20 bölümden oluşan, Word olarak indirilebilen model dokümanı.</p>
+              </div>
+            </div>
+          </section>
           <section class="as-alt-bolum">
             <h3 class="as-alt-baslik">Beş Faz</h3>
             <ol class="as-fazlar">
@@ -288,6 +310,164 @@
                 <h3>Modelleme ve Finalizasyon</h3>
               </li>
             </ol>
+          </section>
+          <section class="as-alt-bolum">
+            <h3 class="as-alt-baslik">Fazlar Adım Adım</h3>
+            <div class="as-faz-detaylar">
+              <article class="as-faz-ayrinti">
+                <div class="as-faz-ayrinti-bas">
+                  <span class="as-faz-no">01</span>
+                  <span class="as-faz-ikon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9"></path><path d="M17 6h3"></path><path d="M4 12h3"></path><path d="M11 12h9"></path><path d="M4 18h11"></path><path d="M19 18h1"></path><circle cx="15" cy="6" r="2"></circle><circle cx="9" cy="12" r="2"></circle><circle cx="17" cy="18" r="2"></circle></svg></span>
+                  <h3>Çalışma Kurulumu</h3>
+                  <p>Modellemeye girecek veri ve kuralları hazırlanır: hangi tabloyla çalışılacağı, kolonların ne anlama geldiği, hedefin ne olduğu ve verinin nasıl bölüneceği bu fazda belirlenir.</p>
+                </div>
+                <ol class="as-adim-liste">
+                  <li>
+                    <span class="as-adim-no">1.1</span>
+                    <div><h4>Başlangıç Seçimi</h4><p>Verinizin durumuna göre iki yoldan biri seçilir. <b>Baz Veri Seti Mevcut</b>: modellemeye girecek tablo hazırdır. <b>Kaynak Tablolar Mevcut</b>: baz veri seti, seçilen kaynak tablolar birleştirilerek oluşturulur.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">1.2</span>
+                    <div><h4>Veri Seti ve Sözlük</h4><p>Baz veri seti ve varsa değişken sözlüğü seçilir. Kaynak tablolarla başlandıysa her tablonun sözlüğü seçilir; yapay zekâ iskelet tabloyu, bağlantı anahtarlarını ve işlem tablolarından üretilecek zaman pencereli toplamaları önerir. Birleştirmede her satır yalnız kendi tarihinden önceki bilgiyi görür (point-in-time).</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">1.3</span>
+                    <div><h4>Kolon Rolleri</h4><p>Hedef değişken, kimlik kolonu ve dönem kolonu belirlenir; hedefin tipi ve dağılımı çıkarılır. Bu üç kolon hiçbir dönüşüme girmez.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">1.4</span>
+                    <div><h4>Eksik Sözlük Tanımları</h4><p>Sözlükte tanımı olmayan kolonlar için açıklama yazılır ya da kolon süreç dışına alınır. Tanımlar daha önce onaylanmış tanımlardan ve yapay zekâ önerilerinden doldurulur; hedef, kimlik ve dönem kolonunun tanımı zorunludur.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">1.5</span>
+                    <div><h4>Sözlük ve Kolon Adı Kontrolü</h4><p>İsteğe bağlıdır. Seçilirse dört alt adım sırayla çalışır: <b>Dönem Bilgisi</b> (kolon adlarındaki dönem parçalarının anlamı), <b>Açıklama Düzenleme</b> (açıklamalar anlamı değiştirilmeden düzeltilir), <b>Kısaltma Sözlüğü</b> (kolon adlarındaki parçaların kısaltmaları) ve <b>Yeni Kolon Adları</b> (adlar bu kısaltmalarla yeniden yazılır). Düzeltmeler yalnız platformun kopyalarına yazılır.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">1.6</span>
+                    <div><h4>Değişken Listesi ve Tip Kontrolü</h4><p>Değişken listesi, tipleri ve sözlük tanımları bölmeden önce son kez gözden geçirilir. Onayla birlikte platformun çalışma kopyaları (AMP_VERISETI, AMP_SOZLUK) yazılır.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">1.7</span>
+                    <div><h4>Örneklem ve Doğrulama Tasarımı</h4><p>Veri üç sete ayrılır: modelin öğrendiği <b>Train (MS)</b>, ayarların seçildiği <b>Test (OOS)</b> ve nihai ölçümün yapıldığı <b>Validasyon (OOT)</b>. Bu sınır aynı zamanda sızıntı sınırıdır: doldurma, dönüşüm ve eğitim yalnız geliştirme setinden hesaplanır.</p></div>
+                  </li>
+                </ol>
+              </article>
+              <article class="as-faz-ayrinti">
+                <div class="as-faz-ayrinti-bas">
+                  <span class="as-faz-no">02</span>
+                  <span class="as-faz-ikon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="M5.6 5.6l2.1 2.1"></path><path d="M16.3 16.3l2.1 2.1"></path><path d="M5.6 18.4l2.1-2.1"></path><path d="M16.3 7.7l2.1-2.1"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+                  <h3>Değişken Mühendisliği</h3>
+                  <p>Elinizdeki kolonlardan modele bilgi katabilecek yeni değişkenler üretilir. Önce verinin kusurları bulunur, sonra kural tabanlı ve yapay zekâ destekli üretim yapılır.</p>
+                </div>
+                <ol class="as-adim-liste">
+                  <li>
+                    <span class="as-adim-no">2.1</span>
+                    <div><h4>Veri Profili ve Kalite</h4><p>Her kolon için eksik değer oranı, tekil değer sayısı ve kardinalite çıkarılır; sabit ve kimlik benzeri kolonlar işaretlenir. Kusurlu kolonlardan yeni değişken üretilmez.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">2.2</span>
+                    <div><h4>Kural Tabanlı Değişken Üretimi</h4><p>Yapay zekâ kolon açıklamalarını okuyup hangi değişken ailesine fark, oran, log, sıralama ya da budama uygulanacağını önerir; siz seçersiniz, değişkenleri kod üretir.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">2.3</span>
+                    <div><h4>AI Değişken Keşfi</h4><p>Kalıpların dışında, elle düşünülmesi zor yeni değişken hipotezleri üretilir. Her önerinin formülü güvenlik kontrolünden geçer; geçenler çalıştırılır ve veri setine eklenir.</p></div>
+                  </li>
+                </ol>
+              </article>
+              <article class="as-faz-ayrinti">
+                <div class="as-faz-ayrinti-bas">
+                  <span class="as-faz-no">03</span>
+                  <span class="as-faz-ikon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"></path><path d="M6 17v-6"></path><path d="M11 17V5"></path><path d="M16 17v-9"></path><path d="M20 17v-3"></path></svg></span>
+                  <h3>Veri Anlama ve Hazırlama</h3>
+                  <p>Ham ve üretilen bütün değişkenlerin hedefle ilişkisi ve zaman içindeki kararlılığı ölçülür; sonunda modellemeye hazır, sabitlenmiş analitik baz set oluşur.</p>
+                </div>
+                <ol class="as-adim-liste">
+                  <li>
+                    <span class="as-adim-no">3.1</span>
+                    <div><h4>Tek Değişken Analizi (SFA)</h4><p>Her değişkenin hedefle ilişkisi ölçülür: bilgi değeri (IV), beş dönüşümle ayrıştırma gücü ve hedefe göre aralıklar. Bu adımda eleme yapılmaz; yapay zekâ her değişkenin modele hangi hâliyle gireceğini önerir. Kararlar Model Değişkenleri sayfasında grafikleriyle görülür ve değiştirilebilir.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">3.2</span>
+                    <div><h4>Stabilite Analizi (PSI)</h4><p>Değişken dağılımlarının dönemler arasında kayıp kaymadığı ölçülür; zamana göre kararsız değişkenler görünür olur.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">3.3</span>
+                    <div><h4>Analitik Baz Set</h4><p>Kusurlu kolonlar düşürülür, eksik değerler yalnız geliştirme setinin istatistikleriyle doldurulur ve set dondurulur. Sonraki bütün adımlar bu sabit set üzerinde çalışır.</p></div>
+                  </li>
+                </ol>
+              </article>
+              <article class="as-faz-ayrinti">
+                <div class="as-faz-ayrinti-bas">
+                  <span class="as-faz-no">04</span>
+                  <span class="as-faz-ikon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path><path d="M8.5 11l1.8 1.8 3.2-3.6"></path></svg></span>
+                  <h3>Değişken Değerlendirme</h3>
+                  <p>Modele girecek değişkenler daraltılır: hedefle şüpheli derecede ilişkili olanlar ayıklanır, kalanlar bilgi katkısına göre süzülür.</p>
+                </div>
+                <ol class="as-adim-liste">
+                  <li>
+                    <span class="as-adim-no">4.1</span>
+                    <div><h4>Sızıntı Kontrolü</h4><p>Değişkenlerin hedefle aşırı ilişkisi ölçülür. Hedefi neredeyse birebir taşıyan, yani gerçek kullanımda bilinemeyecek bilgi içeren değişkenler aday sete ve modele alınmaz.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">4.2</span>
+                    <div><h4>Aday Değişken Seti</h4><p>Sırayla yarı sabit değişkenler, birbirinin tekrarı olan yüksek ilişkili değişkenler, karşılıklı bilgisi düşük değişkenler ve model önem skoru zayıf değişkenler elenir. Kalanlar modele girecek aday settir.</p></div>
+                  </li>
+                </ol>
+              </article>
+              <article class="as-faz-ayrinti">
+                <div class="as-faz-ayrinti-bas">
+                  <span class="as-faz-no">05</span>
+                  <span class="as-faz-ikon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v4h4"></path><path d="M9.5 14l2 2 3.5-4"></path></svg></span>
+                  <h3>Modelleme ve Finalizasyon</h3>
+                  <p>Aday setle modeller kurulur ve karşılaştırılır; seçilen model son hâliyle eğitilip doğrulanır ve bütün kararlar kayda geçer.</p>
+                </div>
+                <ol class="as-adim-liste">
+                  <li>
+                    <span class="as-adim-no">5.1</span>
+                    <div><h4>Model Karşılaştırması</h4><p>Yalnız ham değişkenlerle kurulan baz model ile üretilen değişkenlerle zenginleştirilmiş model aynı bölme, aynı rastgelelik tohumu ve aynı ayarlarla karşılaştırılır; yeni değişkenlerin katkısı böylece ölçülür.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">5.2</span>
+                    <div><h4>Algoritma Seçimi</h4><p>Lojistik Regresyon, Random Forest, Gradient Boosting ve XGBoost aynı değişken seti ve aynı bölmeyle eğitilir; ayrıştırma gücü ve eğitim süresi karşılaştırılır. Uzun sürdüğü için Dataiku senaryosunda çalışır.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">5.3</span>
+                    <div><h4>Model Finalizasyonu</h4><p>Seçilen model son hâliyle eğitilir, test setinde doğrulanır ve sonradan kullanılmak üzere kaydedilir.</p></div>
+                  </li>
+                  <li>
+                    <span class="as-adim-no">5.4</span>
+                    <div><h4>Değişken Kataloğu</h4><p>Kabul edilen her değişkenin formülü, kaynağı, kodu, kalite ve seçim sonucu kalıcı kataloğa yazılır.</p></div>
+                  </li>
+                </ol>
+              </article>
+            </div>
+          </section>
+          <section class="as-alt-bolum">
+            <h3 class="as-alt-baslik">Yapay Zekâ ve Kod</h3>
+            <p class="as-bolum-aciklama">Platformda iş bölümü nettir: yapay zekâ önerir ve yorumlar, hesaplamayı kod yapar. Yapay zekânın her önerisi size sunulur; sayılar her zaman koddan gelir.</p>
+            <div class="as-roller">
+              <div class="as-rol">
+                <h3>Yapay zekânın yaptıkları</h3>
+                <ul>
+                  <li>Kaynak tablolar için birleştirme planı önerir.</li>
+                  <li>Eksik sözlük tanımlarını, açıklama düzeltmelerini ve kısaltmaları önerir.</li>
+                  <li>Hangi değişken ailesine hangi dönüşümün uygulanacağını önerir.</li>
+                  <li>Elle düşünülmesi zor yeni değişken hipotezleri üretir.</li>
+                  <li>Her değişkenin modele hangi hâliyle gireceğini gerekçesiyle önerir.</li>
+                  <li>Sorularınızı çalışmanın verisi ve kararlarıyla yanıtlar.</li>
+                </ul>
+              </div>
+              <div class="as-rol">
+                <h3>Kodun yaptıkları</h3>
+                <ul>
+                  <li>Bütün sayımları, istatistikleri ve ölçümleri verinin tamamı üzerinden hesaplar; büyük veri Spark ile kümede işlenir.</li>
+                  <li>Onaylanan değişkenleri üretir, formülleri güvenlik kontrolünden geçirir.</li>
+                  <li>Bölme, doldurma, eleme ve model eğitimini yapar.</li>
+                  <li>Kararları, sonuçları ve değişken kataloğunu kaydeder.</li>
+                  <li>Model dokümanını akışın son durumundan üretir.</li>
+                </ul>
+              </div>
+            </div>
           </section>
           <section class="as-alt-bolum">
             <h3 class="as-alt-baslik">Katkılar</h3>
@@ -320,27 +500,27 @@
               <div class="as-sayfa">
                 <img class="as-sayfa-ikon" data-as-ikon="model_akisi" alt="">
                 <h3>Model Akışı</h3>
-                <p>Adımların blok blok ilerlediği çalışma alanı; seçimler kartlarla yapılır.</p>
+                <p>Adımların blok blok ilerlediği çalışma alanı. Her blok kendi sonucunu, önerisini ve Geri Dön düğmesini taşır; seçimler kartlarla yapılır, ilerleme üstteki İş Akışı'ndan izlenir.</p>
               </div>
               <div class="as-sayfa">
                 <img class="as-sayfa-ikon" data-as-ikon="gosterge_paneli" alt="">
                 <h3>Model Gösterge Paneli</h3>
-                <p>Çalışmanın sayılarla özeti: veri, değişkenler, bölme, validasyon ve model sonucu.</p>
+                <p>Çalışmanın sayılarla özeti: veri seti ve sözlük, üretilen ve elenen değişken sayıları, bölme, validasyon ve model sonucu.</p>
               </div>
               <div class="as-sayfa">
                 <img class="as-sayfa-ikon" data-as-ikon="degiskenler" alt="">
                 <h3>Model Değişkenleri</h3>
-                <p>Değişken düzeyinde inceleme: veri ve sözlük, dağılım ve SFA, kontroller.</p>
+                <p>Değişken düzeyinde inceleme: veri ve sözlük, dağılım ve SFA grafikleri, değişken kontrolleri. SFA kararları burada değiştirilebilir.</p>
               </div>
               <div class="as-sayfa">
                 <img class="as-sayfa-ikon" data-as-ikon="ozet" alt="">
                 <h3>Model Özeti</h3>
-                <p>Model dokümanı: künye ve 20 bölüm, akışın son durumundan üretilir.</p>
+                <p>Künye ve 20 bölümden oluşan model dokümanı. Akışın son durumundan her açılışta yeniden üretilir, eksik bölümler ayrıca listelenir ve Word olarak indirilir.</p>
               </div>
               <div class="as-sayfa kapali">
                 <img class="as-sayfa-ikon" data-as-ikon="model_sohbeti" alt="">
                 <h3>Model Sohbeti <span class="as-rozet">Hazırlanıyor</span></h3>
-                <p>Açık çalışmanın verisi, kararları ve sonuçları üzerine sohbet.</p>
+                <p>Açık çalışmanın verisi, kararları ve sonuçları üzerine yapay zekâ ile sohbet.</p>
               </div>
             </div>
           </section>

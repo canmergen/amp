@@ -4240,7 +4240,8 @@ span.bolme-cip { cursor: default; }
 #kabuk .panel-bolum-baslik, #kabuk .ft-detay-ad,
 #kabuk .bf-kilit-baslik, #kabuk .bf-kisit-baslik, #kabuk .bolme-grup-baslik,
 #kabuk .dg-tablo-baslik, #kabuk .dg-kisa-tablo-baslik, #kabuk .calisma-gizli-baslik,
-#kabuk .ana-sayfa h1, #kabuk .ana-sayfa h1 em, #kabuk .ana-sayfa h2, #kabuk .ana-sayfa h3 {
+#kabuk .ana-sayfa h1, #kabuk .ana-sayfa h1 em, #kabuk .ana-sayfa h2, #kabuk .ana-sayfa h3,
+#kabuk .ana-sayfa h4 {
   font-family: var(--font-baslik); font-weight: var(--fw-kalin);
 }
 #kabuk #sol-bar .ust-sekme, #kabuk #sol-bar .ust-kume-ad,
@@ -4267,8 +4268,9 @@ span.bolme-cip { cursor: default; }
      Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır,
      yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır.
      Açıklama yalnız tanıtır: ortada başlık ve kısa giriş; Model
-     Platformu'nda ayrıca dört alt bölüm (Beş Faz, Katkılar, Sayfalar,
-     Güvenceler), her biri çizgili alt başlıkla. KATIB'le Sohbet ve Gösterge Paneli'nde yalnız başlık ve
+     Platformu'nda ayrıca alt bölümler (Genel Bakış, Beş Faz, Fazlar
+     Adım Adım, Yapay Zekâ ve Kod, Katkılar, Sayfalar, Güvenceler), her
+     biri çizgili alt başlıkla. KATIB'le Sohbet ve Gösterge Paneli'nde yalnız başlık ve
      giriş.
    Bölüm başlığı ortada, iki yanında 2 px mürekkep çizgisi.
    Zemin kartlarla aynı renk (Beyaz modda beyaz); üst bölüm, kartlar,
@@ -4280,7 +4282,7 @@ span.bolme-cip { cursor: default; }
   display: flex; flex-direction: column; gap: 38px;
   color: var(--metin);
 }
-.ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa p { margin: 0; }
+.ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa h4, .ana-sayfa p { margin: 0; }
 .ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
 
 /* Üst bölüm: üstte ortada görsel, altında ortada iki satır başlık
@@ -4429,6 +4431,68 @@ span.bolme-cip { cursor: default; }
 }
 .ana-sayfa .as-faz h3 { margin-top: 16px; font-size: 18px; line-height: 1.35; color: var(--murekkep); }
 
+/* Genel Bakış: üç kutu (Ne yapar, Nasıl ilerler, Ne üretir); kırmızı
+   daire içinde simge, başlık ve açıklama ortada. */
+.as-genel-liste { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.as-genel {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 26px 26px 28px; text-align: center;
+  background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 12px;
+}
+.ana-sayfa .as-genel h3 { margin-top: 6px; font-size: 19px; line-height: 1.4; color: var(--murekkep); }
+.ana-sayfa .as-genel p { font-size: 15.5px; line-height: 1.65; }
+
+/* Fazlar Adım Adım: her faz bir kutu. Solda faz başlığı (numara, simge,
+   ad, amaç; hafif kırmızı zemin), sağda numaralı adımlar; her adımda
+   kalın ad ve açıklama, adımlar arasında ince çizgi. */
+.as-faz-detaylar { display: flex; flex-direction: column; gap: 18px; }
+.as-faz-ayrinti {
+  display: grid; grid-template-columns: minmax(220px, 30%) minmax(0, 1fr);
+  background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 12px; overflow: hidden;
+}
+.as-faz-ayrinti-bas {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  padding: 26px 26px 28px; border-right: 1px solid var(--murekkep);
+  background: color-mix(in srgb, var(--kirmizi) 4%, var(--yuzey));
+}
+.as-faz-ayrinti-bas .as-faz-no { height: auto; margin: 0; font-size: 30px; line-height: 1; }
+.ana-sayfa .as-faz-ayrinti-bas h3 { font-size: 21px; line-height: 1.35; color: var(--murekkep); }
+.as-faz-ayrinti-bas p { font-size: 15.5px; line-height: 1.65; }
+.as-adim-liste { list-style: none; margin: 0; padding: 10px 28px; }
+.as-adim-liste li {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px;
+  padding: 16px 0; border-top: 1px solid color-mix(in srgb, var(--murekkep) 25%, transparent);
+}
+.as-adim-liste li:first-child { border-top: 0; }
+.as-adim-no {
+  padding-top: 2px; font-size: 15px; font-weight: var(--fw-kalin); color: var(--kirmizi);
+  font-variant-numeric: tabular-nums;
+}
+#kabuk .as-adim-no { font-family: var(--font-baslik); }
+.ana-sayfa .as-adim-liste h4 { margin-bottom: 4px; font-size: 17px; line-height: 1.4; color: var(--murekkep); }
+.as-adim-liste p { font-size: 15.5px; line-height: 1.65; }
+
+/* Yapay Zekâ ve Kod: kısa açıklama, altında yan yana iki kutu; her
+   kutuda başlık ve kırmızı işaretli madde listesi. */
+.ana-sayfa .as-bolum-aciklama {
+  max-width: 56em; margin: 0 auto; text-align: center; font-size: 16px; line-height: 1.6;
+}
+.as-roller { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.as-rol {
+  padding: 24px 28px 26px;
+  background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 12px;
+}
+.ana-sayfa .as-rol h3 {
+  margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--murekkep);
+  font-size: 19px; line-height: 1.4; color: var(--murekkep);
+}
+.as-rol ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.as-rol li { position: relative; padding-left: 22px; font-size: 15.5px; line-height: 1.6; }
+.as-rol li::before {
+  content: ""; position: absolute; left: 2px; top: .62em;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--kirmizi);
+}
+
 /* Katkılar: yan yana dört kutu; simge, başlık ve yazı ortada. */
 .as-katkilar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .as-katki {
@@ -4491,10 +4555,15 @@ span.bolme-cip { cursor: default; }
 .ana-sayfa .as-guvence h3 { min-height: 2.8em; padding-top: 1px; font-size: 18px; line-height: 1.4; color: var(--murekkep); }
 .ana-sayfa .as-guvence p { grid-column: 1 / -1; font-size: 15.5px; line-height: 1.6; }
 
-/* Orta genişlik (1300 px altı): faz adları biraz küçük ve sıkı, katkılar ve güvenceler
+/* Orta genişlik (1300 px altı): Genel Bakış, faz ayrıntıları ve Yapay
+   Zekâ ve Kod tek sütun; faz adları biraz küçük ve sıkı, katkılar ve güvenceler
    ikişerli (2x2; güvencelerde alt satırın üstünde de çizgi), sayfalar
    ikişerli (son kutu ortada). */
 @media (max-width: 1300px) {
+  .as-genel-liste { grid-template-columns: minmax(0, 1fr); }
+  .as-faz-ayrinti { grid-template-columns: minmax(0, 1fr); }
+  .as-faz-ayrinti-bas { border-right: 0; border-bottom: 1px solid var(--murekkep); }
+  .as-roller { grid-template-columns: minmax(0, 1fr); }
   .as-fazlar { padding-left: 12px; padding-right: 12px; column-gap: 10px; }
   .ana-sayfa .as-faz h3 { font-size: 15.5px; }
   .as-faz:not(:last-child)::after { right: calc(-50% - 10px + 42px); }

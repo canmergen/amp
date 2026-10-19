@@ -178,25 +178,27 @@ tanıtır; sayfalar sol bardan açılır.
   (aynı anda tek kart).
 - Açıklamalar yalnız tanıtır. Her biri ortada, iki yanında çizgi olan
   başlıkla ve altında ortalı kısa girişle başlar.
-  - Model Platformu Nasıl Çalışır: giriş (beş faz, öneri ve onay);
-    ardından dört alt bölüm, her biri ortada çizgili alt başlıkla ve
-    aralarında geniş boşlukla:
-    - Beş Faz: tek kutu içinde süreç şeridi; her fazda kırmızı numara,
-      mürekkep halkalı daire içinde kırmızı simge (daireler kesik çizgiyle
-      bağlı) ve altında yalnız faz adı (özet ve adımlar yok; ayrıntı
-      Model Akışı'ndaki İş Akışı'nda).
-    - Katkılar: dört kutu (Akıllı değişken üretimi, Hız ve verimlilik,
-      Sade ve güçlü model, Her modele uygun yapı); kırmızı daire içinde
-      simge, başlık ve yazı ortada; sayısal iddia yok.
-    - Sayfalar: Çalışma Alanları kartlarıyla aynı düzen: solda büyük
-      çizim, sağında ad ve tek cümle; üçerli satırlar, son satır ortada;
-      Model Sohbeti soluk ve Hazırlanıyor rozetli.
-    - Güvenceler: açık zeminli tek kutu, dört bölme ince çizgiyle
-      ayrılır; her bölmede kırmızı halka içinde simge, yanında başlık,
-      altında kısa açıklama.
-    Bütün kutular 2 px mürekkep kenarlı. Fazlar her genişlikte tek
-    satır; 1300 px altında
-    katkılar ve güvenceler 2x2, sayfalar ikişerli dizilir.
+  - Model Platformu Nasıl Çalışır: platformu hiç bilmeyen birine baştan
+    sona anlatır. Giriş paragrafından sonra alt bölümler, her biri ortada
+    çizgili alt başlıkla:
+    - Genel Bakış: Ne yapar, Nasıl ilerler (öneri, onay, Geri Dön,
+      Arşiv), Ne üretir (analitik baz set, aday set, final model,
+      değişken kataloğu, model dokümanı).
+    - Beş Faz: tek kutuda süreç şeridi (numara, simgeli daire, faz adı;
+      daireler kesik çizgiyle bağlı).
+    - Fazlar Adım Adım: her faz bir kutu; solda faz başlığı ve amacı,
+      sağda numaralı adımlar (1.1 ile 5.4 arası), her adımda ne
+      yapıldığı. Metinler `akis_kayit.py` ve `akis_metin.py`'deki adım
+      tanımlarına dayanır; adım değişirse burası da güncellenir.
+    - Yapay Zekâ ve Kod: yapay zekânın önerdikleri ve kodun hesapladıkları
+      iki kutuda madde madde.
+    - Katkılar: dört kutu, simge, başlık ve yazı ortada; sayısal iddia yok.
+    - Sayfalar: Çalışma Alanları kartları düzeninde beş kutu (solda büyük
+      çizim, sağda ad ve açıklama).
+    - Güvenceler: açık zeminli tek kutu, dört bölme.
+    Bütün kutular 2 px mürekkep kenarlı. 1300 px altında Genel Bakış,
+    faz ayrıntıları ve Yapay Zekâ ve Kod tek sütun; katkılar ve
+    güvenceler 2x2, sayfalar ikişerli.
   - KATIB'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
