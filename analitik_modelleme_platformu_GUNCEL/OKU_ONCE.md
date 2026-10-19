@@ -183,8 +183,8 @@ tanıtır; sayfalar sol bardan açılır.
     aralarında geniş boşlukla:
     - Beş Faz: tek kutu içinde süreç şeridi; her fazda kırmızı numara,
       mürekkep halkalı daire içinde kırmızı simge (daireler kesik çizgiyle
-      bağlı), faz adı, özet, kısa kırmızı çizgi ve adımlar; ad, özet ve
-      adımlar bütün fazlarda aynı hizada.
+      bağlı) ve altında yalnız faz adı (özet ve adımlar yok; ayrıntı
+      Model Akışı'ndaki İş Akışı'nda).
     - Katkılar: dört kutu (Akıllı değişken üretimi, Hız ve verimlilik,
       Sade ve güçlü model, Her modele uygun yapı); kırmızı daire içinde
       simge, başlık ve yazı ortada; sayısal iddia yok.
@@ -194,8 +194,8 @@ tanıtır; sayfalar sol bardan açılır.
     - Güvenceler: açık zeminli tek kutu, dört bölme ince çizgiyle
       ayrılır; her bölmede kırmızı halka içinde simge, yanında başlık,
       altında kısa açıklama.
-    Bütün kutular 2 px mürekkep kenarlı. 1300 px altında fazlar üçerli
-    (satır sonunda bağlantı çizgisi yok),
+    Bütün kutular 2 px mürekkep kenarlı. Fazlar her genişlikte tek
+    satır; 1300 px altında
     katkılar ve güvenceler 2x2, sayfalar ikişerli dizilir.
   - KATIB'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;

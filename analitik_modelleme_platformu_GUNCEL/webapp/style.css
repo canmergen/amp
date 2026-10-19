@@ -4396,17 +4396,15 @@ span.bolme-cip { cursor: default; }
 /* Beş faz: süreç şeridi. Tek kutu içinde yan yana beş sütun; her
    sütunda üstte kırmızı numara, altında mürekkep halkalı daire içinde
    kırmızı simge (daireler kesik mürekkep çizgisiyle birbirine bağlı),
-   ortada faz adı, kısa özet, kısa kırmızı çizgi ve adımlar. Sütunlar
-   ortak satırlara oturur (subgrid): adlar, özetler ve adımlar bütün
-   fazlarda aynı hizada başlar. */
+   altında faz adı. Sütunlar ortak satırlara oturur (subgrid). */
 .as-fazlar {
-  list-style: none; margin: 0; padding: 30px 24px 32px;
+  list-style: none; margin: 0; padding: 28px 24px 30px;
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 16px; row-gap: 0;
   background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 12px;
 }
 .as-faz {
   position: relative;
-  display: grid; grid-row: span 5; grid-template-rows: subgrid;
+  display: grid; grid-row: span 3; grid-template-rows: subgrid;
   justify-items: center; align-items: start; text-align: center;
 }
 .as-faz-no {
@@ -4429,16 +4427,7 @@ span.bolme-cip { cursor: default; }
   left: calc(50% + 42px); right: calc(-50% - 16px + 42px);
   border-top: 2px dashed var(--murekkep);
 }
-.ana-sayfa .as-faz h3 { margin: 16px 0 6px; font-size: 18px; line-height: 1.35; color: var(--murekkep); }
-.as-faz-ozet { font-size: 14.5px; line-height: 1.5; color: var(--metin-tamam); }
-.as-faz ul::before {
-  content: ""; display: block; width: 32px; height: 2px; margin: 14px auto 6px;
-  background: var(--kirmizi);
-}
-.as-faz ul {
-  list-style: none; margin: 0; padding: 0;
-  display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.4;
-}
+.ana-sayfa .as-faz h3 { margin-top: 16px; font-size: 18px; line-height: 1.35; color: var(--murekkep); }
 
 /* Katkılar: yan yana dört kutu; simge, başlık ve yazı ortada. */
 .as-katkilar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
@@ -4502,15 +4491,13 @@ span.bolme-cip { cursor: default; }
 .ana-sayfa .as-guvence h3 { min-height: 2.8em; padding-top: 1px; font-size: 18px; line-height: 1.4; color: var(--murekkep); }
 .ana-sayfa .as-guvence p { grid-column: 1 / -1; font-size: 15.5px; line-height: 1.6; }
 
-/* Orta genişlik (1300 px altı): fazlar üçerli (satır sonunda bağlantı
-   çizgisi yok), katkılar ve güvenceler
+/* Orta genişlik (1300 px altı): faz adları biraz küçük ve sıkı, katkılar ve güvenceler
    ikişerli (2x2; güvencelerde alt satırın üstünde de çizgi), sayfalar
    ikişerli (son kutu ortada). */
 @media (max-width: 1300px) {
-  .as-fazlar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .as-faz:nth-child(3)::after, .as-faz:nth-child(5)::after { display: none; }
-  .as-faz:nth-child(n+4) .as-faz-no { margin-top: 34px; }
-  .as-faz:nth-child(n+4)::after { top: 99px; }
+  .as-fazlar { padding-left: 12px; padding-right: 12px; column-gap: 10px; }
+  .ana-sayfa .as-faz h3 { font-size: 15.5px; }
+  .as-faz:not(:last-child)::after { right: calc(-50% - 10px + 42px); }
   .as-katkilar, .as-guvenceler { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .as-guvence:nth-child(odd) { border-left: 0; }
   .as-guvence:nth-child(n+3) { border-top: 1px solid var(--murekkep); }
