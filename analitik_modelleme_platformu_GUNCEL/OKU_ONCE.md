@@ -83,8 +83,10 @@ SIL Open Font License). Gövde 400; başlıklar ve sol bar satırları 600;
 vurgu 700. Rakamlar tablolarda eşit genişlikte.
 
 **Sol bar**
-- Tepede KATIB logosu; arkasında barın eni boyunca İstanbul çizimi (solda
-  Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta. Altında
+- Tepede KATIB logosu; arkasında İstanbul çizimi: solda Galata, sağda
+  tarihi yarımada ve vapur. Çizimin iki parçası oranı bozulmadan %72'ye
+  küçültülüp barın iki kenarına yaslanır, logoya binmez (style.css:
+  --arkaplan-olcek). Altında
   ince siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içerik hazırlanıyor).
 - Ortasında **Çalışma Alanları** yazan çizgi; altında Model Platformu

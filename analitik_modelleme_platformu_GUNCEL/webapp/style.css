@@ -407,18 +407,39 @@ body { background-color: #FEFEFE; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde; arkasında barın eni boyunca İstanbul
-   çizimi (katib_arkaplan.png, 3:1). Çizimin solunda Galata, sağında
-   tarihi yarımada ve vapur var; ortadaki boşluk enin yaklaşık %30-%72'si.
-   Logo bu boşluğa ortalı oturur (barın eninin %52'si). Yuvanın boyu
-   çizimin oranında: 340 px enin üçte biri. Çizim yüklenemezse
+/* KATIB logosu sol barın tepesinde (barın eninin %58'i, ortada; yatayda
+   enin yaklaşık %21-%79'u). Arkasında İstanbul çizimi (katib_arkaplan.png,
+   3:1): solunda Galata (çizimin eninin %0-%27'si), sağında tarihi
+   yarımada ve vapur (%74-%100), ortası boş. Çizim logoya binmesin diye iki parçası ayrı basılır ve
+   oranı bozulmadan --arkaplan-olcek kadar küçültülüp barın iki kenarına,
+   alta yaslanır: Galata ::before (çizimin ilk %33'ü), yarımada ::after
+   (son %32'si; çizimin %32-%68'i tamamen boş); kutu tam o parçanın
+   eninde, çizimin geri kalanı kutunun dışında kalır, görünmez. .72 ile Galata yuvanın %20'sinde başlar,
+   yarımada %81'inde; logo arada boşta kalır. Çizim yüklenemezse
    (--logo-arkaplan yok) logo tek başına durur. */
 #sol-bar-logo {
+  --arkaplan-olcek: .72;
+  position: relative;
   flex-shrink: 0; height: 113px; padding: 10px 0 0; margin-bottom: 4px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--logo-arkaplan, none) center top / 100% auto no-repeat;
+}
+#sol-bar-logo::before, #sol-bar-logo::after {
+  content: ""; position: absolute; top: 0; bottom: 0;
+  pointer-events: none;
+  background: var(--logo-arkaplan, none) no-repeat;
+}
+/* Kutu, çizimin o parçası kadar (yuva eni x ölçek x parça payı); çizim
+   kutunun 1 / parça payı katı genişlikte basılır. */
+#sol-bar-logo::before {
+  left: 0; width: calc(var(--arkaplan-olcek) * 33%);
+  background-size: calc(100% / .33) auto; background-position: left bottom;
+}
+#sol-bar-logo::after {
+  right: 0; width: calc(var(--arkaplan-olcek) * 32%);
+  background-size: calc(100% / .32) auto; background-position: right bottom;
 }
 #katib-logo {
+  position: relative; z-index: 1;
   display: block; width: 58%; height: auto; max-height: 72px;
   object-fit: contain;
 }
@@ -4005,8 +4026,8 @@ span.bolme-cip { cursor: default; }
 }
 #kabuk.gri #sol-bar .ust-sekme.kapali img.ikon-gorsel { opacity: .6; }
 #kabuk.gri #sol-bar-logo {
-  margin: 8px 10px 6px; border-radius: 10px;
-  background-color: var(--kagit); background-position: center 6px;
+  margin: 8px 10px 6px; border-radius: 10px; overflow: hidden;
+  background-color: var(--kagit);
 }
 #kabuk.gri #robot-alt {
   padding: 4px 6px; border-radius: 10px; background: var(--kagit);
