@@ -130,9 +130,11 @@ Uygulama ekranın tamamını kullanır ve tarayıcıda %88 yakınlaştırmadaki
 gibi görünür: style.css'te `--olcek: .88` (1 = %100); tarayıcının kendi
 yakınlaştırması %100'de kalır. Sol bar kaydırmasızdır (tasarım eni
 340 px, satırlar 44 px, yazılar 15 px, çizim ikonları 40 px; %88 ölçekte
-ekranda 299 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür,
-eni de aynı orana gelir; büyük ekranda büyümez. Küçültme CSS zoom ile
-yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
+ekranda 299 px en). Bar, Model Platformu açıkken yüksekliğine sığacak
+oranda büyür ya da küçülür (0,6 ile 1,2 kat arası); yazılar, çizimler
+ve logo birlikte büyür, eni de aynı orana gelir. Örnek: 1366x768
+pencerede 1,13 kat (yazı ekranda 15 px, çizim 40 px). Ölçek CSS zoom
+ile verilir (transform değil): yazı ve görseller bulanıklaşmaz.
 
 **Ana Sayfa** (uygulama bununla açılır; alanın tamamını kaplar, kendi
 içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
@@ -146,7 +148,7 @@ tanıtır; sayfalar sol bardan açılır.
   (harf aralığı .03em, satır yüksekliği 1.22). Blok eniyle orantılı
   (boy = en x %24; yazı boyları blok enine bağlı), yakınlaştırınca tek
   parça büyür. Yazı çizime değmez (piksel düzeyinde denetlendi).
-- Çalışma Alanları (üç ayrı iş): Model Platformu (model kurma, izleme ve
+- Çalışma Alanları (başlık ortada, iki yanında ince çizgi; üç ayrı iş): Model Platformu (model kurma, izleme ve
   üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartın üstünde enine yayılan geniş görsel

@@ -301,14 +301,14 @@ function beyazZeminiSil(a, w, h) {
 /* ==================== SOL BAR ÖLÇEĞİ ====================
    Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm, Arşiv,
    Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
-   (#sol-bar-ic) tasarım eninde (340 px) doğal boyuyla dizilir; ekran
-   yetmezse barın yüksekliğine sığacak oranda küçülür (en az 0,6 kat),
-   barın eni de aynı orana gelir. Büyük ekranda büyümez (en fazla 1 kat):
-   uygulama ölçeği (style.css: --olcek) sol bara da aynen yansır.
+   (#sol-bar-ic) tasarım eninde (340 px) doğal boyuyla dizilir ve barın
+   yüksekliğine sığacak oranda büyür ya da küçülür (0,6 ile 1,2 kat
+   arası); barın eni de aynı orana gelir. Doğal boy Model Platformu
+   açıkken ölçülür: küme açılınca bar taşmaz.
    Ölçek CSS zoom ile verilir, transform ile değil: zoom içeriği yeni
    boyutunda baştan çizer, yazı ve görseller bulanıklaşmaz. */
 const SOL_BAR_TASARIM_EN = 340;
-const SOL_BAR_OLCEK = { min: 0.6, max: 1.0 };
+const SOL_BAR_OLCEK = { min: 0.6, max: 1.2 };
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");

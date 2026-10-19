@@ -3937,9 +3937,10 @@ span.bolme-cip { cursor: default; }
 
 /* ---- Sol bar ölçeği ve KATIB logosu ----
    İç kap tasarım eninde (340 px) doğal boyuyla dizilir; app.js
-   (solBarOlcekle) ekran yetmezse onu barın yüksekliğine sığacak oranda
-   küçültür (CSS zoom; en fazla 1 kat) ve barın enini (--sol-bar-en) aynı
-   orana getirir. Kaydırma yok. */
+   (solBarOlcekle) onu barın yüksekliğine sığacak oranda büyütür ya da
+   küçültür (CSS zoom; 0,6 ile 1,2 kat arası) ve barın enini
+   (--sol-bar-en) aynı orana getirir; yazılar ve çizimler birlikte
+   büyür. Kaydırma yok. */
 #sol-bar { display: block; overflow: hidden; }
 #sol-bar-ic {
   width: 340px;
@@ -4215,7 +4216,8 @@ span.bolme-cip { cursor: default; }
      faz ve adımları (fazlar mürekkep çizgisinin altında ince dikey
      çizgilerle ayrılan sütunlar, faz numarası kırmızı), sayfalar,
      güvenceler ve başlarken adımları.
-   Bölüm başlıklarının yanında sol bardaki gibi ince mürekkep çizgisi.
+   Bölüm başlığı ortada, iki yanında sol bardaki gibi ince mürekkep
+   çizgisi.
    Zemin kartlarla aynı renk (Beyaz modda beyaz); kartlar ince kenarla
    ayrılır. Simgeler sol barın çizimleri, "multiply" ile basılır (beyaz
    kısımları zeminin rengini alır). */
@@ -4280,7 +4282,7 @@ span.bolme-cip { cursor: default; }
   display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
   font-size: 24px; font-weight: var(--fw-yari); color: var(--murekkep);
 }
-.as-bolum-baslik::after { content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep); }
+.as-bolum-baslik::before, .as-bolum-baslik::after { content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep); }
 .as-bolum-not { margin: -4px 0 18px; font-size: 15.5px; line-height: 1.6; max-width: 62em; }
 
 .as-rozet {
