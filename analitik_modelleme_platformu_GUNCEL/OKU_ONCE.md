@@ -150,7 +150,8 @@ tanıtır; sayfalar sol bardan açılır.
 - Üst bölüm: üstte ortada tek satır başlık: "Veriyle İlgili
   Yapacağınız" siyah, "Her Şey, Tek Platformda." kırmızı (kalın, harf
   aralığı .01em; dar ekranda iki satıra bölünebilir). Altında
-  `anasayfa_aciklama` görseli bloğun iç eninin tamamında, kendi
+  `anasayfa_aciklama` görseli ortada, bloğun iç eninin %86'sında (başlıkla
+  aşağı yukarı aynı en; boşluklar dar), kendi
   oranıyla (daraltma ya da kırpma yok; yalnız saydam kenarları
   kırpılır); yüklenemezse yalnız başlık kalır. Başlık boyu ve boşluklar
   blok enine bağlı, yakınlaştırınca blok tek parça büyür. Tanıtım

@@ -4282,21 +4282,22 @@ span.bolme-cip { cursor: default; }
 .ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa p { margin: 0; }
 .ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
 
-/* Üst bölüm: üstte ortada başlık, altında görsel. Görsel bloğun iç
-   eninin tamamında, kendi oranıyla (daraltma ya da kırpma yok; saydam
-   kenarları app.js'te kırpılır). Başlık boyu ve boşluklar cqw ile bloğun
+/* Üst bölüm: üstte ortada başlık, altında ortada görsel. Görsel bloğun
+   iç eninin %86'sında (başlıkla aşağı yukarı aynı en), kendi oranıyla
+   (daraltma ya da kırpma yok; saydam kenarları app.js'te kırpılır);
+   boşluklar dar, blok dikeyde gereğinden uzun olmasın. Başlık boyu ve boşluklar cqw ile bloğun
    enine bağlı: bu yüzden yakınlaştırınca ya da uzaklaştırınca blok tek
    parça büyür ve küçülür. Tanıtım yazısı burada değil, Çalışma Alanları
    kartlarında. */
 .as-hero {
   overflow: hidden; container-type: inline-size;
-  padding: 3cqw 3cqw 2.5cqw;
+  padding: 2cqw 3cqw 1.5cqw;
   background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 14px;
   box-shadow: var(--golge-1);
 }
 .as-hero-metin { text-align: center; }
-.as-hero-gorsel { margin-top: 2.5cqw; }
-.as-hero-gorsel img { display: block; width: 100%; height: auto; }
+.as-hero-gorsel { margin-top: 1.5cqw; }
+.as-hero-gorsel img { display: block; width: 86%; height: auto; margin: 0 auto; }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
   margin: 0; white-space: nowrap;
