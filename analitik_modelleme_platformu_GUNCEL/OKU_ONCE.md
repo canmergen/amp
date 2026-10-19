@@ -86,7 +86,8 @@ içindeki `VARSAYILAN_MODEL`.
   Değişkenleri ve Model Özeti'nde bölüm, kart ve tablo başlıkları;
   kilitli sayfaların adı; sol bardaki sayfa satırları, Model Platformu
   başlığı ve alt sayfaları, Çalışma Alanları ayracı, Görünüm, Arşiv,
-  Yeni Çalışma. Başlıklar kalın (700); sol bar satırları 600, seçili
+  Yeni Çalışma. Gömülü kopyada Z ve z harflerinin üst çizgisindeki
+  kıvrık kanca kaldırılmıştır (düz köşe); öbür harfler özgün. Başlıklar kalın (700); sol bar satırları 600, seçili
   satır 700. Başlığın içindeki rozet ve bilgi simgesi
   Newsreader kalır.
 - **Newsreader** (editoryal serif): geri kalan her şey (gövde metni,
