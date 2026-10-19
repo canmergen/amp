@@ -4264,8 +4264,8 @@ span.bolme-cip { cursor: default; }
      Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır,
      yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır.
      Açıklama yalnız tanıtır: ortada başlık ve kısa giriş; Model
-     Platformu'nda ayrıca beş faz kutusu (adımlarıyla), beş sayfa
-     kutusu ve en sonda koyu Güvenceler bandı. KATIB'le Sohbet ve Gösterge Paneli'nde yalnız başlık ve
+     Platformu'nda ayrıca beş faz kutusu (adımlarıyla), dört Katkılar
+     kutusu, beş sayfa kutusu ve en sonda koyu Güvenceler bandı. KATIB'le Sohbet ve Gösterge Paneli'nde yalnız başlık ve
      giriş.
    Bölüm başlığı ortada, iki yanında 2 px mürekkep çizgisi.
    Zemin kartlarla aynı renk (Beyaz modda beyaz); üst bölüm, kartlar,
@@ -4427,6 +4427,25 @@ span.bolme-cip { cursor: default; }
 .as-sayfa h3 { font-size: 16.5px; line-height: 1.25; }
 .as-sayfa .as-rozet { align-self: flex-start; }
 .as-sayfa p { font-size: 14.5px; line-height: 1.5; }
+
+/* Katkılar: platformun getirdikleri; yan yana dört kutu. Kutunun üst
+   kenarı kalın kırmızı şerit, solda kırmızı halka içinde kırmızı çizgi
+   simge, kalın başlık, kısa açıklama. Sayısal iddia yok. */
+.as-katkilar { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.as-katki {
+  display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 20px;
+  background: var(--yuzey); border: 2px solid var(--murekkep); border-top: 6px solid var(--kirmizi);
+  border-radius: 12px;
+}
+.as-katki-ikon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 2px solid var(--kirmizi); color: var(--kirmizi);
+  background: color-mix(in srgb, var(--kirmizi) 7%, var(--yuzey));
+}
+.as-katki-ikon svg { width: 24px; height: 24px; }
+.ana-sayfa .as-katki h3 { margin-top: 4px; font-size: 18px; line-height: 1.25; color: var(--murekkep); }
+.ana-sayfa .as-katki p { font-size: 14.5px; line-height: 1.55; }
 
 /* Güvenceler: mürekkep zeminli tek bant (her modda koyu), içinde yan
    yana dört bölme; aralarında ince açık çizgi. Her bölmede kırmızı

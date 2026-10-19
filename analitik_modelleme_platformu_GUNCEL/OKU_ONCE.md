@@ -179,7 +179,10 @@ tanıtır; sayfalar sol bardan açılır.
   başlıkla ve altında ortalı kısa girişle başlar.
   - Model Platformu Nasıl Çalışır: giriş (beş faz, öneri ve onay); beş
     faz kutusu yan yana (kırmızı numara, faz adı, özet, ince çizginin
-    altında numaralı adımlar); "Sayfalar" alt başlığı altında beş sayfa
+    altında numaralı adımlar); "Katkılar" alt başlığı altında dört kutu
+    (Akıllı değişken üretimi, Hız ve verimlilik, Sade ve güçlü model,
+    Her modele uygun yapı; üstte kalın kırmızı şerit, kırmızı halka
+    içinde simge; sayısal iddia yok); "Sayfalar" alt başlığı altında beş sayfa
     kutusu (simge, ad, tek cümle; Model Sohbeti soluk ve Hazırlanıyor
     rozetli); en sonda "Güvenceler": her modda koyu (mürekkep) zeminli
     tek bant, yan yana dört bölme (Girdi veriniz değişmez, Tam veri
