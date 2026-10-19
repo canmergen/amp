@@ -395,7 +395,7 @@ body { background-color: #FFFFFF; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde, ortada (barın eninin %58'i). Üstünde
+/* KATIB logosu sol barın tepesinde, ortada (barın eninin %63'ü). Üstünde
    20 px, altında 10 px boşluk (altındaki çizgiye kadar toplam 20 px);
    yuvanın boyu logonun boyuna göre. */
 #sol-bar-logo {
@@ -403,7 +403,7 @@ body { background-color: #FFFFFF; }
   display: flex; align-items: flex-start; justify-content: center;
 }
 #katib-logo {
-  display: block; width: 58%; height: auto; max-height: 72px;
+  display: block; width: 63%; height: auto; max-height: 72px;
   object-fit: contain;
 }
 
