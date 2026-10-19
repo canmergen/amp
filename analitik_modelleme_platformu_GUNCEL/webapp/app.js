@@ -580,7 +580,16 @@ function genislikYaz() {
 /* Ölçülen gerçek genişlik: kullanıcı ilk kez sürüklemeye başladığında
    başlangıç noktası clamp() sonucu olmalı, --panel-en'in metni değil
    ("clamp(224px, 21vw, 296px)" sayı değil). */
-function suankiEn(el) { return Math.round(el.getBoundingClientRect().width); }
+function suankiEn(el) { return Math.round(el.getBoundingClientRect().width / ekranOlcegi()); }
+
+/* Ekran ölçeği (style.css: html { zoom: var(--olcek) }). Fare konumu,
+   getBoundingClientRect ve innerWidth / innerHeight EKRAN pikseliyle
+   gelir; style.left / top / width ve offsetWidth / offsetHeight TASARIM
+   pikseliyle. Ekran pikseli bu orana bölünerek tasarım pikseline,
+   tasarım pikseli bu oranla çarpılarak ekran pikseline çevrilir. */
+function ekranOlcegi() {
+    return parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+}
 
 function genislikUygula() {
     if (panelEni.sol === null) kabukEl.style.removeProperty("--panel-en");
@@ -648,7 +657,7 @@ function tutamakKur(tutamak, taraf, el) {
     tutamak.addEventListener("pointermove", (e) => {
         if (!surukleniyor) return;
         /* Sol panel sağa doğru büyür, sağ panel SOLA doğru. */
-        const delta = taraf === "sol" ? (e.clientX - basX) : (basX - e.clientX);
+        const delta = (taraf === "sol" ? (e.clientX - basX) : (basX - e.clientX)) / ekranOlcegi();
         panelEni[taraf] = genislikKirp(taraf, basEn + delta);
         genislikUygula();
     });
@@ -2943,13 +2952,15 @@ function szMenuAc(dugme, o) {
 
     /* Tema değişkenleri #kabuk altında tanımlı: menü oraya eklenir. */
     (document.getElementById("kabuk") || document.body).appendChild(m);
+    /* Hesap ekran pikseliyle; konum tasarım pikseline çevrilerek yazılır. */
+    const z = ekranOlcegi();
     const r = dugme.getBoundingClientRect();
-    const en = m.offsetWidth, boy = m.offsetHeight;
+    const en = m.offsetWidth * z, boy = m.offsetHeight * z;
     let x = r.left, y = r.bottom + 4;
     if (x + en > window.innerWidth - 8) x = Math.max(8, window.innerWidth - en - 8);
     if (y + boy > window.innerHeight - 8) y = Math.max(8, r.top - boy - 4);
-    m.style.left = x + "px";
-    m.style.top = y + "px";
+    m.style.left = (x / z) + "px";
+    m.style.top = (y / z) + "px";
     SZ_MENU = m;
     document.addEventListener("mousedown", szDisTik, true);
     document.addEventListener("keydown", szTus, true);
@@ -6938,7 +6949,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
         if (!sohbetEl) return;
         const g = giris.getBoundingClientRect();
         const alan = sohbetEl.getBoundingClientRect();
-        const yukari = g.top - alan.top;
+        const yukari = (g.top - alan.top) / ekranOlcegi();
         const gerekli = Math.min(LISTE_YUKSEKLIGI, liste.scrollHeight + 8);
         if (yukari < gerekli) sohbetEl.scrollTop -= (gerekli - yukari + 8);
     }
@@ -10262,17 +10273,19 @@ function bolmeBilgiSimgesi(metin, baslik) {
     let kapat = null;
     const acikMi = () => tip.style.display === "block";
     const yerlestir = () => {
+        /* Hesap ekran pikseliyle; konum tasarım pikseline çevrilerek yazılır. */
+        const z = ekranOlcegi();
         const r = kap.getBoundingClientRect();
         tip.style.display = "block";
-        const en = Math.min(tip.offsetWidth, window.innerWidth - 16);
-        const boy = tip.offsetHeight;
+        const en = Math.min(tip.offsetWidth * z, window.innerWidth - 16);
+        const boy = tip.offsetHeight * z;
         let sol = Math.min(r.right - en, window.innerWidth - en - 8);
         sol = Math.max(sol, 8);
         const altYer = window.innerHeight - r.bottom - 8;
         let ust = (boy <= altYer || r.top < boy + 8) ? r.bottom + 6 : r.top - boy - 6;
         ust = Math.max(8, Math.min(ust, window.innerHeight - boy - 8));
-        tip.style.left = sol + "px";
-        tip.style.top = ust + "px";
+        tip.style.left = (sol / z) + "px";
+        tip.style.top = (ust / z) + "px";
     };
     const kaydirinca = (e) => {
         if (e.target === tip || tip.contains(e.target)) return;

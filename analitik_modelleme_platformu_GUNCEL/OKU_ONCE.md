@@ -87,8 +87,8 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta. Altında
   ince siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içerik hazırlanıyor).
-- Çizgisiz, küçük ve soluk **Çalışma Alanları** etiketi; altında Model
-  Platformu kümesi ve kilitli alanlar, en altta ince siyah çizgi.
+- Ortasında **Çalışma Alanları** yazan çizgi; altında Model Platformu
+  kümesi ve kilitli alanlar, en altta ince siyah çizgi.
 - Sayfa adları normal yazımla (büyük harf değil), alttaki Görünüm, Arşiv
   ve Yeni Çalışma ile aynı yazı: 15 px, yarı kalın; seçili satır kalın.
 - **Model Platformu** (başta kapalı; başlığa basınca içindekiler açılır,
@@ -118,7 +118,9 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
-Uygulama ekranın tamamını kullanır. Sol bar kaydırmasızdır (tasarım eni
+Uygulama ekranın tamamını kullanır ve tarayıcıda %80 yakınlaştırmadaki
+gibi görünür: style.css'te `--olcek: .8` (1 = %100); tarayıcının kendi
+yakınlaştırması %100'de kalır. Sol bar kaydırmasızdır (tasarım eni
 340 px, satırlar 40 px, yazılar 15 px, çizim ikonları 36 px). Bar ekran
 yüksekliğine sığacak oranda ölçeklenir, eni de aynı orana gelir: ekran
 yetmezse küçülür, büyük ekranda en fazla 1,15 kata kadar büyür.
