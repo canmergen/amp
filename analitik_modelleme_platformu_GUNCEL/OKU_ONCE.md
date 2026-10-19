@@ -155,7 +155,7 @@ tanıtır; sayfalar sol bardan açılır.
 - İlk ekran sayfaya tam sığar: üst bölüm ve Çalışma Alanları kartları
   sayfa yüksekliğini doldurur, kaydırma çubuğu açılmaz, altta boşluk
   kalmaz (F11 ile ya da Dataiku içinde). app.js (anaSayfaSigdir) görselin
-  enini bloğun iç eninin %40'ı ile %100'ü arasında buna göre ayarlar;
+  enini bloğun iç eninin %30'u ile %100'ü arasında buna göre ayarlar;
   görsel tam ende de yer artarsa başlık en çok 1,15 kat büyür, kalan
   boşluk üst bölüme eklenir (içerik ortada). Kart açıklaması açılınca
   sayfa aşağı kayar. Dar ekranda (1100 px altı) yapılmaz. Altında ortada iki satır başlık:
@@ -170,7 +170,7 @@ tanıtır; sayfalar sol bardan açılır.
   üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
-  kartın içinin %34'ü), sağında üstte başlık, altında açıklama. Üst
+  kartın içinin %34'ü), sağında üstte başlık, altında açıklama (16,5 px). Üst
   bölümün, kartların, faz ve sayfa kutularının kenarı 2 px mürekkep
   siyahı. Kartlarda düğme yok: karta basınca (klavyede Enter / Boşluk)
   kart seçilir (kırmızı kalın kenar, hafif pembe zemin) ve kartların

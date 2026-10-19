@@ -4288,7 +4288,7 @@ span.bolme-cip { cursor: default; }
    kendi oranındaki boyun %95'i (dikeyde hafif basık; kırpma yok,
    saydam kenarları app.js'te kırpılır; oranı app.js --gorsel-oran
    olarak verir). Boşluklar dar, blok dikeyde gereğinden uzun olmasın.
-   Görselin eni %94 varsayılandır; app.js (anaSayfaSigdir) onu %40 ile
+   Görselin eni %94 varsayılandır; app.js (anaSayfaSigdir) onu %30 ile
    %100 arasında, ilk ekran (üst bölüm ve kartlar) sayfa yüksekliğini tam
    dolduracak şekilde ayarlar; görsel tam ende de boşluk kalırsa başlık
    büyür (--baslik-k, en çok 1,15), artanında üst bölüm uzar, içerik
@@ -4353,7 +4353,8 @@ span.bolme-cip { cursor: default; }
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
   font-size: clamp(16px, 5.6cqw, 22px); font-weight: var(--fw-yari);
 }
-.as-kart p { grid-column: 2; grid-row: 2; align-self: start; font-size: 15px; line-height: 1.55; }
+.as-kart p { grid-column: 2; grid-row: 2; align-self: start; font-size: 16.5px; line-height: 1.5; }
+.as-kart .as-rozet { font-size: 13.5px; }
 .as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { filter: grayscale(1); opacity: .5; }
 
 /* Kart açıklamaları: karta basınca kart seçilir (kenarı kırmızı ve

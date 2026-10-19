@@ -5683,7 +5683,7 @@ document.addEventListener("keydown", e => {
        kalır. Görselin eni (dolayısıyla boyu, oranı sabit) kartların alt
        kenarıyla sayfanın altı arasında sayfanın alt iç boşluğu kalacak
        şekilde ayarlanır: en az bloğun
-       iç eninin %40'ı, en çok %100'ü. Görsel en çok enine ulaştıktan sonra
+       iç eninin %30'u, en çok %100'ü. Görsel en çok enine ulaştıktan sonra
        artan yükseklikle önce başlık büyür (en çok 1,15 kat), kalanı üst
        bölüme eklenir (içerik dikeyde ortalı). Ölçüler
        ekrandaki (yakınlaştırılmış) boyutlarla oranlanır; ölçek farkı
@@ -5708,7 +5708,7 @@ document.addEventListener("keydown", e => {
         const fazla = kartAlani.getBoundingClientRect().bottom + altPay
                       - kok.getBoundingClientRect().bottom;
         let yuzde = varsayilan * (iR.height - fazla) / iR.height;
-        yuzde = Math.max(40, Math.min(100, yuzde));
+        yuzde = Math.max(30, Math.min(100, yuzde));
         hero.style.width = yuzde + "%";
         const kalanOlc = () => kok.getBoundingClientRect().bottom
                                - (kartAlani.getBoundingClientRect().bottom + altPay);
