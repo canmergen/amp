@@ -5681,10 +5681,10 @@ document.addEventListener("keydown", e => {
         solBarGorseli(img.dataset.asIkon).then(src => { img.src = src; },
             () => img.classList.add("yok"));
     });
-    /* Kart açıklamaları: kartın "Nasıl Çalışır" / "Ne Olacak" düğmesine
-       basınca kartların altında o alanın açıklaması açılır, yeniden
-       basınca kapanır; aynı anda tek açıklama açık. Seçili kartın kenarı
-       kalınlaşır; açılan açıklama görünür alana kaydırılır. */
+    /* Kart açıklamaları: karta (düğmesi dahil herhangi bir yerine)
+       basınca kart seçilir ve kartların altında o alanın açıklaması
+       açılır, yeniden basınca ikisi de kalkar; aynı anda tek kart seçili.
+       Açılan açıklama görünür alana kaydırılır. */
     const dugmeler = Array.from(kok.querySelectorAll(".as-ayrinti-ac[data-ayrinti]"));
     const ayrintilar = Array.from(kok.querySelectorAll(".as-ayrinti[data-alan]"));
     function ayrintiAc(alan) {
@@ -5701,7 +5701,10 @@ document.addEventListener("keydown", e => {
         const gorunen = ayrintilar.find(a => !a.hidden);
         if (gorunen) gorunen.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
-    dugmeler.forEach(d => { d.onclick = () => ayrintiAc(d.dataset.ayrinti); });
+    dugmeler.forEach(d => {
+        const kart = d.closest(".as-kart");
+        (kart || d).onclick = () => ayrintiAc(d.dataset.ayrinti);
+    });
     /* Uygulama Ana Sayfa ile açılır (index.html'de görünen sayfa); sol
        barda da Ana Sayfa seçili görünsün. */
     sayfaAc("anasayfa");

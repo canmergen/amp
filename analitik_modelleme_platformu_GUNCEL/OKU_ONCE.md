@@ -82,12 +82,13 @@ içindeki `VARSAYILAN_MODEL`.
   başlıklar. Ana Sayfa başlıkları; Model Akışı'nda blok ve alt adım
   adları, iş akışı fazları, seçim ve seçenek kartı başlıkları, tablo
   başlıkları; Model Gösterge Paneli, Model Değişkenleri ve Model
-  Özeti'nde bölüm, kart ve tablo başlıkları; kilitli sayfaların adı.
-  Tek ağırlığı var; 600 istenen başlıklarda tarayıcı kalınlaştırır.
+  Özeti'nde bölüm, kart ve tablo başlıkları; kilitli sayfaların adı;
+  sol bar seçimleri (sayfa satırları, Model Platformu başlığı, Görünüm,
+  Arşiv, Yeni Çalışma; harf aralığı .03em). Tek ağırlığı var; 600 istenen başlıklarda tarayıcı kalınlaştırır.
   Başlığın içindeki rozet ve bilgi simgesi Newsreader kalır.
 - **Newsreader** (editoryal serif): geri kalan her şey (gövde metni,
-  sol bar ve üst bar, düğmeler, tablolar). Gövde 400; sol bar satırları
-  600; vurgu 700. Rakamlar tablolarda eşit genişlikte.
+  sol bardaki "Çalışma Alanları" ayracı, üst bar, düğmeler, tablolar).
+  Gövde 400; yarı kalın 600; vurgu 700. Rakamlar tablolarda eşit genişlikte.
 
 İkisi de `style.css` içinde gömülü, dış font sunucusuna bağlanmaz, SIL
 Open Font License. Başlık ailesi tek değişkende: `--font-baslik`.
@@ -154,8 +155,10 @@ tanıtır; sayfalar sol bardan açılır.
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
   kartın içinin %34'ü), sağında üstte başlık, altında açıklama. Üst
   bölümün ve kartların kenarı mürekkep siyahı. Her kartın altında **Nasıl Çalışır** / **Ne
-  Olacak** düğmesi: basınca kartların altında o alanın açıklaması açılır,
-  yeniden basınca kapanır (aynı anda tek açıklama). Model Platformu'nun
+  Olacak** düğmesi. Karta (düğme dahil herhangi bir yerine) basınca kart
+  seçilir (kırmızı kalın kenar, hafif pembe zemin, kırmızı dolu düğme) ve
+  kartların altında o alanın açıklaması açılır; yeniden basınca ikisi de
+  kalkar (aynı anda tek kart). Model Platformu'nun
   açıklaması: beş faz ve adımları, Model Platformu sayfaları, güvenceler,
   başlarken adımları.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;

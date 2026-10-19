@@ -4202,6 +4202,13 @@ span.bolme-cip { cursor: default; }
 #kabuk #sol-bar #tema-btn, #kabuk #sol-bar #calismalar-btn, #kabuk #sol-bar #sifirla-btn {
   font-weight: var(--fw-yari);
 }
+/* Sol bar seçimleri (sayfa satırları, Model Platformu başlığı, Görünüm,
+   Arşiv, Yeni Çalışma) de başlık yazı tipinde; harfler birbirine
+   değmesin diye aralık .03em. "Çalışma Alanları" ayracı Newsreader. */
+#kabuk #sol-bar .ust-sekme, #kabuk #sol-bar .ust-kume-ad, #kabuk #sol-bar .ust-kume-ad span,
+#kabuk #sol-bar #tema-btn, #kabuk #sol-bar .sifirla-etiket {
+  font-family: var(--font-baslik); letter-spacing: .03em;
+}
 
 /* ==================== ANA SAYFA ====================
    Platformu tanıtan tek sütunlu sayfa (alanın tamamı); sayfa kendi
@@ -4210,9 +4217,8 @@ span.bolme-cip { cursor: default; }
      Platformda.") ve tanıtım; sağda anasayfa_aciklama görseli. Görsel
      yüklenemezse metin tek sütun kalır.
    - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan.
-     Kartın düğmesine (Nasıl Çalışır / Ne Olacak) basınca altında o
-     alanın açıklaması (.as-ayrinti) açılır;
-     seçili kartın kenarı kalınlaşır. Model Platformu'nun açıklamasında beş
+     Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır,
+     yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır. Model Platformu'nun açıklamasında beş
      faz ve adımları (fazlar mürekkep çizgisinin altında ince dikey
      çizgilerle ayrılan sütunlar, faz numarası kırmızı), sayfalar,
      güvenceler ve başlarken adımları.
@@ -4320,12 +4326,19 @@ span.bolme-cip { cursor: default; }
 .as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { filter: grayscale(1); opacity: .5; }
 
 /* Kart açıklamaları: kartın altında "Nasıl Çalışır" / "Ne Olacak"
-   düğmesi (kartın eninde). Basılınca kartın kenarı kalınlaşır, düğme
-   dolar ve oku yukarı döner. Açıklama kartların altında, ince mürekkep
+   düğmesi (kartın eninde). Karta (düğme dahil herhangi bir yerine)
+   basınca kart seçilir: kenarı kırmızı ve kalın, zemini hafif pembe,
+   düğme kırmızı dolar ve oku yukarı döner; yeniden basınca seçim ve
+   açıklama kalkar. Açıklama kartların altında, ince mürekkep
    çizgisiyle başlayan düz bir alan. */
-.as-kart.secili { box-shadow: 0 0 0 1px var(--murekkep); }
+.as-kart { cursor: pointer; transition: background .12s, border-color .12s; }
+.as-kart:not(.secili):hover { background: color-mix(in srgb, var(--murekkep) 3%, var(--yuzey)); }
+.as-kart.secili {
+  border-color: var(--kirmizi); box-shadow: 0 0 0 1px var(--kirmizi);
+  background: color-mix(in srgb, var(--kirmizi) 5%, var(--yuzey));
+}
 .as-ayrinti-ac { align-self: stretch; }
-.as-ayrinti-ac[aria-expanded="true"] { background: var(--murekkep); border-color: var(--murekkep); color: var(--yuzey); }
+.as-ayrinti-ac[aria-expanded="true"] { background: var(--kirmizi); border-color: var(--kirmizi); color: #FFFFFF; }
 .as-acilir-ok { width: 16px; height: 16px; flex-shrink: 0; transition: transform .15s; }
 .as-ayrinti-ac[aria-expanded="true"] .as-acilir-ok { transform: rotate(180deg); }
 .as-ayrinti {
