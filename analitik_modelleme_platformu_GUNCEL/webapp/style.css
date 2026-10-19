@@ -4256,9 +4256,9 @@ span.bolme-cip { cursor: default; }
 /* ==================== ANA SAYFA ====================
    Platformu tanıtan tek sütunlu sayfa (alanın tamamı); sayfa kendi
    içinde kayar. Sırayla:
-   - Üst bölüm: solda başlık ("Veriyle Yapacağınız / Her Şey, Tek
-     Platformda.") ve tanıtım; sağda anasayfa_aciklama görseli. Görsel
-     yüklenemezse metin tek sütun kalır.
+   - Üst bölüm: üstte başlık ("Veriyle Yapacağınız / Her Şey, Tek
+     Platformda.") ve tanıtım yan yana; altında anasayfa_aciklama
+     görseli. Görsel yüklenemezse yalnız yazı kalır.
    - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan.
      Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır,
      yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır. Model Platformu'nun açıklamasında beş
@@ -4279,37 +4279,29 @@ span.bolme-cip { cursor: default; }
 .ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa p { margin: 0; }
 .ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
 
-/* Üst bölüm: bütün blok, eniyle orantılı bir resim gibi davranır (boyu
-   enin %24'ü; yazı boyları ve boşluklar cqw ile bloğun enine bağlı), bu
+/* Üst bölüm: üstte yazı, altında görsel. Yazı iki sütun: solda başlık,
+   sağda giriş yazısı (dikeyde ortalı). Görsel bloğun iç eninin tamamında,
+   kendi oranıyla (daraltma ya da kırpma yok; saydam kenarları app.js'te
+   kırpılır). Yazı boyları ve boşluklar cqw ile bloğun enine bağlı: bu
    yüzden yakınlaştırınca ya da uzaklaştırınca blok tek parça büyür ve
-   küçülür. Görsel bloğun üst, sağ ve alt kenarına yapışık, bloğun tam
-   boyunda (saydam kenarları app.js'te kırpılır); kendi oranının %92,5'i
-   enle çizilir (çizim yatayda geniş durduğu için daraltılır, oranı
-   app.js --gorsel-oran olarak verir). Yazının soldan ve
-   üstten boşluğu aynı (enin %3'ü). Çizimin üst %30'u boş (yalnız
-   pencere çerçeveleri sağda): başlık oraya uzanabilir; giriş yazısı
-   aşağıda, çizime yaklaşan ama saksı ve masaya değmeyen sütunda
-   (enin %37'si; satır sonları çizime başlık kadar yakın). Dar ekranda görsel yazının altına iner. */
+   küçülür. Dar ekranda giriş yazısı başlığın altına iner. */
 .as-hero {
-  position: relative; overflow: hidden; container-type: inline-size;
-  aspect-ratio: 100 / 24;
+  overflow: hidden; container-type: inline-size;
+  padding: 3cqw 3cqw 2.5cqw;
   background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 14px;
   box-shadow: var(--golge-1);
 }
-.as-hero-metin { position: absolute; z-index: 1; left: 3cqw; top: 3cqw; }
-.as-hero-gorsel { position: absolute; top: 0; right: 0; bottom: 0; }
-.as-hero-gorsel img {
-  display: block; height: 100%; width: auto;
-  aspect-ratio: calc(var(--gorsel-oran, 2.768) * .925);
-}
+.as-hero-metin { display: flex; align-items: center; justify-content: space-between; gap: 5cqw; }
+.as-hero-gorsel { margin-top: 2.5cqw; }
+.as-hero-gorsel img { display: block; width: 100%; height: auto; }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
-  margin-bottom: 1.4cqw; white-space: nowrap;
-  font-size: 2.8cqw; line-height: 1.22; font-weight: var(--fw-kalin); letter-spacing: .01em;
+  flex: none; margin: 0; white-space: nowrap;
+  font-size: 3.2cqw; line-height: 1.18; font-weight: var(--fw-kalin); letter-spacing: .01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
-.as-giris { width: 37cqw; font-size: 1.28cqw; line-height: 1.5; }
+.as-giris { flex: 0 1 46cqw; font-size: 1.3cqw; line-height: 1.55; }
 
 /* Bölüm başlığı: yanında sol bardaki gibi ince mürekkep çizgisi */
 .as-bolum-baslik {
@@ -4440,10 +4432,9 @@ span.bolme-cip { cursor: default; }
 
 /* Dar ekran: yazı üstte, görsel altında bloğun eninde */
 @media (max-width: 1100px) {
-  .as-hero { aspect-ratio: auto; padding: 24px 24px 0; }
-  .as-hero-metin { position: static; }
-  .as-baslik { font-size: 32px; margin-bottom: 12px; white-space: normal; }
-  .as-giris { width: auto; font-size: 15px; }
-  .as-hero-gorsel { position: static; margin: 18px -24px 0; }
-  .as-hero-gorsel img { width: 100%; height: auto; }
+  .as-hero { padding: 24px 24px 20px; }
+  .as-hero-metin { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .as-baslik { font-size: 32px; white-space: normal; }
+  .as-giris { flex: none; font-size: 15px; }
+  .as-hero-gorsel { margin-top: 18px; }
 }

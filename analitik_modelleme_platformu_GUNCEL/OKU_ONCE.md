@@ -34,7 +34,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
 | `robot_alt` | `robot_alt.png` | Sol bar: Görünüm'ün üstünde robot, kitaplar ve kupa |
-| `anasayfa_aciklama` | `anasayfa_aciklama.png` | Ana Sayfa: üst bölümün görseli (saydam, 3:1) |
+| `anasayfa_aciklama` | `anasayfa_aciklama.png` | Ana Sayfa: üst bölümün görseli (saydam zeminli, geniş; yazının altında tam en) |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -147,15 +147,14 @@ mürekkep siyahı.
 **Ana Sayfa** (uygulama bununla açılır; alanın tamamını kaplar, kendi
 içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
 tanıtır; sayfalar sol bardan açılır.
-- Üst bölüm: "Veriyle Yapacağınız / Her Şey, Tek Platformda." başlığı ve
-  giriş yazısı; sağda `anasayfa_aciklama` görseli bloğun üst, sağ ve alt
-  kenarına yapışık (yüklenemezse yalnız yazı kalır). Görsel kendi
-  oranının %92,5'i enle çizilir: çizim yatayda geniş durduğu için %7,5
-  daraltılır, kırpılmaz. Giriş yazısı çizime yaklaşan geniş bir sütunda
-  (blok eninin %37'si); satır sonları çizime başlık kadar yakın. Başlık harfleri ve iki satırı arası açık
-  (kalın, harf aralığı .01em, satır yüksekliği 1.22). Blok eniyle orantılı
-  (boy = en x %24; yazı boyları blok enine bağlı), yakınlaştırınca tek
-  parça büyür. Yazı çizime değmez (piksel düzeyinde denetlendi).
+- Üst bölüm: üstte yazı, altında görsel. Yazı iki sütun: solda
+  "Veriyle Yapacağınız / Her Şey, Tek Platformda." başlığı (kalın,
+  harf aralığı .01em), sağda giriş yazısı. Altında `anasayfa_aciklama`
+  görseli bloğun iç eninin tamamında, kendi oranıyla (daraltma ya da
+  kırpma yok; yalnız saydam kenarları kırpılır); yüklenemezse yalnız
+  yazı kalır. Yazı boyları ve boşluklar blok enine bağlı,
+  yakınlaştırınca blok tek parça büyür. Dar ekranda giriş yazısı
+  başlığın altına iner.
 - Çalışma Alanları (başlık ortada, iki yanında ince çizgi; üç ayrı iş): Model Platformu (model kurma, izleme ve
   üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);

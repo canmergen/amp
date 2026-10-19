@@ -5664,16 +5664,12 @@ document.addEventListener("keydown", e => {
 (function anaSayfaKur() {
     const kok = document.getElementById("sayfa-anasayfa");
     if (!kok) return;
-    /* Üst bölüm görseli: saydam kenarları kırpılır; böylece bloğun üst,
-       sağ ve alt kenarına çizimin kendisi yapışır. */
+    /* Üst bölüm görseli: saydam kenarları kırpılır; çizim yazının
+       altında bloğun iç eninin tamamını kaplar. */
     const hero = document.getElementById("as-hero-img");
     if (hero) {
         const yok = () => hero.parentElement.classList.add("yok");
         hero.onerror = yok;
-        hero.onload = () => {
-            if (hero.naturalHeight) hero.style.setProperty("--gorsel-oran",
-                hero.naturalWidth / hero.naturalHeight);
-        };
         saydamKirp(getWebAppBackendUrl("gorsel/anasayfa_aciklama"),
                    src => { hero.src = src; }, yok);
     }
