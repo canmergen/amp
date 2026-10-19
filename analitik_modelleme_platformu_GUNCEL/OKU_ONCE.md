@@ -140,15 +140,18 @@ tanıtır; sayfalar sol bardan açılır.
 - Üst bölüm: "Veriyle Yapacağınız / Her Şey, Tek Platformda." başlığı ve
   giriş yazısı; sağda `anasayfa_aciklama` görseli bloğun üst, sağ ve alt
   kenarına yapışık (yüklenemezse yalnız yazı kalır). Görsel kendi
-  oranının %90'ı enle çizilir: çizim yatayda geniş durduğu için %10
-  daraltılır, kırpılmaz. Başlık harfleri ve iki satırı arası açık
+  oranının %92,5'i enle çizilir: çizim yatayda geniş durduğu için %7,5
+  daraltılır, kırpılmaz. Giriş yazısı çizime yaklaşan geniş bir sütunda
+  (blok eninin %37'si); satır sonları çizime başlık kadar yakın. Başlık harfleri ve iki satırı arası açık
   (harf aralığı .03em, satır yüksekliği 1.22). Blok eniyle orantılı
   (boy = en x %24; yazı boyları blok enine bağlı), yakınlaştırınca tek
   parça büyür. Yazı çizime değmez (piksel düzeyinde denetlendi).
 - Çalışma Alanları (üç ayrı iş): Model Platformu (model kurma, izleme ve
   üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
-  son ikisi hazırlanıyor. Her kartın altında **Nasıl Çalışır** / **Ne
+  son ikisi hazırlanıyor. Kartın üstünde enine yayılan geniş görsel
+  alanı (en:boy 2,2; sol barın çizimi sola ve alta yaslı), altında
+  başlık ve açıklama. Her kartın altında **Nasıl Çalışır** / **Ne
   Olacak** düğmesi: basınca kartların altında o alanın açıklaması açılır,
   yeniden basınca kapanır (aynı anda tek açıklama). Model Platformu'nun
   açıklaması: beş faz ve adımları, Model Platformu sayfaları, güvenceler,

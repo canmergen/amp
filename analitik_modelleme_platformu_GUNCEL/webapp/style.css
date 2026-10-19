@@ -4232,13 +4232,13 @@ span.bolme-cip { cursor: default; }
    enin %24'ü; yazı boyları ve boşluklar cqw ile bloğun enine bağlı), bu
    yüzden yakınlaştırınca ya da uzaklaştırınca blok tek parça büyür ve
    küçülür. Görsel bloğun üst, sağ ve alt kenarına yapışık, bloğun tam
-   boyunda (saydam kenarları app.js'te kırpılır); kendi oranının %90'ı
+   boyunda (saydam kenarları app.js'te kırpılır); kendi oranının %92,5'i
    enle çizilir (çizim yatayda geniş durduğu için daraltılır, oranı
    app.js --gorsel-oran olarak verir). Yazının soldan ve
    üstten boşluğu aynı (enin %3'ü). Çizimin üst %30'u boş (yalnız
    pencere çerçeveleri sağda): başlık oraya uzanabilir; giriş yazısı
-   aşağıda, çizimin sol ucundaki saksı ve masaya değmeyen dar sütunda
-   (enin %30'u). Dar ekranda görsel yazının altına iner. */
+   aşağıda, çizime yaklaşan ama saksı ve masaya değmeyen sütunda
+   (enin %37'si; satır sonları çizime başlık kadar yakın). Dar ekranda görsel yazının altına iner. */
 .as-hero {
   position: relative; overflow: hidden; container-type: inline-size;
   aspect-ratio: 100 / 24;
@@ -4249,7 +4249,7 @@ span.bolme-cip { cursor: default; }
 .as-hero-gorsel { position: absolute; top: 0; right: 0; bottom: 0; }
 .as-hero-gorsel img {
   display: block; height: 100%; width: auto;
-  aspect-ratio: calc(var(--gorsel-oran, 2.768) * .9);
+  aspect-ratio: calc(var(--gorsel-oran, 2.768) * .925);
 }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
@@ -4258,7 +4258,7 @@ span.bolme-cip { cursor: default; }
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
-.as-giris { width: 31cqw; font-size: 1.28cqw; line-height: 1.5; }
+.as-giris { width: 37cqw; font-size: 1.28cqw; line-height: 1.5; }
 
 /* Düğmeler */
 .as-dugme {
@@ -4290,7 +4290,9 @@ span.bolme-cip { cursor: default; }
   vertical-align: middle;
 }
 
-/* Çalışma alanı kartları */
+/* Çalışma alanı kartları: üstte kartın enine yayılan geniş görsel alanı
+   (en:boy 2,2; çizim sola ve alta yaslı), altında başlık, açıklama ve
+   kartın eninde düğme. Kartlar aynı boyda, düğmeler aynı hizada. */
 .as-kartlar { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .as-kart {
   display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 18px;
@@ -4299,10 +4301,13 @@ span.bolme-cip { cursor: default; }
 }
 .as-kart h3 {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-  font-size: 20px; font-weight: var(--fw-yari);
+  font-size: 22px; font-weight: var(--fw-yari);
 }
 .as-kart p { flex: 1; font-size: 15px; line-height: 1.55; }
-.as-kart-ikon { width: 56px; height: 56px; object-fit: contain; mix-blend-mode: multiply; }
+.as-kart-ikon {
+  width: 100%; aspect-ratio: 2.2; margin-bottom: 8px;
+  object-fit: contain; object-position: left bottom; mix-blend-mode: multiply;
+}
 .as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { filter: grayscale(1); opacity: .5; }
 
 /* Kart açıklamaları: kartın altında "Nasıl Çalışır" / "Ne Olacak"
