@@ -77,10 +77,13 @@ içindeki `VARSAYILAN_MODEL`.
 
 ## Ekran
 
-**Yazı tipi:** bütün arayüz tek aile, **Newsreader** (New Yorker esintili
-editoryal serif; `style.css` içinde gömülü, dış font sunucusuna bağlanmaz,
-SIL Open Font License). Gövde 400; başlıklar ve sol bar satırları 600;
-vurgu 700. Rakamlar tablolarda eşit genişlikte.
+**Yazı tipi:** arayüzün tamamı **Newsreader** (editoryal serif). Gövde
+400; başlıklar ve sol bar satırları 600; vurgu 700. Rakamlar tablolarda
+eşit genişlikte. Tek istisna Ana Sayfa'nın büyük başlığı ("Veriyle
+Yapacağınız / Her Şey, Tek Platformda."): **Limelight** (art deco
+başlık yazı tipi; tek ağırlığı var, başlıkta tarayıcı kalınlaştırır).
+İkisi de `style.css` içinde gömülü, dış font sunucusuna bağlanmaz, SIL
+Open Font License.
 
 **Sol bar**
 - Tepede KATIB logosu, ortada; üstünde ve altındaki çizgiye kadar 20'şer
