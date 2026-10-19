@@ -77,25 +77,23 @@ içindeki `VARSAYILAN_MODEL`.
 
 ## Ekran
 
-**Yazı tipi:** üç aile.
-- **Limelight** (art deco başlık yazı tipi): platformdaki bütün
-  başlıklar. Ana Sayfa başlıkları; Model Akışı'nda blok ve alt adım
-  adları, iş akışı fazları, seçim ve seçenek kartı başlıkları, tablo
-  başlıkları; Model Gösterge Paneli, Model Değişkenleri ve Model
-  Özeti'nde bölüm, kart ve tablo başlıkları; kilitli sayfaların adı.
-  Tek ağırlığı var; 600 istenen başlıklarda tarayıcı kalınlaştırır.
-  Başlığın içindeki rozet ve bilgi simgesi Newsreader kalır.
-- **Josefin Sans** (1920'lerin geometrik yazı tipi): sol bar seçimleri
-  (sayfa satırları, Model Platformu başlığı ve alt sayfaları, Çalışma
-  Alanları ayracı, Görünüm, Arşiv, Yeni Çalışma). 600; seçili satır
-  700; harf aralığı .02em.
+**Yazı tipi:** iki aile.
+- **Josefin Sans** (1920'lerin geometrik yazı tipi): platformdaki bütün
+  başlıklar ve sol bar seçimleri. Ana Sayfa başlıkları; Model Akışı'nda
+  blok ve alt adım adları, iş akışı fazları, seçim ve seçenek kartı
+  başlıkları, tablo başlıkları; Model Gösterge Paneli, Model
+  Değişkenleri ve Model Özeti'nde bölüm, kart ve tablo başlıkları;
+  kilitli sayfaların adı; sol bardaki sayfa satırları, Model Platformu
+  başlığı ve alt sayfaları, Çalışma Alanları ayracı, Görünüm, Arşiv,
+  Yeni Çalışma. 600 ve 700. Başlığın içindeki rozet ve bilgi simgesi
+  Newsreader kalır.
 - **Newsreader** (editoryal serif): geri kalan her şey (gövde metni,
   üst bar, düğmeler, tablolar). Gövde 400; yarı kalın 600; vurgu 700.
   Rakamlar tablolarda eşit genişlikte.
 
-Üçü de `style.css` içinde gömülü, dış font sunucusuna bağlanmaz, SIL
-Open Font License. Aileler değişkende: `--font-baslik` (Limelight),
-`--font-menu` (Josefin Sans), `--font` (Newsreader).
+İkisi de `style.css` içinde gömülü, dış font sunucusuna bağlanmaz, SIL
+Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
+`--font` (Newsreader).
 
 **Sol bar**
 - Tepede KATIB logosu, ortada; üstünde ve altındaki çizgiye kadar 20'şer
@@ -154,7 +152,7 @@ tanıtır; sayfalar sol bardan açılır.
   oranının %92,5'i enle çizilir: çizim yatayda geniş durduğu için %7,5
   daraltılır, kırpılmaz. Giriş yazısı çizime yaklaşan geniş bir sütunda
   (blok eninin %37'si); satır sonları çizime başlık kadar yakın. Başlık harfleri ve iki satırı arası açık
-  (harf aralığı .03em, satır yüksekliği 1.22). Blok eniyle orantılı
+  (kalın, harf aralığı .01em, satır yüksekliği 1.22). Blok eniyle orantılı
   (boy = en x %24; yazı boyları blok enine bağlı), yakınlaştırınca tek
   parça büyür. Yazı çizime değmez (piksel düzeyinde denetlendi).
 - Çalışma Alanları (başlık ortada, iki yanında ince çizgi; üç ayrı iş): Model Platformu (model kurma, izleme ve
