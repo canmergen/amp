@@ -177,12 +177,15 @@ tanıtır; sayfalar sol bardan açılır.
   (aynı anda tek kart).
 - Açıklamalar yalnız tanıtır. Her biri ortada, iki yanında çizgi olan
   başlıkla ve altında ortalı kısa girişle başlar.
-  - Model Platformu Nasıl Çalışır: giriş (beş faz, öneri ve onay, girdi
-    verinin değişmemesi, tam veri, kayıt); beş faz kutusu yan yana
-    (kırmızı numara, faz adı, özet, ince çizginin altında numaralı
-    adımlar); "Sayfalar" alt başlığı altında beş sayfa kutusu (simge, ad,
-    tek cümle; Model Sohbeti soluk ve Hazırlanıyor rozetli). Kutular yer
-    yetmezse alt satıra geçer.
+  - Model Platformu Nasıl Çalışır: giriş (beş faz, öneri ve onay); beş
+    faz kutusu yan yana (kırmızı numara, faz adı, özet, ince çizginin
+    altında numaralı adımlar); "Sayfalar" alt başlığı altında beş sayfa
+    kutusu (simge, ad, tek cümle; Model Sohbeti soluk ve Hazırlanıyor
+    rozetli); en sonda "Güvenceler": her modda koyu (mürekkep) zeminli
+    tek bant, yan yana dört bölme (Girdi veriniz değişmez, Tam veri
+    örneklem yok, Sızıntı sınırı korunur, Her karar kayıtlı), her birinde
+    kırmızı daire içinde simge, beyaz başlık ve kısa açıklama. Kutular
+    yer yetmezse alt satıra geçer.
   - KATIB'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.

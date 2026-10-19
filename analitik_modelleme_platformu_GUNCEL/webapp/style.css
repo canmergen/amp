@@ -4264,8 +4264,8 @@ span.bolme-cip { cursor: default; }
      Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır,
      yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır.
      Açıklama yalnız tanıtır: ortada başlık ve kısa giriş; Model
-     Platformu'nda ayrıca beş faz kutusu (adımlarıyla) ve beş sayfa
-     kutusu. KATIB'le Sohbet ve Gösterge Paneli'nde yalnız başlık ve
+     Platformu'nda ayrıca beş faz kutusu (adımlarıyla), beş sayfa
+     kutusu ve en sonda koyu Güvenceler bandı. KATIB'le Sohbet ve Gösterge Paneli'nde yalnız başlık ve
      giriş.
    Bölüm başlığı ortada, iki yanında 2 px mürekkep çizgisi.
    Zemin kartlarla aynı renk (Beyaz modda beyaz); üst bölüm, kartlar,
@@ -4427,6 +4427,29 @@ span.bolme-cip { cursor: default; }
 .as-sayfa h3 { font-size: 16.5px; line-height: 1.25; }
 .as-sayfa .as-rozet { align-self: flex-start; }
 .as-sayfa p { font-size: 14.5px; line-height: 1.5; }
+
+/* Güvenceler: mürekkep zeminli tek bant (her modda koyu), içinde yan
+   yana dört bölme; aralarında ince açık çizgi. Her bölmede kırmızı
+   daire içinde çizgi simge, kalın başlık, kısa açıklama. Sayfanın en
+   güçlü vurgusu: açıklamanın sonunda durur. */
+.as-guvenceler {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  background: var(--murekkep); color: #F4F1EA;
+  border: 2px solid var(--murekkep); border-radius: 12px; overflow: hidden;
+}
+.as-guvence {
+  display: flex; flex-direction: column; gap: 10px; padding: 22px 22px 24px;
+  border-left: 1px solid rgba(244, 241, 234, .18);
+}
+.as-guvence:first-child { border-left: 0; }
+.as-guvence-ikon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--kirmizi); color: #FFFFFF;
+}
+.as-guvence-ikon svg { width: 24px; height: 24px; }
+.ana-sayfa .as-guvence h3 { margin-top: 4px; font-size: 18px; line-height: 1.25; color: #FFFFFF; }
+.ana-sayfa .as-guvence p { font-size: 14.5px; line-height: 1.55; color: rgba(244, 241, 234, .82); }
 
 /* Dar ekran: yazı üstte, görsel altında bloğun eninde */
 @media (max-width: 1100px) {
