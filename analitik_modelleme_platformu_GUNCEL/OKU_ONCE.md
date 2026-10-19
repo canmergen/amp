@@ -170,13 +170,20 @@ tanıtır; sayfalar sol bardan açılır.
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
   kartın içinin %34'ü), sağında üstte başlık, altında açıklama. Üst
-  bölümün, kartların ve sayfa kutularının kenarı 2 px mürekkep siyahı;
-  açıklamadaki faz ve güvence sütunlarını ayıran çizgiler de siyah. Kartlarda düğme yok: karta basınca
-  (klavyede Enter / Boşluk) kart seçilir (kırmızı kalın kenar, hafif
-  pembe zemin) ve kartların altında o alanın açıklaması açılır; yeniden
-  basınca ikisi de kalkar (aynı anda tek kart). Model Platformu'nun
-  açıklaması: beş faz ve adımları, Model Platformu sayfaları (kenarı siyah kutular), güvenceler,
-  başlarken adımları.
+  bölümün, kartların, faz ve sayfa kutularının kenarı 2 px mürekkep
+  siyahı. Kartlarda düğme yok: karta basınca (klavyede Enter / Boşluk)
+  kart seçilir (kırmızı kalın kenar, hafif pembe zemin) ve kartların
+  altında o alanın açıklaması açılır; yeniden basınca ikisi de kalkar
+  (aynı anda tek kart).
+- Açıklamalar yalnız tanıtır. Her biri ortada, iki yanında çizgi olan
+  başlıkla ve altında ortalı kısa girişle başlar.
+  - Model Platformu Nasıl Çalışır: giriş (beş faz, öneri ve onay, girdi
+    verinin değişmemesi, tam veri, kayıt); beş faz kutusu yan yana
+    (kırmızı numara, faz adı, özet, ince çizginin altında numaralı
+    adımlar); "Sayfalar" alt başlığı altında beş sayfa kutusu (simge, ad,
+    tek cümle; Model Sohbeti soluk ve Hazırlanıyor rozetli). Kutular yer
+    yetmezse alt satıra geçer.
+  - KATIB'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
 - Açılışta Model Akışı arka planda yüklenir; akış bir kart için analiz

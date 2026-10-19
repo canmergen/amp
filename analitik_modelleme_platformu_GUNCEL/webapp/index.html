@@ -253,11 +253,11 @@
         </div>
 
         <div class="as-ayrinti" data-alan="model" hidden>
-        <section class="as-alt-bolum">
-          <h3 class="as-alt-baslik">Model Akışı: Beş Faz</h3>
-          <p class="as-bolum-not">Akış adım adım ilerler; her adımda ne yapılacağı ve
-            neden yapıldığı açıklanır. Hangi adımda olduğunuzu ve ilerlemeyi
-            Model Akışı'nın üstündeki <b>İş Akışı</b> düğmesinden izlersiniz.</p>
+          <h2 class="as-bolum-baslik">Model Platformu Nasıl Çalışır</h2>
+          <p class="as-ayrinti-giris">Ham veriden final modele beş fazda ilerlersiniz. Her
+            adımda platform analizi yapar ve önerisini gerekçesiyle sunar; karar
+            sizin onayınızla uygulanır. Girdi veriniz değişmez, analizler verinin
+            tamamında yapılır ve her karar kayıt altına alınır.</p>
           <ol class="as-fazlar">
             <li class="as-faz">
               <span class="as-faz-no">01</span>
@@ -311,98 +311,61 @@
               </ul>
             </li>
           </ol>
-        </section>
-
-        <section class="as-alt-bolum">
-          <h3 class="as-alt-baslik">Model Platformu Sayfaları</h3>
+          <h3 class="as-alt-baslik">Sayfalar</h3>
           <div class="as-sayfalar">
             <div class="as-sayfa">
-              <img class="as-sayfa-ikon" data-as-ikon="model_akisi" alt="">
-              <span class="as-sayfa-metin"><b>Model Akışı</b>
-                Adımların blok blok ilerlediği çalışma alanı. Seçimler kartlar
-                üzerinden yapılır; her blok kendi kararını ve Geri Dön düğmesini
-                taşır.</span>
+              <div class="as-sayfa-bas">
+                <img class="as-sayfa-ikon" data-as-ikon="model_akisi" alt="">
+                <h3>Model Akışı</h3>
+              </div>
+              <p>Adımların blok blok ilerlediği çalışma alanı; seçimler kartlarla yapılır.</p>
             </div>
             <div class="as-sayfa">
-              <img class="as-sayfa-ikon" data-as-ikon="gosterge_paneli" alt="">
-              <span class="as-sayfa-metin"><b>Model Gösterge Paneli</b>
-                Çalışmanın sayılarla özeti: veri seti ve sözlük, değişken
-                sayıları (üretim, eleme), bölme, validasyon ve model sonucu.</span>
+              <div class="as-sayfa-bas">
+                <img class="as-sayfa-ikon" data-as-ikon="gosterge_paneli" alt="">
+                <h3>Model Gösterge Paneli</h3>
+              </div>
+              <p>Çalışmanın sayılarla özeti: veri, değişkenler, bölme, validasyon ve model sonucu.</p>
             </div>
             <div class="as-sayfa">
-              <img class="as-sayfa-ikon" data-as-ikon="degiskenler" alt="">
-              <span class="as-sayfa-metin"><b>Model Değişkenleri</b>
-                Değişken düzeyinde inceleme: Veri ve Sözlük, Dağılım ve SFA,
-                Değişken Kontrolleri. SFA kararları burada değiştirilebilir.</span>
+              <div class="as-sayfa-bas">
+                <img class="as-sayfa-ikon" data-as-ikon="degiskenler" alt="">
+                <h3>Model Değişkenleri</h3>
+              </div>
+              <p>Değişken düzeyinde inceleme: veri ve sözlük, dağılım ve SFA, kontroller.</p>
             </div>
             <div class="as-sayfa">
-              <img class="as-sayfa-ikon" data-as-ikon="ozet" alt="">
-              <span class="as-sayfa-metin"><b>Model Özeti</b>
-                Model dokümanı: künye ve 20 bölüm. Akışın son durumundan her
-                açılışta yeniden üretilir; eksik ve teslimi engelleyen bölümler
-                ayrıca listelenir.</span>
+              <div class="as-sayfa-bas">
+                <img class="as-sayfa-ikon" data-as-ikon="ozet" alt="">
+                <h3>Model Özeti</h3>
+              </div>
+              <p>Model dokümanı: künye ve 20 bölüm, akışın son durumundan üretilir.</p>
             </div>
             <div class="as-sayfa kapali">
-              <img class="as-sayfa-ikon" data-as-ikon="model_sohbeti" alt="">
-              <span class="as-sayfa-metin"><b>Model Sohbeti <span class="as-rozet">Hazırlanıyor</span></b>
-                Açık çalışmaya bağlı sohbet: o çalışmanın verisi, kararları ve
-                sonuçları üzerine soru sorma.</span>
+              <div class="as-sayfa-bas">
+                <img class="as-sayfa-ikon" data-as-ikon="model_sohbeti" alt="">
+                <h3>Model Sohbeti</h3>
+              </div>
+              <span class="as-rozet">Hazırlanıyor</span>
+              <p>Açık çalışmanın verisi, kararları ve sonuçları üzerine sohbet.</p>
             </div>
           </div>
-        </section>
-
-        <section class="as-alt-bolum">
-          <h3 class="as-alt-baslik">Güvenceler</h3>
-          <div class="as-guvenceler">
-            <div class="as-guvence"><h3>Girdi veriniz değişmez</h3>
-              <p>Seçtiğiniz veri setine ve sözlüğe hiçbir şey yazılmaz. Platform
-                yalnız kendi kopyalarıyla çalışır: <code>AMP_VERISETI</code> ve
-                <code>AMP_SOZLUK</code>.</p></div>
-            <div class="as-guvence"><h3>Tam veri, örneklem yok</h3>
-              <p>Profil, sayımlar ve analizler verinin tamamı üzerinden yapılır;
-                büyük veri Spark ile kümede işlenir.</p></div>
-            <div class="as-guvence"><h3>Sızıntı sınırı korunur</h3>
-              <p>Doldurma, dönüşüm ve eğitim yalnız geliştirme setinden
-                hesaplanır; hedefle aşırı ilişkili değişkenler modele
-                alınmaz.</p></div>
-            <div class="as-guvence"><h3>Her karar kayıtlı</h3>
-              <p>Değişkenlerin kaynağı, dönüşümleri, seçim kararları ve sonuçlar
-                kaydedilir; çalışmaya Arşiv'den kaldığınız yerden devam
-                edersiniz.</p></div>
-          </div>
-        </section>
-
-        <section class="as-alt-bolum">
-          <h3 class="as-alt-baslik">Başlarken</h3>
-          <ol class="as-adimlar">
-            <li><h3>Çalışmayı açın</h3>
-              <p>Sol alttaki <b>Yeni Çalışma</b> ile başlayın ya da <b>Arşiv</b>'den
-                kayıtlı bir çalışmayı kaldığı yerden açın.</p></li>
-            <li><h3>Başlangıcı seçin</h3>
-              <p><b>Baz Veri Seti Mevcut</b>: modellemeye girecek tablo hazır.
-                <b>Kaynak Tablolar Mevcut</b>: tablolar birleştirilerek
-                oluşturulur. Sözlük isteğe bağlıdır; tanımı olmayan kolonlar
-                onaylı tanımlardan ve yapay zekâ önerilerinden doldurulur.</p></li>
-            <li><h3>Adımları onaylayın</h3>
-              <p>Her adımda öneriyi inceleyin, gerekirse değiştirin ve onaylayın.
-                Önceki bir adıma Geri Dön ile dönebilirsiniz; sohbet Değişken
-                Mühendisliği adımında açılır.</p></li>
-          </ol>
-        </section>
         </div>
 
         <div class="as-ayrinti" data-alan="sohbet" hidden>
-          <p>KATIB'le Sohbet, model çalışmalarından bağımsız bir sohbet alanı
+          <h2 class="as-bolum-baslik">KATIB'le Sohbet</h2>
+          <p class="as-ayrinti-giris">Model çalışmalarından bağımsız bir sohbet alanı
             olacak: yüklediğiniz veri üzerine soru sorup analiz ve yorum
             isteyebilecek ya da herhangi bir konuda yapay zekâ ile
             konuşabileceksiniz. Bu alan hazırlanıyor.</p>
         </div>
 
         <div class="as-ayrinti" data-alan="gosterge" hidden>
-          <p>Gösterge Paneli, modellerden bağımsız veri analizi ve durum izleme
+          <h2 class="as-bolum-baslik">Gösterge Paneli</h2>
+          <p class="as-ayrinti-giris">Modellerden bağımsız veri analizi ve durum izleme
             alanı olacak: verinizi göstergelerle inceleyip takip
             edebileceksiniz. Model Platformu'ndaki bir çalışmanın kendi
-            göstergeleri ise Model Gösterge Paneli sayfasında. Bu alan
+            göstergeleri Model Gösterge Paneli sayfasındadır. Bu alan
             hazırlanıyor.</p>
         </div>
       </section>

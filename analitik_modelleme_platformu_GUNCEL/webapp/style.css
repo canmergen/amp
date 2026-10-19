@@ -4237,8 +4237,7 @@ span.bolme-cip { cursor: default; }
 #kabuk .panel-bolum-baslik, #kabuk .ft-detay-ad,
 #kabuk .bf-kilit-baslik, #kabuk .bf-kisit-baslik, #kabuk .bolme-grup-baslik,
 #kabuk .dg-tablo-baslik, #kabuk .dg-kisa-tablo-baslik, #kabuk .calisma-gizli-baslik,
-#kabuk .ana-sayfa h1, #kabuk .ana-sayfa h1 em, #kabuk .ana-sayfa h2, #kabuk .ana-sayfa h3,
-#kabuk .as-sayfa-metin > b {
+#kabuk .ana-sayfa h1, #kabuk .ana-sayfa h1 em, #kabuk .ana-sayfa h2, #kabuk .ana-sayfa h3 {
   font-family: var(--font-baslik); font-weight: var(--fw-kalin);
 }
 #kabuk #sol-bar .ust-sekme, #kabuk #sol-bar .ust-kume-ad,
@@ -4263,13 +4262,14 @@ span.bolme-cip { cursor: default; }
    - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan,
      her biri kendi tanıtımıyla.
      Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır,
-     yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır. Model Platformu'nun açıklamasında beş
-     faz ve adımları (fazlar mürekkep çizgisinin altında ince dikey
-     çizgilerle ayrılan sütunlar, faz numarası kırmızı), sayfalar,
-     güvenceler ve başlarken adımları.
+     yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır.
+     Açıklama yalnız tanıtır: ortada başlık ve kısa giriş; Model
+     Platformu'nda ayrıca beş faz kutusu (adımlarıyla) ve beş sayfa
+     kutusu. KATIB'le Sohbet ve Gösterge Paneli'nde yalnız başlık ve
+     giriş.
    Bölüm başlığı ortada, iki yanında 2 px mürekkep çizgisi.
-   Zemin kartlarla aynı renk (Beyaz modda beyaz); üst bölüm, kartlar ve
-   sayfa kutuları 2 px mürekkep kenarlı. Simgeler sol barın çizimleri, "multiply" ile basılır (beyaz
+   Zemin kartlarla aynı renk (Beyaz modda beyaz); üst bölüm, kartlar,
+   faz ve sayfa kutuları 2 px mürekkep kenarlı. Simgeler sol barın çizimleri, "multiply" ile basılır (beyaz
    kısımları zeminin rengini alır). */
 #sayfa-anasayfa { overflow-y: auto; background: var(--yuzey); }
 .ana-sayfa {
@@ -4319,7 +4319,6 @@ span.bolme-cip { cursor: default; }
   font-size: 24px; font-weight: var(--fw-yari); color: var(--murekkep);
 }
 .as-bolum-baslik::before, .as-bolum-baslik::after { content: ""; flex: 1 1 0; height: 2px; background: var(--murekkep); }
-.as-bolum-not { margin: -4px 0 18px; font-size: 15.5px; line-height: 1.6; max-width: 62em; }
 
 .as-rozet {
   display: inline-block; padding: 1px 9px; border-radius: 999px;
@@ -4366,28 +4365,44 @@ span.bolme-cip { cursor: default; }
 }
 .as-kart:focus-visible { outline: 2px solid var(--murekkep); outline-offset: 2px; }
 .as-ayrinti {
-  margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--murekkep);
-  display: flex; flex-direction: column; gap: 30px;
+  margin-top: 34px;
+  display: flex; flex-direction: column; gap: 22px;
 }
 .as-ayrinti[hidden] { display: none; }
-.as-ayrinti > p { max-width: 62em; font-size: 15.5px; line-height: 1.6; }
-.as-alt-baslik { margin-bottom: 12px; font-size: 19px; font-weight: var(--fw-yari); color: var(--murekkep); }
+.as-ayrinti > .as-bolum-baslik { margin-bottom: 0; }
+/* Giriş: başlığın altında ortada kısa açıklama */
+.ana-sayfa .as-ayrinti-giris {
+  max-width: 58em; margin: -6px auto 0; text-align: center;
+  font-size: 16px; line-height: 1.6; color: var(--metin);
+}
+/* Alt başlık: ortada, iki yanında ince mürekkep çizgisi */
+.as-alt-baslik {
+  display: flex; align-items: center; gap: 14px; margin-top: 4px;
+  font-size: 19px; font-weight: var(--fw-kalin); color: var(--murekkep);
+}
+.as-alt-baslik::before, .as-alt-baslik::after { content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep); }
 
-/* Beş faz */
+/* Beş faz: yan yana beş kutu (yer yetmezse alt satıra geçer) (kartlarla aynı dil: 2 px mürekkep kenar,
+   köşe 12 px). Kırmızı numara, faz adı, kısa özet; ince çizginin altında
+   adımlar. */
 .as-fazlar {
   list-style: none; margin: 0; padding: 0;
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  border-top: 1px solid var(--murekkep);
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px;
 }
-.as-faz { padding: 16px 18px 4px; border-left: 1px solid var(--murekkep); }
-.as-faz:first-child { border-left: 0; padding-left: 0; }
+.as-faz {
+  display: flex; flex-direction: column; padding: 16px 16px 14px;
+  background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 12px;
+}
 .as-faz-no {
   display: block; margin-bottom: 8px;
-  font-size: 30px; line-height: 1; font-weight: var(--fw-yari); color: var(--kirmizi);
+  font-size: 28px; line-height: 1; font-weight: var(--fw-kalin); color: var(--kirmizi);
   font-variant-numeric: tabular-nums;
 }
-.as-faz h3 { margin-bottom: 4px; font-size: 17px; font-weight: var(--fw-yari); }
-.as-faz-ozet { margin-bottom: 10px; font-size: 14px; line-height: 1.45; color: var(--metin-tamam); }
+.as-faz h3 { margin-bottom: 4px; font-size: 17px; line-height: 1.25; }
+.as-faz-ozet {
+  margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--murekkep);
+  font-size: 14px; line-height: 1.45; color: var(--metin-tamam);
+}
 .as-faz ul {
   list-style: none; margin: 0; padding: 0; counter-reset: adim;
   display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; line-height: 1.4;
@@ -4395,50 +4410,23 @@ span.bolme-cip { cursor: default; }
 .as-faz ul li { display: flex; gap: 8px; counter-increment: adim; }
 .as-faz ul li::before {
   content: counter(adim); flex-shrink: 0; min-width: 1em;
-  color: var(--metin-tamam); font-variant-numeric: tabular-nums;
+  color: var(--kirmizi); font-weight: var(--fw-kalin); font-variant-numeric: tabular-nums;
 }
 
-/* Model Platformu sayfaları: kenarı mürekkep siyahı kutular */
-.as-sayfalar { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+/* Sayfalar: yan yana beş kutu (yer yetmezse alt satıra geçer); üstte
+   simge, altında ad ve tek cümle.
+   Kilitli sayfa soluk, adının altında Hazırlanıyor rozeti. */
+.as-sayfalar { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
 .as-sayfa {
-  display: flex; align-items: flex-start; gap: 14px; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px;
   background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 12px;
   color: var(--metin);
 }
-
+.as-sayfa-bas { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .as-sayfa-ikon { width: 44px; height: 44px; flex-shrink: 0; object-fit: contain; mix-blend-mode: multiply; }
-.as-sayfa-metin { font-size: 14.5px; line-height: 1.5; }
-.as-sayfa-metin b {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 3px;
-  font-size: 16.5px; font-weight: var(--fw-yari);
-}
-
-/* Güvenceler: başlığın üstünde kısa kırmızı çizgi */
-.as-guvenceler { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px 0; }
-.as-guvence { padding: 2px 20px; border-left: 1px solid var(--murekkep); }
-.as-guvence:first-child { border-left: 0; padding-left: 0; }
-.as-guvence h3 { margin-bottom: 6px; font-size: 16.5px; font-weight: var(--fw-yari); }
-.as-guvence h3::before {
-  content: ""; display: block; width: 26px; height: 2px; margin-bottom: 10px;
-  background: var(--kirmizi-cizgi);
-}
-.as-guvence p { font-size: 14.5px; line-height: 1.55; }
-
-/* Başlarken: numaralı üç adım */
-.as-adimlar {
-  list-style: none; margin: 0; padding: 0; counter-reset: basla;
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;
-}
-.as-adimlar li { position: relative; padding-left: 46px; counter-increment: basla; }
-.as-adimlar li::before {
-  content: counter(basla); position: absolute; left: 0; top: -2px;
-  width: 32px; height: 32px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--murekkep); color: var(--murekkep);
-  font-size: 15px; font-weight: var(--fw-yari);
-}
-.as-adimlar h3 { margin-bottom: 4px; font-size: 16.5px; font-weight: var(--fw-yari); }
-.as-adimlar p { font-size: 14.5px; line-height: 1.55; }
+.as-sayfa h3 { font-size: 16.5px; line-height: 1.25; }
+.as-sayfa .as-rozet { align-self: flex-start; }
+.as-sayfa p { font-size: 14.5px; line-height: 1.5; }
 
 /* Dar ekran: yazı üstte, görsel altında bloğun eninde */
 @media (max-width: 1100px) {
