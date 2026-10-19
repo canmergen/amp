@@ -147,10 +147,10 @@ mürekkep siyahı.
 **Ana Sayfa** (uygulama bununla açılır; alanın tamamını kaplar, kendi
 içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
 tanıtır; sayfalar sol bardan açılır.
-- Üst bölüm: üstte ortada tek satır başlık: "Veriyle İlgili
-  Yapacağınız" siyah, "Her Şey, Yapay Zekâ Desteğiyle Tek Platformda."
-  kırmızı (kalın, harf aralığı .01em; dar ekranda birkaç satıra
-  bölünebilir). Altında `anasayfa_aciklama` görseli ortada, bloğun iç
+- Üst bölüm: üstte ortada tek satır başlık: "Veriyle Yapacağınız Her
+  Şey," siyah, "Yapay Zekâ Desteğiyle Tek Platformda." kırmızı (kalın,
+  harf aralığı .01em; bloğun iç eninin yaklaşık %95'i, hiçbir ekranda
+  yana taşmaz; dar ekranda birkaç satıra bölünebilir). Altında `anasayfa_aciklama` görseli ortada, bloğun iç
   eninin %86'sında (boşluklar dar), kendi
   oranıyla (daraltma ya da kırpma yok; yalnız saydam kenarları
   kırpılır); yüklenemezse yalnız başlık kalır. Başlık boyu ve boşluklar

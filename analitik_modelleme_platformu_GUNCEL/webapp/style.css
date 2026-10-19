@@ -4256,9 +4256,9 @@ span.bolme-cip { cursor: default; }
 /* ==================== ANA SAYFA ====================
    Platformu tanıtan tek sütunlu sayfa (alanın tamamı); sayfa kendi
    içinde kayar. Sırayla:
-   - Üst bölüm: üstte ortada tek satır başlık ("Veriyle İlgili
-     Yapacağınız" siyah, "Her Şey, Yapay Zekâ Desteğiyle Tek
-     Platformda." kırmızı), altında
+   - Üst bölüm: üstte ortada tek satır başlık ("Veriyle Yapacağınız Her
+     Şey," siyah, "Yapay Zekâ Desteğiyle Tek Platformda." kırmızı;
+     bloğun iç eninin yaklaşık %95'i, taşmaz), altında
      anasayfa_aciklama görseli. Görsel
      yüklenemezse yalnız başlık kalır.
    - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan,
@@ -4301,7 +4301,7 @@ span.bolme-cip { cursor: default; }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
   margin: 0; white-space: nowrap;
-  font-size: 2.1cqw; line-height: 1.18; font-weight: var(--fw-kalin); letter-spacing: .01em;
+  font-size: 2.4cqw; line-height: 1.18; font-weight: var(--fw-kalin); letter-spacing: .01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
