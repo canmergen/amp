@@ -4222,9 +4222,11 @@ span.bolme-cip { cursor: default; }
      tanıtım ve düğmeler; sağda anasayfa_aciklama görseli. Görsel
      yüklenemezse metin tek sütun kalır.
    - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan.
-   - Model Akışı: beş faz ve adımları; fazlar mürekkep çizgisinin altında
-     ince dikey çizgilerle ayrılan sütunlar, faz numarası kırmızı.
-   - Model Platformu sayfaları, güvenceler, başlarken adımları.
+     Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır;
+     seçili kartın kenarı mürekkep. Model Platformu'nun açıklamasında beş
+     faz ve adımları (fazlar mürekkep çizgisinin altında ince dikey
+     çizgilerle ayrılan sütunlar, faz numarası kırmızı), sayfalar,
+     güvenceler ve başlarken adımları.
    Bölüm başlıklarının yanında sol bardaki gibi ince mürekkep çizgisi.
    Zemin kartlarla aynı renk (Beyaz modda beyaz); kartlar ince kenarla
    ayrılır. Simgeler sol barın çizimleri, "multiply" ile basılır (beyaz
@@ -4306,6 +4308,28 @@ span.bolme-cip { cursor: default; }
 .as-kart p { flex: 1; font-size: 15px; line-height: 1.55; }
 .as-kart-ikon { width: 56px; height: 56px; object-fit: contain; mix-blend-mode: multiply; }
 .as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { filter: grayscale(1); opacity: .5; }
+
+/* Kart açıklamaları: kart tıklanabilir; altında "Nasıl çalışır" ile ok.
+   Seçili kartın kenarı mürekkep, oku yukarı döner. Açıklama kartların
+   altında, ince mürekkep çizgisiyle başlayan düz bir alan. */
+.as-kart[data-ayrinti] { cursor: pointer; transition: border-color .12s; }
+.as-kart[data-ayrinti]:hover { border-color: var(--kenar-guclu); }
+.as-kart[data-ayrinti]:focus-visible { outline: 2px solid var(--murekkep); outline-offset: 2px; }
+.as-kart.secili, .as-kart.secili:hover { border-color: var(--murekkep); }
+.as-ayrinti-ac {
+  display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
+  font-size: 14px; font-weight: var(--fw-yari); color: var(--murekkep);
+  border-bottom: 1px solid currentColor;
+}
+.as-acilir-ok { width: 14px; height: 14px; transition: transform .15s; }
+.as-kart.secili .as-acilir-ok { transform: rotate(180deg); }
+.as-ayrinti {
+  margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--murekkep);
+  display: flex; flex-direction: column; gap: 30px;
+}
+.as-ayrinti[hidden] { display: none; }
+.as-ayrinti > p { max-width: 62em; font-size: 15.5px; line-height: 1.6; }
+.as-alt-baslik { margin-bottom: 12px; font-size: 19px; font-weight: var(--fw-yari); color: var(--murekkep); }
 
 /* Beş faz */
 .as-fazlar {

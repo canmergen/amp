@@ -452,6 +452,15 @@ function sayfaAc(ad) {
     /* ÖZET her açılışta tazelenir: doküman akışın son durumundan üretiliyor
        ve sekme kapalıyken değişmiş olabilir. */
     if (ad === "ozet") dokumanGetir();
+    /* Çalışma sayfası açılışta gizli (Ana Sayfa önde): sohbet gizliyken
+       kaydırılamadığı için ilk gösterilişinde kaldığı yere (en alta)
+       kaydırılır. */
+    if (ad === "calisma" && !sayfaAc.calismaGoruldu) {
+        sayfaAc.calismaGoruldu = true;
+        requestAnimationFrame(() => {
+            sohbetEl.scrollTop = Math.max(sohbetEl.scrollHeight - sohbetEl.clientHeight, 0);
+        });
+    }
     ustSekmeGuncelle();
 }
 sekmeler.forEach(s => { s.onclick = () => sayfaAc(s.dataset.sayfa); });
@@ -5555,7 +5564,10 @@ function analizGuncelle(veri) {
 
 /* Sekmeyi disaridan ac: ust seritteki tiklanabilir kartlar bunu cagirir.
    "aktif" sinifi tek yerden yonetilir. */
-function analizSekmeAc(tab) {
+/* otomatik: akış kendisi açtıysa (analizOtoGuncelle). Kullanıcı başka
+   bir sayfadaysa (ör. Ana Sayfa) oradan koparılmaz; analiz alanı açık
+   işaretlenir, Model Akışı'na dönünce açık görünür. */
+function analizSekmeAc(tab, otomatik) {
     const hedef = Array.from(analizSekme).find(x => x.dataset.tab === tab);
     if (!hedef) return;
     analizSekme.forEach(x => x.classList.toggle("aktif", x === hedef));
@@ -5565,7 +5577,7 @@ function analizSekmeAc(tab) {
     if (tab !== aktifAnalizSekme || !analizGovde.childElementCount) analizCiz(tab);
     /* Analiz alanı çalışma sayfasının içinde: başka sayfa açıksa önce
        oraya dönülür. Sonra alan açılır (animasyonsuz). */
-    if (acikSayfa() !== "calisma") sayfaAc("calisma");
+    if (acikSayfa() !== "calisma" && !otomatik) sayfaAc("calisma");
     analizAcikYaz(true);
 }
 
@@ -5628,7 +5640,7 @@ function analizOtoGuncelle(alan, adim, bekleyen) {
             ANALIZ_DAR.otoAdim = adim;
             if (ANALIZ_DAR.kapatilanAdim !== adim) {
                 if (tab === "degisken") DG.alt = "dagilim";    // SFA kararları
-                analizSekmeAc(tab);
+                analizSekmeAc(tab, true);
             }
         }
         analizAltGuncelle(alan.tip);
@@ -5695,6 +5707,34 @@ const ANA_SAYFA_HEDEF = {
         const git = ANA_SAYFA_HEDEF[d.dataset.git];
         if (git) d.onclick = (e) => { e.stopPropagation(); git(); };
     });
+    /* Kart açıklamaları: karta (ya da Enter / boşluk) basınca altında o
+       alanın açıklaması açılır, yeniden basınca kapanır; aynı anda tek
+       açıklama açık. Açılan açıklama görünür alana kaydırılır. */
+    const kartlar = Array.from(kok.querySelectorAll(".as-kart[data-ayrinti]"));
+    const ayrintilar = Array.from(kok.querySelectorAll(".as-ayrinti[data-alan]"));
+    function ayrintiAc(alan) {
+        const acik = kartlar.find(k => k.dataset.ayrinti === alan && k.classList.contains("secili"));
+        const hedef = acik ? null : alan;
+        kartlar.forEach(k => {
+            const sec = k.dataset.ayrinti === hedef;
+            k.classList.toggle("secili", sec);
+            k.setAttribute("aria-expanded", sec ? "true" : "false");
+        });
+        ayrintilar.forEach(a => { a.hidden = a.dataset.alan !== hedef; });
+        const gorunen = ayrintilar.find(a => !a.hidden);
+        if (gorunen) gorunen.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    kartlar.forEach(k => {
+        k.onclick = () => ayrintiAc(k.dataset.ayrinti);
+        k.onkeydown = (e) => {
+            if (e.target !== k || (e.key !== "Enter" && e.key !== " ")) return;
+            e.preventDefault();
+            ayrintiAc(k.dataset.ayrinti);
+        };
+    });
+    /* Uygulama Ana Sayfa ile açılır (index.html'de görünen sayfa); sol
+       barda da Ana Sayfa seçili görünsün. */
+    sayfaAc("anasayfa");
 })();
 
 /* MODEL PLATFORMU kümesi başta kapalı; başlığa basınca içindeki sayfalar
@@ -11363,7 +11403,7 @@ function teyitKartiEkle(alan, blok) {
     yeniOdak = onayBtn;
 
     /* Kart cizildi: kullanicinin bakacagi yer sag panel. */
-    if (alan.hedef) analizSekmeAc(alan.hedef);
+    if (alan.hedef) analizSekmeAc(alan.hedef, true);
 }
 
 /* Kartın durum rozetini ("✓ Girdiler Onaylandı") ALT BAŞLIK satırına taşır.

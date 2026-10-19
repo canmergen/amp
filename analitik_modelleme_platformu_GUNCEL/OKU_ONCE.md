@@ -130,22 +130,22 @@ ekranda 299 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür
 eni de aynı orana gelir; büyük ekranda büyümez. Küçültme CSS zoom ile
 yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 
-**Ana Sayfa** (tek sütun, en fazla 1180 px, kendi içinde kayar; zemin
-kartlarla aynı renk, Beyaz modda beyaz)
-- Üst bölüm: "Veriden / Daha Fazlasını Keşfedin." başlığı ve tek
+**Ana Sayfa** (uygulama bununla açılır; tek sütun, en fazla 1180 px,
+kendi içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz)
+- Üst bölüm: "Model Kurun, İzleyin, / Üzerine Konuşun." başlığı ve tek
   cümlelik giriş yazısı (soldan ve üstten boşluk aynı); sağda
   `anasayfa_aciklama` görseli bloğun üst, sağ ve alt kenarına yapışık
   (yüklenemezse yalnız yazı kalır).
 - Çalışma Alanları: Model Platformu (Akışı Aç), KATIB'le Sohbet ve
-  Gösterge Paneli (hazırlanıyor).
-- Model Akışı: beş faz, her birinin özeti ve adımları.
-- Model Platformu sayfaları: Model Akışı, Model Gösterge Paneli, Model
-  Değişkenleri, Model Özeti (basınca o sayfa açılır), Model Sohbeti
-  (hazırlanıyor).
-- Güvenceler: girdi veri değişmez, tam veri, sızıntı sınırı, kayıtlı
-  kararlar. Başlarken: üç adım.
+  Gösterge Paneli (hazırlanıyor). Bir karta basınca altında o alanın
+  açıklaması açılır, yeniden basınca kapanır (aynı anda tek açıklama).
+  Model Platformu'nun açıklaması: beş faz ve adımları, Model Platformu
+  sayfaları (basınca o sayfa açılır), güvenceler, başlarken adımları.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
+- Açılışta Model Akışı arka planda yüklenir; akış bir kart için analiz
+  alanını kendisi açarsa kullanıcı Ana Sayfa'dan koparılmaz, Model
+  Akışı'na geçince açık görünür.
 
 **Model Akışı**
 - Üstte **İş Akışı** barı:
