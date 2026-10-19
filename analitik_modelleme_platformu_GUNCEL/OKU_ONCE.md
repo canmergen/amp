@@ -87,8 +87,10 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   Galata, sağda tarihi yarımada ve vapur), logo ortadaki boşlukta. Altında
   ince siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içerik hazırlanıyor).
-- Ortasında **ÇALIŞMA ALANLARI** yazan çizgi; altında Model Platformu
-  kümesi ve kilitli alanlar, en altta ince siyah çizgi.
+- Çizgisiz, küçük ve soluk **Çalışma Alanları** etiketi; altında Model
+  Platformu kümesi ve kilitli alanlar, en altta ince siyah çizgi.
+- Sayfa adları normal yazımla (büyük harf değil), alttaki Görünüm, Arşiv
+  ve Yeni Çalışma ile aynı yazı: 15 px, yarı kalın; seçili satır kalın.
 - **Model Platformu** (başta kapalı; başlığa basınca içindekiler açılır,
   yeniden basınca kapanır):
   - Model Akışı

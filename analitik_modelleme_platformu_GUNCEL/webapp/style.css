@@ -3942,14 +3942,15 @@ span.bolme-cip { cursor: default; }
 }
 #sol-bar-ic #ust-sekmeler { flex: none; overflow: visible; min-height: 0; }
 #sol-bar-ic #sol-bar-alt { margin-top: auto; }
-/* Ölçü: yazılar 15 px (küme adı 15.5 px), çizgi ikonları 15-16 px.
+/* Ölçü: yazılar 15 px, alttaki Görünüm / Arşiv / Yeni Çalışma ile aynı
+   (normal yazım, yarı kalın, .01em aralık); çizgi ikonları 15-16 px.
    Ekran yüksekliğini satır boyu belirlediği için satırlar ve aralıklar
    sıkı; yazı ve ikonlar satırın içinde büyük tutulur. */
 #sol-bar .ust-kume-ad, #sol-bar .ust-sekme {
   height: 32px; padding: 0 10px; gap: 11px; border-radius: 0;
-  font-size: 15px; letter-spacing: .03em;
+  font-size: 15px; letter-spacing: .01em;
 }
-#sol-bar .ust-kume-ad { height: 34px; font-size: 15.5px; padding: 0 8px; }
+#sol-bar .ust-kume-ad { height: 34px; padding: 0 8px; }
 #sol-bar .ust-sekme svg.ikon { width: 15px; height: 15px; }
 #sol-bar .ust-kume-ad svg.ikon { width: 16px; height: 16px; }
 #sol-bar .ust-sekme svg.ok, #sol-bar .ust-sekme.kapali svg.kilit,
@@ -4032,21 +4033,17 @@ span.bolme-cip { cursor: default; }
 /* ---- Sol bar çizgileri ----
    Mürekkep siyahı ince düz çizgiler (dergi sayfasındaki bölüm çizgileri
    gibi): logonun altında ve sayfa satırlarının sonunda (Gösterge
-   Paneli'nin altında). Model Platformu'nun üstündeki çizginin ortasında
-   bölüm adı (ÇALIŞMA ALANLARI): küçük, aralıklı büyük harf; çizgi iki
-   yanından devam eder. */
+   Paneli'nin altında). Model Platformu'nun üstünde çizgisiz bölüm adı
+   (Çalışma Alanları): küçük, soluk, normal yazım. */
 #sol-bar .sol-cizgi {
   height: 1px; margin: 6px 12px; flex-shrink: 0;
   background: var(--murekkep);
 }
 #sol-bar #ust-sekmeler > .sol-cizgi { margin: 4px 2px 0; }
 #sol-bar .sol-bolum-ayrac {
-  display: flex; align-items: center; gap: 8px; margin: 4px 2px 0;
-  font-size: 12px; font-weight: var(--fw-yari); letter-spacing: .12em;
-  color: var(--murekkep); white-space: nowrap;
-}
-#sol-bar .sol-bolum-ayrac::before, #sol-bar .sol-bolum-ayrac::after {
-  content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep);
+  margin: 10px 0 2px; padding: 0 10px;
+  font-size: 12.5px; font-weight: var(--fw-yari); letter-spacing: .01em;
+  color: var(--metin-tamam); white-space: nowrap;
 }
 
 /* ---- Görünüm'ün üstündeki robot ----
@@ -4185,19 +4182,19 @@ span.bolme-cip { cursor: default; }
 
 /* ==================== BAŞLIK VE MENÜ AĞIRLIĞI ====================
    Başlıklar 600 (adım ve alt adım adları, iş akışı fazları, seçim
-   kartları, Gösterge Paneli ve Özet başlıkları, sol bardaki MODEL
-   PLATFORMU); sol bar satırları ve alttaki düğmeler de 600. Gövde 400,
+   kartları, Gösterge Paneli ve Özet başlıkları); sol bar satırları
+   (Model Platformu başlığı dahil) ve alttaki düğmeler de 600. Gövde 400,
    vurgu 700. #kabuk önekli: "#kabuk *" kuralının fontunu ezsin. */
 #kabuk .blok-ad, #kabuk .alt-ad, #kabuk .faz-ad,
 #kabuk .secenek-baslik, #kabuk .secim-baslik,
 #kabuk .iskele-baslik, #kabuk .kart-kat-bas,
 #kabuk .panel-baslik, #kabuk .dok-bolum-baslik,
 #kabuk .dok-baslik, #kabuk .dok-cagri-baslik, #kabuk .dok-eksikler-baslik, #kabuk .dok-tablo-baslik,
-#kabuk .bos-sayfa-ad, #kabuk #sol-bar .ust-kume-ad {
+#kabuk .bos-sayfa-ad {
   font-family: var(--font-baslik); font-weight: var(--fw-yari);
   letter-spacing: 0;
 }
-#kabuk #sol-bar .ust-sekme,
+#kabuk #sol-bar .ust-sekme, #kabuk #sol-bar .ust-kume-ad,
 #kabuk #sol-bar #tema-btn, #kabuk #sol-bar #calismalar-btn, #kabuk #sol-bar #sifirla-btn {
   font-weight: var(--fw-yari);
 }
