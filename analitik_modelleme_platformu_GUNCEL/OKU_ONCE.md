@@ -84,10 +84,11 @@ içindeki `VARSAYILAN_MODEL`.
   başlıkları; Model Gösterge Paneli, Model Değişkenleri ve Model
   Özeti'nde bölüm, kart ve tablo başlıkları; kilitli sayfaların adı;
   sol bar seçimleri (sayfa satırları, Model Platformu başlığı, Görünüm,
-  Arşiv, Yeni Çalışma; harf aralığı .03em). Tek ağırlığı var; 600 istenen başlıklarda tarayıcı kalınlaştırır.
+  Arşiv, Yeni Çalışma) ve "Çalışma Alanları" ayracı (harf aralığı
+  .03em). Tek ağırlığı var; 600 istenen başlıklarda tarayıcı kalınlaştırır.
   Başlığın içindeki rozet ve bilgi simgesi Newsreader kalır.
 - **Newsreader** (editoryal serif): geri kalan her şey (gövde metni,
-  sol bardaki "Çalışma Alanları" ayracı, üst bar, düğmeler, tablolar).
+  üst bar, düğmeler, tablolar).
   Gövde 400; yarı kalın 600; vurgu 700. Rakamlar tablolarda eşit genişlikte.
 
 İkisi de `style.css` içinde gömülü, dış font sunucusuna bağlanmaz, SIL
@@ -110,9 +111,11 @@ Open Font License. Başlık ailesi tek değişkende: `--font-baslik`.
   - Model Sohbeti (kapalı)
 - Sayfa satırları kartsız, düz liste; satırlarda ok yok (ok yalnız açılıp
   kapanan Model Platformu başlığında ve Arşiv'de). Model Platformu'nun
-  alt sayfaları içeride, solunda ince kılavuz çizgisiyle. Seçili satır
-  köşesiz: solunda düz siyah çizgi, hafif zemin, kalın yazı. Kırmızı ya
-  da pembe vurgu yok.
+  alt sayfaları içeride, ağaç çizgisiyle bağlı: başlığın altından inen
+  dikey siyah çizgi son alt sayfanın ortasında biter, her alt sayfaya
+  çizgi üstündeki küçük boş düğümden kısa yatay kol uzanır; seçili alt
+  sayfanın düğümü dolu. Seçili satır köşesiz: hafif zemin (üst düzey
+  satırlarda solunda düz siyah çizgi). Kırmızı ya da pembe vurgu yok.
 - KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
   soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
@@ -174,6 +177,9 @@ tanıtır; sayfalar sol bardan açılır.
   - sağda tamamlanan / toplam adım.
 - İş Akışı düğmesi beş fazı ve adımları solda bir bölmede açar. Bölme
   alanın en altına kadar uzanır ve aynı düğmeyle kapanana kadar açık kalır.
+  Fazın adımları (ve grup adımlarının alt adımları) sol bardaki Model
+  Platformu alt sayfaları gibi ağaç çizgisiyle bağlı: dikey siyah çizgi,
+  her adıma küçük düğümden kısa yatay kol, çizgi son adımda biter.
 - Listede görülmüş bir adıma basınca sohbet o adımın bloğuna kayar.
 - Adımlar sohbet alanında blok blok ilerler. Her blok kendi kararını ve
   "Geri Dön" düğmesini taşır.

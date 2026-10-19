@@ -745,7 +745,7 @@ body { background-color: #FFFFFF; }
 
 .faz-adimlar {
   list-style: none; margin: 2px 0 var(--b-2) var(--b-3); padding: 0 0 0 var(--b-5);
-  display: none; border-left: 1px solid var(--kenar);
+  display: none;
 }
 .faz.acik .faz-adimlar { display: block; }
 
@@ -808,9 +808,36 @@ body { background-color: #FFFFFF; }
 .faz-adimlar li.grup-satir:hover { background: none; }
 .faz-alt-adimlar {
   list-style: none; flex: 1 0 100%; margin: 3px 0 0 5px;
-  padding: 0 0 0 var(--b-3); border-left: 1px solid var(--kenar);
+  padding: 0 0 0 var(--b-3);
 }
 .faz-alt-adimlar li { padding: 3px 5px; }
+
+/* AĞAÇ ÇİZGİSİ (sol bardaki Model Platformu alt sayfalarıyla aynı): dikey
+   mürekkep çizgisi listenin solundan iner, son adımın işaretinin
+   hizasında biter; her adıma çizgi üstündeki küçük boş düğümden kısa
+   yatay kol uzanır. Kol ve düğüm adımın ilk satırının (işaretin)
+   hizasında: uzun adı alt satıra geçse de kayma olmaz. --agac-sol:
+   listenin sol iç boşluğu (çizgi oradan geçer), --agac-y: işaretin
+   ortasının satır tepesinden uzaklığı. */
+.faz-adimlar > li, .faz-alt-adimlar > li { position: relative; }
+.faz-adimlar > li { --agac-sol: var(--b-5); --agac-y: 12px; }
+.faz-alt-adimlar > li { --agac-sol: var(--b-3); --agac-y: 11px; }
+.faz-adimlar > li::before, .faz-alt-adimlar > li::before {
+  content: ""; position: absolute; top: 0; bottom: 0; pointer-events: none;
+  left: calc(-1 * var(--agac-sol)); width: calc(var(--agac-sol) + 3px);
+  background:
+    linear-gradient(var(--murekkep), var(--murekkep)) 0 0 / 1px 100% no-repeat,
+    linear-gradient(var(--murekkep), var(--murekkep)) 0 var(--agac-y) / 100% 1px no-repeat;
+}
+.faz-adimlar > li:last-child::before, .faz-alt-adimlar > li:last-child::before {
+  background-size: 1px calc(var(--agac-y) + 1px), 100% 1px;
+}
+.faz-adimlar > li::after, .faz-alt-adimlar > li::after {
+  content: ""; position: absolute; pointer-events: none;
+  left: calc(-1 * var(--agac-sol) - 3px); top: calc(var(--agac-y) - 3px);
+  width: 7px; height: 7px; box-sizing: border-box;
+  border: 1px solid var(--murekkep); border-radius: 50%; background: var(--panel-zemin);
+}
 
 /* ALT ADIMLI SATIR (01.2.4 → 01.2.4.1 ...): sağdaki ok alt adımları
    açar/kapatır; açıkken aşağı döner. Alt adımlar bir kademe daha
@@ -4069,10 +4096,10 @@ span.bolme-cip { cursor: default; }
    Başta kapalı: yalnız başlık görünür, sağında › oku. Başlığa basınca
    (app.js: kumeAcKapa) .acik gelir, alt sayfalar görünür, ok aşağı
    döner. Alt sayfalar başlığın ikonunun hizasından içeride (girinti) ve
-   solunda ince kılavuz çizgisi var; böylece MODEL PLATFORMU'na bağlı
-   oldukları okunur. Seçili alt sayfada kılavuz çizgisi 3 px mürekkep
-   çizgisine dönüşür (aynı hizada). Alt sayfa satırları 38 px, çizimleri
-   34 px. */
+   ağaç çizgisiyle bağlı: başlığın altından inen dikey mürekkep çizgisi
+   son alt sayfanın ortasında biter; her alt sayfaya çizgi üstündeki
+   küçük boş bir düğümden kısa yatay bir kol uzanır. Seçili alt sayfanın
+   düğümü dolu. Alt sayfa satırları 38 px, çizimleri 34 px. */
 #sol-bar .ust-kume-ad { width: 100%; cursor: pointer; text-align: left; }
 #sol-bar .ust-kume-ad:hover { background: color-mix(in srgb, var(--murekkep) 5%, transparent); }
 #sol-bar .ust-kume-ad:focus-visible { outline: 2px solid var(--murekkep); outline-offset: -2px; }
@@ -4082,15 +4109,27 @@ span.bolme-cip { cursor: default; }
 }
 #sol-bar .ust-kume.acilir:not(.acik) > .ust-sekme { display: none; }
 #sol-bar .ust-kume.acilir.acik > .ust-kume-ad svg.ok { transform: rotate(90deg); }
+#sol-bar { --agac-zemin: var(--panel-zemin); }
+#kabuk.sepya #sol-bar, #kabuk.gri #sol-bar { --agac-zemin: var(--yuzey-alt); }
 #sol-bar .ust-kume.acilir > .ust-sekme {
-  height: 38px; margin-left: 28px; padding-left: 12px;
-  border: 0; border-left: 1px solid var(--kenar-guclu);
+  position: relative; height: 38px; margin-left: 28px; padding-left: 22px; border: 0;
 }
 #sol-bar .ust-kume.acilir > .ust-sekme img.ikon-gorsel { width: 34px; height: 34px; }
-#sol-bar .ust-kume.acilir > .ust-sekme.aktif,
-#sol-bar .ust-kume.acilir > .ust-sekme.aktif:hover {
-  border-left: 3px solid var(--murekkep); padding-left: 10px; box-shadow: none;
+#sol-bar .ust-kume.acilir > .ust-sekme::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 16px; pointer-events: none;
+  background:
+    linear-gradient(var(--murekkep), var(--murekkep)) 0 0 / 1px 100% no-repeat,
+    linear-gradient(var(--murekkep), var(--murekkep)) 0 50% / 16px 1px no-repeat;
 }
+#sol-bar .ust-kume.acilir > .ust-sekme:last-child::before { background-size: 1px 50%, 16px 1px; }
+#sol-bar .ust-kume.acilir > .ust-sekme::after {
+  content: ""; position: absolute; left: -3px; top: 50%; margin-top: -3.5px;
+  width: 7px; height: 7px; box-sizing: border-box; pointer-events: none;
+  border: 1px solid var(--murekkep); border-radius: 50%; background: var(--agac-zemin);
+}
+#sol-bar .ust-kume.acilir > .ust-sekme.aktif::after { background: var(--murekkep); }
+#sol-bar .ust-kume.acilir > .ust-sekme.aktif,
+#sol-bar .ust-kume.acilir > .ust-sekme.aktif:hover { box-shadow: none; }
 
 /* ==================== İŞ AKIŞI BARI ====================
    Sohbet alanının üstünde ince bar (Jupyter defterindeki menü çubuğu
@@ -4203,10 +4242,10 @@ span.bolme-cip { cursor: default; }
   font-weight: var(--fw-yari);
 }
 /* Sol bar seçimleri (sayfa satırları, Model Platformu başlığı, Görünüm,
-   Arşiv, Yeni Çalışma) de başlık yazı tipinde; harfler birbirine
-   değmesin diye aralık .03em. "Çalışma Alanları" ayracı Newsreader. */
+   Arşiv, Yeni Çalışma) ve "Çalışma Alanları" ayracı da başlık yazı
+   tipinde; harfler birbirine değmesin diye aralık .03em. */
 #kabuk #sol-bar .ust-sekme, #kabuk #sol-bar .ust-kume-ad, #kabuk #sol-bar .ust-kume-ad span,
-#kabuk #sol-bar #tema-btn, #kabuk #sol-bar .sifirla-etiket {
+#kabuk #sol-bar #tema-btn, #kabuk #sol-bar .sifirla-etiket, #kabuk #sol-bar .sol-bolum-ayrac span {
   font-family: var(--font-baslik); letter-spacing: .03em;
 }
 
@@ -4272,11 +4311,11 @@ span.bolme-cip { cursor: default; }
 .as-dugme {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 42px; padding: 0 18px; border-radius: 8px;
-  border: 1px solid var(--kenar-guclu); background: var(--yuzey); color: var(--metin);
+  border: 1px solid var(--murekkep); background: var(--yuzey); color: var(--metin);
   font: inherit; font-size: 15px; font-weight: var(--fw-yari); cursor: pointer;
-  transition: border-color .12s, filter .12s;
+  transition: background .12s, filter .12s;
 }
-.as-dugme:hover:not(:disabled) { border-color: var(--murekkep); }
+.as-dugme:hover:not(:disabled) { background: color-mix(in srgb, var(--murekkep) 6%, var(--yuzey)); }
 .as-dugme.birincil { background: var(--kirmizi-dolgu); border-color: var(--kirmizi-dolgu); color: #fff; }
 .as-dugme.birincil:hover { filter: brightness(.93); border-color: var(--kirmizi-dolgu); }
 .as-dugme:disabled { cursor: not-allowed; background: transparent; color: var(--kilitli-yazi); }
@@ -4355,7 +4394,7 @@ span.bolme-cip { cursor: default; }
   display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   border-top: 1px solid var(--murekkep);
 }
-.as-faz { padding: 16px 18px 4px; border-left: 1px solid var(--kenar); }
+.as-faz { padding: 16px 18px 4px; border-left: 1px solid var(--murekkep); }
 .as-faz:first-child { border-left: 0; padding-left: 0; }
 .as-faz-no {
   display: block; margin-bottom: 8px;
@@ -4391,7 +4430,7 @@ span.bolme-cip { cursor: default; }
 
 /* Güvenceler: başlığın üstünde kısa kırmızı çizgi */
 .as-guvenceler { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px 0; }
-.as-guvence { padding: 2px 20px; border-left: 1px solid var(--kenar); }
+.as-guvence { padding: 2px 20px; border-left: 1px solid var(--murekkep); }
 .as-guvence:first-child { border-left: 0; padding-left: 0; }
 .as-guvence h3 { margin-bottom: 6px; font-size: 16.5px; font-weight: var(--fw-yari); }
 .as-guvence h3::before {
