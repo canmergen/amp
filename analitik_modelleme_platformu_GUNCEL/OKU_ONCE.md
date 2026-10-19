@@ -149,8 +149,8 @@ mürekkep siyahı.
 içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
 tanıtır; sayfalar sol bardan açılır.
 - Üst bölüm: üstte `anasayfa_aciklama` görseli ortada, bloğun iç
-  eninin %94'ünde, kendi oranıyla (daraltma ya da kırpma yok; yalnız
-  saydam kenarları kırpılır). Altında ortada iki satır başlık:
+  eninin %94'ünde; boyu kendi oranındaki boyun %95'i (dikeyde hafif
+  basık; kırpma yok, yalnız saydam kenarları kırpılır). Altında ortada iki satır başlık:
   "Veriyle Yapacağınız Her Şey," siyah, "Yapay Zekâ Desteğiyle Tek
   Platformda." kırmızı (kalın, harf aralığı .01em). Görsel
   yüklenemezse yalnız başlık kalır. Başlık boyu ve boşluklar blok

@@ -4281,9 +4281,10 @@ span.bolme-cip { cursor: default; }
 .ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
 
 /* Üst bölüm: üstte ortada görsel, altında ortada iki satır başlık
-   (siyah satır, kırmızı satır). Görsel bloğun iç eninin %94'ünde, kendi
-   oranıyla (daraltma ya da kırpma yok; saydam kenarları app.js'te
-   kırpılır); boşluklar dar, blok dikeyde gereğinden uzun olmasın. Başlık boyu ve boşluklar cqw ile bloğun
+   (siyah satır, kırmızı satır). Görsel bloğun iç eninin %94'ünde; boyu
+   kendi oranındaki boyun %95'i (dikeyde hafif basık; kırpma yok,
+   saydam kenarları app.js'te kırpılır; oranı app.js --gorsel-oran
+   olarak verir). Boşluklar dar, blok dikeyde gereğinden uzun olmasın. Başlık boyu ve boşluklar cqw ile bloğun
    enine bağlı: bu yüzden yakınlaştırınca ya da uzaklaştırınca blok tek
    parça büyür ve küçülür. Tanıtım yazısı burada değil, Çalışma Alanları
    kartlarında. */
@@ -4294,7 +4295,10 @@ span.bolme-cip { cursor: default; }
   box-shadow: var(--golge-1);
 }
 .as-hero-metin { margin-top: 1.5cqw; text-align: center; }
-.as-hero-gorsel img { display: block; width: 94%; height: auto; margin: 0 auto; }
+.as-hero-gorsel img {
+  display: block; width: 94%; height: auto; margin: 0 auto;
+  aspect-ratio: calc(var(--gorsel-oran, 3.667) / .95);
+}
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
   margin: 0; white-space: nowrap;

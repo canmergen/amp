@@ -5670,6 +5670,10 @@ document.addEventListener("keydown", e => {
     if (hero) {
         const yok = () => hero.parentElement.classList.add("yok");
         hero.onerror = yok;
+        hero.onload = () => {
+            if (hero.naturalHeight) hero.style.setProperty("--gorsel-oran",
+                hero.naturalWidth / hero.naturalHeight);
+        };
         saydamKirp(getWebAppBackendUrl("gorsel/anasayfa_aciklama"),
                    src => { hero.src = src; }, yok);
     }
