@@ -4374,11 +4374,11 @@ span.bolme-cip { cursor: default; }
   color: var(--metin-tamam); font-variant-numeric: tabular-nums;
 }
 
-/* Model Platformu sayfaları */
+/* Model Platformu sayfaları: kenarı mürekkep siyahı kutular */
 .as-sayfalar { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .as-sayfa {
   display: flex; align-items: flex-start; gap: 14px; padding: 16px;
-  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 12px;
+  background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 12px;
   color: var(--metin);
 }
 

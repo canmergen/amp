@@ -159,7 +159,7 @@ tanıtır; sayfalar sol bardan açılır.
   seçilir (kırmızı kalın kenar, hafif pembe zemin, kırmızı dolu düğme) ve
   kartların altında o alanın açıklaması açılır; yeniden basınca ikisi de
   kalkar (aynı anda tek kart). Model Platformu'nun
-  açıklaması: beş faz ve adımları, Model Platformu sayfaları, güvenceler,
+  açıklaması: beş faz ve adımları, Model Platformu sayfaları (kenarı siyah kutular), güvenceler,
   başlarken adımları.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
