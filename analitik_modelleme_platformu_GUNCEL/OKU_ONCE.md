@@ -156,14 +156,14 @@ tanıtır; sayfalar sol bardan açılır.
   enine bağlı: yakınlaştırınca blok tek parça büyür, hiçbir ekranda
   yana taşmaz. Tanıtım yazısı burada yok; Çalışma Alanları kartlarına
   dağıtılmıştır.
-- Çalışma Alanları (başlık ortada, iki yanında ince çizgi; üç ayrı iş,
+- Çalışma Alanları (başlık ortada, iki yanında 2 px siyah çizgi; üç ayrı iş,
   her kartta kendi tanıtımı): Model Platformu (model kurma, izleme ve
   üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
   kartın içinin %34'ü), sağında üstte başlık, altında açıklama. Üst
-  bölümün ve kartların kenarı, açıklamadaki faz ve güvence sütunlarını
-  ayıran çizgiler mürekkep siyahı. Kartlarda düğme yok: karta basınca
+  bölümün, kartların ve sayfa kutularının kenarı 2 px mürekkep siyahı;
+  açıklamadaki faz ve güvence sütunlarını ayıran çizgiler de siyah. Kartlarda düğme yok: karta basınca
   (klavyede Enter / Boşluk) kart seçilir (kırmızı kalın kenar, hafif
   pembe zemin) ve kartların altında o alanın açıklaması açılır; yeniden
   basınca ikisi de kalkar (aynı anda tek kart). Model Platformu'nun

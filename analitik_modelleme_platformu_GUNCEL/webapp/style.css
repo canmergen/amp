@@ -4267,10 +4267,9 @@ span.bolme-cip { cursor: default; }
      faz ve adımları (fazlar mürekkep çizgisinin altında ince dikey
      çizgilerle ayrılan sütunlar, faz numarası kırmızı), sayfalar,
      güvenceler ve başlarken adımları.
-   Bölüm başlığı ortada, iki yanında sol bardaki gibi ince mürekkep
-   çizgisi.
-   Zemin kartlarla aynı renk (Beyaz modda beyaz); kartlar ince kenarla
-   ayrılır. Simgeler sol barın çizimleri, "multiply" ile basılır (beyaz
+   Bölüm başlığı ortada, iki yanında 2 px mürekkep çizgisi.
+   Zemin kartlarla aynı renk (Beyaz modda beyaz); üst bölüm, kartlar ve
+   sayfa kutuları 2 px mürekkep kenarlı. Simgeler sol barın çizimleri, "multiply" ile basılır (beyaz
    kısımları zeminin rengini alır). */
 #sayfa-anasayfa { overflow-y: auto; background: var(--yuzey); }
 .ana-sayfa {
@@ -4291,7 +4290,7 @@ span.bolme-cip { cursor: default; }
 .as-hero {
   overflow: hidden; container-type: inline-size;
   padding: 2cqw 3cqw 2cqw;
-  background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 14px;
+  background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 14px;
   box-shadow: var(--golge-1);
 }
 .as-hero-metin { margin-top: 1.5cqw; text-align: center; }
@@ -4304,12 +4303,12 @@ span.bolme-cip { cursor: default; }
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
 
-/* Bölüm başlığı: yanında sol bardaki gibi ince mürekkep çizgisi */
+/* Bölüm başlığı: ortada, iki yanında 2 px mürekkep çizgisi */
 .as-bolum-baslik {
   display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
   font-size: 24px; font-weight: var(--fw-yari); color: var(--murekkep);
 }
-.as-bolum-baslik::before, .as-bolum-baslik::after { content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep); }
+.as-bolum-baslik::before, .as-bolum-baslik::after { content: ""; flex: 1 1 0; height: 2px; background: var(--murekkep); }
 .as-bolum-not { margin: -4px 0 18px; font-size: 15.5px; line-height: 1.6; max-width: 62em; }
 
 .as-rozet {
@@ -4329,7 +4328,7 @@ span.bolme-cip { cursor: default; }
   container-type: inline-size;
   display: grid; grid-template-columns: 34% minmax(0, 1fr); grid-template-rows: auto 1fr;
   column-gap: 18px; row-gap: 8px; padding: 20px 20px 18px;
-  background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 12px;
+  background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 12px;
   box-shadow: var(--golge-1);
 }
 .as-kart-ikon {
@@ -4393,7 +4392,7 @@ span.bolme-cip { cursor: default; }
 .as-sayfalar { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .as-sayfa {
   display: flex; align-items: flex-start; gap: 14px; padding: 16px;
-  background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 12px;
+  background: var(--yuzey); border: 2px solid var(--murekkep); border-radius: 12px;
   color: var(--metin);
 }
 
