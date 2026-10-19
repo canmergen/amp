@@ -111,7 +111,8 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
   soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
-- **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
+- **Görünüm:** üç renk modu: Beyaz (varsayılan; sayfa zemini, sol bar ve
+  yan paneller saf beyaz, kartlar ince kenarla ayrılır), Sepya (sıcak kâğıt
   tonu), Gri (açık gri zemin, koyu yazı). Sepya ve Gri'de yalnız zemin
   tonları değişir; renkler ve görseller Beyaz moddaki gibi kalır. Anahtar üç bölmeli segmentli
   düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); ince

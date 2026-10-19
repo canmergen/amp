@@ -101,7 +101,11 @@
   /* Adim blogu cercevesinin kalinligi. Renk dogrudan var(--kirmizi). */
   --blok-cerceve: 3px;
 
-  --zemin:        #F4F5F7;
+  /* Beyaz modda sayfa zemini, sol bar ve yan paneller saf beyaz; kartlar
+     ince kenar ve hafif gölgeyle ayrılır. --panel-zemin: sol bar, İş Akışı
+     bölmesi ve analiz paneli (Sepya ve Gri kendi panel tonunu verir). */
+  --zemin:        #FFFFFF;
+  --panel-zemin:  #FFFFFF;
   --yuzey:        #FFFFFF;
   --yuzey-alt:    #F9FAFB;
   --kenar:        #DDE1E6;          /* kart, balon, form kenarlari */
@@ -225,6 +229,7 @@
   --zemin:        #F1E9D6;
   --yuzey:        #FBF7EE;
   --yuzey-alt:    #F6F0E2;
+  --panel-zemin:  #F6F0E2;
   --kenar:        #E2D6BC;
   --kenar-guclu:  #C9B993;
   --kenar-acik:   #EDE4D0;
@@ -276,6 +281,7 @@
   --zemin:        #D5D8DD;
   --yuzey:        #E8EAED;
   --yuzey-alt:    #DDE0E4;
+  --panel-zemin:  #DDE0E4;
   --kenar:        #C3C7CE;
   --kenar-guclu:  #A6ACB5;
   --kenar-acik:   #D0D3D8;
@@ -330,7 +336,7 @@ html { zoom: var(--olcek); }
    ekrandaki kenarları; ekrana göre yerleşen (position: fixed) paneller de
    bunları kullanır. */
 :root { --kabuk-ust: 0px; --kabuk-alt: 0px; --kabuk-sol: 0px; --kabuk-sag: 0px; }
-body { background-color: #FEFEFE; }
+body { background-color: #FFFFFF; }
 
 /* Uygulama kabuğu. Iki sutun: solda sol bar, saginda acik sayfa.
    En dışta bölmeleri ayıran ayraç çizgisiyle çevrelenir. solda sol bar, saginda acik sayfa.
@@ -652,7 +658,7 @@ body { background-color: #FEFEFE; }
 #panel { --fs-govde: 12.5px; --fs-baslik: 14px; }
 #panel {
   width: var(--panel-en); flex-shrink: 0;
-  background: var(--yuzey-alt);
+  background: var(--panel-zemin);
   border-right: var(--ayrac-kalinlik) solid var(--ayrac);
   padding: var(--b-5) var(--b-4) 22px; overflow-y: auto;
 }
@@ -2011,7 +2017,7 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
   /* Kabuğun içinde, sol barın sağı (kabuk kenarı 1 px) */
   top: calc(var(--kabuk-ust) + 1px); bottom: calc(var(--kabuk-alt) + 1px);
   left: calc(var(--kabuk-sol) + 1px + var(--sol-bar-en)); right: calc(var(--kabuk-sag) + 1px);
-  background: var(--yuzey-alt);
+  background: var(--panel-zemin);
   /* SATIR: solda (yalnız Değişkenler'de) seçim paneli, sağda içerik. */
   display: flex; flex-direction: row; overflow: hidden;
 }
@@ -3911,7 +3917,7 @@ span.bolme-cip { cursor: default; }
    satırlar kutusuz, soluk. Altta Görünüm (üç mod anahtarı), oklu Arşiv
    ve Yeni Çalışma kartları. Yukarıdaki kuralların ÜSTÜNE yazar. */
 :root { --sol-bar-en: 340px; }
-#sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
+#sol-bar { --sol-ok: #9AA0A6; background: var(--panel-zemin); }
 #kabuk.sepya #sol-bar { --sol-ok: #8C7D68; background: var(--yuzey-alt); }
 #kabuk.gri #sol-bar { --sol-ok: #6B7380; background: var(--yuzey-alt); }
 
@@ -4169,7 +4175,7 @@ span.bolme-cip { cursor: default; }
   width: 276px; min-height: 0; max-height: none;
   overflow-y: auto; padding: 12px 0 16px;
   transform: none; transition: none; box-shadow: none;
-  background: var(--yuzey-alt);
+  background: var(--panel-zemin);
   border: 0; border-right: var(--ayrac-kalinlik) solid var(--ayrac);
   border-radius: 0;
 }
