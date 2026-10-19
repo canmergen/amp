@@ -4257,12 +4257,12 @@ span.bolme-cip { cursor: default; }
    Platformu tanıtan tek sütunlu sayfa (alanın tamamı); sayfa kendi
    içinde kayar. Sırayla:
    - Üst bölüm: üstte ortada tek satır başlık ("Veriyle İlgili
-     Yapacağınız" siyah, "Her Şey, Tek Platformda." kırmızı), altında
+     Yapacağınız" siyah, "Her Şey, Yapay Zekâ Desteğiyle Tek
+     Platformda." kırmızı), altında
      anasayfa_aciklama görseli. Görsel
      yüklenemezse yalnız başlık kalır.
-   - Çalışma Alanları: başlığın altında tek satır ("Hepsi yapay zekâ
-     desteğiyle, tek çalışma alanında."); Model Platformu (açık) ve iki
-     hazırlanan alan, her biri kendi tanıtımıyla.
+   - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan,
+     her biri kendi tanıtımıyla.
      Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır,
      yeniden basınca kapanır; seçili kart kırmızıyla vurgulanır. Model Platformu'nun açıklamasında beş
      faz ve adımları (fazlar mürekkep çizgisinin altında ince dikey
@@ -4301,7 +4301,7 @@ span.bolme-cip { cursor: default; }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
   margin: 0; white-space: nowrap;
-  font-size: 2.8cqw; line-height: 1.18; font-weight: var(--fw-kalin); letter-spacing: .01em;
+  font-size: 2.1cqw; line-height: 1.18; font-weight: var(--fw-kalin); letter-spacing: .01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
@@ -4313,8 +4313,6 @@ span.bolme-cip { cursor: default; }
 }
 .as-bolum-baslik::before, .as-bolum-baslik::after { content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep); }
 .as-bolum-not { margin: -4px 0 18px; font-size: 15.5px; line-height: 1.6; max-width: 62em; }
-/* Çalışma Alanları başlığının altındaki tek satır (ortada) */
-.as-bolum-alt { margin: -6px 0 18px; text-align: center; font-size: 16px; color: var(--metin); }
 
 .as-rozet {
   display: inline-block; padding: 1px 9px; border-radius: 999px;
