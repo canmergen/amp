@@ -113,9 +113,10 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
   tonu), Gri (koyu gri zemin, beyaz yazı; siyah olan her şey beyaza
-  döner; logo ve İstanbul çizimi, ikonlar ve robot renkleri değişmeden
-  kâğıt rengi plakaların üstünde durur; kenar ve çerçeveler canlı
-  kırmızı). Anahtar üç bölmeli segmentli
+  döner; logo, ikonlar, robot ve Ana Sayfa görselleri Beyaz moddaki
+  gibi kalır, yalnız dış çizgilerine çok ince beyaz kontur alır; logonun
+  arkasındaki İstanbul çiziminin siyah çizgileri beyaza döner; kenar ve
+  çerçeveler canlı kırmızı). Anahtar üç bölmeli segmentli
   düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); ince
   siyah çerçeve ve bölme çizgileri; simgeye basınca o mod seçilir; seçili
   bölme mürekkep siyahıyla dolu, simgesi ters baskı. Düğmenin
@@ -131,7 +132,8 @@ ekranda 299 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür
 eni de aynı orana gelir; büyük ekranda büyümez. Küçültme CSS zoom ile
 yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 
-**Ana Sayfa** (tek sütun, en fazla 1180 px, kendi içinde kayar)
+**Ana Sayfa** (tek sütun, en fazla 1180 px, kendi içinde kayar; zemin
+kartlarla aynı renk, Beyaz modda beyaz)
 - Üst bölüm: "Veriden / Daha Fazlasını Keşfedin." başlığı, platformun
   kısa tanıtımı, **Model Akışını Aç** ve **Arşivden Devam Et** düğmeleri;
   sağda `anasayfa_aciklama` görseli (yüklenemezse metin tek sütun kalır).

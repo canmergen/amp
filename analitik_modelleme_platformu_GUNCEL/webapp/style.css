@@ -265,8 +265,10 @@
    çizgileri, Görünüm anahtarı) beyaza döner: --murekkep açık. Kırmızı
    yazı açık ton (#FFB0B0, kartta 4,8:1); kenar ve çerçeveler canlı
    kırmızı (#FF7A70, kartta 3,3:1); beyaz yazının altındaki kırmızı
-   dolgu koyu kalır (#C4161C, 6:1). Sol bar çizimleri kâğıt rengi
-   plakada (--kagit). Yeşil, kehribar, mavi yazılar da koyu
+   dolgu koyu kalır (#C4161C, 6:1). Çizimler (logo, ikonlar, robot,
+   Ana Sayfa görselleri) Beyaz moddaki gibi kalır, yalnız dış
+   çizgilerine çok ince beyaz kontur alır; logonun arkasındaki İstanbul
+   çiziminin siyah çizgileri beyaza döner. Yeşil, kehribar, mavi yazılar da koyu
    zeminde okunacak kadar açık; açık zeminli rozet ve vurgular koyu,
    renkli tonlara döner. color-scheme: dark ile tarayıcının açılır
    listeleri ve kaydırma çubukları da koyu çizilir. */
@@ -278,7 +280,6 @@
   --kirmizi-koyu: #FF9A9A;
   --kirmizi-dolgu: #C4161C;
   --kirmizi-cizgi: #FF7A70;
-  --kagit:        #EEEBE4;     /* sol bar çizimlerinin plakası */
   --kirmizi-acik: #5A4448;
   --kirmizi-halka: rgba(255,140,140,.28);
 
@@ -4023,22 +4024,31 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-kume-ad img.ikon-gorsel { width: 42px; height: 42px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
 #sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 32px; height: 32px; }
-/* Gri modda zemin koyu: çizimler beyaz kâğıt için çizildiği için
-   (ikonlar, KATIB logosu ve İstanbul çizimi, robot) renkleri hiç
-   değişmeden kâğıt rengi (--kagit) yuvarlak köşeli plakaların üstünde
-   durur; koyu zeminde "kâğıda basılmış çizim" gibi okunur. İkonların
-   beyaz zemini app.js'te saydam yapıldığı için plakanın rengi görünür. */
-#kabuk.gri #sol-bar img.ikon-gorsel {
-  mix-blend-mode: normal; background: var(--kagit);
-  border-radius: 6px; padding: 3px;
+/* Gri modda çizimler Beyaz moddaki gibi kalır: renkleri değişmez,
+   plaka yok. Koyu zeminde siyah dış hatları kaybolmasın diye çevrelerine
+   çok ince (.75 px) beyaz kontur çekilir: dört yöne .75 px beyaz gölge,
+   saydam zemin sayesinde çizimin kendi şeklini izler. "multiply" kapalı
+   (koyu zeminde çizimi karartırdı). Logonun arkasındaki İstanbul çizimi
+   ayrı: siyah çizgileri beyaza döner (negatif; hue-rotate kırmızıyı
+   kırmızı tutar, "lighten" koyulaşan iç dolguları zemine bırakır). */
+#kabuk.gri #sol-bar img.ikon-gorsel,
+#kabuk.gri #katib-logo,
+#kabuk.gri #robot-alt,
+#kabuk.gri .as-kart-ikon,
+#kabuk.gri .as-sayfa-ikon,
+#kabuk.gri .as-hero-gorsel img {
+  mix-blend-mode: normal;
+  filter: drop-shadow(.75px 0 0 #fff) drop-shadow(-.75px 0 0 #fff)
+          drop-shadow(0 .75px 0 #fff) drop-shadow(0 -.75px 0 #fff);
 }
-#kabuk.gri #sol-bar .ust-sekme.kapali img.ikon-gorsel { opacity: .6; }
-#kabuk.gri #sol-bar-logo {
-  margin: 8px 10px 6px; border-radius: 10px; overflow: hidden;
-  background-color: var(--kagit);
+#kabuk.gri #sol-bar .ust-sekme.kapali img.ikon-gorsel,
+#kabuk.gri .as-kart.kapali .as-kart-ikon,
+#kabuk.gri .as-sayfa.kapali .as-sayfa-ikon {
+  filter: grayscale(1) drop-shadow(.75px 0 0 #fff) drop-shadow(-.75px 0 0 #fff)
+          drop-shadow(0 .75px 0 #fff) drop-shadow(0 -.75px 0 #fff);
 }
-#kabuk.gri #robot-alt {
-  padding: 4px 6px; border-radius: 10px; background: var(--kagit);
+#kabuk.gri #sol-bar-logo::before, #kabuk.gri #sol-bar-logo::after {
+  filter: invert(1) hue-rotate(180deg); mix-blend-mode: lighten;
 }
 /* ---- Görünüm anahtarı ----
    Dergi dilinde (New Yorker): renk yerine mürekkep. İnce siyah çerçeveli
@@ -4253,9 +4263,10 @@ span.bolme-cip { cursor: default; }
      ince dikey çizgilerle ayrılan sütunlar, faz numarası kırmızı.
    - Model Platformu sayfaları, güvenceler, başlarken adımları.
    Bölüm başlıklarının yanında sol bardaki gibi ince mürekkep çizgisi.
-   Simgeler sol barın çizimleri: beyaz ve sepyada "multiply" ile basılır,
-   gri modda sol bar gibi kâğıt rengi plakada durur. */
-#sayfa-anasayfa { overflow-y: auto; background: var(--zemin); }
+   Zemin kartlarla aynı renk (Beyaz modda beyaz); kartlar ince kenarla
+   ayrılır. Simgeler sol barın çizimleri: beyaz ve sepyada "multiply" ile
+   basılır; gri modda sol bardaki gibi ince beyaz konturlu. */
+#sayfa-anasayfa { overflow-y: auto; background: var(--yuzey); }
 .ana-sayfa {
   max-width: 1180px; margin: 0 auto; padding: 28px 32px 56px;
   display: flex; flex-direction: column; gap: 38px;
@@ -4397,12 +4408,6 @@ button.as-sayfa:hover { border-color: var(--murekkep); }
 }
 .as-adimlar h3 { margin-bottom: 4px; font-size: 16.5px; font-weight: var(--fw-yari); }
 .as-adimlar p { font-size: 14.5px; line-height: 1.55; }
-
-/* Gri mod: çizimler sol bardaki gibi kâğıt rengi plakada */
-#kabuk.gri .as-kart-ikon, #kabuk.gri .as-sayfa-ikon {
-  mix-blend-mode: normal; background: var(--kagit); border-radius: 8px; padding: 4px;
-}
-#kabuk.gri .as-hero-gorsel { background: var(--kagit); border-radius: 10px; padding: 8px; }
 
 /* Dar ekran: üst bölüm tek sütun, görsel altta */
 @media (max-width: 1100px) {
