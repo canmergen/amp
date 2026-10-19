@@ -118,11 +118,11 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
-Uygulama ekranın tamamını kullanır ve tarayıcıda %80 yakınlaştırmadaki
-gibi görünür: style.css'te `--olcek: .8` (1 = %100); tarayıcının kendi
+Uygulama ekranın tamamını kullanır ve tarayıcıda %88 yakınlaştırmadaki
+gibi görünür: style.css'te `--olcek: .88` (1 = %100); tarayıcının kendi
 yakınlaştırması %100'de kalır. Sol bar kaydırmasızdır (tasarım eni
-340 px, satırlar 44 px, yazılar 15 px, çizim ikonları 40 px; %80 ölçekte
-ekranda 272 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür,
+340 px, satırlar 44 px, yazılar 15 px, çizim ikonları 40 px; %88 ölçekte
+ekranda 299 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür,
 eni de aynı orana gelir; büyük ekranda büyümez. Küçültme CSS zoom ile
 yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 

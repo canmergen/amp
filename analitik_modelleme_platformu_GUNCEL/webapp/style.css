@@ -334,14 +334,14 @@ body:has(#kabuk.gri) { background-color: #3A3E45; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
-/* EKRAN ÖLÇEĞİ: uygulamanın tamamı tarayıcıda %80 yakınlaştırmadaki
+/* EKRAN ÖLÇEĞİ: uygulamanın tamamı tarayıcıda %88 yakınlaştırmadaki
    gibi görünür (yazılar, simgeler, boşluklar, paneller birlikte).
    Tasarım ölçüleri olduğu gibi kalır; html'e zoom verilir. Ekranın
    oranına bağlı ölçüler (vw, vh) zoom'dan ayrıca etkilenmesin diye
    var(--olcek)'e bölünür; app.js ekrandaki konumları (fare,
    getBoundingClientRect) tasarım pikseline aynı oranla çevirir
-   (ekranOlcegi). Tek yerden değişir: 1 = %100, .8 = %80. */
-:root { --olcek: .8; }
+   (ekranOlcegi). Tek yerden değişir: 1 = %100, .88 = %88. */
+:root { --olcek: .88; }
 html { zoom: var(--olcek); }
 
 /* Uygulama ekranın tamamını kullanır. --kabuk-*: uygulama kabuğunun
