@@ -419,7 +419,7 @@ body { background-color: #FEFEFE; }
   background: var(--logo-arkaplan, none) center top / 100% auto no-repeat;
 }
 #katib-logo {
-  display: block; width: 52%; height: auto; max-height: 64px;
+  display: block; width: 58%; height: auto; max-height: 72px;
   object-fit: contain;
 }
 
@@ -3979,21 +3979,22 @@ span.bolme-cip { cursor: default; }
 #sol-bar .sol-bar-dugmeler { gap: 6px; }
 
 /* ---- Sol bar çizim ikonları ----
-   Satırlardaki çizimler (app.js: SOL_BAR_IKONLARI) 36 px (küme adında
-   38 px); satır boyu onları taşıyacak kadar (40 px). Beyaz zeminli çizimler sepya ve gri
+   Satırlardaki çizimler (app.js: SOL_BAR_IKONLARI) 40 px (küme adında
+   42 px); satır boyu onları taşıyacak kadar (44 px). Çizimler app.js'te
+   ekrandaki piksel boyutuna keskin küçültülür (keskinYenile). Beyaz zeminli çizimler sepya ve gri
    zeminde beyaz kutu gibi durmasın diye "multiply" ile basılır: beyaz
    kısımlar zeminin rengini alır, mürekkep çizgiler kalır. Kilitli
    satırlarda çizim soluk ve renksiz. Alttaki Görünüm, Arşiv ve Yeni
-   Çalışma düğmelerinde çizim 30 px. */
-#sol-bar .ust-sekme { height: 40px; }
-#sol-bar .ust-kume-ad { height: 42px; }
+   Çalışma düğmelerinde çizim 32 px. */
+#sol-bar .ust-sekme { height: 44px; }
+#sol-bar .ust-kume-ad { height: 46px; }
 #sol-bar img.ikon-gorsel {
-  display: block; flex-shrink: 0; width: 36px; height: 36px;
+  display: block; flex-shrink: 0; width: 40px; height: 40px;
   object-fit: contain; mix-blend-mode: multiply;
 }
-#sol-bar .ust-kume-ad img.ikon-gorsel { width: 38px; height: 38px; }
+#sol-bar .ust-kume-ad img.ikon-gorsel { width: 42px; height: 42px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
-#sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 30px; height: 30px; }
+#sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 32px; height: 32px; }
 /* Gri modda zemin koyu: çizimler beyaz kâğıt için çizildiği için
    (ikonlar, KATIB logosu ve İstanbul çizimi, robot) renkleri hiç
    değişmeden kâğıt rengi (--kagit) yuvarlak köşeli plakaların üstünde
@@ -4092,8 +4093,8 @@ span.bolme-cip { cursor: default; }
    döner. Alt sayfalar başlığın ikonunun hizasından içeride (girinti) ve
    solunda ince kılavuz çizgisi var; böylece MODEL PLATFORMU'na bağlı
    oldukları okunur. Seçili alt sayfada kılavuz çizgisi 3 px mürekkep
-   çizgisine dönüşür (aynı hizada). Alt sayfa satırları 36 px, çizimleri
-   30 px. */
+   çizgisine dönüşür (aynı hizada). Alt sayfa satırları 38 px, çizimleri
+   34 px. */
 #sol-bar .ust-kume-ad { width: 100%; cursor: pointer; text-align: left; }
 #sol-bar .ust-kume-ad:hover { background: color-mix(in srgb, var(--murekkep) 5%, transparent); }
 #sol-bar .ust-kume-ad:focus-visible { outline: 2px solid var(--murekkep); outline-offset: -2px; }
@@ -4104,10 +4105,10 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-kume.acilir:not(.acik) > .ust-sekme { display: none; }
 #sol-bar .ust-kume.acilir.acik > .ust-kume-ad svg.ok { transform: rotate(90deg); }
 #sol-bar .ust-kume.acilir > .ust-sekme {
-  height: 36px; margin-left: 26px; padding-left: 12px;
+  height: 38px; margin-left: 28px; padding-left: 12px;
   border: 0; border-left: 1px solid var(--kenar-guclu);
 }
-#sol-bar .ust-kume.acilir > .ust-sekme img.ikon-gorsel { width: 30px; height: 30px; }
+#sol-bar .ust-kume.acilir > .ust-sekme img.ikon-gorsel { width: 34px; height: 34px; }
 #sol-bar .ust-kume.acilir > .ust-sekme.aktif,
 #sol-bar .ust-kume.acilir > .ust-sekme.aktif:hover {
   border-left: 3px solid var(--murekkep); padding-left: 10px; box-shadow: none;

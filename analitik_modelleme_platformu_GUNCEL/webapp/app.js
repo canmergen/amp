@@ -173,7 +173,7 @@ const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
    logo doldursun). Yüklenemezse gizlenir. */
 katibLogoEl.onerror = () => { katibLogoEl.style.display = "none"; solBarOlcekle(); };
 katibLogoEl.onload = () => solBarOlcekle();
-saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
+saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; keskinKaydet(katibLogoEl, src); },
            () => { katibLogoEl.style.display = "none"; solBarOlcekle(); }, true);
 /* SOL BAR İKONLARI: her satırın çizgi ikonu (SVG) klasördeki çizimle
    (PNG) değiştirilir. Kenarlardaki saydam ve beyaz boşluk kırpılır.
@@ -210,6 +210,7 @@ function solBarGorseli(ad) {
             img.alt = "";
             img.src = src;
             svg.replaceWith(img);
+            keskinKaydet(img, src);
         }, () => { /* görsel yok: çizgi ikon kalır */ });
     });
     /* Görünüm'ün üstündeki robot (robot_alt): kenarları kırpılır;
@@ -219,6 +220,7 @@ function solBarGorseli(ad) {
         robot.onload = () => solBarOlcekle();
         robot.src = src;
         robot.classList.add("yuklu");
+        keskinKaydet(robot, src);
     }, () => { /* görsel yok */ });
 })();
 
@@ -228,7 +230,9 @@ function solBarGorseli(ad) {
     const yuva = document.getElementById("sol-bar-logo");
     const img = new Image();
     img.onload = () => {
-        if (yuva) yuva.style.setProperty("--logo-arkaplan", 'url("' + GORSEL.katibArkaplan + '")');
+        if (!yuva) return;
+        yuva.style.setProperty("--logo-arkaplan", 'url("' + GORSEL.katibArkaplan + '")');
+        keskinKaydet(yuva, GORSEL.katibArkaplan, "--logo-arkaplan");
     };
     img.src = GORSEL.katibArkaplan;
 })();
@@ -310,6 +314,82 @@ function beyazZeminiSil(a, w, h) {
     return silinen > 0;
 }
 
+/* ==================== KESKİN GÖRSEL ====================
+   Sol bardaki çizimler (KATIB logosu, İstanbul çizimi, ikonlar, robot)
+   büyük dosyalardan küçük kutulara iner. Bu küçültme tarayıcıya
+   bırakılınca (uygulama ölçeği, sol bar ölçeği ve ekran ölçeği üst üste
+   binince) ayrıntılı çizimler ve logodaki küçük yazı yumuşuyor. Bunun
+   yerine görsel burada, ekrandaki GERÇEK piksel boyutuna (kutunun
+   ekrandaki eni x devicePixelRatio) yüksek kaliteyle küçültülür: önce
+   yarıya yarıya adımlarla, sonra hedef boyuta; her adımda yüksek
+   kaliteli yumuşatma. Tarayıcı sonucu birebir basar, ikinci bir
+   küçültme olmaz. Dosyaya dokunulmaz, yalnız gösterilen kopya üretilir.
+   Boyut değişince (ekran, sol bar ölçeği, küme açılınca) yeniden
+   üretilir; kopya üretilemezse (ör. çapraz kaynak) görsel olduğu gibi
+   kalır. */
+const KESKIN = new Map();   // öğe -> { kaynak: Image, boyut, zemin }
+function keskinKucult(kaynak, w, h) {
+    let c = document.createElement("canvas");
+    c.width = kaynak.naturalWidth; c.height = kaynak.naturalHeight;
+    c.getContext("2d").drawImage(kaynak, 0, 0);
+    const ciz = (hedef, en, boy) => {
+        const y = document.createElement("canvas");
+        y.width = en; y.height = boy;
+        const g = y.getContext("2d");
+        g.imageSmoothingEnabled = true;
+        g.imageSmoothingQuality = "high";
+        g.drawImage(hedef, 0, 0, en, boy);
+        return y;
+    };
+    while (c.width / 2 >= w && c.height / 2 >= h)
+        c = ciz(c, Math.round(c.width / 2), Math.round(c.height / 2));
+    return ciz(c, w, h).toDataURL("image/png");
+}
+/* zemin: görsel bir CSS arka planıysa (background-size: 100% auto)
+   değişkenin adı; yoksa öğe bir <img> (object-fit: contain). */
+function keskinKaydet(el, src, zemin) {
+    const kaynak = new Image();
+    kaynak.onload = () => {
+        KESKIN.set(el, { kaynak: kaynak, boyut: "", zemin: zemin || null });
+        keskinYenile();
+    };
+    kaynak.src = src;
+}
+function keskinYenile() {
+    const dpr = window.devicePixelRatio || 1;
+    KESKIN.forEach((v, el) => {
+        if (!el.isConnected) { KESKIN.delete(el); return; }
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height || !el.offsetWidth) return;   // gizli: açılınca
+        const nw = v.kaynak.naturalWidth, nh = v.kaynak.naturalHeight;
+        /* Ekran pikseli / tasarım pikseli: iç dolguyu (padding) düşmek için. */
+        const oran = r.width / el.offsetWidth;
+        let w, h;
+        if (v.zemin) {
+            w = r.width * dpr;
+            h = w * nh / nw;
+        } else {
+            const cs = getComputedStyle(el);
+            const icEn = (el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) * oran;
+            const icBoy = (el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) * oran;
+            const o = Math.min(icEn / nw, icBoy / nh);
+            w = nw * o * dpr;
+            h = nh * o * dpr;
+        }
+        w = Math.max(1, Math.round(w));
+        h = Math.max(1, Math.round(h));
+        const boyut = w + "x" + h;
+        if (v.boyut === boyut) return;
+        v.boyut = boyut;
+        let src = v.kaynak.src;
+        if (w < nw) {
+            try { src = keskinKucult(v.kaynak, w, h); } catch (e) { /* olduğu gibi */ }
+        }
+        if (v.zemin) el.style.setProperty(v.zemin, 'url("' + src + '")');
+        else if (el.src !== src) el.src = src;
+    });
+}
+
 /* ==================== SOL BAR ÖLÇEĞİ ====================
    Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm, Arşiv,
    Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
@@ -339,6 +419,7 @@ function solBarOlcekle() {
     ic.style.zoom = String(olcek);
     document.documentElement.style.setProperty("--sol-bar-en",
         Math.round(SOL_BAR_TASARIM_EN * olcek) + "px");
+    keskinYenile();
 }
 window.addEventListener("resize", () => {
     clearTimeout(solBarOlcekle._z);
@@ -5661,6 +5742,7 @@ document.addEventListener("keydown", e => {
    açılır, yeniden basınca kapanır. */
 function kumeAcKapa(kume) {
     const acik = kume.classList.toggle("acik");
+    keskinYenile();
     const ad = kume.querySelector(".ust-kume-ad");
     if (ad) ad.setAttribute("aria-expanded", acik ? "true" : "false");
 }
