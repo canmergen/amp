@@ -132,12 +132,14 @@ yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 
 **Ana Sayfa** (uygulama bununla açılır; tek sütun, en fazla 1180 px,
 kendi içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz)
-- Üst bölüm: "Model Kurun, İzleyin, / Üzerine Konuşun." başlığı ve tek
+- Üst bölüm: "Veriyle Yapacağınız / Her Şey, Tek Platformda." başlığı ve tek
   cümlelik giriş yazısı (soldan ve üstten boşluk aynı); sağda
   `anasayfa_aciklama` görseli bloğun üst, sağ ve alt kenarına yapışık
   (yüklenemezse yalnız yazı kalır).
-- Çalışma Alanları: Model Platformu (Akışı Aç), KATIB'le Sohbet ve
-  Gösterge Paneli (hazırlanıyor). Bir karta basınca altında o alanın
+- Çalışma Alanları (üç ayrı iş): Model Platformu (model kurma, izleme ve
+  üzerine konuşma; Akışı Aç), KATIB'le Sohbet (yüklenen veriyle ya da
+  genel sohbet) ve Gösterge Paneli (modellerden bağımsız veri analizi ve
+  durum izleme); son ikisi hazırlanıyor. Bir karta basınca altında o alanın
   açıklaması açılır, yeniden basınca kapanır (aynı anda tek açıklama).
   Model Platformu'nun açıklaması: beş faz ve adımları, Model Platformu
   sayfaları (basınca o sayfa açılır), güvenceler, başlarken adımları.
