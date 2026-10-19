@@ -5674,15 +5674,18 @@ const ANA_SAYFA_HEDEF = {
     gosterge: () => solBarSatirAc('.ust-sekme[data-tab="ozet"]'),
     degisken: () => solBarSatirAc('.ust-sekme[data-tab="degisken"]'),
     ozet:     () => solBarSatirAc('.ust-sekme[data-ust="dokuman"]'),
-    arsiv:    () => { const b = document.getElementById("calismalar-btn"); if (b) b.click(); },
 };
 (function anaSayfaKur() {
     const kok = document.getElementById("sayfa-anasayfa");
     if (!kok) return;
+    /* Üst bölüm görseli: saydam kenarları kırpılır; böylece bloğun üst,
+       sağ ve alt kenarına çizimin kendisi yapışır. */
     const hero = document.getElementById("as-hero-img");
     if (hero) {
-        hero.onerror = () => hero.parentElement.classList.add("yok");
-        hero.src = getWebAppBackendUrl("gorsel/anasayfa_aciklama");
+        const yok = () => hero.parentElement.classList.add("yok");
+        hero.onerror = yok;
+        saydamKirp(getWebAppBackendUrl("gorsel/anasayfa_aciklama"),
+                   src => { hero.src = src; }, yok);
     }
     kok.querySelectorAll("img[data-as-ikon]").forEach(img => {
         solBarGorseli(img.dataset.asIkon).then(src => { img.src = src; },

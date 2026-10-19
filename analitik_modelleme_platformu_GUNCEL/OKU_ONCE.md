@@ -132,9 +132,10 @@ yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 
 **Ana Sayfa** (tek sütun, en fazla 1180 px, kendi içinde kayar; zemin
 kartlarla aynı renk, Beyaz modda beyaz)
-- Üst bölüm: "Veriden / Daha Fazlasını Keşfedin." başlığı, platformun
-  kısa tanıtımı, **Model Akışını Aç** ve **Arşivden Devam Et** düğmeleri;
-  sağda `anasayfa_aciklama` görseli (yüklenemezse metin tek sütun kalır).
+- Üst bölüm: "Veriden / Daha Fazlasını Keşfedin." başlığı ve tek
+  cümlelik giriş yazısı (soldan ve üstten boşluk aynı); sağda
+  `anasayfa_aciklama` görseli bloğun üst, sağ ve alt kenarına yapışık
+  (yüklenemezse yalnız yazı kalır).
 - Çalışma Alanları: Model Platformu (Akışı Aç), KATIB'le Sohbet ve
   Gösterge Paneli (hazırlanıyor).
 - Model Akışı: beş faz, her birinin özeti ve adımları.

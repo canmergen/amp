@@ -4238,25 +4238,29 @@ span.bolme-cip { cursor: default; }
 .ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa p { margin: 0; }
 .ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
 
-/* Üst bölüm */
+/* Üst bölüm: solda başlık ve giriş yazısı (soldan boşluğu üstten
+   boşluğuyla aynı, 30 px; başlık iki satır, giriş yazısı başlığın
+   eninde); bloğun boyunu yazı belirler. Görsel bloğun üst, sağ ve alt
+   kenarına yapışık, bloğun tam boyunda (eni boyuna göre; saydam
+   kenarları app.js'te kırpılır). Çizimin solu yazıya değmez. Dar ekranda
+   görsel yazının altına iner. */
 .as-hero {
-  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  align-items: center; gap: 20px;
-  padding: 30px 26px 24px 38px;
+  position: relative; overflow: hidden;
+  padding: 30px;
   background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 14px;
   box-shadow: var(--golge-1);
 }
-.as-hero:has(.as-hero-gorsel.yok) { grid-template-columns: 1fr; }
+.as-hero-metin { position: relative; z-index: 1; }
+.as-hero-gorsel { position: absolute; top: 0; right: 0; bottom: 0; }
+.as-hero-gorsel img { display: block; height: 100%; width: auto; }
+.as-hero-gorsel.yok { display: none; }
 .as-baslik {
-  margin-bottom: 16px;
-  font-size: 44px; line-height: 1.1; font-weight: var(--fw-yari); letter-spacing: -.01em;
+  margin-bottom: 12px; white-space: nowrap;
+  font-size: 38px; line-height: 1.08; font-weight: var(--fw-yari); letter-spacing: -.01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
-.as-giris { margin-bottom: 22px; font-size: 16.5px; line-height: 1.6; max-width: 34em; }
-.as-dugmeler { display: flex; flex-wrap: wrap; gap: 10px; }
-.as-hero-gorsel img { display: block; width: 100%; height: auto; }
-.as-hero-gorsel.yok { display: none; }
+.as-giris { max-width: 430px; font-size: 15px; line-height: 1.55; }
 
 /* Düğmeler */
 .as-dugme {
@@ -4372,7 +4376,9 @@ button.as-sayfa:hover { border-color: var(--murekkep); }
 .as-adimlar h3 { margin-bottom: 4px; font-size: 16.5px; font-weight: var(--fw-yari); }
 .as-adimlar p { font-size: 14.5px; line-height: 1.55; }
 
-/* Dar ekran: üst bölüm tek sütun, görsel altta */
+/* Dar ekran: görsel yazının altına, bloğun eninde */
 @media (max-width: 1100px) {
-  .as-hero { grid-template-columns: 1fr; }
+  .as-hero { padding-bottom: 0; }
+  .as-hero-gorsel { position: static; margin: 20px -30px 0; }
+  .as-hero-gorsel img { width: 100%; height: auto; }
 }
