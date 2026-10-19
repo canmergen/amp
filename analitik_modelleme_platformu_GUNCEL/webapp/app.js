@@ -313,17 +313,19 @@ function beyazZeminiSil(a, w, h) {
 /* ==================== SOL BAR ÖLÇEĞİ ====================
    Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm, Arşiv,
    Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
-   (#sol-bar-ic) tasarım eninde (340 px) doğal boyuyla dizilir ve barın
-   yüksekliğine sığacak oranda ölçeklenir; barın eni de aynı orana gelir.
-   Ekran yetmezse küçülür (en az 0,6 kat); büyük ekranda en fazla 1,15
-   kata kadar büyür. */
+   (#sol-bar-ic) tasarım eninde (340 px) doğal boyuyla dizilir; ekran
+   yetmezse barın yüksekliğine sığacak oranda küçülür (en az 0,6 kat),
+   barın eni de aynı orana gelir. Büyük ekranda büyümez (en fazla 1 kat):
+   uygulama ölçeği (style.css: --olcek) sol bara da aynen yansır.
+   Ölçek CSS zoom ile verilir, transform ile değil: zoom içeriği yeni
+   boyutunda baştan çizer, yazı ve görseller bulanıklaşmaz. */
 const SOL_BAR_TASARIM_EN = 340;
-const SOL_BAR_OLCEK = { min: 0.6, max: 1.15 };
+const SOL_BAR_OLCEK = { min: 0.6, max: 1.0 };
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");
     if (!bar || !ic || !bar.clientHeight) return;
-    ic.style.transform = "none";
+    ic.style.zoom = "1";
     ic.style.height = "auto";
     /* Ölçek açık hâle göre: küme açılıp kapanınca bar boyu değişmesin. */
     const kapali = [...ic.querySelectorAll(".ust-kume.acilir:not(.acik)")];
@@ -334,7 +336,7 @@ function solBarOlcekle() {
     const olcek = Math.max(SOL_BAR_OLCEK.min,
                            Math.min(SOL_BAR_OLCEK.max, bar.clientHeight / dogal));
     ic.style.height = (bar.clientHeight / olcek) + "px";
-    ic.style.transform = "scale(" + olcek + ")";
+    ic.style.zoom = String(olcek);
     document.documentElement.style.setProperty("--sol-bar-en",
         Math.round(SOL_BAR_TASARIM_EN * olcek) + "px");
 }

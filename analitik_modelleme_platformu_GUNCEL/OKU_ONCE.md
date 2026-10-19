@@ -121,9 +121,10 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 Uygulama ekranın tamamını kullanır ve tarayıcıda %80 yakınlaştırmadaki
 gibi görünür: style.css'te `--olcek: .8` (1 = %100); tarayıcının kendi
 yakınlaştırması %100'de kalır. Sol bar kaydırmasızdır (tasarım eni
-340 px, satırlar 40 px, yazılar 15 px, çizim ikonları 36 px). Bar ekran
-yüksekliğine sığacak oranda ölçeklenir, eni de aynı orana gelir: ekran
-yetmezse küçülür, büyük ekranda en fazla 1,15 kata kadar büyür.
+340 px, satırlar 40 px, yazılar 15 px, çizim ikonları 36 px; %80 ölçekte
+ekranda 272 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür,
+eni de aynı orana gelir; büyük ekranda büyümez. Küçültme CSS zoom ile
+yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 
 **Model Akışı**
 - Üstte **İş Akışı** barı:

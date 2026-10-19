@@ -3942,12 +3942,12 @@ span.bolme-cip { cursor: default; }
 
 /* ---- Sol bar ölçeği ve KATIB logosu ----
    İç kap tasarım eninde (340 px) doğal boyuyla dizilir; app.js
-   (solBarOlcekle) onu barın yüksekliğine sığacak oranda ölçekler
-   (en fazla 1,15 kat) ve barın enini (--sol-bar-en) aynı orana getirir.
-   Kaydırma yok. */
+   (solBarOlcekle) ekran yetmezse onu barın yüksekliğine sığacak oranda
+   küçültür (CSS zoom; en fazla 1 kat) ve barın enini (--sol-bar-en) aynı
+   orana getirir. Kaydırma yok. */
 #sol-bar { display: block; overflow: hidden; }
 #sol-bar-ic {
-  width: 340px; transform-origin: 0 0;
+  width: 340px;
   display: flex; flex-direction: column;
 }
 #sol-bar-ic #ust-sekmeler { flex: none; overflow: visible; min-height: 0; }
