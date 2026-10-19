@@ -86,7 +86,8 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
 - Tepede KATIB logosu; arkasında İstanbul çizimi: solda Galata, sağda
   tarihi yarımada ve vapur. Çizimin iki parçası oranı bozulmadan %72'ye
   küçültülüp barın iki kenarına yaslanır, dikeyde logoyla aynı hizada
-  durur, logoya binmez (style.css:
+  durur, logoya binmez. Logonun üstünde ve altındaki çizgiye kadar 20'şer
+  px boşluk (style.css:
   --arkaplan-olcek). Altında
   ince siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içerik hazırlanıyor).

@@ -408,36 +408,43 @@ body { background-color: #FEFEFE; }
 
 /* ==================== SOL BAR LOGOSU ==================== */
 /* KATIB logosu sol barın tepesinde (barın eninin %58'i, ortada; yatayda
-   enin yaklaşık %21-%79'u). Arkasında İstanbul çizimi (katib_arkaplan.png,
-   3:1): solunda Galata (çizimin eninin %0-%27'si), sağında tarihi
-   yarımada ve vapur (%74-%100), ortası boş. Çizim logoya binmesin diye iki parçası ayrı basılır ve
+   enin yaklaşık %21-%79'u). Üstünde 20 px, altında 10 px boşluk (altındaki
+   çizgiye kadar toplam 20 px); yuvanın boyu logonun boyuna göre.
+   Arkasında İstanbul çizimi (katib_arkaplan.png, 3:1): solunda Galata
+   (çizimin eninin %0-%32'si), sağında tarihi yarımada ve vapur
+   (%68-%100), ortası boş. Çizim logoya binmesin diye iki parçası ayrı
+   basılır: Galata ::before, yarımada ::after; kutu tam o parçanın
+   eninde, çizimin geri kalanı kutunun dışında kalır, görünmez. Parçalar
    oranı bozulmadan --arkaplan-olcek kadar küçültülüp barın iki kenarına
-   yaslanır; dikeyde logoyla aynı hizada (ikisinin de ortası aynı
-   yükseklikte: kutu, yuvanın üst dolgusu kadar aşağıdan başlar): Galata ::before (çizimin ilk %33'ü), yarımada ::after
-   (son %32'si; çizimin %32-%68'i tamamen boş); kutu tam o parçanın
-   eninde, çizimin geri kalanı kutunun dışında kalır, görünmez. .72 ile Galata yuvanın %20'sinde başlar,
-   yarımada %81'inde; logo arada boşta kalır. Çizim yüklenemezse
+   yaslanır (.72 ile Galata yuvanın %20'sinde biter, yarımada %81'inde
+   başlar). Dikeyde logoyla aynı hizada: kutu logonun yüksekliğinde ve
+   çizimin görsel ağırlık noktası (yüksekliğinin %62'si; altı evler ve
+   kıyı, üstü kuşlar) logonun ortasına gelir. Çizim yüklenemezse
    (--logo-arkaplan yok) logo tek başına durur. */
 #sol-bar-logo {
   --arkaplan-olcek: .72;
   position: relative;
-  flex-shrink: 0; height: 113px; padding: 10px 0 0; margin-bottom: 4px;
-  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 20px 0 10px; margin-bottom: 4px;
+  display: flex; align-items: flex-start; justify-content: center;
 }
 #sol-bar-logo::before, #sol-bar-logo::after {
-  content: ""; position: absolute; top: 10px; bottom: 0;
+  content: ""; position: absolute; top: 20px; bottom: 10px;
   pointer-events: none;
   background: var(--logo-arkaplan, none) no-repeat;
 }
 /* Kutu, çizimin o parçası kadar (yuva eni x ölçek x parça payı); çizim
-   kutunun 1 / parça payı katı genişlikte basılır. */
+   kutunun 1 / parça payı katı genişlikte basılır. Dikey konum: çizimin
+   ortası kutunun ortasına (50%), sonra çizim boyunun %12'si kadar yukarı
+   (çizim boyu = ölçek x 340 / 3 px). */
 #sol-bar-logo::before {
   left: 0; width: calc(var(--arkaplan-olcek) * 33%);
-  background-size: calc(100% / .33) auto; background-position: left center;
+  background-size: calc(100% / .33) auto;
+  background-position: left calc(50% - var(--arkaplan-olcek) * 13.6px);
 }
 #sol-bar-logo::after {
   right: 0; width: calc(var(--arkaplan-olcek) * 32%);
-  background-size: calc(100% / .32) auto; background-position: right center;
+  background-size: calc(100% / .32) auto;
+  background-position: right calc(50% - var(--arkaplan-olcek) * 13.6px);
 }
 #katib-logo {
   position: relative; z-index: 1;
