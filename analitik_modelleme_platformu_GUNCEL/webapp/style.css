@@ -4256,10 +4256,9 @@ span.bolme-cip { cursor: default; }
 /* ==================== ANA SAYFA ====================
    Platformu tanıtan tek sütunlu sayfa (alanın tamamı); sayfa kendi
    içinde kayar. Sırayla:
-   - Üst bölüm: üstte ortada tek satır başlık ("Veriyle Yapacağınız Her
-     Şey," siyah, "Yapay Zekâ Desteğiyle Tek Platformda." kırmızı;
-     bloğun iç eninin yaklaşık %95'i, taşmaz), altında
-     anasayfa_aciklama görseli. Görsel
+   - Üst bölüm: üstte anasayfa_aciklama görseli, altında ortada iki
+     satır başlık ("Veriyle Yapacağınız Her Şey," siyah, "Yapay Zekâ
+     Desteğiyle Tek Platformda." kırmızı). Görsel
      yüklenemezse yalnız başlık kalır.
    - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan,
      her biri kendi tanıtımıyla.
@@ -4282,26 +4281,25 @@ span.bolme-cip { cursor: default; }
 .ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa p { margin: 0; }
 .ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
 
-/* Üst bölüm: üstte ortada başlık, altında ortada görsel. Görsel bloğun
-   iç eninin %86'sında (başlıkla aşağı yukarı aynı en), kendi oranıyla
-   (daraltma ya da kırpma yok; saydam kenarları app.js'te kırpılır);
-   boşluklar dar, blok dikeyde gereğinden uzun olmasın. Başlık boyu ve boşluklar cqw ile bloğun
+/* Üst bölüm: üstte ortada görsel, altında ortada iki satır başlık
+   (siyah satır, kırmızı satır). Görsel bloğun iç eninin %94'ünde, kendi
+   oranıyla (daraltma ya da kırpma yok; saydam kenarları app.js'te
+   kırpılır); boşluklar dar, blok dikeyde gereğinden uzun olmasın. Başlık boyu ve boşluklar cqw ile bloğun
    enine bağlı: bu yüzden yakınlaştırınca ya da uzaklaştırınca blok tek
    parça büyür ve küçülür. Tanıtım yazısı burada değil, Çalışma Alanları
    kartlarında. */
 .as-hero {
   overflow: hidden; container-type: inline-size;
-  padding: 2cqw 3cqw 1.5cqw;
+  padding: 2cqw 3cqw 2cqw;
   background: var(--yuzey); border: 1px solid var(--murekkep); border-radius: 14px;
   box-shadow: var(--golge-1);
 }
-.as-hero-metin { text-align: center; }
-.as-hero-gorsel { margin-top: 1.5cqw; }
-.as-hero-gorsel img { display: block; width: 86%; height: auto; margin: 0 auto; }
+.as-hero-metin { margin-top: 1.5cqw; text-align: center; }
+.as-hero-gorsel img { display: block; width: 94%; height: auto; margin: 0 auto; }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
   margin: 0; white-space: nowrap;
-  font-size: 2.4cqw; line-height: 1.18; font-weight: var(--fw-kalin); letter-spacing: .01em;
+  font-size: 3.2cqw; line-height: 1.2; font-weight: var(--fw-kalin); letter-spacing: .01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
@@ -4437,5 +4435,5 @@ span.bolme-cip { cursor: default; }
 @media (max-width: 1100px) {
   .as-hero { padding: 24px 24px 20px; }
   .as-baslik { font-size: 32px; white-space: normal; }
-  .as-hero-gorsel { margin-top: 18px; }
+  .as-hero-metin { margin-top: 16px; }
 }
