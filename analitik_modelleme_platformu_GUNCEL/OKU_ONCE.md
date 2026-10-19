@@ -147,8 +147,9 @@ mürekkep siyahı.
 **Ana Sayfa** (uygulama bununla açılır; alanın tamamını kaplar, kendi
 içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
 tanıtır; sayfalar sol bardan açılır.
-- Üst bölüm: üstte ortada "Veriyle Yapacağınız / Her Şey, Tek
-  Platformda." başlığı (kalın, harf aralığı .01em), altında
+- Üst bölüm: üstte ortada tek satır başlık: "Veriyle İlgili
+  Yapacağınız" siyah, "Her Şey, Tek Platformda." kırmızı (kalın, harf
+  aralığı .01em; dar ekranda iki satıra bölünebilir). Altında
   `anasayfa_aciklama` görseli bloğun iç eninin tamamında, kendi
   oranıyla (daraltma ya da kırpma yok; yalnız saydam kenarları
   kırpılır); yüklenemezse yalnız başlık kalır. Başlık boyu ve boşluklar
