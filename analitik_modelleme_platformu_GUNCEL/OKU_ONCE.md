@@ -77,13 +77,20 @@ içindeki `VARSAYILAN_MODEL`.
 
 ## Ekran
 
-**Yazı tipi:** arayüzün tamamı **Newsreader** (editoryal serif). Gövde
-400; başlıklar ve sol bar satırları 600; vurgu 700. Rakamlar tablolarda
-eşit genişlikte. Tek istisna Ana Sayfa'nın büyük başlığı ("Veriyle
-Yapacağınız / Her Şey, Tek Platformda."): **Limelight** (art deco
-başlık yazı tipi; tek ağırlığı var, başlıkta tarayıcı kalınlaştırır).
+**Yazı tipi:** iki aile.
+- **Limelight** (art deco başlık yazı tipi): platformdaki bütün
+  başlıklar. Ana Sayfa başlıkları; Model Akışı'nda blok ve alt adım
+  adları, iş akışı fazları, seçim ve seçenek kartı başlıkları, tablo
+  başlıkları; Model Gösterge Paneli, Model Değişkenleri ve Model
+  Özeti'nde bölüm, kart ve tablo başlıkları; kilitli sayfaların adı.
+  Tek ağırlığı var; 600 istenen başlıklarda tarayıcı kalınlaştırır.
+  Başlığın içindeki rozet ve bilgi simgesi Newsreader kalır.
+- **Newsreader** (editoryal serif): geri kalan her şey (gövde metni,
+  sol bar ve üst bar, düğmeler, tablolar). Gövde 400; sol bar satırları
+  600; vurgu 700. Rakamlar tablolarda eşit genişlikte.
+
 İkisi de `style.css` içinde gömülü, dış font sunucusuna bağlanmaz, SIL
-Open Font License.
+Open Font License. Başlık ailesi tek değişkende: `--font-baslik`.
 
 **Sol bar**
 - Tepede KATIB logosu, ortada; üstünde ve altındaki çizgiye kadar 20'şer

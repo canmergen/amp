@@ -1,5 +1,5 @@
 /* ===== FONT (gomulu; dis kaynaga baglanmaz) =====
-   Newsreader: Ana Sayfa buyuk basligi disinda butun arayuzun fontu; ekranda
+   Newsreader: basliklar disinda butun arayuzun fontu; ekranda
    okunmak icin cizilmis editoryal bir serif. 400 (metin), 600
    (basliklar, sol bar satirlari) ve 700 (vurgu). Rakamlar esit
    genislikte (tnum) cizilebildigi icin tablolarda da kullanilir.
@@ -26,8 +26,9 @@
 @font-face { font-family: "AMP Newsreader"; font-style: normal; font-weight: 700; font-display: swap;
   src: url(data:font/woff2;base64,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) format("woff2");
   unicode-range: U+011E-011F, U+0130, U+015E-015F; }
-/* Limelight: yalnız Ana Sayfa'nın büyük başlığı. Tek ağırlık (400);
-   başlık 600 istendiği için tarayıcı kalınlaştırarak çizer. SIL Open
+/* Limelight: platformdaki bütün başlıklar (bkz. BAŞLIK VE MENÜ
+   AĞIRLIĞI). Tek ağırlık (400); başlıklar 600 istediği için tarayıcı
+   kalınlaştırarak çizer. SIL Open
    Font License 1.1. Aile adı "AMP Baslik": font özgün adıyla anılmaz.
    Newsreader gibi iki parça: Latin ve yalnız Türkçe harfler. */
 @font-face { font-family: "AMP Baslik"; font-style: normal; font-weight: 400; font-display: swap;
@@ -63,10 +64,8 @@
   --fw-kalin:  700;
 
   --font: "AMP Newsreader", Georgia, "Times New Roman", serif;
-  /* Başlıklar da aynı aile; 600 ağırlıkla ayrışır. */
-  --font-baslik: var(--font);
-  /* Ana Sayfa'nın büyük başlığı */
-  --font-vitrin: "AMP Baslik", var(--font);
+  /* Başlıklar: Limelight */
+  --font-baslik: "AMP Baslik", var(--font);
   /* Mürekkep siyahı: sol bar çizgileri ve Görünüm anahtarı; her modda
      aynı. */
   --murekkep: #1A1A1A;
@@ -4187,6 +4186,17 @@ span.bolme-cip { cursor: default; }
   font-family: var(--font-baslik); font-weight: var(--fw-yari);
   letter-spacing: 0;
 }
+/* Başlık yazı tipi (Limelight) alan öbür başlıklar: analiz panelindeki
+   bölüm ve tablo başlıkları, Ana Sayfa başlıkları. Ağırlıkları kendi
+   kurallarında. Başlığın içindeki rozet ve bilgi simgesi Newsreader
+   kalır ("#kabuk *"). */
+#kabuk .panel-bolum-baslik, #kabuk .ft-detay-ad,
+#kabuk .bf-kilit-baslik, #kabuk .bf-kisit-baslik, #kabuk .bolme-grup-baslik,
+#kabuk .dg-tablo-baslik, #kabuk .dg-kisa-tablo-baslik, #kabuk .calisma-gizli-baslik,
+#kabuk .ana-sayfa h1, #kabuk .ana-sayfa h1 em, #kabuk .ana-sayfa h2, #kabuk .ana-sayfa h3,
+#kabuk .as-sayfa-metin > b {
+  font-family: var(--font-baslik);
+}
 #kabuk #sol-bar .ust-sekme, #kabuk #sol-bar .ust-kume-ad,
 #kabuk #sol-bar #tema-btn, #kabuk #sol-bar #calismalar-btn, #kabuk #sol-bar #sifirla-btn {
   font-weight: var(--fw-yari);
@@ -4195,11 +4205,12 @@ span.bolme-cip { cursor: default; }
 /* ==================== ANA SAYFA ====================
    Platformu tanıtan tek sütunlu sayfa (alanın tamamı); sayfa kendi
    içinde kayar. Sırayla:
-   - Üst bölüm: solda başlık ("Veriden / Daha Fazlasını Keşfedin."),
-     tanıtım ve düğmeler; sağda anasayfa_aciklama görseli. Görsel
+   - Üst bölüm: solda başlık ("Veriyle Yapacağınız / Her Şey, Tek
+     Platformda.") ve tanıtım; sağda anasayfa_aciklama görseli. Görsel
      yüklenemezse metin tek sütun kalır.
    - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan.
-     Karta basınca altında o alanın açıklaması (.as-ayrinti) açılır;
+     Kartın düğmesine (Nasıl Çalışır / Ne Olacak) basınca altında o
+     alanın açıklaması (.as-ayrinti) açılır;
      seçili kartın kenarı mürekkep. Model Platformu'nun açıklamasında beş
      faz ve adımları (fazlar mürekkep çizgisinin altında ince dikey
      çizgilerle ayrılan sütunlar, faz numarası kırmızı), sayfalar,
@@ -4242,7 +4253,6 @@ span.bolme-cip { cursor: default; }
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
-#kabuk .as-baslik, #kabuk .as-baslik em { font-family: var(--font-vitrin); }
 .as-giris { width: 31cqw; font-size: 1.28cqw; line-height: 1.5; }
 
 /* Düğmeler */
