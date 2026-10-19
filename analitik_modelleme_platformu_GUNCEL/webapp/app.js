@@ -186,7 +186,7 @@ const SOL_BAR_IKONLARI = [
     ['#sol-bar .ust-sekme[data-tab="ozet"] > svg.ikon', "gosterge_paneli"],
     ['#sol-bar .ust-sekme[data-tab="degisken"] > svg.ikon', "degiskenler"],
     ['#sol-bar .ust-sekme[data-ust="dokuman"] > svg.ikon', "ozet"],
-    ['#sol-bar .ust-sekme[data-ust="model_sohbet"] > svg.ikon', "katible_sohbet"],
+    ['#sol-bar .ust-sekme[data-ust="model_sohbet"] > svg.ikon', "model_sohbeti"],
     ['#sol-bar .ust-sekme[data-ust="sohbet"] > svg.ikon', "katible_sohbet"],
     ['#sol-bar .ust-sekme[data-ust="dashboard"] > svg.ikon', "gosterge_paneli"],
     ["#tema-btn > svg.ikon", "gorunum"],

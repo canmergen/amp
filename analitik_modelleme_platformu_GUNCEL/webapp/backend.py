@@ -41,13 +41,14 @@ GORSELLER = {
     "gosterge_paneli": "gosterge_paneli.png",
     "degiskenler":     "degiskenler.png",
     "ozet":            "ozet.png",
+    "model_sohbeti":   "model_sohbeti.png",
     "katible_sohbet":  "katible_sohbet.png",
     "gorunum":         "gorunum.png",
     "arsiv":           "arsiv.png",
     "yeni_calisma":    "yeni_calisma.png",
     # Sol barın altında, Görünüm'ün üstündeki robot
     "robot_alt":       "robot_alt.png",
-    # Ana Sayfa'nın üstündeki "Veriden Daha Fazlasını Keşfedin" görseli
+    # Ana Sayfa'nın üst bölümündeki görsel
     "anasayfa_aciklama": "anasayfa_aciklama.png",
     # Sohbetteki ilk (karsilama) mesajin robotu
     "karsilama":  "robot_welcome.png",

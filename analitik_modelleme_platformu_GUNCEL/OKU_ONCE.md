@@ -29,7 +29,8 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `gosterge_paneli` | `gosterge_paneli.png` | Sol bar: Model Gösterge Paneli ve Gösterge Paneli |
 | `degiskenler` | `degiskenler.png` | Sol bar: Model Değişkenleri |
 | `ozet` | `ozet.png` | Sol bar: Model Özeti |
-| `katible_sohbet` | `katible_sohbet.png` | Sol bar: Model Sohbeti ve KATIB'le Sohbet |
+| `model_sohbeti` | `model_sohbeti.png` | Sol bar ve Ana Sayfa: Model Sohbeti |
+| `katible_sohbet` | `katible_sohbet.png` | Sol bar ve Ana Sayfa: KATIB'le Sohbet |
 | `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
