@@ -4311,7 +4311,7 @@ span.bolme-cip { cursor: default; }
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
   margin: 0; white-space: nowrap;
-  font-size: calc(3.2cqw * var(--baslik-k, 1)); line-height: 1.2; font-weight: var(--fw-kalin); letter-spacing: .01em;
+  font-size: calc(3.2cqw * var(--baslik-k, 1)); line-height: 1.32; font-weight: var(--fw-kalin); letter-spacing: .01em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }
