@@ -124,10 +124,7 @@ yakınlaştırması %100'de kalır. Sol bar kaydırmasızdır (tasarım eni
 340 px, satırlar 44 px, yazılar 15 px, çizim ikonları 40 px; %80 ölçekte
 ekranda 272 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür,
 eni de aynı orana gelir; büyük ekranda büyümez. Küçültme CSS zoom ile
-yapılır (transform değil): yazı ve görseller bulanıklaşmaz. Sol bar
-çizimleri (logo, İstanbul çizimi, ikonlar, robot) tarayıcıya
-bırakılmadan, ekrandaki gerçek piksel boyutuna yüksek kaliteyle
-küçültülüp gösterilir (app.js: keskinYenile); dosyalar değişmez.
+yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
 
 **Model Akışı**
 - Üstte **İş Akışı** barı:

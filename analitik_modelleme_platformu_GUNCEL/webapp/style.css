@@ -3980,8 +3980,7 @@ span.bolme-cip { cursor: default; }
 
 /* ---- Sol bar çizim ikonları ----
    Satırlardaki çizimler (app.js: SOL_BAR_IKONLARI) 40 px (küme adında
-   42 px); satır boyu onları taşıyacak kadar (44 px). Çizimler app.js'te
-   ekrandaki piksel boyutuna keskin küçültülür (keskinYenile). Beyaz zeminli çizimler sepya ve gri
+   42 px); satır boyu onları taşıyacak kadar (44 px). Beyaz zeminli çizimler sepya ve gri
    zeminde beyaz kutu gibi durmasın diye "multiply" ile basılır: beyaz
    kısımlar zeminin rengini alır, mürekkep çizgiler kalır. Kilitli
    satırlarda çizim soluk ve renksiz. Alttaki Görünüm, Arşiv ve Yeni
