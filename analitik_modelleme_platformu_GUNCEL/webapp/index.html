@@ -206,12 +206,197 @@
   </div>
 
   <!-- ===================== ANA SAYFA, SOHBET ve DASHBOARD =====================
-       Sol bardaki ayrı bloklar. İçerikleri ayrıca kurulacak; şimdilik
-       yalnız sayfa iskeleti. -->
+       Sol bardaki ayrı sayfalar. Sohbet ve Dashboard'ın içerikleri ayrıca
+       kurulacak; şimdilik yalnız sayfa iskeleti. -->
+  <!-- ANA SAYFA: platformu tanıtır ve sayfalara yönlendirir. Metinler
+       koddaki gerçek adlardan: faz ve adım adları fe_agent/akis_metin.py
+       (SONRAKI_FAZLAR, ADIM_ADI) ve fe_agent/akis_kayit.py (adım
+       başlıkları); başlangıçlar MOD_SECENEKLERI. Biri değişirse burası da
+       güncellenir. Düğmeler (data-git) sol bardaki ilgili satırı açar
+       (app.js: anaSayfaKur). -->
   <div id="sayfa-anasayfa" class="sayfa gizli">
-    <div class="bos-sayfa">
-      <div class="bos-sayfa-ad">Ana Sayfa</div>
-      <div class="bos-sayfa-not">Bu bölüm hazırlanıyor.</div>
+    <div class="ana-sayfa">
+
+      <section class="as-hero">
+        <div class="as-hero-metin">
+          <h1 class="as-baslik">Veriden<br><em>Daha Fazlasını</em> Keşfedin.</h1>
+          <p class="as-giris">KATIB, bireysel kredilerde ham veriden final modele kadar
+            model geliştirme sürecini tek ve izlenebilir bir çalışmada yürütür.
+            Analizleri ve hesaplamaları platform yapar; önemli kararlar sizin
+            onayınızla uygulanır ve gerekçesiyle kayda geçer.</p>
+          <div class="as-dugmeler">
+            <button class="as-dugme birincil" type="button" data-git="akis">Model Akışını Aç<svg class="as-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+            <button class="as-dugme" type="button" data-git="arsiv">Arşivden Devam Et</button>
+          </div>
+        </div>
+        <div class="as-hero-gorsel"><img id="as-hero-img" alt=""></div>
+      </section>
+
+      <section class="as-bolum">
+        <h2 class="as-bolum-baslik">Çalışma Alanları</h2>
+        <div class="as-kartlar">
+          <article class="as-kart">
+            <img class="as-kart-ikon" data-as-ikon="model_platformu" alt="">
+            <h3>Model Platformu</h3>
+            <p>Ham veriden final modele beş fazlık model geliştirme akışı:
+              veri hazırlığı, değişken üretimi ve değerlendirmesi, model
+              karşılaştırması ve model dokümanı tek çalışmada.</p>
+            <button class="as-dugme birincil" type="button" data-git="akis">Akışı Aç<svg class="as-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+          </article>
+          <article class="as-kart kapali">
+            <img class="as-kart-ikon" data-as-ikon="katible_sohbet" alt="">
+            <h3>KATIB'le Sohbet <span class="as-rozet">Hazırlanıyor</span></h3>
+            <p>Veri, model, değişken ve süreç hakkında serbestçe soru
+              sorabileceğiniz, çalışmalardan bağımsız sohbet alanı.</p>
+            <button class="as-dugme" type="button" disabled>Henüz Açık Değil</button>
+          </article>
+          <article class="as-kart kapali">
+            <img class="as-kart-ikon" data-as-ikon="gosterge_paneli" alt="">
+            <h3>Gösterge Paneli <span class="as-rozet">Hazırlanıyor</span></h3>
+            <p>Modellerin sonuçlarını izleyip karşılaştıracağınız, kritik
+              metrikleri tek ekranda takip edeceğiniz alan.</p>
+            <button class="as-dugme" type="button" disabled>Henüz Açık Değil</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="as-bolum">
+        <h2 class="as-bolum-baslik">Model Akışı: Beş Faz</h2>
+        <p class="as-bolum-not">Akış adım adım ilerler; her adımda ne yapılacağı ve
+          neden yapıldığı açıklanır. Hangi adımda olduğunuzu ve ilerlemeyi
+          Model Akışı'nın üstündeki <b>İş Akışı</b> düğmesinden izlersiniz.</p>
+        <ol class="as-fazlar">
+          <li class="as-faz">
+            <span class="as-faz-no">01</span>
+            <h3>Çalışma Kurulumu</h3>
+            <p class="as-faz-ozet">Veri seti, sözlük, kolon rolleri ve örneklem tasarımı</p>
+            <ul>
+              <li>Başlangıç Seçimi</li>
+              <li>Veri Seti, Sözlük ve Kolon Rolleri</li>
+              <li>Değişken Listesi ve Tip Kontrolü</li>
+              <li>Örneklem ve Doğrulama Tasarımı</li>
+            </ul>
+          </li>
+          <li class="as-faz">
+            <span class="as-faz-no">02</span>
+            <h3>Değişken Mühendisliği</h3>
+            <p class="as-faz-ozet">Profil, kural tabanlı ve AI destekli üretim</p>
+            <ul>
+              <li>Veri Profili ve Kalite</li>
+              <li>Kural Tabanlı Değişken Üretimi</li>
+              <li>AI Değişken Keşfi</li>
+            </ul>
+          </li>
+          <li class="as-faz">
+            <span class="as-faz-no">03</span>
+            <h3>Veri Anlama ve Hazırlama</h3>
+            <p class="as-faz-ozet">SFA, stabilite ve analitik baz set</p>
+            <ul>
+              <li>Tek Değişken Analizi (SFA)</li>
+              <li>Stabilite Analizi (PSI)</li>
+              <li>Analitik Baz Set</li>
+            </ul>
+          </li>
+          <li class="as-faz">
+            <span class="as-faz-no">04</span>
+            <h3>Değişken Değerlendirme</h3>
+            <p class="as-faz-ozet">Sızıntı kontrolü ve aday değişken seti</p>
+            <ul>
+              <li>Sızıntı Kontrolü</li>
+              <li>Aday Değişken Seti</li>
+            </ul>
+          </li>
+          <li class="as-faz">
+            <span class="as-faz-no">05</span>
+            <h3>Modelleme ve Finalizasyon</h3>
+            <p class="as-faz-ozet">Model seçimi, katkı ölçümü ve doğrulama</p>
+            <ul>
+              <li>Model Karşılaştırması</li>
+              <li>Algoritma Seçimi</li>
+              <li>Model Finalizasyonu</li>
+              <li>Değişken Kataloğu</li>
+            </ul>
+          </li>
+        </ol>
+      </section>
+
+      <section class="as-bolum">
+        <h2 class="as-bolum-baslik">Model Platformu Sayfaları</h2>
+        <div class="as-sayfalar">
+          <button class="as-sayfa" type="button" data-git="akis">
+            <img class="as-sayfa-ikon" data-as-ikon="model_akisi" alt="">
+            <span class="as-sayfa-metin"><b>Model Akışı</b>
+              Adımların blok blok ilerlediği çalışma alanı. Seçimler kartlar
+              üzerinden yapılır; her blok kendi kararını ve Geri Dön düğmesini
+              taşır.</span>
+          </button>
+          <button class="as-sayfa" type="button" data-git="gosterge">
+            <img class="as-sayfa-ikon" data-as-ikon="gosterge_paneli" alt="">
+            <span class="as-sayfa-metin"><b>Model Gösterge Paneli</b>
+              Çalışmanın sayılarla özeti: veri seti ve sözlük, değişken
+              sayıları (üretim, eleme), bölme, validasyon ve model sonucu.</span>
+          </button>
+          <button class="as-sayfa" type="button" data-git="degisken">
+            <img class="as-sayfa-ikon" data-as-ikon="degiskenler" alt="">
+            <span class="as-sayfa-metin"><b>Model Değişkenleri</b>
+              Değişken düzeyinde inceleme: Veri ve Sözlük, Dağılım ve SFA,
+              Değişken Kontrolleri. SFA kararları burada değiştirilebilir.</span>
+          </button>
+          <button class="as-sayfa" type="button" data-git="ozet">
+            <img class="as-sayfa-ikon" data-as-ikon="ozet" alt="">
+            <span class="as-sayfa-metin"><b>Model Özeti</b>
+              Model dokümanı: künye ve 20 bölüm. Akışın son durumundan her
+              açılışta yeniden üretilir; eksik ve teslimi engelleyen bölümler
+              ayrıca listelenir.</span>
+          </button>
+          <div class="as-sayfa kapali">
+            <img class="as-sayfa-ikon" data-as-ikon="katible_sohbet" alt="">
+            <span class="as-sayfa-metin"><b>Model Sohbeti <span class="as-rozet">Hazırlanıyor</span></b>
+              Açık çalışmaya bağlı sohbet: o çalışmanın verisi, kararları ve
+              sonuçları üzerine soru sorma.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="as-bolum">
+        <h2 class="as-bolum-baslik">Güvenceler</h2>
+        <div class="as-guvenceler">
+          <div class="as-guvence"><h3>Girdi veriniz değişmez</h3>
+            <p>Seçtiğiniz veri setine ve sözlüğe hiçbir şey yazılmaz. Platform
+              yalnız kendi kopyalarıyla çalışır: <code>AMP_VERISETI</code> ve
+              <code>AMP_SOZLUK</code>.</p></div>
+          <div class="as-guvence"><h3>Tam veri, örneklem yok</h3>
+            <p>Profil, sayımlar ve analizler verinin tamamı üzerinden yapılır;
+              büyük veri Spark ile kümede işlenir.</p></div>
+          <div class="as-guvence"><h3>Sızıntı sınırı korunur</h3>
+            <p>Doldurma, dönüşüm ve eğitim yalnız geliştirme setinden
+              hesaplanır; hedefle aşırı ilişkili değişkenler modele
+              alınmaz.</p></div>
+          <div class="as-guvence"><h3>Her karar kayıtlı</h3>
+            <p>Değişkenlerin kaynağı, dönüşümleri, seçim kararları ve sonuçlar
+              kaydedilir; çalışmaya Arşiv'den kaldığınız yerden devam
+              edersiniz.</p></div>
+        </div>
+      </section>
+
+      <section class="as-bolum">
+        <h2 class="as-bolum-baslik">Başlarken</h2>
+        <ol class="as-adimlar">
+          <li><h3>Çalışmayı açın</h3>
+            <p>Sol alttaki <b>Yeni Çalışma</b> ile başlayın ya da <b>Arşiv</b>'den
+              kayıtlı bir çalışmayı kaldığı yerden açın.</p></li>
+          <li><h3>Başlangıcı seçin</h3>
+            <p><b>Baz Veri Seti Mevcut</b>: modellemeye girecek tablo hazır.
+              <b>Kaynak Tablolar Mevcut</b>: tablolar birleştirilerek
+              oluşturulur. Sözlük isteğe bağlıdır; tanımı olmayan kolonlar
+              onaylı tanımlardan ve yapay zekâ önerilerinden doldurulur.</p></li>
+          <li><h3>Adımları onaylayın</h3>
+            <p>Her adımda öneriyi inceleyin, gerekirse değiştirin ve onaylayın.
+              Önceki bir adıma Geri Dön ile dönebilirsiniz; sohbet Değişken
+              Mühendisliği adımında açılır.</p></li>
+        </ol>
+      </section>
+
     </div>
   </div>
   <div id="sayfa-sohbet" class="sayfa gizli">

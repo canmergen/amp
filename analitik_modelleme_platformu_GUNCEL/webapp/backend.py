@@ -50,6 +50,8 @@ GORSELLER = {
     "yeni_calisma":    "yeni_calisma.png",
     # Sol barın altında, Görünüm'ün üstündeki robot
     "robot_alt":       "robot_alt.png",
+    # Ana Sayfa'nın üstündeki "Veriden Daha Fazlasını Keşfedin" görseli
+    "anasayfa_aciklama": "anasayfa_aciklama.png",
     # Sohbetteki ilk (karsilama) mesajin robotu
     "karsilama":  "robot_welcome.png",
     # Normal konusma

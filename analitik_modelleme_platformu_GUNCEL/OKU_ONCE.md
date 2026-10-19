@@ -35,6 +35,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
 | `robot_alt` | `robot_alt.png` | Sol bar: Görünüm'ün üstünde robot, kitaplar ve kupa |
+| `anasayfa_aciklama` | `anasayfa_aciklama.png` | Ana Sayfa: üst bölümün görseli (saydam, 3:1) |
 | `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
 | `bot` | `robot_chat.png` | Normal konuşma |
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
@@ -90,7 +91,7 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   px boşluk (style.css:
   --arkaplan-olcek). Altında
   ince siyah çizgi.
-- **Ana Sayfa** (kendi sayfasını açar; içerik hazırlanıyor).
+- **Ana Sayfa** (kendi sayfasını açar; içeriği aşağıda).
 - Ortasında **Çalışma Alanları** yazan çizgi; altında Model Platformu
   kümesi ve kilitli alanlar, en altta ince siyah çizgi.
 - Sayfa adları normal yazımla (büyük harf değil), alttaki Görünüm, Arşiv
@@ -129,6 +130,21 @@ yakınlaştırması %100'de kalır. Sol bar kaydırmasızdır (tasarım eni
 ekranda 299 px en). Ekran yetmezse bar yüksekliğe sığacak oranda küçülür,
 eni de aynı orana gelir; büyük ekranda büyümez. Küçültme CSS zoom ile
 yapılır (transform değil): yazı ve görseller bulanıklaşmaz.
+
+**Ana Sayfa** (tek sütun, en fazla 1180 px, kendi içinde kayar)
+- Üst bölüm: "Veriden / Daha Fazlasını Keşfedin." başlığı, platformun
+  kısa tanıtımı, **Model Akışını Aç** ve **Arşivden Devam Et** düğmeleri;
+  sağda `anasayfa_aciklama` görseli (yüklenemezse metin tek sütun kalır).
+- Çalışma Alanları: Model Platformu (Akışı Aç), KATIB'le Sohbet ve
+  Gösterge Paneli (hazırlanıyor).
+- Model Akışı: beş faz, her birinin özeti ve adımları.
+- Model Platformu sayfaları: Model Akışı, Model Gösterge Paneli, Model
+  Değişkenleri, Model Özeti (basınca o sayfa açılır), Model Sohbeti
+  (hazırlanıyor).
+- Güvenceler: girdi veri değişmez, tam veri, sızıntı sınırı, kayıtlı
+  kararlar. Başlarken: üç adım.
+- Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
+  biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
 
 **Model Akışı**
 - Üstte **İş Akışı** barı:

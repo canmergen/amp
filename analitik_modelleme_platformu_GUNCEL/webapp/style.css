@@ -4241,3 +4241,170 @@ span.bolme-cip { cursor: default; }
 #kabuk #sol-bar #tema-btn, #kabuk #sol-bar #calismalar-btn, #kabuk #sol-bar #sifirla-btn {
   font-weight: var(--fw-yari);
 }
+
+/* ==================== ANA SAYFA ====================
+   Platformu tanıtan ve sayfalara yönlendiren tek sütunlu sayfa (en fazla
+   1180 px, ortada); sayfa kendi içinde kayar. Sırayla:
+   - Üst bölüm: solda başlık ("Veriden / Daha Fazlasını Keşfedin."),
+     tanıtım ve düğmeler; sağda anasayfa_aciklama görseli. Görsel
+     yüklenemezse metin tek sütun kalır.
+   - Çalışma Alanları: Model Platformu (açık) ve iki hazırlanan alan.
+   - Model Akışı: beş faz ve adımları; fazlar mürekkep çizgisinin altında
+     ince dikey çizgilerle ayrılan sütunlar, faz numarası kırmızı.
+   - Model Platformu sayfaları, güvenceler, başlarken adımları.
+   Bölüm başlıklarının yanında sol bardaki gibi ince mürekkep çizgisi.
+   Simgeler sol barın çizimleri: beyaz ve sepyada "multiply" ile basılır,
+   gri modda sol bar gibi kâğıt rengi plakada durur. */
+#sayfa-anasayfa { overflow-y: auto; background: var(--zemin); }
+.ana-sayfa {
+  max-width: 1180px; margin: 0 auto; padding: 28px 32px 56px;
+  display: flex; flex-direction: column; gap: 38px;
+  color: var(--metin);
+}
+.ana-sayfa h1, .ana-sayfa h2, .ana-sayfa h3, .ana-sayfa p { margin: 0; }
+.ana-sayfa code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; }
+
+/* Üst bölüm */
+.as-hero {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center; gap: 20px;
+  padding: 30px 26px 24px 38px;
+  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 14px;
+  box-shadow: var(--golge-1);
+}
+.as-hero:has(.as-hero-gorsel.yok) { grid-template-columns: 1fr; }
+.as-baslik {
+  margin-bottom: 16px;
+  font-size: 44px; line-height: 1.1; font-weight: var(--fw-yari); letter-spacing: -.01em;
+  color: var(--murekkep);
+}
+.as-baslik em { font-style: normal; color: var(--kirmizi); }
+.as-giris { margin-bottom: 22px; font-size: 16.5px; line-height: 1.6; max-width: 34em; }
+.as-dugmeler { display: flex; flex-wrap: wrap; gap: 10px; }
+.as-hero-gorsel img { display: block; width: 100%; height: auto; }
+.as-hero-gorsel.yok { display: none; }
+
+/* Düğmeler */
+.as-dugme {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 42px; padding: 0 18px; border-radius: 8px;
+  border: 1px solid var(--kenar-guclu); background: var(--yuzey); color: var(--metin);
+  font: inherit; font-size: 15px; font-weight: var(--fw-yari); cursor: pointer;
+  transition: border-color .12s, filter .12s;
+}
+.as-dugme:hover:not(:disabled) { border-color: var(--murekkep); }
+.as-dugme.birincil { background: var(--kirmizi-dolgu); border-color: var(--kirmizi-dolgu); color: #fff; }
+.as-dugme.birincil:hover { filter: brightness(.93); border-color: var(--kirmizi-dolgu); }
+.as-dugme:disabled { cursor: not-allowed; background: transparent; color: var(--kilitli-yazi); }
+.as-dugme:focus-visible, .as-sayfa:focus-visible { outline: 2px solid var(--murekkep); outline-offset: 2px; }
+.as-ok { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* Bölüm başlığı: yanında sol bardaki gibi ince mürekkep çizgisi */
+.as-bolum-baslik {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+  font-size: 24px; font-weight: var(--fw-yari); color: var(--murekkep);
+}
+.as-bolum-baslik::after { content: ""; flex: 1 1 0; height: 1px; background: var(--murekkep); }
+.as-bolum-not { margin: -4px 0 18px; font-size: 15.5px; line-height: 1.6; max-width: 62em; }
+
+.as-rozet {
+  display: inline-block; padding: 1px 9px; border-radius: 999px;
+  border: 1px solid var(--kenar-guclu); color: var(--metin-tamam);
+  font-size: 12px; font-weight: var(--fw-yari); letter-spacing: .02em; white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Çalışma alanı kartları */
+.as-kartlar { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.as-kart {
+  display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 18px;
+  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 12px;
+  box-shadow: var(--golge-1);
+}
+.as-kart h3 {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  font-size: 20px; font-weight: var(--fw-yari);
+}
+.as-kart p { flex: 1; font-size: 15px; line-height: 1.55; }
+.as-kart-ikon { width: 56px; height: 56px; object-fit: contain; mix-blend-mode: multiply; }
+.as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { filter: grayscale(1); opacity: .5; }
+
+/* Beş faz */
+.as-fazlar {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  border-top: 1px solid var(--murekkep);
+}
+.as-faz { padding: 16px 18px 4px; border-left: 1px solid var(--kenar); }
+.as-faz:first-child { border-left: 0; padding-left: 0; }
+.as-faz-no {
+  display: block; margin-bottom: 8px;
+  font-size: 30px; line-height: 1; font-weight: var(--fw-yari); color: var(--kirmizi);
+  font-variant-numeric: tabular-nums;
+}
+.as-faz h3 { margin-bottom: 4px; font-size: 17px; font-weight: var(--fw-yari); }
+.as-faz-ozet { margin-bottom: 10px; font-size: 14px; line-height: 1.45; color: var(--metin-tamam); }
+.as-faz ul {
+  list-style: none; margin: 0; padding: 0; counter-reset: adim;
+  display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; line-height: 1.4;
+}
+.as-faz ul li { display: flex; gap: 8px; counter-increment: adim; }
+.as-faz ul li::before {
+  content: counter(adim); flex-shrink: 0; min-width: 1em;
+  color: var(--metin-tamam); font-variant-numeric: tabular-nums;
+}
+
+/* Model Platformu sayfaları */
+.as-sayfalar { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.as-sayfa {
+  display: flex; align-items: flex-start; gap: 14px; padding: 16px;
+  background: var(--yuzey); border: 1px solid var(--kenar); border-radius: 12px;
+  font: inherit; color: var(--metin); text-align: left; cursor: pointer;
+  transition: border-color .12s;
+}
+button.as-sayfa:hover { border-color: var(--murekkep); }
+.as-sayfa.kapali { cursor: default; }
+.as-sayfa-ikon { width: 44px; height: 44px; flex-shrink: 0; object-fit: contain; mix-blend-mode: multiply; }
+.as-sayfa-metin { font-size: 14.5px; line-height: 1.5; }
+.as-sayfa-metin b {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 3px;
+  font-size: 16.5px; font-weight: var(--fw-yari);
+}
+
+/* Güvenceler: başlığın üstünde kısa kırmızı çizgi */
+.as-guvenceler { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px 0; }
+.as-guvence { padding: 2px 20px; border-left: 1px solid var(--kenar); }
+.as-guvence:first-child { border-left: 0; padding-left: 0; }
+.as-guvence h3 { margin-bottom: 6px; font-size: 16.5px; font-weight: var(--fw-yari); }
+.as-guvence h3::before {
+  content: ""; display: block; width: 26px; height: 2px; margin-bottom: 10px;
+  background: var(--kirmizi-cizgi);
+}
+.as-guvence p { font-size: 14.5px; line-height: 1.55; }
+
+/* Başlarken: numaralı üç adım */
+.as-adimlar {
+  list-style: none; margin: 0; padding: 0; counter-reset: basla;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;
+}
+.as-adimlar li { position: relative; padding-left: 46px; counter-increment: basla; }
+.as-adimlar li::before {
+  content: counter(basla); position: absolute; left: 0; top: -2px;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--murekkep); color: var(--murekkep);
+  font-size: 15px; font-weight: var(--fw-yari);
+}
+.as-adimlar h3 { margin-bottom: 4px; font-size: 16.5px; font-weight: var(--fw-yari); }
+.as-adimlar p { font-size: 14.5px; line-height: 1.55; }
+
+/* Gri mod: çizimler sol bardaki gibi kâğıt rengi plakada */
+#kabuk.gri .as-kart-ikon, #kabuk.gri .as-sayfa-ikon {
+  mix-blend-mode: normal; background: var(--kagit); border-radius: 8px; padding: 4px;
+}
+#kabuk.gri .as-hero-gorsel { background: var(--kagit); border-radius: 10px; padding: 8px; }
+
+/* Dar ekran: üst bölüm tek sütun, görsel altta */
+@media (max-width: 1100px) {
+  .as-hero { grid-template-columns: 1fr; }
+}

@@ -5657,6 +5657,43 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape" && ANALIZ_DAR.acik) analizDaralt(true);
 });
 
+/* ==================== ANA SAYFA ====================
+   Üstteki görsel (anasayfa_aciklama) yüklenemezse yeri kapanır. Kart ve
+   sayfa simgeleri sol barın çizimleri (beyaz zemini saydam). data-git
+   düğmeleri sol bardaki ilgili satırı açar; satır kapalı Model Platformu
+   kümesindeyse küme de açılır, böylece seçili satır görünür. */
+function solBarSatirAc(secici) {
+    const b = document.querySelector("#sol-bar " + secici);
+    if (!b) return;
+    const kume = b.closest(".ust-kume.acilir");
+    if (kume && !kume.classList.contains("acik")) kumeAcKapa(kume);
+    b.click();
+}
+const ANA_SAYFA_HEDEF = {
+    akis:     () => solBarSatirAc('.ust-sekme[data-ust="akis"]'),
+    gosterge: () => solBarSatirAc('.ust-sekme[data-tab="ozet"]'),
+    degisken: () => solBarSatirAc('.ust-sekme[data-tab="degisken"]'),
+    ozet:     () => solBarSatirAc('.ust-sekme[data-ust="dokuman"]'),
+    arsiv:    () => { const b = document.getElementById("calismalar-btn"); if (b) b.click(); },
+};
+(function anaSayfaKur() {
+    const kok = document.getElementById("sayfa-anasayfa");
+    if (!kok) return;
+    const hero = document.getElementById("as-hero-img");
+    if (hero) {
+        hero.onerror = () => hero.parentElement.classList.add("yok");
+        hero.src = getWebAppBackendUrl("gorsel/anasayfa_aciklama");
+    }
+    kok.querySelectorAll("img[data-as-ikon]").forEach(img => {
+        solBarGorseli(img.dataset.asIkon).then(src => { img.src = src; },
+            () => img.classList.add("yok"));
+    });
+    kok.querySelectorAll("[data-git]").forEach(d => {
+        const git = ANA_SAYFA_HEDEF[d.dataset.git];
+        if (git) d.onclick = (e) => { e.stopPropagation(); git(); };
+    });
+})();
+
 /* MODEL PLATFORMU kümesi başta kapalı; başlığa basınca içindeki sayfalar
    açılır, yeniden basınca kapanır. */
 function kumeAcKapa(kume) {
