@@ -87,9 +87,9 @@
      sekme, ilerleme çubuğu). Beyaz temada yazı kırmızısıyla aynı;
      modlar ikisini ayrı ayarlayabilir. */
   --kirmizi-dolgu: #D51115;
-  /* Kırmızı kenar ve çerçeveler (adım bloğu, seçili kart, odak). Beyaz
-     ve sepyada yazı kırmızısıyla aynı; gri modda yazı kırmızısı açık
-     (pembeye kaçar), çerçeve canlı kırmızı kalır. */
+  /* Kırmızı kenar ve çerçeveler (adım bloğu, seçili kart, odak). Her
+     modda o modun yazı kırmızısıyla aynı; ayrı tutulması bir mod kenar
+     rengini yazıdan ayrı ayarlamak isterse diye. */
   --kirmizi-cizgi: #D51115;
   --kirmizi-acik: #FDF1F1;
   --kirmizi-halka: rgba(213,17,21,.16);
@@ -259,78 +259,59 @@
   --kume-secili-yazi: #9E0F14;
 }
 
-/* GRİ: koyu gri zemin, beyaz yazı (siyaha kaçmayan orta-koyu gri). Üç
-   katman: sayfa zemini (#3A3E45), paneller (#42464D), kartlar (#4A4F57).
-   Metin beyaz (kartta 8,2:1). Siyah olan her şey (yazı, mürekkep
-   çizgileri, Görünüm anahtarı) beyaza döner: --murekkep açık. Kırmızı
-   yazı açık ton (#FFB0B0, kartta 4,8:1); kenar ve çerçeveler canlı
-   kırmızı (#FF7A70, kartta 3,3:1); beyaz yazının altındaki kırmızı
-   dolgu koyu kalır (#C4161C, 6:1). Çizimler (logo, ikonlar, robot,
-   Ana Sayfa görselleri) Beyaz moddaki gibi kalır, yalnız dış
-   çizgilerine çok ince beyaz kontur alır; logonun arkasındaki İstanbul
-   çiziminin siyah çizgileri beyaza döner. Yeşil, kehribar, mavi yazılar da koyu
-   zeminde okunacak kadar açık; açık zeminli rozet ve vurgular koyu,
-   renkli tonlara döner. color-scheme: dark ile tarayıcının açılır
-   listeleri ve kaydırma çubukları da koyu çizilir. */
+/* GRİ: açık gri zemin, koyu yazı; Sepya gibi yalnız zemin tonları
+   değişir, renkler ve görseller Beyaz moddaki gibi kalır. Üç katman: sayfa
+   zemini (#D5D8DD), paneller (#DDE0E4), kartlar (#E8EAED). Metin neredeyse
+   siyah (#111418, kartta 15,3:1). Kırmızı bir ton koyu (#B8121A, zeminde
+   4,7:1); yeşil, kehribar ve gri yazılar da gri zeminde okunacak kadar
+   koyu. */
 #kabuk.gri {
-  color-scheme: dark;
-  --murekkep:     #F2F3F5;
+  --kirmizi:      #B8121A;
+  --kirmizi-koyu: #960E14;
+  --kirmizi-dolgu: #B8121A;
+  --kirmizi-cizgi: #B8121A;
+  --kirmizi-acik: #F1DADC;
+  --kirmizi-halka: rgba(184,18,26,.18);
 
-  --kirmizi:      #FFB0B0;
-  --kirmizi-koyu: #FF9A9A;
-  --kirmizi-dolgu: #C4161C;
-  --kirmizi-cizgi: #FF7A70;
-  --kirmizi-acik: #5A4448;
-  --kirmizi-halka: rgba(255,140,140,.28);
+  --zemin:        #D5D8DD;
+  --yuzey:        #E8EAED;
+  --yuzey-alt:    #DDE0E4;
+  --kenar:        #C3C7CE;
+  --kenar-guclu:  #A6ACB5;
+  --kenar-acik:   #D0D3D8;
+  --ayrac:        rgba(0,0,0,.40);
 
-  --zemin:        #3A3E45;
-  --yuzey:        #4A4F57;
-  --yuzey-alt:    #42464D;
-  --kenar:        #60656E;
-  --kenar-guclu:  #7A808A;
-  --kenar-acik:   #555A62;
-  --ayrac:        rgba(0,0,0,.50);
+  --metin:        #111418;
+  --metin-soluk:  #111418;
+  --metin-asil:   #000000;
+  --metin-tamam:  #545C69;
+  --yer-tutucu:   rgba(17,20,24,.50);
+  --kilitli-yazi: #737B86;
 
-  --metin:        #FFFFFF;
-  --metin-soluk:  #FFFFFF;
-  --metin-asil:   #FFFFFF;
-  --metin-tamam:  #C9CED5;
-  --yer-tutucu:   rgba(255,255,255,.50);
-  --kilitli-yazi:      #BAC0C8;
+  --user-zemin:   #D3D6DB;
 
-  --user-zemin:   #555A62;
+  --golge-1:   0 1px 2px rgba(16,24,40,.08);
+  --ust-golge: 0 1px 2px rgba(16,24,40,.12);
+  --golge-2:   0 5px 13px rgba(16,24,40,.14);
 
-  --gonder-zemin: #FFFFFF;
-  --gonder-metin: #2A2D33;
+  --yesil:        #0B6E41;
+  --yesil-acik:   #D2E5DA;
+  --excel-acik:   #CFE6D8;
+  --excel-kenar:  #93C3A6;
+  --amber:        #8F4A06;
+  --amber-acik:   #EBDDBF;
+  --sari-acik:    #EDE3B8;
 
-  --golge-1:   0 1px 2px rgba(0,0,0,.20);
-  --ust-golge: 0 1px 2px rgba(0,0,0,.25);
-  --golge-2:   0 5px 13px rgba(0,0,0,.30);
-
-  --yesil:        #8FE3B3;
-  --yesil-acik:   #2F4F40;
-  --excel-acik:   #2E4A3A;
-  --excel-kenar:  #5E9277;
-  --excel-pasif-yazi: #8FE3B3;
-  --amber:        #F8C77E;
-  --amber-acik:   #5A4A30;
-  --sari-acik:    #57502F;
-  --mavi:         #A9C6FF;
-  --bilgi-zemin:  rgba(111,220,208,.14);
-  --bilgi-kenar:  #6FDCD0;
-  --grafik-seri:  #8DB0F5;
-  --aralik-seri-2: #F49A6E;
-
-  --pembe-secili:  #5E4549;
-  --pembe-kenar:   #8A5A60;
-  --kume-secili-yazi: #FFB0B0;
+  --pembe-secili:  #EFD3D5;
+  --pembe-kenar:   #DDB8BB;
+  --kume-secili-yazi: #960E14;
 }
 #kabuk.sepya .blok-durum.kontrol {
   color: #7E4106; background: #F4E2BE; border-color: #7E4106;
 }
 /* Sepya ve gri modda sayfa zemini. */
 body:has(#kabuk.sepya) { background-color: #F1E9D6; }
-body:has(#kabuk.gri) { background-color: #3A3E45; }
+body:has(#kabuk.gri) { background-color: #D5D8DD; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
@@ -3932,7 +3913,7 @@ span.bolme-cip { cursor: default; }
 :root { --sol-bar-en: 340px; }
 #sol-bar { --sol-ok: #9AA0A6; background: #F7F7F8; }
 #kabuk.sepya #sol-bar { --sol-ok: #8C7D68; background: var(--yuzey-alt); }
-#kabuk.gri #sol-bar { --sol-ok: #B5BBC3; background: var(--yuzey-alt); }
+#kabuk.gri #sol-bar { --sol-ok: #6B7380; background: var(--yuzey-alt); }
 
 
 #ust-sekmeler { gap: 10px; padding: var(--b-3) 10px; }
@@ -4024,32 +4005,6 @@ span.bolme-cip { cursor: default; }
 #sol-bar .ust-kume-ad img.ikon-gorsel { width: 42px; height: 42px; }
 #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
 #sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 32px; height: 32px; }
-/* Gri modda çizimler Beyaz moddaki gibi kalır: renkleri değişmez,
-   plaka yok. Koyu zeminde siyah dış hatları kaybolmasın diye çevrelerine
-   çok ince (.75 px) beyaz kontur çekilir: dört yöne .75 px beyaz gölge,
-   saydam zemin sayesinde çizimin kendi şeklini izler. "multiply" kapalı
-   (koyu zeminde çizimi karartırdı). Logonun arkasındaki İstanbul çizimi
-   ayrı: siyah çizgileri beyaza döner (negatif; hue-rotate kırmızıyı
-   kırmızı tutar, "lighten" koyulaşan iç dolguları zemine bırakır). */
-#kabuk.gri #sol-bar img.ikon-gorsel,
-#kabuk.gri #katib-logo,
-#kabuk.gri #robot-alt,
-#kabuk.gri .as-kart-ikon,
-#kabuk.gri .as-sayfa-ikon,
-#kabuk.gri .as-hero-gorsel img {
-  mix-blend-mode: normal;
-  filter: drop-shadow(.75px 0 0 #fff) drop-shadow(-.75px 0 0 #fff)
-          drop-shadow(0 .75px 0 #fff) drop-shadow(0 -.75px 0 #fff);
-}
-#kabuk.gri #sol-bar .ust-sekme.kapali img.ikon-gorsel,
-#kabuk.gri .as-kart.kapali .as-kart-ikon,
-#kabuk.gri .as-sayfa.kapali .as-sayfa-ikon {
-  filter: grayscale(1) drop-shadow(.75px 0 0 #fff) drop-shadow(-.75px 0 0 #fff)
-          drop-shadow(0 .75px 0 #fff) drop-shadow(0 -.75px 0 #fff);
-}
-#kabuk.gri #sol-bar-logo::before, #kabuk.gri #sol-bar-logo::after {
-  filter: invert(1) hue-rotate(180deg); mix-blend-mode: lighten;
-}
 /* ---- Görünüm anahtarı ----
    Dergi dilinde (New Yorker): renk yerine mürekkep. İnce siyah çerçeveli
    dikdörtgen, bölmeler ince siyah çizgiyle ayrılır; simgeler mürekkep
@@ -4264,8 +4219,8 @@ span.bolme-cip { cursor: default; }
    - Model Platformu sayfaları, güvenceler, başlarken adımları.
    Bölüm başlıklarının yanında sol bardaki gibi ince mürekkep çizgisi.
    Zemin kartlarla aynı renk (Beyaz modda beyaz); kartlar ince kenarla
-   ayrılır. Simgeler sol barın çizimleri: beyaz ve sepyada "multiply" ile
-   basılır; gri modda sol bardaki gibi ince beyaz konturlu. */
+   ayrılır. Simgeler sol barın çizimleri, "multiply" ile basılır (beyaz
+   kısımları zeminin rengini alır). */
 #sayfa-anasayfa { overflow-y: auto; background: var(--yuzey); }
 .ana-sayfa {
   max-width: 1180px; margin: 0 auto; padding: 28px 32px 56px;

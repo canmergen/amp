@@ -407,7 +407,7 @@ function baslikBuyuk(s) {
 
 /* ==================== Renk modu (beyaz / sepya / gri) ==================== */
 /* Sol bardaki Görünüm düğmesi. Üç mod: "acik" (Beyaz), "sepya" ve
-   "gri" (koyu gri, beyaz yazı). Sepya ve gri modda #kabuk.sepya / #kabuk.gri
+   "gri" (açık gri). Sepya ve gri modda #kabuk.sepya / #kabuk.gri
    renk değişkenlerini devralır. Anahtardaki bir simgeye basınca o mod
    seçilir; düğmenin başka bir yerine basınca sıradaki moda geçilir.
    Seçim bu tarayıcıda hatırlanır; okunamazsa Beyaz başlar. */

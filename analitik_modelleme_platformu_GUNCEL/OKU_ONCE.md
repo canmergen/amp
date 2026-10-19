@@ -112,11 +112,8 @@ vurgu 700. Rakamlar tablolarda eşit genişlikte.
   soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan), Sepya (sıcak kâğıt
-  tonu), Gri (koyu gri zemin, beyaz yazı; siyah olan her şey beyaza
-  döner; logo, ikonlar, robot ve Ana Sayfa görselleri Beyaz moddaki
-  gibi kalır, yalnız dış çizgilerine çok ince beyaz kontur alır; logonun
-  arkasındaki İstanbul çiziminin siyah çizgileri beyaza döner; kenar ve
-  çerçeveler canlı kırmızı). Anahtar üç bölmeli segmentli
+  tonu), Gri (açık gri zemin, koyu yazı). Sepya ve Gri'de yalnız zemin
+  tonları değişir; renkler ve görseller Beyaz moddaki gibi kalır. Anahtar üç bölmeli segmentli
   düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); ince
   siyah çerçeve ve bölme çizgileri; simgeye basınca o mod seçilir; seçili
   bölme mürekkep siyahıyla dolu, simgesi ters baskı. Düğmenin
