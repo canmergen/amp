@@ -157,7 +157,8 @@ tanıtır; sayfalar sol bardan açılır.
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
   kartın içinin %34'ü), sağında üstte başlık, altında açıklama. Üst
-  bölümün ve kartların kenarı mürekkep siyahı. Her kartın altında **Nasıl Çalışır** / **Ne
+  bölümün, kartların ve düğmelerin kenarı, açıklamadaki faz ve güvence
+  sütunlarını ayıran çizgiler mürekkep siyahı. Her kartın altında **Nasıl Çalışır** / **Ne
   Olacak** düğmesi. Karta (düğme dahil herhangi bir yerine) basınca kart
   seçilir (kırmızı kalın kenar, hafif pembe zemin, kırmızı dolu düğme) ve
   kartların altında o alanın açıklaması açılır; yeniden basınca ikisi de
