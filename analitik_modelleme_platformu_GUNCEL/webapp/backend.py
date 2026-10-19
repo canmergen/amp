@@ -34,9 +34,6 @@ GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 GORSELLER = {
     # Sol barın tepesindeki KATIB logosu
     "katib_logo": "katib_logo.png",
-    # Logonun arkasındaki bina çizimi (solda ve sağda bina grupları;
-    # ortası boş, logo oraya oturur)
-    "katib_arkaplan": "katib_arkaplan.png",
     # Sol bar ikonları (çizim); yüklenemeyenin yerinde çizgi ikon kalır
     "anasayfa":        "anasayfa.png",
     "model_platformu": "model_platformu.png",

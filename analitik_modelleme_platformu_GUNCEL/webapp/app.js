@@ -82,7 +82,6 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
     katibLogo:  getWebAppBackendUrl("gorsel/katib_logo"),
-    katibArkaplan: getWebAppBackendUrl("gorsel/katib_arkaplan"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
@@ -220,17 +219,6 @@ function solBarGorseli(ad) {
         robot.src = src;
         robot.classList.add("yuklu");
     }, () => { /* görsel yok */ });
-})();
-
-/* Logonun arkasındaki bina çizimi: yüklenirse logo yuvasının zemini
-   olur (style.css: --logo-arkaplan); yüklenemezse logo tek başına kalır. */
-(function () {
-    const yuva = document.getElementById("sol-bar-logo");
-    const img = new Image();
-    img.onload = () => {
-        if (yuva) yuva.style.setProperty("--logo-arkaplan", 'url("' + GORSEL.katibArkaplan + '")');
-    };
-    img.src = GORSEL.katibArkaplan;
 })();
 
 /* Görselin kenarlarındaki saydam boşluğu kırpar (logo yuvada küçük

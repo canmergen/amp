@@ -395,44 +395,14 @@ body { background-color: #FFFFFF; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATIB logosu sol barın tepesinde (barın eninin %58'i, ortada; yatayda
-   enin yaklaşık %21-%79'u). Üstünde 20 px, altında 10 px boşluk (altındaki
-   çizgiye kadar toplam 20 px); yuvanın boyu logonun boyuna göre.
-   Arkasında bina çizimi (katib_arkaplan.png, 3:1, saydam): solda bir
-   bina grubu (çizimin eninin %0-%31'i), sağda diğeri (%69-%100), ortası
-   boş; çizimin üst dörtte biri boş, binalar yüksekliğin %25-%87'sinde.
-   Çizim logoya binmesin diye iki parçası ayrı basılır: sol grup
-   ::before, sağ grup ::after; kutu tam o parçanın eninde, çizimin geri
-   kalanı kutunun dışında kalır, görünmez. Parçalar oranı bozulmadan
-   --arkaplan-olcek kadar küçültülüp barın iki kenarına yaslanır (.66 ile
-   sol grup yuvanın %20'sinde biter, sağ grup %80'inde başlar; logo
-   arada). Kutu yuvanın tam boyunda; çizim yuvanın altına yaslanır: alt
-   boşluğu (%13) yuvanın 10 px alt boşluğuyla örtüşür, binaların zemini
-   logonun alt çizgisine, uzun bina logonun üst hizasına yakın gelir.
-   Çizim yüklenemezse (--logo-arkaplan yok) logo tek başına durur. */
+/* KATIB logosu sol barın tepesinde, ortada (barın eninin %58'i). Üstünde
+   20 px, altında 10 px boşluk (altındaki çizgiye kadar toplam 20 px);
+   yuvanın boyu logonun boyuna göre. */
 #sol-bar-logo {
-  --arkaplan-olcek: .66;
-  position: relative;
   flex-shrink: 0; padding: 20px 0 10px; margin-bottom: 4px;
   display: flex; align-items: flex-start; justify-content: center;
 }
-#sol-bar-logo::before, #sol-bar-logo::after {
-  content: ""; position: absolute; top: 0; bottom: 0;
-  pointer-events: none;
-  background: var(--logo-arkaplan, none) no-repeat;
-}
-/* Kutu, çizimin o parçası kadar (yuva eni x ölçek x parça payı %31);
-   çizim kutunun 1 / .31 katı genişlikte basılır. */
-#sol-bar-logo::before {
-  left: 0; width: calc(var(--arkaplan-olcek) * 31%);
-  background-size: calc(100% / .31) auto; background-position: left bottom;
-}
-#sol-bar-logo::after {
-  right: 0; width: calc(var(--arkaplan-olcek) * 31%);
-  background-size: calc(100% / .31) auto; background-position: right bottom;
-}
 #katib-logo {
-  position: relative; z-index: 1;
   display: block; width: 58%; height: auto; max-height: 72px;
   object-fit: contain;
 }
@@ -3906,7 +3876,7 @@ span.bolme-cip { cursor: default; }
 }
 
 /* ==================== SOL BAR TASARIMI ====================
-   Üstte KATIB logosu ve arkasında bina çizimi. Sayfa satırları
+   Üstte KATIB logosu. Sayfa satırları
    kartsız, sol barın zemininde düz liste; gruplar ince mürekkep
    çizgileriyle ayrılır. Model Platformu'nun alt sayfaları girintili ve
    solunda ince kılavuz çizgisi var. Seçili satır köşesiz: solunda düz

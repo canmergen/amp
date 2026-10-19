@@ -23,7 +23,6 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
 | `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
-| `katib_arkaplan` | `katib_arkaplan.png` | Logonun arkasındaki bina çizimi (saydam, 3:1; ortası boş) |
 | `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
@@ -84,11 +83,8 @@ SIL Open Font License). Gövde 400; başlıklar ve sol bar satırları 600;
 vurgu 700. Rakamlar tablolarda eşit genişlikte.
 
 **Sol bar**
-- Tepede KATIB logosu; arkasında bina çizimi: solda ve sağda birer bina
-  grubu. Çizimin iki parçası oranı bozulmadan %66'ya küçültülüp barın
-  iki kenarına yaslanır, logoya binmez; binaların zemini logonun alt
-  çizgisine gelir. Logonun üstünde ve altındaki çizgiye kadar 20'şer px
-  boşluk (style.css: --arkaplan-olcek). Altında ince siyah çizgi.
+- Tepede KATIB logosu, ortada; üstünde ve altındaki çizgiye kadar 20'şer
+  px boşluk. Altında ince siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içeriği aşağıda).
 - Ortasında **Çalışma Alanları** yazan çizgi; altında Model Platformu
   kümesi ve kilitli alanlar, en altta ince siyah çizgi.
