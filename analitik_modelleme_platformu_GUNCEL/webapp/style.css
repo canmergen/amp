@@ -4232,7 +4232,9 @@ span.bolme-cip { cursor: default; }
    enin %24'ü; yazı boyları ve boşluklar cqw ile bloğun enine bağlı), bu
    yüzden yakınlaştırınca ya da uzaklaştırınca blok tek parça büyür ve
    küçülür. Görsel bloğun üst, sağ ve alt kenarına yapışık, bloğun tam
-   boyunda (saydam kenarları app.js'te kırpılır). Yazının soldan ve
+   boyunda (saydam kenarları app.js'te kırpılır); kendi oranının %90'ı
+   enle çizilir (çizim yatayda geniş durduğu için daraltılır, oranı
+   app.js --gorsel-oran olarak verir). Yazının soldan ve
    üstten boşluğu aynı (enin %3'ü). Çizimin üst %30'u boş (yalnız
    pencere çerçeveleri sağda): başlık oraya uzanabilir; giriş yazısı
    aşağıda, çizimin sol ucundaki saksı ve masaya değmeyen dar sütunda
@@ -4245,11 +4247,14 @@ span.bolme-cip { cursor: default; }
 }
 .as-hero-metin { position: absolute; z-index: 1; left: 3cqw; top: 3cqw; }
 .as-hero-gorsel { position: absolute; top: 0; right: 0; bottom: 0; }
-.as-hero-gorsel img { display: block; height: 100%; width: auto; }
+.as-hero-gorsel img {
+  display: block; height: 100%; width: auto;
+  aspect-ratio: calc(var(--gorsel-oran, 2.768) * .9);
+}
 .as-hero-gorsel.yok { display: none; }
 .as-baslik {
-  margin-bottom: 1.1cqw; white-space: nowrap;
-  font-size: 3.3cqw; line-height: 1.08; font-weight: var(--fw-yari); letter-spacing: -.01em;
+  margin-bottom: 1.4cqw; white-space: nowrap;
+  font-size: 3.3cqw; line-height: 1.22; font-weight: var(--fw-yari); letter-spacing: .03em;
   color: var(--murekkep);
 }
 .as-baslik em { font-style: normal; color: var(--kirmizi); }

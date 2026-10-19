@@ -139,7 +139,10 @@ içinde kayar; zemin kartlarla aynı renk, Beyaz modda beyaz). Yalnız
 tanıtır; sayfalar sol bardan açılır.
 - Üst bölüm: "Veriyle Yapacağınız / Her Şey, Tek Platformda." başlığı ve
   giriş yazısı; sağda `anasayfa_aciklama` görseli bloğun üst, sağ ve alt
-  kenarına yapışık (yüklenemezse yalnız yazı kalır). Blok eniyle orantılı
+  kenarına yapışık (yüklenemezse yalnız yazı kalır). Görsel kendi
+  oranının %90'ı enle çizilir: çizim yatayda geniş durduğu için %10
+  daraltılır, kırpılmaz. Başlık harfleri ve iki satırı arası açık
+  (harf aralığı .03em, satır yüksekliği 1.22). Blok eniyle orantılı
   (boy = en x %24; yazı boyları blok enine bağlı), yakınlaştırınca tek
   parça büyür. Yazı çizime değmez (piksel düzeyinde denetlendi).
 - Çalışma Alanları (üç ayrı iş): Model Platformu (model kurma, izleme ve
