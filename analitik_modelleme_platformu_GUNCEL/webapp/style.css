@@ -405,9 +405,11 @@ body { background-color: #FFFFFF; }
    eninde, çizimin geri kalanı kutunun dışında kalır, görünmez. Parçalar
    oranı bozulmadan --arkaplan-olcek kadar küçültülüp barın iki kenarına
    yaslanır (.72 ile Galata yuvanın %20'sinde biter, yarımada %81'inde
-   başlar). Dikeyde logoyla aynı hizada: kutu logonun yüksekliğinde ve
-   çizimin görsel ağırlık noktası (yüksekliğinin %62'si; altı evler ve
-   kıyı, üstü kuşlar) logonun ortasına gelir. Çizim yüklenemezse
+   başlar). Kutu yuvanın tam boyunda (çizim logodan uzun, kırpılmasın
+   diye); dikeyde logoyla aynı hizada: çizimin görsel ağırlık noktası
+   (yüksekliğinin %62'si; altı evler ve kıyı, üstü kuşlar) logonun
+   ortasına gelir. Logonun ortası yuvanın ortasından 5 px aşağıda (üst
+   boşluk 20, alt 10 px). Çizim yüklenemezse
    (--logo-arkaplan yok) logo tek başına durur. */
 #sol-bar-logo {
   --arkaplan-olcek: .72;
@@ -416,23 +418,23 @@ body { background-color: #FFFFFF; }
   display: flex; align-items: flex-start; justify-content: center;
 }
 #sol-bar-logo::before, #sol-bar-logo::after {
-  content: ""; position: absolute; top: 20px; bottom: 10px;
+  content: ""; position: absolute; top: 0; bottom: 0;
   pointer-events: none;
   background: var(--logo-arkaplan, none) no-repeat;
 }
 /* Kutu, çizimin o parçası kadar (yuva eni x ölçek x parça payı); çizim
    kutunun 1 / parça payı katı genişlikte basılır. Dikey konum: çizimin
-   ortası kutunun ortasına (50%), sonra çizim boyunun %12'si kadar yukarı
-   (çizim boyu = ölçek x 340 / 3 px). */
+   ortası kutunun ortasına (50%), 5 px aşağı (logonun ortası), sonra
+   çizim boyunun %12'si kadar yukarı (çizim boyu = ölçek x 340 / 3 px). */
 #sol-bar-logo::before {
   left: 0; width: calc(var(--arkaplan-olcek) * 33%);
   background-size: calc(100% / .33) auto;
-  background-position: left calc(50% - var(--arkaplan-olcek) * 13.6px);
+  background-position: left calc(50% + 5px - var(--arkaplan-olcek) * 13.6px);
 }
 #sol-bar-logo::after {
   right: 0; width: calc(var(--arkaplan-olcek) * 32%);
   background-size: calc(100% / .32) auto;
-  background-position: right calc(50% - var(--arkaplan-olcek) * 13.6px);
+  background-position: right calc(50% + 5px - var(--arkaplan-olcek) * 13.6px);
 }
 #katib-logo {
   position: relative; z-index: 1;
