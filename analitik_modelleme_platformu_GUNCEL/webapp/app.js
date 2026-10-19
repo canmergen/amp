@@ -5737,7 +5737,10 @@ document.addEventListener("keydown", e => {
     /* Kart açıklamaları: karta basınca (ya da klavyede Enter / Boşluk)
        kart seçilir ve kartların altında o alanın açıklaması açılır,
        yeniden basınca ikisi de kalkar; aynı anda tek kart seçili.
-       Açılan açıklama görünür alana kaydırılır. */
+       Açılan açıklama, sayfanın üst kenarı kartlarla açıklama başlığı
+       arasındaki boşluğun ortasına gelecek şekilde kaydırılır: başlık
+       ekranın tepesine yapışmaz, üstünde kartlarla arasındaki boşluğun
+       yarısı kadar pay kalır. */
     const kartlar = Array.from(kok.querySelectorAll(".as-kart[data-ayrinti]"));
     const ayrintilar = Array.from(kok.querySelectorAll(".as-ayrinti[data-alan]"));
     function ayrintiAc(alan) {
@@ -5751,7 +5754,13 @@ document.addEventListener("keydown", e => {
         });
         ayrintilar.forEach(a => { a.hidden = a.dataset.alan !== hedef; });
         const gorunen = ayrintilar.find(a => !a.hidden);
-        if (gorunen) gorunen.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        if (gorunen) {
+            const kartAlt = kok.querySelector(".as-kartlar").getBoundingClientRect().bottom;
+            const ustu = gorunen.getBoundingClientRect().top;
+            const hedef = kok.scrollTop + ((kartAlt + ustu) / 2 - kok.getBoundingClientRect().top)
+                          / ekranOlcegi();
+            kok.scrollTo({ top: Math.max(0, hedef), behavior: "smooth" });
+        }
     }
     kartlar.forEach(k => {
         k.onclick = () => ayrintiAc(k.dataset.ayrinti);

@@ -175,7 +175,8 @@ tanıtır; sayfalar sol bardan açılır.
   siyahı. Kartlarda düğme yok: karta basınca (klavyede Enter / Boşluk)
   kart seçilir (kırmızı kalın kenar, hafif pembe zemin) ve kartların
   altında o alanın açıklaması açılır; yeniden basınca ikisi de kalkar
-  (aynı anda tek kart).
+  (aynı anda tek kart). Açıklama açılınca sayfa, üst kenarı kartlarla
+  açıklama başlığı arasındaki boşluğun ortasına gelecek şekilde kayar.
 - Açıklamalar yalnız tanıtır. Her biri ortada, iki yanında çizgi olan
   başlıkla ve altında ortalı kısa girişle başlar.
   - Model Platformu Nasıl Çalışır: platformu hiç bilmeyen birine baştan
