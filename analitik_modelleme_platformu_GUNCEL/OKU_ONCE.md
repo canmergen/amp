@@ -181,8 +181,10 @@ tanıtır; sayfalar sol bardan açılır.
   - Model Platformu Nasıl Çalışır: giriş (beş faz, öneri ve onay);
     ardından dört alt bölüm, her biri ortada çizgili alt başlıkla ve
     aralarında geniş boşlukla:
-    - Beş Faz: yan yana beş kutu (kırmızı numara, faz adı, özet, ince
-      çizginin altında numaralı adımlar).
+    - Beş Faz: tek kutu içinde süreç şeridi; her fazda kırmızı numara,
+      mürekkep halkalı daire içinde kırmızı simge (daireler kesik çizgiyle
+      bağlı), faz adı, özet, kısa kırmızı çizgi ve adımlar; ad, özet ve
+      adımlar bütün fazlarda aynı hizada.
     - Katkılar: dört kutu (Akıllı değişken üretimi, Hız ve verimlilik,
       Sade ve güçlü model, Her modele uygun yapı); kırmızı daire içinde
       simge, başlık ve yazı ortada; sayısal iddia yok.
@@ -192,7 +194,8 @@ tanıtır; sayfalar sol bardan açılır.
     - Güvenceler: açık zeminli tek kutu, dört bölme ince çizgiyle
       ayrılır; her bölmede kırmızı halka içinde simge, yanında başlık,
       altında kısa açıklama.
-    Bütün kutular 2 px mürekkep kenarlı. 1300 px altında fazlar üçerli,
+    Bütün kutular 2 px mürekkep kenarlı. 1300 px altında fazlar üçerli
+    (satır sonunda bağlantı çizgisi yok),
     katkılar ve güvenceler 2x2, sayfalar ikişerli dizilir.
   - KATIB'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
