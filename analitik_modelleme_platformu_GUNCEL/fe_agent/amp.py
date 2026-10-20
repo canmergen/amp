@@ -25,6 +25,7 @@ ozeldir (AMP_VERISETI_V8), baska bir calisma onu ezemez.
 
 import re
 
+from fe_agent import akis_atif
 from fe_agent import motor
 from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
@@ -228,8 +229,8 @@ def amp_bolme_yaz(durum, bolme):
     AMP_VERISETI odur. Doner: amp_yaz ile ayni bicim + setler."""
     kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
     if not (kayit.get("dosya") or kayit.get("dataset")):
-        raise AdimHatasi("AMP_VERISETI henüz oluşturulmadı; önce «Değişken "
-                         "Listesi ve Tip Kontrolü» adımını kaydedin.")
+        raise AdimHatasi("AMP_VERISETI henüz oluşturulmadı; önce %s adımını "
+                         "kaydedin." % akis_atif.adim("teyit", durum))
     istek = {"donusum": {}, "dusen": [],
              "hedef": (durum.get("meta") or {}).get("target"), "bolme": bolme,
              # Segment kolonu: set x segment sayimi (01.4 segment tablosu)

@@ -3,7 +3,7 @@
 
 import pandas as pd
 
-from fe_agent import sozluk_calisma
+from fe_agent import akis_atif, sozluk_calisma
 from fe_agent import motor as motor_mod
 from fe_agent.akis_metin import (
     BIRLESTIREN_MODLAR, MOD_ADLARI, SOZLUK_URETEN_MODLAR)
@@ -657,11 +657,12 @@ def baslik_bicimi(metin):
     return " ".join(cikti)
 
 
-def _kart(baslik, tanimlar):
+def _kart(baslik, tanimlar, durum=None):
     """tanimlar: [(etiket, deger, "dolduran adim")]
 
     Degeri olmayan satirlar ∅ kalir ve kart notu hangi adimdan sonra
-    dolacaklarini yazar. Adim adi None ise o satir icin not uretilmez.
+    dolacaklarini numarali ve kalin yazar (durum moda gore numarayi
+    verir). Adim adi None ise o satir icin not uretilmez.
 
     BASLIK ve ETIKETLER tek yerde Baslik Buyuk Harfine cevriliyor: her
     kartta tek tek yazmak, bir kartin sessizce kuralin disinda kalmasina
@@ -679,25 +680,35 @@ def _kart(baslik, tanimlar):
         # satiri "Hedef değişken"den once geliyor); not AKIS SIRASIYLA.
         bekleyen.sort(key=_akis_sirasi)
         kart["not"] = "Boş satırlar %s %s sonra dolar." % (
-            _ad_listesi(bekleyen),
+            _ad_listesi([_ad_atfi(a, durum) for a in bekleyen]),
             "adımından" if len(bekleyen) == 1 else "adımlarından")
     return kart
 
 
 def _ad_listesi(adlar):
-    """«A» / «A» ve «B» / «A», «B» ve «C».
+    """A / A ve B / A, B ve C.
 
     Turkcede son ikisi "ve" ile,
     oncekiler virgulle baglanir."""
-    tirnakli = ["«%s»" % a for a in adlar]
-    if len(tirnakli) <= 1:
-        return "".join(tirnakli)
-    return "%s ve %s" % (", ".join(tirnakli[:-1]), tirnakli[-1])
+    if len(adlar) <= 1:
+        return "".join(adlar)
+    return "%s ve %s" % (", ".join(adlar[:-1]), adlar[-1])
 
 
-def _bekleyen_panel(adim, kartlar=None):
+def _ad_atfi(ad, durum):
+    """Sol panel adini numarali, kalin atifa cevirir:
+    **01.4 Örneklem ve Doğrulama Tasarımı**. Ad bu modun akisinda yoksa
+    numarasiz, kalin."""
+    for a in adim_sirasi((durum or {}).get("mod")):
+        if sol_panel_adi(a) == ad:
+            return akis_atif.adim(a, durum, satir=True)
+    return "**%s**" % ad
+
+
+def _bekleyen_panel(adim, kartlar=None, durum=None):
     veri = {"durum": "bekliyor",
-            "bekleme_notu": "Bu bölüm «%s» adımından sonra dolar." % adim,
+            "bekleme_notu": "Bu bölüm %s adımından sonra dolar."
+                            % _ad_atfi(adim, durum),
             "kartlar": kartlar or []}
     return veri
 
@@ -1035,11 +1046,11 @@ def veri_paneli(durum):
         ("Hedef Oranı", _hedef_orani(p), TANIM_ADIMI),
         ("Dönem Aralığı", _donem_araligi(p, durum), TANIM_ADIMI),
         ("Segment", _segment_metni(p, durum), TANIM_ADIMI),
-    ])
+    ], durum)
 
     kartlar = [veri_kart]
     if not satir:
-        return _bekleyen_panel(veri_adimi, kartlar)
+        return _bekleyen_panel(veri_adimi, kartlar, durum)
     return {"durum": "hazir", "kartlar": kartlar}
 
 
@@ -1148,7 +1159,8 @@ def _duzenleme_notu(durum, kopya_mi):
         return ""
     if not sozluk_calisma.sozluk_adi(durum):
         return ("Sözlük henüz bağlanmadı; tanımlar salt okunur. "
-                "«Veri Seti, Sözlük ve Kolon Rolleri» adımında bir sözlük seçin.")
+                "%s adımında bir sözlük seçin."
+                % akis_atif.adim("tanimlar", durum, satir=True))
     return ("Sözlük çalışma kopyası oluşturulamadı (proje hafızasına "
             "yazılamıyor); tanımlar salt okunur. Orijinal sözlüğe "
             "hiçbir koşulda yazılmaz.")
@@ -1276,7 +1288,7 @@ def _sozluk_karti(durum):
         ("Kapsam", _yuzde_dogrudan(kapsam, 1), sozluk_adimi),
         ("Sözlükte Olmayan Değişken Sayısı",
          _sayi(len(tanimsiz)) if kolonlar else None, sozluk_adimi),
-    ] + _esitleme_satiri(durum, sozluk_adimi))
+    ] + _esitleme_satiri(durum, sozluk_adimi), durum)
 
 
 def _esitleme_satiri(durum, sozluk_adimi):
@@ -1342,7 +1354,7 @@ def eksik_paneli(durum):
     p = durum.get("profil") or {}
     ilk20 = p.get("eksik_ilk20")
     if not p.get("null_ozet") and not ilk20:
-        return _bekleyen_panel(PROFIL_ADIMI)
+        return _bekleyen_panel(PROFIL_ADIMI, durum=durum)
 
     n = p.get("null_ozet") or {}
     toplam_kolon = _tam(p.get("profil_kolon"), 0)
@@ -1361,14 +1373,14 @@ def eksik_paneli(durum):
         ("En Yüksek Null Oranı", _en_yuksek_null(p, en_yuksek), PROFIL_ADIMI),
         ("Aşırı Null Eşiğini Aşan", _sayi(_tam(p.get("asiri_null_adet"), 0)),
          PROFIL_ADIMI),
-    ])
+    ], durum)
 
     dagilim_kart = _kart("Null oranı dağılımı", [
         ("Hiç Null Yok", _sayi(_tam(n.get("hic_null_yok"), 0)), PROFIL_ADIMI),
         ("Az  (≤ %5)", _sayi(_tam(n.get("az"), 0)), PROFIL_ADIMI),
         ("Orta  (%5-%50)", _sayi(_tam(n.get("orta"), 0)), PROFIL_ADIMI),
         ("Aşırı  (> %50)", _sayi(_tam(n.get("asiri"), 0)), PROFIL_ADIMI),
-    ])
+    ], durum)
 
     satirlar = [[r.get("FEATURE"), r.get("TYPE"),
                  _sayi(_tam(r.get("NULL_COUNT"), 0)),
@@ -1710,7 +1722,8 @@ def bolme_satirlari(durum, oneri_ayarlari=None):
             "alanlar": list(tanim["alanlar"]),
             "oneri": bolme_satir_degeri(tanim["anahtar"], a_oneri, durum),
             # "i" simgesinde acilan aciklama (bkz. akis_durum.BOLME_SATIR_BILGI)
-            "bilgi": BOLME_SATIR_BILGI.get(tanim["anahtar"], ""),
+            "bilgi": BOLME_SATIR_BILGI.get(tanim["anahtar"], "").replace(
+                "{kolon_rolleri}", akis_atif.adim("tanimlar", durum)),
         }
         if tanim.get("salt"):
             kayit["salt"] = bolme_satir_degeri(tanim["anahtar"],
@@ -1770,8 +1783,8 @@ def bolme_ozet_karti(durum):
     satirlar.append(("Setler", bolme_ozeti(durum),
                      None if b.get("satir") else BOLME_ADIMI))
 
-    kart = _kart(BOLME_ADIMI, satirlar)
-    kart["not"] = ("Ayarlar «" + BOLME_ADIMI + "» adımında, sohbet kartı "
+    kart = _kart(BOLME_ADIMI, satirlar, durum)
+    kart["not"] = ("Ayarlar " + akis_atif.adim("bolme", durum) + " adımında, sohbet kartı "
                    "üzerinden değiştirilir.")
     return kart
 
@@ -1807,7 +1820,7 @@ def sfa_paneli(durum):
     kart kararlarin durumunu gosterir."""
     s = durum.get("sfa") or {}
     if s.get("analiz_edilen") is None:
-        return _bekleyen_panel(SFA_ADIMI)
+        return _bekleyen_panel(SFA_ADIMI, durum=durum)
 
     olculen = _tam(s.get("analiz_edilen"), 0)
     b = s.get("iv_bantlari") or {}
@@ -1828,7 +1841,7 @@ def sfa_paneli(durum):
     if s.get("onaylandi"):
         satirlar.append(("Modele Girecek", _sayi(s.get("kullanilan") or 0), None))
     satirlar.append(("Tam Tablo", tam or "-", None))
-    ozet_kart = _kart("Tek değişken analizi", satirlar)
+    ozet_kart = _kart("Tek değişken analizi", satirlar, durum)
     ozet_kart["not"] = (
         "Ölçümler Train satırlarında. Eleme yapılmaz; her değişkenin modele "
         "hangi hâliyle gireceğine yapay zekâ karar verir, aşağıda değişken "

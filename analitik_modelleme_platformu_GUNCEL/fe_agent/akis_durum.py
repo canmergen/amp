@@ -48,7 +48,8 @@ except ImportError:
 
     def donem_sirala(degerler):
         return sorted({str(d) for d in degerler if d is not None})
-from fe_agent.akis_metin import ADIM_ADI, MOD_SECENEKLERI, SECIM_KALIP
+from fe_agent.akis_metin import MOD_SECENEKLERI, SECIM_KALIP
+from fe_agent import akis_atif
 
 
 HAFIZA_FOLDER = "PROJE_HAFIZASI"
@@ -561,9 +562,9 @@ def modelleme_kaynagi(durum):
         if str(amp) == AMP_VERI_ADI and not sahibi_mi(amp, durum):
             raise AdimHatasi(
                 "Bu çalışmanın AMP_VERISETI'si eski ortak veri setinde duruyor "
-                "ve başka bir çalışma tarafından değiştirilmiş. «Değişken "
-                "Listesi ve Tip Kontrolü» adımına dönüp kaydedin; AMP_VERISETI bu çalışmanın "
-                "kendi klasörüne yeniden yazılır.")
+                "ve başka bir çalışma tarafından değiştirilmiş. %s "
+                "adımına dönüp kaydedin; AMP_VERISETI bu çalışmanın "
+                "kendi klasörüne yeniden yazılır." % akis_atif.adim("teyit", durum))
         return str(amp), True
     # TEYIT ONCESI: secim aninda alinan birebir kopya (AMP_VERISETI_HAM).
     # Kullanicinin tablosu secimden sonra okunmaz; tip donusumleri henuz
@@ -898,8 +899,8 @@ def sozluk_orijinal_oku(durum):
         return pd.DataFrame({"DEGISKEN": pd.Series(dtype=object),
                              "ACIKLAMA": pd.Series(dtype=object),
                              "KATEGORI": pd.Series(dtype=object)})
-    raise AdimHatasi("Değişken sözlüğü bulunamadı; sözlük üretimi adımını "
-                     "tamamlamanız gerekiyor.")
+    raise AdimHatasi("Değişken sözlüğü bulunamadı; %s adımını "
+                     "tamamlamanız gerekiyor." % akis_atif.adim("sozluk_uret", durum))
 
 # ===========================================================================
 # BOLME  -  LEAKAGE SINIRI
@@ -1802,8 +1803,8 @@ def _setler_hazir(durum, df, tanim):
         if kol not in df.columns:
             raise AdimHatasi(
                 "Veri setindeki hazır bölme kolonu (%s) artık tabloda yok; "
-                "\"%s\" adımını yeniden çalıştırın."
-                % (kol, ADIM_ADI["bolme"]))
+                "%s adımını yeniden çalıştırın."
+                % (kol, akis_atif.adim("bolme", durum)))
         normal = df[kol].astype(str).str.strip().str.lower()
         for ham, hedef in (tanim.get("esleme") or {}).items():
             maske[hedef] = maske[hedef] | (normal == ham)
@@ -1864,8 +1865,8 @@ def setler(durum, df):
             return _setler_hazir(durum, df, tanim)
         raise AdimHatasi(
             "Veri setinde hazır bölme kullanılacaktı ama bölme kolonu "
-            "bulunamadı; \"%s\" adımını yeniden çalıştırın."
-            % ADIM_ADI["bolme"])
+            "bulunamadı; %s adımını yeniden çalıştırın."
+            % akis_atif.adim("bolme", durum))
 
     oot = _oot_maske(durum, df, a, [])
 
@@ -1892,18 +1893,18 @@ def setler(durum, df):
 
     # 3b) Calisma klasorune kaydedilmis bolme etiketleri
     if b.get("split_dosya"):
-        return _setler_etiket(_split_dosyasi_oku(b, df), df)
+        return _setler_etiket(_split_dosyasi_oku(durum, b, df), df)
 
     # 4) Hicbir kalici kayit yok: bolme adimi calismamis ya da durum
     #    eksik yuklenmis demektir. Burada YENIDEN rastgeleleme YAPMIYORUZ;
     #    sessizce sizdirmaktansa acikca durduruyoruz.
     raise AdimHatasi(
         "Geliştirme/test bölmesi henüz kalıcı hale getirilmemiş. "
-        "\"%s\" adımını çalıştırın; sızıntı sınırı olmadan "
-        "hesaplama yapmıyorum." % ADIM_ADI["bolme"])
+        "%s adımını çalıştırın; sızıntı sınırı olmadan "
+        "hesaplama yapmıyorum." % akis_atif.adim("bolme", durum))
 
 
-def _split_dosyasi_oku(b, df):
+def _split_dosyasi_oku(durum, b, df):
     """Calisma klasorundeki bolme etiketlerini df'nin satirlarina eslestirir.
 
     Etiketler SATIR SIRASIYLA eslesir: dosyadaki n. etiket tablonun n.
@@ -1915,15 +1916,15 @@ def _split_dosyasi_oku(b, df):
     except Exception:
         raise AdimHatasi(
             "Bölme etiketleri çalışma klasöründe okunamadı (PROJE_HAFIZASI%s). "
-            "\"%s\" adımını yeniden çalıştırın."
-            % (b["split_dosya"], ADIM_ADI["bolme"]))
+            "%s adımını yeniden çalıştırın."
+            % (b["split_dosya"], akis_atif.adim("bolme", durum)))
     n = len(df)
     if n != len(etiket):
         raise AdimHatasi(
             "Veri seti bölmeden sonra değişmiş (%s satır bölündü, şimdi %s "
-            "satır); eski bölme bu tabloya uygulanamaz. \"%s\" adımını "
+            "satır); eski bölme bu tabloya uygulanamaz. %s adımını "
             "yeniden çalıştırın."
-            % (_sayi(len(etiket)), _sayi(n), ADIM_ADI["bolme"]))
+            % (_sayi(len(etiket)), _sayi(n), akis_atif.adim("bolme", durum)))
     return pd.Series(etiket.to_numpy(), index=df.index)
 
 
@@ -1974,8 +1975,8 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
         if not isinstance(tanim, dict):
             raise AdimHatasi(
                 "Veri setinde hazır bölme kullanılacaktı ama bölme kolonu "
-                "bulunamadı; \"%s\" adımını yeniden çalıştırın."
-                % ADIM_ADI["bolme"])
+                "bulunamadı; %s adımını yeniden çalıştırın."
+                % akis_atif.adim("bolme", durum))
         b["kalici"] = "hazir"
         b["hazir_kolonlar"] = list(tanim.get("kolonlar") or [])
         for k in ("set_kimlikleri", "test_kimlikleri", "split_kolon",
@@ -2099,8 +2100,8 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
         raise AdimHatasi(
             "Bölmeyi kalıcı hale getiremedim: kimlik kolonu yok ve bölme "
             "etiketleri ne veri setine ne de çalışma klasörüne yazılabildi. "
-            "Kolon Rolleri adımında bir kimlik kolonu belirtirseniz bölme "
-            "kimlik üzerinden sabitlenebilir.")
+            "%s adımında bir kimlik kolonu belirtirseniz bölme "
+            "kimlik üzerinden sabitlenebilir." % akis_atif.adim("tanimlar", durum))
 
     # _SPLIT bir degisken degildir; degisken havuzunun disinda kalmali.
     durum["haric_kolonlar"] = sorted(
@@ -2692,8 +2693,8 @@ BOLME_SATIR_BILGI = {
         + OOS2_ACIKLAMA),
     "donem_kolon": (
         "Kayıtların hangi döneme (ay, çeyrek gibi) ait olduğunu söyleyen "
-        "kolon. Zamansal bölme bu kolona göre yapılır. «Kolon "
-        "Rolleri» adımında seçildi; burada değiştirilmez."),
+        "kolon. Zamansal bölme bu kolona göre yapılır. {kolon_rolleri} "
+        "adımında seçildi; burada değiştirilmez."),
     "test_donem": (
         "Hangi dönemlerin Validasyon (OOT) olacağı. «Son 1 dönem» seçilirse en "
         "yeni dönem Validasyon (OOT), öncekilerin tamamı eğitim olur. Daha "
@@ -2753,7 +2754,7 @@ BOLME_SATIR_BILGI = {
         "önerilir."),
     "bolme_kolon": (
         "Kimlik bazlı bölmede bir arada tutulacak kayıtları tanımlayan "
-        "kolon (müşteri numarası gibi). «Kolon Rolleri» adımında "
+        "kolon (müşteri numarası gibi). {kolon_rolleri} adımında "
         "seçildi; burada değiştirilmez."),
     "segment_katmanla": (
         "Hedef dağılımı korunurken segmentler de ayrıca korunsun mu.\n\n"

@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from fe_agent import llm as llm_mod
 from fe_agent import ifade as ifade_mod
+from fe_agent import akis_atif
 
 from fe_agent.akis_durum import (
     sozluk_oku,
@@ -424,10 +425,12 @@ def _yeniden_notu(silinen_kural, silinen_kesif):
                         "%s kural tabanlı kolonun kaydı silindi ve yerine "
                         "yenisi yazıldı." % _sayi(len(silinen_kural)))
     if silinen_kesif:
-        parcalar.append("Tablo yeniden kurulduğu için keşif "
+        kesif = akis_atif.adim("kesif")
+        parcalar.append("Tablo yeniden kurulduğu için %s "
                         "adımında üretilen %s kolon veri setinden düştü; "
-                        "kayıtları da temizlendi. Keşif adımına gelince "
-                        "yeniden üretilecekler." % _sayi(len(silinen_kesif)))
+                        "kayıtları da temizlendi. %s adımına gelince "
+                        "yeniden üretilecekler."
+                        % (kesif, _sayi(len(silinen_kesif)), kesif))
     return ("\n\n" + "\n".join(parcalar)) if parcalar else ""
 
 def kesif_plan(durum):

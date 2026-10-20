@@ -13,6 +13,7 @@ import pandas as pd
 from fe_agent import aralik as aralik_mod
 from fe_agent import sfa as sfa_mod
 from fe_agent import sfa_karar
+from fe_agent import akis_atif
 
 from fe_agent.akis_durum import (
     SPLIT_KOLON, _dataset_okunur_mu, _df_oku, _liste, _nerede, _ond, _sayi, _yaz,
@@ -312,12 +313,12 @@ def veri_profili_uygula(durum):
             "  Kimlik Benzeri : %s\n"
             "  Kardinalitesi Aşırı Yüksek : %s\n"
             "  Kayıt : %s\n"
-            "Kusurlu kolonlardan değişken üretilmez; Analitik Baz Set "
+            "Kusurlu kolonlardan değişken üretilmez; %s "
             "adımında düşürülürler."
             % (_sayi(len(tablo)), _sayi(len(teshis["temiz"])),
                _sayi_ad(teshis["cok_bos"]), _sayi_ad(teshis["sabit"]),
                _sayi_ad(teshis["kimlik_gibi"]), _sayi_ad(teshis["yuksek_kardinalite"]),
-               _kayit_metni(yazildi, yedek)))
+               _kayit_metni(yazildi, yedek), akis_atif.adim("baz")))
 
 def _buyuk_veri_engeli(durum, adim):
     """SFA ve aralik hesabi su an pandas'ta: tablo webapp'e tam okunur.
@@ -440,7 +441,7 @@ def sfa_tip_degistir(durum, kol, kod):
 def _sfa_hesapla(durum):
     """SFA tablosu + aralik onerileri + degisken detayi + kural kararlari;
     ardindan yapay zeka karar isi arka planda baslar."""
-    _buyuk_veri_engeli(durum, "Tek Değişken Analizi (SFA)")
+    _buyuk_veri_engeli(durum, akis_atif.adim("sfa"))
     eski = (durum.get("sfa") or {}).get("ai_is")
     if eski:
         sfa_karar.ai_durdur(eski)
@@ -599,13 +600,13 @@ def sfa_uygula(durum):
              "  Winsor (%%5) : %s\n"
              "  Eksik İşareti : %s\n"
              "  Karar Kaynağı : yapay zekâ %s · sizin %s · kural %s\n"
-             "Kararlar Analitik Baz Set adımında uygulanır."
+             "Kararlar %s adımında uygulanır."
              % (_sayi(s["kullanilan"]), _sayi_ad(girmeyen), _sayi(tip_say),
                 _sayi(say("ayriklastirma", "onerilen")), _sayi(say("donusum", "log")),
                 _sayi(say("donusum", "ustel")), _sayi(say("donusum", "sira")),
                 _sayi(say("aykiri", "winsor")), _sayi(say("eksik", "isaret")),
                 _sayi(kaynak["yapay_zeka"]), _sayi(kaynak["kullanici"]),
-                _sayi(kaynak["kural"])))
+                _sayi(kaynak["kural"]), akis_atif.adim("baz")))
     if kaynak["kural"] and s.get("ai_is"):
         metin += ("\nYapay zekâ kararı gelmeyen %s değişkende kural tabanlı karar "
                   "kullanıldı." % _sayi(kaynak["kural"]))
@@ -679,10 +680,10 @@ def stabilite_uygula(durum):
             "  Kayan : %s\n"
             "  En Yüksek PSI : %s\n"
             "  Kayıt : %s\n"
-            "Kayan değişkenler Analitik Baz Set adımında düşürülür."
+            "Kayan değişkenler %s adımında düşürülür."
             % (ozet["olcum_turu"], _sayi(ozet["olculen"]), _sayi(ozet["stabil"]),
                _ond(sfa_mod.PSI_ESIK, 2), _sayi_ad(ozet.get("kayan")),
-               en_kotu or "-", _kayit_metni(yazildi, yedek)))
+               en_kotu or "-", _kayit_metni(yazildi, yedek), akis_atif.adim("baz")))
 
 def _dusurulecek_kume(durum):
     """Baz sette DUSURULECEK kolonlarin tam kumesi.

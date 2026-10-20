@@ -7,6 +7,7 @@ import json
 from fe_agent import niyet_kural
 from fe_agent import validasyon
 from fe_agent import llm as llm_mod
+from fe_agent import akis_atif
 
 from fe_agent.akis_metin import (
     GERI_KALIP, MOD_ADLARI, MOD_KALIP, PLATFORM_TANIMLARI,
@@ -462,9 +463,10 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
             durum.pop("_dogrulama_karari", None)
             durum["_secenekler"] = onceki_secenekler
             durum["_secim_alani"] = onceki_alan
-            return ("Bu karar «%s» adımına ait; şu an «%s» adımındasınız. "
+            return ("Bu karar %s adımına ait; şu an %s adımındasınız. "
                     "Karar uygulanmadı, ekrandaki adımdan devam edin."
-                    % (adim_basligi(karar_adim), adim.get("baslik", anahtar)))
+                    % (akis_atif.adim(karar_adim, durum),
+                       akis_atif.adim(anahtar, durum)))
         return _onayi_uygula(durum, adim, anahtar)
 
     # 1) Acik soru: geri/onay/girdi kontrollerinden ONCE LLM'e.
@@ -480,8 +482,8 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
         sira = adim_sirasi(durum.get("mod"))
         _validasyonu_tazele(durum, sira)
         _aciklamayi_geri_al(durum, sira, durum["i"])
-        return ("\"%s\" adımına dönüyorum.\n\n"
-                % ADIMLAR[sira[durum["i"]]]["baslik"]) \
+        return ("%s adımına dönüyorum.\n\n"
+                % akis_atif.adim(sira[durum["i"]], durum)) \
             + _adima_gir(durum, yeniden_sor=True)
 
     sonuc = niyet_kural.coz(mesaj)

@@ -5,6 +5,7 @@ from fe_agent import model as model_mod
 from fe_agent import kutuk as katalog_mod
 from fe_agent import senaryo as senaryo_mod
 from fe_agent import validasyon
+from fe_agent import akis_atif
 
 from fe_agent.akis_metin import BIRLESTIREN_MODLAR
 from fe_agent.akis_durum import (
@@ -54,7 +55,7 @@ def _baz_kolonlari(durum):
 
 
 _KAYNAK_YOK = ("Bu adımı çalıştıramadım: ne analitik baz set ne de %s veri "
-               "seti okunabiliyor. Analitik Baz Set adımına dönebilir ya da "
+               "seti okunabiliyor. %s adımına dönebilir ya da "
                "bu adımı geçebilirsiniz.")
 
 _ZENGIN_YOK = ("NOT: Analitik baz set okunamadı; %s veri setiyle çalıştım "
@@ -124,7 +125,7 @@ def model_uygula(durum):
     kaynak, zengin = _kaynak(durum)
     if kaynak is None:
         durum["model"] = {"hata": "kaynak veri seti bulunamadı"}
-        return _KAYNAK_YOK % durum.get("veri_seti")
+        return _KAYNAK_YOK % (durum.get("veri_seti"), akis_atif.adim("baz"))
 
     not_metni = "" if zengin else \
         ("\n\n" + _ZENGIN_YOK % kaynak)
@@ -302,7 +303,7 @@ def algoritma_uygula(durum):
     kaynak, _zengin = _kaynak(durum)
     if kaynak is None:
         durum["algoritma"] = {"hata": "kaynak veri seti bulunamadı"}
-        return _KAYNAK_YOK % durum.get("veri_seti")
+        return _KAYNAK_YOK % (durum.get("veri_seti"), akis_atif.adim("baz"))
 
     konfig = {
         "veri_seti": kaynak,
@@ -514,8 +515,8 @@ def _validasyon_uygula(durum, sonuc):
                 for s in p.get("satirlar") or []]
     baz_not = "" if baz_gini is not None else \
         ("\n  UYARI: Baz model Gini'si bilinmediği için 'Yeni değişken "
-         "katkısı' kriteri ölçülemedi; model karşılaştırma adımını "
-         "çalıştırın.")
+         "katkısı' kriteri ölçülemedi; %s adımını "
+         "çalıştırın." % akis_atif.adim("model"))
 
     return ("VALİDASYON KAPISI - genel sonuç: %s\n  %s\n%s%s%s"
             % (str(p.get("genel")).upper(), p.get("ozet") or "",
@@ -528,7 +529,7 @@ def final_uygula(durum):
     if kaynak is None:
         durum["final"] = {"hata": "kaynak veri seti bulunamadı"}
         validasyon.temizle(durum)
-        return _KAYNAK_YOK % durum.get("veri_seti")
+        return _KAYNAK_YOK % (durum.get("veri_seti"), akis_atif.adim("baz"))
 
     konfig = {
         "veri_seti": kaynak,

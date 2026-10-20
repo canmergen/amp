@@ -1190,6 +1190,24 @@ body { background-color: #FFFFFF; }
   white-space: normal; overflow: visible; text-overflow: clip;
 }
 
+/* MODEL TİPİ (Kolon Rolleri): alanların üstünde dört seçenek, tek
+   satır; genişlik yetmezse 2x2. Kart görünümü seçenek kartlarıyla aynı. */
+.problem-etiket {
+  font-size: var(--fs-govde); font-weight: var(--fw-kalin); color: var(--metin);
+  margin-bottom: var(--b-1); line-height: 1.4;
+}
+.problem-secim {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--b-2); margin-bottom: var(--b-2);
+}
+.problem-secim .problem-tip { align-items: flex-start; height: 100%; }
+.problem-secim .secenek-rozet { margin-top: 1px; }
+.problem-not { margin: 0 0 var(--b-2); }
+.problem-not + .secim-govde { margin-top: var(--b-3); }
+@media (max-width: 1100px) {
+  .problem-secim { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .secim-satir { display: flex; gap: var(--b-2); align-items: flex-end; margin-bottom: var(--b-4); }
 /* "+" giris kutusuyla ayni yukseklikte ve ayni hizada: etiketin altindaki
    kutunun ortasina oturur, satirin disina tasmaz. */

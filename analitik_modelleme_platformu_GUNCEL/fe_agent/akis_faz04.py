@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from fe_agent import secim as secim_mod
 from fe_agent import sfa_karar
+from fe_agent import akis_atif
 
 from fe_agent.akis_durum import (
     _dataset_okunur_mu, _df_oku, _liste, _nerede, _ond, _sayi, _yaz, maskeler,
@@ -41,7 +42,7 @@ def _kaynak(durum):
 
 
 _KAYNAK_YOK = ("Bu adımı çalıştıramadım: ne analitik baz set ne de %s veri "
-               "seti okunabiliyor. Analitik Baz Set adımına dönüp yeniden "
+               "seti okunabiliyor. %s adımına dönüp yeniden "
                "çalıştırabilir ya da bu adımı geçebilirsiniz.")
 
 _BAZ_YOK = ("NOT: Analitik baz set okunamadı; hesaplamayı %s veri seti "
@@ -86,9 +87,10 @@ def kalite_plan(durum):
             "kontrolü yapacağım: Train (MS) satırlarında hedefle korelasyonu "
             "mutlak değerce %s üstünde olan değişken sızıntı şüphelisi sayılır; "
             "aday sete ve modele alınmaz.\n\n"
-            "Eksik değer, sabitlik ve kararlılık Veri Anlama ve Hazırlama "
+            "Eksik değer, sabitlik ve kararlılık %s "
             "fazında bütün değişkenler için zaten denetlendi. Çalıştıralım mı?"
-            % (_sayi(ham + ur), _sayi(ham), _sayi(ur), _ond(SIZINTI_ESIK, 2)))
+            % (_sayi(ham + ur), _sayi(ham), _sayi(ur), _ond(SIZINTI_ESIK, 2),
+               akis_atif.faz("03")))
 
 
 def kalite_uygula(durum):
@@ -97,7 +99,7 @@ def kalite_uygula(durum):
            "gecti": [], "aday": [], "ham_sizinti": []}
     if kaynak is None:
         durum["kalite"] = bos
-        return _KAYNAK_YOK % durum.get("veri_seti")
+        return _KAYNAK_YOK % (durum.get("veri_seti"), akis_atif.adim("baz"))
     not_metni = "" if baz_mi else ("\n\n" + _BAZ_YOK % kaynak)
 
     df = _sayisal_df(durum, _df_oku(kaynak))
@@ -176,7 +178,7 @@ def secim_uygula(durum):
     kaynak, baz_mi = _kaynak(durum)
     if kaynak is None:
         durum["secim"] = {"secilen": 0, "secilen_liste": []}
-        return _KAYNAK_YOK % durum.get("veri_seti")
+        return _KAYNAK_YOK % (durum.get("veri_seti"), akis_atif.adim("baz"))
 
     not_metni = "" if baz_mi else ("\n\n" + _BAZ_YOK % kaynak)
 

@@ -363,6 +363,65 @@ def fazlar(mod=None):
              "adimlar": FAZ01_ADIMLARI.get(mod, FAZ01_ADIMLARI[None])}] + \
         SONRAKI_FAZLAR
 
+def _satirlar(f):
+    """Fazin sol paneldeki satirlari; app.js fazOgeleri ile ayni kural.
+    Ardisik ayni gruptaki adimlar tek satirdir, alt adimlar ust
+    adimlarinin altina girer. Her satir: [(anahtar, [alt adimlar])]."""
+    satirlar, gruplar = [], []
+    for a in f["adimlar"]:
+        ust = ALT_ADIMLAR.get(a)
+        uye = next((u for s in satirlar for u in s if u[0] == ust), None) \
+            if ust else None
+        if uye:
+            uye[1].append(a)
+            continue
+        grup = ADIM_GRUPLARI.get(a)
+        if grup and gruplar and gruplar[-1] == grup:
+            satirlar[-1].append((a, []))
+            continue
+        satirlar.append([(a, [])])
+        gruplar.append(grup)
+    return satirlar
+
+
+def adim_kodu(anahtar, mod=None, satir=False):
+    """Adimin is akisindaki numarasi: 01.2.3, 01.2.4.1, 03.3. Gruplu
+    satirin icindeki adim alt numara alir; tek adimli satirin adimi
+    satirin numarasini tasir. satir=True ise adimin SATIRININ numarasi
+    (01.2). Adim bu modun akisinda yoksa bos dize."""
+    for f in fazlar(mod):
+        for i, uyeler in enumerate(_satirlar(f), 1):
+            kod = "%s.%d" % (f["no"], i)
+            for j, (u, cocuklar) in enumerate(uyeler, 1):
+                ukod = kod if len(uyeler) == 1 else "%s.%d" % (kod, j)
+                if u == anahtar:
+                    return kod if satir else ukod
+                for k, c in enumerate(cocuklar, 1):
+                    if c == anahtar:
+                        return kod if satir else "%s.%d" % (ukod, k)
+    return ""
+
+
+def adim_atfi(anahtar, mod=None, satir=False):
+    """Mesajlarda adima atif, numarali ve kalin:
+    "**01.2.3 Eksik Sözlük Tanımları**". satir=True ise adimin sol
+    paneldeki satiri: "**01.2 Veri Seti, Sözlük ve Kolon Rolleri**".
+    On yuz ** isaretini kalin yazar."""
+    _grup, grup_baslik = adim_grubu(anahtar)
+    ad = grup_baslik if satir and grup_baslik else \
+        (ADIMLAR.get(anahtar) or {}).get("baslik") or anahtar
+    kod = adim_kodu(anahtar, mod, satir)
+    return "**%s**" % ("%s %s" % (kod, ad) if kod else ad)
+
+
+def faz_atfi(no):
+    """Faza atif: "**02. Değişken Mühendisliği**"."""
+    for f in SONRAKI_FAZLAR:
+        if f["no"] == no:
+            return "**%s. %s**" % (no, f["baslik"])
+    return ""
+
+
 def faz_agaci(mod=None, durum=None):
     """Sol panelin agaci. durum verilirse alt adimli adimlar alt
     adimlarinin acik mi kapali mi oldugunu da tasir (bkz. ALT_ADIMLAR)."""

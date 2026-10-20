@@ -26,6 +26,7 @@ from fe_agent import profil as profil_mod
 from fe_agent import profil_kural
 from fe_agent import amp as amp_mod
 from fe_agent import spark_is
+from fe_agent import akis_atif
 
 from fe_agent.akis_metin import (
     ACIK_MODLAR, ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI,
@@ -800,7 +801,8 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
         "baslik": "Baz Veri Seti ve Baz Sözlük",
         "aciklama": "Modellemeye girecek baz veri setini seçin. Sözlüğünüz "
                     "varsa onu da seçin; yoksa alanı boş bırakın, kolon "
-                    "tanımları Eksik Sözlük Tanımları adımında oluşturulur.",
+                    "tanımları %s adımında oluşturulur."
+                    % akis_atif.adim("sozluk_tanim", durum),
         # Dugme etiketi SONRAKI EKRANIN adini soyler: bu form
         # gonderildiginde "Girdi doğrulama tamamlandı" karti acilir.
         "buton": "Girdileri Doğrula",
@@ -950,8 +952,8 @@ def _kaynak_sozluk_formu(durum, secili=None):
         "aciklama": "Sözlüğü olan kaynak tabloların sözlüğünü seçin; olmayanları "
                     "boş bırakın. Aynı sözlük birden fazla tablo için "
                     "seçilebilir. Baz sözlük birleştirmeden sonra seçilen "
-                    "sözlüklerden kurulur; tanımı olmayan kolonlar Eksik "
-                    "Sözlük Tanımları adımında tanımlanır.",
+                    "sözlüklerden kurulur; tanımı olmayan kolonlar %s "
+                    "adımında tanımlanır." % akis_atif.adim("sozluk_tanim", durum),
         "bos_deger": "-",
         "buton": "Sözlükleri Onayla",
         "alanlar": alanlar,
@@ -1009,8 +1011,8 @@ def kaynak_sozluk_girdi(durum, mesaj, yeniden_sor=False):
 def kaynak_sozluk_uygula(durum):
     adlar = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
     if not adlar:
-        return ("Kaynak sözlük seçilmedi; kolon tanımları Eksik Sözlük Tanımları "
-                "adımında oluşturulacak.")
+        return ("Kaynak sözlük seçilmedi; kolon tanımları %s adımında "
+                "oluşturulacak." % akis_atif.adim("sozluk_tanim", durum))
     return "Kaynak sözlükleri kaydedildi: %s" % ", ".join(adlar)
 
 
@@ -1134,8 +1136,9 @@ def _mod_b_sozlugu(durum, baz, kutuk):
              % (_sayi(oz["toplam"]), _sayi(oz["tanimli"]),
                 _sayi(oz["turetilen"]), _nerede(None, yedek)))
     if tanimsiz:
-        metin += ("\n  Kaynağında tanımı olmayan %s kolon «Eksik Sözlük "
-                  "Tanımları» adımında listelenecek." % _sayi(tanimsiz))
+        metin += ("\n  Kaynağında tanımı olmayan %s kolon %s adımında "
+                  "listelenecek." % (_sayi(tanimsiz),
+                                     akis_atif.adim("sozluk_tanim", durum)))
     if oz["okunamayan"]:
         metin += "\n\n%s" % _liste("Okunamayan sözlükler:", oz["okunamayan"], 6)
     return metin + kopya_not
@@ -1538,13 +1541,13 @@ def _kisaltma_alani(durum):
 # kisaltmalar kolon bazli eslemeyle adlara uygulanir.
 # ---------------------------------------------------------------------------
 KOLON_AD_BASLIK = ADIM_ADI["kolon_ad"]
-KOLON_AD_ACIKLAMA = ("Kolon adları Kısaltma Sözlüğü'nde seçilenlerle yeniden yazıldı. "
+KOLON_AD_ACIKLAMA = ("Kolon adları {kisaltma}'nde seçilenlerle yeniden yazıldı. "
                      "İşaretini kaldırdığınız kolon eski adıyla kalır; yeni adı "
                      "düzenleyebilirsiniz.")
 KOLON_AD_BILGI = (
     "Yeni adları kod üretir: seçilen satırın önerilen kısaltması o anlamın "
     "geçtiği parçaların yerine geçer; tanımda olup adda olmayan bir anlam "
-    "seçildiyse kısaltması eklenir. Sonra parçalar Kısaltma Sözlüğü'ndeki Ad "
+    "seçildiyse kısaltması eklenir. Sonra parçalar {kisaltma}'ndeki Ad "
     "Kalıbı'na göre türlerinin sırasına dizilir (aynı türdekiler adda "
     "geçtikleri sırayla). Parçaların anlamı "
     "her kolonun kendi tanımından okunduğu için iki anlamda kullanılan bir "
@@ -1585,8 +1588,11 @@ def _kolon_ad_alani(durum):
             s["secili"] = bool(k.get("uygula"))
             if k.get("yeni_ad"):
                 s["yeni_ad"] = k["yeni_ad"]
-    return {"surum": 2, "baslik": KOLON_AD_BASLIK, "bilgi": KOLON_AD_BILGI,
-            "aciklama": KOLON_AD_ACIKLAMA, "satirlar": satirlar}
+    kisaltma = akis_atif.adim("kisaltma", durum)
+    return {"surum": 2, "baslik": KOLON_AD_BASLIK,
+            "bilgi": KOLON_AD_BILGI.replace("{kisaltma}", kisaltma),
+            "aciklama": KOLON_AD_ACIKLAMA.replace("{kisaltma}", kisaltma),
+            "satirlar": satirlar}
 
 
 def _kolon_adlarini_denetle(durum, satirlar):
@@ -1984,8 +1990,9 @@ def _kontrol_atlandi(durum):
 def _kontrol_atla_plani(durum):
     durum["_plan_otomatik"] = True
     durum["_secim_alani"] = None
-    return (KONTROL_ATLANDI + " Kontrol etmek için Sözlük ve Kolon Adı Kontrolü "
-            "adımına dönüp «Sözlük ve Kolon Adları Kontrol Edilsin»i seçin.")
+    return (KONTROL_ATLANDI + " Kontrol etmek için %s adımına dönüp "
+            "«Sözlük ve Kolon Adları Kontrol Edilsin»i seçin."
+            % akis_atif.adim("sozluk_kontrol", durum))
 
 
 def sozluk_kontrol_girdi(durum, mesaj, yeniden_sor=False):
@@ -2004,8 +2011,10 @@ def sozluk_kontrol_girdi(durum, mesaj, yeniden_sor=False):
 def sozluk_kontrol_uygula(durum):
     if _kontrol_atlandi(durum):
         hata = aciklama_geri_al(durum)
-        metin = ("Açıklamalar ve kolon adları olduğu gibi kalacak; Dönem Bilgisi, "
-                 "Açıklama Düzenleme, Kısaltma Sözlüğü ve Yeni Kolon Adları atlanıyor.")
+        metin = ("Açıklamalar ve kolon adları olduğu gibi kalacak; %s, %s, %s "
+                 "ve %s atlanıyor." % tuple(
+                     akis_atif.adim(a, durum)
+                     for a in ("donem", "aciklama", "kisaltma", "kolon_ad")))
         return metin + (" " + hata if hata else "")
     return ""
 
@@ -2026,7 +2035,7 @@ ACIKLAMA_YONERGE = [
     "Aynı parça hakkındaki sorular «Toplu Sorular»da bir kez sorulur; cevabınız "
     "o parçanın geçtiği bütün kolonlara uygulanır."]
 ACIKLAMA_SUTUNLAR = (
-    "Orijinal: sözlükteki açıklama (Eksik Sözlük Tanımları'nda yazılanlar dahil).\n"
+    "Orijinal: sözlükteki açıklama ({sozluk_tanim}'nda yazılanlar dahil).\n"
     "Sizin Düzenlemeniz: notunuz ya da düzeltmeniz; kesin bilgi olarak kullanılır.\n"
     "Düzeltilmiş Açıklama: onaylanınca sözlüğe yazılacak metin. Altında dil "
     "modelinin kararı, varsa sorusu, ad ve dağılım notu, kod kontrolü ve "
@@ -2167,7 +2176,8 @@ def _aciklama_ver(durum, oncelikli=(), devam=True, hatalari_yenile=False):
 
 def _aciklama_karti(durum, toplam, uyari=""):
     return {"baslik": ACIKLAMA_BASLIK, "yonerge": ACIKLAMA_YONERGE,
-            "sutunlar": ACIKLAMA_SUTUNLAR, "toplam": int(toplam), "surum": 1,
+            "sutunlar": ACIKLAMA_SUTUNLAR.replace(
+                "{sozluk_tanim}", akis_atif.adim("sozluk_tanim", durum)), "toplam": int(toplam), "surum": 1,
             "uyari": uyari or ""}
 
 
@@ -2311,15 +2321,16 @@ def aciklama_alani(durum, son=0):
                          "gecen": is_["gecen"]} if is_["calisiyor"] else None}
 
 
-_KART_KAPALI = ("Bu kart artık düzenlenemez; değiştirmek için Açıklama Düzenleme "
-                "adımına dönün.")
+def _kart_kapali(durum):
+    return ("Bu kart artık düzenlenemez; değiştirmek için %s adımına dönün."
+            % akis_atif.adim("aciklama", durum))
 
 
 def aciklama_not_kaydet(durum, kolon, metin):
     """Kullanicinin notu kaydedilir ve kolon beklemeden yeniden kontrol
     edilir. Not aileye uygulanmissa aile notu da guncellenir."""
     if not _aciklama_canli(durum):
-        return {"hata": _KART_KAPALI, "kolon_sayisi": 0}
+        return {"hata": _kart_kapali(durum), "kolon_sayisi": 0}
     klasor = _aciklama_klasoru(durum)
     kolon = str(kolon or "").strip()
     hata = aciklama_mod.not_yaz(klasor, kolon, metin)
@@ -2336,7 +2347,7 @@ def aciklama_not_kaydet(durum, kolon, metin):
 def aciklama_parca_cevapla(durum, parca, cevap):
     """Toplu soru cevabi: parcanin gectigi butun kolonlar yeniden duzenlenir."""
     if not _aciklama_canli(durum):
-        return {"hata": _KART_KAPALI, "kolon_sayisi": 0}
+        return {"hata": _kart_kapali(durum), "kolon_sayisi": 0}
     klasor = _aciklama_klasoru(durum)
     hata = aciklama_mod.parca_notu_yaz(klasor, parca, cevap)
     girdiler = _aciklama_ver(durum, devam=True)
@@ -2349,7 +2360,7 @@ def aciklama_aileye_uygula(durum, kolon, uygula=True):
     """Kolonun notu ailesindeki (adi yalniz sayilarla ayrilan) kolonlara
     uygulanir ya da geri alinir."""
     if not _aciklama_canli(durum):
-        return {"hata": _KART_KAPALI, "kolon_sayisi": 0}
+        return {"hata": _kart_kapali(durum), "kolon_sayisi": 0}
     klasor = _aciklama_klasoru(durum)
     kolon = str(kolon or "").strip()
     d = aciklama_mod.depo(klasor)
@@ -2373,7 +2384,7 @@ def aciklama_devam(durum):
     """Durdurulan isi ve dil modelinin duzenleyemedigi kolonlari yeniden
     baslatir."""
     if not _aciklama_canli(durum):
-        return {"hata": _KART_KAPALI, "kolon_sayisi": 0}
+        return {"hata": _kart_kapali(durum), "kolon_sayisi": 0}
     _aciklama_ver(durum, devam=True, hatalari_yenile=True)
     return {"hata": ""}
 
@@ -4006,6 +4017,85 @@ TANIM_KALIP = {
     "segment": r"\bsegment\s*[:=]?\s*(?!donem\b)([a-z0-9_]+)",
 }
 
+# MODEL TIPI. Kolon Rolleri'nin ilk secimi; hedef degisken listesi buna
+# gore degisir. Secim durum["problem"]'e yazilir, meta'ya DEGIL: meta'nin
+# degerleri her yerde kolon adi olarak okunuyor.
+PROBLEM_KALIP = r"\bproblem\s*[:=]?\s*(classification|regression|time_series|clustering)\b"
+PROBLEM_HAZIR = {"classification"}
+PROBLEM_HAZIR_DEGIL = (
+    "Sonraki adımlar (tek değişken analizi, bölme, model ve başarı "
+    "ölçütleri) şu an yalnız Classification için hazır; bu model tipiyle "
+    "devam edilemiyor.")
+PROBLEM_TIPLERI = [
+    {"deger": "classification", "baslik": "Classification",
+     "aciklama": "Hedef iki sınıflıdır (0/1): bir olayın olup olmayacağı "
+                 "tahmin edilir.",
+     "hedef_ipucu": "0 ve 1 değeri alan kolonlar listelenir",
+     "hedef_yok": "Yalnızca 0 ve 1 değeri alan kolon bulunamadı; tüm "
+                  "kolonlar listeleniyor."},
+    {"deger": "regression", "baslik": "Regression",
+     "aciklama": "Hedef sayısaldır: bir miktarın değeri tahmin edilir.",
+     "hedef_ipucu": "İkiden fazla farklı değer alan sayısal kolonlar listelenir",
+     "hedef_yok": "İkiden fazla farklı değer alan sayısal kolon bulunamadı; "
+                  "tüm kolonlar listeleniyor."},
+    {"deger": "time_series", "baslik": "Time Series Forecasting",
+     "aciklama": "Hedef sayısaldır ve dönemlere bağlıdır: gelecek dönemlerin "
+                 "değeri tahmin edilir. Dönem kolonu gerekir.",
+     "hedef_ipucu": "İkiden fazla farklı değer alan sayısal kolonlar listelenir",
+     "hedef_yok": "İkiden fazla farklı değer alan sayısal kolon bulunamadı; "
+                  "tüm kolonlar listeleniyor."},
+    {"deger": "clustering", "baslik": "Clustering",
+     "aciklama": "Hedef değişken yoktur: kayıtlar benzerliklerine göre "
+                 "gruplara ayrılır.",
+     "hedef_ipucu": "Clustering'de hedef değişken seçilmez",
+     "hedef_yok": ""},
+]
+
+
+def _sayisal_hedef_adaylari(durum, kimlik=()):
+    """Regression ve zaman serisi hedefi: tam ya da ondalik sayi tipinde,
+    ikiden fazla farkli deger alan kolonlar (profilden, tam tablo). Tam
+    sayi tipindeki kimlik adaylari (musteri numarasi gibi) disarida."""
+    try:
+        kol = profil_mod.kolonlar(_profil(durum))
+    except Exception:
+        return []
+    kimlik = set(kimlik)
+    cikti = []
+    for ad, kp in kol.items():
+        if not kp or kp.get("tur") not in (profil_kural.TUR_TAM,
+                                           profil_kural.TUR_ONDALIK):
+            continue
+        if kp.get("tur") == profil_kural.TUR_TAM and ad in kimlik:
+            continue
+        try:
+            tekil = int(kp.get("tekil") or 0)
+        except (TypeError, ValueError):
+            continue
+        if tekil > 2:
+            cikti.append(str(ad))
+    return cikti
+
+
+def _hedef_adaylari(durum, problem, p=None):
+    """Model tipine gore hedef degisken adaylari."""
+    p = p or _donem_adaylarini_hazirla(durum)
+    if problem == "classification":
+        return list(p.get("hedef_adaylari") or [])
+    if problem in ("regression", "time_series"):
+        return _sayisal_hedef_adaylari(durum, p.get("kimlik_adaylari") or [])
+    return []
+
+
+def secili_problem(durum):
+    """Kolon Rolleri'nde secilen model tipi. Model tipi secimi gelmeden
+    once tanimlanan calismalarda hedef 0/1 oldugu icin Classification."""
+    pr = (durum or {}).get("problem")
+    if pr:
+        return pr
+    return "classification" if ((durum or {}).get("meta") or {}).get("target") else ""
+
+
 # SEGMENT KOLONU (opsiyonel.). Az sayida
 # farkli deger tasiyan kolon: urun, kanal, musteri tipi gibi.
 SEGMENT_EN_AZ = 2
@@ -4066,7 +4156,7 @@ def _tanimlar_formu(durum, meta=None):
     # ADAY LISTELERI. Bos donerse TUM kolonlara dusulur ve nedeni
     # alanin altinda yazilir: veri setinde uygun kolon yoksa kullaniciyi
     # secim yapamaz halde birakmak dogru olmaz.
-    hedef_aday = [k for k in (p.get("hedef_adaylari") or []) if k in kolonlar]
+    problem = secili_problem(durum)
     kimlik_aday = [k for k in (p.get("kimlik_adaylari") or []) if k in kolonlar]
 
     # Kullanicinin onceki secimi listede yoksa yine de gorunmeli, aksi
@@ -4081,7 +4171,24 @@ def _tanimlar_formu(durum, meta=None):
     secili = {m.get("target"), m.get("id")} - {None, ""}
     donem_aday = [k for k in (p.get("donem_adaylari") or [])
                   if k in kolonlar and k not in secili]
-    hedef_liste = _ekle(hedef_aday, m.get("target")) if hedef_aday else kolonlar
+    # HEDEF LISTESI MODEL TIPINE GORE. On yuz tip degisince listeyi
+    # buradan alir; secilen tipin listesine onceki hedef de eklenir.
+    tipler = []
+    for t in PROBLEM_TIPLERI:
+        aday = [k for k in _hedef_adaylari(durum, t["deger"], p) if k in kolonlar]
+        hedefsiz = t["deger"] == "clustering"
+        liste = [] if hedefsiz else (
+            (_ekle(aday, m.get("target")) if t["deger"] == problem else aday)
+            if aday else kolonlar)
+        tipler.append({
+            "deger": t["deger"], "baslik": t["baslik"], "aciklama": t["aciklama"],
+            "hazir": t["deger"] in PROBLEM_HAZIR,
+            "not": "" if t["deger"] in PROBLEM_HAZIR else PROBLEM_HAZIR_DEGIL,
+            "hedef": {"secenekler": liste, "ipucu": t["hedef_ipucu"],
+                      "not": "" if (aday or hedefsiz) else t["hedef_yok"],
+                      "yok": hedefsiz}})
+    secili_tip = next((t for t in tipler if t["deger"] == problem), None)
+    hedef_liste = secili_tip["hedef"]["secenekler"] if secili_tip else []
     kimlik_liste = _ekle(kimlik_aday, m.get("id")) if kimlik_aday else kolonlar
     # DONEM: yalnizca tarih ya da donem bicimli kolonlar (bkz.
     # profil_kural.donem_adayi_mi). Aday yoksa liste bos kalir ve nedeni yazilir;
@@ -4104,9 +4211,7 @@ def _tanimlar_formu(durum, meta=None):
     segment_liste = _ekle(segment_aday, m.get("segment"))
     segment_not = "" if segment_aday else "2 ile 20 arası farklı değer alan kolon bulunamadı."
 
-    hedef_not = ("" if hedef_aday else
-                 "Yalnızca 0 ve 1 değeri alan kolon bulunamadı; tüm kolonlar "
-                 "listeleniyor.")
+    hedef_not = secili_tip["hedef"]["not"] if secili_tip else ""
     kimlik_not = ("" if kimlik_aday else
                   "Her satırda farklı değer alan kolon bulunamadı; tüm "
                   "kolonlar listeleniyor.")
@@ -4115,10 +4220,14 @@ def _tanimlar_formu(durum, meta=None):
         "tip": "form",
         "baslik": ADIM_ADI["tanimlar"],
         # ACIKLAMA ADIMIN METNINI DE TASIR.
-        "aciklama": "Hedef değişkeni ve kimlik kolonunu seçin. Dönem ve "
-                    "segment kolonu isteğe bağlıdır: dönem seçilirse veri "
-                    "zamana göre bölünebilir ve stabilite ölçülebilir; segment "
-                    "seçilirse sonuçlar segment bazında da gösterilir.",
+        "aciklama": "Önce model tipini seçin; hedef değişken listesi model "
+                    "tipine göre değişir. Sonra hedef değişkeni ve kimlik "
+                    "kolonunu seçin. Dönem ve segment kolonu isteğe bağlıdır: "
+                    "dönem seçilirse veri zamana göre bölünebilir ve stabilite "
+                    "ölçülebilir; segment seçilirse sonuçlar segment bazında "
+                    "da gösterilir.",
+        # MODEL TIPI kartin ilk secimi; on yuz alanlarin ustunde cizer.
+        "problem": {"etiket": "Model Tipi", "deger": problem, "tipler": tipler},
         # Kartta acilir listeler var. Yazarak girme yolu da calisir (bkz.
         # TANIM_KALIP), yalniz kartta gosterilmez.
         "buton": "Kolon Rollerini Onayla",
@@ -4129,7 +4238,9 @@ def _tanimlar_formu(durum, meta=None):
         "alanlar": [
             {"ad": "target", "etiket": "Hedef Değişken", "kaynak": "kolon",
              "deger": m.get("target") or "", "secenekler": hedef_liste,
-             "ipucu": "0 ve 1 değeri alan kolonlar listelenir", "not": hedef_not},
+             "ipucu": secili_tip["hedef"]["ipucu"] if secili_tip else
+                      "Model tipini seçince listelenir",
+             "not": hedef_not},
             {"ad": "id", "etiket": "Kimlik Kolonu", "kaynak": "kolon",
              "deger": m.get("id") or "", "secenekler": kimlik_liste,
              "ipucu": "Her satırda farklı değer alan kolonlar listelenir",
@@ -4146,7 +4257,8 @@ def _tanimlar_formu(durum, meta=None):
              "not": segment_not,
              "bilgi": SEGMENT_BILGI},
         ],
-        "sablon": "target {target} id {id} donem {donem} segment {segment}",
+        "sablon": "problem {problem} target {target} id {id} donem {donem} "
+                  "segment {segment}",
     }
 
 
@@ -4160,6 +4272,22 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
 
     norm = niyet_kural.normalize(mesaj)
     meta = dict(durum.get("meta") or {})
+    # MODEL TIPI yalniz mesajda acikca geldiginde yazilir. Model tipi
+    # tasimayan "target X id Y" (yazarak girme) Classification sayilir:
+    # sonraki adimlari hazir olan tek tip o.
+    pm = re.search(PROBLEM_KALIP, norm)
+    if pm:
+        durum["problem"] = pm.group(1)
+    elif re.search(r"\btarget\b", norm) and secili_problem(durum) not in PROBLEM_HAZIR:
+        durum["problem"] = "classification"
+    problem = secili_problem(durum)
+    if problem and problem not in PROBLEM_HAZIR:
+        _tanimlar_formu(durum, meta)
+        if not pm:
+            return False, ""
+        ad = next(t["baslik"] for t in PROBLEM_TIPLERI if t["deger"] == problem)
+        return False, "%s seçildi. %s" % (ad, PROBLEM_HAZIR_DEGIL)
+    problem = problem or "classification"
     for anahtar, kalip in TANIM_KALIP.items():
         m = re.search(kalip, norm)
         if m:
@@ -4201,8 +4329,10 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
     # kontrol bu yuzden burada tekrarlanir.
     p = _donem_adaylarini_hazirla(durum)
     aday_kurali = [
-        ("target", p.get("hedef_adaylari"), "hedef değişken",
-         "yalnızca 0/1 değerli bir kolon olabilir"),
+        ("target", _hedef_adaylari(durum, problem, p), "hedef değişken",
+         "Classification'da yalnızca 0/1 değerli bir kolon olabilir"
+         if problem == "classification" else
+         "yalnızca ikiden fazla farklı değer alan sayısal bir kolon olabilir"),
         ("id", p.get("kimlik_adaylari"), "kimlik kolonu",
          "yalnızca tekrarsız (her satırda farklı) bir kolon olabilir"),
         ("donem", p.get("donem_adaylari"), "dönem kolonu",
@@ -4818,10 +4948,10 @@ def platform_disi_kolonlar(durum):
     return disi
 
 TIP_KILIT_SEBEBI = {
-    "target": "hedef değişken - tipi Kolon Rolleri adımında belirlendi",
-    "id": "kimlik kolonu - tipi Kolon Rolleri adımında belirlendi",
+    "target": "hedef değişken - tipi {kolon_rolleri} adımında belirlendi",
+    "id": "kimlik kolonu - tipi {kolon_rolleri} adımında belirlendi",
     "donem": "dönem kolonu - yalnızca tarihe çevrilebilir",
-    "segment": "segment kolonu - tipi Kolon Rolleri adımında belirlendi",
+    "segment": "segment kolonu - tipi {kolon_rolleri} adımında belirlendi",
 }
 
 
@@ -4845,7 +4975,8 @@ def _tip_kilidi(durum, ad, kod):
         return None
     if rol == "donem" and tip_donusum.hedef_tip(kod) == "tarih":
         return None
-    return TIP_KILIT_SEBEBI[rol]
+    return TIP_KILIT_SEBEBI[rol].replace(
+        "{kolon_rolleri}", akis_atif.adim("tanimlar", durum))
 
 
 def teyit_satirlari(durum):
@@ -5724,8 +5855,8 @@ def _bolme_tarifi(durum, a, b, notlar):
         if not isinstance(tanim, dict):
             raise AdimHatasi(
                 "Veri setinde hazır bölme kullanılacaktı ama bölme kolonu "
-                "bulunamadı; \"%s\" adımını yeniden çalıştırın."
-                % ADIM_ADI["bolme"])
+                "bulunamadı; %s adımını yeniden çalıştırın."
+                % akis_atif.adim("bolme", durum))
         b["hazir_kolonlar"] = list(tanim.get("kolonlar") or [])
         return {"tur": "hazir", "bicim": tanim.get("tur"),
                 "kolon": tanim.get("kolon"), "esleme": tanim.get("esleme") or {}}

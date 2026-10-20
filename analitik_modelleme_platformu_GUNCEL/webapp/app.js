@@ -749,7 +749,7 @@ const SOHBET_ACILIS_ADIMI = "kural";    // Faz 02 - Değişken Mühendisliği (2
    Sebep: placeholder düz metindir, içindeki adım adı kalın yazılamaz.
    Katman <strong> taşıyabiliyor. Düz hâli title ve ekran okuyucu için
    duruyor. */
-const KUTU_KILIT_ADIM = "Değişken Mühendisliği";
+const KUTU_KILIT_ADIM = "02. Değişken Mühendisliği";   // SOHBET_ACILIS_ADIMI'nın fazı
 const KUTU_KILIT_ONCE = "Sohbet, ";
 const KUTU_KILIT_SONRA =
     " adımında açılır. O ana kadar seçimler kartlar üzerinden yapılır; "
@@ -929,6 +929,14 @@ function adimKonumu(anahtar) {
     return null;
 }
 
+/* Ön yüzde yazılan adım atfı, arka ucun akis_atif.adim'i ile aynı
+   biçim: **02.1 Veri Profili ve Kalite** (metinYaz kalın yazar). */
+function adimAtfi(anahtar, yedekAd) {
+    const k = adimKonumu(anahtar);
+    const a = DUZ_ADIMLAR.find(x => x && x.anahtar === anahtar);
+    return "**" + numarali(k && k.altKod, a ? a.baslik : yedekAd) + "**";
+}
+
 function numarali(kod, baslik) {
     const b = tireSade(baslik || "");
     return kod ? kod + " " + b : b;
@@ -1015,7 +1023,7 @@ function fazlariCiz() {
                Tamamlandı sayılmaz ve tıklanmaz (sohbetteki bloğu gizli). */
             if (satirAtlandi(a)) {
                 li.className = "atlandi";
-                li.title = tireSade(a.baslik) + ": atlandı (Sözlük ve Kolon Adı "
+                li.title = duzMetin(a.baslik) + ": atlandı (Sözlük ve Kolon Adı "
                     + "Kontrolü'nde «Kontrol Edilmeden Geçilsin» seçildi)";
                 li.appendChild(elYap("span", "adim-isaret"));
                 li.appendChild(elYap("span", "", numarali(a.kod, a.baslik)));
@@ -1584,7 +1592,7 @@ function dokDamgaTazele() {
     const taslak = (g.teslim_durumu || "") !== "hazir";
     dokDamgaEl.hidden = false;
     dokDamgaEl.className = "dok-damga " + (taslak ? "taslak" : "hazir");
-    dokDamgaEl.textContent = tireSade(metin);
+    metinYaz(dokDamgaEl, metin);
     dokDamgaEl.title = "";
 }
 
@@ -1620,7 +1628,7 @@ function dokumanCiz() {
     if (!dokBolumlerEl) return;
     const g = DOK.govde;
 
-    if (dokBaslikEl) dokBaslikEl.textContent = tireSade((g && g.baslik) || "");
+    if (dokBaslikEl) metinYaz(dokBaslikEl, (g && g.baslik) || "");
     if (dokTarihEl) {
         const tarih = (g && g.olusturma) || "";
         dokTarihEl.textContent = tarih ? "Oluşturma: " + tireSade(tarih) : "";
@@ -1691,7 +1699,7 @@ function dokumanGetir() {
 /* ---------------- Word çıktısı ---------------- */
 function dokIndirmeHataYaz(mesaj) {
     if (!dokIndirmeHataEl) return;
-    dokIndirmeHataEl.textContent = mesaj || "";
+    metinYaz(dokIndirmeHataEl, mesaj || "");
     dokIndirmeHataEl.hidden = !mesaj;
 }
 
@@ -1786,8 +1794,36 @@ function cipYap(durum) {
 function elYap(etiket, sinif, metin) {
     const e = document.createElement(etiket);
     if (sinif) e.className = sinif;
-    if (metin !== undefined) e.textContent = tireSade(metin);
+    if (metin !== undefined) metinYaz(e, metin);
     return e;
+}
+
+/* ADIM ATIFLARI KALIN. Arka uç "nerede ne olacağını" söyleyen
+   cümlelerde adımı **01.2.3 Eksik Sözlük Tanımları** biçiminde
+   işaretler. İşaret yalnız kelime sınırında tanınır (a**2 gibi bir
+   ifade işaret sayılmaz); işaretli parça <strong>, gerisi düz metin
+   olarak yazılır. */
+const KALIN_ISARET = /(^|[\s«("'(])\*\*(\S(?:[^*\n]*?\S)?)\*\*(?=$|[\s.,;:!?»)"'’'])/g;
+
+function metinYaz(el, metin) {
+    const s = tireSade(metin);
+    el.textContent = "";
+    let son = 0;
+    s.replace(KALIN_ISARET, (tam, on, ic, yer) => {
+        el.appendChild(document.createTextNode(s.slice(son, yer) + on));
+        const k = document.createElement("strong");
+        k.textContent = ic;
+        el.appendChild(k);
+        son = yer + tam.length;
+        return tam;
+    });
+    el.appendChild(document.createTextNode(s.slice(son)));
+    return el;
+}
+
+/* title ve aria-label düz metindir: işaret düşer, metin kalır. */
+function duzMetin(metin) {
+    return tireSade(metin).replace(KALIN_ISARET, "$1$2");
 }
 
 /* Backend'e bagli olmayan sekmeler: icerik iskelet, bu acikca yazilir.
@@ -1903,7 +1939,7 @@ function tabloYap(t) {
         (s || []).forEach((h, i) => {
             const td = elYap("td", i === 0 ? "panel-ad" : "", degerGoster(h));
             // Uzun kolon adlari kirpilir; tam degeri tooltip'te durur.
-            td.title = tireSade(h === null || h === undefined ? "" : h);
+            td.title = duzMetin(h === null || h === undefined ? "" : h);
             tr.appendChild(td);
         });
         govde.appendChild(tr);
@@ -1968,7 +2004,7 @@ function panelCiz(v) {
             const satir = elYap("div", "iskele-satir");
             satir.appendChild(elYap("span", "panel-etiket", s.etiket));
             const deger = elYap("span", "iskele-deger", degerGoster(s.deger));
-            deger.title = tireSade(s.deger === null || s.deger === undefined
+            deger.title = duzMetin(s.deger === null || s.deger === undefined
                                    ? "" : s.deger);
             satir.appendChild(deger);
             kart.appendChild(satir);
@@ -2207,7 +2243,7 @@ function excelSeridiYap(tur, etiket, ipucu, govdeFn) {
     btn.innerHTML = EXCEL_SIMGESI;
     btn.appendChild(document.createTextNode(tireSade(etiket)));
     btn.disabled = true;
-    btn.title = tireSade(ipucu || "");
+    btn.title = duzMetin(ipucu || "");
     el.appendChild(btn);
 
     const hata = elYap("span", "excel-hata");
@@ -2246,8 +2282,7 @@ function excelSeridiYap(tur, etiket, ipucu, govdeFn) {
             })
             .catch(e => {
                 bitir();
-                hata.textContent = "Excel indirilemedi: "
-                                   + ((e && e.message) || e);
+                metinYaz(hata, "Excel indirilemedi: " + ((e && e.message) || e));
                 hata.hidden = false;
             });
     };
@@ -2275,7 +2310,7 @@ const DG_SIRALAMA = [
 
 function teyitHatasi(el, metin) {
     if (!el) return;
-    el.textContent = tireSade(metin || "");
+    metinYaz(el, metin || "");
     el.hidden = !metin;
 }
 
@@ -2334,7 +2369,7 @@ function haricKaydet(kolon, kutu, hataEl) {
         }
         
         const oz = document.querySelector(".teyit-kart .teyit-ozet");
-        if (oz && d.ozet) oz.textContent = tireSade(d.ozet);
+        if (oz && d.ozet) metinYaz(oz, d.ozet);
         /* Uç, hedef/kimlik/dönem kolonunu listeden ÇIKARMIŞ olabilir
            (tamam:true ama reddedilen dolu). Kutuyu işaretli bırakmak
            "süreç dışı bıraktım" izlenimi verirdi; geri alınıp sebebi
@@ -2444,9 +2479,9 @@ function tipKaydet(kolon, sec, tipEl, hataEl) {
         }
         sec.dataset.eski = kod;
         if (sec._vurgu) sec._vurgu();
-        if (tipEl && d.tip) tipEl.textContent = tireSade(d.tip);
+        if (tipEl && d.tip) metinYaz(tipEl, d.tip);
         const oz = document.querySelector(".teyit-kart .teyit-ozet");
-        if (oz && d.ozet) oz.textContent = tireSade(d.ozet);
+        if (oz && d.ozet) metinYaz(oz, d.ozet);
         teyitHatasi(hataEl, "");
     })
     .catch(e => {
@@ -3169,7 +3204,7 @@ function ftTanimHucresi(s) {
         /*
            Sözlük hiç bağlanmadıysa hangi adımda bağlanacağı, kopya
            çıkarılamadıysa nedeni yazıyor. */
-        h.title = tireSade((FT.veri && FT.veri.duzenleme_notu)
+        h.title = duzMetin((FT.veri && FT.veri.duzenleme_notu)
                            || "Tanımlar salt okunur.");
         return h;
     }
@@ -3238,7 +3273,7 @@ function ftSatirCiz(s, i) {
                         + (a.sayisal ? " ft-sayi" : ""), metin);
         h.setAttribute("role", "cell");
         h.setAttribute("data-alan", a.alan);
-        h.title = tireSade(s[a.alan] === null || s[a.alan] === undefined
+        h.title = duzMetin(s[a.alan] === null || s[a.alan] === undefined
                            ? "" : String(s[a.alan]));
         satir.appendChild(h);
     });
@@ -3299,7 +3334,7 @@ function ftPencereCiz() {
         FT.dom.yer.appendChild(elYap("div", "ft-bos",
             (FT.veri && (FT.veri.satirlar || []).length)
                 ? "Filtrelerle eşleşen kolon yok."
-                : "Kolon listesi «Veri Profili ve Kalite» adımından sonra dolar."));
+                : "Kolon listesi " + adimAtfi("veri_profili", "Veri Profili ve Kalite") + " adımından sonra dolar."));
         return;
     }
 
@@ -3893,7 +3928,7 @@ function bfSecimKutusu(ad, secenekler, deger, pasif, degisti) {
         const o = secenekler[i];
         if (!o) return;
         if (o.kilitli) op.disabled = true;
-        if (o.aciklama) op.title = tireSade(o.aciklama);
+        if (o.aciklama) op.title = duzMetin(o.aciklama);
     });
     s.disabled = pasif;
     if (pasif) s.onchange = null;
@@ -4917,7 +4952,7 @@ function sfaKararFormu(v, ozet, yenidenCiz) {
             body: JSON.stringify({ oturum_id: OTURUM_ID, kolon: v.ad || ozet.ad, karar: karar })
         }).then(r => r.json()).then(d => {
             kaydet.disabled = false;
-            if (!d || !d.tamam) { durum.textContent = tireSade((d && d.hata) || "Kaydedilemedi."); return; }
+            if (!d || !d.tamam) { metinYaz(durum, (d && d.hata) || "Kaydedilemedi."); return; }
             v.karar = d.karar;
             if (d.degisken) {
                 /* Tip değişti: detay (ölçütler, grafik, aralıklar) yeni tiple. */
@@ -6150,7 +6185,7 @@ function balonIcerikYap(rol, metin, hataMi) {
     if (rol === "bot" && !hataMi) {
         balon.innerHTML = metinBicimle(tireSade(metin));
     } else if (hataMi) {
-        balon.textContent = tireSade(metin);
+        metinYaz(balon, metin);
     } else {
         balon.textContent = metin;          // kullanicinin yazdigi aynen kalir
     }
@@ -6621,13 +6656,13 @@ function secenekEkle(secenekler, kilit, secili) {
 
         const bas = document.createElement("div");
         bas.className = "secenek-baslik";
-        bas.textContent = tireSade(s.baslik);
+        metinYaz(bas, s.baslik);
         govde.appendChild(bas);
 
         if (s.aciklama) {
             const ack = document.createElement("div");
             ack.className = "secenek-aciklama";
-            ack.textContent = tireSade(s.aciklama);
+            metinYaz(ack, s.aciklama);
             govde.appendChild(ack);
         }
         kart.appendChild(govde);
@@ -7243,7 +7278,7 @@ function dogrulamaKartiEkle(alan, blok) {
     if (alan.aciklama) {
         const ack = document.createElement("div");
         ack.className = "secim-aciklama dg-aciklama";
-        ack.textContent = tireSade(alan.aciklama);
+        metinYaz(ack, alan.aciklama);
         kart.appendChild(ack);
     }
 
@@ -7258,7 +7293,7 @@ function dogrulamaKartiEkle(alan, blok) {
 
             const et = document.createElement("div");
             et.className = "dg-ozet-etiket";
-            et.textContent = tireSade(o.etiket);
+            metinYaz(et, o.etiket);
             /* Sayının arkasındaki adlar "i" içinde. */
             if (o.bilgi) et.appendChild(bolmeBilgiSimgesi(o.bilgi, o.etiket));
             blok.appendChild(et);
@@ -7267,13 +7302,13 @@ function dogrulamaKartiEkle(alan, blok) {
             dg.className = "dg-ozet-deger";
             dg.textContent = degerGoster(o.deger);
             /* Uzun ad kisaltiliyor; tamami ipucunda kalsin */
-            dg.title = tireSade(o.deger);
+            dg.title = duzMetin(o.deger);
             blok.appendChild(dg);
 
             (o.alt || []).forEach(a => {
                 const s = document.createElement("div");
                 s.className = "dg-ozet-alt";
-                s.textContent = tireSade(a);
+                metinYaz(s, a);
                 blok.appendChild(s);
             });
             oz.appendChild(blok);
@@ -7302,7 +7337,7 @@ function dogrulamaKartiEkle(alan, blok) {
 
         const mt = document.createElement("div");
         mt.className = "dg-kapsam-metin";
-        mt.textContent = tireSade(alan.kapsam.metin);
+        metinYaz(mt, alan.kapsam.metin);
         kp.appendChild(mt);
 
         kart.appendChild(kp);
@@ -7329,7 +7364,7 @@ function dogrulamaKartiEkle(alan, blok) {
 
         const tb = document.createElement("div");
         tb.className = "dg-tablo-baslik";
-        tb.textContent = tireSade(tanimsiz.baslik);
+        metinYaz(tb, tanimsiz.baslik);
         tbas.appendChild(tb);
 
         /* Toplu islem: 200 kutuyu tek tek isaretlemek kullaniciyi bogar.
@@ -7363,7 +7398,7 @@ function dogrulamaKartiEkle(alan, blok) {
         if (tanimsiz["not"]) {
             const nt = document.createElement("div");
             nt.className = "dg-not dg-cizgisiz";
-            nt.textContent = tireSade(tanimsiz["not"]);
+            metinYaz(nt, tanimsiz["not"]);
             kart.appendChild(nt);
         }
         /* ZORUNLU TANIM UYARISI: hedef, kimlik ve dönem kolonunun
@@ -7372,7 +7407,7 @@ function dogrulamaKartiEkle(alan, blok) {
         if (tanimsiz.zorunlu_not) {
             const zn = document.createElement("div");
             zn.className = "dg-not dg-zorunlu-not dg-cizgisiz";
-            zn.textContent = tireSade(tanimsiz.zorunlu_not);
+            metinYaz(zn, tanimsiz.zorunlu_not);
             kart.appendChild(zn);
         }
         /* Öneri alınamayan grup varsa NEDENİ burada.  Kullanıcı boş açıklamaların neden boş olduğunu
@@ -7380,7 +7415,7 @@ function dogrulamaKartiEkle(alan, blok) {
         if (tanimsiz.oneri_hata) {
             const oh = document.createElement("div");
             oh.className = "dg-oneri-hata";
-            oh.textContent = tireSade(tanimsiz.oneri_hata);
+            metinYaz(oh, tanimsiz.oneri_hata);
             kart.appendChild(oh);
         }
 
@@ -7455,7 +7490,7 @@ function dogrulamaKartiEkle(alan, blok) {
                kullanici veriye aykiri bir tip secebilirdi. */
             const tdT = document.createElement("td");
             tdT.className = "dg-tip";
-            tdT.textContent = tireSade(sat.tip);
+            metinYaz(tdT, sat.tip);
             tr.appendChild(tdT);
 
             /* Aciklama duzenlenebilir: oneri ile dolu gelir, kullanici
@@ -7534,7 +7569,7 @@ function dogrulamaKartiEkle(alan, blok) {
             if (durum.zorunlu) kutu.disabled = true;
             if (durum.kilitli) {
                 kutu.disabled = true;
-                kutu.title = tireSade(sat.kilit_sebebi || "");
+                kutu.title = duzMetin(sat.kilit_sebebi || "");
                 tdI.title = kutu.title;
                 giris.disabled = true;
                 tr.classList.add("dg-rol-kilitli");
@@ -7624,7 +7659,7 @@ function dogrulamaKartiEkle(alan, blok) {
         kDurumEl = elYap("div", "dg-not dg-kontrol-durum", "");
         kart.appendChild(kDurumEl);
         kHataEl = elYap("div", "dg-oneri-hata");
-        kHataEl.textContent = tireSade(kontrol.hata || "");
+        metinYaz(kHataEl, kontrol.hata || "");
         kHataEl.hidden = !kontrol.hata;
         kart.appendChild(kHataEl);
         if (!kontrol.toplam && !(kontrol.satirlar || []).length && !kontrol.hata) {
@@ -7766,7 +7801,7 @@ function dogrulamaKartiEkle(alan, blok) {
         }
         if (kDurumEl) { kDurumEl.textContent = metin; kDurumEl.hidden = !metin; }
         if (kHataEl && kayit.kontrol_hata) {
-            kHataEl.textContent = tireSade(kayit.kontrol_hata);
+            metinYaz(kHataEl, kayit.kontrol_hata);
             kHataEl.hidden = false;
         }
         kontrolBekliyor = !!kontrol.bekle && (durumK === "bekliyor" || durumK === "calisiyor");
@@ -7876,7 +7911,7 @@ function dogrulamaKartiEkle(alan, blok) {
         .then(d => {
             if (!d || d.tamam !== true || !d.oneri_is) {
                 kBaslaBtn.disabled = false;
-                kHataEl.textContent = tireSade((d && d.hata) || "Kontrol başlatılamadı.");
+                metinYaz(kHataEl, (d && d.hata) || "Kontrol başlatılamadı.");
                 kHataEl.hidden = false;
                 return;
             }
@@ -7944,7 +7979,7 @@ function dogrulamaKartiEkle(alan, blok) {
         else if (ekleSayisi === 0)   etiket = kalip.haric.replace("%s", ftBinlik(toplamHaric));
         else if (toplamHaric === 0)  etiket = kalip.ekle.replace("%s", ftBinlik(ekleSayisi));
         else                         etiket = kalip.karma;
-        birincil.textContent = tireSade(etiket);
+        metinYaz(birincil, etiket);
 
         /* Aciklamasi bos "sözlüğe ekle" satiri varsa kaydetmek anlamsiz:
            dugme pasif ve NEDENI ekranda yaziyor. */
@@ -8130,7 +8165,7 @@ function dogrulamaKartiEkle(alan, blok) {
                 oh = elYap("div", "dg-oneri-hata");
                 kart.insertBefore(oh, dugmeler);
             }
-            oh.textContent = tireSade(kayit.hata);
+            metinYaz(oh, kayit.hata);
         }
         /* Kullanılamayan model (orkestra diğer modellerle devam etti). */
         if (kayit && kayit.model_notu) {
@@ -8139,7 +8174,7 @@ function dogrulamaKartiEkle(alan, blok) {
                 mn = elYap("div", "dg-not dg-model-notu");
                 kart.insertBefore(mn, dugmeler);
             }
-            mn.textContent = tireSade(kayit.model_notu);
+            metinYaz(mn, kayit.model_notu);
         }
         kontrolIsle(kayit);
     }
@@ -8311,7 +8346,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         const tdK = elYap("td", "dg-kolon", r.kolon);
         /* Neyin değiştiği ve varsa sorun "i"de. */
         const iMetni = [(r.degisim || []).join("\n"), r.sorun ? "Sorun: " + r.sorun : "",
-                        r.aciklama_notu ? "Açıklama Düzenleme notu: " + r.aciklama_notu : ""]
+                        r.aciklama_notu ? adimAtfi("aciklama", "Açıklama Düzenleme") + " notu: " + r.aciklama_notu : ""]
             .filter(Boolean).join("\n\n");
         if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kolon));
         tr.appendChild(tdK);
@@ -9024,7 +9059,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             const h = elYap("div", "dg-oneri-hata",
                 "Dil modeli bu kolonu düzenleyemedi; onaylarsanız "
                 + (v.not ? "notunuz" : "orijinal açıklama") + " kalır.");
-            if (v.hata) h.title = tireSade(v.hata);
+            if (v.hata) h.title = duzMetin(v.hata);
             td.appendChild(h);
             return;
         }
@@ -9218,7 +9253,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     }
 
     function durumYaz(metin, hata) {
-        durumEl.textContent = tireSade(metin || "");
+        metinYaz(durumEl, metin || "");
         durumEl.classList.toggle("dg-acik-hata", !!hata);
         durumEl.hidden = !metin;
     }
@@ -9395,7 +9430,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const bilgiEl = elYap("div", "dg-donem-bilgi", "");
     bilgiEl.hidden = true;
     function bilgiYaz(m, hata) {
-        bilgiEl.textContent = tireSade(m || "");
+        metinYaz(bilgiEl, m || "");
         bilgiEl.classList.toggle("hata", !!hata);
         bilgiEl.hidden = !m;
     }
@@ -9922,7 +9957,7 @@ function sfaKartiEkle(alan, blok) {
             durum.textContent = "Kararlar Değişkenler > Dağılım ve SFA bölümünde; inceleyip "
                 + "değiştirebilirsiniz.";
         hata.hidden = !(d && d.hata);
-        hata.textContent = (d && d.hata) ? tireSade(d.hata) : "";
+        metinYaz(hata, (d && d.hata) || "");
     }
     let sonBiten = -1;
     function yokla(isId) {
@@ -10373,7 +10408,7 @@ function bolmeBilgiSimgesi(metin, baslik) {
         /* Tek satır sonu: satır kırılır (seçenek listesi gibi). */
         par.split("\n").forEach((satir, i) => {
             if (i) p.appendChild(document.createElement("br"));
-            p.appendChild(document.createTextNode(tireSade(satir)));
+            p.appendChild(metinYaz(document.createElement("span"), satir));
         });
         tip.appendChild(p);
     });
@@ -10493,7 +10528,7 @@ function bfCipDugmesi(ad, anahtar, etiket, secili, pasif, sec, aciklama, oneri) 
     b.setAttribute("aria-pressed", secili ? "true" : "false");
     b.textContent = etiket;
     b.disabled = !!pasif;
-    if (aciklama) b.title = tireSade(aciklama);
+    if (aciklama) b.title = duzMetin(aciklama);
     if (!b.disabled) b.onclick = (e) => { e.stopPropagation(); sec(); };
     return b;
 }
@@ -10840,7 +10875,7 @@ function bolmeGovdeCiz(kok) {
         btn.type = "button";
         btn.className = "secim-onay bolme-onay";
         btn.setAttribute("data-bolme-onay", "1");
-        btn.textContent = tireSade(alan.buton || "Bu Ayarları Seç");
+        metinYaz(btn, alan.buton || "Bu Ayarları Seç");
         btn.disabled = kilitli || BF.kaydediyor || bfPasif();
         if (btn.disabled && bfPasif())
             btn.title = "Bölme kilitli; değiştirmek için önce kilidi açın.";
@@ -11027,7 +11062,7 @@ function teyitKartiEkle(alan, blok) {
     if (alan.ozet) {
         const oz = document.createElement("div");
         oz.className = "teyit-ozet";
-        oz.textContent = tireSade(alan.ozet);
+        metinYaz(oz, alan.ozet);
         kart.appendChild(oz);
     }
 
@@ -11187,14 +11222,14 @@ function teyitKartiEkle(alan, blok) {
                işaretleyemiyorum" sorusu ekranda cevaplanmış oluyor. */
             if (sat.disi_kilitli) {
                 kutu.disabled = true;
-                kutu.title = tireSade(sat.disi_kilit_sebebi || "");
+                kutu.title = duzMetin(sat.disi_kilit_sebebi || "");
                 tdI.title = kutu.title;
                 tr.classList.add("dg-rol-kilitli");
             }
             else if (sat.disi_sebebi) {
                 /* Otomatik işaretlenmiş (tek değerli): kilitli değil,
                    neden işaretli geldiği ipucunda yazıyor. */
-                kutu.title = tireSade(sat.disi_sebebi);
+                kutu.title = duzMetin(sat.disi_sebebi);
             }
             /* SÜREÇ DIŞI SATIR ÇİZİLİR: satırın üstü
                çizili, tip ve tanım alanları kilitli - süreç dışı bir
@@ -11309,7 +11344,7 @@ function teyitKartiEkle(alan, blok) {
                 } else {
                     kur(new Set(d.kolonlar || []));
                     const oz = document.querySelector(".teyit-kart .teyit-ozet");
-                    if (oz && d.ozet) oz.textContent = tireSade(d.ozet);
+                    if (oz && d.ozet) metinYaz(oz, d.ozet);
                     teyitHatasi(hataEl, (d.reddedilen || []).length ? (d.hata || "") : "");
                 }
                 topluSayilari();
@@ -11335,7 +11370,7 @@ function teyitKartiEkle(alan, blok) {
     const onayBtn = document.createElement("button");
     onayBtn.type = "button";
     onayBtn.className = "secim-onay teyit-birincil";
-    onayBtn.textContent = tireSade(alan.buton || "Devam Et");
+    metinYaz(onayBtn, alan.buton || "Devam Et");
     kart.appendChild(onayBtn);
 
     /* GECMISTEN yeniden cizim: kart kilitli acilir ve CANLI TEYIT
@@ -11689,7 +11724,80 @@ function secimAlaniEkle(alan, blok) {
             "repeat(" + Math.max(1, alanlar.length) + ", minmax(0, 1fr))";
         kilitEk = () => {
             Object.keys(combolar).forEach(k => { combolar[k].giris.disabled = true; });
+            tipDugmeleri.forEach(x => { x.b.disabled = true; });
         };
+
+        /* MODEL TİPİ (Kolon Rolleri): kartın ilk seçimi, alanların üstünde.
+           Arka uç her tipin hedef listesini gönderiyor; tip değişince hedef
+           alanının listesi (hedefListe, yerinde güncellenir), alt notu ve
+           düğmenin durumu değişir. Sonraki adımları hazır olmayan tipte
+           düğme kapalı kalır ve nedeni tiplerin altında yazar. */
+        const pr = alan.problem || null;
+        let problem = (pr && pr.deger) || "";
+        const tipDugmeleri = [];
+        const hedefListe = [];
+        let hedefAlt = null;
+        let tipNot = null;
+        const tipBul = d => ((pr && pr.tipler) || []).find(t => t.deger === d) || null;
+        if (pr) {
+            const etk = elYap("div", "problem-etiket", pr.etiket || "Model Tipi");
+            const y = elYap("span", "combo-zorunlu", "*");
+            y.setAttribute("aria-hidden", "true");
+            etk.appendChild(y);
+            kart.appendChild(etk);
+            const satir = elYap("div", "problem-secim");
+            satir.setAttribute("role", "radiogroup");
+            satir.setAttribute("aria-label", pr.etiket || "Model Tipi");
+            (pr.tipler || []).forEach((t, i) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "secenek problem-tip";
+                b.setAttribute("role", "radio");
+                b.appendChild(elYap("span", "secenek-rozet", String(i + 1)));
+                const g = elYap("div", "secenek-govde");
+                g.appendChild(elYap("div", "secenek-baslik", t.baslik));
+                g.appendChild(elYap("div", "secenek-aciklama", t.aciklama));
+                b.appendChild(g);
+                b.onclick = () => {
+                    if (mesgul || kart.classList.contains("kilitli")) return;
+                    tipSec(t.deger, true);
+                };
+                tipDugmeleri.push({ b: b, t: t });
+                satir.appendChild(b);
+            });
+            kart.appendChild(satir);
+            tipNot = elYap("div", "alan-not alan-not-uyari problem-not");
+            tipNot.hidden = true;
+            kart.appendChild(tipNot);
+        }
+
+        function tipSec(deger, kullanici) {
+            const t = tipBul(deger);
+            if (!t) return;
+            problem = deger;
+            tipDugmeleri.forEach(x => {
+                const sec = x.t.deger === deger;
+                x.b.classList.toggle("secili", sec);
+                x.b.setAttribute("aria-checked", sec ? "true" : "false");
+            });
+            tipNot.hidden = !t["not"];
+            metinYaz(tipNot, t["not"] || "");
+            hedefListe.length = 0;
+            (t.hedef.secenekler || []).forEach(k => hedefListe.push(k));
+            const hc = combolar.target;
+            if (hc) {
+                if (kullanici && hc.giris.value && hedefListe.indexOf(hc.deger()) === -1)
+                    hc.giris.value = "";
+                hc.giris.disabled = !!t.hedef.yok;
+                if (t.hedef.yok) hc.giris.value = "";
+                hc.isaretle();
+            }
+            if (hedefAlt) {
+                metinYaz(hedefAlt, t.hedef["not"] || t.hedef.ipucu || "");
+                hedefAlt.classList.toggle("alan-not-uyari", !!t.hedef["not"]);
+            }
+            durumTazele();
+        }
 
         /* Kolon kaynakli alan varsa (hedef/kimlik/dönem) once kolon listesi
            hazirlanir: backend'in gonderdigi liste ya da /kolonlar ucu. */
@@ -11706,8 +11814,13 @@ function secimAlaniEkle(alan, blok) {
             const zorunlular = anahtarlar.filter(k => zorunluAlan[k]);
             const sayilan = zorunlular.length ? zorunlular : anahtarlar;
             const dolu = sayilan.filter(k => combolar[k].dolu()).length;
-            onayBtn.disabled = anahtarlar.some(k => !combolar[k].gecerli());
-            durumEl.textContent = secimDurumMetni(dolu, sayilan.length);
+            const tip = pr ? tipBul(problem) : null;
+            onayBtn.disabled = anahtarlar.some(k => !combolar[k].gecerli())
+                || (pr && !(tip && tip.hazir));
+            /* Model tipi de zorunlu bir seçim: sayaca girer. */
+            durumEl.textContent = pr
+                ? secimDurumMetni(dolu + (problem ? 1 : 0), sayilan.length + 1)
+                : secimDurumMetni(dolu, sayilan.length);
             /* Dolu ama GÖNDERİLMEMİŞ kart yeşil olmaz: yeşil "onaylandı" demek. */
             durumEl.classList.remove("hazir", "onayli");
         }
@@ -11717,12 +11830,17 @@ function secimAlaniEkle(alan, blok) {
                ALAN BAZLI LISTE: a.secenekler geldiyse o alanda YALNIZCA
                o liste gosterilir. Hedef degisken 0/1 kolonlarla, kimlik
                kolonu tekrarsiz kolonlarla sinirli. */
+            /* Model tipli kartta hedef alanı tipin listesini kullanır. */
+            const hedefTipli = pr && a.ad === "target";
+            if (hedefTipli) (a.secenekler || []).forEach(k => hedefListe.push(k));
             const combo = comboYap(a.etiket, durumTazele, a.deger, {
                 kaynak: a.kaynak || "dataset",
                 zorunlu: a.zorunlu,
                 placeholder: a.placeholder,
-                liste: Array.isArray(a.secenekler) ? a.secenekler : undefined
+                liste: hedefTipli ? hedefListe
+                     : Array.isArray(a.secenekler) ? a.secenekler : undefined
             });
+            if (hedefTipli && !problem) combo.giris.disabled = true;
             combolar[a.ad] = combo;
             zorunluAlan[a.ad] = (a.zorunlu !== false);
             govde.appendChild(combo.kok);
@@ -11751,14 +11869,16 @@ function secimAlaniEkle(alan, blok) {
                         tireSade(a.etiket || "")));
                 }
                 combo.kok.appendChild(alt);
+                if (hedefTipli) hedefAlt = alt;
             }
         });
 
         kart.appendChild(govde);
+        if (pr && problem) tipSec(problem, false);
 
         onayBtn.onclick = () => {
             if (mesgul || onayBtn.disabled) return;
-            let metin = alan.sablon || "";
+            let metin = (alan.sablon || "").replace("{problem}", problem);
             Object.keys(combolar).forEach(k => {
                 const v = combolar[k].deger();
                 combolar[k].giris.value = v;
@@ -11780,6 +11900,8 @@ function secimAlaniEkle(alan, blok) {
             geriAlKilit = () => {
                 kilidiAc();
                 Object.keys(combolar).forEach(k => { combolar[k].giris.disabled = false; });
+                tipDugmeleri.forEach(x => { x.b.disabled = false; });
+                if (pr && problem) tipSec(problem, false);
                 durumTazele();
             };
             gonderimiKaydet(geriAlKilit);
@@ -12025,7 +12147,7 @@ function durumuYokla(satir, onEk) {
        balonIcerikYap); textContent ile yaziliyor. */
     const yaz = (metin) => {
         const govde = satir.querySelector(".balon") || satir;
-        govde.textContent = tireSade(metin);
+        metinYaz(govde, metin);
     };
     const tur = () => {
         /* Kullanıcı yeni bir istek başlattıysa yoklama BİTER: sunucunun
@@ -12172,7 +12294,7 @@ function aksiyonIziEkle(metin) {
     const iz = document.createElement("div");
     iz.className = "aksiyon-izi";
     const yazi = document.createElement("span");
-    yazi.textContent = tireSade(metin);
+    metinYaz(yazi, metin);
     iz.appendChild(yazi);
     sohbetEl.appendChild(iz);
     sohbetKaydir();

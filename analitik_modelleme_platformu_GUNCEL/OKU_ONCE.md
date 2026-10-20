@@ -220,6 +220,28 @@ tanıtır; sayfalar sol bardan açılır.
 - Listede görülmüş bir adıma basınca sohbet o adımın bloğuna kayar.
 - Adımlar sohbet alanında blok blok ilerler. Her blok kendi kararını ve
   "Geri Dön" düğmesini taşır.
+- **Adım atıfları:** bir işin hangi adımda yapılacağını ya da yapıldığını
+  söyleyen her metin (sohbet mesajları, kart açıklamaları, sağ panel
+  notları, "i" açıklamaları, hata mesajları, sohbet kutusunun kilit notu)
+  adımı iş akışındaki numarası ve adıyla, kalın yazar: "kolon tanımları
+  **01.2.3 Eksik Sözlük Tanımları** adımında oluşturulur", "Sohbet,
+  **02. Değişken Mühendisliği** adımında açılır". Faz 01'in adım listesi
+  başlangıca göre değiştiği için numara da değişir (A'da Kolon Rolleri
+  01.2.2, B'de 01.5.1); numara iş akışı listesiyle aynı kuralla
+  hesaplanır (`akis_kayit.adim_kodu`, mesajlarda `akis_atif.adim`).
+  Arka uç adımı `**…**` ile işaretler, ön yüz kalın yazar; düz metin
+  alanlarında (title) işaret düşer.
+- **01.2.2 Kolon Rolleri:** ilk seçim model tipi (Classification,
+  Regression, Time Series Forecasting, Clustering); başta hiçbiri seçili
+  değildir ve hedef değişken alanı kapalıdır. Hedef listesi tipe göre
+  değişir: Classification'da yalnız 0 ve 1 değeri alan kolonlar;
+  Regression ve Time Series Forecasting'de ikiden fazla farklı değer alan
+  tam ya da ondalıklı sayı kolonları (tam sayı tipindeki kimlik adayları
+  hariç); Clustering'de hedef seçilmez. Listeler profilden (tam tablo)
+  çıkar. Sonraki adımlar (tek değişken analizi, bölme, model ve başarı
+  ölçütleri) şu an yalnız Classification için hazır: öbür tipler
+  seçilebilir, listeleri görülür, ama onay düğmesi kapalı kalır ve
+  tiplerin altında nedeni yazar. Seçim `durum["problem"]`de durur.
 
 **Başlangıçlar (01.1)**
 - **A:** Baz Veri Seti Mevcut.

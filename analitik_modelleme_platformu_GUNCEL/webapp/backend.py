@@ -25,7 +25,7 @@ import traceback
 import dataiku
 from flask import request, jsonify, Response
 
-from fe_agent import akis, validasyon
+from fe_agent import akis, akis_atif, validasyon
 
 GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 
@@ -2188,7 +2188,8 @@ def sfa_degiskenler_endpoint():
         detay = akis_faz02.sfa_detay_oku(durum)
         if not detay:
             return jsonify({"tamam": True, "degiskenler": [],
-                            "not": "SFA adımından sonra dolar."})
+                            "not": "%s adımından sonra dolar."
+                                   % akis_atif.adim("sfa")})
         kararlar = akis_faz02.sfa_kararlari_oku(durum)
         liste = []
         for ad, d in detay.items():
@@ -2808,8 +2809,9 @@ def degisken_excel_endpoint():
         # yalniz sohbetteki karar listesi (tur=liste) icin.
         if genis and not akis.teyit_kaydedildi_mi(durum):
             return Response(
-                "Değişken listesi henüz kaydedilmedi. Sohbetteki Değişken "
-                "Listesi ve Tip Kontrolü adımında listeyi kaydettikten sonra indirebilirsiniz.",
+                "Değişken listesi henüz kaydedilmedi. Sohbetteki %s "
+                "adımında listeyi kaydettikten sonra indirebilirsiniz."
+                % akis_atif.adim("teyit", durum),
                 status=409, mimetype="text/plain; charset=utf-8")
         if isinstance(suzulmus, list):
             veri = akis.teyit_excel_suzulmus(durum, suzulmus, genis=genis)
