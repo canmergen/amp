@@ -1257,6 +1257,24 @@ body { background-color: #FFFFFF; }
   font-size: var(--fs-kucuk); line-height: 1.35; color: var(--metin-soluk);
 }
 .alan-not-uyari { color: var(--amber); }
+/* Baz Sözlük önerisi: alanın altında, önceki çalışmalarda bu veri setiyle
+   kullanılan sözlükler; etikete basınca alana yazılır. Kart kilitlenince
+   gizlenir. */
+.oneri-satir {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--b-1) var(--b-2);
+  margin-top: var(--b-2); font-size: var(--fs-kucuk); color: var(--metin-soluk);
+}
+.oneri-satir[hidden], .secim-kart.kilitli .oneri-satir { display: none; }
+.oneri-cip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 2px 8px; border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin); cursor: pointer;
+  font: inherit; font-size: var(--fs-kucuk);
+}
+.oneri-cip:hover { border-color: var(--kirmizi-cizgi); }
+.oneri-cip.secili { border-color: var(--kirmizi-cizgi); background: var(--kirmizi-acik); }
+.oneri-ad { font-weight: var(--fw-kalin); }
+.oneri-sayi { color: var(--metin-soluk); }
 .alan-not-liste {
   margin: var(--b-1) 0 0; padding-left: 16px;
   color: var(--metin-soluk);

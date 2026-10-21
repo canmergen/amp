@@ -231,9 +231,21 @@ tanıtır; sayfalar sol bardan açılır.
   hesaplanır (`akis_kayit.adim_kodu`, mesajlarda `akis_atif.adim`).
   Arka uç adımı `**…**` ile işaretler, ön yüz kalın yazar; düz metin
   alanlarında (title) işaret düşer.
+- **01.2.1 Baz Sözlük önerisi:** Baz Veri Seti seçilince, o veri setiyle
+  önceki çalışmalarda (projedeki bütün çalışmalar, her kullanıcının)
+  kullanılan sözlükler Baz Sözlük alanının altında etiket olarak çıkar:
+  sözlük adı ve kaç çalışmada kullanıldığı. En çok kullanılan (eşitlikte
+  en son kullanılan) alana kendiliğinden yazılır; başka bir etikete
+  basınca o yazılır. Elle yazılan ya da seçilen sözlük ezilmez; form dolu
+  açıldığında da değere dokunulmaz. Projede artık olmayan tablo önerilmez.
+  Kayıt `PROJE_HAFIZASI/VERI_SOZLUK_GECMISI.json`'da (yalnız adlar):
+  01.2.1 onaylanıp veri seti ve sözlük doğrulanınca eşleşme yazılır; dosya
+  yoksa ilk açılışta eski çalışmaların `ozet.json` dosyalarından bir kez
+  kurulur (`fe_agent/sozluk_gecmisi.py`). Başlangıç B'nin kaynak
+  sözlükleri bu öneriye girmez.
 - **01.2.2 Kolon Rolleri:** ilk seçim model tipi (Classification,
-  Regression, Time Series Forecasting, Clustering); başta hiçbiri seçili
-  değildir ve hedef değişken alanı kapalıdır. Hedef listesi tipe göre
+  Regression, Time Series Forecasting, Clustering). Şu an seçilebilen tek
+  tip Classification olduğu için seçili gelir. Hedef listesi tipe göre
   değişir: Classification'da yalnız 0 ve 1 değeri alan kolonlar;
   Regression ve Time Series Forecasting'de ikiden fazla farklı değer alan
   tam ya da ondalıklı sayı kolonları (tam sayı tipindeki kimlik adayları

@@ -27,6 +27,7 @@ from fe_agent import profil_kural
 from fe_agent import amp as amp_mod
 from fe_agent import spark_is
 from fe_agent import akis_atif
+from fe_agent import sozluk_gecmisi
 
 from fe_agent.akis_metin import (
     ACIK_MODLAR, ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI,
@@ -815,7 +816,11 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
             {"ad": "sozluk", "etiket": "Baz Sözlük",
              "placeholder": "Sözlük tablosu ara", "zorunlu": False,
              "ipucu": "Kolon adlarını ve açıklamalarını içeren tablo",
-             "deger": sozluk or durum.get("sozluk") or ""},
+             "deger": sozluk or durum.get("sozluk") or "",
+             # SOZLUK ONERISI: baz veri seti secilince onceki calismalarda
+             # o veri setiyle kullanilan sozlukler (bkz. sozluk_gecmisi).
+             "oneri_alani": "veri_seti",
+             "oneriler": sozluk_gecmisi.harita()},
         ],
         "sablon": "veri seti {veri_seti} ve sözlük {sozluk}",
     }
@@ -917,6 +922,7 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
         return False, "Girdiler onaylanmadı. " + hata
 
     durum["veri_seti"], durum["sozluk"] = veri, sozluk or None
+    sozluk_gecmisi.arka_planda_kaydet(veri, sozluk, amp_klasor_adi(durum))
     # SOZLUKSUZ: butun kolonlar 01.2.3'te tanimlanir (bkz.
     # akis_durum.sozluk_orijinal_oku: bos sozluk tabani).
     durum["_sozluksuz"] = not sozluk
@@ -4200,9 +4206,10 @@ def _tanimlar_formu(durum, meta=None):
     # alanin altinda yazilir: veri setinde uygun kolon yoksa kullaniciyi
     # secim yapamaz halde birakmak dogru olmaz.
     # Kapali bir tip (bu kural gelmeden secilmis) secili gosterilmez.
+    # Secilebilen tek tip varsa o secili gelir.
     problem = model_tipi(durum)
     if problem not in PROBLEM_HAZIR:
-        problem = ""
+        problem = next(iter(PROBLEM_HAZIR)) if len(PROBLEM_HAZIR) == 1 else ""
     kimlik_aday = [k for k in (p.get("kimlik_adaylari") or []) if k in kolonlar]
 
     # Kullanicinin onceki secimi listede yoksa yine de gorunmeli, aksi

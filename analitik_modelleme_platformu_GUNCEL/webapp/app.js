@@ -11738,6 +11738,7 @@ function secimAlaniEkle(alan, blok) {
         const pr = alan.problem || null;
         let problem = (pr && pr.deger) || "";
         const tipDugmeleri = [];
+        const oneriler = [];          // Baz Sözlük önerisi (aşağıda)
         const hedefListe = [];
         let hedefAlt = null;
         const tipBul = d => ((pr && pr.tipler) || []).find(t => t.deger === d) || null;
@@ -11818,6 +11819,7 @@ function secimAlaniEkle(alan, blok) {
            alana gecersiz bir deger yazilmissa form yine kilitli kalmali. */
         function durumTazele() {
             if (kart.classList.contains("kilitli")) return;
+            onerileriTazele();
             const anahtarlar = Object.keys(combolar);
             const zorunlular = anahtarlar.filter(k => zorunluAlan[k]);
             const sayilan = zorunlular.length ? zorunlular : anahtarlar;
@@ -11880,6 +11882,81 @@ function secimAlaniEkle(alan, blok) {
                 if (hedefTipli) hedefAlt = alt;
             }
         });
+
+        /* ÖNERİ (Baz Sözlük). Alanın "oneriler"i, kaynak alanın (Baz Veri
+           Seti) değerine göre önceki çalışmalarda o değerle kullanılanları
+           taşır. Kaynak değişince ilk öneri alana yazılır; alan boşsa ya
+           da içindeki değer de bir öneriyse. Kullanıcının yazdığı ya da
+           listeden seçtiği değer ezilmez. Bütün öneriler alanın altında
+           seçilebilir etiket olarak durur; veri seti listesi yüklüyse
+           yalnız projede hâlâ duran tablolar önerilir. Açılışta dolu gelen
+           değere dokunulmaz. */
+        alanlar.filter(a => a.oneri_alani && a.oneriler && combolar[a.ad]
+                            && combolar[a.oneri_alani]).forEach(a => {
+            const hedef = combolar[a.ad];
+            const kutu = elYap("div", "oneri-satir");
+            kutu.hidden = true;
+            /* Alanın ipucu bloğunun içinde: alan ızgarası üç satırlı
+               (etiket, kutu, ipucu); dördüncü bir çocuk üst üste biner. */
+            (hedef.kok.querySelector(".alan-not") || hedef.kok).appendChild(kutu);
+            const o = { a: a, kutu: kutu, liste: [], otomatik: false,
+                        kaynakDeger: combolar[a.oneri_alani].deger() };
+            o.ciz = () => {
+                kutu.innerHTML = "";
+                kutu.hidden = !o.liste.length;
+                if (!o.liste.length) return;
+                kutu.appendChild(elYap("span", "oneri-bas", o.liste.length > 1
+                    ? "Bu veri setiyle önceki çalışmalarda kullanılan sözlükler:"
+                    : "Bu veri setiyle önceki çalışmalarda kullanılan sözlük:"));
+                o.liste.forEach(x => {
+                    const c = document.createElement("button");
+                    c.type = "button";
+                    c.className = "oneri-cip"
+                        + (hedef.deger() === x.oneri ? " secili" : "");
+                    c.appendChild(elYap("span", "oneri-ad", x.oneri));
+                    c.appendChild(elYap("span", "oneri-sayi",
+                        ftBinlik(x.sayi) + " çalışma"));
+                    c.onclick = () => {
+                        if (kart.classList.contains("kilitli")) return;
+                        hedef.giris.value = x.oneri;
+                        o.otomatik = false;
+                        hedef.isaretle();
+                        durumTazele();
+                    };
+                    kutu.appendChild(c);
+                });
+            };
+            o.listeAl = d => {
+                const varMi = ad => DATASET_DURUMU !== "hazir"
+                    || DATASETLER.indexOf(ad) !== -1;
+                return ((a.oneriler || {})[d] || [])
+                    .map(x => ({ oneri: x.sozluk, sayi: x.sayi }))
+                    .filter(x => varMi(x.oneri));
+            };
+            o.liste = o.listeAl(o.kaynakDeger);
+            hedef.giris.addEventListener("input", () => { o.otomatik = false; });
+            oneriler.push(o);
+        });
+        function onerileriTazele() {
+            oneriler.forEach(o => {
+                const hedef = combolar[o.a.ad];
+                const d = combolar[o.a.oneri_alani].deger();
+                if (d !== o.kaynakDeger) {
+                    o.kaynakDeger = d;
+                    o.liste = o.listeAl(d);
+                    const bos = !hedef.giris.value.trim();
+                    if (o.liste.length && (bos || o.otomatik)) {
+                        hedef.giris.value = o.liste[0].oneri;
+                        o.otomatik = true;
+                    } else if (!o.liste.length && o.otomatik) {
+                        hedef.giris.value = "";
+                        o.otomatik = false;
+                    }
+                    hedef.isaretle();
+                }
+                o.ciz();
+            });
+        }
 
         kart.appendChild(govde);
         if (pr && problem) tipSec(problem, false);
