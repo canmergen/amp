@@ -158,7 +158,12 @@ Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
   çalışan Spark işleri yazarsa klasör silmeden 20 sn, 1, 5 ve 15 dk sonra
   yeniden kontrol edilir ve yeniden silinir. Silinen numara backend yeniden
   başlatılana kadar yeni çalışmaya verilmez (geç yazma yeni çalışmaya
-  düşmesin).
+  düşmesin). Silmenin bittiği, klasörün ayrıntısı ve PROJE_HAFIZASI'nın
+  dosya listesi birlikte kontrol edilerek söylenir; biri bayat dönerse
+  kalan dosyalar yine silinir.
+- **Çalışma özeti:** her çalışmanın klasöründe `ozet.json` (Arşiv listesi
+  için). Bu yolda dosya yerine klasör oluşmuşsa özet yazılırken o klasör
+  kaldırılır ve özet yeniden yazılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
 Uygulama ekranın tamamını kullanır ve tarayıcıda %88 yakınlaştırmadaki

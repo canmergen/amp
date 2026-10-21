@@ -1248,9 +1248,21 @@ def _ozet_yaz(anahtar, durum):
     try:
         oz = _calisma_ozeti(anahtar, durum)
         oz["_sahip"] = durum.get("_sahip") or _sahip_ozeti()
-        _hafiza().upload_stream(_ozet_yolu(anahtar),
-                                json.dumps(oz, ensure_ascii=False, default=str)
-                                .encode("utf-8"))
+        veri = json.dumps(oz, ensure_ascii=False, default=str).encode("utf-8")
+        hafiza = _hafiza()
+        try:
+            hafiza.upload_stream(_ozet_yolu(anahtar), veri)
+        except akis_durum.CalismaSilindi:
+            raise
+        except Exception:
+            # Ozet yolunda dosya yerine klasor durursa dosya yazilamaz:
+            # klasor kaldirilip ozet bir kez yeniden yazilir.
+            if not (hafiza.get_path_details(_ozet_yolu(anahtar)) or {}).get("directory"):
+                raise
+            hafiza.delete_path(_ozet_yolu(anahtar))
+            hafiza.upload_stream(_ozet_yolu(anahtar), veri)
+    except akis_durum.CalismaSilindi:
+        pass
     except Exception as e:
         _hata_kaydet("ozet_yaz", e)
 
@@ -1923,31 +1935,26 @@ def calisma_kopyala_endpoint():
 
 
 def _klasor_dosyalari(hafiza, kimlik):
-    """Calisma klasorundeki dosyalar. Once yalnizca o klasore bakilir
-    (get_path_details); cevap anlasilamazsa butun klasor listelenir.
+    """Calisma klasorundeki dosyalar: klasorun ayrintisi (get_path_details)
+    ile butun klasorun listesinin BIRLESIMI. Biri bayat ya da eksik
+    donerse silme "bitti" sanilmasin diye ikisine de bakilir.
     Doner: [yol] - klasor yoksa []."""
     on_ek = "/%s/" % kimlik
+    cikti = {_yol_normal(y) for y in _hafiza_yollari()
+             if _yol_normal(y).startswith(on_ek)}
     try:
         d = hafiza.get_path_details("/%s" % kimlik) or {}
-        if d.get("exists") is False:
-            return []
-        if "children" in d:
-            cikti, yigin = [], list(d.get("children") or [])
-            while yigin:
-                c = yigin.pop() or {}
-                yol = c.get("fullPath") or c.get("path")
-                if c.get("directory"):
-                    if "children" not in c:
-                        raise ValueError("alt klasor ayrintisi yok")
-                    yigin.extend(c.get("children") or [])
-                elif yol:
-                    cikti.append(_yol_normal(yol))
-                else:
-                    raise ValueError("yol bilgisi yok")
-            return cikti
+        yigin = list(d.get("children") or [])
+        while yigin:
+            c = yigin.pop() or {}
+            yol = c.get("fullPath") or c.get("path")
+            if c.get("directory"):
+                yigin.extend(c.get("children") or [])
+            elif yol:
+                cikti.add(_yol_normal(yol))
     except Exception:
         pass
-    return [y for y in _hafiza_yollari() if _yol_normal(y).startswith(on_ek)]
+    return sorted(cikti)
 
 
 def _klasoru_sil(hafiza, kimlik):
