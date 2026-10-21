@@ -387,7 +387,8 @@ tanıtır; sayfalar sol bardan açılır.
   - **Bekleyen satırlar:** dil modeli çalışırken biçimden bulunan bütün
     kalıplar baştan "Dil modeli yorumluyor" olarak görünür (tür kutusu
     yerine "Tür dil modelinin yorumundan sonra gelir."); yorum geldikçe
-    yoklamayla dolar, dönem değilse kalkar.
+    yoklamayla dolar, dönem değilse kalkar. Dil modeli çalışırken bloğun
+    robotu düşünen hâlde (`robot_think.png`).
   - **İptal:** ilerleme satırında İptal (`/donem_iptal`,
     `akis_faz01.donem_iptal`, `donem.iptal`): o ana kadar gelen yorumlar
     kalır, yorumlanmayanlar Olası'ya düşer, kartta "Dil modelini

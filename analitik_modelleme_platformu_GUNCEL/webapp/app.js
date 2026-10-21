@@ -9970,9 +9970,12 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     panolar.kalip.append(sar);
     sekmeAc("kalip");
     let ilerBas = Date.now() - ((da.ilerleme && da.ilerleme.gecen) || 0) * 1000;
+    /* DÜŞÜNEN ROBOT: dil modeli yorumlarken bloğun robotu düşünen hâlde. */
+    const ilerDusun = dusunmeIzleyici(kart);
     const ilerSayac = setInterval(() => {
         const acik = da.dm === "calisiyor" && !kilitli && kart.isConnected;
         ilerEl.classList.toggle("gorunur", acik);
+        ilerDusun(acik);
         if (acik) ilerMetin.textContent = "Dil modeli dönem kalıplarını yorumluyor ve kısaltmaları tarıyor · "
             + sureBicim(Math.max(0, Math.floor((Date.now() - ilerBas) / 1000)));
         if (da.dm !== "calisiyor" && kart.isConnected) clearInterval(ilerSayac);
