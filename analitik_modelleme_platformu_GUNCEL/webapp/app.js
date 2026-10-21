@@ -9971,6 +9971,18 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     }
     const cikarildi = (r, anah) => (duzen[anah] && duzen[anah].cikar !== undefined)
         ? duzen[anah].cikar : !!r.cikar;
+    /* AİLEYE KATILAN: ailesinden ayrılmış yazılış satırı ("M<N>") ailesine
+       geri katıldı; satır tablodan kalkar, değerleri aile satırına geçer. */
+    const katildi = (r, anah) => (duzen[anah] && duzen[anah].aileye_kat !== undefined)
+        ? duzen[anah].aileye_kat : !!r.aileye_kat;
+    const katilanlar = [];            // {r, anah}
+    const aileTablodaMi = aile => (da.satirlar || []).some(s => s.kalip === aile && !s.aile);
+    function aileyeKat(anah, kat) {
+        if (kilitli || da.dm === "calisiyor") return;
+        duzen[anah] = Object.assign(duzen[anah] || {}, { aileye_kat: kat });
+        ciz(da.satirlar);
+        if (degisti) degisti();
+    }
 
     function satirCiz(r) {
         const calisiyor = da.dm === "calisiyor";
@@ -9991,9 +10003,31 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             tdK.appendChild(kg);
         } else {
             tdK.appendChild(donemKalipEtiketi(r));
-            /* Ailesinden ayrılan yazılış: hangi aileden ayrıldığı. */
-            if (r.aile) tdK.appendChild(elYap("div", "dg-donem-aile-not",
-                r.aile + " ailesinden ayrı anlamlı yazılış"));
+            /* Ailesinden ayrılan yazılış: hangi aileden ayrıldığı ve
+               ailesine geri katma. */
+            if (r.aile) {
+                const not = elYap("div", "dg-donem-aile-not", r.aile + " ailesinden ayrı anlamlı yazılış");
+                if (aileTablodaMi(r.aile)) {
+                    const kat = elYap("button", "dg-baglanti dg-donem-aile-btn", "Aileye Kat");
+                    kat.type = "button";
+                    kat.disabled = kilitli || calisiyor;
+                    kat.title = "Bu yazılış da " + r.aile + " anlamını alır; değerleri aile satırına geçer.";
+                    kat.onclick = () => aileyeKat(anah, true);
+                    not.append(" · ", kat);
+                }
+                tdK.appendChild(not);
+            }
+            /* Aileye katılan yazılışlar: geri alınabilir. */
+            (r.katilan || []).forEach(c => {
+                const not = elYap("div", "dg-donem-aile-not", c.r.kalip + " aileye katıldı · ");
+                const geri = elYap("button", "dg-baglanti dg-donem-aile-btn", "Geri Al");
+                geri.type = "button";
+                geri.disabled = kilitli || calisiyor;
+                geri.title = c.r.kalip + " yeniden ayrı satırda, kendi anlamıyla durur.";
+                geri.onclick = () => aileyeKat(c.anah, false);
+                not.appendChild(geri);
+                tdK.appendChild(not);
+            });
         }
         /* ZAMAN BİLGİSİ TÜRÜ: Pencere / Zaman Birimi / Zaman Ölçüsü (dil
            modeli önerir, kullanıcı değiştirir). */
@@ -10515,8 +10549,25 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         satirlar.length = 0;
         cikanlar.length = 0;
         olasilar.length = 0;
+        katilanlar.length = 0;
+        const kat = {};               // aile -> [{r, anah}]
         (liste || []).forEach(r => {
             const anah = anahtarOf(r);
+            if (r.aile && aileTablodaMi(r.aile) && katildi(r, anah)) {
+                (kat[r.aile] = kat[r.aile] || []).push({ r, anah });
+                katilanlar.push({ r, anah });
+            }
+        });
+        (liste || []).forEach(r0 => {
+            const anah = anahtarOf(r0);
+            if (katilanlar.some(c => c.anah === anah)) return;
+            /* Aile satırı katılan yazılışların değerleriyle çizilir. */
+            const k = kat[r0.kalip];
+            const r = k ? Object.assign({}, r0, {
+                degerler: (r0.degerler || []).concat(...k.map(c => c.r.degerler || [])),
+                yazilislar: ((r0.yazilislar || []).length ? r0.yazilislar : [r0.kalip])
+                    .concat(k.map(c => c.r.kalip)),
+                katilan: k }) : r0;
             if (cikarildi(r, anah)) {
                 if (r.olasi) olasilar.push({ r, anah });     // olası: tabloya alınmadı
                 else if (!r.elle) cikanlar.push({ r, anah }); // elle satır çıkarılınca silinir
@@ -10635,6 +10686,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             elle: !!x.r.elle, cikar: false, haric: Array.from(x.haric),
             deger_anlam: Object.assign({}, x.dgAnlam), ayrilan: ayrilanCikti(x.r, x.anah),
             zaman_tur: x.turSec.value }))
+            .concat(katilanlar.map(c => ({
+                kalip: c.r.kalip, aileye_kat: true, cikar: false, elle: false, anlam: "" })))
             .concat(cikanlar.map(c => ({
                 kalip: c.r.kalip, cikar: true, elle: false,
                 ayrilan: ayrilanCikti(c.r, c.anah),
@@ -10661,7 +10714,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                                         .forEach(i => { i.disabled = k || c || i.closest(".dg-durum-disi") !== null
                                             && i.tagName === "INPUT"; });
                                     if (x.kg) x.kg.disabled = k || c;
-                                    x.tr.querySelectorAll(".dg-birlikte-cip")
+                                    x.tr.querySelectorAll(".dg-birlikte-cip, .dg-donem-aile-btn")
                                         .forEach(b => { b.disabled = k || c; }); });
             kilitDurumu();
         },

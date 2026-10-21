@@ -394,13 +394,25 @@ tanıtır; sayfalar sol bardan açılır.
     (`<N>_M`, eski `M<NN>`) aile o anlamla gelir (`donem.hafiza_anahtari`).
     Aile çıkarılırsa bu yazılış kayıtları da hafızadan silinir (ayrı
     işaretliler kalır).
+  - **Aileye Kat:** ayrı yazılış satırında (ailesi tabloda varsa) notun
+    yanında "Aileye Kat". Basınca satır tablodan kalkar, değerleri ve
+    yazılışı aile satırına geçer; aile satırında "M<N> aileye katıldı ·
+    Geri Al" yazar. Kararda satır `{"kalip": "M<N>", "aileye_kat": true}`
+    gider: onayda yazılışın değerleri ailenin değeri sayılır (değere kendi
+    anlamı yazılabilir), yazılışın hafızadaki kaydı ve ayrı işareti
+    silinir; sonraki çalışmada ailesiyle gelir. Geri dönüşte ve yenilemede
+    katılmış hâliyle gelir.
   - Açıklama Düzenleme'de ayrılan yazılışın deseni aileden önce eşleşir.
 - **Zaman bilgisi türleri:** dil modeli her kalıba "tur" yazar
   (`llm.ZAMAN_TURLERI`: pencere, birim, olcu; `llm.zaman_turu`). Kartta
   kalıp hücresinde seçim kutusu: Pencere / Zaman Birimi / Zaman Ölçüsü;
   kararda `zaman_tur`, durumda `durum["donem_turleri"]` ({kalıp: tür}),
-  hafızada `donem_tur`. Açıklama Düzenleme parçayı türüyle anar
-  (`akis_faz01.ZAMAN_TUR_ETIKETI`: "zaman penceresi kalıbı <N>D; ...").
+  hafızada `donem_tur`.
+- **Açıklama Düzenleme'ye giden dönem parçası** (`_donem_parca_metni`):
+  değerin kendi anlamı ya da kalıbın anlamı, yer tutucu değerin sayısıyla
+  doldurulmuş olarak ve yanında türü: "3_M: son 3 ay (zaman penceresi)",
+  "MONTH: ay (zaman birimi)". Kalıp adı ve yer tutucu (`<N>`, `N`) dil
+  modeline gitmez; sözlüğe yazılan açıklama sayıyla yazılır.
   `donem.ISTEM_SURUMU` 5: önbellekteki eski yorumlar yeniden alınır.
 - **Tabloya giren kalıplar:** hafızadan gelenler ve dil modelinin
   tanımlardan zaman bilgisi olduğunu bulduğu parçalar Kalıplar'a girer;
@@ -445,7 +457,7 @@ tanıtır; sayfalar sol bardan açılır.
     anlamı saklanmaz. Yalnız kolon adlarında geçen değerler kabul edilir.
     Onay mesajı kendi anlamı ve dönem olmayan değer sayısını yazar.
   - **Açıklama Düzenleme'ye:** kendi anlamı olan değer o anlamla gider
-    ("360D: zaman penceresi kalıbı <N>D; son 1 yıl"), dönem olmayan değer dönem
+    ("360D: son 1 yıl (zaman penceresi)"), dönem olmayan değer dönem
     parçası sayılmaz (grubun deseni onu kapsamaz, `_AyrilanliDesen`),
     öbürleri kalıbın anlamıyla.
   - Dönem tablosunun penceresi en çok ekran yüksekliğinin %72'si.
