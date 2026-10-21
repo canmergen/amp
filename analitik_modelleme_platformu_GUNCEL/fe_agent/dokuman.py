@@ -50,7 +50,7 @@ from fe_agent.akis_durum import (
     bolme_ayarlari, bolme_ozeti, bolme_uyarilari,
 )
 
-BASLIK = "Akıllı Modelleme Platformu: Model Geliştirme Dokümanı"
+BASLIK = "Katip · Kurumsal Analitik, Tahminleme ve İçgörü Platformu: Model Geliştirme Dokümanı"
 
 # Degeri henuz uretilmemis alanin isareti - akis_panel.BOS_DEGER ile ayni.
 BOS_DEGER = "-"

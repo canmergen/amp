@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/akis.py - Akıllı Modelleme Platformu akis orkestratoru.
+"""fe_agent/akis.py - Katip (Kurumsal Analitik, Tahminleme ve İçgörü Platformu) akis orkestratoru.
 
 Bu dosya yalnizca bir CEPHE (facade). Gercek kod su modullerde:
 
