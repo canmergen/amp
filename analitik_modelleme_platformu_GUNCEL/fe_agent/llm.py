@@ -2831,6 +2831,90 @@ def sfa_karar_ver(girdi, isle=None, parca=SFA_PARCA):
 
 
 # ===========================================================================
+# SOZLUK KATALOGU (02'ye giden baglam): 01.2.4'te onaylanan kolon kartlari
+# varsa sozluk duz liste yerine AILE KATALOGU olarak gider. Aile: adi
+# yalniz sayilarla ayrilan kolonlar (AMP_SOZLUK AILE). Her ailede kolonlar,
+# kartin ortak alanlari ve degisen alanlari (cogu zaman pencere), bir
+# ornek aciklama ve ek bilgi. 5000 kolonda bile istem aileler kadar kisalir;
+# dil modeli ailenin uyelerini ve aralarindaki farki acikca gorur.
+# ===========================================================================
+KATALOG_ALANLARI = (("KONU", "konu"), ("YON", "yön"), ("NITELIK", "nitelik"),
+                    ("OLCU", "ölçü"), ("ISTATISTIK", "istatistik"), ("ZAMAN", "zaman"),
+                    ("KARSILASTIRMA", "karşılaştırma"), ("BIRIM", "birim"),
+                    ("DIGER", "diğer"))
+KATALOG_ACIKLAMA = 200
+
+
+def _katalog_kolonu(sozluk_df, ad):
+    harita = {_normalize_ad(c): c for c in sozluk_df.columns}
+    return harita.get(_normalize_ad(ad))
+
+
+def sozluk_katalogu(sozluk_df, dahil):
+    """Kolon kartlari olan sozlukten aile katalogu satirlari; kart yoksa
+    None (cagiran duz listeye doner). dahil: istenen kolon adlari."""
+    ad_kol, ack_kol, hata = _sozluk_kolonlari(sozluk_df)
+    if hata:
+        return None
+    alanlar = [(_katalog_kolonu(sozluk_df, k), e) for k, e in KATALOG_ALANLARI]
+    alanlar = [(k, e) for k, e in alanlar if k is not None]
+    if not alanlar:
+        return None
+    aile_kol = _katalog_kolonu(sozluk_df, "AILE")
+    ek_kol = _katalog_kolonu(sozluk_df, "EK_BILGI")
+    dahil = set(map(str, dahil))
+    aileler, kartli = {}, 0
+    for _, r in sozluk_df.iterrows():
+        kolon = str(r[ad_kol])
+        if kolon not in dahil:
+            continue
+        aile = str(r[aile_kol]).strip() if aile_kol is not None and str(r[aile_kol] or "").strip() \
+            and str(r[aile_kol]) != "nan" else kolon
+        aileler.setdefault(aile, []).append(r)
+        if any(str(r[k] or "").strip() not in ("", "nan") for k, _e in alanlar):
+            kartli += 1
+    if not kartli:
+        return None
+    satirlar = []
+    for aile, uyeler in aileler.items():
+        adlar = [str(r[ad_kol]) for r in uyeler]
+        s = "- %s" % (adlar[0] if len(adlar) == 1 else "AİLE %s (%d kolon): %s"
+                      % (aile, len(adlar), ", ".join(adlar)))
+        ortak, degisen = [], []
+        for k, e in alanlar:
+            degerler = []
+            for r in uyeler:
+                v = str(r[k] or "").strip()
+                if v and v != "nan" and v not in degerler:
+                    degerler.append(v)
+            if len(degerler) == 1:
+                ortak.append("%s: %s" % (e, degerler[0]))
+            elif degerler:
+                degisen.append("%s: %s" % (e, " | ".join(degerler)))
+        if ortak:
+            s += "\n  kart: %s" % "; ".join(ortak)
+        if degisen:
+            s += "\n  üyelerde değişen: %s" % "; ".join(degisen)
+        ack = str(uyeler[0][ack_kol] or "").strip()
+        if ack and ack != "nan":
+            s += "\n  açıklama (%s): %s" % (adlar[0], ack[:KATALOG_ACIKLAMA])
+        if ek_kol is not None:
+            ek = str(uyeler[0][ek_kol] or "").strip()
+            if ek and ek != "nan":
+                s += "\n  ek bilgi: %s" % ek[:KATALOG_ACIKLAMA]
+        satirlar.append(s)
+    return satirlar
+
+
+KATALOG_NOTU = (
+    "Kolonlar AİLE KATALOĞU olarak verildi: aynı ailedeki kolonların adı yalnız "
+    "sayıyla (çoğu zaman pencereyle) ayrılır; \"kart\" ailenin ortak anlamı "
+    "(konu, ölçü, istatistik, zaman ...), \"üyelerde değişen\" üyeleri ayıran "
+    "alan. Kartlar kullanıcı tarafından onaylandı; kesin bilgi say. Gerekçeyi "
+    "kartın anlamıyla, bir bankacının anlayacağı Türkçe ile yaz.")
+
+
+# ===========================================================================
 # LLM #3 — GELENEKSEL DONUSUM PLANI
 # ===========================================================================
 SISTEM_PLAN = """Sen bir değişken mühendisliği (feature engineering) danışmanısın.
@@ -2863,15 +2947,21 @@ def gelenekse_plan_oner(sozluk_df, haric, meta, max_satir=None):
     kimlik = meta.get("id")
     yasak = {x for x in (hedef, kimlik) if x}
 
-    kayitlar = []
-    for _, r in (sozluk_df if max_satir is None else sozluk_df.head(max_satir)).iterrows():
-        kolon = str(r[ad_kol])
-        if kolon in haric or kolon in yasak:
-            continue
-        kayitlar.append("%s: %s" % (kolon, str(r[ack_kol])[:120]))
-
-    istek = ("Hedef değişken: %s\n\n%s"
-             % (hedef or "?", _veri_blogu("Kolonlar:", "\n".join(kayitlar))))
+    kaynak = sozluk_df if max_satir is None else sozluk_df.head(max_satir)
+    dahil = [str(k) for k in kaynak[ad_kol] if str(k) not in haric and str(k) not in yasak]
+    katalog = sozluk_katalogu(kaynak, dahil)
+    if katalog:
+        istek = ("Hedef değişken: %s\n\n%s\n\n%s"
+                 % (hedef or "?", KATALOG_NOTU, _veri_blogu("Kolonlar:", "\n".join(katalog))))
+    else:
+        kayitlar = []
+        for _, r in kaynak.iterrows():
+            kolon = str(r[ad_kol])
+            if kolon in haric or kolon in yasak:
+                continue
+            kayitlar.append("%s: %s" % (kolon, str(r[ack_kol])[:120]))
+        istek = ("Hedef değişken: %s\n\n%s"
+                 % (hedef or "?", _veri_blogu("Kolonlar:", "\n".join(kayitlar))))
 
     try:
         ham = _cagir(SISTEM_PLAN, istek, sicaklik=0.2)
@@ -2948,15 +3038,22 @@ def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None):
     kimlik = meta.get("id")
     yasak = {x for x in (hedef, kimlik) if x}
 
-    kayitlar = []
-    for _, r in (sozluk_df if max_satir is None else sozluk_df.head(max_satir)).iterrows():
-        kolon = str(r[ad_kol])
-        if kolon not in mevcut or kolon in yasak:
-            continue
-        kayitlar.append("%s: %s" % (kolon, str(r[ack_kol])[:100]))
-
-    istek = "Hedef değişken: %s\n\n%s" % (
-        hedef or "?", _veri_blogu("Kullanılabilir kolonlar:", "\n".join(kayitlar)))
+    kaynak = sozluk_df if max_satir is None else sozluk_df.head(max_satir)
+    dahil = [str(k) for k in kaynak[ad_kol] if str(k) in mevcut and str(k) not in yasak]
+    katalog = sozluk_katalogu(kaynak, dahil)
+    if katalog:
+        istek = "Hedef değişken: %s\n\n%s\n\n%s" % (
+            hedef or "?", KATALOG_NOTU,
+            _veri_blogu("Kullanılabilir kolonlar:", "\n".join(katalog)))
+    else:
+        kayitlar = []
+        for _, r in kaynak.iterrows():
+            kolon = str(r[ad_kol])
+            if kolon not in mevcut or kolon in yasak:
+                continue
+            kayitlar.append("%s: %s" % (kolon, str(r[ack_kol])[:100]))
+        istek = "Hedef değişken: %s\n\n%s" % (
+            hedef or "?", _veri_blogu("Kullanılabilir kolonlar:", "\n".join(kayitlar)))
 
     if sfa_ozet:
         # En yuksek IV'li degiskenler modele yon verir

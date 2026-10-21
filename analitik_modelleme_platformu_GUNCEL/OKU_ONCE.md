@@ -612,6 +612,15 @@ tanıtır; sayfalar sol bardan açılır.
     bütün ikilileri açar. Sorunlu ad (sayıyla başlıyor, iki kolon aynı
     adı alıyor, rol kolonunun adı) onaylanamaz. Arka uç adları onayda
     kendisi yeniden kurar ve denetler. Sonuç `durum["kolon_yeni_ad"]`.
+- **02'ye giden sözlük (aile kataloğu, `llm.sozluk_katalogu`):** sözlükte
+  kolon kartı varsa Kural Tabanlı Değişken Üretimi'nin ve keşif
+  hipotezlerinin dil modeline kolonlar düz "AD: açıklama" listesi yerine
+  aile kataloğu olarak gider: aile başına üyeler, ortak kart, üyelerde
+  değişen alan (çoğu zaman pencere), bir örnek açıklama ve ek bilgi;
+  açıklama kırpılmaz (200 karakter). Dil modeline kartların onaylı ve
+  kesin olduğu, gerekçeyi kartın anlamıyla yazması söylenir. Kart yoksa
+  (kontrol atlandı ya da eski çalışma) eski düz liste. Üretilen ifadedeki
+  kolonlar her durumda gerçek kolonlarla doğrulanır.
 - **AMP_SOZLUK kolonları:** DEGISKEN, TIP, TIP_DEGISIKLIGI, ACIKLAMA,
   NULL_ORANI, SUREC_DISI, KATEGORI, ESKI_AD, ACIKLAMA_ORIJINAL, KONU, YON,
   NITELIK, ZAMAN, OLCU, ISTATISTIK, KARSILASTIRMA, BIRIM, DIGER,
