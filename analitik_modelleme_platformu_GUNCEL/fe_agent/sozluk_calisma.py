@@ -41,7 +41,8 @@ import pandas as pd
 
 from fe_agent import kutuk as kutuk_mod
 from fe_agent import tablo_io
-from fe_agent.akis_durum import _folder, sozluk_orijinal_oku
+from fe_agent.akis_durum import (
+    _folder, sozluk_gorunen, sozluk_kimligi, sozluk_orijinal_oku)
 
 
 DOSYA_ADI = "sozluk_calisma.parquet"   # eski calismalarda .csv (okunur)
@@ -451,7 +452,7 @@ def veri_setiyle_esitle(tablo, kolonlar):
 def _esitlemeyi_kutuge_dus(durum, oturum, rapor):
     """Degisiklik kutugune yazar; ayni veri seti ve sozluk icin BIR KEZ
     (kopya ayni calismada yeniden kurulabiliyor, kutuk sismesin)."""
-    imza = [durum.get("veri_seti"), durum.get("sozluk"),
+    imza = [durum.get("veri_seti"), sozluk_kimligi(durum),
             len(rapor["dusen"]), len(rapor["eklenen"]), len(rapor["duzeltilen"])]
     if durum.get("_sozluk_esitleme_imza") == imza:
         return
@@ -557,14 +558,8 @@ def sozluk_tablosu(durum):
 
 def sozluk_adi(durum):
     """Kullaniciya gosterilecek sozluk adi (dataset ya da yedek dosya)."""
-    durum = durum or {}
-    ad = durum.get("sozluk")
-    if ad:
-        return str(ad)
-    yedek = durum.get("sozluk_yedek")
-    if yedek:
-        return str(yedek).lstrip("/")
-    return None
+    ad = sozluk_gorunen(durum)
+    return str(ad).lstrip("/") if ad else None
 
 
 def kaynak_etiketi(durum):

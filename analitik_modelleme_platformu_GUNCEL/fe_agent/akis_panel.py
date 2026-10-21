@@ -8,6 +8,7 @@ from fe_agent import motor as motor_mod
 from fe_agent.akis_metin import (
     BIRLESTIREN_MODLAR, MOD_ADLARI, SOZLUK_URETEN_MODLAR, model_tipi_adi)
 from fe_agent.akis_durum import (
+    sozluk_gorunen,
     AMP_SOZLUK_ADI, AMP_VERI_ADI, BOLME_ALAN_ACIKLAMA, BOLME_ALAN_BASLIK,
     BOLME_SATIR_BILGI,
     LINEAGE_ADI, SOZLUK_ADI, TRAIN_KULLANIMI_BASLIK, _ond, _sayi,
@@ -68,7 +69,7 @@ def _serit_veri_sozluk_karti(durum):
     kolon = _tam(p.get("kolon_baslangic") or p.get("kolon"))
     satir = _tam(p.get("satir"))
     veri_ad = durum.get("veri_seti")
-    sozluk_ad = durum.get("sozluk") or durum.get("sozluk_yedek")
+    sozluk_ad = sozluk_gorunen(durum)
     # SERIT DE AYNI KAYNAKTAN: tanim sayisi ve kapsam sag paneldeki
     # kartla ayni hesaptan geliyor (sozluk_kapsami).
     _kolonlar, _tanimli, _tanimsiz = sozluk_kapsami(durum)
@@ -367,7 +368,7 @@ def ozet(durum):
     return {
         # Secilmediyse cip cizilmez; None'i uc katmani bekliyor.
         "veri_seti_cip": durum.get("veri_seti") or None,
-        "sozluk_cip": (durum.get("sozluk") or durum.get("sozluk_yedek")
+        "sozluk_cip": (sozluk_gorunen(durum)
                        or None),
         # SIRA AKISIN GERCEK SIRASI: degisken URETILIR, sonra ELENIR,
         # sonunda MODEL kurulur.
@@ -428,7 +429,7 @@ def detay(durum):
             ("Sayısal / Kategorik", "%s / %s" % (
                 _sayi(p.get("sayisal", 0)),
                 _sayi(p["kolon_baslangic"] - p.get("sayisal", 0)))),
-            ("Sözlük", durum.get("sozluk") or durum.get("sozluk_yedek")),
+            ("Sözlük", sozluk_gorunen(durum)),
         ]))
 
     if m.get("target"):
@@ -958,14 +959,14 @@ def _sozluk_kokeni(durum):
     uretilen = mod in SOZLUK_URETEN_MODLAR
     if mod == "B":
         adlar = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
-        if not (durum.get("sozluk") or durum.get("sozluk_yedek")):
+        if not (sozluk_gorunen(durum)):
             return None
         if not adlar:
             return "Kaynak Sözlük Seçilmedi; Tanımlar Bu Çalışmada Oluşturuldu"
         return "Kaynak Sözlüklerden Kuruldu: %s" % ", ".join(adlar)
     if durum.get("_sozluksuz"):
         return "Sözlük Seçilmedi; Tanımlar Bu Çalışmada Oluşturuldu"
-    if not (durum.get("sozluk") or durum.get("sozluk_yedek")):
+    if not (sozluk_gorunen(durum)):
         return "Dil Modeli Tarafından Oluşturulacak" if uretilen else None
     if not uretilen:
         return "Hazır Sözlük Seçildi: %s" % sozluk_calisma.sozluk_adi(durum)

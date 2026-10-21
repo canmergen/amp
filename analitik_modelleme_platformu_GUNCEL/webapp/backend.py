@@ -26,6 +26,7 @@ import dataiku
 from flask import request, jsonify, Response
 
 from fe_agent import akis, akis_atif, validasyon
+from fe_agent.akis_durum import secili_sozlukler
 
 GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 
@@ -1733,8 +1734,9 @@ def _calisma_secimleri(durum):
     kaynak_sz = sorted(set((durum.get("kaynak_sozlukler") or {}).values()))
     if kaynak_sz:
         sec.append(["Kaynak Sözlükler", ", ".join(kaynak_sz)])
-    elif durum.get("sozluk"):
-        sec.append(["Sözlük", str(durum["sozluk"])])
+    elif secili_sozlukler(durum):
+        # Birden fazla sozluk "A + B" (bkz. sozluk_gecmisi.AYRAC).
+        sec.append(["Sözlük", " + ".join(secili_sozlukler(durum))])
     meta = durum.get("meta") or {}
     if akis.model_tipi_adi(durum):
         sec.append(["Model Tipi", akis.model_tipi_adi(durum)])
@@ -2037,12 +2039,6 @@ def calisma_sil_endpoint():
                 _ad.sahiplikleri_birak(anahtar)
             except Exception as e:
                 _hata_kaydet("calisma_sil:sahiplik", e)
-            # Baz Sozluk onerisinin sayimi da silinen calismayi birakir.
-            try:
-                from fe_agent import sozluk_gecmisi
-                sozluk_gecmisi.calisma_cikar(anahtar)
-            except Exception as e:
-                _hata_kaydet("calisma_sil:sozluk_gecmisi", e)
         threading.Thread(target=sahiplik, daemon=True).start()
 
         govde = {"tamam": True, "silinen": hedef}

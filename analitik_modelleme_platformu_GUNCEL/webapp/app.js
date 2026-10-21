@@ -6905,7 +6905,9 @@ const COMBO_KAYNAKLARI = {
    placeholder : giris kutusu ipucu
    zorunlu     : false ise alan BOS birakilabilir ("Devam et" beklemez)
    bos_mesaji  : filtreye uyan oge kalmadiginda gosterilecek metin
-   kaynak      : "dataset" (varsayilan) | "kolon" | "serbest" */
+   kaynak      : "dataset" (varsayilan) | "kolon" | "serbest"
+   secilince   : listeden seçilince (tık ya da Enter) çağrılır; verilirse
+                 alanın değeri yerine bu karar verir (çoklu alan) */
 function comboYap(etiket, degisince, baslangic, secenekler) {
     const s = secenekler || {};
     const kaynak = COMBO_KAYNAKLARI[s.kaynak] || COMBO_KAYNAKLARI.dataset;
@@ -7056,6 +7058,8 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
     function sec(ad) {
         giris.value = ad;
         kapat();
+        /* Çoklu alan seçileni kendi listesine ekler (bkz. cokluYap). */
+        if (s.secilince) { s.secilince(ad); return; }
         isaretle();
         if (degisince) degisince();
     }
@@ -7177,6 +7181,7 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
             const bulunan = bul(giris.value);
             if (bulunan) giris.value = bulunan;
             kapat();
+            if (bulunan && s.secilince) { s.secilince(bulunan); return; }
             isaretle();
             if (degisince) degisince();
         }
@@ -11738,7 +11743,87 @@ function secimAlaniEkle(alan, blok) {
         const pr = alan.problem || null;
         let problem = (pr && pr.deger) || "";
         const tipDugmeleri = [];
-        const oneriler = [];          // Baz Sözlük önerisi (aşağıda)
+        let eslesmeler = [];          // Baz Sözlük eşleşmesi (aşağıda)
+
+        /* ÇOKLU ALAN (Baz Sözlük): seçilenler kutunun içinde etiket olarak
+           durur, × ile çıkar; kutuya basınca liste açılır, seçilen eklenir
+           (aynı ad iki kez eklenmez, listede seçilenler görünmez). Boş
+           kutuda Backspace son etiketi siler. Değer "A + B". */
+        function cokluYap(a) {
+            const secilen = (a.degerler || []).slice();
+            const o = { coklu: true, secilen: secilen, otomatik: false };
+            const combo = comboYap(a.etiket, durumTazele, "", {
+                kaynak: a.kaynak || "dataset",
+                zorunlu: a.zorunlu,
+                placeholder: a.placeholder,
+                haric: () => secilen,
+                secilince: ad => ekle(ad)
+            });
+            const kutu = combo.giris.parentElement;
+            kutu.classList.add("coklu-alan");
+            const cipler = elYap("div", "coklu-cipler");
+            kutu.insertBefore(cipler, combo.giris);
+            function ciz() {
+                cipler.innerHTML = "";
+                secilen.forEach((ad, i) => {
+                    const c = elYap("span", "coklu-cip");
+                    c.appendChild(elYap("span", "coklu-ad", ad));
+                    const x = document.createElement("button");
+                    x.type = "button";
+                    x.className = "coklu-sil";
+                    x.textContent = "×";
+                    x.setAttribute("aria-label", ad + " çıkar");
+                    x.onmousedown = e => e.preventDefault();
+                    x.onclick = e => {
+                        e.stopPropagation();
+                        if (kart.classList.contains("kilitli")) return;
+                        secilen.splice(i, 1);
+                        o.otomatik = false;
+                        ciz();
+                        durumTazele();
+                    };
+                    c.appendChild(x);
+                    cipler.appendChild(c);
+                });
+                combo.giris.placeholder = secilen.length
+                    ? "Sözlük ekle" : (a.placeholder || "");
+            }
+            function ekle(ad) {
+                if (secilen.indexOf(ad) === -1) secilen.push(ad);
+                combo.giris.value = "";
+                o.otomatik = false;
+                ciz();
+                durumTazele();
+            }
+            kutu.addEventListener("mousedown", e => {
+                if (combo.giris.disabled || e.target === combo.giris
+                    || e.target.closest(".coklu-sil, .combo-ok, .combo-liste")) return;
+                e.preventDefault();
+                combo.giris.focus();
+                combo.ciz(combo.giris.value);
+            });
+            combo.giris.addEventListener("click", () => {
+                if (!combo.giris.disabled) combo.ciz(combo.giris.value);
+            });
+            combo.giris.addEventListener("keydown", e => {
+                if (e.key === "Backspace" && !combo.giris.value && secilen.length) {
+                    secilen.pop();
+                    o.otomatik = false;
+                    ciz();
+                    durumTazele();
+                }
+            });
+            o.kok = combo.kok;
+            o.giris = combo.giris;
+            o.isaretle = combo.isaretle;
+            /* Yazılıp eklenmemiş metin varsa form gönderilmez. */
+            o.gecerli = () => !combo.giris.value.trim();
+            o.dolu = () => secilen.length > 0;
+            o.deger = () => secilen.join(" + ");
+            o.ata = liste => { secilen.splice(0, secilen.length, ...liste); ciz(); };
+            ciz();
+            return o;
+        }
         const hedefListe = [];
         let hedefAlt = null;
         const tipBul = d => ((pr && pr.tipler) || []).find(t => t.deger === d) || null;
@@ -11817,6 +11902,24 @@ function secimAlaniEkle(alan, blok) {
            SAYIMA YALNIZ ZORUNLU ALANLAR GIRER. Düğmenin
            etkinligi yine BUTUN alanlarin gecerliligine bakar: opsiyonel
            alana gecersiz bir deger yazilmissa form yine kilitli kalmali. */
+        function onerileriTazele() {
+            eslesmeler.forEach(o => {
+                const d = combolar[o.a.oneri_alani].deger();
+                if (d !== o.kaynakDeger) {
+                    o.kaynakDeger = d;
+                    const varMi = ad => DATASET_DURUMU !== "hazir"
+                        || DATASETLER.indexOf(ad) !== -1;
+                    const liste = ((o.a.oneriler || {})[d] || []).filter(varMi);
+                    if (!o.c.secilen.length || o.c.otomatik) {
+                        o.c.ata(liste);
+                        o.c.otomatik = liste.length > 0;
+                    }
+                }
+                if (o.alt) metinYaz(o.alt, o.c.otomatik
+                    ? (o.a.oneri_notu || "") : (o.a.ipucu || ""));
+            });
+        }
+
         function durumTazele() {
             if (kart.classList.contains("kilitli")) return;
             onerileriTazele();
@@ -11843,7 +11946,7 @@ function secimAlaniEkle(alan, blok) {
             /* Model tipli kartta hedef alanı tipin listesini kullanır. */
             const hedefTipli = pr && a.ad === "target";
             if (hedefTipli) (a.secenekler || []).forEach(k => hedefListe.push(k));
-            const combo = comboYap(a.etiket, durumTazele, a.deger, {
+            const combo = a.coklu ? cokluYap(a) : comboYap(a.etiket, durumTazele, a.deger, {
                 kaynak: a.kaynak || "dataset",
                 zorunlu: a.zorunlu,
                 placeholder: a.placeholder,
@@ -11883,120 +11986,19 @@ function secimAlaniEkle(alan, blok) {
             }
         });
 
-        /* ÖNERİ (Baz Sözlük). Alanın "oneriler"i, kaynak alanın (Baz Veri
-           Seti) değerine göre önceki çalışmalarda o değerle kullanılanları
-           taşır. Kaynak değişince ilk öneri alana yazılır; alan boşsa ya
-           da içindeki değer de bir öneriyse. Kullanıcının yazdığı ya da
-           listeden seçtiği değer ezilmez. Bütün öneriler alanın altında
-           seçilebilir etiket olarak durur; veri seti listesi yüklüyse
-           yalnız projede hâlâ duran tablolar önerilir. Açılışta dolu gelen
-           değere dokunulmaz. */
-        alanlar.filter(a => a.oneri_alani && a.oneriler && combolar[a.ad]
-                            && combolar[a.oneri_alani]).forEach(a => {
-            const hedef = combolar[a.ad];
-            const kutu = elYap("div", "oneri-satir");
-            kutu.hidden = true;
-            /* Alanın ipucu bloğunun içinde: alan ızgarası üç satırlı
-               (etiket, kutu, ipucu); dördüncü bir çocuk üst üste biner. */
-            (hedef.kok.querySelector(".alan-not") || hedef.kok).appendChild(kutu);
-            const o = { a: a, kutu: kutu, liste: [], otomatik: false,
-                        kaynakDeger: combolar[a.oneri_alani].deger() };
-            /* SEÇİM LİSTESİ: önerilen sözlükler ve "Başka bir sözlük",
-               radyo düğmesi gibi tek seçim. Kendiliğinden seçilen öğe
-               işaretli gelir ve başlık bunu söyler; kullanıcı öbür
-               öneriyi ya da "Başka bir sözlük"ü seçebilir (alan boşalır,
-               liste açılır; boş bırakılırsa sözlüksüz devam edilir). */
-            const secenek = (secili, ad, alt, rozet, tikla) => {
-                const c = document.createElement("button");
-                c.type = "button";
-                c.className = "oneri-sec" + (secili ? " secili" : "");
-                c.setAttribute("role", "radio");
-                c.setAttribute("aria-checked", secili ? "true" : "false");
-                c.appendChild(elYap("span", "oneri-daire"));
-                const g = elYap("span", "oneri-govde");
-                const ust = elYap("span", "oneri-ust");
-                ust.appendChild(elYap("span", "oneri-ad", ad));
-                if (rozet) ust.appendChild(elYap("span", "oneri-rozet", rozet));
-                g.appendChild(ust);
-                g.appendChild(elYap("span", "oneri-sayi", alt));
-                c.appendChild(g);
-                c.onclick = () => {
-                    if (kart.classList.contains("kilitli")) return;
-                    tikla();
-                };
-                return c;
-            };
-            o.ciz = () => {
-                kutu.innerHTML = "";
-                kutu.hidden = !o.liste.length;
-                if (!o.liste.length) return;
-                const cur = hedef.giris.value.trim() ? hedef.deger() : "";
-                const eslesen = o.liste.find(x => x.oneri === cur);
-                kutu.appendChild(elYap("div", "oneri-bas", o.otomatik
-                    ? "Önceki çalışmalara göre otomatik seçildi; başka bir sözlük de seçebilirsiniz."
-                    : (o.liste.length > 1
-                       ? "Bu veri setiyle önceki çalışmalarda kullanılan sözlükler:"
-                       : "Bu veri setiyle önceki çalışmalarda kullanılan sözlük:")));
-                const liste = elYap("div", "oneri-liste");
-                liste.setAttribute("role", "radiogroup");
-                liste.setAttribute("aria-label", "Baz Sözlük önerileri");
-                o.liste.forEach((x, i) => {
-                    liste.appendChild(secenek(!!eslesen && eslesen === x, x.oneri,
-                        ftBinlik(x.sayi) + " çalışmada kullanıldı",
-                        i === 0 && o.liste.length > 1 ? "En Çok Kullanılan" : "",
-                        () => {
-                            hedef.giris.value = x.oneri;
-                            o.otomatik = false;
-                            o.baska = false;
-                            hedef.isaretle();
-                            durumTazele();
-                        }));
-                });
-                liste.appendChild(secenek(!eslesen && (!!cur || o.baska),
-                    "Başka bir sözlük", "Listeden arayın ya da boş bırakın", "",
-                    () => {
-                        hedef.giris.value = "";
-                        o.otomatik = false;
-                        o.baska = true;
-                        hedef.isaretle();
-                        durumTazele();
-                        hedef.giris.focus();
-                        hedef.ciz("");
-                    }));
-                kutu.appendChild(liste);
-            };
-            o.listeAl = d => {
-                const varMi = ad => DATASET_DURUMU !== "hazir"
-                    || DATASETLER.indexOf(ad) !== -1;
-                return ((a.oneriler || {})[d] || [])
-                    .map(x => ({ oneri: x.sozluk, sayi: x.sayi }))
-                    .filter(x => varMi(x.oneri));
-            };
-            o.liste = o.listeAl(o.kaynakDeger);
-            hedef.giris.addEventListener("input", () => { o.otomatik = false; o.baska = true; });
-            oneriler.push(o);
-        });
-        function onerileriTazele() {
-            oneriler.forEach(o => {
-                const hedef = combolar[o.a.ad];
-                const d = combolar[o.a.oneri_alani].deger();
-                if (d !== o.kaynakDeger) {
-                    o.kaynakDeger = d;
-                    o.baska = false;
-                    o.liste = o.listeAl(d);
-                    const bos = !hedef.giris.value.trim();
-                    if (o.liste.length && (bos || o.otomatik)) {
-                        hedef.giris.value = o.liste[0].oneri;
-                        o.otomatik = true;
-                    } else if (!o.liste.length && o.otomatik) {
-                        hedef.giris.value = "";
-                        o.otomatik = false;
-                    }
-                    hedef.isaretle();
-                }
-                o.ciz();
-            });
-        }
+        /* EŞLEŞEN SÖZLÜK (Baz Sözlük). "oneriler", kaynak alanın (Baz
+           Veri Seti) değerine göre o veri setinin en son eşlendiği
+           sözlükleri taşır. Veri seti değişince bunlar seçili gelir; alan
+           boşsa ya da içindekiler de kendiliğinden gelmişse. Kullanıcının
+           eklediği ya da çıkardığı seçim ezilmez. Kendiliğinden
+           seçildiğinde alanın altındaki satır bunu söyler. Projede artık
+           olmayan tablo seçilmez; açılışta dolu gelen seçime dokunulmaz. */
+        eslesmeler = alanlar
+            .filter(a => a.coklu && a.oneri_alani && a.oneriler
+                         && combolar[a.ad] && combolar[a.oneri_alani])
+            .map(a => ({ a: a, c: combolar[a.ad],
+                         kaynakDeger: combolar[a.oneri_alani].deger(),
+                         alt: combolar[a.ad].kok.querySelector(".alan-not") }));
 
         kart.appendChild(govde);
         if (pr && problem) tipSec(problem, false);
@@ -12006,7 +12008,7 @@ function secimAlaniEkle(alan, blok) {
             let metin = (alan.sablon || "").replace("{problem}", problem);
             Object.keys(combolar).forEach(k => {
                 const v = combolar[k].deger();
-                combolar[k].giris.value = v;
+                if (!combolar[k].coklu) combolar[k].giris.value = v;
                 /* Boş opsiyonel alan anahtar kelimesiyle birlikte düşer
                    ("segment {segment}" -> ""): bir sonraki anahtar kelime
                    değer sanılmasın. */

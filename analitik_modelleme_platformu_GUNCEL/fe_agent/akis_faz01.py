@@ -34,6 +34,7 @@ from fe_agent.akis_metin import (
     MODEL_TIPI_ADI, MODEL_TIPI_TURKCE, model_tipi,
     MOD_SIRA, KONTROL_SECENEKLERI, KONTROL_SIRA, KONTROL_SORUSU)
 from fe_agent.akis_durum import (
+    secili_sozlukler, sozluk_gorunen, sozluk_kimligi,
     BAZ_ADI, LINEAGE_ADI, SOZLUK_ADI, SPLIT_KOLON, TEST_KIMLIK_LIMITI,
     AdimHatasi, _ad_haritasi,
     _dataset_var_mi, _df_oku, _liste, _nerede, _ond,
@@ -762,6 +763,7 @@ def sozluk_uret_uygula(durum):
     # uzerinden iki kaynagi da kullanabilir.
     durum["sozluk"] = yazildi or None
     durum["sozluk_yedek"] = yedek
+    durum.pop("sozlukler", None)
     durum["sozluk_uretim"] = oz
 
     # Sozluk burada da BAGLANIYOR (Mod B/C). Calisma kopyasi Mod A ile
@@ -796,8 +798,10 @@ def sozluk_uret_uygula(durum):
 # ===========================================================================
 # ADIM 1.2C — VERI VE SOZLUK  (Mod C)
 # ===========================================================================
-def _kurulum_formu(durum, veri=None, sozluk=None):
+def _kurulum_formu(durum, veri=None, sozlukler=None):
     """A secenegi formu. Onceki secim varsa alanlar dolu gelir."""
+    if sozlukler is None:
+        sozlukler = secili_sozlukler(durum)
     durum["_secim_alani"] = {
         "tip": "form",
         "baslik": "Baz Veri Seti ve Baz Sözlük",
@@ -813,14 +817,21 @@ def _kurulum_formu(durum, veri=None, sozluk=None):
              "placeholder": "Baz veri seti ara",
              "ipucu": "Hedef, kimlik ve tüm değişkenleri içeren tablo",
              "deger": veri or durum.get("veri_seti") or ""},
-            {"ad": "sozluk", "etiket": "Baz Sözlük",
-             "placeholder": "Sözlük tablosu ara", "zorunlu": False,
-             "ipucu": "Kolon adlarını ve açıklamalarını içeren tablo",
-             "deger": sozluk or durum.get("sozluk") or "",
-             # SOZLUK ONERISI: baz veri seti secilince onceki calismalarda
-             # o veri setiyle kullanilan sozlukler (bkz. sozluk_gecmisi).
+            # BIRDEN FAZLA SOZLUK: bir tablonun kolon aciklamalari farkli
+            # sozluklerde olabilir. Secilenler kurulumda tek sozlukte
+            # birlesir (bkz. _sozlukleri_birlestir).
+            {"ad": "sozluk", "etiket": "Baz Sözlük", "coklu": True,
+             "placeholder": "Sözlük ara", "zorunlu": False,
+             "ipucu": "Kolon adlarını ve açıklamalarını içeren tablolar; "
+                      "birden fazla seçilebilir",
+             "degerler": list(sozlukler or []),
+             # ESLESME: baz veri seti secilince o veri setinin en son
+             # eslendigi sozlukler secili gelir (bkz. sozluk_gecmisi).
              "oneri_alani": "veri_seti",
-             "oneriler": sozluk_gecmisi.harita()},
+             "oneriler": sozluk_gecmisi.harita(),
+             "oneri_notu": "Bu veri setiyle daha önce kullanıldığı için seçildi; "
+                           "kutuya basıp başka sözlük ekleyebilir, × ile "
+                           "çıkarabilirsiniz"},
         ],
         "sablon": "veri seti {veri_seti} ve sözlük {sozluk}",
     }
@@ -887,6 +898,25 @@ def _sozluk_denetle(sozluk_ad, veri_ad):
     return None
 
 
+# Formdan gelen birden fazla sozluk: "sözlük A + B" (normalize metinde).
+SOZLUK_LISTE_KALIP = re.compile(
+    r"\bsozluk(?:ler)?\s*[:=]?\s*([a-z0-9_.\-]+(?:\s*\+\s*[a-z0-9_.\-]+)+)")
+
+
+def _sozluk_adlari(mesaj, a):
+    """Mesajdaki sozluk adlari, secim sirasiyla ve tekrarsiz. Tek sozluk
+    niyet_kural'in kalibiyla, birden fazlasi "A + B" bicimiyle okunur."""
+    norm = niyet_kural.normalize(mesaj or "")
+    m = SOZLUK_LISTE_KALIP.search(norm)
+    adlar = (sozluk_gecmisi.adlara_ayir(mesaj[m.start(1):m.end(1)]) if m
+             else [a["sozluk"]] if a.get("sozluk") else [])
+    cikti = []
+    for x in adlar:
+        if x not in cikti:
+            cikti.append(x)
+    return cikti
+
+
 def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     """yeniden_sor=True ('Değiştir'): mevcut degerlerle DOLU form acilir."""
     a = niyet_kural.alanlari_cikar(mesaj) if mesaj else {}
@@ -895,42 +925,125 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
     veri = a.get("veri_seti") or (durum.get("veri_seti") if a else None)
     # SOZLUK ISTEGE BAGLI: form veri setini gonderip sozlugu gondermediyse
     # sozluk SECILMEDI demektir (eski secime dusulmez).
-    sozluk = a.get("sozluk") or (durum.get("sozluk")
-                                 if a and not a.get("veri_seti") else None)
+    sozlukler = _sozluk_adlari(mesaj, a)
+    if not sozlukler and a and not a.get("veri_seti"):
+        sozlukler = secili_sozlukler(durum)
 
     # METIN YOK, YALNIZ FORM: formun basligi ve aciklamasi ne istendigini
     # soyler. A/B/C kart tiklamasi sessiz gider; akis ayni sohbette
     # KESINTISIZ devam eder.
     if yeniden_sor:
         _kurulum_formu(durum, veri or durum.get("veri_seti"),
-                       sozluk or durum.get("sozluk"))
+                       sozlukler or secili_sozlukler(durum))
         return False, ""
 
     if not veri:
-        _kurulum_formu(durum, veri, sozluk)
+        _kurulum_formu(durum, veri, sozlukler)
         return False, ""
 
-    for ad in [x for x in (veri, sozluk) if x]:
+    for ad in [veri] + sozlukler:
         if not _dataset_var_mi(ad):
-            _kurulum_formu(durum, veri, sozluk)
+            _kurulum_formu(durum, veri, sozlukler)
             return False, ("'%s' adında bir tabloya erişemiyorum. "
                            "Adı kontrol edip yeniden seçin." % ad)
 
-    hata = _sozluk_denetle(sozluk, veri) if sozluk else None
-    if hata:
-        _kurulum_formu(durum, veri, sozluk)
-        return False, "Girdiler onaylanmadı. " + hata
+    for ad in sozlukler:
+        hata = _sozluk_denetle(ad, veri)
+        if hata:
+            _kurulum_formu(durum, veri, sozlukler)
+            return False, "Girdiler onaylanmadı. " + hata
 
-    durum["veri_seti"], durum["sozluk"] = veri, sozluk or None
-    # Calisma anahtari ("v3"): silmede ayni anahtarla cikarilir.
-    sozluk_gecmisi.arka_planda_kaydet(veri, sozluk, durum.get("_oturum_id") or "")
+    durum["veri_seti"] = veri
+    durum.pop("_sozluk_birlesim", None)
+    if len(sozlukler) > 1:
+        # BIRLESIK SOZLUK calismanin klasorune yazilir; okumalar oradan
+        # (akis_durum.sozluk_orijinal_oku: sozluk None, sozluk_yedek dolu).
+        tablo, oz = _sozlukleri_birlestir(sozlukler, veri)
+        yedek = dosya_yaz(_amp_yolu(durum, "BIRLESIK_SOZLUK"), tablo)
+        if not yedek:
+            _kurulum_formu(durum, veri, sozlukler)
+            return False, ("Girdiler onaylanmadı. Seçilen sözlükler "
+                           "birleştirildi ama çalışma klasörüne yazılamadı.")
+        durum["sozluk"], durum["sozluk_yedek"] = None, yedek
+        durum["sozlukler"] = sozlukler
+        durum["_sozluk_birlesim"] = oz
+    else:
+        durum["sozluk"] = sozlukler[0] if sozlukler else None
+        durum["sozluk_yedek"] = None
+        durum.pop("sozlukler", None)
+    sozluk_gecmisi.arka_planda_kaydet(veri, sozlukler)
     # SOZLUKSUZ: butun kolonlar 01.2.3'te tanimlanir (bkz.
     # akis_durum.sozluk_orijinal_oku: bos sozluk tabani).
-    durum["_sozluksuz"] = not sozluk
-    if not sozluk:
-        durum["sozluk_yedek"] = None
+    durum["_sozluksuz"] = not sozlukler
     durum["_secim_alani"] = None
     return True, None
+
+
+def _sozlukleri_birlestir(adlar, veri_ad):
+    """Birden fazla sozlugu tek tabloya indirger: DEGISKEN, ACIKLAMA,
+    KATEGORI, KAYNAK (tanimin geldigi sozluk).
+
+    Kolonlar ad kolonunda buyuk/kucuk harf farksiz eslesir. Bir kolonun
+    tanimi SECIM SIRASINDAKI ilk sozlukten, tanimi dolu olandan alinir;
+    ilk sozlukte bos, sonrakinde dolu ise sonrakinden. Iki sozlukte farkli
+    dolu tanimi olan kolonlar raporda adiyla listelenir. Girdi sozluklerine
+    yazilmaz. Doner: (tablo, ozet)."""
+    try:
+        veri_kume = {str(c).strip().upper()
+                     for c in _df_oku(veri_ad, limit=5).columns}
+    except Exception:
+        veri_kume = set()
+    satirlar, sira, farkli = {}, [], []
+    for ad in adlar:
+        sz = _df_oku(ad)
+        ad_k = sozluk_calisma.degisken_kolonu_bul(sz)
+        tanim_k = sozluk_calisma.tanim_kolonu_bul(sz)
+        kat_k = sozluk_calisma.kategori_kolonu_bul(sz)
+        kolonlar = sz[ad_k].tolist()
+        tanimlar = sz[tanim_k].tolist()
+        katlar = sz[kat_k].tolist() if kat_k else [""] * len(sz)
+        for kolon, tanim, kat in zip(kolonlar, tanimlar, katlar):
+            if kolon is None or pd.isna(kolon) or not str(kolon).strip():
+                continue
+            kolon = str(kolon).strip()
+            tanim = "" if tanim is None or pd.isna(tanim) else str(tanim).strip()
+            kat = "" if kat is None or pd.isna(kat) else str(kat).strip()
+            anahtar = kolon.upper()
+            mevcut = satirlar.get(anahtar)
+            if mevcut is None:
+                satirlar[anahtar] = {"DEGISKEN": kolon, "ACIKLAMA": tanim,
+                                     "KATEGORI": kat, "KAYNAK": ad if tanim else ""}
+                sira.append(anahtar)
+            elif tanim and not mevcut["ACIKLAMA"]:
+                mevcut.update(ACIKLAMA=tanim, KAYNAK=ad,
+                              KATEGORI=mevcut["KATEGORI"] or kat)
+            elif (tanim and mevcut["KAYNAK"] != ad
+                  and tanim != mevcut["ACIKLAMA"] and anahtar in veri_kume
+                  and mevcut["DEGISKEN"] not in farkli):
+                farkli.append(mevcut["DEGISKEN"])
+    tablo = pd.DataFrame([satirlar[k] for k in sira],
+                         columns=["DEGISKEN", "ACIKLAMA", "KATEGORI", "KAYNAK"])
+    veride = tablo[tablo["DEGISKEN"].str.upper().isin(veri_kume)]
+    return tablo, {
+        "kaynaklar": [{"ad": ad, "kolon": int((veride["KAYNAK"] == ad).sum())}
+                      for ad in adlar],
+        "farkli": farkli}
+
+
+def _birlesim_metni(durum):
+    """Birden fazla sozluk secildiyse kurulum ciktisina eklenen ozet."""
+    oz = durum.get("_sozluk_birlesim")
+    if not oz:
+        return ""
+    satirlar = ["  %s : %s kolonun tanımı" % (k["ad"], _sayi(k["kolon"]))
+                for k in oz.get("kaynaklar") or []]
+    farkli = oz.get("farkli") or []
+    if farkli:
+        satirlar.append("  Farklı Tanımlı : %s kolon (%s)"
+                        % (_sayi(len(farkli)), _kolon_listesi_metni(farkli)))
+    return ("Seçilen sözlükler tek sözlükte birleştirildi. Bir kolon birden "
+            "fazla sözlükte tanımlıysa ilk seçilen sözlükteki tanım alındı.\n"
+            + "\n".join(satirlar))
 
 # ===========================================================================
 # ADIM KAYNAK SOZLUKLERI  (Mod B)
@@ -1129,6 +1242,7 @@ def _mod_b_sozlugu(durum, baz, kutuk):
                          "klasörüne yazılamadı.")
     durum["sozluk"] = None
     durum["sozluk_yedek"] = yedek
+    durum.pop("sozlukler", None)
     durum["sozluk_uretim"] = {"kaynak": "kaynak sözlükleri", **oz}
     # Profil + kapsam SIMDI: baz zaten bellekte. Modelleme tanimlari
     # hedef/kimlik adaylarini, sozluk tanimlari tanimsiz listesini
@@ -2868,7 +2982,7 @@ def _onceki_duzeltmeler(durum):
     icin. Baska bir sozluk baglandiysa eski kararlar o sozluge ait
     degildir ve yok sayilir."""
     if durum.get("_tanim_duzeltmeleri_kaynak") != [durum.get("veri_seti"),
-                                                   durum.get("sozluk")]:
+                                                   sozluk_kimligi(durum)]:
         return {}
     return dict(durum.get("_tanim_duzeltmeleri") or {})
 
@@ -3383,7 +3497,8 @@ def _kapsami_cikar(durum, taze=False):
     # YOK: bu fonksiyon zaten profili ilk kez cikaran taraf, tabloyu
     # nasilsa okuyacakti.
     onbellek_temizle(durum.get("veri_seti"))
-    onbellek_temizle(durum.get("sozluk"))
+    for ad in secili_sozlukler(durum):
+        onbellek_temizle(ad)
     prof = _profil(durum, taze=taze)
     # Secim aninda (taze) kullanicinin sozlugu okunur - AMP_SOZLUK (calisma
     # kopyasi) ondan kurulacak. Sonrasinda YALNIZ AMP_SOZLUK okunur.
@@ -3421,7 +3536,7 @@ def _kapsam_hesapla(durum, prof, sz):
     # Profilin HANGI girdilerden cikarildigi: sozluk_tanim adimi ayni
     # veri seti ve sozluk icin profili yeniden CIKARMAZ, yalnizca tabloyu
     # okur.
-    p["_kaynak"] = [durum.get("veri_seti"), durum.get("sozluk")]
+    p["_kaynak"] = [durum.get("veri_seti"), sozluk_kimligi(durum)]
     durum["profil"] = p
     durum["_aciklamasiz"] = aciklamasiz
     # ORIJINAL sozlukte tanimsiz olanlar. _aciklamasiz, sozluk tanimlari
@@ -3454,7 +3569,7 @@ def _tanim_listesi(durum):
 def _kapsam_hazir(durum):
     """Kapsam bu veri seti ve sozluk icin zaten cikarilmis mi?"""
     p = durum.get("profil") or {}
-    return (p.get("_kaynak") == [durum.get("veri_seti"), durum.get("sozluk")]
+    return (p.get("_kaynak") == [durum.get("veri_seti"), sozluk_kimligi(durum)]
             and isinstance(durum.get("_aciklamasiz"), list))
 
 
@@ -3696,7 +3811,7 @@ def kurulum_uygula(durum):
     _kapsami_cikar(durum, taze=True)
     # Calisma kopyasi sozluk baglanir baglanmaz cikarilir: satir_ekle
     # yalnizca kopyaya yazar, kopya yoksa yazacak yer yoktur.
-    return _calisma_kopyasi_kur(durum).strip()
+    return (_birlesim_metni(durum) + _calisma_kopyasi_kur(durum)).strip()
 
 
 def sozluk_tanim_uygula(durum):
@@ -3834,7 +3949,7 @@ def _tanim_duzeltmelerini_uygula(durum, satirlar, is_duzeltmeleri):
             onceki[ad] = dict(kayit, islem="red")
     durum["_tanim_duzeltmeleri"] = onceki
     durum["_tanim_duzeltmeleri_kaynak"] = [durum.get("veri_seti"),
-                                           durum.get("sozluk")]
+                                           sozluk_kimligi(durum)]
     return hafiza, hatalar
 
 
@@ -3855,7 +3970,7 @@ KONTROL_DUGME = {
 def _kontrol_basladi_mi(durum):
     """Kullanici bu veri seti + sozluk icin kontrolu BASLATTI mi?"""
     return durum.get("_kontrol_basladi") == [durum.get("veri_seti"),
-                                             durum.get("sozluk")]
+                                             sozluk_kimligi(durum)]
 
 
 def _kontrol_karti(durum, adlar, hata, basladi):
@@ -3913,7 +4028,7 @@ def tanim_kontrol_baslat(durum):
     else:
         prof, p = _kapsami_cikar(durum)
     adlar, tanim, hata = _kontrol_kolonlari(durum, prof)
-    durum["_kontrol_basladi"] = [durum.get("veri_seti"), durum.get("sozluk")]
+    durum["_kontrol_basladi"] = [durum.get("veri_seti"), sozluk_kimligi(durum)]
 
     # Ayni kolonlar icin TAMAMLANMIS bir kontrol varsa yeniden calismaz.
     oneri_isi_iptal(durum.get("_kontrol_is"))
@@ -4696,7 +4811,7 @@ def _tek_degerli_hesapla(durum, prof=None):
     Bos hucre ayri deger: nunique(dropna=False). Hedef / kimlik / donem
     rolundeki kolonlar listeye girmez (kendi kurallari var). Ayni veri
     seti icin bir kez hesaplanir. Doner: liste."""
-    kaynak = [durum.get("veri_seti"), durum.get("sozluk")]
+    kaynak = [durum.get("veri_seti"), sozluk_kimligi(durum)]
     if durum.get("_tek_degerli_kaynak") == kaynak \
             and isinstance(durum.get("_tek_degerli"), list):
         return durum["_tek_degerli"]

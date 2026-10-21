@@ -896,6 +896,35 @@ def sozluk_oku(durum):
     return sozluk_orijinal_oku(durum)
 
 
+def secili_sozlukler(durum):
+    """Kullanicinin 01.2.1'de sectigi sozluk dataset'leri, secim sirasiyla.
+    Tek sozlukte [durum["sozluk"]]; birden fazlasinda durum["sozlukler"]
+    (o zaman birlesik sozluk calisma klasorunde durur, durum["sozluk"]
+    None ve durum["sozluk_yedek"] dolu)."""
+    d = durum or {}
+    if d.get("sozlukler"):
+        return [str(x) for x in d["sozlukler"]]
+    return [str(d["sozluk"])] if d.get("sozluk") else []
+
+
+def sozluk_kimligi(durum):
+    """Onbellek ve imza anahtari: hangi sozluk(ler) secildi. Tek sozlukte
+    sozlugun adi (onceki kayitlarla ayni), birden fazlasinda "A + B"."""
+    adlar = secili_sozlukler(durum)
+    if len(adlar) > 1:
+        return " + ".join(adlar)
+    return (durum or {}).get("sozluk")
+
+
+def sozluk_gorunen(durum):
+    """Ekranda ve kayitlarda yazilan sozluk adi: "A + B", tek sozluk ya da
+    platformun kurdugu sozlugun dosyasi."""
+    adlar = secili_sozlukler(durum)
+    if adlar:
+        return " + ".join(adlar)
+    return (durum or {}).get("sozluk_yedek")
+
+
 def sozluk_orijinal_oku(durum):
     """Sozlugu dataset'ten ya da CSV yedeginden okur (KOPYAYA BAKMAZ).
 

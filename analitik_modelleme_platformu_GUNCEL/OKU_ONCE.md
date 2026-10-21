@@ -231,27 +231,33 @@ tanıtır; sayfalar sol bardan açılır.
   hesaplanır (`akis_kayit.adim_kodu`, mesajlarda `akis_atif.adim`).
   Arka uç adımı `**…**` ile işaretler, ön yüz kalın yazar; düz metin
   alanlarında (title) işaret düşer.
-- **01.2.1 Baz Sözlük önerisi:** Baz Veri Seti seçilince, o veri setiyle
-  önceki çalışmalarda (projedeki bütün çalışmalar, her kullanıcının)
-  kullanılan sözlükler Baz Sözlük alanının altında tek seçimli bir liste
-  olarak çıkar: her satırda radyo düğmesi, sözlük adı ve kaç çalışmada
-  kullanıldığı; en çok kullanılanın yanında "En Çok Kullanılan". En çok
-  kullanılan (eşitlikte en son kullanılan) kendiliğinden seçilir ve
-  listenin başlığı "Önceki çalışmalara göre otomatik seçildi; başka bir
-  sözlük de seçebilirsiniz." der. Öbür öneri seçilebilir; en alttaki
-  "Başka bir sözlük" alanı boşaltıp sözlük listesini açar (boş bırakılırsa
-  sözlüksüz devam edilir). Elle yazılan ya da seçilen sözlük ezilmez; form
-  dolu açıldığında da değere dokunulmaz. Projede artık olmayan tablo
-  önerilmez. Kart onaylanınca liste gizlenir.
-  Kayıt `PROJE_HAFIZASI/VERI_SOZLUK_GECMISI.json`'da (yalnız adlar ve
-  çalışma numaraları; `fe_agent/sozluk_gecmisi.py`). Sayım kesindir: her
-  çalışma yalnız son onayladığı (veri seti, sözlük) çiftinde sayılır;
-  01.2.1'e dönüp başka bir sözlük seçerse eski çiftten çıkar, sözlüksüz
-  onaylarsa hiçbir çiftte sayılmaz; çalışma silinince (Arşiv) her yerden
-  çıkar, böylece numara yeniden verildiğinde yeni çalışma eskisinin
-  sayımını devralmaz. Dosya yoksa ilk açılışta eski çalışmaların
-  `ozet.json` dosyalarından bir kez kurulur. Başlangıç B'nin kaynak
-  sözlükleri bu öneriye girmez.
+- **01.2.1 Baz Sözlük (birden fazla):** bir tablonun kolon açıklamaları
+  farklı sözlüklerde olabileceği için Baz Sözlük çoklu seçimlidir.
+  Seçilenler kutunun içinde etiket olarak durur, × ile çıkar; kutuya
+  basınca sözlük listesi açılır, seçilen eklenir (seçilmiş olanlar listede
+  görünmez). Boş kutuda Backspace son etiketi siler. Hiç seçilmezse
+  sözlüksüz devam edilir (bütün kolonlar 01.2.3'te tanımlanır).
+  - **Birleştirme:** birden fazla sözlük seçilirse her biri ayrı ayrı
+    doğrulanır, sonra çalışma klasöründe tek sözlükte birleşir
+    (`BIRLESIK_SOZLUK`, kolonlar DEGISKEN, ACIKLAMA, KATEGORI, KAYNAK).
+    Kolonlar adla (büyük/küçük harf farksız) eşleşir; bir kolonun tanımı
+    seçim sırasındaki ilk sözlükten, tanımı dolu olandan alınır (ilkinde
+    boşsa sonrakinden). Kurulum çıktısında her sözlükten kaç kolonun
+    tanımı alındığı ve iki sözlükte farklı tanımı olan kolonlar adıyla
+    yazılır. Girdi sözlüklerine yazılmaz. Tek sözlükte davranış öncekiyle
+    aynı. Ekranda ve kayıtlarda sözlük "A + B" diye yazılır.
+  - **Eşleşme:** Baz Veri Seti seçilince o tablonun en son eşlendiği
+    sözlük(ler) kutuda seçili gelir; alanın altında "Bu veri setiyle daha
+    önce kullanıldığı için seçildi" yazar. Kutu boşsa ya da içindekiler de
+    kendiliğinden gelmişse doldurulur; kullanıcının eklediği ya da
+    çıkardığı seçim ezilmez, form dolu açıldığında da dokunulmaz. Projede
+    artık olmayan tablo seçilmez. Kayıt
+    `PROJE_HAFIZASI/VERI_SOZLUK_GECMISI.json`'da: yalnız hangi tablonun
+    hangi sözlük(ler)le eşleştiği (çalışma bilgisi ve sayım yok). 01.2.1
+    onaylanınca o tablonun eşleşmesi yenisiyle değişir; sözlüksüz onay
+    eşleşmeyi değiştirmez. Dosya yoksa ilk açılışta eski çalışmaların
+    `ozet.json` dosyalarından bir kez kurulur (`fe_agent/sozluk_gecmisi.py`).
+    Başlangıç B'nin kaynak sözlükleri buna girmez.
 - **01.2.2 Kolon Rolleri:** ilk seçim model tipi (Classification,
   Regression, Time Series Forecasting, Clustering). Şu an seçilebilen tek
   tip Classification olduğu için seçili gelir. Hedef listesi tipe göre

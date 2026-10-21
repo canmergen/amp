@@ -1257,38 +1257,38 @@ body { background-color: #FFFFFF; }
   font-size: var(--fs-kucuk); line-height: 1.35; color: var(--metin-soluk);
 }
 .alan-not-uyari { color: var(--amber); }
-/* Baz Sözlük önerisi: alanın altında tek seçimli liste (radyo gibi).
-   Kendiliğinden seçilen öğe işaretli; öbür öneri ya da "Başka bir sözlük"
-   seçilebilir. Kart kilitlenince gizlenir. */
-.oneri-satir { margin-top: var(--b-2); }
-.oneri-satir[hidden], .secim-kart.kilitli .oneri-satir { display: none; }
-.oneri-bas { font-size: var(--fs-kucuk); color: var(--metin); margin-bottom: var(--b-1); }
-.oneri-liste { display: flex; flex-direction: column; gap: var(--b-1); }
-.oneri-sec {
-  display: flex; align-items: flex-start; gap: var(--b-2); width: 100%;
-  padding: 5px var(--b-3); text-align: left; cursor: pointer;
-  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
-  background: var(--yuzey); color: var(--metin); font: inherit; font-size: var(--fs-kucuk);
-  transition: border-color .15s, background .15s;
+/* ÇOKLU ALAN (Baz Sözlük): kutu bir giriş alanı gibi görünür; seçilenler
+   içinde etiket, yanında yazma yeri. Kutuya basınca liste açılır. */
+.combo-alan.coklu-alan {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  min-height: var(--btn-h); padding: 3px calc(var(--btn-h) + 2px) 3px 4px;
+  border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk);
+  background: var(--yuzey); cursor: text;
+  transition: border-color .15s, box-shadow .15s;
 }
-.oneri-sec:hover { border-color: var(--kirmizi-cizgi); }
-.oneri-sec.secili { border-color: var(--kirmizi-cizgi); background: var(--kirmizi-acik); }
-.oneri-daire {
-  flex: 0 0 14px; width: 14px; height: 14px; margin-top: 2px; border-radius: 50%;
-  border: 1.5px solid var(--kenar-guclu); background: var(--yuzey);
+.combo-alan.coklu-alan:focus-within {
+  border-color: var(--kirmizi-cizgi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
-.oneri-sec.secili .oneri-daire {
-  border-color: var(--kirmizi-cizgi);
-  background: radial-gradient(circle, var(--kirmizi-dolgu) 0 4px, var(--yuzey) 4.5px);
+.combo-alan.coklu-alan:has(.combo-giris:disabled) { background: var(--yuzey-alt); cursor: default; }
+.coklu-cipler { display: contents; }
+.coklu-alan .combo-giris {
+  flex: 1 1 90px; min-width: 90px; width: auto; height: calc(var(--btn-h) - 8px);
+  border: none; box-shadow: none !important; padding: 0 4px; background: transparent;
 }
-.oneri-govde { display: flex; flex-direction: column; min-width: 0; }
-.oneri-ust { display: flex; align-items: baseline; gap: var(--b-2); flex-wrap: wrap; }
-.oneri-ad { font-weight: var(--fw-kalin); word-break: break-all; }
-.oneri-rozet {
-  font-size: var(--fs-kucuk); color: var(--kirmizi); border: 1px solid var(--kirmizi-cizgi);
-  border-radius: var(--r-kucuk); padding: 0 5px; line-height: 1.4;
+.coklu-cip {
+  display: inline-flex; align-items: center; gap: 2px; max-width: 100%;
+  padding: 1px 2px 1px 8px; border: 1px solid var(--kirmizi-cizgi);
+  border-radius: var(--r-kucuk); background: var(--kirmizi-acik);
+  font-size: var(--fs-govde); line-height: 1.5;
 }
-.oneri-sayi { color: var(--metin-soluk); }
+.coklu-ad { overflow-wrap: anywhere; }
+.coklu-sil {
+  border: none; background: none; cursor: pointer; padding: 0 5px;
+  color: var(--metin-soluk); font-size: 15px; line-height: 1;
+}
+.coklu-sil:hover { color: var(--kirmizi); }
+.secim-kart.kilitli .coklu-sil { display: none; }
+.secim-kart.kilitli .coklu-cip { padding-right: 8px; }
 .alan-not-liste {
   margin: var(--b-1) 0 0; padding-left: 16px;
   color: var(--metin-soluk);
