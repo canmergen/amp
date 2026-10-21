@@ -2348,10 +2348,10 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   /* dört kolonda satır dar panele
      sığıyor ve yatay kaydırma çoğu ekranda hiç gerekmiyor. */
   /* --ft-en, ızgaranın GERÇEK asgari genişliğiyle AYNI olmalı. */
-  /* Satırın en az genişliği: 84 + 58 + 104 + iki boşluk = 258px.
+  /* Satırın en az genişliği: 84 + 80 + 104 + iki boşluk = 280px.
      Daraltılmış panelin en dar halinde (312px - 32px dolgu = 280px)
      yatay kaydırma olmadan sığıyor. */
-  --ft-en: 258px;
+  --ft-en: 280px;
   --ft-govde-h: 360px;     /* kaydırılabilir pencere yüksekliği */
 }
 .ft-kart { padding: var(--b-3); }
@@ -2448,7 +2448,8 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 .ft-satir {
   display: grid;
   /* ÜÇ SÜTUN: DEĞİŞKEN / TİP / SÖZLÜK TANIMI. */
-  grid-template-columns: 26px minmax(84px, 1.3fr) 58px minmax(104px, 2.2fr);
+  /* TİP 80px: en uzun tip adı ("kategorik") bölünmeden sığar. */
+  grid-template-columns: 26px minmax(84px, 1.3fr) 80px minmax(104px, 2.2fr);
   align-items: start; gap: var(--b-2);
   min-width: var(--ft-en); min-height: var(--ft-satir-h);
   padding: 3px 0;
@@ -2458,7 +2459,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
    Sınıf JS'ten geliyor; :has() kullanılmadı, Dataiku'nun gömdüğü eski
    WebView'lerde destek yok. */
 .ft-tablo.salt-okunur .ft-satir {
-  grid-template-columns: minmax(84px, 1.3fr) 58px minmax(104px, 2.2fr);
+  grid-template-columns: minmax(84px, 1.3fr) 80px minmax(104px, 2.2fr);
 }
 /* METİN KIRPILMAZ: uzun ad ve tanım alt satıra kayar. */
 .ft-hucre {
