@@ -3327,8 +3327,9 @@ span.bolme-cip { cursor: default; }
 .dg-kisa-ac:hover { color: var(--kirmizi); }
 /* Dönem Bilgisi tablosu */
 .dg-donem-tablo { table-layout: fixed; }
-.dg-donem-tablo th:nth-child(1) { width: 140px; }
-.dg-donem-tablo th:nth-child(2) { width: 28%; }
+.dg-donem-tablo th:nth-child(1) { width: 200px; }
+.dg-donem-tablo th:nth-child(2) { width: 26%; }
+.dg-donem-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
 .dg-donem-tablo th:nth-child(4) { width: 110px; text-align: center; }
 /* Değer paneli açılınca tablo küçük bir pencerede kaymasın. */
 .dg-donem-sar { max-height: 72vh; }
@@ -3357,7 +3358,7 @@ span.bolme-cip { cursor: default; }
 .dg-sekme-pano[hidden] { display: none; }
 .dg-donem-pano-not { margin: 0 0 var(--b-2); color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1.45; }
 .dg-donem-tur {
-  display: block; margin-top: 4px; max-width: 100%; height: 24px;
+  display: block; margin-top: 6px; width: 100%; height: 26px;
   font: inherit; font-size: var(--fs-kucuk); color: var(--metin);
   border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk); background: var(--yuzey);
 }
@@ -4767,3 +4768,19 @@ span.bolme-cip { cursor: default; }
 .dg-kart.kilitli .dg-birlesim-secenek { cursor: default; }
 /* Dönem: ailesinden ayrılan yazılışın notu (kalıp hücresinde). */
 .dg-donem-aile-not { margin: 2px 0 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: normal; }
+
+/* DÖNEM KARTI: satırlar renksiz; durum anlamın üstündeki tek satır
+   etikette, dikkat isteyen satırın solunda ince amber çizgi. Türün ne
+   demek olduğu seçim kutusunun altında. */
+.dg-kart .dg-donem-tablo tr.dg-satir > td { background: transparent; }
+.dg-donem-tablo tr.dg-donem-dikkat > td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
+.dg-donem-durum {
+  margin-bottom: 3px; color: var(--metin-soluk); font-size: var(--fs-kucuk);
+  font-weight: var(--fw-kalin); letter-spacing: .01em;
+}
+.dg-donem-durum.dikkat { color: var(--amber); }
+.dg-donem-tur-not { margin-top: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: normal; line-height: 1.4; }
+.dg-donem-uyari {
+  display: flex; align-items: center; gap: 4px; margin-top: 4px;
+  color: var(--amber); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+}

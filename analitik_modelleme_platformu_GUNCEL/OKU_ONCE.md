@@ -360,12 +360,35 @@ tanıtır; sayfalar sol bardan açılır.
   kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve
   01.2.3.1'de sorulur (düğme "N Kolonu Tanımsız Bırak ve Devam Et").
 - **01.2.4.1 Dönem Bilgisi, kart:** başlığın altında tek satır özet
-  ("6 kalıp (3 pencere, 2 zaman birimi, 1 zaman ölçüsü) · 4 olası · 28
-  kısaltma") ve yanında "i": yönerge ile sütun açıklamaları orada. Altında
-  üç sekme (sayılarıyla): Kalıplar (lejant ve tablo), Olası (KALIP /
-  ADLARDA GEÇEN / NEDEN EMİN DEĞİL tablosu, "Tabloya Al" satırı Kalıplar'a
-  taşır ve o sekmeye geçer), Kısaltmalar (kolon adlarındaki bütün
-  kısaltmalar; tıklanan Kalıplar'a elle satır olarak eklenir).
+  ("6 kalıp (3 pencere, 1 zaman noktası, 1 zaman birimi, 1 zaman
+  ölçüsü) · 2 yorumlanıyor · 4 olası · 28 kısaltma") ve yanında "i":
+  yönerge ile sütun açıklamaları orada. Altında üç sekme (sayılarıyla):
+  Kalıplar (tablo), Olası (KALIP / ADLARDA GEÇEN / NEDEN EMİN DEĞİL
+  tablosu, "Tabloya Al" satırı Kalıplar'a taşır ve o sekmeye geçer),
+  Kısaltmalar (kolon adlarındaki bütün kısaltmalar; tıklanan Kalıplar'a
+  elle satır olarak eklenir).
+  - **[sayı]:** kalıpta ve anlamda sayı yer tutucusu ekranda "[sayı]"
+    yazar ("[sayı]D", "[sayı] gün boyunca"). İçeride yer tutucu olarak
+    saklanır (app.js `donemAnlamGoster` / `donemAnlamIc`: k'inci [sayı]
+    kalıbın k'inci yer tutucusu olur); hafıza ve Açıklama Düzenleme aynı
+    kalır. Sayısız kalıpta [sayı] yazılırsa satır "Kontrol edin" olur.
+  - **Durum etiketi:** satırlar renksiz; anlam kutusunun üstünde tek
+    satır: "Dil modeli · 9 / 10 örnek tanım uyuşuyor", "Dil modeli
+    kısaltmalardan buldu", "Hafızadan", "Düzenlendi", "Elle eklendi",
+    "Kontrol edin" ya da "Anlam boş" (amber), "Dil modeli yorumluyor".
+    Dikkat isteyen satırın solunda ince amber çizgi.
+  - Altında kısa notlar: Soru, "Ad ile tanımlar çelişiyor: ...", Not ve
+    kısa uyarı ("Dikkat: Yalnız PER_DAY içinde geçiyor", uzun açıklaması
+    "i"de).
+  - **Bekleyen satırlar:** dil modeli çalışırken biçimden bulunan bütün
+    kalıplar baştan "Dil modeli yorumluyor" olarak görünür (tür kutusu
+    yerine "Tür dil modelinin yorumundan sonra gelir."); yorum geldikçe
+    yoklamayla dolar, dönem değilse kalkar.
+  - **İptal:** ilerleme satırında İptal (`/donem_iptal`,
+    `akis_faz01.donem_iptal`, `donem.iptal`): o ana kadar gelen yorumlar
+    kalır, yorumlanmayanlar Olası'ya düşer, kartta "Dil modelini
+    durdurdunuz" notu çıkar. Süren çağrının sonradan gelen cevabı
+    yazılmaz.
 - **Kalıp yakalama (`donem.kaliplar`, `parca_listesi`):** sayı içeren
   parçalar kalıba çevrilir (`H00_06` → `H<NN>_<NN>`, `L3M` → `L<N>M`).
   Alt çizgiyle ayrılmış sayı ve tek harf tek parça sayılır (`3_M`, `M_3`;
@@ -377,8 +400,8 @@ tanıtır; sayfalar sol bardan açılır.
   (yalnız tek harf). `donem.kalip_deseni("<N>M")` hepsine uyar;
   `deger_anlami` sayıyı hangi yazılışta olursa olsun yerine koyar (M_6 →
   "son 6 ay"); app.js `donemKalipDeseni` / `donemSayiEslesmesi` aynı kural.
-  - Kartta kalıp hücresinde adlarda geçen yazılışlar yazar ("<N>M · M<N> ·
-    <N>_M").
+  - Kartta kalıp hücresinde adlarda geçen yazılışlar yazar ("[sayı]M ·
+    M[sayı] · [sayı]_M").
   - Dil modeline aile satırında YAZILIŞLAR (her biri değerleriyle) ve her
     yazılıştan bir örnek gider. Tanımlar bir yazılışın açıkça farklı
     anlamda olduğunu gösteriyorsa model onu "ayri" listesine yazar
@@ -401,20 +424,47 @@ tanıtır; sayfalar sol bardan açılır.
     katılmış hâliyle gelir.
   - Açıklama Düzenleme'de ayrılan yazılışın deseni aileden önce eşleşir.
 - **Zaman bilgisi türleri:** dil modeli her kalıba "tur" yazar
-  (`llm.ZAMAN_TURLERI`: pencere, birim, olcu; `llm.zaman_turu`). Kartta
-  kalıp hücresinde seçim kutusu: Pencere / Zaman Birimi / Zaman Ölçüsü;
-  kararda `zaman_tur`, durumda `durum["donem_turleri"]` ({kalıp: tür}),
+  (`llm.ZAMAN_TURLERI`: pencere, nokta, birim, olcu; `llm.zaman_turu`).
+  Kartta kalıp hücresinde seçim kutusu ve altında seçili türün açıklaması
+  (app.js `DONEM_TURLERI`):
+  - Pencere: sayı bir süre; veri o süre boyunca toplanır (30D: 30 gün
+    boyunca).
+  - Zaman Noktası: sayı belirli bir an ya da sıra (M3: yılın 3. ayı ya da
+    3 ay önceki ay).
+  - Zaman Birimi: sayısız zaman birimi (DAY: gün).
+  - Zaman Ölçüsü: değerin kendisi bir süre (TMSNCFRST).
+  Kararda `zaman_tur`, durumda `durum["donem_turleri"]` ({kalıp: tür}),
   hafızada `donem_tur`.
+- **Anlamın kaynağı (dil modeli kuralları, `llm._DONEM_ANLAM_KURALLARI`):**
+  önce ad, sonra tanımlar. Anlam parçanın yapısından kurulur (D gün, W
+  hafta, M ay, Q çeyrek, Y yıl, H saat; sözcük kısaltmaları harflerinden).
+  Sözlük tanımları kesin değil, kanıttır: kalıp başına en çok 10 örnek
+  tanım (`donem.ORNEK_ADET`; taramada kısaltma başına 3,
+  `donem.TARAMA_ORNEK`) gider; model her tanımın anlamıyla uyuşup
+  uyuşmadığını sayar (`kanit`: bakılan, uyan). Adda karşılığı olmayan
+  bilgi (son, önceki) anlama yazılmaz, nota yazılır. Ad ile tanımların
+  çoğu çelişirse adın yapısı geçer, çelişki `celiski`de yazar. Süre mi
+  (pencere) an mı (nokta) olduğu tanımların çoğundan çıkar; belli
+  değilse soru iki seçeneği de yazar. Anlam tür adını tekrar etmez ("N
+  gün boyunca", "N gün boyunca zaman penceresi" değil).
+- **Arka plan işi (`donem.baslat`):** yorum `YORUM_PARCA` (6) kalıplık,
+  tarama `llm.TARAMA_PARCA` (50) kısaltmalık parçalara bölünür; en çok
+  `ES_ZAMANLI` (4) çağrı aynı anda çalışır, her parçanın sonucu gelince
+  yazılır.
 - **Açıklama Düzenleme'ye giden dönem parçası** (`_donem_parca_metni`):
   değerin kendi anlamı ya da kalıbın anlamı, yer tutucu değerin sayısıyla
   doldurulmuş olarak ve yanında türü: "3_M: son 3 ay (zaman penceresi)",
   "MONTH: ay (zaman birimi)". Kalıp adı ve yer tutucu (`<N>`, `N`) dil
   modeline gitmez; sözlüğe yazılan açıklama sayıyla yazılır.
-  `donem.ISTEM_SURUMU` 5: önbellekteki eski yorumlar yeniden alınır.
+  `donem.ISTEM_SURUMU` 6: önbellekteki eski yorumlar yeniden alınır.
 - **Tabloya giren kalıplar:** hafızadan gelenler ve dil modelinin
-  tanımlardan zaman bilgisi olduğunu bulduğu parçalar Kalıplar'a girer;
-  yalnız ikililer içinde geçse de (MONTH). Olası'da yalnız emin
-  olunamayanlar kalır (hafıza ve modelden gelmeyen, uyarılı parçalar).
+  zaman bilgisi olduğunu bulduğu parçalar Kalıplar'a girer; yalnız
+  ikililer içinde geçse de (MONTH). Olası'ya düşenler: dil modelinin
+  sorusu olanlar, kanıtı zayıf olanlar (en az 2 örnek tanıma bakıp
+  uyuşanlar %60'tan az, `DONEM_KANIT_ESIGI`; nedeni "Örnek tanımlardan
+  yalnız 1 / 5 tanesi bu anlamla uyuşuyor"), dil modelinin bakmadığı ya
+  da İptal ile yorumlanmayan kalıplar ve hafıza ile modelden gelmeyen
+  uyarılı parçalar.
 - **01.2.4.1 Dönem Bilgisi, değerler:** sayı yer tutucusu olan kalıpta
   (`<N>D`, `H<NN>_<NN>`) Anlam hücresinde kalıbın anlamının altında bir
   örnek ("Örnek: 30D → 30 gün boyunca") ve "Değerleri Düzenle" bağlantısı

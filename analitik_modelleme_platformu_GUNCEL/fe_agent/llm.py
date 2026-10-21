@@ -1657,37 +1657,55 @@ dönem değilse dönem sayma.
 """
 
 _DONEM_ANLAM_KURALLARI = """
-ZAMAN BİLGİSİ: parçanın taşıdığı, zamanla ilgili bilgi. Üç türü var;
+ZAMAN BİLGİSİ: parçanın taşıdığı, zamanla ilgili bilgi. Dört türü var;
 "tur" alanına birini yaz:
-  - "pencere": verinin hangi zaman aralığından ya da diliminden alındığı
-    (son 30 gün, 00-06 saatleri, dönem başından bugüne, önceki ya da
-    karşılaştırma dönemi).
-  - "birim": bir zaman birimi (gün, hafta, ay, yıl, saat; DAY, MONTH gibi
-    sözcükler ve sayıya bağlı tek harfler: M ay, D gün, W hafta, Y yıl,
-    H saat). Sayıyla birlikte (3_M: 3 ay) ya da "gün başına", "aylık"
-    gibi kullanılabilir.
-  - "olcu": zamanı ölçen parça (ilk ya da son işlemden bu yana geçen süre,
-    gün sayısı, vade, yaş, kıdem).
+  - "pencere": sayı bir SÜREYİ gösterir; veri o süre boyunca toplanır
+    (30D: 30 gün boyunca; H00_06: 00:00 ile 06:00 arası; dönem başından
+    bugüne).
+  - "nokta": sayı belirli bir ANI ya da SIRAYI gösterir (M3: yılın 3. ayı
+    ya da 3 ay önceki ay; ay sonu; gözlem tarihi).
+  - "birim": sayısız zaman birimi sözcüğü (DAY: gün, MONTH: ay); "gün
+    başına", "aylık" gibi kullanılır.
+  - "olcu": değerin kendisi bir süredir (ilk ya da son işlemden bu yana
+    geçen süre, gün sayısı, vade, yaş, kıdem).
 ZAMAN BİLGİSİ DEĞİLDİR: konu, ürün, kanal, işlem türü, tutar, adet,
 istatistik (ortalama, en büyük) gibi zamanla ilgisi olmayan parçalar.
-  - Bir parça hem zaman hem başka bilgi taşıyorsa (ör. pencere ile bir
-    eşik sayısı) "anlam"a YALNIZ zaman kısmını yaz; kalanını "not"a yaz.
-  - Birden çok sözcüğün kısaltması olabilir (TMSNCFRST: time since first,
-    ilk işlemden bu yana geçen süre); örnek tanımlardan çöz.
+Bir parça hem zaman hem başka bilgi taşıyorsa "anlam"a YALNIZ zaman
+kısmını yaz; kalanını "not"a yaz.
 
-  - Anlamı YALNIZCA örnek tanımlardan ve değerlerin birbirine göre
-    durumundan çıkar. Genel bilgiyle tahmin etme.
-  - "anlam": parçanın KENDİSİNİN taşıdığı bilgi, tek kısa cümle; harf ve
-    sayının neyi gösterdiğini açık yaz (ör. "<sayı> + [harf]: <sayı>
-    [birim]lık pencere"). Tanımda geçip adda karşılığı olmayan bilgiyi
-    (ör. "son", "önceki", "ortalama" gibi; adda bunu gösteren ayrı bir
-    parça yoksa) anlama YAZMA; "not"a yaz (ör. "Tanımlarda 'son'
-    geçiyor ama adda karşılığı yok."). Değerlere özel bir durum varsa
-    (ör. bir değer diğerlerinden farklı kullanılıyorsa) onu anlama yaz.
-  - "soru": tanımlardan kesin çıkmayan bir nokta varsa kullanıcıya tek,
-    somut bir soru; yoksa boş. Belirsiz noktayı "anlam"a tahminle YAZMA;
-    soruya yaz.
-  - "not": yalnızca yukarıdaki ad / tanım farkı için; yoksa boş.
+ANLAMIN KAYNAĞI: ÖNCE AD, SONRA TANIMLAR.
+  1. Anlamı önce parçanın yapısından kur. Sayıyla birlikte geçen harf
+     çoğunlukla zaman birimidir (D gün, W hafta, M ay, Q çeyrek, Y yıl,
+     H saat). Sözcük kısaltmalarını harflerinden çöz (TMSNCFRST: time
+     since first, ilk işlemden bu yana geçen süre).
+  2. Sözlükteki tanımlar KANITTIR, kesin değildir: bir kısmı yanlış ya
+     da eksik olabilir. Tek bir tanıma göre karar verme. Örnek tanımların
+     her birine bak ve senin anlamınla uyuşup uyuşmadığını say:
+     "kanit": {"bakilan": baktığın örnek tanım sayısı, "uyan": anlamınla
+     uyuşan tanım sayısı}.
+  3. Adda karşılığı olmayan bilgiyi anlama YAZMA (son, önceki, ortalama
+     gibi; adda bunu gösteren ayrı bir parça yoksa); "not"a yaz. Örnek:
+     adda 3M var, tanımlar "son 3 ayda" diyor; adda "son" gösteren parça
+     yoksa anlam "3 ay boyunca" olur, not "Tanımlarda 'son' geçiyor ama
+     adda karşılığı yok.".
+  4. Adın yapısı ile tanımların çoğunluğu çelişirse adın yapısına güven;
+     çelişkiyi "celiski"ye tek cümleyle yaz. Çelişki yoksa boş.
+  5. PENCERE Mİ NOKTA MI: sayılı bir parçada sayının süre mi (pencere)
+     an ya da sıra mı (nokta) gösterdiğini tanımların çoğunluğundan
+     çıkar. Tanımlar ikisine de işaret ediyorsa ya da karar verdirmiyorsa
+     tahmin etme; "soru"ya iki seçeneği de yaz (ör. "3M: 3 ay boyunca mı,
+     3 ay önceki ay mı?").
+
+YAZIM:
+  - "anlam": parçanın KENDİSİNİN söylediği, tek kısa ifade. Türün adını
+    (zaman penceresi, zaman birimi, zaman noktası) anlama YAZMA; tür ayrı
+    alanda. Doğru: "N gün boyunca", "yılın N. ayı", "NN:00 ile NN:00
+    arası", "gün". Yanlış: "N gün boyunca zaman penceresi".
+  - Değerlere özel bir durum varsa (ör. bir değer diğerlerinden farklı
+    kullanılıyorsa) onu anlama yaz.
+  - "soru": emin olmadığın bir nokta varsa kullanıcıya tek, somut bir
+    soru; yoksa boş. Belirsiz noktayı "anlam"a tahminle YAZMA.
+  - "not": yalnızca ad / tanım farkı için; yoksa boş.
   - Tamamen Türkçe, Türkçe karakterlerle yaz.
 """ + _DONEM_BIRLIKTE_KURALI
 
@@ -1697,7 +1715,8 @@ zaman bilgisi (zaman penceresi, saat dilimi, zaman birimi, geçen süre)
 taşıyabilecek parça KALIPLARI verilecek. Her kalıp için: adlarda geçen değerleri (kaç
 kolonda geçtiğiyle) ve birkaç örnek kolonun adı ile sözlükteki tanımı.
 
-Görevin her kalıbın ne anlama geldiğini, tanımlardan okuyarak yazmak.
+Görevin her kalıbın ne anlama geldiğini, önce kalıbın yapısından kurup
+örnek tanımlarla doğrulayarak yazmak.
 """ + _DONEM_ANLAM_KURALLARI + """
   - Yer tutucu: anlamda kalıptaki <N> için "N", <NN> için "NN" yaz;
     başka bir yer tutucu biçimi kullanma.
@@ -1719,19 +1738,31 @@ yazılışı yazar. Hepsi aynı anlamdadır; tek "anlam" yaz.
     kalır. Yazılış farkı yoksa "ayri" boş liste.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kalıbı AYNEN yaz.
-{"kolonlar": [{"ad": "...", "donem": true, "tur": "pencere", "anlam": "...", "soru": "", "not": "", "haric": [], "ayri": []}]}""" \
+{"kolonlar": [{"ad": "...", "donem": true, "tur": "pencere", "anlam": "...", "kanit": {"bakilan": 0, "uyan": 0}, "celiski": "", "soru": "", "not": "", "haric": [], "ayri": []}]}""" \
     + SINIRLAYICI_KURALI
 
 
-ZAMAN_TURLERI = ("pencere", "birim", "olcu")
+ZAMAN_TURLERI = ("pencere", "nokta", "birim", "olcu")
 
 
 def zaman_turu(x):
-    """Dil modelinin "tur" alani: pencere / birim / olcu (tanınmazsa
-    pencere)."""
+    """Dil modelinin "tur" alani: pencere / nokta / birim / olcu
+    (tanınmazsa pencere)."""
     t = _secenek(str(x or ""))
     return {"birim": "birim", "olcu": "olcu", "olçu": "olcu", "ölçü": "olcu",
-            "ölcü": "olcu"}.get(t, "pencere")
+            "ölcü": "olcu", "nokta": "nokta"}.get(t, "pencere")
+
+
+def _kanit(x):
+    """Dil modelinin "kanit" alani: {"bakilan", "uyan"} (tam sayi; uyan
+    bakilandan buyuk olamaz). Yoksa {"bakilan": 0, "uyan": 0}."""
+    k = x if isinstance(x, dict) else {}
+    try:
+        bakilan = max(0, int(k.get("bakilan") or 0))
+        uyan = max(0, min(bakilan, int(k.get("uyan") or 0)))
+    except (TypeError, ValueError):
+        bakilan = uyan = 0
+    return {"bakilan": bakilan, "uyan": uyan}
 
 
 def _donem_metni(x):
@@ -1807,7 +1838,8 @@ def donem_yorumla(kaliplar, orkestra=None):
         haric = x.get("haric") if isinstance(x.get("haric"), list) else []
         sonuc[str(x["ad"])] = {
             "donem": bool(donem), "anlam": _donem_metni(x.get("anlam")),
-            "tur": zaman_turu(x.get("tur")),
+            "tur": zaman_turu(x.get("tur")), "kanit": _kanit(x.get("kanit")),
+            "celiski": _donem_metni(x.get("celiski")),
             "soru": _donem_metni(x.get("soru")), "not": _donem_metni(x.get("not")),
             "model": MODEL_ADLARI.get(model, model),
             "haric": sorted({str(h).strip().upper() for h in haric} & gecerli[str(x["ad"])]),
@@ -1818,7 +1850,7 @@ def donem_yorumla(kaliplar, orkestra=None):
 # TARAMA: bicimi donem olmayan (rakamsiz) kisaltmalar arasindan donem
 # bilgisi tasiyanlari bulur. Liste parcalara bolunur (TARAMA_PARCA), her
 # parca ayri cagri; ayni anda en cok TARAMA_ES_ZAMANLI cagri.
-TARAMA_PARCA = 150
+TARAMA_PARCA = 50       # kisaltma basina birden cok ornek tanim gider
 TARAMA_ES_ZAMANLI = 3
 
 SISTEM_DONEM_TARA = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon
@@ -1837,7 +1869,7 @@ olmadığını sor; emin olduğunda "soru"yu boş bırak.
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. Yalnızca zaman bilgisi taşıyan
 kısaltmaları yaz; "ad" alanına kısaltmayı AYNEN yaz. Hiçbiri değilse
 {"kolonlar": []} yaz.
-{"kolonlar": [{"ad": "...", "tur": "birim", "anlam": "...", "soru": "", "not": "", "haric": []}]}""" \
+{"kolonlar": [{"ad": "...", "tur": "birim", "anlam": "...", "kanit": {"bakilan": 0, "uyan": 0}, "celiski": "", "soru": "", "not": "", "haric": []}]}""" \
     + SINIRLAYICI_KURALI
 
 
@@ -1851,9 +1883,9 @@ def _donem_tara_parca(parca):
         if birlikte:
             s += "\n  BİRLİKTE: %s | tek başına: %d kolon" % (
                 ", ".join("%s (%d kolon)" % (ik, n) for ik, n in birlikte), int(x.get("tek") or 0))
-        if ad:
-            s += "\n  ÖRNEK%s: %s: %s" % (" (tek başına)" if birlikte and x.get("tek") else "",
-                                         ad, str(tanim)[:200])
+        for i, (oad, otanim) in enumerate(x.get("ornekler") or ([(ad, tanim)] if ad else [])):
+            s += "\n  ÖRNEK%s: %s: %s" % (" (tek başına)" if i == 0 and birlikte and x.get("tek")
+                                         else "", oad, str(otanim)[:200])
         for ik, (oad, otanim) in sorted((x.get("birlikte_ornek") or {}).items()):
             s += "\n  ÖRNEK (%s): %s: %s" % (ik, oad, str(otanim)[:200])
         satirlar.append(s)
@@ -1871,6 +1903,7 @@ def _donem_tara_parca(parca):
         haric = x.get("haric") if isinstance(x.get("haric"), list) else []
         sonuc[ad] = {
             "anlam": _donem_metni(x.get("anlam")), "tur": zaman_turu(x.get("tur")),
+            "kanit": _kanit(x.get("kanit")), "celiski": _donem_metni(x.get("celiski")),
             "soru": _donem_metni(x.get("soru")),
             "not": _donem_metni(x.get("not")), "model": MODEL_ADLARI.get(model, model),
             # Yalniz listede olan ikililer gecer.

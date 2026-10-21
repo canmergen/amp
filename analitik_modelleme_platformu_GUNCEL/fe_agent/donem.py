@@ -35,6 +35,7 @@ import re
 import threading
 import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 
 from fe_agent import kisaltma as kisaltma_mod
 from fe_agent import kisaltma_okuma
@@ -42,7 +43,13 @@ from fe_agent import llm as llm_mod
 from fe_agent.akis_durum import _folder
 
 ESKI_DOSYA = "/DONEM_BILGISI.json"   # eski bicim; bir kez hafizaya tasinip silinir
-ORNEK_ADET = 3            # kalip basina modele ve karta giden ornek kolon
+# Sozlukteki tanimlar kesin degil, kanittir: dil modeli anlami adin
+# yapisindan kurar, tanimlarin cogunluguyla dogrular (oylama). Bu yuzden
+# kalip basina birden cok tanim gider.
+ORNEK_ADET = 10           # kalip basina modele ve karta giden ornek kolon
+TARAMA_ORNEK = 3          # tarama: kisaltma basina ornek kolon
+YORUM_PARCA = 6           # dil modeline bir cagrida giden kalip
+ES_ZAMANLI = 4            # ayni anda en cok bu kadar cagri
 KOMSU_EN_AZ = 3           # komsu aday: en az bu kadar kolonda
 KOMSU_PAY = 0.6           # ... ve geciklerinin en az bu kadari donem yaninda
 BIRLIKTE_EN_AZ = 3        # birlikte gecis: ikili en az bu kadar kolonda yan yana
@@ -434,7 +441,7 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
         yazilislar = [y for y in sira if any(yazilis(d) == y for d, _n in degerler)]
         # Ornekler: tanimi olan kolonlardan, farkli degerleri gosterecek
         # sekilde; ailede once her yazilistan bir ornek.
-        hedef = max(ORNEK_ADET, min(5, len(yazilislar)))
+        hedef = ORNEK_ADET
         adaylar = [(ad, str(tanimlar.get(ad) or "").strip(), b["kd"].get(ad, ""))
                    for ad in b["kolonlar"]]
         adaylar = [x for x in adaylar if x[1]]
@@ -524,19 +531,23 @@ def tarama_listesi(adlar, tanimlar, kalip_listesi):
     olmayan ve hicbir kalibin degeri olmayan butun parcalar (yalniz rakam
     haric): [{"parca", "kolon", "ornek": (kolon, tanim), "birlikte":
     [[ikili, kolon]], "tek", "birlikte_ornek": {ikili: (kolon, tanim)}}].
-    Birlikte gectigi ikilisi varsa ornek tek basina gectigi kolondan."""
+    Birlikte gectigi ikilisi varsa ornek tek basina gectigi kolondan.
+    "ornekler": tanimi dolu en cok TARAMA_ORNEK kolon (oylama icin)."""
     tanimlar = tanimlar or {}
     kapsanan = {d for k in kalip_listesi for d, _n in k["degerler"]}
     bh = birlikte_haritasi(adlar, tanimlar)
     cikti = []
-    for x in parca_listesi(adlar, tanimlar, ornek=1):
+    for x in parca_listesi(adlar, tanimlar, ornek=TARAMA_ORNEK * 3):
         if x["donem"] or x["parca"] in kapsanan:
             continue
         b = bh.get(x["parca"]) or {}
-        ornek = x["ornekler"][0] if x["ornekler"] else ("", "")
+        dolu = [(a, t) for a, t in x["ornekler"] if t][:TARAMA_ORNEK]
+        ornek = dolu[0] if dolu else (x["ornekler"][0] if x["ornekler"] else ("", ""))
         if b.get("ornek_tek"):
             ornek = b["ornek_tek"]
+            dolu = [ornek] + [o for o in dolu if o[0] != ornek[0]][:TARAMA_ORNEK - 1]
         cikti.append({"parca": x["parca"], "kolon": x["kolon"], "ornek": ornek,
+                      "ornekler": dolu,
                       "birlikte": b.get("birlikte") or [], "tek": b.get("tek", x["kolon"]),
                       "birlikte_ornek": dict(b.get("ornekler") or {})})
     return cikti
@@ -655,7 +666,7 @@ def hafizadan_sil(kaliplar):
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
 # Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
-ISTEM_SURUMU = 5
+ISTEM_SURUMU = 6
 
 
 def _imza(liste, tara):
@@ -683,22 +694,35 @@ def baslat(liste, tara=None):
     sorulacak = [x for x in liste if not hafiza_anahtari(x["kalip"], haf, ayri)]
 
     def calis():
+        # Yorum ve tarama parcalara bolunur, parcalar ayni anda calisir;
+        # her parcanin sonucu gelince yazilir (kart yoklamada dolar).
+        # Iptal edilen isin sonradan gelen cevabi yazilmaz.
         k = _ISLER[imza]
         hatalar = []
+        gorevler = [("sonuc", llm_mod.donem_yorumla, sorulacak[i:i + YORUM_PARCA])
+                    for i in range(0, len(sorulacak), YORUM_PARCA)]
+        gorevler += [("bulunan", llm_mod.donem_tara, tara[i:i + llm_mod.TARAMA_PARCA])
+                     for i in range(0, len(tara), llm_mod.TARAMA_PARCA)]
+
+        def yap(g):
+            alan, f, parca = g
+            sonuc, hata = f(parca)
+            with _KILIT:
+                if not k.get("iptal"):
+                    k[alan].update(sonuc)
+            return hata
         try:
-            if sorulacak:
-                sonuc, hata = llm_mod.donem_yorumla(sorulacak)
-                k["sonuc"] = sonuc
-                if hata:
-                    hatalar.append(hata)
-            if tara:
-                bulunan, hata = llm_mod.donem_tara(tara)
-                k["bulunan"] = bulunan
-                if hata:
-                    hatalar.append(hata)
+            with ThreadPoolExecutor(max_workers=ES_ZAMANLI) as ex:
+                for hata in ex.map(yap, gorevler):
+                    if hata:
+                        hatalar.append(hata)
+            if k.get("iptal"):
+                return
             k["hata"] = " ".join(hatalar)
             k["durum"] = "bitti"
         except Exception as e:
+            if k.get("iptal"):
+                return
             k["hata"] = "%s: %s" % (type(e).__name__, str(e)[:200])
             k["durum"] = "hata"
     if sorulacak or tara:
@@ -708,10 +732,23 @@ def baslat(liste, tara=None):
     return imza
 
 
+def iptal(imza):
+    """Suren yorumu durdurur: o ana kadar gelen sonuclar kalir, is bitmis
+    sayilir (yorumlanmayan kaliplar Olasi'ya duser). Dil modelinin suren
+    cagrisi kesilemez; cevabi gelince yazilmaz."""
+    with _KILIT:
+        k = _ISLER.get(imza or "")
+        if k and k["durum"] == "calisiyor":
+            k["iptal"] = True
+            k["durum"] = "bitti"
+
+
 def durum(imza):
     k = _ISLER.get(imza or "")
     if not k:
-        return {"durum": "yok", "sonuc": {}, "bulunan": {}, "hata": "", "gecen": 0}
-    return {"durum": k["durum"], "sonuc": dict(k["sonuc"]),
-            "bulunan": dict(k.get("bulunan") or {}), "hata": k["hata"],
-            "gecen": int(time.time() - k["zaman"])}
+        return {"durum": "yok", "sonuc": {}, "bulunan": {}, "hata": "", "gecen": 0,
+                "iptal": False}
+    with _KILIT:                  # parcalar yazilirken kopyalanmasin
+        return {"durum": k["durum"], "sonuc": dict(k["sonuc"]),
+                "bulunan": dict(k.get("bulunan") or {}), "hata": k["hata"],
+                "gecen": int(time.time() - k["zaman"]), "iptal": bool(k.get("iptal"))}

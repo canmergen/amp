@@ -1789,41 +1789,48 @@ DONEM_BASLIK = ADIM_ADI["donem"]
 DONEM_YONERGE = [
     "Kalıplar sekmesinde kolon adlarındaki zaman bilgisi parçalarından "
     "yalnız zaman bilgisi olduğu kesin olanlar var: hafızadan gelenler ve "
-    "dil modelinin tanımlardan doğruladıkları. Emin olunamayanlar Olası "
-    "sekmesinde; zaman bilgisiyse \"Tabloya Al\" ile tabloya alın. "
-    "Kısaltmalar sekmesinde kolon adlarındaki bütün kısaltmalar var; zaman "
-    "bilgisi taşıyan biri tabloda yoksa üzerine tıklayıp ekleyin. "
+    "dil modelinin yorumladıkları. Dil modeli anlamı önce adın yapısından "
+    "kurar (D gün, M ay, Y yıl, H saat), sözlükteki örnek tanımları kanıt "
+    "olarak sayar; tanımların çoğu uyuşmuyorsa ya da süre mi an mı olduğu "
+    "belli değilse kalıp Olası sekmesine düşer. Olası'dakiler zaman "
+    "bilgisiyse \"Tabloya Al\" ile tabloya alın. Kısaltmalar sekmesinde "
+    "kolon adlarındaki bütün kısaltmalar var; zaman bilgisi taşıyan biri "
+    "tabloda yoksa üzerine tıklayıp ekleyin. Dil modeli çalışırken İptal "
+    "ile durdurabilirsiniz; yorumlananlar kalır, kalanlar Olası'ya düşer. "
     "Anlamları kontrol edip gerekirse düzeltin, dönem olmayanı \"Çıkar\" "
     "ile çıkarın. Listede olmayan bir kalıbı \"+ Dönem Kalıbı Ekle\" ile "
     "anlamıyla siz de ekleyebilirsiniz; kolon adlarında geçmese de "
     "hafızaya yazılır ve sonraki çalışmalarda kullanılır. Onaylayınca "
     "tablodaki satırlar hafızaya kaydedilir."]
 DONEM_SUTUNLAR = (
-    "Kalıp: kolon adındaki dönem parçasının biçimi (<N> sayı, <NN> iki "
-    "basamaklı sayı). Aynı harf ile sayının yazılışları tek satırdır "
-    "(<N>M · M<N> · <N>_M · M_<N>: 3M, M3, 3_M, M_3); anlam hepsine "
-    "uygulanır. Dil modeli tanımlara göre bir yazılışın farklı anlamda "
-    "olduğunu bulursa o yazılış ayrı satırda durur (\"ailesinden ayrı "
-    "anlamlı yazılış\").\n"
-    "Tür: zaman bilgisinin türü; dil modeli önerir, siz değiştirebilirsiniz. "
-    "Pencere: verinin hangi zaman aralığından alındığı (30D, H00_06). Zaman "
-    "Birimi: gün, ay, yıl gibi birim (DAY, MONTH). Zaman Ölçüsü: bir "
-    "olaydan bu yana geçen süre, vade ya da yaş (TMSNCFRST). Açıklama "
-    "Düzenleme parçayı bu türle anar.\n"
+    "Kalıp: kolon adındaki dönem parçasının biçimi; [sayı] adda sayının "
+    "geldiği yer (30D, 7D: [sayı]D). Aynı harf ile sayının yazılışları tek "
+    "satırdır ([sayı]M · M[sayı] · [sayı]_M · M_[sayı]: 3M, M3, 3_M, M_3); "
+    "anlam hepsine uygulanır. Dil modeli tanımlara göre bir yazılışın "
+    "farklı anlamda olduğunu bulursa o yazılış ayrı satırda durur "
+    "(\"ailesinden ayrı anlamlı yazılış\"; \"Aileye Kat\" ile geri katılır).\n"
+    "Tür: dil modeli önerir, siz değiştirebilirsiniz; seçili türün ne demek "
+    "olduğu kutunun altında yazar. Pencere: sayı bir süre, veri o süre "
+    "boyunca toplanır (30D: 30 gün boyunca). Zaman Noktası: sayı belirli "
+    "bir an ya da sıra (M3: yılın 3. ayı ya da 3 ay önceki ay). Zaman "
+    "Birimi: sayısız birim (DAY: gün). Zaman Ölçüsü: değerin kendisi bir "
+    "süre (TMSNCFRST: ilk işlemden bu yana geçen süre).\n"
     "Adlarda Geçen: bu kalıpta geçen bütün değerler ve kaç kolonda geçtiği.\n"
-    "Anlam: kalıbın anlamı; dil modeli önerir, siz onaylarsınız. Satır "
-    "rengi: mavi dil modeli önerisi, mor hafızadan, yeşil sizin "
-    "düzenlediğiniz, sarı eksik ya da kontrol gerektiren.\n"
+    "Anlam: kalıbın anlamı, [sayı] her değerde o değerin sayısı olur; tür "
+    "adı anlama yazılmaz. Üstündeki satır nereden geldiğini yazar: Dil "
+    "modeli (kaç örnek tanımın bu anlamla uyuştuğu), Hafızadan, "
+    "Düzenlendi, Kontrol edin ya da Dil modeli yorumluyor. Ad ile "
+    "tanımların çoğu çelişirse bu da altında yazar.\n"
     "Değerleri Düzenle: sayı yer tutucusu olan kalıpta adlarda geçen "
     "değerler grup satırının altında listelenir. Her değerin durumu: Kalıba "
     "Uyar (anlamı kalıbın anlamından, sayısı yerine konarak gelir; 30D: 30 "
-    "gün boyunca), Kendi Anlamı (değere özel, ör. 360D: son 1 yıl) ya da "
-    "Dönem Değil (gruba yanlış girmiş). Kalıba uyan bir değeri düzenlerseniz "
-    "yazdığınızın biçimi kalıbın anlamı olur ve öbür değerlere yayılır "
-    "(Geri al ile geri alınır); sayı içermeyen anlam o değerin kendi anlamı "
-    "olur.\n"
+    "gün boyunca), Kendi Anlamı (değere özel, ör. 360D: 1 yıl boyunca) ya "
+    "da Dönem Değil (gruba yanlış girmiş). Kalıba uyan bir değeri "
+    "düzenlerseniz yazdığınızın biçimi kalıbın anlamı olur ve öbür "
+    "değerlere yayılır (Geri al ile geri alınır); sayı içermeyen anlam o "
+    "değerin kendi anlamı olur.\n"
     "Çıkar: satırı dönem bilgisinden çıkarır; çıkarılan satır kullanılmaz "
-    "ve hafızaya yazılmaz. Hafızadan gelen (mor) bir kalıbı çıkarırsanız "
+    "ve hafızaya yazılmaz. Hafızadan gelen bir kalıbı çıkarırsanız "
     "onaylayınca hafızadan da silinir.")
 DONEM_DUGME = {"bos": "Dönem Bilgisini Onayla ve Devam Et"}
 
@@ -1844,13 +1851,6 @@ def _donem_kaynak(durum):
     return adlar, tanimlar
 
 
-def _donem_girdisi(durum):
-    """(kaliplar, tarama listesi). Hafizadaki kaliplar adlarda geciyorsa
-    kalip olur (sistem onaylananlari ogrenir)."""
-    adlar, tanimlar = _donem_kaynak(durum)
-    liste = donem_mod.kaliplar(adlar, tanimlar, ek=list(donem_mod.hafiza()))
-    return liste, donem_mod.tarama_listesi(adlar, tanimlar, liste)
-
 
 def _parca_alani(durum):
     """Kolon adlarindaki butun parcalar (yalniz liste; anlam yok). Elle
@@ -1862,18 +1862,40 @@ def _parca_alani(durum):
             for x in donem_mod.parca_listesi(adlar, tanimlar)]
 
 
-def _donem_alani(durum):
-    """01.2.4.1 kartinin verisi (beklemez). Model surerken satirlar kilitli
-    gelir, yoklamayla tazelenir. BIRLIKTE: kalibin kolon adlarinda yan yana
-    gectigi ikililer; HARIC: kalibin donem sayilmadigi ikililer (dil modeli
-    ya da hafiza onerir, kullanici degistirir)."""
+def _donem_isi(durum):
+    """Dil modeli isinin girdisi: (adlar, tanimlar, hafiza, ayri yazilislar,
+    kalip listesi, tarama listesi). Liste yalniz hafizadaki ayri
+    yazilislarla kurulur (isin imzasi kararlarla degismesin)."""
     adlar, tanimlar = _donem_kaynak(durum)
     haf = donem_mod.hafiza()
     haf_ayri = donem_mod.hafiza_ayri()
-    # Dil modeline giden liste yalniz hafizadaki ayri yazilislarla kurulur
-    # (imza kararlarla degismesin).
     liste = donem_mod.kaliplar(adlar, tanimlar, ek=list(haf), ayri=haf_ayri)
     tara = donem_mod.tarama_listesi(adlar, tanimlar, liste)
+    return adlar, tanimlar, haf, haf_ayri, liste, tara
+
+
+def donem_iptal(durum):
+    """Suren dil modeli yorumunu durdurur; gelenler kalir, yorumlanmayan
+    kaliplar Olasi'ya duser. Kartin yeni verisini doner."""
+    _a, _t, _h, _ay, liste, tara = _donem_isi(durum)
+    if liste or tara:
+        donem_mod.iptal(donem_mod._imza(liste, tara))
+    return _donem_alani(durum)
+
+
+# KANIT: dil modelinin anlamiyla uyusan ornek tanimlarin orani bundan
+# azsa satir Olasi'ya duser (sozluk tanimlari kesin degil, oylanir).
+DONEM_KANIT_ESIGI = 0.6
+
+
+def _donem_alani(durum):
+    """01.2.4.1 kartinin verisi (beklemez). Model surerken bicimden bulunan
+    kaliplar "bekliyor" olarak gelir, yoklamayla dolar. BIRLIKTE: kalibin
+    kolon adlarinda yan yana gectigi ikililer; HARIC: kalibin donem
+    sayilmadigi ikililer (dil modeli ya da hafiza onerir, kullanici
+    degistirir). KANIT: dil modelinin baktigi ve anlamla uyusan ornek
+    tanim sayisi."""
+    adlar, tanimlar, haf, haf_ayri, liste, tara = _donem_isi(durum)
     bh = donem_mod.birlikte_haritasi(adlar, tanimlar)
     imza = donem_mod.baslat(liste, tara) if (liste or tara) else ""
     d = donem_mod.durum(imza)
@@ -1899,7 +1921,7 @@ def _donem_alani(durum):
 
     def satir(kalip, tur, kolon, degerler, ornekler, oneri, kaynak, soru, notu,
               model, varsayilan_cikar=False, haric_oneri=(), olasi=False, zaman_tur="",
-              **ek):
+              kanit=None, celiski="", **ek):
         """ANLAM: onceki karar varsa o; yoksa oneri (dil modeli ya da
         hafiza). ONERI ayri gider: on yuz duzenlenmis satiri buna gore
         boyar. CIKAR: kullanicinin cikardigi satir (onceki kararda)."""
@@ -1909,19 +1931,29 @@ def _donem_alani(durum):
         # YALNIZ IKILI ICINDE GECEN kalip (tek basina 0 kolon): satir uyari
         # tasir (on yuz sari gosterir). Kendiliginden CIKARILMAZ: hep ayni
         # parcanin yaninda gecen bir kisaltma da kendi anlamini tasiyabilir.
-        uyari = ""
+        uyari = uyari_ayrinti = ""
         if b.get("birlikte") and not b.get("tek"):
-            uyari = ("Kolon adlarında yalnız %s içinde geçiyor, tek başına geçmiyor. "
-                     "Orada dönem bilgisi değilse çıkarın." %
-                     ", ".join(ik for ik, _n in b["birlikte"]))
+            ikililer = ", ".join(ik for ik, _n in b["birlikte"])
+            uyari = "Yalnız %s içinde geçiyor" % ikililer
+            uyari_ayrinti = ("Kolon adlarında yalnız %s içinde geçiyor, tek başına "
+                             "geçmiyor. Orada dönem bilgisi değilse çıkarın." % ikililer)
         # OLASI: zaman bilgisi olduğu kesin olmayan satır (dil modelinin
         # sorusu var ya da dil modeli bakmadı). Tabloya baştan girmez;
         # kartın Olası sekmesinde durur, kullanıcı alırsa tabloya gelir.
         # Dil modelinin emin olduğu (sorusuz) kalıp, yalnız ikililer içinde
         # geçse de tabloya gelir; uyarısı satırda yazar. Hafızadan gelen
         # (önceden onaylanmış) olası sayılmaz.
-        if uyari and kaynak not in ("hafiza", "model"):
+        if uyari and kaynak not in ("hafiza", "model") and not ek.get("bekliyor"):
             olasi = True
+        # KANIT ZAYIF: dil modelinin anlamıyla örnek tanımların çoğu
+        # uyuşmuyorsa satır Olası'ya düşer; neden emin olunamadığı yazar.
+        kn = kanit if isinstance(kanit, dict) else {}
+        if kaynak == "model" and kn.get("bakilan", 0) >= 2 \
+                and kn.get("uyan", 0) < DONEM_KANIT_ESIGI * kn["bakilan"]:
+            olasi = True
+            if not soru:
+                soru = ("Örnek tanımlardan yalnız %d / %d tanesi bu anlamla uyuşuyor; "
+                        "anlamı kontrol edin." % (kn.get("uyan", 0), kn["bakilan"]))
         anlam, cikar = oneri, (varsayilan_cikar or olasi)
         if o is not None:
             anlam = "" if o.get("donem_degil") else str(o.get("anlam") or "")
@@ -1959,7 +1991,10 @@ def _donem_alani(durum):
              "tek": b.get("tek", kolon), "haric": sorted(set(haric or ()) & gecerli),
              "haric_oneri": sorted(set(haric_oneri or ()) & gecerli), "uyari": uyari,
              "olasi": bool(olasi), "deger_anlam": deger_anlam, "ayrilan": ayrilan,
-             "zaman_tur": ztur, "aileye_kat": bool(o is not None and o.get("aileye_kat"))}
+             "zaman_tur": ztur, "aileye_kat": bool(o is not None and o.get("aileye_kat")),
+             "uyari_ayrinti": uyari_ayrinti,
+             "kanit": kn if kn.get("bakilan") else None,
+             "celiski": celiski if anlam == oneri else ""}
         r.update(ek)
         satirlar.append(r)
 
@@ -1995,10 +2030,14 @@ def _donem_alani(durum):
         # Kullanıcının önceki kararı (geri dönüş) her durumda korunur.
         donem_mi = m.get("donem", True)
         if not m:
+            # Dil modeli henüz bakmadı: satır "yorumlanıyor" olarak görünür,
+            # cevap gelince dolar (ya da dönem değilse kalkar).
             if calisiyor and kalip not in onceki:
+                satir(kalip, k["tur"], k["kolon"], degerler, ornekler, "", "", "", "", "",
+                      bekliyor=True, **ek)
                 continue
             satir(kalip, k["tur"], k["kolon"], degerler, ornekler, "", "", "", "", "",
-                  olasi=True)
+                  olasi=True, **ek)
             continue
         if not donem_mi:
             if kalip not in onceki or onceki[kalip].get("cikar"):
@@ -2007,7 +2046,8 @@ def _donem_alani(durum):
               (m.get("anlam") or "") if donem_mi else "", "model",
               m.get("soru", ""), m.get("not", ""), m.get("model", ""),
               haric_oneri=m.get("haric") or (), olasi=bool(m.get("soru")),
-              zaman_tur=m.get("tur") or "", **ek)
+              zaman_tur=m.get("tur") or "", kanit=m.get("kanit"),
+              celiski=m.get("celiski", ""), **ek)
     # TARAMA: dil modelinin rakamsiz kisaltmalar arasindan buldugu donem
     # parcalari (kalip = kisaltmanin kendisi).
     tara_bilgi = {x["parca"]: x for x in tara}
@@ -2015,12 +2055,13 @@ def _donem_alani(durum):
         x = tara_bilgi.get(p_)
         if not x:
             continue
-        orn_ad, orn_tanim = x["ornek"]
+        orn = x.get("ornekler") or ([x["ornek"]] if x["ornek"][0] else [])
         satir(p_, "tarama", x["kolon"], [{"deger": p_, "kolon": x["kolon"]}],
-              [{"kolon": orn_ad, "tanim": str(orn_tanim)[:240]}] if orn_ad else [],
+              [{"kolon": a_, "tanim": str(t_)[:240]} for a_, t_ in orn],
               b.get("anlam", ""), "model", b.get("soru", ""), b.get("not", ""),
               b.get("model", ""), haric_oneri=b.get("haric") or (),
-              olasi=bool(b.get("soru")), zaman_tur=b.get("tur") or "")
+              olasi=bool(b.get("soru")), zaman_tur=b.get("tur") or "",
+              kanit=b.get("kanit"), celiski=b.get("celiski", ""))
     # Onceki kararda olup artik listede olmayan (tarama sonucu bu surecte
     # bellekte yok) satir korunur; kullanicinin karari kaybolmaz.
     tespit = {s_["kalip"] for s_ in satirlar}
@@ -2036,6 +2077,9 @@ def _donem_alani(durum):
         if o.get("elle") and kalip not in tespit:
             satir(kalip, "elle", 0, [], [], "", "", "", "", "", elle=True)
     notlar = []
+    if d.get("iptal"):
+        notlar.append("Dil modelini durdurdunuz. Yorumlanan kalıplar tabloda; yorumlanmayanlar "
+                      "Olası sekmesinde, anlamlarını siz yazabilirsiniz.")
     if d["hata"]:
         notlar.append("Dil modeli cevap vermedi; anlamları kendiniz yazabilirsiniz. (%s)"
                       % d["hata"][:200])
@@ -2405,10 +2449,11 @@ class _AyrilanliDesen(object):
 
 
 # Aciklama Duzenleme'ye giden parca satirinda zaman bilgisinin turu.
-ZAMAN_TUR_ETIKETI = {"pencere": "zaman penceresi", "birim": "zaman birimi",
-                     "olcu": "zaman ölçüsü"}
+ZAMAN_TUR_ETIKETI = {"pencere": "zaman penceresi", "nokta": "zaman noktası",
+                     "birim": "zaman birimi", "olcu": "zaman ölçüsü"}
 # Turlerin kartta gorunen adlari.
-ZAMAN_TUR_ADI = {"pencere": "Pencere", "birim": "Zaman Birimi", "olcu": "Zaman Ölçüsü"}
+ZAMAN_TUR_ADI = {"pencere": "Pencere", "nokta": "Zaman Noktası", "birim": "Zaman Birimi",
+                 "olcu": "Zaman Ölçüsü"}
 
 
 def _donem_parca_metni(k, anlam, degerler, deger, tur):
