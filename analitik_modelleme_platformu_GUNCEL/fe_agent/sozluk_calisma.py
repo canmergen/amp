@@ -170,7 +170,7 @@ def _temiz_anahtar(oturum_anahtari):
 
 
 # AMP_SOZLUK: Degisken Kontrolu kaydedildikten sonra
-# sozlugun TEK kaynagi calisma klasorundeki AMP_SOZLUK'tur. Dosya varsa
+# sozlugun TEK kaynagi calisma klasorundeki AMP_SOZLUK'tür. Dosya varsa
 # butun okumalar ve yazmalar ona gider; teyit oncesine donulunce silinir ve
 # calisma kopyasina geri donulur.
 AMP_SOZLUK_DOSYA = "AMP_SOZLUK.parquet"
@@ -200,7 +200,7 @@ def kopya_yolu(oturum_anahtari):
 
 
 def amp_sozluk_yaz(durum, tablo):
-    """AMP_SOZLUK'u calisma klasorune yazar. Doner: yol ya da None."""
+    """AMP_SOZLUK'ü calisma klasorune yazar. Doner: yol ya da None."""
     yol = amp_sozluk_yolu((durum or {}).get("_oturum_id"))
     if not yol:
         return None
@@ -358,7 +358,7 @@ def kopya_kur(durum, tablo=None):
         tanim_kolon = tanim_kolonu_bul(tablo)
         if tanim_kolon is not None:
             tablo[ILK_TANIM_KOLONU] = tablo[tanim_kolon].astype(object)
-        # Kopya TEYIT ONCESININ tablosudur: AMP_SOZLUK'un ustune yazilmaz.
+        # Kopya TEYIT ONCESININ tablosudur: AMP_SOZLUK'ün ustune yazilmaz.
         yol, hata = _kopya_yaz(oturum, tablo, _calisma_kopyasi_yolu(oturum))
         if yol and rapor:
             _esitlemeyi_kutuge_dus(durum, oturum, rapor)

@@ -110,7 +110,7 @@ ADIMLAR = {
     "tanimsiz_karar": {
         "baslik": ADIM_ADI["tanimsiz_karar"],
         "aciklama": "Sözlükte tanımı olmayan kolonlar listelenir. Çıkarılması "
-                    "onaylananlar AMP_VERISETI'nden ve AMP_SOZLUK'tan çıkarılır; "
+                    "onaylananlar AMP_VERISETI'nden ve AMP_SOZLUK'ten çıkarılır; "
                     "kalanlar veri setinde kalır, sözlükte tanımları boş durur.",
         "girdi": None, "plan": tanimsiz_karar_plan,
         "uygula": tanimsiz_karar_uygula},

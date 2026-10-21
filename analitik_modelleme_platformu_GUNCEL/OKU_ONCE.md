@@ -346,7 +346,7 @@ tanıtır; sayfalar sol bardan açılır.
     ikisine de girmez. Süreç dışı listesini değiştiren istek
     (`/haric_kolonlar`) bu kolonları listeden düşürmez. Baz Veri Seti'nin
     kendi kolon sayısı (girdi tablosu) değişmez.
-  - İşaretsiz kolon AMP_VERISETI'nde kalır, AMP_SOZLUK'ta satırı tanımı
+  - İşaretsiz kolon AMP_VERISETI'nde kalır, AMP_SOZLUK'te satırı tanımı
     boş durur. Açıklama Düzenleme'ye (01.2.4.2) girmez, tanımı boş kalsın
     diye. 01.3 Değişken Listesi ve Tip Kontrolü'ndeki "açıklaması olmayan kolonu süreç dışı işaretle" kuralı
     bu kolonlara uygulanmaz.

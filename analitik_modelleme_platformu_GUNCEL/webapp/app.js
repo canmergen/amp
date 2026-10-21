@@ -7740,7 +7740,7 @@ function dogrulamaKartiEkle(alan, blok) {
 
     /* ---- 5') Tanımsız Kolonlar (01.2.3.1) ----
        Sözlükte hâlâ tanımı olmayan kolonlar: işaretli satır AMP_VERISETI'nden
-       ve AMP_SOZLUK'tan çıkarılır, işaretsiz satır veri setinde kalır ve
+       ve AMP_SOZLUK'ten çıkarılır, işaretsiz satır veri setinde kalır ve
        sözlükte tanımı boş durur. Kilitli satır (tek değerli) hep çıkar. */
     const cikar = alan.cikar || null;
     const cDurumlar = [];            /* {kolon, islem, kilitli, kutu, tr} */

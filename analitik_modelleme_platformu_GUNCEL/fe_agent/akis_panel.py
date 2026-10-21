@@ -1269,7 +1269,7 @@ def _sozluk_karti(durum):
     # ayni kaynaktan (sozluk_kapsami) geliyor, birlikte hareket ediyorlar.
     kolonlar, tanimli, tanimsiz = sozluk_kapsami(durum)
     # YALNIZCA SURECTE KALAN KOLONLAR sayilir; surec disi kolonlar
-    # AMP_SOZLUK'ta isaretiyle durur ama tabloda yoktur. Kac tane oldugu
+    # AMP_SOZLUK'te isaretiyle durur ama tabloda yoktur. Kac tane oldugu
     # Tanım Sayısı satirinda ayrica yazar.
     disi = set(map(str, durum.get("haric_kolonlar") or [])) & set(kolonlar)
     kolonlar = [k for k in kolonlar if k not in disi]

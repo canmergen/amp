@@ -166,7 +166,7 @@ ADIM_ADI = {
 # "yap": Donem Bilgisi, Aciklama Duzenleme, Kisaltma Sozlugu ve Yeni
 # Kolon Adlari sirayla calisir. "atla": dort adim kendiliginden atlanir;
 # aciklamalar ve kolon adlari oldugu gibi kalir. Iki durumda da sonuc
-# yalniz AMP_VERISETI ve AMP_SOZLUK'a (Degisken Listesi ve Tip Kontrolu
+# yalniz AMP_VERISETI ve AMP_SOZLUK'e (Degisken Listesi ve Tip Kontrolu
 # onaylaninca) yazilir.
 KONTROL_ADIMLARI = ("donem", "aciklama", "kisaltma", "kolon_ad")
 KONTROL_SECENEKLERI = [

@@ -3905,9 +3905,9 @@ def sozluk_tanim_uygula(durum):
 # 01.2.3.1 TANIMSIZ KOLONLAR: Eksik Sozluk Tanimlari'ndan sonra sozlukte
 # hala tanimi olmayan kolonlar listelenir; her biri icin AMP_VERISETI'nden
 # cikarilip cikarilmayacagi sorulur.
-#   cikar : kolon haric_kolonlar'a girer; AMP_VERISETI'ne ve AMP_SOZLUK'a
+#   cikar : kolon haric_kolonlar'a girer; AMP_VERISETI'ne ve AMP_SOZLUK'e
 #           yazilmaz (amp.dusen_kolonlar).
-#   kalsin: kolon AMP_VERISETI'nde kalir; AMP_SOZLUK'ta satiri tanimi bos
+#   kalsin: kolon AMP_VERISETI'nde kalir; AMP_SOZLUK'te satiri tanimi bos
 #           durur.
 # Tek degerli kolonlar ve tek degerli donem kolonu her durumda cikar
 # (kilitli). Veri setinde hazir duran bolme kolonlari cikar isaretli gelir,
@@ -3917,8 +3917,8 @@ def sozluk_tanim_uygula(durum):
 # ---------------------------------------------------------------------------
 TANIMSIZ_KARAR_NOT = (
     "Sözlükte tanımı bulunmayan %s kolon. İşaretlediğiniz kolonlar AMP_VERISETI'nden "
-    "ve AMP_SOZLUK'tan çıkarılır. İşaretlemedikleriniz veri setinde kalır, "
-    "AMP_SOZLUK'ta tanımları boş durur. Girdi veri setiniz ve sözlüğünüz değişmez.")
+    "ve AMP_SOZLUK'ten çıkarılır. İşaretlemedikleriniz veri setinde kalır, "
+    "AMP_SOZLUK'te tanımları boş durur. Girdi veri setiniz ve sözlüğünüz değişmez.")
 TANIMSIZ_KARAR_DUGME = {
     "cikar": "%s Kolonu Çıkar ve Devam Et",
     "kalsin": "Hepsi Veri Setinde Kalsın ve Devam Et",
@@ -5313,7 +5313,7 @@ def teyit_satirlari(durum):
         tam = None
     # Orijinal sozluk tanimlari: kullanici bir tanimi degistirdiyse satir
     # sari gosterilir (bkz. app.js oneriVurgusu).
-    # Kaynak: AMP_SOZLUK'un secim anindaki aciklamasi (ILK_ACIKLAMA);
+    # Kaynak: AMP_SOZLUK'ün secim anindaki aciklamasi (ILK_ACIKLAMA);
     # kullanicinin sozlugu secimden sonra okunmaz. Eski calismada kolon
     # yoksa orijinal sozluk.
     try:
@@ -5515,7 +5515,7 @@ def _amp_yolu(durum, ad):
 
 
 def amp_ciktilarini_yaz(durum):
-    """AMP_VERISETI ve AMP_SOZLUK'u YAZAR. Doner: {"veri":..., "sozluk":...}
+    """AMP_VERISETI ve AMP_SOZLUK'ü YAZAR. Doner: {"veri":..., "sozluk":...}
 
     Her deger: {"ad", "dataset", "dosya"} - "dataset" doluysa akista o
     adla bir veri seti var ve oraya yazildi; degilse "dosya" PROJE
@@ -5638,7 +5638,7 @@ SPLIT_ACIKLAMA = ("Kaydın örneklem seti: train, val ya da test; hiçbir sete "
 
 
 def _amp_sozluk_split_ekle(durum):
-    """Bolme AMP_VERISETI'ne _SPLIT kolonunu ekledi: AMP_SOZLUK'a da ayni
+    """Bolme AMP_VERISETI'ne _SPLIT kolonunu ekledi: AMP_SOZLUK'e da ayni
     satir girer (onceki _SPLIT satiri degistirilir). Doner: not metni
     ("" ise sorun yok)."""
     yol = sozluk_calisma.amp_sozluk_yolu((durum or {}).get("_oturum_id"))
@@ -5653,7 +5653,7 @@ def _amp_sozluk_split_ekle(durum):
              "TIP_DEGISIKLIGI": _DISI_METNI[False], "ACIKLAMA": SPLIT_ACIKLAMA,
              "NULL_ORANI": 0.0, "SUREC_DISI": _DISI_METNI[True], "KATEGORI": "",
              "ESKI_AD": SPLIT_KOLON, "ACIKLAMA_ORIJINAL": SPLIT_ACIKLAMA}
-    # Eski calismanin AMP_SOZLUK'u yeni kolonlari tasimayabilir: satir
+    # Eski calismanin AMP_SOZLUK'ü yeni kolonlari tasimayabilir: satir
     # tablonun kendi kolonlarina gore kurulur.
     tablo = pd.concat([tablo, pd.DataFrame([satir]).reindex(columns=list(tablo.columns),
                                                              fill_value="")],
@@ -5668,9 +5668,9 @@ def _amp_sozluk_split_ekle(durum):
 
 
 def _amp_sozluk_ve_kayit(durum, sonuc, tablo, hata=""):
-    """AMP_SOZLUK'u CALISMA KLASORUNE yazar ve durumu kaydeder.
+    """AMP_SOZLUK'ü CALISMA KLASORUNE yazar ve durumu kaydeder.
 
-    Bundan sonra sozlugun TEK kaynagi AMP_SOZLUK'tur:
+    Bundan sonra sozlugun TEK kaynagi AMP_SOZLUK'tür:
     okuma da yazma da (sag paneldeki tanim / kategori duzenlemeleri) bu
     dosyaya gider (bkz. sozluk_calisma.kopya_yolu). Kategori de tasinir."""
     if tablo is None:

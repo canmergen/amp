@@ -944,7 +944,7 @@ def sozluk_oku(durum):
 def cikarilan_kolonlar(durum):
     """01.2.3.1 Tanimsiz Kolonlar'da veri setinden cikarilan kolonlar.
     Karar verildigi anda veri onizlemesinden, sozluk tablosundan ve
-    degisken listesinden duserler; AMP_VERISETI ve AMP_SOZLUK'a yazilmazlar
+    degisken listesinden duserler; AMP_VERISETI ve AMP_SOZLUK'e yazilmazlar
     (haric_kolonlar'dadirlar)."""
     k = (durum or {}).get("tanimsiz_karar")
     if not isinstance(k, dict):
