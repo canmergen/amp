@@ -618,15 +618,14 @@ def _hafiza_yaz(df):
     for anahtar in ("degisimler", "notlar"):
         if not govde[anahtar]:
             govde.pop(anahtar)
-    # AD ILKESI (kalip ve anlam turleri) ve DONEM BILGISI ayni dosyada;
-    # burada korunur.
+    # AD ILKESI (kalip ve anlam turleri) ve DONEM BILGISI (donem ile baslayan
+    # butun anahtarlar: anlam, haric, deger, ayrilan, tur, ayri yazilis)
+    # ayni dosyada; burada aynen korunur.
     govde.update(_ad_ilkesi_ham())
-    donem = _donem_ham()
-    if donem:
-        govde["donem"] = donem
-    haric = _donem_haric_ham()
-    if haric:
-        govde["donem_haric"] = haric
+    eski, _hata = _govde_oku()
+    for k, v in (eski or {}).items():
+        if str(k).startswith("donem") and v:
+            govde[k] = v
     _folder().upload_stream(DOSYA, json.dumps(govde, ensure_ascii=False, indent=2,
                                               sort_keys=True).encode("utf-8"))
 
