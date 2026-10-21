@@ -34,7 +34,7 @@ from fe_agent.akis_metin import (
     MODEL_TIPI_ADI, MODEL_TIPI_TURKCE, model_tipi,
     MOD_SIRA, KONTROL_SECENEKLERI, KONTROL_SIRA, KONTROL_SORUSU)
 from fe_agent.akis_durum import (
-    secili_sozlukler, sozluk_gorunen, sozluk_kimligi,
+    cikarilan_kolonlar, secili_sozlukler, sozluk_gorunen, sozluk_kimligi,
     BAZ_ADI, LINEAGE_ADI, SOZLUK_ADI, SPLIT_KOLON, TEST_KIMLIK_LIMITI,
     AdimHatasi, _ad_haritasi,
     _dataset_var_mi, _df_oku, _liste, _nerede, _ond,
@@ -4893,7 +4893,10 @@ def _teyit_sayilari(durum):
     p = durum.get("profil") or {}
     kolonlar, tanimli, _tanimsiz = akis_panel.sozluk_kapsami(durum)
 
-    haric = {str(k) for k in (durum.get("haric_kolonlar") or [])}
+    # 01.2.3.1'de cikarilan kolonlar degisken listesinde yok; surec disi
+    # sayilmaz.
+    haric = {str(k) for k in (durum.get("haric_kolonlar") or [])} \
+        - cikarilan_kolonlar(durum)
     degisken = len(kolonlar) or int(p.get("kolon") or 0)
     sayi = len(tanimli) if kolonlar else int(p.get("eslesen") or 0)
     return degisken, len(haric), sayi

@@ -336,8 +336,16 @@ tanıtır; sayfalar sol bardan açılır.
   kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar tip ve
   boş oranıyla listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve
   "Tümünü Temizle".
-  - İşaretli kolon `haric_kolonlar`'a girer: AMP_VERISETI'ne ve
-    AMP_SOZLUK'a yazılmaz.
+  - İşaretli kolon karar verildiği anda çıkar: Veri ve Sözlük
+    sayfasındaki veri önizlemesinde, sözlük tablosunda, 01.3 Değişken
+    Listesi ve Tip Kontrolü'nün listesinde ve sayılarında yer almaz,
+    "süreç dışı" sayısına girmez; sağ paneldeki sözlük kartının Tanım
+    Sayısı satırında "N kolon çıkarıldı" yazar
+    (`akis_durum.cikarilan_kolonlar`). `haric_kolonlar`'da durur, bu
+    yüzden AMP_VERISETI ve AMP_SOZLUK fiziksel olarak 01.3'te yazılırken
+    ikisine de girmez. Süreç dışı listesini değiştiren istek
+    (`/haric_kolonlar`) bu kolonları listeden düşürmez. Baz Veri Seti'nin
+    kendi kolon sayısı (girdi tablosu) değişmez.
   - İşaretsiz kolon AMP_VERISETI'nde kalır, AMP_SOZLUK'ta satırı tanımı
     boş durur. Açıklama Düzenleme'ye (01.2.4.2) girmez, tanımı boş kalsın
     diye. 01.3 Değişken Listesi ve Tip Kontrolü'ndeki "açıklaması olmayan kolonu süreç dışı işaretle" kuralı
@@ -350,8 +358,7 @@ tanıtır; sayfalar sol bardan açılır.
     Setinde Kalsın ve Devam Et". Karar `durum["tanimsiz_karar"]`
     ({kolon: "cikar" | "kalsin"}); geri dönüşte kart bu kararla açılır.
     Tanımsız kolon yoksa adım sorulmadan geçilir.
-  - Girdi veri seti ve sözlük değişmez; çıkarma AMP kopyaları 01.3 Değişken Listesi ve Tip Kontrolü'nde
-    yazılırken uygulanır. Bu adımdan önce kaydedilmiş çalışmalar bir adım
+  - Girdi veri seti ve sözlük değişmez. Bu adımdan önce kaydedilmiş çalışmalar bir adım
     ileri kaydırılır (`SIRA_SURUMU` 13); onlarda tanımsız kolonlar önceki
     gibi süreç dışı kalır.
 

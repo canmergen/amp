@@ -8,7 +8,7 @@ from fe_agent import motor as motor_mod
 from fe_agent.akis_metin import (
     BIRLESTIREN_MODLAR, MOD_ADLARI, SOZLUK_URETEN_MODLAR, model_tipi_adi)
 from fe_agent.akis_durum import (
-    sozluk_gorunen,
+    sozluk_gorunen, cikarilan_kolonlar,
     AMP_SOZLUK_ADI, AMP_VERI_ADI, BOLME_ALAN_ACIKLAMA, BOLME_ALAN_BASLIK,
     BOLME_SATIR_BILGI,
     LINEAGE_ADI, SOZLUK_ADI, TRAIN_KULLANIMI_BASLIK, _ond, _sayi,
@@ -1147,13 +1147,16 @@ def _kolon_listesi(durum, sozluk_harita):
     """Tabloda satir acilacak kolonlar, veri setindeki SIRAYLA.
 
     Once profil adiminin birakttigi kolon ozeti; o yoksa (veri seti henuz
-    okunmadi) sozlukteki degiskenler. Ikisi de yoksa tablo bos kalir."""
+    okunmadi) sozlukteki degiskenler. Ikisi de yoksa tablo bos kalir.
+    01.2.3.1'de veri setinden cikarilan kolonlar listede olmaz."""
+    cikan = cikarilan_kolonlar(durum)
     ozet = (durum.get("profil") or {}).get("kolon_ozet") or []
     if ozet:
-        return [o for o in ozet if isinstance(o, dict) and o.get("ad")]
+        return [o for o in ozet if isinstance(o, dict) and o.get("ad")
+                and str(o["ad"]) not in cikan]
     # Veri seti henuz profillenmedi: sozluk ne diyorsa onu goster.
     return [{"ad": ad, "tip": None, "null_oran": None, "tekil": None,
-             "ornek": None} for ad in sozluk_harita]
+             "ornek": None} for ad in sozluk_harita if str(ad) not in cikan]
 
 
 def _duzenleme_notu(durum, kopya_mi):
@@ -1240,11 +1243,13 @@ def sozluk_kapsami(durum):
       bilmiyor olmak demek. Sozlukte bos bir satir bunu degistirmiyor.
 
     Kolon ozeti henuz yoksa (veri seti okunmadan once) uc bos liste
-    doner; cagiran taraf ∅ gosterir."""
+    doner; cagiran taraf ∅ gosterir. 01.2.3.1'de veri setinden cikarilan
+    kolonlar sayilmaz."""
     p = (durum or {}).get("profil") or {}
     ozet = p.get("kolon_ozet")
+    cikan = cikarilan_kolonlar(durum)
     kolonlar = [str(o["ad"]) for o in (ozet if isinstance(ozet, list) else [])
-                if isinstance(o, dict) and o.get("ad")]
+                if isinstance(o, dict) and o.get("ad") and str(o["ad"]) not in cikan]
     if not kolonlar:
         return [], [], []
     harita, _kat, _adet, _kopya = _sozluk_kayitlari(durum)
@@ -1273,9 +1278,11 @@ def _sozluk_karti(durum):
     kapsam = (round(100.0 * len(tanimli) / len(kolonlar), 1)
               if kolonlar else None)
     tanim_sayisi = None
+    cikan = cikarilan_kolonlar(durum)
     if kolonlar or disi:
         tanim_sayisi = _sayi(len(tanimli)) + (
-            "  · %s süreç dışı" % _sayi(len(disi)) if disi else "")
+            "  · %s süreç dışı" % _sayi(len(disi)) if disi else "") + (
+            "  · %s kolon çıkarıldı" % _sayi(len(cikan)) if cikan else "")
 
     sozluk_adimi = _sozluk_adimi(durum)
     return _kart("Değişken Sözlüğü", [

@@ -2441,6 +2441,11 @@ def _onizleme_hesapla(durum):
     import pandas as pd
     donem = str((durum.get("meta") or {}).get("donem") or "")
     df = akis.modelleme_df(durum, limit=-1 if donem else ONIZLEME_SATIR)
+    # 01.2.3.1'de veri setinden cikarilan kolonlar gosterilmez (AMP_VERISETI
+    # yazilmadan once okunan tam kopyada da).
+    cikan = akis_durum.cikarilan_kolonlar(durum)
+    if cikan:
+        df = df[[c for c in df.columns if str(c) not in cikan]]
     kolonlar = [str(c) for c in df.columns]
     gruplar, parcalar = [], []
     if donem and donem in df.columns:
@@ -3137,6 +3142,9 @@ def haric_kolonlar_endpoint():
         geri_alinan = ", ".join(eksik)
         if eksik:
             secili = sorted(set(secili) | set(eksik))
+        # 01.2.3.1'de veri setinden cikarilan kolonlar kartta yok; listede
+        # kalirlar.
+        secili = sorted(set(secili) | akis_durum.cikarilan_kolonlar(durum))
 
         durum["haric_kolonlar"] = secili
         akis.teyit_kartini_tazele(durum)
@@ -3145,7 +3153,7 @@ def haric_kolonlar_endpoint():
         # bu listeden besleniyor. Tazesini burada donmezsek kart, kullanici
         # kutulari isaretledikten sonra bile eski sayiyi gosterir.
         return jsonify({"tamam": True, "kolonlar": secili,
-                        "haric": len(secili),
+                        "haric": len(set(secili) - akis_durum.cikarilan_kolonlar(durum)),
                         # Reddedilenler SESSIZ DUSURULMEZ: on yuz kutuyu
                         # geri alip sebebini yaziyor.
                         "reddedilen": reddedilen + eksik,
