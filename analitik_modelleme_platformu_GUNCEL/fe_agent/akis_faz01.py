@@ -922,7 +922,8 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
         return False, "Girdiler onaylanmadı. " + hata
 
     durum["veri_seti"], durum["sozluk"] = veri, sozluk or None
-    sozluk_gecmisi.arka_planda_kaydet(veri, sozluk, amp_klasor_adi(durum))
+    # Calisma anahtari ("v3"): silmede ayni anahtarla cikarilir.
+    sozluk_gecmisi.arka_planda_kaydet(veri, sozluk, durum.get("_oturum_id") or "")
     # SOZLUKSUZ: butun kolonlar 01.2.3'te tanimlanir (bkz.
     # akis_durum.sozluk_orijinal_oku: bos sozluk tabani).
     durum["_sozluksuz"] = not sozluk

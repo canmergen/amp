@@ -11901,30 +11901,69 @@ function secimAlaniEkle(alan, blok) {
             (hedef.kok.querySelector(".alan-not") || hedef.kok).appendChild(kutu);
             const o = { a: a, kutu: kutu, liste: [], otomatik: false,
                         kaynakDeger: combolar[a.oneri_alani].deger() };
+            /* SEÇİM LİSTESİ: önerilen sözlükler ve "Başka bir sözlük",
+               radyo düğmesi gibi tek seçim. Kendiliğinden seçilen öğe
+               işaretli gelir ve başlık bunu söyler; kullanıcı öbür
+               öneriyi ya da "Başka bir sözlük"ü seçebilir (alan boşalır,
+               liste açılır; boş bırakılırsa sözlüksüz devam edilir). */
+            const secenek = (secili, ad, alt, rozet, tikla) => {
+                const c = document.createElement("button");
+                c.type = "button";
+                c.className = "oneri-sec" + (secili ? " secili" : "");
+                c.setAttribute("role", "radio");
+                c.setAttribute("aria-checked", secili ? "true" : "false");
+                c.appendChild(elYap("span", "oneri-daire"));
+                const g = elYap("span", "oneri-govde");
+                const ust = elYap("span", "oneri-ust");
+                ust.appendChild(elYap("span", "oneri-ad", ad));
+                if (rozet) ust.appendChild(elYap("span", "oneri-rozet", rozet));
+                g.appendChild(ust);
+                g.appendChild(elYap("span", "oneri-sayi", alt));
+                c.appendChild(g);
+                c.onclick = () => {
+                    if (kart.classList.contains("kilitli")) return;
+                    tikla();
+                };
+                return c;
+            };
             o.ciz = () => {
                 kutu.innerHTML = "";
                 kutu.hidden = !o.liste.length;
                 if (!o.liste.length) return;
-                kutu.appendChild(elYap("span", "oneri-bas", o.liste.length > 1
-                    ? "Bu veri setiyle önceki çalışmalarda kullanılan sözlükler:"
-                    : "Bu veri setiyle önceki çalışmalarda kullanılan sözlük:"));
-                o.liste.forEach(x => {
-                    const c = document.createElement("button");
-                    c.type = "button";
-                    c.className = "oneri-cip"
-                        + (hedef.deger() === x.oneri ? " secili" : "");
-                    c.appendChild(elYap("span", "oneri-ad", x.oneri));
-                    c.appendChild(elYap("span", "oneri-sayi",
-                        ftBinlik(x.sayi) + " çalışma"));
-                    c.onclick = () => {
-                        if (kart.classList.contains("kilitli")) return;
-                        hedef.giris.value = x.oneri;
+                const cur = hedef.giris.value.trim() ? hedef.deger() : "";
+                const eslesen = o.liste.find(x => x.oneri === cur);
+                kutu.appendChild(elYap("div", "oneri-bas", o.otomatik
+                    ? "Önceki çalışmalara göre otomatik seçildi; başka bir sözlük de seçebilirsiniz."
+                    : (o.liste.length > 1
+                       ? "Bu veri setiyle önceki çalışmalarda kullanılan sözlükler:"
+                       : "Bu veri setiyle önceki çalışmalarda kullanılan sözlük:")));
+                const liste = elYap("div", "oneri-liste");
+                liste.setAttribute("role", "radiogroup");
+                liste.setAttribute("aria-label", "Baz Sözlük önerileri");
+                o.liste.forEach((x, i) => {
+                    liste.appendChild(secenek(!!eslesen && eslesen === x, x.oneri,
+                        ftBinlik(x.sayi) + " çalışmada kullanıldı",
+                        i === 0 && o.liste.length > 1 ? "En Çok Kullanılan" : "",
+                        () => {
+                            hedef.giris.value = x.oneri;
+                            o.otomatik = false;
+                            o.baska = false;
+                            hedef.isaretle();
+                            durumTazele();
+                        }));
+                });
+                liste.appendChild(secenek(!eslesen && (!!cur || o.baska),
+                    "Başka bir sözlük", "Listeden arayın ya da boş bırakın", "",
+                    () => {
+                        hedef.giris.value = "";
                         o.otomatik = false;
+                        o.baska = true;
                         hedef.isaretle();
                         durumTazele();
-                    };
-                    kutu.appendChild(c);
-                });
+                        hedef.giris.focus();
+                        hedef.ciz("");
+                    }));
+                kutu.appendChild(liste);
             };
             o.listeAl = d => {
                 const varMi = ad => DATASET_DURUMU !== "hazir"
@@ -11934,7 +11973,7 @@ function secimAlaniEkle(alan, blok) {
                     .filter(x => varMi(x.oneri));
             };
             o.liste = o.listeAl(o.kaynakDeger);
-            hedef.giris.addEventListener("input", () => { o.otomatik = false; });
+            hedef.giris.addEventListener("input", () => { o.otomatik = false; o.baska = true; });
             oneriler.push(o);
         });
         function onerileriTazele() {
@@ -11943,6 +11982,7 @@ function secimAlaniEkle(alan, blok) {
                 const d = combolar[o.a.oneri_alani].deger();
                 if (d !== o.kaynakDeger) {
                     o.kaynakDeger = d;
+                    o.baska = false;
                     o.liste = o.listeAl(d);
                     const bos = !hedef.giris.value.trim();
                     if (o.liste.length && (bos || o.otomatik)) {

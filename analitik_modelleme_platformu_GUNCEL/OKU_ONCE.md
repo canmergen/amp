@@ -233,15 +233,24 @@ tanıtır; sayfalar sol bardan açılır.
   alanlarında (title) işaret düşer.
 - **01.2.1 Baz Sözlük önerisi:** Baz Veri Seti seçilince, o veri setiyle
   önceki çalışmalarda (projedeki bütün çalışmalar, her kullanıcının)
-  kullanılan sözlükler Baz Sözlük alanının altında etiket olarak çıkar:
-  sözlük adı ve kaç çalışmada kullanıldığı. En çok kullanılan (eşitlikte
-  en son kullanılan) alana kendiliğinden yazılır; başka bir etikete
-  basınca o yazılır. Elle yazılan ya da seçilen sözlük ezilmez; form dolu
-  açıldığında da değere dokunulmaz. Projede artık olmayan tablo önerilmez.
-  Kayıt `PROJE_HAFIZASI/VERI_SOZLUK_GECMISI.json`'da (yalnız adlar):
-  01.2.1 onaylanıp veri seti ve sözlük doğrulanınca eşleşme yazılır; dosya
-  yoksa ilk açılışta eski çalışmaların `ozet.json` dosyalarından bir kez
-  kurulur (`fe_agent/sozluk_gecmisi.py`). Başlangıç B'nin kaynak
+  kullanılan sözlükler Baz Sözlük alanının altında tek seçimli bir liste
+  olarak çıkar: her satırda radyo düğmesi, sözlük adı ve kaç çalışmada
+  kullanıldığı; en çok kullanılanın yanında "En Çok Kullanılan". En çok
+  kullanılan (eşitlikte en son kullanılan) kendiliğinden seçilir ve
+  listenin başlığı "Önceki çalışmalara göre otomatik seçildi; başka bir
+  sözlük de seçebilirsiniz." der. Öbür öneri seçilebilir; en alttaki
+  "Başka bir sözlük" alanı boşaltıp sözlük listesini açar (boş bırakılırsa
+  sözlüksüz devam edilir). Elle yazılan ya da seçilen sözlük ezilmez; form
+  dolu açıldığında da değere dokunulmaz. Projede artık olmayan tablo
+  önerilmez. Kart onaylanınca liste gizlenir.
+  Kayıt `PROJE_HAFIZASI/VERI_SOZLUK_GECMISI.json`'da (yalnız adlar ve
+  çalışma numaraları; `fe_agent/sozluk_gecmisi.py`). Sayım kesindir: her
+  çalışma yalnız son onayladığı (veri seti, sözlük) çiftinde sayılır;
+  01.2.1'e dönüp başka bir sözlük seçerse eski çiftten çıkar, sözlüksüz
+  onaylarsa hiçbir çiftte sayılmaz; çalışma silinince (Arşiv) her yerden
+  çıkar, böylece numara yeniden verildiğinde yeni çalışma eskisinin
+  sayımını devralmaz. Dosya yoksa ilk açılışta eski çalışmaların
+  `ozet.json` dosyalarından bir kez kurulur. Başlangıç B'nin kaynak
   sözlükleri bu öneriye girmez.
 - **01.2.2 Kolon Rolleri:** ilk seçim model tipi (Classification,
   Regression, Time Series Forecasting, Clustering). Şu an seçilebilen tek

@@ -2037,6 +2037,12 @@ def calisma_sil_endpoint():
                 _ad.sahiplikleri_birak(anahtar)
             except Exception as e:
                 _hata_kaydet("calisma_sil:sahiplik", e)
+            # Baz Sozluk onerisinin sayimi da silinen calismayi birakir.
+            try:
+                from fe_agent import sozluk_gecmisi
+                sozluk_gecmisi.calisma_cikar(anahtar)
+            except Exception as e:
+                _hata_kaydet("calisma_sil:sozluk_gecmisi", e)
         threading.Thread(target=sahiplik, daemon=True).start()
 
         govde = {"tamam": True, "silinen": hedef}
