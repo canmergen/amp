@@ -120,6 +120,20 @@ Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
   çizgi üstündeki küçük boş düğümden kısa yatay kol uzanır; seçili alt
   sayfanın düğümü dolu. Seçili satır köşesiz: hafif zemin (üst düzey
   satırlarda solunda düz siyah çizgi). Kırmızı ya da pembe vurgu yok.
+- **Yeni güncelleme rozeti:** Model Değişkenleri satırının sağında kırmızı
+  yuvarlak içinde, görülmemiş güncellemesi olan bölüm sayısı (en çok "9+").
+  Bölümler: Veri Seti, Sözlük (Veri ve Sözlük), Dağılım, Tek Değişken
+  Analizi (Dağılım ve SFA), Eksik Değer (Değişken Kontrolleri). Bir
+  bölümün içeriği her sunucu yanıtında bir imzaya indirgenir; imza
+  kullanıcının o bölümü en son gördüğü hâlden farklıysa bölüm yenidir
+  (ör. veri seti ve sözlük seçilince Veri Seti, Sözlük ve Dağılım).
+  Bölümün başlığı ekranda 0,8 saniye görününce görülmüş sayılır; sayı her
+  bölümde bir azalır, hepsi görülünce rozet kalkar. Model Değişkenleri
+  içindeki görünüm düğmelerinde (Veri ve Sözlük, Dağılım ve SFA, Değişken
+  Kontrolleri) o görünümün sayısı ayrıca durur; Model Platformu kapalıyken
+  toplam sayı başlığında görünür. Görülenler çalışma başına bu tarayıcıda
+  saklanır; çalışma bu tarayıcıda ilk kez açıldığında o anki içerik
+  görülmüş sayılır, yalnız sonraki değişiklikler rozete girer.
 - KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
   soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
@@ -259,8 +273,7 @@ tanıtır; sayfalar sol bardan açılır.
   yok; Arşiv'den silme etkilemez). 01.2.1 ve 01.2.2 onaylanınca o
   tablonun kaydı yenisiyle değişir. Dosya yoksa ilk açılışta eski
   çalışmaların `ozet.json` dosyalarından bir kez kurulur (segment özette
-  olmadığı için boş gelir); ilk sürümdeki `VERI_SOZLUK_GECMISI.json`
-  varsa sözlük eşleşmeleri oradan aktarılır. Yalnız adlar yazılır.
+  olmadığı için boş gelir). Yalnız adlar ve onay zamanı yazılır.
 - **01.2.2 Kolon Rolleri önceki seçimle:** adım ilk kez açıldığında
   (henüz hedef ve kimlik seçilmemişken) model tipi, hedef, kimlik, dönem
   ve segment alanları bu tablonun en son onaylanan rolleriyle dolu gelir;

@@ -16,8 +16,7 @@ calisma bilgisi tutulmaz:
         "sozluk_zaman": "2026-10-21T09:10:00",
         "roller": {"problem": "classification", "target": "TARGET",
                    "id": "MUSTERI_NO", "donem": "PERIOD", "segment": ""},
-        "roller_zaman": "2026-10-21T09:12:00"}},
-     "surum": 4}
+        "roller_zaman": "2026-10-21T09:12:00"}}}
 
 NE ZAMAN YAZILIR - 01.2.1 onaylanip veri seti ve sozlukler
 dogrulandiginda (akis_faz01.kurulum_girdi) ve 01.2.2 onaylandiginda
@@ -39,10 +38,6 @@ from fe_agent.akis_durum import _folder
 from fe_agent.akis_metin import MODEL_TIPI_ADI
 
 DOSYA = "/VERI_SETI_GECMISI.json"
-# Ayni bilginin ilk surumu (yalniz sozluk eslesmesi); yeni dosya yoksa
-# bir kez okunup aktarilir.
-ESKI_DOSYA = "/VERI_SOZLUK_GECMISI.json"
-SURUM = 4
 ROLLER = ("problem", "target", "id", "donem", "segment")
 # Ozet ve form mesajinda birden fazla sozluk bu ayracla yazilir.
 AYRAC = " + "
@@ -79,39 +74,10 @@ def _oku_ham():
                   for y in _folder().list_paths_in_partition()}
         if DOSYA in yollar:
             raise
-    veri = _gecmisten_kur(yollar)
-    if ESKI_DOSYA in yollar:
-        try:
-            _eskiyi_aktar(veri, _json_oku(ESKI_DOSYA))
-        except Exception:
-            pass
-    return veri, True
-
-
-def _eskiyi_aktar(veri, eski):
-    """Ilk surumdeki sozluk eslesmeleri (yeni olanin uzerine, daha
-    yeniyse). Eski bicimler: {vs: {"sozlukler", "zaman"}} ve
-    {vs: {sozluk: {"calismalar", "son"}}}."""
-    for vs, k in ((eski or {}).get("veri") or {}).items():
-        if not isinstance(k, dict):
-            continue
-        if "sozlukler" in k:
-            adlar, zaman = list(k.get("sozlukler") or []), k.get("zaman") or ""
-        else:
-            adlar, zaman = [], ""
-            for sz, d in k.items():
-                c = (d or {}).get("calismalar")
-                z = (max(c.values()) if isinstance(c, dict) and c
-                     else (d or {}).get("son") or "")
-                if not adlar or z > zaman:
-                    adlar, zaman = [sz], z
-        kayit = veri["veri"].setdefault(vs, {})
-        if adlar and zaman >= (kayit.get("sozluk_zaman") or ""):
-            kayit["sozlukler"], kayit["sozluk_zaman"] = adlar, zaman
+    return _gecmisten_kur(yollar), True
 
 
 def _yaz(veri):
-    veri["surum"] = SURUM
     _folder().upload_stream(
         DOSYA, json.dumps(veri, ensure_ascii=False, indent=1).encode("utf-8"))
 
@@ -130,7 +96,7 @@ def _gecmisten_kur(yollar):
 
     with futures.ThreadPoolExecutor(max_workers=8) as havuz:
         okunan = list(havuz.map(oku, ozetler))
-    veri = {"surum": SURUM, "veri": {}}
+    veri = {"veri": {}}
     for oz in okunan:
         if not isinstance(oz, dict) or not oz.get("veri_seti"):
             continue

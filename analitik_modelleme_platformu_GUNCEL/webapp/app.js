@@ -4370,11 +4370,130 @@ if (dgPanelEl) dgPanelEl.querySelectorAll("[data-alt]").forEach(b => {
     b.onclick = () => dgAc(b.dataset.alt);
 });
 
+
+/* ==================== YENİ GÜNCELLEME ROZETİ (Model Değişkenleri) ====
+   Model Değişkenleri'nin beş bölümünden her biri bir birimdir. Birimin
+   içeriği her sunucu yanıtında bir imzaya indirgenir; imza, kullanıcının
+   o bölümü en son GÖRDÜĞÜ imzadan farklıysa bölüm "yeni" sayılır. Sol
+   bardaki Model Değişkenleri satırında kırmızı yuvarlak içinde yeni bölüm
+   sayısı, görünüm şeridindeki düğmelerde o görünümün sayısı durur.
+   GÖRÜLDÜ: bölümün başlığı ekranda 0,8 sn göründüğünde; sayı her bölümde
+   bir azalır, hepsi görülünce rozet kalkar.
+   İmzalar çalışma başına bu tarayıcıda saklanır (yalnız kolaylık).
+   Çalışma bu tarayıcıda ilk kez açıldığında o anki içerik görülmüş
+   sayılır; yalnız ondan sonraki değişiklikler rozete girer. */
+const GUNCELLEME_BIRIMLERI = [
+    { ad: "veri_seti", alt: "veri" },
+    { ad: "sozluk", alt: "veri" },
+    { ad: "dagilim", alt: "dagilim" },
+    { ad: "sfa", alt: "dagilim" },
+    { ad: "eksik", alt: "kontrol" }
+];
+const GORULEN_ONEK = "amp_gorulen_";
+const GUNCELLEME = { imza: {}, gorulen: null, calisma: null, izleyici: null };
+
+function metinOzeti(x) {
+    const m = JSON.stringify(x === undefined ? null : x);
+    let h = 5381;
+    for (let i = 0; i < m.length; i++) h = ((h << 5) + h + m.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36) + ":" + m.length;
+}
+
+/* Birimin içeriği yoksa imzası da yok (bölüm henüz dolmadı). */
+function birimImzalari(v) {
+    const hazir = p => p && !p.hata && p.durum === "hazir" && (p.kartlar || []).length;
+    const o = (v && v.ozet) || {};
+    const imza = {};
+    if (hazir(o)) {
+        imza.veri_seti = metinOzeti((o.kartlar || []).filter(k => k.baslik === "Veri Seti"));
+        imza.dagilim = metinOzeti([imza.veri_seti, hazir(v.bolme) ? v.bolme.kartlar : null]);
+    }
+    const ft = o.feature_tablo;
+    if (ft && (ft.satirlar || []).length) imza.sozluk = metinOzeti(ft.satirlar);
+    if (hazir(v && v.sfa)) imza.sfa = metinOzeti(v.sfa.kartlar);
+    if (hazir(v && v.eksik)) imza.eksik = metinOzeti(v.eksik.kartlar);
+    return imza;
+}
+
+function gorulenKaydet() {
+    try { localStorage.setItem(GORULEN_ONEK + GUNCELLEME.calisma, JSON.stringify(GUNCELLEME.gorulen)); }
+    catch (e) { /* depolama kapalı: yalnız bu oturum */ }
+}
+
+function guncellemeleriTazele(veri) {
+    const imza = birimImzalari(veri);
+    if (GUNCELLEME.calisma !== OTURUM_ID) {
+        GUNCELLEME.calisma = OTURUM_ID;
+        let kayit = null;
+        try { kayit = JSON.parse(localStorage.getItem(GORULEN_ONEK + OTURUM_ID) || "null"); }
+        catch (e) { kayit = null; }
+        GUNCELLEME.gorulen = kayit && typeof kayit === "object" ? kayit : Object.assign({}, imza);
+        gorulenKaydet();
+    }
+    GUNCELLEME.imza = imza;
+    rozetleriCiz();
+}
+
+function yeniBirimler() {
+    return GUNCELLEME_BIRIMLERI.filter(b => GUNCELLEME.imza[b.ad]
+        && GUNCELLEME.gorulen && GUNCELLEME.imza[b.ad] !== GUNCELLEME.gorulen[b.ad]);
+}
+
+function rozetYaz(el, sayi, etiket) {
+    if (!el) return;
+    let r = el.querySelector(":scope > .guncelleme-rozet");
+    if (!sayi) { if (r) r.remove(); return; }
+    if (!r) {
+        r = elYap("span", "guncelleme-rozet");
+        el.insertBefore(r, el.querySelector(":scope > svg.ok"));    // okun solunda
+    }
+    r.textContent = sayi > 9 ? "9+" : String(sayi);
+    r.title = sayi + " " + etiket;
+    r.setAttribute("aria-label", sayi + " " + etiket);
+}
+
+function rozetleriCiz() {
+    const yeni = yeniBirimler();
+    rozetYaz(document.querySelector('#sol-bar .ust-sekme[data-tab="degisken"]'),
+             yeni.length, "bölümde görülmemiş güncelleme");
+    /* Model Platformu kapalıyken sayı başlığında görünür (style.css). */
+    rozetYaz(document.querySelector("#sol-bar .ust-kume-ad"),
+             yeni.length, "bölümde görülmemiş güncelleme (Model Değişkenleri)");
+    if (dgPanelEl) dgPanelEl.querySelectorAll("[data-alt]").forEach(b => {
+        rozetYaz(b, yeni.filter(x => x.alt === b.dataset.alt).length,
+                 "bölümde görülmemiş güncelleme");
+    });
+}
+
+/* Bölüm başlığı çizildikçe izlenir; ekranda 0,8 sn kalınca görüldü. */
+function guncellemeIzle(birim, el) {
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (!GUNCELLEME.izleyici) {
+        const sayac = new Map();
+        GUNCELLEME.izleyici = new IntersectionObserver(girisler => girisler.forEach(g => {
+            const ad = g.target.dataset.birim;
+            clearTimeout(sayac.get(g.target));
+            if (!g.isIntersecting) return;
+            sayac.set(g.target, setTimeout(() => {
+                if (!g.target.isConnected || !GUNCELLEME.gorulen) return;
+                if (!GUNCELLEME.imza[ad] || GUNCELLEME.gorulen[ad] === GUNCELLEME.imza[ad]) return;
+                GUNCELLEME.gorulen[ad] = GUNCELLEME.imza[ad];
+                gorulenKaydet();
+                rozetleriCiz();
+            }, 800));
+        }), { threshold: 0.9 });
+    }
+    el.dataset.birim = birim;
+    GUNCELLEME.izleyici.observe(el);
+}
+
 function analizCiz(tab) {
     /* Panel bastan ciziliyor; feature tablosunda yaziyor olabilir.
        Odak ve imlec yeri ayni kontrole geri veriliyor. */
     const odak = ftOdakAnahtari();
     aktifAnalizSekme = tab;
+    /* Eski bölüm başlıkları silinecek; izleme yeni çizimle yeniden kurulur. */
+    if (GUNCELLEME.izleyici) GUNCELLEME.izleyici.disconnect();
     analizGovde.innerHTML = "";
     /* Seçim şeridi YALNIZ Değişkenler'de: her çizimin başında (erken
        dönen Model Göstergeleri dahil) ayarlanır. */
@@ -4407,10 +4526,11 @@ function analizCiz(tab) {
             "Veri Seti" + (ONIZLEME.veri && ONIZLEME.veri.kaynak_ad
                            ? " · " + ONIZLEME.veri.kaynak_ad : ""));
         analizGovde.appendChild(veriBaslik);
+        guncellemeIzle("veri_seti", veriBaslik);
         const onizKap = elYap("div", "iskele-kart vo-kart");
         analizGovde.appendChild(onizKap);
         const sk = o && o.feature_tablo && o.feature_tablo.sozluk_kaynak;
-        panelBolumBasligi("Sözlük" + (sk ? " · " + sk : ""));
+        panelBolumBasligi("Sözlük" + (sk ? " · " + sk : ""), "sozluk");
         if (o && o.feature_tablo) featureTabloCiz(ftSaltOku(o.feature_tablo));
         else analizGovde.appendChild(elYap("div", "set-not",
             "Sözlük listesi veri seti seçildikten sonra burada görünür."));
@@ -4421,10 +4541,10 @@ function analizCiz(tab) {
     /* DAĞILIM VE SFA: değişken düzeyinde dağılım ve tek değişken analizi. */
     if (tab === "degisken" && DG.alt === "dagilim") {
         /* Kume secici yalnizca Dağılım bolumune uygulanir: basligin altinda. */
-        panelBolumBasligi("Dağılım");
+        panelBolumBasligi("Dağılım", "dagilim");
         setSeciciCiz(tab);
         dagilimCiz();
-        panelBolumBasligi("Tek Değişken Analizi (SFA)");
+        panelBolumBasligi("Tek Değişken Analizi (SFA)", "sfa");
         analizGovde.appendChild(elYap("div", "set-not", SFA_SET_NOTU));
         panelCiz(ANALIZ_VERI.sfa);
         if (ANALIZ_VERI.sfa && ANALIZ_VERI.sfa.aralik) aralikCiz();
@@ -4433,7 +4553,7 @@ function analizCiz(tab) {
     }
     /* DEĞİŞKEN KONTROLLERİ: eksik değer. */
     if (tab === "degisken") {
-        panelBolumBasligi("Eksik Değer");
+        panelBolumBasligi("Eksik Değer", "eksik");
         panelCiz(ANALIZ_VERI.eksik);
         ftOdakGeriVer(odak);
         return;
@@ -4971,8 +5091,11 @@ function sfaKararFormu(v, ozet, yenidenCiz) {
 }
 
 /* Birlesik sekmelerde bolum basligi (DEĞİŞKEN ANALİZİ, BÖLME & VALİDASYON) */
-function panelBolumBasligi(metin) {
-    analizGovde.appendChild(elYap("div", "panel-bolum-baslik", metin));
+function panelBolumBasligi(metin, birim) {
+    const el = elYap("div", "panel-bolum-baslik", metin);
+    analizGovde.appendChild(el);
+    if (birim) guncellemeIzle(birim, el);
+    return el;
 }
 
 /* ==================== DAĞILIM sekmesi ====================
@@ -5565,6 +5688,7 @@ function onizlemeCiz(kap, baslikEl) {
 function analizGuncelle(veri) {
     if (!veri) return;
     ANALIZ_VERI = veri;
+    guncellemeleriTazele(veri);
     /* Bölme uygulandıysa sohbetteki bölme kartının çubuğu setlerin
        GERÇEK hedef oranlarını yazsın (yalnızca bu iki alan alınır;
        kullanıcının taslağına dokunulmaz). */

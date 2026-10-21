@@ -3970,6 +3970,30 @@ span.bolme-cip { cursor: default; }
   background: var(--pembe-secili); border-color: var(--kume-secili-yazi); color: var(--kume-secili-yazi);
 }
 .dg-dikey:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
+
+/* YENİ GÜNCELLEME ROZETİ: kırmızı yuvarlak içinde görülmemiş bölüm sayısı
+   (app.js: rozetleriCiz). Sol barda satırın sağında; Model Platformu
+   açıkken başlıktaki gizlenir (sayı alt satırda). */
+.guncelleme-rozet {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 19px; height: 19px; padding: 0 5px; flex-shrink: 0;
+  border-radius: 10px; background: var(--kirmizi-dolgu); color: #fff;
+  font-family: var(--font); font-size: 11.5px; font-weight: var(--fw-kalin);
+  letter-spacing: 0; line-height: 1;
+}
+#sol-bar .ust-sekme > .guncelleme-rozet,
+#sol-bar .ust-kume-ad > .guncelleme-rozet { margin-left: auto; }
+#sol-bar .ust-kume-ad[aria-expanded="true"] > .guncelleme-rozet { display: none; }
+#sol-bar .guncelleme-rozet + svg.ok { margin-left: 6px; }
+/* Dikey düğmede (180° döndürülmüş) görünürde sağ üst köşe. */
+.dg-dikey { position: relative; }
+.dg-dikey > .guncelleme-rozet {
+  position: absolute; bottom: -7px; left: -7px;
+  writing-mode: horizontal-tb; transform: rotate(180deg);
+}
+@media (max-width: 864px) {
+  .dg-dikey > .guncelleme-rozet { bottom: auto; left: auto; top: -7px; right: -7px; transform: none; }
+}
 /* Dar ekran: şerit üstte yatay, düğmeler düz yazılı yan yana. */
 @media (max-width: 864px) {
   #analiz-panel { flex-direction: column; }
