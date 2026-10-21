@@ -16,10 +16,11 @@
          ekran yetmezse barın yüksekliğine sığacak oranda küçültülür;
          büyük ekranda büyütülmez (app.js: solBarOlcekle). -->
     <div id="sol-bar-ic">
-    <!-- LOGO: en üstte KATIB logosu, ortada. Yüklenemezse gizlenir
-         (app.js). -->
+    <!-- LOGO: en üstte ortada, solda Katip yazısı, sağında aynı boyda
+         Katip robotu. Yüklenemeyen gizlenir (app.js). -->
     <div id="sol-bar-logo">
-      <img id="katib-logo" alt="KATIB">
+      <img id="katip-yazi" alt="Katip">
+      <img id="katip-logo" alt="">
     </div>
     <!-- Logo ile sayfa satırları arasında ince çizgi. -->
     <div class="sol-cizgi" role="separator"></div>
@@ -51,14 +52,14 @@
         <button class="ust-sekme analiz-sekme" data-tab="degisken" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>Model Değişkenleri<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
         <button class="ust-sekme" data-ust="dokuman" type="button"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h6"></path></svg>Model Özeti<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
         <!-- MODEL SOHBETİ (model platformu içi, çalışmaya bağlı sohbet): içerik
-             hazırlanana kadar kilitli. Aşağıdaki ayrı KATIB'le Sohbet
+             hazırlanana kadar kilitli. Aşağıdaki ayrı Katip'le Sohbet
              alanından farklıdır. -->
         <button class="ust-sekme kapali" data-ust="model_sohbet" type="button" aria-disabled="true"
                 title="Model Sohbeti henüz kapalı: hazırlanıyor"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Model Sohbeti<svg class="kilit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></button>
       </div>
       <div class="ust-kume tekli">
         <button class="ust-sekme kapali" data-ust="sohbet" type="button" aria-disabled="true"
-                title="KATIB'le Sohbet henüz kapalı: hazırlanıyor"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>KATIB'le Sohbet<svg class="kilit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></button>
+                title="Katip'le Sohbet henüz kapalı: hazırlanıyor"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Katip'le Sohbet<svg class="kilit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></button>
       </div>
       <div class="ust-kume tekli">
         <button class="ust-sekme kapali" data-ust="dashboard" type="button" aria-disabled="true"
@@ -239,8 +240,8 @@
               kararlar sizin onayınızla uygulanır.</p>
           </article>
           <article class="as-kart kapali" data-ayrinti="sohbet" role="button" tabindex="0" aria-expanded="false">
-            <img class="as-kart-ikon" data-as-ikon="katible_sohbet" alt="">
-            <h3>KATIB'le Sohbet <span class="as-rozet">Hazırlanıyor</span></h3>
+            <img class="as-kart-ikon" data-as-ikon="katiple_sohbet" alt="">
+            <h3>Katip'le Sohbet <span class="as-rozet">Hazırlanıyor</span></h3>
             <p>Yüklediğiniz veriyle ya da herhangi bir konuda yapay zekâ ile
               sohbet edin; model çalışması gerekmez.</p>
           </article>
@@ -553,7 +554,7 @@
 
         <div class="as-ayrinti" data-alan="sohbet" hidden>
           <header class="as-ayrinti-bas">
-            <h2 class="as-bolum-baslik">KATIB'le Sohbet</h2>
+            <h2 class="as-bolum-baslik">Katip'le Sohbet</h2>
             <p class="as-ayrinti-giris">Model çalışmalarından bağımsız bir sohbet alanı
             olacak: yüklediğiniz veri üzerine soru sorup analiz ve yorum
             isteyebilecek ya da herhangi bir konuda yapay zekâ ile
@@ -578,7 +579,7 @@
   </div>
   <div id="sayfa-sohbet" class="sayfa gizli">
     <div class="bos-sayfa">
-      <div class="bos-sayfa-ad">KATIB'le Sohbet</div>
+      <div class="bos-sayfa-ad">Katip'le Sohbet</div>
       <div class="bos-sayfa-not">Bu bölüm hazırlanıyor.</div>
     </div>
   </div>

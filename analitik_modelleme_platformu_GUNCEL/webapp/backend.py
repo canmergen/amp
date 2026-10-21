@@ -34,8 +34,9 @@ GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
 # Mantiksal ad -> folder'daki gercek dosya adi.
 # Gorsel degistirmek istersen SADECE burayi duzenle, JS'e dokunma.
 GORSELLER = {
-    # Sol barın tepesindeki KATIB logosu
-    "katib_logo": "katib_logo.png",
+    # Sol barın tepesi: solda Katip yazısı, sağında aynı boyda Katip robotu
+    "katip":      "katip.png",
+    "katip_logo": "katip_logo.png",
     # Sol bar ikonları (çizim); yüklenemeyenin yerinde çizgi ikon kalır
     "anasayfa":        "anasayfa.png",
     "model_platformu": "model_platformu.png",
@@ -44,7 +45,7 @@ GORSELLER = {
     "degiskenler":     "degiskenler.png",
     "ozet":            "ozet.png",
     "model_sohbeti":   "model_sohbeti.png",
-    "katible_sohbet":  "katible_sohbet.png",
+    "katiple_sohbet":  "katiple_sohbet.png",
     "gorunum":         "gorunum.png",
     "arsiv":           "arsiv.png",
     "yeni_calisma":    "yeni_calisma.png",

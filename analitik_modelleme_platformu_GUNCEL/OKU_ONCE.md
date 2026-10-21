@@ -1,4 +1,4 @@
-# KATIB · Akıllı Analitik ve Modelleme Platformu
+# Katip · Akıllı Analitik ve Modelleme Platformu
 
 Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bir
 çalışmada yürüten Dataiku webapp'i. Bu belge platformun güncel hâlini anlatır.
@@ -22,7 +22,8 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
-| `katib_logo` | `katib_logo.png` | Sol barın tepesindeki KATIB logosu |
+| `katip` | `katip.png` | Sol barın tepesi, solda: Katip yazısı |
+| `katip_logo` | `katip_logo.png` | Sol barın tepesi, yazının sağında aynı boyda: Katip robotu |
 | `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
@@ -30,7 +31,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `degiskenler` | `degiskenler.png` | Sol bar: Model Değişkenleri |
 | `ozet` | `ozet.png` | Sol bar: Model Özeti |
 | `model_sohbeti` | `model_sohbeti.png` | Sol bar ve Ana Sayfa: Model Sohbeti |
-| `katible_sohbet` | `katible_sohbet.png` | Sol bar ve Ana Sayfa: KATIB'le Sohbet |
+| `katiple_sohbet` | `katiple_sohbet.png` | Sol bar ve Ana Sayfa: Katip'le Sohbet |
 | `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
@@ -99,8 +100,10 @@ Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
 `--font` (Newsreader).
 
 **Sol bar**
-- Tepede KATIB logosu, ortada; üstünde ve altındaki çizgiye kadar 20'şer
-  px boşluk. Altında ince siyah çizgi.
+- Tepede ortada Katip logosu: solda Katip yazısı (`katip.png`), sağında
+  aynı boyda (64 px) Katip robotu (`katip_logo.png`); üstünde ve altındaki
+  çizgiye kadar 20'şer px boşluk. Yüklenemeyen gizlenir. Altında ince
+  siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içeriği aşağıda).
 - Ortasında **Çalışma Alanları** yazan çizgi; altında Model Platformu
   kümesi ve kilitli alanlar, en altta ince siyah çizgi.
@@ -134,7 +137,7 @@ Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
   toplam sayı başlığında görünür. Görülenler çalışma başına bu tarayıcıda
   saklanır; çalışma bu tarayıcıda ilk kez açıldığında o anki içerik
   görülmüş sayılır, yalnız sonraki değişiklikler rozete girer.
-- KATIB'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
+- Katip'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
   soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu: Beyaz (varsayılan; sayfa zemini, sol bar ve
@@ -199,7 +202,7 @@ tanıtır; sayfalar sol bardan açılır.
   dağıtılmıştır.
 - Çalışma Alanları (başlık ortada, iki yanında 2 px siyah çizgi; üç ayrı iş,
   her kartta kendi tanıtımı): Model Platformu (model kurma, izleme ve
-  üzerine konuşma), KATIB'le Sohbet (yüklenen veriyle ya da genel sohbet)
+  üzerine konuşma), Katip'le Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
   kartın içinin %34'ü), sağında üstte başlık, altında açıklama (16,5 px). Üst
@@ -232,7 +235,7 @@ tanıtır; sayfalar sol bardan açılır.
     Bütün kutular 2 px mürekkep kenarlı. 1300 px altında Genel Bakış,
     faz ayrıntıları ve Yapay Zekâ ve Kod tek sütun; katkılar ve
     güvenceler 2x2, sayfalar ikişerli.
-  - KATIB'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
+  - Katip'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
 - Açılışta Model Akışı arka planda yüklenir; akış bir kart için analiz

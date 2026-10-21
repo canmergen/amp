@@ -81,7 +81,8 @@ const YENI_CALISMA_ETIKETI = "⟳ Yeni Çalışma";
 const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
-    katibLogo:  getWebAppBackendUrl("gorsel/katib_logo"),
+    katipYazi:  getWebAppBackendUrl("gorsel/katip"),
+    katipLogo:  getWebAppBackendUrl("gorsel/katip_logo"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
@@ -111,7 +112,8 @@ const PANELDE_KARAR = { sfa_karar: "degisken" };
 const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
 /* Sol bardaki kutu -> sayfa (ustSekmeGuncelle, kutu tıklamaları). */
 const UST_SAYFA = { anasayfa: "anasayfa", akis: "calisma", dokuman: "ozet", sohbet: "sohbet", dashboard: "dashboard" };
-const katibLogoEl = document.getElementById("katib-logo");
+const katipYaziEl = document.getElementById("katip-yazi");
+const katipLogoEl = document.getElementById("katip-logo");
 /* Giriş bölgesinin kilidi için. */
 const girisBolge  = document.getElementById("giris-bolge");
 const kabukEl     = document.getElementById("kabuk");
@@ -168,16 +170,19 @@ let DATASETLER = [];
 let DATASET_DURUMU = "yukleniyor";
 const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
-/* KATIB logosu: saydam ve beyaz kenarları kırpılır (yuvayı boşluk değil
-   logo doldursun). Yüklenemezse gizlenir. */
-katibLogoEl.onerror = () => { katibLogoEl.style.display = "none"; solBarOlcekle(); };
-katibLogoEl.onload = () => solBarOlcekle();
-saydamKirp(GORSEL.katibLogo, src => { katibLogoEl.src = src; },
-           () => { katibLogoEl.style.display = "none"; solBarOlcekle(); }, true);
+/* KATİP LOGOSU: solda yazı, sağında robot, aynı boyda. Saydam ve beyaz
+   kenarlar kırpılır (yuvayı boşluk değil görsel doldursun). Yüklenemeyen
+   gizlenir. */
+[[katipYaziEl, GORSEL.katipYazi], [katipLogoEl, GORSEL.katipLogo]].forEach(([el, url]) => {
+    el.onerror = () => { el.style.display = "none"; solBarOlcekle(); };
+    el.onload = () => solBarOlcekle();
+    saydamKirp(url, src => { el.src = src; },
+               () => { el.style.display = "none"; solBarOlcekle(); }, true);
+});
 /* SOL BAR İKONLARI: her satırın çizgi ikonu (SVG) klasördeki çizimle
    (PNG) değiştirilir. Kenarlardaki saydam ve beyaz boşluk kırpılır.
    Görsel yüklenemezse çizgi ikon yerinde kalır. Aynı görsel birden çok
-   satırda kullanılabilir: Model Sohbeti ile KATIB'le Sohbet aynı, Model
+   satırda kullanılabilir: Model Sohbeti ile Katip'le Sohbet aynı, Model
    Göstergeleri ile Gösterge Paneli aynı çizimi kullanır. */
 const SOL_BAR_IKONLARI = [
     ['#sol-bar .ust-sekme[data-ust="anasayfa"] > svg.ikon', "anasayfa"],
@@ -187,7 +192,7 @@ const SOL_BAR_IKONLARI = [
     ['#sol-bar .ust-sekme[data-tab="degisken"] > svg.ikon', "degiskenler"],
     ['#sol-bar .ust-sekme[data-ust="dokuman"] > svg.ikon', "ozet"],
     ['#sol-bar .ust-sekme[data-ust="model_sohbet"] > svg.ikon', "model_sohbeti"],
-    ['#sol-bar .ust-sekme[data-ust="sohbet"] > svg.ikon', "katible_sohbet"],
+    ['#sol-bar .ust-sekme[data-ust="sohbet"] > svg.ikon', "katiple_sohbet"],
     ['#sol-bar .ust-sekme[data-ust="dashboard"] > svg.ikon', "gosterge_paneli"],
     ["#tema-btn > svg.ikon", "gorunum"],
     ["#calismalar-btn > svg.sifirla-ikon", "arsiv"],
