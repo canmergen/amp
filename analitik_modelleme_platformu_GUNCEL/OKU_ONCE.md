@@ -22,8 +22,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
-| `katip` | `katip.png` | Sol barın tepesi, solda: Katip yazısı |
-| `katip_logo` | `katip_logo.png` | Sol barın tepesi, yazının sağında aynı boyda: Katip robotu |
+| `katip_logo` | `katip_logo.png` | Sol barın tepesindeki Katip robotu |
 | `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
@@ -100,10 +99,9 @@ Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
 `--font` (Newsreader).
 
 **Sol bar**
-- Tepede ortada Katip logosu: solda Katip yazısı (`katip.png`), sağında
-  aynı boyda (64 px) Katip robotu (`katip_logo.png`); üstünde ve altındaki
-  çizgiye kadar 20'şer px boşluk. Yüklenemeyen gizlenir. Altında ince
-  siyah çizgi.
+- Tepede ortada Katip robotu (`katip_logo.png`, 64 px); üstünde ve
+  altındaki çizgiye kadar 20'şer px boşluk. Yüklenemezse gizlenir. Altında
+  ince siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içeriği aşağıda).
 - Ortasında **Çalışma Alanları** yazan çizgi; altında Model Platformu
   kümesi ve kilitli alanlar, en altta ince siyah çizgi.

@@ -414,14 +414,14 @@ body { background-color: #FFFFFF; }
 }
 
 /* ==================== SOL BAR LOGOSU ==================== */
-/* KATİP LOGOSU sol barın tepesinde, ortada: solda yazı, sağında robot;
-   ikisi aynı boyda (64 px). Üstünde 20 px, altında 10 px boşluk
-   (altındaki çizgiye kadar toplam 20 px). */
+/* KATİP LOGOSU (robot) sol barın tepesinde, ortada, 64 px boyunda.
+   Üstünde 20 px, altında 10 px boşluk (altındaki çizgiye kadar toplam
+   20 px). */
 #sol-bar-logo {
   flex-shrink: 0; padding: 20px 10px 10px; margin-bottom: 4px;
-  display: flex; align-items: center; justify-content: center; gap: 12px;
+  display: flex; align-items: center; justify-content: center;
 }
-#katip-yazi, #katip-logo {
+#katip-logo {
   display: block; height: 64px; width: auto; min-width: 0;
   max-width: 100%; object-fit: contain;
 }

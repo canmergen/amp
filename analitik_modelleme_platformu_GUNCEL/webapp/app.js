@@ -81,7 +81,6 @@ const YENI_CALISMA_ETIKETI = "⟳ Yeni Çalışma";
 const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
-    katipYazi:  getWebAppBackendUrl("gorsel/katip"),
     katipLogo:  getWebAppBackendUrl("gorsel/katip_logo"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
@@ -112,7 +111,6 @@ const PANELDE_KARAR = { sfa_karar: "degisken" };
 const ANALIZ_DAR = { acik: false, otoAdim: null, kapatilanAdim: null };
 /* Sol bardaki kutu -> sayfa (ustSekmeGuncelle, kutu tıklamaları). */
 const UST_SAYFA = { anasayfa: "anasayfa", akis: "calisma", dokuman: "ozet", sohbet: "sohbet", dashboard: "dashboard" };
-const katipYaziEl = document.getElementById("katip-yazi");
 const katipLogoEl = document.getElementById("katip-logo");
 /* Giriş bölgesinin kilidi için. */
 const girisBolge  = document.getElementById("giris-bolge");
@@ -170,15 +168,12 @@ let DATASETLER = [];
 let DATASET_DURUMU = "yukleniyor";
 const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
-/* KATİP LOGOSU: solda yazı, sağında robot, aynı boyda. Saydam ve beyaz
-   kenarlar kırpılır (yuvayı boşluk değil görsel doldursun). Yüklenemeyen
-   gizlenir. */
-[[katipYaziEl, GORSEL.katipYazi], [katipLogoEl, GORSEL.katipLogo]].forEach(([el, url]) => {
-    el.onerror = () => { el.style.display = "none"; solBarOlcekle(); };
-    el.onload = () => solBarOlcekle();
-    saydamKirp(url, src => { el.src = src; },
-               () => { el.style.display = "none"; solBarOlcekle(); }, true);
-});
+/* KATİP LOGOSU (robot): saydam ve beyaz kenarlar kırpılır (yuvayı boşluk
+   değil görsel doldursun). Yüklenemezse gizlenir. */
+katipLogoEl.onerror = () => { katipLogoEl.style.display = "none"; solBarOlcekle(); };
+katipLogoEl.onload = () => solBarOlcekle();
+saydamKirp(GORSEL.katipLogo, src => { katipLogoEl.src = src; },
+           () => { katipLogoEl.style.display = "none"; solBarOlcekle(); }, true);
 /* SOL BAR İKONLARI: her satırın çizgi ikonu (SVG) klasördeki çizimle
    (PNG) değiştirilir. Kenarlardaki saydam ve beyaz boşluk kırpılır.
    Görsel yüklenemezse çizgi ikon yerinde kalır. Aynı görsel birden çok
