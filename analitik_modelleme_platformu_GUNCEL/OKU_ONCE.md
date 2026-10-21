@@ -332,6 +332,13 @@ tanıtır; sayfalar sol bardan açılır.
   listelenir; işaretlenip açıklaması yazılan kolon sözlüğün çalışma
   kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve
   01.2.3.1'de sorulur (düğme "N Kolonu Tanımsız Bırak ve Devam Et").
+- **01.2.4.2 Açıklama Düzenleme'nin kapsamı:** dil modeline yalnız
+  sözlükte zaten tanımı olan ve süreçte kalan kolonlar gider. Girmeyenler:
+  01.2.3'te tanımı eklenen kolonlar (kullanıcı yazdı ya da önerisini
+  onayladı; `durum["_tanim_kararlari"]` "ekle"), 01.2.3.1'de "kalsın"
+  denenler (tanımları boş kalır) ve süreç dışı kolonlar. Bunlar kartta
+  da listelenmez; AMP_SOZLUK'e tanımları olduğu gibi yazılır. Kartın
+  "Sütunlar" bilgisinde bu yazar.
 - **01.2.3.1 Tanımsız Kolonlar** (A ve B; 01.2.3'ün alt adımı, numaralar
   kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar tip ve
   boş oranıyla listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve

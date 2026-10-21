@@ -2158,7 +2158,8 @@ ACIKLAMA_YONERGE = [
     "Aynı parça hakkındaki sorular «Toplu Sorular»da bir kez sorulur; cevabınız "
     "o parçanın geçtiği bütün kolonlara uygulanır."]
 ACIKLAMA_SUTUNLAR = (
-    "Orijinal: sözlükteki açıklama ({sozluk_tanim}'nda yazılanlar dahil).\n"
+    "Orijinal: sözlükteki açıklama. {sozluk_tanim}'nda eklediğiniz tanımlar ve "
+    "{tanimsiz_karar}'da tanımsız bırakılan kolonlar bu listede yok; olduğu gibi kalır.\n"
     "Sizin Düzenlemeniz: notunuz ya da düzeltmeniz; kesin bilgi olarak kullanılır.\n"
     "Düzeltilmiş Açıklama: onaylanınca sözlüğe yazılacak metin. Altında dil "
     "modelinin kararı, varsa sorusu, ad ve dağılım notu, kod kontrolü ve "
@@ -2231,13 +2232,18 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
 
 
 def _aciklama_girdileri(durum):
-    """Her kolonun duzenleme girdisi (sirasi veri setininki). Surec disi
-    kolonlar girmez; Tanimsiz Kolonlar adiminda "kalsin" denen kolonlar
-    da girmez (sozlukte tanimlari bos kalir)."""
+    """Her kolonun duzenleme girdisi (sirasi veri setininki). Girmeyenler:
+      * surec disi kolonlar;
+      * Tanimsiz Kolonlar adiminda "kalsin" denen kolonlar (sozlukte
+        tanimlari bos kalir, oneri yeniden sorulmaz);
+      * Eksik Sozluk Tanimlari'nda tanimi eklenen kolonlar (kullanici o
+        tanimi yazdi ya da onayladi; yeniden onaya gelmez)."""
     d = aciklama_mod.depo(_aciklama_klasoru(durum))
     haric = set(map(str, durum.get("haric_kolonlar") or []))
     karar = durum.get("tanimsiz_karar") if isinstance(durum.get("tanimsiz_karar"), dict) else {}
     haric |= {str(k) for k, v in karar.items() if v == "kalsin"}
+    haric |= {str(k) for k, v in (durum.get("_tanim_kararlari") or {}).items()
+              if isinstance(v, dict) and v.get("islem") == "ekle"}
     adlar = [a for a in _veri_kolonlari(durum) if a not in haric]
     try:
         tanimlar = sozluk_calisma.tanimlar_tam(durum) or _sozluk_tanimlari(sozluk_oku(durum))
@@ -2303,7 +2309,8 @@ def _aciklama_ver(durum, oncelikli=(), devam=True, hatalari_yenile=False):
 def _aciklama_karti(durum, toplam, uyari=""):
     return {"baslik": ACIKLAMA_BASLIK, "yonerge": ACIKLAMA_YONERGE,
             "sutunlar": ACIKLAMA_SUTUNLAR.replace(
-                "{sozluk_tanim}", akis_atif.adim("sozluk_tanim", durum)), "toplam": int(toplam), "surum": 1,
+                "{sozluk_tanim}", akis_atif.adim("sozluk_tanim", durum)).replace(
+                "{tanimsiz_karar}", akis_atif.adim("tanimsiz_karar", durum)), "toplam": int(toplam), "surum": 1,
             "uyari": uyari or ""}
 
 
