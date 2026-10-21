@@ -1305,8 +1305,9 @@ EN_UZUN_ETIKET = 40
 
 # Kartin ustunde HER ZAMAN gorunen TEK not satiri: kac kolonun karara
 # acildigi, varsayilan islem ve onerilerin dogrulanmamis oldugu.
-TANIMSIZ_NOT_KALIP = ("Tanımı bulunmayan %s kolon aşağıda listelendi; "
-                      "varsayılan olarak analiz dışında tutulurlar. "
+TANIMSIZ_NOT_KALIP = ("Tanımı bulunmayan %s kolon aşağıda listelendi. Sözlüğe "
+                      "eklemediğiniz kolonların veri setinden çıkarılıp "
+                      "çıkarılmayacağı %s adımında sorulur. "
                       "Açıklama önerileri dil modeli tarafından üretildi, "
                       "doğrulanmamıştır.")
 
@@ -2231,9 +2232,12 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
 
 def _aciklama_girdileri(durum):
     """Her kolonun duzenleme girdisi (sirasi veri setininki). Surec disi
-    kolonlar girmez."""
+    kolonlar girmez; Tanimsiz Kolonlar adiminda "kalsin" denen kolonlar
+    da girmez (sozlukte tanimlari bos kalir)."""
     d = aciklama_mod.depo(_aciklama_klasoru(durum))
     haric = set(map(str, durum.get("haric_kolonlar") or []))
+    karar = durum.get("tanimsiz_karar") if isinstance(durum.get("tanimsiz_karar"), dict) else {}
+    haric |= {str(k) for k, v in karar.items() if v == "kalsin"}
     adlar = [a for a in _veri_kolonlari(durum) if a not in haric]
     try:
         tanimlar = sozluk_calisma.tanimlar_tam(durum) or _sozluk_tanimlari(sozluk_oku(durum))
@@ -3125,7 +3129,7 @@ def _tanimsiz_oneriler(durum, kolonlar, profil, prof=None):
     durum["_tanimsiz_oneri_hata"] = (
         "" if not dusen_grup else
         "%s gruptan %s tanesi için öneri alınamadı (%s). O kolonların "
-        "açıklamasını kendiniz yazabilir ya da hariç tutabilirsiniz."
+        "açıklamasını kendiniz yazabilir ya da tanımsız bırakabilirsiniz."
         % (_sayi(grup_sayisi), _sayi(dusen_grup), son_hata))
     return oneriler
 
@@ -3225,7 +3229,7 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
         kayit["hata"] = (
             "" if not dusen_grup else
             "%s gruptan %s tanesi için öneri alınamadı (%s). O kolonların "
-            "açıklamasını kendiniz yazabilir ya da hariç tutabilirsiniz."
+            "açıklamasını kendiniz yazabilir ya da tanımsız bırakabilirsiniz."
             % (_sayi(grup_sayisi), _sayi(dusen_grup), son_hata))
         if kontrol:
             kayit["kontrol_durum"] = "calisiyor"
@@ -3333,7 +3337,7 @@ def oneri_isi_iptal(is_id, kullanici=False):
             if kullanici and kayit["durum"] == "calisiyor":
                 kayit["durum"] = "bitti"
                 kayit["hata"] = ("Öneriler durduruldu; gelmeyen açıklamaları kendiniz "
-                                 "yazabilir ya da kolonları hariç tutabilirsiniz.")
+                                 "yazabilir ya da kolonları tanımsız bırakabilirsiniz.")
 
 
 def _oneri_sonucunu_tasi(durum):
@@ -3397,7 +3401,7 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         "aciklama": _cikan_sozluk_notu(durum),
         "tanimsiz": None,
         "buton_kalip": {
-            "haric": "%s Kolonu Hariç Tut ve Devam Et",
+            "haric": "%s Kolonu Tanımsız Bırak ve Devam Et",
             "ekle": "%s Kolonu Sözlüğe Ekle ve Devam Et",
             "karma": "Seçimleri Uygula ve Devam Et",
             "bos": "Devam Et",
@@ -3460,7 +3464,9 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         # TEK NOT. Kac kolon incelendigini de yaziyor ki bekleme suresi
         # anlamli gorunsun (bkz. TANIMSIZ_NOT_KALIP).
         "not": (SOZLUKSUZ_NOT_KALIP if durum.get("_sozluksuz")
-                else TANIMSIZ_NOT_KALIP) % _sayi(len(satirlar)),
+                else TANIMSIZ_NOT_KALIP) % ((_sayi(len(satirlar)),) if durum.get("_sozluksuz")
+                                            else (_sayi(len(satirlar)),
+                                                  akis_atif.adim("tanimsiz_karar", durum))),
         # Sozluk secilmediyse oneri geldikce satir "Sözlüğe Ekle" isaretli
         # olur.
         "oneri_gelince_ekle": bool(durum.get("_sozluksuz")),
@@ -3893,6 +3899,98 @@ def sozluk_tanim_uygula(durum):
     tanim_hafiza.arka_planda_ekle(hafiza, durum.get("veri_seti") or "",
                                   durum.get("_kullanici_ad") or "", amp_klasor_adi(durum))
     return (metin + kopya_not).strip()
+
+
+# ---------------------------------------------------------------------------
+# 01.2.3.1 TANIMSIZ KOLONLAR: Eksik Sozluk Tanimlari'ndan sonra sozlukte
+# hala tanimi olmayan kolonlar listelenir; her biri icin AMP_VERISETI'nden
+# cikarilip cikarilmayacagi sorulur.
+#   cikar : kolon haric_kolonlar'a girer; AMP_VERISETI'ne ve AMP_SOZLUK'a
+#           yazilmaz (amp.dusen_kolonlar).
+#   kalsin: kolon AMP_VERISETI'nde kalir; AMP_SOZLUK'ta satiri tanimi bos
+#           durur.
+# Tek degerli kolonlar ve tek degerli donem kolonu her durumda cikar
+# (kilitli). Veri setinde hazir duran bolme kolonlari cikar isaretli gelir,
+# degistirilebilir; digerleri isaretsiz gelir. Karar AMP ciktilari
+# Degisken Listesi ve Tip Kontrolu'nde yazilinca uygulanir; girdi veri
+# seti ve sozluk degismez.
+# ---------------------------------------------------------------------------
+TANIMSIZ_KARAR_NOT = (
+    "Sözlükte tanımı bulunmayan %s kolon. İşaretlediğiniz kolonlar AMP_VERISETI'nden "
+    "ve AMP_SOZLUK'tan çıkarılır. İşaretlemedikleriniz veri setinde kalır, "
+    "AMP_SOZLUK'ta tanımları boş durur. Girdi veri setiniz ve sözlüğünüz değişmez.")
+TANIMSIZ_KARAR_DUGME = {
+    "cikar": "%s Kolonu Çıkar ve Devam Et",
+    "kalsin": "Hepsi Veri Setinde Kalsın ve Devam Et",
+}
+
+
+def _tanimsiz_kalanlar(durum):
+    """Eksik Sozluk Tanimlari'ndan sonra sozlukte hala tanimsiz olan
+    kolonlar (veri seti sirasiyla). Rol kolonlari orada tanimlanmak
+    zorunda oldugu icin listede olmaz."""
+    roller = set(_zorunlu_etiketler(durum))
+    return [str(k) for k in (durum.get("_aciklamasiz") or []) if str(k) not in roller]
+
+
+def _tanimsiz_varsayilan(durum, ad):
+    """Karar verilmemis satirin ilk hali: hazir bolme kolonu ve zorunlu
+    disi kolon cikar, digerleri kalsin."""
+    return "cikar" if ad in platform_disi_kolonlar(durum) else "kalsin"
+
+
+def tanimsiz_karar_plan(durum):
+    """Tanimsiz kolon karari karti. METIN DONDURMEZ. Tanimsiz kolon
+    kalmadiysa adim sorulmadan gecilir."""
+    adlar = _tanimsiz_kalanlar(durum)
+    if not adlar:
+        durum["_plan_otomatik"] = True
+        durum["_secim_alani"] = None
+        return ""
+    kilitli = zorunlu_disi_kolonlar(durum)
+    donem = str(durum.get("_donem_dusuruldu") or "")
+    onceki = durum.get("tanimsiz_karar") if isinstance(durum.get("tanimsiz_karar"), dict) else {}
+    ozet = _kolon_ozet_haritasi(durum.get("profil") or {})
+    satirlar = []
+    for ad in adlar:
+        k = ozet.get(ad) or {}
+        satir = {"kolon": ad, "tip": k.get("tip") or "", "null_oran": k.get("null_oran"),
+                 "islem": onceki.get(ad) if onceki.get(ad) in ("cikar", "kalsin")
+                 else _tanimsiz_varsayilan(durum, ad)}
+        if ad in kilitli:
+            satir["islem"] = "cikar"
+            satir["kilitli"] = True
+            satir["kilit_sebebi"] = DONEM_TEK_DEGER_SEBEBI if ad == donem else TEK_DEGER_SEBEBI
+        satirlar.append(satir)
+    durum["_secim_alani"] = {
+        "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [], "kapsam": None,
+        "aciklama": "", "tanimsiz": None, "adim": "tanimsiz_karar",
+        "cikar": {"baslik": "Sözlükte Tanımı Bulunmayan Kolonlar",
+                  "not": TANIMSIZ_KARAR_NOT % _sayi(len(satirlar)),
+                  "satirlar": satirlar},
+        "buton_kalip": dict(TANIMSIZ_KARAR_DUGME),
+    }
+    return ""
+
+
+def tanimsiz_karar_uygula(durum):
+    """Karar govdesi {"cikar": [kolon, ...]}: listedeki kolonlar cikar,
+    kalan tanimsiz kolonlar veri setinde kalir. Govde gelmezse (yazarak
+    onay) onceki karar, yoksa ilk hal uygulanir."""
+    karar = durum.pop("_dogrulama_karari", None)
+    adlar = _tanimsiz_kalanlar(durum)
+    onceki = durum.get("tanimsiz_karar") if isinstance(durum.get("tanimsiz_karar"), dict) else {}
+    if isinstance(karar, dict) and isinstance(karar.get("cikar"), list):
+        cikar = {str(k) for k in karar["cikar"]} & set(adlar)
+    else:
+        cikar = {a for a in adlar
+                 if (onceki.get(a) or _tanimsiz_varsayilan(durum, a)) == "cikar"}
+    cikar |= set(adlar) & zorunlu_disi_kolonlar(durum)
+    kalsin = {a for a in adlar if a not in cikar}
+    durum["tanimsiz_karar"] = {a: ("cikar" if a in cikar else "kalsin") for a in adlar}
+    durum["haric_kolonlar"] = sorted(
+        (set(map(str, durum.get("haric_kolonlar") or [])) - kalsin) | cikar)
+    return ""
 
 
 def _tanim_duzeltmelerini_uygula(durum, satirlar, is_duzeltmeleri):
@@ -4824,7 +4922,9 @@ def tanimsiz_kolonlari_isaretle(durum):
     # tanimlarinda secildi ve tanimlari zaten zorunlu tutuluyor.
     korunan = {v for v in (durum.get("meta") or {}).values() if v}
     mevcut = {str(k) for k in (durum.get("haric_kolonlar") or [])}
-    yeni = [a for a in tanimsiz if a not in mevcut and a not in korunan]
+    # Tanimsiz Kolonlar adiminda karari verilmis kolon o kararla kalir.
+    karar = durum.get("tanimsiz_karar") if isinstance(durum.get("tanimsiz_karar"), dict) else {}
+    yeni = [a for a in tanimsiz if a not in mevcut and a not in korunan and a not in karar]
     if yeni:
         durum["haric_kolonlar"] = sorted(mevcut | set(yeni))
     durum["_tanimsiz_haric_uygulandi"] = True

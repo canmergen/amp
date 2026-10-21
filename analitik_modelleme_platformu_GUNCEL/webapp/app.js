@@ -6460,6 +6460,7 @@ const BLOK_TAMAM_METNI = {
     kurulum: "Girdiler Onaylandı",
     tanimlar: "Kolon Rolleri Onaylandı",
     sozluk_tanim: "Eksik Sözlük Tanımları Kaydedildi",
+    tanimsiz_karar: "Tanımsız Kolonlar Kararı Verildi",
     kisaltma: "Kısaltma Sözlüğü Onaylandı",
     kolon_ad: "Yeni Kolon Adları Belirlendi",
     teyit: "Değişken Listesi Kaydedildi",
@@ -7338,7 +7339,8 @@ function comboYap(etiket, degisince, baslangic, secenekler) {
    Özet + kapsam + sözlükte tanımı bulunmayan kolonlar için satır satır
    karar: beş kolonlu tablo (Kolon | Tip | Kategori | Açıklama |
    Sözlüğe ekle). Kutu işaretliyse kolon sözlüğe eklenir, işaretsizse
-   hariç tutulur; varsayılan işaretsizdir.
+   tanımsız kalır ve 01.2.3.1 Tanımsız Kolonlar'da sorulur; varsayılan
+   işaretsizdir.
 
    Kart sohbet balonunun ICINDE degil, kendi karti olarak dogrudan
    sohbete dusuyor (mevcut .secim-kart deseni): adim bos metin
@@ -7357,7 +7359,7 @@ const DG_ONERI_NOTU = "Öneriler gelince açıklamalar düzenlenebilir. Beklemek
     + "istemezseniz İptal ile durdurup kendiniz yazabilirsiniz.";
 const DG_ONERI_ARALIK = 1500;      // yoklama aralığı (ms)
 const DG_KALIP = {
-    haric: "%s Kolonu Hariç Tut ve Devam Et",
+    haric: "%s Kolonu Tanımsız Bırak ve Devam Et",
     ekle:  "%s Kolonu Sözlüğe Ekle ve Devam Et",
     karma: "Seçimleri Uygula ve Devam Et",
     bos:   "Devam Et"
@@ -7367,7 +7369,7 @@ const DG_KALIP = {
    Sessiz gider - kullanici bir cumle yazmadi, bir form doldurdu. */
 function dogrulamaOzetMetni(haricSayisi, ekleSayisi, duzeltSayisi) {
     const parcalar = [];
-    if (haricSayisi) parcalar.push(ftBinlik(haricSayisi) + " kolon hariç tutuldu");
+    if (haricSayisi) parcalar.push(ftBinlik(haricSayisi) + " kolon tanımsız bırakıldı");
     if (ekleSayisi)  parcalar.push(ftBinlik(ekleSayisi) + " kolon sözlüğe eklendi");
     if (duzeltSayisi) parcalar.push(ftBinlik(duzeltSayisi) + " tanım düzeltildi");
     return parcalar.length ? parcalar.join(", ") : "Girdi doğrulama onaylandı.";
@@ -7731,10 +7733,97 @@ function dogrulamaKartiEkle(alan, blok) {
             const kalan = document.createElement("div");
             kalan.className = "dg-kalan";
             kalan.textContent = ftBinlik(tanimsiz.kalan)
-                + " kolon daha tanımsız; listede gösterilmiyor ve varsayılan "
-                + "işleme (hariç tut) tabi olacak.";
+                + " kolon daha tanımsız; listede gösterilmiyor ve tanımsız kalacak.";
             kart.appendChild(kalan);
         }
+    }
+
+    /* ---- 5') Tanımsız Kolonlar (01.2.3.1) ----
+       Sözlükte hâlâ tanımı olmayan kolonlar: işaretli satır AMP_VERISETI'nden
+       ve AMP_SOZLUK'tan çıkarılır, işaretsiz satır veri setinde kalır ve
+       sözlükte tanımı boş durur. Kilitli satır (tek değerli) hep çıkar. */
+    const cikar = alan.cikar || null;
+    const cDurumlar = [];            /* {kolon, islem, kilitli, kutu, tr} */
+    if (cikar) {
+        const cbas = elYap("div", "dg-tablo-bas");
+        const cb = elYap("div", "dg-tablo-baslik");
+        metinYaz(cb, cikar.baslik || "");
+        cbas.appendChild(cb);
+        kart.appendChild(cbas);
+        if (cikar["not"]) {
+            const nt = elYap("div", "dg-not dg-cizgisiz");
+            metinYaz(nt, cikar["not"]);
+            kart.appendChild(nt);
+        }
+        const cUst = elYap("div", "dg-tablo-ust");
+        const cToplu = elYap("div", "dg-toplu");
+        [["cikar", "Tümünü Seç"], ["kalsin", "Tümünü Temizle"]].forEach(([islem, etiket]) => {
+            const b = elYap("button", "dg-toplu-btn", etiket);
+            b.type = "button";
+            b.onclick = () => {
+                if (kart.classList.contains("kilitli")) return;
+                cDurumlar.forEach(c => { if (!c.kilitli) { c.islem = islem; cKutuCiz(c); } });
+                durumTazele();
+            };
+            cToplu.appendChild(b);
+            topluBtnleri.push(b);
+        });
+        cUst.appendChild(cToplu);
+        kart.appendChild(cUst);
+
+        const cSar = elYap("div", "dg-tablo-sar");
+        const ct = elYap("table", "dg-tablo dg-cikar-tablo");
+        const cth = document.createElement("thead");
+        const chr = document.createElement("tr");
+        ["Değişken", "Tip", "Boş Oranı", "Çıkar"].forEach(h =>
+            chr.appendChild(elYap("th", "", h)));
+        cth.appendChild(chr);
+        ct.appendChild(cth);
+        const cTbody = document.createElement("tbody");
+        (cikar.satirlar || []).forEach(sat => {
+            const ad = String(sat.kolon === null || sat.kolon === undefined ? "" : sat.kolon);
+            const tr = elYap("tr", "dg-satir dg-cikar-satir");
+            tr.dataset.kolon = ad;
+            const tdK = elYap("td", "dg-kolon", ad);
+            tdK.title = ad;
+            tr.appendChild(tdK);
+            const tdT = elYap("td", "dg-tip");
+            metinYaz(tdT, sat.tip || "");
+            tr.appendChild(tdT);
+            tr.appendChild(elYap("td", "dg-bos-oran",
+                sat.null_oran === null || sat.null_oran === undefined ? "" : ftOran(sat.null_oran)));
+            const tdI = elYap("td", "dg-ekle-hucre");
+            const kutu = document.createElement("input");
+            kutu.type = "checkbox";
+            kutu.className = "dg-ekle";
+            kutu.setAttribute("aria-label", ad + " veri setinden çıkarılsın");
+            const c = { kolon: ad, kilitli: !!sat.kilitli, kutu: kutu, tr: tr,
+                        islem: sat.kilitli ? "cikar" : (sat.islem === "cikar" ? "cikar" : "kalsin") };
+            if (c.kilitli) {
+                kutu.disabled = true;
+                kutu.title = duzMetin(sat.kilit_sebebi || "");
+                tdI.title = kutu.title;
+                tr.classList.add("dg-rol-kilitli");
+            }
+            kutu.addEventListener("change", () => {
+                if (kart.classList.contains("kilitli") || c.kilitli) { cKutuCiz(c); return; }
+                c.islem = kutu.checked ? "cikar" : "kalsin";
+                cKutuCiz(c);
+                durumTazele();
+            });
+            tdI.appendChild(kutu);
+            tr.appendChild(tdI);
+            cTbody.appendChild(tr);
+            cDurumlar.push(c);
+            cKutuCiz(c);
+        });
+        ct.appendChild(cTbody);
+        cSar.appendChild(ct);
+        kart.appendChild(cSar);
+    }
+    function cKutuCiz(c) {
+        c.kutu.checked = c.islem === "cikar";
+        c.tr.dataset.islem = c.islem;
     }
 
     /* ---- 5a) Kısaltma Sözlüğü (01.2.4.3) ve Yeni Kolon Adları (01.2.4.4) ----
@@ -8075,6 +8164,15 @@ function dogrulamaKartiEkle(alan, blok) {
     function durumTazele() {
         if (kart.classList.contains("kilitli")) return;
 
+        /* Tanımsız Kolonlar: etiket çıkarılacak kolon sayısıyla. */
+        if (cikar) {
+            const n = cDurumlar.filter(c => c.islem === "cikar").length;
+            metinYaz(birincil, n ? kalip.cikar.replace("%s", ftBinlik(n)) : kalip.kalsin);
+            birincil.disabled = false;
+            gerekce.hidden = true;
+            return;
+        }
+
         let haricSayisi = 0, ekleSayisi = 0, eksikSayisi = 0;
         durumlar.forEach((s, i) => {
             const bos = girisler[i] ? girisler[i].value.trim() === "" : true;
@@ -8174,6 +8272,7 @@ function dogrulamaKartiEkle(alan, blok) {
         if (atlaBtn) atlaBtn.disabled = kilit;
         if (kBaslaBtn) kBaslaBtn.disabled = kilit;
         kDurumlar.forEach(k => { k.giris.disabled = kilit; k.kutu.disabled = kilit; });
+        cDurumlar.forEach(c => { c.kutu.disabled = kilit || c.kilitli; });
         kutular.forEach((k, i) => {
             // Zorunlu satırın kutusu kilit açılsa da pasif kalır.
             k.disabled = kilit || !!(durumlar[i] && durumlar[i].zorunlu);
@@ -8378,8 +8477,14 @@ function dogrulamaKartiEkle(alan, blok) {
         if (kolonAdErisim) karar.kolon_ad = kolonAdErisim.deger();
         if (donErisim) karar.donem = donErisim.deger();
         if (acikErisim) karar.aciklama = true;
+        if (cikar) karar.cikar = cDurumlar.filter(c => c.islem === "cikar").map(c => c.kolon);
         let ozet;
-        if (adimModu === "aciklama") {
+        if (cikar) {
+            const n = karar.cikar.length, k = cDurumlar.length - n;
+            ozet = n && k ? ftBinlik(n) + " kolon veri setinden çıkarıldı, " + ftBinlik(k) + " kolon kaldı"
+                : n ? ftBinlik(n) + " kolon veri setinden çıkarıldı"
+                : "Tanımsız kolonların hepsi veri setinde kaldı";
+        } else if (adimModu === "aciklama") {
             const s = acikErisim ? acikErisim.sayac() : {};
             ozet = ftBinlik(Number(s.degisen || 0)) + " açıklama düzeltildi";
         } else if (adimModu === "donem") {

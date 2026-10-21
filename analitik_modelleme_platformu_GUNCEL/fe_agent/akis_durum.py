@@ -350,7 +350,7 @@ def _mod_goc(durum):
 # Eski kayitlarda adim konumu (durum["i"]) kaydin surumundeki adim
 # listesine gore bir SAYIDIR; okunurken surum surum guncel siraya
 # kaydirilir (bkz. _sira_goc, _faz_sirasi_goc).
-SIRA_SURUMU = 12
+SIRA_SURUMU = 13
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
@@ -364,6 +364,7 @@ _SIRA_GOCLERI = {
     9: (1, {"A": 3, "B": 5}),
     10: (1, {"A": 3, "B": 5}),
     11: (1, {"A": 5, "B": 7}),
+    13: (1, {"A": 3, "B": 5}),
 }
 # surum -> {mod: (ilk, son)}: bu surumden onceki sirada [ilk, son]
 # araligindaki adimda duran calisma "ilk" adimda yeniden acilir.
@@ -396,7 +397,10 @@ def _faz_sirasi_goc(durum, i):
     faz01 = FAZ01_ADIMLARI.get(durum.get("mod"))
     if not faz01:
         return i
-    profil = len(faz01)                       # Veri Profili'nin yeri
+    # Veri Profili'nin surum 12 sirasindaki yeri: sonraki surumlerde Faz
+    # 01'e eklenen adimlar dusulur.
+    profil = len(faz01) - sum(adet for h, (adet, yer) in _SIRA_GOCLERI.items()
+                              if h > 12 and durum.get("mod") in yer)
     # Eski sira: profil, sfa, stabilite, baz, kural, kesif, kalite, secim
     if profil + 1 <= i <= profil + 7:
         i = profil + 1                        # yeni sirada kural

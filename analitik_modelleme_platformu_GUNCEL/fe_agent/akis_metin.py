@@ -154,6 +154,7 @@ ADIM_ADI = {
     "teyit":  "Değişken Listesi ve Tip Kontrolü",
     "tanimlar": "Kolon Rolleri",
     "sozluk_tanim": "Eksik Sözlük Tanımları",
+    "tanimsiz_karar": "Tanımsız Kolonlar",
     "sozluk_kontrol": "Sözlük ve Kolon Adı Kontrolü",
     "donem": "Dönem Bilgisi",
     "aciklama": "Açıklama Düzenleme",

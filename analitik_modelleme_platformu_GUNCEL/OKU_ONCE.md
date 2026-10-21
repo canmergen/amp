@@ -328,6 +328,32 @@ tanıtır; sayfalar sol bardan açılır.
   JSON'u (`problem`, `meta`'nın hemen üstünde). Ad tek kaynaktan gelir
   (`akis_metin.MODEL_TIPI_ADI`). Model tipi seçimi gelmeden önce hedefi
   tanımlanmış çalışmalar Classification sayılır.
+- **01.2.3 Eksik Sözlük Tanımları:** sözlükte tanımı olmayan kolonlar
+  listelenir; işaretlenip açıklaması yazılan kolon sözlüğün çalışma
+  kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve
+  01.2.3.1'de sorulur (düğme "N Kolonu Tanımsız Bırak ve Devam Et").
+- **01.2.3.1 Tanımsız Kolonlar** (A ve B; 01.2.3'ün alt adımı, numaralar
+  kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar tip ve
+  boş oranıyla listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve
+  "Tümünü Temizle".
+  - İşaretli kolon `haric_kolonlar`'a girer: AMP_VERISETI'ne ve
+    AMP_SOZLUK'a yazılmaz.
+  - İşaretsiz kolon AMP_VERISETI'nde kalır, AMP_SOZLUK'ta satırı tanımı
+    boş durur. Açıklama Düzenleme'ye (01.2.4.2) girmez, tanımı boş kalsın
+    diye. 01.3 Değişken Listesi ve Tip Kontrolü'ndeki "açıklaması olmayan kolonu süreç dışı işaretle" kuralı
+    bu kolonlara uygulanmaz.
+  - İlk hal: kutular boş; veri setinde hazır duran bölme kolonu işaretli
+    gelir (değiştirilebilir); tek değerli kolon ve tek değerli dönem
+    kolonu işaretli ve kilitli (her durumda çıkar, sebebi kutunun
+    ipucunda).
+  - Düğme: "N Kolonu Çıkar ve Devam Et", hiç işaret yoksa "Hepsi Veri
+    Setinde Kalsın ve Devam Et". Karar `durum["tanimsiz_karar"]`
+    ({kolon: "cikar" | "kalsin"}); geri dönüşte kart bu kararla açılır.
+    Tanımsız kolon yoksa adım sorulmadan geçilir.
+  - Girdi veri seti ve sözlük değişmez; çıkarma AMP kopyaları 01.3 Değişken Listesi ve Tip Kontrolü'nde
+    yazılırken uygulanır. Bu adımdan önce kaydedilmiş çalışmalar bir adım
+    ileri kaydırılır (`SIRA_SURUMU` 13); onlarda tanımsız kolonlar önceki
+    gibi süreç dışı kalır.
 
 **Başlangıçlar (01.1)**
 - **A:** Baz Veri Seti Mevcut.

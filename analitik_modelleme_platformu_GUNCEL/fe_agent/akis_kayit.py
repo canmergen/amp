@@ -9,6 +9,7 @@ from fe_agent.akis_faz01 import (
     kurulum_uygula, mod_girdi, mod_plan, mod_uygula,
     kaynak_sozluk_girdi, kaynak_sozluk_uygula,
     sozluk_tanim_plan, sozluk_tanim_uygula,
+    tanimsiz_karar_plan, tanimsiz_karar_uygula,
     kisaltma_plan, kisaltma_uygula, kolon_ad_plan, kolon_ad_uygula,
     donem_plan, donem_uygula, sozluk_kontrol_girdi, sozluk_kontrol_uygula,
     aciklama_plan, aciklama_uygula,
@@ -99,10 +100,20 @@ ADIMLAR = {
     "sozluk_tanim": {
         "baslik": ADIM_ADI["sozluk_tanim"],
         "aciklama": "Sözlükte tanımı bulunmayan kolonlar için açıklama "
-                    "yazılır ya da kolonlar süreç dışına alınır. Hedef, "
-                    "kimlik ve dönem kolonunun tanımı zorunludur.",
+                    "yazılır; tanımsız kalanlar bir sonraki adımda sorulur. "
+                    "Hedef, kimlik ve dönem kolonunun tanımı zorunludur.",
         "girdi": None, "plan": sozluk_tanim_plan,
         "uygula": sozluk_tanim_uygula},
+
+    # TANIMSIZ KOLONLAR: Eksik Sozluk Tanimlari'ndan sonra hala tanimsiz
+    # olan kolonlarin AMP_VERISETI'nden cikarilip cikarilmayacagi.
+    "tanimsiz_karar": {
+        "baslik": ADIM_ADI["tanimsiz_karar"],
+        "aciklama": "Sözlükte tanımı olmayan kolonlar listelenir. Çıkarılması "
+                    "onaylananlar AMP_VERISETI'nden ve AMP_SOZLUK'tan çıkarılır; "
+                    "kalanlar veri setinde kalır, sözlükte tanımları boş durur.",
+        "girdi": None, "plan": tanimsiz_karar_plan,
+        "uygula": tanimsiz_karar_uygula},
 
     # SOZLUK VE KOLON ADI KONTROLU: iki kartli secim (baslangic secimi
     # gibi). "atla" secilirse sonraki dort adim kendiliginden atlanir.
@@ -266,14 +277,16 @@ FAZ01_ADIMLARI = {
     # SOZLUK TANIMLARI, MODELLEME TANIMLARINDAN SONRA. Hedef, kimlik ve
     # donem kolonunun sozlukte tanimli olmasi zorunlu; hangi kolonlar
     # oldugu tanimlar adiminda belli oluyor.
-    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "sozluk_kontrol", "donem",
+    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "tanimsiz_karar",
+           "sozluk_kontrol", "donem",
            "aciklama", "kisaltma", "kolon_ad", "teyit", "bolme"],
     # B: nihai veri seti YOK; kaynak tablolar ve HER BIRININ SOZLUGU hazir.
     # Sozlukler birlestirmeden ONCE eslenir, nihai sozluk birlestirmede
     # bunlardan kurulur. Kaynagi tanimsiz kolonlar icin A gibi
     # sozluk_tanim adimi var.
     "B":  ["mod", "ham_veri", "kaynak_sozluk", "birlestirme", "tanimlar",
-           "sozluk_tanim", "sozluk_kontrol", "donem", "aciklama", "kisaltma",
+           "sozluk_tanim", "tanimsiz_karar", "sozluk_kontrol", "donem",
+           "aciklama", "kisaltma",
            "kolon_ad", "teyit", "bolme"],
     # C ve D'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
     # tanimsiz kolon kalmiyor ve ayri bir "sozluk_tanim" adimina gerek
@@ -297,6 +310,7 @@ ADIM_GRUPLARI = {
     "kurulum":     "veri_sozluk",
     "tanimlar":    "veri_sozluk",
     "sozluk_tanim": "veri_sozluk",
+    "tanimsiz_karar": "veri_sozluk",
     "sozluk_kontrol": "veri_sozluk",
     "donem": "veri_sozluk",
     "aciklama": "veri_sozluk",
@@ -330,6 +344,7 @@ def adim_grubu(anahtar):
 # kapali kalir. Yalnizca GORSELDIR: adim sirasi, sayimi ve geri donus
 # hedefi degismez.
 ALT_ADIMLAR = {
+    "tanimsiz_karar": "sozluk_tanim",
     "donem": "sozluk_kontrol",
     "aciklama": "sozluk_kontrol",
     "kisaltma": "sozluk_kontrol",
