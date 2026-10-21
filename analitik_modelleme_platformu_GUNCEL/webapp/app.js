@@ -168,7 +168,7 @@ let DATASETLER = [];
 let DATASET_DURUMU = "yukleniyor";
 const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
 
-/* KATİP LOGOSU (robot): saydam ve beyaz kenarlar kırpılır (yuvayı boşluk
+/* KATİP LOGOSU: saydam ve beyaz kenarlar kırpılır (yuvayı boşluk
    değil görsel doldursun). Yüklenemezse gizlenir. */
 katipLogoEl.onerror = () => { katipLogoEl.style.display = "none"; solBarOlcekle(); };
 katipLogoEl.onload = () => solBarOlcekle();
