@@ -13,10 +13,8 @@ calisma bilgisi tutulmaz:
 
     {"veri": {"HAVALE_EFT_NTT": {
         "sozlukler": ["DEGISKENLER", "EK_SOZLUK"],
-        "sozluk_zaman": "2026-10-21T09:10:00",
         "roller": {"problem": "classification", "target": "TARGET",
-                   "id": "MUSTERI_NO", "donem": "PERIOD", "segment": ""},
-        "roller_zaman": "2026-10-21T09:12:00"}}}
+                   "id": "MUSTERI_NO", "donem": "PERIOD", "segment": ""}}}}
 
 NE ZAMAN YAZILIR - 01.2.1 onaylanip veri seti ve sozlukler
 dogrulandiginda (akis_faz01.kurulum_girdi) ve 01.2.2 onaylandiginda
@@ -28,7 +26,6 @@ ilk okumada eski calismalarin ozet.json dosyalarindan bir kez kurulur
 Yalniz adlar yazilir; girdi veri setine ve sozluge dokunulmaz. Okuma ya da
 yazma hatasi akisi durdurmaz: on doldurma bir kolaylik."""
 
-import datetime
 import json
 import re
 import threading
@@ -54,8 +51,11 @@ def adlara_ayir(metin):
     return [x.strip() for x in str(metin or "").split("+") if x.strip()]
 
 
-def _simdi():
-    return datetime.datetime.now().isoformat(timespec="seconds")
+def _fazlasi_var(veri):
+    """Dosyada sozlukler ve roller disinda alan var mi?"""
+    return set(veri) - {"veri"} or any(
+        set(k or {}) - {"sozlukler", "roller"}
+        for k in (veri.get("veri") or {}).values())
 
 
 def _json_oku(yol):
@@ -78,6 +78,11 @@ def _oku_ham():
 
 
 def _yaz(veri):
+    """Yalniz tablo basina sozlukler ve roller yazilir; baska alan
+    dusurulur."""
+    veri = {"veri": {vs: {k: v for k, v in (kayit or {}).items()
+                          if k in ("sozlukler", "roller") and v}
+                     for vs, kayit in (veri.get("veri") or {}).items()}}
     _folder().upload_stream(
         DOSYA, json.dumps(veri, ensure_ascii=False, indent=1).encode("utf-8"))
 
@@ -96,22 +101,21 @@ def _gecmisten_kur(yollar):
 
     with futures.ThreadPoolExecutor(max_workers=8) as havuz:
         okunan = list(havuz.map(oku, ozetler))
+    # Eskiden yeniye: ayni tablonun sonraki calismasi oncekinin yerine gecer.
+    okunan = sorted((oz for oz in okunan
+                     if isinstance(oz, dict) and oz.get("veri_seti")),
+                    key=lambda oz: str(oz.get("zaman") or ""))
     veri = {"veri": {}}
     for oz in okunan:
-        if not isinstance(oz, dict) or not oz.get("veri_seti"):
-            continue
         sec = {e: d for e, d in (oz.get("secimler") or []) if d}
-        zaman = str(oz.get("zaman") or "")
         kayit = veri["veri"].setdefault(oz["veri_seti"], {})
-        if sec.get("Sözlük") and zaman > (kayit.get("sozluk_zaman") or ""):
+        if sec.get("Sözlük"):
             kayit["sozlukler"] = adlara_ayir(sec["Sözlük"])
-            kayit["sozluk_zaman"] = zaman
         roller = {r: sec[e] for e, r in _OZET_ROL.items() if sec.get(e)}
-        if roller.get("target") and zaman > (kayit.get("roller_zaman") or ""):
+        if roller.get("target"):
             roller["problem"] = _TIP_KODU.get(sec.get("Model Tipi"),
                                               "classification")
             kayit["roller"] = {r: roller.get(r, "") for r in ROLLER}
-            kayit["roller_zaman"] = zaman
     veri["veri"] = {vs: k for vs, k in veri["veri"].items() if k}
     return veri
 
@@ -121,7 +125,8 @@ def _oku():
     try:
         with _KILIT:
             veri, yeni = _oku_ham()
-            if yeni:
+            # Yeni kurulduysa ya da fazla alan tasiyorsa sade haliyle yazilir.
+            if yeni or _fazlasi_var(veri):
                 _yaz(veri)
             return veri
     except Exception:
@@ -165,7 +170,7 @@ def sozluk_kaydet(veri_seti, sozlukler):
     sozlukler = [str(s) for s in (sozlukler or []) if s]
     if veri_seti and sozlukler:
         _arka_planda(_guncelle, veri_seti,
-                     {"sozlukler": sozlukler, "sozluk_zaman": _simdi()})
+                     {"sozlukler": sozlukler})
 
 
 def roller_kaydet(veri_seti, problem, meta):
@@ -174,4 +179,4 @@ def roller_kaydet(veri_seti, problem, meta):
     if veri_seti and meta.get("target"):
         r = {"problem": problem or ""}
         r.update({k: str(meta.get(k) or "") for k in ROLLER if k != "problem"})
-        _arka_planda(_guncelle, veri_seti, {"roller": r, "roller_zaman": _simdi()})
+        _arka_planda(_guncelle, veri_seti, {"roller": r})

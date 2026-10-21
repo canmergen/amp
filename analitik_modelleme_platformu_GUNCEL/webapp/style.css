@@ -548,6 +548,7 @@ body { background-color: #FFFFFF; }
 .calisma-alt { font-size: var(--fs-kucuk); }
 .calisma-bos { padding: var(--b-2) var(--b-3); }
 .calisma-hata { color: var(--kirmizi); }
+.calisma-not { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
 /* ==================== SOL BAR: SAYFA KÜMELERİ ====================
    Sol bar ekranın tam boyunda; sayfa kümeleri alt
    alta. MODEL AKIŞI kümesi (başlık + beş kutu) ve altında ayrı SOHBET
@@ -3975,11 +3976,15 @@ span.bolme-cip { cursor: default; }
    (app.js: rozetleriCiz). Sol barda satırın sağında; Model Platformu
    açıkken başlıktaki gizlenir (sayı alt satırda). */
 .guncelleme-rozet {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 19px; height: 19px; padding: 0 5px; flex-shrink: 0;
+  box-sizing: border-box; display: inline-block; flex-shrink: 0;
+  min-width: 20px; height: 20px; padding: 0 6px;
   border-radius: 10px; background: var(--kirmizi-dolgu); color: #fff;
-  font-family: var(--font); font-size: 11.5px; font-weight: var(--fw-kalin);
-  letter-spacing: 0; line-height: 1;
+  box-shadow: 0 0 0 2px var(--yuzey), 0 1px 2px rgba(0, 0, 0, .25);
+  /* Rakamlar düz (eski stil rakam satırdan taşar) ve dairenin tam
+     ortasında: yazı tipi sistem sans-serif, satır yüksekliği daire boyu. */
+  font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 11px; font-weight: 700; line-height: 20px; text-align: center;
+  font-variant-numeric: lining-nums tabular-nums; letter-spacing: 0;
 }
 #sol-bar .ust-sekme > .guncelleme-rozet,
 #sol-bar .ust-kume-ad > .guncelleme-rozet { margin-left: auto; }

@@ -127,7 +127,7 @@ Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
   bölümün içeriği her sunucu yanıtında bir imzaya indirgenir; imza
   kullanıcının o bölümü en son gördüğü hâlden farklıysa bölüm yenidir
   (ör. veri seti ve sözlük seçilince Veri Seti, Sözlük ve Dağılım).
-  Bölümün başlığı ekranda 0,8 saniye görününce görülmüş sayılır; sayı her
+  Bölümün başlığı ekranda 0,1 saniye görününce görülmüş sayılır; sayı her
   bölümde bir azalır, hepsi görülünce rozet kalkar. Model Değişkenleri
   içindeki görünüm düğmelerinde (Veri ve Sözlük, Dağılım ve SFA, Değişken
   Kontrolleri) o görünümün sayısı ayrıca durur; Model Platformu kapalıyken
@@ -146,6 +146,12 @@ Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
   bölme mürekkep siyahıyla dolu, simgesi ters baskı. Düğmenin
   başka bir yerine basınca sıradaki moda geçilir.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
+  Her satırın sağında çöp kutusu (onaylı, kalıcı silme). Altta "Diğer
+  Klasörler": PROJE_HAFIZASI'nda olup listede olmayan kendi v-klasörleriniz
+  (çalışma dosyası silinmiş, başlanmamış çalışma ya da silinmiş bir
+  çalışmadan kalmış boş klasör), her biri silinebilir. Dataiku boş
+  klasörün kendisini silmezse listede bunu söyleyen not çıkar; klasör
+  Dataiku'nun klasör ekranından silinebilir, yeni çalışmalara engel olmaz.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
 Uygulama ekranın tamamını kullanır ve tarayıcıda %88 yakınlaştırmadaki
@@ -273,7 +279,8 @@ tanıtır; sayfalar sol bardan açılır.
   yok; Arşiv'den silme etkilemez). 01.2.1 ve 01.2.2 onaylanınca o
   tablonun kaydı yenisiyle değişir. Dosya yoksa ilk açılışta eski
   çalışmaların `ozet.json` dosyalarından bir kez kurulur (segment özette
-  olmadığı için boş gelir). Yalnız adlar ve onay zamanı yazılır.
+  olmadığı için boş gelir). Dosyada tablo başına yalnız sözlükler ve
+  roller durur; başka alan yazılmaz.
 - **01.2.2 Kolon Rolleri önceki seçimle:** adım ilk kez açıldığında
   (henüz hedef ve kimlik seçilmemişken) model tipi, hedef, kimlik, dönem
   ve segment alanları bu tablonun en son onaylanan rolleriyle dolu gelir;

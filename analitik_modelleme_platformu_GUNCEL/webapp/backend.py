@@ -1788,6 +1788,7 @@ def _gizli_klasorler(gosterilen):
 
       Çalışma dosyası yok     : calisma.json silinmiş, artık dosyalar kalmış
       Başlanmamış çalışma     : açılmış ama hiçbir adım yapılmamış
+      Boş klasör              : silinmiş bir çalışmadan kalmış, içi boş
     Başka kullanıcının çalışması listelenmez. Doner: [{ad, neden, dosya}]."""
     hafiza = _hafiza()
     dosyalar = {}
@@ -1811,11 +1812,15 @@ def _gizli_klasorler(gosterilen):
     for ad in sorted(adlar - set(gosterilen), key=lambda k: int(k[1:])):
         icerik = dosyalar.get(ad) or []
         sahip = (kayit.get(ad) or {}).get("sahip")
-        # BOS KLASOR LISTELENMEZ: icinde veri yok, numarasi yeni calismaya
+        # BOS KLASOR: silinmis bir calismadan kalmis. Numarasi yeni calismaya
         # zaten yeniden verilir (_yeni_calisma_id dosyasi olmayan klasoru bos
-        # sayar). Dataiku bazi depolarda bos klasoru silmez; listelenirse
-        # "Temizle" sonrasi geri gelir gibi gorunur.
+        # sayar); silinebilsin diye listelenir. Baskasinin kayitli (henuz
+        # dosyasi yazilmamis) calismasi listelenmez.
         if not icerik:
+            if sahip and sahip != ben:
+                continue
+            cikti.append({"ad": ad, "neden": "Boş klasör · silinmiş bir "
+                          "çalışmadan kalmış", "dosya": 0})
             continue
         if "calisma.json" not in icerik:
             if sahip and sahip != ben:
@@ -1968,6 +1973,17 @@ def _klasoru_sil(hafiza, kimlik):
     return _klasor_dosyalari(hafiza, kimlik)
 
 
+def _klasor_duruyor_mu(hafiza, kimlik):
+    """Kok klasorde bu adla bir klasor hala var mi (bos olsa da)?"""
+    try:
+        kok = hafiza.get_path_details("/") or {}
+    except Exception:
+        return False
+    return any(c.get("directory")
+               and str(c.get("name") or c.get("fullPath") or "").strip("/") == kimlik
+               for c in kok.get("children") or [])
+
+
 @app.route("/calisma_sil", methods=["POST"])
 def calisma_sil_endpoint():
     """Bir calismayi "Çalışmalarım"dan KALICI olarak siler.
@@ -2042,6 +2058,11 @@ def calisma_sil_endpoint():
         threading.Thread(target=sahiplik, daemon=True).start()
 
         govde = {"tamam": True, "silinen": hedef}
+        if _v_mi(hedef) and _klasor_duruyor_mu(hafiza, hedef):
+            govde["not"] = ("%s klasörünün içi boşaltıldı ama Dataiku "
+                            "klasörün kendisini silmedi. Dataiku'da PROJE_HAFIZASI "
+                            "ekranından silebilirsiniz; boş klasör yeni "
+                            "çalışmalara engel olmaz." % hedef)
         if hedef == mevcut:
             govde["sonraki"] = _son_calisma_id()
         return jsonify(govde)

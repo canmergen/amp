@@ -4377,7 +4377,7 @@ if (dgPanelEl) dgPanelEl.querySelectorAll("[data-alt]").forEach(b => {
    o bölümü en son GÖRDÜĞÜ imzadan farklıysa bölüm "yeni" sayılır. Sol
    bardaki Model Değişkenleri satırında kırmızı yuvarlak içinde yeni bölüm
    sayısı, görünüm şeridindeki düğmelerde o görünümün sayısı durur.
-   GÖRÜLDÜ: bölümün başlığı ekranda 0,8 sn göründüğünde; sayı her bölümde
+   GÖRÜLDÜ: bölümün başlığı ekranda 0,1 sn göründüğünde; sayı her bölümde
    bir azalır, hepsi görülünce rozet kalkar.
    İmzalar çalışma başına bu tarayıcıda saklanır (yalnız kolaylık).
    Çalışma bu tarayıcıda ilk kez açıldığında o anki içerik görülmüş
@@ -4465,7 +4465,7 @@ function rozetleriCiz() {
     });
 }
 
-/* Bölüm başlığı çizildikçe izlenir; ekranda 0,8 sn kalınca görüldü. */
+/* Bölüm başlığı çizildikçe izlenir; ekranda 0,1 sn kalınca görüldü. */
 function guncellemeIzle(birim, el) {
     if (!el || typeof IntersectionObserver === "undefined") return;
     if (!GUNCELLEME.izleyici) {
@@ -4480,7 +4480,7 @@ function guncellemeIzle(birim, el) {
                 GUNCELLEME.gorulen[ad] = GUNCELLEME.imza[ad];
                 gorulenKaydet();
                 rozetleriCiz();
-            }, 800));
+            }, 100));
         }), { threshold: 0.9 });
     }
     el.dataset.birim = birim;
@@ -12990,6 +12990,14 @@ function calismaSil(kimlik, hataysa, satir) {
             ARSIV_ONBELLEK.gizli = ARSIV_ONBELLEK.gizli.filter(x => x.ad !== kimlik);
         if (d.sonraki) { calismayaGec(d.sonraki, true); return; }
         if (satir) satir.remove();
+        const gb = calismalarListe.querySelector(".calisma-gizli-baslik");
+        if (gb) {
+            const n = calismalarListe.querySelectorAll(".calisma-gizli").length;
+            if (n) gb.textContent = "Diğer Klasörler · " + n; else gb.remove();
+        }
+        /* Dosyalar silindi ama Dataiku boş klasörü bıraktı: hata değil, not. */
+        if (d.not) calismalarListe.insertBefore(
+            elYap("div", "calisma-bos calisma-not", d.not), calismalarListe.firstChild);
         if (!calismalarListe.querySelector(".calisma-satir"))
             calismalarListe.appendChild(elYap("div", "calisma-bos", "Kayıtlı çalışma yok."));
     })
