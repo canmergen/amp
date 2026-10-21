@@ -1,4 +1,4 @@
-# Katip · Akıllı Analitik ve Modelleme Platformu
+# Katip · Kurumsal Analitik, Tahminleme ve İçgörü Platformu
 
 Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bir
 çalışmada yürüten Dataiku webapp'i. Bu belge platformun güncel hâlini anlatır.
