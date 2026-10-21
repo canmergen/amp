@@ -26,6 +26,7 @@ import dataiku
 from flask import request, jsonify, Response
 
 from fe_agent import akis, akis_atif, validasyon
+from fe_agent import akis_durum
 from fe_agent.akis_durum import secili_sozlukler
 
 GORSEL_FOLDER = "LLM_WEBAPP_GORSEL"
@@ -307,7 +308,9 @@ def _sayili_mi(calisma):
 
 
 def _hafiza():
-    return dataiku.Folder(getattr(akis, "HAFIZA_FOLDER", "PROJE_HAFIZASI"))
+    # Silinen calismanin klasorune yazma burada da reddedilir.
+    return akis_durum.KorunanKlasor(
+        dataiku.Folder(getattr(akis, "HAFIZA_FOLDER", "PROJE_HAFIZASI")))
 
 
 def _calisma_kaydi_oku(kati=False):
@@ -1640,6 +1643,10 @@ def _yeni_calisma_id():
         kayit = {k: d for k, d in kayit.items()
                  if not (_v_mi(k) and (d or {}).get("silindi"))}
         dolu = {int(V_KALIP.match(k).group(1)) for k in kayit if _v_mi(k)}
+        # Bu surecte silinenler: gec biten arka plan isi yeni calismaya
+        # yazmasin diye numara yeniden verilmez (akis_durum.SILINEN_CALISMALAR).
+        dolu |= {int(V_KALIP.match(k).group(1))
+                 for k in akis_durum.SILINEN_CALISMALAR if _v_mi(k)}
         for y in _hafiza_yollari():
             m = re.match(r"^/v(\d{1,6})/", _yol_normal(y))
             if m:
@@ -1973,6 +1980,26 @@ def _klasoru_sil(hafiza, kimlik):
     return _klasor_dosyalari(hafiza, kimlik)
 
 
+# Webapp disinda calisan Spark isleri (profil, AMP yazimi) silinen
+# calismanin klasorune sonradan yazabilir; KorunanKlasor onlari
+# durduramaz. Silmeden sonra klasor bu araliklarla yeniden kontrol edilir,
+# dosya cikmissa yeniden silinir.
+GEC_TEMIZLIK_SN = (20, 60, 300, 900)
+
+
+def _gec_yazilanlari_temizle(kimlik):
+    def calis():
+        for bekle in GEC_TEMIZLIK_SN:
+            time.sleep(bekle)
+            try:
+                hafiza = _hafiza()
+                if _klasor_dosyalari(hafiza, kimlik):
+                    _klasoru_sil(hafiza, kimlik)
+            except Exception as e:
+                _hata_kaydet("calisma_sil:gec_temizlik", e)
+    threading.Thread(target=calis, daemon=True).start()
+
+
 def _klasor_duruyor_mu(hafiza, kimlik):
     """Kok klasorde bu adla bir klasor hala var mi (bos olsa da)?"""
     try:
@@ -2017,12 +2044,15 @@ def calisma_sil_endpoint():
             if sahip and sahip != _sahip_ozeti():
                 raise CalismaErisimYok("Bu çalışma başka bir kullanıcıya ait.")
             anahtar = hedef
-            # ONCE KAYITTAN CIKAR, SONRA KLASORU SIL: kayitta olmayan
-            # calismaya artik hicbir istek yazamaz (bkz. _kaydet).
+            # ONCE KAYITTAN CIKAR VE YAZMAYI KAPAT, SONRA KLASORU SIL:
+            # kayitta olmayan calismaya istek yazamaz (bkz. _kaydet), suren
+            # arka plan isleri de klasore yazamaz (akis_durum.KorunanKlasor).
             girdi = kayit.pop(hedef, None)
             _calisma_kaydi_yaz(kayit)
+            akis_durum.SILINEN_CALISMALAR.add(hedef)
             kalan = _klasoru_sil(hafiza, anahtar)
             if kalan:
+                akis_durum.SILINEN_CALISMALAR.discard(hedef)
                 # Silinemedi: kayit geri yazilir, calisma listede kalir.
                 try:
                     geri = _calisma_kaydi_oku(kati=True)
@@ -2039,6 +2069,7 @@ def calisma_sil_endpoint():
             # Silme sirasinda biten bir istek dosya yazdiysa bir kez daha.
             if _klasor_dosyalari(hafiza, anahtar):
                 _klasoru_sil(hafiza, anahtar)
+            _gec_yazilanlari_temizle(anahtar)
         else:
             anahtar = _oturum_anahtari(hedef)          # erisim denetimi
             try:

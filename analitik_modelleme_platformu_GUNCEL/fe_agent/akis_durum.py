@@ -185,8 +185,49 @@ class DurumOkunamadi(Exception):
 # ===========================================================================
 # DURUM
 # ===========================================================================
+# SILINEN CALISMALAR. Arsiv'den silinen calismanin numarasi bu surec
+# boyunca burada durur ve klasorune yazilamaz: silme aninda suren arka plan
+# isleri (aciklama duzenleme, kisaltma okuma, donem, SFA kararlari, oneri
+# onbellegi, Spark isini izleyen is parcacigi) bitince sonuclarini yazmaya
+# kalkar; yazilsaydi silinen klasor dosyalariyla geri gelirdi. Numara bu
+# surec boyunca yeni calismaya verilmez (bkz. backend._yeni_calisma_id),
+# boylece gec gelen yazma yeni calismaya da dusmez.
+SILINEN_CALISMALAR = set()
+_SILINEN_YOL = re.compile(r"^/?(v\d{1,6})(?:/|$)")
+
+
+class CalismaSilindi(Exception):
+    """Silinen calismanin klasorune yazma denemesi."""
+
+
+def silinen_yol_mu(yol):
+    m = _SILINEN_YOL.match(str(yol or ""))
+    return bool(m and m.group(1) in SILINEN_CALISMALAR)
+
+
+class KorunanKlasor(object):
+    """PROJE_HAFIZASI: okuma ve silme oldugu gibi; silinen calismanin
+    klasorune yazma CalismaSilindi atar (cagiran is hatayla biter)."""
+
+    def __init__(self, klasor):
+        self._klasor = klasor
+
+    def __getattr__(self, ad):
+        return getattr(self._klasor, ad)
+
+    def upload_stream(self, yol, veri):
+        if silinen_yol_mu(yol):
+            raise CalismaSilindi("%s silindi; yazılmadı." % yol)
+        return self._klasor.upload_stream(yol, veri)
+
+    def upload_data(self, yol, veri):
+        if silinen_yol_mu(yol):
+            raise CalismaSilindi("%s silindi; yazılmadı." % yol)
+        return self._klasor.upload_data(yol, veri)
+
+
 def _folder():
-    return dataiku.Folder(HAFIZA_FOLDER)
+    return KorunanKlasor(dataiku.Folder(HAFIZA_FOLDER))
 
 def _yol(oturum_id):
     """Kayit dosyasi. Calismalar (v1, v2 ...) kendi klasorunde:

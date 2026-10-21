@@ -152,6 +152,13 @@ Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
   çalışmadan kalmış boş klasör), her biri silinebilir. Dataiku boş
   klasörün kendisini silmezse listede bunu söyleyen not çıkar; klasör
   Dataiku'nun klasör ekranından silinebilir, yeni çalışmalara engel olmaz.
+  Silinen çalışmanın klasörüne yazma kapanır: silme anında süren arka plan
+  işleri (açıklama düzenleme, kısaltma okuma, dönem, SFA kararları, öneri
+  önbelleği) bitince klasöre yazamaz, klasör geri gelmez. Webapp dışında
+  çalışan Spark işleri yazarsa klasör silmeden 20 sn, 1, 5 ve 15 dk sonra
+  yeniden kontrol edilir ve yeniden silinir. Silinen numara backend yeniden
+  başlatılana kadar yeni çalışmaya verilmez (geç yazma yeni çalışmaya
+  düşmesin).
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
 Uygulama ekranın tamamını kullanır ve tarayıcıda %88 yakınlaştırmadaki
