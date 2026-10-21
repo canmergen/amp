@@ -760,11 +760,28 @@ def donem_haric_hafizasi():
     return _donem_haric_ham()
 
 
-def donem_kaydet(kayitlar, haric=None):
+def _donem_deger_ham(govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    dd = (govde or {}).get("donem_deger")
+    if not isinstance(dd, dict):
+        return {}
+    return {str(k): {str(d): str(a) for d, a in v.items() if str(a or "").strip()}
+            for k, v in dd.items() if isinstance(v, dict) and v}
+
+
+def donem_deger_hafizasi():
+    """{kalip: {deger: anlam}} - kalibin anlamindan farkli yazilmis deger
+    anlamlari (ornegin 360D icin "son 1 yıl")."""
+    return _donem_deger_ham()
+
+
+def donem_kaydet(kayitlar, haric=None, degerler=None):
     """kayitlar: {kalip: anlam}; eklenir / guncellenir, silinmez. haric:
     {kalip: [ikili]}; verilen kaliplarin haric listesi bununla degisir (bos
-    liste kaldirir). Dosya var ama okunamiyorsa ustune yazilmaz. Doner: hata
-    ya da None."""
+    liste kaldirir). degerler: {kalip: {deger: anlam}}; verilen kaliplarin
+    deger anlamlari bununla degisir (bos sozluk kaldirir). Dosya var ama
+    okunamiyorsa ustune yazilmaz. Doner: hata ya da None."""
     kayitlar = {str(k).strip(): str(v).strip() for k, v in (kayitlar or {}).items()
                 if str(k).strip() and str(v or "").strip()}
     if not kayitlar:
@@ -788,6 +805,19 @@ def donem_kaydet(kayitlar, haric=None):
                 govde["donem_haric"] = dict(sorted(h.items()))
             else:
                 govde.pop("donem_haric", None)
+        if degerler is not None:
+            dd = _donem_deger_ham(govde)
+            for k in kayitlar:
+                v = {str(d): str(a).strip() for d, a in (degerler.get(k) or {}).items()
+                     if str(a or "").strip()}
+                if v:
+                    dd[k] = dict(sorted(v.items()))
+                else:
+                    dd.pop(k, None)
+            if dd:
+                govde["donem_deger"] = dict(sorted(dd.items()))
+            else:
+                govde.pop("donem_deger", None)
         try:
             _folder().upload_stream(DOSYA, json.dumps(
                 govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
@@ -812,12 +842,20 @@ def donem_sil(kaliplar):
         silinen = sorted(k for k in kaliplar if k in donem)
         h = _donem_haric_ham(govde)
         h_silinen = [k for k in kaliplar if k in h]
-        if not silinen and not h_silinen:
+        dd = _donem_deger_ham(govde)
+        d_silinen = [k for k in kaliplar if k in dd]
+        if not silinen and not h_silinen and not d_silinen:
             return 0, None
         for k in silinen:
             donem.pop(k, None)
         for k in h_silinen:
             h.pop(k, None)
+        for k in d_silinen:
+            dd.pop(k, None)
+        if dd:
+            govde["donem_deger"] = dict(sorted(dd.items()))
+        else:
+            govde.pop("donem_deger", None)
         govde["donem"] = dict(sorted(donem.items()))
         if h:
             govde["donem_haric"] = dict(sorted(h.items()))

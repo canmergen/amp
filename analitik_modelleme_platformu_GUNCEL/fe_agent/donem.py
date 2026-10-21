@@ -178,6 +178,41 @@ def birlikte_haritasi(adlar, tanimlar=None):
     return cikti
 
 
+def deger_anlami(kalip, anlam, deger):
+    """Kalibin anlamindaki yer tutuculari degerin sayilariyla doldurur:
+    <N>D "<N> gün boyunca" + 30D -> "30 gün boyunca"; H<NN>_<NN>
+    "<NN> - <NN> saatleri arası" + H00_06 -> "00 - 06 saatleri arası".
+    Ayni turdeki yer tutucular kalipta gectikleri sirayla eslenir; anlamda
+    fazlasi varsa son sayi kullanilir. Deger kaliba uymuyorsa ya da kalipta
+    yer tutucu yoksa anlam aynen doner."""
+    k = re.sub(r"\s+", "", str(kalip or "")).upper()
+    anlam = str(anlam or "")
+    turler = re.findall(r"<NN>|<N>", k)
+    if not turler or not anlam:
+        return anlam
+    desen = re.escape(k).replace("<NN>", r"(\d{2,})").replace("<N>", r"(\d+)")
+    try:
+        m = re.match("^" + desen + "$", str(deger or "").upper())
+    except re.error:
+        return anlam
+    if not m:
+        return anlam
+    sayilar = {}
+    for tur, sayi in zip(turler, m.groups()):
+        sayilar.setdefault(tur.strip("<>"), []).append(sayi)
+    sayac = Counter()
+
+    def yer(mo):
+        y = re.sub(r"[\s<>]", "", mo.group(1)).upper()
+        liste = sayilar.get(y)
+        if not liste:
+            return mo.group(0)
+        i = sayac[y]
+        sayac[y] += 1
+        return liste[min(i, len(liste) - 1)]
+    return _YT_ADAY.sub(yer, anlam)
+
+
 def kalip_deseni(kalip):
     """Kalip adini derlenmis desene cevirir: <N> sayi, <NN> en az iki
     basamakli sayi, gerisi aynen. Gecersizse None."""
@@ -394,10 +429,20 @@ def hafiza_haric():
         return {}
 
 
-def hafizaya_yaz(kayitlar, haric=None):
-    """kayitlar: {kalip: anlam}; haric: {kalip: [ikili]} (bu kaliplarin
-    hafizadaki haric listesi bununla degisir). Doner: hata ya da None."""
-    return kisaltma_mod.donem_kaydet(kayitlar, haric)
+def hafiza_deger():
+    """{kalip: {deger: anlam}}: hafizada kalibin anlamindan farkli yazilmis
+    deger anlamlari."""
+    try:
+        return kisaltma_mod.donem_deger_hafizasi()
+    except Exception:
+        return {}
+
+
+def hafizaya_yaz(kayitlar, haric=None, degerler=None):
+    """kayitlar: {kalip: anlam}; haric: {kalip: [ikili]} ve degerler:
+    {kalip: {deger: anlam}} (bu kaliplarin hafizadaki haric listesi ve deger
+    anlamlari bununla degisir). Doner: hata ya da None."""
+    return kisaltma_mod.donem_kaydet(kayitlar, haric, degerler)
 
 
 def hafizadan_sil(kaliplar):

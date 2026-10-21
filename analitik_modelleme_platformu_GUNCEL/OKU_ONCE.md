@@ -332,6 +332,24 @@ tanıtır; sayfalar sol bardan açılır.
   listelenir; işaretlenip açıklaması yazılan kolon sözlüğün çalışma
   kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve
   01.2.3.1'de sorulur (düğme "N Kolonu Tanımsız Bırak ve Devam Et").
+- **01.2.4.1 Dönem Bilgisi, değer anlamları:** sayı yer tutucusu olan
+  kalıbın (`<N>D`, `H<NN>_<NN>`) Anlam hücresinin altında "Değer Anlamları
+  · N" açılır listesi var. Adlarda geçen her değer (30D, 360D…) kalıbın
+  anlamından yer tutucu sayıyla doldurularak gelir ("<N> gün boyunca" →
+  "30 gün boyunca"; aynı türdeki yer tutucular kalıptaki sırayla eşlenir,
+  `donem.deger_anlami` ve app.js `donemDegerAnlami` aynı kural). Her biri
+  ayrı değiştirilebilir; değiştirilmeyen değer kalıbın anlamı
+  değiştikçe onu izler, boşaltılan alan kalıbın anlamına döner.
+  Değiştirilenler yeşil kenarla işaretlenir, düğmede "N değiştirildi"
+  yazar, satır "Düzenlendi" olur. Değerin anlamında yer tutucu kalamaz
+  (onay durur). Onaylanınca yalnız kalıbın anlamından farklı yazılanlar
+  saklanır: `durum["donem_deger_anlam"]` ({kalıp: {değer: anlam}}),
+  kararla birlikte (geri dönüşte gelir) ve kısaltma hafızasında
+  `donem_deger` (sonraki çalışmalarda aynı kalıbın değeri bu anlamla
+  gelir; kalıp çıkarılıp hafızadan silinince bunlar da silinir). Yalnız
+  kolon adlarında geçen değerler kabul edilir. Açıklama Düzenleme'ye
+  değiştirilen değer kendi anlamıyla gider ("360D: dönem kalıbı <N>D;
+  son 1 yıl boyunca"); değiştirilmeyen değer kalıbın anlamıyla.
 - **01.2.4.2 Açıklama Düzenleme'nin kapsamı:** dil modeline yalnız
   sözlükte zaten tanımı olan ve süreçte kalan kolonlar gider. Girmeyenler:
   01.2.3'te tanımı eklenen kolonlar (kullanıcı yazdı ya da önerisini

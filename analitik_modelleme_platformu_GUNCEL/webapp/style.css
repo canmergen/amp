@@ -3346,6 +3346,19 @@ span.bolme-cip { cursor: default; }
 .dg-donem-kalip { font-weight: var(--fw-kalin); margin-right: 4px; }
 .dg-donem-anlam { width: 100%; resize: vertical; min-height: 44px; font: inherit; }
 .dg-donem-soru { color: var(--amber); font-weight: var(--fw-kalin); margin-top: 4px; }
+/* Değer anlamları: kalıbın anlamı değer değer, her biri düzenlenebilir. */
+.dg-donem-degerler { margin-top: 4px; }
+.dg-donem-degerler[hidden], .dg-donem-deger-liste[hidden] { display: none; }
+.dg-donem-deger-ac {
+  border: 0; background: none; padding: 2px 0; cursor: pointer;
+  color: var(--metin-soluk); font: inherit; font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+}
+.dg-donem-deger-ac:hover { color: var(--metin); }
+.dg-donem-deger-liste { display: grid; gap: 3px; margin-top: 3px; }
+.dg-donem-deger-satir { display: grid; grid-template-columns: minmax(4.5rem, max-content) 1fr; gap: 6px; align-items: center; }
+.dg-donem-deger-satir .dg-kisa-cip { margin: 0; justify-self: start; }
+.dg-donem-deger-giris { width: 100%; font: inherit; font-size: var(--fs-kucuk); }
+.dg-donem-deger-satir.dg-deger-degisti .dg-donem-deger-giris { border-color: var(--yesil, var(--kenar)); font-weight: var(--fw-kalin); }
 .dg-donem-not { color: var(--metin-soluk); margin-top: 4px; }
 .dg-donem-tablo .dg-rozet-kucuk + .dg-rozet-kucuk { margin-left: 4px; }
 .dg-donem-ekle { margin: var(--b-2) 0 var(--b-3); }

@@ -9636,6 +9636,36 @@ function donemYerTutucuHatasi(kalip, anlam) {
         + Array.from(izinli).filter(x => x[0] !== "<").sort().join(", ") + ".";
 }
 
+/* Kalıbın anlamındaki yer tutucuları değerin sayılarıyla doldurur
+   (akis: donem.deger_anlami ile aynı kural): <N>D "<N> gün boyunca" +
+   30D -> "30 gün boyunca". Değer kalıba uymuyorsa anlam aynen döner. */
+function donemDegerAnlami(kalip, anlam, deger) {
+    const k = String(kalip || "").replace(/\s+/g, "").toUpperCase();
+    const turler = k.match(/<NN>|<N>/g);
+    anlam = String(anlam || "");
+    if (!turler || !anlam) return anlam;
+    const desen = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        .replace(/<NN>/g, "(\\d{2,})").replace(/<N>/g, "(\\d+)");
+    let m;
+    try { m = new RegExp("^" + desen + "$").exec(String(deger || "").toUpperCase()); }
+    catch (e) { return anlam; }
+    if (!m) return anlam;
+    const sayilar = {};
+    turler.forEach((t, i) => {
+        const y = t.replace(/[<>]/g, "");
+        (sayilar[y] = sayilar[y] || []).push(m[i + 1]);
+    });
+    const sayac = {};
+    return anlam.replace(DONEM_YT_ADAY, (t, on, y) => {
+        const yy = y.replace(/[\s<>]/g, "").toUpperCase();
+        const l = sayilar[yy];
+        if (!l) return t;
+        const i = sayac[yy] || 0;
+        sayac[yy] = i + 1;
+        return on + l[Math.min(i, l.length - 1)];
+    });
+}
+
 function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     let kilitli = ilkKilit;
     const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
@@ -9844,6 +9874,82 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         if (r.tur === "tarama")
             tdA.appendChild(elYap("span", "dg-rozet-kucuk", "Dil Modeli Buldu"));
         if (r.model) g.title = "Öneren: " + tireSade(r.model);
+        /* DEĞER ANLAMLARI: kalıbın anlamı adlarda geçen her değere yer
+           tutucusu doldurularak gelir (30D: "30 gün boyunca"); her biri
+           ayrı değiştirilebilir. Değiştirilmeyen değer kalıbın anlamını
+           izler. Liste yalnız sayı yer tutucusu olan kalıpta. */
+        const dgAnlam = Object.assign({}, (dz && dz.deger_anlam) || r.deger_anlam || {});
+        const dgKap = elYap("div", "dg-donem-degerler");
+        const dgAc = elYap("button", "dg-donem-deger-ac", "");
+        dgAc.type = "button";
+        const dgListe = elYap("div", "dg-donem-deger-liste");
+        dgKap.append(dgAc, dgListe);
+        tdA.insertBefore(dgKap, g.nextSibling);
+        let dgAcik = !!(dz && dz.dgAcik);
+        const degerListesi = () => kg ? adlardaBul(kg.value) : (r.degerler || []);
+        function dgCiz() {
+            const kalipV = kg ? kg.value.trim() : r.kalip;
+            const liste = degerListesi();
+            const var_ = /<N{1,2}>/i.test(kalipV || "") && liste.length > 0;
+            dgKap.hidden = !var_;
+            if (!var_) return;
+            const gecen = new Set(liste.map(d => d.deger));
+            Object.keys(dgAnlam).forEach(dg => { if (!gecen.has(dg)) delete dgAnlam[dg]; });
+            const n = Object.keys(dgAnlam).length;
+            dgAc.textContent = (dgAcik ? "▾ " : "▸ ") + "Değer Anlamları · " + ftBinlik(liste.length)
+                + (n ? " · " + ftBinlik(n) + " değiştirildi" : "");
+            dgAc.title = dgAcik ? "Listeyi kapat"
+                : "Adlarda geçen her değerin anlamını ayrı görün ve değiştirin";
+            dgListe.hidden = !dgAcik;
+            dgListe.textContent = "";
+            if (!dgAcik) return;
+            const k = kilitli || da.dm === "calisiyor";
+            liste.forEach(d => {
+                const oto = donemDegerAnlami(kalipV, g.value.trim(), d.deger);
+                const satir = elYap("div", "dg-donem-deger-satir");
+                const et = elYap("span", "dg-kisa-cip", d.deger);
+                et.title = ftBinlik(d.kolon) + " kolonun adında";
+                const gi = document.createElement("input");
+                gi.type = "text";
+                gi.className = "dg-giris dg-donem-deger-giris";
+                gi.value = dgAnlam[d.deger] !== undefined ? dgAnlam[d.deger] : oto;
+                gi.placeholder = oto || "Anlamı yazın";
+                gi.disabled = k;
+                gi.setAttribute("aria-label", d.deger + " anlamı");
+                const isaret = () => {
+                    satir.classList.toggle("dg-deger-degisti", dgAnlam[d.deger] !== undefined);
+                    /* Değerin anlamında yer tutucu kalmaz: sayı yazılır. */
+                    const yt = dgAnlam[d.deger] !== undefined && !!donemYerTutucuHatasi("", dgAnlam[d.deger]);
+                    gi.classList.toggle("dg-noksan", yt);
+                    gi.title = yt ? "Değerin anlamında yer tutucu olamaz; sayıyı yazın." : "";
+                };
+                gi.addEventListener("input", () => {
+                    const v = gi.value.trim();
+                    const simdiOto = donemDegerAnlami(kg ? kg.value.trim() : r.kalip, g.value.trim(), d.deger);
+                    if (!v || v === simdiOto) delete dgAnlam[d.deger]; else dgAnlam[d.deger] = v;
+                    isaret();
+                    duzen[anah] = Object.assign(duzen[anah] || {}, { deger_anlam: Object.assign({}, dgAnlam) });
+                    const nn = Object.keys(dgAnlam).length;
+                    dgAc.textContent = "▾ Değer Anlamları · " + ftBinlik(liste.length)
+                        + (nn ? " · " + ftBinlik(nn) + " değiştirildi" : "");
+                    boya();
+                    if (degisti) degisti();
+                });
+                /* Boş bırakılan alan kalıbın anlamına döner. */
+                gi.addEventListener("blur", () => {
+                    if (!gi.value.trim())
+                        gi.value = donemDegerAnlami(kg ? kg.value.trim() : r.kalip, g.value.trim(), d.deger);
+                });
+                isaret();
+                satir.append(et, gi);
+                dgListe.appendChild(satir);
+            });
+        }
+        dgAc.onclick = () => {
+            dgAcik = !dgAcik;
+            duzen[anah] = Object.assign(duzen[anah] || {}, { dgAcik });
+            dgCiz();
+        };
         tr.appendChild(tdA);
         /* ÇIKAR */
         const tdS = elYap("td", "dg-ekle-hucre");
@@ -9870,8 +9976,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             /* Uyarılı satır (yalnız ikili içinde geçen kalıp) dokunulana
                kadar sarı; anlamı ya da hariç durumu değişince karar
                sizindir (yeşil). Onayı durdurmaz. */
-            const uyarili = !!r.uyari && !duz0;
-            const duz = !dikkat && duz0;
+            const dgOnce = JSON.stringify(Object.entries(r.deger_anlam || {}).sort());
+            const dgSimdi = JSON.stringify(Object.entries(dgAnlam).sort());
+            const uyarili = !!r.uyari && !duz0 && dgOnce === dgSimdi;
+            const duz = !dikkat && (duz0 || dgOnce !== dgSimdi);
             tr.classList.toggle("dg-uyarili", dikkat || uyarili);
             tr.classList.toggle("dg-duzenlendi", duz);
             tr.classList.toggle("dg-hafiza-renk", !dikkat && !uyarili && !duz && r.kaynak === "hafiza");
@@ -9881,8 +9989,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         }
         const kaydet = () => {
             duzen[anah] = Object.assign(duzen[anah] || {}, {
-                anlam: g.value, kalip: kg ? kg.value : undefined, haric: Array.from(haric) });
-            elleSay(); birlikteCiz(); boya(); listeBoya(); if (degisti) degisti();
+                anlam: g.value, kalip: kg ? kg.value : undefined, haric: Array.from(haric),
+                deger_anlam: Object.assign({}, dgAnlam) });
+            elleSay(); birlikteCiz(); dgCiz(); boya(); listeBoya(); if (degisti) degisti();
         };
         g.addEventListener("input", kaydet);
         if (kg) kg.addEventListener("input", kaydet);
@@ -9890,12 +9999,14 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             if (kilitli || da.dm === "calisiyor") return;
             duzen[anah] = Object.assign(duzen[anah] || {}, {
                 anlam: g.value, kalip: kg ? kg.value : undefined, cikar: true,
-                haric: Array.from(haric) });
+                haric: Array.from(haric), deger_anlam: Object.assign({}, dgAnlam) });
             const i = elleYeni.findIndex(e => e.id === anah);
             if (i !== -1) elleYeni.splice(i, 1);          // yeni elle satır: silinir
             ciz(da.satirlar);
             if (degisti) degisti();
         };
+        x.dgAnlam = dgAnlam;
+        dgCiz();
         boya();
         satirlar.push(x);
         tb.appendChild(tr);
@@ -10100,16 +10211,19 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         /* Tabloda kalanlar + çıkarılanlar (cikar: true). */
         deger: () => acik().map(x => ({
             kalip: x.kg ? x.kg.value.trim() : x.r.kalip, anlam: x.g.value.trim(),
-            elle: !!x.r.elle, cikar: false, haric: Array.from(x.haric) }))
+            elle: !!x.r.elle, cikar: false, haric: Array.from(x.haric),
+            deger_anlam: Object.assign({}, x.dgAnlam) }))
             .concat(cikanlar.map(c => ({
                 kalip: c.r.kalip, cikar: true, elle: false,
                 haric: (duzen[c.anah] && duzen[c.anah].haric) || c.r.haric || [],
+                deger_anlam: (duzen[c.anah] && duzen[c.anah].deger_anlam) || c.r.deger_anlam || {},
                 anlam: ((duzen[c.anah] && duzen[c.anah].anlam !== undefined)
                     ? duzen[c.anah].anlam : (c.r.anlam || "")).trim() }))),
         /* Onayı durduran: tabloda kalan satırda anlam (elle satırda kalıp) boş. */
         eksik: () => acik().filter(x => !x.g.value.trim() || (x.kg && !x.kg.value.trim())).length,
         /* Onayı durduran: anlamdaki yer tutucu geçersiz. */
-        kontrol: () => acik().filter(x => x.g.value.trim() && x.yt()).length,
+        kontrol: () => acik().filter(x => (x.g.value.trim() && x.yt())
+            || Object.values(x.dgAnlam || {}).some(v => donemYerTutucuHatasi("", v))).length,
         /* Onayı durduran: elle yazılan kalıp kolon adlarında geçmiyor. */
         adlardaYok: () => satirlar.filter(x => x.kg && x.kg.value.trim()
                                           && !adlardaBul(x.kg.value).length).length,
@@ -10118,6 +10232,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             kilitli = k;
             const c = da.dm === "calisiyor";
             satirlar.forEach(x => { x.g.disabled = k || c; x.cikBtn.disabled = k || c;
+                                    x.tr.querySelectorAll(".dg-donem-deger-giris")
+                                        .forEach(i => { i.disabled = k || c; });
                                     if (x.kg) x.kg.disabled = k || c;
                                     x.tr.querySelectorAll(".dg-birlikte-cip")
                                         .forEach(b => { b.disabled = k || c; }); });

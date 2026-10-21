@@ -1794,6 +1794,11 @@ DONEM_SUTUNLAR = (
     "Anlam: kalıbın anlamı; dil modeli önerir, siz onaylarsınız. Satır "
     "rengi: mavi dil modeli önerisi, mor hafızadan, yeşil sizin "
     "düzenlediğiniz, sarı eksik ya da kontrol gerektiren.\n"
+    "Değer Anlamları: sayı yer tutucusu olan kalıpta adlarda geçen her "
+    "değerin anlamı; kalıbın anlamından sayısı yerine konarak gelir "
+    "(30D: 30 gün boyunca), her biri ayrı değiştirilebilir. Değiştirilen "
+    "değer Açıklama Düzenleme'ye kendi anlamıyla gider ve hafızaya yazılır; "
+    "değiştirilmeyen kalıbın anlamını izler.\n"
     "Çıkar: satırı dönem bilgisinden çıkarır; çıkarılan satır kullanılmaz "
     "ve hafızaya yazılmaz. Hafızadan gelen (mor) bir kalıbı çıkarırsanız "
     "onaylayınca hafızadan da silinir.")
@@ -1848,6 +1853,7 @@ def _donem_alani(durum):
     sonuc = d["sonuc"]
     haf = donem_mod.hafiza()
     haf_haric = donem_mod.hafiza_haric()
+    haf_deger = donem_mod.hafiza_deger()
     onceki = {str(x.get("kalip")): x for x in (durum.get("donem_bilgisi_karari") or [])
               if isinstance(x, dict)}
     calisiyor = d["durum"] == "calisiyor"
@@ -1881,6 +1887,14 @@ def _donem_alani(durum):
         birlikte = b.get("birlikte") or []
         gecerli = {ik for ik, _n in birlikte}
         haric = o.get("haric") if (o is not None and "haric" in o) else haric_oneri
+        # DEGER ANLAMLARI: kalibin anlamindan farkli yazilmis deger anlamlari
+        # (onceki karar, yoksa hafiza). Yazilmayan deger kalibin anlamindan
+        # yer tutucusu doldurularak gelir (on yuz hesaplar).
+        deger_anlam = o.get("deger_anlam") if (o is not None and "deger_anlam" in o) \
+            else haf_deger.get(kalip)
+        gecen = {str(x.get("deger")) for x in degerler or []}
+        deger_anlam = {str(dg): str(an) for dg, an in (deger_anlam or {}).items()
+                       if str(an or "").strip() and (not gecen or str(dg) in gecen)}
         r = {"kalip": kalip, "tur": tur, "kolon": kolon, "degerler": degerler,
              "ornekler": ornekler, "anlam": anlam, "oneri": oneri,
              "soru": soru if anlam == oneri else "", "not": notu if anlam == oneri else "",
@@ -1888,7 +1902,7 @@ def _donem_alani(durum):
              "hafizada": bool(haf.get(kalip)), "birlikte": birlikte,
              "tek": b.get("tek", kolon), "haric": sorted(set(haric or ()) & gecerli),
              "haric_oneri": sorted(set(haric_oneri or ()) & gecerli), "uyari": uyari,
-             "olasi": bool(olasi)}
+             "olasi": bool(olasi), "deger_anlam": deger_anlam}
         r.update(ek)
         satirlar.append(r)
 
@@ -1997,9 +2011,14 @@ def donem_uygula(durum):
     if _kontrol_atlandi(durum):
         durum["donem_bilgisi"] = {}
         durum["donem_haric"] = {}
+        durum["donem_deger_anlam"] = {}
         return KONTROL_ATLANDI
     alan = _donem_alani(durum)
     gecerli = {s_["kalip"] for s_ in alan["satirlar"]}
+    # Kolon adlarinda gecen degerler (deger anlami yalniz bunlara yazilir).
+    adlarda = {s_["kalip"]: {str(x.get("deger")) for x in s_.get("degerler") or []}
+               for s_ in alan["satirlar"]}
+    parca_adlari = {str(p_.get("parca")) for p_ in alan.get("parcalar") or []}
     bh = donem_mod.birlikte_haritasi(*_donem_kaynak(durum))
     gelen = []
     if isinstance(karar, dict):
@@ -2007,7 +2026,7 @@ def donem_uygula(durum):
         gelen = [g for g in (karar.get("donem") or [])
                  if isinstance(g, dict) and (str(g.get("kalip")) in gecerli or g.get("elle"))]
     hatalar = []
-    bilgi, kayit, haric_harita = {}, [], {}
+    bilgi, kayit, haric_harita, deger_harita = {}, [], {}, {}
     gorulen = set()
     cikan = 0
     cikan_kaliplar = []
@@ -2036,9 +2055,27 @@ def donem_uygula(durum):
         # HARIC: yalniz kalibin gercekten birlikte gectigi ikililer gecer.
         ikililer = {ik for ik, _n in (bh.get(kalip) or {}).get("birlikte") or []}
         haric = sorted({str(x).strip().upper() for x in (g.get("haric") or [])} & ikililer)
+        # DEGER ANLAMLARI: yalniz kaliba uyan degerler; kalibin anlamindan
+        # uretilenle ayni olan yazilmaz (kalip anlami degisince o da degissin).
+        desen = donem_mod.kalip_deseni(kalip)
+        deger_anlam = {}
+        for dg, an in (g.get("deger_anlam") or {}).items() \
+                if isinstance(g.get("deger_anlam"), dict) else ():
+            dg = re.sub(r"\s+", "", str(dg or "")).upper()
+            an = re.sub(r"\s+", " ", str(an or "")).strip()
+            gecen = adlarda.get(kalip) or {x for x in parca_adlari if desen and desen.match(x)}
+            if not dg or not an or desen is None or not desen.match(dg) or dg not in gecen:
+                continue
+            if an == donem_mod.deger_anlami(kalip, anlam, dg):
+                continue
+            if donem_mod.yer_tutucu_hatasi(dg, an) and not cikar:
+                hatalar.append("%s (%s): değerin anlamında yer tutucu olamaz; sayıyı "
+                               "yazın." % (kalip, dg))
+                continue
+            deger_anlam[dg] = an
         if cikar:
             kayit.append({"kalip": kalip, "anlam": anlam, "elle": False, "cikar": True,
-                          "haric": haric})
+                          "haric": haric, "deger_anlam": deger_anlam})
             cikan += 1
             cikan_kaliplar.append(kalip)
             continue
@@ -2050,16 +2087,18 @@ def donem_uygula(durum):
             hatalar.append("%s: %s" % (kalip, yt))
             continue
         kayit.append({"kalip": kalip, "anlam": anlam, "elle": elle, "cikar": False,
-                      "haric": haric})
+                      "haric": haric, "deger_anlam": deger_anlam})
         bilgi[kalip] = anlam
         haric_harita[kalip] = haric
+        deger_harita[kalip] = deger_anlam
     if hatalar:
         raise AdimHatasi("Şu satırlar onaylanamadı:\n" + "\n".join(hatalar))
     durum["donem_bilgisi"] = bilgi
     durum["donem_haric"] = {k: v for k, v in haric_harita.items() if v}
+    durum["donem_deger_anlam"] = {k: v for k, v in deger_harita.items() if v}
     durum["donem_bilgisi_karari"] = kayit
     durum.pop("parca_bilgisi", None)
-    hata = donem_mod.hafizaya_yaz(bilgi, haric_harita) if bilgi else None
+    hata = donem_mod.hafizaya_yaz(bilgi, haric_harita, deger_harita) if bilgi else None
     silinen, sil_hata = donem_mod.hafizadan_sil(cikan_kaliplar)
     metin = "%d dönem kalıbı onaylandı" % len(bilgi)
     if bilgi and not hata:
@@ -2204,19 +2243,20 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
         bulundu = False
         if i + 1 < len(t) and t[i + 1].isdigit():
             ikili = p + "_" + t[i + 1]
-            for k, r, anlam, _haric in desenler:
+            for k, r, anlam, _haric, degerler in desenler:
                 if r.match(ikili):
-                    parcalar.append((ikili, "dönem kalıbı %s; %s" % (k, anlam)))
+                    parcalar.append((ikili, "dönem kalıbı %s; %s"
+                                     % (k, degerler.get(ikili) or anlam)))
                     ozet.append((k, anlam))
                     kullanildi.update((i, i + 1))
                     bulundu = True
                     break
         if bulundu:
             continue
-        for k, r, anlam, haric in desenler:
+        for k, r, anlam, haric, degerler in desenler:
             # Kalip, haric tutulan ikilinin icinde donem sayilmaz.
             if r.match(p) and not donem_mod.haric_mi(t, i, haric):
-                parcalar.append((p, "dönem kalıbı %s; %s" % (k, anlam)))
+                parcalar.append((p, "dönem kalıbı %s; %s" % (k, degerler.get(p) or anlam)))
                 ozet.append((k, anlam))
                 bulundu = True
                 break
@@ -2256,10 +2296,12 @@ def _aciklama_girdileri(durum):
         ozetler = {}
     desenler = []
     donem_haric = durum.get("donem_haric") or {}
+    donem_deger = durum.get("donem_deger_anlam") or {}
     for k, v in (durum.get("donem_bilgisi") or {}).items():
         r = donem_mod.kalip_deseni(k)
         if r is not None and str(v or "").strip():
-            desenler.append((str(k), r, str(v).strip(), set(donem_haric.get(k) or ())))
+            desenler.append((str(k), r, str(v).strip(), set(donem_haric.get(k) or ()),
+                             dict(donem_deger.get(k) or {})))
     try:
         onayli = kisaltma_mod.onaylilar()
     except Exception:
