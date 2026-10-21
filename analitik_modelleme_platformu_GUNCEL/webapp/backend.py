@@ -52,13 +52,6 @@ GORSELLER = {
     "robot_alt":       "robot_alt.png",
     # Ana Sayfa'nın üst bölümündeki görsel
     "anasayfa_aciklama": "anasayfa_aciklama.png",
-    # Sohbetteki ilk (karsilama) mesajin robotu
-    "karsilama":  "robot_welcome.png",
-    # Normal konusma
-    "bot":        "robot_chat.png",
-    # Arkada calisirken (islem suruyor, sure sayaci)
-    "dusunme":    "robot_think.png",
-    "user":       "robot_llm_person.png",
 }
 
 _MIME = {".png": "image/png", ".jpg": "image/jpeg",

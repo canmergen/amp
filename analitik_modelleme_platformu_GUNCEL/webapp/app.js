@@ -82,19 +82,7 @@ const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
     katipLogo:  getWebAppBackendUrl("gorsel/katip_logo"),
-    bot:        getWebAppBackendUrl("gorsel/bot"),
-    karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
-    dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
-    user:       getWebAppBackendUrl("gorsel/user"),
 };
-/* ÖNCEDEN YÜKLE: avatar görselleri açılışta tarayıcı önbelleğine alınır;
-   ilk kullanımda sunucudan inmeleri beklenmez. */
-const GORSEL_ON = [GORSEL.bot, GORSEL.dusunme, GORSEL.karsilama, GORSEL.user].map(u => {
-    const i = new Image();
-    i.src = u;
-    return i;
-});
-
 const sohbetEl    = document.getElementById("sohbet");
 const sohbetAlan  = document.getElementById("sohbet-alani");
 const kutuEl      = document.getElementById("kutu");
@@ -6095,27 +6083,7 @@ function metinBicimle(metin) {
 }
 
 
-/* ==================== Balon kurucu ==================== */
-/* Bot balonu bir "balon-sutun" kutusunun icinde durur. Secenek kartlari
-   da ayni kutuya eklenir; boylece kartlar balonun genisligini alir.
-   Bloklar SUTUNUN TAMAMINI kaplar ve her iki tarafta da avatar vardir.
-
-   Gorsel YUKLENMEZSE (folder'da yok, ag hatasi) <img> kendini gizler:
-   kirik resim ikonu, olmayan bir seyin yerini tutmaktan kotudur. */
-/* ROBOT GÖRSELLERİ: sohbetteki İLK robot (karşılama)
-   el sallayan görsel, normal konuşmada konuşan görsel, arkada iş
-   sürerken düşünen görsel (bkz. calismaGostergesi). */
-function avatarYap(rol) {
-    const img = document.createElement("img");
-    img.className = "balon-avatar " + rol;
-    const ilk = rol === "bot" && !sohbetEl.querySelector(".balon-avatar.bot");
-    img.src = rol === "bot" ? (ilk ? GORSEL.karsilama : GORSEL.bot) : GORSEL.user;
-    if (ilk) img.classList.add("karsilama");
-    img.alt = "";                 // dekoratif: ekran okuyucu atlasin
-    img.setAttribute("aria-hidden", "true");
-    img.onerror = () => { img.style.display = "none"; };
-    return img;
-}
+/* ==================== Blok başlığı ==================== */
 /* ---- Blok başlığı: solda adım adı, SAĞ ÜSTTE "Geri Dön" ----
    Onay düğmeleri blokların İÇİNDE: her blok kendi kararını taşır.
 
@@ -6163,9 +6131,6 @@ function blokBasligiEkle(kap, blok) {
     if (!b.adim && !b.baslik) return null;
 
     const bas = elYap("div", "blok-bas");
-    /* AVATAR BURADA, balonYap'ta değil: başlık satırını kartlar
-       (doğrulama, teyit, form) da kullanıyor. */
-    bas.appendChild(avatarYap("bot"));
     const konum = b.kod === undefined ? adimKonumu(b.adim) : null;
     bas.appendChild(elYap("span", "blok-ad",
                           numarali(b.kod !== undefined ? b.kod : (konum ? konum.kod : ""),
@@ -6657,7 +6622,7 @@ function sureBicim(sn) {
 /* İŞLEM SATIRI: ayrı bir "yükleniyor" kartı YOK.
    Durumu başlıktaki "● Kontrol Ediliyor" etiketi anlatıyor; aktif adımın
    bloğunun EN ALTINA tek ince satır gelir: "İşlem Devam Ediyor · 0:12 · İptal".
-   Satır ve düşünen avatar ilk ISLEM_GECIKME_MS boyunca görünmez: anında
+   Satır ilk ISLEM_GECIKME_MS boyunca görünmez: anında
    dönen işlemlerde ekran yanıp sönmez. Kısa: daha uzun gecikme
    işlemin başladığını geç gösterir. Her adımda aynı. */
 const ISLEM_GECIKME_MS = 250;
@@ -6681,36 +6646,6 @@ function aktifBlokKabi() {
     return kap;
 }
 
-/* DÜŞÜNEN AVATAR: bir işlem sürerken (sohbet isteği, açıklama
-   önerileri, kısaltma okuması) bulunduğu bloğun avatarı düşünen hâle
-   geçer. Aynı blokta birden fazla işlem sürebildiği için sayaçla tutulur;
-   son işlem bitince eski görsel geri gelir. */
-function avatarDusunsun(el, acik) {
-    const blok = el && el.closest ? el.closest(".adim-blok") : null;
-    const av = blok ? blok.querySelector(".balon-avatar.bot") : null;
-    if (!av || av.classList.contains("karsilama")) return;
-    const n = Math.max(0, (Number(av.dataset.dusun) || 0) + (acik ? 1 : -1));
-    av.dataset.dusun = String(n);
-    if (n > 0) {
-        if (!av.dataset.normal) av.dataset.normal = av.src;
-        av.src = GORSEL.dusunme;
-    } else if (av.dataset.normal) {
-        av.src = av.dataset.normal;
-        delete av.dataset.normal;
-    }
-}
-
-/* Kart içi işlem satırları için: durum değişince avatara bildirir. */
-function dusunmeIzleyici(el) {
-    let acik = false;
-    return function (yeni) {
-        yeni = !!yeni;
-        if (yeni === acik || (yeni && !el.isConnected)) return;
-        acik = yeni;
-        avatarDusunsun(el, yeni);
-    };
-}
-
 function calismaGostergesi(iptalEt) {
     const kap = aktifBlokKabi();
     const satir = elYap("div", "islem-satiri");
@@ -6726,12 +6661,8 @@ function calismaGostergesi(iptalEt) {
         iptal.textContent = "İptal ediliyor";
         if (iptalEt) iptalEt();
     };
-    /* DÜŞÜNEN ROBOT: işlem sürerken çalışan bloğun başlığındaki robot
-       geçici olarak düşünen hâle geçer. "İşlem Devam Ediyor" satırına
-       görsel konmaz. */
     satir.append(sure, iptal);
     (kap || sohbetEl).appendChild(satir);
-    const dusun = dusunmeIzleyici(satir);
 
     let gecen = 0;
     const yaz = () => { sure.textContent = "İşlem Devam Ediyor · " + sureBicim(gecen); };
@@ -6739,14 +6670,12 @@ function calismaGostergesi(iptalEt) {
     const sayac = setInterval(() => { gecen += 1; yaz(); }, 1000);
     const goster = setTimeout(() => {
         satir.classList.add("gorunur");
-        dusun(true);
         if (!kap) sohbetKaydir();
     }, ISLEM_GECIKME_MS);
     return {
         kaldir() {
             clearInterval(sayac);
             clearTimeout(goster);
-            dusun(false);
             satir.remove();
         }
     };
@@ -8160,14 +8089,11 @@ function dogrulamaKartiEkle(alan, blok) {
         oIlerMetin.textContent = "İşlem Devam Ediyor · Açıklama Önerileri · "
             + ftBinlik(oBiten) + " / " + ftBinlik(oToplam) + " Kolon · " + sureBicim(gecen);
     }
-    const oDusun = dusunmeIzleyici(kart);
     function oIlerGoster(acik) {
         oIler.classList.toggle("gorunur", acik);
-        oDusun(acik && kart.isConnected);
         if (acik && !oSayac) {
             oSayac = setInterval(() => {
-                if (!kart.isConnected) { clearInterval(oSayac); oSayac = null; oDusun(false); return; }
-                oDusun(true);
+                if (!kart.isConnected) { clearInterval(oSayac); oSayac = null; return; }
                 oIlerYaz();
             }, 1000);
         } else if (!acik && oSayac) { clearInterval(oSayac); oSayac = null; }
@@ -8805,12 +8731,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        (yoklamayla ileri geri oynamaz). */
     let ilerBas = Date.now() - ((ka.ilerleme && ka.ilerleme.gecen) || 0) * 1000;
     let ilerSabit = !!ka.ilerleme;
-    const ilerDusun = dusunmeIzleyici(kart);
     function ilerYaz() {
         const il = ka.ilerleme;
         const acik = ka.dm === "calisiyor" && !!il && !kilitli;
         ilerEl.classList.toggle("gorunur", acik);
-        ilerDusun(acik && kart.isConnected);
         if (acik) {
             const oneri = il.asama === "oneri";
             ilerMetin.textContent = "İşlem Devam Ediyor · "
