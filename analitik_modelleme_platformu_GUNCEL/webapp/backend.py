@@ -1735,7 +1735,7 @@ def _calisma_secimleri(durum):
     if kaynak_sz:
         sec.append(["Kaynak Sözlükler", ", ".join(kaynak_sz)])
     elif secili_sozlukler(durum):
-        # Birden fazla sozluk "A + B" (bkz. sozluk_gecmisi.AYRAC).
+        # Birden fazla sozluk "A + B" (bkz. veri_gecmisi.AYRAC).
         sec.append(["Sözlük", " + ".join(secili_sozlukler(durum))])
     meta = durum.get("meta") or {}
     if akis.model_tipi_adi(durum):

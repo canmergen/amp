@@ -27,7 +27,7 @@ from fe_agent import profil_kural
 from fe_agent import amp as amp_mod
 from fe_agent import spark_is
 from fe_agent import akis_atif
-from fe_agent import sozluk_gecmisi
+from fe_agent import veri_gecmisi
 
 from fe_agent.akis_metin import (
     ACIK_MODLAR, ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI,
@@ -826,9 +826,9 @@ def _kurulum_formu(durum, veri=None, sozlukler=None):
                       "birden fazla seçilebilir",
              "degerler": list(sozlukler or []),
              # ESLESME: baz veri seti secilince o veri setinin en son
-             # eslendigi sozlukler secili gelir (bkz. sozluk_gecmisi).
+             # eslendigi sozlukler secili gelir (bkz. veri_gecmisi).
              "oneri_alani": "veri_seti",
-             "oneriler": sozluk_gecmisi.harita(),
+             "oneriler": veri_gecmisi.sozluk_haritasi(),
              "oneri_notu": "Bu veri setiyle daha önce kullanıldığı için seçildi; "
                            "kutuya basıp başka sözlük ekleyebilir, × ile "
                            "çıkarabilirsiniz"},
@@ -908,7 +908,7 @@ def _sozluk_adlari(mesaj, a):
     niyet_kural'in kalibiyla, birden fazlasi "A + B" bicimiyle okunur."""
     norm = niyet_kural.normalize(mesaj or "")
     m = SOZLUK_LISTE_KALIP.search(norm)
-    adlar = (sozluk_gecmisi.adlara_ayir(mesaj[m.start(1):m.end(1)]) if m
+    adlar = (veri_gecmisi.adlara_ayir(mesaj[m.start(1):m.end(1)]) if m
              else [a["sozluk"]] if a.get("sozluk") else [])
     cikti = []
     for x in adlar:
@@ -971,7 +971,7 @@ def kurulum_girdi(durum, mesaj, yeniden_sor=False):
         durum["sozluk"] = sozlukler[0] if sozlukler else None
         durum["sozluk_yedek"] = None
         durum.pop("sozlukler", None)
-    sozluk_gecmisi.arka_planda_kaydet(veri, sozlukler)
+    veri_gecmisi.sozluk_kaydet(veri, sozlukler)
     # SOZLUKSUZ: butun kolonlar 01.2.3'te tanimlanir (bkz.
     # akis_durum.sozluk_orijinal_oku: bos sozluk tabani).
     durum["_sozluksuz"] = not sozlukler
@@ -4226,6 +4226,20 @@ PROBLEM_TIPLERI = [
 ]
 
 
+def _gecmis_anahtari(durum):
+    """Kolon rolleri gecmisinin anahtari: kullanicinin sectigi tablo. B'de
+    baz veri seti platformun birlestirme ciktisi (her calismada ayni ad),
+    bu yuzden orada gecmis tutulmaz."""
+    if (durum or {}).get("mod") not in ("A", "C"):
+        return None
+    return durum.get("veri_seti") or None
+
+
+def _onceki_roller(durum):
+    anahtar = _gecmis_anahtari(durum)
+    return veri_gecmisi.roller(anahtar) if anahtar else {}
+
+
 def _sayisal_hedef_adaylari(durum, kimlik=()):
     """Regression ve zaman serisi hedefi: tam ya da ondalik sayi tipinde,
     ikiden fazla farkli deger alan kolonlar (profilden, tam tablo). Tam
@@ -4314,16 +4328,20 @@ def _tanimlar_formu(durum, meta=None):
 
     Uc alan da SECILI VERI SETININ KOLONLARINDAN secilir.
 """
-    m = meta or durum.get("meta") or {}
+    m = dict(meta or durum.get("meta") or {})
     kolonlar = _veri_seti_kolonlari(durum)
     p = _donem_adaylarini_hazirla(durum)
+    # ONCEKI ROLLER: adim ilk kez aciliyorsa (rol secilmemis) alanlar bu
+    # tablonun en son onaylanan rolleriyle dolu gelir; yalniz hala o
+    # alanin listesinde olan deger yazilir. Onaylanana kadar kaydedilmez.
+    gecmis = {} if m.get("target") or m.get("id") else _onceki_roller(durum)
 
     # ADAY LISTELERI. Bos donerse TUM kolonlara dusulur ve nedeni
     # alanin altinda yazilir: veri setinde uygun kolon yoksa kullaniciyi
     # secim yapamaz halde birakmak dogru olmaz.
     # Kapali bir tip (bu kural gelmeden secilmis) secili gosterilmez.
     # Secilebilen tek tip varsa o secili gelir.
-    problem = model_tipi(durum)
+    problem = model_tipi(durum) or (gecmis.get("problem") or "")
     if problem not in PROBLEM_HAZIR:
         problem = next(iter(PROBLEM_HAZIR)) if len(PROBLEM_HAZIR) == 1 else ""
     kimlik_aday = [k for k in (p.get("kimlik_adaylari") or []) if k in kolonlar]
@@ -4382,6 +4400,13 @@ def _tanimlar_formu(durum, meta=None):
     segment_not = "" if segment_aday else "2 ile 20 arası farklı değer alan kolon bulunamadı."
 
     hedef_not = secili_tip["hedef"]["not"] if secili_tip else ""
+
+    dolan = []
+    for ad, liste in (("target", hedef_liste), ("id", kimlik_liste),
+                      ("donem", donem_liste), ("segment", segment_liste)):
+        if gecmis.get(ad) and gecmis[ad] in liste and gecmis[ad] in kolonlar:
+            m[ad] = gecmis[ad]
+            dolan.append(ad)
     kimlik_not = ("" if kimlik_aday else
                   "Her satırda farklı değer alan kolon bulunamadı; tüm "
                   "kolonlar listeleniyor.")
@@ -4395,7 +4420,10 @@ def _tanimlar_formu(durum, meta=None):
                     "kolonunu seçin. Dönem ve segment kolonu isteğe bağlıdır: "
                     "dönem seçilirse veri zamana göre bölünebilir ve stabilite "
                     "ölçülebilir; segment seçilirse sonuçlar segment bazında "
-                    "da gösterilir.",
+                    "da gösterilir." + (
+                        " Alanlar bu tablonun en son onaylanan kolon "
+                        "rolleriyle dolu geldi; değiştirebilirsiniz."
+                        if dolan else ""),
         # MODEL TIPI kartin ilk secimi; on yuz alanlarin ustunde cizer.
         "problem": {"etiket": "Model Tipi", "deger": problem, "tipler": tipler},
         # Kartta acilir listeler var. Yazarak girme yolu da calisir (bkz.
@@ -4538,6 +4566,8 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
 
     durum["meta"] = meta
     eksik = [k for k in ("target", "id") if k not in meta]
+    if not eksik and _gecmis_anahtari(durum):
+        veri_gecmisi.roller_kaydet(_gecmis_anahtari(durum), problem, meta)
     if eksik:
         _tanimlar_formu(durum, meta)
         # METIN YOK, YALNIZ FORM: kartin basligi ve aciklamasi ayni seyi

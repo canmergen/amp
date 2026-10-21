@@ -251,13 +251,25 @@ tanıtır; sayfalar sol bardan açılır.
     önce kullanıldığı için seçildi" yazar. Kutu boşsa ya da içindekiler de
     kendiliğinden gelmişse doldurulur; kullanıcının eklediği ya da
     çıkardığı seçim ezilmez, form dolu açıldığında da dokunulmaz. Projede
-    artık olmayan tablo seçilmez. Kayıt
-    `PROJE_HAFIZASI/VERI_SOZLUK_GECMISI.json`'da: yalnız hangi tablonun
-    hangi sözlük(ler)le eşleştiği (çalışma bilgisi ve sayım yok). 01.2.1
-    onaylanınca o tablonun eşleşmesi yenisiyle değişir; sözlüksüz onay
-    eşleşmeyi değiştirmez. Dosya yoksa ilk açılışta eski çalışmaların
-    `ozet.json` dosyalarından bir kez kurulur (`fe_agent/sozluk_gecmisi.py`).
+    artık olmayan tablo seçilmez. Sözlüksüz onay eşleşmeyi değiştirmez.
     Başlangıç B'nin kaynak sözlükleri buna girmez.
+- **Tablonun önceki seçimleri** (`fe_agent/veri_gecmisi.py`,
+  `PROJE_HAFIZASI/VERI_SETI_GECMISI.json`): her tablo için yalnız en son
+  onaylanan Baz Sözlük ve kolon rolleri durur (çalışma bilgisi ve sayım
+  yok; Arşiv'den silme etkilemez). 01.2.1 ve 01.2.2 onaylanınca o
+  tablonun kaydı yenisiyle değişir. Dosya yoksa ilk açılışta eski
+  çalışmaların `ozet.json` dosyalarından bir kez kurulur (segment özette
+  olmadığı için boş gelir); ilk sürümdeki `VERI_SOZLUK_GECMISI.json`
+  varsa sözlük eşleşmeleri oradan aktarılır. Yalnız adlar yazılır.
+- **01.2.2 Kolon Rolleri önceki seçimle:** adım ilk kez açıldığında
+  (henüz hedef ve kimlik seçilmemişken) model tipi, hedef, kimlik, dönem
+  ve segment alanları bu tablonun en son onaylanan rolleriyle dolu gelir;
+  açıklamanın sonunda "Alanlar bu tablonun en son onaylanan kolon
+  rolleriyle dolu geldi; değiştirebilirsiniz." yazar. Yalnız hâlâ o
+  alanın listesinde olan değer yazılır (ör. artık 0/1 olmayan hedef
+  gelmez). Değerler onaylanana kadar çalışmaya kaydedilmez; kullanıcı
+  her alanı değiştirebilir ya da boşaltabilir. B'de baz veri seti
+  platformun birleştirme çıktısı olduğu için önceki rol gelmez.
 - **01.2.2 Kolon Rolleri:** ilk seçim model tipi (Classification,
   Regression, Time Series Forecasting, Clustering). Şu an seçilebilen tek
   tip Classification olduğu için seçili gelir. Hedef listesi tipe göre
