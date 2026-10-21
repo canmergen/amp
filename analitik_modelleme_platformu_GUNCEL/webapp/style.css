@@ -59,7 +59,7 @@
      sekmeler 64 px'lik barda tek sirada sigmali. Ikon karakterleri (×, +,
      ok, i) kutularina gore sabit px alir. --fs-kucuk, --fs-etiket,
      --fs-buyuk takma adlardir: ayni iki degere baglidir. TEK ISTISNA
-     --fs-blok: sohbetteki blok basligi ("01.2 ...")
+     --fs-blok: sohbetteki blok basligi (avatarin yanindaki "01.2 ...")
      baslik boyutundan 1,5 px buyuk; alt adim basliklari (.alt-ad) 15. */
   --fs-govde:  13.5px;   /* her metin */
   --fs-baslik: 15px;     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
@@ -218,6 +218,8 @@
   /* BLOKLAR EŞİT VE TAM GENİŞLİK: sohbet sütununun tamamını kaplarlar.
 */
   --balon-en:     100%;
+  --avatar-en:    42px;          /* sohbet avatarı */
+  --avatar-ara:   10px;          /* avatar ile blok arası */
   /* Ardisik balonlar arasindaki SABIT dikey aralik. Bot/kullanici,
      balon/kart ayrimi gozetmeden hepsi ayni bosluga sahip. */
   --balon-ara:    var(--b-4);
@@ -910,6 +912,16 @@ body { background-color: #FFFFFF; }
   width: 100%; min-width: 0;
 }
 
+/* Sohbet avatarı: akışı ilerletenin bir robot olduğu görünür kalsın.
+   Yüklenemezse JS kendini gizler (bkz. avatarYap); kırık resim ikonu
+   olmayan bir şeyin yerini tutmaktan kötüdür. */
+.balon-avatar {
+  flex: 0 0 auto; width: var(--avatar-en); height: var(--avatar-en);
+  border-radius: 50%; object-fit: cover;
+  background: var(--yuzey-alt); border: 1px solid var(--kenar);
+}
+/* Avatar yalnızca BOT adım bloklarında: akışı yürüten asistanı işaret
+   eder. Kullanıcı mesajının ve hata bildiriminin avatarı yok. */
 /* ---- ÇIKTI LİSTESİ ----
    Bir adımın sonucu: "Modelleme tablosu : PROJE_HAFIZASI/..." gibi
    etiket-değer satırları. Boşlukla hizalanmış düz metin yerine ızgara
@@ -976,8 +988,8 @@ body { background-color: #FFFFFF; }
 }
 
 /* -------- Bot kutusu: balon + (varsa) seçenek kartları -------- */
-/* Sütun kalan genişliğin TAMAMINI alır: bot ve kullanıcı blokları AYNI
-   ende çıkar. */
+/* Sütun kalan genişliğin TAMAMINI alır: avatar iki tarafta da aynı yeri
+   götürdüğü için bot ve kullanıcı blokları AYNI ende çıkar. */
 .balon-sutun {
   display: flex; flex-direction: column; align-items: stretch;
   flex: 1 1 auto; width: auto; min-width: 0;
@@ -1027,7 +1039,8 @@ body { background-color: #FFFFFF; }
 .balon-sutun .secenek-kok { width: 0; min-width: 100%; margin-top: var(--b-2); }
 /* Balonsuz (kok seviyesinde) secenek kartlari da ayni sutunda,
    ayni genislikte ve sola yapisik basliyor. */
-/* Kök seviyesindeki kartlar/ayraçlar da sütunun TAMAMINI kaplar. */
+/* Kök seviyesindeki kartlar/ayraçlar da sütunun TAMAMINI kaplar:
+   avatar bloğun içinde, girinti açmaz. */
 #sohbet > .secenek-kok,
 #sohbet > .secim-kart,
 #sohbet > .aksiyon-izi { width: auto; margin-left: 0; }

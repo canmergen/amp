@@ -36,6 +36,10 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
 | `robot_alt` | `robot_alt.png` | Sol bar: Görünüm'ün üstünde robot, kitaplar ve kupa |
 | `anasayfa_aciklama` | `anasayfa_aciklama.png` | Ana Sayfa: üst bölümün görseli (saydam zeminli, geniş; yazının altında tam en) |
+| `karsilama` | `robot_welcome.png` | Sohbetteki ilk robot |
+| `bot` | `robot_chat.png` | Normal konuşma |
+| `dusunme` | `robot_think.png` | Arkada iş sürerken |
+| `user` | `robot_llm_person.png` | Kullanıcı balonu |
 
 Görsel bulunamazsa yerinde boşluk kalır, sayfa bozulmaz; sol bar ikonu
 bulunamazsa yerinde çizgi ikon kalır.
