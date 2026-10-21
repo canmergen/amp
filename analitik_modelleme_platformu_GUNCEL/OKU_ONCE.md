@@ -350,6 +350,27 @@ tanıtır; sayfalar sol bardan açılır.
   kolon adlarında geçen değerler kabul edilir. Açıklama Düzenleme'ye
   değiştirilen değer kendi anlamıyla gider ("360D: dönem kalıbı <N>D;
   son 1 yıl boyunca"); değiştirilmeyen değer kalıbın anlamıyla.
+- **01.2.4.1 Gruptan ayırma:** Değer Anlamları listesinde her değerin
+  yanında "Ayır" var (grupta en az bir değer kalır). Ayrılan değer grubun
+  hemen altında kendi satırına geçer ("<N>D grubundan ayrıldı"), anlamı
+  ayrıldığı andaki anlamla başlar ve düzenlenir; "Çıkar" ile dönem değil
+  olur (Çıkarılanlar'a gider, geri alınabilir), "Gruba Geri Al" ile
+  gruba döner. Grubun deseni ayrılan değeri kapsamaz.
+  - Çalışmada: `durum["donem_bilgisi"]`'ne ayrılan değer kendi kalıbı
+    olarak girer (dönem değilse girmez), `durum["donem_ayrilan"]`
+    ({grup: [değer]}) Açıklama Düzenleme'de grubun deseninden düşülür
+    (`_AyrilanliDesen`); karar `donem_bilgisi_karari`'nda grubun
+    `ayrilan` alanında ({değer: {anlam, cikar}}), geri dönüşte gelir.
+  - Hafızada: grubun altında `donem_ayrilan` ({grup: {değer: {anlam,
+    cikar}}}); ayrılan değer ayrı kalıp olarak yazılmaz (sonraki
+    çalışmada grubun altında, kendi satırında gelir). Grup hafızadan
+    silinince ayrılanları da silinir.
+  - **Grup ve üye açıklamaları tablosu:** onayda
+    `PROJE_HAFIZASI/<çalışma>/DONEM_BILGISI.parquet` yazılır: KALIP,
+    KALIP_ANLAMI, DEGER, DEGER_ANLAMI, KOLON_SAYISI, KAYNAK (Kalıptan,
+    Değiştirildi, Gruptan Ayrıldı, Gruptan Ayrıldı · Dönem Değil); her
+    grubun adlarda geçen her değeri bir satır. Yazılamazsa onay mesajına
+    not düşer, onay durmaz.
 - **01.2.4.2 Açıklama Düzenleme'nin kapsamı:** dil modeline yalnız
   sözlükte zaten tanımı olan ve süreçte kalan kolonlar gider. Girmeyenler:
   01.2.3'te tanımı eklenen kolonlar (kullanıcı yazdı ya da önerisini

@@ -438,11 +438,21 @@ def hafiza_deger():
         return {}
 
 
-def hafizaya_yaz(kayitlar, haric=None, degerler=None):
-    """kayitlar: {kalip: anlam}; haric: {kalip: [ikili]} ve degerler:
-    {kalip: {deger: anlam}} (bu kaliplarin hafizadaki haric listesi ve deger
-    anlamlari bununla degisir). Doner: hata ya da None."""
-    return kisaltma_mod.donem_kaydet(kayitlar, haric, degerler)
+def hafiza_ayrilan():
+    """{kalip: {deger: {"anlam", "cikar"}}}: hafizada kalibin grubundan
+    ayrilan degerler."""
+    try:
+        return kisaltma_mod.donem_ayrilan_hafizasi()
+    except Exception:
+        return {}
+
+
+def hafizaya_yaz(kayitlar, haric=None, degerler=None, ayrilan=None):
+    """kayitlar: {kalip: anlam}; haric: {kalip: [ikili]}, degerler:
+    {kalip: {deger: anlam}} ve ayrilan: {kalip: {deger: {"anlam", "cikar"}}}
+    (bu kaliplarin hafizadaki haric listesi, deger anlamlari ve gruptan
+    ayrilan degerleri bununla degisir). Doner: hata ya da None."""
+    return kisaltma_mod.donem_kaydet(kayitlar, haric, degerler, ayrilan)
 
 
 def hafizadan_sil(kaliplar):

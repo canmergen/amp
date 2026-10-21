@@ -776,12 +776,39 @@ def donem_deger_hafizasi():
     return _donem_deger_ham()
 
 
-def donem_kaydet(kayitlar, haric=None, degerler=None):
+def _donem_ayrilan_ham(govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    da = (govde or {}).get("donem_ayrilan")
+    if not isinstance(da, dict):
+        return {}
+    cikti = {}
+    for k, v in da.items():
+        if not isinstance(v, dict):
+            continue
+        uyeler = {str(d): {"anlam": str((x or {}).get("anlam") or ""),
+                           "cikar": bool((x or {}).get("cikar"))}
+                  for d, x in v.items() if isinstance(x, dict)}
+        if uyeler:
+            cikti[str(k)] = uyeler
+    return cikti
+
+
+def donem_ayrilan_hafizasi():
+    """{kalip: {deger: {"anlam", "cikar"}}} - kalibin grubundan ayrilan
+    degerler: kendi anlamiyla donem (cikar False) ya da donem degil
+    (cikar True)."""
+    return _donem_ayrilan_ham()
+
+
+def donem_kaydet(kayitlar, haric=None, degerler=None, ayrilan=None):
     """kayitlar: {kalip: anlam}; eklenir / guncellenir, silinmez. haric:
     {kalip: [ikili]}; verilen kaliplarin haric listesi bununla degisir (bos
     liste kaldirir). degerler: {kalip: {deger: anlam}}; verilen kaliplarin
-    deger anlamlari bununla degisir (bos sozluk kaldirir). Dosya var ama
-    okunamiyorsa ustune yazilmaz. Doner: hata ya da None."""
+    deger anlamlari bununla degisir (bos sozluk kaldirir). ayrilan:
+    {kalip: {deger: {"anlam", "cikar"}}}; verilen kaliplarin gruptan ayrilan
+    degerleri bununla degisir. Dosya var ama okunamiyorsa ustune yazilmaz.
+    Doner: hata ya da None."""
     kayitlar = {str(k).strip(): str(v).strip() for k, v in (kayitlar or {}).items()
                 if str(k).strip() and str(v or "").strip()}
     if not kayitlar:
@@ -818,6 +845,20 @@ def donem_kaydet(kayitlar, haric=None, degerler=None):
                 govde["donem_deger"] = dict(sorted(dd.items()))
             else:
                 govde.pop("donem_deger", None)
+        if ayrilan is not None:
+            da = _donem_ayrilan_ham(govde)
+            for k in kayitlar:
+                v = {str(d): {"anlam": str((x or {}).get("anlam") or "").strip(),
+                              "cikar": bool((x or {}).get("cikar"))}
+                     for d, x in (ayrilan.get(k) or {}).items() if isinstance(x, dict)}
+                if v:
+                    da[k] = dict(sorted(v.items()))
+                else:
+                    da.pop(k, None)
+            if da:
+                govde["donem_ayrilan"] = dict(sorted(da.items()))
+            else:
+                govde.pop("donem_ayrilan", None)
         try:
             _folder().upload_stream(DOSYA, json.dumps(
                 govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
@@ -844,8 +885,16 @@ def donem_sil(kaliplar):
         h_silinen = [k for k in kaliplar if k in h]
         dd = _donem_deger_ham(govde)
         d_silinen = [k for k in kaliplar if k in dd]
-        if not silinen and not h_silinen and not d_silinen:
+        ay = _donem_ayrilan_ham(govde)
+        a_silinen = [k for k in kaliplar if k in ay]
+        if not silinen and not h_silinen and not d_silinen and not a_silinen:
             return 0, None
+        for k in a_silinen:
+            ay.pop(k, None)
+        if ay:
+            govde["donem_ayrilan"] = dict(sorted(ay.items()))
+        else:
+            govde.pop("donem_ayrilan", None)
         for k in silinen:
             donem.pop(k, None)
         for k in h_silinen:

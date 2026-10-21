@@ -3355,7 +3355,10 @@ span.bolme-cip { cursor: default; }
 }
 .dg-donem-deger-ac:hover { color: var(--metin); }
 .dg-donem-deger-liste { display: grid; gap: 3px; margin-top: 3px; }
-.dg-donem-deger-satir { display: grid; grid-template-columns: minmax(4.5rem, max-content) 1fr; gap: 6px; align-items: center; }
+.dg-donem-deger-satir { display: grid; grid-template-columns: minmax(4.5rem, max-content) 1fr auto; gap: 6px; align-items: center; }
+.dg-donem-ayir { padding: 1px 8px; font-size: var(--fs-kucuk); }
+.dg-donem-ayrilan-not { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-top: 2px; }
+.dg-donem-geri-al { margin-top: 4px; padding: 1px 8px; font-size: var(--fs-kucuk); }
 .dg-donem-deger-satir .dg-kisa-cip { margin: 0; justify-self: start; }
 .dg-donem-deger-giris { width: 100%; font: inherit; font-size: var(--fs-kucuk); }
 .dg-donem-deger-satir.dg-deger-degisti .dg-donem-deger-giris { border-color: var(--yesil, var(--kenar)); font-weight: var(--fw-kalin); }

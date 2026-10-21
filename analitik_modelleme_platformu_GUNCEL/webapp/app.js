@@ -9738,7 +9738,26 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const cikanlar = [];              // çıkarılanlar: {r, anah}
     const olasilar = [];              // emin olunamayanlar (tabloda değil): {r, anah}
     const duzen = {};                 // anahtar -> {anlam, kalip, cikar}: yoklamada kaybolmasın
-    const anahtarOf = r => r.elle ? (r.id || ("elle:" + r.kalip)) : r.kalip;
+    const anahtarOf = r => r.sentetik ? r.id : r.elle ? (r.id || ("elle:" + r.kalip)) : r.kalip;
+    /* GRUPTAN AYRILANLAR: {değer: {anlam, cikar}}. Düzenleme duzen'de
+       tutulur (yoklamada kaybolmaz); ilk okumada satırdan kopyalanır. */
+    function grupAyrilan(r, anah) {
+        const dz = duzen[anah] = duzen[anah] || {};
+        if (!dz.ayrilan) dz.ayrilan = JSON.parse(JSON.stringify(r.ayrilan || {}));
+        return dz.ayrilan;
+    }
+    const ayrAnahtari = (anah, dg) => "ayr:" + anah + ":" + dg;
+    /* Grubun onaya giden ayrılan listesi: her üyenin kendi satırındaki
+       anlam ve çıkarma kararıyla. */
+    function ayrilanCikti(r, anah) {
+        const ayr = grupAyrilan(r, anah), cikti = {};
+        Object.keys(ayr).forEach(dg => {
+            const sd = duzen[ayrAnahtari(anah, dg)] || {};
+            cikti[dg] = { anlam: String(sd.anlam !== undefined ? sd.anlam : (ayr[dg].anlam || "")).trim(),
+                          cikar: sd.cikar !== undefined ? !!sd.cikar : !!ayr[dg].cikar };
+        });
+        return cikti;
+    }
     const cikarildi = (r, anah) => (duzen[anah] && duzen[anah].cikar !== undefined)
         ? duzen[anah].cikar : !!r.cikar;
 
@@ -9760,6 +9779,24 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             kg.setAttribute("aria-label", "Kalıp");
             tdK.appendChild(kg);
         } else tdK.appendChild(elYap("span", "dg-donem-kalip", r.kalip));
+        let geriAlBtn = null;
+        if (r.sentetik) {
+            /* Gruptan ayrılan değer: kendi anlamıyla dönem; "Gruba Geri Al"
+               grubun anlamına döndürür, "Çıkar" dönem değil yapar. */
+            tdK.appendChild(elYap("div", "dg-donem-ayrilan-not", r.ust + " grubundan ayrıldı"));
+            geriAlBtn = elYap("button", "dg-toplu-btn dg-donem-geri-al", "Gruba Geri Al");
+            geriAlBtn.type = "button";
+            geriAlBtn.disabled = kilitli || calisiyor;
+            geriAlBtn.title = r.ust + " grubuna geri koy; anlamı grubun anlamından gelir.";
+            geriAlBtn.onclick = () => {
+                if (kilitli || da.dm === "calisiyor") return;
+                delete grupAyrilan(r.ustR, r.ustAnah)[r.kalip];
+                delete duzen[anah];
+                ciz(da.satirlar);
+                if (degisti) degisti();
+            };
+            tdK.appendChild(geriAlBtn);
+        }
         const orn = r.ornekler || [];
         if (orn.length) tdK.appendChild(bolmeBilgiSimgesi(
             tireSade("Örnek:\n" + orn.map(o => o.kolon + ": " + o.tanim).join("\n")), r.kalip));
@@ -9812,7 +9849,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         function elleSay() {
             if (!kg) return;
             const k = kg.value.trim();
-            const bulunan = adlardaBul(k);
+            const bulunan = adlardaBul(k).filter(d => !grupAyrilan(r, anah)[d.deger]);
             degerCiz(tdD, bulunan);
             if (k && !bulunan.length) {
                 /* ADLARDA GEÇMEYEN KALIP: bu çalışmada bir kolonu etkilemez;
@@ -9850,7 +9887,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 tdD.appendChild(hb);
             }
         }
-        if (kg) elleSay(); else degerCiz(tdD, r.degerler || []);
+        const ayrilanlar = r.sentetik ? {} : grupAyrilan(r, anah);
+        if (kg) elleSay(); else degerCiz(tdD, (r.degerler || []).filter(d => !ayrilanlar[d.deger]));
         birlikteCiz();
         tr.appendChild(tdD);
         /* ANLAM: model önerisi; kullanıcı düzeltir. Soru / not / kontrol altında. */
@@ -9886,7 +9924,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         dgKap.append(dgAc, dgListe);
         tdA.insertBefore(dgKap, g.nextSibling);
         let dgAcik = !!(dz && dz.dgAcik);
-        const degerListesi = () => kg ? adlardaBul(kg.value) : (r.degerler || []);
+        const degerListesi = () => (kg ? adlardaBul(kg.value) : (r.degerler || []))
+            .filter(d => !ayrilanlar[d.deger]);
         function dgCiz() {
             const kalipV = kg ? kg.value.trim() : r.kalip;
             const liste = degerListesi();
@@ -9941,7 +9980,25 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                         gi.value = donemDegerAnlami(kg ? kg.value.trim() : r.kalip, g.value.trim(), d.deger);
                 });
                 isaret();
-                satir.append(et, gi);
+                /* GRUPTAN AYIR: yanlış gruplanmış değer kendi satırına
+                   geçer, anlamı şimdiki anlamıyla başlar. Grupta en az bir
+                   değer kalır. */
+                const ayir = elYap("button", "dg-toplu-btn dg-donem-ayir", "Ayır");
+                ayir.type = "button";
+                ayir.disabled = k || liste.length < 2;
+                ayir.title = liste.length < 2 ? "Grupta tek değer kaldı."
+                    : d.deger + " değerini gruptan ayır: kendi satırında kendi anlamıyla durur ya da çıkarılır.";
+                ayir.onclick = () => {
+                    if (kilitli || da.dm === "calisiyor" || liste.length < 2) return;
+                    ayrilanlar[d.deger] = { anlam: gi.value.trim() || donemDegerAnlami(
+                        kg ? kg.value.trim() : r.kalip, g.value.trim(), d.deger), cikar: false };
+                    delete dgAnlam[d.deger];
+                    duzen[anah] = Object.assign(duzen[anah] || {}, {
+                        anlam: g.value, deger_anlam: Object.assign({}, dgAnlam), dgAcik: true });
+                    ciz(da.satirlar);
+                    if (degisti) degisti();
+                };
+                satir.append(et, gi, ayir);
                 dgListe.appendChild(satir);
             });
         }
@@ -10071,7 +10128,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const anlam = (duzen[c.anah] && duzen[c.anah].anlam !== undefined)
                 ? duzen[c.anah].anlam : (c.r.anlam || "");
             const hafizada = c.r.kaynak === "hafiza";
-            b.title = (anlam ? tireSade(anlam) + "\n" : "")
+            b.title = (c.r.sentetik ? c.r.ust + " grubundan ayrıldı; dönem değil.\n" : "")
+                + (anlam ? tireSade(anlam) + "\n" : "")
                 + (c.r.soru ? "Dil modeli: " + tireSade(c.r.soru) + "\n" : "")
                 + (hafizada ? "Onaylayınca hafızadan silinir.\n" : "") + "Tıklayın: geri al";
             /* Hafızadan gelen kalıp onayla hafızadan da silinir: görünür yazılır. */
@@ -10095,9 +10153,19 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             if (cikarildi(r, anah)) {
                 if (r.olasi) olasilar.push({ r, anah });     // olası: tabloya alınmadı
                 else if (!r.elle) cikanlar.push({ r, anah }); // elle satır çıkarılınca silinir
-                return;
-            }
-            satirCiz(r);
+            } else satirCiz(r);
+            /* Gruptan ayrılan değerler grubun hemen altında kendi satırında. */
+            const ayr = r.olasi && cikarildi(r, anah) ? {} : grupAyrilan(r, anah);
+            Object.keys(ayr).sort().forEach(dg => {
+                const sr = { kalip: dg, tur: "ayrilan", sentetik: true, id: ayrAnahtari(anah, dg),
+                             ust: r.kalip, ustR: r, ustAnah: anah,
+                             degerler: (r.degerler || []).filter(x => x.deger === dg),
+                             ornekler: [], anlam: ayr[dg].anlam || "",
+                             oneri: donemDegerAnlami(r.kalip, r.anlam || "", dg),
+                             kaynak: "", cikar: !!ayr[dg].cikar, birlikte: [], haric: [] };
+                if (cikarildi(sr, sr.id)) cikanlar.push({ r: sr, anah: sr.id });
+                else satirCiz(sr);
+            });
         });
         elleYeni.forEach(satirCiz);
         if (!satirlar.length) {
@@ -10209,12 +10277,13 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const acik = () => satirlar.filter(x => !bosElle(x));
     return {
         /* Tabloda kalanlar + çıkarılanlar (cikar: true). */
-        deger: () => acik().map(x => ({
+        deger: () => acik().filter(x => !x.r.sentetik).map(x => ({
             kalip: x.kg ? x.kg.value.trim() : x.r.kalip, anlam: x.g.value.trim(),
             elle: !!x.r.elle, cikar: false, haric: Array.from(x.haric),
-            deger_anlam: Object.assign({}, x.dgAnlam) }))
-            .concat(cikanlar.map(c => ({
+            deger_anlam: Object.assign({}, x.dgAnlam), ayrilan: ayrilanCikti(x.r, x.anah) }))
+            .concat(cikanlar.filter(c => !c.r.sentetik).map(c => ({
                 kalip: c.r.kalip, cikar: true, elle: false,
+                ayrilan: ayrilanCikti(c.r, c.anah),
                 haric: (duzen[c.anah] && duzen[c.anah].haric) || c.r.haric || [],
                 deger_anlam: (duzen[c.anah] && duzen[c.anah].deger_anlam) || c.r.deger_anlam || {},
                 anlam: ((duzen[c.anah] && duzen[c.anah].anlam !== undefined)
@@ -10232,8 +10301,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             kilitli = k;
             const c = da.dm === "calisiyor";
             satirlar.forEach(x => { x.g.disabled = k || c; x.cikBtn.disabled = k || c;
-                                    x.tr.querySelectorAll(".dg-donem-deger-giris")
+                                    x.tr.querySelectorAll(".dg-donem-deger-giris, .dg-donem-geri-al")
                                         .forEach(i => { i.disabled = k || c; });
+                                    x.tr.querySelectorAll(".dg-donem-ayir")
+                                        .forEach(i => { i.disabled = k || c || i.title === "Grupta tek değer kaldı."; });
                                     if (x.kg) x.kg.disabled = k || c;
                                     x.tr.querySelectorAll(".dg-birlikte-cip")
                                         .forEach(b => { b.disabled = k || c; }); });

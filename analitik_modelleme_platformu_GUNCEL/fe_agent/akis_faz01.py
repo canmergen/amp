@@ -1798,7 +1798,9 @@ DONEM_SUTUNLAR = (
     "değerin anlamı; kalıbın anlamından sayısı yerine konarak gelir "
     "(30D: 30 gün boyunca), her biri ayrı değiştirilebilir. Değiştirilen "
     "değer Açıklama Düzenleme'ye kendi anlamıyla gider ve hafızaya yazılır; "
-    "değiştirilmeyen kalıbın anlamını izler.\n"
+    "değiştirilmeyen kalıbın anlamını izler. Yanlış gruplanmış değeri «Ayır» "
+    "ile gruptan ayırın: kendi satırında kendi anlamıyla durur, «Çıkar» ile "
+    "dönem değil yapılır, «Gruba Geri Al» ile gruba döner.\n"
     "Çıkar: satırı dönem bilgisinden çıkarır; çıkarılan satır kullanılmaz "
     "ve hafızaya yazılmaz. Hafızadan gelen (mor) bir kalıbı çıkarırsanız "
     "onaylayınca hafızadan da silinir.")
@@ -1854,6 +1856,7 @@ def _donem_alani(durum):
     haf = donem_mod.hafiza()
     haf_haric = donem_mod.hafiza_haric()
     haf_deger = donem_mod.hafiza_deger()
+    haf_ayrilan = donem_mod.hafiza_ayrilan()
     onceki = {str(x.get("kalip")): x for x in (durum.get("donem_bilgisi_karari") or [])
               if isinstance(x, dict)}
     calisiyor = d["durum"] == "calisiyor"
@@ -1893,8 +1896,17 @@ def _donem_alani(durum):
         deger_anlam = o.get("deger_anlam") if (o is not None and "deger_anlam" in o) \
             else haf_deger.get(kalip)
         gecen = {str(x.get("deger")) for x in degerler or []}
+        # GRUPTAN AYRILANLAR: yanlis gruplanmis degerler kendi satirinda,
+        # kendi anlamiyla (ya da donem degil). Onceki karar, yoksa hafiza.
+        ayrilan = o.get("ayrilan") if (o is not None and "ayrilan" in o) \
+            else haf_ayrilan.get(kalip)
+        ayrilan = {str(dg): {"anlam": str((x or {}).get("anlam") or ""),
+                             "cikar": bool((x or {}).get("cikar"))}
+                   for dg, x in (ayrilan or {}).items()
+                   if isinstance(x, dict) and (not gecen or str(dg) in gecen)}
         deger_anlam = {str(dg): str(an) for dg, an in (deger_anlam or {}).items()
-                       if str(an or "").strip() and (not gecen or str(dg) in gecen)}
+                       if str(an or "").strip() and (not gecen or str(dg) in gecen)
+                       and str(dg) not in ayrilan}
         r = {"kalip": kalip, "tur": tur, "kolon": kolon, "degerler": degerler,
              "ornekler": ornekler, "anlam": anlam, "oneri": oneri,
              "soru": soru if anlam == oneri else "", "not": notu if anlam == oneri else "",
@@ -1902,7 +1914,7 @@ def _donem_alani(durum):
              "hafizada": bool(haf.get(kalip)), "birlikte": birlikte,
              "tek": b.get("tek", kolon), "haric": sorted(set(haric or ()) & gecerli),
              "haric_oneri": sorted(set(haric_oneri or ()) & gecerli), "uyari": uyari,
-             "olasi": bool(olasi), "deger_anlam": deger_anlam}
+             "olasi": bool(olasi), "deger_anlam": deger_anlam, "ayrilan": ayrilan}
         r.update(ek)
         satirlar.append(r)
 
@@ -2012,6 +2024,7 @@ def donem_uygula(durum):
         durum["donem_bilgisi"] = {}
         durum["donem_haric"] = {}
         durum["donem_deger_anlam"] = {}
+        durum["donem_ayrilan"] = {}
         return KONTROL_ATLANDI
     alan = _donem_alani(durum)
     gecerli = {s_["kalip"] for s_ in alan["satirlar"]}
@@ -2027,6 +2040,7 @@ def donem_uygula(durum):
                  if isinstance(g, dict) and (str(g.get("kalip")) in gecerli or g.get("elle"))]
     hatalar = []
     bilgi, kayit, haric_harita, deger_harita = {}, [], {}, {}
+    ayrilan_harita, ayrilan_bilgi = {}, {}      # grup -> uyeler; uye -> anlam
     gorulen = set()
     cikan = 0
     cikan_kaliplar = []
@@ -2058,12 +2072,12 @@ def donem_uygula(durum):
         # DEGER ANLAMLARI: yalniz kaliba uyan degerler; kalibin anlamindan
         # uretilenle ayni olan yazilmaz (kalip anlami degisince o da degissin).
         desen = donem_mod.kalip_deseni(kalip)
+        gecen = adlarda.get(kalip) or {x for x in parca_adlari if desen and desen.match(x)}
         deger_anlam = {}
         for dg, an in (g.get("deger_anlam") or {}).items() \
                 if isinstance(g.get("deger_anlam"), dict) else ():
             dg = re.sub(r"\s+", "", str(dg or "")).upper()
             an = re.sub(r"\s+", " ", str(an or "")).strip()
-            gecen = adlarda.get(kalip) or {x for x in parca_adlari if desen and desen.match(x)}
             if not dg or not an or desen is None or not desen.match(dg) or dg not in gecen:
                 continue
             if an == donem_mod.deger_anlami(kalip, anlam, dg):
@@ -2073,9 +2087,36 @@ def donem_uygula(durum):
                                "yazın." % (kalip, dg))
                 continue
             deger_anlam[dg] = an
+        # GRUPTAN AYRILANLAR: yalniz bu kalibin adlarda gecen degerleri.
+        # Donem kalanin anlami dolu ve yer tutucusuz olmali; grup
+        # cikarilsa da ayrilan kendi kararini tasir.
+        ayrilan = {}
+        ham_ayr = g.get("ayrilan") if isinstance(g.get("ayrilan"), dict) else {}
+        for dg, x in ham_ayr.items():
+            dg = re.sub(r"\s+", "", str(dg or "")).upper()
+            if not isinstance(x, dict) or desen is None or not desen.match(dg) \
+                    or dg not in gecen:
+                continue
+            an = re.sub(r"\s+", " ", str(x.get("anlam") or "")).strip()
+            ay_cikar = bool(x.get("cikar"))
+            if not ay_cikar:
+                if not an:
+                    hatalar.append("%s: gruptan ayrılan %s için anlam boş; yazın ya "
+                                   "da çıkarın." % (kalip, dg))
+                    continue
+                if donem_mod.yer_tutucu_hatasi(dg, an):
+                    hatalar.append("%s: gruptan ayrılan %s anlamında yer tutucu "
+                                   "olamaz; sayıyı yazın." % (kalip, dg))
+                    continue
+                ayrilan_bilgi[dg] = an
+            ayrilan[dg] = {"anlam": an, "cikar": ay_cikar}
+            deger_anlam.pop(dg, None)
+        if ayrilan:
+            ayrilan_harita[kalip] = ayrilan
         if cikar:
             kayit.append({"kalip": kalip, "anlam": anlam, "elle": False, "cikar": True,
-                          "haric": haric, "deger_anlam": deger_anlam})
+                          "haric": haric, "deger_anlam": deger_anlam,
+                          "ayrilan": ayrilan})
             cikan += 1
             cikan_kaliplar.append(kalip)
             continue
@@ -2087,28 +2128,82 @@ def donem_uygula(durum):
             hatalar.append("%s: %s" % (kalip, yt))
             continue
         kayit.append({"kalip": kalip, "anlam": anlam, "elle": elle, "cikar": False,
-                      "haric": haric, "deger_anlam": deger_anlam})
+                      "haric": haric, "deger_anlam": deger_anlam, "ayrilan": ayrilan})
         bilgi[kalip] = anlam
         haric_harita[kalip] = haric
         deger_harita[kalip] = deger_anlam
+    for dg in ayrilan_bilgi:
+        if dg in gorulen:
+            hatalar.append("%s: hem gruptan ayrılmış hem ayrı bir satırda." % dg)
     if hatalar:
         raise AdimHatasi("Şu satırlar onaylanamadı:\n" + "\n".join(hatalar))
+    grup_bilgi = dict(bilgi)
+    # Ayrilan uye calismada kendi kalibi olarak kullanilir (grubun deseni
+    # onu kapsamaz, bkz. _aciklama_girdileri); hafizada grubun altinda durur.
+    bilgi.update(ayrilan_bilgi)
     durum["donem_bilgisi"] = bilgi
     durum["donem_haric"] = {k: v for k, v in haric_harita.items() if v}
     durum["donem_deger_anlam"] = {k: v for k, v in deger_harita.items() if v}
+    durum["donem_ayrilan"] = {k: sorted(v) for k, v in ayrilan_harita.items()}
     durum["donem_bilgisi_karari"] = kayit
     durum.pop("parca_bilgisi", None)
-    hata = donem_mod.hafizaya_yaz(bilgi, haric_harita, deger_harita) if bilgi else None
+    hata = donem_mod.hafizaya_yaz(grup_bilgi, haric_harita, deger_harita,
+                                  {k: ayrilan_harita.get(k) or {} for k in grup_bilgi}) \
+        if grup_bilgi else None
+    tablo_hata = _donem_tablosu_yaz(durum, alan, grup_bilgi, deger_harita, ayrilan_harita)
     silinen, sil_hata = donem_mod.hafizadan_sil(cikan_kaliplar)
-    metin = "%d dönem kalıbı onaylandı" % len(bilgi)
-    if bilgi and not hata:
+    metin = "%d dönem kalıbı onaylandı" % len(grup_bilgi)
+    if grup_bilgi and not hata:
         metin += " ve hafızaya kaydedildi"
+    ayr_sayi = sum(len(v) for v in ayrilan_harita.values())
+    if ayr_sayi:
+        metin += "; %d değer gruptan ayrıldı" % ayr_sayi
     if cikan:
         metin += "; %d kalıp çıkarıldı" % cikan
         if silinen:
             metin += ", bunların %d tanesi hafızadan da silindi" % silinen
-    hatalar = " ".join(h for h in (hata, sil_hata) if h)
+    hatalar = " ".join(h for h in (hata, sil_hata, tablo_hata) if h)
     return metin + "." + (" " + hatalar if hatalar else "")
+
+
+DONEM_TABLO_ADI = "DONEM_BILGISI"
+DONEM_TABLO_KOLONLARI = ("KALIP", "KALIP_ANLAMI", "DEGER", "DEGER_ANLAMI",
+                         "KOLON_SAYISI", "KAYNAK")
+
+
+def _donem_tablosu_yaz(durum, alan, bilgi, deger_harita, ayrilan_harita):
+    """Calismanin donem bilgisi tablosu: her grup ve icindeki her deger
+    kendi anlamiyla (PROJE_HAFIZASI/<calisma>/DONEM_BILGISI.parquet).
+    KAYNAK: Kalıptan (grubun anlamindan), Değiştirildi (degere ayri
+    yazildi), Gruptan Ayrıldı (kendi anlamiyla donem), Gruptan Ayrıldı ·
+    Dönem Değil. Doner: hata metni ya da None."""
+    satirlar = []
+    sayi = {s_["kalip"]: {str(x.get("deger")): int(x.get("kolon") or 0)
+                          for x in s_.get("degerler") or []} for s_ in alan["satirlar"]}
+    gruplar = list(bilgi) + [k for k in ayrilan_harita if k not in bilgi]
+    for kalip in gruplar:
+        anlam = bilgi.get(kalip, "")
+        ayr = ayrilan_harita.get(kalip) or {}
+        degerler = sayi.get(kalip) or {}
+        for dg in sorted(degerler, key=lambda d: (-degerler[d], d)):
+            if dg in ayr:
+                x = ayr[dg]
+                satirlar.append([kalip, anlam, dg, "" if x["cikar"] else x["anlam"],
+                                 degerler[dg], "Gruptan Ayrıldı · Dönem Değil"
+                                 if x["cikar"] else "Gruptan Ayrıldı"])
+            elif kalip in bilgi:
+                ozel = (deger_harita.get(kalip) or {}).get(dg)
+                satirlar.append([kalip, anlam, dg,
+                                 ozel or donem_mod.deger_anlami(kalip, anlam, dg),
+                                 degerler[dg], "Değiştirildi" if ozel else "Kalıptan"])
+    try:
+        from fe_agent.akis_durum import _folder as _klasor
+        from fe_agent import tablo_io
+        tablo_io.klasore_yaz(_klasor(), "/%s/%s.parquet" % (amp_klasor_adi(durum), DONEM_TABLO_ADI),
+                             pd.DataFrame(satirlar, columns=list(DONEM_TABLO_KOLONLARI)))
+    except Exception as e:
+        return "Dönem bilgisi tablosu çalışma klasörüne yazılamadı (%s)." % str(e)[:120]
+    return None
 
 
 def donem_hafiza_ekle(durum, kalip, anlam):
@@ -2233,6 +2328,16 @@ def _dagilim_satiri(p):
     return " | ".join(x for x in parca if x)
 
 
+class _AyrilanliDesen(object):
+    """Grubun deseni; gruptan ayrilan degerlerle eslesmez."""
+
+    def __init__(self, desen, ayrilan):
+        self._desen, self._ayrilan = desen, set(ayrilan)
+
+    def match(self, metin):
+        return None if metin in self._ayrilan else self._desen.match(metin)
+
+
 def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
     """Ad parcalarinin onayli anlamlari. Doner: (istem satirlari, aile
     karsilastirmasi icin donem degeri silinmis ozet)."""
@@ -2297,9 +2402,14 @@ def _aciklama_girdileri(durum):
     desenler = []
     donem_haric = durum.get("donem_haric") or {}
     donem_deger = durum.get("donem_deger_anlam") or {}
+    donem_ayrilan = durum.get("donem_ayrilan") or {}
     for k, v in (durum.get("donem_bilgisi") or {}).items():
         r = donem_mod.kalip_deseni(k)
         if r is not None and str(v or "").strip():
+            # Gruptan ayrilan deger grubun deseniyle eslesmez.
+            ayr = set(donem_ayrilan.get(k) or ())
+            if ayr:
+                r = _AyrilanliDesen(r, ayr)
             desenler.append((str(k), r, str(v).strip(), set(donem_haric.get(k) or ()),
                              dict(donem_deger.get(k) or {})))
     try:
