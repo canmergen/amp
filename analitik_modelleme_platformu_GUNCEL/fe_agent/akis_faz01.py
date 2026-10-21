@@ -4152,6 +4152,32 @@ def tanimsiz_karar_uygula(durum):
     return ""
 
 
+def karar_sonrasi_alan(durum, adim):
+    """Adim onaylaninca kartinin KARARLI hali: transkriptteki kart bununla
+    guncellenir, sayfa yenilenince kart verilen kararlarla gelir (bkz.
+    backend._biten_adimi_guncelle). Kartlari ureten fonksiyonlar onceki
+    karari okur (Geri Don ile ayni); durumun kopyasi uzerinde calisilir.
+    Doner: kartin secim alanina islenecek bolumler ({} ise yok)."""
+    import copy as _copy
+    kopya = _copy.deepcopy(durum)
+    try:
+        if adim == "tanimsiz_karar":
+            tanimsiz_karar_plan(kopya)
+            alan = kopya.get("_secim_alani") or {}
+            return {"cikar": alan["cikar"]} if alan.get("cikar") else {}
+        if _kontrol_atlandi(kopya):
+            return {}
+        if adim == "donem":
+            return {"donem": _donem_alani(kopya)}
+        if adim == "kisaltma":
+            return {"kisaltma": _kisaltma_alani(kopya)}
+        if adim == "kolon_ad":
+            return {"kolon_ad": _kolon_ad_alani(kopya)}
+    except Exception:
+        return {}
+    return {}
+
+
 def _tanim_duzeltmelerini_uygula(durum, satirlar, is_duzeltmeleri):
     """Tanim kontrolu kararlarini sozlugun CALISMA KOPYASINA isler.
 

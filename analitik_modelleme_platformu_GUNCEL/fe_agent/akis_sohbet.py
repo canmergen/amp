@@ -403,6 +403,15 @@ def _tamamlandi_yaz(durum, anahtar, cikti):
         "dolu": dolu,
         "secili": secili,
     }
+    # KARAR KARTLARI: kartin verilen kararlarla hali (yenilemede ilk hali
+    # degil bu gorunur).
+    try:
+        from fe_agent.akis_faz01 import karar_sonrasi_alan
+        karar_alan = karar_sonrasi_alan(durum, anahtar)
+    except Exception:
+        karar_alan = {}
+    if karar_alan:
+        kayit["karar_alan"] = karar_alan
     durum["_tamamlanan"] = kayit
     # BIR TURDA BIRDEN FAZLA ADIM BITEBILIR (bolme -> profil -> SFA ->
     # aralik karti, onaysiz zincir). Hepsi SIRAYLA tutulur.

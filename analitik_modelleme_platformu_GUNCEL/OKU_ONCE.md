@@ -252,6 +252,16 @@ tanıtır; sayfalar sol bardan açılır.
 - Listede görülmüş bir adıma basınca sohbet o adımın bloğuna kayar.
 - Adımlar sohbet alanında blok blok ilerler. Her blok kendi kararını ve
   "Geri Dön" düğmesini taşır.
+- **Sayfa yenilenince kartlar kararlarla gelir:** biten adımın kartı
+  transkriptte son haliyle saklanır (`backend._biten_adimi_guncelle`).
+  Formlar dolu haliyle (akis_sohbet._biten_ekran), Eksik Sözlük
+  Tanımları satırları ve tanım kontrolü karar gövdesinden; Tanımsız
+  Kolonlar, Dönem Bilgisi (değer anlamları ve gruptan ayrılanlar dahil),
+  Kısaltma Sözlüğü ve Yeni Kolon Adları kartları onay anında verilen
+  kararlarla yeniden üretilir (`akis_faz01.karar_sonrasi_alan`, Geri Dön
+  ile aynı kaynak). Yeni hali kayıt sınırını aşarsa kart ilk haliyle
+  kalır. Henüz onaylanmamış kartta yapılan düzenlemeler yenilemede
+  kaybolur.
 - **Adım atıfları:** bir işin hangi adımda yapılacağını ya da yapıldığını
   söyleyen her metin (sohbet mesajları, kart açıklamaları, sağ panel
   notları, "i" açıklamaları, hata mesajları, sohbet kutusunun kilit notu)

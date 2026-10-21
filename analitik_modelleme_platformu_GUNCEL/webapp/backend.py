@@ -1002,10 +1002,14 @@ def _biten_adimi_guncelle(durum, tamam, rozet=None, karar=None):
     dolu = tamam.get("dolu")
     secili = tamam.get("secili")
     hedef = tamam.get("adim")
+    # 4) KARAR KARTLARININ KARARLI HALI (Tanımsız Kolonlar, Dönem Bilgisi,
+    #    Kısaltma Sözlüğü, Yeni Kolon Adları): akis kartı verilen kararlarla
+    #    yeniden üretti (akis_faz01.karar_sonrasi_alan).
+    karar_alan = tamam.get("karar_alan") if isinstance(tamam.get("karar_alan"), dict) else None
     if not hedef:
         return
     form_bitti = (dolu is None and secili is None)
-    dg_bitti = not rozet and not karar
+    dg_bitti = not rozet and not karar and not karar_alan
     for kayit in reversed(durum.get("_gecmis") or []):
         if form_bitti and dg_bitti:
             return
@@ -1022,6 +1026,12 @@ def _biten_adimi_guncelle(durum, tamam, rozet=None, karar=None):
             if karar:
                 _dogrulama_satirlarini_isle(alan, karar)
                 _kontrol_satirlarini_isle(alan, karar, durum)
+            if karar_alan:
+                eski = {k: alan[k] for k in karar_alan if k in alan}
+                alan.update({k: v for k, v in karar_alan.items() if k in eski})
+                # Sinir asilirsa kart ilk haliyle kalir (kart kaybolmasin).
+                if _ekran_boyutu(ekran) > EKRAN_SINIRI:
+                    alan.update(eski)
             dg_bitti = True
             continue
         if form_bitti:
