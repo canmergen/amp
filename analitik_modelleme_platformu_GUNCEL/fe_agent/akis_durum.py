@@ -97,16 +97,18 @@ SAHIP_DOSYA = "/VERI_SETI_SAHIPLERI.json"
 # kolon adlari; baska bir kurumun veri setinden gelmiyorlar.
 AMP_SOZLUK_KOLONLARI = ("DEGISKEN", "TIP", "TIP_DEGISIKLIGI", "ACIKLAMA",
                         "NULL_ORANI", "SUREC_DISI", "KATEGORI",
-                        # Aciklama Duzenleme ve Yeni Kolon Adlari: eski ad,
-                        # duzenleme oncesi aciklama ve anlam karti.
+                        # Sozluk ve Kolon Adi Kontrolu: eski ad, duzenleme
+                        # oncesi aciklama, kolon karti (onayli ad
+                        # parcalarindan), ek bilgi, aile (adi yalniz
+                        # sayilarla ayrilan kolonlar ayni ailede) ve onay.
                         "ESKI_AD", "ACIKLAMA_ORIJINAL", "KONU", "YON", "NITELIK",
-                        "PENCERE", "OLCU", "ISTATISTIK", "KARSILASTIRMA",
-                        "DEGER_ANLAMI")
-# Anlam karti alani -> AMP_SOZLUK kolonu (llm.KART_ALANLARI sirasiyla).
+                        "ZAMAN", "OLCU", "ISTATISTIK", "KARSILASTIRMA", "BIRIM",
+                        "DIGER", "EK_BILGI", "AILE", "ONAY_KULLANICI", "ONAY_ZAMANI")
+# Kolon karti alani -> AMP_SOZLUK kolonu (llm.KART_ALANLARI sirasiyla).
 AMP_KART_KOLONLARI = (("konu", "KONU"), ("yon", "YON"), ("nitelik", "NITELIK"),
-                      ("pencere", "PENCERE"), ("olcu", "OLCU"),
+                      ("zaman", "ZAMAN"), ("olcu", "OLCU"),
                       ("istatistik", "ISTATISTIK"), ("karsilastirma", "KARSILASTIRMA"),
-                      ("deger_anlami", "DEGER_ANLAMI"))
+                      ("birim", "BIRIM"), ("diger", "DIGER"))
 
 LINEAGE_ADI = "MODELLEME_LINEAGE"
 
@@ -350,7 +352,7 @@ def _mod_goc(durum):
 # Eski kayitlarda adim konumu (durum["i"]) kaydin surumundeki adim
 # listesine gore bir SAYIDIR; okunurken surum surum guncel siraya
 # kaydirilir (bkz. _sira_goc, _faz_sirasi_goc).
-SIRA_SURUMU = 14
+SIRA_SURUMU = 15
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
@@ -366,16 +368,25 @@ _SIRA_GOCLERI = {
     11: (1, {"A": 5, "B": 7}),
     13: (1, {"A": 3, "B": 5}),
     14: (1, {"A": 1}),
+    # Kisaltma Sozlugu cikti, Ad Parcalari girdi (Dönem Bilgisi'nden sonra,
+    # Kolon Kartlari'ndan once): adim sayisi ayni.
+    15: (0, {}),
 }
 # surum -> {mod: (ilk, son)}: bu surumden onceki sirada [ilk, son]
 # araligindaki adimda duran calisma "ilk" adimda yeniden acilir.
 _YENIDEN_ACILAN = {
     8: {"A": (4, 6), "B": (6, 8)},
+    # Eski Aciklama Duzenleme / Kisaltma Sozlugu / Yeni Kolon Adlari'nda
+    # duran calisma Ad Parcalari'nda yeniden acilir.
+    15: {"A": (8, 10), "B": (9, 11)},
 }
 # Yeniden acilan calismada eski kararlar temizlenir.
 _YENIDEN_ACILAN_ALANLAR = {
     8: ("kisaltma_birlesik", "kisaltma_sayi_ayir", "_kolon_ad_imza",
         "kisaltma_kararlari", "kisaltma_esleme", "_kolon_ad_karari"),
+    15: ("kisaltma_sozluk", "kisaltma_yeni", "kisaltma_kararlari", "kisaltma_esleme",
+         "kisaltma_turleri", "kisaltma_kalip", "_kisaltma_imza", "kolon_yeni_ad",
+         "_kolon_ad_karari"),
 }
 
 

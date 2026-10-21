@@ -618,13 +618,13 @@ def _hafiza_yaz(df):
     for anahtar in ("degisimler", "notlar"):
         if not govde[anahtar]:
             govde.pop(anahtar)
-    # AD ILKESI (kalip ve anlam turleri) ve DONEM BILGISI (donem ile baslayan
-    # butun anahtarlar: anlam, haric, deger, ayrilan, tur, ayri yazilis)
-    # ayni dosyada; burada aynen korunur.
+    # AD ILKESI (kalip ve anlam turleri), DONEM BILGISI (donem ile baslayan
+    # butun anahtarlar) ve AD PARCALARI (parca ile baslayan anahtarlar) ayni
+    # dosyada; burada aynen korunur.
     govde.update(_ad_ilkesi_ham())
     eski, _hata = _govde_oku()
     for k, v in (eski or {}).items():
-        if str(k).startswith("donem") and v:
+        if (str(k).startswith("donem") or str(k).startswith("parca")) and v:
             govde[k] = v
     _folder().upload_stream(DOSYA, json.dumps(govde, ensure_ascii=False, indent=2,
                                               sort_keys=True).encode("utf-8"))
@@ -909,6 +909,55 @@ def donem_kaydet(kayitlar, haric=None, degerler=None, ayrilan=None, turler=None,
                 govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
         except Exception as e:
             return "Dönem bilgisi hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
+
+
+def parca_kaydet(kayitlar, esler=None):
+    """01.2.4.1 Ad Parcalari: kayitlar {PARCA: {"anlam", "tur", "standart"}}
+    "parcalar" altina eklenir ya da guncellenir (silinmez); esler {"A|B":
+    "ayni" | "farkli"} "parca_esler" altina. Dosya var ama okunamiyorsa
+    ustune yazilmaz. Doner: hata ya da None."""
+    temiz = {}
+    for k, v in (kayitlar or {}).items():
+        if not isinstance(v, dict) or not str(v.get("anlam") or "").strip():
+            continue
+        temiz[str(k).strip().upper()] = {"anlam": str(v["anlam"]).strip(),
+                                         "tur": str(v.get("tur") or "").strip(),
+                                         "standart": str(v.get("standart") or "").strip().upper()}
+    if not temiz and not esler:
+        return None
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Ad parçaları hafızaya yazılamadı: " + hata
+        p = dict(govde.get("parcalar") or {})
+        p.update(temiz)
+        govde["parcalar"] = dict(sorted(p.items()))
+        if esler:
+            e = dict(govde.get("parca_esler") or {})
+            e.update({str(a): str(b) for a, b in esler.items() if b in ("ayni", "farkli")})
+            govde["parca_esler"] = dict(sorted(e.items()))
+        try:
+            _folder().upload_stream(DOSYA, json.dumps(
+                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+        except Exception as e:
+            return "Ad parçaları hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
+
+
+def parca_ad_standardi_kaydet(standart):
+    """01.2.4.4 Ad Standardi: "parca_ad_standardi" altina yazilir. Doner:
+    hata ya da None."""
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Ad standardı hafızaya yazılamadı: " + hata
+        govde["parca_ad_standardi"] = dict(standart or {})
+        try:
+            _folder().upload_stream(DOSYA, json.dumps(
+                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+        except Exception as e:
+            return "Ad standardı hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
 
 

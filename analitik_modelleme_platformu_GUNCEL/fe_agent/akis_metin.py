@@ -158,22 +158,22 @@ ADIM_ADI = {
     "sozluk_birlestir": "Sözlük Birleştirme",
     "sozluk_kontrol": "Sözlük ve Kolon Adı Kontrolü",
     "donem": "Dönem Bilgisi",
-    "aciklama": "Açıklama Düzenleme",
-    "kisaltma": "Kısaltma Sözlüğü",
-    "kolon_ad": "Yeni Kolon Adları",
+    "parca": "Ad Parçaları",
+    "aciklama": "Kolon Kartları",
+    "kolon_ad": "Kolon Adları",
     "bolme":  "Örneklem ve Doğrulama Tasarımı",
 }
 # SOZLUK VE KOLON ADI KONTROLU: baslangic secimi gibi iki kartli secim.
-# "yap": Donem Bilgisi, Aciklama Duzenleme, Kisaltma Sozlugu ve Yeni
-# Kolon Adlari sirayla calisir. "atla": dort adim kendiliginden atlanir;
+# "yap": Donem Bilgisi, Ad Parcalari, Kolon Kartlari ve Kolon Adlari
+# sirayla calisir. "atla": dort adim kendiliginden atlanir;
 # aciklamalar ve kolon adlari oldugu gibi kalir. Iki durumda da sonuc
 # yalniz AMP_VERISETI ve AMP_SOZLUK'e (Degisken Listesi ve Tip Kontrolu
 # onaylaninca) yazilir.
-KONTROL_ADIMLARI = ("donem", "aciklama", "kisaltma", "kolon_ad")
+KONTROL_ADIMLARI = ("donem", "parca", "aciklama", "kolon_ad")
 KONTROL_SECENEKLERI = [
     {"deger": "yap", "rozet": "A", "baslik": "Sözlük ve Kolon Adları Kontrol Edilsin",
-     "aciklama": "Dönem bilgisi, açıklamalar, kısaltmalar ve kolon adları sırayla "
-                 "kontrol edilip düzeltilir. Düzeltmeler yalnız platformun "
+     "aciklama": "Kolon adlarının parçaları, her kolonun kartı ve açıklaması ve "
+                 "yeni kolon adları sırayla kontrol edilip onaylanır. Düzeltmeler yalnız platformun "
                  "kopyalarına (AMP_VERISETI, AMP_SOZLUK) yazılır."},
     {"deger": "atla", "rozet": "B", "baslik": "Kontrol Edilmeden Geçilsin",
      "aciklama": "Açıklamalar ve kolon adları olduğu gibi kalır; bu dört adım "

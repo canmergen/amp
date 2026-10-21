@@ -11,7 +11,7 @@ from fe_agent.akis_faz01 import (
     sozluk_tanim_plan, sozluk_tanim_uygula,
     tanimsiz_karar_plan, tanimsiz_karar_uygula,
     sozluk_birlestir_plan, sozluk_birlestir_uygula,
-    kisaltma_plan, kisaltma_uygula, kolon_ad_plan, kolon_ad_uygula,
+    parca_plan, parca_uygula, kolon_ad_plan, kolon_ad_uygula,
     donem_plan, donem_uygula, sozluk_kontrol_girdi, sozluk_kontrol_uygula,
     aciklama_plan, aciklama_uygula,
     sozluk_uret_plan, sozluk_uret_uygula, tanimlar_girdi,
@@ -130,46 +130,40 @@ ADIMLAR = {
     "sozluk_kontrol": {
         "baslik": ADIM_ADI["sozluk_kontrol"],
         "aciklama": "Sözlükteki açıklamaların ve kolon adlarının kontrol edilip "
-                    "edilmeyeceği seçilir. Kontrol edilirse dönem bilgisi, "
-                    "açıklamalar, kısaltmalar ve kolon adları sırayla düzeltilir.",
+                    "edilmeyeceği seçilir. Kontrol edilirse kolon adlarının "
+                    "parçaları, her kolonun kartı ve açıklaması ve yeni kolon "
+                    "adları sırayla onaylanır.",
         # plan=None: SECIMIN KENDISI ONAYDIR.
         "girdi": sozluk_kontrol_girdi, "plan": None, "uygula": sozluk_kontrol_uygula},
 
-    # DONEM BILGISI: aciklama duzenlemesinden ONCE kolon adlarindaki donem
-    # kaliplarinin anlami onaylanir (sonraki adimlarin baglami).
+    # SIRA: sayili zaman parcalari -> rakamsiz ad parcalari -> kolon
+    # kartlari (parcalardan) -> kolon adlari (kartlardan). Her adim bir
+    # oncekinin onayladigini kesin bilgi olarak kullanir.
     "donem": {
         "baslik": ADIM_ADI["donem"],
-        "aciklama": "Kolon adlarındaki dönem parçalarının anlamı tanımlardan "
-                    "okunur ve onaylanır; sonraki adımlar açıklamaları ve "
-                    "kolon adlarını bu anlamla yazar.",
+        "aciklama": "Kolon adlarındaki sayılı zaman parçalarının (30D, M3, "
+                    "3_M) anlamı ve türü onaylanır.",
         "girdi": None, "plan": donem_plan, "uygula": donem_uygula},
 
-    # ACIKLAMA DUZENLEME: her kolonun aciklamasi anlami degistirilmeden
-    # duzeltilir; kisaltma sozlugu ve yeni kolon adlari DUZELTILMIS
-    # aciklamalari okur.
+    "parca": {
+        "baslik": ADIM_ADI["parca"],
+        "aciklama": "Kolon adlarındaki öbür parçaların (kısaltmalar ve "
+                    "sözcükler) anlamı, türü ve adlarda kullanılacak standart "
+                    "yazılışı onaylanır; yazımı farklı aynı parçalar birleşir.",
+        "girdi": None, "plan": parca_plan, "uygula": parca_uygula},
+
     "aciklama": {
         "baslik": ADIM_ADI["aciklama"],
-        "aciklama": "Her kolonun sözlük açıklaması anlamı değiştirilmeden "
-                    "düzeltilir: kısaltmalar ve dönem açılır, yarım cümle "
-                    "tamamlanır. Kullanıcının yazdığı esas alınır; belirsizlik "
-                    "soru olarak gelir.",
+        "aciklama": "Her kolonun kartı onaylı parçalardan kurulur, sözlük "
+                    "tanımıyla karşılaştırılır ve tek, açık bir açıklama "
+                    "yazılır; her kolon onaylanır.",
         "girdi": None, "plan": aciklama_plan, "uygula": aciklama_uygula},
-
-    # ADIM SIRASI: aciklama duzenleme -> kisaltma sozlugu -> yeni kolon
-    # adlari. Kisaltmalarin anlami (duzeltilmis) tanimlardan okunur; kolon
-    # adlari onaylanan kisaltmalarla kodla yeniden yazilir.
-    "kisaltma": {
-        "baslik": ADIM_ADI["kisaltma"],
-        "aciklama": "Kolon adlarındaki parçaların anlamı sözlükteki "
-                    "tanımlardan okunur; her anlam için kolon adlarında "
-                    "kullanılacak kısaltma seçilir.",
-        "girdi": None, "plan": kisaltma_plan, "uygula": kisaltma_uygula},
 
     "kolon_ad": {
         "baslik": ADIM_ADI["kolon_ad"],
-        "aciklama": "Kolon adları Kısaltma Sözlüğü'nde seçilen kısaltmalarla "
-                    "yeniden yazılır; yeni adlar yalnız platformun "
-                    "kopyalarında geçerli olur.",
+        "aciklama": "Yeni kolon adları onaylı parçaların standart "
+                    "yazılışlarıyla Ad Standardı'na göre kurulur; yeni adlar "
+                    "yalnız platformun kopyalarında geçerli olur.",
         "girdi": None, "plan": kolon_ad_plan, "uygula": kolon_ad_uygula},
 
     "tanimlar": {
@@ -289,14 +283,14 @@ FAZ01_ADIMLARI = {
     # oldugu tanimlar adiminda belli oluyor.
     "A":  ["mod", "kurulum", "sozluk_birlestir", "tanimlar", "sozluk_tanim", "tanimsiz_karar",
            "sozluk_kontrol", "donem",
-           "aciklama", "kisaltma", "kolon_ad", "teyit", "bolme"],
+           "parca", "aciklama", "kolon_ad", "teyit", "bolme"],
     # B: nihai veri seti YOK; kaynak tablolar ve HER BIRININ SOZLUGU hazir.
     # Sozlukler birlestirmeden ONCE eslenir, nihai sozluk birlestirmede
     # bunlardan kurulur. Kaynagi tanimsiz kolonlar icin A gibi
     # sozluk_tanim adimi var.
     "B":  ["mod", "ham_veri", "kaynak_sozluk", "birlestirme", "tanimlar",
            "sozluk_tanim", "tanimsiz_karar", "sozluk_kontrol", "donem",
-           "aciklama", "kisaltma",
+           "parca", "aciklama",
            "kolon_ad", "teyit", "bolme"],
     # C ve D'de sozluk VERIDEN URETILIYOR: her kolon tanim aliyor, yani
     # tanimsiz kolon kalmiyor ve ayri bir "sozluk_tanim" adimina gerek
@@ -324,8 +318,8 @@ ADIM_GRUPLARI = {
     "tanimsiz_karar": "veri_sozluk",
     "sozluk_kontrol": "veri_sozluk",
     "donem": "veri_sozluk",
+    "parca": "veri_sozluk",
     "aciklama": "veri_sozluk",
-    "kisaltma": "veri_sozluk",
     "kolon_ad": "veri_sozluk",
     # C modu: veri seti secimi + sozluk uretimi + modelleme tanimlari
     "veri_sec":    "veri_sozluk",
@@ -359,8 +353,8 @@ ALT_ADIMLAR = {
     "sozluk_birlestir": "kurulum",
     "tanimsiz_karar": "sozluk_tanim",
     "donem": "sozluk_kontrol",
+    "parca": "sozluk_kontrol",
     "aciklama": "sozluk_kontrol",
-    "kisaltma": "sozluk_kontrol",
     "kolon_ad": "sozluk_kontrol",
 }
 

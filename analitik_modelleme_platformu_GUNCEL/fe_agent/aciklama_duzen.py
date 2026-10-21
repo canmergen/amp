@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""fe_agent/aciklama_duzen.py - ACIKLAMA DUZENLEME (01.2.4.2).
+"""fe_agent/aciklama_duzen.py - KOLON KARTLARI (01.2.4.3).
 
 NE YAPAR
   Her kolonun sozluk aciklamasi ANLAMI DEGISTIRILMEDEN duzeltilir:
@@ -31,6 +31,8 @@ KAYIT: PROJE_HAFIZASI/<calisma>/ACIKLAMA_DUZENLEME.json
   onay            onaylanan son hal (AMP_SOZLUK ve onerilen sozluk buradan)
   yazilan         {kolon: [onceki, son]}: calisma kopyasina yazilanlar
                   (adima ya da oncesine donulunce geri alinir)
+  kabul           {kolon: onaylanan aciklama}: kullanicinin satir onayi;
+                  aciklama sonradan degisirse onay gecersiz olur
 Girdi veri setine ve sozluge hicbir kosulda yazilmaz."""
 
 import hashlib
@@ -61,7 +63,7 @@ _ONCELIK_HAVUZ = futures.ThreadPoolExecutor(max_workers=2)
 
 _SAYI = re.compile(r"(?<!\d)\d+(?!\d)")
 _KAYIT_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "onay",
-                   "yazilan")
+                   "yazilan", "kabul")
 METIN_ALANLARI = ("aciklama", "karar", "soru", "ad_notu", "dagilim_notu")
 
 
@@ -86,6 +88,7 @@ class _Depo(object):
         self.sonuclar = {}
         self.onay = {}
         self.yazilan = {}
+        self.kabul = {}             # kolon -> kullanicinin onayladigi aciklama (sade)
         self.girdiler = {}          # kolon -> son girdi
         self.aileler = {}           # aile -> [kolon]
         self.son_imza = {}          # kolon -> son girdinin imzasi
@@ -252,8 +255,7 @@ def aktar(kaynak, sonuc, hedef):
         return None
     yeni = {a: sayilari_degistir(sonuc.get(a) or "", harita) for a in METIN_ALANLARI}
     yeni["parca"] = sonuc.get("parca") or ""
-    yeni["kart"] = {a: sayilari_degistir(v or "", harita)
-                    for a, v in (sonuc.get("kart") or {}).items()}
+    yeni["ek"] = sayilari_degistir(sonuc.get("ek") or "", harita)
     yeni["model"] = sonuc.get("model") or ""
     yeni["kaynak"] = "aile"
     yeni["aile_kaynagi"] = kaynak["kolon"]
@@ -292,12 +294,12 @@ def denetle(girdi, sonuc):
     eksik = [x for x in dict.fromkeys(girdi.get("donem_sayilari") or []) if x not in var]
     if eksik:
         kontrol.append("Adın dönem sayısı açıklamada yok: %s." % ", ".join(map(str, eksik)))
-    kart = sonuc.get("kart") or {}
+    # KOLON KARTI kodla kurulur (onayli parcalardan); karttaki sayilar
+    # aciklamada gecmeli.
+    kart = girdi.get("kart") or {}
     eksik = [x for x in dict.fromkeys(s for v in kart.values() for s in _sayilar(v)) if x not in var]
     if eksik:
-        yeniden.append("anlam kartındaki sayı açıklamada yok: %s" % ", ".join(map(str, eksik)))
-    if not any(_norm(v) for v in kart.values()):
-        kontrol.append("Anlam kartı boş.")
+        yeniden.append("kolon kartındaki sayı açıklamada yok: %s" % ", ".join(map(str, eksik)))
     for s in llm_mod.aciklama_sorunlari(ack):
         if s.startswith("cümle yarım") or s.startswith("tahmin"):
             yeniden.append(s)
@@ -320,7 +322,7 @@ def _kontrol_metni(sorun):
 # DIL MODELI
 # ---------------------------------------------------------------------------
 def _llm_girdisi(g, duzeltilecek=None):
-    x = {k: g.get(k) for k in ("kolon", "orijinal", "not", "aile_notu", "parcalar",
+    x = {k: g.get(k) for k in ("kolon", "orijinal", "not", "aile_notu", "parcalar", "kart",
                                "kardesler", "dagilim", "rol")}
     if duzeltilecek:
         x["duzeltilecek"] = list(duzeltilecek)
@@ -391,7 +393,7 @@ def _isle(girdiler, ork, durdu=None):
 
 
 def _hata_sonucu(hata):
-    return {"aciklama": "", "karar": "", "kart": {}, "soru": "", "parca": "",
+    return {"aciklama": "", "karar": "", "ek": "", "soru": "", "parca": "",
             "ad_notu": "", "dagilim_notu": "", "kontrol": [], "model": "",
             "kaynak": "hata",
             "hata": hata or "Dil modeli bu kolon için açıklama döndürmedi."}

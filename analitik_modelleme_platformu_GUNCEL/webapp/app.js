@@ -2222,11 +2222,10 @@ const EXCEL_SIMGESI =
    DOKUMAN_DOSYA_ADI ile aynı gerekçe). */
 const EXCEL_ADLARI = { liste: "degisken_listesi.xlsx",
                        sozluk: "degisken_sozlugu.xlsx",
-                       kisaltma: "kisaltma_onerileri.xlsx",
                        aciklama: "onerilen_sozluk.xlsx",
                        onizleme: "veri_onizleme.xlsx" };
-/* Tür -> uç. Kısaltma raporu kendi ucundan gelir (teyit kapısı yok). */
-const EXCEL_UCLARI = { kisaltma: "kisaltma_excel", aciklama: "aciklama_excel",
+/* Tür -> uç. Önerilen sözlük kendi ucundan gelir (teyit kapısı yok). */
+const EXCEL_UCLARI = { aciklama: "aciklama_excel",
                        onizleme: "veri_onizleme_excel" };
 
 /* govdeFn verilirse indirme POST: gövde o an ekranda görünen süzülmüş
@@ -6462,8 +6461,8 @@ const BLOK_TAMAM_METNI = {
     sozluk_tanim: "Eksik Sözlük Tanımları Kaydedildi",
     tanimsiz_karar: "Tanımsız Kolonlar Kararı Verildi",
     sozluk_birlestir: "Sözlük Tanımları Seçildi",
-    kisaltma: "Kısaltma Sözlüğü Onaylandı",
-    kolon_ad: "Yeni Kolon Adları Belirlendi",
+    parca: "Ad Parçaları Onaylandı",
+    kolon_ad: "Kolon Adları Belirlendi",
     teyit: "Değişken Listesi Kaydedildi",
     bolme: "Bölme Uygulandı",
     veri_profili: "Veri Profili Çıkarıldı",
@@ -7941,22 +7940,26 @@ function dogrulamaKartiEkle(alan, blok) {
         d.tr.classList.toggle("dg-noksan", eksik);
     }
 
-    /* ---- 5a) Kısaltma Sözlüğü (01.2.4.3) ve Yeni Kolon Adları (01.2.4.4) ----
-       Ayrı adımlar, kendi kartlarında; karar birincil düğmeyle adımla
-       birlikte gider (alan.adim). */
+    /* ---- 5a) Sözlük ve Kolon Adı Kontrolü'nün dört adımı (01.2.4.1 Dönem
+       Bilgisi, 01.2.4.2 Ad Parçaları, 01.2.4.3 Kolon Kartları, 01.2.4.4
+       Kolon Adları). Ayrı adımlar, kendi kartlarında; karar birincil
+       düğmeyle adımla birlikte gider (alan.adim). */
     const adimModu = alan.adim || "";
     /* Dönem Bilgisi (01.2.4.1) */
     const donErisim = alan.donem
         ? donemBolumuEkle(kart, alan.donem, !!(blok && blok.kilit), () => durumTazele()) : null;
-    /* Açıklama Düzenleme (01.2.4.2) */
+    /* Kolon Kartları (01.2.4.3) */
     const acikErisim = alan.aciklama_duzen
         ? aciklamaBolumuEkle(kart, alan.aciklama_duzen, !!(blok && blok.kilit), () => durumTazele())
         : null;
-    const kisaErisim = alan.kisaltma
-        ? kisaltmaBolumuEkle(kart, alan.kisaltma, !!(blok && blok.kilit), !!adimModu,
-                             () => durumTazele()) : null;
-    /* Yeni Kolon Adları: Kısaltma Sözlüğü'nde seçilenlerle kodla
-       üretilen adların önizlemesi (yalnız AMP kopyalarında uygulanır). */
+    /* Ad Parçaları (01.2.4.2) */
+    const parcaErisim = alan.parca
+        ? parcaBolumuEkle(kart, alan.parca, !!(blok && blok.kilit), () => durumTazele()) : null;
+    /* Kaldırılan Kısaltma Sözlüğü'nün eski kayıttaki kartı: yalnız not. */
+    if (alan.kisaltma) kart.appendChild(elYap("div", "dg-kisa-aciklama",
+        "Bu kart önceki sürümle oluşturuldu; ayrıntısı gösterilmiyor."));
+    /* Kolon Adları: onaylı parçaların standart yazılışlarıyla kodla
+       kurulan adlar (yalnız AMP kopyalarında uygulanır). */
     const kolonAdErisim = alan.kolon_ad
         ? kolonAdBolumuEkle(kart, alan.kolon_ad, !!(blok && blok.kilit), !!adimModu,
                             () => durumTazele()) : null;
@@ -8142,7 +8145,7 @@ function dogrulamaKartiEkle(alan, blok) {
     }
 
     /* ---- 5c) İşlem satırı: açıklama önerileri sürerken süre ve İptal
-       (Kısaltma Sözlüğü'ndekiyle aynı). İptal önerileri durdurur, gelenler
+       (Kolon Kartları'ndakiyle aynı). İptal önerileri durdurur, gelenler
        kalır, kart kilidi açılır. ---- */
     const oIler = elYap("div", "islem-satiri dg-ilerleme");
     oIler.setAttribute("role", "status");
@@ -8218,14 +8221,13 @@ function dogrulamaKartiEkle(alan, blok) {
         /* Başlamadan önce ana düğmenin yapacağı bir şey yok. */
         birincil.hidden = !!kontrol.baslamadi;
     } else if (alan.atla) {
-        /* İsteğe bağlı adım (Kısaltma Sözlüğü, Yeni Kolon Adları). */
+        /* İsteğe bağlı adım ("Değiştirmeden devam" düğmesi olan kart). */
         atlaBtn = elYap("button", "secim-onay ikincil dg-kontrol-atla", tireSade(alan.atla));
         atlaBtn.type = "button";
         atlaBtn.onclick = () => {
             if (mesgul || kart.classList.contains("kilitli")) return;
             const ozet = adimModu === "kolon_ad" ? "Yeni adlar uygulanmadan devam edildi"
-                : adimModu === "aciklama" ? "Açıklamalar değiştirilmeden devam edildi"
-                : "Kısaltmalar onaylanmadan devam edildi";
+                : "Açıklamalar değiştirilmeden devam edildi";
             kartiKilitle(ozet);
             gonder(ozet, false, { dogrulama: { atla: true, adim: kartAdim } });
         };
@@ -8368,10 +8370,13 @@ function dogrulamaKartiEkle(alan, blok) {
         if (adimModu === "aciklama" && acikErisim) {
             const bek = acikErisim.bekliyor(), s = acikErisim.sayac();
             const durdu = acikErisim.durduruldu();
-            birincil.disabled = bek;
+            const onaysiz = Number(s.onaysiz || 0);
+            birincil.disabled = bek || onaysiz > 0;
             gerekce.textContent = bek
                 ? "Dil modeli " + ftBinlik(Number(s.bekleyen || 0)) + " kolonu düzenliyor; bitince "
                   + "onaylanabilir. Beklemek istemezseniz İptal'e basın."
+                : onaysiz > 0 ? ftBinlik(onaysiz) + " kolon onay bekliyor. Her kolonun kartını ve "
+                  + "açıklamasını kontrol edip onaylayın (süzgeç: Onaylanmadı)."
                 : durdu ? ftBinlik(Number(s.bekleyen || 0)) + " kolon düzenlenmedi; onaylarsanız "
                   + "orijinal açıklamaları kalır."
                 : Number(s.soru || 0) > 0 ? ftBinlik(Number(s.soru)) + " kolonda cevapsız soru var; "
@@ -8380,11 +8385,31 @@ function dogrulamaKartiEkle(alan, blok) {
             gerekce.hidden = !gerekce.textContent;
             return;
         }
-        if (adimModu === "kisaltma" && kisaErisim && kisaErisim.bekliyor()) {
-            birincil.disabled = true;
-            gerekce.hidden = false;
-            gerekce.textContent = "Okuma bitince onaylanabilir. Beklemek istemezseniz "
-                + "İptal'e basın ya da onaylamadan devam edin.";
+        /* KOLON ADLARI: her aile onaylanmalı; sorunlu ad onaylanamaz. */
+        if (adimModu === "kolon_ad" && kolonAdErisim) {
+            const on = kolonAdErisim.onaysiz(), sor = kolonAdErisim.sorunlu();
+            birincil.disabled = on > 0 || sor > 0;
+            gerekce.textContent = sor > 0 ? ftBinlik(sor) + " ailede ad sorunu var (süzgeç: Sorunlu)."
+                : on > 0 ? ftBinlik(on) + " aile onay bekliyor. Her aile için yeni adı ya da eski adın "
+                    + "kalmasını onaylayın." : "";
+            gerekce.hidden = !gerekce.textContent;
+            return;
+        }
+        /* AD PARÇALARI: dil modeli bitmeden, onaysız satır, eksik ya da
+           hatalı satır ve kararsız yazım çifti kaldıkça onaylanamaz. */
+        if (adimModu === "parca" && parcaErisim) {
+            const bek = parcaErisim.bekliyor(), on = parcaErisim.onaysiz();
+            const es = parcaErisim.esBekleyen(), sor = parcaErisim.sorunlu();
+            const cak = parcaErisim.cakisma();
+            birincil.disabled = bek || on > 0 || es > 0 || sor > 0 || cak;
+            gerekce.textContent = bek ? "Dil modeli parçaları yorumlamayı bitirince onaylanabilir. "
+                    + "Beklemek istemezseniz İptal'e basın."
+                : sor > 0 ? ftBinlik(sor) + " satırda eksik ya da hatalı bilgi var: süzgeçte «Eksik ya da Hatalı»yı seçin."
+                : cak ? "Aynı gruptaki çiftlerde adlarda kullanılacak yazılış farklı seçilmiş: Yazım Sorunları'nda birini seçin."
+                : on > 0 ? ftBinlik(on) + " parça onay bekliyor. Her parça kontrol edilip onaylanmalı."
+                : es > 0 ? ftBinlik(es) + " yazım çifti karar bekliyor (Yazım Sorunları)."
+                : "";
+            gerekce.hidden = !gerekce.textContent;
             return;
         }
         birincil.disabled = eksikSayisi > 0;
@@ -8404,7 +8429,7 @@ function dogrulamaKartiEkle(alan, blok) {
             k.disabled = kilit || !!(durumlar[i] && durumlar[i].zorunlu);
         });
         topluBtnleri.forEach(b => { b.disabled = kilit; });
-        if (kisaErisim) kisaErisim.kilitle(kilit);
+        if (parcaErisim) parcaErisim.kilitle(kilit);
         if (kolonAdErisim) kolonAdErisim.kilitle(kilit);
         if (donErisim) donErisim.kilitle(kilit);
         if (acikErisim) acikErisim.kilitle(kilit);
@@ -8596,10 +8621,7 @@ function dogrulamaKartiEkle(alan, blok) {
         karar.kontrol = kDurumlar.map(k => ({
             kolon: k.kolon, aciklama: k.giris.value.trim(), uygula: k.kutu.checked }));
         const duzelt = karar.kontrol.filter(k => k.uygula && k.aciklama).length;
-        if (kisaErisim) {
-            karar.kisaltma = kisaErisim.deger();
-            if (kisaErisim.kalip) karar.kalip = kisaErisim.kalip();
-        }
+        if (parcaErisim) karar.parca = parcaErisim.deger();
         if (kolonAdErisim) karar.kolon_ad = kolonAdErisim.deger();
         if (donErisim) karar.donem = donErisim.deger();
         if (acikErisim) karar.aciklama = true;
@@ -8618,17 +8640,21 @@ function dogrulamaKartiEkle(alan, blok) {
                 : "Tanımsız kolonların hepsi veri setinde kaldı";
         } else if (adimModu === "aciklama") {
             const s = acikErisim ? acikErisim.sayac() : {};
-            ozet = ftBinlik(Number(s.degisen || 0)) + " açıklama düzeltildi";
+            ozet = ftBinlik(Number(s.toplam || 0)) + " kolon kartı onaylandı, "
+                + ftBinlik(Number(s.degisen || 0)) + " açıklama düzeltildi";
         } else if (adimModu === "donem") {
             const n = (karar.donem || []).filter(k => k.anlam).length;
             const h = (karar.donem || []).filter(k => k.anlam && k.kaydet).length;
             ozet = ftBinlik(n) + " dönem kalıbı onaylandı" + (h ? ", " + ftBinlik(h) + " tanesi hafızaya" : "");
-        } else if (adimModu === "kisaltma") {
-            const n = (karar.kisaltma || []).filter(k => k.anlam && k.secili).length;
-            ozet = n ? ftBinlik(n) + " anlam onaylandı" : "Anlam onaylanmadı";
+        } else if (adimModu === "parca") {
+            const sy = parcaErisim ? parcaErisim.sayilar() : {};
+            ozet = ftBinlik(Number(sy.parca || 0)) + " parça onaylandı"
+                + (sy.ayni ? ", " + ftBinlik(sy.ayni) + " yazım çifti birleşti" : "")
+                + (sy.degisen ? ", " + ftBinlik(sy.degisen) + " parçanın yazılışı değişecek" : "");
         } else if (adimModu === "kolon_ad") {
-            const n = (karar.kolon_ad || []).filter(k => k.uygula && k.yeni_ad && k.yeni_ad !== k.kolon).length;
-            ozet = n ? ftBinlik(n) + " kolonun adı değiştirilecek" : "Kolon adı değiştirilmedi";
+            const sy = kolonAdErisim ? kolonAdErisim.sayilar() : {};
+            ozet = ftBinlik(Number(sy.aile || 0)) + " aile onaylandı, "
+                + ftBinlik(Number(sy.degisen || 0)) + " kolonun adı değişecek";
         } else ozet = (!durumlar.length && kontrol)
             ? (duzelt ? ftBinlik(duzelt) + " tanım düzeltildi" : "Düzeltme uygulanmadı")
             : dogrulamaOzetMetni(karar.haric.length, karar.ekle.length, duzelt);
@@ -8661,572 +8687,872 @@ function dogrulamaKartiEkle(alan, blok) {
     yeniOdak = birincil;
 }
 
-/* ==================== 01.2.4.4 Yeni Kolon Adları ====================
-   Kolon adlarını KOD üretir (Kısaltma Sözlüğü'nde seçilenlerle); kart bir
-   önizlemedir: işareti kaldırılan kolon eski adıyla kalır, yeni ad
-   düzenlenebilir. Karar birincil düğmeyle adımla birlikte gider. */
-function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
-    let kilitli = ilkKilit;
-    const satirlar = [];
-    const topluBtn = [];
-    const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
-    const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Yeni Kolon Adları");
-    kb.appendChild(kbas);
-    kart.appendChild(kb);
-    const bos = { deger: () => [], kilitle: () => {}, bekliyor: () => false };
-    /* Eski kayıtlardaki kart (surum 2 değil, geçmişten çizim): yalnız not. */
-    if (ka.surum !== 2) {
-        kart.appendChild(elYap("div", "dg-kisa-aciklama",
-            "Bu kart önceki sürümle oluşturuldu; ayrıntısı gösterilmiyor."));
-        return bos;
-    }
-    if (ka.bilgi) kbas.appendChild(bolmeBilgiSimgesi(tireSade(ka.bilgi), ka.baslik || "Yeni Kolon Adları"));
-    /* Önerilen sözlük: düzeltilmiş açıklamalar ve önerilen yeni adlar. */
-    const adExcel = excelSeridiYap("aciklama", "Önerilen Sözlüğü İndir",
-        "Eski ve önerilen yeni adlar, orijinal ve düzeltilmiş açıklamalar, anlam kartı");
-    adExcel.ac(true);
-    kb.appendChild(adExcel.el);
-    if (ka.aciklama) kart.appendChild(elYap("div", "dg-kisa-aciklama", tireSade(ka.aciklama)));
-    const ust = elYap("div", "dg-tablo-ust");
-    ust.appendChild(dgLejant([["dg-l-llm", "Yeni Ad"], ["dg-l-dikkat", "Sorunlu"],
-                              ["dg-l-duzenlendi", "Düzenlendi"]]));
-    const toplu = elYap("div", "dg-toplu");
-    [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([d, e]) => {
-        const b = elYap("button", "dg-toplu-btn", e);
-        b.type = "button"; b.disabled = kilitli;
-        b.onclick = () => { satirlar.forEach(x => { x.kutu.checked = d; x.vurgu(); }); if (degisti) degisti(); };
-        toplu.appendChild(b);
-        topluBtn.push(b);
-    });
-    ust.appendChild(toplu);
-    kart.appendChild(ust);
-    const sar = elYap("div", "dg-tablo-sar");
-    const tablo = elYap("table", "dg-tablo dg-kolonad-tablo");
-    const th = document.createElement("thead"), hr = document.createElement("tr");
-    ["Eski Ad", "Yeni Ad", "Uygula"].forEach(h => hr.appendChild(elYap("th", "", h)));
-    th.appendChild(hr); tablo.appendChild(th);
-    const tb = document.createElement("tbody");
-    tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
-    (ka.satirlar || []).forEach(r => {
-        const tr = elYap("tr", "dg-satir");
-        const tdK = elYap("td", "dg-kolon", r.kolon);
-        /* Neyin değiştiği ve varsa sorun "i"de. */
-        const iMetni = [(r.degisim || []).join("\n"), r.sorun ? "Sorun: " + r.sorun : "",
-                        r.aciklama_notu ? adimAtfi("aciklama", "Açıklama Düzenleme") + " notu: " + r.aciklama_notu : ""]
-            .filter(Boolean).join("\n\n");
-        if (iMetni) tdK.appendChild(bolmeBilgiSimgesi(tireSade(iMetni), r.kolon));
-        tr.appendChild(tdK);
-        const tdA = elYap("td", "dg-aciklama-hucre");
-        const g = document.createElement("input");
-        g.type = "text"; g.className = "dg-giris";
-        g.value = r.yeni_ad || ""; g.disabled = kilitli;
-        g.setAttribute("aria-label", r.kolon + " yeni adı");
-        tdA.appendChild(g); tr.appendChild(tdA);
-        const tdI = elYap("td", "dg-ekle-hucre");
-        const kutu = document.createElement("input");
-        kutu.type = "checkbox"; kutu.className = "dg-ekle";
-        kutu.checked = !!r.secili; kutu.disabled = kilitli;
-        kutu.setAttribute("aria-label", r.kolon + " yeni adıyla uygulansın");
-        tdI.appendChild(kutu); tr.appendChild(tdI);
-        const vurgu = () => {
-            const duz = g.value.trim() !== String(r.yeni_ad || "");
-            tr.classList.toggle("dg-duzenlendi", duz);
-            tr.classList.toggle("dg-bos", !duz && !!r.sorun);
-            tr.classList.toggle("dg-llm", !duz && !r.sorun);
-        };
-        g.addEventListener("input", vurgu);
-        kutu.addEventListener("change", () => { if (degisti) degisti(); });
-        vurgu();
-        satirlar.push({ r, g, kutu, vurgu });
-        tb.appendChild(tr);
-    });
-    return {
-        deger: () => satirlar.map(x => ({ kolon: x.r.kolon, yeni_ad: x.g.value.trim(),
-                                          uygula: x.kutu.checked })),
-        kilitle: k => {
-            kilitli = k;
-            satirlar.forEach(x => { x.g.disabled = k; x.kutu.disabled = k; });
-            topluBtn.forEach(b => { b.disabled = k; });
-        },
-        bekliyor: () => false
-    };
-}
+/* ==================== 01.2.4.2 Ad Parçaları ====================
+   Kolon adlarındaki sayısız parçalar: anlam, tür, standart yazılış ve
+   satır onayı. Yazım Sorunları sekmesinde yazımı yakın ya da anlamı aynı
+   çıkan çiftler: Aynı / Farklı. "Aynı" denen gruptaki parçalar adlarda
+   seçilen yazılışı ve onun satırındaki anlamı alır. Her satır ve her çift
+   onaylanmadan birincil düğme açılmaz. 5000 kolonda yüzlerce parça
+   olabilir: süzgeç, arama ve sayfalama; örnek tanımlar "i"ye basınca
+   sunucudan gelir. */
+const PARCA_SAYFA = 100;
+const PARCA_STANDART = /^[A-Z][A-Z0-9]{0,11}$/;
+const PARCA_SUZGECLER = [
+    ["hepsi", "Tümü"], ["onaysiz", "Onaylanmadı"], ["kontrol", "Kontrol Edin"],
+    ["hafiza", "Hafızadan"], ["duzen", "Düzenlendi"], ["sorun", "Eksik ya da Hatalı"]];
 
-/* ==================== 01.2.4.3 Kısaltma Sözlüğü ====================
-   SÖZLÜK KESİN DOĞRUDUR: kolon adlarındaki parçaların anlamı tanımlardan
-   okunur; tablonun her satırı bir ANLAM. Aynı anlama giden kısaltmalar
-   aynı satırda, iki anlamda kullanılan kısaltma iki satırda görünür.
-   Okuma ve öneriler arka planda sürerken satırlar kilitli gelir ve
-   yoklamayla tazelenir; bitince düzenlenebilir. */
-function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
+function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
     let kilitli = ilkKilit;
-    const topluBtn = [];
-    const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
-    const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Kısaltma Sözlüğü");
-    kb.appendChild(kbas);
-    kart.appendChild(kb);
-    /* Önceki sürümün kartı (geçmişten çizim): yalnız not. */
-    if (ka.surum !== 2) {
-        kart.appendChild(elYap("div", "dg-kisa-aciklama",
-            "Bu kart önceki sürümle oluşturuldu; ayrıntısı gösterilmiyor."));
-        return { deger: () => [], kilitle: () => {}, bekliyor: () => false };
-    }
-    if (ka.sutunlar) kbas.appendChild(bolmeBilgiSimgesi(tireSade(ka.sutunlar), "Sütunlar"));
-    if (ka.aciklama) kart.appendChild(elYap("div", "dg-kisa-aciklama", tireSade(ka.aciklama)));
-    /* YÖNERGE: kartta ne yapılacağı üç adımda. */
-    if (ka.yonerge && ka.yonerge.length) {
-        const yl = elYap("ol", "dg-yonerge");
-        ka.yonerge.forEach(m => yl.appendChild(elYap("li", "", tireSade(m))));
-        kart.appendChild(yl);
-    }
-    const durumEl = elYap("div", "dg-bilgi-kutu", "");
-    durumEl.hidden = true;
-    /* İLERLEME: akıştaki işlem satırının aynısı; süre sunucudaki
-       başlangıçtan. İptal okumayı / önerileri durdurur, gelenler kalır. */
+    const sade = !!pa.sade;
+    const turler = pa.turler || [];
+    const turAdi = k => (turler.find(t => t.kod === k) || {}).ad || "";
+    const turAck = k => (turler.find(t => t.kod === k) || {}).aciklama || "";
+
+    /* ÖZET + "i" (yönerge ve sütunlar) */
+    const ozetSatir = elYap("div", "dg-donem-ozet");
+    const ozetEl = elYap("span", "", "");
+    ozetSatir.appendChild(ozetEl);
+    const bilgiMetni = [(pa.yonerge || []).join("\n\n"), pa.sutunlar || ""].filter(Boolean).join("\n\n");
+    if (bilgiMetni) ozetSatir.appendChild(bolmeBilgiSimgesi(tireSade(bilgiMetni), pa.baslik || "Ad Parçaları"));
+    kart.appendChild(ozetSatir);
+    const notEl = elYap("div", "dg-bilgi-kutu", "");
+    notEl.hidden = true;
+    kart.appendChild(notEl);
+
+    /* İLERLEME + İPTAL + düşünen robot */
     const ilerEl = elYap("div", "islem-satiri dg-ilerleme");
     ilerEl.setAttribute("role", "status");
     const ilerMetin = elYap("span", "islem-sure", "");
     const ilerIptal = elYap("button", "islem-iptal", "İptal");
     ilerIptal.type = "button";
-    ilerIptal.title = "Dil modelini durdur; okunan kolonlar kalır";
+    ilerIptal.title = "Dil modelini durdur; yorumlanan parçalar kalır, kalanların anlamını siz yazarsınız";
     ilerIptal.onclick = () => {
         ilerIptal.disabled = true;
         ilerIptal.textContent = "İptal ediliyor";
-        fetch(getWebAppBackendUrl("kisaltma_iptal"), {
+        fetch(getWebAppBackendUrl("parca_iptal"), {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify(ftKimlikGovdesi({}))
         })
         .then(r => r.json())
-        .then(() => yokla())
-        .catch(() => { ilerIptal.disabled = false; ilerIptal.textContent = "İptal"; });
+        .then(d => { if (d && d.parca) yeniVeri(d.parca); })
+        .catch(() => {})
+        .then(() => { ilerIptal.disabled = false; ilerIptal.textContent = "İptal"; });
     };
     ilerEl.append(ilerMetin, ilerIptal);
-    /* SÜRE: başlangıç anı bir kez sabitlenir, sonra saatten hesaplanır
-       (yoklamayla ileri geri oynamaz). */
-    let ilerBas = Date.now() - ((ka.ilerleme && ka.ilerleme.gecen) || 0) * 1000;
-    let ilerSabit = !!ka.ilerleme;
-    const ilerDusun = dusunmeIzleyici(kart);
-    function ilerYaz() {
-        const il = ka.ilerleme;
-        const acik = ka.dm === "calisiyor" && !!il && !kilitli;
-        ilerEl.classList.toggle("gorunur", acik);
-        ilerDusun(acik && kart.isConnected);
-        if (acik) {
-            const oneri = il.asama === "oneri";
-            ilerMetin.textContent = "İşlem Devam Ediyor · "
-                + (oneri ? "Kısaltma Önerileri · " : "Tanımlar Okunuyor · ")
-                + ftBinlik(il.biten || 0) + " / " + ftBinlik(il.toplam || 0)
-                + (oneri ? " Anlam" : " Kolon")
-                + (!oneri && il.kodla ? " (" + ftBinlik(il.kodla) + " kod ile)" : "") + " · "
-                + sureBicim(Math.max(0, Math.floor((Date.now() - ilerBas) / 1000)));
-        }
-    }
-    let ilerBagli = false;
-    const ilerSayac = setInterval(() => {
-        if (kart.isConnected) ilerBagli = true;
-        if (ka.dm !== "calisiyor" || (ilerBagli && !kart.isConnected)) {
-            clearInterval(ilerSayac);
-            ilerYaz();
-            return;
-        }
-        ilerYaz();
-    }, 1000);
-    const satirlar = [];
-    /* KULLANICI DEĞİŞİKLİKLERİ: yoklamayla tablo yeniden çizilince
-       yazdıklarınız ve seçimleriniz kaybolmasın (anahtar -> alanlar). */
-    const duzen = {};
-    /* AD KALIBI: türlerin kolon adındaki sırası. SABİT: kullanıcı
-       değiştirmez, yalnız bilgi olarak görünür. */
-    const turAdi = {};
-    (ka.turler || []).forEach(t => { turAdi[t.kod] = t.ad; });
-    const kalip = (ka.ad_kalibi || []).slice();
-    const kalipEl = elYap("div", "dg-kalip");
-    function kalipCiz() {
-        kalipEl.textContent = "";
-        const et = elYap("span", "dg-kalip-etiket", "Ad Kalıbı");
-        if (ka.kalip_bilgi) et.appendChild(bolmeBilgiSimgesi(tireSade(ka.kalip_bilgi), "Ad Kalıbı"));
-        kalipEl.appendChild(et);
-        kalip.forEach((t, i) => {
-            const cip = elYap("span", "dg-kalip-cip dg-kalip-sabit", turAdi[t] || t);
-            kalipEl.appendChild(cip);
-            if (i < kalip.length - 1) kalipEl.appendChild(elYap("span", "dg-kalip-ayrac", "_"));
-        });
-    }
-    kalipCiz();
-    kart.appendChild(kalipEl);
-    const ust = elYap("div", "dg-tablo-ust");
-    /* RENK: mavi sözlükten okunan, mor hafızada onaylı, sarı sözlükte
-       karşılığı yok, yeşil sizin değiştirdiğiniz. */
-    ust.appendChild(dgLejant([["dg-l-llm", "Sözlükten"], ["dg-l-hafiza", "Onaylı (Hafızada)"],
-                              ["dg-l-dikkat", "Sözlükte Yok"], ["dg-l-duzenlendi", "Düzenlendi"]]));
-    const toplu = elYap("div", "dg-toplu");
-    [[true, "Tümünü Seç"], [false, "Tümünü Temizle"]].forEach(([d, e]) => {
-        const b = elYap("button", "dg-toplu-btn", e);
-        b.type = "button"; b.disabled = kilitli;
-        /* Tümünü Seç yalnız uygulanabilir satırları işaretler: anlamı
-           boş satır ya da adda karşılığı olmayıp kısaltması yazılmamış
-           kavram onaylanamaz. */
-        b.onclick = () => {
-            satirlar.forEach(x => {
-                if (x.kutu.disabled) return;
-                const uygun = !!x.g.value.trim()
-                    && ((x.r.kisaltmalar || []).length > 0 || !!x.y.value.trim());
-                if (!d || uygun) x.kutu.checked = d;
-                duzenKaydet(x);
-            });
-            if (degisti) degisti();
-        };
-        toplu.appendChild(b);
-        topluBtn.push(b);
-    });
-    ust.appendChild(toplu);
-    kart.appendChild(ust);
-    /* EXCEL: kısaltma sözlüğü, kolon eşlemeleri ve adda olmayan kavramlar;
-       dosya çalışma klasörüne de yazılır. */
-    const kisaExcel = excelSeridiYap("kisaltma", "Excel İndir",
-        "Kısaltma sözlüğü, kolon eşlemeleri ve adda olmayan kavramlar");
-    kisaExcel.ac(true);
-    kb.appendChild(kisaExcel.el);
-    /* İKİ AYRI TABLO, her biri kendi kaydırmasıyla: üstte sözlükte
-       karşılığı bulunamayan parçalar, altta sözlükten okunan anlamlar.
-       Biri uzun olsa da diğeri yerinde durur, aşağı inmek gerekmez. */
-    function tabloKur(ilkSutun) {
-        const kap = elYap("div", "dg-kisa-tablo-kap");
-        const bas = elYap("div", "dg-kisa-tablo-baslik", "");
-        const sar_ = elYap("div", "dg-tablo-sar dg-kisa-sar");
-        const tablo = elYap("table", "dg-tablo dg-kisaltma-tablo");
-        const th = document.createElement("thead"), hr = document.createElement("tr");
-        [ilkSutun, "Adlarda Geçen", "Tür", "Önerilen Kısaltma", "Seç"]
-            .forEach(h => hr.appendChild(elYap("th", "", h)));
-        th.appendChild(hr); tablo.appendChild(th);
-        const govde = document.createElement("tbody");
-        tablo.appendChild(govde); sar_.appendChild(tablo);
-        kap.append(bas, sar_);
-        kart.appendChild(kap);
-        return { kap: kap, bas: bas, tb: govde };
-    }
-    /* ÜÇ TABLO: karşılığı bulunamayanlar, karar gerekenler, sorunsuzlar
-       (katlanmış; tek kısaltmalı, çelişkisiz, seçili gelir, ad değişmez). */
-    const tBul = tabloKur("Anlam");
-    const tSoz = tabloKur("Anlam (Sözlükten)");
-    const tSor = tabloKur("Anlam (Sözlükten)");
-    let sorunsuzAcik = false;
-    tSor.sar = tSor.kap.querySelector(".dg-kisa-sar");
-    const tb = tSoz.tb;                     // yoklama / odak kontrolü için
-    const sar = { set hidden(v) { tBul.kap.hidden = v; tSoz.kap.hidden = v; tSor.kap.hidden = v; } };
-    kart.appendChild(durumEl);
     kart.appendChild(ilerEl);
-
-    /* CANLI GEÇİŞ: bir yoklamadan diğerine tabloya yeni giren satır
-       (ör. anlamı okununca karşılıksızlardan sözlüğe geçen parça) kısa
-       süre vurgulanır. İlk çizimde vurgu yok. */
-    const oncekiAnahtar = { bul: null, soz: null, sor: null };
-    function yeniGelenleriVurgula(t, ad) {
-        const simdi = new Set();
-        t.tb.querySelectorAll("tr[data-anahtar]").forEach(tr => {
-            simdi.add(tr.dataset.anahtar);
-            if (oncekiAnahtar[ad] && !oncekiAnahtar[ad].has(tr.dataset.anahtar))
-                tr.classList.add("dg-yeni-gelen");
-        });
-        oncekiAnahtar[ad] = simdi;
-    }
-    function bosSatir(t, metin) {
-        const tr = elYap("tr", "dg-bos-tablo");
-        const td = elYap("td", "", metin);
-        td.colSpan = 5;
-        tr.appendChild(td);
-        t.tb.appendChild(tr);
-    }
-
-    function basYaz(t, metin, ipucu) {
-        t.bas.textContent = metin;
-        if (ipucu) t.bas.appendChild(bolmeBilgiSimgesi(ipucu, metin));
-    }
-
-    function duzenKaydet(x) {
-        duzen[x.r.anahtar] = { anlam: x.g.value, oneri: x.y.value, secili: x.kutu.checked,
-                               tur: x.t.value };
-    }
-
-    function satirCiz(r, hedef) {
-        /* Okuma sürerken tablo görünür ama KİLİTLİ: izlenir, dokunulmaz. */
-        const calisiyor = ka.dm === "calisiyor";
-        /* Sayı değerli parçanın ailesi (H00, H00_06): harf kısmının (H)
-           satırının altında girintili. */
-        const tr = elYap("tr", "dg-satir" + (r.ust ? " dg-alt-satir" : ""));
-        const dz = duzen[r.anahtar] || null;
-        const mevcut = (r.kisaltmalar || []).map(k => k.kisaltma);
-        /* ANLAM: tanımdan okunan ifade; düzenlenebilir. Okuma örnekleri,
-           öneri gerekçesi ve çok anlamlılık notu "i"de. */
-        const tdA = elYap("td", "dg-aciklama-hucre");
-        const kap = elYap("div", "dg-anlam-kap");
-        const g = document.createElement("input");
-        g.type = "text"; g.className = "dg-giris";
-        g.value = dz ? dz.anlam : tireSade(r.anlam || "");
-        g.placeholder = r.bolum === "bulunamadi" ? "Anlamı yazın" : "";
-        g.disabled = kilitli || calisiyor;
-        g.setAttribute("aria-label", (mevcut.join(", ") || "Kavram") + " anlamı");
-        kap.appendChild(g);
-        const notlar = [];
-        if (r.kaynak === "hafiza")
-            notlar.push("Anlam önceki bir çalışmada onaylandı.");
-        else if (r.kaynak === "ogrenilen")
-            notlar.push("Anlam başka bir çalışmanın sözlüğünden.");
-        Object.keys(r.cok_anlamli || {}).forEach(k => {
-            notlar.push(k + " başka anlamda da var: " + r.cok_anlamli[k].join(", ") + ".");
-        });
-        (r.cikarilan || []).forEach(c => {
-            notlar.push(c.kisaltma + " (" + ftBinlik(c.kolon) + " kolon) çıkarıldı: çoğunlukla \""
-                        + c.anlam + "\" anlamında.");
-        });
-        if (r.adda_yok)
-            notlar.push(ftBinlik(r.adda_yok) + " kolonun tanımında var, adında yok; seçilirse adına eklenir.");
-        if (r.oneri_kaynak === "hafiza")
-            notlar.push("Önerilen kısaltma kurum standardı.");
-        else if (r.oneri_gerekce)
-            notlar.push("Öneri: " + r.oneri_gerekce);
-        const orn = r.ornekler || [];
-        if (orn.length)
-            notlar.push("Örnek:\n" + orn.map(o => o.kolon + ": " + o.tanim).join("\n"));
-        if (notlar.length) kap.appendChild(bolmeBilgiSimgesi(tireSade(notlar.join("\n\n")),
-                                                             r.anlam || mevcut.join(", ")));
-        tdA.appendChild(kap);
-        /* Anlam sözlükten değil, başka bir çalışmadan geldiyse kutunun altında. */
-        if (r.kaynak === "hafiza" || r.kaynak === "ogrenilen")
-            tdA.appendChild(elYap("span", "dg-rozet-kucuk", "Başka Çalışmadan"));
-        tr.appendChild(tdA);
-        /* ADLARDA GEÇEN: kısaltmalar ve kolon sayıları; iki anlamda
-           kullanılan kısaltma işaretli. */
-        const tdK = elYap("td", "dg-kisa-hucre");
-        (r.kisaltmalar || []).forEach(k => {
-            const cok = r.cok_anlamli && r.cok_anlamli[k.kisaltma];
-            const c = elYap("span", "dg-kisa-cip" + (cok ? " dg-cok-anlamli" : ""),
-                            k.kisaltma + " · " + ftBinlik(k.kolon));
-            c.title = cok ? k.kisaltma + " başka anlamda da kullanılıyor: " + cok.join(", ")
-                          : ftBinlik(k.kolon) + " kolonun adında";
-            tdK.appendChild(c);
-        });
-        if (r.adda_yok) {
-            const c = elYap("span", "dg-kisa-cip dg-adda-yok", "Adda Yok · " + ftBinlik(r.adda_yok));
-            c.title = "Tanımda geçiyor, kolon adında karşılığı yok";
-            tdK.appendChild(c);
+    let ilerBas = Date.now() - ((pa.ilerleme && pa.ilerleme.gecen) || 0) * 1000;
+    const ilerDusun = dusunmeIzleyici(kart);
+    const ilerSayac = setInterval(() => {
+        const acik = pa.dm === "calisiyor" && !kilitli && kart.isConnected;
+        ilerEl.classList.toggle("gorunur", acik);
+        ilerDusun(acik);
+        if (acik) {
+            const il = pa.ilerleme || {};
+            ilerMetin.textContent = "Dil modeli parçaları yorumluyor"
+                + (il.toplam ? ": " + ftBinlik(il.biten || 0) + " / " + ftBinlik(il.toplam) : "")
+                + " · " + sureBicim(Math.max(0, Math.floor((Date.now() - ilerBas) / 1000)));
         }
-        tr.appendChild(tdK);
-        /* TÜR: anlamın kolon adındaki görevi; Ad Kalıbı bu türlere göre dizer. */
-        const tdT = elYap("td", "dg-tur-hucre");
-        const ts = document.createElement("select");
-        ts.className = "dg-tur-sec";
-        ts.appendChild(new Option("—", ""));
-        (ka.turler || []).forEach(t => {
-            const o = new Option(t.ad, t.kod);
-            o.title = t.aciklama || "";
-            ts.appendChild(o);
+        if (pa.dm !== "calisiyor" && kart.isConnected) clearInterval(ilerSayac);
+    }, 1000);
+
+    /* SEKMELER */
+    const sekmeBar = elYap("div", "dg-sekmeler");
+    sekmeBar.setAttribute("role", "tablist");
+    const panolar = {}, sekmeDugme = {};
+    [["parca", "Parçalar"], ["yazim", "Yazım Sorunları"]].forEach(([ad, etiket]) => {
+        const b = elYap("button", "dg-sekme", "");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.append(elYap("span", "", etiket), elYap("span", "dg-sekme-sayi", ""));
+        b.onclick = () => sekmeAc(ad);
+        sekmeBar.appendChild(b);
+        sekmeDugme[ad] = b;
+        panolar[ad] = elYap("div", "dg-sekme-pano");
+        panolar[ad].setAttribute("role", "tabpanel");
+    });
+    function sekmeAc(ad) {
+        Object.keys(panolar).forEach(k => {
+            panolar[k].hidden = k !== ad;
+            sekmeDugme[k].classList.toggle("secili", k === ad);
+            sekmeDugme[k].setAttribute("aria-selected", k === ad ? "true" : "false");
         });
-        ts.value = dz ? dz.tur : (r.tur || "");
-        ts.disabled = kilitli || calisiyor;
-        ts.title = r.tur_kaynak === "hafiza" ? "Kurum standardı (önceki çalışmalarda onaylandı)"
-            : r.tur_kaynak === "dil_modeli" ? "Dil modeli önerisi" : "";
-        ts.setAttribute("aria-label", (r.anlam || mevcut.join(", ")) + " türü");
-        tdT.appendChild(ts);
-        tr.appendChild(tdT);
-        /* ÖNERİLEN: boşsa mevcut kısaltma kalır. */
-        const tdY = elYap("td", "dg-aciklama-hucre");
-        const y = document.createElement("input");
-        y.type = "text"; y.className = "dg-giris dg-yeni-kisa";
-        y.value = dz ? dz.oneri : (r.oneri || ""); y.maxLength = 24;
-        y.placeholder = mevcut.length === 1 ? mevcut[0] + " kalır" : "";
-        y.disabled = kilitli || calisiyor;
-        y.setAttribute("aria-label", (r.anlam || mevcut.join(", ")) + " için önerilen kısaltma");
-        y.addEventListener("input", () => {
-            const b = y.value.toUpperCase().replace(/[^A-Z0-9_]/g, "");
-            if (b !== y.value) y.value = b;
-        });
-        tdY.appendChild(y);
-        tr.appendChild(tdY);
-        const tdI = elYap("td", "dg-ekle-hucre");
-        const kutu = document.createElement("input");
-        kutu.type = "checkbox"; kutu.className = "dg-ekle";
-        kutu.checked = dz ? dz.secili : (r.secili !== undefined ? !!r.secili : !!r.onayli);
-        kutu.disabled = kilitli || calisiyor;
-        kutu.setAttribute("aria-label", (r.anlam || mevcut.join(", ")) + " onaylansın");
-        tdI.appendChild(kutu); tr.appendChild(tdI);
-        const vurgu = () => {
-            const duz = g.value.trim() !== tireSade(r.anlam || "").trim()
-                || y.value !== String(r.oneri || "") || ts.value !== String(r.tur || "");
-            tr.classList.toggle("dg-duzenlendi", duz);
-            tr.classList.toggle("dg-bos", !duz && r.bolum === "bulunamadi");
-            tr.classList.toggle("dg-hafiza-renk", !duz && r.bolum !== "bulunamadi" && !!r.onayli);
-            tr.classList.toggle("dg-llm", !duz && r.bolum !== "bulunamadi" && !r.onayli);
-        };
-        /* ANLAM DÜZENLENİNCE ÖNERİ YENİDEN: kutudan çıkılınca o satırın
-           önerisi yeni anlamla, adlandırma dilinde sorulur. Önerilen
-           Kısaltma elle değiştirildiyse ya da o kutuya girildiyse dokunulmaz. */
-        let yOto = String(r.oneri || ""), sonAnlam = g.value.trim(), oneriNo = 0;
-        let tElle = !!dz && dz.tur !== String(r.tur || "");
-        g.addEventListener("change", () => {
-            const anlam = g.value.trim();
-            if (anlam === sonAnlam || y.value !== yOto) return;
-            sonAnlam = anlam;
-            const no = ++oneriNo;
-            if (!anlam || anlam === tireSade(r.anlam || "").trim()) {
-                yOto = String(r.oneri || ""); y.value = yOto; y.title = "";
-                vurgu();
-                return;
+    }
+    kart.appendChild(sekmeBar);
+    Object.values(panolar).forEach(pn => kart.appendChild(pn));
+    sekmeAc("parca");
+
+    /* ---- KARAR HALİ ----
+       satir: parca -> {anlam, tur, standart, onay} (kullanıcının son hâli;
+       yoklamada kaybolmaz). es: anahtar -> {karar, standart, onay}. */
+    const satir = {}, duzenlendi = new Set();
+    const es = {};
+    function satirAl(r) {
+        if (!satir[r.parca]) satir[r.parca] = { anlam: tireSade(r.anlam || ""), tur: r.tur || "",
+                                                standart: r.standart || r.parca, onay: !!r.onay };
+        return satir[r.parca];
+    }
+    function esAl(e) {
+        if (!es[e.anahtar]) es[e.anahtar] = { karar: e.karar || "", standart: e.standart || e.a,
+                                              onay: !!e.onay };
+        return es[e.anahtar];
+    }
+    /* Yoklama: kullanıcının dokunmadığı satır sunucunun son önerisini alır. */
+    function yeniVeri(yeni) {
+        pa.dm = yeni.dm; pa.not = yeni.not || ""; pa.ilerleme = yeni.ilerleme;
+        (yeni.satirlar || []).forEach(r => {
+            if (!duzenlendi.has(r.parca) && satir[r.parca] && !satir[r.parca].onay) {
+                const s = satir[r.parca];
+                s.anlam = tireSade(r.anlam || ""); s.tur = r.tur || ""; s.standart = r.standart || r.parca;
             }
-            const bekleyen = y.value;
-            y.title = "Öneri güncelleniyor";
-            if (!bekleyen) y.placeholder = "öneri güncelleniyor";
-            fetch(getWebAppBackendUrl("kisaltma_oneri"), {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(ftKimlikGovdesi({ kisaltma: mevcut.length === 1 ? mevcut[0] : "",
-                                                       anlam: anlam }))
-            })
-            .then(c => c.json())
-            .then(c => {
-                if (no !== oneriNo) return;
-                y.title = "";
-                y.placeholder = mevcut.length === 1 ? mevcut[0] + " kalır" : "";
-                if (y.value !== bekleyen || document.activeElement === y) return;
-                if (c && c.hata) { y.placeholder = "öneri alınamadı"; return; }
-                yOto = String((c && c.yeni_kisaltma) || "");
-                y.value = yOto;
-                if (c && c.tur && !tElle) ts.value = c.tur;
-                duzenKaydet(x);
-                vurgu();
-            })
-            .catch(() => {
-                if (no !== oneriNo) return;
-                y.title = "";
-                if (!y.value) y.placeholder = "öneri alınamadı";
-            });
         });
-        const x = { r, g, y, kutu, t: ts };
-        tr.dataset.anahtar = r.anahtar;
-        const kaydet = () => { duzenKaydet(x); vurgu(); };
-        g.addEventListener("input", kaydet);
-        y.addEventListener("input", kaydet);
-        ts.addEventListener("change", () => { tElle = true; kaydet(); });
-        kutu.addEventListener("change", () => { duzenKaydet(x); if (degisti) degisti(); });
-        vurgu();
-        satirlar.push(x);
-        hedef.appendChild(tr);
+        (yeni.esler || []).forEach(e => { esAl(e); });
+        pa.satirlar = yeni.satirlar || [];
+        pa.esler = yeni.esler || [];
+        tumunuCiz();
+        if (degisti) degisti();
     }
 
-    function ciz(liste) {
-        tBul.tb.textContent = "";
-        tSoz.tb.textContent = "";
-        tSor.tb.textContent = "";
-        satirlar.length = 0;
-        const bul = (liste || []).filter(r => r.bolum === "bulunamadi");
-        const soz = (liste || []).filter(r => r.bolum !== "bulunamadi");
-        const sor = soz.filter(r => r.grup === "sorunsuz");
-        const kar = soz.filter(r => r.grup !== "sorunsuz");
-        basYaz(tBul, "Sözlükte Karşılığı Bulunamayan Parçalar · " + ftBinlik(bul.length),
-               "Hiçbir tanımda karşılığı yok; anlamını yazıp seçebilirsiniz.");
-        basYaz(tSoz, "Karar Gerekenler · " + ftBinlik(kar.length),
-               "Aynı anlam için birden çok kısaltma, başka anlamda da kullanılan "
-               + "kısaltma, önerilen yeni kısaltma ya da adda olmayan kavram.");
-        /* Sorunsuzlar başlığı aç / kapa düğmesi. */
-        tSor.bas.textContent = "";
-        const ac = elYap("button", "dg-kisa-ac", (sorunsuzAcik ? "▾ " : "▸ ")
-                         + "Sorunsuz · " + ftBinlik(sor.length));
-        ac.type = "button";
-        ac.title = "Tek kısaltmalı, çelişkisiz satırlar; seçili gelir, kolon adı değişmez.";
-        ac.onclick = () => { sorunsuzAcik = !sorunsuzAcik; ciz(liste); };
-        tSor.bas.appendChild(ac);
-        tSor.sar.hidden = !sorunsuzAcik;
-        bul.forEach(r => satirCiz(r, tBul.tb));
-        kar.forEach(r => satirCiz(r, tSoz.tb));
-        sor.forEach(r => satirCiz(r, tSor.tb));
-        /* Tablolar HEP görünür (boşken de): okuma sürerken parçaların
-           birinden diğerine geçişi canlı izlenir. */
-        const bos = ka.dm === "calisiyor";
-        if (!bul.length) bosSatir(tBul, bos ? "Henüz yok." : "Karşılığı bulunamayan parça yok.");
-        if (!kar.length) bosSatir(tSoz, bos ? "Okunuyor" : "Karar gereken satır yok.");
-        if (!sor.length) bosSatir(tSor, bos ? "Okunuyor" : "Sorunsuz satır yok.");
-        yeniGelenleriVurgula(tBul, "bul");
-        yeniGelenleriVurgula(tSoz, "soz");
-        yeniGelenleriVurgula(tSor, "sor");
-        const ozet = ka.ozet || {};
-        /* OKUMA SÜRERKEN TABLO GÖRÜNÜR AMA KİLİTLİ: her pakette sayılar
-           güncellenir; satırlar okuma (ve öneriler) bitince düzenlenir. */
-        const okunuyor = ka.dm === "calisiyor";
-        topluBtn.forEach(b => { b.disabled = kilitli || okunuyor; });
-        durumEl.textContent = okunuyor
-            ? "Okunuyor: " + ftBinlik(soz.length) + " anlam, " + ftBinlik(bul.length)
-              + " karşılıksız parça."
-            : [(liste || []).length ? ""
-                : "Kolon adlarında sözlükle eşlenecek bir parça bulunmadı.",
-               ka.not ? tireSade(ka.not) : ""].filter(Boolean).join(" ");
-        durumEl.hidden = !durumEl.textContent;
-        ilerYaz();
-        sar.hidden = ust.hidden = !(liste || []).length && ka.dm !== "calisiyor";
-        if (ozet.tanimli) kbas.title = ftBinlik(ozet.okunan || 0) + " / " + ftBinlik(ozet.tanimli)
-            + " tanımlı kolon okundu" + (ozet.dil ? " · adlandırma dili: " + ozet.dil : "");
+    /* "AYNI" GRUPLARI: aynı denen çiftlerin birleşimi; grubun yazılışı
+       çiftlerde seçilen standart. parca -> {uyeler, std} */
+    function gruplar() {
+        const ust = {};
+        const bul = x => { while ((ust[x] = ust[x] || x) !== x) x = ust[x]; return x; };
+        (pa.esler || []).forEach(e => {
+            if (esAl(e).karar === "ayni") { const a = bul(e.a), b = bul(e.b); if (a !== b) ust[b] = a; }
+        });
+        const g = {};
+        Object.keys(ust).forEach(x => { (g[bul(x)] = g[bul(x)] || []).push(x); });
+        const harita = {};
+        Object.values(g).forEach(uyeler => {
+            if (uyeler.length < 2) return;
+            uyeler.sort();
+            const secilen = (pa.esler || []).filter(e => esAl(e).karar === "ayni" && uyeler.includes(e.a))
+                .map(e => esAl(e).standart).filter(Boolean);
+            const std = secilen.length ? secilen[0] : uyeler[0];
+            uyeler.forEach(p => { harita[p] = { uyeler, std, cakisma: new Set(secilen).size > 1 }; });
+        });
+        return harita;
     }
-    ciz(ka.satirlar);
+    /* Satırın geçerli değerleri (aynı grubun üyesi standart satırdan alır). */
+    function etkin(p, grup) {
+        const s = satir[p] || {};
+        const g = grup[p];
+        if (g && g.std !== p && satir[g.std]) {
+            const k = satir[g.std];
+            return { anlam: k.anlam, tur: k.tur, standart: k.standart, onay: s.onay, uye: g.std };
+        }
+        return { anlam: s.anlam, tur: s.tur, standart: s.standart, onay: s.onay, uye: "" };
+    }
+    function sorunlar(grup) {
+        /* Onayı durduranlar: satır başına metin. */
+        const sor = {};
+        const sahip = {};
+        (pa.satirlar || []).forEach(r => {
+            const e = etkin(r.parca, grup);
+            const kim = grup[r.parca] ? grup[r.parca].std : r.parca;
+            const st = (e.standart || "").trim();
+            (sahip[st] = sahip[st] || new Set()).add(kim);
+        });
+        (pa.satirlar || []).forEach(r => {
+            if (r.bekliyor && pa.dm === "calisiyor" && !duzenlendi.has(r.parca)) return;
+            const e = etkin(r.parca, grup);
+            const st = (e.standart || "").trim();
+            if (!(e.anlam || "").trim()) sor[r.parca] = "Anlam boş.";
+            else if (!e.tur) sor[r.parca] = "Tür seçilmedi.";
+            else if (!PARCA_STANDART.test(st))
+                sor[r.parca] = "Standart yazılış geçersiz: büyük harfle başlar, yalnız büyük harf ve rakam, en çok 12 karakter.";
+            else if (sahip[st] && sahip[st].size > 1)
+                sor[r.parca] = st + " standardını anlamı farklı başka bir parça da alıyor ("
+                    + Array.from(sahip[st]).filter(x => x !== (grup[r.parca] ? grup[r.parca].std : r.parca)).join(", ")
+                    + "). Aynıysa Yazım Sorunları'nda «Aynı» deyin, değilse birini değiştirin.";
+        });
+        return sor;
+    }
 
-    /* YOKLAMA: okuma / öneriler sürerken 3 sn'de bir; satırlar o sırada
-       kilitli. Kullanıcı tablodaki bir kutudayken yeniden çizilmez. */
+    /* ---- PARÇALAR SEKMESİ ---- */
+    const pUst = elYap("div", "dg-tablo-ust dg-parca-ust");
+    const ara = document.createElement("input");
+    ara.type = "search"; ara.className = "dg-giris dg-parca-ara";
+    ara.placeholder = "Parça ya da anlam ara";
+    ara.setAttribute("aria-label", "Parça ara");
+    const suz = document.createElement("select");
+    suz.className = "dg-parca-suz";
+    suz.setAttribute("aria-label", "Süzgeç");
+    PARCA_SUZGECLER.forEach(([d, a]) => { const o = document.createElement("option"); o.value = d; o.textContent = a; suz.appendChild(o); });
+    const gorOnay = elYap("button", "dg-toplu-btn", "Görünenleri Onayla");
+    gorOnay.type = "button";
+    gorOnay.title = "Bu sayfada görünen ve eksiği olmayan satırlar onaylanır. «Kontrol edin» "
+        + "satırları toplu onaylanmaz; tek tek bakıp onaylayın.";
+    const sayfaEl = elYap("div", "dg-parca-sayfa");
+    pUst.append(ara, suz, gorOnay, sayfaEl);
+    if (!sade) panolar.parca.appendChild(pUst);
+    const pSar = elYap("div", "dg-tablo-sar dg-parca-sar");
+    const pTablo = elYap("table", "dg-tablo dg-parca-tablo");
+    const pTh = document.createElement("thead"), pHr = document.createElement("tr");
+    ["Parça", "Anlam", "Tür", "Standart", "Onay"].forEach(h => pHr.appendChild(elYap("th", "", h)));
+    pTh.appendChild(pHr); pTablo.appendChild(pTh);
+    const pTb = document.createElement("tbody");
+    pTablo.appendChild(pTb); pSar.appendChild(pTablo);
+    panolar.parca.appendChild(pSar);
+    let sayfa = 0;
+    ara.addEventListener("input", () => { sayfa = 0; parcaCiz(); });
+    suz.addEventListener("change", () => { sayfa = 0; parcaCiz(); });
+
+    function durumMetni(r, e, sor) {
+        const bekliyor = !!r.bekliyor && pa.dm === "calisiyor" && !satir[r.parca].onay && !duzenlendi.has(r.parca);
+        if (bekliyor) return ["Dil modeli yorumluyor", false];
+        if (sor) return ["Kontrol edin", true];
+        if (e.uye) return [e.uye + " ile aynı; anlamı ve yazılışı o satırdan", false];
+        if (duzenlendi.has(r.parca) || (r.oneri && (e.anlam !== tireSade(r.oneri.anlam || "")
+            || e.tur !== (r.oneri.tur || "") || e.standart !== (r.oneri.standart || r.parca))))
+            return ["Düzenlendi", false];
+        if (r.kontrol) return ["Kontrol edin", true];
+        if (r.kaynak === "hafiza") return ["Hafızadan", false];
+        if (r.kaynak === "model") {
+            const kn = r.kanit;
+            return ["Dil modeli" + (kn && kn.bakilan ? " · " + kn.uyan + " / " + kn.bakilan
+                + " örnek tanım uyuşuyor" : ""), false];
+        }
+        return ["Anlamı siz yazın", true];
+    }
+    function goruneni() {
+        const grup = gruplar(), sor = sorunlar(grup);
+        const q = ara.value.trim().toLocaleUpperCase("tr");
+        const sz = suz.value;
+        return { grup, sor, liste: (pa.satirlar || []).filter(r => {
+            const e = etkin(r.parca, grup);
+            if (q && r.parca.indexOf(q) === -1
+                && (e.anlam || "").toLocaleUpperCase("tr").indexOf(q) === -1) return false;
+            if (sz === "onaysiz") return !e.onay;
+            if (sz === "kontrol") return !!r.kontrol;
+            if (sz === "hafiza") return r.kaynak === "hafiza";
+            if (sz === "duzen") return durumMetni(r, e, "")[0] === "Düzenlendi";
+            if (sz === "sorun") return !!sor[r.parca];
+            return true;
+        }) };
+    }
+    function parcaCiz() {
+        const { grup, sor, liste } = goruneni();
+        const sayfaSay = Math.max(1, Math.ceil(liste.length / PARCA_SAYFA));
+        if (sayfa >= sayfaSay) sayfa = sayfaSay - 1;
+        const gorunen = liste.slice(sayfa * PARCA_SAYFA, (sayfa + 1) * PARCA_SAYFA);
+        pTb.textContent = "";
+        gorunen.forEach(r => pTb.appendChild(satirCiz(r, grup, sor)));
+        if (!gorunen.length) {
+            const tr = elYap("tr", "dg-bos-tablo");
+            const td = elYap("td", "", (pa.satirlar || []).length
+                ? "Bu süzgeçte parça yok." : "Kolon adlarında yorumlanacak parça yok.");
+            td.colSpan = 5; tr.appendChild(td); pTb.appendChild(tr);
+        }
+        sayfaEl.textContent = "";
+        if (liste.length > PARCA_SAYFA) {
+            const geri = elYap("button", "dg-toplu-btn", "Önceki");
+            geri.type = "button"; geri.disabled = sayfa === 0;
+            geri.onclick = () => { sayfa--; parcaCiz(); };
+            const ileri = elYap("button", "dg-toplu-btn", "Sonraki");
+            ileri.type = "button"; ileri.disabled = sayfa >= sayfaSay - 1;
+            ileri.onclick = () => { sayfa++; parcaCiz(); };
+            sayfaEl.append(geri, elYap("span", "dg-parca-sayfa-no",
+                ftBinlik(sayfa * PARCA_SAYFA + 1) + " ile " + ftBinlik(Math.min(liste.length, (sayfa + 1) * PARCA_SAYFA))
+                + " arası · " + ftBinlik(liste.length)), ileri);
+        }
+        /* Toplu onay "Kontrol edin" satırlarını atlar: onlar tek tek onaylanır. */
+        const topluOlur = r => !satir[r.parca].onay && !sor[r.parca] && !r.kontrol;
+        gorOnay.disabled = kilitli || pa.dm === "calisiyor" || !gorunen.some(topluOlur);
+        gorOnay.onclick = () => {
+            if (kilitli || pa.dm === "calisiyor") return;
+            gorunen.filter(topluOlur).forEach(r => { satir[r.parca].onay = true; });
+            tumunuCiz(); if (degisti) degisti();
+        };
+        ozetYaz(grup, sor);
+    }
+    /* Örnekler satırın altında, tablo genişliğinde açılır. */
+    function ornekGoster(tr, r, dugme) {
+        if (dugme._acik) { dugme._acik.remove(); dugme._acik = null; dugme.textContent = "Örnekler"; return; }
+        const dtr = elYap("tr", "dg-donem-detay");
+        const dtd = elYap("td", "");
+        dtd.colSpan = 5;
+        const kutu = elYap("div", "dg-parca-ornek", "Örnekler yükleniyor");
+        dtd.appendChild(kutu); dtr.appendChild(dtd);
+        tr.after(dtr);
+        dugme._acik = dtr;
+        dugme.textContent = "Örnekleri Kapat";
+        fetch(getWebAppBackendUrl("parca_ornek") + "?oturum_id=" + encodeURIComponent(OTURUM_ID)
+              + "&parca=" + encodeURIComponent(r.parca))
+            .then(x => x.json())
+            .then(d => {
+                const orn = (d && d.ornekler) || [];
+                kutu.textContent = "";
+                if (!orn.length) { kutu.textContent = "Örnek tanım bulunamadı."; return; }
+                kutu.appendChild(elYap("div", "dg-parca-ornek-bas", "Dil modelinin baktığı örnek tanımlar"));
+                orn.forEach(o => {
+                    const sat = elYap("div", "dg-parca-ornek-satir");
+                    sat.append(elYap("span", "dg-parca-ornek-kolon", o.kolon),
+                               elYap("span", "", tireSade(o.tanim || "Tanım yok")));
+                    kutu.appendChild(sat);
+                });
+            })
+            .catch(() => { kutu.textContent = "Örnekler okunamadı."; });
+    }
+    function satirCiz(r, grup, sor) {
+        const s = satirAl(r);
+        const e = etkin(r.parca, grup);
+        const calisiyor = pa.dm === "calisiyor";
+        const kapali = kilitli || sade;
+        const tr = elYap("tr", "dg-satir dg-parca-satir");
+        tr.dataset.parca = r.parca;
+        /* PARÇA */
+        const tdP = elYap("td", "dg-kolon");
+        const pBas = elYap("div", "dg-parca-ad");
+        pBas.appendChild(elYap("span", "dg-donem-kalip", r.parca));
+        if (!sade) {
+            const ib = elYap("button", "dg-baglanti dg-parca-ornek-ac", "Örnekler");
+            ib.type = "button";
+            ib.title = "Bu parçanın geçtiği kolonlardan örnek ad ve sözlük tanımları";
+            ib.onclick = () => ornekGoster(tr, r, ib);
+            pBas.appendChild(ib);
+        }
+        tdP.appendChild(pBas);
+        let alt = ftBinlik(r.kolon || 0) + " kolonda";
+        if (r.tanimsiz) alt += " · " + ftBinlik(r.tanimsiz) + " tanımsız";
+        if ((r.birlikte || []).length) alt += " · yanında: " + r.birlikte.map(b => b[0]).join(", ");
+        tdP.appendChild(elYap("div", "dg-donem-tur-not", alt));
+        tr.appendChild(tdP);
+        /* ANLAM */
+        const tdA = elYap("td", "dg-aciklama-hucre");
+        const [et, dikkat] = sade ? ["", false] : durumMetni(r, e, sor[r.parca]);
+        const durumEl = elYap("div", "dg-donem-durum" + (dikkat ? " dikkat" : ""), et);
+        tdA.appendChild(durumEl);
+        const g = document.createElement("input");
+        g.type = "text"; g.className = "dg-giris dg-parca-anlam";
+        g.value = e.anlam || "";
+        g.placeholder = r.bekliyor && calisiyor ? "" : "Anlamı yazın";
+        g.disabled = kapali || !!e.uye || (r.bekliyor && calisiyor && !duzenlendi.has(r.parca));
+        g.setAttribute("aria-label", r.parca + " anlamı");
+        if (r.model) g.title = "Öneren: " + tireSade(r.model);
+        tdA.appendChild(g);
+        if (!sade) {
+            if (sor[r.parca]) tdA.appendChild(elYap("div", "dg-donem-soru", tireSade(sor[r.parca])));
+            if (r.soru) tdA.appendChild(elYap("div", "dg-donem-soru", "Soru: " + tireSade(r.soru)));
+            if (r.celiski) tdA.appendChild(elYap("div", "dg-donem-not", "Ad ile tanımlar çelişiyor: " + tireSade(r.celiski)));
+            if (r["not"]) tdA.appendChild(elYap("div", "dg-donem-not", "Not: " + tireSade(r["not"])));
+        }
+        tr.appendChild(tdA);
+        /* TÜR */
+        const tdT = elYap("td", "");
+        const ts = document.createElement("select");
+        ts.className = "dg-donem-tur dg-parca-tur";
+        ts.setAttribute("aria-label", r.parca + " türü");
+        const bos = document.createElement("option");
+        bos.value = ""; bos.textContent = "Tür seçin";
+        ts.appendChild(bos);
+        turler.forEach(t => { const o = document.createElement("option"); o.value = t.kod; o.textContent = t.ad; ts.appendChild(o); });
+        ts.value = e.tur || "";
+        ts.disabled = g.disabled;
+        tdT.append(ts, elYap("div", "dg-donem-tur-not", turAck(ts.value)));
+        tr.appendChild(tdT);
+        /* STANDART */
+        const tdS = elYap("td", "");
+        const st = document.createElement("input");
+        st.type = "text"; st.className = "dg-giris dg-parca-std";
+        st.value = e.standart || "";
+        st.maxLength = 12;
+        st.disabled = g.disabled;
+        st.setAttribute("aria-label", r.parca + " standart yazılışı");
+        st.classList.toggle("dg-noksan", !sade && !PARCA_STANDART.test((e.standart || "").trim()));
+        tdS.appendChild(st);
+        if (!sade && (e.standart || "") !== r.parca && PARCA_STANDART.test(e.standart || ""))
+            tdS.appendChild(elYap("div", "dg-donem-tur-not", "Adlarda " + r.parca + " yerine " + e.standart));
+        tr.appendChild(tdS);
+        /* ONAY */
+        const tdO = elYap("td", "dg-ekle-hucre");
+        const k = document.createElement("input");
+        k.type = "checkbox"; k.className = "dg-ekle";
+        k.checked = !!s.onay;
+        k.disabled = kapali || (calisiyor && r.bekliyor && !duzenlendi.has(r.parca)) || (!s.onay && !!sor[r.parca]);
+        k.title = sor[r.parca] ? "Önce eksiği giderin" : "Satırı onayla";
+        k.setAttribute("aria-label", r.parca + " onay");
+        tdO.appendChild(k);
+        tr.appendChild(tdO);
+        tr.classList.toggle("dg-donem-dikkat", !sade && dikkat && !s.onay);
+        tr.classList.toggle("dg-parca-onayli", !!s.onay);
+        /* Değişiklik onayı kaldırır. */
+        const degis = () => {
+            s.anlam = g.value; s.tur = ts.value; s.standart = st.value.toUpperCase().trim();
+            s.onay = false; duzenlendi.add(r.parca);
+            tumunuCiz(tr); if (degisti) degisti();
+        };
+        g.addEventListener("change", degis);
+        ts.addEventListener("change", degis);
+        st.addEventListener("input", () => { const p = st.selectionStart; st.value = st.value.toUpperCase(); st.setSelectionRange(p, p); });
+        st.addEventListener("change", degis);
+        k.addEventListener("change", () => {
+            if (kapali) { k.checked = !k.checked; return; }
+            s.onay = k.checked; tumunuCiz(tr); if (degisti) degisti();
+        });
+        return tr;
+    }
+
+    /* ---- YAZIM SORUNLARI SEKMESİ ---- */
+    const yNot = elYap("p", "dg-donem-pano-not",
+        "Yazımı birbirine yakın ya da anlamı aynı çıkan parçalar. Aynı şeyi anlatıyorlarsa «Aynı» "
+        + "deyip adlarda kullanılacak yazılışı seçin; diğerleri o yazılışın anlamını ve türünü alır. "
+        + "Değilse «Farklı» deyin.");
+    if (!sade) panolar.yazim.appendChild(yNot);
+    const yUst = elYap("div", "dg-tablo-ust");
+    const yOnay = elYap("button", "dg-toplu-btn", "Kararı Verilenleri Onayla");
+    yOnay.type = "button";
+    if (!sade) { yUst.appendChild(yOnay); panolar.yazim.appendChild(yUst); }
+    const ySar = elYap("div", "dg-tablo-sar dg-parca-sar");
+    const yTablo = elYap("table", "dg-tablo dg-parca-es-tablo");
+    const yTh = document.createElement("thead"), yHr = document.createElement("tr");
+    ["Parçalar", "Neden", "Karar", "Adlarda Kullanılacak", "Onay"].forEach(h => yHr.appendChild(elYap("th", "", h)));
+    yTh.appendChild(yHr); yTablo.appendChild(yTh);
+    const yTb = document.createElement("tbody");
+    yTablo.appendChild(yTb); ySar.appendChild(yTablo);
+    panolar.yazim.appendChild(ySar);
+    function esCiz() {
+        const grup = gruplar();
+        yTb.textContent = "";
+        const kapali = kilitli || sade || pa.dm === "calisiyor";
+        (pa.esler || []).forEach(e => {
+            const k = esAl(e);
+            const tr = elYap("tr", "dg-satir dg-parca-es-satir");
+            const tdP = elYap("td", "");
+            [e.a, e.b].forEach(p => {
+                const r = (pa.satirlar || []).find(x => x.parca === p) || {};
+                const sat = elYap("div", "dg-parca-es-parca");
+                sat.append(elYap("span", "dg-donem-kalip", p),
+                           elYap("span", "dg-donem-tur-not", ftBinlik(r.kolon || 0) + " kolon"
+                                 + (satir[p] && satir[p].anlam ? " · " + satir[p].anlam : "")));
+                tdP.appendChild(sat);
+            });
+            tr.appendChild(tdP);
+            tr.appendChild(elYap("td", "dg-donem-olasi-neden", e.neden || ""));
+            const tdK = elYap("td", "");
+            const bol = elYap("div", "dg-segment");
+            [["ayni", "Aynı"], ["farkli", "Farklı"]].forEach(([d, a]) => {
+                const b = elYap("button", k.karar === d ? "secili" : "", a);
+                b.type = "button"; b.disabled = kapali;
+                b.setAttribute("aria-pressed", k.karar === d ? "true" : "false");
+                b.onclick = () => {
+                    if (kapali) return;
+                    k.karar = d; k.onay = true;
+                    tumunuCiz(); if (degisti) degisti();
+                };
+                bol.appendChild(b);
+            });
+            tdK.appendChild(bol);
+            if (e.kaynak === "hafiza" && !k.onay) tdK.appendChild(elYap("div", "dg-donem-tur-not", "Hafızadan"));
+            tr.appendChild(tdK);
+            const tdS = elYap("td", "");
+            if (k.karar === "ayni") {
+                const g = grup[e.a] || { uyeler: [e.a, e.b], std: k.standart };
+                const sec = document.createElement("select");
+                sec.className = "dg-donem-tur";
+                sec.setAttribute("aria-label", e.a + " ve " + e.b + " için adlarda kullanılacak yazılış");
+                g.uyeler.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; sec.appendChild(o); });
+                sec.value = g.std;
+                sec.disabled = kapali;
+                sec.onchange = () => {
+                    /* Grubun bütün çiftleri aynı yazılışı alır. */
+                    (pa.esler || []).forEach(x => { if (esAl(x).karar === "ayni" && g.uyeler.includes(x.a)) esAl(x).standart = sec.value; });
+                    tumunuCiz(); if (degisti) degisti();
+                };
+                tdS.appendChild(sec);
+                if (g.uyeler.length > 2) tdS.appendChild(elYap("div", "dg-donem-tur-not",
+                    "Aynı grupta: " + g.uyeler.join(", ")));
+            } else tdS.appendChild(elYap("span", "dg-donem-tur-not", k.karar === "farkli" ? "Her biri kendi yazılışıyla" : ""));
+            tr.appendChild(tdS);
+            const tdO = elYap("td", "dg-ekle-hucre");
+            const kt = document.createElement("input");
+            kt.type = "checkbox"; kt.className = "dg-ekle";
+            kt.checked = !!k.onay; kt.disabled = kapali || !k.karar;
+            kt.setAttribute("aria-label", e.a + " ve " + e.b + " onay");
+            kt.onchange = () => { if (kapali) { kt.checked = !kt.checked; return; } k.onay = kt.checked; tumunuCiz(); if (degisti) degisti(); };
+            tdO.appendChild(kt);
+            tr.appendChild(tdO);
+            tr.classList.toggle("dg-donem-dikkat", !sade && !(k.karar && k.onay));
+            tr.classList.toggle("dg-parca-onayli", !!(k.karar && k.onay));
+            yTb.appendChild(tr);
+        });
+        if (!(pa.esler || []).length) {
+            const tr = elYap("tr", "dg-bos-tablo");
+            const td = elYap("td", "", pa.dm === "calisiyor"
+                ? "Dil modelinin yorumu geldikçe anlamı aynı çıkan parçalar burada görünür."
+                : "Yazımı yakın ya da anlamı aynı parça bulunmadı.");
+            td.colSpan = 5; tr.appendChild(td); yTb.appendChild(tr);
+        }
+        yOnay.disabled = kapali || !(pa.esler || []).some(e => esAl(e).karar && !esAl(e).onay);
+        yOnay.onclick = () => {
+            if (kapali) return;
+            (pa.esler || []).forEach(e => { const k = esAl(e); if (k.karar) k.onay = true; });
+            tumunuCiz(); if (degisti) degisti();
+        };
+    }
+
+    function ozetYaz(grup, sor) {
+        const ss = pa.satirlar || [], ee = pa.esler || [];
+        const onayli = ss.filter(r => satir[r.parca] && satir[r.parca].onay).length;
+        const kontrol = ss.filter(r => r.kontrol && !(satir[r.parca] || {}).onay).length;
+        const esBekle = ee.filter(e => !(esAl(e).karar && esAl(e).onay)).length;
+        const sorun = Object.keys(sor).length;
+        const p = [ftBinlik(ss.length) + " parça", ftBinlik(onayli) + " onaylı"];
+        if (kontrol) p.push(ftBinlik(kontrol) + " kontrol edilecek");
+        if (sorun) p.push(ftBinlik(sorun) + " eksik ya da hatalı");
+        if (ee.length) p.push(ftBinlik(ee.length) + " yazım çifti" + (esBekle ? ", " + ftBinlik(esBekle) + " karar bekliyor" : ""));
+        ozetEl.textContent = p.join(" · ");
+        sekmeDugme.parca.lastChild.textContent = ftBinlik(ss.length - onayli);
+        sekmeDugme.yazim.lastChild.textContent = ftBinlik(esBekle);
+        sekmeDugme.parca.title = ftBinlik(ss.length - onayli) + " parça onay bekliyor";
+        sekmeDugme.yazim.title = ftBinlik(esBekle) + " çift karar bekliyor";
+    }
+    /* odak: yeniden çizimde odakta kalacak satır (değişikliğin yapıldığı). */
+    function tumunuCiz(odakTr) {
+        const odakP = odakTr && odakTr.dataset ? odakTr.dataset.parca : null;
+        const odakSinif = document.activeElement && document.activeElement.className;
+        parcaCiz();
+        esCiz();
+        notEl.textContent = pa.not ? tireSade(pa.not) : "";
+        notEl.hidden = !notEl.textContent;
+        if (odakP) {
+            const tr = pTb.querySelector('tr[data-parca="' + CSS.escape(odakP) + '"]');
+            const el = tr && odakSinif ? tr.querySelector("." + String(odakSinif).split(" ").filter(c => c.indexOf("dg-parca-") === 0)[0]) : null;
+            if (el && el.focus) el.focus();
+        }
+    }
+    (pa.satirlar || []).forEach(satirAl);
+    (pa.esler || []).forEach(esAl);
+    tumunuCiz();
+
     let yoklamaSayisi = 0;
     function yokla() {
-        if (kilitli || !document.body.contains(tb)) return;
-        if (yoklamaSayisi++ > 600) {
-            ka.dm = "zaman_asimi";
-            durumEl.textContent = (durumEl.textContent + " Okuma 30 dakikada bitmedi; "
-                                   + "okunan kolonlarla devam edebilirsiniz.").trim();
-            durumEl.hidden = false;
-            ilerYaz();
-            if (degisti) degisti();
-            return;
-        }
-        fetch(getWebAppBackendUrl("kisaltma_alani") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+        if (kilitli || !document.body.contains(pTb)) return;
+        if (yoklamaSayisi++ > 600) return;
+        fetch(getWebAppBackendUrl("parca_alani") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
             .then(r => r.json())
             .then(d => {
-                const yeni = d && d.kisaltma;
+                const yeni = d && d.parca;
                 if (!yeni) return setTimeout(yokla, 3000);
-                if (tBul.tb.contains(document.activeElement)
-                        || tb.contains(document.activeElement)
-                        || tSor.tb.contains(document.activeElement)) {
+                if (kart.contains(document.activeElement) && document.activeElement.tagName !== "BUTTON") {
                     yoklamaSayisi--;
                     return setTimeout(yokla, 1500);
                 }
-                ka.not = yeni.not || "";
-                ka.dm = yeni.dm;
-                ka.ozet = yeni.ozet || ka.ozet;
-                ka.ilerleme = yeni.ilerleme || null;
-                if (ka.ilerleme && !ilerSabit) {
-                    ilerBas = Date.now() - (ka.ilerleme.gecen || 0) * 1000;
-                    ilerSabit = true;
-                }
-                ciz(yeni.satirlar);
+                yeniVeri(yeni);
                 if (yeni.dm === "calisiyor") setTimeout(yokla, 3000);
-                if (degisti) degisti();
             })
             .catch(() => setTimeout(yokla, 8000));
     }
-    if (ka.dm === "calisiyor") setTimeout(yokla, 3000);
+    if (pa.dm === "calisiyor" && !sade) setTimeout(yokla, 3000);
 
     return {
-        deger: () => satirlar.map(x => ({ anahtar: x.r.anahtar, anlam: x.g.value.trim(),
-                                          oneri: x.y.value.trim(), secili: x.kutu.checked,
-                                          tur: x.t.value })),
-        kalip: () => kalip.slice(),
-        kilitle: k => {
-            kilitli = k;
-            satirlar.forEach(x => { x.g.disabled = k; x.y.disabled = k; x.t.disabled = k;
-                                    x.kutu.disabled = k; });
-            topluBtn.forEach(b => { b.disabled = k; });
-            kalipCiz();
-            ilerYaz();
+        deger: () => {
+            const grup = gruplar();
+            return {
+                satirlar: (pa.satirlar || []).map(r => {
+                    const e = etkin(r.parca, grup);
+                    return { parca: r.parca, anlam: (e.anlam || "").trim(), tur: e.tur || "",
+                             standart: (e.standart || "").trim(), onay: !!(satir[r.parca] || {}).onay };
+                }),
+                esler: (pa.esler || []).map(e => ({ anahtar: e.anahtar, karar: esAl(e).karar,
+                                                     standart: esAl(e).standart, onay: !!esAl(e).onay }))
+            };
         },
-        /* Okuma / öneriler sürüyor mu (adım kartında onay kilidi). */
-        bekliyor: () => ka.dm === "calisiyor"
+        /* Onayı durduranlar. */
+        onaysiz: () => (pa.satirlar || []).filter(r => !(satir[r.parca] || {}).onay).length,
+        esBekleyen: () => (pa.esler || []).filter(e => !(esAl(e).karar && esAl(e).onay)).length,
+        sorunlu: () => Object.keys(sorunlar(gruplar())).length,
+        cakisma: () => Object.values(gruplar()).some(g => g.cakisma),
+        sayilar: () => {
+            const v = (pa.satirlar || []).length;
+            const deg = (pa.satirlar || []).filter(r => { const e = etkin(r.parca, gruplar()); return (e.standart || "") !== r.parca; }).length;
+            return { parca: v, ayni: (pa.esler || []).filter(e => esAl(e).karar === "ayni").length, degisen: deg };
+        },
+        kilitle: k => { kilitli = k; tumunuCiz(); },
+        bekliyor: () => pa.dm === "calisiyor"
     };
 }
 
-/* ==================== 01.2.4.2 Açıklama Düzenleme ====================
-   Her kolonun açıklaması, anlamı değiştirilmeden dil modeliyle düzeltilir.
+/* ==================== 01.2.4.4 Kolon Adları ====================
+   Adları KOD kurar: onaylı parçaların standart yazılışları Ad
+   Standardı'ndaki yer sırasına dizilir. Üstte Ad Standardı (yerlerin
+   sırası, ← → ile değişir; adlar sunucuda yeniden kurulur). Satırlar
+   ailedir (adı yalnız sayılarla ayrılan kolonlar): Yeni Ad ya da Eski Ad
+   Kalsın, ve onay. Her aile onaylanmadan birincil düğme açılmaz. */
+const KAD_SAYFA = 100;
+const KAD_AD = /^[A-Za-z][A-Za-z0-9_]*$/;
+
+function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
+    let kilitli = ilkKilit;
+    const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
+    const kbas = elYap("div", "dg-tablo-baslik", ka.baslik || "Kolon Adları");
+    kb.appendChild(kbas);
+    kart.appendChild(kb);
+    const bos = { deger: () => ({}), kilitle: () => {}, bekliyor: () => false,
+                  onaysiz: () => 0, sorunlu: () => 0, sayilar: () => ({}) };
+    /* Eski kayıtlardaki kart (aile yapısı yok): yalnız not. */
+    if (!ka.sira) {
+        kart.appendChild(elYap("div", "dg-kisa-aciklama",
+            "Bu kart önceki sürümle oluşturuldu; ayrıntısı gösterilmiyor."));
+        return bos;
+    }
+    if (ka.bilgi) kbas.appendChild(bolmeBilgiSimgesi(tireSade(ka.bilgi), ka.baslik || "Kolon Adları"));
+    const adExcel = excelSeridiYap("aciklama", "Önerilen Sözlüğü İndir",
+        "Eski ve yeni adlar, orijinal ve düzeltilmiş açıklamalar, kolon kartı");
+    adExcel.ac(true);
+    kb.appendChild(adExcel.el);
+
+    const yerAdi = {};
+    (ka.yerler || []).forEach(y => { yerAdi[y.kod] = y.ad; });
+    let sira = (ka.sira || []).slice();
+    const satirlar = (ka.satirlar || []).map(r => ({ aile: r.aile, kolonlar: r.kolonlar || [],
+                                                    secim: r.secim || "yeni", onay: !!r.onay }));
+    const korunan = ka.korunan || [];
+
+    /* ---- AD STANDARDI ---- */
+    const stKap = elYap("div", "dg-kad-standart");
+    const stBas = elYap("div", "dg-kad-standart-bas");
+    stBas.append(elYap("span", "dg-kad-standart-ad", "Ad Standardı"),
+                 elYap("span", "dg-donem-tur-not", (ka.standart_kayitli ? "Hafızadaki standart" : "Varsayılan sıra")
+                       + " · büyük harf · ayraç _"));
+    const stSira = elYap("div", "dg-kad-sira");
+    stKap.append(stBas, stSira);
+    kart.appendChild(stKap);
+    const stOrnek = elYap("div", "dg-donem-tur-not dg-kad-ornek", "");
+    stKap.appendChild(stOrnek);
+    let onizleSayac = 0;
+    function siraCiz() {
+        stSira.textContent = "";
+        sira.forEach((y, i) => {
+            const c = elYap("span", "dg-kad-yer");
+            const sol = elYap("button", "dg-kad-ok", "←");
+            sol.type = "button"; sol.disabled = kilitli || i === 0;
+            sol.title = yerAdi[y] + " bir öne";
+            sol.setAttribute("aria-label", yerAdi[y] + " bir öne");
+            sol.onclick = () => tasi(i, -1);
+            const sag = elYap("button", "dg-kad-ok", "→");
+            sag.type = "button"; sag.disabled = kilitli || i === sira.length - 1;
+            sag.title = yerAdi[y] + " bir arkaya";
+            sag.setAttribute("aria-label", yerAdi[y] + " bir arkaya");
+            sag.onclick = () => tasi(i, 1);
+            c.append(sol, elYap("span", "dg-kad-yer-ad", (i + 1) + ". " + (yerAdi[y] || y)), sag);
+            stSira.appendChild(c);
+        });
+        const ilk = satirlar.find(r => r.kolonlar.length && r.kolonlar[0][0] !== r.kolonlar[0][1]);
+        stOrnek.textContent = ilk ? "Örnek: " + ilk.kolonlar[0][0] + " → " + ilk.kolonlar[0][1] : "";
+    }
+    function tasi(i, yon) {
+        if (kilitli) return;
+        const j = i + yon;
+        if (j < 0 || j >= sira.length) return;
+        [sira[i], sira[j]] = [sira[j], sira[i]];
+        siraCiz();
+        const no = ++onizleSayac;
+        stKap.classList.add("yukleniyor");
+        fetch(getWebAppBackendUrl("kolon_ad_onizle"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ftKimlikGovdesi({ sira: sira }))
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (no !== onizleSayac) return;
+            const k = d && d.kolon_ad;
+            if (!k) return;
+            const harita = {};
+            (k.satirlar || []).forEach(r => { harita[r.aile] = r.kolonlar; });
+            /* Ad değişen ailenin onayı kalkar (yeni adı görülmedi). */
+            satirlar.forEach(r => {
+                const yeni = harita[r.aile];
+                if (!yeni) return;
+                if (JSON.stringify(yeni) !== JSON.stringify(r.kolonlar) && r.secim === "yeni") r.onay = false;
+                r.kolonlar = yeni;
+            });
+            tabloCiz(); siraCiz();
+            if (degisti) degisti();
+        })
+        .catch(() => {})
+        .then(() => { if (no === onizleSayac) stKap.classList.remove("yukleniyor"); });
+    }
+
+    /* ---- ÜST: arama, süzgeç, toplu onay, sayfa ---- */
+    const ust = elYap("div", "dg-tablo-ust dg-parca-ust");
+    const ara = document.createElement("input");
+    ara.type = "search"; ara.className = "dg-giris dg-parca-ara";
+    ara.placeholder = "Kolon adı ara";
+    ara.setAttribute("aria-label", "Kolon adı ara");
+    const suz = document.createElement("select");
+    suz.className = "dg-parca-suz";
+    suz.setAttribute("aria-label", "Süzgeç");
+    [["hepsi", "Tümü"], ["onaysiz", "Onaylanmadı"], ["degisen", "Adı Değişen"],
+     ["ayni", "Adı Aynı Kalan"], ["sorun", "Sorunlu"]].forEach(([d, a]) => {
+        const o = document.createElement("option"); o.value = d; o.textContent = a; suz.appendChild(o); });
+    const gorOnay = elYap("button", "dg-toplu-btn", "Görünenleri Onayla");
+    gorOnay.type = "button";
+    gorOnay.title = "Bu sayfada görünen ve sorunu olmayan aileler seçili haliyle onaylanır.";
+    const sayfaEl = elYap("div", "dg-parca-sayfa");
+    ust.append(ara, suz, gorOnay, sayfaEl);
+    kart.appendChild(ust);
+    if (korunan.length) kart.appendChild(elYap("div", "dg-donem-tur-not",
+        "Yeniden adlandırılmayan rol kolonları: " + korunan.join(", ") + "."));
+    const sar = elYap("div", "dg-tablo-sar dg-parca-sar");
+    const tablo = elYap("table", "dg-tablo dg-kolonad-tablo dg-kad-tablo");
+    const th = document.createElement("thead"), hr = document.createElement("tr");
+    ["Eski Ad", "Yeni Ad", "Karar", "Onay"].forEach(h => hr.appendChild(elYap("th", "", h)));
+    th.appendChild(hr); tablo.appendChild(th);
+    const tb = document.createElement("tbody");
+    tablo.appendChild(tb); sar.appendChild(tablo); kart.appendChild(sar);
+    let sayfa = 0;
+    ara.addEventListener("input", () => { sayfa = 0; tabloCiz(); });
+    suz.addEventListener("change", () => { sayfa = 0; tabloCiz(); });
+
+    /* SORUNLAR: yeni ad geçersiz, iki kolon aynı adı alıyor ya da yeni ad
+       adı değişmeyen başka bir kolonun adı. */
+    function sorunlar() {
+        const sonAd = new Map(), say = new Map(), sor = {};
+        satirlar.forEach(r => r.kolonlar.forEach(([e, y]) => {
+            const ad = r.secim === "eski" ? e : y;
+            sonAd.set(e, ad);
+            say.set(ad, (say.get(ad) || 0) + 1);
+        }));
+        korunan.forEach(k => say.set(k, (say.get(k) || 0) + 1));
+        satirlar.forEach(r => {
+            const m = [];
+            r.kolonlar.forEach(([e, y]) => {
+                const ad = sonAd.get(e);
+                if (!KAD_AD.test(ad)) m.push(ad + ": harfle başlamalı; yalnız harf, rakam ve _");
+                else if (say.get(ad) > 1) m.push(ad + " adını birden fazla kolon alıyor");
+            });
+            if (m.length) sor[r.aile] = m.slice(0, 3).join(". ") + (m.length > 3 ? " ve " + (m.length - 3) + " sorun daha" : "") + ".";
+        });
+        return sor;
+    }
+    const degisir = r => r.kolonlar.some(([e, y]) => e !== y);
+    function gorunen() {
+        const sor = sorunlar();
+        const q = ara.value.trim().toLocaleUpperCase("tr");
+        const sz = suz.value;
+        return { sor, liste: satirlar.filter(r => {
+            if (q && !r.kolonlar.some(([e, y]) => e.toLocaleUpperCase("tr").includes(q)
+                                      || y.toLocaleUpperCase("tr").includes(q))) return false;
+            if (sz === "onaysiz") return !r.onay;
+            if (sz === "degisen") return degisir(r);
+            if (sz === "ayni") return !degisir(r);
+            if (sz === "sorun") return !!sor[r.aile];
+            return true;
+        }) };
+    }
+    function tabloCiz() {
+        const { sor, liste } = gorunen();
+        const sayfaSay = Math.max(1, Math.ceil(liste.length / KAD_SAYFA));
+        if (sayfa >= sayfaSay) sayfa = sayfaSay - 1;
+        const parca = liste.slice(sayfa * KAD_SAYFA, (sayfa + 1) * KAD_SAYFA);
+        tb.textContent = "";
+        parca.forEach(r => tb.appendChild(satirCiz(r, sor[r.aile])));
+        if (!parca.length) {
+            const tr = elYap("tr", "dg-bos-tablo");
+            const td = elYap("td", "", satirlar.length ? "Bu süzgeçte aile yok." : "Yeniden adlandırılacak kolon yok.");
+            td.colSpan = 4; tr.appendChild(td); tb.appendChild(tr);
+        }
+        sayfaEl.textContent = "";
+        if (liste.length > KAD_SAYFA) {
+            const geri = elYap("button", "dg-toplu-btn", "Önceki");
+            geri.type = "button"; geri.disabled = sayfa === 0;
+            geri.onclick = () => { sayfa--; tabloCiz(); };
+            const ileri = elYap("button", "dg-toplu-btn", "Sonraki");
+            ileri.type = "button"; ileri.disabled = sayfa >= sayfaSay - 1;
+            ileri.onclick = () => { sayfa++; tabloCiz(); };
+            sayfaEl.append(geri, elYap("span", "dg-parca-sayfa-no",
+                ftBinlik(sayfa * KAD_SAYFA + 1) + " ile " + ftBinlik(Math.min(liste.length, (sayfa + 1) * KAD_SAYFA))
+                + " arası · " + ftBinlik(liste.length)), ileri);
+        }
+        gorOnay.disabled = kilitli || !parca.some(r => !r.onay && !sor[r.aile]);
+        gorOnay.onclick = () => {
+            if (kilitli) return;
+            parca.forEach(r => { if (!sor[r.aile]) r.onay = true; });
+            tabloCiz(); if (degisti) degisti();
+        };
+    }
+    function satirCiz(r, sorun) {
+        const tr = elYap("tr", "dg-satir dg-kad-satir");
+        const ilk = r.kolonlar[0] || ["", ""];
+        const n = r.kolonlar.length;
+        const tdE = elYap("td", "dg-kolon");
+        tdE.appendChild(elYap("div", "dg-kad-ad", ilk[0]));
+        const tdY = elYap("td", "");
+        const yeniAd = elYap("div", "dg-kad-ad" + (r.secim === "eski" ? " dg-kad-pasif" : ""), ilk[1]);
+        tdY.appendChild(yeniAd);
+        if (n > 1) {
+            const ac = elYap("button", "dg-baglanti dg-kad-aile", "Ailede " + ftBinlik(n) + " kolon");
+            ac.type = "button";
+            ac.title = "Adı yalnız sayılarla ayrılan kolonlar; hepsi aynı kurala göre adlandırılır.";
+            let acik = null;
+            ac.onclick = () => {
+                if (acik) { acik.remove(); acik = null; return; }
+                acik = elYap("tr", "dg-donem-detay");
+                const td = elYap("td", "");
+                td.colSpan = 4;
+                const kutu = elYap("div", "dg-parca-ornek");
+                r.kolonlar.forEach(([e, y]) => {
+                    const s = elYap("div", "dg-parca-ornek-satir");
+                    s.append(elYap("span", "dg-parca-ornek-kolon", e), elYap("span", "", r.secim === "eski" ? e : y));
+                    kutu.appendChild(s);
+                });
+                td.appendChild(kutu); acik.appendChild(td);
+                tr.after(acik);
+            };
+            tdE.appendChild(ac);
+        }
+        if (ilk[0] === ilk[1] && n === 1) tdY.appendChild(elYap("div", "dg-donem-tur-not", "Ad standarda uygun; aynı kalır."));
+        if (sorun) tdY.appendChild(elYap("div", "dg-donem-soru", sorun));
+        tr.append(tdE, tdY);
+        const tdK = elYap("td", "");
+        const seg = elYap("div", "dg-segment");
+        [["yeni", "Yeni Ad"], ["eski", "Eski Ad Kalsın"]].forEach(([d, a]) => {
+            const b = elYap("button", r.secim === d ? "secili" : "", a);
+            b.type = "button"; b.disabled = kilitli;
+            b.setAttribute("aria-pressed", r.secim === d ? "true" : "false");
+            b.onclick = () => {
+                if (kilitli || r.secim === d) return;
+                r.secim = d; r.onay = false;
+                tabloCiz(); if (degisti) degisti();
+            };
+            seg.appendChild(b);
+        });
+        tdK.appendChild(seg);
+        tr.appendChild(tdK);
+        const tdO = elYap("td", "dg-ekle-hucre");
+        const k = document.createElement("input");
+        k.type = "checkbox"; k.className = "dg-ekle";
+        k.checked = r.onay; k.disabled = kilitli || (!r.onay && !!sorun);
+        k.title = sorun ? "Önce sorunu giderin" : "Aileyi onayla";
+        k.setAttribute("aria-label", ilk[0] + " onay");
+        k.onchange = () => { if (kilitli) { k.checked = !k.checked; return; } r.onay = k.checked; tabloCiz(); if (degisti) degisti(); };
+        tdO.appendChild(k);
+        tr.appendChild(tdO);
+        tr.classList.toggle("dg-parca-onayli", r.onay);
+        tr.classList.toggle("dg-donem-dikkat", !r.onay && !!sorun);
+        return tr;
+    }
+    siraCiz();
+    tabloCiz();
+    return {
+        deger: () => ({ sira: sira.slice(),
+                        aileler: satirlar.map(r => ({ aile: r.aile, secim: r.secim, onay: r.onay })) }),
+        onaysiz: () => satirlar.filter(r => !r.onay).length,
+        sorunlu: () => Object.keys(sorunlar()).length,
+        sayilar: () => {
+            let deg = 0;
+            satirlar.forEach(r => { if (r.secim === "yeni") deg += r.kolonlar.filter(([e, y]) => e !== y).length; });
+            return { aile: satirlar.length, degisen: deg };
+        },
+        kilitle: k => { kilitli = k; siraCiz(); tabloCiz(); },
+        bekliyor: () => false
+    };
+}
+
+/* ==================== 01.2.4.3 Kolon Kartları ====================
+   Her kolonun kartı onaylı ad parçalarından (arka uçta kodla) kurulur;
+   açıklaması karttan ve tanımdan dil modeliyle yazılır, satır onaylanır.
    Satırlar arka plandaki işten yoklamayla gelir; satır, düzenlemesi
    bitince açılır. "Sizin Düzenlemeniz"e yazılan not alandan çıkınca
    kaydedilir ve o kolon beklemeden yeniden kontrol edilir. Aynı parça
@@ -9235,9 +9561,10 @@ function kisaltmaBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
 const ACK_SAYFA = 150;
 const ACK_YOKLAMA = 2500;
 const ACK_KART_ADLARI = [["konu", "Konu"], ["yon", "Yön"], ["nitelik", "Nitelik"],
-                         ["pencere", "Dönem"], ["olcu", "Ölçü"], ["istatistik", "İstatistik"],
-                         ["karsilastirma", "Karşılaştırma"], ["deger_anlami", "Değer Anlamı"]];
-const ACK_SUZGECLER = [["tumu", "Tümü", "toplam"], ["degisen", "Değişen", "degisen"],
+                         ["zaman", "Zaman"], ["olcu", "Ölçü"], ["istatistik", "İstatistik"],
+                         ["karsilastirma", "Karşılaştırma"], ["birim", "Birim"], ["diger", "Diğer"]];
+const ACK_SUZGECLER = [["tumu", "Tümü", "toplam"], ["onaysiz", "Onaylanmadı", "onaysiz"],
+                       ["degisen", "Değişen", "degisen"], ["ek", "Ek Bilgi", "ek"],
                        ["soru", "Soru Var", "soru"], ["ad", "Ad / Dağılım Notu", "ad"],
                        ["kontrol", "Kontrol Gereken", "kontrol"],
                        ["elle", "Düzenledikleriniz", "elle"], ["hata", "Düzenlenemedi", "hata"]];
@@ -9258,11 +9585,11 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
 
     /* ---- Başlık, yönerge, Excel ---- */
     const kb = elYap("div", "dg-tablo-bas dg-kontrol-bas");
-    const kbas = elYap("div", "dg-tablo-baslik", aa.baslik || "Açıklama Düzenleme");
+    const kbas = elYap("div", "dg-tablo-baslik", aa.baslik || "Kolon Kartları");
     if (aa.sutunlar) kbas.appendChild(bolmeBilgiSimgesi(tireSade(aa.sutunlar), "Sütunlar"));
     kb.appendChild(kbas);
     const excel = excelSeridiYap("aciklama", "Önerilen Sözlüğü İndir",
-        "Orijinal ve düzeltilmiş açıklamalar, notlarınız ve anlam kartı");
+        "Orijinal ve düzeltilmiş açıklamalar, notlarınız, ek bilgi ve kolon kartı");
     excel.ac(true);
     kb.appendChild(excel.el);
     kart.appendChild(kb);
@@ -9273,7 +9600,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     }
     if (aa.uyari) kart.appendChild(elYap("div", "dg-oneri-hata", tireSade(aa.uyari)));
 
-    /* ---- İlerleme: süre, sayı, İptal / Devam (Kısaltma Sözlüğü'ndeki
+    /* ---- İlerleme: süre, sayı, İptal / Devam (Dönem Bilgisi'ndeki
        işlem satırının aynısı) ---- */
     const ilerEl = elYap("div", "islem-satiri dg-ilerleme dg-acik-ilerleme");
     ilerEl.setAttribute("role", "status");
@@ -9319,14 +9646,33 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         gosterilen = ACK_SAYFA;
         tabloCiz();
     });
-    ust.append(suzKap, ara);
+    /* TOPLU ONAY: görünen ve dikkat notu olmayan hazır satırlar. Soru,
+       ad / dağılım notu, kontrol notu ya da hata olan satır tek tek
+       onaylanır. */
+    const topluOnay = elYap("button", "dg-toplu-btn", "Görünenleri Onayla");
+    topluOnay.type = "button";
+    topluOnay.title = "Görünen ve notu olmayan satırlar onaylanır. Soru, ad ya da dağılım notu ve "
+        + "kontrol notu olan satırları tek tek bakıp onaylayın.";
+    topluOnay.onclick = () => {
+        if (kilitli || saltOkunur) return;
+        const kolonlar = gorunenler().filter(topluOlur).map(v => v.kolon);
+        if (!kolonlar.length) return;
+        topluOnay.disabled = true;
+        kolonlar.forEach(k => { const v = veriler.get(k); if (v) { v.onayli = true; satirGuncelle(v); } });
+        islem({ islem: "onay", kolonlar: kolonlar, onay: true })
+            .then(d => { if (d && d.hata) durumYaz(d.hata, true); yoklaHemen(); })
+            .catch(() => yoklaHemen())
+            .finally(() => { topluOnay.disabled = false; });
+        if (degisti) degisti();
+    };
+    ust.append(suzKap, ara, topluOnay);
     kart.appendChild(ust);
 
     /* ---- Tablo ---- */
     const sar = elYap("div", "dg-tablo-sar dg-acik-sar");
     const tablo = elYap("table", "dg-tablo dg-acik-tablo");
     const th = document.createElement("thead"), hr = document.createElement("tr");
-    ["Kolon", "Orijinal", "Sizin Düzenlemeniz", "Düzeltilmiş Açıklama"]
+    ["Kolon", "Orijinal", "Sizin Düzenlemeniz", "Kart ve Açıklama", "Onay"]
         .forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
@@ -9405,7 +9751,23 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         tr.appendChild(tdN);
         const tdD = elYap("td", "dg-acik-duzeltilmis");
         tr.appendChild(tdD);
-        const e = { tr, tdD, giris, aileBtn, aileEl, notBilgi };
+        const tdOn = elYap("td", "dg-ekle-hucre");
+        const onayK = document.createElement("input");
+        onayK.type = "checkbox"; onayK.className = "dg-ekle";
+        onayK.setAttribute("aria-label", v.kolon + " onay");
+        onayK.addEventListener("change", () => {
+            const v2 = veriler.get(v.kolon);
+            if (kilitli || saltOkunur || !v2 || bekliyorMu(v2)) { onayK.checked = !onayK.checked; return; }
+            v2.onayli = onayK.checked;
+            satirGuncelle(v2);
+            islem({ islem: "onay", kolonlar: [v.kolon], onay: onayK.checked })
+                .then(d => { if (d && d.hata) durumYaz(d.hata, true); yoklaHemen(); })
+                .catch(() => yoklaHemen());
+            if (degisti) degisti();
+        });
+        tdOn.appendChild(onayK);
+        tr.appendChild(tdOn);
+        const e = { tr, tdD, giris, aileBtn, aileEl, notBilgi, onayK };
         el.set(v.kolon, e);
         satirGuncelle(v);
         return tr;
@@ -9429,9 +9791,11 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             td.appendChild(h);
             return;
         }
+        kartCiz(td, v);
         const m = elYap("div", "dg-acik-metin", tireSade(v.aciklama || ""));
         if (v.model) m.title = "Öneren: " + tireSade(v.model);
         td.appendChild(m);
+        if (v.ek) td.appendChild(elYap("div", "dg-acik-ek", "Ek bilgi: " + tireSade(v.ek)));
         if (v.karar) {
             let k = tireSade(v.karar);
             if (v.kaynak === "aile" && v.aile_kaynagi)
@@ -9445,24 +9809,37 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                                                   "Dağılım: " + tireSade(v.dagilim_notu)));
         (v.kontrol || []).forEach(k => td.appendChild(elYap("div", "dg-acik-kontrol",
                                                              "Kontrol: " + tireSade(k))));
+    }
+    /* KOLON KARTI: onaylı ad parçalarından (kodla); açıklamanın üstünde. */
+    function kartCiz(td, v) {
         const kartV = v.kart || {};
         const alanlar = ACK_KART_ADLARI.filter(([a]) => kartV[a]);
-        if (alanlar.length) {
-            const kk = elYap("div", "dg-acik-kart");
-            alanlar.forEach(([a, et]) => {
-                const c = elYap("span", "dg-acik-kart-oge");
-                c.appendChild(elYap("span", "dg-acik-kart-et", et + ":"));
-                c.appendChild(document.createTextNode(" " + tireSade(kartV[a])));
-                kk.appendChild(c);
-            });
-            td.appendChild(kk);
-        }
+        if (!alanlar.length) return;
+        const kk = elYap("div", "dg-acik-kart");
+        alanlar.forEach(([a, et]) => {
+            const c = elYap("span", "dg-acik-kart-oge");
+            c.appendChild(elYap("span", "dg-acik-kart-et", et + ":"));
+            c.appendChild(document.createTextNode(" " + tireSade(kartV[a])));
+            kk.appendChild(c);
+        });
+        td.appendChild(kk);
+    }
+    /* Toplu onaya giren satır: hazır, onaysız, dikkat notu yok. */
+    function topluOlur(v) {
+        return v.durum === "hazir" && !v.onayli && !v.soru && !v.ad_notu && !v.dagilim_notu
+            && !(v.kontrol || []).length;
+    }
+    function gorunenler() {
+        return sira.map(k => veriler.get(k)).filter(v => v && uyar(v)).slice(0, gosterilen);
     }
 
     function satirGuncelle(v) {
         const e = el.get(v.kolon);
         if (!e) return;
         const kilit = kilitli || saltOkunur || bekliyorMu(v);
+        e.onayK.checked = !!v.onayli;
+        e.onayK.disabled = kilitli || saltOkunur || bekliyorMu(v);
+        e.tr.classList.toggle("dg-parca-onayli", !!v.onayli);
         if (e.giris) {
             if (document.activeElement !== e.giris && ackSade(e.giris.value) !== ackSade(v.not))
                 e.giris.value = tireSade(v.not || "");
@@ -9523,6 +9900,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     /* ---- Süzgeç ---- */
     function uyar(v) {
         const hazir = v.durum === "hazir";
+        if (suzgec === "onaysiz" && v.onayli) return false;
+        if (suzgec === "ek" && !(hazir && v.ek)) return false;
         if (suzgec === "degisen" && !(hazir && ackSade(v.aciklama) !== ackSade(v.orijinal))) return false;
         if (suzgec === "soru" && !(hazir && v.soru)) return false;
         if (suzgec === "ad" && !(hazir && (v.ad_notu || v.dagilim_notu))) return false;
@@ -9546,6 +9925,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         const kalan = uyan.length - Math.min(uyan.length, gosterilen);
         dahaBtn.hidden = kalan <= 0;
         dahaBtn.textContent = "Daha Fazla Göster (" + ftBinlik(kalan) + " satır daha)";
+        topluOnay.hidden = saltOkunur;
+        topluOnay.disabled = kilitli || !uyan.slice(0, gosterilen).some(topluOlur);
         bosEl.hidden = !(yuklendi && !uyan.length);
         bosEl.textContent = sira.length ? "Bu süzgece uyan satır yok."
             : atlandi ? "Açıklamalar değiştirilmeden geçildi." : "Düzenlenecek kolon yok.";
@@ -9853,7 +10234,7 @@ function donemKalipEtiketi(r) {
 
 /* [SAYI] GÖSTERİMİ: kalıpta ve anlamda sayı yer tutucusu (<N>, <NN>, N,
    NN) ekranda "[sayı]" yazar; içeride yer tutucu olarak saklanır
-   (hafıza ve Açıklama Düzenleme aynı kalır). */
+   (hafıza ve Kolon Kartları aynı kalır). */
 const DONEM_SAYI = "[sayı]";
 const DONEM_SAYI_RE = /\[\s*say[ıi]\s*\]/gi;
 function donemSayiGoster(metin) {
@@ -9884,9 +10265,8 @@ const DONEM_TURLERI = [
 function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     let kilitli = ilkKilit;
     /* BAŞLIK: yönerge ve sütun açıklamaları başlıktaki "i"de. Altında tek
-       satır özet, sonra üç sekme: Kalıplar (karar tablosu), Olası (dil
-       modelinin emin olamadıkları), Kısaltmalar (kolon adlarındaki bütün
-       kısaltmalar; tıklanan tabloya eklenir). */
+       satır özet, sonra iki sekme: Kalıplar (karar tablosu) ve Olası (dil
+       modelinin emin olamadıkları). Sayısız parçalar Ad Parçaları'nda. */
     /* Adımın adı blok başlığında; kartta ayrıca başlık yok. */
     const ozetSatir = elYap("div", "dg-donem-ozet");
     const ozetEl = elYap("span", "", "");
@@ -9946,7 +10326,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     sekmeBar.setAttribute("role", "tablist");
     const panolar = {}, sekmeDugme = {};
     let aktifSekme = "kalip";
-    [["kalip", "Kalıplar"], ["olasi", "Olası"], ["kisa", "Kısaltmalar"]].forEach(([ad, etiket]) => {
+    [["kalip", "Kalıplar"], ["olasi", "Olası"]].forEach(([ad, etiket]) => {
         const b = elYap("button", "dg-sekme", "");
         b.type = "button";
         b.setAttribute("role", "tab");
@@ -9976,7 +10356,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         const acik = da.dm === "calisiyor" && !kilitli && kart.isConnected;
         ilerEl.classList.toggle("gorunur", acik);
         ilerDusun(acik);
-        if (acik) ilerMetin.textContent = "Dil modeli dönem kalıplarını yorumluyor ve kısaltmaları tarıyor · "
+        if (acik) ilerMetin.textContent = "Dil modeli dönem kalıplarını yorumluyor · "
             + sureBicim(Math.max(0, Math.floor((Date.now() - ilerBas) / 1000)));
         if (da.dm !== "calisiyor" && kart.isConnected) clearInterval(ilerSayac);
     }, 1000);
@@ -10502,7 +10882,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             duzen[anah] = Object.assign(duzen[anah] || {}, {
                 anlam: anlamAl(), kalip: kg ? kg.value : undefined, haric: Array.from(haric),
                 deger_anlam: Object.assign({}, dgAnlam) });
-            elleSay(); dgCiz(); boya(); listeBoya(); if (degisti) degisti();
+            elleSay(); dgCiz(); boya(); if (degisti) degisti();
         };
         g.addEventListener("input", () => {
             if (duzen[anah]) delete duzen[anah].sablonNot;
@@ -10620,10 +11000,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
 
     /* Özet satırı ve sekme sayıları. */
     function sekmeSayilari() {
-        const kisaSayi = parcalar.filter(p => !p.donem && !p.ikili).length;
         sekmeDugme.kalip.lastChild.textContent = ftBinlik(satirlar.length);
         sekmeDugme.olasi.lastChild.textContent = ftBinlik(olasilar.length);
-        sekmeDugme.kisa.lastChild.textContent = ftBinlik(kisaSayi);
         const tur = { pencere: 0, nokta: 0, birim: 0, olcu: 0 };
         satirlar.forEach(x => {
             if (x.r.bekliyor && da.dm === "calisiyor") return;     // tür henüz yok
@@ -10638,7 +11016,6 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         if (bekleyen) parca.push(ftBinlik(bekleyen) + " yorumlanıyor");
         if (olasilar.length) parca.push(ftBinlik(olasilar.length) + " olası");
         if (cikanlar.length) parca.push(ftBinlik(cikanlar.length) + " çıkarılan");
-        parca.push(ftBinlik(kisaSayi) + " kısaltma");
         ozetEl.textContent = parca.join(" · ");
     }
     /* Elle eklenen ve henüz kaydedilmemiş satırlar (yoklamada kalır). */
@@ -10689,7 +11066,6 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         sekmeSayilari();
         durumEl.textContent = da.not ? tireSade(da.not) : "";
         durumEl.hidden = !durumEl.textContent;
-        listeBoya();
     }
     function elleEkle(kalip) {
         if (kilitli || da.dm === "calisiyor") return;
@@ -10717,32 +11093,6 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     ekleBtn.onclick = () => elleEkle("");
     bilgiEl.after(ekleBtn);
 
-    /* ---- KOLON ADLARINDAKİ KISALTMALAR: düz liste (dönem değerleri
-       hariç). Tıklanan kısaltma elle dönem satırı olarak eklenir. */
-    const liste = parcalar.filter(p => !p.donem && !p.ikili);
-    const listeOgeleri = [];
-    function listeBoya() {
-        const tabloda = new Set(satirlar.map(x => (x.kg ? x.kg.value.trim().toUpperCase() : x.r.kalip)));
-        listeOgeleri.forEach(o => o.b.classList.toggle("dg-parca-tabloda", tabloda.has(o.p.parca)));
-    }
-    if (liste.length) {
-        const pb = elYap("p", "dg-donem-pano-not",
-            "Kolon adlarındaki bütün kısaltmalar (zaman değerleri hariç). Zaman bilgisi taşıyan "
-            + "biri tabloda yoksa üzerine tıklayın; Kalıplar tablosuna eklenir, anlamını yazarsınız.");
-        const ul = elYap("ul", "dg-parca-liste");
-        liste.forEach(p => {
-            const li = document.createElement("li");
-            const b = elYap("button", "dg-parca-oge", p.parca);
-            b.type = "button";
-            b.title = ftBinlik(p.kolon) + " kolonda" + ((p.ornekler || []).length
-                ? " · ör. " + p.ornekler.join(", ") : "") + "\nTıklayın: dönem tablosuna ekle";
-            b.onclick = () => { elleEkle(p.parca); sekmeAc("kalip"); };
-            li.appendChild(b);
-            ul.appendChild(li);
-            listeOgeleri.push({ p, b });
-        });
-        panolar.kisa.append(pb, ul);
-    }
     ciz(da.satirlar);
 
     let yoklamaSayisi = 0;
@@ -10771,7 +11121,6 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     function kilitDurumu() {
         const k = kilitli || da.dm === "calisiyor";
         ekleBtn.disabled = k;
-        listeOgeleri.forEach(o => { o.b.disabled = k; });
         cikListe.querySelectorAll("button").forEach(b => { b.disabled = k; });
         olaTb.querySelectorAll("button").forEach(b => { b.disabled = k; });
     }

@@ -1003,7 +1003,7 @@ def _biten_adimi_guncelle(durum, tamam, rozet=None, karar=None):
     secili = tamam.get("secili")
     hedef = tamam.get("adim")
     # 4) KARAR KARTLARININ KARARLI HALI (Tanımsız Kolonlar, Dönem Bilgisi,
-    #    Kısaltma Sözlüğü, Yeni Kolon Adları): akis kartı verilen kararlarla
+    #    Ad Parçaları, Kolon Adları): akis kartı verilen kararlarla
     #    yeniden üretti (akis_faz01.karar_sonrasi_alan).
     karar_alan = tamam.get("karar_alan") if isinstance(tamam.get("karar_alan"), dict) else None
     if not hedef:
@@ -1158,10 +1158,10 @@ def _surdurme_govdesi(durum):
     # icinde). Metin yoksa ekrani adimin kendi karti kurar;
     # "kaldigi yerden yuklendi" seridi zaten ayrica basiliyor.
     metin = durum.get("_son_cevap") or ""
-    # Kisaltma Sozlugu her yuklemede guncel koddan ve guncel hafizadan
+    # Acik 01.2.4 karti her yuklemede guncel koddan ve guncel hafizadan
     # yeniden kurulur (kaydedilmis eski satirlar gosterilmez).
     try:
-        akis.kisaltma_alani_tazele(durum)
+        akis.acik_kart_tazele(durum)
     except Exception:
         pass
     govde = _yanit(durum, metin)
@@ -2912,18 +2912,6 @@ def degisken_excel_endpoint():
     })
 
 
-@app.route("/kisaltma_alani")
-def kisaltma_alani_endpoint():
-    """Kisaltma Sozlugu yoklamasi: okuma ve oneriler surerken karttaki
-    satirlar guncellenir (beklemez; durum kaydedilmez)."""
-    try:
-        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
-        durum = _durum_al(anahtar)
-        return jsonify({"tamam": True, "kisaltma": akis.kisaltma_alani(durum)})
-    except Exception as e:
-        return jsonify(_hata_govdesi("kisaltma_alani", e)), 200
-
-
 @app.route("/donem_alani")
 def donem_alani_endpoint():
     """Donem Bilgisi yoklamasi: dil modeli yorumu surerken karttaki
@@ -2934,6 +2922,57 @@ def donem_alani_endpoint():
         return jsonify({"tamam": True, "donem": akis.donem_alani(durum)})
     except Exception as e:
         return jsonify(_hata_govdesi("donem_alani", e)), 200
+
+
+@app.route("/parca_alani")
+def parca_alani_endpoint():
+    """Ad Parcalari yoklamasi: dil modeli yorumu surerken karttaki satirlar
+    guncellenir (beklemez; durum kaydedilmez)."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True, "parca": akis.parca_alani(durum)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("parca_alani", e)), 200
+
+
+@app.route("/parca_ornek")
+def parca_ornek_endpoint():
+    """Ad Parcalari: bir parcanin ornek kolonlari ve sozluk tanimlari."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True, "ornekler": akis.parca_ornek(
+            durum, str(request.args.get("parca") or ""))})
+    except Exception as e:
+        return jsonify(_hata_govdesi("parca_ornek", e)), 200
+
+
+@app.route("/parca_iptal", methods=["POST"])
+def parca_iptal_endpoint():
+    """Ad Parcalari: suren dil modeli yorumunu durdurur; gelenler kalir."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        return jsonify({"tamam": True, "parca": akis.parca_iptal(durum)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("parca_iptal", e)), 200
+
+
+@app.route("/kolon_ad_onizle", methods=["POST"])
+def kolon_ad_onizle_endpoint():
+    """Kolon Adlari: Ad Standardi'nin sirasi degisince adlar yeniden kurulur
+    (durum kaydedilmez)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        sira = istek.get("sira")
+        return jsonify({"tamam": True, "kolon_ad": akis.kolon_ad_onizle(
+            durum, sira if isinstance(sira, list) else None)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("kolon_ad_onizle", e)), 200
 
 
 @app.route("/donem_iptal", methods=["POST"])
@@ -2978,9 +3017,9 @@ def aciklama_alani_endpoint():
 
 @app.route("/aciklama_islem", methods=["POST"])
 def aciklama_islem_endpoint():
-    """Aciklama Duzenleme kartindan gelen islem: kullanicinin notu (kolon
-    yeniden kontrol edilir), toplu soru cevabi, aileye uygulama, durdurma ve
-    devam. Kayit calisma klasorundedir; oturum dosyasi yazilmaz."""
+    """Kolon Kartlari kartindan gelen islem: kullanicinin notu (kolon
+    yeniden kontrol edilir), toplu soru cevabi, aileye uygulama, satir
+    onayi, durdurma ve devam. Kayit calisma klasorundedir; oturum dosyasi yazilmaz."""
     try:
         istek = request.get_json(force=True) or {}
         anahtar = _oturum_anahtari(_calisma_id(istek))
@@ -2997,6 +3036,10 @@ def aciklama_islem_endpoint():
             sonuc = akis.aciklama_iptal(durum)
         elif islem == "devam":
             sonuc = akis.aciklama_devam(durum)
+        elif islem == "onay":
+            kolonlar = istek.get("kolonlar")
+            sonuc = akis.aciklama_onayla(durum, kolonlar if isinstance(kolonlar, list) else [],
+                                         istek.get("onay", True) is not False)
         else:
             return jsonify({"tamam": False, "hata": "Bilinmeyen işlem."})
         return jsonify(dict(sonuc, tamam=not sonuc.get("hata")))
@@ -3023,20 +3066,6 @@ def aciklama_excel_endpoint():
     })
 
 
-@app.route("/kisaltma_oneri", methods=["POST"])
-def kisaltma_oneri_endpoint():
-    """Kisaltma Sozlugu'nde anlam duzenlenince o satirin onerilen
-    kisaltmasi yeni anlamla (durum kaydedilmez)."""
-    try:
-        istek = request.get_json(force=True) or {}
-        anahtar = _oturum_anahtari(_calisma_id(istek))
-        durum = _durum_al(anahtar)
-        sonuc = akis.kisaltma_tek_oneri(durum, istek.get("kisaltma"), istek.get("anlam"))
-        return jsonify(dict(sonuc, tamam=not sonuc.get("hata")))
-    except Exception as e:
-        return jsonify(_hata_govdesi("kisaltma_oneri", e)), 200
-
-
 @app.route("/oneri_iptal", methods=["POST"])
 def oneri_iptal_endpoint():
     """Eksik Sozluk Tanimlari: suren aciklama onerilerini durdurur; gelen
@@ -3047,39 +3076,6 @@ def oneri_iptal_endpoint():
         return jsonify({"tamam": True})
     except Exception as e:
         return jsonify(_hata_govdesi("oneri_iptal", e)), 200
-
-
-@app.route("/kisaltma_iptal", methods=["POST"])
-def kisaltma_iptal_endpoint():
-    """Kisaltma Sozlugu: suren okumayi / oneriyi durdurur; gelen
-    sonuclar kalir."""
-    try:
-        istek = request.get_json(force=True) or {}
-        anahtar = _oturum_anahtari(_calisma_id(istek))
-        durum = _durum_al(anahtar)
-        return jsonify({"tamam": True, "kisaltma": akis.kisaltma_iptal(durum)})
-    except Exception as e:
-        return jsonify(_hata_govdesi("kisaltma_iptal", e)), 200
-
-
-@app.route("/kisaltma_excel")
-def kisaltma_excel_endpoint():
-    """Kisaltma Sozlugu'nu kolon eslemeleriyle .xlsx olarak indirir (ayni
-    dosya calismanin PROJE_HAFIZASI klasorune de yazilir). Hata halinde duz
-    metin."""
-    try:
-        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
-        durum = _durum_al(anahtar)
-        veri, _yol = akis.kisaltma_excel(durum)
-    except Exception as e:
-        kod = _hata_kaydet("kisaltma_excel", e)
-        return Response(
-            "Kısaltma sözlüğü Excel olarak oluşturulamadı (hata kodu: %s)." % kod,
-            status=500, mimetype="text/plain; charset=utf-8")
-    return Response(veri, mimetype=XLSX_MIME, headers={
-        "Content-Disposition": 'attachment; filename="%s"' % akis.KISALTMA_EXCEL_ADI,
-        "Cache-Control": "no-store",
-    })
 
 
 @app.route("/tip_degistir", methods=["POST"])

@@ -17,11 +17,9 @@ Kod yalniz KALIP bulur, anlam vermez (anlam kodda yazili degil):
   - hafiza    : kurum hafizasindaki (onceki calismalarda onaylanan)
                 kalip adlarda geciyorsa; sistem boylece yeni kaliplari
                 ogrenir
-  - komsu     : donem parcasinin hemen yaninda en az KOMSU_EN_AZ kolonda
-                gecen, rakamsiz parca; geciklerinin cogu donem parcasinin
-                yanindaysa aday olur. Donemle ilgili mi dil modeli soyler.
-Rakamsiz donem kisaltmalari bicimden bulunamaz: geri kalan butun
-kisaltmalari dil modeli tarar (tarama), donem bilgisi tasiyanlari onerir.
+Yalniz SAYILI kaliplar burada. Rakamsiz zaman parcalari (DAY, MONTH,
+TMSNCFRST) Ad Parcalari'nda (parca.py) butun kisaltmalarla birlikte
+yorumlanir; turleri orada zaman turlerinden biri olur.
 Anlami dil modeli tanimlardan okuyarak onerir (arka planda), kullanici
 onaylar ya da duzeltir. Onaylanan anlam bu calismanin donem bilgisi olur
 ve sonraki adimlarda (aciklama duzenleme, kisaltma, kolon adlari) baglam
@@ -50,8 +48,6 @@ ORNEK_ADET = 10           # kalip basina modele ve karta giden ornek kolon
 TARAMA_ORNEK = 3          # tarama: kisaltma basina ornek kolon
 YORUM_PARCA = 6           # dil modeline bir cagrida giden kalip
 ES_ZAMANLI = 4            # ayni anda en cok bu kadar cagri
-KOMSU_EN_AZ = 3           # komsu aday: en az bu kadar kolonda
-KOMSU_PAY = 0.6           # ... ve geciklerinin en az bu kadari donem yaninda
 BIRLIKTE_EN_AZ = 3        # birlikte gecis: ikili en az bu kadar kolonda yan yana
 BIRLIKTE_ADET = 3         # parca basina gosterilen en cok ikili
 
@@ -359,8 +355,6 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
     tanimlar = tanimlar or {}
     ayri = {_norm(x) for x in (ayri or ())}
     bilgi = {}                      # kalip -> {"tur", "deger": Counter, "kolonlar": [], "kd": {}}
-    toplam = Counter()              # parca -> gectigi kolon sayisi
-    komsu = Counter()               # parca -> donem parcasinin yaninda gectigi kolon
 
     def ekle(kalip, tur, deger, ad):
         b = bilgi.setdefault(kalip, {"tur": tur, "deger": Counter(), "kolonlar": [], "kd": {}})
@@ -378,9 +372,6 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
 
     for ad in adlar:
         t = _toklar(ad)
-        for p in set(t):
-            toplam[p] += 1
-        yan = set()
         atla = set()
         for i, p in enumerate(t):
             if i in atla:
@@ -390,7 +381,6 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
                 # 3_M / M_3: iki parca birlikte tek deger.
                 aileye_ekle(ay[1], ad)
                 atla.add(i + 1)
-                komsu_yer = (i - 1, i + 2)
             else:
                 d = _donem_parcasi(p)
                 if not d:
@@ -404,21 +394,10 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
                     aileye_ekle(p, ad)
                 else:
                     ekle(kalip, tur, p, ad)
-                komsu_yer = (i - 1, i + 1)
-            for j in komsu_yer:
-                if 0 <= j < len(t):
-                    q = t[j]
-                    if len(q) > 1 and not _YALIN_SAYI.match(q) and not _donem_parcasi(q):
-                        yan.add(q)
-        for q in yan:
-            komsu[q] += 1
-    for q, n in komsu.items():
-        if n >= KOMSU_EN_AZ and n >= KOMSU_PAY * toplam[q]:
-            for ad in adlar:
-                if q in _toklar(ad):
-                    ekle(q, "komsu", q, ad)
-    # Hafizadaki kaliplar (tek parca ya da <P>_<NN> ikilisi olarak).
-    desenler = [(k, kalip_deseni(k)) for k in (ek or []) if k not in bilgi
+    # Hafizadaki SAYILI kaliplar (tek parca ya da <P>_<NN> ikilisi olarak).
+    # Rakamsiz parcalar (DAY, MONTH) burada degil, Ad Parcalari'nda
+    # (parca.py) yorumlanir.
+    desenler = [(k, kalip_deseni(k)) for k in (ek or []) if k not in bilgi and "<N" in k
                 and not (aile_adi(k) and not aile_mi(k) and _norm(k) not in ayri)]
     desenler = [(k, r) for k, r in desenler if r is not None]
     if desenler:

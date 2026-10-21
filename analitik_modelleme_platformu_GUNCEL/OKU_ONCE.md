@@ -258,7 +258,7 @@ tanıtır; sayfalar sol bardan açılır.
   Formlar dolu haliyle (akis_sohbet._biten_ekran), Eksik Sözlük
   Tanımları satırları ve tanım kontrolü karar gövdesinden; Tanımsız
   Kolonlar, Dönem Bilgisi (değer anlamları ve gruptan ayrılanlar dahil),
-  Kısaltma Sözlüğü ve Yeni Kolon Adları kartları onay anında verilen
+  Ad Parçaları (yalnız kararlar) ve Kolon Adları kartları onay anında verilen
   kararlarla yeniden üretilir (`akis_faz01.karar_sonrasi_alan`, Geri Dön
   ile aynı kaynak). Yeni hali kayıt sınırını aşarsa kart ilk haliyle
   kalır. Henüz onaylanmamış kartta yapılan düzenlemeler yenilemede
@@ -363,22 +363,43 @@ tanıtır; sayfalar sol bardan açılır.
   listelenir; işaretlenip açıklaması yazılan kolon sözlüğün çalışma
   kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve
   01.2.3.1'de sorulur (düğme "N Kolonu Tanımsız Bırak ve Devam Et").
+- **01.2.4 Sözlük ve Kolon Adı Kontrolü (A ve B):** sözlüğe de kolon
+  adlarına da tam güvenilmez (tanımların bir kısmı yanlış ya da eksik,
+  adlarda eksik ve yanlış yazılmış kısaltmalar var). Amaç 02'deki dil
+  modelinin de insanın da her kolonu kesin anlaması. Dört alt adım sırayla,
+  her biri bir öncekinin onayladığını kesin bilgi olarak kullanır ve her
+  satır kullanıcı tarafından onaylanmadan geçilmez:
+  1. **01.2.4.1 Dönem Bilgisi** (`donem`): adlardaki SAYILI zaman
+     parçaları (30D, M3, 3_M, H00_06).
+  2. **01.2.4.2 Ad Parçaları** (`parca`): öbür bütün parçalar
+     (kısaltmalar, sözcükler, DAY, MONTH, TMSNCFRST): anlam, tür, standart
+     yazılış; yazımı farklı aynı parçalar birleşir.
+  3. **01.2.4.3 Kolon Kartları** (`aciklama`): her kolonun kartı
+     parçalardan kodla kurulur, dil modeli kartı tanımla karşılaştırıp
+     açıklamayı yazar.
+  4. **01.2.4.4 Kolon Adları** (`kolon_ad`): adlar standart yazılışlarla
+     Ad Standardı'na göre kodla kurulur.
+  "Kontrol Edilmeden Geçilsin" seçilirse dördü de atlanır. Eski Kısaltma
+  Sözlüğü adımı kaldırıldı (göç: `SIRA_SURUMU` 15; eski Açıklama
+  Düzenleme / Kısaltma Sözlüğü / Yeni Kolon Adları adımında duran
+  çalışma Ad Parçaları'nda yeniden açılır, eski kısaltma kararları
+  silinir).
 - **01.2.4.1 Dönem Bilgisi, kart:** başlığın altında tek satır özet
-  ("6 kalıp (3 pencere, 1 zaman noktası, 1 zaman birimi, 1 zaman
-  ölçüsü) · 2 yorumlanıyor · 4 olası · 28 kısaltma") ve yanında "i":
-  yönerge ile sütun açıklamaları orada. Altında üç sekme (sayılarıyla):
-  Kalıplar (tablo), Olası (KALIP / ADLARDA GEÇEN / NEDEN EMİN DEĞİL
-  tablosu, "Tabloya Al" satırı Kalıplar'a taşır ve o sekmeye geçer),
-  Kısaltmalar (kolon adlarındaki bütün kısaltmalar; tıklanan Kalıplar'a
-  elle satır olarak eklenir).
+  ("6 kalıp (3 pencere, 1 zaman noktası) · 2 yorumlanıyor · 4 olası")
+  ve yanında "i": yönerge ile sütun açıklamaları orada. Altında iki
+  sekme (sayılarıyla): Kalıplar (tablo) ve Olası (KALIP / ADLARDA GEÇEN /
+  NEDEN EMİN DEĞİL tablosu, "Tabloya Al" satırı Kalıplar'a taşır ve o
+  sekmeye geçer). Yalnız sayılı kalıplar burada: rakamsız parçaların
+  taraması, komşu adaylar ve hafızadaki rakamsız dönem kayıtları bu
+  adımdan kalktı (Ad Parçaları'nda gelir).
   - **[sayı]:** kalıpta ve anlamda sayı yer tutucusu ekranda "[sayı]"
     yazar ("[sayı]D", "[sayı] gün boyunca"). İçeride yer tutucu olarak
     saklanır (app.js `donemAnlamGoster` / `donemAnlamIc`: k'inci [sayı]
-    kalıbın k'inci yer tutucusu olur); hafıza ve Açıklama Düzenleme aynı
+    kalıbın k'inci yer tutucusu olur); hafıza ve Kolon Kartları aynı
     kalır. Sayısız kalıpta [sayı] yazılırsa satır "Kontrol edin" olur.
   - **Durum etiketi:** satırlar renksiz; anlam kutusunun üstünde tek
-    satır: "Dil modeli · 9 / 10 örnek tanım uyuşuyor", "Dil modeli
-    kısaltmalardan buldu", "Hafızadan", "Düzenlendi", "Elle eklendi",
+    satır: "Dil modeli · 9 / 10 örnek tanım uyuşuyor", "Hafızadan",
+    "Düzenlendi", "Elle eklendi",
     "Kontrol edin" ya da "Anlam boş" (amber), "Dil modeli yorumluyor".
     Dikkat isteyen satırın solunda ince amber çizgi.
   - Altında kısa notlar: Soru, "Ad ile tanımlar çelişiyor: ...", Not ve
@@ -427,7 +448,7 @@ tanıtır; sayfalar sol bardan açılır.
     anlamı yazılabilir), yazılışın hafızadaki kaydı ve ayrı işareti
     silinir; sonraki çalışmada ailesiyle gelir. Geri dönüşte ve yenilemede
     katılmış hâliyle gelir.
-  - Açıklama Düzenleme'de ayrılan yazılışın deseni aileden önce eşleşir.
+  - Kolon Kartları'nda ayrılan yazılışın deseni aileden önce eşleşir.
 - **Zaman bilgisi türleri:** dil modeli her kalıba "tur" yazar
   (`llm.ZAMAN_TURLERI`: pencere, nokta, birim, olcu; `llm.zaman_turu`).
   Kartta kalıp hücresinde seçim kutusu ve altında seçili türün açıklaması
@@ -444,19 +465,18 @@ tanıtır; sayfalar sol bardan açılır.
   önce ad, sonra tanımlar. Anlam parçanın yapısından kurulur (D gün, W
   hafta, M ay, Q çeyrek, Y yıl, H saat; sözcük kısaltmaları harflerinden).
   Sözlük tanımları kesin değil, kanıttır: kalıp başına en çok 10 örnek
-  tanım (`donem.ORNEK_ADET`; taramada kısaltma başına 3,
-  `donem.TARAMA_ORNEK`) gider; model her tanımın anlamıyla uyuşup
+  tanım (`donem.ORNEK_ADET`) gider; model her tanımın anlamıyla uyuşup
   uyuşmadığını sayar (`kanit`: bakılan, uyan). Adda karşılığı olmayan
   bilgi (son, önceki) anlama yazılmaz, nota yazılır. Ad ile tanımların
   çoğu çelişirse adın yapısı geçer, çelişki `celiski`de yazar. Süre mi
   (pencere) an mı (nokta) olduğu tanımların çoğundan çıkar; belli
   değilse soru iki seçeneği de yazar. Anlam tür adını tekrar etmez ("N
   gün boyunca", "N gün boyunca zaman penceresi" değil).
-- **Arka plan işi (`donem.baslat`):** yorum `YORUM_PARCA` (6) kalıplık,
-  tarama `llm.TARAMA_PARCA` (50) kısaltmalık parçalara bölünür; en çok
+- **Arka plan işi (`donem.baslat`):** yorum `YORUM_PARCA` (6) kalıplık
+  parçalara bölünür; en çok
   `ES_ZAMANLI` (4) çağrı aynı anda çalışır, her parçanın sonucu gelince
   yazılır.
-- **Açıklama Düzenleme'ye giden dönem parçası** (`_donem_parca_metni`):
+- **Kolon Kartları'na giden dönem parçası** (`_donem_parca_metni`):
   değerin kendi anlamı ya da kalıbın anlamı, yer tutucu değerin sayısıyla
   doldurulmuş olarak ve yanında türü: "3_M: son 3 ay (zaman penceresi)",
   "MONTH: ay (zaman birimi)". Kalıp adı ve yer tutucu (`<N>`, `N`) dil
@@ -508,18 +528,95 @@ tanıtır; sayfalar sol bardan açılır.
     silinince bunlar da silinir). Kalıbın anlamıyla aynı kalan kendi
     anlamı saklanmaz. Yalnız kolon adlarında geçen değerler kabul edilir.
     Onay mesajı kendi anlamı ve dönem olmayan değer sayısını yazar.
-  - **Açıklama Düzenleme'ye:** kendi anlamı olan değer o anlamla gider
+  - **Kolon Kartları'na:** kendi anlamı olan değer o anlamla gider
     ("360D: son 1 yıl (zaman penceresi)"), dönem olmayan değer dönem
     parçası sayılmaz (grubun deseni onu kapsamaz, `_AyrilanliDesen`),
     öbürleri kalıbın anlamıyla.
   - Dönem tablosunun penceresi en çok ekran yüksekliğinin %72'si.
-- **01.2.4.2 Açıklama Düzenleme'nin kapsamı:** dil modeline yalnız
+- **01.2.4.3 Kolon Kartları'nın kapsamı:** dil modeline yalnız
   sözlükte zaten tanımı olan ve süreçte kalan kolonlar gider. Girmeyenler:
   01.2.3'te tanımı eklenen kolonlar (kullanıcı yazdı ya da önerisini
   onayladı; `durum["_tanim_kararlari"]` "ekle"), 01.2.3.1'de "kalsın"
   denenler (tanımları boş kalır) ve süreç dışı kolonlar. Bunlar kartta
   da listelenmez; AMP_SOZLUK'e tanımları olduğu gibi yazılır. Kartın
   "Sütunlar" bilgisinde bu yazar.
+- **01.2.4.2 Ad Parçaları** (`parca.py`, `akis_faz01._parca_alani`,
+  `parca_plan`, `parca_uygula`):
+  - **Parçalar** (`parca.parcalar`): rol kolonları ve süreç dışı
+    kolonlar hariç bütün kolon adlarının rakamsız parçaları; sayılı
+    kalıpların kapsadıkları (`parca.sayili_konumlar`, dönemle aynı kural)
+    ve 01.2.4.1'de onaylanan kalıplara uyanlar burada yok. Parça başına
+    kaç kolonda geçtiği, tanımsız kolon sayısı, en sık yanında duran 3
+    parça ve en çok 10 örnek (ad, tanım; listenin başından sonuna eşit
+    aralıkla, rastgele değil).
+  - **Anlam** (`llm.parca_yorumla`, istem `SISTEM_PARCA`, rol `parca`:
+    düşünen model önce): önce parçanın yazılışı ve yaygın kısaltma
+    bilgisi, sözlük tanımları kanıt (oylama, `kanit`); `celiski`, `soru`,
+    `not`; tür (12): konu, yön, nitelik, ölçü, istatistik,
+    karşılaştırma, pencere, nokta, zaman birimi, geçen süre, birim,
+    diğer. Arka planda 12 parçalık çağrılar, en çok 4 aynı anda; İptal
+    (`/parca_iptal`) gelenleri tutar.
+  - **Hafıza** (`KISALTMA_HAFIZASI.json` `parcalar` {PARÇA: {anlam, tür,
+    standart}} ve `parca_esler` {"A|B": "ayni"/"farkli"}; eski
+    `kisaltmalar`, `degisimler`, `turler` ve rakamsız `donem` kayıtları
+    da öneri olarak okunur): hafızada olan parça dil modeline gitmez,
+    "Hafızadan" önerisiyle gelir, değiştirilebilir.
+  - **Kart:** özet satırı ve "i"; iki sekme. Parçalar: arama, süzgeç
+    (Tümü, Onaylanmadı, Kontrol Edin, Hafızadan, Düzenlendi, Eksik ya da
+    Hatalı), "Görünenleri Onayla", 100'lük sayfalar; tablo PARÇA (kolon
+    sayısı, yanındakiler, "Örnekler" satırın altında açılır,
+    `/parca_ornek`) / ANLAM (üstünde durum etiketi) / TÜR (açıklaması
+    altında) / STANDART / ONAY. Yazım Sorunları: kodun bulduğu yakın
+    yazılışlar (sessiz harf iskeleti aynı, tek harf farkı, biri
+    ötekinin başı) ve önerilen anlamı aynı çıkan parçalar; Aynı / Farklı
+    ve Onay. "Aynı" denen gruptaki parçalar adlarda seçilen yazılışı ve
+    onun satırındaki anlam ile türü alır (satırları kilitli, "TXN ile
+    aynı").
+  - **Kurallar:** "Kontrol edin" satırları (soru, çelişki ya da örnek
+    tanımların %60'ından azı uyuşuyor) toplu onaylanmaz. Onaylı satırda
+    bir şey değişince onay kalkar. Standart: büyük harfle başlar, büyük
+    harf ve rakam, en çok 12; anlamı farklı iki parça aynı standardı
+    alamaz. Bütün parçalar ve çiftler onaylanmadan geçilmez.
+  - **Sonuç:** `durum["parca_bilgisi"]` {PARÇA: {anlam, tür, standart}},
+    geri dönüş için `parca_karari` ve `parca_esler`; onaylananlar
+    hafızaya yazılır.
+- **01.2.4.3 Kolon Kartları** (`aciklama_duzen.py`, `akis_faz01`
+  `_aciklama_*`):
+  - **Kart** kodla kurulur (`_kolon_karti`): onaylı parçaların anlamları
+    türlerine göre alanlara (Konu, Yön, Nitelik, Zaman, Ölçü, İstatistik,
+    Karşılaştırma, Birim, Diğer); dönem parçası değerin sayısıyla
+    ("30 gün boyunca"). Dil modeline PARÇALAR (anlam ve tür) ve KART
+    kesin bilgi olarak gider; model tanımla karşılaştırıp tek açık
+    açıklama yazar, tanımda olup adda olmayan bilgiyi `ek` (Ek bilgi)
+    olarak ayırır, ad ile tanım çelişkisini `ad_notu`'na yazar. Karttaki
+    sayılar açıklamada geçmeli (kod denetimi). `ACIKLAMA_SURUMU` 2.
+  - **Onay:** her satırda Onay kutusu ve "Görünenleri Onayla" (soru, ad /
+    dağılım notu ya da kontrol notu olan satırı atlar). Onay çalışma
+    klasöründeki kayda yazılır (`kabul`: onaylanan açıklama metni);
+    açıklama sonradan değişirse onay kendiliğinden düşer. Süzgeçler:
+    Onaylanmadı, Ek Bilgi da var. Bütün kolonlar onaylanmadan geçilmez;
+    "değiştirmeden devam" düğmesi yok.
+- **01.2.4.4 Kolon Adları** (`parca.ad_birimleri`, `parca.ad_kur`,
+  `akis_faz01._kolon_ad_alani`):
+  - Her parça standart yazılışını alır; birimler Ad Standardı'ndaki yer
+    sırasına dizilir (aynı yerdekiler adda geçtikleri sırayla). Sayılı
+    zaman parçası yazıldığı gibi kalır (3_M, H00_06), yeri Zaman.
+    Varsayılan sıra: Konu, Yön, Nitelik, Ölçü, İstatistik, Zaman,
+    Karşılaştırma, Birim, Diğer (TXN_30D_CNT → TXN_CNT_30D); büyük harf,
+    ayraç "_".
+  - **Ad Standardı paneli:** yerler ← → ile sıralanır; adlar sunucuda
+    yeniden kurulur (`/kolon_ad_onizle`), adı değişen ailenin onayı
+    kalkar. Onayda hafızaya yazılır (`parca_ad_standardi`).
+  - **Satırlar ailedir** (adı yalnız sayılarla ayrılan kolonlar; adı
+    değişenler önce): Yeni Ad / Eski Ad Kalsın ve Onay; "Ailede N kolon"
+    bütün ikilileri açar. Sorunlu ad (sayıyla başlıyor, iki kolon aynı
+    adı alıyor, rol kolonunun adı) onaylanamaz. Arka uç adları onayda
+    kendisi yeniden kurar ve denetler. Sonuç `durum["kolon_yeni_ad"]`.
+- **AMP_SOZLUK kolonları:** DEGISKEN, TIP, TIP_DEGISIKLIGI, ACIKLAMA,
+  NULL_ORANI, SUREC_DISI, KATEGORI, ESKI_AD, ACIKLAMA_ORIJINAL, KONU, YON,
+  NITELIK, ZAMAN, OLCU, ISTATISTIK, KARSILASTIRMA, BIRIM, DIGER,
+  EK_BILGI, AILE (yeni adlarla aile anahtarı, tek kolonlu ailede boş),
+  ONAY_KULLANICI, ONAY_ZAMANI (Kolon Kartları onayı).
 - **01.2.3.1 Tanımsız Kolonlar** (A ve B; 01.2.3'ün alt adımı, numaralar
   kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar tip ve
   boş oranıyla listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve
@@ -535,7 +632,7 @@ tanıtır; sayfalar sol bardan açılır.
     (`/haric_kolonlar`) bu kolonları listeden düşürmez. Baz Veri Seti'nin
     kendi kolon sayısı (girdi tablosu) değişmez.
   - İşaretsiz kolon AMP_VERISETI'nde kalır, AMP_SOZLUK'te satırı tanımı
-    boş durur. Açıklama Düzenleme'ye (01.2.4.2) girmez, tanımı boş kalsın
+    boş durur. Kolon Kartları'na (01.2.4.3) girmez, tanımı boş kalsın
     diye. 01.3 Değişken Listesi ve Tip Kontrolü'ndeki "açıklaması olmayan kolonu süreç dışı işaretle" kuralı
     bu kolonlara uygulanmaz.
   - İlk hal: kutular boş; veri setinde hazır duran bölme kolonu işaretli

@@ -875,7 +875,7 @@ def tanim_duzelt(durum, kolon, tanim, oneri=None, geri_al=False):
     return True, ""
 
 
-# Aciklama Duzenleme (01.2.4.2) onayi ve geri alinmasi.
+# Kolon Kartlari (01.2.4.3) onayi ve geri alinmasi.
 KAYNAK_ACIKLAMA_DUZEN = "açıklama düzenleme (kullanıcı onayladı)"
 KAYNAK_ACIKLAMA_GERI = "açıklama düzenlemesi geri alındı"
 
