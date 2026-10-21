@@ -3356,6 +3356,14 @@ span.bolme-cip { cursor: default; }
 .dg-donem-deger-ac:hover { color: var(--metin); }
 .dg-donem-deger-liste { display: grid; gap: 3px; margin-top: 3px; }
 .dg-donem-deger-satir { display: grid; grid-template-columns: minmax(4.5rem, max-content) 1fr auto; gap: 6px; align-items: center; }
+.dg-donem-deger-bas { color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); }
+.dg-donem-deger-yardim { margin: 2px 0 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1.45; }
+.dg-donem-deger-kutu { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dg-donem-deger-kutu .dg-donem-deger-giris { flex: 1; min-width: 0; }
+.dg-donem-deger-ozel { flex: none; color: var(--yesil); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); white-space: nowrap; }
+.dg-donem-deger-ozel[hidden] { display: none; }
+.dg-donem-sablon-not { margin: 2px 0 4px; color: var(--metin); font-size: var(--fs-kucuk); line-height: 1.45; }
+.dg-donem-sablon-not .dg-donem-sablon-geri { margin-left: 6px; padding: 1px 8px; font-size: var(--fs-kucuk); }
 .dg-donem-ayir { padding: 1px 8px; font-size: var(--fs-kucuk); }
 .dg-donem-ayrilan-not { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-top: 2px; }
 .dg-donem-geri-al { margin-top: 4px; padding: 1px 8px; font-size: var(--fs-kucuk); }

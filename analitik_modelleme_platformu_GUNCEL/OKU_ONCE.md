@@ -343,15 +343,29 @@ tanıtır; sayfalar sol bardan açılır.
   kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve
   01.2.3.1'de sorulur (düğme "N Kolonu Tanımsız Bırak ve Devam Et").
 - **01.2.4.1 Dönem Bilgisi, değer anlamları:** sayı yer tutucusu olan
-  kalıbın (`<N>D`, `H<NN>_<NN>`) Anlam hücresinin altında "Değer Anlamları
-  · N" açılır listesi var. Adlarda geçen her değer (30D, 360D…) kalıbın
+  kalıbın (`<N>D`, `H<NN>_<NN>`) Anlam hücresinin altında "Her Değerin
+  Anlamı · N değer" açılır listesi var. Açılınca üstte nasıl çalıştığını
+  anlatan bir paragraf (kalıbın anlamının ilk değere uygulanmış örneğiyle)
+  ve "Değer / Bu Değerin Anlamı" başlıklı liste; özel anlamlı değerin
+  yanında "Bu değere özel" yazar.
+  - **Biçimi öğrenme:** bir değerin kutusu değiştirilip kutudan
+    çıkılınca (change), yazılan metindeki o değerin sayıları yer tutucuyla
+    değiştirilir (app.js `donemSablonu`: "Son 30 günde / 30 Günlük" + 30D
+    → "Son <N> günde / <N> Günlük"). Bu şablon o değere uygulanınca
+    yazılanı aynen veriyorsa kalıbın anlamı olur; özel anlamı olmayan
+    bütün değerler ona uyar ve listede "30D için yazdığınız biçim bütün
+    değerlere uygulandı" notu çıkar; "Yalnız 30D Değişsin" kalıbın eski
+    anlamını geri getirir ve metni yalnız 30D'ye özel yapar. Metinde
+    değerin sayısı geçmiyorsa (360D: "son 1 yıl") anlam yalnız o değere
+    özeldir. Kalıbın anlamıyla aynı kalan özel anlam özel sayılmaz.
+  - **Değer anlamı:** adlarda geçen her değer (30D, 360D…) kalıbın
   anlamından yer tutucu sayıyla doldurularak gelir ("<N> gün boyunca" →
   "30 gün boyunca"; aynı türdeki yer tutucular kalıptaki sırayla eşlenir,
   `donem.deger_anlami` ve app.js `donemDegerAnlami` aynı kural). Her biri
   ayrı değiştirilebilir; değiştirilmeyen değer kalıbın anlamı
   değiştikçe onu izler, boşaltılan alan kalıbın anlamına döner.
-  Değiştirilenler yeşil kenarla işaretlenir, düğmede "N değiştirildi"
-  yazar, satır "Düzenlendi" olur. Değerin anlamında yer tutucu kalamaz
+  Özel anlamlı değer yeşil kenarlı ve "Bu değere özel" etiketli,
+  düğmede "N tanesi kendine özel" yazar, satır "Düzenlendi" olur. Değerin anlamında yer tutucu kalamaz
   (onay durur). Onaylanınca yalnız kalıbın anlamından farklı yazılanlar
   saklanır: `durum["donem_deger_anlam"]` ({kalıp: {değer: anlam}}),
   kararla birlikte (geri dönüşte gelir) ve kısaltma hafızasında
@@ -360,7 +374,7 @@ tanıtır; sayfalar sol bardan açılır.
   kolon adlarında geçen değerler kabul edilir. Açıklama Düzenleme'ye
   değiştirilen değer kendi anlamıyla gider ("360D: dönem kalıbı <N>D;
   son 1 yıl boyunca"); değiştirilmeyen değer kalıbın anlamıyla.
-- **01.2.4.1 Gruptan ayırma:** Değer Anlamları listesinde her değerin
+- **01.2.4.1 Gruptan ayırma:** Her Değerin Anlamı listesinde her değerin
   yanında "Ayır" var (grupta en az bir değer kalır). Ayrılan değer grubun
   hemen altında kendi satırına geçer ("<N>D grubundan ayrıldı"), anlamı
   ayrıldığı andaki anlamla başlar ve düzenlenir; "Çıkar" ile dönem değil
