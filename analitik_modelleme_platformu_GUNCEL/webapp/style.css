@@ -3343,34 +3343,70 @@ span.bolme-cip { cursor: default; }
 .dg-donem-tablo th:nth-child(1) { width: 140px; }
 .dg-donem-tablo th:nth-child(2) { width: 28%; }
 .dg-donem-tablo th:nth-child(4) { width: 110px; text-align: center; }
-.dg-donem-sar { max-height: 460px; }
+/* Değer paneli açılınca tablo küçük bir pencerede kaymasın. */
+.dg-donem-sar { max-height: 72vh; }
 .dg-donem-kalip { font-weight: var(--fw-kalin); margin-right: 4px; }
 .dg-donem-anlam { width: 100%; resize: vertical; min-height: 44px; font: inherit; }
 .dg-donem-soru { color: var(--amber); font-weight: var(--fw-kalin); margin-top: 4px; }
-/* Değer anlamları: kalıbın anlamı değer değer, her biri düzenlenebilir. */
-.dg-donem-degerler { margin-top: 4px; }
-.dg-donem-degerler[hidden], .dg-donem-deger-liste[hidden] { display: none; }
+/* DÖNEM DEĞERLERİ: Anlam hücresinde örnek ve "Değerleri Düzenle"; değer
+   paneli grup satırının hemen altında, tablo genişliğinde. */
+.dg-donem-ornek { margin-top: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+.dg-donem-ornek[hidden], .dg-donem-deger-ac[hidden], .dg-donem-detay[hidden] { display: none; }
 .dg-donem-deger-ac {
-  border: 0; background: none; padding: 2px 0; cursor: pointer;
-  color: var(--metin-soluk); font: inherit; font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px;
+  margin-top: 2px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: var(--fs-kucuk); text-align: left;
 }
-.dg-donem-deger-ac:hover { color: var(--metin); }
-.dg-donem-deger-liste { display: grid; gap: 3px; margin-top: 3px; }
-.dg-donem-deger-satir { display: grid; grid-template-columns: minmax(4.5rem, max-content) 1fr auto; gap: 6px; align-items: center; }
-.dg-donem-deger-bas { color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); }
-.dg-donem-deger-yardim { margin: 2px 0 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1.45; }
-.dg-donem-deger-kutu { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.dg-donem-deger-kutu .dg-donem-deger-giris { flex: 1; min-width: 0; }
-.dg-donem-deger-ozel { flex: none; color: var(--yesil); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); white-space: nowrap; }
-.dg-donem-deger-ozel[hidden] { display: none; }
-.dg-donem-sablon-not { margin: 2px 0 4px; color: var(--metin); font-size: var(--fs-kucuk); line-height: 1.45; }
-.dg-donem-sablon-not .dg-donem-sablon-geri { margin-left: 6px; padding: 1px 8px; font-size: var(--fs-kucuk); }
-.dg-donem-ayir { padding: 1px 8px; font-size: var(--fs-kucuk); }
-.dg-donem-ayrilan-not { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-top: 2px; }
-.dg-donem-geri-al { margin-top: 4px; padding: 1px 8px; font-size: var(--fs-kucuk); }
-.dg-donem-deger-satir .dg-kisa-cip { margin: 0; justify-self: start; }
+.dg-donem-deger-ac-ad { color: var(--kirmizi); font-weight: var(--fw-kalin); }
+.dg-donem-deger-ac:hover .dg-donem-deger-ac-ad { text-decoration: underline; }
+.dg-donem-deger-ozet { color: var(--metin-soluk); }
+.dg-tablo tr.dg-donem-detay > td { padding: 0 var(--b-2) var(--b-3); border-bottom: 1px solid var(--kenar); }
+.dg-donem-panel {
+  border: 1px solid var(--kenar); border-top: 2px solid var(--murekkep);
+  border-radius: var(--r-kucuk); background: var(--yuzey); padding: var(--b-2) var(--b-3) var(--b-1);
+}
+.dg-donem-panel-bas { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; margin-bottom: var(--b-2); }
+.dg-donem-panel-ad { font-weight: var(--fw-kalin); color: var(--metin); }
+.dg-donem-panel-ipucu { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+.dg-donem-sablon-not {
+  margin: 0 0 var(--b-2); padding: 4px var(--b-2);
+  border-left: 2px solid var(--yesil); color: var(--metin); font-size: var(--fs-kucuk);
+}
+.dg-baglanti {
+  padding: 0; border: 0; background: none; cursor: pointer;
+  font: inherit; color: var(--kirmizi); text-decoration: underline;
+}
+.dg-baglanti:disabled { color: var(--metin-soluk); cursor: default; }
+/* Değer tablosu: dg-tablo düzeni, kendi sütun genişlikleri. */
+.dg-donem-deger-tablo th { position: static; }
+.dg-donem-deger-tablo th:nth-child(1) { width: 92px; }
+.dg-donem-deger-tablo th:nth-child(2) { width: 64px; }
+.dg-donem-deger-tablo th:nth-child(3) { width: auto; }
+.dg-donem-deger-tablo th:nth-child(4) { width: 296px; }
+.dg-donem-deger-tablo td { background: none; }
+.dg-donem-deger-kolon { color: var(--metin-soluk); font-size: var(--fs-kucuk); font-variant-numeric: tabular-nums; }
 .dg-donem-deger-giris { width: 100%; font: inherit; font-size: var(--fs-kucuk); }
-.dg-donem-deger-satir.dg-deger-degisti .dg-donem-deger-giris { border-color: var(--yesil, var(--kenar)); font-weight: var(--fw-kalin); }
+.dg-donem-deger.dg-durum-kalip .dg-donem-deger-giris { color: var(--metin-soluk); }
+.dg-donem-deger.dg-durum-ozel .dg-donem-deger-giris { border-color: var(--yesil); color: var(--metin); }
+.dg-donem-deger.dg-durum-disi .dg-donem-deger-giris { background: none; border-style: dashed; }
+/* Değer çipinin durumu (tabloda ve Adlarda Geçen'de). */
+.dg-kisa-cip.dg-durum-ozel { border-color: var(--yesil); color: var(--yesil); }
+.dg-kisa-cip.dg-durum-disi { border-style: dashed; color: var(--metin-soluk); text-decoration: line-through; }
+/* BÖLMELİ DÜĞME: Görünüm anahtarıyla aynı dil (mürekkep çerçeve, seçili
+   bölme ters baskı). */
+.dg-segment {
+  display: inline-flex; align-items: stretch; height: 24px; overflow: hidden;
+  border: 1px solid var(--murekkep); border-radius: 3px;
+}
+.dg-segment button {
+  padding: 0 8px; border: 0; border-radius: 0; background: none; cursor: pointer;
+  font: inherit; font-size: var(--fs-kucuk); color: var(--murekkep); white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+.dg-segment button + button { border-left: 1px solid var(--murekkep); }
+.dg-segment button:hover:not(:disabled):not(.secili) { background: color-mix(in srgb, var(--murekkep) 8%, transparent); }
+.dg-segment button.secili { background: var(--murekkep); color: var(--yuzey); }
+.dg-segment button:disabled:not(.secili) { opacity: .4; cursor: not-allowed; }
 .dg-donem-not { color: var(--metin-soluk); margin-top: 4px; }
 .dg-donem-tablo .dg-rozet-kucuk + .dg-rozet-kucuk { margin-left: 4px; }
 .dg-donem-ekle { margin: var(--b-2) 0 var(--b-3); }

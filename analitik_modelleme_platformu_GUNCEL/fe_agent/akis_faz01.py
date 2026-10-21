@@ -1794,16 +1794,14 @@ DONEM_SUTUNLAR = (
     "Anlam: kalıbın anlamı; dil modeli önerir, siz onaylarsınız. Satır "
     "rengi: mavi dil modeli önerisi, mor hafızadan, yeşil sizin "
     "düzenlediğiniz, sarı eksik ya da kontrol gerektiren.\n"
-    "Her Değerin Anlamı: sayı yer tutucusu olan kalıpta adlarda geçen her "
-    "değerin anlamı; kalıbın anlamından sayısı yerine konarak gelir "
-    "(30D: 30 gün boyunca). Bir değeri değiştirdiğinizde yazdığınızda o "
-    "değerin sayısı geçiyorsa aynı biçim kalıbın anlamı olur ve bütün "
-    "değerlere uygulanır («Yalnız 30D Değişsin» ile geri alınır); sayı "
-    "geçmiyorsa (360D: son 1 yıl) anlam yalnız o değere özel kalır. Özel "
-    "anlam Açıklama Düzenleme'ye o değerin anlamı olarak gider ve hafızaya "
-    "yazılır. Yanlış gruplanmış değeri «Ayır» "
-    "ile gruptan ayırın: kendi satırında kendi anlamıyla durur, «Çıkar» ile "
-    "dönem değil yapılır, «Gruba Geri Al» ile gruba döner.\n"
+    "Değerleri Düzenle: sayı yer tutucusu olan kalıpta adlarda geçen "
+    "değerler grup satırının altında listelenir. Her değerin durumu: Kalıba "
+    "Uyar (anlamı kalıbın anlamından, sayısı yerine konarak gelir; 30D: 30 "
+    "gün boyunca), Kendi Anlamı (değere özel, ör. 360D: son 1 yıl) ya da "
+    "Dönem Değil (gruba yanlış girmiş). Kalıba uyan bir değeri düzenlerseniz "
+    "yazdığınızın biçimi kalıbın anlamı olur ve öbür değerlere yayılır "
+    "(Geri al ile geri alınır); sayı içermeyen anlam o değerin kendi anlamı "
+    "olur.\n"
     "Çıkar: satırı dönem bilgisinden çıkarır; çıkarılan satır kullanılmaz "
     "ve hafızaya yazılmaz. Hafızadan gelen (mor) bir kalıbı çıkarırsanız "
     "onaylayınca hafızadan da silinir.")
@@ -2158,9 +2156,13 @@ def donem_uygula(durum):
     metin = "%d dönem kalıbı onaylandı" % len(grup_bilgi)
     if grup_bilgi and not hata:
         metin += " ve hafızaya kaydedildi"
-    ayr_sayi = sum(len(v) for v in ayrilan_harita.values())
-    if ayr_sayi:
-        metin += "; %d değer gruptan ayrıldı" % ayr_sayi
+    disi_sayi = sum(1 for v in ayrilan_harita.values() for x in v.values() if x["cikar"])
+    ozel_sayi = sum(len(v) for v in deger_harita.values()) + \
+        sum(1 for v in ayrilan_harita.values() for x in v.values() if not x["cikar"])
+    if ozel_sayi:
+        metin += "; %d değerin kendi anlamı var" % ozel_sayi
+    if disi_sayi:
+        metin += "; %d değer dönem değil" % disi_sayi
     if cikan:
         metin += "; %d kalıp çıkarıldı" % cikan
         if silinen:
@@ -2171,15 +2173,15 @@ def donem_uygula(durum):
 
 DONEM_TABLO_ADI = "DONEM_BILGISI"
 DONEM_TABLO_KOLONLARI = ("KALIP", "KALIP_ANLAMI", "DEGER", "DEGER_ANLAMI",
-                         "KOLON_SAYISI", "KAYNAK")
+                         "KOLON_SAYISI", "DURUM")
 
 
 def _donem_tablosu_yaz(durum, alan, bilgi, deger_harita, ayrilan_harita):
     """Calismanin donem bilgisi tablosu: her grup ve icindeki her deger
     kendi anlamiyla (PROJE_HAFIZASI/<calisma>/DONEM_BILGISI.parquet).
-    KAYNAK: Kalıptan (grubun anlamindan), Değiştirildi (degere ayri
-    yazildi), Gruptan Ayrıldı (kendi anlamiyla donem), Gruptan Ayrıldı ·
-    Dönem Değil. Doner: hata metni ya da None."""
+    DURUM karttaki adlarla: Kalıba Uyar (grubun anlamindan), Kendi Anlamı
+    (degere ayri yazildi), Dönem Değil (gruba yanlis girmis). Doner: hata
+    metni ya da None."""
     satirlar = []
     sayi = {s_["kalip"]: {str(x.get("deger")): int(x.get("kolon") or 0)
                           for x in s_.get("degerler") or []} for s_ in alan["satirlar"]}
@@ -2192,13 +2194,12 @@ def _donem_tablosu_yaz(durum, alan, bilgi, deger_harita, ayrilan_harita):
             if dg in ayr:
                 x = ayr[dg]
                 satirlar.append([kalip, anlam, dg, "" if x["cikar"] else x["anlam"],
-                                 degerler[dg], "Gruptan Ayrıldı · Dönem Değil"
-                                 if x["cikar"] else "Gruptan Ayrıldı"])
+                                 degerler[dg], "Dönem Değil" if x["cikar"] else "Kendi Anlamı"])
             elif kalip in bilgi:
                 ozel = (deger_harita.get(kalip) or {}).get(dg)
                 satirlar.append([kalip, anlam, dg,
                                  ozel or donem_mod.deger_anlami(kalip, anlam, dg),
-                                 degerler[dg], "Değiştirildi" if ozel else "Kalıptan"])
+                                 degerler[dg], "Kendi Anlamı" if ozel else "Kalıba Uyar"])
     try:
         from fe_agent.akis_durum import _folder as _klasor
         from fe_agent import tablo_io
