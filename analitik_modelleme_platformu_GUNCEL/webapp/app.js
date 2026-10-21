@@ -11729,15 +11729,14 @@ function secimAlaniEkle(alan, blok) {
 
         /* MODEL TİPİ (Kolon Rolleri): kartın ilk seçimi, alanların üstünde.
            Arka uç her tipin hedef listesini gönderiyor; tip değişince hedef
-           alanının listesi (hedefListe, yerinde güncellenir), alt notu ve
-           düğmenin durumu değişir. Sonraki adımları hazır olmayan tipte
-           düğme kapalı kalır ve nedeni tiplerin altında yazar. */
+           alanının listesi (hedefListe, yerinde güncellenir) ve alt notu
+           değişir. Sonraki adımları hazır olmayan tip KAPALI: soluk durur,
+           tıklanmaz, sağında "Şu An Kapalı"; nedeni ipucunda. */
         const pr = alan.problem || null;
         let problem = (pr && pr.deger) || "";
         const tipDugmeleri = [];
         const hedefListe = [];
         let hedefAlt = null;
-        let tipNot = null;
         const tipBul = d => ((pr && pr.tipler) || []).find(t => t.deger === d) || null;
         if (pr) {
             const etk = elYap("div", "problem-etiket", pr.etiket || "Model Tipi");
@@ -11758,30 +11757,31 @@ function secimAlaniEkle(alan, blok) {
                 g.appendChild(elYap("div", "secenek-baslik", t.baslik));
                 g.appendChild(elYap("div", "secenek-aciklama", t.aciklama));
                 b.appendChild(g);
+                if (!t.hazir) {
+                    b.classList.add("kapali");
+                    b.disabled = true;
+                    b.title = duzMetin(t["not"] || "");
+                    b.appendChild(elYap("span", "secenek-kapali", "Şu An Kapalı"));
+                }
                 b.onclick = () => {
-                    if (mesgul || kart.classList.contains("kilitli")) return;
+                    if (mesgul || !t.hazir || kart.classList.contains("kilitli")) return;
                     tipSec(t.deger, true);
                 };
                 tipDugmeleri.push({ b: b, t: t });
                 satir.appendChild(b);
             });
             kart.appendChild(satir);
-            tipNot = elYap("div", "alan-not alan-not-uyari problem-not");
-            tipNot.hidden = true;
-            kart.appendChild(tipNot);
         }
 
         function tipSec(deger, kullanici) {
             const t = tipBul(deger);
-            if (!t) return;
+            if (!t || !t.hazir) return;
             problem = deger;
             tipDugmeleri.forEach(x => {
                 const sec = x.t.deger === deger;
                 x.b.classList.toggle("secili", sec);
                 x.b.setAttribute("aria-checked", sec ? "true" : "false");
             });
-            tipNot.hidden = !t["not"];
-            metinYaz(tipNot, t["not"] || "");
             hedefListe.length = 0;
             (t.hedef.secenekler || []).forEach(k => hedefListe.push(k));
             const hc = combolar.target;
@@ -11900,7 +11900,7 @@ function secimAlaniEkle(alan, blok) {
             geriAlKilit = () => {
                 kilidiAc();
                 Object.keys(combolar).forEach(k => { combolar[k].giris.disabled = false; });
-                tipDugmeleri.forEach(x => { x.b.disabled = false; });
+                tipDugmeleri.forEach(x => { x.b.disabled = !x.t.hazir; });
                 if (pr && problem) tipSec(problem, false);
                 durumTazele();
             };

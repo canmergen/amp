@@ -213,7 +213,8 @@ def yeni_durum():
         # Train'den ogrenilen donusum parametreleri (winsor sinirlari,
         # rank izgarasi). Uretim koduna gomulur; tekrarlanabilirlik icin.
         "ogrenilen_donusum": {},
-        "meta": {}, "bolme": {},
+        # Model tipi (Kolon Rolleri'nin ilk secimi) rollerin ustunde.
+        "problem": "", "meta": {}, "bolme": {},
         # HAZIRLIK sekmesinin veri sozlesmesi. Liste bos baslar ve panel
         # "henuz donusum tanimlanmadi" der. Sekme bos bir kutu olarak
         # degil, dolmayi bekleyen bir kart olarak gorunsun diye anahtar
@@ -403,8 +404,24 @@ def _eski_mod_kartlari(secenekler):
         for x in secenekler))
 
 
+def _model_tipi_ustte(temiz):
+    """Kayitta model tipi rollerin (meta) hemen ustunde durur; tipi sonradan
+    secilen eski calismalarda anahtar sona eklenmis olur."""
+    if not isinstance(temiz, dict) or "meta" not in temiz:
+        return temiz
+    problem = temiz.get("problem", "")
+    sirali = {}
+    for k, v in temiz.items():
+        if k == "problem":
+            continue
+        if k == "meta":
+            sirali["problem"] = problem
+        sirali[k] = v
+    return sirali
+
+
 def durum_kaydet(oturum_id, durum):
-    temiz = _json_uygun(durum)
+    temiz = _model_tipi_ustte(_json_uygun(durum))
     veri = json.dumps(temiz, ensure_ascii=False, indent=2,
                       allow_nan=False).encode("utf-8")
     _folder().upload_stream(_yol(oturum_id), veri)

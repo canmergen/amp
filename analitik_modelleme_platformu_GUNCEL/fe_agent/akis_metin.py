@@ -186,6 +186,31 @@ KONTROL_SIRA = {"a": "yap", "1": "yap", "b": "atla", "2": "atla",
 # Gruplu blogun ortak basligi: kurulum + kolon rolleri + sozluk adimlari.
 GRUP_ADI_VERI_SOZLUK = "Veri Seti, Sözlük ve Kolon Rolleri"
 
+# MODEL TIPI (Kolon Rolleri'nin ilk secimi). Ad, rollerin yazildigi her
+# yerde (Ozet, Veri Seti karti, Arsiv ozeti, dokuman, senaryo konfigi,
+# katalog) hedef degiskenin ustunde gecer.
+MODEL_TIPI_ADI = {
+    "classification": "Classification",
+    "regression": "Regression",
+    "time_series": "Time Series Forecasting",
+    "clustering": "Clustering",
+}
+
+
+def model_tipi(durum):
+    """Secilen model tipinin kodu. Model tipi secimi gelmeden once
+    hedefi tanimlanmis calismalarda hedef 0/1 oldugu icin
+    "classification"; hic tanim yoksa bos dize."""
+    durum = durum or {}
+    if durum.get("problem"):
+        return durum["problem"]
+    return "classification" if (durum.get("meta") or {}).get("target") else ""
+
+
+def model_tipi_adi(durum):
+    """Ekranda ve kayitlarda gorunen ad: "Classification"; secim yoksa bos."""
+    return MODEL_TIPI_ADI.get(model_tipi(durum), "")
+
 # norm (kucuk harf, Turkce karaktersiz) uzerinde calisir.
 # "onceki adim\w*": akisin kendi onerdigi "önceki adıma dön" cumlesi
 # normalize edilince "onceki adima don" oluyor.

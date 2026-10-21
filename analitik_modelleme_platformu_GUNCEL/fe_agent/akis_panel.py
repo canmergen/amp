@@ -6,7 +6,7 @@ import pandas as pd
 from fe_agent import akis_atif, sozluk_calisma
 from fe_agent import motor as motor_mod
 from fe_agent.akis_metin import (
-    BIRLESTIREN_MODLAR, MOD_ADLARI, SOZLUK_URETEN_MODLAR)
+    BIRLESTIREN_MODLAR, MOD_ADLARI, SOZLUK_URETEN_MODLAR, model_tipi_adi)
 from fe_agent.akis_durum import (
     AMP_SOZLUK_ADI, AMP_VERI_ADI, BOLME_ALAN_ACIKLAMA, BOLME_ALAN_BASLIK,
     BOLME_SATIR_BILGI,
@@ -433,6 +433,7 @@ def detay(durum):
 
     if m.get("target"):
         bolumler.append(_bolum("MODELLEME TANIMLARI", [
+            ("Model Tipi", model_tipi_adi(durum)),
             ("Hedef", m.get("target")),
             ("Hedef Tipi", p.get("hedef_ozet")),
             ("Kimlik Kolonu", m.get("id")),
@@ -1039,6 +1040,7 @@ def veri_paneli(durum):
          None if kimlik_dup is None else _sayi(kimlik_dup), TANIM_ADIMI),
         # Null orani veri seti profilinden (tam tablo), secimle birlikte dolar.
         ("Toplam Null Oranı", _yuzde(p.get("null_oran"), 2), veri_adimi),
+        ("Model Tipi", model_tipi_adi(durum) or None, TANIM_ADIMI),
         ("Hedef Değişken",
          (durum.get("meta") or {}).get("target"), TANIM_ADIMI),
         # Oran sayilarla birlikte: "%3,21 · 12.345 / 384.567".

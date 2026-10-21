@@ -1736,6 +1736,8 @@ def _calisma_secimleri(durum):
     elif durum.get("sozluk"):
         sec.append(["Sözlük", str(durum["sozluk"])])
     meta = durum.get("meta") or {}
+    if akis.model_tipi_adi(durum):
+        sec.append(["Model Tipi", akis.model_tipi_adi(durum)])
     for anahtar, etiket in (("target", "Hedef Değişken"), ("id", "Kimlik Kolonu"),
                             ("donem", "Dönem Kolonu")):
         if meta.get(anahtar):

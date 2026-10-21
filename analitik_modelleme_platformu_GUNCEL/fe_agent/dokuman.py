@@ -43,7 +43,7 @@ from fe_agent import kutuk as kutuk_mod
 from fe_agent import secim as secim_mod
 from fe_agent import sfa as sfa_mod
 from fe_agent import validasyon as validasyon_mod
-from fe_agent.akis_metin import MOD_ADLARI
+from fe_agent.akis_metin import MOD_ADLARI, model_tipi_adi
 from fe_agent.akis_durum import (
     LINEAGE_ADI, TRAIN_KULLANIMI_BASLIK, _ond, _sayi,
     bolme_ayarlari, bolme_ozeti, bolme_uyarilari,
@@ -464,6 +464,7 @@ def _kunye(durum):
                          if mod else BOS_DEGER),
         ("Veri seti", _m(durum.get("veri_seti"))),
         ("Sözlük", _m(durum.get("sozluk") or durum.get("sozluk_yedek"))),
+        ("Model tipi", _m(model_tipi_adi(durum))),
         ("Hedef değişken", _m(meta.get("target"))),
         ("Doküman tarihi", _bicimli_zaman(_olusturma(durum))),
     ]))
@@ -520,6 +521,8 @@ def _yonetici_ozeti(durum):
     satirlar = [
         ["Amaç", _yazildi("amac"),
          "Karar anı, population ve skorun tüketildiği yer"],
+        ["Model Tipi", _m(model_tipi_adi(durum)),
+         "Problem türü ve hedefin tipi"],
         ["Hedef", _m(meta.get("target")),
          "Event tanımı, observation date ve performans penceresi"],
         ["Veri", veri_metni,
@@ -628,6 +631,7 @@ def _hedef(durum):
         return []
     p = _sz(durum, "profil")
     return _bloklar(_alan_tablosu([
+        ("Model tipi", _m(model_tipi_adi(durum))),
         ("Hedef değişken", _m(meta.get("target"))),
         ("Hedef tipi", _m(p.get("hedef_tip"))),
         ("Dağılım", _m(p.get("hedef_ozet"))),

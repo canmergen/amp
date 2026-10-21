@@ -1202,8 +1202,8 @@ body { background-color: #FFFFFF; }
 }
 .problem-secim .problem-tip { align-items: flex-start; height: 100%; }
 .problem-secim .secenek-rozet { margin-top: 1px; }
-.problem-not { margin: 0 0 var(--b-2); }
-.problem-not + .secim-govde { margin-top: var(--b-3); }
+.problem-secim .secenek-kapali { align-self: flex-start; }
+.problem-secim + .secim-govde { margin-top: var(--b-3); }
 @media (max-width: 1100px) {
   .problem-secim { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

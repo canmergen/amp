@@ -30,6 +30,7 @@ from fe_agent import akis_atif
 
 from fe_agent.akis_metin import (
     ACIK_MODLAR, ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI,
+    MODEL_TIPI_ADI, model_tipi,
     MOD_SIRA, KONTROL_SECENEKLERI, KONTROL_SIRA, KONTROL_SORUSU)
 from fe_agent.akis_durum import (
     BAZ_ADI, LINEAGE_ADI, SOZLUK_ADI, SPLIT_KOLON, TEST_KIMLIK_LIMITI,
@@ -4022,29 +4023,30 @@ TANIM_KALIP = {
 # degerleri her yerde kolon adi olarak okunuyor.
 PROBLEM_KALIP = r"\bproblem\s*[:=]?\s*(classification|regression|time_series|clustering)\b"
 PROBLEM_HAZIR = {"classification"}
+# Hazir olmayan tip kartta KAPALI (secilemez); yazarak girilse de
+# reddedilir.
 PROBLEM_HAZIR_DEGIL = (
     "Sonraki adımlar (tek değişken analizi, bölme, model ve başarı "
-    "ölçütleri) şu an yalnız Classification için hazır; bu model tipiyle "
-    "devam edilemiyor.")
+    "ölçütleri) şu an yalnız Classification için hazır.")
 PROBLEM_TIPLERI = [
-    {"deger": "classification", "baslik": "Classification",
+    {"deger": "classification", "baslik": MODEL_TIPI_ADI["classification"],
      "aciklama": "Hedef iki sınıflıdır (0/1): bir olayın olup olmayacağı "
                  "tahmin edilir.",
      "hedef_ipucu": "0 ve 1 değeri alan kolonlar listelenir",
      "hedef_yok": "Yalnızca 0 ve 1 değeri alan kolon bulunamadı; tüm "
                   "kolonlar listeleniyor."},
-    {"deger": "regression", "baslik": "Regression",
+    {"deger": "regression", "baslik": MODEL_TIPI_ADI["regression"],
      "aciklama": "Hedef sayısaldır: bir miktarın değeri tahmin edilir.",
      "hedef_ipucu": "İkiden fazla farklı değer alan sayısal kolonlar listelenir",
      "hedef_yok": "İkiden fazla farklı değer alan sayısal kolon bulunamadı; "
                   "tüm kolonlar listeleniyor."},
-    {"deger": "time_series", "baslik": "Time Series Forecasting",
+    {"deger": "time_series", "baslik": MODEL_TIPI_ADI["time_series"],
      "aciklama": "Hedef sayısaldır ve dönemlere bağlıdır: gelecek dönemlerin "
                  "değeri tahmin edilir. Dönem kolonu gerekir.",
      "hedef_ipucu": "İkiden fazla farklı değer alan sayısal kolonlar listelenir",
      "hedef_yok": "İkiden fazla farklı değer alan sayısal kolon bulunamadı; "
                   "tüm kolonlar listeleniyor."},
-    {"deger": "clustering", "baslik": "Clustering",
+    {"deger": "clustering", "baslik": MODEL_TIPI_ADI["clustering"],
      "aciklama": "Hedef değişken yoktur: kayıtlar benzerliklerine göre "
                  "gruplara ayrılır.",
      "hedef_ipucu": "Clustering'de hedef değişken seçilmez",
@@ -4085,15 +4087,6 @@ def _hedef_adaylari(durum, problem, p=None):
     if problem in ("regression", "time_series"):
         return _sayisal_hedef_adaylari(durum, p.get("kimlik_adaylari") or [])
     return []
-
-
-def secili_problem(durum):
-    """Kolon Rolleri'nde secilen model tipi. Model tipi secimi gelmeden
-    once tanimlanan calismalarda hedef 0/1 oldugu icin Classification."""
-    pr = (durum or {}).get("problem")
-    if pr:
-        return pr
-    return "classification" if ((durum or {}).get("meta") or {}).get("target") else ""
 
 
 # SEGMENT KOLONU (opsiyonel.). Az sayida
@@ -4156,7 +4149,10 @@ def _tanimlar_formu(durum, meta=None):
     # ADAY LISTELERI. Bos donerse TUM kolonlara dusulur ve nedeni
     # alanin altinda yazilir: veri setinde uygun kolon yoksa kullaniciyi
     # secim yapamaz halde birakmak dogru olmaz.
-    problem = secili_problem(durum)
+    # Kapali bir tip (bu kural gelmeden secilmis) secili gosterilmez.
+    problem = model_tipi(durum)
+    if problem not in PROBLEM_HAZIR:
+        problem = ""
     kimlik_aday = [k for k in (p.get("kimlik_adaylari") or []) if k in kolonlar]
 
     # Kullanicinin onceki secimi listede yoksa yine de gorunmeli, aksi
@@ -4276,17 +4272,19 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
     # tasimayan "target X id Y" (yazarak girme) Classification sayilir:
     # sonraki adimlari hazir olan tek tip o.
     pm = re.search(PROBLEM_KALIP, norm)
+    if pm and pm.group(1) not in PROBLEM_HAZIR:
+        # Kapali tip yazilarak girildi: kaydedilmez, form oldugu gibi kalir.
+        _tanimlar_formu(durum, meta)
+        return False, "%s şu an seçilemez. %s" % (
+            MODEL_TIPI_ADI[pm.group(1)], PROBLEM_HAZIR_DEGIL)
     if pm:
         durum["problem"] = pm.group(1)
-    elif re.search(r"\btarget\b", norm) and secili_problem(durum) not in PROBLEM_HAZIR:
+    elif re.search(r"\btarget\b", norm) and model_tipi(durum) not in PROBLEM_HAZIR:
         durum["problem"] = "classification"
-    problem = secili_problem(durum)
+    problem = model_tipi(durum)
     if problem and problem not in PROBLEM_HAZIR:
         _tanimlar_formu(durum, meta)
-        if not pm:
-            return False, ""
-        ad = next(t["baslik"] for t in PROBLEM_TIPLERI if t["deger"] == problem)
-        return False, "%s seçildi. %s" % (ad, PROBLEM_HAZIR_DEGIL)
+        return False, ""
     problem = problem or "classification"
     for anahtar, kalip in TANIM_KALIP.items():
         m = re.search(kalip, norm)

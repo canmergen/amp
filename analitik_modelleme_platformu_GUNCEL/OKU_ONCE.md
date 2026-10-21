@@ -239,9 +239,18 @@ tanıtır; sayfalar sol bardan açılır.
   tam ya da ondalıklı sayı kolonları (tam sayı tipindeki kimlik adayları
   hariç); Clustering'de hedef seçilmez. Listeler profilden (tam tablo)
   çıkar. Sonraki adımlar (tek değişken analizi, bölme, model ve başarı
-  ölçütleri) şu an yalnız Classification için hazır: öbür tipler
-  seçilebilir, listeleri görülür, ama onay düğmesi kapalı kalır ve
-  tiplerin altında nedeni yazar. Seçim `durum["problem"]`de durur.
+  ölçütleri) şu an yalnız Classification için hazır: öbür üç tip kapalı
+  (soluk, tıklanmaz, sağında "Şu An Kapalı"; nedeni ipucunda), yazarak
+  girilse de kaydedilmez. Seçim `durum["problem"]`de durur.
+- **Model tipi rollerin üstünde yazılır.** Hedef, kimlik ve dönem
+  kolonunun yazıldığı her yerde ilk satır model tipidir: Özet sayfasının
+  Modelleme Tanımları bölümü, sağ paneldeki Veri Seti kartı, Arşiv'deki
+  çalışma özeti, model dokümanı (genel bilgiler, model özeti ve hedef
+  bölümü), senaryo konfig JSON'u (`model_tipi`, ilk anahtar), Değişken
+  Kataloğu (`MODEL_TIPI` kolonu, `HEDEF`'in solunda) ve çalışma durumu
+  JSON'u (`problem`, `meta`'nın hemen üstünde). Ad tek kaynaktan gelir
+  (`akis_metin.MODEL_TIPI_ADI`). Model tipi seçimi gelmeden önce hedefi
+  tanımlanmış çalışmalar Classification sayılır.
 
 **Başlangıçlar (01.1)**
 - **A:** Baz Veri Seti Mevcut.

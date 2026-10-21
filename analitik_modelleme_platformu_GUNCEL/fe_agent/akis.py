@@ -41,7 +41,7 @@ burada yeniden ihrac edilir.
 from fe_agent.akis_metin import (  # noqa
     FAZ01_OZET, GERI_KALIP, KARSILAMA, MOD_ADLARI, MOD_KALIP,
     MOD_SECENEKLERI, PLATFORM_TANIMLARI, SECIM_KALIP, SONRAKI_FAZLAR,
-    SORU_KALIP,
+    SORU_KALIP, model_tipi_adi,
 )
 from fe_agent.akis_durum import (  # noqa
     AMP_KLASOR, AMP_SOZLUK_ADI, AMP_SOZLUK_KOLONLARI, AMP_VERI_ADI,
@@ -138,7 +138,7 @@ __all__ = [
     "LINEAGE_ADI", "MOD_ADLARI", "MOD_KALIP", "MOD_SECENEKLERI",
     "OKUMA_LIMITI", "PLATFORM_TANIMLARI", "SECIMLI", "SECIM_KALIP",
     "SONRAKI_FAZLAR", "SORU_KALIP", "SOZLUK_ADI", "TANIM_KALIP",
-    "adim_anahtari", "adim_basligi", "mevcut_ekran",
+    "adim_anahtari", "adim_basligi", "mevcut_ekran", "model_tipi_adi",
     "adim_sirasi", "algoritma_plan", "algoritma_uygula", "modelleme_df", "modelleme_kaynagi",
     "baz_plan", "baz_uygula", "birlestirme_plan",
     "birlestirme_uygula", "bolme_ayarlari", "bolme_formu",

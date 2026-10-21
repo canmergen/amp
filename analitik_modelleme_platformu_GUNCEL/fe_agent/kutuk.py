@@ -14,10 +14,12 @@ import pandas as pd
 
 from fe_agent import tablo_io
 from fe_agent.akis_durum import _folder
+from fe_agent.akis_metin import model_tipi_adi
 
 SUTUNLAR = ["KOSU_ID", "ZAMAN", "FEATURE", "KAYNAK", "IFADE", "KAYNAK_KOLONLAR",
             "GEREKCE", "PYTHON_KODU", "KALITE", "SECIM", "SECIM_GEREKCE", "MI",
-            "ONEM", "MODEL_TOPLAM_DELTA_AUC", "VERI_SETI", "HEDEF", "TARIH"]
+            "ONEM", "MODEL_TOPLAM_DELTA_AUC", "VERI_SETI", "MODEL_TIPI", "HEDEF",
+            "TARIH"]
 
 # Kalite adimi hic calismadiysa ya da degisken hicbir kalite listesinde
 # gecmiyorsa kullanilan ucuncu durum.
@@ -142,6 +144,7 @@ def olustur(durum, oturum_id=None):
             # Tum modelin delta'si — degisken bazli katki DEGIL.
             "MODEL_TOPLAM_DELTA_AUC": delta,
             "VERI_SETI": durum.get("veri_seti"),
+            "MODEL_TIPI": model_tipi_adi(durum),
             "HEDEF": (durum.get("meta") or {}).get("target"),
             "TARIH": tarih,
         })

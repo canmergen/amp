@@ -7,7 +7,7 @@ from fe_agent import senaryo as senaryo_mod
 from fe_agent import validasyon
 from fe_agent import akis_atif
 
-from fe_agent.akis_metin import BIRLESTIREN_MODLAR
+from fe_agent.akis_metin import BIRLESTIREN_MODLAR, model_tipi
 from fe_agent.akis_durum import (
     BAZ_ADI, LINEAGE_ADI, _dataset_okunur_mu, _df_oku, _ond, _sayi, _yaz,
     GECERSIZ_BIRLESIM, bolme_ayarlari, bolme_uyarilari, katlar,
@@ -306,6 +306,7 @@ def algoritma_uygula(durum):
         return _KAYNAK_YOK % (durum.get("veri_seti"), akis_atif.adim("baz"))
 
     konfig = {
+        "model_tipi": model_tipi(durum),
         "veri_seti": kaynak,
         "target": durum["meta"]["target"],
         "baz_kolonlar": _baz_kolonlari(durum),
@@ -532,6 +533,7 @@ def final_uygula(durum):
         return _KAYNAK_YOK % (durum.get("veri_seti"), akis_atif.adim("baz"))
 
     konfig = {
+        "model_tipi": model_tipi(durum),
         "veri_seti": kaynak,
         "cikti_onek": durum["veri_seti"],
         "target": durum["meta"]["target"],
