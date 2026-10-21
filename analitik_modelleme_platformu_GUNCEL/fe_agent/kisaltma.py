@@ -808,6 +808,21 @@ def donem_tur_hafizasi():
     return _donem_tur_ham()
 
 
+def _donem_ayri_ham(govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    ay = (govde or {}).get("donem_ayri_yazilis")
+    if not isinstance(ay, list):
+        return set()
+    return {str(k) for k in ay if str(k).strip()}
+
+
+def donem_ayri_hafizasi():
+    """{kalip}: ailesinden ayri anlamla onaylanmis yazilis kaliplari
+    ("M<N>" gibi; bkz. donem.kaliplar ayri)."""
+    return _donem_ayri_ham()
+
+
 def donem_ayrilan_hafizasi():
     """{kalip: {deger: {"anlam", "cikar"}}} - kalibin grubundan ayrilan
     degerler: kendi anlamiyla donem (cikar False) ya da donem degil
@@ -815,14 +830,17 @@ def donem_ayrilan_hafizasi():
     return _donem_ayrilan_ham()
 
 
-def donem_kaydet(kayitlar, haric=None, degerler=None, ayrilan=None, turler=None):
+def donem_kaydet(kayitlar, haric=None, degerler=None, ayrilan=None, turler=None,
+                 ayri=None):
     """kayitlar: {kalip: anlam}; eklenir / guncellenir, silinmez. haric:
     {kalip: [ikili]}; verilen kaliplarin haric listesi bununla degisir (bos
     liste kaldirir). degerler: {kalip: {deger: anlam}}; verilen kaliplarin
     deger anlamlari bununla degisir (bos sozluk kaldirir). ayrilan:
     {kalip: {deger: {"anlam", "cikar"}}}; verilen kaliplarin gruptan ayrilan
     degerleri bununla degisir. turler: {kalip: tur} (zaman bilgisi turu).
-    Dosya var ama okunamiyorsa ustune yazilmaz. Doner: hata ya da None."""
+    ayri: ailesinden ayrilmis yazilis kaliplari; verilen kayitlarda
+    listedekiler ayri isaretlenir, digerlerinin isareti kalkar. Dosya var
+    ama okunamiyorsa ustune yazilmaz. Doner: hata ya da None."""
     kayitlar = {str(k).strip(): str(v).strip() for k, v in (kayitlar or {}).items()
                 if str(k).strip() and str(v or "").strip()}
     if not kayitlar:
@@ -880,6 +898,13 @@ def donem_kaydet(kayitlar, haric=None, degerler=None, ayrilan=None, turler=None)
                     dt[k] = str(turler[k])
             if dt:
                 govde["donem_tur"] = dict(sorted(dt.items()))
+        if ayri is not None:
+            ay = _donem_ayri_ham(govde)
+            ay = (ay - set(kayitlar)) | ({str(k) for k in ayri} & set(kayitlar))
+            if ay:
+                govde["donem_ayri_yazilis"] = sorted(ay)
+            else:
+                govde.pop("donem_ayri_yazilis", None)
         try:
             _folder().upload_stream(DOSYA, json.dumps(
                 govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
@@ -915,6 +940,11 @@ def donem_sil(kaliplar):
         dt = _donem_tur_ham(govde)
         for k in kaliplar:
             dt.pop(k, None)
+        ayr = _donem_ayri_ham(govde) - kaliplar
+        if ayr:
+            govde["donem_ayri_yazilis"] = sorted(ayr)
+        else:
+            govde.pop("donem_ayri_yazilis", None)
         if dt:
             govde["donem_tur"] = dict(sorted(dt.items()))
         else:

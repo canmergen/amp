@@ -155,6 +155,7 @@ ADIM_ADI = {
     "tanimlar": "Kolon Rolleri",
     "sozluk_tanim": "Eksik Sözlük Tanımları",
     "tanimsiz_karar": "Tanımsız Kolonlar",
+    "sozluk_birlestir": "Sözlük Birleştirme",
     "sozluk_kontrol": "Sözlük ve Kolon Adı Kontrolü",
     "donem": "Dönem Bilgisi",
     "aciklama": "Açıklama Düzenleme",

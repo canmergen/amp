@@ -2,12 +2,16 @@
 
 Aciklama duzenlemesinden ONCE kolon adlarindaki donem bilgisi netlesir.
 Kod yalniz KALIP bulur, anlam vermez (anlam kodda yazili degil):
-  - sayi_harf : sayi + 1-3 harf (<N><H>); kalip adi "<N>" + harf kismi
-  - harf_sayi : 1-2 harf + en az 2 rakam (<H><NN>); kalip adi harf + "<NN>"
-  - aralik    : harf_sayi parcasinin ardindan yalniz rakam gelirse
+  - aile      : ayni harf ve sayinin butun yazilislari tek kalip; adi
+                "<N>" + harf ("<N>M"). Yazilislar: sayi + 1-3 harf (3M,
+                30D), 1-2 harf + sayi (M3, M12; tek basamakta tek harf),
+                alt cizgiyle ayrilmis sayi ve tek harf (3_M, M_3). Dil
+                modeli tanimlara gore farkli anlamli buldugu yazilisi ayirir
+                (bkz. ayri); ayrilan yazilis kendi kalibiyla ("M<N>") ayri
+                satirda durur
+  - aralik    : harf + en az 2 rakamin ardindan yalniz rakam gelirse
                 (<H><NN>_<MM>); kalip adi harf + "<NN>_<NN>". Bu gecis
-                harf_sayi kalibina AYRICA yazilmaz: aralik kalibi zaten
-                kapsiyor (harf_sayi yalniz adlarda tek basina gecerse cikar)
+                aileye AYRICA yazilmaz: aralik kalibi zaten kapsiyor
   - harf_sayi_harf : 1-3 harf + sayi + 1-3 harf (<H><N><H>); kalip adi
                 harf + "<N>" + harf
   - hafiza    : kurum hafizasindaki (onceki calismalarda onaylanan)
@@ -54,6 +58,74 @@ _TEK_HARF = re.compile(r"^[A-Z]$")
 
 _KILIT = threading.Lock()
 _ISLER = {}               # imza -> {"durum", "sonuc", "hata", "zaman"}
+
+
+# AILE ve YAZILISLAR. Yazilis kaliplari: <N>L, L<N>, <N>_L, L_<N> (L harf
+# kismi). "L<NN>" eski bicimdir; L<N> yazilisi sayilir.
+_AILE = re.compile(r"^<N>([A-Z]{1,3})$")
+_YAZILIS_KALIP = (re.compile(r"^<N>([A-Z]{1,3})$"), re.compile(r"^([A-Z]{1,2})<NN?>$"),
+                  re.compile(r"^<N>_([A-Z])$"), re.compile(r"^([A-Z])_<N>$"))
+_YAZILIS_DEGER = ((re.compile(r"^\d+([A-Z]{1,3})$"), "<N>%s"),
+                  (re.compile(r"^([A-Z]{1,2})\d+$"), "%s<N>"),
+                  (re.compile(r"^\d+_([A-Z])$"), "<N>_%s"),
+                  (re.compile(r"^([A-Z])_\d+$"), "%s_<N>"))
+YAZILIS_SIRASI = ("<N>%s", "%s<N>", "<N>_%s", "%s_<N>")
+
+
+def _norm(kalip):
+    return re.sub(r"\s+", "", str(kalip or "")).upper()
+
+
+def aile_mi(kalip):
+    """Kalip bir aile mi ("<N>M": M ile sayinin butun yazilislari)?"""
+    return bool(_AILE.match(_norm(kalip)))
+
+
+def aile_adi(kalip):
+    """Yazilis kalibinin ailesi ("M<N>", "M<NN>", "<N>_M", "M_<N>" ve
+    "<N>M" -> "<N>M"); yazilis degilse None."""
+    k = _norm(kalip)
+    for r in _YAZILIS_KALIP:
+        m = r.match(k)
+        if m:
+            return "<N>" + m.group(1)
+    return None
+
+
+def yazilis(deger):
+    """Degerin yazilis kalibi (3M -> "<N>M", M12 -> "M<N>", 3_M -> "<N>_M",
+    M_3 -> "M_<N>"); degilse None."""
+    d = _norm(deger)
+    for r, bicim in _YAZILIS_DEGER:
+        m = r.match(d)
+        if m:
+            return bicim % m.group(1)
+    return None
+
+
+def aile_yazilislari(kalip):
+    """Ailenin yazilis kaliplari (sirayla); aile degilse []."""
+    m = _AILE.match(_norm(kalip))
+    if not m:
+        return []
+    h = m.group(1)
+    # Harften sonra sayi en cok iki harfle, alt cizgili yazilis tek harfle.
+    adet = {1: 4, 2: 2}.get(len(h), 1)
+    return [b % h for b in YAZILIS_SIRASI[:adet]]
+
+
+def hafiza_anahtari(kalip, haf, ayri=()):
+    """Kalibin hafizadaki anahtari: kendisi; aile hafizada yoksa ayrilmamis
+    bir yazilisinin (ya da eski "L<NN>") kaydi. Yoksa None."""
+    if kalip in haf:
+        return kalip
+    if not aile_mi(kalip):
+        return None
+    h = _AILE.match(_norm(kalip)).group(1)
+    for y in aile_yazilislari(kalip)[1:] + [h + "<NN>"]:
+        if y in haf and y not in ayri:
+            return y
+    return None
 
 
 def _toklar(ad):
@@ -210,16 +282,9 @@ def deger_anlami(kalip, anlam, deger):
     turler = re.findall(r"<NN>|<N>", k)
     if not turler or not anlam:
         return anlam
-    desen = re.escape(k).replace("<NN>", r"(\d{2,})").replace("<N>", r"(\d+)")
-    try:
-        m = re.match("^" + desen + "$", str(deger or "").upper())
-    except re.error:
+    sayilar = _sayi_eslesmesi(k, deger)
+    if sayilar is None:
         return anlam
-    if not m:
-        return anlam
-    sayilar = {}
-    for tur, sayi in zip(turler, m.groups()):
-        sayilar.setdefault(tur.strip("<>"), []).append(sayi)
     sayac = Counter()
 
     def yer(mo):
@@ -233,12 +298,40 @@ def deger_anlami(kalip, anlam, deger):
     return _YT_ADAY.sub(yer, anlam)
 
 
+def _sayi_eslesmesi(kalip, deger):
+    """Degerin kalibin yer tutucularina dusen sayilari: {"N": [...],
+    "NN": [...]} (kalipta gectikleri sirayla). Uymuyorsa None."""
+    k = _norm(kalip)
+    d = _norm(deger)
+    if aile_mi(k):
+        r = kalip_deseni(k)
+        if r is None or not r.match(d):
+            return None
+        return {"N": [re.search(r"\d+", d).group(0)]}
+    turler = re.findall(r"<NN>|<N>", k)
+    desen = re.escape(k).replace("<NN>", r"(\d{2,})").replace("<N>", r"(\d+)")
+    try:
+        m = re.match("^" + desen + "$", d)
+    except re.error:
+        return None
+    if not m:
+        return None
+    sayilar = {}
+    for tur, sayi in zip(turler, m.groups()):
+        sayilar.setdefault(tur.strip("<>"), []).append(sayi)
+    return sayilar
+
+
 def kalip_deseni(kalip):
     """Kalip adini derlenmis desene cevirir: <N> sayi, <NN> en az iki
-    basamakli sayi, gerisi aynen. Gecersizse None."""
+    basamakli sayi, gerisi aynen. Aile ("<N>M") butun yazilislara uyar
+    (3M, M3, 3_M, M_3). Gecersizse None."""
     k = re.sub(r"\s+", "", str(kalip or "")).upper()
     if not k:
         return None
+    if aile_mi(k):
+        h = re.escape(_AILE.match(k).group(1))
+        return re.compile(r"^(?:\d+%s|%s\d+|\d+_%s|%s_\d+)$" % (h, h, h, h))
     desen = re.escape(k).replace("<NN>", r"\d{2,}").replace("<N>", r"\d+")
     try:
         return re.compile("^" + desen + "$")
@@ -246,22 +339,35 @@ def kalip_deseni(kalip):
         return None
 
 
-def kaliplar(adlar, tanimlar, ek=None):
+def kaliplar(adlar, tanimlar, ek=None, ayri=()):
     """Kolon adlarindan donem kaliplari: [{"kalip", "tur", "kolon",
-    "degerler": [(deger, kolon sayisi)], "ornekler": [(kolon, tanim)]}].
-    ek: hafizadaki kalip adlari; adlarda gecen (yerlesik bicimlerin
-    bulmadigi) her biri "hafiza" turuyle eklenir. Siralama: kolon sayisi
-    (cok olan once)."""
+    "degerler": [(deger, kolon sayisi)], "ornekler": [(kolon, tanim)]}];
+    ailede ayrica "yazilislar" (adlarda gecen yazilis kaliplari) ve
+    "ornek_yazilis" (her ornegin yazilisi). ek: hafizadaki kalip adlari;
+    adlarda gecen (yerlesik bicimlerin bulmadigi) her biri "hafiza"
+    turuyle eklenir; ailenin ayrilmamis yazilisi eklenmez (aile kapsar).
+    ayri: aileden ayrilan yazilis kaliplari ("M<N>"); o yazilistaki
+    degerler aileye degil kendi kalibina ("yazilis" turu) girer.
+    Siralama: kolon sayisi (cok olan once)."""
     tanimlar = tanimlar or {}
-    bilgi = {}                      # kalip -> {"tur", "deger": Counter, "kolonlar": set}
+    ayri = {_norm(x) for x in (ayri or ())}
+    bilgi = {}                      # kalip -> {"tur", "deger": Counter, "kolonlar": [], "kd": {}}
     toplam = Counter()              # parca -> gectigi kolon sayisi
     komsu = Counter()               # parca -> donem parcasinin yaninda gectigi kolon
 
     def ekle(kalip, tur, deger, ad):
-        b = bilgi.setdefault(kalip, {"tur": tur, "deger": Counter(), "kolonlar": []})
+        b = bilgi.setdefault(kalip, {"tur": tur, "deger": Counter(), "kolonlar": [], "kd": {}})
         b["deger"][deger] += 1
         if ad not in b["kolonlar"]:
             b["kolonlar"].append(ad)
+            b["kd"][ad] = deger
+
+    def aileye_ekle(deger, ad):
+        y = yazilis(deger)
+        if y in ayri:
+            ekle(y, "yazilis", deger, ad)
+        else:
+            ekle(aile_adi(y), "aile", deger, ad)
 
     for ad in adlar:
         t = _toklar(ad)
@@ -275,7 +381,7 @@ def kaliplar(adlar, tanimlar, ek=None):
             ay = ayrik_ikili(t, i)
             if ay:
                 # 3_M / M_3: iki parca birlikte tek deger.
-                ekle(ay[0], "ayrik", ay[1], ad)
+                aileye_ekle(ay[1], ad)
                 atla.add(i + 1)
                 komsu_yer = (i - 1, i + 2)
             else:
@@ -287,6 +393,8 @@ def kaliplar(adlar, tanimlar, ek=None):
                     # Aralik kalibi bu gecisi kapsiyor; harf_sayi'ya ayrica
                     # yazilirsa ayni degerler iki satirda gorunur.
                     ekle(kalip + "_<NN>", "aralik", p + "_" + t[i + 1], ad)
+                elif tur in ("sayi_harf", "harf_sayi", "harf_tek"):
+                    aileye_ekle(p, ad)
                 else:
                     ekle(kalip, tur, p, ad)
                 komsu_yer = (i - 1, i + 1)
@@ -303,7 +411,8 @@ def kaliplar(adlar, tanimlar, ek=None):
                 if q in _toklar(ad):
                     ekle(q, "komsu", q, ad)
     # Hafizadaki kaliplar (tek parca ya da <P>_<NN> ikilisi olarak).
-    desenler = [(k, kalip_deseni(k)) for k in (ek or []) if k not in bilgi]
+    desenler = [(k, kalip_deseni(k)) for k in (ek or []) if k not in bilgi
+                and not (aile_adi(k) and not aile_mi(k) and _norm(k) not in ayri)]
     desenler = [(k, r) for k, r in desenler if r is not None]
     if desenler:
         for ad in adlar:
@@ -320,21 +429,36 @@ def kaliplar(adlar, tanimlar, ek=None):
     cikti = []
     for kalip, b in bilgi.items():
         degerler = sorted(b["deger"].items(), key=lambda kv: (-kv[1], kv[0]))
-        # Ornekler: tanimi olan kolonlardan, farkli degerleri gosterecek sekilde.
-        ornek, gorulen = [], set()
-        for ad in b["kolonlar"]:
-            if len(ornek) >= ORNEK_ADET:
+        aile = b["tur"] == "aile"
+        sira = aile_yazilislari(kalip) if aile else []
+        yazilislar = [y for y in sira if any(yazilis(d) == y for d, _n in degerler)]
+        # Ornekler: tanimi olan kolonlardan, farkli degerleri gosterecek
+        # sekilde; ailede once her yazilistan bir ornek.
+        hedef = max(ORNEK_ADET, min(5, len(yazilislar)))
+        adaylar = [(ad, str(tanimlar.get(ad) or "").strip(), b["kd"].get(ad, ""))
+                   for ad in b["kolonlar"]]
+        adaylar = [x for x in adaylar if x[1]]
+        ornek, gorulen, secilen = [], set(), set()
+        for y in yazilislar:
+            x = next((x for x in adaylar if yazilis(x[2]) == y), None)
+            if x and len(ornek) < hedef:
+                ornek.append(x)
+                gorulen.add(x[2])
+                secilen.add(x[0])
+        for x in adaylar:
+            if len(ornek) >= hedef:
                 break
-            tanim = str(tanimlar.get(ad) or "").strip()
-            if not tanim:
+            if x[0] in secilen or (x[2] in gorulen and len(gorulen) < len(degerler)):
                 continue
-            deger = next((d for d, _n in degerler if d.split("_")[0] in _toklar(ad)), "")
-            if deger in gorulen and len(gorulen) < len(degerler):
-                continue
-            gorulen.add(deger)
-            ornek.append((ad, tanim))
-        cikti.append({"kalip": kalip, "tur": b["tur"], "kolon": len(b["kolonlar"]),
-                      "degerler": degerler, "ornekler": ornek})
+            gorulen.add(x[2])
+            secilen.add(x[0])
+            ornek.append(x)
+        k = {"kalip": kalip, "tur": b["tur"], "kolon": len(b["kolonlar"]),
+             "degerler": degerler, "ornekler": [(ad, t) for ad, t, _d in ornek]}
+        if aile:
+            k["yazilislar"] = yazilislar
+            k["ornek_yazilis"] = [yazilis(d) or "" for _a, _t, d in ornek]
+        cikti.append(k)
     # Yer tutucusuz (tek parca) kaliplarin birlikte gectigi ikililer.
     bh = birlikte_haritasi(adlar, tanimlar)
     for k in cikti:
@@ -494,13 +618,31 @@ def hafiza_tur():
         return {}
 
 
-def hafizaya_yaz(kayitlar, haric=None, degerler=None, ayrilan=None, turler=None):
+def hafiza_ayri():
+    """{kalip}: ailesinden ayri anlamla onaylanmis yazilis kaliplari."""
+    try:
+        return kisaltma_mod.donem_ayri_hafizasi()
+    except Exception:
+        return set()
+
+
+def aile_uyeleri(kalip):
+    """Ailenin kendi adi disindaki yazilis kaliplari ve eski "L<NN>" bicimi
+    (hafizada aile adina katilan kayitlar)."""
+    if not aile_mi(kalip):
+        return []
+    h = _AILE.match(_norm(kalip)).group(1)
+    return aile_yazilislari(kalip)[1:] + [h + "<NN>"]
+
+
+def hafizaya_yaz(kayitlar, haric=None, degerler=None, ayrilan=None, turler=None,
+                 ayri=None):
     """kayitlar: {kalip: anlam}; haric: {kalip: [ikili]}, degerler:
     {kalip: {deger: anlam}} ve ayrilan: {kalip: {deger: {"anlam", "cikar"}}}
     (bu kaliplarin hafizadaki haric listesi, deger anlamlari ve gruptan
-    ayrilan degerleri bununla degisir); turler: {kalip: tur}. Doner: hata
-    ya da None."""
-    return kisaltma_mod.donem_kaydet(kayitlar, haric, degerler, ayrilan, turler)
+    ayrilan degerleri bununla degisir); turler: {kalip: tur}; ayri:
+    ailesinden ayrilmis yazilis kaliplari. Doner: hata ya da None."""
+    return kisaltma_mod.donem_kaydet(kayitlar, haric, degerler, ayrilan, turler, ayri)
 
 
 def hafizadan_sil(kaliplar):
@@ -513,7 +655,7 @@ def hafizadan_sil(kaliplar):
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
 # Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
-ISTEM_SURUMU = 4
+ISTEM_SURUMU = 5
 
 
 def _imza(liste, tara):
@@ -536,8 +678,9 @@ def baslat(liste, tara=None):
         _ISLER[imza] = {"durum": "calisiyor", "sonuc": {}, "bulunan": {}, "hata": "",
                         "zaman": time.time()}
     haf = hafiza()
-    # Hafizada anlami olan kalip sorulmaz.
-    sorulacak = [x for x in liste if x["kalip"] not in haf]
+    ayri = hafiza_ayri()
+    # Hafizada anlami olan kalip (aile icin bir yazilisinin kaydi da) sorulmaz.
+    sorulacak = [x for x in liste if not hafiza_anahtari(x["kalip"], haf, ayri)]
 
     def calis():
         k = _ISLER[imza]

@@ -4758,3 +4758,25 @@ span.bolme-cip { cursor: default; }
   .as-baslik { font-size: 32px; white-space: normal; }
   .as-hero-metin { margin-top: 16px; }
 }
+
+/* Sözlük Birleştirme (01.2.1.1): her satırda sözlüklerin tanımları seçenek
+   olarak, altta "Kendim yazayım". */
+.dg-birlesim-tablo th:nth-child(1) { width: 220px; }
+.dg-birlesim-tablo th:nth-child(2) { width: auto; }
+.dg-birlesim-tablo td { vertical-align: top; }
+.dg-birlesim-secenekler { display: flex; flex-direction: column; gap: 4px; padding: 4px 0; }
+.dg-birlesim-secenek {
+  display: grid; grid-template-columns: 16px 140px minmax(0, 1fr); align-items: start;
+  column-gap: var(--b-2); cursor: pointer; line-height: 1.45;
+}
+.dg-birlesim-secenek input[type="radio"] { margin: 3px 0 0; accent-color: var(--kirmizi); }
+.dg-birlesim-kaynak {
+  color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dg-birlesim-metin { color: var(--metin); overflow-wrap: anywhere; }
+.dg-birlesim-elle { align-items: center; }
+.dg-birlesim-elle .dg-birlesim-kaynak { font-weight: normal; }
+.dg-kart.kilitli .dg-birlesim-secenek { cursor: default; }
+/* Dönem: ailesinden ayrılan yazılışın notu (kalıp hücresinde). */
+.dg-donem-aile-not { margin: 2px 0 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: normal; }

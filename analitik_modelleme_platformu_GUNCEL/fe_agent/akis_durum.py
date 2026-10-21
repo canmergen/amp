@@ -350,7 +350,7 @@ def _mod_goc(durum):
 # Eski kayitlarda adim konumu (durum["i"]) kaydin surumundeki adim
 # listesine gore bir SAYIDIR; okunurken surum surum guncel siraya
 # kaydirilir (bkz. _sira_goc, _faz_sirasi_goc).
-SIRA_SURUMU = 13
+SIRA_SURUMU = 14
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
@@ -365,6 +365,7 @@ _SIRA_GOCLERI = {
     10: (1, {"A": 3, "B": 5}),
     11: (1, {"A": 5, "B": 7}),
     13: (1, {"A": 3, "B": 5}),
+    14: (1, {"A": 1}),
 }
 # surum -> {mod: (ilk, son)}: bu surumden onceki sirada [ilk, son]
 # araligindaki adimda duran calisma "ilk" adimda yeniden acilir.

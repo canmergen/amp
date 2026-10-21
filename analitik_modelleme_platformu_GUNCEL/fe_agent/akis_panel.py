@@ -766,7 +766,7 @@ BOLME_ADIMI = sol_panel_adi("bolme")
 # Sol paneldeki adlarin akis sirasi, uc modun birlesimi. Faz 01'de
 # modlar farkli adim tasiyor ama ortak adimlarin sirasi aynı.
 _AKIS_ADLARI = []
-for _a in (["mod", "ham_veri", "birlestirme", "kurulum", "veri_sec",
+for _a in (["mod", "ham_veri", "birlestirme", "kurulum", "sozluk_birlestir", "veri_sec",
             "kaynak_sozluk", "sozluk_uret", "tanimlar", "sozluk_tanim",
             "tanimsiz_karar", "sozluk_kontrol", "donem", "aciklama", "kisaltma", "kolon_ad", "teyit",
             "bolme"]

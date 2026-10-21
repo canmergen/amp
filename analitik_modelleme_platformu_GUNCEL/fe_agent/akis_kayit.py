@@ -10,6 +10,7 @@ from fe_agent.akis_faz01 import (
     kaynak_sozluk_girdi, kaynak_sozluk_uygula,
     sozluk_tanim_plan, sozluk_tanim_uygula,
     tanimsiz_karar_plan, tanimsiz_karar_uygula,
+    sozluk_birlestir_plan, sozluk_birlestir_uygula,
     kisaltma_plan, kisaltma_uygula, kolon_ad_plan, kolon_ad_uygula,
     donem_plan, donem_uygula, sozluk_kontrol_girdi, sozluk_kontrol_uygula,
     aciklama_plan, aciklama_uygula,
@@ -87,6 +88,15 @@ ADIMLAR = {
         # tanimlarindan SONRA verilir (hedef/kimlik/donem kolonunun
         # tanimi zorunlu, hangileri oldugu once bilinmeli).
         "girdi": kurulum_girdi, "plan": None, "uygula": kurulum_uygula},
+
+    # SOZLUK BIRLESTIRME: birden fazla sozlukte farkli tanimi olan
+    # kolonlarda kalacak tanim. Cakisma yoksa sorulmadan gecilir.
+    "sozluk_birlestir": {
+        "baslik": ADIM_ADI["sozluk_birlestir"],
+        "aciklama": "Seçilen sözlüklerde tanımı farklı olan kolonlar listelenir; "
+                    "her biri için kalacak tanım seçilir ya da yazılır.",
+        "girdi": None, "plan": sozluk_birlestir_plan,
+        "uygula": sozluk_birlestir_uygula},
 
     "kaynak_sozluk": {
         "baslik": "Kaynak Sözlükleri",
@@ -277,7 +287,7 @@ FAZ01_ADIMLARI = {
     # SOZLUK TANIMLARI, MODELLEME TANIMLARINDAN SONRA. Hedef, kimlik ve
     # donem kolonunun sozlukte tanimli olmasi zorunlu; hangi kolonlar
     # oldugu tanimlar adiminda belli oluyor.
-    "A":  ["mod", "kurulum", "tanimlar", "sozluk_tanim", "tanimsiz_karar",
+    "A":  ["mod", "kurulum", "sozluk_birlestir", "tanimlar", "sozluk_tanim", "tanimsiz_karar",
            "sozluk_kontrol", "donem",
            "aciklama", "kisaltma", "kolon_ad", "teyit", "bolme"],
     # B: nihai veri seti YOK; kaynak tablolar ve HER BIRININ SOZLUGU hazir.
@@ -308,6 +318,7 @@ FAZ01_ADIMLARI = {
 # degismez.
 ADIM_GRUPLARI = {
     "kurulum":     "veri_sozluk",
+    "sozluk_birlestir": "veri_sozluk",
     "tanimlar":    "veri_sozluk",
     "sozluk_tanim": "veri_sozluk",
     "tanimsiz_karar": "veri_sozluk",
@@ -342,8 +353,10 @@ def adim_grubu(anahtar):
 # basliklarinda kontrolun ALTINDA gorunur (01.2.4.1 - 01.2.4.4). Kontrol
 # yapilsin secilene kadar kapali durur; yapilmasin secilirse atlanir ve
 # kapali kalir. Yalnizca GORSELDIR: adim sirasi, sayimi ve geri donus
-# hedefi degismez.
+# hedefi degismez. Sozluk Birlestirme kurulumun, Tanimsiz Kolonlar Eksik
+# Sozluk Tanimlari'nin altindadir.
 ALT_ADIMLAR = {
+    "sozluk_birlestir": "kurulum",
     "tanimsiz_karar": "sozluk_tanim",
     "donem": "sozluk_kontrol",
     "aciklama": "sozluk_kontrol",

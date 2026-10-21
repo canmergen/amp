@@ -985,8 +985,10 @@ def _sozlukleri_birlestir(adlar, veri_ad):
 
     Kolonlar ad kolonunda buyuk/kucuk harf farksiz eslesir. Bir kolonun
     tanimi SECIM SIRASINDAKI ilk sozlukten, tanimi dolu olandan alinir;
-    ilk sozlukte bos, sonrakinde dolu ise sonrakinden. Iki sozlukte farkli
-    dolu tanimi olan kolonlar raporda adiyla listelenir. Girdi sozluklerine
+    ilk sozlukte bos, sonrakinde dolu ise sonrakinden. Veri setindeki bir
+    kolonun sozluklerde birden fazla farkli dolu tanimi varsa (bosluk farki
+    sayilmaz) ozetin "secenekler"ine sozluk sirasiyla yazilir; hangisinin
+    kalacagi Sozluk Birlestirme adiminda sorulur. Girdi sozluklerine
     yazilmaz. Doner: (tablo, ozet)."""
     try:
         veri_kume = {str(c).strip().upper()
@@ -994,6 +996,7 @@ def _sozlukleri_birlestir(adlar, veri_ad):
     except Exception:
         veri_kume = set()
     satirlar, sira, farkli = {}, [], []
+    secenekler = {}                         # KOLON -> [{sozluk, tanim}]
     for ad in adlar:
         sz = _df_oku(ad)
         ad_k = sozluk_calisma.degisken_kolonu_bul(sz)
@@ -1009,6 +1012,11 @@ def _sozlukleri_birlestir(adlar, veri_ad):
             tanim = "" if tanim is None or pd.isna(tanim) else str(tanim).strip()
             kat = "" if kat is None or pd.isna(kat) else str(kat).strip()
             anahtar = kolon.upper()
+            if tanim and anahtar in veri_kume:
+                liste = secenekler.setdefault(anahtar, [])
+                norm = " ".join(tanim.split())
+                if all(" ".join(x["tanim"].split()) != norm for x in liste):
+                    liste.append({"sozluk": ad, "tanim": tanim})
             mevcut = satirlar.get(anahtar)
             if mevcut is None:
                 satirlar[anahtar] = {"DEGISKEN": kolon, "ACIKLAMA": tanim,
@@ -1017,17 +1025,16 @@ def _sozlukleri_birlestir(adlar, veri_ad):
             elif tanim and not mevcut["ACIKLAMA"]:
                 mevcut.update(ACIKLAMA=tanim, KAYNAK=ad,
                               KATEGORI=mevcut["KATEGORI"] or kat)
-            elif (tanim and mevcut["KAYNAK"] != ad
-                  and tanim != mevcut["ACIKLAMA"] and anahtar in veri_kume
-                  and mevcut["DEGISKEN"] not in farkli):
-                farkli.append(mevcut["DEGISKEN"])
     tablo = pd.DataFrame([satirlar[k] for k in sira],
                          columns=["DEGISKEN", "ACIKLAMA", "KATEGORI", "KAYNAK"])
     veride = tablo[tablo["DEGISKEN"].str.upper().isin(veri_kume)]
+    secenekler = {satirlar[k]["DEGISKEN"]: secenekler[k] for k in sira
+                  if len(secenekler.get(k) or []) > 1}
     return tablo, {
         "kaynaklar": [{"ad": ad, "kolon": int((veride["KAYNAK"] == ad).sum())}
                       for ad in adlar],
-        "farkli": farkli}
+        "farkli": list(secenekler),
+        "secenekler": secenekler}
 
 
 def _birlesim_metni(durum):
@@ -1041,8 +1048,10 @@ def _birlesim_metni(durum):
     if farkli:
         satirlar.append("  Farklı Tanımlı : %s kolon (%s)"
                         % (_sayi(len(farkli)), _kolon_listesi_metni(farkli)))
-    return ("Seçilen sözlükler tek sözlükte birleştirildi. Bir kolon birden "
-            "fazla sözlükte tanımlıysa ilk seçilen sözlükteki tanım alındı.\n"
+        satirlar.append("Farklı tanımlı kolonların hangi tanımla kalacağı %s "
+                        "adımında sorulur." % akis_atif.adim("sozluk_birlestir", durum))
+    return ("Seçilen sözlükler tek sözlükte birleştirildi. Bir kolonun tanımı "
+            "yalnız bir sözlükte doluysa o tanım alındı.\n"
             + "\n".join(satirlar))
 
 # ===========================================================================
@@ -1791,10 +1800,14 @@ DONEM_YONERGE = [
     "tablodaki satırlar hafızaya kaydedilir."]
 DONEM_SUTUNLAR = (
     "Kalıp: kolon adındaki dönem parçasının biçimi (<N> sayı, <NN> iki "
-    "basamaklı sayı).\n"
+    "basamaklı sayı). Aynı harf ile sayının yazılışları tek satırdır "
+    "(<N>M · M<N> · <N>_M · M_<N>: 3M, M3, 3_M, M_3); anlam hepsine "
+    "uygulanır. Dil modeli tanımlara göre bir yazılışın farklı anlamda "
+    "olduğunu bulursa o yazılış ayrı satırda durur (\"ailesinden ayrı "
+    "anlamlı yazılış\").\n"
     "Tür: zaman bilgisinin türü; dil modeli önerir, siz değiştirebilirsiniz. "
     "Pencere: verinin hangi zaman aralığından alındığı (30D, H00_06). Zaman "
-    "Birimi: gün, ay, yıl gibi birim (DAY, MONTH, 3_M). Zaman Ölçüsü: bir "
+    "Birimi: gün, ay, yıl gibi birim (DAY, MONTH). Zaman Ölçüsü: bir "
     "olaydan bu yana geçen süre, vade ya da yaş (TMSNCFRST). Açıklama "
     "Düzenleme parçayı bu türle anar.\n"
     "Adlarda Geçen: bu kalıpta geçen bütün değerler ve kaç kolonda geçtiği.\n"
@@ -1855,13 +1868,16 @@ def _donem_alani(durum):
     gectigi ikililer; HARIC: kalibin donem sayilmadigi ikililer (dil modeli
     ya da hafiza onerir, kullanici degistirir)."""
     adlar, tanimlar = _donem_kaynak(durum)
-    liste = donem_mod.kaliplar(adlar, tanimlar, ek=list(donem_mod.hafiza()))
+    haf = donem_mod.hafiza()
+    haf_ayri = donem_mod.hafiza_ayri()
+    # Dil modeline giden liste yalniz hafizadaki ayri yazilislarla kurulur
+    # (imza kararlarla degismesin).
+    liste = donem_mod.kaliplar(adlar, tanimlar, ek=list(haf), ayri=haf_ayri)
     tara = donem_mod.tarama_listesi(adlar, tanimlar, liste)
     bh = donem_mod.birlikte_haritasi(adlar, tanimlar)
     imza = donem_mod.baslat(liste, tara) if (liste or tara) else ""
     d = donem_mod.durum(imza)
     sonuc = d["sonuc"]
-    haf = donem_mod.hafiza()
     haf_haric = donem_mod.hafiza_haric()
     haf_deger = donem_mod.hafiza_deger()
     haf_ayrilan = donem_mod.hafiza_ayrilan()
@@ -1869,6 +1885,16 @@ def _donem_alani(durum):
     onceki = {str(x.get("kalip")): x for x in (durum.get("donem_bilgisi_karari") or [])
               if isinstance(x, dict)}
     calisiyor = d["durum"] == "calisiyor"
+    # AYRI YAZILISLAR: hafizada, dil modelinin ayirdigi (ailesi listede) ve
+    # onceki kararda ayri satir olan yazilislar kendi satirina gecer.
+    aileler = {k["kalip"] for k in liste if k["tur"] == "aile"}
+    model_ayri = {a["yazilis"]: a for fam, m in sonuc.items() if fam in aileler
+                  for a in (m.get("ayri") or [])}
+    ayri = set(haf_ayri) | set(model_ayri) | {
+        k for k in onceki if donem_mod.aile_adi(k) and not donem_mod.aile_mi(k)
+        and not onceki[k].get("elle")}
+    if ayri != set(haf_ayri):
+        liste = donem_mod.kaliplar(adlar, tanimlar, ek=list(haf), ayri=ayri)
     satirlar = []
 
     def satir(kalip, tur, kolon, degerler, ornekler, oneri, kaynak, soru, notu,
@@ -1879,6 +1905,7 @@ def _donem_alani(durum):
         boyar. CIKAR: kullanicinin cikardigi satir (onceki kararda)."""
         o = onceki.get(kalip)
         b = bh.get(kalip) or {}
+        hk = donem_mod.hafiza_anahtari(kalip, haf, haf_ayri) or kalip
         # YALNIZ IKILI ICINDE GECEN kalip (tek basina 0 kolon): satir uyari
         # tasir (on yuz sari gosterir). Kendiliginden CIKARILMAZ: hep ayni
         # parcanin yaninda gecen bir kisaltma da kendi anlamini tasiyabilir.
@@ -1906,12 +1933,12 @@ def _donem_alani(durum):
         # (onceki karar, yoksa hafiza). Yazilmayan deger kalibin anlamindan
         # yer tutucusu doldurularak gelir (on yuz hesaplar).
         deger_anlam = o.get("deger_anlam") if (o is not None and "deger_anlam" in o) \
-            else haf_deger.get(kalip)
+            else haf_deger.get(hk)
         gecen = {str(x.get("deger")) for x in degerler or []}
         # GRUPTAN AYRILANLAR: yanlis gruplanmis degerler kendi satirinda,
         # kendi anlamiyla (ya da donem degil). Onceki karar, yoksa hafiza.
         ayrilan = o.get("ayrilan") if (o is not None and "ayrilan" in o) \
-            else haf_ayrilan.get(kalip)
+            else haf_ayrilan.get(hk)
         ayrilan = {str(dg): {"anlam": str((x or {}).get("anlam") or ""),
                              "cikar": bool((x or {}).get("cikar"))}
                    for dg, x in (ayrilan or {}).items()
@@ -1920,7 +1947,7 @@ def _donem_alani(durum):
                        if str(an or "").strip() and (not gecen or str(dg) in gecen)
                        and str(dg) not in ayrilan}
         # ZAMAN TURU: onceki karar, hafiza, dil modeli; yoksa pencere.
-        ztur = (o.get("zaman_tur") if o is not None else "") or haf_tur.get(kalip) \
+        ztur = (o.get("zaman_tur") if o is not None else "") or haf_tur.get(hk) \
             or zaman_tur or "pencere"
         if ztur not in ZAMAN_TUR_ADI:
             ztur = "pencere"
@@ -1928,7 +1955,7 @@ def _donem_alani(durum):
              "ornekler": ornekler, "anlam": anlam, "oneri": oneri,
              "soru": soru if anlam == oneri else "", "not": notu if anlam == oneri else "",
              "kaynak": kaynak, "model": model, "cikar": cikar,
-             "hafizada": bool(haf.get(kalip)), "birlikte": birlikte,
+             "hafizada": bool(haf.get(hk)), "birlikte": birlikte,
              "tek": b.get("tek", kolon), "haric": sorted(set(haric or ()) & gecerli),
              "haric_oneri": sorted(set(haric_oneri or ()) & gecerli), "uyari": uyari,
              "olasi": bool(olasi), "deger_anlam": deger_anlam, "ayrilan": ayrilan,
@@ -1939,12 +1966,28 @@ def _donem_alani(durum):
     for k in liste:
         kalip = k["kalip"]
         m = sonuc.get(kalip) or {}
-        h = haf.get(kalip) or ""
+        hk = donem_mod.hafiza_anahtari(kalip, haf, haf_ayri)
+        h = haf.get(hk) or "" if hk else ""
         degerler = [{"deger": v, "kolon": n} for v, n in k["degerler"]]
         ornekler = [{"kolon": a, "tanim": t[:240]} for a, t in k["ornekler"]]
+        # AILE: satirda adlarda gecen yazilislar; ayri yazilis satiri
+        # ailesini tasir.
+        ek = {}
+        if k["tur"] == "aile":
+            ek["yazilislar"] = list(k.get("yazilislar") or [])
+        elif k["tur"] == "yazilis":
+            ek["aile"] = donem_mod.aile_adi(kalip)
         if h:
             satir(kalip, k["tur"], k["kolon"], degerler, ornekler, h, "hafiza", "", "", "",
-                  haric_oneri=haf_haric.get(kalip) or ())
+                  haric_oneri=haf_haric.get(hk) or (), **ek)
+            continue
+        if k["tur"] == "yazilis":
+            # Dil modelinin ailesinden ayirdigi yazilis: anlami o cevaptan.
+            a = model_ayri.get(kalip)
+            satir(kalip, k["tur"], k["kolon"], degerler, ornekler,
+                  (a or {}).get("anlam", ""), "model" if a else "", "", "",
+                  (sonuc.get(ek["aile"]) or {}).get("model", ""),
+                  zaman_tur=(a or {}).get("tur") or "", **ek)
             continue
         # YALNIZ KESİN OLANLAR TABLOYA. Dil modeli henüz bakmadıysa satır gösterilmez; dönem
         # değil dediyse hiç gösterilmez; sorusu varsa OLASI listesine gider.
@@ -1964,7 +2007,7 @@ def _donem_alani(durum):
               (m.get("anlam") or "") if donem_mi else "", "model",
               m.get("soru", ""), m.get("not", ""), m.get("model", ""),
               haric_oneri=m.get("haric") or (), olasi=bool(m.get("soru")),
-              zaman_tur=m.get("tur") or "")
+              zaman_tur=m.get("tur") or "", **ek)
     # TARAMA: dil modelinin rakamsiz kisaltmalar arasindan buldugu donem
     # parcalari (kalip = kisaltmanin kendisi).
     tara_bilgi = {x["parca"]: x for x in tara}
@@ -2172,12 +2215,25 @@ def donem_uygula(durum):
     durum["donem_turleri"] = dict(tur_harita)
     durum["donem_bilgisi_karari"] = kayit
     durum.pop("parca_bilgisi", None)
+    # Ailesinden ayri satirda onaylanan yazilis ("M<N>") hafizada ayri
+    # isaretlenir: sonraki calismada da aileye katilmaz.
+    ayri = {k for k in grup_bilgi if donem_mod.aile_adi(k) and not donem_mod.aile_mi(k)}
     hata = donem_mod.hafizaya_yaz(grup_bilgi, haric_harita, deger_harita,
                                   {k: ayrilan_harita.get(k) or {} for k in grup_bilgi},
-                                  tur_harita) if grup_bilgi else None
-    tablo_hata = _donem_tablosu_yaz(durum, alan, grup_bilgi, deger_harita, ayrilan_harita,
-                                    tur_harita)
-    silinen, sil_hata = donem_mod.hafizadan_sil(cikan_kaliplar)
+                                  tur_harita, ayri) if grup_bilgi else None
+    # Cikarilan aile, hafizada ailenin adina katilan yazilis kayitlariyla
+    # birlikte silinir (ayri isaretli olanlar haric).
+    haf_ayri = donem_mod.hafiza_ayri()
+    haf_once = donem_mod.hafiza()
+    uyeler = {k: [y for y in donem_mod.aile_uyeleri(k) if y not in haf_ayri and y not in grup_bilgi]
+              for k in cikan_kaliplar}
+    # Hafizada kaydi olan cikarilan kalip sayisi (aile kendi adiyla ya da
+    # bir yazilisinin kaydiyla).
+    silinecek = sum(1 for k in cikan_kaliplar
+                    if k in haf_once or any(y in haf_once for y in uyeler[k]))
+    _sayi_sil, sil_hata = donem_mod.hafizadan_sil(
+        list(cikan_kaliplar) + [y for k in cikan_kaliplar for y in uyeler[k]])
+    silinen = 0 if sil_hata else silinecek
     metin = "%d dönem kalıbı onaylandı" % len(grup_bilgi)
     if grup_bilgi and not hata:
         metin += " ve hafızaya kaydedildi"
@@ -2192,48 +2248,8 @@ def donem_uygula(durum):
         metin += "; %d kalıp çıkarıldı" % cikan
         if silinen:
             metin += ", bunların %d tanesi hafızadan da silindi" % silinen
-    hatalar = " ".join(h for h in (hata, sil_hata, tablo_hata) if h)
+    hatalar = " ".join(h for h in (hata, sil_hata) if h)
     return metin + "." + (" " + hatalar if hatalar else "")
-
-
-DONEM_TABLO_ADI = "DONEM_BILGISI"
-DONEM_TABLO_KOLONLARI = ("KALIP", "TUR", "KALIP_ANLAMI", "DEGER", "DEGER_ANLAMI",
-                         "KOLON_SAYISI", "DURUM")
-
-
-def _donem_tablosu_yaz(durum, alan, bilgi, deger_harita, ayrilan_harita, tur_harita=None):
-    """Calismanin donem bilgisi tablosu: her grup ve icindeki her deger
-    kendi anlamiyla (PROJE_HAFIZASI/<calisma>/DONEM_BILGISI.parquet).
-    DURUM karttaki adlarla: Kalıba Uyar (grubun anlamindan), Kendi Anlamı
-    (degere ayri yazildi), Dönem Değil (gruba yanlis girmis). Doner: hata
-    metni ya da None."""
-    satirlar = []
-    sayi = {s_["kalip"]: {str(x.get("deger")): int(x.get("kolon") or 0)
-                          for x in s_.get("degerler") or []} for s_ in alan["satirlar"]}
-    gruplar = list(bilgi) + [k for k in ayrilan_harita if k not in bilgi]
-    for kalip in gruplar:
-        anlam = bilgi.get(kalip, "")
-        tur = ZAMAN_TUR_ADI.get((tur_harita or {}).get(kalip) or "pencere", "Pencere")
-        ayr = ayrilan_harita.get(kalip) or {}
-        degerler = sayi.get(kalip) or {}
-        for dg in sorted(degerler, key=lambda d: (-degerler[d], d)):
-            if dg in ayr:
-                x = ayr[dg]
-                satirlar.append([kalip, tur, anlam, dg, "" if x["cikar"] else x["anlam"],
-                                 degerler[dg], "Dönem Değil" if x["cikar"] else "Kendi Anlamı"])
-            elif kalip in bilgi:
-                ozel = (deger_harita.get(kalip) or {}).get(dg)
-                satirlar.append([kalip, tur, anlam, dg,
-                                 ozel or donem_mod.deger_anlami(kalip, anlam, dg),
-                                 degerler[dg], "Kendi Anlamı" if ozel else "Kalıba Uyar"])
-    try:
-        from fe_agent.akis_durum import _folder as _klasor
-        from fe_agent import tablo_io
-        tablo_io.klasore_yaz(_klasor(), "/%s/%s.parquet" % (amp_klasor_adi(durum), DONEM_TABLO_ADI),
-                             pd.DataFrame(satirlar, columns=list(DONEM_TABLO_KOLONLARI)))
-    except Exception as e:
-        return "Dönem bilgisi tablosu çalışma klasörüne yazılamadı (%s)." % str(e)[:120]
-    return None
 
 
 def donem_hafiza_ekle(durum, kalip, anlam):
@@ -2371,7 +2387,7 @@ class _AyrilanliDesen(object):
 # Aciklama Duzenleme'ye giden parca satirinda zaman bilgisinin turu.
 ZAMAN_TUR_ETIKETI = {"pencere": "zaman penceresi kalıbı", "birim": "zaman birimi kalıbı",
                      "olcu": "zaman ölçüsü kalıbı"}
-# Kartta ve DONEM_BILGISI tablosunda.
+# Turlerin kartta gorunen adlari.
 ZAMAN_TUR_ADI = {"pencere": "Pencere", "birim": "Zaman Birimi", "olcu": "Zaman Ölçüsü"}
 
 
@@ -2455,9 +2471,9 @@ def _aciklama_girdileri(durum):
                 r = _AyrilanliDesen(r, ayr)
             desenler.append((str(k), r, str(v).strip(), set(donem_haric.get(k) or ()),
                              dict(donem_deger.get(k) or {}), donem_tur.get(k) or "pencere"))
-    # Daha ozel desen once: <NN> (en az iki basamak) <N>'den once eslesir
-    # (M12 icin M<NN>, M3 icin M<N>).
-    desenler.sort(key=lambda x: -x[0].count("<NN>"))
+    # Daha ozel desen once: ailesinden ayrilan yazilis ("M<N>") ailesinden
+    # ("<N>M"), <NN> (en az iki basamak) <N>'den once eslesir.
+    desenler.sort(key=lambda x: (donem_mod.aile_mi(x[0]), -x[0].count("<NN>")))
     try:
         onayli = kisaltma_mod.onaylilar()
     except Exception:
@@ -4198,6 +4214,120 @@ def tanimsiz_karar_uygula(durum):
     return ""
 
 
+# ---------------------------------------------------------------------------
+# 01.2.1.1 SOZLUK BIRLESTIRME: birden fazla sozluk secildiyse ve veri
+# setindeki bir kolonun sozluklerde farkli tanimlari varsa her kolon icin
+# hangi tanimin kalacagi sorulur (ya da kullanici kendisi yazar). Secim
+# birlesik sozluge (BIRLESIK_SOZLUK) ve calisma kopyasina yazilir; girdi
+# sozlukleri degismez. Cakisma yoksa adim sorulmadan gecilir.
+# ---------------------------------------------------------------------------
+BIRLESIM_NOT = (
+    "Seçtiğiniz sözlüklerde %s kolonun tanımı farklı. Her kolon için kalacak tanımı "
+    "seçin ya da kendiniz yazın. Seçtiğiniz tanım AMP_SOZLUK'e yazılır; girdi "
+    "sözlükleriniz değişmez.")
+BIRLESIM_DUGME = {"bos": "Tanımları Onayla ve Devam Et"}
+BIRLESIM_KULLANICI = "Kullanıcı"
+
+
+def _birlesim_secenekleri(durum):
+    oz = durum.get("_sozluk_birlesim") if isinstance(durum.get("_sozluk_birlesim"), dict) else {}
+    sec = oz.get("secenekler")
+    return sec if isinstance(sec, dict) else {}
+
+
+def _birlesim_secimi(onceki, secenekler):
+    """Onceki karar gecerliyse o, degilse ilk sozlugun tanimi."""
+    if isinstance(onceki, dict):
+        if onceki.get("kaynak") in {x["sozluk"] for x in secenekler}:
+            return {"kaynak": onceki["kaynak"], "metin": ""}
+        if not onceki.get("kaynak") and str(onceki.get("metin") or "").strip():
+            return {"kaynak": "", "metin": str(onceki["metin"]).strip()}
+    return {"kaynak": secenekler[0]["sozluk"], "metin": ""}
+
+
+def sozluk_birlestir_plan(durum):
+    """Farkli tanimli kolonlar karti. METIN DONDURMEZ."""
+    sec = _birlesim_secenekleri(durum)
+    if not sec:
+        durum["_plan_otomatik"] = True
+        durum["_secim_alani"] = None
+        return ""
+    onceki = durum.get("sozluk_birlesim_karar")
+    onceki = onceki if isinstance(onceki, dict) else {}
+    satirlar = []
+    for kolon, liste in sec.items():
+        secim = _birlesim_secimi(onceki.get(kolon), liste)
+        satirlar.append({"kolon": kolon, "secenekler": liste,
+                         "kaynak": secim["kaynak"], "metin": secim["metin"]})
+    durum["_secim_alani"] = {
+        "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [], "kapsam": None,
+        "aciklama": "", "tanimsiz": None, "adim": "sozluk_birlestir",
+        "birlesim": {"baslik": "Farklı Tanımlı Kolonlar",
+                     "not": BIRLESIM_NOT % _sayi(len(satirlar)),
+                     "sozlukler": secili_sozlukler(durum),
+                     "satirlar": satirlar},
+        "buton_kalip": dict(BIRLESIM_DUGME),
+    }
+    return ""
+
+
+def sozluk_birlestir_uygula(durum):
+    """Karar govdesi {"birlesim": [{kolon, kaynak, metin}]}: kaynak bir
+    sozluk adiysa o sozlugun tanimi, bossa kullanicinin yazdigi metin
+    alinir. Govde gelmezse onceki karar, yoksa ilk sozlugun tanimi."""
+    karar = durum.pop("_dogrulama_karari", None)
+    sec = _birlesim_secenekleri(durum)
+    if not sec:
+        return ""
+    gelen = {}
+    if isinstance(karar, dict) and isinstance(karar.get("birlesim"), list):
+        for x in karar["birlesim"]:
+            if isinstance(x, dict) and str(x.get("kolon") or "") in sec:
+                gelen[str(x["kolon"])] = {"kaynak": str(x.get("kaynak") or ""),
+                                          "metin": str(x.get("metin") or "")}
+    else:
+        onceki = durum.get("sozluk_birlesim_karar")
+        gelen = onceki if isinstance(onceki, dict) else {}
+    secim, hatalar = {}, []
+    for kolon, liste in sec.items():
+        g = gelen.get(kolon)
+        if isinstance(g, dict) and not g.get("kaynak") and not str(g.get("metin") or "").strip():
+            hatalar.append("%s: tanımı boş; bir sözlüğün tanımını seçin ya da yazın." % kolon)
+            continue
+        s_ = _birlesim_secimi(g, liste)
+        if s_["kaynak"]:
+            tanim = next(x["tanim"] for x in liste if x["sozluk"] == s_["kaynak"])
+        else:
+            tanim = re.sub(r"\s+", " ", s_["metin"]).strip()
+        secim[kolon] = {"kaynak": s_["kaynak"], "metin": s_["metin"], "tanim": tanim}
+    if hatalar:
+        raise AdimHatasi("Şu satırlar onaylanamadı:\n" + "\n".join(hatalar))
+    yol = _amp_yolu(durum, "BIRLESIK_SOZLUK")
+    try:
+        tablo = sozluk_orijinal_oku(durum)
+    except Exception as e:
+        raise AdimHatasi("Birleşik sözlük okunamadı (%s)." % str(e)[:120])
+    anahtar = tablo["DEGISKEN"].astype(str).str.upper()
+    for kolon, x in secim.items():
+        m = anahtar == kolon.upper()
+        tablo.loc[m, "ACIKLAMA"] = x["tanim"]
+        tablo.loc[m, "KAYNAK"] = x["kaynak"] or BIRLESIM_KULLANICI
+    yedek = dosya_yaz(yol, tablo)
+    if not yedek:
+        raise AdimHatasi("Seçilen tanımlar birleşik sözlüğe yazılamadı; yeniden deneyin.")
+    durum["sozluk_yedek"] = yedek
+    durum["sozluk_birlesim_karar"] = {k: {"kaynak": v["kaynak"], "metin": v["metin"]}
+                                      for k, v in secim.items()}
+    # Calisma kopyasi secilen tanimlarla yeniden cikarilir (bu adim
+    # kurulumun hemen ardinda; kopyada henuz baska duzenleme yok).
+    kopya_not = _calisma_kopyasi_kur(durum)
+    elle = sum(1 for v in secim.values() if not v["kaynak"])
+    metin = "%s kolonun tanımı seçildi" % _sayi(len(secim))
+    if elle:
+        metin += "; %s tanesini siz yazdınız" % _sayi(elle)
+    return (metin + "." + kopya_not).strip()
+
+
 def karar_sonrasi_alan(durum, adim):
     """Adim onaylaninca kartinin KARARLI hali: transkriptteki kart bununla
     guncellenir, sayfa yenilenince kart verilen kararlarla gelir (bkz.
@@ -4211,6 +4341,10 @@ def karar_sonrasi_alan(durum, adim):
             tanimsiz_karar_plan(kopya)
             alan = kopya.get("_secim_alani") or {}
             return {"cikar": alan["cikar"]} if alan.get("cikar") else {}
+        if adim == "sozluk_birlestir":
+            sozluk_birlestir_plan(kopya)
+            alan = kopya.get("_secim_alani") or {}
+            return {"birlesim": alan["birlesim"]} if alan.get("birlesim") else {}
         if _kontrol_atlandi(kopya):
             return {}
         if adim == "donem":

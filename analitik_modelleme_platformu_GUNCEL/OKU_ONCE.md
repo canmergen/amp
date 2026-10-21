@@ -282,12 +282,32 @@ tanıtır; sayfalar sol bardan açılır.
   - **Birleştirme:** birden fazla sözlük seçilirse her biri ayrı ayrı
     doğrulanır, sonra çalışma klasöründe tek sözlükte birleşir
     (`BIRLESIK_SOZLUK`, kolonlar DEGISKEN, ACIKLAMA, KATEGORI, KAYNAK).
-    Kolonlar adla (büyük/küçük harf farksız) eşleşir; bir kolonun tanımı
-    seçim sırasındaki ilk sözlükten, tanımı dolu olandan alınır (ilkinde
-    boşsa sonrakinden). Kurulum çıktısında her sözlükten kaç kolonun
-    tanımı alındığı ve iki sözlükte farklı tanımı olan kolonlar adıyla
-    yazılır. Girdi sözlüklerine yazılmaz. Tek sözlükte davranış öncekiyle
-    aynı. Ekranda ve kayıtlarda sözlük "A + B" diye yazılır.
+    Kolonlar adla (büyük/küçük harf farksız) eşleşir; tanımı yalnız bir
+    sözlükte dolu olan kolon o tanımı alır. Kurulum çıktısında her
+    sözlükten kaç kolonun tanımı alındığı ve sözlüklerde farklı tanımı
+    olan kolonlar adıyla yazılır. Girdi sözlüklerine yazılmaz. Tek
+    sözlükte davranış öncekiyle aynı. Ekranda ve kayıtlarda sözlük "A + B"
+    diye yazılır.
+- **01.2.1.1 Sözlük Birleştirme** (yalnız A; kurulumun alt adımı,
+  `sozluk_birlestir`): veri setindeki bir kolonun seçilen sözlüklerde
+  birden fazla farklı dolu tanımı varsa (yalnız boşluk farkı sayılmaz)
+  kart açılır; yoksa adım sorulmadan geçilir.
+  - Seçenekler kurulumda `_sozlukleri_birlestir` ile çıkarılır
+    (`durum["_sozluk_birlesim"]["secenekler"]`: {kolon: [{sozluk, tanim}]},
+    sözlük sırasıyla).
+  - Kart "Farklı Tanımlı Kolonlar": DEĞİŞKEN | TANIM. Tanım hücresinde
+    her sözlüğün tanımı sözlük adıyla seçenek olarak, en altta "Kendim
+    yazayım" kutusu (yazmak o seçeneği seçer). Başta ilk seçilen
+    sözlüğün tanımı seçili. Üstte sözlük başına "Tümünde <sözlük> Tanımı".
+    "Kendim yazayım" seçili ve boşsa onay durur.
+  - Onay (`sozluk_birlestir_uygula`): seçilen tanım `BIRLESIK_SOZLUK`'e
+    yazılır (KAYNAK sözlük adı ya da "Kullanıcı") ve sözlüğün çalışma
+    kopyası bu tanımlarla yeniden çıkarılır; AMP_SOZLUK'e buradan gider.
+    Karar `durum["sozluk_birlesim_karar"]` ({kolon: {kaynak, metin}});
+    geri dönüşte kart bu kararla açılır, yenilemede de kararla gelir.
+  - Bu adımdan önce kaydedilmiş A çalışmaları bir adım ileri kaydırılır
+    (`SIRA_SURUMU` 14); onlarda farklı tanımlı kolonlar ilk sözlüğün
+    tanımıyla kalır.
   - **Eşleşme:** Baz Veri Seti seçilince o tablonun en son eşlendiği
     sözlük(ler) kutuda seçili gelir; alanın altında "Bu veri setiyle daha
     önce kullanıldığı için seçildi" yazar. Kutu boşsa ya da içindekiler de
@@ -350,18 +370,38 @@ tanıtır; sayfalar sol bardan açılır.
   taşır ve o sekmeye geçer), Kısaltmalar (kolon adlarındaki bütün
   kısaltmalar; tıklanan Kalıplar'a elle satır olarak eklenir).
 - **Kalıp yakalama (`donem.kaliplar`, `parca_listesi`):** sayı içeren
-  parçalar kalıba çevrilir (`30D` → `<N>D`, `H00_06` → `H<NN>_<NN>`).
-  Harf ve tek basamaklı sayı (`M3`) `M<N>` olur. Alt çizgiyle ayrılmış
-  sayı ve tek harf tek parça sayılır: `3_M` → `<N>_M`, `M_3` → `M_<N>`
-  (`donem.ayrik_ikili`); bu ikililerdeki tek harf ayrıca dönem parçası
-  işaretlenir. Desenler `<NN>` sayısı çok olandan aza sıralanır.
+  parçalar kalıba çevrilir (`H00_06` → `H<NN>_<NN>`, `L3M` → `L<N>M`).
+  Alt çizgiyle ayrılmış sayı ve tek harf tek parça sayılır (`3_M`, `M_3`;
+  `donem.ayrik_ikili`); bu ikililerdeki tek harf ayrıca dönem parçası
+  işaretlenir.
+- **Yazılış ailesi:** aynı harf ile sayının bütün yazılışları tek kalıptır;
+  adı `<N>` + harf (`<N>M`). Yazılışlar (`donem.YAZILIS_SIRASI`): `<N>M`
+  (3M, 30D; harf 1-3), `M<N>` (M3, M12; harf 1-2), `<N>_M` ve `M_<N>`
+  (yalnız tek harf). `donem.kalip_deseni("<N>M")` hepsine uyar;
+  `deger_anlami` sayıyı hangi yazılışta olursa olsun yerine koyar (M_6 →
+  "son 6 ay"); app.js `donemKalipDeseni` / `donemSayiEslesmesi` aynı kural.
+  - Kartta kalıp hücresinde adlarda geçen yazılışlar yazar ("<N>M · M<N> ·
+    <N>_M").
+  - Dil modeline aile satırında YAZILIŞLAR (her biri değerleriyle) ve her
+    yazılıştan bir örnek gider. Tanımlar bir yazılışın açıkça farklı
+    anlamda olduğunu gösteriyorsa model onu "ayri" listesine yazar
+    (yazılış, anlam, tür); en az bir yazılış ailede kalır. Ayrılan yazılış
+    (`M<N>`) kendi satırında durur, kalıp hücresinde "<N>M ailesinden ayrı
+    anlamlı yazılış" yazar; ailenin deseni o yazılışın değerlerini almaz.
+  - Hafıza: aile kendi adıyla yazılır. Ayrı satırda onaylanan yazılış
+    `donem_ayri_yazilis` listesinde işaretlenir; sonraki çalışmada da
+    ayrı gelir. Hafızada yalnız ayrı işaretsiz bir yazılışın kaydı varsa
+    (`<N>_M`, eski `M<NN>`) aile o anlamla gelir (`donem.hafiza_anahtari`).
+    Aile çıkarılırsa bu yazılış kayıtları da hafızadan silinir (ayrı
+    işaretliler kalır).
+  - Açıklama Düzenleme'de ayrılan yazılışın deseni aileden önce eşleşir.
 - **Zaman bilgisi türleri:** dil modeli her kalıba "tur" yazar
   (`llm.ZAMAN_TURLERI`: pencere, birim, olcu; `llm.zaman_turu`). Kartta
   kalıp hücresinde seçim kutusu: Pencere / Zaman Birimi / Zaman Ölçüsü;
   kararda `zaman_tur`, durumda `durum["donem_turleri"]` ({kalıp: tür}),
   hafızada `donem_tur`. Açıklama Düzenleme parçayı türüyle anar
   (`akis_faz01.ZAMAN_TUR_ETIKETI`: "zaman penceresi kalıbı <N>D; ...").
-  `donem.ISTEM_SURUMU` 4: önbellekteki eski yorumlar yeniden alınır.
+  `donem.ISTEM_SURUMU` 5: önbellekteki eski yorumlar yeniden alınır.
 - **Tabloya giren kalıplar:** hafızadan gelenler ve dil modelinin
   tanımlardan zaman bilgisi olduğunu bulduğu parçalar Kalıplar'a girer;
   yalnız ikililer içinde geçse de (MONTH). Olası'da yalnız emin
@@ -408,11 +448,6 @@ tanıtır; sayfalar sol bardan açılır.
     ("360D: zaman penceresi kalıbı <N>D; son 1 yıl"), dönem olmayan değer dönem
     parçası sayılmaz (grubun deseni onu kapsamaz, `_AyrilanliDesen`),
     öbürleri kalıbın anlamıyla.
-  - **Grup ve üye açıklamaları tablosu:** onayda
-    `PROJE_HAFIZASI/<çalışma>/DONEM_BILGISI.parquet` yazılır: KALIP, TUR,
-    KALIP_ANLAMI, DEGER, DEGER_ANLAMI, KOLON_SAYISI, DURUM (Kalıba Uyar,
-    Kendi Anlamı, Dönem Değil); her grubun adlarda geçen her değeri bir
-    satır. Yazılamazsa onay mesajına not düşer, onay durmaz.
   - Dönem tablosunun penceresi en çok ekran yüksekliğinin %72'si.
 - **01.2.4.2 Açıklama Düzenleme'nin kapsamı:** dil modeline yalnız
   sözlükte zaten tanımı olan ve süreçte kalan kolonlar gider. Girmeyenler:

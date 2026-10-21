@@ -1706,8 +1706,20 @@ Görevin her kalıbın ne anlama geldiğini, tanımlardan okuyarak yazmak.
     için özellikle dikkat et: yalnızca zamanla ilgiliyse (ör. önceki dönem,
     karşılaştırma dönemi, zaman birimi) true.
 
+YAZILIŞLAR: "harf ve sayı" kalıbı (ör. <N>M) aynı harf ile sayının bütün
+yazılışlarını kapsar: 3M, M3, M12, 3_M, M_3. Adlarda geçen yazılışlar
+YAZILIŞLAR satırında, her biri kendi değerleriyle; örneklerin başında
+yazılışı yazar. Hepsi aynı anlamdadır; tek "anlam" yaz.
+  - Örnek tanımlar bir yazılışın AÇIKÇA farklı anlam taşıdığını
+    gösteriyorsa (ör. 3M: 3 aylık pencere, M3: yılın 3. ayı) o yazılışı
+    "ayri" listesine yaz: {"yazilis": "...", "anlam": "...", "tur": "..."}.
+    "yazilis" alanına YAZILIŞLAR satırındaki yazılışı AYNEN yaz; anlamda
+    yer tutucu olarak N kullan. Ana "anlam" öbür yazılışların anlamıdır.
+  - Emin değilsen ayırma; "soru"ya yaz. En az bir yazılış ayrılmadan
+    kalır. Yazılış farkı yoksa "ayri" boş liste.
+
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kalıbı AYNEN yaz.
-{"kolonlar": [{"ad": "...", "donem": true, "tur": "pencere", "anlam": "...", "soru": "", "not": "", "haric": []}]}""" \
+{"kolonlar": [{"ad": "...", "donem": true, "tur": "pencere", "anlam": "...", "soru": "", "not": "", "haric": [], "ayri": []}]}""" \
     + SINIRLAYICI_KURALI
 
 
@@ -1726,10 +1738,18 @@ def _donem_metni(x):
     return re.sub(r"\s+", " ", str(x or "")).strip()
 
 
+def yazilis_bul(deger):
+    """Degerin yazilis kalibi (3M -> "<N>M", M3 -> "M<N>", 3_M -> "<N>_M",
+    M_3 -> "M_<N>"); bkz. donem.yazilis."""
+    from fe_agent import donem
+    return donem.yazilis(deger)
+
+
 def donem_yorumla(kaliplar, orkestra=None):
     """kaliplar: [{"kalip", "tur", "degerler": [(deger, kolon)],
-    "ornekler": [(kolon, tanim)]}]. Doner: ({kalip: {"donem", "anlam",
-    "soru", "not", "model"}}, hata)."""
+    "ornekler": [(kolon, tanim)], aile ise "yazilislar", "ornek_yazilis"}].
+    Doner: ({kalip: {"donem", "anlam", "soru", "not", "model", "haric",
+    "ayri": [{"yazilis", "anlam", "tur"}]}}, hata)."""
     if not kaliplar:
         return {}, None
     ork = orkestra or Orkestra(arka=True)
@@ -1737,6 +1757,8 @@ def donem_yorumla(kaliplar, orkestra=None):
                "aralik": "harf + sayı aralığı", "harf_sayi_harf": "harf + sayı + harf",
                "harf_tek": "tek harf + tek basamaklı sayı",
                "ayrik": "alt çizgiyle ayrılmış sayı ve tek harf",
+               "aile": "harf ve sayı; aynı harf ile sayının yazılışları birlikte",
+               "yazilis": "harf ve sayının ailesinden ayrı anlamlı yazılışı",
                "komsu": "dönem parçasının yanındaki parça (aday)",
                "hafiza": "önceki çalışmada onaylanmış kalıp"}
     satirlar = []
@@ -1744,11 +1766,17 @@ def donem_yorumla(kaliplar, orkestra=None):
         s = "- KALIP: %s (%s)\n  DEĞERLER: %s" % (
             k["kalip"], tur_adi.get(k["tur"], k["tur"]),
             ", ".join("%s (%d kolon)" % (d, n) for d, n in k["degerler"][:20]))
+        if len(k.get("yazilislar") or []) > 1:
+            s += "\n  YAZILIŞLAR: %s" % "; ".join(
+                "%s (%s)" % (y, ", ".join(d for d, _n in k["degerler"] if yazilis_bul(d) == y)[:120])
+                for y in k["yazilislar"])
         if k.get("birlikte"):
             s += "\n  BİRLİKTE: %s | tek başına: %d kolon" % (
                 ", ".join("%s (%d kolon)" % (ik, n) for ik, n in k["birlikte"]), int(k.get("tek") or 0))
-        for ad, tanim in k["ornekler"]:
-            s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim)[:240])
+        oy = k.get("ornek_yazilis") or []
+        for i, (ad, tanim) in enumerate(k["ornekler"]):
+            etiket = (" [%s]" % oy[i]) if len(k.get("yazilislar") or []) > 1 and i < len(oy) else ""
+            s += "\n  ÖRNEK%s: %s: %s" % (etiket, ad, str(tanim)[:240])
         for ik, (oad, otanim) in sorted((k.get("birlikte_ornek") or {}).items()):
             s += "\n  ÖRNEK (%s): %s: %s" % (ik, oad, str(otanim)[:240])
         satirlar.append(s)
@@ -1758,10 +1786,21 @@ def donem_yorumla(kaliplar, orkestra=None):
     if not model:
         return {}, _orkestra_hatasi(ork, "dönem bilgisi")
     gecerli = {k["kalip"]: {ik for ik, _n in (k.get("birlikte") or [])} for k in kaliplar}
+    yazilislar = {k["kalip"]: list(k.get("yazilislar") or []) for k in kaliplar}
     sonuc = {}
     for x in veri.get("kolonlar") or []:
         if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
             continue
+        # AYRI YAZILIS: yalniz kalibin adlarda gecen yazilislari; en az biri
+        # ailede kalir.
+        ayri, kalan = [], list(yazilislar[str(x["ad"])])
+        for a in (x.get("ayri") if isinstance(x.get("ayri"), list) else []):
+            y = re.sub(r"\s+", "", str((a or {}).get("yazilis") or "")).upper() \
+                if isinstance(a, dict) else ""
+            an = _donem_metni((a or {}).get("anlam")) if isinstance(a, dict) else ""
+            if y in kalan and len(kalan) > 1 and an:
+                kalan.remove(y)
+                ayri.append({"yazilis": y, "anlam": an, "tur": zaman_turu(a.get("tur"))})
         donem = x.get("donem")
         if isinstance(donem, str):
             donem = _secenek(donem) in ("true", "evet", "1")
@@ -1771,7 +1810,8 @@ def donem_yorumla(kaliplar, orkestra=None):
             "tur": zaman_turu(x.get("tur")),
             "soru": _donem_metni(x.get("soru")), "not": _donem_metni(x.get("not")),
             "model": MODEL_ADLARI.get(model, model),
-            "haric": sorted({str(h).strip().upper() for h in haric} & gecerli[str(x["ad"])])}
+            "haric": sorted({str(h).strip().upper() for h in haric} & gecerli[str(x["ad"])]),
+            "ayri": ayri}
     return sonuc, None
 
 
