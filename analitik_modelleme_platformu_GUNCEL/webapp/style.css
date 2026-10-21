@@ -3348,6 +3348,38 @@ span.bolme-cip { cursor: default; }
 .dg-donem-kalip { font-weight: var(--fw-kalin); margin-right: 4px; }
 .dg-donem-anlam { width: 100%; resize: vertical; min-height: 44px; font: inherit; }
 .dg-donem-soru { color: var(--amber); font-weight: var(--fw-kalin); margin-top: 4px; }
+/* DÖNEM BİLGİSİ KARTI: başlık ("i"de yönerge), tek satır özet, sekmeler. */
+.dg-donem-ozet { display: flex; align-items: center; gap: 6px; margin: 0 0 var(--b-2); color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+.dg-sekmeler {
+  display: flex; gap: 2px; margin: 0 0 var(--b-2);
+  border-bottom: 1px solid var(--kenar);
+}
+.dg-sekme {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-bottom: -1px; padding: 6px var(--b-3);
+  border: 0; border-bottom: 2px solid transparent; background: none; cursor: pointer;
+  font: inherit; font-weight: var(--fw-kalin); color: var(--metin-soluk);
+}
+.dg-sekme:hover { color: var(--metin); }
+.dg-sekme.secili { color: var(--kirmizi); border-bottom-color: var(--kirmizi); }
+.dg-sekme-sayi {
+  min-width: 20px; padding: 0 6px; border-radius: 10px;
+  border: 1px solid currentColor; font-size: var(--fs-kucuk); line-height: 16px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.dg-sekme-pano[hidden] { display: none; }
+.dg-donem-pano-not { margin: 0 0 var(--b-2); color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1.45; }
+.dg-donem-tur {
+  display: block; margin-top: 4px; max-width: 100%; height: 24px;
+  font: inherit; font-size: var(--fs-kucuk); color: var(--metin);
+  border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk); background: var(--yuzey);
+}
+.dg-donem-olasi-tablo th:nth-child(1) { width: 18%; }
+.dg-donem-olasi-tablo th:nth-child(2) { width: 24%; }
+.dg-donem-olasi-tablo th:nth-child(3) { width: auto; }
+.dg-donem-olasi-tablo th:nth-child(4) { width: 110px; }
+.dg-donem-olasi-neden { color: var(--metin); font-size: var(--fs-kucuk); line-height: 1.45; }
+
 /* DÖNEM DEĞERLERİ: Anlam hücresinde örnek ve "Değerleri Düzenle"; değer
    paneli grup satırının hemen altında, tablo genişliğinde. */
 .dg-donem-ornek { margin-top: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); }
@@ -3435,8 +3467,6 @@ span.bolme-cip { cursor: default; }
 .dg-donem-geri .dg-donem-sil-not { text-decoration: none; }
 /* Olası kalıp: üstü çizili değil (çıkarılmadı, henüz alınmadı); kesik
    kenarlı ve önünde "+": tıklanınca tabloya gelir. */
-.dg-donem-olasilar .dg-donem-geri { text-decoration: none; border-style: dashed; }
-.dg-donem-olasilar .dg-donem-geri::before { content: "+ "; color: var(--kirmizi); font-weight: var(--fw-kalin); }
 /* Birlikte geçtiği ikililer: çip tıklanır; hariç olan üstü çizili. */
 .dg-donem-birlikte {
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px;

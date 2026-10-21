@@ -1657,15 +1657,23 @@ dönem değilse dönem sayma.
 """
 
 _DONEM_ANLAM_KURALLARI = """
-DÖNEM NEDİR: verinin hangi zaman aralığından ya da diliminden alındığını
-gösteren parça (zaman penceresi, gün / saat dilimi, dönem başından bugüne,
-önceki / karşılaştırma dönemi).
-DÖNEM DEĞİLDİR:
-  - Bir zaman birimi BAŞINA oran ya da birim gösteren parça ("… başına"):
-    pencere değil birimdir.
-  - Zamanı ÖLÇEN parça (geçen süre, gün sayısı gibi): ölçüdür.
-  - Bir parça hem dönem hem başka bilgi taşıyorsa (ör. pencere ile bir
-    eşik sayısı) "anlam"a YALNIZ dönem kısmını yaz; kalanını "not"a yaz.
+ZAMAN BİLGİSİ: parçanın taşıdığı, zamanla ilgili bilgi. Üç türü var;
+"tur" alanına birini yaz:
+  - "pencere": verinin hangi zaman aralığından ya da diliminden alındığı
+    (son 30 gün, 00-06 saatleri, dönem başından bugüne, önceki ya da
+    karşılaştırma dönemi).
+  - "birim": bir zaman birimi (gün, hafta, ay, yıl, saat; DAY, MONTH gibi
+    sözcükler ve sayıya bağlı tek harfler: M ay, D gün, W hafta, Y yıl,
+    H saat). Sayıyla birlikte (3_M: 3 ay) ya da "gün başına", "aylık"
+    gibi kullanılabilir.
+  - "olcu": zamanı ölçen parça (ilk ya da son işlemden bu yana geçen süre,
+    gün sayısı, vade, yaş, kıdem).
+ZAMAN BİLGİSİ DEĞİLDİR: konu, ürün, kanal, işlem türü, tutar, adet,
+istatistik (ortalama, en büyük) gibi zamanla ilgisi olmayan parçalar.
+  - Bir parça hem zaman hem başka bilgi taşıyorsa (ör. pencere ile bir
+    eşik sayısı) "anlam"a YALNIZ zaman kısmını yaz; kalanını "not"a yaz.
+  - Birden çok sözcüğün kısaltması olabilir (TMSNCFRST: time since first,
+    ilk işlemden bu yana geçen süre); örnek tanımlardan çöz.
 
   - Anlamı YALNIZCA örnek tanımlardan ve değerlerin birbirine göre
     durumundan çıkar. Genel bilgiyle tahmin etme.
@@ -1685,21 +1693,33 @@ DÖNEM DEĞİLDİR:
 
 
 SISTEM_DONEM = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon adlarında
-dönem (zaman penceresi, saat dilimi, karşılaştırma dönemi) bilgisi taşıyan
-parça KALIPLARI verilecek. Her kalıp için: adlarda geçen değerleri (kaç
+zaman bilgisi (zaman penceresi, saat dilimi, zaman birimi, geçen süre)
+taşıyabilecek parça KALIPLARI verilecek. Her kalıp için: adlarda geçen değerleri (kaç
 kolonda geçtiğiyle) ve birkaç örnek kolonun adı ile sözlükteki tanımı.
 
 Görevin her kalıbın ne anlama geldiğini, tanımlardan okuyarak yazmak.
 """ + _DONEM_ANLAM_KURALLARI + """
   - Yer tutucu: anlamda kalıptaki <N> için "N", <NN> için "NN" yaz;
     başka bir yer tutucu biçimi kullanma.
-  - "donem": kalıp gerçekten dönem / zaman bilgisi taşıyorsa true, değilse
-    false (yukarıdaki "DÖNEM DEĞİLDİR" maddeleri false). Yanındaki-parça adayları için özellikle dikkat et: yalnızca
-    dönemle ilgiliyse (ör. önceki dönem, karşılaştırma dönemi) true.
+  - "donem": kalıp zaman bilgisi taşıyorsa true, değilse false (yukarıdaki
+    "ZAMAN BİLGİSİ DEĞİLDİR" maddeleri false). Yanındaki-parça adayları
+    için özellikle dikkat et: yalnızca zamanla ilgiliyse (ör. önceki dönem,
+    karşılaştırma dönemi, zaman birimi) true.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kalıbı AYNEN yaz.
-{"kolonlar": [{"ad": "...", "donem": true, "anlam": "...", "soru": "", "not": "", "haric": []}]}""" \
+{"kolonlar": [{"ad": "...", "donem": true, "tur": "pencere", "anlam": "...", "soru": "", "not": "", "haric": []}]}""" \
     + SINIRLAYICI_KURALI
+
+
+ZAMAN_TURLERI = ("pencere", "birim", "olcu")
+
+
+def zaman_turu(x):
+    """Dil modelinin "tur" alani: pencere / birim / olcu (tanınmazsa
+    pencere)."""
+    t = _secenek(str(x or ""))
+    return {"birim": "birim", "olcu": "olcu", "olçu": "olcu", "ölçü": "olcu",
+            "ölcü": "olcu"}.get(t, "pencere")
 
 
 def _donem_metni(x):
@@ -1715,6 +1735,8 @@ def donem_yorumla(kaliplar, orkestra=None):
     ork = orkestra or Orkestra(arka=True)
     tur_adi = {"sayi_harf": "sayı + harf", "harf_sayi": "harf + sayı",
                "aralik": "harf + sayı aralığı", "harf_sayi_harf": "harf + sayı + harf",
+               "harf_tek": "tek harf + tek basamaklı sayı",
+               "ayrik": "alt çizgiyle ayrılmış sayı ve tek harf",
                "komsu": "dönem parçasının yanındaki parça (aday)",
                "hafiza": "önceki çalışmada onaylanmış kalıp"}
     satirlar = []
@@ -1746,6 +1768,7 @@ def donem_yorumla(kaliplar, orkestra=None):
         haric = x.get("haric") if isinstance(x.get("haric"), list) else []
         sonuc[str(x["ad"])] = {
             "donem": bool(donem), "anlam": _donem_metni(x.get("anlam")),
+            "tur": zaman_turu(x.get("tur")),
             "soru": _donem_metni(x.get("soru")), "not": _donem_metni(x.get("not")),
             "model": MODEL_ADLARI.get(model, model),
             "haric": sorted({str(h).strip().upper() for h in haric} & gecerli[str(x["ad"])])}
@@ -1762,18 +1785,19 @@ SISTEM_DONEM_TARA = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon
 adlarında geçen KISALTMALAR verilecek; her biri için kaç kolonda geçtiği
 ve bir örnek kolonun adı ile sözlükteki tanımı.
 
-Görevin bu kısaltmalardan DÖNEM BİLGİSİ taşıyanları bulmak: zaman
+Görevin bu kısaltmalardan ZAMAN BİLGİSİ taşıyanları bulmak: zaman
 penceresi, dönem başından bugüne, önceki / sonraki dönem, karşılaştırma
-dönemi, gün / saat dilimi, vade ya da süre dilimi gibi zamanı ya da
-dönemi gösteren kısaltmalar. Konu, ürün, kanal, işlem türü, ölçü ya da
-istatistik gösteren kısaltmaları ve aşağıdaki "DÖNEM DEĞİLDİR"
-maddelerine girenleri YAZMA. Emin olmadığın ama dönemle
-ilgili olabilecek kısaltmayı yaz ve "soru"ya neden emin olmadığını sor.
+dönemi, gün / saat dilimi, zaman birimi (DAY, MONTH, YEAR gibi), geçen
+süre ya da gün sayısı (TMSNCFRST gibi), vade. Konu, ürün, kanal, işlem
+türü, tutar, adet ya da istatistik gösteren kısaltmaları ve aşağıdaki
+"ZAMAN BİLGİSİ DEĞİLDİR" maddelerine girenleri YAZMA. Emin olmadığın ama
+zamanla ilgili olabilecek kısaltmayı yaz ve "soru"ya neden emin
+olmadığını sor; emin olduğunda "soru"yu boş bırak.
 """ + _DONEM_ANLAM_KURALLARI + """
-ÇIKTI: Yalnızca şu JSON; muhakeme yazma. Yalnızca dönem bilgisi taşıyan
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. Yalnızca zaman bilgisi taşıyan
 kısaltmaları yaz; "ad" alanına kısaltmayı AYNEN yaz. Hiçbiri değilse
 {"kolonlar": []} yaz.
-{"kolonlar": [{"ad": "...", "anlam": "...", "soru": "", "not": "", "haric": []}]}""" \
+{"kolonlar": [{"ad": "...", "tur": "birim", "anlam": "...", "soru": "", "not": "", "haric": []}]}""" \
     + SINIRLAYICI_KURALI
 
 
@@ -1806,7 +1830,8 @@ def _donem_tara_parca(parca):
         ad = str(x["ad"])
         haric = x.get("haric") if isinstance(x.get("haric"), list) else []
         sonuc[ad] = {
-            "anlam": _donem_metni(x.get("anlam")), "soru": _donem_metni(x.get("soru")),
+            "anlam": _donem_metni(x.get("anlam")), "tur": zaman_turu(x.get("tur")),
+            "soru": _donem_metni(x.get("soru")),
             "not": _donem_metni(x.get("not")), "model": MODEL_ADLARI.get(model, model),
             # Yalniz listede olan ikililer gecer.
             "haric": sorted({str(h).strip().upper() for h in haric} & gecerli[ad])}

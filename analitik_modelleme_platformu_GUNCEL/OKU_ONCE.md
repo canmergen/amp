@@ -342,6 +342,30 @@ tanıtır; sayfalar sol bardan açılır.
   listelenir; işaretlenip açıklaması yazılan kolon sözlüğün çalışma
   kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve
   01.2.3.1'de sorulur (düğme "N Kolonu Tanımsız Bırak ve Devam Et").
+- **01.2.4.1 Dönem Bilgisi, kart:** başlığın altında tek satır özet
+  ("6 kalıp (3 pencere, 2 zaman birimi, 1 zaman ölçüsü) · 4 olası · 28
+  kısaltma") ve yanında "i": yönerge ile sütun açıklamaları orada. Altında
+  üç sekme (sayılarıyla): Kalıplar (lejant ve tablo), Olası (KALIP /
+  ADLARDA GEÇEN / NEDEN EMİN DEĞİL tablosu, "Tabloya Al" satırı Kalıplar'a
+  taşır ve o sekmeye geçer), Kısaltmalar (kolon adlarındaki bütün
+  kısaltmalar; tıklanan Kalıplar'a elle satır olarak eklenir).
+- **Kalıp yakalama (`donem.kaliplar`, `parca_listesi`):** sayı içeren
+  parçalar kalıba çevrilir (`30D` → `<N>D`, `H00_06` → `H<NN>_<NN>`).
+  Harf ve tek basamaklı sayı (`M3`) `M<N>` olur. Alt çizgiyle ayrılmış
+  sayı ve tek harf tek parça sayılır: `3_M` → `<N>_M`, `M_3` → `M_<N>`
+  (`donem.ayrik_ikili`); bu ikililerdeki tek harf ayrıca dönem parçası
+  işaretlenir. Desenler `<NN>` sayısı çok olandan aza sıralanır.
+- **Zaman bilgisi türleri:** dil modeli her kalıba "tur" yazar
+  (`llm.ZAMAN_TURLERI`: pencere, birim, olcu; `llm.zaman_turu`). Kartta
+  kalıp hücresinde seçim kutusu: Pencere / Zaman Birimi / Zaman Ölçüsü;
+  kararda `zaman_tur`, durumda `durum["donem_turleri"]` ({kalıp: tür}),
+  hafızada `donem_tur`. Açıklama Düzenleme parçayı türüyle anar
+  (`akis_faz01.ZAMAN_TUR_ETIKETI`: "zaman penceresi kalıbı <N>D; ...").
+  `donem.ISTEM_SURUMU` 4: önbellekteki eski yorumlar yeniden alınır.
+- **Tabloya giren kalıplar:** hafızadan gelenler ve dil modelinin
+  tanımlardan zaman bilgisi olduğunu bulduğu parçalar Kalıplar'a girer;
+  yalnız ikililer içinde geçse de (MONTH). Olası'da yalnız emin
+  olunamayanlar kalır (hafıza ve modelden gelmeyen, uyarılı parçalar).
 - **01.2.4.1 Dönem Bilgisi, değerler:** sayı yer tutucusu olan kalıpta
   (`<N>D`, `H<NN>_<NN>`) Anlam hücresinde kalıbın anlamının altında bir
   örnek ("Örnek: 30D → 30 gün boyunca") ve "Değerleri Düzenle" bağlantısı
@@ -381,11 +405,11 @@ tanıtır; sayfalar sol bardan açılır.
     anlamı saklanmaz. Yalnız kolon adlarında geçen değerler kabul edilir.
     Onay mesajı kendi anlamı ve dönem olmayan değer sayısını yazar.
   - **Açıklama Düzenleme'ye:** kendi anlamı olan değer o anlamla gider
-    ("360D: dönem kalıbı <N>D; son 1 yıl"), dönem olmayan değer dönem
+    ("360D: zaman penceresi kalıbı <N>D; son 1 yıl"), dönem olmayan değer dönem
     parçası sayılmaz (grubun deseni onu kapsamaz, `_AyrilanliDesen`),
     öbürleri kalıbın anlamıyla.
   - **Grup ve üye açıklamaları tablosu:** onayda
-    `PROJE_HAFIZASI/<çalışma>/DONEM_BILGISI.parquet` yazılır: KALIP,
+    `PROJE_HAFIZASI/<çalışma>/DONEM_BILGISI.parquet` yazılır: KALIP, TUR,
     KALIP_ANLAMI, DEGER, DEGER_ANLAMI, KOLON_SAYISI, DURUM (Kalıba Uyar,
     Kendi Anlamı, Dönem Değil); her grubun adlarda geçen her değeri bir
     satır. Yazılamazsa onay mesajına not düşer, onay durmaz.

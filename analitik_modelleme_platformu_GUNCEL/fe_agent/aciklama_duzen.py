@@ -164,12 +164,15 @@ def toklar(ad):
 def donem_konumlari(t, desenler=()):
     """Ad parcalarindan onayli donem kalibina uyanlarin sirasi. desenler:
     01.2.4.1'de onaylanan kaliplarin derlenmis desenleri; aralik kalibi
-    (<P><NN>_<NN>) iki parcayi birlikte kapsar."""
+    (<P><NN>_<NN>) ve alt cizgiyle ayrilmis sayi ve tek harf (3_M, M_3)
+    iki parcayi birlikte kapsar."""
     konum = set()
     for i, p in enumerate(t):
         if any(r.match(p) for r in desenler):
             konum.add(i)
-        if i + 1 < len(t) and t[i + 1].isdigit() \
+        # Iki parcali deger: aralik (H00_06), M_3 ya da 3_M.
+        if i + 1 < len(t) and (t[i + 1].isdigit()
+                               or (p.isdigit() and len(t[i + 1]) == 1 and t[i + 1].isalpha())) \
                 and any(r.match(p + "_" + t[i + 1]) for r in desenler):
             konum.update((i, i + 1))
     return konum

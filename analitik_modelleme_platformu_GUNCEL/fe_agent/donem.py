@@ -47,7 +47,10 @@ BIRLIKTE_ADET = 3         # parca basina gosterilen en cok ikili
 _SAYI_HARF = re.compile(r"^(\d+)([A-Z]{1,3})$")
 _HARF_SAYI = re.compile(r"^([A-Z]{1,2})(\d{2,})$")
 _HARF_SAYI_HARF = re.compile(r"^([A-Z]{1,3})(\d+)([A-Z]{1,3})$")
+# Tek harf + tek basamak (M3, Y1): harf zaman birimi olabilir.
+_HARF_TEK = re.compile(r"^([A-Z])(\d)$")
 _YALIN_SAYI = re.compile(r"^\d+$")
+_TEK_HARF = re.compile(r"^[A-Z]$")
 
 _KILIT = threading.Lock()
 _ISLER = {}               # imza -> {"durum", "sonuc", "hata", "zaman"}
@@ -68,6 +71,23 @@ def _donem_parcasi(t):
     m = _HARF_SAYI_HARF.match(t)
     if m:
         return "harf_sayi_harf", m.group(1) + "<N>" + m.group(3)
+    m = _HARF_TEK.match(t)
+    if m:
+        return "harf_tek", m.group(1) + "<N>"
+    return None
+
+
+def ayrik_ikili(t, i):
+    """Alt cizgiyle ayrilmis sayi ve tek harf (3_M, M_3): t[i] ile t[i+1]
+    birlikte bir parca. Doner: (kalip, deger) ya da None. Harf + sayi
+    araligin basiysa (H00_06) aralik kalibi gecerlidir."""
+    if i + 1 >= len(t):
+        return None
+    a, b = t[i], t[i + 1]
+    if _YALIN_SAYI.match(a) and _TEK_HARF.match(b):
+        return "<N>_" + b, a + "_" + b
+    if _TEK_HARF.match(a) and _YALIN_SAYI.match(b):
+        return a + "_<N>", a + "_" + b
     return None
 
 
@@ -248,18 +268,29 @@ def kaliplar(adlar, tanimlar, ek=None):
         for p in set(t):
             toplam[p] += 1
         yan = set()
+        atla = set()
         for i, p in enumerate(t):
-            d = _donem_parcasi(p)
-            if not d:
+            if i in atla:
                 continue
-            tur, kalip = d
-            if _araligin_basi(t, i):
-                # Aralik kalibi bu gecisi kapsiyor; harf_sayi'ya ayrica
-                # yazilirsa ayni degerler iki satirda gorunur.
-                ekle(kalip + "_<NN>", "aralik", p + "_" + t[i + 1], ad)
+            ay = ayrik_ikili(t, i)
+            if ay:
+                # 3_M / M_3: iki parca birlikte tek deger.
+                ekle(ay[0], "ayrik", ay[1], ad)
+                atla.add(i + 1)
+                komsu_yer = (i - 1, i + 2)
             else:
-                ekle(kalip, tur, p, ad)
-            for j in (i - 1, i + 1):
+                d = _donem_parcasi(p)
+                if not d:
+                    continue
+                tur, kalip = d
+                if _araligin_basi(t, i):
+                    # Aralik kalibi bu gecisi kapsiyor; harf_sayi'ya ayrica
+                    # yazilirsa ayni degerler iki satirda gorunur.
+                    ekle(kalip + "_<NN>", "aralik", p + "_" + t[i + 1], ad)
+                else:
+                    ekle(kalip, tur, p, ad)
+                komsu_yer = (i - 1, i + 1)
+            for j in komsu_yer:
                 if 0 <= j < len(t):
                     q = t[j]
                     if len(q) > 1 and not _YALIN_SAYI.match(q) and not _donem_parcasi(q):
@@ -322,17 +353,25 @@ def parca_listesi(adlar, tanimlar, ornek=2):
     adlarda aranabilsin)."""
     tanimlar = tanimlar or {}
     bh = birlikte_haritasi(adlar, tanimlar)
-    kolonlar, ikililer = {}, set()
+    kolonlar, ikililer, ayrik_harf = {}, set(), set()
     for ad in adlar:
         t = _toklar(ad)
         gorulen = []
         for i, p in enumerate(t):
+            # Sayi + tek harf (3_M): ikili olarak girer, harf donem parcasi.
+            ay = ayrik_ikili(t, i)
+            if ay and _YALIN_SAYI.match(p):
+                gorulen.append(ay[1])
+                ikililer.add(ay[1])
+                ayrik_harf.add(t[i + 1])
             if _YALIN_SAYI.match(p):
                 continue
             gorulen.append(p)
             if i + 1 < len(t) and _YALIN_SAYI.match(t[i + 1]):
                 gorulen.append(p + "_" + t[i + 1])
                 ikililer.add(p + "_" + t[i + 1])
+                if _TEK_HARF.match(p):
+                    ayrik_harf.add(p)
         for p in dict.fromkeys(gorulen):
             kolonlar.setdefault(p, []).append(ad)
     cikti = []
@@ -340,7 +379,7 @@ def parca_listesi(adlar, tanimlar, ornek=2):
         ornekler = [(a, str(tanimlar.get(a) or "").strip()[:200]) for a in liste[:ornek]]
         b = bh.get(p) or {}
         cikti.append({"parca": p, "kolon": len(liste), "ikili": p in ikililer,
-                      "donem": p in ikililer or bool(_donem_parcasi(p)),
+                      "donem": p in ikililer or p in ayrik_harf or bool(_donem_parcasi(p)),
                       "ornekler": ornekler, "birlikte": b.get("birlikte") or [],
                       "tek": b.get("tek", len(liste))})
     cikti.sort(key=lambda x: x["parca"])
@@ -447,12 +486,21 @@ def hafiza_ayrilan():
         return {}
 
 
-def hafizaya_yaz(kayitlar, haric=None, degerler=None, ayrilan=None):
+def hafiza_tur():
+    """{kalip: tur}: hafizada kalibin zaman bilgisi turu."""
+    try:
+        return kisaltma_mod.donem_tur_hafizasi()
+    except Exception:
+        return {}
+
+
+def hafizaya_yaz(kayitlar, haric=None, degerler=None, ayrilan=None, turler=None):
     """kayitlar: {kalip: anlam}; haric: {kalip: [ikili]}, degerler:
     {kalip: {deger: anlam}} ve ayrilan: {kalip: {deger: {"anlam", "cikar"}}}
     (bu kaliplarin hafizadaki haric listesi, deger anlamlari ve gruptan
-    ayrilan degerleri bununla degisir). Doner: hata ya da None."""
-    return kisaltma_mod.donem_kaydet(kayitlar, haric, degerler, ayrilan)
+    ayrilan degerleri bununla degisir); turler: {kalip: tur}. Doner: hata
+    ya da None."""
+    return kisaltma_mod.donem_kaydet(kayitlar, haric, degerler, ayrilan, turler)
 
 
 def hafizadan_sil(kaliplar):
@@ -465,7 +513,7 @@ def hafizadan_sil(kaliplar):
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
 # Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
-ISTEM_SURUMU = 3
+ISTEM_SURUMU = 4
 
 
 def _imza(liste, tara):
