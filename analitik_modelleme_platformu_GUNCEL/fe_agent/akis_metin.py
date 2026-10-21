@@ -195,6 +195,12 @@ MODEL_TIPI_ADI = {
     "time_series": "Time Series Forecasting",
     "clustering": "Clustering",
 }
+MODEL_TIPI_TURKCE = {
+    "classification": "Sınıflandırma",
+    "regression": "Regresyon",
+    "time_series": "Zaman Serisi Tahmini",
+    "clustering": "Kümeleme",
+}
 
 
 def model_tipi(durum):

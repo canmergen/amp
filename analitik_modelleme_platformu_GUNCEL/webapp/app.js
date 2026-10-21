@@ -11731,7 +11731,10 @@ function secimAlaniEkle(alan, blok) {
            Arka uç her tipin hedef listesini gönderiyor; tip değişince hedef
            alanının listesi (hedefListe, yerinde güncellenir) ve alt notu
            değişir. Sonraki adımları hazır olmayan tip KAPALI: soluk durur,
-           tıklanmaz, sağında "Şu An Kapalı"; nedeni ipucunda. */
+           tıklanmaz, açıklamasının altında "Şu An Kapalı".
+           Her kartın köşesinde "i": tip nedir, ne için kullanılır, örnek.
+           Simge kartın DIŞINDA (kutunun köşesinde) durur: kapalı kartın
+           solukluğu ve tıklanmazlığı ona geçmez, açıklama her tipte okunur. */
         const pr = alan.problem || null;
         let problem = (pr && pr.deger) || "";
         const tipDugmeleri = [];
@@ -11755,20 +11758,25 @@ function secimAlaniEkle(alan, blok) {
                 b.appendChild(elYap("span", "secenek-rozet", String(i + 1)));
                 const g = elYap("div", "secenek-govde");
                 g.appendChild(elYap("div", "secenek-baslik", t.baslik));
+                if (t.turkce) g.appendChild(elYap("div", "problem-turkce", t.turkce));
                 g.appendChild(elYap("div", "secenek-aciklama", t.aciklama));
                 b.appendChild(g);
                 if (!t.hazir) {
                     b.classList.add("kapali");
                     b.disabled = true;
-                    b.title = duzMetin(t["not"] || "");
-                    b.appendChild(elYap("span", "secenek-kapali", "Şu An Kapalı"));
+                    /* Etiket açıklamanın altında: sağda dursa metni daraltır. */
+                    g.appendChild(elYap("span", "secenek-kapali", "Şu An Kapalı"));
                 }
+                const kutu = elYap("div", "problem-kutu");
+                kutu.appendChild(b);
+                if (t.bilgi) kutu.appendChild(bolmeBilgiSimgesi(t.bilgi,
+                    t.baslik + (t.turkce ? " (" + t.turkce + ")" : "")));
                 b.onclick = () => {
                     if (mesgul || !t.hazir || kart.classList.contains("kilitli")) return;
                     tipSec(t.deger, true);
                 };
                 tipDugmeleri.push({ b: b, t: t });
-                satir.appendChild(b);
+                satir.appendChild(kutu);
             });
             kart.appendChild(satir);
         }

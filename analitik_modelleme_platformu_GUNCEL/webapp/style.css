@@ -1200,9 +1200,18 @@ body { background-color: #FFFFFF; }
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--b-2); margin-bottom: var(--b-2);
 }
-.problem-secim .problem-tip { align-items: flex-start; height: 100%; }
+/* Kutu: kart + köşedeki "i". Kart sağda simgeye yer bırakır. */
+.problem-kutu { position: relative; min-width: 0; }
+.problem-secim .problem-tip {
+  align-items: flex-start; height: 100%; width: 100%; padding-right: 36px;
+}
+.problem-kutu > .bolme-info { position: absolute; top: 12px; right: 10px; }
+.problem-turkce {
+  font-size: var(--fs-kucuk); color: var(--metin-soluk); line-height: 1.35;
+  margin-top: 1px;
+}
 .problem-secim .secenek-rozet { margin-top: 1px; }
-.problem-secim .secenek-kapali { align-self: flex-start; }
+.problem-secim .secenek-kapali { display: inline-block; margin-top: var(--b-2); }
 .problem-secim + .secim-govde { margin-top: var(--b-3); }
 @media (max-width: 1100px) {
   .problem-secim { grid-template-columns: repeat(2, minmax(0, 1fr)); }

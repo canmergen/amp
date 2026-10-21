@@ -240,8 +240,14 @@ tanıtır; sayfalar sol bardan açılır.
   hariç); Clustering'de hedef seçilmez. Listeler profilden (tam tablo)
   çıkar. Sonraki adımlar (tek değişken analizi, bölme, model ve başarı
   ölçütleri) şu an yalnız Classification için hazır: öbür üç tip kapalı
-  (soluk, tıklanmaz, sağında "Şu An Kapalı"; nedeni ipucunda), yazarak
+  (soluk, tıklanmaz, açıklamasının altında "Şu An Kapalı"), yazarak
   girilse de kaydedilmez. Seçim `durum["problem"]`de durur.
+  Her kartta adın altında Türkçe karşılığı (Sınıflandırma, Regresyon,
+  Zaman Serisi Tahmini, Kümeleme) ve sağ üst köşede "i" var: tip nedir,
+  ne için kullanılır ve hiç bilmeyenin anlayacağı bir örnek. "i" kartın
+  dışında durduğu için kapalı tiplerde de solmaz ve açılır. Metinler
+  `akis_faz01.PROBLEM_TIPLERI`'nde, Türkçe adlar
+  `akis_metin.MODEL_TIPI_TURKCE`'de.
 - **Model tipi rollerin üstünde yazılır.** Hedef, kimlik ve dönem
   kolonunun yazıldığı her yerde ilk satır model tipidir: Özet sayfasının
   Modelleme Tanımları bölümü, sağ paneldeki Veri Seti kartı, Arşiv'deki
