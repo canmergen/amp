@@ -80,21 +80,21 @@ içindeki `VARSAYILAN_MODEL`.
 
 **Yazı tipi:** tek aile, **Outfit** (geometrik, yuvarlak, sade). Bütün
 arayüzde: başlıklar, sol bar, metin, tablolar, düğmeler. Başlıklar ve
-vurgu kalın (700), sol bar satırları 600, seçili satır 700, metin 400;
+vurgu kalın (700), sol bar satırları 600 (seçili satır da), metin 400;
 kalın halleri gerçek (yapay kalınlaştırma yok). Rakamlar tablolarda eşit
 genişlikte. Değişken font, `style.css` içinde tek dosya olarak gömülü
 (yalnız Latin ve Türkçe harfler, noktalama ve oklar; yaklaşık 33 KB);
 dış font sunucusuna bağlanmaz. SIL Open Font License. Aile adı "AMP
-Outfit" (metin, tablolar, düğmeler) ve "AMP Outfit Baslik" (başlıklar,
-sol bar); `--font` ve `--font-baslik`. Yüklenemezse sistemin serifsiz
-fontu (Segoe UI, Arial) kullanılır.
+Outfit"; `--font` ve `--font-baslik` ikisi de onu gösterir. Yüklenemezse
+sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
 - **Görünür boy:** CSS'teki px boyları (`--fs-*` ve tek tek verilenler)
-  değişmez. Outfit aynı px'te önceki fontlardan küçük göründüğü için
-  font yüzlerinde `size-adjust` ile önceki görünür boyuna getirilir
-  (aynı metinlerin genişliği ölçülerek): metin normal %106,5, metin
-  kalın (600 ve üstü) %114, başlık ve sol bar 600 %107, başlık 700 %120.
-  `font-size-adjust` kullanılmaz (`--x-yukseklik: none`), bu oranları
-  geri alırdı.
+  değişmez. Outfit aynı px'te önceki fontlardan küçük çizildiği için font
+  yüzünde tek bir `size-adjust` (%108) vardır: her yazı, her ağırlık ve
+  her yer aynı oranla büyür, boylar arasındaki ilişkiyi yalnız px
+  değerleri belirler. `font-size-adjust` kullanılmaz (`--x-yukseklik:
+  none`).
+- **Sol bar seçili satır:** yazısı öbür satırlarla aynı (15 px, 600);
+  seçili olduğunu gri zemin ve soldaki çizgi gösterir.
 
 **Sol bar**
 - Tepede ortada Katip logosu (`katip_logo.png`; barın
