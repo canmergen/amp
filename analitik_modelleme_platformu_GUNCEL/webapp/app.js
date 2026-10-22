@@ -10205,22 +10205,6 @@ function donemDegerAnlami(kalip, anlam, deger) {
     });
 }
 
-/* Bir değere yazılan anlamdan kalıbın şablonu: değerin sayıları yer
-   tutucuyla değiştirilir ("Son 30 günde" + 30D -> "Son <N> günde").
-   Şablon o değere uygulanınca yazılan metni aynen vermiyorsa ya da metinde
-   sayı geçmiyorsa "" (anlam yalnız o değere özeldir). */
-function donemSablonu(kalip, deger, metin) {
-    if (!metin) return "";
-    const es = donemSayiEslesmesi(kalip, deger);
-    if (!es) return "";
-    let t = String(metin);
-    es.forEach(([tur, sayi]) => {
-        t = t.replace(new RegExp("(^|[^0-9])" + sayi + "(?![0-9])", "g"), "$1" + tur);
-    });
-    if (t === metin) return "";
-    return donemDegerAnlami(kalip, t, deger) === metin ? t : "";
-}
-
 /* Kalıp hücresi: aile satırında adlarda geçen yazılışlar ("<N>M · M<N> ·
    <N>_M"); anlam hepsine uygulanır. */
 function donemKalipEtiketi(r) {
@@ -10631,9 +10615,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
            bir örnek ve "Değerleri Düzenle"; açılınca grup satırının hemen
            altında, tablo genişliğinde değer paneli. Her değerin durumu
            bölmeli düğmeyle seçilir: Kalıba Uyar / Kendi Anlamı / Dönem
-           Değil. Kalıba uyan bir değer düzenlenince yazılandan şablon
-           çıkarılırsa kalıbın anlamı olur (bütün değerlere yayılır);
-           çıkarılamazsa değer kendi anlamına geçer. */
+           Değil. Anlam kutusu yalnız Kendi Anlamı seçiliyken yazılır ve
+           yazılan yalnız o değerde kalır; Kalıba Uyar'da kutu kalıbın
+           anlamını gösterir (kalıbın anlamı satırın anlam kutusundan
+           değişir). */
         const ornekEl = elYap("div", "dg-donem-ornek");
         const dgAc = elYap("button", "dg-donem-deger-ac", "");
         dgAc.type = "button";
@@ -10662,10 +10647,11 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const liste = degerListesi();
             const var_ = /<N{1,2}>/i.test(kalipSimdi() || "") && liste.length > 0;
             const gecen = new Set(liste.map(d => d.deger));
-            Object.keys(dgAnlam).forEach(dg => {
-                /* Kalıbın anlamıyla aynı olan kendi anlamı artık kalıba uyar. */
-                if (!gecen.has(dg) || dgAnlam[dg] === otoAnlam(dg)) delete dgAnlam[dg];
-            });
+            /* Adlarda artık geçmeyen değerin kendi anlamı düşer. Kalıbın
+               anlamıyla aynı kendi anlamı burada silinmez (kullanıcı
+               Kendi Anlamı'na basıp yazmaya başlıyor); onayda arka uç
+               saklamaz. */
+            Object.keys(dgAnlam).forEach(dg => { if (!gecen.has(dg)) delete dgAnlam[dg]; });
             ornekEl.hidden = dgAc.hidden = !var_;
             detay.hidden = !var_ || !dgAcik;
             /* Adlarda Geçen çipleri durumu gösterir (elle satırı elleSay çizer). */
@@ -10686,28 +10672,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const bas = elYap("div", "dg-donem-panel-bas");
             bas.appendChild(elYap("span", "dg-donem-panel-ad", r.kalip ? r.kalip + " değerleri" : "Değerler"));
             bas.appendChild(elYap("span", "dg-donem-panel-ipucu",
-                "Kalıbın anlamı her değere kendi sayısıyla uygulanır. Bir değeri düzenlediğinizde "
-                + "biçim kalıba ve öbür değerlere yayılır; sayı içermeyen anlam yalnız o değerde kalır."));
+                "Kalıbın anlamı her değere kendi sayısıyla uygulanır. Bir değere özel anlam yazmak "
+                + "için önce o satırda Kendi Anlamı'na basın; yazdığınız yalnız o değerde kalır."));
             panel.appendChild(bas);
-            /* Biçim öğrenildiyse: tek satır not ve geri alma bağlantısı. */
-            const sn = duzen[anah] && duzen[anah].sablonNot;
-            if (sn) {
-                const not = elYap("div", "dg-donem-sablon-not",
-                    "Kalıbın anlamı " + sn.deger + " için yazdığınıza göre güncellendi. ");
-                const geri = elYap("button", "dg-baglanti", "Geri al");
-                geri.type = "button";
-                geri.disabled = k;
-                geri.title = "Kalıbın önceki anlamı döner; yazdığınız yalnız " + sn.deger + " değerinde kalır.";
-                geri.onclick = () => {
-                    if (kilitli || da.dm === "calisiyor") return;
-                    anlamYaz(sn.oncekiAnlam);
-                    dgAnlam[sn.deger] = sn.metin;
-                    delete duzen[anah].sablonNot;
-                    kaydet();
-                };
-                not.appendChild(geri);
-                panel.appendChild(not);
-            }
             const tablo = elYap("table", "dg-tablo dg-donem-deger-tablo");
             const th = document.createElement("thead"), hr = document.createElement("tr");
             hr.append(elYap("th", "", "Değer"), elYap("th", "", "Kolon"), elYap("th", "", "Anlam"));
@@ -10736,8 +10703,14 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                     gi.value = "";
                     gi.placeholder = "Dönem bilgisi değil";
                     gi.disabled = true;
+                } else if (durum === "kalip") {
+                    /* Kalıba uyan değerin anlamı kalıptan gelir; burada
+                       yazılmaz. Özel anlam için önce Kendi Anlamı. */
+                    gi.value = otoAnlam(d.deger);
+                    gi.disabled = true;
+                    gi.title = "Kalıbın anlamından gelir. Bu değere özel anlam yazmak için Kendi Anlamı'na basın.";
                 } else {
-                    gi.value = durum === "ozel" ? dgAnlam[d.deger] : otoAnlam(d.deger);
+                    gi.value = dgAnlam[d.deger];
                     gi.placeholder = otoAnlam(d.deger) || "Anlamı yazın";
                     gi.disabled = k;
                     const ytKontrol = () => {
@@ -10747,32 +10720,15 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                     };
                     ytKontrol();
                     gi.addEventListener("input", () => {
-                        if (durum === "ozel") {
-                            dgAnlam[d.deger] = gi.value.trim();
-                            ytKontrol();
-                            dgKaydet(); boya(); if (degisti) degisti();
-                        }
+                        dgAnlam[d.deger] = gi.value.trim();
+                        ytKontrol();
+                        dgKaydet(); boya(); if (degisti) degisti();
                     });
-                    /* Kutudan çıkınca karar: kalıba uyan değerde şablon ya da
-                       kendi anlamı; kendi anlamı boşaltılırsa kalıba döner. */
+                    /* Kendi anlamı boş bırakılıp kutudan çıkılırsa değer
+                       kalıba döner. */
                     gi.addEventListener("change", () => {
-                        const v = gi.value.trim();
-                        if (durum === "ozel") {
-                            if (!v) delete dgAnlam[d.deger];
-                            dgKaydet(); dgCiz(); boya(); if (degisti) degisti();
-                            return;
-                        }
-                        if (!v || v === otoAnlam(d.deger)) { gi.value = otoAnlam(d.deger); return; }
-                        const sablon = donemSablonu(kalipSimdi(), d.deger, v);
-                        if (sablon) {
-                            const oncekiAnlam = anlamAl();
-                            anlamYaz(sablon);
-                            duzen[anah] = Object.assign(duzen[anah] || {}, {
-                                sablonNot: { deger: d.deger, metin: v, oncekiAnlam } });
-                            kaydet();
-                            return;
-                        }
-                        dgAnlam[d.deger] = v;
+                        if (gi.value.trim()) return;
+                        delete dgAnlam[d.deger];
                         dgKaydet(); dgCiz(); boya(); if (degisti) degisti();
                     });
                 }
@@ -10884,10 +10840,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 deger_anlam: Object.assign({}, dgAnlam) });
             elleSay(); dgCiz(); boya(); if (degisti) degisti();
         };
-        g.addEventListener("input", () => {
-            if (duzen[anah]) delete duzen[anah].sablonNot;
-            kaydet();
-        });
+        g.addEventListener("input", kaydet);
         if (kg) kg.addEventListener("input", kaydet);
         cikBtn.onclick = () => {
             if (kilitli || da.dm === "calisiyor") return;

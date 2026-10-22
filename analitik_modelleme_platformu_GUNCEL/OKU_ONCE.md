@@ -504,20 +504,17 @@ tanıtır; sayfalar sol bardan açılır.
       `donemDegerAnlami`; aynı türdeki yer tutucular kalıptaki sırayla
       eşlenir). Kalıp değişince değişir.
     - Kendi Anlamı: değere özel anlam (360D: son 1 yıl); kalıp değişse de
-      kalır. Yer tutucu içeremez (onay durur). Boşaltılırsa Kalıba Uyar'a
-      döner.
+      kalır. Yer tutucu içeremez (onay durur).
     - Dönem Değil: değer gruba yanlış girmiş; dönem sayılmaz. Grupta dönem
       olarak en az bir değer kalır (bütün değerler dönem değilse kalıp Çıkar
       ile çıkarılır).
-  - **Biçim öğrenme:** Kalıba Uyar durumundaki bir değerin anlamı
-    düzenlenip kutudan çıkılınca, yazılandaki değerin sayıları yer
-    tutucuyla değiştirilir (app.js `donemSablonu`: "Son 30 günde / 30
-    Günlük" + 30D → "Son <N> günde / <N> Günlük"). Bu şablon o değere
-    uygulanınca yazılanı aynen veriyorsa kalıbın anlamı olur ve Kalıba
-    Uyar değerlerin hepsine yayılır; panelde tek satır not ve "Geri al"
-    bağlantısı çıkar (geri alınca kalıbın önceki anlamı döner, yazılan o
-    değerin kendi anlamı olur). Şablon çıkmazsa (sayı geçmiyor) değer
-    Kendi Anlamı'na geçer.
+  - **Düzenleme yalnız Kendi Anlamı'nda:** Kalıba Uyar satırında anlam
+    düz metin olarak görünür ve yazılamaz (kalıbın anlamı satırın anlam
+    kutusundan değişir). Bir değere özel anlam yazmak için önce o satırda
+    Kendi Anlamı'na basılır; kutu açılır, odaklanır ve yazılan yalnız o
+    değerde kalır, öbür değerler ve kalıbın anlamı değişmez. Kendi anlamı
+    boşaltılıp kutudan çıkılırsa değer Kalıba Uyar'a döner. Kalıbın
+    anlamıyla aynı kalan kendi anlamı onayda saklanmaz.
   - Adlarda Geçen çipleri durumu gösterir: kendi anlamı yeşil çerçeve,
     dönem değil kesik çerçeve ve üstü çizili.
   - **Kayıt:** kendi anlamları `durum["donem_deger_anlam"]` ({kalıp:

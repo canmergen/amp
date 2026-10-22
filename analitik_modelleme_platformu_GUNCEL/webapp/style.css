@@ -3401,10 +3401,6 @@ span.bolme-cip { cursor: default; }
 .dg-donem-panel-bas { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; margin-bottom: var(--b-2); }
 .dg-donem-panel-ad { font-weight: var(--fw-kalin); color: var(--metin); }
 .dg-donem-panel-ipucu { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
-.dg-donem-sablon-not {
-  margin: 0 0 var(--b-2); padding: 4px var(--b-2);
-  border-left: 2px solid var(--yesil); color: var(--metin); font-size: var(--fs-kucuk);
-}
 .dg-baglanti {
   padding: 0; border: 0; background: none; cursor: pointer;
   font: inherit; color: var(--kirmizi); text-decoration: underline;
@@ -4886,3 +4882,7 @@ span.bolme-cip { cursor: default; }
 .dg-kad-ad { font-weight: var(--fw-kalin); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .dg-kad-ad.dg-kad-pasif { color: var(--metin-soluk); font-weight: normal; text-decoration: line-through; }
 .dg-kad-aile { font-size: var(--fs-kucuk); }
+/* Kalıba uyan değerin anlamı kalıptan gelir: kutu değil düz metin gibi. */
+.dg-donem-deger.dg-durum-kalip .dg-donem-deger-giris:disabled {
+  background: none; border-color: transparent; color: var(--metin-soluk); cursor: default;
+}
