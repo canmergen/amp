@@ -78,25 +78,15 @@ içindeki `VARSAYILAN_MODEL`.
 
 ## Ekran
 
-**Yazı tipi:** iki aile.
-- **Josefin Sans** (1920'lerin geometrik yazı tipi): platformdaki bütün
-  başlıklar ve sol bar seçimleri. Ana Sayfa başlıkları; Model Akışı'nda
-  blok ve alt adım adları, iş akışı fazları, seçim ve seçenek kartı
-  başlıkları, tablo başlıkları; Model Gösterge Paneli, Model
-  Değişkenleri ve Model Özeti'nde bölüm, kart ve tablo başlıkları;
-  kilitli sayfaların adı; sol bardaki sayfa satırları, Model Platformu
-  başlığı ve alt sayfaları, Çalışma Alanları ayracı, Görünüm, Arşiv,
-  Yeni Çalışma. Gömülü kopyada Z ve z harflerinin üst çizgisindeki
-  kıvrık kanca kaldırılmıştır (düz köşe); öbür harfler özgün. Başlıklar kalın (700); sol bar satırları 600, seçili
-  satır 700. Başlığın içindeki rozet ve bilgi simgesi
-  Newsreader kalır.
-- **Newsreader** (editoryal serif): geri kalan her şey (gövde metni,
-  üst bar, düğmeler, tablolar). Gövde 400; yarı kalın 600; vurgu 700.
-  Rakamlar tablolarda eşit genişlikte.
-
-İkisi de `style.css` içinde gömülü, dış font sunucusuna bağlanmaz, SIL
-Open Font License. Aileler değişkende: `--font-baslik` (Josefin Sans),
-`--font` (Newsreader).
+**Yazı tipi:** tek aile, **Outfit** (geometrik, yuvarlak, sade). Bütün
+arayüzde: başlıklar, sol bar, metin, tablolar, düğmeler. Başlıklar ve
+vurgu kalın (700), sol bar satırları 600, seçili satır 700, metin 400;
+kalın halleri gerçek (yapay kalınlaştırma yok). Rakamlar tablolarda eşit
+genişlikte. Değişken font, `style.css` içinde tek dosya olarak gömülü
+(yalnız Latin ve Türkçe harfler, noktalama ve oklar; yaklaşık 33 KB);
+dış font sunucusuna bağlanmaz. SIL Open Font License. Aile adı "AMP
+Outfit"; `--font` ve `--font-baslik` ikisi de onu gösterir. Yüklenemezse
+sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
 
 **Sol bar**
 - Tepede ortada Katip logosu (`katip_logo.png`; barın
