@@ -104,7 +104,7 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
 - Ortasında **Çalışma Alanları** yazan çizgi; altında Model Platformu
   kümesi ve kilitli alanlar, en altta ince siyah çizgi.
 - Sayfa adları normal yazımla (büyük harf değil), alttaki Görünüm, Arşiv
-  ve Yeni Çalışma ile aynı yazı: 15 px, yarı kalın; seçili satır kalın.
+  ve Yeni Çalışma ile aynı yazı: 15 px, yarı kalın; seçili satır da aynı (gri zemin ve soldaki çizgiyle belli olur).
 - **Model Platformu** (başta kapalı; başlığa basınca içindekiler açılır,
   yeniden basınca kapanır):
   - Model Akışı
