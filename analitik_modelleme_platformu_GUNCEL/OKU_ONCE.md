@@ -85,8 +85,16 @@ kalın halleri gerçek (yapay kalınlaştırma yok). Rakamlar tablolarda eşit
 genişlikte. Değişken font, `style.css` içinde tek dosya olarak gömülü
 (yalnız Latin ve Türkçe harfler, noktalama ve oklar; yaklaşık 33 KB);
 dış font sunucusuna bağlanmaz. SIL Open Font License. Aile adı "AMP
-Outfit"; `--font` ve `--font-baslik` ikisi de onu gösterir. Yüklenemezse
-sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
+Outfit" (metin, tablolar, düğmeler) ve "AMP Outfit Baslik" (başlıklar,
+sol bar); `--font` ve `--font-baslik`. Yüklenemezse sistemin serifsiz
+fontu (Segoe UI, Arial) kullanılır.
+- **Görünür boy:** CSS'teki px boyları (`--fs-*` ve tek tek verilenler)
+  değişmez. Outfit aynı px'te önceki fontlardan küçük göründüğü için
+  font yüzlerinde `size-adjust` ile önceki görünür boyuna getirilir
+  (aynı metinlerin genişliği ölçülerek): metin normal %106,5, metin
+  kalın (600 ve üstü) %114, başlık ve sol bar 600 %107, başlık 700 %120.
+  `font-size-adjust` kullanılmaz (`--x-yukseklik: none`), bu oranları
+  geri alırdı.
 
 **Sol bar**
 - Tepede ortada Katip logosu (`katip_logo.png`; barın
