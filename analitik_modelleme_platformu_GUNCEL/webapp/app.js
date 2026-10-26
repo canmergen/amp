@@ -426,21 +426,22 @@ function baslikBuyuk(s) {
 }
 
 
-/* ==================== Renk modu (beyaz / sepya / gri) ==================== */
+/* ==================== Renk modu (beyaz / sepya / koyu) ==================== */
 /* Sol bardaki Görünüm düğmesi. Üç mod: "acik" (Beyaz), "sepya" ve
-   "gri" (açık gri). Sepya ve gri modda #kabuk.sepya / #kabuk.gri
-   renk değişkenlerini devralır. Anahtardaki bir simgeye basınca o mod
+   "koyu". Sepya ve koyu modda #kabuk.sepya / #kabuk.koyu renk
+   değişkenlerini devralır. Anahtardaki bir simgeye basınca o mod
    seçilir; düğmenin başka bir yerine basınca sıradaki moda geçilir.
-   Seçim bu tarayıcıda hatırlanır; okunamazsa Beyaz başlar. */
+   Seçim bu tarayıcıda hatırlanır; okunamazsa Beyaz başlar. Eski "gri"
+   kaydı Koyu olarak açılır. */
 const TEMA_ANAHTAR = "amp_renk_modu";
-const TEMA_MODLARI = ["acik", "sepya", "gri"];
-const TEMA_ADI = { acik: "Beyaz", sepya: "Sepya", gri: "Gri" };
+const TEMA_MODLARI = ["acik", "sepya", "koyu"];
+const TEMA_ADI = { acik: "Beyaz", sepya: "Sepya", koyu: "Koyu" };
 let temaModu = "acik";
 const temaBtn = document.getElementById("tema-btn");
 
 function temaUygula(kaydet) {
     kabukEl.classList.toggle("sepya", temaModu === "sepya");
-    kabukEl.classList.toggle("gri", temaModu === "gri");
+    kabukEl.classList.toggle("koyu", temaModu === "koyu");
     if (temaBtn) {
         temaBtn.title = "Görünüm: " + TEMA_ADI[temaModu];
         temaBtn.setAttribute("aria-label", "Görünüm: " + TEMA_ADI[temaModu]);
@@ -457,7 +458,8 @@ if (temaBtn) temaBtn.onclick = e => {
     temaUygula(true);
 };
 try {
-    const kayit = localStorage.getItem(TEMA_ANAHTAR);
+    let kayit = localStorage.getItem(TEMA_ANAHTAR);
+    if (kayit === "gri") kayit = "koyu";
     temaModu = TEMA_MODLARI.indexOf(kayit) !== -1 ? kayit : "acik";
 } catch (e) { temaModu = "acik"; }
 temaUygula(false);
