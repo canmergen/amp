@@ -362,6 +362,28 @@ function solBarOlcekle() {
     kapali.forEach(k => k.classList.remove("acik"));
     document.documentElement.style.setProperty("--sol-bar-en",
         Math.round(SOL_BAR_TASARIM_EN * olcek) + "px");
+    konturGuncelle();
+}
+
+/* GÖRSEL KONTURU (index.html: SVG filtreleri; style.css: GÖRSEL KONTURU).
+   Kontur ekranda her görselde KONTUR_PX kalınlıkta olsun diye her
+   filtrenin bulanıklığı görselin durduğu yerin toplam ölçeğine bölünür:
+   sayfa (html zoom), sol bar (iç kabın zoom'u da) ve sol bar satırları
+   (içerik büyütmesi de). Eşik maskede alfa 0,07'de: düz bir kenarda dış
+   hat bulanıklığın 1,476 katı uzağa düşer. */
+const KONTUR_PX = 1.2;
+const KONTUR_ORAN = 1.476;
+function konturGuncelle() {
+    const kok = ekranOlcegi();
+    const ic = document.getElementById("sol-bar-ic");
+    const icZ = parseFloat(ic && ic.style.zoom) || 1;
+    const icerik = document.getElementById("ust-sekmeler");
+    const icerikZ = parseFloat(icerik && icerik.style.zoom) || 1;
+    [["kontur-ana", kok], ["kontur-sol", kok * icZ], ["kontur-sol-ic", kok * icZ * icerikZ]]
+        .forEach(([id, olcek]) => {
+            const b = document.querySelector("#" + id + " feGaussianBlur");
+            if (b) b.setAttribute("stdDeviation", (KONTUR_PX / KONTUR_ORAN / olcek).toFixed(3));
+        });
 }
 window.addEventListener("resize", () => {
     clearTimeout(solBarOlcekle._z);

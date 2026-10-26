@@ -168,9 +168,13 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
     mürekkep yazıları da aynı renkte. Grafik mavisi #6EA8FE. Kaydırma çubukları ve form kutuları
     da koyu.
   - **Görsel konturu (her modda):** görseller saydam zeminli; renklerine
-    hiç dokunulmaz (süzgeç, ters çevirme, plaka yok). Her görselin dış
-    hattına 1 px kontur çizilir (art arda dört yönde 1 px gölge; köşeler
-    dahil tam): Beyaz'da siyah (#1A1A1A), Sepya'da sepyanın siyahı
+    hiç dokunulmaz (ters çevirme, plaka yok). Her görselin dış hattına
+    her yönde EŞİT kalınlıkta kontur çizilir (index.html'deki SVG
+    filtreleri: görselin saydamlık maskesi bulanıklaştırılıp eşiklenir,
+    dış hat yuvarlak genişler; köşe ve çaprazlarda kalınlaşmaz). Kalınlık
+    ekranda her görselde 1,2 px (app.js: KONTUR_PX; konturGuncelle
+    bulanıklığı sayfa, sol bar ve sol bar satırlarının ölçeğine böler).
+    Renk: Beyaz'da siyah (#1A1A1A), Sepya'da sepyanın siyahı
     (#2B2118), Koyu'da çizimlerin kâğıt rengi (#EDE6D8; siyah çizgi ve
     dolgular koyu zeminde kaybolmasın). Kapsadığı görseller: sol bar
     çizimleri, alttaki robot, Ana Sayfa'nın üst görseli ve kart

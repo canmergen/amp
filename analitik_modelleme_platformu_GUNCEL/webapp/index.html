@@ -6,6 +6,40 @@
      yeterlidir. -->
 <div id="kabuk" lang="tr">
 
+  <!-- GÖRSEL KONTURU: görsellerin dış hattına her yönde EŞİT kalınlıkta
+       kontur (style.css: GÖRSEL KONTURU). Görselin saydamlık maskesi
+       bulanıklaştırılıp eşiklenir: dış hat her yönde aynı mesafede
+       (yuvarlak) genişler; köşe ve çaprazlarda kalınlaşmaz. Renk moda
+       göre --kontur-renk. Üç filtre, görselin durduğu yerin ölçeği için:
+       sayfa (html zoom), sol bar (logo, alttaki robot) ve sol bar
+       satırları; ekranda aynı kalınlık için bulanıklık app.js'te
+       (konturGuncelle) ölçeğe bölünür. -->
+  <svg class="kontur-tanim" width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="kontur-ana" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="bulanik"></feGaussianBlur>
+        <feComponentTransfer in="bulanik" result="maske"><feFuncA type="linear" slope="10" intercept="-0.2"></feFuncA></feComponentTransfer>
+        <feFlood class="kontur-renk"></feFlood>
+        <feComposite in2="maske" operator="in" result="kontur"></feComposite>
+        <feMerge><feMergeNode in="kontur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+      </filter>
+      <filter id="kontur-sol" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="bulanik"></feGaussianBlur>
+        <feComponentTransfer in="bulanik" result="maske"><feFuncA type="linear" slope="10" intercept="-0.2"></feFuncA></feComponentTransfer>
+        <feFlood class="kontur-renk"></feFlood>
+        <feComposite in2="maske" operator="in" result="kontur"></feComposite>
+        <feMerge><feMergeNode in="kontur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+      </filter>
+      <filter id="kontur-sol-ic" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="bulanik"></feGaussianBlur>
+        <feComponentTransfer in="bulanik" result="maske"><feFuncA type="linear" slope="10" intercept="-0.2"></feFuncA></feComponentTransfer>
+        <feFlood class="kontur-renk"></feFlood>
+        <feComposite in2="maske" operator="in" result="kontur"></feComposite>
+        <feMerge><feMergeNode in="kontur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+      </filter>
+    </defs>
+  </svg>
+
   <!-- ===================== SOL BAR =====================
        En üstte robotlu kurum görseli, altında sayfa kümeleri (Model Platformu,
        Sohbet, Dashboard), en altta Görünüm, Arşiv ve Yeni Çalışma. Üst

@@ -340,32 +340,29 @@
   color: var(--amber); background: var(--amber-acik); border-color: var(--amber);
 }
 /* GÖRSEL KONTURU (her modda). Görseller saydam zeminli; renklerine hiç
-   dokunulmaz (süzgeç, ters çevirme, plaka yok). Her görselin dış hattına
-   ince bir kontur çizilir: Beyaz'da siyah, Sepya'da sepyanın siyahı,
-   Koyu'da çizimlerin kâğıt rengi (koyu zeminde siyah çizgi ve dolgular
-   kaybolmasın). Kontur art arda dört yönde 1 px gölgedir; her gölge
-   bir öncekinin de gölgesini aldığı için köşeler dahil her yönde tam
-   1 px olur, boşluk kalmaz. Kapsadığı görseller: sol bar çizimleri,
-   alttaki robot, Ana Sayfa'nın üst görseli ve kart çizimleri, sohbet
-   avatarları; logo yalnız Koyu'da (Beyaz ve Sepya'da siyah kontur
-   logonun altındaki küçük siyah yazının harflerini doldurup okunmaz
-   yapıyor; açık zeminde logo konturu gerektirmiyor). Kilitli satırların çizimleri gri ve soluk, kontur aynı. */
+   dokunulmaz (ters çevirme, plaka yok). Her görselin dış hattına her
+   yönde EŞİT kalınlıkta kontur çizilir (index.html: SVG filtreleri
+   kontur-ana, kontur-sol, kontur-sol-ic; saydamlık maskesi bulanıklaştırılıp
+   eşiklenir, dış hat yuvarlak genişler; köşe ve çaprazlarda kalınlaşmaz).
+   Kalınlık ekranda her görselde aynı (app.js: konturGuncelle, KONTUR_PX).
+   Renk: Beyaz'da siyah, Sepya'da sepyanın siyahı, Koyu'da çizimlerin
+   kâğıt rengi. Kapsadığı görseller: sol bar çizimleri, alttaki robot,
+   Ana Sayfa'nın üst görseli ve kart çizimleri, sohbet avatarları; logo
+   yalnız Koyu'da (Beyaz ve Sepya'da siyah kontur logonun altındaki küçük
+   siyah yazının harflerini doldurup okunmaz yapıyor). Kilitli satırların
+   çizimleri gri ve soluk, kontur aynı. */
 #kabuk { --kontur-renk: #1A1A1A; }
 #kabuk.sepya { --kontur-renk: #2B2118; }
 #kabuk.koyu { --kontur-renk: #EDE6D8; }
-#kabuk {
-  --cizim-kontur:
-    drop-shadow(1px 0 0 var(--kontur-renk)) drop-shadow(-1px 0 0 var(--kontur-renk))
-    drop-shadow(0 1px 0 var(--kontur-renk)) drop-shadow(0 -1px 0 var(--kontur-renk));
-}
-#kabuk.koyu #katip-logo, #kabuk #sol-bar .ikon-gorsel, #kabuk #robot-alt,
+#kabuk .kontur-tanim { position: absolute; width: 0; height: 0; overflow: hidden; }
+#kabuk .kontur-renk { flood-color: var(--kontur-renk); }
 #kabuk .as-hero-gorsel img, #kabuk .as-kart-ikon, #kabuk .as-sayfa-ikon,
-#kabuk .balon-avatar {
-  filter: var(--cizim-kontur);
-}
-#kabuk #sol-bar .ust-sekme.kapali img.ikon-gorsel,
+#kabuk .balon-avatar { filter: url(#kontur-ana); }
+#kabuk.koyu #katip-logo, #kabuk #robot-alt { filter: url(#kontur-sol); }
+#kabuk #sol-bar .ikon-gorsel { filter: url(#kontur-sol-ic); }
+#kabuk #sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1) url(#kontur-sol-ic); }
 #kabuk .as-kart.kapali .as-kart-ikon, #kabuk .as-sayfa.kapali .as-sayfa-ikon {
-  filter: grayscale(1) var(--cizim-kontur);
+  filter: grayscale(1) url(#kontur-ana);
 }
 /* Koyu zeminde multiply her şeyi karartır: kapalı. */
 #kabuk.koyu #sol-bar .ikon-gorsel, #kabuk.koyu .as-kart-ikon, #kabuk.koyu .as-sayfa-ikon {
