@@ -105,8 +105,9 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   kümesi ve kilitli alanlar, en altta ince siyah çizgi.
 - Sayfa adları normal yazımla (büyük harf değil), alttaki Görünüm, Arşiv
   ve Yeni Çalışma ile aynı yazı: 15 px, yarı kalın; seçili satır da aynı (gri zemin ve soldaki çizgiyle belli olur).
-- **Model Platformu** (başta kapalı; başlığa basınca içindekiler açılır,
-  yeniden basınca kapanır):
+- **Model Platformu** (başta kapalı; başlığa basınca içindekiler açılır
+  ve Model Akışı seçilir, o an kümenin sayfalarından biri zaten açıksa o
+  kalır; yeniden basınca küme kapanır, açık sayfa değişmez):
   - Model Akışı
   - Model Gösterge Paneli
   - Model Değişkenleri (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)

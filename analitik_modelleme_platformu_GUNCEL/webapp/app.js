@@ -5943,11 +5943,17 @@ document.addEventListener("keydown", e => {
 })();
 
 /* MODEL PLATFORMU kümesi başta kapalı; başlığa basınca içindeki sayfalar
-   açılır, yeniden basınca kapanır. */
+   açılır ve Model Akışı seçilir (o an kümenin sayfalarından biri zaten
+   açıksa o kalır); yeniden basınca küme kapanır, açık sayfa değişmez. */
 function kumeAcKapa(kume) {
     const acik = kume.classList.toggle("acik");
     const ad = kume.querySelector(".ust-kume-ad");
     if (ad) ad.setAttribute("aria-expanded", acik ? "true" : "false");
+    if (!acik) return;
+    const akis = kume.querySelector('.ust-sekme[data-ust="akis"]');
+    const icerde = [...kume.querySelectorAll(".ust-sekme[data-ust]")]
+        .some(b => UST_SAYFA[b.dataset.ust] === acikSayfa());
+    if (akis && !icerde) akis.click();
 }
 document.querySelectorAll(".ust-kume.acilir > .ust-kume-ad").forEach(ad => {
     ad.onclick = () => kumeAcKapa(ad.parentElement);
