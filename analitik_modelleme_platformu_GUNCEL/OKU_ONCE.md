@@ -162,9 +162,10 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
     kartlar #1C2027. Yazı #E6E8EB (kartta 13,3:1); yazı ve çizgi
     kırmızısı #FF5A5F (5,4:1); düğme dolgusu marka kırmızısı (#D51115,
     beyaz yazı). Pembe şerit, seçili satır, yeşil ve sarı rozet zeminleri
-    rengin şeffaf tonu. Mürekkep yazıları ana yazı renginde, mürekkep
-    çizgileri (sol bar ayraçları, Ana Sayfa kart kenarları) yumuşak gri
-    (#555C67). Grafik mavisi #6EA8FE. Kaydırma çubukları ve form kutuları
+    rengin şeffaf tonu. Beyaz modda siyah olan bütün çizgiler (bölmeleri
+    ayıran ve uygulamayı çevreleyen kalın ayraç, sol bar ayraçları, Ana
+    Sayfa kart kenarları, Görünüm anahtarı) koyu modda beyaz (#E6E8EB);
+    mürekkep yazıları da aynı renkte. Grafik mavisi #6EA8FE. Kaydırma çubukları ve form kutuları
     da koyu.
   - **Görsel konturu (her modda):** görseller saydam zeminli; renklerine
     hiç dokunulmaz (süzgeç, ters çevirme, plaka yok). Her görselin dış

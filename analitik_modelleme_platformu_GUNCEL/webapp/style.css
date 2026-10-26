@@ -272,17 +272,18 @@
    kırmızısı (#D51115, beyaz yazı 5,4:1). Açık renk zeminler (pembe şerit,
    yeşil ve sarı rozet zeminleri) koyu zeminde rengin şeffaf tonu olur.
    Yeşil #3FB37A (6,2:1), kehribar #E3A43B (7,5:1), mavi #6EA8FE (6,8:1).
-   Mürekkep yazıları ana yazı renginde; mürekkep çizgileri (sol bar
-   ayraçları, Görünüm anahtarı, Ana Sayfa kart kenarları) yumuşak gri
-   (#555C67); uygulamayı çevreleyen ayraç koyu gri.
+   Beyaz modda siyah olan bütün çizgiler koyu modda beyaz (#E6E8EB, ana
+   yazıyla aynı kırık beyaz): bölmeleri ayıran ve uygulamayı çevreleyen
+   kalın ayraç, sol bar ayraçları, Görünüm anahtarı, Ana Sayfa kart
+   kenarları. Mürekkep yazıları da aynı renkte.
    GÖRSELLER: renkleri değişmez; dış hatlarında ince açık kontur
    (aşağıda, GÖRSEL KONTURU). Form denetimleri ve kaydırma çubukları da
    koyu (color-scheme). */
 #kabuk.koyu {
   color-scheme: dark;
   --murekkep:     #E6E8EB;
-  --murekkep-cizgi: #555C67;
-  --ayrac:        #2E333B;
+  --murekkep-cizgi: #E6E8EB;
+  --ayrac:        #E6E8EB;
 
   --kirmizi:      #FF5A5F;
   --kirmizi-koyu: #FF7A7E;
