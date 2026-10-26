@@ -645,7 +645,7 @@ def hafizadan_sil(kaliplar):
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
 # Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
-ISTEM_SURUMU = 6
+ISTEM_SURUMU = 7
 
 
 def _imza(liste, tara):

@@ -1783,11 +1783,14 @@ DONEM_YONERGE = [
     "dil modelinin yorumladıkları. Dil modeli anlamı önce adın yapısından "
     "kurar (D gün, M ay, Y yıl, H saat), sözlükteki örnek tanımları kanıt "
     "olarak sayar; tanımların çoğu uyuşmuyorsa ya da süre mi an mı olduğu "
-    "belli değilse kalıp Olası sekmesine düşer. Olası'dakiler zaman "
-    "bilgisiyse \"Tabloya Al\" ile tabloya alın. Sayı içermeyen zaman "
+    "belli değilse kalıp Adaylar sekmesine düşer. Adaylar sekmesinde "
+    "adlarda bulunan öbür bütün kalıplar da durur, kalıp olma olasılığıyla: "
+    "Orta (dil modeli zaman bilgisi dedi ama emin değil), Düşük (dil modeli "
+    "zaman bilgisi değil dedi; nedeni yazar), Yorumlanmadı. Zaman "
+    "bilgisi olanları \"Tabloya Al\" ile tabloya alın. Sayı içermeyen zaman "
     "parçaları (DAY, MONTH) burada değil, bir sonraki adımda Ad "
     "Parçaları'nda bütün kısaltmalarla birlikte gelir. Dil modeli çalışırken İptal "
-    "ile durdurabilirsiniz; yorumlananlar kalır, kalanlar Olası'ya düşer. "
+    "ile durdurabilirsiniz; yorumlananlar kalır, kalanlar Adaylar'a düşer. "
     "Anlamları kontrol edip gerekirse düzeltin, dönem olmayanı \"Çıkar\" "
     "ile çıkarın. Listede olmayan bir kalıbı \"+ Dönem Kalıbı Ekle\" ile "
     "anlamıyla siz de ekleyebilirsiniz; kolon adlarında geçmese de "
@@ -1935,16 +1938,17 @@ def _donem_alani(durum):
                              "geçmiyor. Orada dönem bilgisi değilse çıkarın." % ikililer)
         # OLASI: zaman bilgisi olduğu kesin olmayan satır (dil modelinin
         # sorusu var ya da dil modeli bakmadı). Tabloya baştan girmez;
-        # kartın Olası sekmesinde durur, kullanıcı alırsa tabloya gelir.
+        # kartın Adaylar sekmesinde durur, kullanıcı alırsa tabloya gelir.
         # Dil modelinin emin olduğu (sorusuz) kalıp, yalnız ikililer içinde
         # geçse de tabloya gelir; uyarısı satırda yazar. Hafızadan gelen
         # (önceden onaylanmış) olası sayılmaz.
         if uyari and kaynak not in ("hafiza", "model") and not ek.get("bekliyor"):
             olasi = True
+        dusuk = ek.get("olasilik") == "dusuk"
         # KANIT ZAYIF: dil modelinin anlamıyla örnek tanımların çoğu
-        # uyuşmuyorsa satır Olası'ya düşer; neden emin olunamadığı yazar.
+        # uyuşmuyorsa satır Adaylar'a düşer; neden emin olunamadığı yazar.
         kn = kanit if isinstance(kanit, dict) else {}
-        if kaynak == "model" and kn.get("bakilan", 0) >= 2 \
+        if kaynak == "model" and not dusuk and kn.get("bakilan", 0) >= 2 \
                 and kn.get("uyan", 0) < DONEM_KANIT_ESIGI * kn["bakilan"]:
             olasi = True
             if not soru:
@@ -1992,6 +1996,13 @@ def _donem_alani(durum):
              "kanit": kn if kn.get("bakilan") else None,
              "celiski": celiski if anlam == oneri else ""}
         r.update(ek)
+        # KALIP OLMA OLASILIĞI (Adaylar sekmesi): yüksek = tabloda, kesin;
+        # orta = dil modeli zaman bilgisi dedi ama emin değil (soru, zayıf
+        # kanıt, yalnız ikili içinde); düşük = dil modeli zaman bilgisi
+        # değil dedi; bakılmadı = dil modeli yorumlayamadı (iptal, hata).
+        if not r.get("olasilik"):
+            r["olasilik"] = ("yuksek" if not olasi else
+                             "bakilmadi" if not kaynak else "orta")
         satirlar.append(r)
 
     for k in liste:
@@ -2035,9 +2046,15 @@ def _donem_alani(durum):
             satir(kalip, k["tur"], k["kolon"], degerler, ornekler, "", "", "", "", "",
                   olasi=True, **ek)
             continue
-        if not donem_mi:
-            if kalip not in onceki or onceki[kalip].get("cikar"):
-                continue
+        if not donem_mi and (kalip not in onceki or onceki[kalip].get("cikar")):
+            # DİL MODELİNE GÖRE DÖNEM DEĞİL: tabloya girmez ama gizlenmez;
+            # Adaylar sekmesinde düşük olasılıkla durur, kullanıcı alabilir.
+            satir(kalip, k["tur"], k["kolon"], degerler, ornekler,
+                  m.get("anlam") or "", "model", m.get("soru", ""), m.get("not", ""),
+                  m.get("model", ""), haric_oneri=m.get("haric") or (), olasi=True,
+                  zaman_tur=m.get("tur") or "", kanit=m.get("kanit"),
+                  celiski=m.get("celiski", ""), olasilik="dusuk", **ek)
+            continue
         satir(kalip, k["tur"], k["kolon"], degerler, ornekler,
               (m.get("anlam") or "") if donem_mi else "", "model",
               m.get("soru", ""), m.get("not", ""), m.get("model", ""),
@@ -2075,7 +2092,7 @@ def _donem_alani(durum):
     notlar = []
     if d.get("iptal"):
         notlar.append("Dil modelini durdurdunuz. Yorumlanan kalıplar tabloda; yorumlanmayanlar "
-                      "Olası sekmesinde, anlamlarını siz yazabilirsiniz.")
+                      "Adaylar sekmesinde, anlamlarını siz yazabilirsiniz.")
     if d["hata"]:
         notlar.append("Dil modeli cevap vermedi; anlamları kendiniz yazabilirsiniz. (%s)"
                       % d["hata"][:200])

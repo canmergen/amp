@@ -1730,6 +1730,9 @@ Görevin her kalıbın ne anlama geldiğini, önce kalıbın yapısından kurup
     "ZAMAN BİLGİSİ DEĞİLDİR" maddeleri false). Yanındaki-parça adayları
     için özellikle dikkat et: yalnızca zamanla ilgiliyse (ör. önceki dönem,
     karşılaştırma dönemi, zaman birimi) true.
+  - "donem" false ise "not" alanına neden zaman bilgisi olmadığını ve
+    tanımlara göre neyi gösterdiğini tek kısa cümleyle yaz (ör. "Önceki
+    eşit süreli döneme göre karşılaştırma; dönemin kendisi değil.").
 
 YAZILIŞLAR: "harf ve sayı" kalıbı (ör. <N>M) aynı harf ile sayının bütün
 yazılışlarını kapsar: 3M, M3, M12, 3_M, M_3. Adlarda geçen yazılışlar

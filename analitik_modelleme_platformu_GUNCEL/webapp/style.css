@@ -3440,10 +3440,22 @@ span.bolme-cip { cursor: default; }
   font: inherit; font-size: var(--fs-kucuk); color: var(--metin);
   border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk); background: var(--yuzey);
 }
-.dg-donem-olasi-tablo th:nth-child(1) { width: 18%; }
-.dg-donem-olasi-tablo th:nth-child(2) { width: 24%; }
-.dg-donem-olasi-tablo th:nth-child(3) { width: auto; }
-.dg-donem-olasi-tablo th:nth-child(4) { width: 110px; }
+.dg-donem-olasi-tablo th:nth-child(1) { width: 15%; }
+.dg-donem-olasi-tablo th:nth-child(2) { width: 22%; }
+.dg-donem-olasi-tablo th:nth-child(3) { width: 15%; }
+.dg-donem-olasi-tablo th:nth-child(4) { width: auto; }
+.dg-donem-olasi-tablo th:nth-child(5) { width: 110px; }
+/* Adaylar: süzgeç çipleri ve kalıp olma olasılığı rozeti. */
+.dg-donem-aday-suz { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 var(--b-2); }
+.dg-donem-olasilik {
+  display: inline-block; padding: 1px 9px; border: 1px solid; border-radius: 999px;
+  font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); white-space: nowrap;
+}
+.dg-donem-olasilik-orta { color: var(--amber); background: var(--amber-acik); border-color: var(--amber); }
+.dg-donem-olasilik-bakilmadi { color: var(--metin-soluk); background: var(--yuzey-alt); border-color: var(--kenar-guclu); }
+.dg-donem-olasilik-dusuk { color: var(--metin-tamam); background: transparent; border-color: var(--kenar-guclu); }
+.dg-donem-olasilik-hucre .dg-donem-ornek { margin-top: 4px; }
+.dg-donem-aday-dusuk td { color: var(--metin-soluk); }
 .dg-donem-olasi-neden { color: var(--metin); font-size: var(--fs-kucuk); line-height: 1.45; }
 
 /* DÖNEM DEĞERLERİ: Anlam hücresinde örnek ve "Değerleri Düzenle"; değer

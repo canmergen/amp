@@ -444,11 +444,21 @@ tanıtır; sayfalar sol bardan açılır.
   çalışma Ad Parçaları'nda yeniden açılır, eski kısaltma kararları
   silinir).
 - **01.2.4.1 Dönem Bilgisi, kart:** başlığın altında tek satır özet
-  ("6 kalıp (3 pencere, 1 zaman noktası) · 2 yorumlanıyor · 4 olası")
+  ("6 kalıp (3 pencere, 1 zaman noktası) · 2 yorumlanıyor · 4 aday")
   ve yanında "i": yönerge ile sütun açıklamaları orada. Altında iki
-  sekme (sayılarıyla): Kalıplar (tablo) ve Olası (KALIP / ADLARDA GEÇEN /
-  NEDEN EMİN DEĞİL tablosu, "Tabloya Al" satırı Kalıplar'a taşır ve o
-  sekmeye geçer). Yalnız sayılı kalıplar burada: rakamsız parçaların
+  sekme (sayılarıyla): Kalıplar (tablo) ve Adaylar. Adaylar'da kolon
+  adlarında bulunup tabloda olmayan BÜTÜN sayılı kalıplar durur (KALIP /
+  ADLARDA GEÇEN / OLASILIK / DİL MODELİ); hiçbiri gizlenmez. Olasılık
+  rozeti: Orta (dil modeli zaman bilgisi dedi ama emin değil; kanıt
+  "1 / 4 örnek tanım uyuşuyor"), Yorumlanmadı (dil modeli bakamadı),
+  Düşük (dil modeli zaman bilgisi değil dedi; DİL MODELİ sütununda nedeni,
+  ör. "Önceki eşit süreli döneme göre karşılaştırma"). Sıra: olasılık,
+  sonra kolon sayısı; üstte süzgeç çipleri (Tümü, Orta, Yorumlanmadı,
+  Düşük, sayılarıyla). "Tabloya Al" satırı Kalıplar'a taşır ve o sekmeye
+  geçer; Kalıplar'da yeniden Çıkar denen aday Adaylar'a döner. Olasılık
+  yalnız dil modelinin kararı ve saydığı örnek tanımlardan gelir
+  (uydurma yüzde yok; satırda `olasilik`: yuksek, orta, bakilmadi,
+  dusuk). Yalnız sayılı kalıplar burada: rakamsız parçaların
   taraması, komşu adaylar ve hafızadaki rakamsız dönem kayıtları bu
   adımdan kalktı (Ad Parçaları'nda gelir).
   - **[sayı]:** kalıpta ve anlamda sayı yer tutucusu ekranda "[sayı]"
@@ -471,7 +481,7 @@ tanıtır; sayfalar sol bardan açılır.
     robotu düşünen hâlde (`robot_think.png`).
   - **İptal:** ilerleme satırında İptal (`/donem_iptal`,
     `akis_faz01.donem_iptal`, `donem.iptal`): o ana kadar gelen yorumlar
-    kalır, yorumlanmayanlar Olası'ya düşer, kartta "Dil modelini
+    kalır, yorumlanmayanlar Adaylar'a düşer, kartta "Dil modelini
     durdurdunuz" notu çıkar. Süren çağrının sonradan gelen cevabı
     yazılmaz.
 - **Kalıp yakalama (`donem.kaliplar`, `parca_listesi`):** sayı içeren
@@ -540,15 +550,18 @@ tanıtır; sayfalar sol bardan açılır.
   doldurulmuş olarak ve yanında türü: "3_M: son 3 ay (zaman penceresi)",
   "MONTH: ay (zaman birimi)". Kalıp adı ve yer tutucu (`<N>`, `N`) dil
   modeline gitmez; sözlüğe yazılan açıklama sayıyla yazılır.
-  `donem.ISTEM_SURUMU` 6: önbellekteki eski yorumlar yeniden alınır.
+  `donem.ISTEM_SURUMU` 7: önbellekteki eski yorumlar yeniden alınır.
+  Dil modeli "dönem değil" dediği kalıp için nedenini "not"a tek
+  cümleyle yazar (Adaylar'da görünür).
 - **Tabloya giren kalıplar:** hafızadan gelenler ve dil modelinin
   zaman bilgisi olduğunu bulduğu parçalar Kalıplar'a girer; yalnız
-  ikililer içinde geçse de (MONTH). Olası'ya düşenler: dil modelinin
+  ikililer içinde geçse de (MONTH). Adaylar'a (Orta) düşenler: dil modelinin
   sorusu olanlar, kanıtı zayıf olanlar (en az 2 örnek tanıma bakıp
   uyuşanlar %60'tan az, `DONEM_KANIT_ESIGI`; nedeni "Örnek tanımlardan
   yalnız 1 / 5 tanesi bu anlamla uyuşuyor"), dil modelinin bakmadığı ya
   da İptal ile yorumlanmayan kalıplar ve hafıza ile modelden gelmeyen
-  uyarılı parçalar.
+  uyarılı parçalar. Dil modelinin dönem değil dediği kalıplar da
+  Adaylar'da (Düşük) durur.
 - **01.2.4.1 Dönem Bilgisi, değerler:** sayı yer tutucusu olan kalıpta
   (`<N>D`, `H<NN>_<NN>`) Anlam hücresinde kalıbın anlamının altında bir
   örnek ("Örnek: 30D → 30 gün boyunca") ve "Değerleri Düzenle" bağlantısı

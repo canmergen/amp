@@ -10362,8 +10362,9 @@ const DONEM_TURLERI = [
 function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     let kilitli = ilkKilit;
     /* BAŞLIK: yönerge ve sütun açıklamaları başlıktaki "i"de. Altında tek
-       satır özet, sonra iki sekme: Kalıplar (karar tablosu) ve Olası (dil
-       modelinin emin olamadıkları). Sayısız parçalar Ad Parçaları'nda. */
+       satır özet, sonra iki sekme: Kalıplar (karar tablosu) ve Adaylar
+       (adlarda bulunup tabloda olmayan bütün kalıplar, kalıp olma
+       olasılığıyla). Sayısız parçalar Ad Parçaları'nda. */
     /* Adımın adı blok başlığında; kartta ayrıca başlık yok. */
     const ozetSatir = elYap("div", "dg-donem-ozet");
     const ozetEl = elYap("span", "", "");
@@ -10394,10 +10395,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     ilerEl.setAttribute("role", "status");
     const ilerMetin = elYap("span", "islem-sure", "");
     /* İPTAL: dil modelini durdurur; yorumlananlar kalır, yorumlanmayanlar
-       Olası'ya düşer ve anlamları elle yazılır. */
+       Adaylar'a düşer ve anlamları elle yazılır. */
     const ilerIptal = elYap("button", "islem-iptal", "İptal");
     ilerIptal.type = "button";
-    ilerIptal.title = "Dil modelini durdur; yorumlanan kalıplar kalır, kalanlar Olası'ya düşer";
+    ilerIptal.title = "Dil modelini durdur; yorumlanan kalıplar kalır, kalanlar Adaylar'a düşer";
     ilerIptal.onclick = () => {
         ilerIptal.disabled = true;
         ilerIptal.textContent = "İptal ediliyor";
@@ -10423,7 +10424,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     sekmeBar.setAttribute("role", "tablist");
     const panolar = {}, sekmeDugme = {};
     let aktifSekme = "kalip";
-    [["kalip", "Kalıplar"], ["olasi", "Olası"]].forEach(([ad, etiket]) => {
+    [["kalip", "Kalıplar"], ["olasi", "Adaylar"]].forEach(([ad, etiket]) => {
         const b = elYap("button", "dg-sekme", "");
         b.type = "button";
         b.setAttribute("role", "tab");
@@ -10991,37 +10992,80 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         if (tr) { tr.scrollIntoView({ block: "nearest" }); const t = tr.querySelector("textarea"); if (t) t.focus(); }
         if (degisti) degisti();
     }
-    /* OLASI: zaman bilgisi olduğu kesin olmayanlar (dil modeli emin
-       olamadı ya da bakamadı). Tabloya baştan girmez; "Tabloya Al" ile
-       Kalıplar sekmesine geçer. */
+    /* ADAYLAR: adlarda bulunup tabloda olmayan bütün kalıplar, kalıp olma
+       olasılığıyla (r.olasilik): Orta (dil modeli zaman bilgisi dedi ama
+       emin değil), Düşük (dil modeli zaman bilgisi değil dedi), Yorumlanmadı
+       (dil modeli bakamadı). Sıra: olasılık, sonra kolon sayısı. Üstteki
+       çiplerle süzülür. "Tabloya Al" ile Kalıplar sekmesine geçer. */
+    const OLASILIK = {
+        orta: ["Orta", "Dil modeli zaman bilgisi dedi ama emin değil."],
+        bakilmadi: ["Yorumlanmadı", "Dil modeli bu kalıba bakamadı."],
+        dusuk: ["Düşük", "Dil modeli zaman bilgisi değil dedi."]
+    };
+    const OLASILIK_SIRA = { orta: 0, bakilmadi: 1, dusuk: 2 };
+    const olasilikOf = r => OLASILIK[r.olasilik] ? r.olasilik : "orta";
+    let adaySuzgec = "tumu";
     const olaNot = elYap("p", "dg-donem-pano-not",
-        "Dil modelinin zaman bilgisi olduğundan emin olamadığı kalıplar. Zaman bilgisiyse "
-        + "tabloya alın; anlamını Kalıplar sekmesinde kontrol edersiniz. Tabloya almadıklarınız "
-        + "kullanılmaz ve hafızaya yazılmaz.");
+        "Kolon adlarında bulunup tabloda olmayan bütün kalıplar, kalıp olma olasılığıyla. "
+        + "Zaman bilgisi olanları tabloya alın; anlamını Kalıplar sekmesinde kontrol edersiniz. "
+        + "Tabloya almadıklarınız kullanılmaz ve hafızaya yazılmaz.");
+    const olaSuz = elYap("div", "dg-donem-aday-suz");
     const olaTablo = elYap("table", "dg-tablo dg-donem-olasi-tablo");
     const olaBasR = document.createElement("tr");
-    ["Kalıp", "Adlarda Geçen", "Neden Emin Değil", ""].forEach(h => olaBasR.appendChild(elYap("th", "", h)));
+    ["Kalıp", "Adlarda Geçen", "Olasılık", "Dil Modeli", ""].forEach(h => olaBasR.appendChild(elYap("th", "", h)));
     const olaTh = document.createElement("thead");
     olaTh.appendChild(olaBasR);
     const olaTb = document.createElement("tbody");
     olaTablo.append(olaTh, olaTb);
-    panolar.olasi.append(olaNot, olaTablo);
+    panolar.olasi.append(olaNot, olaSuz, olaTablo);
     function olasilariCiz() {
         olaTb.textContent = "";
         const k = kilitli || da.dm === "calisiyor";
-        olasilar.forEach(c => {
-            const tr = elYap("tr", "dg-satir");
+        const say = { tumu: olasilar.length, orta: 0, bakilmadi: 0, dusuk: 0 };
+        olasilar.forEach(c => { say[olasilikOf(c.r)]++; });
+        if (adaySuzgec !== "tumu" && !say[adaySuzgec]) adaySuzgec = "tumu";
+        olaSuz.textContent = "";
+        [["tumu", "Tümü"], ["orta", "Orta Olasılık"], ["bakilmadi", "Yorumlanmadı"],
+         ["dusuk", "Düşük Olasılık"]].forEach(([deg, ad]) => {
+            if (deg !== "tumu" && !say[deg]) return;
+            const b = elYap("button", "bolme-cip" + (adaySuzgec === deg ? " secili" : ""),
+                            ad + " · " + ftBinlik(say[deg]));
+            b.type = "button";
+            b.onclick = () => { adaySuzgec = deg; olasilariCiz(); };
+            olaSuz.appendChild(b);
+        });
+        olaSuz.hidden = !olasilar.length;
+        const liste = olasilar
+            .filter(c => adaySuzgec === "tumu" || olasilikOf(c.r) === adaySuzgec)
+            .sort((a, b) => (OLASILIK_SIRA[olasilikOf(a.r)] - OLASILIK_SIRA[olasilikOf(b.r)])
+                || ((b.r.kolon || 0) - (a.r.kolon || 0)) || String(a.r.kalip).localeCompare(String(b.r.kalip)));
+        liste.forEach(c => {
+            const ol = olasilikOf(c.r);
+            const tr = elYap("tr", "dg-satir dg-donem-aday-" + ol);
             const tdK = elYap("td", "dg-kolon");
             tdK.appendChild(donemKalipEtiketi(c.r));
             tr.appendChild(tdK);
             const tdD = elYap("td", "dg-kisa-hucre");
             degerCiz(tdD, c.r.degerler || []);
             tr.appendChild(tdD);
-            const neden = c.r.soru ? "Dil modeli: " + tireSade(c.r.soru)
+            /* OLASILIK: rozet; kanıt yalnız dil modelinin saydığı örnek
+               tanımlardan (uydurma yüzde yok). */
+            const tdO = elYap("td", "dg-donem-olasilik-hucre");
+            tdO.appendChild(elYap("span", "dg-donem-olasilik dg-donem-olasilik-" + ol, OLASILIK[ol][0]));
+            const kn = c.r.kanit;
+            if (kn && kn.bakilan && ol !== "dusuk")
+                tdO.appendChild(elYap("div", "dg-donem-ornek",
+                    ftBinlik(kn.uyan) + " / " + ftBinlik(kn.bakilan) + " örnek tanım uyuşuyor"));
+            tr.appendChild(tdO);
+            /* DİL MODELİ: neden emin değil ya da neden dönem değil; önerdiği
+               anlam varsa. */
+            const tdN = elYap("td", "dg-donem-olasi-neden");
+            const neden = c.r.soru ? tireSade(c.r.soru)
                 : c.r.uyari ? tireSade(c.r.uyari)
-                : "Dil modeli bu kalıba bakamadı.";
-            const tdN = elYap("td", "dg-donem-olasi-neden", neden);
-            if (c.r.anlam) tdN.appendChild(elYap("div", "dg-donem-ornek", "Önerilen anlam: "
+                : c.r.not ? tireSade(c.r.not) : OLASILIK[ol][1];
+            tdN.appendChild(elYap("div", "", neden));
+            if (c.r.anlam) tdN.appendChild(elYap("div", "dg-donem-ornek",
+                (ol === "dusuk" ? "Dil modelinin yorumu: " : "Önerilen anlam: ")
                 + donemAnlamGoster(c.r.kalip, tireSade(c.r.anlam))));
             tr.appendChild(tdN);
             const tdB = elYap("td", "dg-ekle-hucre");
@@ -11035,8 +11079,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         });
         if (!olasilar.length) {
             const tr = elYap("tr", "dg-bos-tablo");
-            const td = elYap("td", "", "Emin olunamayan kalıp yok.");
-            td.colSpan = 4; tr.appendChild(td); olaTb.appendChild(tr);
+            const td = elYap("td", "", da.dm === "calisiyor"
+                ? "Dil modeli kalıpları değerlendiriyor; tabloya girmeyenler burada görünecek."
+                : "Adlarda bulunan bütün kalıplar tabloda.");
+            td.colSpan = 5; tr.appendChild(td); olaTb.appendChild(tr);
         }
     }
     function cikanlariCiz() {
@@ -11080,7 +11126,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         if (turParca.length) parca[0] += " (" + turParca.join(", ") + ")";
         const bekleyen = satirlar.filter(x => x.r.bekliyor && da.dm === "calisiyor").length;
         if (bekleyen) parca.push(ftBinlik(bekleyen) + " yorumlanıyor");
-        if (olasilar.length) parca.push(ftBinlik(olasilar.length) + " olası");
+        if (olasilar.length) parca.push(ftBinlik(olasilar.length) + " aday");
         if (cikanlar.length) parca.push(ftBinlik(cikanlar.length) + " çıkarılan");
         ozetEl.textContent = parca.join(" · ");
     }
@@ -11121,7 +11167,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const td = elYap("td", "", da.dm === "calisiyor"
                 ? "Dil modeli kalıpları değerlendiriyor; dönem olduğu kesin olanlar burada görünecek."
                 : olasilar.length && !cikanlar.length
-                    ? "Kesin zaman bilgisi bulunmadı; Olası sekmesindeki kalıplardan zaman bilgisi olanları tabloya alın."
+                    ? "Kesin zaman bilgisi bulunmadı; Adaylar sekmesindeki kalıplardan zaman bilgisi olanları tabloya alın."
                     : (liste || []).length
                         ? "Bütün satırlar çıkarıldı; onaylarsanız dönem bilgisi boş kalır."
                         : "Dönem bilgisi taşıyan parça bulunmadı.");
