@@ -32,13 +32,18 @@
      --fs-buyuk takma adlardir: ayni iki degere baglidir. TEK ISTISNA
      --fs-blok: sohbetteki blok basligi (avatarin yanindaki "01.2 ...")
      baslik boyutundan 1,5 px buyuk; alt adim basliklari (.alt-ad) 15. */
-  --fs-govde:  13.5px;   /* her metin */
-  --fs-baslik: 15px;     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
-  --fs-ustbar: 12px;     /* yalniz sol bar sekmeleri ve alttaki dugmeler */
+  /* EKRANDA GÖRÜNEN BOY: sayfa html zoom'u (--olcek) ile küçültüldüğü
+     için yazı boyları ona bölünür; ekranda değer neyse o görünür
+     (gövde 13,5 px, başlık 15 px, kart başlığı 16,5 px, küçük 12 px) ve
+     sol barın 15 px'lik satırlarıyla aynı ölçeğe oturur. Boşluklar,
+     paneller ve kutular sayfa ölçeğinde kalır. */
+  --fs-govde:  calc(13.5px / var(--olcek));   /* her metin */
+  --fs-baslik: calc(15px / var(--olcek));     /* kart/faz/blok basliklari, ozet degerleri, urun adi */
+  --fs-ustbar: calc(12px / var(--olcek));     /* kucuk yazilar: ilerleme sayaci, rozet */
   --fs-kucuk:  var(--fs-govde);
   --fs-etiket: var(--fs-govde);
   --fs-buyuk:  var(--fs-baslik);
-  --fs-blok:   16.5px;    /* yalniz sohbet blok basligi (.blok-ad) */
+  --fs-blok:   calc(16.5px / var(--olcek));    /* yalniz sohbet blok basligi (.blok-ad) */
 
   --fw-normal: 400;
   --fw-kalin:  700;
@@ -66,8 +71,10 @@
   --r:         6px;      /* kart, balon, buton, giris kutusu */
   --r-kucuk:   5px;      /* sekme, cip, liste ogesi, ic alan */
   --b-1: 3px;  --b-2: 6px;  --b-3: 9px;  --b-4: 12px;  --b-5: 15px;  --b-6: 18px;
-  --btn-h:     27px;     /* tum ana butonlar */
-  --btn-h-kucuk: 23px;   /* ikon butonlari, Gonder */
+  /* Kontrol yükseklikleri de yazı gibi EKRANDA görünen boyla (27 / 23 px):
+     yazı sayfa ölçeğinden bağımsız olduğu için kutular da onunla büyür. */
+  --btn-h:     calc(27px / var(--olcek));     /* tum ana butonlar */
+  --btn-h-kucuk: calc(23px / var(--olcek));   /* ikon butonlari, Gonder */
   --serit:     3px;      /* kart solundaki marka vurgu cubugu */
   --halka:     2px;      /* odak ve hover halkasi kalinligi */
   --golge-1:   0 1px 2px rgba(16,24,40,.06);
@@ -684,7 +691,15 @@ body { background-color: #FFFFFF; }
 /* ==================== SOL PANEL ==================== */
 /* Orta panel (ANALİTİK SÜREÇ / İŞ AKIŞI) yazıları bir kademe küçük:
    panel dar, uzun adım adları satıra sığsın. Yalnız bu panelde geçerli. */
-#panel { --fs-govde: 12.5px; --fs-baslik: 14px; }
+#panel { --fs-govde: calc(12.5px / var(--olcek)); --fs-baslik: calc(14px / var(--olcek)); }
+/* Sol barın kendi ölçeği var (app.js: solBarOlcekle); oradaki yazı ve
+   kontrol boyları sayfa ölçeğine bölünmez, düz değerlerinde kalır
+   (Arşiv listesi, Görünüm, Yeni Çalışma). */
+#sol-bar {
+  --fs-govde: 13.5px; --fs-kucuk: 13.5px; --fs-etiket: 13.5px;
+  --fs-baslik: 15px; --fs-buyuk: 15px; --fs-ustbar: 12px; --fs-blok: 16.5px;
+  --btn-h: 27px; --btn-h-kucuk: 23px;
+}
 #panel {
   width: var(--panel-en); flex-shrink: 0;
   background: var(--panel-zemin);
@@ -4392,7 +4407,7 @@ span.bolme-cip { cursor: default; }
   height: 32px; padding: 0 10px 0 11px;
   border: 1px solid var(--pembe-kenar); border-radius: 9px;
   background: var(--yuzey); color: var(--kirmizi); cursor: pointer;
-  font-size: 13px; font-weight: 800; letter-spacing: .02em;
+  font-size: calc(13.5px / var(--olcek)); font-weight: 800; letter-spacing: .02em;
   transition: background .12s, border-color .12s;
 }
 #akis-btn .ikon { width: 16px; height: 16px; flex-shrink: 0; }
@@ -4403,7 +4418,7 @@ span.bolme-cip { cursor: default; }
 #akis-konum {
   flex: 1 1 auto; min-width: 0;
   display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px;
-  font-size: 13px; line-height: 1.35;
+  font-size: calc(13.5px / var(--olcek)); line-height: 1.35;
   white-space: normal; overflow-wrap: break-word;
 }
 #akis-konum .akis-faz { font-weight: 700; color: var(--metin); }
@@ -4411,7 +4426,7 @@ span.bolme-cip { cursor: default; }
 #akis-konum .akis-adim { font-weight: 700; color: var(--kirmizi); }
 #akis-ilerleme {
   flex-shrink: 0; white-space: nowrap;
-  font-size: 12px; font-weight: 700; color: var(--metin);
+  font-size: calc(12px / var(--olcek)); font-weight: 700; color: var(--metin);
   padding: 3px 10px; border-radius: 999px; background: var(--yuzey-alt);
 }
 #akis-ilerleme:empty { display: none; }
@@ -4591,7 +4606,7 @@ span.bolme-cip { cursor: default; }
   font-size: clamp(16px, 5.6cqw, 22px); font-weight: var(--fw-yari);
 }
 .as-kart p { grid-column: 2; grid-row: 2; align-self: start; font-size: 16.5px; line-height: 1.5; }
-.as-kart .as-rozet { font-size: 13.5px; }
+.as-kart .as-rozet { font-size: calc(12px / var(--olcek)); }
 .as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { opacity: .5; }
 
 /* Kart açıklamaları: karta basınca kart seçilir (kenarı kırmızı ve
@@ -4765,7 +4780,7 @@ span.bolme-cip { cursor: default; }
   font-size: clamp(16px, 5.6cqw, 21px); line-height: 1.35;
 }
 .as-sayfa p { grid-column: 2; grid-row: 2; align-self: start; font-size: 15.5px; line-height: 1.5; }
-.as-sayfa .as-rozet { font-size: 13px; }
+.as-sayfa .as-rozet { font-size: calc(12px / var(--olcek)); }
 
 /* Güvenceler: açık zeminli tek kutu, içinde yan yana dört bölme; aralarında
    ince mürekkep çizgisi. Her bölmede solda kırmızı daire içinde simge,
