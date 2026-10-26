@@ -319,8 +319,10 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
    (fare, getBoundingClientRect) tasarım pikseline aynı oranla çevirir
    (ekranOlcegi). Tek yerden değişir: 1 = %100.
    --sol-olcek: sol bar, sayfa .88 ölçekteyken ekrandaki boyunun bu
-   oranında görünür (.8 = %80); bkz. app.js solBarOlcekle. */
-:root { --olcek: .792; --sol-olcek: .8; }
+   oranında görünür (.8 = %80); bkz. app.js solBarOlcekle.
+   --sol-icerik: sol barın eni ve boyu aynı kalır, içindeki sayfa
+   satırları ve alttaki düğmeler (yazı ve çizimler) bu kat büyür. */
+:root { --olcek: .792; --sol-olcek: .8; --sol-icerik: 1.2; }
 html { zoom: var(--olcek); }
 
 /* Uygulama ekranın tamamını kullanır. --kabuk-*: uygulama kabuğunun

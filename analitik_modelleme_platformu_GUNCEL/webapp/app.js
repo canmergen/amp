@@ -309,6 +309,12 @@ function beyazZeminiSil(a, w, h) {
    zoom'u ekrandaki boyun html zoom'una oranıdır. Barın eni de aynı
    orana gelir. Doğal boy Model Platformu açıkken ölçülür: küme
    açılınca bar taşmaz.
+   İÇERİK BÜYÜTME: barın eni ve boyu yukarıdaki ölçekle kalır; içindeki
+   sayfa satırları ve alttaki Görünüm / Arşiv / Yeni Çalışma düğmeleri
+   (yazı, çizim, satır boyu birlikte) ayrıca --sol-icerik (style.css)
+   katı büyür. Logo ve robot barın enine bağlı, büyümez. Büyümüş içerik
+   barın boyuna sığmazsa ya da bir satırın yazısı satıra sığmazsa kat
+   sığana kadar düşer (en az 1).
    Ölçek CSS zoom ile verilir, transform ile değil: zoom içeriği yeni
    boyutunda baştan çizer, yazı ve görseller bulanıklaşmaz. */
 const SOL_BAR_TASARIM_EN = 340;
@@ -318,24 +324,40 @@ function solBarOrani() {
     return parseFloat(getComputedStyle(document.documentElement)
                       .getPropertyValue("--sol-olcek")) || 0.8;
 }
+function solBarIcerikKati() {
+    return parseFloat(getComputedStyle(document.documentElement)
+                      .getPropertyValue("--sol-icerik")) || 1;
+}
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");
     if (!bar || !ic || !bar.clientHeight) return;
+    const icerik = [...ic.querySelectorAll("#ust-sekmeler, .sol-bar-dugmeler")];
     ic.style.zoom = "1";
     ic.style.height = "auto";
+    icerik.forEach(e => { e.style.zoom = ""; });
     /* Ölçek açık hâle göre: küme açılıp kapanınca bar boyu değişmesin. */
     const kapali = [...ic.querySelectorAll(".ust-kume.acilir:not(.acik)")];
     kapali.forEach(k => k.classList.add("acik"));
     const dogal = ic.offsetHeight;
-    kapali.forEach(k => k.classList.remove("acik"));
-    if (!dogal) return;
+    if (!dogal) { kapali.forEach(k => k.classList.remove("acik")); return; }
     const kok = ekranOlcegi();
     const sigdirma = Math.max(SOL_BAR_SIGDIRMA.min, Math.min(SOL_BAR_SIGDIRMA.max,
         bar.clientHeight * kok / (SOL_BAR_TABAN * dogal)));
     const olcek = SOL_BAR_TABAN * sigdirma * solBarOrani() / kok;
     ic.style.height = (bar.clientHeight / olcek) + "px";
     ic.style.zoom = String(olcek);
+    const satirlar = [...ic.querySelectorAll(
+        ".ust-sekme, .ust-kume-ad, #tema-btn, #calismalar-btn, #sifirla-btn")];
+    const sigar = () => ic.scrollHeight <= ic.clientHeight + 1
+        && satirlar.every(e => e.scrollWidth <= e.clientWidth);
+    let kat = Math.max(1, solBarIcerikKati());
+    for (;;) {
+        icerik.forEach(e => { e.style.zoom = String(kat); });
+        if (kat <= 1 || sigar()) break;
+        kat = Math.max(1, Math.round((kat - 0.02) * 100) / 100);
+    }
+    kapali.forEach(k => k.classList.remove("acik"));
     document.documentElement.style.setProperty("--sol-bar-en",
         Math.round(SOL_BAR_TASARIM_EN * olcek) + "px");
 }

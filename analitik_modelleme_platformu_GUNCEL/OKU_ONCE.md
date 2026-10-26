@@ -173,7 +173,12 @@ kaydırmasızdır (tasarım eni 340 px, yazılar 15 px). Boyu iki adımda
 bulunur: önce eski sığdırma oranı (sayfa %88'deyken Model Platformu
 açık barın yüksekliğine sığan oran, 0,6 ile 1,2 kat arası), sonra bar
 ekranda bunun %80'i boyda gösterilir (`--sol-olcek: .8`). Eni de aynı
-orana gelir; yazılar, çizimler ve logo birlikte ölçeklenir. Ölçek CSS
+orana gelir. Barın eni ve boyu bu ölçekle kalır; içindeki sayfa
+satırları ve alttaki Görünüm, Arşiv, Yeni Çalışma düğmeleri (yazı, çizim
+ve satır boyu birlikte) ayrıca `--sol-icerik: 1.2` katı büyür. Logo ve
+robot barın enine bağlı olduğu için büyümez. Büyümüş içerik barın boyuna
+ya da bir satırın yazısı satıra sığmazsa kat sığana kadar düşer (en az
+1); 1440x900'de 1,18 kat (sol bar yazısı ekranda yaklaşık 15 px). Ölçek CSS
 zoom ile verilir (transform değil): yazı ve görseller yeni boyunda
 baştan çizilir, bulanıklaşmaz.
 Bölmeleri ayıran ve uygulamayı en dışta çevreleyen kalın çizgi her modda
