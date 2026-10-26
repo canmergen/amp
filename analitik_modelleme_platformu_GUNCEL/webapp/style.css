@@ -311,15 +311,16 @@ body:has(#kabuk.gri) { background-color: #D5D8DD; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
-/* EKRAN ÖLÇEĞİ: uygulama tarayıcıda %90 yakınlaştırmadaki gibi görünür
-   (yazılar, simgeler, boşluklar, paneller birlikte); sol bar %80'deki
-   gibi (--sol-olcek). Tasarım ölçüleri olduğu gibi kalır; html'e zoom
-   verilir, sol bar app.js'te (solBarOlcekle) kendi oranına getirilir.
-   Ekranın oranına bağlı ölçüler (vw, vh) zoom'dan ayrıca etkilenmesin
-   diye var(--olcek)'e bölünür; app.js ekrandaki konumları (fare,
-   getBoundingClientRect) tasarım pikseline aynı oranla çevirir
-   (ekranOlcegi). Tek yerden değişir: 1 = %100, .9 = %90. */
-:root { --olcek: .9; --sol-olcek: .8; }
+/* EKRAN ÖLÇEĞİ: uygulama tarayıcıda %79,2 yakınlaştırmadaki gibi görünür
+   (yazılar, simgeler, boşluklar, paneller birlikte): eski .88 ölçeğin
+   %90'ı (.88 x .9 = .792). Tasarım ölçüleri olduğu gibi kalır; html'e
+   zoom verilir. Ekranın oranına bağlı ölçüler (vw, vh) zoom'dan ayrıca
+   etkilenmesin diye var(--olcek)'e bölünür; app.js ekrandaki konumları
+   (fare, getBoundingClientRect) tasarım pikseline aynı oranla çevirir
+   (ekranOlcegi). Tek yerden değişir: 1 = %100.
+   --sol-olcek: sol bar, sayfa .88 ölçekteyken ekrandaki boyunun bu
+   oranında görünür (.8 = %80); bkz. app.js solBarOlcekle. */
+:root { --olcek: .792; --sol-olcek: .8; }
 html { zoom: var(--olcek); }
 
 /* Uygulama ekranın tamamını kullanır. --kabuk-*: uygulama kabuğunun
@@ -4122,10 +4123,11 @@ span.bolme-cip { cursor: default; }
 
 /* ---- Sol bar ölçeği ve Katip logosu ----
    İç kap tasarım eninde (340 px) doğal boyuyla dizilir; app.js
-   (solBarOlcekle) onu ekranda --sol-olcek (%80) boyuna getirir (CSS
-   zoom) ve barın enini (--sol-bar-en) aynı orana getirir; yazılar ve
-   çizimler birlikte ölçeklenir. Bar bu boyda sığmayan kısa ekranlarda
-   sığacak kadar küçülür (en az 0,6 kat), hiç büyümez. Kaydırma yok. */
+   (solBarOlcekle) önce eski sığdırma oranını bulur (sayfa .88 ölçekteyken
+   barın yüksekliğine sığan oran, 0,6 ile 1,2 kat arası), bar ekranda
+   bunun --sol-olcek (%80) katı boyda görünür (CSS zoom). Barın eni
+   (--sol-bar-en) aynı orana gelir; yazılar ve çizimler birlikte
+   ölçeklenir. Kaydırma yok. */
 #sol-bar { display: block; overflow: hidden; }
 #sol-bar-ic {
   width: 340px;
