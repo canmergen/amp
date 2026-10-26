@@ -275,10 +275,10 @@
    Mürekkep yazıları ana yazı renginde; mürekkep çizgileri (sol bar
    ayraçları, Görünüm anahtarı, Ana Sayfa kart kenarları) yumuşak gri
    (#555C67); uygulamayı çevreleyen ayraç koyu gri.
-   GÖRSELLER: logo, çizimler ve robotlar değişmez (renk süzgeci, ters
-   çevirme, multiply yok); her biri açık bir plakanın (--gorsel-plaka)
-   üstünde durur. Form denetimleri ve kaydırma çubukları da koyu
-   (color-scheme). */
+   GÖRSELLER: çizimlerde yalnız renksiz pikseller döner (siyah açık,
+   beyaz saydam), renkler aynı kalır (app.js: koyuGorsel). Logo
+   değişmez, açık plakanın (--gorsel-plaka) üstünde durur. Form
+   denetimleri ve kaydırma çubukları da koyu (color-scheme). */
 #kabuk.koyu {
   color-scheme: dark;
   --murekkep:     #E6E8EB;
@@ -340,22 +340,21 @@
 #kabuk.koyu .blok-durum.kontrol {
   color: var(--amber); background: var(--amber-acik); border-color: var(--amber);
 }
-/* Koyu modda görseller açık plakanın üstünde; renkleri değişmez. */
+/* Koyu modda görseller. Çizimler (sol bar, Ana Sayfa kartları, alttaki
+   robot, sohbet avatarları) app.js'te (koyuGorsel) tersine çevrilir:
+   siyahlar açık, beyazlar saydam; renkler aynı. Burada yalnız
+   multiply kapatılır (koyu zeminde her şeyi karartırdı). Logo hiç
+   değişmez; siyah harfleri koyu zeminde okunsun diye açık bir
+   plakanın üstünde durur. Ana Sayfa'nın üst görseli de değişmez,
+   köşeleri yuvarlatılmış bir resim olarak durur. */
+#kabuk.koyu #sol-bar .ikon-gorsel, #kabuk.koyu .as-kart-ikon, #kabuk.koyu .as-sayfa-ikon {
+  mix-blend-mode: normal;
+}
 #kabuk.koyu #katip-logo {
   box-sizing: border-box; padding: 6px 10px; border-radius: 8px;
   background: var(--gorsel-plaka);
 }
-#kabuk.koyu #sol-bar img.ikon-gorsel,
-#kabuk.koyu .as-kart-ikon, #kabuk.koyu .as-sayfa-ikon {
-  mix-blend-mode: normal; background: var(--gorsel-plaka);
-  box-sizing: border-box; padding: 3px; border-radius: 6px;
-}
-#kabuk.koyu .as-kart-ikon, #kabuk.koyu .as-sayfa-ikon { padding: 8px; border-radius: 10px; }
-#kabuk.koyu #robot-alt, #kabuk.koyu .as-hero-gorsel img {
-  background: var(--gorsel-plaka); border-radius: 10px;
-}
-#kabuk.koyu .balon-avatar { background: var(--gorsel-plaka); }
-#kabuk.koyu #robot-alt { box-sizing: border-box; padding: 4px 6px; }
+#kabuk.koyu .as-hero-gorsel img { border-radius: 10px; }
 #kabuk.sepya .blok-durum.kontrol {
   color: #7E4106; background: #F4E2BE; border-color: #7E4106;
 }
@@ -4333,6 +4332,18 @@ span.bolme-cip { cursor: default; }
   position: relative; height: 38px; margin-left: 28px; padding-left: 22px; border: 0;
 }
 #sol-bar .ust-kume.acilir > .ust-sekme img.ikon-gorsel { width: 34px; height: 34px; }
+/* Çizimlerin yerindeki çizgi ikonlar (SVG) yalnız yer tutar: görünmez
+   ve çizimle aynı boyda; çizim gelince yerine geçer (app.js:
+   SOL_BAR_IKONLARI), gelmezse yer boş kalır. */
+#kabuk #sol-bar .ust-sekme > svg.ikon, #kabuk #sol-bar .ust-kume-ad > svg.ikon,
+#kabuk #sol-bar #tema-btn > svg.ikon, #kabuk #sol-bar #calismalar-btn > svg.sifirla-ikon,
+#kabuk #sol-bar #sifirla-btn > svg.sifirla-ikon {
+  visibility: hidden; flex-shrink: 0; width: 40px; height: 40px;
+}
+#kabuk #sol-bar .ust-kume-ad > svg.ikon { width: 42px; height: 42px; }
+#kabuk #sol-bar .ust-kume.acilir > .ust-sekme > svg.ikon { width: 34px; height: 34px; }
+#kabuk #sol-bar #tema-btn > svg.ikon, #kabuk #sol-bar #calismalar-btn > svg.sifirla-ikon,
+#kabuk #sol-bar #sifirla-btn > svg.sifirla-ikon { width: 32px; height: 32px; }
 #sol-bar .ust-kume.acilir > .ust-sekme::before {
   content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 16px; pointer-events: none;
   background:
