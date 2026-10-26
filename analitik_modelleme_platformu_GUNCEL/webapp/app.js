@@ -5034,6 +5034,7 @@ function sfaGrafik(binler, genelOran, kategorik, eksenAdi) {
         alan.addEventListener("mouseleave", () => { ipucu.hidden = true; });
     });
     kap.appendChild(svg);
+    eksenYazisiniSabitle(svg);
     kap.appendChild(ipucu);
     return kap;
 }
@@ -5262,6 +5263,27 @@ function dagKart(baslik) {
     return k;
 }
 
+/* GRAFİK EKSEN YAZILARI: grafikler sabit bir çizim alanında (viewBox)
+   çizilip kabın enine göre büyür ya da küçülür; eksen yazıları bununla
+   birlikte büyümesin diye boyları grafiğin o anki büyütme oranına
+   bölünür: ekranda her genişlikte EKSEN_YAZI_PX. Grafiğin eni
+   değişince (panel genişleyince, pencere boyu değişince) yeniden
+   hesaplanır. */
+const EKSEN_YAZI_PX = 12;
+const EKSEN_GOZCU = window.ResizeObserver ? new ResizeObserver(girdiler => {
+    girdiler.forEach(g => eksenYazisiOlcekle(g.target));
+}) : null;
+function eksenYazisiOlcekle(svg) {
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const en = svg.getBoundingClientRect().width;      // ekran pikseli
+    if (!vb || !vb.width || !en) return;
+    svg.style.setProperty("--eksen-yazi", (EKSEN_YAZI_PX * vb.width / en).toFixed(2) + "px");
+}
+function eksenYazisiniSabitle(svg) {
+    if (EKSEN_GOZCU) EKSEN_GOZCU.observe(svg);
+    requestAnimationFrame(() => eksenYazisiOlcekle(svg));
+}
+
 /* Tek serili çubuk grafiği (SVG). Çubuklar arası 2px boşluk, üst uçlar
    yuvarlak, taban düz; eksen ve ızgara geri planda. Üzerine gelince
    değer ipucu çıkar. ogeler: [{etiket, adet}] */
@@ -5325,6 +5347,7 @@ function dagCubukGrafik(ogeler, altEtiketler) {
         svg.appendChild(t);
     });
     kap.appendChild(svg);
+    eksenYazisiniSabitle(svg);
     kap.appendChild(ipucu);
     return kap;
 }

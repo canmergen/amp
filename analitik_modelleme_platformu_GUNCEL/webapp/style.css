@@ -1150,7 +1150,9 @@ body { background-color: #FFFFFF; }
 }
 
 .secenek-govde { min-width: 0; flex: 1; }
-.secenek-baslik { font-weight: var(--fw-kalin); font-size: var(--fs-baslik); line-height: 1.35; }
+/* Seçenek başlığı kutudaki açıklamayla aynı boyda (13,5 px), kalınlıkla
+   ayrılır. */
+.secenek-baslik { font-weight: var(--fw-kalin); font-size: var(--fs-govde); line-height: 1.35; }
 .secenek-aciklama {
   font-size: var(--fs-govde); color: var(--metin-soluk);
   line-height: 1.5; margin-top: 2px;
@@ -3705,7 +3707,9 @@ span.bolme-cip { cursor: default; }
 .dag-vurus { fill: transparent; cursor: default; }
 .dag-vurus:hover { fill: rgba(127,127,127,.08); }
 .dag-eksen { stroke: var(--kenar); stroke-width: 1; }
-.dag-eksen-yazi { font-size: 10px; fill: var(--metin-soluk); }
+/* Eksen yazısı ekranda 12 px: --eksen-yazi app.js'te (eksenYazisiOlcekle)
+   grafiğin büyütme oranına göre verilir; gelmeden önce çizim birimi 10. */
+.dag-eksen-yazi { font-size: var(--eksen-yazi, 10px); fill: var(--metin-soluk); }
 .dag-ipucu {
   position: absolute; top: -6px; transform: translateY(-100%);
   background: var(--metin); color: var(--yuzey); border-radius: var(--r-kucuk);

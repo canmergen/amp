@@ -105,7 +105,10 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   Boşluklar, paneller ve kutuların eni sayfa ölçeğinde kalır. Sol barın
   kendi ölçeği olduğu için orada bu değişkenler düz değerlerindedir
   (Arşiv listesi 13,5 px). Ana Sayfa'nın tanıtım yazıları kendi
-  boylarında.
+  boylarında. Seçenek kutularında (A, B, C) başlık açıklamayla aynı boyda
+  (13,5 px), kalınlıkla ayrılır. Grafiklerin eksen yazıları ekranda her
+  genişlikte 12 px: grafik kabın enine göre büyüdükçe yazı boyu o orana
+  bölünür (app.js: eksenYazisiniSabitle, EKSEN_YAZI_PX).
 - **Sol bar seçili satır:** yazısı öbür satırlarla aynı (15 px, 600);
   seçili olduğunu gri zemin ve soldaki çizgi gösterir.
 
