@@ -5275,7 +5275,7 @@ function dagKart(baslik) {
    bölünür: ekranda her genişlikte EKSEN_YAZI_PX. Grafiğin eni
    değişince (panel genişleyince, pencere boyu değişince) yeniden
    hesaplanır. */
-const EKSEN_YAZI_PX = 12;
+const EKSEN_YAZI_PX = 10.8;      /* 12 px x --ekran-kat (.9) */
 const EKSEN_GOZCU = window.ResizeObserver ? new ResizeObserver(girdiler => {
     girdiler.forEach(g => eksenYazisiOlcekle(g.target));
 }) : null;

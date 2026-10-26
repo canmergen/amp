@@ -96,20 +96,22 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   değerleri belirler. `font-size-adjust` kullanılmaz (`--x-yukseklik:
   none`).
 - **Yazı ölçeği (ekranda görünen boy, her yerde aynı):** ÜÇ BOY, İKİ
-  KALINLIK. Metin, ad, başlık, düğme, tablo, sol bar satırları, üst şerit
-  ve İş Akışı fazları 14 px; küçük yazılar (adım sayacı, rozetler, İş
-  Akışı alt açıklamaları ve adımları, "Çalışma Alanları" ayracı) 12,5 px;
-  yalnız sohbetteki kart başlığı (01.1 ...) 16 px. Ad ve başlıklar boyla
-  değil kalınlıkla ayrılır: 600 (sol bar satırlarıyla aynı), metin 400;
-  700 ve 800 kullanılmaz. Sayfa %79,2 ölçekte olduğu için boylar ölçeğe
-  bölünür (`calc(14px / var(--olcek))`); sol barın kendi ölçeği var,
-  oradaki boylar `--sol-ekran`'a bölünür (app.js: solBarOlcekle), böylece
-  her pencere boyunda ekranda aynı px. Düğme ve giriş kutusu yükseklikleri
-  ekranda 27 / 23 px. Boşluklar, paneller ve kutuların eni sayfa
-  ölçeğinde kalır. Ana Sayfa'nın tanıtım yazıları kendi boylarında.
-  Grafiklerin eksen yazıları ekranda her genişlikte 12 px (app.js:
-  eksenYazisiniSabitle, EKSEN_YAZI_PX).
-- **Sol bar seçili satır:** yazısı öbür satırlarla aynı (14 px, 600);
+  KALINLIK. Tasarım boyları 14 / 12,5 / 16 px; `--ekran-kat` (.9) ile
+  ekranda 12,6 / 11,25 / 14,4 px. Metin, ad, başlık, düğme, tablo, sol
+  bar satırları, üst şerit ve İş Akışı fazları büyük boyda; küçük yazılar
+  (adım sayacı, rozetler, İş Akışı alt açıklamaları ve adımları,
+  "Çalışma Alanları" ayracı) küçük boyda; yalnız sohbetteki kart başlığı
+  (01.1 ...) en büyük boyda. Ad ve başlıklar boyla değil kalınlıkla
+  ayrılır: 600 (sol bar satırlarıyla aynı), metin 400; 700 ve 800
+  kullanılmaz. Boylar `calc(14px * var(--ekran-kat) / var(--olcek))`
+  biçiminde; sol barda `--sol-ekran`'a bölünür (app.js: solBarOlcekle),
+  böylece her pencere boyunda ekranda aynı px. Düğme ve giriş kutusu
+  yükseklikleri ekranda 24,3 / 20,7 px. Ana Sayfa'nın tanıtım yazıları
+  kendi boylarında (sayfa ölçeğiyle). Grafiklerin eksen yazıları ekranda
+  her genişlikte 10,8 px (app.js: EKSEN_YAZI_PX). Bütün boyutu tek
+  yerden değiştirmek için `--ekran-kat` (1 = eski %100 görünüm) ile
+  `--olcek` ve `--sol-olcek` birlikte değiştirilir.
+- **Sol bar seçili satır:** yazısı öbür satırlarla aynı (600);
   seçili olduğunu gri zemin ve soldaki çizgi gösterir.
 
 **Sol bar**
@@ -216,8 +218,10 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   kaldırılır ve özet yeniden yazılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
-Uygulama ekranın tamamını kullanır ve tarayıcıda %79,2 yakınlaştırmadaki
-gibi görünür: eski %88 ölçeğin %90'ı. style.css'te `--olcek: .792`
+Uygulama ekranın tamamını kullanır ve tarayıcıda %71,28 yakınlaştırmadaki
+gibi görünür: .88 x .9 x .9; son .9 (`--ekran-kat`) bütün uygulamanın
+tarayıcıda %90'daki görünümüdür, yazı ve kontrol boyları da bu katla
+çarpılır. style.css'te `--olcek: .7128`, sol bar `--sol-olcek: .72`
 (1 = %100); tarayıcının kendi yakınlaştırması %100'de kalır. Sol bar
 kaydırmasızdır (tasarım eni 340 px, yazılar 15 px). Boyu iki adımda
 bulunur: önce eski sığdırma oranı (sayfa %88'deyken Model Platformu

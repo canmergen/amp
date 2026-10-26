@@ -39,13 +39,13 @@
      px; yalnız kart başlığı 16 px. Ad ve başlıklar boyla değil
      kalınlıkla (600) ayrılır. Boşluklar, paneller ve kutular sayfa
      ölçeğinde kalır. */
-  --fs-govde:  calc(14px / var(--olcek));     /* her metin */
-  --fs-baslik: calc(14px / var(--olcek));     /* adlar ve basliklar: govdeyle ayni boy, kalinlikla ayrilir */
-  --fs-ustbar: calc(12.5px / var(--olcek));   /* kucuk yazilar: sayac, rozet, alt aciklama */
+  --fs-govde:  calc(14px * var(--ekran-kat) / var(--olcek));     /* her metin */
+  --fs-baslik: calc(14px * var(--ekran-kat) / var(--olcek));     /* adlar ve basliklar: govdeyle ayni boy, kalinlikla ayrilir */
+  --fs-ustbar: calc(12.5px * var(--ekran-kat) / var(--olcek));   /* kucuk yazilar: sayac, rozet, alt aciklama */
   --fs-kucuk:  var(--fs-govde);
   --fs-etiket: var(--fs-govde);
   --fs-buyuk:  var(--fs-baslik);
-  --fs-blok:   calc(16px / var(--olcek));      /* yalniz sohbet blok basligi (.blok-ad) */
+  --fs-blok:   calc(16px * var(--ekran-kat) / var(--olcek));      /* yalniz sohbet blok basligi (.blok-ad) */
 
   --fw-normal: 400;
   --fw-kalin:  600;   /* tek vurgu kalinligi (sol bar satirlariyla ayni) */
@@ -75,8 +75,8 @@
   --b-1: 3px;  --b-2: 6px;  --b-3: 9px;  --b-4: 12px;  --b-5: 15px;  --b-6: 18px;
   /* Kontrol yükseklikleri de yazı gibi EKRANDA görünen boyla (27 / 23 px):
      yazı sayfa ölçeğinden bağımsız olduğu için kutular da onunla büyür. */
-  --btn-h:     calc(27px / var(--olcek));     /* tum ana butonlar */
-  --btn-h-kucuk: calc(23px / var(--olcek));   /* ikon butonlari, Gonder */
+  --btn-h:     calc(27px * var(--ekran-kat) / var(--olcek));     /* tum ana butonlar */
+  --btn-h-kucuk: calc(23px * var(--ekran-kat) / var(--olcek));   /* ikon butonlari, Gonder */
   --serit:     3px;      /* kart solundaki marka vurgu cubugu */
   --halka:     2px;      /* odak ve hover halkasi kalinligi */
   --golge-1:   0 1px 2px rgba(16,24,40,.06);
@@ -388,18 +388,20 @@ body:has(#kabuk.koyu) { background-color: #121418; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
-/* EKRAN ÖLÇEĞİ: uygulama tarayıcıda %79,2 yakınlaştırmadaki gibi görünür
-   (yazılar, simgeler, boşluklar, paneller birlikte): eski .88 ölçeğin
-   %90'ı (.88 x .9 = .792). Tasarım ölçüleri olduğu gibi kalır; html'e
-   zoom verilir. Ekranın oranına bağlı ölçüler (vw, vh) zoom'dan ayrıca
+/* EKRAN ÖLÇEĞİ: uygulama tarayıcıda %71,28 yakınlaştırmadaki gibi görünür
+   (yazılar, simgeler, boşluklar, paneller birlikte): .88 x .9 x .9. Son
+   .9 --ekran-kat: bütün uygulamanın tarayıcıda %90'daki görünümü; yazı
+   ve kontrol boyları da (style.css: calc(14px * var(--ekran-kat) / ...))
+   bu katla çarpılır. Tasarım ölçüleri olduğu gibi kalır; html'e zoom
+   verilir. Ekranın oranına bağlı ölçüler (vw, vh) zoom'dan ayrıca
    etkilenmesin diye var(--olcek)'e bölünür; app.js ekrandaki konumları
    (fare, getBoundingClientRect) tasarım pikseline aynı oranla çevirir
    (ekranOlcegi). Tek yerden değişir: 1 = %100.
    --sol-olcek: sol bar, sayfa .88 ölçekteyken ekrandaki boyunun bu
-   oranında görünür (.8 = %80); bkz. app.js solBarOlcekle.
+   oranında görünür (.72 = .8 x .9); bkz. app.js solBarOlcekle.
    --sol-icerik: sol barın eni ve boyu aynı kalır, içindeki sayfa
    satırları ve alttaki düğmeler (yazı ve çizimler) bu kat büyür. */
-:root { --olcek: .792; --sol-olcek: .8; --sol-icerik: 1.2; }
+:root { --olcek: .7128; --sol-olcek: .72; --sol-icerik: 1.2; --ekran-kat: .9; }
 html { zoom: var(--olcek); }
 
 /* Uygulama ekranın tamamını kullanır. --kabuk-*: uygulama kabuğunun
@@ -693,15 +695,15 @@ body { background-color: #FFFFFF; }
 /* ==================== SOL PANEL ==================== */
 /* Orta panel (ANALİTİK SÜREÇ / İŞ AKIŞI) yazıları bir kademe küçük:
    panel dar, uzun adım adları satıra sığsın. Yalnız bu panelde geçerli. */
-#panel { --fs-govde: calc(12.5px / var(--olcek)); --fs-baslik: calc(14px / var(--olcek)); --fs-kucuk: calc(12.5px / var(--olcek)); }
+#panel { --fs-govde: calc(12.5px * var(--ekran-kat) / var(--olcek)); --fs-baslik: calc(14px * var(--ekran-kat) / var(--olcek)); --fs-kucuk: calc(12.5px * var(--ekran-kat) / var(--olcek)); }
 /* Sol barın kendi ölçeği var (app.js: solBarOlcekle); oradaki yazı ve
    kontrol boyları sayfa ölçeğine bölünmez, düz değerlerinde kalır
    (Arşiv listesi, Görünüm, Yeni Çalışma). */
 #sol-bar {
-  --fs-govde: calc(14px / var(--sol-ekran, 1)); --fs-kucuk: calc(14px / var(--sol-ekran, 1));
-  --fs-etiket: calc(14px / var(--sol-ekran, 1)); --fs-baslik: calc(14px / var(--sol-ekran, 1));
-  --fs-buyuk: calc(14px / var(--sol-ekran, 1)); --fs-ustbar: calc(12.5px / var(--sol-ekran, 1));
-  --fs-blok: calc(16px / var(--sol-ekran, 1));
+  --fs-govde: calc(14px * var(--ekran-kat) / var(--sol-ekran, 1)); --fs-kucuk: calc(14px * var(--ekran-kat) / var(--sol-ekran, 1));
+  --fs-etiket: calc(14px * var(--ekran-kat) / var(--sol-ekran, 1)); --fs-baslik: calc(14px * var(--ekran-kat) / var(--sol-ekran, 1));
+  --fs-buyuk: calc(14px * var(--ekran-kat) / var(--sol-ekran, 1)); --fs-ustbar: calc(12.5px * var(--ekran-kat) / var(--sol-ekran, 1));
+  --fs-blok: calc(16px * var(--ekran-kat) / var(--sol-ekran, 1));
   --btn-h: 27px; --btn-h-kucuk: 23px;
 }
 #panel {
@@ -4234,7 +4236,7 @@ span.bolme-cip { cursor: default; }
    sıkı; yazı ve ikonlar satırın içinde büyük tutulur. */
 #sol-bar .ust-kume-ad, #sol-bar .ust-sekme {
   height: 32px; padding: 0 10px; gap: 11px; border-radius: 0;
-  font-size: calc(14px / var(--sol-ekran, 1)); letter-spacing: .01em;
+  font-size: calc(14px * var(--ekran-kat) / var(--sol-ekran, 1)); letter-spacing: .01em;
 }
 #sol-bar .ust-kume-ad { height: 34px; padding: 0 8px; }
 #sol-bar .ust-sekme svg.ikon { width: 15px; height: 15px; }
@@ -4249,7 +4251,7 @@ span.bolme-cip { cursor: default; }
 #ust-sekmeler { gap: 6px; padding: 6px 10px; }
 #sol-bar-alt { padding: 4px 10px 10px; }
 #sol-bar .sol-bar-dugmeler #tema-btn, #sol-bar .sol-bar-dugmeler #calismalar-btn, #sol-bar .sol-bar-dugmeler #sifirla-btn {
-  height: 38px; padding: 0 10px; gap: 11px; border-radius: 10px; font-size: calc(14px / var(--sol-ekran, 1));
+  height: 38px; padding: 0 10px; gap: 11px; border-radius: 10px; font-size: calc(14px * var(--ekran-kat) / var(--sol-ekran, 1));
 }
 #sol-bar #tema-btn svg.ikon, #sol-bar #calismalar-btn .sifirla-ikon, #sol-bar #sifirla-btn .sifirla-ikon { width: 15px; height: 15px; }
 #sol-bar .sol-bar-dugmeler { gap: 6px; }
@@ -4312,7 +4314,7 @@ span.bolme-cip { cursor: default; }
 #sol-bar #ust-sekmeler > .sol-cizgi { margin: 4px 2px 0; }
 #sol-bar .sol-bolum-ayrac {
   display: flex; align-items: center; gap: 8px; margin: 4px 2px 0;
-  font-size: calc(12.5px / var(--sol-ekran, 1)); font-weight: var(--fw-yari); letter-spacing: .02em;
+  font-size: calc(12.5px * var(--ekran-kat) / var(--sol-ekran, 1)); font-weight: var(--fw-yari); letter-spacing: .02em;
   color: var(--murekkep); white-space: nowrap;
 }
 #sol-bar .sol-bolum-ayrac::before, #sol-bar .sol-bolum-ayrac::after {
@@ -4415,7 +4417,7 @@ span.bolme-cip { cursor: default; }
   height: 32px; padding: 0 10px 0 11px;
   border: 1px solid var(--pembe-kenar); border-radius: 9px;
   background: var(--yuzey); color: var(--kirmizi); cursor: pointer;
-  font-size: calc(14px / var(--olcek)); font-weight: var(--fw-kalin); letter-spacing: .02em;
+  font-size: calc(14px * var(--ekran-kat) / var(--olcek)); font-weight: var(--fw-kalin); letter-spacing: .02em;
   transition: background .12s, border-color .12s;
 }
 #akis-btn .ikon { width: 16px; height: 16px; flex-shrink: 0; }
@@ -4426,7 +4428,7 @@ span.bolme-cip { cursor: default; }
 #akis-konum {
   flex: 1 1 auto; min-width: 0;
   display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px;
-  font-size: calc(14px / var(--olcek)); line-height: 1.35;
+  font-size: calc(14px * var(--ekran-kat) / var(--olcek)); line-height: 1.35;
   white-space: normal; overflow-wrap: break-word;
 }
 #akis-konum .akis-faz { font-weight: var(--fw-kalin); color: var(--metin); }
@@ -4434,7 +4436,7 @@ span.bolme-cip { cursor: default; }
 #akis-konum .akis-adim { font-weight: var(--fw-kalin); color: var(--kirmizi); }
 #akis-ilerleme {
   flex-shrink: 0; white-space: nowrap;
-  font-size: calc(12.5px / var(--olcek)); font-weight: var(--fw-kalin); color: var(--metin);
+  font-size: calc(12.5px * var(--ekran-kat) / var(--olcek)); font-weight: var(--fw-kalin); color: var(--metin);
   padding: 3px 10px; border-radius: 999px; background: var(--yuzey-alt);
 }
 #akis-ilerleme:empty { display: none; }
@@ -4614,7 +4616,7 @@ span.bolme-cip { cursor: default; }
   font-size: clamp(16px, 5.6cqw, 22px); font-weight: var(--fw-yari);
 }
 .as-kart p { grid-column: 2; grid-row: 2; align-self: start; font-size: 16.5px; line-height: 1.5; }
-.as-kart .as-rozet { font-size: calc(12.5px / var(--olcek)); }
+.as-kart .as-rozet { font-size: calc(12.5px * var(--ekran-kat) / var(--olcek)); }
 .as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { opacity: .5; }
 
 /* Kart açıklamaları: karta basınca kart seçilir (kenarı kırmızı ve
@@ -4788,7 +4790,7 @@ span.bolme-cip { cursor: default; }
   font-size: clamp(16px, 5.6cqw, 21px); line-height: 1.35;
 }
 .as-sayfa p { grid-column: 2; grid-row: 2; align-self: start; font-size: 15.5px; line-height: 1.5; }
-.as-sayfa .as-rozet { font-size: calc(12.5px / var(--olcek)); }
+.as-sayfa .as-rozet { font-size: calc(12.5px * var(--ekran-kat) / var(--olcek)); }
 
 /* Güvenceler: açık zeminli tek kutu, içinde yan yana dört bölme; aralarında
    ince mürekkep çizgisi. Her bölmede solda kırmızı daire içinde simge,
