@@ -82,7 +82,7 @@ içindeki `VARSAYILAN_MODEL`.
 
 **Yazı tipi:** tek aile, **Outfit** (geometrik, yuvarlak, sade). Bütün
 arayüzde: başlıklar, sol bar, metin, tablolar, düğmeler. Başlıklar ve
-vurgu kalın (700), sol bar satırları 600 (seçili satır da), metin 400;
+vurgu 600 (sol bar satırları ve seçili satır da), metin 400;
 kalın halleri gerçek (yapay kalınlaştırma yok). Rakamlar tablolarda eşit
 genişlikte. Değişken font, `style.css` içinde tek dosya olarak gömülü
 (yalnız Latin ve Türkçe harfler, noktalama ve oklar; yaklaşık 33 KB);
@@ -95,21 +95,21 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   her yer aynı oranla büyür, boylar arasındaki ilişkiyi yalnız px
   değerleri belirler. `font-size-adjust` kullanılmaz (`--x-yukseklik:
   none`).
-- **Yazı ölçeği (ekranda görünen boy):** sayfa %79,2 ölçekte olduğu için
-  yazı boyu değişkenleri ölçeğe bölünür; ekranda değer neyse o görünür
-  ve her yerde aynı ölçek geçerli: gövde 13,5 px (`--fs-govde`), başlık
-  15 px (`--fs-baslik`), kart başlığı 16,5 px (`--fs-blok`), küçük 12 px
-  (`--fs-ustbar`); İş Akışı panelinde 12,5 / 14 px. Sol bar satırları 15
-  px, aynı ölçeğe oturur. Düğme ve giriş kutusu yükseklikleri de ekranda
-  27 / 23 px (`--btn-h`, `--btn-h-kucuk`), yazıyla birlikte büyür.
-  Boşluklar, paneller ve kutuların eni sayfa ölçeğinde kalır. Sol barın
-  kendi ölçeği olduğu için orada bu değişkenler düz değerlerindedir
-  (Arşiv listesi 13,5 px). Ana Sayfa'nın tanıtım yazıları kendi
-  boylarında. Seçenek kutularında (A, B, C) başlık açıklamayla aynı boyda
-  (13,5 px), kalınlıkla ayrılır. Grafiklerin eksen yazıları ekranda her
-  genişlikte 12 px: grafik kabın enine göre büyüdükçe yazı boyu o orana
-  bölünür (app.js: eksenYazisiniSabitle, EKSEN_YAZI_PX).
-- **Sol bar seçili satır:** yazısı öbür satırlarla aynı (15 px, 600);
+- **Yazı ölçeği (ekranda görünen boy, her yerde aynı):** ÜÇ BOY, İKİ
+  KALINLIK. Metin, ad, başlık, düğme, tablo, sol bar satırları, üst şerit
+  ve İş Akışı fazları 14 px; küçük yazılar (adım sayacı, rozetler, İş
+  Akışı alt açıklamaları ve adımları, "Çalışma Alanları" ayracı) 12,5 px;
+  yalnız sohbetteki kart başlığı (01.1 ...) 16 px. Ad ve başlıklar boyla
+  değil kalınlıkla ayrılır: 600 (sol bar satırlarıyla aynı), metin 400;
+  700 ve 800 kullanılmaz. Sayfa %79,2 ölçekte olduğu için boylar ölçeğe
+  bölünür (`calc(14px / var(--olcek))`); sol barın kendi ölçeği var,
+  oradaki boylar `--sol-ekran`'a bölünür (app.js: solBarOlcekle), böylece
+  her pencere boyunda ekranda aynı px. Düğme ve giriş kutusu yükseklikleri
+  ekranda 27 / 23 px. Boşluklar, paneller ve kutuların eni sayfa
+  ölçeğinde kalır. Ana Sayfa'nın tanıtım yazıları kendi boylarında.
+  Grafiklerin eksen yazıları ekranda her genişlikte 12 px (app.js:
+  eksenYazisiniSabitle, EKSEN_YAZI_PX).
+- **Sol bar seçili satır:** yazısı öbür satırlarla aynı (14 px, 600);
   seçili olduğunu gri zemin ve soldaki çizgi gösterir.
 
 **Sol bar**

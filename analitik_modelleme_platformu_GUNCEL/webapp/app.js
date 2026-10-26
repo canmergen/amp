@@ -335,6 +335,11 @@ function solBarOlcekle() {
     const ic = document.getElementById("sol-bar-ic");
     if (!bar || !ic || !bar.clientHeight) return;
     const icerik = [...ic.querySelectorAll("#ust-sekmeler, .sol-bar-dugmeler")];
+    /* Sol bar yazıları ekranda sabit boyda (style.css: calc(14px /
+       --sol-ekran)); --sol-ekran satırların ekrandaki toplam ölçeği.
+       Doğal boy ölçülürken 1. */
+    const kokStil = document.documentElement.style;
+    kokStil.setProperty("--sol-ekran", "1");
     ic.style.zoom = "1";
     ic.style.height = "auto";
     icerik.forEach(e => { e.style.zoom = ""; });
@@ -356,6 +361,7 @@ function solBarOlcekle() {
     let kat = Math.max(1, solBarIcerikKati());
     for (;;) {
         icerik.forEach(e => { e.style.zoom = String(kat); });
+        kokStil.setProperty("--sol-ekran", String(kok * olcek * kat));
         if (kat <= 1 || sigar()) break;
         kat = Math.max(1, Math.round((kat - 0.02) * 100) / 100);
     }
