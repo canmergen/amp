@@ -445,8 +445,8 @@ tanıtır; sayfalar sol bardan açılır.
   silinir).
 - **01.2.4.1 Dönem Bilgisi, kart:** başlığın altında tek satır özet
   ("6 kalıp (3 pencere, 1 zaman noktası) · 2 yorumlanıyor · 4 aday")
-  ve yanında "i": yönerge ile sütun açıklamaları orada. Altında iki
-  sekme (sayılarıyla): Kalıplar (tablo) ve Adaylar. Adaylar'da kolon
+  ve yanında "i": yönerge ile sütun açıklamaları orada. Altında üç
+  sekme (sayılarıyla): Kalıplar (tablo), Adaylar ve Tüm Parçalar. Adaylar'da kolon
   adlarında bulunup tabloda olmayan BÜTÜN sayılı kalıplar durur (KALIP /
   ADLARDA GEÇEN / OLASILIK / DİL MODELİ); hiçbiri gizlenmez. Olasılık
   rozeti: Orta (dil modeli zaman bilgisi dedi ama emin değil; kanıt
@@ -458,7 +458,33 @@ tanıtır; sayfalar sol bardan açılır.
   geçer; Kalıplar'da yeniden Çıkar denen aday Adaylar'a döner. Olasılık
   yalnız dil modelinin kararı ve saydığı örnek tanımlardan gelir
   (uydurma yüzde yok; satırda `olasilik`: yuksek, orta, bakilmadi,
-  dusuk). Yalnız sayılı kalıplar burada: rakamsız parçaların
+  dusuk).
+  - **Tüm Parçalar (üçüncü sekme):** kolon adlarındaki BÜTÜN parçalar
+    (yalnız rakamlar hariç; sayılı parçalar ve `P_NN` ikilileri dahil),
+    kolon sayısına göre sıralı, arama kutusu ve süzgeç çipleri (Tümü,
+    Kalıplarda, Kalıplarda Olmayan), sayfa başına 150 satır ("Daha fazla
+    göster"). Sütunlar: PARÇA / KOLON / ÖRNEK KOLON / DURUM / düğme. Durum:
+    Kalıp (tablodaki bir kalıbın kendisi), Kalıp değeri (tablodaki bir
+    kalıbın değeri), Dönem değil (değer gruptan çıkarılmış), Adaylarda.
+    Tek düğme: kalıplardaysa "Kalıplardan Çıkar" (kalıbın kendisiyse satır
+    çıkar; bir grubun değeriyse yalnız o değer Dönem Değil olur, grupta
+    son değerse satır çıkar), değilse "Kalıplara Al" (Adaylar'daki kalıbı
+    tabloya alır; dönem değil işaretli değeri gruba geri alır; hiçbir
+    kalıba uymayan parçayı kendisi olarak elle ekler).
+  - **Anlamı dil modeli yazar:** tablodaki bir satırın anlamı boşsa
+    (tabloya alındı, Tüm Parçalar'dan eklendi, elle kalıp yazıldı) kart
+    `/donem_anlam` ile dil modeline yazdırır (`akis_faz01.donem_anlam_oner`,
+    `donem.tek_kalip`: kalıbın adlardaki değerleri ve örnek tanımlar;
+    `llm.donem_yorumla(..., zorunlu_anlam=True)`: "dönem değil" bulsa bile
+    anlam yazar). Hafızada anlamı olan kalıp dil modeline gitmez. Satırın
+    üstünde "Dil modeli anlamı yazıyor", gelince "Dil modeli · 3 / 3 örnek
+    tanım uyuşuyor". Gelen anlam yalnız kutu hâlâ boşsa yazılır; tür
+    kullanıcı değiştirmediyse dil modelininki olur. Kullanıcı anlamı silip
+    boş bırakırsa 8 saniye bekler ("Anlam boş: birkaç saniye içinde dil
+    modeli yazacak"); o sürede yazmaya başlarsa vazgeçilir. Elle kalıpta
+    kalıp yazılıp 1,5 saniye durulunca anlam boşsa yazdırılır. Dil modeli
+    yazamazsa satırda nedeni ve "Yeniden dene". Aynı anda en çok 3 istek.
+    Çalışma ve oturum dosyası değişmez; anlam onayla kaydedilir. Yalnız sayılı kalıplar burada: rakamsız parçaların
   taraması, komşu adaylar ve hafızadaki rakamsız dönem kayıtları bu
   adımdan kalktı (Ad Parçaları'nda gelir).
   - **[sayı]:** kalıpta ve anlamda sayı yer tutucusu ekranda "[sayı]"

@@ -455,6 +455,49 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
     return cikti
 
 
+def tek_kalip(adlar, tanimlar, kalip):
+    """KULLANICININ EKLEDIGI tek kalip icin dil modeli girdisi (bkz.
+    kaliplar): adlarda kalibin desenine uyan parcalar (tek parca ya da
+    <P>_<NN> ikilisi) degerler, tanimi olan kolonlar ornekler; yer
+    tutucusuz kalipta birlikte gectigi ikililer de. Adlarda gecmiyorsa
+    None."""
+    r = kalip_deseni(kalip)
+    if r is None:
+        return None
+    k = _norm(kalip)
+    tanimlar = tanimlar or {}
+    sayac, kolonlar = Counter(), []
+    for ad in adlar:
+        t = _toklar(ad)
+        adaylar = list(t) + [t[i] + "_" + t[i + 1] for i in range(len(t) - 1)]
+        bulunan = [p for p in adaylar if r.match(p)]
+        for p in dict.fromkeys(bulunan):
+            sayac[p] += 1
+        if bulunan:
+            kolonlar.append((ad, bulunan[0]))
+    if not kolonlar:
+        return None
+    ornek, gorulen = [], set()
+    tanimli = [(a, str(tanimlar.get(a) or "").strip(), d) for a, d in kolonlar]
+    tanimli = [x for x in tanimli if x[1]]
+    for a, tn, d in tanimli:                      # once farkli degerler
+        if len(ornek) < ORNEK_ADET and d not in gorulen:
+            ornek.append((a, tn)); gorulen.add(d)
+    for a, tn, d in tanimli:
+        if len(ornek) >= ORNEK_ADET:
+            break
+        if (a, tn) not in ornek:
+            ornek.append((a, tn))
+    cikti = {"kalip": k, "tur": "elle", "kolon": len(kolonlar),
+             "degerler": sorted(sayac.items(), key=lambda kv: (-kv[1], kv[0])),
+             "ornekler": ornek}
+    if "<" not in k:
+        b = birlikte_haritasi(adlar, tanimlar).get(k)
+        if b:
+            cikti.update(birlikte=b["birlikte"], tek=b["tek"], birlikte_ornek=dict(b["ornekler"]))
+    return cikti
+
+
 def parca_listesi(adlar, tanimlar, ornek=2):
     """Kolon adlarindaki BUTUN parcalar (yalniz rakam haric): [{"parca",
     "kolon", "donem": donem kalibina uyuyor mu, "ikili": aralik ikilisi mi,

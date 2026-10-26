@@ -10362,9 +10362,10 @@ const DONEM_TURLERI = [
 function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     let kilitli = ilkKilit;
     /* BAŞLIK: yönerge ve sütun açıklamaları başlıktaki "i"de. Altında tek
-       satır özet, sonra iki sekme: Kalıplar (karar tablosu) ve Adaylar
+       satır özet, sonra üç sekme: Kalıplar (karar tablosu), Adaylar
        (adlarda bulunup tabloda olmayan bütün kalıplar, kalıp olma
-       olasılığıyla). Sayısız parçalar Ad Parçaları'nda. */
+       olasılığıyla) ve Tüm Parçalar (kolon adlarındaki bütün parçalar;
+       buradan kalıplara alınır ya da kalıplardan çıkarılır). Sayısız parçalar Ad Parçaları'nda. */
     /* Adımın adı blok başlığında; kartta ayrıca başlık yok. */
     const ozetSatir = elYap("div", "dg-donem-ozet");
     const ozetEl = elYap("span", "", "");
@@ -10424,7 +10425,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     sekmeBar.setAttribute("role", "tablist");
     const panolar = {}, sekmeDugme = {};
     let aktifSekme = "kalip";
-    [["kalip", "Kalıplar"], ["olasi", "Adaylar"]].forEach(([ad, etiket]) => {
+    [["kalip", "Kalıplar"], ["olasi", "Adaylar"], ["parca", "Tüm Parçalar"]].forEach(([ad, etiket]) => {
         const b = elYap("button", "dg-sekme", "");
         b.type = "button";
         b.setAttribute("role", "tab");
@@ -10486,6 +10487,80 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const olasilar = [];              // emin olunamayanlar (tabloda değil): {r, anah}
     const duzen = {};                 // anahtar -> {anlam, kalip, cikar}: yoklamada kaybolmasın
     const anahtarOf = r => r.elle ? (r.id || ("elle:" + r.kalip)) : r.kalip;
+    /* ANLAMI DİL MODELİ YAZAR: tablodaki bir satırın anlamı boşsa
+       (tabloya alındı, Tüm Parçalar'dan eklendi, elle kalıp yazıldı)
+       /donem_anlam ile dil modeline yazdırılır. Kullanıcı anlamı silip boş
+       bıraktıysa URETIM_BEKLE_MS bekler; o sürede yazmaya başlarsa
+       vazgeçilir. Gelen anlam yalnız kutu hâlâ boşsa yazılır. Aynı anda en
+       çok URETIM_ES_ZAMANLI istek. URETIM: anahtar -> {durum: "sayac" |
+       "calisiyor" | "bitti" | "hata", kalip, anlam, tur, kanit, not,
+       kaynak, hata}. */
+    const URETIM = {};
+    const URETIM_BEKLE_MS = 8000;
+    const URETIM_ES_ZAMANLI = 3;
+    const uretimKuyruk = [];
+    let uretimAktif = 0;
+    function uretimSirala() {
+        while (uretimAktif < URETIM_ES_ZAMANLI && uretimKuyruk.length) {
+            uretimAktif++;
+            uretimKuyruk.shift()().finally(() => { uretimAktif--; uretimSirala(); });
+        }
+    }
+    const satirBul = anah => satirlar.find(x => x.anah === anah);
+    const anlamBosMu = (anah, r) => {
+        const dz = duzen[anah];
+        const v = dz && dz.anlam !== undefined ? dz.anlam : (r ? r.anlam : "");
+        return !String(v || "").trim();
+    };
+    function uretimBaslat(anah, kalip) {
+        const u = URETIM[anah];
+        if (u && u.zamanlayici) clearTimeout(u.zamanlayici);
+        URETIM[anah] = { durum: "calisiyor", kalip };
+        const x0 = satirBul(anah); if (x0) x0.boya();
+        uretimKuyruk.push(() => fetch(getWebAppBackendUrl("donem_anlam"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oturum_id: OTURUM_ID, kalip })
+        })
+        .then(res => res.json())
+        .then(d => {
+            if (!URETIM[anah] || URETIM[anah].kalip !== kalip || URETIM[anah].durum !== "calisiyor") return;
+            if (d && d.tamam && d.anlam) {
+                URETIM[anah] = Object.assign({ durum: "bitti", kalip }, d);
+                const x = satirBul(anah);
+                if (x) x.uretimYaz(d);
+                else if (anlamBosMu(anah, null)) {
+                    duzen[anah] = Object.assign(duzen[anah] || {}, { anlam: d.anlam });
+                    if (d.tur && duzen[anah].zaman_tur === undefined) duzen[anah].zaman_tur = d.tur;
+                }
+            } else {
+                URETIM[anah] = { durum: "hata", kalip,
+                                 hata: tireSade((d && (d.hata || d.mesaj)) || "Dil modeli anlam yazmadı.") };
+                const x = satirBul(anah); if (x) x.boya();
+            }
+        })
+        .catch(() => {
+            if (!URETIM[anah] || URETIM[anah].kalip !== kalip) return;
+            URETIM[anah] = { durum: "hata", kalip, hata: "Bağlantı kurulamadı." };
+            const x = satirBul(anah); if (x) x.boya();
+        }));
+        uretimSirala();
+    }
+    /* Kullanıcı anlamı sildi: bir süre bekle, hâlâ boşsa yazdır. */
+    function uretimSayac(anah, kalip) {
+        const u = URETIM[anah];
+        if (u && u.zamanlayici) clearTimeout(u.zamanlayici);
+        const z = setTimeout(() => {
+            const x = satirBul(anah);
+            const bos = x ? !x.anlam().trim() : anlamBosMu(anah, null);
+            if (bos && URETIM[anah] && URETIM[anah].durum === "sayac" && !kilitli && da.dm !== "calisiyor")
+                uretimBaslat(anah, kalip);
+        }, URETIM_BEKLE_MS);
+        URETIM[anah] = { durum: "sayac", kalip, zamanlayici: z };
+    }
+    function uretimVazgec(anah) {
+        const u = URETIM[anah];
+        if (u && u.durum === "sayac") { clearTimeout(u.zamanlayici); delete URETIM[anah]; }
+    }
     /* DÖNEM OLMAYAN DEĞERLER: {değer: {anlam, cikar}} (gruptan ayrılan).
        Düzenleme duzen'de tutulur (yoklamada kaybolmaz); ilk okumada
        satırdan kopyalanır. */
@@ -10700,6 +10775,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
            · kanıt, Hafızadan, Düzenlendi, Kontrol edin, Yorumlanıyor). */
         const durumCip = elYap("div", "dg-donem-durum", "");
         tdA.appendChild(durumCip);
+        /* Dil modelinin yazdığı anlamın notu ya da "Yeniden dene". */
+        const uretimNot = elYap("div", "dg-donem-not", "");
         const g = document.createElement("textarea");
         g.className = "dg-giris dg-donem-anlam";
         g.rows = 2;
@@ -10724,6 +10801,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         const kontrolEl = elYap("div", "dg-donem-kontrol");
         kontrolEl.hidden = true;
         tdA.appendChild(kontrolEl);
+        tdA.appendChild(uretimNot);
         if (r.model) g.title = "Öneren: " + tireSade(r.model);
         /* DEĞERLER (yalnız sayı yer tutucusu olan kalıpta): Anlam hücresinde
            bir örnek ve "Değerleri Düzenle"; açılınca grup satırının hemen
@@ -10931,9 +11009,30 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             /* Renk yok: durum anlamın üstündeki etikette yazar; dikkat
                isteyen satırın solunda ince amber çizgi. */
             const bekliyor = !!r.bekliyor && da.dm === "calisiyor";
-            tr.classList.toggle("dg-donem-dikkat", !bekliyor && (dikkat || uyarili));
+            const u = URETIM[anah];
+            const uYaziyor = !v && u && (u.durum === "calisiyor" || u.durum === "sayac");
+            const uUretti = !!(u && u.durum === "bitti" && v
+                && v.replace(/\s+/g, " ") === String(u.anlam || "").trim().replace(/\s+/g, " "));
+            tr.classList.toggle("dg-donem-dikkat", !bekliyor && !uYaziyor && (dikkat || uyarili));
             let et = "", dikkatEt = false;
+            uretimNot.textContent = "";
             if (bekliyor) et = "Dil modeli yorumluyor";
+            else if (uYaziyor && u.durum === "calisiyor") et = "Dil modeli anlamı yazıyor";
+            else if (uYaziyor) et = "Anlam boş: birkaç saniye içinde dil modeli yazacak";
+            else if (!v && u && u.durum === "hata") {
+                et = "Dil modeli yazamadı: " + u.hata; dikkatEt = true;
+                const yd = elYap("button", "dg-baglanti", "Yeniden dene");
+                yd.type = "button";
+                yd.disabled = kilitli || da.dm === "calisiyor";
+                yd.onclick = () => { const kk = kalipNe(); if (kk) uretimBaslat(anah, kk); };
+                uretimNot.appendChild(yd);
+            }
+            else if (uUretti && !(kg && !kg.value.trim()) && !yt) {
+                et = (u.kaynak === "hafiza" ? "Hafızadan" : "Dil modeli")
+                    + (u.kanit && u.kanit.bakilan ? " · " + ftBinlik(u.kanit.uyan) + " / "
+                       + ftBinlik(u.kanit.bakilan) + " örnek tanım uyuşuyor" : "");
+                if (u.not) uretimNot.textContent = "Not: " + tireSade(u.not);
+            }
             else if (dikkat) { et = !v ? "Anlam boş: yazın ya da satırı çıkarın" : "Kontrol edin"; dikkatEt = true; }
             else if (duz) et = "Düzenlendi";
             else if (r.kaynak === "hafiza") et = "Hafızadan";
@@ -10954,8 +11053,25 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 deger_anlam: Object.assign({}, dgAnlam) });
             elleSay(); dgCiz(); boya(); if (degisti) degisti();
         };
-        g.addEventListener("input", kaydet);
-        if (kg) kg.addEventListener("input", kaydet);
+        g.addEventListener("input", () => {
+            kaydet();
+            /* Silip boş bıraktı: bir süre bekle, sonra dil modeli yazar. */
+            const kk = kalipNe();
+            if (!g.value.trim() && kk) uretimSayac(anah, kk); else uretimVazgec(anah);
+            boya();
+        });
+        if (kg) {
+            let kgZ = null;
+            kg.addEventListener("input", () => {
+                kaydet();
+                /* Elle yazılan kalıp: yazmayı bırakınca anlam boşsa yazdır. */
+                clearTimeout(kgZ);
+                kgZ = setTimeout(() => {
+                    const kk = kg.value.trim().toUpperCase();
+                    if (kk && !anlamAl().trim() && kg.isConnected) uretimBaslat(anah, kk);
+                }, 1500);
+            });
+        }
         cikBtn.onclick = () => {
             if (kilitli || da.dm === "calisiyor") return;
             duzen[anah] = Object.assign(duzen[anah] || {}, {
@@ -10969,9 +11085,43 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         x.dgAnlam = dgAnlam;
         x.detay = detay;
         x.turSec = turSec;
+        x.boya = () => boya();
+        x.kalipNe = kalipNe;
+        x.degerListesi = degerListesi;
+        x.degerDurumu = degerDurumu;
+        /* Tüm Parçalar'dan: bir değeri gruptan çıkar (dönem değil) ya da geri al. */
+        x.degerCikar = (dg, cik) => {
+            if (kilitli || da.dm === "calisiyor") return;
+            delete ayrilanlar[dg];
+            delete dgAnlam[dg];
+            if (cik) ayrilanlar[dg] = { anlam: "", cikar: true };
+            dgKaydet(); dgCiz(); boya();
+            if (kg) elleSay(); else degerCiz(tdD, r.degerler || [], degerDurumu);
+            birlikteCiz();
+            if (degisti) degisti();
+        };
+        /* Dil modelinin yazdığı anlam: kutu hâlâ boşsa yazılır; tür
+           kullanıcı değiştirmediyse dil modelininki olur. */
+        x.uretimYaz = d => {
+            if (!anlamAl().trim()) anlamYaz(tireSade(d.anlam || ""));
+            if (d.tur && !(duzen[anah] && duzen[anah].zaman_tur)
+                    && DONEM_TURLERI.some(t => t[0] === d.tur)) {
+                turSec.value = d.tur; turNotYaz();
+                duzen[anah] = Object.assign(duzen[anah] || {}, { zaman_tur: d.tur });
+            }
+            kaydet(); sekmeSayilari();
+        };
         dgCiz();
         boya();
         satirlar.push(x);
+        /* İLK ÇİZİMDE ANLAM BOŞ: hemen yazdır (daha önce yazdırılmadıysa). */
+        {
+            const kk = kalipNe();
+            const u = URETIM[anah];
+            if (kk && !anlamAl().trim() && !(r.bekliyor && calisiyor) && !kilitli && !calisiyor
+                    && (!u || u.kalip !== kk.toUpperCase() && u.kalip !== kk))
+                setTimeout(() => uretimBaslat(anah, kk.toUpperCase()), 0);
+        }
         tb.appendChild(tr);
         tb.appendChild(detay);
     }
@@ -11085,6 +11235,122 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             td.colSpan = 5; tr.appendChild(td); olaTb.appendChild(tr);
         }
     }
+    /* TÜM PARÇALAR: kolon adlarındaki bütün parçalar (yalnız rakamlar hariç;
+       sayılı parça ve P_NN ikilisi de). Durum: Kalıp (tablodaki bir kalıbın
+       kendisi), Kalıp değeri (tablodaki bir kalıbın değeri), Dönem değil
+       (değer gruptan çıkarılmış), Aday (Adaylar ya da çıkarılanlar). Tek
+       düğme: kalıplardaysa çıkarır, değilse kalıplara alır (Adaylar'daki
+       kalıbı tabloya alır; hiçbir kalıba uymayanı kendisi olarak elle
+       ekler, anlamını dil modeli yazar). Arama ve süzgeç; sayfa başına
+       PARCA_SAYFA satır. */
+    const PARCA_SAYFA = 150;
+    let parcaAra = "", parcaSuz = "tumu", parcaGoster = PARCA_SAYFA;
+    const parNot = elYap("p", "dg-donem-pano-not",
+        "Kolon adlarındaki bütün parçalar, kaç kolonda geçtiğiyle. Kalıplarda olanı buradan "
+        + "çıkarabilir, olmayanı kalıplara alabilirsiniz; anlamı boşsa dil modeli yazar. "
+        + "Sayı içermeyen parçaların anlamı ayrıca bir sonraki adımda Ad Parçaları'nda da sorulur.");
+    const parUst = elYap("div", "dg-donem-aday-suz dg-donem-parca-ust");
+    const parAra = document.createElement("input");
+    parAra.type = "search"; parAra.className = "ft-ara dg-donem-parca-ara";
+    parAra.placeholder = "Parça ara";
+    parAra.setAttribute("aria-label", "Parça ara");
+    parAra.addEventListener("input", () => { parcaAra = parAra.value.trim().toUpperCase(); parcaGoster = PARCA_SAYFA; parcalariCiz(); });
+    const parCipler = elYap("span", "dg-donem-parca-cipler");
+    parUst.append(parAra, parCipler);
+    const parTablo = elYap("table", "dg-tablo dg-donem-parca-tablo");
+    const parBasR = document.createElement("tr");
+    ["Parça", "Kolon", "Örnek Kolon", "Durum", ""].forEach(h => parBasR.appendChild(elYap("th", "", h)));
+    const parTh = document.createElement("thead");
+    parTh.appendChild(parBasR);
+    const parTb = document.createElement("tbody");
+    parTablo.append(parTh, parTb);
+    const parDaha = elYap("button", "dg-toplu-btn dg-donem-parca-daha", "");
+    parDaha.type = "button";
+    parDaha.onclick = () => { parcaGoster += PARCA_SAYFA; parcalariCiz(); };
+    panolar.parca.append(parNot, parUst, parTablo, parDaha);
+    function parcaDurumHaritasi() {
+        const h = new Map();
+        satirlar.forEach(x => {
+            const kal = String(x.kalipNe() || "").toUpperCase();
+            if (kal) h.set(kal, { tip: "kalip", x });
+            (x.degerListesi() || []).forEach(d => {
+                if (h.has(d.deger)) return;
+                h.set(d.deger, { tip: x.degerDurumu(d.deger) === "disi" ? "disi" : "deger", x });
+            });
+        });
+        olasilar.concat(cikanlar).forEach(c => {
+            if (!h.has(c.r.kalip)) h.set(c.r.kalip, { tip: "aday", c });
+            (c.r.degerler || []).forEach(d => { if (!h.has(d.deger)) h.set(d.deger, { tip: "aday", c }); });
+        });
+        return h;
+    }
+    function parcaEylem(p, du) {
+        if (kilitli || da.dm === "calisiyor") return;
+        if (!du) { elleEkle(p.parca); sekmeAc("parca"); return; }
+        if (du.tip === "kalip") { du.x.cikBtn.onclick(); return; }
+        if (du.tip === "deger") {
+            const etkin = (du.x.degerListesi() || []).filter(d => du.x.degerDurumu(d.deger) !== "disi");
+            if (etkin.length <= 1) du.x.cikBtn.onclick(); else du.x.degerCikar(p.parca, true);
+            parcalariCiz(); return;
+        }
+        if (du.tip === "disi") { du.x.degerCikar(p.parca, false); parcalariCiz(); return; }
+        if (du.tip === "aday") { geriAl(du.c.anah); sekmeAc("parca"); }
+    }
+    function parcalariCiz() {
+        parTb.textContent = "";
+        const k = kilitli || da.dm === "calisiyor";
+        const h = parcaDurumHaritasi();
+        const icinde = p => { const du = h.get(p.parca); return !!du && (du.tip === "kalip" || du.tip === "deger"); };
+        const say = { tumu: parcalar.length, ic: 0, dis: 0 };
+        parcalar.forEach(p => { if (icinde(p)) say.ic++; else say.dis++; });
+        parCipler.textContent = "";
+        [["tumu", "Tümü"], ["ic", "Kalıplarda"], ["dis", "Kalıplarda Olmayan"]].forEach(([deg, ad]) => {
+            const b = elYap("button", "bolme-cip" + (parcaSuz === deg ? " secili" : ""), ad + " · " + ftBinlik(say[deg]));
+            b.type = "button";
+            b.onclick = () => { parcaSuz = deg; parcaGoster = PARCA_SAYFA; parcalariCiz(); };
+            parCipler.appendChild(b);
+        });
+        const liste = parcalar
+            .filter(p => !parcaAra || p.parca.includes(parcaAra))
+            .filter(p => parcaSuz === "tumu" || (parcaSuz === "ic") === icinde(p))
+            .sort((a, b) => (b.kolon - a.kolon) || a.parca.localeCompare(b.parca));
+        liste.slice(0, parcaGoster).forEach(p => {
+            const du = h.get(p.parca) || null;
+            const tr = elYap("tr", "dg-satir" + (du && du.tip !== "aday" && du.tip !== "disi" ? " dg-donem-parca-ic" : ""));
+            tr.appendChild(elYap("td", "dg-kolon", p.parca));
+            tr.appendChild(elYap("td", "dg-donem-parca-sayi", ftBinlik(p.kolon)));
+            tr.appendChild(elYap("td", "dg-donem-parca-ornek", (p.ornekler || []).slice(0, 2).join(", ")));
+            const durumMetni = !du ? ""
+                : du.tip === "kalip" ? "Kalıp"
+                : du.tip === "deger" ? "Kalıp değeri: " + donemSayiGoster(du.x.kalipNe())
+                : du.tip === "disi" ? "Dönem değil: " + donemSayiGoster(du.x.kalipNe())
+                : "Adaylarda: " + donemSayiGoster(du.c.r.kalip);
+            tr.appendChild(elYap("td", "dg-donem-olasi-neden", durumMetni));
+            const tdB = elYap("td", "dg-ekle-hucre");
+            const ic = du && (du.tip === "kalip" || du.tip === "deger");
+            const b = elYap("button", "dg-toplu-btn" + (ic ? " dg-donem-cikar" : ""), ic ? "Kalıplardan Çıkar" : "Kalıplara Al");
+            b.type = "button";
+            b.disabled = k;
+            b.title = ic ? (du.tip === "deger"
+                    ? p.parca + " " + donemSayiGoster(du.x.kalipNe()) + " kalıbında dönem değil sayılır."
+                    : p.parca + " dönem bilgisinden çıkarılır.")
+                : du && du.tip === "aday" ? donemSayiGoster(du.c.r.kalip) + " tabloya alınır."
+                : du && du.tip === "disi" ? p.parca + " yeniden " + donemSayiGoster(du.x.kalipNe()) + " kalıbının değeri olur."
+                : p.parca + " kalıp olarak eklenir; anlamını dil modeli yazar.";
+            b.onclick = () => parcaEylem(p, du);
+            tdB.appendChild(b);
+            tr.appendChild(tdB);
+            parTb.appendChild(tr);
+        });
+        if (!liste.length) {
+            const tr = elYap("tr", "dg-bos-tablo");
+            const td = elYap("td", "", parcalar.length ? "Aramaya uyan parça yok." : "Kolon adlarında parça bulunmadı.");
+            td.colSpan = 5; tr.appendChild(td); parTb.appendChild(tr);
+        }
+        const kalan = liste.length - Math.min(liste.length, parcaGoster);
+        parDaha.hidden = kalan <= 0;
+        parDaha.textContent = "Daha fazla göster · " + ftBinlik(kalan) + " parça daha";
+    }
     function cikanlariCiz() {
         cikListe.textContent = "";
         cikBas.textContent = "Çıkarılanlar · " + ftBinlik(cikanlar.length);
@@ -11114,6 +11380,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     function sekmeSayilari() {
         sekmeDugme.kalip.lastChild.textContent = ftBinlik(satirlar.length);
         sekmeDugme.olasi.lastChild.textContent = ftBinlik(olasilar.length);
+        sekmeDugme.parca.lastChild.textContent = ftBinlik(parcalar.length);
         const tur = { pencere: 0, nokta: 0, birim: 0, olcu: 0 };
         satirlar.forEach(x => {
             if (x.r.bekliyor && da.dm === "calisiyor") return;     // tür henüz yok
@@ -11175,6 +11442,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         }
         cikanlariCiz();
         olasilariCiz();
+        parcalariCiz();
         sekmeSayilari();
         durumEl.textContent = da.not ? tireSade(da.not) : "";
         durumEl.hidden = !durumEl.textContent;
@@ -11235,6 +11503,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         ekleBtn.disabled = k;
         cikListe.querySelectorAll("button").forEach(b => { b.disabled = k; });
         olaTb.querySelectorAll("button").forEach(b => { b.disabled = k; });
+        parTb.querySelectorAll("button").forEach(b => { b.disabled = k; });
     }
     kilitDurumu();
     /* Elle satır: kalıp ve anlam ikisi de boşsa yok sayılır. */

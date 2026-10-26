@@ -3456,6 +3456,20 @@ span.bolme-cip { cursor: default; }
 .dg-donem-olasilik-dusuk { color: var(--metin-tamam); background: transparent; border-color: var(--kenar-guclu); }
 .dg-donem-olasilik-hucre .dg-donem-ornek { margin-top: 4px; }
 .dg-donem-aday-dusuk td { color: var(--metin-soluk); }
+/* Tüm Parçalar: arama, süzgeç, tablo. */
+.dg-donem-parca-ust { align-items: center; }
+.dg-donem-parca-ara { width: 220px; height: var(--btn-h-kucuk); }
+.dg-donem-parca-cipler { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.dg-donem-parca-tablo th:nth-child(1) { width: 20%; }
+.dg-donem-parca-tablo th:nth-child(2) { width: 8%; }
+.dg-donem-parca-tablo th:nth-child(3) { width: auto; }
+.dg-donem-parca-tablo th:nth-child(4) { width: 22%; }
+.dg-donem-parca-tablo th:nth-child(5) { width: 185px; }
+.dg-donem-parca-tablo .dg-ekle-hucre .dg-toplu-btn { white-space: nowrap; }
+.dg-donem-parca-sayi { font-variant-numeric: tabular-nums; }
+.dg-donem-parca-ornek { color: var(--metin-soluk); font-size: var(--fs-kucuk); overflow-wrap: anywhere; }
+.dg-donem-parca-ic > td:first-child { box-shadow: inset 3px 0 0 var(--yesil); }
+.dg-donem-parca-daha { margin-top: var(--b-2); }
 .dg-donem-olasi-neden { color: var(--metin); font-size: var(--fs-kucuk); line-height: 1.45; }
 
 /* DÖNEM DEĞERLERİ: Anlam hücresinde örnek ve "Değerleri Düzenle"; değer

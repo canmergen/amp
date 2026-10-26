@@ -2329,6 +2329,36 @@ def donem_uygula(durum):
     return metin + "." + (" " + hatalar if hatalar else "")
 
 
+def donem_anlam_oner(durum, kalip):
+    """KULLANICININ TABLOYA ALDIGI ya da ekledigi kalibin anlamini yazar
+    (anlam kutusu bos kaldiginda kart ister). Hafizada anlami varsa o;
+    yoksa dil modeli kalibin adlardaki degerlerine ve ornek tanimlara
+    bakar ve "donem" false olsa bile anlam yazar. Calisma ve oturum dosyasi
+    degismez. Doner: {"tamam", "anlam", "tur", "kanit", "not", "soru",
+    "celiski", "kaynak", "model"} ya da {"tamam": False, "hata"}."""
+    kalip = re.sub(r"\s+", "", str(kalip or "")).upper()
+    if not kalip or donem_mod.kalip_deseni(kalip) is None:
+        return {"tamam": False, "hata": "Geçerli bir kalıp yok."}
+    haf = donem_mod.hafiza()
+    hk = donem_mod.hafiza_anahtari(kalip, haf, donem_mod.hafiza_ayri())
+    if hk and haf.get(hk):
+        return {"tamam": True, "anlam": haf[hk], "tur": donem_mod.hafiza_tur().get(hk) or "",
+                "kanit": None, "not": "", "soru": "", "celiski": "", "kaynak": "hafiza",
+                "model": ""}
+    adlar, tanimlar = _donem_kaynak(durum)
+    k = donem_mod.tek_kalip(adlar, tanimlar, kalip)
+    if not k:
+        return {"tamam": False, "hata": "%s kolon adlarında geçmiyor; anlamını siz yazın." % kalip}
+    sonuc, hata = llm_mod.donem_yorumla([k], zorunlu_anlam=True)
+    m = sonuc.get(k["kalip"]) or {}
+    if not m.get("anlam"):
+        return {"tamam": False, "hata": hata or "Dil modeli anlam yazmadı; anlamı siz yazın."}
+    return {"tamam": True, "anlam": m["anlam"], "tur": m.get("tur") or "",
+            "kanit": m.get("kanit"), "not": m.get("not", ""), "soru": m.get("soru", ""),
+            "celiski": m.get("celiski", ""), "kaynak": "model", "model": m.get("model", ""),
+            "donem": bool(m.get("donem", True))}
+
+
 def donem_hafiza_ekle(durum, kalip, anlam):
     """KOLON ADLARINDA GECMEYEN donem kalibini yalniz hafizaya yazar; bu
     calismayi etkilemez. Adinda bu kalip gecen bir veri seti geldiginde

@@ -1785,7 +1785,7 @@ def yazilis_bul(deger):
     return donem.yazilis(deger)
 
 
-def donem_yorumla(kaliplar, orkestra=None):
+def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False):
     """kaliplar: [{"kalip", "tur", "degerler": [(deger, kolon)],
     "ornekler": [(kolon, tanim)], aile ise "yazilislar", "ornek_yazilis"}].
     Doner: ({kalip: {"donem", "anlam", "soru", "not", "model", "haric",
@@ -1800,7 +1800,8 @@ def donem_yorumla(kaliplar, orkestra=None):
                "aile": "harf ve sayı; aynı harf ile sayının yazılışları birlikte",
                "yazilis": "harf ve sayının ailesinden ayrı anlamlı yazılışı",
                "komsu": "dönem parçasının yanındaki parça (aday)",
-               "hafiza": "önceki çalışmada onaylanmış kalıp"}
+               "hafiza": "önceki çalışmada onaylanmış kalıp",
+               "elle": "kullanıcının dönem bilgisi olarak eklediği kalıp"}
     satirlar = []
     for k in kaliplar:
         s = "- KALIP: %s (%s)\n  DEĞERLER: %s" % (
@@ -1821,7 +1822,11 @@ def donem_yorumla(kaliplar, orkestra=None):
             s += "\n  ÖRNEK (%s): %s: %s" % (ik, oad, str(otanim)[:240])
         satirlar.append(s)
     model, veri = ork.json_cagir(ork.modeller("donem"), SISTEM_DONEM,
-                                 _veri_blogu("KALIPLAR:", "\n".join(satirlar)), 0.1,
+                                 _veri_blogu(
+                                     "KALIPLAR (kullanıcı bunları dönem bilgisi olarak ekledi; "
+                                     "\"donem\" false olsa bile \"anlam\" alanını tanımlara göre "
+                                     "mutlaka yaz):" if zorunlu_anlam else "KALIPLAR:",
+                                     "\n".join(satirlar)), 0.1,
                                  zaman_asimi=DONEM_ZAMAN_ASIMI)
     if not model:
         return {}, _orkestra_hatasi(ork, "dönem bilgisi")

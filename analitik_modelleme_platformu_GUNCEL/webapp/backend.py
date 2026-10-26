@@ -2988,6 +2988,19 @@ def donem_iptal_endpoint():
         return jsonify(_hata_govdesi("donem_iptal", e)), 200
 
 
+@app.route("/donem_anlam", methods=["POST"])
+def donem_anlam_endpoint():
+    """Tabloya alinan / eklenen kalibin anlamini dil modeline yazdirir
+    (anlam kutusu bos kalinca kart ister). Calisma dosyasi degismez."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify(akis.donem_anlam_oner(durum, istek.get("kalip")))
+    except Exception as e:
+        return jsonify(_hata_govdesi("donem_anlam", e)), 200
+
+
 @app.route("/donem_hafiza_ekle", methods=["POST"])
 def donem_hafiza_ekle_endpoint():
     """Kolon adlarinda gecmeyen donem kalibini yalniz hafizaya yazar
