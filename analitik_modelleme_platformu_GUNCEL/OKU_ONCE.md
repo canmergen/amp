@@ -166,14 +166,15 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
     çizgileri (sol bar ayraçları, Ana Sayfa kart kenarları) yumuşak gri
     (#555C67). Grafik mavisi #6EA8FE. Kaydırma çubukları ve form kutuları
     da koyu.
-  - **Koyu modda görseller:** çizimler (sol bar, Ana Sayfa kartları,
-    alttaki robot, sohbet avatarları) piksel piksel işlenir (app.js:
-    koyuGorsel): yalnız renksiz pikseller döner (siyah açık renge,
-    beyaz saydama, gri koyuluğuyla orantılı yarı saydama); kırmızı, açık
-    kırmızı ve diğer renkli pikseller hiç değişmez. Logo değişmez, siyah
-    harfleri okunsun diye açık bir plakanın üstünde durur. Ana Sayfa'nın
-    üst görseli değişmez, köşeleri yuvarlatılmış resim olarak durur.
-    Beyaz ve Sepya'da hiçbir görsel değişmez.
+  - **Koyu modda görseller:** görseller saydam zeminli; renklerine hiç
+    dokunulmaz (süzgeç, ters çevirme, plaka yok). Siyah çizgi ve siyah
+    dolgular (saç, pantolon, logo harfleri) koyu zeminde kaybolmasın diye
+    çizimlerin dış hattına ince açık kontur çizilir: sol bar çizimleri,
+    Ana Sayfa kart çizimleri ve alttaki robotta 1 px, logoda 0,5 px;
+    rengi çizimlerin kâğıt rengi (#EDE6D8). Kilitli satırların çizimleri
+    yine gri ve soluk. Sohbet avatarları ve Ana Sayfa'nın üst görseli
+    kendi zeminleriyle okunduğu için kontursuz. Beyaz ve Sepya'da hiçbir
+    görsel değişmez.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
   Her satırın sağında çöp kutusu (onaylı, kalıcı silme). Altta "Diğer
   Klasörler": PROJE_HAFIZASI'nda olup listede olmayan kendi v-klasörleriniz

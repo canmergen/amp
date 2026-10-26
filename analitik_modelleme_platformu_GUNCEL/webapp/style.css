@@ -275,16 +275,14 @@
    Mürekkep yazıları ana yazı renginde; mürekkep çizgileri (sol bar
    ayraçları, Görünüm anahtarı, Ana Sayfa kart kenarları) yumuşak gri
    (#555C67); uygulamayı çevreleyen ayraç koyu gri.
-   GÖRSELLER: çizimlerde yalnız renksiz pikseller döner (siyah açık,
-   beyaz saydam), renkler aynı kalır (app.js: koyuGorsel). Logo
-   değişmez, açık plakanın (--gorsel-plaka) üstünde durur. Form
-   denetimleri ve kaydırma çubukları da koyu (color-scheme). */
+   GÖRSELLER: renkleri değişmez; çizimlerin ve logonun dış hattında ince
+   açık kontur (aşağıda, --cizim-kontur). Form denetimleri ve kaydırma
+   çubukları da koyu (color-scheme). */
 #kabuk.koyu {
   color-scheme: dark;
   --murekkep:     #E6E8EB;
   --murekkep-cizgi: #555C67;
   --ayrac:        #2E333B;
-  --gorsel-plaka: #F2F3F5;
 
   --kirmizi:      #FF5A5F;
   --kirmizi-koyu: #FF7A7E;
@@ -340,19 +338,30 @@
 #kabuk.koyu .blok-durum.kontrol {
   color: var(--amber); background: var(--amber-acik); border-color: var(--amber);
 }
-/* Koyu modda görseller. Çizimler (sol bar, Ana Sayfa kartları, alttaki
-   robot, sohbet avatarları) app.js'te (koyuGorsel) tersine çevrilir:
-   siyahlar açık, beyazlar saydam; renkler aynı. Burada yalnız
-   multiply kapatılır (koyu zeminde her şeyi karartırdı). Logo hiç
-   değişmez; siyah harfleri koyu zeminde okunsun diye açık bir
-   plakanın üstünde durur. Ana Sayfa'nın üst görseli de değişmez,
-   köşeleri yuvarlatılmış bir resim olarak durur. */
-#kabuk.koyu #sol-bar .ikon-gorsel, #kabuk.koyu .as-kart-ikon, #kabuk.koyu .as-sayfa-ikon {
-  mix-blend-mode: normal;
+/* Koyu modda görseller. Görseller saydam zeminli; renklerine hiç
+   dokunulmaz (süzgeç, ters çevirme, plaka yok). Siyah çizgiler ve siyah
+   dolgular (saç, pantolon, logo harfleri) koyu zeminde kaybolmasın diye
+   çizimlerin ve logonun dış hattına ince açık bir kontur çizilir
+   (--cizim-kontur: dört yönde 1 px gölge, logoda 0,5 px; çizimlerin
+   kâğıt rengi). Multiply
+   kapatılır (koyu zeminde her şeyi karartırdı). Sohbet avatarları ve Ana
+   Sayfa'nın üst görseli kendi zeminleriyle okunduğu için kontursuz. */
+#kabuk.koyu {
+  --cizim-kontur: drop-shadow(1px 0 0 #EDE6D8) drop-shadow(-1px 0 0 #EDE6D8)
+                  drop-shadow(0 1px 0 #EDE6D8) drop-shadow(0 -1px 0 #EDE6D8);
+  /* Logoda daha ince (0,5 px): alttaki küçük yazının harfleri birbirine
+     karışmasın. */
+  --logo-kontur: drop-shadow(.5px 0 0 #EDE6D8) drop-shadow(-.5px 0 0 #EDE6D8)
+                 drop-shadow(0 .5px 0 #EDE6D8) drop-shadow(0 -.5px 0 #EDE6D8);
 }
-#kabuk.koyu #katip-logo {
-  box-sizing: border-box; padding: 6px 10px; border-radius: 8px;
-  background: var(--gorsel-plaka);
+#kabuk.koyu #sol-bar .ikon-gorsel, #kabuk.koyu .as-kart-ikon, #kabuk.koyu .as-sayfa-ikon,
+#kabuk.koyu #robot-alt {
+  mix-blend-mode: normal; filter: var(--cizim-kontur);
+}
+#kabuk.koyu #katip-logo { filter: var(--logo-kontur); }
+#kabuk.koyu #sol-bar .ust-sekme.kapali img.ikon-gorsel,
+#kabuk.koyu .as-kart.kapali .as-kart-ikon, #kabuk.koyu .as-sayfa.kapali .as-sayfa-ikon {
+  filter: grayscale(1) var(--cizim-kontur);
 }
 #kabuk.koyu .as-hero-gorsel img { border-radius: 10px; }
 #kabuk.sepya .blok-durum.kontrol {
