@@ -275,9 +275,9 @@
    Mürekkep yazıları ana yazı renginde; mürekkep çizgileri (sol bar
    ayraçları, Görünüm anahtarı, Ana Sayfa kart kenarları) yumuşak gri
    (#555C67); uygulamayı çevreleyen ayraç koyu gri.
-   GÖRSELLER: renkleri değişmez; çizimlerin ve logonun dış hattında ince
-   açık kontur (aşağıda, --cizim-kontur). Form denetimleri ve kaydırma
-   çubukları da koyu (color-scheme). */
+   GÖRSELLER: renkleri değişmez; dış hatlarında ince açık kontur
+   (aşağıda, GÖRSEL KONTURU). Form denetimleri ve kaydırma çubukları da
+   koyu (color-scheme). */
 #kabuk.koyu {
   color-scheme: dark;
   --murekkep:     #E6E8EB;
@@ -338,30 +338,37 @@
 #kabuk.koyu .blok-durum.kontrol {
   color: var(--amber); background: var(--amber-acik); border-color: var(--amber);
 }
-/* Koyu modda görseller. Görseller saydam zeminli; renklerine hiç
-   dokunulmaz (süzgeç, ters çevirme, plaka yok). Siyah çizgiler ve siyah
-   dolgular (saç, pantolon, logo harfleri) koyu zeminde kaybolmasın diye
-   çizimlerin ve logonun dış hattına ince açık bir kontur çizilir
-   (--cizim-kontur: dört yönde 1 px gölge, logoda 0,5 px; çizimlerin
-   kâğıt rengi). Multiply
-   kapatılır (koyu zeminde her şeyi karartırdı). Sohbet avatarları ve Ana
-   Sayfa'nın üst görseli kendi zeminleriyle okunduğu için kontursuz. */
-#kabuk.koyu {
-  --cizim-kontur: drop-shadow(1px 0 0 #EDE6D8) drop-shadow(-1px 0 0 #EDE6D8)
-                  drop-shadow(0 1px 0 #EDE6D8) drop-shadow(0 -1px 0 #EDE6D8);
-  /* Logoda daha ince (0,5 px): alttaki küçük yazının harfleri birbirine
-     karışmasın. */
-  --logo-kontur: drop-shadow(.5px 0 0 #EDE6D8) drop-shadow(-.5px 0 0 #EDE6D8)
-                 drop-shadow(0 .5px 0 #EDE6D8) drop-shadow(0 -.5px 0 #EDE6D8);
+/* GÖRSEL KONTURU (her modda). Görseller saydam zeminli; renklerine hiç
+   dokunulmaz (süzgeç, ters çevirme, plaka yok). Her görselin dış hattına
+   ince bir kontur çizilir: Beyaz'da siyah, Sepya'da sepyanın siyahı,
+   Koyu'da çizimlerin kâğıt rengi (koyu zeminde siyah çizgi ve dolgular
+   kaybolmasın). Kontur art arda dört yönde 1 px gölgedir; her gölge
+   bir öncekinin de gölgesini aldığı için köşeler dahil her yönde tam
+   1 px olur, boşluk kalmaz. Kapsadığı görseller: sol bar çizimleri,
+   alttaki robot, Ana Sayfa'nın üst görseli ve kart çizimleri, sohbet
+   avatarları; logo yalnız Koyu'da (Beyaz ve Sepya'da siyah kontur
+   logonun altındaki küçük siyah yazının harflerini doldurup okunmaz
+   yapıyor; açık zeminde logo konturu gerektirmiyor). Kilitli satırların çizimleri gri ve soluk, kontur aynı. */
+#kabuk { --kontur-renk: #1A1A1A; }
+#kabuk.sepya { --kontur-renk: #2B2118; }
+#kabuk.koyu { --kontur-renk: #EDE6D8; }
+#kabuk {
+  --cizim-kontur:
+    drop-shadow(1px 0 0 var(--kontur-renk)) drop-shadow(-1px 0 0 var(--kontur-renk))
+    drop-shadow(0 1px 0 var(--kontur-renk)) drop-shadow(0 -1px 0 var(--kontur-renk));
 }
-#kabuk.koyu #sol-bar .ikon-gorsel, #kabuk.koyu .as-kart-ikon, #kabuk.koyu .as-sayfa-ikon,
-#kabuk.koyu #robot-alt {
-  mix-blend-mode: normal; filter: var(--cizim-kontur);
+#kabuk.koyu #katip-logo, #kabuk #sol-bar .ikon-gorsel, #kabuk #robot-alt,
+#kabuk .as-hero-gorsel img, #kabuk .as-kart-ikon, #kabuk .as-sayfa-ikon,
+#kabuk .balon-avatar {
+  filter: var(--cizim-kontur);
 }
-#kabuk.koyu #katip-logo { filter: var(--logo-kontur); }
-#kabuk.koyu #sol-bar .ust-sekme.kapali img.ikon-gorsel,
-#kabuk.koyu .as-kart.kapali .as-kart-ikon, #kabuk.koyu .as-sayfa.kapali .as-sayfa-ikon {
+#kabuk #sol-bar .ust-sekme.kapali img.ikon-gorsel,
+#kabuk .as-kart.kapali .as-kart-ikon, #kabuk .as-sayfa.kapali .as-sayfa-ikon {
   filter: grayscale(1) var(--cizim-kontur);
+}
+/* Koyu zeminde multiply her şeyi karartır: kapalı. */
+#kabuk.koyu #sol-bar .ikon-gorsel, #kabuk.koyu .as-kart-ikon, #kabuk.koyu .as-sayfa-ikon {
+  mix-blend-mode: normal;
 }
 #kabuk.koyu .as-hero-gorsel img { border-radius: 10px; }
 #kabuk.sepya .blok-durum.kontrol {
@@ -4240,7 +4247,7 @@ span.bolme-cip { cursor: default; }
   object-fit: contain; mix-blend-mode: multiply;
 }
 #sol-bar .ust-kume-ad img.ikon-gorsel { width: 42px; height: 42px; }
-#sol-bar .ust-sekme.kapali img.ikon-gorsel { filter: grayscale(1); opacity: .45; }
+#sol-bar .ust-sekme.kapali img.ikon-gorsel { opacity: .45; }
 #sol-bar .sol-bar-dugmeler img.ikon-gorsel { width: 32px; height: 32px; }
 /* ---- Görünüm anahtarı ----
    Dergi dilinde (New Yorker): renk yerine mürekkep. İnce siyah çerçeveli
@@ -4587,7 +4594,7 @@ span.bolme-cip { cursor: default; }
 }
 .as-kart p { grid-column: 2; grid-row: 2; align-self: start; font-size: 16.5px; line-height: 1.5; }
 .as-kart .as-rozet { font-size: 13.5px; }
-.as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { filter: grayscale(1); opacity: .5; }
+.as-kart.kapali .as-kart-ikon, .as-sayfa.kapali .as-sayfa-ikon { opacity: .5; }
 
 /* Kart açıklamaları: karta basınca kart seçilir (kenarı kırmızı ve
    kalın, zemini hafif pembe) ve altında açıklaması açılır; yeniden

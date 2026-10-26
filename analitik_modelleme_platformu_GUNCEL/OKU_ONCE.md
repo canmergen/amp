@@ -166,15 +166,16 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
     çizgileri (sol bar ayraçları, Ana Sayfa kart kenarları) yumuşak gri
     (#555C67). Grafik mavisi #6EA8FE. Kaydırma çubukları ve form kutuları
     da koyu.
-  - **Koyu modda görseller:** görseller saydam zeminli; renklerine hiç
-    dokunulmaz (süzgeç, ters çevirme, plaka yok). Siyah çizgi ve siyah
-    dolgular (saç, pantolon, logo harfleri) koyu zeminde kaybolmasın diye
-    çizimlerin dış hattına ince açık kontur çizilir: sol bar çizimleri,
-    Ana Sayfa kart çizimleri ve alttaki robotta 1 px, logoda 0,5 px;
-    rengi çizimlerin kâğıt rengi (#EDE6D8). Kilitli satırların çizimleri
-    yine gri ve soluk. Sohbet avatarları ve Ana Sayfa'nın üst görseli
-    kendi zeminleriyle okunduğu için kontursuz. Beyaz ve Sepya'da hiçbir
-    görsel değişmez.
+  - **Görsel konturu (her modda):** görseller saydam zeminli; renklerine
+    hiç dokunulmaz (süzgeç, ters çevirme, plaka yok). Her görselin dış
+    hattına 1 px kontur çizilir (art arda dört yönde 1 px gölge; köşeler
+    dahil tam): Beyaz'da siyah (#1A1A1A), Sepya'da sepyanın siyahı
+    (#2B2118), Koyu'da çizimlerin kâğıt rengi (#EDE6D8; siyah çizgi ve
+    dolgular koyu zeminde kaybolmasın). Kapsadığı görseller: sol bar
+    çizimleri, alttaki robot, Ana Sayfa'nın üst görseli ve kart
+    çizimleri, sohbet avatarları. Logo yalnız Koyu'da konturlu: Beyaz ve
+    Sepya'da siyah kontur altındaki küçük siyah yazının harflerini
+    doldurup okunmaz yapıyor. Kilitli satırların çizimleri gri ve soluk.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
   Her satırın sağında çöp kutusu (onaylı, kalıcı silme). Altta "Diğer
   Klasörler": PROJE_HAFIZASI'nda olup listede olmayan kendi v-klasörleriniz
