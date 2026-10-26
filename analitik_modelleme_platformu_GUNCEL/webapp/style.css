@@ -3408,7 +3408,7 @@ span.bolme-cip { cursor: default; }
 .dg-donem-tablo th:nth-child(1) { width: 200px; }
 .dg-donem-tablo th:nth-child(2) { width: 26%; }
 .dg-donem-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
-.dg-donem-tablo th:nth-child(4) { width: 110px; text-align: center; }
+.dg-donem-tablo th:nth-child(4) { width: 125px; text-align: center; }
 /* Değer paneli açılınca tablo küçük bir pencerede kaymasın. */
 .dg-donem-sar { max-height: 72vh; }
 .dg-donem-kalip { font-weight: var(--fw-kalin); margin-right: 4px; }
@@ -3470,6 +3470,12 @@ span.bolme-cip { cursor: default; }
 .dg-donem-parca-ornek { color: var(--metin-soluk); font-size: var(--fs-kucuk); overflow-wrap: anywhere; }
 .dg-donem-parca-ic > td:first-child { box-shadow: inset 3px 0 0 var(--yesil); }
 .dg-donem-parca-daha { margin-top: var(--b-2); }
+/* Dönem satırı: Kaydet ve Çıkar alt alta; kaydedilen satırın durum etiketi yeşil. */
+.dg-donem-tablo .dg-ekle-hucre { vertical-align: top; }
+.dg-donem-tablo .dg-ekle-hucre .dg-toplu-btn { display: block; width: 100%; white-space: nowrap; }
+.dg-donem-tablo .dg-ekle-hucre .dg-donem-kaydet { margin-bottom: 6px; }
+.dg-donem-durum.kayitli { color: var(--yesil); }
+.dg-donem-onceki { margin-top: 2px; }
 .dg-donem-olasi-neden { color: var(--metin); font-size: var(--fs-kucuk); line-height: 1.45; }
 
 /* DÖNEM DEĞERLERİ: Anlam hücresinde örnek ve "Değerleri Düzenle"; değer

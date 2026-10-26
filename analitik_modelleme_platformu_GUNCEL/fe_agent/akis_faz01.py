@@ -2329,19 +2329,26 @@ def donem_uygula(durum):
     return metin + "." + (" " + hatalar if hatalar else "")
 
 
-def donem_anlam_oner(durum, kalip):
+def donem_anlam_oner(durum, kalip, kayitli=None):
     """KULLANICININ TABLOYA ALDIGI ya da ekledigi kalibin anlamini yazar
     (anlam kutusu bos kaldiginda kart ister). Hafizada anlami varsa o;
     yoksa dil modeli kalibin adlardaki degerlerine ve ornek tanimlara
     bakar ve "donem" false olsa bile anlam yazar. Calisma ve oturum dosyasi
     degismez. Doner: {"tamam", "anlam", "tur", "kanit", "not", "soru",
-    "celiski", "kaynak", "model"} ya da {"tamam": False, "hata"}."""
+    "celiski", "kaynak", "model"} ya da {"tamam": False, "hata"}.
+    kayitli: [{"kalip", "anlam"}] kullanicinin kaydettigi oteki satirlar;
+    verilirse (cakisan anlam yeniden yaziliyor) hafiza atlanir ve dil
+    modeli bunlardan farkli bir anlam yazar."""
     kalip = re.sub(r"\s+", "", str(kalip or "")).upper()
     if not kalip or donem_mod.kalip_deseni(kalip) is None:
         return {"tamam": False, "hata": "Geçerli bir kalıp yok."}
+    kayitli = [(re.sub(r"\s+", "", str(x.get("kalip") or "")).upper(),
+                re.sub(r"\s+", " ", str(x.get("anlam") or "")).strip())
+               for x in (kayitli or []) if isinstance(x, dict)]
+    kayitli = [(k_, a_) for k_, a_ in kayitli if k_ and a_ and k_ != kalip]
     haf = donem_mod.hafiza()
     hk = donem_mod.hafiza_anahtari(kalip, haf, donem_mod.hafiza_ayri())
-    if hk and haf.get(hk):
+    if hk and haf.get(hk) and not kayitli:
         return {"tamam": True, "anlam": haf[hk], "tur": donem_mod.hafiza_tur().get(hk) or "",
                 "kanit": None, "not": "", "soru": "", "celiski": "", "kaynak": "hafiza",
                 "model": ""}
@@ -2349,7 +2356,7 @@ def donem_anlam_oner(durum, kalip):
     k = donem_mod.tek_kalip(adlar, tanimlar, kalip)
     if not k:
         return {"tamam": False, "hata": "%s kolon adlarında geçmiyor; anlamını siz yazın." % kalip}
-    sonuc, hata = llm_mod.donem_yorumla([k], zorunlu_anlam=True)
+    sonuc, hata = llm_mod.donem_yorumla([k], zorunlu_anlam=True, kayitli=kayitli)
     m = sonuc.get(k["kalip"]) or {}
     if not m.get("anlam"):
         return {"tamam": False, "hata": hata or "Dil modeli anlam yazmadı; anlamı siz yazın."}
@@ -2357,6 +2364,50 @@ def donem_anlam_oner(durum, kalip):
             "kanit": m.get("kanit"), "not": m.get("not", ""), "soru": m.get("soru", ""),
             "celiski": m.get("celiski", ""), "kaynak": "model", "model": m.get("model", ""),
             "donem": bool(m.get("donem", True))}
+
+
+def donem_kaydet(durum, g):
+    """TEK SATIRI KAYDET: karttaki bir satiri (kalip, anlam, tur, haric
+    ikililer, deger anlamlari, gruptan ayrilanlar) onayi beklemeden
+    hafizaya yazar; sonraki acilista ve sonraki calismalarda "Hafizadan"
+    gelir. Calismanin donem bilgisi onayla yazilir (bu cagri degistirmez).
+    Doner: (tamam, mesaj)."""
+    g = g if isinstance(g, dict) else {}
+    kalip = re.sub(r"\s+", "", str(g.get("kalip") or "")).upper()
+    anlam = re.sub(r"\s+", " ", str(g.get("anlam") or "")).strip()
+    if not kalip or donem_mod.kalip_deseni(kalip) is None:
+        return False, "Geçerli bir kalıp yok."
+    if not anlam:
+        return False, "%s: anlam boş; önce anlamı yazın." % kalip
+    yt = donem_mod.yer_tutucu_hatasi(kalip, anlam)
+    if yt:
+        return False, "%s: %s" % (kalip, yt)
+    adlar, tanimlar = _donem_kaynak(durum)
+    desen = donem_mod.kalip_deseni(kalip)
+    ikililer = {ik for ik, _n in (donem_mod.birlikte_haritasi(adlar, tanimlar).get(kalip) or {})
+                .get("birlikte") or []}
+    haric = sorted({str(x).strip().upper() for x in (g.get("haric") or [])} & ikililer)
+    deger_anlam, ayrilan = {}, {}
+    for dg, an in (g.get("deger_anlam") or {}).items() \
+            if isinstance(g.get("deger_anlam"), dict) else ():
+        dg = re.sub(r"\s+", "", str(dg or "")).upper()
+        an = re.sub(r"\s+", " ", str(an or "")).strip()
+        if dg and an and desen.match(dg) and an != donem_mod.deger_anlami(kalip, anlam, dg) \
+                and not donem_mod.yer_tutucu_hatasi(dg, an):
+            deger_anlam[dg] = an
+    for dg, x in (g.get("ayrilan") or {}).items() if isinstance(g.get("ayrilan"), dict) else ():
+        dg = re.sub(r"\s+", "", str(dg or "")).upper()
+        if isinstance(x, dict) and dg and desen.match(dg) and x.get("cikar"):
+            ayrilan[dg] = {"anlam": "", "cikar": True}
+            deger_anlam.pop(dg, None)
+    zaman_tur = str(g.get("zaman_tur") or "")
+    zaman_tur = zaman_tur if zaman_tur in ZAMAN_TUR_ADI else "pencere"
+    ayri = {kalip} if donem_mod.aile_adi(kalip) and not donem_mod.aile_mi(kalip) else set()
+    hata = donem_mod.hafizaya_yaz({kalip: anlam}, {kalip: haric}, {kalip: deger_anlam},
+                                  {kalip: ayrilan}, {kalip: zaman_tur}, ayri)
+    if hata:
+        return False, hata
+    return True, "%s kaydedildi." % kalip
 
 
 def donem_hafiza_ekle(durum, kalip, anlam):

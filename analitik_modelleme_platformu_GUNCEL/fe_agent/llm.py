@@ -1785,7 +1785,7 @@ def yazilis_bul(deger):
     return donem.yazilis(deger)
 
 
-def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False):
+def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False, kayitli=None):
     """kaliplar: [{"kalip", "tur", "degerler": [(deger, kolon)],
     "ornekler": [(kolon, tanim)], aile ise "yazilislar", "ornek_yazilis"}].
     Doner: ({kalip: {"donem", "anlam", "soru", "not", "model", "haric",
@@ -1821,6 +1821,14 @@ def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False):
         for ik, (oad, otanim) in sorted((k.get("birlikte_ornek") or {}).items()):
             s += "\n  ÖRNEK (%s): %s: %s" % (ik, oad, str(otanim)[:240])
         satirlar.append(s)
+    # KAYDEDILMIS ANLAMLAR: kullanicinin onayladigi baska kaliplarin
+    # anlamlari; yeni anlam bunlarla ayni ya da cok yakin olmasin.
+    kayitli = [(str(a), str(b)) for a, b in (kayitli or []) if str(a).strip() and str(b).strip()]
+    if kayitli:
+        satirlar.append("KAYDEDİLMİŞ ANLAMLAR (başka kalıpların, kullanıcı onayladı; "
+                        "yukarıdaki kalıba bunlarla aynı ya da çok yakın anlam verme, "
+                        "tanımlara göre farkını göster):\n" + "\n".join(
+                            "- %s: %s" % (a, b[:200]) for a, b in kayitli[:40]))
     model, veri = ork.json_cagir(ork.modeller("donem"), SISTEM_DONEM,
                                  _veri_blogu(
                                      "KALIPLAR (kullanıcı bunları dönem bilgisi olarak ekledi; "

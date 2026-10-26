@@ -2996,9 +2996,22 @@ def donem_anlam_endpoint():
         istek = request.get_json(force=True) or {}
         anahtar = _oturum_anahtari(istek.get("oturum_id"))
         durum = _durum_al(anahtar)
-        return jsonify(akis.donem_anlam_oner(durum, istek.get("kalip")))
+        return jsonify(akis.donem_anlam_oner(durum, istek.get("kalip"), istek.get("kayitli")))
     except Exception as e:
         return jsonify(_hata_govdesi("donem_anlam", e)), 200
+
+
+@app.route("/donem_kaydet", methods=["POST"])
+def donem_kaydet_endpoint():
+    """Dönem Bilgisi kartında tek satırı hafızaya kaydeder (onayı beklemeden)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        tamam, mesaj = akis.donem_kaydet(durum, istek.get("satir"))
+        return jsonify({"tamam": tamam, "mesaj": mesaj})
+    except Exception as e:
+        return jsonify(_hata_govdesi("donem_kaydet", e)), 200
 
 
 @app.route("/donem_hafiza_ekle", methods=["POST"])

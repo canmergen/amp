@@ -484,7 +484,27 @@ tanıtır; sayfalar sol bardan açılır.
     modeli yazacak"); o sürede yazmaya başlarsa vazgeçilir. Elle kalıpta
     kalıp yazılıp 1,5 saniye durulunca anlam boşsa yazdırılır. Dil modeli
     yazamazsa satırda nedeni ve "Yeniden dene". Aynı anda en çok 3 istek.
-    Çalışma ve oturum dosyası değişmez; anlam onayla kaydedilir. Yalnız sayılı kalıplar burada: rakamsız parçaların
+    Çalışma ve oturum dosyası değişmez; anlam onayla kaydedilir.
+  - **Tek tek kaydet:** her satırda "Kayıt" sütununda Kaydet (Çıkar'ın
+    üstünde). Satırı onayı beklemeden hafızaya yazar (`/donem_kaydet`,
+    `akis_faz01.donem_kaydet`: anlam, tür, hariç ikililer, değer
+    anlamları, dönem olmayan değerler; anlam boşsa ya da yer tutucusu
+    geçersizse kaydetmez). Kaydedilen satırın etiketi yeşil "Kaydedildi",
+    düğmesi "Kaydedildi" ve kapalı; satırda bir şey değişince yeniden
+    "Kaydet" olur. Hafızadan gelip dokunulmamış satır kaydedilmiş sayılır.
+    Çalışmanın dönem bilgisi yine "Dönem Bilgisini Onayla" ile yazılır.
+  - **Yakın anlamlar yeniden yazılır:** bir satır kaydedilince
+    kaydedilmemiş satırlardan anlamı ona yakın olanlar dil modeline
+    yeniden yazdırılır (etiket "Kaydedilen bir anlama yakın: dil modeli
+    yeniden yazıyor"). Yakın: iki anlamın kelimeleri (sayı, yer tutucu ve
+    dolgu sözcükler hariç) aynı, birininki öbüründe tümüyle var ya da
+    ortak kelime oranı %60 ve üstü (`ANLAM_YAKIN_ESIGI`). Dil modeline
+    kaydedilmiş anlamlar bağlam olarak gider ("bunlarla aynı ya da çok
+    yakın anlam verme"; `llm.donem_yorumla(..., kayitli=...)`; bu durumda
+    hafıza atlanır). Yeni anlamın altında "Önceki: ... · Geri Al".
+    Kaydedilmemiş bir satır kaydedilmiş bir anlama yakın kalırsa altında
+    "Kaydedilen [kalıp] anlamına yakın: farkını yazın" uyarısı durur. Boş
+    anlamı yazdırırken de kaydedilmiş anlamlar bağlam olarak gider. Yalnız sayılı kalıplar burada: rakamsız parçaların
   taraması, komşu adaylar ve hafızadaki rakamsız dönem kayıtları bu
   adımdan kalktı (Ad Parçaları'nda gelir).
   - **[sayı]:** kalıpta ve anlamda sayı yer tutucusu ekranda "[sayı]"

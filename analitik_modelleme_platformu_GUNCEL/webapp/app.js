@@ -10376,7 +10376,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const sar = elYap("div", "dg-tablo-sar dg-kisa-sar dg-donem-sar");
     const tablo = elYap("table", "dg-tablo dg-donem-tablo");
     const th = document.createElement("thead"), hr = document.createElement("tr");
-    ["Kalıp", "Adlarda Geçen", "Anlam", "Çıkar"]
+    ["Kalıp", "Adlarda Geçen", "Anlam", "Kayıt"]
         .forEach(h => hr.appendChild(elYap("th", "", h)));
     th.appendChild(hr); tablo.appendChild(th);
     const tb = document.createElement("tbody");
@@ -10496,6 +10496,36 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
        "calisiyor" | "bitti" | "hata", kalip, anlam, tur, kanit, not,
        kaynak, hata}. */
     const URETIM = {};
+    /* KAYIT: satır tek tek kaydedilir (/donem_kaydet, hafızaya yazar).
+       KAYIT[anahtar] kaydedilen hâlin imzası (anlam, tür, hariç ikililer,
+       değer anlamları, dönem olmayan değerler); satır değişince imza tutmaz
+       ve "Kaydet" yeniden açılır. Hafızadan gelen, dokunulmamış satır
+       kaydedilmiş sayılır. */
+    const KAYIT = {};
+    /* YAKIN ANLAM: iki anlamın kelimeleri (sayı ve yer tutucu, dolgu
+       sözcükler hariç) aynı, birinin kelimeleri öbüründe tümüyle var ya da
+       ortak kelime oranı ANLAM_YAKIN_ESIGI ve üstü. Kaydedilen bir satıra
+       yakın anlamlı, kaydedilmemiş satırlar dil modeline yeniden yazdırılır. */
+    const ANLAM_YAKIN_ESIGI = 0.6;
+    const ANLAM_DOLGU = new Set(["ve", "ile", "bir", "için", "olan", "de", "da", "bu", "gibi", "göre"]);
+    function anlamKelimeleri(v) {
+        return new Set(String(v || "").toLocaleLowerCase("tr")
+            .replace(/\[\s*say[ıi]\s*\]|<\s*nn?\s*>/g, " ").replace(/[0-9]/g, " ")
+            .replace(/[^a-zçğıöşü\s]/g, " ").split(/\s+/)
+            .filter(w => w.length > 1 && !ANLAM_DOLGU.has(w)));
+    }
+    function anlamYakin(a, b) {
+        const A = anlamKelimeleri(a), B = anlamKelimeleri(b);
+        if (!A.size || !B.size) return false;
+        let ortak = 0;
+        A.forEach(w => { if (B.has(w)) ortak++; });
+        const birlesim = A.size + B.size - ortak;
+        return ortak === Math.min(A.size, B.size) || ortak / birlesim >= ANLAM_YAKIN_ESIGI;
+    }
+    /* Dil modeline bağlam: kaydedilmiş öbür satırların anlamları. */
+    const kayitliAnlamlar = haric => satirlar
+        .filter(x => x.anah !== haric && x.kayitliMi() && x.anlam().trim())
+        .map(x => ({ kalip: String(x.kalipNe() || "").toUpperCase(), anlam: x.anlam().trim() }));
     const URETIM_BEKLE_MS = 8000;
     const URETIM_ES_ZAMANLI = 3;
     const uretimKuyruk = [];
@@ -10512,22 +10542,24 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         const v = dz && dz.anlam !== undefined ? dz.anlam : (r ? r.anlam : "");
         return !String(v || "").trim();
     };
-    function uretimBaslat(anah, kalip) {
+    function uretimBaslat(anah, kalip, zorla, onceki) {
         const u = URETIM[anah];
         if (u && u.zamanlayici) clearTimeout(u.zamanlayici);
-        URETIM[anah] = { durum: "calisiyor", kalip };
+        URETIM[anah] = { durum: "calisiyor", kalip, zorla: !!zorla, onceki: onceki || "" };
+        const kayitli = kayitliAnlamlar(anah);
         const x0 = satirBul(anah); if (x0) x0.boya();
         uretimKuyruk.push(() => fetch(getWebAppBackendUrl("donem_anlam"), {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ oturum_id: OTURUM_ID, kalip })
+            body: JSON.stringify({ oturum_id: OTURUM_ID, kalip, kayitli })
         })
         .then(res => res.json())
         .then(d => {
             if (!URETIM[anah] || URETIM[anah].kalip !== kalip || URETIM[anah].durum !== "calisiyor") return;
             if (d && d.tamam && d.anlam) {
-                URETIM[anah] = Object.assign({ durum: "bitti", kalip }, d);
+                const zorla0 = URETIM[anah].zorla, onceki0 = URETIM[anah].onceki;
+                URETIM[anah] = Object.assign({ durum: "bitti", kalip, onceki: onceki0 }, d);
                 const x = satirBul(anah);
-                if (x) x.uretimYaz(d);
+                if (x) x.uretimYaz(d, zorla0);
                 else if (anlamBosMu(anah, null)) {
                     duzen[anah] = Object.assign(duzen[anah] || {}, { anlam: d.anlam });
                     if (d.tur && duzen[anah].zaman_tur === undefined) duzen[anah].zaman_tur = d.tur;
@@ -10802,6 +10834,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         kontrolEl.hidden = true;
         tdA.appendChild(kontrolEl);
         tdA.appendChild(uretimNot);
+        const yakinEl = elYap("div", "dg-donem-uyari", "");
+        yakinEl.hidden = true;
+        tdA.appendChild(yakinEl);
         if (r.model) g.title = "Öneren: " + tireSade(r.model);
         /* DEĞERLER (yalnız sayı yer tutucusu olan kalıpta): Anlam hücresinde
            bir örnek ve "Değerleri Düzenle"; açılınca grup satırının hemen
@@ -10979,9 +11014,16 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 ? "Dönem bilgisinden çıkar: kullanılmaz ve onaylayınca hafızadan da silinir. Tablonun altından geri alınabilir."
                 : "Dönem bilgisinden çıkar: kullanılmaz ve hafızaya yazılmaz. Tablonun altından geri alınabilir.";
         cikBtn.setAttribute("aria-label", (r.kalip || "Kalıp") + " çıkar");
+        /* KAYDET: bu satırı onayı beklemeden hafızaya yazar. */
+        const kaydetBtn = elYap("button", "dg-toplu-btn dg-donem-kaydet", "Kaydet");
+        kaydetBtn.type = "button";
+        kaydetBtn.title = "Bu satırı şimdi hafızaya kaydet. Kaydedilmemiş satırlardan anlamı buna "
+            + "yakın olanları dil modeli yeniden yazar.";
+        kaydetBtn.setAttribute("aria-label", (r.kalip || "Kalıp") + " kaydet");
+        tdS.appendChild(kaydetBtn);
         tdS.appendChild(cikBtn);
         tr.appendChild(tdS);
-        const x = { r, g, tr, kg, anah, cikBtn, haric };
+        const x = { r, g, tr, kg, anah, cikBtn, haric, kaydetBtn };
         const kalipDegeri = () => kg ? kg.value.trim() : r.kalip;
         x.yt = () => /\[\s*say[ıi]\s*\]/i.test(anlamAl())
             ? "Kalıpta sayı yok; [sayı] yerine değeri yazın."
@@ -11011,13 +11053,17 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const bekliyor = !!r.bekliyor && da.dm === "calisiyor";
             const u = URETIM[anah];
             const uYaziyor = !v && u && (u.durum === "calisiyor" || u.durum === "sayac");
+            /* Ekran biçiminde karşılaştırılır ("N" ile "[sayı]" aynı). */
             const uUretti = !!(u && u.durum === "bitti" && v
-                && v.replace(/\s+/g, " ") === String(u.anlam || "").trim().replace(/\s+/g, " "));
+                && g.value.trim().replace(/\s+/g, " ")
+                   === donemAnlamGoster(kalipNe(), tireSade(u.anlam || "")).trim().replace(/\s+/g, " "));
             tr.classList.toggle("dg-donem-dikkat", !bekliyor && !uYaziyor && (dikkat || uyarili));
             let et = "", dikkatEt = false;
             uretimNot.textContent = "";
             if (bekliyor) et = "Dil modeli yorumluyor";
             else if (uYaziyor && u.durum === "calisiyor") et = "Dil modeli anlamı yazıyor";
+            else if (u && u.durum === "calisiyor" && u.zorla)
+                et = "Kaydedilen bir anlama yakın: dil modeli yeniden yazıyor";
             else if (uYaziyor) et = "Anlam boş: birkaç saniye içinde dil modeli yazacak";
             else if (!v && u && u.durum === "hata") {
                 et = "Dil modeli yazamadı: " + u.hata; dikkatEt = true;
@@ -11026,6 +11072,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 yd.disabled = kilitli || da.dm === "calisiyor";
                 yd.onclick = () => { const kk = kalipNe(); if (kk) uretimBaslat(anah, kk); };
                 uretimNot.appendChild(yd);
+            }
+            else if (!dikkat && x.kayitliMi()) {
+                et = "Kaydedildi";
             }
             else if (uUretti && !(kg && !kg.value.trim()) && !yt) {
                 et = (u.kaynak === "hafiza" ? "Hafızadan" : "Dil modeli")
@@ -11042,6 +11091,29 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                        + " örnek tanım uyuşuyor" : "");
             else if (r.elle) et = "Elle eklendi";
             else et = "Dil modeli bakmadı";
+            /* Yakın anlamla yeniden yazıldı: önceki anlam ve Geri Al. */
+            if (u && u.durum === "bitti" && u.onceki && uUretti) {
+                const ont = elYap("div", "dg-donem-onceki",
+                    "Kaydedilen bir anlama yakın olduğu için yeniden yazıldı. Önceki: "
+                    + donemAnlamGoster(kalipNe(), tireSade(u.onceki)) + " · ");
+                const ga = elYap("button", "dg-baglanti", "Geri Al");
+                ga.type = "button";
+                ga.disabled = kilitli || da.dm === "calisiyor";
+                ga.onclick = () => { const on = u.onceki; u.onceki = ""; anlamYaz(on); kaydet(); };
+                ont.appendChild(ga);
+                uretimNot.appendChild(ont);
+            }
+            /* Kaydedilmemiş satır kaydedilmiş bir anlama yakınsa uyarı. */
+            const yakin = !x.kayitliMi() && v ? satirlar.find(o => o !== x && o.kayitliMi()
+                && anlamYakin(v, o.anlam())) : null;
+            yakinEl.textContent = yakin ? "Kaydedilen " + donemSayiGoster(yakin.kalipNe())
+                + " anlamına yakın: farkını yazın." : "";
+            yakinEl.hidden = !yakin;
+            durumCip.classList.toggle("kayitli", et === "Kaydedildi");
+            kaydetBtn.disabled = kilitli || da.dm === "calisiyor" || !v || !!yt
+                || (kg && !kg.value.trim()) || x.kayitliMi() || kaydetBtn.dataset.gidiyor === "1";
+            kaydetBtn.textContent = kaydetBtn.dataset.gidiyor === "1" ? "Kaydediliyor"
+                : x.kayitliMi() ? "Kaydedildi" : "Kaydet";
             durumCip.textContent = et;
             durumCip.classList.toggle("dikkat", dikkatEt);
             kontrolEl.textContent = yt ? "Kontrol: " + yt : "";
@@ -11086,6 +11158,49 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         x.detay = detay;
         x.turSec = turSec;
         x.boya = () => boya();
+        x.satirCikti = () => ({
+            kalip: String(kalipNe() || "").toUpperCase(), anlam: anlamAl().trim(),
+            elle: !!r.elle, cikar: false, haric: Array.from(haric).sort(),
+            deger_anlam: Object.assign({}, dgAnlam), ayrilan: ayrilanCikti(r, anah),
+            zaman_tur: turSec.value });
+        x.imza = () => {
+            const c = x.satirCikti();
+            return JSON.stringify([c.kalip, c.anlam.replace(/\s+/g, " "), c.zaman_tur, c.haric,
+                Object.entries(c.deger_anlam).sort(), Object.keys(c.ayrilan).sort()]);
+        };
+        x.kayitliMi = () => KAYIT[anah] !== undefined && KAYIT[anah] === x.imza();
+        kaydetBtn.onclick = () => {
+            if (kilitli || da.dm === "calisiyor" || x.kayitliMi()) return;
+            const satir = x.satirCikti();
+            kaydetBtn.dataset.gidiyor = "1"; boya();
+            fetch(getWebAppBackendUrl("donem_kaydet"), {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ oturum_id: OTURUM_ID, satir })
+            })
+            .then(res => res.json())
+            .then(d => {
+                delete kaydetBtn.dataset.gidiyor;
+                if (!(d && d.tamam)) {
+                    bilgiYaz((d && (d.mesaj || d.hata)) || "Kaydedilemedi.", true); boya(); return;
+                }
+                KAYIT[anah] = x.imza();
+                /* YAKIN ANLAMLAR: kaydedilmemiş satırlardan anlamı bu satıra
+                   yakın olanlar dil modeline yeniden yazdırılır (kaydedilen
+                   anlamlar bağlam olarak gider). */
+                const yakinlar = satirlar.filter(o => o !== x && !o.kayitliMi()
+                    && o.anlam().trim() && anlamYakin(satir.anlam, o.anlam()));
+                yakinlar.forEach(o => {
+                    const kk = String(o.kalipNe() || "").toUpperCase();
+                    if (kk) uretimBaslat(o.anah, kk, true, o.anlam().trim());
+                });
+                bilgiYaz(donemSayiGoster(satir.kalip) + " kaydedildi." + (yakinlar.length
+                    ? " Anlamı buna yakın " + ftBinlik(yakinlar.length) + " satır yeniden yazılıyor: "
+                      + yakinlar.map(o => donemSayiGoster(o.kalipNe())).join(", ") + "." : ""), false);
+                satirlar.forEach(o => o.boya());
+                if (degisti) degisti();
+            })
+            .catch(() => { delete kaydetBtn.dataset.gidiyor; bilgiYaz("Kaydedilemedi (bağlantı).", true); boya(); });
+        };
         x.kalipNe = kalipNe;
         x.degerListesi = degerListesi;
         x.degerDurumu = degerDurumu;
@@ -11102,8 +11217,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         };
         /* Dil modelinin yazdığı anlam: kutu hâlâ boşsa yazılır; tür
            kullanıcı değiştirmediyse dil modelininki olur. */
-        x.uretimYaz = d => {
-            if (!anlamAl().trim()) anlamYaz(tireSade(d.anlam || ""));
+        x.uretimYaz = (d, zorla) => {
+            if (zorla || !anlamAl().trim()) anlamYaz(tireSade(d.anlam || ""));
             if (d.tur && !(duzen[anah] && duzen[anah].zaman_tur)
                     && DONEM_TURLERI.some(t => t[0] === d.tur)) {
                 turSec.value = d.tur; turNotYaz();
@@ -11111,9 +11226,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             }
             kaydet(); sekmeSayilari();
         };
+        if (KAYIT[anah] === undefined && r.kaynak === "hafiza" && !duzen[anah]) KAYIT[anah] = x.imza();
         dgCiz();
-        boya();
         satirlar.push(x);
+        boya();
         /* İLK ÇİZİMDE ANLAM BOŞ: hemen yazdır (daha önce yazdırılmadıysa). */
         {
             const kk = kalipNe();
@@ -11538,7 +11654,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         kilitle: k => {
             kilitli = k;
             const c = da.dm === "calisiyor";
-            satirlar.forEach(x => { x.g.disabled = k || c; x.cikBtn.disabled = k || c;
+            satirlar.forEach(x => { x.g.disabled = k || c; x.cikBtn.disabled = k || c; x.boya();
                                     if (x.turSec) x.turSec.disabled = k || c;
                                     if (x.detay) x.detay.querySelectorAll("input, button")
                                         .forEach(i => { i.disabled = k || c || i.closest(".dg-durum-disi") !== null
