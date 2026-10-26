@@ -107,7 +107,13 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   ve Yeni Çalışma ile aynı yazı: 15 px, yarı kalın; seçili satır da aynı (gri zemin ve soldaki çizgiyle belli olur).
 - **Model Platformu** (başta kapalı; başlığa basınca içindekiler açılır
   ve Model Akışı seçilir, o an kümenin sayfalarından biri zaten açıksa o
-  kalır; yeniden basınca küme kapanır, açık sayfa değişmez):
+  kalır; yeniden basınca küme kapanır, açık sayfa değişmez). Açılır
+  kümeler açık sayfayı izler: kümenin dışındaki bir sayfaya geçilince
+  (Ana Sayfa ya da başka bir alan) küme kendiliğinden kapanır; başka bir
+  yoldan içindeki bir sayfaya geçilince (Yeni Çalışma, Arşiv'den çalışma
+  açma) açılır. Bu yalnız sayfa değişince olur; aynı sayfadayken
+  başlıktan kapatılan küme yeniden açılmaz. Kilitli satıra basmak bir
+  şey değiştirmez:
   - Model Akışı
   - Model Gösterge Paneli
   - Model Değişkenleri (Veri ve Sözlük, Dağılım ve SFA, Değişken Kontrolleri)

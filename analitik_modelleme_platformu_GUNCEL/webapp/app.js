@@ -464,6 +464,7 @@ temaUygula(false);
 
 /* ==================== Sayfa geçişi ==================== */
 function sayfaAc(ad) {
+    const onceki = acikSayfa();
     Object.keys(sayfalar).forEach(k => {
         if (sayfalar[k]) sayfalar[k].classList.toggle("gizli", k !== ad);
     });
@@ -482,6 +483,7 @@ function sayfaAc(ad) {
             sohbetEl.scrollTop = Math.max(sohbetEl.scrollHeight - sohbetEl.clientHeight, 0);
         });
     }
+    if (ad !== onceki) kumeleriEsle(ad);
     ustSekmeGuncelle();
 }
 sekmeler.forEach(s => { s.onclick = () => sayfaAc(s.dataset.sayfa); });
@@ -5966,16 +5968,33 @@ document.addEventListener("keydown", e => {
 
 /* MODEL PLATFORMU kümesi başta kapalı; başlığa basınca içindeki sayfalar
    açılır ve Model Akışı seçilir (o an kümenin sayfalarından biri zaten
-   açıksa o kalır); yeniden basınca küme kapanır, açık sayfa değişmez. */
-function kumeAcKapa(kume) {
-    const acik = kume.classList.toggle("acik");
+   açıksa o kalır); yeniden basınca küme kapanır, açık sayfa değişmez.
+   Açılır kümeler açık sayfayı izler (kumeleriEsle): sol bardan ya da
+   başka bir yoldan kümenin dışındaki bir sayfaya geçilince küme kapanır,
+   içindeki bir sayfaya geçilince (Yeni Çalışma, Arşiv'den çalışma
+   açma) açılır. Yalnız sayfa değişince uygulanır: aynı sayfadayken
+   başlıktan kapatılan küme kendiliğinden yeniden açılmaz. */
+function kumeAyarla(kume, acik) {
+    kume.classList.toggle("acik", acik);
     const ad = kume.querySelector(".ust-kume-ad");
     if (ad) ad.setAttribute("aria-expanded", acik ? "true" : "false");
+}
+function kumeIcindeMi(kume, sayfa) {
+    return [...kume.querySelectorAll(".ust-sekme[data-ust]")]
+        .some(b => UST_SAYFA[b.dataset.ust] === sayfa);
+}
+function kumeleriEsle(sayfa) {
+    document.querySelectorAll("#sol-bar .ust-kume.acilir").forEach(kume => {
+        const icerde = kumeIcindeMi(kume, sayfa);
+        if (kume.classList.contains("acik") !== icerde) kumeAyarla(kume, icerde);
+    });
+}
+function kumeAcKapa(kume) {
+    const acik = !kume.classList.contains("acik");
+    kumeAyarla(kume, acik);
     if (!acik) return;
     const akis = kume.querySelector('.ust-sekme[data-ust="akis"]');
-    const icerde = [...kume.querySelectorAll(".ust-sekme[data-ust]")]
-        .some(b => UST_SAYFA[b.dataset.ust] === acikSayfa());
-    if (akis && !icerde) akis.click();
+    if (akis && !kumeIcindeMi(kume, acikSayfa())) akis.click();
 }
 document.querySelectorAll(".ust-kume.acilir > .ust-kume-ad").forEach(ad => {
     ad.onclick = () => kumeAcKapa(ad.parentElement);
