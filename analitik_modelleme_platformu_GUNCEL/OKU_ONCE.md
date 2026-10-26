@@ -95,6 +95,17 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   her yer aynı oranla büyür, boylar arasındaki ilişkiyi yalnız px
   değerleri belirler. `font-size-adjust` kullanılmaz (`--x-yukseklik:
   none`).
+- **Yazı ölçeği (ekranda görünen boy):** sayfa %79,2 ölçekte olduğu için
+  yazı boyu değişkenleri ölçeğe bölünür; ekranda değer neyse o görünür
+  ve her yerde aynı ölçek geçerli: gövde 13,5 px (`--fs-govde`), başlık
+  15 px (`--fs-baslik`), kart başlığı 16,5 px (`--fs-blok`), küçük 12 px
+  (`--fs-ustbar`); İş Akışı panelinde 12,5 / 14 px. Sol bar satırları 15
+  px, aynı ölçeğe oturur. Düğme ve giriş kutusu yükseklikleri de ekranda
+  27 / 23 px (`--btn-h`, `--btn-h-kucuk`), yazıyla birlikte büyür.
+  Boşluklar, paneller ve kutuların eni sayfa ölçeğinde kalır. Sol barın
+  kendi ölçeği olduğu için orada bu değişkenler düz değerlerindedir
+  (Arşiv listesi 13,5 px). Ana Sayfa'nın tanıtım yazıları kendi
+  boylarında.
 - **Sol bar seçili satır:** yazısı öbür satırlarla aynı (15 px, 600);
   seçili olduğunu gri zemin ve soldaki çizgi gösterir.
 
