@@ -174,9 +174,11 @@ katipLogoEl.onerror = () => { katipLogoEl.style.display = "none"; solBarOlcekle(
 katipLogoEl.onload = () => solBarOlcekle();
 saydamKirp(GORSEL.katipLogo, src => { katipLogoEl.src = src; },
            () => { katipLogoEl.style.display = "none"; solBarOlcekle(); }, true);
-/* SOL BAR İKONLARI: her satırın çizgi ikonu (SVG) klasördeki çizimle
-   (PNG) değiştirilir. Kenarlardaki saydam ve beyaz boşluk kırpılır.
-   Görsel yüklenemezse çizgi ikon yerinde kalır. Aynı görsel birden çok
+/* SOL BAR İKONLARI: her satırın yerinde klasördeki çizim (PNG) durur.
+   HTML'deki çizgi ikon (SVG) yalnız yer tutar ve görünmez (style.css):
+   çizim gelene kadar o yer boş kalır, sonra çizim aynı boyda yerine
+   geçer; yüklenemezse yer boş kalır. Kenarlardaki saydam ve beyaz
+   boşluk kırpılır. Aynı görsel birden çok
    satırda kullanılabilir: Model Sohbeti ile Katip'le Sohbet aynı, Model
    Göstergeleri ile Gösterge Paneli aynı çizimi kullanır. */
 const SOL_BAR_IKONLARI = [
@@ -207,8 +209,8 @@ function solBarGorseli(ad) {
             const img = document.createElement("img");
             img.className = "ikon-gorsel";
             img.alt = "";
-            img.src = src;
-            svg.replaceWith(img);
+            img.onload = () => { if (svg.isConnected) svg.replaceWith(img); };
+            gorselKoy(img, src);
         }, () => { /* görsel yok: çizgi ikon kalır */ });
     });
     /* Görünüm'ün üstündeki robot (robot_alt): kenarları kırpılır;
@@ -216,7 +218,7 @@ function solBarGorseli(ad) {
     const robot = document.getElementById("robot-alt");
     if (robot) solBarGorseli("robot_alt").then(src => {
         robot.onload = () => solBarOlcekle();
-        robot.src = src;
+        gorselKoy(robot, src);
         robot.classList.add("yuklu");
     }, () => { /* görsel yok */ });
 })();
@@ -269,6 +271,76 @@ function saydamKirp(url, cb, hata, beyazDa, zeminSil) {
     };
     ham.onerror = () => { if (hata) hata(); };
     ham.src = url;
+}
+
+/* ==================== KOYU MODDA GÖRSELLER ====================
+   Çizimler (sol bar, Ana Sayfa kartları, alttaki robot, sohbet
+   avatarları) koyu modda tersine çevrilir ama RENKLER DEĞİŞMEZ: yalnız
+   renksiz (siyah, gri, beyaz) pikseller döner. Siyah çizgiler açık
+   mürekkep rengine (#E6E8EB) döner; beyazlar saydamlaşır, zemin
+   görünür; grilerin örtücülüğü koyuluklarıyla orantılı. Kırmızı, açık
+   kırmızı ve diğer renkli pikseller olduğu gibi kalır. Renkli ile
+   renksiz arası (kenar yumuşatma) iki sonucun karışımıdır. Logo ve Ana
+   Sayfa'nın üst görseli bu işleme girmez (renkleri hiç değişmez).
+   gorselKoy(img, url): görselin asıl adresini saklar; koyu moddaysa
+   dönüştürülmüş hâlini, değilse asıl hâlini koyar. Mod değişince
+   gorselleriTemayaUydur hepsini yeniden koyar. */
+const KOYU_GORSEL = new Map();
+const KOYU_MUREKKEP = [230, 232, 235];
+function koyuModMu() {
+    const k = document.getElementById("kabuk");
+    return !!(k && k.classList.contains("koyu"));
+}
+function yumusakEsik(a, b, x) {
+    const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    return t * t * (3 - 2 * t);
+}
+function koyuGorsel(url) {
+    if (KOYU_GORSEL.has(url)) return KOYU_GORSEL.get(url);
+    const is = new Promise(tamam => {
+        const ham = new Image();
+        ham.onload = () => {
+            try {
+                const w = ham.naturalWidth, h = ham.naturalHeight;
+                const c = document.createElement("canvas");
+                c.width = w; c.height = h;
+                const g = c.getContext("2d");
+                g.drawImage(ham, 0, 0);
+                const veri = g.getImageData(0, 0, w, h);
+                const a = veri.data;
+                for (let i = 0; i < a.length; i += 4) {
+                    if (!a[i + 3]) continue;
+                    const r = a[i], gg = a[i + 1], b = a[i + 2];
+                    const enb = Math.max(r, gg, b), enk = Math.min(r, gg, b);
+                    const fark = (enb - enk) / 255, L = (enb + enk) / 510;
+                    const doyma = fark ? fark / (1 - Math.abs(2 * L - 1) || 1) : 0;
+                    /* renk payı: doygun VE gerçekten renkli (gürültü değil) */
+                    const p = yumusakEsik(0.18, 0.40, doyma) * yumusakEsik(0.06, 0.16, fark);
+                    const ortu = 1 - L;               // renksiz kısmın örtücülüğü
+                    const alfa = p + (1 - p) * ortu;
+                    if (alfa <= 0.002) { a[i + 3] = 0; continue; }
+                    a[i]     = Math.round((p * r  + (1 - p) * ortu * KOYU_MUREKKEP[0]) / alfa);
+                    a[i + 1] = Math.round((p * gg + (1 - p) * ortu * KOYU_MUREKKEP[1]) / alfa);
+                    a[i + 2] = Math.round((p * b  + (1 - p) * ortu * KOYU_MUREKKEP[2]) / alfa);
+                    a[i + 3] = Math.round(a[i + 3] * alfa);
+                }
+                g.putImageData(veri, 0, 0);
+                tamam(c.toDataURL("image/png"));
+            } catch (e) { tamam(url); }       // işlenemedi: olduğu gibi
+        };
+        ham.onerror = () => tamam(url);
+        ham.src = url;
+    });
+    KOYU_GORSEL.set(url, is);
+    return is;
+}
+function gorselKoy(img, url) {
+    img.dataset.acik = url;
+    if (!koyuModMu()) { img.src = url; return; }
+    koyuGorsel(url).then(k => { if (img.dataset.acik === url && koyuModMu()) img.src = k; });
+}
+function gorselleriTemayaUydur() {
+    document.querySelectorAll("img[data-acik]").forEach(img => gorselKoy(img, img.dataset.acik));
 }
 
 /* Kenardaki beyaz piksellerden başlayıp yalnız beyaz pikseller
@@ -426,21 +498,23 @@ function baslikBuyuk(s) {
 }
 
 
-/* ==================== Renk modu (beyaz / sepya / gri) ==================== */
+/* ==================== Renk modu (beyaz / sepya / koyu) ==================== */
 /* Sol bardaki Görünüm düğmesi. Üç mod: "acik" (Beyaz), "sepya" ve
-   "gri" (açık gri). Sepya ve gri modda #kabuk.sepya / #kabuk.gri
-   renk değişkenlerini devralır. Anahtardaki bir simgeye basınca o mod
+   "koyu". Sepya ve koyu modda #kabuk.sepya / #kabuk.koyu renk
+   değişkenlerini devralır. Anahtardaki bir simgeye basınca o mod
    seçilir; düğmenin başka bir yerine basınca sıradaki moda geçilir.
-   Seçim bu tarayıcıda hatırlanır; okunamazsa Beyaz başlar. */
+   Seçim bu tarayıcıda hatırlanır; okunamazsa Beyaz başlar. Eski "gri"
+   kaydı Koyu olarak açılır. */
 const TEMA_ANAHTAR = "amp_renk_modu";
-const TEMA_MODLARI = ["acik", "sepya", "gri"];
-const TEMA_ADI = { acik: "Beyaz", sepya: "Sepya", gri: "Gri" };
+const TEMA_MODLARI = ["acik", "sepya", "koyu"];
+const TEMA_ADI = { acik: "Beyaz", sepya: "Sepya", koyu: "Koyu" };
 let temaModu = "acik";
 const temaBtn = document.getElementById("tema-btn");
 
 function temaUygula(kaydet) {
     kabukEl.classList.toggle("sepya", temaModu === "sepya");
-    kabukEl.classList.toggle("gri", temaModu === "gri");
+    kabukEl.classList.toggle("koyu", temaModu === "koyu");
+    gorselleriTemayaUydur();
     if (temaBtn) {
         temaBtn.title = "Görünüm: " + TEMA_ADI[temaModu];
         temaBtn.setAttribute("aria-label", "Görünüm: " + TEMA_ADI[temaModu]);
@@ -457,7 +531,8 @@ if (temaBtn) temaBtn.onclick = e => {
     temaUygula(true);
 };
 try {
-    const kayit = localStorage.getItem(TEMA_ANAHTAR);
+    let kayit = localStorage.getItem(TEMA_ANAHTAR);
+    if (kayit === "gri") kayit = "koyu";
     temaModu = TEMA_MODLARI.indexOf(kayit) !== -1 ? kayit : "acik";
 } catch (e) { temaModu = "acik"; }
 temaUygula(false);
@@ -5924,7 +5999,7 @@ document.addEventListener("keydown", e => {
     window.addEventListener("resize", anaSayfaSigdir);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(anaSayfaSigdir);
     kok.querySelectorAll("img[data-as-ikon]").forEach(img => {
-        solBarGorseli(img.dataset.asIkon).then(src => { img.src = src; },
+        solBarGorseli(img.dataset.asIkon).then(src => gorselKoy(img, src),
             () => img.classList.add("yok"));
     });
     /* Kart açıklamaları: karta basınca (ya da klavyede Enter / Boşluk)
@@ -6166,7 +6241,7 @@ function avatarYap(rol) {
     const img = document.createElement("img");
     img.className = "balon-avatar " + rol;
     const ilk = rol === "bot" && !sohbetEl.querySelector(".balon-avatar.bot");
-    img.src = rol === "bot" ? (ilk ? GORSEL.karsilama : GORSEL.bot) : GORSEL.user;
+    gorselKoy(img, rol === "bot" ? (ilk ? GORSEL.karsilama : GORSEL.bot) : GORSEL.user);
     if (ilk) img.classList.add("karsilama");
     img.alt = "";                 // dekoratif: ekran okuyucu atlasin
     img.setAttribute("aria-hidden", "true");
@@ -6749,10 +6824,10 @@ function avatarDusunsun(el, acik) {
     const n = Math.max(0, (Number(av.dataset.dusun) || 0) + (acik ? 1 : -1));
     av.dataset.dusun = String(n);
     if (n > 0) {
-        if (!av.dataset.normal) av.dataset.normal = av.src;
-        av.src = GORSEL.dusunme;
+        if (!av.dataset.normal) av.dataset.normal = av.dataset.acik || av.src;
+        gorselKoy(av, GORSEL.dusunme);
     } else if (av.dataset.normal) {
-        av.src = av.dataset.normal;
+        gorselKoy(av, av.dataset.normal);
         delete av.dataset.normal;
     }
 }

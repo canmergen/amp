@@ -41,8 +41,10 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `dusunme` | `robot_think.png` | Arkada iş sürerken |
 | `user` | `robot_llm_person.png` | Kullanıcı balonu |
 
-Görsel bulunamazsa yerinde boşluk kalır, sayfa bozulmaz; sol bar ikonu
-bulunamazsa yerinde çizgi ikon kalır.
+Görsel bulunamazsa yerinde boşluk kalır, sayfa bozulmaz. Sol bar
+ikonlarının yeri görsel gelene kadar boş durur (HTML'deki çizgi ikon
+görünmez, yalnız görselle aynı boyda yer tutar); görsel gelince aynı yere
+oturur, yazılar kaymaz; bulunamazsa yer boş kalır, sembol görünmez.
 
 **`PROJE_HAFIZASI` (managed folder):** çalışma kayıtları (Arşiv), onaylı tanım
 hafızası ve veri seti sahipliği.
@@ -143,14 +145,35 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
 - Katip'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
   soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
-- **Görünüm:** üç renk modu: Beyaz (varsayılan; sayfa zemini, sol bar ve
-  yan paneller saf beyaz, kartlar ince kenarla ayrılır), Sepya (sıcak kâğıt
-  tonu), Gri (açık gri zemin, koyu yazı). Sepya ve Gri'de yalnız zemin
-  tonları değişir; renkler ve görseller Beyaz moddaki gibi kalır. Anahtar üç bölmeli segmentli
-  düğme: güneş (Beyaz), kitap (Sepya), yarısı dolu daire (Gri); ince
-  siyah çerçeve ve bölme çizgileri; simgeye basınca o mod seçilir; seçili
-  bölme mürekkep siyahıyla dolu, simgesi ters baskı. Düğmenin
-  başka bir yerine basınca sıradaki moda geçilir.
+- **Görünüm:** üç renk modu. Anahtar üç bölmeli segmentli düğme: güneş
+  (Beyaz), kitap (Sepya), yarısı dolu daire (Koyu); ince çerçeve ve
+  bölme çizgileri; simgeye basınca o mod seçilir; seçili bölme mürekkeple
+  dolu, simgesi ters baskı. Düğmenin başka bir yerine basınca sıradaki
+  moda geçilir. Seçim tarayıcıda hatırlanır; eskiden "Gri" seçili olan
+  tarayıcıda Koyu açılır.
+  - **Beyaz** (varsayılan): sayfa zemini, sol bar ve yan paneller saf
+    beyaz, kartlar ince kenarla ayrılır.
+  - **Sepya:** sıcak kâğıt tonu (sayfa #F1E9D6, paneller #F6F0E2, kartlar
+    #FBF7EE). Yazı, çizgiler ve uygulamayı çevreleyen çerçeve aynı sıcak
+    kahve-siyah (#2B2118). Kırmızı kiremit tonunda (#B3261E); kilitli
+    satırlar sıcak gri (#7A6B57).
+  - **Koyu:** gerçek koyu tema; saf siyah ve saf beyaz yok. Katmanlar
+    gölgeyle değil açıklıkla ayrılır: sayfa #121418, paneller #171A1F,
+    kartlar #1C2027. Yazı #E6E8EB (kartta 13,3:1); yazı ve çizgi
+    kırmızısı #FF5A5F (5,4:1); düğme dolgusu marka kırmızısı (#D51115,
+    beyaz yazı). Pembe şerit, seçili satır, yeşil ve sarı rozet zeminleri
+    rengin şeffaf tonu. Mürekkep yazıları ana yazı renginde, mürekkep
+    çizgileri (sol bar ayraçları, Ana Sayfa kart kenarları) yumuşak gri
+    (#555C67). Grafik mavisi #6EA8FE. Kaydırma çubukları ve form kutuları
+    da koyu.
+  - **Koyu modda görseller:** çizimler (sol bar, Ana Sayfa kartları,
+    alttaki robot, sohbet avatarları) piksel piksel işlenir (app.js:
+    koyuGorsel): yalnız renksiz pikseller döner (siyah açık renge,
+    beyaz saydama, gri koyuluğuyla orantılı yarı saydama); kırmızı, açık
+    kırmızı ve diğer renkli pikseller hiç değişmez. Logo değişmez, siyah
+    harfleri okunsun diye açık bir plakanın üstünde durur. Ana Sayfa'nın
+    üst görseli değişmez, köşeleri yuvarlatılmış resim olarak durur.
+    Beyaz ve Sepya'da hiçbir görsel değişmez.
 - **Arşiv:** kayıtlı çalışmalar; birine basınca kaldığı yerden açılır.
   Her satırın sağında çöp kutusu (onaylı, kalıcı silme). Altta "Diğer
   Klasörler": PROJE_HAFIZASI'nda olup listede olmayan kendi v-klasörleriniz
@@ -680,7 +703,7 @@ tanıtır; sayfalar sol bardan açılır.
 
 | Anahtar | Ne |
 |---|---|
-| `amp_renk_modu` | Görünüm (renk modu): `acik` (Beyaz), `sepya`, `gri` |
+| `amp_renk_modu` | Görünüm (renk modu): `acik` (Beyaz), `sepya`, `koyu` (eski `gri` kaydı Koyu açılır) |
 | `amp_akis_acik` | İş Akışı bölmesi açık / kapalı |
 | `amp_dg_alt` | Model Değişkenleri'nde açık görünüm |
 | `fe_agent_calisma_id` | Açık çalışmanın kimliği |
