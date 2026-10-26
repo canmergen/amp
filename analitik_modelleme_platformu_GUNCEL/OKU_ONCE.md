@@ -165,15 +165,16 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   kaldırılır ve özet yeniden yazılır.
 - **Yeni Çalışma:** yeni çalışma açar; açık çalışma silinmez, Arşiv'de kalır.
 
-Uygulama ekranın tamamını kullanır ve tarayıcıda %88 yakınlaştırmadaki
-gibi görünür: style.css'te `--olcek: .88` (1 = %100); tarayıcının kendi
-yakınlaştırması %100'de kalır. Sol bar kaydırmasızdır (tasarım eni
-340 px, satırlar 44 px, yazılar 15 px, çizim ikonları 40 px; %88 ölçekte
-ekranda 299 px en). Bar, Model Platformu açıkken yüksekliğine sığacak
-oranda büyür ya da küçülür (0,6 ile 1,2 kat arası); yazılar, çizimler
-ve logo birlikte büyür, eni de aynı orana gelir. Örnek: 1366x768
-pencerede 1,13 kat (yazı ekranda 15 px, çizim 40 px). Ölçek CSS zoom
-ile verilir (transform değil): yazı ve görseller bulanıklaşmaz.
+Uygulama ekranın tamamını kullanır ve tarayıcıda %90 yakınlaştırmadaki
+gibi görünür; sol bar %80'deki gibi. İkisi style.css'te tek yerden
+değişir: `--olcek: .9` (sayfanın geneli) ve `--sol-olcek: .8` (sol bar);
+1 = %100. Tarayıcının kendi yakınlaştırması %100'de kalır. Sol bar
+kaydırmasızdır (tasarım eni 340 px, yazılar 15 px; %80'de ekranda
+272 px en, yazı 12 px). Bar bu boyda sığmayan kısa ekranlarda sığacak
+kadar küçülür (en az 0,6 kat), hiç büyümez; boy Model Platformu açıkken
+ölçülür. 1280x560 pencerede bile %80'de sığar. Ölçek CSS zoom ile
+verilir (transform değil): yazı ve görseller yeni boyunda baştan
+çizilir, bulanıklaşmaz.
 Bölmeleri ayıran ve uygulamayı en dışta çevreleyen kalın çizgi her modda
 mürekkep siyahı.
 

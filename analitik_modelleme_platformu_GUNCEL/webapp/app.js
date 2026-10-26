@@ -301,14 +301,22 @@ function beyazZeminiSil(a, w, h) {
 /* ==================== SOL BAR ÖLÇEĞİ ====================
    Sol barın bütün içeriği (logo, sayfa kümeleri, Görünüm, Arşiv,
    Yeni Çalışma) TEK BAKIŞTA görünür; kaydırma yok. İç kap
-   (#sol-bar-ic) tasarım eninde (340 px) doğal boyuyla dizilir ve barın
-   yüksekliğine sığacak oranda büyür ya da küçülür (0,6 ile 1,2 kat
-   arası); barın eni de aynı orana gelir. Doğal boy Model Platformu
-   açıkken ölçülür: küme açılınca bar taşmaz.
+   (#sol-bar-ic) tasarım eninde (340 px) doğal boyuyla dizilir ve
+   ekranda --sol-olcek (style.css, %80) boyunda görünür; sayfanın geri
+   kalanı html zoom'u (--olcek, %90) ile ölçeklendiği için iç kabın
+   kendi zoom'u ikisinin oranıdır. Bu boyda sığmayan kısa ekranlarda
+   bar sığacak kadar küçülür (en az 0,6 kat), hiç büyümez; barın eni de
+   aynı orana gelir. Doğal boy Model Platformu açıkken ölçülür: küme
+   açılınca bar taşmaz.
    Ölçek CSS zoom ile verilir, transform ile değil: zoom içeriği yeni
    boyutunda baştan çizer, yazı ve görseller bulanıklaşmaz. */
 const SOL_BAR_TASARIM_EN = 340;
-const SOL_BAR_OLCEK = { min: 0.6, max: 1.2 };
+const SOL_BAR_OLCEK_EN_AZ = 0.6;
+function solBarHedefOlcek() {
+    const sol = parseFloat(getComputedStyle(document.documentElement)
+                           .getPropertyValue("--sol-olcek")) || 0.8;
+    return sol / ekranOlcegi();
+}
 function solBarOlcekle() {
     const bar = document.getElementById("sol-bar");
     const ic = document.getElementById("sol-bar-ic");
@@ -321,8 +329,8 @@ function solBarOlcekle() {
     const dogal = ic.offsetHeight;
     kapali.forEach(k => k.classList.remove("acik"));
     if (!dogal) return;
-    const olcek = Math.max(SOL_BAR_OLCEK.min,
-                           Math.min(SOL_BAR_OLCEK.max, bar.clientHeight / dogal));
+    const olcek = Math.max(SOL_BAR_OLCEK_EN_AZ,
+                           Math.min(solBarHedefOlcek(), bar.clientHeight / dogal));
     ic.style.height = (bar.clientHeight / olcek) + "px";
     ic.style.zoom = String(olcek);
     document.documentElement.style.setProperty("--sol-bar-en",
