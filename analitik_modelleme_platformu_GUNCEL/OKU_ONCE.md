@@ -758,22 +758,26 @@ tanıtır; sayfalar sol bardan açılır.
 - **01.2.3.1 Tanımsız Kolonlar** (A ve B; 01.2.3'ün alt adımı, numaralar
   kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar
   listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve "Tümünü
-  Temizle". Kolonlar: Değişken, Tip, Boş Oranı, Tekrar, Tekil Değer, En
-  Sık Değerler, Min, Maks, Medyan, Ortalama, Çıkar
+  Temizle". Kolonlar: Değişken, Tip, Boş Oranı, Tekrar Oranı, Tekil
+  Değer, En Sık Değerler (Satır Adedi), Min, Med, Mean, Max, Çıkar
   (`akis_faz01._tanimsiz_bilgi`). Hepsi veri seti profilinden (tam tablo,
-  örneklem yok):
-  - Tekrar: kolonda tekrar eden değer var mı. "Yok" ya da "Var" ve altında
-    satır adedi: değeri kendinden önceki bir satırla aynı olan satır, boş
-    hücre de değer sayılır (profil `tekrar`; `df[kolon].duplicated().sum()`
-    ile aynı). Eski profillerde de var.
-  - En Sık Değerler: en sık 10 değer, her biri satır adediyle (adet
+  örneklem yok). Genişlikler `<col>` sınıflarından (`tk-*`), başlık ve
+  hücre aynı hizada; kolonlar ince dikey çizgiyle ayrılır.
+  - Tekrar Oranı: değeri kendinden önceki bir satırla aynı olan satırların
+    bütün satırlara oranı, boş hücre de değer sayılır (profil `tekrar` /
+    satır; `df[kolon].duplicated().sum()` ile aynı). Adedi ipucunda. Sıfır
+    olmayan çok küçük oran ilk anlamlı basamağına kadar yazılır (%0,0
+    görünmez). Eski profillerde de var.
+  - En Sık Değerler: en sık 10 değer, her biri "değer (adet)" biçiminde,
+    adet parantez içinde ve soluk (adet
     azalan, eşitlikte değer artan; profilin `ust_degerler`'i). Tekil
     değeri 10 ve altındaki kolonda bütün değerler görünür. Sayısal değer
     yerel biçimle, saati gece yarısı olan tarih yalnız gün olarak yazılır;
     uzun değer kısaltılmaz, sarar. Tam değer ipucunda.
-  - Tarih kolonunda Min, Maks ve Medyan (ortalama yok). Tarih medyanı
+  - Tarih kolonunda Min, Med ve Max (Mean yok). Tarih medyanı
     profilin `medyan` alanı (aşağıda).
-  - Min, Maks, Medyan, Ortalama sayısal kolonda (mantıksal dahil).
+  - Min, Med (medyan), Mean (ortalama), Max sayısal kolonda (mantıksal
+    dahil); bu sırayla, Med ve Mean ortada.
     Medyan profilin kantilinden (0,5; çift adette iki ortanın ortalaması),
     ortalama sonlu değerlerin tamamının ortalaması (profil `ortalama`,
     aşağıda). Ekranda 100 ve üstü iki, altı dört ondalık; tam değer

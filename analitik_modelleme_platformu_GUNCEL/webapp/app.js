@@ -5177,20 +5177,25 @@ function dagilimSifirla() {
     DAGILIM.onbellek = {};
 }
 
-/* Tanımsız Kolonlar satırının tekrar hücresi: "Yok" ya da "Var" ve altında
-   tekrar eden satır adedi. Profilde yoksa boş. */
-function tanimsizTekrarHucresi(tekrar) {
-    const td = elYap("td", "dg-sayi-hucre dg-tekrar-hucre");
-    if (tekrar === null || tekrar === undefined || tekrar === "") return td;
-    const n = Number(tekrar);
-    if (!isFinite(n)) return td;
-    td.appendChild(elYap("div", n > 0 ? "dg-tekrar-var" : "dg-tekrar-yok", n > 0 ? "Var" : "Yok"));
-    if (n > 0) {
-        td.appendChild(elYap("div", "dg-tekrar-adet", ftBinlik(n) + " satır"));
-        td.title = ftBinlik(n) + " satırın değeri kendinden önceki bir satırla aynı";
-    } else {
-        td.title = "Her satırın değeri farklı";
+/* Tanımsız Kolonlar satırının tekrar oranı hücresi: tekrar eden satırın
+   bütün satırlara oranı; adet ipucunda. Sıfır olmayan çok küçük oran
+   "%0,0" gibi görünmesin diye ilk anlamlı basamağa kadar yazılır. */
+function tanimsizTekrarHucresi(sat) {
+    const td = elYap("td", "dg-sayi-hucre tk-sag");
+    const n = Number(sat.tekrar), r = Number(sat.tekrar_oran);
+    if (sat.tekrar === null || sat.tekrar === undefined || !isFinite(n)) return td;
+    if (sat.tekrar_oran === null || sat.tekrar_oran === undefined || !isFinite(r)) {
+        metinYaz(td, ftBinlik(n) + " satır");
+        return td;
     }
+    let yazi = ftOran(r);
+    if (n > 0 && r < 0.0005) {
+        const b = Math.min(6, Math.max(2, 1 - Math.floor(Math.log10(r * 100))));
+        yazi = "%" + (r * 100).toFixed(b).replace(".", ",");
+    }
+    metinYaz(td, yazi);
+    td.title = n > 0 ? ftBinlik(n) + " satırın değeri kendinden önceki bir satırla aynı"
+                     : "Her satırın değeri farklı";
     return td;
 }
 
@@ -5215,10 +5220,11 @@ function tanimsizDegerHucresi(sat) {
         return td;
     }
     liste.forEach(([deger, adet]) => {
+        /* "değer (adet)": adet parantez içinde ve soluk; değerle karışmaz. */
         const c = elYap("span", "dg-deger");
         const yazi = sat.sayisal && typeof deger === "number" ? dagSayi(deger) : tarihGoster(deger);
         c.appendChild(elYap("span", "dg-deger-ad", yazi));
-        c.appendChild(elYap("span", "dg-deger-adet", ftBinlik(adet)));
+        c.appendChild(elYap("span", "dg-deger-adet", "(" + ftBinlik(adet) + ")"));
         c.title = String(deger) + ": " + ftBinlik(adet) + " satır";
         td.appendChild(c);
     });
@@ -7937,14 +7943,25 @@ function dogrulamaKartiEkle(alan, blok) {
 
         const cSar = elYap("div", "dg-tablo-sar");
         const ct = elYap("table", "dg-tablo dg-cikar-tablo");
+        /* Kolonlar: [başlık, genişlik sınıfı, hizalama, ipucu]. Genişlik
+           <col> sınıfından gelir (CSS sıraya bağlı değil); başlık ve
+           hücre aynı hizada durur. Min, Med, Mean, Max yan yana. */
+        const KOLONLAR = [
+            ["Değişken", "tk-ad", ""], ["Tip", "tk-tip", ""],
+            ["Boş Oranı", "tk-oran", "tk-sag", "Boş hücrelerin bütün satırlara oranı (tam tablo)."],
+            ["Tekrar Oranı", "tk-oran", "tk-sag", "Değeri kendinden önceki bir satırla aynı olan satırların bütün satırlara oranı; boş hücre de değer sayılır (tam tablo). Adedi ipucunda."],
+            ["Tekil Değer", "tk-oran", "tk-sag", "Farklı değer sayısı (boş hariç, tam tablo)."],
+            ["En Sık Değerler (Satır Adedi)", "tk-deger", "", "En sık 10 değer; parantez içinde o değeri taşıyan satır adedi (tam tablo)."],
+            ["Min", "tk-ist", "tk-sag"], ["Med", "tk-ist", "tk-sag", "Medyan"],
+            ["Mean", "tk-ist", "tk-sag", "Ortalama (sonlu değerler)"], ["Max", "tk-ist", "tk-sag"],
+            ["Çıkar", "tk-cikar", "tk-orta"]];
+        const cg = document.createElement("colgroup");
+        KOLONLAR.forEach(([, gen]) => { const col = document.createElement("col"); col.className = gen; cg.appendChild(col); });
+        ct.appendChild(cg);
         const cth = document.createElement("thead");
         const chr = document.createElement("tr");
-        [["Değişken"], ["Tip"], ["Boş Oranı"],
-         ["Tekrar", "Kolonda tekrar eden değer var mı. Sayı: değeri kendinden önceki bir satırla aynı olan satır adedi; boş hücre de değer sayılır (tam tablo)."],
-         ["Tekil Değer"],
-         ["En Sık Değerler", "En sık 10 değer ve satır adedi (tam tablo)"],
-         ["Min"], ["Maks"], ["Medyan"], ["Ortalama"], ["Çıkar"]].forEach(([h, ipucu]) => {
-            const th = elYap("th", "", h);
+        KOLONLAR.forEach(([h, , hiza, ipucu]) => {
+            const th = elYap("th", hiza, h);
             if (ipucu) th.title = ipucu;
             chr.appendChild(th);
         });
@@ -7962,14 +7979,14 @@ function dogrulamaKartiEkle(alan, blok) {
             const tdT = elYap("td", "dg-tip");
             metinYaz(tdT, sat.tip || "");
             tr.appendChild(tdT);
-            tr.appendChild(elYap("td", "dg-bos-oran",
+            tr.appendChild(elYap("td", "dg-sayi-hucre tk-sag",
                 sat.null_oran === null || sat.null_oran === undefined ? "" : ftOran(sat.null_oran)));
-            tr.appendChild(tanimsizTekrarHucresi(sat.tekrar));
-            tr.appendChild(elYap("td", "dg-sayi-hucre",
+            tr.appendChild(tanimsizTekrarHucresi(sat));
+            tr.appendChild(elYap("td", "dg-sayi-hucre tk-sag",
                 sat.tekil === null || sat.tekil === undefined ? "" : ftBinlik(sat.tekil)));
             tr.appendChild(tanimsizDegerHucresi(sat));
-            ["min", "max", "medyan", "ortalama"].forEach(alan => {
-                const td = elYap("td", "dg-sayi-hucre");
+            ["min", "medyan", "ortalama", "max"].forEach(alan => {
+                const td = elYap("td", "dg-sayi-hucre tk-sag");
                 const v = sat[alan];
                 const yok = v === null || v === undefined || v === "";
                 if (sat.sayisal && !sat.gizli) {

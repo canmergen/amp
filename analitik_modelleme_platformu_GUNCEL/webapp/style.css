@@ -5000,44 +5000,38 @@ span.bolme-cip { cursor: default; }
   background: none; border-color: transparent; color: var(--metin-soluk); cursor: default;
 }
 
-/* TANIMSIZ KOLONLAR (01.2.3.1) ON BIR KOLON: Değişken | Tip | Boş Oranı |
-   Tekrar | Tekil Değer | En Sık Değerler | Min | Maks | Medyan | Ortalama |
-   Çıkar. Değerler kalan genişliği alır ve satıra sarar; sayılar sağa
-   yaslı, tabular. Uzun değer kısaltılmaz (üç nokta yok), kelime içinden
-   sarar. */
-.dg-cikar-tablo th { white-space: normal; vertical-align: bottom; }
-.dg-cikar-tablo th:nth-child(1) { width: 14%; }
-.dg-cikar-tablo th:nth-child(2) { width: 8%; }
-.dg-cikar-tablo th:nth-child(3) { width: 7%; }
-.dg-cikar-tablo th:nth-child(4) { width: 7%; }
-.dg-cikar-tablo th:nth-child(5) { width: 7%; }
-.dg-cikar-tablo th:nth-child(6) { width: auto; }
-.dg-cikar-tablo th:nth-child(n+7):nth-child(-n+10) { width: 8%; }
-.dg-cikar-tablo th:nth-child(11) { width: 64px; text-align: center; }
-.dg-cikar-tablo th:nth-child(3), .dg-cikar-tablo th:nth-child(4),
-.dg-cikar-tablo th:nth-child(5), .dg-cikar-tablo th:nth-child(7),
-.dg-cikar-tablo th:nth-child(8), .dg-cikar-tablo th:nth-child(9),
-.dg-cikar-tablo th:nth-child(10) { text-align: right; }
+/* TANIMSIZ KOLONLAR (01.2.3.1): Değişken | Tip | Boş Oranı | Tekrar
+   Oranı | Tekil Değer | En Sık Değerler (Satır Adedi) | Min | Med | Mean |
+   Max | Çıkar. Genişlikler <col> sınıflarından (tk-*), hizalama başlıkta
+   ve hücrede aynı sınıfla (tk-sag sağa, tk-orta ortaya). Kolonlar ince
+   dikey çizgiyle ayrılır: hangi değerin hangi kolona ait olduğu belli
+   olsun. Değerler kalan genişliği alır ve satıra sarar. Uzun değer
+   kısaltılmaz (üç nokta yok). */
+.dg-cikar-tablo col.tk-ad { width: 14%; }
+.dg-cikar-tablo col.tk-tip { width: 8%; }
+.dg-cikar-tablo col.tk-oran { width: 7.5%; }
+.dg-cikar-tablo col.tk-deger { width: auto; }
+.dg-cikar-tablo col.tk-ist { width: 8%; }
+.dg-cikar-tablo col.tk-cikar { width: 64px; }
+.dg-cikar-tablo th, .dg-cikar-tablo th:nth-child(n) {
+  width: auto; white-space: normal; vertical-align: bottom; text-align: left;
+}
+.dg-cikar-tablo th.tk-sag, .dg-cikar-tablo td.tk-sag { text-align: right; }
+.dg-cikar-tablo th.tk-orta, .dg-cikar-tablo td.dg-ekle-hucre { text-align: center; }
+.dg-cikar-tablo th + th, .dg-cikar-tablo td + td { border-left: 1px solid var(--kenar-acik); }
 .dg-cikar-tablo td { vertical-align: top; padding-top: 5px; padding-bottom: 5px; }
-.dg-cikar-tablo td.dg-ekle-hucre { text-align: center; }
-.dg-cikar-tablo .dg-bos-oran,
-.dg-sayi-hucre {
-  text-align: right; font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+.dg-cikar-tablo .dg-sayi-hucre {
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
 }
 .dg-deger-hucre { line-height: 1.3; }
 .dg-deger {
-  display: inline-flex; align-items: baseline; gap: 5px;
+  display: inline-flex; align-items: baseline; gap: 4px;
   max-width: 100%; margin: 0 4px 3px 0; padding: 1px 6px;
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
   background: var(--yuzey-alt); font-size: var(--fs-kucuk);
 }
 .dg-deger-ad { color: var(--metin); overflow-wrap: anywhere; min-width: 0; }
-/* Adet değerden çizgiyle ayrılır: "5 | 767" sayısal kolonda değerle
-   adet karışmasın. */
 .dg-deger-adet {
-  color: var(--metin-soluk); font-variant-numeric: tabular-nums;
-  white-space: nowrap; padding-left: 5px; border-left: 1px solid var(--kenar);
+  color: var(--metin-soluk); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .dg-deger-yok { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
-.dg-tekrar-adet { color: var(--metin-soluk); font-size: var(--fs-kucuk); white-space: nowrap; }
