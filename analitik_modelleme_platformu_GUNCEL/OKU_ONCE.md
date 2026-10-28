@@ -487,6 +487,32 @@ tanıtır; sayfalar sol bardan açılır.
     son değerse satır çıkar), değilse "Kalıplara Al" (Adaylar'daki kalıbı
     tabloya alır; dönem değil işaretli değeri gruba geri alır; hiçbir
     kalıba uymayan parçayı kendisi olarak elle ekler).
+  - **Gruplar:** aynı yazılışın farklı sayılı parçaları bir grup
+    (`donem.parca_grubu`: H00, H06, H12 → H[sayı]; 3D, 30D → [sayı]D;
+    H00_06, H06_12 → H[sayı]_[sayı]; PRD3X → PRD[sayı]X). İki ya da daha
+    çok üyeli grup Tüm Parçalar'da başlık satırı (grubun kalıbı, "grup ·
+    N parça", kesin kolon sayısı: üyelerin geçtiği farklı kolonlar,
+    `grup_kolon`, üyelerin listesi, durum) ve altında üyeleri olarak
+    durur; grup aramaya ya da süzgece bir üyesi uyarsa görünür, sayfada
+    bölünmez. Grup düğmesi:
+    - "Grubu Kalıplara Al": üyeler tek bir adayın değeriyse o aday
+      tabloya alınır; değilse grubun kalıbı tek elle satır olarak
+      eklenir (anlamını dil modeli yazar).
+    - "Grupla": üyelerden ikisi ya da daha çoğu ayrı satır olarak
+      alınmışsa ayrı satırlar tek satırda birleşir (aşağıda).
+    - "Grubu Kalıplardan Çıkar": grubun kalıbı tablodaysa ya da bütün
+      üyeler kalıplardaysa; grup satırı ve ayrı satırlar çıkar, başka bir
+      kalıbın değeri olan üye o kalıpta Dönem Değil olur.
+    Üyeler yine tek tek alınabilir ("Kalıplara Al").
+  - **Kalıplar'da grup:** aynı gruptan ayrı alınan iki ya da daha çok
+    satır yan yana dizilir; üstlerinde "H[sayı] grubu · H00, H06, H12 ayrı
+    satırlarda · Grupla" başlığı, solunda ince çizgi. Grupla: ayrı
+    satırlar tablodan kalkar (elle olanlar silinir, hafızadan gelenler
+    Çıkarılanlar'a geçer), grubun kalıbı tek satır olur (tabloda varsa o
+    satıra katılır). Ayrı satırların yazılı anlamları değerlerin Kendi
+    Anlamı olur; en çok seçilen tür grubun türü olur. Dil modeli grubun
+    anlamını yazınca, kendi anlamı kalıbın anlamından çıkanla aynı olan
+    değerler Kalıba Uyar'a döner.
   - **Anlamı dil modeli yazar:** tablodaki bir satırın anlamı boşsa
     (tabloya alındı, Tüm Parçalar'dan eklendi, elle kalıp yazıldı) kart
     `/donem_anlam` ile dil modeline yazdırır (`akis_faz01.donem_anlam_oner`,

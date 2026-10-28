@@ -1855,7 +1855,8 @@ def _donem_parcalari(durum):
     adlar, tanimlar = _donem_kaynak(durum)
     return [{"parca": x["parca"], "kolon": x["kolon"], "donem": x["donem"],
              "ikili": x["ikili"], "ornekler": [a for a, _t in x["ornekler"]],
-             "birlikte": x["birlikte"], "tek": x["tek"]}
+             "birlikte": x["birlikte"], "tek": x["tek"],
+             "grup": x["grup"], "grup_kolon": x["grup_kolon"]}
             for x in donem_mod.parca_listesi(adlar, tanimlar)]
 
 

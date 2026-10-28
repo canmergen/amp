@@ -11343,6 +11343,15 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
            kullanıcı değiştirmediyse dil modelininki olur. */
         x.uretimYaz = (d, zorla) => {
             if (zorla || !anlamAl().trim()) anlamYaz(tireSade(d.anlam || ""));
+            /* Gruplanan satırdan gelen değer anlamı kalıbın anlamıyla aynı
+               çıkıyorsa kendi anlamı sayılmaz (Kalıba Uyar olur). */
+            let dgDegisti = false;
+            Object.keys(dgAnlam).forEach(dg => {
+                if (String(dgAnlam[dg]).trim() === String(otoAnlam(dg) || "").trim()) {
+                    delete dgAnlam[dg]; dgDegisti = true;
+                }
+            });
+            if (dgDegisti) { dgKaydet(); dgCiz(); }
             if (d.tur && !(duzen[anah] && duzen[anah].zaman_tur)
                     && DONEM_TURLERI.some(t => t[0] === d.tur)) {
                 turSec.value = d.tur; turNotYaz();
@@ -11550,13 +11559,32 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             b.onclick = () => { parcaSuz = deg; parcaGoster = PARCA_SAYFA; parcalariCiz(); };
             parCipler.appendChild(b);
         });
-        const liste = parcalar
-            .filter(p => !parcaAra || p.parca.includes(parcaAra))
-            .filter(p => parcaSuz === "tumu" || (parcaSuz === "ic") === icinde(p))
-            .sort((a, b) => (b.kolon - a.kolon) || a.parca.localeCompare(b.parca));
-        liste.slice(0, parcaGoster).forEach(p => {
+        /* GRUPLU LİSTE: iki ya da daha çok üyeli grup bir başlık satırı ve
+           altında üyeleri; grup aramaya ya da süzgece bir üyesi uyarsa
+           görünür. Sıra: kolon sayısı (grubun kesin kolon sayısı). */
+        const uyar = p => (!parcaAra || p.parca.includes(parcaAra)
+                           || (p.grup && p.grup.includes(parcaAra)))
+            && (parcaSuz === "tumu" || (parcaSuz === "ic") === icinde(p));
+        const grupUye = new Map();
+        parcalar.forEach(p => { if (p.grup) (grupUye.get(p.grup) || grupUye.set(p.grup, []).get(p.grup)).push(p); });
+        const ogeler = [];
+        const gorulenGrup = new Set();
+        parcalar.forEach(p => {
+            const uyeler = p.grup ? grupUye.get(p.grup) : null;
+            if (uyeler && uyeler.length > 1) {
+                if (gorulenGrup.has(p.grup)) return;
+                gorulenGrup.add(p.grup);
+                if (!uyeler.some(uyar)) return;
+                ogeler.push({ grup: p.grup, uyeler: uyeler.slice().sort((x, y) => x.parca.localeCompare(y.parca, "tr", { numeric: true })),
+                              kolon: Number(p.grup_kolon || 0) });
+            } else if (uyar(p)) ogeler.push({ p, kolon: p.kolon });
+        });
+        ogeler.sort((x, y) => (y.kolon - x.kolon)
+            || String(x.grup || x.p.parca).localeCompare(String(y.grup || y.p.parca)));
+        const parcaSatiri = (p, uye) => {
             const du = h.get(p.parca) || null;
-            const tr = elYap("tr", "dg-satir" + (du && du.tip !== "aday" && du.tip !== "disi" ? " dg-donem-parca-ic" : ""));
+            const tr = elYap("tr", "dg-satir" + (du && du.tip !== "aday" && du.tip !== "disi" ? " dg-donem-parca-ic" : "")
+                                   + (uye ? " dg-donem-parca-uye" : ""));
             tr.appendChild(elYap("td", "dg-kolon", p.parca));
             tr.appendChild(elYap("td", "dg-donem-parca-sayi", ftBinlik(p.kolon)));
             tr.appendChild(elYap("td", "dg-donem-parca-ornek", (p.ornekler || []).slice(0, 2).join(", ")));
@@ -11576,18 +11604,70 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                     : p.parca + " dönem bilgisinden çıkarılır.")
                 : du && du.tip === "aday" ? donemSayiGoster(du.c.r.kalip) + " tabloya alınır."
                 : du && du.tip === "disi" ? p.parca + " yeniden " + donemSayiGoster(du.x.kalipNe()) + " kalıbının değeri olur."
-                : p.parca + " kalıp olarak eklenir; anlamını dil modeli yazar.";
+                : p.parca + " kalıp olarak eklenir; anlamını dil modeli yazar."
+                  + (uye ? " Aynı gruptan ayrı alınanlar Kalıplar sekmesinde yan yana durur ve gruplanabilir." : "");
             b.onclick = () => parcaEylem(p, du);
             tdB.appendChild(b);
             tr.appendChild(tdB);
             parTb.appendChild(tr);
+        };
+        const grupSatiri = o => {
+            const uyeDurum = o.uyeler.map(p => h.get(p.parca) || null);
+            const icSay = uyeDurum.filter(du => du && (du.tip === "kalip" || du.tip === "deger")).length;
+            const ayri = grupUyeSatirlari(o.grup);
+            const grupTabloda = satirlar.some(x => satirKalibi(x) === o.grup);
+            const adaylar = new Set(uyeDurum.filter(du => du && du.tip === "aday").map(du => du.c.anah));
+            const tumIc = icSay === o.uyeler.length;
+            const tr = elYap("tr", "dg-satir dg-donem-parca-grup" + (tumIc ? " dg-donem-parca-ic" : ""));
+            const tdA = elYap("td", "dg-kolon");
+            tdA.appendChild(elYap("div", "", donemSayiGoster(o.grup)));
+            tdA.appendChild(elYap("div", "dg-donem-grup-alt", "grup · " + ftBinlik(o.uyeler.length) + " parça"));
+            tr.appendChild(tdA);
+            const tdK = elYap("td", "dg-donem-parca-sayi", ftBinlik(o.kolon));
+            tdK.title = "Üyelerin geçtiği farklı kolon sayısı";
+            tr.appendChild(tdK);
+            tr.appendChild(elYap("td", "dg-donem-parca-ornek", o.uyeler.map(p => p.parca).join(", ")));
+            const durum = grupTabloda ? "Grup kalıbı tabloda"
+                : ayri.length > 1 ? ftBinlik(ayri.length) + " parça ayrı kalıp: gruplanabilir"
+                : tumIc ? "Kalıplarda"
+                : icSay ? ftBinlik(icSay) + " / " + ftBinlik(o.uyeler.length) + " parça kalıplarda"
+                : adaylar.size === 1 ? "Adaylarda: " + donemSayiGoster(uyeDurum.find(du => du && du.tip === "aday").c.r.kalip)
+                : "";
+            tr.appendChild(elYap("td", "dg-donem-olasi-neden", durum));
+            const tdB = elYap("td", "dg-ekle-hucre");
+            const cikar = grupTabloda || (tumIc && ayri.length < 2);
+            const b = elYap("button", "dg-toplu-btn" + (cikar ? " dg-donem-cikar" : ""),
+                            cikar ? "Grubu Kalıplardan Çıkar" : ayri.length > 1 ? "Grupla" : "Grubu Kalıplara Al");
+            b.type = "button";
+            b.disabled = k;
+            b.title = cikar ? "Grubun bütün parçaları dönem bilgisinden çıkarılır."
+                : ayri.length > 1 ? "Ayrı alınan parçalar tek kalıpta (" + donemSayiGoster(o.grup) + ") birleşir."
+                : "Grup tek kalıp olarak (" + donemSayiGoster(o.grup) + ") eklenir; anlamını dil modeli yazar.";
+            b.onclick = () => {
+                if (kilitli || da.dm === "calisiyor") return;
+                if (cikar) grubuCikar(o);
+                else if (!ayri.length && !icSay && adaylar.size === 1) { geriAl([...adaylar][0]); sekmeAc("parca"); }
+                else { grupla(o.grup); sekmeAc("parca"); }
+                parcalariCiz();
+            };
+            tdB.appendChild(b);
+            tr.appendChild(tdB);
+            parTb.appendChild(tr);
+            o.uyeler.forEach(p => parcaSatiri(p, true));
+        };
+        /* Sayfa: PARCA_SAYFA parça; grup bölünmez. */
+        let gosterilen = 0, kalan = 0;
+        ogeler.forEach(o => {
+            const n = o.grup ? o.uyeler.length : 1;
+            if (gosterilen >= parcaGoster) { kalan += n; return; }
+            gosterilen += n;
+            if (o.grup) grupSatiri(o); else parcaSatiri(o.p, false);
         });
-        if (!liste.length) {
+        if (!ogeler.length) {
             const tr = elYap("tr", "dg-bos-tablo");
             const td = elYap("td", "", parcalar.length ? "Aramaya uyan parça yok." : "Kolon adlarında parça bulunmadı.");
             td.colSpan = 5; tr.appendChild(td); parTb.appendChild(tr);
         }
-        const kalan = liste.length - Math.min(liste.length, parcaGoster);
         parDaha.hidden = kalan <= 0;
         parDaha.textContent = "Daha fazla göster · " + ftBinlik(kalan) + " parça daha";
     }
@@ -11669,6 +11749,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 else if (!r.elle) cikanlar.push({ r, anah }); // elle satır çıkarılınca silinir
             } else satirCiz(r);        });
         elleYeni.forEach(satirCiz);
+        gruplariDiz();
         if (!satirlar.length) {
             const tr = elYap("tr", "dg-bos-tablo");
             const td = elYap("td", "", da.dm === "calisiyor"
@@ -11686,6 +11767,108 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         sekmeSayilari();
         durumEl.textContent = da.not ? tireSade(da.not) : "";
         durumEl.hidden = !durumEl.textContent;
+    }
+    /* GRUPLAR: aynı yazılışın farklı sayılı parçaları (H00, H06, H12)
+       bir grup; grubun kalıbı parçanın "grup" alanı (ör. H<N>; arka uç
+       donem.parca_grubu). Grubun kolon sayısı kesin (grup_kolon: üyelerin
+       geçtiği farklı kolonlar). */
+    const grupOf = k => {
+        const p = parcalar.find(x => x.parca === String(k || "").trim().toUpperCase());
+        return (p && p.grup) || null;
+    };
+    const satirKalibi = x => String(x.kalipNe() || "").trim().toUpperCase();
+    /* Ayrı ayrı alınan aynı grup parçaları (yer tutucusuz kalıp satırları). */
+    const grupUyeSatirlari = g => satirlar.filter(x => {
+        const k = satirKalibi(x);
+        return k && !k.includes("<") && grupOf(k) === g;
+    });
+    /* KALIPLAR SEKMESİNDE GRUP: aynı gruptan iki ya da daha çok ayrı satır
+       yan yana dizilir, üstlerinde grup başlığı ve "Grupla" durur. */
+    function gruplariDiz() {
+        const gruplar = new Map();
+        satirlar.forEach(x => {
+            const k = satirKalibi(x);
+            const g = k && !k.includes("<") ? grupOf(k) : null;
+            if (g) (gruplar.get(g) || gruplar.set(g, []).get(g)).push(x);
+        });
+        gruplar.forEach((uyeler, g) => {
+            if (uyeler.length < 2) return;
+            const bas = elYap("tr", "dg-donem-grup-bas");
+            const td = elYap("td", "");
+            td.colSpan = 4;
+            const grupSatiri = satirlar.find(x => satirKalibi(x) === g);
+            td.appendChild(elYap("span", "dg-donem-grup-ad", donemSayiGoster(g) + " grubu"));
+            td.appendChild(elYap("span", "dg-donem-grup-ozet",
+                uyeler.map(satirKalibi).join(", ") + " ayrı satırlarda"
+                + (grupSatiri ? "; grup kalıbı da tabloda" : "")));
+            const b = elYap("button", "dg-toplu-btn dg-donem-grupla", "Grupla");
+            b.type = "button";
+            b.disabled = kilitli || da.dm === "calisiyor";
+            b.title = "Tek kalıpta (" + donemSayiGoster(g) + ") birleşir; her parçanın yazılı anlamı o "
+                + "değerin kendi anlamı olarak kalır.";
+            b.onclick = () => grupla(g);
+            td.appendChild(b);
+            bas.appendChild(td);
+            tb.insertBefore(bas, uyeler[0].tr);
+            let son = bas;
+            uyeler.forEach(x => {
+                x.tr.classList.add("dg-donem-grup-uye");
+                son.after(x.tr); son = x.tr;
+                if (x.detay) { son.after(x.detay); son = x.detay; }
+            });
+        });
+    }
+    /* GRUPLA: grubun ayrı satırları tek satırda birleşir. Grup kalıbı
+       tabloda yoksa elle satır olarak eklenir (anlamını dil modeli yazar);
+       ayrı satırların anlamları değerlerin kendi anlamı, en çok seçilen
+       tür grubun türü olur. Ayrı satırlar tablodan kalkar (hafızadan
+       gelenler Çıkarılanlar'a geçer). */
+    function grupla(g) {
+        if (kilitli || da.dm === "calisiyor") return;
+        const uyeler = grupUyeSatirlari(g);
+        const dgYeni = {}, turSay = {};
+        uyeler.forEach(x => {
+            const a = x.anlam().trim();
+            if (a) dgYeni[satirKalibi(x)] = a;
+            turSay[x.turSec.value] = (turSay[x.turSec.value] || 0) + 1;
+        });
+        const tur = Object.keys(turSay).sort((a, b) => turSay[b] - turSay[a])[0];
+        uyeler.forEach(x => {
+            duzen[x.anah] = Object.assign(duzen[x.anah] || {}, { cikar: true });
+            const i = elleYeni.findIndex(e => e.id === x.anah);
+            if (i !== -1) elleYeni.splice(i, 1);
+        });
+        const var_ = satirlar.find(x => satirKalibi(x) === g);
+        if (var_) {
+            duzen[var_.anah] = Object.assign(duzen[var_.anah] || {}, {
+                deger_anlam: Object.assign({}, var_.dgAnlam, dgYeni) });
+        } else {
+            const id = "elle-yeni-" + (++elleSayac);
+            elleYeni.push({ kalip: g, anlam: "", oneri: "", elle: true, id, degerler: [], ornekler: [],
+                            deger_anlam: dgYeni, zaman_tur: tur || "pencere" });
+            if (tur) duzen[id] = { zaman_tur: tur };
+        }
+        ciz(da.satirlar);
+        bilgiYaz(donemSayiGoster(g) + " grubu tek satırda" + (uyeler.length
+            ? ": " + uyeler.map(satirKalibi).join(", ") + " değerleri olarak birleşti." : "."), false);
+        const tr = Array.from(tb.querySelectorAll("tr[data-anahtar]"))
+            .find(t => (satirlar.find(x => x.tr === t) || {}).kalipNe
+                       && satirKalibi(satirlar.find(x => x.tr === t)) === g);
+        if (tr) tr.scrollIntoView({ block: "nearest" });
+        if (degisti) degisti();
+    }
+    /* GRUBU KALIPLARDAN ÇIKAR: grup kalıbı satırı ve grubun ayrı satırları
+       tablodan çıkar; başka bir kalıbın değeri olan üyeler o kalıpta dönem
+       değil sayılır (Tüm Parçalar'daki tek parça eylemiyle aynı). */
+    function grubuCikar(o) {
+        if (kilitli || da.dm === "calisiyor") return;
+        const gs = satirlar.find(x => satirKalibi(x) === o.grup);
+        if (gs) gs.cikBtn.onclick();
+        o.uyeler.forEach(p => {
+            const du = parcaDurumHaritasi().get(p.parca);
+            if (du && (du.tip === "kalip" || du.tip === "deger")) parcaEylem(p, du);
+        });
+        bilgiYaz(donemSayiGoster(o.grup) + " grubu dönem bilgisinden çıkarıldı.", false);
     }
     function elleEkle(kalip) {
         if (kilitli || da.dm === "calisiyor") return;

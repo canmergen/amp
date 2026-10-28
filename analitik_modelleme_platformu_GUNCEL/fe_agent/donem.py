@@ -501,7 +501,8 @@ def tek_kalip(adlar, tanimlar, kalip):
 def parca_listesi(adlar, tanimlar, ornek=2):
     """Kolon adlarindaki BUTUN parcalar (yalniz rakam haric): [{"parca",
     "kolon", "donem": donem kalibina uyuyor mu, "ikili": aralik ikilisi mi,
-    "ornekler": [(kolon, tanim)]}], alfabetik. Ardindan yalniz rakam gelen
+    "ornekler": [(kolon, tanim)], "grup": parca_grubu, "grup_kolon":
+    grubun farkli kolon sayisi}], alfabetik. Ardindan yalniz rakam gelen
     parca ikili olarak da girer (<P>_<NN>; elle yazilan aralik kalibi
     adlarda aranabilsin)."""
     tanimlar = tanimlar or {}
@@ -527,16 +528,46 @@ def parca_listesi(adlar, tanimlar, ornek=2):
                     ayrik_harf.add(p)
         for p in dict.fromkeys(gorulen):
             kolonlar.setdefault(p, []).append(ad)
+    # GRUPLAR: grubun kolon sayisi uyelerin gectigi FARKLI kolonlar (bir
+    # kolon adinda iki uye gecerse bir kez sayilir).
+    grup_kolon = {}
+    for p, liste in kolonlar.items():
+        g = parca_grubu(p)
+        if g:
+            grup_kolon.setdefault(g, set()).update(liste)
     cikti = []
     for p, liste in kolonlar.items():
         ornekler = [(a, str(tanimlar.get(a) or "").strip()[:200]) for a in liste[:ornek]]
         b = bh.get(p) or {}
+        g = parca_grubu(p)
         cikti.append({"parca": p, "kolon": len(liste), "ikili": p in ikililer,
                       "donem": p in ikililer or p in ayrik_harf or bool(_donem_parcasi(p)),
                       "ornekler": ornekler, "birlikte": b.get("birlikte") or [],
-                      "tek": b.get("tek", len(liste))})
+                      "tek": b.get("tek", len(liste)), "grup": g,
+                      "grup_kolon": len(grup_kolon[g]) if g else None})
     cikti.sort(key=lambda x: x["parca"])
     return cikti
+
+
+_ARALIK_PARCA = re.compile(r"^([A-Z]{1,2})\d{2,}_\d+$")
+
+
+def parca_grubu(p):
+    """Parcanin grubu: ayni yazilisin farkli sayili parcalari bir grup
+    (H00, H06, H12 -> "H<N>"; 3D, 30D -> "<N>D"; H00_06, H06_12 ->
+    "H<NN>_<NN>"; PRD3X -> "PRD<N>X"). Grubun kalibi elle kalip olarak
+    eklenebilir (kalip_deseni butun uyelere uyar). Sayisiz parca: None."""
+    k = _norm(p)
+    m = _ARALIK_PARCA.match(k)
+    if m:
+        return m.group(1) + "<NN>_<NN>"
+    y = yazilis(k)
+    if y:
+        return y
+    m = _HARF_SAYI_HARF.match(k)
+    if m:
+        return m.group(1) + "<N>" + m.group(3)
+    return None
 
 
 def kalip_adlarda(kalip, parcalar):

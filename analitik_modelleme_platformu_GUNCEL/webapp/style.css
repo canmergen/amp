@@ -3464,7 +3464,7 @@ span.bolme-cip { cursor: default; }
 .dg-donem-parca-tablo th:nth-child(2) { width: 8%; }
 .dg-donem-parca-tablo th:nth-child(3) { width: auto; }
 .dg-donem-parca-tablo th:nth-child(4) { width: 22%; }
-.dg-donem-parca-tablo th:nth-child(5) { width: 185px; }
+.dg-donem-parca-tablo th:nth-child(5) { width: 250px; }
 .dg-donem-parca-tablo .dg-ekle-hucre .dg-toplu-btn { white-space: nowrap; }
 .dg-donem-parca-sayi { font-variant-numeric: tabular-nums; }
 .dg-donem-parca-ornek { color: var(--metin-soluk); font-size: var(--fs-kucuk); overflow-wrap: anywhere; }
@@ -5090,3 +5090,19 @@ span.bolme-cip { cursor: default; }
 /* Blok düzenli düğme (Değerleri Düzenle) kendi genişliğinde: hücrede
    ortaya otursun. */
 #kabuk table td .dg-donem-deger-ac { margin-left: auto; margin-right: auto; }
+
+/* DÖNEM GRUPLARI (Tüm Parçalar ve Kalıplar): aynı yazılışın sayılı
+   parçaları (H00, H06, H12) bir grup. Grup başlık satırı hafif zeminli,
+   üyeler solunda ince mürekkep çizgisiyle başlığa bağlı. */
+.dg-donem-parca-grup > td { background: var(--yuzey-alt); font-weight: var(--fw-kalin); }
+.dg-donem-grup-alt { font-size: var(--fs-kucuk); font-weight: 400; color: var(--metin-soluk); }
+.dg-donem-parca-uye > td:first-child,
+.dg-donem-grup-uye > td:first-child { box-shadow: inset 3px 0 0 var(--murekkep); }
+.dg-donem-parca-uye.dg-donem-parca-ic > td:first-child { box-shadow: inset 3px 0 0 var(--yesil); }
+.dg-donem-grup-bas > td {
+  background: var(--yuzey-alt); padding: 6px var(--b-2);
+  border-top: 1px solid var(--kenar); box-shadow: inset 3px 0 0 var(--murekkep);
+}
+.dg-donem-grup-ad { font-weight: var(--fw-kalin); margin-right: 8px; }
+.dg-donem-grup-ozet { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-right: 10px; }
+.dg-donem-grupla { vertical-align: middle; }
