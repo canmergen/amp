@@ -4441,8 +4441,9 @@ if (dgPanelEl) dgPanelEl.querySelectorAll("[data-alt]").forEach(b => {
    Model Değişkenleri'nin beş bölümünden her biri bir birimdir. Birimin
    içeriği her sunucu yanıtında bir imzaya indirgenir; imza, kullanıcının
    o bölümü en son GÖRDÜĞÜ imzadan farklıysa bölüm "yeni" sayılır. Sol
-   bardaki Model Değişkenleri satırında kırmızı yuvarlak içinde yeni bölüm
-   sayısı, görünüm şeridindeki düğmelerde o görünümün sayısı durur.
+   bardaki Model Değişkenleri satırının (Model Platformu kapalıyken
+   başlığının) zemini sayı yerine yavaşça kırmızılaşıp açılır; görünüm
+   şeridindeki düğmelerde o görünümün sayısı durur.
    GÖRÜLDÜ: bölümün başlığı ekranda 0,1 sn göründüğünde; sayı her bölümde
    bir azalır, hepsi görülünce rozet kalkar.
    İmzalar çalışma başına bu tarayıcıda saklanır (yalnız kolaylık).
@@ -4507,6 +4508,25 @@ function yeniBirimler() {
 
 function rozetYaz(el, sayi, etiket) {
     if (!el) return;
+    /* SOL BAR: sayı yok; satırın zemini yavaşça kırmızılaşıp açılır
+       (style.css .guncel-nabiz). Bölümler görülünce kalkar. */
+    if (el.closest("#sol-bar")) {
+        let n = el.querySelector(":scope > .guncel-nabiz");
+        el.classList.toggle("guncel-var", !!sayi);
+        if (!sayi) {
+            if (n) n.remove();
+            el.removeAttribute("data-guncel");
+            return;
+        }
+        if (!n) {
+            n = elYap("span", "guncel-nabiz");
+            n.setAttribute("aria-hidden", "true");
+            el.insertBefore(n, el.firstChild);
+        }
+        el.dataset.guncel = "Görülmemiş güncelleme var (" + sayi + " " + etiket + ")";
+        el.setAttribute("aria-description", el.dataset.guncel);
+        return;
+    }
     let r = el.querySelector(":scope > .guncelleme-rozet");
     if (!sayi) { if (r) r.remove(); return; }
     if (!r) {

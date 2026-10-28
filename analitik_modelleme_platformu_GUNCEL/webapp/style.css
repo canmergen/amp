@@ -5026,7 +5026,7 @@ span.bolme-cip { cursor: default; }
 .dg-deger-hucre { line-height: 1.3; }
 .dg-deger {
   display: inline-flex; align-items: baseline; gap: 4px;
-  max-width: 100%; margin: 0 4px 3px 0; padding: 1px 6px;
+  max-width: 100%; margin: 0 2px 3px; padding: 1px 6px;
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
   background: var(--yuzey-alt); font-size: var(--fs-kucuk);
 }
@@ -5035,3 +5035,58 @@ span.bolme-cip { cursor: default; }
   color: var(--metin-soluk); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .dg-deger-yok { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+
+/* GÜNCELLEME NABZI (sol bar): sayı rozeti yerine satırın zemini 2,4 sn'de
+   bir yavaşça kırmızılaşıp açılır; bölümler görülünce kalkar (app.js:
+   rozetYaz). Katman satırın zemininin üstünde, yazı ve ikonun altında
+   (isolation + z-index -1). Model Platformu açıkken başlıkta değil alt
+   satırda görünür. Hareket azaltma tercihinde sabit hafif kırmızı. */
+#kabuk { --guncel-nabiz: rgba(213, 17, 21, .26); }
+#kabuk.sepya { --guncel-nabiz: rgba(179, 38, 30, .24); }
+#kabuk.koyu { --guncel-nabiz: rgba(255, 90, 95, .30); }
+#sol-bar .guncel-var { position: relative; isolation: isolate; }
+#sol-bar .guncel-nabiz {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  border-radius: inherit; background: var(--guncel-nabiz); opacity: 0;
+  animation: guncel-nabiz 2.4s ease-in-out infinite;
+}
+#sol-bar .ust-kume-ad[aria-expanded="true"] > .guncel-nabiz { display: none; }
+@keyframes guncel-nabiz { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  #sol-bar .guncel-nabiz { animation: none; opacity: .6; }
+}
+
+/* TABLOLARDA HİZA (her yerde): başlık ve hücre içeriği ortalı, ne sola
+   ne sağa yaslı. Hücredeki esnek kutular (çip dizileri, başlık ve
+   süzgeç düğmesi) da ortaya toplanır; anahtar ve değeri iki uca dağıtan
+   satırlar (sfa-olcut-hucre, ft-detay-satir) hariç. Değişken Listesi
+   ızgarası (ft-) da aynı. Yazı alanları (input, textarea, select) kendi
+   içinde soldan yazar: yazarken imleç ortadan kaymasın. */
+#kabuk table th, #kabuk table td,
+#kabuk .ft-hucre, #kabuk .ft-bas { text-align: center !important; }
+#kabuk table th div:not(.sfa-olcut-hucre):not(.ft-detay-satir),
+#kabuk table th span:not(.sfa-olcut-hucre):not(.ft-detay-satir),
+#kabuk table th label:not(.sfa-olcut-hucre):not(.ft-detay-satir),
+#kabuk table th p:not(.sfa-olcut-hucre):not(.ft-detay-satir),
+#kabuk table td div:not(.sfa-olcut-hucre):not(.ft-detay-satir),
+#kabuk table td span:not(.sfa-olcut-hucre):not(.ft-detay-satir),
+#kabuk table td label:not(.sfa-olcut-hucre):not(.ft-detay-satir),
+#kabuk table td p:not(.sfa-olcut-hucre):not(.ft-detay-satir),
+#kabuk table th button, #kabuk table td button,
+#kabuk table td summary,
+#kabuk .ft-baslik .ft-bas,
+#kabuk .ft-hucre div:not(.ft-detay-satir),
+#kabuk .ft-hucre span:not(.ft-detay-satir),
+#kabuk .ft-hucre label:not(.ft-detay-satir) { justify-content: center; }
+#kabuk table th input,
+#kabuk table th textarea,
+#kabuk table th select,
+#kabuk table td input,
+#kabuk table td textarea,
+#kabuk table td select,
+#kabuk .ft-hucre input,
+#kabuk .ft-hucre textarea,
+#kabuk .ft-hucre select { text-align: left; }
+/* Blok düzenli düğme (Değerleri Düzenle) kendi genişliğinde: hücrede
+   ortaya otursun. */
+#kabuk table td .dg-donem-deger-ac { margin-left: auto; margin-right: auto; }

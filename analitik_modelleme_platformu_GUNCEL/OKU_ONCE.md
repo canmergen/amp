@@ -88,6 +88,12 @@ içindeki `VARSAYILAN_MODEL`.
 
 ## Ekran
 
+**Tablolarda hiza:** her tabloda (Değişken Listesi ızgarası dahil)
+başlık ve hücre içeriği ortalı; çip dizileri ve hücredeki düğmeler de
+ortada. Yazı alanları (kutu, açılır liste) kendi içinde soldan yazar.
+Anahtar ve değeri iki uca dağıtan satırlar (SFA ölçüt satırı, Değişken
+Listesi detay satırı) dokunulmaz. Kural `style.css` sonunda tek yerde.
+
 **Yazı tipi:** tek aile, **Outfit** (geometrik, yuvarlak, sade). Bütün
 arayüzde: başlıklar, sol bar, metin, tablolar, düğmeler. Başlıklar ve
 vurgu 600 (sol bar satırları ve seçili satır da), metin 400;
@@ -152,20 +158,22 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   çizgi üstündeki küçük boş düğümden kısa yatay kol uzanır; seçili alt
   sayfanın düğümü dolu. Seçili satır köşesiz: hafif zemin (üst düzey
   satırlarda solunda düz siyah çizgi). Kırmızı ya da pembe vurgu yok.
-- **Yeni güncelleme rozeti:** Model Değişkenleri satırının sağında kırmızı
-  yuvarlak içinde, görülmemiş güncellemesi olan bölüm sayısı (en çok "9+").
-  Bölümler: Veri Seti, Sözlük (Veri ve Sözlük), Dağılım, Tek Değişken
-  Analizi (Dağılım ve SFA), Eksik Değer (Değişken Kontrolleri). Bir
-  bölümün içeriği her sunucu yanıtında bir imzaya indirgenir; imza
+- **Yeni güncelleme nabzı:** görülmemiş güncellemesi olan bölüm varsa
+  Model Değişkenleri satırının zemini sayı yerine 2,4 saniyede bir
+  yavaşça kırmızılaşıp açılır (`.guncel-nabiz`; Beyaz, Sepya ve Koyu'da
+  kendi kırmızısı; hareket azaltma tercihinde sabit hafif kırmızı). Model
+  Platformu kapalıyken başlığı nabız atar. Bütün yeni bölümler görülünce
+  kalkar. Bölümler: Veri Seti, Sözlük (Veri ve Sözlük), Dağılım, Tek
+  Değişken Analizi (Dağılım ve SFA), Eksik Değer (Değişken Kontrolleri).
+  Bir bölümün içeriği her sunucu yanıtında bir imzaya indirgenir; imza
   kullanıcının o bölümü en son gördüğü hâlden farklıysa bölüm yenidir
   (ör. veri seti ve sözlük seçilince Veri Seti, Sözlük ve Dağılım).
-  Bölümün başlığı ekranda 0,1 saniye görününce görülmüş sayılır; sayı her
-  bölümde bir azalır, hepsi görülünce rozet kalkar. Model Değişkenleri
-  içindeki görünüm düğmelerinde (Veri ve Sözlük, Dağılım ve SFA, Değişken
-  Kontrolleri) o görünümün sayısı ayrıca durur; Model Platformu kapalıyken
-  toplam sayı başlığında görünür. Görülenler çalışma başına bu tarayıcıda
+  Bölümün başlığı ekranda 0,1 saniye görününce görülmüş sayılır. Model
+  Değişkenleri içindeki görünüm düğmelerinde (Veri ve Sözlük, Dağılım ve
+  SFA, Değişken Kontrolleri) o görünümün görülmemiş bölüm sayısı kırmızı
+  yuvarlak içinde durur. Görülenler çalışma başına bu tarayıcıda
   saklanır; çalışma bu tarayıcıda ilk kez açıldığında o anki içerik
-  görülmüş sayılır, yalnız sonraki değişiklikler rozete girer.
+  görülmüş sayılır, yalnız sonraki değişiklikler girer.
 - Katip'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
   soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
@@ -762,7 +770,8 @@ tanıtır; sayfalar sol bardan açılır.
   Değer, En Sık Değerler (Satır Adedi), Min, Med, Mean, Max, Çıkar
   (`akis_faz01._tanimsiz_bilgi`). Hepsi veri seti profilinden (tam tablo,
   örneklem yok). Genişlikler `<col>` sınıflarından (`tk-*`), başlık ve
-  hücre aynı hizada; kolonlar ince dikey çizgiyle ayrılır.
+  hücre ortalı (bütün tablolardaki kural); kolonlar ince dikey çizgiyle
+  ayrılır.
   - Tekrar Oranı: değeri kendinden önceki bir satırla aynı olan satırların
     bütün satırlara oranı, boş hücre de değer sayılır (profil `tekrar` /
     satır; `df[kolon].duplicated().sum()` ile aynı). Adedi ipucunda. Sıfır
