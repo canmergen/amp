@@ -5177,6 +5177,23 @@ function dagilimSifirla() {
     DAGILIM.onbellek = {};
 }
 
+/* Tanımsız Kolonlar satırının tekrar hücresi: "Yok" ya da "Var" ve altında
+   tekrar eden satır adedi. Profilde yoksa boş. */
+function tanimsizTekrarHucresi(tekrar) {
+    const td = elYap("td", "dg-sayi-hucre dg-tekrar-hucre");
+    if (tekrar === null || tekrar === undefined || tekrar === "") return td;
+    const n = Number(tekrar);
+    if (!isFinite(n)) return td;
+    td.appendChild(elYap("div", n > 0 ? "dg-tekrar-var" : "dg-tekrar-yok", n > 0 ? "Var" : "Yok"));
+    if (n > 0) {
+        td.appendChild(elYap("div", "dg-tekrar-adet", ftBinlik(n) + " satır"));
+        td.title = ftBinlik(n) + " satırın değeri kendinden önceki bir satırla aynı";
+    } else {
+        td.title = "Her satırın değeri farklı";
+    }
+    return td;
+}
+
 /* Tanımsız Kolonlar satırının değer hücresi: en sık 10 değer, her biri
    adediyle. Sayısal değer yerel biçimle yazılır. Kişisel veri taşıyan
    kolonda değer gösterilmez. Uzun değer kısaltılmaz, satıra sarar. */
@@ -7918,7 +7935,9 @@ function dogrulamaKartiEkle(alan, blok) {
         const ct = elYap("table", "dg-tablo dg-cikar-tablo");
         const cth = document.createElement("thead");
         const chr = document.createElement("tr");
-        [["Değişken"], ["Tip"], ["Boş Oranı"], ["Tekil Değer"],
+        [["Değişken"], ["Tip"], ["Boş Oranı"],
+         ["Tekrar", "Kolonda tekrar eden değer var mı. Sayı: değeri kendinden önceki bir satırla aynı olan satır adedi; boş hücre de değer sayılır (tam tablo)."],
+         ["Tekil Değer"],
          ["En Sık Değerler", "En sık 10 değer ve satır adedi (tam tablo)"],
          ["Min"], ["Maks"], ["Medyan"], ["Ortalama"], ["Çıkar"]].forEach(([h, ipucu]) => {
             const th = elYap("th", "", h);
@@ -7941,6 +7960,7 @@ function dogrulamaKartiEkle(alan, blok) {
             tr.appendChild(tdT);
             tr.appendChild(elYap("td", "dg-bos-oran",
                 sat.null_oran === null || sat.null_oran === undefined ? "" : ftOran(sat.null_oran)));
+            tr.appendChild(tanimsizTekrarHucresi(sat.tekrar));
             tr.appendChild(elYap("td", "dg-sayi-hucre",
                 sat.tekil === null || sat.tekil === undefined ? "" : ftBinlik(sat.tekil)));
             tr.appendChild(tanimsizDegerHucresi(sat));

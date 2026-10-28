@@ -748,10 +748,14 @@ tanıtır; sayfalar sol bardan açılır.
 - **01.2.3.1 Tanımsız Kolonlar** (A ve B; 01.2.3'ün alt adımı, numaralar
   kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar
   listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve "Tümünü
-  Temizle". Kolonlar: Değişken, Tip, Boş Oranı, Tekil Değer, En Sık
-  Değerler, Min, Maks, Medyan, Ortalama, Çıkar
+  Temizle". Kolonlar: Değişken, Tip, Boş Oranı, Tekrar, Tekil Değer, En
+  Sık Değerler, Min, Maks, Medyan, Ortalama, Çıkar
   (`akis_faz01._tanimsiz_bilgi`). Hepsi veri seti profilinden (tam tablo,
   örneklem yok):
+  - Tekrar: kolonda tekrar eden değer var mı. "Yok" ya da "Var" ve altında
+    satır adedi: değeri kendinden önceki bir satırla aynı olan satır, boş
+    hücre de değer sayılır (profil `tekrar`; `df[kolon].duplicated().sum()`
+    ile aynı). Eski profillerde de var.
   - En Sık Değerler: en sık 10 değer, her biri satır adediyle (adet
     azalan, eşitlikte değer artan; profilin `ust_degerler`'i). Tekil
     değeri 10 ve altındaki kolonda bütün değerler görünür. Sayısal değer

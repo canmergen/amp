@@ -4522,7 +4522,8 @@ TANIMSIZ_DEGER_ADEDI = 10
 
 def _tanimsiz_bilgi(kp):
     """Tanimsiz kolon satirinin bilgi alanlari - VERI SETI PROFILINDEN
-    (tam tablo, kesin; orneklem yok). Degerler: en sik 10 deger ve
+    (tam tablo, kesin; orneklem yok). Tekrar: kolonda tekrar eden deger
+    var mi (satir adedi). Degerler: en sik 10 deger ve
     adedi (adet azalan, esitlikte deger artan). Sayisal kolonda ayrica
     min, maks, medyan (kantil 0,5) ve ortalama (sonlu degerlerin
     tamami). Kisisel veri tasiyan kolonun degerleri ve istatistikleri
@@ -4530,8 +4531,10 @@ def _tanimsiz_bilgi(kp):
     if not kp:
         return {}
     sayisal = kp.get("tur") in profil_kural.SAYISAL_TURLER
+    # Tekrar: degeri kendinden onceki bir satirla ayni olan satir adedi,
+    # bos hucre de deger sayilir (df[kolon].duplicated().sum() ile ayni).
     bilgi = {"sayisal": bool(sayisal), "tekil": kp.get("tekil"),
-             "dolu": kp.get("dolu")}
+             "dolu": kp.get("dolu"), "tekrar": kp.get("tekrar")}
     if kp.get("pii_ad") or kp.get("pii_deger"):
         bilgi["gizli"] = True
         return bilgi

@@ -5000,21 +5000,24 @@ span.bolme-cip { cursor: default; }
   background: none; border-color: transparent; color: var(--metin-soluk); cursor: default;
 }
 
-/* TANIMSIZ KOLONLAR (01.2.3.1) ON KOLON: Değişken | Tip | Boş Oranı |
-   Tekil Değer | En Sık Değerler | Min | Maks | Medyan | Ortalama | Çıkar.
-   Değerler kalan genişliği alır ve satıra sarar; sayılar sağa yaslı,
-   tabular. Uzun değer kısaltılmaz (üç nokta yok), kelime içinden sarar. */
+/* TANIMSIZ KOLONLAR (01.2.3.1) ON BIR KOLON: Değişken | Tip | Boş Oranı |
+   Tekrar | Tekil Değer | En Sık Değerler | Min | Maks | Medyan | Ortalama |
+   Çıkar. Değerler kalan genişliği alır ve satıra sarar; sayılar sağa
+   yaslı, tabular. Uzun değer kısaltılmaz (üç nokta yok), kelime içinden
+   sarar. */
 .dg-cikar-tablo th { white-space: normal; vertical-align: bottom; }
-.dg-cikar-tablo th:nth-child(1) { width: 15%; }
+.dg-cikar-tablo th:nth-child(1) { width: 14%; }
 .dg-cikar-tablo th:nth-child(2) { width: 8%; }
 .dg-cikar-tablo th:nth-child(3) { width: 7%; }
 .dg-cikar-tablo th:nth-child(4) { width: 7%; }
-.dg-cikar-tablo th:nth-child(5) { width: auto; }
-.dg-cikar-tablo th:nth-child(n+6):nth-child(-n+9) { width: 8.5%; }
-.dg-cikar-tablo th:nth-child(10) { width: 64px; text-align: center; }
+.dg-cikar-tablo th:nth-child(5) { width: 7%; }
+.dg-cikar-tablo th:nth-child(6) { width: auto; }
+.dg-cikar-tablo th:nth-child(n+7):nth-child(-n+10) { width: 8%; }
+.dg-cikar-tablo th:nth-child(11) { width: 64px; text-align: center; }
 .dg-cikar-tablo th:nth-child(3), .dg-cikar-tablo th:nth-child(4),
-.dg-cikar-tablo th:nth-child(6), .dg-cikar-tablo th:nth-child(7),
-.dg-cikar-tablo th:nth-child(8), .dg-cikar-tablo th:nth-child(9) { text-align: right; }
+.dg-cikar-tablo th:nth-child(5), .dg-cikar-tablo th:nth-child(7),
+.dg-cikar-tablo th:nth-child(8), .dg-cikar-tablo th:nth-child(9),
+.dg-cikar-tablo th:nth-child(10) { text-align: right; }
 .dg-cikar-tablo td { vertical-align: top; padding-top: 5px; padding-bottom: 5px; }
 .dg-cikar-tablo td.dg-ekle-hucre { text-align: center; }
 .dg-cikar-tablo .dg-bos-oran,
@@ -5037,3 +5040,4 @@ span.bolme-cip { cursor: default; }
   white-space: nowrap; padding-left: 5px; border-left: 1px solid var(--kenar);
 }
 .dg-deger-yok { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+.dg-tekrar-adet { color: var(--metin-soluk); font-size: var(--fs-kucuk); white-space: nowrap; }
