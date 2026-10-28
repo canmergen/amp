@@ -1904,8 +1904,18 @@ def _donem_alani(durum):
     haf_deger = donem_mod.hafiza_deger()
     haf_ayrilan = donem_mod.hafiza_ayrilan()
     haf_tur = donem_mod.hafiza_tur()
-    onceki = {str(x.get("kalip")): x for x in (durum.get("donem_bilgisi_karari") or [])
-              if isinstance(x, dict)}
+    # ONCEKI KARAR: bu calismada verilmis karar (geri donus); yoksa ayni
+    # tablonun en son onaylanan karari (veri seti gecmisi, yeni calismada
+    # da gelir).
+    tablo = {}
+    if "donem_bilgisi_karari" not in durum:
+        anahtar = _gecmis_anahtari(durum)
+        tablo = veri_gecmisi.donem(anahtar) if anahtar else {}
+    karar_kayit = durum.get("donem_bilgisi_karari") if "donem_bilgisi_karari" in durum \
+        else tablo.get("kayit")
+    onceki = {str(x.get("kalip")): x for x in (karar_kayit or []) if isinstance(x, dict)}
+    ayrik = list(durum.get("donem_ayrik") or []) if "donem_bilgisi_karari" in durum \
+        else list(tablo.get("ayrik") or [])
     calisiyor = d["durum"] == "calisiyor"
     # AYRI YAZILISLAR: hafizada, dil modelinin ayirdigi (ailesi listede) ve
     # onceki kararda ayri satir olan yazilislar kendi satirina gecer.
@@ -2091,6 +2101,10 @@ def _donem_alani(durum):
         if o.get("elle") and kalip not in tespit:
             satir(kalip, "elle", 0, [], [], "", "", "", "", "", elle=True)
     notlar = []
+    if tablo.get("kayit"):
+        notlar.append("Bu tablo için son onaylanan dönem kararları getirildi%s; "
+                      "değiştirebilirsiniz." % (" (%s)" % str(tablo.get("zaman"))[:10].replace("-", ".")
+                                               if tablo.get("zaman") else ""))
     if d.get("iptal"):
         notlar.append("Dil modelini durdurdunuz. Yorumlanan kalıplar tabloda; yorumlanmayanlar "
                       "Adaylar sekmesinde, anlamlarını siz yazabilirsiniz.")
@@ -2102,7 +2116,7 @@ def _donem_alani(durum):
     except Exception:
         parcalar = []
     return {"baslik": DONEM_BASLIK, "yonerge": DONEM_YONERGE, "sutunlar": DONEM_SUTUNLAR,
-            "satirlar": satirlar, "parcalar": parcalar,
+            "satirlar": satirlar, "parcalar": parcalar, "ayrik": ayrik,
             "dm": "calisiyor" if calisiyor else ("hata" if d["durum"] == "hata" else "bitti"),
             "ilerleme": {"gecen": d["gecen"]} if calisiyor else None,
             "not": " ".join(notlar)}
@@ -2287,6 +2301,13 @@ def donem_uygula(durum):
     durum["donem_ayrilan"] = {k: sorted(v) for k, v in ayrilan_harita.items()}
     durum["donem_turleri"] = dict(tur_harita)
     durum["donem_bilgisi_karari"] = kayit
+    # Ayrilan gruplar (kartta Ayir): sonraki acilista kendiliginden
+    # birlesmesin. Karar tablonun gecmisine de yazilir (yeni calismada gelir).
+    durum["donem_ayrik"] = sorted({str(x) for x in ((karar or {}).get("donem_ayrik") or [])
+                                   if str(x).strip()}) if isinstance(karar, dict) else []
+    anahtar = _gecmis_anahtari(durum)
+    if anahtar:
+        veri_gecmisi.donem_kaydet(anahtar, kayit, durum["donem_ayrik"])
     durum.pop("parca_bilgisi", None)
     # Ailesinden ayri satirda onaylanan yazilis ("M<N>") hafizada ayri
     # isaretlenir: sonraki calismada da aileye katilmaz.

@@ -403,13 +403,22 @@ tanıtır; sayfalar sol bardan açılır.
     artık olmayan tablo seçilmez. Sözlüksüz onay eşleşmeyi değiştirmez.
     Başlangıç B'nin kaynak sözlükleri buna girmez.
 - **Tablonun önceki seçimleri** (`fe_agent/veri_gecmisi.py`,
-  `PROJE_HAFIZASI/VERI_SETI_GECMISI.json`): her tablo için yalnız en son
-  onaylanan Baz Sözlük ve kolon rolleri durur (çalışma bilgisi ve sayım
-  yok; Arşiv'den silme etkilemez). 01.2.1 ve 01.2.2 onaylanınca o
-  tablonun kaydı yenisiyle değişir. Dosya yoksa ilk açılışta eski
+  `PROJE_HAFIZASI/VERI_SETI_GECMISI.json`): her tablo için en son
+  onaylanan Baz Sözlük, kolon rolleri ve dönem kararı durur (çalışma
+  bilgisi ve sayım yok; Arşiv'den silme etkilemez). 01.2.1, 01.2.2 ve
+  01.2.4.1 onaylanınca o tablonun kaydı yenisiyle değişir.
+  - **Dönem kararı** (`donem`: `kayit` onaylanan ve çıkarılan satırlar,
+    anlam, tür, hariç ikililer, değer anlamları, ayrılan değerler, elle
+    eklenenler; `ayrik` Ayır ile bölünen gruplar; `zaman`): aynı tablo
+    yeni çalışmada seçilince 01.2.4.1 bu kararla açılır (çıkarılanlar
+    çıkarılmış, elle eklenenler ve ayrılan gruplar yerinde); kartta "Bu
+    tablo için son onaylanan dönem kararları getirildi (tarih);
+    değiştirebilirsiniz." yazar. Bu çalışmada karar verildiyse (geri
+    dönüş) o karar geçerlidir. B'de (birleştirme çıktısı) tutulmaz.
+    Kart yoklandığı için tablo kaydı 30 sn bellekte tutulur. Dosya yoksa ilk açılışta eski
   çalışmaların `ozet.json` dosyalarından bir kez kurulur (segment özette
-  olmadığı için boş gelir). Dosyada tablo başına yalnız sözlükler ve
-  roller durur; başka alan yazılmaz.
+  olmadığı için boş gelir). Dosyada tablo başına yalnız sözlükler,
+  roller ve dönem durur (`veri_gecmisi.ALANLAR`); başka alan yazılmaz.
 - **01.2.2 Kolon Rolleri önceki seçimle:** adım ilk kez açıldığında
   (henüz hedef ve kimlik seçilmemişken) model tipi, hedef, kimlik, dönem
   ve segment alanları bu tablonun en son onaylanan rolleriyle dolu gelir;
@@ -476,8 +485,8 @@ tanıtır; sayfalar sol bardan açılır.
   sekme (sayılarıyla): Kalıplar (tablo), Adaylar ve Tüm Parçalar. Adaylar'da kolon
   adlarında bulunup tabloda olmayan BÜTÜN sayılı kalıplar durur (KALIP /
   ADLARDA GEÇEN / OLASILIK / DİL MODELİ); hiçbiri gizlenmez. Olasılık
-  rozeti: Orta (dil modeli zaman bilgisi dedi ama emin değil; kanıt
-  "1 / 4 örnek tanım uyuşuyor"), Yorumlanmadı (dil modeli bakamadı),
+  rozeti: Orta (dil modeli zaman bilgisi dedi ama emin değil; nedeni
+  DİL MODELİ sütununda), Yorumlanmadı (dil modeli bakamadı),
   Düşük (dil modeli zaman bilgisi değil dedi; DİL MODELİ sütununda nedeni,
   ör. "Önceki eşit süreli döneme göre karşılaştırma"). Sıra: olasılık,
   sonra kolon sayısı; üstte süzgeç çipleri (Tümü, Orta, Yorumlanmadı,
@@ -541,8 +550,7 @@ tanıtır; sayfalar sol bardan açılır.
     `donem.tek_kalip`: kalıbın adlardaki değerleri ve örnek tanımlar;
     `llm.donem_yorumla(..., zorunlu_anlam=True)`: "dönem değil" bulsa bile
     anlam yazar). Hafızada anlamı olan kalıp dil modeline gitmez. Satırın
-    üstünde "Dil modeli anlamı yazıyor", gelince "Dil modeli · 3 / 3 örnek
-    tanım uyuşuyor". Gelen anlam yalnız kutu hâlâ boşsa yazılır; tür
+    üstünde "Dil modeli anlamı yazıyor", gelince etiket kalkar. Gelen anlam yalnız kutu hâlâ boşsa yazılır; tür
     kullanıcı değiştirmediyse dil modelininki olur. Kullanıcı anlamı silip
     boş bırakırsa 8 saniye bekler ("Anlam boş: birkaç saniye içinde dil
     modeli yazacak"); o sürede yazmaya başlarsa vazgeçilir. Elle kalıpta
@@ -600,9 +608,10 @@ tanıtır; sayfalar sol bardan açılır.
     kalıbın k'inci yer tutucusu olur); hafıza ve Kolon Kartları aynı
     kalır. Sayısız kalıpta [sayı] yazılırsa satır "Kontrol edin" olur.
   - **Durum etiketi:** satırlar renksiz; anlam kutusunun üstünde tek
-    satır: "Dil modeli · 9 / 10 örnek tanım uyuşuyor", "Hafızadan",
-    "Düzenlendi", "Elle eklendi",
-    "Kontrol edin" ya da "Anlam boş" (amber), "Dil modeli yorumluyor".
+    satır, yalnız durum varsa: "Kaydedildi", "Düzenlendi", "Kontrol edin"
+    ya da "Anlam boş" (amber), "Dil modeli yorumluyor" / "anlamı
+    yazıyor" / "yazamadı". Önerinin kaynağı (dil modeli, kanıt sayısı,
+    hafıza, elle) yazılmaz.
     Dikkat isteyen satırın solunda ince amber çizgi.
   - Altında kısa notlar: Soru, "Ad ile tanımlar çelişiyor: ...", Not ve
     kısa uyarı ("Dikkat: Yalnız PER_DAY içinde geçiyor", uzun açıklaması
@@ -764,7 +773,10 @@ tanıtır; sayfalar sol bardan açılır.
     diğer. Arka planda 12 parçalık çağrılar, en çok 4 aynı anda; İptal
     (`/parca_iptal`) gelenleri tutar. Cevap `{"parcalar": [...]}`:
     `Orkestra.json_cagir(..., anahtar="parcalar")` ile okunur (öbür
-    işler `kolonlar`); istem sürümü `parca.ISTEM_SURUMU` 2.
+    işler `kolonlar`); istem sürümü `parca.ISTEM_SURUMU` 2. Satırda
+    önerinin kaynağı (dil modeli, kanıt sayısı, hafıza) yazılmaz; anlamın
+    üstünde yalnız durum (Düzenlendi, Kontrol edin, Anlamı siz yazın,
+    yorumluyor).
   - **Hafıza** (`KISALTMA_HAFIZASI.json` `parcalar` {PARÇA: {anlam, tür,
     standart}} ve `parca_esler` {"A|B": "ayni"/"farkli"}; eski
     `kisaltmalar`, `degisimler`, `turler` ve rakamsız `donem` kayıtları

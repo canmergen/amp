@@ -8858,7 +8858,7 @@ function dogrulamaKartiEkle(alan, blok) {
         const duzelt = karar.kontrol.filter(k => k.uygula && k.aciklama).length;
         if (parcaErisim) karar.parca = parcaErisim.deger();
         if (kolonAdErisim) karar.kolon_ad = kolonAdErisim.deger();
-        if (donErisim) karar.donem = donErisim.deger();
+        if (donErisim) { karar.donem = donErisim.deger(); karar.donem_ayrik = donErisim.ayrik(); }
         if (acikErisim) karar.aciklama = true;
         if (cikar) karar.cikar = cDurumlar.filter(c => c.islem === "cikar").map(c => c.kolon);
         if (birlesim) karar.birlesim = bDurumlar.map(d => ({
@@ -9151,12 +9151,8 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
             || e.tur !== (r.oneri.tur || "") || e.standart !== (r.oneri.standart || r.parca))))
             return ["Düzenlendi", false];
         if (r.kontrol) return ["Kontrol edin", true];
-        if (r.kaynak === "hafiza") return ["Hafızadan", false];
-        if (r.kaynak === "model") {
-            const kn = r.kanit;
-            return ["Dil modeli" + (kn && kn.bakilan ? " · " + kn.uyan + " / " + kn.bakilan
-                + " örnek tanım uyuşuyor" : ""), false];
-        }
+        /* Önerinin kaynağı (hafıza, dil modeli, kanıt sayısı) yazılmaz. */
+        if (r.kaynak === "hafiza" || r.kaynak === "model") return ["", false];
         return ["Anlamı siz yazın", true];
     }
     function goruneni() {
@@ -9266,6 +9262,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         const tdA = elYap("td", "dg-aciklama-hucre");
         const [et, dikkat] = sade ? ["", false] : durumMetni(r, e, sor[r.parca]);
         const durumEl = elYap("div", "dg-donem-durum" + (dikkat ? " dikkat" : ""), et);
+        durumEl.hidden = !et;
         tdA.appendChild(durumEl);
         const g = document.createElement("input");
         g.type = "text"; g.className = "dg-giris dg-parca-anlam";
@@ -9390,7 +9387,6 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
                 bol.appendChild(b);
             });
             tdK.appendChild(bol);
-            if (e.kaynak === "hafiza" && !k.onay) tdK.appendChild(elYap("div", "dg-donem-tur-not", "Hafızadan"));
             tr.appendChild(tdK);
             const tdS = elYap("td", "");
             if (k.karar === "ayni") {
@@ -11264,20 +11260,14 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 et = "Kaydedildi";
             }
             else if (uUretti && !(kg && !kg.value.trim()) && !yt) {
-                et = (u.kaynak === "hafiza" ? "Hafızadan" : "Dil modeli")
-                    + (u.kanit && u.kanit.bakilan ? " · " + ftBinlik(u.kanit.uyan) + " / "
-                       + ftBinlik(u.kanit.bakilan) + " örnek tanım uyuşuyor" : "");
+                /* Önerinin kaynağı yazılmaz; dil modelinin notu kalır. */
+                et = "";
                 if (u.not) uretimNot.textContent = "Not: " + tireSade(u.not);
             }
             else if (dikkat) { et = !v ? "Anlam boş: yazın ya da satırı çıkarın" : "Kontrol edin"; dikkatEt = true; }
             else if (duz) et = "Düzenlendi";
-            else if (r.kaynak === "hafiza") et = "Hafızadan";
-            else if (r.kaynak === "model")
-                et = (r.tur === "tarama" ? "Dil modeli kısaltmalardan buldu" : "Dil modeli")
-                    + (r.kanit ? " · " + ftBinlik(r.kanit.uyan) + " / " + ftBinlik(r.kanit.bakilan)
-                       + " örnek tanım uyuşuyor" : "");
-            else if (r.elle) et = "Elle eklendi";
-            else et = "Dil modeli bakmadı";
+            /* Önerinin kaynağı (hafıza, dil modeli, kanıt, elle) yazılmaz. */
+            else et = "";
             /* Yakın anlamla yeniden yazıldı: önceki anlam ve Geri Al. */
             if (u && u.durum === "bitti" && u.onceki && uUretti) {
                 const ont = elYap("div", "dg-donem-onceki",
@@ -11319,7 +11309,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 : "Bu satırı şimdi hafızaya kaydet. Kaydedilmemiş satırlardan anlamı buna yakın olanlar "
                   + "dil modeline yeniden yazdırılır.";
             hepsiDurum();
-            durumCip.textContent = et;
+            durumCip.textContent = et; durumCip.hidden = !et;
             durumCip.classList.toggle("dikkat", dikkatEt);
             kontrolEl.textContent = yt ? "Kontrol: " + yt : "";
             kontrolEl.hidden = !yt;
@@ -11593,10 +11583,6 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                tanımlardan (uydurma yüzde yok). */
             const tdO = elYap("td", "dg-donem-olasilik-hucre");
             tdO.appendChild(elYap("span", "dg-donem-olasilik dg-donem-olasilik-" + ol, OLASILIK[ol][0]));
-            const kn = c.r.kanit;
-            if (kn && kn.bakilan && ol !== "dusuk")
-                tdO.appendChild(elYap("div", "dg-donem-ornek",
-                    ftBinlik(kn.uyan) + " / " + ftBinlik(kn.bakilan) + " örnek tanım uyuşuyor"));
             tr.appendChild(tdO);
             /* DİL MODELİ: neden emin değil ya da neden dönem değil; önerdiği
                anlam varsa. */
@@ -11926,7 +11912,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
        satırda kalmaz, grubun kalıbında birleşir; tek parça alınırken de
        grubuyla alınır. Kullanıcı grubu Ayır'la böldüyse (ayrikGruplar)
        parçalar ayrı durur; grup yeniden alınınca birleşir. */
-    const ayrikGruplar = new Set();
+    const ayrikGruplar = new Set(da.ayrik || []);
     const grupOf = k => {
         const p = parcalar.find(x => x.parca === String(k || "").trim().toUpperCase());
         return (p && p.grup) || null;
@@ -12224,6 +12210,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
            ile tek tek kaydedilir; hafızadan gelen, dokunulmamış satır
            kaydedilmiş sayılır). */
         kaydedilmemis: () => acik().filter(x => !x.kayitliMi()).length,
+        /* Ayır ile bölünen gruplar (onayda tablonun geçmişine yazılır). */
+        ayrik: () => [...ayrikGruplar],
         /* Onayı durduran: elle yazılan kalıp kolon adlarında geçmiyor. */
         adlardaYok: () => satirlar.filter(x => x.kg && x.kg.value.trim()
                                           && !adlardaBul(x.kg.value).length).length,

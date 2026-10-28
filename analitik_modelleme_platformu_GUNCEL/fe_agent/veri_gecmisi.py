@@ -6,6 +6,10 @@ kullanici degistirebilir:
   * 01.2.1 Baz Sozluk: tablonun en son eslendigi sozluk(ler) secili gelir.
   * 01.2.2 Kolon Rolleri: model tipi, hedef, kimlik, donem ve segment
     kolonu en son onaylanan haliyle dolu gelir.
+  * 01.2.4.1 Donem Bilgisi: tablonun en son onaylanan donem karari
+    (kaliplar, anlamlari, turleri, deger anlamlari, cikarilanlar, elle
+    eklenenler, ayrilan gruplar) yeni calismada aynen gelir; calisma
+    arsivden silinse de kalir.
 
 NEREDE - PROJE_HAFIZASI/VERI_SETI_GECMISI.json, projenin butun
 calismalari icin tek dosya. Yalniz tablo basina en son secim durur;
@@ -14,11 +18,15 @@ calisma bilgisi tutulmaz:
     {"veri": {"HAVALE_EFT_NTT": {
         "sozlukler": ["DEGISKENLER", "EK_SOZLUK"],
         "roller": {"problem": "classification", "target": "TARGET",
-                   "id": "MUSTERI_NO", "donem": "PERIOD", "segment": ""}}}}
+                   "id": "MUSTERI_NO", "donem": "PERIOD", "segment": ""},
+        "donem": {"kayit": [{"kalip", "anlam", "elle", "cikar", "haric",
+                             "deger_anlam", "ayrilan", "zaman_tur"}],
+                  "ayrik": ["H<N2>"], "zaman": "..."}}}}
 
 NE ZAMAN YAZILIR - 01.2.1 onaylanip veri seti ve sozlukler
 dogrulandiginda (akis_faz01.kurulum_girdi) ve 01.2.2 onaylandiginda
-(akis_faz01.tanimlar_girdi); ayni tablonun onceki secimi yenisiyle
+(akis_faz01.tanimlar_girdi), donem karari 01.2.4.1 onaylandiginda
+(akis_faz01.donem_uygula); ayni tablonun onceki secimi yenisiyle
 degisir. Sozluksuz onay sozluk eslesmesini degistirmez. Dosya hic yoksa
 ilk okumada eski calismalarin ozet.json dosyalarindan bir kez kurulur
 (her tablo icin en son secimler; segment ozette olmadigi icin bos).
@@ -26,9 +34,11 @@ ilk okumada eski calismalarin ozet.json dosyalarindan bir kez kurulur
 Yalniz adlar yazilir; girdi veri setine ve sozluge dokunulmaz. Okuma ya da
 yazma hatasi akisi durdurmaz: on doldurma bir kolaylik."""
 
+import datetime
 import json
 import re
 import threading
+import time
 from concurrent import futures
 
 from fe_agent.akis_durum import _folder
@@ -39,6 +49,11 @@ ROLLER = ("problem", "target", "id", "donem", "segment")
 # Ozet ve form mesajinda birden fazla sozluk bu ayracla yazilir.
 AYRAC = " + "
 _KILIT = threading.Lock()
+# Tablo basina tutulan alanlar; digerleri dosyadan dusurulur.
+ALANLAR = ("sozlukler", "roller", "donem")
+# Donem karti saniyede bir yoklanir: tablo kaydi kisa sure bellekte.
+_DONEM_ONBELLEK = {}
+DONEM_ONBELLEK_SN = 30
 _V_OZET = re.compile(r"^/?(v\d{1,6})/ozet\.json$")
 # Arsiv ozetindeki etiketler (backend._calisma_secimleri).
 _OZET_ROL = {"Hedef Değişken": "target", "Kimlik Kolonu": "id",
@@ -52,9 +67,9 @@ def adlara_ayir(metin):
 
 
 def _fazlasi_var(veri):
-    """Dosyada sozlukler ve roller disinda alan var mi?"""
+    """Dosyada ALANLAR disinda alan var mi?"""
     return set(veri) - {"veri"} or any(
-        set(k or {}) - {"sozlukler", "roller"}
+        set(k or {}) - set(ALANLAR)
         for k in (veri.get("veri") or {}).values())
 
 
@@ -78,10 +93,9 @@ def _oku_ham():
 
 
 def _yaz(veri):
-    """Yalniz tablo basina sozlukler ve roller yazilir; baska alan
-    dusurulur."""
+    """Yalniz tablo basina ALANLAR yazilir; baska alan dusurulur."""
     veri = {"veri": {vs: {k: v for k, v in (kayit or {}).items()
-                          if k in ("sozlukler", "roller") and v}
+                          if k in ALANLAR and v}
                      for vs, kayit in (veri.get("veri") or {}).items()}}
     _folder().upload_stream(
         DOSYA, json.dumps(veri, ensure_ascii=False, indent=1).encode("utf-8"))
@@ -180,3 +194,32 @@ def roller_kaydet(veri_seti, problem, meta):
         r = {"problem": problem or ""}
         r.update({k: str(meta.get(k) or "") for k in ROLLER if k != "problem"})
         _arka_planda(_guncelle, veri_seti, {"roller": r})
+
+
+def donem(veri_seti):
+    """Tablonun en son onaylanan donem karari: {"kayit": [...], "ayrik":
+    [...], "zaman"}; yoksa bos sozluk. Kisa sure bellekte tutulur."""
+    anahtar = str(veri_seti or "")
+    if not anahtar:
+        return {}
+    simdi = time.time()
+    b = _DONEM_ONBELLEK.get(anahtar)
+    if b and simdi - b[0] < DONEM_ONBELLEK_SN:
+        return b[1]
+    veri = _oku() or {}
+    k = ((veri.get("veri") or {}).get(anahtar) or {}).get("donem")
+    k = dict(k) if isinstance(k, dict) else {}
+    _DONEM_ONBELLEK[anahtar] = (simdi, k)
+    return k
+
+
+def donem_kaydet(veri_seti, kayit, ayrik=()):
+    """Tablonun donem karari (oncekinin yerine): onaylanan ve cikarilan
+    satirlar ve ayrilan gruplar. Arka planda; bellekteki kopya hemen
+    guncellenir."""
+    if not veri_seti:
+        return
+    deger = {"kayit": list(kayit or []), "ayrik": sorted({str(g) for g in (ayrik or ()) if g}),
+             "zaman": datetime.datetime.now().isoformat(timespec="seconds")}
+    _DONEM_ONBELLEK[str(veri_seti)] = (time.time(), deger)
+    _arka_planda(_guncelle, veri_seti, {"donem": deger})
