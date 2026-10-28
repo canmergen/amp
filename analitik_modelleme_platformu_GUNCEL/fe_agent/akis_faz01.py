@@ -36,7 +36,7 @@ from fe_agent.akis_metin import (
     ACIK_MODLAR, ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI,
     MODEL_TIPI_ADI, MODEL_TIPI_TURKCE, model_tipi,
     MOD_SIRA, KONTROL_SECENEKLERI, KONTROL_SORUSU, KONTROL_ONCEKI_BASLIK,
-    KONTROL_SORUSU_ONCEKI)
+    KONTROL_SORUSU_ONCEKI, KONTROL_ADIM_ADIM_BASLIK)
 from fe_agent.akis_durum import (
     cikarilan_kolonlar, secili_sozlukler, sozluk_gorunen, sozluk_kimligi,
     BAZ_ADI, LINEAGE_ADI, SOZLUK_ADI, SPLIT_KOLON, TEST_KIMLIK_LIMITI,
@@ -2957,9 +2957,14 @@ def _kontrol_atlandi(durum):
 def _kontrol_atla_plani(durum):
     durum["_plan_otomatik"] = True
     durum["_secim_alani"] = None
-    return (KONTROL_ATLANDI + " Kontrol etmek için %s adımına dönüp "
-            "«Sözlük ve Kolon Adları Kontrol Edilsin»i seçin."
-            % akis_atif.adim("sozluk_kontrol", durum))
+    # Secenegin adi ekrandakiyle ayni (onceki kontrol varken "Adım Adım
+    # Kontrol Edilsin").
+    try:
+        yap = next(x["baslik"] for x in _kontrol_secenekleri(durum)[0] if x["deger"] == "yap")
+    except Exception:
+        yap = KONTROL_SECENEKLERI[0]["baslik"]
+    return (KONTROL_ATLANDI + " Kontrol etmek için %s adımına dönüp «%s»i seçin."
+            % (akis_atif.adim("sozluk_kontrol", durum), yap))
 
 
 def sozluk_kontrol_girdi(durum, mesaj, yeniden_sor=False):
@@ -3104,6 +3109,9 @@ def _kontrol_secenekleri(durum):
     if oz and (oz["tamam"] or oz["taslak"]):
         secenekler.insert(0, {"deger": "onceki", "baslik": KONTROL_ONCEKI_BASLIK,
                               "aciklama": _onceki_aciklamasi(durum, oz)})
+        for x in secenekler:
+            if x["deger"] == "yap":
+                x["baslik"] = KONTROL_ADIM_ADIM_BASLIK
     else:
         oz = None
     for n, x in enumerate(secenekler):

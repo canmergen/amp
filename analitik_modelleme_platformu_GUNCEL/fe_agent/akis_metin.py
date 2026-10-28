@@ -189,6 +189,8 @@ KONTROL_SIRA = {"a": "yap", "1": "yap", "b": "atla", "2": "atla",
 # alt adimlar denetlenip yeniden sorulmadan uygulanir; yarim kalan alt adim
 # kaldigi yerden acilir (bkz. akis_faz01, kontrol_gecmisi).
 KONTROL_ONCEKI_BASLIK = "Önceki Onaylı Kontrol Uygulansın"
+# Onceki secenegi varken "yap"in basligi (ikisinin farki acik olsun).
+KONTROL_ADIM_ADIM_BASLIK = "Adım Adım Kontrol Edilsin"
 KONTROL_SORUSU_ONCEKI = (
     "Bu veri seti ve sözlük için proje hafızasında önceki bir kontrol var. "
     "Önceki onaylı kontrol mü uygulansın, adım adım yeniden mi kontrol "

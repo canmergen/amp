@@ -474,7 +474,8 @@ tanıtır; sayfalar sol bardan açılır.
      açıklamayı yazar.
   4. **01.2.4.4 Kolon Adları** (`kolon_ad`): adlar standart yazılışlarla
      Ad Standardı'na göre kodla kurulur.
-  Seçenekler: "Sözlük ve Kolon Adları Kontrol Edilsin" (adım adım),
+  Seçenekler: "Sözlük ve Kolon Adları Kontrol Edilsin" (adım adım; önceki
+  kontrol seçeneği varken başlığı "Adım Adım Kontrol Edilsin"),
   "Kontrol Edilmeden Geçilsin" (dördü de atlanır) ve kayıt varsa en üstte
   "Önceki Onaylı Kontrol Uygulansın" (harfler A, B, C; soru "Bu veri seti
   ve sözlük için proje hafızasında önceki bir kontrol var..."). Eski Kısaltma
