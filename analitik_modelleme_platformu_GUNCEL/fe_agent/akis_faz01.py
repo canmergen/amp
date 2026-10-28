@@ -4488,7 +4488,8 @@ def sozluk_tanim_uygula(durum):
 # Tek degerli kolonlar ve tek degerli donem kolonu her durumda cikar
 # (kilitli). Sozlukte anlami olmadigi icin diger butun kolonlar da cikar
 # isaretli gelir, degistirilebilir. Her satirda kolonun degerleri (en sik
-# 10, adetleriyle) ve sayisal kolonda min, maks, medyan, ortalama durur;
+# 10, adetleriyle), sayisal kolonda min, maks, medyan, ortalama, tarih
+# kolonunda min, maks, medyan durur;
 # hepsi tam tablo profilinden (orneklem yok). Karar AMP ciktilari
 # Degisken Listesi ve Tip Kontrolu'nde yazilinca uygulanir; girdi veri
 # seti ve sozluk degismez.
@@ -4523,11 +4524,11 @@ TANIMSIZ_DEGER_ADEDI = 10
 def _tanimsiz_bilgi(kp):
     """Tanimsiz kolon satirinin bilgi alanlari - VERI SETI PROFILINDEN
     (tam tablo, kesin; orneklem yok). Tekrar: kolonda tekrar eden deger
-    var mi (satir adedi). Degerler: en sik 10 deger ve
-    adedi (adet azalan, esitlikte deger artan). Sayisal kolonda ayrica
-    min, maks, medyan (kantil 0,5) ve ortalama (sonlu degerlerin
-    tamami). Kisisel veri tasiyan kolonun degerleri ve istatistikleri
-    gosterilmez (ornek degerdeki kural)."""
+    var mi (satir adedi). Degerler: en sik 10 deger ve adedi (adet
+    azalan, esitlikte deger artan). Sayisal kolonda ayrica min, maks,
+    medyan (kantil 0,5) ve ortalama (sonlu degerlerin tamami); tarih
+    kolonunda min, maks, medyan. Kisisel veri tasiyan kolonun degerleri
+    ve istatistikleri gosterilmez (ornek degerdeki kural)."""
     if not kp:
         return {}
     sayisal = kp.get("tur") in profil_kural.SAYISAL_TURLER
@@ -4549,6 +4550,10 @@ def _tanimsiz_bilgi(kp):
                       "medyan": q[2] if len(q) > 2 else None,
                       # Eski profilde ortalama yok: alan bos gelir.
                       "ortalama": kp.get("ortalama")})
+    elif kp.get("tur") == profil_kural.TUR_TARIH:
+        # Tarihte ortalama yok; eski profilde medyan yok (bos gelir).
+        bilgi.update({"tarih": True, "min": kp.get("min"), "max": kp.get("max"),
+                      "medyan": kp.get("medyan")})
     return bilgi
 
 

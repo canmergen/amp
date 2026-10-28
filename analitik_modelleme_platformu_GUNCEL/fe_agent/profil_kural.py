@@ -501,6 +501,8 @@ def profil_kur(veri_seti, satir, duplicate, ozetler, motor):
             "tekrar": int(satir - tekil_bos),
             "min": json_deger(oz.get("min")), "max": json_deger(oz.get("max")),
             "ortalama": json_deger(oz.get("ortalama")),
+            # Tarih kolonunun medyani (sayisalda medyan kantillerde).
+            "medyan": json_deger(oz.get("medyan")),
             "hepsi_tam": bool(oz.get("hepsi_tam")),
             "ondalikli": bool(oz.get("n_kesirli")),
             "pozitif": oz.get("pozitif"),
@@ -580,6 +582,27 @@ def kantil_hesapla(n, sira_deger):
         a, b = float(sira_deger[alt]), float(sira_deger[ust])
         cikti.append(a + (b - a) * (p - alt) if ust != alt else a)
     return cikti
+
+
+def tarih_medyani(degerler_sirali, adetler, n):
+    """Sirali tekil tarihler + adetler -> medyan (pandas median ile ayni:
+    cift adette iki ortanin tam ortasi). Tarih aritmetigi tarih tipinde
+    yapilir; sayiya cevrilmez."""
+    if not n:
+        return None
+    p = (n - 1) * 0.5
+    alt, ust = int(math.floor(p)), int(math.ceil(p))
+    sira, bas = {}, 0
+    for v, c in zip(degerler_sirali, adetler):
+        son = bas + int(c)
+        for s in (alt, ust):
+            if bas <= s < son:
+                sira[s] = v
+        bas = son
+        if ust < bas:
+            break
+    a, b = sira[alt], sira[ust]
+    return a if alt == ust else a + (b - a) / 2
 
 
 def siradan_kantil(degerler_sirali, adetler, n):
@@ -682,6 +705,10 @@ def yerel_profil(df, veri_seti=None):
             sirali = sorted(zip([float(v) for v in degerler], adetler))
             oz["kantiller"] = siradan_kantil([v for v, _ in sirali],
                                              [c for _, c in sirali], oz["dolu"])
+        if tur == TUR_TARIH and oz["dolu"]:
+            sirali = sorted(zip(degerler, adetler))
+            oz["medyan"] = tarih_medyani([v for v, _ in sirali],
+                                         [c for _, c in sirali], oz["dolu"])
         gorev = gorev_plani(oz, sozluk_mod._pii_ad_mi(ad))
         parca = parca_degerlendir(tur, degerler, adetler, gorev)
         oz["donem_parca"] = parca.get("donem")

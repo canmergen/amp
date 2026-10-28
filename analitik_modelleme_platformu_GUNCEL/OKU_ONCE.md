@@ -81,6 +81,10 @@ içindeki `VARSAYILAN_MODEL`.
   ortalamayı (`ortalama`: sonlu değerlerin toplamı / sonlu değer adedi)
   tutar. Spark motoru ortalamayı tekil değer tablosundan adetle ağırlıklı
   toplamla, pandas motoru doğrudan hesaplar (aynı formül).
+- Tarih kolonunda min, maks ve medyan (`medyan`; pandas median ile aynı:
+  çift adette iki ortadaki tarihin tam ortası, tarih tipinde hesaplanır,
+  `profil_kural.tarih_medyani`). Spark motoru ortadaki satırları tekil
+  değer tablosundan birikimli adetle bulur.
 
 ## Ekran
 
@@ -497,6 +501,12 @@ tanıtır; sayfalar sol bardan açılır.
     düğmesi "Kaydedildi" ve kapalı; satırda bir şey değişince yeniden
     "Kaydet" olur. Hafızadan gelip dokunulmamış satır kaydedilmiş sayılır.
     Çalışmanın dönem bilgisi yine "Dönem Bilgisini Onayla" ile yazılır.
+    Onay için tablodaki her satır kaydedilmiş olmalı: kaydedilmemiş satır
+    kaldıkça düğme kapalı, altında "N satır kaydedilmedi: onaylamadan önce
+    her satırı «Kaydet» ile kaydedin ya da satırı çıkarın." Kaydedilen
+    satır hafızaya yazıldığı için kart yeniden kurulunca "Hafızadan" gelir
+    ve kaydedilmiş sayılır. Kart dışında yazarak verilen onayda bu
+    denetim yok.
   - **Yakın anlamlar yeniden yazılır:** bir satır kaydedilince
     kaydedilmemiş satırlardan anlamı ona yakın olanlar dil modeline
     yeniden yazdırılır (etiket "Kaydedilen bir anlama yakın: dil modeli
@@ -761,15 +771,18 @@ tanıtır; sayfalar sol bardan açılır.
     değeri 10 ve altındaki kolonda bütün değerler görünür. Sayısal değer
     yerel biçimle, saati gece yarısı olan tarih yalnız gün olarak yazılır;
     uzun değer kısaltılmaz, sarar. Tam değer ipucunda.
-  - Min, Maks, Medyan, Ortalama yalnız sayısal kolonda (mantıksal dahil).
+  - Tarih kolonunda Min, Maks ve Medyan (ortalama yok). Tarih medyanı
+    profilin `medyan` alanı (aşağıda).
+  - Min, Maks, Medyan, Ortalama sayısal kolonda (mantıksal dahil).
     Medyan profilin kantilinden (0,5; çift adette iki ortanın ortalaması),
     ortalama sonlu değerlerin tamamının ortalaması (profil `ortalama`,
     aşağıda). Ekranda 100 ve üstü iki, altı dört ondalık; tam değer
     ipucunda.
   - Kişisel veri taşıyan kolonda (`pii_ad` ya da `pii_deger`) değer ve
-    istatistik gösterilmez, "Kişisel veri, değerler gösterilmez" yazar.
-  - Profili ortalama eklenmeden önce çıkarılmış çalışmada Ortalama "∅"
-    ve kartın altında bunu söyleyen not durur.
+    istatistik gösterilmez, "Kişisel veri olduğu için değerler
+    gösterilemez." yazar. Boş oranı, tekrar ve tekil sayısı görünür.
+  - Profili ortalama ve tarih medyanı eklenmeden önce çıkarılmış
+    çalışmada bu hücreler "∅" ve kartın altında bunu söyleyen not durur.
   - İşaretli kolon karar verildiği anda çıkar: Veri ve Sözlük
     sayfasındaki veri önizlemesinde, sözlük tablosunda, 01.3 Değişken
     Listesi ve Tip Kontrolü'nün listesinde ve sayılarında yer almaz,

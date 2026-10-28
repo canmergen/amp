@@ -5194,13 +5194,19 @@ function tanimsizTekrarHucresi(tekrar) {
     return td;
 }
 
+/* Profil değerinin yazısı; saati gece yarısı olan tarih yalnız gün
+   olarak yazılır (tarih olmayan değer aynen). */
+function tarihGoster(v) {
+    return degerGoster(String(v).replace(/^(\d{4}-\d{2}-\d{2})[ T]00:00:00$/, "$1"));
+}
+
 /* Tanımsız Kolonlar satırının değer hücresi: en sık 10 değer, her biri
    adediyle. Sayısal değer yerel biçimle yazılır. Kişisel veri taşıyan
    kolonda değer gösterilmez. Uzun değer kısaltılmaz, satıra sarar. */
 function tanimsizDegerHucresi(sat) {
     const td = elYap("td", "dg-deger-hucre");
     if (sat.gizli) {
-        td.appendChild(elYap("span", "dg-deger-yok", "Kişisel veri, değerler gösterilmez"));
+        td.appendChild(elYap("span", "dg-deger-yok", "Kişisel veri olduğu için değerler gösterilemez."));
         return td;
     }
     const liste = sat.degerler || [];
@@ -5210,9 +5216,7 @@ function tanimsizDegerHucresi(sat) {
     }
     liste.forEach(([deger, adet]) => {
         const c = elYap("span", "dg-deger");
-        /* Saati gece yarısı olan tarih yalnız gün olarak yazılır. */
-        const yazi = sat.sayisal && typeof deger === "number" ? dagSayi(deger)
-            : degerGoster(String(deger).replace(/^(\d{4}-\d{2}-\d{2})[ T]00:00:00$/, "$1"));
+        const yazi = sat.sayisal && typeof deger === "number" ? dagSayi(deger) : tarihGoster(deger);
         c.appendChild(elYap("span", "dg-deger-ad", yazi));
         c.appendChild(elYap("span", "dg-deger-adet", ftBinlik(adet)));
         c.title = String(deger) + ": " + ftBinlik(adet) + " satır";
@@ -7947,7 +7951,7 @@ function dogrulamaKartiEkle(alan, blok) {
         cth.appendChild(chr);
         ct.appendChild(cth);
         const cTbody = document.createElement("tbody");
-        let ortalamaEksik = false;
+        const eksikler = new Set();     /* eski profilde olmayan alanlar */
         (cikar.satirlar || []).forEach(sat => {
             const ad = String(sat.kolon === null || sat.kolon === undefined ? "" : sat.kolon);
             const tr = elYap("tr", "dg-satir dg-cikar-satir");
@@ -7966,12 +7970,16 @@ function dogrulamaKartiEkle(alan, blok) {
             tr.appendChild(tanimsizDegerHucresi(sat));
             ["min", "max", "medyan", "ortalama"].forEach(alan => {
                 const td = elYap("td", "dg-sayi-hucre");
+                const v = sat[alan];
+                const yok = v === null || v === undefined || v === "";
                 if (sat.sayisal && !sat.gizli) {
-                    const v = sat[alan];
                     metinYaz(td, dagSayi(v));
-                    if (v !== null && v !== undefined && v !== "") td.title = String(v);
-                    if (alan === "ortalama" && (v === null || v === undefined)) ortalamaEksik = true;
+                    if (alan === "ortalama" && yok) eksikler.add("ortalama");
+                } else if (sat.tarih && !sat.gizli && alan !== "ortalama") {
+                    metinYaz(td, yok ? BOS_SIMGE : tarihGoster(v));
+                    if (alan === "medyan" && yok) eksikler.add("tarih medyanı");
                 }
+                if (!yok && td.textContent) td.title = String(v);
                 tr.appendChild(td);
             });
             const tdI = elYap("td", "dg-ekle-hucre");
@@ -8002,10 +8010,11 @@ function dogrulamaKartiEkle(alan, blok) {
         ct.appendChild(cTbody);
         cSar.appendChild(ct);
         kart.appendChild(cSar);
-        if (ortalamaEksik) {
+        if (eksikler.size) {
+            const ad = [...eksikler].join(" ve ");
             const nt = elYap("div", "dg-not dg-cizgisiz");
-            metinYaz(nt, "Bu çalışmanın veri seti profili ortalama hesaplanmadan önce çıkarıldı. "
-                + "Ortalama, profili yeni çıkarılan çalışmalarda görünür.");
+            metinYaz(nt, "Bu çalışmanın veri seti profili " + ad + " hesaplanmadan önce çıkarıldı. "
+                + ilkHarfBuyuk(ad) + ", profili yeni çıkarılan çalışmalarda görünür.");
             kart.appendChild(nt);
         }
     }
@@ -8534,13 +8543,14 @@ function dogrulamaKartiEkle(alan, blok) {
         /* KISALTMA SÖZLÜĞÜ: dil modeli kontrolü bitmeden
            onaylanamaz; yalnız sözlükten çıkan anlamlar çalışmaya girmesin.
            Beklemek istemeyen "Kısaltmaları Onaylamadan Devam Et"i kullanır. */
-        /* DÖNEM BİLGİSİ: model yorumu bitmeden ve anlamı boş satır
-           kaldıkça onaylanamaz. */
+        /* DÖNEM BİLGİSİ: model yorumu bitmeden, anlamı boş satır ve
+           kaydedilmemiş satır kaldıkça onaylanamaz. */
         if (adimModu === "donem" && donErisim) {
             const bek = donErisim.bekliyor(), eks = donErisim.eksik(), yok = donErisim.adlardaYok();
-            const kon = donErisim.kontrol();
-            birincil.disabled = bek || eks > 0 || yok > 0 || kon > 0;
-            gerekce.hidden = !(bek || eks > 0 || yok > 0 || kon > 0);
+            const kon = donErisim.kontrol(), kay = donErisim.kaydedilmemis();
+            const dur = bek || eks > 0 || yok > 0 || kon > 0 || kay > 0;
+            birincil.disabled = dur;
+            gerekce.hidden = !dur;
             gerekce.textContent = bek ? "Dil modeli yorumunu bitirince onaylanabilir."
                 : yok > 0 ? ftBinlik(yok) + " satırdaki kalıp kolon adlarında geçmiyor: bu adımda "
                     + "yalnız adlarda geçen dönem parçaları eklenir. Satırdaki «Yalnız Hafızaya "
@@ -8549,6 +8559,8 @@ function dogrulamaKartiEkle(alan, blok) {
                     + "yazın ya da satırı çıkarın. Tabloda kalan her satır hafızaya kaydedilir."
                 : kon > 0 ? ftBinlik(kon) + " satırda yer tutucu geçersiz: satırdaki «Kontrol» "
                     + "notuna bakın."
+                : kay > 0 ? ftBinlik(kay) + " satır kaydedilmedi: onaylamadan önce her satırı "
+                    + "«Kaydet» ile kaydedin ya da satırı çıkarın."
                 : "";
             return;
         }
@@ -11722,6 +11734,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         /* Onayı durduran: anlamdaki yer tutucu geçersiz. */
         kontrol: () => acik().filter(x => (x.anlam().trim() && x.yt())
             || Object.values(x.dgAnlam || {}).some(v => donemYerTutucuHatasi("", v))).length,
+        /* Onayı durduran: tabloda kaydedilmemiş satır (her satır «Kaydet»
+           ile tek tek kaydedilir; hafızadan gelen, dokunulmamış satır
+           kaydedilmiş sayılır). */
+        kaydedilmemis: () => acik().filter(x => !x.kayitliMi()).length,
         /* Onayı durduran: elle yazılan kalıp kolon adlarında geçmiyor. */
         adlardaYok: () => satirlar.filter(x => x.kg && x.kg.value.trim()
                                           && !adlardaBul(x.kg.value).length).length,

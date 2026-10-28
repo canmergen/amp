@@ -82,7 +82,7 @@ _UZUN_TIP = {pk.TUR_TAM: "long", pk.TUR_ONDALIK: "double",
 # ===========================================================================
 def _bos_ozet(ad, tur, satir):
     return {"ad": ad, "tur": tur, "dolu": 0, "bos": satir, "ornek": None,
-            "min": None, "max": None, "ortalama": None, "hepsi_tam": False,
+            "min": None, "max": None, "ortalama": None, "medyan": None, "hepsi_tam": False,
             "n_sonlu": 0,
             "n_kesirli": 0, "pozitif": None, "n_pii_aday": 0,
             "ym_degil": None, "ymd_degil": None, "tekil": 0, "degerler": [],
@@ -232,6 +232,41 @@ def _kantiller(tt, tur, dolular):
                     break
         cikti[k] = pk.kantil_hesapla(n, sira_deger)
     return cikti
+
+
+def _tarih_medyanlari(tt, dolular):
+    """Tarih kolonlarinin KESIN medyani (pandas median ile ayni): tekil
+    tarihler sirali, birikimli satir sayisi ile ortadaki bir ya da iki
+    siranin tarihi bulunur; ortalamalari surucude tarih tipinde alinir
+    (pk.tarih_medyani). Doner: {k: medyan}."""
+    from pyspark.sql import Window, functions as F
+    if not any(dolular.values()):
+        return {}
+    w = Window.partitionBy("k").orderBy(F.col("v").asc()) \
+              .rowsBetween(Window.unboundedPreceding, Window.currentRow)
+    birikim = tt.select("k", "v", "adet") \
+                .withColumn("son", F.sum("adet").over(w)) \
+                .withColumn("bas", F.col("son") - F.col("adet")) \
+                .withColumn("n", F.sum("adet").over(Window.partitionBy("k")))
+    p = (F.col("n") - 1) * F.lit(0.5)
+    kosul = F.lit(False)
+    for sira in (F.floor(p), F.ceil(p)):
+        kosul = kosul | ((F.col("bas") <= sira) & (sira < F.col("son")))
+    aralik = {}
+    for x in birikim.where(kosul).select("k", "v", "bas", "son").collect():
+        aralik.setdefault(int(x["k"]), []).append((int(x["bas"]), x["v"], int(x["son"] - x["bas"])))
+    return {k: _orta_satirlardan_medyan(liste, int(dolular[k]))
+            for k, liste in aralik.items()}
+
+
+def _orta_satirlardan_medyan(liste, n):
+    """liste: ortadaki siralari tasiyan [(bas, tarih, adet)]. Ilk satirin
+    oncesi tek bir yer tutucu adimla atlanir; medyan pk.tarih_medyani."""
+    liste = sorted(liste, key=lambda t: t[0])
+    bas0 = liste[0][0]
+    degerler = ([None] if bas0 else []) + [v for _b, v, _c in liste]
+    adetler = ([bas0] if bas0 else []) + [c for _b, _v, c in liste]
+    return pk.tarih_medyani(degerler, adetler, n)
 
 
 # ===========================================================================
@@ -385,6 +420,10 @@ def _kolon_python(oz, tur, degerler, adetler, gorev):
         sirali = sorted(zip([float(v) for v in degerler], adetler))
         oz["kantiller"] = pk.siradan_kantil([v for v, _ in sirali],
                                             [c for _, c in sirali], oz["dolu"])
+    if tur == pk.TUR_TARIH and oz["dolu"]:
+        sirali = sorted(zip(degerler, adetler))
+        oz["medyan"] = pk.tarih_medyani([v for v, _ in sirali],
+                                        [c for _, c in sirali], oz["dolu"])
     if gorev is not None and _gorevli(gorev):
         adet_np = np.asarray(adetler, dtype="int64")
         parca = None
@@ -480,6 +519,9 @@ def _grup_isle(tt, indeks, tur, adlar, ozetler, satir):
         kant = _kantiller(tc, tur, {i: ozetler[i]["dolu"] for i in cok})
         for i, k in kant.items():
             ozetler[i]["kantiller"] = k
+    elif tur == pk.TUR_TARIH:
+        for i, m in _tarih_medyanlari(tc, {i: ozetler[i]["dolu"] for i in cok}).items():
+            ozetler[i]["medyan"] = m
     for i in cok:
         if _gorevli(gorevler[i]):
             _spark_ile_denetle(tt, i, tur, gorevler[i], ozetler[i])
