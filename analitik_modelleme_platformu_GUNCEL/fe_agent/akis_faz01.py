@@ -2372,17 +2372,18 @@ def donem_kaydet(durum, g):
     ikililer, deger anlamlari, gruptan ayrilanlar) onayi beklemeden
     hafizaya yazar; sonraki acilista ve sonraki calismalarda "Hafizadan"
     gelir. Calismanin donem bilgisi onayla yazilir (bu cagri degistirmez).
-    Doner: (tamam, mesaj)."""
+    Doner: (tamam, mesaj, onceki): onceki kaydetmeden onceki hafiza kaydi
+    (Kaydi Geri Al bunu yazar)."""
     g = g if isinstance(g, dict) else {}
     kalip = re.sub(r"\s+", "", str(g.get("kalip") or "")).upper()
     anlam = re.sub(r"\s+", " ", str(g.get("anlam") or "")).strip()
     if not kalip or donem_mod.kalip_deseni(kalip) is None:
-        return False, "Geçerli bir kalıp yok."
+        return False, "Geçerli bir kalıp yok.", None
     if not anlam:
-        return False, "%s: anlam boş; önce anlamı yazın." % kalip
+        return False, "%s: anlam boş; önce anlamı yazın." % kalip, None
     yt = donem_mod.yer_tutucu_hatasi(kalip, anlam)
     if yt:
-        return False, "%s: %s" % (kalip, yt)
+        return False, "%s: %s" % (kalip, yt), None
     adlar, tanimlar = _donem_kaynak(durum)
     desen = donem_mod.kalip_deseni(kalip)
     ikililer = {ik for ik, _n in (donem_mod.birlikte_haritasi(adlar, tanimlar).get(kalip) or {})
@@ -2404,11 +2405,44 @@ def donem_kaydet(durum, g):
     zaman_tur = str(g.get("zaman_tur") or "")
     zaman_tur = zaman_tur if zaman_tur in ZAMAN_TUR_ADI else "pencere"
     ayri = {kalip} if donem_mod.aile_adi(kalip) and not donem_mod.aile_mi(kalip) else set()
+    onceki = _donem_hafiza_kaydi(kalip)
     hata = donem_mod.hafizaya_yaz({kalip: anlam}, {kalip: haric}, {kalip: deger_anlam},
                                   {kalip: ayrilan}, {kalip: zaman_tur}, ayri)
     if hata:
-        return False, hata
-    return True, "%s kaydedildi." % kalip
+        return False, hata, None
+    return True, "%s kaydedildi." % kalip, onceki
+
+
+def _donem_hafiza_kaydi(kalip):
+    """Kalibin hafizadaki kaydi (kaydetmeden onceki hal; geri almada
+    yazilir). Hafizada yoksa anlam bos."""
+    return {"kalip": kalip, "anlam": str(donem_mod.hafiza().get(kalip) or ""),
+            "haric": list(donem_mod.hafiza_haric().get(kalip) or []),
+            "deger_anlam": dict(donem_mod.hafiza_deger().get(kalip) or {}),
+            "ayrilan": dict(donem_mod.hafiza_ayrilan().get(kalip) or {}),
+            "zaman_tur": str(donem_mod.hafiza_tur().get(kalip) or ""),
+            "ayri": kalip in donem_mod.hafiza_ayri()}
+
+
+def donem_kayit_geri(durum, onceki):
+    """KAYDI GERI AL: Kaydet'in hafizaya yazdigini geri alir. onceki:
+    donem_kaydet'in dondurdugu, kaydetmeden onceki kayit. Hafizada kayit
+    yoktuysa kalip hafizadan silinir; vardiysa eski hali yazilir.
+    Calismanin donem bilgisi degismez. Doner: (tamam, mesaj)."""
+    o = onceki if isinstance(onceki, dict) else {}
+    kalip = re.sub(r"\s+", "", str(o.get("kalip") or "")).upper()
+    if not kalip or donem_mod.kalip_deseni(kalip) is None:
+        return False, "Geçerli bir kalıp yok."
+    anlam = str(o.get("anlam") or "").strip()
+    if not anlam:
+        _n, hata = donem_mod.hafizadan_sil([kalip])
+        return (False, hata) if hata else (True, "%s kaydı geri alındı (hafızadan silindi)." % kalip)
+    tur = str(o.get("zaman_tur") or "")
+    hata = donem_mod.hafizaya_yaz(
+        {kalip: anlam}, {kalip: list(o.get("haric") or [])},
+        {kalip: dict(o.get("deger_anlam") or {})}, {kalip: dict(o.get("ayrilan") or {})},
+        {kalip: tur} if tur else None, {kalip} if o.get("ayri") else set())
+    return (False, hata) if hata else (True, "%s kaydı geri alındı (hafızadaki önceki hâli yazıldı)." % kalip)
 
 
 def donem_hafiza_ekle(durum, kalip, anlam):

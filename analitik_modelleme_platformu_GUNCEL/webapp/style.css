@@ -3408,7 +3408,7 @@ span.bolme-cip { cursor: default; }
 .dg-donem-tablo th:nth-child(1) { width: 200px; }
 .dg-donem-tablo th:nth-child(2) { width: 26%; }
 .dg-donem-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
-.dg-donem-tablo th:nth-child(4) { width: 125px; text-align: center; }
+.dg-donem-tablo th:nth-child(4) { width: 150px; text-align: center; }
 /* Değer paneli açılınca tablo küçük bir pencerede kaymasın. */
 .dg-donem-sar { max-height: 72vh; }
 .dg-donem-kalip { font-weight: var(--fw-kalin); margin-right: 4px; }
@@ -5107,3 +5107,5 @@ span.bolme-cip { cursor: default; }
 .dg-donem-grup-ozet { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-right: 10px; }
 .dg-donem-grupla { vertical-align: middle; }
 .dg-donem-ayir { margin-top: 4px; }
+/* Hepsini Kabul Et: + Dönem Kalıbı Ekle'nin yanında. */
+.dg-donem-hepsi { margin: var(--b-2) 0 var(--b-3) var(--b-2); }

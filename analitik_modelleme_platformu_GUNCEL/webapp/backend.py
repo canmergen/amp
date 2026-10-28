@@ -3008,10 +3008,24 @@ def donem_kaydet_endpoint():
         istek = request.get_json(force=True) or {}
         anahtar = _oturum_anahtari(istek.get("oturum_id"))
         durum = _durum_al(anahtar)
-        tamam, mesaj = akis.donem_kaydet(durum, istek.get("satir"))
-        return jsonify({"tamam": tamam, "mesaj": mesaj})
+        tamam, mesaj, onceki = akis.donem_kaydet(durum, istek.get("satir"))
+        return jsonify({"tamam": tamam, "mesaj": mesaj, "onceki": onceki})
     except Exception as e:
         return jsonify(_hata_govdesi("donem_kaydet", e)), 200
+
+
+@app.route("/donem_kayit_geri", methods=["POST"])
+def donem_kayit_geri_endpoint():
+    """Dönem Bilgisi kartında Kaydet'in hafızaya yazdığını geri alır
+    (kaydetmeden önceki kayıt istekte gelir)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        tamam, mesaj = akis.donem_kayit_geri(durum, istek.get("onceki"))
+        return jsonify({"tamam": tamam, "mesaj": mesaj})
+    except Exception as e:
+        return jsonify(_hata_govdesi("donem_kayit_geri", e)), 200
 
 
 @app.route("/donem_hafiza_ekle", methods=["POST"])

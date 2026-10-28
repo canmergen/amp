@@ -541,8 +541,19 @@ tanıtır; sayfalar sol bardan açılır.
     `akis_faz01.donem_kaydet`: anlam, tür, hariç ikililer, değer
     anlamları, dönem olmayan değerler; anlam boşsa ya da yer tutucusu
     geçersizse kaydetmez). Kaydedilen satırın etiketi yeşil "Kaydedildi",
-    düğmesi "Kaydedildi" ve kapalı; satırda bir şey değişince yeniden
-    "Kaydet" olur. Hafızadan gelip dokunulmamış satır kaydedilmiş sayılır.
+    düğmesi "Kaydı Geri Al"; satırda bir şey değişince yeniden "Kaydet"
+    olur. Hafızadan gelip dokunulmamış satır kaydedilmiş sayılır
+    (çizimde düzenleme kaydına kendiliğinden giren ayrılan değerler
+    dokunma sayılmaz).
+  - **Kaydı Geri Al:** bu kartta kaydedilen satırda hafıza kaydetmeden
+    önceki hâline döner (`/donem_kayit_geri`, `akis_faz01.donem_kayit_geri`;
+    Kaydet'in döndürdüğü önceki kayıt yazılır, hafızada yoktuysa kalıp
+    silinir; karttaki ilk kayıttan önceki hâl). Hafızadan gelip bu kartta
+    kaydedilmemiş satırda hafızaya dokunulmaz, satır yeniden açılır. İki
+    durumda da satır kaydedilmemiş sayılır.
+  - **Hepsini Kabul Et · N:** "+ Dönem Kalıbı Ekle"nin yanında;
+    kaydedilmemiş bütün satırlar sırayla kaydedilir (yakın anlamlar
+    yeniden yazdırılmaz). Kaydedilemeyenler nedeniyle yazılır.
     Çalışmanın dönem bilgisi yine "Dönem Bilgisini Onayla" ile yazılır.
     Onay için tablodaki her satır kaydedilmiş olmalı: kaydedilmemiş satır
     kaldıkça düğme kapalı, altında "N satır kaydedilmedi: onaylamadan önce

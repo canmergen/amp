@@ -10633,6 +10633,20 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
        ve "Kaydet" yeniden açılır. Hafızadan gelen, dokunulmamış satır
        kaydedilmiş sayılır. */
     const KAYIT = {};
+    /* ONCEKI[anahtar]: bu kartta ilk kaydetmeden önceki hafıza kaydı (Kaydı
+       Geri Al bunu yazar). KAYIT_ACIK: kaydı geri alınan satırlar
+       (hafızadan gelse de kendiliğinden kaydedilmiş sayılmaz). */
+    const ONCEKI = {};
+    const KAYIT_ACIK = new Set();
+    /* Hafızadan gelen satıra kullanıcı dokunmadı mı? duzen'e çizimde
+       kendiliğinden giren "ayrilan" (hafızadakinin kopyası) dokunma sayılmaz. */
+    const DUZEN_DEGISIKLIK = ["anlam", "kalip", "zaman_tur", "haric", "deger_anlam", "cikar", "aileye_kat"];
+    const dokunulmadi = (r, anah) => {
+        const dz = duzen[anah];
+        if (!dz) return true;
+        if (DUZEN_DEGISIKLIK.some(k => dz[k] !== undefined)) return false;
+        return JSON.stringify(dz.ayrilan || {}) === JSON.stringify(r.ayrilan || {});
+    };
     /* YAKIN ANLAM: iki anlamın kelimeleri (sayı ve yer tutucu, dolgu
        sözcükler hariç) aynı, birinin kelimeleri öbüründe tümüyle var ya da
        ortak kelime oranı ANLAM_YAKIN_ESIGI ve üstü. Kaydedilen bir satıra
@@ -11256,10 +11270,18 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 + " anlamına yakın: farkını yazın." : "";
             yakinEl.hidden = !yakin;
             durumCip.classList.toggle("kayitli", et === "Kaydedildi");
-            kaydetBtn.disabled = kilitli || da.dm === "calisiyor" || !v || !!yt
-                || (kg && !kg.value.trim()) || x.kayitliMi() || kaydetBtn.dataset.gidiyor === "1";
-            kaydetBtn.textContent = kaydetBtn.dataset.gidiyor === "1" ? "Kaydediliyor"
-                : x.kayitliMi() ? "Kaydedildi" : "Kaydet";
+            /* Kaydedilmiş satırda düğme "Kaydı Geri Al" (etiket "Kaydedildi"). */
+            const kayitli = x.kayitliMi();
+            kaydetBtn.disabled = kilitli || da.dm === "calisiyor" || kaydetBtn.dataset.gidiyor === "1"
+                || (!kayitli && (!v || !!yt || (kg && !kg.value.trim())));
+            kaydetBtn.textContent = kaydetBtn.dataset.gidiyor === "1" ? "Bekleyin"
+                : kayitli ? "Kaydı Geri Al" : "Kaydet";
+            kaydetBtn.classList.toggle("dg-donem-geri-al", kayitli);
+            kaydetBtn.title = kayitli
+                ? "Kaydı geri alır: hafıza kaydetmeden önceki hâline döner, satır yeniden düzenlenip kaydedilebilir."
+                : "Bu satırı şimdi hafızaya kaydet. Kaydedilmemiş satırlardan anlamı buna yakın olanlar "
+                  + "dil modeline yeniden yazdırılır.";
+            hepsiDurum();
             durumCip.textContent = et;
             durumCip.classList.toggle("dikkat", dikkatEt);
             kontrolEl.textContent = yt ? "Kontrol: " + yt : "";
@@ -11322,11 +11344,15 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 Object.entries(c.deger_anlam).sort(), Object.keys(c.ayrilan).sort()]);
         };
         x.kayitliMi = () => KAYIT[anah] !== undefined && KAYIT[anah] === x.imza();
-        kaydetBtn.onclick = () => {
-            if (kilitli || da.dm === "calisiyor" || x.kayitliMi()) return;
+        /* KAYDET: satır onayı beklemeden hafızaya yazılır. toplu: Hepsini
+           Kabul Et'ten (yakın anlamlar yeniden yazdırılmaz, mesaj toplu
+           yazılır). Doner: Promise<{ok, mesaj}>. */
+        x.kaydetIstek = toplu => {
+            if (kilitli || da.dm === "calisiyor" || x.kayitliMi() || kaydetBtn.dataset.gidiyor === "1")
+                return Promise.resolve({ ok: false, mesaj: "" });
             const satir = x.satirCikti();
             kaydetBtn.dataset.gidiyor = "1"; boya();
-            fetch(getWebAppBackendUrl("donem_kaydet"), {
+            return fetch(getWebAppBackendUrl("donem_kaydet"), {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ oturum_id: OTURUM_ID, satir })
             })
@@ -11334,26 +11360,74 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             .then(d => {
                 delete kaydetBtn.dataset.gidiyor;
                 if (!(d && d.tamam)) {
-                    bilgiYaz((d && (d.mesaj || d.hata)) || "Kaydedilemedi.", true); boya(); return;
+                    const m = (d && (d.mesaj || d.hata)) || "Kaydedilemedi.";
+                    if (!toplu) bilgiYaz(m, true);
+                    boya(); return { ok: false, mesaj: m };
                 }
                 KAYIT[anah] = x.imza();
-                /* YAKIN ANLAMLAR: kaydedilmemiş satırlardan anlamı bu satıra
-                   yakın olanlar dil modeline yeniden yazdırılır (kaydedilen
-                   anlamlar bağlam olarak gider). */
-                const yakinlar = satirlar.filter(o => o !== x && !o.kayitliMi()
-                    && o.anlam().trim() && anlamYakin(satir.anlam, o.anlam()));
-                yakinlar.forEach(o => {
-                    const kk = String(o.kalipNe() || "").toUpperCase();
-                    if (kk) uretimBaslat(o.anah, kk, true, o.anlam().trim());
-                });
-                bilgiYaz(donemSayiGoster(satir.kalip) + " kaydedildi." + (yakinlar.length
-                    ? " Anlamı buna yakın " + ftBinlik(yakinlar.length) + " satır yeniden yazılıyor: "
-                      + yakinlar.map(o => donemSayiGoster(o.kalipNe())).join(", ") + "." : ""), false);
+                KAYIT_ACIK.delete(anah);
+                /* Geri almada yazılacak: bu karttaki İLK kayıttan önceki hâl. */
+                if (ONCEKI[anah] === undefined && d.onceki) ONCEKI[anah] = d.onceki;
+                let yakinlar = [];
+                if (!toplu) {
+                    /* YAKIN ANLAMLAR: kaydedilmemiş satırlardan anlamı bu
+                       satıra yakın olanlar dil modeline yeniden yazdırılır
+                       (kaydedilen anlamlar bağlam olarak gider). */
+                    yakinlar = satirlar.filter(o => o !== x && !o.kayitliMi()
+                        && o.anlam().trim() && anlamYakin(satir.anlam, o.anlam()));
+                    yakinlar.forEach(o => {
+                        const kk = String(o.kalipNe() || "").toUpperCase();
+                        if (kk) uretimBaslat(o.anah, kk, true, o.anlam().trim());
+                    });
+                    bilgiYaz(donemSayiGoster(satir.kalip) + " kaydedildi." + (yakinlar.length
+                        ? " Anlamı buna yakın " + ftBinlik(yakinlar.length) + " satır yeniden yazılıyor: "
+                          + yakinlar.map(o => donemSayiGoster(o.kalipNe())).join(", ") + "." : ""), false);
+                }
                 satirlar.forEach(o => o.boya());
                 if (degisti) degisti();
+                return { ok: true, mesaj: "" };
             })
-            .catch(() => { delete kaydetBtn.dataset.gidiyor; bilgiYaz("Kaydedilemedi (bağlantı).", true); boya(); });
+            .catch(() => {
+                delete kaydetBtn.dataset.gidiyor;
+                if (!toplu) bilgiYaz("Kaydedilemedi (bağlantı).", true);
+                boya(); return { ok: false, mesaj: "bağlantı kurulamadı" };
+            });
         };
+        /* KAYDI GERİ AL: bu kartta kaydedildiyse hafıza kaydetmeden önceki
+           hâline döner (yoktuysa silinir); hafızadan gelip bu kartta
+           kaydedilmediyse hafızaya dokunulmaz, satır yeniden açılır. İki
+           durumda da satır kaydedilmemiş sayılır, Kaydet yeniden açılır. */
+        x.kaydiGeriAl = () => {
+            if (kilitli || da.dm === "calisiyor" || kaydetBtn.dataset.gidiyor === "1") return;
+            const ac = m => {
+                delete KAYIT[anah]; KAYIT_ACIK.add(anah);
+                bilgiYaz(m, false);
+                satirlar.forEach(o => o.boya());
+                if (degisti) degisti();
+            };
+            const onceki = ONCEKI[anah];
+            if (!onceki) {
+                ac(donemSayiGoster(kalipNe()) + " yeniden açıldı. Hafızadaki kaydı değişmedi; "
+                   + "değiştirip yeniden kaydedin ya da Çıkar ile çıkarın.");
+                return;
+            }
+            kaydetBtn.dataset.gidiyor = "1"; boya();
+            fetch(getWebAppBackendUrl("donem_kayit_geri"), {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ oturum_id: OTURUM_ID, onceki })
+            })
+            .then(res => res.json())
+            .then(d => {
+                delete kaydetBtn.dataset.gidiyor;
+                if (!(d && d.tamam)) {
+                    bilgiYaz((d && (d.mesaj || d.hata)) || "Kayıt geri alınamadı.", true); boya(); return;
+                }
+                delete ONCEKI[anah];
+                ac(d.mesaj || (donemSayiGoster(kalipNe()) + " kaydı geri alındı."));
+            })
+            .catch(() => { delete kaydetBtn.dataset.gidiyor; bilgiYaz("Kayıt geri alınamadı (bağlantı).", true); boya(); });
+        };
+        kaydetBtn.onclick = () => { if (x.kayitliMi()) x.kaydiGeriAl(); else x.kaydetIstek(false); };
         x.kalipNe = kalipNe;
         x.otoAnlam = otoAnlam;
         x.degerListesi = degerListesi;
@@ -11389,7 +11463,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             }
             kaydet(); sekmeSayilari();
         };
-        if (KAYIT[anah] === undefined && r.kaynak === "hafiza" && !duzen[anah]) KAYIT[anah] = x.imza();
+        if (KAYIT[anah] === undefined && r.kaynak === "hafiza" && dokunulmadi(r, anah) && !KAYIT_ACIK.has(anah))
+            KAYIT[anah] = x.imza();
         dgCiz();
         satirlar.push(x);
         boya();
@@ -12012,6 +12087,42 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         + "onaylayınca hafızaya yazılır ve sonraki çalışmalarda kullanılır.";
     ekleBtn.onclick = () => elleEkle("");
     bilgiEl.after(ekleBtn);
+    /* HEPSİNİ KABUL ET: kaydedilmemiş bütün satırlar sırayla kaydedilir
+       (Kaydet ile aynı; yakın anlamlar yeniden yazdırılmaz). Kaydedilemeyen
+       satırlar (anlam boş, yer tutucu geçersiz) nedeniyle yazılır. */
+    const hepsiBtn = elYap("button", "dg-toplu-btn dg-donem-hepsi", "Hepsini Kabul Et");
+    hepsiBtn.type = "button";
+    hepsiBtn.title = "Tablodaki kaydedilmemiş bütün satırları şimdiki anlam ve türleriyle hafızaya kaydeder.";
+    let hepsiGidiyor = false;
+    /* Boş elle satır (kalıp ve anlam boş) sayılmaz. */
+    const kaydedilecekler = () => satirlar.filter(x => !x.kayitliMi()
+        && !(x.kg && !x.kg.value.trim() && !x.anlam().trim()));
+    function hepsiDurum() {
+        const bekleyen = kaydedilecekler();
+        hepsiBtn.disabled = kilitli || da.dm === "calisiyor" || hepsiGidiyor || !bekleyen.length;
+        hepsiBtn.textContent = hepsiGidiyor ? "Kaydediliyor" : "Hepsini Kabul Et"
+            + (bekleyen.length ? " · " + ftBinlik(bekleyen.length) : "");
+    }
+    hepsiBtn.onclick = () => {
+        if (kilitli || da.dm === "calisiyor" || hepsiGidiyor) return;
+        const liste = kaydedilecekler();
+        if (!liste.length) return;
+        hepsiGidiyor = true; hepsiDurum();
+        const olmayan = [];
+        let ok = 0;
+        liste.reduce((zincir, x) => zincir.then(() => x.kaydetIstek(true).then(s => {
+            if (s.ok) ok++;
+            else olmayan.push(donemSayiGoster(x.kalipNe() || "(boş kalıp)") + (s.mesaj ? ": " + s.mesaj : ""));
+        })), Promise.resolve()).then(() => {
+            hepsiGidiyor = false; hepsiDurum();
+            bilgiYaz(ftBinlik(ok) + " satır kaydedildi." + (olmayan.length
+                ? " Kaydedilemeyen " + ftBinlik(olmayan.length) + " satır: " + olmayan.join("; ") + "." : ""),
+                olmayan.length > 0);
+            satirlar.forEach(o => o.boya());
+            if (degisti) degisti();
+        });
+    };
+    ekleBtn.after(hepsiBtn);
 
     ciz(da.satirlar);
 
@@ -12044,6 +12155,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         cikListe.querySelectorAll("button").forEach(b => { b.disabled = k; });
         olaTb.querySelectorAll("button").forEach(b => { b.disabled = k; });
         parTb.querySelectorAll("button").forEach(b => { b.disabled = k; });
+        hepsiDurum();
     }
     kilitDurumu();
     /* Elle satır: kalıp ve anlam ikisi de boşsa yok sayılır. */
