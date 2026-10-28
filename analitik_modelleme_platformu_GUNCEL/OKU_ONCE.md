@@ -767,7 +767,7 @@ tanıtır; sayfalar sol bardan açılır.
   kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar
   listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve "Tümünü
   Temizle". Kolonlar: Değişken, Tip, Boş Oranı, Tekrar Oranı, Tekil
-  Değer, En Sık Değerler (Satır Adedi), Min, Med, Mean, Max, Çıkar
+  Değer, En Sık Değerler, Min, Med, Mean, Max, Çıkar
   (`akis_faz01._tanimsiz_bilgi`). Hepsi veri seti profilinden (tam tablo,
   örneklem yok). Genişlikler `<col>` sınıflarından (`tk-*`), başlık ve
   hücre ortalı (bütün tablolardaki kural); kolonlar ince dikey çizgiyle

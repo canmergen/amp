@@ -7971,7 +7971,7 @@ function dogrulamaKartiEkle(alan, blok) {
             ["Boş Oranı", "tk-oran", "tk-sag", "Boş hücrelerin bütün satırlara oranı (tam tablo)."],
             ["Tekrar Oranı", "tk-oran", "tk-sag", "Değeri kendinden önceki bir satırla aynı olan satırların bütün satırlara oranı; boş hücre de değer sayılır (tam tablo). Adedi ipucunda."],
             ["Tekil Değer", "tk-oran", "tk-sag", "Farklı değer sayısı (boş hariç, tam tablo)."],
-            ["En Sık Değerler (Satır Adedi)", "tk-deger", "", "En sık 10 değer; parantez içinde o değeri taşıyan satır adedi (tam tablo)."],
+            ["En Sık Değerler", "tk-deger", "", "En sık 10 değer; parantez içinde o değeri taşıyan satır adedi (tam tablo)."],
             ["Min", "tk-ist", "tk-sag"], ["Med", "tk-ist", "tk-sag", "Medyan"],
             ["Mean", "tk-ist", "tk-sag", "Ortalama (sonlu değerler)"], ["Max", "tk-ist", "tk-sag"],
             ["Çıkar", "tk-cikar", "tk-orta"]];
