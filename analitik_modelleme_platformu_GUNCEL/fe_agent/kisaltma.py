@@ -807,6 +807,50 @@ def donem_tur_hafizasi():
     return _donem_tur_ham()
 
 
+def _donem_ad_ham(govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    da = (govde or {}).get("donem_ad")
+    if not isinstance(da, dict):
+        return {}
+    return {str(k): str(v) for k, v in da.items() if str(v or "").strip()}
+
+
+def donem_ad_hafizasi():
+    """{kalip: sablon} - kalibin yeni kolon adlarindaki yazilisi (ör.
+    "<N>D_<N>D" -> "BTWN_<N>D_<N>D"); yoksa kalip yazildigi gibi kalir."""
+    return _donem_ad_ham()
+
+
+def donem_ad_kaydet(sablonlar):
+    """sablonlar: {kalip: sablon}; bos sablon kaydi kaldirir. Dosya var ama
+    okunamiyorsa ustune yazilmaz. Doner: hata ya da None."""
+    sablonlar = {str(k).strip(): str(v or "").strip() for k, v in (sablonlar or {}).items()
+                 if str(k).strip()}
+    if not sablonlar:
+        return None
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Dönem yazılışı hafızaya yazılamadı: " + hata
+        da = _donem_ad_ham(govde)
+        for k, v in sablonlar.items():
+            if v:
+                da[k] = v
+            else:
+                da.pop(k, None)
+        if da:
+            govde["donem_ad"] = dict(sorted(da.items()))
+        else:
+            govde.pop("donem_ad", None)
+        try:
+            _folder().upload_stream(DOSYA, json.dumps(
+                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+        except Exception as e:
+            return "Dönem yazılışı hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
+
+
 def _donem_ayri_ham(govde=None):
     if govde is None:
         govde, _h = _govde_oku()
@@ -993,6 +1037,11 @@ def donem_sil(kaliplar):
             govde["donem_ayri_yazilis"] = sorted(ayr)
         else:
             govde.pop("donem_ayri_yazilis", None)
+        dad = {k: v for k, v in _donem_ad_ham(govde).items() if k not in kaliplar}
+        if dad:
+            govde["donem_ad"] = dict(sorted(dad.items()))
+        else:
+            govde.pop("donem_ad", None)
         if dt:
             govde["donem_tur"] = dict(sorted(dt.items()))
         else:

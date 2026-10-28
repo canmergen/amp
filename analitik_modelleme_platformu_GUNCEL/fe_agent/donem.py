@@ -552,6 +552,11 @@ def parca_listesi(adlar, tanimlar, ornek=2):
                 ikililer.add(p + "_" + t[i + 1])
                 if _TEK_HARF.match(p):
                     ayrik_harf.add(p)
+            # Yan yana iki sayili donem parcasi (3D_6D) ikili olarak da
+            # girer: "<N>D_<N>D" gibi bir kalip (ör. arasinda) alinabilsin.
+            elif i + 1 < len(t) and _donem_parcasi(p) and _donem_parcasi(t[i + 1]):
+                gorulen.append(p + "_" + t[i + 1])
+                ikililer.add(p + "_" + t[i + 1])
         for p in dict.fromkeys(gorulen):
             kolonlar.setdefault(p, []).append(ad)
     # GRUPLAR: grubun kolon sayisi uyelerin gectigi FARKLI kolonlar (bir
@@ -727,6 +732,72 @@ def hafiza_ayri():
         return kisaltma_mod.donem_ayri_hafizasi()
     except Exception:
         return set()
+
+
+def hafiza_ad():
+    """{kalip: yeni adda yazilis sablonu}."""
+    try:
+        return kisaltma_mod.donem_ad_hafizasi()
+    except Exception:
+        return {}
+
+
+def hafizaya_ad_yaz(sablonlar):
+    """{kalip: sablon} (bos: kaydi kaldir). Doner: hata ya da None."""
+    return kisaltma_mod.donem_ad_kaydet(sablonlar)
+
+
+# YENI ADDA YAZILIS: kalibin yeni kolon adlarinda nasil yazilacagi (ör.
+# <N>D_<N>D -> BTWN_<N>D_<N>D). Sablondaki yer tutucular kalibinkilerle
+# ayni sayida ve sirada; harf, rakam, alt cizgi.
+_AD_SABLON = re.compile(r"^(?:[A-Z0-9_]|<NN>|<N\d?>)+$")
+
+
+def ad_sablonu_hatasi(kalip, sablon):
+    """Sablon gecersizse hata metni; bos sablon gecerlidir (kalip aynen)."""
+    s = _norm(sablon)
+    if not s:
+        return ""
+    if not _AD_SABLON.match(s) or not re.match(r"^[A-Z<]", s):
+        return ("yeni adda yazılış yalnız büyük harf, rakam, alt çizgi ve [sayı] "
+                "içerebilir; harfle ya da [sayı] ile başlar.")
+    k = _norm(kalip)
+    n_kalip = 1 if aile_mi(k) else len(_YT_KALIP.findall(k))
+    n_sablon = len(_YT_KALIP.findall(s))
+    if n_sablon != n_kalip:
+        return ("yeni adda yazılışta %d [sayı] var, kalıpta %d; aynı sayıda olmalı."
+                % (n_sablon, n_kalip))
+    return ""
+
+
+def ad_sablonu_doldur(kalip, sablon, deger):
+    """Degerin sayilari sablonun yer tutucularina sirayla yazilir (3D_6D +
+    BTWN_<N>D_<N>D -> BTWN_3D_6D). Uymazsa deger aynen."""
+    k, s, d = _norm(kalip), _norm(sablon), _norm(deger)
+    if not s:
+        return d
+    if aile_mi(k):
+        r = kalip_deseni(k)
+        if r is None or not r.match(d):
+            return d
+        sayilar = [re.search(r"\d+", d).group(0)]
+    else:
+        try:
+            m = re.match("^" + _desen_kur(k, yakala=True) + "$", d)
+        except re.error:
+            return d
+        if not m:
+            return d
+        sayilar = list(m.groups())
+    if not sayilar:
+        return s
+    i = [0]
+
+    def yer(_m):
+        v = sayilar[min(i[0], len(sayilar) - 1)]
+        i[0] += 1
+        return v
+    return _YT_KALIP.sub(yer, s)
 
 
 def aile_uyeleri(kalip):

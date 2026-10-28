@@ -4904,6 +4904,11 @@ span.bolme-cip { cursor: default; }
   font-weight: var(--fw-kalin); letter-spacing: .01em;
 }
 .dg-donem-durum.dikkat { color: var(--amber); }
+/* Yeni adda yazılış: tür kutusunun altında başlık, giriş ve örnek. */
+.dg-donem-ad { margin-top: 8px; }
+.dg-donem-ad-bas { display: inline-flex; align-items: center; gap: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: 600; }
+.dg-giris.dg-donem-ad-giris { display: block; width: 100%; margin-top: 4px; height: 26px; font-size: var(--fs-kucuk); }
+.dg-donem-tur-not.dg-donem-ad-hata { color: var(--kirmizi); }
 .dg-donem-tur-not { margin-top: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: normal; line-height: 1.4; }
 .dg-donem-uyari {
   display: flex; align-items: center; gap: 4px; margin-top: 4px;

@@ -3047,6 +3047,20 @@ def donem_kayit_geri_endpoint():
         return jsonify(_hata_govdesi("donem_kayit_geri", e)), 200
 
 
+@app.route("/kontrol_taslak", methods=["POST"])
+def kontrol_taslak_endpoint():
+    """Dönem Bilgisi, Ad Parçaları ve Kolon Adları kartının onaylanmamış son
+    hâli proje hafızasına (önceki kontrolde kaldığı yerden devam için)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify(akis.kontrol_taslak(durum, str(istek.get("adim") or ""),
+                                           istek.get("karar")))
+    except Exception as e:
+        return jsonify(_hata_govdesi("kontrol_taslak", e)), 200
+
+
 @app.route("/donem_hafiza_ekle", methods=["POST"])
 def donem_hafiza_ekle_endpoint():
     """Kolon adlarinda gecmeyen donem kalibini yalniz hafizaya yazar

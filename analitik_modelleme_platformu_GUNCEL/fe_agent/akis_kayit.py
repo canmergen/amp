@@ -368,7 +368,8 @@ def alt_adim_durumu(ust, durum, sira):
     if int(durum.get("i") or 0) <= sira:
         return ""
     if ust == "sozluk_kontrol":
-        return {"yap": "acik", "atla": "atlandi"}.get(durum.get("sozluk_kontrol"), "")
+        return {"yap": "acik", "onceki": "acik", "atla": "atlandi"}.get(
+            durum.get("sozluk_kontrol"), "")
     return "acik"
 
 SECIMLI = {"kural", "kesif"}

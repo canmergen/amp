@@ -411,10 +411,12 @@ def ad_standardi_kaydet(sira):
     return kisaltma_mod.parca_ad_standardi_kaydet({"sira": sira_temizle(sira)})
 
 
-def ad_birimleri(ad, bilgi, desenler=()):
+def ad_birimleri(ad, bilgi, desenler=(), yazilislar=()):
     """Kolon adinin birimleri: [[metin, yer]]. Ardisik sayili parcalar
     (3_M, H00_06) tek birim; onayli parca standart yazilisiyla; bilinmeyen
-    parca aynen, yeri "diger"."""
+    parca aynen, yeri "diger". yazilislar: [(kalip, sablon)] donem
+    kalibinin yeni adda yazilisi; kaliba uyan zaman birimi (ya da yan yana
+    iki zaman birimi, ör. 3D_6D) sablonla yazilir (BTWN_3D_6D)."""
     t = toklar(ad)
     sayili = sayili_konumlar(t)
     sayili.update(i for i, p in enumerate(t) if any(r.match(p) for r in desenler))
@@ -431,7 +433,41 @@ def ad_birimleri(ad, bilgi, desenler=()):
         o = (bilgi or {}).get(t[i]) or {}
         birimler.append([str(o.get("standart") or t[i]).upper(), ad_yeri(o.get("tur"))])
         i += 1
-    return birimler
+    return _yazilisla(birimler, yazilislar) if yazilislar else birimler
+
+
+def _yazilisla(birimler, yazilislar):
+    """Zaman birimlerini donem kalibinin yeni adda yazilisiyla yazar; once
+    yan yana iki zaman birimi (iki parcali kalip), sonra tek birim."""
+    derli = []
+    for k, s in yazilislar:
+        r = donem_mod.kalip_deseni(k)
+        if r is not None and s:
+            derli.append((r, k, s))
+
+    def bul(metin):
+        for r, k, s in derli:
+            if r.match(metin):
+                return donem_mod.ad_sablonu_doldur(k, s, metin)
+        return None
+    cikti, i = [], 0
+    while i < len(birimler):
+        m, y = birimler[i]
+        if y == "zaman":
+            if i + 1 < len(birimler) and birimler[i + 1][1] == "zaman":
+                ik = bul(m + "_" + birimler[i + 1][0])
+                if ik:
+                    cikti.append([ik, "zaman"])
+                    i += 2
+                    continue
+            tek = bul(m)
+            if tek:
+                cikti.append([tek, "zaman"])
+                i += 1
+                continue
+        cikti.append([m, y])
+        i += 1
+    return cikti
 
 
 def ad_kur(birimler, sira):

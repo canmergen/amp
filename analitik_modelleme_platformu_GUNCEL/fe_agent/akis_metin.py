@@ -184,6 +184,15 @@ KONTROL_SORUSU = ("Sözlükteki açıklamalar ve kolon adları kontrol edilsin m
 # Kartta gorunen harf ("A", "B") ya da sira ("1", "2") da secer.
 KONTROL_SIRA = {"a": "yap", "1": "yap", "b": "atla", "2": "atla",
                 "yap": "yap", "atla": "atla"}
+# ONCEKI ONAYLI KONTROL: ayni veri seti ve sozluk(ler) icin proje
+# hafizasinda kayit varsa ilk secenek olarak gelir (harfler kayar). Onayli
+# alt adimlar denetlenip yeniden sorulmadan uygulanir; yarim kalan alt adim
+# kaldigi yerden acilir (bkz. akis_faz01, kontrol_gecmisi).
+KONTROL_ONCEKI_BASLIK = "Önceki Onaylı Kontrol Uygulansın"
+KONTROL_SORUSU_ONCEKI = (
+    "Bu veri seti ve sözlük için proje hafızasında önceki bir kontrol var. "
+    "Önceki onaylı kontrol mü uygulansın, adım adım yeniden mi kontrol "
+    "edilsin? Girdi veri setiniz ve sözlüğünüz her durumda değişmez.")
 
 # Gruplu blogun ortak basligi: kurulum + kolon rolleri + sozluk adimlari.
 GRUP_ADI_VERI_SOZLUK = "Veri Seti, Sözlük ve Kolon Rolleri"

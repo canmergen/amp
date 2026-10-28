@@ -474,11 +474,53 @@ tanıtır; sayfalar sol bardan açılır.
      açıklamayı yazar.
   4. **01.2.4.4 Kolon Adları** (`kolon_ad`): adlar standart yazılışlarla
      Ad Standardı'na göre kodla kurulur.
-  "Kontrol Edilmeden Geçilsin" seçilirse dördü de atlanır. Eski Kısaltma
+  Seçenekler: "Sözlük ve Kolon Adları Kontrol Edilsin" (adım adım),
+  "Kontrol Edilmeden Geçilsin" (dördü de atlanır) ve kayıt varsa en üstte
+  "Önceki Onaylı Kontrol Uygulansın" (harfler A, B, C; soru "Bu veri seti
+  ve sözlük için proje hafızasında önceki bir kontrol var..."). Eski Kısaltma
   Sözlüğü adımı kaldırıldı (göç: `SIRA_SURUMU` 15; eski Açıklama
   Düzenleme / Kısaltma Sözlüğü / Yeni Kolon Adları adımında duran
   çalışma Ad Parçaları'nda yeniden açılır, eski kısaltma kararları
   silinir).
+- **Önceki onaylı kontrol** (`fe_agent/kontrol_gecmisi.py`,
+  `PROJE_HAFIZASI/KONTROL_GECMISI/<anahtar>.json`; anahtar veri setinin ve
+  sözlüklerin adlarından, sözlük sırası önemsiz; yalnız A ve C, B'de
+  tutulmaz). 01.2.4'ün dört alt adımının her şeyi kaydedilir; çalışma
+  Arşiv'den silinse de kalır:
+  - Onaylanan karar (kartın gönderdiği gövde; `karar`, onayla yazılır,
+    taslağı siler). Kolon Adları'nda onaydaki yeni adlar da (`adlar`).
+  - Taslak: Dönem Bilgisi, Ad Parçaları ve Kolon Adları kartında
+    kullanıcı bir şey değiştirince 1,5 sn sonra onaylanmamış son hâl
+    (`/kontrol_taslak`, `akis_faz01.kontrol_taslak`; açılış ve yoklama
+    taslak sayılmaz; yalnız ekrandaki adımın kartı).
+  - Kolon Kartları: çalışmanın deposu (notlar, parça ve aile notları, dil
+    modeli sonuçları, satır onayları; `depo`), onaylı ve toplam kolon
+    sayısı, adım onaylandıysa `tamam`. Satır onayı, not, parça cevabı ve
+    aileye uygulamada yazılır; depo yazmadan hemen önce bir kez
+    kopyalanır, ardışık yazmalar 1 sn içinde birleşir.
+  - **"Önceki Onaylı Kontrol Uygulansın"** seçilince seçenek açıklaması
+    neyin onaylı ve yarım olduğunu yazar ("Dönem Bilgisi ve Ad Parçaları
+    onaylı; Kolon Kartları içinde 340 / 512 kolon onaylı"). Her alt adım
+    ilk girişte kaydı dener:
+    - Onaylı karar adımın kendi denetiminden yan etkisiz geçerse
+      (`_donem_karari_isle`, `_parca_karari_isle`, `_kolon_ad_karari_isle`;
+      dil modeli işi başlatılmaz) adım sorulmadan onaylanır; sohbette
+      "Önceki onaylı karar uygulandı. ..." yazar. Dönem'de ayrıca önceki
+      kararda olmayan tablo kalıbı ya da artık adlarda olmayan kalıp
+      olmamalı; Ad Parçaları'nda önceki kararda olmayan parça olmamalı;
+      Kolon Adları'nda her ailenin yeni adları onaydakiyle aynı olmalı;
+      Kolon Kartları'nda adım onaylanmış ve bütün kolonlar hâlâ onaylı
+      olmalı (girdisi değişen kolonun onayı düşer).
+    - Geçmezse kart önceki kararlarla dolu açılır, notta neden yazar
+      ("Önceki onaylı karar kendiliğinden uygulanamadı: önceki kararda
+      olmayan 1 parça var (MAX). ..."). Yalnız taslak varsa kart taslakla
+      açılır ("Önceki kontrolden kalan taslak getirildi; kaldığınız yerden
+      devam edin."); Kolon Kartları'nda girdisi aynı kalan kolonlar
+      yeniden yazılmaz, onayları gelir ("N / M kolon onaylı").
+    - Deneme alt adım başına bir kez: geri dönüşte kart normal açılır.
+      01.2.4'te yeniden seçim yapılınca baştan denenir.
+    - Kayıt her durumda tutulur ("adım adım" seçilse de); Dönem'de satır
+      Kaydet'leri ayrıca hafızada durur.
 - **01.2.4.1 Dönem Bilgisi, kart:** başlığın altında tek satır özet
   ("6 kalıp (3 pencere, 1 zaman noktası) · 2 yorumlanıyor · 4 aday")
   ve yanında "i": yönerge ile sütun açıklamaları orada. Altında üç
@@ -536,8 +578,9 @@ tanıtır; sayfalar sol bardan açılır.
       kendiliğinden yeniden birleşmez: Kalıplar'da ayrı satırları yan
       yana, üstlerinde "[grup] grubu ayrıldı · Grup Olarak Al" başlığı;
       Tüm Parçalar'da grup "Ayrıldı" ve "Grup Olarak Al", üyeler tek tek
-      alınıp çıkarılır. "Grup Olarak Al" yeniden birleştirir. Ayrılma
-      bilgisi yalnız bu kartta tutulur.
+      alınıp çıkarılır. "Grup Olarak Al" yeniden birleştirir. Ayrılan
+      gruplar onayla tablonun dönem kararına (`ayrik`) yazılır; yeni
+      çalışmada da ayrık gelir.
     - "Grubu Kalıplardan Çıkar": grubun kalıbı tablodaysa ya da bütün
       üyeler kalıplardaysa; grup satırı ve ayrı satırlar çıkar, başka bir
       kalıbın değeri olan üye o kalıpta Dönem Değil olur.
@@ -677,6 +720,25 @@ tanıtır; sayfalar sol bardan açılır.
   - Zaman Ölçüsü: değerin kendisi bir süre (TMSNCFRST).
   Kararda `zaman_tur`, durumda `durum["donem_turleri"]` ({kalıp: tür}),
   hafızada `donem_tur`.
+- **Yeni adda yazılış:** kalıp hücresinde tür kutusunun altında "Yeni
+  adda" alanı: kalıbın 01.2.4.4 Kolon Adları'nda yeni addaki yazılışı.
+  Kalıbın sayıları yerine [sayı] yazılır; sırayla kalıbın sayıları gelir
+  (ör. [sayı]D_[sayı]D için BTWN_[sayı]D_[sayı]D: 3D_6D yeni adda
+  BTWN_3D_6D). Boşsa kalıp aynen kalır. Yalnız harf, rakam, alt çizgi ve
+  [sayı]; harfle ya da [sayı] ile başlar; [sayı] adedi kalıbınkiyle aynı
+  olmalı (aile kalıbında 1). Altında ilk değerle örnek ("Ör. 3D_6D →
+  BTWN_3D_6D") ya da kırmızı hata; geçersizken onay kapalı ("N satırda yeni
+  adda yazılış geçersiz"). Satırın kayıt imzasına girer (değişince
+  yeniden Kaydet). Kararda ve satırda `ad_yazilis` (içeride yer tutucuyla:
+  `BTWN_<N>D_<N>D`), durumda `durum["donem_ad_yazilis"]` ({kalıp:
+  yazılış}), hafızada `donem_ad` (Kaydet, onay ve Kaydı Geri Al yazar;
+  boş bırakılınca ve kalıp hafızadan silinince kalkar). Satıra önceki
+  karar, yoksa hafıza gelir. Denetim ve doldurma `donem.ad_sablonu_hatasi`,
+  `donem.ad_sablonu_doldur`.
+- **İki parçalı zaman kalıbı:** yan yana iki sayılı dönem parçası
+  (3D_6D) Tüm Parçalar'da ikili olarak da yer alır (grubu `<N>D_<N>D`);
+  "Kalıplara Al" ile tek satır olur (ör. anlamı "N ile N gün arası", yeni
+  adda BTWN_[sayı]D_[sayı]D).
 - **Anlamın kaynağı (dil modeli kuralları, `llm._DONEM_ANLAM_KURALLARI`):**
   önce ad, sonra tanımlar. Anlam parçanın yapısından kurulur (D gün, W
   hafta, M ay, Q çeyrek, Y yıl, H saat; sözcük kısaltmaları harflerinden).
@@ -825,7 +887,11 @@ tanıtır; sayfalar sol bardan açılır.
   `akis_faz01._kolon_ad_alani`):
   - Her parça standart yazılışını alır; birimler Ad Standardı'ndaki yer
     sırasına dizilir (aynı yerdekiler adda geçtikleri sırayla). Sayılı
-    zaman parçası yazıldığı gibi kalır (3_M, H00_06), yeri Zaman.
+    zaman parçası yazıldığı gibi kalır (3_M, H00_06), yeri Zaman. Dönem
+    kalıbının "Yeni adda" yazılışı varsa o yazılır: önce yan yana iki
+    zaman birimi (3D_6D, `<N>D_<N>D` → BTWN_3D_6D), sonra tek birim
+    (`parca.ad_birimleri(..., yazilislar)`, `akis_faz01._donem_ad_yazilislari`:
+    bu çalışmada onaylı kalıplar; eski çalışmada hafızadaki yazılış).
     Varsayılan sıra: Konu, Yön, Nitelik, Ölçü, İstatistik, Zaman,
     Karşılaştırma, Birim, Diğer (TXN_30D_CNT → TXN_CNT_30D); büyük harf,
     ayraç "_".
