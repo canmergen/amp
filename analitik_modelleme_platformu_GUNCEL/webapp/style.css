@@ -5106,3 +5106,4 @@ span.bolme-cip { cursor: default; }
 .dg-donem-grup-ad { font-weight: var(--fw-kalin); margin-right: 8px; }
 .dg-donem-grup-ozet { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-right: 10px; }
 .dg-donem-grupla { vertical-align: middle; }
+.dg-donem-ayir { margin-top: 4px; }

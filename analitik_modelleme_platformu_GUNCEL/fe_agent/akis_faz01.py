@@ -2198,7 +2198,7 @@ def donem_uygula(durum):
         # bir veri seti gelince tabloya anlamıyla gelir. Biçimi geçerli olmalı.
         if elle and not donem_mod.kalip_adlarda(kalip, alan.get("parcalar") or []) \
                 and donem_mod.kalip_deseni(kalip) is None:
-            hatalar.append("%s: geçerli bir kalıp değil (harf, rakam, <N> ya da <NN>)." % kalip)
+            hatalar.append("%s: geçerli bir kalıp değil (harf, rakam, <N>, <NN> ya da <N2>)." % kalip)
             continue
         # HARIC: yalniz kalibin gercekten birlikte gectigi ikililer gecer.
         ikililer = {ik for ik, _n in (bh.get(kalip) or {}).get("birlikte") or []}
@@ -3009,8 +3009,10 @@ def _aciklama_girdileri(durum):
             desenler.append((str(k), r, str(v).strip(), set(donem_haric.get(k) or ()),
                              dict(donem_deger.get(k) or {}), donem_tur.get(k) or "pencere"))
     # Daha ozel desen once: ailesinden ayrilan yazilis ("M<N>") ailesinden
-    # ("<N>M"), <NN> (en az iki basamak) <N>'den once eslesir.
-    desenler.sort(key=lambda x: (donem_mod.aile_mi(x[0]), -x[0].count("<NN>")))
+    # ("<N>M"), tam basamakli <N2> ve <NN> (en az iki basamak) <N>'den once
+    # eslesir.
+    desenler.sort(key=lambda x: (donem_mod.aile_mi(x[0]),
+                                 -len(re.findall(r"<N\d>", x[0])), -x[0].count("<NN>")))
     # Ad Parcalari'nda onaylanan anlamlar (kesin).
     onayli = durum.get("parca_bilgisi") if isinstance(durum.get("parca_bilgisi"), dict) else {}
     with aciklama_mod._KILIT:

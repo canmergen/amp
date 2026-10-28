@@ -75,6 +75,34 @@ _YAZILIS_DEGER = ((re.compile(r"^\d+([A-Z]{1,3})$"), "<N>%s"),
 YAZILIS_SIRASI = ("<N>%s", "%s<N>", "<N>_%s", "%s_<N>")
 
 
+# SAYI YER TUTUCULARI: <N> herhangi bir sayi, <NN> en az iki basamakli,
+# <N2>, <N3> ... tam o kadar basamakli sayi (H<N2>: H00, H06, H12; H000
+# uymaz). Anlamda <N> ve <Nk> icin "N", <NN> icin "NN" yazilir.
+_YT_KALIP = re.compile(r"<NN>|<N\d>|<N>")
+
+
+def _yt_tur(t):
+    """Kalip yer tutucusunun anlamdaki adi: <NN> -> "NN", digerleri "N"."""
+    return "NN" if t == "<NN>" else "N"
+
+
+def _yt_desen(t, yakala=False):
+    d = r"\d{2,}" if t == "<NN>" else (r"\d{%s}" % t[2:-1] if t != "<N>" else r"\d+")
+    return "(" + d + ")" if yakala else d
+
+
+def _desen_kur(k, yakala=False):
+    """Kalip metni -> duzenli ifade govdesi (yer tutucular sayi, gerisi
+    aynen)."""
+    parcalar, son = [], 0
+    for m in _YT_KALIP.finditer(k):
+        parcalar.append(re.escape(k[son:m.start()]))
+        parcalar.append(_yt_desen(m.group(0), yakala))
+        son = m.end()
+    parcalar.append(re.escape(k[son:]))
+    return "".join(parcalar)
+
+
 def _norm(kalip):
     return re.sub(r"\s+", "", str(kalip or "")).upper()
 
@@ -187,7 +215,7 @@ def yer_tutucu_hatasi(kalip, anlam):
     izinli = set()
     if "<NN>" in k:
         izinli.update({"NN", "<NN>"})
-    if "<N>" in k:
+    if re.search(r"<N\d?>", k):
         izinli.update({"N", "<N>"})
     kotu = []
     for m in _YT_ADAY.finditer(str(anlam or "")):
@@ -282,7 +310,7 @@ def deger_anlami(kalip, anlam, deger):
     yer tutucu yoksa anlam aynen doner."""
     k = re.sub(r"\s+", "", str(kalip or "")).upper()
     anlam = str(anlam or "")
-    turler = re.findall(r"<NN>|<N>", k)
+    turler = _YT_KALIP.findall(k)
     if not turler or not anlam:
         return anlam
     sayilar = _sayi_eslesmesi(k, deger)
@@ -311,23 +339,22 @@ def _sayi_eslesmesi(kalip, deger):
         if r is None or not r.match(d):
             return None
         return {"N": [re.search(r"\d+", d).group(0)]}
-    turler = re.findall(r"<NN>|<N>", k)
-    desen = re.escape(k).replace("<NN>", r"(\d{2,})").replace("<N>", r"(\d+)")
+    turler = _YT_KALIP.findall(k)
     try:
-        m = re.match("^" + desen + "$", d)
+        m = re.match("^" + _desen_kur(k, yakala=True) + "$", d)
     except re.error:
         return None
     if not m:
         return None
     sayilar = {}
     for tur, sayi in zip(turler, m.groups()):
-        sayilar.setdefault(tur.strip("<>"), []).append(sayi)
+        sayilar.setdefault(_yt_tur(tur), []).append(sayi)
     return sayilar
 
 
 def kalip_deseni(kalip):
     """Kalip adini derlenmis desene cevirir: <N> sayi, <NN> en az iki
-    basamakli sayi, gerisi aynen. Aile ("<N>M") butun yazilislara uyar
+    basamakli sayi, <N2> tam iki basamakli sayi, gerisi aynen. Aile ("<N>M") butun yazilislara uyar
     (3M, M3, 3_M, M_3). Gecersizse None."""
     k = re.sub(r"\s+", "", str(kalip or "")).upper()
     if not k:
@@ -335,9 +362,8 @@ def kalip_deseni(kalip):
     if aile_mi(k):
         h = re.escape(_AILE.match(k).group(1))
         return re.compile(r"^(?:\d+%s|%s\d+|\d+_%s|%s_\d+)$" % (h, h, h, h))
-    desen = re.escape(k).replace("<NN>", r"\d{2,}").replace("<N>", r"\d+")
     try:
-        return re.compile("^" + desen + "$")
+        return re.compile("^" + _desen_kur(k) + "$")
     except re.error:
         return None
 
@@ -501,8 +527,8 @@ def tek_kalip(adlar, tanimlar, kalip):
 def parca_listesi(adlar, tanimlar, ornek=2):
     """Kolon adlarindaki BUTUN parcalar (yalniz rakam haric): [{"parca",
     "kolon", "donem": donem kalibina uyuyor mu, "ikili": aralik ikilisi mi,
-    "ornekler": [(kolon, tanim)], "grup": parca_grubu, "grup_kolon":
-    grubun farkli kolon sayisi}], alfabetik. Ardindan yalniz rakam gelen
+    "ornekler": [(kolon, tanim)], "grup": grubun kalibi (parca_gruplari),
+    "grup_kolon": grubun farkli kolon sayisi}], alfabetik. Ardindan yalniz rakam gelen
     parca ikili olarak da girer (<P>_<NN>; elle yazilan aralik kalibi
     adlarda aranabilsin)."""
     tanimlar = tanimlar or {}
@@ -530,16 +556,17 @@ def parca_listesi(adlar, tanimlar, ornek=2):
             kolonlar.setdefault(p, []).append(ad)
     # GRUPLAR: grubun kolon sayisi uyelerin gectigi FARKLI kolonlar (bir
     # kolon adinda iki uye gecerse bir kez sayilir).
+    gruplar = parca_gruplari(kolonlar.keys())
     grup_kolon = {}
     for p, liste in kolonlar.items():
-        g = parca_grubu(p)
+        g = gruplar.get(p)
         if g:
             grup_kolon.setdefault(g, set()).update(liste)
     cikti = []
     for p, liste in kolonlar.items():
         ornekler = [(a, str(tanimlar.get(a) or "").strip()[:200]) for a in liste[:ornek]]
         b = bh.get(p) or {}
-        g = parca_grubu(p)
+        g = gruplar.get(p)
         cikti.append({"parca": p, "kolon": len(liste), "ikili": p in ikililer,
                       "donem": p in ikililer or p in ayrik_harf or bool(_donem_parcasi(p)),
                       "ornekler": ornekler, "birlikte": b.get("birlikte") or [],
@@ -549,25 +576,37 @@ def parca_listesi(adlar, tanimlar, ornek=2):
     return cikti
 
 
-_ARALIK_PARCA = re.compile(r"^([A-Z]{1,2})\d{2,}_\d+$")
+_SAYI_KOSU = re.compile(r"\d+")
 
 
-def parca_grubu(p):
-    """Parcanin grubu: ayni yazilisin farkli sayili parcalari bir grup
-    (H00, H06, H12 -> "H<N>"; 3D, 30D -> "<N>D"; H00_06, H06_12 ->
-    "H<NN>_<NN>"; PRD3X -> "PRD<N>X"). Grubun kalibi elle kalip olarak
-    eklenebilir (kalip_deseni butun uyelere uyar). Sayisiz parca: None."""
-    k = _norm(p)
-    m = _ARALIK_PARCA.match(k)
-    if m:
-        return m.group(1) + "<NN>_<NN>"
-    y = yazilis(k)
-    if y:
-        return y
-    m = _HARF_SAYI_HARF.match(k)
-    if m:
-        return m.group(1) + "<N>" + m.group(3)
-    return None
+def parca_gruplari(parcalar):
+    """{parca: grup kalibi}. Yalniz sayilari farkli parcalar bir grup
+    (H00, H06, H12 -> ayni grup; 3D, 30D -> ayni grup). SABIT GENISLIK:
+    gruptaki bir sayi basta sifirla yaziliyorsa (00, 06) sayilarin basamak
+    sayisi anlamlidir; grup basamak sayisina gore bolunur ve kalip tam
+    basamakli yer tutucuyla yazilir (H00, H06, H12 -> "H<N2>"; H000 ayri,
+    "H<N3>"). Basta sifir yoksa basamak sayisi onemsiz (3D, 30D -> "<N>D").
+    Sayisiz ya da yalniz sayi olan parca gruba girmez."""
+    kaba = {}
+    for p in parcalar:
+        k = _norm(p)
+        if not _SAYI_KOSU.search(k) or _YALIN_SAYI.match(k.replace("_", "")):
+            continue
+        kaba.setdefault(_SAYI_KOSU.sub("<N>", k), []).append(k)
+    cikti = {}
+    for anahtar, uyeler in kaba.items():
+        sabit = any(len(x) > 1 and x.startswith("0")
+                    for u in uyeler for x in _SAYI_KOSU.findall(u))
+        for u in uyeler:
+            cikti[u] = (_SAYI_KOSU.sub(lambda m: "<N%d>" % len(m.group(0)), u)
+                        if sabit else anahtar)
+    return cikti
+
+
+def parca_grubu(p, parcalar=None):
+    """Tek parcanin grubu (parcalar: ayni listedeki obur parcalar; sabit
+    genislik karari listeye gore verilir). Bkz. parca_gruplari."""
+    return parca_gruplari(list(parcalar or []) + [p]).get(_norm(p))
 
 
 def kalip_adlarda(kalip, parcalar):

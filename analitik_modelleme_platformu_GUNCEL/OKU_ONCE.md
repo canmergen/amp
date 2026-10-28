@@ -487,32 +487,41 @@ tanıtır; sayfalar sol bardan açılır.
     son değerse satır çıkar), değilse "Kalıplara Al" (Adaylar'daki kalıbı
     tabloya alır; dönem değil işaretli değeri gruba geri alır; hiçbir
     kalıba uymayan parçayı kendisi olarak elle ekler).
-  - **Gruplar:** aynı yazılışın farklı sayılı parçaları bir grup
-    (`donem.parca_grubu`: H00, H06, H12 → H[sayı]; 3D, 30D → [sayı]D;
-    H00_06, H06_12 → H[sayı]_[sayı]; PRD3X → PRD[sayı]X). İki ya da daha
-    çok üyeli grup Tüm Parçalar'da başlık satırı (grubun kalıbı, "grup ·
-    N parça", kesin kolon sayısı: üyelerin geçtiği farklı kolonlar,
-    `grup_kolon`, üyelerin listesi, durum) ve altında üyeleri olarak
-    durur; grup aramaya ya da süzgece bir üyesi uyarsa görünür, sayfada
-    bölünmez. Grup düğmesi:
-    - "Grubu Kalıplara Al": üyeler tek bir adayın değeriyse o aday
-      tabloya alınır; değilse grubun kalıbı tek elle satır olarak
-      eklenir (anlamını dil modeli yazar).
-    - "Grupla": üyelerden ikisi ya da daha çoğu ayrı satır olarak
-      alınmışsa ayrı satırlar tek satırda birleşir (aşağıda).
+  - **Gruplar (kendiliğinden):** yalnız sayıları farklı parçalar bir grup
+    (`donem.parca_gruplari`). Sabit genişlik: gruptaki bir sayı başta
+    sıfırla yazılıyorsa (00, 06) basamak sayısı anlamlıdır; grup basamak
+    sayısına göre bölünür ve kalıbı tam basamaklı yer tutucuyla yazılır
+    (H00, H06, H12, H18 → `H<N2>`, ekranda "H[2 haneli sayı]"; H000 ayrı,
+    `H<N3>`; H00_06, H06_12 → `H<N2>_<N2>`). Başta sıfır yoksa basamak
+    sayısı önemsiz (3D, 7D, 30D → `<N>D`; M3, M12 → `M<N>`). İki ya da daha
+    çok üyeli grup Tüm Parçalar'da başlık satırı (grubun kalıbı, "grup · N
+    parça", kesin kolon sayısı: üyelerin geçtiği farklı kolonlar,
+    `grup_kolon`, üyeler, durum) ve altında üyeleri olarak durur; grup
+    aramaya ya da süzgece bir üyesi uyarsa görünür, sayfada bölünmez.
+    - Grubu ya da bir üyesini "Kalıplara Al": grup tek satır olarak
+      alınır (grubun kalıbı, değerleri bütün üyeler; anlamını dil modeli
+      yazar). Üyelerin hepsi tek bir adayın değeriyse o aday tabloya
+      alınır.
+    - Ayrı satırda kalan aynı grup parçaları (elle yazıldı, hafızadan
+      geldi) ve grubun kalıbı tablodayken ayrı satırdaki bir parçası
+      kendiliğinden grupta birleşir (`otoGrupla`); altta hangi parçaların
+      birleştiği yazar. Ayrı satırların yazılı anlamları değerlerin Kendi
+      Anlamı olur (kalıbın anlamından çıkanla aynıysa Kalıba Uyar); en çok
+      seçilen tür grubun türü olur.
+    - **Ayır:** yer tutuculu satırda (grup ya da sistemin bulduğu aile)
+      dönem sayılan iki ya da daha çok değer varsa "Ayır" düğmesi.
+      Değerler kendi satırlarına ayrılır (anlamı kendi anlamı ya da
+      kalıbın anlamından çıkan, tür satırın türü); satır tablodan kalkar
+      (sistemin bulduğu kalıp Çıkarılanlar'a geçer). Ayrılan grup
+      kendiliğinden yeniden birleşmez: Kalıplar'da ayrı satırları yan
+      yana, üstlerinde "[grup] grubu ayrıldı · Grup Olarak Al" başlığı;
+      Tüm Parçalar'da grup "Ayrıldı" ve "Grup Olarak Al", üyeler tek tek
+      alınıp çıkarılır. "Grup Olarak Al" yeniden birleştirir. Ayrılma
+      bilgisi yalnız bu kartta tutulur.
     - "Grubu Kalıplardan Çıkar": grubun kalıbı tablodaysa ya da bütün
       üyeler kalıplardaysa; grup satırı ve ayrı satırlar çıkar, başka bir
       kalıbın değeri olan üye o kalıpta Dönem Değil olur.
-    Üyeler yine tek tek alınabilir ("Kalıplara Al").
-  - **Kalıplar'da grup:** aynı gruptan ayrı alınan iki ya da daha çok
-    satır yan yana dizilir; üstlerinde "H[sayı] grubu · H00, H06, H12 ayrı
-    satırlarda · Grupla" başlığı, solunda ince çizgi. Grupla: ayrı
-    satırlar tablodan kalkar (elle olanlar silinir, hafızadan gelenler
-    Çıkarılanlar'a geçer), grubun kalıbı tek satır olur (tabloda varsa o
-    satıra katılır). Ayrı satırların yazılı anlamları değerlerin Kendi
-    Anlamı olur; en çok seçilen tür grubun türü olur. Dil modeli grubun
-    anlamını yazınca, kendi anlamı kalıbın anlamından çıkanla aynı olan
-    değerler Kalıba Uyar'a döner.
+    - Gruptan eklenen satırın kalıbı yazılmaz, etiket olarak durur.
   - **Anlamı dil modeli yazar:** tablodaki bir satırın anlamı boşsa
     (tabloya alındı, Tüm Parçalar'dan eklendi, elle kalıp yazıldı) kart
     `/donem_anlam` ile dil modeline yazdırır (`akis_faz01.donem_anlam_oner`,
@@ -580,6 +589,11 @@ tanıtır; sayfalar sol bardan açılır.
     yazılmaz.
 - **Kalıp yakalama (`donem.kaliplar`, `parca_listesi`):** sayı içeren
   parçalar kalıba çevrilir (`H00_06` → `H<NN>_<NN>`, `L3M` → `L<N>M`).
+  Yer tutucular: `<N>` herhangi bir sayı, `<NN>` en az iki basamaklı,
+  `<N2>`, `<N3>` tam o kadar basamaklı sayı (`H<N2>`: H00, H06; H000
+  uymaz). Anlamda `<N>` ve `<N2>` için "N", `<NN>` için "NN" yazılır
+  (`donem.kalip_deseni`, `deger_anlami`, `yer_tutucu_hatasi`; ön yüzde
+  aynı kurallar). Desen sırasında tam basamaklı kalıp önce eşleşir.
   Alt çizgiyle ayrılmış sayı ve tek harf tek parça sayılır (`3_M`, `M_3`;
   `donem.ayrik_ikili`); bu ikililerdeki tek harf ayrıca dönem parçası
   işaretlenir.
