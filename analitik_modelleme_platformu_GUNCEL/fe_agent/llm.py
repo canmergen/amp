@@ -157,8 +157,28 @@ def _cagir(sistem, kullanici, model=None, sicaklik=0.2,
     raise son_hata
 
 
+# MODEL ADI KULLANICIYA GOSTERILMEZ: hata metinlerinde baglanti kimligi
+# (openai:...) ya da model adi gecerse "dil modeli" yazilir. Kullaniciya
+# giden her metin (kart notu, hata, oneri bilgisi) buradan gecer.
+# Desen DAR: yalniz baglanti kimlikleri (openai:...), MODELLER'deki
+# baglanti ve model adlari ve eski ekran adlari; kolon / veri seti adlari
+# (ornegin GPT_SKOR) bozulmasin.
+def _model_izleri():
+    parcalar = {r"openai:[^\s,;)\]'\"<]+", r"Llama 3\.1 70B", r"Qwen 3 Thinking", r"Qwen Flash"}
+    for kimlik in MODELLER.values():
+        for p in str(kimlik).split(":")[1:]:
+            if p:
+                parcalar.add(re.escape(p))
+    return re.compile("|".join(sorted(parcalar, key=len, reverse=True)), re.I)
+
+
+def model_adi_gizle(metin):
+    """Metindeki model adlarini ve baglanti kimliklerini "dil modeli" yapar."""
+    return _model_izleri().sub("dil modeli", str(metin or ""))
+
+
 def _hata_metni(e):
-    return "%s: %s" % (type(e).__name__, str(e)[:200])
+    return model_adi_gizle("%s: %s" % (type(e).__name__, str(e)[:200]))
 
 
 def _think_temizle(metin):
@@ -956,8 +976,10 @@ ACIKLAMA_TOKEN_KOLON = 200
 
 def aciklama_token_siniri(kolon_sayisi):
     return ACIKLAMA_TOKEN_TABAN + ACIKLAMA_TOKEN_KOLON * max(1, int(kolon_sayisi or 1))
-MODEL_ADLARI = {"llama": "Llama 3.1 70B", "qwen_flash": "Qwen Flash",
-                "qwen_thinking": "Qwen 3 Thinking"}
+# Kullaniciya giden etiketler: model adi YOK (yalniz sira; ayni iste
+# birden cok aday varsa ayirt edilsin diye). Gercek adlar MODELLER'de.
+MODEL_ADLARI = {"llama": "1. dil modeli", "qwen_flash": "2. dil modeli",
+                "qwen_thinking": "3. dil modeli"}
 ORKESTRA_DUSME_SINIRI = 2
 _ORKESTRA_HAVUZ = futures.ThreadPoolExecutor(max_workers=4)
 
@@ -1028,9 +1050,10 @@ class Orkestra(object):
             son = dict(self._son)
         if not dusen:
             return ""
-        return ("%s modeline ulaşılamadı (%s); öneriler diğer modellerle "
-                "üretildi." % (", ".join(MODEL_ADLARI.get(a, a) for a in dusen),
-                               "; ".join(son.get(a, "") for a in dusen)[:200]))
+        # Model adi yazilmaz; yalniz kac modele ulasilamadigi ve nedenleri.
+        nedenler = list(dict.fromkeys(model_adi_gizle(son.get(a, "")) for a in dusen if son.get(a)))
+        return ("%d dil modeline ulaşılamadı%s; öneriler diğer modellerle üretildi."
+                % (len(dusen), (" (%s)" % "; ".join(nedenler)[:200]) if nedenler else ""))
 
 
 def _ayni_metin(a, b):
@@ -2062,8 +2085,8 @@ def parca_yorumla(liste, orkestra=None):
 
 
 def _orkestra_hatasi(ork, is_adi):
-    son = "; ".join("%s: %s" % (MODEL_ADLARI.get(a, a), h)
-                    for a, h in sorted(ork._son.items()) if h)
+    # Model adi yazilmaz: yalniz farkli nedenler.
+    son = "; ".join(dict.fromkeys(model_adi_gizle(h) for _a, h in sorted(ork._son.items()) if h))
     return ("Dil modeli %s için cevap vermedi%s." % (is_adi, (" (%s)" % son[:300]) if son else ""))
 
 

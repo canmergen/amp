@@ -26,6 +26,7 @@ import dataiku
 from flask import request, jsonify, Response
 
 from fe_agent import akis, akis_atif, validasyon
+from fe_agent.llm import model_adi_gizle
 from fe_agent import akis_durum
 from fe_agent.akis_durum import secili_sozlukler
 
@@ -435,6 +436,24 @@ def _dosya_bul(ad):
         return harita[anahtar]
     # Folder'a yeni dosya eklendiyse haritayi tazele
     return _haritayi_kur(zorla=True).get(anahtar)
+
+
+# MODEL ADI KULLANICIYA GITMEZ: her JSON / metin cevabinda dil modeli
+# baglanti kimligi ve adi "dil modeli" olur (hata metinleri dahil). Dosya
+# ve gorsel cevaplarina dokunulmaz.
+@app.after_request
+def _model_adlarini_gizle(cevap):
+    try:
+        tur = (cevap.mimetype or "")
+        if cevap.direct_passthrough or not (tur.startswith("application/json") or tur.startswith("text/")):
+            return cevap
+        govde = cevap.get_data(as_text=True)
+        temiz = model_adi_gizle(govde)
+        if temiz != govde:
+            cevap.set_data(temiz)
+    except Exception:
+        pass
+    return cevap
 
 
 @app.route("/gorsel/<anahtar>")

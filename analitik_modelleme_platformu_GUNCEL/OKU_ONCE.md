@@ -61,6 +61,17 @@ Gereken Flow nesnelerini webapp kendisi kurar; Flow'a elle bir şey eklenmez.
 **LLM:** Dataiku LLM Connections üzerinden. Varsayılan model `fe_agent/llm.py`
 içindeki `VARSAYILAN_MODEL`.
 
+**Model adı kullanıcıya gösterilmez:** arayüzde hiçbir yerde (kart notu,
+hata, ipucu) dil modelinin adı ya da bağlantı kimliği geçmez.
+`llm.MODEL_ADLARI` yalnız sıra etiketi ("1. dil modeli"); hata ve "cevap
+vermedi / ulaşılamadı" notları model saymaz, yalnız nedenleri yazar
+(`_orkestra_hatasi`, `Orkestra.notu`); hata metinlerindeki kimlikler
+`llm.model_adi_gizle` ile "dil modeli" olur. Ayrıca backend'in her JSON ve
+metin cevabı bu süzgeçten geçer (`backend._model_adlarini_gizle`,
+`after_request`); desen dar: `openai:` kimlikleri, `MODELLER`'deki
+bağlantı ve model adları ve eski ekran adları (kolon adları bozulmaz).
+Ön yüzde "Öneren: …" ipuçları kaldırıldı.
+
 ## Proje değişkenleri (isteğe bağlı)
 
 | Değişken | Varsayılan | Anlamı |

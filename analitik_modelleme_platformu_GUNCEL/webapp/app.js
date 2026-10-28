@@ -8302,7 +8302,6 @@ function dogrulamaKartiEkle(alan, blok) {
         giris.value = tireSade(sat.aciklama !== undefined && sat.aciklama !== ""
                                ? sat.aciklama : oneri);
         giris.setAttribute("aria-label", ad + " önerilen tanım");
-        if (sat.modeller) giris.title = "Öneren: " + tireSade(sat.modeller);
         const boyla = () => { giris.style.height = "auto"; giris.style.height = giris.scrollHeight + "px"; };
         tdA.appendChild(giris);
         tr.appendChild(tdA);
@@ -8755,7 +8754,6 @@ function dogrulamaKartiEkle(alan, blok) {
                 kutuCiz(i);
             }
             g.dataset.oneriMetin = tireSade(ack);
-            if (k.modeller) g.title = "Öneren: " + tireSade(k.modeller);
             /* KONTROL ET: model kural dışı bir ifade yazdıysa metin
                budanmaz; satır işaretlenir, nedeni ipucunda. */
             if (k.uyari && satirElemanlari[i]
@@ -9275,7 +9273,6 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         g.placeholder = r.bekliyor && calisiyor ? "" : "Anlamı yazın";
         g.disabled = kapali || !!e.uye || (r.bekliyor && calisiyor && !duzenlendi.has(r.parca));
         g.setAttribute("aria-label", r.parca + " anlamı");
-        if (r.model) g.title = "Öneren: " + tireSade(r.model);
         tdA.appendChild(g);
         if (!sade) {
             if (sor[r.parca]) tdA.appendChild(elYap("div", "dg-donem-soru", tireSade(sor[r.parca])));
@@ -10043,7 +10040,6 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         }
         kartCiz(td, v);
         const m = elYap("div", "dg-acik-metin", tireSade(v.aciklama || ""));
-        if (v.model) m.title = "Öneren: " + tireSade(v.model);
         td.appendChild(m);
         if (v.ek) td.appendChild(elYap("div", "dg-acik-ek", "Ek bilgi: " + tireSade(v.ek)));
         if (v.karar) {
@@ -11016,7 +11012,6 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         const yakinEl = elYap("div", "dg-donem-uyari dg-donem-yakin", "");
         yakinEl.hidden = true;
         tdA.appendChild(yakinEl);
-        if (r.model) g.title = "Öneren: " + tireSade(r.model);
         /* DEĞERLER (yalnız sayı yer tutucusu olan kalıpta): Anlam hücresinde
            bir örnek ve "Değerleri Düzenle"; açılınca grup satırının hemen
            altında, tablo genişliğinde değer paneli. Her değerin durumu
