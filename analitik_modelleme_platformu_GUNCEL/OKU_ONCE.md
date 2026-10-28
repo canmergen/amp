@@ -772,9 +772,13 @@ tanıtır; sayfalar sol bardan açılır.
     aynı").
   - **Kurallar:** "Kontrol edin" satırları (soru, çelişki ya da örnek
     tanımların %60'ından azı uyuşuyor) toplu onaylanmaz. Onaylı satırda
-    bir şey değişince onay kalkar. Standart: büyük harfle başlar, büyük
-    harf ve rakam, en çok 12; anlamı farklı iki parça aynı standardı
-    alamaz. Bütün parçalar ve çiftler onaylanmadan geçilmez.
+    bir şey değişince onay kalkar. Standart: parçanın yeni kolon
+    adlarında (01.2.4.4) yazılacağı biçim; çoğunlukla parçanın kendisi,
+    aynı şeyi anlatan yazılışları tek yazılışta toplamak için değiştirilir
+    (TRX yerine TXN). Başlığın "i"sinde açıklaması var; parçadan farklıysa
+    kutu sarı (`dg-parca-std-farkli`) ve altında "Adlarda X yerine Y".
+    Büyük harfle başlar, büyük harf ve rakam, en çok 12; anlamı farklı iki
+    parça aynı standardı alamaz. Bütün parçalar ve çiftler onaylanmadan geçilmez.
   - **Sonuç:** `durum["parca_bilgisi"]` {PARÇA: {anlam, tür, standart}},
     geri dönüş için `parca_karari` ve `parca_esler`; onaylananlar
     hafızaya yazılır.

@@ -5112,3 +5112,5 @@ span.bolme-cip { cursor: default; }
 /* Yakın anlam uyarısı: metin ve "Uyarıyı Kaldır" aynı paragrafta akar. */
 .dg-donem-uyari.dg-donem-yakin { display: block; }
 .dg-donem-yakin .dg-baglanti { display: inline; }
+/* Ad Parçaları: standart parçadan farklı (yeni adlarda parça değişecek). */
+.dg-giris.dg-parca-std-farkli { background: var(--sari-acik); border-color: var(--amber); }

@@ -9126,7 +9126,16 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
     const pSar = elYap("div", "dg-tablo-sar dg-parca-sar");
     const pTablo = elYap("table", "dg-tablo dg-parca-tablo");
     const pTh = document.createElement("thead"), pHr = document.createElement("tr");
-    ["Parça", "Anlam", "Tür", "Standart", "Onay"].forEach(h => pHr.appendChild(elYap("th", "", h)));
+    ["Parça", "Anlam", "Tür", "Standart", "Onay"].forEach(h => {
+        const th = elYap("th", "", h);
+        /* Standart'ın ne olduğu başlığın "i"sinde. */
+        if (h === "Standart") th.appendChild(bolmeBilgiSimgesi(
+            "Parçanın yeni kolon adlarında (01.2.4.4 Kolon Adları) yazılacağı biçim. Çoğunlukla "
+            + "parçanın kendisidir. Aynı şeyi anlatan farklı yazılışları tek yazılışta toplamak için "
+            + "değiştirilir (ör. TRX yerine TXN). Parçadan farklıysa kutu sarı görünür ve altında "
+            + "\"Adlarda X yerine Y\" yazar. Girdi veri setindeki adlar değişmez.", "Standart"));
+        pHr.appendChild(th);
+    });
     pTh.appendChild(pHr); pTablo.appendChild(pTh);
     const pTb = document.createElement("tbody");
     pTablo.appendChild(pTb); pSar.appendChild(pTablo);
@@ -9297,6 +9306,10 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         st.disabled = g.disabled;
         st.setAttribute("aria-label", r.parca + " standart yazılışı");
         st.classList.toggle("dg-noksan", !sade && !PARCA_STANDART.test((e.standart || "").trim()));
+        /* Standart parçadan farklıysa sarı: yeni adlarda parça değişecek. */
+        const stFarkBoya = () => st.classList.toggle("dg-parca-std-farkli", !sade
+            && st.value.trim() !== r.parca && PARCA_STANDART.test(st.value.trim()));
+        stFarkBoya();
         tdS.appendChild(st);
         if (!sade && (e.standart || "") !== r.parca && PARCA_STANDART.test(e.standart || ""))
             tdS.appendChild(elYap("div", "dg-donem-tur-not", "Adlarda " + r.parca + " yerine " + e.standart));
@@ -9321,7 +9334,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         };
         g.addEventListener("change", degis);
         ts.addEventListener("change", degis);
-        st.addEventListener("input", () => { const p = st.selectionStart; st.value = st.value.toUpperCase(); st.setSelectionRange(p, p); });
+        st.addEventListener("input", () => { const p = st.selectionStart; st.value = st.value.toUpperCase(); st.setSelectionRange(p, p); stFarkBoya(); });
         st.addEventListener("change", degis);
         k.addEventListener("change", () => {
             if (kapali) { k.checked = !k.checked; return; }
