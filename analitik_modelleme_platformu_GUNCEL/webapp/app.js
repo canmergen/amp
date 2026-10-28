@@ -5177,6 +5177,33 @@ function dagilimSifirla() {
     DAGILIM.onbellek = {};
 }
 
+/* Tanımsız Kolonlar satırının değer hücresi: en sık 10 değer, her biri
+   adediyle. Sayısal değer yerel biçimle yazılır. Kişisel veri taşıyan
+   kolonda değer gösterilmez. Uzun değer kısaltılmaz, satıra sarar. */
+function tanimsizDegerHucresi(sat) {
+    const td = elYap("td", "dg-deger-hucre");
+    if (sat.gizli) {
+        td.appendChild(elYap("span", "dg-deger-yok", "Kişisel veri, değerler gösterilmez"));
+        return td;
+    }
+    const liste = sat.degerler || [];
+    if (!liste.length) {
+        td.appendChild(elYap("span", "dg-deger-yok", BOS_SIMGE));
+        return td;
+    }
+    liste.forEach(([deger, adet]) => {
+        const c = elYap("span", "dg-deger");
+        /* Saati gece yarısı olan tarih yalnız gün olarak yazılır. */
+        const yazi = sat.sayisal && typeof deger === "number" ? dagSayi(deger)
+            : degerGoster(String(deger).replace(/^(\d{4}-\d{2}-\d{2})[ T]00:00:00$/, "$1"));
+        c.appendChild(elYap("span", "dg-deger-ad", yazi));
+        c.appendChild(elYap("span", "dg-deger-adet", ftBinlik(adet)));
+        c.title = String(deger) + ": " + ftBinlik(adet) + " satır";
+        td.appendChild(c);
+    });
+    return td;
+}
+
 function dagSayi(x) {
     if (x === null || x === undefined || x === "") return "∅";
     const n = Number(x);
@@ -7854,7 +7881,10 @@ function dogrulamaKartiEkle(alan, blok) {
     /* ---- 5') Tanımsız Kolonlar (01.2.3.1) ----
        Sözlükte hâlâ tanımı olmayan kolonlar: işaretli satır AMP_VERISETI'nden
        ve AMP_SOZLUK'ten çıkarılır, işaretsiz satır veri setinde kalır ve
-       sözlükte tanımı boş durur. Kilitli satır (tek değerli) hep çıkar. */
+       sözlükte tanımı boş durur. Kilitli satır (tek değerli) hep çıkar.
+       Her satır işaretli gelir. Satırda kolonun en sık 10 değeri (adediyle)
+       ve sayısal kolonda min, maks, medyan, ortalama durur: hepsi tam
+       tablo profilinden. */
     const cikar = alan.cikar || null;
     const cDurumlar = [];            /* {kolon, islem, kilitli, kutu, tr} */
     if (cikar) {
@@ -7888,11 +7918,17 @@ function dogrulamaKartiEkle(alan, blok) {
         const ct = elYap("table", "dg-tablo dg-cikar-tablo");
         const cth = document.createElement("thead");
         const chr = document.createElement("tr");
-        ["Değişken", "Tip", "Boş Oranı", "Çıkar"].forEach(h =>
-            chr.appendChild(elYap("th", "", h)));
+        [["Değişken"], ["Tip"], ["Boş Oranı"], ["Tekil Değer"],
+         ["En Sık Değerler", "En sık 10 değer ve satır adedi (tam tablo)"],
+         ["Min"], ["Maks"], ["Medyan"], ["Ortalama"], ["Çıkar"]].forEach(([h, ipucu]) => {
+            const th = elYap("th", "", h);
+            if (ipucu) th.title = ipucu;
+            chr.appendChild(th);
+        });
         cth.appendChild(chr);
         ct.appendChild(cth);
         const cTbody = document.createElement("tbody");
+        let ortalamaEksik = false;
         (cikar.satirlar || []).forEach(sat => {
             const ad = String(sat.kolon === null || sat.kolon === undefined ? "" : sat.kolon);
             const tr = elYap("tr", "dg-satir dg-cikar-satir");
@@ -7905,6 +7941,19 @@ function dogrulamaKartiEkle(alan, blok) {
             tr.appendChild(tdT);
             tr.appendChild(elYap("td", "dg-bos-oran",
                 sat.null_oran === null || sat.null_oran === undefined ? "" : ftOran(sat.null_oran)));
+            tr.appendChild(elYap("td", "dg-sayi-hucre",
+                sat.tekil === null || sat.tekil === undefined ? "" : ftBinlik(sat.tekil)));
+            tr.appendChild(tanimsizDegerHucresi(sat));
+            ["min", "max", "medyan", "ortalama"].forEach(alan => {
+                const td = elYap("td", "dg-sayi-hucre");
+                if (sat.sayisal && !sat.gizli) {
+                    const v = sat[alan];
+                    metinYaz(td, dagSayi(v));
+                    if (v !== null && v !== undefined && v !== "") td.title = String(v);
+                    if (alan === "ortalama" && (v === null || v === undefined)) ortalamaEksik = true;
+                }
+                tr.appendChild(td);
+            });
             const tdI = elYap("td", "dg-ekle-hucre");
             const kutu = document.createElement("input");
             kutu.type = "checkbox";
@@ -7933,6 +7982,12 @@ function dogrulamaKartiEkle(alan, blok) {
         ct.appendChild(cTbody);
         cSar.appendChild(ct);
         kart.appendChild(cSar);
+        if (ortalamaEksik) {
+            const nt = elYap("div", "dg-not dg-cizgisiz");
+            metinYaz(nt, "Bu çalışmanın veri seti profili ortalama hesaplanmadan önce çıkarıldı. "
+                + "Ortalama, profili yeni çıkarılan çalışmalarda görünür.");
+            kart.appendChild(nt);
+        }
     }
     function cKutuCiz(c) {
         c.kutu.checked = c.islem === "cikar";

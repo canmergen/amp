@@ -4486,8 +4486,10 @@ def sozluk_tanim_uygula(durum):
 #   kalsin: kolon AMP_VERISETI'nde kalir; AMP_SOZLUK'te satiri tanimi bos
 #           durur.
 # Tek degerli kolonlar ve tek degerli donem kolonu her durumda cikar
-# (kilitli). Veri setinde hazir duran bolme kolonlari cikar isaretli gelir,
-# degistirilebilir; digerleri isaretsiz gelir. Karar AMP ciktilari
+# (kilitli). Sozlukte anlami olmadigi icin diger butun kolonlar da cikar
+# isaretli gelir, degistirilebilir. Her satirda kolonun degerleri (en sik
+# 10, adetleriyle) ve sayisal kolonda min, maks, medyan, ortalama durur;
+# hepsi tam tablo profilinden (orneklem yok). Karar AMP ciktilari
 # Degisken Listesi ve Tip Kontrolu'nde yazilinca uygulanir; girdi veri
 # seti ve sozluk degismez.
 # ---------------------------------------------------------------------------
@@ -4510,9 +4512,41 @@ def _tanimsiz_kalanlar(durum):
 
 
 def _tanimsiz_varsayilan(durum, ad):
-    """Karar verilmemis satirin ilk hali: hazir bolme kolonu ve zorunlu
-    disi kolon cikar, digerleri kalsin."""
-    return "cikar" if ad in platform_disi_kolonlar(durum) else "kalsin"
+    """Karar verilmemis satirin ilk hali: sozlukte anlami olmadigi icin
+    cikar. Kullanici isaretini kaldirirsa kalsin."""
+    return "cikar"
+
+
+TANIMSIZ_DEGER_ADEDI = 10
+
+
+def _tanimsiz_bilgi(kp):
+    """Tanimsiz kolon satirinin bilgi alanlari - VERI SETI PROFILINDEN
+    (tam tablo, kesin; orneklem yok). Degerler: en sik 10 deger ve
+    adedi (adet azalan, esitlikte deger artan). Sayisal kolonda ayrica
+    min, maks, medyan (kantil 0,5) ve ortalama (sonlu degerlerin
+    tamami). Kisisel veri tasiyan kolonun degerleri ve istatistikleri
+    gosterilmez (ornek degerdeki kural)."""
+    if not kp:
+        return {}
+    sayisal = kp.get("tur") in profil_kural.SAYISAL_TURLER
+    bilgi = {"sayisal": bool(sayisal), "tekil": kp.get("tekil"),
+             "dolu": kp.get("dolu")}
+    if kp.get("pii_ad") or kp.get("pii_deger"):
+        bilgi["gizli"] = True
+        return bilgi
+    # Sayisal deger sayi olarak gider (ekranda yerel bicimle yazilir).
+    bilgi["degerler"] = [[v if sayisal and isinstance(v, (int, float))
+                          and not isinstance(v, bool)
+                          else _ornek_metni(v), int(n)] for v, n in
+                         (kp.get("ust_degerler") or [])[:TANIMSIZ_DEGER_ADEDI]]
+    if sayisal:
+        q = kp.get("kantiller") or []
+        bilgi.update({"min": kp.get("min"), "max": kp.get("max"),
+                      "medyan": q[2] if len(q) > 2 else None,
+                      # Eski profilde ortalama yok: alan bos gelir.
+                      "ortalama": kp.get("ortalama")})
+    return bilgi
 
 
 def tanimsiz_karar_plan(durum):
@@ -4527,12 +4561,14 @@ def tanimsiz_karar_plan(durum):
     donem = str(durum.get("_donem_dusuruldu") or "")
     onceki = durum.get("tanimsiz_karar") if isinstance(durum.get("tanimsiz_karar"), dict) else {}
     ozet = _kolon_ozet_haritasi(durum.get("profil") or {})
+    kol = _profil_kolonlari(durum)
     satirlar = []
     for ad in adlar:
         k = ozet.get(ad) or {}
         satir = {"kolon": ad, "tip": k.get("tip") or "", "null_oran": k.get("null_oran"),
                  "islem": onceki.get(ad) if onceki.get(ad) in ("cikar", "kalsin")
                  else _tanimsiz_varsayilan(durum, ad)}
+        satir.update(_tanimsiz_bilgi(kol.get(ad)))
         if ad in kilitli:
             satir["islem"] = "cikar"
             satir["kilitli"] = True

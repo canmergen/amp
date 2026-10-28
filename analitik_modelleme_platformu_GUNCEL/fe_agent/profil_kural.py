@@ -500,6 +500,7 @@ def profil_kur(veri_seti, satir, duplicate, ozetler, motor):
             "tekil": int(oz["tekil"]), "tekil_bos_dahil": tekil_bos,
             "tekrar": int(satir - tekil_bos),
             "min": json_deger(oz.get("min")), "max": json_deger(oz.get("max")),
+            "ortalama": json_deger(oz.get("ortalama")),
             "hepsi_tam": bool(oz.get("hepsi_tam")),
             "ondalikli": bool(oz.get("n_kesirli")),
             "pozitif": oz.get("pozitif"),
@@ -629,12 +630,14 @@ def ilk_gecis_ozeti(ad, tur, seri):
           "bos": int(len(seri) - len(dolu)), "min": None, "max": None,
           "hepsi_tam": False, "n_sonlu": 0, "n_kesirli": 0, "pozitif": None,
           "n_pii_aday": 0, "ym_degil": None, "ymd_degil": None,
-          "ornek": dolu.iloc[0] if len(dolu) else None}
+          "ortalama": None, "ornek": dolu.iloc[0] if len(dolu) else None}
     if tur in SAYISAL_TURLER and len(dolu):
         v = dolu.astype(float)
         oz["min"], oz["max"] = float(v.min()), float(v.max())
         sonlu = v[np.isfinite(v)]
         oz["n_sonlu"] = int(len(sonlu))
+        # Ortalama: sonlu degerlerin tamaminin aritmetik ortalamasi.
+        oz["ortalama"] = float(sonlu.sum()) / len(sonlu) if len(sonlu) else None
         oz["n_kesirli"] = int((sonlu != np.floor(sonlu)).sum())
         oz["hepsi_tam"] = bool(np.isfinite(v).all()) and not oz["n_kesirli"]
         oz["pozitif"] = int((v > 0).sum())

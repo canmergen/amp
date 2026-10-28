@@ -77,6 +77,10 @@ içindeki `VARSAYILAN_MODEL`.
 - Seçim yapıldıktan sonra platform yalnız kendi kopyalarıyla çalışır:
   `AMP_VERISETI` ve `AMP_SOZLUK`. Adımlar ilerledikçe bu kopyalar güncellenir.
 - Profil ve sayımlar tam veri üzerinden yapılır.
+- Profil sayısal kolonda min, maks, kantiller (0, 0,25, 0,5, 0,75, 1) ve
+  ortalamayı (`ortalama`: sonlu değerlerin toplamı / sonlu değer adedi)
+  tutar. Spark motoru ortalamayı tekil değer tablosundan adetle ağırlıklı
+  toplamla, pandas motoru doğrudan hesaplar (aynı formül).
 
 ## Ekran
 
@@ -742,9 +746,26 @@ tanıtır; sayfalar sol bardan açılır.
   EK_BILGI, AILE (yeni adlarla aile anahtarı, tek kolonlu ailede boş),
   ONAY_KULLANICI, ONAY_ZAMANI (Kolon Kartları onayı).
 - **01.2.3.1 Tanımsız Kolonlar** (A ve B; 01.2.3'ün alt adımı, numaralar
-  kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar tip ve
-  boş oranıyla listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve
-  "Tümünü Temizle".
+  kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar
+  listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve "Tümünü
+  Temizle". Kolonlar: Değişken, Tip, Boş Oranı, Tekil Değer, En Sık
+  Değerler, Min, Maks, Medyan, Ortalama, Çıkar
+  (`akis_faz01._tanimsiz_bilgi`). Hepsi veri seti profilinden (tam tablo,
+  örneklem yok):
+  - En Sık Değerler: en sık 10 değer, her biri satır adediyle (adet
+    azalan, eşitlikte değer artan; profilin `ust_degerler`'i). Tekil
+    değeri 10 ve altındaki kolonda bütün değerler görünür. Sayısal değer
+    yerel biçimle, saati gece yarısı olan tarih yalnız gün olarak yazılır;
+    uzun değer kısaltılmaz, sarar. Tam değer ipucunda.
+  - Min, Maks, Medyan, Ortalama yalnız sayısal kolonda (mantıksal dahil).
+    Medyan profilin kantilinden (0,5; çift adette iki ortanın ortalaması),
+    ortalama sonlu değerlerin tamamının ortalaması (profil `ortalama`,
+    aşağıda). Ekranda 100 ve üstü iki, altı dört ondalık; tam değer
+    ipucunda.
+  - Kişisel veri taşıyan kolonda (`pii_ad` ya da `pii_deger`) değer ve
+    istatistik gösterilmez, "Kişisel veri, değerler gösterilmez" yazar.
+  - Profili ortalama eklenmeden önce çıkarılmış çalışmada Ortalama "∅"
+    ve kartın altında bunu söyleyen not durur.
   - İşaretli kolon karar verildiği anda çıkar: Veri ve Sözlük
     sayfasındaki veri önizlemesinde, sözlük tablosunda, 01.3 Değişken
     Listesi ve Tip Kontrolü'nün listesinde ve sayılarında yer almaz,
@@ -759,10 +780,11 @@ tanıtır; sayfalar sol bardan açılır.
     boş durur. Kolon Kartları'na (01.2.4.3) girmez, tanımı boş kalsın
     diye. 01.3 Değişken Listesi ve Tip Kontrolü'ndeki "açıklaması olmayan kolonu süreç dışı işaretle" kuralı
     bu kolonlara uygulanmaz.
-  - İlk hal: kutular boş; veri setinde hazır duran bölme kolonu işaretli
-    gelir (değiştirilebilir); tek değerli kolon ve tek değerli dönem
+  - İlk hal: sözlükte anlamı olmadığı için bütün kutular işaretli gelir
+    (değiştirilebilir; `_tanimsiz_varsayilan`). Yazarak onayda da önceki
+    karar yoksa kolon çıkar. Tek değerli kolon ve tek değerli dönem
     kolonu işaretli ve kilitli (her durumda çıkar, sebebi kutunun
-    ipucunda).
+    ipucunda). Önceki karar (geri dönüş) korunur.
   - Düğme: "N Kolonu Çıkar ve Devam Et", hiç işaret yoksa "Hepsi Veri
     Setinde Kalsın ve Devam Et". Karar `durum["tanimsiz_karar"]`
     ({kolon: "cikar" | "kalsin"}); geri dönüşte kart bu kararla açılır.

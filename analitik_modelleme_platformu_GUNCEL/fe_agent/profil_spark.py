@@ -82,7 +82,8 @@ _UZUN_TIP = {pk.TUR_TAM: "long", pk.TUR_ONDALIK: "double",
 # ===========================================================================
 def _bos_ozet(ad, tur, satir):
     return {"ad": ad, "tur": tur, "dolu": 0, "bos": satir, "ornek": None,
-            "min": None, "max": None, "hepsi_tam": False, "n_sonlu": 0,
+            "min": None, "max": None, "ortalama": None, "hepsi_tam": False,
+            "n_sonlu": 0,
             "n_kesirli": 0, "pozitif": None, "n_pii_aday": 0,
             "ym_degil": None, "ymd_degil": None, "tekil": 0, "degerler": [],
             "ust_degerler": [], "ornek3": [], "kantiller": None, "parca": None,
@@ -110,6 +111,7 @@ def _tt_ozetleri(tt, tur):
         topla = lambda kosul: F.coalesce(F.sum(F.when(kosul, w)), F.lit(0))  # noqa: E731
         ifade += [F.min(v).alias("mn"), F.max(v).alias("mx"),
                   topla(~sonsuz).alias("sonlu"),
+                  F.sum(F.when(~sonsuz, v * w)).alias("toplam"),
                   topla(~sonsuz & ((v % 1) != 0)).alias("kesir"),
                   topla(v > 0).alias("poz"),
                   topla(~sonsuz & ((a % 1) == 0) & (a >= pk.PII_SAYI_ALT)
@@ -131,6 +133,8 @@ def _ozeti_doldur(oz, tur, r):
                    "n_pii_aday": int(r["pii"]), "ym_degil": int(r["ym"]),
                    "ymd_degil": int(r["ymd"])})
         oz["hepsi_tam"] = (oz["n_sonlu"] == dolu and not oz["n_kesirli"])
+        oz["ortalama"] = (float(r["toplam"]) / oz["n_sonlu"]
+                          if oz["n_sonlu"] and r.get("toplam") is not None else None)
     elif tur == pk.TUR_TARIH and dolu:
         oz["min"], oz["max"] = r["mn"], r["mx"]
 

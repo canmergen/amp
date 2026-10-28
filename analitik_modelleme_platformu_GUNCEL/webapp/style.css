@@ -4999,3 +4999,41 @@ span.bolme-cip { cursor: default; }
 .dg-donem-deger.dg-durum-kalip .dg-donem-deger-giris:disabled {
   background: none; border-color: transparent; color: var(--metin-soluk); cursor: default;
 }
+
+/* TANIMSIZ KOLONLAR (01.2.3.1) ON KOLON: Değişken | Tip | Boş Oranı |
+   Tekil Değer | En Sık Değerler | Min | Maks | Medyan | Ortalama | Çıkar.
+   Değerler kalan genişliği alır ve satıra sarar; sayılar sağa yaslı,
+   tabular. Uzun değer kısaltılmaz (üç nokta yok), kelime içinden sarar. */
+.dg-cikar-tablo th { white-space: normal; vertical-align: bottom; }
+.dg-cikar-tablo th:nth-child(1) { width: 15%; }
+.dg-cikar-tablo th:nth-child(2) { width: 8%; }
+.dg-cikar-tablo th:nth-child(3) { width: 7%; }
+.dg-cikar-tablo th:nth-child(4) { width: 7%; }
+.dg-cikar-tablo th:nth-child(5) { width: auto; }
+.dg-cikar-tablo th:nth-child(n+6):nth-child(-n+9) { width: 8.5%; }
+.dg-cikar-tablo th:nth-child(10) { width: 64px; text-align: center; }
+.dg-cikar-tablo th:nth-child(3), .dg-cikar-tablo th:nth-child(4),
+.dg-cikar-tablo th:nth-child(6), .dg-cikar-tablo th:nth-child(7),
+.dg-cikar-tablo th:nth-child(8), .dg-cikar-tablo th:nth-child(9) { text-align: right; }
+.dg-cikar-tablo td { vertical-align: top; padding-top: 5px; padding-bottom: 5px; }
+.dg-cikar-tablo td.dg-ekle-hucre { text-align: center; }
+.dg-cikar-tablo .dg-bos-oran,
+.dg-sayi-hucre {
+  text-align: right; font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.dg-deger-hucre { line-height: 1.3; }
+.dg-deger {
+  display: inline-flex; align-items: baseline; gap: 5px;
+  max-width: 100%; margin: 0 4px 3px 0; padding: 1px 6px;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey-alt); font-size: var(--fs-kucuk);
+}
+.dg-deger-ad { color: var(--metin); overflow-wrap: anywhere; min-width: 0; }
+/* Adet değerden çizgiyle ayrılır: "5 | 767" sayısal kolonda değerle
+   adet karışmasın. */
+.dg-deger-adet {
+  color: var(--metin-soluk); font-variant-numeric: tabular-nums;
+  white-space: nowrap; padding-left: 5px; border-left: 1px solid var(--kenar);
+}
+.dg-deger-yok { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
