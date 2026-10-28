@@ -10638,6 +10638,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
        (hafızadan gelse de kendiliğinden kaydedilmiş sayılmaz). */
     const ONCEKI = {};
     const KAYIT_ACIK = new Set();
+    /* Yakın anlam uyarısı kullanıcı "farklılar" dediği ikililerde çıkmaz. */
+    const YAKIN_TAMAM = new Set();
     /* Hafızadan gelen satıra kullanıcı dokunmadı mı? duzen'e çizimde
        kendiliğinden giren "ayrilan" (hafızadakinin kopyası) dokunma sayılmaz. */
     const DUZEN_DEGISIKLIK = ["anlam", "kalip", "zaman_tur", "haric", "deger_anlam", "cikar", "aileye_kat"];
@@ -10648,24 +10650,35 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         return JSON.stringify(dz.ayrilan || {}) === JSON.stringify(r.ayrilan || {});
     };
     /* YAKIN ANLAM: iki anlamın kelimeleri (sayı ve yer tutucu, dolgu
-       sözcükler hariç) aynı, birinin kelimeleri öbüründe tümüyle var ya da
-       ortak kelime oranı ANLAM_YAKIN_ESIGI ve üstü. Kaydedilen bir satıra
+       sözcükler hariç; yer tutucu kelime sayılır) ortak oranı
+       ANLAM_YAKIN_ESIGI ve üstü. Kaydedilen bir satıra
        yakın anlamlı, kaydedilmemiş satırlar dil modeline yeniden yazdırılır. */
     const ANLAM_YAKIN_ESIGI = 0.6;
     const ANLAM_DOLGU = new Set(["ve", "ile", "bir", "için", "olan", "de", "da", "bu", "gibi", "göre"]);
+    /* Kelime sayımı: sayı yer tutucusu "#" kelimesi sayılır (kaç tane
+       geçtiği de: "saat [sayı]:00" ile "saat [sayı]:00 ile saat [sayı]:00
+       arası" ayrı), rakamlar ve dolgu sözcükler sayılmaz. */
     function anlamKelimeleri(v) {
-        return new Set(String(v || "").toLocaleLowerCase("tr")
-            .replace(/\[\s*say[ıi]\s*\]|<\s*nn?\s*>/g, " ").replace(/[0-9]/g, " ")
-            .replace(/[^a-zçğıöşü\s]/g, " ").split(/\s+/)
-            .filter(w => w.length > 1 && !ANLAM_DOLGU.has(w)));
+        const say = new Map();
+        String(v || "").toLocaleLowerCase("tr")
+            .replace(/\[\s*say[ıi]\s*\]|<\s*n{1,2}\d?\s*>/g, " # ").replace(/[0-9]/g, " ")
+            .replace(/[^a-zçğıöşü#\s]/g, " ").split(/\s+/)
+            .filter(w => w && (w === "#" || w.length > 1) && !ANLAM_DOLGU.has(w))
+            .forEach(w => say.set(w, (say.get(w) || 0) + 1));
+        return say;
     }
+    /* YAKIN: ortak kelime oranı (çoklu küme; ortak / birleşim) eşik ve
+       üstü. Biri öbürünün içinde diye yakın sayılmaz ("gün" ile "[sayı]
+       gün boyunca" yakın değil). */
     function anlamYakin(a, b) {
         const A = anlamKelimeleri(a), B = anlamKelimeleri(b);
         if (!A.size || !B.size) return false;
-        let ortak = 0;
-        A.forEach(w => { if (B.has(w)) ortak++; });
-        const birlesim = A.size + B.size - ortak;
-        return ortak === Math.min(A.size, B.size) || ortak / birlesim >= ANLAM_YAKIN_ESIGI;
+        let ortak = 0, birlesim = 0;
+        new Set([...A.keys(), ...B.keys()]).forEach(w => {
+            ortak += Math.min(A.get(w) || 0, B.get(w) || 0);
+            birlesim += Math.max(A.get(w) || 0, B.get(w) || 0);
+        });
+        return ortak / birlesim >= ANLAM_YAKIN_ESIGI;
     }
     /* Dil modeline bağlam: kaydedilmiş öbür satırların anlamları. */
     const kayitliAnlamlar = haric => satirlar
@@ -10770,6 +10783,12 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     }
 
     function satirCiz(r) {
+        /* Kalıbı bir grubun kalıbı olan elle satır (sonradan yoklamayla ya
+           da kayıttan gelse de) grup satırıdır: kalıp etiket, değerler
+           adlardan. */
+        if (r.elle && !r.grup && parcalar.some(p => p.grup && p.grup === String(r.kalip || "").toUpperCase()))
+            r = Object.assign({}, r, { grup: true, degerler: (r.degerler || []).length ? r.degerler
+                                                                : adlardaBul(r.kalip) });
         const calisiyor = da.dm === "calisiyor";
         const tr = elYap("tr", "dg-satir" + (r.elle ? " dg-donem-elle" : ""));
         const anah = anahtarOf(r);
@@ -10981,7 +11000,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         kontrolEl.hidden = true;
         tdA.appendChild(kontrolEl);
         tdA.appendChild(uretimNot);
-        const yakinEl = elYap("div", "dg-donem-uyari", "");
+        const yakinEl = elYap("div", "dg-donem-uyari dg-donem-yakin", "");
         yakinEl.hidden = true;
         tdA.appendChild(yakinEl);
         if (r.model) g.title = "Öneren: " + tireSade(r.model);
@@ -11265,9 +11284,19 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             }
             /* Kaydedilmemiş satır kaydedilmiş bir anlama yakınsa uyarı. */
             const yakin = !x.kayitliMi() && v ? satirlar.find(o => o !== x && o.kayitliMi()
-                && anlamYakin(v, o.anlam())) : null;
-            yakinEl.textContent = yakin ? "Kaydedilen " + donemSayiGoster(yakin.kalipNe())
-                + " anlamına yakın: farkını yazın." : "";
+                && !YAKIN_TAMAM.has(anah + "|" + o.anah) && anlamYakin(v, o.anlam())) : null;
+            yakinEl.textContent = "";
+            if (yakin) {
+                yakinEl.appendChild(document.createTextNode(
+                    "Bu anlam, kaydedilen " + donemSayiGoster(yakin.kalipNe()) + " satırının anlamına («"
+                    + donemAnlamGoster(yakin.kalipNe(), yakin.anlam()) + "») çok benziyor. İki kalıp "
+                    + "farklı şeyler anlatıyorsa bu satırın anlam kutusunu farkı gösterecek biçimde "
+                    + "düzeltin; aynı şeyi anlatıyorlarsa birini çıkarın. "));
+                const tm = elYap("button", "dg-baglanti", "Farklılar, Uyarıyı Kaldır");
+                tm.type = "button";
+                tm.onclick = () => { YAKIN_TAMAM.add(anah + "|" + yakin.anah); boya(); };
+                yakinEl.appendChild(tm);
+            }
             yakinEl.hidden = !yakin;
             durumCip.classList.toggle("kayitli", et === "Kaydedildi");
             /* Kaydedilmiş satırda düğme "Kaydı Geri Al" (etiket "Kaydedildi"). */

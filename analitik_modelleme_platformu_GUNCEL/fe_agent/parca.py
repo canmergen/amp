@@ -33,7 +33,7 @@ TANIM_EN_UZUN = 200       # ornek tanim kirpma
 KOMSU_ADET = 3            # parca basina gosterilen en sik komsu
 YORUM_PARCA = 12          # dil modeline bir cagrida giden parca
 ES_ZAMANLI = 4            # ayni anda en cok bu kadar cagri
-ISTEM_SURUMU = 1
+ISTEM_SURUMU = 2
 
 # TURLER: parcanin adda tasidigi bilginin turu. Zaman turleri donem
 # turleriyle ayni anlamda (pencere, nokta, zaman_birim, sure); kolon adinda

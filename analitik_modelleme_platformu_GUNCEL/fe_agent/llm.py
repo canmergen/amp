@@ -999,11 +999,12 @@ class Orkestra(object):
             raise
 
     def json_cagir(self, adlar, sistem, govde, sicaklik=0.2, haric=(), zaman_asimi=None,
-                   deneme=None, en_cok=None, bos_olabilir=False):
-        """adlar sirasiyla dener; ilk OKUNABILIR JSON'u doner.
-        bos_olabilir=True: {"kolonlar": []} de gecerli cevaptir (ornek:
-        taramada aranan sey yok). Doner: (model, veri). Hicbiri olmazsa
-        (None, {})."""
+                   deneme=None, en_cok=None, bos_olabilir=False, anahtar="kolonlar"):
+        """adlar sirasiyla dener; ilk OKUNABILIR JSON'u doner. anahtar:
+        cevabin liste alani (istemdeki cikti bicimi; Ad Parcalari'nda
+        "parcalar"). bos_olabilir=True: {anahtar: []} de gecerli cevaptir
+        (ornek: taramada aranan sey yok). Doner: (model, veri). Hicbiri
+        olmazsa (None, {})."""
         for ad in adlar:
             if ad in haric or not self.uygun_mu(ad):
                 continue
@@ -1012,7 +1013,7 @@ class Orkestra(object):
                                                  deneme, en_cok), {}, dict)
             except Exception:
                 continue
-            if veri.get("kolonlar") or (bos_olabilir and isinstance(veri.get("kolonlar"), list)):
+            if veri.get(anahtar) or (bos_olabilir and isinstance(veri.get(anahtar), list)):
                 return ad, veri
             with self._kilit:
                 self._hata[ad] = self._hata.get(ad, 0) + 1
@@ -2040,9 +2041,11 @@ def parca_yorumla(liste, orkestra=None):
         for ad, tanim in x.get("ornekler") or []:
             s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim or "(tanım yok)")[:200])
         satirlar.append(s)
+    # Cikti {"parcalar": [...]}: json_cagir varsayilan "kolonlar" beklerdi;
+    # anahtar verilmezse her modelin dogru cevabi okunamaz sayilirdi.
     model, veri = ork.json_cagir(ork.modeller("parca"), SISTEM_PARCA,
                                  _veri_blogu("PARÇALAR:", "\n".join(satirlar)), 0.1,
-                                 zaman_asimi=DONEM_ZAMAN_ASIMI)
+                                 zaman_asimi=DONEM_ZAMAN_ASIMI, anahtar="parcalar")
     if not model:
         return {}, _orkestra_hatasi(ork, "ad parçaları")
     gecerli = {x["parca"] for x in liste}

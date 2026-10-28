@@ -521,7 +521,9 @@ tanıtır; sayfalar sol bardan açılır.
     - "Grubu Kalıplardan Çıkar": grubun kalıbı tablodaysa ya da bütün
       üyeler kalıplardaysa; grup satırı ve ayrı satırlar çıkar, başka bir
       kalıbın değeri olan üye o kalıpta Dönem Değil olur.
-    - Gruptan eklenen satırın kalıbı yazılmaz, etiket olarak durur.
+    - Gruptan eklenen satırın kalıbı yazılmaz, etiket olarak durur; kalıbı
+      bir grubun kalıbı olan elle satır yoklamayla ya da kayıttan gelse de
+      etiket olur ("H[2 haneli sayı]", kutuda "H<N2>" görünmez).
   - **Anlamı dil modeli yazar:** tablodaki bir satırın anlamı boşsa
     (tabloya alındı, Tüm Parçalar'dan eklendi, elle kalıp yazıldı) kart
     `/donem_anlam` ile dil modeline yazdırır (`akis_faz01.donem_anlam_oner`,
@@ -564,14 +566,20 @@ tanıtır; sayfalar sol bardan açılır.
   - **Yakın anlamlar yeniden yazılır:** bir satır kaydedilince
     kaydedilmemiş satırlardan anlamı ona yakın olanlar dil modeline
     yeniden yazdırılır (etiket "Kaydedilen bir anlama yakın: dil modeli
-    yeniden yazıyor"). Yakın: iki anlamın kelimeleri (sayı, yer tutucu ve
-    dolgu sözcükler hariç) aynı, birininki öbüründe tümüyle var ya da
-    ortak kelime oranı %60 ve üstü (`ANLAM_YAKIN_ESIGI`). Dil modeline
+    yeniden yazıyor"). Yakın: iki anlamın kelimelerinin (sayı yer
+    tutucusu "#" kelimesi sayılır, kaç kez geçtiği de; rakamlar ve dolgu
+    sözcükler sayılmaz) ortak oranı (çoklu küme: ortak / birleşim) %60 ve üstü
+    (`ANLAM_YAKIN_ESIGI`); biri öbürünün içinde diye yakın sayılmaz ("gün"
+    ile "[sayı] gün boyunca", "saat [sayı]:00" ile "saat [sayı]:00 ile saat
+    [sayı]:00 arası" yakın değil). Dil modeline
     kaydedilmiş anlamlar bağlam olarak gider ("bunlarla aynı ya da çok
     yakın anlam verme"; `llm.donem_yorumla(..., kayitli=...)`; bu durumda
     hafıza atlanır). Yeni anlamın altında "Önceki: ... · Geri Al".
-    Kaydedilmemiş bir satır kaydedilmiş bir anlama yakın kalırsa altında
-    "Kaydedilen [kalıp] anlamına yakın: farkını yazın" uyarısı durur. Boş
+    Kaydedilmemiş bir satır kaydedilmiş bir anlama yakın kalırsa anlamın
+    altında uyarı durur: hangi kalıbın hangi anlamına benzediği, ne
+    yapılacağı (farklıysa bu satırın anlam kutusunu farkı gösterecek
+    biçimde düzelt, aynıysa birini çıkar) ve "Farklılar, Uyarıyı Kaldır"
+    (o ikili için uyarı bu kartta bir daha çıkmaz). Boş
     anlamı yazdırırken de kaydedilmiş anlamlar bağlam olarak gider. Yalnız sayılı kalıplar burada: rakamsız parçaların
   taraması, komşu adaylar ve hafızadaki rakamsız dönem kayıtları bu
   adımdan kalktı (Ad Parçaları'nda gelir).
@@ -743,7 +751,9 @@ tanıtır; sayfalar sol bardan açılır.
     `not`; tür (12): konu, yön, nitelik, ölçü, istatistik,
     karşılaştırma, pencere, nokta, zaman birimi, geçen süre, birim,
     diğer. Arka planda 12 parçalık çağrılar, en çok 4 aynı anda; İptal
-    (`/parca_iptal`) gelenleri tutar.
+    (`/parca_iptal`) gelenleri tutar. Cevap `{"parcalar": [...]}`:
+    `Orkestra.json_cagir(..., anahtar="parcalar")` ile okunur (öbür
+    işler `kolonlar`); istem sürümü `parca.ISTEM_SURUMU` 2.
   - **Hafıza** (`KISALTMA_HAFIZASI.json` `parcalar` {PARÇA: {anlam, tür,
     standart}} ve `parca_esler` {"A|B": "ayni"/"farkli"}; eski
     `kisaltmalar`, `degisimler`, `turler` ve rakamsız `donem` kayıtları

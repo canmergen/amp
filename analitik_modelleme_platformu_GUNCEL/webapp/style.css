@@ -5109,3 +5109,6 @@ span.bolme-cip { cursor: default; }
 .dg-donem-ayir { margin-top: 4px; }
 /* Hepsini Kabul Et: + Dönem Kalıbı Ekle'nin yanında. */
 .dg-donem-hepsi { margin: var(--b-2) 0 var(--b-3) var(--b-2); }
+/* Yakın anlam uyarısı: metin ve "Uyarıyı Kaldır" aynı paragrafta akar. */
+.dg-donem-uyari.dg-donem-yakin { display: block; }
+.dg-donem-yakin .dg-baglanti { display: inline; }
