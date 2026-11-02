@@ -3524,10 +3524,11 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
         if i in kullanildi:
             continue
         bulundu = False
-        # Iki parcali deger: aralik (H00_06), harf_sayi (M_3) ya da
-        # sayi_harf (3_M).
-        if i + 1 < len(t) and (t[i + 1].isdigit()
-                               or (p.isdigit() and len(t[i + 1]) == 1 and t[i + 1].isalpha())):
+        # Iki parcali deger: aralik (H00_06), harf_sayi (M_3), sayi_harf
+        # (3_M) ya da iki donem parcasi (14D_28D: kalip <N>D_<N>D, anlami
+        # "14 gün ile 28 gün arası"; parcalar tek tek "14 gün boyunca, 28
+        # gün boyunca" olmasin). Desenler tam eslesir.
+        if i + 1 < len(t):
             ikili = p + "_" + t[i + 1]
             for k, r, anlam, _haric, degerler, tur in desenler:
                 if r.match(ikili):

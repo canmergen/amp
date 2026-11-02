@@ -947,6 +947,13 @@ tanıtır; sayfalar sol bardan açılır.
     açıklama sonradan değişirse onay kendiliğinden düşer. Süzgeçler:
     Onaylanmadı, Ek Bilgi da var. Bütün kolonlar onaylanmadan geçilmez;
     "değiştirmeden devam" düğmesi yok.
+  - **İki parçalı dönem kalıbı kartta:** kolon kartı kurulurken
+    (`akis_faz01._aciklama_parcalari`, `aciklama_duzen.donem_konumlari`)
+    her yan yana iki parça önce birlikte onaylı dönem kalıplarına bakılır
+    (H00_06, 3_M, M_3 ve 14D_28D, `<N>D_<N>D`); uymazsa tek tek. Böylece
+    14D_28D kartta "14 gün ile 28 gün arası" olur, "14 gün boyunca, 28 gün
+    boyunca" değil. Kart değişen kolonun girdisi değiştiği için dil modeli
+    yalnız o kolonları yeniden yazar.
   - **Değişim türü** (`aciklama_duzen.degisim_turu`, satırda `degisim`):
     "aynen"; "yazim" (sözcükler aynı, yalnız büyük / küçük harf,
     noktalama ya da Türkçe karakter); "degisen" (sözcük eklendi, çıktı ya

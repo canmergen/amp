@@ -173,10 +173,10 @@ def donem_konumlari(t, desenler=()):
     for i, p in enumerate(t):
         if any(r.match(p) for r in desenler):
             konum.add(i)
-        # Iki parcali deger: aralik (H00_06), M_3 ya da 3_M.
-        if i + 1 < len(t) and (t[i + 1].isdigit()
-                               or (p.isdigit() and len(t[i + 1]) == 1 and t[i + 1].isalpha())) \
-                and any(r.match(p + "_" + t[i + 1]) for r in desenler):
+        # Iki parcali deger: aralik (H00_06), M_3, 3_M ya da iki donem
+        # parcasi (14D_28D, kalip <N>D_<N>D). Desenler tam eslesir; ikiliye
+        # uyan kalip yoksa parcalar tek tek bakilir.
+        if i + 1 < len(t) and any(r.match(p + "_" + t[i + 1]) for r in desenler):
             konum.update((i, i + 1))
     return konum
 
