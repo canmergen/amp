@@ -183,22 +183,68 @@ def donem_konumlari(t, desenler=()):
 
 # DEGISIM TURU: duzenlenen aciklamanin orijinalden farki. "aynen": ayni;
 # "yazim": yalniz buyuk / kucuk harf, noktalama ya da Turkce karakter
-# (sozcukler ayni); "degisen": sozcuk eklendi, cikti ya da degisti.
+# (sozcukler ayni); "ek": yalniz sozcuk ekleri (bkz. degisim_turu);
+# "degisen": sozcuk eklendi, cikti ya da degisti.
 _TR_ASCII = str.maketrans("çğıöşüâîû", "cgiosuaiu")
 
 
 def _sozcukler(metin, ascii_=False):
+    """Kucuk harfli sozcukler. Sira sayisi ("3. ay") ayri sozcuktur
+    ("3." -> "3_sira"): "3 ay" ile "3. ay" ayni sayilmaz."""
     m = str(metin or "").replace("I", "ı").replace("İ", "i").lower()
+    m = re.sub(r"(\d+)\.(?=\s+[a-zçğıöşüâîû])", r"\1_sira", m)
     if ascii_:
         m = m.translate(_TR_ASCII)
-    return re.findall(r"[0-9a-zçğıöşüâîû]+", m)
+    return re.findall(r"[0-9a-zçğıöşüâîû_]+", m)
+
+
+# EK DEGISIMI: iki sozcugun ortak govdesi var ve govdeden sonra iki
+# tarafta da yalniz bilinen ekler kaliyor ("günde" / "günlük": gün + de /
+# lük; "adet" / "adedi": yumusama + i). Karsilastirma Turkce karaktersiz
+# yazilisla; govde en az iki harf; ek zinciri en cok uc ek. Anlami
+# degistiren ekler (-siz, -li) listede yok: "işlemsiz" ek degisimi sayilmaz.
+_EKLER = frozenset({
+    "i", "u", "e", "a", "yi", "yu", "ye", "ya", "ni", "nu", "de", "da", "te", "ta",
+    "den", "dan", "ten", "tan", "in", "un", "nin", "nun", "yla", "yle", "la", "le",
+    "ki", "lik", "luk", "si", "su", "ler", "lar", "n", "y"})
+_YUMUSAMA = {"d": "t", "g": "k", "b": "p", "c": "c"}
+
+
+def _ek_zinciri(m, kalan=3):
+    if not m:
+        return True
+    if not kalan:
+        return False
+    return any(m.startswith(e) and _ek_zinciri(m[len(e):], kalan - 1) for e in _EKLER)
+
+
+def _ayni_govde(a, b):
+    if a == b:
+        return True
+    if a.isdigit() or b.isdigit():
+        return False
+    for k in range(min(len(a), len(b)), 1, -1):
+        on_a, on_b = a[:k], b[:k]
+        if on_a[:-1] != on_b[:-1]:
+            continue
+        son_a, son_b = on_a[-1], on_b[-1]
+        if son_a != son_b and _YUMUSAMA.get(son_a, son_a) != _YUMUSAMA.get(son_b, son_b):
+            continue
+        if _ek_zinciri(a[k:]) and _ek_zinciri(b[k:]):
+            return True
+    return False
 
 
 def degisim_turu(orijinal, aciklama):
+    """"aynen" / "yazim" (yalniz harf, noktalama, Turkce karakter) / "ek"
+    (sozcuklerin govdesi ve sirasi ayni, yalniz ekler farkli) / "degisen"."""
     if _norm(orijinal) == _norm(aciklama):
         return "aynen"
-    if _sozcukler(orijinal, True) == _sozcukler(aciklama, True):
+    o, a = _sozcukler(orijinal, True), _sozcukler(aciklama, True)
+    if o == a:
         return "yazim"
+    if len(o) == len(a) and all(_ayni_govde(x, y) for x, y in zip(o, a)):
+        return "ek"
     return "degisen"
 
 

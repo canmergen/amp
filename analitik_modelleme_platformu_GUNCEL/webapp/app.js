@@ -10039,6 +10039,7 @@ const ACK_KART_ADLARI = [["konu", "Konu"], ["yon", "Yön"], ["nitelik", "Nitelik
                          ["karsilastirma", "Karşılaştırma"], ["birim", "Birim"], ["diger", "Diğer"]];
 const ACK_SUZGECLER = [["tumu", "Tümü", "toplam"], ["onaysiz", "Onaylanmadı", "onaysiz"],
                        ["degisen", "Değişen", "degisen"], ["yazim", "Yalnız Yazım", "yazim"],
+                       ["ekdegisim", "Yalnız Ek", "ek_degisim"],
                        ["ek", "Ek Bilgi", "ek"],
                        ["soru", "Soru Var", "soru"], ["ad", "Ad / Dağılım Notu", "ad"],
                        ["kontrol", "Kontrol Gereken", "kontrol"],
@@ -10518,6 +10519,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         if (suzgec === "ek" && !(hazir && v.ek && !v.ek_acikta)) return false;
         if (suzgec === "degisen" && !(hazir && v.degisim === "degisen")) return false;
         if (suzgec === "yazim" && !(hazir && v.degisim === "yazim")) return false;
+        if (suzgec === "ekdegisim" && !(hazir && v.degisim === "ek")) return false;
         if (suzgec === "soru" && !(hazir && v.soru)) return false;
         if (suzgec === "ad" && !(hazir && (v.ad_notu || v.dagilim_notu))) return false;
         if (suzgec === "kontrol" && !(hazir && (v.kontrol || []).length)) return false;

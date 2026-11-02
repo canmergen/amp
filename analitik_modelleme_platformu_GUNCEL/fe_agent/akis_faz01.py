@@ -3820,7 +3820,8 @@ def aciklama_alani(durum, son=0):
                           "kontrol": 0, "elle": sum(1 for x in satirlar if x["not"]),
                           "hata": 0, "bekleyen": 0, "onayli": len(satirlar),
                           "onaysiz": 0, "ek": sum(1 for x in satirlar if x["ek"] and not x["ek_acikta"]),
-                          "yazim": sum(1 for x in satirlar if x["degisim"] == "yazim")}}
+                          "yazim": sum(1 for x in satirlar if x["degisim"] == "yazim"),
+                          "ek_degisim": sum(1 for x in satirlar if x["degisim"] == "ek")}}
     with aciklama_mod._KILIT:
         bos = not d.girdiler
     if bos:
@@ -3834,7 +3835,7 @@ def aciklama_alani(durum, son=0):
                     if not son or d.sira.get(g["kolon"], 0) > son]
         sayac = {"toplam": len(girdiler), "hazir": 0, "degisen": 0, "soru": 0,
                  "ad": 0, "kontrol": 0, "elle": 0, "hata": 0, "bekleyen": 0,
-                 "onayli": 0, "onaysiz": 0, "ek": 0, "yazim": 0}
+                 "onayli": 0, "onaysiz": 0, "ek": 0, "yazim": 0, "ek_degisim": 0}
         for g in girdiler:
             kolon = g["kolon"]
             dr = aciklama_mod.satir_durumu(d, kolon)
@@ -3853,8 +3854,8 @@ def aciklama_alani(durum, son=0):
                 continue
             sayac["hazir"] += 1
             dt = aciklama_mod.degisim_turu(g.get("orijinal"), r.get("aciklama"))
-            if dt in ("degisen", "yazim"):
-                sayac[dt] += 1
+            if dt in ("degisen", "yazim", "ek"):
+                sayac["ek_degisim" if dt == "ek" else dt] += 1
             if r.get("soru"):
                 sayac["soru"] += 1
             if r.get("ad_notu") or r.get("dagilim_notu"):

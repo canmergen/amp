@@ -971,9 +971,15 @@ tanıtır; sayfalar sol bardan açılır.
     yalnız o kolonları yeniden yazar.
   - **Değişim türü** (`aciklama_duzen.degisim_turu`, satırda `degisim`):
     "aynen"; "yazim" (sözcükler aynı, yalnız büyük / küçük harf,
-    noktalama ya da Türkçe karakter); "degisen" (sözcük eklendi, çıktı ya
-    da değişti). Değişen süzgeci yalnız "degisen"i sayar; "Yalnız Yazım"
-    ayrı süzgeç. Değişen satırda açıklamanın orijinalde karşılığı olmayan
+    noktalama ya da Türkçe karakter); "ek" (sözcüklerin gövdesi ve sırası
+    aynı, yalnız ekleri farklı: "günde" / "günlük", "adet" / "adedi",
+    "bakiye" / "bakiyesi"; `_ayni_govde`: ortak gövde en az iki harf,
+    gövdeden sonra iki tarafta da en çok üç bilinen ek, gövde sonu
+    yumuşaması eşitlenir; anlamı değiştiren -siz, -li ek sayılmaz; sıra
+    sayısı "3." ayrı sözcüktür, "3 ay" ile "3. ay" aynı değil);
+    "degisen" (sözcük eklendi, çıktı ya da değişti). Değişen süzgeci yalnız
+    "degisen"i sayar; "Yalnız Yazım" ve "Yalnız Ek" ayrı süzgeç (sayaçta
+    `yazim`, `ek_degisim`). Değişen satırda açıklamanın orijinalde karşılığı olmayan
     sözcükleri altı yeşil çizgili (`ackSozcukFarki`, küçük harf ve
     noktalamasız en uzun ortak dizi); bütün metni yeniden okumak gerekmez.
     Sözlüğe yazılan "N kolonun açıklaması düzeltildi" sayısı yine her
