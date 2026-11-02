@@ -2660,10 +2660,14 @@ def _zaman_desenleri(durum):
     """Zaman Parcalari'nda onaylanan kaliplarin desenleri (bu parcalar Ad
     Parcalari'nda yer almaz)."""
     cikti = []
+    ayrilan = durum.get("donem_ayrilan") or {}
     for k, v in (durum.get("donem_bilgisi") or {}).items():
         r = donem_mod.kalip_deseni(k)
         if r is not None and str(v or "").strip():
-            cikti.append(r)
+            # Gruptan ayrilan deger grubun deseniyle eslesmez: kendi anlami
+            # varsa kendi kalibi olarak burada, donem degilse Ad
+            # Parcalari'nda.
+            cikti.append(_AyrilanliDesen(r, ayrilan[k]) if ayrilan.get(k) else r)
     return cikti
 
 

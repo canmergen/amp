@@ -79,25 +79,18 @@ def toklar(ad):
     return donem_mod._toklar(ad)
 
 
-def sayili_konumlar(t):
-    """Ad parcalarindan sayili kaliplarin (Zaman sekmesi) kapsadiklari:
-    yalniz rakam, 30D / M3 gibi sayili parca, 3_M / M_3 ikilisi, H00_06
-    araligi (donem.kaliplar ile ayni kurallar)."""
-    konum = set()
-    i = 0
-    while i < len(t):
-        p = t[i]
-        if donem_mod.ayrik_ikili(t, i):
-            konum.update((i, i + 1))
-            i += 2
-            continue
-        if donem_mod._YALIN_SAYI.match(p) or donem_mod._donem_parcasi(p):
+def zaman_konumlari(t, desenler=()):
+    """Ad parcalarindan zaman sayilanlar: Donem Bilgisi'nde onaylanan
+    kaliplara uyanlar (tek parca ya da yan yana iki parca birlikte: H00_06,
+    3_M, 14D_28D) ve yalniz rakamdan olusanlar. Donem diye alinmayan sayili
+    parca (X2, cikarilan 30D) zaman degildir: Ad Parcalari'nda anlam ve
+    turuyle yorumlanir, kolon kartina ve yeni ada oradan girer."""
+    konum = {i for i, p in enumerate(t) if donem_mod._YALIN_SAYI.match(p)}
+    for i, p in enumerate(t):
+        if any(r.match(p) for r in desenler):
             konum.add(i)
-            if donem_mod._araligin_basi(t, i):
-                konum.add(i + 1)
-                i += 2
-                continue
-        i += 1
+        if i + 1 < len(t) and any(r.match(p + "_" + t[i + 1]) for r in desenler):
+            konum.update((i, i + 1))
     return konum
 
 
@@ -115,15 +108,14 @@ def parcalar(adlar, tanimlar, desenler=()):
     kolon sayisi, "ornekler": [(kolon, tanim)], "tanimsiz": tanimi olmayan
     kolon sayisi, "birlikte": [(komsu parca, kolon sayisi)]}], kolon
     sayisina gore (cok olan once). Ornekler tanimi dolu kolonlardan,
-    listenin basindan sonuna esit aralikla secilir. desenler: Zaman
-    Parcalari'nda onaylanan kaliplarin desenleri; eslesen parca zaman
-    parcasidir, burada yer almaz."""
+    listenin basindan sonuna esit aralikla secilir. desenler: Donem
+    Bilgisi'nde onaylanan kaliplarin desenleri; eslesen parca zaman
+    parcasidir, burada yer almaz (bkz. zaman_konumlari)."""
     tanimlar = tanimlar or {}
     kolonlar, komsu = {}, {}
     for ad in adlar:
         t = toklar(ad)
-        sayili = sayili_konumlar(t)
-        sayili.update(i for i, p in enumerate(t) if any(r.match(p) for r in desenler))
+        sayili = zaman_konumlari(t, desenler)
         gorulen = set()
         for i, p in enumerate(t):
             if i in sayili or p in gorulen:
@@ -486,8 +478,7 @@ def ad_birimleri(ad, bilgi, desenler=(), yazilislar=()):
     kalibinin yeni adda yazilisi; kaliba uyan zaman birimi (ya da yan yana
     iki zaman birimi, ör. 3D_6D) sablonla yazilir (BTWN_3D_6D)."""
     t = toklar(ad)
-    sayili = sayili_konumlar(t)
-    sayili.update(i for i, p in enumerate(t) if any(r.match(p) for r in desenler))
+    sayili = zaman_konumlari(t, desenler)
     birimler, i = [], 0
     while i < len(t):
         if i in sayili:

@@ -348,7 +348,11 @@ tanıtır; sayfalar sol bardan açılır.
   kararlarla yeniden üretilir (`akis_faz01.karar_sonrasi_alan`, Geri Dön
   ile aynı kaynak). Yeni hali kayıt sınırını aşarsa kart ilk haliyle
   kalır. Henüz onaylanmamış kartta yapılan düzenlemeler yenilemede
-  kaybolur.
+  kaybolur. Aynı adımın kartı birden fazla kez gönderildiyse (Geri Dön,
+  onayda hata, soru turu) yalnız sonuncusu kararlarla güncellenir;
+  yenilemede aynı adımın aynı türden eski karar kartları çizilmez
+  (app.js `eskiKararKartlariniAyikla`; metinleri yerinde kalır), yoksa
+  eski kopya kararlar kaydolmamış gibi görünürdü.
 - **Adım atıfları:** bir işin hangi adımda yapılacağını ya da yapıldığını
   söyleyen her metin (sohbet mesajları, kart açıklamaları, sağ panel
   notları, "i" açıklamaları, hata mesajları, sohbet kutusunun kilit notu)
@@ -467,7 +471,8 @@ tanıtır; sayfalar sol bardan açılır.
   1. **01.2.4.1 Dönem Bilgisi** (`donem`): adlardaki SAYILI zaman
      parçaları (30D, M3, 3_M, H00_06).
   2. **01.2.4.2 Ad Parçaları** (`parca`): öbür bütün parçalar
-     (kısaltmalar, sözcükler, DAY, MONTH, TMSNCFRST): anlam, tür, standart
+     (kısaltmalar, sözcükler, DAY, MONTH, TMSNCFRST ve 01.2.4.1'de dönem
+     diye alınmayan sayılı parçalar, ör. X2): anlam, tür, standart
      yazılış; yazımı farklı aynı parçalar birleşir.
   3. **01.2.4.3 Kolon Kartları** (`aciklama`): her kolonun kartı
      parçalardan kodla kurulur, dil modeli kartı tanımla karşılaştırıp
@@ -839,9 +844,13 @@ tanıtır; sayfalar sol bardan açılır.
 - **01.2.4.2 Ad Parçaları** (`parca.py`, `akis_faz01._parca_alani`,
   `parca_plan`, `parca_uygula`):
   - **Parçalar** (`parca.parcalar`): rol kolonları ve süreç dışı
-    kolonlar hariç bütün kolon adlarının rakamsız parçaları; sayılı
-    kalıpların kapsadıkları (`parca.sayili_konumlar`, dönemle aynı kural)
-    ve 01.2.4.1'de onaylanan kalıplara uyanlar burada yok. Parça başına
+    kolonlar hariç bütün kolon adlarının parçaları. Burada olmayanlar
+    (`parca.zaman_konumlari`): 01.2.4.1'de onaylanan kalıplara uyanlar
+    (tek parça ya da yan yana iki parça: H00_06, 3_M, 14D_28D; gruptan
+    "dönem değil" diye ayrılan değer kalıba uymaz) ve yalnız rakamdan
+    oluşanlar. Dönem diye alınmayan sayılı parça (X2, çıkarılan 30D)
+    burada anlam ve türüyle yorumlanır; kolon kartına ve yeni ada da
+    buradan girer. Parça başına
     kaç kolonda geçtiği, tanımsız kolon sayısı, en sık yanında duran 3
     parça ve en çok 10 örnek (ad, tanım; listenin başından sonuna eşit
     aralıkla, rastgele değil).

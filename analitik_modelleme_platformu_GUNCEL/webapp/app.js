@@ -15289,8 +15289,36 @@ function reddedilenFormlariAyikla(liste) {
     return liste;
 }
 
+/* ESKİ KARAR KARTLARI ÇİZİLMEZ. Aynı adımın kartı birden fazla kez
+   gönderilebilir (adıma Geri Dön, onayda hata, soru turu). Onayla
+   yalnız SONUNCUSU verilen kararlarla güncellenir (backend
+   _biten_adimi_guncelle); öncekiler ilk hâlinde kalır ve yenilemede
+   kararlar kaydolmamış gibi görünürdü. Aynı adımda aynı türden daha yeni
+   bir karar kartı varsa eskisinin kartı düşülür; metni yerinde kalır. */
+const KARAR_KART_BOLUMLERI = ["tanimsiz", "kontrol", "cikar", "birlesim", "donem", "parca",
+                              "aciklama_duzen", "kolon_ad"];
+function eskiKararKartlariniAyikla(liste) {
+    const anahtar = g => {
+        const a = g && g.rol === "bot" && g.adim && g.ekran && g.ekran.secim_alani;
+        if (!a || a.tip !== "dogrulama") return null;
+        return g.adim + "\u0000" + (a.adim || "") + "\u0000"
+            + KARAR_KART_BOLUMLERI.filter(k => a[k]).join(",");
+    };
+    const sonra = new Set();
+    for (let i = liste.length - 1; i >= 0; i--) {
+        const k = anahtar(liste[i]);
+        if (!k) continue;
+        if (sonra.has(k)) {
+            const ekran = Object.assign({}, liste[i].ekran);
+            delete ekran.secim_alani;
+            liste[i] = Object.assign({}, liste[i], { ekran: ekran });
+        } else sonra.add(k);
+    }
+    return liste;
+}
+
 function gecmisiCiz(gecmis, sonMetin) {
-    const liste = reddedilenFormlariAyikla((gecmis || []).slice());
+    const liste = eskiKararKartlariniAyikla(reddedilenFormlariAyikla((gecmis || []).slice()));
 
     /* AKTIF ADIMIN SON EKRANI canli ciziliyor (yanitUygula); gecmisten
        ikinci kez cizilmemeli. Ondan ONCEKI ekranlari ise gecmisten
