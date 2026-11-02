@@ -8958,7 +8958,35 @@ function dogrulamaKartiEkle(alan, blok) {
     /* GECMISTEN yeniden cizim: kart kilitli acilir, rozet karar
        verildigi andaki halini korur (ozet gecirilmiyor). Yoklama da
        BASLAMAZ: o is coktan bitti, tekrar sorulacak bir sey yok. */
-    if (blok && blok.kilit) { kartiKilitle(); geriAlKilit = null; return; }
+    if (blok && blok.kilit) {
+        kartiKilitle(); geriAlKilit = null;
+        /* BİTEN ADIMIN KARARLI KARTI: Dönem Bilgisi, Ad Parçaları ve
+           Kolon Adları geçmişten çizilince sunucudaki GÜNCEL kararlardan
+           yeniden kurulur (/karar_alani); transkriptteki kopya eski kalsa
+           da kararlar görünür. Kurulamazsa kartın altında nedeni yazar. */
+        const bolum = ["donem", "parca", "kolon_ad"].find(k => alan[k]);
+        if (bolum && !alan._kararli && alan.adim === bolum) {
+            fetch(getWebAppBackendUrl("karar_alani") + "?oturum_id=" + encodeURIComponent(OTURUM_ID)
+                  + "&adim=" + encodeURIComponent(bolum))
+                .then(r => r.json())
+                .then(d => {
+                    if (!kart.isConnected) return;
+                    if (d && d.tamam && d.alan && d.alan[bolum]) {
+                        const kap = kart.parentNode;
+                        const yeni = Object.assign({}, alan, d.alan, { _kararli: true, rozet: "" });
+                        dogrulamaKartiEkle(yeni, blok);
+                        const kartlar = kap.querySelectorAll(":scope > .dg-kart");
+                        const yeniKart = kartlar[kartlar.length - 1];
+                        if (yeniKart && yeniKart !== kart) { kap.insertBefore(yeniKart, kart); kart.remove(); }
+                    } else if (d && d.hata) {
+                        kart.appendChild(elYap("div", "dg-oneri-hata",
+                            "Bu kart verilen kararlarla yeniden kurulamadı; ilk hâli görünüyor. (" + tireSade(d.hata) + ")"));
+                    }
+                })
+                .catch(() => {});
+        }
+        return;
+    }
 
     /* CANLI KART: öneriler / tanım kontrolü arka planda sürüyorsa
        yoklamayı başlat. */

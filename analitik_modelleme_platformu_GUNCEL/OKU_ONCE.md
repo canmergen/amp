@@ -352,7 +352,13 @@ tanıtır; sayfalar sol bardan açılır.
   onayda hata, soru turu) yalnız sonuncusu kararlarla güncellenir;
   yenilemede aynı adımın aynı türden eski karar kartları çizilmez
   (app.js `eskiKararKartlariniAyikla`; metinleri yerinde kalır), yoksa
-  eski kopya kararlar kaydolmamış gibi görünürdü.
+  eski kopya kararlar kaydolmamış gibi görünürdü. Dönem Bilgisi, Ad
+  Parçaları ve Kolon Adları kartları ayrıca geçmişten çizilince
+  sunucudaki GÜNCEL kararlardan yeniden kurulur (`/karar_alani`,
+  `akis_faz01.karar_alani`; yalnız bitmiş adım; dil modeli işi
+  başlatılmaz) ve eski kartın yerine geçer; transkriptteki kopya eski
+  kalsa da kararlar görünür. Kurulamazsa kartın altında "Bu kart verilen
+  kararlarla yeniden kurulamadı" ve nedeni yazar.
 - **Adım atıfları:** bir işin hangi adımda yapılacağını ya da yapıldığını
   söyleyen her metin (sohbet mesajları, kart açıklamaları, sağ panel
   notları, "i" açıklamaları, hata mesajları, sohbet kutusunun kilit notu)

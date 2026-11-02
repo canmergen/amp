@@ -3060,6 +3060,18 @@ def donem_kayit_geri_endpoint():
         return jsonify(_hata_govdesi("donem_kayit_geri", e)), 200
 
 
+@app.route("/karar_alani")
+def karar_alani_endpoint():
+    """Yenilemede biten Dönem Bilgisi, Ad Parçaları ve Kolon Adları kartı
+    güncel kararlardan (transkriptteki kopya eski kalsa da)."""
+    try:
+        anahtar = _oturum_anahtari(request.args.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify(akis.karar_alani(durum, str(request.args.get("adim") or "")))
+    except Exception as e:
+        return jsonify(_hata_govdesi("karar_alani", e)), 200
+
+
 @app.route("/kontrol_taslak", methods=["POST"])
 def kontrol_taslak_endpoint():
     """Dönem Bilgisi, Ad Parçaları ve Kolon Adları kartının onaylanmamış son

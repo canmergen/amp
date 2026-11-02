@@ -5398,15 +5398,17 @@ def sozluk_birlestir_uygula(durum):
     return (metin + "." + kopya_not).strip()
 
 
-def karar_sonrasi_alan(durum, adim):
+def karar_sonrasi_alan(durum, adim, hata=False):
     """Adim onaylaninca kartinin KARARLI hali: transkriptteki kart bununla
     guncellenir, sayfa yenilenince kart verilen kararlarla gelir (bkz.
     backend._biten_adimi_guncelle). Kartlari ureten fonksiyonlar onceki
     karari okur (Geri Don ile ayni); durumun kopyasi uzerinde calisilir.
-    Doner: kartin secim alanina islenecek bolumler ({} ise yok)."""
+    Doner: kartin secim alanina islenecek bolumler ({} ise yok). hata:
+    kurulamazsa bos donmek yerine istisna (yenilemedeki kart nedenini
+    yazar). Dil modeli isi baslatilmaz: kararlar yeter."""
     import copy as _copy
-    kopya = _copy.deepcopy(durum)
     try:
+        kopya = _copy.deepcopy(durum)
         if adim == "tanimsiz_karar":
             tanimsiz_karar_plan(kopya)
             alan = kopya.get("_secim_alani") or {}
@@ -5418,14 +5420,36 @@ def karar_sonrasi_alan(durum, adim):
         if _kontrol_atlandi(kopya):
             return {}
         if adim == "donem":
-            return {"donem": _donem_alani(kopya)}
+            return {"donem": _donem_alani(kopya, baslat=False)}
         if adim == "parca":
-            return {"parca": _parca_alani_sade(_parca_alani(kopya))}
+            return {"parca": _parca_alani_sade(_parca_alani(kopya, baslat=False))}
         if adim == "kolon_ad":
             return {"kolon_ad": _kolon_ad_alani(kopya)}
     except Exception:
+        if hata:
+            raise
         return {}
     return {}
+
+
+KARARLI_KARTLAR = ("donem", "parca", "kolon_ad")
+
+
+def karar_alani(durum, adim):
+    """YENILEMEDE BITEN ADIMIN KARTI: Donem Bilgisi, Ad Parcalari ve Kolon
+    Adlari kartlari gecmisten cizilirken durumdaki GUNCEL kararlardan
+    yeniden kurulur (transkriptteki kopya eski kalsa da). Yalniz bitmis
+    adim. Doner: {"tamam", "alan"} ya da {"tamam": False, "hata"}."""
+    from fe_agent.akis_kayit import adim_sirasi
+    if adim not in KARARLI_KARTLAR:
+        return {"tamam": False, "hata": ""}
+    sira = adim_sirasi(durum.get("mod"))
+    if adim not in sira or sira.index(adim) >= int(durum.get("i") or 0):
+        return {"tamam": False, "hata": ""}
+    try:
+        return {"tamam": True, "alan": karar_sonrasi_alan(durum, adim, hata=True)}
+    except Exception as e:
+        return {"tamam": False, "hata": "%s: %s" % (type(e).__name__, str(e)[:300])}
 
 
 def _tanim_duzeltmelerini_uygula(durum, satirlar, is_duzeltmeleri):
