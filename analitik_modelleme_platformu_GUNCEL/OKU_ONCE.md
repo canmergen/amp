@@ -593,7 +593,7 @@ tanıtır; sayfalar sol bardan açılır.
     `/donem_anlam` ile dil modeline yazdırır (`akis_faz01.donem_anlam_oner`,
     `donem.tek_kalip`: kalıbın adlardaki değerleri ve örnek tanımlar;
     `llm.donem_yorumla(..., zorunlu_anlam=True)`: "dönem değil" bulsa bile
-    anlam yazar). Hafızada anlamı olan kalıp dil modeline gitmez. Satırın
+    anlam yazar). Hafızada anlamı olan kalıbın anlamı hafızadan gelir. Satırın
     üstünde "Dil modeli anlamı yazıyor", gelince etiket kalkar. Gelen anlam yalnız kutu hâlâ boşsa yazılır; tür
     kullanıcı değiştirmediyse dil modelininki olur. Kullanıcı anlamı silip
     boş bırakırsa 8 saniye bekler ("Anlam boş: birkaç saniye içinde dil
@@ -721,6 +721,23 @@ tanıtır; sayfalar sol bardan açılır.
   - Zaman Ölçüsü: değerin kendisi bir süre (TMSNCFRST).
   Kararda `zaman_tur`, durumda `durum["donem_turleri"]` ({kalıp: tür}),
   hafızada `donem_tur`.
+- **Hafızadaki kalıplar (önceden kaydedilen ya da onaylanan):** adlarda
+  geçen her hafıza kalıbı satır olarak gelir (`donem.kaliplar`, `ek`):
+  tek parça, `<P>_<NN>` ikilisi, yan yana iki dönem parçası (3D_6D →
+  `<N>D_<N>D`) ve rakamsız kalıp (TMSNCFRST; hafızada değilse Ad
+  Parçaları'nda kalır). Bir kolonda hafıza kalıbının kapsadığı parçalar
+  kendiliğinden bulunan kalıplardan düşülür (H<N2> kayıtlıyken H00 ve
+  H06 `<N>H` ailesinde ikinci kez sayılmaz; 3D_6D'deki 3D `<N>D`
+  satırına girmez). Hafıza kalıbı da dil modeline gider, hafızadaki
+  anlamla (`hafiza_anlam`, "HAFIZADAKİ ANLAM"): dil modeli yeni anlam
+  kurmaz, örnek tanımlardan kaçının bu anlamla uyuştuğunu sayar
+  (`donem.ISTEM_SURUMU` 8). Uyuşuyorsa (ya da dil modeli bakamadıysa,
+  durdurulduysa) satır tabloya hafızadaki anlamıyla, kaydedilmiş olarak
+  gelir. Örneklerin %60'ından azı uyuşuyorsa ya da dil modeli zaman
+  bilgisi değil diyorsa Adaylar'a düşer (Orta), nedeni yazar ("Hafızadaki
+  anlamla örnek tanımlardan yalnız 0 / 3 tanesi uyuşuyor; anlamı kontrol
+  edin."). Bakılana kadar satırda "Dil modeli yorumluyor". Bu çalışmada
+  ya da tablonun son kararında verilen karar her zaman geçerlidir.
 - **Yeni adda yazılış:** kalıp hücresinde tür kutusunun altında "Yeni
   adda" alanı: kalıbın 01.2.4.4 Kolon Adları'nda yeni addaki yazılışı.
   Kalıbın sayıları yerine [sayı] yazılır; sırayla kalıbın sayıları gelir
@@ -853,7 +870,9 @@ tanıtır; sayfalar sol bardan açılır.
     altında) / STANDART / ONAY. Yazım Sorunları: kodun bulduğu yakın
     yazılışlar (sessiz harf iskeleti aynı, tek harf farkı, biri
     ötekinin başı) ve önerilen anlamı aynı çıkan parçalar; Aynı / Farklı
-    ve Onay. "Aynı" denen gruptaki parçalar adlarda seçilen yazılışı ve
+    ve Onay. Çiftteki her parçanın yanında "i": geçtiği ilk üç kolon ve
+    sözlük tanımı (`ESLER_ORNEK`; eşin `ornek` alanı), aynı mı ve hangi
+    yazılış kullanılsın diye karşılaştırmak için. "Aynı" denen gruptaki parçalar adlarda seçilen yazılışı ve
     onun satırındaki anlam ile türü alır (satırları kilitli, "TXN ile
     aynı").
   - **Kurallar:** "Kontrol edin" satırları (soru, çelişki ya da örnek

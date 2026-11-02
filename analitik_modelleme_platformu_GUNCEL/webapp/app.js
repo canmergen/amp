@@ -9403,6 +9403,11 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
                 sat.append(elYap("span", "dg-donem-kalip", p),
                            elYap("span", "dg-donem-tur-not", ftBinlik(r.kolon || 0) + " kolon"
                                  + (satir[p] && satir[p].anlam ? " · " + satir[p].anlam : "")));
+                /* "i": parçanın geçtiği ilk üç kolon ve tanımı (aynı mı, hangi
+                   yazılış kullanılsın diye karşılaştırmak için). */
+                const orn = (e.ornek && e.ornek[p]) || [];
+                if (orn.length) sat.appendChild(bolmeBilgiSimgesi(tireSade("Geçtiği kolonlardan örnekler:\n"
+                    + orn.map(([k, t]) => k + ": " + (t || "Tanım yok")).join("\n")), p));
                 tdP.appendChild(sat);
             });
             tr.appendChild(tdP);

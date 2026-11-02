@@ -383,7 +383,9 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
     bilgi = {}                      # kalip -> {"tur", "deger": Counter, "kolonlar": [], "kd": {}}
 
     def ekle(kalip, tur, deger, ad):
-        b = bilgi.setdefault(kalip, {"tur": tur, "deger": Counter(), "kolonlar": [], "kd": {}})
+        b = bilgi.setdefault(kalip, {"tur": tur, "deger": Counter(), "kolonlar": [], "kd": {},
+                                     "giris": []})
+        b["giris"].append((ad, deger))
         b["deger"][deger] += 1
         if ad not in b["kolonlar"]:
             b["kolonlar"].append(ad)
@@ -420,23 +422,47 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
                     aileye_ekle(p, ad)
                 else:
                     ekle(kalip, tur, p, ad)
-    # Hafizadaki SAYILI kaliplar (tek parca ya da <P>_<NN> ikilisi olarak).
-    # Rakamsiz parcalar (DAY, MONTH) burada degil, Ad Parcalari'nda
-    # (parca.py) yorumlanir.
-    desenler = [(k, kalip_deseni(k)) for k in (ek or []) if k not in bilgi and "<N" in k
+    # HAFIZADAKI KALIPLAR (kullanicinin onceki calismalarda onayladigi ya
+    # da kaydettigi): tek parca, <P>_<NN> ikilisi, yan yana iki donem
+    # parcasi (3D_6D) ya da rakamsiz kalip (TMSNCFRST). Adlarda gecen her
+    # biri "hafiza" turuyle eklenir. Bir kolonda hafiza kalibinin kapsadigi
+    # parcalar kendiliginden bulunan kaliplardan dusulur (ayni deger iki
+    # satirda sayilmasin: H<N2> kayitliyken H00 <N>H ailesine de girmez).
+    # Hafizada olmayan rakamsiz parcalar (DAY, MONTH) burada degil, Ad
+    # Parcalari'nda (parca.py) yorumlanir.
+    desenler = [(k, kalip_deseni(k)) for k in (ek or []) if k not in bilgi
                 and not (aile_adi(k) and not aile_mi(k) and _norm(k) not in ayri)]
     desenler = [(k, r) for k, r in desenler if r is not None]
+    kapsanan = {}                   # ad -> hafiza kalibinin kapsadigi parcalar
     if desenler:
         for ad in adlar:
             t = _toklar(ad)
             # Araligin basi olan parca tek basina aday degil (bkz. aralik).
             adaylar = [p for i, p in enumerate(t) if not _araligin_basi(t, i)] + \
                 [t[i] + "_" + t[i + 1] for i in range(len(t) - 1)
-                 if _YALIN_SAYI.match(t[i + 1])]
+                 if _YALIN_SAYI.match(t[i + 1])
+                 or (_donem_parcasi(t[i]) and _donem_parcasi(t[i + 1]))]
             for k, r in desenler:
                 for p in adaylar:
                     if r.match(p):
                         ekle(k, "hafiza", p, ad)
+                        kapsanan.setdefault(ad, set()).update(p.split("_"))
+    for kalip in list(bilgi):
+        b = bilgi[kalip]
+        if b["tur"] == "hafiza" or not kapsanan:
+            continue
+        kalan = [(ad, d) for ad, d in b["giris"]
+                 if not set(d.split("_")) <= kapsanan.get(ad, set())]
+        if len(kalan) == len(b["giris"]):
+            continue
+        if not kalan:
+            del bilgi[kalip]
+            continue
+        b.update(giris=kalan, deger=Counter(d for _a, d in kalan), kolonlar=[], kd={})
+        for ad, d in kalan:
+            if ad not in b["kolonlar"]:
+                b["kolonlar"].append(ad)
+                b["kd"][ad] = d
 
     cikti = []
     for kalip, b in bilgi.items():
@@ -829,7 +855,7 @@ def hafizadan_sil(kaliplar):
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
 # Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
-ISTEM_SURUMU = 7
+ISTEM_SURUMU = 8
 
 
 def _imza(liste, tara):
@@ -853,8 +879,13 @@ def baslat(liste, tara=None):
                         "zaman": time.time()}
     haf = hafiza()
     ayri = hafiza_ayri()
-    # Hafizada anlami olan kalip (aile icin bir yazilisinin kaydi da) sorulmaz.
-    sorulacak = [x for x in liste if not hafiza_anahtari(x["kalip"], haf, ayri)]
+    # Hafizada anlami olan kalip (aile icin bir yazilisinin kaydi da) da
+    # sorulur: dil modeli hafizadaki anlamin bu veri setinin tanimlariyla
+    # uyusup uyusmadigini sayar (kart uyusmayani Adaylar'a koyar).
+    sorulacak = []
+    for x in liste:
+        hk = hafiza_anahtari(x["kalip"], haf, ayri)
+        sorulacak.append(dict(x, hafiza_anlam=haf[hk]) if hk and haf.get(hk) else x)
 
     def calis():
         # Yorum ve tarama parcalara bolunur, parcalar ayni anda calisir;

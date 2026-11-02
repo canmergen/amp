@@ -2079,8 +2079,30 @@ def _donem_alani(durum, baslat=True):
         elif k["tur"] == "yazilis":
             ek["aile"] = donem_mod.aile_adi(kalip)
         if h:
-            satir(kalip, k["tur"], k["kolon"], degerler, ornekler, h, "hafiza", "", "", "",
-                  haric_oneri=haf_haric.get(hk) or (), **ek)
+            # HAFIZADAKI KALIP: dil modeli hafizadaki anlamin bu veri setinin
+            # tanimlariyla uyusmasini sayar. Uyusuyorsa (ya da dil modeli
+            # bakamadiysa) tabloya hafizadaki anlamiyla gelir; uyusmuyorsa
+            # Adaylar'da, nedeniyle. Bakilana kadar "yorumlaniyor".
+            if not m and calisiyor and kalip not in onceki:
+                satir(kalip, k["tur"], k["kolon"], degerler, ornekler, h, "hafiza", "", "", "",
+                      haric_oneri=haf_haric.get(hk) or (), bekliyor=True, **ek)
+                continue
+            uyusmaz, kn = "", {}
+            if m and str(m.get("hafiza_anlam") or "") == h:
+                kn = m.get("kanit") or {}
+                if not m.get("donem", True):
+                    uyusmaz = ("Dil modeli bu veri setinde zaman bilgisi olmadığını düşünüyor"
+                               + (": " + m["not"] if m.get("not") else "."))
+                elif kn.get("bakilan", 0) >= 2 and kn.get("uyan", 0) < DONEM_KANIT_ESIGI * kn["bakilan"]:
+                    uyusmaz = ("Hafızadaki anlamla örnek tanımlardan yalnız %d / %d tanesi "
+                               "uyuşuyor; anlamı kontrol edin." % (kn.get("uyan", 0), kn["bakilan"]))
+            if uyusmaz:
+                satir(kalip, k["tur"], k["kolon"], degerler, ornekler, h, "hafiza", uyusmaz, "",
+                      m.get("model", ""), haric_oneri=haf_haric.get(hk) or (), olasi=True,
+                      kanit=kn, celiski=m.get("celiski", ""), **ek)
+            else:
+                satir(kalip, k["tur"], k["kolon"], degerler, ornekler, h, "hafiza", "", "", "",
+                      haric_oneri=haf_haric.get(hk) or (), **ek)
             continue
         if k["tur"] == "yazilis":
             # Dil modelinin ailesinden ayirdigi yazilis: anlami o cevaptan.
@@ -2650,6 +2672,9 @@ def _parca_listesi(durum):
     return parca_mod.parcalar(adlar, tanimlar, _zaman_desenleri(durum))
 
 
+ESLER_ORNEK = 3
+
+
 def _parca_alani(durum, baslat=True):
     """01.2.4.2 kartinin verisi (beklemez). baslat=False: dil modeli isi
     baslatilmaz (onceki onayli kontrol uygulanirken). Satir basina: parca, kolon
@@ -2724,6 +2749,10 @@ def _parca_alani(durum, baslat=True):
         if a in gecerli and b in gecerli:
             ciftler.setdefault(k, "Önceki kararınız")
     sayilar = {r["parca"]: r["kolon"] for r in satirlar}
+    # Ciftte her parcanin ilk ESLER_ORNEK ornek kolonu ve tanimi (kartta "i":
+    # ayni mi, hangi yazilis; ornekler satir basina karta gitmez).
+    ornek_harita = {x["parca"]: [[a, str(t or "")[:240]] for a, t in (x["ornekler"] or [])[:ESLER_ORNEK]]
+                    for x in liste}
     esler = []
     for k, neden in sorted(ciftler.items()):
         a, _s, b = k.partition("|")
@@ -2732,6 +2761,7 @@ def _parca_alani(durum, baslat=True):
         # Varsayilan standart: daha cok kolonda gecen yazilis.
         std = a if sayilar.get(a, 0) >= sayilar.get(b, 0) else b
         e = {"anahtar": k, "a": a, "b": b, "neden": neden,
+             "ornek": {a: ornek_harita.get(a, []), b: ornek_harita.get(b, [])},
              "karar": hk if hk in ("ayni", "farkli") else "", "standart": std,
              "kaynak": "hafiza" if hk in ("ayni", "farkli") else "", "onay": False}
         if o is not None:

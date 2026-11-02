@@ -1840,6 +1840,8 @@ def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False, kayitli=None):
         if k.get("birlikte"):
             s += "\n  BİRLİKTE: %s | tek başına: %d kolon" % (
                 ", ".join("%s (%d kolon)" % (ik, n) for ik, n in k["birlikte"]), int(k.get("tek") or 0))
+        if k.get("hafiza_anlam"):
+            s += "\n  HAFIZADAKİ ANLAM: %s" % str(k["hafiza_anlam"])[:200]
         oy = k.get("ornek_yazilis") or []
         for i, (ad, tanim) in enumerate(k["ornekler"]):
             etiket = (" [%s]" % oy[i]) if len(k.get("yazilislar") or []) > 1 and i < len(oy) else ""
@@ -1855,17 +1857,25 @@ def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False, kayitli=None):
                         "yukarıdaki kalıba bunlarla aynı ya da çok yakın anlam verme, "
                         "tanımlara göre farkını göster):\n" + "\n".join(
                             "- %s: %s" % (a, b[:200]) for a, b in kayitli[:40]))
+    baslik = ("KALIPLAR (kullanıcı bunları dönem bilgisi olarak ekledi; "
+              "\"donem\" false olsa bile \"anlam\" alanını tanımlara göre "
+              "mutlaka yaz):" if zorunlu_anlam else "KALIPLAR:")
+    # HAFIZADAKI ANLAM: kullanicinin onceki calismada onayladigi anlam; dil
+    # modeli yeni anlam kurmaz, bu anlamin tanimlarla uyusmasini sayar.
+    if any(k.get("hafiza_anlam") for k in kaliplar):
+        baslik = ("HAFIZADAKİ ANLAM yazan kalıbı kullanıcı önceki bir çalışmada bu anlamla "
+                  "onayladı. Onun için \"anlam\" alanına hafızadaki anlamı AYNEN yaz; "
+                  "\"kanit\"te örnek tanımlardan kaçının BU anlamla uyuştuğunu say; "
+                  "uyuşmuyorsa nedenini \"celiski\"ye yaz; \"donem\" alanını "
+                  "tanımlara göre yaz.\n" + baslik)
     model, veri = ork.json_cagir(ork.modeller("donem"), SISTEM_DONEM,
-                                 _veri_blogu(
-                                     "KALIPLAR (kullanıcı bunları dönem bilgisi olarak ekledi; "
-                                     "\"donem\" false olsa bile \"anlam\" alanını tanımlara göre "
-                                     "mutlaka yaz):" if zorunlu_anlam else "KALIPLAR:",
-                                     "\n".join(satirlar)), 0.1,
+                                 _veri_blogu(baslik, "\n".join(satirlar)), 0.1,
                                  zaman_asimi=DONEM_ZAMAN_ASIMI)
     if not model:
         return {}, _orkestra_hatasi(ork, "dönem bilgisi")
     gecerli = {k["kalip"]: {ik for ik, _n in (k.get("birlikte") or [])} for k in kaliplar}
     yazilislar = {k["kalip"]: list(k.get("yazilislar") or []) for k in kaliplar}
+    hafiza_anlam = {k["kalip"]: str(k.get("hafiza_anlam") or "") for k in kaliplar}
     sonuc = {}
     for x in veri.get("kolonlar") or []:
         if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
@@ -1891,7 +1901,7 @@ def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False, kayitli=None):
             "soru": _donem_metni(x.get("soru")), "not": _donem_metni(x.get("not")),
             "model": MODEL_ADLARI.get(model, model),
             "haric": sorted({str(h).strip().upper() for h in haric} & gecerli[str(x["ad"])]),
-            "ayri": ayri}
+            "ayri": ayri, "hafiza_anlam": hafiza_anlam[str(x["ad"])]}
     return sonuc, None
 
 
