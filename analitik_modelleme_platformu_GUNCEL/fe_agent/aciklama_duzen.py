@@ -63,7 +63,7 @@ _ONCELIK_HAVUZ = futures.ThreadPoolExecutor(max_workers=2)
 
 _SAYI = re.compile(r"(?<!\d)\d+(?!\d)")
 _KAYIT_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "onay",
-                   "yazilan", "kabul")
+                   "yazilan", "kabul", "elle")
 METIN_ALANLARI = ("aciklama", "karar", "soru", "ad_notu", "dagilim_notu")
 
 
@@ -89,6 +89,7 @@ class _Depo(object):
         self.onay = {}
         self.yazilan = {}
         self.kabul = {}             # kolon -> kullanicinin onayladigi aciklama (sade)
+        self.elle = {}              # kolon -> True: notu kolonun son aciklamasi (dil modeli yazmaz)
         self.girdiler = {}          # kolon -> son girdi
         self.aileler = {}           # aile -> [kolon]
         self.son_imza = {}          # kolon -> son girdinin imzasi
@@ -651,6 +652,64 @@ def _tek_isle(d, g):
     kaydet(d, zorla=True)
 
 
+def elle_sonuc(g, metin):
+    """Kullanicinin duzenledigi aciklamanin sonucu: metin aynen (yalniz
+    tarz: nokta, bas harf), kod denetimi notlari."""
+    ack = llm_mod.tarza_uydur(llm_mod.aciklama_temizle(metin), {"nokta": True, "buyuk_bas": True})
+    return {"imza": g["imza"], "aciklama": ack, "karar": "Sizin düzenlemeniz.", "ek": "",
+            "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": "", "model": "",
+            "kaynak": "elle", "kontrol": llm_mod.aciklama_sorunlari(ack)}
+
+
+def elle_yaz(klasor, kolon, metin):
+    """Kolonun aciklamasini kullanici yazdi (bos: kaldirilir, dil modeli
+    yeniden yazar). Doner: hata ya da None."""
+    d = depo(klasor)
+    metin = _norm(metin)
+    with _KILIT:
+        if metin:
+            d.notlar[str(kolon)] = metin
+            d.elle[str(kolon)] = True
+        else:
+            d.notlar.pop(str(kolon), None)
+            d.elle.pop(str(kolon), None)
+        d.dokun(str(kolon))
+    return kaydet(d, zorla=True)
+
+
+def aileye_elle_yaz(klasor, kolon, uygula=True):
+    """Kolonun elle aciklamasi ailesindeki kolonlara sayilari degistirilerek
+    yazilir (ya da geri alinir). Sayi eslemesi kurulamayan kolon atlanir.
+    Doner: (yazilan kolon sayisi, atlanan kolonlar, hata)."""
+    d = depo(klasor)
+    with _KILIT:
+        metin = d.notlar.get(kolon, "")
+        g0 = d.girdiler.get(kolon) or {}
+        aile = g0.get("aile")
+        uyeler = [k for k in d.aileler.get(aile, []) if k != kolon]
+        yazilan, atlanan = 0, []
+        for k in uyeler:
+            harita = sayi_haritasi(kolon, k)
+            if harita is None:
+                atlanan.append(k)
+                continue
+            uyarlanmis = sayilari_degistir(metin, harita)
+            if uygula and metin:
+                d.notlar[k] = uyarlanmis
+                d.elle[k] = True
+                yazilan += 1
+            elif _norm(d.notlar.get(k)) == _norm(uyarlanmis):
+                d.notlar.pop(k, None)
+                d.elle.pop(k, None)
+                yazilan += 1
+            d.dokun(k)
+        if uygula and metin:
+            d.aile_notlari[str(aile)] = {"kolon": kolon, "not": metin, "elle": True}
+        else:
+            d.aile_notlari.pop(str(aile), None)
+    return yazilan, atlanan, kaydet(d, zorla=True)
+
+
 def girdileri_ver(klasor, girdiler, oncelikli=(), devam=True, hatalari_yenile=False):
     """Kolonlarin guncel girdileri. Sonucu guncel olmayanlar (girdisi
     degismis ya da hic islenmemis) kuyruga girer; oncelikli kolonlar
@@ -667,6 +726,15 @@ def girdileri_ver(klasor, girdiler, oncelikli=(), devam=True, hatalari_yenile=Fa
         for g in girdiler:
             kolon = g["kolon"]
             d.son_imza[kolon] = g["imza"]
+            # ELLE: kullanicinin duzenledigi aciklama aynen son metin; dil
+            # modeline gitmez, kod denetimi yapilir.
+            if d.elle.get(kolon) and _norm(d.notlar.get(kolon)):
+                r = d.sonuclar.get(kolon)
+                if not (r and r.get("imza") == g["imza"] and r.get("kaynak") == "elle"):
+                    d.sonuclar[kolon] = elle_sonuc(g, d.notlar[kolon])
+                    d.dokun(kolon)
+                d.bekleyen.pop(kolon, None)
+                continue
             r = d.sonuclar.get(kolon)
             guncel = bool(r) and r.get("imza") == g["imza"] \
                 and not (hatalari_yenile and r.get("kaynak") == "hata")

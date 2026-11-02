@@ -10048,6 +10048,13 @@ const ACK_SUZGECLER = [["tumu", "Tümü", "toplam"], ["onaysiz", "Onaylanmadı",
 function ackSade(m) {
     return String(m || "").replace(/\s+/g, " ").trim();
 }
+/* DÜZENLEME ALANININ TABANI: sizin düzenlemeniz, yoksa dil modelinin
+   önerisi (satır hazırsa). Alan bununla dolar; farklı bırakılırsa
+   düzenleme sayılır. */
+function ackTaban(v) {
+    if (v.not) return tireSade(v.not);
+    return v.durum === "hazir" ? tireSade(v.aciklama || "") : "";
+}
 /* SÖZCÜK FARKI: yeni metnin sözcükleri, eskide karşılığı olmayanlar
    işaretli ([sözcük, yeni_mi]). Karşılaştırma küçük harf ve noktalamasız
    (en uzun ortak dizi). */
@@ -10346,8 +10353,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             giris = document.createElement("textarea");
             giris.className = "dg-giris dg-acik-giris";
             giris.rows = 2;
-            giris.placeholder = "Not ya da düzeltme yazın";
-            giris.value = tireSade(v.not || "");
+            giris.placeholder = "Dil modelinin önerisi gelince burada; değiştirebilirsiniz";
+            giris.value = ackTaban(v);
             giris.setAttribute("aria-label", v.kolon + " için düzenlemeniz");
             giris.addEventListener("blur", () => notKaydet(v.kolon));
             giris.addEventListener("input", () => { if (degisti) degisti(); });
@@ -10466,8 +10473,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         e.onayK.disabled = kilitli || saltOkunur || bekliyorMu(v);
         e.tr.classList.toggle("dg-parca-onayli", !!v.onayli);
         if (e.giris) {
-            if (document.activeElement !== e.giris && ackSade(e.giris.value) !== ackSade(v.not))
-                e.giris.value = tireSade(v.not || "");
+            if (document.activeElement !== e.giris && ackSade(e.giris.value) !== ackSade(ackTaban(v)))
+                e.giris.value = ackTaban(v);
             e.giris.disabled = kilit;
         }
         duzeltilmisCiz(e.tdD, v);
@@ -10605,11 +10612,14 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         const e = el.get(kolon), v = veriler.get(kolon);
         if (!e || !e.giris || !v || kilitli || saltOkunur) return;
         const metin = e.giris.value.trim();
-        if (ackSade(metin) === ackSade(v.not)) return;
+        /* Öneri (ya da önceki düzenleme) aynen kaldıysa kayıt yok. Alan
+           boşaltılırsa düzenleme kalkar, öneriyi dil modeli yeniden yazar. */
+        if (ackSade(metin) === ackSade(ackTaban(v))) return;
+        if (!metin && !v.not) { e.giris.value = ackTaban(v); return; }
         v.not = metin;
         v.durum = "isleniyor";
         satirGuncelle(v);
-        islem({ islem: "not", kolon: kolon, metin: metin })
+        islem({ islem: "not", kolon: kolon, metin: metin, tam: true })
             .then(d => {
                 if (d && d.hata) durumYaz(d.hata, true);
                 yoklaHemen();
@@ -10860,7 +10870,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         let n = 0;
         el.forEach((e, kolon) => {
             const v = veriler.get(kolon);
-            if (e.giris && v && ackSade(e.giris.value) !== ackSade(v.not)) {
+            if (e.giris && v && ackSade(e.giris.value) !== ackSade(ackTaban(v))
+                    && (e.giris.value.trim() || v.not)) {
                 n++;
                 notKaydet(kolon);
             }

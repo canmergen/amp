@@ -3124,7 +3124,8 @@ def aciklama_islem_endpoint():
         durum = _durum_al(anahtar)
         islem = str(istek.get("islem") or "")
         if islem == "not":
-            sonuc = akis.aciklama_not_kaydet(durum, istek.get("kolon"), istek.get("metin"))
+            sonuc = akis.aciklama_not_kaydet(durum, istek.get("kolon"), istek.get("metin"),
+                                             tam=bool(istek.get("tam")))
         elif islem == "parca":
             sonuc = akis.aciklama_parca_cevapla(durum, istek.get("parca"), istek.get("cevap"))
         elif islem == "aile":

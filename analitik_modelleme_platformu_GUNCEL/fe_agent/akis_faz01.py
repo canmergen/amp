@@ -3421,8 +3421,11 @@ ACIKLAMA_YONERGE = [
     "sözlükteki tanımla karşılaştırır, tanımda olup adda olmayan bilgiyi "
     "«Ek bilgi» olarak ayırır ve karttan tek, açık bir açıklama yazar. Satır, "
     "düzenlemesi bitince açılır.",
-    "Düzeltmek ya da bir soruyu cevaplamak için «Sizin Düzenlemeniz»e yazın; "
-    "alandan çıkınca kolon yeniden yazılır. Yazdığınız esas alınır.",
+    "«Sizin Düzenlemeniz»de dil modelinin önerdiği açıklama durur; düzeltmek "
+    "için orada değiştirin. Değiştirdiğiniz metin aynen kolonun açıklaması "
+    "olur (dil modeli yeniden yazmaz); alanı boşaltırsanız öneri yeniden "
+    "yazılır. Ailede «Ailedeki N Kolona da Uygula» metninizi sayıları "
+    "değiştirerek bütün aileye yazar; her üyeyi ayrıca da düzeltebilirsiniz.",
     "Onay üç aşamada sırayla: 1 Aileler, 2 Biçim Değişiklikleri, 3 "
     "Değişenler. Bir aşama, öncekinin bütün kolonları onaylanınca açılır. "
     "Soru, ad notu ya da kontrol notu olan satırlar toplu onaylanmaz; tek tek "
@@ -3430,7 +3433,8 @@ ACIKLAMA_YONERGE = [
 ACIKLAMA_SUTUNLAR = (
     "Orijinal: sözlükteki açıklama. {sozluk_tanim}'nda eklediğiniz tanımlar ve "
     "{tanimsiz_karar}'da tanımsız bırakılan kolonlar bu listede yok; olduğu gibi kalır.\n"
-    "Sizin Düzenlemeniz: notunuz ya da düzeltmeniz; kesin bilgi olarak kullanılır.\n"
+    "Sizin Düzenlemeniz: dil modelinin önerisi; değiştirirseniz sizin metniniz aynen "
+    "açıklama olur.\n"
     "Kart ve Açıklama: üstte kolonun kartı (onaylı parçalardan), altında "
     "onaylanınca sözlüğe yazılacak açıklama, dil modelinin kararı, varsa ek "
     "bilgi, sorusu, ad ve dağılım notu ve kod kontrolü.\n"
@@ -3887,13 +3891,30 @@ def _kart_kapali(durum):
             % akis_atif.adim("aciklama", durum))
 
 
-def aciklama_not_kaydet(durum, kolon, metin):
+def aciklama_not_kaydet(durum, kolon, metin, tam=False):
     """Kullanicinin notu kaydedilir ve kolon beklemeden yeniden kontrol
-    edilir. Not aileye uygulanmissa aile notu da guncellenir."""
+    edilir. Not aileye uygulanmissa aile notu da guncellenir. tam: metin
+    kartin "Düzenleme" alanindaki onerinin duzeltilmis hali; kolonun
+    aciklamasi AYNEN odur (dil modeli yeniden yazmaz, bkz.
+    aciklama_duzen.elle_yaz). Bos tam metin duzenlemeyi kaldirir; oneriyi
+    dil modeli yeniden yazar."""
     if not _aciklama_canli(durum):
         return {"hata": _kart_kapali(durum), "kolon_sayisi": 0}
     klasor = _aciklama_klasoru(durum)
     kolon = str(kolon or "").strip()
+    if tam:
+        hata = aciklama_mod.elle_yaz(klasor, kolon, metin)
+        d = aciklama_mod.depo(klasor)
+        with aciklama_mod._KILIT:
+            g0 = d.girdiler.get(kolon) or {}
+            an = d.aile_notlari.get(g0.get("aile")) or {}
+        # Aileye uygulanmis duzenleme degisince uyeler de guncellenir.
+        if an.get("elle") and an.get("kolon") == kolon:
+            _n, _atlanan, h2 = aciklama_mod.aileye_elle_yaz(klasor, kolon, bool(str(metin or "").strip()))
+            hata = h2 or hata
+        _aciklama_ver(durum, oncelikli=[kolon], devam=False)
+        _kontrol_aciklama_yaz(durum)
+        return {"hata": hata or ""}
     hata = aciklama_mod.not_yaz(klasor, kolon, metin)
     d = aciklama_mod.depo(klasor)
     aile = aciklama_mod.aile_anahtari(kolon)
@@ -3931,6 +3952,19 @@ def aciklama_aileye_uygula(durum, kolon, uygula=True):
         notu = d.notlar.get(kolon, "")
     if uygula and not notu:
         return {"hata": "Önce bu kolon için notunuzu yazın.", "kolon_sayisi": 0}
+    with aciklama_mod._KILIT:
+        elle = bool(d.elle.get(kolon))
+    if elle:
+        # Duzenlenen aciklama ailedeki kolonlara sayilari degistirilerek
+        # aynen yazilir (dil modeline gitmez).
+        adet, atlanan, hata = aciklama_mod.aileye_elle_yaz(klasor, kolon, uygula)
+        _aciklama_ver(durum, devam=True)
+        _kontrol_aciklama_yaz(durum)
+        if atlanan:
+            hata = ((hata + " ") if hata else "") + (
+                "%s kolonda sayılar eşlenemediği için düzenleme yazılmadı: %s." % (
+                    _sayi(len(atlanan)), ", ".join(atlanan[:6]) + (" ve diğerleri" if len(atlanan) > 6 else "")))
+        return {"hata": hata or "", "kolon_sayisi": adet}
     aile = aciklama_mod.aile_anahtari(kolon)
     hata = aciklama_mod.aile_notu_yaz(klasor, aile, kolon, notu if uygula else "")
     girdiler = _aciklama_ver(durum, devam=True)

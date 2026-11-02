@@ -995,6 +995,21 @@ tanıtır; sayfalar sol bardan açılır.
     orijinaliyle aynı ya da yalnız yazımı veya ekleri değişen ("aynen",
     "yazim", "ek"), hazır ve sorusu, notu, kontrol notu olmayan BÜTÜN
     2. aşama satırlarını (görünsün görünmesin) onaylar.
+  - **Sizin Düzenlemeniz = önerinin düzenlenebilir hâli:** alan dil
+    modelinin önerdiği açıklamayla dolu gelir (sizin düzenlemeniz varsa o;
+    app.js `ackTaban`). Değiştirip alandan çıkınca metin aynen kolonun
+    açıklaması olur (`islem: "not", tam: true`;
+    `aciklama_duzen.elle_yaz`, kayıtta `elle`; `girdileri_ver` bu kolonu
+    dil modeline göndermez, sonucu `elle_sonuc`: metin, tarz düzeltmesi,
+    kod denetimi; karar "Sizin düzenlemeniz."). Değiştirmeden çıkmak
+    kayıt değildir; alanı boşaltmak düzenlemeyi kaldırır ve öneri yeniden
+    yazılır. Ailede "Ailedeki N Kolona da Uygula" düzenlemenizi üyelere
+    sayıları değiştirerek aynen yazar (`aciklama_duzen.aileye_elle_yaz`;
+    sayısı eşlenemeyen üye atlanır, notta yazar; "Geri Al" yalnız hâlâ
+    aynı metni taşıyan üyelerden kaldırır). Kaynak kolonun düzenlemesi
+    değişince üyeler de güncellenir; her üye ayrıca kendi alanından
+    düzeltilebilir. Eski not biçimi (kısa ipucu, dil modeli işler) `tam`
+    gelmeyen isteklerde sürer.
   - **Aşamalar (zorunlu sıra):** kartın üstünde üç aşama, sayılarıyla
     ("1 · Aileler · 120 / 600"): 1 Aileler (adı yalnız sayıyla ayrılan
     kolonlar, aile başlıklarıyla), 2 Biçim Değişiklikleri (aile dışı;

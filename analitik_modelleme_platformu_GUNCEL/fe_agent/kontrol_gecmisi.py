@@ -42,7 +42,7 @@ from fe_agent.akis_durum import _folder
 
 DIZIN = "/KONTROL_GECMISI"
 ADIMLAR = ("donem", "parca", "aciklama", "kolon_ad")
-DEPO_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "kabul")
+DEPO_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "kabul", "elle")
 # Ardisik yazmalar (taslak, satir onayi) bu sure icinde tek yazmada birlesir.
 BIRLESTIR_SN = 1.0
 
