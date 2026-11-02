@@ -994,8 +994,19 @@ tanıtır; sayfalar sol bardan açılır.
   - **Biçim Değişikliklerini Onayla · N:** süzgeçlerin yanında; açıklaması
     orijinaliyle aynı ya da yalnız yazımı veya ekleri değişen ("aynen",
     "yazim", "ek"), hazır ve sorusu, notu, kontrol notu olmayan BÜTÜN
-    satırları (görünsün görünmesin) onaylar. Önerilen sıra: Aileyi Onayla,
-    Biçim Değişikliklerini Onayla, sonra Değişen ve sorulu satırlar tek tek.
+    2. aşama satırlarını (görünsün görünmesin) onaylar.
+  - **Aşamalar (zorunlu sıra):** kartın üstünde üç aşama, sayılarıyla
+    ("1 · Aileler · 120 / 600"): 1 Aileler (adı yalnız sayıyla ayrılan
+    kolonlar, aile başlıklarıyla), 2 Biçim Değişiklikleri (aile dışı;
+    "aynen", "yazim", "ek"), 3 Değişenler (kalan: "degisen", sorulu,
+    düzenlenemeyen). Tablo, süzgeç sayıları ve düğmeler yalnız seçili
+    aşamanın satırları için; "Biçim Değişikliklerini Onayla" yalnız 2.
+    aşamada. Aşama, öncekinin bütün satırları onaylanınca açılır (kilitli
+    aşama soluk, "Önceki aşama bitince açılır"); 2. aşama, dil modeli aile
+    dışı satırları bitirmeden bitmiş sayılmaz. Aşama bitince sonraki
+    kendiliğinden açılır; önceki bir aşama sonradan eksik kalırsa ona
+    dönülür. Biten aşamaya tıklanıp bakılabilir. Onaylanmış (salt okunur)
+    kartta aşama yok. Adımın onayı yine bütün kolonların onayını ister.
   - **Ek bilgi tekrarı:** ek bilginin bütün sözcükleri açıklamada geçiyorsa
     (`aciklama_duzen.ek_acikta`, satırda `ek_acikta`) "Ek bilgi" satırı
     gösterilmez ve Ek Bilgi süzgecinde sayılmaz; ek bilgi veride, Önerilen

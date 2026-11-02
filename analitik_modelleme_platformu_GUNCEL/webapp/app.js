@@ -10184,7 +10184,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     bicimOnay.title = "Açıklaması orijinaliyle aynı ya da yalnız yazımı veya ekleri değişen, notu olmayan "
         + "bütün satırlar onaylanır.";
     const bicimSatirlari = () => sira.map(k => veriler.get(k))
-        .filter(v => v && topluOlur(v) && ["aynen", "yazim", "ek"].includes(v.degisim));
+        .filter(v => v && topluOlur(v) && asamaOf(v) === 2);
     bicimOnay.onclick = () => {
         if (kilitli || saltOkunur) return;
         const kolonlar = bicimSatirlari().map(v => v.kolon);
@@ -10200,10 +10200,87 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     function bicimDurum() {
         const n = bicimSatirlari().length;
         bicimOnay.textContent = "Biçim Değişikliklerini Onayla · " + ftBinlik(n);
-        bicimOnay.hidden = saltOkunur;
+        bicimOnay.hidden = saltOkunur || gorulenAsama() !== 2;
         bicimOnay.disabled = kilitli || !n;
     }
     ust.append(suzKap, ara, bicimOnay, topluOnay);
+
+    /* ---- AŞAMALAR ----
+       Onay sırayla: 1 Aileler (adı yalnız sayıyla ayrılan kolonlar), 2
+       Biçim Değişiklikleri (aile dışı; açıklaması aynı ya da yalnız yazımı
+       veya ekleri değişen), 3 Değişenler (kalan: anlamı değişen, sorulu,
+       düzenlenemeyen). Tablo yalnız seçili aşamanın satırlarını gösterir;
+       bir aşama, öncekinin bütün satırları onaylanınca açılır (önceki
+       aşama sonradan eksik kalırsa geri ona dönülür). Biten aşamaya geri
+       bakılabilir. Salt okunur kartta aşama yok. */
+    const ASAMALAR = [
+        [1, "Aileler", "Adı yalnız sayıyla ayrılan kolonlar. Her ailenin ortak kartına ve açıklama "
+            + "kalıbına bakıp «Aileyi Onayla» deyin; tek tek bakılacak üyeleri «Üyeleri Göster» ile "
+            + "açıp onaylayın. Bütün aileler onaylanınca 2. aşama açılır."],
+        [2, "Biçim Değişiklikleri", "Açıklaması orijinaliyle aynı ya da yalnız yazımı veya ekleri "
+            + "değişen kolonlar; bilgi değişmedi. «Biçim Değişikliklerini Onayla» ile toplu onaylayın; "
+            + "sorulu ya da notlu satırlara tek tek bakın. Bitince 3. aşama açılır."],
+        [3, "Değişenler", "Açıklamasının anlamı değişen, sorusu, notu olan ya da düzenlenemeyen "
+            + "kolonlar. Her satırı kontrol edip onaylayın."]];
+    let secilenAsama = null;
+    const asamaBar = elYap("div", "dg-acik-asamalar");
+    asamaBar.setAttribute("role", "tablist");
+    const asamaNot = elYap("div", "dg-donem-pano-not dg-acik-asama-not", "");
+    const asamaBtn = {};
+    ASAMALAR.forEach(([n, ad]) => {
+        const b = elYap("button", "dg-acik-asama", "");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.onclick = () => {
+            if (b.disabled) return;
+            secilenAsama = n === aktifAsama() ? null : n;
+            gosterilen = ACK_SAYFA; suzgec = "tumu";
+            suzgecCiz(); tabloCiz();
+        };
+        asamaBtn[n] = b;
+        asamaBar.appendChild(b);
+    });
+    const asamaOf = v => (v.aile && Number(v.aile_boyu || 1) > 1) ? 1
+        : (v.durum === "hazir" && ["aynen", "yazim", "ek"].includes(v.degisim)) ? 2 : 3;
+    const asamaSatirlari = n => sira.map(k => veriler.get(k)).filter(v => v && asamaOf(v) === n);
+    /* Aşama bitti: satırlarının hepsi onaylı. 2. aşama, dil modeli aile
+       dışı satırları bitirmeden bitmiş sayılmaz (bekleyen satır biçim
+       değişikliği çıkabilir). */
+    function asamaBitti(n) {
+        if (!yuklendi) return false;
+        if (asamaSatirlari(n).some(v => !v.onayli)) return false;
+        if (n === 2 && sira.some(k => { const v = veriler.get(k); return v && asamaOf(v) !== 1 && bekliyorMu(v); }))
+            return false;
+        return true;
+    }
+    function aktifAsama() {
+        for (const [n] of ASAMALAR) if (!asamaBitti(n)) return n;
+        return 3;
+    }
+    function gorulenAsama() {
+        const a = aktifAsama();
+        if (secilenAsama !== null && secilenAsama > a) secilenAsama = null;
+        return secilenAsama === null ? a : secilenAsama;
+    }
+    function asamaCiz() {
+        asamaBar.hidden = asamaNot.hidden = saltOkunur;
+        if (saltOkunur) return;
+        const a = aktifAsama(), g = gorulenAsama();
+        ASAMALAR.forEach(([n, ad, ack]) => {
+            const satir = asamaSatirlari(n);
+            const onayli = satir.filter(v => v.onayli).length;
+            const b = asamaBtn[n];
+            b.textContent = n + " · " + ad + " · " + ftBinlik(onayli) + " / " + ftBinlik(satir.length);
+            b.disabled = n > a;
+            b.title = n > a ? "Önceki aşama bitince açılır." : "";
+            b.classList.toggle("secili", n === g);
+            b.classList.toggle("bitti", asamaBitti(n));
+            b.setAttribute("aria-selected", n === g ? "true" : "false");
+            if (n === g) asamaNot.textContent = ack;
+        });
+    }
+    kart.appendChild(asamaBar);
+    kart.appendChild(asamaNot);
     kart.appendChild(ust);
 
     /* ---- Tablo ---- */
@@ -10415,6 +10492,19 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             ? v.aile_notu_kaynagi + " kolonundaki notunuz bu kolona da uygulandı." : "";
         const ab = aileBas.get(v.aile);
         if (ab) ab.guncelle();
+        asamaTazele();
+    }
+    /* Onay değişince aşama çubuğu; aktif aşama değiştiyse tablo da. */
+    let sonAktif_ = null;
+    function asamaTazele() {
+        if (!yuklendi || saltOkunur) return;
+        const a = aktifAsama();
+        if (a !== sonAktif_) {
+            const ilk = sonAktif_ === null;
+            sonAktif_ = a;
+            if (!ilk) { gosterilen = ACK_SAYFA; suzgec = "tumu"; suzgecCiz(); tabloYenidenCiz(); return; }
+        }
+        asamaCiz();
     }
 
     /* ---- AİLELER ----
@@ -10541,7 +10631,16 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     }
 
     /* ---- Süzgeç ---- */
-    function uyar(v) {
+    function uyar(v, k_) {
+        if (!saltOkunur && asamaOf(v) !== gorulenAsama()) return false;
+        return suzgecUyar(v, k_ === undefined ? suzgec : k_) && aramaUyar(v);
+    }
+    function aramaUyar(v) {
+        if (!arama) return true;
+        return [v.kolon, v.orijinal, v.aciklama, v.not].join(" ")
+            .toLocaleLowerCase("tr").includes(arama);
+    }
+    function suzgecUyar(v, suzgec) {
         const hazir = v.durum === "hazir";
         if (suzgec === "onaysiz" && v.onayli) return false;
         if (suzgec === "ek" && !(hazir && v.ek && !v.ek_acikta)) return false;
@@ -10553,9 +10652,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         if (suzgec === "kontrol" && !(hazir && (v.kontrol || []).length)) return false;
         if (suzgec === "elle" && !v.not) return false;
         if (suzgec === "hata" && v.durum !== "hata") return false;
-        if (!arama) return true;
-        return [v.kolon, v.orijinal, v.aciklama, v.not].join(" ")
-            .toLocaleLowerCase("tr").includes(arama);
+        return true;
     }
 
     function tabloCiz() {
@@ -10603,9 +10700,13 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     }
 
     function suzgecCiz() {
+        asamaCiz();
+        /* Sayılar görülen aşamanın satırlarından (salt okunurda bütün kart). */
+        const satirlar_ = sira.map(k => veriler.get(k))
+            .filter(v => v && (saltOkunur || asamaOf(v) === gorulenAsama()));
         ACK_SUZGECLER.forEach(([k, et, sk]) => {
             const b = suzBtn[k];
-            const n = Number(sayac[sk] || 0);
+            const n = satirlar_.filter(v => suzgecUyar(v, k)).length;
             b.textContent = et + " · " + ftBinlik(n);
             b.classList.toggle("secili", suzgec === k);
             b.hidden = k !== "tumu" && !n && suzgec !== k;
@@ -10703,6 +10804,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         });
         son = Math.max(son, Number(a.son || 0));
         yuklendi = true;
+        if (sonAktif_ === null && !saltOkunur) sonAktif_ = aktifAsama();
         suzgecCiz();
         tabloCiz();
         sorulariCiz();

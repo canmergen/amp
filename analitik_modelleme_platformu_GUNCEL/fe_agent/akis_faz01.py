@@ -3423,9 +3423,10 @@ ACIKLAMA_YONERGE = [
     "düzenlemesi bitince açılır.",
     "Düzeltmek ya da bir soruyu cevaplamak için «Sizin Düzenlemeniz»e yazın; "
     "alandan çıkınca kolon yeniden yazılır. Yazdığınız esas alınır.",
-    "Her kolonu kontrol edip onaylayın. Soru, ad notu ya da kontrol notu olan "
-    "satırlar toplu onaylanmaz; tek tek bakıp onaylayın. Açıklama sonradan "
-    "değişirse onay kalkar."]
+    "Onay üç aşamada sırayla: 1 Aileler, 2 Biçim Değişiklikleri, 3 "
+    "Değişenler. Bir aşama, öncekinin bütün kolonları onaylanınca açılır. "
+    "Soru, ad notu ya da kontrol notu olan satırlar toplu onaylanmaz; tek tek "
+    "bakıp onaylayın. Açıklama sonradan değişirse onay kalkar."]
 ACIKLAMA_SUTUNLAR = (
     "Orijinal: sözlükteki açıklama. {sozluk_tanim}'nda eklediğiniz tanımlar ve "
     "{tanimsiz_karar}'da tanımsız bırakılan kolonlar bu listede yok; olduğu gibi kalır.\n"

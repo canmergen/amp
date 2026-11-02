@@ -3630,6 +3630,16 @@ span.bolme-cip { cursor: default; }
 /* Açıklamada orijinalde karşılığı olmayan sözcükler. */
 mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: underline;
   text-decoration-color: var(--yesil); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+/* Kolon Kartları aşamaları: sırayla açılır. */
+.dg-acik-asamalar { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--b-3) 0 var(--b-2); }
+.dg-acik-asama {
+  font: inherit; font-size: var(--fs-kucuk); padding: 4px 12px; cursor: pointer;
+  border: 1px solid var(--kenar-guclu); border-radius: 999px; background: var(--yuzey); color: var(--metin);
+}
+.dg-acik-asama.secili { border-color: var(--kirmizi); color: var(--kirmizi); font-weight: var(--fw-kalin); }
+.dg-acik-asama.bitti:not(.secili) { border-color: var(--yesil); color: var(--yesil); }
+.dg-acik-asama:disabled { opacity: .5; cursor: not-allowed; }
+.dg-acik-asama-not { margin-bottom: var(--b-2); }
 /* Aile başlığı ve üyeleri. */
 .dg-kart .dg-acik-tablo tr.dg-acik-aile-bas > td { background: var(--yuzey-alt); text-align: left; }
 .dg-acik-aile-ust { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-bottom: 6px; }
