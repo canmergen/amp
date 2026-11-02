@@ -8641,12 +8641,21 @@ function dogrulamaKartiEkle(alan, blok) {
             const bek = acikErisim.bekliyor(), s = acikErisim.sayac();
             const durdu = acikErisim.durduruldu();
             const onaysiz = Number(s.onaysiz || 0);
+            /* Onay bekleyen varsa etkin aşamaya göre tek adım yazılır. */
+            const as = acikErisim.asama ? acikErisim.asama() : null;
+            const asamaYazi = !as || !as.kalan ? ""
+                : "Aşama " + as.n + " / " + as.toplam + " (" + as.ad + "): " + (as.n === 1
+                    ? ftBinlik(as.aile) + " aile onay bekliyor. Yukarıdaki kutularda «Aileyi Onayla»ya basın; "
+                      + "kutuda adı yazan kolonları tek tek onaylayın."
+                    : as.n === 2
+                    ? ftBinlik(as.kalan) + " kolon onay bekliyor. Yukarıda «Biçim Değişikliklerini Onayla»ya basın."
+                    : ftBinlik(as.kalan) + " kolon onay bekliyor. Her kolonu okuyup onay kutusunu işaretleyin.");
             birincil.disabled = bek || onaysiz > 0;
             gerekce.textContent = bek
                 ? "Dil modeli " + ftBinlik(Number(s.bekleyen || 0)) + " kolonu düzenliyor; bitince "
                   + "onaylanabilir. Beklemek istemezseniz İptal'e basın."
-                : onaysiz > 0 ? ftBinlik(onaysiz) + " kolon onay bekliyor. Her kolonun kartını ve "
-                  + "açıklamasını kontrol edip onaylayın (süzgeç: Onaylanmadı)."
+                : onaysiz > 0 ? (asamaYazi || ftBinlik(onaysiz) + " kolon onay bekliyor. Her kolonu "
+                  + "kontrol edip onaylayın.")
                 : durdu ? ftBinlik(Number(s.bekleyen || 0)) + " kolon düzenlenmedi; onaylarsanız "
                   + "orijinal açıklamaları kalır."
                 : Number(s.soru || 0) > 0 ? ftBinlik(Number(s.soru)) + " kolonda cevapsız soru var; "
@@ -10221,14 +10230,15 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
        aşama sonradan eksik kalırsa geri ona dönülür). Biten aşamaya geri
        bakılabilir. Salt okunur kartta aşama yok. */
     const ASAMALAR = [
-        [1, "Aileler", "Adı yalnız sayıyla ayrılan kolonlar. Her ailenin ortak kartına ve açıklama "
-            + "kalıbına bakıp «Aileyi Onayla» deyin; tek tek bakılacak üyeleri «Üyeleri Göster» ile "
-            + "açıp onaylayın. Bütün aileler onaylanınca 2. aşama açılır."],
-        [2, "Biçim Değişiklikleri", "Açıklaması orijinaliyle aynı ya da yalnız yazımı veya ekleri "
-            + "değişen kolonlar; bilgi değişmedi. «Biçim Değişikliklerini Onayla» ile toplu onaylayın; "
-            + "sorulu ya da notlu satırlara tek tek bakın. Bitince 3. aşama açılır."],
-        [3, "Değişenler", "Açıklamasının anlamı değişen, sorusu, notu olan ya da düzenlenemeyen "
-            + "kolonlar. Her satırı kontrol edip onaylayın."]];
+        [1, "Aileler", "Her ailede açıklamayı okuyun; doğruysa «Aileyi Onayla»ya basın. Kutuda adı "
+            + "yazan kolonları «Kolonları Aç ve Tek Tek Bak» ile açıp tek tek onaylayın. Aileler "
+            + "bitince 2. aşama açılır."],
+        [2, "Biçim Değişiklikleri", "Bu kolonlarda bilgi değişmedi; yalnız yazım ya da ek düzeltildi. "
+            + "Listeye göz atıp «Biçim Değişikliklerini Onayla»ya basın; sorulu ya da notlu kolonları "
+            + "tek tek onaylayın. Bitince 3. aşama açılır."],
+        [3, "Değişenler", "Bu kolonlarda açıklamanın anlamı değişti ya da sorusu, notu var. Her kolonu "
+            + "okuyup onay kutusunu işaretleyin. Hepsi bitince aşağıdaki «Kolon Kartlarını Onayla ve "
+            + "Devam Et» açılır."]];
     let secilenAsama = null;
     const asamaBar = elYap("div", "dg-acik-asamalar");
     asamaBar.setAttribute("role", "tablist");
@@ -10289,11 +10299,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             const aileler = new Map();
             asamaSatirlari(1).forEach(v => (aileler.get(v.aile) || aileler.set(v.aile, []).get(v.aile)).push(v));
             const biten = [...aileler.values()].filter(u => u.every(v => v.onayli)).length;
-            asamaNot.textContent = "Bu aşamada " + ftBinlik(aileler.size) + " aile ("
-                + ftBinlik(asamaSatirlari(1).length) + " kolon) var; " + ftBinlik(biten) + " aile onaylandı. "
-                + "Her ailenin açıklamasını okuyun: bütün kolonları için doğruysa «Aileyi Onayla», bir "
-                + "kolonda yanlışsa «Kolonları Aç ve Tek Tek Bak» ile o kolonu düzeltin. Bütün aileler "
-                + "onaylanınca 2. aşama açılır.";
+            asamaNot.textContent = ftBinlik(aileler.size) + " aile (" + ftBinlik(asamaSatirlari(1).length)
+                + " kolon), " + ftBinlik(biten) + " aile onaylı. " + ASAMALAR[0][2];
         }
     }
     kart.appendChild(asamaBar);
@@ -10528,7 +10535,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
        Adı yalnız sayılarla ayrılan kolonlar (aynı ölçümün farklı dönemleri)
        bir başlık altında: ailenin anahtarı, ortak kart, açıklama kalıbı
        (sayılar [sayı]), onay sayısı. Tümü süzgecinde ve aramasız üyeler
-       kapalı gelir; "Üyeleri Göster" açar. "Aileyi Onayla" kalıba uyan,
+       kapalı gelir; "Kolonları Aç ve Tek Tek Bak" açar. "Aileyi Onayla" kalıba uyan,
        notu olmayan hazır üyeleri onaylar; soru, not ya da kalıba uymayan
        üye tek tek bakılır. */
     const aileBas = new Map();         // aile -> {tr, guncelle}
@@ -10960,6 +10967,13 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             && (dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0),
         durduruldu: () => dm === "iptal",
         sayac: () => Object.assign({}, sayac),
+        /* Etkin aşama ve onay bekleyenleri (alttaki gerekçe için). */
+        asama: () => {
+            if (!yuklendi || saltOkunur) return null;
+            const n = aktifAsama(), bekleyen = asamaSatirlari(n).filter(v => !v.onayli);
+            return { n, ad: ASAMALAR[n - 1][1], toplam: ASAMALAR.length, kalan: bekleyen.length,
+                     aile: new Set(bekleyen.map(v => v.aile)).size };
+        },
         kaydedilmemis: kaydedilmemis,
         kilitle: k => {
             kilitli = k;

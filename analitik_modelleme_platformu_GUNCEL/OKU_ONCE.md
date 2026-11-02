@@ -1054,6 +1054,14 @@ tanıtır; sayfalar sol bardan açılır.
     yapılacağını yazar. Sayfa aileyi bölmez; kalan hep aileyse düğme "Daha
     Fazla Aile Göster (N aile daha)". "Görünenleri Onayla" yalnız çizilen
     satırları onaylar.
+  - **Adım adım yönlendirme:** aşama notu her aşamada yalnız o aşamada
+    ne yapılacağını yazar (1. aşamada önce aile ve kolon sayısı, kaç
+    ailenin onaylı olduğu). Kartın altındaki gerekçe etkin aşamaya göre
+    tek adım yazar (`acikErisim.asama()`): "Aşama 1 / 3 (Aileler): N aile
+    onay bekliyor", "Aşama 2 / 3 (Biçim Değişiklikleri): N kolon onay
+    bekliyor", "Aşama 3 / 3 (Değişenler): N kolon onay bekliyor"; etkin
+    aşamada bekleyen yoksa (2. aşama dil modelini bekliyorsa) toplam onay
+    bekleyen sayısı yazılır.
   - **02'ye aile açıklaması:** aile kataloğunda bütün üyelerin açıklaması
     yalnız sayılarla ayrılıyorsa tek örnek yerine "açıklama kalıbı (bütün
     üyelerde aynı; [sayı] üyeye göre değişir)" gider
