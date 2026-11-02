@@ -2251,11 +2251,16 @@ ANLAMIN KAYNAĞI (sırasıyla): KULLANICI, AİLE NOTU, PARÇALAR, ORİJİNAL.
     hesap türü, kimin ya da neyin ölçüldüğü ...) EKLEME; genel bilgiyle
     tahmin etme.
 
+EN AZ DEĞİŞİKLİK: yalnız gereken yeri düzelt. ORİJİNAL anlaşılır ve
+doğruysa cümleyi yeniden kurma; anlamı aynı kalan ifadeyi (sözcük eki,
+sözcük sırası, eş anlamlı sözcük; "son 3 günde" ile "son 3 günlük") değiştirme.
+ORİJİNAL tam ve doğruysa AYNEN yaz (yalnız yazım ve noktalama düzeltilir).
+
 NASIL DÜZELTİRSİN
   1. Kısaltmaları ve İngilizce terimleri PARÇALAR'daki anlamla ya da açık
      Türkçe karşılığıyla aç.
-  2. Dönemi açık yaz ("<sayı> günlük", "<sayı> aylık" gibi; PARÇALAR'daki
-     anlamla).
+  2. Dönem yazmıyorsa ya da belirsizse açık yaz (PARÇALAR'daki anlamla);
+     ORİJİNAL'de dönem zaten açıksa ("son 3 günde") ifadesine dokunma.
   3. Yarım ya da bozuk cümleyi tamamla; sırayı düzenle: zaman penceresi +
      kimin / neyin + ne ölçüldüğü + uygulanan hesap ya da karşılaştırma +
      birim ya da değerlerin anlamı.
@@ -2294,7 +2299,8 @@ yok"). Kısa ad öbeği; birden fazlaysa noktalı virgülle. Yoksa boş. Bu
 bilgi açıklamada da geçer.
 
 KARAR ("karar"): ne yaptığını tek kısa cümleyle yaz. Açıklama zaten doğru
-ve tamsa "Aynen alındı."; değiştirdiysen "Netleştirildi: <neyi
+ve tamsa "Aynen alındı." (yalnız yazım ya da noktalama düzelttiysen
+"Yazım düzeltildi."); değiştirdiysen "Netleştirildi: <neyi
 değiştirdiğin>."; kullanıcı notunu işlediysen "Notunuz işlendi: <kısaca>.".
 
 ÖRNEKLER (köşeli parantezler yer tutucudur; kalıbı göster, içeriği

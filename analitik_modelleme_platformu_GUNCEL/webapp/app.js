@@ -10175,7 +10175,35 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             .finally(() => { topluOnay.disabled = false; });
         if (degisti) degisti();
     };
-    ust.append(suzKap, ara, topluOnay);
+    /* BİÇİM DEĞİŞİKLİKLERİ: açıklaması orijinaliyle aynı, yalnız yazımı
+       ya da ekleri değişen bütün satırlar (görünsün görünmesin) tek
+       düğmeyle onaylanır; bilgi değişmedi. Soru, not ya da kontrol notu
+       olan satır yine tek tek. */
+    const bicimOnay = elYap("button", "dg-toplu-btn", "");
+    bicimOnay.type = "button";
+    bicimOnay.title = "Açıklaması orijinaliyle aynı ya da yalnız yazımı veya ekleri değişen, notu olmayan "
+        + "bütün satırlar onaylanır.";
+    const bicimSatirlari = () => sira.map(k => veriler.get(k))
+        .filter(v => v && topluOlur(v) && ["aynen", "yazim", "ek"].includes(v.degisim));
+    bicimOnay.onclick = () => {
+        if (kilitli || saltOkunur) return;
+        const kolonlar = bicimSatirlari().map(v => v.kolon);
+        if (!kolonlar.length) return;
+        bicimOnay.disabled = true;
+        kolonlar.forEach(k => { const v = veriler.get(k); if (v) { v.onayli = true; satirGuncelle(v); } });
+        islem({ islem: "onay", kolonlar: kolonlar, onay: true })
+            .then(d => { if (d && d.hata) durumYaz(d.hata, true); yoklaHemen(); })
+            .catch(() => yoklaHemen())
+            .finally(() => { bicimDurum(); });
+        if (degisti) degisti();
+    };
+    function bicimDurum() {
+        const n = bicimSatirlari().length;
+        bicimOnay.textContent = "Biçim Değişikliklerini Onayla · " + ftBinlik(n);
+        bicimOnay.hidden = saltOkunur;
+        bicimOnay.disabled = kilitli || !n;
+    }
+    ust.append(suzKap, ara, bicimOnay, topluOnay);
     kart.appendChild(ust);
 
     /* ---- Tablo ---- */
@@ -10567,6 +10595,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         dahaBtn.textContent = "Daha Fazla Göster (" + ftBinlik(kalan) + " satır daha)";
         topluOnay.hidden = saltOkunur;
         topluOnay.disabled = kilitli || !gorunenler().some(topluOlur);
+        bicimDurum();
         bosEl.hidden = !(yuklendi && !uyan.length);
         bosEl.textContent = sira.length ? "Bu süzgece uyan satır yok."
             : atlandi ? "Açıklamalar değiştirilmeden geçildi." : "Düzenlenecek kolon yok.";

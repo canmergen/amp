@@ -984,6 +984,18 @@ tanıtır; sayfalar sol bardan açılır.
     noktalamasız en uzun ortak dizi); bütün metni yeniden okumak gerekmez.
     Sözlüğe yazılan "N kolonun açıklaması düzeltildi" sayısı yine her
     farklı metni sayar.
+  - **En az değişiklik (istem, `ACIKLAMA_SURUMU` 3):** dil modeli yalnız
+    gereken yeri düzeltir; orijinal anlaşılır ve doğruysa cümleyi yeniden
+    kurmaz, anlamı aynı kalan ifadeyi (ek, sözcük sırası, eş anlamlı)
+    değiştirmez; dönem orijinalde açıksa ("son 3 günde") dokunmaz, yalnız
+    yazmıyorsa ya da belirsizse açar. Yalnız yazım düzeltildiyse karar
+    "Yazım düzeltildi.". Sürüm değiştiği için kolonlar bir kez yeniden
+    yazılır.
+  - **Biçim Değişikliklerini Onayla · N:** süzgeçlerin yanında; açıklaması
+    orijinaliyle aynı ya da yalnız yazımı veya ekleri değişen ("aynen",
+    "yazim", "ek"), hazır ve sorusu, notu, kontrol notu olmayan BÜTÜN
+    satırları (görünsün görünmesin) onaylar. Önerilen sıra: Aileyi Onayla,
+    Biçim Değişikliklerini Onayla, sonra Değişen ve sorulu satırlar tek tek.
   - **Ek bilgi tekrarı:** ek bilginin bütün sözcükleri açıklamada geçiyorsa
     (`aciklama_duzen.ek_acikta`, satırda `ek_acikta`) "Ek bilgi" satırı
     gösterilmez ve Ek Bilgi süzgecinde sayılmaz; ek bilgi veride, Önerilen
