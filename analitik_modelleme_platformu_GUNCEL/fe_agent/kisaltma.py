@@ -650,7 +650,7 @@ TUR_ACIKLAMA = {
     "pencere": "zaman penceresi ya da dönem",
     "olcu": "ölçülen büyüklük (tutar, adet, süre ...)",
     "istatistik": "ölçüme uygulanan hesap (ortalama, en büyük, oran, toplam, fark ...)",
-    "diger": "bayrak, düzey ya da yukarıdakilere girmeyen",
+    "diger": "bayrak (FLAG, IND) ya da yukarıdakilere girmeyen",
 }
 VARSAYILAN_KALIP = [t for t, _e in TURLER]
 

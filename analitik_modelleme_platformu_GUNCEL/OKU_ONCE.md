@@ -881,6 +881,11 @@ tanıtır; sayfalar sol bardan açılır.
     Yeni kolon adında ek arkasındaki birime yapışır ve onun yerini alır
     (`parca._ekleri_bagla`: TXN_CNT_PER_DAY_AVG → TXN_CNT_AVG_PER_DAY);
     sondaki ek Diğer. Dil modeli de Ek önerebilir (`parca.ISTEM_SURUMU` 3).
+    Tür açıklamaları (`parca.TURLER`, dil modeli istemleri aynı metni
+    kullanır): Nitelik "ölçümü daraltan alt küme ya da özellik (kanal,
+    ürün, taraf, yüksek ya da düşük tutarlı)"; Diğer "bayrak (FLAG, IND) ya
+    da hiçbir türe girmeyen" (HIGH ve LOW gibi düzey sözcükleri Diğer'e
+    itilmesin; `parca.ISTEM_SURUMU` 4).
     **Tür değerlendirmesi** (onaydan hemen sonra, ayrı adım değil):
     "Ad Parçalarını Onayla ve Devam Et"e basılınca adım hemen geçmez;
     kendi satırı olan her parçanın (aynı gruptaki üyeler standart satırı
@@ -894,7 +899,13 @@ tanıtır; sayfalar sol bardan açılır.
     ilerleme (düğme kapalı, "Türler onayladığınız anlamlara göre
     değerlendiriliyor"); bitince "N parçanın türü anlamıyla uyumlu" ve
     öneri varsa tablo (PARÇA / ANLAM / SİZİN TÜRÜNÜZ / ÖNERİLEN TÜR / NEDEN
-    / KARAR: Öneriyi Al, Benimki Kalsın). Öneri yoksa adım kendiliğinden
+    / KARAR: Öneriyi Al, Benimki Kalsın; parçanın yanında "i": geçtiği ilk
+    üç kolon ve tanımı, yanıtın `ornek` alanı). Gerekçe tek cümle ve bir
+    örnek kolona dayanır; örneklerle desteklenemeyen öneri yapılmaz; tür
+    adıyla yazılır (istemde kod yanında ad), kalan kod ekranda adına
+    çevrilir (`llm.tur_kodlarini_adlandir`: tırnaklı her kod, tırnaksız
+    yalnız Türkçe sözcük olmayanlar: diger, olcu, yon, karsilastirma,
+    zaman_birim, sure). Öneri yoksa adım kendiliğinden
     geçer. Öneri varsa karar verilmeden düğme kapalı ("N tür önerisine
     karar verin"); karar verilince düğmeye yeniden basılır. Öneriyi Al
     satırın türünü değiştirir (onayı kalır). Kararlar yalnız bu kartta

@@ -2810,7 +2810,7 @@ def parca_tur_degerlendir(durum, satirlar):
     kullanicida: kart onerileri gosterir, adim kullanici karar verince
     gecer. Ayni istek yoklama icin yinelenir (is bir kez baslar). Doner:
     {"durum", "biten", "toplam", "hata", "sonuc": {parca: {"uygun", "tur",
-    "neden"}}}."""
+    "neden"}}, "ornek": {parca: [[kolon, tanim]]} (onerisi olanlar)}."""
     liste = {x["parca"]: x for x in _parca_listesi(durum)}
     girdi = []
     for g in satirlar or []:
@@ -2833,6 +2833,9 @@ def parca_tur_degerlendir(durum, satirlar):
         if r is not None:
             sonuc[x["parca"]] = r
     d["sonuc"] = sonuc
+    # Oneri tablosunda parcanin yaninda "i": ilk uc ornek kolon ve tanimi.
+    d["ornek"] = {x["parca"]: [[a, str(t or "")[:240]] for a, t in x["ornekler"]]
+                  for x in girdi if not (sonuc.get(x["parca"]) or {}).get("uygun", True)}
     return d
 
 

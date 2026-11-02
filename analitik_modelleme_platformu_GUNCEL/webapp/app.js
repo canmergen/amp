@@ -9619,7 +9619,11 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         const tb = document.createElement("tbody");
         oneriler.forEach(o => {
             const tr = elYap("tr", "dg-satir");
-            tr.append(elYap("td", "dg-kolon", o.parca), elYap("td", "", tireSade(o.anlam)),
+            const tdP = elYap("td", "dg-kolon", o.parca);
+            /* "i": parçanın geçtiği ilk üç kolon ve tanımı. */
+            if ((o.ornek || []).length) tdP.appendChild(bolmeBilgiSimgesi(tireSade("Geçtiği kolonlardan örnekler:\n"
+                + o.ornek.map(([k, t]) => k + ": " + (t || "Tanım yok")).join("\n")), o.parca));
+            tr.append(tdP, elYap("td", "", tireSade(o.anlam)),
                       elYap("td", "", turAdi(o.tur)), elYap("td", "", turAdi(o.oneri)),
                       elYap("td", "dg-donem-olasi-neden", tireSade(o.neden || "")));
             const td = elYap("td", "");
@@ -9666,7 +9670,8 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
                 const yeni = [];
                 bekleyen.forEach(x => {
                     const r = sonuc[x.parca];
-                    if (r && r.uygun === false && r.tur) yeni.push(Object.assign({}, x, { oneri: r.tur, neden: r.neden || "", karar: "" }));
+                    if (r && r.uygun === false && r.tur) yeni.push(Object.assign({}, x, {
+                        oneri: r.tur, neden: r.neden || "", karar: "", ornek: (d.ornek || {})[x.parca] || [] }));
                     else { if (!r) bakilamayan++; turKombin.add(kombin(x)); }
                 });
                 turDeg = { durum: "bitti", biten: bekleyen.length, toplam: bekleyen.length,

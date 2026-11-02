@@ -2023,7 +2023,7 @@ ANLAMIN KAYNAĞI: ÖNCE PARÇANIN KENDİSİ, SONRA TANIMLAR.
 TÜR ("tur"): parçanın adda taşıdığı bilgi; birini yaz:
   konu: ölçümün konusu olan varlık ya da olay (işlem, kredi, müşteri)
   yon: hareketin yönü (giriş, çıkış, borç, alacak)
-  nitelik: ölçümü daraltan alt küme ya da özellik (kanal, ürün, taraf)
+  nitelik: ölçümü daraltan alt küme ya da özellik (kanal, ürün, taraf, yüksek ya da düşük tutarlı)
   olcu: ölçülen büyüklük (tutar, adet, bakiye, oran)
   istatistik: uygulanan hesap (toplam, ortalama, en büyük, fark)
   karsilastirma: iki şeyin oranı ya da farkı (önceki döneme göre)
@@ -2033,7 +2033,7 @@ TÜR ("tur"): parçanın adda taşıdığı bilgi; birini yaz:
   sure: değerin kendisi bir süre (TMSNCFRST: ilk işlemden bu yana
     geçen süre; yaş, vade)
   birim: değerin birimi (TL, USD)
-  diger: bayrak, düzey ya da bunlara girmeyen
+  diger: bayrak (FLAG, IND) ya da hiçbir türe girmeyen
   ek: tek başına bilgi taşımayan, ARKASINDAKİ parçaya bağlanan ek ya da
     edat (PER: PER_DAY günlük; BY: BY_CUST müşteri tarafından). Anlamına
     arkasındaki parçanın yerine [parça] yaz: "[parça]lık", "[parça]
@@ -2101,6 +2101,12 @@ def parca_yorumla(liste, orkestra=None):
 # TUR DEGERLENDIRMESI (01.2.4.2 onayindan hemen sonra): kullanicinin
 # onayladigi anlama gore secilen tur uygun mu? Uygun degilse en uygun tur
 # ve tek cumle neden. Karar kullanicida kalir (kart oneri olarak gosterir).
+# Tur kodlarinin ekrandaki adlari (dil modeli gerekcede bunlari yazar).
+TUR_GORUNEN = {"konu": "Konu", "yon": "Yön", "nitelik": "Nitelik", "olcu": "Ölçü",
+               "istatistik": "İstatistik", "karsilastirma": "Karşılaştırma",
+               "pencere": "Zaman Penceresi", "nokta": "Zaman Noktası",
+               "zaman_birim": "Zaman Birimi", "sure": "Geçen Süre", "birim": "Birim",
+               "diger": "Diğer", "ek": "Ek"}
 SISTEM_PARCA_TUR = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon adlarında
 geçen PARÇALAR verilecek; her biri için kullanıcının onayladığı ANLAM, seçtiği
 TÜR ve birkaç örnek kolonun adı ile sözlükteki tanımı.
@@ -2108,13 +2114,19 @@ TÜR ve birkaç örnek kolonun adı ile sözlükteki tanımı.
 Görevin her parçanın TÜRÜNÜN, onaylanan anlamına ve adlarda kullanılışına
 uyup uymadığını değerlendirmek. Anlamı değiştirme, yalnız türe bak. Tür
 açıkça yanlışsa en uygun türü öner; uygunsa ya da emin değilsen "uygun"
-true yaz. Yalnız TÜRLER listesindeki kodları kullan.
+true yaz. "tur" alanında yalnız TÜRLER listesindeki kodları kullan.
+
+NEDEN ("neden"): tek cümle. Örnek kolonlardan birine dayan (ör.
+"TXN_HIGH_AMT_CNT yüksek tutarlı işlemleri seçiyor; ölçümü daraltan bir
+özellik"). Türü kodla değil, parantezdeki adıyla yaz (Nitelik, Diğer, Geçen
+Süre). Parçada ya da örneklerde olmayan bir şeyi (bayrak gibi) varsayma;
+örneklerle desteklenemiyorsa öneri yapma, "uygun" true yaz.
 
 TÜRLER:
-""" + "\n".join("  %s: %s" % (k, a) for k, a in (
+""" + "\n".join("  %s (%s): %s" % (k, TUR_GORUNEN.get(k, k), a) for k, a in (
     ("konu", "ölçümün konusu olan varlık ya da olay (işlem, kredi, müşteri)"),
     ("yon", "hareketin yönü (giriş, çıkış, borç, alacak)"),
-    ("nitelik", "ölçümü daraltan alt küme ya da özellik (kanal, ürün, taraf)"),
+    ("nitelik", "ölçümü daraltan alt küme ya da özellik (kanal, ürün, taraf, yüksek ya da düşük tutarlı)"),
     ("olcu", "ölçülen büyüklük (tutar, adet, bakiye, oran)"),
     ("istatistik", "uygulanan hesap (toplam, ortalama, en büyük, fark)"),
     ("karsilastirma", "iki şeyin oranı ya da farkı (önceki döneme göre)"),
@@ -2123,12 +2135,24 @@ TÜRLER:
     ("zaman_birim", "sayısız zaman birimi (DAY: gün, MONTH: ay)"),
     ("sure", "değerin kendisi bir süre (ilk işlemden bu yana geçen süre, yaş, vade)"),
     ("birim", "değerin birimi (TL, USD)"),
-    ("diger", "bayrak, düzey ya da bunlara girmeyen"),
+    ("diger", "bayrak (FLAG, IND) ya da hiçbir türe girmeyen"),
     ("ek", "arkasındaki parçaya bağlanan ek; anlamında [parça] yazar (PER: [parça]lık)"))) + """
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına parçayı AYNEN yaz;
 her parça için bir satır. Uygunsa "tur" ve "neden" boş.
 {"parcalar": [{"ad": "...", "uygun": true, "tur": "", "neden": ""}]}""" + SINIRLAYICI_KURALI
+
+
+# Gerekcede kalan tur kodu ekranda adina cevrilir: tirnakli her kod;
+# tirnaksiz yalniz Turkce sozcuk olmayan kodlar (konu, nitelik gibi
+# sozcukler metinde kendi anlamiyla gecebilir).
+_KOD_TIRNAKLI = re.compile(r"[\'\"‘’“”`]\s*(%s)\s*[\'\"‘’“”`]" % "|".join(TUR_GORUNEN))
+_KOD_YALIN = re.compile(r"(?<![\wçğıöşü])(diger|olcu|yon|karsilastirma|zaman_birim|sure)(?![\wçğıöşü])")
+
+
+def tur_kodlarini_adlandir(metin):
+    m = _KOD_TIRNAKLI.sub(lambda x: TUR_GORUNEN[x.group(1)], str(metin or ""))
+    return _KOD_YALIN.sub(lambda x: TUR_GORUNEN[x.group(1)], m)
 
 
 def parca_tur_degerlendir(liste, orkestra=None):
@@ -2163,7 +2187,8 @@ def parca_tur_degerlendir(liste, orkestra=None):
             uygun = _secenek(uygun) not in ("false", "hayir", "0")
         t = _secenek(str(x.get("tur") or "")).replace(" ", "_")
         if uygun is False and t in PARCA_TURLERI and t != secilen[ad]:
-            sonuc[ad] = {"uygun": False, "tur": t, "neden": _donem_metni(x.get("neden"))}
+            sonuc[ad] = {"uygun": False, "tur": t,
+                         "neden": tur_kodlarini_adlandir(_donem_metni(x.get("neden")))}
         else:
             sonuc[ad] = {"uygun": True, "tur": "", "neden": ""}
     return sonuc, None

@@ -33,7 +33,7 @@ TANIM_EN_UZUN = 200       # ornek tanim kirpma
 KOMSU_ADET = 3            # parca basina gosterilen en sik komsu
 YORUM_PARCA = 12          # dil modeline bir cagrida giden parca
 ES_ZAMANLI = 4            # ayni anda en cok bu kadar cagri
-ISTEM_SURUMU = 3
+ISTEM_SURUMU = 4
 
 # TURLER: parcanin adda tasidigi bilginin turu. Zaman turleri donem
 # turleriyle ayni anlamda (pencere, nokta, zaman_birim, sure); kolon adinda
@@ -41,7 +41,8 @@ ISTEM_SURUMU = 3
 TURLER = [
     ("konu", "Konu", "Ölçümün konusu olan varlık ya da olay (işlem, kredi, müşteri)."),
     ("yon", "Yön", "Hareketin yönü (giriş, çıkış, borç, alacak)."),
-    ("nitelik", "Nitelik", "Ölçümü daraltan alt küme ya da özellik (kanal, ürün, taraf)."),
+    ("nitelik", "Nitelik", "Ölçümü daraltan alt küme ya da özellik (kanal, ürün, taraf, "
+                           "yüksek ya da düşük tutarlı)."),
     ("olcu", "Ölçü", "Ölçülen büyüklük (tutar, adet, bakiye, oran)."),
     ("istatistik", "İstatistik", "Uygulanan hesap (toplam, ortalama, en büyük, fark)."),
     ("karsilastirma", "Karşılaştırma", "İki şeyin oranı ya da farkı (önceki döneme göre)."),
@@ -50,7 +51,7 @@ TURLER = [
     ("zaman_birim", "Zaman Birimi", "Sayısız zaman birimi (DAY: gün, MONTH: ay)."),
     ("sure", "Geçen Süre", "Değerin kendisi bir süre (ilk işlemden bu yana geçen süre, yaş, vade)."),
     ("birim", "Birim", "Değerin birimi (TL, USD)."),
-    ("diger", "Diğer", "Bayrak, düzey ya da bunlara girmeyen."),
+    ("diger", "Diğer", "Bayrak (FLAG, IND) ya da hiçbir türe girmeyen."),
     ("ek", "Ek", "Arkasındaki parçaya bağlanan ek; anlamda [parça] o parçanın yerini "
                  "tutar (PER: [parça]lık, PER_DAY günlük; BY: [parça] tarafından)."),
 ]
