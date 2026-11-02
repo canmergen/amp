@@ -238,8 +238,8 @@ def _ayni_govde(a, b):
 def degisim_turu(orijinal, aciklama):
     """"aynen" / "yazim" (yalniz harf, noktalama, Turkce karakter) / "ek"
     (sozcuklerin govdesi ve sirasi ayni, yalniz ekler farkli) / "degisen"."""
-    if _norm(orijinal) == _norm(aciklama):
-        return "aynen"
+    if _norm(orijinal).rstrip(" .") == _norm(aciklama).rstrip(" ."):
+        return "aynen"          # yalniz sona nokta eklendi ya da kalkti
     o, a = _sozcukler(orijinal, True), _sozcukler(aciklama, True)
     if o == a:
         return "yazim"

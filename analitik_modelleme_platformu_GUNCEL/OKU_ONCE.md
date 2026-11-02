@@ -1007,6 +1007,12 @@ tanıtır; sayfalar sol bardan açılır.
     kendiliğinden açılır; önceki bir aşama sonradan eksik kalırsa ona
     dönülür. Biten aşamaya tıklanıp bakılabilir. Onaylanmış (salt okunur)
     kartta aşama yok. Adımın onayı yine bütün kolonların onayını ister.
+  - **Kontrol notu ve zaman aralığı:** kod denetimi (`llm.aciklama_sorunlari`)
+    "sayı ile sayı arası"nı değer aralığı istatistiği sayar; içinde zaman
+    sözcüğü (saat, gün, hafta, ay, yıl, dakika, dönem, gece ...) ya da
+    saat biçimi (00:00) olan aralık istatistik değildir ("00-06 saatleri
+    arası", "14 gün ile 28 gün arası"). Metin yalnız sona nokta eklenerek
+    kaldıysa değişim "aynen" ve karar "Aynen alındı." gösterilir.
   - **Ek bilgi tekrarı:** ek bilginin bütün sözcükleri açıklamada geçiyorsa
     (`aciklama_duzen.ek_acikta`, satırda `ek_acikta`) "Ek bilgi" satırı
     gösterilmez ve Ek Bilgi süzgecinde sayılmaz; ek bilgi veride, Önerilen

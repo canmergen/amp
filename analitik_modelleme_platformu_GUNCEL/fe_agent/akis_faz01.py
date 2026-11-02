@@ -3706,6 +3706,10 @@ def _aciklama_satiri(d, g):
 def _degisim_yaz(satir):
     """Satira degisim turu ve ek bilginin aciklamada gecip gecmedigi."""
     satir["degisim"] = aciklama_mod.degisim_turu(satir.get("orijinal"), satir.get("aciklama"))
+    # Metin aynen kaldiysa (yalniz sona nokta) dil modelinin "Yazım
+    # düzeltildi." karari yaniltir.
+    if satir["degisim"] == "aynen" and str(satir.get("karar") or "").startswith(("Yazım", "Netleştirildi")):
+        satir["karar"] = "Aynen alındı."
     satir["ek_acikta"] = bool(satir.get("ek")) and aciklama_mod.ek_acikta(satir["ek"],
                                                                           satir.get("aciklama"))
 

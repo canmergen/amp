@@ -756,6 +756,20 @@ _ISTATISTIK = [
     re.compile(r"(min|maks|medyan|ortanca)\w*\s*[:=]?\s*-?\d", re.I),
 ]
 
+# ZAMAN ARALIGI istatistik degildir: "00-06 saatleri arası", "14 gün ile
+# 28 gün arası", "saat 00:00 ile 06:00 arası" adin donem bilgisidir.
+_ZAMAN_SOZ = re.compile(r"(?:\d:\d|\b(?:saat|gün|gun|hafta|ay|yıl|yil|dakika|dönem|donem|gece|"
+                        r"sabah|öğle|ogle|akşam|aksam)\w*)", re.I)
+
+
+def _istatistik_mi(desen, metin):
+    for e in desen.finditer(metin):
+        if desen is _ISTATISTIK[0] and _ZAMAN_SOZ.search(e.group(0)):
+            continue
+        return True
+    return False
+
+
 # Kesinlik / tahmin sozcukleri: tanimda yer almaz.
 _TAHMIN_SOZ = re.compile(
     r"\b(?:muhtemelen|b[üu]y[üu]k\s+(?:olas[ıi]l[ıi]kla|ihtimalle)|"
@@ -796,7 +810,7 @@ def aciklama_sorunlari(metin, veri_seti=None):
     if not m:
         return []
     sorun = []
-    if any(k.search(m) for k in _ISTATISTIK):
+    if any(_istatistik_mi(k, m) for k in _ISTATISTIK):
         sorun.append("sayısal istatistik içeriyor (değer aralığı, tekil sayısı ...)")
     if _TAHMIN_SOZ.search(m):
         sorun.append("tahmin sözcüğü içeriyor (muhtemelen, kesinlikle ...)")
