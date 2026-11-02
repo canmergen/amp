@@ -2034,6 +2034,10 @@ TÜR ("tur"): parçanın adda taşıdığı bilgi; birini yaz:
     geçen süre; yaş, vade)
   birim: değerin birimi (TL, USD)
   diger: bayrak, düzey ya da bunlara girmeyen
+  ek: tek başına bilgi taşımayan, ARKASINDAKİ parçaya bağlanan ek ya da
+    edat (PER: PER_DAY günlük; BY: BY_CUST müşteri tarafından). Anlamına
+    arkasındaki parçanın yerine [parça] yaz: "[parça]lık", "[parça]
+    tarafından"; başka türün anlamına [parça] yazma
 
 YAZIM:
   - "anlam": parçanın KENDİSİNİN anlamı, kısa ve küçük harfle (ör.
@@ -2047,7 +2051,7 @@ YAZIM:
     + SINIRLAYICI_KURALI
 
 PARCA_TURLERI = ("konu", "yon", "nitelik", "olcu", "istatistik", "karsilastirma", "pencere",
-                 "nokta", "zaman_birim", "sure", "birim", "diger")
+                 "nokta", "zaman_birim", "sure", "birim", "diger", "ek")
 
 
 def parca_turu(x):

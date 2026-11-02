@@ -9126,8 +9126,14 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
             if (r.bekliyor && pa.dm === "calisiyor" && !duzenlendi.has(r.parca)) return;
             const e = etkin(r.parca, grup);
             const st = (e.standart || "").trim();
+            const ekSay = ((e.anlam || "").match(/\[\s*par[çc]a\s*\]/gi) || []).length;
             if (!(e.anlam || "").trim()) sor[r.parca] = "Anlam boş.";
             else if (!e.tur) sor[r.parca] = "Tür seçilmedi.";
+            /* EK: anlamda bir kez [parça] (arkasındaki parçanın yeri) ve ekin kendisi. */
+            else if (e.tur === "ek" && (ekSay !== 1 || !(e.anlam || "").replace(/\[\s*par[çc]a\s*\]/gi, "").trim()))
+                sor[r.parca] = "Ek türünde anlam bir kez [parça] ve eki içermeli; [parça] arkasındaki "
+                    + "parçanın yerini tutar (ör. [parça]lık, [parça] tarafından).";
+            else if (e.tur !== "ek" && ekSay) sor[r.parca] = "[parça] yalnız Ek türünde yazılır.";
             else if (!PARCA_STANDART.test(st))
                 sor[r.parca] = "Standart yazılış geçersiz: büyük harfle başlar, yalnız büyük harf ve rakam, en çok 12 karakter.";
             else if (sahip[st] && sahip[st].size > 1)

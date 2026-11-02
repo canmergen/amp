@@ -33,7 +33,7 @@ TANIM_EN_UZUN = 200       # ornek tanim kirpma
 KOMSU_ADET = 3            # parca basina gosterilen en sik komsu
 YORUM_PARCA = 12          # dil modeline bir cagrida giden parca
 ES_ZAMANLI = 4            # ayni anda en cok bu kadar cagri
-ISTEM_SURUMU = 2
+ISTEM_SURUMU = 3
 
 # TURLER: parcanin adda tasidigi bilginin turu. Zaman turleri donem
 # turleriyle ayni anlamda (pencere, nokta, zaman_birim, sure); kolon adinda
@@ -51,6 +51,8 @@ TURLER = [
     ("sure", "Geçen Süre", "Değerin kendisi bir süre (ilk işlemden bu yana geçen süre, yaş, vade)."),
     ("birim", "Birim", "Değerin birimi (TL, USD)."),
     ("diger", "Diğer", "Bayrak, düzey ya da bunlara girmeyen."),
+    ("ek", "Ek", "Arkasındaki parçaya bağlanan ek; anlamda [parça] o parçanın yerini "
+                 "tutar (PER: [parça]lık, PER_DAY günlük; BY: [parça] tarafından)."),
 ]
 TUR_KODLARI = [t for t, _a, _c in TURLER]
 # Kolon adinda parcanin yeri (ad standardi bu yerlerin sirasidir).
@@ -431,9 +433,27 @@ def ad_birimleri(ad, bilgi, desenler=(), yazilislar=()):
             i = j + 1
             continue
         o = (bilgi or {}).get(t[i]) or {}
-        birimler.append([str(o.get("standart") or t[i]).upper(), ad_yeri(o.get("tur"))])
+        birimler.append([str(o.get("standart") or t[i]).upper(),
+                         "ek" if o.get("tur") == "ek" else ad_yeri(o.get("tur"))])
         i += 1
-    return _yazilisla(birimler, yazilislar) if yazilislar else birimler
+    if yazilislar:
+        birimler = _yazilisla(birimler, yazilislar)
+    return _ekleri_bagla(birimler)
+
+
+def _ekleri_bagla(birimler):
+    """EK arkasindaki birime yapisir, onun yerini alir (PER + DAY ->
+    PER_DAY, yeri Zaman). Sondaki ek tek basina "diger"."""
+    cikti = []
+    for m, y in reversed(birimler):
+        if y == "ek":
+            if cikti:
+                cikti[-1] = [m + AYRAC + cikti[-1][0], cikti[-1][1]]
+            else:
+                cikti.append([m, "diger"])
+            continue
+        cikti.append([m, y])
+    return list(reversed(cikti))
 
 
 def _yazilisla(birimler, yazilislar):
@@ -468,6 +488,71 @@ def _yazilisla(birimler, yazilislar):
         cikti.append([m, y])
         i += 1
     return cikti
+
+
+# EK: anlamdaki [parça] arkasindaki parcanin anlamiyla dolar; bitisik
+# ekin unlusu son unluye uyar (gün + [parça]lık -> günlük).
+EK_YER = re.compile(r"\[\s*par[çc]a\s*\]", re.I)
+_UNLU = "aeıioöuü"
+_SERT = "fstkçşhp"
+
+
+def ek_hatasi(anlam):
+    """Ek turunun anlami: tam bir [parça] icermeli."""
+    n = len(EK_YER.findall(str(anlam or "")))
+    if n != 1:
+        return ("Ek türünde anlam bir kez [parça] içermeli; [parça] arkasındaki parçanın "
+                "yerini tutar (ör. [parça]lık, [parça] tarafından).")
+    if not EK_YER.sub("", str(anlam)).strip():
+        return "Ek türünde anlam yalnız [parça] olamaz; eki de yazın (ör. [parça]lık)."
+    return ""
+
+
+def _kucuk(m):
+    return str(m or "").replace("I", "ı").replace("İ", "i").lower()
+
+
+# Son unlusu kalin oldugu halde ince ek alan sozcukler (saatlik, kontrolde).
+INCE_EK_ALAN = {"saat", "kontrol", "normal", "global", "total", "rol", "gol", "hal", "kalp",
+                "alkol", "petrol", "metal", "dikkat", "seyahat", "ihtimal", "sual", "terminal",
+                "portal", "digital", "dijital", "final", "festival", "spiral", "lineal"}
+
+
+def _uyum(kok, ek):
+    """Bitisik ekin unlulerini ve bastaki d/t'yi kokun sonuna uydurur."""
+    kok = _kucuk(kok)
+    son = next((c for c in reversed(kok) if c in _UNLU), "")
+    if not son:
+        return ek
+    kalin = son in "aıou" and kok.split()[-1] not in INCE_EK_ALAN
+    yuvarlak = son in "oöuü"
+    cikti = []
+    for c in ek:
+        if c in "ıiuü":
+            c = ("u" if yuvarlak else "ı") if kalin else ("ü" if yuvarlak else "i")
+        elif c in "ae":
+            c = "a" if kalin else "e"
+        cikti.append(c)
+    ek = "".join(cikti)
+    if ek[:1] in "dt" and kok[-1:] in _SERT:
+        ek = "t" + ek[1:]
+    elif ek[:1] == "t" and kok[-1:] and kok[-1:] not in _SERT:
+        ek = "d" + ek[1:]
+    return ek
+
+
+def ek_uygula(sablon, metin):
+    """Ekin anlami arkasindaki parcanin anlamiyla: "[parça]lık" + "gün" ->
+    "günlük"; "[parça] tarafından" + "müşteri" -> "müşteri tarafından"."""
+    sablon, metin = str(sablon or ""), str(metin or "").strip()
+    m = EK_YER.search(sablon)
+    if not m:
+        return sablon
+    once, sonra = sablon[:m.start()], sablon[m.end():]
+    bitisik = re.match(r"^[^\s,.;:()]+", sonra)
+    if bitisik and metin:
+        sonra = _uyum(metin, bitisik.group(0)) + sonra[bitisik.end():]
+    return re.sub(r"\s+", " ", once + metin + sonra).strip()
 
 
 def ad_kur(birimler, sira):

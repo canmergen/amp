@@ -870,7 +870,18 @@ tanıtır; sayfalar sol bardan açılır.
     altında) / STANDART / ONAY. Yazım Sorunları: kodun bulduğu yakın
     yazılışlar (sessiz harf iskeleti aynı, tek harf farkı, biri
     ötekinin başı) ve önerilen anlamı aynı çıkan parçalar; Aynı / Farklı
-    ve Onay. Çiftteki her parçanın yanında "i": geçtiği ilk üç kolon ve
+    ve Onay. **Ek türü** (`ek`): tek başına bilgi taşımayan, arkasındaki
+    parçaya bağlanan ek (PER, BY). Anlamda bir kez [parça] yazılır, o
+    parçanın yerini tutar: PER "[parça]lık", BY "[parça] tarafından"
+    (`parca.ek_hatasi`; başka türün anlamında [parça] olamaz). Kolon
+    kartında ek kendi alanını almaz, arkasındaki parçanın anlamıyla
+    birleşip onun alanına girer (`parca.ek_uygula`; bitişik ekin ünlüsü ve
+    baştaki d/t son sözcüğe uyar: gün → günlük, ay → aylık, saat → saatlik,
+    son 30 gün → son 30 günlük; TXN_BY_CUST: nitelik "müşteri tarafından").
+    Yeni kolon adında ek arkasındaki birime yapışır ve onun yerini alır
+    (`parca._ekleri_bagla`: TXN_CNT_PER_DAY_AVG → TXN_CNT_AVG_PER_DAY);
+    sondaki ek Diğer. Dil modeli de Ek önerebilir (`parca.ISTEM_SURUMU` 3).
+    Çiftteki her parçanın yanında "i": geçtiği ilk üç kolon ve
     sözlük tanımı (`ESLER_ORNEK`; eşin `ornek` alanı), aynı mı ve hangi
     yazılış kullanılsın diye karşılaştırmak için. "Aynı" denen gruptaki parçalar adlarda seçilen yazılışı ve
     onun satırındaki anlam ile türü alır (satırları kilitli, "TXN ile

@@ -2913,6 +2913,10 @@ def _parca_karari_isle(alan, karar):
             hatalar.append("%s: anlam boş." % p)
         if s["tur"] not in parca_mod.TUR_KODLARI:
             hatalar.append("%s: tür seçilmedi." % p)
+        elif s["anlam"] and s["tur"] == "ek" and parca_mod.ek_hatasi(s["anlam"]):
+            hatalar.append("%s: %s" % (p, parca_mod.ek_hatasi(s["anlam"])))
+        elif s["tur"] != "ek" and parca_mod.EK_YER.search(s["anlam"]):
+            hatalar.append("%s: [parça] yalnız Ek türünde yazılır." % p)
         if not parca_mod.STANDART_DESEN.match(s["standart"]):
             hatalar.append("%s: standart yazılış '%s' geçersiz (büyük harfle başlar; yalnız "
                            "büyük harf ve rakam, en çok 12 karakter)." % (p, s["standart"]))
@@ -3474,8 +3478,11 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
     """Ad parcalarinin onayli anlamlari. onayli: Ad Parcalari'nin sonucu
     {PARCA: {"anlam", "tur", "standart"}}. Doner: (istem satirlari, aile
     karsilastirmasi icin donem degeri silinmis ozet, kolon kartinin
-    parcalari [(alan, metin)])."""
-    parcalar, ozet, kullanildi, kart = [], [], set(), []
+    parcalari [(alan, metin)]). EK turundeki parca (PER: "[parça]lık")
+    kendi satirini almaz: arkasindaki parcanin anlamiyla birlesir ve onun
+    alanina girer (PER_DAY -> zaman: günlük)."""
+    parcalar, ozet, kullanildi, kart = [], [], set(), []      # kart: [(sira, alan, metin)]
+    ekler = {}                                                # sira -> (parca, sablon, satir)
     for i, p in enumerate(t):
         if i in kullanildi:
             continue
@@ -3488,7 +3495,7 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
             for k, r, anlam, _haric, degerler, tur in desenler:
                 if r.match(ikili):
                     parcalar.append((ikili, _donem_parca_metni(k, anlam, degerler, ikili, tur)))
-                    kart.append(("zaman", degerler.get(ikili) or donem_mod.deger_anlami(k, anlam, ikili)))
+                    kart.append((i, "zaman", degerler.get(ikili) or donem_mod.deger_anlami(k, anlam, ikili)))
                     ozet.append((k, anlam))
                     kullanildi.update((i, i + 1))
                     bulundu = True
@@ -3499,7 +3506,7 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
             # Kalip, haric tutulan ikilinin icinde donem sayilmaz.
             if r.match(p) and not donem_mod.haric_mi(t, i, haric):
                 parcalar.append((p, _donem_parca_metni(k, anlam, degerler, p, tur)))
-                kart.append(("zaman", degerler.get(p) or donem_mod.deger_anlami(k, anlam, p)))
+                kart.append((i, "zaman", degerler.get(p) or donem_mod.deger_anlami(k, anlam, p)))
                 ozet.append((k, anlam))
                 bulundu = True
                 break
@@ -3509,13 +3516,29 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
         if parca_notlari.get(p):
             parcalar.append((p, parca_notlari[p] + " (kullanıcının cevabı)"))
             ozet.append((p, parca_notlari[p]))
-            kart.append((KART_ALANI.get(o.get("tur"), "diger"), parca_notlari[p]))
+            kart.append((i, KART_ALANI.get(o.get("tur"), "diger"), parca_notlari[p]))
+        elif o.get("anlam") and o.get("tur") == "ek":
+            ekler[i] = (p, o["anlam"], len(parcalar))
+            parcalar.append((p, o["anlam"]))
+            ozet.append((p, o["anlam"]))
         elif o.get("anlam"):
             tur_adi = PARCA_TUR_ADI.get(o.get("tur"), "")
-            parcalar.append((p, o["anlam"] + (" (%s)" % tur_adi.lower() if tur_adi else "")))
+            parcalar.append((p, o["anlam"] + (" (%s)" % parca_mod._kucuk(tur_adi) if tur_adi else "")))
             ozet.append((p, o["anlam"]))
-            kart.append((KART_ALANI.get(o.get("tur"), "diger"), o["anlam"]))
-    return parcalar, ozet, kart
+            kart.append((i, KART_ALANI.get(o.get("tur"), "diger"), o["anlam"]))
+    # Ekler sondan baslayarak arkasindaki parcaya baglanir (PER_BY_CUST:
+    # once BY + CUST, sonra PER + o).
+    for i in sorted(ekler, reverse=True):
+        p, sablon, n = ekler[i]
+        j = next((x for x, (sira, _a, _m) in enumerate(kart) if sira == i + 1), None)
+        if j is None:
+            parcalar[n] = (p, "%s (ek; arkasında anlamı bilinen parça yok)" % sablon)
+            continue
+        _s, alan, metin = kart[j]
+        birlesik = parca_mod.ek_uygula(sablon, metin)
+        kart[j] = (i, alan, birlesik)
+        parcalar[n] = (p, "%s (ek; arkasındaki parçayla: %s)" % (sablon, birlesik))
+    return parcalar, ozet, [(alan, metin) for _s, alan, metin in kart]
 
 
 def _aciklama_girdileri(durum):
