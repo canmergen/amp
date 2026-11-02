@@ -1032,16 +1032,28 @@ tanıtır; sayfalar sol bardan açılır.
     (`aciklama_duzen.ek_acikta`, satırda `ek_acikta`) "Ek bilgi" satırı
     gösterilmez ve Ek Bilgi süzgecinde sayılmaz; ek bilgi veride, Önerilen
     Sözlük'te ve 02'ye giden katalogda kalır.
-  - **Aileler:** adı yalnız sayılarla ayrılan kolonlar (satırda `aile`,
-    `aciklama_duzen.aile_anahtari`; iki ya da daha çok üye) tabloda bir
-    başlık altında: "Aile" ve anahtar (# yerine [sayı]), kolon ve onay
-    sayısı, bütün hazır üyelerde aynı olan kart alanları, aile açıklaması
-    (sayılar [sayı] yapılınca en çok üyede aynı olan metin; herkeste değilse
-    "(N / M üyede)") ve tek tek bakılacak üyeler (soru, not ya da kalıba
-    uymayan açıklama). Tümü süzgecinde ve aramasız üyeler kapalı ("Üyeleri
-    Göster"); süzgeç ya da arama varsa açık. "Aileyi Onayla · N": kalıba
-    uyan, notu olmayan hazır üyeleri onaylar. Sayfa aileyi bölmez;
-    "Görünenleri Onayla" yalnız çizilen satırları onaylar.
+  - **Aileler (aile kutusu):** adı yalnız sayılarla ayrılan kolonlar (satırda
+    `aile`, `aciklama_duzen.aile_anahtari`; iki ya da daha çok üye) 1.
+    aşamada tabloda her biri kendi kutusunda (`aileBasKur`, `.dg-acik-aile-kutu`;
+    tablo hizası kuralının tek istisnası: kutunun içi soldan hizalı):
+    üstte ailenin adı (# yerine [sayı]) ve sağ uçta durum ("N / M kolon
+    onaylı" ya da "✓ Onaylandı · M kolon"); altında kolonları ayıran
+    değerler (`aileDegerleri`: "4 kolon: 3D · 7D · 30D · 90D"); aile
+    açıklaması (sayılar [sayı] yapılınca en çok kolonda aynı olan metin;
+    "bütün kolonlarda aynı, yalnız [sayı] değişir" ya da "N / M kolonda
+    aynı"); bütün hazır üyelerde aynı kart alanları; toplu onaya girmeyen
+    kolonlar adlarıyla (soru, not ya da kalıptan farklı açıklama; hepsi
+    kalmışsa "Toplu onaylanacak kolon kalmadı"); düğmeler: "Aileyi Onayla ·
+    N kolon" (yalnız henüz onaylanmamış, kalıba uyan, notu olmayan hazır
+    kolonlar; kalmadıysa görünmez), "Onayı Kaldır" (onaylı kolonu varsa;
+    ailenin onaylarını kaldırır, `aileOnayKaldir`) ve "Kolonları Aç ve Tek
+    Tek Bak" / "Kolonları Kapat". Açılan ailenin kolonları kendi sütun
+    başlığı satırıyla (`dg-acik-alt-bas`) altında; 1. aşamada tablonun üst
+    sütun başlığı gizli. Süzgeç ya da arama varsa aileler açık. Aşama
+    notu aile ve kolon sayısını, kaç ailenin tamamen onaylandığını ve ne
+    yapılacağını yazar. Sayfa aileyi bölmez; kalan hep aileyse düğme "Daha
+    Fazla Aile Göster (N aile daha)". "Görünenleri Onayla" yalnız çizilen
+    satırları onaylar.
   - **02'ye aile açıklaması:** aile kataloğunda bütün üyelerin açıklaması
     yalnız sayılarla ayrılıyorsa tek örnek yerine "açıklama kalıbı (bütün
     üyelerde aynı; [sayı] üyeye göre değişir)" gider

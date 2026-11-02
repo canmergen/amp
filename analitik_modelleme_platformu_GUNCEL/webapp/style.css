@@ -3640,14 +3640,28 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-acik-asama.bitti:not(.secili) { border-color: var(--yesil); color: var(--yesil); }
 .dg-acik-asama:disabled { opacity: .5; cursor: not-allowed; }
 .dg-acik-asama-not { margin-bottom: var(--b-2); }
-/* Aile başlığı ve üyeleri. */
-.dg-kart .dg-acik-tablo tr.dg-acik-aile-bas > td { background: var(--yuzey-alt); text-align: left; }
-.dg-acik-aile-ust { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-bottom: 6px; }
-.dg-acik-aile-et { font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin-tamam);
-  border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk); padding: 0 6px; }
-.dg-acik-aile-dugme { margin-left: auto; display: inline-flex; gap: 10px; align-items: center; }
+/* Aile kutusu (Kolon Kartları, 1. aşama). */
+.dg-kart .dg-acik-tablo tr.dg-acik-aile-bas > td { background: transparent; padding: 6px 0; text-align: left; border-bottom: 0; }
+.dg-acik-aile-kutu { border: 1px solid var(--kenar-guclu); border-left: 4px solid var(--amber);
+  border-radius: var(--r-kucuk); padding: 10px 14px; background: var(--yuzey); text-align: left; }
+.dg-acik-aile-kutu.tamam { border-left-color: var(--yesil); }
+.dg-acik-aile-kutu .dg-acik-aile-ust { display: flex; justify-content: space-between; align-items: baseline;
+  gap: 10px; flex-wrap: wrap; margin-bottom: 2px; }
+.dg-acik-aile-ad { font-weight: var(--fw-kalin); overflow-wrap: anywhere; }
+.dg-acik-aile-durum { font-size: var(--fs-kucuk); color: var(--metin-tamam); white-space: nowrap; }
+.dg-acik-aile-durum.tamam { color: var(--yesil); font-weight: var(--fw-kalin); }
+.dg-acik-aile-uyeler { font-size: var(--fs-kucuk); color: var(--metin-tamam); margin-bottom: 8px; overflow-wrap: anywhere; }
+.dg-acik-aile-ack { border-left: 3px solid var(--kenar-guclu); padding: 2px 0 2px 10px; margin-bottom: 8px; }
+.dg-acik-aile-et { font-size: var(--fs-kucuk); color: var(--metin-tamam); border: 0; padding: 0; font-weight: var(--fw-normal); }
+.dg-acik-aile-metin { font-weight: var(--fw-kalin); }
+.dg-acik-aile-kart { justify-content: flex-start; }
+.dg-acik-aile-uyari { font-size: var(--fs-kucuk); color: var(--amber-metin, var(--metin)); margin-bottom: 6px; }
+.dg-acik-aile-kutu .dg-acik-aile-dugme { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-left: 0; margin-top: 4px; }
+.dg-acik-aile-onay { font-weight: var(--fw-kalin); }
+.dg-acik-tablo tr.dg-acik-alt-bas > th { font-size: var(--fs-kucuk); padding-top: 6px; padding-bottom: 6px; }
+/* Açılan ailenin kolonları. */
 .dg-acik-tablo tr.dg-acik-aile-uye > td:first-child { padding-left: 22px; }
-.dg-acik-tablo tr.dg-acik-aile-bas.dg-parca-onayli > td { box-shadow: inset 3px 0 0 var(--yesil); }
+.dg-acik-tablo tr.dg-acik-aile-bas.dg-parca-onayli > td { box-shadow: none; }
 .dg-acik-kart-oge {
   padding: 0 6px; border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
   background: var(--yuzey-alt); font-size: var(--fs-kucuk);
@@ -5154,3 +5168,9 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-donem-yakin .dg-baglanti { display: inline; }
 /* Ad Parçaları: standart parçadan farklı (yeni adlarda parça değişecek). */
 .dg-giris.dg-parca-std-farkli { background: var(--sari-acik); border-color: var(--amber); }
+
+/* AİLE KUTUSU (Kolon Kartları, 1. aşama) tablo hizası kuralının tek
+   istisnası: kutu bir hücre değeri değil, okunacak bir kart. Adı, durum,
+   açıklama ve düğmeler soldan bir hizada; durum sağ uçta. */
+#kabuk table td div.dg-acik-aile-kutu div[class] { justify-content: flex-start; }
+#kabuk table td div.dg-acik-aile-kutu div.dg-acik-aile-ust { justify-content: space-between; }

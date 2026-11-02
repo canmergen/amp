@@ -10285,6 +10285,16 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             b.setAttribute("aria-selected", n === g ? "true" : "false");
             if (n === g) asamaNot.textContent = ack;
         });
+        if (g === 1) {
+            const aileler = new Map();
+            asamaSatirlari(1).forEach(v => (aileler.get(v.aile) || aileler.set(v.aile, []).get(v.aile)).push(v));
+            const biten = [...aileler.values()].filter(u => u.every(v => v.onayli)).length;
+            asamaNot.textContent = "Bu aşamada " + ftBinlik(aileler.size) + " aile ("
+                + ftBinlik(asamaSatirlari(1).length) + " kolon) var; " + ftBinlik(biten) + " aile onaylandı. "
+                + "Her ailenin açıklamasını okuyun: bütün kolonları için doğruysa «Aileyi Onayla», bir "
+                + "kolonda yanlışsa «Kolonları Aç ve Tek Tek Bak» ile o kolonu düzeltin. Bütün aileler "
+                + "onaylanınca 2. aşama açılır.";
+        }
     }
     kart.appendChild(asamaBar);
     kart.appendChild(asamaNot);
@@ -10533,7 +10543,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             const d = new Set(hazir.map(v => ackSade((v.kart || {})[k])));
             return d.size === 1 && !d.has("");
         }).map(([k, et]) => [et, (hazir[0].kart || {})[k]]);
-        const onaylanacak = uyeler.filter(v => topluOlur(v) && kalibaUyar(v));
+        const onaylanacak = uyeler.filter(v => !v.onayli && topluOlur(v) && kalibaUyar(v));
         const tek = uyeler.filter(v => !v.onayli && v.durum === "hazir" && !(topluOlur(v) && kalibaUyar(v)));
         return { uyeler, hazir, kalip, uyan, ortak, onaylanacak, tek,
                  onayli: uyeler.filter(v => v.onayli).length,
@@ -10544,50 +10554,102 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         const td = elYap("td", "");
         td.colSpan = 5;
         tr.appendChild(td);
+        /* AİLE KUTUSU: hangi kolonlar (değişen değerler), neyin
+           onaylandığı (aile açıklaması ve ortak kart), tek düğme. */
         const guncelle = () => {
             const d = aileDurumu(a);
             const acik = aileAcikMi(a);
+            const tamam = d.uyeler.length > 0 && d.onayli === d.uyeler.length;
             td.textContent = "";
+            const kutu = elYap("div", "dg-acik-aile-kutu" + (tamam ? " tamam" : ""));
             const ust_ = elYap("div", "dg-acik-aile-ust");
-            ust_.append(elYap("span", "dg-acik-aile-et", "Aile"),
-                        elYap("span", "dg-acik-kolon", a.replace(/#/g, "[sayı]")),
-                        elYap("span", "dg-donem-tur-not", ftBinlik(d.uyeler.length) + " kolon · "
-                              + ftBinlik(d.onayli) + " / " + ftBinlik(d.uyeler.length) + " onaylı"
-                              + (d.bekleyen ? " · " + ftBinlik(d.bekleyen) + " kolon dil modelini bekliyor" : "")));
-            const goster = elYap("button", "dg-baglanti", acik ? "Üyeleri Gizle" : "Üyeleri Göster");
-            goster.type = "button";
-            goster.onclick = () => { if (acik) acikAileler.delete(a); else acikAileler.add(a); tabloYenidenCiz(); };
-            const onayla = elYap("button", "dg-toplu-btn", "Aileyi Onayla"
-                                 + (d.onaylanacak.length ? " · " + ftBinlik(d.onaylanacak.length) : ""));
-            onayla.type = "button";
-            onayla.disabled = kilitli || saltOkunur || !d.onaylanacak.length;
-            onayla.title = "Açıklaması aile kalıbına uyan ve notu olmayan üyeler onaylanır.";
-            onayla.onclick = () => aileyiOnayla(a);
-            const dug = elYap("span", "dg-acik-aile-dugme");
-            dug.append(goster);
-            if (!saltOkunur) dug.append(onayla);
-            ust_.appendChild(dug);
-            td.appendChild(ust_);
+            ust_.append(elYap("span", "dg-acik-aile-ad", a.replace(/#/g, "[sayı]")),
+                        elYap("span", "dg-acik-aile-durum" + (tamam ? " tamam" : ""),
+                              tamam ? "✓ Onaylandı · " + ftBinlik(d.uyeler.length) + " kolon"
+                                    : ftBinlik(d.onayli) + " / " + ftBinlik(d.uyeler.length) + " kolon onaylı"));
+            kutu.appendChild(ust_);
+            kutu.appendChild(elYap("div", "dg-acik-aile-uyeler",
+                ftBinlik(d.uyeler.length) + " kolon: " + aileDegerleri(a, d.uyeler).join(" · ")));
+            if (d.kalip) {
+                const ack = elYap("div", "dg-acik-aile-ack");
+                ack.appendChild(elYap("div", "dg-acik-aile-et",
+                    d.uyan === d.hazir.length && d.hazir.length === d.uyeler.length
+                        ? "Aile açıklaması (bütün kolonlarda aynı, yalnız [sayı] değişir)"
+                        : "Aile açıklaması (" + ftBinlik(d.uyan) + " / " + ftBinlik(d.uyeler.length) + " kolonda aynı)"));
+                ack.appendChild(elYap("div", "dg-acik-aile-metin", tireSade(d.kalip)));
+                kutu.appendChild(ack);
+            }
             if (d.ortak.length) {
-                const kk = elYap("div", "dg-acik-kart");
+                const kk = elYap("div", "dg-acik-kart dg-acik-aile-kart");
                 d.ortak.forEach(([et, deger]) => {
                     const c = elYap("span", "dg-acik-kart-oge");
                     c.append(elYap("span", "dg-acik-kart-et", et + ":"), document.createTextNode(" " + tireSade(deger)));
                     kk.appendChild(c);
                 });
-                td.appendChild(kk);
+                kutu.appendChild(kk);
             }
-            if (d.kalip) td.appendChild(elYap("div", "dg-acik-metin", "Aile açıklaması: " + tireSade(d.kalip)
-                + (d.uyan < d.hazir.length ? " (" + ftBinlik(d.uyan) + " / " + ftBinlik(d.hazir.length) + " üyede)" : "")));
-            if (d.tek.length) td.appendChild(elYap("div", "dg-acik-not",
-                ftBinlik(d.tek.length) + " üyeye tek tek bakın (soru, not ya da kalıba uymayan açıklama): "
-                + d.tek.slice(0, 6).map(v => v.kolon).join(", ") + (d.tek.length > 6 ? " ve diğerleri" : "") + "."));
-            tr.classList.toggle("dg-parca-onayli", d.onayli === d.uyeler.length);
+            if (d.bekleyen) kutu.appendChild(elYap("div", "dg-acik-not",
+                ftBinlik(d.bekleyen) + " kolonun açıklamasını dil modeli henüz yazmadı."));
+            if (d.tek.length) {
+                const adlar = d.tek.slice(0, 4).map(v => v.kolon).join(", ") + (d.tek.length > 4 ? " ve diğerleri" : "");
+                kutu.appendChild(elYap("div", "dg-acik-aile-uyari", d.onaylanacak.length
+                    ? ftBinlik(d.tek.length) + " kolon toplu onaya girmiyor (sorusu, notu var ya da açıklaması "
+                      + "kalıptan farklı); kolonları açıp tek tek onaylayın: " + adlar + "."
+                    : "Toplu onaylanacak kolon kalmadı; kalan " + ftBinlik(d.tek.length)
+                      + " kolonu açıp tek tek onaylayın: " + adlar + "."));
+            }
+            const dug = elYap("div", "dg-acik-aile-dugme");
+            if (!saltOkunur && !tamam && d.onaylanacak.length) {
+                const onayla = elYap("button", "dg-toplu-btn dg-acik-aile-onay",
+                    "Aileyi Onayla · " + ftBinlik(d.onaylanacak.length) + " kolon");
+                onayla.type = "button";
+                onayla.disabled = kilitli || !d.onaylanacak.length;
+                onayla.title = "Aile açıklaması bu kolonların hepsi için doğruysa basın. Açıklaması "
+                    + "kalıba uyan ve notu olmayan kolonlar onaylanır.";
+                onayla.onclick = () => aileyiOnayla(a);
+                dug.appendChild(onayla);
+            }
+            if (!saltOkunur && d.onayli) {
+                const kaldir = elYap("button", "dg-baglanti", "Onayı Kaldır");
+                kaldir.type = "button";
+                kaldir.disabled = kilitli;
+                kaldir.onclick = () => aileOnayKaldir(a);
+                dug.appendChild(kaldir);
+            }
+            const goster = elYap("button", "dg-baglanti", acik ? "Kolonları Kapat" : "Kolonları Aç ve Tek Tek Bak");
+            goster.type = "button";
+            goster.onclick = () => { if (acik) acikAileler.delete(a); else acikAileler.add(a); tabloYenidenCiz(); };
+            dug.appendChild(goster);
+            kutu.appendChild(dug);
+            td.appendChild(kutu);
+            tr.classList.toggle("dg-parca-onayli", tamam);
         };
         guncelle();
         const x = { tr, guncelle };
         aileBas.set(a, x);
         return x;
+    }
+    /* Ailenin kolonlarını ayıran değerler (adın sayılı parçaları: 3D, 7D). */
+    function aileDegerleri(a, uyeler) {
+        const k = a.split("_");
+        return uyeler.map(v => {
+            const t = String(v.kolon).split("_");
+            if (t.length !== k.length) return v.kolon;
+            const d = t.filter((x, i) => k[i].indexOf("#") !== -1);
+            return d.length ? d.join("_") : v.kolon;
+        });
+    }
+    function aileOnayKaldir(a) {
+        if (kilitli || saltOkunur) return;
+        const kolonlar = aileUyeleri(a).filter(v => v.onayli).map(v => v.kolon);
+        if (!kolonlar.length) return;
+        kolonlar.forEach(k => { const v = veriler.get(k); if (v) { v.onayli = false; satirGuncelle(v); } });
+        const ab = aileBas.get(a); if (ab) ab.guncelle();
+        asamaTazele();
+        islem({ islem: "onay", kolonlar: kolonlar, onay: false })
+            .then(d => { if (d && d.hata) durumYaz(d.hata, true); yoklaHemen(); })
+            .catch(() => yoklaHemen());
+        if (degisti) degisti();
     }
     function aileAcikMi(a) {
         return acikAileler.has(a) || suzgec !== "tumu" || !!arama;
@@ -10597,6 +10659,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         const kolonlar = aileDurumu(a).onaylanacak.map(v => v.kolon);
         if (!kolonlar.length) return;
         kolonlar.forEach(k => { const v = veriler.get(k); if (v) { v.onayli = true; satirGuncelle(v); } });
+        const ab = aileBas.get(a); if (ab) ab.guncelle();
+        asamaTazele();
         islem({ islem: "onay", kolonlar: kolonlar, onay: true })
             .then(d => { if (d && d.hata) durumYaz(d.hata, true); yoklaHemen(); })
             .catch(() => yoklaHemen());
@@ -10695,11 +10759,23 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             const ab = aileBas.get(g.a) || aileBasKur(g.a);
             ab.guncelle();
             tb.appendChild(ab.tr);
-            if (aileAcikMi(g.a)) g.uyeler.forEach(v => { satirCiz_(v); el.get(v.kolon).tr.classList.add("dg-acik-aile-uye"); });
+            if (aileAcikMi(g.a)) {
+                /* Açılan ailenin kolonları kendi sütun başlığıyla. */
+                const alt = elYap("tr", "dg-acik-alt-bas");
+                ["Kolon", "Orijinal", "Sizin Düzenlemeniz", "Kart ve Açıklama", "Onay"]
+                    .forEach(h => alt.appendChild(elYap("th", "", h)));
+                tb.appendChild(alt);
+                g.uyeler.forEach(v => { satirCiz_(v); el.get(v.kolon).tr.classList.add("dg-acik-aile-uye"); });
+            }
         }
         const kalan = uyan.length - Math.min(uyan.length, sayilan);
+        const kalanAile = gruplar.slice(gi).filter(g => g.a && g.uyeler.length > 1).length;
         dahaBtn.hidden = kalan <= 0;
-        dahaBtn.textContent = "Daha Fazla Göster (" + ftBinlik(kalan) + " satır daha)";
+        dahaBtn.textContent = kalanAile && kalanAile === gruplar.length - gi
+            ? "Daha Fazla Aile Göster (" + ftBinlik(kalanAile) + " aile daha)"
+            : "Daha Fazla Göster (" + ftBinlik(kalan) + " satır daha)";
+        /* Aileler aşamasında üst sütun başlığı yok (kutular kendini anlatır). */
+        th.hidden = !saltOkunur && gorulenAsama() === 1;
         topluOnay.hidden = saltOkunur;
         topluOnay.disabled = kilitli || !gorunenler().some(topluOlur);
         bicimDurum();
