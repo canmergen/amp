@@ -881,6 +881,28 @@ tanıtır; sayfalar sol bardan açılır.
     Yeni kolon adında ek arkasındaki birime yapışır ve onun yerini alır
     (`parca._ekleri_bagla`: TXN_CNT_PER_DAY_AVG → TXN_CNT_AVG_PER_DAY);
     sondaki ek Diğer. Dil modeli de Ek önerebilir (`parca.ISTEM_SURUMU` 3).
+    **Tür değerlendirmesi** (onaydan hemen sonra, ayrı adım değil):
+    "Ad Parçalarını Onayla ve Devam Et"e basılınca adım hemen geçmez;
+    kendi satırı olan her parçanın (aynı gruptaki üyeler standart satırı
+    izler) anlamı ve türü `/parca_tur_degerlendir`'e gider
+    (`akis_faz01.parca_tur_degerlendir`, `parca.tur_baslat` / `tur_durum`,
+    `llm.parca_tur_degerlendir`: dil modeli anlamı değiştirmez, türün
+    onaylanan anlama ve adlardaki kullanılışa uyup uymadığına bakar,
+    uymuyorsa tür ve tek cümle neden önerir; 25 parçalık çağrılar, aynı
+    anda 4). Sonuç parça, anlam ve tür üçlüsüne göre bellekte tutulur; aynı
+    üçlü yeniden sorulmaz. Kartın altında "Tür Değerlendirmesi": sürerken
+    ilerleme (düğme kapalı, "Türler onayladığınız anlamlara göre
+    değerlendiriliyor"); bitince "N parçanın türü anlamıyla uyumlu" ve
+    öneri varsa tablo (PARÇA / ANLAM / SİZİN TÜRÜNÜZ / ÖNERİLEN TÜR / NEDEN
+    / KARAR: Öneriyi Al, Benimki Kalsın). Öneri yoksa adım kendiliğinden
+    geçer. Öneri varsa karar verilmeden düğme kapalı ("N tür önerisine
+    karar verin"); karar verilince düğmeye yeniden basılır. Öneriyi Al
+    satırın türünü değiştirir (onayı kalır). Kararlar yalnız bu kartta
+    tutulur; değerlendirmeden sonra değişen satır sonraki basışta yeniden
+    değerlendirilir. Dil modelinin bakamadığı parçanın türü seçildiği gibi
+    kalır (notta sayısı yazar). Önceki onaylı kontrolde kendiliğinden
+    onaylanan adımda değerlendirme yapılmaz (karar zaten değerlendirilmiş
+    hâliyle kayıtlı).
     Çiftteki her parçanın yanında "i": geçtiği ilk üç kolon ve
     sözlük tanımı (`ESLER_ORNEK`; eşin `ornek` alanı), aynı mı ve hangi
     yazılış kullanılsın diye karşılaştırmak için. "Aynı" denen gruptaki parçalar adlarda seçilen yazılışı ve

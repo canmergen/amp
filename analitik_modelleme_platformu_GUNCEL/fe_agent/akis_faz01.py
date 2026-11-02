@@ -2802,6 +2802,40 @@ def parca_alani(durum):
     return _parca_alani(durum)
 
 
+def parca_tur_degerlendir(durum, satirlar):
+    """TUR DEGERLENDIRMESI: "Ad Parçalarını Onayla"ya basilinca kart
+    onaylanan anlam ve turleri gonderir (yalniz kendi satiri olanlar; ayni
+    gruptaki uyeler standart satiri izler). Dil modeli her parcanin turunun
+    anlamina uyup uymadigina bakar; uymayan icin tur onerir. Karar
+    kullanicida: kart onerileri gosterir, adim kullanici karar verince
+    gecer. Ayni istek yoklama icin yinelenir (is bir kez baslar). Doner:
+    {"durum", "biten", "toplam", "hata", "sonuc": {parca: {"uygun", "tur",
+    "neden"}}}."""
+    liste = {x["parca"]: x for x in _parca_listesi(durum)}
+    girdi = []
+    for g in satirlar or []:
+        if not isinstance(g, dict):
+            continue
+        p = str(g.get("parca") or "")
+        tur = str(g.get("tur") or "")
+        anlam = re.sub(r"\s+", " ", str(g.get("anlam") or "")).strip()
+        if p not in liste or not anlam or tur not in parca_mod.TUR_KODLARI:
+            continue
+        x = liste[p]
+        girdi.append({"parca": p, "anlam": anlam, "tur": tur,
+                      "ornekler": list(x["ornekler"] or [])[:3], "birlikte": list(x["birlikte"] or [])})
+    if not girdi:
+        return {"durum": "bitti", "biten": 0, "toplam": 0, "hata": "", "sonuc": {}}
+    d = parca_mod.tur_durum(parca_mod.tur_baslat(girdi))
+    sonuc = {}
+    for x in girdi:
+        r = d["sonuc"].get(parca_mod._tur_anahtari(x))
+        if r is not None:
+            sonuc[x["parca"]] = r
+    d["sonuc"] = sonuc
+    return d
+
+
 def parca_iptal(durum):
     """Suren dil modeli yorumunu durdurur; gelenler kalir."""
     liste = _parca_listesi(durum)

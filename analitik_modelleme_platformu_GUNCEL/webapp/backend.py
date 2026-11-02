@@ -2967,6 +2967,19 @@ def parca_ornek_endpoint():
         return jsonify(_hata_govdesi("parca_ornek", e)), 200
 
 
+@app.route("/parca_tur_degerlendir", methods=["POST"])
+def parca_tur_degerlendir_endpoint():
+    """Ad Parçaları onayında türlerin anlama göre değerlendirmesi (başlatır
+    ve yoklanır; aynı istek aynı işi okur)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify(dict(akis.parca_tur_degerlendir(durum, istek.get("satirlar")), tamam=True))
+    except Exception as e:
+        return jsonify(_hata_govdesi("parca_tur_degerlendir", e)), 200
+
+
 @app.route("/parca_iptal", methods=["POST"])
 def parca_iptal_endpoint():
     """Ad Parcalari: suren dil modeli yorumunu durdurur; gelenler kalir."""

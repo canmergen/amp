@@ -347,6 +347,71 @@ def baslat(liste):
     return imza
 
 
+# TUR DEGERLENDIRMESI (01.2.4.2 onayi): ayri is; parca basina sonuc
+# (parca, anlam, tur) uclusune gore bellekte tutulur, ayni uclu yeniden
+# sorulmaz.
+TUR_PARCA = 25
+_TUR_ISLER = {}
+_TUR_ONBELLEK = {}
+
+
+def _tur_anahtari(x):
+    return "%s|%s|%s" % (x["parca"], x.get("anlam") or "", x.get("tur") or "")
+
+
+def tur_baslat(liste):
+    """liste: [{"parca", "anlam", "tur", "ornekler", "birlikte"}]. Bellekte
+    sonucu olmayanlar arka planda dil modeline gider. Doner: imza."""
+    imza = hashlib.sha1(json.dumps(sorted(_tur_anahtari(x) for x in liste),
+                                   ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+    with _KILIT:
+        k = _TUR_ISLER.get(imza)
+        if k and k["durum"] in ("calisiyor", "bitti"):
+            return imza
+        sorulacak = [x for x in liste if _tur_anahtari(x) not in _TUR_ONBELLEK]
+        _TUR_ISLER[imza] = {"durum": "calisiyor", "liste": [_tur_anahtari(x) for x in liste],
+                            "hata": "", "biten": len(liste) - len(sorulacak), "toplam": len(liste)}
+    k = _TUR_ISLER[imza]
+
+    def calis():
+        hatalar = []
+
+        def yap(parca):
+            sonuc, hata = llm_mod.parca_tur_degerlendir(parca)
+            with _KILIT:
+                for x in parca:
+                    if x["parca"] in sonuc:
+                        _TUR_ONBELLEK[_tur_anahtari(x)] = sonuc[x["parca"]]
+                k["biten"] += len(parca)
+            return hata
+        try:
+            with ThreadPoolExecutor(max_workers=ES_ZAMANLI) as ex:
+                for hata in ex.map(yap, [sorulacak[i:i + TUR_PARCA]
+                                         for i in range(0, len(sorulacak), TUR_PARCA)]):
+                    if hata:
+                        hatalar.append(hata)
+            k["hata"] = " ".join(dict.fromkeys(hatalar))
+        except Exception as e:
+            k["hata"] = "%s: %s" % (type(e).__name__, str(e)[:200])
+        k["durum"] = "bitti"
+    if sorulacak:
+        threading.Thread(target=calis, daemon=True).start()
+    else:
+        k["durum"] = "bitti"
+    return imza
+
+
+def tur_durum(imza):
+    """{"durum", "biten", "toplam", "hata", "sonuc": {anahtar: sonuc}}; dil
+    modelinin bakamadigi parcanin sonucu yoktur."""
+    with _KILIT:
+        k = _TUR_ISLER.get(imza or "")
+        if not k:
+            return {"durum": "yok", "biten": 0, "toplam": 0, "hata": "", "sonuc": {}}
+        return {"durum": k["durum"], "biten": k["biten"], "toplam": k["toplam"], "hata": k["hata"],
+                "sonuc": {a: _TUR_ONBELLEK[a] for a in k["liste"] if a in _TUR_ONBELLEK}}
+
+
 def iptal(imza):
     """Suren yorumu durdurur; gelenler kalir."""
     with _KILIT:

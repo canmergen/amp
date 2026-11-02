@@ -2098,6 +2098,77 @@ def parca_yorumla(liste, orkestra=None):
     return sonuc, None
 
 
+# TUR DEGERLENDIRMESI (01.2.4.2 onayindan hemen sonra): kullanicinin
+# onayladigi anlama gore secilen tur uygun mu? Uygun degilse en uygun tur
+# ve tek cumle neden. Karar kullanicida kalir (kart oneri olarak gosterir).
+SISTEM_PARCA_TUR = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon adlarında
+geçen PARÇALAR verilecek; her biri için kullanıcının onayladığı ANLAM, seçtiği
+TÜR ve birkaç örnek kolonun adı ile sözlükteki tanımı.
+
+Görevin her parçanın TÜRÜNÜN, onaylanan anlamına ve adlarda kullanılışına
+uyup uymadığını değerlendirmek. Anlamı değiştirme, yalnız türe bak. Tür
+açıkça yanlışsa en uygun türü öner; uygunsa ya da emin değilsen "uygun"
+true yaz. Yalnız TÜRLER listesindeki kodları kullan.
+
+TÜRLER:
+""" + "\n".join("  %s: %s" % (k, a) for k, a in (
+    ("konu", "ölçümün konusu olan varlık ya da olay (işlem, kredi, müşteri)"),
+    ("yon", "hareketin yönü (giriş, çıkış, borç, alacak)"),
+    ("nitelik", "ölçümü daraltan alt küme ya da özellik (kanal, ürün, taraf)"),
+    ("olcu", "ölçülen büyüklük (tutar, adet, bakiye, oran)"),
+    ("istatistik", "uygulanan hesap (toplam, ortalama, en büyük, fark)"),
+    ("karsilastirma", "iki şeyin oranı ya da farkı (önceki döneme göre)"),
+    ("pencere", "verinin alındığı süre ya da aralık (dönem başından bugüne)"),
+    ("nokta", "belirli bir an ya da sıra (ay sonu, gözlem tarihi)"),
+    ("zaman_birim", "sayısız zaman birimi (DAY: gün, MONTH: ay)"),
+    ("sure", "değerin kendisi bir süre (ilk işlemden bu yana geçen süre, yaş, vade)"),
+    ("birim", "değerin birimi (TL, USD)"),
+    ("diger", "bayrak, düzey ya da bunlara girmeyen"),
+    ("ek", "arkasındaki parçaya bağlanan ek; anlamında [parça] yazar (PER: [parça]lık)"))) + """
+
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına parçayı AYNEN yaz;
+her parça için bir satır. Uygunsa "tur" ve "neden" boş.
+{"parcalar": [{"ad": "...", "uygun": true, "tur": "", "neden": ""}]}""" + SINIRLAYICI_KURALI
+
+
+def parca_tur_degerlendir(liste, orkestra=None):
+    """liste: [{"parca", "anlam", "tur", "ornekler": [(kolon, tanim)],
+    "birlikte": [(komsu, n)]}]. Doner: ({parca: {"uygun", "tur", "neden"}},
+    hata). Onerilen tur gecersiz ya da secilenle ayniysa uygun sayilir."""
+    if not liste:
+        return {}, None
+    ork = orkestra or Orkestra(arka=True)
+    satirlar = []
+    for x in liste:
+        s = "- PARÇA: %s\n  ANLAM: %s\n  TÜR: %s" % (x["parca"], str(x.get("anlam") or "")[:200],
+                                                    x.get("tur") or "")
+        if x.get("birlikte"):
+            s += "\n  YANINDA: %s" % ", ".join("%s (%d)" % (k, n) for k, n in x["birlikte"][:6])
+        for ad, tanim in (x.get("ornekler") or [])[:3]:
+            s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim or "(tanım yok)")[:200])
+        satirlar.append(s)
+    model, veri = ork.json_cagir(ork.modeller("parca"), SISTEM_PARCA_TUR,
+                                 _veri_blogu("PARÇALAR:", "\n".join(satirlar)), 0.1,
+                                 zaman_asimi=DONEM_ZAMAN_ASIMI, anahtar="parcalar")
+    if not model:
+        return {}, _orkestra_hatasi(ork, "tür değerlendirmesi")
+    secilen = {x["parca"]: x.get("tur") or "" for x in liste}
+    sonuc = {}
+    for x in veri.get("parcalar") or []:
+        if not isinstance(x, dict) or str(x.get("ad")) not in secilen:
+            continue
+        ad = str(x["ad"])
+        uygun = x.get("uygun")
+        if isinstance(uygun, str):
+            uygun = _secenek(uygun) not in ("false", "hayir", "0")
+        t = _secenek(str(x.get("tur") or "")).replace(" ", "_")
+        if uygun is False and t in PARCA_TURLERI and t != secilen[ad]:
+            sonuc[ad] = {"uygun": False, "tur": t, "neden": _donem_metni(x.get("neden"))}
+        else:
+            sonuc[ad] = {"uygun": True, "tur": "", "neden": ""}
+    return sonuc, None
+
+
 def _orkestra_hatasi(ork, is_adi):
     # Model adi yazilmaz: yalniz farkli nedenler.
     son = "; ".join(dict.fromkeys(model_adi_gizle(h) for _a, h in sorted(ork._son.items()) if h))
