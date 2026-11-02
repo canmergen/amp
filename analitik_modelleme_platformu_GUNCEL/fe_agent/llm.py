@@ -3050,7 +3050,15 @@ def sozluk_katalogu(sozluk_df, dahil):
         if degisen:
             s += "\n  üyelerde değişen: %s" % "; ".join(degisen)
         ack = str(uyeler[0][ack_kol] or "").strip()
-        if ack and ack != "nan":
+        # AILE ACIKLAMA KALIBI: butun uyelerin aciklamasi yalniz sayilarla
+        # ayriliyorsa ailenin tek aciklamasi olarak gider.
+        ackler = [str(r[ack_kol] or "").strip() for r in uyeler]
+        kaliplar = {re.sub(r"\d+", "[sayı]", re.sub(r"\s+", " ", a)) for a in ackler
+                    if a and a != "nan"}
+        if len(uyeler) > 1 and len(kaliplar) == 1 and all(a and a != "nan" for a in ackler):
+            s += "\n  açıklama kalıbı (bütün üyelerde aynı; [sayı] üyeye göre değişir): %s" \
+                % next(iter(kaliplar))[:KATALOG_ACIKLAMA]
+        elif ack and ack != "nan":
             s += "\n  açıklama (%s): %s" % (adlar[0], ack[:KATALOG_ACIKLAMA])
         if ek_kol is not None:
             ek = str(uyeler[0][ek_kol] or "").strip()

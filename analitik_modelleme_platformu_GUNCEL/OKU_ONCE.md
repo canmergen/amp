@@ -947,6 +947,33 @@ tanıtır; sayfalar sol bardan açılır.
     açıklama sonradan değişirse onay kendiliğinden düşer. Süzgeçler:
     Onaylanmadı, Ek Bilgi da var. Bütün kolonlar onaylanmadan geçilmez;
     "değiştirmeden devam" düğmesi yok.
+  - **Değişim türü** (`aciklama_duzen.degisim_turu`, satırda `degisim`):
+    "aynen"; "yazim" (sözcükler aynı, yalnız büyük / küçük harf,
+    noktalama ya da Türkçe karakter); "degisen" (sözcük eklendi, çıktı ya
+    da değişti). Değişen süzgeci yalnız "degisen"i sayar; "Yalnız Yazım"
+    ayrı süzgeç. Değişen satırda açıklamanın orijinalde karşılığı olmayan
+    sözcükleri altı yeşil çizgili (`ackSozcukFarki`, küçük harf ve
+    noktalamasız en uzun ortak dizi); bütün metni yeniden okumak gerekmez.
+    Sözlüğe yazılan "N kolonun açıklaması düzeltildi" sayısı yine her
+    farklı metni sayar.
+  - **Ek bilgi tekrarı:** ek bilginin bütün sözcükleri açıklamada geçiyorsa
+    (`aciklama_duzen.ek_acikta`, satırda `ek_acikta`) "Ek bilgi" satırı
+    gösterilmez ve Ek Bilgi süzgecinde sayılmaz; ek bilgi veride, Önerilen
+    Sözlük'te ve 02'ye giden katalogda kalır.
+  - **Aileler:** adı yalnız sayılarla ayrılan kolonlar (satırda `aile`,
+    `aciklama_duzen.aile_anahtari`; iki ya da daha çok üye) tabloda bir
+    başlık altında: "Aile" ve anahtar (# yerine [sayı]), kolon ve onay
+    sayısı, bütün hazır üyelerde aynı olan kart alanları, aile açıklaması
+    (sayılar [sayı] yapılınca en çok üyede aynı olan metin; herkeste değilse
+    "(N / M üyede)") ve tek tek bakılacak üyeler (soru, not ya da kalıba
+    uymayan açıklama). Tümü süzgecinde ve aramasız üyeler kapalı ("Üyeleri
+    Göster"); süzgeç ya da arama varsa açık. "Aileyi Onayla · N": kalıba
+    uyan, notu olmayan hazır üyeleri onaylar. Sayfa aileyi bölmez;
+    "Görünenleri Onayla" yalnız çizilen satırları onaylar.
+  - **02'ye aile açıklaması:** aile kataloğunda bütün üyelerin açıklaması
+    yalnız sayılarla ayrılıyorsa tek örnek yerine "açıklama kalıbı (bütün
+    üyelerde aynı; [sayı] üyeye göre değişir)" gider
+    (`llm.sozluk_katalogu`).
 - **01.2.4.4 Kolon Adları** (`parca.ad_birimleri`, `parca.ad_kur`,
   `akis_faz01._kolon_ad_alani`):
   - Her parça standart yazılışını alır; birimler Ad Standardı'ndaki yer

@@ -3686,13 +3686,22 @@ def _aciklama_satiri(d, g):
              "aile_notu_kaynagi": (an.get("kolon") if an.get("not") and an.get("kolon") != kolon
                                    else "")}
     satir["kart"] = dict(g.get("kart") or {})
+    satir["aile"] = g.get("aile") or ""
     if r:
         for a in ("aciklama", "karar", "ek", "soru", "parca", "ad_notu", "dagilim_notu", "model",
                   "kaynak", "aile_kaynagi", "hata"):
             satir[a] = r.get(a) or ""
         satir["kontrol"] = list(r.get("kontrol") or [])
+        _degisim_yaz(satir)
     satir["onayli"] = _aciklama_onayli(d, g, durum_)
     return satir
+
+
+def _degisim_yaz(satir):
+    """Satira degisim turu ve ek bilginin aciklamada gecip gecmedigi."""
+    satir["degisim"] = aciklama_mod.degisim_turu(satir.get("orijinal"), satir.get("aciklama"))
+    satir["ek_acikta"] = bool(satir.get("ek")) and aciklama_mod.ek_acikta(satir["ek"],
+                                                                          satir.get("aciklama"))
 
 
 def _aciklama_onayli(d, g, durum_=None):
@@ -3778,6 +3787,8 @@ def _onay_satirlari(d):
                          "kart": {k: v for k, v in (o.get("kart") or {}).items()
                                   if str(v or "").strip()},
                          "kontrol": [], "model": "", "kaynak": "onay"})
+        satirlar[-1]["aile"] = o.get("aile") or ""
+        _degisim_yaz(satirlar[-1])
     return satirlar
 
 
@@ -3794,8 +3805,7 @@ def aciklama_alani(durum, son=0):
     if not _aciklama_canli(durum):
         with aciklama_mod._KILIT:
             satirlar = _onay_satirlari(d)
-        degisen = sum(1 for x in satirlar
-                      if aciklama_mod._norm(x["aciklama"]) != aciklama_mod._norm(x["orijinal"]))
+        degisen = sum(1 for x in satirlar if x["degisim"] == "degisen")
         return {"dm": "bitti", "son": 0, "satirlar": satirlar if not son else [],
                 "sorular": [], "salt_okunur": True, "hata": "", "ilerleme": None,
                 "atlandi": bool((durum.get("aciklama_onay") or {}).get("atla")),
@@ -3804,7 +3814,8 @@ def aciklama_alani(durum, son=0):
                           "ad": sum(1 for x in satirlar if x["ad_notu"] or x["dagilim_notu"]),
                           "kontrol": 0, "elle": sum(1 for x in satirlar if x["not"]),
                           "hata": 0, "bekleyen": 0, "onayli": len(satirlar),
-                          "onaysiz": 0, "ek": sum(1 for x in satirlar if x["ek"])}}
+                          "onaysiz": 0, "ek": sum(1 for x in satirlar if x["ek"] and not x["ek_acikta"]),
+                          "yazim": sum(1 for x in satirlar if x["degisim"] == "yazim")}}
     with aciklama_mod._KILIT:
         bos = not d.girdiler
     if bos:
@@ -3818,7 +3829,7 @@ def aciklama_alani(durum, son=0):
                     if not son or d.sira.get(g["kolon"], 0) > son]
         sayac = {"toplam": len(girdiler), "hazir": 0, "degisen": 0, "soru": 0,
                  "ad": 0, "kontrol": 0, "elle": 0, "hata": 0, "bekleyen": 0,
-                 "onayli": 0, "onaysiz": 0, "ek": 0}
+                 "onayli": 0, "onaysiz": 0, "ek": 0, "yazim": 0}
         for g in girdiler:
             kolon = g["kolon"]
             dr = aciklama_mod.satir_durumu(d, kolon)
@@ -3836,15 +3847,16 @@ def aciklama_alani(durum, son=0):
             if not r:
                 continue
             sayac["hazir"] += 1
-            if aciklama_mod._norm(r.get("aciklama")) != aciklama_mod._norm(g.get("orijinal")):
-                sayac["degisen"] += 1
+            dt = aciklama_mod.degisim_turu(g.get("orijinal"), r.get("aciklama"))
+            if dt in ("degisen", "yazim"):
+                sayac[dt] += 1
             if r.get("soru"):
                 sayac["soru"] += 1
             if r.get("ad_notu") or r.get("dagilim_notu"):
                 sayac["ad"] += 1
             if r.get("kontrol"):
                 sayac["kontrol"] += 1
-            if r.get("ek"):
+            if r.get("ek") and not aciklama_mod.ek_acikta(r["ek"], r.get("aciklama")):
                 sayac["ek"] += 1
         sorular = _sorular(d, girdiler)
         sira = d.sayac

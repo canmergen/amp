@@ -40,7 +40,7 @@ import json
 import re
 import threading
 import time
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from concurrent import futures
 
 from fe_agent import llm as llm_mod
@@ -179,6 +179,45 @@ def donem_konumlari(t, desenler=()):
                 and any(r.match(p + "_" + t[i + 1]) for r in desenler):
             konum.update((i, i + 1))
     return konum
+
+
+# DEGISIM TURU: duzenlenen aciklamanin orijinalden farki. "aynen": ayni;
+# "yazim": yalniz buyuk / kucuk harf, noktalama ya da Turkce karakter
+# (sozcukler ayni); "degisen": sozcuk eklendi, cikti ya da degisti.
+_TR_ASCII = str.maketrans("çğıöşüâîû", "cgiosuaiu")
+
+
+def _sozcukler(metin, ascii_=False):
+    m = str(metin or "").replace("I", "ı").replace("İ", "i").lower()
+    if ascii_:
+        m = m.translate(_TR_ASCII)
+    return re.findall(r"[0-9a-zçğıöşüâîû]+", m)
+
+
+def degisim_turu(orijinal, aciklama):
+    if _norm(orijinal) == _norm(aciklama):
+        return "aynen"
+    if _sozcukler(orijinal, True) == _sozcukler(aciklama, True):
+        return "yazim"
+    return "degisen"
+
+
+def ek_acikta(ek, aciklama):
+    """Ek bilginin butun sozcukleri aciklamada geciyor mu? (Gosterimde
+    tekrar edilmez; veri ve 02'ye giden katalogda kalir.)"""
+    e = _sozcukler(ek)
+    return bool(e) and set(e) <= set(_sozcukler(aciklama))
+
+
+def aile_kalibi(aciklamalar):
+    """Ailenin aciklama kalibi: butun uyelerin aciklamasi sayilar "[sayı]"
+    yapilinca ayniysa o metin; degilse en cok uyenin kalibi. Doner:
+    (kalip, uyan sayisi)."""
+    sayac = Counter(re.sub(r"\d+", "[sayı]", _norm(a)) for a in aciklamalar if _norm(a))
+    if not sayac:
+        return "", 0
+    kalip, n = sayac.most_common(1)[0]
+    return kalip, n
 
 
 def aile_anahtari(ad):

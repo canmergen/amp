@@ -3627,6 +3627,17 @@ span.bolme-cip { cursor: default; }
 .dg-acik-bekliyor { color: var(--yer-tutucu); font-style: italic; }
 .dg-acik-kart { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 .dg-acik-ek { margin-top: 4px; color: var(--metin); font-size: var(--fs-kucuk); }
+/* Açıklamada orijinalde karşılığı olmayan sözcükler. */
+mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: underline;
+  text-decoration-color: var(--yesil); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+/* Aile başlığı ve üyeleri. */
+.dg-kart .dg-acik-tablo tr.dg-acik-aile-bas > td { background: var(--yuzey-alt); text-align: left; }
+.dg-acik-aile-ust { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-bottom: 6px; }
+.dg-acik-aile-et { font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); color: var(--metin-tamam);
+  border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk); padding: 0 6px; }
+.dg-acik-aile-dugme { margin-left: auto; display: inline-flex; gap: 10px; align-items: center; }
+.dg-acik-tablo tr.dg-acik-aile-uye > td:first-child { padding-left: 22px; }
+.dg-acik-tablo tr.dg-acik-aile-bas.dg-parca-onayli > td { box-shadow: inset 3px 0 0 var(--yesil); }
 .dg-acik-kart-oge {
   padding: 0 6px; border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
   background: var(--yuzey-alt); font-size: var(--fs-kucuk);
