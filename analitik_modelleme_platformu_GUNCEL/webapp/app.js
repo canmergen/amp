@@ -8647,8 +8647,12 @@ function dogrulamaKartiEkle(alan, blok) {
                     : as.n === 2
                     ? ftBinlik(as.kalan) + " kolon onay bekliyor. Yukarıda «Biçim Değişikliklerini Onayla»ya basın."
                     : ftBinlik(as.kalan) + " kolon onay bekliyor. Her kolonu okuyup onay kutusunu işaretleyin.");
-            birincil.disabled = bek || onaysiz > 0;
-            gerekce.textContent = bek
+            const ev = acikErisim.soruEvresi ? acikErisim.soruEvresi() : null;
+            birincil.disabled = bek || onaysiz > 0 || !!ev;
+            gerekce.textContent = ev && ev.cevapsiz
+                ? "Önce yukarıdaki Toplu Sorular: " + ftBinlik(ev.cevapsiz) + " soru cevap bekliyor. "
+                  + "Hepsi cevaplanınca 1 Aileler açılır."
+                : bek
                 ? "Dil modeli " + ftBinlik(Number(s.bekleyen || 0)) + " kolonu düzenliyor; bitince "
                   + "onaylanabilir. Beklemek istemezseniz İptal'e basın."
                 : onaysiz > 0 ? (asamaYazi || ftBinlik(onaysiz) + " kolon onay bekliyor. Her kolonu "
@@ -10367,6 +10371,36 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     const soruKap = elYap("div", "dg-acik-sorular");
     soruKap.hidden = true;
     kart.appendChild(soruKap);
+    /* SORU EVRESİ: önce yalnız Toplu Sorular görünür. Dil modeli
+       düzenlemeyi bitirip cevapsız soru kalmayınca aşamalar, arama ve
+       tablo açılır (1 Aileler ile başlanır). Cevap verilince ilgili
+       kolonlar yeniden düzenlenir; yeni soru çıkarsa evre sürer. Salt
+       okunur kartta evre yok. */
+    const evreNot = elYap("div", "dg-bilgi-kutu dg-acik-evre-not", "");
+    evreNot.hidden = true;
+    kart.appendChild(evreNot);
+    const cevapsizSoru = () => (sorular || []).filter(s => s.soru_kolon > 0 && !s.cevap).length;
+    const dmSurer = () => dm !== "iptal" && (dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0);
+    const soruEvresi = () => !saltOkunur && (!yuklendi || cevapsizSoru() > 0 || dmSurer());
+    function evreCiz() {
+        const evre = soruEvresi();
+        kart.classList.toggle("dg-acik-soru-evresi", evre);
+        /* Yüklenirken "Satırlar yükleniyor" görünür; sonra evrede gizli. */
+        if (evre && yuklendi) bosEl.hidden = true;
+        evreNot.hidden = !evre || !yuklendi;
+        if (evreNot.hidden) return;
+        const n = cevapsizSoru();
+        evreNot.textContent = n
+            ? ftBinlik(n) + " soru cevabınızı bekliyor. Önce yukarıdaki Toplu Sorular'ı cevaplayın; "
+              + "cevabınız o parçanın geçtiği bütün kolonlarda kullanılır ve o kolonlar yeniden "
+              + "düzenlenir. " + (dmSurer() ? "Dil modeli düzenlemeyi bitirip bütün sorular "
+              : "Bütün sorular ") + "cevaplanınca 1 Aileler açılır."
+            : (sorular || []).length
+            ? "Bütün sorular cevaplandı. Dil modeli kolonları cevaplarınızla düzenliyor; bitince "
+              + "1 Aileler açılır. Yeni soru çıkarsa burada görünür."
+            : "Dil modeli kolonları düzenliyor. Toplu soru çıkarsa burada görünür; düzenleme bitip "
+              + "cevaplanacak soru kalmayınca 1 Aileler açılır.";
+    }
 
     /* ---- Süzgeçler + arama ---- */
     const ust = elYap("div", "dg-tablo-ust dg-acik-ust");
@@ -10591,8 +10625,9 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     dahaBtn.hidden = true;
     dahaBtn.onclick = () => { gosterilen += ACK_SAYFA; tabloCiz(); };
     kart.appendChild(dahaBtn);
-    const bosEl = elYap("div", "dg-not dg-cizgisiz", "Satırlar yükleniyor");
+    const bosEl = elYap("div", "dg-not dg-cizgisiz dg-acik-bos", "Satırlar yükleniyor");
     kart.appendChild(bosEl);
+    evreCiz();
 
     /* ---- Sunucu işlemleri ---- */
     function islem(govde) {
@@ -11244,6 +11279,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         suzgecCiz();
         tabloCiz();
         sorulariCiz();
+        evreCiz();
         if (dm !== "calisiyor") iptalSifirla();
         if (dm === "iptal") {
             const gelecek = Number(a.gelecek || 0);
@@ -11311,6 +11347,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         durduruldu: () => dm === "iptal",
         sayac: () => Object.assign({}, sayac),
         /* Etkin aşama ve onay bekleyenleri (alttaki gerekçe için). */
+        /* Soru evresi: cevapsız soru sayısı (alttaki gerekçe için). */
+        soruEvresi: () => soruEvresi() ? { cevapsiz: cevapsizSoru(), surer: dmSurer() } : null,
         asama: () => {
             if (!yuklendi || saltOkunur) return null;
             const n = aktifAsama(), bekleyen = asamaSatirlari(n).filter(v => !v.onayli);
@@ -11322,6 +11360,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             kilitli = k;
             veriler.forEach(v => satirGuncelle(v));
             sorulariCiz();
+            evreCiz();
             iptalBtn.disabled = k || iptalBtn.textContent !== "İptal";
             devamBtn.disabled = k;
             ilerYaz();

@@ -5220,3 +5220,12 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 /* Dönem değer çipinde örnek kolonların "i"si. */
 .dg-kisa-cip.dg-cip-bilgili { display: inline-flex; align-items: center; gap: 4px; }
 .dg-kisa-cip.dg-cip-bilgili .bolme-info { margin-left: 2px; }
+
+/* Kolon Kartları: soru evresinde yalnız Toplu Sorular (aşamalar, arama,
+   tablo gizli). */
+.dg-acik-soru-evresi .dg-acik-asamalar,
+.dg-acik-soru-evresi .dg-acik-asama-not,
+.dg-acik-soru-evresi .dg-acik-ust,
+.dg-acik-soru-evresi .dg-acik-hepsi-uyari,
+.dg-acik-soru-evresi .dg-acik-sar,
+.dg-acik-soru-evresi .dg-acik-daha { display: none !important; }

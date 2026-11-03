@@ -1117,6 +1117,19 @@ tanıtır; sayfalar sol bardan açılır.
     değişince üyeler de güncellenir; her üye ayrıca kendi alanından
     düzeltilebilir. Eski not biçimi (kısa ipucu, dil modeli işler) `tam`
     gelmeyen isteklerde sürer.
+  - **Soru evresi (aşamalardan önce):** dil modeli düzenlerken ya da
+    cevapsız toplu soru varken kartta yalnız ilerleme, Toplu Sorular ve
+    bir not görünür; aşama çubuğu, arama ve düğmeler, tablo gizli (kart
+    sınıfı `dg-acik-soru-evresi`; `soruEvresi`, `evreCiz`). Not: "N soru
+    cevabınızı bekliyor ... cevaplanınca 1 Aileler açılır", soru kalmayıp
+    dil modeli sürerken "Bütün sorular cevaplandı. Dil modeli kolonları
+    cevaplarınızla düzenliyor", hiç soru yokken "Dil modeli kolonları
+    düzenliyor. Toplu soru çıkarsa burada görünür". Cevapsız soru: soru
+    kolonu olan ve cevabı olmayan parça. Cevap verilince ilgili kolonlar
+    yeniden düzenlenir; yeni soru çıkarsa evre sürer. Evre bitince 1
+    Aileler açılır; onay düğmesi evrede kapalı ("Önce yukarıdaki Toplu
+    Sorular: N soru cevap bekliyor"). İptal'de cevapsız soru kalmadıysa
+    evre biter. Salt okunur kartta evre yok.
   - **Aşamalar (zorunlu sıra):** kartın üstünde üç aşama, sayılarıyla
     ("1 · Aileler · 120 / 600"): 1 Aileler (adı yalnız sayıyla ayrılan
     kolonlar, aile başlıklarıyla), 2 Biçim Değişiklikleri (aile dışı;

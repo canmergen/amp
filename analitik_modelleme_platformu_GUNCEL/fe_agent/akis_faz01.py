@@ -3752,8 +3752,10 @@ ACIKLAMA_YONERGE = [
     "olur (dil modeli yeniden yazmaz); alanı boşaltırsanız öneri yeniden "
     "yazılır. Ailede «Ailedeki N Kolona da Uygula» metninizi sayıları "
     "değiştirerek bütün aileye yazar; her üyeyi ayrıca da düzeltebilirsiniz.",
-    "Onay üç aşamada sırayla: 1 Aileler, 2 Biçim Değişiklikleri, 3 "
-    "Değişenler. Bir aşama, öncekinin bütün kolonları onaylanınca açılır. "
+    "Önce yalnız Toplu Sorular görünür: dil modeli düzenlemeyi bitirip "
+    "bütün sorular cevaplanınca kolonlar açılır. Onay üç aşamada sırayla: "
+    "1 Aileler, 2 Biçim Değişiklikleri, 3 Değişenler. Bir aşama, öncekinin "
+    "bütün kolonları onaylanınca açılır. "
     "Soru, ad notu ya da kontrol notu olan satırlar toplu onaylanmaz; tek tek "
     "bakıp onaylayın. Açıklama sonradan değişirse onay kalkar."]
 ACIKLAMA_SUTUNLAR = (
