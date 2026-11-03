@@ -982,6 +982,18 @@ tanıtır; sayfalar sol bardan açılır.
     14D_X2 → "son 14 gün ile ondan önceki 14 gün". Kalıpta olmayan sıra
     ("[sayı 3]") hata. Kalıpta birden çok sayı varsa örneğin altında bu
     not yazar; dönem istemi de `<N#k>`yi anlatır.
+  - **Hesaplı yer tutucu** (`donem.formul_hatasi`, `formul_hesapla`;
+    app.js `donemFormulIc`, `donemFormulHesapla`, `donemFormulGorunur`):
+    köşeli parantez içinde sayılarla hesap: "[sayı 1 × sayı 2]", "[sayı 1
+    + sayı 1]", "[sayı 1 x 2 - 1]" (toplama, çıkarma, çarpma; çarpma önce).
+    İçeride `<N#$1*$2>`. Örnek: `<N>D_X<N>` "son [sayı 1] günden son
+    [sayı 1 × sayı 2] gün önceye kadar" + 14D_X2 → "son 14 günden son 28
+    gün önceye kadar". Kalıpta olmayan sayı ya da anlaşılmayan hesap hata.
+  - **Hafızadaki anlamın denetimi:** dil modeline hafızadaki anlam bir
+    değerle doldurulmuş örneğiyle de gider ("(değerle: 180D_360D -> son
+    180 gün önce ile son 360 gün önce arası)"; `hafiza_ornek`); iki
+    sayılı kalıpta iki N'yi aynı sayı sanıp yanlış "uyuşmuyor" demesin.
+    `donem.ISTEM_SURUMU` 9.
   - **Üç dil modeli çağrısı** (`aciklama_duzen._isle`, `_denetim`): her
     grup (8 kolon) için 1) yazar taslağı yazar (`llm.aciklama_duzenle`,
     rol `aciklama_duzen`); 2) denetçi taslağı kaynaklara göre denetler

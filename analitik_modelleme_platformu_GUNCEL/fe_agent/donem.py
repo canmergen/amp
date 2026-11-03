@@ -208,9 +208,70 @@ def _araligin_basi(t, i):
 # YER TUTUCU <N#k>: kalibin k'inci sayisi (ekranda "[sayı k]"); ayni sayi
 # anlamda birden cok kez yazilabilir (<N>D_X<N>: "son <N#1> gün ile ondan
 # önceki <N#1> gün").
-_YT_ADAY = re.compile(r"(?<![0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]\s*#\s*\d+\s*>|<\s*[Nn]{1,2}\s*>|[Nn]{1,2})"
+_YT_ADAY = re.compile(r"(?<![0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]\s*#[^<>]{1,60}>|<\s*[Nn]{1,2}\s*>|[Nn]{1,2})"
                       r"(?![0-9A-Za-zÇĞİÖŞÜçğıöşü])")
-_YT_SIRA = re.compile(r"^<N#(\d+)>$")
+# HESAPLI YER TUTUCU <N#formul>: formulde $k kalibin k'inci sayisi, tam
+# sayilar ve + - * (ekranda "[sayı 1 × sayı 2]", "[sayı 1 + sayı 1]");
+# <N#k> yalniz k'inci sayi (bas sifirlari korunur).
+_FORMUL = re.compile(r"^\s*(\$\d+|\d+)(\s*[-+*]\s*(\$\d+|\d+))*\s*$")
+
+
+def _yt_icerik(y):
+    """<N#...> yer tutucusunun icerigi; degilse None."""
+    m = re.match(r"^<\s*[Nn]\s*#(.*)>$", str(y or ""))
+    return m.group(1).strip() if m else None
+
+
+def formul_hatasi(icerik, adet):
+    """Hesapli yer tutucunun hatasi; yoksa ""."""
+    if re.fullmatch(r"\d+", icerik):
+        return "" if 1 <= int(icerik) <= adet else "kalıpta %s. sayı yok" % icerik
+    if not _FORMUL.match(icerik):
+        return "hesap anlaşılmadı (yalnız sayı, toplama, çıkarma ve çarpma)"
+    kotu = [r for r in re.findall(r"\$(\d+)", icerik) if not 1 <= int(r) <= adet]
+    return ("kalıpta %s. sayı yok" % kotu[0]) if kotu else ""
+
+
+def formul_hesapla(icerik, sirali):
+    """<N#icerik> -> metin (sirali: degerin sayilari); olmuyorsa None."""
+    if re.fullmatch(r"\d+", icerik):
+        k = int(icerik)
+        return sirali[k - 1] if 1 <= k <= len(sirali) else None
+    if not _FORMUL.match(icerik):
+        return None
+    toklar = re.findall(r"\$\d+|\d+|[-+*]", icerik)
+
+    def deger(t):
+        if t.startswith("$"):
+            k = int(t[1:])
+            if not 1 <= k <= len(sirali):
+                raise ValueError(t)
+            return int(sirali[k - 1])
+        return int(t)
+    try:
+        terimler, islemler, cur = [], [], deger(toklar[0])
+        for op, t in zip(toklar[1::2], toklar[2::2]):
+            if op == "*":
+                cur *= deger(t)
+            else:
+                terimler.append(cur)
+                islemler.append(op)
+                cur = deger(t)
+        terimler.append(cur)
+        sonuc = terimler[0]
+        for op, t in zip(islemler, terimler[1:]):
+            sonuc = sonuc + t if op == "+" else sonuc - t
+    except (ValueError, IndexError):
+        return None
+    return str(sonuc)
+
+
+def _formul_gorunur(icerik):
+    """Ic hali ekrandaki gibi: $1*2 -> "[sayı 1 × 2]"; 1 -> "[sayı 1]"."""
+    if re.fullmatch(r"\d+", icerik):
+        return "[sayı %s]" % icerik
+    m = re.sub(r"\$(\d+)", r"sayı \1", icerik.replace(" ", ""))
+    return "[%s]" % re.sub(r"\s*([-+*])\s*", lambda x: " %s " % ("×" if x.group(1) == "*" else x.group(1)), m)
 
 
 def yer_tutucu_hatasi(kalip, anlam):
@@ -224,12 +285,13 @@ def yer_tutucu_hatasi(kalip, anlam):
     adet = 1 if aile_mi(k) else len(_YT_KALIP.findall(k))
     kotu = []
     for m in _YT_ADAY.finditer(str(anlam or "")):
-        y = re.sub(r"\s+", "", m.group(1)).upper() if "#" in m.group(1) else re.sub(r"\s+", "", m.group(1))
-        sira = _YT_SIRA.match(y)
-        if sira and 1 <= int(sira.group(1)) <= adet:
-            continue
-        if sira:
-            y = "[sayı %s]" % sira.group(1)
+        icerik = _yt_icerik(m.group(1))
+        if icerik is not None:
+            if not formul_hatasi(icerik, adet):
+                continue
+            y = _formul_gorunur(icerik)
+        else:
+            y = re.sub(r"\s+", "", m.group(1))
         if y not in izinli and y not in kotu:
             kotu.append(y)
     if not kotu:
@@ -332,10 +394,11 @@ def deger_anlami(kalip, anlam, deger):
     sayac = Counter()
 
     def yer(mo):
+        icerik = _yt_icerik(mo.group(1))
+        if icerik is not None:
+            h = formul_hesapla(icerik, sirali)
+            return h if h is not None else mo.group(0)
         y = re.sub(r"[\s<>]", "", mo.group(1)).upper()
-        if "#" in y:
-            i = int(y.split("#")[1]) - 1
-            return sirali[i] if 0 <= i < len(sirali) else mo.group(0)
         liste = sayilar.get(y)
         if not liste:
             return mo.group(0)
@@ -886,7 +949,7 @@ def hafizadan_sil(kaliplar):
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
 # Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
-ISTEM_SURUMU = 8
+ISTEM_SURUMU = 9
 
 
 def _imza(liste, tara):
@@ -916,7 +979,14 @@ def baslat(liste, tara=None):
     sorulacak = []
     for x in liste:
         hk = hafiza_anahtari(x["kalip"], haf, ayri)
-        sorulacak.append(dict(x, hafiza_anlam=haf[hk]) if hk and haf.get(hk) else x)
+        if hk and haf.get(hk):
+            # Ornek deger dolu haliyle de gider: dil modeli yer tutuculari
+            # (her N kendi sayisi) yanlis okumasin.
+            d0 = (x.get("degerler") or [[""]])[0][0]
+            sorulacak.append(dict(x, hafiza_anlam=haf[hk],
+                                  hafiza_ornek=(d0, deger_anlami(x["kalip"], haf[hk], d0)) if d0 else None))
+        else:
+            sorulacak.append(x)
 
     def calis():
         # Yorum ve tarama parcalara bolunur, parcalar ayni anda calisir;

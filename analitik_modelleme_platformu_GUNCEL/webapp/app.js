@@ -11237,9 +11237,50 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
 /* YER TUTUCU KONTROLÜ (arka uçtaki donem.yer_tutucu_hatasi ile aynı
    kural): kalıptaki <N> için "N", <NN> için "NN" yazılır; başka biçim
    ya da kalıpta olmayan yer tutucu hata. */
-const DONEM_YT_ADAY = /(^|[^0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]\s*#\s*\d+\s*>|<\s*[Nn]{1,2}\s*>|[Nn]{1,2})(?![0-9A-Za-zÇĞİÖŞÜçğıöşü])/g;
-/* Sıra numaralı yer tutucu <N#k>: kalıbın k'inci sayısı (ekranda "[sayı k]"). */
-const DONEM_YT_SIRA = /^<N#(\d+)>$/;
+const DONEM_YT_ADAY = /(^|[^0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]\s*#[^<>]{1,60}>|<\s*[Nn]{1,2}\s*>|[Nn]{1,2})(?![0-9A-Za-zÇĞİÖŞÜçğıöşü])/g;
+/* SIRA NUMARALI VE HESAPLI YER TUTUCU (akis: donem.formul_* ile aynı
+   kural): <N#k> kalıbın k'inci sayısı (ekranda "[sayı k]"); <N#formül>
+   formülde $k kalıbın k'inci sayısı, tam sayılar ve + - * (ekranda
+   "[sayı 1 × sayı 2]"). */
+const DONEM_FORMUL = /^\s*(\$\d+|\d+)(\s*[-+*]\s*(\$\d+|\d+))*\s*$/;
+function donemYtIcerik(y) {
+    const m = /^<\s*[Nn]\s*#(.*)>$/.exec(String(y || ""));
+    return m ? m[1].trim() : null;
+}
+function donemFormulHatasi(ic, adet) {
+    if (/^\d+$/.test(ic)) return +ic >= 1 && +ic <= adet ? "" : "kalıpta " + ic + ". sayı yok";
+    if (!DONEM_FORMUL.test(ic)) return "hesap anlaşılmadı";
+    const kotu = (ic.match(/\$(\d+)/g) || []).map(x => +x.slice(1)).filter(k => k < 1 || k > adet);
+    return kotu.length ? "kalıpta " + kotu[0] + ". sayı yok" : "";
+}
+function donemFormulHesapla(ic, sirali) {
+    if (/^\d+$/.test(ic)) { const k = +ic; return k >= 1 && k <= sirali.length ? sirali[k - 1] : null; }
+    if (!DONEM_FORMUL.test(ic)) return null;
+    const t = ic.match(/\$\d+|\d+|[-+*]/g);
+    const deger = x => {
+        if (x[0] !== "$") return +x;
+        const k = +x.slice(1);
+        if (k < 1 || k > sirali.length) throw new Error(x);
+        return +sirali[k - 1];
+    };
+    try {
+        const terim = [], isl = [];
+        let cur = deger(t[0]);
+        for (let i = 1; i < t.length; i += 2) {
+            if (t[i] === "*") cur *= deger(t[i + 1]);
+            else { terim.push(cur); isl.push(t[i]); cur = deger(t[i + 1]); }
+        }
+        terim.push(cur);
+        let s = terim[0];
+        isl.forEach((op, i) => { s = op === "+" ? s + terim[i + 1] : s - terim[i + 1]; });
+        return String(s);
+    } catch (e) { return null; }
+}
+function donemFormulGorunur(ic) {
+    if (/^\d+$/.test(ic)) return "[sayı " + ic + "]";
+    return "[" + ic.replace(/\s+/g, "").replace(/\$(\d+)/g, "sayı $1")
+        .replace(/([-+*])/g, (_t, op) => " " + (op === "*" ? "×" : op) + " ") + "]";
+}
 function donemYtAdedi(kalip) {
     const k = String(kalip || "").replace(/\s+/g, "").toUpperCase();
     return /^<N>([A-Z]{1,3})$/.test(k) ? 1 : (k.match(/<NN>|<N\d>|<N>/g) || []).length;
@@ -11252,10 +11293,11 @@ function donemYerTutucuHatasi(kalip, anlam) {
     const kotu = [];
     const adet = donemYtAdedi(k);
     String(anlam || "").replace(DONEM_YT_ADAY, (_t, _on, y) => {
-        y = y.replace(/\s+/g, "");
-        const sira = DONEM_YT_SIRA.exec(y.toUpperCase());
-        if (sira && +sira[1] >= 1 && +sira[1] <= adet) return _t;
-        if (sira) y = "[sayı " + sira[1] + "]";
+        const ic = donemYtIcerik(y);
+        if (ic !== null) {
+            if (!donemFormulHatasi(ic, adet)) return _t;
+            y = donemFormulGorunur(ic);
+        } else y = y.replace(/\s+/g, "");
         if (!izinli.has(y) && kotu.indexOf(y) === -1) kotu.push(y);
         return _t;
     });
@@ -11318,11 +11360,12 @@ function donemDegerAnlami(kalip, anlam, deger) {
     });
     const sayac = {};
     return anlam.replace(DONEM_YT_ADAY, (t, on, y) => {
-        const yy = y.replace(/[\s<>]/g, "").toUpperCase();
-        if (yy.indexOf("#") !== -1) {
-            const i = +yy.split("#")[1] - 1;
-            return i >= 0 && i < es.length ? on + es[i][1] : t;
+        const ic = donemYtIcerik(y);
+        if (ic !== null) {
+            const h = donemFormulHesapla(ic, es.map(x => x[1]));
+            return h === null ? t : on + h;
         }
+        const yy = y.replace(/[\s<>]/g, "").toUpperCase();
         const l = sayilar[yy];
         if (!l) return t;
         const i = sayac[yy] || 0;
@@ -11356,11 +11399,20 @@ function donemAnlamGoster(kalip, anlam) {
     const k = String(kalip || "").replace(/\s+/g, "").toUpperCase();
     if (!/<NN?>|<N\d>/.test(k)) return String(anlam || "");
     return String(anlam || "").replace(DONEM_YT_ADAY, (t, on, y) => {
-        const sira = /#\s*(\d+)/.exec(y);
-        return on + (sira ? "[sayı " + sira[1] + "]" : DONEM_SAYI);
+        const ic = donemYtIcerik(y);
+        return on + (ic !== null ? donemFormulGorunur(ic) : DONEM_SAYI);
     });
 }
-const DONEM_SAYI_SIRA_RE = /\[\s*say[ıi]\s*(\d+)\s*\]/gi;
+/* Ekrandaki "[sayı 1]", "[sayı 1 × sayı 2]", "[sayı 1 + 3]" iç hâle. */
+const DONEM_EKRAN_FORMUL = /^\s*(say[ıi]\s*\d+|\d+)(\s*[-+*×xX]\s*(say[ıi]\s*\d+|\d+))*\s*$/i;
+function donemFormulIc(metin) {
+    return String(metin || "").replace(/\[([^\[\]]+)\]/g, (t, ic) => {
+        const tek = /^\s*say[ıi]\s*(\d+)\s*$/i.exec(ic);
+        if (tek) return "<N#" + tek[1] + ">";
+        if (!/say[ıi]\s*\d+/i.test(ic) || !DONEM_EKRAN_FORMUL.test(ic)) return t;
+        return "<N#" + ic.replace(/say[ıi]\s*(\d+)/gi, "$$$1").replace(/[×xX]/g, "*").replace(/\s+/g, "") + ">";
+    });
+}
 /* Ekrandaki anlamın iç hâli: k'inci [sayı] kalıbın k'inci yer tutucusu
    olur (aile kalıbında <N>). */
 function donemAnlamIc(kalip, metin) {
@@ -11369,7 +11421,7 @@ function donemAnlamIc(kalip, metin) {
         : (k.match(/<NN>|<N\d>|<N>/g) || []).map(t => t === "<NN>" ? t : "<N>");
     if (!turler.length) return String(metin || "");
     let i = 0;
-    return String(metin || "").replace(DONEM_SAYI_SIRA_RE, (_t, n) => "<N#" + n + ">")
+    return donemFormulIc(metin)
         .replace(DONEM_SAYI_RE, () => turler[Math.min(i++, turler.length - 1)]);
 }
 /* YENİ ADDA YAZILIŞ: kalıbın Kolon Adları adımında yeni addaki yazılışı
@@ -12017,8 +12069,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const ytAdet = donemYtAdedi(kalipSimdi());
             if (ornekAnlam && ytAdet > 1) ornekEl.appendChild(elYap("div", "dg-donem-tur-not",
                 "Kalıpta " + ytAdet + " sayı var; anlamdaki her [sayı] sırayla bir sonrakini alır. Aynı "
-                + "sayıyı tekrar yazmak için [sayı 1], [sayı 2] yazın (ör. son [sayı 1] gün ile ondan "
-                + "önceki [sayı 1] gün)."));
+                + "sayıyı tekrar yazmak için [sayı 1], [sayı 2]; hesap için [sayı 1 × sayı 2], [sayı 1 + "
+                + "sayı 1] yazın (ör. son [sayı 1] günden son [sayı 1 × sayı 2] gün önceye kadar)."));
             ornekEl.hidden = !ornekAnlam;
             dgAc.textContent = "";
             dgAc.append(elYap("span", "dg-donem-deger-ac-ad", (dgAcik ? "▾ " : "▸ ") + "Değerleri Düzenle"),

@@ -1773,8 +1773,9 @@ Görevin her kalıbın ne anlama geldiğini, önce kalıbın yapısından kurup
     H06, H12), anlamda onun için de "N" yaz. Kalıpta birden çok sayı
     varsa anlamdaki N'ler sırayla 1., 2. sayıyı alır; aynı sayıyı tekrar
     yazmak gerekiyorsa <N#1>, <N#2> yaz (kalıbın 1. ve 2. sayısı; ör.
-    <N>D_X<N> "son <N#1> gün ile ondan önceki <N#1> gün"). Başka bir yer
-    tutucu biçimi kullanma.
+    <N>D_X<N> "son <N#1> gün ile ondan önceki <N#1> gün"); sayılarla hesap
+    için <N#$1*$2> gibi yaz ($k kalıbın k'inci sayısı; +, -, *). Başka bir
+    yer tutucu biçimi kullanma.
   - "donem": kalıp zaman bilgisi taşıyorsa true, değilse false (yukarıdaki
     "ZAMAN BİLGİSİ DEĞİLDİR" maddeleri false). Yanındaki-parça adayları
     için özellikle dikkat et: yalnızca zamanla ilgiliyse (ör. önceki dönem,
@@ -1865,6 +1866,9 @@ def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False, kayitli=None):
                 ", ".join("%s (%d kolon)" % (ik, n) for ik, n in k["birlikte"]), int(k.get("tek") or 0))
         if k.get("hafiza_anlam"):
             s += "\n  HAFIZADAKİ ANLAM: %s" % str(k["hafiza_anlam"])[:200]
+            ho = k.get("hafiza_ornek")
+            if ho and ho[1]:
+                s += " (değerle: %s -> %s)" % (ho[0], str(ho[1])[:200])
         oy = k.get("ornek_yazilis") or []
         for i, (ad, tanim) in enumerate(k["ornekler"]):
             etiket = (" [%s]" % oy[i]) if len(k.get("yazilislar") or []) > 1 and i < len(oy) else ""
