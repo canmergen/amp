@@ -2246,6 +2246,30 @@ her parça için bir satır. Uygunsa "tur" ve "neden" boş.
 {"parcalar": [{"ad": "...", "uygun": true, "tur": "", "neden": ""}]}""" + SINIRLAYICI_KURALI
 
 
+# SON KONTROL (01.2.4.4 Kolon Adlari): tur ekranda secilmez; yeni adlar
+# kurulunca dil modeli her parcanin turune, yeni addaki yerine ve onayli
+# aciklamaya bakar, acikca yanlis olani duzeltir.
+SISTEM_AD_TUR = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon adları
+yeniden kuruluyor: her parça TÜRÜNE göre yeni adda bir yere konur; yerlerin
+sırası AD SIRASI'nda verilir. Her parça için onaylanan ANLAM, şimdiki TÜR ve
+birkaç örnek kolonun ESKİ AD → YENİ AD yazımı ile kullanıcının onayladığı
+AÇIKLAMA verilecek.
+
+Görevin her parçanın türünün, anlamına ve onaylı açıklamaya uyup uymadığına
+bakmak. Onaylı açıklama KESİNDİR: parçanın o kolonda ne iş gördüğünü oradan
+anla. Türü yanlış olan parça yeni adda yanlış yerde durur (ör. ölçümü
+daraltan bir özellik Ölçü sayılırsa ölçünün yanına gider; doğrusu
+Nitelik). Anlamı değiştirme, yalnız türe bak. Tür açıkça yanlışsa en uygun
+türü öner; uygunsa ya da emin değilsen "uygun" true yaz. Ek (ek) türünü
+önerme. "tur" alanında yalnız TÜRLER listesindeki kodları kullan.
+
+NEDEN ("neden"): tek cümle. Örnek kolonlardan birinin açıklamasına dayan.
+Türü kodla değil, parantezdeki adıyla yaz (Nitelik, Diğer, Geçen Süre).
+
+TÜRLER:
+""" + SISTEM_PARCA_TUR.split("TÜRLER:\n", 1)[1]
+
+
 # Gerekcede kalan tur kodu ekranda adina cevrilir: tirnakli her kod;
 # tirnaksiz yalniz Turkce sozcuk olmayan kodlar (konu, nitelik gibi
 # sozcukler metinde kendi anlamiyla gecebilir).
@@ -2258,23 +2282,31 @@ def tur_kodlarini_adlandir(metin):
     return _KOD_YALIN.sub(lambda x: TUR_GORUNEN[x.group(1)], m)
 
 
-def parca_tur_degerlendir(liste, orkestra=None):
+def parca_tur_degerlendir(liste, orkestra=None, kip="", sira=None):
     """liste: [{"parca", "anlam", "tur", "ornekler": [(kolon, tanim)],
-    "birlikte": [(komsu, n)]}]. Doner: ({parca: {"uygun", "tur", "neden"}},
-    hata). Onerilen tur gecersiz ya da secilenle ayniysa uygun sayilir."""
+    "birlikte": [(komsu, n)]}]. kip "ad": 01.2.4.4 son kontrolu; ornekler
+    [("ESKI → YENI", onayli aciklama)], sira ad yerlerinin adlari; Ek
+    onerilmez. Doner: ({parca: {"uygun", "tur", "neden"}}, hata). Onerilen
+    tur gecersiz ya da secilenle ayniysa uygun sayilir."""
     if not liste:
         return {}, None
     ork = orkestra or Orkestra(arka=True)
+    ad_kipi = kip == "ad"
     satirlar = []
+    if ad_kipi and sira:
+        satirlar.append("AD SIRASI: %s" % ", ".join(map(str, sira)))
     for x in liste:
         s = "- PARÇA: %s\n  ANLAM: %s\n  TÜR: %s" % (x["parca"], str(x.get("anlam") or "")[:200],
                                                     x.get("tur") or "")
         if x.get("birlikte"):
             s += "\n  YANINDA: %s" % ", ".join("%s (%d)" % (k, n) for k, n in x["birlikte"][:6])
         for ad, tanim in (x.get("ornekler") or [])[:3]:
-            s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim or "(tanım yok)")[:200])
+            if ad_kipi:
+                s += "\n  ÖRNEK: %s\n    AÇIKLAMA: %s" % (ad, str(tanim or "(açıklama yok)")[:300])
+            else:
+                s += "\n  ÖRNEK: %s: %s" % (ad, str(tanim or "(tanım yok)")[:200])
         satirlar.append(s)
-    model, veri = ork.json_cagir(ork.modeller("parca"), SISTEM_PARCA_TUR,
+    model, veri = ork.json_cagir(ork.modeller("parca"), SISTEM_AD_TUR if ad_kipi else SISTEM_PARCA_TUR,
                                  _veri_blogu("PARÇALAR:", "\n".join(satirlar)), 0.1,
                                  zaman_asimi=DONEM_ZAMAN_ASIMI, anahtar="parcalar")
     if not model:
@@ -2289,7 +2321,7 @@ def parca_tur_degerlendir(liste, orkestra=None):
         if isinstance(uygun, str):
             uygun = _secenek(uygun) not in ("false", "hayir", "0")
         t = _secenek(str(x.get("tur") or "")).replace(" ", "_")
-        if uygun is False and t in PARCA_TURLERI and t != secilen[ad]:
+        if uygun is False and t in PARCA_TURLERI and t != secilen[ad] and not (ad_kipi and t == "ek"):
             sonuc[ad] = {"uygun": False, "tur": t,
                          "neden": tur_kodlarini_adlandir(_donem_metni(x.get("neden")))}
         else:

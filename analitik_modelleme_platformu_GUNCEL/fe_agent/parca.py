@@ -349,14 +349,20 @@ _TUR_ONBELLEK = {}
 
 
 def _tur_anahtari(x):
-    return "%s|%s|%s" % (x["parca"], x.get("anlam") or "", x.get("tur") or "")
+    # kip "ad": 01.2.4.4 son kontrolu (ornekler yeni ad ve onayli aciklama).
+    return "%s|%s|%s|%s" % (x.get("kip") or "", x["parca"], x.get("anlam") or "", x.get("tur") or "")
+
+
+def tur_imzasi(liste):
+    return hashlib.sha1(json.dumps(sorted(_tur_anahtari(x) for x in liste),
+                                   ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
 
 
 def tur_baslat(liste):
-    """liste: [{"parca", "anlam", "tur", "ornekler", "birlikte"}]. Bellekte
-    sonucu olmayanlar arka planda dil modeline gider. Doner: imza."""
-    imza = hashlib.sha1(json.dumps(sorted(_tur_anahtari(x) for x in liste),
-                                   ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+    """liste: [{"parca", "anlam", "tur", "ornekler", "birlikte", "kip",
+    "sira"}] (bir listede tek kip). Bellekte sonucu olmayanlar arka planda
+    dil modeline gider. Doner: imza."""
+    imza = tur_imzasi(liste)
     with _KILIT:
         k = _TUR_ISLER.get(imza)
         if k and k["durum"] in ("calisiyor", "bitti"):
@@ -370,7 +376,8 @@ def tur_baslat(liste):
         hatalar = []
 
         def yap(parca):
-            sonuc, hata = llm_mod.parca_tur_degerlendir(parca)
+            sonuc, hata = llm_mod.parca_tur_degerlendir(parca, kip=parca[0].get("kip") or "",
+                                                        sira=parca[0].get("sira"))
             with _KILIT:
                 for x in parca:
                     if x["parca"] in sonuc:

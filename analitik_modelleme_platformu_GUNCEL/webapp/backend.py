@@ -2967,19 +2967,6 @@ def parca_ornek_endpoint():
         return jsonify(_hata_govdesi("parca_ornek", e)), 200
 
 
-@app.route("/parca_tur_degerlendir", methods=["POST"])
-def parca_tur_degerlendir_endpoint():
-    """Ad Parçaları onayında türlerin anlama göre değerlendirmesi (başlatır
-    ve yoklanır; aynı istek aynı işi okur)."""
-    try:
-        istek = request.get_json(force=True) or {}
-        anahtar = _oturum_anahtari(istek.get("oturum_id"))
-        durum = _durum_al(anahtar)
-        return jsonify(dict(akis.parca_tur_degerlendir(durum, istek.get("satirlar")), tamam=True))
-    except Exception as e:
-        return jsonify(_hata_govdesi("parca_tur_degerlendir", e)), 200
-
-
 @app.route("/parca_iptal", methods=["POST"])
 def parca_iptal_endpoint():
     """Ad Parcalari: suren dil modeli yorumunu durdurur; gelenler kalir."""
@@ -2994,17 +2981,20 @@ def parca_iptal_endpoint():
 
 @app.route("/kolon_ad_onizle", methods=["POST"])
 def kolon_ad_onizle_endpoint():
-    """Kolon Adlari: Ad Standardi'nin sirasi degisince adlar yeniden kurulur
-    (durum kaydedilmez)."""
+    """Kolon Adlari: Ad Standardi'nin sirasi, ada eklenecek parcalar ya da
+    parca turleri degisince adlar yeniden kurulur (durum kaydedilmez); son
+    kontrol surerken kart bununla yoklar."""
     try:
         istek = request.get_json(force=True) or {}
         anahtar = _oturum_anahtari(_calisma_id(istek))
         durum = _durum_al(anahtar)
         sira = istek.get("sira")
         ekler = istek.get("eklenecekler")
+        turler = istek.get("turler")
         return jsonify({"tamam": True, "kolon_ad": akis.kolon_ad_onizle(
             durum, sira if isinstance(sira, list) else None,
-            ekler if isinstance(ekler, list) else None)})
+            ekler if isinstance(ekler, list) else None,
+            turler if isinstance(turler, dict) else None)})
     except Exception as e:
         return jsonify(_hata_govdesi("kolon_ad_onizle", e)), 200
 

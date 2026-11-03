@@ -8668,8 +8668,12 @@ function dogrulamaKartiEkle(alan, blok) {
         if (adimModu === "kolon_ad" && kolonAdErisim) {
             const on = kolonAdErisim.onaysiz(), sor = kolonAdErisim.sorunlu();
             const ek = kolonAdErisim.ekOnaysiz ? kolonAdErisim.ekOnaysiz() : 0;
-            birincil.disabled = on > 0 || sor > 0 || ek > 0;
-            gerekce.textContent = sor > 0 ? ftBinlik(sor) + " yerde ad ya da kısaltma sorunu var."
+            const sk = kolonAdErisim.sonKontrolSuruyor ? kolonAdErisim.sonKontrolSuruyor() : false;
+            birincil.disabled = on > 0 || sor > 0 || ek > 0 || sk;
+            gerekce.textContent = sk ? "Son kontrol sürüyor: dil modeli parça türlerini yeni adlar ve onaylı "
+                    + "açıklamalarla karşılaştırıyor. Bitince adlar gerekirse yeniden kurulur; ailelerin onayını "
+                    + "ondan sonra verin."
+                : sor > 0 ? ftBinlik(sor) + " yerde ad ya da kısaltma sorunu var."
                 : ek > 0 ? "Ada eklenecek " + ftBinlik(ek) + " parça onay bekliyor. Önce yukarıdaki «Ada "
                     + "Eklenecek Parçalar»ı onaylayın; adlar buna göre kurulur."
                 : on > 0 ? ftBinlik(on) + " aile onay bekliyor. Her aile için yeni adı ya da eski adın "
@@ -8683,12 +8687,9 @@ function dogrulamaKartiEkle(alan, blok) {
             const bek = parcaErisim.bekliyor(), on = parcaErisim.onaysiz();
             const es = parcaErisim.esBekleyen(), sor = parcaErisim.sorunlu();
             const cak = parcaErisim.cakisma();
-            const tSur = parcaErisim.turSuruyor(), tBek = parcaErisim.turBekleyen();
-            birincil.disabled = bek || on > 0 || es > 0 || sor > 0 || cak || tSur || tBek > 0;
+            birincil.disabled = bek || on > 0 || es > 0 || sor > 0 || cak;
             gerekce.textContent = bek ? "Dil modeli parçaları yorumlamayı bitirince onaylanabilir. "
                     + "Beklemek istemezseniz İptal'e basın."
-                : tSur ? "Türler onayladığınız anlamlara göre değerlendiriliyor; bitince öneri yoksa adım geçer."
-                : tBek > 0 ? ftBinlik(tBek) + " tür önerisine karar verin (Tür Değerlendirmesi), sonra yeniden onaylayın."
                 : sor > 0 ? ftBinlik(sor) + " satırda eksik ya da hatalı bilgi var: süzgeçte «Eksik ya da Hatalı»yı seçin."
                 : cak ? "Aynı gruptaki çiftlerde adlarda kullanılacak yazılış farklı seçilmiş: Yazım Sorunları'nda birini seçin."
                 : on > 0 ? ftBinlik(on) + " parça onay bekliyor. Her parça kontrol edilip onaylanmalı."
@@ -8891,18 +8892,6 @@ function dogrulamaKartiEkle(alan, blok) {
             gerekce.textContent = "Notunuz kontrol ediliyor; bitince onaylayın.";
             return;
         }
-        /* AD PARÇALARI: önce türler anlamlarına göre değerlendirilir; öneri
-           yoksa onay kendiliğinden sürer, varsa kullanıcı karar verir. */
-        if (adimModu === "parca" && parcaErisim && !parcaErisim.turHazir()) {
-            parcaErisim.turBaslat(() => {
-                if (parcaErisim.turHazir() && kart.isConnected && !kart.classList.contains("kilitli")) {
-                    durumTazele();
-                    if (!birincil.disabled) birincil.onclick();
-                }
-            });
-            durumTazele();
-            return;
-        }
         const karar = { haric: [], ekle: [] };
         durumlar.forEach((s, i) => {
             const ack = girisler[i] ? girisler[i].value.trim() : "";
@@ -9028,9 +9017,13 @@ const PARCA_SUZGECLER = [
 function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
     let kilitli = ilkKilit;
     const sade = !!pa.sade;
-    const turler = pa.turler || [];
-    const turAdi = k => (turler.find(t => t.kod === k) || {}).ad || "";
-    const turAck = k => (turler.find(t => t.kod === k) || {}).aciklama || "";
+    /* TÜR ARKA PLANDA: ekranda seçilmez. Dil modelinin (ya da hafızanın)
+       türü kalır; anlamda [parça] varsa tür Ek'tir. Ek önerilen satırın
+       anlamı [parça] olmadan düzenlenirse tür Diğer olur; asıl tür 01.2.4.4
+       son kontrolünde düzeltilir. */
+    const EK_YER_RE = /\[\s*par[çc]a\s*\]/i;
+    const turBul = (anlam, tur) => EK_YER_RE.test(anlam || "") ? "ek"
+        : (!tur || tur === "ek") ? "diger" : tur;
 
     /* ÖZET + "i" (yönerge ve sütunlar) */
     const ozetSatir = elYap("div", "dg-donem-ozet");
@@ -9111,7 +9104,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
     const satir = {}, duzenlendi = new Set();
     const es = {};
     function satirAl(r) {
-        if (!satir[r.parca]) satir[r.parca] = { anlam: tireSade(r.anlam || ""), tur: r.tur || "",
+        if (!satir[r.parca]) satir[r.parca] = { anlam: tireSade(r.anlam || ""), tur: r.tur || "diger",
                                                 standart: r.standart || r.parca, onay: !!r.onay };
         return satir[r.parca];
     }
@@ -9126,7 +9119,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         (yeni.satirlar || []).forEach(r => {
             if (!duzenlendi.has(r.parca) && satir[r.parca] && !satir[r.parca].onay) {
                 const s = satir[r.parca];
-                s.anlam = tireSade(r.anlam || ""); s.tur = r.tur || ""; s.standart = r.standart || r.parca;
+                s.anlam = tireSade(r.anlam || ""); s.tur = r.tur || "diger"; s.standart = r.standart || r.parca;
             }
         });
         (yeni.esler || []).forEach(e => { esAl(e); });
@@ -9183,12 +9176,13 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
             const st = (e.standart || "").trim();
             const ekSay = ((e.anlam || "").match(/\[\s*par[çc]a\s*\]/gi) || []).length;
             if (!(e.anlam || "").trim()) sor[r.parca] = "Anlam boş.";
-            else if (!e.tur) sor[r.parca] = "Tür seçilmedi.";
             /* EK: anlamda bir kez [parça] (arkasındaki parçanın yeri) ve ekin kendisi. */
             else if (e.tur === "ek" && (ekSay !== 1 || !(e.anlam || "").replace(/\[\s*par[çc]a\s*\]/gi, "").trim()))
-                sor[r.parca] = "Ek türünde anlam bir kez [parça] ve eki içermeli; [parça] arkasındaki "
-                    + "parçanın yerini tutar (ör. [parça]lık, [parça] başına, [parça] bazında).";
-            else if (e.tur !== "ek" && ekSay) sor[r.parca] = "[parça] yalnız Ek türünde yazılır.";
+                sor[r.parca] = ekSay > 1 ? "Anlamda [parça] bir kez yazılır."
+                    : ekSay ? "[parça] ile birlikte eki de yazın (ör. [parça]lık, [parça] başına)."
+                    : "Bu parça arkasındaki parçaya bağlanan bir ek gibi duruyor (PER_DAY: günlük). "
+                    + "Anlamı [parça] ile yazın: [parça]lık, [parça] başına, [parça] bazında. Ek "
+                    + "değilse anlamı kendi sözcüğüyle düzeltin.";
             else if (!PARCA_STANDART.test(st))
                 sor[r.parca] = "Standart yazılış geçersiz: büyük harfle başlar, yalnız büyük harf ve rakam, en çok 12 karakter.";
             else if (sahip[st] && sahip[st].size > 1)
@@ -9219,7 +9213,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
     const pSar = elYap("div", "dg-tablo-sar dg-parca-sar");
     const pTablo = elYap("table", "dg-tablo dg-parca-tablo");
     const pTh = document.createElement("thead"), pHr = document.createElement("tr");
-    ["Parça", "Anlam", "Tür", "Standart", "Onay"].forEach(h => {
+    ["Parça", "Anlam", "Standart", "Onay"].forEach(h => {
         const th = elYap("th", "", h);
         /* Standart'ın ne olduğu başlığın "i"sinde. */
         if (h === "Standart") th.appendChild(bolmeBilgiSimgesi(
@@ -9243,7 +9237,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         if (sor) return ["Kontrol edin", true];
         if (e.uye) return [e.uye + " ile aynı; anlamı ve yazılışı o satırdan", false];
         if (duzenlendi.has(r.parca) || (r.oneri && (e.anlam !== tireSade(r.oneri.anlam || "")
-            || e.tur !== (r.oneri.tur || "") || e.standart !== (r.oneri.standart || r.parca))))
+            || e.standart !== (r.oneri.standart || r.parca))))
             return ["Düzenlendi", false];
         if (r.kontrol) return ["Kontrol edin", true];
         /* Önerinin kaynağı (hafıza, dil modeli, kanıt sayısı) yazılmaz. */
@@ -9277,7 +9271,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
             const tr = elYap("tr", "dg-bos-tablo");
             const td = elYap("td", "", (pa.satirlar || []).length
                 ? "Bu süzgeçte parça yok." : "Kolon adlarında yorumlanacak parça yok.");
-            td.colSpan = 5; tr.appendChild(td); pTb.appendChild(tr);
+            td.colSpan = 4; tr.appendChild(td); pTb.appendChild(tr);
         }
         sayfaEl.textContent = "";
         if (liste.length > PARCA_SAYFA) {
@@ -9306,7 +9300,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         if (dugme._acik) { dugme._acik.remove(); dugme._acik = null; dugme.textContent = "Örnekler"; return; }
         const dtr = elYap("tr", "dg-donem-detay");
         const dtd = elYap("td", "");
-        dtd.colSpan = 5;
+        dtd.colSpan = 4;
         const kutu = elYap("div", "dg-parca-ornek", "Örnekler yükleniyor");
         dtd.appendChild(kutu); dtr.appendChild(dtd);
         tr.after(dtr);
@@ -9373,19 +9367,6 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
             if (r["not"]) tdA.appendChild(elYap("div", "dg-donem-not", "Not: " + tireSade(r["not"])));
         }
         tr.appendChild(tdA);
-        /* TÜR */
-        const tdT = elYap("td", "");
-        const ts = document.createElement("select");
-        ts.className = "dg-donem-tur dg-parca-tur";
-        ts.setAttribute("aria-label", r.parca + " türü");
-        const bos = document.createElement("option");
-        bos.value = ""; bos.textContent = "Tür seçin";
-        ts.appendChild(bos);
-        turler.forEach(t => { const o = document.createElement("option"); o.value = t.kod; o.textContent = t.ad; ts.appendChild(o); });
-        ts.value = e.tur || "";
-        ts.disabled = g.disabled;
-        tdT.append(ts, elYap("div", "dg-donem-tur-not", turAck(ts.value)));
-        tr.appendChild(tdT);
         /* STANDART */
         const tdS = elYap("td", "");
         const st = document.createElement("input");
@@ -9417,12 +9398,12 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
         tr.classList.toggle("dg-parca-onayli", !!s.onay);
         /* Değişiklik onayı kaldırır. */
         const degis = () => {
-            s.anlam = g.value; s.tur = ts.value; s.standart = st.value.toUpperCase().trim();
+            if (g.value !== s.anlam) s.tur = turBul(g.value, s.tur);
+            s.anlam = g.value; s.standart = st.value.toUpperCase().trim();
             s.onay = false; duzenlendi.add(r.parca);
             tumunuCiz(tr); if (degisti) degisti();
         };
         g.addEventListener("change", degis);
-        ts.addEventListener("change", degis);
         st.addEventListener("input", () => { const p = st.selectionStart; st.value = st.value.toUpperCase(); st.setSelectionRange(p, p); stFarkBoya(); });
         st.addEventListener("change", degis);
         k.addEventListener("change", () => {
@@ -9435,7 +9416,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
     /* ---- YAZIM SORUNLARI SEKMESİ ---- */
     const yNot = elYap("p", "dg-donem-pano-not",
         "Yazımı birbirine yakın ya da anlamı aynı çıkan parçalar. Aynı şeyi anlatıyorlarsa «Aynı» "
-        + "deyip adlarda kullanılacak yazılışı seçin; diğerleri o yazılışın anlamını ve türünü alır. "
+        + "deyip adlarda kullanılacak yazılışı seçin; diğerleri o yazılışın anlamını alır. "
         + "Değilse «Farklı» deyin.");
     if (!sade) panolar.yazim.appendChild(yNot);
     const yUst = elYap("div", "dg-tablo-ust");
@@ -9588,154 +9569,13 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
     }
     if (pa.dm === "calisiyor" && !sade) setTimeout(yokla, 3000);
 
-    /* ---- TÜR DEĞERLENDİRMESİ ----
-       "Ad Parçalarını Onayla"ya basılınca adım hemen geçmez: dil modeli her
-       parçanın türünü onaylanan anlamına göre değerlendirir
-       (/parca_tur_degerlendir; yalnız kendi satırı olanlar, aynı gruptaki
-       üyeler standart satırı izler). Uymayan için öneri gelir; her öneride
-       karar kullanıcının (Öneriyi Al / Benimki Kalsın). Öneri yoksa ya da
-       hepsine karar verilince adım geçer. turKombin: uygun bulunan ya da
-       kararı verilen "parça|anlam|tür"; satır sonradan değişirse yeniden
-       değerlendirilir. */
-    const turKombin = new Set();
-    let turDeg = null;            // {durum, biten, toplam, bakilamayan, hata, oneriler: []}
-    const turPano = elYap("div", "dg-parca-tur-pano");
-    turPano.hidden = true;
-    if (!sade) kart.appendChild(turPano);
-    const kombin = x => x.parca + "|" + x.anlam + "|" + x.tur;
-    function kendiSatirlar() {
-        const grup = gruplar();
-        return (pa.satirlar || []).map(r => ({ r, e: etkin(r.parca, grup) }))
-            .filter(({ e }) => !e.uye)
-            .map(({ r, e }) => ({ parca: r.parca, anlam: (e.anlam || "").trim(), tur: e.tur || "" }));
-    }
-    const turBekleyen = () => (turDeg && turDeg.oneriler || []).filter(o => !o.karar).length;
-    function turHazir() {
-        if (turDeg && turDeg.durum === "calisiyor") return false;
-        return kendiSatirlar().every(x => turKombin.has(kombin(x))) && !turBekleyen();
-    }
-    function turKarar(o, karar) {
-        if (kilitli) return;
-        const s = satir[o.parca];
-        if (!s) return;
-        turKombin.delete(o.parca + "|" + o.anlam + "|" + (o.karar === "al" ? o.oneri : o.tur));
-        o.karar = karar;
-        s.tur = karar === "al" ? o.oneri : o.tur;
-        turKombin.add(o.parca + "|" + o.anlam + "|" + s.tur);
-        tumunuCiz(); turPanoCiz(); if (degisti) degisti();
-    }
-    function turPanoCiz() {
-        turPano.textContent = "";
-        turPano.hidden = !turDeg;
-        if (!turDeg) return;
-        const bas = elYap("div", "dg-tablo-baslik dg-parca-tur-bas", "Tür Değerlendirmesi");
-        bas.appendChild(bolmeBilgiSimgesi("Onaydan hemen sonra dil modeli her parçanın türünü "
-            + "onayladığınız anlama göre değerlendirir; anlam değişmez. Türü anlamına uymayan parça "
-            + "için tür önerir. Her öneride son karar sizin: «Öneriyi Al» türü değiştirir, «Benimki "
-            + "Kalsın» sizin seçtiğiniz türü bırakır. Karar verince «Ad Parçalarını Onayla ve Devam "
-            + "Et»e yeniden basın.", "Tür Değerlendirmesi"));
-        turPano.appendChild(bas);
-        const oneriler = turDeg.oneriler || [];
-        let durum;
-        if (turDeg.durum === "calisiyor")
-            durum = "Dil modeli türleri onayladığınız anlamlara göre değerlendiriyor: "
-                + ftBinlik(turDeg.biten || 0) + " / " + ftBinlik(turDeg.toplam || 0) + ".";
-        else {
-            const uygun = Math.max(0, (turDeg.toplam || 0) - oneriler.length - (turDeg.bakilamayan || 0));
-            durum = ftBinlik(uygun) + " parçanın türü anlamıyla uyumlu."
-                + (oneriler.length ? " " + ftBinlik(oneriler.length) + " parça için tür önerisi var"
-                    + (turBekleyen() ? ", " + ftBinlik(turBekleyen()) + " tanesi kararınızı bekliyor." : "; hepsine karar verdiniz.")
-                    : "")
-                + (turDeg.bakilamayan ? " Dil modeli " + ftBinlik(turDeg.bakilamayan)
-                    + " parçayı değerlendiremedi; onların türü seçtiğiniz gibi kalır." : "");
-        }
-        turPano.appendChild(elYap("div", "dg-bilgi-kutu", durum));
-        if (!oneriler.length) return;
-        const sar = elYap("div", "dg-tablo-sar dg-parca-sar");
-        const tablo = elYap("table", "dg-tablo dg-parca-tur-tablo");
-        const th = document.createElement("thead"), hr = document.createElement("tr");
-        ["Parça", "Anlam", "Sizin Türünüz", "Önerilen Tür", "Neden", "Karar"].forEach(h => hr.appendChild(elYap("th", "", h)));
-        th.appendChild(hr); tablo.appendChild(th);
-        const tb = document.createElement("tbody");
-        oneriler.forEach(o => {
-            const tr = elYap("tr", "dg-satir");
-            const tdP = elYap("td", "dg-kolon", o.parca);
-            /* "i": parçanın geçtiği ilk üç kolon ve tanımı. */
-            if ((o.ornek || []).length) tdP.appendChild(bolmeBilgiSimgesi(tireSade("Geçtiği kolonlardan örnekler:\n"
-                + o.ornek.map(([k, t]) => k + ": " + (t || "Tanım yok")).join("\n")), o.parca));
-            tr.append(tdP, elYap("td", "", tireSade(o.anlam)),
-                      elYap("td", "", turAdi(o.tur)), elYap("td", "", turAdi(o.oneri)),
-                      elYap("td", "dg-donem-olasi-neden", tireSade(o.neden || "")));
-            const td = elYap("td", "");
-            const bol = elYap("div", "dg-segment");
-            [["al", "Öneriyi Al"], ["kalsin", "Benimki Kalsın"]].forEach(([d, a]) => {
-                const b = elYap("button", o.karar === d ? "secili" : "", a);
-                b.type = "button"; b.disabled = kilitli;
-                b.setAttribute("aria-pressed", o.karar === d ? "true" : "false");
-                b.onclick = () => turKarar(o, d);
-                bol.appendChild(b);
-            });
-            td.appendChild(bol);
-            tr.appendChild(td);
-            tr.classList.toggle("dg-donem-dikkat", !o.karar);
-            tr.classList.toggle("dg-parca-onayli", !!o.karar);
-            tb.appendChild(tr);
-        });
-        tablo.appendChild(tb); sar.appendChild(tablo); turPano.appendChild(sar);
-    }
-    /* Değerlendirilmemiş satırlar gönderilir; yoklanır. bitince(): öneri
-       yoksa onay sürer. */
-    function turBaslat(bitince) {
-        const bekleyen = kendiSatirlar().filter(x => !turKombin.has(kombin(x)));
-        if (!bekleyen.length) { bitince(); return; }
-        const eski = (turDeg && turDeg.oneriler || []).filter(o => o.karar);
-        turDeg = { durum: "calisiyor", biten: 0, toplam: bekleyen.length, bakilamayan: 0, oneriler: eski };
-        turPanoCiz(); if (degisti) degisti();
-        let deneme = 0;
-        const sor = () => fetch(getWebAppBackendUrl("parca_tur_degerlendir"), {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ oturum_id: OTURUM_ID, satirlar: bekleyen })
-            })
-            .then(r => r.json())
-            .then(d => {
-                if (!kart.isConnected) return;
-                if (!d || d.tamam === false || d.durum === "calisiyor") {
-                    if (d && d.durum === "calisiyor") { turDeg.biten = d.biten || 0; turDeg.toplam = d.toplam || bekleyen.length; }
-                    turPanoCiz();
-                    if (deneme++ < 400) setTimeout(sor, 1500);
-                    return;
-                }
-                const sonuc = d.sonuc || {};
-                let bakilamayan = 0;
-                const yeni = [];
-                bekleyen.forEach(x => {
-                    const r = sonuc[x.parca];
-                    if (r && r.uygun === false && r.tur) yeni.push(Object.assign({}, x, {
-                        oneri: r.tur, neden: r.neden || "", karar: "", ornek: (d.ornek || {})[x.parca] || [] }));
-                    else { if (!r) bakilamayan++; turKombin.add(kombin(x)); }
-                });
-                turDeg = { durum: "bitti", biten: bekleyen.length, toplam: bekleyen.length,
-                           bakilamayan, hata: d.hata || "", oneriler: eski.concat(yeni) };
-                turPanoCiz(); if (degisti) degisti();
-                if (!yeni.length) bitince();
-                else turPano.scrollIntoView({ block: "nearest", behavior: "smooth" });
-            })
-            .catch(() => { if (deneme++ < 400) setTimeout(sor, 3000); });
-        sor();
-    }
-
     return {
-        /* Tür değerlendirmesi: onay bunu bekler. */
-        turHazir,
-        turBaslat,
-        turSuruyor: () => !!(turDeg && turDeg.durum === "calisiyor"),
-        turBekleyen,
         deger: () => {
             const grup = gruplar();
             return {
                 satirlar: (pa.satirlar || []).map(r => {
                     const e = etkin(r.parca, grup);
-                    return { parca: r.parca, anlam: (e.anlam || "").trim(), tur: e.tur || "",
+                    return { parca: r.parca, anlam: (e.anlam || "").trim(), tur: e.tur || "diger",
                              standart: (e.standart || "").trim(), onay: !!(satir[r.parca] || {}).onay };
                 }),
                 esler: (pa.esler || []).map(e => ({ anahtar: e.anahtar, karar: esAl(e).karar,
@@ -9841,15 +9681,18 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         const no = ++onizleSayac;
         stKap.classList.add("yukleniyor");
         ekKap.classList.add("yukleniyor");
+        tkKap.classList.add("yukleniyor");
         fetch(getWebAppBackendUrl("kolon_ad_onizle"), {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ftKimlikGovdesi({ sira: sira, eklenecekler: ekDeger() }))
+            body: JSON.stringify(ftKimlikGovdesi({ sira: sira, eklenecekler: ekDeger(),
+                                                   turler: Object.assign({}, turSecim) }))
         })
         .then(r => r.json())
         .then(d => {
             if (no !== onizleSayac) return;
             const k = d && d.kolon_ad;
-            if (!k) return;
+            if (!k) { tkYoklaKur(); return; }
+            if (k.son_kontrol) skAl(k.son_kontrol);
             const harita = {};
             (k.satirlar || []).forEach(r => { harita[r.aile] = r.kolonlar; });
             /* Ad değişen ailenin onayı kalkar (yeni adı görülmedi). */
@@ -9863,11 +9706,188 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const x = ekler.find(y => y.anahtar === e.anahtar);
                 if (x) x.gecerli = !!e.gecerli;
             });
-            tabloCiz(); siraCiz(); ekCiz();
+            tabloCiz(); siraCiz(); ekCiz(); tkCiz();
             if (degisti) degisti();
+            tkYoklaKur();
         })
-        .catch(() => {})
-        .then(() => { if (no === onizleSayac) { stKap.classList.remove("yukleniyor"); ekKap.classList.remove("yukleniyor"); } });
+        .catch(() => { tkYoklaKur(); })
+        .then(() => { if (no === onizleSayac) { stKap.classList.remove("yukleniyor"); ekKap.classList.remove("yukleniyor"); tkKap.classList.remove("yukleniyor"); } });
+    }
+
+    /* ---- SON KONTROL: PARÇA TÜRLERİ ----
+       Tür 01.2.4.2'de seçilmez (arka planda). Adlar kurulunca dil modeli
+       her parçanın türünü yeni addaki yerine ve Kolon Kartları'nda
+       onaylanan açıklamaya göre denetler; açıkça yanlış olanı düzeltir ve
+       adlar düzeltilmiş türle kurulur. Her düzeltmede tür değiştirilebilir
+       (önceki türe dönmek dahil); başka bir parçanın türü de buradan
+       değiştirilebilir. turSecim: parca -> tür (dil modelinin düzeltmeleri
+       ve kullanıcının seçimleri; sunucuya gider). */
+    let sk = ka.son_kontrol || null;
+    const turSecim = Object.assign({}, (sk && sk.secim) || {});
+    const elle = new Set(Object.keys(turSecim).filter(p => !((sk && sk.oneriler) || []).some(o => o.parca === p)));
+    const tkKap = elYap("div", "dg-kad-ek dg-kad-tur");
+    tkKap.hidden = !sk;
+    kart.appendChild(tkKap);
+    const tkTurAdi = k => (((sk && sk.turler) || []).find(t => t.kod === k) || {}).ad || k;
+    const tkSuruyor = () => !!(sk && sk.durum === "calisiyor") && !kilitli;
+    function skAl(yeni) {
+        sk = yeni;
+        /* Yeni gelen düzeltme kullanıcının seçimi yoksa kendiliğinden geçerli. */
+        (sk.oneriler || []).forEach(o => {
+            if (!(o.parca in turSecim)) turSecim[o.parca] = o.oneri;
+            elle.delete(o.parca);
+        });
+    }
+    let tkYokla = null;
+    function tkYoklaKur() {
+        /* Kart ilk çizimde henüz sayfada değil; sayfadan kalkmışsa yoklama durur. */
+        if (tkYokla || !tkSuruyor()) return;
+        tkYokla = setTimeout(() => { tkYokla = null; if (tkSuruyor() && tkKap.isConnected) onizle(); }, 3000);
+    }
+    function tkSecimDegis(p, t) {
+        if (kilitli || turSecim[p] === t) return;
+        turSecim[p] = t;
+        tkCiz(); onizle();
+    }
+    function tkCiz() {
+        tkKap.textContent = "";
+        tkKap.hidden = !sk;
+        if (!sk) return;
+        const oneriler = sk.oneriler || [];
+        const parcalar = sk.parcalar || [];
+        const bas = elYap("div", "dg-kad-standart-bas");
+        const baslik = elYap("span", "dg-kad-standart-ad", "Son Kontrol: Parça Türleri");
+        baslik.appendChild(bolmeBilgiSimgesi("Parçanın türü (konu, ölçü, istatistik gibi) yeni addaki "
+            + "yerini belirler. Tür Ad Parçaları'nda seçilmez; burada dil modeli her parçanın türünü "
+            + "yeni addaki yerine ve Kolon Kartları'nda onayladığınız açıklamaya bakarak denetler, "
+            + "açıkça yanlış olanı düzeltir. Adlar düzeltilmiş türle kurulur. Bir düzeltmeyi "
+            + "beğenmezseniz türü seçip değiştirin (önceki türüne dönmek dahil). Başka bir parçanın "
+            + "türünü de alttan değiştirebilirsiniz. Onaylayınca türler proje hafızasına yazılır.",
+            "Son Kontrol"));
+        bas.appendChild(baslik);
+        let durumMetni;
+        if (kilitli) durumMetni = (sk.uygulanan || []).length ? "Onayda türü değişen parçalar:"
+            : oneriler.length || elle.size ? "" : "Türlerde değişiklik yapılmadı.";
+        else if (sk.durum === "calisiyor")
+            durumMetni = "Dil modeli parça türlerini yeni adlar ve onaylı açıklamalarla karşılaştırıyor: "
+                + ftBinlik(sk.biten || 0) + " / " + ftBinlik(sk.toplam || 0) + ". Bitince adlar gerekirse "
+                + "yeniden kurulur.";
+        else if (sk.durum === "yok") durumMetni = "";
+        else if (oneriler.length)
+            durumMetni = "Dil modeli " + ftBinlik(oneriler.length) + " parçanın türünü düzeltti; adlar "
+                + "düzeltilmiş türle kuruldu. Uymayanı aşağıdan değiştirin.";
+        else durumMetni = sk.hata && !sk.toplam ? "" : "Bütün parça türleri yeni adlar ve onaylı açıklamalarla uyumlu.";
+        if (!kilitli && sk.hata) durumMetni = (durumMetni ? durumMetni + " " : "")
+            + "Dil modeli bazı parçalara bakamadı; onların türü Ad Parçaları'ndaki gibi kaldı.";
+        if (durumMetni) bas.appendChild(elYap("span", "dg-donem-tur-not", durumMetni));
+        tkKap.appendChild(bas);
+        /* Onaylanmış kart: onayda değişen türler (kayıttan). */
+        if (kilitli && (sk.uygulanan || []).length) {
+            const t = elYap("table", "dg-tablo dg-kad-tur-tablo");
+            const h = document.createElement("thead"), hr = document.createElement("tr");
+            ["Parça", "Anlam", "Tür", "Neden"].forEach(x => hr.appendChild(elYap("th", "", x)));
+            h.appendChild(hr); t.appendChild(h);
+            const b = document.createElement("tbody");
+            sk.uygulanan.forEach(x => {
+                const tr = elYap("tr", "dg-satir");
+                tr.append(elYap("td", "dg-kolon", x.parca), elYap("td", "", tireSade(x.anlam || "")),
+                          elYap("td", "", tkTurAdi(x.eski) + " yerine " + tkTurAdi(x.yeni)),
+                          elYap("td", "", x.kaynak === "dil_modeli" ? tireSade(x.neden || "Dil modelinin düzeltmesi.")
+                                : "Sizin değişikliğiniz."));
+                b.appendChild(tr);
+            });
+            t.appendChild(b);
+            const sar_ = elYap("div", "dg-tablo-sar");
+            sar_.appendChild(t);
+            tkKap.appendChild(sar_);
+            return;
+        }
+        const satirP = oneriler.map(o => o.parca).concat(Array.from(elle).filter(p => !oneriler.some(o => o.parca === p)));
+        if (satirP.length) {
+            const t = elYap("table", "dg-tablo dg-kad-tur-tablo");
+            const h = document.createElement("thead"), hr = document.createElement("tr");
+            ["Parça", "Anlam", "Tür", "Neden"].forEach(x => hr.appendChild(elYap("th", "", x)));
+            h.appendChild(hr); t.appendChild(h);
+            const b = document.createElement("tbody");
+            satirP.forEach(p => {
+                const o = oneriler.find(x => x.parca === p);
+                const pb = parcalar.find(x => x.parca === p) || {};
+                const eski = o ? o.eski : pb.tur;
+                const tr = elYap("tr", "dg-satir");
+                const t1 = elYap("td", "dg-kolon");
+                const ad = elYap("div", "dg-kad-ad", p);
+                if (o && (o.ornek || []).length) ad.appendChild(bolmeBilgiSimgesi(
+                    "Baktığı kolonlar (eski ad → yeni ad):\n" + o.ornek.join("\n"), p));
+                t1.appendChild(ad);
+                const t2 = elYap("td", "", tireSade((o ? o.anlam : pb.anlam) || ""));
+                const t3 = elYap("td", "");
+                const sec = document.createElement("select");
+                sec.className = "dg-donem-tur dg-kad-tur-sec";
+                sec.setAttribute("aria-label", p + " türü");
+                (sk.turler || []).forEach(x => {
+                    const op = document.createElement("option");
+                    op.value = x.kod;
+                    op.textContent = x.ad + (x.kod === eski ? " (önceki)" : "");
+                    sec.appendChild(op);
+                });
+                sec.value = turSecim[p] || eski || "";
+                sec.disabled = kilitli;
+                sec.onchange = () => tkSecimDegis(p, sec.value);
+                t3.appendChild(sec);
+                const t4 = elYap("td", "");
+                if (o) {
+                    t4.appendChild(elYap("div", "dg-donem-tur-not", "Dil modeli: " + tkTurAdi(o.eski)
+                        + " yerine " + tkTurAdi(o.oneri)));
+                    if (o.neden) t4.appendChild(elYap("div", "", tireSade(o.neden)));
+                } else {
+                    t4.appendChild(elYap("div", "dg-donem-tur-not", "Sizin değişikliğiniz; önceki türü "
+                        + tkTurAdi(eski) + "."));
+                    if (!kilitli) {
+                        const kal = elYap("button", "dg-baglanti", "Değişikliği Kaldır");
+                        kal.type = "button";
+                        kal.onclick = () => { delete turSecim[p]; elle.delete(p); tkCiz(); onizle(); };
+                        t4.appendChild(kal);
+                    }
+                }
+                tr.append(t1, t2, t3, t4);
+                tr.classList.toggle("dg-parca-onayli", !!o && turSecim[p] === o.oneri);
+                b.appendChild(tr);
+            });
+            t.appendChild(b);
+            const sar_ = elYap("div", "dg-tablo-sar");
+            sar_.appendChild(t);
+            tkKap.appendChild(sar_);
+        }
+        /* Başka bir parçanın türünü değiştir. */
+        const kalanP = parcalar.filter(x => !satirP.includes(x.parca));
+        if (!kilitli && sk.durum !== "calisiyor" && kalanP.length) {
+            const ekS = elYap("div", "dg-kad-tur-ekle");
+            const ps = document.createElement("select");
+            ps.className = "dg-donem-tur";
+            ps.setAttribute("aria-label", "Türü değişecek parça");
+            const ilk = document.createElement("option");
+            ilk.value = ""; ilk.textContent = "Parça seçin";
+            ps.appendChild(ilk);
+            kalanP.forEach(x => {
+                const op = document.createElement("option");
+                op.value = x.parca; op.textContent = x.parca + " · " + tireSade(x.anlam) + " · " + tkTurAdi(x.tur);
+                ps.appendChild(op);
+            });
+            const bt = elYap("button", "dg-toplu-btn", "Türünü Değiştir");
+            bt.type = "button"; bt.disabled = true;
+            ps.onchange = () => { bt.disabled = !ps.value; };
+            bt.onclick = () => {
+                const x = kalanP.find(y => y.parca === ps.value);
+                if (!x || kilitli) return;
+                elle.add(x.parca);
+                turSecim[x.parca] = x.tur;
+                tkCiz();
+                const sel = tkKap.querySelector('select[aria-label="' + CSS.escape(x.parca) + ' türü"]');
+                if (sel) sel.focus();
+            };
+            ekS.append(elYap("span", "dg-donem-tur-not", "Başka bir parçanın türü yanlışsa:"), ps, bt);
+            tkKap.appendChild(ekS);
+        }
     }
 
     /* ---- ADA EKLENECEK PARÇALAR ----
@@ -10114,10 +10134,13 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     }
     siraCiz();
     ekCiz();
+    tkCiz();
     tabloCiz();
+    tkYoklaKur();
     return {
-        deger: () => ({ sira: sira.slice(), eklenecekler: ekDeger(),
+        deger: () => ({ sira: sira.slice(), eklenecekler: ekDeger(), turler: Object.assign({}, turSecim),
                         aileler: satirlar.map(r => ({ aile: r.aile, secim: r.secim, onay: r.onay })) }),
+        sonKontrolSuruyor: tkSuruyor,
         onaysiz: () => satirlar.filter(r => !r.onay).length,
         ekOnaysiz: () => ekler.filter(e => !e.onay).length,
         sorunlu: () => Object.keys(sorunlar()).length + ekler.filter(e => !ekGecerli(e)).length,
@@ -10126,7 +10149,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             satirlar.forEach(r => { if (r.secim === "yeni") deg += r.kolonlar.filter(([e, y]) => e !== y).length; });
             return { aile: satirlar.length, degisen: deg };
         },
-        kilitle: k => { kilitli = k; siraCiz(); ekCiz(); tabloCiz(); },
+        kilitle: k => { kilitli = k; siraCiz(); ekCiz(); tkCiz(); tabloCiz(); if (!k) tkYoklaKur(); },
         bekliyor: () => false
     };
 }

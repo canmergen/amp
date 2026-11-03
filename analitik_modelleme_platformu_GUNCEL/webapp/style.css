@@ -4967,9 +4967,8 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-parca-tablo { table-layout: fixed; }
 .dg-parca-tablo th:nth-child(1) { width: 22%; }
 .dg-parca-tablo th:nth-child(2) { width: auto; }
-.dg-parca-tablo th:nth-child(3) { width: 22%; }
-.dg-parca-tablo th:nth-child(4) { width: 112px; }
-.dg-parca-tablo th:nth-child(5) { width: 62px; text-align: center; }
+.dg-parca-tablo th:nth-child(3) { width: 220px; }
+.dg-parca-tablo th:nth-child(4) { width: 62px; text-align: center; }
 .dg-parca-tablo td, .dg-parca-es-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
 .dg-kart .dg-parca-tablo tr.dg-satir > td, .dg-kart .dg-parca-es-tablo tr.dg-satir > td { background: transparent; }
 .dg-parca-tablo tr.dg-donem-dikkat > td:first-child,
@@ -4989,20 +4988,7 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-parca-ornek-satir { display: grid; grid-template-columns: minmax(160px, 28%) 1fr; gap: 10px; }
 .dg-parca-ornek-satir + .dg-parca-ornek-satir { margin-top: 3px; }
 .dg-parca-ornek-kolon { font-weight: var(--fw-kalin); overflow-wrap: anywhere; }
-/* Ad Parçaları: onay sonrası tür değerlendirmesi. */
-.dg-parca-tur-pano { margin-top: var(--b-3); }
-.dg-parca-tur-bas { display: flex; align-items: center; gap: 6px; margin-bottom: var(--b-2); }
-.dg-parca-tur-tablo { table-layout: fixed; }
-.dg-parca-tur-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
-.dg-kart .dg-parca-tur-tablo tr.dg-satir > td { background: transparent; }
-.dg-parca-tur-tablo tr.dg-donem-dikkat > td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
-.dg-parca-tur-tablo tr.dg-parca-onayli > td:first-child { box-shadow: inset 3px 0 0 var(--yesil); }
-.dg-parca-tur-tablo th:nth-child(1) { width: 12%; }
-.dg-parca-tur-tablo th:nth-child(2) { width: 16%; }
-.dg-parca-tur-tablo th:nth-child(3), .dg-parca-tur-tablo th:nth-child(4) { width: 13%; }
-.dg-parca-tur-tablo th:nth-child(5) { width: auto; }
-.dg-parca-tur-tablo th:nth-child(6) { width: 290px; }
-.dg-parca-tur-tablo .dg-segment { white-space: nowrap; }
+/* Ad Parçaları: yazım sorunları tablosu. */
 .dg-parca-es-tablo { table-layout: fixed; }
 .dg-parca-es-tablo th:nth-child(1) { width: 30%; }
 .dg-parca-es-tablo th:nth-child(2) { width: auto; }
@@ -5052,6 +5038,19 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-kad-ek-tablo th:nth-child(5) { width: 62px; }
 .dg-kad-ek-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
 .dg-kad-ek-giris { width: 120px; text-transform: uppercase; }
+/* Son kontrol: parça türleri (Ad Standardı'nın altında). */
+.dg-kad-tur { border-top-color: var(--murekkep-cizgi); }
+.dg-kad-tur-tablo { table-layout: fixed; }
+.dg-kad-tur-tablo th:nth-child(1) { width: 18%; }
+.dg-kad-tur-tablo th:nth-child(2) { width: 22%; }
+.dg-kad-tur-tablo th:nth-child(3) { width: 200px; }
+.dg-kad-tur-tablo th:nth-child(4) { width: auto; }
+.dg-kad-tur-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
+.dg-kad-tur-sec { width: 100%; }
+.dg-kart .dg-kad-tur-tablo tr.dg-satir > td { background: transparent; }
+.dg-kad-tur-tablo tr.dg-parca-onayli > td:first-child { box-shadow: inset 3px 0 0 var(--yesil); }
+.dg-kad-tur-ekle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: var(--b-2); }
+.dg-kad-tur-ekle select { max-width: 360px; }
 .dg-kad-tablo { table-layout: fixed; }
 .dg-kad-tablo th:nth-child(1) { width: 34%; }
 .dg-kad-tablo th:nth-child(2) { width: auto; }

@@ -945,34 +945,16 @@ tanıtır; sayfalar sol bardan açılır.
     durdurmaz). Ek biçimi yine bozuksa ekrandaki onayı durduran hata
     görünür. İstemdeki BY örneği "[parça] bazında ya da [parça]
     tarafından, örnek tanımlara bakarak" oldu (`parca.ISTEM_SURUMU` 5).
-    **Tür değerlendirmesi** (onaydan hemen sonra, ayrı adım değil):
-    "Ad Parçalarını Onayla ve Devam Et"e basılınca adım hemen geçmez;
-    kendi satırı olan her parçanın (aynı gruptaki üyeler standart satırı
-    izler) anlamı ve türü `/parca_tur_degerlendir`'e gider
-    (`akis_faz01.parca_tur_degerlendir`, `parca.tur_baslat` / `tur_durum`,
-    `llm.parca_tur_degerlendir`: dil modeli anlamı değiştirmez, türün
-    onaylanan anlama ve adlardaki kullanılışa uyup uymadığına bakar,
-    uymuyorsa tür ve tek cümle neden önerir; 25 parçalık çağrılar, aynı
-    anda 4). Sonuç parça, anlam ve tür üçlüsüne göre bellekte tutulur; aynı
-    üçlü yeniden sorulmaz. Kartın altında "Tür Değerlendirmesi": sürerken
-    ilerleme (düğme kapalı, "Türler onayladığınız anlamlara göre
-    değerlendiriliyor"); bitince "N parçanın türü anlamıyla uyumlu" ve
-    öneri varsa tablo (PARÇA / ANLAM / SİZİN TÜRÜNÜZ / ÖNERİLEN TÜR / NEDEN
-    / KARAR: Öneriyi Al, Benimki Kalsın; parçanın yanında "i": geçtiği ilk
-    üç kolon ve tanımı, yanıtın `ornek` alanı). Gerekçe tek cümle ve bir
-    örnek kolona dayanır; örneklerle desteklenemeyen öneri yapılmaz; tür
-    adıyla yazılır (istemde kod yanında ad), kalan kod ekranda adına
-    çevrilir (`llm.tur_kodlarini_adlandir`: tırnaklı her kod, tırnaksız
-    yalnız Türkçe sözcük olmayanlar: diger, olcu, yon, karsilastirma,
-    zaman_birim, sure). Öneri yoksa adım kendiliğinden
-    geçer. Öneri varsa karar verilmeden düğme kapalı ("N tür önerisine
-    karar verin"); karar verilince düğmeye yeniden basılır. Öneriyi Al
-    satırın türünü değiştirir (onayı kalır). Kararlar yalnız bu kartta
-    tutulur; değerlendirmeden sonra değişen satır sonraki basışta yeniden
-    değerlendirilir. Dil modelinin bakamadığı parçanın türü seçildiği gibi
-    kalır (notta sayısı yazar). Önceki onaylı kontrolde kendiliğinden
-    onaylanan adımda değerlendirme yapılmaz (karar zaten değerlendirilmiş
-    hâliyle kayıtlı).
+    **Tür arka planda** (01.2.4.2'de tür sütunu ve onaydaki tür
+    değerlendirmesi kaldırıldı; `/parca_tur_degerlendir` yok): ekranda
+    yalnız Parça, Anlam, Standart, Onay. Satırın türü dil modelinin ya da
+    hafızanın türüdür. Anlamda [parça] varsa tür Ek'tir; Ek önerilen
+    satırın anlamı [parça] olmadan düzenlenirse tür Diğer olur (asıl tür
+    01.2.4.4 son kontrolünde düzeltilir). Ek önerilip anlamı [parça]
+    içermeyen satırda onayı durduran uyarı ("Anlamı [parça] ile yazın ...
+    Ek değilse anlamı kendi sözcüğüyle düzeltin"). Sunucuda
+    (`_parca_karari_isle`) boş ya da geçersiz tür Diğer, [parça] içeren
+    anlam Ek sayılır; "tür seçilmedi" hatası yok.
     Çiftteki her parçanın yanında "i": geçtiği ilk üç kolon ve
     sözlük tanımı (`ESLER_ORNEK`; eşin `ornek` alanı), aynı mı ve hangi
     yazılış kullanılsın diye karşılaştırmak için. "Aynı" denen gruptaki parçalar adlarda seçilen yazılışı ve
@@ -1242,6 +1224,29 @@ tanıtır; sayfalar sol bardan açılır.
   - **Ad Standardı paneli:** yerler ← → ile sıralanır; adlar sunucuda
     yeniden kurulur (`/kolon_ad_onizle`), adı değişen ailenin onayı
     kalkar. Onayda hafızaya yazılır (`parca_ad_standardi`).
+  - **Son Kontrol: Parça Türleri** (Ad Standardı'nın altında; tür
+    01.2.4.2'de seçilmez): kart açılınca arka planda dil modeli Ek
+    dışındaki her parçanın türünü denetler (`_ad_tur_girdisi`,
+    `_ad_tur_kontrolu`; `parca.tur_baslat` kip "ad", `llm.SISTEM_AD_TUR`).
+    Girdi: anlam, şimdiki tür, AD SIRASI ve en çok 3 ailenin ilk kolonu
+    "ESKİ → YENİ" ile Kolon Kartları'nda onaylanan açıklaması. Dil modeli
+    yalnız açıkça yanlış türü düzeltir, Ek önermez; sonuç parça, anlam ve
+    türe göre bellekte (Ad Standardı değişince yeniden sorulmaz).
+    Düzeltme kendiliğinden geçerli olur, adlar düzeltilmiş türle kurulur
+    (`_aile_adlari` ikinci kez). Panelde satır başına PARÇA ("i": baktığı
+    kolonlar) / ANLAM / TÜR (seçim; önceki türün yanında "(önceki)") /
+    NEDEN ("Dil modeli: X yerine Y" ve tek cümle). Kullanıcı türü
+    değiştirebilir (önceki türe dönmek dahil); "Başka bir parçanın türü
+    yanlışsa" ile herhangi bir parçanın türünü değiştirir ("Sizin
+    değişikliğiniz", "Değişikliği Kaldır"). Seçimler `turler` ({parça:
+    tür}) olarak `/kolon_ad_onizle`'ye ve karara gider; adı değişen
+    ailenin onayı kalkar. Kontrol sürerken kart 3 saniyede bir
+    `/kolon_ad_onizle` ile yoklar ve onay düğmesi kapalıdır ("Son kontrol
+    sürüyor"); sunucu da onaylamaz. Onayda değişen türler parça bilgisine
+    ve proje hafızasına yazılır, `durum["kolon_ad_tur_duzeltme"]`
+    (parça, anlam, eski, yeni, kaynak, neden) onaylanmış kartta "Onayda
+    türü değişen parçalar" tablosu olur. Önceki onaylı kontrol ve
+    onaylanmış kart dil modeli işini başlatmaz (`baslat=False`).
   - **Satırlar ailedir** (adı yalnız sayılarla ayrılan kolonlar; adı
     değişenler önce): Yeni Ad / Eski Ad Kalsın ve Onay; "Ailede N kolon"
     bütün ikilileri açar. Sorunlu ad (sayıyla başlıyor, iki kolon aynı
