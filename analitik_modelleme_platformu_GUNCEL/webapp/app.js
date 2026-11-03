@@ -11427,16 +11427,22 @@ function donemAnlamIc(kalip, metin) {
 /* YENİ ADDA YAZILIŞ: kalıbın Kolon Adları adımında yeni addaki yazılışı
    (ör. [sayı]D_[sayı]D için BTWN_[sayı]D_[sayı]D). Ekranda her yer
    tutucu "[sayı]"; içeride k'inci [sayı] kalıbın k'inci yer tutucusu. */
+/* Yeni adda yazılışta da sıra numaralı ve hesaplı yer tutucu: [sayı 1],
+   [sayı 1 × sayı 2] (içeride <N#1>, <N#$1*$2>). */
+const DONEM_AD_YT = /<N#[^<>]{1,60}>|<NN>|<N\d?>/g;
 function donemAdGoster(sablon) {
-    return String(sablon || "").replace(/<NN>|<N\d?>/g, DONEM_SAYI);
+    return String(sablon || "").replace(DONEM_AD_YT, t => {
+        const ic = donemYtIcerik(t);
+        return ic !== null ? donemFormulGorunur(ic) : DONEM_SAYI;
+    });
 }
 function donemAdIc(kalip, metin) {
     const k = String(kalip || "").replace(/\s+/g, "").toUpperCase();
     const turler = DONEM_AILE.test(k) ? ["<N>"] : (k.match(/<NN>|<N\d>|<N>/g) || []);
     let i = 0;
-    return String(metin || "").replace(/\s+/g, "")
+    return donemFormulIc(String(metin || ""))
         .replace(DONEM_SAYI_RE, t => turler.length ? turler[Math.min(i++, turler.length - 1)] : t)
-        .toUpperCase();
+        .replace(/\s+/g, "").toUpperCase();
 }
 /* Geçersizse hata metni; boş yazılış geçerli (kalıp aynen kalır). */
 function donemAdHatasi(kalip, metin) {
@@ -11444,9 +11450,16 @@ function donemAdHatasi(kalip, metin) {
     const ic = donemAdIc(k, metin);
     if (!ic) return "";
     const nKalip = DONEM_AILE.test(k) ? 1 : (k.match(/<NN>|<N\d>|<N>/g) || []).length;
-    if (!/^(?:[A-Z0-9_]|<NN>|<N\d?>)+$/.test(ic) || !/^[A-Z<]/.test(ic))
+    const duz = ic.replace(/<N#[^<>]{1,60}>/g, "<N>");
+    if (!/^(?:[A-Z0-9_]|<NN>|<N\d?>)+$/.test(duz) || !/^[A-Z<]/.test(ic))
         return "Yalnız harf, rakam, alt çizgi ve [sayı] yazılabilir; harfle ya da [sayı] ile başlar.";
-    const nAd = (ic.match(/<NN>|<N\d?>/g) || []).length;
+    const numarali = (ic.match(/<N#[^<>]{1,60}>/g) || []).map(donemYtIcerik);
+    for (const n of numarali) {
+        const h = donemFormulHatasi(n, nKalip);
+        if (h) return "Yazılışta " + donemFormulGorunur(n) + ": " + h + ".";
+    }
+    const nAd = (ic.replace(/<N#[^<>]{1,60}>/g, "").match(/<NN>|<N\d?>/g) || []).length;
+    if (numarali.length) return nAd > nKalip ? "Yazılışta " + nAd + " sıralı [sayı] var, kalıpta " + nKalip + "." : "";
     if (nAd !== nKalip)
         return "Yazılışta " + nAd + " [sayı] var, kalıpta " + nKalip + "; aynı sayıda olmalı.";
     return "";
@@ -11456,7 +11469,12 @@ function donemAdDoldur(kalip, ic, deger) {
     const es = donemSayiEslesmesi(kalip, deger);
     if (!ic || !es) return String(deger || "");
     let i = 0;
-    return ic.replace(/<NN>|<N\d?>/g, () => es[Math.min(i++, es.length - 1)][1]);
+    const sirali = es.map(x => x[1]);
+    return ic.replace(DONEM_AD_YT, t => {
+        const n = donemYtIcerik(t);
+        if (n !== null) { const h = donemFormulHesapla(n, sirali); return h === null ? t : h; }
+        return es[Math.min(i++, es.length - 1)][1];
+    });
 }
 
 /* Zaman bilgisi türleri: ad ve kutunun altında görünen açıklama. */
@@ -11850,7 +11868,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         adBas.appendChild(bolmeBilgiSimgesi("Kolon Adları adımında bu kalıbın yeni addaki "
             + "yazılışı. Kalıbın sayıları yerine [sayı] yazın; sırayla kalıbın sayıları gelir. "
             + "Ör. [sayı]D_[sayı]D için BTWN_[sayı]D_[sayı]D yazılırsa 3D_6D yeni adda "
-            + "BTWN_3D_6D olur. Boş bırakılırsa kalıp aynen kalır. Girdi veri setiniz ve "
+            + "BTWN_3D_6D olur. Aynı sayıyı tekrar yazmak için [sayı 1], [sayı 2]; hesap için "
+            + "[sayı 1 × sayı 2] yazın (ör. [sayı]D_X[sayı] için L[sayı 1]D_P[sayı 1]D ile 7D_X2 "
+            + "yeni adda L7D_P7D olur). Boş bırakılırsa kalıp aynen kalır. Girdi veri setiniz ve "
             + "sözlüğünüz değişmez.", "Yeni adda"));
         const adGir = document.createElement("input");
         adGir.type = "text"; adGir.className = "dg-giris dg-donem-ad-giris";

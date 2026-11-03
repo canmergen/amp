@@ -871,6 +871,9 @@ def hafizaya_ad_yaz(sablonlar):
 # <N>D_<N>D -> BTWN_<N>D_<N>D). Sablondaki yer tutucular kalibinkilerle
 # ayni sayida ve sirada; harf, rakam, alt cizgi.
 _AD_SABLON = re.compile(r"^(?:[A-Z0-9_]|<NN>|<N\d?>)+$")
+# Yeni adda yazilista sira numarali ve hesapli yer tutucu da (<N#1>,
+# <N#$1*$2>; ekranda [sayı 1], [sayı 1 × sayı 2]).
+_AD_YT = re.compile(r"<N#[^<>]{1,60}>|<NN>|<N\d>|<N>")
 
 
 def ad_sablonu_hatasi(kalip, sablon):
@@ -878,12 +881,23 @@ def ad_sablonu_hatasi(kalip, sablon):
     s = _norm(sablon)
     if not s:
         return ""
-    if not _AD_SABLON.match(s) or not re.match(r"^[A-Z<]", s):
+    if not _AD_SABLON.match(re.sub(r"<N#[^<>]{1,60}>", "<N>", s)) or not re.match(r"^[A-Z<]", s):
         return ("yeni adda yazılış yalnız büyük harf, rakam, alt çizgi ve [sayı] "
                 "içerebilir; harfle ya da [sayı] ile başlar.")
     k = _norm(kalip)
     n_kalip = 1 if aile_mi(k) else len(_YT_KALIP.findall(k))
-    n_sablon = len(_YT_KALIP.findall(s))
+    numarali = [_yt_icerik(m) for m in re.findall(r"<N#[^<>]{1,60}>", s)]
+    for ic in numarali:
+        h = formul_hatasi(ic, n_kalip)
+        if h:
+            return "yeni adda yazılışta %s: %s." % (_formul_gorunur(ic), h)
+    n_sablon = len(_YT_KALIP.findall(re.sub(r"<N#[^<>]{1,60}>", "", s)))
+    if numarali:
+        # Numarali yer tutucu varsa her sayi istendigi kadar kullanilir.
+        if n_sablon > n_kalip:
+            return ("yeni adda yazılışta %d sıralı [sayı] var, kalıpta %d."
+                    % (n_sablon, n_kalip))
+        return ""
     if n_sablon != n_kalip:
         return ("yeni adda yazılışta %d [sayı] var, kalıpta %d; aynı sayıda olmalı."
                 % (n_sablon, n_kalip))
@@ -913,11 +927,15 @@ def ad_sablonu_doldur(kalip, sablon, deger):
         return s
     i = [0]
 
-    def yer(_m):
+    def yer(m):
+        ic = _yt_icerik(m.group(0))
+        if ic is not None:
+            h = formul_hesapla(ic, sayilar)
+            return h if h is not None else m.group(0)
         v = sayilar[min(i[0], len(sayilar) - 1)]
         i[0] += 1
         return v
-    return _YT_KALIP.sub(yer, s)
+    return _AD_YT.sub(yer, s)
 
 
 def aile_uyeleri(kalip):

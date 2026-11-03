@@ -989,6 +989,13 @@ tanıtır; sayfalar sol bardan açılır.
     İçeride `<N#$1*$2>`. Örnek: `<N>D_X<N>` "son [sayı 1] günden son
     [sayı 1 × sayı 2] gün önceye kadar" + 14D_X2 → "son 14 günden son 28
     gün önceye kadar". Kalıpta olmayan sayı ya da anlaşılmayan hesap hata.
+  - **Yeni adda yazılışta da** sıra numaralı ve hesaplı yer tutucu
+    (`donem._AD_YT`, `ad_sablonu_hatasi`, `ad_sablonu_doldur`; app.js
+    `donemAdIc`, `donemAdGoster`, `donemAdHatasi`, `donemAdDoldur`):
+    `<N>D_X<N>` için "L[sayı 1]D_P[sayı 1]D" ile 7D_X2 → L7D_P7D,
+    "L[sayı 1]D_L[sayı 1 × sayı 2]D" ile L7D_L14D. Numaralı yer tutucu
+    varsa sayı adedi kuralı aranmaz (sıralı [sayı] kalıptakinden çok
+    olamaz); yoksa eskisi gibi aynı sayıda olmalı.
   - **Hafızadaki anlamın denetimi:** dil modeline hafızadaki anlam bir
     değerle doldurulmuş örneğiyle de gider ("(değerle: 180D_360D -> son
     180 gün önce ile son 360 gün önce arası)"; `hafiza_ornek`); iki
