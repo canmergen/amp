@@ -793,6 +793,20 @@ tanıtır; sayfalar sol bardan açılır.
   `donem.ISTEM_SURUMU` 7: önbellekteki eski yorumlar yeniden alınır.
   Dil modeli "dönem değil" dediği kalıp için nedenini "not"a tek
   cümleyle yazar (Adaylar'da görünür).
+- **Yan yana iki dönem parçası (aday, `tur` "ikili"; `donem.kaliplar`):**
+  bir kolon adında iki dönem parçası yan yana geçiyorsa (3D_6D, 7D_14D,
+  7D_X2) ikisi birlikte tek kalıp olarak önerilir (`<N>D_<N>D`,
+  `<N>D_X<N>`); dil modeli yorumlar ama kendiliğinden tabloya girmez,
+  Adaylar'da (Orta) durur; kullanıcı «Tabloya Al» derse girer.
+  Hafızada aynı kalıp varsa "hafiza" türüyle gelir ve önerilmez.
+- **Değer örnekleri:** "Adlarda Geçen" sütunundaki her değer çipinde
+  "i": o değerin geçtiği ilk üç kolon ve sözlük tanımı
+  (`kaliplar` `deger_ornek`, satırda `degerler[].ornek`; `DEGER_ORNEK_ADET`).
+- **Tüm Parçalar'da iki parçalı değerin parçaları:** tablodaki bir
+  kalıbın iki parçalı değerinin içindeki parça (H00_06'daki H00)
+  "Kalıp değerinin parçası: H00_06 (H[sayı]_[sayı])" yazar, "Kalıplarda"
+  sayılır, düğmesi yoktur (değer Kalıplar'da yönetilir). Adaylardaki
+  değerin parçaları "Adaylarda" sayılır.
 - **Tabloya giren kalıplar:** hafızadan gelenler ve dil modelinin
   zaman bilgisi olduğunu bulduğu parçalar Kalıplar'a girer; yalnız
   ikililer içinde geçse de (MONTH). Adaylar'a (Orta) düşenler: dil modelinin

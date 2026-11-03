@@ -1851,6 +1851,8 @@ def donem_yorumla(kaliplar, orkestra=None, zorunlu_anlam=False, kayitli=None):
                "yazilis": "harf ve sayının ailesinden ayrı anlamlı yazılışı",
                "komsu": "dönem parçasının yanındaki parça (aday)",
                "hafiza": "önceki çalışmada onaylanmış kalıp",
+               "ikili": "yan yana iki dönem parçası; birlikte tek zaman bilgisi olabilir "
+                        "(aralık ya da iki dönemin karşılaştırması)",
                "elle": "kullanıcının dönem bilgisi olarak eklediği kalıp"}
     satirlar = []
     for k in kaliplar:

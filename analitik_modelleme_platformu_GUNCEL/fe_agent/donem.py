@@ -462,6 +462,9 @@ def kalip_deseni(kalip):
         return None
 
 
+DEGER_ORNEK_ADET = 3
+
+
 def kaliplar(adlar, tanimlar, ek=None, ayri=()):
     """Kolon adlarindan donem kaliplari: [{"kalip", "tur", "kolon",
     "degerler": [(deger, kolon sayisi)], "ornekler": [(kolon, tanim)]}];
@@ -474,6 +477,7 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
     Siralama: kolon sayisi (cok olan once)."""
     tanimlar = tanimlar or {}
     ayri = {_norm(x) for x in (ayri or ())}
+    hafiza_kume = {_norm(x) for x in (ek or ())}
     bilgi = {}                      # kalip -> {"tur", "deger": Counter, "kolonlar": [], "kd": {}}
 
     def ekle(kalip, tur, deger, ad):
@@ -516,6 +520,16 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
                     aileye_ekle(p, ad)
                 else:
                     ekle(kalip, tur, p, ad)
+                # YAN YANA IKI DONEM PARCASI (3D_6D, 7D_X2): birlikte tek
+                # zaman bilgisi olabilir (aralik, karsilastirma). Aday olarak
+                # eklenir (tur "ikili"; kart Adaylar'a koyar); hafizadaki
+                # ayni kalip zaten "hafiza" turuyle gelir.
+                if i + 1 < len(t) and not _araligin_basi(t, i):
+                    d2 = _donem_parcasi(t[i + 1])
+                    if d2 and not ayrik_ikili(t, i + 1):
+                        ik = kalip + "_" + d2[1]
+                        if _norm(ik) not in hafiza_kume:
+                            ekle(ik, "ikili", p + "_" + t[i + 1], ad)
     # HAFIZADAKI KALIPLAR (kullanicinin onceki calismalarda onayladigi ya
     # da kaydettigi): tek parca, <P>_<NN> ikilisi, yan yana iki donem
     # parcasi (3D_6D) ya da rakamsiz kalip (TMSNCFRST). Adlarda gecen her
@@ -585,8 +599,16 @@ def kaliplar(adlar, tanimlar, ek=None, ayri=()):
             gorulen.add(x[2])
             secilen.add(x[0])
             ornek.append(x)
+        # DEGER ORNEKLERI: her degerin adinda gectigi ilk uc kolon ve
+        # tanimi (kartta degerin "i"sinde).
+        deger_ornek = {}
+        for ad, d in b["giris"]:
+            liste_ = deger_ornek.setdefault(d, [])
+            if len(liste_) < DEGER_ORNEK_ADET and all(a_ != ad for a_, _t in liste_):
+                liste_.append((ad, str(tanimlar.get(ad) or "").strip()))
         k = {"kalip": kalip, "tur": b["tur"], "kolon": len(b["kolonlar"]),
-             "degerler": degerler, "ornekler": [(ad, t) for ad, t, _d in ornek]}
+             "degerler": degerler, "ornekler": [(ad, t) for ad, t, _d in ornek],
+             "deger_ornek": deger_ornek}
         if aile:
             k["yazilislar"] = yazilislar
             k["ornek_yazilis"] = [yazilis(d) or "" for _a, _t, d in ornek]

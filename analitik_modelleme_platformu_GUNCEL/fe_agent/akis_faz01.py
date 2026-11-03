@@ -2226,7 +2226,10 @@ def _donem_alani(durum, baslat=True):
         m = sonuc.get(kalip) or {}
         hk = donem_mod.hafiza_anahtari(kalip, haf, haf_ayri)
         h = haf.get(hk) or "" if hk else ""
-        degerler = [{"deger": v, "kolon": n} for v, n in k["degerler"]]
+        dor = k.get("deger_ornek") or {}
+        degerler = [{"deger": v, "kolon": n,
+                     "ornek": [{"kolon": a, "tanim": str(t)[:240]} for a, t in dor.get(v) or []]}
+                    for v, n in k["degerler"]]
         ornekler = [{"kolon": a, "tanim": t[:240]} for a, t in k["ornekler"]]
         # AILE: satirda adlarda gecen yazilislar; ayri yazilis satiri
         # ailesini tasir.
@@ -2293,10 +2296,13 @@ def _donem_alani(durum, baslat=True):
                   zaman_tur=m.get("tur") or "", kanit=m.get("kanit"),
                   celiski=m.get("celiski", ""), olasilik="dusuk", **ek)
             continue
+        # Yan yana iki donem parcasi (ikili) kendiliginden tabloya girmez:
+        # Adaylar'da durur, kullanici alirsa tabloya gelir.
         satir(kalip, k["tur"], k["kolon"], degerler, ornekler,
               (m.get("anlam") or "") if donem_mi else "", "model",
               m.get("soru", ""), m.get("not", ""), m.get("model", ""),
-              haric_oneri=m.get("haric") or (), olasi=bool(m.get("soru")),
+              haric_oneri=m.get("haric") or (),
+              olasi=bool(m.get("soru")) or (k["tur"] == "ikili" and kalip not in onceki),
               zaman_tur=m.get("tur") or "", kanit=m.get("kanit"),
               celiski=m.get("celiski", ""), **ek)
     # TARAMA: dil modelinin rakamsiz kisaltmalar arasindan buldugu donem

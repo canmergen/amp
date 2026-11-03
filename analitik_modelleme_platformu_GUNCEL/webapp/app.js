@@ -11604,6 +11604,13 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const c = elYap("span", "dg-kisa-cip dg-durum-" + durum, d.deger + " · " + ftBinlik(d.kolon));
             c.title = ftBinlik(d.kolon) + " kolonun adında"
                 + (durum === "ozel" ? " · kendi anlamı var" : durum === "disi" ? " · dönem değil" : "");
+            /* Değerin geçtiği örnek kolonlar ve sözlük tanımları ("i"). */
+            if ((d.ornek || []).length) {
+                c.appendChild(bolmeBilgiSimgesi(d.ornek.map(o => o.kolon + ": "
+                    + (tireSade(o.tanim || "") || "(sözlükte tanım yok)")).join("\n\n"),
+                    d.deger + " geçen kolonlar"));
+                c.classList.add("dg-cip-bilgili");
+            }
             td.appendChild(c);
         });
     }
@@ -12691,9 +12698,20 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 h.set(d.deger, { tip: x.degerDurumu(d.deger) === "disi" ? "disi" : "deger", x });
             });
         });
+        /* İKİ PARÇALI DEĞERİN PARÇALARI (H00_06'daki H00): kendi başına
+           kalıp olmasa da kalıp değerinin içinde; "Kalıplarda" sayılır. */
+        satirlar.forEach(x => (x.degerListesi() || []).forEach(d => {
+            if (x.degerDurumu(d.deger) === "disi" || String(d.deger).indexOf("_") === -1) return;
+            String(d.deger).split("_").forEach(pr => {
+                if (!h.has(pr)) h.set(pr, { tip: "parca", x, deger: d.deger });
+            });
+        }));
         olasilar.concat(cikanlar).forEach(c => {
             if (!h.has(c.r.kalip)) h.set(c.r.kalip, { tip: "aday", c });
-            (c.r.degerler || []).forEach(d => { if (!h.has(d.deger)) h.set(d.deger, { tip: "aday", c }); });
+            (c.r.degerler || []).forEach(d => {
+                if (!h.has(d.deger)) h.set(d.deger, { tip: "aday", c });
+                String(d.deger).split("_").forEach(pr => { if (!h.has(pr)) h.set(pr, { tip: "aday", c }); });
+            });
         });
         return h;
     }
@@ -12713,13 +12731,14 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             parcalariCiz(); return;
         }
         if (du.tip === "disi") { du.x.degerCikar(p.parca, false); parcalariCiz(); return; }
+        if (du.tip === "parca") return;
         if (du.tip === "aday") { geriAl(du.c.anah); sekmeAc("parca"); }
     }
     function parcalariCiz() {
         parTb.textContent = "";
         const k = kilitli || da.dm === "calisiyor";
         const h = parcaDurumHaritasi();
-        const icinde = p => { const du = h.get(p.parca); return !!du && (du.tip === "kalip" || du.tip === "deger"); };
+        const icinde = p => { const du = h.get(p.parca); return !!du && (du.tip === "kalip" || du.tip === "deger" || du.tip === "parca"); };
         const say = { tumu: parcalar.length, ic: 0, dis: 0 };
         parcalar.forEach(p => { if (icinde(p)) say.ic++; else say.dis++; });
         parCipler.textContent = "";
@@ -12762,13 +12781,15 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 : du.tip === "kalip" ? "Kalıp"
                 : du.tip === "deger" ? "Kalıp değeri: " + donemSayiGoster(du.x.kalipNe())
                 : du.tip === "disi" ? "Dönem değil: " + donemSayiGoster(du.x.kalipNe())
+                : du.tip === "parca" ? "Kalıp değerinin parçası: " + du.deger + " (" + donemSayiGoster(du.x.kalipNe()) + ")"
                 : "Adaylarda: " + donemSayiGoster(du.c.r.kalip);
             tr.appendChild(elYap("td", "dg-donem-olasi-neden", durumMetni));
             const tdB = elYap("td", "dg-ekle-hucre");
             const ic = du && (du.tip === "kalip" || du.tip === "deger");
             const b = elYap("button", "dg-toplu-btn" + (ic ? " dg-donem-cikar" : ""), ic ? "Kalıplardan Çıkar" : "Kalıplara Al");
             b.type = "button";
-            b.disabled = k;
+            b.disabled = k || (du && du.tip === "parca");
+            if (du && du.tip === "parca") b.hidden = true;
             b.title = ic ? (du.tip === "deger"
                     ? p.parca + " " + donemSayiGoster(du.x.kalipNe()) + " kalıbında dönem değil sayılır."
                     : p.parca + " dönem bilgisinden çıkarılır.")
@@ -12785,7 +12806,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         };
         const grupSatiri = o => {
             const uyeDurum = o.uyeler.map(p => h.get(p.parca) || null);
-            const icSay = uyeDurum.filter(du => du && (du.tip === "kalip" || du.tip === "deger")).length;
+            const icSay = uyeDurum.filter(du => du && (du.tip === "kalip" || du.tip === "deger" || du.tip === "parca")).length;
+            const parcaIc = uyeDurum.length > 0 && uyeDurum.every(du => du && du.tip === "parca");
             const ayri = grupUyeSatirlari(o.grup);
             const grupTabloda = satirlar.some(x => satirKalibi(x) === o.grup);
             const adaylar = new Set(uyeDurum.filter(du => du && du.tip === "aday").map(du => du.c.anah));
@@ -12799,7 +12821,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             tdK.title = "Üyelerin geçtiği farklı kolon sayısı";
             tr.appendChild(tdK);
             tr.appendChild(elYap("td", "dg-donem-parca-ornek", o.uyeler.map(p => p.parca).join(", ")));
-            const durum = grupTabloda ? "Grup kalıbı tabloda"
+            const durum = parcaIc ? "Kalıp değerlerinin parçası (" + donemSayiGoster(uyeDurum[0].x.kalipNe()) + ")"
+                : grupTabloda ? "Grup kalıbı tabloda"
                 : ayri.length ? "Ayrıldı: " + ftBinlik(ayri.length) + " parça ayrı kalıp"
                 : tumIc ? "Kalıplarda"
                 : icSay ? ftBinlik(icSay) + " / " + ftBinlik(o.uyeler.length) + " parça kalıplarda"
@@ -12811,7 +12834,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const b = elYap("button", "dg-toplu-btn" + (cikar ? " dg-donem-cikar" : ""),
                             cikar ? "Grubu Kalıplardan Çıkar" : ayri.length ? "Grup Olarak Al" : "Grubu Kalıplara Al");
             b.type = "button";
-            b.disabled = k;
+            b.disabled = k || parcaIc;
+            /* İki parçalı değerlerin içindeki parçalar: değeri Kalıplar'da yönetin. */
+            if (parcaIc) b.hidden = true;
             b.title = cikar ? "Grubun bütün parçaları dönem bilgisinden çıkarılır."
                 : ayri.length ? "Ayrı alınan parçalar tek kalıpta (" + donemSayiGoster(o.grup) + ") birleşir."
                 : "Grup tek kalıp olarak (" + donemSayiGoster(o.grup) + ") eklenir; anlamını dil modeli yazar.";

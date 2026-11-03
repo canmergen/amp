@@ -5208,3 +5208,7 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
   border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r-kucuk); background: var(--kirmizi-acik); }
 .dg-acik-soru .dg-toplu-btn.onay-bekliyor { color: var(--kirmizi); border-color: var(--kirmizi-cizgi);
   background: var(--kirmizi-acik); font-weight: var(--fw-kalin); }
+
+/* Dönem değer çipinde örnek kolonların "i"si. */
+.dg-kisa-cip.dg-cip-bilgili { display: inline-flex; align-items: center; gap: 4px; }
+.dg-kisa-cip.dg-cip-bilgili .bolme-info { margin-left: 2px; }
