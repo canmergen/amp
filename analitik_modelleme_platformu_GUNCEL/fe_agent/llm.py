@@ -1771,10 +1771,12 @@ Görevin her kalıbın ne anlama geldiğini, önce kalıbın yapısından kurup
   - Yer tutucu: anlamda kalıptaki <N> için "N", <NN> için "NN" yaz;
     <N2>, <N3> gibi yer tutucu tam o kadar basamaklı sayıdır (H<N2>: H00,
     H06, H12), anlamda onun için de "N" yaz. Kalıpta birden çok sayı
-    varsa anlamdaki N'ler sırayla 1., 2. sayıyı alır; aynı sayıyı tekrar
-    yazmak gerekiyorsa <N#1>, <N#2> yaz (kalıbın 1. ve 2. sayısı; ör.
-    <N>D_X<N> "son <N#1> gün ile ondan önceki <N#1> gün"); sayılarla hesap
-    için <N#$1*$2> gibi yaz ($k kalıbın k'inci sayısı; +, -, *). Başka bir
+    varsa anlamdaki N'ler (NN'ler) sırayla 1., 2. sayıyı alır: her sayı
+    bir kez ve kalıptaki sırayla geçiyorsa yalnız N ya da NN yaz
+    (H<NN>_<NN>: "saat NN:00 ile saat NN:00 arası"). Yalnız aynı sayıyı
+    tekrar yazmak gerekiyorsa <N#1>, <N#2> yaz (ör. <N>D_X<N> "son <N#1>
+    gün ile ondan önceki <N#1> gün"); sayılarla hesap için <N#$1*$2> gibi
+    yaz ($k kalıbın k'inci sayısı; +, -, *). <NN1>, <N1>, N1 gibi başka bir
     yer tutucu biçimi kullanma.
   - "donem": kalıp zaman bilgisi taşıyorsa true, değilse false (yukarıdaki
     "ZAMAN BİLGİSİ DEĞİLDİR" maddeleri false). Yanındaki-parça adayları

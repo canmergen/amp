@@ -1030,6 +1030,14 @@ tanıtır; sayfalar sol bardan açılır.
     "L[sayı 1]D_L[sayı 1 × sayı 2]D" ile L7D_L14D. Numaralı yer tutucu
     varsa sayı adedi kuralı aranmaz (sıralı [sayı] kalıptakinden çok
     olamaz); yoksa eskisi gibi aynı sayıda olmalı.
+  - **Dil modelinin yer tutucu yazımı düzeltilir** (`donem.anlam_duzelt`;
+    dil modeli işi ve `donem_anlam_oner` sonucunda): "<NN1>", "<N1>",
+    "<N 1>" gibi yazım "<N#1>" olur (kalıpta aynen geçen tam basamaklı
+    `<N2>` ise "<N>"); sıra numaraları kalıbın sayılarıyla sırayla ve
+    birer kez geçiyorsa düz yer tutucuya çevrilir ("<NN1>:00 ile
+    <NN2>:00 arası" → "<NN>:00 ile <NN>:00 arası"). Çevrilemeyen yazım
+    yer tutucu hatası olarak görünür. İstem de yalnız N / NN, <N#k> ve
+    formülü kullanmasını söyler; `donem.ISTEM_SURUMU` 10.
   - **Hafızadaki anlamın denetimi:** dil modeline hafızadaki anlam bir
     değerle doldurulmuş örneğiyle de gider ("(değerle: 180D_360D -> son
     180 gün önce ile son 360 gün önce arası)"; `hafiza_ornek`); iki

@@ -2654,6 +2654,7 @@ def donem_anlam_oner(durum, kalip, kayitli=None):
     m = sonuc.get(k["kalip"]) or {}
     if not m.get("anlam"):
         return {"tamam": False, "hata": hata or "Dil modeli anlam yazmadı; anlamı siz yazın."}
+    m["anlam"] = donem_mod.anlam_duzelt(k["kalip"], m["anlam"])
     return {"tamam": True, "anlam": m["anlam"], "tur": m.get("tur") or "",
             "kanit": m.get("kanit"), "not": m.get("not", ""), "soru": m.get("soru", ""),
             "celiski": m.get("celiski", ""), "kaynak": "model", "model": m.get("model", ""),

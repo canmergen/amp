@@ -11301,6 +11301,11 @@ function donemYerTutucuHatasi(kalip, anlam) {
         if (!izinli.has(y) && kotu.indexOf(y) === -1) kotu.push(y);
         return _t;
     });
+    /* Tanınmayan sıra numaralı yazım (<NN1>, <N3>) da hata. */
+    (String(anlam || "").match(/<\s*[Nn]{1,2}\s*\d+\s*>/g) || []).forEach(y => {
+        y = y.replace(/\s+/g, "");
+        if (kotu.indexOf(y) === -1) kotu.push(y);
+    });
     if (kotu.length && adet > 1) for (let i = 1; i <= adet; i++) izinli.add("[sayı " + i + "]");
     if (!kotu.length) return "";
     if (!izinli.size) return "Anlamda yer tutucu var (" + kotu.join(", ")

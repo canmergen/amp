@@ -222,6 +222,34 @@ def _yt_icerik(y):
     return m.group(1).strip() if m else None
 
 
+def anlam_duzelt(kalip, anlam):
+    """Dil modelinin anlamindaki yer tutucu yazimlarini duzeltir:
+    "<NN1>", "<N1>", "<N 1>" gibi sira numarali yazim "<N#1>" olur
+    (kalipta ayni bicimde gecen tam basamakli <N2> ise "<N>"); sira
+    numaralari kalibin sayilariyla sirayla ve birer kez geciyorsa duz yer
+    tutucuya (kalipta <NN> ise "<NN>", degilse "<N>") cevrilir: "<NN1>:00
+    ile <NN2>:00 arası" -> "<NN>:00 ile <NN>:00 arası"."""
+    a = str(anlam or "")
+    if not a:
+        return a
+    k = _norm(kalip)
+    turler = ["<N>"] if aile_mi(k) else _YT_KALIP.findall(k)
+    adet = len(turler)
+
+    def cevir(m):
+        ham = re.sub(r"\s+", "", m.group(0)).upper()
+        if ham in turler and re.fullmatch(r"<N\d>", ham):
+            return "<N>"
+        n = int(m.group(1))
+        return "<N#%d>" % n if 1 <= n <= adet else m.group(0)
+    a = re.sub(r"<\s*[Nn]{1,2}\s*#?\s*(\d+)\s*>", cevir, a)
+    refs = [int(x) for x in re.findall(r"<N#(\d+)>", a)]
+    if refs and refs == list(range(1, adet + 1)) and not re.search(r"<N#[^\d>][^>]*>", a):
+        it = iter(turler)
+        a = re.sub(r"<N#\d+>", lambda _m: "<NN>" if next(it) == "<NN>" else "<N>", a)
+    return a
+
+
 def formul_hatasi(icerik, adet):
     """Hesapli yer tutucunun hatasi; yoksa ""."""
     if re.fullmatch(r"\d+", icerik):
@@ -293,6 +321,11 @@ def yer_tutucu_hatasi(kalip, anlam):
         else:
             y = re.sub(r"\s+", "", m.group(1))
         if y not in izinli and y not in kotu:
+            kotu.append(y)
+    # Taninmayan sira numarali yazim (<NN1>, <N3>): anlam_duzelt cevirmediyse hata.
+    for m in re.finditer(r"<\s*[Nn]{1,2}\s*\d+\s*>", str(anlam or "")):
+        y = re.sub(r"\s+", "", m.group(0))
+        if y not in kotu:
             kotu.append(y)
     if not kotu:
         return ""
@@ -1005,7 +1038,7 @@ def hafizadan_sil(kaliplar):
 # ARKA PLAN: dil modeli yorumu
 # ---------------------------------------------------------------------------
 # Istem ya da kalip kurallari degisince eski yorumlar yeniden uretilsin.
-ISTEM_SURUMU = 9
+ISTEM_SURUMU = 10
 
 
 def _imza(liste, tara):
@@ -1058,6 +1091,13 @@ def baslat(liste, tara=None):
         def yap(g):
             alan, f, parca = g
             sonuc, hata = f(parca)
+            # Yer tutucu yazimi (<NN1> gibi) duzeltilir.
+            for kk, m in (sonuc or {}).items():
+                if isinstance(m, dict) and m.get("anlam"):
+                    m["anlam"] = anlam_duzelt(kk, m["anlam"])
+                for a_ in (m or {}).get("ayri") or [] if isinstance(m, dict) else []:
+                    if isinstance(a_, dict) and a_.get("anlam") and a_.get("yazilis"):
+                        a_["anlam"] = anlam_duzelt(a_["yazilis"], a_["anlam"])
             with _KILIT:
                 if not k.get("iptal"):
                     k[alan].update(sonuc)
