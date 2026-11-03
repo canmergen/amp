@@ -1608,6 +1608,12 @@ KOLON_AD_BILGI = (
     "Ad Standardı: yerlerin sırası. Değiştirince bütün adlar yeniden kurulur; "
     "onaylayınca proje hafızasına yazılır ve sonraki çalışmalarda varsayılan "
     "olur.\n\n"
+    "Ada Eklenecek Parçalar: Kolon Kartları'nda açıklamada olup adda karşılığı "
+    "olmayan kısa bilgiler (ör. adda PER_DAY «günlük» var, açıklama «günlük "
+    "ortalama» diyor). Her biri için kısaltmayı (önce onaylı ad parçalarından, "
+    "yoksa dil modelinin önerisi) kontrol edip «Ekle» ya da «Ekleme» seçin ve "
+    "onaylayın; eklenen kısaltma o bilginin geçtiği bütün kolonların adına, Ad "
+    "Standardı'ndaki yerine yazılır.\n\n"
     "Satırlar ailedir: adı yalnız sayılarla ayrılan kolonlar (TXN_30D_CNT, "
     "TXN_90D_CNT) tek satırda onaylanır. Her ailede «Yeni Ad» ya da «Eski Ad "
     "Kalsın» seçilip onaylanır.\n\n"
@@ -1631,10 +1637,149 @@ def _donem_ad_yazilislari(durum):
             if k in bilgi and v and not donem_mod.ad_sablonu_hatasi(k, v)]
 
 
-def _kolon_ad_alani(durum, sira=None):
-    """01.2.4.4 kartinin verisi: Ad Standardi ve aileler; her ailede
-    kolonlarin [eski ad, yeni ad] ikilileri. sira verilirse adlar o sirayla
-    kurulur (kartta sira degisince onizleme; kaydedilmez)."""
+# ADA EKLENECEK PARCALAR: Kolon Kartlari'nda dil modelinin buldugu,
+# aciklamada olup adda ve kartta karsiligi olmayan kisa bilgi (PER_DAY
+# "gunluk", aciklama "gunluk ortalama": ortalama). Burada kisaltmasiyla
+# onaylanir ve ailenin butun kolonlarinin adina, Ad Standardi'ndaki yerine
+# eklenir.
+AD_EK_TUR_AD = {k: e for k, e, _c in parca_mod.TURLER}
+
+
+def _ad_ek_anahtari(tur, anlam):
+    return "%s|%s" % (tur, anlam)
+
+
+def _anlam_sade(metin):
+    m = str(metin or "").replace("I", "ı").replace("İ", "i").lower()
+    return re.sub(r"\s+", " ", re.sub(r"[^\w ]", " ", m)).strip()
+
+
+def _ada_eklenecekler(durum):
+    """Kolon Kartlari'nda onaylanan aciklamalarin ada eklenecek bilgileri:
+    {anahtar: {"anlam", "tur", "kolonlar": [eski ad]}} (veri setindeki
+    kolon sirasiyla; rol ve surec disi kolonlar haric)."""
+    onay = aciklama_onayi(durum)
+    if not onay:
+        return {}
+    korunan = _korunan_kolonlar(durum)
+    haric = set(map(str, durum.get("haric_kolonlar") or []))
+    cikti = {}
+    for kolon in _veri_kolonlari(durum):
+        if kolon in korunan or kolon in haric:
+            continue
+        for e in (onay.get(kolon) or {}).get("ad_eksik") or []:
+            if not isinstance(e, dict) or not e.get("anlam") or not e.get("tur"):
+                continue
+            a = _ad_ek_anahtari(e["tur"], e["anlam"])
+            cikti.setdefault(a, {"anlam": str(e["anlam"]), "tur": str(e["tur"]),
+                                 "kolonlar": []})["kolonlar"].append(kolon)
+    return cikti
+
+
+def _ad_ek_bilinen(anlam, tur, kaynaklar):
+    """Anlamin bilinen kisaltmasi: kaynaklar [(ad, {parca: {"anlam",
+    "tur", "standart"}})] sirasiyla; ayni turdeki parca once. Doner:
+    (kisaltma, kaynak) ya da ("", "")."""
+    hedef = _anlam_sade(anlam)
+    for kaynak, bilgi in kaynaklar:
+        adaylar = []
+        for p, o in (bilgi or {}).items():
+            if not isinstance(o, dict) or _anlam_sade(o.get("anlam")) != hedef:
+                continue
+            k = str(o.get("standart") or p).upper()
+            if parca_mod.STANDART_DESEN.match(k):
+                adaylar.append((o.get("tur") != tur, k))
+        if adaylar:
+            return sorted(adaylar)[0][1], kaynak
+    return "", ""
+
+
+def _ad_ek_kaynaklari(durum):
+    bilgi = durum.get("parca_bilgisi") if isinstance(durum.get("parca_bilgisi"), dict) else {}
+    try:
+        hafiza = parca_mod.hafiza()
+    except Exception:
+        hafiza = {}
+    return [("parca", bilgi), ("hafiza", hafiza)]
+
+
+def _ad_ek_onerileri(durum):
+    """Bilinen kisaltmasi olmayan anlamlar icin dil modelinin onerisi (kart
+    acilirken bir kez; durum["_ad_ek_oneri"]: {anahtar: kisaltma})."""
+    ekler = _ada_eklenecekler(durum)
+    if not ekler:
+        return
+    onbellek = durum.setdefault("_ad_ek_oneri", {})
+    kaynaklar = _ad_ek_kaynaklari(durum)
+    bilgi = kaynaklar[0][1]
+    dil = llm_mod.adlandirma_dili({p: o.get("anlam") for p, o in bilgi.items() if isinstance(o, dict)})
+    kullanilan = {str(o.get("standart") or p).upper() for p, o in bilgi.items() if isinstance(o, dict)}
+    for a, e in ekler.items():
+        if a in onbellek or _ad_ek_bilinen(e["anlam"], e["tur"], kaynaklar)[0]:
+            continue
+        try:
+            yeni, _g, _t, hata = llm_mod.kisaltma_tek_oneri("", e["anlam"], "", dil, kullanilan)
+        except Exception:
+            yeni, hata = "", "hata"
+        yeni = llm_mod.kisaltma_temizle(yeni)
+        if yeni and parca_mod.STANDART_DESEN.match(yeni) and not hata:
+            onbellek[a] = yeni
+
+
+def _ad_ek_karari(liste):
+    """Kartin gonderdigi [{"anahtar", "kisaltma", "secim", "onay"}] ->
+    {anahtar: {"kisaltma", "secim", "onay"}}."""
+    cikti = {}
+    for x in liste if isinstance(liste, list) else []:
+        if not isinstance(x, dict) or not str(x.get("anahtar") or ""):
+            continue
+        cikti[str(x["anahtar"])] = {
+            # Kullanicinin yazdigi aynen (buyuk harf, harf ve rakam); gecersizse
+            # oneriyle degistirilmez, kartta hata olarak gorunur.
+            "kisaltma": re.sub(r"[^A-Z0-9]", "", str(x.get("kisaltma") or "").strip().upper()),
+            "secim": "ekleme" if x.get("secim") == "ekleme" else "ekle",
+            "onay": bool(x.get("onay"))}
+    return cikti
+
+
+def _ad_ek_satirlari(durum, ekler_karari):
+    """Kartin "eklenecekler" satirlari ve kolon -> [[kisaltma, yer]]."""
+    ekler = _ada_eklenecekler(durum)
+    if not ekler:
+        return [], {}
+    kaynaklar = _ad_ek_kaynaklari(durum)
+    onbellek = durum.get("_ad_ek_oneri") if isinstance(durum.get("_ad_ek_oneri"), dict) else {}
+    satirlar, kolon_ek = [], {}
+    for a, e in ekler.items():
+        oneri, kaynak = _ad_ek_bilinen(e["anlam"], e["tur"], kaynaklar)
+        if not oneri and onbellek.get(a):
+            oneri, kaynak = onbellek[a], "dil_modeli"
+        o = (ekler_karari or {}).get(a) or {}
+        kisa = o["kisaltma"] if o.get("kisaltma") else oneri
+        secim = o.get("secim") or "ekle"
+        gecerli = bool(kisa) and bool(parca_mod.STANDART_DESEN.match(kisa))
+        satirlar.append({"anahtar": a, "anlam": e["anlam"], "tur": e["tur"],
+                         "tur_ad": AD_EK_TUR_AD.get(e["tur"], e["tur"]),
+                         "kolon_sayisi": len(e["kolonlar"]), "ornek": e["kolonlar"][:3],
+                         "kisaltma": kisa, "oneri": oneri, "kaynak": kaynak,
+                         "secim": secim, "onay": bool(o.get("onay")), "gecerli": gecerli})
+        if secim == "ekle" and gecerli:
+            for k in e["kolonlar"]:
+                kolon_ek.setdefault(k, []).append([kisa, parca_mod.ad_yeri(e["tur"])])
+    return satirlar, kolon_ek
+
+
+def _ek_birimli(birimler, ekler):
+    """Ada eklenecek birimler (adda zaten olan kisaltma yeniden eklenmez)."""
+    var = {p for m, _y in birimler for p in m.split(parca_mod.AYRAC)}
+    return list(birimler) + [[m, y] for m, y in ekler or [] if m not in var]
+
+
+def _kolon_ad_alani(durum, sira=None, ekler=None):
+    """01.2.4.4 kartinin verisi: Ad Standardi, ada eklenecek parcalar ve
+    aileler; her ailede kolonlarin [eski ad, yeni ad] ikilileri. sira ve
+    ekler verilirse adlar onlarla kurulur (kartta degisince onizleme;
+    kaydedilmez)."""
     bilgi = durum.get("parca_bilgisi") if isinstance(durum.get("parca_bilgisi"), dict) else {}
     desenler = _zaman_desenleri(durum)
     yazilislar = _donem_ad_yazilislari(durum)
@@ -1645,13 +1790,16 @@ def _kolon_ad_alani(durum, sira=None):
     if sira is None:
         sira = onceki.get("sira") if onceki.get("sira") else st["sira"]
     sira = parca_mod.sira_temizle(sira)
+    if ekler is None:
+        ekler = onceki.get("eklenecekler") if isinstance(onceki.get("eklenecekler"), dict) else {}
+    ek_satirlar, kolon_ek = _ad_ek_satirlari(durum, ekler)
     aileler = {}
     for ad in _veri_kolonlari(durum):
         if ad in korunan or ad in haric:
             continue
         a = aciklama_mod.aile_anahtari(ad)
-        aileler.setdefault(a, []).append(
-            [ad, parca_mod.ad_kur(parca_mod.ad_birimleri(ad, bilgi, desenler, yazilislar), sira)])
+        birimler = _ek_birimli(parca_mod.ad_birimleri(ad, bilgi, desenler, yazilislar), kolon_ek.get(ad))
+        aileler.setdefault(a, []).append([ad, parca_mod.ad_kur(birimler, sira)])
     # Adi degisen aileler once (veri setindeki sirayla), degismeyenler sonra.
     aileler = dict(sorted(aileler.items(), key=lambda kv: not any(e != y for e, y in kv[1])))
     satirlar = []
@@ -1666,13 +1814,15 @@ def _kolon_ad_alani(durum, sira=None):
             "sira": sira, "standart_kayitli": st["kayitli"],
             "yerler": [{"kod": k, "ad": e} for k, e in parca_mod.AD_YERLERI],
             "satirlar": satirlar, "korunan": sorted(korunan & set(_veri_kolonlari(durum))),
+            "eklenecekler": ek_satirlar,
             "not": (durum.get("_onceki_notlari") or {}).get("kolon_ad", "")}
 
 
-def kolon_ad_onizle(durum, sira):
-    """Kartta Ad Standardi degisince adlar yeniden kurulur (kaydedilmez)."""
-    alan = _kolon_ad_alani(durum, sira)
-    return {"sira": alan["sira"],
+def kolon_ad_onizle(durum, sira, ekler=None):
+    """Kartta Ad Standardi ya da ada eklenecek parcalar degisince adlar
+    yeniden kurulur (kaydedilmez). ekler: kartin eklenecekler listesi."""
+    alan = _kolon_ad_alani(durum, sira, _ad_ek_karari(ekler) if ekler is not None else None)
+    return {"sira": alan["sira"], "eklenecekler": alan["eklenecekler"],
             "satirlar": [{"aile": s_["aile"], "kolonlar": s_["kolonlar"]} for s_ in alan["satirlar"]]}
 
 
@@ -1681,6 +1831,10 @@ def kolon_ad_plan(durum):
         return _kontrol_atla_plani(durum)
     if _onceki_sirasi(durum, "kolon_ad") and _kolon_ad_onceki_dene(durum) is None:
         return ""
+    try:
+        _ad_ek_onerileri(durum)
+    except Exception:
+        pass
     try:
         alan = _kolon_ad_alani(durum)
     except Exception:
@@ -1701,15 +1855,23 @@ def _kolon_ad_karari(karar):
     gelen = {str(x.get("aile")): x for x in (k.get("aileler") or []) if isinstance(x, dict)}
     return {"sira": parca_mod.sira_temizle(k.get("sira")),
             "aileler": {a: {"secim": "eski" if x.get("secim") == "eski" else "yeni",
-                            "onay": bool(x.get("onay"))} for a, x in gelen.items()}}
+                            "onay": bool(x.get("onay"))} for a, x in gelen.items()},
+            "eklenecekler": _ad_ek_karari(k.get("eklenecekler"))}
 
 
 def _kolon_ad_karari_isle(durum, kk):
     """Kolon adlari kararini denetler; yan etkisi yok. kk: _kolon_ad_karari.
     Doner: (esleme, alan, hatalar)."""
     sira, gelen = kk["sira"], kk["aileler"]
-    alan = _kolon_ad_alani(durum, sira)
+    alan = _kolon_ad_alani(durum, sira, kk.get("eklenecekler") or {})
     hatalar, satirlar = [], []
+    ek_onaysiz = [e for e in alan["eklenecekler"] if not e["onay"]]
+    if ek_onaysiz:
+        hatalar.append("Ada eklenecek %s parça onaylanmadı." % _sayi(len(ek_onaysiz)))
+    for e in alan["eklenecekler"]:
+        if e["secim"] == "ekle" and not e["gecerli"]:
+            hatalar.append("Ada eklenecek '%s': kısaltma geçersiz (büyük harfle başlar; en çok 12 "
+                           "harf ve rakam)." % e["anlam"])
     eksik = [s_["aile"] for s_ in alan["satirlar"] if not (gelen.get(s_["aile"]) or {}).get("onay")]
     if eksik:
         hatalar.append("%s aile onaylanmadı." % _sayi(len(eksik)))
@@ -3443,7 +3605,7 @@ ACIKLAMA_DUGME = {"bos": "Kolon Kartlarını Onayla ve Devam Et"}
 # Her kolon onaylanir; degistirmeden gecmek yok.
 ACIKLAMA_ATLA = ""
 # Istem ya da girdi bicimi degisince eski sonuclar yeniden uretilsin.
-ACIKLAMA_SURUMU = 5
+ACIKLAMA_SURUMU = 6
 ACIKLAMA_EXCEL_ADI = "onerilen_sozluk.xlsx"
 ROL_ADLARI = {"target": "hedef değişken", "id": "kimlik kolonu",
               "donem": "dönem kolonu", "segment": "segment kolonu"}
@@ -3702,6 +3864,7 @@ def _aciklama_satiri(d, g):
                   "kaynak", "aile_kaynagi", "hata", "denetim"):
             satir[a] = r.get(a) or ""
         satir["kontrol"] = list(r.get("kontrol") or [])
+        satir["ad_eksik"] = [dict(o) for o in r.get("ad_eksik") or []]
         _degisim_yaz(satir)
     satir["onayli"] = _aciklama_onayli(d, g, durum_)
     return satir
@@ -3800,7 +3963,8 @@ def _onay_satirlari(d):
                          "dagilim_notu": o.get("dagilim_notu") or "",
                          "kart": {k: v for k, v in (o.get("kart") or {}).items()
                                   if str(v or "").strip()},
-                         "kontrol": [], "model": "", "kaynak": "onay"})
+                         "kontrol": [], "model": "", "kaynak": "onay",
+                         "ad_eksik": [dict(x) for x in o.get("ad_eksik") or []]})
         satirlar[-1]["aile"] = o.get("aile") or ""
         _degisim_yaz(satirlar[-1])
     return satirlar
@@ -4086,6 +4250,7 @@ def aciklama_uygula(durum):
                            "karar": (r or {}).get("karar") or "",
                            "ad_notu": (r or {}).get("ad_notu") or "",
                            "dagilim_notu": (r or {}).get("dagilim_notu") or "",
+                           "ad_eksik": [dict(o) for o in (r or {}).get("ad_eksik") or []],
                            "soru": (r or {}).get("soru") or ""}
             if r is None:
                 sayi["duzenlenmedi"] += 1

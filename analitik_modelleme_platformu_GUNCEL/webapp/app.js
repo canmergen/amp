@@ -8667,8 +8667,11 @@ function dogrulamaKartiEkle(alan, blok) {
         /* KOLON ADLARI: her aile onaylanmalı; sorunlu ad onaylanamaz. */
         if (adimModu === "kolon_ad" && kolonAdErisim) {
             const on = kolonAdErisim.onaysiz(), sor = kolonAdErisim.sorunlu();
-            birincil.disabled = on > 0 || sor > 0;
-            gerekce.textContent = sor > 0 ? ftBinlik(sor) + " ailede ad sorunu var (süzgeç: Sorunlu)."
+            const ek = kolonAdErisim.ekOnaysiz ? kolonAdErisim.ekOnaysiz() : 0;
+            birincil.disabled = on > 0 || sor > 0 || ek > 0;
+            gerekce.textContent = sor > 0 ? ftBinlik(sor) + " yerde ad ya da kısaltma sorunu var."
+                : ek > 0 ? "Ada eklenecek " + ftBinlik(ek) + " parça onay bekliyor. Önce yukarıdaki «Ada "
+                    + "Eklenecek Parçalar»ı onaylayın; adlar buna göre kurulur."
                 : on > 0 ? ftBinlik(on) + " aile onay bekliyor. Her aile için yeni adı ya da eski adın "
                     + "kalmasını onaylayın." : "";
             gerekce.hidden = !gerekce.textContent;
@@ -9830,11 +9833,17 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         if (j < 0 || j >= sira.length) return;
         [sira[i], sira[j]] = [sira[j], sira[i]];
         siraCiz();
+        onizle();
+    }
+    /* Ad Standardı ya da ada eklenecek parça değişince adlar sunucuda
+       yeniden kurulur (kaydedilmez). */
+    function onizle() {
         const no = ++onizleSayac;
         stKap.classList.add("yukleniyor");
+        ekKap.classList.add("yukleniyor");
         fetch(getWebAppBackendUrl("kolon_ad_onizle"), {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ftKimlikGovdesi({ sira: sira }))
+            body: JSON.stringify(ftKimlikGovdesi({ sira: sira, eklenecekler: ekDeger() }))
         })
         .then(r => r.json())
         .then(d => {
@@ -9850,11 +9859,98 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 if (JSON.stringify(yeni) !== JSON.stringify(r.kolonlar) && r.secim === "yeni") r.onay = false;
                 r.kolonlar = yeni;
             });
-            tabloCiz(); siraCiz();
+            (k.eklenecekler || []).forEach(e => {
+                const x = ekler.find(y => y.anahtar === e.anahtar);
+                if (x) x.gecerli = !!e.gecerli;
+            });
+            tabloCiz(); siraCiz(); ekCiz();
             if (degisti) degisti();
         })
         .catch(() => {})
-        .then(() => { if (no === onizleSayac) stKap.classList.remove("yukleniyor"); });
+        .then(() => { if (no === onizleSayac) { stKap.classList.remove("yukleniyor"); ekKap.classList.remove("yukleniyor"); } });
+    }
+
+    /* ---- ADA EKLENECEK PARÇALAR ----
+       Kolon Kartları'nda açıklamada olup adda karşılığı olmayan kısa
+       bilgiler. Her birinde kısaltma, Ekle / Ekleme ve onay. */
+    const ekler = (ka.eklenecekler || []).map(e => Object.assign({}, e));
+    const ekKap = elYap("div", "dg-kad-ek");
+    ekKap.hidden = !ekler.length;
+    kart.appendChild(ekKap);
+    const KAYNAK_ADI = { parca: "onaylı ad parçalarından", hafiza: "parça hafızasından",
+                         dil_modeli: "dil modelinin önerisi" };
+    const ekDeger = () => ekler.map(e => ({ anahtar: e.anahtar, kisaltma: e.kisaltma,
+                                            secim: e.secim, onay: !!e.onay }));
+    const ekGecerli = e => e.secim === "ekleme" || /^[A-Z][A-Z0-9]{0,11}$/.test(e.kisaltma || "");
+    function ekCiz() {
+        ekKap.textContent = "";
+        if (!ekler.length) return;
+        const bas = elYap("div", "dg-kad-standart-bas");
+        bas.append(elYap("span", "dg-kad-standart-ad", "Ada Eklenecek Parçalar · " + ftBinlik(ekler.length)),
+                   elYap("span", "dg-donem-tur-not", "Kolon Kartları'nda açıklamada olup adda karşılığı olmayan "
+                         + "bilgiler. Kısaltmayı kontrol edin, «Ekle» ya da «Ekleme» seçip onaylayın."));
+        ekKap.appendChild(bas);
+        const t = elYap("table", "dg-tablo dg-kad-ek-tablo");
+        const h = document.createElement("thead"), hr = document.createElement("tr");
+        ["Bilgi", "Kolonlar", "Kısaltma", "Karar", "Onay"].forEach(x => hr.appendChild(elYap("th", "", x)));
+        h.appendChild(hr); t.appendChild(h);
+        const b = document.createElement("tbody");
+        ekler.forEach(e => {
+            const tr = elYap("tr", "dg-satir");
+            const t1 = elYap("td", "");
+            t1.append(elYap("div", "dg-kad-ad", e.anlam), elYap("div", "dg-donem-tur-not", e.tur_ad || e.tur));
+            const t2 = elYap("td", "");
+            t2.append(elYap("div", "", ftBinlik(e.kolon_sayisi) + " kolon"),
+                      elYap("div", "dg-donem-tur-not", (e.ornek || []).join(", ")
+                            + (e.kolon_sayisi > (e.ornek || []).length ? " ve diğerleri" : "")));
+            const t3 = elYap("td", "");
+            const g = document.createElement("input");
+            g.type = "text"; g.className = "dg-giris dg-kad-ek-giris";
+            g.value = e.kisaltma || ""; g.maxLength = 12;
+            g.disabled = kilitli || e.secim === "ekleme";
+            g.setAttribute("aria-label", e.anlam + " kısaltması");
+            g.onchange = () => {
+                const v = g.value.trim().toLocaleUpperCase("tr").replace(/[^A-Z0-9]/g, "");
+                g.value = v;
+                if (v === e.kisaltma) return;
+                e.kisaltma = v; e.onay = false;
+                ekCiz(); onizle();
+            };
+            t3.appendChild(g);
+            t3.appendChild(elYap("div", "dg-donem-tur-not", e.oneri
+                ? "Öneri: " + e.oneri + " (" + (KAYNAK_ADI[e.kaynak] || "öneri") + ")"
+                : "Kısaltma bulunamadı; yazın."));
+            if (e.secim === "ekle" && !ekGecerli(e)) t3.appendChild(elYap("div", "dg-donem-soru",
+                "Büyük harfle başlamalı; en çok 12 harf ve rakam."));
+            const t4 = elYap("td", "");
+            const seg = elYap("div", "dg-segment");
+            [["ekle", "Ekle"], ["ekleme", "Ekleme"]].forEach(([dd, aa]) => {
+                const bt = elYap("button", e.secim === dd ? "secili" : "", aa);
+                bt.type = "button"; bt.disabled = kilitli;
+                bt.setAttribute("aria-pressed", e.secim === dd ? "true" : "false");
+                bt.onclick = () => {
+                    if (kilitli || e.secim === dd) return;
+                    e.secim = dd; e.onay = false;
+                    ekCiz(); onizle();
+                };
+                seg.appendChild(bt);
+            });
+            t4.appendChild(seg);
+            const t5 = elYap("td", "dg-ekle-hucre");
+            const k = document.createElement("input");
+            k.type = "checkbox"; k.className = "dg-ekle";
+            k.checked = !!e.onay; k.disabled = kilitli || (!e.onay && !ekGecerli(e));
+            k.setAttribute("aria-label", e.anlam + " onay");
+            k.onchange = () => { if (kilitli) { k.checked = !k.checked; return; } e.onay = k.checked; ekCiz(); if (degisti) degisti(); };
+            t5.appendChild(k);
+            tr.append(t1, t2, t3, t4, t5);
+            tr.classList.toggle("dg-parca-onayli", !!e.onay);
+            b.appendChild(tr);
+        });
+        t.appendChild(b);
+        const sar_ = elYap("div", "dg-tablo-sar");
+        sar_.appendChild(t);
+        ekKap.appendChild(sar_);
     }
 
     /* ---- ÜST: arama, süzgeç, toplu onay, sayfa ---- */
@@ -10017,18 +10113,20 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         return tr;
     }
     siraCiz();
+    ekCiz();
     tabloCiz();
     return {
-        deger: () => ({ sira: sira.slice(),
+        deger: () => ({ sira: sira.slice(), eklenecekler: ekDeger(),
                         aileler: satirlar.map(r => ({ aile: r.aile, secim: r.secim, onay: r.onay })) }),
         onaysiz: () => satirlar.filter(r => !r.onay).length,
-        sorunlu: () => Object.keys(sorunlar()).length,
+        ekOnaysiz: () => ekler.filter(e => !e.onay).length,
+        sorunlu: () => Object.keys(sorunlar()).length + ekler.filter(e => !ekGecerli(e)).length,
         sayilar: () => {
             let deg = 0;
             satirlar.forEach(r => { if (r.secim === "yeni") deg += r.kolonlar.filter(([e, y]) => e !== y).length; });
             return { aile: satirlar.length, degisen: deg };
         },
-        kilitle: k => { kilitli = k; siraCiz(); tabloCiz(); },
+        kilitle: k => { kilitli = k; siraCiz(); ekCiz(); tabloCiz(); },
         bekliyor: () => false
     };
 }
@@ -10046,6 +10144,16 @@ const ACK_YOKLAMA = 2500;
 const ACK_KART_ADLARI = [["konu", "Konu"], ["yon", "Yön"], ["nitelik", "Nitelik"],
                          ["zaman", "Zaman"], ["olcu", "Ölçü"], ["istatistik", "İstatistik"],
                          ["karsilastirma", "Karşılaştırma"], ["birim", "Birim"], ["diger", "Diğer"]];
+/* Açıklamada olup adda karşılığı olmayan bilgi: kart çipi (01.2.4.4'te
+   kısaltmasıyla onaylanıp ada eklenir). */
+function adEksikCipi(e) {
+    const et = (ACK_KART_ADLARI.find(([a]) => a === e.tur) || [e.tur, e.tur])[1];
+    const c = elYap("span", "dg-acik-kart-oge dg-acik-kart-eksik");
+    c.title = "Açıklamada var, adda karşılığı yok; 01.2.4.4 Kolon Adları'nda kısaltmasıyla onaylanıp ada eklenir.";
+    c.append(elYap("span", "dg-acik-kart-et", et + ":"), document.createTextNode(" " + tireSade(e.anlam)),
+             elYap("span", "dg-acik-kart-eksik-not", " · ada eklenecek"));
+    return c;
+}
 const ACK_SUZGECLER = [["tumu", "Tümü", "toplam"], ["onaysiz", "Onaylanmadı", "onaysiz"],
                        ["degisen", "Değişen", "degisen"], ["yazim", "Yalnız Yazım", "yazim"],
                        ["ekdegisim", "Yalnız Ek", "ek_degisim"],
@@ -10256,10 +10364,10 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         if (!hepsiSor) return;
         const bek = sira.filter(k => { const v = veriler.get(k); return v && bekliyorMu(v); }).length;
         const soru = sat.filter(v => v.soru).length;
-        const notlu = sat.filter(v => v.ad_notu || v.dagilim_notu || (v.kontrol || []).length).length;
+        const notlu = sat.filter(v => (v.kontrol || []).length).length;
         hepsiMetin.textContent = ftBinlik(n) + " kolonun açıklaması ekranda göründüğü gibi onaylanacak"
             + (soru ? "; " + ftBinlik(soru) + " kolonda cevapsız soru var" : "")
-            + (notlu ? (soru ? ", " : "; ") + ftBinlik(notlu) + " kolonda ad, dağılım ya da kontrol notu var" : "")
+            + (notlu ? (soru ? ", " : "; ") + ftBinlik(notlu) + " kolonda kontrol notu var" : "")
             + (bek ? ". Dil modelinin düzenlediği " + ftBinlik(bek) + " kolon bitince ayrıca onaylanır" : "")
             + ". Emin değilseniz ";
     }
@@ -10270,7 +10378,9 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         bicimOnay.hidden = saltOkunur || gorulenAsama() !== 2;
         bicimOnay.disabled = kilitli || !n;
     }
-    ust.append(suzKap, ara, bicimOnay, topluOnay, hepsiOnay);
+    /* Süzgeç düğmeleri ve «Görünenleri Onayla» gösterilmez: aşamalar ve
+       aile, biçim ve hepsini onaylama düğmeleri aynı işi görür. */
+    ust.append(ara, bicimOnay, hepsiOnay);
 
     /* ---- AŞAMALAR ----
        Onay sırayla: 1 Aileler (adı yalnız sayıyla ayrılan kolonlar), 2
@@ -10516,7 +10626,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     function kartCiz(td, v) {
         const kartV = v.kart || {};
         const alanlar = ACK_KART_ADLARI.filter(([a]) => kartV[a]);
-        if (!alanlar.length) return;
+        const eksik = v.durum === "hazir" ? (v.ad_eksik || []) : [];
+        if (!alanlar.length && !eksik.length) return;
         const kk = elYap("div", "dg-acik-kart");
         alanlar.forEach(([a, et]) => {
             const c = elYap("span", "dg-acik-kart-oge");
@@ -10524,12 +10635,13 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             c.appendChild(document.createTextNode(" " + tireSade(kartV[a])));
             kk.appendChild(c);
         });
+        eksik.forEach(e => kk.appendChild(adEksikCipi(e)));
         td.appendChild(kk);
     }
-    /* Toplu onaya giren satır: hazır, onaysız, dikkat notu yok. */
+    /* Toplu onaya giren satır: hazır, onaysız, cevapsız sorusu ve kontrol
+       notu yok (ad ve dağılım notu bilgi; toplu onayı durdurmaz). */
     function topluOlur(v) {
-        return v.durum === "hazir" && !v.onayli && !v.soru && !v.ad_notu && !v.dagilim_notu
-            && !(v.kontrol || []).length;
+        return v.durum === "hazir" && !v.onayli && !v.soru && !(v.kontrol || []).length;
     }
     /* Görünen satırlar: kapalı ailenin üyeleri görünmez. */
     let cizilenler = [];
@@ -10608,7 +10720,15 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         }).map(([k, et]) => [et, (hazir[0].kart || {})[k]]);
         const onaylanacak = uyeler.filter(v => !v.onayli && topluOlur(v) && kalibaUyar(v));
         const tek = uyeler.filter(v => !v.onayli && v.durum === "hazir" && !(topluOlur(v) && kalibaUyar(v)));
-        return { uyeler, hazir, kalip, uyan, ortak, onaylanacak, tek,
+        /* Ada eklenecek bilgiler: kaç hazır üyede geçtiği ile. */
+        const eksikM = new Map();
+        hazir.forEach(v => (v.ad_eksik || []).forEach(e => {
+            const k = e.tur + "|" + e.anlam;
+            const x = eksikM.get(k) || { e, n: 0 };
+            x.n++; eksikM.set(k, x);
+        }));
+        const eksik = [...eksikM.values()];
+        return { uyeler, hazir, kalip, uyan, ortak, onaylanacak, tek, eksik,
                  onayli: uyeler.filter(v => v.onayli).length,
                  bekleyen: uyeler.filter(bekliyorMu).length };
     }
@@ -10642,11 +10762,17 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                 ack.appendChild(elYap("div", "dg-acik-aile-metin", tireSade(d.kalip)));
                 kutu.appendChild(ack);
             }
-            if (d.ortak.length) {
+            if (d.ortak.length || d.eksik.length) {
                 const kk = elYap("div", "dg-acik-kart dg-acik-aile-kart");
                 d.ortak.forEach(([et, deger]) => {
                     const c = elYap("span", "dg-acik-kart-oge");
                     c.append(elYap("span", "dg-acik-kart-et", et + ":"), document.createTextNode(" " + tireSade(deger)));
+                    kk.appendChild(c);
+                });
+                d.eksik.forEach(({ e, n }) => {
+                    const c = adEksikCipi(e);
+                    if (n < d.hazir.length) c.appendChild(document.createTextNode(
+                        " (" + ftBinlik(n) + " / " + ftBinlik(d.hazir.length) + " kolonda)"));
                     kk.appendChild(c);
                 });
                 kutu.appendChild(kk);
@@ -10658,8 +10784,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                 /* Neden toplu onaya girmiyor: her kolonun ilk sebebi. */
                 const sebep = new Map();
                 d.tek.forEach(v => {
-                    const s_ = v.soru ? "cevapsız soru" : v.ad_notu ? "ad notu" : v.dagilim_notu ? "dağılım notu"
-                        : (v.kontrol || []).length ? "kontrol notu" : "açıklaması kalıptan farklı";
+                    const s_ = v.soru ? "cevapsız soru" : (v.kontrol || []).length ? "kontrol notu"
+                        : "açıklaması kalıptan farklı";
                     sebep.set(s_, (sebep.get(s_) || 0) + 1);
                 });
                 const neden = [...sebep].map(([k, n]) => k + ": " + ftBinlik(n)).join(", ");

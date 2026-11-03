@@ -2315,11 +2315,22 @@ BELİRSİZLİK VE ÇELİŞKİ (açıklamayı tahminle değiştirme; bildir):
   - "ad_notu": ad ile açıklama uyuşmuyorsa yaz: açıklamada olup adda
     karşılığı olmayan bilgi (ör. "Açıklamada 'son' var; adda karşılığı
     yok.") ya da adda olup açıklamada karşılığı olmayan parça. Açıklamayı
-    bu yüzden değiştirme; kolon adı sonraki adımda açıklamaya göre
-    düzeltilir. Uyumluysa boş.
+    bu yüzden değiştirme. Uyumluysa boş.
   - "dagilim_notu": DAĞILIM açıklamayla çelişiyorsa yaz (ör. açıklama
     tutar diyor, değerler yalnız 0 ve 1); açıklamayı dağılıma göre
     değiştirme. Çelişki yoksa boş.
+
+ADA EKLENECEK ("ad_eksik"): açıklamada geçen, KART'ta ve adda karşılığı
+olmayan KISA bilgi bir kart alanına karşılık geliyorsa (ör. adda
+yalnız PER_DAY "günlük" var, açıklama "günlük ortalama" diyor: adda
+ortalamanın karşılığı yok) her biri için {"anlam": "ortalama", "tur":
+"istatistik"} yaz; kolonun adına sonraki adımda bu anlamın kısaltması
+eklenir (kullanıcı onaylar). "anlam": bilginin yalın hali, bir ya da
+iki sözcük, açıklamadaki gibi ("ortalama", "maksimum", "giden", "TL").
+"tur": konu, yon, nitelik, olcu, istatistik, karsilastirma, birim
+kodlarından biri. Zaman bilgisi, uzun ya da cümle gibi bilgi (ör.
+"yalnız yurt içi işlemler") buraya YAZILMAZ; o ek bilgidir. KART'ta zaten
+olan bilgiyi yazma. Yoksa [].
 
 EK BİLGİ ("ek"): ORİJİNAL'de (ya da KULLANICI notunda) olup KART'ta ve
 adda karşılığı olmayan, kolonun anlamını değiştiren bilgi (ör. "yalnız
@@ -2348,7 +2359,7 @@ kopyalama):
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN
 yaz; her kolon için bir kayıt.
-{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": ""}]}""" \
+{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": "", "ad_eksik": []}]}""" \
     + SINIRLAYICI_KURALI
 
 
@@ -2417,8 +2428,32 @@ def _duzen_ciktisi(veri, girdiler, model):
             "parca": _donem_metni(x.get("parca")),
             "ad_notu": _donem_metni(x.get("ad_notu")),
             "dagilim_notu": _donem_metni(x.get("dagilim_notu")),
+            "ad_eksik": ad_eksik_temizle(x.get("ad_eksik")),
             "model": MODEL_ADLARI.get(model, model)}
     return sonuc
+
+
+AD_EKSIK_TURLERI = ("konu", "yon", "nitelik", "olcu", "istatistik", "karsilastirma", "birim")
+
+
+def ad_eksik_temizle(x):
+    """Ada eklenecek bilgiler: [{"anlam", "tur"}] (gecersizler atilir;
+    anlam kucuk harf, en cok 3 sozcuk ve 40 karakter; en cok 3 kayit)."""
+    cikti, gor = [], set()
+    for o in (x if isinstance(x, list) else []):
+        if not isinstance(o, dict):
+            continue
+        anlam = _donem_metni(o.get("anlam")).strip(" .;,")
+        tur = _donem_metni(o.get("tur")).lower()
+        if not anlam or tur not in AD_EKSIK_TURLERI or len(anlam) > 40 or len(anlam.split()) > 3:
+            continue
+        if anlam.upper() != anlam:      # kisaltma (TL) buyuk kalir
+            anlam = anlam.replace("I", "ı").replace("İ", "i").lower()
+        if (anlam, tur) in gor:
+            continue
+        gor.add((anlam, tur))
+        cikti.append({"anlam": anlam, "tur": tur})
+    return cikti[:3]
 
 
 # ---------------------------------------------------------------------------
@@ -2452,6 +2487,8 @@ NEYE BAKARSIN
      değiştirilmiş, eş anlamlısı yazılmış, istatistik sözcüğü KART'tan
      farklı yazılmış ("maksimum" yerine "en yüksek").
   6. Editörün kurallarına aykırılık (aşağıda).
+  7. TASLAK ADA EKLENECEK: açıklamada olup KART'ta ve adda karşılığı
+     olmayan kısa bilgi eksik mi, fazla mı, türü yanlış mı.
 
 Sorun yoksa "uygun": true, "sorunlar": [], "oneri": "". Sorun varsa
 "uygun": false; "sorunlar": her biri tek kısa, somut madde (ne eksik, ne
@@ -2461,7 +2498,7 @@ kurallarıyla. Emin olmadığın şeyi sorun sayma; zevk farkını sorun sayma.
 EDİTÖRÜN KURALLARI (taslak bunlara uymalı):
 """ + _YAZAR_KURALLARI + """
 GİRDİ: KOLONLAR bloğunda her kolon için kaynak satırları ve TASLAK
-(editörün açıklaması), TASLAK KARARI.
+(editörün açıklaması), TASLAK KARARI, TASLAK ADA EKLENECEK.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN
 yaz; her kolon için bir kayıt.
@@ -2492,7 +2529,7 @@ KARARI, TASLAK ALANLARI, DENETÇİ SORUNLARI ve DENETÇİ ÖNERİSİ.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN
 yaz; her kolon için bir kayıt.
-{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": ""}]}""" \
+{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": "", "ad_eksik": []}]}""" \
     + SINIRLAYICI_KURALI
 ACIKLAMA_KONTROL_TOKEN_KOLON = 250
 
@@ -2501,6 +2538,8 @@ def _taslak_satirlari(t, kontrol=None):
     s = ["  TASLAK: %s" % (_kirp(t.get("aciklama"), 400) or "(boş)")]
     if str(t.get("karar") or "").strip():
         s.append("  TASLAK KARARI: %s" % _kirp(t["karar"], 200))
+    s.append("  TASLAK ADA EKLENECEK: %s" % ("; ".join(
+        "%s (%s)" % (o["anlam"], o["tur"]) for o in t.get("ad_eksik") or []) or "yok"))
     if kontrol is not None:
         alan = ["%s: %s" % (e, _kirp(t.get(k), 200)) for k, e in
                 (("ek", "ek bilgi"), ("soru", "soru"), ("parca", "parça"),

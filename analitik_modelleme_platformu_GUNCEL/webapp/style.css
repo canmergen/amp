@@ -5037,6 +5037,21 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-kad-ok:hover:not(:disabled) { color: var(--kirmizi); }
 .dg-kad-ok:disabled { opacity: .3; cursor: default; }
 .dg-kad-ornek { margin-top: 6px; }
+/* Ada eklenecek parçalar (Ad Standardı'nın altında). */
+.dg-kad-ek {
+  margin: 0 0 var(--b-2); padding: var(--b-2) var(--b-3);
+  border: 1px solid var(--kenar); border-top: 2px solid var(--amber);
+  border-radius: var(--r-kucuk); background: var(--yuzey);
+}
+.dg-kad-ek.yukleniyor { opacity: .6; }
+.dg-kad-ek-tablo { table-layout: fixed; }
+.dg-kad-ek-tablo th:nth-child(1) { width: 20%; }
+.dg-kad-ek-tablo th:nth-child(2) { width: auto; }
+.dg-kad-ek-tablo th:nth-child(3) { width: 200px; }
+.dg-kad-ek-tablo th:nth-child(4) { width: 170px; }
+.dg-kad-ek-tablo th:nth-child(5) { width: 62px; }
+.dg-kad-ek-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
+.dg-kad-ek-giris { width: 120px; text-transform: uppercase; }
 .dg-kad-tablo { table-layout: fixed; }
 .dg-kad-tablo th:nth-child(1) { width: 34%; }
 .dg-kad-tablo th:nth-child(2) { width: auto; }
@@ -5181,3 +5196,7 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-acik-hepsi-uyari { margin: 0 0 var(--b-2); padding: 8px 12px; font-size: var(--fs-kucuk);
   border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r-kucuk); background: var(--kirmizi-acik); }
 .dg-acik-hepsi-uyari .dg-baglanti { margin-left: 2px; }
+
+/* Kolon kartında ada eklenecek bilgi (01.2.4.4'te onaylanır). */
+.dg-acik-kart-oge.dg-acik-kart-eksik { border-style: dashed; border-color: var(--amber); }
+.dg-acik-kart-eksik-not { color: var(--metin-tamam); }

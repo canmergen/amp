@@ -973,12 +973,27 @@ tanıtır; sayfalar sol bardan açılır.
     karar cevap veremezse taslak kalır ve kontrol notu ("Denetçinin bulduğu
     sorun çözülmedi") yazar, satır toplu onaya girmez. Kod denetimi son
     açıklamada çalışır. İptal edilince denetim ve karar çağrılmaz.
-  - **Onay:** her satırda Onay kutusu ve "Görünenleri Onayla" (soru, ad /
-    dağılım notu ya da kontrol notu olan satırı atlar). Onay çalışma
-    klasöründeki kayda yazılır (`kabul`: onaylanan açıklama metni);
-    açıklama sonradan değişirse onay kendiliğinden düşer. Süzgeçler:
-    Onaylanmadı, Ek Bilgi da var. Bütün kolonlar onaylanmadan geçilmez;
+  - **Onay:** her satırda Onay kutusu; toplu onay "Aileyi Onayla",
+    "Biçim Değişikliklerini Onayla" ve "Hepsini Onayla" ile. Toplu onaya
+    yalnız cevapsız sorusu ya da kontrol notu olan satır girmez (`topluOlur`;
+    ad ve dağılım notu bilgidir, durdurmaz). Süzgeç düğmeleri ve
+    "Görünenleri Onayla" gösterilmez (aşamalar aynı işi görür); arama
+    kutusu kalır. Onay çalışma klasöründeki kayda yazılır (`kabul`:
+    onaylanan açıklama metni); açıklama sonradan değişirse onay
+    kendiliğinden düşer. Bütün kolonlar onaylanmadan geçilmez;
     "değiştirmeden devam" düğmesi yok.
+  - **Ada eklenecek bilgi** (`ad_eksik`, `ACIKLAMA_SURUMU` 6): yazar
+    (ve karar) açıklamada geçen, kartta ve adda karşılığı olmayan kısa
+    bilgiyi anlamı ve türüyle döndürür (`[{"anlam": "ortalama", "tur":
+    "istatistik"}]`; türler konu, yon, nitelik, olcu, istatistik,
+    karsilastirma, birim; zaman ve uzun bilgi buraya girmez, ek bilgidir;
+    `llm.ad_eksik_temizle`, kartta olan anlam atılır `_bicimle`). Denetçi
+    bunu da denetler. Kartta kesik çerçeveli çip "İstatistik: ortalama ·
+    ada eklenecek" (aile kutusunda kaç kolonda geçtiğiyle). Onay kaydına
+    yazılır; 01.2.4.4'te kısaltmasıyla onaylanıp ada eklenir. Elle
+    düzenlenen kolonda dil modelinin son bulduğu kalır. Yazar istemindeki
+    "kolon adı sonraki adımda açıklamaya göre düzeltilir" cümlesi
+    kaldırıldı (öyle bir adım yoktu).
   - **İki parçalı dönem kalıbı kartta:** kolon kartı kurulurken
     (`akis_faz01._aciklama_parcalari`, `aciklama_duzen.donem_konumlari`)
     her yan yana iki parça önce birlikte onaylı dönem kalıplarına bakılır
@@ -1001,7 +1016,7 @@ tanıtır; sayfalar sol bardan açılır.
     noktalamasız en uzun ortak dizi); bütün metni yeniden okumak gerekmez.
     Sözlüğe yazılan "N kolonun açıklaması düzeltildi" sayısı yine her
     farklı metni sayar.
-  - **En az değişiklik (istem, `ACIKLAMA_SURUMU` 5):** dil modeli yalnız
+  - **En az değişiklik (istem, `ACIKLAMA_SURUMU` 6):** dil modeli yalnız
     gereken yeri düzeltir; orijinal anlaşılır ve doğruysa cümleyi yeniden
     kurmaz, anlamı aynı kalan ifadeyi (ek, sözcük sırası, eş anlamlı)
     değiştirmez; dönem orijinalde açıksa ("son 3 günde") dokunmaz, yalnız
@@ -1075,20 +1090,18 @@ tanıtır; sayfalar sol bardan açılır.
     sütun başlığı gizli. Süzgeç ya da arama varsa aileler açık. Aşama
     notu aile ve kolon sayısını, kaç ailenin tamamen onaylandığını ve ne
     yapılacağını yazar. Sayfa aileyi bölmez; kalan hep aileyse düğme "Daha
-    Fazla Aile Göster (N aile daha)". "Görünenleri Onayla" yalnız çizilen
-    satırları onaylar.
+    Fazla Aile Göster (N aile daha)".
   - **Hepsini Onayla · N:** süzgeçlerin yanında; hazır ve onaylanmamış
     bütün kolonları (aşama sırası, cevapsız soru ve notlar dahil) onaylar.
     İki tıklamalı: birinci tıklama düğmeyi "Evet, N Kolonu Onayla" yapar
     ve altında ne onaylanacağını yazar (kaç kolonda cevapsız soru, kaçında
-    ad, dağılım ya da kontrol notu var; dil modelinin düzenlediği kolonlar
+    kontrol notu var; dil modelinin düzenlediği kolonlar
     bitince ayrıca onaylanır), «Vazgeç» geri alır; ikinci tıklama onaylar
     (`hepsiDurum`).
   - **Aile kutusunda toplu onaya girmeme sebebi:** her kolonun ilk sebebi
-    sayılır (cevapsız soru, ad notu, dağılım notu, kontrol notu,
-    açıklaması kalıptan farklı). Hiçbir kolonu toplu onaylanamayan ve
-    onaylısı olmayan ailede "Bu ailenin kolonları toplu onaylanamıyor
-    (ad notu: 8)" yazar.
+    sayılır (cevapsız soru, kontrol notu, açıklaması kalıptan farklı).
+    Hiçbir kolonu toplu onaylanamayan ve onaylısı olmayan ailede "Bu
+    ailenin kolonları toplu onaylanamıyor (cevapsız soru: 8)" yazar.
   - **Adım adım yönlendirme:** aşama notu her aşamada yalnız o aşamada
     ne yapılacağını yazar (1. aşamada önce aile ve kolon sayısı, kaç
     ailenin onaylı olduğu). Kartın altındaki gerekçe etkin aşamaya göre
@@ -1113,6 +1126,22 @@ tanıtır; sayfalar sol bardan açılır.
     Varsayılan sıra: Konu, Yön, Nitelik, Ölçü, İstatistik, Zaman,
     Karşılaştırma, Birim, Diğer (TXN_30D_CNT → TXN_CNT_30D); büyük harf,
     ayraç "_".
+  - **Ada Eklenecek Parçalar** (`_ada_eklenecekler`, `_ad_ek_satirlari`;
+    Ad Standardı'nın altında): Kolon Kartları onayındaki `ad_eksik`
+    bilgileri anlam ve türe göre (kaç kolonda, örnek kolonlar). Kısaltma
+    önerisi önce bu çalışmanın onaylı ad parçalarından, sonra parça
+    hafızasından (anlamı aynı parçanın standart yazılışı, aynı türdeki
+    önce; `_ad_ek_bilinen`); yoksa kart açılırken dil modeli önerir
+    (`_ad_ek_onerileri`, `llm.kisaltma_tek_oneri`, `durum["_ad_ek_oneri"]`).
+    Satırda kısaltma kutusu (büyük harf, harf ve rakam, en çok 12; yazılan
+    aynen kalır, geçersizse hata), «Ekle» / «Ekleme» ve Onay. Kısaltma ya
+    da karar değişince adlar yeniden kurulur (`/kolon_ad_onizle`,
+    `eklenecekler`), adı değişen ailenin onayı kalkar. «Ekle»de kısaltma
+    o kolonların adına Ad Standardı'ndaki yerine eklenir (`_ek_birimli`;
+    adda zaten varsa eklenmez): TXN_GDN_3D_CNT_PER_DAY →
+    TXN_GDN_CNT_AVG_3D_PER_DAY. Hepsi onaylanmadan ve kısaltmalar geçerli
+    olmadan adım geçmez (`_kolon_ad_karari_isle`); karar
+    `_kolon_ad_karari["eklenecekler"]`.
   - **Ad Standardı paneli:** yerler ← → ile sıralanır; adlar sunucuda
     yeniden kurulur (`/kolon_ad_onizle`), adı değişen ailenin onayı
     kalkar. Onayda hafızaya yazılır (`parca_ad_standardi`).

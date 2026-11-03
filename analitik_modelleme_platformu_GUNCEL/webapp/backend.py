@@ -3001,8 +3001,10 @@ def kolon_ad_onizle_endpoint():
         anahtar = _oturum_anahtari(_calisma_id(istek))
         durum = _durum_al(anahtar)
         sira = istek.get("sira")
+        ekler = istek.get("eklenecekler")
         return jsonify({"tamam": True, "kolon_ad": akis.kolon_ad_onizle(
-            durum, sira if isinstance(sira, list) else None)})
+            durum, sira if isinstance(sira, list) else None,
+            ekler if isinstance(ekler, list) else None)})
     except Exception as e:
         return jsonify(_hata_govdesi("kolon_ad_onizle", e)), 200
 

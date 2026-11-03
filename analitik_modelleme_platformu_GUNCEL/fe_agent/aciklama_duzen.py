@@ -341,6 +341,7 @@ def aktar(kaynak, sonuc, hedef):
         return None
     yeni = {a: sayilari_degistir(sonuc.get(a) or "", harita) for a in METIN_ALANLARI}
     yeni["parca"] = sonuc.get("parca") or ""
+    yeni["ad_eksik"] = [dict(o) for o in sonuc.get("ad_eksik") or []]
     yeni["ek"] = sayilari_degistir(sonuc.get("ek") or "", harita)
     yeni["model"] = sonuc.get("model") or ""
     yeni["kaynak"] = "aile"
@@ -433,6 +434,10 @@ def _bicimle(g, ham):
     r["parca"] = parca if parca in gecerli else ""
     if not r.get("soru"):
         r["parca"] = ""
+    # Ada eklenecek bilgi kartta zaten varsa atilir.
+    kart_metni = " ".join(str(v or "") for v in (g.get("kart") or {}).values()).lower()
+    r["ad_eksik"] = [o for o in llm_mod.ad_eksik_temizle(r.get("ad_eksik"))
+                     if o["anlam"].lower() not in kart_metni]
     r["kaynak"] = "model"
     return r
 
@@ -534,7 +539,7 @@ def _isle(girdiler, ork, durdu=None):
 def _hata_sonucu(hata):
     return {"aciklama": "", "karar": "", "ek": "", "soru": "", "parca": "",
             "ad_notu": "", "dagilim_notu": "", "kontrol": [], "model": "",
-            "kaynak": "hata",
+            "ad_eksik": [], "kaynak": "hata",
             "hata": hata or "Dil modeli bu kolon için açıklama döndürmedi."}
 
 
@@ -784,7 +789,10 @@ def girdileri_ver(klasor, girdiler, oncelikli=(), devam=True, hatalari_yenile=Fa
             if d.elle.get(kolon) and _norm(d.notlar.get(kolon)):
                 r = d.sonuclar.get(kolon)
                 if not (r and r.get("imza") == g["imza"] and r.get("kaynak") == "elle"):
+                    # Ada eklenecek bilgi dil modelinin son sonucundan kalir.
+                    eski_eksik = (d.sonuclar.get(kolon) or {}).get("ad_eksik") or []
                     d.sonuclar[kolon] = elle_sonuc(g, d.notlar[kolon])
+                    d.sonuclar[kolon]["ad_eksik"] = list(eski_eksik)
                     d.dokun(kolon)
                 d.bekleyen.pop(kolon, None)
                 continue
