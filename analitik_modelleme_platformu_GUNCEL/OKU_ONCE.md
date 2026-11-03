@@ -413,22 +413,20 @@ tanıtır; sayfalar sol bardan açılır.
     artık olmayan tablo seçilmez. Sözlüksüz onay eşleşmeyi değiştirmez.
     Başlangıç B'nin kaynak sözlükleri buna girmez.
 - **Tablonun önceki seçimleri** (`fe_agent/veri_gecmisi.py`,
-  `PROJE_HAFIZASI/VERI_SETI_GECMISI.json`): her tablo için en son
-  onaylanan Baz Sözlük, kolon rolleri ve dönem kararı durur (çalışma
-  bilgisi ve sayım yok; Arşiv'den silme etkilemez). 01.2.1, 01.2.2 ve
-  01.2.4.1 onaylanınca o tablonun kaydı yenisiyle değişir.
-  - **Dönem kararı** (`donem`: `kayit` onaylanan ve çıkarılan satırlar,
-    anlam, tür, hariç ikililer, değer anlamları, ayrılan değerler, elle
-    eklenenler; `ayrik` Ayır ile bölünen gruplar; `zaman`): aynı tablo
-    yeni çalışmada seçilince 01.2.4.1 bu kararla açılır (çıkarılanlar
-    çıkarılmış, elle eklenenler ve ayrılan gruplar yerinde); kartta "Bu
-    tablo için son onaylanan dönem kararları getirildi (tarih);
-    değiştirebilirsiniz." yazar. Bu çalışmada karar verildiyse (geri
-    dönüş) o karar geçerlidir. B'de (birleştirme çıktısı) tutulmaz.
-    Kart yoklandığı için tablo kaydı 30 sn bellekte tutulur. Dosya yoksa ilk açılışta eski
+  `PROJE_HAFIZASI/VERI_SETI_GECMISI.json`): her tablo için yalnız en son
+  onaylanan Baz Sözlük ve kolon rolleri durur (çalışma bilgisi ve sayım
+  yok; Arşiv'den silme etkilemez). 01.2.1 ve 01.2.2 onaylanınca o
+  tablonun kaydı yenisiyle değişir. Her dosyanın işi ayrı: dönem
+  kalıpları, ad parçaları ve ad standardı `KISALTMA_HAFIZASI.json`'da
+  (kurum geneli bilgi); 01.2.4 kontrol adımlarının kararları
+  `KONTROL_GECMISI`'nde (veri seti ve sözlük başına, "Önceki Onaylı
+  Kontrol Uygulansın"). Bu dosyada dönem kararı tutulmaz; eski dosyadaki
+  `donem` alanı ilk okumada düşer (`veri_gecmisi.ALANLAR` = sözlükler,
+  roller). 01.2.4.1 yeni çalışmada kalıpları ve anlamlarını hafızadan
+  alır; bu çalışmada verilmiş karar (geri dönüş ya da önceki onaylı
+  kontrol) varsa o geçerlidir. Dosya yoksa ilk açılışta eski
   çalışmaların `ozet.json` dosyalarından bir kez kurulur (segment özette
-  olmadığı için boş gelir). Dosyada tablo başına yalnız sözlükler,
-  roller ve dönem durur (`veri_gecmisi.ALANLAR`); başka alan yazılmaz.
+  olmadığı için boş gelir).
 - **01.2.2 Kolon Rolleri önceki seçimle:** adım ilk kez açıldığında
   (henüz hedef ve kimlik seçilmemişken) model tipi, hedef, kimlik, dönem
   ve segment alanları bu tablonun en son onaylanan rolleriyle dolu gelir;
