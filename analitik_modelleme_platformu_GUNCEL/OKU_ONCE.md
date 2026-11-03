@@ -1135,6 +1135,23 @@ tanıtır; sayfalar sol bardan açılır.
     Aileler açılır; onay düğmesi evrede kapalı ("Önce yukarıdaki Toplu
     Sorular: N soru cevap bekliyor"). İptal'de cevapsız soru kalmadıysa
     evre biter. Salt okunur kartta evre yok.
+  - **Sorunsuz ve Ayrılanlar:** aşama çubuğu iki grupludur. "Sorunsuz":
+    Aileler, Biçim Değişiklikleri, Değişenler (sırayla açılır).
+    "Ayrılanlar": Cevapsız Soru (hazır ve sorusu cevapsız kolonlar) ve
+    Kontrol Notu (hazır, sorusu yok, kontrol notu var); her zaman
+    bakılabilir, düz liste (aile kutusu yok), sekmesi amber kenarlı.
+    `asamaOf`: soru 4, kontrol notu 5, sonra aile 1, biçim 2, kalan 3.
+    Satırı olmayan aşama görünmez; sekme numarası görünen sıradır
+    (`gorunurAsamalar`, `asamaNo`). Aile kutusu yalnız Aileler aşamasındaki
+    üyeleri sayar; ayrılan üyeler için "Bu ailenin N kolonu ayrıldı,
+    burada yok: 1 tanesi «Cevapsız Soru» listesinde (90D) ..." yazar.
+    Sorunsuz aşamalarda düğme "Sorunsuzların Hepsini Onayla · N" (yalnız
+    1 ile 3'ün onaysız hazır kolonları; uyarıda Ayrılanlar'daki kolonların
+    onaylanmadığı ve nerede oldukları yazar); Ayrılanlar listesinde "Bu
+    Listedekilerin Hepsini Onayla · N" (yalnız o liste, iki tıklama).
+    Sorunsuzlar bitince etkin aşama Ayrılanlar'a geçer; alttaki gerekçe
+    "Aşama 3 / 4 (Cevapsız Soru): N kolonda soru cevapsız". Toplu soruya
+    cevap verilince kolon yeniden yazılır, sorusu kalkarsa sorunsuza geçer.
   - **Aşamalar (zorunlu sıra):** kartın üstünde üç aşama, sayılarıyla
     ("1 · Aileler · 120 / 600"): 1 Aileler (adı yalnız sayıyla ayrılan
     kolonlar, aile başlıklarıyla), 2 Biçim Değişiklikleri (aile dışı;
@@ -1178,11 +1195,9 @@ tanıtır; sayfalar sol bardan açılır.
     notu aile ve kolon sayısını, kaç ailenin tamamen onaylandığını ve ne
     yapılacağını yazar. Sayfa aileyi bölmez; kalan hep aileyse düğme "Daha
     Fazla Aile Göster (N aile daha)".
-  - **Hepsini Onayla · N:** süzgeçlerin yanında; hazır ve onaylanmamış
-    kolonları (aşama sırası dahil) onaylar. Cevapsız sorusu ya da kontrol
-    notu olan kolonlar AYRILIR (`ayrilirMi`): N'ye girmez, onaylanmaz,
-    listede kalır; aşamalar onlarla sürer ve aile kutusunda tek tek
-    bakılacak kolon olarak görünür. İki tıklamalı: birinci tıklama
+  - **Hepsini Onayla · N** (Sorunsuzların / Bu Listedekilerin; bkz.
+    Sorunsuz ve Ayrılanlar): cevapsız sorusu ya da kontrol notu olan
+    kolonlar sorunsuz onaya girmez, kendi listelerinde kalır. İki tıklamalı: birinci tıklama
     düğmeyi "Evet, N Kolonu Onayla" yapar ve altında yazar ("Ayrılan M
     kolon onaylanmaz, listede kalır: X kolonda cevapsız soru, Y kolonda
     kontrol notu; onlara tek tek bakın"; ikisi de olan soru sayılır; dil

@@ -3640,6 +3640,11 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-acik-asama.bitti:not(.secili) { border-color: var(--yesil); color: var(--yesil); }
 .dg-acik-asama:disabled { opacity: .5; cursor: not-allowed; }
 .dg-acik-asama-not { margin-bottom: var(--b-2); }
+/* Sorunsuz ve Ayrılanlar grupları; ayrılan liste sekmesi amber. */
+.dg-acik-asamalar { align-items: center; }
+.dg-acik-asama-grup { color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); }
+.dg-acik-asama-grup:not(:first-child) { margin-left: var(--b-3); }
+.dg-acik-asama.ayri:not(.secili):not(.bitti) { border-color: var(--amber); }
 /* Aile kutusu (Kolon Kartları, 1. aşama). */
 .dg-kart .dg-acik-tablo tr.dg-acik-aile-bas > td { background: transparent; padding: 6px 0; text-align: left; border-bottom: 0; }
 .dg-acik-aile-kutu { border: 1px solid var(--kenar-guclu); border-left: 4px solid var(--amber);
