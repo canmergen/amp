@@ -3988,13 +3988,22 @@ def _aciklama_girdileri(durum):
         an = aile_notlari.get(aile) or {}
         aile_notu = ({"kolon": an.get("kolon"), "not": an.get("not")}
                      if an.get("not") and an.get("kolon") != a else None)
+        kart = _kolon_karti(kart_p)
+        # Donem sayisi denetimi: kartta zaman bilgisi varsa (donem anlami
+        # sayilari doldurulmus olarak) yalniz kartta da gecen sayilar
+        # aranir. Ör. 3D_X2 "son 3 gun ile son 3 ile 6 gun arasi": 2 kartta
+        # yok, aciklamada da olmasi gerekmez.
+        donem_s = aciklama_mod.donem_sayilari(a, sadece_desen)
+        if str(kart.get("zaman") or "").strip():
+            kart_s = {int(x) for v in kart.values() for x in re.findall(r"(?<!\d)\d+(?!\d)", str(v or ""))}
+            donem_s = [x for x in donem_s if x in kart_s]
         g = {"kolon": a, "orijinal": str(tanimlar.get(a) or "").strip(),
              "not": notlar.get(a, ""), "aile_notu": aile_notu,
-             "parcalar": parcalar, "parcalar_ozet": ozet, "kart": _kolon_karti(kart_p),
+             "parcalar": parcalar, "parcalar_ozet": ozet, "kart": kart,
              "kardesler": [(k, str(tanimlar.get(k) or "").strip()) for k in kardes],
              "dagilim": _dagilim_satiri(ozetler.get(a)), "rol": roller.get(a, ""),
              "aile": aile, "aile_boyu": len(aileler.get(aile, [])),
-             "donem_sayilari": aciklama_mod.donem_sayilari(a, sadece_desen)}
+             "donem_sayilari": donem_s}
         g["imza"] = aciklama_mod.imza(
             ACIKLAMA_SURUMU, a, g["orijinal"], g["not"], g["aile_notu"], g["parcalar"],
             g["kardesler"], g["dagilim"], g["rol"])
@@ -4036,9 +4045,14 @@ def _aciklama_satiri(d, g):
         for a in ("aciklama", "karar", "ek", "soru", "parca", "ad_notu", "dagilim_notu", "model",
                   "kaynak", "aile_kaynagi", "hata", "denetim"):
             satir[a] = r.get(a) or ""
-        satir["kontrol"] = list(r.get("kontrol") or [])
+        satir["kontrol"] = aciklama_mod.guncel_kontrol(g, r)
         satir["ad_eksik"] = [dict(o) for o in r.get("ad_eksik") or []]
         _degisim_yaz(satir)
+    # Kolonun sorusuna verilen cevap (kartta soru ve cevabiyla).
+    sc = aciklama_mod.soru_cevabi(d, kolon)
+    if sc:
+        satir["soru_cevabi"] = sc
+    satir["elle"] = bool(d.elle.get(kolon))
     satir["onayli"] = _aciklama_onayli(d, g, durum_)
     return satir
 
@@ -4216,7 +4230,7 @@ def aciklama_alani(durum, son=0):
                 sayac["soru"] += 1
             if r.get("ad_notu") or r.get("dagilim_notu"):
                 sayac["ad"] += 1
-            if r.get("kontrol"):
+            if aciklama_mod.guncel_kontrol(g, r):
                 sayac["kontrol"] += 1
             if r.get("ek") and not aciklama_mod.ek_acikta(r["ek"], r.get("aciklama")):
                 sayac["ek"] += 1
@@ -4269,6 +4283,25 @@ def aciklama_not_kaydet(durum, kolon, metin, tam=False):
         an = d.aile_notlari.get(aile) or {}
     if an.get("kolon") == kolon:
         hata = aciklama_mod.aile_notu_yaz(klasor, aile, kolon, metin) or hata
+    _aciklama_ver(durum, oncelikli=[kolon], devam=False)
+    _kontrol_aciklama_yaz(durum)
+    return {"hata": hata or ""}
+
+
+def aciklama_soru_cevapla(durum, kolon, cevap):
+    """KOLONUN SORUSUNA CEVAP: cevap soruyla birlikte dil modeline not
+    olarak gider, kolon beklemeden yeniden yazilir. Bos cevap kaldirir."""
+    if not _aciklama_canli(durum):
+        return {"hata": _kart_kapali(durum)}
+    klasor = _aciklama_klasoru(durum)
+    kolon = str(kolon or "").strip()
+    d = aciklama_mod.depo(klasor)
+    with aciklama_mod._KILIT:
+        r = d.sonuclar.get(kolon) or {}
+        soru = r.get("soru") or (d.soru_cevaplari.get(kolon) or {}).get("soru") or ""
+    if not soru and str(cevap or "").strip():
+        return {"hata": "%s kolonunda cevaplanacak soru yok." % kolon}
+    hata = aciklama_mod.soru_cevabi_yaz(klasor, kolon, soru, cevap)
     _aciklama_ver(durum, oncelikli=[kolon], devam=False)
     _kontrol_aciklama_yaz(durum)
     return {"hata": hata or ""}

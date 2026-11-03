@@ -3122,6 +3122,8 @@ def aciklama_islem_endpoint():
                                              tam=bool(istek.get("tam")))
         elif islem == "parca":
             sonuc = akis.aciklama_parca_cevapla(durum, istek.get("parca"), istek.get("cevap"))
+        elif islem == "soru":
+            sonuc = akis.aciklama_soru_cevapla(durum, istek.get("kolon"), istek.get("cevap"))
         elif islem == "aile":
             sonuc = akis.aciklama_aileye_uygula(durum, istek.get("kolon"),
                                                 istek.get("uygula", True) is not False)

@@ -26,6 +26,9 @@ AILE AKTARIMI (dil modeli cagrisi yok)
 KAYIT: PROJE_HAFIZASI/<calisma>/ACIKLAMA_DUZENLEME.json
   notlar          {kolon: kullanicinin notu}
   parca_notlari   {PARCA: kullanicinin parca hakkindaki cevabi}
+  soru_cevaplari  {kolon: {"soru", "cevap"}}: kolonun sorusuna kullanicinin
+                  cevabi (notlar'a dil modeli icin soru ve cevap olarak
+                  yazilir; burada kartta gostermek icin)
   aile_notlari    {aile: {"kolon", "not"}}
   sonuclar        {kolon: duzenleme sonucu + girdinin imzasi}
   onay            onaylanan son hal (AMP_SOZLUK ve onerilen sozluk buradan)
@@ -63,7 +66,7 @@ _ONCELIK_HAVUZ = futures.ThreadPoolExecutor(max_workers=2)
 
 _SAYI = re.compile(r"(?<!\d)\d+(?!\d)")
 _KAYIT_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "onay",
-                   "yazilan", "kabul", "elle")
+                   "yazilan", "kabul", "elle", "soru_cevaplari")
 METIN_ALANLARI = ("aciklama", "karar", "soru", "ad_notu", "dagilim_notu", "denetim")
 
 
@@ -84,6 +87,7 @@ class _Depo(object):
         self.klasor = klasor
         self.notlar = {}
         self.parca_notlari = {}
+        self.soru_cevaplari = {}
         self.aile_notlari = {}
         self.sonuclar = {}
         self.onay = {}
@@ -360,6 +364,38 @@ def _sayilar(metin):
     return [int(x) for x in _SAYI.findall(str(metin or ""))]
 
 
+# SORU CEVABI: kolonun sorusuna verilen cevap dil modeline notla gider:
+# "Sorduğun: ... Cevabım: ...". Sayi denetimi yalniz cevap kismina bakar
+# (sorudaki sayilar aciklamada olmak zorunda degil).
+CEVAP_IMI = "Cevabım:"
+
+
+def soru_notu(soru, cevap):
+    return "Sorduğun: %s %s %s" % (_norm(soru), CEVAP_IMI, _norm(cevap))
+
+
+def _not_sayi_kismi(notu):
+    n = _norm(notu)
+    return n.split(CEVAP_IMI, 1)[1] if n.startswith("Sorduğun:") and CEVAP_IMI in n else n
+
+
+DONEM_KONTROL_BASI = "Adın dönem sayısı açıklamada yok"
+
+
+def donem_kontrolu(girdi, ack):
+    """Adin donem sayilarindan aciklamada olmayanlar (kartta kontrol notu)."""
+    var = set(_sayilar(ack))
+    eksik = [x for x in dict.fromkeys(girdi.get("donem_sayilari") or []) if x not in var]
+    return ["%s: %s." % (DONEM_KONTROL_BASI, ", ".join(map(str, eksik)))] if eksik else []
+
+
+def guncel_kontrol(girdi, sonuc):
+    """Sonucun kontrol notlari; donem sayisi notu guncel girdiyle yeniden
+    hesaplanir (kural degisince eski sonuclar yeniden yazdirilmadan)."""
+    k = [x for x in (sonuc or {}).get("kontrol") or [] if not str(x).startswith(DONEM_KONTROL_BASI)]
+    return k + donem_kontrolu(girdi or {}, (sonuc or {}).get("aciklama") or "")
+
+
 def denetle(girdi, sonuc):
     """Doner: (kontrol, yeniden). yeniden: dil modeline bir kez daha
     sorulacak sorunlar; kontrol: kartta yazacak bilgi notlari."""
@@ -370,7 +406,7 @@ def denetle(girdi, sonuc):
     var = set(_sayilar(ack))
     notu = _norm(girdi.get("not"))
     if notu:
-        eksik = [x for x in dict.fromkeys(_sayilar(notu)) if x not in var]
+        eksik = [x for x in dict.fromkeys(_sayilar(_not_sayi_kismi(notu))) if x not in var]
         if eksik:
             yeniden.append("kullanıcı notundaki sayı açıklamada yok: %s"
                            % ", ".join(map(str, eksik)))
@@ -378,9 +414,7 @@ def denetle(girdi, sonuc):
         eksik = [x for x in dict.fromkeys(_sayilar(girdi.get("orijinal"))) if x not in var]
         if eksik:
             kontrol.append("Orijinaldeki sayı açıklamada yok: %s." % ", ".join(map(str, eksik)))
-    eksik = [x for x in dict.fromkeys(girdi.get("donem_sayilari") or []) if x not in var]
-    if eksik:
-        kontrol.append("Adın dönem sayısı açıklamada yok: %s." % ", ".join(map(str, eksik)))
+    kontrol.extend(donem_kontrolu(girdi, ack))
     # KOLON KARTI kodla kurulur (onayli parcalardan); karttaki sayilar
     # aciklamada gecmeli.
     kart = girdi.get("kart") or {}
@@ -894,6 +928,34 @@ def not_yaz(klasor, kolon, metin):
             d.notlar.pop(str(kolon), None)
         d.dokun(str(kolon))
     return kaydet(d, zorla=True)
+
+
+def soru_cevabi_yaz(klasor, kolon, soru, cevap):
+    """Kolonun sorusuna kullanicinin cevabi: dil modeline not olarak gider
+    ve kolon yeniden yazilir (elle aciklama kalkar). Bos cevap kaldirir.
+    Doner: hata ya da None."""
+    d = depo(klasor)
+    kolon, cevap = str(kolon), _norm(cevap)
+    with _KILIT:
+        if cevap:
+            d.notlar[kolon] = soru_notu(soru, cevap)
+            d.soru_cevaplari[kolon] = {"soru": _norm(soru), "cevap": cevap}
+        else:
+            if (d.soru_cevaplari.get(kolon) or {}).get("cevap"):
+                d.notlar.pop(kolon, None)
+            d.soru_cevaplari.pop(kolon, None)
+        d.elle.pop(kolon, None)
+        d.dokun(kolon)
+    return kaydet(d, zorla=True)
+
+
+def soru_cevabi(d, kolon):
+    """Kartta gosterilecek cevap: not hala o cevapsa {"soru", "cevap"}."""
+    x = d.soru_cevaplari.get(kolon) or {}
+    if x.get("cevap") and not d.elle.get(kolon) \
+            and _norm(d.notlar.get(kolon)) == soru_notu(x.get("soru"), x.get("cevap")):
+        return dict(x)
+    return None
 
 
 def parca_notu_yaz(klasor, parca, cevap):

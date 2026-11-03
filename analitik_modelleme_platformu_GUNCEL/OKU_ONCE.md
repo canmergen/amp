@@ -1135,23 +1135,39 @@ tanıtır; sayfalar sol bardan açılır.
     Aileler açılır; onay düğmesi evrede kapalı ("Önce yukarıdaki Toplu
     Sorular: N soru cevap bekliyor"). İptal'de cevapsız soru kalmadıysa
     evre biter. Salt okunur kartta evre yok.
-  - **Sorunsuz ve Ayrılanlar:** aşama çubuğu iki grupludur. "Sorunsuz":
-    Aileler, Biçim Değişiklikleri, Değişenler (sırayla açılır).
-    "Ayrılanlar": Cevapsız Soru (hazır ve sorusu cevapsız kolonlar) ve
-    Kontrol Notu (hazır, sorusu yok, kontrol notu var); her zaman
-    bakılabilir, düz liste (aile kutusu yok), sekmesi amber kenarlı.
-    `asamaOf`: soru 4, kontrol notu 5, sonra aile 1, biçim 2, kalan 3.
-    Satırı olmayan aşama görünmez; sekme numarası görünen sıradır
-    (`gorunurAsamalar`, `asamaNo`). Aile kutusu yalnız Aileler aşamasındaki
-    üyeleri sayar; ayrılan üyeler için "Bu ailenin N kolonu ayrıldı,
-    burada yok: 1 tanesi «Cevapsız Soru» listesinde (90D) ..." yazar.
-    Sorunsuz aşamalarda düğme "Sorunsuzların Hepsini Onayla · N" (yalnız
-    1 ile 3'ün onaysız hazır kolonları; uyarıda Ayrılanlar'daki kolonların
-    onaylanmadığı ve nerede oldukları yazar); Ayrılanlar listesinde "Bu
-    Listedekilerin Hepsini Onayla · N" (yalnız o liste, iki tıklama).
-    Sorunsuzlar bitince etkin aşama Ayrılanlar'a geçer; alttaki gerekçe
-    "Aşama 3 / 4 (Cevapsız Soru): N kolonda soru cevapsız". Toplu soruya
-    cevap verilince kolon yeniden yazılır, sorusu kalkarsa sorunsuza geçer.
+  - **Sıra: önce sorunlular, sonra sorunsuzlar.** Aşama çubuğu iki
+    grupludur ve bütün aşamalar sırayla açılır (bir aşama, öncekinin
+    bütün kolonları onaylanınca ya da listeden çıkınca): "Önce
+    sorunlular": Cevapsız Soru (hazır ve sorusu cevapsız; cevabı
+    işlenirken de burada), Kontrol Notu (hazır, sorusu yok, kontrol notu
+    var); "Sonra sorunsuzlar": Aileler, Biçim Değişiklikleri, Değişenler.
+    Kodlar `asamaOf`: 4 soru, 5 kontrol notu, 1 aile, 2 biçim, 3 kalan;
+    `ASAMALAR` dizisi görünüm sırasıdır (`asamaBilgi`, `asamaSirasi`).
+    Satırı olmayan aşama görünmez; numara görünen sıradır. Sorunlu
+    listeler düz listedir (aile kutusu yok), sekmesi amber kenarlı. Aile
+    kutusu yalnız Aileler aşamasındaki üyeleri sayar; ayrılan üyeler için
+    hangi listede oldukları yazar. Düğme sorunlu listede "Bu Listedekilerin
+    Hepsini Onayla · N" (yalnız o liste), sorunsuz aşamalarda
+    "Sorunsuzların Hepsini Onayla · N"; ikisi de iki tıklama.
+  - **Satırda soruya cevap** (`aciklama_soru_cevapla`, `/aciklama_islem`
+    islem "soru"; `aciklama_duzen.soru_cevabi_yaz`): sorulu satırda
+    sorunun altında "Cevabınız" kutusu ve «Cevabı Uygula» (Enter da).
+    Cevap soruyla birlikte nota yazılır ("Sorduğun: ... Cevabım: ...";
+    `soru_notu`), elle açıklama kalkar ve kolon beklemeden yeniden yazılır
+    (yazar istemi bu biçimi önceki soru ve cevap olarak okur, soruyu
+    kopyalamaz, yeniden sormaz). Soru kalkarsa kolon kendi listesine geçer
+    ve satırda "Sorusuna cevabınız: ..." yazar; yine soru gelirse "Önceki
+    cevabınız" ile kutu yeniden çıkar. Kart `soru_cevaplari`'ndan
+    gösterir (`soru_cevabi`; not hâlâ o cevapsa). Notun sayı denetimi
+    yalnız cevap kısmına bakar. "Sizin Düzenlemeniz" yalnız elle notu
+    gösterir (`elle` alanı; `ackElleNot`). Yazılan ama uygulanmayan cevap
+    yoklamada kaybolmaz (`cevapTaslak`).
+  - **Dönem sayısı kontrol notu:** kartta zaman bilgisi varsa
+    (`_aciklama_girdileri`) adın dönem sayılarından yalnız kartta da
+    geçenler aranır: 3D_X2 "son 3 gün ile son 3 ile 6 gün arası" için 2
+    aranmaz. Not sonuçta saklı kalmaz, girdiyle yeniden hesaplanır
+    (`aciklama_duzen.guncel_kontrol`; satır ve sayaçlar), eski sonuçlar
+    yeniden yazdırılmadan düzelir.
   - **Aşamalar (zorunlu sıra):** kartın üstünde üç aşama, sayılarıyla
     ("1 · Aileler · 120 / 600"): 1 Aileler (adı yalnız sayıyla ayrılan
     kolonlar, aile başlıklarıyla), 2 Biçim Değişiklikleri (aile dışı;

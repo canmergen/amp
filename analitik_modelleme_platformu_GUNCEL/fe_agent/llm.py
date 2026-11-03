@@ -2360,7 +2360,10 @@ GİRDİ: KOLONLAR bloğunda her kolon için şu satırlar (yalnız dolu olanlar)
   AD           : kolonun adı
   ORİJİNAL     : sözlükteki açıklama (boş olabilir)
   KULLANICI    : kullanıcının bu kolon için yazdığı not ya da düzeltme.
-                 KESİNDİR.
+                 KESİNDİR. "Sorduğun: ... Cevabım: ..." biçimindeyse
+                 senin önceki sorun ve kullanıcının cevabıdır: cevabı
+                 kesin bilgi olarak kullan, soruyu açıklamaya kopyalama,
+                 aynı soruyu yeniden sorma.
   AİLE NOTU    : kullanıcının aynı kalıptaki kardeş kolon için yazdığı
                  düzeltme. KESİNDİR; bu kolonun kendi parçalarına
                  (dönemine) uyarlanarak uygulanır.
