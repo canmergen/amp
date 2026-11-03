@@ -973,11 +973,15 @@ tanıtır; sayfalar sol bardan açılır.
     onaylı değilse kartta o parça yok). Yazar istemi metni kopyalamamasını,
     kolona uyan anlamı kendi cümlesiyle yazmasını söyler. Kutunun altında
     yol gösteren not yazar.
-  - **Sayı katı olan dönem (X2):** 7D_X2 gibi ikili için 01.2.4.1'de
-    «+ Dönem Kalıbı Ekle» ile `<N>D_X2` kalıbı ("son N gün ile ondan
-    önceki N gün") eklenip onaylanır; değer anlamı "son 7 gün ile ondan
-    önceki 7 gün" olur, ikilinin 7D'si `<N>D` ailesinden, X2 `X<N>`'den
-    düşer (`donem.kaliplar` kapsanan).
+  - **Sıra numaralı yer tutucu** (`donem._YT_ADAY`, `_sirali_sayilar`,
+    `deger_anlami`, `yer_tutucu_hatasi`; app.js `donemAnlamIc`,
+    `donemAnlamGoster`, `donemDegerAnlami`, `donemYerTutucuHatasi`):
+    anlamdaki her "[sayı]" kalıbın sayılarını sırayla alır; aynı sayıyı
+    tekrar yazmak için "[sayı 1]", "[sayı 2]" yazılır (içeride `<N#1>`).
+    Örnek: `<N>D_X<N>` "son [sayı 1] gün ile ondan önceki [sayı 1] gün" +
+    14D_X2 → "son 14 gün ile ondan önceki 14 gün". Kalıpta olmayan sıra
+    ("[sayı 3]") hata. Kalıpta birden çok sayı varsa örneğin altında bu
+    not yazar; dönem istemi de `<N#k>`yi anlatır.
   - **Üç dil modeli çağrısı** (`aciklama_duzen._isle`, `_denetim`): her
     grup (8 kolon) için 1) yazar taslağı yazar (`llm.aciklama_duzenle`,
     rol `aciklama_duzen`); 2) denetçi taslağı kaynaklara göre denetler

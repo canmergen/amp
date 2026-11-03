@@ -204,9 +204,13 @@ def _araligin_basi(t, i):
 
 # YER TUTUCU: anlamda kalibin sayilarini gosteren isaret. <N> icin "N"
 # ya da "<N>", <NN> icin "NN" ya da "<NN>" yazilir; baska bicim (ornegin
-# "Nn", "n") ya da kalipta olmayan yer tutucu hata sayilir.
-_YT_ADAY = re.compile(r"(?<![0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]{1,2}\s*>|[Nn]{1,2})"
+# "Nn", "n") ya da kalipta olmayan yer tutucu hata sayilir. SIRA NUMARALI
+# YER TUTUCU <N#k>: kalibin k'inci sayisi (ekranda "[sayı k]"); ayni sayi
+# anlamda birden cok kez yazilabilir (<N>D_X<N>: "son <N#1> gün ile ondan
+# önceki <N#1> gün").
+_YT_ADAY = re.compile(r"(?<![0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]\s*#\s*\d+\s*>|<\s*[Nn]{1,2}\s*>|[Nn]{1,2})"
                       r"(?![0-9A-Za-zÇĞİÖŞÜçğıöşü])")
+_YT_SIRA = re.compile(r"^<N#(\d+)>$")
 
 
 def yer_tutucu_hatasi(kalip, anlam):
@@ -217,13 +221,21 @@ def yer_tutucu_hatasi(kalip, anlam):
         izinli.update({"NN", "<NN>"})
     if re.search(r"<N\d?>", k):
         izinli.update({"N", "<N>"})
+    adet = 1 if aile_mi(k) else len(_YT_KALIP.findall(k))
     kotu = []
     for m in _YT_ADAY.finditer(str(anlam or "")):
-        y = re.sub(r"\s+", "", m.group(1))
+        y = re.sub(r"\s+", "", m.group(1)).upper() if "#" in m.group(1) else re.sub(r"\s+", "", m.group(1))
+        sira = _YT_SIRA.match(y)
+        if sira and 1 <= int(sira.group(1)) <= adet:
+            continue
+        if sira:
+            y = "[sayı %s]" % sira.group(1)
         if y not in izinli and y not in kotu:
             kotu.append(y)
     if not kotu:
         return ""
+    if adet > 1:
+        izinli.update("[sayı %d]" % i for i in range(1, adet + 1))
     if not izinli:
         return ("Anlamda yer tutucu var (%s) ama kalıpta sayı yer tutucusu yok; "
                 "yerine değeri yazın." % ", ".join(kotu))
@@ -316,10 +328,14 @@ def deger_anlami(kalip, anlam, deger):
     sayilar = _sayi_eslesmesi(k, deger)
     if sayilar is None:
         return anlam
+    sirali = _sirali_sayilar(k, deger) or []
     sayac = Counter()
 
     def yer(mo):
         y = re.sub(r"[\s<>]", "", mo.group(1)).upper()
+        if "#" in y:
+            i = int(y.split("#")[1]) - 1
+            return sirali[i] if 0 <= i < len(sirali) else mo.group(0)
         liste = sayilar.get(y)
         if not liste:
             return mo.group(0)
@@ -327,6 +343,21 @@ def deger_anlami(kalip, anlam, deger):
         sayac[y] += 1
         return liste[min(i, len(liste) - 1)]
     return _YT_ADAY.sub(yer, anlam)
+
+
+def _sirali_sayilar(kalip, deger):
+    """Degerin kalibin yer tutucularina dusen sayilari kalipta gectikleri
+    sirayla (tur ayrimi yok); uymuyorsa None."""
+    k = _norm(kalip)
+    d = _norm(deger)
+    if aile_mi(k):
+        r = kalip_deseni(k)
+        return [re.search(r"\d+", d).group(0)] if r is not None and r.match(d) else None
+    try:
+        m = re.match("^" + _desen_kur(k, yakala=True) + "$", d)
+    except re.error:
+        return None
+    return list(m.groups()) if m else None
 
 
 def _sayi_eslesmesi(kalip, deger):
