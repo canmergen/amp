@@ -873,17 +873,19 @@ tanıtır; sayfalar sol bardan açılır.
     üstünde yalnız durum (Düzenlendi, Kontrol edin, Anlamı siz yazın,
     yorumluyor).
   - **Hafıza dosyasının biçimi** (`kisaltma._diske`, `_diskten`,
-    `_dosya_metni`, `DOSYA_SURUM` 2): elle okunup düzeltilebilsin diye her
-    dönem kalıbı ve her ad parçası tek kayıtta. Üstte `aciklama` (alanları
-    anlatır) ve `surum`; sonra `ad_standardi` (yer sırası), `donem_kaliplari`
-    {kalıp: {anlam, tur, yeni_adda, deger_anlamlari, haric_ikililer,
-    gruptan_ayrilan {değer: {anlam, donem_degil}}, ayri_yazilis}},
-    `ad_parcalari` {PARÇA: {anlam, tur, standart}} (standart yazılmazsa
-    parçanın kendisi), `ayni_parcalar` ve `farkli_parcalar` ("ADT, CNT"
-    biçiminde). Boş alan yazılmaz; metin listeleri ve kısa kayıtlar tek
-    satırda. Kod içeride eski biçimle çalışır: okurken `_diskten`, yazarken
-    `_diske` çevirir (bütün yazmalar `_dosya_yaz`'dan). Eski biçimdeki dosya
-    okunur, ilk yazmada yeni biçime geçer; tanınmayan anahtar korunur.
+    `_dosya_metni`): elle okunup düzeltilebilsin diye her dönem kalıbı ve
+    her ad parçası tek kayıtta: `ad_standardi` (yer sırası),
+    `donem_kaliplari` {kalıp: {anlam, tur, yeni_adda, deger_anlamlari,
+    haric_ikililer, gruptan_ayrilan {değer: {anlam, donem_degil}},
+    ayri_yazilis}}, `ad_parcalari` {PARÇA: {anlam, tur, standart}}
+    (standart yazılmazsa parçanın kendisi), `ayni_parcalar` ve
+    `farkli_parcalar` (her metin bir çift: "ADT, CNT" ADT ile CNT aynı;
+    çiftler birbirinden bağımsız). Açıklama ve sürüm alanı yok; yeni
+    biçim bu anahtarlardan biri varsa tanınır. Boş alan yazılmaz; metin
+    listeleri ve kısa kayıtlar tek satırda. Kod içeride eski biçimle
+    çalışır: okurken `_diskten`, yazarken `_diske` çevirir (bütün
+    yazmalar `_dosya_yaz`'dan). Eski biçimdeki dosya okunur, ilk yazmada
+    yeni biçime geçer; tanınmayan anahtar korunur.
   - **Hafıza** (iç biçim: `parcalar` {PARÇA: {anlam, tür,
     standart}} ve `parca_esler` {"A|B": "ayni"/"farkli"}; eski
     `kisaltmalar`, `degisimler`, `turler` ve rakamsız `donem` kayıtları

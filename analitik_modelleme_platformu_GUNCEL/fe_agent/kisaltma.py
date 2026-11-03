@@ -727,8 +727,7 @@ def _govde_oku():
 # DOSYA BICIMI (surum 2): elle okunup duzeltilebilsin diye her donem kalibi
 # ve her ad parcasi TEK KAYITTA, butun bilgisiyle:
 #
-#   {"aciklama": "...", "surum": 2,
-#    "ad_standardi": ["konu", "yon", ...],
+#   {"ad_standardi": ["konu", "yon", ...],
 #    "donem_kaliplari": {
 #        "<N>D": {"anlam": "<N> gün boyunca", "tur": "pencere",
 #                 "yeni_adda": "L<N>D",
@@ -741,18 +740,12 @@ def _govde_oku():
 #    "ayni_parcalar": ["ADT, CNT", ...],
 #    "farkli_parcalar": ["CONC, HHI", ...]}
 #
-# Bos alanlar yazilmaz. Kod icinde eski (ic) bicim kullanilir: okurken
+# Bos alanlar yazilmaz. ayni_parcalar / farkli_parcalar: her metin bir
+# cift ("ADT, CNT": ADT ile CNT ayni; listedeki ciftler birbirinden
+# bagimsiz). Kod icinde eski (ic) bicim kullanilir: okurken
 # _diskten, yazarken _diske cevirir; eski bicimdeki dosya da okunur ve ilk
 # yazmada yeni bicime gecer. Tanimadigi anahtar aynen korunur.
 # ---------------------------------------------------------------------------
-DOSYA_SURUM = 2
-DOSYA_ACIKLAMA = (
-    "Proje hafızası. Elle düzeltilebilir: donem_kaliplari (kalıp: anlam, tur "
-    "[pencere, nokta, birim, olcu], yeni_adda, deger_anlamlari, haric_ikililer, "
-    "gruptan_ayrilan, ayri_yazilis), ad_parcalari (parça: anlam, tur, standart), "
-    "ayni_parcalar ve farkli_parcalar (\"ADT, CNT\" gibi iki parça), ad_standardi (yer "
-    "sırası). Anlamda <N> kalıbın sayısıdır; <N#1> kalıbın 1. sayısı, <N#$1*$2> "
-    "1. ve 2. sayının çarpımı. Kaydı silmek için satırı çıkarın.")
 # ic anahtar -> donem kaydindaki alan
 _DONEM_ALAN = (("donem", "anlam"), ("donem_tur", "tur"), ("donem_ad", "yeni_adda"),
                ("donem_deger", "deger_anlamlari"), ("donem_haric", "haric_ikililer"),
@@ -762,9 +755,9 @@ _YENI_ANAHTAR = {"aciklama", "surum", "ad_standardi", "donem_kaliplari", "ad_par
 
 
 def _diskten(ham):
-    """Dosya bicimi -> ic bicim. Eski bicim (surum yok) aynen doner."""
-    if not isinstance(ham.get("donem_kaliplari"), dict) and not isinstance(ham.get("ad_parcalari"), dict) \
-            and "surum" not in ham:
+    """Dosya bicimi -> ic bicim. Eski bicim (yeni anahtarlarin hicbiri
+    yok) aynen doner."""
+    if not any(k in ham for k in _YENI_ANAHTAR):
         return ham
     ic = {k: v for k, v in ham.items() if k not in _YENI_ANAHTAR}
     for kalip, kayit in (ham.get("donem_kaliplari") or {}).items():
@@ -840,7 +833,7 @@ def _diske(ic):
         if len(ab) == 2:
             (ayni if karar == "ayni" else farkli if karar == "farkli" else []).append(", ".join(ab))
     standart = (ic.pop("parca_ad_standardi", None) or {}).get("sira")
-    cikti = {"aciklama": DOSYA_ACIKLAMA, "surum": DOSYA_SURUM}
+    cikti = {}
     if standart:
         cikti["ad_standardi"] = list(standart)
     if kaliplar:
