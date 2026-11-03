@@ -626,8 +626,7 @@ def _hafiza_yaz(df):
     for k, v in (eski or {}).items():
         if (str(k).startswith("donem") or str(k).startswith("parca")) and v:
             govde[k] = v
-    _folder().upload_stream(DOSYA, json.dumps(govde, ensure_ascii=False, indent=2,
-                                              sort_keys=True).encode("utf-8"))
+    _dosya_yaz(govde)
 
 
 # ---------------------------------------------------------------------------
@@ -656,14 +655,8 @@ VARSAYILAN_KALIP = [t for t, _e in TURLER]
 
 
 def _ad_ilkesi_ham():
-    try:
-        with _folder().get_download_stream(DOSYA) as akis:
-            govde = json.loads(akis.read().decode("utf-8") or "{}")
-    except Exception:
-        return {}
-    if not isinstance(govde, dict):
-        return {}
-    return {k: govde[k] for k in ("kalip", "turler") if govde.get(k)}
+    govde, _h = _govde_oku()
+    return {k: govde[k] for k in ("kalip", "turler") if (govde or {}).get(k)}
 
 
 def kalip_temizle(kalip):
@@ -690,13 +683,9 @@ def ad_ilkesi_kaydet(kalip=None, turler=None):
     """Kalibi ve anlam turlerini hafizaya yazar (turler eklenir /
     guncellenir, silinmez). Doner: hata ya da None."""
     with _KILIT:
-        try:
-            with _folder().get_download_stream(DOSYA) as akis:
-                govde = json.loads(akis.read().decode("utf-8") or "{}")
-        except Exception:
-            govde = {}
-        if not isinstance(govde, dict):
-            govde = {}
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Ad ilkesi hafızaya yazılamadı: " + hata
         if kalip:
             govde["kalip"] = kalip_temizle(kalip)
         if turler:
@@ -705,8 +694,7 @@ def ad_ilkesi_kaydet(kalip=None, turler=None):
                            if str(k).strip() and str(v) in VARSAYILAN_KALIP})
             govde["turler"] = mevcut
         try:
-            _folder().upload_stream(DOSYA, json.dumps(
-                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+            _dosya_yaz(govde)
         except Exception as e:
             return "Ad ilkesi hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
@@ -718,7 +706,8 @@ def ad_ilkesi_kaydet(kalip=None, turler=None):
 # kalibin donem sayilmadigi ikililer "donem_haric" altinda: {kalip: [ikili]}.
 # ---------------------------------------------------------------------------
 def _govde_oku():
-    """Doner: (govde, hata). Dosya yoksa ({}, None)."""
+    """Doner: (govde, hata); govde ic bicimde (bkz. _diskten). Dosya yoksa
+    ({}, None)."""
     try:
         with _folder().get_download_stream(DOSYA) as akis:
             govde = json.loads(akis.read().decode("utf-8") or "{}")
@@ -728,7 +717,169 @@ def _govde_oku():
         return None, "Kısaltma hafızası okunamadı (%s)." % str(e)[:120]
     if not isinstance(govde, dict):
         return None, "Kısaltma hafızası okunamadı (biçim)."
-    return govde, None
+    try:
+        return _diskten(govde), None
+    except Exception as e:
+        return None, "Kısaltma hafızası okunamadı (%s)." % str(e)[:120]
+
+
+# ---------------------------------------------------------------------------
+# DOSYA BICIMI (surum 2): elle okunup duzeltilebilsin diye her donem kalibi
+# ve her ad parcasi TEK KAYITTA, butun bilgisiyle:
+#
+#   {"aciklama": "...", "surum": 2,
+#    "ad_standardi": ["konu", "yon", ...],
+#    "donem_kaliplari": {
+#        "<N>D": {"anlam": "<N> gün boyunca", "tur": "pencere",
+#                 "yeni_adda": "L<N>D",
+#                 "deger_anlamlari": {"360D": "son 1 yıl"},
+#                 "haric_ikililer": ["..."],
+#                 "gruptan_ayrilan": {"H00": {"anlam": "...", "donem_degil": false}},
+#                 "ayri_yazilis": true}, ...},
+#    "ad_parcalari": {"AVG": {"anlam": "ortalama", "tur": "istatistik",
+#                             "standart": "AVG"}, ...},
+#    "ayni_parcalar": ["ADT, CNT", ...],
+#    "farkli_parcalar": ["CONC, HHI", ...]}
+#
+# Bos alanlar yazilmaz. Kod icinde eski (ic) bicim kullanilir: okurken
+# _diskten, yazarken _diske cevirir; eski bicimdeki dosya da okunur ve ilk
+# yazmada yeni bicime gecer. Tanimadigi anahtar aynen korunur.
+# ---------------------------------------------------------------------------
+DOSYA_SURUM = 2
+DOSYA_ACIKLAMA = (
+    "Proje hafızası. Elle düzeltilebilir: donem_kaliplari (kalıp: anlam, tur "
+    "[pencere, nokta, birim, olcu], yeni_adda, deger_anlamlari, haric_ikililer, "
+    "gruptan_ayrilan, ayri_yazilis), ad_parcalari (parça: anlam, tur, standart), "
+    "ayni_parcalar ve farkli_parcalar (\"ADT, CNT\" gibi iki parça), ad_standardi (yer "
+    "sırası). Anlamda <N> kalıbın sayısıdır; <N#1> kalıbın 1. sayısı, <N#$1*$2> "
+    "1. ve 2. sayının çarpımı. Kaydı silmek için satırı çıkarın.")
+# ic anahtar -> donem kaydindaki alan
+_DONEM_ALAN = (("donem", "anlam"), ("donem_tur", "tur"), ("donem_ad", "yeni_adda"),
+               ("donem_deger", "deger_anlamlari"), ("donem_haric", "haric_ikililer"),
+               ("donem_ayrilan", "gruptan_ayrilan"))
+_YENI_ANAHTAR = {"aciklama", "surum", "ad_standardi", "donem_kaliplari", "ad_parcalari",
+                 "ayni_parcalar", "farkli_parcalar"}
+
+
+def _diskten(ham):
+    """Dosya bicimi -> ic bicim. Eski bicim (surum yok) aynen doner."""
+    if not isinstance(ham.get("donem_kaliplari"), dict) and not isinstance(ham.get("ad_parcalari"), dict) \
+            and "surum" not in ham:
+        return ham
+    ic = {k: v for k, v in ham.items() if k not in _YENI_ANAHTAR}
+    for kalip, kayit in (ham.get("donem_kaliplari") or {}).items():
+        if not isinstance(kayit, dict):
+            continue
+        kalip = str(kalip).strip()
+        for ic_ad, alan in _DONEM_ALAN:
+            v = kayit.get(alan)
+            if alan == "gruptan_ayrilan" and isinstance(v, dict):
+                v = {str(d): {"anlam": str((x or {}).get("anlam") or ""),
+                              "cikar": bool((x or {}).get("donem_degil"))}
+                     for d, x in v.items() if isinstance(x, dict)}
+            if v in (None, "", [], {}):
+                continue
+            ic.setdefault(ic_ad, {})[kalip] = v
+        if kayit.get("ayri_yazilis"):
+            ic.setdefault("donem_ayri_yazilis", []).append(kalip)
+    parcalar = {}
+    for p, kayit in (ham.get("ad_parcalari") or {}).items():
+        if not isinstance(kayit, dict):
+            continue
+        p = str(p).strip().upper()
+        parcalar[p] = {"anlam": str(kayit.get("anlam") or "").strip(),
+                       "tur": str(kayit.get("tur") or "").strip(),
+                       "standart": str(kayit.get("standart") or p).strip().upper()}
+    if parcalar:
+        ic["parcalar"] = parcalar
+    esler = {}
+    for anahtar, karar in (("ayni_parcalar", "ayni"), ("farkli_parcalar", "farkli")):
+        for cift in ham.get(anahtar) or []:
+            if isinstance(cift, str):
+                cift = [x for x in re.split(r"[,|=]", cift) if x.strip()]
+            if isinstance(cift, (list, tuple)) and len(cift) == 2:
+                a, b = sorted(str(x).strip().upper() for x in cift)
+                if a and b:
+                    esler["%s|%s" % (a, b)] = karar
+    if esler:
+        ic["parca_esler"] = esler
+    if isinstance(ham.get("ad_standardi"), list) and ham["ad_standardi"]:
+        ic["parca_ad_standardi"] = {"sira": [str(x) for x in ham["ad_standardi"]]}
+    return ic
+
+
+def _diske(ic):
+    """Ic bicim -> dosya bicimi (bkz. DOSYA BICIMI)."""
+    ic = dict(ic or {})
+    kaliplar = {}
+    for ic_ad, alan in _DONEM_ALAN:
+        for kalip, v in (ic.pop(ic_ad, None) or {}).items():
+            if v in (None, "", [], {}):
+                continue
+            if alan == "gruptan_ayrilan" and isinstance(v, dict):
+                v = {str(d): {"anlam": str((x or {}).get("anlam") or ""),
+                              "donem_degil": bool((x or {}).get("cikar"))}
+                     for d, x in sorted(v.items()) if isinstance(x, dict)}
+            elif isinstance(v, dict):
+                v = dict(sorted(v.items()))
+            kaliplar.setdefault(str(kalip), {})[alan] = v
+    for kalip in ic.pop("donem_ayri_yazilis", None) or []:
+        kaliplar.setdefault(str(kalip), {})["ayri_yazilis"] = True
+    sira = [a for _i, a in _DONEM_ALAN] + ["ayri_yazilis"]
+    kaliplar = {k: {a: v[a] for a in sira if a in v} for k, v in sorted(kaliplar.items())}
+    parcalar = {}
+    for p, v in sorted((ic.pop("parcalar", None) or {}).items()):
+        if not isinstance(v, dict):
+            continue
+        kayit = {"anlam": str(v.get("anlam") or ""), "tur": str(v.get("tur") or "")}
+        kayit["standart"] = str(v.get("standart") or p)
+        parcalar[str(p)] = {a: x for a, x in kayit.items() if x}
+    ayni, farkli = [], []
+    for cift, karar in sorted((ic.pop("parca_esler", None) or {}).items()):
+        ab = str(cift).split("|")
+        if len(ab) == 2:
+            (ayni if karar == "ayni" else farkli if karar == "farkli" else []).append(", ".join(ab))
+    standart = (ic.pop("parca_ad_standardi", None) or {}).get("sira")
+    cikti = {"aciklama": DOSYA_ACIKLAMA, "surum": DOSYA_SURUM}
+    if standart:
+        cikti["ad_standardi"] = list(standart)
+    if kaliplar:
+        cikti["donem_kaliplari"] = kaliplar
+    if parcalar:
+        cikti["ad_parcalari"] = parcalar
+    if ayni:
+        cikti["ayni_parcalar"] = ayni
+    if farkli:
+        cikti["farkli_parcalar"] = farkli
+    # Eski kisaltma hafizasi ve ad ilkesi (varsa) aynen, en sonda.
+    for k in sorted(ic):
+        if ic[k] not in (None, "", [], {}):
+            cikti[k] = ic[k]
+    return cikti
+
+
+_DIZI = re.compile(r'\[\s*\n\s*("(?:[^"\\]|\\.)*"(?:,\s*\n\s*"(?:[^"\\]|\\.)*")*)\s*\n\s*\]')
+
+
+_DUZ_SOZLUK = re.compile(r'\{\n((?:[ ]*"(?:[^"\\\n]|\\.)*": (?:"(?:[^"\\\n]|\\.)*"|true|false|-?\d+),?\n)+)[ ]*\}')
+
+
+def _dosya_metni(govde):
+    """Dosya bicimi JSON metni. Okunur olsun diye yalniz metin iceren
+    listeler ve kisa duz kayitlar (ad parcasi: anlam, tur, standart) tek
+    satirda."""
+    metin = json.dumps(_diske(govde), ensure_ascii=False, indent=2)
+    metin = _DIZI.sub(lambda m: "[" + re.sub(r",\s*\n\s*", ", ", m.group(1)) + "]", metin)
+
+    def tek_satir(m):
+        ic = ", ".join(x.strip().rstrip(",") for x in m.group(1).strip("\n").split("\n"))
+        return "{" + ic + "}" if len(ic) <= 110 else m.group(0)
+    return _DUZ_SOZLUK.sub(tek_satir, metin)
+
+
+def _dosya_yaz(govde):
+    """Ic bicimdeki govdeyi dosya bicimiyle yazar (hata firlatir)."""
+    _folder().upload_stream(DOSYA, _dosya_metni(govde).encode("utf-8"))
 
 
 def _donem_ham():
@@ -844,8 +995,7 @@ def donem_ad_kaydet(sablonlar):
         else:
             govde.pop("donem_ad", None)
         try:
-            _folder().upload_stream(DOSYA, json.dumps(
-                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+            _dosya_yaz(govde)
         except Exception as e:
             return "Dönem yazılışı hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
@@ -949,8 +1099,7 @@ def donem_kaydet(kayitlar, haric=None, degerler=None, ayrilan=None, turler=None,
             else:
                 govde.pop("donem_ayri_yazilis", None)
         try:
-            _folder().upload_stream(DOSYA, json.dumps(
-                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+            _dosya_yaz(govde)
         except Exception as e:
             return "Dönem bilgisi hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
@@ -982,8 +1131,7 @@ def parca_kaydet(kayitlar, esler=None):
             e.update({str(a): str(b) for a, b in esler.items() if b in ("ayni", "farkli")})
             govde["parca_esler"] = dict(sorted(e.items()))
         try:
-            _folder().upload_stream(DOSYA, json.dumps(
-                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+            _dosya_yaz(govde)
         except Exception as e:
             return "Ad parçaları hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
@@ -998,8 +1146,7 @@ def parca_ad_standardi_kaydet(standart):
             return "Ad standardı hafızaya yazılamadı: " + hata
         govde["parca_ad_standardi"] = dict(standart or {})
         try:
-            _folder().upload_stream(DOSYA, json.dumps(
-                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+            _dosya_yaz(govde)
         except Exception as e:
             return "Ad standardı hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
@@ -1066,8 +1213,7 @@ def donem_sil(kaliplar):
         else:
             govde.pop("donem_haric", None)
         try:
-            _folder().upload_stream(DOSYA, json.dumps(
-                govde, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8"))
+            _dosya_yaz(govde)
         except Exception as e:
             return 0, "Dönem bilgisi hafızadan silinemedi (%s)." % str(e)[:120]
     return len(silinen), None
@@ -1099,6 +1245,7 @@ def _hafiza_oku():
         return eski, None
     if not isinstance(govde, dict):
         return None, "Kısaltma hafızası okunamadı (biçim)."
+    govde = _diskten(govde)
     notlar = govde.get("notlar") or {}
     degisim = {str(k).upper(): str(y).strip().upper()
                for k, y in (govde.get("degisimler") or {}).items() if str(y or "").strip()}
