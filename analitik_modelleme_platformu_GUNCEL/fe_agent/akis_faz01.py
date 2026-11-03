@@ -3722,31 +3722,38 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
         if bulundu or p.isdigit():
             continue
         o = onayli.get(p) if isinstance(onayli.get(p), dict) else {}
-        if parca_notlari.get(p):
-            parcalar.append((p, parca_notlari[p] + " (kullanıcının cevabı)"))
-            ozet.append((p, parca_notlari[p]))
-            kart.append((i, KART_ALANI.get(o.get("tur"), "diger"), parca_notlari[p]))
-        elif o.get("anlam") and o.get("tur") == "ek":
+        # KULLANICININ PARCA CEVABI (Toplu Sorular) yalniz dil modelinin
+        # anlamasi icindir: karta ve aciklamaya kopyalanmaz. Kartta parcanin
+        # onayli anlami kalir; dil modeline anlamin yaninda gider.
+        cevap = str(parca_notlari.get(p) or "").strip()
+        cevap_eki = ("; kullanıcının açıklaması (yalnız anlamak için; açıklamaya ve "
+                     "karta kopyalama): %s" % cevap) if cevap else ""
+        if o.get("anlam") and o.get("tur") == "ek":
             ekler[i] = (p, o["anlam"], len(parcalar))
-            parcalar.append((p, o["anlam"]))
-            ozet.append((p, o["anlam"]))
+            parcalar.append((p, o["anlam"] + cevap_eki))
+            ozet.append((p, o["anlam"] + cevap_eki))
         elif o.get("anlam"):
             tur_adi = PARCA_TUR_ADI.get(o.get("tur"), "")
-            parcalar.append((p, o["anlam"] + (" (%s)" % parca_mod._kucuk(tur_adi) if tur_adi else "")))
-            ozet.append((p, o["anlam"]))
+            parcalar.append((p, o["anlam"] + (" (%s)" % parca_mod._kucuk(tur_adi) if tur_adi else "")
+                             + cevap_eki))
+            ozet.append((p, o["anlam"] + cevap_eki))
             kart.append((i, KART_ALANI.get(o.get("tur"), "diger"), o["anlam"]))
+        elif cevap:
+            parcalar.append((p, "anlamı onaylanmadı" + cevap_eki))
+            ozet.append((p, cevap_eki))
     # Ekler sondan baslayarak arkasindaki parcaya baglanir (PER_BY_CUST:
     # once BY + CUST, sonra PER + o).
     for i in sorted(ekler, reverse=True):
         p, sablon, n = ekler[i]
         j = next((x for x, (sira, _a, _m) in enumerate(kart) if sira == i + 1), None)
+        ek_cevap = parcalar[n][1][len(sablon):]
         if j is None:
-            parcalar[n] = (p, "%s (ek; arkasında anlamı bilinen parça yok)" % sablon)
+            parcalar[n] = (p, "%s (ek; arkasında anlamı bilinen parça yok)%s" % (sablon, ek_cevap))
             continue
         _s, alan, metin = kart[j]
         birlesik = parca_mod.ek_uygula(sablon, metin)
         kart[j] = (i, alan, birlesik)
-        parcalar[n] = (p, "%s (ek; arkasındaki parçayla: %s)" % (sablon, birlesik))
+        parcalar[n] = (p, "%s (ek; arkasındaki parçayla: %s)%s" % (sablon, birlesik, ek_cevap))
     return parcalar, ozet, [(alan, metin) for _s, alan, metin in kart]
 
 

@@ -2250,8 +2250,11 @@ GİRDİ: KOLONLAR bloğunda her kolon için şu satırlar (yalnız dolu olanlar)
                  düzeltme. KESİNDİR; bu kolonun kendi parçalarına
                  (dönemine) uyarlanarak uygulanır.
   PARÇALAR     : adın parçalarının onaylı anlamları ve türleri (dönem
-                 bilgisi, onaylı ad parçaları, kullanıcının parça
-                 cevapları). KESİNDİR.
+                 bilgisi, onaylı ad parçaları). KESİNDİR. "kullanıcının
+                 açıklaması" parçayı anlaman içindir (KESİNDİR); o metni
+                 açıklamaya kopyalama, bu kolona uyan anlamını kendi
+                 cümlenle yaz (içindeki örnek başka bir kolon için
+                 olabilir).
   KART         : parçalardan kurulmuş kolon kartı (konu, yön, nitelik,
                  zaman, ölçü, istatistik, karşılaştırma, birim). KESİNDİR;
                  açıklama bu kartın bütün bilgisini taşımalı.

@@ -11010,7 +11010,9 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                           "Toplu Sorular · " + ftBinlik(acik) + " cevapsız");
         bas.appendChild(bolmeBilgiSimgesi(
             "Aynı parça hakkındaki sorular bir kez sorulur. Cevabınız o parçanın geçtiği "
-            + "bütün kolonlara kesin bilgi olarak verilir ve o kolonlar yeniden düzenlenir.",
+            + "bütün kolonlarda dil modeline kesin bilgi olarak verilir ve o kolonlar yeniden "
+            + "düzenlenir. Cevap yalnız dil modelinin anlaması içindir: karta ve açıklamaya "
+            + "kopyalanmaz; kartta parçanın onaylı anlamı kalır.",
             "Toplu Sorular"));
         soruKap.appendChild(bas);
         liste.forEach(s => {
@@ -11051,6 +11053,9 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             };
             satir.append(g, b);
             kutu.appendChild(satir);
+            kutu.appendChild(elYap("div", "dg-donem-tur-not",
+                "Cevabınız " + s.parca + " geçen " + ftBinlik(s.kolon_sayisi) + " kolonun hepsinde dil "
+                + "modelinin anlaması için kullanılır; karta ve açıklamaya kopyalanmaz."));
             soruKap.appendChild(kutu);
         });
     }

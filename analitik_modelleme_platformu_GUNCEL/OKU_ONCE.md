@@ -956,6 +956,17 @@ tanıtır; sayfalar sol bardan açılır.
     açıklama yazar, tanımda olup adda olmayan bilgiyi `ek` (Ek bilgi)
     olarak ayırır, ad ile tanım çelişkisini `ad_notu`'na yazar. Karttaki
     sayılar açıklamada geçmeli (kod denetimi).
+  - **Toplu Sorular ve parça cevabı** (`akis_faz01._sorular`,
+    `_aciklama_parcalari`): dil modelinin bir parça hakkında sorduğu
+    sorular (`parca` alanı) parça başına tek kutuda (ilk üç farklı soru,
+    örnek kolonlar). Kullanıcının cevabı yalnız dil modelinin anlaması
+    içindir: o parçanın geçtiği bütün kolonlarda PARÇALAR satırına
+    parçanın onaylı anlamının yanında "kullanıcının açıklaması (yalnız
+    anlamak için; açıklamaya ve karta kopyalama)" olarak gider; karta ve
+    açıklamaya kopyalanmaz, kartta parçanın onaylı anlamı kalır (anlamı
+    onaylı değilse kartta o parça yok). Yazar istemi metni kopyalamamasını,
+    kolona uyan anlamı kendi cümlesiyle yazmasını söyler. Kutunun altında
+    bu not yazar.
   - **Üç dil modeli çağrısı** (`aciklama_duzen._isle`, `_denetim`): her
     grup (8 kolon) için 1) yazar taslağı yazar (`llm.aciklama_duzenle`,
     rol `aciklama_duzen`); 2) denetçi taslağı kaynaklara göre denetler
