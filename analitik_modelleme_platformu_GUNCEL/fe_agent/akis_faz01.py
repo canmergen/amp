@@ -4092,9 +4092,11 @@ def aciklama_onayla(durum, kolonlar, onay=True):
 SORU_GOSTER = 8          # Toplu Sorular'da parca basina gosterilen farkli soru
 
 
-def _sorular(d, girdiler):
+def _sorular(d, girdiler, bilgi=None):
     """Toplu sorular: ayni parca hakkindaki sorular parca basina tek satir
-    (kilit altinda)."""
+    (kilit altinda). bilgi: onayli ad parcalari; satirda parcanin onayli
+    anlami ("anlam") gosterilir: soru anlamin yetmedigi yeri sorar."""
+    bilgi = bilgi if isinstance(bilgi, dict) else {}
     toklar = {g["kolon"]: set(aciklama_mod.toklar(g["kolon"])) for g in girdiler}
     gecen = set().union(*toklar.values()) if toklar else set()
     gruplar = {}
@@ -4116,7 +4118,9 @@ def _sorular(d, girdiler):
                                               for q, ks in sorular[:SORU_GOSTER]],
                       "soru_sayisi": len(sorular), "soru_kolon": len(k["kolonlar"]),
                       "kolon_sayisi": sum(1 for t in toklar.values() if p in t),
-                      "ornek": k["kolonlar"][:3], "cevap": d.parca_notlari.get(p, "")})
+                      "ornek": k["kolonlar"][:3], "cevap": d.parca_notlari.get(p, ""),
+                      "anlam": str((bilgi.get(p) or {}).get("anlam") or "")
+                      if isinstance(bilgi.get(p), dict) else ""})
     cikti.sort(key=lambda x: (-x["soru_kolon"], x["parca"]))
     return cikti
 
@@ -4216,7 +4220,7 @@ def aciklama_alani(durum, son=0):
                 sayac["kontrol"] += 1
             if r.get("ek") and not aciklama_mod.ek_acikta(r["ek"], r.get("aciklama")):
                 sayac["ek"] += 1
-        sorular = _sorular(d, girdiler)
+        sorular = _sorular(d, girdiler, durum.get("parca_bilgisi"))
         sira = d.sayac
     dm = "calisiyor" if is_["calisiyor"] else ("iptal" if is_["iptal"] and is_["bekleyen"]
                                                else "bitti")

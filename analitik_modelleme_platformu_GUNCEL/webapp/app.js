@@ -10463,13 +10463,17 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             .finally(() => { bicimDurum(); });
         if (degisti) degisti();
     };
-    /* HEPSİNİ ONAYLA: hazır bütün kolonlar (aşama sırası, soru ve notlar
-       dahil) iki tıklamayla onaylanır: birinci tıklama ne onaylanacağını
-       yazar, ikinci onaylar. Dil modelinin düzenlediği kolon bitince
-       ayrıca onaylanır. native confirm() yok (iframe akışı durur). */
+    /* HEPSİNİ ONAYLA: hazır kolonlar (aşama sırası dahil) iki tıklamayla
+       onaylanır: birinci tıklama ne onaylanacağını yazar, ikinci onaylar.
+       Cevapsız sorusu ya da kontrol notu olan kolonlar AYRILIR: onaylanmaz,
+       listede kalır ve tek tek bakılır (aşamalar onlarla sürer). Dil
+       modelinin düzenlediği kolon bitince ayrıca onaylanır. native
+       confirm() yok (iframe akışı durur). */
     let hepsiSor = false;
     const hepsiOnay = elYap("button", "dg-toplu-btn dg-acik-hepsi", "");
     hepsiOnay.type = "button";
+    hepsiOnay.title = "Hazır kolonlar onaylanır. Cevapsız sorusu ya da kontrol notu olan kolonlar "
+        + "ayrılır; listede kalır, onlara tek tek bakın.";
     const hepsiUyari = elYap("div", "dg-acik-hepsi-uyari", "");
     hepsiUyari.hidden = true;
     const hepsiMetin = elYap("span", "", "");
@@ -10477,8 +10481,10 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     hepsiVazgec.type = "button";
     hepsiVazgec.onclick = () => { hepsiSor = false; hepsiDurum(); };
     hepsiUyari.append(hepsiMetin, hepsiVazgec);
-    const hepsiSatirlari = () => sira.map(k => veriler.get(k))
+    const ayrilirMi = v => !!v.soru || !!(v.kontrol || []).length;
+    const hepsiAday = () => sira.map(k => veriler.get(k))
         .filter(v => v && !v.onayli && (v.durum === "hazir" || v.durum === "hata"));
+    const hepsiSatirlari = () => hepsiAday().filter(v => !ayrilirMi(v));
     hepsiOnay.onclick = () => {
         if (kilitli || saltOkunur) return;
         const kolonlar = hepsiSatirlari().map(v => v.kolon);
@@ -10505,11 +10511,14 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         hepsiUyari.hidden = !hepsiSor;
         if (!hepsiSor) return;
         const bek = sira.filter(k => { const v = veriler.get(k); return v && bekliyorMu(v); }).length;
-        const soru = sat.filter(v => v.soru).length;
-        const notlu = sat.filter(v => (v.kontrol || []).length).length;
+        const ayri = hepsiAday().filter(ayrilirMi);
+        const soru = ayri.filter(v => v.soru).length;
+        const notlu = ayri.filter(v => !v.soru && (v.kontrol || []).length).length;
         hepsiMetin.textContent = ftBinlik(n) + " kolonun açıklaması ekranda göründüğü gibi onaylanacak"
-            + (soru ? "; " + ftBinlik(soru) + " kolonda cevapsız soru var" : "")
-            + (notlu ? (soru ? ", " : "; ") + ftBinlik(notlu) + " kolonda kontrol notu var" : "")
+            + (ayri.length ? ". Ayrılan " + ftBinlik(ayri.length) + " kolon onaylanmaz, listede kalır: "
+                + [soru ? ftBinlik(soru) + " kolonda cevapsız soru" : "",
+                   notlu ? ftBinlik(notlu) + " kolonda kontrol notu" : ""].filter(Boolean).join(", ")
+                + "; onlara tek tek bakın" : "")
             + (bek ? ". Dil modelinin düzenlediği " + ftBinlik(bek) + " kolon bitince ayrıca onaylanır" : "")
             + ". Emin değilseniz ";
     }
@@ -11152,7 +11161,9 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         const bas = elYap("div", "dg-kisa-tablo-baslik",
                           "Toplu Sorular · " + ftBinlik(acik) + " cevapsız");
         bas.appendChild(bolmeBilgiSimgesi(
-            "Aynı parça hakkındaki sorular bir kez sorulur. Cevabınız o parçanın geçtiği "
+            "Dil modeli parçanın onaylı anlamını (Ad Parçaları) biliyor; burada o anlamın "
+            + "yetmediği yeri soruyor (ör. RATIO oran, ama hangi dönem hangisine bölünüyor). "
+            + "Aynı parça hakkındaki sorular bir kez sorulur. Cevabınız o parçanın geçtiği "
             + "bütün kolonlarda dil modeline kesin bilgi olarak verilir ve o kolonlar yeniden "
             + "düzenlenir. Cevap yalnız dil modelinin anlaması içindir: karta ve açıklamaya "
             + "kopyalanmaz; kartta parçanın onaylı anlamı kalır.",
@@ -11162,6 +11173,9 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             const kutu = elYap("div", "dg-acik-soru");
             const ust_ = elYap("div", "dg-acik-soru-ust");
             ust_.appendChild(elYap("span", "dg-donem-kalip", s.parca));
+            /* Onaylı anlam: soru bunu sormuyor, bunun yetmediği yeri soruyor. */
+            if (s.anlam) ust_.appendChild(elYap("span", "dg-acik-soru-anlam",
+                "Onaylı anlamı: " + tireSade(s.anlam)));
             ust_.appendChild(elYap("span", "dg-acik-soru-sayi",
                 ftBinlik(s.kolon_sayisi) + " kolonda geçiyor"
                 + (s.soru_kolon ? " · " + ftBinlik(s.soru_kolon) + " kolonda soru" : "")));
@@ -11183,15 +11197,17 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             if (!(s.sorular || []).length && (s.ornek || []).length)
                 kutu.appendChild(elYap("div", "dg-acik-ornek", "Örnek: " + s.ornek.join(", ")));
             kutu.appendChild(elYap("div", "dg-acik-soru-yol",
-                "Bu kutuya " + s.parca + " parçasının genel anlamını yazın: " + s.parca + " geçen "
-                + ftBinlik(s.kolon_sayisi) + " kolonun hepsinde dil modelinin anlaması için kullanılır, karta ve "
-                + "açıklamaya kopyalanmaz. Kısa ve genel yazın; belirli bir dönem ya da sayı yazmayın. Tek "
+                ((s.sorular || []).length ? "Dil modeli " + (s.anlam ? "«" + tireSade(s.anlam) + "» anlamının" : "bu parçanın")
+                    + " yetmediği yeri soruyor (yukarıdaki " + ((s.sorular || []).length > 1 ? "sorular" : "soru") + "). " : "")
+                + "Cevabı " + s.parca + " geçen " + ftBinlik(s.kolon_sayisi) + " kolonun hepsinde geçerli bir kural "
+                + "olarak yazın (ör. «adda önce gelen dönemin değeri sonrakine bölünür»); belirli bir dönem ya da "
+                + "sayı yazmayın. Cevap dil modelinin anlaması içindir, karta ve açıklamaya kopyalanmaz. Tek "
                 + "kolona özel bilgi için o kolonun «Sizin Düzenlemeniz» alanını kullanın."));
             const satir = elYap("div", "dg-acik-soru-giris");
             const g = document.createElement("input");
             g.type = "text"; g.className = "dg-giris";
             g.value = tireSade(s.cevap || "");
-            g.placeholder = "Cevabınız (" + s.parca + " ne demek?)";
+            g.placeholder = "Cevabınız (bütün " + s.parca + " kolonları için geçerli kural)";
             g.disabled = kilitli;
             g.setAttribute("aria-label", s.parca + " için cevabınız");
             const etiket = s.cevap ? "Cevabı Güncelle" : "Cevabı Uygula";

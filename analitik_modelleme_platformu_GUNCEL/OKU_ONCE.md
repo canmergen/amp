@@ -976,9 +976,14 @@ tanıtır; sayfalar sol bardan açılır.
     `_aciklama_parcalari`): dil modelinin bir parça hakkında sorduğu
     sorular (`parca` alanı) parça başına tek kutuda; farklı sorular ayrı
     satırda, her biri kaç kolondan geldiği ve ilk üç kolonuyla (en çok
-    `SORU_GOSTER` = 8 soru, kalanı "ve N farklı soru daha"). Kutunun
-    üstünde ne yazılacağı: parçanın genel anlamı, kısa, dönem ve sayı
-    olmadan; tek kolona özel bilgi o kolonun «Sizin Düzenlemeniz»inde.
+    `SORU_GOSTER` = 8 soru, kalanı "ve N farklı soru daha"). Parça adının
+    yanında Ad Parçaları'nda onaylanan anlamı ("Onaylı anlamı: oran";
+    `_sorular(..., bilgi)` → `anlam`): soru o anlamı değil, anlamın
+    yetmediği yeri sorar (ör. hangi dönem hangisine bölünüyor). Kutunun
+    altında ne yazılacağı: bütün kolonlarda geçerli bir kural (ör. "adda
+    önce gelen dönemin değeri sonrakine bölünür"), dönem ve sayı olmadan;
+    kutuda "Cevabınız (bütün RATIO kolonları için geçerli kural)"; tek
+    kolona özel bilgi o kolonun «Sizin Düzenlemeniz»inde.
     Cevapta sayı varsa ilk tıklama uyarır ("Cevabınızda sayı var (3, 7)";
     düğme "Yine de Uygula"), ikinci tıklama uygular; cevap değişince uyarı
     kalkar. Kullanıcının cevabı yalnız dil modelinin anlaması
@@ -1174,12 +1179,15 @@ tanıtır; sayfalar sol bardan açılır.
     yapılacağını yazar. Sayfa aileyi bölmez; kalan hep aileyse düğme "Daha
     Fazla Aile Göster (N aile daha)".
   - **Hepsini Onayla · N:** süzgeçlerin yanında; hazır ve onaylanmamış
-    bütün kolonları (aşama sırası, cevapsız soru ve notlar dahil) onaylar.
-    İki tıklamalı: birinci tıklama düğmeyi "Evet, N Kolonu Onayla" yapar
-    ve altında ne onaylanacağını yazar (kaç kolonda cevapsız soru, kaçında
-    kontrol notu var; dil modelinin düzenlediği kolonlar
-    bitince ayrıca onaylanır), «Vazgeç» geri alır; ikinci tıklama onaylar
-    (`hepsiDurum`).
+    kolonları (aşama sırası dahil) onaylar. Cevapsız sorusu ya da kontrol
+    notu olan kolonlar AYRILIR (`ayrilirMi`): N'ye girmez, onaylanmaz,
+    listede kalır; aşamalar onlarla sürer ve aile kutusunda tek tek
+    bakılacak kolon olarak görünür. İki tıklamalı: birinci tıklama
+    düğmeyi "Evet, N Kolonu Onayla" yapar ve altında yazar ("Ayrılan M
+    kolon onaylanmaz, listede kalır: X kolonda cevapsız soru, Y kolonda
+    kontrol notu; onlara tek tek bakın"; ikisi de olan soru sayılır; dil
+    modelinin düzenlediği kolonlar bitince ayrıca onaylanır), «Vazgeç»
+    geri alır; ikinci tıklama onaylar (`hepsiDurum`).
   - **Aile kutusunda toplu onaya girmeme sebebi:** her kolonun ilk sebebi
     sayılır (cevapsız soru, kontrol notu, açıklaması kalıptan farklı).
     Hiçbir kolonu toplu onaylanamayan ve onaylısı olmayan ailede "Bu

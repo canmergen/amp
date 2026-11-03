@@ -5229,3 +5229,4 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-acik-soru-evresi .dg-acik-hepsi-uyari,
 .dg-acik-soru-evresi .dg-acik-sar,
 .dg-acik-soru-evresi .dg-acik-daha { display: none !important; }
+.dg-acik-soru-anlam { color: var(--metin); font-size: var(--fs-kucuk); }
