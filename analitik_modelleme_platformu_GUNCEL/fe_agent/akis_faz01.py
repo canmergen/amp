@@ -3443,7 +3443,7 @@ ACIKLAMA_DUGME = {"bos": "Kolon Kartlarını Onayla ve Devam Et"}
 # Her kolon onaylanir; degistirmeden gecmek yok.
 ACIKLAMA_ATLA = ""
 # Istem ya da girdi bicimi degisince eski sonuclar yeniden uretilsin.
-ACIKLAMA_SURUMU = 4
+ACIKLAMA_SURUMU = 5
 ACIKLAMA_EXCEL_ADI = "onerilen_sozluk.xlsx"
 ROL_ADLARI = {"target": "hedef değişken", "id": "kimlik kolonu",
               "donem": "dönem kolonu", "segment": "segment kolonu"}
@@ -3699,7 +3699,7 @@ def _aciklama_satiri(d, g):
     satir["aile"] = g.get("aile") or ""
     if r:
         for a in ("aciklama", "karar", "ek", "soru", "parca", "ad_notu", "dagilim_notu", "model",
-                  "kaynak", "aile_kaynagi", "hata"):
+                  "kaynak", "aile_kaynagi", "hata", "denetim"):
             satir[a] = r.get(a) or ""
         satir["kontrol"] = list(r.get("kontrol") or [])
         _degisim_yaz(satir)

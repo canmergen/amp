@@ -64,7 +64,7 @@ _ONCELIK_HAVUZ = futures.ThreadPoolExecutor(max_workers=2)
 _SAYI = re.compile(r"(?<!\d)\d+(?!\d)")
 _KAYIT_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "onay",
                    "yazilan", "kabul", "elle")
-METIN_ALANLARI = ("aciklama", "karar", "soru", "ad_notu", "dagilim_notu")
+METIN_ALANLARI = ("aciklama", "karar", "soru", "ad_notu", "dagilim_notu", "denetim")
 
 
 def _norm(metin):
@@ -437,24 +437,75 @@ def _bicimle(g, ham):
     return r
 
 
+def _denetim(girdiler, taslak, ork):
+    """Ikinci ve ucuncu cagri: denetci taslaklari denetler; sorun buldugu
+    kolonlarda karar cagrisi son aciklamayi yazar. taslak yerinde
+    guncellenir; her sonuca "denetim" (kartta yazan kisa not) eklenir.
+    Denetim ya da karar cevap veremezse taslak kalir ve not bunu yazar."""
+    try:
+        kon, kh = llm_mod.aciklama_kontrol([_llm_girdisi(g) for g in girdiler], taslak, ork)
+    except Exception as e:
+        kon, kh = {}, "%s: %s" % (type(e).__name__, str(e)[:200])
+    sorunlu = []
+    for g in girdiler:
+        r = taslak.get(g["kolon"])
+        if r is None:
+            continue
+        k = kon.get(g["kolon"])
+        if not k:
+            r["denetim"] = "Denetim yapılamadı; açıklama yalnız ilk düzenlemeden geçti."
+        elif k["uygun"]:
+            r["denetim"] = "Denetim: uygun bulundu."
+        else:
+            sorunlu.append(g)
+    if not sorunlu:
+        return
+    try:
+        son, _h = llm_mod.aciklama_karar([_llm_girdisi(g) for g in sorunlu], taslak,
+                                         {g["kolon"]: kon[g["kolon"]] for g in sorunlu}, ork)
+    except Exception:
+        son = {}
+    for g in sorunlu:
+        k = kon[g["kolon"]]
+        sorun = "; ".join(x.rstrip(".") for x in k["sorunlar"]) or "taslak uygun bulunmadı"
+        r3 = son.get(g["kolon"])
+        if r3 and r3.get("aciklama"):
+            r3 = _bicimle(g, r3)
+            r3["ilk_aciklama"] = taslak[g["kolon"]].get("aciklama") or ""
+            r3["denetim"] = ("Denetim: %s. Son açıklama denetimle birlikte yazıldı." % sorun)
+            taslak[g["kolon"]] = r3
+        else:
+            r = taslak[g["kolon"]]
+            r["denetim"] = "Denetim: %s. Karar verilemedi; ilk düzenleme kaldı." % sorun
+            r["_ek_kontrol"] = ["Denetçinin bulduğu sorun çözülmedi: %s." % sorun]
+
+
 def _isle(girdiler, ork, durdu=None):
-    """Bir grup kolonu dil modeline duzenletir; kod denetiminden gecmeyenler
-    bir kez daha sorulur (is iptal edildiyse ikinci soru sorulmaz).
-    Doner: ({kolon: sonuc}, hata)."""
+    """Bir grup kolonu uc cagriyla duzenletir: yazar taslagi yazar,
+    denetci denetler, sorun bulunanlarda karar cagrisi son aciklamayi
+    yazar (_denetim). Kod denetiminden gecmeyenler bir kez daha sorulur
+    (is iptal edildiyse sonraki cagrilar yapilmaz). Doner: ({kolon:
+    sonuc}, hata)."""
     try:
         ham, hata = llm_mod.aciklama_duzenle([_llm_girdisi(g) for g in girdiler], ork)
     except Exception as e:
         ham, hata = {}, "%s: %s" % (type(e).__name__, str(e)[:200])
-    sonuc, yeniden = {}, []
+    sonuc, yeniden, taslak = {}, [], {}
     for g in girdiler:
         r = ham.get(g["kolon"])
         if not r:
             if not hata:
                 yeniden.append((g, None, ["dil modeli bu kolon için cevap vermedi"]))
             continue
-        r = _bicimle(g, r)
+        taslak[g["kolon"]] = _bicimle(g, r)
+    if taslak and not (durdu and durdu()):
+        _denetim([g for g in girdiler if g["kolon"] in taslak], taslak, ork)
+    for g in girdiler:
+        r = taslak.get(g["kolon"])
+        if r is None:
+            continue
         kontrol, yen = denetle(g, r)
-        r["kontrol"] = kontrol
+        r["kontrol"] = kontrol + r.pop("_ek_kontrol", [])
         sonuc[g["kolon"]] = r
         if yen:
             yeniden.append((g, r, yen))
@@ -468,6 +519,8 @@ def _isle(girdiler, ork, durdu=None):
             r2 = ham2.get(g["kolon"])
             if r2:
                 r2 = _bicimle(g, r2)
+                if r1 is not None and r1.get("denetim"):
+                    r2["denetim"] = r1["denetim"]
                 k2, yen2 = denetle(g, r2)
                 if r1 is None or len(yen2) <= len(yen1):
                     r2["kontrol"] = k2 + [_kontrol_metni(x) for x in yen2]

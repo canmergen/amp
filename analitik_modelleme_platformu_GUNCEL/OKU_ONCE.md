@@ -955,7 +955,24 @@ tanıtır; sayfalar sol bardan açılır.
     kesin bilgi olarak gider; model tanımla karşılaştırıp tek açık
     açıklama yazar, tanımda olup adda olmayan bilgiyi `ek` (Ek bilgi)
     olarak ayırır, ad ile tanım çelişkisini `ad_notu`'na yazar. Karttaki
-    sayılar açıklamada geçmeli (kod denetimi). `ACIKLAMA_SURUMU` 2.
+    sayılar açıklamada geçmeli (kod denetimi).
+  - **Üç dil modeli çağrısı** (`aciklama_duzen._isle`, `_denetim`): her
+    grup (8 kolon) için 1) yazar taslağı yazar (`llm.aciklama_duzenle`,
+    rol `aciklama_duzen`); 2) denetçi taslağı kaynaklara göre denetler
+    (`llm.aciklama_kontrol`, rol `aciklama_kontrol`, yazardan farklı model
+    önce): anlam kaybı, eklenen anlam, karttaki eksik bilgi, anlaşılırlık
+    (dizilmiş isimler), gereksiz değişiklik, yazar kurallarına aykırılık;
+    cevap: uygun, sorunlar, kendi önerisi; 3) yalnız denetçinin sorun
+    bulduğu kolonlarda karar çağrısı (`llm.aciklama_karar`, rol
+    `aciklama_karar`, düşünen model önce) taslak, sorunlar ve öneriyi
+    kaynaklarla tartıp son açıklamayı yazar (`ilk_aciklama` taslağı
+    saklar). Denetçi uygun bulduysa taslak son açıklamadır. Kartta
+    satırda "Denetim: uygun bulundu." ya da "Denetim: <sorun>. Son
+    açıklama denetimle birlikte yazıldı." (`denetim`; aileye aktarımda
+    sayıları değişir). Denetim cevap veremezse "Denetim yapılamadı";
+    karar cevap veremezse taslak kalır ve kontrol notu ("Denetçinin bulduğu
+    sorun çözülmedi") yazar, satır toplu onaya girmez. Kod denetimi son
+    açıklamada çalışır. İptal edilince denetim ve karar çağrılmaz.
   - **Onay:** her satırda Onay kutusu ve "Görünenleri Onayla" (soru, ad /
     dağılım notu ya da kontrol notu olan satırı atlar). Onay çalışma
     klasöründeki kayda yazılır (`kabul`: onaylanan açıklama metni);
@@ -984,7 +1001,7 @@ tanıtır; sayfalar sol bardan açılır.
     noktalamasız en uzun ortak dizi); bütün metni yeniden okumak gerekmez.
     Sözlüğe yazılan "N kolonun açıklaması düzeltildi" sayısı yine her
     farklı metni sayar.
-  - **En az değişiklik (istem, `ACIKLAMA_SURUMU` 4):** dil modeli yalnız
+  - **En az değişiklik (istem, `ACIKLAMA_SURUMU` 5):** dil modeli yalnız
     gereken yeri düzeltir; orijinal anlaşılır ve doğruysa cümleyi yeniden
     kurmaz, anlamı aynı kalan ifadeyi (ek, sözcük sırası, eş anlamlı)
     değiştirmez; dönem orijinalde açıksa ("son 3 günde") dokunmaz, yalnız

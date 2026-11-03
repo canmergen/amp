@@ -962,6 +962,12 @@ ORKESTRA = {
     # ACIKLAMA DUZENLEME: butun kolonlar (cok sayida cagri): hizli model
     # once; cevap veremezse siradaki.
     "aciklama_duzen": ("qwen_flash", "llama"),
+    # ACIKLAMA DENETIMI (ikinci cagri): taslagi yazandan farkli model
+    # (bagimsiz goz); cevap veremezse siradaki.
+    "aciklama_kontrol": ("llama", "qwen_flash"),
+    # ACIKLAMA KARARI (ucuncu cagri; yalniz denetcinin sorun buldugu
+    # kolonlar): dusunen model once.
+    "aciklama_karar": ("qwen_thinking", "llama", "qwen_flash"),
     # AD PARCALARI (01.2.4.1): parca anlami (az sayida, onemli karar):
     # dusunen model once.
     "parca": ("qwen_thinking", "llama", "qwen_flash"),
@@ -2393,6 +2399,11 @@ def aciklama_duzenle(girdiler, orkestra=None):
         en_cok=ACIKLAMA_DUZEN_TOKEN_TABAN + ACIKLAMA_DUZEN_TOKEN_KOLON * len(girdiler))
     if not model:
         return {}, _orkestra_hatasi(ork, "açıklama düzenleme")
+    return _duzen_ciktisi(veri, girdiler, model), None
+
+
+def _duzen_ciktisi(veri, girdiler, model):
+    """Yazar ve karar cagrisinin ortak ciktisi: {kolon: alanlar}."""
     gecerli = {str(g["kolon"]) for g in girdiler}
     sonuc = {}
     for x in veri.get("kolonlar") or []:
@@ -2407,7 +2418,152 @@ def aciklama_duzenle(girdiler, orkestra=None):
             "ad_notu": _donem_metni(x.get("ad_notu")),
             "dagilim_notu": _donem_metni(x.get("dagilim_notu")),
             "model": MODEL_ADLARI.get(model, model)}
+    return sonuc
+
+
+# ---------------------------------------------------------------------------
+# ACIKLAMA DENETIMI VE KARARI (ikinci ve ucuncu cagri)
+#   1. yazar (SISTEM_ACIKLAMA_DUZEN) taslagi yazar;
+#   2. denetci taslagi kaynaklara gore denetler: uygun mu, sorunlar,
+#      kendi onerisi;
+#   3. karar (yalniz denetcinin sorun buldugu kolonlar) taslak, sorunlar
+#      ve oneriyi kaynaklarla tartip son aciklamayi yazar.
+# Denetci uygun bulduysa taslak son aciklamadir (ucuncu cagri yok).
+# ---------------------------------------------------------------------------
+_YAZAR_KURALLARI = SISTEM_ACIKLAMA_DUZEN[
+    SISTEM_ACIKLAMA_DUZEN.index("ANLAMIN KAYNAĞI"):SISTEM_ACIKLAMA_DUZEN.index("BELİRSİZLİK VE ÇELİŞKİ")]
+_YAZAR_CIKTI_KURALLARI = SISTEM_ACIKLAMA_DUZEN[
+    SISTEM_ACIKLAMA_DUZEN.index("ANLAMIN KAYNAĞI"):SISTEM_ACIKLAMA_DUZEN.index("ÇIKTI: Yalnızca şu JSON")]
+
+SISTEM_ACIKLAMA_KONTROL = """Sen bir bankacılık veri sözlüğünün denetçisisin.
+Bir editör her kolonun sözlük açıklamasını düzeltti (TASLAK). Görevin:
+taslağı kaynaklara göre denetlemek. Kaynaklar KESİNDİR: KULLANICI, AİLE
+NOTU, PARÇALAR, KART, ORİJİNAL (KARDEŞLER, DAĞILIM ve ROL yalnız bağlam).
+
+NEYE BAKARSIN
+  1. Anlam kaybı: ORİJİNAL'deki ya da KULLANICI notundaki bir bilgi
+     taslakta yok.
+  2. Eklenen anlam: kaynaklarda olmayan bilgi (yön, birim, dönem, hesap
+     türü ...) taslağa eklenmiş.
+  3. KART'taki bir bilgi taslakta yok.
+  4. Anlaşılırlık: dizilmiş isimler ("giden işlem ortalama tutarı"),
+     bozuk tamlama, yarım ya da anlaşılmaz cümle.
+  5. Gereksiz değişiklik: ORİJİNAL doğru ve anlaşılırken sözcükleri
+     değiştirilmiş, eş anlamlısı yazılmış, istatistik sözcüğü KART'tan
+     farklı yazılmış ("maksimum" yerine "en yüksek").
+  6. Editörün kurallarına aykırılık (aşağıda).
+
+Sorun yoksa "uygun": true, "sorunlar": [], "oneri": "". Sorun varsa
+"uygun": false; "sorunlar": her biri tek kısa, somut madde (ne eksik, ne
+fazla, ne yanlış); "oneri": sorunları gideren açıklama, editörün
+kurallarıyla. Emin olmadığın şeyi sorun sayma; zevk farkını sorun sayma.
+
+EDİTÖRÜN KURALLARI (taslak bunlara uymalı):
+""" + _YAZAR_KURALLARI + """
+GİRDİ: KOLONLAR bloğunda her kolon için kaynak satırları ve TASLAK
+(editörün açıklaması), TASLAK KARARI.
+
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN
+yaz; her kolon için bir kayıt.
+{"kolonlar": [{"ad": "...", "uygun": true, "sorunlar": [], "oneri": ""}]}""" \
+    + SINIRLAYICI_KURALI
+
+SISTEM_ACIKLAMA_KARAR = """Sen bir bankacılık veri sözlüğünün baş
+editörüsün. Her kolonun açıklaması iki elden geçti: bir editör TASLAK
+yazdı, bir denetçi taslağı kaynaklara göre denetleyip DENETÇİ SORUNLARI
+ve DENETÇİ ÖNERİSİ yazdı. Görevin son açıklamayı yazmak.
+
+NASIL KARAR VERİRSİN
+  - Denetçinin her sorununu kaynaklarla (KULLANICI, AİLE NOTU, PARÇALAR,
+    KART, ORİJİNAL) karşılaştır: kaynak denetçiyi doğruluyorsa düzelt,
+    doğrulamıyorsa taslağı koru.
+  - TASLAK ile DENETÇİ ÖNERİSİ'nden hangisi kaynaklara daha sadık ve
+    daha anlaşılırsa onu al; gerekirse ikisini birleştir. İkisinde de
+    olmayan yeni bir anlam ekleme.
+  - TASLAK ALANLARI'ndaki ek bilgi, soru, ad ve dağılım notlarını koru;
+    yalnız son açıklamayla çelişiyorsa düzelt.
+  - "karar": son metinde ne yaptığını yaz (taslağı aynen koruduysan
+    taslağın kararını; düzelttiysen "Netleştirildi: <ne değişti>.").
+
+KURALLAR (son açıklama bunlara uymalı):
+""" + _YAZAR_CIKTI_KURALLARI + """
+GİRDİ: KOLONLAR bloğunda her kolon için kaynak satırları, TASLAK, TASLAK
+KARARI, TASLAK ALANLARI, DENETÇİ SORUNLARI ve DENETÇİ ÖNERİSİ.
+
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN
+yaz; her kolon için bir kayıt.
+{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": ""}]}""" \
+    + SINIRLAYICI_KURALI
+ACIKLAMA_KONTROL_TOKEN_KOLON = 250
+
+
+def _taslak_satirlari(t, kontrol=None):
+    s = ["  TASLAK: %s" % (_kirp(t.get("aciklama"), 400) or "(boş)")]
+    if str(t.get("karar") or "").strip():
+        s.append("  TASLAK KARARI: %s" % _kirp(t["karar"], 200))
+    if kontrol is not None:
+        alan = ["%s: %s" % (e, _kirp(t.get(k), 200)) for k, e in
+                (("ek", "ek bilgi"), ("soru", "soru"), ("parca", "parça"),
+                 ("ad_notu", "ad notu"), ("dagilim_notu", "dağılım notu"))
+                if str(t.get(k) or "").strip()]
+        if alan:
+            s.append("  TASLAK ALANLARI: %s" % "; ".join(alan))
+        s.append("  DENETÇİ SORUNLARI: %s" % "; ".join(_kirp(x, 200) for x in kontrol.get("sorunlar") or []))
+        if str(kontrol.get("oneri") or "").strip():
+            s.append("  DENETÇİ ÖNERİSİ: %s" % _kirp(kontrol["oneri"], 400))
+    return s
+
+
+def aciklama_kontrol(girdiler, taslaklar, orkestra=None):
+    """Ikinci cagri. taslaklar: {kolon: yazarin sonucu}. Doner:
+    ({kolon: {"uygun": bool, "sorunlar": [metin], "oneri": metin}}, hata)."""
+    girdiler = [g for g in girdiler if (taslaklar.get(g["kolon"]) or {}).get("aciklama")]
+    if not girdiler:
+        return {}, None
+    ork = orkestra or Orkestra(arka=True)
+    govde = _veri_blogu("KOLONLAR:", "\n".join(
+        "\n".join([_aciklama_duzen_satiri(g)] + _taslak_satirlari(taslaklar[g["kolon"]]))
+        for g in girdiler))
+    model, veri = ork.json_cagir(
+        ork.modeller("aciklama_kontrol"), SISTEM_ACIKLAMA_KONTROL, govde, 0.1,
+        zaman_asimi=ACIKLAMA_DUZEN_ZAMAN_ASIMI,
+        en_cok=ACIKLAMA_DUZEN_TOKEN_TABAN + ACIKLAMA_KONTROL_TOKEN_KOLON * len(girdiler))
+    if not model:
+        return {}, _orkestra_hatasi(ork, "açıklama denetimi")
+    gecerli = {str(g["kolon"]) for g in girdiler}
+    sonuc = {}
+    for x in veri.get("kolonlar") or []:
+        if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
+            continue
+        sorunlar = [_donem_metni(y) for y in (x.get("sorunlar") or []) if _donem_metni(y)] \
+            if isinstance(x.get("sorunlar"), list) else \
+            ([_donem_metni(x.get("sorunlar"))] if _donem_metni(x.get("sorunlar")) else [])
+        uygun = x.get("uygun")
+        uygun = (str(uygun).strip().lower() in ("true", "1", "evet")) if not isinstance(uygun, bool) else uygun
+        # Sorun yazip "uygun" diyen cevap sorunlu sayilir (temkinli taraf).
+        sonuc[str(x["ad"])] = {"uygun": bool(uygun) and not sorunlar, "sorunlar": sorunlar[:6],
+                               "oneri": _donem_metni(x.get("oneri"))}
     return sonuc, None
+
+
+def aciklama_karar(girdiler, taslaklar, kontroller, orkestra=None):
+    """Ucuncu cagri (yalniz denetcinin sorun buldugu kolonlar). Doner:
+    aciklama_duzenle ile ayni bicim."""
+    girdiler = [g for g in girdiler if g["kolon"] in taslaklar and g["kolon"] in kontroller]
+    if not girdiler:
+        return {}, None
+    ork = orkestra or Orkestra(arka=True)
+    govde = _veri_blogu("KOLONLAR:", "\n".join(
+        "\n".join([_aciklama_duzen_satiri(g)]
+                  + _taslak_satirlari(taslaklar[g["kolon"]], kontroller[g["kolon"]]))
+        for g in girdiler))
+    model, veri = ork.json_cagir(
+        ork.modeller("aciklama_karar"), SISTEM_ACIKLAMA_KARAR, govde, 0.1,
+        zaman_asimi=ACIKLAMA_DUZEN_ZAMAN_ASIMI,
+        en_cok=ACIKLAMA_DUZEN_TOKEN_TABAN + ACIKLAMA_DUZEN_TOKEN_KOLON * len(girdiler))
+    if not model:
+        return {}, _orkestra_hatasi(ork, "açıklama kararı")
+    return _duzen_ciktisi(veri, girdiler, model), None
 
 
 SISTEM_KISALTMA_STANDART = """Sen bir veri sözlüğü editörüsün. Kolon

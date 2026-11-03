@@ -10501,6 +10501,9 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                 k += " (" + v.aile_kaynagi + " kolonundan sayılar değiştirilerek aktarıldı)";
             td.appendChild(elYap("div", "dg-acik-karar", k));
         }
+        /* Denetim: ikinci dil modeli çağrısının sonucu (uygun bulundu ya
+           da bulduğu sorun ve son açıklamanın buna göre yazıldığı). */
+        if (v.denetim) td.appendChild(elYap("div", "dg-acik-karar", tireSade(v.denetim)));
         if (v.soru) td.appendChild(elYap("div", "dg-donem-soru",
             "Soru: " + tireSade(v.soru) + (v.parca ? " (Toplu Sorular: " + v.parca + ")" : "")));
         if (v.ad_notu) td.appendChild(elYap("div", "dg-acik-not", "Ad: " + tireSade(v.ad_notu)));
