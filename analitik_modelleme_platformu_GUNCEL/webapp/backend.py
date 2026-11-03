@@ -2981,8 +2981,8 @@ def parca_iptal_endpoint():
 
 @app.route("/kolon_ad_onizle", methods=["POST"])
 def kolon_ad_onizle_endpoint():
-    """Kolon Adlari: Ad Standardi'nin sirasi, ada eklenecek parcalar ya da
-    parca turleri degisince adlar yeniden kurulur (durum kaydedilmez); son
+    """Kolon Adlari: Ad Standardi'nin sirasi, donem yazilislari, ada
+    eklenecek parcalar ya da parca turleri degisince adlar yeniden kurulur (durum kaydedilmez); son
     kontrol surerken kart bununla yoklar."""
     try:
         istek = request.get_json(force=True) or {}
@@ -2991,10 +2991,12 @@ def kolon_ad_onizle_endpoint():
         sira = istek.get("sira")
         ekler = istek.get("eklenecekler")
         turler = istek.get("turler")
+        yazilis = istek.get("donem_yazilis")
         return jsonify({"tamam": True, "kolon_ad": akis.kolon_ad_onizle(
             durum, sira if isinstance(sira, list) else None,
             ekler if isinstance(ekler, list) else None,
-            turler if isinstance(turler, dict) else None)})
+            turler if isinstance(turler, dict) else None,
+            yazilis if isinstance(yazilis, dict) else None)})
     except Exception as e:
         return jsonify(_hata_govdesi("kolon_ad_onizle", e)), 200
 

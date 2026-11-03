@@ -8615,8 +8615,7 @@ function dogrulamaKartiEkle(alan, blok) {
         if (adimModu === "donem" && donErisim) {
             const bek = donErisim.bekliyor(), eks = donErisim.eksik(), yok = donErisim.adlardaYok();
             const kon = donErisim.kontrol(), kay = donErisim.kaydedilmemis();
-            const adh = donErisim.adHata();
-            const dur = bek || eks > 0 || yok > 0 || kon > 0 || adh > 0 || kay > 0;
+            const dur = bek || eks > 0 || yok > 0 || kon > 0 || kay > 0;
             birincil.disabled = dur;
             gerekce.hidden = !dur;
             gerekce.textContent = bek ? "Dil modeli yorumunu bitirince onaylanabilir."
@@ -8627,8 +8626,6 @@ function dogrulamaKartiEkle(alan, blok) {
                     + "yazın ya da satırı çıkarın. Tabloda kalan her satır hafızaya kaydedilir."
                 : kon > 0 ? ftBinlik(kon) + " satırda yer tutucu geçersiz: satırdaki «Kontrol» "
                     + "notuna bakın."
-                : adh > 0 ? ftBinlik(adh) + " satırda yeni adda yazılış geçersiz: kutunun altındaki "
-                    + "nota bakın."
                 : kay > 0 ? ftBinlik(kay) + " satır kaydedilmedi: onaylamadan önce her satırı "
                     + "«Kaydet» ile kaydedin ya da satırı çıkarın."
                 : "";
@@ -8673,7 +8670,7 @@ function dogrulamaKartiEkle(alan, blok) {
             gerekce.textContent = sk ? "Son kontrol sürüyor: dil modeli parça türlerini yeni adlar ve onaylı "
                     + "açıklamalarla karşılaştırıyor. Bitince adlar gerekirse yeniden kurulur; ailelerin onayını "
                     + "ondan sonra verin."
-                : sor > 0 ? ftBinlik(sor) + " yerde ad ya da kısaltma sorunu var."
+                : sor > 0 ? ftBinlik(sor) + " yerde ad, kısaltma ya da dönem yazılışı sorunu var."
                 : ek > 0 ? "Ada eklenecek " + ftBinlik(ek) + " parça onay bekliyor. Önce yukarıdaki «Ada "
                     + "Eklenecek Parçalar»ı onaylayın; adlar buna göre kurulur."
                 : on > 0 ? ftBinlik(on) + " aile onay bekliyor. Her aile için yeni adı ya da eski adın "
@@ -9682,10 +9679,12 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         stKap.classList.add("yukleniyor");
         ekKap.classList.add("yukleniyor");
         tkKap.classList.add("yukleniyor");
+        dyKap.classList.add("yukleniyor");
         fetch(getWebAppBackendUrl("kolon_ad_onizle"), {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify(ftKimlikGovdesi({ sira: sira, eklenecekler: ekDeger(),
-                                                   turler: Object.assign({}, turSecim) }))
+                                                   turler: Object.assign({}, turSecim),
+                                                   donem_yazilis: dyDeger() }))
         })
         .then(r => r.json())
         .then(d => {
@@ -9693,6 +9692,10 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             const k = d && d.kolon_ad;
             if (!k) { tkYoklaKur(); return; }
             if (k.son_kontrol) skAl(k.son_kontrol);
+            (k.donem_yazilis || []).forEach(x => {
+                const y = dyler.find(z => z.kalip === x.kalip);
+                if (y) { y.hata = x.hata || ""; y.ornek_yeni = x.ornek_yeni || ""; }
+            });
             const harita = {};
             (k.satirlar || []).forEach(r => { harita[r.aile] = r.kolonlar; });
             /* Ad değişen ailenin onayı kalkar (yeni adı görülmedi). */
@@ -9706,12 +9709,91 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const x = ekler.find(y => y.anahtar === e.anahtar);
                 if (x) x.gecerli = !!e.gecerli;
             });
-            tabloCiz(); siraCiz(); ekCiz(); tkCiz();
+            tabloCiz(); siraCiz(); ekCiz(); tkCiz(); dyNotlar();
             if (degisti) degisti();
             tkYoklaKur();
         })
         .catch(() => { tkYoklaKur(); })
-        .then(() => { if (no === onizleSayac) { stKap.classList.remove("yukleniyor"); ekKap.classList.remove("yukleniyor"); tkKap.classList.remove("yukleniyor"); } });
+        .then(() => { if (no === onizleSayac) { stKap.classList.remove("yukleniyor"); ekKap.classList.remove("yukleniyor"); tkKap.classList.remove("yukleniyor"); dyKap.classList.remove("yukleniyor"); } });
+    }
+
+    /* ---- DÖNEM YAZILIŞLARI ----
+       01.2.4.1'de onaylanan dönem kalıplarının yeni addaki yazılışı (ör.
+       [sayı]D için L[sayı]D: 30D yeni adda L30D). Yazılış değişince adlar
+       hemen yeniden kurulur; boşsa kalıp aynen kalır. Onayda hafızaya
+       yazılır. dyler: [{kalip, deger (ekrandaki), ornek, ornek_yeni, hata,
+       kolon}]. */
+    const dyler = (ka.donem_yazilis || []).map(x => Object.assign({}, x, { deger: donemAdGoster(x.yazilis) }));
+    const dyKap = elYap("div", "dg-kad-ek dg-kad-dy");
+    dyKap.hidden = !dyler.length;
+    kart.appendChild(dyKap);
+    const dyDeger = () => {
+        const o = {};
+        dyler.forEach(x => { o[x.kalip] = donemAdIc(x.kalip, x.deger); });
+        return o;
+    };
+    const dyHata = x => donemAdHatasi(x.kalip, x.deger);
+    const dyNotEl = {};
+    function dyNotYaz(x) {
+        const el = dyNotEl[x.kalip];
+        if (!el) return;
+        const h = dyHata(x);
+        el.classList.toggle("dg-donem-ad-hata", !!h);
+        const tr = el.closest("tr");
+        if (tr) tr.classList.toggle("dg-donem-dikkat", !!h);
+        const ic = donemAdIc(x.kalip, x.deger);
+        el.textContent = h ? h
+            : !ic ? "Kalıp yeni adda aynen kalır" + (x.ornek ? " (ör. " + x.ornek + ")." : ".")
+            : x.ornek ? "Ör. " + x.ornek + " → " + donemAdDoldur(x.kalip, ic, x.ornek) : "";
+    }
+    const dyNotlar = () => dyler.forEach(dyNotYaz);
+    function dyCiz() {
+        dyKap.textContent = "";
+        if (!dyler.length) return;
+        const bas = elYap("div", "dg-kad-standart-bas");
+        const baslik = elYap("span", "dg-kad-standart-ad", "Dönem Yazılışları · " + ftBinlik(dyler.length));
+        baslik.appendChild(bolmeBilgiSimgesi("Dönem Bilgisi'nde onaylanan kalıpların yeni adlardaki "
+            + "yazılışı. Kalıbın sayıları yerine [sayı] yazın; sırayla kalıbın sayıları gelir. Ör. "
+            + "[sayı]D için L[sayı]D yazılırsa 30D yeni adda L30D olur; [sayı]D_[sayı]D için "
+            + "BTWN_[sayı]D_[sayı]D yazılırsa 3D_6D yeni adda BTWN_3D_6D olur. Aynı sayıyı tekrar "
+            + "yazmak için [sayı 1], [sayı 2]; hesap için [sayı 1 × sayı 2] yazın (ör. [sayı]D_X[sayı] "
+            + "için L[sayı 1]D_P[sayı 1 × sayı 2]D ile 7D_X2 yeni adda L7D_P14D olur). Boş bırakılırsa "
+            + "kalıp aynen kalır. Yazılışı değiştirince aşağıdaki adlar hemen yeniden kurulur; "
+            + "onaylayınca hafızaya yazılır ve sonraki çalışmalarda dolu gelir. Girdi veri setiniz ve "
+            + "sözlüğünüz değişmez.", "Dönem Yazılışları"));
+        bas.append(baslik, elYap("span", "dg-donem-tur-not", "Kalıbın yeni addaki yazılışı; boşsa aynen kalır."));
+        dyKap.appendChild(bas);
+        const t = elYap("table", "dg-tablo dg-kad-dy-tablo");
+        const h = document.createElement("thead"), hr = document.createElement("tr");
+        ["Kalıp", "Kolonlar", "Yeni Adda"].forEach(x => hr.appendChild(elYap("th", "", x)));
+        h.appendChild(hr); t.appendChild(h);
+        const b = document.createElement("tbody");
+        dyler.forEach(x => {
+            const tr = elYap("tr", "dg-satir");
+            tr.appendChild(elYap("td", "dg-kolon", donemSayiGoster(x.kalip)));
+            tr.appendChild(elYap("td", "", ftBinlik(x.kolon || 0) + " kolon" + (x.ornek ? " · ör. " + x.ornek : "")));
+            const td = elYap("td", "");
+            const g = document.createElement("input");
+            g.type = "text"; g.className = "dg-giris dg-donem-ad-giris";
+            g.value = x.deger || "";
+            g.placeholder = "Boş: kalıp aynen";
+            g.disabled = kilitli;
+            g.setAttribute("aria-label", donemSayiGoster(x.kalip) + " yeni adda yazılış");
+            const not = elYap("div", "dg-donem-tur-not", "");
+            dyNotEl[x.kalip] = not;
+            g.oninput = () => { x.deger = g.value; dyNotYaz(x); if (degisti) degisti(); };
+            /* Kutudan çıkınca adlar yeniden kurulur (geçersizse kurulmaz). */
+            g.onchange = () => { if (!dyHata(x)) onizle(); };
+            td.append(g, not);
+            tr.appendChild(td);
+            tr.classList.toggle("dg-donem-dikkat", !!dyHata(x));
+            b.appendChild(tr);
+            dyNotYaz(x);
+        });
+        t.appendChild(b);
+        const sar_ = elYap("div", "dg-tablo-sar");
+        sar_.appendChild(t);
+        dyKap.appendChild(sar_);
     }
 
     /* ---- SON KONTROL: PARÇA TÜRLERİ ----
@@ -10133,23 +10215,26 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         return tr;
     }
     siraCiz();
+    dyCiz();
     ekCiz();
     tkCiz();
     tabloCiz();
     tkYoklaKur();
     return {
         deger: () => ({ sira: sira.slice(), eklenecekler: ekDeger(), turler: Object.assign({}, turSecim),
+                        donem_yazilis: dyDeger(),
                         aileler: satirlar.map(r => ({ aile: r.aile, secim: r.secim, onay: r.onay })) }),
         sonKontrolSuruyor: tkSuruyor,
         onaysiz: () => satirlar.filter(r => !r.onay).length,
         ekOnaysiz: () => ekler.filter(e => !e.onay).length,
-        sorunlu: () => Object.keys(sorunlar()).length + ekler.filter(e => !ekGecerli(e)).length,
+        sorunlu: () => Object.keys(sorunlar()).length + ekler.filter(e => !ekGecerli(e)).length
+            + dyler.filter(dyHata).length,
         sayilar: () => {
             let deg = 0;
             satirlar.forEach(r => { if (r.secim === "yeni") deg += r.kolonlar.filter(([e, y]) => e !== y).length; });
             return { aile: satirlar.length, degisen: deg };
         },
-        kilitle: k => { kilitli = k; siraCiz(); ekCiz(); tkCiz(); tabloCiz(); if (!k) tkYoklaKur(); },
+        kilitle: k => { kilitli = k; siraCiz(); dyCiz(); ekCiz(); tkCiz(); tabloCiz(); if (!k) tkYoklaKur(); },
         bekliyor: () => false
     };
 }
@@ -11672,8 +11757,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const YAKIN_TAMAM = new Set();
     /* Hafızadan gelen satıra kullanıcı dokunmadı mı? duzen'e çizimde
        kendiliğinden giren "ayrilan" (hafızadakinin kopyası) dokunma sayılmaz. */
-    const DUZEN_DEGISIKLIK = ["anlam", "kalip", "zaman_tur", "haric", "deger_anlam", "cikar", "aileye_kat",
-                              "ad_yazilis"];
+    const DUZEN_DEGISIKLIK = ["anlam", "kalip", "zaman_tur", "haric", "deger_anlam", "cikar", "aileye_kat"];
     const dokunulmadi = (r, anah) => {
         const dz = duzen[anah];
         if (!dz) return true;
@@ -11896,39 +11980,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         if (r.bekliyor && calisiyor) tdK.appendChild(elYap("div", "dg-donem-tur-not",
                                                             "Tür dil modelinin yorumundan sonra gelir."));
         else tdK.append(turSec, turNot);
-        /* YENİ ADDA: kalıbın yeni kolon adındaki yazılışı; boşsa kalıp
-           aynen kalır. Altında ilk değerle örnek ya da hata. */
-        const adKap = elYap("div", "dg-donem-ad");
-        const adBas = elYap("span", "dg-donem-ad-bas", "Yeni adda");
-        adBas.appendChild(bolmeBilgiSimgesi("Kolon Adları adımında bu kalıbın yeni addaki "
-            + "yazılışı. Kalıbın sayıları yerine [sayı] yazın; sırayla kalıbın sayıları gelir. "
-            + "Ör. [sayı]D_[sayı]D için BTWN_[sayı]D_[sayı]D yazılırsa 3D_6D yeni adda "
-            + "BTWN_3D_6D olur. Aynı sayıyı tekrar yazmak için [sayı 1], [sayı 2]; hesap için "
-            + "[sayı 1 × sayı 2] yazın (ör. [sayı]D_X[sayı] için L[sayı 1]D_P[sayı 1]D ile 7D_X2 "
-            + "yeni adda L7D_P7D olur). Boş bırakılırsa kalıp aynen kalır. Girdi veri setiniz ve "
-            + "sözlüğünüz değişmez.", "Yeni adda"));
-        const adGir = document.createElement("input");
-        adGir.type = "text"; adGir.className = "dg-giris dg-donem-ad-giris";
-        adGir.value = dz && dz.ad_yazilis !== undefined ? dz.ad_yazilis : donemAdGoster(r.ad_yazilis);
-        adGir.placeholder = "Boş: kalıp aynen";
-        adGir.disabled = kilitli || calisiyor;
-        adGir.setAttribute("aria-label", "Yeni adda yazılış");
-        const adNot = elYap("div", "dg-donem-tur-not", "");
-        const adNotYaz = () => {
-            const h = donemAdHatasi(kalipNe(), adGir.value);
-            adNot.classList.toggle("dg-donem-ad-hata", !!h);
-            if (h) { adNot.textContent = h; return; }
-            const ic = donemAdIc(kalipNe(), adGir.value);
-            const ilk = ((r.degerler || []).length ? r.degerler : adlardaBul(kalipNe()))[0];
-            adNot.textContent = ic && ilk ? "Ör. " + ilk.deger + " → " + donemAdDoldur(kalipNe(), ic, ilk.deger)
-                : ic ? "" : "Kalıp yeni adda aynen kalır.";
-        };
-        adGir.oninput = () => {
-            duzen[anah] = Object.assign(duzen[anah] || {}, { ad_yazilis: adGir.value });
-            adNotYaz(); boya(); sekmeSayilari(); if (degisti) degisti();
-        };
-        adKap.append(adBas, adGir, adNot);
-        if (!(r.bekliyor && calisiyor)) tdK.appendChild(adKap);
+        /* Yeni adda yazılış burada değil, 01.2.4.4 Kolon Adları'nda
+           (adlar orada kurulur). */
         tr.appendChild(tdK);
         /* ADLARDA GEÇEN: bütün değerler ve kolon sayıları. Altında
            BİRLİKTE GEÇTİĞİ ikililer: çipe tıklamak o ikiliyi hariç tutar
@@ -12397,7 +12450,6 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             let kgZ = null;
             kg.addEventListener("input", () => {
                 kaydet();
-                adNotYaz();
                 /* Elle yazılan kalıp: yazmayı bırakınca anlam boşsa yazdır. */
                 clearTimeout(kgZ);
                 kgZ = setTimeout(() => {
@@ -12427,19 +12479,15 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         x.detay = detay;
         x.turSec = turSec;
         x.boya = () => boya();
-        x.adYazilis = () => donemAdIc(kalipNe(), adGir.value);
-        x.adHata = () => donemAdHatasi(kalipNe(), adGir.value);
-        x.adNotYaz = adNotYaz;
-        adNotYaz();
         x.satirCikti = () => ({
             kalip: String(kalipNe() || "").toUpperCase(), anlam: anlamAl().trim(),
             elle: !!r.elle, cikar: false, haric: Array.from(haric).sort(),
             deger_anlam: Object.assign({}, dgAnlam), ayrilan: ayrilanCikti(r, anah),
-            zaman_tur: turSec.value, ad_yazilis: x.adYazilis() });
+            zaman_tur: turSec.value });
         x.imza = () => {
             const c = x.satirCikti();
             return JSON.stringify([c.kalip, c.anlam.replace(/\s+/g, " "), c.zaman_tur, c.haric,
-                Object.entries(c.deger_anlam).sort(), Object.keys(c.ayrilan).sort(), c.ad_yazilis]);
+                Object.entries(c.deger_anlam).sort(), Object.keys(c.ayrilan).sort()]);
         };
         x.kayitliMi = () => KAYIT[anah] !== undefined && KAYIT[anah] === x.imza();
         /* KAYDET: satır onayı beklemeden hafızaya yazılır. toplu: Hepsini
@@ -13279,7 +13327,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             kalip: x.kg ? x.kg.value.trim() : x.r.kalip, anlam: x.anlam().trim(),
             elle: !!x.r.elle, cikar: false, haric: Array.from(x.haric),
             deger_anlam: Object.assign({}, x.dgAnlam), ayrilan: ayrilanCikti(x.r, x.anah),
-            zaman_tur: x.turSec.value, ad_yazilis: x.adYazilis() }))
+            zaman_tur: x.turSec.value }))
             .concat(katilanlar.map(c => ({
                 kalip: c.r.kalip, aileye_kat: true, cikar: false, elle: false, anlam: "" })))
             .concat(cikanlar.map(c => ({
@@ -13295,8 +13343,6 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         /* Onayı durduran: anlamdaki yer tutucu geçersiz. */
         kontrol: () => acik().filter(x => (x.anlam().trim() && x.yt())
             || Object.values(x.dgAnlam || {}).some(v => donemYerTutucuHatasi("", v))).length,
-        /* Onayı durduran: yeni adda yazılış geçersiz. */
-        adHata: () => acik().filter(x => x.adHata()).length,
         /* Onayı durduran: tabloda kaydedilmemiş satır (her satır «Kaydet»
            ile tek tek kaydedilir; hafızadan gelen, dokunulmamış satır
            kaydedilmiş sayılır). */

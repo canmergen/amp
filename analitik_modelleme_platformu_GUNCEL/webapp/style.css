@@ -5038,6 +5038,15 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-kad-ek-tablo th:nth-child(5) { width: 62px; }
 .dg-kad-ek-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
 .dg-kad-ek-giris { width: 120px; text-transform: uppercase; }
+/* Dönem yazılışları (Ad Standardı'nın altında). */
+.dg-kad-dy { border-top-color: var(--murekkep-cizgi); }
+.dg-kad-dy-tablo { table-layout: fixed; }
+.dg-kad-dy-tablo th:nth-child(1) { width: 26%; }
+.dg-kad-dy-tablo th:nth-child(2) { width: auto; }
+.dg-kad-dy-tablo th:nth-child(3) { width: 34%; }
+.dg-kad-dy-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
+.dg-kart .dg-kad-dy-tablo tr.dg-satir > td { background: transparent; }
+.dg-kad-dy-tablo tr.dg-donem-dikkat > td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
 /* Son kontrol: parça türleri (Ad Standardı'nın altında). */
 .dg-kad-tur { border-top-color: var(--murekkep-cizgi); }
 .dg-kad-tur-tablo { table-layout: fixed; }

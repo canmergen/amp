@@ -755,21 +755,11 @@ tanıtır; sayfalar sol bardan açılır.
   anlamla örnek tanımlardan yalnız 0 / 3 tanesi uyuşuyor; anlamı kontrol
   edin."). Bakılana kadar satırda "Dil modeli yorumluyor". Bu çalışmada
   ya da tablonun son kararında verilen karar her zaman geçerlidir.
-- **Yeni adda yazılış:** kalıp hücresinde tür kutusunun altında "Yeni
-  adda" alanı: kalıbın 01.2.4.4 Kolon Adları'nda yeni addaki yazılışı.
-  Kalıbın sayıları yerine [sayı] yazılır; sırayla kalıbın sayıları gelir
-  (ör. [sayı]D_[sayı]D için BTWN_[sayı]D_[sayı]D: 3D_6D yeni adda
-  BTWN_3D_6D). Boşsa kalıp aynen kalır. Yalnız harf, rakam, alt çizgi ve
-  [sayı]; harfle ya da [sayı] ile başlar; [sayı] adedi kalıbınkiyle aynı
-  olmalı (aile kalıbında 1). Altında ilk değerle örnek ("Ör. 3D_6D →
-  BTWN_3D_6D") ya da kırmızı hata; geçersizken onay kapalı ("N satırda yeni
-  adda yazılış geçersiz"). Satırın kayıt imzasına girer (değişince
-  yeniden Kaydet). Kararda ve satırda `ad_yazilis` (içeride yer tutucuyla:
-  `BTWN_<N>D_<N>D`), durumda `durum["donem_ad_yazilis"]` ({kalıp:
-  yazılış}), hafızada `donem_ad` (Kaydet, onay ve Kaydı Geri Al yazar;
-  boş bırakılınca ve kalıp hafızadan silinince kalkar). Satıra önceki
-  karar, yoksa hafıza gelir. Denetim ve doldurma `donem.ad_sablonu_hatasi`,
-  `donem.ad_sablonu_doldur`.
+- **Yeni adda yazılış 01.2.4.1'de değil:** kalıbın yeni addaki yazılışı
+  01.2.4.4 Kolon Adları'nda "Dönem Yazılışları" panelinde verilir (adlar
+  orada kurulur; 01.2.4.1'de ad değiştiriyormuş gibi görünen kutu yok).
+  01.2.4.1 kararı, Kaydet ve Kaydı Geri Al hafızadaki yazılışa (`donem_ad`)
+  dokunmaz; eski kararlardaki `ad_yazilis` yok sayılır.
 - **İki parçalı zaman kalıbı:** yan yana iki sayılı dönem parçası
   (3D_6D) Tüm Parçalar'da ikili olarak da yer alır (grubu `<N>D_<N>D`);
   "Kalıplara Al" ile tek satır olur (ör. anlamı "N ile N gün arası", yeni
@@ -1198,10 +1188,24 @@ tanıtır; sayfalar sol bardan açılır.
   - Her parça standart yazılışını alır; birimler Ad Standardı'ndaki yer
     sırasına dizilir (aynı yerdekiler adda geçtikleri sırayla). Sayılı
     zaman parçası yazıldığı gibi kalır (3_M, H00_06), yeri Zaman. Dönem
-    kalıbının "Yeni adda" yazılışı varsa o yazılır: önce yan yana iki
+    kalıbının yeni adda yazılışı varsa o yazılır: önce yan yana iki
     zaman birimi (3D_6D, `<N>D_<N>D` → BTWN_3D_6D), sonra tek birim
-    (`parca.ad_birimleri(..., yazilislar)`, `akis_faz01._donem_ad_yazilislari`:
-    bu çalışmada onaylı kalıplar; eski çalışmada hafızadaki yazılış).
+    (`parca.ad_birimleri(..., yazilislar)`).
+  - **Dönem Yazılışları** (Ad Standardı'nın altında;
+    `_donem_yazilis_satirlari`, `_donem_ad_yazilislari`): kolon adlarında
+    geçen her onaylı dönem kalıbı (yer tutuculu; gruptan ayrılan tek
+    değerler hariç) için KALIP / KOLONLAR (kaç kolonda, adlarda ilk geçen
+    örnek; iki parçalı kalıp yan yana iki parçayla aranır, onun içindeki
+    tek parça tek parçalı kalıba sayılmaz) / YENİ ADDA (kutu; ekranda
+    [sayı], içeride `<N>`; boşsa kalıp aynen). Kutunun altında "Ör. 30D →
+    L30D" ya da kırmızı hata (`donemAdHatasi`; sunucuda
+    `donem.ad_sablonu_hatasi`). Kutudan çıkınca adlar yeniden kurulur
+    (`/kolon_ad_onizle` `donem_yazilis`), adı değişen ailenin onayı kalkar;
+    geçersiz yazılış onayı durdurur. Kaynak sırası: kartın gönderdiği, bu
+    çalışmanın önceki kararı (`_kolon_ad_karari["donem_yazilis"]`; eski
+    kayıtta yok), hafıza (`donem_ad`). Onayda `durum["donem_ad_yazilis"]`
+    ve hafızaya yazılır (boş olan hafızadan kalkar); onay metninde "N dönem
+    kalıbının yeni adda yazılışı var".
     Varsayılan sıra: Konu, Yön, Nitelik, Ölçü, İstatistik, Zaman,
     Karşılaştırma, Birim, Diğer (TXN_30D_CNT → TXN_CNT_30D); büyük harf,
     ayraç "_".
