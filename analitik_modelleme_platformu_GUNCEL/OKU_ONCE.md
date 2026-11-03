@@ -419,7 +419,7 @@ tanıtır; sayfalar sol bardan açılır.
   tablonun kaydı yenisiyle değişir. Her dosyanın işi ayrı: dönem
   kalıpları, ad parçaları ve ad standardı `KISALTMA_HAFIZASI.json`'da
   (kurum geneli bilgi); 01.2.4 kontrol adımlarının kararları
-  `KONTROL_GECMISI`'nde (veri seti ve sözlük başına, "Önceki Onaylı
+  `KONTROL_GECMISI.json`'da (veri seti ve sözlük başına, "Önceki Onaylı
   Kontrol Uygulansın"). Bu dosyada dönem kararı tutulmaz; eski dosyadaki
   `donem` alanı ilk okumada düşer (`veri_gecmisi.ALANLAR` = sözlükler,
   roller). 01.2.4.1 yeni çalışmada kalıpları, anlamlarını ve «Ayır» ile
@@ -497,21 +497,26 @@ tanıtır; sayfalar sol bardan açılır.
   çalışma Ad Parçaları'nda yeniden açılır, eski kısaltma kararları
   silinir).
 - **Önceki onaylı kontrol** (`fe_agent/kontrol_gecmisi.py`,
-  `PROJE_HAFIZASI/KONTROL_GECMISI/<anahtar>.json`; anahtar veri setinin ve
-  sözlüklerin adlarından, sözlük sırası önemsiz; yalnız A ve C, B'de
-  tutulmaz). 01.2.4'ün dört alt adımının her şeyi kaydedilir; çalışma
+  `PROJE_HAFIZASI/KONTROL_GECMISI.json`, TEK DOSYA; anahtar okunur: "VERI
+  SETI | SÖZLÜK + SÖZLÜK" (sözlükler sıralı), sözlüksüz "... | sözlüksüz";
+  yalnız A ve C, B'de tutulmaz). Yalnız onaylı kararlar durur; çalışma
   Arşiv'den silinse de kalır:
-  - Onaylanan karar (kartın gönderdiği gövde; `karar`, onayla yazılır,
-    taslağı siler). Kolon Adları'nda onaydaki yeni adlar da (`adlar`).
-  - Taslak: Dönem Bilgisi, Ad Parçaları ve Kolon Adları kartında
-    kullanıcı bir şey değiştirince 1,5 sn sonra onaylanmamış son hâl
-    (`/kontrol_taslak`, `akis_faz01.kontrol_taslak`; açılış ve yoklama
-    taslak sayılmaz; yalnız ekrandaki adımın kartı).
-  - Kolon Kartları: çalışmanın deposu (notlar, parça ve aile notları, dil
-    modeli sonuçları, satır onayları; `depo`), onaylı ve toplam kolon
-    sayısı, adım onaylandıysa `tamam`. Satır onayı, not, parça cevabı ve
-    aileye uygulamada yazılır; depo yazmadan hemen önce bir kez
-    kopyalanır, ardışık yazmalar 1 sn içinde birleşir.
+  - `donem`, `parca`: `karar` (onayda kartın gönderdiği gövde);
+    `kolon_ad`: `karar` ve onaydaki yeni adlar (`adlar`).
+  - `aciklama` (Kolon Kartları): `tamam`, `onayli` / `toplam`, kullanıcı
+    notları (`notlar`, `parca_notlari`, `aile_notlari`, `elle`) ve
+    yalnız onaylanan kolonların son açıklaması (`onaylanan` {kolon:
+    {aciklama, imza, karar, ek, ad_eksik}}). Dil modelinin ara sonuçları
+    yazılmaz. Yeni çalışmada imzası tutan kolon dil modeline gitmeden
+    onaylı gelir; girdisi değişen yeniden yazılır. Yarım kalan Kolon
+    Kartları'nın onaylanan kolonları da gelir.
+  - Taslak (onaylanmamış kart hâli) tutulmaz; `/kontrol_taslak` yazmadan
+    döner.
+  - Kod kaydı içeride eski biçimde görür (`adimlar`, `depo`); okurken
+    `_icten`, yazarken `_diske` çevirir. Eski klasör
+    (`KONTROL_GECMISI/<sha>.json`) varsa ve tek dosya yoksa kayıtlar bir
+    kez tek dosyaya taşınır (taslaklar ve ara sonuçlar düşer); klasör
+    silinmez. Yazmalar arka planda, 1 sn içinde birleşir.
   - **"Önceki Onaylı Kontrol Uygulansın"** seçilince seçenek açıklaması
     neyin onaylı ve yarım olduğunu yazar ("Dönem Bilgisi ve Ad Parçaları
     onaylı; Kolon Kartları içinde 340 / 512 kolon onaylı"). Her alt adım
@@ -527,10 +532,9 @@ tanıtır; sayfalar sol bardan açılır.
       olmalı (girdisi değişen kolonun onayı düşer).
     - Geçmezse kart önceki kararlarla dolu açılır, notta neden yazar
       ("Önceki onaylı karar kendiliğinden uygulanamadı: önceki kararda
-      olmayan 1 parça var (MAX). ..."). Yalnız taslak varsa kart taslakla
-      açılır ("Önceki kontrolden kalan taslak getirildi; kaldığınız yerden
-      devam edin."); Kolon Kartları'nda girdisi aynı kalan kolonlar
-      yeniden yazılmaz, onayları gelir ("N / M kolon onaylı").
+      olmayan 1 parça var (MAX). ..."). Kolon Kartları'nda girdisi aynı
+      kalan kolonlar yeniden yazılmaz, onayları gelir ("N / M kolon
+      onaylı").
     - Deneme alt adım başına bir kez: geri dönüşte kart normal açılır.
       01.2.4'te yeniden seçim yapılınca baştan denenir.
     - Kayıt her durumda tutulur ("adım adım" seçilse de); Dönem'de satır

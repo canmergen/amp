@@ -3240,9 +3240,9 @@ def sozluk_kontrol_uygula(durum):
 
 # ---------------------------------------------------------------------------
 # ONCEKI ONAYLI KONTROL (01.2.4 "onceki"). Alt adimlarin kararlari proje
-# hafizasinda veri seti ve sozluk(ler) basina tutulur (kontrol_gecmisi):
-# onaylanan karar, kart acikken son taslak, Kolon Kartlari'nda satir
-# onaylariyla depo. "onceki" secilince her alt adimin plani once kaydi
+# hafizasinda veri seti ve sozluk(ler) basina tek dosyada tutulur
+# (kontrol_gecmisi, KONTROL_GECMISI.json): onaylanan karar; Kolon
+# Kartlari'nda onaylanan aciklamalar ve notlar (taslak tutulmaz). "onceki" secilince her alt adimin plani once kaydi
 # dener (yalniz ilk giriste; geri donuste kart normal acilir):
 #   * Onaylanmis karar adimin kendi denetiminden YAN ETKISIZ gecerse
 #     (kuru deneme) adim sorulmadan onaylanir; sonuc metni "Önceki onaylı
@@ -3313,27 +3313,10 @@ def _kontrol_aciklama_yaz(durum, tamam=False, karar=None):
 
 
 def kontrol_taslak(durum, adim, govde):
-    """KART ACIKKEN SON HAL (onaylanmamis): Donem Bilgisi, Ad Parcalari ve
-    Kolon Adlari kartlari degisince gonderir; onceki kontrol secilince
-    yarim kalan adim buradan acilir. Yalniz ekrandaki adimin karti."""
-    if adim not in ("donem", "parca", "kolon_ad") or not isinstance(govde, dict):
-        return {"tamam": False}
-    alan = durum.get("_secim_alani")
-    if not (isinstance(alan, dict) and alan.get("adim") == adim):
-        return {"tamam": False}
-    kim = _kontrol_kimligi(durum)
-    if not kim:
-        return {"tamam": False}
-    ek = {}
-    if adim == "kolon_ad":
-        try:
-            kk = _kolon_ad_karari(govde)
-            ek["taslak_adlar"] = {s_["aile"]: s_["kolonlar"]
-                                  for s_ in _kolon_ad_alani(durum, kk["sira"])["satirlar"]}
-        except Exception:
-            return {"tamam": False}
-    kontrol_gecmisi.taslak_yaz(kim[0], kim[1], kim[2], adim, govde, **ek)
-    return {"tamam": True}
+    """Kart acikken gonderilen son hal (onaylanmamis). KONTROL_GECMISI
+    yalniz onayli kararlari tutar: taslak yazilmaz (kart istegi bozulmasin
+    diye yanit doner)."""
+    return {"tamam": True, "tutulmadi": True}
 
 
 def _kontrol_secenekleri(durum):
