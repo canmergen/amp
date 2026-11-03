@@ -9187,7 +9187,7 @@ function parcaBolumuEkle(kart, pa, ilkKilit, degisti) {
             /* EK: anlamda bir kez [parça] (arkasındaki parçanın yeri) ve ekin kendisi. */
             else if (e.tur === "ek" && (ekSay !== 1 || !(e.anlam || "").replace(/\[\s*par[çc]a\s*\]/gi, "").trim()))
                 sor[r.parca] = "Ek türünde anlam bir kez [parça] ve eki içermeli; [parça] arkasındaki "
-                    + "parçanın yerini tutar (ör. [parça]lık, [parça] tarafından).";
+                    + "parçanın yerini tutar (ör. [parça]lık, [parça] başına, [parça] bazında).";
             else if (e.tur !== "ek" && ekSay) sor[r.parca] = "[parça] yalnız Ek türünde yazılır.";
             else if (!PARCA_STANDART.test(st))
                 sor[r.parca] = "Standart yazılış geçersiz: büyük harfle başlar, yalnız büyük harf ve rakam, en çok 12 karakter.";

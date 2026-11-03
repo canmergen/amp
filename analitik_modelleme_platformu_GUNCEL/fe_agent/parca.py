@@ -33,7 +33,7 @@ TANIM_EN_UZUN = 200       # ornek tanim kirpma
 KOMSU_ADET = 3            # parca basina gosterilen en sik komsu
 YORUM_PARCA = 12          # dil modeline bir cagrida giden parca
 ES_ZAMANLI = 4            # ayni anda en cok bu kadar cagri
-ISTEM_SURUMU = 4
+ISTEM_SURUMU = 5
 
 # TURLER: parcanin adda tasidigi bilginin turu. Zaman turleri donem
 # turleriyle ayni anlamda (pencere, nokta, zaman_birim, sure); kolon adinda
@@ -53,7 +53,7 @@ TURLER = [
     ("birim", "Birim", "Değerin birimi (TL, USD)."),
     ("diger", "Diğer", "Bayrak (FLAG, IND) ya da hiçbir türe girmeyen."),
     ("ek", "Ek", "Arkasındaki parçaya bağlanan ek; anlamda [parça] o parçanın yerini "
-                 "tutar (PER: [parça]lık, PER_DAY günlük; BY: [parça] tarafından)."),
+                 "tutar (PER: [parça]lık, PER_DAY günlük; BY: [parça] bazında)."),
 ]
 TUR_KODLARI = [t for t, _a, _c in TURLER]
 # Kolon adinda parcanin yeri (ad standardi bu yerlerin sirasidir).
@@ -559,7 +559,7 @@ def ek_hatasi(anlam):
     n = len(EK_YER.findall(str(anlam or "")))
     if n != 1:
         return ("Ek türünde anlam bir kez [parça] içermeli; [parça] arkasındaki parçanın "
-                "yerini tutar (ör. [parça]lık, [parça] tarafından).")
+                "yerini tutar (ör. [parça]lık, [parça] başına, [parça] bazında).")
     if not EK_YER.sub("", str(anlam)).strip():
         return "Ek türünde anlam yalnız [parça] olamaz; eki de yazın (ör. [parça]lık)."
     return ""

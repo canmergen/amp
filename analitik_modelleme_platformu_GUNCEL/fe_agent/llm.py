@@ -2066,16 +2066,26 @@ TÜR ("tur"): parçanın adda taşıdığı bilgi; birini yaz:
   birim: değerin birimi (TL, USD)
   diger: bayrak (FLAG, IND) ya da hiçbir türe girmeyen
   ek: tek başına bilgi taşımayan, ARKASINDAKİ parçaya bağlanan ek ya da
-    edat (PER: PER_DAY günlük; BY: BY_CUST müşteri tarafından). Anlamına
-    arkasındaki parçanın yerine [parça] yaz: "[parça]lık", "[parça]
-    tarafından"; başka türün anlamına [parça] yazma
+    edat (PER: PER_DAY günlük; BY: BY_CUST müşteri bazında ya da müşteri
+    tarafından, hangisi olduğuna örnek tanımlara bakarak karar ver).
+    Türü ek ise anlam MUTLAKA bir kez [parça] içerir; [parça] arkasındaki
+    parçanın yerini tutar: "[parça]lık", "[parça] başına", "[parça]
+    bazında". Yalnız "tarafından" ya da "per" yazma. Başka türün anlamına
+    [parça] yazma
 
 YAZIM:
   - "anlam": parçanın KENDİSİNİN anlamı, kısa ve küçük harfle (ör.
     "işlem", "tutar", "kredi kartı"). Türün adını anlama yazma. Tanımda
     geçip parçada karşılığı olmayan bilgiyi anlama yazma.
+  - Anlama parçanın İngilizce kendisini yazma (NO için "no", PER için
+    "per" anlam değildir); Türkçe karşılığını yaz, bulamıyorsan "soru"ya
+    yaz. Parça zaten Türkçe bir sözcükse (KREDI, LIMIT) aynen yazılabilir.
   - "soru", "not", "celiski": yoksa boş.
   - Tamamen Türkçe, Türkçe karakterlerle yaz.
+
+DÜZELTME: Bir parçada "ÖNCEKİ CEVABIN" ve "DÜZELTİLECEK" satırları varsa
+önceki cevabın kurala uymadı; DÜZELTİLECEK'te yazanı düzelterek yeniden
+cevap ver.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına parçayı AYNEN yaz.
 {"parcalar": [{"ad": "...", "anlam": "...", "tur": "konu", "kanit": {"bakilan": 0, "uyan": 0}, "celiski": "", "soru": "", "not": ""}]}""" \
@@ -2117,16 +2127,78 @@ def parca_yorumla(liste, orkestra=None):
     if not model:
         return {}, _orkestra_hatasi(ork, "ad parçaları")
     gecerli = {x["parca"] for x in liste}
-    sonuc = {}
-    for x in veri.get("parcalar") or []:
-        if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
-            continue
-        sonuc[str(x["ad"])] = {
-            "anlam": _donem_metni(x.get("anlam")), "tur": parca_turu(x.get("tur")),
-            "kanit": _kanit(x.get("kanit")), "celiski": _donem_metni(x.get("celiski")),
-            "soru": _donem_metni(x.get("soru")), "not": _donem_metni(x.get("not")),
-            "model": MODEL_ADLARI.get(model, model)}
+
+    def oku(veri, model):
+        sonuc = {}
+        for x in veri.get("parcalar") or []:
+            if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
+                continue
+            sonuc[str(x["ad"])] = {
+                "anlam": _donem_metni(x.get("anlam")), "tur": parca_turu(x.get("tur")),
+                "kanit": _kanit(x.get("kanit")), "celiski": _donem_metni(x.get("celiski")),
+                "soru": _donem_metni(x.get("soru")), "not": _donem_metni(x.get("not")),
+                "model": MODEL_ADLARI.get(model, model)}
+        return sonuc
+    sonuc = oku(veri, model)
+    # Kural disi cevap (ek turunde [parca] yok, anlam parcanin kendisi) bir
+    # kez, yalniz o parcalarla yeniden sorulur.
+    kotu = {p: parca_kural_disi(p, r) for p, r in sonuc.items()}
+    kotu = {p: h for p, h in kotu.items() if h}
+    if kotu:
+        ek = []
+        for x in liste:
+            if x["parca"] in kotu:
+                ek.append(satirlar[liste.index(x)] + "\n  ÖNCEKİ CEVABIN: anlam \"%s\", tür %s"
+                          "\n  DÜZELTİLECEK: %s" % (sonuc[x["parca"]]["anlam"],
+                                                    sonuc[x["parca"]]["tur"], kotu[x["parca"]]))
+        model2, veri2 = ork.json_cagir(ork.modeller("parca"), SISTEM_PARCA,
+                                       _veri_blogu("PARÇALAR:", "\n".join(ek)), 0.1,
+                                       zaman_asimi=DONEM_ZAMAN_ASIMI, anahtar="parcalar")
+        if model2:
+            for p, r in oku(veri2, model2).items():
+                # Anlami yine parcanin kendisi olan ikinci cevap kabul:
+                # parca Turkce bir sozcuk olabilir (NET, LIMIT, KREDI).
+                if p in kotu and (not parca_kural_disi(p, r) or _yalniz_ayni(p, r)):
+                    sonuc[p] = r
+        # Hala kural disi kalanlar: ek bicimi ekranda onayi durduran hata
+        # olarak zaten gorunur; anlami parcanin kendisi olana not dusulur
+        # (onayi durdurmaz; parca Turkce bir sozcuk olabilir).
+        for p in kotu:
+            r = sonuc[p]
+            n = "Anlam parçanın kendisi; Türkçe karşılığı varsa yazın."
+            if r["anlam"] and _parca_sade(r["anlam"]) == _parca_sade(p) and n not in r["not"]:
+                r["not"] = (r["not"] + " " if r["not"] else "") + n
     return sonuc, None
+
+
+_EK_YER = re.compile(r"\[\s*par[çc]a\s*\]", re.I)
+
+
+def _parca_sade(x):
+    return re.sub(r"[^a-z0-9]", "", _sade_kucuk(x))
+
+
+def _yalniz_ayni(parca, r):
+    """Kural disiligi yalniz anlamin parcanin kendisi olmasi mi (tur ek
+    degil)?"""
+    return r.get("tur") != "ek" and _parca_sade(r.get("anlam")) == _parca_sade(parca)
+
+
+def parca_kural_disi(parca, r):
+    """Parca yorumunun kurala uymayan yeri (tek cumle) ya da "". Anlam
+    parcanin kendisiyse ya da ek turunde bir kez [parça] ve ek yoksa."""
+    anlam = str(r.get("anlam") or "").strip()
+    if anlam and _parca_sade(anlam) == _parca_sade(parca):
+        return ("Anlam parçanın kendisi (%s); parça Türkçe bir sözcük değilse Türkçe "
+                "karşılığını yaz, anlamı belli değilse soru'ya yaz." % anlam)
+    if r.get("tur") == "ek":
+        n = len(_EK_YER.findall(anlam))
+        if n != 1 or not _EK_YER.sub("", anlam).strip():
+            return ("Tür ek ama anlam bir kez [parça] ve eki içermiyor (ör. [parça]lık, "
+                    "[parça] başına, [parça] bazında).")
+    elif _EK_YER.search(anlam):
+        return "Anlamda [parça] var ama tür ek değil."
+    return ""
 
 
 # TUR DEGERLENDIRMESI (01.2.4.2 onayindan hemen sonra): kullanicinin

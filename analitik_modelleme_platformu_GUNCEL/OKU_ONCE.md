@@ -935,6 +935,16 @@ tanıtır; sayfalar sol bardan açılır.
     ürün, taraf, yüksek ya da düşük tutarlı)"; Diğer "bayrak (FLAG, IND) ya
     da hiçbir türe girmeyen" (HIGH ve LOW gibi düzey sözcükleri Diğer'e
     itilmesin; `parca.ISTEM_SURUMU` 4).
+    **Dil modelinin kural dışı cevabı** (`llm.parca_kural_disi`): türü
+    Ek olup anlamında bir kez [parça] ve ek olmayan (BY "tarafından") ya
+    da anlamı parçanın kendisi olan (NO "no", PER "per") parçalar bir kez,
+    yalnız onlarla ve "ÖNCEKİ CEVABIN / DÜZELTİLECEK" satırlarıyla yeniden
+    sorulur. İkinci cevapta da anlamı parçanın kendisi kalırsa kabul edilir
+    (parça Türkçe bir sözcük olabilir: KREDI, LIMIT) ve satıra "Anlam
+    parçanın kendisi; Türkçe karşılığı varsa yazın." notu düşer (onayı
+    durdurmaz). Ek biçimi yine bozuksa ekrandaki onayı durduran hata
+    görünür. İstemdeki BY örneği "[parça] bazında ya da [parça]
+    tarafından, örnek tanımlara bakarak" oldu (`parca.ISTEM_SURUMU` 5).
     **Tür değerlendirmesi** (onaydan hemen sonra, ayrı adım değil):
     "Ad Parçalarını Onayla ve Devam Et"e basılınca adım hemen geçmez;
     kendi satırı olan her parçanın (aynı gruptaki üyeler standart satırı
