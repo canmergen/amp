@@ -1060,6 +1060,18 @@ tanıtır; sayfalar sol bardan açılır.
     yapılacağını yazar. Sayfa aileyi bölmez; kalan hep aileyse düğme "Daha
     Fazla Aile Göster (N aile daha)". "Görünenleri Onayla" yalnız çizilen
     satırları onaylar.
+  - **Hepsini Onayla · N:** süzgeçlerin yanında; hazır ve onaylanmamış
+    bütün kolonları (aşama sırası, cevapsız soru ve notlar dahil) onaylar.
+    İki tıklamalı: birinci tıklama düğmeyi "Evet, N Kolonu Onayla" yapar
+    ve altında ne onaylanacağını yazar (kaç kolonda cevapsız soru, kaçında
+    ad, dağılım ya da kontrol notu var; dil modelinin düzenlediği kolonlar
+    bitince ayrıca onaylanır), «Vazgeç» geri alır; ikinci tıklama onaylar
+    (`hepsiDurum`).
+  - **Aile kutusunda toplu onaya girmeme sebebi:** her kolonun ilk sebebi
+    sayılır (cevapsız soru, ad notu, dağılım notu, kontrol notu,
+    açıklaması kalıptan farklı). Hiçbir kolonu toplu onaylanamayan ve
+    onaylısı olmayan ailede "Bu ailenin kolonları toplu onaylanamıyor
+    (ad notu: 8)" yazar.
   - **Adım adım yönlendirme:** aşama notu her aşamada yalnız o aşamada
     ne yapılacağını yazar (1. aşamada önce aile ve kolon sayısı, kaç
     ailenin onaylı olduğu). Kartın altındaki gerekçe etkin aşamaya göre

@@ -10213,13 +10213,64 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             .finally(() => { bicimDurum(); });
         if (degisti) degisti();
     };
+    /* HEPSİNİ ONAYLA: hazır bütün kolonlar (aşama sırası, soru ve notlar
+       dahil) iki tıklamayla onaylanır: birinci tıklama ne onaylanacağını
+       yazar, ikinci onaylar. Dil modelinin düzenlediği kolon bitince
+       ayrıca onaylanır. native confirm() yok (iframe akışı durur). */
+    let hepsiSor = false;
+    const hepsiOnay = elYap("button", "dg-toplu-btn dg-acik-hepsi", "");
+    hepsiOnay.type = "button";
+    const hepsiUyari = elYap("div", "dg-acik-hepsi-uyari", "");
+    hepsiUyari.hidden = true;
+    const hepsiMetin = elYap("span", "", "");
+    const hepsiVazgec = elYap("button", "dg-baglanti", "Vazgeç");
+    hepsiVazgec.type = "button";
+    hepsiVazgec.onclick = () => { hepsiSor = false; hepsiDurum(); };
+    hepsiUyari.append(hepsiMetin, hepsiVazgec);
+    const hepsiSatirlari = () => sira.map(k => veriler.get(k))
+        .filter(v => v && !v.onayli && (v.durum === "hazir" || v.durum === "hata"));
+    hepsiOnay.onclick = () => {
+        if (kilitli || saltOkunur) return;
+        const kolonlar = hepsiSatirlari().map(v => v.kolon);
+        if (!kolonlar.length) return;
+        if (!hepsiSor) { hepsiSor = true; hepsiDurum(); return; }
+        hepsiSor = false;
+        hepsiOnay.disabled = true;
+        kolonlar.forEach(k => { const v = veriler.get(k); if (v) v.onayli = true; });
+        tabloYenidenCiz();
+        islem({ islem: "onay", kolonlar: kolonlar, onay: true })
+            .then(d => { if (d && d.hata) durumYaz(d.hata, true); yoklaHemen(); })
+            .catch(() => yoklaHemen())
+            .finally(() => { hepsiDurum(); });
+        if (degisti) degisti();
+    };
+    function hepsiDurum() {
+        const sat = hepsiSatirlari(), n = sat.length;
+        if (!n || kilitli) hepsiSor = false;
+        hepsiOnay.hidden = saltOkunur;
+        hepsiOnay.disabled = kilitli || !n;
+        hepsiOnay.textContent = hepsiSor ? "Evet, " + ftBinlik(n) + " Kolonu Onayla"
+            : "Hepsini Onayla · " + ftBinlik(n);
+        hepsiOnay.classList.toggle("onay-bekliyor", hepsiSor);
+        hepsiUyari.hidden = !hepsiSor;
+        if (!hepsiSor) return;
+        const bek = sira.filter(k => { const v = veriler.get(k); return v && bekliyorMu(v); }).length;
+        const soru = sat.filter(v => v.soru).length;
+        const notlu = sat.filter(v => v.ad_notu || v.dagilim_notu || (v.kontrol || []).length).length;
+        hepsiMetin.textContent = ftBinlik(n) + " kolonun açıklaması ekranda göründüğü gibi onaylanacak"
+            + (soru ? "; " + ftBinlik(soru) + " kolonda cevapsız soru var" : "")
+            + (notlu ? (soru ? ", " : "; ") + ftBinlik(notlu) + " kolonda ad, dağılım ya da kontrol notu var" : "")
+            + (bek ? ". Dil modelinin düzenlediği " + ftBinlik(bek) + " kolon bitince ayrıca onaylanır" : "")
+            + ". Emin değilseniz ";
+    }
     function bicimDurum() {
+        hepsiDurum();
         const n = bicimSatirlari().length;
         bicimOnay.textContent = "Biçim Değişikliklerini Onayla · " + ftBinlik(n);
         bicimOnay.hidden = saltOkunur || gorulenAsama() !== 2;
         bicimOnay.disabled = kilitli || !n;
     }
-    ust.append(suzKap, ara, bicimOnay, topluOnay);
+    ust.append(suzKap, ara, bicimOnay, topluOnay, hepsiOnay);
 
     /* ---- AŞAMALAR ----
        Onay sırayla: 1 Aileler (adı yalnız sayıyla ayrılan kolonlar), 2
@@ -10306,6 +10357,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     kart.appendChild(asamaBar);
     kart.appendChild(asamaNot);
     kart.appendChild(ust);
+    kart.appendChild(hepsiUyari);
 
     /* ---- Tablo ---- */
     const sar = elYap("div", "dg-tablo-sar dg-acik-sar");
@@ -10522,6 +10574,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     let sonAktif_ = null;
     function asamaTazele() {
         if (!yuklendi || saltOkunur) return;
+        hepsiDurum();
         const a = aktifAsama();
         if (a !== sonAktif_) {
             const ilk = sonAktif_ === null;
@@ -10599,11 +10652,22 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                 ftBinlik(d.bekleyen) + " kolonun açıklamasını dil modeli henüz yazmadı."));
             if (d.tek.length) {
                 const adlar = d.tek.slice(0, 4).map(v => v.kolon).join(", ") + (d.tek.length > 4 ? " ve diğerleri" : "");
+                /* Neden toplu onaya girmiyor: her kolonun ilk sebebi. */
+                const sebep = new Map();
+                d.tek.forEach(v => {
+                    const s_ = v.soru ? "cevapsız soru" : v.ad_notu ? "ad notu" : v.dagilim_notu ? "dağılım notu"
+                        : (v.kontrol || []).length ? "kontrol notu" : "açıklaması kalıptan farklı";
+                    sebep.set(s_, (sebep.get(s_) || 0) + 1);
+                });
+                const neden = [...sebep].map(([k, n]) => k + ": " + ftBinlik(n)).join(", ");
                 kutu.appendChild(elYap("div", "dg-acik-aile-uyari", d.onaylanacak.length
-                    ? ftBinlik(d.tek.length) + " kolon toplu onaya girmiyor (sorusu, notu var ya da açıklaması "
-                      + "kalıptan farklı); kolonları açıp tek tek onaylayın: " + adlar + "."
-                    : "Toplu onaylanacak kolon kalmadı; kalan " + ftBinlik(d.tek.length)
-                      + " kolonu açıp tek tek onaylayın: " + adlar + "."));
+                    ? ftBinlik(d.tek.length) + " kolon toplu onaya girmiyor (" + neden + "); kolonları açıp "
+                      + "tek tek onaylayın: " + adlar + "."
+                    : d.onayli
+                    ? "Toplu onaylanacak kolon kalmadı; kalan " + ftBinlik(d.tek.length) + " kolon ("
+                      + neden + ") tek tek onaylanır: " + adlar + "."
+                    : "Bu ailenin kolonları toplu onaylanamıyor (" + neden + "); kolonları açıp tek tek "
+                      + "onaylayın: " + adlar + "."));
             }
             const dug = elYap("div", "dg-acik-aile-dugme");
             if (!saltOkunur && !tamam && d.onaylanacak.length) {

@@ -5174,3 +5174,10 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
    açıklama ve düğmeler soldan bir hizada; durum sağ uçta. */
 #kabuk table td div.dg-acik-aile-kutu div[class] { justify-content: flex-start; }
 #kabuk table td div.dg-acik-aile-kutu div.dg-acik-aile-ust { justify-content: space-between; }
+
+/* HEPSİNİ ONAYLA (Kolon Kartları): ikinci tıklama bekleniyor. */
+.dg-acik-hepsi.onay-bekliyor { color: var(--kirmizi); background: var(--kirmizi-acik);
+  border-color: var(--kirmizi-cizgi); font-weight: var(--fw-kalin); }
+.dg-acik-hepsi-uyari { margin: 0 0 var(--b-2); padding: 8px 12px; font-size: var(--fs-kucuk);
+  border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r-kucuk); background: var(--kirmizi-acik); }
+.dg-acik-hepsi-uyari .dg-baglanti { margin-left: 2px; }
