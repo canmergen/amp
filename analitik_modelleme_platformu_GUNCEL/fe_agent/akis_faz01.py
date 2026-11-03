@@ -3443,7 +3443,7 @@ ACIKLAMA_DUGME = {"bos": "Kolon Kartlarını Onayla ve Devam Et"}
 # Her kolon onaylanir; degistirmeden gecmek yok.
 ACIKLAMA_ATLA = ""
 # Istem ya da girdi bicimi degisince eski sonuclar yeniden uretilsin.
-ACIKLAMA_SURUMU = 3
+ACIKLAMA_SURUMU = 4
 ACIKLAMA_EXCEL_ADI = "onerilen_sozluk.xlsx"
 ROL_ADLARI = {"target": "hedef değişken", "id": "kimlik kolonu",
               "donem": "dönem kolonu", "segment": "segment kolonu"}

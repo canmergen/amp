@@ -984,13 +984,19 @@ tanıtır; sayfalar sol bardan açılır.
     noktalamasız en uzun ortak dizi); bütün metni yeniden okumak gerekmez.
     Sözlüğe yazılan "N kolonun açıklaması düzeltildi" sayısı yine her
     farklı metni sayar.
-  - **En az değişiklik (istem, `ACIKLAMA_SURUMU` 3):** dil modeli yalnız
+  - **En az değişiklik (istem, `ACIKLAMA_SURUMU` 4):** dil modeli yalnız
     gereken yeri düzeltir; orijinal anlaşılır ve doğruysa cümleyi yeniden
     kurmaz, anlamı aynı kalan ifadeyi (ek, sözcük sırası, eş anlamlı)
     değiştirmez; dönem orijinalde açıksa ("son 3 günde") dokunmaz, yalnız
-    yazmıyorsa ya da belirsizse açar. Yalnız yazım düzeltildiyse karar
-    "Yazım düzeltildi.". Sürüm değiştiği için kolonlar bir kez yeniden
-    yazılır.
+    yazmıyorsa ya da belirsizse açar. Tek istisna dizilmiş isimler:
+    tamlama kurmadan art arda dizilen isimlerde ("giden işlem ortalama
+    tutarı") tamlama kurulur ("giden işlemlerin ortalama tutarı"); yalnız
+    ek eklenir ya da değişir, sözcük ve sıra aynı kalır (satır "ek"
+    sayılır, 2. aşamaya düşer). İstatistik sözcüğü karttaki gibi yazılır
+    ("maksimum", "minimum"; "en yüksek", "en düşük" değil). Yalnız yazım
+    düzeltildiyse karar "Yazım düzeltildi.". Sürüm değişince kolonlar bir
+    kez yeniden yazılır; açıklaması değişen kolonun onayı düşer (onay
+    açıklama metniyle saklanır), elle düzenlenen kolon olduğu gibi kalır.
   - **Biçim Değişikliklerini Onayla · N:** süzgeçlerin yanında; açıklaması
     orijinaliyle aynı ya da yalnız yazımı veya ekleri değişen ("aynen",
     "yazim", "ek"), hazır ve sorusu, notu, kontrol notu olmayan BÜTÜN

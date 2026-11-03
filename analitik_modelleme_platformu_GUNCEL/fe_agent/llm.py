@@ -2269,6 +2269,14 @@ EN AZ DEĞİŞİKLİK: yalnız gereken yeri düzelt. ORİJİNAL anlaşılır ve
 doğruysa cümleyi yeniden kurma; anlamı aynı kalan ifadeyi (sözcük eki,
 sözcük sırası, eş anlamlı sözcük; "son 3 günde" ile "son 3 günlük") değiştirme.
 ORİJİNAL tam ve doğruysa AYNEN yaz (yalnız yazım ve noktalama düzeltilir).
+TEK İSTİSNA, DİZİLMİŞ İSİMLER: isimler tamlama kurmadan art arda dizilmişse
+("giden işlem ortalama tutarı") tamlamayı kur: hesap ya da istatistik
+ölçüden önce gelir, ölçülen şey tamlayan olur ("giden işlemlerin
+ortalama tutarı", "giden işlemlerin maksimum tutarı", "gelen havalelerin
+toplam adedi"). Bunu yalnız ek ekleyerek ya da eki değiştirerek yap:
+sözcükleri değiştirme, atma ya da yerlerini değiştirme. İstatistik
+sözcüğünü KART'taki gibi yaz ("maksimum" yerine "en yüksek", "minimum"
+yerine "en düşük" yazma).
 
 NASIL DÜZELTİRSİN
   1. Kısaltmaları ve İngilizce terimleri PARÇALAR'daki anlamla ya da açık
@@ -2276,7 +2284,8 @@ NASIL DÜZELTİRSİN
   2. Dönem yazmıyorsa ya da belirsizse açık yaz (PARÇALAR'daki anlamla);
      ORİJİNAL'de dönem zaten açıksa ("son 3 günde") ifadesine dokunma.
   3. Yarım ya da bozuk cümleyi tamamla; sırayı düzenle: zaman penceresi +
-     kimin / neyin + ne ölçüldüğü + uygulanan hesap ya da karşılaştırma +
+     kimin / neyin (tamlayan: "giden işlemlerin") + uygulanan hesap ya da
+     istatistik + ne ölçüldüğü ("ortalama tutarı") + karşılaştırma +
      birim ya da değerlerin anlamı.
   4. Yazım, noktalama ve Türkçe karakter hatalarını düzelt (ç, ğ, ı, İ, ö,
      ş, ü).
