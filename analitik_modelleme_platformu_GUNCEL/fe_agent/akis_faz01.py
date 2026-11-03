@@ -2111,11 +2111,12 @@ def _donem_alani(durum, baslat=True):
     haf_tur = donem_mod.hafiza_tur()
     haf_ad = donem_mod.hafiza_ad()
     # ONCEKI KARAR: bu calismada verilmis karar (geri donus ya da 01.2.4
-    # "Onceki Onayli Kontrol"un yukledigi karar). Yeni calismada kaliplar
-    # ve anlamlari hafizadan gelir.
+    # "Onceki Onayli Kontrol"un yukledigi karar). Yeni calismada kaliplar,
+    # anlamlari ve «Ayır» ile ayrilan gruplar hafizadan gelir.
     karar_kayit = durum.get("donem_bilgisi_karari")
     onceki = {str(x.get("kalip")): x for x in (karar_kayit or []) if isinstance(x, dict)}
-    ayrik = list(durum.get("donem_ayrik") or [])
+    ayrik = list(durum.get("donem_ayrik") or []) if "donem_bilgisi_karari" in durum \
+        else sorted(donem_mod.hafiza_ayrik())
     calisiyor = d["durum"] == "calisiyor"
     # AYRI YAZILISLAR: hafizada, dil modelinin ayirdigi (ailesi listede) ve
     # onceki kararda ayri satir olan yazilislar kendi satirina gecer.
@@ -2557,9 +2558,13 @@ def donem_uygula(durum):
     durum["donem_ad_yazilis"] = {k: v for k, v in ad_harita.items() if v}
     durum["donem_bilgisi_karari"] = kayit
     # Ayrilan gruplar (kartta Ayir): sonraki acilista kendiliginden
-    # birlesmesin. Karar tablonun gecmisine de yazilir (yeni calismada gelir).
+    # birlesmesin. Hafizaya da yazilir (yeni calismada gelir): bu calismada
+    # gorulen gruplarin isareti konur ya da kalkar.
     durum["donem_ayrik"] = sorted({str(x) for x in ((karar or {}).get("donem_ayrik") or [])
                                    if str(x).strip()}) if isinstance(karar, dict) else []
+    gorulen_gruplar = {str(p_.get("grup")) for p_ in (alan.get("parcalar") or [])
+                       if isinstance(p_, dict) and p_.get("grup")}
+    ayrik_hata = donem_mod.hafizaya_ayrik_yaz(gorulen_gruplar, set(durum["donem_ayrik"]) & gorulen_gruplar)
     durum.pop("parca_bilgisi", None)
     # Ailesinden ayri satirda onaylanan yazilis ("M<N>") hafizada ayri
     # isaretlenir: sonraki calismada da aileye katilmaz.
@@ -2604,7 +2609,7 @@ def donem_uygula(durum):
         metin += "; %d kalıp çıkarıldı" % cikan
         if silinen:
             metin += ", bunların %d tanesi hafızadan da silindi" % silinen
-    hatalar = " ".join(h for h in (hata, sil_hata, kat_hata) if h)
+    hatalar = " ".join(h for h in (hata, sil_hata, kat_hata, ayrik_hata) if h)
     if isinstance(karar, dict):
         _kontrol_karar_yaz(durum, "donem", karar)
     (durum.get("_onceki_notlari") or {}).pop("donem", None)

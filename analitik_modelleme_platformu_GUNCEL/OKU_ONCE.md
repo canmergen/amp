@@ -422,8 +422,12 @@ tanıtır; sayfalar sol bardan açılır.
   `KONTROL_GECMISI`'nde (veri seti ve sözlük başına, "Önceki Onaylı
   Kontrol Uygulansın"). Bu dosyada dönem kararı tutulmaz; eski dosyadaki
   `donem` alanı ilk okumada düşer (`veri_gecmisi.ALANLAR` = sözlükler,
-  roller). 01.2.4.1 yeni çalışmada kalıpları ve anlamlarını hafızadan
-  alır; bu çalışmada verilmiş karar (geri dönüş ya da önceki onaylı
+  roller). 01.2.4.1 yeni çalışmada kalıpları, anlamlarını ve «Ayır» ile
+  değerlerine ayrılan grupları hafızadan alır (`degerlerine_ayrildi`,
+  iç biçimde `donem_ayrik`; `donem.hafiza_ayrik`, `hafizaya_ayrik_yaz`,
+  `kisaltma.donem_ayrik_kaydet`: onayda bu çalışmada görülen grupların
+  işareti konur ya da kalkar, görülmeyenlere dokunulmaz; kalıp
+  hafızadan silinince işareti de kalkar); bu çalışmada verilmiş karar (geri dönüş ya da önceki onaylı
   kontrol) varsa o geçerlidir. Dosya yoksa ilk açılışta eski
   çalışmaların `ozet.json` dosyalarından bir kez kurulur (segment özette
   olmadığı için boş gelir).
@@ -875,7 +879,7 @@ tanıtır; sayfalar sol bardan açılır.
     her ad parçası tek kayıtta: `ad_standardi` (yer sırası),
     `donem_kaliplari` {kalıp: {anlam, tur, yeni_adda, deger_anlamlari,
     haric_ikililer, gruptan_ayrilan {değer: {anlam, donem_degil}},
-    ayri_yazilis}}, `ad_parcalari` {PARÇA: {anlam, tur, standart}}
+    ayri_yazilis, degerlerine_ayrildi}}, `ad_parcalari` {PARÇA: {anlam, tur, standart}}
     (standart yazılmazsa parçanın kendisi), `ayni_parcalar` ve
     `farkli_parcalar` (her metin bir çift: "ADT, CNT" ADT ile CNT aynı;
     çiftler birbirinden bağımsız). Açıklama ve sürüm alanı yok; yeni

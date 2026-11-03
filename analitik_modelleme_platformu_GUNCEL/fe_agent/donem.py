@@ -846,6 +846,22 @@ def hafiza_tur():
         return {}
 
 
+def hafiza_ayrik():
+    """{grup}: «Ayır» ile degerlerine ayrilmis gruplar."""
+    try:
+        return kisaltma_mod.donem_ayrik_hafizasi()
+    except Exception:
+        return set()
+
+
+def hafizaya_ayrik_yaz(gruplar, ayrik):
+    """Bu calismada gorulen gruplarin «Ayır» isareti. Doner: hata ya da None."""
+    try:
+        return kisaltma_mod.donem_ayrik_kaydet(gruplar, ayrik)
+    except Exception as e:
+        return "Ayrılan gruplar hafızaya yazılamadı (%s)." % str(e)[:120]
+
+
 def hafiza_ayri():
     """{kalip}: ailesinden ayri anlamla onaylanmis yazilis kaliplari."""
     try:

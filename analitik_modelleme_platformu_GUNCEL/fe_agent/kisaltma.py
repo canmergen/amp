@@ -734,7 +734,8 @@ def _govde_oku():
 #                 "deger_anlamlari": {"360D": "son 1 yıl"},
 #                 "haric_ikililer": ["..."],
 #                 "gruptan_ayrilan": {"H00": {"anlam": "...", "donem_degil": false}},
-#                 "ayri_yazilis": true}, ...},
+#                 "ayri_yazilis": true,
+#                 "degerlerine_ayrildi": true}, ...},
 #    "ad_parcalari": {"AVG": {"anlam": "ortalama", "tur": "istatistik",
 #                             "standart": "AVG"}, ...},
 #    "ayni_parcalar": ["ADT, CNT", ...],
@@ -775,6 +776,8 @@ def _diskten(ham):
             ic.setdefault(ic_ad, {})[kalip] = v
         if kayit.get("ayri_yazilis"):
             ic.setdefault("donem_ayri_yazilis", []).append(kalip)
+        if kayit.get("degerlerine_ayrildi"):
+            ic.setdefault("donem_ayrik", []).append(kalip)
     parcalar = {}
     for p, kayit in (ham.get("ad_parcalari") or {}).items():
         if not isinstance(kayit, dict):
@@ -818,7 +821,9 @@ def _diske(ic):
             kaliplar.setdefault(str(kalip), {})[alan] = v
     for kalip in ic.pop("donem_ayri_yazilis", None) or []:
         kaliplar.setdefault(str(kalip), {})["ayri_yazilis"] = True
-    sira = [a for _i, a in _DONEM_ALAN] + ["ayri_yazilis"]
+    for grup in ic.pop("donem_ayrik", None) or []:
+        kaliplar.setdefault(str(grup), {})["degerlerine_ayrildi"] = True
+    sira = [a for _i, a in _DONEM_ALAN] + ["ayri_yazilis", "degerlerine_ayrildi"]
     kaliplar = {k: {a: v[a] for a in sira if a in v} for k, v in sorted(kaliplar.items())}
     parcalar = {}
     for p, v in sorted((ic.pop("parcalar", None) or {}).items()):
@@ -1003,6 +1008,47 @@ def _donem_ayri_ham(govde=None):
     return {str(k) for k in ay if str(k).strip()}
 
 
+def _donem_ayrik_ham(govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    ay = (govde or {}).get("donem_ayrik")
+    if not isinstance(ay, list):
+        return set()
+    return {str(k) for k in ay if str(k).strip()}
+
+
+def donem_ayrik_hafizasi():
+    """{grup}: 01.2.4.1'de «Ayır» ile degerlerine ayrilmis gruplar
+    (sonraki calismalarda da ayri gelir)."""
+    return _donem_ayrik_ham()
+
+
+def donem_ayrik_kaydet(gruplar, ayrik):
+    """gruplar: bu calismada gorulen gruplar; ayrik: bunlardan ayrilmis
+    olanlar. Gorulen gruplarin isareti buna gore konur ya da kalkar;
+    gorulmeyenlere dokunulmaz. Doner: hata ya da None."""
+    gruplar = {str(g) for g in (gruplar or ()) if str(g).strip()}
+    ayrik = {str(g) for g in (ayrik or ()) if str(g).strip()}
+    if not gruplar and not ayrik:
+        return None
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Ayrılan gruplar hafızaya yazılamadı: " + hata
+        yeni = (_donem_ayrik_ham(govde) - gruplar) | ayrik
+        if yeni == _donem_ayrik_ham(govde):
+            return None
+        if yeni:
+            govde["donem_ayrik"] = sorted(yeni)
+        else:
+            govde.pop("donem_ayrik", None)
+        try:
+            _dosya_yaz(govde)
+        except Exception as e:
+            return "Ayrılan gruplar hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
+
+
 def donem_ayri_hafizasi():
     """{kalip}: ailesinden ayri anlamla onaylanmis yazilis kaliplari
     ("M<N>" gibi; bkz. donem.kaliplar ayri)."""
@@ -1165,13 +1211,19 @@ def donem_sil(kaliplar):
         d_silinen = [k for k in kaliplar if k in dd]
         ay = _donem_ayrilan_ham(govde)
         a_silinen = [k for k in kaliplar if k in ay]
-        if not silinen and not h_silinen and not d_silinen and not a_silinen:
+        k_silinen = [k for k in kaliplar if k in _donem_ayrik_ham(govde)]
+        if not silinen and not h_silinen and not d_silinen and not a_silinen and not k_silinen:
             return 0, None
         for k in a_silinen:
             ay.pop(k, None)
         dt = _donem_tur_ham(govde)
         for k in kaliplar:
             dt.pop(k, None)
+        ayk = _donem_ayrik_ham(govde) - kaliplar
+        if ayk:
+            govde["donem_ayrik"] = sorted(ayk)
+        else:
+            govde.pop("donem_ayrik", None)
         ayr = _donem_ayri_ham(govde) - kaliplar
         if ayr:
             govde["donem_ayri_yazilis"] = sorted(ayr)
