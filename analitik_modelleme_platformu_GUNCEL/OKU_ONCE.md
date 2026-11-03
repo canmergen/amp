@@ -958,15 +958,26 @@ tanıtır; sayfalar sol bardan açılır.
     sayılar açıklamada geçmeli (kod denetimi).
   - **Toplu Sorular ve parça cevabı** (`akis_faz01._sorular`,
     `_aciklama_parcalari`): dil modelinin bir parça hakkında sorduğu
-    sorular (`parca` alanı) parça başına tek kutuda (ilk üç farklı soru,
-    örnek kolonlar). Kullanıcının cevabı yalnız dil modelinin anlaması
+    sorular (`parca` alanı) parça başına tek kutuda; farklı sorular ayrı
+    satırda, her biri kaç kolondan geldiği ve ilk üç kolonuyla (en çok
+    `SORU_GOSTER` = 8 soru, kalanı "ve N farklı soru daha"). Kutunun
+    üstünde ne yazılacağı: parçanın genel anlamı, kısa, dönem ve sayı
+    olmadan; tek kolona özel bilgi o kolonun «Sizin Düzenlemeniz»inde.
+    Cevapta sayı varsa ilk tıklama uyarır ("Cevabınızda sayı var (3, 7)";
+    düğme "Yine de Uygula"), ikinci tıklama uygular; cevap değişince uyarı
+    kalkar. Kullanıcının cevabı yalnız dil modelinin anlaması
     içindir: o parçanın geçtiği bütün kolonlarda PARÇALAR satırına
     parçanın onaylı anlamının yanında "kullanıcının açıklaması (yalnız
     anlamak için; açıklamaya ve karta kopyalama)" olarak gider; karta ve
     açıklamaya kopyalanmaz, kartta parçanın onaylı anlamı kalır (anlamı
     onaylı değilse kartta o parça yok). Yazar istemi metni kopyalamamasını,
     kolona uyan anlamı kendi cümlesiyle yazmasını söyler. Kutunun altında
-    bu not yazar.
+    yol gösteren not yazar.
+  - **Sayı katı olan dönem (X2):** 7D_X2 gibi ikili için 01.2.4.1'de
+    «+ Dönem Kalıbı Ekle» ile `<N>D_X2` kalıbı ("son N gün ile ondan
+    önceki N gün") eklenip onaylanır; değer anlamı "son 7 gün ile ondan
+    önceki 7 gün" olur, ikilinin 7D'si `<N>D` ailesinden, X2 `X<N>`'den
+    düşer (`donem.kaliplar` kapsanan).
   - **Üç dil modeli çağrısı** (`aciklama_duzen._isle`, `_denetim`): her
     grup (8 kolon) için 1) yazar taslağı yazar (`llm.aciklama_duzenle`,
     rol `aciklama_duzen`); 2) denetçi taslağı kaynaklara göre denetler

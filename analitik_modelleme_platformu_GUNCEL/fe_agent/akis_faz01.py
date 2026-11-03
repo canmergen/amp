@@ -3923,6 +3923,9 @@ def aciklama_onayla(durum, kolonlar, onay=True):
     return {"hata": "", "kolon_sayisi": n}
 
 
+SORU_GOSTER = 8          # Toplu Sorular'da parca basina gosterilen farkli soru
+
+
 def _sorular(d, girdiler):
     """Toplu sorular: ayni parca hakkindaki sorular parca basina tek satir
     (kilit altinda)."""
@@ -3933,16 +3936,19 @@ def _sorular(d, girdiler):
         r = aciklama_mod.guncel_sonuc(d, g["kolon"])
         if not r or not r.get("soru") or not r.get("parca"):
             continue
-        k = gruplar.setdefault(r["parca"], {"sorular": [], "kolonlar": []})
-        if r["soru"] not in k["sorular"] and len(k["sorular"]) < 3:
-            k["sorular"].append(r["soru"])
+        k = gruplar.setdefault(r["parca"], {"sorular": {}, "kolonlar": []})
+        # Ayni soru tek satir; her sorunun kendi kolonlari.
+        k["sorular"].setdefault(r["soru"], []).append(g["kolon"])
         k["kolonlar"].append(g["kolon"])
     for p in d.parca_notlari:
         if p in gecen:
-            gruplar.setdefault(p, {"sorular": [], "kolonlar": []})
+            gruplar.setdefault(p, {"sorular": {}, "kolonlar": []})
     cikti = []
     for p, k in gruplar.items():
-        cikti.append({"parca": p, "sorular": k["sorular"], "soru_kolon": len(k["kolonlar"]),
+        sorular = sorted(k["sorular"].items(), key=lambda kv: -len(kv[1]))
+        cikti.append({"parca": p, "sorular": [{"soru": q, "kolon_sayisi": len(ks), "kolonlar": ks[:3]}
+                                              for q, ks in sorular[:SORU_GOSTER]],
+                      "soru_sayisi": len(sorular), "soru_kolon": len(k["kolonlar"]),
                       "kolon_sayisi": sum(1 for t in toklar.values() if p in t),
                       "ornek": k["kolonlar"][:3], "cevap": d.parca_notlari.get(p, "")})
     cikti.sort(key=lambda x: (-x["soru_kolon"], x["parca"]))

@@ -11024,9 +11024,26 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                 + (s.soru_kolon ? " · " + ftBinlik(s.soru_kolon) + " kolonda soru" : "")));
             if (s.cevap) ust_.appendChild(elYap("span", "dg-rozet-kucuk", "Cevaplandı"));
             kutu.appendChild(ust_);
-            (s.sorular || []).forEach(q => kutu.appendChild(elYap("div", "dg-donem-soru", tireSade(q))));
-            if ((s.ornek || []).length)
+            /* Farklı sorular ayrı ayrı, her biri hangi kolonlardan geldiğiyle. */
+            (s.sorular || []).forEach(q => {
+                const metin = typeof q === "string" ? q : q.soru;
+                const sk = elYap("div", "dg-acik-soru-satir");
+                sk.appendChild(elYap("div", "dg-donem-soru", tireSade(metin)));
+                if (typeof q !== "string" && (q.kolonlar || []).length)
+                    sk.appendChild(elYap("div", "dg-acik-ornek", ftBinlik(q.kolon_sayisi) + " kolon: "
+                        + q.kolonlar.join(", ") + (q.kolon_sayisi > q.kolonlar.length ? " ve diğerleri" : "")));
+                kutu.appendChild(sk);
+            });
+            if (s.soru_sayisi > (s.sorular || []).length)
+                kutu.appendChild(elYap("div", "dg-acik-ornek", "ve " + ftBinlik(s.soru_sayisi - s.sorular.length)
+                    + " farklı soru daha"));
+            if (!(s.sorular || []).length && (s.ornek || []).length)
                 kutu.appendChild(elYap("div", "dg-acik-ornek", "Örnek: " + s.ornek.join(", ")));
+            kutu.appendChild(elYap("div", "dg-acik-soru-yol",
+                "Bu kutuya " + s.parca + " parçasının genel anlamını yazın: " + s.parca + " geçen "
+                + ftBinlik(s.kolon_sayisi) + " kolonun hepsinde dil modelinin anlaması için kullanılır, karta ve "
+                + "açıklamaya kopyalanmaz. Kısa ve genel yazın; belirli bir dönem ya da sayı yazmayın. Tek "
+                + "kolona özel bilgi için o kolonun «Sizin Düzenlemeniz» alanını kullanın."));
             const satir = elYap("div", "dg-acik-soru-giris");
             const g = document.createElement("input");
             g.type = "text"; g.className = "dg-giris";
@@ -11034,12 +11051,34 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             g.placeholder = "Cevabınız (" + s.parca + " ne demek?)";
             g.disabled = kilitli;
             g.setAttribute("aria-label", s.parca + " için cevabınız");
-            const b = elYap("button", "dg-toplu-btn", s.cevap ? "Cevabı Güncelle" : "Cevabı Uygula");
+            const etiket = s.cevap ? "Cevabı Güncelle" : "Cevabı Uygula";
+            const b = elYap("button", "dg-toplu-btn", etiket);
             b.type = "button";
             b.disabled = kilitli;
+            /* Cevapta sayı varsa (belirli dönem, örnek kolon) ilk tıklama
+               uyarır; ikinci tıklama uygular. */
+            const uyari = elYap("div", "dg-acik-soru-uyari", "");
+            uyari.hidden = true;
+            let sorgu = false;
+            g.addEventListener("input", () => {
+                if (!sorgu) return;
+                sorgu = false; uyari.hidden = true; b.textContent = etiket; b.classList.remove("onay-bekliyor");
+            });
             b.onclick = () => {
                 const cevap = g.value.trim();
                 if (!cevap && !s.cevap) return;
+                if (/\d/.test(cevap) && !sorgu) {
+                    sorgu = true;
+                    uyari.hidden = false;
+                    uyari.textContent = "Cevabınızda sayı var (" + (cevap.match(/\d+/g) || []).slice(0, 4).join(", ")
+                        + "). Bu cevap " + s.parca + " geçen " + ftBinlik(s.kolon_sayisi) + " kolonun hepsinde "
+                        + "kullanılır; belirli bir dönem ya da örnek başka kolonları yanıltabilir. Genel "
+                        + "yazmak için cevabı düzeltin ya da yine de uygulamak için düğmeye bir kez daha basın.";
+                    b.textContent = "Yine de Uygula";
+                    b.classList.add("onay-bekliyor");
+                    return;
+                }
+                sorgu = false; uyari.hidden = true; b.textContent = etiket; b.classList.remove("onay-bekliyor");
                 b.disabled = true;
                 islem({ islem: "parca", parca: s.parca, cevap: cevap })
                     .then(d => {
@@ -11053,9 +11092,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             };
             satir.append(g, b);
             kutu.appendChild(satir);
-            kutu.appendChild(elYap("div", "dg-donem-tur-not",
-                "Cevabınız " + s.parca + " geçen " + ftBinlik(s.kolon_sayisi) + " kolonun hepsinde dil "
-                + "modelinin anlaması için kullanılır; karta ve açıklamaya kopyalanmaz."));
+            kutu.appendChild(uyari);
             soruKap.appendChild(kutu);
         });
     }

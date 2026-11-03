@@ -5200,3 +5200,11 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 /* Kolon kartında ada eklenecek bilgi (01.2.4.4'te onaylanır). */
 .dg-acik-kart-oge.dg-acik-kart-eksik { border-style: dashed; border-color: var(--amber); }
 .dg-acik-kart-eksik-not { color: var(--metin-tamam); }
+
+/* Toplu Sorular: soru satırı, yol gösteren not ve sayı uyarısı. */
+.dg-acik-soru-satir { margin-bottom: 4px; }
+.dg-acik-soru-yol { margin: 6px 0; font-size: var(--fs-kucuk); color: var(--metin-tamam); }
+.dg-acik-soru-uyari { margin-top: 6px; padding: 6px 10px; font-size: var(--fs-kucuk);
+  border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r-kucuk); background: var(--kirmizi-acik); }
+.dg-acik-soru .dg-toplu-btn.onay-bekliyor { color: var(--kirmizi); border-color: var(--kirmizi-cizgi);
+  background: var(--kirmizi-acik); font-weight: var(--fw-kalin); }
