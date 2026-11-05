@@ -12683,8 +12683,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         };
         /* KOŞUL ÖNERİLERİ: kalıbın anlamıyla sözlük açıklamaları uyuşmayan
            parçalar için arka uçta hazırlanan koşullu anlam önerileri
-           (akis donem_kosul_onerisi). Satır çizilince ve kalıbın anlamı
-           değişince (kutudan çıkınca) istenir; hazırlanırken yoklanır.
+           (akis donem_kosul_onerisi). Koşulları Düzenle paneli açılınca
+           (o andaki kalıp anlamıyla) istenir; panel açıkken kalıbın anlamı
+           değişirse kutudan çıkınca yeniden istenir; hazırlanırken
+           yoklanır. Panel hiç açılmayan kalıp için istenmez.
            Öneri yalnız gösterilir: «Öneriyi Al» Kendi Anlamı'na yazar,
            kullanıcı düzeltir. */
         let kosOneri = null, kosOneriAnlam = null, kosOneriZaman = null;
@@ -12949,12 +12951,20 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             satirlariCiz();
             kosKap.appendChild(panel);
         }
-        /* Bütün satırlar kurulduktan sonra (kalıp listesi tam olsun). */
-        setTimeout(() => kosOneriIste(), 0);
-        g.addEventListener("change", () => kosOneriIste());
+        /* Panel açık kurulduysa (yeniden çizim) bütün satırlar kurulduktan
+           sonra istenir (kalıp listesi tam olsun). */
+        setTimeout(() => { if (kosAcik) kosOneriIste(); }, 0);
+        g.addEventListener("change", () => {
+            if (kosAcik) { kosOneriIste(); return; }
+            /* Panel kapalıyken anlam değişti: eski öneri geçersiz; panel
+               açılınca yeni anlamla istenir. */
+            clearTimeout(kosOneriZaman);
+            kosOneri = null; kosOneriAnlam = null; kosButonCiz();
+        });
         kosAc.onclick = () => {
             kosAcik = !kosAcik;
             duzen[anah] = Object.assign(duzen[anah] || {}, { kosAcik });
+            if (kosAcik) kosOneriIste();
             dgCiz();
             if (kosAcik) { const a_ = kosKap.querySelector(".dg-donem-kosul-ara"); if (a_) a_.focus(); }
         };

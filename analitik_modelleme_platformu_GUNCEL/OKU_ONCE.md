@@ -795,8 +795,13 @@ tanıtır; sayfalar sol bardan açılır.
   yoksa gizlidir.
 
   **Öneriler** (`donem_kosul_onerisi`, `/donem_kosul_oneri`;
-  `llm.donem_kosul_denetle`, `SISTEM_DONEM_KOSUL_DENETIM`). Satır çizilince
-  ve kalıbın anlamı değişince (kutudan çıkınca) kart arka uçtan ister.
+  `llm.donem_kosul_denetle`, `SISTEM_DONEM_KOSUL_DENETIM`). Önce koşul
+  eklemek gerekmez: kalıbın o anki anlamı (kullanıcının yazdığı) bütün
+  açıklamalarla karşılaştırılır. **Koşulları Düzenle paneli açılınca
+  başlar**; panel hiç açılmayan kalıp için istenmez. Panel açıkken
+  kalıbın anlamı değişirse kutudan çıkınca yeniden istenir; panel
+  kapalıyken değişirse eski öneri düşer, panel açılınca yeni anlamla
+  istenir.
   1. Kalıbın geçtiği ve sözlükte açıklaması olan BÜTÜN kolonlar (örneklem
      yok; kalıp adda daha geniş bir kalıbın içindeyse o kolon sayılmaz)
      25'lik paketlerle (aynı anda 4) dil modeline gider. Her kolon için
@@ -818,7 +823,8 @@ tanıtır; sayfalar sol bardan açılır.
   3. Panelde durum satırı: hazırlanırken "biten / toplam kolon"; bitince
      kaç kolonun karşılaştırıldığı (uyumlu, uyumsuz, belirsiz), kaç parça
      için öneri olduğu ve bağlanamayanlar; hata olursa «Yeniden Dene».
-     Düğmenin özetinde "· N öneri" ya da "· öneriler hazırlanıyor".
+     Düğmenin özetinde (panel bir kez açıldıktan sonra) "· N öneri" ya da
+     "· öneriler hazırlanıyor".
   4. Önerili parça, kendi anlamı olanlardan sonra listenin başında durur.
      Anlam hücresinin altında kesik çerçeveli kutuda şunlar yazar:
      - "Öneri: «…»";
