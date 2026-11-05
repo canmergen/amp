@@ -1203,6 +1203,43 @@ tanıtır; sayfalar sol bardan açılır.
     alttaki gerekçe ne beklendiğini yazar); kart karşılaştırma bitene dek
     yoklar. Gerekçedeki ORİJİNAL / YENİ etiketleri küçük harfli adlarıyla
     yazılır (`llm._kayma_nedeni`).
+  - **Kayma cevabından koşullu anlam** (`_kosul_onerisi_baslat`,
+    `_kosul_onerisi_dogrula`, `aciklama_kosul_karari`, `_kosul_yaz`;
+    `llm.aciklama_kosul_cikar`, `SISTEM_KOSUL_CIKAR`; `/aciklama_islem`
+    islem "kosul"; kayıt `aciklama_duzen.kosul_onerileri`). Ailenin doğru
+    anlamı yazılınca arka planda dil modeline örnek kolonun adı, orijinal
+    ve yeni açıklama, soru, cevap, adındaki dönem kalıpları (sıra
+    numaralı, ör. <N1>D_<N2>D; değeri, sayıları ve genel anlamın o
+    değerdeki hali) ve harf parçaları verilir. Dil modeli cevabın bir
+    kalıbın adda belirli bir parça geçince farklı dönem anlattığını
+    gösterip göstermediğini söyler; gösteriyorsa kalıp, parça ve
+    yer tutuculu anlam yazar. **Kod doğrular:**
+    - kalıp ve parça örnek kolonun adında geçmeli;
+    - anlamda rakam olmamalı, yer tutucuları kalıba uymalı;
+    - örnek kolonun değeriyle doldurulunca çıkan sayılar cevapta (cevapta
+      sayı yoksa orijinal açıklamada) aynı sırayla geçmeli;
+    - genel anlamdan farklı olmalı.
+
+    Tutmazsa öneri gösterilmez, kutuda nedeni yazar. Tutarsa ailenin
+    kutusunda: "Dönem Bilgisi'ne de koşullu anlam olarak kaydedilsin mi?",
+    kural ("adında RATIO geçen kolonlarda [sayı 1]D_[sayı 2]D «son [sayı 1]
+    gün ile son [sayı 2] gün» demek"), örnek kolonda şimdiki ve
+    kaydedilince anlam, etkilenen kolon sayısı (kalıp ve parça birlikte
+    geçen kart kolonları; i balonunda 3 örnek), Dönem Bilgisi'nde o parça
+    için başka anlam varsa o, sözlük açıklamasındaki sayılar bu anlamla
+    sırasıyla tutmayan öteki kolonlar (ilk 5) ve «Kaydet» / «Kaydetme».
+    Karar verilmeden kolonlar açılmaz (karar bekleyen sayılır).
+    **Kaydet:**
+    - çalışmanın `durum["donem_kosul"]`'una, 01.2.4.1 kararına
+      (`donem_bilgisi_karari` satırının `kosullu`'su; geri dönülünce
+      01.2.4.1'de görünür) ve hafızaya (`kosullu_anlamlar`) yazar;
+    - oturum durumu kaydedilir;
+    - o kalıbı ve parçayı taşıyan kolonların kartı koşullu anlamla yeniden
+      kurulur ve açıklamaları yeniden yazılır.
+
+    «Geri Al» kaydedilen anlam değişmediyse önceki hali yazar. Ailenin
+    kararı değişince kararı verilmemiş öneri kalkar; kaydedilmiş olan
+    kalır.
   - **Sıra: önce sorunlular, sonra sorunsuzlar.** Aşama çubuğu iki
     grupludur ve bütün aşamalar sırayla açılır (bir aşama, öncekinin
     bütün kolonları onaylanınca ya da listeden çıkınca): "Önce

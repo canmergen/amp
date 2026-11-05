@@ -30,6 +30,10 @@ KAYIT: PROJE_HAFIZASI/<calisma>/ACIKLAMA_DUZENLEME.json
                   denetimi (ailenin temsilci kolonu; imza orijinal ve aciklama)
   kayma_kararlari {aile: {"karar": "dogru" | "cevap", "cevap", "kolon",
                   "neden"}}: kullanicinin buyuk kaymaya karari
+  kosul_onerileri {aile: {"durum", "cevap", "kalip", "parca", "anlam", ...,
+                  "karar"}}: anlami kayan ailenin cevabindan Donem
+                  Bilgisi'ne onerilen kosullu anlam ve kullanicinin karari
+                  ("kaydet" | "kaydetme"; bkz. akis_faz01.aciklama_kosul_*)
   soru_cevaplari  {kolon: {"soru", "cevap"}}: kolonun sorusuna kullanicinin
                   cevabi (notlar'a dil modeli icin soru ve cevap olarak
                   yazilir; burada kartta gostermek icin)
@@ -70,7 +74,8 @@ _ONCELIK_HAVUZ = futures.ThreadPoolExecutor(max_workers=2)
 
 _SAYI = re.compile(r"(?<!\d)\d+(?!\d)")
 _KAYIT_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "onay",
-                   "yazilan", "kabul", "elle", "soru_cevaplari", "kaymalar", "kayma_kararlari")
+                   "yazilan", "kabul", "elle", "soru_cevaplari", "kaymalar", "kayma_kararlari",
+                   "kosul_onerileri")
 METIN_ALANLARI = ("aciklama", "karar", "soru", "ad_notu", "dagilim_notu", "denetim")
 
 
@@ -94,6 +99,7 @@ class _Depo(object):
         self.soru_cevaplari = {}
         self.kaymalar = {}
         self.kayma_kararlari = {}
+        self.kosul_onerileri = {}
         self.aile_notlari = {}
         self.sonuclar = {}
         self.onay = {}

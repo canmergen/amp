@@ -8659,6 +8659,8 @@ function dogrulamaKartiEkle(alan, blok) {
                   + "Hepsi cevaplanınca kolonlar açılır."
                 : ev && !bek && ev.kaymaSurer
                 ? "Dil modeli açıklamaları orijinalleriyle karşılaştırıyor; bitince kolonlar açılır."
+                : ev && !bek && ev.kosulSurer && !ev.kayma
+                ? "Cevabınızdan Dönem Bilgisi için koşullu anlam çıkarılıyor; bitince kolonlar açılır."
                 : ev && !bek && ev.kayma
                 ? "Önce yukarıdaki Anlamı Kayan Aileler: " + ftBinlik(ev.kayma) + " aile karar bekliyor."
                 : bek
@@ -10410,8 +10412,14 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     const dmSurer = () => dm !== "iptal" && (dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0);
     const kaymaBekleyen = () => kayma ? Number(kayma.bekleyen || 0) : 0;
     const kaymaSurer = () => !!kayma && kayma.durum === "calisiyor";
+    /* Kayan ailenin cevabından koşullu anlam önerisi hazırlanıyor. */
+    const kosulSurer = () => !!kayma && !!kayma.oneri_suruyor;
+    /* Kararı bekleyen koşullu anlam önerisi olan aileler (ailenin kendi
+       kararı verilmiş). */
+    const kosulBekleyen = () => ((kayma && kayma.aileler) || [])
+        .filter(x => x.karar && x.kosul && x.kosul.durum === "hazir" && !x.kosul.karar).length;
     const soruEvresi = () => !saltOkunur && (!yuklendi || cevapsizSoru() > 0 || dmSurer()
-                                             || kaymaSurer() || kaymaBekleyen() > 0);
+                                             || kaymaSurer() || kosulSurer() || kaymaBekleyen() > 0);
     function evreCiz() {
         const evre = soruEvresi();
         kart.classList.toggle("dg-acik-soru-evresi", evre);
@@ -10420,14 +10428,19 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         evreNot.hidden = !evre || !yuklendi;
         if (evreNot.hidden) return;
         const n = cevapsizSoru();
-        if (!n && !dmSurer() && (kaymaSurer() || kaymaBekleyen())) {
+        if (!n && !dmSurer() && (kaymaSurer() || kosulSurer() || kaymaBekleyen())) {
+            const kb = kosulBekleyen(), ab = Math.max(0, kaymaBekleyen() - kb);
             evreNot.textContent = kaymaSurer()
                 ? "Dil modeli her ailenin açıklamasını orijinaliyle karşılaştırıyor: "
                   + ftBinlik(kayma.biten || 0) + " / " + ftBinlik(kayma.toplam || 0)
                   + ". Anlamı kayan aile çıkarsa yukarıda sorulur; bitince kolonlar açılır."
-                : ftBinlik(kaymaBekleyen()) + " ailenin açıklamasında anlam kaymış. Yukarıda her aile için "
-                  + "doğru anlamı yazın ya da yeni açıklama doğruysa «Yeni Açıklama Doğru»ya basın; "
-                  + "hepsi bitince kolonlar açılır.";
+                : (ab ? ftBinlik(ab) + " ailenin açıklamasında anlam kaymış. Yukarıda her aile için "
+                        + "doğru anlamı yazın ya da yeni açıklama doğruysa «Yeni Açıklama Doğru»ya basın. "
+                      : "")
+                  + (kb ? ftBinlik(kb) + " ailenin cevabından Dönem Bilgisi için koşullu anlam önerildi. "
+                        + "Yukarıda «Kaydet» ya da «Kaydetme»ye basın. " : "")
+                  + (kosulSurer() ? "Cevabınızdan Dönem Bilgisi için koşullu anlam çıkarılıyor. " : "")
+                  + "Hepsi bitince kolonlar açılır.";
             return;
         }
         evreNot.textContent = n
@@ -11318,7 +11331,10 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             + "karşılaştırır. Yalnız anlamın açıkça değiştiği aileler burada sorulur (dönem, hesap ya "
             + "da ölçülen şey farklı); yazım ve netleştirme sorulmaz. Doğru anlamı yazarsanız ailenin "
             + "bütün kolonlarına, her kolonun kendi sayılarına uyarlanarak gider ve dil modeli ailenin "
-            + "açıklamalarını yeniden yazar. Yeni açıklama doğruysa «Yeni Açıklama Doğru»ya basın.",
+            + "açıklamalarını yeniden yazar. Yeni açıklama doğruysa «Yeni Açıklama Doğru»ya basın. "
+            + "Cevabınız bir dönem kalıbının adda belirli bir parça geçince farklı anlam taşıdığını "
+            + "gösteriyorsa (ör. RATIO geçince 3D_7D son 3 gün ile son 7 gün) altında Dönem Bilgisi'ne "
+            + "koşullu anlam olarak kaydetmek önerilir; öneri sayılarla doğrulanır, kaydetmek sizin kararınız.",
             "Anlamı Kayan Aileler"));
         kaymaKap.appendChild(bas);
         if (kaymaSurer()) kaymaKap.appendChild(elYap("div", "dg-acik-ornek",
@@ -11350,6 +11366,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                     sat.appendChild(geri);
                 }
                 kutu.appendChild(sat);
+                const ko = kosulKutusu(x);
+                if (ko) kutu.appendChild(ko);
                 kaymaKap.appendChild(kutu);
                 return;
             }
@@ -11377,6 +11395,95 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             kutu.appendChild(satir);
             kaymaKap.appendChild(kutu);
         });
+    }
+    /* KOŞULLU ANLAM ÖNERİSİ: ailenin cevabından Dönem Bilgisi'ne (01.2.4.1)
+       koşullu anlam. Dil modeli çıkarır, kod sayılarla doğrular; kaydetmek
+       kullanıcının kararı. */
+    function kosulKutusu(x) {
+        const o = x.kosul;
+        if (!o || o.durum === "yok") return null;
+        const kutu = elYap("div", "dg-acik-kosul");
+        if (o.durum === "calisiyor") {
+            kutu.appendChild(elYap("div", "dg-acik-ornek",
+                "Cevabınızdan Dönem Bilgisi için koşullu anlam çıkarılıyor."));
+            return kutu;
+        }
+        if (o.durum === "hata" || o.durum === "dogrulanamadi") {
+            kutu.appendChild(elYap("div", "dg-acik-ornek", "Cevabınızdan Dönem Bilgisi için koşullu anlam "
+                + "önerilmedi. " + tireSade(o.neden || "")));
+            return kutu;
+        }
+        const kal = donemSayiGoster(o.kalip), anl = donemAnlamGoster(o.kalip, o.anlam);
+        const kural = "adında " + o.parca + " geçen kolonlarda " + kal + " «" + anl + "» demek";
+        if (o.durum === "zaten") {
+            kutu.appendChild(elYap("div", "dg-acik-ornek", "Dönem Bilgisi'nde bu koşullu anlam zaten var: "
+                + kural + "."));
+            return kutu;
+        }
+        const islemDugmesi = (yazi, karar, sinif) => {
+            const b = elYap("button", sinif || "dg-toplu-btn", yazi);
+            b.type = "button"; b.disabled = kilitli;
+            b.onclick = () => kosulIslem(x, karar, b);
+            return b;
+        };
+        if (o.karar) {
+            const sat = elYap("div", "dg-acik-soru-yol", o.karar === "kaydet"
+                ? "Dönem Bilgisi'ne kaydedildi: " + kural + ". Adında " + o.parca + " ve " + kal + " geçen "
+                  + ftBinlik(o.kolon_sayisi) + " kolonun kartı ve açıklaması bu anlamla yeniden yazılıyor."
+                : "Koşullu anlam Dönem Bilgisi'ne kaydedilmedi.");
+            if (!kilitli) {
+                sat.appendChild(document.createTextNode(" "));
+                sat.appendChild(islemDugmesi(o.karar === "kaydet" ? "Geri Al" : "Kararı Değiştir", "",
+                                             "dg-baglanti"));
+            }
+            kutu.appendChild(sat);
+            return kutu;
+        }
+        kutu.appendChild(elYap("div", "dg-acik-kosul-bas",
+            "Dönem Bilgisi'ne de koşullu anlam olarak kaydedilsin mi?"));
+        kutu.appendChild(elYap("div", "dg-acik-ornek", "Cevabınıza göre " + kural + "."
+            + (o.neden ? " " + tireSade(o.neden) : "")));
+        kutu.appendChild(elYap("div", "dg-acik-ornek", "Örnek kolon " + o.kolon + " (" + o.deger + "): şu an «"
+            + tireSade(o.genel) + "», kaydedilirse «" + tireSade(o.dolu) + "»."));
+        if (o.mevcut) kutu.appendChild(elYap("div", "dg-acik-ornek", "Dönem Bilgisi'nde " + o.parca
+            + " için şu an «" + donemAnlamGoster(o.kalip, o.mevcut) + "» yazıyor; kaydedilirse bunun yerine geçer."));
+        const etki = elYap("div", "dg-acik-ornek", "Kaydedilirse adında " + o.parca + " ve " + kal + " geçen "
+            + ftBinlik(o.kolon_sayisi) + " kolonun kartı ve açıklaması bu anlamla yeniden yazılır; "
+            + "sonraki çalışmalarda da hafızadan gelir.");
+        const orn = o.ornekler || [];
+        if (orn.length) {
+            const i_ = bolmeBilgiSimgesi(orn.map(([ad, dg, dolu]) => ad + "\n" + dg + ": «" + tireSade(dolu) + "»")
+                .join("\n\n"), "Etkilenen kolonlardan örnek");
+            i_.classList.add("bolme-info-genis");
+            etki.appendChild(i_);
+        }
+        kutu.appendChild(etki);
+        if (o.uymayan_sayisi) {
+            const u = elYap("div", "dg-acik-kosul-uyari", ftBinlik(o.uymayan_sayisi)
+                + " kolonun sözlük açıklamasındaki sayılar bu anlamla tutmuyor; kaydetmeden önce bakın:");
+            (o.uymayan || []).forEach(([ad, dolu, orj]) => u.appendChild(elYap("div", "dg-acik-ornek",
+                ad + ": bu anlamla «" + tireSade(dolu) + "», açıklaması «" + tireSade(orj) + "»")));
+            if (o.uymayan_sayisi > (o.uymayan || []).length) u.appendChild(elYap("div", "dg-acik-ornek",
+                "ve " + ftBinlik(o.uymayan_sayisi - o.uymayan.length) + " kolon daha."));
+            kutu.appendChild(u);
+        }
+        const sat = elYap("div", "dg-acik-soru-giris");
+        sat.append(islemDugmesi("Kaydet", "kaydet"), islemDugmesi("Kaydetme", "kaydetme"));
+        kutu.appendChild(sat);
+        return kutu;
+    }
+    function kosulIslem(x, karar, dugme) {
+        if (kilitli || saltOkunur) return;
+        dugme.disabled = true;
+        islem({ islem: "kosul", aile: x.anahtar, karar: karar })
+            .then(d => {
+                if (d && d.hata) durumYaz(d.hata, true);
+                else if (karar === "kaydet") durumYaz("Koşullu anlam Dönem Bilgisi'ne kaydedildi; "
+                    + ftBinlik(x.kosul.kolon_sayisi) + " kolon yeniden yazılıyor.", false);
+                yoklaHemen();
+            })
+            .catch(() => yoklaHemen())
+            .finally(() => { dugme.disabled = false; });
     }
     function kaymaIslem(x, karar, cevap, dugme) {
         if (kilitli || saltOkunur) return;
@@ -11574,7 +11681,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                 if (!a) { durumYaz((d && d.hata) || "Satırlar alınamadı.", true); zamanla(8000); return; }
                 isle(a);
                 const surer = !saltOkunur && ((dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0)
-                    && dm !== "iptal" || kaymaSurer());
+                    && dm !== "iptal" || kaymaSurer() || kosulSurer());
                 /* İptal anında yolda olan cevaplar sonradan gelir; gelene dek
                    seyrek yoklanır (sayılar ve onay gerekçesi güncel kalsın). */
                 if (surer) zamanla(ACK_YOKLAMA);
@@ -11609,7 +11716,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         /* Etkin aşama ve onay bekleyenleri (alttaki gerekçe için). */
         /* Soru evresi: cevapsız soru sayısı (alttaki gerekçe için). */
         soruEvresi: () => soruEvresi() ? { cevapsiz: cevapsizSoru(), surer: dmSurer(),
-                                           kayma: kaymaBekleyen(), kaymaSurer: kaymaSurer() } : null,
+                                           kayma: kaymaBekleyen(), kaymaSurer: kaymaSurer(),
+                                           kosulSurer: kosulSurer() } : null,
         asama: () => {
             if (!yuklendi || saltOkunur) return null;
             const n = aktifAsama(), bekleyen = asamaSatirlari(n).filter(v => !v.onayli);

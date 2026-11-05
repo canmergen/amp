@@ -2736,6 +2736,66 @@ def aciklama_kayma(liste, orkestra=None):
     return sonuc, None
 
 
+SISTEM_KOSUL_CIKAR = """Sen bir bankacılık veri sözlüğü uzmanısın. Bir kolon ailesinin
+yeni açıklamasının anlamı orijinalinden kaymış; kullanıcıya soruldu ve doğru
+anlamı CEVAP olarak yazdı. Kolon adındaki dönem kalıplarının genel anlamları
+DÖNEMLER'de, adın harf parçaları PARÇALAR'da verilir.
+
+Görevin: CEVAP, adlardaki bir dönem kalıbının bu kolonda genel anlamından
+FARKLI bir dönem anlattığını mı gösteriyor ve bu fark adda geçen bir parçaya mı
+bağlı? Ör. kalıp <N1>D_<N2>D genel anlamı "<N1> gün önce ile <N2> gün önce
+arası", adında RATIO geçen kolonda CEVAP "son 3 günün son 7 güne oranı": RATIO
+geçince kalıbın anlamı "son <N1> gün ile son <N2> gün" olur.
+
+"kosul": yalnız böyleyse true. Fark dönemde değilse (hesap, konu, ölçülen
+şey), CEVAP genel anlamla aynı dönemi anlatıyorsa ya da farkı bir parçaya
+bağlayamıyorsan false.
+"kalip": DÖNEMLER'deki kalıplardan biri, AYNEN.
+"parca": PARÇALAR'dan biri, AYNEN; farkı doğuran parça (ör. RATIO). Ailenin
+konusunu anlatan parça (işlem, tutar, adet) değil.
+"anlam": kalıbın bu parça geçtiğinde anlamı; yalnız dönem kısmı, ölçülen şeyi
+ve hesabı yazma. Sayıların yerine kalıptaki sırayla <N1>, <N2> (tek sayılı
+kalıpta <N1>); hiçbir sayıyı rakamla yazma.
+"neden": tek kısa cümle, Türkçe; büyük harfle yazılmış sözcük kullanma.
+
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma.
+{"kosul": false, "kalip": "", "parca": "", "anlam": "", "neden": ""}""" + SINIRLAYICI_KURALI
+
+
+def aciklama_kosul_cikar(x, orkestra=None):
+    """Anlami kayan ailenin cevabindan kosullu donem anlami. x: {"kolon",
+    "orijinal", "aciklama", "soru", "cevap", "donemler": [{"kalip" (sira
+    numarali, ör. <N1>D_<N2>D), "deger", "sayilar" ("<N1>=3, <N2>=7"),
+    "genel" (genel anlamin bu degerle hali)}], "parcalar": [PARCA]}.
+    Doner: ({"kosul", "kalip", "parca", "anlam", "neden"}, hata). Sonuc
+    burada dogrulanmaz (bkz. akis_faz01._kosul_onerisi_dogrula)."""
+    ork = orkestra or Orkestra(arka=True)
+    donemler = "\n".join("- KALIP: %s | DEĞER: %s (%s) | GENEL ANLAM BU DEĞERDE: %s"
+                         % (d["kalip"], d["deger"], d["sayilar"], d["genel"])
+                         for d in x.get("donemler") or [])
+    govde = _veri_blogu("KOLON:", "\n".join([
+        "AD: %s" % x["kolon"],
+        "ORİJİNAL: %s" % _kirp(x.get("orijinal") or "(boş)", 500),
+        "YENİ: %s" % _kirp(x.get("aciklama") or "(boş)", 500),
+        "SORU: %s" % _kirp(x.get("soru") or "", 400),
+        "CEVAP: %s" % _kirp(x.get("cevap") or "", 600),
+        "DÖNEMLER:\n" + donemler,
+        "PARÇALAR: %s" % ", ".join(x.get("parcalar") or [])]))
+    model, veri = ork.json_cagir(
+        ork.modeller("aciklama_kontrol"), SISTEM_KOSUL_CIKAR, govde, 0.1,
+        zaman_asimi=ACIKLAMA_DUZEN_ZAMAN_ASIMI, en_cok=ACIKLAMA_DUZEN_TOKEN_TABAN + 200)
+    if not model:
+        return {}, _orkestra_hatasi(ork, "koşullu anlam önerisi")
+    veri = veri if isinstance(veri, dict) else {}
+    kosul = veri.get("kosul")
+    kosul = kosul is True or str(kosul).strip().lower() in ("true", "evet", "1")
+    return {"kosul": kosul,
+            "kalip": re.sub(r"\s+", "", str(veri.get("kalip") or "")).upper(),
+            "parca": re.sub(r"\s+", "", str(veri.get("parca") or "")).upper(),
+            "anlam": re.sub(r"\s+", " ", str(veri.get("anlam") or "")).strip(),
+            "neden": _kayma_nedeni(veri.get("neden"))}, None
+
+
 def _kayma_nedeni(x):
     """Gerekcedeki ORİJİNAL / YENİ (istemdeki etiketler) ekranda kucuk
     harfli adlariyla."""

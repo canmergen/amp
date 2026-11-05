@@ -3111,7 +3111,8 @@ def aciklama_alani_endpoint():
 def aciklama_islem_endpoint():
     """Kolon Kartlari kartindan gelen islem: kullanicinin notu (kolon
     yeniden kontrol edilir), toplu soru cevabi, aileye uygulama, satir
-    onayi, durdurma ve devam. Kayit calisma klasorundedir; oturum dosyasi yazilmaz."""
+    onayi, durdurma ve devam. Kayit calisma klasorundedir; oturum dosyasi
+    yalniz kosullu anlam Donem Bilgisi'ne yazilinca (islem "kosul") yazilir."""
     try:
         istek = request.get_json(force=True) or {}
         anahtar = _oturum_anahtari(_calisma_id(istek))
@@ -3127,6 +3128,12 @@ def aciklama_islem_endpoint():
                                                istek.get("cevap"))
         elif islem == "soru":
             sonuc = akis.aciklama_soru_cevapla(durum, istek.get("kolon"), istek.get("cevap"))
+        elif islem == "kosul":
+            # Kosullu anlam calismanin donem bilgisine yazilir: oturum
+            # durumu bu islemde kaydedilir.
+            sonuc = akis.aciklama_kosul_karari(durum, istek.get("aile"), istek.get("karar"))
+            if sonuc.pop("kaydet", False):
+                _kaydet(anahtar, durum)
         elif islem == "aile":
             sonuc = akis.aciklama_aileye_uygula(durum, istek.get("kolon"),
                                                 istek.get("uygula", True) is not False)

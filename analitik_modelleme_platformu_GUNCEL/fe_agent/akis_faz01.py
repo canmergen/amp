@@ -4494,7 +4494,7 @@ def _kayma_alani(klasor, d, girdiler, baslat):
                             "orijinal": g.get("orijinal") or "", "aciklama": r.get("aciklama") or "",
                             "neden": (kr or {}).get("neden") or k.get("neden") or "",
                             "karar": (kr or {}).get("karar") or "", "cevap": (kr or {}).get("cevap") or "",
-                            "yaziliyor": False})
+                            "yaziliyor": False, "kosul": _kosul_onerisi_gorunur(d, a)})
         # Karari verilmis ama uyeleri yeniden yazilan aile de listede kalir.
         for a, kr in d.kayma_kararlari.items():
             if a in gorulen or a not in boy:
@@ -4504,10 +4504,28 @@ def _kayma_alani(klasor, d, girdiler, baslat):
             aileler.append({"anahtar": a, "kolon_sayisi": boy[a], "kolon": ornek,
                             "orijinal": g.get("orijinal") or "", "aciklama": "",
                             "neden": kr.get("neden") or "", "karar": kr.get("karar") or "",
-                            "cevap": kr.get("cevap") or "", "yaziliyor": True})
+                            "cevap": kr.get("cevap") or "", "yaziliyor": True,
+                            "kosul": _kosul_onerisi_gorunur(d, a)})
     aileler.sort(key=lambda x: (bool(x["karar"]), -x["kolon_sayisi"], x["anahtar"]))
+    # Karari verilmemis kosullu anlam onerisi de karar bekler; hazirlanan
+    # oneri varken kart yoklamayi surdurur.
     return dict(durum_, aileler=aileler,
-                bekleyen=sum(1 for x in aileler if not x["karar"]))
+                bekleyen=sum(1 for x in aileler if not x["karar"] or (
+                    x["kosul"] and x["kosul"].get("durum") == "hazir" and not x["kosul"].get("karar"))),
+                oneri_suruyor=any(x["kosul"] and x["kosul"].get("durum") == "calisiyor"
+                                  for x in aileler))
+
+
+def _kosul_onerisi_gorunur(d, aile):
+    """Kartta gosterilecek oneri (kilit altinda); yoksa None. Kalip ve
+    anlam ekrandaki gibi ([sayı 1]); ham hali kayit icin ayri."""
+    o = d.kosul_onerileri.get(aile)
+    if not o:
+        return None
+    o = dict(o)
+    if o.get("kalip"):
+        o["kalip_gorunur"] = _donem_kalip_gorunur(o["kalip"])
+    return o
 
 
 def aciklama_kayma_karari(durum, aile, karar, cevap=""):
@@ -4529,9 +4547,271 @@ def aciklama_kayma_karari(durum, aile, karar, cevap=""):
     if not kolon:
         return {"hata": "Bu aile için anlam kayması kaydı yok."}
     hata = aciklama_mod.kayma_karari_yaz(klasor, aile, kolon, neden, karar, cevap)
+    # KOSULLU ANLAM ONERISI: cevap Donem Bilgisi'ne kosullu anlam olarak
+    # da kaydedilebilir mi (arka planda; kaydetmek kullanicinin karari).
+    # Karar degisirse karari verilmemis oneri kalkar; kaydedilmis olan
+    # Donem Bilgisi'nde kalir (kartta «Geri Al» ile ya da 01.2.4.1'de
+    # degistirilir).
+    if not hata:
+        if karar == "cevap":
+            _kosul_onerisi_baslat(durum, aciklama_mod.depo(klasor), aile, kolon, neden,
+                                  str(cevap or "").strip())
+        else:
+            with aciklama_mod._KILIT:
+                o = d.kosul_onerileri.get(aile) or {}
+                if o.get("karar") != "kaydet":
+                    d.kosul_onerileri.pop(aile, None)
+            aciklama_mod.kaydet(d, zorla=True)
     _aciklama_ver(durum, oncelikli=[kolon], devam=True)
     _kontrol_aciklama_yaz(durum)
     return {"hata": hata or ""}
+
+
+# ---------------------------------------------------------------------------
+# ANLAMI KAYAN AILENIN CEVABINDAN KOSULLU ANLAM ONERISI
+# Kullanici kayan ailenin dogru anlamini yazinca dil modeli cevabin bir
+# donem kalibinin adda belirli bir parca gectiginde farkli anlam tasidigini
+# gosterip gostermedigine bakar (ör. RATIO gecince <N>D_<N>D "son <N> gün
+# ile son <N> gün"). Oneri KOD ILE DOGRULANIR: anlam kalibin yer
+# tutuculariyla yazilmis olmali; ornek kolonun degeriyle doldurulunca
+# cikan sayilar kullanicinin cevabinda (cevapta sayi yoksa orijinal
+# aciklamada) gecmeli; parca adda gecmeli; genel anlamdan farkli olmali.
+# Etkilenen oteki kolonlardan orijinal aciklamasindaki sayilarla tutmayan
+# varsa kartta listelenir. Kaydet: calismanin donem bilgisine
+# (durum["donem_kosul"], 01.2.4.1 karari) ve hafizaya yazilir; o kalibi ve
+# parcayi tasiyan kolonlarin karti yeniden kurulur, aciklamalari yeniden
+# yazilir.
+# ---------------------------------------------------------------------------
+_SAYI_RE = re.compile(r"(?<!\d)\d+(?!\d)")
+KOSUL_ONERI_UYMAYAN_ADET = 5
+
+
+def _sayilar(metin):
+    return [int(x) for x in _SAYI_RE.findall(str(metin or ""))]
+
+
+def _sayi_sirasi_uyar(dolu, kaynak):
+    """Dolu anlamdaki sayilar kaynak metinde AYNI SIRAYLA geciyor mu (araya
+    baska sayi girebilir)? "son 7 gün ile son 3 gün" "son 3 günün son 7
+    güne oranı"na uymaz."""
+    it = iter(_sayilar(kaynak))
+    return all(any(n == k for k in it) for n in _sayilar(dolu))
+
+
+def _ad_kalip_degerleri(ad, kaliplar):
+    """Adda gecen donem kaliplari: [(kalip, deger, konumlar)]; daha genis
+    bir kalibin icinde kalan eslesme atilir (3D_7D'deki 3D, <N>D)."""
+    t = donem_mod._toklar(ad)
+    bulunan = []
+    for k in kaliplar:
+        r = donem_mod.kalip_deseni(k)
+        if r is None:
+            continue
+        ikili = "_" in str(k)
+        for i, p in enumerate(t):
+            if ikili and i + 1 < len(t) and r.match(p + "_" + t[i + 1]):
+                bulunan.append((k, p + "_" + t[i + 1], {i, i + 1}))
+                break
+            if not ikili and r.match(p):
+                bulunan.append((k, p, {i}))
+                break
+    return [b for b in bulunan if not any(b[2] < o[2] for o in bulunan)]
+
+
+def _ad_harf_parcalari(ad, konumlar):
+    t = donem_mod._toklar(ad)
+    return list(dict.fromkeys(p for i, p in enumerate(t)
+                              if i not in konumlar and p.isalpha() and len(p) > 1))
+
+
+def _kalip_numarali(kalip):
+    """Dil modeline: <N>D_<N>D -> <N1>D_<N2>D (tek sayili kalip aynen)."""
+    yt = donem_mod._YT_KALIP.findall(kalip)
+    if len(yt) < 2:
+        return kalip
+    sayac = iter(range(1, len(yt) + 1))
+    return donem_mod._YT_KALIP.sub(
+        lambda m: ("<NN%d>" if m.group(0) == "<NN>" else "<N%d>") % next(sayac), kalip)
+
+
+def _kosul_onerisi_dogrula(m, kolon, cevap, bilgi, kosul, orijinaller):
+    """Dil modelinin onerisi (m) dogrulanir. Doner: oneri sozlugu
+    (durum: "hazir" | "zaten" | "yok" | "dogrulanamadi")."""
+    kalip, parca = m.get("kalip") or "", m.get("parca") or ""
+    if not m.get("kosul"):
+        return {"durum": "yok", "neden": m.get("neden") or ""}
+    kv = {k: (dg, yer) for k, dg, yer in _ad_kalip_degerleri(kolon, list(bilgi))}
+    if kalip not in kv:
+        return {"durum": "dogrulanamadi", "neden": "Önerilen kalıp bu kolonun adında geçmiyor."}
+    deger, yer = kv[kalip]
+    if parca not in _ad_harf_parcalari(kolon, set().union(*[y for _d, y in kv.values()])):
+        return {"durum": "dogrulanamadi", "neden": "Önerilen parça bu kolonun adında geçmiyor."}
+    ham = m.get("anlam") or ""
+    if _SAYI_RE.search(re.sub(r"<[^<>]*>", "", ham)):
+        return {"durum": "dogrulanamadi", "neden": "Önerilen anlamda sayı yer tutucu yerine rakamla yazılmış."}
+    anlam = donem_mod.anlam_duzelt(kalip, ham)
+    if not anlam or donem_mod.yer_tutucu_hatasi(kalip, anlam):
+        return {"durum": "dogrulanamadi", "neden": "Önerilen anlamın yer tutucuları kalıba uymuyor."}
+    dolu = donem_mod.deger_anlami(kalip, anlam, deger)
+    if dolu == anlam or not _sayilar(dolu):
+        return {"durum": "dogrulanamadi", "neden": "Önerilen anlamda kalıbın sayıları kullanılmamış."}
+    mevcut = (kosul.get(kalip) or {}).get(parca) or ""
+    genel = donem_mod.deger_anlami(kalip, bilgi[kalip], deger)
+    if re.sub(r"\s+", " ", dolu).strip().lower() == re.sub(r"\s+", " ", genel).strip().lower():
+        return {"durum": "yok", "neden": "Önerilen anlam kalıbın genel anlamıyla aynı."}
+    # ORNEK KOLONUN SAYILARI: cevapta sayi varsa cevaptakiler, yoksa
+    # orijinal aciklamadakiler.
+    kaynak = cevap if _sayilar(cevap) else str(orijinaller.get(kolon) or "")
+    if not _sayilar(kaynak):
+        return {"durum": "dogrulanamadi",
+                "neden": "Cevapta ve orijinal açıklamada sayı yok; anlam sayılarla doğrulanamadı."}
+    if not _sayi_sirasi_uyar(dolu, kaynak):
+        return {"durum": "dogrulanamadi",
+                "neden": "Önerilen anlam %s için «%s» diyor; bu sayılar %s bu sırayla geçmiyor."
+                         % (deger, dolu, "cevabınızda" if _sayilar(cevap) else "orijinal açıklamada")}
+    # ETKILENEN KOLONLAR: kalip ve parca birlikte gecen kart kolonlari.
+    etkilenen, uymayan = [], []
+    for ad in orijinaller:
+        kv_ = _ad_kalip_degerleri(ad, [kalip])
+        if not kv_ or parca not in _ad_harf_parcalari(ad, kv_[0][2]):
+            continue
+        dg = kv_[0][1]
+        d_ = donem_mod.deger_anlami(kalip, anlam, dg)
+        etkilenen.append((ad, dg, d_))
+        if ad != kolon and _sayilar(orijinaller.get(ad)) and not _sayi_sirasi_uyar(d_, orijinaller.get(ad)):
+            uymayan.append([ad, d_, str(orijinaller.get(ad) or "")[:300]])
+    return {"durum": "zaten" if mevcut == anlam else "hazir",
+            "kalip": kalip, "parca": parca, "anlam": anlam, "neden": m.get("neden") or "",
+            "deger": deger, "dolu": dolu, "genel": genel, "mevcut": mevcut,
+            "kolon_sayisi": len(etkilenen),
+            "ornekler": _kosul_ornekleri([e for e in etkilenen if e[0] != kolon]),
+            "uymayan_sayisi": len(uymayan), "uymayan": uymayan[:KOSUL_ONERI_UYMAYAN_ADET]}
+
+
+def _kosul_onerisi_baslat(durum, d, aile, kolon, neden, cevap):
+    bilgi = {str(k): str(v) for k, v in (durum.get("donem_bilgisi") or {}).items()
+             if str(v or "").strip()}
+    kosul = {str(k): dict(v) for k, v in (durum.get("donem_kosul") or {}).items()
+             if isinstance(v, dict)}
+    with aciklama_mod._KILIT:
+        onceki = d.kosul_onerileri.get(aile) or {}
+        # Kaydedilmis oneri yeni cevapla degismez (once «Geri Al»).
+        if onceki.get("karar") == "kaydet":
+            return
+        g = dict(d.girdiler.get(kolon) or {})
+        r = dict(d.sonuclar.get(kolon) or {})
+        orijinaller = {k: str(x.get("orijinal") or "") for k, x in d.girdiler.items()}
+        kv = _ad_kalip_degerleri(kolon, list(bilgi))
+        if not kv:
+            d.kosul_onerileri.pop(aile, None)
+            return
+        d.kosul_onerileri[aile] = {"durum": "calisiyor", "cevap": cevap, "kolon": kolon, "karar": ""}
+    t = donem_mod._toklar(kolon)
+    konum = set().union(*[y for _k, _d, y in kv])
+    donemler = []
+    for k, dg, _y in kv:
+        sirali = donem_mod._sirali_sayilar(k, dg) or []
+        genel_anlam = donem_mod.kosullu_anlam(bilgi[k], kosul.get(k), t)
+        donemler.append({"kalip": _kalip_numarali(k), "ham": k, "deger": dg,
+                         "sayilar": ", ".join("<N%d>=%s" % (i + 1, n) for i, n in enumerate(sirali)),
+                         "genel": donem_mod.deger_anlami(k, genel_anlam, dg)})
+    girdi = {"kolon": kolon, "orijinal": g.get("orijinal") or "", "aciklama": r.get("aciklama") or "",
+             "soru": neden, "cevap": cevap, "donemler": donemler,
+             "parcalar": _ad_harf_parcalari(kolon, konum)}
+    numara = {x["kalip"]: x["ham"] for x in donemler}
+
+    def calis():
+        try:
+            m, hata = llm_mod.aciklama_kosul_cikar(girdi)
+        except Exception as e:
+            m, hata = {}, "%s: %s" % (type(e).__name__, str(e)[:200])
+        if hata:
+            sonuc = {"durum": "hata", "neden": hata}
+        else:
+            m["kalip"] = numara.get(m.get("kalip") or "", m.get("kalip") or "")
+            sonuc = _kosul_onerisi_dogrula(m, kolon, cevap, bilgi, kosul, orijinaller)
+        with aciklama_mod._KILIT:
+            o = d.kosul_onerileri.get(aile) or {}
+            if o.get("durum") != "calisiyor" or o.get("cevap") != cevap:
+                return
+            d.kosul_onerileri[aile] = dict(sonuc, cevap=cevap, kolon=kolon, karar="")
+        aciklama_mod.kaydet(d, zorla=True)
+    threading.Thread(target=calis, daemon=True).start()
+
+
+def _kosul_yaz(durum, kalip, parca, anlam):
+    """Calismanin donem bilgisine (durum ve 01.2.4.1 karari) ve hafizaya
+    kalibin PARCA kosulunu yazar (anlam bos: kosulu kaldirir). Doner: hata
+    ya da None."""
+    dk = {str(k): dict(v) for k, v in (durum.get("donem_kosul") or {}).items() if isinstance(v, dict)}
+    v = dict(dk.get(kalip) or {})
+    if anlam:
+        v[parca] = anlam
+    else:
+        v.pop(parca, None)
+    if v:
+        dk[kalip] = dict(sorted(v.items()))
+    else:
+        dk.pop(kalip, None)
+    durum["donem_kosul"] = dk
+    for x in durum.get("donem_bilgisi_karari") or []:
+        if isinstance(x, dict) and str(x.get("kalip")) == kalip:
+            x["kosullu"] = dict(v)
+    haf = donem_mod.hafiza()
+    hk = donem_mod.hafiza_anahtari(kalip, haf, donem_mod.hafiza_ayri()) or kalip
+    hv = dict(donem_mod.hafiza_kosul().get(hk) or {})
+    if anlam:
+        hv[parca] = anlam
+    else:
+        hv.pop(parca, None)
+    return donem_mod.hafizaya_kosul_yaz({hk: hv})
+
+
+def aciklama_kosul_karari(durum, aile, karar):
+    """Anlami kayan ailenin kosullu anlam onerisine karar: "kaydet" (Donem
+    Bilgisi'ne ve hafizaya yazar), "kaydetme" ya da "" (karari geri alir;
+    kaydedildiyse onceki hali yazilir). Doner: {"hata", "kaydet"}: kaydet
+    True ise cagiran oturum durumunu kaydeder."""
+    if not _aciklama_canli(durum):
+        return {"hata": _kart_kapali(durum)}
+    klasor = _aciklama_klasoru(durum)
+    d = aciklama_mod.depo(klasor)
+    aile, karar = str(aile or ""), str(karar or "")
+    with aciklama_mod._KILIT:
+        o = dict(d.kosul_onerileri.get(aile) or {})
+    if o.get("durum") != "hazir":
+        return {"hata": "Bu aile için kaydedilecek koşullu anlam önerisi yok."}
+    kalip, parca, anlam = o["kalip"], o["parca"], o["anlam"]
+    degisti = False
+    if karar == "kaydet":
+        if o.get("karar") == "kaydet":
+            return {"hata": ""}
+        if kalip not in (durum.get("donem_bilgisi") or {}):
+            return {"hata": "%s Dönem Bilgisi'nde yok; koşullu anlam kaydedilemez."
+                    % _donem_kalip_gorunur(kalip)}
+        onceki = ((durum.get("donem_kosul") or {}).get(kalip) or {}).get(parca) or ""
+        hata = _kosul_yaz(durum, kalip, parca, anlam)
+        degisti = True
+        o.update(karar="kaydet", onceki=onceki)
+    elif karar == "kaydetme":
+        hata = None
+        o.update(karar="kaydetme")
+    else:
+        hata = None
+        if o.get("karar") == "kaydet":
+            # Kaydedilen anlam degismediyse onceki hali geri yazilir.
+            simdiki = ((durum.get("donem_kosul") or {}).get(kalip) or {}).get(parca) or ""
+            if simdiki == anlam:
+                hata = _kosul_yaz(durum, kalip, parca, o.get("onceki") or "")
+                degisti = True
+        o.update(karar="")
+        o.pop("onceki", None)
+    with aciklama_mod._KILIT:
+        d.kosul_onerileri[aile] = o
+    aciklama_mod.kaydet(d, zorla=True)
+    _aciklama_ver(durum, devam=True)
+    _kontrol_aciklama_yaz(durum)
+    return {"hata": hata or "", "kaydet": degisti}
 
 
 def _kart_kapali(durum):

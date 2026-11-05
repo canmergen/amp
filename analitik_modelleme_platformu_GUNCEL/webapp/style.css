@@ -5257,3 +5257,10 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-giris.dg-donem-kosul-parca { width: 96px; height: 26px; font-size: var(--fs-kucuk); text-transform: uppercase; }
 .dg-giris.dg-donem-kosul-anlam { flex: 1; min-width: 160px; height: 26px; font-size: var(--fs-kucuk); }
 .dg-donem-kosul-ekle { font-size: var(--fs-kucuk); margin-top: 4px; }
+
+/* Anlamı Kayan Aileler: cevaptan Dönem Bilgisi'ne koşullu anlam önerisi. */
+.dg-acik-kosul { margin-top: var(--b-2); padding-top: var(--b-2); border-top: 1px dashed var(--kenar); }
+.dg-acik-kosul-bas { font-weight: var(--fw-kalin); }
+.dg-acik-kosul .dg-acik-ornek .bolme-info { vertical-align: middle; margin-left: 4px; }
+.dg-acik-kosul-uyari { margin-top: var(--b-2); color: var(--amber); font-size: var(--fs-kucuk); }
+.dg-acik-kosul-uyari .dg-acik-ornek { color: var(--metin-tamam); }
