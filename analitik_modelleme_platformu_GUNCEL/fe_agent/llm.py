@@ -3932,7 +3932,7 @@ def test(model=None):
 # SERBEST SORU — akis disi mesajlari yanitlar
 # ===========================================================================
 SORU_SISTEM = """Sen Bireysel Krediler Analitik ve Tahsis BI ekibinin \
-kullandığı Katip'in (Kurumsal Analitik, Tahminleme ve İçgörü Platformu) asistanısın.
+kullandığı Kurumsal Analitik, Tahminleme ve İçgörü Platformu'nun asistanısın.
 
 Görevin: kullanıcının sorduğu şeyi, EKRAN DURUMU ve TANIMLAR bölümlerine \
 dayanarak doğrudan ve somut biçimde yanıtlamak.

@@ -30,7 +30,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 | `degiskenler` | `degiskenler.png` | Sol bar: Model Değişkenleri |
 | `ozet` | `ozet.png` | Sol bar: Model Özeti |
 | `model_sohbeti` | `model_sohbeti.png` | Sol bar ve Ana Sayfa: Model Sohbeti |
-| `katiple_sohbet` | `katiple_sohbet.png` | Sol bar ve Ana Sayfa: Katip'le Sohbet |
+| `katiple_sohbet` | `katiple_sohbet.png` | Sol bar ve Ana Sayfa: Asistanla Sohbet |
 | `gorunum` | `gorunum.png` | Sol bar: Görünüm düğmesi |
 | `arsiv` | `arsiv.png` | Sol bar: Arşiv |
 | `yeni_calisma` | `yeni_calisma.png` | Sol bar: Yeni Çalışma |
@@ -232,7 +232,7 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   yuvarlak içinde durur. Görülenler çalışma başına bu tarayıcıda
   saklanır; çalışma bu tarayıcıda ilk kez açıldığında o anki içerik
   görülmüş sayılır, yalnız sonraki değişiklikler girer.
-- Katip'le Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
+- Asistanla Sohbet ve Gösterge Paneli (kapalı, hazırlanıyor): kutusuz,
   soluk yazı ve kilit.
 - Altta robot, kitaplar ve kupa (`robot_alt`), altında:
 - **Görünüm:** üç renk modu. Anahtar üç bölmeli segmentli düğme: güneş
@@ -333,7 +333,7 @@ tanıtır; sayfalar sol bardan açılır.
   dağıtılmıştır.
 - Çalışma Alanları (başlık ortada, iki yanında 2 px siyah çizgi; üç ayrı iş,
   her kartta kendi tanıtımı): Model Platformu (model kurma, izleme ve
-  üzerine konuşma), Katip'le Sohbet (yüklenen veriyle ya da genel sohbet)
+  üzerine konuşma), Asistanla Sohbet (yüklenen veriyle ya da genel sohbet)
   ve Gösterge Paneli (modellerden bağımsız veri analizi ve durum izleme);
   son ikisi hazırlanıyor. Kartta solda büyük görsel (sol barın çizimi,
   kartın içinin %34'ü), sağında üstte başlık, altında açıklama (16,5 px). Üst
@@ -366,7 +366,7 @@ tanıtır; sayfalar sol bardan açılır.
     Bütün kutular 2 px mürekkep kenarlı. 1300 px altında Genel Bakış,
     faz ayrıntıları ve Yapay Zekâ ve Kod tek sütun; katkılar ve
     güvenceler 2x2, sayfalar ikişerli.
-  - Katip'le Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
+  - Asistanla Sohbet ve Gösterge Paneli: başlık ve kısa giriş.
 - Faz ve adım adları koddan (`akis_metin.py`, `akis_kayit.py`) alınmıştır;
   biri değişirse `index.html`'deki Ana Sayfa da güncellenir.
 - Açılışta Model Akışı arka planda yüklenir; akış bir kart için analiz
