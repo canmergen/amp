@@ -9770,7 +9770,8 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         baslik.appendChild(bolmeBilgiSimgesi("Dönem Bilgisi'nde onaylanan kalıpların yeni adlardaki "
             + "yazılışı. Kalıbın sayıları yerine [sayı] yazın; sırayla kalıbın sayıları gelir. Ör. "
             + "[sayı]D için L[sayı]D yazılırsa 30D yeni adda L30D olur; [sayı]D_[sayı]D için "
-            + "BTWN_[sayı]D_[sayı]D yazılırsa 3D_6D yeni adda BTWN_3D_6D olur. Aynı sayıyı tekrar "
+            + "BTWN_[sayı]D_[sayı]D yazılırsa 3D_6D yeni adda BTWN_3D_6D olur. Sayıları kutunun "
+            + "altındaki düğmelerle de ekleyebilirsiniz; imlecin olduğu yere boşluksuz eklenir. Aynı sayıyı tekrar "
             + "yazmak için [sayı 1], [sayı 2]; hesap için [sayı 1 × sayı 2] yazın (ör. [sayı]D_X[sayı] "
             + "için L[sayı 1]D_P[sayı 1 × sayı 2]D ile 7D_X2 yeni adda L7D_P14D olur). Boş bırakılırsa "
             + "kalıp aynen kalır. Yazılışı değiştirince aşağıdaki adlar hemen yeniden kurulur; "
@@ -9796,10 +9797,15 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             g.setAttribute("aria-label", donemSayiGoster(x.kalip) + " yeni adda yazılış");
             const not = elYap("div", "dg-donem-tur-not", "");
             dyNotEl[x.kalip] = not;
-            g.oninput = () => { x.deger = g.value; dyNotYaz(x); if (degisti) degisti(); };
-            /* Kutudan çıkınca adlar yeniden kurulur (geçersizse kurulmaz). */
-            g.onchange = () => { if (!dyHata(x)) onizle(); };
-            td.append(g, not);
+            /* Kutudan çıkınca adlar yeniden kurulur (geçersizse kurulmaz).
+               Sayı ekle düğmesiyle yapılan değişiklik "change" doğurmaz;
+               bu yüzden değişiklik işaretlenir, kutudan çıkınca bakılır. */
+            let kirli = false;
+            g.oninput = () => { x.deger = g.value; kirli = true; dyNotYaz(x); if (degisti) degisti(); };
+            g.onblur = () => { if (kirli && !dyHata(x)) { kirli = false; onizle(); } };
+            td.append(g);
+            if (!kilitli) td.appendChild(donemSayiDugmeleri(() => x.kalip, g, true));
+            td.appendChild(not);
             tr.appendChild(td);
             tr.classList.toggle("dg-donem-dikkat", !!dyHata(x));
             b.appendChild(tr);
@@ -11805,8 +11811,10 @@ function donemFormulGorunur(ic) {
 /* SAYI EKLE: anlam kutusunun altında kalıbın sayıları için düğmeler
    ([sayı 1], [sayı 2]; tek sayılı kalıpta [sayı]). Basınca imlecin olduğu
    yere eklenir (kutu odakta değilse sona); kutunun kendi değişiklik
-   işleyicisi çalışır. yenile(): kalıp değişince düğmeleri yeniden kurar. */
-function donemSayiDugmeleri(kalipFn, hedef) {
+   işleyicisi çalışır. yenile(): kalıp değişince düğmeleri yeniden kurar.
+   bitisik: önüne ve arkasına boşluk konmaz (yeni adda yazılış:
+   BTWN_[sayı 1]D). */
+function donemSayiDugmeleri(kalipFn, hedef, bitisik) {
     const kap = elYap("div", "dg-donem-sayi-ekle");
     const ciz = () => {
         kap.textContent = "";
@@ -11826,7 +11834,7 @@ function donemSayiDugmeleri(kalipFn, hedef) {
                 const bas = odak ? hedef.selectionStart : hedef.value.length;
                 const son = odak ? hedef.selectionEnd : bas;
                 const once = hedef.value.slice(0, bas), sonra = hedef.value.slice(son);
-                const ek = (once && !/\s$/.test(once) ? " " : "") + t
+                const ek = bitisik ? t : (once && !/\s$/.test(once) ? " " : "") + t
                     + (!/^[\s,.;:)]/.test(sonra) ? " " : "");
                 hedef.focus();
                 hedef.setRangeText(ek, bas, son, "end");

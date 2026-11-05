@@ -806,7 +806,11 @@ tanıtır; sayfalar sol bardan açılır.
   [sayı 1] [sayı 2]" (tek sayılı kalıpta [sayı]). Basınca imlecin olduğu
   yere eklenir (kutu odakta değilse sona), önüne ve arkasına gerekirse
   boşluk konur; düğme odağı kutudan almaz. Elle satırda kalıp değişince
-  düğmeler yenilenir (`dgCiz`).
+  düğmeler yenilenir (`dgCiz`). 01.2.4.4 Dönem Yazılışları'nda da her
+  "Yeni Adda" kutusunun altında var; orada boşluksuz eklenir (`bitisik`:
+  BTWN_[sayı 1]D_[sayı 2]D). Adlar kutudan çıkınca yeniden kurulur;
+  düğmeyle yapılan değişiklik "change" doğurmadığı için kutu değişince
+  işaretlenir, çıkışta (`blur`) yazılış geçerliyse önizleme istenir.
 - **Yer tutucu harfe bitişikse:** "<N>gün" (ekranda "[sayı 1]gün") da yer
   tutucudur (`donem._YT_ADAY`, `DONEM_YT_ADAY`); harf sınırı yalnız çıplak
   N / NN yazımında aranır. Önceden köşeli biçim harfe bitişince içindeki
