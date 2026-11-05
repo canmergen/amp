@@ -208,8 +208,11 @@ def _araligin_basi(t, i):
 # YER TUTUCU <N#k>: kalibin k'inci sayisi (ekranda "[sayı k]"); ayni sayi
 # anlamda birden cok kez yazilabilir (<N>D_X<N>: "son <N#1> gün ile ondan
 # önceki <N#1> gün").
-_YT_ADAY = re.compile(r"(?<![0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]\s*#[^<>]{1,60}>|<\s*[Nn]{1,2}\s*>|[Nn]{1,2})"
-                      r"(?![0-9A-Za-zÇĞİÖŞÜçğıöşü])")
+# Koseli bicim (<N>, <N#1>) kendi sinirini tasir: harfe bitisik de yer
+# tutucudur ("<N>gün"); harf siniri yalniz ciplak N / NN icin aranir
+# (yoksa "<N>gün" icindeki N tek basina yakalanip "<3>gün" olurdu).
+_YT_ADAY = re.compile(r"(<\s*[Nn]\s*#[^<>]{1,60}>|<\s*[Nn]{1,2}\s*>"
+                      r"|(?<![0-9A-Za-zÇĞİÖŞÜçğıöşü])[Nn]{1,2}(?![0-9A-Za-zÇĞİÖŞÜçğıöşü]))")
 # HESAPLI YER TUTUCU <N#formul>: formulde $k kalibin k'inci sayisi, tam
 # sayilar ve + - * (ekranda "[sayı 1 × sayı 2]", "[sayı 1 + sayı 1]");
 # <N#k> yalniz k'inci sayi (bas sifirlari korunur).

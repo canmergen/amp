@@ -5254,7 +5254,28 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-donem-kosul-satir { justify-content: center; }
 .dg-donem-kosul-bas { display: inline-flex; align-items: center; gap: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: 600; }
 .dg-donem-kosul-satir { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
-.dg-giris.dg-donem-kosul-parca { width: 96px; height: 26px; font-size: var(--fs-kucuk); text-transform: uppercase; }
+/* Koşul parçası: seçim tablosunu açan düğme (Değerleri Düzenle gibi). */
+.dg-donem-deger-ac.dg-donem-kosul-sec { margin-top: 0; display: inline-flex; }
+.dg-donem-deger-ac.dg-donem-kosul-sec:disabled { cursor: default; }
+.dg-donem-deger-ac.dg-donem-kosul-sec:disabled .dg-donem-deger-ac-ad { color: var(--metin); }
+.dg-donem-kosul-panel { margin: 6px 0 4px; }
+.dg-giris.dg-donem-kosul-ara { width: 220px; max-width: 100%; height: 26px; font-size: var(--fs-kucuk); margin-bottom: 6px; }
+.dg-donem-kosul-tablo { width: 100%; }
+.dg-donem-kosul-tablo th { position: static; }
+.dg-donem-kosul-tablo th:nth-child(1) { width: 26%; }
+.dg-donem-kosul-tablo th:nth-child(2) { width: 12%; }
+.dg-donem-kosul-tablo th:nth-child(4) { width: 18%; }
+.dg-donem-kosul-tablo td { background: none; vertical-align: middle; overflow-wrap: anywhere; }
+.dg-donem-kosul-tablo tr.secili td { background: var(--yuzey-alt); font-weight: var(--fw-kalin); }
+.dg-donem-kosul-tablo td .bolme-info { vertical-align: middle; margin-left: 4px; }
+/* Sayı ekle: anlam kutularının altında [sayı 1], [sayı 2] düğmeleri. */
+.dg-donem-sayi-ekle { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.dg-donem-sayi-ekle[hidden] { display: none; }
+.dg-donem-sayi-btn {
+  padding: 1px 8px; border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin); cursor: pointer; font: inherit; font-size: var(--fs-kucuk);
+}
+.dg-donem-sayi-btn:hover { border-color: var(--murekkep-cizgi); }
 .dg-giris.dg-donem-kosul-anlam { flex: 1; min-width: 160px; height: 26px; font-size: var(--fs-kucuk); }
 .dg-donem-kosul-ekle { font-size: var(--fs-kucuk); margin-top: 4px; }
 

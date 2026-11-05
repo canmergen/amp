@@ -2352,7 +2352,11 @@ def _kosul_temizle(x):
     return cikti
 
 
-KOSUL_ADAY_ADET = 25
+# Kosul parcasi secim tablosunda butun adaylar (arama ile bulunur); ornek
+# kolonlar (aciklamasiyla) yalniz en cok gecen KOSUL_ORNEKLI_ADET parcada
+# (kart verisi sismesin).
+KOSUL_ADAY_ADET = 300
+KOSUL_ORNEKLI_ADET = 60
 KOSUL_ORNEK_ADET = 3
 
 
@@ -2396,7 +2400,7 @@ def _kosul_adaylari(adlar, kalip, tanimlar=None):
                 break
         if deger is None:
             continue
-        tanim = re.sub(r"\s+", " ", str(tanimlar.get(ad) or "")).strip()[:300]
+        tanim = re.sub(r"\s+", " ", str(tanimlar.get(ad) or "")).strip()[:200]
         for i, p in enumerate(dict.fromkeys(t)):
             if p.isalpha() and len(p) > 1 and t.index(p) not in yer:
                 say[p] += 1
@@ -2404,8 +2408,9 @@ def _kosul_adaylari(adlar, kalip, tanimlar=None):
                 k = kolonlar.setdefault(p, [])
                 if len(k) < 60:
                     k.append((str(ad), deger, tanim))
-    return [[p, n, ornek[p], _kosul_ornekleri(kolonlar[p])]
-            for p, n in sorted(say.items(), key=lambda kv: (-kv[1], kv[0]))[:KOSUL_ADAY_ADET]]
+    return [[p, n, ornek[p], _kosul_ornekleri(kolonlar[p]) if i < KOSUL_ORNEKLI_ADET else []]
+            for i, (p, n) in enumerate(sorted(say.items(), key=lambda kv: (-kv[1], kv[0]))
+                                       [:KOSUL_ADAY_ADET])]
 
 
 def _donem_alani(durum, baslat=True):

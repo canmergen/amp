@@ -11754,7 +11754,11 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
 /* YER TUTUCU KONTROLÜ (arka uçtaki donem.yer_tutucu_hatasi ile aynı
    kural): kalıptaki <N> için "N", <NN> için "NN" yazılır; başka biçim
    ya da kalıpta olmayan yer tutucu hata. */
-const DONEM_YT_ADAY = /(^|[^0-9A-Za-zÇĞİÖŞÜçğıöşü])(<\s*[Nn]\s*#[^<>]{1,60}>|<\s*[Nn]{1,2}\s*>|[Nn]{1,2})(?![0-9A-Za-zÇĞİÖŞÜçğıöşü])/g;
+/* Köşeli biçim (<N>, <N#1>) kendi sınırını taşır: harfe bitişik de yer
+   tutucudur ("<N>gün"); harf sınırı yalnız çıplak N / NN için aranır
+   (yoksa "<N>gün" içindeki N tek başına yakalanıp "<3>gün" olurdu). İlk
+   grup (önceki karakter) artık hep boş; çağıranlar onu aynen geri yazar. */
+const DONEM_YT_ADAY = /()(<\s*[Nn]\s*#[^<>]{1,60}>|<\s*[Nn]{1,2}\s*>|(?<![0-9A-Za-zÇĞİÖŞÜçğıöşü])[Nn]{1,2}(?![0-9A-Za-zÇĞİÖŞÜçğıöşü]))/g;
 /* SIRA NUMARALI VE HESAPLI YER TUTUCU (akis: donem.formul_* ile aynı
    kural): <N#k> kalıbın k'inci sayısı (ekranda "[sayı k]"); <N#formül>
    formülde $k kalıbın k'inci sayısı, tam sayılar ve + - * (ekranda
@@ -11797,6 +11801,43 @@ function donemFormulGorunur(ic) {
     if (/^\d+$/.test(ic)) return "[sayı " + ic + "]";
     return "[" + ic.replace(/\s+/g, "").replace(/\$(\d+)/g, "sayı $1")
         .replace(/([-+*])/g, (_t, op) => " " + (op === "*" ? "×" : op) + " ") + "]";
+}
+/* SAYI EKLE: anlam kutusunun altında kalıbın sayıları için düğmeler
+   ([sayı 1], [sayı 2]; tek sayılı kalıpta [sayı]). Basınca imlecin olduğu
+   yere eklenir (kutu odakta değilse sona); kutunun kendi değişiklik
+   işleyicisi çalışır. yenile(): kalıp değişince düğmeleri yeniden kurar. */
+function donemSayiDugmeleri(kalipFn, hedef) {
+    const kap = elYap("div", "dg-donem-sayi-ekle");
+    const ciz = () => {
+        kap.textContent = "";
+        const n = donemYtAdedi(kalipFn());
+        kap.hidden = !n || hedef.disabled;
+        if (kap.hidden) return;
+        kap.appendChild(elYap("span", "dg-donem-tur-not", "Sayı ekle:"));
+        const etiketler = n > 1 ? Array.from({ length: n }, (_x, j) => "[sayı " + (j + 1) + "]") : [DONEM_SAYI];
+        etiketler.forEach(t => {
+            const b = elYap("button", "dg-donem-sayi-btn", t);
+            b.type = "button";
+            b.title = t + " imlecin olduğu yere eklenir.";
+            /* Düğmeye basmak odağı kutudan almasın (imleç yerinde kalsın). */
+            b.addEventListener("mousedown", e => e.preventDefault());
+            b.onclick = () => {
+                const odak = document.activeElement === hedef;
+                const bas = odak ? hedef.selectionStart : hedef.value.length;
+                const son = odak ? hedef.selectionEnd : bas;
+                const once = hedef.value.slice(0, bas), sonra = hedef.value.slice(son);
+                const ek = (once && !/\s$/.test(once) ? " " : "") + t
+                    + (!/^[\s,.;:)]/.test(sonra) ? " " : "");
+                hedef.focus();
+                hedef.setRangeText(ek, bas, son, "end");
+                hedef.dispatchEvent(new Event("input", { bubbles: true }));
+            };
+            kap.appendChild(b);
+        });
+    };
+    ciz();
+    kap.yenile = ciz;
+    return kap;
 }
 function donemYtAdedi(kalip) {
     const k = String(kalip || "").replace(/\s+/g, "").toUpperCase();
@@ -12584,12 +12625,18 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
            sırası ekranda eklenme sırası. */
         const kosKap = elYap("div", "dg-donem-kosul");
         tdA.insertBefore(kosKap, dgAc.nextSibling);
+        /* SAYI EKLE: anlam kutusunun altında kalıbın sayıları için düğmeler
+           ([sayı 1], [sayı 2]); basınca imlecin olduğu yere eklenir. Kalıp
+           değişince (elle satır) dgCiz yeniler. */
+        const sayiEkle = donemSayiDugmeleri(kalipNe, g);
+        tdA.insertBefore(sayiEkle, ornekEl);
+        let kosSayiEkle = [];
         const kosListe = Object.entries((dz && dz.kosullu) || r.kosullu || {}).map(([p, a]) => ({ p, a }));
+        /* Adaylar: kalıbın geçtiği adlardaki harf parçaları, çok geçen önce:
+           [parça, kolon sayısı, örnek değer, örnekler ([ad, değer, açıklama])]. */
         const kosAday = r.kosul_adaylari || [];
-        const kosDl = elYap("datalist", "");
-        kosDl.id = "dg-kosul-" + Math.random().toString(36).slice(2);
-        kosAday.forEach(([p, n]) => { const o = document.createElement("option"); o.value = p;
-                                      o.label = ftBinlik(n) + " kolon"; kosDl.appendChild(o); });
+        const kosAdayBul = p => kosAday.find(x => x[0] === String(p || "").trim().toUpperCase());
+        const KOS_TABLO_ADET = 50;
         const kosCikti = () => {
             const o = {};
             kosListe.forEach(k => {
@@ -12600,86 +12647,170 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         };
         const kosHata = k => !String(k.a || "").trim() ? ""
             : !/^[A-Z][A-Z0-9]{0,19}$/.test(String(k.p || "").trim().toUpperCase())
-            ? "Parçayı yazın (harfle başlar; harf ve rakam)."
+            ? "Önce parçayı seçin."
             : donemYerTutucuHatasi(kalipNe(), k.a);
         const kosDegisti = () => {
             duzen[anah] = Object.assign(duzen[anah] || {}, { kosullu: kosCikti() });
             boya(); sekmeSayilari(); if (degisti) degisti();
         };
+        /* Parçanın örnek kolonları (i balonu): parçanın ve kalıbın birlikte
+           geçtiği 3 kolon, sözlük açıklaması ve (anlam yazıldıysa) koşullu
+           anlamla o kolonun dönemi. */
+        const kosOrnekBalonu = (aday, anlam) => {
+            const orn = (aday && aday[3]) || [];
+            if (!orn.length) return elYap("span", "bolme-info bos");
+            const kal = donemSayiGoster(kalipNe());
+            const anl = String(anlam || "").trim() && !donemYerTutucuHatasi(kalipNe(), anlam) ? anlam : "";
+            const par = orn.map(([ad, dg, tn]) => ad
+                + "\nAçıklaması: " + (tn || "Sözlükte açıklaması yok.")
+                + "\n" + dg + (anl ? ", bu koşullu anlamla: " + donemDegerAnlami(kalipNe(), anl, dg)
+                                   : ", koşullu anlam yazınca burada anlamı görünür."));
+            const bas = "Adında " + aday[0] + " ve " + kal + " geçen " + ftBinlik(aday[1]) + " kolon"
+                + (orn.length < aday[1] ? "dan " + orn.length + " örnek" : "");
+            const i_ = bolmeBilgiSimgesi(par.join("\n\n"), bas);
+            i_.classList.add("dg-donem-kosul-i", "bolme-info-genis");
+            return i_;
+        };
+        /* PARÇA SEÇİM TABLOSU (Değerleri Düzenle gibi açılır): arama;
+           Parça, Kolon, Örnek Kolon, Seçim. Başka koşulda seçili parça
+           seçilemez. */
+        function kosPanel(k, i) {
+            const panel = elYap("div", "dg-donem-panel dg-donem-kosul-panel");
+            const bas = elYap("div", "dg-donem-panel-bas");
+            bas.appendChild(elYap("span", "dg-donem-panel-ad", "Parça seçin"));
+            bas.appendChild(elYap("span", "dg-donem-panel-ipucu", "Kolon adlarında " + donemSayiGoster(kalipNe())
+                + " ile birlikte geçen parçalar, çok geçen önce. Seçtiğiniz parça adında geçen kolonlarda "
+                + "kalıp bu satırdaki anlamı alır."));
+            panel.appendChild(bas);
+            if (!kosAday.length) {
+                panel.appendChild(elYap("div", "dg-donem-tur-not", "Bu kalıpla birlikte adlarda geçen parça yok."));
+                return panel;
+            }
+            const ara = document.createElement("input");
+            ara.type = "text"; ara.className = "dg-giris dg-donem-kosul-ara";
+            ara.placeholder = "Parça ara"; ara.setAttribute("aria-label", "Parça ara");
+            panel.appendChild(ara);
+            const tablo = elYap("table", "dg-tablo dg-donem-kosul-tablo");
+            const th = document.createElement("thead"), hr = document.createElement("tr");
+            hr.append(elYap("th", "", "Parça"), elYap("th", "", "Kolon"), elYap("th", "", "Örnek Kolon"),
+                      elYap("th", "", "Seçim"));
+            th.appendChild(hr);
+            const govde = document.createElement("tbody");
+            tablo.append(th, govde);
+            panel.appendChild(tablo);
+            const alt = elYap("div", "dg-donem-tur-not", "");
+            panel.appendChild(alt);
+            const baskasi = new Set(kosListe.filter((x, j) => j !== i && x.p).map(x => String(x.p).toUpperCase()));
+            const satirlar = () => {
+                govde.textContent = "";
+                const q = ara.value.trim().toLocaleUpperCase("tr");
+                const uyan = kosAday.filter(x => !q || x[0].indexOf(q) !== -1);
+                uyan.slice(0, KOS_TABLO_ADET).forEach(x => {
+                    const tr_ = document.createElement("tr");
+                    const secili = x[0] === String(k.p || "").toUpperCase();
+                    tr_.classList.toggle("secili", secili);
+                    const tdP = elYap("td", "");
+                    tdP.appendChild(elYap("strong", "", x[0]));
+                    const tdO = elYap("td", "");
+                    const orn = x[3] || [];
+                    tdO.appendChild(document.createTextNode(orn.length ? orn[0][0] : ""));
+                    if (orn.length) tdO.appendChild(kosOrnekBalonu(x, k.a));
+                    const tdS = elYap("td", "");
+                    if (secili) tdS.appendChild(elYap("span", "dg-donem-tur-not", "Seçili"));
+                    else if (baskasi.has(x[0])) tdS.appendChild(elYap("span", "dg-donem-tur-not", "Başka koşulda"));
+                    else {
+                        const sb = elYap("button", "dg-toplu-btn", "Seç");
+                        sb.type = "button";
+                        sb.onclick = () => {
+                            k.p = x[0]; k.acik = false;
+                            kosCiz(); kosDegisti();
+                            const a_ = kosKap.querySelectorAll(".dg-donem-kosul-anlam")[i];
+                            if (a_) a_.focus();
+                        };
+                        tdS.appendChild(sb);
+                    }
+                    tr_.append(tdP, elYap("td", "", ftBinlik(x[1])), tdO, tdS);
+                    govde.appendChild(tr_);
+                });
+                if (!uyan.length) {
+                    const tr_ = elYap("tr", "dg-bos-tablo");
+                    const td_ = elYap("td", "", "«" + ara.value.trim() + "» bu kalıpla birlikte adlarda geçmiyor.");
+                    td_.colSpan = 4; tr_.appendChild(td_); govde.appendChild(tr_);
+                }
+                alt.textContent = uyan.length > KOS_TABLO_ADET
+                    ? ftBinlik(uyan.length - KOS_TABLO_ADET) + " parça daha var; aradığınızı yukarıya yazın." : "";
+            };
+            ara.oninput = satirlar;
+            satirlar();
+            return panel;
+        }
         function kosCiz() {
             kosKap.textContent = "";
-            kosKap.appendChild(kosDl);
+            kosSayiEkle = [];
             if (kosListe.length) {
                 const bas = elYap("div", "dg-donem-kosul-bas", "Koşullu anlamlar");
                 bas.appendChild(bolmeBilgiSimgesi("Kolon adında belirli bir parça geçerse bu kalıbın anlamı "
                     + "farklıysa yazın. Ör. [sayı 1]D_[sayı 2]D adda RATIO geçerse «son [sayı 1] gün ile son "
-                    + "[sayı 2] gün» demektir; geçmezse yukarıdaki anlam kullanılır. Kolon Kartları'nda o "
+                    + "[sayı 2] gün» demektir; geçmezse yukarıdaki anlam kullanılır. Parçayı açılan tablodan "
+                    + "seçin; anlamdaki sayıları altındaki düğmelerle ekleyebilirsiniz. Kolon Kartları'nda o "
                     + "kolonların kartı ve açıklaması bu anlamla yazılır. Kaydedince hafızaya yazılır.",
                     "Koşullu anlamlar"));
                 kosKap.appendChild(bas);
             }
+            const kapali = kilitli || calisiyor;
             kosListe.forEach((k, i) => {
                 const sat = elYap("div", "dg-donem-kosul-satir");
-                const pg = document.createElement("input");
-                pg.type = "text"; pg.className = "dg-giris dg-donem-kosul-parca";
-                pg.value = k.p || ""; pg.placeholder = "Parça";
-                pg.setAttribute("list", kosDl.id);
-                pg.setAttribute("aria-label", "Koşul parçası");
-                pg.disabled = kilitli || calisiyor;
+                /* Parça: tıklanınca seçim tablosu açılır (seçiliyse değiştirmek için de). */
+                const secBtn = elYap("button", "dg-donem-deger-ac dg-donem-kosul-sec", "");
+                secBtn.type = "button"; secBtn.disabled = kapali;
+                const aday = kosAdayBul(k.p);
+                secBtn.append(elYap("span", "dg-donem-deger-ac-ad", (k.acik ? "▾ " : "▸ ") + (k.p || "Parça Seç")));
+                if (k.p) secBtn.appendChild(elYap("span", "dg-donem-deger-ozet",
+                                                  aday ? ftBinlik(aday[1]) + " kolon · değiştir" : "değiştir"));
+                secBtn.setAttribute("aria-expanded", k.acik ? "true" : "false");
+                secBtn.title = k.p ? "Parçayı değiştirmek için basın." : "Parçayı seçmek için basın.";
+                secBtn.onclick = () => { k.acik = !k.acik; kosCiz(); };
                 const ag = document.createElement("input");
                 ag.type = "text"; ag.className = "dg-giris dg-donem-kosul-anlam";
                 ag.value = k.a ? donemAnlamGoster(kalipNe(), k.a) : "";
                 ag.placeholder = "Bu durumda anlamı";
                 ag.setAttribute("aria-label", "Koşullu anlam");
-                ag.disabled = kilitli || calisiyor;
+                ag.disabled = kapali;
                 const sil = elYap("button", "dg-baglanti", "Kaldır");
-                sil.type = "button"; sil.disabled = kilitli || calisiyor;
+                sil.type = "button"; sil.disabled = kapali;
                 const not = elYap("div", "dg-donem-tur-not", "");
-                /* ÖRNEK KOLONLAR: parça yazılınca yanında i çıkar; içinde parçanın
-                   ve kalıbın birlikte geçtiği 3 kolon, sözlük açıklaması ve
-                   (anlam yazıldıysa) bu koşullu anlamla o kolonun dönemi. */
-                let ornI = elYap("span", "bolme-info bos");
-                const ornekYaz = () => {
-                    const aday = kosAday.find(x => x[0] === String(k.p || "").trim().toUpperCase());
-                    const orn = (aday && aday[3]) || [];
-                    let yeni;
-                    if (!orn.length) yeni = elYap("span", "bolme-info bos");
-                    else {
-                        const kal = donemSayiGoster(kalipNe());
-                        const anl = String(k.a || "").trim() && !donemYerTutucuHatasi(kalipNe(), k.a) ? k.a : "";
-                        const par = orn.map(([ad, dg, tn]) => ad
-                            + "\nAçıklaması: " + (tn || "Sözlükte açıklaması yok.")
-                            + "\n" + dg + (anl ? ", bu koşullu anlamla: " + donemDegerAnlami(kalipNe(), anl, dg)
-                                               : ", koşullu anlam yazınca burada anlamı görünür."));
-                        const bas = "Adında " + aday[0] + " ve " + kal + " geçen " + ftBinlik(aday[1]) + " kolon"
-                            + (orn.length < aday[1] ? "dan " + orn.length + " örnek" : "");
-                        yeni = bolmeBilgiSimgesi(par.join("\n\n"), bas);
-                        yeni.classList.add("dg-donem-kosul-i", "bolme-info-genis");
-                    }
-                    ornI.replaceWith(yeni); ornI = yeni;
-                };
+                let ornI = kosOrnekBalonu(aday, k.a);
+                const ornekYaz = () => { const y = kosOrnekBalonu(kosAdayBul(k.p), k.a); ornI.replaceWith(y); ornI = y; };
                 const notYaz = () => {
                     const h = kosHata(k);
                     not.classList.toggle("dg-donem-ad-hata", !!h);
-                    const aday = kosAday.find(x => x[0] === String(k.p || "").trim().toUpperCase());
-                    not.textContent = h ? h : aday && k.a
-                        ? "Ör. adında " + aday[0] + " geçen " + aday[2] + " → " + donemDegerAnlami(kalipNe(), k.a, aday[2])
-                          + " (" + ftBinlik(aday[1]) + " kolon)"
-                        : k.p && !aday && k.a ? "Bu parça bu kalıpla birlikte adlarda geçmiyor." : "";
+                    const ad_ = kosAdayBul(k.p);
+                    not.textContent = h ? h : ad_ && k.a
+                        ? "Ör. adında " + ad_[0] + " geçen " + ad_[2] + " → " + donemDegerAnlami(kalipNe(), k.a, ad_[2])
+                          + " (" + ftBinlik(ad_[1]) + " kolon)"
+                        : k.p && !ad_ && k.a ? "Bu parça bu kalıpla birlikte adlarda geçmiyor." : "";
                 };
-                pg.oninput = () => { pg.value = pg.value.toUpperCase(); k.p = pg.value.trim(); notYaz(); ornekYaz(); kosDegisti(); };
                 ag.oninput = () => { k.a = donemAnlamIc(kalipNe(), ag.value); notYaz(); ornekYaz(); kosDegisti(); };
                 sil.onclick = () => { kosListe.splice(i, 1); kosCiz(); kosDegisti(); };
-                sat.append(elYap("span", "dg-donem-tur-not", "Adda"), pg, ornI, elYap("span", "dg-donem-tur-not", "geçerse:"), ag, sil);
-                kosKap.append(sat, not);
-                notYaz(); ornekYaz();
+                sat.append(elYap("span", "dg-donem-tur-not", "Adda"), secBtn, ornI,
+                           elYap("span", "dg-donem-tur-not", "geçerse:"), ag, sil);
+                kosKap.appendChild(sat);
+                const se = donemSayiDugmeleri(kalipNe, ag);
+                kosSayiEkle.push(se);
+                kosKap.appendChild(se);
+                kosKap.appendChild(not);
+                if (k.acik && !kapali) kosKap.appendChild(kosPanel(k, i));
+                notYaz();
             });
-            if (!kilitli && !calisiyor) {
+            if (!kapali) {
                 const ekle = elYap("button", "dg-baglanti dg-donem-kosul-ekle", "Koşullu Anlam Ekle");
                 ekle.type = "button";
                 ekle.title = "Adda belirli bir parça geçtiğinde bu kalıbın anlamı farklıysa ekleyin (ör. RATIO).";
-                ekle.onclick = () => { kosListe.push({ p: "", a: "" }); kosCiz();
-                    const s_ = kosKap.querySelectorAll(".dg-donem-kosul-parca"); if (s_.length) s_[s_.length - 1].focus(); };
+                ekle.onclick = () => {
+                    kosListe.forEach(x => { x.acik = false; });
+                    kosListe.push({ p: "", a: "", acik: true }); kosCiz();
+                    const s_ = kosKap.querySelector(".dg-donem-kosul-ara"); if (s_) s_.focus();
+                };
                 kosKap.appendChild(ekle);
             }
         }
@@ -12704,6 +12835,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 + (say.disi ? " · " + ftBinlik(say.disi) + " dönem değil" : "");
         }
         function dgCiz() {
+            sayiEkle.yenile();
+            kosSayiEkle.forEach(x => x.yenile());
             const liste = degerListesi();
             const var_ = /<N{1,2}>|<N\d>/i.test(kalipSimdi() || "") && liste.length > 0;
             const gecen = new Set(liste.map(d => d.deger));
