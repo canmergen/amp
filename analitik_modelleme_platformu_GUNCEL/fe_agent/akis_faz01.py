@@ -1685,6 +1685,9 @@ def _donem_yazilis_satirlari(durum, secim=None):
     desen = {k: donem_mod.kalip_deseni(k) for k in kaliplar}
     ikili = {k for k in kaliplar if "_" in k}
     ornek, sayi = {}, Counter()
+    # Kalibin gectigi kolonlar ve degerleri (ornek kolonlar icin, en cok
+    # DONEM_YAZILIS_ADAY_ADET).
+    adaylar = {}
     korunan = _korunan_kolonlar(durum)
     haric = set(map(str, durum.get("haric_kolonlar") or []))
     for ad in _veri_kolonlari(durum):
@@ -1697,6 +1700,8 @@ def _donem_yazilis_satirlari(durum, secim=None):
             m = t[i] + "_" + t[i + 1]
             for k in ikili:
                 if desen[k].match(m):
+                    if k not in gorulen and len(adaylar.setdefault(k, [])) < DONEM_YAZILIS_ADAY_ADET:
+                        adaylar[k].append((ad, m))
                     gorulen.add(k)
                     ikide.update((i, i + 1))
                     ornek.setdefault(k, m)
@@ -1705,6 +1710,8 @@ def _donem_yazilis_satirlari(durum, secim=None):
                 continue
             for k in kaliplar:
                 if k not in ikili and desen[k].match(p):
+                    if k not in gorulen and len(adaylar.setdefault(k, [])) < DONEM_YAZILIS_ADAY_ADET:
+                        adaylar[k].append((ad, p))
                     gorulen.add(k)
                     ornek.setdefault(k, p)
         sayi.update(gorulen)
@@ -1718,8 +1725,38 @@ def _donem_yazilis_satirlari(durum, secim=None):
         o = ornek.get(k, "")
         cikti.append({"kalip": k, "yazilis": v, "hata": h, "ornek": o,
                       "ornek_yeni": donem_mod.ad_sablonu_doldur(k, v, o) if v and not h and o else o,
-                      "kolon": sayi[k]})
+                      "kolon": sayi[k], "_adaylar": adaylar.get(k, [])})
     return cikti
+
+
+DONEM_YAZILIS_ADAY_ADET = 200
+DONEM_YAZILIS_ORNEK_ADET = 3
+
+
+def _donem_yazilis_ornekleri(satirlar, aileler, durum):
+    """Her donem yazilisi satirina ornek kolonlar: [[eski ad, deger, yeni ad,
+    aciklama]] (en cok 3; once aciklamasi olan ve degeri farkli olanlar).
+    Yeni ad bu kartin kurdugu ad (yazilis, standart sira, eklenecekler
+    uygulanmis); aciklama 01.2.4.3'te onaylanan (yoksa sozlugun calisma
+    kopyasindaki). Satirdaki ic "_adaylar" alani kalkar."""
+    yeni = {e: y for kol in aileler.values() for e, y in kol}
+    onay = aciklama_onayi(durum)
+    tanim = None
+    for x in satirlar:
+        ad_dg = x.pop("_adaylar", [])
+        if tanim is None and any(not (isinstance(onay.get(a), dict) and onay[a].get("son")) for a, _d in ad_dg):
+            try:
+                tanim = sozluk_calisma.tanimlar_tam(durum) or {}
+            except Exception:
+                tanim = {}
+        liste = []
+        for a, dg in ad_dg:
+            o = onay.get(a) if isinstance(onay.get(a), dict) else {}
+            ac = re.sub(r"\s+", " ", str(o.get("son") or (tanim or {}).get(a) or "")).strip()[:300]
+            liste.append((a, dg, ac))
+        x["ornekler"] = [[a, dg, yeni.get(a, a), ac] for a, dg, ac in _kosul_ornekleri(
+            liste, DONEM_YAZILIS_ORNEK_ADET)]
+    return satirlar
 
 
 def _donem_ad_yazilislari(satirlar):
@@ -2013,7 +2050,7 @@ def _kolon_ad_alani(durum, sira=None, ekler=None, turler=None, baslat=True, yazi
             "yerler": [{"kod": k, "ad": e} for k, e in parca_mod.AD_YERLERI],
             "satirlar": satirlar, "korunan": sorted(korunan & set(_veri_kolonlari(durum))),
             "eklenecekler": ek_satirlar, "son_kontrol": son_kontrol,
-            "donem_yazilis": donem_yazilis,
+            "donem_yazilis": _donem_yazilis_ornekleri(donem_yazilis, aileler, durum),
             "_etkin_turler": {p: o["tur"] for p, o in etkin.items()
                               if isinstance(o, dict) and o is not bilgi.get(p)},
             "not": (durum.get("_onceki_notlari") or {}).get("kolon_ad", "")}

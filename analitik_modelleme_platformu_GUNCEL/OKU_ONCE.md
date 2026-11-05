@@ -1440,7 +1440,13 @@ tanıtır; sayfalar sol bardan açılır.
     zaman birimi (3D_6D, `<N>D_<N>D` → BTWN_3D_6D), sonra tek birim
     (`parca.ad_birimleri(..., yazilislar)`).
   - **Dönem Yazılışları** (Ad Standardı'nın altında;
-    `_donem_yazilis_satirlari`, `_donem_ad_yazilislari`): kolon adlarında
+    `_donem_yazilis_satirlari`, `_donem_ad_yazilislari`). Kolonlar
+    hücresinde i balonu (`_donem_yazilis_ornekleri`, `dyOrnekYaz`):
+    kalıbın geçtiği 3 kolon (önce açıklaması olan ve değeri farklı
+    olanlar); her birinin eski adı, bu kartın kurduğu yeni adı (yazılış,
+    Ad Standardı ve eklenecek parçalar uygulanmış; adlar kurulunca
+    yenilenir) ve 01.2.4.3'te onaylanan açıklaması (onay yoksa sözlüğün
+    çalışma kopyasındaki tanım). Kolon adlarında
     geçen her onaylı dönem kalıbı (yer tutuculu; gruptan ayrılan tek
     değerler hariç) için KALIP / KOLONLAR (kaç kolonda, adlarda ilk geçen
     örnek; iki parçalı kalıp yan yana iki parçayla aranır, onun içindeki
@@ -1473,9 +1479,14 @@ tanıtır; sayfalar sol bardan açılır.
     TXN_GDN_CNT_AVG_3D_PER_DAY. Hepsi onaylanmadan ve kısaltmalar geçerli
     olmadan adım geçmez (`_kolon_ad_karari_isle`); karar
     `_kolon_ad_karari["eklenecekler"]`.
-  - **Ad Standardı paneli:** yerler ← → ile sıralanır; adlar sunucuda
-    yeniden kurulur (`/kolon_ad_onizle`), adı değişen ailenin onayı
-    kalkar. Onayda hafızaya yazılır (`parca_ad_standardi`).
+  - **Ad Standardı paneli:** yerler tutup sürüklenerek sıralanır
+    (`surukleBasla`; pointer olayları, fare ve dokunmatik). Sürüklerken
+    öteki yerler canlı kayar, numaralar güncellenir; bırakınca sıra
+    değiştiyse adlar sunucuda yeniden kurulur (`/kolon_ad_onizle`), adı
+    değişen ailenin onayı kalkar. Sürüklemeden tıklamak sırayı
+    değiştirmez. Klavye: yere odaklanıp sol / sağ ok tuşu bir öne / arkaya
+    taşır; adlar kurulunca odak aynı yerde kalır. Onayda hafızaya yazılır
+    (`parca_ad_standardi`).
   - **Son Kontrol: Parça Türleri** (Ad Standardı'nın altında; tür
     01.2.4.2'de seçilmez): kart açılınca arka planda dil modeli Ek
     dışındaki her parçanın türünü denetler (`_ad_tur_girdisi`,

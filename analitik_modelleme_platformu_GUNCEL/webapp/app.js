@@ -9659,32 +9659,88 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     const stOrnek = elYap("div", "dg-donem-tur-not dg-kad-ornek", "");
     stKap.appendChild(stOrnek);
     let onizleSayac = 0;
-    function siraCiz() {
+    /* SIRA: parçalar tutup sürüklenerek dizilir (fare ve dokunmatik;
+       pointer olayları). Sürüklerken öteki parçalar canlı kayar, numaralar
+       güncellenir; bırakınca sıra değiştiyse adlar yeniden kurulur. Klavye:
+       parçaya odaklanıp sol / sağ ok tuşu bir öne / arkaya taşır. */
+    function siraCiz(odakYer) {
         stSira.textContent = "";
+        stSira.setAttribute("role", "list");
         sira.forEach((y, i) => {
-            const c = elYap("span", "dg-kad-yer");
-            const sol = elYap("button", "dg-kad-ok", "←");
-            sol.type = "button"; sol.disabled = kilitli || i === 0;
-            sol.title = yerAdi[y] + " bir öne";
-            sol.setAttribute("aria-label", yerAdi[y] + " bir öne");
-            sol.onclick = () => tasi(i, -1);
-            const sag = elYap("button", "dg-kad-ok", "→");
-            sag.type = "button"; sag.disabled = kilitli || i === sira.length - 1;
-            sag.title = yerAdi[y] + " bir arkaya";
-            sag.setAttribute("aria-label", yerAdi[y] + " bir arkaya");
-            sag.onclick = () => tasi(i, 1);
-            c.append(sol, elYap("span", "dg-kad-yer-ad", (i + 1) + ". " + (yerAdi[y] || y)), sag);
+            const c = elYap("span", "dg-kad-yer" + (kilitli ? "" : " suruklenir"));
+            c.dataset.yer = y;
+            c.setAttribute("role", "listitem");
+            if (!kilitli) {
+                c.tabIndex = 0;
+                c.title = "Tutup sürükleyerek yerini değiştirin (klavyede sol ve sağ ok tuşları).";
+                c.setAttribute("aria-label", (i + 1) + ". " + (yerAdi[y] || y)
+                    + ". Yerini değiştirmek için tutup sürükleyin ya da sol ve sağ ok tuşlarını kullanın.");
+                c.appendChild(elYap("span", "dg-kad-tutamak", "⠿"));
+                c.addEventListener("pointerdown", e => surukleBasla(e, c));
+                c.addEventListener("keydown", e => {
+                    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+                    e.preventDefault();
+                    tasi(i, e.key === "ArrowLeft" ? -1 : 1);
+                });
+            }
+            c.appendChild(elYap("span", "dg-kad-yer-ad", (i + 1) + ". " + (yerAdi[y] || y)));
             stSira.appendChild(c);
         });
+        if (odakYer) {
+            const o = stSira.querySelector('[data-yer="' + CSS.escape(odakYer) + '"]');
+            if (o) o.focus();
+        }
         const ilk = satirlar.find(r => r.kolonlar.length && r.kolonlar[0][0] !== r.kolonlar[0][1]);
         stOrnek.textContent = ilk ? "Örnek: " + ilk.kolonlar[0][0] + " → " + ilk.kolonlar[0][1] : "";
+    }
+    function siraNumarala() {
+        [...stSira.children].forEach((c, i) => {
+            const ad = c.querySelector(".dg-kad-yer-ad");
+            if (ad) ad.textContent = (i + 1) + ". " + (yerAdi[c.dataset.yer] || c.dataset.yer);
+        });
+    }
+    function surukleBasla(e, c) {
+        if (kilitli || (e.pointerType === "mouse" && e.button !== 0)) return;
+        e.preventDefault();
+        c.focus();
+        const ilk = sira.slice();
+        let oynadi = false;
+        const x0 = e.clientX, y0 = e.clientY;
+        const hareket = ev => {
+            if (!oynadi && Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 4) return;
+            oynadi = true;
+            c.classList.add("surukleniyor");
+            /* Bırakılacak yer: imlecin önünde kalan ilk parça (satır satır). */
+            let once = null;
+            for (const o of stSira.children) {
+                if (o === c) continue;
+                const r = o.getBoundingClientRect();
+                if (ev.clientY < r.top || (ev.clientY <= r.bottom && ev.clientX < r.left + r.width / 2)) { once = o; break; }
+            }
+            if (once) { if (c.nextSibling !== once) stSira.insertBefore(c, once); }
+            else if (stSira.lastChild !== c) stSira.appendChild(c);
+            siraNumarala();
+        };
+        const bitir = () => {
+            window.removeEventListener("pointermove", hareket);
+            window.removeEventListener("pointerup", bitir);
+            window.removeEventListener("pointercancel", bitir);
+            c.classList.remove("surukleniyor");
+            if (!oynadi) return;
+            sira = [...stSira.children].map(x => x.dataset.yer);
+            siraCiz(c.dataset.yer);
+            if (JSON.stringify(sira) !== JSON.stringify(ilk)) onizle();
+        };
+        window.addEventListener("pointermove", hareket);
+        window.addEventListener("pointerup", bitir);
+        window.addEventListener("pointercancel", bitir);
     }
     function tasi(i, yon) {
         if (kilitli) return;
         const j = i + yon;
         if (j < 0 || j >= sira.length) return;
         [sira[i], sira[j]] = [sira[j], sira[i]];
-        siraCiz();
+        siraCiz(sira[j]);
         onizle();
     }
     /* Ad Standardı ya da ada eklenecek parça değişince adlar sunucuda
@@ -9709,7 +9765,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             if (k.son_kontrol) skAl(k.son_kontrol);
             (k.donem_yazilis || []).forEach(x => {
                 const y = dyler.find(z => z.kalip === x.kalip);
-                if (y) { y.hata = x.hata || ""; y.ornek_yeni = x.ornek_yeni || ""; }
+                if (y) { y.hata = x.hata || ""; y.ornek_yeni = x.ornek_yeni || ""; y.ornekler = x.ornekler || []; }
             });
             const harita = {};
             (k.satirlar || []).forEach(r => { harita[r.aile] = r.kolonlar; });
@@ -9724,7 +9780,9 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 const x = ekler.find(y => y.anahtar === e.anahtar);
                 if (x) x.gecerli = !!e.gecerli;
             });
-            tabloCiz(); siraCiz(); ekCiz(); tkCiz(); dyNotlar();
+            /* Sıradaki odak (klavyeyle taşıma sürerken) yeniden çizimde kalır. */
+            const odakYer = stSira.contains(document.activeElement) ? document.activeElement.dataset.yer : null;
+            tabloCiz(); siraCiz(odakYer); ekCiz(); tkCiz(); dyNotlar();
             if (degisti) degisti();
             tkYoklaKur();
         })
@@ -9749,6 +9807,24 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     };
     const dyHata = x => donemAdHatasi(x.kalip, x.deger);
     const dyNotEl = {};
+    /* ÖRNEK KOLONLAR (i balonu): kalıbın geçtiği 3 kolon; eski ad, bu
+       kartın kurduğu yeni ad (yazılış, standart sıra ve eklenecekler
+       uygulanmış) ve 01.2.4.3'te onaylanan açıklama. Adlar kurulunca
+       (önizleme) yenilenir. */
+    const dyOrnEl = {};
+    function dyOrnekYaz(x) {
+        const kap = dyOrnEl[x.kalip];
+        if (!kap) return;
+        kap.textContent = "";
+        const orn = x.ornekler || [];
+        if (!orn.length) return;
+        const i_ = bolmeBilgiSimgesi(orn.map(([eski, dg, yeni, ac]) => eski + "\nYeni ad: " + yeni
+            + "\nAçıklaması: " + (ac ? tireSade(ac) : "Sözlükte açıklaması yok.")).join("\n\n"),
+            donemSayiGoster(x.kalip) + " geçen " + ftBinlik(x.kolon || 0) + " kolon"
+            + (orn.length < (x.kolon || 0) ? "dan " + orn.length + " örnek" : ""));
+        i_.classList.add("bolme-info-genis");
+        kap.appendChild(i_);
+    }
     function dyNotYaz(x) {
         const el = dyNotEl[x.kalip];
         if (!el) return;
@@ -9761,7 +9837,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             : !ic ? "Kalıp yeni adda aynen kalır" + (x.ornek ? " (ör. " + x.ornek + ")." : ".")
             : x.ornek ? "Ör. " + x.ornek + " → " + donemAdDoldur(x.kalip, ic, x.ornek) : "";
     }
-    const dyNotlar = () => dyler.forEach(dyNotYaz);
+    const dyNotlar = () => dyler.forEach(x => { dyNotYaz(x); dyOrnekYaz(x); });
     function dyCiz() {
         dyKap.textContent = "";
         if (!dyler.length) return;
@@ -9774,7 +9850,9 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             + "altındaki düğmelerle de ekleyebilirsiniz; imlecin olduğu yere boşluksuz eklenir. Aynı sayıyı tekrar "
             + "yazmak için [sayı 1], [sayı 2]; hesap için [sayı 1 × sayı 2] yazın (ör. [sayı]D_X[sayı] "
             + "için L[sayı 1]D_P[sayı 1 × sayı 2]D ile 7D_X2 yeni adda L7D_P14D olur). Boş bırakılırsa "
-            + "kalıp aynen kalır. Yazılışı değiştirince aşağıdaki adlar hemen yeniden kurulur; "
+            + "kalıp aynen kalır. Kolonlar'daki i'de kalıbın geçtiği 3 kolon, eski ve yeni adıyla ve "
+            + "Kolon Kartları'nda onaylanan açıklamasıyla görünür (yeni ad bu karttaki yazılış, Ad Standardı "
+            + "ve eklenecek parçalarla kurulur). Yazılışı değiştirince aşağıdaki adlar hemen yeniden kurulur; "
             + "onaylayınca hafızaya yazılır ve sonraki çalışmalarda dolu gelir. Girdi veri setiniz ve "
             + "sözlüğünüz değişmez.", "Dönem Yazılışları"));
         bas.append(baslik, elYap("span", "dg-donem-tur-not", "Kalıbın yeni addaki yazılışı; boşsa aynen kalır."));
@@ -9787,7 +9865,11 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         dyler.forEach(x => {
             const tr = elYap("tr", "dg-satir");
             tr.appendChild(elYap("td", "dg-kolon", donemSayiGoster(x.kalip)));
-            tr.appendChild(elYap("td", "", ftBinlik(x.kolon || 0) + " kolon" + (x.ornek ? " · ör. " + x.ornek : "")));
+            const tdK = elYap("td", "", ftBinlik(x.kolon || 0) + " kolon" + (x.ornek ? " · ör. " + x.ornek : ""));
+            const ornKap = elYap("span", "dg-kad-dy-orn");
+            dyOrnEl[x.kalip] = ornKap;
+            tdK.appendChild(ornKap);
+            tr.appendChild(tdK);
             const td = elYap("td", "");
             const g = document.createElement("input");
             g.type = "text"; g.className = "dg-giris dg-donem-ad-giris";
@@ -9810,6 +9892,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             tr.classList.toggle("dg-donem-dikkat", !!dyHata(x));
             b.appendChild(tr);
             dyNotYaz(x);
+            dyOrnekYaz(x);
         });
         t.appendChild(b);
         const sar_ = elYap("div", "dg-tablo-sar");

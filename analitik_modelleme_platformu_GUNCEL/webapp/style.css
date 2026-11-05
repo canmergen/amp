@@ -5020,13 +5020,15 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
   display: inline-flex; align-items: center; height: 26px;
   border: 1px solid var(--kenar-guclu); border-radius: var(--r-kucuk); background: var(--yuzey-alt);
 }
-.dg-kad-yer-ad { padding: 0 6px; font-size: var(--fs-kucuk); white-space: nowrap; }
-.dg-kad-ok {
-  height: 100%; padding: 0 6px; border: 0; background: none; cursor: pointer;
-  font: inherit; font-size: var(--fs-kucuk); color: var(--metin-soluk);
-}
-.dg-kad-ok:hover:not(:disabled) { color: var(--kirmizi); }
-.dg-kad-ok:disabled { opacity: .3; cursor: default; }
+.dg-kad-yer-ad { padding: 0 8px 0 4px; font-size: var(--fs-kucuk); white-space: nowrap; }
+/* Ad Standardı: parçalar tutup sürüklenir. */
+.dg-kad-yer.suruklenir { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.dg-kad-yer.suruklenir:hover { border-color: var(--murekkep-cizgi); }
+.dg-kad-yer.suruklenir:focus-visible { outline: 2px solid var(--kirmizi); outline-offset: 1px; }
+.dg-kad-yer.surukleniyor { cursor: grabbing; border-color: var(--kirmizi); background: var(--yuzey);
+  box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.dg-kad-tutamak { padding-left: 6px; color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1; }
+.dg-kad-dy-orn .bolme-info { vertical-align: middle; margin-left: 4px; }
 .dg-kad-ornek { margin-top: 6px; }
 /* Ada eklenecek parçalar (Ad Standardı'nın altında). */
 .dg-kad-ek {
