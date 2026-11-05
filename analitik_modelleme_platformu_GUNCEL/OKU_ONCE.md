@@ -101,7 +101,12 @@ bağlantı ve model adları ve eski ekran adları (kolon adları bozulmaz).
 
 **Tablolarda hiza:** her tabloda (Değişken Listesi ızgarası dahil)
 başlık ve hücre içeriği ortalı; çip dizileri ve hücredeki düğmeler de
-ortada. Yazı alanları (kutu, açılır liste) kendi içinde soldan yazar.
+ortada. Tablo hücresindeki yazı alanları (kutu, açılır liste) da
+yazısını ortadan yazar. Hiçbir öğe hücresinden taşmaz: kutu ve liste en
+çok hücre genişliğinde, seçenek düğmeleri (ör. 01.2.4.1 Değerleri
+Düzenle'deki Kalıba Uyar / Kendi Anlamı / Dönem Değil) hücreye sığmazsa
+düğme yazısı iki satıra iner. Değer panelinde Durum kolonu 360px, panel
+başlığı numaralı kalıpla yazılır ("[sayı 1]D_[sayı 2]D değerleri").
 Anahtar ve değeri iki uca dağıtan satırlar (SFA ölçüt satırı, Değişken
 Listesi detay satırı) dokunulmaz. Kural `style.css` sonunda tek yerde.
 

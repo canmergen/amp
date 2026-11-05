@@ -12609,7 +12609,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const k = kilitli || da.dm === "calisiyor";
             const panel = elYap("div", "dg-donem-panel");
             const bas = elYap("div", "dg-donem-panel-bas");
-            bas.appendChild(elYap("span", "dg-donem-panel-ad", r.kalip ? r.kalip + " değerleri" : "Değerler"));
+            bas.appendChild(elYap("span", "dg-donem-panel-ad", r.kalip ? donemSayiGoster(r.kalip) + " değerleri" : "Değerler"));
             bas.appendChild(elYap("span", "dg-donem-panel-ipucu",
                 "Kalıbın anlamı her değere kendi sayısıyla uygulanır. Bir değere özel anlam yazmak "
                 + "için önce o satırda Kendi Anlamı'na basın; yazdığınız yalnız o değerde kalır."));

@@ -3508,8 +3508,8 @@ span.bolme-cip { cursor: default; }
 .dg-donem-deger-tablo th:nth-child(1) { width: 92px; }
 .dg-donem-deger-tablo th:nth-child(2) { width: 64px; }
 .dg-donem-deger-tablo th:nth-child(3) { width: auto; }
-.dg-donem-deger-tablo th:nth-child(4) { width: 296px; }
-.dg-donem-deger-tablo td { background: none; }
+.dg-donem-deger-tablo th:nth-child(4) { width: 360px; }
+.dg-donem-deger-tablo td { background: none; vertical-align: middle; }
 .dg-donem-deger-kolon { color: var(--metin-soluk); font-size: var(--fs-kucuk); font-variant-numeric: tabular-nums; }
 .dg-donem-deger-giris { width: 100%; font: inherit; font-size: var(--fs-kucuk); }
 .dg-donem-deger.dg-durum-kalip .dg-donem-deger-giris { color: var(--metin-soluk); }
@@ -5142,8 +5142,10 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
    ne sağa yaslı. Hücredeki esnek kutular (çip dizileri, başlık ve
    süzgeç düğmesi) da ortaya toplanır; anahtar ve değeri iki uca dağıtan
    satırlar (sfa-olcut-hucre, ft-detay-satir) hariç. Değişken Listesi
-   ızgarası (ft-) da aynı. Yazı alanları (input, textarea, select) kendi
-   içinde soldan yazar: yazarken imleç ortadan kaymasın. */
+   ızgarası (ft-) da aynı. Yazı alanlarının (input, textarea, select)
+   içi de ortalıdır. Hücredeki hiçbir öğe hücresinden taşmaz: bölmeli
+   düğmeler (Kalıba Uyar / Kendi Anlamı / Dönem Değil gibi) hücreye
+   sığmazsa düğme yazısı iki satıra iner. */
 #kabuk table th, #kabuk table td,
 #kabuk .ft-hucre, #kabuk .ft-bas { text-align: center !important; }
 #kabuk table th div:not(.sfa-olcut-hucre):not(.ft-detay-satir),
@@ -5168,7 +5170,14 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 #kabuk table td select,
 #kabuk .ft-hucre input,
 #kabuk .ft-hucre textarea,
-#kabuk .ft-hucre select { text-align: left; }
+#kabuk .ft-hucre select { text-align: center; text-align-last: center; }
+#kabuk table td input:not([type="checkbox"]):not([type="radio"]),
+#kabuk table td textarea,
+#kabuk table td select { max-width: 100%; }
+#kabuk table td .dg-segment { max-width: 100%; height: auto; min-height: 24px; }
+#kabuk table td .dg-segment button {
+  flex: 1 1 auto; min-width: 0; white-space: normal; line-height: 1.15; padding: 2px 7px;
+}
 /* Blok düzenli düğme (Değerleri Düzenle) kendi genişliğinde: hücrede
    ortaya otursun. */
 #kabuk table td .dg-donem-deger-ac { margin-left: auto; margin-right: auto; }
@@ -5241,7 +5250,8 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-acik-satir-cevap .dg-giris { flex: 1; min-width: 0; }
 .dg-acik-soru-cevap-not { margin-top: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); }
 /* Dönem Bilgisi: koşullu anlamlar (anlam kutusunun altında). */
-.dg-donem-kosul { margin-top: 6px; text-align: left; }
+.dg-donem-kosul { margin-top: 6px; }
+.dg-donem-kosul-satir { justify-content: center; }
 .dg-donem-kosul-bas { display: inline-flex; align-items: center; gap: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: 600; }
 .dg-donem-kosul-satir { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .dg-giris.dg-donem-kosul-parca { width: 96px; height: 26px; font-size: var(--fs-kucuk); text-transform: uppercase; }
