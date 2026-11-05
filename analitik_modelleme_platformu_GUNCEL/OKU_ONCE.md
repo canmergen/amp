@@ -145,6 +145,13 @@ başlığı numaralı kalıpla yazılır ("[sayı 1]D_[sayı 2]D değerleri").
 Anahtar ve değeri iki uca dağıtan satırlar (SFA ölçüt satırı, Değişken
 Listesi detay satırı) dokunulmaz. Kural `style.css` sonunda tek yerde.
 
+**01.4 Veri Bölme Stratejisi çubuğu** (`bolmeCubukParca`, `.bolme-cubuk`):
+setler yüzdeleriyle orantılı renkli parçalar (Train, Test, Validasyon;
+zamansal bölmede dönemler ve gap). Parça yazısından dar olmaz; dar
+ekranda alt satıra sarılır. Tek satırlı parça en az 34px, hedef oranı
+da yazan iki satırlı parça en az 48px (iç boşluk 6px 14px, satır arası
+1,35); yükseklik içeriğe göre uzar, sarılan sıralar arasında 3px boşluk.
+
 **Yazı tipi:** tek aile, **Outfit** (geometrik, yuvarlak, sade). Bütün
 arayüzde: başlıklar, sol bar, metin, tablolar, düğmeler. Başlıklar ve
 vurgu 600 (sol bar satırları ve seçili satır da), metin 400;

@@ -2763,14 +2763,17 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 /* Parça yazısından DAR OLAMAZ: flex-basis auto + flex-shrink 0. Yüzde
    yalnızca kalan alanın paylaşımını belirler; yazı hiçbir zaman
    kırpılmaz. Dar ekranda çubuk sarılır. */
-.bolme-cubuk { flex-wrap: wrap; row-gap: 2px; height: auto; min-height: 26px; }
+.bolme-cubuk { flex-wrap: wrap; row-gap: 3px; height: auto; min-height: 34px; align-items: stretch; margin: 2px 0 4px; }
+/* Parçalar ferah: tek satırlı en az 34px, iki satırlı (yüzde ve hedef
+   oranı) en az 48px; yazı büyürse yükseklik içeriğe göre uzar, satırlar
+   üst üste binmez. */
 .bolme-cubuk > span {
   display: flex; align-items: center; justify-content: center;
-  height: 26px; padding: 0 10px; white-space: nowrap;
-  flex-basis: auto; flex-shrink: 0;
+  min-height: 34px; height: auto; padding: 6px 14px; white-space: nowrap;
+  flex-basis: auto; flex-shrink: 0; box-sizing: border-box;
 }
 .bolme-cubuk > span.iki-satir {
-  flex-direction: column; height: 38px; line-height: 1.2;
+  flex-direction: column; min-height: 48px; line-height: 1.35; gap: 2px;
 }
 .bolme-cubuk-alt { font-weight: var(--fw-normal, 400); opacity: .92; }
 .bolme-cubuk-egitim { background: #3B5F9E; }
