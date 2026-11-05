@@ -765,27 +765,34 @@ tanıtır; sayfalar sol bardan açılır.
   kalıbın, kolon adında belirli bir parça geçtiğinde kullanılan anlamı.
   Ör. [sayı 1]D_[sayı 2]D varsayılan "[sayı 1] gün önce ile [sayı 2] gün
   önce arası", adda RATIO geçerse "son [sayı 1] gün ile son [sayı 2]
-  gün". Satırda anlamın altında "Koşullu Anlam Ekle": "Adda [parça]
-  geçerse: [anlam]". **Parça seçim tablosu** (Değerleri Düzenle gibi
-  açılır): parça düğmesi ("▸ Parça Seç"; seçiliyse "▸ RATIO 4 kolon ·
-  değiştir") basınca satırın altında panel açar: arama kutusu ve tablo
-  (Parça, Kolon, Örnek Kolon ve i balonunda örnekler, Seçim). Adaylar
-  `_kosul_adaylari`: kalıbın geçtiği adlardaki harf parçaları, çok geçen
-  önce ([parça, kolon sayısı, örnek değer, örnekler]; en çok 300 parça,
-  örnek kolonlar yalnız ilk 60 parçada). Tablo ilk 50 satırı gösterir,
-  gerisi aramayla bulunur. Başka koşulda seçili parça "Başka koşulda"
-  yazar, seçilemez. Seçince panel kapanır, imleç anlam kutusuna geçer.
-  "Koşullu Anlam Ekle" paneli açık ve arama kutusu odakta getirir. Parça
-  elle yazılmaz. Parça seçilince düğmenin yanında i çıkar: balonda
-  parçanın ve kalıbın birlikte geçtiği en çok 3 kolon
+  gün".
+
+  **Koşulları Düzenle** ("Değerleri Düzenle"nin hemen yanında, özetiyle:
+  "6 parça · 1 kendi anlamı"). Basınca değer paneliyle aynı düzende ve
+  satırın altında "[kalıp] koşulları" paneli açılır (iki panel birlikte
+  açıksa üst üste). Panelde:
+  - arama kutusu (açılınca odakta);
+  - tablo: Parça, Kolon (sayı ve i balonu), Anlam, Durum.
+
+  Durum bölmeli düğmeyle seçilir:
+  - **Kalıba Uyar:** kutu kalıbın anlamını gösterir, yazılmaz.
+  - **Kendi Anlamı:** kutu kalıbın anlamıyla dolup odaklanır. Altında
+    sayı ekle düğmeleri ve örnek ("Ör. 3D_7D → son 3 gün ile son 7 gün")
+    ya da hata (yer tutucu kalıbın anlamı gibi denetlenir; geçersizken
+    onay kapalı) yazar. Boş bırakılıp çıkılırsa parça Kalıba Uyar'a döner.
+
+  Satırlar: kendi anlamı olanlar önce, sonra çok geçen önce. Adaylar
+  `_kosul_adaylari`: kalıbın geçtiği adlardaki harf parçaları ([parça,
+  kolon sayısı, örnek değer, örnekler]; en çok 300 parça, örnek kolonlar
+  yalnız ilk 60 parçada). Hafızadan gelen ama adlarda bu kalıpla geçmeyen
+  parça da listede durur (kolon 0, "Bu parça bu kalıpla birlikte adlarda
+  geçmiyor."). Tablo ilk 50 satırı gösterir, gerisi aramayla bulunur.
+
+  i balonunda parçanın ve kalıbın birlikte geçtiği en çok 3 kolon
   (`_kosul_ornekleri`: önce sözlük açıklaması olan ve kalıp değeri farklı
-  olanlar), her birinin açıklaması ve yazılan koşullu anlamla o kolonun
-  dönemi ("3D_7D, bu koşullu anlamla: son 3 gün ile son 7 gün"); anlam
-  yazılmadıysa yerinde ne görüneceği yazar. Başlıkta toplam kolon sayısı.
-  Parça adlarda kalıpla geçmiyorsa i çıkmaz. Altında
-  örnek ("Ör. adında RATIO geçen 3D_7D → son 3 gün ile
-  son 7 gün (2 kolon)") ya da hata (yer tutucu kalıbın anlamı gibi
-  denetlenir; geçersizken onay kapalı). Karar ve satır `kosullu`
+  olanlar), her birinin açıklaması ve o kolonun dönemi (kendi anlamı
+  varsa onunla, yoksa kalıbın anlamıyla) yazar. Düğme, adaylar ve koşul
+  yoksa gizlidir. Karar ve satır `kosullu`
   ({PARÇA: anlam}, içeride yer tutuculu); satırın kayıt imzasına girer.
   Onayda `durum["donem_kosul"]` ve hafızaya (dosyada kalıp kaydında
   `kosullu_anlamlar`; boş bırakılan kalkar; kalıp hafızadan silinince
@@ -795,7 +802,7 @@ tanıtır; sayfalar sol bardan açılır.
   kolonlar yeniden yazılır. Birden çok koşul tutarsa parça adına göre
   ilki.
 - **Sayı ekle düğmeleri** (`donemSayiDugmeleri`): 01.2.4.1'de kalıbın
-  anlam kutusunun ve her koşullu anlam kutusunun altında "Sayı ekle:
+  anlam kutusunun ve Koşulları Düzenle'de her kendi anlamı kutusunun altında "Sayı ekle:
   [sayı 1] [sayı 2]" (tek sayılı kalıpta [sayı]). Basınca imlecin olduğu
   yere eklenir (kutu odakta değilse sona), önüne ve arkasına gerekirse
   boşluk konur; düğme odağı kutudan almaz. Elle satırda kalıp değişince

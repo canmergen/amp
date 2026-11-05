@@ -5250,24 +5250,15 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-acik-satir-cevap .dg-giris { flex: 1; min-width: 0; }
 .dg-acik-soru-cevap-not { margin-top: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); }
 /* Dönem Bilgisi: koşullu anlamlar (anlam kutusunun altında). */
-.dg-donem-kosul { margin-top: 6px; }
-.dg-donem-kosul-satir { justify-content: center; }
-.dg-donem-kosul-bas { display: inline-flex; align-items: center; gap: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: 600; }
-.dg-donem-kosul-satir { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
-/* Koşul parçası: seçim tablosunu açan düğme (Değerleri Düzenle gibi). */
-.dg-donem-deger-ac.dg-donem-kosul-sec { margin-top: 0; display: inline-flex; }
-.dg-donem-deger-ac.dg-donem-kosul-sec:disabled { cursor: default; }
-.dg-donem-deger-ac.dg-donem-kosul-sec:disabled .dg-donem-deger-ac-ad { color: var(--metin); }
-.dg-donem-kosul-panel { margin: 6px 0 4px; }
+/* Değerleri Düzenle ve Koşulları Düzenle yan yana; ikisinin paneli de
+   satırın altında (açıksa üst üste). */
+.dg-donem-duzenle { display: flex; justify-content: center; align-items: baseline; flex-wrap: wrap; gap: 2px 22px; }
+#kabuk table td .dg-donem-duzenle .dg-donem-deger-ac { margin-left: 0; margin-right: 0; }
+div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); }
 .dg-giris.dg-donem-kosul-ara { width: 220px; max-width: 100%; height: 26px; font-size: var(--fs-kucuk); margin-bottom: 6px; }
-.dg-donem-kosul-tablo { width: 100%; }
-.dg-donem-kosul-tablo th { position: static; }
-.dg-donem-kosul-tablo th:nth-child(1) { width: 26%; }
-.dg-donem-kosul-tablo th:nth-child(2) { width: 12%; }
-.dg-donem-kosul-tablo th:nth-child(4) { width: 18%; }
-.dg-donem-kosul-tablo td { background: none; vertical-align: middle; overflow-wrap: anywhere; }
-.dg-donem-kosul-tablo tr.secili td { background: var(--yuzey-alt); font-weight: var(--fw-kalin); }
+.dg-donem-kosul-tablo th:nth-child(4) { width: 260px; }
 .dg-donem-kosul-tablo td .bolme-info { vertical-align: middle; margin-left: 4px; }
+.dg-donem-kosul-tablo td .dg-donem-tur-not { margin-top: 2px; }
 /* Sayı ekle: anlam kutularının altında [sayı 1], [sayı 2] düğmeleri. */
 .dg-donem-sayi-ekle { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .dg-donem-sayi-ekle[hidden] { display: none; }
@@ -5276,8 +5267,6 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
   background: var(--yuzey); color: var(--metin); cursor: pointer; font: inherit; font-size: var(--fs-kucuk);
 }
 .dg-donem-sayi-btn:hover { border-color: var(--murekkep-cizgi); }
-.dg-giris.dg-donem-kosul-anlam { flex: 1; min-width: 160px; height: 26px; font-size: var(--fs-kucuk); }
-.dg-donem-kosul-ekle { font-size: var(--fs-kucuk); margin-top: 4px; }
 
 /* Anlamı Kayan Aileler: cevaptan Dönem Bilgisi'ne koşullu anlam önerisi. */
 .dg-acik-kosul { margin-top: var(--b-2); padding-top: var(--b-2); border-top: 1px dashed var(--kenar); }
