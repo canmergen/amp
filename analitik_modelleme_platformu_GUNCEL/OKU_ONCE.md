@@ -796,12 +796,19 @@ tanıtır; sayfalar sol bardan açılır.
 
   **Öneriler** (`donem_kosul_onerisi`, `/donem_kosul_oneri`;
   `llm.donem_kosul_denetle`, `SISTEM_DONEM_KOSUL_DENETIM`). Önce koşul
-  eklemek gerekmez: kalıbın o anki anlamı (kullanıcının yazdığı) bütün
-  açıklamalarla karşılaştırılır. **Koşulları Düzenle paneli açılınca
-  başlar**; panel hiç açılmayan kalıp için istenmez. Panel açıkken
-  kalıbın anlamı değişirse kutudan çıkınca yeniden istenir; panel
-  kapalıyken değişirse eski öneri düşer, panel açılınca yeni anlamla
-  istenir.
+  eklemek gerekmez. Bütün açıklamalarla karşılaştırılan, kalıbın
+  **kaydedilmiş anlamıdır** (`KAYIT_ANLAM`):
+  - hafızadan gelen satırda hafızadaki anlam;
+  - «Kaydet»te kaydedilen anlam;
+  - «Kaydı Geri Al»da önceki kayıt (yoksa silinir).
+
+  Kutudaki kaydedilmemiş yazı kullanılmaz; kutu kaydedilenden farklıysa
+  panel "Öneriler kaydedilmiş anlama göre: «…»" diye yazar. Kaydedilmiş
+  anlamı olmayan satırda öneri istenmez, panel "önce satırı «Kaydet» ile
+  kaydedin" der. **Koşulları Düzenle paneli açılınca başlar**; panel hiç
+  açılmayan kalıp için istenmez. Kaydedilmiş anlam değişince (Kaydet,
+  Kaydı Geri Al) panel açıksa yeniden istenir; kapalıysa eski öneri
+  düşer, panel açılınca istenir.
   1. Kalıbın geçtiği ve sözlükte açıklaması olan BÜTÜN kolonlar (örneklem
      yok; kalıp adda daha geniş bir kalıbın içindeyse o kolon sayılmaz)
      25'lik paketlerle (aynı anda 4) dil modeline gider. Her kolon için

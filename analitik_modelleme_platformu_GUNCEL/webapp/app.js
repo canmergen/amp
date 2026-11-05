@@ -12245,6 +12245,11 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
        (hafızadan gelse de kendiliğinden kaydedilmiş sayılmaz). */
     const ONCEKI = {};
     const KAYIT_ACIK = new Set();
+    /* KAYIT_ANLAM[anahtar]: satırın hafızadaki (kaydedilmiş) anlamı, iç
+       hâliyle: hafızadan gelen satırda hafızadaki anlam, Kaydet'te
+       kaydedilen, Kaydı Geri Al'da önceki kayıt. Koşul önerileri bununla
+       hazırlanır (kutudaki kaydedilmemiş yazıyla değil). */
+    const KAYIT_ANLAM = {};
     /* Yakın anlam uyarısı kullanıcı "farklılar" dediği ikililerde çıkmaz. */
     const YAKIN_TAMAM = new Set();
     /* Hafızadan gelen satıra kullanıcı dokunmadı mı? duzen'e çizimde
@@ -12683,10 +12688,11 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         };
         /* KOŞUL ÖNERİLERİ: kalıbın anlamıyla sözlük açıklamaları uyuşmayan
            parçalar için arka uçta hazırlanan koşullu anlam önerileri
-           (akis donem_kosul_onerisi). Koşulları Düzenle paneli açılınca
-           (o andaki kalıp anlamıyla) istenir; panel açıkken kalıbın anlamı
-           değişirse kutudan çıkınca yeniden istenir; hazırlanırken
-           yoklanır. Panel hiç açılmayan kalıp için istenmez.
+           (akis donem_kosul_onerisi). Kalıbın KAYDEDİLMİŞ anlamıyla
+           (KAYIT_ANLAM) ve Koşulları Düzenle paneli açılınca istenir;
+           kaydedilmiş anlam değişince (Kaydet, Kaydı Geri Al) panel açıksa
+           yeniden istenir; hazırlanırken yoklanır. Panel hiç açılmayan ya
+           da kaydedilmemiş kalıp için istenmez.
            Öneri yalnız gösterilir: «Öneriyi Al» Kendi Anlamı'na yazar,
            kullanıcı düzeltir. */
         let kosOneri = null, kosOneriAnlam = null, kosOneriZaman = null;
@@ -12715,10 +12721,16 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             });
         }
         function kosOneriIste(yeniden) {
-            const an = anlamAl().trim();
-            if (kilitli || !kosAday.length || !an || donemYerTutucuHatasi(kalipNe(), an)) {
+            const an = String(KAYIT_ANLAM[anah] || "").trim();
+            if (kilitli || !kosAday.length) {
                 clearTimeout(kosOneriZaman);
                 if (kosOneri) { kosOneri = null; kosOneriAnlam = null; kosCiz(); }
+                return;
+            }
+            /* Kaydedilmiş anlam yok: öneri hazırlanmaz, panel nedenini yazar. */
+            if (!an || donemYerTutucuHatasi(kalipNe(), an)) {
+                clearTimeout(kosOneriZaman);
+                kosOneri = { durum: "kayitsiz" }; kosOneriAnlam = null; kosCiz();
                 return;
             }
             if (!yeniden && kosOneriAnlam === an) return;
@@ -12744,27 +12756,38 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         function kosOneriDurumu() {
             if (!kosOneri) return null;
             const el = elYap("div", "dg-donem-kosul-oneri-durum");
+            if (kosOneri.durum === "kayitsiz") {
+                el.textContent = "Öneriler kalıbın kaydedilmiş anlamıyla hazırlanır. Önce satırı «Kaydet» ile "
+                    + "kaydedin; kaydedince öneriler burada görünür.";
+                return el;
+            }
+            /* Kutudaki anlam kaydedilenden farklı: öneriler kaydedilene göre. */
+            const fark = kosOneriAnlam && anlamAl().trim().replace(/\s+/g, " ")
+                !== String(kosOneriAnlam).replace(/\s+/g, " ");
+            if (fark) el.appendChild(elYap("div", "dg-donem-kosul-uyari", "Öneriler kaydedilmiş anlama göre: «"
+                + donemAnlamGoster(kalipNe(), kosOneriAnlam) + "». Kutudaki değişikliği kaydedince yeniden hazırlanır."));
+            const yaz = t => el.insertBefore(document.createTextNode(t), el.firstChild);
             if (kosOneri.durum === "calisiyor") {
-                el.textContent = "Sözlük açıklamaları kalıbın anlamıyla karşılaştırılıyor"
+                yaz("Sözlük açıklamaları kalıbın kaydedilmiş anlamıyla karşılaştırılıyor"
                     + (kosOneri.toplam ? ": " + ftBinlik(kosOneri.biten || 0) + " / " + ftBinlik(kosOneri.toplam) + " kolon" : "")
-                    + ". Öneriler bitince burada görünür.";
+                    + ". Öneriler bitince burada görünür.");
                 return el;
             }
             if (kosOneri.durum === "hata") {
-                el.textContent = "Öneriler alınamadı. ";
                 const b = elYap("button", "dg-baglanti", "Yeniden Dene");
                 b.type = "button";
                 b.onclick = () => kosOneriIste(true);
-                el.appendChild(b);
+                el.insertBefore(b, el.firstChild);
+                yaz("Öneriler alınamadı. ");
                 return el;
             }
             const o = kosOneri, n = Object.keys(o.oneriler || {}).length;
-            if (!o.kontrol) { el.textContent = "Bu kalıbın geçtiği kolonların sözlükte açıklaması yok; öneri yapılamadı."; return el; }
-            el.textContent = "Sözlükte açıklaması olan " + ftBinlik(o.kontrol) + " kolon kalıbın anlamıyla karşılaştırıldı: "
+            if (!o.kontrol) { yaz("Bu kalıbın geçtiği kolonların sözlükte açıklaması yok; öneri yapılamadı."); return el; }
+            yaz("Sözlükte açıklaması olan " + ftBinlik(o.kontrol) + " kolon kalıbın kaydedilmiş anlamıyla karşılaştırıldı: "
                 + ftBinlik(o.uyumlu) + " uyumlu, " + ftBinlik(o.uyumsuz) + " uyumsuz, " + ftBinlik(o.belirsiz) + " belirsiz. "
                 + (n ? ftBinlik(n) + " parça için öneri var; satırında «Öneriyi Al» ile alıp düzeltebilirsiniz."
                      : "Öneri yok.")
-                + (o.eksik ? " " + ftBinlik(o.eksik) + " kolona dil modeli cevap vermedi." : "");
+                + (o.eksik ? " " + ftBinlik(o.eksik) + " kolona dil modeli cevap vermedi." : ""));
             if (o.aciklanamayan_sayisi) {
                 const u = elYap("div", "dg-donem-kosul-uyari", ftBinlik(o.aciklanamayan_sayisi)
                     + " uyumsuz kolon hiçbir parçaya bağlanamadı; elle bakın.");
@@ -12954,13 +12977,14 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         /* Panel açık kurulduysa (yeniden çizim) bütün satırlar kurulduktan
            sonra istenir (kalıp listesi tam olsun). */
         setTimeout(() => { if (kosAcik) kosOneriIste(); }, 0);
-        g.addEventListener("change", () => {
+        /* Kaydedilmiş anlam değişti (Kaydet, Kaydı Geri Al): panel açıksa
+           yeni anlamla istenir; kapalıysa eski öneri düşer, panel açılınca
+           istenir. */
+        const kosOneriYenile = () => {
             if (kosAcik) { kosOneriIste(); return; }
-            /* Panel kapalıyken anlam değişti: eski öneri geçersiz; panel
-               açılınca yeni anlamla istenir. */
             clearTimeout(kosOneriZaman);
             kosOneri = null; kosOneriAnlam = null; kosButonCiz();
-        });
+        };
         kosAc.onclick = () => {
             kosAcik = !kosAcik;
             duzen[anah] = Object.assign(duzen[anah] || {}, { kosAcik });
@@ -13318,6 +13342,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         x.turSec = turSec;
         x.boya = () => boya();
         x.kosullu = kosCikti;
+        x.kosOneriYenile = kosOneriYenile;
         x.kosulHata = () => Object.values(kosMap).some(a => !!kosHata(a));
         x.satirCikti = () => ({
             kalip: String(kalipNe() || "").toUpperCase(), anlam: anlamAl().trim(),
@@ -13353,6 +13378,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 }
                 KAYIT[anah] = x.imza();
                 KAYIT_ACIK.delete(anah);
+                KAYIT_ANLAM[anah] = satir.anlam;
+                x.kosOneriYenile();
                 /* Geri almada yazılacak: bu karttaki İLK kayıttan önceki hâl. */
                 if (ONCEKI[anah] === undefined && d.onceki) ONCEKI[anah] = d.onceki;
                 let yakinlar = [];
@@ -13409,8 +13436,12 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 if (!(d && d.tamam)) {
                     bilgiYaz((d && (d.mesaj || d.hata)) || "Kayıt geri alınamadı.", true); boya(); return;
                 }
+                /* Hafıza önceki hâline döndü: kaydedilmiş anlam da o (yoktuysa silindi). */
+                if (String(onceki.anlam || "").trim()) KAYIT_ANLAM[anah] = String(onceki.anlam).trim();
+                else delete KAYIT_ANLAM[anah];
                 delete ONCEKI[anah];
                 ac(d.mesaj || (donemSayiGoster(kalipNe()) + " kaydı geri alındı."));
+                x.kosOneriYenile();
             })
             .catch(() => { delete kaydetBtn.dataset.gidiyor; bilgiYaz("Kayıt geri alınamadı (bağlantı).", true); boya(); });
         };
@@ -13452,6 +13483,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         };
         if (KAYIT[anah] === undefined && r.kaynak === "hafiza" && dokunulmadi(r, anah) && !KAYIT_ACIK.has(anah))
             KAYIT[anah] = x.imza();
+        if (!(anah in KAYIT_ANLAM) && r.kaynak === "hafiza" && String(r.oneri || "").trim())
+            KAYIT_ANLAM[anah] = String(r.oneri).trim();
         dgCiz();
         satirlar.push(x);
         boya();
