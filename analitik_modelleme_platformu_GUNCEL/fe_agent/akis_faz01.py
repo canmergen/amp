@@ -1649,8 +1649,17 @@ def _donem_kaliplari(durum):
 
 
 def _donem_kalip_gorunur(kalip):
-    """Kalip ekrandaki gibi: <N2> "[2 haneli sayı]", <N> ve <NN> "[sayı]"."""
-    return re.sub(r"<NN?>", "[sayı]", re.sub(r"<N(\d)>", r"[\1 haneli sayı]", str(kalip or "")))
+    """Kalip ekrandaki gibi: <N2> "[2 haneli sayı]", <N> ve <NN> "[sayı]";
+    birden cok sayi varsa numarali ("[sayı 1]D_[sayı 2]D")."""
+    k = str(kalip or "")
+    adet = len(re.findall(r"<N\d>|<NN?>", k))
+    sayac = [0]
+
+    def yaz(m):
+        sayac[0] += 1
+        no = " %d" % sayac[0] if adet > 1 else ""
+        return "[%s haneli sayı%s]" % (m.group(1), no) if m.group(1) else "[sayı%s]" % no
+    return re.sub(r"<N(\d)>|<NN?>", yaz, k)
 
 
 def _donem_yazilis_karari(x):

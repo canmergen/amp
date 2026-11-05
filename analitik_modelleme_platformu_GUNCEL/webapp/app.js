@@ -10292,6 +10292,13 @@ function ackSade(m) {
 /* Kullanıcının elle yazdığı açıklama (soruya cevap notu değil; eski kayıtta
    elle bilgisi yok, not elle sayılır). */
 const ackElleNot = v => !!v.not && v.elle !== false;
+/* Aile anahtarı ekranda: "#" sayı yeri; birden çok sayı varsa numaralı
+   (TXN_[sayı 1]D_[sayı 2]D_RATIO), adın sırasıyla. */
+function ackAileAdi(a) {
+    const adet = (String(a || "").match(/#/g) || []).length;
+    let i = 0;
+    return String(a || "").replace(/#/g, () => adet > 1 ? "[sayı " + (++i) + "]" : "[sayı]");
+}
 function ackTaban(v) {
     if (ackElleNot(v)) return tireSade(v.not);
     return v.durum === "hazir" ? tireSade(v.aciklama || "") : "";
@@ -11032,7 +11039,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             td.textContent = "";
             const kutu = elYap("div", "dg-acik-aile-kutu" + (tamam ? " tamam" : ""));
             const ust_ = elYap("div", "dg-acik-aile-ust");
-            ust_.append(elYap("span", "dg-acik-aile-ad", a.replace(/#/g, "[sayı]")),
+            ust_.append(elYap("span", "dg-acik-aile-ad", ackAileAdi(a)),
                         elYap("span", "dg-acik-aile-durum" + (tamam ? " tamam" : ""),
                               tamam ? "✓ Onaylandı · " + ftBinlik(d.uyeler.length) + " kolon"
                                     : ftBinlik(d.onayli) + " / " + ftBinlik(d.uyeler.length) + " kolon onaylı"));
@@ -11320,7 +11327,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             const kutu = elYap("div", "dg-acik-soru");
             const ust_ = elYap("div", "dg-acik-soru-ust");
             ust_.appendChild(elYap("span", "dg-donem-kalip", x.kolon_sayisi > 1
-                ? String(x.anahtar).replace(/#/g, "[sayı]") : x.kolon));
+                ? ackAileAdi(x.anahtar) : x.kolon));
             ust_.appendChild(elYap("span", "dg-acik-soru-sayi", ftBinlik(x.kolon_sayisi) + " kolon"));
             if (x.karar) ust_.appendChild(elYap("span", "dg-rozet-kucuk", x.yaziliyor ? "Yeniden yazılıyor"
                 : x.karar === "dogru" ? "Yeni açıklama doğru" : "Cevaplandı"));
@@ -11712,8 +11719,11 @@ function donemYerTutucuHatasi(kalip, anlam) {
     if (!kotu.length) return "";
     if (!izinli.size) return "Anlamda yer tutucu var (" + kotu.join(", ")
         + ") ama kalıpta sayı yer tutucusu yok; yerine değeri yazın.";
+    /* Kullanılabilenler ekrandaki gibi: tek sayılı kalıpta [sayı], çok
+       sayılıda [sayı 1], [sayı 2] (içerideki N, NN yazılmaz). */
+    const gor = adet > 1 ? Array.from({ length: adet }, (_x, j) => "[sayı " + (j + 1) + "]") : [DONEM_SAYI];
     return "Anlamda geçersiz yer tutucu: " + kotu.join(", ") + ". Bu kalıpta kullanılabilenler: "
-        + Array.from(izinli).filter(x => x[0] !== "<").sort().join(", ") + ".";
+        + gor.join(", ") + ".";
 }
 
 /* KALIP DESENİ (akis: donem.kalip_deseni ile aynı kural): <N> sayı, <NN>
@@ -11795,20 +11805,47 @@ function donemKalipEtiketi(r) {
 /* [SAYI] GÖSTERİMİ: kalıpta ve anlamda sayı yer tutucusu (<N>, <NN>, N,
    NN) ekranda "[sayı]" yazar; tam basamaklı <N2> kalıpta "[2 haneli
    sayı]" yazar (H<N2> ile H<N3> ayrı görünsün), anlamda "[sayı]".
-   İçeride yer tutucu olarak saklanır (hafıza ve Kolon Kartları aynı
-   kalır). */
+   Kalıpta birden çok sayı varsa en baştan numaralı yazar: kalıp
+   "[sayı 1]D_[sayı 2]D", anlamda sırayla "[sayı 1]", "[sayı 2]" (anlamın
+   k'inci düz yer tutucusu kalıbın k'inci sayısıdır). İçeride yer tutucu
+   olarak saklanır; numaralar sırayla ve birer kez geçiyorsa düz yer
+   tutucuya döner (hafıza ve Kolon Kartları aynı kalır). */
 const DONEM_SAYI = "[sayı]";
 const DONEM_SAYI_RE = /\[\s*say[ıi]\s*\]/gi;
 function donemSayiGoster(metin) {
-    return String(metin || "").replace(/<N(\d)>/g, "[$1 haneli sayı]").replace(/<NN?>/g, DONEM_SAYI);
+    /* " · " ile birleştirilmiş yazılışlar (aile) ayrı ayrı numaralanır. */
+    return String(metin || "").split(" · ").map(k => {
+        const adet = (k.match(/<NN?>|<N\d>/g) || []).length;
+        let i = 0;
+        return k.replace(/<N(\d)>|<NN?>/g, (t, h) => {
+            i++;
+            const no = adet > 1 ? " " + i : "";
+            return h ? "[" + h + " haneli sayı" + no + "]" : "[sayı" + no + "]";
+        });
+    }).join(" · ");
 }
 function donemAnlamGoster(kalip, anlam) {
     const k = String(kalip || "").replace(/\s+/g, "").toUpperCase();
     if (!/<NN?>|<N\d>/.test(k)) return String(anlam || "");
+    const adet = DONEM_AILE.test(k) ? 1 : (k.match(/<NN>|<N\d>|<N>/g) || []).length;
+    let i = 0;
     return String(anlam || "").replace(DONEM_YT_ADAY, (t, on, y) => {
         const ic = donemYtIcerik(y);
-        return on + (ic !== null ? donemFormulGorunur(ic) : DONEM_SAYI);
+        if (ic !== null) return on + donemFormulGorunur(ic);
+        i++;
+        return on + (adet > 1 ? "[sayı " + Math.min(i, adet) + "]" : DONEM_SAYI);
     });
+}
+/* Numaralı yer tutucular 1, 2, ..., n sırayla ve birer kez geçiyorsa
+   (hesap yok) düz yer tutucuya döner: "[sayı 1] ile [sayı 2]" ile
+   "[sayı] ile [sayı]" içeride aynıdır. */
+function donemDuzYerTutucu(ic, turler) {
+    const refs = ic.match(/<N#[^<>]*>/g) || [];
+    if (!refs.length || refs.length !== turler.length) return ic;
+    if (!refs.every((r, j) => r === "<N#" + (j + 1) + ">")) return ic;
+    if ((ic.match(/<NN>|<N\d?>/g) || []).length) return ic;
+    let j = 0;
+    return ic.replace(/<N#\d+>/g, () => turler[j++]);
 }
 /* Ekrandaki "[sayı 1]", "[sayı 1 × sayı 2]", "[sayı 1 + 3]" iç hâle. */
 const DONEM_EKRAN_FORMUL = /^\s*(say[ıi]\s*\d+|\d+)(\s*[-+*×xX]\s*(say[ıi]\s*\d+|\d+))*\s*$/i;
@@ -11828,8 +11865,8 @@ function donemAnlamIc(kalip, metin) {
         : (k.match(/<NN>|<N\d>|<N>/g) || []).map(t => t === "<NN>" ? t : "<N>");
     if (!turler.length) return String(metin || "");
     let i = 0;
-    return donemFormulIc(metin)
-        .replace(DONEM_SAYI_RE, () => turler[Math.min(i++, turler.length - 1)]);
+    return donemDuzYerTutucu(donemFormulIc(metin)
+        .replace(DONEM_SAYI_RE, () => turler[Math.min(i++, turler.length - 1)]), turler);
 }
 /* YENİ ADDA YAZILIŞ: kalıbın Kolon Adları adımında yeni addaki yazılışı
    (ör. [sayı]D_[sayı]D için BTWN_[sayı]D_[sayı]D). Ekranda her yer
@@ -11838,18 +11875,22 @@ function donemAnlamIc(kalip, metin) {
    [sayı 1 × sayı 2] (içeride <N#1>, <N#$1*$2>). */
 const DONEM_AD_YT = /<N#[^<>]{1,60}>|<NN>|<N\d?>/g;
 function donemAdGoster(sablon) {
+    const duz = (String(sablon || "").match(/<NN>|<N\d?>/g) || []).length;
+    let i = 0;
     return String(sablon || "").replace(DONEM_AD_YT, t => {
         const ic = donemYtIcerik(t);
-        return ic !== null ? donemFormulGorunur(ic) : DONEM_SAYI;
+        if (ic !== null) return donemFormulGorunur(ic);
+        i++;
+        return duz > 1 ? "[sayı " + i + "]" : DONEM_SAYI;
     });
 }
 function donemAdIc(kalip, metin) {
     const k = String(kalip || "").replace(/\s+/g, "").toUpperCase();
     const turler = DONEM_AILE.test(k) ? ["<N>"] : (k.match(/<NN>|<N\d>|<N>/g) || []);
     let i = 0;
-    return donemFormulIc(String(metin || ""))
+    return donemDuzYerTutucu(donemFormulIc(String(metin || ""))
         .replace(DONEM_SAYI_RE, t => turler.length ? turler[Math.min(i++, turler.length - 1)] : t)
-        .replace(/\s+/g, "").toUpperCase();
+        .replace(/\s+/g, "").toUpperCase(), turler);
 }
 /* Geçersizse hata metni; boş yazılış geçerli (kalıp aynen kalır). */
 function donemAdHatasi(kalip, metin) {
@@ -12470,9 +12511,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                aynı sayıyı tekrar yazmanın yolu [sayı 1], [sayı 2]. */
             const ytAdet = donemYtAdedi(kalipSimdi());
             if (ornekAnlam && ytAdet > 1) ornekEl.appendChild(elYap("div", "dg-donem-tur-not",
-                "Kalıpta " + ytAdet + " sayı var; anlamdaki her [sayı] sırayla bir sonrakini alır. Aynı "
-                + "sayıyı tekrar yazmak için [sayı 1], [sayı 2]; hesap için [sayı 1 × sayı 2], [sayı 1 + "
-                + "sayı 1] yazın (ör. son [sayı 1] günden son [sayı 1 × sayı 2] gün önceye kadar)."));
+                "Kalıpta " + ytAdet + " sayı var: " + Array.from({ length: ytAdet }, (_x, j) => "[sayı " + (j + 1) + "]")
+                .join(", ") + ", kalıptaki sırasıyla. Bir sayıyı birden çok yazabilir ya da hesap yazabilirsiniz: "
+                + "[sayı 1 × sayı 2], [sayı 1 + sayı 1] (ör. son [sayı 1] günden son [sayı 1 × sayı 2] gün önceye kadar)."));
             ornekEl.hidden = !ornekAnlam;
             dgAc.textContent = "";
             dgAc.append(elYap("span", "dg-donem-deger-ac-ad", (dgAcik ? "▾ " : "▸ ") + "Değerleri Düzenle"),

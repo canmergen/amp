@@ -755,6 +755,19 @@ tanıtır; sayfalar sol bardan açılır.
   anlamla örnek tanımlardan yalnız 0 / 3 tanesi uyuşuyor; anlamı kontrol
   edin."). Bakılana kadar satırda "Dil modeli yorumluyor". Bu çalışmada
   ya da tablonun son kararında verilen karar her zaman geçerlidir.
+- **Çok sayılı kalıpta numaralı [sayı]:** kalıpta birden çok sayı varsa
+  ekranda en baştan numaralı yazılır: kalıp "[sayı 1]D_[sayı 2]D"
+  (`donemSayiGoster`; tam basamaklıda "[2 haneli sayı 1]"; aile
+  yazılışları ayrı ayrı), anlamda düz yer tutucular sırayla "[sayı 1]",
+  "[sayı 2]" (`donemAnlamGoster`), yeni adda yazılışta da
+  (`donemAdGoster`, 01.2.4.4 Dönem Yazılışları), Kolon Kartları'nda aile
+  adlarında (`ackAileAdi`: TXN_[sayı 1]D_[sayı 2]D_RATIO) ve sunucu
+  mesajlarında (`akis_faz01._donem_kalip_gorunur`). Tek sayılı kalıpta
+  "[sayı]" kalır. İçeride değişiklik yok: numaralar 1, 2, ... sırayla ve
+  birer kez geçiyorsa düz yer tutucuya döner (`donemDuzYerTutucu`;
+  `donemAnlamIc`, `donemAdIc`), hafızadaki kayıt aynı kalır, satır
+  düzenlenmiş sayılmaz. Yer tutucu uyarısında kullanılabilenler ekrandaki
+  gibi yazılır ([sayı 1], [sayı 2]; içerideki N, NN yazılmaz).
 - **Yeni adda yazılış 01.2.4.1'de değil:** kalıbın yeni addaki yazılışı
   01.2.4.4 Kolon Adları'nda "Dönem Yazılışları" panelinde verilir (adlar
   orada kurulur; 01.2.4.1'de ad değiştiriyormuş gibi görünen kutu yok).
