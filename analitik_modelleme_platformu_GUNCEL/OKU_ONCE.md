@@ -99,6 +99,33 @@ bağlantı ve model adları ve eski ekran adları (kolon adları bozulmaz).
 
 ## Ekran
 
+**Veri ve Sözlük sekmesi: 01.2.4 sonuçları hemen görünür.** AMP_VERISETI
+ve AMP_SOZLUK dosyaları eskisi gibi 01.3 Değişken Listesi ve Tip
+Kontrolü onayında bir kez, her şey uygulanmış olarak yazılır. Sağ paneldeki
+Değişken Listesi ise her 01.2.4 onayından hemen sonra güncel hâli
+gösterir (`akis_panel.feature_tablo`, `adim_0124_ozeti`):
+- **Tanım:** 01.2.4.3 onayında düzeltilen açıklama sözlüğün çalışma
+  kopyasına yazıldığı için tabloda güncel.
+- **Ad:** 01.2.4.4'te adı değişen kolonda DEĞİŞKEN hücresinde yeni ad,
+  altında soluk "eski: …" (`yeni_ad`; `amp.yeniden_ad_esleme` ile, rol ve
+  süreç dışı kolonlar hariç). Arama iki adda da çalışır; satırın anahtarı
+  (tanım düzeltme, süreç dışı) eski ad kalır.
+- **Satır detayı:** adı değiştiyse eski adı; kolon kartı (01.2.4.3
+  onayından, `_onayli_kolon_kartlari`): güncel tanımdan farklıysa
+  orijinal açıklama, kart alanları ("Kart: Konu" gibi), ek bilgi, notunuz.
+- **Tablonun altında "Sözlük ve Kolon Adı Kontrolü sonuçları"**
+  (`ozet0124Ciz`; açılır bölümler, açık / kapalı durumu yeniden çizimde
+  kalır; yalnız onaylanan bölüm görünür):
+  - Dönem Bilgisi: Kalıp, Anlam, Zaman Türü, Özel Durumlar (değerin
+    kendi anlamı, gruptan ayrılan değerler, "Adda RATIO geçerse: …").
+  - Ad Parçaları: Parça, Anlam, Tür, Kolon (adında geçen kolon sayısı);
+    15'ten çok parçada arama kutusu.
+  - Kolon Adları: kaç kolonun adı değişti, Ad Standardı sırası, dönem
+    yazılışları, ada eklenen bilgiler (`durum["kolon_ad_eklenen"]`,
+    01.2.4.4 onayında yazılır).
+  - Kolon Kartları: kaç kolonun kartı olduğu ve satır detayında
+    göründüğü.
+
 **Tablolarda hiza:** her tabloda (Değişken Listesi ızgarası dahil)
 başlık ve hücre içeriği ortalı; çip dizileri ve hücredeki düğmeler de
 ortada. Tablo hücresindeki yazı alanları (kutu, açılır liste) da

@@ -5290,3 +5290,32 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .dg-donem-kosul-oneri .bolme-info { vertical-align: middle; margin-left: 4px; }
 .dg-donem-kosul-oneri.alindi { border: 0; padding: 0; margin-top: 2px; }
 .dg-donem-kosul-oneri-bas { margin-bottom: 2px; }
+
+/* Değişken Listesi: 01.2.4.4'te adı değişen kolon (yeni ad, altında eski ad). */
+.ft-yeni-ad { display: block; }
+.ft-eski-ad { display: block; color: var(--metin-soluk); font-size: var(--fs-kucuk); overflow-wrap: anywhere; }
+/* Değişken Listesi altında 01.2.4 sonuçları: açılır bölümler. */
+.oz0124 { margin-top: var(--b-3); }
+.oz0124-bas { display: flex; align-items: center; gap: 4px; font-weight: var(--fw-kalin); margin-bottom: 6px; }
+.oz0124-bolum { border: 1px solid var(--kenar); border-radius: var(--r-kucuk); background: var(--yuzey); margin-bottom: 6px; }
+.oz0124-bolum > summary {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; padding: 6px 10px;
+  cursor: pointer; list-style: none;
+}
+.oz0124-bolum > summary::-webkit-details-marker { display: none; }
+.oz0124-bolum > summary::before { content: "▸"; color: var(--kirmizi); }
+.oz0124-bolum[open] > summary::before { content: "▾"; }
+.oz0124-baslik { font-weight: var(--fw-kalin); color: var(--kirmizi); }
+.oz0124-bolum > summary:hover .oz0124-baslik { text-decoration: underline; }
+.oz0124-ozet { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+.oz0124-ic { padding: 0 10px 10px; }
+.oz0124-not { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-bottom: 6px; }
+.oz0124-satir { font-size: var(--fs-kucuk); margin-bottom: 6px; }
+.oz0124-tablo { width: 100%; margin-bottom: 6px; }
+.oz0124-tablo td { overflow-wrap: anywhere; }
+.oz0124-liste { font-size: var(--fs-kucuk); }
+.dg-giris.oz0124-ara { width: 240px; max-width: 100%; height: 26px; font-size: var(--fs-kucuk); margin-bottom: 6px; }
+/* Kart tablolarının sabit kolon genişlikleri (dg-tablo) burada geçmez. */
+.dg-tablo.oz0124-tablo { table-layout: auto; }
+.dg-tablo.oz0124-tablo th { width: auto; white-space: normal; }
+.dg-tablo.oz0124-tablo td { vertical-align: middle; }

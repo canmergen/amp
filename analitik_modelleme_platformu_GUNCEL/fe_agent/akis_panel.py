@@ -1185,9 +1185,15 @@ def feature_tablo(durum):
     sozluk_harita, _kategoriler, _, kopya_mi = _sozluk_kayitlari(durum)
     sfa_harita = _sfa_haritasi(durum)
     haric = set(durum.get("haric_kolonlar") or [])
+    kolon_listesi = _kolon_listesi(durum, sozluk_harita)
+    # 01.2.4 SONUCLARI HEMEN GORUNUR: yeni ad (01.2.4.4 onayi; AMP_VERISETI
+    # 01.3'te bu adla yazilir) ve kolon karti (01.2.4.3 onayi). Tanim zaten
+    # calisma kopyasindan (onayli aciklama oraya yazildi).
+    yeni_ad = _uygulanacak_adlar(durum, [str(o.get("ad")) for o in kolon_listesi])
+    kartlar = _onayli_kolon_kartlari(durum)
 
     satirlar = []
-    for o in _kolon_listesi(durum, sozluk_harita):
+    for o in kolon_listesi:
         ad = str(o.get("ad"))
         tanim, _kategori = sozluk_harita.get(
             ad, (None, sozluk_calisma.KATEGORISIZ))
@@ -1198,7 +1204,7 @@ def feature_tablo(durum):
         else:
             satir_durum = DURUM_YOK
         iv, c = sfa_harita.get(ad, (None, None))
-        satirlar.append({
+        satir = {
             "feature": ad,
             "tip": o.get("tip"),
             "tanim": tanim,
@@ -1206,7 +1212,13 @@ def feature_tablo(durum):
             "durum": satir_durum,
             "iv": iv,
             "c": c,
-        })
+        }
+        if yeni_ad.get(ad):
+            satir["yeni_ad"] = yeni_ad[ad]
+        k = kartlar.get(ad)
+        if k:
+            satir["kart"] = k
+        satirlar.append(satir)
 
     return {
         "kolonlar": list(FEATURE_KOLONLARI),
@@ -1225,6 +1237,102 @@ def feature_tablo(durum):
         "sozluk_kaynak": (PLATFORM_SOZLUK_ADI
                           if sozluk_calisma.sozluk_adi(durum) else None),
     }
+
+
+def _uygulanacak_adlar(durum, adlar):
+    """{eski: yeni}: 01.2.4.4'te onaylanan ve AMP_VERISETI'ne uygulanacak
+    adlar (rol ve surec disi kolonlar haric; bkz. amp.yeniden_ad_esleme)."""
+    if not durum.get("kolon_yeni_ad"):
+        return {}
+    try:
+        from fe_agent import amp as amp_mod
+        return amp_mod.yeniden_ad_esleme(durum, adlar)
+    except Exception:
+        return {}
+
+
+def _onayli_kolon_kartlari(durum):
+    """{kolon: {"orijinal", "kart": {alan: metin}, "ek", "not"}}: 01.2.4.3'te
+    onaylanan kolon kartlari (bos alanlar yok). Onay yoksa {}."""
+    try:
+        from fe_agent import akis_faz01
+        onay = akis_faz01.aciklama_onayi(durum)
+    except Exception:
+        return {}
+    cikti = {}
+    for kolon, o in (onay or {}).items():
+        if not isinstance(o, dict):
+            continue
+        x = {"orijinal": str(o.get("orijinal") or ""),
+             "kart": {a: str(m) for a, m in (o.get("kart") or {}).items() if str(m or "").strip()},
+             "ek": str(o.get("ek") or ""), "not": str(o.get("not") or "")}
+        cikti[str(kolon)] = {a: v for a, v in x.items() if v}
+    return cikti
+
+
+def adim_0124_ozeti(durum):
+    """VERI & SOZLUK sekmesinde Degisken Listesi'nin altinda 01.2.4'te
+    onaylananlar (yalniz onaylanan bolumler doner):
+      donem   : [{kalip, anlam, tur, degerler {deger: anlam}, ayrilan [deger]
+                  (gruptan ayrilan degerler), kosullu {PARCA: anlam}}]
+      parcalar: [{parca, anlam, tur, kolon}] (kolon: veri setinde kac
+                  kolonun adinda geciyor)
+      kolon_ad: {sira [yer adi], yazilis [{kalip, yazilis}], eklenen
+                  [{anlam, kisaltma, tur, kolon}], degisen (kac kolonun adi
+                  degisti)}
+    Yer tutuculu metinler ic haliyle; ekran [sayı] gosterir."""
+    cikti = {}
+    bilgi = durum.get("donem_bilgisi") if isinstance(durum.get("donem_bilgisi"), dict) else {}
+    if bilgi:
+        try:
+            from fe_agent.akis_faz01 import ZAMAN_TUR_ADI
+        except Exception:
+            ZAMAN_TUR_ADI = {}
+        turler = durum.get("donem_turleri") or {}
+        degerler = durum.get("donem_deger_anlam") or {}
+        ayrilan = durum.get("donem_ayrilan") or {}
+        kosul = durum.get("donem_kosul") or {}
+        cikti["donem"] = [{"kalip": k, "anlam": str(a),
+                           "tur": ZAMAN_TUR_ADI.get(turler.get(k) or "pencere", ""),
+                           "degerler": dict(degerler.get(k) or {}),
+                           "ayrilan": sorted(map(str, ayrilan.get(k) or [])),
+                           "kosullu": dict(kosul.get(k) or {})}
+                          for k, a in sorted(bilgi.items())]
+    parca = durum.get("parca_bilgisi") if isinstance(durum.get("parca_bilgisi"), dict) else {}
+    if parca:
+        try:
+            from fe_agent import parca as parca_mod
+            tur_ad = {k: a for k, a, _c in parca_mod.TURLER}
+            toklar = parca_mod.toklar
+        except Exception:
+            tur_ad, toklar = {}, (lambda ad: str(ad).upper().split("_"))
+        ozet = (durum.get("profil") or {}).get("kolon_ozet") or []
+        sayi = {}
+        for o in ozet:
+            if isinstance(o, dict) and o.get("ad"):
+                for t in set(toklar(str(o["ad"]))):
+                    sayi[t] = sayi.get(t, 0) + 1
+        cikti["parcalar"] = sorted(
+            [{"parca": p, "anlam": str(x.get("anlam") or ""),
+              "tur": tur_ad.get(x.get("tur"), str(x.get("tur") or "")), "kolon": sayi.get(p, 0)}
+             for p, x in parca.items() if isinstance(x, dict) and str(x.get("anlam") or "").strip()],
+            key=lambda x: (-x["kolon"], x["parca"]))
+    if "kolon_yeni_ad" in durum and isinstance(durum.get("_kolon_ad_karari"), dict):
+        try:
+            from fe_agent import parca as parca_mod
+            yer_ad = dict(parca_mod.AD_YERLERI)
+            sira = parca_mod.sira_temizle(durum["_kolon_ad_karari"].get("sira"))
+        except Exception:
+            yer_ad, sira = {}, []
+        cikti["kolon_ad"] = {
+            "sira": [yer_ad.get(y, y) for y in sira],
+            "yazilis": [{"kalip": k, "yazilis": v}
+                        for k, v in sorted((durum.get("donem_ad_yazilis") or {}).items())],
+            "eklenen": list(durum.get("kolon_ad_eklenen") or []),
+            "degisen": len(_uygulanacak_adlar(durum, [
+                str(o["ad"]) for o in ((durum.get("profil") or {}).get("kolon_ozet") or [])
+                if isinstance(o, dict) and o.get("ad")]))}
+    return cikti
 
 
 def sozluk_kapsami(durum):
@@ -1342,6 +1450,10 @@ def veri_sozluk_paneli(durum):
     # henuz verilmemis karari dosyaya yazmak olurdu. Bayrak tabloyla
     # birlikte geliyor ki panel her cizimde dogru durumu gostersin.
     tablo["excel_hazir"] = bool(durum.get("teyit"))
+    try:
+        tablo["ozet_0124"] = adim_0124_ozeti(durum)
+    except Exception:
+        tablo["ozet_0124"] = {}
     veri["feature_tablo"] = tablo
     return veri
 

@@ -2116,6 +2116,10 @@ const FT_DISI = "süreç dışı";
 
    Panel karar yeri değil, AÇIKLAMA yeri: düzenleme ve süreç dışı
    işaretleme sohbetteki kartta yapılıyor (bkz. ftSaltOku). */
+/* Kolon kartı alanları (akis KART_ADLARI ile aynı sıra). */
+const FT_KART_ALANLARI = [["konu", "Konu"], ["yon", "Yön"], ["nitelik", "Nitelik"], ["zaman", "Zaman"],
+                          ["olcu", "Ölçü"], ["istatistik", "İstatistik"], ["karsilastirma", "Karşılaştırma"],
+                          ["birim", "Birim"], ["diger", "Diğer"]];
 const FT_ALANLAR = [
     { alan: "feature",   baslik: "DEĞİŞKEN",      sinif: "ft-ad" },
     { alan: "tip",       baslik: "TİP" },
@@ -2216,6 +2220,7 @@ function ftSuzListe(haricAlan) {
     return liste.filter(s => {
         for (const [a, sz] of kolonSz) if (!szUyar(s[a], sz)) return false;
         if (aranan && ftSade(s.feature).indexOf(aranan) === -1
+            && ftSade(s.yeni_ad).indexOf(aranan) === -1
             && ftSade(s.tanim).indexOf(aranan) === -1) return false;
         /* TIP SUZGECI tam esleme: "sayısal" secildiginde "sayısal"
            kolonlar gelir. Parca eslemesi yapsaydik gelecekte eklenecek
@@ -3332,6 +3337,18 @@ function ftSatirCiz(s, i) {
 
     FT_ALANLAR.forEach(a => {
         if (a.alan === "tanim") { satir.appendChild(ftTanimHucresi(s)); return; }
+        /* 01.2.4.4'te adı değişen kolon: yeni ad, altında soluk eski ad
+           (AMP_VERISETI 01.3'te yeni adla yazılır). */
+        if (a.alan === "feature" && s.yeni_ad) {
+            const h = elYap("span", "ft-hucre " + (a.sinif || ""));
+            h.setAttribute("role", "cell");
+            h.setAttribute("data-alan", a.alan);
+            h.appendChild(elYap("span", "ft-yeni-ad", s.yeni_ad));
+            h.appendChild(elYap("span", "ft-eski-ad", "eski: " + s.feature));
+            h.title = s.yeni_ad + " (eski adı " + s.feature + ")";
+            satir.appendChild(h);
+            return;
+        }
         let metin;
         if (a.alan === "null_oran") metin = ftOran(s.null_oran);
         else metin = degerGoster(s[a.alan]);
@@ -3432,7 +3449,9 @@ function ftDetayCiz() {
     if (!s) { kutu.hidden = true; return; }
     kutu.hidden = false;
 
-    kutu.appendChild(elYap("div", "ft-detay-ad", s.feature));
+    kutu.appendChild(elYap("div", "ft-detay-ad", s.yeni_ad || s.feature));
+    if (s.yeni_ad) kutu.appendChild(elYap("div", "ft-eski-ad", "Eski adı: " + s.feature
+        + ". Yeni ad Kolon Adları adımında onaylandı; AMP_VERISETI bu adla yazılır."));
     /* Satir govdesinde (SOZLESME7 §5) tekil/ornek gelmeyebilir.
        GELMEYEN ALAN HIC CIZILMEZ - bos "∅" kullaniciya "olculdu ve
        bostu" diye okunuyor. */
@@ -3450,6 +3469,16 @@ function ftDetayCiz() {
     // IV / C yalnizca SFA calistiysa var.
     if (s.iv !== null && s.iv !== undefined) satirlar.push(["IV", ftOndalik(s.iv)]);
     if (s.c !== null && s.c !== undefined) satirlar.push(["C-value", ftOndalik(s.c)]);
+    /* KOLON KARTI (Kolon Kartları adımında onaylanan): orijinal açıklama
+       (güncel tanımdan farklıysa), kart alanları, ek bilgi ve not. */
+    const kart = s.kart || {};
+    if (kart.orijinal && kart.orijinal.trim() !== String(s.tanim || "").trim())
+        satirlar.push(["Orijinal Açıklama", kart.orijinal]);
+    FT_KART_ALANLARI.forEach(([alan, ad]) => {
+        if (kart.kart && kart.kart[alan]) satirlar.push(["Kart: " + ad, kart.kart[alan]]);
+    });
+    if (kart.ek) satirlar.push(["Ek Bilgi", kart.ek]);
+    if (kart.not) satirlar.push(["Notunuz", kart.not]);
 
     satirlar.forEach(ikili => {
         const sat = elYap("div", "ft-detay-satir");
@@ -3464,6 +3493,122 @@ function ftDetayCiz() {
     kapat.textContent = "Kapat";
     kapat.onclick = () => { FT.detay = null; ftTazele(); };
     kutu.appendChild(kapat);
+}
+
+/* ==================== 01.2.4 SONUÇLARI (Değişken Listesi'nin altında) ====
+   Sözlük ve Kolon Adı Kontrolü'nde onaylananlar, açılır bölümlerde:
+   Dönem Bilgisi, Ad Parçaları, Kolon Adları kuralları ve Kolon Kartları.
+   Yalnız onaylanan bölüm görünür. Yer tutucular ekranda [sayı]. Açık /
+   kapalı durumu yeniden çizimde korunur (OZ0124_ACIK). */
+const OZ0124_ACIK = new Set();
+function ozet0124Ciz(o, satirlar) {
+    const kartli = satirlar.filter(s => s.kart && (s.kart.kart || s.kart.orijinal)).length;
+    const yeniAdli = satirlar.filter(s => s.yeni_ad).length;
+    if (!(o.donem || []).length && !(o.parcalar || []).length && !o.kolon_ad && !kartli) return null;
+    const kok = elYap("div", "oz0124");
+    const bas = elYap("div", "oz0124-bas", "Sözlük ve Kolon Adı Kontrolü sonuçları");
+    bas.appendChild(bolmeBilgiSimgesi("01.2.4 adımlarında onaylananlar. Tablodaki açıklamalar ve yeni adlar "
+        + "bunlarla güncel; AMP_VERISETI ve AMP_SOZLUK Değişken Listesi ve Tip Kontrolü onayında bu hâliyle "
+        + "yazılır. Girdi veri setiniz ve sözlüğünüz değişmez.", "Sözlük ve Kolon Adı Kontrolü sonuçları"));
+    kok.appendChild(bas);
+    const bolum = (anahtar, baslik, ozet, icerik) => {
+        const d = document.createElement("details");
+        d.className = "oz0124-bolum";
+        d.open = OZ0124_ACIK.has(anahtar);
+        d.addEventListener("toggle", () => { if (d.open) OZ0124_ACIK.add(anahtar); else OZ0124_ACIK.delete(anahtar); });
+        const sm = document.createElement("summary");
+        sm.appendChild(elYap("span", "oz0124-baslik", baslik));
+        if (ozet) sm.appendChild(elYap("span", "oz0124-ozet", ozet));
+        d.appendChild(sm);
+        const ic = elYap("div", "oz0124-ic");
+        icerik(ic);
+        d.appendChild(ic);
+        kok.appendChild(d);
+    };
+    const tablo = (basliklar, satirlar_, sinif) => {
+        const t = elYap("table", "dg-tablo oz0124-tablo " + (sinif || ""));
+        const th = document.createElement("thead"), hr = document.createElement("tr");
+        basliklar.forEach(b => hr.appendChild(elYap("th", "", b)));
+        th.appendChild(hr); t.appendChild(th);
+        const tb = document.createElement("tbody");
+        satirlar_.forEach(h => {
+            const tr = document.createElement("tr");
+            h.forEach(x => {
+                const td = document.createElement("td");
+                if (x instanceof Node) td.appendChild(x); else td.textContent = x;
+                tr.appendChild(td);
+            });
+            tb.appendChild(tr);
+        });
+        t.appendChild(tb);
+        const sar = elYap("div", "dg-tablo-sar");
+        sar.appendChild(t);
+        return sar;
+    };
+    /* Dönem Bilgisi */
+    if ((o.donem || []).length) {
+        bolum("donem", "Dönem Bilgisi", ftBinlik(o.donem.length) + " kalıp", ic => {
+            ic.appendChild(elYap("div", "oz0124-not", "Kolon adlarındaki dönem kalıpları ve anlamları. Özel durumlar: "
+                + "kendi anlamı olan değerler, gruptan ayrılan değerler ve adda bir parça geçince geçerli anlam."));
+            ic.appendChild(tablo(["Kalıp", "Anlam", "Zaman Türü", "Özel Durumlar"], o.donem.map(d => {
+                const ozel = elYap("div", "oz0124-liste");
+                Object.entries(d.degerler || {}).forEach(([dg, an]) =>
+                    ozel.appendChild(elYap("div", "", dg + ": " + an)));
+                if ((d.ayrilan || []).length) ozel.appendChild(elYap("div", "", "Gruptan ayrılan: " + d.ayrilan.join(", ")));
+                Object.entries(d.kosullu || {}).forEach(([p, an]) =>
+                    ozel.appendChild(elYap("div", "", "Adda " + p + " geçerse: " + donemAnlamGoster(d.kalip, an))));
+                if (!ozel.childNodes.length) ozel.textContent = "Yok";
+                return [donemSayiGoster(d.kalip), donemAnlamGoster(d.kalip, d.anlam), d.tur || "", ozel];
+            })));
+        });
+    }
+    /* Ad Parçaları */
+    if ((o.parcalar || []).length) {
+        bolum("parca", "Ad Parçaları", ftBinlik(o.parcalar.length) + " parça", ic => {
+            ic.appendChild(elYap("div", "oz0124-not", "Kolon adlarındaki kısaltmaların onaylı anlamı ve türü; "
+                + "kolon sayısı adında o parça geçen kolon sayısıdır."));
+            const ara = document.createElement("input");
+            ara.type = "text"; ara.className = "dg-giris oz0124-ara";
+            ara.placeholder = "Parça ya da anlam ara"; ara.setAttribute("aria-label", "Parça ya da anlam ara");
+            const yer = elYap("div", "");
+            const ciz = () => {
+                const q = ftSade(ara.value);
+                const l = o.parcalar.filter(x => !q || ftSade(x.parca).indexOf(q) !== -1 || ftSade(x.anlam).indexOf(q) !== -1);
+                yer.textContent = "";
+                yer.appendChild(l.length ? tablo(["Parça", "Anlam", "Tür", "Kolon"],
+                    l.map(x => [x.parca, x.anlam, x.tur, ftBinlik(x.kolon)]))
+                    : elYap("div", "oz0124-not", "Aramayla eşleşen parça yok."));
+            };
+            ara.oninput = ciz;
+            if (o.parcalar.length > 15) ic.appendChild(ara);
+            ic.appendChild(yer);
+            ciz();
+        });
+    }
+    /* Kolon Adları kuralları */
+    if (o.kolon_ad) {
+        const k = o.kolon_ad;
+        bolum("kolon_ad", "Kolon Adları", ftBinlik(k.degisen || 0) + " kolonun adı değişti", ic => {
+            ic.appendChild(elYap("div", "oz0124-not", "Yeni adlar bu kurallarla kuruldu. Tabloda adı değişen kolonun "
+                + "yeni adı, altında eski adı yazar."));
+            if ((k.sira || []).length) ic.appendChild(elYap("div", "oz0124-satir",
+                "Ad Standardı sırası: " + k.sira.map((y, i) => (i + 1) + ". " + y).join(" · ")));
+            if ((k.yazilis || []).length) ic.appendChild(tablo(["Dönem Kalıbı", "Yeni Adda Yazılış"],
+                k.yazilis.map(x => [donemSayiGoster(x.kalip), donemAdGoster(x.yazilis)])));
+            if ((k.eklenen || []).length) ic.appendChild(tablo(["Ada Eklenen Bilgi", "Kısaltma", "Tür", "Kolon"],
+                k.eklenen.map(x => [x.anlam, x.kisaltma, x.tur, ftBinlik(x.kolon)])));
+        });
+    }
+    /* Kolon Kartları */
+    if (kartli) {
+        bolum("kart", "Kolon Kartları", ftBinlik(kartli) + " kolon", ic => {
+            ic.appendChild(elYap("div", "oz0124-not", "Her kolonun adındaki parçalardan kurulan kartı (konu, yön, "
+                + "zaman, ölçü ve diğerleri), düzeltmeden önceki açıklaması ve notunuz: yukarıdaki tabloda kolonun "
+                + "satırına tıklayınca altta açılan detayda görünür."
+                + (yeniAdli ? " Adı değişen " + ftBinlik(yeniAdli) + " kolonda detayda eski ad da yazar." : "")));
+        });
+    }
+    return kok;
 }
 
 /* Filtre/siralama/secim degisince yalnizca degisen parcalar yeniden
@@ -3644,6 +3789,9 @@ function featureTabloCiz(t) {
     const detay = elYap("div", "ft-detay");
     detay.hidden = true;
     kok.appendChild(detay);
+    /* 01.2.4 SONUÇLARI: tablonun altında, onaylanan bölümler. */
+    const ozet0124 = ozet0124Ciz(t.ozet_0124 || {}, t.satirlar || []);
+    if (ozet0124) kok.appendChild(ozet0124);
 
     FT.dom = { kok, sayac, kaynak, baslik, toplu, not, hata, govde, yer, detay, ciplar };
     ftCiplarCiz();

@@ -2148,6 +2148,7 @@ def kolon_ad_uygula(durum):
     onceki = durum.pop("_onceki_uygula", None) == "kolon_ad"
     if _kontrol_atlandi(durum):
         durum["kolon_yeni_ad"] = {}
+        durum["kolon_ad_eklenen"] = []
         return KONTROL_ATLANDI
     kk = _kolon_ad_karari(karar)
     durum["_kolon_ad_karari"] = kk
@@ -2156,6 +2157,10 @@ def kolon_ad_uygula(durum):
     if hatalar:
         raise AdimHatasi("Kolon adları onaylanamadı:\n" + "\n".join(hatalar))
     durum["kolon_yeni_ad"] = esleme
+    # Ada eklenen parcalar (Degisken Listesi altindaki ozet icin).
+    durum["kolon_ad_eklenen"] = [
+        {"anlam": e["anlam"], "kisaltma": e["kisaltma"], "tur": e["tur_ad"], "kolon": e["kolon_sayisi"]}
+        for e in alan.get("eklenecekler") or [] if e.get("secim") == "ekle" and e.get("gecerli")]
     hata = parca_mod.ad_standardi_kaydet(sira)
     # Donem yazilislari: bu calismada gecerli, hafizaya da (bos olan
     # hafizadan kalkar).
