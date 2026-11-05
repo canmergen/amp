@@ -2674,6 +2674,78 @@ def _taslak_satirlari(t, kontrol=None):
     return s
 
 
+# ANLAM KAYMASI (01.2.4.3, aile basina bir kolon): yazilan aciklama
+# orijinalin anlamini koruyor mu? Buyuk kayma kullaniciya ailece sorulur.
+SISTEM_ACIKLAMA_KAYMA = """Sen bir bankacılık veri sözlüğü uzmanısın. Her kolon
+için sözlükteki ORİJİNAL açıklama, dil modelinin yazdığı YENİ açıklama, kolonun
+adı ve KART (adın parçalarından kurulmuş bilgi) verilecek.
+
+Görevin YENİ açıklamanın ORİJİNAL'in anlamını koruyup korumadığına bakmak.
+"kayma" alanına birini yaz:
+  yok   : anlam aynı (yazım, netleştirme, kısaltma açma, sözcük sırası).
+  kucuk : anlam aynı; ayrıntı eklenmiş ya da çıkmış ama ölçülen şey, dönem
+          ve hesap aynı.
+  buyuk : YENİ açıklama ORİJİNAL'den farklı bir şey anlatıyor: dönem ya da
+          pencere farklı (ör. ORİJİNAL "son 3 gün / son 7 gün oranı", YENİ
+          "3 gün önce ile 7 gün önce arası ... oranı"), hesap farklı (oran
+          yerine fark, toplam yerine ortalama), konu, yön ya da ölçülen
+          büyüklük farklı, ORİJİNAL'deki temel bir bilgi YENİ'de yok ya da
+          tersine çevrilmiş.
+ORİJİNAL boşsa, anlamsızsa ya da yalnız kolon adının tekrarıysa "yok" yaz.
+Emin değilsen "kucuk" yaz; "buyuk" yalnız anlam açıkça değiştiyse.
+
+"neden": kayma "buyuk" ise tek cümle; iki açıklamanın farkını somut yaz
+(ör. "Orijinal açıklama son 3 günün son 7 güne oranını anlatıyor; yeni
+açıklama 3 ile 7 gün önce arasındaki dönemi anlatıyor."). Diğerlerinde
+boş. Tamamen Türkçe; büyük harfle yazılmış sözcük kullanma.
+
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN yaz.
+{"kolonlar": [{"ad": "...", "kayma": "yok", "neden": ""}]}""" + SINIRLAYICI_KURALI
+
+
+def aciklama_kayma(liste, orkestra=None):
+    """liste: [{"kolon", "orijinal", "aciklama", "kart": {alan: metin}}].
+    Doner: ({kolon: {"kayma": "yok" | "kucuk" | "buyuk", "neden"}}, hata)."""
+    liste = [x for x in liste if str(x.get("aciklama") or "").strip()]
+    if not liste:
+        return {}, None
+    ork = orkestra or Orkestra(arka=True)
+    satirlar = []
+    for x in liste:
+        s = "- AD: %s\n  ORİJİNAL: %s\n  YENİ: %s" % (
+            x["kolon"], _kirp(x.get("orijinal") or "(boş)", 500), _kirp(x["aciklama"], 500))
+        kart = "; ".join("%s: %s" % (k, v) for k, v in (x.get("kart") or {}).items() if v)
+        if kart:
+            s += "\n  KART: %s" % _kirp(kart, 400)
+        satirlar.append(s)
+    model, veri = ork.json_cagir(
+        ork.modeller("aciklama_kontrol"), SISTEM_ACIKLAMA_KAYMA,
+        _veri_blogu("KOLONLAR:", "\n".join(satirlar)), 0.1,
+        zaman_asimi=ACIKLAMA_DUZEN_ZAMAN_ASIMI,
+        en_cok=ACIKLAMA_DUZEN_TOKEN_TABAN + 120 * len(liste))
+    if not model:
+        return {}, _orkestra_hatasi(ork, "anlam kayması denetimi")
+    gecerli = {str(x["kolon"]) for x in liste}
+    sonuc = {}
+    for x in veri.get("kolonlar") or []:
+        if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
+            continue
+        k = _secenek(str(x.get("kayma") or ""))
+        k = k if k in ("yok", "kucuk", "buyuk") else "kucuk"
+        sonuc[str(x["ad"])] = {"kayma": k, "neden": _kayma_nedeni(x.get("neden")) if k == "buyuk" else ""}
+    return sonuc, None
+
+
+def _kayma_nedeni(x):
+    """Gerekcedeki ORİJİNAL / YENİ (istemdeki etiketler) ekranda kucuk
+    harfli adlariyla."""
+    m = _donem_metni(x)
+    m = re.sub(r"\bOR[İI]J[İI]NAL\b", "orijinal açıklama", m)
+    m = re.sub(r"\bYEN[İI]\b", "yeni açıklama", m)
+    m = re.sub(r"(açıklama)( açıklama)+", r"\1", m)
+    return m[:1].upper() + m[1:] if m else m
+
+
 def aciklama_kontrol(girdiler, taslaklar, orkestra=None):
     """Ikinci cagri. taslaklar: {kolon: yazarin sonucu}. Doner:
     ({kolon: {"uygun": bool, "sorunlar": [metin], "oneri": metin}}, hata)."""

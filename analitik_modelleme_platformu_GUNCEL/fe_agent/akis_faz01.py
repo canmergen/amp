@@ -3752,9 +3752,11 @@ ACIKLAMA_YONERGE = [
     "olur (dil modeli yeniden yazmaz); alanı boşaltırsanız öneri yeniden "
     "yazılır. Ailede «Ailedeki N Kolona da Uygula» metninizi sayıları "
     "değiştirerek bütün aileye yazar; her üyeyi ayrıca da düzeltebilirsiniz.",
-    "Önce yalnız Toplu Sorular görünür: dil modeli düzenlemeyi bitirip "
-    "bütün sorular cevaplanınca kolonlar açılır. Onay üç aşamada sırayla: "
-    "1 Aileler, 2 Biçim Değişiklikleri, 3 Değişenler. Bir aşama, öncekinin "
+    "Önce Toplu Sorular, sonra Anlamı Kayan Aileler görünür (açıklaması "
+    "orijinalinden açıkça farklı anlama kayan aileler; doğru anlamı yazın ya "
+    "da yeni açıklama doğru deyin). Bunlar bitince kolonlar sırayla açılır: "
+    "önce sorunlular (Cevapsız Soru, Kontrol Notu), sonra sorunsuzlar "
+    "(Aileler, Biçim Değişiklikleri, Değişenler). Bir aşama, öncekinin "
     "bütün kolonları onaylanınca açılır. "
     "Soru, ad notu ya da kontrol notu olan satırlar toplu onaylanmaz; tek tek "
     "bakıp onaylayın. Açıklama sonradan değişirse onay kalkar."]
@@ -4238,13 +4240,176 @@ def aciklama_alani(durum, son=0):
         sira = d.sayac
     dm = "calisiyor" if is_["calisiyor"] else ("iptal" if is_["iptal"] and is_["bekleyen"]
                                                else "bitti")
+    # Anlam kaymasi denetimi: dil modeli bitip cevapsiz toplu soru kalmayinca.
+    kayma = _kayma_alani(klasor, d, girdiler, baslat=dm != "calisiyor" and not sayac["bekleyen"]
+                         and not any(x["soru_kolon"] > 0 and not x["cevap"] for x in sorular))
     # gelecek: iptal aninda yolda olan cagrilar; sonuclari gelince satirlar
     # duzenlenmis olur, kart o zamana dek yoklamayi surdurur.
-    return {"dm": dm, "son": sira, "satirlar": satirlar, "sorular": sorular,
+    return {"dm": dm, "son": sira, "satirlar": satirlar, "sorular": sorular, "kayma": kayma,
             "sayac": sayac, "hata": is_["hata"], "salt_okunur": False,
             "gelecek": is_["gelecek"] if dm == "iptal" else 0,
             "ilerleme": {"biten": is_["biten"], "toplam": is_["toplam"],
                          "gecen": is_["gecen"]} if is_["calisiyor"] else None}
+
+
+# ANLAMI KAYAN AILELER: aciklamalar yazilip toplu sorular cevaplaninca dil
+# modeli her ailenin bir kolonunda (ailesi olmayan kolonda kendisinde)
+# orijinal aciklamayla yeni aciklamayi karsilastirir (llm.aciklama_kayma).
+# Buyuk kayma kullaniciya aile basina sorulur; cevap ailenin hepsine aile
+# notu olarak gider ve dil modeli aileyi yeniden yazar (ya da kullanici
+# "Yeni Aciklama Dogru" der). Sonuc ve kararlar calismanin kaydinda
+# (aciklama_duzen.kaymalar, kayma_kararlari): ayni aciklama yeniden
+# sorulmaz.
+KAYMA_PAKET = 8
+_KAYMA_IS = {}                     # klasor -> {"durum", "biten", "toplam", "hata"}
+_KAYMA_KILIT = threading.Lock()
+
+
+def _kayma_imzasi(g, r):
+    return aciklama_mod.imza(g.get("orijinal") or "", (r or {}).get("aciklama") or "")
+
+
+def _kayma_adaylari(d, girdiler):
+    """{aile: (temsilci girdi, sonuc, uye sayisi)}: butun uyeleri yazilmis
+    aileler; temsilci orijinali dolu, dil modelinin yazdigi ilk uye (kilit
+    altinda cagrilir)."""
+    uyeler = {}
+    for g in girdiler:
+        uyeler.setdefault(g.get("aile") or g["kolon"], []).append(g)
+    cikti = {}
+    for a, gs in uyeler.items():
+        if any(aciklama_mod.satir_durumu(d, g["kolon"]) in ("bekliyor", "isleniyor", "yok") for g in gs):
+            continue
+        for g in gs:
+            r = aciklama_mod.guncel_sonuc(d, g["kolon"])
+            if (r and r.get("aciklama") and r.get("kaynak") not in ("hata", "elle")
+                    and str(g.get("orijinal") or "").strip()):
+                cikti[a] = (g, r, len(gs))
+                break
+    return cikti
+
+
+def _kayma_durumu(klasor):
+    with _KAYMA_KILIT:
+        return dict(_KAYMA_IS.get(klasor) or {"durum": "yok", "biten": 0, "toplam": 0, "hata": ""})
+
+
+def _kayma_baslat(klasor, d, adaylar):
+    """Sonucu guncel olmayan (aciklamasi degismis ya da hic bakilmamis) ve
+    karari verilmemis ailelerin temsilcileri arka planda denetlenir."""
+    with aciklama_mod._KILIT:
+        isler = []
+        for a, (g, r, _n) in adaylar.items():
+            if a in d.kayma_kararlari:
+                continue
+            k = d.kaymalar.get(a) or {}
+            if k.get("imza") == _kayma_imzasi(g, r):
+                continue
+            isler.append((a, g, r))
+    with _KAYMA_KILIT:
+        if (_KAYMA_IS.get(klasor) or {}).get("durum") == "calisiyor":
+            return
+        if not isler:
+            if klasor not in _KAYMA_IS:
+                _KAYMA_IS[klasor] = {"durum": "bitti", "biten": 0, "toplam": 0, "hata": ""}
+            return
+        k = _KAYMA_IS[klasor] = {"durum": "calisiyor", "biten": 0, "toplam": len(isler), "hata": ""}
+
+    def paket(liste):
+        girdi = [{"kolon": g["kolon"], "orijinal": g.get("orijinal") or "",
+                  "aciklama": r.get("aciklama") or "",
+                  "kart": {e: (g.get("kart") or {}).get(a_) for a_, e in KART_ADLARI}}
+                 for _a, g, r in liste]
+        try:
+            sonuc, hata = llm_mod.aciklama_kayma(girdi)
+        except Exception as e:
+            sonuc, hata = {}, "%s: %s" % (type(e).__name__, str(e)[:200])
+        with aciklama_mod._KILIT:
+            for a, g, r in liste:
+                x = sonuc.get(g["kolon"])
+                if x:
+                    d.kaymalar[a] = {"kolon": g["kolon"], "imza": _kayma_imzasi(g, r),
+                                     "kayma": x["kayma"], "neden": x["neden"]}
+        with _KAYMA_KILIT:
+            k["biten"] += len(liste)
+        return hata
+
+    def calis():
+        hatalar = []
+        try:
+            with futures.ThreadPoolExecutor(max_workers=aciklama_mod.PARALEL) as ex:
+                for h in ex.map(paket, [isler[i:i + KAYMA_PAKET] for i in range(0, len(isler), KAYMA_PAKET)]):
+                    if h:
+                        hatalar.append(h)
+        except Exception as e:
+            hatalar.append("%s: %s" % (type(e).__name__, str(e)[:200]))
+        aciklama_mod.kaydet(d, zorla=True)
+        with _KAYMA_KILIT:
+            k["hata"] = " ".join(dict.fromkeys(hatalar))
+            k["durum"] = "bitti"
+    threading.Thread(target=calis, daemon=True).start()
+
+
+def _kayma_alani(klasor, d, girdiler, baslat):
+    """Kartin "Anlami Kayan Aileler" verisi. baslat: dil modeli bitti ve
+    cevapsiz toplu soru yok; denetim o zaman baslar (kilit disinda)."""
+    with aciklama_mod._KILIT:
+        adaylar = _kayma_adaylari(d, girdiler)
+    if baslat:
+        _kayma_baslat(klasor, d, adaylar)
+    durum_ = _kayma_durumu(klasor)
+    aileler = []
+    with aciklama_mod._KILIT:
+        boy = Counter(g.get("aile") or g["kolon"] for g in girdiler)
+        gorulen = set()
+        for a, (g, r, n) in adaylar.items():
+            k = d.kaymalar.get(a) or {}
+            kr = d.kayma_kararlari.get(a)
+            if not kr and not (k.get("kayma") == "buyuk" and k.get("imza") == _kayma_imzasi(g, r)):
+                continue
+            gorulen.add(a)
+            aileler.append({"anahtar": a, "kolon_sayisi": n, "kolon": g["kolon"],
+                            "orijinal": g.get("orijinal") or "", "aciklama": r.get("aciklama") or "",
+                            "neden": (kr or {}).get("neden") or k.get("neden") or "",
+                            "karar": (kr or {}).get("karar") or "", "cevap": (kr or {}).get("cevap") or "",
+                            "yaziliyor": False})
+        # Karari verilmis ama uyeleri yeniden yazilan aile de listede kalir.
+        for a, kr in d.kayma_kararlari.items():
+            if a in gorulen or a not in boy:
+                continue
+            ornek = kr.get("kolon") or ""
+            g = d.girdiler.get(ornek) or {}
+            aileler.append({"anahtar": a, "kolon_sayisi": boy[a], "kolon": ornek,
+                            "orijinal": g.get("orijinal") or "", "aciklama": "",
+                            "neden": kr.get("neden") or "", "karar": kr.get("karar") or "",
+                            "cevap": kr.get("cevap") or "", "yaziliyor": True})
+    aileler.sort(key=lambda x: (bool(x["karar"]), -x["kolon_sayisi"], x["anahtar"]))
+    return dict(durum_, aileler=aileler,
+                bekleyen=sum(1 for x in aileler if not x["karar"]))
+
+
+def aciklama_kayma_karari(durum, aile, karar, cevap=""):
+    """Anlami kayan aile icin kullanicinin karari ("cevap" ya da "dogru";
+    bos: karari kaldirir)."""
+    if not _aciklama_canli(durum):
+        return {"hata": _kart_kapali(durum)}
+    klasor = _aciklama_klasoru(durum)
+    d = aciklama_mod.depo(klasor)
+    aile = str(aile or "")
+    karar = str(karar or "")
+    if karar == "cevap" and not str(cevap or "").strip():
+        return {"hata": "Önce ailenin doğru anlamını yazın."}
+    with aciklama_mod._KILIT:
+        k = d.kaymalar.get(aile) or {}
+        kr = d.kayma_kararlari.get(aile) or {}
+        kolon = k.get("kolon") or kr.get("kolon") or ""
+        neden = k.get("neden") or kr.get("neden") or ""
+    if not kolon:
+        return {"hata": "Bu aile için anlam kayması kaydı yok."}
+    hata = aciklama_mod.kayma_karari_yaz(klasor, aile, kolon, neden, karar, cevap)
+    _aciklama_ver(durum, oncelikli=[kolon], devam=True)
+    _kontrol_aciklama_yaz(durum)
+    return {"hata": hata or ""}
 
 
 def _kart_kapali(durum):

@@ -1135,6 +1135,30 @@ tanıtır; sayfalar sol bardan açılır.
     Aileler açılır; onay düğmesi evrede kapalı ("Önce yukarıdaki Toplu
     Sorular: N soru cevap bekliyor"). İptal'de cevapsız soru kalmadıysa
     evre biter. Salt okunur kartta evre yok.
+  - **Anlamı Kayan Aileler** (soru evresinde, Toplu Sorular'dan sonra;
+    `_kayma_alani`, `_kayma_baslat`, `llm.aciklama_kayma`,
+    `SISTEM_ACIKLAMA_KAYMA`): dil modeli bitip cevapsız toplu soru
+    kalmayınca arka planda her ailenin bir kolonunda (bütün üyeleri
+    yazılmış ailede, orijinali dolu ve dil modelinin yazdığı ilk üye;
+    ailesi olmayan kolonda kendisi) orijinal açıklama yeni açıklamayla
+    karşılaştırılır: yok / küçük / büyük (8'li paket, aynı anda 4; rol
+    aciklama_kontrol). Büyük: dönem, hesap, konu, yön ya da ölçülen şey
+    farklı ya da temel bilgi kayıp. Sonuç çalışma kaydında
+    (`aciklama_duzen.kaymalar`, imza orijinal ve açıklama): aynı açıklama
+    yeniden sorulmaz, açıklama değişince yeniden bakılır. Büyük kayma
+    aile başına kutuda sorulur (aile adı, kolon sayısı, dil modelinin tek
+    cümle tespiti, örnek kolon, orijinal, yeni açıklama): "Ailenin doğru
+    anlamı" + «Cevabı Uygula» ya da «Yeni Açıklama Doğru». Cevap
+    (`aciklama_kayma_karari`, `/aciklama_islem` islem "kayma";
+    `aciklama_duzen.kayma_karari_yaz`) temsilci kolona not, aileye aile
+    notu olarak "Sorduğun: <tespit> Cevabım: <cevap>" biçiminde gider; dil
+    modeli ailenin hepsini, sayıları her kolonun dönemine uyarlayarak
+    yeniden yazar. Karar `kayma_kararlari`'nda; «Kararı Değiştir» kararı
+    ve verilmiş cevabın notlarını kaldırır. Karşılaştırma sürerken ya da
+    karar bekleyen aile varken kolonlar açılmaz (`soruEvresi`; not ve
+    alttaki gerekçe ne beklendiğini yazar); kart karşılaştırma bitene dek
+    yoklar. Gerekçedeki ORİJİNAL / YENİ etiketleri küçük harfli adlarıyla
+    yazılır (`llm._kayma_nedeni`).
   - **Sıra: önce sorunlular, sonra sorunsuzlar.** Aşama çubuğu iki
     grupludur ve bütün aşamalar sırayla açılır (bir aşama, öncekinin
     bütün kolonları onaylanınca ya da listeden çıkınca): "Önce

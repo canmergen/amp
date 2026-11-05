@@ -26,6 +26,10 @@ AILE AKTARIMI (dil modeli cagrisi yok)
 KAYIT: PROJE_HAFIZASI/<calisma>/ACIKLAMA_DUZENLEME.json
   notlar          {kolon: kullanicinin notu}
   parca_notlari   {PARCA: kullanicinin parca hakkindaki cevabi}
+  kaymalar        {aile: {"kolon", "imza", "kayma", "neden"}}: anlam kaymasi
+                  denetimi (ailenin temsilci kolonu; imza orijinal ve aciklama)
+  kayma_kararlari {aile: {"karar": "dogru" | "cevap", "cevap", "kolon",
+                  "neden"}}: kullanicinin buyuk kaymaya karari
   soru_cevaplari  {kolon: {"soru", "cevap"}}: kolonun sorusuna kullanicinin
                   cevabi (notlar'a dil modeli icin soru ve cevap olarak
                   yazilir; burada kartta gostermek icin)
@@ -66,7 +70,7 @@ _ONCELIK_HAVUZ = futures.ThreadPoolExecutor(max_workers=2)
 
 _SAYI = re.compile(r"(?<!\d)\d+(?!\d)")
 _KAYIT_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "onay",
-                   "yazilan", "kabul", "elle", "soru_cevaplari")
+                   "yazilan", "kabul", "elle", "soru_cevaplari", "kaymalar", "kayma_kararlari")
 METIN_ALANLARI = ("aciklama", "karar", "soru", "ad_notu", "dagilim_notu", "denetim")
 
 
@@ -88,6 +92,8 @@ class _Depo(object):
         self.notlar = {}
         self.parca_notlari = {}
         self.soru_cevaplari = {}
+        self.kaymalar = {}
+        self.kayma_kararlari = {}
         self.aile_notlari = {}
         self.sonuclar = {}
         self.onay = {}
@@ -946,6 +952,40 @@ def soru_cevabi_yaz(klasor, kolon, soru, cevap):
             d.soru_cevaplari.pop(kolon, None)
         d.elle.pop(kolon, None)
         d.dokun(kolon)
+    return kaydet(d, zorla=True)
+
+
+def kayma_karari_yaz(klasor, aile, kolon, neden, karar, cevap=""):
+    """Anlami kayan ailede kullanicinin karari. "cevap": ailenin dogru
+    anlami temsilci kolona not ve aileye aile notu olarak gider (dil
+    modeli ailenin hepsini yeniden yazar). "dogru": yalniz kaydedilir.
+    Bos karar karari kaldirir (verilmis cevap notlardan da kalkar).
+    Doner: hata ya da None."""
+    d = depo(klasor)
+    aile, kolon, cevap = str(aile), str(kolon), _norm(cevap)
+    with _KILIT:
+        eski = d.kayma_kararlari.get(aile) or {}
+        if eski.get("karar") == "cevap":
+            ek = eski.get("kolon") or kolon
+            notu = soru_notu(eski.get("neden"), eski.get("cevap"))
+            if _norm(d.notlar.get(ek)) == notu:
+                d.notlar.pop(ek, None)
+                d.dokun(ek)
+            if _norm((d.aile_notlari.get(aile) or {}).get("not")) == notu:
+                d.aile_notlari.pop(aile, None)
+        if karar == "cevap" and cevap:
+            notu = soru_notu(neden, cevap)
+            d.notlar[kolon] = notu
+            d.elle.pop(kolon, None)
+            d.aile_notlari[aile] = {"kolon": kolon, "not": notu}
+            d.kayma_kararlari[aile] = {"karar": "cevap", "cevap": cevap, "kolon": kolon,
+                                        "neden": _norm(neden)}
+            d.dokun(kolon)
+        elif karar == "dogru":
+            d.kayma_kararlari[aile] = {"karar": "dogru", "cevap": "", "kolon": kolon,
+                                        "neden": _norm(neden)}
+        else:
+            d.kayma_kararlari.pop(aile, None)
     return kaydet(d, zorla=True)
 
 

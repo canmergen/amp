@@ -3678,7 +3678,7 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-acik-durum .dg-toplu-btn { margin-left: var(--b-2); }
 .dg-bilgi-kutu.dg-acik-hata { color: var(--kirmizi); border-left-color: var(--kirmizi-cizgi); }
 .dg-acik-ilerleme .dg-toplu-btn { margin-left: var(--b-3); }
-.dg-acik-sorular { margin: var(--b-3) 0; }
+.dg-acik-sorular, .dg-acik-kayma { margin: var(--b-3) 0; }
 .dg-acik-soru {
   border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
   padding: var(--b-2) var(--b-3); margin-bottom: var(--b-2); background: var(--yuzey);

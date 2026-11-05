@@ -8656,7 +8656,11 @@ function dogrulamaKartiEkle(alan, blok) {
             birincil.disabled = bek || onaysiz > 0 || !!ev;
             gerekce.textContent = ev && ev.cevapsiz
                 ? "Önce yukarıdaki Toplu Sorular: " + ftBinlik(ev.cevapsiz) + " soru cevap bekliyor. "
-                  + "Hepsi cevaplanınca 1 Aileler açılır."
+                  + "Hepsi cevaplanınca kolonlar açılır."
+                : ev && !bek && ev.kaymaSurer
+                ? "Dil modeli açıklamaları orijinalleriyle karşılaştırıyor; bitince kolonlar açılır."
+                : ev && !bek && ev.kayma
+                ? "Önce yukarıdaki Anlamı Kayan Aileler: " + ftBinlik(ev.kayma) + " aile karar bekliyor."
                 : bek
                 ? "Dil modeli " + ftBinlik(Number(s.bekleyen || 0)) + " kolonu düzenliyor; bitince "
                   + "onaylanabilir. Beklemek istemezseniz İptal'e basın."
@@ -10330,7 +10334,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
     const veriler = new Map();        // kolon -> satır verisi (sunucudan)
     const sira = [];                  // kolonların veri setindeki sırası
     const el = new Map();             // kolon -> satır elemanları
-    let son = 0, dm = ilkKilit ? "bitti" : "calisiyor", sayac = {}, sorular = [];
+    let son = 0, dm = ilkKilit ? "bitti" : "calisiyor", sayac = {}, sorular = [], kayma = null;
     let hataMetni = "", saltOkunur = !!ilkKilit, ilerleme = null, atlandi = false;
     let suzgec = "tumu", arama = "", gosterilen = ACK_SAYFA;
     let yoklamaZaman = null, yuklendi = false;
@@ -10384,12 +10388,23 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
        tablo açılır (1 Aileler ile başlanır). Cevap verilince ilgili
        kolonlar yeniden düzenlenir; yeni soru çıkarsa evre sürer. Salt
        okunur kartta evre yok. */
+    /* ANLAMI KAYAN AİLELER: toplu sorular cevaplanıp dil modeli bitince
+       sunucu her ailenin bir kolonunda orijinal ile yeni açıklamayı
+       karşılaştırır; anlamı açıkça kayan aileler burada sorulur. Cevap
+       ailenin bütün kolonlarına gider ve dil modeli aileyi yeniden yazar
+       ya da «Yeni Açıklama Doğru» denir. */
+    const kaymaKap = elYap("div", "dg-acik-kayma");
+    kaymaKap.hidden = true;
+    kart.appendChild(kaymaKap);
     const evreNot = elYap("div", "dg-bilgi-kutu dg-acik-evre-not", "");
     evreNot.hidden = true;
     kart.appendChild(evreNot);
     const cevapsizSoru = () => (sorular || []).filter(s => s.soru_kolon > 0 && !s.cevap).length;
     const dmSurer = () => dm !== "iptal" && (dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0);
-    const soruEvresi = () => !saltOkunur && (!yuklendi || cevapsizSoru() > 0 || dmSurer());
+    const kaymaBekleyen = () => kayma ? Number(kayma.bekleyen || 0) : 0;
+    const kaymaSurer = () => !!kayma && kayma.durum === "calisiyor";
+    const soruEvresi = () => !saltOkunur && (!yuklendi || cevapsizSoru() > 0 || dmSurer()
+                                             || kaymaSurer() || kaymaBekleyen() > 0);
     function evreCiz() {
         const evre = soruEvresi();
         kart.classList.toggle("dg-acik-soru-evresi", evre);
@@ -10398,16 +10413,26 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         evreNot.hidden = !evre || !yuklendi;
         if (evreNot.hidden) return;
         const n = cevapsizSoru();
+        if (!n && !dmSurer() && (kaymaSurer() || kaymaBekleyen())) {
+            evreNot.textContent = kaymaSurer()
+                ? "Dil modeli her ailenin açıklamasını orijinaliyle karşılaştırıyor: "
+                  + ftBinlik(kayma.biten || 0) + " / " + ftBinlik(kayma.toplam || 0)
+                  + ". Anlamı kayan aile çıkarsa yukarıda sorulur; bitince kolonlar açılır."
+                : ftBinlik(kaymaBekleyen()) + " ailenin açıklamasında anlam kaymış. Yukarıda her aile için "
+                  + "doğru anlamı yazın ya da yeni açıklama doğruysa «Yeni Açıklama Doğru»ya basın; "
+                  + "hepsi bitince kolonlar açılır.";
+            return;
+        }
         evreNot.textContent = n
             ? ftBinlik(n) + " soru cevabınızı bekliyor. Önce yukarıdaki Toplu Sorular'ı cevaplayın; "
               + "cevabınız o parçanın geçtiği bütün kolonlarda kullanılır ve o kolonlar yeniden "
               + "düzenlenir. " + (dmSurer() ? "Dil modeli düzenlemeyi bitirip bütün sorular "
-              : "Bütün sorular ") + "cevaplanınca 1 Aileler açılır."
+              : "Bütün sorular ") + "cevaplanınca kolonlar açılır."
             : (sorular || []).length
             ? "Bütün sorular cevaplandı. Dil modeli kolonları cevaplarınızla düzenliyor; bitince "
-              + "1 Aileler açılır. Yeni soru çıkarsa burada görünür."
+              + "kolonlar açılır. Yeni soru çıkarsa burada görünür."
             : "Dil modeli kolonları düzenliyor. Toplu soru çıkarsa burada görünür; düzenleme bitip "
-              + "cevaplanacak soru kalmayınca 1 Aileler açılır.";
+              + "cevaplanacak soru kalmayınca kolonlar açılır.";
     }
 
     /* ---- Süzgeçler + arama ---- */
@@ -11272,6 +11297,95 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         });
     }
 
+    /* ---- Anlamı kayan aileler ---- */
+    const kaymaTaslak = new Map();
+    function kaymaCiz() {
+        kaymaKap.textContent = "";
+        const liste = (kayma && kayma.aileler) || [];
+        kaymaKap.hidden = saltOkunur || !kayma || cevapsizSoru() > 0 || (!liste.length && !kaymaSurer());
+        if (kaymaKap.hidden) return;
+        const bas = elYap("div", "dg-kisa-tablo-baslik", "Anlamı Kayan Aileler · "
+            + (kaymaSurer() ? "karşılaştırılıyor" : ftBinlik(kaymaBekleyen()) + " karar bekliyor"));
+        bas.appendChild(bolmeBilgiSimgesi(
+            "Dil modeli her ailenin bir kolonunda sözlükteki orijinal açıklamayı yeni açıklamayla "
+            + "karşılaştırır. Yalnız anlamın açıkça değiştiği aileler burada sorulur (dönem, hesap ya "
+            + "da ölçülen şey farklı); yazım ve netleştirme sorulmaz. Doğru anlamı yazarsanız ailenin "
+            + "bütün kolonlarına, her kolonun kendi sayılarına uyarlanarak gider ve dil modeli ailenin "
+            + "açıklamalarını yeniden yazar. Yeni açıklama doğruysa «Yeni Açıklama Doğru»ya basın.",
+            "Anlamı Kayan Aileler"));
+        kaymaKap.appendChild(bas);
+        if (kaymaSurer()) kaymaKap.appendChild(elYap("div", "dg-acik-ornek",
+            "Karşılaştırılıyor: " + ftBinlik(kayma.biten || 0) + " / " + ftBinlik(kayma.toplam || 0) + " aile."));
+        liste.forEach(x => {
+            const kutu = elYap("div", "dg-acik-soru");
+            const ust_ = elYap("div", "dg-acik-soru-ust");
+            ust_.appendChild(elYap("span", "dg-donem-kalip", x.kolon_sayisi > 1
+                ? String(x.anahtar).replace(/#/g, "[sayı]") : x.kolon));
+            ust_.appendChild(elYap("span", "dg-acik-soru-sayi", ftBinlik(x.kolon_sayisi) + " kolon"));
+            if (x.karar) ust_.appendChild(elYap("span", "dg-rozet-kucuk", x.yaziliyor ? "Yeniden yazılıyor"
+                : x.karar === "dogru" ? "Yeni açıklama doğru" : "Cevaplandı"));
+            kutu.appendChild(ust_);
+            if (x.neden) kutu.appendChild(elYap("div", "dg-donem-soru", tireSade(x.neden)));
+            if (x.kolon_sayisi > 1) kutu.appendChild(elYap("div", "dg-acik-ornek", "Örnek kolon: " + x.kolon));
+            kutu.appendChild(elYap("div", "dg-acik-ornek", "Orijinal: " + tireSade(x.orijinal || "")));
+            if (x.aciklama) kutu.appendChild(elYap("div", "dg-acik-ornek", "Yeni açıklama: " + tireSade(x.aciklama)));
+            if (x.karar) {
+                const sat = elYap("div", "dg-acik-soru-yol", x.karar === "dogru"
+                    ? "Yeni açıklamanın doğru olduğunu söylediniz."
+                    : "Cevabınız: " + tireSade(x.cevap) + (x.yaziliyor
+                        ? " Ailenin açıklamaları buna göre yeniden yazılıyor."
+                        : " Ailenin açıklamaları buna göre yazıldı."));
+                if (!kilitli) {
+                    const geri = elYap("button", "dg-baglanti", "Kararı Değiştir");
+                    geri.type = "button";
+                    geri.onclick = () => kaymaIslem(x, "", "", geri);
+                    sat.appendChild(document.createTextNode(" "));
+                    sat.appendChild(geri);
+                }
+                kutu.appendChild(sat);
+                kaymaKap.appendChild(kutu);
+                return;
+            }
+            kutu.appendChild(elYap("div", "dg-acik-soru-yol",
+                "Ailenin doğru anlamını " + (x.kolon_sayisi > 1 ? "örnek kolonun sayılarıyla " : "")
+                + "yazın (ör. «son 3 gündeki işlem adedinin son 7 gündeki işlem adedine oranı»)"
+                + (x.kolon_sayisi > 1 ? "; sayılar her kolonda kendi dönemine uyarlanır" : "")
+                + ". Yeni açıklama doğruysa «Yeni Açıklama Doğru»ya basın."));
+            const satir = elYap("div", "dg-acik-soru-giris");
+            const g = document.createElement("input");
+            g.type = "text"; g.className = "dg-giris";
+            g.placeholder = "Ailenin doğru anlamı";
+            g.value = kaymaTaslak.get(x.anahtar) || "";
+            g.disabled = kilitli;
+            g.setAttribute("aria-label", x.anahtar + " doğru anlamı");
+            g.addEventListener("input", () => kaymaTaslak.set(x.anahtar, g.value));
+            const b = elYap("button", "dg-toplu-btn", "Cevabı Uygula");
+            b.type = "button"; b.disabled = kilitli;
+            b.onclick = () => { if (g.value.trim()) kaymaIslem(x, "cevap", g.value.trim(), b); };
+            g.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); b.click(); } });
+            const dogru = elYap("button", "dg-toplu-btn", "Yeni Açıklama Doğru");
+            dogru.type = "button"; dogru.disabled = kilitli;
+            dogru.onclick = () => kaymaIslem(x, "dogru", "", dogru);
+            satir.append(g, b, dogru);
+            kutu.appendChild(satir);
+            kaymaKap.appendChild(kutu);
+        });
+    }
+    function kaymaIslem(x, karar, cevap, dugme) {
+        if (kilitli || saltOkunur) return;
+        dugme.disabled = true;
+        if (karar) kaymaTaslak.delete(x.anahtar);
+        islem({ islem: "kayma", aile: x.anahtar, karar: karar, cevap: cevap })
+            .then(d => {
+                if (d && d.hata) durumYaz(d.hata, true);
+                else if (karar === "cevap") durumYaz("Cevabınız ailenin " + ftBinlik(x.kolon_sayisi)
+                    + " kolonuna uygulandı; açıklamalar yeniden yazılıyor.", false);
+                yoklaHemen();
+            })
+            .catch(() => yoklaHemen())
+            .finally(() => { dugme.disabled = false; });
+    }
+
     /* ---- Toplu sorular ---- */
     function sorulariCiz() {
         soruKap.textContent = "";
@@ -11402,6 +11516,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         atlandi = !!a.atlandi;
         sayac = a.sayac || {};
         sorular = a.sorular || [];
+        kayma = a.kayma || null;
         hataMetni = a.hata || "";
         ilerleme = a.ilerleme || null;
         if (!ilerleme) ilerSabit = false;
@@ -11416,6 +11531,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         suzgecCiz();
         tabloCiz();
         sorulariCiz();
+        kaymaCiz();
         evreCiz();
         if (dm !== "calisiyor") iptalSifirla();
         if (dm === "iptal") {
@@ -11450,8 +11566,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
                 const a = d && d.aciklama;
                 if (!a) { durumYaz((d && d.hata) || "Satırlar alınamadı.", true); zamanla(8000); return; }
                 isle(a);
-                const surer = !saltOkunur && (dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0)
-                    && dm !== "iptal";
+                const surer = !saltOkunur && ((dm === "calisiyor" || Number(sayac.bekleyen || 0) > 0)
+                    && dm !== "iptal" || kaymaSurer());
                 /* İptal anında yolda olan cevaplar sonradan gelir; gelene dek
                    seyrek yoklanır (sayılar ve onay gerekçesi güncel kalsın). */
                 if (surer) zamanla(ACK_YOKLAMA);
@@ -11485,7 +11601,8 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         sayac: () => Object.assign({}, sayac),
         /* Etkin aşama ve onay bekleyenleri (alttaki gerekçe için). */
         /* Soru evresi: cevapsız soru sayısı (alttaki gerekçe için). */
-        soruEvresi: () => soruEvresi() ? { cevapsiz: cevapsizSoru(), surer: dmSurer() } : null,
+        soruEvresi: () => soruEvresi() ? { cevapsiz: cevapsizSoru(), surer: dmSurer(),
+                                           kayma: kaymaBekleyen(), kaymaSurer: kaymaSurer() } : null,
         asama: () => {
             if (!yuklendi || saltOkunur) return null;
             const n = aktifAsama(), bekleyen = asamaSatirlari(n).filter(v => !v.onayli);
@@ -11497,6 +11614,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             kilitli = k;
             veriler.forEach(v => satirGuncelle(v));
             sorulariCiz();
+            kaymaCiz();
             evreCiz();
             iptalBtn.disabled = k || iptalBtn.textContent !== "İptal";
             devamBtn.disabled = k;
