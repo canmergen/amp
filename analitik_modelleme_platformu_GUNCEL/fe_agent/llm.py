@@ -2796,6 +2796,65 @@ def aciklama_kosul_cikar(x, orkestra=None):
             "neden": _kayma_nedeni(veri.get("neden"))}, None
 
 
+SISTEM_DONEM_KOSUL_DENETIM = """Sen bir bankacılık veri sözlüğü uzmanısın. Kolon adlarında
+geçen bir dönem kalıbının kullanıcının yazdığı GENEL ANLAMI var. Her kolon için
+adı, kalıbın o addaki değeri ve sayıları, sözlükteki AÇIKLAMA ve genel anlamın
+o değerdeki hali verilecek.
+
+Görevin: AÇIKLAMA, kalıbın bu kolondaki dönemini genel anlamla AYNI mı
+anlatıyor? "uyum" alanına birini yaz:
+  uyumlu  : açıklamadaki dönem genel anlamla aynı (yazım, sözcük farkı önemsiz).
+  uyumsuz : açıklama dönemi açıkça FARKLI anlatıyor (ör. genel anlam "3 gün
+            önce ile 7 gün önce arası", açıklama "son 3 günün son 7 güne
+            oranı": son 3 gün ve son 7 gün, aradaki dönem değil).
+  belirsiz: açıklama dönemi söylemiyor ya da anlaşılmıyor.
+Yalnız DÖNEME bak; ölçülen şey, hesap ya da konu farkı uyumsuzluk değildir.
+Emin değilsen "belirsiz" yaz.
+
+"anlam": yalnız uyumsuzsa; kalıbın bu kolondaki dönem anlamı, açıklamaya göre.
+Yalnız dönem kısmı; ölçülen şeyi ve hesabı yazma. Sayıların yerine kalıptaki
+sırayla <N1>, <N2> (tek sayılı kalıpta <N1>); hiçbir sayıyı rakamla yazma
+(ör. "son <N1> gün ile son <N2> gün"). Diğerlerinde boş.
+"neden": yalnız uyumsuzsa tek kısa cümle, Türkçe; büyük harfle yazılmış
+sözcük kullanma.
+
+ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN yaz.
+{"kolonlar": [{"ad": "...", "uyum": "uyumlu", "anlam": "", "neden": ""}]}""" + SINIRLAYICI_KURALI
+
+
+def donem_kosul_denetle(kalip, liste, orkestra=None):
+    """Kalibin genel anlami kolonlarin sozluk aciklamalariyla uyusuyor mu.
+    kalip: sira numarali (ör. <N1>D_<N2>D). liste: [{"ad", "deger",
+    "sayilar" ("<N1>=3, <N2>=7"), "aciklama", "genel"}]. Doner: ({ad:
+    {"uyum": "uyumlu" | "uyumsuz" | "belirsiz", "anlam", "neden"}}, hata).
+    Sonuc burada dogrulanmaz (bkz. akis_faz01._kosul_denetim_*)."""
+    if not liste:
+        return {}, None
+    ork = orkestra or Orkestra(arka=True)
+    satirlar = ["- AD: %s | DEĞER: %s (%s)\n  AÇIKLAMA: %s\n  GENEL ANLAM BU DEĞERDE: %s"
+                % (x["ad"], x["deger"], x["sayilar"], _kirp(x["aciklama"], 300), x["genel"])
+                for x in liste]
+    model, veri = ork.json_cagir(
+        ork.modeller("aciklama_kontrol"), SISTEM_DONEM_KOSUL_DENETIM,
+        _veri_blogu("KALIP: %s\nKOLONLAR:" % kalip, "\n".join(satirlar)), 0.1,
+        zaman_asimi=ACIKLAMA_DUZEN_ZAMAN_ASIMI,
+        en_cok=ACIKLAMA_DUZEN_TOKEN_TABAN + 90 * len(liste))
+    if not model:
+        return {}, _orkestra_hatasi(ork, "koşullu anlam denetimi")
+    gecerli = {str(x["ad"]) for x in liste}
+    sonuc = {}
+    for x in (veri or {}).get("kolonlar") or []:
+        if not isinstance(x, dict) or str(x.get("ad")) not in gecerli:
+            continue
+        u = _secenek(str(x.get("uyum") or ""))
+        u = u if u in ("uyumlu", "uyumsuz", "belirsiz") else "belirsiz"
+        sonuc[str(x["ad"])] = {
+            "uyum": u,
+            "anlam": re.sub(r"\s+", " ", str(x.get("anlam") or "")).strip() if u == "uyumsuz" else "",
+            "neden": _kayma_nedeni(x.get("neden")) if u == "uyumsuz" else ""}
+    return sonuc, None
+
+
 def _kayma_nedeni(x):
     """Gerekcedeki ORİJİNAL / YENİ (istemdeki etiketler) ekranda kucuk
     harfli adlariyla."""

@@ -792,7 +792,49 @@ tanıtır; sayfalar sol bardan açılır.
   (`_kosul_ornekleri`: önce sözlük açıklaması olan ve kalıp değeri farklı
   olanlar), her birinin açıklaması ve o kolonun dönemi (kendi anlamı
   varsa onunla, yoksa kalıbın anlamıyla) yazar. Düğme, adaylar ve koşul
-  yoksa gizlidir. Karar ve satır `kosullu`
+  yoksa gizlidir.
+
+  **Öneriler** (`donem_kosul_onerisi`, `/donem_kosul_oneri`;
+  `llm.donem_kosul_denetle`, `SISTEM_DONEM_KOSUL_DENETIM`). Satır çizilince
+  ve kalıbın anlamı değişince (kutudan çıkınca) kart arka uçtan ister.
+  1. Kalıbın geçtiği ve sözlükte açıklaması olan BÜTÜN kolonlar (örneklem
+     yok; kalıp adda daha geniş bir kalıbın içindeyse o kolon sayılmaz)
+     25'lik paketlerle (aynı anda 4) dil modeline gider. Her kolon için
+     açıklama kalıbın genel anlamıyla aynı dönemi mi anlatıyor: uyumlu,
+     uyumsuz ya da belirsiz. Uyumsuzsa doğru dönem anlamı yer tutucuyla
+     istenir.
+  2. **Kod doğrular ve parçaya bağlar** (`_kosul_denetim_grupla`):
+     - Kolonun önerdiği anlam rakamsız olmalı ve yer tutucuları kalıba
+       uymalı; doldurulunca sayıları açıklamada aynı sırayla geçmeli.
+     - Bir parça için öneri ancak o parçanın geçtiği kontrol edilmiş
+       kolonlardan hiçbiri uyumlu değilse çıkar.
+     - Anlam, o kolonlarda en çok önerilen anlamdır ve parçanın bütün
+       uyumsuz kolonlarının açıklamasıyla sayı sırasıyla tutmalıdır.
+     - Aynı kolon kümesini kapsayan parçalardan biri gösterilir (ötekiler
+       "Aynı kolonlarda … de geçiyor" diye yazılır). Başka bir önerinin
+       kolonlarının alt kümesi olan parça gösterilmez.
+     - Hiçbir parçaya bağlanamayan uyumsuz kolonlar ayrıca sayılır (ilk
+       10'u i balonunda; kullanıcı elle baksın).
+  3. Panelde durum satırı: hazırlanırken "biten / toplam kolon"; bitince
+     kaç kolonun karşılaştırıldığı (uyumlu, uyumsuz, belirsiz), kaç parça
+     için öneri olduğu ve bağlanamayanlar; hata olursa «Yeniden Dene».
+     Düğmenin özetinde "· N öneri" ya da "· öneriler hazırlanıyor".
+  4. Önerili parça, kendi anlamı olanlardan sonra listenin başında durur.
+     Anlam hücresinin altında kesik çerçeveli kutuda şunlar yazar:
+     - "Öneri: «…»";
+     - kaç kolonun açıklamasına dayandığı ve parçanın toplam kaç kolonda
+       geçtiği;
+     - neden, i balonunda dayanak kolonlar;
+     - «Öneriyi Al».
+
+     «Öneriyi Al» öneriyi Kendi Anlamı'na yazar ve kutu odaklanır;
+     kullanıcı elle düzeltir. Kutu öneriyle aynıysa "Kendi anlamı
+     öneriyle aynı." yazar. Hiçbir öneri kendiliğinden uygulanmaz.
+
+  Sonuç bellekte, (kalıp, anlam, kontrol edilen kolonlar ve açıklamaları)
+  imzasıyla tutulur; aynı istek dil modeline yeniden gitmez. Hata kalır,
+  yalnız «Yeniden Dene» ile yeniden başlar. Webapp yeniden başlayınca
+  bellek boşalır, öneriler yeniden hazırlanır. Karar ve satır `kosullu`
   ({PARÇA: anlam}, içeride yer tutuculu); satırın kayıt imzasına girer.
   Onayda `durum["donem_kosul"]` ve hafızaya (dosyada kalıp kaydında
   `kosullu_anlamlar`; boş bırakılan kalkar; kalıp hafızadan silinince

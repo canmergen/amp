@@ -5274,3 +5274,15 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .dg-acik-kosul .dg-acik-ornek .bolme-info { vertical-align: middle; margin-left: 4px; }
 .dg-acik-kosul-uyari { margin-top: var(--b-2); color: var(--amber); font-size: var(--fs-kucuk); }
 .dg-acik-kosul-uyari .dg-acik-ornek { color: var(--metin-tamam); }
+
+/* Koşulları Düzenle: açıklamalarla uyuşmayan parçalara koşullu anlam önerisi. */
+.dg-donem-kosul-oneri-durum { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-bottom: 6px; }
+.dg-donem-kosul-uyari { color: var(--amber); margin-top: 2px; }
+.dg-donem-kosul-uyari .bolme-info { vertical-align: middle; margin-left: 4px; }
+.dg-donem-kosul-oneri {
+  margin-top: 6px; padding: 6px 8px; border: 1px dashed var(--amber); border-radius: var(--r-kucuk);
+  font-size: var(--fs-kucuk);
+}
+.dg-donem-kosul-oneri-ad { color: var(--amber); font-weight: var(--fw-kalin); }
+.dg-donem-kosul-oneri .dg-toplu-btn { margin-top: 4px; }
+.dg-donem-kosul-oneri .bolme-info { vertical-align: middle; margin-left: 4px; }

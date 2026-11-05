@@ -3040,6 +3040,25 @@ def donem_kaydet_endpoint():
         return jsonify(_hata_govdesi("donem_kaydet", e)), 200
 
 
+@app.route("/donem_kosul_oneri", methods=["POST"])
+def donem_kosul_oneri_endpoint():
+    """Dönem Bilgisi kartında Koşulları Düzenle önerileri: kalıbın
+    anlamıyla sözlük açıklamaları uyuşmayan parçalar için koşullu anlam.
+    İlk çağrı arka planda başlatır; kart aynı çağrıyla yoklar. Oturum
+    dosyası yazılmaz."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        kaliplar = istek.get("kaliplar")
+        sonuc = akis.donem_kosul_onerisi(durum, istek.get("kalip"), istek.get("anlam"),
+                                         kaliplar if isinstance(kaliplar, list) else [],
+                                         yeniden=bool(istek.get("yeniden")))
+        return jsonify(dict(sonuc, tamam=sonuc.get("durum") != "hata"))
+    except Exception as e:
+        return jsonify(_hata_govdesi("donem_kosul_oneri", e)), 200
+
+
 @app.route("/donem_kayit_geri", methods=["POST"])
 def donem_kayit_geri_endpoint():
     """Dönem Bilgisi kartında Kaydet'in hafızaya yazdığını geri alır

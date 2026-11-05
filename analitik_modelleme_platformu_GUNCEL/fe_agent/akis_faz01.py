@@ -3,6 +3,7 @@
 
 import copy
 import datetime
+import hashlib
 import json
 import re
 import threading
@@ -4742,6 +4743,192 @@ def _kosul_onerisi_baslat(durum, d, aile, kolon, neden, cevap):
             d.kosul_onerileri[aile] = dict(sonuc, cevap=cevap, kolon=kolon, karar="")
         aciklama_mod.kaydet(d, zorla=True)
     threading.Thread(target=calis, daemon=True).start()
+
+
+# ---------------------------------------------------------------------------
+# KOSUL ONERISI (01.2.4.1 Kosullari Duzenle): kalibin gectigi ve sozlukte
+# aciklamasi olan BUTUN kolonlar (orneklem yok) paketler halinde dil
+# modeline gider: aciklama kalibin genel anlamiyla ayni donemi mi anlatiyor
+# (uyumlu / uyumsuz / belirsiz; uyumsuzsa dogru donem anlami). Sonra KOD
+# parcalara baglar: bir parca icin oneri ancak
+#   * o parcanin gectigi kontrol edilmis kolonlardan hicbiri uyumlu degilse
+#     ve en az biri uyumsuzsa,
+#   * secilen anlam (uyumsuz kolonlarda en cok onerilen) o parcanin butun
+#     uyumsuz kolonlarinin aciklamasindaki sayilarla ayni sirayla tutuyorsa
+# cikar. Ayni kolon kumesini kapsayan parcalardan biri gosterilir (otekiler
+# "ayni kolonlarda" diye yazilir); baska bir onerinin kolonlarinin alt
+# kumesi olan parca gosterilmez. Hicbir parcaya baglanamayan uyumsuz
+# kolonlar ayrica listelenir (kullanici elle baksin). Sonuc bellekte,
+# (kalip, anlam, kontrol edilen kolonlar ve aciklamalari) imzasiyla.
+# ---------------------------------------------------------------------------
+KOSUL_DENETIM_PAKET = 25
+KOSUL_DENETIM_PARALEL = 4
+KOSUL_DENETIM_ORNEK = 3
+KOSUL_DENETIM_LISTE = 10
+_KOSUL_DENETIM = {}                       # imza -> is
+_KOSUL_DENETIM_KILIT = threading.Lock()
+
+
+def _kosul_denetim_kolonlari(durum, kalip, kaliplar):
+    """Kalibin gectigi ve aciklamasi olan kolonlar: [(ad, deger, aciklama,
+    parcalar)], veri setindeki sirayla. Kalip adda daha genis bir kalibin
+    icinde kaliyorsa (3D_7D'deki 3D) o kolon bu kalibin degildir."""
+    adlar, tanimlar = _donem_kaynak(durum)
+    kaliplar = list(dict.fromkeys([kalip] + [k for k in kaliplar if k]))
+    cikti = []
+    for ad in adlar:
+        bul = [b for b in _ad_kalip_degerleri(ad, kaliplar) if b[0] == kalip]
+        if not bul:
+            continue
+        tanim = re.sub(r"\s+", " ", str(tanimlar.get(ad) or "")).strip()
+        _k, deger, yer = bul[0]
+        cikti.append((str(ad), deger, tanim, _ad_harf_parcalari(ad, yer)))
+    return cikti
+
+
+def _kosul_denetim_grupla(kalip, anlam, kolonlar, sonuc):
+    """Dil modelinin kolon kararlarindan parca onerileri (bkz. ustteki not)."""
+    uyumlu, uyumsuz, belirsiz = {}, {}, set()
+    for ad, deger, tanim, parcalar in kolonlar:
+        x = sonuc.get(ad)
+        if not x or not tanim:
+            continue
+        if x["uyum"] == "uyumlu":
+            uyumlu[ad] = parcalar
+            continue
+        if x["uyum"] != "uyumsuz":
+            belirsiz.add(ad)
+            continue
+        a = ""
+        ham = x.get("anlam") or ""
+        if ham and not _SAYI_RE.search(re.sub(r"<[^<>]*>", "", ham)):
+            a = donem_mod.anlam_duzelt(kalip, ham)
+            dolu = donem_mod.deger_anlami(kalip, a, deger) if a else ""
+            if (not a or donem_mod.yer_tutucu_hatasi(kalip, a) or dolu == a
+                    or not _sayi_sirasi_uyar(dolu, tanim)):
+                a = ""
+        uyumsuz[ad] = {"deger": deger, "tanim": tanim, "parcalar": parcalar, "anlam": a,
+                       "neden": x.get("neden") or ""}
+    bilgi = {ad: (deger, tanim) for ad, deger, tanim, _p in kolonlar}
+    toplam = Counter(p for _a, _d, _t, ps in kolonlar for p in ps)
+    adaylar = []
+    for p in sorted({p for u in uyumsuz.values() for p in u["parcalar"]}):
+        if any(p in ps for ps in uyumlu.values()):
+            continue
+        kume = frozenset(ad for ad, u in uyumsuz.items() if p in u["parcalar"])
+        sayac = Counter(re.sub(r"\s+", " ", uyumsuz[ad]["anlam"]).strip()
+                        for ad in kume if uyumsuz[ad]["anlam"])
+        if not sayac:
+            continue
+        secilen, _n = max(sayac.items(), key=lambda kv: (kv[1], -len(kv[0])))
+        dolular = [(ad, donem_mod.deger_anlami(kalip, secilen, bilgi[ad][0])) for ad in sorted(kume)]
+        if not all(_sayi_sirasi_uyar(d, bilgi[ad][1]) for ad, d in dolular):
+            continue
+        adaylar.append((p, kume, secilen, dolular))
+    # Ayni kumeyi kapsayanlar tek oneri; baska bir onerinin alt kumesi olan atilir.
+    adaylar.sort(key=lambda x: (-len(x[1]), -toplam[x[0]], x[0]))
+    oneriler, alinan = [], []
+    for p, kume, secilen, dolular in adaylar:
+        es = next((o for o in oneriler if o["_kume"] == kume), None)
+        if es is not None:
+            es["ayni"].append(p)
+            continue
+        if any(kume < o["_kume"] for o in oneriler):
+            continue
+        nedenler = Counter(uyumsuz[ad]["neden"] for ad in kume if uyumsuz[ad]["neden"])
+        oneriler.append({
+            "_kume": kume, "parca": p, "anlam": secilen, "ayni": [],
+            "neden": nedenler.most_common(1)[0][0] if nedenler else "",
+            "uyumsuz": len(kume), "toplam": toplam[p],
+            "ayni_anlam": _kosul_ayni_anlam(kume, uyumsuz, secilen),
+            "ornekler": [[ad, bilgi[ad][0], bilgi[ad][1][:300], d]
+                         for ad, d in dolular[:KOSUL_DENETIM_ORNEK]]})
+        alinan.append(kume)
+    aciklanan = set().union(*alinan) if alinan else set()
+    kalan = [ad for ad in uyumsuz if ad not in aciklanan]
+    for o in oneriler:
+        o.pop("_kume")
+    return {"oneriler": {o["parca"]: o for o in oneriler},
+            "kontrol": len([1 for _a, _d, t, _p in kolonlar if t]),
+            "uyumlu": len(uyumlu), "uyumsuz": len(uyumsuz), "belirsiz": len(belirsiz),
+            "aciklanamayan_sayisi": len(kalan),
+            "aciklanamayan": [[ad, uyumsuz[ad]["deger"], uyumsuz[ad]["tanim"][:300],
+                               donem_mod.deger_anlami(kalip, anlam, uyumsuz[ad]["deger"])]
+                              for ad in kalan[:KOSUL_DENETIM_LISTE]]}
+
+
+def _kosul_ayni_anlam(kume, uyumsuz, secilen):
+    """Kumedeki uyumsuz kolonlardan kacinda dil modeli ayni anlami yazdi."""
+    return sum(1 for ad in kume if re.sub(r"\s+", " ", uyumsuz[ad]["anlam"]).strip() == secilen)
+
+
+def donem_kosul_onerisi(durum, kalip, anlam, kaliplar=None, yeniden=False):
+    """01.2.4.1 Kosullari Duzenle onerileri. Ilk cagrida arka planda
+    baslar ({"durum": "calisiyor", "biten", "toplam"}); bitince ayni
+    cagri sonucu doner ({"durum": "hazir", "oneriler": {PARCA: {...}},
+    ...}). Kalibin anlami ya da aciklamalar degisirse yeniden bakilir.
+    Hata kalir ({"durum": "hata"}); yeniden=True (kartta «Yeniden Dene»)
+    isi bastan baslatir. Calisma ve oturum dosyasi degismez."""
+    kalip = re.sub(r"\s+", "", str(kalip or "")).upper()
+    anlam = re.sub(r"\s+", " ", str(anlam or "")).strip()
+    if not kalip or donem_mod.kalip_deseni(kalip) is None or not anlam:
+        return {"durum": "yok"}
+    if donem_mod.yer_tutucu_hatasi(kalip, anlam):
+        return {"durum": "yok"}
+    kaliplar = [re.sub(r"\s+", "", str(k or "")).upper() for k in (kaliplar or [])]
+    kolonlar = _kosul_denetim_kolonlari(durum, kalip, kaliplar)
+    bakilacak = [(ad, deger, tanim) for ad, deger, tanim, _p in kolonlar if tanim]
+    if not bakilacak:
+        return {"durum": "hazir", "oneriler": {}, "kontrol": 0, "uyumlu": 0, "uyumsuz": 0,
+                "belirsiz": 0, "aciklanamayan_sayisi": 0, "aciklanamayan": []}
+    imza = hashlib.sha1(json.dumps([kalip, anlam, bakilacak], ensure_ascii=False)
+                        .encode("utf-8")).hexdigest()
+    with _KOSUL_DENETIM_KILIT:
+        is_ = _KOSUL_DENETIM.get(imza)
+        if is_ is not None and yeniden and is_["durum"] == "hata":
+            is_ = None
+        if is_ is not None:
+            if is_["durum"] == "hazir":
+                return dict(is_["cikti"], durum="hazir")
+            if is_["durum"] == "calisiyor":
+                return {"durum": "calisiyor", "biten": is_["biten"], "toplam": is_["toplam"]}
+            return {"durum": "hata", "hata": is_.get("hata") or ""}
+        is_ = _KOSUL_DENETIM[imza] = {"durum": "calisiyor", "biten": 0, "toplam": len(bakilacak)}
+    numarali = _kalip_numarali(kalip)
+    girdi = [{"ad": ad, "deger": dg, "aciklama": tn,
+              "sayilar": ", ".join("<N%d>=%s" % (i + 1, n)
+                                   for i, n in enumerate(donem_mod._sirali_sayilar(kalip, dg) or [])),
+              "genel": donem_mod.deger_anlami(kalip, anlam, dg)} for ad, dg, tn in bakilacak]
+
+    def paket(liste):
+        try:
+            sonuc, hata = llm_mod.donem_kosul_denetle(numarali, liste)
+        except Exception as e:
+            sonuc, hata = {}, "%s: %s" % (type(e).__name__, str(e)[:200])
+        with _KOSUL_DENETIM_KILIT:
+            is_["biten"] += len(liste)
+        return sonuc, hata
+
+    def calis():
+        sonuc, hatalar = {}, []
+        try:
+            with futures.ThreadPoolExecutor(max_workers=KOSUL_DENETIM_PARALEL) as ex:
+                for s_, h in ex.map(paket, [girdi[i:i + KOSUL_DENETIM_PAKET]
+                                            for i in range(0, len(girdi), KOSUL_DENETIM_PAKET)]):
+                    sonuc.update(s_)
+                    if h:
+                        hatalar.append(h)
+            if hatalar and not sonuc:
+                raise RuntimeError(" ".join(dict.fromkeys(hatalar)))
+            cikti = _kosul_denetim_grupla(kalip, anlam, kolonlar, sonuc)
+            cikti["eksik"] = len(bakilacak) - len(sonuc)
+            with _KOSUL_DENETIM_KILIT:
+                is_.update(durum="hazir", cikti=cikti)
+        except Exception as e:
+            with _KOSUL_DENETIM_KILIT:
+                is_.update(durum="hata", hata=str(e)[:300])
+    threading.Thread(target=calis, daemon=True).start()
+    return {"durum": "calisiyor", "biten": 0, "toplam": len(bakilacak)}
 
 
 def _kosul_yaz(durum, kalip, parca, anlam):
