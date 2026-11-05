@@ -1542,6 +1542,14 @@ tanıtır; sayfalar sol bardan açılır.
     bütün ikilileri açar. Sorunlu ad (sayıyla başlıyor, iki kolon aynı
     adı alıyor, rol kolonunun adı) onaylanamaz. Arka uç adları onayda
     kendisi yeniden kurar ve denetler. Sonuç `durum["kolon_yeni_ad"]`.
+  - **Toplu onay:** arama ve süzgecin yanındaki düğme BÜTÜN sayfalardaki
+    listeye uygulanır (yalnız o sayfaya değil). Süzgeç yoksa
+    "Sorunsuzların Hepsini Onayla · N", arama ya da süzgeç varsa "Bu
+    Listedekilerin Hepsini Onayla · N". Onaylanmamış ve sorunsuz aileler
+    seçili hâliyle (Yeni Ad ya da Eski Ad Kalsın) onaylanır; sorunlu aile
+    atlanır (sayısı düğmenin açıklamasında). Ada Eklenecek Parçalar
+    başlığında "Hepsini Onayla · N": onaylanmamış satırlar seçili hâliyle
+    onaylanır; kısaltması geçersiz satır atlanır ve sayısı başlıkta yazar.
 - **02'ye giden sözlük (aile kataloğu, `llm.sozluk_katalogu`):** sözlükte
   kolon kartı varsa Kural Tabanlı Değişken Üretimi'nin ve keşif
   hipotezlerinin dil modeline kolonlar düz "AD: açıklama" listesi yerine

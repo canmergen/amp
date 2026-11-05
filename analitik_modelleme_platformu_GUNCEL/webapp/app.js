@@ -10243,6 +10243,26 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         bas.append(elYap("span", "dg-kad-standart-ad", "Ada Eklenecek Parçalar · " + ftBinlik(ekler.length)),
                    elYap("span", "dg-donem-tur-not", "Kolon Kartları'nda açıklamada olup adda karşılığı olmayan "
                          + "bilgiler. Kısaltmayı kontrol edin, «Ekle» ya da «Ekleme» seçip onaylayın."));
+        /* TOPLU ONAY: onaylanmamış ve onaylanabilir (kısaltması geçerli ya
+           da «Ekleme» seçili) satırlar seçili hâliyle onaylanır; kısaltması
+           geçersiz olan atlanır. */
+        const ekOnaylanir = ekler.filter(e => !e.onay && ekGecerli(e));
+        const ekAtlanan = ekler.filter(e => !e.onay && !ekGecerli(e)).length;
+        if (ekOnaylanir.length || ekAtlanan) {
+            const hb = elYap("button", "dg-toplu-btn", "Hepsini Onayla · " + ftBinlik(ekOnaylanir.length));
+            hb.type = "button";
+            hb.disabled = kilitli || !ekOnaylanir.length;
+            hb.title = "Onaylanmamış satırlar seçili hâliyle («Ekle» ya da «Ekleme») onaylanır."
+                + (ekAtlanan ? " Kısaltması geçersiz " + ftBinlik(ekAtlanan) + " satır atlanır; önce kısaltmasını düzeltin." : "");
+            hb.onclick = () => {
+                if (kilitli) return;
+                ekOnaylanir.forEach(e => { e.onay = true; });
+                ekCiz(); if (degisti) degisti();
+            };
+            bas.appendChild(hb);
+            if (ekAtlanan) bas.appendChild(elYap("span", "dg-donem-soru", ftBinlik(ekAtlanan)
+                + " satırın kısaltması geçersiz; düzeltmeden onaylanamaz."));
+        }
         ekKap.appendChild(bas);
         const t = elYap("table", "dg-tablo dg-kad-ek-tablo");
         const h = document.createElement("thead"), hr = document.createElement("tr");
@@ -10319,9 +10339,11 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
     [["hepsi", "Tümü"], ["onaysiz", "Onaylanmadı"], ["degisen", "Adı Değişen"],
      ["ayni", "Adı Aynı Kalan"], ["sorun", "Sorunlu"]].forEach(([d, a]) => {
         const o = document.createElement("option"); o.value = d; o.textContent = a; suz.appendChild(o); });
-    const gorOnay = elYap("button", "dg-toplu-btn", "Görünenleri Onayla");
+    /* TOPLU ONAY (bütün sayfalar): arama ve süzgeçle görünen listenin
+       sorunu olmayan, onaylanmamış aileleri seçili hâliyle (Yeni Ad ya da
+       Eski Ad Kalsın) onaylanır; sorunlu aile atlanır. */
+    const gorOnay = elYap("button", "dg-toplu-btn", "");
     gorOnay.type = "button";
-    gorOnay.title = "Bu sayfada görünen ve sorunu olmayan aileler seçili haliyle onaylanır.";
     const sayfaEl = elYap("div", "dg-parca-sayfa");
     ust.append(ara, suz, gorOnay, sayfaEl);
     kart.appendChild(ust);
@@ -10398,10 +10420,18 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
                 ftBinlik(sayfa * KAD_SAYFA + 1) + " ile " + ftBinlik(Math.min(liste.length, (sayfa + 1) * KAD_SAYFA))
                 + " arası · " + ftBinlik(liste.length)), ileri);
         }
-        gorOnay.disabled = kilitli || !parca.some(r => !r.onay && !sor[r.aile]);
+        const onaylanir = liste.filter(r => !r.onay && !sor[r.aile]);
+        const sorunlu = liste.filter(r => !r.onay && sor[r.aile]).length;
+        const suzulu = !!ara.value.trim() || suz.value !== "hepsi";
+        gorOnay.textContent = (suzulu ? "Bu Listedekilerin Hepsini Onayla" : "Sorunsuzların Hepsini Onayla")
+            + " · " + ftBinlik(onaylanir.length);
+        gorOnay.title = (suzulu ? "Arama ve süzgeçle listelenen" : "Bütün") + " sayfalardaki onaylanmamış ve "
+            + "sorunu olmayan " + ftBinlik(onaylanir.length) + " aile seçili hâliyle (Yeni Ad ya da Eski Ad Kalsın) onaylanır."
+            + (sorunlu ? " Sorunlu " + ftBinlik(sorunlu) + " aile atlanır; süzgeçte «Sorunlu»yu seçip tek tek bakın." : "");
+        gorOnay.disabled = kilitli || !onaylanir.length;
         gorOnay.onclick = () => {
             if (kilitli) return;
-            parca.forEach(r => { if (!sor[r.aile]) r.onay = true; });
+            onaylanir.forEach(r => { r.onay = true; });
             tabloCiz(); if (degisti) degisti();
         };
     }
