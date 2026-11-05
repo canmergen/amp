@@ -81,7 +81,7 @@ const YENI_CALISMA_ETIKETI = "⟳ Yeni Çalışma";
 const CALISMALARIM_ETIKETI = "Arşiv";
 
 const GORSEL = {
-    katipLogo:  getWebAppBackendUrl("gorsel/katip_logo"),
+    kurumLogo:  getWebAppBackendUrl("gorsel/kurum_logo"),
     bot:        getWebAppBackendUrl("gorsel/bot"),
     karsilama:  getWebAppBackendUrl("gorsel/karsilama"),
     dusunme:    getWebAppBackendUrl("gorsel/dusunme"),
@@ -172,7 +172,7 @@ const DATASET_DINLEYICILER = [];   // liste gelince formlar kendini tazeler
    değil görsel doldursun). Yüklenemezse gizlenir. */
 katipLogoEl.onerror = () => { katipLogoEl.style.display = "none"; solBarOlcekle(); };
 katipLogoEl.onload = () => solBarOlcekle();
-saydamKirp(GORSEL.katipLogo, src => { katipLogoEl.src = src; },
+saydamKirp(GORSEL.kurumLogo, src => { katipLogoEl.src = src; },
            () => { katipLogoEl.style.display = "none"; solBarOlcekle(); }, true);
 /* SOL BAR İKONLARI: her satırın yerinde klasördeki çizim (PNG) durur.
    HTML'deki çizgi ikon (SVG) yalnız yer tutar ve görünmez (style.css):

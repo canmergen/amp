@@ -22,7 +22,7 @@ Ham veriden final modele kadar model geliştirme sürecini tek ve izlenebilir bi
 
 | Anahtar | Dosya | Kullanıldığı yer |
 |---|---|---|
-| `katip_logo` | `katip_logo.png` | Sol barın tepesindeki Katip logosu |
+| `kurum_logo` | `kurum_logo.png` | Sol barın tepesindeki logo |
 | `anasayfa` | `anasayfa.png` | Sol bar: ANA SAYFA |
 | `model_platformu` | `model_platformu.png` | Sol bar: MODEL PLATFORMU başlığının ikonu |
 | `model_akisi` | `model_akisi.png` | Sol bar: Model Akışı |
@@ -172,7 +172,7 @@ sistemin serifsiz fontu (Segoe UI, Arial) kullanılır.
   seçili olduğunu gri zemin ve soldaki çizgi gösterir.
 
 **Sol bar**
-- Tepede ortada Katip logosu (`katip_logo.png`; barın
+- Tepede ortada logo (`kurum_logo.png`; barın
   eninin %63'ü); üstünde ve altındaki çizgiye kadar 20'şer px boşluk.
   Yüklenemezse gizlenir. Altında ince siyah çizgi.
 - **Ana Sayfa** (kendi sayfasını açar; içeriği aşağıda).
