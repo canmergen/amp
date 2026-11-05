@@ -12092,7 +12092,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
     const YAKIN_TAMAM = new Set();
     /* Hafızadan gelen satıra kullanıcı dokunmadı mı? duzen'e çizimde
        kendiliğinden giren "ayrilan" (hafızadakinin kopyası) dokunma sayılmaz. */
-    const DUZEN_DEGISIKLIK = ["anlam", "kalip", "zaman_tur", "haric", "deger_anlam", "cikar", "aileye_kat"];
+    const DUZEN_DEGISIKLIK = ["anlam", "kalip", "zaman_tur", "haric", "deger_anlam", "cikar", "aileye_kat",
+                              "kosullu"];
     const dokunulmadi = (r, anah) => {
         const dz = duzen[anah];
         if (!dz) return true;
@@ -12468,6 +12469,90 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         dgAc.type = "button";
         tdA.insertBefore(dgAc, g.nextSibling);
         tdA.insertBefore(ornekEl, dgAc);
+        /* KOŞULLU ANLAMLAR: adda belirli bir parça geçerse kalıbın anlamı
+           (ör. [sayı 1]D_[sayı 2]D, adda RATIO geçerse "son [sayı 1] gün ile
+           son [sayı 2] gün"). Kolon Kartları'nda o kolonun kartı bu anlamla
+           kurulur. kosullu: PARÇA -> anlam (içeride yer tutuculu); liste
+           sırası ekranda eklenme sırası. */
+        const kosKap = elYap("div", "dg-donem-kosul");
+        tdA.insertBefore(kosKap, dgAc.nextSibling);
+        const kosListe = Object.entries((dz && dz.kosullu) || r.kosullu || {}).map(([p, a]) => ({ p, a }));
+        const kosAday = r.kosul_adaylari || [];
+        const kosDl = elYap("datalist", "");
+        kosDl.id = "dg-kosul-" + Math.random().toString(36).slice(2);
+        kosAday.forEach(([p, n]) => { const o = document.createElement("option"); o.value = p;
+                                      o.label = ftBinlik(n) + " kolon"; kosDl.appendChild(o); });
+        const kosCikti = () => {
+            const o = {};
+            kosListe.forEach(k => {
+                const p = String(k.p || "").trim().toLocaleUpperCase("tr").replace(/[^A-Z0-9]/g, "");
+                if (p && String(k.a || "").trim()) o[p] = String(k.a).trim();
+            });
+            return o;
+        };
+        const kosHata = k => !String(k.a || "").trim() ? ""
+            : !/^[A-Z][A-Z0-9]{0,19}$/.test(String(k.p || "").trim().toUpperCase())
+            ? "Parçayı yazın (harfle başlar; harf ve rakam)."
+            : donemYerTutucuHatasi(kalipNe(), k.a);
+        const kosDegisti = () => {
+            duzen[anah] = Object.assign(duzen[anah] || {}, { kosullu: kosCikti() });
+            boya(); sekmeSayilari(); if (degisti) degisti();
+        };
+        function kosCiz() {
+            kosKap.textContent = "";
+            kosKap.appendChild(kosDl);
+            if (kosListe.length) {
+                const bas = elYap("div", "dg-donem-kosul-bas", "Koşullu anlamlar");
+                bas.appendChild(bolmeBilgiSimgesi("Kolon adında belirli bir parça geçerse bu kalıbın anlamı "
+                    + "farklıysa yazın. Ör. [sayı 1]D_[sayı 2]D adda RATIO geçerse «son [sayı 1] gün ile son "
+                    + "[sayı 2] gün» demektir; geçmezse yukarıdaki anlam kullanılır. Kolon Kartları'nda o "
+                    + "kolonların kartı ve açıklaması bu anlamla yazılır. Kaydedince hafızaya yazılır.",
+                    "Koşullu anlamlar"));
+                kosKap.appendChild(bas);
+            }
+            kosListe.forEach((k, i) => {
+                const sat = elYap("div", "dg-donem-kosul-satir");
+                const pg = document.createElement("input");
+                pg.type = "text"; pg.className = "dg-giris dg-donem-kosul-parca";
+                pg.value = k.p || ""; pg.placeholder = "Parça";
+                pg.setAttribute("list", kosDl.id);
+                pg.setAttribute("aria-label", "Koşul parçası");
+                pg.disabled = kilitli || calisiyor;
+                const ag = document.createElement("input");
+                ag.type = "text"; ag.className = "dg-giris dg-donem-kosul-anlam";
+                ag.value = k.a ? donemAnlamGoster(kalipNe(), k.a) : "";
+                ag.placeholder = "Bu durumda anlamı";
+                ag.setAttribute("aria-label", "Koşullu anlam");
+                ag.disabled = kilitli || calisiyor;
+                const sil = elYap("button", "dg-baglanti", "Kaldır");
+                sil.type = "button"; sil.disabled = kilitli || calisiyor;
+                const not = elYap("div", "dg-donem-tur-not", "");
+                const notYaz = () => {
+                    const h = kosHata(k);
+                    not.classList.toggle("dg-donem-ad-hata", !!h);
+                    const aday = kosAday.find(x => x[0] === String(k.p || "").trim().toUpperCase());
+                    not.textContent = h ? h : aday && k.a
+                        ? "Ör. adında " + aday[0] + " geçen " + aday[2] + " → " + donemDegerAnlami(kalipNe(), k.a, aday[2])
+                          + " (" + ftBinlik(aday[1]) + " kolon)"
+                        : k.p && !aday && k.a ? "Bu parça bu kalıpla birlikte adlarda geçmiyor." : "";
+                };
+                pg.oninput = () => { pg.value = pg.value.toUpperCase(); k.p = pg.value.trim(); notYaz(); kosDegisti(); };
+                ag.oninput = () => { k.a = donemAnlamIc(kalipNe(), ag.value); notYaz(); kosDegisti(); };
+                sil.onclick = () => { kosListe.splice(i, 1); kosCiz(); kosDegisti(); };
+                sat.append(elYap("span", "dg-donem-tur-not", "Adda"), pg, elYap("span", "dg-donem-tur-not", "geçerse:"), ag, sil);
+                kosKap.append(sat, not);
+                notYaz();
+            });
+            if (!kilitli && !calisiyor) {
+                const ekle = elYap("button", "dg-baglanti dg-donem-kosul-ekle", "Koşullu Anlam Ekle");
+                ekle.type = "button";
+                ekle.title = "Adda belirli bir parça geçtiğinde bu kalıbın anlamı farklıysa ekleyin (ör. RATIO).";
+                ekle.onclick = () => { kosListe.push({ p: "", a: "" }); kosCiz();
+                    const s_ = kosKap.querySelectorAll(".dg-donem-kosul-parca"); if (s_.length) s_[s_.length - 1].focus(); };
+                kosKap.appendChild(ekle);
+            }
+        }
+        kosCiz();
         const detay = elYap("tr", "dg-donem-detay");
         const detayTd = elYap("td", "");
         detayTd.colSpan = 4;
@@ -12814,15 +12899,18 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         x.detay = detay;
         x.turSec = turSec;
         x.boya = () => boya();
+        x.kosullu = kosCikti;
+        x.kosulHata = () => kosListe.some(k => !!kosHata(k));
         x.satirCikti = () => ({
             kalip: String(kalipNe() || "").toUpperCase(), anlam: anlamAl().trim(),
             elle: !!r.elle, cikar: false, haric: Array.from(haric).sort(),
             deger_anlam: Object.assign({}, dgAnlam), ayrilan: ayrilanCikti(r, anah),
-            zaman_tur: turSec.value });
+            zaman_tur: turSec.value, kosullu: kosCikti() });
         x.imza = () => {
             const c = x.satirCikti();
             return JSON.stringify([c.kalip, c.anlam.replace(/\s+/g, " "), c.zaman_tur, c.haric,
-                Object.entries(c.deger_anlam).sort(), Object.keys(c.ayrilan).sort()]);
+                Object.entries(c.deger_anlam).sort(), Object.keys(c.ayrilan).sort(),
+                Object.entries(c.kosullu).sort()]);
         };
         x.kayitliMi = () => KAYIT[anah] !== undefined && KAYIT[anah] === x.imza();
         /* KAYDET: satır onayı beklemeden hafızaya yazılır. toplu: Hepsini
@@ -13662,7 +13750,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             kalip: x.kg ? x.kg.value.trim() : x.r.kalip, anlam: x.anlam().trim(),
             elle: !!x.r.elle, cikar: false, haric: Array.from(x.haric),
             deger_anlam: Object.assign({}, x.dgAnlam), ayrilan: ayrilanCikti(x.r, x.anah),
-            zaman_tur: x.turSec.value }))
+            zaman_tur: x.turSec.value, kosullu: x.kosullu() }))
             .concat(katilanlar.map(c => ({
                 kalip: c.r.kalip, aileye_kat: true, cikar: false, elle: false, anlam: "" })))
             .concat(cikanlar.map(c => ({
@@ -13671,13 +13759,15 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 zaman_tur: (duzen[c.anah] && duzen[c.anah].zaman_tur) || c.r.zaman_tur || "pencere",
                 haric: (duzen[c.anah] && duzen[c.anah].haric) || c.r.haric || [],
                 deger_anlam: (duzen[c.anah] && duzen[c.anah].deger_anlam) || c.r.deger_anlam || {},
+                kosullu: (duzen[c.anah] && duzen[c.anah].kosullu) || c.r.kosullu || {},
                 anlam: ((duzen[c.anah] && duzen[c.anah].anlam !== undefined)
                     ? duzen[c.anah].anlam : (c.r.anlam || "")).trim() }))),
         /* Onayı durduran: tabloda kalan satırda anlam (elle satırda kalıp) boş. */
         eksik: () => acik().filter(x => !x.anlam().trim() || (x.kg && !x.kg.value.trim())).length,
         /* Onayı durduran: anlamdaki yer tutucu geçersiz. */
         kontrol: () => acik().filter(x => (x.anlam().trim() && x.yt())
-            || Object.values(x.dgAnlam || {}).some(v => donemYerTutucuHatasi("", v))).length,
+            || Object.values(x.dgAnlam || {}).some(v => donemYerTutucuHatasi("", v))
+            || (x.kosulHata && x.kosulHata())).length,
         /* Onayı durduran: tabloda kaydedilmemiş satır (her satır «Kaydet»
            ile tek tek kaydedilir; hafızadan gelen, dokunulmamış satır
            kaydedilmiş sayılır). */

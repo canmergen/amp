@@ -5240,3 +5240,10 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-acik-satir-cevap .dg-acik-soru-giris { display: flex; gap: 6px; }
 .dg-acik-satir-cevap .dg-giris { flex: 1; min-width: 0; }
 .dg-acik-soru-cevap-not { margin-top: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+/* Dönem Bilgisi: koşullu anlamlar (anlam kutusunun altında). */
+.dg-donem-kosul { margin-top: 6px; text-align: left; }
+.dg-donem-kosul-bas { display: inline-flex; align-items: center; gap: 4px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: 600; }
+.dg-donem-kosul-satir { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.dg-giris.dg-donem-kosul-parca { width: 96px; height: 26px; font-size: var(--fs-kucuk); text-transform: uppercase; }
+.dg-giris.dg-donem-kosul-anlam { flex: 1; min-width: 160px; height: 26px; font-size: var(--fs-kucuk); }
+.dg-donem-kosul-ekle { font-size: var(--fs-kucuk); margin-top: 4px; }

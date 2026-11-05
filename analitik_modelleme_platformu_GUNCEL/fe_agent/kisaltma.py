@@ -731,6 +731,7 @@ def _govde_oku():
 #    "donem_kaliplari": {
 #        "<N>D": {"anlam": "<N> gün boyunca", "tur": "pencere",
 #                 "yeni_adda": "L<N>D",
+#                 "kosullu_anlamlar": {"RATIO": "son <N#1> gün ile son <N#2> gün"},
 #                 "deger_anlamlari": {"360D": "son 1 yıl"},
 #                 "haric_ikililer": ["..."],
 #                 "gruptan_ayrilan": {"H00": {"anlam": "...", "donem_degil": false}},
@@ -750,7 +751,7 @@ def _govde_oku():
 # ic anahtar -> donem kaydindaki alan
 _DONEM_ALAN = (("donem", "anlam"), ("donem_tur", "tur"), ("donem_ad", "yeni_adda"),
                ("donem_deger", "deger_anlamlari"), ("donem_haric", "haric_ikililer"),
-               ("donem_ayrilan", "gruptan_ayrilan"))
+               ("donem_ayrilan", "gruptan_ayrilan"), ("donem_kosul", "kosullu_anlamlar"))
 _YENI_ANAHTAR = {"aciklama", "surum", "ad_standardi", "donem_kaliplari", "ad_parcalari",
                  "ayni_parcalar", "farkli_parcalar"}
 
@@ -999,6 +1000,58 @@ def donem_ad_kaydet(sablonlar):
     return None
 
 
+# KOSULLU ANLAM: kalibin adda belirli bir parca gectiginde kullanilan
+# anlami ({kalip: {PARCA: anlam}}; ör. <N>D_<N>D adda RATIO geciyorsa
+# "son <N#1> gün ile son <N#2> gün"). Yoksa kalibin anlami.
+def _donem_kosul_ham(govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    dk = (govde or {}).get("donem_kosul")
+    if not isinstance(dk, dict):
+        return {}
+    cikti = {}
+    for k, v in dk.items():
+        if isinstance(v, dict):
+            v = {str(p).strip().upper(): str(a).strip() for p, a in v.items()
+                 if str(p).strip() and str(a or "").strip()}
+            if v:
+                cikti[str(k)] = v
+    return cikti
+
+
+def donem_kosul_hafizasi():
+    return _donem_kosul_ham()
+
+
+def donem_kosul_kaydet(kosullar):
+    """kosullar: {kalip: {PARCA: anlam}}; kalibin kosullu anlamlari bununla
+    degisir (bos sozluk kaydi kaldirir). Doner: hata ya da None."""
+    kosullar = {str(k).strip(): v for k, v in (kosullar or {}).items() if str(k).strip()}
+    if not kosullar:
+        return None
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Koşullu anlam hafızaya yazılamadı: " + hata
+        dk = _donem_kosul_ham(govde)
+        for k, v in kosullar.items():
+            v = {str(p).strip().upper(): str(a).strip() for p, a in (v or {}).items()
+                 if str(p).strip() and str(a or "").strip()}
+            if v:
+                dk[k] = dict(sorted(v.items()))
+            else:
+                dk.pop(k, None)
+        if dk:
+            govde["donem_kosul"] = dict(sorted(dk.items()))
+        else:
+            govde.pop("donem_kosul", None)
+        try:
+            _dosya_yaz(govde)
+        except Exception as e:
+            return "Koşullu anlam hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
+
+
 def _donem_ayri_ham(govde=None):
     if govde is None:
         govde, _h = _govde_oku()
@@ -1229,6 +1282,11 @@ def donem_sil(kaliplar):
             govde["donem_ayri_yazilis"] = sorted(ayr)
         else:
             govde.pop("donem_ayri_yazilis", None)
+        dko = {k: v for k, v in _donem_kosul_ham(govde).items() if k not in kaliplar}
+        if dko:
+            govde["donem_kosul"] = dict(sorted(dko.items()))
+        else:
+            govde.pop("donem_kosul", None)
         dad = {k: v for k, v in _donem_ad_ham(govde).items() if k not in kaliplar}
         if dad:
             govde["donem_ad"] = dict(sorted(dad.items()))

@@ -2335,6 +2335,55 @@ def donem_iptal(durum):
 DONEM_KANIT_ESIGI = 0.6
 
 
+_KOSUL_PARCA = re.compile(r"^[A-Z][A-Z0-9]{0,19}$")
+
+
+def _kosul_temizle(x):
+    """Kartin gonderdigi kosullu anlamlar: {PARCA: anlam} (bos anlam ve
+    gecersiz parca atilir)."""
+    if not isinstance(x, dict):
+        return {}
+    cikti = {}
+    for p, an in x.items():
+        p = re.sub(r"\s+", "", str(p or "")).upper()
+        an = re.sub(r"\s+", " ", str(an or "")).strip()
+        if an and _KOSUL_PARCA.match(p):
+            cikti[p] = an
+    return cikti
+
+
+KOSUL_ADAY_ADET = 25
+
+
+def _kosul_adaylari(adlar, kalip):
+    """Kalibin gectigi kolon adlarindaki harf parcalari: [[PARCA, kolon
+    sayisi, ornek deger]] (cok gecen once). Ornek deger: parcanin gectigi
+    ilk addaki kalip degeri (kosullu anlamin ornegi icin)."""
+    r = donem_mod.kalip_deseni(kalip)
+    if r is None:
+        return []
+    ikili = "_" in str(kalip)
+    say, ornek = Counter(), {}
+    for ad in adlar:
+        t = donem_mod._toklar(ad)
+        deger, yer = None, set()
+        for i, p in enumerate(t):
+            if ikili and i + 1 < len(t) and r.match(p + "_" + t[i + 1]):
+                deger, yer = p + "_" + t[i + 1], {i, i + 1}
+                break
+            if not ikili and r.match(p):
+                deger, yer = p, {i}
+                break
+        if deger is None:
+            continue
+        for i, p in enumerate(dict.fromkeys(t)):
+            if p.isalpha() and len(p) > 1 and t.index(p) not in yer:
+                say[p] += 1
+                ornek.setdefault(p, deger)
+    return [[p, n, ornek[p]] for p, n in sorted(say.items(), key=lambda kv: (-kv[1], kv[0]))
+            [:KOSUL_ADAY_ADET]]
+
+
 def _donem_alani(durum, baslat=True):
     """01.2.4.1 kartinin verisi (beklemez). baslat=False: dil modeli isi
     baslatilmaz (onceki onayli kontrol uygulanirken; yorumu gerekmez). Model surerken bicimden bulunan
@@ -2357,6 +2406,7 @@ def _donem_alani(durum, baslat=True):
     haf_deger = donem_mod.hafiza_deger()
     haf_ayrilan = donem_mod.hafiza_ayrilan()
     haf_tur = donem_mod.hafiza_tur()
+    haf_kosul = donem_mod.hafiza_kosul()
     # ONCEKI KARAR: bu calismada verilmis karar (geri donus ya da 01.2.4
     # "Onceki Onayli Kontrol"un yukledigi karar). Yeni calismada kaliplar,
     # anlamlari ve «Ayır» ile ayrilan gruplar hafizadan gelir.
@@ -2442,7 +2492,14 @@ def _donem_alani(durum, baslat=True):
             or zaman_tur or "pencere"
         if ztur not in ZAMAN_TUR_ADI:
             ztur = "pencere"
+        # KOSULLU ANLAMLAR: adda belirli parca gecerse kalibin anlami
+        # ({PARCA: anlam}); onceki karar, yoksa hafiza. Adaylar: kalibin
+        # gectigi adlardaki harf parcalari, ornek degerleriyle.
+        kosullu = o.get("kosullu") if (o is not None and "kosullu" in o) else haf_kosul.get(hk)
+        kosullu = {str(p_).upper(): str(a_) for p_, a_ in (kosullu or {}).items()
+                   if str(a_ or "").strip()}
         r = {"kalip": kalip, "tur": tur, "kolon": kolon, "degerler": degerler,
+             "kosullu": kosullu, "kosul_adaylari": _kosul_adaylari(adlar, kalip),
              "ornekler": ornekler, "anlam": anlam, "oneri": oneri,
              "soru": soru if anlam == oneri else "", "not": notu if anlam == oneri else "",
              "kaynak": kaynak, "model": model, "cikar": cikar,
@@ -2648,6 +2705,7 @@ def _donem_karari_isle(durum, karar, alan):
             katilan.setdefault(a, []).append(k)
     katilan_hepsi = {k for v in katilan.values() for k in v}
     bilgi, kayit, haric_harita, deger_harita, tur_harita = {}, [], {}, {}, {}
+    kosul_harita = {}                           # kalip -> {PARCA: anlam}
     ayrilan_harita, ayrilan_bilgi = {}, {}      # grup -> uyeler; uye -> anlam
     gorulen = set()
     cikan = 0
@@ -2728,10 +2786,18 @@ def _donem_karari_isle(durum, karar, alan):
             ayrilan_harita[kalip] = ayrilan
         zaman_tur = str(g.get("zaman_tur") or "")
         zaman_tur = zaman_tur if zaman_tur in ZAMAN_TUR_ADI else "pencere"
+        # KOSULLU ANLAMLAR: {PARCA: anlam}; parca harf ve rakam, anlamin yer
+        # tutuculari kalibin anlami gibi denetlenir.
+        kosullu = _kosul_temizle(g.get("kosullu"))
+        if not cikar:
+            for p_, an in sorted(kosullu.items()):
+                yt_ = donem_mod.yer_tutucu_hatasi(kalip, an)
+                if yt_:
+                    hatalar.append("%s (adda %s geçerse): %s" % (_donem_kalip_gorunur(kalip), p_, yt_))
         if cikar:
             kayit.append({"kalip": kalip, "anlam": anlam, "elle": False, "cikar": True,
                           "haric": haric, "deger_anlam": deger_anlam,
-                          "ayrilan": ayrilan, "zaman_tur": zaman_tur})
+                          "ayrilan": ayrilan, "zaman_tur": zaman_tur, "kosullu": kosullu})
             cikan += 1
             cikan_kaliplar.append(kalip)
             continue
@@ -2744,8 +2810,9 @@ def _donem_karari_isle(durum, karar, alan):
             continue
         kayit.append({"kalip": kalip, "anlam": anlam, "elle": elle, "cikar": False,
                       "haric": haric, "deger_anlam": deger_anlam, "ayrilan": ayrilan,
-                      "zaman_tur": zaman_tur})
+                      "zaman_tur": zaman_tur, "kosullu": kosullu})
         bilgi[kalip] = anlam
+        kosul_harita[kalip] = kosullu
         tur_harita[kalip] = zaman_tur
         haric_harita[kalip] = haric
         deger_harita[kalip] = deger_anlam
@@ -2755,7 +2822,7 @@ def _donem_karari_isle(durum, karar, alan):
     if hatalar:
         raise AdimHatasi("Şu satırlar onaylanamadı:\n" + "\n".join(hatalar))
     return {"bilgi": bilgi, "kayit": kayit, "haric_harita": haric_harita,
-            "deger_harita": deger_harita, "tur_harita": tur_harita,
+            "deger_harita": deger_harita, "tur_harita": tur_harita, "kosul_harita": kosul_harita,
             "ayrilan_harita": ayrilan_harita, "ayrilan_bilgi": ayrilan_bilgi,
             "cikan": cikan, "cikan_kaliplar": cikan_kaliplar,
             "katilan": katilan, "katilan_hepsi": katilan_hepsi}
@@ -2778,6 +2845,7 @@ def donem_uygula(durum):
         durum["donem_deger_anlam"] = {}
         durum["donem_ayrilan"] = {}
         durum["donem_turleri"] = {}
+        durum["donem_kosul"] = {}
         return KONTROL_ATLANDI
     alan = _donem_alani(durum, baslat=not onceki)
     k_ = _donem_karari_isle(durum, karar, alan)
@@ -2795,6 +2863,7 @@ def donem_uygula(durum):
     durum["donem_deger_anlam"] = {k: v for k, v in deger_harita.items() if v}
     durum["donem_ayrilan"] = {k: sorted(v) for k, v in ayrilan_harita.items()}
     durum["donem_turleri"] = dict(tur_harita)
+    durum["donem_kosul"] = {k: v for k, v in k_["kosul_harita"].items() if v}
     durum["donem_bilgisi_karari"] = kayit
     # Ayrilan gruplar (kartta Ayir): sonraki acilista kendiliginden
     # birlesmesin. Hafizaya da yazilir (yeni calismada gelir): bu calismada
@@ -2811,6 +2880,9 @@ def donem_uygula(durum):
     hata = donem_mod.hafizaya_yaz(grup_bilgi, haric_harita, deger_harita,
                                   {k: ayrilan_harita.get(k) or {} for k in grup_bilgi},
                                   tur_harita, ayri) if grup_bilgi else None
+    # Kosullu anlamlar hafizaya (bos olan kalibin kosullulari kalkar).
+    if grup_bilgi and not hata:
+        hata = donem_mod.hafizaya_kosul_yaz({k: k_["kosul_harita"].get(k, {}) for k in grup_bilgi})
     # Yeni adda yazilis bu adimda degil: 01.2.4.4 Kolon Adlari'nda verilir ve
     # onun onayinda hafizaya yazilir (hafizadaki yazilisa burada dokunulmaz).
     # Cikarilan aile, hafizada ailenin adina katilan yazilis kayitlariyla
@@ -2928,10 +3000,16 @@ def donem_kaydet(durum, g):
             deger_anlam.pop(dg, None)
     zaman_tur = str(g.get("zaman_tur") or "")
     zaman_tur = zaman_tur if zaman_tur in ZAMAN_TUR_ADI else "pencere"
+    kosullu = _kosul_temizle(g.get("kosullu"))
+    for p_, an in sorted(kosullu.items()):
+        yt_ = donem_mod.yer_tutucu_hatasi(kalip, an)
+        if yt_:
+            return False, "%s (adda %s geçerse): %s" % (kalip, p_, yt_), None
     ayri = {kalip} if donem_mod.aile_adi(kalip) and not donem_mod.aile_mi(kalip) else set()
     onceki = _donem_hafiza_kaydi(kalip)
     hata = donem_mod.hafizaya_yaz({kalip: anlam}, {kalip: haric}, {kalip: deger_anlam},
-                                  {kalip: ayrilan}, {kalip: zaman_tur}, ayri)
+                                  {kalip: ayrilan}, {kalip: zaman_tur}, ayri) \
+        or donem_mod.hafizaya_kosul_yaz({kalip: kosullu})
     if hata:
         return False, hata, None
     return True, "%s kaydedildi." % kalip, onceki
@@ -2945,6 +3023,7 @@ def _donem_hafiza_kaydi(kalip):
             "deger_anlam": dict(donem_mod.hafiza_deger().get(kalip) or {}),
             "ayrilan": dict(donem_mod.hafiza_ayrilan().get(kalip) or {}),
             "zaman_tur": str(donem_mod.hafiza_tur().get(kalip) or ""),
+            "kosullu": dict(donem_mod.hafiza_kosul().get(kalip) or {}),
             "ayri": kalip in donem_mod.hafiza_ayri()}
 
 
@@ -2965,7 +3044,8 @@ def donem_kayit_geri(durum, onceki):
     hata = donem_mod.hafizaya_yaz(
         {kalip: anlam}, {kalip: list(o.get("haric") or [])},
         {kalip: dict(o.get("deger_anlam") or {})}, {kalip: dict(o.get("ayrilan") or {})},
-        {kalip: tur} if tur else None, {kalip} if o.get("ayri") else set())
+        {kalip: tur} if tur else None, {kalip} if o.get("ayri") else set()) \
+        or donem_mod.hafizaya_kosul_yaz({kalip: dict(o.get("kosullu") or {})})
     return (False, hata) if hata else (True, "%s kaydı geri alındı (hafızadaki önceki hâli yazıldı)." % kalip)
 
 
@@ -3962,6 +4042,8 @@ def _aciklama_girdileri(durum):
     donem_deger = durum.get("donem_deger_anlam") or {}
     donem_ayrilan = durum.get("donem_ayrilan") or {}
     donem_tur = durum.get("donem_turleri") or {}
+    donem_kosul = {k: v for k, v in (durum.get("donem_kosul") or {}).items() if isinstance(v, dict) and v}
+    donem_kosul_parcalari = {p_ for v in donem_kosul.values() for p_ in v}
     for k, v in (durum.get("donem_bilgisi") or {}).items():
         r = donem_mod.kalip_deseni(k)
         if r is not None and str(v or "").strip():
@@ -3993,7 +4075,14 @@ def _aciklama_girdileri(durum):
     girdiler = []
     for a in adlar:
         t = aciklama_mod.toklar(a)
-        parcalar, ozet, kart_p = _aciklama_parcalari(t, desenler, onayli, parca_notlari)
+        # KOSULLU ANLAM: adinda kosul parcasi gecen kolonda kalibin anlami
+        # o kosulun anlamidir (ör. RATIO'lu kolonda 3D_7D "son 3 gün ile
+        # son 7 gün").
+        desen_a = desenler
+        if donem_kosul and any(p_ in donem_kosul_parcalari for p_ in t):
+            desen_a = [(k_, r_, donem_mod.kosullu_anlam(an_, donem_kosul.get(k_), t), h_, dg_, tr_)
+                       for k_, r_, an_, h_, dg_, tr_ in desenler]
+        parcalar, ozet, kart_p = _aciklama_parcalari(t, desen_a, onayli, parca_notlari)
         aile = aciklama_mod.aile_anahtari(a)
         kardes = [k for k in aileler.get(aile, []) if k != a][:aciklama_mod.KARDES_ADET]
         an = aile_notlari.get(aile) or {}

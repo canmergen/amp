@@ -334,8 +334,9 @@ def yer_tutucu_hatasi(kalip, anlam):
     if not izinli:
         return ("Anlamda yer tutucu var (%s) ama kalıpta sayı yer tutucusu yok; "
                 "yerine değeri yazın." % ", ".join(kotu))
+    gor = ["[sayı %d]" % i for i in range(1, adet + 1)] if adet > 1 else ["[sayı]"]
     return ("Anlamda geçersiz yer tutucu: %s. Bu kalıpta kullanılabilenler: %s."
-            % (", ".join(kotu), ", ".join(sorted(x for x in izinli if not x.startswith("<")))))
+            % (", ".join(kotu), ", ".join(gor)))
 
 
 # ---------------------------------------------------------------------------
@@ -923,6 +924,29 @@ def hafiza_ayri():
         return kisaltma_mod.donem_ayri_hafizasi()
     except Exception:
         return set()
+
+
+def hafiza_kosul():
+    """{kalip: {PARCA: anlam}}: adda PARCA gecerse kalibin anlami."""
+    try:
+        return kisaltma_mod.donem_kosul_hafizasi()
+    except Exception:
+        return {}
+
+
+def hafizaya_kosul_yaz(kosullar):
+    """{kalip: {PARCA: anlam}} (bos: kalibin kosullu anlamlari kalkar)."""
+    return kisaltma_mod.donem_kosul_kaydet(kosullar)
+
+
+def kosullu_anlam(anlam, kosullar, toklar):
+    """Kolonun adinda (toklar) gecen ilk kosul parcasinin anlami; yoksa
+    kalibin anlami. Kosullar parca adina gore sirali denenir."""
+    t = {str(x).upper() for x in toklar or ()}
+    for p in sorted(kosullar or {}):
+        if p in t and str(kosullar[p] or "").strip():
+            return kosullar[p]
+    return anlam
 
 
 def hafiza_ad():

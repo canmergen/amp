@@ -755,6 +755,25 @@ tanıtır; sayfalar sol bardan açılır.
   anlamla örnek tanımlardan yalnız 0 / 3 tanesi uyuşuyor; anlamı kontrol
   edin."). Bakılana kadar satırda "Dil modeli yorumluyor". Bu çalışmada
   ya da tablonun son kararında verilen karar her zaman geçerlidir.
+- **Koşullu anlam** (01.2.4.1; `donem.kosullu_anlam`,
+  `hafiza_kosul` / `hafizaya_kosul_yaz`, `kisaltma.donem_kosul_*`): bir
+  kalıbın, kolon adında belirli bir parça geçtiğinde kullanılan anlamı.
+  Ör. [sayı 1]D_[sayı 2]D varsayılan "[sayı 1] gün önce ile [sayı 2] gün
+  önce arası", adda RATIO geçerse "son [sayı 1] gün ile son [sayı 2]
+  gün". Satırda anlamın altında "Koşullu Anlam Ekle": "Adda [PARÇA]
+  geçerse: [anlam]" (parça kutusunda kalıbın geçtiği adlardaki harf
+  parçaları öneri olarak, `_kosul_adaylari`: [parça, kolon sayısı, örnek
+  değer]); altında örnek ("Ör. adında RATIO geçen 3D_7D → son 3 gün ile
+  son 7 gün (2 kolon)") ya da hata (yer tutucu kalıbın anlamı gibi
+  denetlenir; geçersizken onay kapalı). Karar ve satır `kosullu`
+  ({PARÇA: anlam}, içeride yer tutuculu); satırın kayıt imzasına girer.
+  Onayda `durum["donem_kosul"]` ve hafızaya (dosyada kalıp kaydında
+  `kosullu_anlamlar`; boş bırakılan kalkar; kalıp hafızadan silinince
+  o da silinir). Kolon Kartları'nda (`_aciklama_girdileri`) adında koşul
+  parçası geçen kolonun kartı ve dil modeline giden dönem satırı koşullu
+  anlamla kurulur (değerin kendi anlamı varsa o önce); kart değişince o
+  kolonlar yeniden yazılır. Birden çok koşul tutarsa parça adına göre
+  ilki.
 - **Çok sayılı kalıpta numaralı [sayı]:** kalıpta birden çok sayı varsa
   ekranda en baştan numaralı yazılır: kalıp "[sayı 1]D_[sayı 2]D"
   (`donemSayiGoster`; tam basamaklıda "[2 haneli sayı 1]"; aile
