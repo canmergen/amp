@@ -5322,3 +5322,82 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .dg-tablo.oz0124-tablo { table-layout: auto; }
 .dg-tablo.oz0124-tablo th { width: auto; white-space: normal; }
 .dg-tablo.oz0124-tablo td { vertical-align: middle; }
+
+/* ==================== 02.1 Veri Profili kartı ====================
+   Karar istemeyen sonuç kartı: dört sayı, eksik değer dağılımı, dört
+   kontrol. Eksik değer çubuğu TEK RENK TONUNDA açıktan koyuya (sıralı
+   ölçek): koyulaştıkça eksik oranı artar. Dilimler arasında 2px boşluk;
+   yazılar çubukta değil, altındaki açıklamada (metin renginde). */
+.pf-kart { display: flex; flex-direction: column; gap: var(--b-4); }
+.pf-bas { display: flex; align-items: center; gap: 6px; }
+.pf-baslik { font-size: var(--fs-baslik); font-weight: var(--fw-kalin); }
+.pf-karolar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--b-2); }
+.pf-karo {
+  border: 1px solid var(--kenar); border-radius: var(--r); background: var(--yuzey-alt);
+  padding: var(--b-3) var(--b-4); min-width: 0; text-align: center;
+}
+.pf-karo-deger {
+  font-size: calc(var(--fs-blok) * 1.25); font-weight: var(--fw-kalin);
+  line-height: 1.2; color: var(--metin); overflow-wrap: anywhere;
+}
+.pf-karo-etiket { color: var(--metin-tamam); margin-top: 2px; }
+.pf-karo.tamam { border-color: color-mix(in srgb, var(--yesil) 35%, var(--kenar)); }
+.pf-karo.tamam .pf-karo-deger { color: var(--yesil); }
+.pf-karo.sorun { border-color: var(--kirmizi); background: var(--kirmizi-acik); }
+.pf-karo.sorun .pf-karo-deger { color: var(--kirmizi); }
+.pf-satir { display: flex; gap: var(--b-3); align-items: baseline; flex-wrap: wrap; }
+.pf-satir-ad, .pf-bolum-ad { font-weight: var(--fw-kalin); }
+.pf-bolum { display: flex; flex-direction: column; gap: var(--b-2); }
+.pf-cubuk {
+  display: flex; gap: 2px; height: 22px; border-radius: var(--r-kucuk); overflow: hidden;
+}
+.pf-dilim { flex-basis: 0; min-width: 4px; }
+.pf-yok   { background: color-mix(in srgb, var(--kirmizi) 14%, var(--yuzey)); }
+.pf-az    { background: color-mix(in srgb, var(--kirmizi) 38%, var(--yuzey)); }
+.pf-orta  { background: color-mix(in srgb, var(--kirmizi) 66%, var(--yuzey)); }
+.pf-asiri { background: var(--kirmizi-koyu); }
+.pf-lejant { display: flex; flex-wrap: wrap; gap: 4px var(--b-5); }
+.pf-lejant-oge { display: inline-flex; align-items: center; gap: 6px; }
+.pf-lejant-oge.sifir { color: var(--metin-tamam); }
+.pf-renk { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.pf-not { color: var(--metin-tamam); }
+.pf-not strong { color: var(--metin); }
+.dg-tablo.pf-tablo { table-layout: auto; }
+.dg-tablo.pf-tablo th { width: auto; white-space: nowrap; }
+.dg-tablo.pf-tablo > tbody > tr.pf-kontrol > td { padding: 7px var(--b-3); vertical-align: middle; }
+.pf-kontrol-ad { font-weight: var(--fw-kalin); white-space: nowrap; }
+.pf-kural { color: var(--metin-tamam); line-height: 1.4; }
+.pf-sonuc { white-space: nowrap; }
+.pf-durum {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 999px; font-weight: var(--fw-kalin); line-height: 1.3;
+  font: inherit; font-weight: var(--fw-kalin);
+}
+.pf-durum.tamam { color: var(--yesil); background: var(--yesil-acik); }
+.pf-durum.sorun {
+  color: var(--kirmizi); background: var(--kirmizi-acik); border: 1px solid var(--kirmizi);
+  cursor: pointer;
+}
+.pf-durum.sorun:hover { background: color-mix(in srgb, var(--kirmizi) 16%, var(--yuzey)); }
+.pf-durum.sorun:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--kirmizi-halka); }
+.pf-durum-ikon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; font-size: 11px; line-height: 1;
+  color: var(--yuzey); background: currentColor;
+}
+.pf-durum-ikon { color: inherit; background: none; border: 1.5px solid currentColor; }
+.pf-ok { transition: transform .15s; }
+.pf-durum.acik .pf-ok { transform: rotate(180deg); }
+.pf-detay > td { padding: 0 var(--b-3) var(--b-3) !important; background: var(--yuzey-alt); }
+.pf-ic-kap {
+  max-height: 300px; overflow: auto; border: 1px solid var(--kenar);
+  border-radius: var(--r-kucuk); background: var(--yuzey);
+}
+.dg-tablo.pf-ic-tablo { table-layout: auto; }
+.dg-tablo.pf-ic-tablo th { width: auto; }
+.pf-kolon-ad { font-weight: var(--fw-kalin); overflow-wrap: anywhere; }
+.pf-kayit { color: var(--metin-tamam); overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  .pf-karolar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-kontrol-ad, .pf-sonuc { white-space: normal; }
+}

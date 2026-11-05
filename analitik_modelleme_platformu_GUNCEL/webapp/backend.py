@@ -1188,6 +1188,11 @@ def _surdurme_govdesi(durum):
     govde["devam"] = True
     govde["devam_bilgi"] = _devam_bilgi(durum)
     govde["gecmis"] = _gecmis_temizle(durum.get("_gecmis"))
+    # 02.1 Veri Profili blogu guncel kart ve metinle (eski calismalarda da).
+    try:
+        govde["gecmis"] = akis.profil_gecmisini_tazele(durum, govde["gecmis"])
+    except Exception:
+        pass
     return govde
 
 
@@ -1460,12 +1465,21 @@ def mesaj_endpoint():
             if not (_tamam.get("adim") and (_tamam.get("metin") or "").strip()):
                 continue
             _ozet = _tamam["metin"].strip()
-            govde["tamamlananlar"].append({
+            _t = {
                 "adim": _tamam["adim"],
                 "baslik": _tamam.get("baslik")
                           or akis.adim_basligi(_tamam["adim"]),
                 "metin": _ozet,
-            })
+            }
+            # 02.1 Veri Profili: biten adimin karti kendi blogunda.
+            if _tamam["adim"] == "veri_profili":
+                try:
+                    _kart = akis.profil_karti(durum)
+                except Exception:
+                    _kart = None
+                if _kart:
+                    _t["secim_alani"] = _kart
+            govde["tamamlananlar"].append(_t)
             if _kalan.startswith(_ozet):
                 _kalan = _kalan[len(_ozet):].lstrip("\n")
         if govde["tamamlananlar"]:

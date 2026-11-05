@@ -1665,6 +1665,33 @@ tanıtır; sayfalar sol bardan açılır.
 4. Değişken Değerlendirme
 5. Modelleme ve Finalizasyon
 
+**02.1 Veri Profili ve Kalite kartı**
+- Profil bölmeden sonra kendiliğinden çalışır (onay sorulmaz). Bloğun
+  metni tek cümlelik sonuçtur (`akis_faz02.profil_metni`): kaç kolonun
+  tablonun tamamı üzerinden incelendiği, sorun bulunup bulunmadığı ve
+  sorunlu kolonların **03.3 Analitik Baz Set** adımında çıkarılacağı.
+- Altında karar istemeyen kart (`akis_faz02.profil_karti`, tip
+  `profil`; app.js `profilKartiEkle`):
+  - Dört sayı: Satır, İncelenen Kolon, Sorunsuz, Sorunlu (sorun varsa
+    kırmızı).
+  - Türler: sayısal, kategorik, tarih kolon sayısı.
+  - Eksik Değer Oranına Göre Kolonlar: tek renk tonunda (açıktan koyuya)
+    çubuk; dilimler Eksik yok, %5 ve altı, %5 ile %50 arası, %50 üstü;
+    altında sayılarla açıklama, eksik değeri olan kolon sayısı ve en çok
+    eksik olan kolon.
+  - Kontroller tablosu: Eksik Oranı Yüksek, Sabit ya da Tek Değerli,
+    Kimlik Benzeri, Kardinalitesi Aşırı Yüksek; her birinin kuralı
+    kodun eşikleriyle yazılır (`_profil_kurallari`, `sfa.profil_cikar`).
+    Sorun varsa "N kolon" düğmesi kolonları açar: tür, eksik oranı,
+    farklı değer sayısı, bulgular (bir kolon birden fazla kontrole
+    takılabilir).
+  - "i": neyin incelendiği, incelemeye alınmayanlar (hedef, kimlik,
+    dönem ve süreç dışı kolonlar), profil tablosunun kayıt yeri.
+- Canlı akışta kart `tamamlananlar` içinde (`secim_alani`) gelir.
+  Yenilemede `backend._surdurme_govdesi` geçmişteki 02.1 özet satırını
+  güncel metin ve kartla değiştirir (`profil_gecmisini_tazele`; kayıtlı
+  transkript değişmez), eski çalışmalarda da kart görünür.
+
 ## Tarayıcıda hatırlanan tercihler
 
 | Anahtar | Ne |

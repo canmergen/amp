@@ -299,26 +299,170 @@ def veri_profili_uygula(durum):
     p["eksik_ilk20"] = ilk20
     p["null_ozet"] = null_ozet
     p.update(ek)
+    # Kartin satir sayisi ve kayit yeri (02.1 Veri Profili karti).
+    p["profil_satir"] = int(len(df))
+    p["profil_kayit"] = _kayit_metni(yazildi, yedek)
     durum["profil"] = p
     # Profil degisti: SFA ve kararlari eski profile aitti, yeniden hesaplanir.
     eski = (durum.pop("sfa", None) or {}).get("ai_is")
     if eski:
         sfa_karar.ai_durdur(eski)
 
-    return ("Profil çıkarıldı.\n"
-            "  İncelenen Kolon : %s\n"
-            "  Sorunsuz : %s\n"
-            "  Eksik Oranı %%50 Üstü : %s\n"
-            "  Sabit ya da Tek Değerli : %s\n"
-            "  Kimlik Benzeri : %s\n"
-            "  Kardinalitesi Aşırı Yüksek : %s\n"
-            "  Kayıt : %s\n"
-            "Kusurlu kolonlardan değişken üretilmez; %s "
-            "adımında düşürülürler."
-            % (_sayi(len(tablo)), _sayi(len(teshis["temiz"])),
-               _sayi_ad(teshis["cok_bos"]), _sayi_ad(teshis["sabit"]),
-               _sayi_ad(teshis["kimlik_gibi"]), _sayi_ad(teshis["yuksek_kardinalite"]),
-               _kayit_metni(yazildi, yedek), akis_atif.adim("baz")))
+    return profil_metni(durum)
+
+
+# ===========================================================================
+# 02.1 VERI PROFILI KARTI
+# ===========================================================================
+# (anahtar, kontrolun adi, kolon satirindaki kisa bulgu adi)
+PROFIL_KONTROLLERI = (
+    ("cok_bos", "Eksik Oranı Yüksek", "Eksik oranı yüksek"),
+    ("sabit", "Sabit ya da Tek Değerli", "Sabit"),
+    ("kimlik_gibi", "Kimlik Benzeri", "Kimlik benzeri"),
+    ("yuksek_kardinalite", "Kardinalitesi Aşırı Yüksek", "Kardinalite yüksek"),
+)
+
+
+def _yuzde_metni(oran):
+    """0.5 -> "%50"; 0.055 -> "%5,5" (gereksiz sifir yazilmaz)."""
+    v = round(float(oran) * 100, 2)
+    return "%" + (("%d" % v) if v == int(v) else ("%s" % v).rstrip("0").replace(".", ","))
+
+
+def _ilgi_eki(sayi_metni):
+    """Sayinin okunusuna gore ilgi eki: "%50" -> "'nin", "%95" -> "'in",
+    "%5,5" -> "'in" (son okunan kelimeye bakilir)."""
+    rakam = "".join(ch for ch in str(sayi_metni) if ch.isdigit())
+    if not rakam:
+        return "'in"
+    son = rakam.rstrip("0")
+    if not son:
+        return "'ın"
+    sifir = len(rakam) - len(son)
+    if sifir == 0:
+        return {"1": "'in", "2": "'nin", "3": "'ün", "4": "'ün", "5": "'in", "6": "'nın",
+                "7": "'nin", "8": "'in", "9": "'un"}[son[-1]]
+    if sifir == 1:
+        return {"1": "'un", "2": "'nin", "3": "'un", "4": "'ın", "5": "'nin", "6": "'ın",
+                "7": "'in", "8": "'in", "9": "'ın"}[son[-1]]
+    if sifir == 2:
+        return "'ün"
+    return "'in"                                    # bin, milyon: binin
+
+
+def _profil_kurallari():
+    """Kontrollerin kurali, kodun kullandigi esiklerle (sfa.profil_cikar)."""
+    return {
+        "cok_bos": "Boş hücre oranı %s%s üstünde." % (
+            _yuzde_metni(sfa_mod.NULL_ESIK), _ilgi_eki(_yuzde_metni(sfa_mod.NULL_ESIK))),
+        "sabit": "Kolonda tek bir değer var. Bir değer ile boş hücrelerden oluşan "
+                 "kolon iki değerli sayılır, sabit değildir.",
+        "kimlik_gibi": "Farklı değer oranı %s%s üstünde, en az %s farklı değer "
+                       "var ve değerler tam sayı ya da metin. Ondalıklı tutarlar "
+                       "(gelir, bakiye) bu kurala girmez."
+                       % (_yuzde_metni(0.95), _ilgi_eki(_yuzde_metni(0.95)),
+                          _sayi(sfa_mod.MIN_SATIR + 1)),
+        "yuksek_kardinalite": "Kategorik kolonda farklı değer sayısı %s%s üstünde."
+                              % (_sayi(sfa_mod.KATEGORIK_MAX),
+                                 _ilgi_eki(_sayi(sfa_mod.KATEGORIK_MAX))),
+    }
+
+
+def profil_metni(durum):
+    """02.1 bloğunun metni: ne yapildi ve sonuc, tek bakista."""
+    t = (durum.get("profil") or {}).get("profil_teshis") or {}
+    kusurlu = kusurlu_kolonlar(durum)
+    incelenen = len(set(t.get("temiz") or []) | set(kusurlu))
+    metin = ("Modelleme tablosundaki %s kolonun eksik değer oranı, farklı değer "
+             "sayısı ve türü tablonun tamamı üzerinden incelendi. "
+             % _sayi(incelenen))
+    if kusurlu:
+        return metin + ("%s kolonda sorun bulundu. Bu kolonlardan değişken "
+                        "üretilmez; %s adımında veri setinden çıkarılır."
+                        % (_sayi(len(kusurlu)), akis_atif.adim("baz")))
+    return metin + "Hiçbir kolonda sorun bulunmadı; bütün kolonlar değişken üretimine girer."
+
+
+def profil_karti(durum):
+    """02.1 Veri Profili karti (sohbette adimin blogunda). Butun sayilar
+    profilin tablonun TAMAMINDAN cikardigi teshisten; orneklem yok.
+    Profil yoksa None."""
+    p = durum.get("profil") or {}
+    t = p.get("profil_teshis")
+    if not isinstance(t, dict):
+        return None
+    ozet = {str(s.get("ad")): s for s in (p.get("kolon_ozet") or []) if isinstance(s, dict)}
+    temiz = [str(k) for k in (t.get("temiz") or [])]
+    kusurlu = kusurlu_kolonlar(durum)
+    incelenen = sorted(set(temiz) | set(kusurlu))
+
+    turler = {"sayısal": 0, "kategorik": 0, "tarih": 0}
+    for k in incelenen:
+        tur = (ozet.get(k) or {}).get("tip") or "kategorik"
+        turler[tur] = turler.get(tur, 0) + 1
+
+    def _kolon(k):
+        o = ozet.get(k) or {}
+        return {"ad": k, "tur": o.get("tip") or "",
+                "eksik": o.get("null_oran"), "tekil": o.get("tekil"),
+                "bulgular": [kisa for a, _ad, kisa in PROFIL_KONTROLLERI
+                             if k in set(t.get(a) or [])]}
+
+    kurallar = _profil_kurallari()
+    kontroller = [{"anahtar": a, "ad": ad, "kural": kurallar[a],
+                   "kolonlar": [_kolon(k) for k in sorted(set(t.get(a) or []))]}
+                  for a, ad, _kisa in PROFIL_KONTROLLERI]
+
+    m = durum.get("meta") or {}
+    kayit = p.get("profil_kayit") or (
+        ("%s veri seti" % p["profil_dataset"]) if p.get("profil_dataset")
+        else "PROJE_HAFIZASI/veri_profili.parquet")
+    n = p.get("null_ozet") or {}
+    return {
+        "tip": "profil",
+        "satir": p.get("profil_satir") if p.get("profil_satir") is not None else p.get("satir"),
+        "kolon": len(incelenen),
+        "temiz": len(temiz),
+        "kusurlu": len(kusurlu),
+        "turler": turler,
+        "eksik": {"yok": int(n.get("hic_null_yok") or 0), "az": int(n.get("az") or 0),
+                  "orta": int(n.get("orta") or 0), "asiri": int(n.get("asiri") or 0)},
+        "eksik_esik": {"az": NULL_AZ, "asiri": sfa_mod.NULL_ESIK},
+        "eksik_kolon": p.get("null_kolon_adet"),
+        "eksik_maks": p.get("null_maks"),
+        "eksik_maks_kolon": p.get("null_maks_kolon"),
+        "kontroller": kontroller,
+        "haric": {"hedef": m.get("target") or "", "kimlik": m.get("id") or "",
+                  "donem": m.get("donem") or "",
+                  "surec_disi": len(set(durum.get("haric_kolonlar") or []))},
+        "kayit": kayit,
+        "dusme_atif": akis_atif.adim("baz"),
+    }
+
+
+def profil_gecmisini_tazele(durum, gecmis):
+    """Yenilemede 02.1 blogu guncel kart ve metinle cizilir (eski calismada
+    metin tablosu yerine de). Profilin ozet satiri, adimin transkriptteki
+    SON kaydidir; adim gecilmemisse (Geri Dön ile onay bekliyor) dokunulmaz.
+    Transkript degismez: doner yeni liste."""
+    from fe_agent.akis_kayit import adim_sirasi
+    sira = adim_sirasi(durum.get("mod"))
+    if "veri_profili" not in sira or sira.index("veri_profili") >= int(durum.get("i") or 0):
+        return gecmis
+    son = None
+    for i, k in enumerate(gecmis or []):
+        if isinstance(k, dict) and k.get("rol") == "bot" and k.get("adim") == "veri_profili":
+            son = i
+    kart = profil_karti(durum) if son is not None else None
+    if not kart:
+        return gecmis
+    yeni = list(gecmis)
+    k = dict(yeni[son])
+    k["metin"] = profil_metni(durum)
+    k["ekran"] = {"secim_alani": kart}
+    k.pop("ekran_atlandi", None)
+    yeni[son] = k
+    return yeni
 
 def _buyuk_veri_engeli(durum, adim):
     """SFA ve aralik hesabi su an pandas'ta: tablo webapp'e tam okunur.

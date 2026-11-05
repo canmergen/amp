@@ -16211,6 +16211,191 @@ function rozetiBasligaTasi(blok, el, kap0) {
     if (yuva) yuva.appendChild(el);
 }
 
+/* ==================== 02.1 Veri Profili kartı ====================
+   Karar istemeyen sonuç kartı. Üstte dört sayı (satır, incelenen,
+   sorunsuz, sorunlu), altında eksik değer dağılımı (tek renk tonunda,
+   açıktan koyuya), en altta dört kontrol: kuralı ve sonucu. Sorun bulunan
+   kontrolde "N kolon" düğmesi kolonları (tür, eksik oranı, farklı değer
+   sayısı, bulgular) açar. Bütün sayılar tablonun tamamından. */
+function pfYuzde(x) {
+    if (x === null || x === undefined || x === "") return BOS_SIMGE;
+    const v = Number(x);
+    if (!isFinite(v)) return BOS_SIMGE;
+    const y = Math.round(v * 10000) / 100;
+    return "%" + (Number.isInteger(y) ? String(y) : String(y).replace(".", ","));
+}
+
+function profilKartiEkle(alan, blok) {
+    const kart = elYap("div", "secim-kart pf-kart");
+
+    /* Başlık + i */
+    const bas = elYap("div", "pf-bas");
+    bas.appendChild(elYap("b", "pf-baslik", "Veri Profili"));
+    const h = alan.haric || {};
+    const disari = [];
+    if (h.hedef) disari.push("hedef (" + h.hedef + ")");
+    if (h.kimlik) disari.push("kimlik (" + h.kimlik + ")");
+    if (h.donem) disari.push("dönem (" + h.donem + ")");
+    const disariMetni = (disari.length ? disari.join(", ") + " kolonları" : "")
+        + (h.surec_disi ? (disari.length ? " ve " : "") + "süreç dışı bırakılan "
+                          + ftBinlik(h.surec_disi) + " kolon" : "");
+    const bilgi = [
+        "Modelleme tablosundaki her kolon tablonun tamamı üzerinden incelenir; örneklem kullanılmaz.",
+        "Her kolon için eksik değer oranı, farklı değer sayısı ve türü çıkarılır; ardından dört kontrol uygulanır. Bir kolon birden fazla kontrole takılabilir.",
+        disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
+        "Sorunlu kolonlardan değişken üretilmez; bu kolonlar " + tireSade(alan.dusme_atif || "") + " adımında veri setinden çıkarılır.",
+        alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
+    ].filter(Boolean).join("\n\n");
+    bas.appendChild(bolmeBilgiSimgesi(bilgi, "Veri Profili"));
+    kart.appendChild(bas);
+
+    /* Dört sayı */
+    const karolar = elYap("div", "pf-karolar");
+    const karo = (etiket, deger, sinif) => {
+        const k = elYap("div", "pf-karo" + (sinif ? " " + sinif : ""));
+        k.appendChild(elYap("div", "pf-karo-deger", deger));
+        k.appendChild(elYap("div", "pf-karo-etiket", etiket));
+        karolar.appendChild(k);
+    };
+    karo("Satır", ftBinlik(alan.satir));
+    karo("İncelenen Kolon", ftBinlik(alan.kolon));
+    karo("Sorunsuz", ftBinlik(alan.temiz), "tamam");
+    karo("Sorunlu", ftBinlik(alan.kusurlu), alan.kusurlu ? "sorun" : "");
+    kart.appendChild(karolar);
+
+    /* Türler */
+    const tr = alan.turler || {};
+    const turParca = [["sayısal", "sayısal"], ["kategorik", "kategorik"], ["tarih", "tarih"]]
+        .filter(([a]) => Number(tr[a] || 0) > 0)
+        .map(([a, ad]) => ftBinlik(tr[a]) + " " + ad);
+    if (turParca.length) {
+        const ts = elYap("div", "pf-satir");
+        ts.appendChild(elYap("span", "pf-satir-ad", "Türler"));
+        ts.appendChild(elYap("span", "", turParca.join(" · ")));
+        kart.appendChild(ts);
+    }
+
+    /* Eksik değer dağılımı */
+    const e = alan.eksik || {};
+    const es = alan.eksik_esik || {};
+    const azY = pfYuzde(es.az), asY = pfYuzde(es.asiri);
+    const dilimler = [
+        ["yok", "Eksik yok", Number(e.yok || 0)],
+        ["az", azY + " ve altı", Number(e.az || 0)],
+        ["orta", azY + " ile " + asY + " arası", Number(e.orta || 0)],
+        ["asiri", asY + " üstü", Number(e.asiri || 0)]
+    ];
+    const top = dilimler.reduce((t, d) => t + d[2], 0);
+    const eb = elYap("div", "pf-bolum");
+    const ebBas = elYap("div", "pf-bolum-bas");
+    ebBas.appendChild(elYap("span", "pf-bolum-ad", "Eksik Değer Oranına Göre Kolonlar"));
+    eb.appendChild(ebBas);
+    if (top > 0) {
+        const cubuk = elYap("div", "pf-cubuk");
+        cubuk.setAttribute("role", "img");
+        cubuk.setAttribute("aria-label", dilimler.map(d => d[1] + ": " + ftBinlik(d[2]) + " kolon").join(", "));
+        dilimler.forEach(([a, ad, n]) => {
+            if (!n) return;
+            const p = elYap("span", "pf-dilim pf-" + a);
+            p.style.flexGrow = String(n);
+            p.title = ad + ": " + ftBinlik(n) + " kolon (" + pfYuzde(n / top) + ")";
+            cubuk.appendChild(p);
+        });
+        eb.appendChild(cubuk);
+        const lj = elYap("div", "pf-lejant");
+        dilimler.forEach(([a, ad, n]) => {
+            const l = elYap("span", "pf-lejant-oge" + (n ? "" : " sifir"));
+            l.appendChild(elYap("span", "pf-renk pf-" + a));
+            l.appendChild(elYap("span", "", ad));
+            l.appendChild(elYap("b", "", ftBinlik(n)));
+            lj.appendChild(l);
+        });
+        eb.appendChild(lj);
+        if (alan.eksik_maks_kolon && Number(alan.eksik_maks) > 0) {
+            const en = elYap("div", "pf-not");
+            metinYaz(en, "Eksik değeri olan kolon: **" + ftBinlik(alan.eksik_kolon) + "**. En çok eksik olan: **"
+                + alan.eksik_maks_kolon + "** (" + pfYuzde(alan.eksik_maks) + ").");
+            eb.appendChild(en);
+        } else {
+            eb.appendChild(elYap("div", "pf-not", "Hiçbir kolonda eksik değer yok."));
+        }
+    }
+    kart.appendChild(eb);
+
+    /* Kontroller */
+    const kb = elYap("div", "pf-bolum");
+    const kbBas = elYap("div", "pf-bolum-bas");
+    kbBas.appendChild(elYap("span", "pf-bolum-ad", "Kontroller"));
+    kb.appendChild(kbBas);
+    const tablo = elYap("table", "dg-tablo pf-tablo");
+    const thead = elYap("thead");
+    const htr = elYap("tr");
+    ["Kontrol", "Kural", "Sonuç"].forEach(b => htr.appendChild(elYap("th", "", b)));
+    thead.appendChild(htr);
+    tablo.appendChild(thead);
+    const tbody = elYap("tbody");
+    (alan.kontroller || []).forEach(k => {
+        const satir = elYap("tr", "pf-kontrol");
+        satir.appendChild(elYap("td", "pf-kontrol-ad", k.ad));
+        satir.appendChild(elYap("td", "pf-kural", k.kural));
+        const sonuc = elYap("td", "pf-sonuc");
+        satir.appendChild(sonuc);
+        const n = (k.kolonlar || []).length;
+        if (!n) {
+            const ok = elYap("span", "pf-durum tamam");
+            ok.append(elYap("span", "pf-durum-ikon", "✓"), elYap("span", "", "Sorun yok"));
+            sonuc.appendChild(ok);
+        } else {
+            const dg = elYap("button", "pf-durum sorun");
+            dg.type = "button";
+            dg.setAttribute("aria-expanded", "false");
+            dg.append(elYap("span", "pf-durum-ikon", "!"), elYap("span", "", ftBinlik(n) + " kolon"),
+                      elYap("span", "pf-ok", "▾"));
+            sonuc.appendChild(dg);
+            const detay = elYap("tr", "pf-detay");
+            detay.hidden = true;
+            const td = elYap("td");
+            td.colSpan = 3;
+            const it = elYap("table", "dg-tablo pf-ic-tablo");
+            const ith = elYap("tr");
+            ["Kolon", "Tür", "Eksik Oranı", "Farklı Değer", "Bulgular"].forEach(b => ith.appendChild(elYap("th", "", b)));
+            const ithead = elYap("thead"); ithead.appendChild(ith); it.appendChild(ithead);
+            const itb = elYap("tbody");
+            k.kolonlar.forEach(c => {
+                const r = elYap("tr");
+                r.appendChild(elYap("td", "pf-kolon-ad", c.ad));
+                r.appendChild(elYap("td", "", c.tur || BOS_SIMGE));
+                r.appendChild(elYap("td", "", pfYuzde(c.eksik)));
+                r.appendChild(elYap("td", "", ftBinlik(c.tekil)));
+                r.appendChild(elYap("td", "", (c.bulgular || []).join(", ")));
+                itb.appendChild(r);
+            });
+            it.appendChild(itb);
+            const kap = elYap("div", "pf-ic-kap");
+            kap.appendChild(it);
+            td.appendChild(kap);
+            detay.appendChild(td);
+            dg.onclick = () => {
+                detay.hidden = !detay.hidden;
+                dg.setAttribute("aria-expanded", detay.hidden ? "false" : "true");
+                dg.classList.toggle("acik", !detay.hidden);
+            };
+            tbody.appendChild(satir);
+            tbody.appendChild(detay);
+            return;
+        }
+        tbody.appendChild(satir);
+    });
+    tablo.appendChild(tbody);
+    kb.appendChild(tablo);
+    kart.appendChild(kb);
+
+    /* Sonuç cümlesi bloğun metninde (profil_metni); kartta tekrar yazılmaz. */
+    if (alan.kayit) kart.appendChild(elYap("div", "pf-kayit", "Profil tablosu: " + alan.kayit));
+
+    (adimKabiAl(blok) || sohbetEl).appendChild(kart);
+}
+
 /* Kart aciklamasi KARTIN ICINDE DUZ METIN olarak duruyor. */
 function secimAlaniEkle(alan, blok) {
     if (!alan) return;
@@ -16223,6 +16408,8 @@ function secimAlaniEkle(alan, blok) {
     if (alan.tip === "bolme") { bolmeKartiEkle(alan, blok); return; }
     /* Aralık önerileri: satır başına kabul / ret (sözlük tanımları gibi) */
     if (alan.tip === "sfa_karar") { sfaKartiEkle(alan, blok); return; }
+    /* 02.1 Veri Profili: yalnız sonuç, karar yok */
+    if (alan.tip === "profil") { profilKartiEkle(alan, blok); return; }
 
     const kart = document.createElement("div");
     kart.className = "secim-kart";
@@ -16818,12 +17005,15 @@ function yanitUygula(d, metin) {
     if (!hataMi) bitenler.forEach(t => {
         if (!t || !t.adim || !(t.metin || "").trim()) return;
         const tAdim = DUZ_ADIMLAR[(adimSirasiHaritasi() || {})[t.adim]] || {};
-        balonEkle("bot", t.metin, false, {
+        const tBlok = {
             adim: t.adim,
             baslik: t.baslik || tAdim.baslik || "",
             grup: tAdim.grup || "", grup_baslik: tAdim.grup_baslik || "",
             onay: false
-        });
+        };
+        balonEkle("bot", t.metin, false, tBlok);
+        /* Biten adımın kartı (02.1 Veri Profili) kendi bloğunda. */
+        if (t.secim_alani) secimAlaniEkle(t.secim_alani, tBlok);
     });
 
     const seceneklerVar = !!(d.secenekler && d.secenekler.length);
