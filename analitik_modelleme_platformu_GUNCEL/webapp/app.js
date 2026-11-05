@@ -12527,6 +12527,29 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 const sil = elYap("button", "dg-baglanti", "Kaldır");
                 sil.type = "button"; sil.disabled = kilitli || calisiyor;
                 const not = elYap("div", "dg-donem-tur-not", "");
+                /* ÖRNEK KOLONLAR: parça yazılınca yanında i çıkar; içinde parçanın
+                   ve kalıbın birlikte geçtiği 3 kolon, sözlük açıklaması ve
+                   (anlam yazıldıysa) bu koşullu anlamla o kolonun dönemi. */
+                let ornI = elYap("span", "bolme-info bos");
+                const ornekYaz = () => {
+                    const aday = kosAday.find(x => x[0] === String(k.p || "").trim().toUpperCase());
+                    const orn = (aday && aday[3]) || [];
+                    let yeni;
+                    if (!orn.length) yeni = elYap("span", "bolme-info bos");
+                    else {
+                        const kal = donemSayiGoster(kalipNe());
+                        const anl = String(k.a || "").trim() && !donemYerTutucuHatasi(kalipNe(), k.a) ? k.a : "";
+                        const par = orn.map(([ad, dg, tn]) => ad
+                            + "\nAçıklaması: " + (tn || "Sözlükte açıklaması yok.")
+                            + "\n" + dg + (anl ? ", bu koşullu anlamla: " + donemDegerAnlami(kalipNe(), anl, dg)
+                                               : ", koşullu anlam yazınca burada anlamı görünür."));
+                        const bas = "Adında " + aday[0] + " ve " + kal + " geçen " + ftBinlik(aday[1]) + " kolon"
+                            + (orn.length < aday[1] ? "dan " + orn.length + " örnek" : "");
+                        yeni = bolmeBilgiSimgesi(par.join("\n\n"), bas);
+                        yeni.classList.add("dg-donem-kosul-i", "bolme-info-genis");
+                    }
+                    ornI.replaceWith(yeni); ornI = yeni;
+                };
                 const notYaz = () => {
                     const h = kosHata(k);
                     not.classList.toggle("dg-donem-ad-hata", !!h);
@@ -12536,12 +12559,12 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                           + " (" + ftBinlik(aday[1]) + " kolon)"
                         : k.p && !aday && k.a ? "Bu parça bu kalıpla birlikte adlarda geçmiyor." : "";
                 };
-                pg.oninput = () => { pg.value = pg.value.toUpperCase(); k.p = pg.value.trim(); notYaz(); kosDegisti(); };
-                ag.oninput = () => { k.a = donemAnlamIc(kalipNe(), ag.value); notYaz(); kosDegisti(); };
+                pg.oninput = () => { pg.value = pg.value.toUpperCase(); k.p = pg.value.trim(); notYaz(); ornekYaz(); kosDegisti(); };
+                ag.oninput = () => { k.a = donemAnlamIc(kalipNe(), ag.value); notYaz(); ornekYaz(); kosDegisti(); };
                 sil.onclick = () => { kosListe.splice(i, 1); kosCiz(); kosDegisti(); };
-                sat.append(elYap("span", "dg-donem-tur-not", "Adda"), pg, elYap("span", "dg-donem-tur-not", "geçerse:"), ag, sil);
+                sat.append(elYap("span", "dg-donem-tur-not", "Adda"), pg, ornI, elYap("span", "dg-donem-tur-not", "geçerse:"), ag, sil);
                 kosKap.append(sat, not);
-                notYaz();
+                notYaz(); ornekYaz();
             });
             if (!kilitli && !calisiyor) {
                 const ekle = elYap("button", "dg-baglanti dg-donem-kosul-ekle", "Koşullu Anlam Ekle");

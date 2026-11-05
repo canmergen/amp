@@ -2353,17 +2353,37 @@ def _kosul_temizle(x):
 
 
 KOSUL_ADAY_ADET = 25
+KOSUL_ORNEK_ADET = 3
 
 
-def _kosul_adaylari(adlar, kalip):
+def _kosul_ornekleri(liste, adet=KOSUL_ORNEK_ADET):
+    """Parcanin ve kalibin birlikte gectigi kolonlardan ADET tanesi:
+    once aciklamasi olan ve degeri farkli olanlar (kullanici kosullu
+    anlami farkli sayilarla gorsun), sonra kalanlar; kolon sirasi korunur."""
+    secilen, degerler = [], set()
+    sirali = [x for x in liste if x[2]] + [x for x in liste if not x[2]]
+    for x in sirali:
+        if len(secilen) < adet and x[1] not in degerler:
+            secilen.append(x)
+            degerler.add(x[1])
+    for x in sirali:
+        if len(secilen) < adet and x not in secilen:
+            secilen.append(x)
+    return [list(x) for x in secilen]
+
+
+def _kosul_adaylari(adlar, kalip, tanimlar=None):
     """Kalibin gectigi kolon adlarindaki harf parcalari: [[PARCA, kolon
-    sayisi, ornek deger]] (cok gecen once). Ornek deger: parcanin gectigi
-    ilk addaki kalip degeri (kosullu anlamin ornegi icin)."""
+    sayisi, ornek deger, ornekler]] (cok gecen once). Ornek deger:
+    parcanin gectigi ilk addaki kalip degeri. Ornekler: parcanin ve
+    kalibin birlikte gectigi en cok 3 kolon, [ad, kalip degeri, sozluk
+    aciklamasi] (kart bilgi balonunda gosterir)."""
     r = donem_mod.kalip_deseni(kalip)
     if r is None:
         return []
+    tanimlar = tanimlar if isinstance(tanimlar, dict) else {}
     ikili = "_" in str(kalip)
-    say, ornek = Counter(), {}
+    say, ornek, kolonlar = Counter(), {}, {}
     for ad in adlar:
         t = donem_mod._toklar(ad)
         deger, yer = None, set()
@@ -2376,12 +2396,16 @@ def _kosul_adaylari(adlar, kalip):
                 break
         if deger is None:
             continue
+        tanim = re.sub(r"\s+", " ", str(tanimlar.get(ad) or "")).strip()[:300]
         for i, p in enumerate(dict.fromkeys(t)):
             if p.isalpha() and len(p) > 1 and t.index(p) not in yer:
                 say[p] += 1
                 ornek.setdefault(p, deger)
-    return [[p, n, ornek[p]] for p, n in sorted(say.items(), key=lambda kv: (-kv[1], kv[0]))
-            [:KOSUL_ADAY_ADET]]
+                k = kolonlar.setdefault(p, [])
+                if len(k) < 60:
+                    k.append((str(ad), deger, tanim))
+    return [[p, n, ornek[p], _kosul_ornekleri(kolonlar[p])]
+            for p, n in sorted(say.items(), key=lambda kv: (-kv[1], kv[0]))[:KOSUL_ADAY_ADET]]
 
 
 def _donem_alani(durum, baslat=True):
@@ -2499,7 +2523,7 @@ def _donem_alani(durum, baslat=True):
         kosullu = {str(p_).upper(): str(a_) for p_, a_ in (kosullu or {}).items()
                    if str(a_ or "").strip()}
         r = {"kalip": kalip, "tur": tur, "kolon": kolon, "degerler": degerler,
-             "kosullu": kosullu, "kosul_adaylari": _kosul_adaylari(adlar, kalip),
+             "kosullu": kosullu, "kosul_adaylari": _kosul_adaylari(adlar, kalip, tanimlar),
              "ornekler": ornekler, "anlam": anlam, "oneri": oneri,
              "soru": soru if anlam == oneri else "", "not": notu if anlam == oneri else "",
              "kaynak": kaynak, "model": model, "cikar": cikar,

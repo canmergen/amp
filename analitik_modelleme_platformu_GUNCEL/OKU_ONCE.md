@@ -768,7 +768,14 @@ tanıtır; sayfalar sol bardan açılır.
   gün". Satırda anlamın altında "Koşullu Anlam Ekle": "Adda [PARÇA]
   geçerse: [anlam]" (parça kutusunda kalıbın geçtiği adlardaki harf
   parçaları öneri olarak, `_kosul_adaylari`: [parça, kolon sayısı, örnek
-  değer]); altında örnek ("Ör. adında RATIO geçen 3D_7D → son 3 gün ile
+  değer, örnekler]). Parça yazılınca (adlarda kalıpla birlikte geçiyorsa)
+  kutunun yanında i çıkar: balonda parçanın ve kalıbın birlikte geçtiği
+  en çok 3 kolon (`_kosul_ornekleri`: önce sözlük açıklaması olan ve
+  kalıp değeri farklı olanlar), her birinin açıklaması ve yazılan koşullu
+  anlamla o kolonun dönemi ("3D_7D, bu koşullu anlamla: son 3 gün ile son
+  7 gün"); anlam yazılmadıysa yerinde ne görüneceği yazar. Başlıkta
+  toplam kolon sayısı. Parça adlarda kalıpla geçmiyorsa i çıkmaz. Altında
+  örnek ("Ör. adında RATIO geçen 3D_7D → son 3 gün ile
   son 7 gün (2 kolon)") ya da hata (yer tutucu kalıbın anlamı gibi
   denetlenir; geçersizken onay kapalı). Karar ve satır `kosullu`
   ({PARÇA: anlam}, içeride yer tutuculu); satırın kayıt imzasına girer.
