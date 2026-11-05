@@ -6685,7 +6685,30 @@ function balonIcerikYap(rol, metin, hataMi) {
    adımlar AYRI kalır, yani yalnızca Kolon Rolleri adımına dönmek
    mümkün. Gruplama GÖRSELDİR: adım sırası ve geri dönüş hedefi
    değişmez. */
+/* GEÇİLMİŞ ADIMIN KABI TEKTİR. Sohbette geçilmiş bir adımın bloğu (ya da
+   gruplu bloktaki bölümü) zaten varsa, o adıma ait her şey ORAYA girer;
+   sohbetin sonuna yeni blok açılmaz. Yenilemede geçmişten çizilen kartların
+   geç gelen yanıtları (ör. kararlı kartın yeniden kurulması) aktif adımın
+   altına düşmesin. Aktif ve sonraki adımlar eski davranışta kalır: canlı
+   akışta aynı adımın yeni yanıtı kullanıcı satırının altına yeni blokla
+   gelir. */
+function gecilmisAdimKabi(blok) {
+    if (!sohbetEl || !blok || !blok.adim) return null;
+    const sira = (adimSirasiHaritasi() || {})[blok.adim];
+    if (sira === undefined || sira >= aktifAdim) return null;
+    const ad = CSS.escape(blok.adim);
+    if (blok.grup) {
+        const bolumler = sohbetEl.querySelectorAll('.adim-blok.gruplu .alt-bolum[data-adim="' + ad + '"]');
+        return bolumler.length ? bolumler[bolumler.length - 1] : null;
+    }
+    const bloklar = [...sohbetEl.querySelectorAll('.adim-blok[data-adim="' + ad + '"]')]
+        .filter(b => !b.dataset.grup);
+    return bloklar.length ? bloklar[bloklar.length - 1] : null;
+}
+
 function grupKabiAl(blok) {
+    const varOlan = gecilmisAdimKabi(blok);
+    if (varOlan) return varOlan;
     const son = sohbetEl.lastElementChild;
     let kok = null;
     if (son) {
@@ -6770,6 +6793,8 @@ function fazAyraclariniEkle(yeniAdim) {
 function adimKabiAl(blok) {
     if (!blok || !blok.adim) return null;
     if (blok.grup) return grupKabiAl(blok);
+    const varOlan = gecilmisAdimKabi(blok);
+    if (varOlan) return varOlan;
 
     const son = sohbetEl.lastElementChild;
     if (son) {
@@ -9136,7 +9161,10 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
     /* YERİNDE DEĞİŞTİRME: adimKabiAl sohbetteki SON bloğa bakar; yanıt
        geldiğinde son blok başka bir adımın olabilir (ör. F5 sonrası aktif
        02.3) ve kart en alta yeni bir blokta düşerdi. */
-    const yerKap = yerine && yerine.isConnected ? yerine.parentNode : null;
+    /* Değiştirilecek kart bu arada ekrandan kalktıysa (çalışma değişti,
+       transkript kırpıldı) yenisi hiçbir yere eklenmez. */
+    if (yerine && !yerine.isConnected) return;
+    const yerKap = yerine ? yerine.parentNode : null;
     if (yerKap) yerine.replaceWith(kart);
     else (adimKabiAl(blok) || sohbetEl).appendChild(kart);
     rozetiBasligaTasi(blok, rozet, yerKap);

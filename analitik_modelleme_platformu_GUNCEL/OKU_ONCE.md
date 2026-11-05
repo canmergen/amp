@@ -411,6 +411,15 @@ tanıtır; sayfalar sol bardan açılır.
   son bloğa baktığı için yanıt geldiğinde (F5 sonrası aktif adım, ör.
   02.3) kart en alta yeni bir 01.2 bloğunda, yanıtların geliş sırasıyla
   düşüyor ve eski kart da yerinde kalıyordu.
+- **Geçilmiş adımın kabı tektir (`gecilmisAdimKabi`):** `adimKabiAl` ve
+  `grupKabiAl`, aktif adımdan ÖNCEKİ bir adım için sohbette o adımın
+  bloğu (gruplu blokta bölümü) zaten varsa onu döndürür; sohbetin sonuna
+  yeni blok açmaz. Böylece yenilemeden sonra geç gelen herhangi bir yanıt
+  (kart, metin, rozet) geçilmiş adımın kendi yerine girer. Aktif ve
+  sonraki adımlar eski kuralla çalışır (son blok o adımın değilse yeni
+  blok). Geri Dön'de hedef adım ve sonrası önce transkriptten silindiği
+  için yeni blok yine açılır. `dogrulamaKartiEkle`'ye verilen eski kart
+  bu arada ekrandan kalktıysa yeni kart hiçbir yere eklenmez.
 - **Adım atıfları:** bir işin hangi adımda yapılacağını ya da yapıldığını
   söyleyen her metin (sohbet mesajları, kart açıklamaları, sağ panel
   notları, "i" açıklamaları, hata mesajları, sohbet kutusunun kilit notu)
