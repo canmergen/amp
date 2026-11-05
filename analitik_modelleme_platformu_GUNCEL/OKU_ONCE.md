@@ -125,6 +125,12 @@ gösterir (`akis_panel.feature_tablo`, `adim_0124_ozeti`):
     01.2.4.4 onayında yazılır).
   - Kolon Kartları: kaç kolonun kartı olduğu ve satır detayında
     göründüğü.
+- **Excel İndir (Değişken Listesi):** iki biçimde de (sağ panel: Değişken,
+  Yeni Ad, Tip, Sözlük Tanımı; sohbetteki karar listesi: ayrıca Süreç
+  Dışı) "Yeni Ad" kolonu var: AMP_VERISETI'ndeki adı (01.2.4.4'te
+  değiştiyse yeni ad, değişmediyse aynı ad; rol ve süreç dışı kolonlar
+  kendi adında). "Değişken" ilk (eski) ad kalır; "Filtrelenmiş" sayfası
+  ekrandaki satırlarla eski adla eşleşir (`_excel_satirlari`).
 
 **Tablolarda hiza:** her tabloda (Değişken Listesi ızgarası dahil)
 başlık ve hücre içeriği ortalı; çip dizileri ve hücredeki düğmeler de

@@ -8125,8 +8125,10 @@ def teyit_kartini_tazele(durum, kolon=None, tanim=None):
 TEYIT_EXCEL_ADI = "degisken_listesi.xlsx"
 SOZLUK_EXCEL_ADI = "degisken_sozlugu.xlsx"
 
-TEYIT_EXCEL_KOLONLARI = ["Değişken", "Tip", "Sözlük Tanımı", "Süreç Dışı"]
-SOZLUK_EXCEL_KOLONLARI = ["Değişken", "Tip", "Sözlük Tanımı"]
+# YENI AD: AMP_VERISETI'ndeki adi (01.2.4.4 Kolon Adlari'nda degistiyse yeni
+# ad, degismediyse ayni ad); "Değişken" kolonu ilk (eski) ad kalir.
+TEYIT_EXCEL_KOLONLARI = ["Değişken", "Yeni Ad", "Tip", "Sözlük Tanımı", "Süreç Dışı"]
+SOZLUK_EXCEL_KOLONLARI = ["Değişken", "Yeni Ad", "Tip", "Sözlük Tanımı"]
 
 # Excel'de "evet/hayır" okunur; True/False Turkce bir tabloda yabanci.
 _DISI_METNI = {True: "evet", False: "hayır"}
@@ -8135,12 +8137,15 @@ _DISI_METNI = {True: "evet", False: "hayır"}
 def _excel_satirlari(durum, genis):
     """(kolonlar, satirlar, yuzde_sutunlari) - genis=True ise karar
     tablosu, False ise sag panelin uc kolonu."""
+    from fe_agent import akis_panel
     satirlar, _duzenlenebilir = teyit_satirlari(durum)
+    yeni = akis_panel._uygulanacak_adlar(durum, [str(s["kolon"]) for s in satirlar])
+    ad = lambda s: yeni.get(str(s["kolon"])) or s["kolon"]
     if not genis:
         return (list(SOZLUK_EXCEL_KOLONLARI),
-                [[s["kolon"], s["tip"], s["tanim"]] for s in satirlar],
+                [[s["kolon"], ad(s), s["tip"], s["tanim"]] for s in satirlar],
                 ())
-    govde = [[s["kolon"], s["tip"], s["tanim"], _DISI_METNI[bool(s.get("disi"))]]
+    govde = [[s["kolon"], ad(s), s["tip"], s["tanim"], _DISI_METNI[bool(s.get("disi"))]]
              for s in satirlar]
     return list(TEYIT_EXCEL_KOLONLARI), govde, ()
 
