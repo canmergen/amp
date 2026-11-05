@@ -833,16 +833,23 @@ tanıtır; sayfalar sol bardan açılır.
      Düğmenin özetinde (panel bir kez açıldıktan sonra) "· N öneri" ya da
      "· öneriler hazırlanıyor".
   4. Önerili parça, kendi anlamı olanlardan sonra listenin başında durur.
-     Anlam hücresinin altında kesik çerçeveli kutuda şunlar yazar:
-     - "Öneri: «…»";
-     - kaç kolonun açıklamasına dayandığı ve parçanın toplam kaç kolonda
-       geçtiği;
-     - neden, i balonunda dayanak kolonlar;
+     Alınmamış öneri, anlam hücresinin altında kesik çerçeveli kutuda
+     (`kosOneriSatiri`) şunları yazar:
+     - "Öneri: adında RATIO geçen kolonlarda bu kalıp «…» demek.";
+     - "Neden:" kaç kolonun açıklaması kaydedilmiş anlamla («…»)
+       uyuşmuyor, parça toplam kaç kolonda geçiyor, dil modelinin tek
+       cümlesi (yer tutucular `donemNedenGoster` ile "[sayı 1]");
+     - somut örnek: "Ör. KOLON: açıklaması «…»; öneriyle «…», şimdiki
+       anlamla «…»" (öteki dayanak kolonlar i balonunda);
      - «Öneriyi Al».
 
-     «Öneriyi Al» öneriyi Kendi Anlamı'na yazar ve kutu odaklanır;
-     kullanıcı elle düzeltir. Kutu öneriyle aynıysa "Kendi anlamı
-     öneriyle aynı." yazar. Hiçbir öneri kendiliğinden uygulanmaz.
+     **Öneriyi Al:** önerilen yazı Kendi Anlamı olur, durum Kendi Anlamı
+     işaretlenir, kutu odaklanır ve imleç yazının sonunda durur (yazı
+     seçili gelmez; yazmaya başlamak öneriyi silmez). Kutunun altında
+     "Öneri alındı. Yukarıdaki kutuda yazıyı istediğiniz gibi
+     değiştirebilirsiniz." yazar. Kutudaki yazı öneriden farklılaşınca
+     "Önerilen yazı: «…»" ve **«Tekrar Öner»** çıkar; basınca kutu
+     önerilen yazıya döner. Hiçbir öneri kendiliğinden uygulanmaz.
 
   Sonuç bellekte, (kalıp, anlam, kontrol edilen kolonlar ve açıklamaları)
   imzasıyla tutulur; aynı istek dil modeline yeniden gitmez. Hata kalır,

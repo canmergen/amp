@@ -11416,7 +11416,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         }
         if (o.durum === "hata" || o.durum === "dogrulanamadi") {
             kutu.appendChild(elYap("div", "dg-acik-ornek", "Cevabınızdan Dönem Bilgisi için koşullu anlam "
-                + "önerilmedi. " + tireSade(o.neden || "")));
+                + "önerilmedi. " + tireSade(donemNedenGoster(o.neden || ""))));
             return kutu;
         }
         const kal = donemSayiGoster(o.kalip), anl = donemAnlamGoster(o.kalip, o.anlam);
@@ -11448,7 +11448,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         kutu.appendChild(elYap("div", "dg-acik-kosul-bas",
             "Dönem Bilgisi'ne de koşullu anlam olarak kaydedilsin mi?"));
         kutu.appendChild(elYap("div", "dg-acik-ornek", "Cevabınıza göre " + kural + "."
-            + (o.neden ? " " + tireSade(o.neden) : "")));
+            + (o.neden ? " " + tireSade(donemNedenGoster(o.neden)) : "")));
         kutu.appendChild(elYap("div", "dg-acik-ornek", "Örnek kolon " + o.kolon + " (" + o.deger + "): şu an «"
             + tireSade(o.genel) + "», kaydedilirse «" + tireSade(o.dolu) + "»."));
         if (o.mevcut) kutu.appendChild(elYap("div", "dg-acik-ornek", "Dönem Bilgisi'nde " + o.parca
@@ -11969,6 +11969,11 @@ function donemKalipEtiketi(r) {
    tutucuya döner (hafıza ve Kolon Kartları aynı kalır). */
 const DONEM_SAYI = "[sayı]";
 const DONEM_SAYI_RE = /\[\s*say[ıi]\s*\]/gi;
+/* Dil modelinin gerekçesindeki yer tutucular ekranda: <N1> "[sayı 1]",
+   <N> "[sayı]". */
+function donemNedenGoster(metin) {
+    return String(metin || "").replace(/<\s*N{1,2}\s*#?\s*(\d)\s*>/g, "[sayı $1]").replace(/<\s*N{1,2}\s*>/g, "[sayı]");
+}
 function donemSayiGoster(metin) {
     /* " · " ile birleştirilmiş yazılışlar (aile) ayrı ayrı numaralanır. */
     return String(metin || "").split(" · ").map(k => {
@@ -12804,37 +12809,73 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         }
         /* Parça satırındaki öneri: anlam, neden, kaç kolon, i balonunda
            örnekler ve «Öneriyi Al» (Kendi Anlamı'na yazar, kutu odaklanır). */
+        /* Parça satırındaki öneri. Alınmadıysa: kural, neden, somut bir
+           örnek kolon (açıklaması, öneriyle ve kaydedilmiş anlamla) ve
+           «Öneriyi Al». Alındıysa kısa satır; kutudaki yazı öneriden
+           farklıysa «Tekrar Öner» önerilen yazıya döndürür. */
+        const kosKutuOdak = p => {
+            const yeni = kosKap.querySelector('input[aria-label="' + CSS.escape(p + " koşullu anlamı") + '"]');
+            if (!yeni) return;
+            /* İmleç sona: yazı seçili gelmez, yazmaya başlamak öneriyi silmez. */
+            yeni.focus();
+            const n = yeni.value.length;
+            yeni.setSelectionRange(n, n);
+        };
         function kosOneriSatiri(p, o, kilit) {
-            const el = elYap("div", "dg-donem-kosul-oneri");
-            el.appendChild(elYap("span", "dg-donem-kosul-oneri-ad", "Öneri: "));
-            el.appendChild(document.createTextNode("«" + donemAnlamGoster(kalipNe(), o.anlam) + "»"));
-            const ay = elYap("div", "dg-donem-tur-not", "Adında " + p + " geçen " + ftBinlik(o.uyumsuz)
-                + " kolonun açıklaması kalıbın anlamıyla uyuşmuyor, bu anlamla uyuşuyor"
-                + (o.toplam > o.uyumsuz ? " (parça " + ftBinlik(o.toplam) + " kolonda geçiyor; ötekilerinin açıklaması yok ya da belirsiz)" : "")
-                + "." + (o.neden ? " " + tireSade(o.neden) : "")
-                + ((o.ayni || []).length ? " Aynı kolonlarda " + o.ayni.join(", ") + " de geçiyor." : ""));
-            if ((o.ornekler || []).length) {
-                const i_ = bolmeBilgiSimgesi(o.ornekler.map(([ad, dg, tn, dolu]) => ad + "\nAçıklaması: " + tn
-                    + "\n" + dg + ", öneriyle: " + dolu).join("\n\n"), "Öneriye dayanak olan kolonlar");
-                i_.classList.add("bolme-info-genis");
-                ay.appendChild(i_);
-            }
-            el.appendChild(ay);
-            if (!kosOneriVar(p, o)) {
-                el.appendChild(elYap("div", "dg-donem-tur-not", "Kendi anlamı öneriyle aynı."));
+            const oneriYazi = donemAnlamGoster(kalipNe(), o.anlam);
+            const alindi = p in kosMap;
+            const el = elYap("div", "dg-donem-kosul-oneri" + (alindi ? " alindi" : ""));
+            const oneriAl = yaz => {
+                const b = elYap("button", "dg-toplu-btn", yaz);
+                b.type = "button"; b.disabled = kilit;
+                b.title = "Önerilen yazı bu parçanın kendi anlamı olur; sonra kutuda istediğiniz gibi değiştirebilirsiniz.";
+                b.onclick = () => {
+                    if (kilitli || da.dm === "calisiyor") return;
+                    kosMap[p] = o.anlam;
+                    kosCiz(); kosDegisti();
+                    kosKutuOdak(p);
+                };
+                return b;
+            };
+            if (alindi) {
+                if (!kosOneriVar(p, o)) {
+                    el.appendChild(elYap("div", "dg-donem-tur-not",
+                        "Öneri alındı. Yukarıdaki kutuda yazıyı istediğiniz gibi değiştirebilirsiniz."));
+                    return el;
+                }
+                el.appendChild(elYap("div", "dg-donem-tur-not", "Önerilen yazı: «" + oneriYazi + "». Kutudaki yazı "
+                    + "öneriden farklı; öneriye dönmek için «Tekrar Öner»e basın."));
+                el.appendChild(oneriAl("Tekrar Öner"));
                 return el;
             }
-            const b = elYap("button", "dg-toplu-btn", "Öneriyi Al");
-            b.type = "button"; b.disabled = kilit;
-            b.title = "Öneri bu parçanın kendi anlamı olur; sonra kutuda düzeltebilirsiniz.";
-            b.onclick = () => {
-                if (kilitli || da.dm === "calisiyor") return;
-                kosMap[p] = o.anlam;
-                kosCiz(); kosDegisti();
-                const yeni = kosKap.querySelector('input[aria-label="' + CSS.escape(p + " koşullu anlamı") + '"]');
-                if (yeni) { yeni.focus(); yeni.select(); }
-            };
-            el.appendChild(b);
+            const bas = elYap("div", "dg-donem-kosul-oneri-bas");
+            bas.appendChild(elYap("span", "dg-donem-kosul-oneri-ad", "Öneri: "));
+            bas.appendChild(document.createTextNode("adında " + p + " geçen kolonlarda bu kalıp «" + oneriYazi + "» demek."));
+            el.appendChild(bas);
+            el.appendChild(elYap("div", "dg-donem-tur-not", "Neden: adında " + p + " geçen " + ftBinlik(o.uyumsuz)
+                + " kolonun sözlük açıklaması kalıbın kaydedilmiş anlamıyla («"
+                + donemAnlamGoster(kalipNe(), kosOneriAnlam || "") + "») uyuşmuyor, bu öneriyle uyuşuyor."
+                + (o.toplam > o.uyumsuz ? " Parça " + ftBinlik(o.toplam) + " kolonda geçiyor; ötekilerinin açıklaması "
+                   + "yok ya da dönemi söylemiyor." : "")
+                + (o.neden ? " " + tireSade(donemNedenGoster(o.neden)) : "")
+                + ((o.ayni || []).length ? " Aynı kolonlarda " + o.ayni.join(", ") + " de geçiyor." : "")));
+            const orn = o.ornekler || [];
+            if (orn.length) {
+                const [ad, dg, tn, dolu] = orn[0];
+                const ornEl = elYap("div", "dg-donem-tur-not", "Ör. " + ad + ": açıklaması «" + tireSade(tn)
+                    + "»; öneriyle «" + dolu + "», şimdiki anlamla «"
+                    + donemDegerAnlami(kalipNe(), kosOneriAnlam || "", dg) + "».");
+                if (orn.length > 1) {
+                    const i_ = bolmeBilgiSimgesi(orn.map(([ad_, dg_, tn_, dolu_]) => ad_ + "\nAçıklaması: " + tn_
+                        + "\n" + dg_ + ", öneriyle: " + dolu_ + "\n" + dg_ + ", şimdiki anlamla: "
+                        + donemDegerAnlami(kalipNe(), kosOneriAnlam || "", dg_)).join("\n\n"),
+                        "Öneriye dayanak olan kolonlar");
+                    i_.classList.add("bolme-info-genis");
+                    ornEl.appendChild(i_);
+                }
+                el.appendChild(ornEl);
+            }
+            el.appendChild(oneriAl("Öneriyi Al"));
             return el;
         }
         function kosCiz() {
@@ -12951,10 +12992,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                             if (deg === "ozel") kosMap[p] = anlamAl().trim();
                             else delete kosMap[p];
                             kosCiz(); kosDegisti();
-                            if (deg === "ozel") {
-                                const yeni = kosKap.querySelector('input[aria-label="' + CSS.escape(p + " koşullu anlamı") + '"]');
-                                if (yeni) { yeni.focus(); yeni.select(); }
-                            }
+                            if (deg === "ozel") kosKutuOdak(p);
                         };
                         seg.appendChild(b);
                     });
