@@ -3511,13 +3511,19 @@ function ozet0124Ciz(o, satirlar) {
         + "bunlarla güncel; AMP_VERISETI ve AMP_SOZLUK Değişken Listesi ve Tip Kontrolü onayında bu hâliyle "
         + "yazılır. Girdi veri setiniz ve sözlüğünüz değişmez.", "Sözlük ve Kolon Adı Kontrolü sonuçları"));
     kok.appendChild(bas);
-    const bolum = (anahtar, baslik, ozet, icerik) => {
+    const bolum = (anahtar, baslik, ozet, icerik, bilgi) => {
         const d = document.createElement("details");
         d.className = "oz0124-bolum";
         d.open = OZ0124_ACIK.has(anahtar);
         d.addEventListener("toggle", () => { if (d.open) OZ0124_ACIK.add(anahtar); else OZ0124_ACIK.delete(anahtar); });
         const sm = document.createElement("summary");
         sm.appendChild(elYap("span", "oz0124-baslik", baslik));
+        if (bilgi) {
+            /* i'ye basmak bölümü açıp kapatmasın (summary'nin varsayılan işi). */
+            const i_ = bolmeBilgiSimgesi(bilgi, baslik);
+            i_.addEventListener("click", e => e.preventDefault());
+            sm.appendChild(i_);
+        }
         if (ozet) sm.appendChild(elYap("span", "oz0124-ozet", ozet));
         d.appendChild(sm);
         const ic = elYap("div", "oz0124-ic");
@@ -3560,7 +3566,14 @@ function ozet0124Ciz(o, satirlar) {
                 if (!ozel.childNodes.length) ozel.textContent = "Yok";
                 return [donemSayiGoster(d.kalip), donemAnlamGoster(d.kalip, d.anlam), d.tur || "", ozel];
             })));
-        });
+        }, "Kolon adlarındaki sayı içeren zaman parçaları (3D, 30D, 3D_7D). Aynı biçimdekiler tek kalıpta "
+            + "toplanır: 3D, 7D ve 30D, [sayı]D kalıbıdır. Kalıba bir kez anlam yazılır, sayı yerine [sayı] "
+            + "konur («son [sayı] gün»); her kolona kendi sayısıyla uygulanır (30D: son 30 gün).\n\n"
+            + "Zaman türü: Pencere (veri o süre boyunca toplanır), Zaman Noktası, Zaman Birimi, Zaman Ölçüsü.\n\n"
+            + "Özel durumlar: bir değerin kendi anlamı (360D: son 1 yıl), gruptan ayrılan değerler ve adda bir "
+            + "parça geçince geçerli anlam (adda RATIO geçerse 3D_7D: son 3 gün ile son 7 gün).\n\n"
+            + "Kolon kartının Zaman alanı, açıklamalardaki dönem kontrolü ve yeni adda yazılış (3D, L3D olur) "
+            + "buradan gelir.");
     }
     /* Ad Parçaları */
     if ((o.parcalar || []).length) {
@@ -3583,7 +3596,12 @@ function ozet0124Ciz(o, satirlar) {
             if (o.parcalar.length > 15) ic.appendChild(ara);
             ic.appendChild(yer);
             ciz();
-        });
+        }, "Kolon adlarındaki dönem dışı kısaltmalar (TXN, GDN, CNT, RATIO). Her birinin onaylı bir anlamı "
+            + "(TXN: işlem) ve türü var: Konu, Yön, Nitelik, Ölçü, İstatistik, Zaman, Karşılaştırma, Birim, Diğer.\n\n"
+            + "Ör. TXN_GDN_3D_CNT: TXN işlem (Konu), GDN giden (Yön), CNT adet (Ölçü); 3D Dönem Bilgisi'nden "
+            + "gelir (son 3 gün).\n\n"
+            + "Kolon kartları, açıklama düzeltme ve yeni adlar (Ad Standardı sırası ve standart yazılış) bu "
+            + "parçalardan kurulur.");
     }
     /* Kolon Adları kuralları */
     if (o.kolon_ad) {
@@ -7710,8 +7728,11 @@ function dogrulamaOzetMetni(haricSayisi, ekleSayisi, duzeltSayisi) {
     return parcalar.length ? parcalar.join(", ") : "Girdi doğrulama onaylandı.";
 }
 
-function dogrulamaKartiEkle(alan, blok) {
-    /* Kartın ait olduğu adım: karar yalnız bu adım ekrandayken uygulanır. */
+function dogrulamaKartiEkle(alan, blok, yerine) {
+    /* yerine: verilirse yeni kart bu kartın YERİNE konur (geçmişten çizilen
+       kartın güncel kararlarla yeniden kurulması). Verilmezse kart adımın
+       kabına eklenir. Kartın ait olduğu adım: karar yalnız bu adım
+       ekrandayken uygulanır. */
     const kartAdim = (blok && blok.adim) || "";
     const kart = document.createElement("div");
     kart.className = "secim-kart dg-kart";
@@ -9112,9 +9133,14 @@ function dogrulamaKartiEkle(alan, blok) {
 
     durumTazele();
 
-    (adimKabiAl(blok) || sohbetEl).appendChild(kart);
-    rozetiBasligaTasi(blok, rozet);
-    sohbetKaydir();
+    /* YERİNDE DEĞİŞTİRME: adimKabiAl sohbetteki SON bloğa bakar; yanıt
+       geldiğinde son blok başka bir adımın olabilir (ör. F5 sonrası aktif
+       02.3) ve kart en alta yeni bir blokta düşerdi. */
+    const yerKap = yerine && yerine.isConnected ? yerine.parentNode : null;
+    if (yerKap) yerine.replaceWith(kart);
+    else (adimKabiAl(blok) || sohbetEl).appendChild(kart);
+    rozetiBasligaTasi(blok, rozet, yerKap);
+    if (!yerKap) sohbetKaydir();
 
     /* GECMISTEN yeniden cizim: kart kilitli acilir, rozet karar
        verildigi andaki halini korur (ozet gecirilmiyor). Yoklama da
@@ -9133,12 +9159,9 @@ function dogrulamaKartiEkle(alan, blok) {
                 .then(d => {
                     if (!kart.isConnected) return;
                     if (d && d.tamam && d.alan && d.alan[bolum]) {
-                        const kap = kart.parentNode;
                         const yeni = Object.assign({}, alan, d.alan, { _kararli: true, rozet: "" });
-                        dogrulamaKartiEkle(yeni, blok);
-                        const kartlar = kap.querySelectorAll(":scope > .dg-kart");
-                        const yeniKart = kartlar[kartlar.length - 1];
-                        if (yeniKart && yeniKart !== kart) { kap.insertBefore(yeniKart, kart); kart.remove(); }
+                        /* Eski kartın YERİNE (sohbetin sonuna değil). */
+                        dogrulamaKartiEkle(yeni, blok, kart);
                     } else if (d && d.hata) {
                         kart.appendChild(elYap("div", "dg-oneri-hata",
                             "Bu kart verilen kararlarla yeniden kurulamadı; ilk hâli görünüyor. (" + tireSade(d.hata) + ")"));
@@ -16144,14 +16167,15 @@ function rozetYuvasinaEkle(blok, el) {
     if (yuva) yuva.appendChild(el);
 }
 
-function rozetiBasligaTasi(blok, el) {
+function rozetiBasligaTasi(blok, el, kap0) {
     if (!el || !blok) return;
     /* KART KENDI BASLIK SATIRINI ÇİZDİYSE rozet orada kalır: yanında
        başlık var, tek başına bir satır kaplamıyor.
        el.isConnected: başlık satırı karta eklenmediyse rozet hâlâ
        DOM dışında duruyor demektir. */
     if (el.isConnected) return;
-    const kap = adimKabiAl(blok);
+    /* kap0: kartın yerinde değiştirildiği kap (adimKabiAl sondaki bloğa bakar). */
+    const kap = kap0 ? (kap0.closest(".alt-bolum") || kap0.closest(".adim-blok") || kap0) : adimKabiAl(blok);
     /* Gruplu blokta kap zaten .alt-bolum, içinde tek .alt-bas var;
        tekli blokta kap bloğun kendisi ve yuva .blok-bas içinde. */
     const yuva = kap && kap.querySelector(

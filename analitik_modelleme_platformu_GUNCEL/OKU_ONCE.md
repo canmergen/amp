@@ -116,6 +116,8 @@ gösterir (`akis_panel.feature_tablo`, `adim_0124_ozeti`):
 - **Tablonun altında "Sözlük ve Kolon Adı Kontrolü sonuçları"**
   (`ozet0124Ciz`; açılır bölümler, açık / kapalı durumu yeniden çizimde
   kalır; yalnız onaylanan bölüm görünür):
+  - Dönem Bilgisi ve Ad Parçaları başlıklarında i: bölümün ne olduğu,
+    örnekle (i'ye basmak bölümü açıp kapatmaz).
   - Dönem Bilgisi: Kalıp, Anlam, Zaman Türü, Özel Durumlar (değerin
     kendi anlamı, gruptan ayrılan değerler, "Adda RATIO geçerse: …").
   - Ad Parçaları: Parça, Anlam, Tür, Kolon (adında geçen kolon sayısı);
@@ -396,7 +398,12 @@ tanıtır; sayfalar sol bardan açılır.
   `akis_faz01.karar_alani`; yalnız bitmiş adım; dil modeli işi
   başlatılmaz) ve eski kartın yerine geçer; transkriptteki kopya eski
   kalsa da kararlar görünür. Kurulamazsa kartın altında "Bu kart verilen
-  kararlarla yeniden kurulamadı" ve nedeni yazar.
+  kararlarla yeniden kurulamadı" ve nedeni yazar. Yeni kart eski kartın
+  YERİNE konur (`dogrulamaKartiEkle(alan, blok, yerine)`); adımın kabı
+  yeniden aranmaz. Önceden kap `adimKabiAl` ile aranıyordu; o sohbetteki
+  son bloğa baktığı için yanıt geldiğinde (F5 sonrası aktif adım, ör.
+  02.3) kart en alta yeni bir 01.2 bloğunda, yanıtların geliş sırasıyla
+  düşüyor ve eski kart da yerinde kalıyordu.
 - **Adım atıfları:** bir işin hangi adımda yapılacağını ya da yapıldığını
   söyleyen her metin (sohbet mesajları, kart açıklamaları, sağ panel
   notları, "i" açıklamaları, hata mesajları, sohbet kutusunun kilit notu)
