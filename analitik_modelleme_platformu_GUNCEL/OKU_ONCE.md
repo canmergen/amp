@@ -556,6 +556,35 @@ tanıtır; sayfalar sol bardan açılır.
     aynı imzayla yazıldıysa kullanılır; hafıza değiştiyse o kolon dil
     modeline yeniden sorulur. Hafızanın dokunmadığı kolonun imzası boştur,
     eski önerisi geçerli kalır. Önbellek dosyasına IMZA kolonu eklendi.
+  - **Aile düzeni:** adı yalnız sayılarla ayrılan kolonlar bir ailedir
+    (`tanim_aileleri`, anahtar `aciklama_duzen.aile_anahtari`; rol
+    kolonları aileye girmez).
+    - Sıra: zorunlu kolonlar en üstte, gerisi aile aile (`aile_sirasi`);
+      tablo ve dil modeli paketleri bu sırayla.
+    - Kardeşlerden birinin tanımı hazırsa (önce onaylı tanım, sonra
+      önbellekteki öneri) öbürlerine plan anında aktarılır. Kalan ailede
+      dil modeli yalnız temsilciyi yazar; tanım gelince kardeşlere
+      aktarılır (`_oneri_isi_calis`, `aileler`). Temsilci tanımsız
+      kalırsa sıradaki kardeş temsilci olur; aktarılamayan kardeş dil
+      modeline kendi başına sorulur. İlerleme sayacı bütün kolonları sayar.
+    - Aktarım kuralları (`tanim_aile_aktar`): adlar yalnız sayılarla
+      ayrılmalı ve eşleme tek anlamlı olmalı; tanımdaki her sayı adda
+      geçmeli (3D_X2 için "6 gün" gibi türetilmiş sayı, bayraktaki 1/0
+      aktarılmaz); değişen her sayı tanımda adda geçtiği kadar geçmeli
+      ("00:00" gibi tekrar aktarılmaz); dönem parçalarının anlamı da aynı
+      değişimle kardeşinkine dönmeli (H00_06 gece, H06_12 sabah gibi değere
+      özel anlam aktarılmaz).
+    - Aktarılan satır "Aileden" (kaynak `aile`, `aile_kaynagi`): satırda
+      çip, açık mavi ton, lejantta "Aileden". Önbelleğe yazılmaz (her
+      seferinde temsilciden yeniden türetilir).
+    - Tabloda her ailenin üstünde başlık satırı: "Aile · TXN_[sayı]D_CNT ·
+      N kolon" ve "i".
+    - **Ailenin N kolonuna uygula:** bir aile kolonunun açıklaması
+      öneriden farklıysa altında çıkar. `/tanim_aile_uygula`
+      (`akis.tanim_aile_uygula`) aynı kurallarla kardeşlerin metnini
+      döner; kardeş satırlar dolar (Düzenlendi), kaynak satır sözlüğe
+      eklenecekse onlar da işaretlenir. Uygulanamayanlar nedeniyle yazar.
+      Kayıt değişmez; karar kartın onayıyla gider.
 - **01.2.4 Sözlük ve Kolon Adı Kontrolü (A ve B):** sözlüğe de kolon
   adlarına da tam güvenilmez (tanımların bir kısmı yanlış ya da eksik,
   adlarda eksik ve yanlış yazılmış kısaltmalar var). Amaç 02'deki dil

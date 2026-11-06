@@ -5401,3 +5401,30 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
   .pf-karolar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pf-kontrol-ad, .pf-sonuc { white-space: normal; }
 }
+
+/* ==================== 01.2.3 aile düzeni ====================
+   Adı yalnız sayılarla ayrılan kolonlar bir başlık satırının altında;
+   "Aileden" gelen satır dil modeli önerisinden ayrı, daha açık bir mavi
+   tonda (çipi de var). Ailenin N kolonuna uygula: açıklama değişince. */
+:root { --dg-aile: rgba(14,165,233,.10); }
+.dg-l-aile { background: var(--dg-aile); }
+.dg-tablo tr.dg-aile-renk > td,
+.dg-kart .dg-tablo tr.dg-aile-renk > td { background: var(--dg-aile); }
+.dg-tablo tr.dg-aile-renk .dg-giris,
+.dg-kart .dg-tablo tr.dg-aile-renk .dg-giris { background: transparent; }
+.dg-kart .dg-rol.dg-aile-cip { border-style: dashed; }
+.dg-tablo tr.dg-aile-bas-satir > td {
+  background: var(--yuzey-alt); border-top: 2px solid var(--kenar-guclu);
+  padding: 5px var(--b-3);
+}
+.dg-aile-bas { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.dg-aile-etiket {
+  font-size: var(--fs-kucuk); color: var(--metin-tamam); border: 1px solid var(--kenar-guclu);
+  border-radius: 999px; padding: 0 8px; line-height: 1.6;
+}
+.dg-aile-ad { overflow-wrap: anywhere; }
+.dg-aile-sayi { color: var(--metin-tamam); }
+.dg-aile-uygula { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 4px; }
+.dg-aile-btn[hidden] { display: none; }
+.kilitli .dg-aile-btn { display: none; }
+.dg-aile-not { font-size: var(--fs-kucuk); color: var(--metin-tamam); overflow-wrap: anywhere; }

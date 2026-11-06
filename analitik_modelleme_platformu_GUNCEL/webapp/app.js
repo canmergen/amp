@@ -2496,14 +2496,27 @@ function hafizaCipi(td, tr, veriSeti) {
     tr.classList.add("dg-hafiza-satir");
 }
 
+/* 01.2.3 AİLE: tanım aynı ailedeki bir kolonun tanımından sayılar
+   değiştirilerek aktarıldı (dil modeli bu kolon için çağrılmadı). */
+function aileCipi(td, tr, kaynak) {
+    if (!td || !tr || tr.querySelector(".dg-aile-cip")) return;
+    const c = elYap("span", "dg-rol dg-aile-cip", "Aileden");
+    c.title = "Aileden: " + (kaynak ? kaynak + " kolonunun" : "ailedeki bir kolonun")
+        + " tanımından sayılar değiştirilerek aktarıldı; bu kolon için dil modeli çağrılmadı.";
+    td.appendChild(c);
+    tr.classList.add("dg-aile-kaynak");
+}
+
 function dgRenk(tr, metin, oneri, karar) {
     if (!tr) return;
     const m = String(metin || "").trim();
     const o = String(oneri || "").trim();
     tr.classList.toggle("dg-bos", !karar && !m);
     const hafiza = tr.classList.contains("dg-hafiza-satir");
-    tr.classList.toggle("dg-llm", !karar && !!m && !!o && m === o && !hafiza);
+    const aile = !hafiza && tr.classList.contains("dg-aile-kaynak");
+    tr.classList.toggle("dg-llm", !karar && !!m && !!o && m === o && !hafiza && !aile);
     tr.classList.toggle("dg-hafiza-renk", !karar && !!m && !!o && m === o && hafiza);
+    tr.classList.toggle("dg-aile-renk", !karar && !!m && !!o && m === o && aile);
     tr.classList.toggle("dg-eklendi", karar === "evet");
     tr.classList.toggle("dg-eklenmedi", karar === "hayir");
     /* Kullanıcının yazdığı / değiştirdiği metin (01.2 kartlarında yeşil). */
@@ -2524,6 +2537,7 @@ function dgLejant(ogeler) {
    önerisi, mor onaylı tanım (hafızada), sarı boş,
    yeşil sizin yazdığınız ya da değiştirdiğiniz. */
 const DG_LEJANT_KARAR = [["dg-l-llm", "Dil Modeli Önerisi"],
+                         ["dg-l-aile", "Aileden"],
                          ["dg-l-hafiza", "Onaylı Tanım"],
                          ["dg-l-dikkat", "Boş"],
                          ["dg-l-duzenlendi", "Düzenlendi"]];
@@ -7958,7 +7972,37 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
            200 satir icin sanallastirmaya gerek yok, ama satir basina
            fazlasi da olmamali. */
         const tbody = document.createElement("tbody");
+        /* AİLE: adı yalnız sayılarla ayrılan kolonlar bir başlığın altında
+           alt alta (arka uç sırayı aile aile gönderir). */
+        const aileUyeleri = {};
         (tanimsiz.satirlar || []).forEach(sat => {
+            if (sat.aile) (aileUyeleri[sat.aile] = aileUyeleri[sat.aile] || []).push(String(sat.kolon));
+        });
+        const kolonSirasi = {};
+        let sonAile = "";
+        (tanimsiz.satirlar || []).forEach(sat => {
+            const aileK = sat.aile && (aileUyeleri[sat.aile] || []).length > 1 ? sat.aile : "";
+            if (aileK && aileK !== sonAile) {
+                const bt = elYap("tr", "dg-aile-bas-satir");
+                const btd = elYap("td");
+                btd.colSpan = 4;
+                const bk = elYap("div", "dg-aile-bas");
+                bk.appendChild(elYap("span", "dg-aile-etiket", "Aile"));
+                bk.appendChild(elYap("b", "dg-aile-ad", ackAileAdi(aileK)));
+                bk.appendChild(elYap("span", "dg-aile-sayi", ftBinlik(aileUyeleri[aileK].length) + " kolon"));
+                bk.appendChild(bolmeBilgiSimgesi(
+                    "Bu kolonların adı yalnız sayılarla ayrılır. Dil modeli aileden bir kolonun "
+                    + "tanımını yazar; diğerlerine sayılar değiştirilerek aktarılır (satırda «Aileden»).\n\n"
+                    + "Aktarım güvenli değilse kolon dil modeline ayrıca sorulur: tanımda adda geçmeyen "
+                    + "bir sayı varsa ya da dönemin anlamı değere özelse (saat 00 ile 06 arası gece, "
+                    + "06 ile 12 arası sabah gibi).\n\n"
+                    + "Bir kolonun açıklamasını değiştirince altında «Ailenin N kolonuna uygula» düğmesi "
+                    + "çıkar; düzeltme kardeşlere sayıları değiştirilerek uygulanır.", "Aile"));
+                btd.appendChild(bk);
+                bt.appendChild(btd);
+                tbody.appendChild(bt);
+            }
+            sonAile = aileK;
             const durum = {
                 kolon: String(sat.kolon === null || sat.kolon === undefined
                               ? "" : sat.kolon),
@@ -7976,8 +8020,9 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
             const i = durumlar.push(durum) - 1;
 
             const tr = document.createElement("tr");
-            tr.className = "dg-satir";
+            tr.className = "dg-satir" + (aileK ? " dg-aile-uye" : "");
             tr.dataset.kolon = durum.kolon;
+            kolonSirasi[durum.kolon] = i;
 
             const tdK = document.createElement("td");
             tdK.className = "dg-kolon";
@@ -7986,6 +8031,7 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
             /* ONAYLI HAFIZADAN DOLDU: dil modeli çağrılmadı; metin daha
                önce onaylanmış tanım. Kaynağı satırda yazar. */
             if (sat.oneri_kaynak === "hafiza") hafizaCipi(tdK, tr, sat.hafiza_veri_seti);
+            if (sat.oneri_kaynak === "aile") aileCipi(tdK, tr, sat.aile_kaynagi);
             if (durum.zorunlu) {
                 /* Kolonun NEDEN zorunlu olduğu satırda yazsın; kullanıcı
                    işareti kaldıramayınca sebebini aramamalı. */
@@ -8053,9 +8099,21 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
                     ? (durum.islem === "ekle" ? "evet" : "hayir") : null;
                 dgRenk(tr, giris.value, giris.dataset.oneriMetin || "", karar);
             };
+            /* AİLEYE UYGULA: açıklama değişince kardeşlere sayıları
+               değiştirilerek uygulanır (arka uç tanim_aile_uygula). */
+            const kardesler = aileK ? aileUyeleri[aileK].filter(k => k !== durum.kolon) : [];
+            let aileBtn = null, aileNot = null;
+            const aileDugmesiTazele = () => {
+                if (!aileBtn) return;
+                const v = giris.value.trim();
+                aileBtn.hidden = kart.classList.contains("kilitli") || !v
+                    || v === String(giris.dataset.oneriMetin || "").trim();
+            };
             giris.addEventListener("input", () => {
                 giris._boyla();
                 giris._vurgu();
+                aileDugmesiTazele();
+                if (aileNot) aileNot.hidden = true;
                 if (kart.classList.contains("kilitli")) return;
                 durumTazele();
             });
@@ -8066,6 +8124,65 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
             const kapA = elYap("div", "dg-anlam-kap");
             kapA.appendChild(giris);
             tdA.appendChild(kapA);
+            if (kardesler.length) {
+                const aKap = elYap("div", "dg-aile-uygula");
+                aileBtn = elYap("button", "dg-toplu-btn dg-aile-btn",
+                                "Ailenin " + ftBinlik(kardesler.length) + " kolonuna uygula");
+                aileBtn.type = "button";
+                aileBtn.title = "Bu açıklamayı ailedeki öbür kolonlara, adlarındaki sayılar değiştirilerek yazar.";
+                aileNot = elYap("div", "dg-aile-not");
+                aileNot.hidden = true;
+                aileBtn.onclick = () => {
+                    if (kart.classList.contains("kilitli")) return;
+                    aileBtn.disabled = true;
+                    fetch(getWebAppBackendUrl("tanim_aile_uygula"), {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ oturum_id: OTURUM_ID, kolon: durum.kolon,
+                                               aciklama: giris.value, hedefler: kardesler })
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                        aileBtn.disabled = false;
+                        if (!d || d.tamam !== true) {
+                            aileNot.textContent = "Uygulanamadı: " + tireSade((d && d.hata) || "bilinmeyen hata") + ".";
+                            aileNot.hidden = false;
+                            return;
+                        }
+                        const metinler = d.metinler || {};
+                        let n = 0;
+                        Object.keys(metinler).forEach(k => {
+                            const j = kolonSirasi[k];
+                            if (j === undefined || !girisler[j] || girisler[j].disabled) return;
+                            const hg = girisler[j];
+                            hg.value = tireSade(metinler[k]);
+                            hg.dataset.dolduruldu = "1";
+                            if (hg._boyla) hg._boyla();
+                            const hs = durumlar[j];
+                            if (hs && !hs.zorunlu && !hs.kilitli && durum.islem === "ekle" && hs.islem !== "ekle") {
+                                hs.islem = "ekle";
+                                kutuCiz(j);
+                            }
+                            if (hg._vurgu) hg._vurgu();
+                            n++;
+                        });
+                        const atl = d.atlanan || {};
+                        const atlAd = Object.keys(atl);
+                        aileNot.textContent = ftBinlik(n) + " kolona uygulandı."
+                            + (atlAd.length ? " " + ftBinlik(atlAd.length) + " kolona uygulanamadı: "
+                               + atlAd.map(k => k + " (" + tireSade(atl[k]) + ")").join("; ") + "." : "");
+                        aileNot.hidden = false;
+                        durumTazele();
+                    })
+                    .catch(e => {
+                        aileBtn.disabled = false;
+                        aileNot.textContent = "Uygulanamadı: " + e + ".";
+                        aileNot.hidden = false;
+                    });
+                };
+                aKap.append(aileBtn, aileNot);
+                tdA.appendChild(aKap);
+                aileDugmesiTazele();
+            }
             tr.appendChild(tdA);
             girisler.push(giris);
 
@@ -9026,6 +9143,8 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
                 hafizaCipi(satirElemanlari[i].querySelector(".dg-kolon"),
                            satirElemanlari[i], k.hafiza_veri_seti);
             }
+            if (k.kaynak === "aile" && satirElemanlari[i])
+                aileCipi(satirElemanlari[i].querySelector(".dg-kolon"), satirElemanlari[i], k.aile_kaynagi);
             if (g._vurgu) g._vurgu();
             if (satirElemanlari[i]) satirElemanlari[i].dataset.oneri = "llm";
         });

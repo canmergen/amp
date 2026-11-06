@@ -3099,6 +3099,20 @@ def karar_alani_endpoint():
         return jsonify(_hata_govdesi("karar_alani", e)), 200
 
 
+@app.route("/tanim_aile_uygula", methods=["POST"])
+def tanim_aile_uygula_endpoint():
+    """01.2.3 Aileye Uygula: bir kolonun aciklamasi ailesindeki kolonlara
+    sayilari degistirilerek (kayit degismez; karar kartla gider)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(istek.get("oturum_id"))
+        durum = _durum_al(anahtar)
+        return jsonify(akis.tanim_aile_uygula(durum, istek.get("kolon"), istek.get("aciklama"),
+                                              istek.get("hedefler") or []))
+    except Exception as e:
+        return jsonify(_hata_govdesi("tanim_aile_uygula", e)), 200
+
+
 @app.route("/kontrol_taslak", methods=["POST"])
 def kontrol_taslak_endpoint():
     """Dönem Bilgisi, Ad Parçaları ve Kolon Adları kartının onaylanmamış son

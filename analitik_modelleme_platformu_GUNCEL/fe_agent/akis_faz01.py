@@ -5768,6 +5768,106 @@ _ONERI_KILIT = threading.Lock()
 ONERI_IS_SINIRI = 8          # ayni anda saklanan en fazla is sayisi
 
 
+# ---------------------------------------------------------------------------
+# 01.2.3 AILE DUZENI: adi yalniz sayilarla ayrilan kolonlar bir ailedir
+# (TXN_GLN_3D_CNT, TXN_GLN_7D_CNT ...). Dil modeli aileden yalniz temsilcinin
+# tanimini yazar; kardeslere sayilar degistirilerek aktarilir. Aktarim
+# guvenli degilse kolon dil modeline kendi basina sorulur.
+# ---------------------------------------------------------------------------
+def tanim_aileleri(adlar, haric=()):
+    """{aile anahtari: [kolonlar]}: en az iki kolonlu aileler, adlar
+    sirasiyla. haric (rol kolonlari) aileye girmez."""
+    haric = set(haric or ())
+    gruplar = {}
+    for a in adlar or ():
+        if a in haric:
+            continue
+        k = aciklama_mod.aile_anahtari(a)
+        if "#" in k:
+            gruplar.setdefault(k, []).append(a)
+    return {k: v for k, v in gruplar.items() if len(v) >= 2}
+
+
+def aile_sirasi(adlar, haric=()):
+    """Kolonlar aile aile: her aile ilk kolonunun yerinde, kardesleri
+    hemen altinda (tablo ve paketler bu sirayla)."""
+    aileler = tanim_aileleri(adlar, haric)
+    uye = {a: k for k, v in aileler.items() for a in v}
+    sira, gorulen = [], set()
+    for a in adlar or ():
+        if a in gorulen:
+            continue
+        k = uye.get(a)
+        grup = aileler[k] if k else [a]
+        for x in grup:
+            if x not in gorulen:
+                gorulen.add(x)
+                sira.append(x)
+    return sira
+
+
+def tanim_aile_aktar(kaynak, tanim, hedef, donem_parcalari=None):
+    """Kaynak kolonun tanimini hedef kardese sayilari degistirerek aktarir.
+    Doner: (yeni tanim, "") ya da (None, neden). Guvenlik kurallari:
+      1) adlar yalniz sayilarla ayrilmali ve sayi eslemesi tek anlamli olmali;
+      2) tanimdaki her sayi kaynagin adinda gecmeli (3D_X2 icin "6 gün" gibi
+         turetilmis sayi varsa aktarilmaz);
+      3) degisen her sayi tanimda adda gectigi kadar gecmeli (sayi tanimda
+         yoksa ya da "00:00" gibi tekrar ediyorsa aktarilmaz);
+      4) donem parcalarinin onayli anlami da ayni sayi degisimiyle hedefinkine
+         donmeli (H00_06 "gece", H06_12 "sabah" gibi degere ozel anlamda
+         aktarilmaz)."""
+    t = str(tanim or "").strip()
+    if not t:
+        return None, "kaynak tanım boş"
+    harita = aciklama_mod.sayi_haritasi(kaynak, hedef)
+    if not harita:
+        return None, "adlar yalnız sayılarla ayrılmıyor"
+    from collections import Counter
+    ad_s = Counter(aciklama_mod._SAYI.findall(" ".join(aciklama_mod.toklar(kaynak))))
+    t_s = Counter(aciklama_mod._SAYI.findall(t))
+    disarida = [x for x in t_s if x not in ad_s]
+    if disarida:
+        return None, "tanımda adda geçmeyen sayı var (%s)" % ", ".join(sorted(disarida))
+    for k in harita:
+        if t_s.get(k, 0) != ad_s.get(k, 0):
+            return None, "%s sayısı tanımda adda geçtiği kadar geçmiyor" % k
+    dp = donem_parcalari or {}
+    km = " | ".join(m for _d, m in (dp.get(kaynak) or ()))
+    hm = " | ".join(m for _d, m in (dp.get(hedef) or ()))
+    if (km or hm) and aciklama_mod.sayilari_degistir(km, harita) != hm:
+        return None, "dönem anlamı değere özel"
+    return aciklama_mod.sayilari_degistir(t, harita), ""
+
+
+def tanim_aile_uygula(durum, kolon, aciklama, hedefler):
+    """01.2.3 "Aileye Uygula": kullanicinin bir kolona yazdigi aciklama ayni
+    ailedeki kolonlara sayilari degistirilerek. Doner: {"tamam", "metinler":
+    {kolon: aciklama}, "atlanan": {kolon: neden}}. Kardes olmayan hedef
+    atlanir; kayit degismez (karar kartin onayiyla gider)."""
+    kolon = str(kolon or "")
+    metin = str(aciklama or "").strip()
+    if not kolon or not metin:
+        return {"tamam": False, "hata": "Açıklama boş.", "metinler": {}, "atlanan": {}}
+    anahtar = aciklama_mod.aile_anahtari(kolon)
+    hedefler = [str(h) for h in (hedefler or []) if str(h) and str(h) != kolon]
+    try:
+        donem_p, _k = kolon_donem_parcalari(durum, [kolon] + hedefler)
+    except Exception:
+        donem_p = {}
+    metinler, atlanan = {}, {}
+    for h in hedefler:
+        if aciklama_mod.aile_anahtari(h) != anahtar:
+            atlanan[h] = "aynı aileden değil"
+            continue
+        yeni, neden = tanim_aile_aktar(kolon, metin, h, donem_p)
+        if yeni:
+            metinler[h] = yeni
+        else:
+            atlanan[h] = neden
+    return {"tamam": True, "metinler": metinler, "atlanan": atlanan}
+
+
 def _oneri_isi_kirp():
     """Kayit sinirsiz buyumesin: en eski isler dusurulur."""
     if len(_ONERI_ISLER) <= ONERI_IS_SINIRI:
@@ -5783,7 +5883,8 @@ def _iptal_mi(is_id):
         return kayit is None or bool(kayit.get("iptal"))
 
 
-def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
+def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None, aileler=None,
+                     uye_profilleri=None):
     """Isci, IKI ASAMA:
       1) tanimsiz kolonlara aciklama onerisi (kart bu asama bitene kadar
          kilitli)
@@ -5796,10 +5897,20 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
     dusen_grup = 0
     grup_sayisi = 0
     son_hata = ""
-    for bas in range(0, len(profiller), ONERI_GRUP):
+    # AILE: {temsilci: [kardesler]}; temsilcinin tanimi gelince kardeslere
+    # aktarilir. Aktarilamayan kardes sonra kendi basina sorulur; temsilci
+    # tanimsiz kalirsa siradaki kardes yeni temsilci olur.
+    aileler = {k: list(v) for k, v in (aileler or {}).items() if v}
+    uye_profilleri = dict(uye_profilleri or {})
+    donem_p = (baglam or {}).get("donem_parcalari") or {}
+    toplam = len(profiller) + sum(len(v) for v in aileler.values())
+    sira = list(profiller)
+    biten = 0
+    while sira:
         if _iptal_mi(is_id):
             return
-        grup = profiller[bas:bas + ONERI_GRUP]
+        grup, sira = sira[:ONERI_GRUP], sira[ONERI_GRUP:]
+        bas = biten
         grup_sayisi += 1
         yeni = {}
         try:
@@ -5825,12 +5936,34 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
             # sayac ve son hata kart ustunde yaziliyor.
             dusen_grup += 1
             son_hata = "%s: %s" % (type(e).__name__, str(e)[:120])
+        # Temsilcilerin tanimi kardeslere.
+        aktarilan = {}
+        for pr in grup:
+            kardes = aileler.pop(pr["ad"], None)
+            if not kardes:
+                continue
+            kayit_t = yeni.get(pr["ad"]) or {}
+            if not kayit_t.get("aciklama"):
+                # Temsilci tanimsiz kaldi: siradaki kardes temsilci olur.
+                if kardes[0] in uye_profilleri:
+                    aileler[kardes[0]] = kardes[1:]
+                    sira.append(uye_profilleri[kardes[0]])
+                continue
+            for u in kardes:
+                metin, _neden = tanim_aile_aktar(pr["ad"], kayit_t["aciklama"], u, donem_p)
+                if metin:
+                    aktarilan[u] = {"aciklama": metin, "modeller": kayit_t.get("modeller") or "",
+                                    "kaynak": "aile", "aile_kaynagi": pr["ad"]}
+                elif u in uye_profilleri:
+                    sira.append(uye_profilleri[u])
+        yeni.update(aktarilan)
+        biten = bas + len(grup) + len(aktarilan)
         with _ONERI_KILIT:
             kayit = _ONERI_ISLER.get(is_id)
             if kayit is None or kayit.get("iptal"):
                 return
             kayit["oneriler"].update(yeni)
-            kayit["biten"] = min(bas + len(grup), len(profiller))
+            kayit["biten"] = min(biten, toplam)
             kayit["model_notu"] = ork.notu()
 
     kontrol = kontrol or []
@@ -5839,7 +5972,7 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
         if kayit is None:
             return
         kayit["durum"] = "bitti"
-        kayit["biten"] = len(profiller)
+        kayit["biten"] = toplam
         kayit["hata"] = (
             "" if not dusen_grup else
             "%s gruptan %s tanesi için öneri alınamadı (%s). O kolonların "
@@ -5892,7 +6025,7 @@ def _oneri_isi_calis(is_id, profiller, baglam=None, kontrol=None):
 
 
 def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None, hazir=None,
-                     hazir_duzeltme=None):
+                     hazir_duzeltme=None, aileler=None, uye_profilleri=None):
     """Arka plan onerisini (ve varsa tanim kontrolunu) baslatir.
     kontrol: tanimli kolonlarin profilleri + "mevcut" tanim.
     Doner: is kimligi."""
@@ -5901,7 +6034,9 @@ def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None, hazir=None,
     with _ONERI_KILIT:
         _ONERI_ISLER[is_id] = {
             "durum": "calisiyor" if profiller else "bitti",
-            "oneriler": dict(hazir or {}), "toplam": len(profiller), "biten": 0,
+            "oneriler": dict(hazir or {}),
+            "toplam": len(profiller) + sum(len(v) for v in (aileler or {}).values()),
+            "biten": 0,
             "hata": "", "kolonlar": list(kolonlar),
             "kontrol_durum": ("bekliyor" if profiller else "calisiyor")
                              if kontrol else "yok",
@@ -5914,7 +6049,8 @@ def oneri_isi_baslat(kolonlar, profiller, baglam=None, kontrol=None, hazir=None,
     if not profiller and not kontrol:
         return is_id
     isci = threading.Thread(
-        target=_oneri_isi_calis, args=(is_id, profiller, baglam, kontrol),
+        target=_oneri_isi_calis, args=(is_id, profiller, baglam, kontrol, aileler,
+                                       uye_profilleri),
         daemon=True)
     isci.start()
     return is_id
@@ -5968,7 +6104,7 @@ def _oneri_sonucunu_tasi(durum):
     # Dil modeli onerileri onbellege (ayni veri setinde tekrar cagrilmasin).
     tanim_hafiza.oneri_ekle(
         {k: v for k, v in (kayit["oneriler"] or {}).items()
-         if isinstance(v, dict) and v.get("kaynak") != "hafiza"},
+         if isinstance(v, dict) and v.get("kaynak") not in ("hafiza", "aile")},
         durum.get("veri_seti") or "", amp_klasor_adi(durum),
         imzalar=durum.get("_oneri_imza") or {})
 
@@ -6035,6 +6171,9 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
     # ekle/haric secimi kartta aynen geri gelir (bkz. sozluk_tanim_uygula).
     kararlar = durum.get("_tanim_kararlari") or {}
     tek_kume = {str(k) for k in (durum.get("_tek_degerli") or [])}
+    # Aile anahtari (tabloda kardesler bir basligin altinda; Aileye Uygula).
+    aile_uye = {a: k for k, v in tanim_aileleri(gosterilen, haric=zorunlu_rol).items()
+                for a in v}
     satirlar = []
     for ad in gosterilen:
         oneri = (oneriler or {}).get(ad) or {}
@@ -6054,6 +6193,8 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
             "oneri": aciklama,
             "oneri_kaynak": (oneri.get("kaynak") or "llm") if aciklama else "yok",
             "hafiza_veri_seti": oneri.get("hafiza_veri_seti") or "",
+            "aile_kaynagi": oneri.get("aile_kaynagi") or "",
+            "aile": aile_uye.get(ad, ""),
         }
         if not rol and ad in tek_kume:
             # TEK DEGERLI: sozluge eklenemez, surec disi kalir (kilitli).
@@ -6268,7 +6409,8 @@ def sozluk_tanim_plan(durum):
         pass
     tanimsiz_kume = set(aciklamasiz)
     zorunlu = [k for k in zorunlu_tanimlar(durum) if k in tanimsiz_kume]
-    gosterilen = zorunlu + [k for k in aciklamasiz if k not in set(zorunlu)]
+    # Zorunlu kolonlar en ustte; gerisi AILE AILE (kardesler alt alta).
+    gosterilen = zorunlu + aile_sirasi([k for k in aciklamasiz if k not in set(zorunlu)])
 
     # Onceki is varsa durdurulur: kullanici geri donup adimi tazeledi.
     oneri_isi_iptal(durum.get("_oneri_is"))
@@ -6320,15 +6462,37 @@ def sozluk_tanim_plan(durum):
                              "modeller": k.get("modeller") or ""}
         except Exception:
             pass
+        # AILELER: tanimi hazir olan bir kardes (onayli tanim, sonra
+        # onbellekteki oneri) varsa kardeslere hemen aktarilir; kalan
+        # ailede dil modeli yalniz temsilciyi yazar (bkz. tanim_aile_aktar).
+        donem_p = baglam.get("donem_parcalari") or {}
+        temsil, kardes_kume = {}, set()
+        for uyeler in tanim_aileleri(gosterilen, haric=roller).values():
+            kaynak = next((u for u in uyeler if (hazir.get(u) or {}).get("kaynak") == "hafiza"), None) \
+                or next((u for u in uyeler if u in hazir), None)
+            eksik = [u for u in uyeler if u not in hazir]
+            if kaynak:
+                for u in eksik:
+                    metin, _neden = tanim_aile_aktar(kaynak, hazir[kaynak]["aciklama"], u, donem_p)
+                    if metin:
+                        hazir[u] = {"aciklama": metin, "kaynak": "aile", "aile_kaynagi": kaynak,
+                                    "modeller": hazir[kaynak].get("modeller") or ""}
+                eksik = [u for u in eksik if u not in hazir]
+            if len(eksik) >= 2:
+                temsil[eksik[0]] = eksik[1:]
+                kardes_kume.update(eksik[1:])
         # Kalanlar dil modeline (tanimli kolonlarin kontrolu SONRAKI
         # ADIMDA, tanim_kontrol).
-        kalan = [k for k in gosterilen if k not in hazir]
+        kalan = [k for k in gosterilen if k not in hazir and k not in kardes_kume]
         profiller = _oneri_profilleri(prof, kalan, p)
         for pr in profiller:
             if pr["ad"] in roller:
                 pr["rol"] = roller[pr["ad"]]
+        uye_profilleri = {pr["ad"]: pr for pr in _oneri_profilleri(prof, sorted(kardes_kume), p)} \
+            if kardes_kume else {}
         durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller, baglam,
-                                              hazir=hazir)
+                                              hazir=hazir, aileler=temsil,
+                                              uye_profilleri=uye_profilleri)
         durum["_oneri_kolonlar"] = list(gosterilen)
         durum["_oneri_imza"] = imzalar
         durum["_tanimsiz_oneri_hata"] = ""
