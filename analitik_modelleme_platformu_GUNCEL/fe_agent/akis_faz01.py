@@ -6772,40 +6772,119 @@ def _tanimsiz_bilgi(kp):
     return bilgi
 
 
+BOS_KOLON_SEBEBI = ("Bütün satırlar boş; modele bilgi katmaz, veri setinden "
+                    "çıkarılmak zorunda.")
+TEK_DEGER_DEGERLI_SEBEBI = ("Bütün satırlarda aynı değer (%s) var ve boş hücre yok; "
+                            "modele bilgi katmaz, veri setinden çıkarılmak zorunda.")
+# Gruplar tabloda bu sirayla, her biri bir basligin altinda.
+SORUNLU_GRUPLAR = (
+    ("bos", "Tamamen Boş Kolonlar",
+     "Bütün satırları boş. Kilitli: her zaman çıkarılır."),
+    ("tek", "Tek Değerli Kolonlar",
+     "Bütün satırlarda aynı değer var, boş hücre yok. Boş hücre ayrı bir değer "
+     "sayılır: bir değer ve boş hücreler iki değerdir, tek değerli sayılmaz. "
+     "Kilitli: her zaman çıkarılır."),
+    ("tanimsiz", "Sözlükte Tanımı Bulunmayan Kolonlar",
+     "İşaretlediğiniz kolonlar çıkarılır; işaretlemedikleriniz veri setinde kalır, "
+     "AMP_SOZLUK'te tanımları boş durur."),
+)
+
+
+def _sorunlu_kolonlar(durum):
+    """01.2.3.1'de sozluk tanimi olsa da listelenen ve hep cikan kolonlar:
+    tamamen bos ve tek degerli (bos hucre ayri deger; bkz.
+    _tek_degerli_hesapla). Rol kolonlari girmez. Doner: [ad] veri seti
+    sirasiyla."""
+    try:
+        tek = set(_tek_degerli_hesapla(durum))
+    except Exception:
+        tek = set(map(str, durum.get("_tek_degerli") or []))
+    roller = set(_zorunlu_etiketler(durum))
+    sira = [str(a) for a in (_veri_kolonlari(durum) or [])]
+    return [a for a in sira if a in tek and a not in roller] + \
+        sorted(a for a in tek if a not in set(sira) and a not in roller)
+
+
 def tanimsiz_karar_plan(durum):
-    """Tanimsiz kolon karari karti. METIN DONDURMEZ. Tanimsiz kolon
-    kalmadiysa adim sorulmadan gecilir."""
-    adlar = _tanimsiz_kalanlar(durum)
+    """Tanimsiz ve sorunlu kolonlar karti. METIN DONDURMEZ. Uc grup:
+    tamamen bos, tek degerli (ikisi kilitli, hep cikar; sozlukte tanimi
+    olsa da) ve sozlukte tanimi bulunmayan (isaretli gelir, kullanici
+    karar verir). Hicbiri yoksa adim sorulmadan gecilir."""
+    tanimsiz = _tanimsiz_kalanlar(durum)
+    sorunlu = _sorunlu_kolonlar(durum)
+    adlar = list(dict.fromkeys(sorunlu + tanimsiz))
     if not adlar:
         durum["_plan_otomatik"] = True
         durum["_secim_alani"] = None
         return ""
-    kilitli = zorunlu_disi_kolonlar(durum)
+    kilitli = zorunlu_disi_kolonlar(durum) | set(sorunlu)
     donem = str(durum.get("_donem_dusuruldu") or "")
     onceki = durum.get("tanimsiz_karar") if isinstance(durum.get("tanimsiz_karar"), dict) else {}
     ozet = _kolon_ozet_haritasi(durum.get("profil") or {})
     kol = _profil_kolonlari(durum)
+    sorunlu_kume = set(sorunlu)
+    tanimsiz_kume = set(tanimsiz)
     satirlar = []
     for ad in adlar:
         k = ozet.get(ad) or {}
+        kp = kol.get(ad) or {}
         satir = {"kolon": ad, "tip": k.get("tip") or "", "null_oran": k.get("null_oran"),
                  "islem": onceki.get(ad) if onceki.get(ad) in ("cikar", "kalsin")
                  else _tanimsiz_varsayilan(durum, ad)}
         satir.update(_tanimsiz_bilgi(kol.get(ad)))
+        if ad in sorunlu_kume:
+            bos = int(kp.get("dolu") or 0) == 0 and kp != {}
+            satir["grup"] = "bos" if bos else "tek"
+            if bos:
+                sebep = BOS_KOLON_SEBEBI
+            else:
+                deger = ""
+                if not (kp.get("pii_ad") or kp.get("pii_deger")) and kp.get("ust_degerler"):
+                    deger = _ornek_metni(kp["ust_degerler"][0][0])
+                sebep = TEK_DEGER_DEGERLI_SEBEBI % deger if deger else TEK_DEGER_SEBEBI
+            satir["sorun"] = sebep
+            satir["tanimsiz"] = ad in tanimsiz_kume
+        else:
+            satir["grup"] = "tanimsiz"
         if ad in kilitli:
             satir["islem"] = "cikar"
             satir["kilitli"] = True
-            satir["kilit_sebebi"] = DONEM_TEK_DEGER_SEBEBI if ad == donem else TEK_DEGER_SEBEBI
+            satir["kilit_sebebi"] = satir.get("sorun") or (
+                DONEM_TEK_DEGER_SEBEBI if ad == donem else TEK_DEGER_SEBEBI)
         satirlar.append(satir)
+    sira = {g: i for i, (g, _b, _a) in enumerate(SORUNLU_GRUPLAR)}
+    satirlar.sort(key=lambda x: sira.get(x["grup"], 9))
+    sayi = {g: sum(1 for x in satirlar if x["grup"] == g) for g, _b, _a in SORUNLU_GRUPLAR}
     durum["_secim_alani"] = {
         "tip": "dogrulama", "baslik": "", "rozet": "", "ozet": [], "kapsam": None,
         "aciklama": "", "tanimsiz": None, "adim": "tanimsiz_karar",
-        "cikar": {"baslik": "Sözlükte Tanımı Bulunmayan Kolonlar",
-                  "not": TANIMSIZ_KARAR_NOT % _sayi(len(satirlar)),
+        "cikar": {"baslik": "Tanımsız ve Sorunlu Kolonlar",
+                  "not": tanimsiz_karar_notu(sayi),
+                  "gruplar": [{"anahtar": g, "baslik": b, "aciklama": a, "sayi": sayi[g]}
+                              for g, b, a in SORUNLU_GRUPLAR if sayi[g]],
                   "satirlar": satirlar},
         "buton_kalip": dict(TANIMSIZ_KARAR_DUGME),
     }
     return ""
+
+
+def tanimsiz_karar_notu(sayi):
+    """Kartin not satiri: kac kolon, hangi gruptan, ne olacak."""
+    parca = []
+    if sayi.get("bos"):
+        parca.append("%s kolon tamamen boş" % _sayi(sayi["bos"]))
+    if sayi.get("tek"):
+        parca.append("%s kolon tek değerli" % _sayi(sayi["tek"]))
+    metin = ""
+    if parca:
+        metin += ("%s. Bu kolonlar modele bilgi katmaz; sözlükte tanımları olsa da "
+                  "AMP_VERISETI'nden ve AMP_SOZLUK'ten çıkarılır. "
+                  % " ve ".join(parca))
+    if sayi.get("tanimsiz"):
+        metin += ("Sözlükte tanımı bulunmayan %s kolon var. İşaretlediğiniz kolonlar "
+                  "çıkarılır; işaretlemedikleriniz veri setinde kalır, AMP_SOZLUK'te "
+                  "tanımları boş durur. " % _sayi(sayi["tanimsiz"]))
+    return metin + "Girdi veri setiniz ve sözlüğünüz değişmez."
 
 
 def tanimsiz_karar_uygula(durum):
@@ -6813,14 +6892,16 @@ def tanimsiz_karar_uygula(durum):
     kalan tanimsiz kolonlar veri setinde kalir. Govde gelmezse (yazarak
     onay) onceki karar, yoksa ilk hal uygulanir."""
     karar = durum.pop("_dogrulama_karari", None)
-    adlar = _tanimsiz_kalanlar(durum)
+    sorunlu = _sorunlu_kolonlar(durum)
+    adlar = list(dict.fromkeys(sorunlu + _tanimsiz_kalanlar(durum)))
     onceki = durum.get("tanimsiz_karar") if isinstance(durum.get("tanimsiz_karar"), dict) else {}
     if isinstance(karar, dict) and isinstance(karar.get("cikar"), list):
         cikar = {str(k) for k in karar["cikar"]} & set(adlar)
     else:
         cikar = {a for a in adlar
                  if (onceki.get(a) or _tanimsiz_varsayilan(durum, a)) == "cikar"}
-    cikar |= set(adlar) & zorunlu_disi_kolonlar(durum)
+    # Tamamen bos ve tek degerli kolonlar her zaman cikar (kilitli).
+    cikar |= set(adlar) & (zorunlu_disi_kolonlar(durum) | set(sorunlu))
     kalsin = {a for a in adlar if a not in cikar}
     durum["tanimsiz_karar"] = {a: ("cikar" if a in cikar else "kalsin") for a in adlar}
     durum["haric_kolonlar"] = sorted(

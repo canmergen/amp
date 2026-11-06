@@ -6851,7 +6851,7 @@ const BLOK_TAMAM_METNI = {
     kurulum: "Girdiler Onaylandı",
     tanimlar: "Kolon Rolleri Onaylandı",
     sozluk_tanim: "Eksik Sözlük Tanımları Kaydedildi",
-    tanimsiz_karar: "Tanımsız Kolonlar Kararı Verildi",
+    tanimsiz_karar: "Tanımsız ve Sorunlu Kolonlar Kararı Verildi",
     sozluk_birlestir: "Sözlük Tanımları Seçildi",
     parca: "Ad Parçaları Onaylandı",
     kolon_ad: "Kolon Adları Belirlendi",
@@ -8300,12 +8300,37 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
         ct.appendChild(cth);
         const cTbody = document.createElement("tbody");
         const eksikler = new Set();     /* eski profilde olmayan alanlar */
+        /* GRUPLAR: Tamamen Boş, Tek Değerli (kilitli, hep çıkar), Sözlükte
+           Tanımı Bulunmayan; her grup bir başlık satırının altında. */
+        const cGruplar = {};
+        (cikar.gruplar || []).forEach(g => { cGruplar[g.anahtar] = g; });
+        let cSonGrup = "";
         (cikar.satirlar || []).forEach(sat => {
             const ad = String(sat.kolon === null || sat.kolon === undefined ? "" : sat.kolon);
+            const g = cGruplar[sat.grup];
+            if (g && sat.grup !== cSonGrup) {
+                const gtr = elYap("tr", "dg-cikar-grup-satir");
+                const gtd = elYap("td");
+                gtd.colSpan = KOLONLAR.length;
+                const gk = elYap("div", "dg-cikar-grup");
+                gk.appendChild(elYap("b", "", g.baslik));
+                gk.appendChild(elYap("span", "dg-aile-sayi", ftBinlik(g.sayi) + " kolon"));
+                if (g.aciklama) gk.appendChild(bolmeBilgiSimgesi(g.aciklama, g.baslik));
+                gtd.appendChild(gk);
+                gtr.appendChild(gtd);
+                cTbody.appendChild(gtr);
+            }
+            cSonGrup = sat.grup || "";
             const tr = elYap("tr", "dg-satir dg-cikar-satir");
             tr.dataset.kolon = ad;
             const tdK = elYap("td", "dg-kolon", ad);
-            tdK.title = ad;
+            tdK.title = ad + (sat.sorun ? "\n" + duzMetin(sat.sorun) : "");
+            /* Sorunlu kolon sözlükte de tanımsızsa bunu da söyler. */
+            if (sat.sorun && sat.tanimsiz) {
+                const tc = elYap("span", "dg-rol", "Tanımsız");
+                tc.title = "Sözlükte tanımı da yok.";
+                tdK.appendChild(tc);
+            }
             tr.appendChild(tdK);
             const tdT = elYap("td", "dg-tip");
             metinYaz(tdT, sat.tip || "");

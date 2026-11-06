@@ -5428,3 +5428,8 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .dg-aile-btn[hidden] { display: none; }
 .kilitli .dg-aile-btn { display: none; }
 .dg-aile-not { font-size: var(--fs-kucuk); color: var(--metin-tamam); overflow-wrap: anywhere; }
+/* 01.2.3.1 Tanımsız ve Sorunlu Kolonlar: grup başlık satırı. */
+.dg-tablo tr.dg-cikar-grup-satir > td {
+  background: var(--yuzey-alt); border-top: 2px solid var(--kenar-guclu); padding: 5px var(--b-3);
+}
+.dg-cikar-grup { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }

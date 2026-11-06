@@ -1647,10 +1647,25 @@ tanıtır; sayfalar sol bardan açılır.
   NITELIK, ZAMAN, OLCU, ISTATISTIK, KARSILASTIRMA, BIRIM, DIGER,
   EK_BILGI, AILE (yeni adlarla aile anahtarı, tek kolonlu ailede boş),
   ONAY_KULLANICI, ONAY_ZAMANI (Kolon Kartları onayı).
-- **01.2.3.1 Tanımsız Kolonlar** (A ve B; 01.2.3'ün alt adımı, numaralar
-  kaymaz): 01.2.3'ten sonra sözlükte hâlâ tanımı olmayan kolonlar
-  listelenir; satır başına "Çıkar" kutusu, "Tümünü Seç" ve "Tümünü
-  Temizle". Kolonlar: Değişken, Tip, Boş Oranı, Tekrar Oranı, Tekil
+- **01.2.3.1 Tanımsız ve Sorunlu Kolonlar** (A ve B; 01.2.3'ün alt adımı,
+  numaralar kaymaz). Üç grup, her biri bir başlık satırının altında
+  (`SORUNLU_GRUPLAR`; başlıkta kolon sayısı ve "i"):
+  - **Tamamen Boş Kolonlar** ve **Tek Değerli Kolonlar**
+    (`_sorunlu_kolonlar`, `_tek_degerli_hesapla`): boş hücre ayrı değer
+    sayılır (`nunique(dropna=False) <= 1`); tamamen boş kolon ve hiç boşu
+    olmayan sabit kolon tek değerlidir, "bir değer ve boş" iki değerlidir.
+    Sözlükte tanımları olsa da listelenir, kilitli ve her zaman çıkar
+    (AMP_VERISETI'nden ve AMP_SOZLUK'ten); satırın ipucunda nedeni ve tek
+    değer yazar ("Bütün satırlarda aynı değer (7) var ve boş hücre yok").
+    Sözlükte tanımı da yoksa "Tanımsız" çipi. Rol kolonları (hedef, kimlik
+    ...) girmez. Önceden yalnız 01.3'te sessizce süreç dışı kalıyorlardı;
+    artık burada çıkarıldıkları için 01.2.4 adımlarına da girmezler.
+  - **Sözlükte Tanımı Bulunmayan Kolonlar:** 01.2.3'ten sonra sözlükte
+    hâlâ tanımı olmayan kolonlar; satır başına "Çıkar" kutusu (işaretli
+    gelir), "Tümünü Seç" ve "Tümünü Temizle".
+  - Not satırı sayıları yazar (`tanimsiz_karar_notu`): "1 kolon tamamen boş
+    ve 2 kolon tek değerli. Bu kolonlar modele bilgi katmaz; …". Üç grup
+    da boşsa adım sorulmadan geçilir. Kolonlar: Değişken, Tip, Boş Oranı, Tekrar Oranı, Tekil
   Değer, En Sık Değerler, Min, Med, Mean, Max, Çıkar
   (`akis_faz01._tanimsiz_bilgi`). Hepsi veri seti profilinden (tam tablo,
   örneklem yok). Genişlikler `<col>` sınıflarından (`tk-*`), başlık ve
