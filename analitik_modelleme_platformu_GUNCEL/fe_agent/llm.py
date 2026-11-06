@@ -406,8 +406,12 @@ KOLON ADI PARÇALARI (anlam varsayma; yalnızca aşağıdaki kaynaklardan al):
     Kalıp varsayma; tanımlarda olmayan bir anlam (zaman yönü, aralık,
     birim ...) ekleme.
   - KISALTMALAR (kesin) bloğu verilirse (bu veri setinin sözlüğünden
-    okunan ya da kullanıcının onayladığı anlamlar) anlam ODUR; kendin
-    tahmin etme.
+    okunan ya da kullanıcının bu veya önceki çalışmalarda onayladığı
+    anlamlar) anlam ODUR; kendin tahmin etme ve tanımda bu anlamı
+    atlama (ör. GDN "giden" ise tanımda "giden" geçer).
+  - DÖNEM PARÇALARI bloğu kolonun adındaki zaman bilgisini kolonun kendi
+    sayılarıyla verir (ör. "3D = son 3 gün"); tanımda bu anlamı aynen
+    kullan, sayıyı ve yönü değiştirme.
   - KISALTMALAR (tahmini) bloğu sözlük istatistiğinden ya da başka
     çalışmalardan gelir: kolon adı, dağılım ve örneklerle tutarlıysa
     kullan, çelişiyorsa kullanma.
@@ -652,6 +656,13 @@ def _baglamli_govde(adlar, kolon_metni, baglam, kolon_basligi="KOLONLAR"):
                     gecen.append((bicim, anlam))
         if gecen:
             ek.append(baslik + ":\n" + "\n".join("- %s: %s" % kv for kv in gecen))
+    # DONEM PARCALARI: onayli donem kaliplari, kolonun kendi sayilariyla
+    # (akis_faz01.kolon_donem_parcalari); yalniz bu gruptaki kolonlar.
+    donem = baglam.get("donem_parcalari") or {}
+    d_satir = ["- %s: %s = %s" % (a, deger, metin)
+               for a in adlar for deger, metin in (donem.get(a) or ())]
+    if d_satir:
+        ek.append("DÖNEM PARÇALARI (onaylı, kesin):\n" + "\n".join(d_satir))
     hafiza = baglam.get("hafiza") or {}
     if hafiza:
         # Rolu olan kolonda (kimlik, hedef ...) ayni adli onayli tanim

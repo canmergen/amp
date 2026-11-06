@@ -191,7 +191,7 @@ def arka_planda_ekle(kayitlar, veri_seti="", kullanici="", klasor=""):
 # tanim hafizasindadir (TANIM_HAFIZASI).
 # ---------------------------------------------------------------------------
 ONERI_AD = "ONERI_ONBELLEGI.json"
-ONERI_KOLONLAR = ["KOLON", "VERI_SETI", "ACIKLAMA", "MODELLER", "TARIH"]
+ONERI_KOLONLAR = ["KOLON", "VERI_SETI", "ACIKLAMA", "MODELLER", "TARIH", "IMZA"]
 _ONERI_ONBELLEK = {}      # yol -> {"zaman", "df"}
 
 
@@ -210,9 +210,12 @@ def _oneri_oku(yol):
     return df[ONERI_KOLONLAR].fillna("").astype(str)
 
 
-def oneri_bul(adlar, veri_seti, klasor):
+def oneri_bul(adlar, veri_seti, klasor, imzalar=None):
     """{kolon: {"aciklama", "modeller"}} - bu calismanin, AYNI veri setinin
-    onerileri. klasor: calismanin PROJE_HAFIZASI icindeki klasoru."""
+    onerileri. klasor: calismanin PROJE_HAFIZASI icindeki klasoru.
+    imzalar {kolon: imza} verilirse yalniz ayni baglamla (kesin parca ve
+    donem anlamlari) yazilmis oneri doner; baglam degistiyse kolon dil
+    modeline yeniden sorulur."""
     if not adlar or not veri_seti or not klasor:
         return {}
     yol = _oneri_yolu(klasor)
@@ -225,11 +228,13 @@ def oneri_bul(adlar, veri_seti, klasor):
         return {}
     df = df[(df["VERI_SETI"] == str(veri_seti)) & df["KOLON"].isin(set(map(str, adlar)))
             & (df["ACIKLAMA"].str.strip() != "")]
+    imz = imzalar if isinstance(imzalar, dict) else None
     return {r["KOLON"]: {"aciklama": r["ACIKLAMA"], "modeller": r["MODELLER"]}
-            for _i, r in df.iterrows()}
+            for _i, r in df.iterrows()
+            if imz is None or str(r["IMZA"] or "") == str(imz.get(r["KOLON"]) or "")}
 
 
-def oneri_ekle(oneriler, veri_seti, klasor):
+def oneri_ekle(oneriler, veri_seti, klasor, imzalar=None):
     """oneriler: {kolon: {"aciklama", "modeller"}}. Ayni (kolon, veri seti)
     guncellenir; calismanin klasorune yazilir. Arka planda; hata akisi
     durdurmaz."""
@@ -248,7 +253,9 @@ def oneri_ekle(oneriler, veri_seti, klasor):
                 yeni = pd.DataFrame([{"KOLON": k, "VERI_SETI": str(veri_seti),
                                       "ACIKLAMA": str(v["aciklama"]),
                                       "MODELLER": str(v.get("modeller") or ""),
-                                      "TARIH": zaman} for k, v in temiz.items()],
+                                      "TARIH": zaman,
+                                      "IMZA": str((imzalar or {}).get(k) or "")}
+                                     for k, v in temiz.items()],
                                     columns=ONERI_KOLONLAR)
                 df = pd.concat([df, yeni], ignore_index=True)
                 tablo_io.klasore_yaz(_folder(), yol, df)

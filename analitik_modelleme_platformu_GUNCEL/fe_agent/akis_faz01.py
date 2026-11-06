@@ -1503,6 +1503,17 @@ def _aciklama_baglami(durum):
             kisaltma_okuma.baglam_kisaltmalari(okunacak)
     except Exception:
         baglam["kisaltmalar"], baglam["kisaltmalar_tahmini"] = {}, {}
+    # ONAYLI PARCA HAFIZASI KESIN: onceki calismalarda Ad Parcalari'nda
+    # (01.2.4.2) onaylanan parca anlamlari ve eski onayli kisaltmalar.
+    # Sozlukten okunanin ustune yazar; bu calismanin Ad Parcalari onayi
+    # (asagida) hepsinin ustundedir. Baska anlamda kullanildigi not edilen
+    # parca asagidaki DIKKAT bloguna gider.
+    hafiza_parca = hafiza_parca_anlamlari()
+    baglam["hafiza_parcalari"] = sorted(hafiza_parca)
+    if hafiza_parca:
+        baglam["kisaltmalar"] = dict(baglam["kisaltmalar"], **hafiza_parca)
+        baglam["kisaltmalar_tahmini"] = {
+            k: v for k, v in baglam["kisaltmalar_tahmini"].items() if k not in hafiza_parca}
     # Ad Parcalari'nda (01.2.4.2) onaylanan anlamlar KESIN.
     onayli = _onayli_anlamlar(durum)
     if onayli:
@@ -1525,7 +1536,96 @@ def _aciklama_baglami(durum):
                      "(yerine %s önerildi). Hangisi olduğunu kolon adı ve "
                      "örneklerden doğrula." % (genel or "?", a, y))
     baglam["kisaltmalar_dikkat"] = dikkat
+    # DONEM PARCALARI KESIN: onayli donem kaliplari kolonun kendi
+    # sayilariyla (bu calismanin Donem Bilgisi ya da hafiza).
+    try:
+        baglam["donem_parcalari"], baglam["donem_kaliplari"] = \
+            kolon_donem_parcalari(durum, _veri_kolonlari(durum))
+    except Exception:
+        baglam["donem_parcalari"], baglam["donem_kaliplari"] = {}, {}
     return baglam
+
+
+def _kesin_parcalar(baglam, ad):
+    """Kolon adinda gecen kesin anlamli parcalar [(bicim, anlam)]: istemle
+    ayni eslestirme (llm._baglamli_govde)."""
+    try:
+        return list(kisaltma_mod.ad_anlamlari(llm_mod._normalize_ad_parcali(ad),
+                                              baglam.get("kisaltmalar") or {}))
+    except Exception:
+        return []
+
+
+def oneri_imzalari(baglam, adlar):
+    """{kolon: imza}: kolona giden kesin parca, dikkat ve donem anlamlarinin
+    ozeti. Hicbiri yoksa bos (onceki oneriler gecerli kalir)."""
+    import hashlib
+    donem = baglam.get("donem_parcalari") or {}
+    dikkat = baglam.get("kisaltmalar_dikkat") or {}
+    cikti = {}
+    for a in adlar or ():
+        ogeler = sorted(_kesin_parcalar(baglam, a))
+        try:
+            ogeler += sorted(("dikkat",) + tuple(x) for x in
+                             kisaltma_mod.ad_anlamlari(llm_mod._normalize_ad_parcali(a), dikkat))
+        except Exception:
+            pass
+        ogeler += [("donem", d, m) for d, m in (donem.get(a) or ())]
+        cikti[a] = hashlib.md5(json.dumps(ogeler, ensure_ascii=False).encode("utf-8")).hexdigest()[:16] \
+            if ogeler else ""
+    return cikti
+
+
+def tanim_hafiza_ozeti(baglam, adlar):
+    """01.2.3 kartinin ust satiri icin: listelenen kolonlarin adlarinda gecen
+    kesin parca anlamlari ve donem kaliplari sayisi."""
+    parcalar, kalip = set(), set()
+    haf = set(baglam.get("hafiza_parcalari") or ())
+    donem = baglam.get("donem_parcalari") or {}
+    dk = baglam.get("donem_kaliplari") or {}
+    for a in adlar or ():
+        for bicim, _an in _kesin_parcalar(baglam, a):
+            # Yalniz hafizadan gelenler (sozlukten okunan sayilmaz).
+            if str(bicim).upper() in haf or all(x in haf for x in str(bicim).upper().split("_")):
+                parcalar.add(bicim)
+        kalip.update(dk.get(a) or ())
+    return {"parca": len(parcalar), "donem": len(kalip),
+            "donem_kolon": sum(1 for a in adlar or () if donem.get(a))}
+
+
+def _tanim_hafiza_cumlesi(oz):
+    """01.2.3 kartinin notuna eklenen cumle: dil modeline kesin bilgi olarak
+    giden hafiza (yoksa bos)."""
+    oz = oz if isinstance(oz, dict) else {}
+    p, d = int(oz.get("parca") or 0), int(oz.get("donem") or 0)
+    parcalar = []
+    if p:
+        parcalar.append("%s parça anlamı" % _sayi(p))
+    if d:
+        parcalar.append("%s dönem kalıbı" % _sayi(d))
+    if not parcalar:
+        return ""
+    return (" Tanımlar yazılırken hafızadaki onaylı %s dil modeline kesin "
+            "bilgi olarak verildi." % " ve ".join(parcalar))
+
+
+def hafiza_parca_anlamlari():
+    """{PARCA: anlam}: hafizadaki onayli parca anlamlari (onceki
+    calismalarin Ad Parcalari onaylari, eski onayli kisaltmalar, rakamsiz
+    donem parcalari). Ek turundeki parcanin anlami nasil okunacagiyla."""
+    try:
+        haf = parca_mod.hafiza()
+    except Exception:
+        return {}
+    cikti = {}
+    for k, v in (haf or {}).items():
+        an = str((v or {}).get("anlam") or "").strip() if isinstance(v, dict) else ""
+        if not an:
+            continue
+        if (v.get("tur") or "") == "ek" or "[" in an:
+            an = "%s (ek: [parça] yerine yanındaki parçanın anlamı gelir)" % an
+        cikti[str(k).upper()] = an
+    return cikti
 
 
 def onayli_hafiza_anlami(kisa):
@@ -3997,6 +4097,72 @@ KART_ADLARI = (("konu", "Konu"), ("yon", "Yön"), ("nitelik", "Nitelik"), ("zama
                ("karsilastirma", "Karşılaştırma"), ("birim", "Birim"), ("diger", "Diğer"))
 
 
+def _donem_desenleri(bilgi, haric=None, deger=None, ayrilan=None, tur=None, kosul=None):
+    """Onayli donem kaliplarinin desenleri: [(kalip, desen, anlam, haric
+    ikililer, deger anlamlari, tur)] ve kosullu anlamlar {kalip: {PARCA:
+    anlam}}. Kaynak bu calismanin Donem Bilgisi (01.2.4.1) ya da hafiza."""
+    haric, deger, ayrilan, tur = haric or {}, deger or {}, ayrilan or {}, tur or {}
+    desenler = []
+    for k, v in (bilgi or {}).items():
+        r = donem_mod.kalip_deseni(k)
+        if r is not None and str(v or "").strip():
+            # Gruptan ayrilan deger grubun deseniyle eslesmez.
+            ayr = set(ayrilan.get(k) or ())
+            if ayr:
+                r = _AyrilanliDesen(r, ayr)
+            desenler.append((str(k), r, str(v).strip(), set(haric.get(k) or ()),
+                             dict(deger.get(k) or {}), tur.get(k) or "pencere"))
+    # Daha ozel desen once: ailesinden ayrilan yazilis ("M<N>") ailesinden
+    # ("<N>M"), tam basamakli <N2> ve <NN> (en az iki basamak) <N>'den once
+    # eslesir.
+    desenler.sort(key=lambda x: (donem_mod.aile_mi(x[0]),
+                                 -len(re.findall(r"<N\d>", x[0])), -x[0].count("<NN>")))
+    kosullar = {k: v for k, v in (kosul or {}).items() if isinstance(v, dict) and v}
+    return desenler, kosullar
+
+
+def _hafiza_donem_desenleri():
+    """Onceki calismalarda onaylanip hafizaya yazilan donem kaliplari."""
+    def _oku(f, bos):
+        try:
+            v = f()
+            return v if isinstance(v, type(bos)) else bos
+        except Exception:
+            return bos
+    return _donem_desenleri(_oku(donem_mod.hafiza, {}), _oku(donem_mod.hafiza_haric, {}),
+                            _oku(donem_mod.hafiza_deger, {}), _oku(donem_mod.hafiza_ayrilan, {}),
+                            _oku(donem_mod.hafiza_tur, {}), _oku(donem_mod.hafiza_kosul, {}))
+
+
+def kolon_donem_parcalari(durum, adlar):
+    """01.2.3 tanim onerisinin DONEM PARCALARI: {kolon: [(deger, metin)]};
+    metin onayli kalibin anlami, kolonun kendi sayilariyla ("3D" -> "son 3
+    gün (zaman penceresi)"), adda kosul parcasi geciyorsa kosullu anlam.
+    Kaynak: bu calismanin Donem Bilgisi onaylandiysa o, yoksa hafiza.
+    Doner: (harita, {kolon: [kullanilan kaliplar]})."""
+    if isinstance(durum.get("donem_bilgisi"), dict) and durum.get("donem_bilgisi"):
+        desenler, kosul = _donem_desenleri(
+            durum.get("donem_bilgisi"), durum.get("donem_haric"), durum.get("donem_deger_anlam"),
+            durum.get("donem_ayrilan"), durum.get("donem_turleri"), durum.get("donem_kosul"))
+    else:
+        desenler, kosul = _hafiza_donem_desenleri()
+    if not desenler:
+        return {}, {}
+    kosul_parcalari = {p_ for v in kosul.values() for p_ in v}
+    harita, kaliplar = {}, {}
+    for a in adlar or ():
+        t = aciklama_mod.toklar(a)
+        desen_a = desenler
+        if kosul and any(p_ in kosul_parcalari for p_ in t):
+            desen_a = [(k_, r_, donem_mod.kosullu_anlam(an_, kosul.get(k_), t), h_, dg_, tr_)
+                       for k_, r_, an_, h_, dg_, tr_ in desenler]
+        parcalar, ozet, _kart = _aciklama_parcalari(t, desen_a, {}, {})
+        if parcalar:
+            harita[a] = parcalar
+            kaliplar[a] = sorted({str(k) for k, _an in ozet if "<" in str(k)})
+    return harita, kaliplar
+
+
 def _kolon_karti(kart_parcalari):
     """[(alan, metin)] -> {alan: "metin1, metin2"} (adda gectikleri
     sirayla; ayni metin bir kez)."""
@@ -4109,27 +4275,10 @@ def _aciklama_girdileri(durum):
                                                          durum.get("profil") or {})}
     except Exception:
         ozetler = {}
-    desenler = []
-    donem_haric = durum.get("donem_haric") or {}
-    donem_deger = durum.get("donem_deger_anlam") or {}
-    donem_ayrilan = durum.get("donem_ayrilan") or {}
-    donem_tur = durum.get("donem_turleri") or {}
-    donem_kosul = {k: v for k, v in (durum.get("donem_kosul") or {}).items() if isinstance(v, dict) and v}
+    desenler, donem_kosul = _donem_desenleri(
+        durum.get("donem_bilgisi"), durum.get("donem_haric"), durum.get("donem_deger_anlam"),
+        durum.get("donem_ayrilan"), durum.get("donem_turleri"), durum.get("donem_kosul"))
     donem_kosul_parcalari = {p_ for v in donem_kosul.values() for p_ in v}
-    for k, v in (durum.get("donem_bilgisi") or {}).items():
-        r = donem_mod.kalip_deseni(k)
-        if r is not None and str(v or "").strip():
-            # Gruptan ayrilan deger grubun deseniyle eslesmez.
-            ayr = set(donem_ayrilan.get(k) or ())
-            if ayr:
-                r = _AyrilanliDesen(r, ayr)
-            desenler.append((str(k), r, str(v).strip(), set(donem_haric.get(k) or ()),
-                             dict(donem_deger.get(k) or {}), donem_tur.get(k) or "pencere"))
-    # Daha ozel desen once: ailesinden ayrilan yazilis ("M<N>") ailesinden
-    # ("<N>M"), tam basamakli <N2> ve <NN> (en az iki basamak) <N>'den once
-    # eslesir.
-    desenler.sort(key=lambda x: (donem_mod.aile_mi(x[0]),
-                                 -len(re.findall(r"<N\d>", x[0])), -x[0].count("<NN>")))
     # Ad Parcalari'nda onaylanan anlamlar (kesin).
     onayli = durum.get("parca_bilgisi") if isinstance(durum.get("parca_bilgisi"), dict) else {}
     with aciklama_mod._KILIT:
@@ -5820,7 +5969,8 @@ def _oneri_sonucunu_tasi(durum):
     tanim_hafiza.oneri_ekle(
         {k: v for k, v in (kayit["oneriler"] or {}).items()
          if isinstance(v, dict) and v.get("kaynak") != "hafiza"},
-        durum.get("veri_seti") or "", amp_klasor_adi(durum))
+        durum.get("veri_seti") or "", amp_klasor_adi(durum),
+        imzalar=durum.get("_oneri_imza") or {})
 
 
 def _kontrol_alani(durum, kontrol_sayisi):
@@ -5931,7 +6081,8 @@ def _dogrulama_karti(durum, profil, gosterilen, kalan, oneriler):
         "not": (SOZLUKSUZ_NOT_KALIP if durum.get("_sozluksuz")
                 else TANIMSIZ_NOT_KALIP) % ((_sayi(len(satirlar)),) if durum.get("_sozluksuz")
                                             else (_sayi(len(satirlar)),
-                                                  akis_atif.adim("tanimsiz_karar", durum))),
+                                                  akis_atif.adim("tanimsiz_karar", durum)))
+               + _tanim_hafiza_cumlesi(durum.get("_tanim_hafiza_ozeti")),
         # Sozluk secilmediyse oneri geldikce satir "Sözlüğe Ekle" isaretli
         # olur.
         "oneri_gelince_ekle": bool(durum.get("_sozluksuz")),
@@ -6122,12 +6273,19 @@ def sozluk_tanim_plan(durum):
     # Onceki is varsa durdurulur: kullanici geri donup adimi tazeledi.
     oneri_isi_iptal(durum.get("_oneri_is"))
 
+    # BAGLAM ONCE: kolon basina imza (kesin parca ve donem anlamlari);
+    # baglam degistiyse ne biten is ne onbellekteki oneri kullanilir.
+    baglam = _aciklama_baglami(durum)
+    imzalar = oneri_imzalari(baglam, gosterilen)
+    durum["_tanim_hafiza_ozeti"] = tanim_hafiza_ozeti(baglam, gosterilen)
+
     # Ayni kolon kumesi icin zaten TAMAMLANMIS bir is varsa yeniden
     # calistirilmaz; geri donup adimi tazelemek modeli ikinci kez
     # bekletmemeli.
     onceki = oneri_isi_durumu(durum.get("_oneri_is"))
     if onceki and onceki["durum"] == "bitti" \
-            and durum.get("_oneri_kolonlar") == gosterilen:
+            and durum.get("_oneri_kolonlar") == gosterilen \
+            and durum.get("_oneri_imza") == imzalar:
         oneriler = onceki["oneriler"]
         durum["_tanimsiz_oneri_hata"] = onceki["hata"]
     else:
@@ -6157,7 +6315,7 @@ def sozluk_tanim_plan(durum):
         try:
             for ad, k in tanim_hafiza.oneri_bul(
                     [g for g in gosterilen if g not in hazir], veri_seti,
-                    amp_klasor_adi(durum)).items():
+                    amp_klasor_adi(durum), imzalar=imzalar).items():
                 hazir[ad] = {"aciklama": k["aciklama"], "kaynak": "llm",
                              "modeller": k.get("modeller") or ""}
         except Exception:
@@ -6169,10 +6327,10 @@ def sozluk_tanim_plan(durum):
         for pr in profiller:
             if pr["ad"] in roller:
                 pr["rol"] = roller[pr["ad"]]
-        durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller,
-                                              _aciklama_baglami(durum),
+        durum["_oneri_is"] = oneri_isi_baslat(gosterilen, profiller, baglam,
                                               hazir=hazir)
         durum["_oneri_kolonlar"] = list(gosterilen)
+        durum["_oneri_imza"] = imzalar
         durum["_tanimsiz_oneri_hata"] = ""
         oneriler = dict(hazir)
 

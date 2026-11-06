@@ -531,6 +531,31 @@ tanıtır; sayfalar sol bardan açılır.
   listelenir; işaretlenip açıklaması yazılan kolon sözlüğün çalışma
   kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve
   01.2.3.1'de sorulur (düğme "N Kolonu Tanımsız Bırak ve Devam Et").
+  - **Hafıza dil modeline kesin bilgi olarak gider** (`_aciklama_baglami`):
+    - Parça anlamları: hafızadaki bütün onaylı parçalar (önceki
+      çalışmaların 01.2.4.2 onayları, eski onaylı kısaltmalar, DAY gibi
+      rakamsız dönem parçaları; `hafiza_parca_anlamlari`) "KISALTMALAR
+      (kesin)" bloğunda. Ek türündeki parça (PER: "[parça] başına")
+      nasıl okunacağıyla gider.
+    - Dönem parçaları: onaylı dönem kalıpları kolonun kendi sayılarıyla,
+      kolon bazında "DÖNEM PARÇALARI (onaylı, kesin)" bloğunda
+      (`kolon_donem_parcalari`; ör. "TXN_GDN_3D_CNT: 3D = son 3 gün").
+      Adda koşul parçası geçerse koşullu anlam (RATIO). Bu çalışmanın
+      01.2.4.1 onayı varsa o, yoksa hafıza.
+    - Öncelik: aynı veri setinde onaylı tanım (satır doğrudan dolar) >
+      bu çalışmanın 01.2.4.2 onayı > hafızadaki onaylı parça ve dönem
+      anlamı > sözlükten okunan > tahmini. Bir veri setinde başka anlamda
+      kullanıldığı not edilen parça "KISALTMALAR (dikkat)" bloğunda kalır.
+    - Her pakete yalnız o paketteki kolon adlarında geçen parçalar gider.
+    - Kartın üst notunun sonuna tek cümle eklenir: "Tanımlar yazılırken
+      hafızadaki onaylı N parça anlamı ve M dönem kalıbı dil modeline kesin
+      bilgi olarak verildi." (yalnız listelenen kolonlarda geçenler).
+  - **Öneri önbelleği bağlam imzasıyla** (`oneri_imzalari`,
+    `tanim_hafiza.oneri_bul(imzalar=)`): kolon başına, ona giden kesin
+    parça, dikkat ve dönem anlamlarının özeti. Önbellekteki öneri yalnız
+    aynı imzayla yazıldıysa kullanılır; hafıza değiştiyse o kolon dil
+    modeline yeniden sorulur. Hafızanın dokunmadığı kolonun imzası boştur,
+    eski önerisi geçerli kalır. Önbellek dosyasına IMZA kolonu eklendi.
 - **01.2.4 Sözlük ve Kolon Adı Kontrolü (A ve B):** sözlüğe de kolon
   adlarına da tam güvenilmez (tanımların bir kısmı yanlış ya da eksik,
   adlarda eksik ve yanlış yazılmış kısaltmalar var). Amaç 02'deki dil
