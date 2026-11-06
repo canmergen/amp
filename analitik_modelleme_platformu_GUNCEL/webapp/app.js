@@ -12489,7 +12489,9 @@ function donemNedenGoster(metin) {
    {eksik: [[sözcük, tür]], oneri: yeni yazılış ya da ""}. */
 function donemYazilistaYok(kalip, anlam, yon) {
     const sonuc = { eksik: [], oneri: "" };
-    if (!yon || !kalip || !anlam) return sonuc;
+    /* Yalnız sayılı kalıp: sayısız kalıpta (TMSNCLST, MONTH) "son", "ilk"
+       adın kendi harflerinde durur (LST, FRST). */
+    if (!yon || !kalip || !anlam || String(kalip).indexOf("<N") < 0) return sonuc;
     const onek = new Set([...String(kalip).matchAll(/([A-Z]+)<N/g)].map(m => m[1]));
     const gorulen = new Set();
     (String(anlam).toLocaleLowerCase("tr-TR").match(/[a-zçğıöşü]+/g) || []).forEach(w => {

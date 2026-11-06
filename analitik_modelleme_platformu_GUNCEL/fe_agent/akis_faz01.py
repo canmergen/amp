@@ -2647,6 +2647,12 @@ def yazilista_yok(kalip, anlam, bilgi=None):
     """Anlamdaki yon bilgisinden kalibin yazilisinda olmayanlar:
     [(sozcuk, tur)]. Kalip o yonu taniyan bir harfle basliyorsa (L<N>D)
     eksik sayilmaz."""
+    # YALNIZ SAYILI KALIP: yon yalniz sayinin hangi yone sayildigini
+    # soyler (30D: son 30 gün mü, 30 gün sonra mı). Sayisiz kalipta
+    # (TMSNCLST "son işlemden bu yana geçen süre", MONTH) "son", "ilk" gibi
+    # sozcukler adin kendi harflerinde (LST, FRST) durur; bakilmaz.
+    if "<N" not in str(kalip or ""):
+        return []
     bilgi = bilgi or yon_bilgisi()
     onek = _yazilis_onekleri(kalip)
     return [(w, t) for w, t in _yon_sozcukleri(anlam)

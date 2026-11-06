@@ -666,7 +666,10 @@ tanıtır; sayfalar sol bardan açılır.
   ("<N>D" = "son <N> gün"); ama "30D" yazılışı yalnız "30 gün" der. Adın
   bu bilgiyi taşıması 01.2.4.4'teki yeni yazılışla olur (L30D).
   - Yön sözcükleri (`YON_KELIMELERI`): son, önce, önceki, öncesi, geçmiş
-    (geri); sonra, sonraki, sonrası, gelecek (ileri). Kalıp o yönü taşıyan
+    (geri); sonra, sonraki, sonrası, gelecek (ileri). Yalnız sayılı kalıplara
+    bakılır ([sayı]D gibi): sayısız kalıpta (TMSNCLST "son işlemden bu yana
+    geçen süre", MONTH) "son", "ilk" adın kendi harflerindedir (LST, FRST).
+    Kalıp o yönü taşıyan
     bir harf öbeğiyle başlıyorsa (L<N>D) eksik sayılmaz. Harfler hafızadaki
     (kalıp, anlam, yeni yazılış) üçlülerinden öğrenilir (`yon_harfleri`);
     örnek yoksa geri L, ileri N (`YON_VARSAYILAN_HARF`).
