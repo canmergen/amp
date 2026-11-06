@@ -17156,8 +17156,12 @@ function yanitUygula(d, metin) {
             onay: false
         };
         balonEkle("bot", t.metin, false, tBlok);
-        /* Biten adımın kartı (02.1 Veri Profili) kendi bloğunda. */
-        if (t.secim_alani) secimAlaniEkle(t.secim_alani, tBlok);
+        /* Biten adımın kartı kendi bloğunda: 02.1 Veri Profili; önceki
+           onaylı kontrolle kendiliğinden onaylanan 01.2.4 adımında
+           uygulanan kararlar (kilitli, salt okunur). */
+        if (t.secim_alani)
+            secimAlaniEkle(t.secim_alani, t.secim_alani.onceki
+                ? Object.assign({}, tBlok, { kilit: true }) : tBlok);
     });
 
     const seceneklerVar = !!(d.secenekler && d.secenekler.length);

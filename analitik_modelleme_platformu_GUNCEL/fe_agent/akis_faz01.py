@@ -3839,6 +3839,73 @@ def _onceki_basarisiz(durum, adim, sorun):
                               "kararlar kartta dolu; kontrol edip onaylayın." % sorun.strip())
 
 
+ONCEKI_KARTLI = ("donem", "parca", "aciklama", "kolon_ad")
+_ONCEKI_DUGME = {"donem": "DONEM_DUGME", "parca": "PARCA_DUGME",
+                 "aciklama": "ACIKLAMA_DUGME", "kolon_ad": "KOLON_AD_DUGME"}
+
+
+def onceki_karti(durum, adim):
+    """Onceki onayli kontrolle KENDILIGINDEN onaylanan adimin karti,
+    uygulanan kararlarla (kilitli gosterilir; kullanici neyin uygulandigini
+    gorur). Dil modeli isi baslatilmaz. Kurulamazsa None."""
+    if adim not in ONCEKI_KARTLI:
+        return None
+    try:
+        dugme = dict(globals()[_ONCEKI_DUGME[adim]])
+        if adim == "aciklama":
+            k = _kontrol_adim_kaydi(durum, "aciklama")
+            if (k.get("karar") or {}).get("atla"):
+                return None
+            d = aciklama_mod.depo(_aciklama_klasoru(durum))
+            with aciklama_mod._KILIT:
+                toplam = len(d.girdiler)
+            if not toplam:
+                return None
+            kart = _adim_karti("aciklama", {"aciklama_duzen": _aciklama_karti(durum, toplam, "")},
+                               dugme, ACIKLAMA_ATLA)
+        else:
+            bolum = karar_sonrasi_alan(durum, adim)
+            if not bolum:
+                return None
+            kart = _adim_karti(adim, bolum, dugme, "")
+        # Kararli hal zaten bu: on yuz yeniden kurmaya calismaz.
+        kart["_kararli"] = True
+        kart["onceki"] = True
+        return kart
+    except Exception:
+        return None
+
+
+def onceki_gecmisini_tazele(durum, gecmis):
+    """Yenilemede onceki onayli kontrolle kendiliginden onaylanan 01.2.4
+    adimlarinin bloguna uygulanan kararlarin karti eklenir (transkriptte
+    yalniz metin var). Adimin "Önceki onaylı karar uygulandı" ile baslayan
+    son kaydi; kartli kayda dokunulmaz. Transkript degismez: yeni liste."""
+    if not _onceki_modu(durum):
+        return gecmis
+    yeni = None
+    for adim in ONCEKI_KARTLI:
+        son = None
+        for i, k in enumerate(gecmis or []):
+            if isinstance(k, dict) and k.get("rol") == "bot" and k.get("adim") == adim:
+                son = i
+        if son is None:
+            continue
+        k = gecmis[son]
+        if k.get("ekran") or not str(k.get("metin") or "").startswith(ONCEKI_UYGULANDI):
+            continue
+        kart = onceki_karti(durum, adim)
+        if not kart:
+            continue
+        if yeni is None:
+            yeni = list(gecmis)
+        k = dict(k)
+        k["ekran"] = {"secim_alani": kart}
+        k.pop("ekran_atlandi", None)
+        yeni[son] = k
+    return yeni if yeni is not None else gecmis
+
+
 def _onceki_metni(metin):
     """Uygula metninin basina "Önceki onaylı karar uygulandı"."""
     return "%s. %s" % (ONCEKI_UYGULANDI, metin)

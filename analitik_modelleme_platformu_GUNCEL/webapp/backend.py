@@ -1193,6 +1193,11 @@ def _surdurme_govdesi(durum):
         govde["gecmis"] = akis.profil_gecmisini_tazele(durum, govde["gecmis"])
     except Exception:
         pass
+    # 01.2.4 onceki onayli kontrolle kendiliginden onaylanan adimlarin karti.
+    try:
+        govde["gecmis"] = akis.onceki_gecmisini_tazele(durum, govde["gecmis"])
+    except Exception:
+        pass
     return govde
 
 
@@ -1471,6 +1476,15 @@ def mesaj_endpoint():
                           or akis.adim_basligi(_tamam["adim"]),
                 "metin": _ozet,
             }
+            # 01.2.4 onceki onayli kontrolle kendiliginden onaylanan adim:
+            # uygulanan kararlarin karti kendi blogunda (kilitli).
+            if _ozet.startswith(akis.ONCEKI_UYGULANDI):
+                try:
+                    _kart = akis.onceki_karti(durum, _tamam["adim"])
+                except Exception:
+                    _kart = None
+                if _kart:
+                    _t["secim_alani"] = _kart
             # 02.1 Veri Profili: biten adimin karti kendi blogunda.
             if _tamam["adim"] == "veri_profili":
                 try:

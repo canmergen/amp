@@ -639,7 +639,14 @@ tanıtır; sayfalar sol bardan açılır.
     - Onaylı karar adımın kendi denetiminden yan etkisiz geçerse
       (`_donem_karari_isle`, `_parca_karari_isle`, `_kolon_ad_karari_isle`;
       dil modeli işi başlatılmaz) adım sorulmadan onaylanır; sohbette
-      "Önceki onaylı karar uygulandı. ..." yazar. Dönem'de ayrıca önceki
+      "Önceki onaylı karar uygulandı. ..." yazar ve altında **uygulanan
+      kararların kartı kilitli (salt okunur) görünür** (`onceki_karti`:
+      Dönem Bilgisi, Ad Parçaları ve Kolon Adları `karar_sonrasi_alan`
+      ile kararlı hâliyle; Kolon Kartları satırlarını `/aciklama_alani`
+      ile çeker; Kolon Kartları atlandıysa kart yok). Canlı akışta kart
+      `tamamlananlar` içinde (`secim_alani`, `onceki: true`) gelir ve
+      kilitli çizilir; yenilemede `onceki_gecmisini_tazele` geçmişteki
+      özet satırına kartı ekler (kayıtlı transkript değişmez). Dönem'de ayrıca önceki
       kararda olmayan tablo kalıbı ya da artık adlarda olmayan kalıp
       olmamalı; Ad Parçaları'nda önceki kararda olmayan parça olmamalı;
       Kolon Adları'nda her ailenin yeni adları onaydakiyle aynı olmalı;
