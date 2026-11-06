@@ -5439,3 +5439,13 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .dg-dy-oneri { margin-left: 6px; }
 .dg-dy-uyari { margin: 4px 0 6px; }
 .dg-dy-uyari[hidden] { display: none; }
+/* Anlamı Kayan Aileler: orijinal ve yeni açıklama tıklanınca kutuya yazılır. */
+.dg-acik-kullan-satir { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.dg-acik-kullan-metin {
+  font: inherit; color: inherit; background: none; border: none; padding: 0;
+  text-align: left; cursor: pointer; text-decoration: underline dotted var(--kenar-guclu);
+  text-underline-offset: 3px;
+}
+.dg-acik-kullan-metin:hover { color: var(--kirmizi); text-decoration-color: var(--kirmizi); }
+.dg-acik-kullan-metin:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--kirmizi-halka); border-radius: 3px; }
+.dg-acik-kullan { padding: 1px 8px; }

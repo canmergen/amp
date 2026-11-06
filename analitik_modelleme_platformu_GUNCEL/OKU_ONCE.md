@@ -1431,7 +1431,10 @@ tanıtır; sayfalar sol bardan açılır.
     yeniden sorulmaz, açıklama değişince yeniden bakılır. Büyük kayma
     aile başına kutuda sorulur (aile adı, kolon sayısı, dil modelinin tek
     cümle tespiti, örnek kolon, orijinal, yeni açıklama): "Ailenin doğru
-    anlamı" + «Cevabı Uygula» ya da «Yeni Açıklama Doğru». Cevap
+    anlamı" + «Cevabı Uygula» ya da «Yeni Açıklama Doğru». Karar
+    verilmemiş kutuda "Orijinal" ve "Yeni açıklama" metinleri tıklanabilir
+    (yanlarında «Bunu Kullan»): metin "Ailenin doğru anlamı" kutusuna
+    yazılır, imleç sonda; olduğu gibi uygulanabilir ya da düzeltilebilir. Cevap
     (`aciklama_kayma_karari`, `/aciklama_islem` islem "kayma";
     `aciklama_duzen.kayma_karari_yaz`) temsilci kolona not, aileye aile
     notu olarak "Sorduğun: <tespit> Cevabım: <cevap>" biçiminde gider; dil

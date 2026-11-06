@@ -11864,8 +11864,38 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             kutu.appendChild(ust_);
             if (x.neden) kutu.appendChild(elYap("div", "dg-donem-soru", tireSade(x.neden)));
             if (x.kolon_sayisi > 1) kutu.appendChild(elYap("div", "dg-acik-ornek", "Örnek kolon: " + x.kolon));
-            kutu.appendChild(elYap("div", "dg-acik-ornek", "Orijinal: " + tireSade(x.orijinal || "")));
-            if (x.aciklama) kutu.appendChild(elYap("div", "dg-acik-ornek", "Yeni açıklama: " + tireSade(x.aciklama)));
+            /* KULLAN: karar verilmemiş ailede orijinal ve yeni açıklama
+               tıklanınca "Ailenin doğru anlamı" kutusuna yazılır; imleç
+               sonda, kullanıcı üstünde düzeltip «Cevabı Uygula» der. */
+            let girdi = null;
+            const metinSatiri = (etiket, metin) => {
+                const sat = elYap("div", "dg-acik-ornek");
+                if (x.karar || kilitli || !metin) {
+                    sat.textContent = etiket + ": " + metin;
+                    return sat;
+                }
+                sat.classList.add("dg-acik-kullan-satir");
+                sat.appendChild(document.createTextNode(etiket + ": "));
+                const yaz = () => {
+                    if (!girdi) return;
+                    girdi.value = metin;
+                    kaymaTaslak.set(x.anahtar, metin);
+                    girdi.focus();
+                    girdi.setSelectionRange(metin.length, metin.length);
+                };
+                const m = elYap("button", "dg-acik-kullan-metin", metin);
+                m.type = "button";
+                m.title = "Kutuya yaz; üstünde düzeltebilirsiniz";
+                m.onclick = yaz;
+                const b = elYap("button", "dg-toplu-btn dg-acik-kullan", "Bunu Kullan");
+                b.type = "button";
+                b.title = m.title;
+                b.onclick = yaz;
+                sat.append(m, b);
+                return sat;
+            };
+            kutu.appendChild(metinSatiri("Orijinal", tireSade(x.orijinal || "")));
+            if (x.aciklama) kutu.appendChild(metinSatiri("Yeni açıklama", tireSade(x.aciklama)));
             if (x.karar) {
                 const sat = elYap("div", "dg-acik-soru-yol", x.karar === "dogru"
                     ? "Yeni açıklamanın doğru olduğunu söylediniz."
@@ -11898,6 +11928,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             g.disabled = kilitli;
             g.setAttribute("aria-label", x.anahtar + " doğru anlamı");
             g.addEventListener("input", () => kaymaTaslak.set(x.anahtar, g.value));
+            girdi = g;
             const b = elYap("button", "dg-toplu-btn", "Cevabı Uygula");
             b.type = "button"; b.disabled = kilitli;
             b.onclick = () => { if (g.value.trim()) kaymaIslem(x, "cevap", g.value.trim(), b); };
