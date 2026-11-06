@@ -661,6 +661,34 @@ tanıtır; sayfalar sol bardan açılır.
       01.2.4'te yeniden seçim yapılınca baştan denenir.
     - Kayıt her durumda tutulur ("adım adım" seçilse de); Dönem'de satır
       Kaydet'leri ayrıca hafızada durur.
+- **Yazılışta olmayan yön bilgisi (01.2.4.1, 01.2.4.4, hafıza, 01.2.3):**
+  Kalıbın 01.2.4.1'de onaylanan anlamı bu veri setindeki gerçek anlamdır
+  ("<N>D" = "son <N> gün"); ama "30D" yazılışı yalnız "30 gün" der. Adın
+  bu bilgiyi taşıması 01.2.4.4'teki yeni yazılışla olur (L30D).
+  - Yön sözcükleri (`YON_KELIMELERI`): son, önce, önceki, öncesi, geçmiş
+    (geri); sonra, sonraki, sonrası, gelecek (ileri). Kalıp o yönü taşıyan
+    bir harf öbeğiyle başlıyorsa (L<N>D) eksik sayılmaz. Harfler hafızadaki
+    (kalıp, anlam, yeni yazılış) üçlülerinden öğrenilir (`yon_harfleri`);
+    örnek yoksa geri L, ileri N (`YON_VARSAYILAN_HARF`).
+  - 01.2.4.1 satırında, anlam yazıldıkça: "Yazılışta yok: «son». [sayı]D
+    yazılışı bunu söylemiyor; … 01.2.4.4 Kolon Adları'nda yeni adda
+    yazılışı belirleyin (öneri: L[sayı]D)." Hafızada genel anlamı ya da
+    başka veri setindeki anlamı varsa: "Hafıza: yazılışın kendi anlamı
+    «[sayı] gün» (yön belirtmez); X veri setinde «son [sayı] gün» anlamında
+    kullanıldı."
+  - 01.2.4.4 Dönem Yazılışları: yazılış boşsa (kullanıcı ya da hafıza
+    vermediyse) öneri dolu gelir (`yazilis_onerisi`; "Önerildi: …"). Yeni
+    yazılış da yönü taşımıyorsa satırda uyarı ve «Öneriyi Yaz», başlıkta
+    sayı. Uyarı onayı engellemez.
+  - Hafıza (`donem_yon_hafizaya`, 01.2.4.4 onayında): yeni yazılış kendi
+    kalıbı olarak aynı anlam ve türle (L<N>D = "son <N> gün"; hafızada
+    başka anlamla varsa üstüne yazılmaz); eski kalıba `genel_anlam` (yön
+    sözcükleri çıkarılmış: "<N> gün") ve `veri_seti_anlamlari` ({veri seti:
+    anlam}) yazılır. Eski kalıbın `anlam`ı değişmez.
+  - 01.2.3 (`kolon_donem_parcalari`): bu çalışmanın 01.2.4.1 onayı varsa
+    hepsi kesin. Hafızadan gelen ve yönü yazılışında olmayan kalıp kesin
+    değil, "DÖNEM PARÇALARI (dikkat)" bloğunda genel anlamıyla gider
+    ("…; uymuyorsa yazılışın kendi anlamını kullan: 3 gün").
 - **01.2.4.1 Dönem Bilgisi, kart:** başlığın altında tek satır özet
   ("6 kalıp (3 pencere, 1 zaman noktası) · 2 yorumlanıyor · 4 aday")
   ve yanında "i": yönerge ile sütun açıklamaları orada. Altında üç

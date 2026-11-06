@@ -5433,3 +5433,9 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
   background: var(--yuzey-alt); border-top: 2px solid var(--kenar-guclu); padding: 5px var(--b-3);
 }
 .dg-cikar-grup { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+/* Dönem yazılışı ile anlamın yönü (son, önce, sonra). */
+.dg-donem-yon[hidden] { display: none; }
+.dg-donem-yon-eksik { color: var(--amber); }
+.dg-dy-oneri { margin-left: 6px; }
+.dg-dy-uyari { margin: 4px 0 6px; }
+.dg-dy-uyari[hidden] { display: none; }

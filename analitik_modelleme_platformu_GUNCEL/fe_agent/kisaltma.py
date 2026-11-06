@@ -735,6 +735,8 @@ def _govde_oku():
 #                 "deger_anlamlari": {"360D": "son 1 yıl"},
 #                 "haric_ikililer": ["..."],
 #                 "gruptan_ayrilan": {"H00": {"anlam": "...", "donem_degil": false}},
+#                 "genel_anlam": "<N> gün",
+#                 "veri_seti_anlamlari": {"VERI_SETI": "son <N> gün"},
 #                 "ayri_yazilis": true,
 #                 "degerlerine_ayrildi": true}, ...},
 #    "ad_parcalari": {"AVG": {"anlam": "ortalama", "tur": "istatistik",
@@ -751,7 +753,11 @@ def _govde_oku():
 # ic anahtar -> donem kaydindaki alan
 _DONEM_ALAN = (("donem", "anlam"), ("donem_tur", "tur"), ("donem_ad", "yeni_adda"),
                ("donem_deger", "deger_anlamlari"), ("donem_haric", "haric_ikililer"),
-               ("donem_ayrilan", "gruptan_ayrilan"), ("donem_kosul", "kosullu_anlamlar"))
+               ("donem_ayrilan", "gruptan_ayrilan"), ("donem_kosul", "kosullu_anlamlar"),
+               # YAZILISTA OLMAYAN BILGI: yazilisin kendi soyledigi (genel,
+               # yonsuz: "<N> gün") ve veri setlerindeki anlami ({veri seti:
+               # "son <N> gün"}); bkz. donem_yon_kaydet.
+               ("donem_genel", "genel_anlam"), ("donem_vs", "veri_seti_anlamlari"))
 _YENI_ANAHTAR = {"aciklama", "surum", "ad_standardi", "donem_kaliplari", "ad_parcalari",
                  "ayni_parcalar", "farkli_parcalar"}
 
@@ -1049,6 +1055,58 @@ def donem_kosul_kaydet(kosullar):
             _dosya_yaz(govde)
         except Exception as e:
             return "Koşullu anlam hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
+
+
+def _donem_sozluk_ham(anahtar, govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    v = (govde or {}).get(anahtar)
+    return dict(v) if isinstance(v, dict) else {}
+
+
+def donem_genel_hafizasi():
+    """{kalip: genel anlam}: yazilisin kendisinin soyledigi (yonsuz)."""
+    return {str(k): str(v) for k, v in _donem_sozluk_ham("donem_genel").items()
+            if str(v or "").strip()}
+
+
+def donem_vs_hafizasi():
+    """{kalip: {veri seti: anlam}}: kalibin veri setlerindeki anlami."""
+    return {str(k): {str(a): str(b) for a, b in v.items() if str(b or "").strip()}
+            for k, v in _donem_sozluk_ham("donem_vs").items() if isinstance(v, dict)}
+
+
+def donem_yon_kaydet(kayitlar):
+    """kayitlar: {kalip: {"genel": str, "veri_seti": str, "anlam": str}}.
+    Yazilisin genel anlamini ve bu veri setindeki anlamini yazar (oteki veri
+    setlerinin kaydi kalir). Doner: hata ya da None."""
+    kayitlar = {str(k).strip(): v for k, v in (kayitlar or {}).items()
+                if str(k).strip() and isinstance(v, dict)}
+    if not kayitlar:
+        return None
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Dönem kalıbının genel anlamı hafızaya yazılamadı: " + hata
+        genel = _donem_sozluk_ham("donem_genel", govde)
+        vs = _donem_sozluk_ham("donem_vs", govde)
+        for k, v in kayitlar.items():
+            if str(v.get("genel") or "").strip():
+                genel[k] = str(v["genel"]).strip()
+            if str(v.get("veri_seti") or "").strip() and str(v.get("anlam") or "").strip():
+                d = dict(vs.get(k) or {})
+                d[str(v["veri_seti"]).strip()] = str(v["anlam"]).strip()
+                vs[k] = dict(sorted(d.items()))
+        for ad, d in (("donem_genel", genel), ("donem_vs", vs)):
+            if d:
+                govde[ad] = dict(sorted(d.items()))
+            else:
+                govde.pop(ad, None)
+        try:
+            _dosya_yaz(govde)
+        except Exception as e:
+            return "Dönem kalıbının genel anlamı hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
 
 

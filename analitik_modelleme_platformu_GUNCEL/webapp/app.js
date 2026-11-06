@@ -10168,6 +10168,23 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         i_.classList.add("bolme-info-genis");
         kap.appendChild(i_);
     }
+    /* YÖN EKSİĞİ: Dönem Bilgisi'ndeki anlamın yönü (son, önce, sonra)
+       yeni addaki yazılışta da yoksa satırda uyarı, başlıkta sayı. */
+    const dyYonEksik = x => {
+        const ic = donemAdIc(x.kalip, x.deger) || x.kalip;
+        const onek = new Set([...String(ic).matchAll(/([A-Z]+)<N/g)].map(m => m[1]));
+        return (x.yon_eksik || []).filter(e => !(e.harfler || []).some(h => onek.has(h)));
+    };
+    const dyYonEl = {};
+    let dyUyariEl = null;
+    function dyYonTazele() {
+        if (!dyUyariEl) return;
+        const n = dyler.filter(x => dyYonEksik(x).length).length;
+        dyUyariEl.hidden = !n;
+        dyUyariEl.textContent = n ? ftBinlik(n) + " kalıbın Dönem Bilgisi'ndeki anlamında yeni adda "
+            + "olmayan yön bilgisi var (son, önce, sonra); satırdaki öneriyi kullanabilir ya da "
+            + "yazılışı kendiniz belirleyebilirsiniz. Yazılış boş kalırsa adlar bu bilgiyi taşımaz." : "";
+    }
     function dyNotYaz(x) {
         const el = dyNotEl[x.kalip];
         if (!el) return;
@@ -10179,6 +10196,35 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         el.textContent = h ? h
             : !ic ? "Kalıp yeni adda aynen kalır" + (x.ornek ? " (ör. " + x.ornek + ")." : ".")
             : x.ornek ? "Ör. " + x.ornek + " → " + donemAdDoldur(x.kalip, ic, x.ornek) : "";
+        const yel = dyYonEl[x.kalip];
+        if (yel) {
+            const eksik = dyYonEksik(x);
+            const anlam = x.anlam ? " (Dönem Bilgisi'ndeki anlam: «" + donemAnlamGoster(x.kalip, x.anlam) + "»)" : "";
+            yel.textContent = "";
+            yel.className = "dg-donem-tur-not";
+            if (eksik.length) {
+                yel.classList.add("dg-donem-yon-eksik");
+                yel.appendChild(document.createTextNode("Anlamdaki " + eksik.map(e => "«" + e.sozcuk + "»").join(", ")
+                    + " bilgisi bu yazılışta yok" + anlam + "."));
+                if (x.oneri && !kilitli && donemAdIc(x.kalip, x.deger) !== x.oneri) {
+                    const b = elYap("button", "dg-toplu-btn dg-dy-oneri", "Öneriyi Yaz: " + donemSayiGoster(x.oneri));
+                    b.type = "button";
+                    b.onclick = () => {
+                        x.deger = donemAdGoster(x.oneri);
+                        const gi = el.closest("td") && el.closest("td").querySelector("input");
+                        if (gi) gi.value = x.deger;
+                        dyNotYaz(x); dyYonTazele();
+                        if (degisti) degisti();
+                        if (!dyHata(x)) onizle();
+                    };
+                    yel.appendChild(b);
+                }
+            } else if (x.oneri_dolu && donemAdIc(x.kalip, x.deger) === x.oneri) {
+                yel.textContent = "Önerildi: anlamdaki " + (x.yon_eksik || []).map(e => "«" + e.sozcuk + "»").join(", ")
+                    + " bilgisi eski yazılışta yoktu" + anlam + ". Değiştirebilirsiniz.";
+            }
+        }
+        dyYonTazele();
     }
     const dyNotlar = () => dyler.forEach(x => { dyNotYaz(x); dyOrnekYaz(x); });
     function dyCiz() {
@@ -10200,6 +10246,9 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             + "sözlüğünüz değişmez.", "Dönem Yazılışları"));
         bas.append(baslik, elYap("span", "dg-donem-tur-not", "Kalıbın yeni addaki yazılışı; boşsa aynen kalır."));
         dyKap.appendChild(bas);
+        dyUyariEl = elYap("div", "dg-donem-uyari dg-dy-uyari", "");
+        dyUyariEl.hidden = true;
+        dyKap.appendChild(dyUyariEl);
         const t = elYap("table", "dg-tablo dg-kad-dy-tablo");
         const h = document.createElement("thead"), hr = document.createElement("tr");
         ["Kalıp", "Kolonlar", "Yeni Adda"].forEach(x => hr.appendChild(elYap("th", "", x)));
@@ -10222,6 +10271,8 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             g.setAttribute("aria-label", donemSayiGoster(x.kalip) + " yeni adda yazılış");
             const not = elYap("div", "dg-donem-tur-not", "");
             dyNotEl[x.kalip] = not;
+            const yonNot = elYap("div", "dg-donem-tur-not", "");
+            dyYonEl[x.kalip] = yonNot;
             /* Kutudan çıkınca adlar yeniden kurulur (geçersizse kurulmaz).
                Sayı ekle düğmesiyle yapılan değişiklik "change" doğurmaz;
                bu yüzden değişiklik işaretlenir, kutudan çıkınca bakılır. */
@@ -10231,6 +10282,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             td.append(g);
             if (!kilitli) td.appendChild(donemSayiDugmeleri(() => x.kalip, g, true));
             td.appendChild(not);
+            td.appendChild(yonNot);
             tr.appendChild(td);
             tr.classList.toggle("dg-donem-dikkat", !!dyHata(x));
             b.appendChild(tr);
@@ -12430,6 +12482,30 @@ const DONEM_SAYI_RE = /\[\s*say[ıi]\s*\]/gi;
 function donemNedenGoster(metin) {
     return String(metin || "").replace(/<\s*N{1,2}\s*#?\s*(\d)\s*>/g, "[sayı $1]").replace(/<\s*N{1,2}\s*>/g, "[sayı]");
 }
+/* YAZILIŞTA OLMAYAN YÖN: kalıbın anlamındaki yön sözcüğü (son, önce,
+   sonra) yazılışta o yönü taşıyan bir harfle (L[sayı]D) karşılanmıyorsa
+   eksik. yon: arka uçtan {kelimeler: {sözcük: tür}, harfler: {tür:
+   [harf]}, oneri: {tür: harf}} (akis_faz01.yon_bilgisi). Döner:
+   {eksik: [[sözcük, tür]], oneri: yeni yazılış ya da ""}. */
+function donemYazilistaYok(kalip, anlam, yon) {
+    const sonuc = { eksik: [], oneri: "" };
+    if (!yon || !kalip || !anlam) return sonuc;
+    const onek = new Set([...String(kalip).matchAll(/([A-Z]+)<N/g)].map(m => m[1]));
+    const gorulen = new Set();
+    (String(anlam).toLocaleLowerCase("tr-TR").match(/[a-zçğıöşü]+/g) || []).forEach(w => {
+        const t = (yon.kelimeler || {})[w];
+        if (!t || gorulen.has(w)) return;
+        gorulen.add(w);
+        if (!((yon.harfler || {})[t] || []).some(h => onek.has(h))) sonuc.eksik.push([w, t]);
+    });
+    if (sonuc.eksik.length) {
+        const harf = (yon.oneri || {})[sonuc.eksik[0][1]] || "";
+        const y = String(kalip).replace(/(?<![A-Z])(<N[^>]*>)(?=[A-Z])/g, harf + "$1");
+        sonuc.oneri = y !== kalip ? y : "";
+    }
+    return sonuc;
+}
+
 function donemSayiGoster(metin) {
     /* " · " ile birleştirilmiş yazılışlar (aile) ayrı ayrı numaralanır. */
     return String(metin || "").split(" · ").map(k => {
@@ -13071,6 +13147,33 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const u = elYap("div", "dg-donem-uyari", "Dikkat: " + tireSade(r.uyari));
             if (r.uyari_ayrinti) u.appendChild(bolmeBilgiSimgesi(tireSade(r.uyari_ayrinti), "Dikkat"));
             tdA.appendChild(u);
+        }
+        /* YAZILIŞTA YOK: anlamdaki yön (son, önce, sonra) kalıbın
+           yazılışında yok. Anlam bu veri setinde doğru olabilir; adın onu
+           taşıması 01.2.4.4'teki yeni yazılışla olur. Anlam yazıldıkça
+           yenilenir. */
+        const yonEl = elYap("div", "dg-donem-uyari dg-donem-yon", "");
+        tdA.appendChild(yonEl);
+        const yonCiz = () => {
+            const y = donemYazilistaYok(kalipNe(), anlamAl(), da.yon);
+            yonEl.hidden = !y.eksik.length;
+            if (!y.eksik.length) { yonEl.textContent = ""; return; }
+            const sozler = y.eksik.map(e => "«" + e[0] + "»").join(", ");
+            yonEl.textContent = "Yazılışta yok: " + sozler + ". " + donemSayiGoster(kalipNe())
+                + " yazılışı bunu söylemiyor; adın bu bilgiyi taşıması için 01.2.4.4 Kolon Adları'nda"
+                + " yeni adda yazılışı belirleyin" + (y.oneri ? " (öneri: " + donemSayiGoster(y.oneri) + ")." : ".");
+        };
+        g.addEventListener("input", yonCiz);
+        yonCiz();
+        /* HAFIZA NOTU: yazılışın kendi (yönsüz) anlamı ve öbür veri
+           setlerinde kullanıldığı anlam. */
+        if (r.hafiza_genel || (r.hafiza_vs && Object.keys(r.hafiza_vs).length)) {
+            const vs = Object.entries(r.hafiza_vs || {})
+                .map(([v, an]) => v + " veri setinde «" + donemAnlamGoster(r.kalip, an) + "»");
+            tdA.appendChild(elYap("div", "dg-donem-not",
+                "Hafıza: " + (r.hafiza_genel ? "yazılışın kendi anlamı «"
+                    + donemAnlamGoster(r.kalip, r.hafiza_genel) + "» (yön belirtmez)" : "")
+                + (vs.length ? (r.hafiza_genel ? "; " : "") + vs.join(", ") + " anlamında kullanıldı" : "") + "."));
         }
         const kontrolEl = elYap("div", "dg-donem-kontrol");
         kontrolEl.hidden = true;

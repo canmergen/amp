@@ -929,6 +929,30 @@ def hafiza_ayri():
         return set()
 
 
+def hafiza_genel():
+    """{kalip: genel anlam}: yazilisin kendi soyledigi (yonsuz)."""
+    try:
+        return kisaltma_mod.donem_genel_hafizasi()
+    except Exception:
+        return {}
+
+
+def hafiza_vs():
+    """{kalip: {veri seti: anlam}}."""
+    try:
+        return kisaltma_mod.donem_vs_hafizasi()
+    except Exception:
+        return {}
+
+
+def hafizaya_yon_yaz(kayitlar):
+    """Bkz. kisaltma.donem_yon_kaydet. Doner: hata ya da None."""
+    try:
+        return kisaltma_mod.donem_yon_kaydet(kayitlar)
+    except Exception as e:
+        return "Dönem kalıbının genel anlamı hafızaya yazılamadı (%s)." % str(e)[:120]
+
+
 def hafiza_kosul():
     """{kalip: {PARCA: anlam}}: adda PARCA gecerse kalibin anlami."""
     try:
