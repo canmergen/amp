@@ -786,7 +786,10 @@ tutamakKur(tutamakSag, "sag", analizPanel);
    düğmelerini kartın içinde taşıyor. Genel aksiyon satırı da açılırsa
    ekranda aynı işi yapan iki düğme takımı yan yana duruyor ve kullanıcı
    hangisinin ne yaptığını düşünmek zorunda kalıyor. */
-const KENDI_DUGMELI_KARTLAR = ["dogrulama", "bolme"];
+/* Kendi onay düğmesi kartın EN ALTINDA olan kartlar: blok ayrıca
+   "Onayla ve Uygula / Değiştir" taşımaz (02.1 karar kartı ve eşik formu
+   dahil; yoksa genel düğmeler metnin altına, kartın üstüne düşüyordu). */
+const KENDI_DUGMELI_KARTLAR = ["dogrulama", "bolme", "profil", "profil_esik"];
 
 /* ---- Sohbet kutusunun kilidi ----
    Ekranda bir kart, form ya da seçenek takımı varken kullanıcı bir

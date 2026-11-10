@@ -1857,6 +1857,13 @@ tanıtır; sayfalar sol bardan açılır.
   kaydedilir; eski kayıtlarda `_biten_ozetleri_ayir` özetleri atar (02.2
   bloğunda 02.1 metni tekrar etmez).
 
+**02.1 kartında onay düğmesi**
+- Karar kartı (tip `profil`) ve eşik formu (tip `profil_esik`)
+  `KENDI_DUGMELI_KARTLAR` listesinde: blok ayrıca genel "Onayla ve
+  Uygula / Değiştir" düğmelerini taşımaz. Onay yalnız kartın en altındaki
+  düğmeyle verilir (önceden genel düğmeler metnin altına, kartın üstüne
+  düşüyordu).
+
 **02.1 kontrol satırı renkleri ve aynı içerikli kolon seçimi**
 - Kontroller tablosunda her satır durumuna göre renkli, sol kenarda kalın
   çizgi: yeşil sorunsuz (bulgu yok, Ne Olacak "İşlem yok"), sarı dikkat
