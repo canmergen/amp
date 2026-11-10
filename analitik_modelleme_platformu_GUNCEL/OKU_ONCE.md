@@ -1115,8 +1115,8 @@ tanıtır; sayfalar sol bardan açılır.
   - **Tanımdan tür (kod, `metinden_tur`):**
     son: "son 3 gün", "geçmiş 3 gün", "geçen 3 gün", "önceki 3 gün",
     "3 gün öncesine kadar", "3 yıldan beri", "3 aydan bu yana", "3 yıldır", "3 aydır işlem
-    yapmayan" (cümle sonundaki ek-fiil "Vadesi 36 aydır." ve önünde vade
-    ya da süre olan sayılmaz); önce: "3 gün önce", "3 gün önceki",
+    yapmayan", cümle sonunda da ("Kredi 36 aydır."); önünde vade ya da
+    süre olan ("Vadesi 36 aydır.") sayılmaz; önce: "3 gün önce", "3 gün önceki",
     "3 gün öncesi"; sonraki: "sonraki 3 gün", "önümüzdeki 3 gün",
     "gelecek 3 gün", "3 gün sonrasına kadar"; sonra: "3 gün sonra",
     "3 gün sonraki", "3 gün sonrası"; çevre: "3 gün öncesi ve sonrası",
