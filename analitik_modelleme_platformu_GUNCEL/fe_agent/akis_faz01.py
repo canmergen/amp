@@ -2617,7 +2617,7 @@ DONEM_SUTUNLAR = (
     "Değerleri Düzenle: sayı yer tutucusu olan kalıpta adlarda geçen "
     "değerler grup satırının altında listelenir. Her değerin durumu: Kalıba "
     "Uyar (anlamı kalıbın anlamından, sayısı yerine konarak gelir; 30D: 30 "
-    "gün boyunca), Kendi Anlamı (değere özel, ör. 360D: 1 yıl boyunca) ya "
+    "gün), Kendi Anlamı (değere özel, ör. 360D: 1 yıl) ya "
     "da Dönem Değil (gruba yanlış girmiş). Kalıba uyan bir değeri "
     "düzenlerseniz yazdığınızın biçimi kalıbın anlamı olur ve öbür "
     "değerlere yayılır (Geri al ile geri alınır); sayı içermeyen anlam o "

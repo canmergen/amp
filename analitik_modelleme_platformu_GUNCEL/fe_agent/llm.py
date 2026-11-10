@@ -1729,9 +1729,9 @@ dönem değilse dönem sayma.
 _DONEM_ANLAM_KURALLARI = """
 ZAMAN BİLGİSİ: parçanın taşıdığı, zamanla ilgili bilgi. Dört türü var;
 "tur" alanına birini yaz:
-  - "pencere": sayı bir SÜREYİ gösterir; veri o süre boyunca toplanır
-    (30D: 30 gün boyunca; H00_06: 00:00 ile 06:00 arası; dönem başından
-    bugüne).
+  - "pencere": sayı bir ARALIĞI gösterir; veri o aralıktaki bütün
+    zamanlardan toplanır (H00_06: 00:00 ile 06:00 arası; L30D: son 30 gün;
+    dönem başından bugüne).
   - "nokta": sayı belirli bir ANI ya da SIRAYI gösterir (M3: yılın 3. ayı
     ya da 3 ay önceki ay; ay sonu; gözlem tarihi).
   - "birim": sayısız zaman birimi sözcüğü (DAY: gün, MONTH: ay); "gün
@@ -1743,6 +1743,16 @@ istatistik (ortalama, en büyük) gibi zamanla ilgisi olmayan parçalar.
 Bir parça hem zaman hem başka bilgi taşıyorsa "anlam"a YALNIZ zaman
 kısmını yaz; kalanını "not"a yaz.
 
+SAYI VE ZAMAN BİRİMİ PARÇASI (30D, 3M, D30, 3_M, M_3): yalnız bir sayı ve
+bir birimden oluşan parçanın yönü ve kapsamı kolondan kolona değişir:
+bir kolonda son 30 gün, başkasında 30 gün önce, sonraki 30 gün, 30 gün
+sonra ya da yalnız 30 gün olabilir. Bunu kolon kartlarında her kolon
+için ayrı belirleriz. Bu yüzden böyle bir parçanın "anlam"ına YALNIZ
+birimi yaz ("N gün", "N ay"); son, önce, sonra, sonraki, boyunca gibi
+yön ve kapsam sözcüklerini anlama YAZMA, nota da yazma, soru da sorma;
+"tur" olarak "pencere" yaz. Sayı takvimde bir sıra gösteriyorsa (M3:
+yılın 3. ayı) bu kural geçmez; anlamı öyle yaz.
+
 ANLAMIN KAYNAĞI: ÖNCE AD, SONRA TANIMLAR.
   1. Anlamı önce parçanın yapısından kur. Sayıyla birlikte geçen harf
      çoğunlukla zaman birimidir (D gün, W hafta, M ay, Q çeyrek, Y yıl,
@@ -1753,24 +1763,28 @@ ANLAMIN KAYNAĞI: ÖNCE AD, SONRA TANIMLAR.
      her birine bak ve senin anlamınla uyuşup uyuşmadığını say:
      "kanit": {"bakilan": baktığın örnek tanım sayısı, "uyan": anlamınla
      uyuşan tanım sayısı}.
-  3. Adda karşılığı olmayan bilgiyi anlama YAZMA (son, önceki, ortalama
-     gibi; adda bunu gösteren ayrı bir parça yoksa); "not"a yaz. Örnek:
-     adda 3M var, tanımlar "son 3 ayda" diyor; adda "son" gösteren parça
-     yoksa anlam "3 ay boyunca" olur, not "Tanımlarda 'son' geçiyor ama
-     adda karşılığı yok.".
+  3. Adda karşılığı olmayan bilgiyi anlama YAZMA (ortalama, toplam gibi;
+     adda bunu gösteren ayrı bir parça yoksa); "not"a yaz. Örnek: adda
+     3M var ama ortalama gösteren parça yok, tanımlar "son 3 ayın
+     ortalaması" diyor; anlam "3 ay" olur, not "Tanımlarda 'ortalama'
+     geçiyor ama adda karşılığı yok.". Yön ("son") sayı ve birim parçasında nota da yazılmaz (bkz.
+     SAYI VE ZAMAN BİRİMİ PARÇASI).
   4. Adın yapısı ile tanımların çoğunluğu çelişirse adın yapısına güven;
      çelişkiyi "celiski"ye tek cümleyle yaz. Çelişki yoksa boş.
-  5. PENCERE Mİ NOKTA MI: sayılı bir parçada sayının süre mi (pencere)
-     an ya da sıra mı (nokta) gösterdiğini tanımların çoğunluğundan
-     çıkar. Tanımlar ikisine de işaret ediyorsa ya da karar verdirmiyorsa
-     tahmin etme; "soru"ya iki seçeneği de yaz (ör. "3M: 3 ay boyunca mı,
-     3 ay önceki ay mı?").
+  5. PENCERE Mİ NOKTA MI: sayı ve zaman birimi parçasında (30D, 3M) bu
+     karar kolon kartlarında her kolon için verilir; burada soru yazma.
+     Diğer sayılı parçalarda sayının aralık mı (pencere) an ya da sıra mı
+     (nokta) gösterdiğini tanımların çoğunluğundan çıkar. Tanımlar ikisine
+     de işaret ediyorsa ya da karar verdirmiyorsa tahmin etme; "soru"ya
+     iki seçeneği de yaz (ör. "H18: saat 18:00 mi, son 18 saat mi?").
 
 YAZIM:
   - "anlam": parçanın KENDİSİNİN söylediği, tek kısa ifade. Türün adını
     (zaman penceresi, zaman birimi, zaman noktası) anlama YAZMA; tür ayrı
-    alanda. Doğru: "N gün boyunca", "yılın N. ayı", "NN:00 ile NN:00
-    arası", "gün". Yanlış: "N gün boyunca zaman penceresi".
+    alanda. Doğru: "N gün" (30D gibi sayı ve birim parçası), "son N gün"
+    (adında yön harfi olan L30D gibi parça), "yılın N. ayı", "NN:00 ile
+    NN:00 arası", "gün". Yanlış: "N gün zaman penceresi", 30D için "son N
+    gün" ya da "N gün boyunca".
   - Değerlere özel bir durum varsa (ör. bir değer diğerlerinden farklı
     kullanılıyorsa) onu anlama yaz.
   - "soru": emin olmadığın bir nokta varsa kullanıcıya tek, somut bir

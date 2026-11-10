@@ -3618,7 +3618,9 @@ function ozet0124Ciz(o, satirlar) {
             })));
         }, "Kolon adlarındaki sayı içeren zaman parçaları (3D, 30D, 3D_7D). Aynı biçimdekiler tek kalıpta "
             + "toplanır: 3D, 7D ve 30D, [sayı]D kalıbıdır. Kalıba bir kez anlam yazılır, sayı yerine [sayı] "
-            + "konur («son [sayı] gün»); her kolona kendi sayısıyla uygulanır (30D: son 30 gün).\n\n"
+            + "konur («[sayı] gün»); her kolona kendi sayısıyla uygulanır (30D: 30 gün). Yönü ve kapsamı "
+            + "(son 30 gün, 30 gün önce, sonraki 30 gün ...) her kolonda ayrıdır; kolon kartlarında "
+            + "belirlenir.\n\n"
             + "Zaman türü: Pencere (veri bir aralıktaki bütün zamanlardan toplanır), Zaman Noktası, Zaman Birimi, "
             + "Zaman Ölçüsü. [sayı]D gibi sayı ve birimden oluşan kalıpta tür kolona göredir.\n\n"
             + "Özel durumlar: bir değerin kendi anlamı (360D: son 1 yıl), gruptan ayrılan değerler ve adda bir "

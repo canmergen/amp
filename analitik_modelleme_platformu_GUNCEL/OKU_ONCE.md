@@ -1159,11 +1159,18 @@ tanıtır; sayfalar sol bardan açılır.
   Sözlük tanımları kesin değil, kanıttır: kalıp başına en çok 10 örnek
   tanım (`donem.ORNEK_ADET`) gider; model her tanımın anlamıyla uyuşup
   uyuşmadığını sayar (`kanit`: bakılan, uyan). Adda karşılığı olmayan
-  bilgi (son, önceki) anlama yazılmaz, nota yazılır. Ad ile tanımların
-  çoğu çelişirse adın yapısı geçer, çelişki `celiski`de yazar. Süre mi
-  (pencere) an mı (nokta) olduğu tanımların çoğundan çıkar; belli
-  değilse soru iki seçeneği de yazar. Anlam tür adını tekrar etmez ("N
-  gün boyunca", "N gün boyunca zaman penceresi" değil).
+  bilgi (ortalama, toplam) anlama yazılmaz, nota yazılır. **Sayı ve zaman
+  birimi parçasında** (30D, 3M, D30, 3_M) anlam yalnız birimdir ("N gün");
+  son, önce, sonraki, boyunca gibi yön ve kapsam sözcükleri anlama da nota
+  da yazılmaz, bunun için soru sorulmaz, tür "pencere" yazılır (yön ve
+  kapsam kolon kartlarında belirlenir; bkz. "Dönem anlam türleri"). Sayı
+  takvimde bir sıra gösteriyorsa (M3: yılın 3. ayı) bu kural geçmez. Ad
+  ile tanımların çoğu çelişirse adın yapısı geçer, çelişki `celiski`de
+  yazar. Diğer sayılı parçalarda aralık mı (pencere) an mı (nokta) olduğu
+  tanımların çoğundan çıkar; belli değilse soru iki seçeneği de yazar.
+  Anlam tür adını tekrar etmez ("N gün", "N gün zaman penceresi" değil).
+  Kurallar değişince `donem.ISTEM_SURUMU` artar (şimdi 11) ve kalıplar
+  dil modeline bir kez yeniden yorumlatılır.
 - **Arka plan işi (`donem.baslat`):** yorum `YORUM_PARCA` (6) kalıplık
   parçalara bölünür; en çok
   `ES_ZAMANLI` (4) çağrı aynı anda çalışır, her parçanın sonucu gelince
