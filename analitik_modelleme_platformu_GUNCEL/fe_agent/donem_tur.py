@@ -301,7 +301,14 @@ def metinden_tur(metin, sayi, birim):
     if bs == "yıl":
         # Yilda takvim yalniz dort haneli takvim yili ("2023 yılında");
         # "3. yıl" takvimde bir yer degildir (ilişkinin 3. yılı).
-        takvim_re = re.compile(r"(?<![0-9])([0-9]{4})\s*(yıl[a-zçğıöşü]*)")
+        # "2023 yılında", "2023 senesi", "2023'te", "2023'teki",
+        # "2023'ten", "2023de" (bulunma ve ayrilma ekleri).
+        # "2023'ten beri / itibaren / bu yana / sonra / önce" bir araliktir,
+        # yalniz 2023 yili degil: takvim sayilmaz.
+        takvim_re = re.compile(
+            r"(?<![0-9])([0-9]{4})(?![0-9])\s*(?:(?:yıl|sene)[a-zçğıöşü]*"
+            r"|['’]?\s*(?:(?:de|da|te|ta)(?:ki)?|(?:den|dan|ten|tan)(?!\s+(?:beri|itibaren|bu\s+yana"
+            r"|sonra|önce|öncesi|sonrası)))(?![a-zçğıöşü]))")
     for m in takvim_re.finditer(ham):
         if int(m.group(1)) == sayi and takvim_gecerli(birim, sayi):
             bulunan.add("takvim")

@@ -1076,7 +1076,10 @@ tanıtır; sayfalar sol bardan açılır.
   yıl → N yılı. **Yılda takvim yalnız dört haneli takvim yılıdır**
   (`takvim_gecerli`, `TAKVIM_YIL_EN_AZ` 1000): Y2023 → "2023 yılı",
   kapsam "bugünden bağımsız; yalnız 2023 yılı (1 Ocak ile 31 Aralık
-  arası)"; tanımdan "2023 yılında", "2023 yılı" okunur. Y3 gibi küçük
+  arası)"; tanımdan "2023 yılında", "2023 yılı", "2023 senesinde",
+  "2023'te", "2023'teki", "2023'ten", "2023de" okunur; "2023'ten beri,
+  itibaren, bu yana, sonra, önce" bir aralık olduğu için takvim sayılmaz.
+  Y3 gibi küçük
   sayıda Takvim seçeneği çıkmaz (01.2.4.3 seçenekleri, dil modelinin
   takvim işareti geçersiz sayılır); "ilişkinin 3. yılı" takvim sayılmaz.
   Kullanıcı türünde Takvim yönü de seçilebilir; pencere
