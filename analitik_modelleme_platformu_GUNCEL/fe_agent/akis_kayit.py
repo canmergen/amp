@@ -198,9 +198,13 @@ ADIMLAR = {
 
     "veri_profili": {
         "baslik": "Veri Profili ve Kalite",
-        "aciklama": "Dataset seviyesinde inceleme: eksik değer, tekil sayısı, "
-                    "kardinalite, sabit ve kimlik benzeri kolonlar. Kusurlu "
-                    "kolonlardan değişken üretilmez.",
+        "aciklama": "Tablonun tamamında 13 kontrol: eksik değer, sabit, kimlik "
+                    "benzeri, kardinalite, aynı içerikli kolonlar, neredeyse sabit, "
+                    "dönemde boş ya da sabit, gizli eksik, sıfır yoğunluğu, beklenmeyen "
+                    "negatif, eksik sıçraması, uç değer ve tekrar eden satır; ayrıca "
+                    "hedef dağılımı. Üretime girmeyen kolonlardan değişken üretilmez; "
+                    "neredeyse sabit ve dönemde boş ya da sabit kolonlar için karar "
+                    "kullanıcınındır.",
         "girdi": None, "plan": veri_profili_plan, "uygula": veri_profili_uygula},
     "sfa": {
         "baslik": "Tek Değişken Analizi (SFA)",

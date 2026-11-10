@@ -196,12 +196,17 @@ def _atlanan_notu(ozet, baslik):
 # ===========================================================================
 def kusurlu_kolonlar(durum):
     """Veri Profili'nin kusurlu buldugu ham kolonlar (asiri bos, sabit,
-    kimlik benzeri, kardinalitesi asiri yuksek). Bunlardan degisken
-    uretilmez; Analitik Baz Set'te duserler."""
-    t = (durum.get("profil") or {}).get("profil_teshis") or {}
+    kimlik benzeri, kardinalitesi asiri yuksek, ayni icerikli kopya) ve
+    kullanicinin 02.1'de cikardigi kolonlar. Bunlardan degisken uretilmez;
+    Analitik Baz Set'te duserler."""
+    p = durum.get("profil") or {}
+    t = p.get("profil_teshis") or {}
+    karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
     return sorted(set(t.get("cok_bos") or []) | set(t.get("sabit") or [])
                   | set(t.get("kimlik_gibi") or [])
-                  | set(t.get("yuksek_kardinalite") or []))
+                  | set(t.get("yuksek_kardinalite") or [])
+                  | set(t.get("ayni_icerik") or [])
+                  | {k for k, v in karar.items() if v == "cikar"})
 
 
 def uretilenler(durum):
@@ -263,18 +268,33 @@ def _kayit_metni(yazildi, yedek):
     return ("%s veri seti" % yazildi) if yazildi else ("PROJE_HAFIZASI%s" % yedek)
 
 
-def veri_profili_plan(durum):
-    """ONAY SORULMAZ. Bolme kaydedilince profil calisir; ilk durak Kural
-    Tabanli Degisken Uretimi'nin planidir.
+# 02.1 KARAR GEREKTIREN KONTROLLER: neredeyse sabit ve donemde bos ya da
+# sabit kolonlar icin kullanici "Tut" ya da "Çıkar" der. Varsayilan Tut.
+PROFIL_KARAR_TUT = "tut"
+PROFIL_KARAR_CIKAR = "cikar"
 
-    Metin yalnizca "Geri Dön" ile bu adima donulunce gorunur (otomatik
-    calismada kullanilmaz)."""
-    durum["_plan_otomatik"] = True
-    return ("Veri profili yeniden çıkarılacak; değişken üretimi ve SFA bu "
-            "profile göre yeniden yapılır, SFA kararları sıfırlanır. "
-            "Onaylıyor musunuz?")
 
-def veri_profili_uygula(durum):
+def _kart_olculeri(durum):
+    """{kolon: kolon kartinin olcu alani} (01.2.4 Kolon Kartlari). Kart
+    yoksa {}: Beklenmeyen Negatif kontrolu uygulanmaz."""
+    try:
+        from fe_agent import sozluk_calisma
+        sz = sozluk_oku(durum)
+        ad_k = sozluk_calisma.degisken_kolonu_bul(sz)
+        harita = {str(c).strip().upper(): c for c in sz.columns}
+        olcu_k = harita.get("OLCU")
+        if ad_k is None or olcu_k is None:
+            return {}
+        return {str(a): str(o) for a, o in zip(sz[ad_k], sz[olcu_k].fillna(""))
+                if str(o).strip() and str(o) != "nan"}
+    except Exception:
+        return {}
+
+
+def profil_hesapla(durum):
+    """Veri profilini tablonun TAMAMINDAN cikarir: dort temel kontrol
+    (sfa.profil_cikar) ve ek kontroller (profil_ek). Sonuc durum["profil"]."""
+    from fe_agent import profil_ek
     df = modelleme_df(durum)
     m = durum["meta"]
     haric = set(durum.get("haric_kolonlar") or []) | {m.get("target"), m.get("id"), m.get("donem")}
@@ -283,8 +303,24 @@ def veri_profili_uygula(durum):
     yazildi, yedek = _yaz("%s_PROFIL" % durum["veri_seti"], tablo, "/veri_profili.parquet")
 
     p = durum.get("profil") or {}
+    temel = set(teshis.get("cok_bos") or []) | set(teshis.get("sabit") or []) \
+        | set(teshis.get("kimlik_gibi") or []) | set(teshis.get("yuksek_kardinalite") or [])
+    adaylar = [str(k) for k in df.columns if k not in haric and k not in temel]
+    ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
+                                 hedef=m.get("target"), olculer=_kart_olculeri(durum))
+    # Sabit kolonun tek degeri (kartta bulgu olarak).
+    ek["sabit_deger"] = {}
+    for k in teshis.get("sabit") or []:
+        dolu = df[k].dropna()
+        ek["sabit_deger"][k] = profil_ek.deger_metni(dolu.iloc[0]) if len(dolu) else "boş"
+    teshis["ayni_icerik"] = sorted({k for g in ek["ayni_icerik"] for k in g["kopyalar"]})
     p["profil_teshis"] = teshis
+    p["profil_ek"] = ek
     p["profil_dataset"] = yazildi
+    # Onceki kararlar yalniz hala karar isteyen kolonlar icin gecerli.
+    eski_karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    p["profil_karar"] = {k: v for k, v in eski_karar.items()
+                         if k in set(_karar_adaylari(teshis, ek))}
 
     # Feature tablosunun kolon ozeti: veri seti secilirken cikarilmisti,
     # burada tekil sayisi ve kesin null orani ile tamamlaniyor. Ozet hic
@@ -295,32 +331,90 @@ def veri_profili_uygula(durum):
 
     # EKSIK DEGER sekmesi: yalnizca ilk 20 satir + dagilim ozeti oturuma
     # yazilir; tam tablo yukarida dataset'e / yedege yazildi.
-    ilk20, null_ozet, ek = _eksik_ozeti(tablo, p.get("satir") or len(df))
+    ilk20, null_ozet, ek_alan = _eksik_ozeti(tablo, p.get("satir") or len(df))
     p["eksik_ilk20"] = ilk20
     p["null_ozet"] = null_ozet
-    p.update(ek)
+    p.update(ek_alan)
     # Kartin satir sayisi ve kayit yeri (02.1 Veri Profili karti).
     p["profil_satir"] = int(len(df))
     p["profil_kayit"] = _kayit_metni(yazildi, yedek)
+    durum["profil"] = p
+    return p
+
+
+def _karar_adaylari(teshis, ek):
+    """Karar isteyen kolonlar (sira korunur): neredeyse sabit, donemde bos
+    ya da sabit."""
+    ad = [x["kolon"] for x in (ek.get("baskin") or [])]
+    ad += [x["kolon"] for x in (ek.get("donem") or [])]
+    return list(dict.fromkeys(ad))
+
+
+def profil_karar_kolonlari(durum):
+    p = durum.get("profil") or {}
+    return _karar_adaylari(p.get("profil_teshis") or {}, p.get("profil_ek") or {})
+
+
+def _profil_karar_bekliyor(durum):
+    p = durum.get("profil") or {}
+    karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    return any(k not in karar for k in profil_karar_kolonlari(durum))
+
+
+def veri_profili_plan(durum):
+    """Profil tablonun tamamindan cikarilir. Karar isteyen kolon yoksa ONAY
+    SORULMAZ, ilk durak Kural Tabanli Degisken Uretimi'nin planidir. Varsa
+    kart her kolon icin Tut ya da Çıkar ister.
+
+    Otomatik dalda metin yalnizca "Geri Dön" ile bu adima donulunce
+    gorunur."""
+    profil_hesapla(durum)
+    durum["_profil_hazir"] = True
+    if profil_karar_kolonlari(durum):
+        durum["_secim_alani"] = profil_karti(durum, karar=True)
+        return profil_metni(durum, karar=True)
+    durum["_plan_otomatik"] = True
+    return ("Veri profili yeniden çıkarıldı. Onaylarsanız değişken üretimi ve SFA bu "
+            "profile göre yeniden yapılır, SFA kararları sıfırlanır.")
+
+
+def veri_profili_uygula(durum):
+    """Karar govdesi {"cikar": [kolon, ...]}: listedeki karar kolonlari
+    cikar, digerleri tutulur. Govde gelmezse (yazarak onay) onceki karar,
+    yoksa Tut."""
+    karar = durum.pop("_dogrulama_karari", None)
+    if not durum.pop("_profil_hazir", False):
+        profil_hesapla(durum)
+    p = durum["profil"]
+    adaylar = profil_karar_kolonlari(durum)
+    onceki = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    if isinstance(karar, dict) and isinstance(karar.get("cikar"), list):
+        cikar = {str(k) for k in karar["cikar"]} & set(adaylar)
+    else:
+        cikar = {a for a in adaylar if onceki.get(a) == PROFIL_KARAR_CIKAR}
+    p["profil_karar"] = {a: (PROFIL_KARAR_CIKAR if a in cikar else PROFIL_KARAR_TUT)
+                         for a in adaylar}
     durum["profil"] = p
     # Profil degisti: SFA ve kararlari eski profile aitti, yeniden hesaplanir.
     eski = (durum.pop("sfa", None) or {}).get("ai_is")
     if eski:
         sfa_karar.ai_durdur(eski)
-
+    # Karar kartli dalda metin ve kart blokta zaten duruyor (kart kilitlenir);
+    # tekrar yazilmaz.
+    if adaylar:
+        return ""
     return profil_metni(durum)
 
 
 # ===========================================================================
 # 02.1 VERI PROFILI KARTI
 # ===========================================================================
-# (anahtar, kontrolun adi, kolon satirindaki kisa bulgu adi)
-PROFIL_KONTROLLERI = (
-    ("cok_bos", "Eksik Oranı Yüksek", "Eksik oranı yüksek"),
-    ("sabit", "Sabit ya da Tek Değerli", "Sabit"),
-    ("kimlik_gibi", "Kimlik Benzeri", "Kimlik benzeri"),
-    ("yuksek_kardinalite", "Kardinalitesi Aşırı Yüksek", "Kardinalite yüksek"),
-)
+SONUC_GIRMEZ = "girmez"
+SONUC_KARAR = "karar"
+SONUC_BILGI = "bilgi"
+NE_OLACAK = {SONUC_GIRMEZ: "Üretime girmez",
+             SONUC_KARAR: "Kararınıza bırakılır",
+             SONUC_BILGI: "Bilgi için gösterilir"}
 
 
 def _yuzde_metni(oran):
@@ -350,68 +444,230 @@ def _ilgi_eki(sayi_metni):
     return "'in"                                    # bin, milyon: binin
 
 
+def _yuzde_ekli(oran):
+    y = _yuzde_metni(oran)
+    return y + _ilgi_eki(y)
+
+
+def _sayi_metni(v):
+    """Ekranda sayi: tam sayi binlik ayracli, ondalik virgullu."""
+    f = float(v)
+    if f == int(f) and abs(f) < 1e15:
+        return _sayi(int(f))
+    return ("%.4g" % f).replace(".", ",")
+
+
 def _profil_kurallari():
-    """Kontrollerin kurali, kodun kullandigi esiklerle (sfa.profil_cikar)."""
+    """Her kontrolun sade kurali; esikler kodun kullandigi degerlerden."""
+    from fe_agent import profil_ek as pe
     return {
-        "cok_bos": "Boş hücre oranı %s%s üstünde." % (
-            _yuzde_metni(sfa_mod.NULL_ESIK), _ilgi_eki(_yuzde_metni(sfa_mod.NULL_ESIK))),
-        "sabit": "Kolonda tek bir değer var. Bir değer ile boş hücrelerden oluşan "
-                 "kolon iki değerli sayılır, sabit değildir.",
-        "kimlik_gibi": "Farklı değer oranı %s%s üstünde, en az %s farklı değer "
-                       "var ve değerler tam sayı ya da metin. Ondalıklı tutarlar "
-                       "(gelir, bakiye) bu kurala girmez."
-                       % (_yuzde_metni(0.95), _ilgi_eki(_yuzde_metni(0.95)),
-                          _sayi(sfa_mod.MIN_SATIR + 1)),
-        "yuksek_kardinalite": "Kategorik kolonda farklı değer sayısı %s%s üstünde."
-                              % (_sayi(sfa_mod.KATEGORIK_MAX),
-                                 _ilgi_eki(_sayi(sfa_mod.KATEGORIK_MAX))),
+        "cok_bos": "Boş hücre oranı %s üstünde." % _yuzde_ekli(sfa_mod.NULL_ESIK),
+        "sabit": "Kolonda tek bir değer var. Bir değer ile boş hücrelerden oluşan kolon "
+                 "iki değerli sayılır.",
+        "kimlik_gibi": "Neredeyse her satırda farklı değer alan tam sayı ya da metin kolon "
+                       "(müşteri numarası gibi). Ondalıklı tutarlar bu kurala girmez.",
+        "yuksek_kardinalite": "Metin kolonda farklı değer sayısı %s üstünde."
+                              % (_sayi(sfa_mod.KATEGORIK_MAX) + _ilgi_eki(_sayi(sfa_mod.KATEGORIK_MAX))),
+        "ayni_icerik": "Değerleri satır satır birebir aynı olan kolonlar. Gruptan tablodaki "
+                       "ilk kolon kalır.",
+        "baskin": "En sık görülen değerin payı %s ya da üstünde. Boş hücre de değer sayılır."
+                  % _yuzde_metni(pe.BASKIN_ESIK),
+        "donem": "Kolon bazı dönemlerde tamamen boş, ya da en az %s satırı olan bir dönemde "
+                 "tek değerli." % _sayi(pe.DONEM_SABIT_MIN_SATIR),
+        "gizli_eksik": "-1, -99, -999, 9999 gibi bir değerin dolu satırlardaki payı %s "
+                       "üstünde ve değer kolonun geri kalanından kopuk. SFA'da eksik gibi "
+                       "ele alınması önerilir." % _yuzde_ekli(pe.GIZLI_EKSIK_ESIK),
+        "sifir": "Dolu satırlarda sıfırın payı %s ya da üstünde. Çoğu zaman işlem yok "
+                 "anlamına gelir." % _yuzde_metni(pe.SIFIR_ESIK),
+        "negatif": "Kolon kartında ölçüsü adet, gün ya da süre olan kolonda negatif değer var.",
+        "sicrama": "Eksik oranı art arda iki dönem arasında %s puandan fazla değişiyor."
+                   % _sayi(int(round(pe.DONEM_SICRAMA_ESIK * 100))),
+        "uc": "En büyük değer, %%99'luk değerin %s katından büyük." % _sayi(pe.UC_DEGER_KAT),
+        "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
+                  "satırlar.",
     }
 
 
-def profil_metni(durum):
+# (anahtar, kontrolun adi, sonuc, kolon satirindaki kisa bulgu adi)
+PROFIL_KONTROLLERI = (
+    ("cok_bos", "Eksik Oranı Yüksek", SONUC_GIRMEZ, "Eksik oranı yüksek"),
+    ("sabit", "Sabit ya da Tek Değerli", SONUC_GIRMEZ, "Sabit"),
+    ("kimlik_gibi", "Kimlik Benzeri", SONUC_GIRMEZ, "Kimlik benzeri"),
+    ("yuksek_kardinalite", "Kardinalitesi Aşırı Yüksek", SONUC_GIRMEZ, "Kardinalite yüksek"),
+    ("ayni_icerik", "Aynı İçerikli Kolonlar", SONUC_GIRMEZ, "Aynı içerik"),
+    ("baskin", "Neredeyse Sabit", SONUC_KARAR, "Neredeyse sabit"),
+    ("donem", "Dönemde Boş ya da Sabit", SONUC_KARAR, "Dönemde boş ya da sabit"),
+    ("gizli_eksik", "Gizli Eksik (Özel Kod)", SONUC_BILGI, "Gizli eksik"),
+    ("sifir", "Sıfır Yoğunluğu", SONUC_BILGI, "Sıfır yoğun"),
+    ("negatif", "Beklenmeyen Negatif", SONUC_BILGI, "Beklenmeyen negatif"),
+    ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_BILGI, "Eksik sıçraması"),
+    ("uc", "Uç Değer Yoğunluğu", SONUC_BILGI, "Uç değer"),
+    ("tekrar", "Tekrar Eden Satır", SONUC_BILGI, ""),
+)
+DONEM_LISTE_EN_COK = 6
+
+
+def _donem_listesi(donemler):
+    if len(donemler) <= DONEM_LISTE_EN_COK:
+        return ", ".join(donemler)
+    return "%s ve %s dönem daha" % (", ".join(donemler[:DONEM_LISTE_EN_COK]),
+                                    _sayi(len(donemler) - DONEM_LISTE_EN_COK))
+
+
+def _ek_bulgulari(ek):
+    """{anahtar: {kolon: bulgu metni}} ek kontrollerden."""
+    b = {a: {} for a in ("ayni_icerik", "baskin", "donem", "gizli_eksik", "sifir",
+                         "negatif", "sicrama", "uc")}
+    for g in ek.get("ayni_icerik") or []:
+        for k in g["kopyalar"]:
+            b["ayni_icerik"][k] = "%s ile birebir aynı; %s kalır" % (g["kalan"], g["kalan"])
+    for x in ek.get("baskin") or []:
+        b["baskin"][x["kolon"]] = "En sık değer %s, payı %s" % (x["deger"], _yuzde_metni(x["pay"]))
+    for x in ek.get("donem") or []:
+        parca = []
+        if x.get("bos"):
+            parca.append("Boş dönemler: %s" % _donem_listesi(x["bos"]))
+        if x.get("sabit"):
+            parca.append("Tek değerli dönemler: %s" % _donem_listesi(x["sabit"]))
+        b["donem"][x["kolon"]] = ". ".join(parca)
+    for x in ek.get("gizli_eksik") or []:
+        b["gizli_eksik"][x["kolon"]] = "Kod %s, payı %s (%s satır)" % (
+            x["deger"], _yuzde_metni(x["pay"]), _sayi(x["adet"]))
+    for x in ek.get("sifir") or []:
+        b["sifir"][x["kolon"]] = "Sıfırın payı %s" % _yuzde_metni(x["pay"])
+    for x in ek.get("negatif") or []:
+        b["negatif"][x["kolon"]] = "Ölçü: %s. Negatif satır %s, en küçük değer %s" % (
+            x["olcu"], _sayi(x["adet"]), _sayi_metni(x["en_kucuk"]))
+    for x in ek.get("sicrama") or []:
+        b["sicrama"][x["kolon"]] = "Eksik oranı %s dönemi %s, %s dönemi %s" % (
+            x["once"], _yuzde_metni(x["once_oran"]), x["sonra"], _yuzde_metni(x["sonra_oran"]))
+    for x in ek.get("uc") or []:
+        b["uc"][x["kolon"]] = "En büyük değer %s, %%99'luk değer %s" % (
+            _sayi_metni(x["maks"]), _sayi_metni(x["p99"]))
+    return b
+
+
+def _profil_ozeti(durum):
+    """Kartin ve metnin ortak sayilari."""
+    p = durum.get("profil") or {}
+    t = p.get("profil_teshis") or {}
+    ek = p.get("profil_ek") or {}
+    temel = set(t.get("cok_bos") or []) | set(t.get("sabit") or []) \
+        | set(t.get("kimlik_gibi") or []) | set(t.get("yuksek_kardinalite") or [])
+    incelenen = set(map(str, t.get("temiz") or [])) | temel
+    girmez = set(kusurlu_kolonlar(durum))
+    karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    karar_ad = profil_karar_kolonlari(durum)
+    bekleyen = {k for k in karar_ad if k not in karar}
+    bilgi = set()
+    for a in ("gizli_eksik", "sifir", "negatif", "sicrama", "uc"):
+        bilgi |= {x["kolon"] for x in (ek.get(a) or [])}
+    bilgi |= {k for k in karar_ad if karar.get(k) == PROFIL_KARAR_TUT}
+    bilgi -= girmez | bekleyen
+    temiz = incelenen - girmez - bilgi - bekleyen
+    return {"incelenen": incelenen, "girmez": girmez, "bilgi": bilgi,
+            "bekleyen": bekleyen, "temiz": temiz, "karar": karar}
+
+
+def profil_metni(durum, karar=False):
     """02.1 bloğunun metni: ne yapildi ve sonuc, tek bakista."""
-    t = (durum.get("profil") or {}).get("profil_teshis") or {}
-    kusurlu = kusurlu_kolonlar(durum)
-    incelenen = len(set(t.get("temiz") or []) | set(kusurlu))
-    metin = ("Modelleme tablosundaki %s kolonun eksik değer oranı, farklı değer "
-             "sayısı ve türü tablonun tamamı üzerinden incelendi. "
-             % _sayi(incelenen))
-    if kusurlu:
-        return metin + ("%s kolonda sorun bulundu. Bu kolonlardan değişken "
-                        "üretilmez; %s adımında veri setinden çıkarılır."
-                        % (_sayi(len(kusurlu)), akis_atif.adim("baz")))
-    return metin + "Hiçbir kolonda sorun bulunmadı; bütün kolonlar değişken üretimine girer."
+    oz = _profil_ozeti(durum)
+    metin = ("Modelleme tablosundaki %s kolon, tablonun tamamı üzerinden %s kontrolle "
+             "incelendi." % (_sayi(len(oz["incelenen"])), _sayi(len(PROFIL_KONTROLLERI))))
+    parca = []
+    if oz["girmez"]:
+        parca.append("%s kolon değişken üretimine girmez; %s adımında veri setinden "
+                     "çıkarılır." % (_sayi(len(oz["girmez"])), akis_atif.adim("baz")))
+    if oz["bekleyen"]:
+        parca.append("%s kolon için kararınız gerekiyor: Neredeyse Sabit ve Dönemde Boş "
+                     "ya da Sabit kontrollerinde her kolonu tutun ya da çıkarın."
+                     % _sayi(len(oz["bekleyen"])))
+    if oz["bilgi"]:
+        parca.append("%s kolonda bilgi notu var; bu kolonlar değişken üretimine girer."
+                     % _sayi(len(oz["bilgi"])))
+    if not parca:
+        parca.append("Hiçbir kolonda sorun bulunmadı; bütün kolonlar değişken üretimine "
+                     "girer.")
+    tk = ((durum.get("profil") or {}).get("profil_ek") or {}).get("tekrar") or {}
+    tekrar = int(tk.get("toplam") or 0)
+    if tekrar:
+        parca.append("Tabloda %s tekrar eden satır var; Tekrar Eden Satır kontrolünde "
+                     "ayrıntısı görünür." % _sayi(tekrar))
+    return metin + " " + " ".join(parca)
 
 
-def profil_karti(durum):
+def profil_karti(durum, karar=False):
     """02.1 Veri Profili karti (sohbette adimin blogunda). Butun sayilar
-    profilin tablonun TAMAMINDAN cikardigi teshisten; orneklem yok.
+    tablonun TAMAMINDAN; orneklem yok. karar=True: neredeyse sabit ve
+    donemde bos ya da sabit kolonlar icin Tut ya da Çıkar istenir.
     Profil yoksa None."""
     p = durum.get("profil") or {}
     t = p.get("profil_teshis")
     if not isinstance(t, dict):
         return None
+    ek = p.get("profil_ek") or {}
     ozet = {str(s.get("ad")): s for s in (p.get("kolon_ozet") or []) if isinstance(s, dict)}
-    temiz = [str(k) for k in (t.get("temiz") or [])]
-    kusurlu = kusurlu_kolonlar(durum)
-    incelenen = sorted(set(temiz) | set(kusurlu))
+    oz = _profil_ozeti(durum)
+    incelenen = sorted(oz["incelenen"])
+    aciklama = _aciklamalar(durum)
 
     turler = {"sayısal": 0, "kategorik": 0, "tarih": 0}
     for k in incelenen:
         tur = (ozet.get(k) or {}).get("tip") or "kategorik"
         turler[tur] = turler.get(tur, 0) + 1
 
-    def _kolon(k):
-        o = ozet.get(k) or {}
-        return {"ad": k, "tur": o.get("tip") or "",
-                "eksik": o.get("null_oran"), "tekil": o.get("tekil"),
-                "bulgular": [kisa for a, _ad, kisa in PROFIL_KONTROLLERI
-                             if k in set(t.get(a) or [])]}
+    bulgu = _ek_bulgulari(ek)
+    for k in t.get("cok_bos") or []:
+        bulgu.setdefault("cok_bos", {})[k] = "Eksik oranı %s" % _yuzde_metni(
+            (ozet.get(k) or {}).get("null_oran") or 0)
+    for k in t.get("sabit") or []:
+        deger = (ek.get("sabit_deger") or {}).get(k)
+        bulgu.setdefault("sabit", {})[k] = ("Bütün hücreler boş" if deger == "boş"
+                                            else "Tek değer: %s" % deger if deger
+                                            else "Tek değerli")
+    for a in ("kimlik_gibi", "yuksek_kardinalite"):
+        for k in t.get(a) or []:
+            tekil = (ozet.get(k) or {}).get("tekil")
+            bulgu.setdefault(a, {})[k] = ("%s farklı değer" % _sayi(tekil)) if tekil is not None \
+                else "Farklı değer sayısı yüksek"
 
     kurallar = _profil_kurallari()
-    kontroller = [{"anahtar": a, "ad": ad, "kural": kurallar[a],
-                   "kolonlar": [_kolon(k) for k in sorted(set(t.get(a) or []))]}
-                  for a, ad, _kisa in PROFIL_KONTROLLERI]
+    karar_deger = oz["karar"]
+    donemler = ek.get("donemler")
+    kontroller = []
+    for a, ad, sonuc, _kisa in PROFIL_KONTROLLERI:
+        k = {"anahtar": a, "ad": ad, "kural": kurallar[a], "sonuc": sonuc,
+             "ne_olacak": NE_OLACAK[sonuc], "uygulandi": True, "sebep": "",
+             "birim": "kolon", "kolonlar": []}
+        if a == "yuksek_kardinalite" and not turler.get("kategorik"):
+            k["uygulandi"], k["sebep"] = False, "Kategorik kolon yok"
+        elif a in ("donem", "sicrama") and donemler is None:
+            k["uygulandi"], k["sebep"] = False, "Dönem kolonu seçilmedi"
+        elif a in ("donem", "sicrama") and len(donemler or []) < 2:
+            k["uygulandi"], k["sebep"] = False, "Tabloda tek dönem var"
+        elif a == "negatif" and not ek.get("olcu_var"):
+            k["uygulandi"], k["sebep"] = False, "Kolon kartlarında ölçü bilgisi yok"
+        if a == "tekrar":
+            tk = ek.get("tekrar") or {}
+            k["birim"] = "satır"
+            if tk.get("kimlik"):
+                k["kolonlar"].append({"ad": "Aynı %s" % " ve ".join(tk.get("anahtar") or []),
+                                      "aciklama": "", "bulgu": "%s fazla satır" % _sayi(tk["kimlik"])})
+            if tk.get("tam"):
+                k["kolonlar"].append({"ad": "Bütün kolonları aynı satır", "aciklama": "",
+                                      "bulgu": "%s fazla satır" % _sayi(tk["tam"])})
+            k["sayi"] = int(tk.get("toplam") or 0)
+            if tk.get("kimlik") is None:
+                k["kural"] += " Kimlik kolonu seçilmediği için yalnız bütün kolonları aynı satırlara bakıldı."
+            kontroller.append(k)
+            continue
+        for kol, metin in (bulgu.get(a) or {}).items():
+            satir = {"ad": kol, "aciklama": aciklama.get(kol, ""), "bulgu": metin}
+            if sonuc == SONUC_KARAR:
+                satir["karar"] = karar_deger.get(kol, PROFIL_KARAR_TUT)
+            k["kolonlar"].append(satir)
+        k["sayi"] = len(k["kolonlar"])
+        kontroller.append(k)
 
     m = durum.get("meta") or {}
     kayit = p.get("profil_kayit") or (
@@ -420,10 +676,15 @@ def profil_karti(durum):
     n = p.get("null_ozet") or {}
     return {
         "tip": "profil",
+        "adim": "veri_profili",
+        "karar_bekliyor": bool(karar and profil_karar_kolonlari(durum)),
         "satir": p.get("profil_satir") if p.get("profil_satir") is not None else p.get("satir"),
         "kolon": len(incelenen),
-        "temiz": len(temiz),
-        "kusurlu": len(kusurlu),
+        "temiz": len(oz["temiz"]),
+        "kusurlu": len(oz["girmez"]),
+        "bilgi": len(oz["bilgi"]),
+        "bekleyen": len(oz["bekleyen"]) if karar else 0,
+        "karar_sayi": len(profil_karar_kolonlari(durum)),
         "turler": turler,
         "eksik": {"yok": int(n.get("hic_null_yok") or 0), "az": int(n.get("az") or 0),
                   "orta": int(n.get("orta") or 0), "asiri": int(n.get("asiri") or 0)},
@@ -432,6 +693,7 @@ def profil_karti(durum):
         "eksik_maks": p.get("null_maks"),
         "eksik_maks_kolon": p.get("null_maks_kolon"),
         "kontroller": kontroller,
+        "hedef": ek.get("hedef"),
         "haric": {"hedef": m.get("target") or "", "kimlik": m.get("id") or "",
                   "donem": m.get("donem") or "",
                   "surec_disi": len(set(durum.get("haric_kolonlar") or []))},
@@ -442,26 +704,36 @@ def profil_karti(durum):
 
 def profil_gecmisini_tazele(durum, gecmis):
     """Yenilemede 02.1 blogu guncel kart ve metinle cizilir (eski calismada
-    metin tablosu yerine de). Profilin ozet satiri, adimin transkriptteki
-    SON kaydidir; adim gecilmemisse (Geri Dön ile onay bekliyor) dokunulmaz.
+    metin tablosu yerine de). Kart, adimin transkriptteki metinli ya da
+    ekranli ILK kaydina yazilir; adimin diger kayitlari (karar kartli dalda
+    bos tamamlama satiri) kartsiz ve metinsiz kalir, kart iki kez cizilmez.
+    Adim gecilmemisse (Geri Dön ile onay bekliyor) dokunulmaz.
     Transkript degismez: doner yeni liste."""
     from fe_agent.akis_kayit import adim_sirasi
     sira = adim_sirasi(durum.get("mod"))
     if "veri_profili" not in sira or sira.index("veri_profili") >= int(durum.get("i") or 0):
         return gecmis
-    son = None
-    for i, k in enumerate(gecmis or []):
-        if isinstance(k, dict) and k.get("rol") == "bot" and k.get("adim") == "veri_profili":
-            son = i
-    kart = profil_karti(durum) if son is not None else None
+    satirlar = [i for i, k in enumerate(gecmis or [])
+                if isinstance(k, dict) and k.get("rol") == "bot" and k.get("adim") == "veri_profili"]
+    if not satirlar:
+        return gecmis
+    kart = profil_karti(durum)
     if not kart:
         return gecmis
+    hedef = next((i for i in satirlar
+                  if str(gecmis[i].get("metin") or "").strip() or gecmis[i].get("ekran")),
+                 satirlar[-1])
     yeni = list(gecmis)
-    k = dict(yeni[son])
-    k["metin"] = profil_metni(durum)
-    k["ekran"] = {"secim_alani": kart}
-    k.pop("ekran_atlandi", None)
-    yeni[son] = k
+    for i in satirlar:
+        k = dict(yeni[i])
+        if i == hedef:
+            k["metin"] = profil_metni(durum)
+            k["ekran"] = {"secim_alani": kart}
+            k.pop("ekran_atlandi", None)
+        else:
+            k["metin"] = ""
+            k.pop("ekran", None)
+        yeni[i] = k
     return yeni
 
 def _buyuk_veri_engeli(durum, adim):
@@ -829,6 +1101,12 @@ def stabilite_uygula(durum):
                _ond(sfa_mod.PSI_ESIK, 2), _sayi_ad(ozet.get("kayan")),
                en_kotu or "-", _kayit_metni(yazildi, yedek), akis_atif.adim("baz")))
 
+def _profil_cikarilan(p):
+    """02.1'de kullanicinin Çıkar dedigi kolonlar."""
+    karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    return [k for k, v in karar.items() if v == "cikar"]
+
+
 def _dusurulecek_kume(durum):
     """Baz sette DUSURULECEK kolonlarin tam kumesi.
 
@@ -849,6 +1127,7 @@ def _dusurulecek_kume(durum):
         (t.get("cok_bos") or []) + (t.get("sabit") or []) +
         (t.get("kimlik_gibi") or []) + (t.get("yuksek_kardinalite") or []) +
         (ut.get("cok_bos") or []) + (ut.get("sabit") or []) +
+        (t.get("ayni_icerik") or []) + _profil_cikarilan(p) +
         (st.get("kayan") or [])) - korunan
     tanimsiz = set(durum.get("haric_kolonlar") or []) - korunan - teshis
     return sorted(teshis | tanimsiz), sorted(teshis), sorted(tanimsiz)
@@ -881,7 +1160,7 @@ def baz_plan(durum):
             "sette yapılır.\n"
             "  Düşürülecek : %s kolon\n"
             "  Düşürme Sebebi : eksik %s · sabit %s · kimlik %s · kardinalite %s · "
-            "kararsız %s · süreç dışı %s\n"
+            "aynı içerik %s · profilde çıkarılan %s · kararsız %s · süreç dışı %s\n"
             "  SFA Kararları : %s değişken modele girmeyecek · %s aralıkla · "
             "%s dönüşümle · %s eksik işaretiyle\n"
             "  Doldurma : SFA kararına göre; kararı olmayan sayısal kolonlar "
@@ -893,6 +1172,7 @@ def baz_plan(durum):
                _sayi(len(set(t.get("sabit") or []) | set(ut.get("sabit") or []))),
                _sayi(len(t.get("kimlik_gibi") or [])),
                _sayi(len(t.get("yuksek_kardinalite") or [])),
+               _sayi(len(t.get("ayni_icerik") or [])), _sayi(len(_profil_cikarilan(p))),
                _sayi(len(st.get("kayan") or [])), _sayi(len(tanimsiz)),
                _sayi(ko["girmeyen"]), _sayi(ko["aralik"]), _sayi(ko["donusum"]),
                _sayi(ko["isaret"]), durum["veri_seti"]))

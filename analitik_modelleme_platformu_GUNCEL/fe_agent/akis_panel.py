@@ -455,12 +455,21 @@ def detay(durum):
         ]))
 
     if t:
+        # 02.1 kartiyla ayni sayilar (akis_faz02._profil_ozeti).
+        try:
+            from fe_agent.akis_faz02 import _profil_ozeti
+            _oz = _profil_ozeti(durum)
+            _sorunsuz, _bilgi = len(_oz["temiz"]), len(_oz["bilgi"])
+        except Exception:
+            _sorunsuz, _bilgi = len(t.get("temiz") or []), 0
         bolumler.append(_bolum("VERİ PROFİLİ", [
-            ("Sorunsuz Kolon", _sayi(len(t.get("temiz") or []))),
+            ("Sorunsuz Kolon", _sayi(_sorunsuz)),
+            ("Bilgi Notu Olan", _sayi(_bilgi)),
             ("Eksik Oranı Yüksek", _sayi(len(t.get("cok_bos") or []))),
             ("Sabit", _sayi(len(t.get("sabit") or []))),
             ("Kimlik Benzeri", _sayi(len(t.get("kimlik_gibi") or []))),
             ("Kardinalite Yüksek", _sayi(len(t.get("yuksek_kardinalite") or []))),
+            ("Aynı İçerikli", _sayi(len(t.get("ayni_icerik") or []))),
         ]))
 
     if s.get("analiz_edilen") is not None:

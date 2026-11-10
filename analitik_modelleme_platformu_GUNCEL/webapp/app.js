@@ -16492,11 +16492,13 @@ function rozetiBasligaTasi(blok, el, kap0) {
 }
 
 /* ==================== 02.1 Veri Profili kartı ====================
-   Karar istemeyen sonuç kartı. Üstte dört sayı (satır, incelenen,
-   sorunsuz, sorunlu), altında eksik değer dağılımı (tek renk tonunda,
-   açıktan koyuya), en altta dört kontrol: kuralı ve sonucu. Sorun bulunan
-   kontrolde "N kolon" düğmesi kolonları (tür, eksik oranı, farklı değer
-   sayısı, bulgular) açar. Bütün sayılar tablonun tamamından. */
+   Üstte sayılar (satır, incelenen, sorunsuz, bilgi notu olan, kararınızı
+   bekleyen, üretime girmeyen), altında eksik değer dağılımı, kontroller
+   tablosu (Kontrol, Neye Bakıldı, Bulunan, Ne Olacak) ve hedef dağılımı.
+   Bulunan sayıya basınca kolonlar açılır (kolon, açıklama, bulgu). Karar
+   isteyen kontrollerde (Neredeyse Sabit, Dönemde Boş ya da Sabit) her
+   kolon için Tut ya da Çıkar seçilir; karar kartın altındaki düğmeyle
+   gider. Bütün sayılar tablonun tamamından. */
 function pfYuzde(x) {
     if (x === null || x === undefined || x === "") return BOS_SIMGE;
     const v = Number(x);
@@ -16505,8 +16507,19 @@ function pfYuzde(x) {
     return "%" + (Number.isInteger(y) ? String(y) : String(y).replace(".", ","));
 }
 
+const PF_NE_OLACAK_SINIF = { girmez: "pf-sonuc-girmez", karar: "pf-sonuc-karar", bilgi: "pf-sonuc-bilgi" };
+
 function profilKartiEkle(alan, blok) {
     const kart = elYap("div", "secim-kart pf-kart");
+    const kararModu = !!alan.karar_bekliyor && !(blok && blok.kilit);
+
+    /* Karar durumu: kolon -> "tut" | "cikar". Bir kolon iki karar
+       kontrolünde birden geçebilir; iki satır aynı kararı gösterir. */
+    const kararlar = {};
+    const kararCizenler = [];
+    (alan.kontroller || []).filter(k => k.sonuc === "karar")
+        .forEach(k => (k.kolonlar || []).forEach(c => { kararlar[c.ad] = c.karar || "tut"; }));
+    const kararCiz = () => kararCizenler.forEach(f => f());
 
     /* Başlık + i */
     const bas = elYap("div", "pf-bas");
@@ -16520,27 +16533,30 @@ function profilKartiEkle(alan, blok) {
         + (h.surec_disi ? (disari.length ? " ve " : "") + "süreç dışı bırakılan "
                           + ftBinlik(h.surec_disi) + " kolon" : "");
     const bilgi = [
-        "Modelleme tablosundaki her kolon tablonun tamamı üzerinden incelenir; örneklem kullanılmaz.",
-        "Her kolon için eksik değer oranı, farklı değer sayısı ve türü çıkarılır; ardından dört kontrol uygulanır. Bir kolon birden fazla kontrole takılabilir.",
+        "Modelleme tablosundaki her kolon tablonun tamamı üzerinden incelenir; örneklem kullanılmaz, sayımlar kesindir.",
+        "Kontrollerin sonucu üç türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
+            + tireSade(alan.dusme_atif || "") + " adımında veri setinden çıkarılır. Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
-        "Sorunlu kolonlardan değişken üretilmez; bu kolonlar " + tireSade(alan.dusme_atif || "") + " adımında veri setinden çıkarılır.",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
     ].filter(Boolean).join("\n\n");
     bas.appendChild(bolmeBilgiSimgesi(bilgi, "Veri Profili"));
     kart.appendChild(bas);
 
-    /* Dört sayı */
+    /* Sayılar */
     const karolar = elYap("div", "pf-karolar");
     const karo = (etiket, deger, sinif) => {
         const k = elYap("div", "pf-karo" + (sinif ? " " + sinif : ""));
-        k.appendChild(elYap("div", "pf-karo-deger", deger));
+        k.appendChild(elYap("div", "pf-karo-deger", ftBinlik(deger)));
         k.appendChild(elYap("div", "pf-karo-etiket", etiket));
         karolar.appendChild(k);
     };
-    karo("Satır", ftBinlik(alan.satir));
-    karo("İncelenen Kolon", ftBinlik(alan.kolon));
-    karo("Sorunsuz", ftBinlik(alan.temiz), "tamam");
-    karo("Sorunlu", ftBinlik(alan.kusurlu), alan.kusurlu ? "sorun" : "");
+    karo("Satır", alan.satir);
+    karo("İncelenen Kolon", alan.kolon);
+    karo("Sorunsuz", alan.temiz, Number(alan.temiz) ? "tamam" : "");
+    karo("Bilgi Notu Olan", alan.bilgi || 0, Number(alan.bilgi) ? "bilgi" : "");
+    if (kararModu) karo("Kararınızı Bekleyen", alan.bekleyen || 0, Number(alan.bekleyen) ? "karar" : "");
+    karo("Üretime Girmeyen", alan.kusurlu, Number(alan.kusurlu) ? "sorun" : "");
+    karolar.style.setProperty("--pf-karo-sayi", String(karolar.children.length));
     kart.appendChild(karolar);
 
     /* Türler */
@@ -16596,8 +16612,6 @@ function profilKartiEkle(alan, blok) {
             metinYaz(en, "Eksik değeri olan kolon: **" + ftBinlik(alan.eksik_kolon) + "**. En çok eksik olan: **"
                 + alan.eksik_maks_kolon + "** (" + pfYuzde(alan.eksik_maks) + ").");
             eb.appendChild(en);
-        } else {
-            eb.appendChild(elYap("div", "pf-not", "Hiçbir kolonda eksik değer yok."));
         }
     }
     kart.appendChild(eb);
@@ -16608,69 +16622,227 @@ function profilKartiEkle(alan, blok) {
     kbBas.appendChild(elYap("span", "pf-bolum-ad", "Kontroller"));
     kb.appendChild(kbBas);
     const tablo = elYap("table", "dg-tablo pf-tablo");
+    const cg = document.createElement("colgroup");
+    ["pf-k-ad", "pf-k-kural", "pf-k-bulunan", "pf-k-sonuc"].forEach(c => {
+        const col = document.createElement("col"); col.className = c; cg.appendChild(col);
+    });
+    tablo.appendChild(cg);
     const thead = elYap("thead");
     const htr = elYap("tr");
-    ["Kontrol", "Kural", "Sonuç"].forEach(b => htr.appendChild(elYap("th", "", b)));
+    ["Kontrol", "Neye Bakıldı", "Bulunan", "Ne Olacak"].forEach(b => htr.appendChild(elYap("th", "", b)));
     thead.appendChild(htr);
     tablo.appendChild(thead);
     const tbody = elYap("tbody");
+
+    const kararDugmesi = (ad) => {
+        const grup = elYap("div", "pf-karar");
+        grup.setAttribute("role", "group");
+        grup.setAttribute("aria-label", ad + " kararı");
+        const btnler = [["tut", "Tut"], ["cikar", "Çıkar"]].map(([d, etiket]) => {
+            const b = elYap("button", "pf-karar-btn pf-karar-" + d, etiket);
+            b.type = "button";
+            b.onclick = () => {
+                if (kart.classList.contains("kilitli")) return;
+                kararlar[ad] = d;
+                kararCiz();
+            };
+            grup.appendChild(b);
+            return [d, b];
+        });
+        kararCizenler.push(() => btnler.forEach(([d, b]) => {
+            const secili = kararlar[ad] === d;
+            b.classList.toggle("secili", secili);
+            b.setAttribute("aria-pressed", secili ? "true" : "false");
+        }));
+        return grup;
+    };
+
     (alan.kontroller || []).forEach(k => {
-        const satir = elYap("tr", "pf-kontrol");
+        const satir = elYap("tr", "pf-kontrol" + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
         satir.appendChild(elYap("td", "pf-kontrol-ad", k.ad));
         satir.appendChild(elYap("td", "pf-kural", k.kural));
-        const sonuc = elYap("td", "pf-sonuc");
-        satir.appendChild(sonuc);
-        const n = (k.kolonlar || []).length;
-        if (!n) {
-            const ok = elYap("span", "pf-durum tamam");
-            ok.append(elYap("span", "pf-durum-ikon", "✓"), elYap("span", "", "Sorun yok"));
-            sonuc.appendChild(ok);
-        } else {
-            const dg = elYap("button", "pf-durum sorun");
-            dg.type = "button";
-            dg.setAttribute("aria-expanded", "false");
-            dg.append(elYap("span", "pf-durum-ikon", "!"), elYap("span", "", ftBinlik(n) + " kolon"),
-                      elYap("span", "pf-ok", "▾"));
-            sonuc.appendChild(dg);
-            const detay = elYap("tr", "pf-detay");
-            detay.hidden = true;
-            const td = elYap("td");
-            td.colSpan = 3;
-            const it = elYap("table", "dg-tablo pf-ic-tablo");
-            const ith = elYap("tr");
-            ["Kolon", "Tür", "Eksik Oranı", "Farklı Değer", "Bulgular"].forEach(b => ith.appendChild(elYap("th", "", b)));
-            const ithead = elYap("thead"); ithead.appendChild(ith); it.appendChild(ithead);
-            const itb = elYap("tbody");
-            k.kolonlar.forEach(c => {
-                const r = elYap("tr");
-                r.appendChild(elYap("td", "pf-kolon-ad", c.ad));
-                r.appendChild(elYap("td", "", c.tur || BOS_SIMGE));
-                r.appendChild(elYap("td", "", pfYuzde(c.eksik)));
-                r.appendChild(elYap("td", "", ftBinlik(c.tekil)));
-                r.appendChild(elYap("td", "", (c.bulgular || []).join(", ")));
-                itb.appendChild(r);
-            });
-            it.appendChild(itb);
-            const kap = elYap("div", "pf-ic-kap");
-            kap.appendChild(it);
-            td.appendChild(kap);
-            detay.appendChild(td);
-            dg.onclick = () => {
-                detay.hidden = !detay.hidden;
-                dg.setAttribute("aria-expanded", detay.hidden ? "false" : "true");
-                dg.classList.toggle("acik", !detay.hidden);
-            };
+        const bulunan = elYap("td", "pf-sonuc");
+        const neOlacak = elYap("td", "pf-ne-olacak");
+        satir.append(bulunan, neOlacak);
+        const n = Number(k.sayi || 0);
+        const birim = k.birim || "kolon";
+
+        if (k.uygulandi === false) {
+            const u = elYap("span", "pf-durum pasif");
+            u.append(elYap("span", "pf-durum-ikon", "○"), elYap("span", "", "Uygulanmadı"));
+            bulunan.appendChild(u);
+            neOlacak.appendChild(elYap("span", "pf-sebep", k.sebep || ""));
             tbody.appendChild(satir);
-            tbody.appendChild(detay);
             return;
         }
+        /* Bulgu yoksa "Ne Olacak" sönük: renk yalnız bulunan kolon varken. */
+        neOlacak.appendChild(elYap("span", "pf-ne " + (n ? (PF_NE_OLACAK_SINIF[k.sonuc] || "") : "pf-sonuc-sessiz"),
+                                   k.ne_olacak || ""));
+        if (!n) {
+            const ok = elYap("span", "pf-durum tamam");
+            ok.append(elYap("span", "pf-durum-ikon", "✓"), elYap("span", "", "Yok"));
+            bulunan.appendChild(ok);
+            tbody.appendChild(satir);
+            return;
+        }
+        const tur = k.sonuc === "girmez" ? "sorun" : (k.sonuc === "karar" ? "karar" : "bilgi");
+        const dg = elYap("button", "pf-durum " + tur);
+        dg.type = "button";
+        dg.setAttribute("aria-expanded", "false");
+        dg.append(elYap("span", "pf-durum-ikon", tur === "bilgi" ? "i" : "!"),
+                  elYap("span", "", ftBinlik(n) + " " + birim), elYap("span", "pf-ok", "▾"));
+        bulunan.appendChild(dg);
+
+        const detay = elYap("tr", "pf-detay");
+        detay.hidden = true;
+        const td = elYap("td");
+        td.colSpan = 4;
+        const kararli = k.sonuc === "karar";
+        if (kararli && kararModu) {
+            const ust = elYap("div", "pf-toplu");
+            ust.appendChild(elYap("span", "pf-toplu-not", "Bu kontroldeki bütün kolonlar için:"));
+            [["tut", "Hepsini Tut"], ["cikar", "Hepsini Çıkar"]].forEach(([d, et]) => {
+                const b = elYap("button", "dg-toplu-btn", et);
+                b.type = "button";
+                b.onclick = () => {
+                    if (kart.classList.contains("kilitli")) return;
+                    (k.kolonlar || []).forEach(c => { kararlar[c.ad] = d; });
+                    kararCiz();
+                };
+                ust.appendChild(b);
+            });
+            td.appendChild(ust);
+        }
+        const it = elYap("table", "dg-tablo pf-ic-tablo");
+        const icg = document.createElement("colgroup");
+        const sutunlar = birim === "satır"
+            ? [["Tekrar", "pf-i-ad"], ["Bulgu", "pf-i-bulgu"]]
+            : [["Kolon", "pf-i-ad"], ["Açıklama", "pf-i-acik"], ["Bulgu", "pf-i-bulgu"]]
+                .concat(kararli ? [["Karar", "pf-i-karar"]] : []);
+        sutunlar.forEach(([, c]) => { const col = document.createElement("col"); col.className = c; icg.appendChild(col); });
+        it.appendChild(icg);
+        const ith = elYap("tr");
+        sutunlar.forEach(([b]) => ith.appendChild(elYap("th", "", b)));
+        const ithead = elYap("thead"); ithead.appendChild(ith); it.appendChild(ithead);
+        const itb = elYap("tbody");
+        (k.kolonlar || []).forEach(c => {
+            const r = elYap("tr");
+            r.appendChild(elYap("td", "pf-kolon-ad", c.ad));
+            if (birim !== "satır") r.appendChild(elYap("td", "pf-kolon-acik", c.aciklama || BOS_SIMGE));
+            r.appendChild(elYap("td", "pf-bulgu", c.bulgu || ""));
+            if (kararli) {
+                const kt = elYap("td", "pf-karar-hucre");
+                if (kararModu) kt.appendChild(kararDugmesi(c.ad));
+                else kt.appendChild(elYap("span", "pf-karar-sonuc " + (c.karar === "cikar" ? "cikar" : "tut"),
+                                          c.karar === "cikar" ? "Çıkarıldı" : "Tutuldu"));
+                r.appendChild(kt);
+            }
+            itb.appendChild(r);
+        });
+        it.appendChild(itb);
+        const kap = elYap("div", "pf-ic-kap");
+        kap.appendChild(it);
+        td.appendChild(kap);
+        detay.appendChild(td);
+        const ac = (acik) => {
+            detay.hidden = !acik;
+            dg.setAttribute("aria-expanded", acik ? "true" : "false");
+            dg.classList.toggle("acik", acik);
+        };
+        dg.onclick = () => ac(detay.hidden);
+        /* Karar bekleyen kontroller açık gelir. */
+        if (kararli && kararModu) ac(true);
         tbody.appendChild(satir);
+        tbody.appendChild(detay);
     });
     tablo.appendChild(tbody);
-    kb.appendChild(tablo);
+    const tsar = elYap("div", "pf-tablo-sar");
+    tsar.appendChild(tablo);
+    kb.appendChild(tsar);
     kart.appendChild(kb);
 
-    /* Sonuç cümlesi bloğun metninde (profil_metni); kartta tekrar yazılmaz. */
+    /* Hedef dağılımı */
+    const hd = alan.hedef;
+    if (hd && (hd.siniflar || []).length) {
+        const hb = elYap("div", "pf-bolum");
+        const hbBas = elYap("div", "pf-bolum-bas");
+        hbBas.appendChild(elYap("span", "pf-bolum-ad", "Hedef Dağılımı (" + hd.kolon + ")"));
+        hb.appendChild(hbBas);
+        const st = elYap("table", "dg-tablo pf-hedef-tablo");
+        const sth = elYap("tr");
+        ["Sınıf", "Satır", "Pay"].forEach(b => sth.appendChild(elYap("th", "", b)));
+        const sthead = elYap("thead"); sthead.appendChild(sth); st.appendChild(sthead);
+        const stb = elYap("tbody");
+        hd.siniflar.forEach(c => {
+            const r = elYap("tr");
+            r.append(elYap("td", "pf-kolon-ad", c.deger), elYap("td", "", ftBinlik(c.satir)),
+                     elYap("td", "", pfYuzde(c.pay)));
+            stb.appendChild(r);
+        });
+        st.appendChild(stb);
+        const ssar = elYap("div", "pf-tablo-sar");
+        ssar.appendChild(st);
+        hb.appendChild(ssar);
+        hb.appendChild(elYap("div", "pf-not", Number(hd.bos)
+            ? "Hedefi boş satır: " + ftBinlik(hd.bos) + ". Bu satırlar modelde kullanılamaz."
+            : "Hedefi boş satır yok."));
+        if ((hd.donemler || []).length) {
+            const siniflar = hd.siniflar.map(c => c.deger);
+            const gosterilen = hd.ikili ? ["1"] : siniflar;
+            const dt = elYap("table", "dg-tablo pf-hedef-tablo");
+            const dth = elYap("tr");
+            ["Dönem", "Satır"].concat(gosterilen.map(c => hd.ikili ? "Hedef = 1 oranı" : "Sınıf " + c + " payı"))
+                .forEach(b => dth.appendChild(elYap("th", "", b)));
+            const dthead = elYap("thead"); dthead.appendChild(dth); dt.appendChild(dthead);
+            const dtb = elYap("tbody");
+            hd.donemler.forEach(d => {
+                const r = elYap("tr");
+                r.append(elYap("td", "pf-kolon-ad", d.donem), elYap("td", "", ftBinlik(d.satir)));
+                gosterilen.forEach(c => r.appendChild(elYap("td", "", pfYuzde((d.paylar || {})[c] || 0))));
+                dtb.appendChild(r);
+            });
+            dt.appendChild(dtb);
+            const dsar = elYap("div", "pf-tablo-sar pf-hedef-donem");
+            dsar.appendChild(dt);
+            hb.appendChild(elYap("div", "pf-alt-baslik", "Dönem Başına"));
+            hb.appendChild(dsar);
+        }
+        kart.appendChild(hb);
+    }
+
+    /* Karar düğmesi */
+    if (kararModu) {
+        const alt = elYap("div", "pf-karar-alt");
+        const ozetEl = elYap("div", "pf-karar-ozet");
+        const btn = elYap("button", "secim-onay", "Kararları Onayla ve Devam Et");
+        btn.type = "button";
+        const ozetYaz = () => {
+            const adlar = Object.keys(kararlar);
+            const cik = adlar.filter(a => kararlar[a] === "cikar").length;
+            ozetEl.textContent = ftBinlik(adlar.length) + " kolon için karar: "
+                + ftBinlik(adlar.length - cik) + " tutulacak, " + ftBinlik(cik) + " çıkarılacak.";
+        };
+        kararCizenler.push(ozetYaz);
+        btn.onclick = () => {
+            if (mesgul || btn.disabled) return;
+            const cikar = Object.keys(kararlar).filter(a => kararlar[a] === "cikar");
+            const tut = Object.keys(kararlar).length - cikar.length;
+            kart.classList.add("kilitli");
+            btn.hidden = true;
+            btn.disabled = true;
+            geriAlKilit = () => {
+                kart.classList.remove("kilitli");
+                btn.hidden = false;
+                btn.disabled = false;
+            };
+            const ozet = ftBinlik(tut) + " kolon tutuldu, " + ftBinlik(cikar.length) + " kolon çıkarıldı";
+            gonder(ozet, false, { dogrulama: { adim: "veri_profili", cikar: cikar } });
+        };
+        alt.append(ozetEl, btn);
+        kart.appendChild(alt);
+    }
+    kararCiz();
+
     if (alan.kayit) kart.appendChild(elYap("div", "pf-kayit", "Profil tablosu: " + alan.kayit));
 
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
@@ -16688,7 +16860,7 @@ function secimAlaniEkle(alan, blok) {
     if (alan.tip === "bolme") { bolmeKartiEkle(alan, blok); return; }
     /* Aralık önerileri: satır başına kabul / ret (sözlük tanımları gibi) */
     if (alan.tip === "sfa_karar") { sfaKartiEkle(alan, blok); return; }
-    /* 02.1 Veri Profili: yalnız sonuç, karar yok */
+    /* 02.1 Veri Profili: sonuç; gerekirse Tut ya da Çıkar kararı */
     if (alan.tip === "profil") { profilKartiEkle(alan, blok); return; }
 
     const kart = document.createElement("div");

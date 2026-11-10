@@ -157,7 +157,7 @@ def kural_plan(durum):
         sozluk_df=sz, haric=haric, meta=durum.get("meta", {}))
     durum["plan"] = plan or []
 
-    if hata:
+    if hata and not plan:
         # Hatayi yutma: kullaniciya goster, adimi ilerletme.
         return ("Dönüşüm planını hazırlayamadım.\n\n  %s\n\n"
                 "Tekrar denemek için onaylayın, bu adımı geçebilir ya da "
@@ -186,7 +186,8 @@ def kural_plan(durum):
             % (_sayi(len(plan)),
                " · ".join("%s %s" % (v, k) for k, v in sorted(kirilim.items())),
                "\n".join(satirlar),
-               _sayi(sum(len(p["kolonlar"]) for p in plan))))
+               _sayi(sum(len(p["kolonlar"]) for p in plan)))
+            + (("\n\nNot: %s" % hata) if hata else ""))
 
 def _ogrenme_serisi(s, ogren_maske):
     """Parametrelerin ogrenilecegi satirlar. Maske yoksa tum satirlar."""

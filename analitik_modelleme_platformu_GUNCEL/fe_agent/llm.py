@@ -3654,45 +3654,33 @@ Kurallar:
 - En fazla 12 şablon öner.""" + SINIRLAYICI_KURALI
 
 
-def gelenekse_plan_oner(sozluk_df, haric, meta, max_satir=None):
-    """Doner: (plan_listesi, hata). Hata varsa plan bos listedir."""
-    meta = meta or {}
-    ad_kol, ack_kol, kolon_hata = _sozluk_kolonlari(sozluk_df)
-    if kolon_hata:
-        return [], kolon_hata
+# PLAN PARCALARI: 1.000 kolonu asan sozlukte tek cagri 90 saniyeyi
+# asiyordu. Katalog satirlari (aile ya da kolon) PLAN_PARCA_KARAKTER
+# boyutunda parcalara bolunur, parcalar PLAN_PARALEL esli gider. Her
+# parca en fazla 12 sablon onerir; toplam yine en fazla PLAN_EN_COK
+# sablondur ve parcalardan sirayla (biri birinden, sonra ikincileri)
+# alinir, boylece her parca temsil edilir.
+PLAN_PARCA_KARAKTER = 12000
+PLAN_PARALEL = 3
+PLAN_EN_COK = 12
 
-    hedef = meta.get("target")
-    kimlik = meta.get("id")
-    yasak = {x for x in (hedef, kimlik) if x}
 
-    kaynak = sozluk_df if max_satir is None else sozluk_df.head(max_satir)
-    dahil = [str(k) for k in kaynak[ad_kol] if str(k) not in haric and str(k) not in yasak]
-    katalog = sozluk_katalogu(kaynak, dahil)
-    if katalog:
-        istek = ("Hedef değişken: %s\n\n%s\n\n%s"
-                 % (hedef or "?", KATALOG_NOTU, _veri_blogu("Kolonlar:", "\n".join(katalog))))
-    else:
-        kayitlar = []
-        for _, r in kaynak.iterrows():
-            kolon = str(r[ad_kol])
-            if kolon in haric or kolon in yasak:
-                continue
-            kayitlar.append("%s: %s" % (kolon, str(r[ack_kol])[:120]))
-        istek = ("Hedef değişken: %s\n\n%s"
-                 % (hedef or "?", _veri_blogu("Kolonlar:", "\n".join(kayitlar))))
+def _plan_parcalari(satirlar, sinir=PLAN_PARCA_KARAKTER):
+    parcalar, simdiki, boy = [], [], 0
+    for s in satirlar:
+        if simdiki and boy + len(s) + 1 > sinir:
+            parcalar.append(simdiki)
+            simdiki, boy = [], 0
+        simdiki.append(s)
+        boy += len(s) + 1
+    if simdiki:
+        parcalar.append(simdiki)
+    return parcalar
 
-    try:
-        ham = _cagir(SISTEM_PLAN, istek, sicaklik=0.2)
-    except Exception as e:
-        return [], "Dönüşüm planı alınamadı: %s" % _hata_metni(e)
-    plan = _json_ayristir(ham, [], list)
 
-    # --- LLM'e GUVENME: dogrula ve temizle -------------------------------
-    # Uydurma kolon adi, izinsiz donusum, eksik kolon -> hepsi eleniyor.
-    # Hedef ve kimlik kolonu BEYAZ LISTEDE OLMAZ: aksi halde LLM hedefi
-    # kolon listesine koyup ondan turemis degisken urettirebilir.
-    gecerli = set(sozluk_df[ad_kol].astype(str)) - yasak
-
+def _plan_temizle(plan, gecerli, haric):
+    """LLM'e GUVENME: uydurma kolon adi, izinsiz donusum, eksik kolon
+    elenir. Hedef ve kimlik gecerli kumede yoktur."""
     temiz = []
     for p in (plan if isinstance(plan, list) else []):
         if not isinstance(p, dict) or p.get("donusum") not in IZINLI_DONUSUMLER:
@@ -3707,7 +3695,94 @@ def gelenekse_plan_oner(sozluk_df, haric, meta, max_satir=None):
                       "donusum": p["donusum"],
                       "kolonlar": kolonlar,
                       "gerekce": p.get("gerekce", "")})
-    return temiz[:12], None
+    return temiz
+
+
+def _plan_birlestir(parca_planlari, en_cok=PLAN_EN_COK):
+    """Parcalarin planlari sirayla (her parcadan birer) alinir; ayni
+    donusum ve ayni kolonlar ikinci kez girmez."""
+    sonuc, gorulen = [], set()
+    en_uzun = max([len(p) for p in parca_planlari] or [0])
+    for i in range(en_uzun):
+        for plan in parca_planlari:
+            if i >= len(plan) or len(sonuc) >= en_cok:
+                continue
+            p = plan[i]
+            anahtar = (p["donusum"], tuple(p["kolonlar"]))
+            if anahtar in gorulen:
+                continue
+            gorulen.add(anahtar)
+            sonuc.append(p)
+    return sonuc
+
+
+def gelenekse_plan_oner(sozluk_df, haric, meta, max_satir=None):
+    """Doner: (plan_listesi, hata). Butun parcalar duserse plan bos ve hata
+    dolu; bir kismi duserse plan doludur, hata hangi parcalarin
+    alinamadigini soyler."""
+    meta = meta or {}
+    ad_kol, ack_kol, kolon_hata = _sozluk_kolonlari(sozluk_df)
+    if kolon_hata:
+        return [], kolon_hata
+
+    hedef = meta.get("target")
+    kimlik = meta.get("id")
+    yasak = {x for x in (hedef, kimlik) if x}
+    haric = set(haric or [])
+
+    kaynak = sozluk_df if max_satir is None else sozluk_df.head(max_satir)
+    dahil = [str(k) for k in kaynak[ad_kol] if str(k) not in haric and str(k) not in yasak]
+    katalog = sozluk_katalogu(kaynak, dahil)
+    if katalog:
+        satirlar = katalog
+    else:
+        satirlar = []
+        for _, r in kaynak.iterrows():
+            kolon = str(r[ad_kol])
+            if kolon in haric or kolon in yasak:
+                continue
+            satirlar.append("%s: %s" % (kolon, str(r[ack_kol])[:120]))
+    if not satirlar:
+        return [], None
+
+    gecerli = set(sozluk_df[ad_kol].astype(str)) - yasak
+
+    def _parca(parca_satirlar):
+        if katalog:
+            istek = ("Hedef değişken: %s\n\n%s\n\n%s"
+                     % (hedef or "?", KATALOG_NOTU,
+                        _veri_blogu("Kolonlar:", "\n".join(parca_satirlar))))
+        else:
+            istek = ("Hedef değişken: %s\n\n%s"
+                     % (hedef or "?", _veri_blogu("Kolonlar:", "\n".join(parca_satirlar))))
+        try:
+            ham = _cagir(SISTEM_PLAN, istek, sicaklik=0.2)
+        except Exception as e:
+            return None, _hata_metni(e)
+        return _plan_temizle(_json_ayristir(ham, [], list), gecerli, haric), None
+
+    parcalar = _plan_parcalari(satirlar)
+    sonuclar = [None] * len(parcalar)
+    hatalar = []
+    # Ayri havuz: _cagir kendi icinde _HAVUZ'u kullaniyor; ayni havuzda
+    # beklemek kilitlenmeye yol acardi.
+    with futures.ThreadPoolExecutor(max_workers=PLAN_PARALEL) as havuz:
+        isler = {havuz.submit(_parca, p): i for i, p in enumerate(parcalar)}
+        for is_ in futures.as_completed(isler):
+            plan, hata = is_.result()
+            if hata:
+                hatalar.append(hata)
+            else:
+                sonuclar[isler[is_]] = plan
+    alinan = [p for p in sonuclar if p is not None]
+    if not alinan:
+        return [], "Dönüşüm planı alınamadı: %s" % (hatalar[-1] if hatalar else "bilinmiyor")
+    hata = None
+    if hatalar:
+        hata = ("Kolonlar %s parçada gönderildi, %s parçanın planı alınamadı "
+                "(son hata: %s); plan alınan parçalardan hazırlandı."
+                % (len(parcalar), len(hatalar), hatalar[-1]))
+    return _plan_birlestir(alinan), hata
 
 
 # ===========================================================================

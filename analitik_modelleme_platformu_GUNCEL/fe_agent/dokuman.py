@@ -753,8 +753,15 @@ def _kalite(durum):
     kusurlu = [("Eksik oranı %50 üstünde", "cok_bos"),
                ("Sabit ya da tek değerli", "sabit"),
                ("Kimlik benzeri", "kimlik_gibi"),
-               ("Kardinalitesi aşırı yüksek", "yuksek_kardinalite")]
-    satirlar = [("Sorunsuz kolon", _n(len(_ls(t.get("temiz")))))]
+               ("Kardinalitesi aşırı yüksek", "yuksek_kardinalite"),
+               ("Aynı içerikli kolon (kopya)", "ayni_icerik")]
+    # 02.1 kartiyla ayni sorunsuz sayisi (akis_faz02._profil_ozeti).
+    try:
+        from fe_agent.akis_faz02 import _profil_ozeti
+        sorunsuz = len(_profil_ozeti(durum)["temiz"])
+    except Exception:
+        sorunsuz = len(_ls(t.get("temiz")))
+    satirlar = [("Sorunsuz kolon", _n(sorunsuz))]
     satirlar += [(ad, _n(len(_ls(t.get(k))))) for ad, k in kusurlu]
     if p.get("duplicate") is not None:
         satirlar.append(("Duplicate satır", _n(p.get("duplicate"))))

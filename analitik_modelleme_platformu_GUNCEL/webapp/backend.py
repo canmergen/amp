@@ -1164,6 +1164,20 @@ def _goc_yeniden_gir(durum):
         _kaydet(durum["_oturum_id"], durum)
 
 
+def _biten_ozetleri_ayir(metin, gecmis, adim):
+    """Eski kayitlarda _son_cevap biten adimlarin ozetiyle baslar (02.2
+    blogunda 02.1 metni tekrar ediyordu). Ozetler kendi bloklarinda
+    durdugu icin acik bloğun metninden sirayla atilir."""
+    kalan = (metin or "").strip()
+    for kayit in gecmis or []:
+        if kayit.get("rol") != "bot" or not kayit.get("adim") or kayit.get("adim") == adim:
+            continue
+        ozet = str(kayit.get("metin") or "").strip()
+        if ozet and kalan.startswith(ozet) and len(kalan) > len(ozet):
+            kalan = kalan[len(ozet):].lstrip("\n")
+    return kalan
+
+
 def _surdurme_govdesi(durum):
     """Kayitli oturum: son yanit ve acik form/kartlar yeniden kurulur.
     Adim TEKRAR CALISTIRILMAZ; yalnizca kayitli durum gosterilir (surum
@@ -1176,7 +1190,8 @@ def _surdurme_govdesi(durum):
     # metin dondurmesi NORMAL (karar kartin ya da secenek takiminin
     # icinde). Metin yoksa ekrani adimin kendi karti kurar;
     # "kaldigi yerden yuklendi" seridi zaten ayrica basiliyor.
-    metin = durum.get("_son_cevap") or ""
+    metin = _biten_ozetleri_ayir(durum.get("_son_cevap") or "",
+                                 durum.get("_gecmis"), akis.adim_anahtari(durum))
     # Acik 01.2.4 karti her yuklemede guncel koddan ve guncel hafizadan
     # yeniden kurulur (kaydedilmis eski satirlar gosterilmez).
     try:
@@ -1500,6 +1515,9 @@ def mesaj_endpoint():
             govde["tamamlanan"] = govde["tamamlananlar"][-1]
             govde["cevap"] = _kalan
             govde["metin"] = _kalan
+            # Yenilemede (F5) acik blok _son_cevap ile cizilir; biten
+            # adimlarin ozeti kendi bloklarinda, burada tekrar edilmez.
+            durum["_son_cevap"] = _kalan
         # Dogrulama karti karardan SONRA rozetini degistiriyor; o metin
         # kullanicinin gonderdigi mesajin ta kendisi.
         _rozet = mesaj if isinstance(dogrulama, dict) and mesaj else None

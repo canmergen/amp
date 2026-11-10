@@ -1776,31 +1776,83 @@ tanıtır; sayfalar sol bardan açılır.
 5. Modelleme ve Finalizasyon
 
 **02.1 Veri Profili ve Kalite kartı**
-- Profil bölmeden sonra kendiliğinden çalışır (onay sorulmaz). Bloğun
-  metni tek cümlelik sonuçtur (`akis_faz02.profil_metni`): kaç kolonun
-  tablonun tamamı üzerinden incelendiği, sorun bulunup bulunmadığı ve
-  sorunlu kolonların **03.3 Analitik Baz Set** adımında çıkarılacağı.
-- Altında karar istemeyen kart (`akis_faz02.profil_karti`, tip
-  `profil`; app.js `profilKartiEkle`):
-  - Dört sayı: Satır, İncelenen Kolon, Sorunsuz, Sorunlu (sorun varsa
-    kırmızı).
-  - Türler: sayısal, kategorik, tarih kolon sayısı.
-  - Eksik Değer Oranına Göre Kolonlar: tek renk tonunda (açıktan koyuya)
-    çubuk; dilimler Eksik yok, %5 ve altı, %5 ile %50 arası, %50 üstü;
-    altında sayılarla açıklama, eksik değeri olan kolon sayısı ve en çok
-    eksik olan kolon.
-  - Kontroller tablosu: Eksik Oranı Yüksek, Sabit ya da Tek Değerli,
-    Kimlik Benzeri, Kardinalitesi Aşırı Yüksek; her birinin kuralı
-    kodun eşikleriyle yazılır (`_profil_kurallari`, `sfa.profil_cikar`).
-    Sorun varsa "N kolon" düğmesi kolonları açar: tür, eksik oranı,
-    farklı değer sayısı, bulgular (bir kolon birden fazla kontrole
-    takılabilir).
-  - "i": neyin incelendiği, incelemeye alınmayanlar (hedef, kimlik,
-    dönem ve süreç dışı kolonlar), profil tablosunun kayıt yeri.
-- Canlı akışta kart `tamamlananlar` içinde (`secim_alani`) gelir.
-  Yenilemede `backend._surdurme_govdesi` geçmişteki 02.1 özet satırını
-  güncel metin ve kartla değiştirir (`profil_gecmisini_tazele`; kayıtlı
-  transkript değişmez), eski çalışmalarda da kart görünür.
+- Profil bölmeden sonra çalışır, tablonun tamamında (örneklem yok, sayımlar
+  kesin). `akis_faz02.profil_hesapla`: dört temel kontrol
+  (`sfa.profil_cikar`) ve ek kontroller (`fe_agent/profil_ek.py`).
+- 13 kontrol, üç sonuç türü (`akis_faz02.PROFIL_KONTROLLERI`):
+  - Üretime girmez (kolon `kusurlu_kolonlar`'a girer, 03.3 Analitik Baz
+    Set'te düşer): Eksik Oranı Yüksek (%50 üstü), Sabit ya da Tek Değerli,
+    Kimlik Benzeri, Kardinalitesi Aşırı Yüksek (metin kolonda 50'den fazla
+    değer), Aynı İçerikli Kolonlar (satır satır birebir aynı; gruptan
+    tablodaki ilk kolon kalır, kopyalar `profil_teshis.ayni_icerik`).
+  - Kararınıza bırakılır: Neredeyse Sabit (en sık değerin payı %99 ya da
+    üstü, boş da değer sayılır), Dönemde Boş ya da Sabit (kolon bazı
+    dönemlerde tamamen boş ya da en az 100 satırlı bir dönemde tek
+    değerli). Her kolon için Tut ya da Çıkar; varsayılan Tut.
+  - Bilgi için gösterilir: Gizli Eksik (-1, -99, -999, 9999 gibi kod, dolu
+    satırların %1'inden fazlası, geri kalan değerlerden kopuk), Sıfır
+    Yoğunluğu (dolu satırların %95'i ya da fazlası sıfır), Beklenmeyen
+    Negatif (kolon kartının ölçüsü adet, gün, süre, yaş, ay, yıl iken
+    negatif), Dönemler Arası Eksik Sıçraması (art arda iki dönemde 20
+    puandan fazla), Uç Değer Yoğunluğu (en büyük değer %99'luk değerin 100
+    katından büyük), Tekrar Eden Satır (aynı kimlik ve dönem ya da bütün
+    kolonları aynı; her satır bir kez sayılır).
+  - Ek kontroller yalnız dört temel kontrolden geçen kolonlara uygulanır.
+    Kopya kolonlar başka listede tekrar edilmez; neredeyse sabit kolonlar
+    dönem kontrolüne ve sıfır yoğunluğuna girmez.
+  - Uygulanamayan kontrol "Uygulanmadı" ve sebebiyle görünür: kategorik
+    kolon yok, dönem kolonu seçilmedi, tabloda tek dönem var, kolon
+    kartlarında ölçü bilgisi yok.
+- Hedef Dağılımı: sınıf başına satır ve pay, hedefi boş satır, dönem
+  başına hedef = 1 oranı (ikili) ya da sınıf payları (çok sınıflı).
+- Akış: karar isteyen kolon yoksa adım onay sormadan geçer (eskisi gibi),
+  kart biten bloğa `tamamlananlar` içinde gelir. Varsa
+  `veri_profili_plan` kartı `karar_bekliyor` ile açar, adım bekler; kart
+  altındaki "Kararları Onayla ve Devam Et" `{"dogrulama": {"adim":
+  "veri_profili", "cikar": [...]}}` gönderir, `veri_profili_uygula`
+  kararı `profil["profil_karar"]`'a yazar ({kolon: "tut" ya da "cikar"}).
+  Yazarak onayda önceki karar, yoksa Tut geçerli. Çıkarılan kolonlar
+  `kusurlu_kolonlar` ve `_dusurulecek_kume`'ye girer; 03.3 planı
+  "aynı içerik" ve "profilde çıkarılan" sayılarını ayrı yazar.
+- Kart (`akis_faz02.profil_karti`, tip `profil`; app.js
+  `profilKartiEkle`):
+  - Sayılar: Satır, İncelenen Kolon, Sorunsuz, Bilgi Notu Olan,
+    Kararınızı Bekleyen (yalnız karar beklerken), Üretime Girmeyen. Bütün
+    karolar aynı görünür; yalnız sayının rengi durumu söyler.
+  - Eksik Değer Oranına Göre Kolonlar çubuğu: "Eksik yok" nötr gri, eksik
+    arttıkça kırmızı koyulaşır.
+  - Kontroller tablosu: Kontrol, Neye Bakıldı (sade kural, eşikler
+    koddan), Bulunan ("N kolon" ya da "N satır" düğmesi, "Yok", ya da
+    "Uygulanmadı"), Ne Olacak. Bulunan düğmesi kolonları açar: Kolon,
+    onaylı Açıklama, Bulgu (ör. "Kod -999, payı %5,18 (311 satır)"),
+    karar kontrollerinde Karar (Tut ya da Çıkar; kilitli kartta Tutuldu ya
+    da Çıkarıldı). Karar bekleyen kontroller açık gelir, "Hepsini Tut" ve
+    "Hepsini Çıkar" düğmeleri var. Bir kolon iki karar kontrolünde
+    geçerse iki satır aynı kararı gösterir.
+  - "i": incelemenin kapsamı, üç sonuç türünün anlamı, incelemeye
+    alınmayanlar, profil tablosunun kayıt yeri.
+- Yenilemede `backend._surdurme_govdesi` 02.1 bloğunu güncel metin ve
+  kilitli kartla çizer (`profil_gecmisini_tazele`): kart adımın metinli ya
+  da ekranlı ilk satırına yazılır, diğer 02.1 satırları boşaltılır (kart
+  iki kez çizilmez). Kayıtlı transkript değişmez.
+- Yenilemede açık bloğun metni (`_son_cevap`) biten adımların özetiyle
+  başlamaz: canlı yanıt ayrıldıktan sonra `_son_cevap` kalan metinle
+  kaydedilir; eski kayıtlarda `_biten_ozetleri_ayir` özetleri atar (02.2
+  bloğunda 02.1 metni tekrar etmez).
+
+**02.2 Kural Tabanlı Değişken Üretimi: plan isteği**
+- `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)
+  `PLAN_PARCA_KARAKTER` (12.000 karakter) parçalarına böler, parçalar
+  `PLAN_PARALEL` (3) eşli gider; 1.000 kolonu aşan sözlükte tek çağrı 90
+  saniyeyi aşıyordu. Her parça en çok 12 şablon önerir; toplam yine en
+  çok `PLAN_EN_COK` (12), parçalardan sırayla (her parçadan birer)
+  alınır, aynı dönüşüm ve kolonlar bir kez girer. Bir kısım parça düşerse
+  plan kalanlardan hazırlanır ve plan metninin sonunda not olarak yazılır;
+  hepsi düşerse eski hata metni gelir.
+
+**Tablo başlıkları**
+- `.dg-tablo th` normal yazılır (büyük harfe çevrilmez); bütün kart
+  tablolarında başlıklar yazıldığı gibi görünür.
 
 ## Tarayıcıda hatırlanan tercihler
 
