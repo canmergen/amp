@@ -321,18 +321,16 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     (tablodaki sirasiyla)."""
     adaylar = [k for k in adaylar if k in df.columns]
     sonuc = kolon_kontrolleri(df, adaylar, olculer, esik)
+    # Ayni icerikli gruplardan hangisinin kalacagi kullanicinin secimine
+    # bagli; bulgular her uye icin hesaplanir, gosterirken kopyalar elenir.
     sonuc["ayni_icerik"] = ayni_icerik(df, adaylar)
-    kopya = {k for g in sonuc["ayni_icerik"] for k in g["kopyalar"]}
     baskin = {x["kolon"] for x in sonuc["baskin"]}
     donemler, bos_sabit, sicrama = donem_kontrolleri(
-        df, [k for k in adaylar if k not in kopya and k not in baskin], donem, esik)
+        df, [k for k in adaylar if k not in baskin], donem, esik)
     sonuc["donemler"] = donemler
     sonuc["donem"] = bos_sabit
     sonuc["sicrama"] = sicrama
     sonuc["tekrar"] = tekrar_satirlar(df, kimlik, donem)
     sonuc["hedef"] = hedef_ozeti(df, hedef, donem)
     sonuc["olcu_var"] = any(str(v or "").strip() for v in (olculer or {}).values())
-    # Kopya kolonlar ayrica bilgi listelerinde tekrar gosterilmez.
-    for anahtar in ("baskin", "gizli_eksik", "sifir", "negatif", "uc"):
-        sonuc[anahtar] = [x for x in sonuc[anahtar] if x["kolon"] not in kopya]
     return sonuc

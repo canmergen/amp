@@ -474,14 +474,19 @@ def profil_hesapla(durum):
     for k in teshis.get("sabit") or []:
         dolu = df[k].dropna()
         ek["sabit_deger"][k] = profil_ek.deger_metni(dolu.iloc[0]) if len(dolu) else "boş"
-    teshis["ayni_icerik"] = sorted({k for g in ek["ayni_icerik"] for k in g["kopyalar"]})
+    ek["ayni_gruplar"] = _ayni_gruplari(durum, ek, p)
     p["profil_teshis"] = teshis
     p["profil_ek"] = ek
     p["profil_dataset"] = yazildi
+    # Onceki secim yalniz hala var olan gruplarda ve grubun uyesiyse gecerli.
+    eski_secim = p.get("ayni_secim") if isinstance(p.get("ayni_secim"), dict) else {}
+    uyeler = {g["id"]: set(g["uyeler"]) for g in ek["ayni_gruplar"]}
+    p["ayni_secim"] = {k: v for k, v in eski_secim.items() if v in uyeler.get(k, set())}
+    teshis["ayni_icerik"] = _ayni_kopyalar(p)
     # Onceki kararlar yalniz hala karar isteyen kolonlar icin gecerli.
     eski_karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
     p["profil_karar"] = {k: v for k, v in eski_karar.items()
-                         if k in set(_karar_adaylari(teshis, ek))}
+                         if k in set(_karar_adaylari(p))}
 
     # Feature tablosunun kolon ozeti: veri seti secilirken cikarilmisti,
     # burada tekil sayisi ve kesin null orani ile tamamlaniyor. Ozet hic
@@ -504,17 +509,77 @@ def profil_hesapla(durum):
     return p
 
 
-def _karar_adaylari(teshis, ek):
+AYNI_KURAL_GEREKCESI = "Dil modeli önerisi alınamadı; tablodaki ilk kolon önerildi."
+
+
+def _ayni_gruplari(durum, ek, p):
+    """Ayni icerikli gruplar ve dil modelinin kalacak kolon onerisi:
+    [{"id", "uyeler", "oneri", "gerekce", "kaynak"}]. id: grubun tablodaki
+    ilk kolonu. Ayni uyelerle onceden alinmis dil modeli onerisi tekrar
+    sorulmaz (esik degisince yeniden hesaplanan profilde)."""
+    ham = ek.get("ayni_icerik") or []
+    if not ham:
+        return []
+    onceki = {g["id"]: g for g in ((p.get("profil_ek") or {}).get("ayni_gruplar") or [])
+              if isinstance(g, dict) and g.get("kaynak") == "dil modeli"}
+    gruplar = [{"id": g["kalan"], "uyeler": [g["kalan"]] + list(g["kopyalar"])} for g in ham]
+    aciklama = _aciklamalar(durum)
+    sorulacak = [g for g in gruplar
+                 if not (g["id"] in onceki and onceki[g["id"]].get("uyeler") == g["uyeler"])]
+    oneri, hata = {}, None
+    if sorulacak:
+        try:
+            from fe_agent import llm as llm_mod
+            oneri, hata = llm_mod.ayni_icerik_sec(
+                [{"id": g["id"], "uyeler": [{"ad": u, "aciklama": aciklama.get(u, "")}
+                                            for u in g["uyeler"]]} for g in sorulacak])
+        except Exception as e:      # dil modeli yoksa kural gecerli
+            hata = str(e)[:120]
+    for g in gruplar:
+        if g["id"] in onceki and onceki[g["id"]].get("uyeler") == g["uyeler"]:
+            o = onceki[g["id"]]
+            g.update({"oneri": o["oneri"], "gerekce": o.get("gerekce", ""), "kaynak": "dil modeli"})
+        elif g["id"] in oneri:
+            g.update({"oneri": oneri[g["id"]]["kalan"], "gerekce": oneri[g["id"]]["gerekce"],
+                      "kaynak": "dil modeli"})
+        else:
+            g.update({"oneri": g["uyeler"][0], "gerekce": AYNI_KURAL_GEREKCESI, "kaynak": "kural"})
+    return gruplar
+
+
+def _ayni_kalan(p, g):
+    s = (p.get("ayni_secim") or {}).get(g["id"])
+    return s if s in g["uyeler"] else g["oneri"]
+
+
+def _ayni_kopyalar(p):
+    """Ayni icerikli gruplarda kalmayan (uretime girmeyen) kolonlar."""
+    ek = p.get("profil_ek") or {}
+    gruplar = ek.get("ayni_gruplar")
+    if gruplar is None:      # eski calisma: ilk kolon kalir
+        return sorted({k for g in (ek.get("ayni_icerik") or []) for k in g["kopyalar"]})
+    return sorted({u for g in gruplar for u in g["uyeler"] if u != _ayni_kalan(p, g)})
+
+
+def _karar_adaylari(p):
     """Karar isteyen kolonlar (sira korunur): neredeyse sabit, donemde bos
-    ya da sabit."""
+    ya da sabit. Ayni icerikli gruplarda kalmayan kolon karar istemez."""
+    ek = p.get("profil_ek") or {}
+    kopya = set(_ayni_kopyalar(p))
     ad = [x["kolon"] for x in (ek.get("baskin") or [])]
     ad += [x["kolon"] for x in (ek.get("donem") or [])]
-    return list(dict.fromkeys(ad))
+    return [k for k in dict.fromkeys(ad) if k not in kopya]
 
 
 def profil_karar_kolonlari(durum):
+    return _karar_adaylari(durum.get("profil") or {})
+
+
+def profil_karar_var(durum):
+    """Kartta karar istenecek mi: Tut ya da Çıkar kolonu ya da ayni icerikli
+    grup var."""
     p = durum.get("profil") or {}
-    return _karar_adaylari(p.get("profil_teshis") or {}, p.get("profil_ek") or {})
+    return bool(profil_karar_kolonlari(durum) or (p.get("profil_ek") or {}).get("ayni_gruplar"))
 
 
 def _profil_karar_bekliyor(durum):
@@ -530,7 +595,7 @@ def veri_profili_plan(durum):
     kolon icin Tut ya da Çıkar ister."""
     profil_hesapla(durum)
     durum["_profil_hazir"] = True
-    if profil_karar_kolonlari(durum):
+    if profil_karar_var(durum):
         durum["_secim_alani"] = profil_karti(durum, karar=True)
         return profil_metni(durum, karar=True)
     durum["_plan_otomatik"] = True
@@ -551,6 +616,15 @@ def veri_profili_uygula(durum):
         cikar = {str(k) for k in karar["cikar"]} & set(adaylar)
     else:
         cikar = {a for a in adaylar if onceki.get(a) == PROFIL_KARAR_CIKAR}
+    # Ayni icerikli gruplarda kalacak kolon: {"ayni": {grup id: kolon}}.
+    gruplar = (p.get("profil_ek") or {}).get("ayni_gruplar") or []
+    if isinstance(karar, dict) and isinstance(karar.get("ayni"), dict):
+        uyeler = {g["id"]: set(g["uyeler"]) for g in gruplar}
+        p["ayni_secim"] = {str(k): str(v) for k, v in karar["ayni"].items()
+                           if str(v) in uyeler.get(str(k), set())}
+    p["profil_teshis"]["ayni_icerik"] = _ayni_kopyalar(p)
+    # Kalan kolon degisince karar adaylari degisebilir.
+    adaylar = _karar_adaylari(p)
     p["profil_karar"] = {a: (PROFIL_KARAR_CIKAR if a in cikar else PROFIL_KARAR_TUT)
                          for a in adaylar}
     durum["profil"] = p
@@ -560,7 +634,7 @@ def veri_profili_uygula(durum):
         sfa_karar.ai_durdur(eski)
     # Karar kartli dalda metin ve kart blokta zaten duruyor (kart kilitlenir);
     # tekrar yazilmaz.
-    if adaylar:
+    if adaylar or gruplar:
         return ""
     return profil_metni(durum)
 
@@ -629,8 +703,9 @@ def _profil_kurallari(esik=None):
                        % _yuzde_ekli(e["kimlik"]),
         "yuksek_kardinalite": "Metin kolonda farklı değer sayısı %s üstünde."
                               % (kat + _ilgi_eki(kat)),
-        "ayni_icerik": "Değerleri satır satır birebir aynı olan kolonlar. Gruptan tablodaki "
-                       "ilk kolon kalır.",
+        "ayni_icerik": "Değerleri satır satır birebir aynı olan kolonlar. Her gruptan bir "
+                       "kolon kalır: dil modeli adına ve açıklamasına bakıp önerir, siz "
+                       "seçersiniz.",
         "baskin": "En sık görülen değerin payı %s ya da üstünde. Boş hücre de değer sayılır."
                   % _yuzde_metni(e["baskin"]),
         "donem": "Kolon bazı dönemlerde tamamen boş, ya da en az %s satırı olan bir dönemde "
@@ -675,13 +750,18 @@ def _donem_listesi(donemler):
                                     _sayi(len(donemler) - DONEM_LISTE_EN_COK))
 
 
-def _ek_bulgulari(ek):
-    """{anahtar: {kolon: bulgu metni}} ek kontrollerden."""
+def _ek_bulgulari(p):
+    """{anahtar: {kolon: bulgu metni}} ek kontrollerden. Ayni icerikli
+    gruplarda kalmayan kolonlar diger kontrollerde gosterilmez."""
+    ek = p.get("profil_ek") or {}
+    kopya = set(_ayni_kopyalar(p))
     b = {a: {} for a in ("ayni_icerik", "baskin", "donem", "gizli_eksik", "sifir",
                          "negatif", "sicrama", "uc")}
-    for g in ek.get("ayni_icerik") or []:
-        for k in g["kopyalar"]:
-            b["ayni_icerik"][k] = "%s ile birebir aynı; %s kalır" % (g["kalan"], g["kalan"])
+    for g in ek.get("ayni_gruplar") or []:
+        kalan = _ayni_kalan(p, g)
+        for k in g["uyeler"]:
+            if k != kalan:
+                b["ayni_icerik"][k] = "%s ile birebir aynı; %s kalır" % (kalan, kalan)
     for x in ek.get("baskin") or []:
         b["baskin"][x["kolon"]] = "En sık değer %s, payı %s" % (x["deger"], _yuzde_metni(x["pay"]))
     for x in ek.get("donem") or []:
@@ -705,6 +785,10 @@ def _ek_bulgulari(ek):
     for x in ek.get("uc") or []:
         b["uc"][x["kolon"]] = "En büyük değer %s, %%99'luk değer %s" % (
             _sayi_metni(x["maks"]), _sayi_metni(x["p99"]))
+    for a, kolonlar in b.items():
+        if a != "ayni_icerik":
+            for k in [k for k in kolonlar if k in kopya]:
+                del kolonlar[k]
     return b
 
 
@@ -743,6 +827,10 @@ def profil_metni(durum, karar=False):
         parca.append("%s kolon için kararınız gerekiyor: Neredeyse Sabit ve Dönemde Boş "
                      "ya da Sabit kontrollerinde her kolonu tutun ya da çıkarın."
                      % _sayi(len(oz["bekleyen"])))
+    gruplar = ((durum.get("profil") or {}).get("profil_ek") or {}).get("ayni_gruplar") or []
+    if karar and gruplar:
+        parca.append("Değerleri birebir aynı %s kolon grubunda hangi kolonun kalacağını "
+                     "seçin; dil modelinin önerisi seçili gelir." % _sayi(len(gruplar)))
     if oz["bilgi"]:
         parca.append("%s kolonda bilgi notu var; bu kolonlar değişken üretimine girer."
                      % _sayi(len(oz["bilgi"])))
@@ -780,7 +868,7 @@ def profil_karti(durum, karar=False):
         tur = (ozet.get(k) or {}).get("tip") or "kategorik"
         turler[tur] = turler.get(tur, 0) + 1
 
-    bulgu = _ek_bulgulari(ek)
+    bulgu = _ek_bulgulari(p)
     for k in t.get("cok_bos") or []:
         bulgu.setdefault("cok_bos", {})[k] = "Eksik oranı %s" % _yuzde_metni(
             (ozet.get(k) or {}).get("null_oran") or 0)
@@ -812,6 +900,13 @@ def profil_karti(durum, karar=False):
             k["uygulandi"], k["sebep"] = False, "Tabloda tek dönem var"
         elif a == "negatif" and not ek.get("olcu_var"):
             k["uygulandi"], k["sebep"] = False, "Kolon kartlarında ölçü bilgisi yok"
+        if a == "ayni_icerik" and ek.get("ayni_gruplar"):
+            k["ne_olacak"] = "Biri kalır, diğerleri üretime girmez"
+            k["gruplar"] = [{"id": g["id"], "oneri": g["oneri"], "gerekce": g.get("gerekce", ""),
+                             "kaynak": g.get("kaynak", ""), "secim": _ayni_kalan(p, g),
+                             "uyeler": [{"ad": u, "aciklama": aciklama.get(u, "")}
+                                        for u in g["uyeler"]]}
+                            for g in ek["ayni_gruplar"]]
         if a == "tekrar":
             tk = ek.get("tekrar") or {}
             k["birim"] = "satır"
@@ -842,7 +937,7 @@ def profil_karti(durum, karar=False):
     return {
         "tip": "profil",
         "adim": "veri_profili",
-        "karar_bekliyor": bool(karar and profil_karar_kolonlari(durum)),
+        "karar_bekliyor": bool(karar and profil_karar_var(durum)),
         "satir": p.get("profil_satir") if p.get("profil_satir") is not None else p.get("satir"),
         "kolon": len(incelenen),
         "temiz": len(oz["temiz"]),

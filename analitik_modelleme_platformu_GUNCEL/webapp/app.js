@@ -16534,6 +16534,82 @@ function pfYuzde(x) {
     return "%" + (Number.isInteger(y) ? String(y) : String(y).replace(".", ","));
 }
 
+/* Aynı içerikli kolon grupları: her grubun başında grup satırı (kaç kolon,
+   dil modelinin önerisi ve gerekçesi), altında üyeler. Karar modunda her
+   üyede "Kalsın" seçeneği (grupta tek seçim); seçilmeyenler çıkar.
+   Kilitli kartta Kaldı ya da Çıkarıldı yazar. */
+function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
+    const it = elYap("table", "dg-tablo pf-ic-tablo pf-ayni-tablo");
+    const icg = document.createElement("colgroup");
+    ["pf-i-ad", "pf-i-acik", "pf-i-oneri", "pf-i-karar"].forEach(c => {
+        const col = document.createElement("col"); col.className = c; icg.appendChild(col);
+    });
+    it.appendChild(icg);
+    const ith = elYap("tr");
+    ["Kolon", "Açıklama", "Dil Modeli", kararModu ? "Kalsın" : "Sonuç"].forEach(b => ith.appendChild(elYap("th", "", b)));
+    const ithead = elYap("thead"); ithead.appendChild(ith); it.appendChild(ithead);
+    const itb = elYap("tbody");
+    gruplar.forEach((g, gi) => {
+        const bt = elYap("tr", "pf-ayni-grup");
+        const btd = elYap("td");
+        btd.colSpan = 4;
+        const bb = elYap("div", "pf-ayni-grup-bas");
+        bb.appendChild(elYap("b", "", "Grup " + ftBinlik(gi + 1)));
+        bb.appendChild(elYap("span", "pf-ayni-grup-sayi", ftBinlik(g.uyeler.length) + " kolon, değerleri birebir aynı"));
+        btd.appendChild(bb);
+        if (g.gerekce) {
+            const ger = elYap("div", "pf-ayni-gerekce");
+            ger.textContent = (g.kaynak === "dil modeli" ? "Dil modelinin önerisi " + g.oneri + ": " : "")
+                + tireSade(g.gerekce);
+            btd.appendChild(ger);
+        }
+        bt.appendChild(btd);
+        itb.appendChild(bt);
+        g.uyeler.forEach(u => {
+            const r = elYap("tr", "pf-ayni-uye");
+            r.appendChild(elYap("td", "pf-kolon-ad", u.ad));
+            r.appendChild(elYap("td", "pf-kolon-acik", u.aciklama || BOS_SIMGE));
+            const oTd = elYap("td", "pf-ayni-oneri");
+            if (u.ad === g.oneri && g.kaynak === "dil modeli") oTd.appendChild(elYap("span", "pf-ayni-cip", "Önerilen"));
+            else if (u.ad === g.oneri) oTd.appendChild(elYap("span", "pf-ayni-cip pasif", "Öneri alınamadı"));
+            r.appendChild(oTd);
+            const kTd = elYap("td", "pf-karar-hucre");
+            if (kararModu) {
+                const et = elYap("label", "pf-ayni-sec");
+                const rd = document.createElement("input");
+                rd.type = "radio";
+                rd.name = "pf-ayni-" + g.id + "-" + Math.random().toString(36).slice(2, 7);
+                rd.value = u.ad;
+                rd.onchange = () => {
+                    if (kart.classList.contains("kilitli")) return;
+                    secim[g.id] = u.ad;
+                    ciz();
+                };
+                et.append(rd, elYap("span", "", "Kalsın"));
+                kTd.appendChild(et);
+                cizenler.push(() => {
+                    const kalir = secim[g.id] === u.ad;
+                    rd.checked = kalir;
+                    rd.disabled = kart.classList.contains("kilitli");
+                    r.classList.toggle("kalir", kalir);
+                    r.classList.toggle("cikar", !kalir);
+                });
+            } else {
+                const kalir = (g.secim || g.oneri) === u.ad;
+                kTd.appendChild(elYap("span", "pf-karar-sonuc " + (kalir ? "tut" : "cikar"), kalir ? "Kaldı" : "Çıkarıldı"));
+                r.classList.toggle("kalir", kalir);
+                r.classList.toggle("cikar", !kalir);
+            }
+            r.appendChild(kTd);
+            itb.appendChild(r);
+        });
+    });
+    it.appendChild(itb);
+    const kap = elYap("div", "pf-ic-kap pf-ayni-kap");
+    kap.appendChild(it);
+    return kap;
+}
+
 const PF_NE_OLACAK_SINIF = { girmez: "pf-sonuc-girmez", karar: "pf-sonuc-karar", bilgi: "pf-sonuc-bilgi" };
 
 function profilKartiEkle(alan, blok) {
@@ -16547,6 +16623,14 @@ function profilKartiEkle(alan, blok) {
     (alan.kontroller || []).filter(k => k.sonuc === "karar")
         .forEach(k => (k.kolonlar || []).forEach(c => { kararlar[c.ad] = c.karar || "tut"; }));
     const kararCiz = () => kararCizenler.forEach(f => f());
+    /* Aynı içerikli gruplar: grup id -> kalacak kolon (dil modeli önerisi
+       ya da önceki seçim). */
+    const ayniSecim = {};
+    const ayniOneri = {};
+    (alan.kontroller || []).forEach(k => (k.gruplar || []).forEach(g => {
+        ayniSecim[g.id] = g.secim || g.oneri;
+        ayniOneri[g.id] = g.oneri;
+    }));
 
     /* Başlık + i */
     const bas = elYap("div", "pf-bas");
@@ -16686,7 +16770,13 @@ function profilKartiEkle(alan, blok) {
     };
 
     (alan.kontroller || []).forEach(k => {
-        const satir = elYap("tr", "pf-kontrol" + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
+        /* SATIR RENGİ: yeşil sorunsuz (bulgu yok), sarı dikkat (kararınıza
+           bırakılan ya da bilgi notu), kırmızı üretime girmez, gri
+           uygulanmadı. Açılan liste satırı da aynı renkte, girintili. */
+        const nBul = Number(k.sayi || 0);
+        const renk = k.uygulandi === false ? "pf-r-pasif" : !nBul ? "pf-r-tamam"
+            : k.sonuc === "girmez" ? "pf-r-sorun" : "pf-r-dikkat";
+        const satir = elYap("tr", "pf-kontrol " + renk + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
         satir.appendChild(elYap("td", "pf-kontrol-ad", k.ad));
         satir.appendChild(elYap("td", "pf-kural", k.kural));
         const bulunan = elYap("td", "pf-sonuc");
@@ -16704,8 +16794,9 @@ function profilKartiEkle(alan, blok) {
             return;
         }
         /* Bulgu yoksa "Ne Olacak" sönük: renk yalnız bulunan kolon varken. */
-        neOlacak.appendChild(elYap("span", "pf-ne " + (n ? (PF_NE_OLACAK_SINIF[k.sonuc] || "") : "pf-sonuc-sessiz"),
-                                   k.ne_olacak || ""));
+        /* Bulgu yoksa yapılacak bir şey yok: "İşlem yok" (sönük). */
+        neOlacak.appendChild(n ? elYap("span", "pf-ne " + (PF_NE_OLACAK_SINIF[k.sonuc] || ""), k.ne_olacak || "")
+                               : elYap("span", "pf-ne pf-sonuc-sessiz", "İşlem yok"));
         if (!n) {
             const ok = elYap("span", "pf-durum tamam");
             ok.append(elYap("span", "pf-durum-ikon", "✓"), elYap("span", "", "Yok"));
@@ -16721,11 +16812,12 @@ function profilKartiEkle(alan, blok) {
                   elYap("span", "", ftBinlik(n) + " " + birim), elYap("span", "pf-ok", "▾"));
         bulunan.appendChild(dg);
 
-        const detay = elYap("tr", "pf-detay");
+        const detay = elYap("tr", "pf-detay " + renk);
         detay.hidden = true;
         const td = elYap("td");
         td.colSpan = 4;
         const kararli = k.sonuc === "karar";
+        const gruplu = (k.gruplar || []).length > 0;
         if (kararli && kararModu) {
             const ust = elYap("div", "pf-toplu");
             ust.appendChild(elYap("span", "pf-toplu-not", "Bu kontroldeki bütün kolonlar için:"));
@@ -16740,6 +16832,20 @@ function profilKartiEkle(alan, blok) {
                 ust.appendChild(b);
             });
             td.appendChild(ust);
+        }
+        if (gruplu) {
+            td.appendChild(pfAyniTablosu(k.gruplar, ayniSecim, ayniOneri, kararModu, kart, kararCizenler, kararCiz));
+            detay.appendChild(td);
+            const acG = (acik) => {
+                detay.hidden = !acik;
+                dg.setAttribute("aria-expanded", acik ? "true" : "false");
+                dg.classList.toggle("acik", !!acik);
+            };
+            dg.onclick = () => acG(detay.hidden);
+            if (kararModu) acG(true);
+            tbody.appendChild(satir);
+            tbody.appendChild(detay);
+            return;
         }
         const it = elYap("table", "dg-tablo pf-ic-tablo");
         const icg = document.createElement("colgroup");
@@ -16847,8 +16953,14 @@ function profilKartiEkle(alan, blok) {
         const ozetYaz = () => {
             const adlar = Object.keys(kararlar);
             const cik = adlar.filter(a => kararlar[a] === "cikar").length;
-            ozetEl.textContent = ftBinlik(adlar.length) + " kolon için karar: "
-                + ftBinlik(adlar.length - cik) + " tutulacak, " + ftBinlik(cik) + " çıkarılacak.";
+            const gid = Object.keys(ayniSecim);
+            const farkli = gid.filter(g => ayniSecim[g] !== ayniOneri[g]).length;
+            const parca = [];
+            if (adlar.length) parca.push(ftBinlik(adlar.length) + " kolon için karar: "
+                + ftBinlik(adlar.length - cik) + " tutulacak, " + ftBinlik(cik) + " çıkarılacak.");
+            if (gid.length) parca.push(ftBinlik(gid.length) + " aynı içerikli grupta kalacak kolon seçildi"
+                + (farkli ? " (" + ftBinlik(farkli) + " grupta öneriden farklı)." : " (hepsi dil modelinin önerisi)."));
+            ozetEl.textContent = parca.join(" ");
         };
         kararCizenler.push(ozetYaz);
         btn.onclick = () => {
@@ -16863,8 +16975,13 @@ function profilKartiEkle(alan, blok) {
                 btn.hidden = false;
                 btn.disabled = false;
             };
-            const ozet = ftBinlik(tut) + " kolon tutuldu, " + ftBinlik(cikar.length) + " kolon çıkarıldı";
-            gonder(ozet, false, { dogrulama: { adim: "veri_profili", cikar: cikar } });
+            const gidler = Object.keys(ayniSecim);
+            const ozet = [Object.keys(kararlar).length
+                    ? ftBinlik(tut) + " kolon tutuldu, " + ftBinlik(cikar.length) + " kolon çıkarıldı" : "",
+                gidler.length ? ftBinlik(gidler.length) + " aynı içerikli grupta seçim yapıldı" : ""]
+                .filter(Boolean).join("; ");
+            gonder(ozet || "Kararlar onaylandı", false,
+                   { dogrulama: { adim: "veri_profili", cikar: cikar, ayni: Object.assign({}, ayniSecim) } });
         };
         alt.append(ozetEl, btn);
         kart.appendChild(alt);

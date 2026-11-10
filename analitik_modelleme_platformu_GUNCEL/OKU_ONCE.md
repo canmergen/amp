@@ -1857,6 +1857,25 @@ tanıtır; sayfalar sol bardan açılır.
   kaydedilir; eski kayıtlarda `_biten_ozetleri_ayir` özetleri atar (02.2
   bloğunda 02.1 metni tekrar etmez).
 
+**02.1 kontrol satırı renkleri ve aynı içerikli kolon seçimi**
+- Kontroller tablosunda her satır durumuna göre renkli, sol kenarda kalın
+  çizgi: yeşil sorunsuz (bulgu yok, Ne Olacak "İşlem yok"), sarı dikkat
+  (kararınıza bırakılan ya da bilgi notu olan bulgu), kırmızı üretime
+  girmez, gri uygulanmadı. Açılan liste aynı renkte, girintili; hangi
+  listenin hangi kontrole ait olduğu çizgiden görünür.
+- Aynı İçerikli Kolonlar: her grup için dil modeli (`llm.ayni_icerik_sec`,
+  `SISTEM_AYNI`) kolonların adına ve sözlük açıklamasına bakıp ortak
+  değerin anlamını en doğru anlatan kolonu önerir, gerekçesini yazar.
+  Kartta grup satırı (kaç kolon, öneri ve gerekçe) ve üyeler; her üyede
+  "Kalsın" seçeneği, öneri seçili gelir. Grup varsa 02.1 kararınızı
+  bekler; gönderim `{"ayni": {grup id: kolon}}` (grup id: grubun tablodaki
+  ilk kolonu), `profil["ayni_secim"]`'e yazılır. Kalmayan kolonlar
+  `profil_teshis.ayni_icerik`'e girer (üretime girmez) ve diğer
+  kontrollerin listelerinde gösterilmez. Dil modeli öneremezse (hata ya
+  da grupta olmayan kolon) tablodaki ilk kolon önerilir ve bu yazılır.
+  Eşik değişip profil yeniden çıkarılınca aynı üyeli grupta önceki öneri
+  tekrar sorulmaz; seçim korunur.
+
 **02.2 Kural Tabanlı Değişken Üretimi: plan isteği**
 - `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)
   `PLAN_PARCA_KARAKTER` (12.000 karakter) parçalarına böler, parçalar

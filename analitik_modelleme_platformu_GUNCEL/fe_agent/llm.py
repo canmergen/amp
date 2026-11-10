@@ -3826,6 +3826,60 @@ Kurallar:
 - En fazla 10 hipotez öner.""" + SINIRLAYICI_KURALI
 
 
+# ===========================================================================
+# 02.1 AYNI ICERIKLI KOLONLAR: hangisi kalsin
+# ===========================================================================
+# Degerleri satir satir birebir ayni kolonlardan yalniz biri modelde kalir.
+# Dil modeli her grup icin adina ve sozluk aciklamasina bakip ortak degerin
+# anlamini en dogru anlatan kolonu onerir; kullanici kartta degistirebilir.
+SISTEM_AYNI = """Sen bir kredi riski veri bilimcisisin. Sana değerleri satır
+satır birebir aynı olan kolon grupları verilecek; her kolonun adı ve sözlük
+açıklaması var. Değerler aynı olduğu için her gruptan yalnız bir kolon modelde
+kalacak. Her grup için, adı ve açıklaması bu ortak değerin anlamını EN DOĞRU
+anlatan kolonu seç.
+
+Ölçütler, sırayla:
+- Açıklamalar farklı şeyler anlatıyorsa: değerler aynı olduğuna göre ikisinden
+  hangisinin anlamı veriyle tutarlı ve daha genel, onu seç; daha dar ya da
+  yanıltıcı anlatanı seçme.
+- Açıklamalar aynı anlamdaysa: adı daha sade ve standart olanı seç.
+- Açıklaması boş ya da belirsiz olanı seçme.
+
+ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
+{"gruplar":[{"id":"...","kalan":"KOLON_ADI","gerekce":"bir cümle, Türkçe"}]}
+"id" ve kolon adlarını sana verildiği gibi AYNEN kopyala. Gerekçede iki
+kolonun anlamını karşılaştır.""" + SINIRLAYICI_KURALI
+AYNI_PARCA = 40
+
+
+def ayni_icerik_sec(gruplar):
+    """gruplar: [{"id", "uyeler": [{"ad", "aciklama"}]}]. Doner:
+    ({id: {"kalan", "gerekce"}}, hata). Gecersiz oneri (grupta olmayan kolon)
+    alinmaz; o grup sonucta yer almaz."""
+    sonuc, hatalar = {}, []
+    for i in range(0, len(gruplar), AYNI_PARCA):
+        parca = gruplar[i:i + AYNI_PARCA]
+        satirlar = []
+        for g in parca:
+            satirlar.append("GRUP id=%s" % g["id"])
+            for u in g["uyeler"]:
+                satirlar.append("  - %s: %s" % (u["ad"], (u.get("aciklama") or "(açıklama yok)")[:200]))
+        try:
+            ham = _cagir(SISTEM_AYNI, _veri_blogu("Gruplar:", "\n".join(satirlar)), sicaklik=0.1)
+        except Exception as e:
+            hatalar.append(_hata_metni(e))
+            continue
+        veri = _json_ayristir(ham, {}, dict)
+        uyeler = {g["id"]: {u["ad"] for u in g["uyeler"]} for g in parca}
+        for k in (veri.get("gruplar") or []) if isinstance(veri, dict) else []:
+            if not isinstance(k, dict):
+                continue
+            gid, kalan = str(k.get("id") or ""), str(k.get("kalan") or "")
+            if gid in uyeler and kalan in uyeler[gid]:
+                sonuc[gid] = {"kalan": kalan, "gerekce": str(k.get("gerekce") or "").strip()[:300]}
+    return sonuc, (hatalar[-1] if hatalar else None)
+
+
 def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None):
     """Kisitli gramerle yeni degisken hipotezleri. Ciktı ifade.dogrula()
     ile AST duzeyinde ayrica denetlenir.

@@ -5456,6 +5456,47 @@ button.pf-durum:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--kirmi
   .pf-sonuc { white-space: normal; }
 }
 
+/* 02.1 kontrol satırı renkleri: yeşil sorunsuz, sarı dikkat, kırmızı
+   üretime girmez, gri uygulanmadı. Sol kenarda kalın renk çizgisi; açılan
+   liste aynı çizgiyle ana satıra bağlı, girintili. */
+.dg-tablo.pf-tablo > tbody > tr.pf-kontrol > td { border-bottom: 2px solid var(--yuzey); }
+.dg-tablo.pf-tablo > tbody > tr.pf-r-tamam > td { background: color-mix(in srgb, var(--yesil) 9%, var(--yuzey)); }
+.dg-tablo.pf-tablo > tbody > tr.pf-r-dikkat > td { background: color-mix(in srgb, var(--amber) 13%, var(--yuzey)); }
+.dg-tablo.pf-tablo > tbody > tr.pf-r-sorun > td { background: color-mix(in srgb, var(--kirmizi) 10%, var(--yuzey)); }
+.dg-tablo.pf-tablo > tbody > tr.pf-r-pasif > td { background: var(--yuzey-alt); }
+.dg-tablo.pf-tablo > tbody > tr.pf-r-tamam > td:first-child { box-shadow: inset 5px 0 0 var(--yesil); }
+.dg-tablo.pf-tablo > tbody > tr.pf-r-dikkat > td:first-child { box-shadow: inset 5px 0 0 var(--amber); }
+.dg-tablo.pf-tablo > tbody > tr.pf-r-sorun > td:first-child { box-shadow: inset 5px 0 0 var(--kirmizi); }
+.dg-tablo.pf-tablo > tbody > tr.pf-r-pasif > td:first-child { box-shadow: inset 5px 0 0 var(--kenar); }
+.dg-tablo.pf-tablo > tbody > tr.pf-detay > td {
+  padding: var(--b-2) var(--b-3) var(--b-4) var(--b-6) !important;
+  border-bottom: 2px solid var(--yuzey);
+}
+.dg-tablo.pf-tablo > tbody > tr.pf-detay.pf-r-dikkat > td {
+  background: color-mix(in srgb, var(--amber) 6%, var(--yuzey)); box-shadow: inset 5px 0 0 var(--amber);
+}
+.dg-tablo.pf-tablo > tbody > tr.pf-detay.pf-r-sorun > td {
+  background: color-mix(in srgb, var(--kirmizi) 5%, var(--yuzey)); box-shadow: inset 5px 0 0 var(--kirmizi);
+}
+/* Aynı içerikli gruplar */
+.dg-tablo.pf-ic-tablo col.pf-i-oneri { width: 160px; }
+.pf-ayni-cip { white-space: nowrap; }
+.pf-ic-kap.pf-ayni-kap { max-height: 460px; }
+.pf-ayni-tablo tr.pf-ayni-grup > td { background: var(--yuzey-alt); text-align: left; padding: 6px var(--b-3); }
+.pf-ayni-grup-bas { display: flex; gap: var(--b-3); align-items: baseline; flex-wrap: wrap; }
+.pf-ayni-grup-sayi { color: var(--metin-soluk); }
+.pf-ayni-gerekce { color: var(--metin-soluk); line-height: 1.4; margin-top: 2px; overflow-wrap: break-word; }
+.pf-ayni-uye.kalir > td { background: color-mix(in srgb, var(--yesil) 7%, var(--yuzey)); }
+.pf-ayni-uye.cikar .pf-kolon-ad { color: var(--metin-soluk); text-decoration: line-through; text-decoration-thickness: 1px; }
+.pf-ayni-cip {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: var(--fw-kalin);
+  color: var(--yesil); background: var(--yesil-acik); border: 1px solid color-mix(in srgb, var(--yesil) 40%, var(--yuzey));
+}
+.pf-ayni-cip.pasif { color: var(--metin-soluk); background: var(--yuzey-alt); border-color: var(--kenar); font-weight: normal; }
+.pf-ayni-sec { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.pf-ayni-sec input { accent-color: var(--yesil); width: 16px; height: 16px; cursor: pointer; }
+.pf-kart.kilitli .pf-ayni-sec { cursor: default; opacity: .75; }
+
 /* 02.1 Kontrol eşikleri formu */
 .dg-tablo.pf-esik-tablo { table-layout: fixed; width: 100%; }
 .dg-tablo.pf-esik-tablo th { width: auto; white-space: normal; }
