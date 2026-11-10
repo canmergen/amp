@@ -1014,6 +1014,11 @@ def donem_ad_kaydet(sablonlar):
     return None
 
 
+# Anlam turu kaydinin alanlari (yon: gecmis, gelecek, iki, yonsuz; bicim:
+# pencere, nokta, uzunluk; bkz. donem_tur.py).
+_DONEM_TUR_ALANLARI = ("ad", "anlam", "yeni_adda", "yon", "bicim")
+
+
 def _donem_tur_kayit_ham(govde=None):
     if govde is None:
         govde, _h = _govde_oku()
@@ -1028,20 +1033,20 @@ def _donem_tur_kayit_ham(govde=None):
         for t, x in v.items():
             if isinstance(x, dict):
                 turler[str(t)] = {a: str(x.get(a) or "").strip()
-                                  for a in ("ad", "anlam", "yeni_adda") if str(x.get(a) or "").strip()}
+                                  for a in _DONEM_TUR_ALANLARI if str(x.get(a) or "").strip()}
         if turler:
             cikti[str(k)] = turler
     return cikti
 
 
 def donem_anlam_turleri_hafizasi():
-    """{kalip: {tur: {"ad", "anlam", "yeni_adda"}}} - birimli kalibin anlam
+    """{kalip: {tur: {"ad", "anlam", "yeni_adda", "yon", "bicim"}}} - birimli kalibin anlam
     turleri (bkz. donem_tur.py)."""
     return _donem_tur_kayit_ham()
 
 
 def donem_anlam_turleri_kaydet(kayitlar):
-    """kayitlar: {kalip: {tur: {"ad", "anlam", "yeni_adda"} ya da None}}.
+    """kayitlar: {kalip: {tur: {"ad", "anlam", "yeni_adda", "yon", "bicim"} ya da None}}.
     Turun alanlari birlesir (verilmeyen alan korunur, bos verilen alan
     kalkar); None turu siler. Dosya var ama okunamiyorsa ustune yazilmaz.
     Doner: hata ya da None."""
@@ -1061,7 +1066,7 @@ def donem_anlam_turleri_kaydet(kayitlar):
                     mevcut.pop(str(t), None)
                     continue
                 kayit = dict(mevcut.get(str(t)) or {})
-                for a in ("ad", "anlam", "yeni_adda"):
+                for a in _DONEM_TUR_ALANLARI:
                     if a in x:
                         v = str(x.get(a) or "").strip()
                         if v:

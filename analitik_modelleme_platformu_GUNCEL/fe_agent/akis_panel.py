@@ -1295,6 +1295,7 @@ def adim_0124_ozeti(durum):
     if bilgi:
         try:
             from fe_agent.akis_faz01 import ZAMAN_TUR_ADI
+            from fe_agent import donem_tur
         except Exception:
             ZAMAN_TUR_ADI = {}
         turler = durum.get("donem_turleri") or {}
@@ -1302,7 +1303,8 @@ def adim_0124_ozeti(durum):
         ayrilan = durum.get("donem_ayrilan") or {}
         kosul = durum.get("donem_kosul") or {}
         cikti["donem"] = [{"kalip": k, "anlam": str(a),
-                           "tur": ZAMAN_TUR_ADI.get(turler.get(k) or "pencere", ""),
+                           "tur": ("Kolona göre" if donem_tur.birimli_mi(k) else
+                                   ZAMAN_TUR_ADI.get(turler.get(k) or "pencere", "")),
                            "degerler": dict(degerler.get(k) or {}),
                            "ayrilan": sorted(map(str, ayrilan.get(k) or [])),
                            "kosullu": dict(kosul.get(k) or {})}

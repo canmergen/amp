@@ -2444,14 +2444,24 @@ NASIL DÜZELTİRSİN
   7. Tek tam cümle ya da tam ad öbeği; gerekirse noktalı virgülle ikinci
      kısım. En çok 250 karakter; noktayla biter.
 
-DÖNEM YÖNÜ ("donem_turu"): PARÇALAR'da "yönü kolona göre değişir" denen
-dönem parçası (ör. 30D: 30 gün) bu kolonda hangi anlamda kullanılıyor, yaz:
-{"30D": "son"}. Kodlar: "son" (son 30 gün), "once" (30 gün önce), "sonra"
-(30 gün sonra), "sure" (yönsüz süre: 30 gün boyunca) ya da PARÇALAR'da o
-parça için yazan ek tür kodu. Yönü yalnız KULLANICI notundan ya da
-ORİJİNAL'den al; açıklamada dönemi o yönle yaz. Kaynaklarda yön yoksa
-"belirsiz" yaz ve açıklamaya yön EKLEME (soru yazma; kart kullanıcıya
-sorar). Böyle parça yoksa {}.
+DÖNEM YÖNÜ ("donem_turu"): PARÇALAR'da "yönü ve kapsamı kolona göre
+değişir" denen dönem parçası (ör. 3D: 3 gün) bu kolonda hangi anlamda
+kullanılıyor, yaz: {"3D": "son"}. Her tür bir yön (geçmiş, gelecek, iki
+yönlü, yönsüz) ve bir kapsamla tanımlıdır; "bugün" referans tarihidir:
+  "son"     son 3 gün: bugünden önceki 1., 2., 3. gün (geçmiş aralık)
+  "once"    3 gün önce: yalnız 3 gün öncesi (geçmişte tek gün)
+  "sonraki" sonraki 3 gün: bugünden sonraki 1., 2., 3. gün (gelecek aralık)
+  "sonra"   3 gün sonra: yalnız 3 gün sonrası (gelecekte tek gün)
+  "cevre"   3 gün öncesi ve sonrası: 3 gün öncesinden 3 gün sonrasına
+  "sure"    yönsüz uzunluk: tarih aralığı değil, bir sürenin uzunluğu
+            (ör. "vade süresi 3 gün")
+ya da PARÇALAR'da o parça için yazan ek tür kodu. Türü yalnız KULLANICI
+notundan ya da ORİJİNAL'den al; hem yön hem kapsam kaynakta açıkça
+yazmalı. "3 gün boyunca", "3 günlük", "3 gün içinde" yön söylemez:
+"belirsiz" yaz. Aralık mı tek gün mü belli değilse de "belirsiz" yaz.
+Belirsizse açıklamaya yön ya da kapsam EKLEME (soru yazma; kart
+kullanıcıya sorar); belliyse açıklamada dönemi o türün anlamıyla yaz.
+Böyle parça yoksa {}.
 
 BELİRSİZLİK VE ÇELİŞKİ (açıklamayı tahminle değiştirme; bildir):
   - "soru": bir bilgi birden fazla anlama gelebiliyorsa (ör. "değişim"

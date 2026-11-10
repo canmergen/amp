@@ -1045,57 +1045,103 @@ tanıtır; sayfalar sol bardan açılır.
   dokunmaz; eski kararlardaki `ad_yazilis` yok sayılır.
 - **Dönem anlam türleri (birimli kalıplar, `fe_agent/donem_tur.py`):**
   sayı + zaman birimi kalıplarının (`<N>D`, `D<N>`, `<N>_D`, `D_<N>`;
-  `donem.aile_adi` dolu olanlar) yönü kolondan kolona değişir: bir
-  kolonda "son 30 gün", başkasında "30 gün önce", "30 gün sonra" ya da
-  yalnız "30 gün". Bu yüzden:
-  - **01.2.4.1:** kalıbın anlamı birimdir ("[sayı] gün"; dil modelinin
-    ya da hafızanın anlamındaki son, önce, sonra, boyunca sözcükleri
-    atılır, `birim_anlami`). Satırda "Yön kalıba yazılmaz" notu ve
-    altında **Anlam türleri** tablosu: Son (son [sayı] gün), Önce
-    ([sayı] gün önce), Sonra ([sayı] gün sonra), Süre ([sayı] gün) sabit;
-    "Tür Ekle" ile kullanıcı tür ekler (ad + anlam, anlamda [sayı];
-    kod adından üretilir), eklenen "Kaldır" ile çıkar (`ozel_turler`).
-    Her türün kaç kolonda geçtiğini kod bütün tanımlarda sayar
-    (`_donem_tur_sayimi`, örnekleme yok; i balonunda örnek kolonlar).
-    Tanımında yön olmayan kolonlar "belirsiz" sayılır ve 01.2.4.3'te
-    sorulur. Tanımdan tür (`metinden_tur`): "son N gün" son, "N gün
-    önce(ki)" önce, "N gün sonra(ki)" ya da "önümüzdeki N gün" sonra,
-    "N gün boyunca" süre; aynı sayı bir yerde yönlü bir yerde yönsüz
-    geçerse yönlü olan, iki farklı yön ya da hiç yön yoksa belirsiz.
+  `donem.aile_adi` dolu olanlar) anlamı kolondan kolona değişir. 3D tek
+  başına belirsizdir: geçmişe mi geleceğe mi (ya da ikisine mi) bakar,
+  aralığın tamamını mı yoksa yalnız uçtaki günü mü kapsar? Her tür bunu
+  iki eksenle kesinleştirir: **yön** (geçmiş, gelecek, iki yönlü, yönsüz)
+  ve **biçim** (pencere: aralığın tamamı; nokta: yalnız uçtaki gün;
+  yönsüzde uzunluk). Sabit türler (3D için; bugün referans tarihidir,
+  pencereye dahil değildir):
+
+  | Tür | Yön | Biçim | Anlam | Kapsam | Varsayılan yazılış |
+  |---|---|---|---|---|---|
+  | Son | geçmiş | pencere | son 3 gün | bugünden önceki 1., 2., 3. gün | L3D |
+  | Önce | geçmiş | nokta | 3 gün önce | yalnız 3 gün öncesi | B3D |
+  | Sonraki | gelecek | pencere | sonraki 3 gün | bugünden sonraki 1., 2., 3. gün | N3D |
+  | Sonra | gelecek | nokta | 3 gün sonra | yalnız 3 gün sonrası | A3D |
+  | Çevre | iki yönlü | pencere | 3 gün öncesi ve sonrası | 3 gün öncesinden 3 gün sonrasına | PM3D |
+  | Süre | yönsüz | uzunluk | 3 gün | tarih aralığı değil, bir sürenin uzunluğu | aynen |
+
+  Kapsam metni `kapsam_metni` (sunucu) ve `kapsamYaz` (ekran) ile aynı
+  kurulur; 3'e kadar günler tek tek, büyük sayıda "1. ile 30. gün arası".
+  Önek bitişince yazılış yine birimli kalıp olursa (D<N> → LD<N>) alt
+  çizgiyle ayrılır (L_D<N>); elle yazılan yazılış birimli kalıpsa
+  (sonraki çalışmada yine belirsiz olur) hata verir
+  (`yazilis_birimli_hatasi`).
+  - **01.2.4.1:** kalıbın anlamı birimdir ("[sayı] gün"; anlamdaki son,
+    önce, sonraki, önümüzdeki, öncesi ve sonrası, kadar, boyunca gibi
+    sözcükler atılır, `birim_anlami`). Birimli satırda kalıp düzeyindeki
+    zaman türü seçimi (Pencere, Zaman Noktası) yoktur; "Zaman türü kolona
+    göre" yazar, özetteki tür sayımında ve Değişken Listesi'nin dönem
+    bölümünde "türü kolona göre" diye geçer.
+    Altında **Anlam türleri** tablosu: Tür, Anlam, Kapsam, Kolon. "Tür
+    Ekle" ile kullanıcı tür ekler: ad, anlam ([sayı] olmalı), Yön ve Biçim
+    (yönsüzde biçim seçilmez); seçince kapsam önizlenir, eksikse hata
+    yazar (formdakiler silinmez). Önceki sürümde eklenip yönü ya da biçimi
+    olmayan türde satırda iki seçim kutusu çıkar; seçilmeden onay
+    sunucuda hata verir (`_ozel_tur_temizle`). Her türün kaç kolonda
+    geçtiğini kod bütün tanımlarda sayar (`_donem_tur_sayimi`, örnekleme
+    yok; i balonunda örnek kolonlar).
+  - **Tanımdan tür (kod, `metinden_tur`):**
+    son: "son 3 gün", "geçmiş 3 gün", "geçen 3 gün", "önceki 3 gün",
+    "3 gün öncesine kadar"; önce: "3 gün önce", "3 gün önceki",
+    "3 gün öncesi"; sonraki: "sonraki 3 gün", "önümüzdeki 3 gün",
+    "gelecek 3 gün", "3 gün sonrasına kadar"; sonra: "3 gün sonra",
+    "3 gün sonraki", "3 gün sonrası"; çevre: "3 gün öncesi ve sonrası",
+    "3 gün önce ve sonra", "±3 gün"; süre: sayıdan önce "süre" sözcüğü
+    ("vade süresi 3 gün"). Yön söylemeyen "3 gün boyunca", "3 günlük",
+    "3 gün içinde" belirsizdir, tahminle türe atanmaz. Aynı sayı bir yerde
+    türlü bir yerde türsüz geçerse türlü olan; iki farklı tür ya da hiç
+    tür yoksa belirsiz.
   - **01.2.4.3:** her kolonda dönemin türü bu sırayla belirlenir
     (`_donem_turu_coz`): kullanıcının seçimi > onaylı açıklamadaki ifade
-    (kod) > dil modelinin `donem_turu` alanı (`SISTEM_ACIKLAMA_DUZEN`
-    "DÖNEM YÖNÜ" kuralı) > belirsiz. Satırda "Dönem: 30D bu kolonda «son
-    30 gün» · Açıklamadan · Değiştir"; belirsiz kolon Cevapsız Soru
-    aşamasına girer, sarı kutuda seçenek düğmeleri ve "Ailenin dönemi
-    belirsiz öbür kolonlarına da uygula" kutusu çıkar. Seçim
-    `/aciklama_islem` `islem: "donem_tur"` ile gider
-    (`aciklama_donem_turu`): seçim kaydedilir, kolon (ve isteğe göre
-    ailenin dönemi belirsiz, aynı yerde aynı kalıbı taşıyan kolonları)
-    "Adındaki 30D bu kolonda «son 30 gün» anlamında" notuyla dil
-    modeline yeniden düzenletilir. Kartın Zaman alanı türlü yazılır.
-    Onay kaydında `donem_turleri` tutulur. Parça metni değiştiği için
-    açıklama imzası değişir: önceki çalışmaların kolonları bir kez yeniden
+    (kod) > dil modelinin `donem_turu` alanı > belirsiz. Dil modeli
+    kuralı (`SISTEM_ACIKLAMA_DUZEN` "DÖNEM YÖNÜ") altı türü kapsamlarıyla
+    yazar; hem yön hem kapsam kaynakta açık değilse "belirsiz" der ve
+    açıklamaya yön eklemez. Parça metninde birimli kalıbın zaman türü
+    etiketi (zaman penceresi) yazılmaz; seçenekler "son = son 30 gün
+    [bugünden önceki 1. ile 30. gün arası]" biçiminde gider. Satırda
+    "Dönem: 30D bu kolonda «son 30 gün» (bugünden önceki 1. ile 30. gün
+    arası) · Açıklamadan · Değiştir". Belirsiz kolon Cevapsız Soru
+    aşamasına girer; sarı kutuda her seçenek bir kart (anlam ve altında
+    kapsam) ve "Ailenin dönemi belirsiz öbür kolonlarına da uygula".
+    Seçim `/aciklama_islem` `islem: "donem_tur"` ile gider
+    (`aciklama_donem_turu`); kolon (ve isteğe göre ailenin dönemi belirsiz,
+    aynı yerde aynı kalıbı taşıyan kolonları) "Adındaki 30D bu kolonda
+    «son 30 gün» anlamında (bugünden önceki 1. ile 30. gün arası)"
+    notuyla yeniden düzenlenir. Kartın Zaman alanı türlü yazılır. Onay
+    kaydında `donem_turleri` tutulur. Parça metni değiştiği için açıklama
+    imzası değişir: önceki çalışmaların kolonları bir kez yeniden
     düzenlenir.
   - **01.2.4.4 Dönem Yazılışları:** birimli kalıp için kalıp × tür
     satırları (yalnız en az bir kolonda geçen türler; anahtar
-    `kalip|tur`), "Anlam" sütunu. Varsayılan yazılış Son L[sayı]D, Önce
-    B[sayı]D, Sonra N[sayı]D, Süre aynen. Aynı yazılış iki türe
-    verilemez (`yazilis_cakismasi`, onayı durdurur). Belirsiz satırı
-    salt okunur: o kolonların adında dönem kısmı aynen kalır. Her kolon
-    kendi türünün yazılışıyla adlanır (`_kolon_yazilislari`,
-    `_aile_adlari(..., kolon_yaz)`): TXN_OUT_AMT_30D → TXN_OUT_AMT_L30D,
-    LOAN_DUE_AMT_30D → LOAN_DUE_AMT_N30D, BAL_30D → BAL_B30D.
+    `kalip|tur`); "Anlam" sütununda tür adı, anlamı ve kapsamı. Aynı
+    yazılış iki türe verilemez (`yazilis_cakismasi`; hata yalnız çakışan
+    türün satırında, onayı durdurur). Belirsiz satırı salt okunur: o
+    kolonların adında dönem kısmı aynen kalır. Her kolon kendi türünün
+    yazılışıyla adlanır (`_kolon_yazilislari`): TXN_OUT_AMT_30D →
+    TXN_OUT_AMT_L30D, LOAN_DUE_AMT_30D (30 gün sonra) → LOAN_DUE_AMT_A30D,
+    BAL_30D (30 gün önceki) → BAL_B30D, önümüzdeki 30 gün → N30D, 3 gün
+    öncesi ve sonrası → PM3D.
   - **Hafıza:** kalıbın anlamı birim; türler `anlam_turleri` alanında
-    (`{tur: {ad, anlam, yeni_adda}}`; `kisaltma.donem_anlam_turleri_kaydet`,
-    `None` türü siler). Bir yazılış bir kalıpta yalnız tek türe bağlanır.
-    Yeni yazılış (L<N>D) kendi kalıbı olarak kesin anlamıyla da yazılır
-    (`_donem_tur_yazilis_hafizaya`): sonraki çalışmada L30D kesin "son 30
-    gün", yalın 30D belirsizdir; 01.2.3 bu yüzden L30D'yi kesin, 30D'yi
-    dikkat bağlamı olarak verir. Eski tek anlamlı kayıt (kalıp düzeyindeki
-    `donem_ad`) eski anlamındaki yön sözcüğünün türüne taşınır
-    (`kalip_turleri`), tür yazılışı kaydedilince kalıp düzeyindeki kayıt
-    kalkar. Kalan kullanıcı türü kaldırılınca hafızadan da silinir.
+    (`{tur: {ad, anlam, yeni_adda, yon, bicim}}`;
+    `kisaltma.donem_anlam_turleri_kaydet`, `None` türü siler). Bir
+    yazılış bir kalıpta yalnız tek türe bağlanır: 01.2.4.4 onayında başka
+    türe verilen yazılış eski türünden kalkar. Yeni yazılış (L<N>D) kendi
+    kalıbı olarak kesin anlamıyla da yazılır (`_donem_tur_yazilis_hafizaya`;
+    zaman türü biçimden: nokta → nokta, uzunluk → ölçü, öbürü pencere);
+    yazılış başka türden taşındıysa kalıbın eski anlamı da değişir.
+    Sonraki çalışmada L30D kesin "son 30 gün", yalın 30D belirsizdir;
+    01.2.3 bu yüzden L30D'yi kesin, 30D'yi dikkat bağlamı olarak verir.
+    Eski tek anlamlı kayıt (kalıp düzeyindeki `donem_ad`) eski anlamındaki
+    yön ifadesinin türüne taşınır (`kalip_turleri`). Kaldırılan kullanıcı
+    türü hafızadan da silinir.
+  - **Önceki sürümden göç (N harfi):** önceki sürümde "sonra" türünün
+    yazılışı N idi ve o tür hem "3 gün sonra" hem "önümüzdeki 3 gün" için
+    kullanılıyordu. Biçim alanı olmayan "sonra" kaydındaki N yazılışı
+    kullanılmaz (`eski_sonra_mi`); 01.2.4.1 onayında bu yazılış türden
+    kalkar ve hafızaya kendi kalıbı olarak yazılmış N<N>D ("<N> gün
+    sonra") silinir. Sonraki onayda sonraki N, sonra A yazılışını alır.
   - **Kapsam dışı:** iki parçalı kalıplar (`<N>D_<N>D`), harf + sayı +
     harf kalıpları (L<N>D) ve saat aralıkları kendi anlamını taşır, bu
     kurala girmez.
