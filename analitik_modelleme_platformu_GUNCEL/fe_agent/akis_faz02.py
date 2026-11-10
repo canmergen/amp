@@ -8,6 +8,8 @@ SONRA, eldeki butun degiskenlerle (ham + uretilen; _ENRICHED) calisir.
 """
 
 
+import re
+
 import numpy as np
 import pandas as pd
 from fe_agent import aralik as aralik_mod
@@ -116,7 +118,7 @@ PANEL_SATIR = 20
 NULL_AZ = 0.05
 
 
-def _eksik_ozeti(tablo, satir):
+def _eksik_ozeti(tablo, satir, asiri=None):
     """profil_cikar tablosundan EKSIK DEGER sekmesinin beslendigi ozet.
 
     Doner: (ilk20, null_ozet, ek_alanlar). tablo NULL_RATIO'ya gore
@@ -137,7 +139,7 @@ def _eksik_ozeti(tablo, satir):
             ozet["hic_null_yok"] += 1
         elif oran <= NULL_AZ:
             ozet["az"] += 1
-        elif oran <= sfa_mod.NULL_ESIK:
+        elif oran <= (sfa_mod.NULL_ESIK if asiri is None else asiri):
             ozet["orta"] += 1
         else:
             ozet["asiri"] += 1
@@ -291,6 +293,161 @@ def _kart_olculeri(durum):
         return {}
 
 
+# 02.1 ESIKLERI: profil cikarilmadan once kullaniciya sorulur; kontroller
+# onaylanan (degistirildiyse degistirilen) esiklerle yapilir. Birim:
+# "yuzde" ve "puan" ekranda 100 ile carpilmis yazilir, "sayi" ve "kat"
+# oldugu gibi. (anahtar, kontrol, esigin anlami, birim, en kucuk, en buyuk)
+PROFIL_ESIKLERI = (
+    ("cok_bos", "Eksik Oranı Yüksek", "Boş hücre oranı bunun üstündeyse", "yuzde", 0.01, 0.99),
+    ("kimlik", "Kimlik Benzeri", "Farklı değer oranı bunun üstündeyse", "yuzde", 0.50, 0.9999),
+    ("kardinalite", "Kardinalitesi Aşırı Yüksek", "Metin kolonda farklı değer sayısı bunun üstündeyse",
+     "sayi", 2, 1000000),
+    ("baskin", "Neredeyse Sabit", "En sık değerin payı en az bu kadarsa", "yuzde", 0.50, 0.9999),
+    ("donem_min_satir", "Dönemde Boş ya da Sabit",
+     "Tek değerli dönem aranırken dönemin en az satır sayısı", "sayi", 1, 1000000000),
+    ("gizli", "Gizli Eksik (Özel Kod)", "Özel kodun dolu satırlardaki payı bunun üstündeyse",
+     "yuzde", 0.0001, 0.50),
+    ("sifir", "Sıfır Yoğunluğu", "Sıfırın dolu satırlardaki payı en az bu kadarsa", "yuzde", 0.50, 1.0),
+    ("sicrama", "Dönemler Arası Eksik Sıçraması",
+     "Art arda iki dönemde eksik oranı farkı bundan fazlaysa", "puan", 0.01, 0.99),
+    ("uc_kat", "Uç Değer Yoğunluğu", "En büyük değer, %99'luk değerin bu katından büyükse",
+     "kat", 2, 1000000000),
+)
+ESIK_BIRIM_ADI = {"yuzde": "%", "puan": "puan", "sayi": "", "kat": "kat"}
+ESIK_METNI = ("Veri profili aşağıdaki eşiklerle çıkarılacak. Eşikleri olduğu gibi onaylayabilir "
+              "ya da değiştirebilirsiniz; kontroller onayladığınız eşiklerle yapılır.")
+ESIK_DUGME = "Eşikleri Onayla ve Profili Çıkar"
+
+
+def _esik_varsayilan():
+    from fe_agent import profil_ek as pe
+    d = dict(pe.ESIK_VARSAYILAN)
+    d.update({"cok_bos": sfa_mod.NULL_ESIK, "kimlik": 0.95, "kardinalite": sfa_mod.KATEGORIK_MAX})
+    return d
+
+
+def profil_esikleri(durum):
+    """Gecerli esikler: varsayilan + kullanicinin onayladigi."""
+    d = _esik_varsayilan()
+    kayit = (durum.get("profil") or {}).get("esikler")
+    if isinstance(kayit, dict):
+        d.update({k: v for k, v in kayit.items() if k in d and v is not None})
+    return d
+
+
+def _esik_ekran(birim, v):
+    """Ic deger -> ekrandaki sayi (yuzde ve puan 100 ile carpilir)."""
+    x = float(v) * 100 if birim in ("yuzde", "puan") else float(v)
+    x = round(x, 4)
+    return int(x) if x == int(x) else x
+
+
+def _esik_ic(birim, v):
+    """Ekrandaki sayi -> ic deger. Turkce yazim: 1.000 binlik, 0,5 ondalik."""
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        x = float(v)
+    else:
+        t = str(v).replace("%", "").replace(" ", "").strip()
+        if "," in t:
+            t = t.replace(".", "").replace(",", ".")
+        elif re.fullmatch(r"\d{1,3}(\.\d{3})+", t):
+            t = t.replace(".", "")
+        x = float(t)
+    return x / 100.0 if birim in ("yuzde", "puan") else x
+
+
+def _esik_metni(birim, v):
+    x = _esik_ekran(birim, v)
+    yazi = _sayi(x) if isinstance(x, int) else ("%s" % x).replace(".", ",")
+    if birim == "yuzde":
+        return "%" + yazi
+    if birim == "puan":
+        return yazi + " puan"
+    if birim == "kat":
+        return yazi + " kat"
+    return yazi
+
+
+def esik_dogrula(gelen):
+    """Formdan gelen {anahtar: ekrandaki sayi}. Doner: (esikler, hata)."""
+    sonuc, hatalar = {}, []
+    gelen = gelen if isinstance(gelen, dict) else {}
+    for a, kontrol, _anlam, birim, en_az, en_cok in PROFIL_ESIKLERI:
+        if a not in gelen or str(gelen[a]).strip() == "":
+            hatalar.append("%s: değer boş" % kontrol)
+            continue
+        try:
+            v = _esik_ic(birim, gelen[a])
+        except (TypeError, ValueError):
+            hatalar.append("%s: sayı değil" % kontrol)
+            continue
+        if birim in ("sayi", "kat"):
+            v = int(round(v)) if float(v).is_integer() or birim == "sayi" else v
+        if not (en_az <= v <= en_cok):
+            hatalar.append("%s: %s ile %s arasında olmalı" % (
+                kontrol, _esik_metni(birim, en_az), _esik_metni(birim, en_cok)))
+            continue
+        sonuc[a] = v
+    if hatalar:
+        return None, "Eşikler kaydedilmedi. " + "; ".join(hatalar) + "."
+    return sonuc, None
+
+
+def esik_formu(durum, hata=None, kilitli=False):
+    """02.1 esik formu (tip profil_esik)."""
+    simdiki = profil_esikleri(durum)
+    varsayilan = _esik_varsayilan()
+    satirlar = []
+    for a, kontrol, anlam, birim, en_az, en_cok in PROFIL_ESIKLERI:
+        satirlar.append({"anahtar": a, "kontrol": kontrol, "anlam": anlam, "birim": birim,
+                         "birim_adi": ESIK_BIRIM_ADI[birim],
+                         "deger": _esik_ekran(birim, simdiki[a]),
+                         "varsayilan": _esik_ekran(birim, varsayilan[a]),
+                         "varsayilan_metni": _esik_metni(birim, varsayilan[a]),
+                         "en_az": _esik_ekran(birim, en_az), "en_cok": _esik_ekran(birim, en_cok)})
+    return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
+            "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
+
+
+def esik_degisiklik_notu(durum):
+    """Varsayilandan farkli esikler (kartta ve metinde)."""
+    simdiki, varsayilan = profil_esikleri(durum), _esik_varsayilan()
+    parca = ["%s %s (varsayılan %s)" % (kontrol, _esik_metni(birim, simdiki[a]),
+                                        _esik_metni(birim, varsayilan[a]))
+             for a, kontrol, _an, birim, _x, _y in PROFIL_ESIKLERI
+             if abs(float(simdiki[a]) - float(varsayilan[a])) > 1e-12]
+    return ("Değiştirilen eşikler: " + "; ".join(parca) + ".") if parca else ""
+
+
+def veri_profili_girdi(durum, mesaj, yeniden_sor=False):
+    """02.1'e girilince esik formu acilir. Form gonderilince ({"dogrulama":
+    {"adim": "veri_profili", "esikler": {...}}}) esikler dogrulanir ve
+    kaydedilir; yazarak onayda mevcut esikler gecerli."""
+    karar = durum.get("_dogrulama_karari")
+    if not yeniden_sor and isinstance(karar, dict) and karar.get("adim") == "veri_profili" \
+            and isinstance(karar.get("esikler"), dict):
+        durum.pop("_dogrulama_karari", None)
+        esik, hata = esik_dogrula(karar["esikler"])
+        if hata:
+            durum["_secim_alani"] = esik_formu(durum, hata)
+            return False, hata
+        p = durum.get("profil") or {}
+        p["esikler"] = esik
+        durum["profil"] = p
+        durum["_secim_alani"] = None
+        return True, None
+    if not yeniden_sor and (mesaj or "").strip():
+        try:
+            from fe_agent import niyet_kural
+            if niyet_kural.coz(mesaj).get("aksiyon") == "onay":
+                durum["_secim_alani"] = None
+                return True, None
+        except Exception:
+            pass
+    durum["_secim_alani"] = esik_formu(durum)
+    return False, ESIK_METNI
+
+
 def profil_hesapla(durum):
     """Veri profilini tablonun TAMAMINDAN cikarir: dort temel kontrol
     (sfa.profil_cikar) ve ek kontroller (profil_ek). Sonuc durum["profil"]."""
@@ -299,7 +456,10 @@ def profil_hesapla(durum):
     m = durum["meta"]
     haric = set(durum.get("haric_kolonlar") or []) | {m.get("target"), m.get("id"), m.get("donem")}
 
-    tablo, teshis = sfa_mod.profil_cikar(df, haric=haric)
+    esik = profil_esikleri(durum)
+    tablo, teshis = sfa_mod.profil_cikar(df, haric=haric, null_esik=esik["cok_bos"],
+                                         kimlik_esik=esik["kimlik"],
+                                         kategorik_max=esik["kardinalite"])
     yazildi, yedek = _yaz("%s_PROFIL" % durum["veri_seti"], tablo, "/veri_profili.parquet")
 
     p = durum.get("profil") or {}
@@ -307,7 +467,8 @@ def profil_hesapla(durum):
         | set(teshis.get("kimlik_gibi") or []) | set(teshis.get("yuksek_kardinalite") or [])
     adaylar = [str(k) for k in df.columns if k not in haric and k not in temel]
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
-                                 hedef=m.get("target"), olculer=_kart_olculeri(durum))
+                                 hedef=m.get("target"), olculer=_kart_olculeri(durum),
+                                 esik=esik)
     # Sabit kolonun tek degeri (kartta bulgu olarak).
     ek["sabit_deger"] = {}
     for k in teshis.get("sabit") or []:
@@ -331,7 +492,8 @@ def profil_hesapla(durum):
 
     # EKSIK DEGER sekmesi: yalnizca ilk 20 satir + dagilim ozeti oturuma
     # yazilir; tam tablo yukarida dataset'e / yedege yazildi.
-    ilk20, null_ozet, ek_alan = _eksik_ozeti(tablo, p.get("satir") or len(df))
+    ilk20, null_ozet, ek_alan = _eksik_ozeti(tablo, p.get("satir") or len(df),
+                                             asiri=esik["cok_bos"])
     p["eksik_ilk20"] = ilk20
     p["null_ozet"] = null_ozet
     p.update(ek_alan)
@@ -362,20 +524,17 @@ def _profil_karar_bekliyor(durum):
 
 
 def veri_profili_plan(durum):
-    """Profil tablonun tamamindan cikarilir. Karar isteyen kolon yoksa ONAY
-    SORULMAZ, ilk durak Kural Tabanli Degisken Uretimi'nin planidir. Varsa
-    kart her kolon icin Tut ya da Çıkar ister.
-
-    Otomatik dalda metin yalnizca "Geri Dön" ile bu adima donulunce
-    gorunur."""
+    """Esikler onaylaninca (veri_profili_girdi) profil tablonun tamamindan
+    onaylanan esiklerle cikarilir. Karar isteyen kolon yoksa ONAY SORULMAZ,
+    ilk durak Kural Tabanli Degisken Uretimi'nin planidir. Varsa kart her
+    kolon icin Tut ya da Çıkar ister."""
     profil_hesapla(durum)
     durum["_profil_hazir"] = True
     if profil_karar_kolonlari(durum):
         durum["_secim_alani"] = profil_karti(durum, karar=True)
         return profil_metni(durum, karar=True)
     durum["_plan_otomatik"] = True
-    return ("Veri profili yeniden çıkarıldı. Onaylarsanız değişken üretimi ve SFA bu "
-            "profile göre yeniden yapılır, SFA kararları sıfırlanır.")
+    return profil_metni(durum)
 
 
 def veri_profili_uygula(durum):
@@ -457,32 +616,34 @@ def _sayi_metni(v):
     return ("%.4g" % f).replace(".", ",")
 
 
-def _profil_kurallari():
-    """Her kontrolun sade kurali; esikler kodun kullandigi degerlerden."""
-    from fe_agent import profil_ek as pe
+def _profil_kurallari(esik=None):
+    """Her kontrolun sade kurali; esikler kullanicinin onayladigi degerler."""
+    e = esik or _esik_varsayilan()
+    kat = _sayi(e["kardinalite"])
     return {
-        "cok_bos": "Boş hücre oranı %s üstünde." % _yuzde_ekli(sfa_mod.NULL_ESIK),
+        "cok_bos": "Boş hücre oranı %s üstünde." % _yuzde_ekli(e["cok_bos"]),
         "sabit": "Kolonda tek bir değer var. Bir değer ile boş hücrelerden oluşan kolon "
                  "iki değerli sayılır.",
-        "kimlik_gibi": "Neredeyse her satırda farklı değer alan tam sayı ya da metin kolon "
-                       "(müşteri numarası gibi). Ondalıklı tutarlar bu kurala girmez.",
+        "kimlik_gibi": "Farklı değer oranı %s üstünde olan tam sayı ya da metin kolon "
+                       "(müşteri numarası gibi). Ondalıklı tutarlar bu kurala girmez."
+                       % _yuzde_ekli(e["kimlik"]),
         "yuksek_kardinalite": "Metin kolonda farklı değer sayısı %s üstünde."
-                              % (_sayi(sfa_mod.KATEGORIK_MAX) + _ilgi_eki(_sayi(sfa_mod.KATEGORIK_MAX))),
+                              % (kat + _ilgi_eki(kat)),
         "ayni_icerik": "Değerleri satır satır birebir aynı olan kolonlar. Gruptan tablodaki "
                        "ilk kolon kalır.",
         "baskin": "En sık görülen değerin payı %s ya da üstünde. Boş hücre de değer sayılır."
-                  % _yuzde_metni(pe.BASKIN_ESIK),
+                  % _yuzde_metni(e["baskin"]),
         "donem": "Kolon bazı dönemlerde tamamen boş, ya da en az %s satırı olan bir dönemde "
-                 "tek değerli." % _sayi(pe.DONEM_SABIT_MIN_SATIR),
+                 "tek değerli." % _sayi(e["donem_min_satir"]),
         "gizli_eksik": "-1, -99, -999, 9999 gibi bir değerin dolu satırlardaki payı %s "
                        "üstünde ve değer kolonun geri kalanından kopuk. SFA'da eksik gibi "
-                       "ele alınması önerilir." % _yuzde_ekli(pe.GIZLI_EKSIK_ESIK),
+                       "ele alınması önerilir." % _yuzde_ekli(e["gizli"]),
         "sifir": "Dolu satırlarda sıfırın payı %s ya da üstünde. Çoğu zaman işlem yok "
-                 "anlamına gelir." % _yuzde_metni(pe.SIFIR_ESIK),
+                 "anlamına gelir." % _yuzde_metni(e["sifir"]),
         "negatif": "Kolon kartında ölçüsü adet, gün ya da süre olan kolonda negatif değer var.",
         "sicrama": "Eksik oranı art arda iki dönem arasında %s puandan fazla değişiyor."
-                   % _sayi(int(round(pe.DONEM_SICRAMA_ESIK * 100))),
-        "uc": "En büyük değer, %%99'luk değerin %s katından büyük." % _sayi(pe.UC_DEGER_KAT),
+                   % _sayi_metni(round(e["sicrama"] * 100, 2)),
+        "uc": "En büyük değer, %%99'luk değerin %s katından büyük." % _sayi_metni(e["uc_kat"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
     }
@@ -588,6 +749,9 @@ def profil_metni(durum, karar=False):
     if not parca:
         parca.append("Hiçbir kolonda sorun bulunmadı; bütün kolonlar değişken üretimine "
                      "girer.")
+    notu = esik_degisiklik_notu(durum)
+    if notu:
+        parca.append(notu)
     tk = ((durum.get("profil") or {}).get("profil_ek") or {}).get("tekrar") or {}
     tekrar = int(tk.get("toplam") or 0)
     if tekrar:
@@ -631,7 +795,8 @@ def profil_karti(durum, karar=False):
             bulgu.setdefault(a, {})[k] = ("%s farklı değer" % _sayi(tekil)) if tekil is not None \
                 else "Farklı değer sayısı yüksek"
 
-    kurallar = _profil_kurallari()
+    esik = profil_esikleri(durum)
+    kurallar = _profil_kurallari(esik)
     karar_deger = oz["karar"]
     donemler = ek.get("donemler")
     kontroller = []
@@ -688,7 +853,8 @@ def profil_karti(durum, karar=False):
         "turler": turler,
         "eksik": {"yok": int(n.get("hic_null_yok") or 0), "az": int(n.get("az") or 0),
                   "orta": int(n.get("orta") or 0), "asiri": int(n.get("asiri") or 0)},
-        "eksik_esik": {"az": NULL_AZ, "asiri": sfa_mod.NULL_ESIK},
+        "eksik_esik": {"az": NULL_AZ, "asiri": esik["cok_bos"]},
+        "esik_notu": esik_degisiklik_notu(durum),
         "eksik_kolon": p.get("null_kolon_adet"),
         "eksik_maks": p.get("null_maks"),
         "eksik_maks_kolon": p.get("null_maks_kolon"),
@@ -702,38 +868,59 @@ def profil_karti(durum, karar=False):
     }
 
 
+def _esik_satiri_mi(kayit):
+    alan = ((kayit.get("ekran") or {}).get("secim_alani") or {}) if isinstance(kayit, dict) else {}
+    return alan.get("tip") == "profil_esik"
+
+
 def profil_gecmisini_tazele(durum, gecmis):
-    """Yenilemede 02.1 blogu guncel kart ve metinle cizilir (eski calismada
-    metin tablosu yerine de). Kart, adimin transkriptteki metinli ya da
-    ekranli ILK kaydina yazilir; adimin diger kayitlari (karar kartli dalda
-    bos tamamlama satiri) kartsiz ve metinsiz kalir, kart iki kez cizilmez.
-    Adim gecilmemisse (Geri Dön ile onay bekliyor) dokunulmaz.
-    Transkript degismez: doner yeni liste."""
+    """Yenilemede 02.1 blogu guncel haliyle cizilir. Transkript degismez:
+    doner yeni liste.
+      * Esik formu satiri: esikler onaylandiysa (adim gecildi ya da karar
+        kartinda bekliyor) formun onaylanan esiklerle KILITLI hali.
+      * Profil karti: adim gecildiyse esik satiri disindaki metinli ya da
+        ekranli ILK 02.1 satirina yazilir; diger 02.1 satirlari kartsiz ve
+        metinsiz kalir (kart iki kez cizilmez)."""
     from fe_agent.akis_kayit import adim_sirasi
     sira = adim_sirasi(durum.get("mod"))
-    if "veri_profili" not in sira or sira.index("veri_profili") >= int(durum.get("i") or 0):
+    if "veri_profili" not in sira:
         return gecmis
-    satirlar = [i for i, k in enumerate(gecmis or [])
+    i = int(durum.get("i") or 0)
+    adim_i = sira.index("veri_profili")
+    gecti = adim_i < i
+    esik_kilit = gecti or (adim_i == i and durum.get("bekleyen") == "onay")
+    satirlar = [n for n, k in enumerate(gecmis or [])
                 if isinstance(k, dict) and k.get("rol") == "bot" and k.get("adim") == "veri_profili"]
     if not satirlar:
         return gecmis
+    yeni = list(gecmis)
+    esik_satirlari = [n for n in satirlar if _esik_satiri_mi(gecmis[n])]
+    if esik_kilit:
+        for n in esik_satirlari:
+            k = dict(yeni[n])
+            k["ekran"] = {"secim_alani": esik_formu(durum, kilitli=True)}
+            yeni[n] = k
+    if not gecti:
+        return yeni
     kart = profil_karti(durum)
     if not kart:
-        return gecmis
-    hedef = next((i for i in satirlar
-                  if str(gecmis[i].get("metin") or "").strip() or gecmis[i].get("ekran")),
-                 satirlar[-1])
-    yeni = list(gecmis)
-    for i in satirlar:
-        k = dict(yeni[i])
-        if i == hedef:
+        return yeni
+    digerleri = [n for n in satirlar if n not in esik_satirlari]
+    if not digerleri:
+        return yeni
+    hedef = next((n for n in digerleri
+                  if str(gecmis[n].get("metin") or "").strip() or gecmis[n].get("ekran")),
+                 digerleri[-1])
+    for n in digerleri:
+        k = dict(yeni[n])
+        if n == hedef:
             k["metin"] = profil_metni(durum)
             k["ekran"] = {"secim_alani": kart}
             k.pop("ekran_atlandi", None)
         else:
             k["metin"] = ""
             k.pop("ekran", None)
-        yeni[i] = k
+        yeni[n] = k
     return yeni
 
 def _buyuk_veri_engeli(durum, adim):

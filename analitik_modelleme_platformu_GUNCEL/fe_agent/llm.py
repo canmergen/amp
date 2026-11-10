@@ -3651,18 +3651,26 @@ Kurallar:
 - Yalnızca sayısal kolonlar.
 - Kolon adlarını sana verilen listeden AYNEN kopyala, uydurma.
 - "gerekce" alanına hedef değişkenle ilişkisini bir cümleyle yaz.
-- En fazla 12 şablon öner.""" + SINIRLAYICI_KURALI
+- En fazla {EN_COK} şablon öner.""" + SINIRLAYICI_KURALI
 
 
 # PLAN PARCALARI: 1.000 kolonu asan sozlukte tek cagri 90 saniyeyi
 # asiyordu. Katalog satirlari (aile ya da kolon) PLAN_PARCA_KARAKTER
 # boyutunda parcalara bolunur, parcalar PLAN_PARALEL esli gider. Her
-# parca en fazla 12 sablon onerir; toplam yine en fazla PLAN_EN_COK
-# sablondur ve parcalardan sirayla (biri birinden, sonra ikincileri)
-# alinir, boylece her parca temsil edilir.
+# parca en fazla _parca_siniri kadar sablon onerir (tek parcada
+# PLAN_EN_COK; cok parcada payi + 3 yedek, gecersiz ya da tekrar eden
+# oneriler elenince toplam dolsun); toplam en fazla PLAN_EN_COK sablondur
+# ve parcalardan sirayla (her parcadan birer) alinir, her parca temsil
+# edilir.
 PLAN_PARCA_KARAKTER = 12000
 PLAN_PARALEL = 3
-PLAN_EN_COK = 12
+PLAN_EN_COK = 30
+
+
+def _parca_siniri(parca_sayisi, en_cok=PLAN_EN_COK):
+    if parca_sayisi <= 1:
+        return en_cok
+    return min(en_cok, -(-en_cok // parca_sayisi) + 3)
 
 
 def _plan_parcalari(satirlar, sinir=PLAN_PARCA_KARAKTER):
@@ -3756,12 +3764,13 @@ def gelenekse_plan_oner(sozluk_df, haric, meta, max_satir=None):
             istek = ("Hedef değişken: %s\n\n%s"
                      % (hedef or "?", _veri_blogu("Kolonlar:", "\n".join(parca_satirlar))))
         try:
-            ham = _cagir(SISTEM_PLAN, istek, sicaklik=0.2)
+            ham = _cagir(SISTEM_PLAN.replace("{EN_COK}", str(sinir)), istek, sicaklik=0.2)
         except Exception as e:
             return None, _hata_metni(e)
         return _plan_temizle(_json_ayristir(ham, [], list), gecerli, haric), None
 
     parcalar = _plan_parcalari(satirlar)
+    sinir = _parca_siniri(len(parcalar))
     sonuclar = [None] * len(parcalar)
     hatalar = []
     # Ayri havuz: _cagir kendi icinde _HAVUZ'u kullaniyor; ayni havuzda

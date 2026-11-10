@@ -5456,6 +5456,40 @@ button.pf-durum:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--kirmi
   .pf-sonuc { white-space: normal; }
 }
 
+/* 02.1 Kontrol eşikleri formu */
+.dg-tablo.pf-esik-tablo { table-layout: fixed; width: 100%; }
+.dg-tablo.pf-esik-tablo th { width: auto; white-space: normal; }
+.dg-tablo.pf-esik-tablo col.pf-e-kontrol { width: 24%; }
+.dg-tablo.pf-esik-tablo col.pf-e-anlam { width: auto; }
+.dg-tablo.pf-esik-tablo col.pf-e-deger { width: 190px; }
+.dg-tablo.pf-esik-tablo col.pf-e-vars { width: 120px; }
+.dg-tablo.pf-esik-tablo > tbody > tr > td { padding: 7px var(--b-3); vertical-align: middle; }
+.pf-esik-kutu { display: inline-flex; align-items: center; gap: 4px; }
+.pf-esik-giris {
+  width: 84px; font: inherit; text-align: center; padding: 4px 6px;
+  border: 1px solid var(--kenar); border-radius: var(--r-kucuk); background: var(--yuzey); color: var(--metin);
+}
+.pf-esik-giris:focus-visible { outline: none; border-color: var(--kirmizi); box-shadow: 0 0 0 3px var(--kirmizi-halka); }
+.pf-esik-giris:disabled { background: var(--yuzey-alt); color: var(--metin); opacity: 1; }
+.pf-esik-birim { color: var(--metin-soluk); font-weight: var(--fw-kalin); }
+.pf-esik-birim.on { width: 14px; text-align: right; flex-shrink: 0; }
+.pf-esik-birim.son { width: 46px; text-align: left; flex-shrink: 0; white-space: nowrap; }
+.pf-esik-vars { color: var(--metin-soluk); }
+.pf-esik-satir.degisti > td { background: color-mix(in srgb, var(--amber) 9%, var(--yuzey)); }
+.pf-esik-satir.degisti .pf-esik-giris { border-color: var(--amber); font-weight: var(--fw-kalin); }
+.pf-esik-satir.hatali .pf-esik-giris { border-color: var(--kirmizi); }
+.pf-esik-uyari { color: var(--kirmizi); font-size: var(--fs-kucuk); margin-top: 3px; }
+.pf-esik-hata {
+  color: var(--kirmizi); background: var(--kirmizi-acik); border: 1px solid var(--kirmizi);
+  border-radius: var(--r-kucuk); padding: var(--b-2) var(--b-3);
+}
+.pf-karar-ozet.hatali { color: var(--kirmizi); }
+.pf-esik-dugmeler { display: flex; align-items: center; justify-content: center; gap: var(--b-3); flex-wrap: wrap; }
+.pf-esik-notu { color: var(--amber); }
+@media (max-width: 720px) {
+  .dg-tablo.pf-esik-tablo { min-width: 600px; }
+}
+
 /* ==================== 01.2.3 aile düzeni ====================
    Adı yalnız sayılarla ayrılan kolonlar bir başlık satırının altında;
    "Aileden" gelen satır dil modeli önerisinden ayrı, daha açık bir mavi

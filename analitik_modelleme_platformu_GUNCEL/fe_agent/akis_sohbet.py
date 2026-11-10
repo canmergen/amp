@@ -543,7 +543,13 @@ def _mesaj_isle(durum, mesaj, dogrulama=None):
             return _onayi_uygula(durum, adim, anahtar)
 
         durum["bekleyen"] = "onay"
-        return adim["plan"](durum)
+        metin = adim["plan"](durum)
+        # Form gonderildikten sonra plan karar gerektirmiyorsa (bkz.
+        # _adima_gir) onay beklenmeden uygulanir. Ornek: 02.1 esikleri
+        # onaylandi, karar isteyen kolon yok.
+        if durum.pop("_plan_otomatik", False):
+            return _onayi_uygula(durum, adim, anahtar)
+        return metin
 
     # 4) SECIMLI adimda numara vermek ONAYDIR.
     # Plan metni "bir kismini secmek icin numaralarini belirtin (ornegin

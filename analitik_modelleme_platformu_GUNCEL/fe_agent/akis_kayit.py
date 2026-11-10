@@ -20,7 +20,7 @@ from fe_agent.akis_faz01 import (
 )
 from fe_agent.akis_faz02 import (
     baz_plan, baz_uygula, sfa_girdi, sfa_uygula, stabilite_plan,
-    stabilite_uygula, veri_profili_plan, veri_profili_uygula,
+    stabilite_uygula, veri_profili_girdi, veri_profili_plan, veri_profili_uygula,
 )
 from fe_agent.akis_faz03 import kesif_plan, kesif_uygula, kural_plan, kural_uygula
 from fe_agent.akis_faz04 import kalite_plan, kalite_uygula, secim_plan, secim_uygula
@@ -205,7 +205,8 @@ ADIMLAR = {
                     "hedef dağılımı. Üretime girmeyen kolonlardan değişken üretilmez; "
                     "neredeyse sabit ve dönemde boş ya da sabit kolonlar için karar "
                     "kullanıcınındır.",
-        "girdi": None, "plan": veri_profili_plan, "uygula": veri_profili_uygula},
+        "girdi": veri_profili_girdi, "plan": veri_profili_plan,
+        "uygula": veri_profili_uygula},
     "sfa": {
         "baslik": "Tek Değişken Analizi (SFA)",
         "aciklama": "Her değişkenin hedefle ilişkisi ölçülür (IV, beş "

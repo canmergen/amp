@@ -36,6 +36,19 @@ DONEM_SICRAMA_ESIK = 0.20
 DONEM_SABIT_MIN_SATIR = 100
 UC_DEGER_KAT = 100
 UC_DEGER_YUZDELIK = 0.99
+# Kullanicinin 02.1'de onayladigi esikler bu anahtarlarla gelir (yoksa
+# varsayilan). Gizli eksik kod listesi ve kopukluk kati sabittir.
+ESIK_VARSAYILAN = {"baskin": BASKIN_ESIK, "sifir": SIFIR_ESIK, "gizli": GIZLI_EKSIK_ESIK,
+                   "donem_min_satir": DONEM_SABIT_MIN_SATIR, "sicrama": DONEM_SICRAMA_ESIK,
+                   "uc_kat": UC_DEGER_KAT}
+
+
+def esik_birlestir(esik=None):
+    d = dict(ESIK_VARSAYILAN)
+    d.update({k: v for k, v in (esik or {}).items() if k in d and v is not None})
+    return d
+
+
 # Sutun parcasi: donem hesabinda bellek sinirli kalsin.
 DONEM_PARCA = 200
 
@@ -126,13 +139,13 @@ def ayni_icerik(df, adaylar):
     return sonuc
 
 
-def _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk):
+def _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk, esik=GIZLI_EKSIK_ESIK):
     """Dolu satirlarin GIZLI_EKSIK_ESIK'inden fazlasinda gecen ve geri
     kalan degerlerden kopuk ozel kod. Doner: (deger, adet) ya da None."""
     aday = None
     for v in GIZLI_EKSIK_DEGERLER:
         n = int(sayim.get(v, 0) or 0)
-        if not n or n / dolu <= GIZLI_EKSIK_ESIK:
+        if not n or n / dolu <= esik:
             continue
         if v < 0:
             # Kolonda bu koddan baska negatif deger yok.
@@ -152,9 +165,10 @@ def _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk):
     return aday
 
 
-def kolon_kontrolleri(df, adaylar, olculer=None):
+def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
     """Kolon basina kontroller. olculer: {kolon: kolon kartinin olcu alani};
     bos ya da None ise negatif kontrolu uygulanmaz."""
+    e = esik_birlestir(esik)
     n = len(df)
     sonuc = {"baskin": [], "gizli_eksik": [], "sifir": [], "negatif": [], "uc": []}
     if not n:
@@ -166,7 +180,7 @@ def kolon_kontrolleri(df, adaylar, olculer=None):
         if not len(vc):
             continue
         ust_deger, ust_adet = vc.index[0], int(vc.iloc[0])
-        baskin = ust_adet / n >= BASKIN_ESIK
+        baskin = ust_adet / n >= e["baskin"]
         if baskin:
             sonuc["baskin"].append({"kolon": kol, "deger": deger_metni(ust_deger),
                                     "pay": ust_adet / n})
@@ -178,18 +192,18 @@ def kolon_kontrolleri(df, adaylar, olculer=None):
             continue
         sayim = sn.value_counts()
         en_kucuk, en_buyuk = float(sn.min()), float(sn.max())
-        gizli = _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk)
+        gizli = _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk, e["gizli"])
         if gizli:
             sonuc["gizli_eksik"].append({"kolon": kol, "deger": deger_metni(gizli[0]),
                                          "adet": gizli[1], "pay": gizli[1] / dolu})
         sifir = int(sayim.get(0, 0) or 0)
-        if not baskin and sifir / dolu >= SIFIR_ESIK:
+        if not baskin and sifir / dolu >= e["sifir"]:
             sonuc["sifir"].append({"kolon": kol, "adet": sifir, "pay": sifir / dolu})
         # Uc deger: ust uctaki ozel kod (9999) uc deger sayilmaz.
         ust_gizli = gizli is not None and gizli[0] > 0
         if not ust_gizli:
             p99 = float(sn.quantile(UC_DEGER_YUZDELIK))
-            if p99 > 0 and en_buyuk > UC_DEGER_KAT * p99:
+            if p99 > 0 and en_buyuk > e["uc_kat"] * p99:
                 sonuc["uc"].append({"kolon": kol, "maks": en_buyuk, "p99": p99})
         if olcu_negatif_olamaz(olculer.get(kol)):
             negatif = sn < 0
@@ -212,7 +226,7 @@ def _donem_sirasi(degerler):
     return sorted(degerler, key=anahtar)
 
 
-def donem_kontrolleri(df, adaylar, donem):
+def donem_kontrolleri(df, adaylar, donem, esik=None):
     """Doner: (donem_listesi, [{"kolon", "bos": [donem], "sabit": [donem]}],
     [{"kolon", "once", "sonra", "once_oran", "sonra_oran"}]).
     Donem kolonu yoksa ya da tek donem varsa (None, None, None)."""
@@ -222,8 +236,9 @@ def donem_kontrolleri(df, adaylar, donem):
     donemler = _donem_sirasi([d for d in g.dropna().unique()])
     if len(donemler) < 2:
         return donemler, None, None
+    e = esik_birlestir(esik)
     satir = g.value_counts()
-    buyuk = {d for d in donemler if int(satir.get(d, 0)) >= DONEM_SABIT_MIN_SATIR}
+    buyuk = {d for d in donemler if int(satir.get(d, 0)) >= e["donem_min_satir"]}
     bos_sabit, sicrama = [], []
     for i in range(0, len(adaylar), DONEM_PARCA):
         parca = list(adaylar[i:i + DONEM_PARCA])
@@ -246,7 +261,7 @@ def donem_kontrolleri(df, adaylar, donem):
             en_iyi = None
             for a, b in zip(donemler, donemler[1:]):
                 fark = abs(float(oran[b]) - float(oran[a]))
-                if fark > DONEM_SICRAMA_ESIK and (en_iyi is None or fark > en_iyi[0]):
+                if fark > e["sicrama"] and (en_iyi is None or fark > en_iyi[0]):
                     en_iyi = (fark, a, b)
             if en_iyi:
                 _f, a, b = en_iyi
@@ -301,16 +316,16 @@ def hedef_ozeti(df, hedef, donem=None):
     return sonuc
 
 
-def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None):
+def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None, esik=None):
     """Butun ek kontroller. adaylar: dort temel kontrolden gecen kolonlar
     (tablodaki sirasiyla)."""
     adaylar = [k for k in adaylar if k in df.columns]
-    sonuc = kolon_kontrolleri(df, adaylar, olculer)
+    sonuc = kolon_kontrolleri(df, adaylar, olculer, esik)
     sonuc["ayni_icerik"] = ayni_icerik(df, adaylar)
     kopya = {k for g in sonuc["ayni_icerik"] for k in g["kopyalar"]}
     baskin = {x["kolon"] for x in sonuc["baskin"]}
     donemler, bos_sabit, sicrama = donem_kontrolleri(
-        df, [k for k in adaylar if k not in kopya and k not in baskin], donem)
+        df, [k for k in adaylar if k not in kopya and k not in baskin], donem, esik)
     sonuc["donemler"] = donemler
     sonuc["donem"] = bos_sabit
     sonuc["sicrama"] = sicrama

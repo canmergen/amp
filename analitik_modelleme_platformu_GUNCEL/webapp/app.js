@@ -16558,6 +16558,7 @@ function profilKartiEkle(alan, blok) {
     karo("Üretime Girmeyen", alan.kusurlu, Number(alan.kusurlu) ? "sorun" : "");
     karolar.style.setProperty("--pf-karo-sayi", String(karolar.children.length));
     kart.appendChild(karolar);
+    if (alan.esik_notu) kart.appendChild(elYap("div", "pf-not pf-esik-notu", alan.esik_notu));
 
     /* Türler */
     const tr = alan.turler || {};
@@ -16848,6 +16849,157 @@ function profilKartiEkle(alan, blok) {
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
 }
 
+/* ==================== 02.1 Kontrol eşikleri formu ====================
+   Profil çıkarılmadan önce eşikler sorulur: her kontrolün eşiği,
+   değiştirilebilir kutuda; varsayılan yanında. Varsayılandan farklı
+   satır vurgulanır. Gönderim: {"dogrulama": {"adim": "veri_profili",
+   "esikler": {anahtar: ekrandaki sayı}}}. Kilitli halde (onaylandı ya da
+   yenileme) kutular salt okunur. */
+function pfEsikSayi(metin) {
+    const t = String(metin == null ? "" : metin).trim().replace("%", "").replace(/\s+/g, "");
+    if (!t) return NaN;
+    /* Türkçe yazım: 1.000 binlik, 0,5 ondalık. */
+    const sade = t.indexOf(",") >= 0 ? t.replace(/\./g, "").replace(",", ".")
+        : (/^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, "") : t);
+    return /^-?\d+(\.\d+)?$/.test(sade) ? Number(sade) : NaN;
+}
+
+function pfEsikYaz(v) {
+    const n = Number(v);
+    if (!isFinite(n)) return "";
+    return Number.isInteger(n) ? String(n) : String(n).replace(".", ",");
+}
+
+function profilEsikKartiEkle(alan, blok) {
+    const kart = elYap("div", "secim-kart pf-kart pf-esik-kart");
+    const kilitli = !!alan.kilitli || !!(blok && blok.kilit);
+    if (kilitli) kart.classList.add("kilitli");
+
+    const bas = elYap("div", "pf-bas");
+    bas.appendChild(elYap("b", "pf-baslik", kilitli ? "Onaylanan Kontrol Eşikleri" : "Kontrol Eşikleri"));
+    bas.appendChild(bolmeBilgiSimgesi(
+        "Veri profilindeki kontroller bu eşiklerle yapılır. Bir eşiği değiştirirseniz kontrol "
+        + "değiştirdiğiniz değerle çalışır; değiştirmediğiniz eşikler varsayılan kalır.\n\n"
+        + "Yüzdeli eşikler yüzde olarak yazılır (ör. 99 yazılırsa %99). Ondalık için virgül kullanılabilir.",
+        "Kontrol Eşikleri"));
+    kart.appendChild(bas);
+
+    const hataEl = elYap("div", "pf-esik-hata");
+    hataEl.hidden = !alan.hata;
+    hataEl.textContent = alan.hata || "";
+    kart.appendChild(hataEl);
+
+    const tablo = elYap("table", "dg-tablo pf-esik-tablo");
+    const cg = document.createElement("colgroup");
+    ["pf-e-kontrol", "pf-e-anlam", "pf-e-deger", "pf-e-vars"].forEach(c => {
+        const col = document.createElement("col"); col.className = c; cg.appendChild(col);
+    });
+    tablo.appendChild(cg);
+    const thead = elYap("thead");
+    const htr = elYap("tr");
+    ["Kontrol", "Eşik", "Değer", "Varsayılan"].forEach(b => htr.appendChild(elYap("th", "", b)));
+    thead.appendChild(htr);
+    tablo.appendChild(thead);
+    const tbody = elYap("tbody");
+    const girisler = [];
+    (alan.satirlar || []).forEach(r => {
+        const tr = elYap("tr", "pf-esik-satir");
+        tr.appendChild(elYap("td", "pf-kontrol-ad", r.kontrol));
+        tr.appendChild(elYap("td", "pf-kural", r.anlam));
+        const td = elYap("td", "pf-esik-hucre");
+        const kutu = elYap("span", "pf-esik-kutu");
+        /* Birim yuvaları sabit genişlikte: kutular alt alta hizalı. */
+        kutu.appendChild(elYap("span", "pf-esik-birim on", r.birim === "yuzde" ? "%" : ""));
+        const g = document.createElement("input");
+        g.type = "text";
+        g.inputMode = "decimal";
+        g.className = "pf-esik-giris";
+        g.value = pfEsikYaz(r.deger);
+        g.setAttribute("aria-label", r.kontrol + " eşiği");
+        g.disabled = kilitli;
+        kutu.appendChild(g);
+        kutu.appendChild(elYap("span", "pf-esik-birim son",
+                               (r.birim === "puan" || r.birim === "kat") ? r.birim_adi : ""));
+        td.appendChild(kutu);
+        const uyari = elYap("div", "pf-esik-uyari");
+        uyari.hidden = true;
+        td.appendChild(uyari);
+        tr.appendChild(td);
+        tr.appendChild(elYap("td", "pf-esik-vars", r.varsayilan_metni || pfEsikYaz(r.varsayilan)));
+        const denetle = () => {
+            const v = pfEsikSayi(g.value);
+            let mesaj = "";
+            if (!isFinite(v)) mesaj = "Sayı yazın";
+            else if (v < Number(r.en_az) || v > Number(r.en_cok))
+                mesaj = pfEsikYaz(r.en_az) + " ile " + pfEsikYaz(r.en_cok) + " arasında olmalı";
+            uyari.textContent = mesaj;
+            uyari.hidden = !mesaj;
+            tr.classList.toggle("hatali", !!mesaj);
+            tr.classList.toggle("degisti", !mesaj && Math.abs(v - Number(r.varsayilan)) > 1e-9);
+            return { ok: !mesaj, v: v };
+        };
+        g.addEventListener("input", () => { denetle(); ozetYaz(); });
+        girisler.push({ r: r, g: g, denetle: denetle });
+        tbody.appendChild(tr);
+    });
+    tablo.appendChild(tbody);
+    const sar = elYap("div", "pf-tablo-sar");
+    sar.appendChild(tablo);
+    kart.appendChild(sar);
+
+    const alt = elYap("div", "pf-karar-alt");
+    const ozetEl = elYap("div", "pf-karar-ozet");
+    function ozetYaz() {
+        const sonuc = girisler.map(x => x.denetle());
+        const degisen = sonuc.filter((x, i) => x.ok && Math.abs(x.v - Number(girisler[i].r.varsayilan)) > 1e-9).length;
+        const hatali = sonuc.filter(x => !x.ok).length;
+        ozetEl.textContent = hatali
+            ? ftBinlik(hatali) + " eşik hatalı; düzeltmeden devam edilemez."
+            : (degisen ? ftBinlik(degisen) + " eşik varsayılandan farklı; kontroller bu değerlerle "
+                         + (kilitli ? "yapıldı." : "yapılır.")
+                       : (kilitli ? "Kontroller varsayılan eşiklerle yapıldı." : "Bütün eşikler varsayılan."));
+        ozetEl.classList.toggle("hatali", !!hatali);
+        return { hatali: hatali, degisen: degisen };
+    }
+    alt.appendChild(ozetEl);
+    if (!kilitli) {
+        const dugmeler = elYap("div", "pf-esik-dugmeler");
+        const vars = elYap("button", "dg-toplu-btn", "Varsayılanlara Dön");
+        vars.type = "button";
+        vars.onclick = () => {
+            if (kart.classList.contains("kilitli")) return;
+            girisler.forEach(x => { x.g.value = pfEsikYaz(x.r.varsayilan); });
+            ozetYaz();
+        };
+        const btn = elYap("button", "secim-onay", alan.buton || "Eşikleri Onayla ve Profili Çıkar");
+        btn.type = "button";
+        btn.onclick = () => {
+            if (mesgul || btn.disabled) return;
+            const oz = ozetYaz();
+            if (oz.hatali) { const ilk = girisler.find(x => !x.denetle().ok); if (ilk) ilk.g.focus(); return; }
+            const esikler = {};
+            girisler.forEach(x => { esikler[x.r.anahtar] = x.denetle().v; });
+            kart.classList.add("kilitli");
+            girisler.forEach(x => { x.g.disabled = true; });
+            dugmeler.hidden = true;
+            geriAlKilit = () => {
+                kart.classList.remove("kilitli");
+                girisler.forEach(x => { x.g.disabled = false; });
+                dugmeler.hidden = false;
+            };
+            const ozet = oz.degisen ? ftBinlik(oz.degisen) + " eşik değiştirilerek onaylandı"
+                                    : "Eşikler varsayılan değerlerle onaylandı";
+            gonder(ozet, false, { dogrulama: { adim: "veri_profili", esikler: esikler } });
+        };
+        dugmeler.append(vars, btn);
+        alt.appendChild(dugmeler);
+    }
+    kart.appendChild(alt);
+    ozetYaz();
+
+    (adimKabiAl(blok) || sohbetEl).appendChild(kart);
+}
+
 /* Kart aciklamasi KARTIN ICINDE DUZ METIN olarak duruyor. */
 function secimAlaniEkle(alan, blok) {
     if (!alan) return;
@@ -16860,6 +17012,8 @@ function secimAlaniEkle(alan, blok) {
     if (alan.tip === "bolme") { bolmeKartiEkle(alan, blok); return; }
     /* Aralık önerileri: satır başına kabul / ret (sözlük tanımları gibi) */
     if (alan.tip === "sfa_karar") { sfaKartiEkle(alan, blok); return; }
+    /* 02.1 Kontrol eşikleri: profil çıkarılmadan önce */
+    if (alan.tip === "profil_esik") { profilEsikKartiEkle(alan, blok); return; }
     /* 02.1 Veri Profili: sonuç; gerekirse Tut ya da Çıkar kararı */
     if (alan.tip === "profil") { profilKartiEkle(alan, blok); return; }
 

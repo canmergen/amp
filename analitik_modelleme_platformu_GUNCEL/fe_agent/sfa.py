@@ -248,8 +248,10 @@ def _ondalikli(s):
 # ===========================================================================
 # 1) VERI PROFILI VE KALITE  (dataset seviyesi, hedef iliskisi YOK)
 # ===========================================================================
-def profil_cikar(df, haric=(), null_esik=NULL_ESIK):
-    """Doner: (tablo, teshis)"""
+def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
+                 kategorik_max=KATEGORIK_MAX):
+    """Doner: (tablo, teshis). Esikler 02.1'de kullanicinin onayladigi
+    degerlerle gelir; verilmezse varsayilan."""
     haric = set(h for h in haric if h)
     satir = float(len(df))
 
@@ -280,9 +282,9 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK):
         # tekildir; bunlari kimlik sanip modelden dusurmek kredi riski
         # modelinde dogrudan performans kaybidir. Gercek kimlikler metin
         # ya da tam sayidir, ondalikli degildir.
-        if kard_oran > 0.95 and tekil > MIN_SATIR and not _ondalikli(s):
+        if kard_oran > kimlik_esik and tekil > MIN_SATIR and not _ondalikli(s):
             kimlik_gibi.append(kol); teshisler.append("kimlik benzeri")
-        if (not sayisal) and tekil > KATEGORIK_MAX:
+        if (not sayisal) and tekil > kategorik_max:
             yuksek_kardinalite.append(kol); teshisler.append("yüksek kardinalite")
         durum = " + ".join(teshisler) if teshisler else "OK"
 

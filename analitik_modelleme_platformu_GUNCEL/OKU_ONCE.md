@@ -1776,6 +1776,23 @@ tanıtır; sayfalar sol bardan açılır.
 5. Modelleme ve Finalizasyon
 
 **02.1 Veri Profili ve Kalite kartı**
+- Önce Kontrol Eşikleri formu (`veri_profili_girdi`, tip `profil_esik`;
+  app.js `profilEsikKartiEkle`): dokuz eşik (`akis_faz02.PROFIL_ESIKLERI`)
+  Kontrol, Eşik, Değer, Varsayılan sütunlarıyla; varsayılandan farklı satır
+  amber vurgulu, hatalı değer kırmızı ve gönderilmez, "Varsayılanlara
+  Dön". "Eşikleri Onayla ve Profili Çıkar" `{"dogrulama": {"adim":
+  "veri_profili", "esikler": {anahtar: ekrandaki sayı}}}` gönderir;
+  `esik_dogrula` aralığı denetler (yüzde ve puan ekranda 100 ile çarpılı,
+  Türkçe yazım: 1.000 binlik, 0,5 ondalık), `profil["esikler"]`'e yazar.
+  Kontroller, kural metinleri ve eksik değer çubuğunun %50 sınırı bu
+  eşiklerle çalışır (`profil_esikleri`; `sfa.profil_cikar` ve
+  `profil_ek.ek_kontroller` eşik alır). Değiştirilen eşikler profil
+  metninde ve kartta "Değiştirilen eşikler: ..." olarak yazılır.
+  Yazarak onayda mevcut eşikler geçerli. Geri Dön ile 02.1'e dönülünce
+  form son onaylanan değerlerle açılır.
+- Form gönderildikten sonra karar isteyen kolon yoksa adım onay sormadan
+  geçer (`akis_sohbet`: girdiden sonra plan `_plan_otomatik` derse
+  uygulanır). Yenilemede onaylanmış form kilitli çizilir.
 - Profil bölmeden sonra çalışır, tablonun tamamında (örneklem yok, sayımlar
   kesin). `akis_faz02.profil_hesapla`: dört temel kontrol
   (`sfa.profil_cikar`) ve ek kontroller (`fe_agent/profil_ek.py`).
@@ -1844,8 +1861,9 @@ tanıtır; sayfalar sol bardan açılır.
 - `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)
   `PLAN_PARCA_KARAKTER` (12.000 karakter) parçalarına böler, parçalar
   `PLAN_PARALEL` (3) eşli gider; 1.000 kolonu aşan sözlükte tek çağrı 90
-  saniyeyi aşıyordu. Her parça en çok 12 şablon önerir; toplam yine en
-  çok `PLAN_EN_COK` (12), parçalardan sırayla (her parçadan birer)
+  saniyeyi aşıyordu. Tek parçada en çok 30, çok parçada parça başına
+  payı artı 3 yedek şablon istenir (`_parca_siniri`); toplam en
+  çok `PLAN_EN_COK` (30), parçalardan sırayla (her parçadan birer)
   alınır, aynı dönüşüm ve kolonlar bir kez girer. Bir kısım parça düşerse
   plan kalanlardan hazırlanır ve plan metninin sonunda not olarak yazılır;
   hepsi düşerse eski hata metni gelir.
