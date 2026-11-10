@@ -3619,7 +3619,8 @@ function ozet0124Ciz(o, satirlar) {
         }, "Kolon adlarındaki sayı içeren zaman parçaları (3D, 30D, 3D_7D). Aynı biçimdekiler tek kalıpta "
             + "toplanır: 3D, 7D ve 30D, [sayı]D kalıbıdır. Kalıba bir kez anlam yazılır, sayı yerine [sayı] "
             + "konur («son [sayı] gün»); her kolona kendi sayısıyla uygulanır (30D: son 30 gün).\n\n"
-            + "Zaman türü: Pencere (veri o süre boyunca toplanır), Zaman Noktası, Zaman Birimi, Zaman Ölçüsü.\n\n"
+            + "Zaman türü: Pencere (veri bir aralıktaki bütün zamanlardan toplanır), Zaman Noktası, Zaman Birimi, "
+            + "Zaman Ölçüsü. [sayı]D gibi sayı ve birimden oluşan kalıpta tür kolona göredir.\n\n"
             + "Özel durumlar: bir değerin kendi anlamı (360D: son 1 yıl), gruptan ayrılan değerler ve adda bir "
             + "parça geçince geçerli anlam (adda RATIO geçerse 3D_7D: son 3 gün ile son 7 gün).\n\n"
             + "Kolon kartının Zaman alanı, açıklamalardaki dönem kontrolü ve yeni adda yazılış (3D, L3D olur) "
@@ -12801,7 +12802,8 @@ function donemAdDoldur(kalip, ic, deger) {
 
 /* Zaman bilgisi türleri: ad ve kutunun altında görünen açıklama. */
 const DONEM_TURLERI = [
-    ["pencere", "Pencere", "Sayı bir süre; veri o süre boyunca toplanır (30D: 30 gün boyunca)."],
+    ["pencere", "Pencere", "Sayı bir aralık; veri o aralıktaki bütün zamanlardan toplanır (H00_06: 00:00 ile "
+        + "06:00 arası; L30D: bugünden önceki 1. ile 30. gün arası)."],
     ["nokta", "Zaman Noktası", "Sayı belirli bir an ya da sıra (M3: yılın 3. ayı ya da 3 ay önceki ay)."],
     ["birim", "Zaman Birimi", "Sayısız zaman birimi (DAY: gün, MONTH: ay)."],
     ["olcu", "Zaman Ölçüsü", "Değerin kendisi bir süre (TMSNCFRST: ilk işlemden bu yana geçen süre)."]

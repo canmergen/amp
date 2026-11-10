@@ -883,8 +883,12 @@ tanıtır; sayfalar sol bardan açılır.
   (`llm.ZAMAN_TURLERI`: pencere, nokta, birim, olcu; `llm.zaman_turu`).
   Kartta kalıp hücresinde seçim kutusu ve altında seçili türün açıklaması
   (app.js `DONEM_TURLERI`):
-  - Pencere: sayı bir süre; veri o süre boyunca toplanır (30D: 30 gün
-    boyunca).
+  - Pencere: sayı bir aralık; veri o aralıktaki bütün zamanlardan
+    toplanır (H00_06: 00:00 ile 06:00 arası; L30D: bugünden önceki 1. ile
+    30. gün arası). Sayı ve birimden oluşan kalıpta ([sayı]D, D[sayı]) bu
+    seçim yoktur; aralık mı tek gün mü olduğu kolonun anlam türünden gelir
+    (bkz. "Dönem anlam türleri"). Aynı metin 01.2.4.1 yönergesinde
+    (`DONEM_YONERGE`) ve Değişken Listesi'nin dönem bölümünün i balonunda.
   - Zaman Noktası: sayı belirli bir an ya da sıra (M3: yılın 3. ayı ya da
     3 ay önceki ay).
   - Zaman Birimi: sayısız zaman birimi (DAY: gün).
