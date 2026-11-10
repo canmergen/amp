@@ -308,7 +308,7 @@ def _sayi_mi(sozcuk, sayi):
 def metinden_tur(metin, sayi, birim):
     """Tanimda sayinin ve birimin gectigi ifadeden tur (kod; tahmin yok):
       son      "son 3 gün", "geçmiş 3 gün", "geçen 3 gün", "önceki 3 gün",
-               "3 gün öncesine kadar"
+               "3 gün öncesine kadar", "3 yıldan beri", "3 aydan bu yana"
       once     "3 gün önce", "3 gün önceki", "3 gün öncesi"
       sonraki  "sonraki 3 gün", "önümüzdeki 3 gün", "gelecek 3 gün",
                "3 gün sonrasına kadar"
@@ -384,7 +384,11 @@ def metinden_tur(metin, sayi, birim):
         sonra_ = w[i + 2:i + 6]
         s0 = sonra_[0] if sonra_ else ""
         s1 = sonra_[1] if len(sonra_) > 1 else ""
-        if s0.startswith("önce") and any(y.startswith("sonra") for y in sonra_[1:3]):
+        # "3 yıldan beri", "3 aydan bu yana": bugune kadarki son 3 yil.
+        if re.search(r"(?:dan|den|tan|ten)$", w[i + 1]) and (
+                s0 == "beri" or (s0 == "bu" and s1 == "yana")):
+            bulunan.add("son")
+        elif s0.startswith("önce") and any(y.startswith("sonra") for y in sonra_[1:3]):
             bulunan.add("cevre")
         elif s0.startswith("önce"):
             bulunan.add("son" if s1 == "kadar" else "once")
