@@ -2906,9 +2906,9 @@ def donem_yon_hafizaya(durum, yazilislar):
 
 
 DONEM_TUR_ORNEK = 3
-BIRIM_NOTU = ("Anlamdaki yön (son, önce, sonraki, sonra) kalıba değil kolona aittir: kalıbın "
-              "anlamı birim olarak yazıldı; yön ve kapsam her kolonda açıklamasından "
-              "belirlenir.")
+BIRIM_NOTU = ("Anlamdaki yön ya da takvim sırası (son, önce, sonraki, sonra, yılın [sayı]. "
+              "ayı) kalıba değil kolona aittir: kalıbın anlamı birim olarak yazıldı; yön ve "
+              "kapsam her kolonda açıklamasından belirlenir.")
 
 
 def _donem_tur_sayimi(adlar, tanimlar, kaliplar):

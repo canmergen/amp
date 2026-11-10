@@ -1051,8 +1051,9 @@ tanıtır; sayfalar sol bardan açılır.
   sayı + zaman birimi kalıplarının (`<N>D`, `D<N>`, `<N>_D`, `D_<N>`;
   `donem.aile_adi` dolu olanlar) anlamı kolondan kolona değişir. 3D tek
   başına belirsizdir: geçmişe mi geleceğe mi (ya da ikisine mi) bakar,
-  aralığın tamamını mı yoksa yalnız uçtaki günü mü kapsar? Her tür bunu
-  iki eksenle kesinleştirir: **yön** (geçmiş, gelecek, iki yönlü, yönsüz)
+  aralığın tamamını mı yoksa yalnız uçtaki günü mü kapsar, yoksa takvimde
+  bir yeri mi gösterir (yılın 3. ayı)? Her tür bunu iki eksenle
+  kesinleştirir: **yön** (geçmiş, gelecek, iki yönlü, takvim, yönsüz)
   ve **biçim** (pencere: aralığın tamamı; nokta: yalnız uçtaki gün;
   yönsüzde uzunluk). Sabit türler (3D için; bugün referans tarihidir,
   pencereye dahil değildir):
@@ -1064,10 +1065,19 @@ tanıtır; sayfalar sol bardan açılır.
   | Sonraki | gelecek | pencere | sonraki 3 gün | bugünden sonraki 1., 2., 3. gün | N3D |
   | Sonra | gelecek | nokta | 3 gün sonra | yalnız 3 gün sonrası | A3D |
   | Çevre | iki yönlü | pencere | 3 gün öncesi ve sonrası | 3 gün öncesinden 3 gün sonrasına | PM3D |
+  | Takvim | takvim | nokta | ayın 3. günü (3M: yılın 3. ayı) | bugünden bağımsız; yalnız ayın 3. günü | C3D |
   | Süre | yönsüz | uzunluk | 3 gün | tarih aralığı değil, bir sürenin uzunluğu | aynen |
 
   Kapsam metni `kapsam_metni` (sunucu) ve `kapsamYaz` (ekran) ile aynı
   kurulur; 3'e kadar günler tek tek, büyük sayıda "1. ile 30. gün arası".
+  Takvim anlamı birimden (`takvim_anlami`, ekranda `takvimAnlami`): gün →
+  ayın N. günü, hafta → yılın N. haftası, ay → yılın N. ayı, çeyrek →
+  yılın N. çeyreği, saat → günün N. saati, dakika → saatin N. dakikası,
+  yıl → N yılı. Kullanıcı türünde Takvim yönü de seçilebilir; pencere
+  biçiminde kapsam "bugünden bağımsız; ayın 1. ile N. günü arası".
+  Kalıbın anlamı takvim olarak gelirse ("yılın <N>. ayı", dil modelinden
+  ya da eski hafızadan) birime döner ("<N> ay", `birim_anlami`); M<N>
+  kalıbının yazılışı birimli olmasın diye C_M<N>.
   Önek bitişince yazılış yine birimli kalıp olursa (D<N> → LD<N>) alt
   çizgiyle ayrılır (L_D<N>); elle yazılan yazılış birimli kalıpsa
   (sonraki çalışmada yine belirsiz olur) hata verir
@@ -1092,7 +1102,10 @@ tanıtır; sayfalar sol bardan açılır.
     "3 gün öncesi"; sonraki: "sonraki 3 gün", "önümüzdeki 3 gün",
     "gelecek 3 gün", "3 gün sonrasına kadar"; sonra: "3 gün sonra",
     "3 gün sonraki", "3 gün sonrası"; çevre: "3 gün öncesi ve sonrası",
-    "3 gün önce ve sonra", "±3 gün"; süre: sayıdan önce "süre" sözcüğü
+    "3 gün önce ve sonra", "±3 gün"; takvim: sıra sayısı ve birim
+    ("yılın 3. ayı", "ayın 15. günü", "3. ay", "3'üncü ay", "üçüncü ay";
+    bulunan yer metinden çıkarılır ki "geçen yılın 3. ayı"ndaki "geçen"
+    yön sayılmasın); süre: sayıdan önce "süre" sözcüğü
     ("vade süresi 3 gün"). Yön söylemeyen "3 gün boyunca", "3 günlük",
     "3 gün içinde" belirsizdir, tahminle türe atanmaz. Aynı sayı bir yerde
     türlü bir yerde türsüz geçerse türlü olan; iki farklı tür ya da hiç
@@ -1162,14 +1175,14 @@ tanıtır; sayfalar sol bardan açılır.
   bilgi (ortalama, toplam) anlama yazılmaz, nota yazılır. **Sayı ve zaman
   birimi parçasında** (30D, 3M, D30, 3_M) anlam yalnız birimdir ("N gün");
   son, önce, sonraki, boyunca gibi yön ve kapsam sözcükleri anlama da nota
-  da yazılmaz, bunun için soru sorulmaz, tür "pencere" yazılır (yön ve
-  kapsam kolon kartlarında belirlenir; bkz. "Dönem anlam türleri"). Sayı
-  takvimde bir sıra gösteriyorsa (M3: yılın 3. ayı) bu kural geçmez. Ad
+  da yazılmaz, takvim sırası ("yılın N. ayı") da yazılmaz, bunun için soru
+  sorulmaz, tür "pencere" yazılır (yön, kapsam ve takvim kolon
+  kartlarında belirlenir; bkz. "Dönem anlam türleri"). Ad
   ile tanımların çoğu çelişirse adın yapısı geçer, çelişki `celiski`de
   yazar. Diğer sayılı parçalarda aralık mı (pencere) an mı (nokta) olduğu
   tanımların çoğundan çıkar; belli değilse soru iki seçeneği de yazar.
   Anlam tür adını tekrar etmez ("N gün", "N gün zaman penceresi" değil).
-  Kurallar değişince `donem.ISTEM_SURUMU` artar (şimdi 11) ve kalıplar
+  Kurallar değişince `donem.ISTEM_SURUMU` artar (şimdi 12) ve kalıplar
   dil modeline bir kez yeniden yorumlatılır.
 - **Arka plan işi (`donem.baslat`):** yorum `YORUM_PARCA` (6) kalıplık
   parçalara bölünür; en çok

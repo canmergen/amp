@@ -1732,8 +1732,8 @@ ZAMAN BİLGİSİ: parçanın taşıdığı, zamanla ilgili bilgi. Dört türü v
   - "pencere": sayı bir ARALIĞI gösterir; veri o aralıktaki bütün
     zamanlardan toplanır (H00_06: 00:00 ile 06:00 arası; L30D: son 30 gün;
     dönem başından bugüne).
-  - "nokta": sayı belirli bir ANI ya da SIRAYI gösterir (M3: yılın 3. ayı
-    ya da 3 ay önceki ay; ay sonu; gözlem tarihi).
+  - "nokta": sayı belirli bir ANI ya da SIRAYI gösterir (B30D: 30 gün
+    önce; ay sonu; gözlem tarihi).
   - "birim": sayısız zaman birimi sözcüğü (DAY: gün, MONTH: ay); "gün
     başına", "aylık" gibi kullanılır.
   - "olcu": değerin kendisi bir süredir (ilk ya da son işlemden bu yana
@@ -1746,12 +1746,12 @@ kısmını yaz; kalanını "not"a yaz.
 SAYI VE ZAMAN BİRİMİ PARÇASI (30D, 3M, D30, 3_M, M_3): yalnız bir sayı ve
 bir birimden oluşan parçanın yönü ve kapsamı kolondan kolona değişir:
 bir kolonda son 30 gün, başkasında 30 gün önce, sonraki 30 gün, 30 gün
-sonra ya da yalnız 30 gün olabilir. Bunu kolon kartlarında her kolon
-için ayrı belirleriz. Bu yüzden böyle bir parçanın "anlam"ına YALNIZ
-birimi yaz ("N gün", "N ay"); son, önce, sonra, sonraki, boyunca gibi
-yön ve kapsam sözcüklerini anlama YAZMA, nota da yazma, soru da sorma;
-"tur" olarak "pencere" yaz. Sayı takvimde bir sıra gösteriyorsa (M3:
-yılın 3. ayı) bu kural geçmez; anlamı öyle yaz.
+sonra, yalnız 30 gün ya da takvimde bir yer (M3: yılın 3. ayı) olabilir.
+Bunu kolon kartlarında her kolon için ayrı belirleriz. Bu yüzden böyle
+bir parçanın "anlam"ına YALNIZ birimi yaz ("N gün", "N ay"); son, önce,
+sonra, sonraki, boyunca gibi yön ve kapsam sözcüklerini ve takvim
+sırasını ("yılın N. ayı") anlama YAZMA, nota da yazma, soru da sorma;
+"tur" olarak "pencere" yaz.
 
 ANLAMIN KAYNAĞI: ÖNCE AD, SONRA TANIMLAR.
   1. Anlamı önce parçanın yapısından kur. Sayıyla birlikte geçen harf
@@ -2461,12 +2461,15 @@ NASIL DÜZELTİRSİN
 DÖNEM YÖNÜ ("donem_turu"): PARÇALAR'da "yönü ve kapsamı kolona göre
 değişir" denen dönem parçası (ör. 3D: 3 gün) bu kolonda hangi anlamda
 kullanılıyor, yaz: {"3D": "son"}. Her tür bir yön (geçmiş, gelecek, iki
-yönlü, yönsüz) ve bir kapsamla tanımlıdır; "bugün" referans tarihidir:
+yönlü, takvim, yönsüz) ve bir kapsamla tanımlıdır; "bugün" referans
+tarihidir:
   "son"     son 3 gün: bugünden önceki 1., 2., 3. gün (geçmiş aralık)
   "once"    3 gün önce: yalnız 3 gün öncesi (geçmişte tek gün)
   "sonraki" sonraki 3 gün: bugünden sonraki 1., 2., 3. gün (gelecek aralık)
   "sonra"   3 gün sonra: yalnız 3 gün sonrası (gelecekte tek gün)
   "cevre"   3 gün öncesi ve sonrası: 3 gün öncesinden 3 gün sonrasına
+  "takvim"  takvimdeki yer, bugünden bağımsız: 3M için yılın 3. ayı, 15D
+            için ayın 15. günü (sayı sıra olarak kullanılır)
   "sure"    yönsüz uzunluk: tarih aralığı değil, bir sürenin uzunluğu
             (ör. "vade süresi 3 gün")
 ya da PARÇALAR'da o parça için yazan ek tür kodu. Türü yalnız KULLANICI

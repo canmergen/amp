@@ -13395,20 +13395,46 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             tdA.appendChild(dt);
             const turAnlami = (t, b) => t === "son" ? ("son " + b).trim() : t === "once" ? (b + " önce").trim()
                 : t === "sonraki" ? ("sonraki " + b).trim() : t === "sonra" ? (b + " sonra").trim()
-                : t === "cevre" ? (b + " öncesi ve sonrası").trim() : t === "sure" ? b : "";
+                : t === "cevre" ? (b + " öncesi ve sonrası").trim() : t === "takvim" ? takvimAnlami(b)
+                : t === "sure" ? b : "";
             const YON_SOZ = new Set(["son", "önce", "önceki", "öncesi", "öncesine", "önceye", "geçmiş", "geçen",
                 "sonra", "sonraki", "sonrası", "sonrasına", "gelecek", "önümüzdeki", "izleyen", "ileriki",
                 "kadar", "boyunca", "süresince", "süreyle"]);
-            const birimAl = () => anlamAl().replace(/±\s*/g, "").split(/\s+/)
+            /* TAKVİM: sayı takvimdeki yeri gösterir (sunucuda
+               donem_tur.takvim_anlami): ay -> yılın [sayı]. ayı, gün ->
+               ayın [sayı]. günü ... */
+            const TAKVIM = { "gün": ["ayın", "günü"], "hafta": ["yılın", "haftası"], "ay": ["yılın", "ayı"],
+                             "çeyrek": ["yılın", "çeyreği"], "saat": ["günün", "saati"], "dakika": ["saatin", "dakikası"] };
+            const TAKVIM_YALIN = Object.fromEntries(Object.entries(TAKVIM).map(([b_, [, e]]) => [e, b_]).concat([["yılı", "yıl"]]));
+            const birimSoz = b => (b.replace(/<[^<>]*>/g, " ").toLocaleLowerCase("tr").match(/[a-zçğıöşüâîû]+/g) || [])
+                .find(w => !YON_SOZ.has(w) && w !== "ve") || "";
+            const takvimAnlami = (b, n) => {
+                const bs = birimSoz(b); n = n || "<N>";
+                if (!bs) return "";
+                if (bs === "yıl") return n + " yılı";
+                return TAKVIM[bs] ? TAKVIM[bs][0] + " " + n + ". " + TAKVIM[bs][1] : n + ". " + bs;
+            };
+            const birimAl = () => {
+                const a_ = anlamAl();
+                const m = a_.match(/(<N\d*>|<NN>)\s*(\.\s*)?([^\s.,;<>]+)/);
+                if (m) {
+                    const e = m[3].toLocaleLowerCase("tr");
+                    if (TAKVIM_YALIN[e] && (m[2] || e === "yılı")) return m[1] + " " + TAKVIM_YALIN[e];
+                }
+                return birimYonsuz(a_);
+            };
+            const birimYonsuz = a_ => a_.replace(/±\s*/g, "").split(/\s+/)
                 .filter(w => w && !YON_SOZ.has(w.toLocaleLowerCase("tr").replace(/[.,;]/g, ""))).join(" ")
                 .replace(/^ve\s+|\s+ve$/g, "").trim();
             /* Kapsam: sunucudaki donem_tur.kapsam_metni ile aynı metin
                (bugün = referans tarihi, pencereye dahil değil). */
             const kapsamYaz = (yon, bicim, b) => {
-                const bs = (b.replace(/<[^<>]*>/g, " ").toLocaleLowerCase("tr").match(/[a-zçğıöşüâîû]+/g) || [])
-                    .find(w => !YON_SOZ.has(w) && w !== "ve") || "";
+                const bs = birimSoz(b);
                 if (!bs || !yon) return "";
                 const n = "<N>";
+                if (yon === "takvim") return bicim === "pencere" && TAKVIM[bs]
+                    ? "bugünden bağımsız; " + TAKVIM[bs][0] + " 1. ile " + n + ". " + TAKVIM[bs][1] + " arası"
+                    : "bugünden bağımsız; yalnız " + takvimAnlami(b);
                 if (yon === "yonsuz" || bicim === "uzunluk")
                     return "tarih aralığı değil, bir sürenin uzunluğu (" + n + " " + bs + ")";
                 if (yon === "gecmis") return bicim === "pencere" ? "bugünden önceki 1. ile " + n + ". " + bs + " arası"
@@ -13419,7 +13445,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                     : "yalnız " + n + " " + bs + " öncesi ve " + n + " " + bs + " sonrası";
                 return "";
             };
-            const YONLER = [["gecmis", "Geçmiş"], ["gelecek", "Gelecek"], ["iki", "İki yönlü"], ["yonsuz", "Yönsüz"]];
+            const YONLER = [["gecmis", "Geçmiş"], ["gelecek", "Gelecek"], ["iki", "İki yönlü"],
+                            ["takvim", "Takvim (bugünden bağımsız)"], ["yonsuz", "Yönsüz"]];
             const BICIMLER = [["pencere", "Pencere: aralığın tamamı"], ["nokta", "Nokta: yalnız uçtaki gün"]];
             let ekleAcik = false, ekleHata = "";
             /* Formda yazılanlar yeniden çizimde (hata gösterilince) kalır. */
@@ -13429,7 +13456,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 const bas = elYap("div", "dg-donem-turler-bas", "Anlam türleri");
                 bas.appendChild(bolmeBilgiSimgesi("Bu kalıp sayı ve zaman biriminden oluşur; tek başına "
                     + "belirsizdir: geçmişe mi geleceğe mi bakar, aralığın tamamını mı yoksa yalnız uçtaki günü mü "
-                    + "kapsar? Her tür bunu yön ve biçimle kesinleştirir; Kapsam sütunu kapsadığı günleri yazar "
+                    + "kapsar, yoksa takvimdeki bir yeri mi gösterir (yılın 3. ayı)? Her tür bunu yön ve biçimle "
+                    + "kesinleştirir; Kapsam sütunu kapsadığı günleri yazar "
                     + "(bugün referans tarihidir, aralığa dahil değildir).\n\n"
                     + "Kalıbın anlamı birim olarak yazılır; her kolonun türü açıklamasından belirlenir "
                     + "(01.2.4.3 Kolon Kartları). Açıklamasında yön ya da kapsam açık olmayan kolon orada size "
@@ -13562,7 +13590,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                         .replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "_")
                         .replace(/^_+|_+$/g, "").slice(0, 20) || "tur";
                     if (!/^[a-z]/.test(kod)) kod = "t_" + kod;
-                    const kullanilan = new Set(["son", "once", "sonraki", "sonra", "cevre", "sure", "belirsiz"]
+                    const kullanilan = new Set(["son", "once", "sonraki", "sonra", "cevre", "takvim", "sure", "belirsiz"]
                         .concat(ozelTurler.map(y => y.tur)));
                     let k2 = kod, i = 2;
                     while (kullanilan.has(k2)) k2 = kod + "_" + (i++);
