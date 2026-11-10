@@ -5053,6 +5053,11 @@ mark.dg-acik-yeni { background: transparent; color: inherit; text-decoration: un
 .dg-kad-dy-tablo th:nth-child(1) { width: 26%; }
 .dg-kad-dy-tablo th:nth-child(2) { width: auto; }
 .dg-kad-dy-tablo th:nth-child(3) { width: 34%; }
+/* Anlam sutunlu (donem anlam turleri) tablo: dort sutun */
+.dg-kad-dy-tablo.dg-kad-dy-turlu th:nth-child(1) { width: 16%; }
+.dg-kad-dy-tablo.dg-kad-dy-turlu th:nth-child(2) { width: 24%; }
+.dg-kad-dy-tablo.dg-kad-dy-turlu th:nth-child(3) { width: 22%; }
+.dg-kad-dy-tablo.dg-kad-dy-turlu th:nth-child(4) { width: auto; }
 .dg-kad-dy-tablo td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
 .dg-kart .dg-kad-dy-tablo tr.dg-satir > td { background: transparent; }
 .dg-kad-dy-tablo tr.dg-donem-dikkat > td:first-child { box-shadow: inset 3px 0 0 var(--amber); }
@@ -5455,6 +5460,29 @@ button.pf-durum:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--kirmi
   .dg-tablo.pf-tablo { min-width: 640px; }
   .pf-sonuc { white-space: normal; }
 }
+
+/* 01.2.4.3 dönem anlamı (birimli kalıp) */
+.dg-acik-donem { margin-top: 4px; padding: 4px 8px; border-radius: var(--r-kucuk);
+  background: var(--yuzey-alt); border: 1px solid var(--kenar); text-align: left; line-height: 1.45; }
+.dg-acik-donem.belirsiz { background: var(--amber-acik); border-color: var(--amber); }
+.dg-acik-donem-kaynak { color: var(--metin-soluk); }
+.dg-acik-donem-bas .dg-baglanti { margin-left: 6px; }
+.dg-acik-donem-secenek { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.dg-acik-donem-secenek .dg-toplu-btn.secili { border-color: var(--yesil); color: var(--yesil); font-weight: var(--fw-kalin); }
+.dg-acik-donem-aile { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--metin-soluk); }
+/* 01.2.4.1 anlam türleri */
+.dg-donem-turler { margin-top: 6px; padding: 6px 8px; border: 1px dashed var(--kenar); border-radius: var(--r-kucuk); }
+.dg-donem-turler-bas { display: flex; align-items: center; gap: 6px; font-weight: var(--fw-kalin); }
+.dg-donem-turler table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.dg-donem-turler td { padding: 2px 6px; border-top: 1px solid var(--kenar-acik); text-align: center; }
+.dg-donem-turler td.dg-dt-ad { font-weight: var(--fw-kalin); }
+.dg-donem-turler .dg-dt-belirsiz { color: var(--amber); margin-top: 4px; }
+.dg-donem-turler .dg-dt-ekle { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 4px; }
+.dg-donem-turler .dg-dt-ekle input { width: 160px; }
+.dg-donem-turler .dg-dt-hata { color: var(--kirmizi); }
+/* 01.2.4.4 dönem yazılışı tür satırı */
+.dg-kad-dy-tur { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 
 /* 02.1 kontrol satırı renkleri: yeşil sorunsuz, sarı dikkat, kırmızı
    üretime girmez, gri uygulanmadı. Sol kenarda kalın renk çizgisi; açılan

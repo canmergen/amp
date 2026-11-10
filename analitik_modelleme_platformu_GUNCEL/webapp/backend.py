@@ -3207,6 +3207,11 @@ def aciklama_islem_endpoint():
                                                istek.get("cevap"))
         elif islem == "soru":
             sonuc = akis.aciklama_soru_cevapla(durum, istek.get("kolon"), istek.get("cevap"))
+        elif islem == "donem_tur":
+            # Birimli donem parcasinin bu kolondaki anlami (son, önce,
+            # sonra, süre); aileye: ailenin belirsiz uyelerine de.
+            sonuc = akis.aciklama_donem_turu(durum, istek.get("kolon"), istek.get("deger"),
+                                             istek.get("tur"), istek.get("aileye", True) is not False)
         elif islem == "kosul":
             # Kosullu anlam calismanin donem bilgisine yazilir: oturum
             # durumu bu islemde kaydedilir.

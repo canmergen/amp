@@ -75,7 +75,7 @@ _ONCELIK_HAVUZ = futures.ThreadPoolExecutor(max_workers=2)
 _SAYI = re.compile(r"(?<!\d)\d+(?!\d)")
 _KAYIT_ALANLARI = ("notlar", "parca_notlari", "aile_notlari", "sonuclar", "onay",
                    "yazilan", "kabul", "elle", "soru_cevaplari", "kaymalar", "kayma_kararlari",
-                   "kosul_onerileri")
+                   "kosul_onerileri", "donem_turleri")
 METIN_ALANLARI = ("aciklama", "karar", "soru", "ad_notu", "dagilim_notu", "denetim")
 
 
@@ -100,6 +100,7 @@ class _Depo(object):
         self.kaymalar = {}
         self.kayma_kararlari = {}
         self.kosul_onerileri = {}
+        self.donem_turleri = {}     # kolon -> {deger: tur}: kullanicinin sectigi donem anlami
         self.aile_notlari = {}
         self.sonuclar = {}
         self.onay = {}
@@ -992,6 +993,37 @@ def kayma_karari_yaz(klasor, aile, kolon, neden, karar, cevap=""):
                                         "neden": _norm(neden)}
         else:
             d.kayma_kararlari.pop(aile, None)
+    return kaydet(d, zorla=True)
+
+
+def donem_turu_yaz(klasor, secimler, notlar=None):
+    """Kullanicinin sectigi donem anlam turleri: secimler {kolon: {deger:
+    tur}} (bos tur secimi kaldirir). notlar {kolon: metin}: secim kolonun
+    notuna eklenir (dil modeli aciklamayi bu yonle yeniden yazar; elle
+    yazilmis aciklamaya dokunulmaz). Doner: hata ya da None."""
+    d = depo(klasor)
+    with _KILIT:
+        for kolon, x in (secimler or {}).items():
+            kolon = str(kolon)
+            mevcut = dict(d.donem_turleri.get(kolon) or {})
+            for dg, t in (x or {}).items():
+                if t:
+                    mevcut[str(dg)] = str(t)
+                else:
+                    mevcut.pop(str(dg), None)
+            if mevcut:
+                d.donem_turleri[kolon] = mevcut
+            else:
+                d.donem_turleri.pop(kolon, None)
+            d.dokun(kolon)
+        for kolon, metin in (notlar or {}).items():
+            kolon, metin = str(kolon), _norm(metin)
+            if not metin or d.elle.get(kolon):
+                continue
+            eski = _norm(d.notlar.get(kolon))
+            if metin not in eski:
+                d.notlar[kolon] = (eski + " " + metin).strip()
+            d.dokun(kolon)
     return kaydet(d, zorla=True)
 
 

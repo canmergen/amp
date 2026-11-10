@@ -737,6 +737,8 @@ def _govde_oku():
 #                 "gruptan_ayrilan": {"H00": {"anlam": "...", "donem_degil": false}},
 #                 "genel_anlam": "<N> gün",
 #                 "veri_seti_anlamlari": {"VERI_SETI": "son <N> gün"},
+#                 "anlam_turleri": {"son": {"ad": "Son", "anlam": "son <N> gün",
+#                                           "yeni_adda": "L<N>D"}, ...},
 #                 "ayri_yazilis": true,
 #                 "degerlerine_ayrildi": true}, ...},
 #    "ad_parcalari": {"AVG": {"anlam": "ortalama", "tur": "istatistik",
@@ -757,7 +759,13 @@ _DONEM_ALAN = (("donem", "anlam"), ("donem_tur", "tur"), ("donem_ad", "yeni_adda
                # YAZILISTA OLMAYAN BILGI: yazilisin kendi soyledigi (genel,
                # yonsuz: "<N> gün") ve veri setlerindeki anlami ({veri seti:
                # "son <N> gün"}); bkz. donem_yon_kaydet.
-               ("donem_genel", "genel_anlam"), ("donem_vs", "veri_seti_anlamlari"))
+               ("donem_genel", "genel_anlam"), ("donem_vs", "veri_seti_anlamlari"),
+               # ANLAM TURLERI (birimli kaliplar, <N>D): kalibin anlami birim
+               # ("<N> gün"); her kolonda yonu ayri. Her turun ekrandaki adi,
+               # anlami ve yeni addaki yazilisi: {"son": {"ad": "Son",
+               # "anlam": "son <N> gün", "yeni_adda": "L<N>D"}}; bkz.
+               # donem_tur.py.
+               ("donem_anlam_turleri", "anlam_turleri"))
 _YENI_ANAHTAR = {"aciklama", "surum", "ad_standardi", "donem_kaliplari", "ad_parcalari",
                  "ayni_parcalar", "farkli_parcalar"}
 
@@ -1003,6 +1011,74 @@ def donem_ad_kaydet(sablonlar):
             _dosya_yaz(govde)
         except Exception as e:
             return "Dönem yazılışı hafızaya yazılamadı (%s)." % str(e)[:120]
+    return None
+
+
+def _donem_tur_kayit_ham(govde=None):
+    if govde is None:
+        govde, _h = _govde_oku()
+    dt = (govde or {}).get("donem_anlam_turleri")
+    if not isinstance(dt, dict):
+        return {}
+    cikti = {}
+    for k, v in dt.items():
+        if not isinstance(v, dict):
+            continue
+        turler = {}
+        for t, x in v.items():
+            if isinstance(x, dict):
+                turler[str(t)] = {a: str(x.get(a) or "").strip()
+                                  for a in ("ad", "anlam", "yeni_adda") if str(x.get(a) or "").strip()}
+        if turler:
+            cikti[str(k)] = turler
+    return cikti
+
+
+def donem_anlam_turleri_hafizasi():
+    """{kalip: {tur: {"ad", "anlam", "yeni_adda"}}} - birimli kalibin anlam
+    turleri (bkz. donem_tur.py)."""
+    return _donem_tur_kayit_ham()
+
+
+def donem_anlam_turleri_kaydet(kayitlar):
+    """kayitlar: {kalip: {tur: {"ad", "anlam", "yeni_adda"} ya da None}}.
+    Turun alanlari birlesir (verilmeyen alan korunur, bos verilen alan
+    kalkar); None turu siler. Dosya var ama okunamiyorsa ustune yazilmaz.
+    Doner: hata ya da None."""
+    kayitlar = {str(k).strip(): v for k, v in (kayitlar or {}).items()
+                if str(k).strip() and isinstance(v, dict)}
+    if not kayitlar:
+        return None
+    with _KILIT:
+        govde, hata = _govde_oku()
+        if govde is None:
+            return "Dönem anlam türleri hafızaya yazılamadı: " + hata
+        dt = _donem_tur_kayit_ham(govde)
+        for k, turler in kayitlar.items():
+            mevcut = dt.setdefault(k, {})
+            for t, x in turler.items():
+                if x is None:
+                    mevcut.pop(str(t), None)
+                    continue
+                kayit = dict(mevcut.get(str(t)) or {})
+                for a in ("ad", "anlam", "yeni_adda"):
+                    if a in x:
+                        v = str(x.get(a) or "").strip()
+                        if v:
+                            kayit[a] = v
+                        else:
+                            kayit.pop(a, None)
+                mevcut[str(t)] = kayit
+            if not mevcut:
+                dt.pop(k, None)
+        if dt:
+            govde["donem_anlam_turleri"] = dict(sorted(dt.items()))
+        else:
+            govde.pop("donem_anlam_turleri", None)
+        try:
+            _dosya_yaz(govde)
+        except Exception as e:
+            return "Dönem anlam türleri hafızaya yazılamadı (%s)." % str(e)[:120]
     return None
 
 

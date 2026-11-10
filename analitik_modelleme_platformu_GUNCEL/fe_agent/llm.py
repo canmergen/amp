@@ -2444,6 +2444,15 @@ NASIL DÜZELTİRSİN
   7. Tek tam cümle ya da tam ad öbeği; gerekirse noktalı virgülle ikinci
      kısım. En çok 250 karakter; noktayla biter.
 
+DÖNEM YÖNÜ ("donem_turu"): PARÇALAR'da "yönü kolona göre değişir" denen
+dönem parçası (ör. 30D: 30 gün) bu kolonda hangi anlamda kullanılıyor, yaz:
+{"30D": "son"}. Kodlar: "son" (son 30 gün), "once" (30 gün önce), "sonra"
+(30 gün sonra), "sure" (yönsüz süre: 30 gün boyunca) ya da PARÇALAR'da o
+parça için yazan ek tür kodu. Yönü yalnız KULLANICI notundan ya da
+ORİJİNAL'den al; açıklamada dönemi o yönle yaz. Kaynaklarda yön yoksa
+"belirsiz" yaz ve açıklamaya yön EKLEME (soru yazma; kart kullanıcıya
+sorar). Böyle parça yoksa {}.
+
 BELİRSİZLİK VE ÇELİŞKİ (açıklamayı tahminle değiştirme; bildir):
   - "soru": bir bilgi birden fazla anlama gelebiliyorsa (ör. "değişim"
     fark mı oran mı belli değil) ya da açıklama ile ad veya kardeş
@@ -2500,7 +2509,7 @@ kopyalama):
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN
 yaz; her kolon için bir kayıt.
-{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": "", "ad_eksik": []}]}""" \
+{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": "", "ad_eksik": [], "donem_turu": {}}]}""" \
     + SINIRLAYICI_KURALI
 
 
@@ -2570,8 +2579,23 @@ def _duzen_ciktisi(veri, girdiler, model):
             "ad_notu": _donem_metni(x.get("ad_notu")),
             "dagilim_notu": _donem_metni(x.get("dagilim_notu")),
             "ad_eksik": ad_eksik_temizle(x.get("ad_eksik")),
+            "donem_turu": donem_turu_temizle(x.get("donem_turu")),
             "model": MODEL_ADLARI.get(model, model)}
     return sonuc
+
+
+def donem_turu_temizle(x):
+    """{"30D": "son"}: parca buyuk harf, kod kucuk harf (gecerliligi
+    cagiran, kolonun turleriyle denetler)."""
+    if not isinstance(x, dict):
+        return {}
+    cikti = {}
+    for p, t in x.items():
+        p = re.sub(r"\s+", "", str(p or "")).upper()
+        t = re.sub(r"\s+", "", str(t or "")).lower()
+        if p and t and len(p) <= 24 and re.match(r"^[a-z][a-z0-9_]{0,23}$", t):
+            cikti[p] = t
+    return cikti
 
 
 AD_EKSIK_TURLERI = ("konu", "yon", "nitelik", "olcu", "istatistik", "karsilastirma", "birim")
@@ -2670,7 +2694,7 @@ KARARI, TASLAK ALANLARI, DENETÇİ SORUNLARI ve DENETÇİ ÖNERİSİ.
 
 ÇIKTI: Yalnızca şu JSON; muhakeme yazma. "ad" alanına kolon adını AYNEN
 yaz; her kolon için bir kayıt.
-{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": "", "ad_eksik": []}]}""" \
+{"kolonlar": [{"ad": "...", "aciklama": "...", "karar": "...", "ek": "", "soru": "", "parca": "", "ad_notu": "", "dagilim_notu": "", "ad_eksik": [], "donem_turu": {}}]}""" \
     + SINIRLAYICI_KURALI
 ACIKLAMA_KONTROL_TOKEN_KOLON = 250
 

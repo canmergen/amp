@@ -10137,7 +10137,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             if (!k) { tkYoklaKur(); return; }
             if (k.son_kontrol) skAl(k.son_kontrol);
             (k.donem_yazilis || []).forEach(x => {
-                const y = dyler.find(z => z.kalip === x.kalip);
+                const y = dyler.find(z => dyAnahtar(z) === dyAnahtar(x));
                 if (y) { y.hata = x.hata || ""; y.ornek_yeni = x.ornek_yeni || ""; y.ornekler = x.ornekler || []; }
             });
             const harita = {};
@@ -10170,12 +10170,15 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        yazılır. dyler: [{kalip, deger (ekrandaki), ornek, ornek_yeni, hata,
        kolon}]. */
     const dyler = (ka.donem_yazilis || []).map(x => Object.assign({}, x, { deger: donemAdGoster(x.yazilis) }));
+    /* Satır anahtarı: birimli kalıpta kalıp ve anlam türü ("<N>D|son"),
+       ötekilerde kalıp. */
+    const dyAnahtar = x => x.anahtar || x.kalip;
     const dyKap = elYap("div", "dg-kad-ek dg-kad-dy");
     dyKap.hidden = !dyler.length;
     kart.appendChild(dyKap);
     const dyDeger = () => {
         const o = {};
-        dyler.forEach(x => { o[x.kalip] = donemAdIc(x.kalip, x.deger); });
+        dyler.forEach(x => { if (!x.belirsiz) o[dyAnahtar(x)] = donemAdIc(x.kalip, x.deger); });
         return o;
     };
     const dyHata = x => donemAdHatasi(x.kalip, x.deger);
@@ -10186,7 +10189,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
        (önizleme) yenilenir. */
     const dyOrnEl = {};
     function dyOrnekYaz(x) {
-        const kap = dyOrnEl[x.kalip];
+        const kap = dyOrnEl[dyAnahtar(x)];
         if (!kap) return;
         kap.textContent = "";
         const orn = x.ornekler || [];
@@ -10216,7 +10219,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             + "yazılışı kendiniz belirleyebilirsiniz. Yazılış boş kalırsa adlar bu bilgiyi taşımaz." : "";
     }
     function dyNotYaz(x) {
-        const el = dyNotEl[x.kalip];
+        const el = dyNotEl[dyAnahtar(x)];
         if (!el) return;
         const h = dyHata(x);
         el.classList.toggle("dg-donem-ad-hata", !!h);
@@ -10226,7 +10229,7 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         el.textContent = h ? h
             : !ic ? "Kalıp yeni adda aynen kalır" + (x.ornek ? " (ör. " + x.ornek + ")." : ".")
             : x.ornek ? "Ör. " + x.ornek + " → " + donemAdDoldur(x.kalip, ic, x.ornek) : "";
-        const yel = dyYonEl[x.kalip];
+        const yel = dyYonEl[dyAnahtar(x)];
         if (yel) {
             const eksik = dyYonEksik(x);
             const anlam = x.anlam ? " (Dönem Bilgisi'ndeki anlam: «" + donemAnlamGoster(x.kalip, x.anlam) + "»)" : "";
@@ -10279,17 +10282,29 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
         dyUyariEl = elYap("div", "dg-donem-uyari dg-dy-uyari", "");
         dyUyariEl.hidden = true;
         dyKap.appendChild(dyUyariEl);
-        const t = elYap("table", "dg-tablo dg-kad-dy-tablo");
+        const turlu = dyler.some(x => x.tur);
+        const t = elYap("table", "dg-tablo dg-kad-dy-tablo" + (turlu ? " dg-kad-dy-turlu" : ""));
         const h = document.createElement("thead"), hr = document.createElement("tr");
-        ["Kalıp", "Kolonlar", "Yeni Adda"].forEach(x => hr.appendChild(elYap("th", "", x)));
+        (turlu ? ["Kalıp", "Anlam", "Kolonlar", "Yeni Adda"] : ["Kalıp", "Kolonlar", "Yeni Adda"])
+            .forEach(x => hr.appendChild(elYap("th", "", x)));
         h.appendChild(hr); t.appendChild(h);
         const b = document.createElement("tbody");
         dyler.forEach(x => {
-            const tr = elYap("tr", "dg-satir");
+            const tr = elYap("tr", "dg-satir" + (x.belirsiz ? " dg-dy-belirsiz" : ""));
             tr.appendChild(elYap("td", "dg-kolon", donemSayiGoster(x.kalip)));
+            /* ANLAM: birimli kalıpta her anlam türü ayrı satır, ayrı
+               yazılış (son: L[sayı]D, sonra: N[sayı]D ...). */
+            if (turlu) {
+                const tdT = elYap("td", "");
+                if (x.tur) {
+                    tdT.appendChild(elYap("b", "", x.tur_ad || ""));
+                    tdT.appendChild(elYap("div", "dg-kad-dy-tur", donemAnlamGoster(x.kalip, x.tur_anlam || "")));
+                } else tdT.appendChild(elYap("span", "dg-kad-dy-tur", donemAnlamGoster(x.kalip, x.anlam || "")));
+                tr.appendChild(tdT);
+            }
             const tdK = elYap("td", "", ftBinlik(x.kolon || 0) + " kolon" + (x.ornek ? " · ör. " + x.ornek : ""));
             const ornKap = elYap("span", "dg-kad-dy-orn");
-            dyOrnEl[x.kalip] = ornKap;
+            dyOrnEl[dyAnahtar(x)] = ornKap;
             tdK.appendChild(ornKap);
             tr.appendChild(tdK);
             const td = elYap("td", "");
@@ -10297,12 +10312,22 @@ function kolonAdBolumuEkle(kart, ka, ilkKilit, adimda, degisti) {
             g.type = "text"; g.className = "dg-giris dg-donem-ad-giris";
             g.value = x.deger || "";
             g.placeholder = "Boş: kalıp aynen";
-            g.disabled = kilitli;
+            g.disabled = kilitli || !!x.belirsiz;
+            /* BELİRSİZ: 01.2.4.3'te dönem anlamı seçilmeyen kolonlar; dönem
+               kısmı aynen kalır (yazılış verilmez). */
+            if (x.belirsiz) {
+                td.appendChild(elYap("div", "dg-donem-tur-not", "Bu kolonlarda dönemin anlamı belirlenmedi; "
+                    + "adda dönem kısmı aynen kalır. Anlamı 01.2.4.3 Kolon Kartları'nda seçebilirsiniz."));
+                tr.appendChild(td);
+                b.appendChild(tr);
+                dyOrnekYaz(x);
+                return;
+            }
             g.setAttribute("aria-label", donemSayiGoster(x.kalip) + " yeni adda yazılış");
             const not = elYap("div", "dg-donem-tur-not", "");
-            dyNotEl[x.kalip] = not;
+            dyNotEl[dyAnahtar(x)] = not;
             const yonNot = elYap("div", "dg-donem-tur-not", "");
-            dyYonEl[x.kalip] = yonNot;
+            dyYonEl[dyAnahtar(x)] = yonNot;
             /* Kutudan çıkınca adlar yeniden kurulur (geçersizse kurulmaz).
                Sayı ekle düğmesiyle yapılan değişiklik "change" doğurmaz;
                bu yüzden değişiklik işaretlenir, kutudan çıkınca bakılır. */
@@ -11195,7 +11220,10 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         asamaBtn[n] = b;
         asamaBar.appendChild(b);
     });
+    /* Dönem anlamı belirsiz kolon da soru sayılır (Cevapsız Soru). */
+    const donemBelirsiz = v => v.durum === "hazir" && (v.donem_turleri || []).some(x => !x.tur);
     const asamaOf = v => (v.durum === "hazir" && v.soru) ? 4
+        : donemBelirsiz(v) ? 4
         : (v.soru_cevabi && bekliyorMu(v)) ? 4
         : (v.durum === "hazir" && (v.kontrol || []).length) ? 5
         : (v.aile && Number(v.aile_boyu || 1) > 1) ? 1
@@ -11415,12 +11443,92 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         if (v.soru) td.appendChild(elYap("div", "dg-donem-soru",
             "Soru: " + tireSade(v.soru) + (v.parca ? " (Toplu Sorular: " + v.parca + ")" : "")));
         soruCevapCiz(td, v);
+        donemTurCiz(td, v);
         if (v.ad_notu) td.appendChild(elYap("div", "dg-acik-not", "Ad: " + tireSade(v.ad_notu)));
         if (v.dagilim_notu) td.appendChild(elYap("div", "dg-acik-not",
                                                   "Dağılım: " + tireSade(v.dagilim_notu)));
         (v.kontrol || []).forEach(k => td.appendChild(elYap("div", "dg-acik-kontrol",
                                                              "Kontrol: " + tireSade(k))));
     }
+    /* DÖNEM ANLAMI (birimli kalıplar, ör. 30D): bu kolonda dönemin hangi
+       anlamda kullanıldığı (son, önce, sonra, süre ya da eklenen tür).
+       Belirlenmişse kaynağıyla tek satır ve "Değiştir"; belirsizse sarı
+       kutuda seçenek düğmeleri. Seçim ailenin dönemi belirsiz kolonlarına
+       da uygulanabilir; dil modeli açıklamayı seçilen anlamla yeniden
+       yazar. 01.2.4.4'te kolonun adı bu anlamın yazılışıyla kurulur. */
+    const donemAcik = new Set();
+    const donemAile = new Map();
+    function donemTurCiz(td, v) {
+        const liste = v.donem_turleri || [];
+        if (!liste.length) return;
+        liste.forEach(x => {
+            const kutu = elYap("div", "dg-acik-donem" + (x.tur ? "" : " belirsiz"));
+            const anahtar = v.kolon + "|" + x.deger;
+            const acik = !x.tur || donemAcik.has(anahtar);
+            const bas = elYap("div", "dg-acik-donem-bas");
+            if (x.tur) {
+                bas.appendChild(elYap("span", "", "Dönem: " + x.deger + " bu kolonda "));
+                bas.appendChild(elYap("b", "", "«" + tireSade(x.metin) + "»"));
+                if (x.kaynak_adi) bas.appendChild(elYap("span", "dg-acik-donem-kaynak", " · " + x.kaynak_adi));
+                if (!kilitli && !saltOkunur) {
+                    const dg = elYap("button", "dg-baglanti", acik ? "Vazgeç" : "Değiştir");
+                    dg.type = "button";
+                    dg.onclick = () => {
+                        if (donemAcik.has(anahtar)) donemAcik.delete(anahtar); else donemAcik.add(anahtar);
+                        const v2 = veriler.get(v.kolon);
+                        if (v2) satirGuncelle(v2);
+                    };
+                    bas.appendChild(dg);
+                }
+            } else {
+                bas.appendChild(elYap("span", "", "Dönem anlamı belirsiz: " + x.deger + " bu kolonda hangi anlamda? "
+                    + "Açıklamada yön yok; seçmezseniz yeni adda dönem kısmı aynen kalır."));
+            }
+            kutu.appendChild(bas);
+            if (acik && !kilitli && !saltOkunur) {
+                const dugmeler = elYap("div", "dg-acik-donem-secenek");
+                (x.secenekler || []).forEach(o => {
+                    const b = elYap("button", "dg-toplu-btn" + (o.tur === x.tur ? " secili" : ""),
+                                    tireSade(o.metin) + " (" + o.ad + ")");
+                    b.type = "button";
+                    b.onclick = () => {
+                        if (kilitli) return;
+                        const aileye = donemAile.has(anahtar) ? donemAile.get(anahtar) : true;
+                        donemAcik.delete(anahtar);
+                        const v2 = veriler.get(v.kolon);
+                        if (v2) {
+                            v2.donem_turleri = (v2.donem_turleri || []).map(y => y.deger === x.deger
+                                ? Object.assign({}, y, { tur: o.tur, metin: o.metin, kaynak: "secim", kaynak_adi: "Sizin seçiminiz" }) : y);
+                            satirGuncelle(v2);
+                        }
+                        islem({ islem: "donem_tur", kolon: v.kolon, deger: x.deger, tur: o.tur, aileye: aileye })
+                            .then(d => {
+                                if (d && d.hata) durumYaz(d.hata, true);
+                                else if (d && d.kolon_sayisi > 1) durumYaz(ftBinlik(d.kolon_sayisi)
+                                    + " kolonda dönem anlamı «" + tireSade(o.metin) + "» olarak işaretlendi; "
+                                    + "açıklamalar bu anlamla yeniden yazılıyor.", false);
+                                yoklaHemen();
+                            })
+                            .catch(() => yoklaHemen());
+                        if (degisti) degisti();
+                    };
+                    dugmeler.appendChild(b);
+                });
+                kutu.appendChild(dugmeler);
+                if (Number(v.aile_boyu || 1) > 1) {
+                    const et = elYap("label", "dg-acik-donem-aile");
+                    const c = document.createElement("input");
+                    c.type = "checkbox";
+                    c.checked = donemAile.has(anahtar) ? donemAile.get(anahtar) : true;
+                    c.onchange = () => donemAile.set(anahtar, c.checked);
+                    et.append(c, elYap("span", "", "Ailenin dönemi belirsiz öbür kolonlarına da uygula"));
+                    kutu.appendChild(et);
+                }
+            }
+            td.appendChild(kutu);
+        });
+    }
+
     /* SORUYA CEVAP: sorulu satırda cevap kutusu. Cevap soruyla birlikte dil
        modeline gider; kolon beklemeden yeniden yazılır (soru kalkarsa
        kolon sorunsuz listesine geçer). Verilen cevap altta yazar; dil
@@ -13222,6 +13330,13 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             yonEl.hidden = !y.eksik.length;
             if (!y.eksik.length) { yonEl.textContent = ""; return; }
             const sozler = y.eksik.map(e => "«" + e[0] + "»").join(", ");
+            /* BİRİMLİ KALIP: yön kalıba değil kolona aittir; onayda anlamdan
+               çıkarılır, her kolonda açıklamasından belirlenir. */
+            if (r.birimli) {
+                yonEl.textContent = "Yön kalıba yazılmaz: " + sozler + " bu kalıbın anlamından onaylayınca çıkarılır. "
+                    + "Kalıbın anlamı birimdir; yönü her kolonda açıklamasından belirlenir (Anlam türleri).";
+                return;
+            }
             yonEl.textContent = "Yazılışta yok: " + sozler + ". " + donemSayiGoster(kalipNe())
                 + " yazılışı bunu söylemiyor; adın bu bilgiyi taşıması için 01.2.4.4 Kolon Adları'nda"
                 + " yeni adda yazılışı belirleyin" + (y.oneri ? " (öneri: " + donemSayiGoster(y.oneri) + ")." : ".");
@@ -13245,6 +13360,117 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
         const yakinEl = elYap("div", "dg-donem-uyari dg-donem-yakin", "");
         yakinEl.hidden = true;
         tdA.appendChild(yakinEl);
+        /* ANLAM TÜRLERİ (birimli kalıp, ör. [sayı]D): kalıbın anlamı birim
+           ("[sayı] gün"); her kolonda yönü ayrı. Türler: son, önce, sonra,
+           süre ve sizin eklediğiniz türler. Sayılar bütün tanımlardan
+           (yön yazmayan tanım belirsiz sayılır). */
+        let ozelTurler = (dz && Array.isArray(dz.ozel_turler)) ? dz.ozel_turler.slice()
+            : (r.anlam_turleri || []).filter(t => t.ozel).map(t => ({ tur: t.tur, ad: t.ad, anlam: t.anlam }));
+        if (r.birimli) {
+            if (r.birim_notu) tdA.appendChild(elYap("div", "dg-donem-not", tireSade(r.birim_notu)));
+            const dt = elYap("div", "dg-donem-turler");
+            tdA.appendChild(dt);
+            const turAnlami = (t, b) => t === "son" ? ("son " + b).trim() : t === "once" ? (b + " önce").trim()
+                : t === "sonra" ? (b + " sonra").trim() : t === "sure" ? b : "";
+            const birimAl = () => {
+                const yon = new Set(["son", "önce", "önceki", "öncesi", "sonra", "sonraki", "sonrası", "boyunca"]);
+                return anlamAl().split(/\s+/).filter(w => w && !yon.has(w.toLocaleLowerCase("tr").replace(/[.,;]/g, ""))).join(" ");
+            };
+            let ekleAcik = false, ekleHata = "";
+            const dtCiz = () => {
+                dt.textContent = "";
+                const bas = elYap("div", "dg-donem-turler-bas", "Anlam türleri");
+                bas.appendChild(bolmeBilgiSimgesi("Bu kalıp sayı ve zaman biriminden oluşur; kolondan kolona "
+                    + "farklı anlamda kullanılabilir: son [sayı] gün, [sayı] gün önce, [sayı] gün sonra ya da yalnız "
+                    + "[sayı] gün (süre). Kalıbın anlamı birim olarak yazılır, yön her kolonda açıklamasından "
+                    + "belirlenir (01.2.4.3 Kolon Kartları). Açıklamasında yön olmayan kolon orada size sorulur. "
+                    + "01.2.4.4 Kolon Adları'nda her türün ayrı yeni ad yazılışı olur (ör. son için L[sayı]D). "
+                    + "Sayılar bütün kolonların tanımından, kesin sayımla.", "Anlam türleri"));
+                dt.appendChild(bas);
+                const b = birimAl();
+                const say = r.tur_sayim || {};
+                const t = elYap("table", "");
+                const tb = document.createElement("tbody");
+                const satirlar_ = (r.anlam_turleri || []).filter(x => !x.ozel)
+                    .map(x => ({ tur: x.tur, ad: x.ad, anlam: turAnlami(x.tur, b), ozel: false }))
+                    .concat(ozelTurler.map(x => ({ tur: x.tur, ad: x.ad, anlam: x.anlam, ozel: true })));
+                satirlar_.forEach(x => {
+                    const tr_ = document.createElement("tr");
+                    tr_.appendChild(elYap("td", "dg-dt-ad", x.ad));
+                    tr_.appendChild(elYap("td", "", donemAnlamGoster(kalipNe(), x.anlam)));
+                    const n = Number(say[x.tur] || 0);
+                    const tdS = elYap("td", "", x.ozel ? "Kolon kartlarında seçilir" : ftBinlik(n) + " kolon");
+                    const orn = (r.tur_ornek || {})[x.tur] || [];
+                    if (orn.length) tdS.appendChild(bolmeBilgiSimgesi(orn.map(o => o[0] + " (" + o[1] + ")\n"
+                        + (o[2] ? tireSade(o[2]) : "Tanımı yok")).join("\n\n"), x.ad + " anlamındaki kolonlar"));
+                    tr_.appendChild(tdS);
+                    const tdI = elYap("td", "");
+                    if (x.ozel && !kilitli && !calisiyor) {
+                        const kal = elYap("button", "dg-baglanti", "Kaldır");
+                        kal.type = "button";
+                        kal.onclick = () => {
+                            ozelTurler = ozelTurler.filter(y => y.tur !== x.tur);
+                            duzen[anah] = Object.assign(duzen[anah] || {}, { ozel_turler: ozelTurler.slice() });
+                            dtCiz(); boya(); if (degisti) degisti();
+                        };
+                        tdI.appendChild(kal);
+                    }
+                    tr_.appendChild(tdI);
+                    tb.appendChild(tr_);
+                });
+                t.appendChild(tb);
+                dt.appendChild(t);
+                const nb = Number(say.belirsiz || 0);
+                if (nb) {
+                    const be = elYap("div", "dg-dt-belirsiz", ftBinlik(nb) + " kolonun tanımında yön yok (belirsiz); "
+                        + "01.2.4.3 Kolon Kartları'nda size sorulur.");
+                    const orn = (r.tur_ornek || {}).belirsiz || [];
+                    if (orn.length) be.appendChild(bolmeBilgiSimgesi(orn.map(o => o[0] + " (" + o[1] + ")\n"
+                        + (o[2] ? tireSade(o[2]) : "Tanımı yok")).join("\n\n"), "Yönü belirsiz kolonlar"));
+                    dt.appendChild(be);
+                }
+                if (kilitli || calisiyor) return;
+                if (!ekleAcik) {
+                    const eb = elYap("button", "dg-toplu-btn", "Tür Ekle");
+                    eb.type = "button";
+                    eb.onclick = () => { ekleAcik = true; ekleHata = ""; dtCiz(); };
+                    dt.appendChild(eb);
+                    return;
+                }
+                const f = elYap("div", "dg-dt-ekle");
+                const adG = document.createElement("input");
+                adG.type = "text"; adG.className = "dg-giris"; adG.placeholder = "Türün adı (ör. Ay başından)";
+                const anG = document.createElement("input");
+                anG.type = "text"; anG.className = "dg-giris"; anG.placeholder = "Anlamı (ör. ay başından [sayı] gün)";
+                const ek = elYap("button", "dg-toplu-btn", "Ekle");
+                ek.type = "button";
+                const vz = elYap("button", "dg-baglanti", "Vazgeç");
+                vz.type = "button";
+                vz.onclick = () => { ekleAcik = false; dtCiz(); };
+                ek.onclick = () => {
+                    const ad = adG.value.trim().replace(/\s+/g, " ");
+                    const anlam = donemAnlamIc(kalipNe(), anG.value.trim());
+                    if (!ad || !anlam) { ekleHata = "Adı ve anlamı yazın."; dtCiz(); return; }
+                    if (anlam.indexOf("<N") === -1) { ekleHata = "Anlamda [sayı] olmalı."; dtCiz(); return; }
+                    let kod = ad.toLocaleLowerCase("tr").replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i")
+                        .replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "_")
+                        .replace(/^_+|_+$/g, "").slice(0, 20) || "tur";
+                    if (!/^[a-z]/.test(kod)) kod = "t_" + kod;
+                    const kullanilan = new Set(["son", "once", "sonra", "sure"].concat(ozelTurler.map(y => y.tur)));
+                    let k2 = kod, i = 2;
+                    while (kullanilan.has(k2)) k2 = kod + "_" + (i++);
+                    ozelTurler.push({ tur: k2, ad: ad, anlam: anlam });
+                    duzen[anah] = Object.assign(duzen[anah] || {}, { ozel_turler: ozelTurler.slice() });
+                    ekleAcik = false; ekleHata = "";
+                    dtCiz(); boya(); if (degisti) degisti();
+                };
+                f.append(adG, anG, ek, vz);
+                dt.appendChild(f);
+                if (ekleHata) dt.appendChild(elYap("div", "dg-dt-hata", ekleHata));
+            };
+            dtCiz();
+            g.addEventListener("input", dtCiz);
+        }
         /* DEĞERLER (yalnız sayı yer tutucusu olan kalıpta): Anlam hücresinde
            bir örnek ve "Değerleri Düzenle"; açılınca grup satırının hemen
            altında, tablo genişliğinde değer paneli. Her değerin durumu
@@ -14008,12 +14234,13 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             kalip: String(kalipNe() || "").toUpperCase(), anlam: anlamAl().trim(),
             elle: !!r.elle, cikar: false, haric: Array.from(haric).sort(),
             deger_anlam: Object.assign({}, dgAnlam), ayrilan: ayrilanCikti(r, anah),
-            zaman_tur: turSec.value, kosullu: kosCikti() });
+            zaman_tur: turSec.value, kosullu: kosCikti(),
+            ozel_turler: r.birimli ? ozelTurler.map(y => ({ tur: y.tur, ad: y.ad, anlam: y.anlam })) : [] });
         x.imza = () => {
             const c = x.satirCikti();
             return JSON.stringify([c.kalip, c.anlam.replace(/\s+/g, " "), c.zaman_tur, c.haric,
                 Object.entries(c.deger_anlam).sort(), Object.keys(c.ayrilan).sort(),
-                Object.entries(c.kosullu).sort()]);
+                Object.entries(c.kosullu).sort(), c.ozel_turler.map(y => [y.tur, y.ad, y.anlam])]);
         };
         x.kayitliMi = () => KAYIT[anah] !== undefined && KAYIT[anah] === x.imza();
         /* KAYDET: satır onayı beklemeden hafızaya yazılır. toplu: Hepsini

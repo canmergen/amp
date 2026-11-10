@@ -21,6 +21,7 @@ from fe_agent import tanim_hafiza
 from fe_agent import kisaltma as kisaltma_mod
 from fe_agent import kisaltma_okuma
 from fe_agent import donem as donem_mod
+from fe_agent import donem_tur
 from fe_agent import parca as parca_mod
 from fe_agent import aciklama_duzen as aciklama_mod
 from fe_agent import tip_donusum
@@ -1772,6 +1773,37 @@ def _donem_yazilis_karari(x):
             for k, v in x.items() if str(k).strip()}
 
 
+def _kolon_donem_turleri(durum):
+    """{kolon: {deger: tur}} birimli donem parcalarinin kolondaki anlam turu
+    ("" belirsiz). Kaynak 01.2.4.3'un onayi (kolonun turleri); onay yoksa
+    (adim atlandi) sozluk tanimindaki ifadeden (kod)."""
+    onay = aciklama_onayi(durum)
+    cikti = {}
+    if onay:
+        for kolon, o in onay.items():
+            if isinstance(o, dict) and isinstance(o.get("donem_turleri"), list):
+                cikti[kolon] = {str(x.get("deger")): str(x.get("tur") or "")
+                                for x in o["donem_turleri"] if isinstance(x, dict)}
+        return cikti
+    bilgi = durum.get("donem_bilgisi") if isinstance(durum.get("donem_bilgisi"), dict) else {}
+    birimli = {k: (donem_mod.kalip_deseni(k), donem_tur.birim_anlami(a))
+               for k, a in bilgi.items() if donem_tur.birimli_mi(k)}
+    if not birimli:
+        return {}
+    try:
+        tanimlar = sozluk_calisma.tanimlar_tam(durum) or _sozluk_tanimlari(sozluk_oku(durum))
+    except Exception:
+        tanimlar = {}
+    for ad in _veri_kolonlari(durum):
+        for p_ in parca_mod.toklar(ad):
+            for k, (r_, birim) in birimli.items():
+                if r_ is not None and r_.match(p_):
+                    cikti.setdefault(ad, {})[p_] = donem_tur.metinden_tur(
+                        str(tanimlar.get(ad) or ""), donem_tur.deger_sayisi(k, p_), birim) or ""
+                    break
+    return cikti
+
+
 def _donem_yazilis_satirlari(durum, secim=None):
     """[{"kalip", "yazilis", "hata", "ornek", "ornek_yeni", "kolon"}]: kolon
     adlarinda gecen her onayli donem kalibi. ornek adlarda ilk gecen deger;
@@ -1822,8 +1854,64 @@ def _donem_yazilis_satirlari(durum, secim=None):
     # vermediyse yeni adda yazilis ONERILIR (dolu gelir, degistirilebilir).
     yon = yon_bilgisi()
     anlamlar = durum.get("donem_bilgisi") if isinstance(durum.get("donem_bilgisi"), dict) else {}
+    # BIRIMLI KALIPLAR (<N>D): kalip x anlam turu satirlari; her kolon kendi
+    # turunun yazilisiyla adlanir. Turu belirsiz kolonlarin satiri salt
+    # okunur (donem kismi aynen kalir).
+    kolon_tur = _kolon_donem_turleri(durum)
+    turler_ozel = durum.get("donem_anlam_turleri") if isinstance(
+        durum.get("donem_anlam_turleri"), dict) else {}
+    haf_t = donem_tur.hafiza_turleri()
     for k in kaliplar:
-        if not sayi.get(k):
+        if not sayi.get(k) or not donem_tur.birimli_mi(k):
+            continue
+        birim = donem_tur.birim_anlami(anlamlar.get(k))
+        ozel = {t: x for t, x in (turler_ozel.get(k) or {}).items()
+                if t not in donem_tur.SABIT_KODLAR and isinstance(x, dict)}
+        tanim = {x["tur"]: x for x in donem_tur.kalip_turleri(
+            k, birim, ozel=ozel, haf=haf_t, haf_anlam=str(donem_mod.hafiza().get(k) or ""),
+            haf_ad=str(haf.get(k) or ""))}
+        say, orn, ady = Counter(), {}, {}
+        # Turu kolon kolon say (butun kolonlar; aday listesi sinirli).
+        for ad in _veri_kolonlari(durum):
+            if ad in korunan or ad in haric:
+                continue
+            for p_ in parca_mod.toklar(ad):
+                if desen[k].match(p_):
+                    t_ = (kolon_tur.get(ad) or {}).get(p_, "") or donem_tur.BELIRSIZ
+                    say[t_] += 1
+                    orn.setdefault(t_, p_)
+                    if len(ady.setdefault(t_, [])) < DONEM_YAZILIS_ADAY_ADET:
+                        ady[t_].append((ad, p_))
+                    break
+        sira_t = [t_ for t_ in tanim if say.get(t_)] + ([donem_tur.BELIRSIZ]
+                                                        if say.get(donem_tur.BELIRSIZ) else [])
+        yazilislar_k = {}
+        for t_ in sira_t:
+            anahtar = "%s|%s" % (k, t_)
+            o = orn.get(t_, "")
+            if t_ == donem_tur.BELIRSIZ:
+                cikti.append({"kalip": k, "anahtar": anahtar, "tur": t_, "tur_ad": "Belirsiz",
+                              "tur_anlam": birim, "belirsiz": True, "yazilis": "", "hata": "",
+                              "ornek": o, "ornek_yeni": o, "kolon": say[t_],
+                              "_adaylar": ady.get(t_, []), "anlam": birim, "yon_eksik": [],
+                              "oneri": "", "oneri_dolu": False})
+                continue
+            secildi = secim is not None and anahtar in secim
+            v = (secim or {}).get(anahtar) if secildi else tanim[t_]["yazilis"]
+            v = re.sub(r"\s+", "", str(v or "")).upper()
+            h = donem_mod.ad_sablonu_hatasi(k, v)
+            yazilislar_k[t_] = v
+            if not h:
+                h = donem_tur.yazilis_cakismasi(k, yazilislar_k)
+            cikti.append({"kalip": k, "anahtar": anahtar, "tur": t_,
+                          "tur_ad": tanim[t_]["ad"], "tur_anlam": tanim[t_]["anlam"],
+                          "belirsiz": False, "yazilis": v, "hata": h, "ornek": o,
+                          "ornek_yeni": donem_mod.ad_sablonu_doldur(k, v, o) if v and not h and o else o,
+                          "kolon": say[t_], "_adaylar": ady.get(t_, []),
+                          "anlam": tanim[t_]["anlam"], "yon_eksik": [], "oneri": "",
+                          "oneri_dolu": False})
+    for k in kaliplar:
+        if not sayi.get(k) or donem_tur.birimli_mi(k):
             continue
         secildi = secim is not None and k in secim
         v = (secim or {}).get(k) if secildi else haf.get(k)
@@ -1835,7 +1923,7 @@ def _donem_yazilis_satirlari(durum, secim=None):
             v = oneri
         h = donem_mod.ad_sablonu_hatasi(k, v)
         o = ornek.get(k, "")
-        cikti.append({"kalip": k, "yazilis": v, "hata": h, "ornek": o,
+        cikti.append({"kalip": k, "anahtar": k, "yazilis": v, "hata": h, "ornek": o,
                       "ornek_yeni": donem_mod.ad_sablonu_doldur(k, v, o) if v and not h and o else o,
                       "kolon": sayi[k], "_adaylar": adaylar.get(k, []),
                       "anlam": str(anlamlar.get(k) or ""),
@@ -1876,8 +1964,40 @@ def _donem_yazilis_ornekleri(satirlar, aileler, durum):
 
 
 def _donem_ad_yazilislari(satirlar):
-    """[(kalip, sablon)]: gecerli yazilisi olan kaliplar (adlari kurmak icin)."""
-    return [(x["kalip"], x["yazilis"]) for x in satirlar if x["yazilis"] and not x["hata"]]
+    """[(kalip, sablon)]: gecerli yazilisi olan kaliplar (adlari kurmak
+    icin). Birimli kalipin satirlari burada degil: kolon basina (bkz.
+    _kolon_yazilislari)."""
+    return [(x["kalip"], x["yazilis"]) for x in satirlar
+            if x["yazilis"] and not x["hata"] and not x.get("tur")]
+
+
+def _kolon_yazilislari(durum, satirlar):
+    """{kolon: [(deger, yeni yazilis)]}: birimli donem parcalari kolonun
+    kendi turunun yazilisiyla (turu belirsiz ya da yazilisi gecersiz
+    parca aynen). Kalibin genel kuralindan once uygulanir."""
+    tur_yaz = {(x["kalip"], x["tur"]): x for x in satirlar if x.get("tur")}
+    if not tur_yaz:
+        return {}
+    kolon_tur = _kolon_donem_turleri(durum)
+    # Ayri yazilis (D<N>) ailesinden (<N>D) once denenir: aile deseni butun
+    # yazilislara uyar.
+    birimli = sorted({x["kalip"] for x in tur_yaz.values()},
+                     key=lambda k: (donem_mod.aile_mi(k), k))
+    desen = {k: donem_mod.kalip_deseni(k) for k in birimli}
+    cikti = {}
+    for ad in _veri_kolonlari(durum):
+        for p_ in parca_mod.toklar(ad):
+            for k in birimli:
+                if desen[k] is None or not desen[k].match(p_):
+                    continue
+                t_ = (kolon_tur.get(ad) or {}).get(p_, "") or donem_tur.BELIRSIZ
+                x = tur_yaz.get((k, t_))
+                yeni = p_
+                if x and x["yazilis"] and not x["hata"]:
+                    yeni = donem_mod.ad_sablonu_doldur(k, x["yazilis"], p_)
+                cikti.setdefault(ad, []).append((p_, yeni))
+                break
+    return cikti
 
 
 # ADA EKLENECEK PARCALAR: Kolon Kartlari'nda dil modelinin buldugu,
@@ -2018,9 +2138,10 @@ def _ek_birimli(birimler, ekler):
     return list(birimler) + [[m, y] for m, y in ekler or [] if m not in var]
 
 
-def _aile_adlari(durum, bilgi, sira, kolon_ek, yazilislar):
+def _aile_adlari(durum, bilgi, sira, kolon_ek, yazilislar, kolon_yaz=None):
     """{aile: [[eski ad, yeni ad]]}; adi degisen aileler once (veri
-    setindeki sirayla), degismeyenler sonra."""
+    setindeki sirayla), degismeyenler sonra. kolon_yaz: {kolon: [(deger,
+    yeni)]} birimli donem parcalarinin kolona ozel yazilisi (once)."""
     desenler = _zaman_desenleri(durum)
     korunan = _korunan_kolonlar(durum)
     haric = set(map(str, durum.get("haric_kolonlar") or []))
@@ -2029,7 +2150,8 @@ def _aile_adlari(durum, bilgi, sira, kolon_ek, yazilislar):
         if ad in korunan or ad in haric:
             continue
         a = aciklama_mod.aile_anahtari(ad)
-        birimler = _ek_birimli(parca_mod.ad_birimleri(ad, bilgi, desenler, yazilislar), kolon_ek.get(ad))
+        yaz_a = list((kolon_yaz or {}).get(ad) or []) + list(yazilislar or [])
+        birimler = _ek_birimli(parca_mod.ad_birimleri(ad, bilgi, desenler, yaz_a), kolon_ek.get(ad))
         aileler.setdefault(a, []).append([ad, parca_mod.ad_kur(birimler, sira)])
     return dict(sorted(aileler.items(), key=lambda kv: not any(e != y for e, y in kv[1])))
 
@@ -2120,7 +2242,8 @@ def _kolon_ad_alani(durum, sira=None, ekler=None, turler=None, baslat=True, yazi
     ek_satirlar, kolon_ek = _ad_ek_satirlari(durum, ekler)
     donem_yazilis = _donem_yazilis_satirlari(durum, yazilis)
     yazilislar = _donem_ad_yazilislari(donem_yazilis)
-    aileler = _aile_adlari(durum, bilgi, sira, kolon_ek, yazilislar)
+    kolon_yaz = _kolon_yazilislari(durum, donem_yazilis)
+    aileler = _aile_adlari(durum, bilgi, sira, kolon_ek, yazilislar, kolon_yaz)
     # Son kontrol: dil modelinin duzeltmesi kendiliginden; kullanicinin
     # secimi (turler) ondan once gelir. Ek turundeki parca degismez.
     son = _ad_tur_kontrolu(durum, bilgi, sira, aileler, baslat)
@@ -2138,7 +2261,7 @@ def _kolon_ad_alani(durum, sira=None, ekler=None, turler=None, baslat=True, yazi
         if isinstance(bilgi.get(p), dict) and bilgi[p].get("tur") != t:
             etkin[p] = dict(bilgi[p], tur=t)
     if etkin != bilgi:
-        aileler = _aile_adlari(durum, etkin, sira, kolon_ek, yazilislar)
+        aileler = _aile_adlari(durum, etkin, sira, kolon_ek, yazilislar, kolon_yaz)
     tur_ad = {k: a for k, a, _c in parca_mod.TURLER}
     son_kontrol = {
         "durum": son["durum"], "biten": son["biten"], "toplam": son["toplam"], "hata": son["hata"],
@@ -2280,13 +2403,20 @@ def kolon_ad_uygula(durum):
     hata = parca_mod.ad_standardi_kaydet(sira)
     # Donem yazilislari: bu calismada gecerli, hafizaya da (bos olan
     # hafizadan kalkar).
-    durum["donem_ad_yazilis"] = {x["kalip"]: x["yazilis"] for x in alan["donem_yazilis"] if x["yazilis"]}
-    yaz_hata = donem_mod.hafizaya_ad_yaz({x["kalip"]: x["yazilis"] for x in alan["donem_yazilis"]}) \
-        if alan["donem_yazilis"] else None
+    durum["donem_ad_yazilis"] = {x["anahtar"]: x["yazilis"] for x in alan["donem_yazilis"]
+                                 if x["yazilis"] and not x.get("belirsiz")}
+    genel_yaz = [x for x in alan["donem_yazilis"] if not x.get("tur")]
+    yaz_hata = donem_mod.hafizaya_ad_yaz({x["kalip"]: x["yazilis"] for x in genel_yaz}) \
+        if genel_yaz else None
+    # BIRIMLI KALIPLAR: yazilis tur kaydina; kalibin eski tek yazilisi
+    # hafizadan kalkar (tur kaydinda durur). Yeni yazilis (L<N>D) kendi
+    # kalibi olarak turun kesin anlamiyla da yazilir.
+    tur_hata = _donem_tur_yazilis_hafizaya(alan["donem_yazilis"])
+    yaz_hata = yaz_hata or tur_hata
     # YAZILISTA OLMAYAN BILGI hafizaya iki kayitla: yeni yazilis kendi
     # kalibi olarak kesin anlamiyla (L<N>D = "son <N> gün"), eski yazilisin
     # genel anlami ve bu veri setindeki anlami (bkz. donem_yon_hafizaya).
-    yon_hata = donem_yon_hafizaya(durum, alan["donem_yazilis"]) if alan["donem_yazilis"] else None
+    yon_hata = donem_yon_hafizaya(durum, genel_yaz) if genel_yaz else None
     yaz_hata = yaz_hata or yon_hata
     # Son kontrolde degisen turler parca bilgisine ve hafizaya yazilir.
     bilgi = durum.get("parca_bilgisi") if isinstance(durum.get("parca_bilgisi"), dict) else {}
@@ -2314,7 +2444,7 @@ def kolon_ad_uygula(durum):
     if degisen:
         metin += "; %s parçanın türü düzeltildi" % _sayi(len(degisen))
     if durum["donem_ad_yazilis"]:
-        metin += "; %s dönem kalıbının yeni adda yazılışı var" % _sayi(len(durum["donem_ad_yazilis"]))
+        metin += "; %s dönem yazılışı var" % _sayi(len(durum["donem_ad_yazilis"]))
     metin += ". Yeni adlar AMP_VERISETI ve AMP_SOZLUK'te geçerli olur."
     if hata:
         metin += " " + hata
@@ -2327,6 +2457,38 @@ def kolon_ad_uygula(durum):
                            adlar={s_["aile"]: s_["kolonlar"] for s_ in alan["satirlar"]})
     (durum.get("_onceki_notlari") or {}).pop("kolon_ad", None)
     return _onceki_metni(metin) if onceki else metin
+
+
+def _donem_tur_yazilis_hafizaya(satirlar):
+    """01.2.4.4 onayinda birimli kaliplarin tur yazilislari hafizaya.
+    Doner: hata ya da None."""
+    tur_satir = [x for x in satirlar or [] if x.get("tur") and not x.get("belirsiz")
+                 and not x.get("hata")]
+    if not tur_satir:
+        return None
+    kayit, eski_ad, yeni_kalip = {}, {}, {}
+    try:
+        haf = donem_mod.hafiza()
+    except Exception:
+        haf = {}
+    for x in tur_satir:
+        k = x["kalip"]
+        # "Aynen" (bos yazilis) hafizada kalibin kendisi olarak durur;
+        # sonraki calismada varsayilan harfe donmesin.
+        kayit.setdefault(k, {})[x["tur"]] = {"ad": x.get("tur_ad") or "", "anlam": x.get("tur_anlam") or "",
+                                             "yeni_adda": x["yazilis"] or k}
+        eski_ad[k] = ""
+        y = str(x["yazilis"] or "")
+        a = str(x.get("tur_anlam") or "")
+        if y and y != k and a and donem_mod.kalip_deseni(y) is not None \
+                and not donem_mod.yer_tutucu_hatasi(y, a) \
+                and (not str(haf.get(y) or "").strip() or str(haf.get(y)).strip() == a):
+            yeni_kalip[y] = a
+    hata = donem_tur.hafizaya_turler_yaz(kayit)
+    hata = hata or donem_mod.hafizaya_ad_yaz(eski_ad)
+    if yeni_kalip and not hata:
+        hata = donem_mod.hafizaya_yaz(yeni_kalip, turler={y: "pencere" for y in yeni_kalip})
+    return hata
 
 
 _AD_KALIP = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
@@ -2717,6 +2879,64 @@ def donem_yon_hafizaya(durum, yazilislar):
     return hata or donem_mod.hafizaya_yon_yaz(kayit)
 
 
+DONEM_TUR_ORNEK = 3
+BIRIM_NOTU = ("Anlamdaki yön (son, önce, sonra) kalıba değil kolona aittir: kalıbın anlamı "
+              "birim olarak yazıldı; yön her kolonda açıklamasından belirlenir.")
+
+
+def _donem_tur_sayimi(adlar, tanimlar, kaliplar):
+    """Birimli kaliplarin ANLAM TURU sayimi, butun kolonlarin tanimlarindan
+    (kesin sayim; orneklem yok). kaliplar: {kalip: (birim anlami, haric
+    ikililer, ayrilan degerler)}. Doner: {kalip: {"sayim": {tur: kolon},
+    "ornek": {tur: [[kolon, deger, tanim]]}}}; tanimda yon yoksa tur
+    "belirsiz"."""
+    desen = {k: donem_mod.kalip_deseni(k) for k in kaliplar}
+    sonuc = {k: {"sayim": Counter(), "ornek": {}} for k in kaliplar}
+    for ad in adlar:
+        t = aciklama_mod.toklar(ad)
+        tanim = str(tanimlar.get(ad) or "")
+        for k, (birim, haric, ayrilan) in kaliplar.items():
+            r_ = desen.get(k)
+            if r_ is None:
+                continue
+            for i, p_ in enumerate(t):
+                if not r_.match(p_) or p_ in ayrilan or donem_mod.haric_mi(t, i, haric):
+                    continue
+                tur = donem_tur.metinden_tur(tanim, donem_tur.deger_sayisi(k, p_), birim) \
+                    or donem_tur.BELIRSIZ
+                x = sonuc[k]
+                x["sayim"][tur] += 1
+                o = x["ornek"].setdefault(tur, [])
+                if len(o) < DONEM_TUR_ORNEK:
+                    o.append([ad, p_, tanim[:240]])
+                break
+    return {k: {"sayim": dict(v["sayim"]), "ornek": v["ornek"]} for k, v in sonuc.items()}
+
+
+def _ozel_tur_temizle(kalip, liste):
+    """Kartin gonderdigi ozel turler [{"tur", "ad", "anlam"}] -> ({tur:
+    {"ad", "anlam"}}, [hata]). Kod kucuk harf, rakam, alt cizgi; anlamda
+    kalibin yer tutucusu olmali."""
+    cikti, hatalar = {}, []
+    for x in liste if isinstance(liste, list) else []:
+        if not isinstance(x, dict):
+            continue
+        kod = str(x.get("tur") or "").strip()
+        ad = re.sub(r"\s+", " ", str(x.get("ad") or "")).strip()
+        anlam = re.sub(r"\s+", " ", str(x.get("anlam") or "")).strip()
+        if not kod or kod in donem_tur.SABIT_KODLAR or not donem_tur.OZEL_KOD.match(kod):
+            continue
+        if not ad or not anlam:
+            hatalar.append("%s: eklenen türün adı ve anlamı dolu olmalı." % _donem_kalip_gorunur(kalip))
+            continue
+        yt = donem_mod.yer_tutucu_hatasi(kalip, anlam)
+        if yt:
+            hatalar.append("%s (%s türü): %s" % (_donem_kalip_gorunur(kalip), ad, yt))
+            continue
+        cikti[kod] = {"ad": ad, "anlam": anlam}
+    return cikti, hatalar
+
+
 def _donem_alani(durum, baslat=True):
     """01.2.4.1 kartinin verisi (beklemez). baslat=False: dil modeli isi
     baslatilmaz (onceki onayli kontrol uygulanirken; yorumu gerekmez). Model surerken bicimden bulunan
@@ -2740,6 +2960,8 @@ def _donem_alani(durum, baslat=True):
     haf_ayrilan = donem_mod.hafiza_ayrilan()
     haf_tur = donem_mod.hafiza_tur()
     haf_kosul = donem_mod.hafiza_kosul()
+    haf_turler = donem_tur.hafiza_turleri()
+    haf_ad_ = donem_mod.hafiza_ad()
     # ONCEKI KARAR: bu calismada verilmis karar (geri donus ya da 01.2.4
     # "Onceki Onayli Kontrol"un yukledigi karar). Yeni calismada kaliplar,
     # anlamlari ve «Ayır» ile ayrilan gruplar hafizadan gelir.
@@ -2831,7 +3053,18 @@ def _donem_alani(durum, baslat=True):
         kosullu = o.get("kosullu") if (o is not None and "kosullu" in o) else haf_kosul.get(hk)
         kosullu = {str(p_).upper(): str(a_) for p_, a_ in (kosullu or {}).items()
                    if str(a_ or "").strip()}
+        # BIRIMLI KALIP (<N>D): anlam birimdir ("<N> gün"); yon kolona aittir
+        # (anlam turleri; bkz. donem_tur.py). Eski anlamdaki yon atilir.
+        birimli = donem_tur.birimli_mi(kalip)
+        birim_notu = ""
+        if birimli:
+            yeni_anlam = donem_tur.birim_anlami(anlam)
+            if yeni_anlam != anlam and anlam:
+                birim_notu = BIRIM_NOTU
+            anlam = yeni_anlam
+            oneri = donem_tur.birim_anlami(oneri)
         r = {"kalip": kalip, "tur": tur, "kolon": kolon, "degerler": degerler,
+             "birimli": birimli, "birim_notu": birim_notu,
              "kosullu": kosullu, "kosul_adaylari": _kosul_adaylari(adlar, kalip, tanimlar),
              "ornekler": ornekler, "anlam": anlam, "oneri": oneri,
              "soru": soru if anlam == oneri else "", "not": notu if anlam == oneri else "",
@@ -2844,6 +3077,15 @@ def _donem_alani(durum, baslat=True):
              "uyari_ayrinti": uyari_ayrinti,
              "kanit": kn if kn.get("bakilan") else None,
              "celiski": celiski if anlam == oneri else ""}
+        if birimli:
+            ozel = {}
+            if o is not None:
+                ozel, _h = _ozel_tur_temizle(kalip, o.get("ozel_turler"))
+            r["ozel_turler"] = [{"tur": t_, "ad": x_["ad"], "anlam": x_["anlam"]}
+                                for t_, x_ in sorted(ozel.items())]
+            r["anlam_turleri"] = donem_tur.kalip_turleri(
+                kalip, anlam, ozel=ozel, haf=haf_turler,
+                haf_anlam=haf.get(hk) or "", haf_ad=haf_ad_.get(hk) or "")
         r.update(ek)
         # KALIP OLMA OLASILIĞI (Adaylar sekmesi): yüksek = tabloda, kesin;
         # orta = dil modeli zaman bilgisi dedi ama emin değil (soru, zayıf
@@ -2979,6 +3221,16 @@ def _donem_alani(durum, baslat=True):
         parcalar = _donem_parcalari(durum)
     except Exception:
         parcalar = []
+    # ANLAM TURU SAYIMI: birimli kaliplarda her turun kac kolonun taniminda
+    # gectigi (butun tanimlar; yon yoksa belirsiz).
+    birimli_satir = {r_["kalip"]: r_ for r_ in satirlar if r_.get("birimli")}
+    if birimli_satir:
+        sayim = _donem_tur_sayimi(adlar, tanimlar, {
+            k: (r_["anlam"] or r_["oneri"], r_.get("haric") or [], set(r_.get("ayrilan") or {}))
+            for k, r_ in birimli_satir.items()})
+        for k, r_ in birimli_satir.items():
+            r_["tur_sayim"] = sayim.get(k, {}).get("sayim", {})
+            r_["tur_ornek"] = sayim.get(k, {}).get("ornek", {})
     # HAFIZA NOTU: yazilisi yon tasimayan kalibin genel anlami ve veri
     # setlerindeki anlamlari (bkz. donem_yon_kaydet).
     haf_genel, haf_vs = donem_mod.hafiza_genel(), donem_mod.hafiza_vs()
@@ -3049,6 +3301,7 @@ def _donem_karari_isle(durum, karar, alan):
     katilan_hepsi = {k for v in katilan.values() for k in v}
     bilgi, kayit, haric_harita, deger_harita, tur_harita = {}, [], {}, {}, {}
     kosul_harita = {}                           # kalip -> {PARCA: anlam}
+    tur_kayit = {}                              # birimli kalip -> {tur: {"ad", "anlam"}}
     ayrilan_harita, ayrilan_bilgi = {}, {}      # grup -> uyeler; uye -> anlam
     gorulen = set()
     cikan = 0
@@ -3129,6 +3382,16 @@ def _donem_karari_isle(durum, karar, alan):
             ayrilan_harita[kalip] = ayrilan
         zaman_tur = str(g.get("zaman_tur") or "")
         zaman_tur = zaman_tur if zaman_tur in ZAMAN_TUR_ADI else "pencere"
+        # BIRIMLI KALIP: anlam birim (yon atilir); ozel anlam turleri.
+        ozel = {}
+        if donem_tur.birimli_mi(kalip):
+            anlam = donem_tur.birim_anlami(anlam)
+            ozel, oh = _ozel_tur_temizle(kalip, g.get("ozel_turler"))
+            if not cikar:
+                hatalar.extend(oh)
+            tur_kayit[kalip] = dict(
+                {t_: {"ad": donem_tur.TUR_ADI[t_], "anlam": donem_tur.tur_anlami(t_, anlam)}
+                 for t_ in donem_tur.SABIT_KODLAR}, **ozel)
         # KOSULLU ANLAMLAR: {PARCA: anlam}; parca harf ve rakam, anlamin yer
         # tutuculari kalibin anlami gibi denetlenir.
         kosullu = _kosul_temizle(g.get("kosullu"))
@@ -3153,7 +3416,9 @@ def _donem_karari_isle(durum, karar, alan):
             continue
         kayit.append({"kalip": kalip, "anlam": anlam, "elle": elle, "cikar": False,
                       "haric": haric, "deger_anlam": deger_anlam, "ayrilan": ayrilan,
-                      "zaman_tur": zaman_tur, "kosullu": kosullu})
+                      "zaman_tur": zaman_tur, "kosullu": kosullu,
+                      "ozel_turler": [{"tur": t_, "ad": x_["ad"], "anlam": x_["anlam"]}
+                                      for t_, x_ in sorted(ozel.items())]})
         bilgi[kalip] = anlam
         kosul_harita[kalip] = kosullu
         tur_harita[kalip] = zaman_tur
@@ -3168,7 +3433,8 @@ def _donem_karari_isle(durum, karar, alan):
             "deger_harita": deger_harita, "tur_harita": tur_harita, "kosul_harita": kosul_harita,
             "ayrilan_harita": ayrilan_harita, "ayrilan_bilgi": ayrilan_bilgi,
             "cikan": cikan, "cikan_kaliplar": cikan_kaliplar,
-            "katilan": katilan, "katilan_hepsi": katilan_hepsi}
+            "katilan": katilan, "katilan_hepsi": katilan_hepsi,
+            "tur_kayit": {k: v for k, v in tur_kayit.items() if k in bilgi}}
 
 
 def donem_uygula(durum):
@@ -3207,6 +3473,10 @@ def donem_uygula(durum):
     durum["donem_ayrilan"] = {k: sorted(v) for k, v in ayrilan_harita.items()}
     durum["donem_turleri"] = dict(tur_harita)
     durum["donem_kosul"] = {k: v for k, v in k_["kosul_harita"].items() if v}
+    # ANLAM TURLERI (birimli kaliplar): {kalip: {tur: {"ad", "anlam"}}};
+    # 01.2.4.3 her kolonun turunu bunlardan secer, 01.2.4.4 tur basina
+    # yazilis verir.
+    durum["donem_anlam_turleri"] = k_["tur_kayit"]
     durum["donem_bilgisi_karari"] = kayit
     # Ayrilan gruplar (kartta Ayir): sonraki acilista kendiliginden
     # birlesmesin. Hafizaya da yazilir (yeni calismada gelir): bu calismada
@@ -3226,6 +3496,17 @@ def donem_uygula(durum):
     # Kosullu anlamlar hafizaya (bos olan kalibin kosullulari kalkar).
     if grup_bilgi and not hata:
         hata = donem_mod.hafizaya_kosul_yaz({k: k_["kosul_harita"].get(k, {}) for k in grup_bilgi})
+    # Anlam turlerinin adi ve anlami hafizaya (yazilis 01.2.4.4'te). Kartta
+    # kaldirilan ozel tur hafizadan da kalkar.
+    if k_["tur_kayit"] and not hata:
+        haf_t = donem_tur.hafiza_turleri()
+        yaz_t = {}
+        for k, v in k_["tur_kayit"].items():
+            yaz_t[k] = dict(v)
+            for t_ in (haf_t.get(k) or {}):
+                if t_ not in donem_tur.SABIT_KODLAR and t_ not in v:
+                    yaz_t[k][t_] = None
+        hata = donem_tur.hafizaya_turler_yaz(yaz_t)
     # Yeni adda yazilis bu adimda degil: 01.2.4.4 Kolon Adlari'nda verilir ve
     # onun onayinda hafizaya yazilir (hafizadaki yazilisa burada dokunulmaz).
     # Cikarilan aile, hafizada ailenin adina katilan yazilis kayitlariyla
@@ -3318,6 +3599,8 @@ def donem_kaydet(durum, g):
     anlam = re.sub(r"\s+", " ", str(g.get("anlam") or "")).strip()
     if not kalip or donem_mod.kalip_deseni(kalip) is None:
         return False, "Geçerli bir kalıp yok.", None
+    if donem_tur.birimli_mi(kalip):
+        anlam = donem_tur.birim_anlami(anlam)
     if not anlam:
         return False, "%s: anlam boş; önce anlamı yazın." % kalip, None
     yt = donem_mod.yer_tutucu_hatasi(kalip, anlam)
@@ -4317,12 +4600,38 @@ ZAMAN_TUR_ADI = {"pencere": "Pencere", "nokta": "Zaman Noktası", "birim": "Zama
                  "olcu": "Zaman Ölçüsü"}
 
 
-def _donem_parca_metni(k, anlam, degerler, deger, tur):
+def _donem_parca_metni(k, anlam, degerler, deger, tur, turler=None):
     """Donem parcasinin istem satiri: degerin kendi anlami ya da kalibin
     anlami yer tutucusu degerin sayisiyla doldurulmus olarak, yaninda turu
-    ("son 3 ay (zaman penceresi)"). Yer tutucu dil modeline gitmez."""
+    ("son 3 ay (zaman penceresi)"). Yer tutucu dil modeline gitmez.
+    BIRIMLI kalipta (degerin kendi anlami yoksa) anlam birimdir ve yonu
+    kolona gore degisir: secenekler (anlam turleri) istemde yazar; dil
+    modeli bu kolondaki turu donem_turu ile bildirir. turler: {kalip: {tur:
+    {"ad", "anlam"}}} (ozel turler)."""
+    if donem_tur.birimli_mi(k) and not degerler.get(deger):
+        secenek = _donem_secenekleri(k, anlam, deger, turler)
+        return "%s (%s); yönü kolona göre değişir, donem_turu ile bildir: %s" % (
+            donem_mod.deger_anlami(k, donem_tur.birim_anlami(anlam), deger),
+            ZAMAN_TUR_ETIKETI.get(tur, "zaman bilgisi"),
+            ", ".join("%s (%s)" % (x["metin"], x["tur"]) for x in secenek))
     metin = degerler.get(deger) or donem_mod.deger_anlami(k, anlam, deger)
     return "%s (%s)" % (metin, ZAMAN_TUR_ETIKETI.get(tur, "zaman bilgisi"))
+
+
+def _donem_secenekleri(k, anlam, deger, turler=None):
+    """Birimli kalibin bu degerdeki anlam turleri: [{"tur", "ad", "metin"}]
+    (sabit dort tur ve calismanin ozel turleri; metin sayi yerinde)."""
+    birim = donem_tur.birim_anlami(anlam)
+    ozel = {t: x for t, x in ((turler or {}).get(k) or {}).items()
+            if t not in donem_tur.SABIT_KODLAR and isinstance(x, dict)}
+    cikti = []
+    for t in list(donem_tur.SABIT_KODLAR) + sorted(ozel):
+        sablon = donem_tur.tur_anlami(t, birim, ozel)
+        if not sablon:
+            continue
+        cikti.append({"tur": t, "ad": donem_tur.TUR_ADI.get(t) or str(ozel[t].get("ad") or t),
+                      "metin": donem_mod.deger_anlami(k, sablon, deger)})
+    return cikti
 
 
 # Parca turu -> kolon karti alani (zaman turlerinin hepsi "zaman").
@@ -4441,7 +4750,7 @@ def _kolon_karti(kart_parcalari):
     return {a: ", ".join(kart[a]) for a, _e in KART_ADLARI if a in kart}
 
 
-def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
+def _aciklama_parcalari(t, desenler, onayli, parca_notlari, turler=None, birimli=None):
     """Ad parcalarinin onayli anlamlari. onayli: Ad Parcalari'nin sonucu
     {PARCA: {"anlam", "tur", "standart"}}. Doner: (istem satirlari, aile
     karsilastirmasi icin donem degeri silinmis ozet, kolon kartinin
@@ -4473,8 +4782,18 @@ def _aciklama_parcalari(t, desenler, onayli, parca_notlari):
         for k, r, anlam, haric, degerler, tur in desenler:
             # Kalip, haric tutulan ikilinin icinde donem sayilmaz.
             if r.match(p) and not donem_mod.haric_mi(t, i, haric):
-                parcalar.append((p, _donem_parca_metni(k, anlam, degerler, p, tur)))
-                kart.append((i, "zaman", degerler.get(p) or donem_mod.deger_anlami(k, anlam, p)))
+                parcalar.append((p, _donem_parca_metni(k, anlam, degerler, p, tur, turler)))
+                # BIRIMLI: kartta birim ("30 gün"); kolonun turu belli olunca
+                # turun anlami yazilir (bkz. _donem_turu_coz).
+                if donem_tur.birimli_mi(k) and not degerler.get(p):
+                    b_metin = donem_mod.deger_anlami(k, donem_tur.birim_anlami(anlam), p)
+                    kart.append((i, "zaman", b_metin))
+                    if birimli is not None:
+                        birimli.append({"deger": p, "kalip": k, "sira": i, "birim": b_metin,
+                                        "birim_anlam": donem_tur.birim_anlami(anlam),
+                                        "secenekler": _donem_secenekleri(k, anlam, p, turler)})
+                else:
+                    kart.append((i, "zaman", degerler.get(p) or donem_mod.deger_anlami(k, anlam, p)))
                 ozet.append((k, anlam))
                 bulundu = True
                 break
@@ -4557,6 +4876,8 @@ def _aciklama_girdileri(durum):
         if kolon and rol in ROL_ADLARI:
             roller[str(kolon)] = ROL_ADLARI[rol]
     sadece_desen = [x[1] for x in desenler]
+    donem_turler = durum.get("donem_anlam_turleri") if isinstance(
+        durum.get("donem_anlam_turleri"), dict) else {}
     girdiler = []
     for a in adlar:
         t = aciklama_mod.toklar(a)
@@ -4567,7 +4888,9 @@ def _aciklama_girdileri(durum):
         if donem_kosul and any(p_ in donem_kosul_parcalari for p_ in t):
             desen_a = [(k_, r_, donem_mod.kosullu_anlam(an_, donem_kosul.get(k_), t), h_, dg_, tr_)
                        for k_, r_, an_, h_, dg_, tr_ in desenler]
-        parcalar, ozet, kart_p = _aciklama_parcalari(t, desen_a, onayli, parca_notlari)
+        birimli_p = []
+        parcalar, ozet, kart_p = _aciklama_parcalari(t, desen_a, onayli, parca_notlari,
+                                                     donem_turler, birimli_p)
         aile = aciklama_mod.aile_anahtari(a)
         kardes = [k for k in aileler.get(aile, []) if k != a][:aciklama_mod.KARDES_ADET]
         an = aile_notlari.get(aile) or {}
@@ -4588,7 +4911,7 @@ def _aciklama_girdileri(durum):
              "kardesler": [(k, str(tanimlar.get(k) or "").strip()) for k in kardes],
              "dagilim": _dagilim_satiri(ozetler.get(a)), "rol": roller.get(a, ""),
              "aile": aile, "aile_boyu": len(aileler.get(aile, [])),
-             "donem_sayilari": donem_s}
+             "donem_sayilari": donem_s, "donem_birimli": birimli_p}
         g["imza"] = aciklama_mod.imza(
             ACIKLAMA_SURUMU, a, g["orijinal"], g["not"], g["aile_notu"], g["parcalar"],
             g["kardesler"], g["dagilim"], g["rol"])
@@ -4610,6 +4933,54 @@ def _aciklama_karti(durum, toplam, uyari=""):
                 "{tanimsiz_karar}", akis_atif.adim("tanimsiz_karar", durum)), "toplam": int(toplam), "surum": 1,
             "uyari": uyari or "",
             "onceki_not": (durum.get("_onceki_notlari") or {}).get("aciklama", "")}
+
+
+DONEM_TUR_KAYNAK = {"secim": "Sizin seçiminiz", "aciklama": "Açıklamadan",
+                    "model": "Dil modeli", "": ""}
+
+
+def _donem_turu_coz(g, metin, model_turu=None, secim=None):
+    """Kolonun birimli donem parcalarinin anlam turu, oncelik sirasiyla:
+    kullanicinin secimi > aciklamadaki ifade (kod, kesin) > dil modelinin
+    isareti > belirsiz. metin: kolonun guncel (ya da onayli) aciklamasi.
+    Doner: [{"deger", "kalip", "tur", "kaynak", "birim", "metin",
+    "secenekler"}]; tur belirsizse "" (metin birim)."""
+    cikti = []
+    for x in g.get("donem_birimli") or []:
+        dg = str(x.get("deger") or "")
+        gecerli = {o["tur"]: o for o in x.get("secenekler") or []}
+        tur, kaynak = "", ""
+        s_ = str((secim or {}).get(dg) or "")
+        if s_ in gecerli:
+            tur, kaynak = s_, "secim"
+        if not tur:
+            m_ = donem_tur.metinden_tur(metin, donem_tur.deger_sayisi(x.get("kalip"), dg),
+                                        x.get("birim_anlam") or "")
+            if m_ in gecerli:
+                tur, kaynak = m_, "aciklama"
+        if not tur:
+            m_ = str((model_turu or {}).get(dg) or "")
+            if m_ in gecerli:
+                tur, kaynak = m_, "model"
+        cikti.append({"deger": dg, "kalip": x.get("kalip") or "", "tur": tur, "kaynak": kaynak,
+                      "kaynak_adi": DONEM_TUR_KAYNAK.get(kaynak, ""),
+                      "birim": x.get("birim") or "",
+                      "metin": gecerli[tur]["metin"] if tur else (x.get("birim") or ""),
+                      "secenekler": list(x.get("secenekler") or [])})
+    return cikti
+
+
+def _kart_donem_turlu(kart, turler):
+    """Kartin zaman alaninda birim metni ("30 gün") kolonun turuyle ("son
+    30 gün") yazilir. Doner: yeni kart."""
+    k = dict(kart or {})
+    z = str(k.get("zaman") or "")
+    for x in turler or []:
+        if x.get("tur") and x.get("birim") and x["birim"] in z:
+            z = z.replace(x["birim"], x["metin"], 1)
+    if z:
+        k["zaman"] = z
+    return k
 
 
 def _aciklama_satiri(d, g):
@@ -4639,6 +5010,13 @@ def _aciklama_satiri(d, g):
         satir["soru_cevabi"] = sc
     satir["elle"] = bool(d.elle.get(kolon))
     satir["onayli"] = _aciklama_onayli(d, g, durum_)
+    # DONEM ANLAM TURU (birimli kaliplar): her parcanin bu kolondaki turu;
+    # belirsizse kartta secilir. Kartin zaman alani turle yazilir.
+    if g.get("donem_birimli"):
+        son_metin, _r = _son_aciklama(d, g)
+        satir["donem_turleri"] = _donem_turu_coz(
+            g, son_metin, (r or {}).get("donem_turu"), d.donem_turleri.get(kolon))
+        satir["kart"] = _kart_donem_turlu(satir["kart"], satir["donem_turleri"])
     return satir
 
 
@@ -4790,10 +5168,17 @@ def aciklama_alani(durum, son=0):
                     if not son or d.sira.get(g["kolon"], 0) > son]
         sayac = {"toplam": len(girdiler), "hazir": 0, "degisen": 0, "soru": 0,
                  "ad": 0, "kontrol": 0, "elle": 0, "hata": 0, "bekleyen": 0,
-                 "onayli": 0, "onaysiz": 0, "ek": 0, "yazim": 0, "ek_degisim": 0}
+                 "onayli": 0, "onaysiz": 0, "ek": 0, "yazim": 0, "ek_degisim": 0,
+                 "donem_belirsiz": 0}
         for g in girdiler:
             kolon = g["kolon"]
             dr = aciklama_mod.satir_durumu(d, kolon)
+            # Donem anlami belirsiz kolon (yazilmis kolonlarda).
+            if g.get("donem_birimli") and dr in ("hazir", "hata"):
+                son_m, r_s = _son_aciklama(d, g)
+                if any(not x["tur"] for x in _donem_turu_coz(
+                        g, son_m, (r_s or {}).get("donem_turu"), d.donem_turleri.get(kolon))):
+                    sayac["donem_belirsiz"] += 1
             if _aciklama_onayli(d, g, dr):
                 sayac["onayli"] += 1
             else:
@@ -5502,6 +5887,55 @@ def aciklama_not_kaydet(durum, kolon, metin, tam=False):
     return {"hata": hata or ""}
 
 
+def aciklama_donem_turu(durum, kolon, deger, tur, aileye=True):
+    """KOLONUN DONEM ANLAMI: belirsiz (ya da degistirilen) birimli donem
+    parcasinin turu secilir. aileye: ailenin (adi yalniz sayilarla ayrilan
+    kolonlar) ayni yerdeki parcasi turu belirsiz olan uyelerine de. Secim
+    kolonun notuna da yazilir; dil modeli aciklamayi bu yonle yeniden
+    yazar. Bos tur secimi kaldirir."""
+    if not _aciklama_canli(durum):
+        return {"hata": _kart_kapali(durum), "kolon_sayisi": 0}
+    klasor = _aciklama_klasoru(durum)
+    d = aciklama_mod.depo(klasor)
+    kolon, deger, tur = str(kolon or "").strip(), str(deger or "").strip().upper(), \
+        str(tur or "").strip()
+    with aciklama_mod._KILIT:
+        g = d.girdiler.get(kolon)
+        if not g:
+            return {"hata": "%s kolonu kartta yok." % kolon, "kolon_sayisi": 0}
+        x = next((y for y in g.get("donem_birimli") or [] if y["deger"] == deger), None)
+        if not x:
+            return {"hata": "%s kolonunun adında %s dönem parçası yok." % (kolon, deger),
+                    "kolon_sayisi": 0}
+        if tur and tur not in {o["tur"] for o in x["secenekler"]}:
+            return {"hata": "Geçersiz dönem anlamı.", "kolon_sayisi": 0}
+        hedefler = [(kolon, x)]
+        if aileye and g.get("aile"):
+            for k2, g2 in d.girdiler.items():
+                if k2 == kolon or g2.get("aile") != g.get("aile"):
+                    continue
+                x2 = next((y for y in g2.get("donem_birimli") or []
+                           if y["sira"] == x["sira"] and y["kalip"] == x["kalip"]), None)
+                if not x2:
+                    continue
+                son2, r2 = _son_aciklama(d, g2)
+                coz = _donem_turu_coz(g2, son2, (r2 or {}).get("donem_turu"),
+                                      d.donem_turleri.get(k2))
+                if any(c["deger"] == x2["deger"] and not c["tur"] for c in coz):
+                    hedefler.append((k2, x2))
+    secimler, notlar = {}, {}
+    for k_, x_ in hedefler:
+        secimler[k_] = {x_["deger"]: tur}
+        sec = next((o for o in x_["secenekler"] if o["tur"] == tur), None)
+        if sec:
+            notlar[k_] = "Adındaki %s bu kolonda «%s» anlamında." % (x_["deger"], sec["metin"])
+    hata = aciklama_mod.donem_turu_yaz(klasor, secimler, notlar)
+    if notlar:
+        _aciklama_ver(durum, oncelikli=list(notlar), devam=False)
+    _kontrol_aciklama_yaz(durum)
+    return {"hata": hata or "", "kolon_sayisi": len(hedefler)}
+
+
 def aciklama_soru_cevapla(durum, kolon, cevap):
     """KOLONUN SORUSUNA CEVAP: cevap soruyla birlikte dil modeline not
     olarak gider, kolon beklemeden yeniden yazilir. Bos cevap kaldirir."""
@@ -5672,9 +6106,16 @@ def aciklama_uygula(durum):
         for g in girdiler:
             son, r = _son_aciklama(d, g)
             kolon = g["kolon"]
+            dturler = _donem_turu_coz(g, son, (r or {}).get("donem_turu"),
+                                      d.donem_turleri.get(kolon)) if g.get("donem_birimli") else []
+            if any(not x["tur"] for x in dturler):
+                sayi["donem_belirsiz"] += 1
             onay[kolon] = {"orijinal": g.get("orijinal") or "", "son": son,
                            "not": d.notlar.get(kolon, ""),
-                           "kart": dict(g.get("kart") or {}),
+                           "kart": _kart_donem_turlu(g.get("kart") or {}, dturler),
+                           "donem_turleri": [{"deger": x["deger"], "kalip": x["kalip"],
+                                              "tur": x["tur"], "kaynak": x["kaynak"]}
+                                             for x in dturler],
                            "ek": (r or {}).get("ek") or "",
                            "aile": g.get("aile") or "",
                            "karar": (r or {}).get("karar") or "",
@@ -5708,6 +6149,9 @@ def aciklama_uygula(durum):
     if sayi["duzenlenmedi"]:
         metin += (" %s kolonu dil modeli düzenlemedi; notunuz varsa o, yoksa orijinal "
                   "açıklama kaldı." % _sayi(sayi["duzenlenmedi"]))
+    if sayi["donem_belirsiz"]:
+        metin += (" %s kolonda dönemin anlamı (son, önce, sonra, süre) belirlenmedi; bu "
+                  "kolonların adında dönem kısmı değişmez." % _sayi(sayi["donem_belirsiz"]))
     _kontrol_aciklama_yaz(durum, tamam=True, karar={})
     (durum.get("_onceki_notlari") or {}).pop("aciklama", None)
     metin = metin + (" " + kayit_hata if kayit_hata else "")

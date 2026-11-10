@@ -1043,6 +1043,62 @@ tanıtır; sayfalar sol bardan açılır.
   orada kurulur; 01.2.4.1'de ad değiştiriyormuş gibi görünen kutu yok).
   01.2.4.1 kararı, Kaydet ve Kaydı Geri Al hafızadaki yazılışa (`donem_ad`)
   dokunmaz; eski kararlardaki `ad_yazilis` yok sayılır.
+- **Dönem anlam türleri (birimli kalıplar, `fe_agent/donem_tur.py`):**
+  sayı + zaman birimi kalıplarının (`<N>D`, `D<N>`, `<N>_D`, `D_<N>`;
+  `donem.aile_adi` dolu olanlar) yönü kolondan kolona değişir: bir
+  kolonda "son 30 gün", başkasında "30 gün önce", "30 gün sonra" ya da
+  yalnız "30 gün". Bu yüzden:
+  - **01.2.4.1:** kalıbın anlamı birimdir ("[sayı] gün"; dil modelinin
+    ya da hafızanın anlamındaki son, önce, sonra, boyunca sözcükleri
+    atılır, `birim_anlami`). Satırda "Yön kalıba yazılmaz" notu ve
+    altında **Anlam türleri** tablosu: Son (son [sayı] gün), Önce
+    ([sayı] gün önce), Sonra ([sayı] gün sonra), Süre ([sayı] gün) sabit;
+    "Tür Ekle" ile kullanıcı tür ekler (ad + anlam, anlamda [sayı];
+    kod adından üretilir), eklenen "Kaldır" ile çıkar (`ozel_turler`).
+    Her türün kaç kolonda geçtiğini kod bütün tanımlarda sayar
+    (`_donem_tur_sayimi`, örnekleme yok; i balonunda örnek kolonlar).
+    Tanımında yön olmayan kolonlar "belirsiz" sayılır ve 01.2.4.3'te
+    sorulur. Tanımdan tür (`metinden_tur`): "son N gün" son, "N gün
+    önce(ki)" önce, "N gün sonra(ki)" ya da "önümüzdeki N gün" sonra,
+    "N gün boyunca" süre; aynı sayı bir yerde yönlü bir yerde yönsüz
+    geçerse yönlü olan, iki farklı yön ya da hiç yön yoksa belirsiz.
+  - **01.2.4.3:** her kolonda dönemin türü bu sırayla belirlenir
+    (`_donem_turu_coz`): kullanıcının seçimi > onaylı açıklamadaki ifade
+    (kod) > dil modelinin `donem_turu` alanı (`SISTEM_ACIKLAMA_DUZEN`
+    "DÖNEM YÖNÜ" kuralı) > belirsiz. Satırda "Dönem: 30D bu kolonda «son
+    30 gün» · Açıklamadan · Değiştir"; belirsiz kolon Cevapsız Soru
+    aşamasına girer, sarı kutuda seçenek düğmeleri ve "Ailenin dönemi
+    belirsiz öbür kolonlarına da uygula" kutusu çıkar. Seçim
+    `/aciklama_islem` `islem: "donem_tur"` ile gider
+    (`aciklama_donem_turu`): seçim kaydedilir, kolon (ve isteğe göre
+    ailenin dönemi belirsiz, aynı yerde aynı kalıbı taşıyan kolonları)
+    "Adındaki 30D bu kolonda «son 30 gün» anlamında" notuyla dil
+    modeline yeniden düzenletilir. Kartın Zaman alanı türlü yazılır.
+    Onay kaydında `donem_turleri` tutulur. Parça metni değiştiği için
+    açıklama imzası değişir: önceki çalışmaların kolonları bir kez yeniden
+    düzenlenir.
+  - **01.2.4.4 Dönem Yazılışları:** birimli kalıp için kalıp × tür
+    satırları (yalnız en az bir kolonda geçen türler; anahtar
+    `kalip|tur`), "Anlam" sütunu. Varsayılan yazılış Son L[sayı]D, Önce
+    B[sayı]D, Sonra N[sayı]D, Süre aynen. Aynı yazılış iki türe
+    verilemez (`yazilis_cakismasi`, onayı durdurur). Belirsiz satırı
+    salt okunur: o kolonların adında dönem kısmı aynen kalır. Her kolon
+    kendi türünün yazılışıyla adlanır (`_kolon_yazilislari`,
+    `_aile_adlari(..., kolon_yaz)`): TXN_OUT_AMT_30D → TXN_OUT_AMT_L30D,
+    LOAN_DUE_AMT_30D → LOAN_DUE_AMT_N30D, BAL_30D → BAL_B30D.
+  - **Hafıza:** kalıbın anlamı birim; türler `anlam_turleri` alanında
+    (`{tur: {ad, anlam, yeni_adda}}`; `kisaltma.donem_anlam_turleri_kaydet`,
+    `None` türü siler). Bir yazılış bir kalıpta yalnız tek türe bağlanır.
+    Yeni yazılış (L<N>D) kendi kalıbı olarak kesin anlamıyla da yazılır
+    (`_donem_tur_yazilis_hafizaya`): sonraki çalışmada L30D kesin "son 30
+    gün", yalın 30D belirsizdir; 01.2.3 bu yüzden L30D'yi kesin, 30D'yi
+    dikkat bağlamı olarak verir. Eski tek anlamlı kayıt (kalıp düzeyindeki
+    `donem_ad`) eski anlamındaki yön sözcüğünün türüne taşınır
+    (`kalip_turleri`), tür yazılışı kaydedilince kalıp düzeyindeki kayıt
+    kalkar. Kalan kullanıcı türü kaldırılınca hafızadan da silinir.
+  - **Kapsam dışı:** iki parçalı kalıplar (`<N>D_<N>D`), harf + sayı +
+    harf kalıpları (L<N>D) ve saat aralıkları kendi anlamını taşır, bu
+    kurala girmez.
 - **İki parçalı zaman kalıbı:** yan yana iki sayılı dönem parçası
   (3D_6D) Tüm Parçalar'da ikili olarak da yer alır (grubu `<N>D_<N>D`);
   "Kalıplara Al" ile tek satır olur (ör. anlamı "N ile N gün arası", yeni
@@ -1610,7 +1666,8 @@ tanıtır; sayfalar sol bardan açılır.
     çalışmanın önceki kararı (`_kolon_ad_karari["donem_yazilis"]`; eski
     kayıtta yok), hafıza (`donem_ad`). Onayda `durum["donem_ad_yazilis"]`
     ve hafızaya yazılır (boş olan hafızadan kalkar); onay metninde "N dönem
-    kalıbının yeni adda yazılışı var".
+    yazılışı var". Birimli kalıplarda satırlar kalıp × türdür (bkz.
+    "Dönem anlam türleri").
     Varsayılan sıra: Konu, Yön, Nitelik, Ölçü, İstatistik, Zaman,
     Karşılaştırma, Birim, Diğer (TXN_30D_CNT → TXN_CNT_30D); büyük harf,
     ayraç "_".
