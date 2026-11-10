@@ -2461,7 +2461,7 @@ NASIL DÜZELTİRSİN
 DÖNEM YÖNÜ ("donem_turu"): PARÇALAR'da "yönü ve kapsamı kolona göre
 değişir" denen dönem parçası (ör. 3D: 3 gün) bu kolonda hangi anlamda
 kullanılıyor, yaz: {"3D": "son"}. Her tür bir yön (geçmiş, gelecek, iki
-yönlü, takvim, yönsüz) ve bir kapsamla tanımlıdır; "bugün" referans
+yönlü, takvim, takvimden bugüne, yönsüz) ve bir kapsamla tanımlıdır; "bugün" referans
 tarihidir:
   "son"     son 3 gün: bugünden önceki 1., 2., 3. gün (geçmiş aralık)
   "once"    3 gün önce: yalnız 3 gün öncesi (geçmişte tek gün)
@@ -2470,6 +2470,8 @@ tarihidir:
   "cevre"   3 gün öncesi ve sonrası: 3 gün öncesinden 3 gün sonrasına
   "takvim"  takvimdeki yer, bugünden bağımsız: 3M için yılın 3. ayı, 15D
             için ayın 15. günü (sayı sıra olarak kullanılır)
+  "beri"    takvimdeki yerden bugüne: Y2023 için 2023 yılından beri (1
+            Ocak 2023 tarihinden bugüne), 3M için yılın 3. ayından beri
   "sure"    yönsüz uzunluk: tarih aralığı değil, bir sürenin uzunluğu
             (ör. "vade süresi 3 gün")
 ya da PARÇALAR'da o parça için yazan ek tür kodu. Türü yalnız KULLANICI

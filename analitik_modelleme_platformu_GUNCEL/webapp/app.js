@@ -13396,6 +13396,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
             const turAnlami = (t, b) => t === "son" ? ("son " + b).trim() : t === "once" ? (b + " önce").trim()
                 : t === "sonraki" ? ("sonraki " + b).trim() : t === "sonra" ? (b + " sonra").trim()
                 : t === "cevre" ? (b + " öncesi ve sonrası").trim() : t === "takvim" ? takvimAnlami(b)
+                : t === "beri" ? beriAnlami(b)
                 : t === "sure" ? b : "";
             const YON_SOZ = new Set(["son", "önce", "önceki", "öncesi", "öncesine", "önceye", "geçmiş", "geçen",
                 "sonra", "sonraki", "sonrası", "sonrasına", "gelecek", "önümüzdeki", "izleyen", "ileriki",
@@ -13405,7 +13406,12 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                ayın [sayı]. günü ... */
             const TAKVIM = { "gün": ["ayın", "günü"], "hafta": ["yılın", "haftası"], "ay": ["yılın", "ayı"],
                              "çeyrek": ["yılın", "çeyreği"], "saat": ["günün", "saati"], "dakika": ["saatin", "dakikası"] };
-            const TAKVIM_YALIN = Object.fromEntries(Object.entries(TAKVIM).map(([b_, [, e]]) => [e, b_]).concat([["yılı", "yıl"]]));
+            /* BERİ: takvimdeki yerden bugüne (sunucuda donem_tur.beri_anlami). */
+            const TAKVIM_CIKMA = { "günü": "gününden", "haftası": "haftasından", "ayı": "ayından",
+                                   "çeyreği": "çeyreğinden", "saati": "saatinden", "dakikası": "dakikasından" };
+            const TAKVIM_YALIN = Object.fromEntries(Object.entries(TAKVIM).map(([b_, [, e]]) => [e, b_])
+                .concat(Object.entries(TAKVIM).map(([b_, [, e]]) => [TAKVIM_CIKMA[e], b_]))
+                .concat([["yılı", "yıl"], ["yılından", "yıl"]]));
             const birimSoz = b => (b.replace(/<[^<>]*>/g, " ").toLocaleLowerCase("tr").match(/[a-zçğıöşüâîû]+/g) || [])
                 .find(w => !YON_SOZ.has(w) && w !== "ve") || "";
             const takvimAnlami = (b, n) => {
@@ -13414,12 +13420,21 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 if (bs === "yıl") return n + " yılı";
                 return TAKVIM[bs] ? TAKVIM[bs][0] + " " + n + ". " + TAKVIM[bs][1] : n + ". " + bs;
             };
+            const beriAnlami = b => {
+                const bs = birimSoz(b), n = "<N>";
+                if (!bs) return "";
+                if (bs === "yıl") return n + " yılından beri";
+                return TAKVIM[bs] ? TAKVIM[bs][0] + " " + n + ". " + TAKVIM_CIKMA[TAKVIM[bs][1]] + " beri"
+                    : n + ". " + bs + " başından beri";
+            };
+            /* Biçimi sabit yönler: yönsüz uzunluk, takvimden bugüne pencere. */
+            const sabitBicim = y => y === "yonsuz" ? "uzunluk" : y === "beri" ? "pencere" : "";
             const birimAl = () => {
                 const a_ = anlamAl();
                 const m = a_.match(/(<N\d*>|<NN>)\s*(\.\s*)?([^\s.,;<>]+)/);
                 if (m) {
                     const e = m[3].toLocaleLowerCase("tr");
-                    if (TAKVIM_YALIN[e] && (m[2] || e === "yılı")) return m[1] + " " + TAKVIM_YALIN[e];
+                    if (TAKVIM_YALIN[e] && (m[2] || e === "yılı" || e === "yılından")) return m[1] + " " + TAKVIM_YALIN[e];
                 }
                 return birimYonsuz(a_);
             };
@@ -13432,10 +13447,13 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 const bs = birimSoz(b);
                 if (!bs || !yon) return "";
                 const n = "<N>";
-                /* Yılda takvim yalnız dört haneli takvim yılı (2023 yılı);
+                /* Yılda takvim ve beri yalnız dört haneli takvim yılı (2023 yılı);
                    sunucuda donem_tur.takvim_gecerli. */
                 if (yon === "takvim" && bs === "yıl")
                     return "bugünden bağımsız; yalnız " + n + " yılı (dört haneli takvim yılı, 1 Ocak ile 31 Aralık arası)";
+                if (yon === "beri") return bs === "yıl"
+                    ? "1 Ocak " + n + " tarihinden bugüne (dört haneli takvim yılı)"
+                    : bs === "gün" ? "ayın " + n + ". gününden bugüne" : takvimAnlami(b) + " başından bugüne";
                 if (yon === "takvim") return bicim === "pencere" && TAKVIM[bs]
                     ? "bugünden bağımsız; " + TAKVIM[bs][0] + " 1. ile " + n + ". " + TAKVIM[bs][1] + " arası"
                     : "bugünden bağımsız; yalnız " + takvimAnlami(b);
@@ -13450,7 +13468,8 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 return "";
             };
             const YONLER = [["gecmis", "Geçmiş"], ["gelecek", "Gelecek"], ["iki", "İki yönlü"],
-                            ["takvim", "Takvim (bugünden bağımsız)"], ["yonsuz", "Yönsüz"]];
+                            ["takvim", "Takvim (bugünden bağımsız)"], ["beri", "Takvimden bugüne"],
+                            ["yonsuz", "Yönsüz"]];
             const BICIMLER = [["pencere", "Pencere: aralığın tamamı"], ["nokta", "Nokta: yalnız uçtaki gün"]];
             let ekleAcik = false, ekleHata = "";
             /* Formda yazılanlar yeniden çizimde (hata gösterilince) kalır. */
@@ -13496,9 +13515,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                                 sc.value = v || "";
                             });
                         sY.setAttribute("aria-label", x.ad + " yönü"); sB.setAttribute("aria-label", x.ad + " biçimi");
-                        sB.disabled = sY.value === "yonsuz";
+                        sB.disabled = !!sabitBicim(sY.value);
                         const yaz = () => {
-                            const yon = sY.value, bicim = yon === "yonsuz" ? "uzunluk" : sB.value;
+                            const yon = sY.value, bicim = sabitBicim(yon) || sB.value;
                             ozelTurler = ozelTurler.map(y => y.tur === x.tur ? Object.assign({}, y, { yon: yon, bicim: bicim }) : y);
                             duzen[anah] = Object.assign(duzen[anah] || {}, { ozel_turler: ozelTurler.slice() });
                             dtCiz(); boya(); if (degisti) degisti();
@@ -13570,9 +13589,9 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 adG.oninput = sakla; anG.oninput = sakla;
                 const kapOn = elYap("div", "dg-dt-kapsam-onizle", "");
                 const onizle = () => {
-                    bicS.disabled = yonS.value === "yonsuz";
-                    const k = kapsamYaz(yonS.value, yonS.value === "yonsuz" ? "uzunluk" : bicS.value, birimAl());
-                    kapOn.textContent = k && (yonS.value === "yonsuz" || bicS.value)
+                    bicS.disabled = !!sabitBicim(yonS.value);
+                    const k = kapsamYaz(yonS.value, sabitBicim(yonS.value) || bicS.value, birimAl());
+                    kapOn.textContent = k && (sabitBicim(yonS.value) || bicS.value)
                         ? "Kapsam: " + donemAnlamGoster(kalipNe(), k) : "";
                 };
                 yonS.onchange = () => { sakla(); onizle(); };
@@ -13586,7 +13605,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 ek.onclick = () => {
                     const ad = adG.value.trim().replace(/\s+/g, " ");
                     const anlam = donemAnlamIc(kalipNe(), anG.value.trim());
-                    const yon = yonS.value, bicim = yon === "yonsuz" ? "uzunluk" : bicS.value;
+                    const yon = yonS.value, bicim = sabitBicim(yon) || bicS.value;
                     if (!ad || !anlam) { ekleHata = "Adı ve anlamı yazın."; dtCiz(); return; }
                     if (anlam.indexOf("<N") === -1) { ekleHata = "Anlamda [sayı] olmalı."; dtCiz(); return; }
                     if (!yon || !bicim) { ekleHata = "Yön ve biçimi seçin."; dtCiz(); return; }
@@ -13594,7 +13613,7 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                         .replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "_")
                         .replace(/^_+|_+$/g, "").slice(0, 20) || "tur";
                     if (!/^[a-z]/.test(kod)) kod = "t_" + kod;
-                    const kullanilan = new Set(["son", "once", "sonraki", "sonra", "cevre", "takvim", "sure", "belirsiz"]
+                    const kullanilan = new Set(["son", "once", "sonraki", "sonra", "cevre", "takvim", "beri", "sure", "belirsiz"]
                         .concat(ozelTurler.map(y => y.tur)));
                     let k2 = kod, i = 2;
                     while (kullanilan.has(k2)) k2 = kod + "_" + (i++);

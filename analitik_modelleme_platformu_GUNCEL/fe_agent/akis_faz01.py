@@ -2962,7 +2962,7 @@ def _ozel_tur_temizle(kalip, liste):
             hatalar.append("%s (%s türü): %s" % (_donem_kalip_gorunur(kalip), ad, yt))
             continue
         yon = str(x.get("yon") or "")
-        bicim = "uzunluk" if yon == "yonsuz" else str(x.get("bicim") or "")
+        bicim = donem_tur.sabit_bicim(yon) or str(x.get("bicim") or "")
         if yon not in donem_tur.YON_ADI or bicim not in ("pencere", "nokta", "uzunluk"):
             hatalar.append("%s (%s türü): yön ve biçim seçilmeli (geçmiş, gelecek, iki yönlü ya "
                            "da yönsüz; pencere ya da nokta)." % (_donem_kalip_gorunur(kalip), ad))
@@ -4684,7 +4684,8 @@ def _donem_secenekleri(k, anlam, deger, turler=None):
         if not sablon:
             continue
         # Takvim yalniz anlamliysa (yil biriminde dort haneli yil).
-        if donem_tur.tur_bilgisi(t, ozel)[0] == "takvim" and not donem_tur.takvim_gecerli(birim, sayi):
+        if donem_tur.tur_bilgisi(t, ozel)[0] in donem_tur.TAKVIM_YONLERI \
+                and not donem_tur.takvim_gecerli(birim, sayi):
             continue
         cikti.append({"tur": t, "ad": donem_tur.TUR_ADI.get(t) or str(ozel[t].get("ad") or t),
                       "metin": donem_mod.deger_anlami(k, sablon, deger),

@@ -1053,7 +1053,8 @@ tanıtır; sayfalar sol bardan açılır.
   başına belirsizdir: geçmişe mi geleceğe mi (ya da ikisine mi) bakar,
   aralığın tamamını mı yoksa yalnız uçtaki günü mü kapsar, yoksa takvimde
   bir yeri mi gösterir (yılın 3. ayı)? Her tür bunu iki eksenle
-  kesinleştirir: **yön** (geçmiş, gelecek, iki yönlü, takvim, yönsüz)
+  kesinleştirir: **yön** (geçmiş, gelecek, iki yönlü, takvim, takvimden
+  bugüne, yönsüz)
   ve **biçim** (pencere: aralığın tamamı; nokta: yalnız uçtaki gün;
   yönsüzde uzunluk). Sabit türler (3D için; bugün referans tarihidir,
   pencereye dahil değildir):
@@ -1066,6 +1067,7 @@ tanıtır; sayfalar sol bardan açılır.
   | Sonra | gelecek | nokta | 3 gün sonra | yalnız 3 gün sonrası | A3D |
   | Çevre | iki yönlü | pencere | 3 gün öncesi ve sonrası | 3 gün öncesinden 3 gün sonrasına | PM3D |
   | Takvim | takvim | nokta | ayın 3. günü (3M: yılın 3. ayı) | bugünden bağımsız; yalnız ayın 3. günü | C3D |
+  | Beri | takvimden bugüne | pencere | ayın 3. gününden beri (Y2023: 2023 yılından beri) | ayın 3. gününden bugüne (Y2023: 1 Ocak 2023 tarihinden bugüne) | S3D |
   | Süre | yönsüz | uzunluk | 3 gün | tarih aralığı değil, bir sürenin uzunluğu | aynen |
 
   Kapsam metni `kapsam_metni` (sunucu) ve `kapsamYaz` (ekran) ile aynı
@@ -1078,11 +1080,16 @@ tanıtır; sayfalar sol bardan açılır.
   kapsam "bugünden bağımsız; yalnız 2023 yılı (1 Ocak ile 31 Aralık
   arası)"; tanımdan "2023 yılında", "2023 yılı", "2023 senesinde",
   "2023'te", "2023'teki", "2023'ten", "2023de" okunur; "2023'ten beri,
-  itibaren, bu yana, sonra, önce" bir aralık olduğu için takvim sayılmaz.
+  itibaren, bu yana" **Beri** türüdür; "2023'ten sonra, önce" belirsiz
+  kalır.
   Y3 gibi küçük
   sayıda Takvim seçeneği çıkmaz (01.2.4.3 seçenekleri, dil modelinin
   takvim işareti geçersiz sayılır); "ilişkinin 3. yılı" takvim sayılmaz.
-  Kullanıcı türünde Takvim yönü de seçilebilir; pencere
+  Beri anlamı `beri_anlami` (ekranda `beriAnlami`), kapsam takvimdeki
+  yerin başından bugüne. Takvim ve Beri yönlü türler `TAKVIM_YONLERI`;
+  yıl biriminde ikisi de dört haneli yıl ister. Kullanıcı türünde
+  Takvimden bugüne yönünde biçim sabit (pencere; `sabit_bicim`), seçim
+  kutusu kapalı. Kullanıcı türünde Takvim yönü de seçilebilir; pencere
   biçiminde kapsam "bugünden bağımsız; ayın 1. ile N. günü arası".
   Kalıbın anlamı takvim olarak gelirse ("yılın <N>. ayı", dil modelinden
   ya da eski hafızadan) birime döner ("<N> ay", `birim_anlami`); M<N>
@@ -1114,7 +1121,10 @@ tanıtır; sayfalar sol bardan açılır.
     "3 gün önce ve sonra", "±3 gün"; takvim: sıra sayısı ve birim
     ("yılın 3. ayı", "ayın 15. günü", "3. ay", "3'üncü ay", "üçüncü ay";
     bulunan yer metinden çıkarılır ki "geçen yılın 3. ayı"ndaki "geçen"
-    yön sayılmasın); süre: sayıdan önce "süre" sözcüğü
+    yön sayılmasın); beri: takvimdeki yer + ayrılma eki + beri, itibaren,
+    bu yana ("2023'ten beri", "2023 yılından itibaren", "yılın 3. ayından
+    bu yana", "ayın 15. gününden beri"; takvimden önce bakılır);
+    süre: sayıdan önce "süre" sözcüğü
     ("vade süresi 3 gün"). Yön söylemeyen "3 gün boyunca", "3 günlük",
     "3 gün içinde" belirsizdir, tahminle türe atanmaz. Aynı sayı bir yerde
     türlü bir yerde türsüz geçerse türlü olan; iki farklı tür ya da hiç

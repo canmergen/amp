@@ -53,6 +53,7 @@ SABIT_TURLER = (
     ("sonra", "Sonra", "A", "gelecek", "nokta"),
     ("cevre", "Çevre", "PM", "iki", "pencere"),
     ("takvim", "Takvim", "C", "takvim", "nokta"),
+    ("beri", "Beri", "S", "beri", "pencere"),
     ("sure", "Süre", "", "yonsuz", "uzunluk"),
 )
 SABIT_KODLAR = tuple(x[0] for x in SABIT_TURLER)
@@ -61,15 +62,21 @@ TUR_HARF = {x[0]: x[2] for x in SABIT_TURLER}
 TUR_YON = {x[0]: x[3] for x in SABIT_TURLER}
 TUR_BICIM = {x[0]: x[4] for x in SABIT_TURLER}
 YON_ADI = {"gecmis": "Geçmiş", "gelecek": "Gelecek", "iki": "İki yönlü", "takvim": "Takvim",
-           "yonsuz": "Yönsüz"}
+           "beri": "Takvimden bugüne", "yonsuz": "Yönsüz"}
+# Yonu takvimdeki bir yere bagli turler (yil biriminde dort haneli yil ister).
+TAKVIM_YONLERI = ("takvim", "beri")
 # TAKVIM: sayi bugune gore degil, takvimdeki yeri gosterir (M3: yilin 3.
 # ayi). Birime gore kap ve sira eki: birim -> (kap, ekli birim).
 _TAKVIM = {"gün": ("ayın", "günü"), "hafta": ("yılın", "haftası"), "ay": ("yılın", "ayı"),
            "çeyrek": ("yılın", "çeyreği"), "saat": ("günün", "saati"),
            "dakika": ("saatin", "dakikası")}
+# BERI: takvimdeki yerin ayrilma hali ("yılın 3. ayından beri").
+_TAKVIM_CIKMA = {"günü": "gününden", "haftası": "haftasından", "ayı": "ayından",
+                 "çeyreği": "çeyreğinden", "saati": "saatinden", "dakikası": "dakikasından"}
 # Takvim anlamindaki ekli birimden yalin birime (ayı -> ay).
 _TAKVIM_YALIN = {e: b for b, (_k, e) in _TAKVIM.items()}
-_TAKVIM_YALIN.update({"yılı": "yıl"})
+_TAKVIM_YALIN.update({"yılı": "yıl", "yılından": "yıl"})
+_TAKVIM_YALIN.update({_TAKVIM_CIKMA[e]: b for b, (_k, e) in _TAKVIM.items()})
 # YIL biriminde takvim yalniz gercek takvim yilidir (dort haneli, 2023);
 # Y3 gibi kucuk sayi takvimde bir yer gostermez, Takvim secenegi olmaz.
 TAKVIM_YIL_EN_AZ = 1000
@@ -117,7 +124,7 @@ def birim_anlami(anlam):
     doner ("yılın <N>. ayı" -> "<N> ay", "ayın <N>. günü" -> "<N> gün")."""
     metin = re.sub(r"±\s*", "", str(anlam or ""))
     m = re.search(r"(<N\d*>|<NN>)\s*(\.\s*)?([^\s.,;<>]+)", metin)
-    if m and _kucuk(m.group(3)) in _TAKVIM_YALIN and (m.group(2) or _kucuk(m.group(3)) == "yılı"):
+    if m and _kucuk(m.group(3)) in _TAKVIM_YALIN and (m.group(2) or _kucuk(m.group(3)) in ("yılı", "yılından")):
         return "%s %s" % (m.group(1), _TAKVIM_YALIN[_kucuk(m.group(3))])
     parca = [x for x in re.split(r"(\s+)", metin) if x]
     kalan = [x for x in parca if _kucuk(x.strip(".,;")) not in _YON_SOZCUKLERI]
@@ -132,8 +139,13 @@ def tur_bilgisi(tur, ozel=None):
     x = (ozel or {}).get(tur) or {}
     yon = str(x.get("yon") or "")
     yon = yon if yon in YON_ADI else ""
-    bicim = "uzunluk" if yon == "yonsuz" else str(x.get("bicim") or "")
+    bicim = sabit_bicim(yon) or str(x.get("bicim") or "")
     return yon, (bicim if bicim in ("pencere", "nokta", "uzunluk") else "")
+
+
+def sabit_bicim(yon):
+    """Yonun biçimi sabitse o (yonsuz: uzunluk, beri: pencere), degilse bos."""
+    return {"yonsuz": "uzunluk", "beri": "pencere"}.get(yon, "")
 
 
 def tur_anlami(tur, birim, ozel=None):
@@ -155,6 +167,8 @@ def tur_anlami(tur, birim, ozel=None):
         return b
     if tur == "takvim":
         return takvim_anlami(b)
+    if tur == "beri":
+        return beri_anlami(b)
     return str(((ozel or {}).get(tur) or {}).get("anlam") or "").strip()
 
 
@@ -180,6 +194,22 @@ def takvim_anlami(birim, sayi=None):
         kap, ek = _TAKVIM[bs]
         return "%s %s. %s" % (kap, n, ek)
     return "%s. %s" % (n, bs)
+
+
+def beri_anlami(birim, sayi=None):
+    """Takvimdeki yerden bugune: "<N> yıl" -> "<N> yılından beri", "<N>
+    ay" -> "yılın <N>. ayından beri", "<N> gün" -> "ayın <N>. gününden
+    beri"."""
+    bs = birim_sozcugu(birim)
+    n = sayi if isinstance(sayi, int) else "<N>"
+    if not bs:
+        return ""
+    if bs == "yıl":
+        return "%s yılından beri" % n
+    if bs in _TAKVIM:
+        kap, ek = _TAKVIM[bs]
+        return "%s %s. %s beri" % (kap, n, _TAKVIM_CIKMA[ek])
+    return "%s. %s başından beri" % (n, bs)
 
 
 def _sira_listesi(n, bs):
@@ -219,6 +249,15 @@ def kapsam_metni(yon, bicim, birim, sayi=None):
             kap, ek = _TAKVIM[bs]
             return "bugünden bağımsız; %s 1. ile %s. %s arası" % (kap, n, ek)
         return "bugünden bağımsız; yalnız %s" % takvim_anlami(birim, sayi)
+    if yon == "beri":
+        # Takvimdeki yerin basindan bugune (bugun dahil).
+        if bs == "yıl":
+            if isinstance(sayi, int):
+                return "1 Ocak %d tarihinden bugüne" % sayi
+            return "1 Ocak %s tarihinden bugüne (dört haneli takvim yılı)" % n
+        if bs == "gün":
+            return "%s gününden bugüne" % takvim_anlami(birim, sayi)[:-len(" günü")]
+        return "%s başından bugüne" % takvim_anlami(birim, sayi)
     return ""
 
 
@@ -276,7 +315,10 @@ def metinden_tur(metin, sayi, birim):
       sonra    "3 gün sonra", "3 gün sonraki", "3 gün sonrası"
       cevre    "3 gün öncesi ve sonrası", "3 gün önce ve sonra", "±3 gün"
       takvim   "yılın 3. ayı", "ayın 3. günü", "3. ay", "3'üncü ay",
-               "üçüncü ay" (sayi sira olarak: takvimdeki yer)
+               "üçüncü ay" (sayi sira olarak: takvimdeki yer); yilda
+               "2023 yılında", "2023'te", "2023'ten"
+      beri     "2023'ten beri", "2023 yılından itibaren", "yılın 3.
+               ayından bu yana" (takvimdeki yerden bugune)
       sure     "vade süresi 3 gün" (sayidan once süre sozcugu)
     Yonsuz ifade ("3 gün boyunca", "3 günlük", "3 gün içinde") belirsizdir.
     Ayni sayi bir yerde yonlu, bir yerde yonsuz geciyorsa yonlu olan
@@ -293,6 +335,23 @@ def metinden_tur(metin, sayi, birim):
     for m in re.finditer(r"(±|\+/-|\+-)\s*([0-9]+)\s*([a-zçğıöşü]+)", ham):
         if int(m.group(2)) == sayi and m.group(3).startswith(bs):
             bulunan.add("cevre")
+    # BERI: takvimdeki yer + ayrilma eki + beri / itibaren / bu yana.
+    # Takvimden once bakilir ve metinden cikarilir ("2023 yılından beri"
+    # takvim sayilmasin).
+    beri_son = r"\s+(?:beri|itibaren|bu\s+yana)(?![a-zçğıöşü])"
+    if bs == "yıl":
+        beri_re = re.compile(
+            r"(?<![0-9])([0-9]{4})(?![0-9])(?:['’]?\s*(?:den|dan|ten|tan)"
+            r"|\s+(?:yıl|sene)[a-zçğıöşü]*(?:dan|den))" + beri_son)
+    else:
+        beri_re = re.compile(
+            r"(?<![0-9])([0-9]+)\s*(?:\.|'?\s*(?:inci|ıncı|uncu|üncü|nci|ncı|ncu|ncü)\b)\s*"
+            r"%s[a-zçğıöşü]*(?:dan|den|tan|ten)" % re.escape(bs) + beri_son)
+    for m in beri_re.finditer(ham):
+        if int(m.group(1)) == sayi and takvim_gecerli(birim, sayi):
+            bulunan.add("beri")
+    if bs != "yıl" or sayi >= TAKVIM_YIL_EN_AZ:
+        ham = beri_re.sub(" ", ham)
     # TAKVIM: sira sayisi + birim. Bulunan yer metinden cikarilir ki
     # cevresindeki sozcukler ("geçen yılın 3. ayı") yon sanilmasin.
     takvim_re = re.compile(
@@ -345,8 +404,9 @@ def metinden_tur(metin, sayi, birim):
 
 def anlamdaki_tur(anlam):
     """Anlamdaki yon ifadesinden tur (eski hafiza kaydini tasimak icin)."""
-    metin = re.sub(r"<N\d*>|<NN>", "7", str(anlam or ""))
-    t = metinden_tur(metin, 7, anlam)
+    # Yil biriminde takvim dort haneli yil ister: ornek sayi 2000.
+    metin = re.sub(r"<N\d*>|<NN>", "2000", str(anlam or ""))
+    t = metinden_tur(metin, 2000, anlam)
     if t:
         return t
     w = _SOZCUK.findall(_kucuk(anlam))
