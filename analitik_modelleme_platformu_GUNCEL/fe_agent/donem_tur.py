@@ -308,7 +308,9 @@ def _sayi_mi(sozcuk, sayi):
 def metinden_tur(metin, sayi, birim):
     """Tanimda sayinin ve birimin gectigi ifadeden tur (kod; tahmin yok):
       son      "son 3 gün", "geçmiş 3 gün", "geçen 3 gün", "önceki 3 gün",
-               "3 gün öncesine kadar", "3 yıldan beri", "3 aydan bu yana"
+               "3 gün öncesine kadar", "3 yıldan beri", "3 aydan bu yana",
+               "3 yıldır", "3 aydır işlem yapmayan" (cumle sonundaki ek-fiil
+               "Vadesi 36 aydır." ya da önünde vade / süre olan sayilmaz)
       once     "3 gün önce", "3 gün önceki", "3 gün öncesi"
       sonraki  "sonraki 3 gün", "önümüzdeki 3 gün", "gelecek 3 gün",
                "3 gün sonrasına kadar"
@@ -376,6 +378,19 @@ def metinden_tur(metin, sayi, birim):
     for sz, n_ in _SIRA_SOZCUK.items():
         if n_ == sayi and bs != "yıl" and re.search(r"\b%s\s+%s" % (sz, re.escape(bs)), ham):
             bulunan.add("takvim")
+    # "3 yıldır", "3 aydır", "30 gündür": bugune kadarki son 3 yil. Cumle
+    # sonundaki ek-fiil ("Vadesi 36 aydır.") ve önünde vade / süre olan
+    # ("vadesi 36 aydır") sure bildirir, son sayilmaz.
+    dir_re = re.compile(
+        r"(?<![0-9a-zçğıöşü])([0-9a-zçğıöşü]+)\s+(%s[a-zçğıöşü]*?(?:dır|dir|dur|dür|tır|tir|tur|tür))"
+        r"(?![a-zçğıöşü])(\s*[.;:!?)]|\s*$)?" % re.escape(bs))
+    for m in dir_re.finditer(ham):
+        if not _sayi_mi(m.group(1), sayi) or m.group(3) is not None:
+            continue
+        onceki = _SOZCUK.findall(ham[:m.start()])[-1:]
+        if onceki and (onceki[0].startswith("vade") or onceki[0].startswith("süre")):
+            continue
+        bulunan.add("son")
     w = _SOZCUK.findall(ham)
     for i, x in enumerate(w):
         if not _sayi_mi(x, sayi) or i + 1 >= len(w) or not w[i + 1].startswith(bs):
