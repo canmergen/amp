@@ -13432,6 +13432,10 @@ function donemBolumuEkle(kart, da, ilkKilit, degisti) {
                 const bs = birimSoz(b);
                 if (!bs || !yon) return "";
                 const n = "<N>";
+                /* Yılda takvim yalnız dört haneli takvim yılı (2023 yılı);
+                   sunucuda donem_tur.takvim_gecerli. */
+                if (yon === "takvim" && bs === "yıl")
+                    return "bugünden bağımsız; yalnız " + n + " yılı (dört haneli takvim yılı, 1 Ocak ile 31 Aralık arası)";
                 if (yon === "takvim") return bicim === "pencere" && TAKVIM[bs]
                     ? "bugünden bağımsız; " + TAKVIM[bs][0] + " 1. ile " + n + ". " + TAKVIM[bs][1] + " arası"
                     : "bugünden bağımsız; yalnız " + takvimAnlami(b);

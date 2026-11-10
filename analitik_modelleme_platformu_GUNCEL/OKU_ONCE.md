@@ -1073,7 +1073,13 @@ tanıtır; sayfalar sol bardan açılır.
   Takvim anlamı birimden (`takvim_anlami`, ekranda `takvimAnlami`): gün →
   ayın N. günü, hafta → yılın N. haftası, ay → yılın N. ayı, çeyrek →
   yılın N. çeyreği, saat → günün N. saati, dakika → saatin N. dakikası,
-  yıl → N yılı. Kullanıcı türünde Takvim yönü de seçilebilir; pencere
+  yıl → N yılı. **Yılda takvim yalnız dört haneli takvim yılıdır**
+  (`takvim_gecerli`, `TAKVIM_YIL_EN_AZ` 1000): Y2023 → "2023 yılı",
+  kapsam "bugünden bağımsız; yalnız 2023 yılı (1 Ocak ile 31 Aralık
+  arası)"; tanımdan "2023 yılında", "2023 yılı" okunur. Y3 gibi küçük
+  sayıda Takvim seçeneği çıkmaz (01.2.4.3 seçenekleri, dil modelinin
+  takvim işareti geçersiz sayılır); "ilişkinin 3. yılı" takvim sayılmaz.
+  Kullanıcı türünde Takvim yönü de seçilebilir; pencere
   biçiminde kapsam "bugünden bağımsız; ayın 1. ile N. günü arası".
   Kalıbın anlamı takvim olarak gelirse ("yılın <N>. ayı", dil modelinden
   ya da eski hafızadan) birime döner ("<N> ay", `birim_anlami`); M<N>

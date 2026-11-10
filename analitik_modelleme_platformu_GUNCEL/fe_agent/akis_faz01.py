@@ -4678,9 +4678,13 @@ def _donem_secenekleri(k, anlam, deger, turler=None):
     ozel = {t: x for t, x in ((turler or {}).get(k) or {}).items()
             if t not in donem_tur.SABIT_KODLAR and isinstance(x, dict)}
     cikti = []
+    sayi = donem_tur.deger_sayisi(k, deger)
     for t in list(donem_tur.SABIT_KODLAR) + sorted(ozel):
         sablon = donem_tur.tur_anlami(t, birim, ozel)
         if not sablon:
+            continue
+        # Takvim yalniz anlamliysa (yil biriminde dort haneli yil).
+        if donem_tur.tur_bilgisi(t, ozel)[0] == "takvim" and not donem_tur.takvim_gecerli(birim, sayi):
             continue
         cikti.append({"tur": t, "ad": donem_tur.TUR_ADI.get(t) or str(ozel[t].get("ad") or t),
                       "metin": donem_mod.deger_anlami(k, sablon, deger),
