@@ -1868,6 +1868,15 @@ tanıtır; sayfalar sol bardan açılır.
   plan kalanlardan hazırlanır ve plan metninin sonunda not olarak yazılır;
   hepsi düşerse eski hata metni gelir.
 
+**Uzun tablolarda açıklama kutusu yüksekliği (sayfa donması)**
+- Çok satırlı açıklama kutuları (01.2.3 Eksik Sözlük Tanımları, tanım
+  kontrolü) yüksekliğini `boylaPlanla` ile TOPLU alır: tek karede önce
+  hepsine "auto" yazılır, sonra hepsi okunur, sonra hepsine yazılır (tek
+  yerleşim hesabı). Genişlik değişimini tek bir ResizeObserver
+  (`BOYLA_GOZCU`) izler. Kutu kutu ölçüm 1.038 satırda sayfayı
+  saniyelerce kilitliyordu (tarayıcı "Page Unresponsive"); yazarken
+  yalnız o kutu hemen ölçülür (`_boylaHemen`).
+
 **Tablo başlıkları**
 - `.dg-tablo th` normal yazılır (büyük harfe çevrilmez); bütün kart
   tablolarında başlıklar yazıldığı gibi görünür.

@@ -3396,6 +3396,39 @@ function ftSatirCiz(s, i) {
    basılmıyor; uzun tanım alt satıra kayıyor. */
 const FT_PARCA = 120;
 
+/* TOPLU YÜKSEKLİK: çok satırlı açıklama kutuları (1.000'i aşan satır)
+   yüksekliklerini TEK karede, tek yerleşim hesabıyla alır: önce hepsine
+   "auto" yazılır, sonra hepsi okunur, sonra hepsine yazılır. Kutu kutu
+   yaz ve oku sırası her kutuda bütün sayfayı yeniden yerleştirir;
+   1.038 satırlı tabloda sayfa saniyelerce donuyordu.
+   el._boyKenar === false: yüksekliğe kenarlık eklenmez. */
+const BOYLA_KUYRUK = new Set();
+let boylaPlanli = false;
+function boylaPlanla(el) {
+    if (!el) return;
+    BOYLA_KUYRUK.add(el);
+    if (boylaPlanli) return;
+    boylaPlanli = true;
+    requestAnimationFrame(() => {
+        boylaPlanli = false;
+        const ogeler = [...BOYLA_KUYRUK].filter(e => e.isConnected);
+        BOYLA_KUYRUK.clear();
+        ogeler.forEach(e => { e.style.height = "auto"; });
+        const olcu = ogeler.map(e => [e, e._boyKenar === false ? 0 : e.offsetHeight - e.clientHeight, e.scrollHeight]);
+        olcu.forEach(([e, kenar, yuk]) => { if (yuk) e.style.height = (yuk + kenar) + "px"; });
+    });
+}
+/* Tek gözcü: genişliği değişen kutular toplu ölçülür (kutu başına ayrı
+   ResizeObserver yerine). */
+const BOYLA_GOZCU = window.ResizeObserver ? new ResizeObserver(girdiler => {
+    girdiler.forEach(g => {
+        const e = g.target, en = g.contentRect.width;
+        if (e._sonEn === en) return;
+        e._sonEn = en;
+        boylaPlanla(e);
+    });
+}) : null;
+
 function ftKutuBoyu(el) {
     el.style.height = "auto";
     el.style.height = el.scrollHeight + 2 + "px";
@@ -8062,24 +8095,17 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
             giris.className = "dg-giris dg-metin";
             /* Yükseklik = içerik + kenarlık; genişlik değişince ("i"
                eklenince, pencere daralınca) yeniden ölçülür. */
-            giris._boyla = () => {
+            /* Toplu ölçüm (boylaPlanla): öneriler yüzlerce satıra aynı
+               anda gelince de sayfa tek seferde yerleşir. Yazarken
+               (input) yalnız bu kutu hemen ölçülür. */
+            giris._boylaHemen = () => {
                 if (!giris.isConnected) return;
                 giris.style.height = "auto";
                 const kenar = giris.offsetHeight - giris.clientHeight;
                 if (giris.scrollHeight) giris.style.height = (giris.scrollHeight + kenar) + "px";
             };
-            if (window.ResizeObserver) {
-                let sonEn = 0;
-                /* Ölçüm bir sonraki karede: aynı karede yükseklik
-                   değiştirmek tarayıcıya "ResizeObserver loop" uyarısı
-                   verdirir. */
-                new ResizeObserver(g => {
-                    const en = g[0].contentRect.width;
-                    if (en === sonEn) return;
-                    sonEn = en;
-                    requestAnimationFrame(() => giris._boyla());
-                }).observe(giris);
-            }
+            giris._boyla = () => boylaPlanla(giris);
+            if (BOYLA_GOZCU) BOYLA_GOZCU.observe(giris);
             giris.addEventListener("keydown", e => { if (e.key === "Enter") e.preventDefault(); });
             /* GERİ DÖNÜŞTE önceki onaylı metin gelir ve model önerisi
                onu EZMEZ. Vurgu, satırdaki metnin öneriyle aynı olup
@@ -8110,7 +8136,7 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
                     || v === String(giris.dataset.oneriMetin || "").trim();
             };
             giris.addEventListener("input", () => {
-                giris._boyla();
+                giris._boylaHemen();
                 giris._vurgu();
                 aileDugmesiTazele();
                 if (aileNot) aileNot.hidden = true;
@@ -8118,7 +8144,7 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
                 durumTazele();
             });
             giris._vurgu();
-            requestAnimationFrame(() => giris._boyla());
+            boylaPlanla(giris);
             /* Açıklama kutusu + öneri gelince "i": açıklamanın nereden
                geldiği (modele giden özet, bağlam, adaylar, modeller). */
             const kapA = elYap("div", "dg-anlam-kap");
@@ -8670,6 +8696,7 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
                                ? sat.aciklama : oneri);
         giris.setAttribute("aria-label", ad + " önerilen tanım");
         const boyla = () => { giris.style.height = "auto"; giris.style.height = giris.scrollHeight + "px"; };
+        giris._boyKenar = false;
         tdA.appendChild(giris);
         tr.appendChild(tdA);
         const tdI = elYap("td", "dg-ekle-hucre");
@@ -8697,7 +8724,7 @@ function dogrulamaKartiEkle(alan, blok, yerine) {
         kSar.hidden = false;
         if (kSar._ust) kSar._ust.hidden = false;
         k.vurgu();
-        requestAnimationFrame(boyla);
+        boylaPlanla(giris);
     }
 
     /* Yoklama kaydından tanım kontrolü: yeni satırlar + ilerleme. */
