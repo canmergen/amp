@@ -1961,7 +1961,13 @@ tanıtır; sayfalar sol bardan açılır.
   `akis_faz02.PROFIL_ESIK_ACIKLAMA`'da (kisa, bilgi, sonuc; sonuç sözleri
   `NE_OLACAK` ile aynı). Önerilenden farklı satır amber vurgulu, hatalı
   değer kırmızı ve gönderilmez, "Önerilenlere Dön". Ekranda "varsayılan"
-  sözü yok: önerilen değer (ör. "Değiştirilen eşikler: … (önerilen %50)"). "Eşikleri Onayla ve Profili Çıkar" `{"dogrulama": {"adim":
+  sözü yok: önerilen değer (ör. "Değiştirilen eşikler: … (önerilen %50)").
+- Karar kartının Kontroller tablosunda da her kontrolün adının yanında
+  "i" ve altında tek cümlelik açıklama (`akis_faz02.kontrol_aciklamasi`:
+  eşikli kontrollerde eşik formunun metni, önerilen değerin gerekçesi
+  hariç; sabit, aynı içerik, beklenmeyen negatif ve tekrar eden satır
+  için `_KONTROL_ACIKLAMA_EK`). "Neye Bakıldı" kuralları eşik formuyla
+  aynı dille (`_profil_kurallari`). "Eşikleri Onayla ve Profili Çıkar" `{"dogrulama": {"adim":
   "veri_profili", "esikler": {anahtar: ekrandaki sayı}}}` gönderir;
   `esik_dogrula` aralığı denetler (yüzde ve puan ekranda 100 ile çarpılı,
   Türkçe yazım: 1.000 binlik, 0,5 ondalık), `profil["esikler"]`'e yazar.

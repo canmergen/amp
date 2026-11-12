@@ -5379,7 +5379,7 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .pf-not strong { color: var(--metin); }
 .pf-tablo-sar { overflow-x: auto; }
 .dg-tablo.pf-tablo { table-layout: fixed; width: 100%; }
-.dg-tablo.pf-tablo col.pf-k-ad { width: 21%; }
+.dg-tablo.pf-tablo col.pf-k-ad { width: 30%; }
 .dg-tablo.pf-tablo col.pf-k-kural { width: auto; }
 .dg-tablo.pf-tablo col.pf-k-bulunan { width: 172px; }
 .dg-tablo.pf-tablo col.pf-k-sonuc { width: 180px; }
@@ -5571,7 +5571,7 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-esik-birim.son { width: 46px; text-align: left; flex-shrink: 0; white-space: nowrap; }
 .pf-esik-vars { color: var(--metin-soluk); }
 /* Kontrol hücresi: ad + "i", kısa açıklama, yakalanırsa ne olur. */
-.pf-esik-tablo td.pf-kontrol-ad { font-weight: var(--fw-normal); }
+.pf-esik-tablo td.pf-kontrol-ad, .pf-tablo td.pf-kontrol-ad { font-weight: var(--fw-normal); }
 .pf-esik-ad { display: inline-flex; align-items: center; gap: 6px; }
 .bolme-tip.pf-esik-tip { width: 30rem; }
 .pf-esik-kisa { color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1.4; margin-top: 2px; }

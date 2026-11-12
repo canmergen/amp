@@ -840,33 +840,95 @@ def _profil_kurallari(esik=None):
     e = esik or _esik_varsayilan()
     kat = _sayi(e["kardinalite"])
     return {
-        "cok_bos": "Boş hücre oranı %s üstünde." % _yuzde_ekli(e["cok_bos"]),
+        "cok_bos": "Kolonun boş hücre oranı %s üstünde." % _yuzde_ekli(e["cok_bos"]),
         "sabit": "Kolonda tek bir değer var. Bir değer ile boş hücrelerden oluşan kolon "
                  "iki değerli sayılır.",
-        "kimlik_gibi": "Farklı değer oranı %s üstünde olan tam sayı ya da metin kolon "
-                       "(müşteri numarası gibi). Ondalıklı tutarlar bu kurala girmez."
-                       % _yuzde_ekli(e["kimlik"]),
+        "kimlik_gibi": "Farklı değer sayısının satır sayısına oranı %s üstünde olan tam sayı "
+                       "ya da metin kolon (müşteri numarası gibi). Ondalıklı tutarlar bu "
+                       "kurala girmez." % _yuzde_ekli(e["kimlik"]),
         "yuksek_kardinalite": "Metin kolonda farklı değer sayısı %s üstünde."
                               % (kat + _ilgi_eki(kat)),
         "ayni_icerik": "Değerleri satır satır birebir aynı olan kolonlar. Her gruptan bir "
                        "kolon kalır: dil modeli adına ve açıklamasına bakıp önerir, siz "
                        "seçersiniz.",
-        "baskin": "En sık görülen değerin payı %s ya da üstünde. Boş hücre de değer sayılır."
-                  % _yuzde_metni(e["baskin"]),
+        "baskin": "En sık görülen değer satırların en az %s kadarında geçiyor. Boş hücre de "
+                  "değer sayılır." % _yuzde_metni(e["baskin"]),
         "donem": "Kolon bazı dönemlerde tamamen boş, ya da en az %s satırı olan bir dönemde "
-                 "tek değerli." % _sayi(e["donem_min_satir"]),
-        "gizli_eksik": "-1, -99, -999, 9999 gibi bir değerin dolu satırlardaki payı %s "
-                       "üstünde ve değer kolonun geri kalanından kopuk. SFA'da eksik gibi "
-                       "ele alınması önerilir." % _yuzde_ekli(e["gizli"]),
+                 "bütün satırlarda aynı değerde." % _sayi(e["donem_min_satir"]),
+        "gizli_eksik": "-1, -99, -999, 9999 gibi bir değer dolu satırların %s fazlasında "
+                       "geçiyor ve kolonun geri kalan değerlerinden kopuk. Sonraki "
+                       "adımlarda boş gibi ele alınması önerilir." % _yuzde_ekli(e["gizli"]),
         "sifir": "Dolu satırlarda sıfırın payı %s ya da üstünde. Çoğu zaman işlem yok "
                  "anlamına gelir." % _yuzde_metni(e["sifir"]),
         "negatif": "Kolon kartında ölçüsü adet, gün ya da süre olan kolonda negatif değer var.",
         "sicrama": "Eksik oranı art arda iki dönem arasında %s puandan fazla değişiyor."
                    % _sayi_metni(round(e["sicrama"] * 100, 2)),
-        "uc": "En büyük değer, %%99'luk değerin %s katından büyük." % _sayi_metni(e["uc_kat"]),
+        "uc": "En büyük değer, değerlerin %%99'unun altında kaldığı sınırın %s katından "
+              "büyük." % _sayi_metni(e["uc_kat"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
     }
+
+
+# KARAR KARTI ACIKLAMALARI: her kontrolun tek cumlesi ("kisa") ve "i"
+# balonu ("bilgi": nedir, neden onemli, ornek, kapsam, yakalanirsa).
+# Esikli kontroller esik formunun metnini kullanir (onerilen degerin
+# gerekcesi karar kartinda yazilmaz; esik zaten onaylandi).
+_KONTROL_ESIK_ANAHTARI = {"cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
+                          "yuksek_kardinalite": "kardinalite", "baskin": "baskin",
+                          "donem": "donem_min_satir", "gizli_eksik": "gizli", "sifir": "sifir",
+                          "sicrama": "sicrama", "uc": "uc_kat"}
+_KONTROL_ACIKLAMA_EK = {
+    "sabit": {
+        "kisa": "Bütün satırlarda aynı değeri alan kolon hiçbir şey ayırt etmez.",
+        "bilgi": "**Nedir?** Kolonda yalnız tek bir değer olup olmadığına bakar. Boş hücre ayrı "
+                 "bir değer sayılır: bir değer ve boşlardan oluşan kolon (1 ve boş gibi) iki "
+                 "değerlidir, sabit sayılmaz.\n\n"
+                 "**Neden önemli?** Her satırda aynı olan bir kolon satırları birbirinden "
+                 "ayıramaz; modele hiçbir bilgi katmaz.\n\n"
+                 "**Örnek:** bütün satırlarda «TL» yazan para birimi kolonu.\n\n"
+                 "**Yakalanırsa:** kolon değişken üretimine girmez."},
+    "ayni_icerik": {
+        "kisa": "Değerleri satır satır birebir aynı olan kolonların ikisini birden kullanmak "
+                "aynı bilgiyi iki kez saymaktır.",
+        "bilgi": "**Nedir?** Bütün satırlarda değerleri birebir aynı olan kolonları gruplar.\n\n"
+                 "**Neden önemli?** Aynı bilgi iki kolonda olunca model onu iki kez sayar; "
+                 "ağırlıklar ve açıklamalar yanıltıcı olur.\n\n"
+                 "**Örnek:** biri eski biri yeni adla gelen aynı tutar kolonu.\n\n"
+                 "**Yakalanırsa:** her gruptan bir kolon kalır, diğerleri üretime girmez. Hangisinin "
+                 "kalacağını dil modeli adlarına ve açıklamalarına bakıp önerir, siz seçersiniz."},
+    "negatif": {
+        "kisa": "Adet, gün, süre gibi negatif olamayacak bir ölçüde negatif değer veri hatasıdır.",
+        "bilgi": "**Nedir?** Kolon kartında ölçüsü adet, sayı, gün, süre, yaş, ay ya da yıl olan "
+                 "kolonlarda sıfırdan küçük değer arar.\n\n"
+                 "**Neden önemli?** Böyle bir ölçü negatif olamaz; negatif değer çoğu zaman bir "
+                 "kodlama ya da hesap hatasıdır.\n\n"
+                 "**Örnek:** «son işlemden bu yana geçen gün» kolonunda -3.\n\n"
+                 "**Kapsam:** yalnız 01.2.4.3'te kolon kartının Ölçü alanı dolu olan kolonlar. "
+                 "Ölçü bilgisi yoksa kontrol yapılmaz.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer."},
+    "tekrar": {
+        "kisa": "Aynı kayıt birden fazla satırda geçiyorsa o kayıt modelde fazla ağırlık alır.",
+        "bilgi": "**Nedir?** Aynı kimlik ve dönemle birden fazla satır olup olmadığına, ayrıca "
+                 "bütün kolonları birebir aynı satırlara bakar. Satır sayar, kolon değil.\n\n"
+                 "**Neden önemli?** Tekrar eden kayıt modelde birden fazla sayılır; ayrıca aynı "
+                 "kayıt hem eğitim hem test verisine düşerse sonuçlar olduğundan iyi görünür.\n\n"
+                 "**Örnek:** aynı müşteri, aynı ay için iki satır.\n\n"
+                 "**Kapsam:** kimlik kolonu seçilmediyse yalnız bütün kolonları aynı satırlara "
+                 "bakılır.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir."},
+}
+
+
+def kontrol_aciklamasi(anahtar):
+    """(kisa, bilgi) - karar kartindaki kontrol satiri icin."""
+    if anahtar in _KONTROL_ACIKLAMA_EK:
+        x = _KONTROL_ACIKLAMA_EK[anahtar]
+        return x["kisa"], x["bilgi"]
+    x = PROFIL_ESIK_ACIKLAMA.get(_KONTROL_ESIK_ANAHTARI.get(anahtar, "")) or {}
+    paragraf = [y for y in str(x.get("bilgi") or "").split("\n\n")
+                if not (y.startswith("**Neden ") and "önerildi" in y)]
+    return str(x.get("kisa") or ""), "\n\n".join(paragraf)
 
 
 # (anahtar, kontrolun adi, sonuc, kolon satirindaki kisa bulgu adi)
@@ -1034,7 +1096,9 @@ def profil_karti(durum, karar=False):
     donemler = ek.get("donemler")
     kontroller = []
     for a, ad, sonuc, _kisa in PROFIL_KONTROLLERI:
+        kisa, bilgi = kontrol_aciklamasi(a)
         k = {"anahtar": a, "ad": ad, "kural": kurallar[a], "sonuc": sonuc,
+             "kisa": kisa, "bilgi": bilgi,
              "ne_olacak": NE_OLACAK[sonuc], "uygulandi": True, "sebep": "",
              "birim": "kolon", "kolonlar": []}
         if a == "yuksek_kardinalite" and not turler.get("kategorik"):

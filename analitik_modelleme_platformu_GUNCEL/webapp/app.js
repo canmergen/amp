@@ -17196,7 +17196,20 @@ function profilKartiEkle(alan, blok) {
         const renk = k.uygulandi === false ? "pf-r-pasif" : !nBul ? "pf-r-tamam"
             : k.sonuc === "girmez" ? "pf-r-sorun" : "pf-r-dikkat";
         const satir = elYap("tr", "pf-kontrol " + renk + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
-        satir.appendChild(elYap("td", "pf-kontrol-ad", k.ad));
+        /* Kontrol: ad + "i" (nedir, neden önemli, örnek, kapsam,
+           yakalanırsa), altında tek cümlelik açıklama. */
+        const tdAd = elYap("td", "pf-kontrol-ad");
+        const adS = elYap("div", "pf-esik-ad");
+        adS.appendChild(elYap("b", "", k.ad));
+        if (k.bilgi) {
+            const ib = bolmeBilgiSimgesi(k.bilgi, k.ad);
+            const tip = ib.querySelector(".bolme-tip");
+            if (tip) tip.classList.add("pf-esik-tip");
+            adS.appendChild(ib);
+        }
+        tdAd.appendChild(adS);
+        if (k.kisa) tdAd.appendChild(elYap("div", "pf-esik-kisa", k.kisa));
+        satir.appendChild(tdAd);
         satir.appendChild(elYap("td", "pf-kural", k.kural));
         const bulunan = elYap("td", "pf-sonuc");
         const neOlacak = elYap("td", "pf-ne-olacak");
