@@ -108,7 +108,11 @@ dışı, tip dönüşümü) kolonun kayıttaki adıyla gider; liste kaydedilince
 AMP_VERISETI ve AMP_SOZLUK yeni adlarla ve 01.2.4.3'te onaylanan
 tanımlarla yazılır, sonraki bütün adımlar bu ikisini okur. Sözlük
 Tanımı kutusu metnin tamamını gösterir (`dg-teyit-tanim`, yükseklik
-metne göre, `boylaPlanla`; Enter yeni satır açmaz).
+metne göre, `boylaPlanla`; Enter yeni satır açmaz). Satır rengi yalnız boş tanımda
+(sarı, "Tanım Boş"); öneriyle eklenen tanımlar önceki adımlarda (01.2.3,
+01.2.4.3) onaylandığı için 01.3'te ayrıca işaretlenmez (eski "Dil
+Modeli Önerisi" mavisi bekleyen iş gibi okunuyordu). Tanımlar 01.2.4.3
+onayında sözlüğün çalışma kopyasına yazılan son hâllerdir.
 
 **Veri ve Sözlük sekmesi: 01.2.4 sonuçları hemen görünür.** AMP_VERISETI
 ve AMP_SOZLUK dosyaları eskisi gibi 01.3 Değişken Listesi ve Tip

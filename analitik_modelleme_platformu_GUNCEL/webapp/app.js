@@ -2544,7 +2544,10 @@ const DG_LEJANT_KARAR = [["dg-l-llm", "Dil Modeli Önerisi"],
                          ["dg-l-hafiza", "Onaylı Tanım"],
                          ["dg-l-dikkat", "Boş"],
                          ["dg-l-duzenlendi", "Düzenlendi"]];
-const DG_LEJANT_TEYIT = [["dg-l-bos", "Tanım Boş"], ["dg-l-llm", "Dil Modeli Önerisi"]];
+/* 01.3: yalnız boş tanım işaretlenir. Buraya gelen her tanım önceki bir
+   adımda (01.2.3, 01.2.4.3) onaylandı; "Dil Modeli Önerisi" rengi
+   bekleyen bir iş gibi okunuyordu, kaldırıldı. */
+const DG_LEJANT_TEYIT = [["dg-l-bos", "Tanım Boş"]];
 
 function tipKaydet(kolon, sec, tipEl, hataEl) {
     const eski = sec.dataset.eski === undefined ? "" : sec.dataset.eski;
@@ -16626,11 +16629,11 @@ function teyitKartiEkle(alan, blok) {
             tdA.appendChild(giris);
             tr.appendChild(tdA);
 
-            /* Satır rengi (bkz. dgRenk): tanım boşsa sarı, sözlük
-               tanımları adımında dil modelinin önerisiyle eklenen ya da
-               düzeltilen tanım değiştirilmediyse mavi. */
+            /* Satır rengi: yalnız tanım boşsa sarı. Öneriyle eklenen
+               tanımlar önceki adımlarda onaylandığı için ayrıca
+               işaretlenmez. */
             function satirVurgu() {
-                dgRenk(tr, giris.value, sat.oneri_tanim || "", null);
+                tr.classList.toggle("dg-bos", !String(giris.value || "").trim());
             }
             satirVurgu();
 
