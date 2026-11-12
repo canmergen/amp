@@ -331,7 +331,8 @@ def hedef_ozeti(df, hedef, donem=None):
     return sonuc
 
 
-def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None, esik=None):
+def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None, esik=None,
+                  tarihler=()):
     """Butun ek kontroller. adaylar: dort temel kontrolden gecen kolonlar
     (tablodaki sirasiyla)."""
     adaylar = [k for k in adaylar if k in df.columns]
@@ -352,9 +353,12 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     # turlerine bagli; akis_faz02.profil_hesapla ekler).
     sonuc["metin_bos"] = metin_bos_kontrol(df, adaylar)
     sonuc["yazim"] = yazim_kontrol(df, adaylar)
-    sonuc["tarih_kod"], sonuc["tarih_kolon"] = tarih_kod_kontrol(df, adaylar)
+    # Tarih tipindeki kolonlar (tarihler) genel kontrollere girmez, tarih
+    # kontrollerine girer.
+    tarihli = list(adaylar) + [k for k in tarihler or () if k in df.columns and k not in adaylar]
+    sonuc["tarih_kod"], sonuc["tarih_kolon"] = tarih_kod_kontrol(df, tarihli)
     sonuc["metin_kolon"] = sum(1 for k in adaylar if _metin_kolonu_mu(df[k]))
-    sonuc["tarih_sonra"] = tarih_sonra_kontrol(df, adaylar, donem)
+    sonuc["tarih_sonra"] = tarih_sonra_kontrol(df, tarihli, donem)
     sonuc["kayma"] = deger_kaymasi(df, [k for k in adaylar if k not in baskin], donem, esik)
     sonuc["birebir"] = hedef_birebir(df, adaylar, hedef, esik)
     kopya = {k for g in sonuc["ayni_icerik"] for k in g["kopyalar"]}

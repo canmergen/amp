@@ -64,6 +64,7 @@ COZUM_ADI = {
     "metin_bos": "Boş say",
     "metin_bos_bayrak": "Boş say ve bayrak üret",
     "tek_yazim": "Tek yazıma çevir",
+    "gun_farki": "Dönem sonuna gün farkı üret",
 }
 COZUM_ACIKLAMA = {
     "hedef_grupla": ("Hedef oranı birbirine yakın değerler aynı grupta birleşir (en fazla 8 "
@@ -100,6 +101,11 @@ COZUM_ACIKLAMA.update({
     "metin_bos_bayrak": ("Bu yazılar boş hücreye çevrilir; yazının olduğu satırlar ayrıca 1/0 "
                          "bayrağıyla işaretlenir (yazı boş hücreden farklı bir anlam "
                          "taşıyorsa bilgi kaybolmaz)."),
+    "gun_farki": ("Tarih yerine, satırın dönem sonu ile tarih arasındaki gün sayısı kolonu "
+                  "üretilir (dönem sonu eksi tarih): geçmişteki tarih pozitif (ör. hesap "
+                  "açılışından bu yana geçen gün), gelecekteki tarih negatif (ör. vadeye "
+                  "kalan gün). Ham tarih kullanılmaz; her satırda kendi dönemine göre "
+                  "hesaplandığı için dönemden döneme kaymaz."),
     "tek_yazim": ("Aynı değerin farklı yazımları (büyük küçük harf, Türkçe karakter, fazla "
                   "boşluk) en sık geçen yazıma çevrilir; «İstanbul», «Istanbul» ve "
                   "«istanbul » tek kategori olur."),
@@ -171,6 +177,22 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
     return x, None
 
 
+def gun_farki(x, donem):
+    """Satirin donem sonu ile tarih arasindaki gun sayisi (donem sonu eksi
+    tarih). Donem okunamayan ya da tarihi bos satir bos kalir."""
+    from fe_agent import profil_ek as pe
+    son = pe.donem_sonu(donem)
+    t = pd.to_datetime(x, errors="coerce")
+    try:
+        if getattr(t.dt, "tz", None) is not None:
+            t = t.dt.tz_localize(None)
+    except Exception:
+        pass
+    if son is None:
+        return pd.Series(np.nan, index=x.index)
+    return (son - t.dt.normalize()).dt.days.astype("float64")
+
+
 def metin_bos_maskesi(x):
     """Metin olarak yazilmis bos hucreler (benzersiz degerler uzerinden)."""
     from fe_agent import profil_ek as pe
@@ -206,7 +228,7 @@ def yazim_uygula(x, anahtar):
 # Yeni kolonun adi: <KOLON>_<EK>.
 COZUM_EKI = {"hedef_grupla": "GRP", "seyrek_grupla": "GRP", "onek_grupla": "ONEK_GRP",
              "dolu_bayrak": "DOLU", "kod_bos_bayrak": "KOD", "tarih_bos_bayrak": "KOD",
-             "metin_bos_bayrak": "BOS"}
+             "metin_bos_bayrak": "BOS", "gun_farki": "GUN"}
 
 
 def _metin_mi(s):

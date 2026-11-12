@@ -754,6 +754,7 @@ def _kalite(durum):
                ("Sabit ya da tek değerli", "sabit"),
                ("Kimlik benzeri", "kimlik_gibi"),
                ("Kardinalitesi aşırı yüksek", "yuksek_kardinalite"),
+               ("Tarih kolonu (ham tarih)", "tarih"),
                ("Aynı içerikli kolon (kopya)", "ayni_icerik")]
     # 02.1 kartiyla ayni sorunsuz sayisi (akis_faz02._profil_ozeti).
     try:

@@ -469,6 +469,7 @@ def detay(durum):
             ("Sabit", _sayi(len(t.get("sabit") or []))),
             ("Kimlik Benzeri", _sayi(len(t.get("kimlik_gibi") or []))),
             ("Kardinalite Yüksek", _sayi(len(t.get("yuksek_kardinalite") or []))),
+            ("Tarih Kolonu", _sayi(len(t.get("tarih") or []))),
             ("Aynı İçerikli", _sayi(len(t.get("ayni_icerik") or []))),
         ]))
 

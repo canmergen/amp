@@ -207,6 +207,7 @@ def kusurlu_kolonlar(durum):
     return sorted(set(t.get("cok_bos") or []) | set(t.get("sabit") or [])
                   | set(t.get("kimlik_gibi") or [])
                   | set(t.get("yuksek_kardinalite") or [])
+                  | set(t.get("tarih") or [])
                   | set(t.get("ayni_icerik") or [])
                   | {k for k, v in karar.items() if v == "cikar"})
 
@@ -217,7 +218,7 @@ def kusurlu_kolonlar(durum):
 # uretilen degisken gibi sonraki adimlara girer, ham kolon girmez.
 # ===========================================================================
 COZUM_KAYNAK = "cozum"
-COZUM_KONTROLLERI = ("cok_bos", "kimlik_gibi", "yuksek_kardinalite")
+COZUM_KONTROLLERI = ("cok_bos", "kimlik_gibi", "yuksek_kardinalite", "tarih")
 
 
 def cozum_onerileri(durum):
@@ -252,7 +253,11 @@ def _cozum_ogren(durum):
     for a in (p.get("duzeltme_bilgi") or {}).values():
         for v in a.values():
             eski |= set(v.get("kolonlar") or [])
-    secim = {k: c for k, c in cozum_secimi(durum).items() if c != "cikar"}
+    # Karar kartinda Çıkar denen kolonun cozumu de uretilmez (ör. donemden
+    # sonraki tarihi olan tarih kolonunun gun farki).
+    karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    secim = {k: c for k, c in cozum_secimi(durum).items()
+             if c != "cikar" and karar.get(k) != PROFIL_KARAR_CIKAR}
     duz = any(c != "birak" for a in duzeltme_secimi(durum).values() for c in a.values())
     bilgi_hepsi = {}
     p["duzeltme_bilgi"] = {}
@@ -269,7 +274,18 @@ def _cozum_ogren(durum):
             if k not in df.columns:
                 continue
             o = cozum_onerileri(durum).get(k) or {}
-            if c == "metin":
+            if c == "gun_farki":
+                donem = (durum.get("meta") or {}).get("donem")
+                b = {"donem": donem}
+                ad = kc.yeni_kolon_adi(k, c, mevcut)
+                kolonlar = [ad] if ad else []
+                if donem in df.columns:     # ozet ozel tarih kodu duzeltmesinden sonra
+                    dx = _duzeltmeleri_uygula(durum, df[[k, donem]])
+                    gun = kc.gun_farki(dx[k], dx[donem])
+                else:
+                    gun = None
+                ozet = _gun_ozeti(gun)
+            elif c == "metin":
                 b = kc.metin_ogren(df[k], y, tr)
                 cikti = kc.metin_uygula(df[k], b, tr, y, kolon=k)
                 kolonlar = [str(x) for x in cikti.columns]
@@ -327,9 +343,21 @@ def cozum_kolonlari_ekle(durum, df):
             cikti = kc.metin_uygula(df[k], v["bilgi"], tr, y, kolon=k)
             for c in cikti.columns:
                 df[c] = cikti[c]
+        elif v["cozum"] == "gun_farki" and v.get("kolonlar"):
+            donem = (v.get("bilgi") or {}).get("donem")
+            if donem in df.columns:
+                df[v["kolonlar"][0]] = kc.gun_farki(df[k], df[donem])
         elif v.get("kolonlar"):
             df[v["kolonlar"][0]] = kc.uygula(v["cozum"], df[k], v["bilgi"])
     return df
+
+
+def _gun_ozeti(gun):
+    """Gun farki kolonunun tek satirlik ozeti (tablonun tamamindan)."""
+    if gun is None or not gun.notna().any():
+        return "Dönem sonuna gün farkı; değer hesaplanamadı."
+    return "Dönem sonuna gün farkı; en küçük %s, en büyük %s gün." % (
+        _sayi(int(gun.min())), _sayi(int(gun.max())))
 
 
 # ===========================================================================
@@ -1298,10 +1326,18 @@ def profil_hesapla(durum):
     p = durum.get("profil") or {}
     temel = set(teshis.get("cok_bos") or []) | set(teshis.get("sabit") or []) \
         | set(teshis.get("kimlik_gibi") or []) | set(teshis.get("yuksek_kardinalite") or [])
+    tarihler = [str(k) for k in teshis.get("tarih") or [] if k not in temel]
+    temel |= set(teshis.get("tarih") or [])
     adaylar = [str(k) for k in df.columns if k not in haric and k not in temel]
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
                                  hedef=m.get("target"), olculer=_kart_olculeri(durum),
-                                 esik=esik)
+                                 esik=esik, tarihler=tarihler)
+    ek["tarih_aralik"] = {}
+    for k in teshis.get("tarih") or []:
+        d = pd.to_datetime(df[k], errors="coerce").dropna()
+        d = d[(d.dt.year >= profil_ek.TARIH_YIL_ALT) & (d.dt.year <= profil_ek.TARIH_YIL_UST)]
+        if len(d):     # ozel tarih kodlari (1900-01-01 gibi) aralikta sayilmaz
+            ek["tarih_aralik"][str(k)] = [str(d.min())[:10], str(d.max())[:10]]
     _ad_kontrolleri(durum, df, adaylar, ek)
     # Sabit kolonun tek degeri (kartta bulgu olarak).
     ek["sabit_deger"] = {}
@@ -1332,6 +1368,8 @@ def profil_hesapla(durum):
     p["cozum_oneri"] = kc.oneriler(df, teshis, esik["kardinalite"],
                                    y=df[target] if target in df.columns else None,
                                    egitim=egitim)
+    p["cozum_oneri"].update(_tarih_onerileri(df, teshis, m.get("donem"),
+                                             set(p["cozum_oneri"])))
     eski_cozum = p.get("cozum_secim") if isinstance(p.get("cozum_secim"), dict) else {}
     p["cozum_secim"] = {k: v for k, v in eski_cozum.items()
                         if v in ((p["cozum_oneri"].get(k) or {}).get("secenekler") or [])}
@@ -1362,6 +1400,29 @@ def profil_hesapla(durum):
     p["profil_kayit"] = _kayit_metni(yazildi, yedek)
     durum["profil"] = p
     return p
+
+
+def _tarih_onerileri(df, teshis, donem, dolu):
+    """Tarih kolonlari icin cozum: donem sonuna gun farki (donem kolonu
+    tarih olarak okunabiliyorsa), yoksa yalniz Çıkar. Baska kontrolde
+    (eksik orani yuksek) cozumu olan ve sabit tarih kolonu atlanir."""
+    from fe_agent import profil_ek
+    sabit = set(teshis.get("sabit") or [])
+    son = profil_ek.donem_sonu(df[donem]) if donem and donem in df.columns else None
+    cikti = {}
+    for k in teshis.get("tarih") or []:
+        if k in dolu or k in sabit:
+            continue
+        if son is not None:
+            cikti[k] = {"kontrol": "tarih", "secenekler": ["gun_farki", "cikar"],
+                        "oneri": "gun_farki",
+                        "gerekce": "Ham tarih modelde anlamlı değil; dönem sonuna gün farkı "
+                                   "her dönemde aynı ölçüde kalır."}
+        else:
+            cikti[k] = {"kontrol": "tarih", "secenekler": ["cikar"], "oneri": "cikar",
+                        "gerekce": "Dönem kolonu yok ya da tarih olarak okunamadı; gün farkı "
+                                   "hesaplanamaz."}
+    return cikti
 
 
 AYNI_KURAL_GEREKCESI = "Dil modeli önerisi alınamadı; tablodaki ilk kolon önerildi."
@@ -1637,6 +1698,7 @@ def _profil_kurallari(esik=None):
               "büyük." % _sayi_metni(e["uc_kat"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
+        "tarih": "Kolonun tipi tarih. Ham tarih değişken olarak kullanılmaz.",
         "yakin_icerik": "İki sayısal kolonun korelasyonu %s ya da üstünde, ya da biri "
                         "ötekinin sabit katı." % _yuzde_metni(e["yakin_kor"]),
         "gelecek_pencere": "Kolon adındaki dönem parçasının anlam türü ileriye bakıyor "
@@ -1734,6 +1796,26 @@ _KONTROL_ACIKLAMA_EK = {
 }
 
 _KONTROL_ACIKLAMA_EK.update({
+    "tarih": {
+        "kisa": "Ham tarih modelde değişken olarak anlamlı değildir; yerine dönem sonuna gün "
+                "farkı kullanılır.",
+        "bilgi": "**Nedir?** Tipi tarih olan kolonları ayırır. Tarih kolonları kimlik benzeri "
+                 "ve kardinalite kontrollerine girmez (farklı tarih sayısı doğal olarak "
+                 "yüksektir); Özel Tarih Kodu ve Dönemden Sonraki Tarih kontrollerinden "
+                 "geçer.\n\n"
+                 "**Neden önemli?** Ham tarih her dönemde ileri kayar: aynı müşteri için "
+                 "geçen yıl ile bu yıl farklı değer alır, model eski dönemde öğrendiğini yeni "
+                 "dönemde uygulayamaz. Anlamlı olan, gözlem anına göre ne kadar önce ya da "
+                 "sonra olduğudur.\n\n"
+                 "**Örnek:** 202403 dönemindeki satırda hesap açılış tarihi 2020-03-31 ise "
+                 "dönem sonuna gün farkı 1.461 gün; vade tarihi 2024-06-30 ise -91 gün "
+                 "(vadeye kalan).\n\n"
+                 "**Kapsam:** tipi tarih olan kolonlar (01.3'te tarih olarak teyit "
+                 "edilenler). Metin olarak duran tarihler bu kontrole girmez.\n\n"
+                 "**Yakalanırsa:** ham tarih üretime girmez. Dönem kolonu tarih olarak "
+                 "okunabiliyorsa yerine dönem sonuna gün farkı kolonu (kolon adının sonuna "
+                 "_GUN eklenmiş) önerilir; Çıkar seçerseniz kolon kullanılmaz. Özel tarih "
+                 "kodu düzeltmesi gün farkından önce uygulanır."},
     "gelecek_pencere": {
         "kisa": "Adındaki dönem parçası ileriye bakan kolon (sonraki 3 ay gibi), gözlem anından "
                 "sonra oluşan bilgiyi taşır; modele girerse sızıntı olur.",
@@ -1766,7 +1848,8 @@ _KONTROL_ACIKLAMA_EK.update({
                  "kod tarihler sayılmaz (Özel Tarih Kodu kontrolünde gösterilir).\n\n"
                  "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; Tut seçili "
                  "gelir, çünkü vade gibi tarihler doğal olarak ileridedir. Olayın gözlem "
-                 "anından sonra kaydedildiğini biliyorsanız çıkarın."},
+                 "anından sonra kaydedildiğini biliyorsanız çıkarın. Çıkar denirse "
+                 "kolonun dönem sonuna gün farkı kolonu da üretilmez."},
     "metin_bos": {
         "kisa": "Boş hücre yerine «NULL», «-», «?», «Bilinmiyor» gibi bir yazı yazılmış; model "
                 "bunu ayrı bir kategori sanır.",
@@ -1905,6 +1988,7 @@ PROFIL_KONTROLLERI = (
     ("sabit", "Sabit ya da Tek Değerli", SONUC_GIRMEZ, "Sabit"),
     ("kimlik_gibi", "Kimlik Benzeri", SONUC_GIRMEZ, "Kimlik benzeri"),
     ("yuksek_kardinalite", "Kardinalitesi Aşırı Yüksek", SONUC_GIRMEZ, "Kardinalite yüksek"),
+    ("tarih", "Tarih Kolonu", SONUC_GIRMEZ, "Tarih kolonu"),
     ("ayni_icerik", "Aynı İçerikli Kolonlar", SONUC_GIRMEZ, "Aynı içerik"),
     ("yakin_icerik", "Neredeyse Aynı Kolonlar", SONUC_GIRMEZ, "Neredeyse aynı"),
     ("gelecek_pencere", "Gelecek Penceresi (Sızıntı Riski)", SONUC_KARAR, "Gelecek penceresi"),
@@ -2063,7 +2147,8 @@ def _profil_ozeti(durum):
     t = p.get("profil_teshis") or {}
     ek = p.get("profil_ek") or {}
     temel = set(t.get("cok_bos") or []) | set(t.get("sabit") or []) \
-        | set(t.get("kimlik_gibi") or []) | set(t.get("yuksek_kardinalite") or [])
+        | set(t.get("kimlik_gibi") or []) | set(t.get("yuksek_kardinalite") or []) \
+        | set(t.get("tarih") or [])
     incelenen = set(map(str, t.get("temiz") or [])) | temel
     girmez = set(kusurlu_kolonlar(durum))
     karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
@@ -2167,6 +2252,10 @@ def profil_karti(durum, karar=False):
         bulgu.setdefault("sabit", {})[k] = ("Bütün hücreler boş" if deger == "boş"
                                             else "Tek değer: %s" % deger if deger
                                             else "Tek değerli")
+    for k in t.get("tarih") or []:
+        ar = (ek.get("tarih_aralik") or {}).get(k)
+        bulgu.setdefault("tarih", {})[k] = ("En eski %s, en yeni %s" % (ar[0], ar[1])) if ar \
+            else "Bütün hücreler boş"
     for a in ("kimlik_gibi", "yuksek_kardinalite"):
         for k in t.get(a) or []:
             tekil = (ozet.get(k) or {}).get("tekil")
@@ -2197,6 +2286,8 @@ def profil_karti(durum, karar=False):
             k["uygulandi"], k["sebep"] = False, "Dönem kolonu seçilmedi"
         elif a in ("donem", "sicrama", "kayma") and len(donemler or []) < 2:
             k["uygulandi"], k["sebep"] = False, "Tabloda tek dönem var"
+        elif a == "tarih" and not t.get("tarih"):
+            k["uygulandi"], k["sebep"] = False, "Tarih tipinde kolon yok"
         elif a == "tarih_sonra" and ek.get("tarih_sonra") is None:
             k["uygulandi"], k["sebep"] = False, "Dönem değerleri tarih olarak okunamadı"
         elif a == "tarih_sonra" and not ek.get("tarih_kolon"):
@@ -2336,6 +2427,8 @@ def _cozum_kisa_ozet(b):
     c = b.get("cozum")
     if c == "dolu_bayrak":
         return "Dolu satır 1, boş satır 0."
+    if c == "gun_farki":
+        return b.get("ozet") or "Dönem sonuna gün farkı."
     if c == "metin":
         nb = len(bilgi.get("bayrak") or [])
         nk = len(((bilgi.get("konu") or {}).get("adlar")) or [])
@@ -2803,6 +2896,7 @@ def _dusurulecek_kume(durum):
     teshis = set(
         (t.get("cok_bos") or []) + (t.get("sabit") or []) +
         (t.get("kimlik_gibi") or []) + (t.get("yuksek_kardinalite") or []) +
+        (t.get("tarih") or []) +
         (ut.get("cok_bos") or []) + (ut.get("sabit") or []) +
         (t.get("ayni_icerik") or []) + _profil_cikarilan(p) +
         (st.get("kayan") or [])) - korunan
@@ -2837,7 +2931,8 @@ def baz_plan(durum):
             "sette yapılır.\n"
             "  Düşürülecek : %s kolon\n"
             "  Düşürme Sebebi : eksik %s · sabit %s · kimlik %s · kardinalite %s · "
-            "aynı içerik %s · profilde çıkarılan %s · kararsız %s · süreç dışı %s\n"
+            "tarih %s · aynı içerik %s · profilde çıkarılan %s · kararsız %s · "
+            "süreç dışı %s\n"
             "  SFA Kararları : %s değişken modele girmeyecek · %s aralıkla · "
             "%s dönüşümle · %s eksik işaretiyle\n"
             "  Doldurma : SFA kararına göre; kararı olmayan sayısal kolonlar "
@@ -2849,6 +2944,7 @@ def baz_plan(durum):
                _sayi(len(set(t.get("sabit") or []) | set(ut.get("sabit") or []))),
                _sayi(len(t.get("kimlik_gibi") or [])),
                _sayi(len(t.get("yuksek_kardinalite") or [])),
+               _sayi(len(t.get("tarih") or [])),
                _sayi(len(t.get("ayni_icerik") or [])), _sayi(len(_profil_cikarilan(p))),
                _sayi(len(st.get("kayan") or [])), _sayi(len(tanimsiz)),
                _sayi(ko["girmeyen"]), _sayi(ko["aralik"]), _sayi(ko["donusum"]),

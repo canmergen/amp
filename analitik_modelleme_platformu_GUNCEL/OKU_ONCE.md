@@ -2254,7 +2254,7 @@ tanıtır; sayfalar sol bardan açılır.
   sayılır.", "Sınır 987,7; üstündeki değerler sınıra çekilir.").
 - Bilinen eksik: düzeltmeler de `uretim_kodu.py`'ye yazılmaz.
 
-**02.1 ikinci kontrol seti (10 kontrol; toplam 24)**
+**02.1 ikinci kontrol seti (10 kontrol ve Tarih Kolonu; toplam 25)**
 - Hepsi tablonun tamamından, örneklemesiz. Hesaplar `profil_ek.py`
   (`metin_bos_kontrol`, `yazim_kontrol`, `tarih_kod_kontrol`,
   `tarih_sonra_kontrol`, `deger_kaymasi`, `hedef_birebir`,
@@ -2309,10 +2309,24 @@ tanıtır; sayfalar sol bardan açılır.
 - Uygulanmadı sebepleri kartta yazar (dönem yok, tek dönem, dönem tarih
   okunamadı, tarih kolonu yok, metin kolon yok, hedef iki sınıflı değil,
   anlam türü onaylı dönem parçası yok, eşleşen çift yok).
-- Bilinen sınır: `sfa.profil_cikar` datetime kolonları "metin" sayar;
-  50'den fazla farklı tarihi olan tarih kolonu Kardinalitesi Aşırı
-  Yüksek'e düşüp kusurlu olur ve tarih kontrollerine girmez (önceden
-  var olan davranış, değiştirilmedi).
+- Tarih Kolonu (`tarih`, `SONUC_GIRMEZ`, çözümlü): `sfa.profil_cikar`
+  datetime tipindeki kolonu kimlik ve kardinalite kontrollerine sokmaz
+  (önceden 50'den fazla farklı tarihi olan kolon Kardinalitesi Aşırı
+  Yüksek'e düşüyordu), `teshis["tarih"]`'e yazar (TYPE "date"). Ham tarih
+  üretime girmez (`kusurlu_kolonlar`, 03.3 `_dusurulecek_kume`), genel ek
+  kontrollere girmez; Özel Tarih Kodu ve Dönemden Sonraki Tarih
+  kontrollerine girer (`ek_kontroller(tarihler=...)`), Özel Tarih Kodu
+  düzeltmesi de sorulur (`_teshis_kusurlu` tarihi saymaz).
+  - Çözüm `_tarih_onerileri`: dönem tarih olarak okunabiliyorsa "Dönem
+    sonuna gün farkı üret" (önerilen) ve Çıkar; değilse yalnız Çıkar.
+    Eksik oranı yüksek ya da sabit tarih kolonunda bu çözüm yok.
+  - `kolon_cozum.gun_farki`: `<KOL>_GUN` = satırın dönem sonu eksi tarih
+    (gün; geçmiş pozitif, gelecek negatif). Öğrenme yok; bilgi
+    `{"donem": kolon}`. `cozum_kolonlari_ekle` düzeltmelerden SONRA
+    hesaplar (kod tarihler boşsa gün farkı da boş).
+  - Karar kartında Çıkar denen kolonun çözümü üretilmez (`_cozum_ogren`):
+    Dönemden Sonraki Tarih'te Çıkar denen tarihin `_GUN` kolonu da yok.
+  - Kart bulgusu: en eski ve en yeni tarih (kod tarihler hariç).
 
 **02.2 Kural Tabanlı Değişken Üretimi: plan isteği**
 - `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)

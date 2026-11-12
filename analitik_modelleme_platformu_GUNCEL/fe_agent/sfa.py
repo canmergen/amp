@@ -257,6 +257,7 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
 
     kayitlar = []
     cok_bos, sabit, kimlik_gibi, yuksek_kardinalite = [], [], [], []
+    tarih_kolonlari = []
 
     for kol in df.columns:
         if kol in haric:
@@ -267,6 +268,11 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
         tekil = int(s.nunique(dropna=True))
         kard_oran = tekil / max(satir, 1.0)
         sayisal = pd.api.types.is_numeric_dtype(s)
+        # TARIH kolonu (datetime tipi) kimlik ve kardinalite kontrolune
+        # girmez: farkli tarih sayisi dogal olarak yuksektir. Ham tarih
+        # modelde anlamli degildir; "tarih" teshisiyle uretime girmez,
+        # yerine 02.1'de donem sonuna gun farki onerilir.
+        tarih = pd.api.types.is_datetime64_any_dtype(s)
 
         # Teshisler birbirini DISLAMAZ: bir kolon hem asiri null hem sabit
         # olabilir. Hepsi toplanir, hicbiri digerini maskelemez.
@@ -282,9 +288,11 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
         # tekildir; bunlari kimlik sanip modelden dusurmek kredi riski
         # modelinde dogrudan performans kaybidir. Gercek kimlikler metin
         # ya da tam sayidir, ondalikli degildir.
-        if kard_oran > kimlik_esik and tekil > MIN_SATIR and not _ondalikli(s):
+        if tarih:
+            tarih_kolonlari.append(kol); teshisler.append("tarih")
+        elif kard_oran > kimlik_esik and tekil > MIN_SATIR and not _ondalikli(s):
             kimlik_gibi.append(kol); teshisler.append("kimlik benzeri")
-        if (not sayisal) and tekil > kategorik_max:
+        if (not sayisal) and (not tarih) and tekil > kategorik_max:
             yuksek_kardinalite.append(kol); teshisler.append("yüksek kardinalite")
         durum = " + ".join(teshisler) if teshisler else "OK"
 
@@ -296,7 +304,7 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
 
         kayitlar.append({
             "FEATURE": kol,
-            "TYPE": "numeric" if sayisal else "categorical",
+            "TYPE": "numeric" if sayisal else ("date" if tarih else "categorical"),
             "NULL_COUNT": null_adet,
             "NULL_RATIO": round(null_oran, 4),
             "UNIQUE": tekil,
@@ -313,6 +321,7 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
     teshis = {
         "cok_bos": cok_bos, "sabit": sabit,
         "kimlik_gibi": kimlik_gibi, "yuksek_kardinalite": yuksek_kardinalite,
+        "tarih": tarih_kolonlari,
         "temiz": [r["FEATURE"] for r in kayitlar if r["DURUM"] == "OK"],
     }
     return tablo, teshis
