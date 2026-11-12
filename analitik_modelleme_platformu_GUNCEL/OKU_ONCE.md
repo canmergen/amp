@@ -2070,6 +2070,60 @@ tanıtır; sayfalar sol bardan açılır.
   Eşik değişip profil yeniden çıkarılınca aynı üyeli grupta önceki öneri
   tekrar sorulmaz; seçim korunur.
 
+**02.1 çözüm önerileri (`fe_agent/kolon_cozum.py`)**
+- Üretime girmez denen kolon doğrudan atılmaz: düzeltilebiliyorsa çözüm
+  önerilir, kullanıcı seçer; çözüm yoksa ya da Çıkar seçilirse kolon
+  kullanılmaz. Ham kolon her durumda üretime girmez (`kusurlu_kolonlar`
+  ve 03.3'te düşme değişmedi); çözümün ürettiği YENİ kolon uretilen
+  değişken gibi sonraki adımlara (02.2, 02.3, SFA, stabilite, baz) girer.
+- Kontroller ve seçenekler (`oneriler`; öneri ilk geçerli seçenek):
+  - Kardinalitesi Aşırı Yüksek ve Kimlik Benzeri: serbest metinse
+    (farklı değerlerin ortalaması 3 sözcük ya da 25 karakter ve üstü)
+    "Metinden özellik çıkar". Değilse "Hedef oranına göre grupla",
+    "Kodun ilk karakterleriyle grupla" (değerlerin %80'i aynı uzunlukta,
+    ilk k karakter 2 ile 200 grup veriyor), "Seyrek değerleri «Diğer»de
+    topla" (en sık 20 değer kalır).
+  - Eksik Oranı Yüksek: "«Dolu mu» bayrağı üret" (1/0).
+  - Sabit ve Aynı İçerikli kolonlarda çözüm yok.
+- Bir seçenek yalnız işe yarayacaksa sunulur (ikili hedefte):
+  hedef ya da önek gruplaması eğitim satırlarının bir yarısında
+  öğrenilir, diğer yarısında hedefi ayırmalıdır (AUC'nin 0,5'ten farkı
+  z ≥ 2,58, `_gruplama_tutarli`); rastgele kimlikte sahte gruplar böyle
+  elenir. Dolu bayrağında dolu ve boş satırların hedef oranı farkı aynı
+  z ile sınanır. Seyrek toplama ikili hedefte yalnız hedef gruplaması
+  tuttuysa sunulur. İkili olmayan hedefte hedefe dayalı seçenekler
+  yoktur (seyrek toplama ve bayrak kalır). Geçerli seçeneği olmayan
+  kolonda kartta "Çözüm yok" ve nedeni yazar.
+- Öğrenme yalnız EĞİTİM satırlarından (`setler(...)["egitim"]`),
+  uygulama tablonun tamamına; örnekleme yok. Hedef gruplaması `aralik`
+  modülünün kategorik birleştirmesini kullanır (en çok 8 grup, grupta en
+  az %5 pay); eğitimde 30 satırdan az görülen ya da hiç görülmeyen değer
+  "Seyrek" grubuna düşer. Grup etiketi metindir (G1, G2 ...).
+- Metinden özellik (dil modeli yok, kodla, bütün satırlarda, sınırsız):
+  `<KOL>_SOZCUK` (sözcük sayısı), `<KOL>_SKOR` (sözcüklerin hedef
+  WoE ortalaması; eğitim satırlarında 5 katlı katlama dışı, sızıntı
+  yok), hedefle anlamlı ilişkili en çok 10 sözcük için `<KOL>_K_<SÖZCÜK>`
+  bayrakları, TF-IDF + NMF ile 8 konu ve `<KOL>_KONU` (K1..K8, "Konu
+  yok"). Konu için sklearn gerekir; yoksa konu atlanır, not yazılır.
+- Yeni kolon adları: `<KOL>_GRP` (hedef ya da seyrek), `<KOL>_ONEK_GRP`,
+  `<KOL>_DOLU`; ad çakışırsa sonuna sayı eklenir.
+- Durum: `profil.cozum_oneri` (seçenekler, öneri, gerekçe),
+  `profil.cozum_secim` (kullanıcının seçimi), `profil.cozum_bilgi`
+  (öğrenilen harita, yeni kolonlar, özet). Yeni kolonlar
+  `durum["uretilen"]`'e ve `uretilen_kaynak["cozum"]`'a yazılır; seçim
+  değişince eski çözüm kolonları silinir. `cozum_kolonlari_ekle` eksik
+  çözüm kolonlarını tabloya hesaplar: `analiz_df`, 02.2 `kural_uygula`
+  ve 02.3 `kesif_uygula` bunu çağırır. `_ENRICHED` yalnız kural ya da
+  keşif bir şey ürettiyse okunur (`uretim_kolonlari`).
+- Kart: çözümü olan kontrollerde detay açık gelir, "Çözüm" sütununda
+  seçim kutusu ("(önerilen)" işaretli) ve seçilenin açıklaması; Bulgu
+  sütununda kolona özgü gerekçe. Gönderim
+  `{"dogrulama": {"adim": "veri_profili", ..., "cozum": {kolon: kod}}}`.
+  Kilitli halde seçilen çözüm, yeni kolon(lar) ve tek satır özet; grup
+  üyeleri, sözcükler ve konular i balonunda.
+- Bilinen eksik: çözüm kolonları `PROJE_HAFIZASI/uretim_kodu.py`
+  dosyasına yazılmaz; platform içinde (analiz, model) hesaplanır.
+
 **02.2 Kural Tabanlı Değişken Üretimi: plan isteği**
 - `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)
   `PLAN_PARCA_KARAKTER` (12.000 karakter) parçalarına böler, parçalar

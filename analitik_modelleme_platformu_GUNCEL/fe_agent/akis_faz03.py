@@ -315,7 +315,9 @@ def kural_uygula(durum, secim=None):
 
     # Kaynak modelleme tablosu (tip donusumleri okumada uygulanmis);
     # baz set uretimden SONRA kurulur.
-    df = modelleme_df(durum)
+    # 02.1 cozum kolonlari (IL_GRP, NOT_SKOR ...) _ENRICHED'e de girer.
+    from fe_agent.akis_faz02 import cozum_kolonlari_ekle
+    df = cozum_kolonlari_ekle(durum, modelleme_df(durum))
     tr, _te = maskeler(durum, df)            # LEAKAGE SINIRI
     yasak = _meta_yasak(durum) | _kusurlu(durum)
     ogrenilen = {}
@@ -518,8 +520,11 @@ def kesif_uygula(durum, secim=None):
 
     # Kural adimi bir sey urettiyse _ENRICHED ustune eklenir; yoksa
     # modelleme tablosundan kurulur.
-    df = _df_oku(hedef) if (durum.get("uretilen") and _dataset_var_mi(hedef)) \
+    from fe_agent.akis_faz02 import cozum_kolonlari_ekle
+    from fe_agent.akis_faz02 import uretim_kolonlari
+    df = _df_oku(hedef) if (uretim_kolonlari(durum) and _dataset_var_mi(hedef)) \
         else modelleme_df(durum)
+    df = cozum_kolonlari_ekle(durum, df)
     eski = [c for c in silinen if c in df.columns]
     if eski:
         df = df.drop(columns=eski)

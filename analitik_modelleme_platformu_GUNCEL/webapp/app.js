@@ -17031,6 +17031,73 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
 
 const PF_NE_OLACAK_SINIF = { girmez: "pf-sonuc-girmez", karar: "pf-sonuc-karar", bilgi: "pf-sonuc-bilgi" };
 
+/* 02.1 çözüm hücresi: üretime girmez denen kolon için çözüm seçimi
+   (gruplama, bayrak, metinden özellik ya da Çıkar). Karar modunda seçim
+   kutusu ve seçilenin açıklaması; kilitli halde seçilen çözüm, ürettiği
+   yeni kolonlar ve öğrenilen grupların özeti. */
+function pfCozumHucresi(ad, cz, secim, kararModu, kart, cizenler, ciz) {
+    const td = elYap("td", "pf-cozum-hucre");
+    const kutu = elYap("div", "pf-cozum");
+    const secenek = kod => (cz.secenekler || []).find(o => o.kod === kod) || { kod: kod, ad: kod, aciklama: "" };
+    if ((cz.secenekler || []).length < 2) {
+        /* Çıkar dışında seçenek yok: neden yok, Bulgu sütununda yazar. */
+        kutu.appendChild(elYap("span", "pf-cozum-yok", "Çözüm yok"));
+    } else if (kararModu) {
+        const sel = elYap("select", "pf-cozum-sec");
+        sel.setAttribute("aria-label", ad + " çözümü");
+        (cz.secenekler || []).forEach(o => {
+            const op = document.createElement("option");
+            op.value = o.kod;
+            op.textContent = o.ad + (o.kod === cz.oneri && o.kod !== "cikar" ? " (önerilen)" : "");
+            sel.appendChild(op);
+        });
+        sel.onchange = () => {
+            if (kart.classList.contains("kilitli")) return;
+            secim[ad] = sel.value;
+            ciz();
+        };
+        const acik = elYap("div", "pf-cozum-acik");
+        kutu.append(sel, acik);
+        cizenler.push(() => {
+            const kod = secim[ad];
+            sel.value = kod;
+            sel.disabled = kart.classList.contains("kilitli");
+            acik.textContent = secenek(kod).aciklama || "";
+            td.classList.toggle("cikar", kod === "cikar");
+        });
+    } else {
+        const o = secenek(cz.secim || cz.oneri);
+        const cik = o.kod === "cikar";
+        kutu.appendChild(elYap("span", "pf-karar-sonuc " + (cik ? "cikar" : "tut"), cik ? "Çıkarıldı" : o.ad));
+        if (!cik && (cz.kolonlar || []).length) {
+            const yk = elYap("div", "pf-cozum-kolon");
+            yk.appendChild(elYap("span", "", (cz.kolonlar.length > 1 ? "Yeni kolonlar: " : "Yeni kolon: ")));
+            if (cz.kolonlar.length > 3) {
+                /* Uzun liste i balonunda; hücrede sayı. */
+                yk.appendChild(elYap("b", "", ftBinlik(cz.kolonlar.length) + " kolon"));
+                const ib = bolmeBilgiSimgesi(cz.kolonlar.join("\n"), ad + " yeni kolonları");
+                const tip = ib.querySelector(".bolme-tip");
+                if (tip) tip.classList.add("pf-esik-tip");
+                yk.appendChild(ib);
+            } else yk.appendChild(elYap("b", "", cz.kolonlar.join(", ")));
+            kutu.appendChild(yk);
+        }
+        if (!cik && (cz.ozet_kisa || cz.ozet)) {
+            const oz = elYap("div", "pf-cozum-acik pf-cozum-ozet");
+            oz.appendChild(elYap("span", "", cz.ozet_kisa || cz.ozet));
+            if (cz.ozet && cz.ozet_kisa && cz.ozet !== cz.ozet_kisa) {
+                const ib = bolmeBilgiSimgesi(cz.ozet.split("; ").join("\n"), ad + " çözümü");
+                const tip = ib.querySelector(".bolme-tip");
+                if (tip) tip.classList.add("pf-esik-tip");
+                oz.appendChild(ib);
+            }
+            kutu.appendChild(oz);
+        }
+    }
+    td.appendChild(kutu);
+    return td;
+}
+
 function profilKartiEkle(alan, blok) {
     const kart = elYap("div", "secim-kart pf-kart");
     const kararModu = !!alan.karar_bekliyor && !(blok && blok.kilit);
@@ -17050,6 +17117,14 @@ function profilKartiEkle(alan, blok) {
         ayniSecim[g.id] = g.secim || g.oneri;
         ayniOneri[g.id] = g.oneri;
     }));
+    /* Çözümler: kolon -> çözüm kodu (önceki seçim ya da öneri). */
+    const cozumSecim = {};
+    const cozumOneri = {};
+    (alan.kontroller || []).forEach(k => (k.kolonlar || []).forEach(c => {
+        if (!c.cozum || (c.cozum.secenekler || []).length < 2) return;
+        cozumSecim[c.ad] = c.cozum.secim || c.cozum.oneri;
+        cozumOneri[c.ad] = c.cozum.oneri;
+    }));
 
     /* Başlık + i */
     const bas = elYap("div", "pf-bas");
@@ -17066,6 +17141,7 @@ function profilKartiEkle(alan, blok) {
         "Modelleme tablosundaki her kolon tablonun tamamı üzerinden incelenir; örneklem kullanılmaz, sayımlar kesindir.",
         "Kontrollerin sonucu üç türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
             + tireSade(alan.dusme_atif || "") + " adımında veri setinden çıkarılır. Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",
+        "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
     ].filter(Boolean).join("\n\n");
@@ -17279,12 +17355,14 @@ function profilKartiEkle(alan, blok) {
             tbody.appendChild(detay);
             return;
         }
-        const it = elYap("table", "dg-tablo pf-ic-tablo");
-        const icg = document.createElement("colgroup");
+        const cozumlu = (k.kolonlar || []).some(c => c.cozum || c.cozum_baska);
         const sutunlar = birim === "satır"
             ? [["Tekrar", "pf-i-ad"], ["Bulgu", "pf-i-bulgu"]]
             : [["Kolon", "pf-i-ad"], ["Açıklama", "pf-i-acik"], ["Bulgu", "pf-i-bulgu"]]
-                .concat(kararli ? [["Karar", "pf-i-karar"]] : []);
+                .concat(kararli ? [["Karar", "pf-i-karar"]] : [])
+                .concat(cozumlu ? [["Çözüm", "pf-i-cozum"]] : []);
+        const it = elYap("table", "dg-tablo pf-ic-tablo" + (cozumlu ? " pf-ic-cozumlu" : ""));
+        const icg = document.createElement("colgroup");
         sutunlar.forEach(([, c]) => { const col = document.createElement("col"); col.className = c; icg.appendChild(col); });
         it.appendChild(icg);
         const ith = elYap("tr");
@@ -17295,7 +17373,9 @@ function profilKartiEkle(alan, blok) {
             const r = elYap("tr");
             r.appendChild(elYap("td", "pf-kolon-ad", c.ad));
             if (birim !== "satır") r.appendChild(elYap("td", "pf-kolon-acik", c.aciklama || BOS_SIMGE));
-            r.appendChild(elYap("td", "pf-bulgu", c.bulgu || ""));
+            const bTd = elYap("td", "pf-bulgu", c.bulgu || "");
+            if (c.cozum && c.cozum.gerekce) bTd.appendChild(elYap("div", "pf-cozum-gerekce", c.cozum.gerekce));
+            r.appendChild(bTd);
             if (kararli) {
                 const kt = elYap("td", "pf-karar-hucre");
                 if (kararModu) kt.appendChild(kararDugmesi(c.ad));
@@ -17303,10 +17383,17 @@ function profilKartiEkle(alan, blok) {
                                           c.karar === "cikar" ? "Çıkarıldı" : "Tutuldu"));
                 r.appendChild(kt);
             }
+            if (cozumlu) {
+                if (c.cozum) r.appendChild(pfCozumHucresi(c.ad, c.cozum, cozumSecim, kararModu, kart, kararCizenler, kararCiz));
+                else if (c.cozum_baska) r.appendChild(elYap("td", "pf-cozum-yok", c.cozum_baska + " satırında seçilir"));
+                else r.appendChild(elYap("td", "", BOS_SIMGE));
+            }
             itb.appendChild(r);
         });
         it.appendChild(itb);
-        const kap = elYap("div", "pf-ic-kap");
+        /* Çözümlü tablo yükseklik sınırı almaz: seçim ve açıklamalar
+           kesilmeden okunur. */
+        const kap = elYap("div", "pf-ic-kap" + (cozumlu ? " pf-ic-kap-tam" : ""));
         kap.appendChild(it);
         td.appendChild(kap);
         detay.appendChild(td);
@@ -17316,8 +17403,8 @@ function profilKartiEkle(alan, blok) {
             dg.classList.toggle("acik", acik);
         };
         dg.onclick = () => ac(detay.hidden);
-        /* Karar bekleyen kontroller açık gelir. */
-        if (kararli && kararModu) ac(true);
+        /* Karar ya da çözüm bekleyen kontroller açık gelir. */
+        if ((kararli || cozumlu) && kararModu) ac(true);
         tbody.appendChild(satir);
         tbody.appendChild(detay);
     });
@@ -17392,6 +17479,12 @@ function profilKartiEkle(alan, blok) {
                 + ftBinlik(adlar.length - cik) + " tutulacak, " + ftBinlik(cik) + " çıkarılacak.");
             if (gid.length) parca.push(ftBinlik(gid.length) + " aynı içerikli grupta kalacak kolon seçildi"
                 + (farkli ? " (" + ftBinlik(farkli) + " grupta öneriden farklı)." : " (hepsi dil modelinin önerisi)."));
+            const cz = Object.keys(cozumSecim);
+            if (cz.length) {
+                const cikC = cz.filter(a => cozumSecim[a] === "cikar").length;
+                parca.push(ftBinlik(cz.length) + " kolon için çözüm: " + ftBinlik(cz.length - cikC)
+                    + " kolon çözümle kullanılacak, " + ftBinlik(cikC) + " kolon çıkarılacak.");
+            }
             ozetEl.textContent = parca.join(" ");
         };
         kararCizenler.push(ozetYaz);
@@ -17402,18 +17495,23 @@ function profilKartiEkle(alan, blok) {
             kart.classList.add("kilitli");
             btn.hidden = true;
             btn.disabled = true;
+            kararCiz();
             geriAlKilit = () => {
                 kart.classList.remove("kilitli");
                 btn.hidden = false;
                 btn.disabled = false;
+                kararCiz();
             };
             const gidler = Object.keys(ayniSecim);
             const ozet = [Object.keys(kararlar).length
                     ? ftBinlik(tut) + " kolon tutuldu, " + ftBinlik(cikar.length) + " kolon çıkarıldı" : "",
-                gidler.length ? ftBinlik(gidler.length) + " aynı içerikli grupta seçim yapıldı" : ""]
+                gidler.length ? ftBinlik(gidler.length) + " aynı içerikli grupta seçim yapıldı" : "",
+                Object.keys(cozumSecim).length ? ftBinlik(Object.keys(cozumSecim).filter(a => cozumSecim[a] !== "cikar").length)
+                    + " kolon çözümle kullanılacak" : ""]
                 .filter(Boolean).join("; ");
             gonder(ozet || "Kararlar onaylandı", false,
-                   { dogrulama: { adim: "veri_profili", cikar: cikar, ayni: Object.assign({}, ayniSecim) } });
+                   { dogrulama: { adim: "veri_profili", cikar: cikar, ayni: Object.assign({}, ayniSecim),
+                                  cozum: Object.assign({}, cozumSecim) } });
         };
         alt.append(ozetEl, btn);
         kart.appendChild(alt);
@@ -17460,7 +17558,8 @@ function profilEsikKartiEkle(alan, blok) {
         + "yakalanması için aşması gereken sınırdır. Önerilen değerlerle dolu gelir; bir eşiği "
         + "değiştirirseniz kontrol sizin değerinizle yapılır.\n\n"
         + "Yakalanan kolona ne olacağı kontrolün altında yazar: «Üretime girmez» (kolon değişken "
-        + "üretiminde kullanılmaz), «Kararınıza bırakılır» (profil sonrası size sorulur), «Bilgi için "
+        + "üretiminde kullanılmaz), «Çözüm önerilir» (ham kolon kullanılmaz; gruplama, bayrak ya da "
+        + "metinden özellik gibi bir çözüm önerilir, seçtiğiniz çözümün yeni kolonu kullanılır), «Kararınıza bırakılır» (profil sonrası size sorulur), «Bilgi için "
         + "gösterilir» (kolon kullanılır, yalnız dikkatinize sunulur).\n\n"
         + "Yüzdeli eşikler yüzde olarak yazılır (ör. 99 yazılırsa %99). Ondalık için virgül kullanılabilir.",
         "Kontrol Eşikleri"));
@@ -17501,7 +17600,7 @@ function profilEsikKartiEkle(alan, blok) {
         tdAd.appendChild(adSatir);
         if (r.kisa) tdAd.appendChild(elYap("div", "pf-esik-kisa", r.kisa));
         if (r.sonuc) tdAd.appendChild(elYap("div", "pf-esik-sonuc pf-esik-sonuc-"
-            + (r.sonuc === "Üretime girmez" ? "girmez" : r.sonuc === "Kararınıza bırakılır" ? "karar" : "bilgi"),
+            + (r.sonuc === "Üretime girmez" || /^Çözüm önerilir/.test(r.sonuc || "") ? "girmez" : r.sonuc === "Kararınıza bırakılır" ? "karar" : "bilgi"),
             "Yakalanırsa: " + r.sonuc.charAt(0).toLocaleLowerCase("tr") + r.sonuc.slice(1)));
         tr.appendChild(tdAd);
         tr.appendChild(elYap("td", "pf-kural", r.anlam));

@@ -5433,6 +5433,21 @@ button.pf-durum:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--kirmi
 .dg-tablo.pf-ic-tablo col.pf-i-acik { width: auto; }
 .dg-tablo.pf-ic-tablo col.pf-i-bulgu { width: 30%; }
 .dg-tablo.pf-ic-tablo col.pf-i-karar { width: 150px; }
+.dg-tablo.pf-ic-tablo col.pf-i-cozum { width: 32%; }
+.dg-tablo.pf-ic-tablo.pf-ic-cozumlu col.pf-i-ad { width: 20%; }
+.dg-tablo.pf-ic-tablo.pf-ic-cozumlu col.pf-i-bulgu { width: 26%; }
+/* 02.1 çözüm hücresi: seçim kutusu ve seçilen çözümün açıklaması. */
+.pf-cozum { display: flex; flex-direction: column; align-items: center; gap: var(--b-1); }
+.pf-cozum-sec { width: 100%; max-width: 100%; }
+.pf-cozum-acik, .pf-cozum-gerekce {
+  color: var(--metin-soluk); line-height: 1.4; overflow-wrap: break-word; white-space: normal;
+}
+.pf-cozum-gerekce { margin-top: var(--b-1); }
+.pf-cozum-kolon { overflow-wrap: anywhere; }
+.pf-cozum-yok { color: var(--metin-soluk); }
+.pf-ic-kap.pf-ic-kap-tam { max-height: none; overflow: visible; }
+.pf-cozum-ozet { display: inline-flex; align-items: center; justify-content: center; gap: var(--b-1); flex-wrap: wrap; }
+.pf-cozum-hucre.cikar .pf-cozum-sec { color: var(--kirmizi); }
 .pf-kolon-ad { font-weight: var(--fw-kalin); overflow-wrap: anywhere; }
 .pf-kolon-acik, .pf-bulgu { overflow-wrap: break-word; line-height: 1.4; }
 .pf-kolon-acik { color: var(--metin-soluk); }
