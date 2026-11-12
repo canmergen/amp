@@ -5450,6 +5450,8 @@ button.pf-durum:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--kirmi
 .pf-cozum-gerekce { margin-top: var(--b-1); }
 .pf-cozum-kolon { overflow-wrap: anywhere; }
 .pf-cozum-yok { color: var(--metin-soluk); }
+.pf-toplu-sec { width: auto; max-width: 280px; }
+.pf-toplu-acik { white-space: pre-line; margin: 0 0 var(--b-2); }
 .pf-ic-kap.pf-ic-kap-tam { max-height: none; overflow: visible; }
 .pf-cozum-ozet { display: inline-flex; align-items: center; justify-content: center; gap: var(--b-1); flex-wrap: wrap; }
 .pf-cozum-hucre.cikar .pf-cozum-sec { color: var(--kirmizi); }

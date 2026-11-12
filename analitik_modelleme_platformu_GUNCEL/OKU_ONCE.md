@@ -2133,6 +2133,44 @@ tanıtır; sayfalar sol bardan açılır.
 - Bilinen eksik: çözüm kolonları `PROJE_HAFIZASI/uretim_kodu.py`
   dosyasına yazılmaz; platform içinde (analiz, model) hesaplanır.
 
+**02.1 bilgi bulgularının karşılığı (düzeltme, karar)**
+- "Bilgi için gösterilir" deyip sonraki hiçbir adımda kullanılmayan
+  bulgu kalmadı. Kontrollerin sonucu:
+  - Gizli Eksik, Beklenmeyen Negatif, Uç Değer: `SONUC_DUZELT`
+    ("Düzeltme seçilir; kolon üretime girer"). Her kolonda düzeltme
+    seçilir, önerilen seçili gelir (`kolon_cozum.DUZELTME_SECENEK`,
+    `DUZELTME_ONERI`):
+    - Gizli Eksik: "Kodu boş say ve bayrak üret" (önerilen; kodun olduğu
+      satırlar `<KOL>_KOD` 1/0 bayrağı), "Kodu boş say", "Olduğu gibi
+      bırak".
+    - Beklenmeyen Negatif: "Negatifleri boş say" (önerilen), "Olduğu
+      gibi bırak".
+    - Uç Değer: "Olduğu gibi bırak" (önerilen), "Uçları kırp" (sınır
+      eğitim satırlarında sıfır olmayan değerlerin %99'u; seyrek kolonda
+      sıfırlar sınırı düşürmesin diye).
+  - Dönemler Arası Eksik Sıçraması: `SONUC_KARAR` (Tut / Çıkar),
+    `_karar_adaylari`'na girer; Çıkar denen kolon üretime girmez.
+  - Sıfır Yoğunluğu: bilgi olarak kalır, işlem yapılmaz ("Bilgi için
+    gösterilir; işlem yapılmaz"); metin bunu açıkça söyler.
+- Düzeltme yalnız üretime giren kolonlara sorulur (`duzeltme_onerileri`;
+  profil teşhisiyle kusurlu kolonlar hariç, kartta "Kolon üretime
+  girmez"). Durum: `profil.duzeltme_secim` {kontrol: {kolon: kod}},
+  `profil.duzeltme_bilgi` {kontrol: {kolon: {secim, bilgi, kolonlar,
+  ozet}}}. Öğrenme `_cozum_ogren` içinde, eğitim satırlarından.
+- Uygulama `cozum_kolonlari_ekle` → `_duzeltmeleri_uygula`: analiz
+  tablosunun kopyasında, sıra gizli eksik, negatif, uç. Bayrak yoksa
+  ham değerden hesaplanır; tekrar uygulamak sonucu değiştirmez. Girdi
+  veri seti değişmez; `_ENRICHED` düzeltilmiş değerleri taşır (kural
+  adımı düzeltilmiş tablodan üretir). Bayraklar `uretilen` ve
+  `uretilen_kaynak["cozum"]`'a yazılır.
+- Kart: düzeltme kontrolünün detayı karar anında açık; üstte "Bu
+  kontroldeki bütün kolonlar için" seçim kutusu, "Hepsine Uygula" ve
+  seçeneklerin açıklaması (bir kez); satırlarda yalnız seçim kutusu
+  ("Düzeltme" sütunu). Gönderim `{"duzeltme": {kontrol: {kolon: kod}}}`.
+  Kilitli halde seçilen düzeltme, bayrak kolonu ve özet (ör. "Kod -1 boş
+  sayılır.", "Sınır 987,7; üstündeki değerler sınıra çekilir.").
+- Bilinen eksik: düzeltmeler de `uretim_kodu.py`'ye yazılmaz.
+
 **02.2 Kural Tabanlı Değişken Üretimi: plan isteği**
 - `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)
   `PLAN_PARCA_KARAKTER` (12.000 karakter) parçalarına böler, parçalar

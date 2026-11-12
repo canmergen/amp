@@ -249,14 +249,22 @@ def _cozum_ogren(durum):
     eski = set()
     for v in (p.get("cozum_bilgi") or {}).values():
         eski |= set(v.get("kolonlar") or [])
+    for a in (p.get("duzeltme_bilgi") or {}).values():
+        for v in a.values():
+            eski |= set(v.get("kolonlar") or [])
     secim = {k: c for k, c in cozum_secimi(durum).items() if c != "cikar"}
+    duz = any(c != "birak" for a in duzeltme_secimi(durum).values() for c in a.values())
     bilgi_hepsi = {}
-    if secim:
+    p["duzeltme_bilgi"] = {}
+    duz_yeni = []
+    if secim or duz:
         df = modelleme_df(durum)
         target = (durum.get("meta") or {}).get("target")
         tr = setler(durum, df)["egitim"]
         y = df[target] if target in df.columns else pd.Series(np.nan, index=df.index)
         mevcut = set(map(str, df.columns))
+        durum["profil"] = p
+        duz_yeni = _duzeltme_ogren(durum, df, tr, mevcut)
         for k, c in secim.items():
             if k not in df.columns:
                 continue
@@ -276,7 +284,7 @@ def _cozum_ogren(durum):
                               "ozet": ozet}
     p["cozum_bilgi"] = bilgi_hepsi
     durum["profil"] = p
-    yeni = {c for v in bilgi_hepsi.values() for c in v["kolonlar"]}
+    yeni = {c for v in bilgi_hepsi.values() for c in v["kolonlar"]} | set(duz_yeni)
     durum["uretilen"] = sorted((set(durum.get("uretilen") or []) - eski) | yeni)
     harita = durum.get("uretilen_kaynak") if isinstance(durum.get("uretilen_kaynak"), dict) else {}
     harita[COZUM_KAYNAK] = sorted(yeni)
@@ -300,6 +308,7 @@ def _json_uyumlu(x):
 def cozum_kolonlari_ekle(durum, df):
     """Secilen cozumlerin kolonlarini df'e ekler (eksikse). Ogrenilen bilgi
     durumda; hesap tablonun tamaminda. Doner: df (gerekirse kopya)."""
+    df = _duzeltmeleri_uygula(durum, df)
     bilgi = (durum.get("profil") or {}).get("cozum_bilgi") or {}
     gerek = [k for k, v in bilgi.items() if k in df.columns
              and any(c not in df.columns for c in v.get("kolonlar") or [])]
@@ -320,6 +329,108 @@ def cozum_kolonlari_ekle(durum, df):
                 df[c] = cikti[c]
         elif v.get("kolonlar"):
             df[v["kolonlar"][0]] = kc.uygula(v["cozum"], df[k], v["bilgi"])
+    return df
+
+
+# ===========================================================================
+# 02.1 DUZELTMELER: Gizli Eksik, Beklenmeyen Negatif, Uc Deger. Kolon
+# uretime girer; secilen duzeltme analiz tablosunda uygulanir (girdi veri
+# seti degismez). Gizli eksikte istenirse <KOL>_KOD bayragi uretilir.
+# ===========================================================================
+DUZELTME_KONTROLLERI = ("gizli_eksik", "negatif", "uc")
+
+
+def _teshis_kusurlu(p):
+    t = p.get("profil_teshis") or {}
+    return (set(t.get("cok_bos") or []) | set(t.get("sabit") or [])
+            | set(t.get("kimlik_gibi") or []) | set(t.get("yuksek_kardinalite") or [])
+            | set(t.get("ayni_icerik") or []))
+
+
+def duzeltme_onerileri(durum):
+    """{kontrol: {kolon: {"secenekler", "oneri", "kayit"}}}. Uretime
+    girmeyen (kusurlu) kolonlara duzeltme sorulmaz."""
+    from fe_agent import kolon_cozum as kc
+    p = durum.get("profil") or {}
+    ek = p.get("profil_ek") or {}
+    kusur = _teshis_kusurlu(p)
+    cikti = {}
+    for a in DUZELTME_KONTROLLERI:
+        for x in ek.get(a) or []:
+            k = x.get("kolon")
+            if not k or k in kusur:
+                continue
+            kayit = {}
+            if a == "gizli_eksik":
+                try:
+                    kayit["kod"] = float(str(x.get("deger")).replace(",", "."))
+                except (TypeError, ValueError):
+                    continue
+            cikti.setdefault(a, {})[k] = {"secenekler": list(kc.DUZELTME_SECENEK[a]),
+                                          "oneri": kc.DUZELTME_ONERI[a], "kayit": kayit}
+    return cikti
+
+
+def duzeltme_secimi(durum):
+    p = durum.get("profil") or {}
+    sec = p.get("duzeltme_secim") if isinstance(p.get("duzeltme_secim"), dict) else {}
+    return {a: {k: ((sec.get(a) or {}).get(k) if (sec.get(a) or {}).get(k) in v["secenekler"]
+                    else v["oneri"]) for k, v in kolonlar.items()}
+            for a, kolonlar in duzeltme_onerileri(durum).items()}
+
+
+def _duzeltme_ogren(durum, df, tr, mevcut):
+    """Secilen duzeltmeleri egitimden ogrenir; p["duzeltme_bilgi"]. Doner:
+    uretilen bayrak kolonlari."""
+    from fe_agent import kolon_cozum as kc
+    p = durum.get("profil") or {}
+    oneri = duzeltme_onerileri(durum)
+    bilgi_hepsi, yeni = {}, []
+    for a, kolonlar in duzeltme_secimi(durum).items():
+        for k, c in kolonlar.items():
+            if c == "birak" or k not in df.columns:
+                continue
+            b = kc.duzeltme_ogren(a, c, df[k], tr, (oneri[a][k] or {}).get("kayit"))
+            kol = []
+            if c == "kod_bos_bayrak":
+                ad = kc.yeni_kolon_adi(k, c, mevcut)
+                kol = [ad]
+                mevcut.add(ad)
+            bilgi_hepsi.setdefault(a, {})[k] = {"secim": c, "bilgi": _json_uyumlu(b),
+                                                "kolonlar": kol,
+                                                "ozet": _duzeltme_ozeti(a, c, b)}
+            yeni += kol
+    p["duzeltme_bilgi"] = bilgi_hepsi
+    return yeni
+
+
+def _duzeltme_ozeti(kontrol, secim, b):
+    if kontrol == "gizli_eksik" and "kod" in b:
+        return "Kod %s boş sayılır." % _sayi_metni(b["kod"])
+    if kontrol == "negatif":
+        return "Negatif değerler boş sayılır."
+    if kontrol == "uc" and "sinir" in b:
+        return "Sınır %s; üstündeki değerler sınıra çekilir." % _sayi_metni(b["sinir"])
+    return ""
+
+
+def _duzeltmeleri_uygula(durum, df):
+    """Secilen duzeltmeleri df'e uygular (kopya). Bayrak kolonu yoksa ham
+    degerden hesaplanir; duzeltme tekrar uygulansa da sonuc ayni."""
+    db = (durum.get("profil") or {}).get("duzeltme_bilgi") or {}
+    if not db:
+        return df
+    from fe_agent import kolon_cozum as kc
+    df = df.copy(deep=False)
+    for a in kc.DUZELTME_SIRA:
+        for k, v in (db.get(a) or {}).items():
+            if k not in df.columns:
+                continue
+            yeni, bayrak = kc.duzeltme_uygula(a, v["secim"], df[k], v.get("bilgi") or {})
+            for ad in v.get("kolonlar") or []:
+                if bayrak is not None and ad not in df.columns:
+                    df[ad] = bayrak
+            df[k] = yeni
     return df
 
 
@@ -530,7 +641,7 @@ PROFIL_ESIK_ACIKLAMA = {
     "gizli": {
         "kisa": "Boş yerine -999, 9999 gibi bir kodla doldurulmuş hücreler gerçek değer "
                 "sanılır.",
-        "sonuc": "Bilgi için gösterilir",
+        "sonuc": "Düzeltme önerilir; kolon üretime girer",
         "bilgi": "**Nedir?** Sayısal kolonda -1, -9, -99, -999 ya da 9999, 99999 gibi değerlerin "
                  "dolu satırların ne kadarında geçtiğine bakar. Değer, dağılımın geri "
                  "kalanından kopuksa (ör. öbür değerler 0 ile 500 arasında) özel kod sayılır.\n\n"
@@ -538,48 +649,55 @@ PROFIL_ESIK_ACIKLAMA = {
                  "kullanılırsa ortalama, toplam gibi hesaplar bozulur.\n\n"
                  "**Örnek:** bakiye kolonunda dolu satırların %3'ü -999 ise, eşik %1 olduğu "
                  "için gösterilir.\n\n"
-                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer. Sonraki adımlarda "
-                 "kodun boş gibi ele alınması önerilir.\n\n"
+                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
+                 "Önerilen: kod boş sayılır ve kodun olduğu satırlar, kolon adının sonuna _KOD "
+                 "eklenmiş bir 1/0 bayrağıyla işaretlenir (ör. «hiç işlem yok» bilgisi kaybolmaz). Diğer seçenekler: "
+                 "yalnız boş saymak ya da olduğu gibi bırakmak.\n\n"
                  "**Neden %1 önerildi?** %1'in altında kalan kod birkaç tesadüfi satır olabilir; "
                  "üstündeyse kolonun dolduruluş biçimidir."},
     "sifir": {
         "kisa": "Dolu satırların çoğu sıfır olan kolon (çoğu müşterinin hiç yapmadığı bir "
                 "işlem gibi).",
-        "sonuc": "Bilgi için gösterilir",
+        "sonuc": "Bilgi için gösterilir; işlem yapılmaz",
         "bilgi": "**Nedir?** Sayısal kolonda dolu satırların ne kadarının tam sıfır olduğuna "
                  "bakar.\n\n"
-                 "**Neden önemli?** Sıfır yoğun kolonlarda ortalama ve sapma yanıltıcı olur; "
-                 "bu kolonlar çoğu zaman «var mı, yok mu» olarak daha iyi kullanılır.\n\n"
+                 "**Neden önemli?** Böyle bir kolonun bilgisi büyük ölçüde «sıfır mı, değil "
+                 "mi» ayrımındadır. Sıfır geçerli bir değerdir (çoğu zaman «işlem yok») ve "
+                 "kolon bu ayrımı zaten taşır; bilmeniz için gösterilir.\n\n"
                  "**Örnek:** dolu satırların %97'si 0 olan yurt dışı harcama kolonu, eşik %95 "
                  "ise gösterilir.\n\n"
-                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer.\n\n"
+                 "**Yakalanırsa:** işlem yapılmaz, kolon olduğu gibi üretime girer.\n\n"
                  "**Neden %95 önerildi?** Yalnız sıfırın gerçekten baskın olduğu kolonlar "
                  "gösterilsin diye."},
     "sicrama": {
         "kisa": "Bir dönemden ötekine boş oranı birden değişen kolon, veri kaynağında bir "
                 "değişikliğe işaret eder.",
-        "sonuc": "Bilgi için gösterilir",
+        "sonuc": "Kararınıza bırakılır",
         "bilgi": "**Nedir?** Art arda iki dönem arasında kolonun boş hücre oranının kaç puan "
                  "değiştiğine bakar.\n\n"
                  "**Neden önemli?** Ani değişim, verinin bir dönemden sonra farklı "
                  "toplandığını gösterebilir; model eski ve yeni dönemi aynı sanır.\n\n"
                  "**Örnek:** Ocak'ta %5 boş, Şubat'ta %30 boş: fark 25 puan; eşik 20 puan ise "
                  "gösterilir.\n\n"
-                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer. Dönem kolonu "
-                 "seçilmediyse bu kontrol yapılmaz.\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; veri "
+                 "kaynağının değişip değişmediğini siz bilirsiniz. Dönem kolonu seçilmediyse "
+                 "bu kontrol yapılmaz.\n\n"
                  "**Neden 20 puan önerildi?** Dönemden döneme küçük oynamalar doğaldır; 20 "
                  "puanın üstü genellikle bir değişikliktir."},
     "uc_kat": {
         "kisa": "Diğer değerlerden çok büyük tekil değerler (ör. hatalı girilmiş tutar) "
                 "hesapları bozar.",
-        "sonuc": "Bilgi için gösterilir",
+        "sonuc": "Düzeltme önerilir; kolon üretime girer",
         "bilgi": "**Nedir?** Kolonun en büyük değerini, değerlerin %99'unun altında kaldığı "
                  "sınırla (99. yüzdelik) karşılaştırır.\n\n"
                  "**Neden önemli?** Birkaç aşırı büyük değer ortalama gibi hesapları tek başına "
                  "çeker; bunlar çoğu zaman hatalı giriştir.\n\n"
                  "**Örnek:** değerlerin %99'u 10.000 TL'nin altında, en büyük değer 5.000.000 "
                  "TL: 500 kat; eşik 100 kat ise gösterilir.\n\n"
-                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer.\n\n"
+                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
+                 "Önerilen: olduğu gibi bırakmak (tutarlarda büyük değer çoğu zaman gerçektir, "
+                 "kırpmak bilgi kaybettirir). Diğer seçenek: uçları eğitim satırlarından "
+                 "öğrenilen sınıra kırpmak.\n\n"
                  "**Neden 100 kat önerildi?** Gelir, tutar gibi kolonlarda doğal olarak büyük "
                  "değerler vardır; 100 katın üstü doğal yayılımın çok dışındadır."},
 }
@@ -777,6 +895,13 @@ def profil_hesapla(durum):
     eski_cozum = p.get("cozum_secim") if isinstance(p.get("cozum_secim"), dict) else {}
     p["cozum_secim"] = {k: v for k, v in eski_cozum.items()
                         if v in ((p["cozum_oneri"].get(k) or {}).get("secenekler") or [])}
+    # Duzeltme secimleri: yalniz hala gecerli kontrol/kolon/secenek kalir.
+    eski_duz = p.get("duzeltme_secim") if isinstance(p.get("duzeltme_secim"), dict) else {}
+    durum["profil"] = p
+    duz_oneri = duzeltme_onerileri(durum)
+    p["duzeltme_secim"] = {a: {k: c for k, c in (eski_duz.get(a) or {}).items()
+                               if c in ((duz_oneri.get(a) or {}).get(k) or {}).get("secenekler", [])}
+                           for a in duz_oneri}
 
     # Feature tablosunun kolon ozeti: veri seti secilirken cikarilmisti,
     # burada tekil sayisi ve kesin null orani ile tamamlaniyor. Ozet hic
@@ -853,11 +978,12 @@ def _ayni_kopyalar(p):
 
 def _karar_adaylari(p):
     """Karar isteyen kolonlar (sira korunur): neredeyse sabit, donemde bos
-    ya da sabit. Ayni icerikli gruplarda kalmayan kolon karar istemez."""
+    ya da sabit, donemler arasi eksik sicramasi. Ayni icerikli gruplarda kalmayan kolon karar istemez."""
     ek = p.get("profil_ek") or {}
     kopya = set(_ayni_kopyalar(p))
     ad = [x["kolon"] for x in (ek.get("baskin") or [])]
     ad += [x["kolon"] for x in (ek.get("donem") or [])]
+    ad += [x["kolon"] for x in (ek.get("sicrama") or [])]
     return [k for k in dict.fromkeys(ad) if k not in kopya]
 
 
@@ -870,7 +996,7 @@ def profil_karar_var(durum):
     grup var."""
     p = durum.get("profil") or {}
     return bool(profil_karar_kolonlari(durum) or (p.get("profil_ek") or {}).get("ayni_gruplar")
-                or cozum_secilebilir(durum))
+                or cozum_secilebilir(durum) or duzeltme_onerileri(durum))
 
 
 def _profil_karar_bekliyor(durum):
@@ -927,6 +1053,17 @@ def veri_profili_uygula(durum):
             if c in ((oneri.get(str(k)) or {}).get("secenekler") or []):
                 sec[str(k)] = str(c)
         p["cozum_secim"] = sec
+    # DUZELTMELER: {"duzeltme": {kontrol: {kolon: kod}}}.
+    duz_oneri = duzeltme_onerileri(durum)
+    if isinstance(karar, dict) and isinstance(karar.get("duzeltme"), dict):
+        sec = {a: dict(v) for a, v in (p.get("duzeltme_secim") or {}).items()}
+        for a, kolonlar in karar["duzeltme"].items():
+            if not isinstance(kolonlar, dict):
+                continue
+            for k, c in kolonlar.items():
+                if c in (((duz_oneri.get(str(a)) or {}).get(str(k)) or {}).get("secenekler") or []):
+                    sec.setdefault(str(a), {})[str(k)] = str(c)
+        p["duzeltme_secim"] = sec
     durum["profil"] = p
     _cozum_ogren(durum)
     # Profil degisti: SFA ve kararlari eski profile aitti, yeniden hesaplanir.
@@ -935,7 +1072,7 @@ def veri_profili_uygula(durum):
         sfa_karar.ai_durdur(eski)
     # Karar kartli dalda metin ve kart blokta zaten duruyor (kart kilitlenir);
     # tekrar yazilmaz.
-    if adaylar or gruplar or cozum_secilebilir(durum):
+    if adaylar or gruplar or cozum_secilebilir(durum) or duz_oneri:
         return ""
     return profil_metni(durum)
 
@@ -946,9 +1083,11 @@ def veri_profili_uygula(durum):
 SONUC_GIRMEZ = "girmez"
 SONUC_KARAR = "karar"
 SONUC_BILGI = "bilgi"
+SONUC_DUZELT = "duzelt"
 NE_OLACAK = {SONUC_GIRMEZ: "Üretime girmez",
              SONUC_KARAR: "Kararınıza bırakılır",
-             SONUC_BILGI: "Bilgi için gösterilir"}
+             SONUC_BILGI: "Bilgi için gösterilir",
+             SONUC_DUZELT: "Düzeltme seçilir; kolon üretime girer"}
 
 
 def _yuzde_metni(oran):
@@ -1059,7 +1198,9 @@ _KONTROL_ACIKLAMA_EK = {
                  "**Örnek:** «son işlemden bu yana geçen gün» kolonunda -3.\n\n"
                  "**Kapsam:** yalnız 01.2.4.3'te kolon kartının Ölçü alanı dolu olan kolonlar. "
                  "Ölçü bilgisi yoksa kontrol yapılmaz.\n\n"
-                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer."},
+                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
+                 "Önerilen: negatif değerler hatalı sayılır ve boş yapılır. Diğer seçenek: "
+                 "olduğu gibi bırakmak."},
     "tekrar": {
         "kisa": "Aynı kayıt birden fazla satırda geçiyorsa o kayıt modelde fazla ağırlık alır.",
         "bilgi": "**Nedir?** Aynı kimlik ve dönemle birden fazla satır olup olmadığına, ayrıca "
@@ -1134,11 +1275,11 @@ PROFIL_KONTROLLERI = (
     ("ayni_icerik", "Aynı İçerikli Kolonlar", SONUC_GIRMEZ, "Aynı içerik"),
     ("baskin", "Neredeyse Sabit", SONUC_KARAR, "Neredeyse sabit"),
     ("donem", "Dönemde Boş ya da Sabit", SONUC_KARAR, "Dönemde boş ya da sabit"),
-    ("gizli_eksik", "Gizli Eksik (Özel Kod)", SONUC_BILGI, "Gizli eksik"),
+    ("gizli_eksik", "Gizli Eksik (Özel Kod)", SONUC_DUZELT, "Gizli eksik"),
     ("sifir", "Sıfır Yoğunluğu", SONUC_BILGI, "Sıfır yoğun"),
-    ("negatif", "Beklenmeyen Negatif", SONUC_BILGI, "Beklenmeyen negatif"),
-    ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_BILGI, "Eksik sıçraması"),
-    ("uc", "Uç Değer Yoğunluğu", SONUC_BILGI, "Uç değer"),
+    ("negatif", "Beklenmeyen Negatif", SONUC_DUZELT, "Beklenmeyen negatif"),
+    ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_KARAR, "Eksik sıçraması"),
+    ("uc", "Uç Değer Yoğunluğu", SONUC_DUZELT, "Uç değer"),
     ("tekrar", "Tekrar Eden Satır", SONUC_BILGI, ""),
 )
 DONEM_LISTE_EN_COK = 6
@@ -1206,7 +1347,7 @@ def _profil_ozeti(durum):
     karar_ad = profil_karar_kolonlari(durum)
     bekleyen = {k for k in karar_ad if k not in karar}
     bilgi = set()
-    for a in ("gizli_eksik", "sifir", "negatif", "sicrama", "uc"):
+    for a in ("gizli_eksik", "sifir", "negatif", "uc"):
         bilgi |= {x["kolon"] for x in (ek.get(a) or [])}
     bilgi |= {k for k in karar_ad if karar.get(k) == PROFIL_KARAR_TUT}
     bilgi -= girmez | bekleyen
@@ -1238,9 +1379,22 @@ def profil_metni(durum, karar=False):
             parca.append("Bunlardan %s kolonun yerine çözümle üretilen %s kolon değişken "
                          "üretimine girer." % (_sayi(len(cozumlu)), _sayi(yeni)))
     if oz["bekleyen"]:
-        parca.append("%s kolon için kararınız gerekiyor: Neredeyse Sabit ve Dönemde Boş "
-                     "ya da Sabit kontrollerinde her kolonu tutun ya da çıkarın."
+        parca.append("%s kolon için kararınız gerekiyor: Neredeyse Sabit, Dönemde Boş "
+                     "ya da Sabit ve Dönemler Arası Eksik Sıçraması kontrollerinde her kolonu "
+                     "tutun ya da çıkarın."
                      % _sayi(len(oz["bekleyen"])))
+    duz = duzeltme_secimi(durum)
+    n_duz = sum(len(v) for v in duz.values())
+    if karar and n_duz:
+        parca.append("Gizli Eksik, Beklenmeyen Negatif ve Uç Değer kontrollerinde %s kolon "
+                     "için düzeltme seçin; önerilen seçili gelir. Bu kolonlar üretime girer."
+                     % _sayi(n_duz))
+    elif n_duz:
+        uyg = sum(1 for v in duz.values() for c in v.values() if c != "birak")
+        parca.append(("%s kolonda düzeltme uygulandı" % _sayi(uyg) if uyg else
+                      "Düzeltme uygulanmadı")
+                     + ((", %s kolon olduğu gibi kullanılır." % _sayi(n_duz - uyg))
+                        if n_duz - uyg else "."))
     gruplar = ((durum.get("profil") or {}).get("profil_ek") or {}).get("ayni_gruplar") or []
     if karar and gruplar:
         parca.append("Değerleri birebir aynı %s kolon grubunda hangi kolonun kalacağını "
@@ -1303,6 +1457,9 @@ def profil_karti(durum, karar=False):
     cozum_oneri = cozum_onerileri(durum)
     cozum_sec = cozum_secimi(durum)
     cozum_bilgi = p.get("cozum_bilgi") or {}
+    duz_oneri = duzeltme_onerileri(durum)
+    duz_sec = duzeltme_secimi(durum)
+    duz_bilgi = p.get("duzeltme_bilgi") or {}
     donemler = ek.get("donemler")
     kontroller = []
     for a, ad, sonuc, _kisa in PROFIL_KONTROLLERI:
@@ -1319,6 +1476,8 @@ def profil_karti(durum, karar=False):
             k["uygulandi"], k["sebep"] = False, "Tabloda tek dönem var"
         elif a == "negatif" and not ek.get("olcu_var"):
             k["uygulandi"], k["sebep"] = False, "Kolon kartlarında ölçü bilgisi yok"
+        if a == "sifir":
+            k["ne_olacak"] = "Bilgi için gösterilir; işlem yapılmaz"
         if a == "ayni_icerik" and ek.get("ayni_gruplar"):
             k["ne_olacak"] = "Biri kalır, diğerleri üretime girmez"
             k["gruplar"] = [{"id": g["id"], "oneri": g["oneri"], "gerekce": g.get("gerekce", ""),
@@ -1346,6 +1505,9 @@ def profil_karti(durum, karar=False):
                 satir["karar"] = karar_deger.get(kol, PROFIL_KARAR_TUT)
             if a in COZUM_KONTROLLERI and (cozum_oneri.get(kol) or {}).get("kontrol") == a:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
+            elif a in DUZELTME_KONTROLLERI and kol in (duz_oneri.get(a) or {}):
+                satir["duzeltme"] = _duzeltme_satiri(duz_oneri[a][kol], duz_sec[a][kol],
+                                                     (duz_bilgi.get(a) or {}).get(kol))
             elif a in COZUM_KONTROLLERI and kol in cozum_oneri \
                     and len(cozum_oneri[kol].get("secenekler") or []) < 2:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
@@ -1408,6 +1570,19 @@ def _cozum_satiri(kol, oneri, secim, bilgi):
         c["kolonlar"] = list(b.get("kolonlar") or [])
         c["ozet"] = b.get("ozet") or ""
         c["ozet_kisa"] = _cozum_kisa_ozet(b)
+    return c
+
+
+def _duzeltme_satiri(oneri, secim, bilgi):
+    """Kart satirinin duzeltme alani (cozum alaniyla ayni bicim)."""
+    from fe_agent import kolon_cozum as kc
+    c = {"secenekler": [{"kod": x, "ad": kc.COZUM_ADI.get(x, x),
+                         "aciklama": kc.COZUM_ACIKLAMA.get(x, "")}
+                        for x in oneri.get("secenekler") or []],
+         "oneri": oneri.get("oneri"), "secim": secim, "gerekce": ""}
+    if isinstance(bilgi, dict) and bilgi.get("secim") == secim:
+        c["kolonlar"] = list(bilgi.get("kolonlar") or [])
+        c["ozet_kisa"] = c["ozet"] = bilgi.get("ozet") or ""
     return c
 
 

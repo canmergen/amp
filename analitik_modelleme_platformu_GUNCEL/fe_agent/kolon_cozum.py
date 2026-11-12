@@ -54,6 +54,11 @@ COZUM_ADI = {
     "dolu_bayrak": "«Dolu mu» bayrağı üret",
     "metin": "Metinden özellik çıkar",
     "cikar": "Çıkar",
+    "kod_bos_bayrak": "Kodu boş say ve bayrak üret",
+    "kod_bos": "Kodu boş say",
+    "negatif_bos": "Negatifleri boş say",
+    "kirp": "Uçları kırp",
+    "birak": "Olduğu gibi bırak",
 }
 COZUM_ACIKLAMA = {
     "hedef_grupla": ("Hedef oranı birbirine yakın değerler aynı grupta birleşir (en fazla 8 "
@@ -70,9 +75,62 @@ COZUM_ACIKLAMA = {
               "üretilir. Bütün satırlarda kodla yapılır."),
     "cikar": "Kolon değişken üretimine girmez.",
 }
+COZUM_ACIKLAMA.update({
+    "kod_bos_bayrak": ("Özel kod (ör. -1, -999) olan hücreler boş sayılır; kodun olduğu satırlar "
+                       "ayrıca 1/0 bayrağıyla işaretlenir. Kodun taşıdığı bilgi (ör. «hiç "
+                       "işlem yok») kaybolmaz, sayı gibi de kullanılmaz."),
+    "kod_bos": "Özel kod olan hücreler boş sayılır; kodun olduğu satırlar ayrıca işaretlenmez.",
+    "negatif_bos": ("Negatif olamayacak bir ölçüdeki negatif değerler hatalı sayılır ve boş "
+                    "yapılır; diğer değerler değişmez."),
+    "kirp": ("Sınırın üstündeki değerler sınıra çekilir. Sınır yalnız eğitim satırlarından "
+             "öğrenilir: sıfır olmayan değerlerin %99'luk değeri (seyrek kolonda sıfırlar "
+             "sınırı düşürmesin diye)."),
+    "birak": "Kolon değiştirilmeden kullanılır.",
+})
+# Duzeltme: kolon uretime girer, secilen duzeltme analiz tablosunda
+# uygulanir (girdi veri seti degismez). Kontrol -> secenekler, oneri.
+DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
+                    "negatif": ["negatif_bos", "birak"],
+                    "uc": ["birak", "kirp"]}
+DUZELTME_ONERI = {"gizli_eksik": "kod_bos_bayrak", "negatif": "negatif_bos", "uc": "birak"}
+DUZELTME_SIRA = ("gizli_eksik", "negatif", "uc")
+
+
+def duzeltme_ogren(kontrol, secim, x, egitim, kayit=None):
+    """Secilen duzeltmenin bilgisi. gizli: {"kod"}; uc/kirp: {"sinir"}
+    (egitim satirlarinda sifir olmayan dolu degerlerin %99'u)."""
+    kayit = kayit or {}
+    if kontrol == "gizli_eksik":
+        return {"kod": float(kayit.get("kod"))}
+    if kontrol == "uc" and secim == "kirp":
+        t = pd.to_numeric(x[egitim], errors="coerce").dropna()
+        t = t[t != 0]
+        if not len(t):
+            return {}
+        return {"sinir": float(np.nanpercentile(t.to_numpy(dtype=float), 99))}
+    return {}
+
+
+def duzeltme_uygula(kontrol, secim, x, bilgi):
+    """Doner: (yeni seri, bayrak serisi ya da None). Ayni duzeltme iki kez
+    uygulansa da sonuc degismez (bayrak ayrica, ham degerden hesaplanir)."""
+    if secim == "birak":
+        return x, None
+    sx = pd.to_numeric(x, errors="coerce")
+    if kontrol == "gizli_eksik" and "kod" in bilgi:
+        kodlu = sx == float(bilgi["kod"])
+        bayrak = kodlu.astype("int8") if secim == "kod_bos_bayrak" else None
+        return sx.where(~kodlu), bayrak
+    if kontrol == "negatif" and secim == "negatif_bos":
+        return sx.where(~(sx < 0)), None
+    if kontrol == "uc" and secim == "kirp" and "sinir" in bilgi:
+        return sx.clip(upper=float(bilgi["sinir"])), None
+    return x, None
+
+
 # Yeni kolonun adi: <KOLON>_<EK>.
 COZUM_EKI = {"hedef_grupla": "GRP", "seyrek_grupla": "GRP", "onek_grupla": "ONEK_GRP",
-             "dolu_bayrak": "DOLU"}
+             "dolu_bayrak": "DOLU", "kod_bos_bayrak": "KOD"}
 
 
 def _metin_mi(s):

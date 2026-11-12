@@ -17033,7 +17033,7 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
    pr: akis_faz02.aciklama_parcalari çıktısı. */
 function pfSonucSinifi(sonuc) {
     const t = String(sonuc || "");
-    return /^Üretime girmez|^Çözüm/.test(t) ? "girmez" : /^Kararınıza/.test(t) ? "karar" : "bilgi";
+    return /^Üretime girmez|^Çözüm/.test(t) ? "girmez" : /^Kararınıza|^Düzeltme/.test(t) ? "karar" : "bilgi";
 }
 
 function pfKontrolHucresi(ad, kisa, onemli) {
@@ -17068,13 +17068,14 @@ function pfGerekceHucresi(gerekce, onerilen) {
     return td;
 }
 
-const PF_NE_OLACAK_SINIF = { girmez: "pf-sonuc-girmez", karar: "pf-sonuc-karar", bilgi: "pf-sonuc-bilgi" };
+const PF_NE_OLACAK_SINIF = { girmez: "pf-sonuc-girmez", karar: "pf-sonuc-karar", bilgi: "pf-sonuc-bilgi",
+                             duzelt: "pf-sonuc-karar" };
 
 /* 02.1 çözüm hücresi: üretime girmez denen kolon için çözüm seçimi
    (gruplama, bayrak, metinden özellik ya da Çıkar). Karar modunda seçim
    kutusu ve seçilenin açıklaması; kilitli halde seçilen çözüm, ürettiği
    yeni kolonlar ve öğrenilen grupların özeti. */
-function pfCozumHucresi(ad, cz, secim, kararModu, kart, cizenler, ciz) {
+function pfCozumHucresi(ad, cz, secim, kararModu, kart, cizenler, ciz, aciklamasiz) {
     const td = elYap("td", "pf-cozum-hucre");
     const kutu = elYap("div", "pf-cozum");
     const secenek = kod => (cz.secenekler || []).find(o => o.kod === kod) || { kod: kod, ad: kod, aciklama: "" };
@@ -17101,7 +17102,8 @@ function pfCozumHucresi(ad, cz, secim, kararModu, kart, cizenler, ciz) {
             const kod = secim[ad];
             sel.value = kod;
             sel.disabled = kart.classList.contains("kilitli");
-            acik.textContent = secenek(kod).aciklama || "";
+            acik.textContent = aciklamasiz ? "" : (secenek(kod).aciklama || "");
+            acik.hidden = !!aciklamasiz;
             td.classList.toggle("cikar", kod === "cikar");
         });
     } else {
@@ -17164,6 +17166,13 @@ function profilKartiEkle(alan, blok) {
         cozumSecim[c.ad] = c.cozum.secim || c.cozum.oneri;
         cozumOneri[c.ad] = c.cozum.oneri;
     }));
+    /* Düzeltmeler (gizli eksik, negatif, uç değer): kontrol -> kolon ->
+       düzeltme kodu (önceki seçim ya da öneri). */
+    const duzSecim = {};
+    (alan.kontroller || []).forEach(k => (k.kolonlar || []).forEach(c => {
+        if (!c.duzeltme) return;
+        (duzSecim[k.anahtar] = duzSecim[k.anahtar] || {})[c.ad] = c.duzeltme.secim || c.duzeltme.oneri;
+    }));
 
     /* Başlık + i */
     const bas = elYap("div", "pf-bas");
@@ -17180,6 +17189,7 @@ function profilKartiEkle(alan, blok) {
         "Modelleme tablosundaki her kolon tablonun tamamı üzerinden incelenir; örneklem kullanılmaz, sayımlar kesindir.",
         "Kontrollerin sonucu üç türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
             + tireSade(alan.dusme_atif || "") + " adımında veri setinden çıkarılır. Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",
+        "Gizli Eksik, Beklenmeyen Negatif ve Uç Değer kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz (kodu boş sayma, negatifleri boş sayma, uçları kırpma ya da olduğu gibi bırakma), önerilen seçili gelir.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
@@ -17344,7 +17354,7 @@ function profilKartiEkle(alan, blok) {
             tbody.appendChild(satir);
             return;
         }
-        const tur = k.sonuc === "girmez" ? "sorun" : (k.sonuc === "karar" ? "karar" : "bilgi");
+        const tur = k.sonuc === "girmez" ? "sorun" : (k.sonuc === "karar" || k.sonuc === "duzelt" ? "karar" : "bilgi");
         const dg = elYap("button", "pf-durum " + tur);
         dg.type = "button";
         dg.setAttribute("aria-expanded", "false");
@@ -17387,12 +17397,45 @@ function profilKartiEkle(alan, blok) {
             tbody.appendChild(detay);
             return;
         }
-        const cozumlu = (k.kolonlar || []).some(c => c.cozum || c.cozum_baska);
+        const duzeltmeli = (k.kolonlar || []).some(c => c.duzeltme);
+        const cozumlu = duzeltmeli || (k.kolonlar || []).some(c => c.cozum || c.cozum_baska);
+        if (duzeltmeli && kararModu) {
+            /* Toplu düzeltme: seçilen düzeltme bu kontroldeki bütün kolonlara. */
+            const ilk = (k.kolonlar || []).find(c => c.duzeltme).duzeltme;
+            const ust = elYap("div", "pf-toplu");
+            ust.appendChild(elYap("span", "pf-toplu-not", "Bu kontroldeki bütün kolonlar için:"));
+            const tsel = elYap("select", "pf-cozum-sec pf-toplu-sec");
+            tsel.setAttribute("aria-label", k.ad + " toplu düzeltme");
+            (ilk.secenekler || []).forEach(o => {
+                const op = document.createElement("option");
+                op.value = o.kod;
+                op.textContent = o.ad + (o.kod === ilk.oneri ? " (önerilen)" : "");
+                tsel.appendChild(op);
+            });
+            tsel.value = ilk.oneri;
+            /* Seçeneklerin açıklaması burada bir kez; satırlarda yalnız seçim. */
+            const tacik = elYap("div", "pf-cozum-acik pf-toplu-acik");
+            const taciklama = () => {
+                tacik.textContent = (ilk.secenekler || []).map(o => o.ad + ": " + (o.aciklama || "")).join("\n");
+            };
+            taciklama();
+            const tb = elYap("button", "dg-toplu-btn", "Hepsine Uygula");
+            tb.type = "button";
+            tb.onclick = () => {
+                if (kart.classList.contains("kilitli")) return;
+                (k.kolonlar || []).forEach(c => { if (c.duzeltme) duzSecim[k.anahtar][c.ad] = tsel.value; });
+                kararCiz();
+            };
+            kararCizenler.push(() => { tsel.disabled = kart.classList.contains("kilitli"); });
+            ust.append(tsel, tb);
+            td.appendChild(ust);
+            td.appendChild(tacik);
+        }
         const sutunlar = birim === "satır"
             ? [["Tekrar", "pf-i-ad"], ["Bulgu", "pf-i-bulgu"]]
             : [["Kolon", "pf-i-ad"], ["Açıklama", "pf-i-acik"], ["Bulgu", "pf-i-bulgu"]]
                 .concat(kararli ? [["Karar", "pf-i-karar"]] : [])
-                .concat(cozumlu ? [["Çözüm", "pf-i-cozum"]] : []);
+                .concat(cozumlu ? [[duzeltmeli ? "Düzeltme" : "Çözüm", "pf-i-cozum"]] : []);
         const it = elYap("table", "dg-tablo pf-ic-tablo" + (cozumlu ? " pf-ic-cozumlu" : ""));
         const icg = document.createElement("colgroup");
         sutunlar.forEach(([, c]) => { const col = document.createElement("col"); col.className = c; icg.appendChild(col); });
@@ -17416,7 +17459,9 @@ function profilKartiEkle(alan, blok) {
                 r.appendChild(kt);
             }
             if (cozumlu) {
-                if (c.cozum) r.appendChild(pfCozumHucresi(c.ad, c.cozum, cozumSecim, kararModu, kart, kararCizenler, kararCiz));
+                if (c.duzeltme) r.appendChild(pfCozumHucresi(c.ad, c.duzeltme, duzSecim[k.anahtar], kararModu, kart, kararCizenler, kararCiz, true));
+                else if (duzeltmeli) r.appendChild(elYap("td", "pf-cozum-yok", "Kolon üretime girmez"));
+                else if (c.cozum) r.appendChild(pfCozumHucresi(c.ad, c.cozum, cozumSecim, kararModu, kart, kararCizenler, kararCiz));
                 else if (c.cozum_baska) r.appendChild(elYap("td", "pf-cozum-yok", c.cozum_baska + " satırında seçilir"));
                 else r.appendChild(elYap("td", "", BOS_SIMGE));
             }
@@ -17425,7 +17470,7 @@ function profilKartiEkle(alan, blok) {
         it.appendChild(itb);
         /* Çözümlü tablo yükseklik sınırı almaz: seçim ve açıklamalar
            kesilmeden okunur. */
-        const kap = elYap("div", "pf-ic-kap" + (cozumlu ? " pf-ic-kap-tam" : ""));
+        const kap = elYap("div", "pf-ic-kap" + (cozumlu && !duzeltmeli ? " pf-ic-kap-tam" : ""));
         kap.appendChild(it);
         td.appendChild(kap);
         detay.appendChild(td);
@@ -17511,6 +17556,12 @@ function profilKartiEkle(alan, blok) {
                 + ftBinlik(adlar.length - cik) + " tutulacak, " + ftBinlik(cik) + " çıkarılacak.");
             if (gid.length) parca.push(ftBinlik(gid.length) + " aynı içerikli grupta kalacak kolon seçildi"
                 + (farkli ? " (" + ftBinlik(farkli) + " grupta öneriden farklı)." : " (hepsi dil modelinin önerisi)."));
+            const dz = Object.values(duzSecim).flatMap(m => Object.values(m));
+            if (dz.length) {
+                const birak = dz.filter(x => x === "birak").length;
+                parca.push(ftBinlik(dz.length) + " kolon için düzeltme: " + ftBinlik(dz.length - birak)
+                    + " kolonda uygulanacak, " + ftBinlik(birak) + " kolon olduğu gibi kalacak.");
+            }
             const cz = Object.keys(cozumSecim);
             if (cz.length) {
                 const cikC = cz.filter(a => cozumSecim[a] === "cikar").length;
@@ -17543,7 +17594,8 @@ function profilKartiEkle(alan, blok) {
                 .filter(Boolean).join("; ");
             gonder(ozet || "Kararlar onaylandı", false,
                    { dogrulama: { adim: "veri_profili", cikar: cikar, ayni: Object.assign({}, ayniSecim),
-                                  cozum: Object.assign({}, cozumSecim) } });
+                                  cozum: Object.assign({}, cozumSecim),
+                                  duzeltme: JSON.parse(JSON.stringify(duzSecim)) } });
         };
         alt.append(ozetEl, btn);
         kart.appendChild(alt);
@@ -17592,7 +17644,8 @@ function profilEsikKartiEkle(alan, blok) {
         + "değiştirirseniz kontrol sizin değerinizle yapılır.\n\n"
         + "Yakalanan kolona ne olacağı kontrolün altında yazar: «Üretime girmez» (kolon değişken "
         + "üretiminde kullanılmaz), «Çözüm önerilir» (ham kolon kullanılmaz; gruplama, bayrak ya da "
-        + "metinden özellik gibi bir çözüm önerilir, seçtiğiniz çözümün yeni kolonu kullanılır), «Kararınıza bırakılır» (profil sonrası size sorulur), «Bilgi için "
+        + "metinden özellik gibi bir çözüm önerilir, seçtiğiniz çözümün yeni kolonu kullanılır), «Düzeltme önerilir» "
+        + "(kolon kullanılır; özel kodu ya da hatalı değeri boş sayma gibi bir düzeltme seçersiniz), «Kararınıza bırakılır» (profil sonrası size sorulur), «Bilgi için "
         + "gösterilir» (kolon kullanılır, yalnız dikkatinize sunulur).\n\n"
         + "Yüzdeli eşikler yüzde olarak yazılır (ör. 99 yazılırsa %99). Ondalık için virgül kullanılabilir.",
         "Kontrol Eşikleri"));
