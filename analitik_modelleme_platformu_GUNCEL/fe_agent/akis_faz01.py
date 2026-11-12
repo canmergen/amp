@@ -9461,7 +9461,10 @@ def _amp_veri_kaydi(oz):
             "dosya": oz.get("dosya"), "taban": oz.get("taban"),
             "motor": oz.get("motor"),
             "satir": int(oz.get("satir") or 0), "kolon": int(oz.get("kolon") or 0),
-            "dusen_kolon": len(oz.get("dusen") or [])}
+            "dusen_kolon": len(oz.get("dusen") or []),
+            # Tabloya yazilmayan kolonlarin adlari (kayit mesajinda
+            # 01.2.3.1'de cikarilan ve 01.3'te surec disi ayri yazilir).
+            "dusen_adlar": [str(k) for k in oz.get("dusen") or []]}
 
 
 def _amp_sozluk_tablosu(durum, esleme, veri_kolon=None):
@@ -9758,7 +9761,9 @@ def _teyit_karti(durum):
         notlar.append("Sözlükte açıklaması bulunmayan %s değişken süreç dışı "
                       "olarak işaretlendi; veri setinde kalmasını istediğiniz "
                       "varsa işareti kaldırın." % _sayi(len(otomatik)))
-    tek_hepsi = durum.get("_tek_degerli") or []
+    # 01.2.3.1'de cikarilan kolon listede yok: onun icin not yazilmaz.
+    cik = cikarilan_kolonlar(durum)
+    tek_hepsi = [k for k in durum.get("_tek_degerli") or [] if str(k) not in cik]
     if tek_hepsi:
         adlar = ", ".join(str(k) for k in tek_hepsi[:3]) + (
             " ve %s değişken daha" % _sayi(len(tek_hepsi) - 3)
@@ -9834,14 +9839,35 @@ def teyit_uygula(durum):
     # kaydediliyor. AMP_VERISETI ve AMP_SOZLUK bu noktada yaziliyor;
     # kullanici sonradan bu adlarla cekebilsin diye.
     cikti = amp_ciktilarini_yaz(durum)
-    dusen = int((cikti.get("veri") or {}).get("dusen_kolon") or 0)
     return ("Değişken listesi kaydedildi.\n"
             "  Modelleme tablosu : %s%s\n"
             "  Değişken sözlüğü  : %s"
             % (amp_nerede(cikti.get("veri")),
-               (" (süreç dışı %s kolon tabloya yazılmadı)" % _sayi(dusen))
-               if dusen else "",
+               _dusen_metni(durum, cikti.get("veri") or {}),
                amp_nerede(cikti.get("sozluk"))))
+
+
+def _dusen_metni(durum, veri):
+    """Kayit mesajinda tabloya yazilmayan kolonlar, nedenine gore ayri ve
+    adlariyla: 01.2.3.1'de cikarilanlar ve 01.3'te surec disi
+    birakilanlar. Bossa bos."""
+    adlar = [str(k) for k in veri.get("dusen_adlar") or []]
+    if not adlar:
+        n = int(veri.get("dusen_kolon") or 0)
+        return (" (%s kolon tabloya yazılmadı)" % _sayi(n)) if n else ""
+    cik = cikarilan_kolonlar(durum)
+
+    def liste(xs):
+        return ", ".join(xs[:5]) + (" ve %s kolon daha" % _sayi(len(xs) - 5)
+                                    if len(xs) > 5 else "")
+    parca = []
+    a = [k for k in adlar if k in cik]
+    b = [k for k in adlar if k not in cik]
+    if a:
+        parca.append("01.2.3.1'de çıkardığınız %s kolon (%s)" % (_sayi(len(a)), liste(a)))
+    if b:
+        parca.append("süreç dışı %s kolon (%s)" % (_sayi(len(b)), liste(b)))
+    return " (%s tabloya yazılmadı)" % " ve ".join(parca)
 
 
 def _profil_donusum_karari(kp, kod):

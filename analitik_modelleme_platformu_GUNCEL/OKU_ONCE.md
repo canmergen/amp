@@ -112,7 +112,11 @@ metne göre, `boylaPlanla`; Enter yeni satır açmaz). Satır rengi yalnız boş
 (sarı, "Tanım Boş"); öneriyle eklenen tanımlar önceki adımlarda (01.2.3,
 01.2.4.3) onaylandığı için 01.3'te ayrıca işaretlenmez (eski "Dil
 Modeli Önerisi" mavisi bekleyen iş gibi okunuyordu). Tanımlar 01.2.4.3
-onayında sözlüğün çalışma kopyasına yazılan son hâllerdir.
+onayında sözlüğün çalışma kopyasına yazılan son hâllerdir. Kayıt mesajı
+tabloya yazılmayan kolonları nedenine göre ve adlarıyla yazar
+(`_dusen_metni`, `amp_cikti.veri.dusen_adlar`): "01.2.3.1'de
+çıkardığınız 2 kolon (PERIOD, RN)" ve "süreç dışı N kolon (…)". 01.2.3.1'de
+çıkarılan kolon listede olmadığı için tek değerli notunda da anılmaz.
 
 **Veri ve Sözlük sekmesi: 01.2.4 sonuçları hemen görünür.** AMP_VERISETI
 ve AMP_SOZLUK dosyaları eskisi gibi 01.3 Değişken Listesi ve Tip
