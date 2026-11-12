@@ -1221,6 +1221,14 @@ def feature_tablo(durum):
     # calisma kopyasindan (onayli aciklama oraya yazildi).
     yeni_ad = _uygulanacak_adlar(durum, [str(o.get("ad")) for o in kolon_listesi])
     kartlar = _onayli_kolon_kartlari(durum)
+    # ESKI AD VE ESKI ACIKLAMA: UPDT veri yeni adla yazildiktan sonra kolon
+    # yeni adla gelir; eski ad durumdaki eslemeden (ve kolon ozetinden),
+    # eski aciklama sozlugun secim anindaki aciklamasindan (ILK_ACIKLAMA).
+    eski_ad = {str(y): str(e) for e, y in (durum.get("_amp_yeniden_ad") or {}).items()}
+    for o in kolon_listesi:
+        if o.get("eski_ad") and str(o["eski_ad"]) != str(o.get("ad")):
+            eski_ad.setdefault(str(o.get("ad")), str(o["eski_ad"]))
+    ilk_tanim = _ilk_tanimlar(durum)
 
     satirlar = []
     for o in kolon_listesi:
@@ -1245,9 +1253,19 @@ def feature_tablo(durum):
         }
         if yeni_ad.get(ad):
             satir["yeni_ad"] = yeni_ad[ad]
-        k = kartlar.get(ad)
+        eski = eski_ad.get(ad, "")
+        if eski and eski != ad:
+            satir["eski_ad"] = eski
+        k = kartlar.get(ad) or (kartlar.get(eski) if eski else None)
         if k:
             satir["kart"] = k
+        # Eski aciklama: secim anindaki aciklama (eski adla, yoksa adla);
+        # yoksa kolon kartinin duzenleme oncesi aciklamasi. Yalniz guncel
+        # tanimdan farkliysa.
+        et = (ilk_tanim.get(eski.upper()) if eski else None) or ilk_tanim.get(ad.upper()) \
+            or (k or {}).get("orijinal") or ""
+        if et and et.strip() != str(tanim or "").strip():
+            satir["eski_tanim"] = et
         satirlar.append(satir)
 
     return {
@@ -1269,6 +1287,25 @@ def feature_tablo(durum):
         # Baz sozluk (yeni duzen): Veri ve Sözlük'te Güncel / Baz secimi.
         "sozluk_baz": _platform_adlari(durum)[3],
     }
+
+
+def _ilk_tanimlar(durum):
+    """{KOLON_BUYUK: aciklama}: sozlugun secim anindaki aciklamalari
+    (calisma kopyasinin ILK_ACIKLAMA kolonu); yoksa {}."""
+    try:
+        ilk = sozluk_calisma.ilk_sozluk_df(durum)
+    except Exception:
+        return {}
+    if ilk is None or not len(ilk):
+        return {}
+    cikti = {}
+    for a, t in zip(ilk["DEGISKEN"], ilk["ACIKLAMA"]):
+        if t is None or (isinstance(t, float) and t != t):
+            continue
+        t = str(t).strip()
+        if t and t.lower() != "nan":
+            cikti.setdefault(str(a).strip().upper(), t)
+    return cikti
 
 
 def _uygulanacak_adlar(durum, adlar):

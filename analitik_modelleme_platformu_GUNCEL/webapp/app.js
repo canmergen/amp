@@ -2224,7 +2224,9 @@ function ftSuzListe(haricAlan) {
         for (const [a, sz] of kolonSz) if (!szUyar(s[a], sz)) return false;
         if (aranan && ftSade(s.feature).indexOf(aranan) === -1
             && ftSade(s.yeni_ad).indexOf(aranan) === -1
-            && ftSade(s.tanim).indexOf(aranan) === -1) return false;
+            && ftSade(s.eski_ad).indexOf(aranan) === -1
+            && ftSade(s.tanim).indexOf(aranan) === -1
+            && ftSade(s.eski_tanim).indexOf(aranan) === -1) return false;
         /* TIP SUZGECI tam esleme: "sayısal" secildiginde "sayısal"
            kolonlar gelir. Parca eslemesi yapsaydik gelecekte eklenecek
            bir tip adi baskasini da yakalardi. */
@@ -3292,6 +3294,14 @@ function ftTanimHucresi(s) {
 
     if (!(FT.veri && FT.veri.duzenlenebilir)) {
         h.textContent = degerGoster(s.tanim);
+        /* Eski açıklama (sözlüğün seçim anındaki hâli), güncelden farklıysa. */
+        if (s.eski_tanim) {
+            h.textContent = "";
+            h.appendChild(elYap("span", "ft-yeni-ad", degerGoster(s.tanim)));
+            h.appendChild(elYap("span", "ft-eski-ad", "Eski açıklama: " + tireSade(s.eski_tanim)));
+            h.title = duzMetin(String(s.tanim || "") + "\nEski açıklama: " + s.eski_tanim);
+            return h;
+        }
         /*
            Sözlük hiç bağlanmadıysa hangi adımda bağlanacağı, kopya
            çıkarılamadıysa nedeni yazıyor. */
@@ -3359,13 +3369,17 @@ function ftSatirCiz(s, i) {
         if (a.alan === "tanim") { satir.appendChild(ftTanimHucresi(s)); return; }
         /* 01.2.4.4'te adı değişen kolon: yeni ad, altında soluk eski ad
            (AMP_VERISETI 01.3'te yeni adla yazılır). */
-        if (a.alan === "feature" && s.yeni_ad) {
+        if (a.alan === "feature" && (s.yeni_ad || s.eski_ad)) {
+            /* Yeni ad henüz yazılmadıysa (yeni_ad) satırın adı eski addır;
+               UPDT veri yeni adla yazıldıktan sonra eski ad eski_ad'dan. */
+            const gorunen = s.yeni_ad || s.feature;
+            const eski = s.yeni_ad ? s.feature : s.eski_ad;
             const h = elYap("span", "ft-hucre " + (a.sinif || ""));
             h.setAttribute("role", "cell");
             h.setAttribute("data-alan", a.alan);
-            h.appendChild(elYap("span", "ft-yeni-ad", s.yeni_ad));
-            h.appendChild(elYap("span", "ft-eski-ad", "eski: " + s.feature));
-            h.title = s.yeni_ad + " (eski adı " + s.feature + ")";
+            h.appendChild(elYap("span", "ft-yeni-ad", gorunen));
+            h.appendChild(elYap("span", "ft-eski-ad", "Eski ad: " + eski));
+            h.title = gorunen + " (eski adı " + eski + ")";
             satir.appendChild(h);
             return;
         }
@@ -3505,6 +3519,8 @@ function ftDetayCiz() {
     kutu.appendChild(elYap("div", "ft-detay-ad", s.yeni_ad || s.feature));
     if (s.yeni_ad) kutu.appendChild(elYap("div", "ft-eski-ad", "Eski adı: " + s.feature
         + ". Yeni ad Kolon Adları adımında onaylandı; UPDT veri bu adla yazılır."));
+    else if (s.eski_ad) kutu.appendChild(elYap("div", "ft-eski-ad", "Eski adı: " + s.eski_ad
+        + ". Ad Kolon Adları adımında değişti; girdi veri setinizde ve sözlüğünüzde eski adla durur."));
     /* Satir govdesinde (SOZLESME7 §5) tekil/ornek gelmeyebilir.
        GELMEYEN ALAN HIC CIZILMEZ - bos "∅" kullaniciya "olculdu ve
        bostu" diye okunuyor. */
@@ -3525,7 +3541,8 @@ function ftDetayCiz() {
     /* KOLON KARTI (Kolon Kartları adımında onaylanan): orijinal açıklama
        (güncel tanımdan farklıysa), kart alanları, ek bilgi ve not. */
     const kart = s.kart || {};
-    if (kart.orijinal && kart.orijinal.trim() !== String(s.tanim || "").trim())
+    if (s.eski_tanim) satirlar.push(["Eski Açıklama", s.eski_tanim]);
+    else if (kart.orijinal && kart.orijinal.trim() !== String(s.tanim || "").trim())
         satirlar.push(["Orijinal Açıklama", kart.orijinal]);
     FT_KART_ALANLARI.forEach(([alan, ad]) => {
         if (kart.kart && kart.kart[alan]) satirlar.push(["Kart: " + ad, kart.kart[alan]]);

@@ -5309,7 +5309,7 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 
 /* Değişken Listesi: 01.2.4.4'te adı değişen kolon (yeni ad, altında eski ad). */
 .ft-yeni-ad { display: block; }
-.ft-eski-ad { display: block; color: var(--metin-soluk); font-size: var(--fs-kucuk); overflow-wrap: anywhere; }
+.ft-eski-ad { display: block; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: var(--fw-normal, 400); overflow-wrap: anywhere; }
 /* Değişken Listesi altında 01.2.4 sonuçları: açılır bölümler. */
 .oz0124 { margin-top: var(--b-3); }
 .oz0124-bas { display: flex; align-items: center; gap: 4px; font-weight: var(--fw-kalin); margin-bottom: 6px; }

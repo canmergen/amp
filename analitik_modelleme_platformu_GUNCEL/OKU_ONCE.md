@@ -201,9 +201,19 @@ gösterir (`akis_panel.feature_tablo`, `adim_0124_ozeti`):
 - **Tanım:** 01.2.4.3 onayında düzeltilen açıklama sözlüğün çalışma
   kopyasına yazıldığı için tabloda güncel.
 - **Ad:** 01.2.4.4'te adı değişen kolonda DEĞİŞKEN hücresinde yeni ad,
-  altında soluk "eski: …" (`yeni_ad`; `amp.yeniden_ad_esleme` ile, rol ve
+  altında soluk "Eski ad: …" (`yeni_ad`; `amp.yeniden_ad_esleme` ile, rol ve
   süreç dışı kolonlar hariç). Arama iki adda da çalışır; satırın anahtarı
   (tanım düzeltme, süreç dışı) eski ad kalır.
+- **Ad yazıldıktan sonra (UPDT veri yeni adla):** kolon yeni adla gelir;
+  eski ad `durum["_amp_yeniden_ad"]` (ve kolon özetinin `eski_ad`'ı) ile
+  satıra `eski_ad` olarak girer, DEĞİŞKEN hücresinde yeni adın altında
+  soluk "Eski ad: …". Kolon kartı eski adla da aranır.
+- **Eski açıklama:** `eski_tanim` = sözlüğün seçim anındaki açıklaması
+  (çalışma kopyasının ILK_ACIKLAMA'sı, `_ilk_tanimlar`; eski adla, yoksa
+  adla), o da yoksa kolon kartının düzenleme öncesi açıklaması; yalnız
+  güncel tanımdan farklıysa. SÖZLÜK TANIMI hücresinde güncel tanımın
+  altında soluk "Eski açıklama: …", detayda "Eski Açıklama". Arama eski
+  ad ve eski açıklamada da çalışır.
 - **Satır detayı:** adı değiştiyse eski adı; kolon kartı (01.2.4.3
   onayından, `_onayli_kolon_kartlari`): güncel tanımdan farklıysa
   orijinal açıklama, kart alanları ("Kart: Konu" gibi), ek bilgi, notunuz.
