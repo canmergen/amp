@@ -258,7 +258,7 @@ def _cozum_ogren(durum):
     p["duzeltme_bilgi"] = {}
     duz_yeni = []
     if secim or duz:
-        df = modelleme_df(durum)
+        df = asama_df(durum, "01") if updt_modu(durum) else modelleme_df(durum)
         target = (durum.get("meta") or {}).get("target")
         tr = setler(durum, df)["egitim"]
         y = df[target] if target in df.columns else pd.Series(np.nan, index=df.index)
@@ -448,10 +448,177 @@ def zengin_adi(durum):
     return "%s_ENRICHED" % durum.get("veri_seti")
 
 
+# ===========================================================================
+# UPDT VERI ASAMALARI (yeni duzen; bkz. amp.py DORT TABLO)
+# ---------------------------------------------------------------------------
+# UPDT veri her adimda ilerler; durum["updt_asama"] tablonun su an hangi
+# adimin sonundaki hali oldugunu soyler:
+#   "01.3" teyit (tip, dusen, yeni ad)   "01"   + _SPLIT (01.4)
+#   "02.1" + duzeltmeler ve cozum kolonlari
+#   "02.2" + kural tabanli uretim        "02.3" + yapay zeka kesfi
+#   "03.3" analitik baz set (dusenler cikar, SFA kararlari, doldurma)
+# Bir adim ONCEKI asamanin tablosunu ister (asama_df). UPDT zaten o
+# asamadaysa (ya da aradaki adimlar bir sey katmadiysa) UPDT okunur; geri
+# donulmus ve UPDT ileride kalmissa tablo BAZ veriden kararlar yeniden
+# uygulanarak kurulur (girdi verisi hic degismez, karar durumda saklidir).
+# Eski calismalar (AMP_VERISETI, _ENRICHED) eski yolla calisir.
+# ===========================================================================
+UPDT_ASAMALARI = ("01.3", "01", "02.1", "02.2", "02.3", "03.3")
+_ASAMA_ONBELLEK = {}
+ASAMA_ONBELLEK_SN = 600
+
+
+def updt_modu(durum):
+    """Calisma yeni duzende mi: modelleme tablosu <EK>_UPDT_VERI."""
+    k = ((durum or {}).get("amp_cikti") or {}).get("veri") or {}
+    return bool(k.get("dataset")) and k.get("istek") is not None \
+        and str(k["dataset"]).endswith("_UPDT_VERI")
+
+
+def updt_adi(durum):
+    return ((durum.get("amp_cikti") or {}).get("veri") or {}).get("dataset")
+
+
+def _asama_katkisi(durum, asama):
+    """Asama UPDT veriye bir sey katar mi?"""
+    if asama == "02.1":
+        p = durum.get("profil") or {}
+        return bool(p.get("cozum_bilgi")) or any(
+            v for v in (p.get("duzeltme_bilgi") or {}).values())
+    if asama in ("02.2", "02.3"):
+        from fe_agent.akis_faz03 import KURAL_KAYNAK, KESIF_KAYNAK
+        kaynak = KURAL_KAYNAK if asama == "02.2" else KESIF_KAYNAK
+        return any(len(b) > 2 and b[2] == kaynak and b[1]
+                   for b in durum.get("kod_bloklari") or [])
+    return True
+
+
+def _asama_imzasi(durum, asama):
+    import hashlib
+    import json as _json
+    kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+    p = durum.get("profil") or {}
+    parca = [asama, durum.get("updt_asama"), kayit.get("istek"), kayit.get("bolme_tarif"),
+             (durum.get("meta") or {}).get("segment"), p.get("cozum_bilgi"),
+             p.get("duzeltme_bilgi"), durum.get("kod_bloklari")]
+    return hashlib.md5(_json.dumps(parca, sort_keys=True, default=str)
+                       .encode("utf-8")).hexdigest()
+
+
+def _updt_01_kur(durum):
+    """01 sonu: BAZ veri + teyit istegi + bolme (01.4) - UPDT'nin 01.4
+    sonrasi hali, BAZ'dan yeniden."""
+    from fe_agent import amp_pandas
+    from fe_agent.akis_durum import AdimHatasi
+    kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+    istek = dict(kayit.get("istek") or {})
+    if kayit.get("bolme_tarif"):
+        istek.update(bolme=kayit["bolme_tarif"],
+                     segment=(durum.get("meta") or {}).get("segment"))
+    tablo, sonuc = amp_pandas.amp_hazirla(_df_oku(kayit.get("kaynak"), onbellek=False), istek)
+    if sonuc.get("hata"):
+        raise AdimHatasi(sonuc["hata"])
+    return tablo
+
+
+def _kod_bloklarini_uygula(durum, df, kaynak):
+    """02.2 / 02.3 kod satirlari (uretim_kodu.py'deki satirlarin aynisi)
+    df'e uygulanir. Sonsuz degerler bos sayilir."""
+    def _s(d, kol):
+        return pd.to_numeric(d[kol], errors="coerce")
+
+    def _bol(a, b):
+        if isinstance(b, pd.Series):
+            b = b.replace(0, np.nan)
+        elif b == 0:
+            return np.nan
+        return a / b
+    df = df.copy()
+    ortam = {"np": np, "pd": pd, "_s": _s, "_bol": _bol, "df": df}
+    for b in durum.get("kod_bloklari") or []:
+        if len(b) < 3 or b[2] != kaynak:
+            continue
+        for satir in b[1] or []:
+            ad, kod = satir[0], satir[1]
+            try:
+                exec(kod, ortam)              # pylint: disable=exec-used
+            except Exception:                 # pylint: disable=broad-except
+                continue
+            if ad in df.columns and pd.api.types.is_numeric_dtype(df[ad]):
+                df[ad] = df[ad].replace([np.inf, -np.inf], np.nan)
+    return df
+
+
+def asama_df(durum, asama):
+    """UPDT verinin `asama` sonundaki hali (bkz. UPDT_ASAMALARI)."""
+    import time as _time
+    mevcut = durum.get("updt_asama")
+    sira = UPDT_ASAMALARI
+    if mevcut in sira and asama in sira:
+        i, j = sira.index(mevcut), sira.index(asama)
+        if i == j or (i < j and not any(_asama_katkisi(durum, a) for a in sira[i + 1:j + 1])):
+            return _df_oku(updt_adi(durum))
+    anahtar = (str(durum.get("_oturum_id") or ""), asama)
+    imza = _asama_imzasi(durum, asama)
+    kayit = _ASAMA_ONBELLEK.get(anahtar)
+    if kayit and kayit[0] == imza and _time.time() - kayit[1] < ASAMA_ONBELLEK_SN:
+        return kayit[2].copy()
+    if asama in ("01.3", "01"):
+        df = _updt_01_kur(durum)
+    elif asama == "02.1":
+        df = cozum_kolonlari_ekle(durum, asama_df(durum, "01"))
+    elif asama == "02.2":
+        from fe_agent.akis_faz03 import KURAL_KAYNAK
+        df = _kod_bloklarini_uygula(durum, asama_df(durum, "02.1"), KURAL_KAYNAK)
+    else:
+        from fe_agent.akis_faz03 import KESIF_KAYNAK
+        df = _kod_bloklarini_uygula(durum, asama_df(durum, "02.2"), KESIF_KAYNAK)
+    for k in [k for k in _ASAMA_ONBELLEK if k[0] == anahtar[0]][:-1]:
+        _ASAMA_ONBELLEK.pop(k, None)
+    _ASAMA_ONBELLEK[anahtar] = (imza, _time.time(), df)
+    return df.copy()
+
+
+def updt_yaz(durum, df, asama):
+    """UPDT veriyi `asama` sonundaki haliyle yazar."""
+    from fe_agent import amp as amp_mod
+    from fe_agent.akis_durum import onbellek_temizle
+    ad = updt_adi(durum)
+    kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+    amp_mod._pandas_yaz(ad, df, kayit.get("kaynak") or ad)
+    onbellek_temizle(ad)
+    durum["updt_asama"] = asama
+    kayit["kolon"] = int(df.shape[1])
+    for k in [k for k in _ASAMA_ONBELLEK if k[0] == str(durum.get("_oturum_id") or "")]:
+        _ASAMA_ONBELLEK.pop(k, None)
+
+
+def updt_ilerlet(durum, asama, onceki):
+    """Adim UPDT'ye bir sey katmadi: tablo `onceki` asamanin hali olur
+    (UPDT ileride kaldiysa geri kurulup yazilir)."""
+    if durum.get("updt_asama") != onceki:
+        updt_yaz(durum, asama_df(durum, onceki), asama)
+    durum["updt_asama"] = asama
+
+
+def ara_tablo_kaydet(durum, ek, tablo, eski_yedek):
+    """Profil, SFA ve PSI tablolari: yeni duzende Flow'a veri seti olarak
+    YAZILMAZ, calisma klasorune iç kayit olarak gider. Doner: (dataset,
+    yedek) - _yaz ile ayni bicim."""
+    if not updt_modu(durum):
+        return _yaz("%s_%s" % (durum["veri_seti"], ek), tablo, eski_yedek)
+    from fe_agent.akis_durum import dosya_yaz
+    from fe_agent.akis_faz01 import amp_klasor_adi
+    return None, dosya_yaz("/%s/%s.parquet" % (amp_klasor_adi(durum), ek.lower()), tablo)
+
+
 def analiz_df(durum):
     """Faz 03'un tablosu: degisken uretildiyse _ENRICHED (ham + uretilen),
     uretilmediyse modelleme tablosu. Uretilen kolondaki sonsuz deger (ornek:
-    sifira bolme) bos sayilir; profil onu eksik deger olarak gorur."""
+    sifira bolme) bos sayilir; profil onu eksik deger olarak gorur.
+    Yeni duzende UPDT verinin 02.3 sonundaki hali."""
+    if updt_modu(durum):
+        return asama_df(durum, "02.3")
     # _ENRICHED yalniz kural / kesif adimlari bir sey urettiyse okunur;
     # cozum kolonlari tek basina _ENRICHED gerektirmez (bayat tablo okunmaz).
     uretilen = uretim_kolonlari(durum)
@@ -846,7 +1013,7 @@ def profil_hesapla(durum):
     """Veri profilini tablonun TAMAMINDAN cikarir: dort temel kontrol
     (sfa.profil_cikar) ve ek kontroller (profil_ek). Sonuc durum["profil"]."""
     from fe_agent import profil_ek
-    df = modelleme_df(durum)
+    df = asama_df(durum, "01") if updt_modu(durum) else modelleme_df(durum)
     m = durum["meta"]
     haric = set(durum.get("haric_kolonlar") or []) | {m.get("target"), m.get("id"), m.get("donem")}
 
@@ -854,7 +1021,7 @@ def profil_hesapla(durum):
     tablo, teshis = sfa_mod.profil_cikar(df, haric=haric, null_esik=esik["cok_bos"],
                                          kimlik_esik=esik["kimlik"],
                                          kategorik_max=esik["kardinalite"])
-    yazildi, yedek = _yaz("%s_PROFIL" % durum["veri_seti"], tablo, "/veri_profili.parquet")
+    yazildi, yedek = ara_tablo_kaydet(durum, "PROFIL", tablo, "/veri_profili.parquet")
 
     p = durum.get("profil") or {}
     temel = set(teshis.get("cok_bos") or []) | set(teshis.get("sabit") or []) \
@@ -1066,6 +1233,13 @@ def veri_profili_uygula(durum):
         p["duzeltme_secim"] = sec
     durum["profil"] = p
     _cozum_ogren(durum)
+    # UPDT VERI: duzeltmeler ve cozum kolonlari dogrudan veriye yazilir
+    # (02.1 sonu). Kaynak her zaman 01 sonu (geri donulduyse BAZ'dan).
+    if updt_modu(durum):
+        if _asama_katkisi(durum, "02.1"):
+            updt_yaz(durum, cozum_kolonlari_ekle(durum, asama_df(durum, "01")), "02.1")
+        else:
+            updt_ilerlet(durum, "02.1", "01")
     # Profil degisti: SFA ve kararlari eski profile aitti, yeniden hesaplanir.
     eski = (durum.pop("sfa", None) or {}).get("ai_is")
     if eski:
@@ -1848,7 +2022,7 @@ def _sfa_hesapla(durum):
         tablo["EGILIM"] = tablo["FEATURE"].map(lambda k: (detay.get(str(k)) or {}).get("sekil"))
         tablo["ARALIK_SAYISI"] = tablo["FEATURE"].map(
             lambda k: (detay.get(str(k)) or {}).get("aralik_sayisi"))
-    yazildi, yedek = _yaz("%s_SFA" % durum["veri_seti"], tablo, "/sfa_tablosu.parquet")
+    yazildi, yedek = ara_tablo_kaydet(durum, "SFA", tablo, "/sfa_tablosu.parquet")
     ozet.pop("iv_skorlari_tam", None)
     ozet.update({
         "tablo_dataset": yazildi, "tablo_yedek": None if yazildi else yedek,
@@ -2011,7 +2185,7 @@ def stabilite_uygula(durum):
         durum["stabilite"] = {"atlandi": True}
         return "Stabilite analizi yapılamadı."
 
-    yazildi, yedek = _yaz("%s_PSI" % durum["veri_seti"], tablo, "/stabilite.parquet")
+    yazildi, yedek = ara_tablo_kaydet(durum, "PSI", tablo, "/stabilite.parquet")
     ozet["tablo_dataset"] = yazildi
     karsi = set_basligi("test", bolme_ayarlari(durum)["test_tanim"])
     ozet["karsilastirma"] = "Train (MS) ↔ %s" % karsi
@@ -2202,16 +2376,25 @@ def baz_uygula(durum):
 
     # Hedef veri seti akista tanimli degilse adim COKMESIN: hesap korunur,
     # tablo yedek dosyaya yazilir ve kullaniciya acik bir uyari verilir.
-    baz_ds = "%s_BAZ" % durum["veri_seti"]
-    # Veri seti Flow'da yoksa webapp kurar (kullanici Flow'a bir sey eklemez;
-    # kaynak tablonun baglantisinda Parquet). Kurulamazsa yedek dosyaya
-    # yazilir ve uyari verilir.
-    try:
-        from fe_agent import spark_is
-        spark_is.veri_seti_hazirla(baz_ds, durum["veri_seti"])
-    except Exception:
-        pass
-    yazildi, yedek = _yaz(baz_ds, df, "/analitik_baz_set.parquet")
+    if updt_modu(durum):
+        # YENI DUZEN: baz set UPDT verinin 03.3 sonundaki halidir.
+        baz_ds = updt_adi(durum)
+        try:
+            updt_yaz(durum, df, "03.3")
+            yazildi, yedek = baz_ds, None
+        except Exception as e:                # pylint: disable=broad-except
+            yazildi, yedek = None, str(e)[:160]
+    else:
+        baz_ds = "%s_BAZ" % durum["veri_seti"]
+        # Veri seti Flow'da yoksa webapp kurar (kullanici Flow'a bir sey
+        # eklemez; kaynak tablonun baglantisinda Parquet). Kurulamazsa yedek
+        # dosyaya yazilir ve uyari verilir.
+        try:
+            from fe_agent import spark_is
+            spark_is.veri_seti_hazirla(baz_ds, durum["veri_seti"])
+        except Exception:
+            pass
+        yazildi, yedek = _yaz(baz_ds, df, "/analitik_baz_set.parquet")
 
     # Dusen kolonlar durum["haric_kolonlar"]'a YAZILMAZ: o liste Faz 01'in
     # (AMP veri seti) ve uretimin girdisi; geri donulup uretim yeniden

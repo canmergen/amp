@@ -343,23 +343,25 @@ def amp_bolme_yaz(durum, bolme):
         # hem girdisi hem ciktisi olamaz; UPDT BAZ veriden teyit istegi +
         # bolme ile yeniden kurulur (sonuc ayni: teyit + _SPLIT).
         updt = kayit["dataset"]
+        tam = dict(kayit["istek"], bolme=bolme,
+                   segment=(durum.get("meta") or {}).get("segment"))
         if kayit.get("motor") == motor.PANDAS:
-            df = _df_oku(updt, onbellek=False)
-            df = df.drop(columns=[amp_pandas.SPLIT_KOLON], errors="ignore")
-            tablo, sonuc = amp_pandas.amp_hazirla(df, istek)
+            # UPDT sonraki adimlarla ilerlemis olabilir (geri donus): bolme
+            # her zaman BAZ veriden teyit istegiyle kurulur.
+            tablo, sonuc = amp_pandas.amp_hazirla(
+                _df_oku(kayit.get("kaynak"), onbellek=False), tam)
             if sonuc.get("hata"):
                 raise AdimHatasi(sonuc["hata"])
             _pandas_yaz(updt, tablo, kayit.get("kaynak") or updt)
             sonuc.update(motor=motor.PANDAS, dataset=updt, dosya=None,
-                         istek=kayit["istek"], kaynak=kayit.get("kaynak"))
+                         istek=kayit["istek"], kaynak=kayit.get("kaynak"),
+                         bolme_tarif=bolme)
             return sonuc
-        tam = dict(kayit["istek"], bolme=bolme,
-                   segment=(durum.get("meta") or {}).get("segment"))
         sonuc = _sonuc_ile_calistir("amp", [kayit.get("kaynak")], tam,
                                     durum.get("_oturum_id") or "", cikti_adi=updt)
         motor.unut(updt)
         sonuc.update(motor=motor.SPARK, dataset=updt, dosya=None, taban=updt,
-                     istek=kayit["istek"], kaynak=kayit.get("kaynak"))
+                     istek=kayit["istek"], kaynak=kayit.get("kaynak"), bolme_tarif=bolme)
         return sonuc
     if kayit.get("dosya"):
         df = tablo_io.klasorden_oku(_folder(), kayit["dosya"])

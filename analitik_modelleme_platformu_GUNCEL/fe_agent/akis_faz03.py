@@ -299,7 +299,9 @@ def _winsor_kod(k, alt, ust):
 
 def kural_uygula(durum, secim=None):
     plan = _secimi_uygula(durum.get("plan") or [], secim)
-    hedef = "%s_ENRICHED" % durum["veri_seti"]
+    from fe_agent import akis_faz02 as _f2
+    yeni_duzen = _f2.updt_modu(durum)
+    hedef = _f2.updt_adi(durum) if yeni_duzen else "%s_ENRICHED" % durum["veri_seti"]
 
     # IDEMPOTANS: bu adim yeniden calistiriliyorsa once kendi kayitlarini
     # sil. Kaynak her zaman baz set oldugu icin _ENRICHED uzerine yazilir
@@ -310,6 +312,8 @@ def kural_uygula(durum, secim=None):
     _sfa_gecersiz(durum)
 
     if not plan:
+        if yeni_duzen:
+            _f2.updt_ilerlet(durum, "02.2", "02.1")
         return ("Bu adımda üretim yapılmadı." +
                 _yeniden_notu(silinen_kural, silinen_kesif))
 
@@ -317,7 +321,8 @@ def kural_uygula(durum, secim=None):
     # baz set uretimden SONRA kurulur.
     # 02.1 cozum kolonlari (IL_GRP, NOT_SKOR ...) _ENRICHED'e de girer.
     from fe_agent.akis_faz02 import cozum_kolonlari_ekle
-    df = cozum_kolonlari_ekle(durum, modelleme_df(durum))
+    df = _f2.asama_df(durum, "02.1") if yeni_duzen \
+        else cozum_kolonlari_ekle(durum, modelleme_df(durum))
     tr, _te = maskeler(durum, df)            # LEAKAGE SINIRI
     yasak = _meta_yasak(durum) | _kusurlu(durum)
     ogrenilen = {}
@@ -384,7 +389,10 @@ def kural_uygula(durum, secim=None):
         df[ad] = seri
 
     try:
-        dataiku.Dataset(hedef).write_with_schema(df)
+        if yeni_duzen:
+            _f2.updt_yaz(durum, df, "02.2")
+        else:
+            dataiku.Dataset(hedef).write_with_schema(df)
     except Exception as e:
         return ("Üretilen %s kolon hesaplandı ama '%s' veri setine "
                 "YAZILAMADI: %s\n\n"
@@ -440,8 +448,12 @@ def kesif_plan(durum):
     # Kusurlu ham kolonlar (Veri Profili) dil modeline gitmez; ifadede
     # gecerse dogrulamada reddedilir. SFA henuz yok (uretimden sonra).
     kusurlu = _kusurlu(durum)
+    # Yeni duzende UPDT veri uretilen kolonlari da tasir; dil modeline
+    # eskisi gibi yalniz modelleme tablosunun kendi kolonlari gider.
+    from fe_agent.akis_faz02 import uretilenler
+    uretilmis = set(uretilenler(durum))
     kolonlar = [k for k in modelleme_df(durum, limit=SEMA_LIMITI).columns
-                if k not in kusurlu]
+                if k not in kusurlu and k not in uretilmis]
     sz = sozluk_oku(durum)   # CSV yedegini de okur
     yasak = _meta_yasak(durum)
 
@@ -502,7 +514,9 @@ def kesif_plan(durum):
 
 def kesif_uygula(durum, secim=None):
     hipotez = _secimi_uygula(durum.get("hipotez") or [], secim)
-    hedef = "%s_ENRICHED" % durum["veri_seti"]
+    from fe_agent import akis_faz02 as _f2
+    yeni_duzen = _f2.updt_modu(durum)
+    hedef = _f2.updt_adi(durum) if yeni_duzen else "%s_ENRICHED" % durum["veri_seti"]
 
     # Adimin onceki kayitlari once silinir; aksi halde secim degisince eski
     # kolonlar tabloda kalir, durum["uretilen"] ile tablo birbirini tutmaz.
@@ -511,6 +525,8 @@ def kesif_uygula(durum, secim=None):
 
     if not hipotez:
         mesaj = "Bu adımda üretim yapılmadı."
+        if yeni_duzen:
+            _f2.updt_ilerlet(durum, "02.3", "02.2")
         if silinen:
             mesaj += ("\n\nÖnceki turda üretilen %s keşif kolonunun kaydı "
                       "silindi." % _sayi(len(silinen)))
@@ -522,9 +538,12 @@ def kesif_uygula(durum, secim=None):
     # modelleme tablosundan kurulur.
     from fe_agent.akis_faz02 import cozum_kolonlari_ekle
     from fe_agent.akis_faz02 import uretim_kolonlari
-    df = _df_oku(hedef) if (uretim_kolonlari(durum) and _dataset_var_mi(hedef)) \
-        else modelleme_df(durum)
-    df = cozum_kolonlari_ekle(durum, df)
+    if yeni_duzen:
+        df = _f2.asama_df(durum, "02.2")
+    else:
+        df = _df_oku(hedef) if (uretim_kolonlari(durum) and _dataset_var_mi(hedef)) \
+            else modelleme_df(durum)
+        df = cozum_kolonlari_ekle(durum, df)
     eski = [c for c in silinen if c in df.columns]
     if eski:
         df = df.drop(columns=eski)
@@ -545,7 +564,10 @@ def kesif_uygula(durum, secim=None):
             hatali.append((h["ad"], str(e)[:60]))
 
     try:
-        dataiku.Dataset(hedef).write_with_schema(df)
+        if yeni_duzen:
+            _f2.updt_yaz(durum, df, "02.3")
+        else:
+            dataiku.Dataset(hedef).write_with_schema(df)
     except Exception as e:
         return ("Üretilen %s kolon hesaplandı ama '%s' veri setine "
                 "YAZILAMADI: %s\n\n"

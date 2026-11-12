@@ -117,9 +117,37 @@ bağlantı ve model adları ve eski ekran adları (kolon adları bozulmaz).
   BAZ veriden yeniden yazılır.
 - Eski çalışmalar (`AMP_VERISETI`, `AMP_VERISETI_HAM`, `MODELLEME_BAZ`)
   eski adlarıyla okunmaya devam eder; yeni adlar yalnız yeni yazımlarda.
-- Henüz taşınmayanlar (sonraki parçalar): 02.x ve 03.x tabloları
-  (`_PROFIL`, `_ENRICHED`, `_SFA`, `_PSI`, `_BAZ`), 04/05 tabloları
-  (`_SECIM`, `_KATALOG`), `MODELLEME_LINEAGE`.
+- **UPDT veri aşamaları (02.x ve 03.x, `akis_faz02.UPDT_ASAMALARI`):**
+  `durum["updt_asama"]` UPDT verinin hangi adımın sonundaki hali
+  olduğunu söyler: `01.3` (teyit), `01` (+ `_SPLIT`), `02.1` (+
+  düzeltmeler doğrudan kolona, çözüm kolonları), `02.2` (+ kural
+  tabanlı üretim), `02.3` (+ yapay zekâ keşfi), `03.3` (analitik baz
+  set: düşenler çıkar, SFA kararları, medyan doldurma).
+  - Her adım önceki aşamanın tablosunu `asama_df(durum, asama)` ile
+    ister: UPDT zaten o aşamadaysa (ya da aradaki adımlar bir şey
+    katmadıysa) UPDT okunur; geri dönülmüş ve UPDT ileride kalmışsa
+    tablo BAZ veriden kararlar yeniden uygulanarak kurulur (01: teyit
+    isteği + `bolme_tarif`; 02.1: `cozum_kolonlari_ekle`; 02.2 ve 02.3:
+    `kod_bloklari`'ndaki satırlar, `uretim_kodu.py` ile aynı). Kısa ömürlü
+    bellek önbelleği (`_ASAMA_ONBELLEK`, 10 dk, imza: aşama ve kararlar).
+  - Yazan adımlar `updt_yaz`: 02.1 `veri_profili_uygula`, 02.2
+    `kural_uygula`, 02.3 `kesif_uygula`, 03.3 `baz_uygula` (baz set UPDT
+    veridir, `durum["baz"]["dataset"]` = UPDT adı; 04/05 oradan okur).
+    Üretim yapmayan adım `updt_ilerlet` ile aşamayı ilerletir.
+  - 01.4 bölme yeni düzende hem pandas hem Spark yolunda BAZ veriden
+    teyit isteğiyle kurulur (UPDT sonraki adımlarla ilerlemiş olabilir);
+    tarif kayıtta `bolme_tarif`.
+  - `_ENRICHED` ve `<VERI_SETI>_BAZ` yeni düzende yazılmaz. Profil, SFA ve
+    PSI tabloları Flow'a veri seti olarak yazılmaz, çalışma klasörüne iç
+    kayıt olarak gider (`/<calisma>/profil.parquet`, `sfa.parquet`,
+    `psi.parquet`; `ara_tablo_kaydet`).
+  - 02.3 planında dil modeline giden kolonlar UPDT'deki üretilmiş
+    kolonlar hariç (eskisi gibi modelleme tablosunun kendi kolonları).
+  - Eski çalışmalar (`updt_modu` False) `_ENRICHED` / `_BAZ` yoluyla
+    çalışır.
+- Henüz taşınmayanlar (Parça 3): 04/05 tabloları (`_SECIM`, `_KATALOG`),
+  04/05'in `_ENRICHED` yedek okuması, `MODELLEME_LINEAGE`,
+  `uretim_kodu.py`'nin kaynak ve hedefi.
 - Profil ve sayımlar tam veri üzerinden yapılır.
 - Profil sayısal kolonda min, maks, kantiller (0, 0,25, 0,5, 0,75, 1) ve
   ortalamayı (`ortalama`: sonlu değerlerin toplamı / sonlu değer adedi)

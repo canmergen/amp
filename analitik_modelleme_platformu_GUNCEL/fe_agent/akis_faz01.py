@@ -9409,6 +9409,8 @@ def amp_ciktilarini_yaz(durum):
     oz = amp_mod.amp_yaz(durum, _profil(durum))
     onbellek_temizle()
     sonuc["veri"] = _amp_veri_kaydi(oz)
+    # UPDT VERI asamasi (bkz. akis_faz02.UPDT_ASAMALARI): teyit sonu.
+    durum["updt_asama"] = "01.3"
     esleme = oz.get("yeniden_ad") or {}
     # Sozluk tablosu kolon ozeti yeni adlara cevrilmeden ONCE kurulur:
     # tanim ve kategori calisma kopyasinda eski adla duruyor.
@@ -9454,6 +9456,7 @@ def _amp_veri_kaydi(oz):
             # UPDT VERI: teyit istegi ve kaynagi (BAZ veri); bolme UPDT'yi
             # Spark'ta BAZ'dan bu istekle yeniden kurar.
             "istek": oz.get("istek"), "kaynak": oz.get("kaynak"),
+            "bolme_tarif": oz.get("bolme_tarif"),
             "satir": int(oz.get("satir") or 0), "kolon": int(oz.get("kolon") or 0),
             "dusen_kolon": len(oz.get("dusen") or []),
             # Tabloya yazilmayan kolonlarin adlari (kayit mesajinda
@@ -9622,7 +9625,8 @@ def amp_gecersiz_kil(durum):
     taze = yeni_durum()
     for anahtar in _AMP_SONRASI:
         durum[anahtar] = taze.get(anahtar, {})
-    for anahtar in ("amp_cikti", "_aralik_ai", "donusum_plani", "_dusurulecek"):
+    for anahtar in ("amp_cikti", "_aralik_ai", "donusum_plani", "_dusurulecek",
+                    "updt_asama"):
         durum.pop(anahtar, None)
     p = durum.get("profil") or {}
     for anahtar in ("profil_teshis", "profil_dataset", "eksik_ilk20", "null_ozet"):
@@ -10147,6 +10151,7 @@ def _bolme_uygula_spark(durum):
     kayit["dusen_kolon"] = eski.get("dusen_kolon", kayit["dusen_kolon"])
     kayit["dusen_adlar"] = eski.get("dusen_adlar", kayit.get("dusen_adlar") or [])
     durum["amp_cikti"]["veri"] = kayit
+    durum["updt_asama"] = "01"
     split_notu = _amp_sozluk_split_ekle(durum)
     if split_notu:
         notlar.append(split_notu)
