@@ -3886,9 +3886,10 @@ Kurallar:
 # Dil modeli her grup icin adina ve sozluk aciklamasina bakip ortak degerin
 # anlamini en dogru anlatan kolonu onerir; kullanici kartta degistirebilir.
 SISTEM_AYNI = """Sen bir kredi riski veri bilimcisisin. Sana değerleri satır
-satır birebir aynı olan kolon grupları verilecek; her kolonun adı ve sözlük
-açıklaması var. Değerler aynı olduğu için her gruptan yalnız bir kolon modelde
-kalacak. Her grup için, adı ve açıklaması bu ortak değerin anlamını EN DOĞRU
+satır birebir aynı (ya da "ilişki" satırı varsa neredeyse aynı: biri ötekinin
+sabit katı ya da korelasyonu çok yüksek) olan kolon grupları verilecek; her
+kolonun adı ve sözlük açıklaması var. Değerler aynı bilgiyi taşıdığı için her
+gruptan yalnız bir kolon modelde kalacak. Her grup için, adı ve açıklaması bu ortak değerin anlamını EN DOĞRU
 anlatan kolonu seç.
 
 Ölçütler, sırayla:
@@ -3915,6 +3916,8 @@ def ayni_icerik_sec(gruplar):
         satirlar = []
         for g in parca:
             satirlar.append("GRUP id=%s" % g["id"])
+            if g.get("iliski"):
+                satirlar.append("  ilişki: %s" % g["iliski"])
             for u in g["uyeler"]:
                 satirlar.append("  - %s: %s" % (u["ad"], (u.get("aciklama") or "(açıklama yok)")[:200]))
         try:

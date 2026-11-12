@@ -17087,8 +17087,10 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
         btd.colSpan = 4;
         const bb = elYap("div", "pf-ayni-grup-bas");
         bb.appendChild(elYap("b", "", "Grup " + ftBinlik(gi + 1)));
-        bb.appendChild(elYap("span", "pf-ayni-grup-sayi", ftBinlik(g.uyeler.length) + " kolon, değerleri birebir aynı"));
+        bb.appendChild(elYap("span", "pf-ayni-grup-sayi", ftBinlik(g.uyeler.length)
+            + (g.iliski ? " kolon, değerleri neredeyse aynı" : " kolon, değerleri birebir aynı")));
         btd.appendChild(bb);
+        if (g.iliski) btd.appendChild(elYap("div", "pf-ayni-gerekce", "İlişki: " + g.iliski));
         if (g.gerekce) {
             const ger = elYap("div", "pf-ayni-gerekce");
             ger.textContent = (g.kaynak === "dil modeli" ? "Dil modelinin önerisi " + g.oneri + ": " : "")
@@ -17667,7 +17669,7 @@ function profilKartiEkle(alan, blok) {
             const parca = [];
             if (adlar.length) parca.push(ftBinlik(adlar.length) + " kolon için karar: "
                 + ftBinlik(adlar.length - cik) + " tutulacak, " + ftBinlik(cik) + " çıkarılacak.");
-            if (gid.length) parca.push(ftBinlik(gid.length) + " aynı içerikli grupta kalacak kolon seçildi"
+            if (gid.length) parca.push(ftBinlik(gid.length) + " birebir ya da neredeyse aynı kolon grubunda kalacak kolon seçildi"
                 + (farkli ? " (" + ftBinlik(farkli) + " grupta öneriden farklı)." : " (hepsi dil modelinin önerisi)."));
             const dz = Object.values(duzSecim).flatMap(m => Object.values(m));
             if (dz.length) {
@@ -17701,7 +17703,7 @@ function profilKartiEkle(alan, blok) {
             const gidler = Object.keys(ayniSecim);
             const ozet = [Object.keys(kararlar).length
                     ? ftBinlik(tut) + " kolon tutuldu, " + ftBinlik(cikar.length) + " kolon çıkarıldı" : "",
-                gidler.length ? ftBinlik(gidler.length) + " aynı içerikli grupta seçim yapıldı" : "",
+                gidler.length ? ftBinlik(gidler.length) + " birebir ya da neredeyse aynı kolon grubunda seçim yapıldı" : "",
                 Object.keys(cozumSecim).length ? ftBinlik(Object.keys(cozumSecim).filter(a => cozumSecim[a] !== "cikar").length)
                     + " kolon çözümle kullanılacak" : ""]
                 .filter(Boolean).join("; ");

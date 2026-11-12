@@ -2241,7 +2241,7 @@ tanıtır; sayfalar sol bardan açılır.
   `profil.duzeltme_bilgi` {kontrol: {kolon: {secim, bilgi, kolonlar,
   ozet}}}. Öğrenme `_cozum_ogren` içinde, eğitim satırlarından.
 - Uygulama `cozum_kolonlari_ekle` → `_duzeltmeleri_uygula`: analiz
-  tablosunun kopyasında, sıra gizli eksik, negatif, uç. Bayrak yoksa
+  tablosunun kopyasında, sıra `DUZELTME_SIRA`. Bayrak yoksa
   ham değerden hesaplanır; tekrar uygulamak sonucu değiştirmez. Girdi
   veri seti değişmez; `_ENRICHED` düzeltilmiş değerleri taşır (kural
   adımı düzeltilmiş tablodan üretir). Bayraklar `uretilen` ve
@@ -2253,6 +2253,66 @@ tanıtır; sayfalar sol bardan açılır.
   Kilitli halde seçilen düzeltme, bayrak kolonu ve özet (ör. "Kod -1 boş
   sayılır.", "Sınır 987,7; üstündeki değerler sınıra çekilir.").
 - Bilinen eksik: düzeltmeler de `uretim_kodu.py`'ye yazılmaz.
+
+**02.1 ikinci kontrol seti (10 kontrol; toplam 24)**
+- Hepsi tablonun tamamından, örneklemesiz. Hesaplar `profil_ek.py`
+  (`metin_bos_kontrol`, `yazim_kontrol`, `tarih_kod_kontrol`,
+  `tarih_sonra_kontrol`, `deger_kaymasi`, `hedef_birebir`,
+  `yakin_kopyalar`, `pencere_tutarliligi`, `tutar_adet_uyumu`); ad
+  tabanlı olanlar `akis_faz02._ad_kontrolleri` (kolon adı parçaları
+  01.2.4.4'ten ÖNCEKİ adlardan, dönem türleri
+  `akis_faz01._kolon_donem_turleri`, kullanıcı türünde yön
+  `donem_tur.tur_bilgisi`, kolon kartı OLCU ve ISTATISTIK `_kart_alani`).
+- Sızıntı (karar, `KARAR_VARSAYILAN_CIKAR` ile Çıkar seçili gelir):
+  - Gelecek Penceresi (`gelecek_pencere`): dönem parçasının türü yön
+    "gelecek" ya da "iki" (Sonraki, Sonra, Çevre).
+  - Hedefle Neredeyse Birebir (`birebir`, eşik `sizinti_auc` %95): iki
+    sınıflı hedefte tek kolon AUC (ya da 1 eksi AUC). Sayısal kolonda
+    sıra, kategorik kolonda (en çok 50 değer) değerin hedef oranı; boş
+    ayrı değer.
+- Karar (Tut seçili gelir): Dönemden Sonraki Tarih (`tarih_sonra`; tarih
+  tipindeki kolon > satırın dönem sonu, dönem YYYY, YYYYAA, YYYYAAGG
+  okunur, kod tarihler sayılmaz), Dönemler Arası Değer Kayması (`kayma`,
+  eşik `kayma_kat` 10: sıfır dışı mutlak değerlerin %25, %50, %75'i art
+  arda iki dönemde aynı yönde en az bu kat; dönemde en az 30 satır).
+  Varsayılan karar `_karar_varsayilan`; kart ve yazarak onay aynı
+  varsayılanı kullanır.
+- Düzeltme (`DUZELTME_KONTROLLERI`, uygulama sırası
+  `kolon_cozum.DUZELTME_SIRA`: gizli, karışık, tarih kodu, metin boş,
+  yazım, negatif, uç):
+  - Özel Tarih Kodu (`tarih_kod`): yıl < 1901 ya da > 2200 (datetime ya
+    da çoğu YYYY-AA-GG metin). "Kod tarihi boş say ve bayrak üret"
+    (önerilen, `<KOL>_KOD`), "Kod tarihi boş say", "Olduğu gibi bırak".
+  - Metin Olarak Yazılmış Boş (`metin_bos`): `profil_ek.METIN_BOS_DEGERLER`
+    (boş, NULL, None, NaN, N/A, NA, #N/A, «-», «?», Bilinmiyor ...; kırpılmış,
+    küçük harf). "Boş say" (önerilen), "Boş say ve bayrak üret"
+    (`<KOL>_BOS`), "Olduğu gibi bırak".
+  - Kategori Yazım Tutarsızlığı (`yazim`): anahtar = kırpılmış, tek
+    boşluklu, Türkçe küçük harf, ç ğ ı ö ş ü katlanmış. "Tek yazıma
+    çevir" (önerilen; grubun en sık yazımı), "Olduğu gibi bırak". Bilgi
+    `{"anahtar": {anahtar: hedef}}`; yeni veride aynı anahtara düşen
+    başka yazım da çevrilir.
+- Üretime girmez: Neredeyse Aynı Kolonlar (`yakin_icerik`, eşik
+  `yakin_kor` %99). Aday kovası: boş sayısı, sıfır sayısı ve z
+  ölçekli 5 yüzdeliğin 0,1'e yuvarlanmış imzası (işaret çevrimine
+  dayanıklı); kesin korelasyon bütün satırlarla; sabit kat ise ilişki
+  "N katı". Gruplar `ayni_gruplar`'a `tur: "yakin"`, id `yakin:<kolon>`
+  ile girer; dil modeli seçimi, kalan seçimi ve kopya mantığı birebir
+  aynı gruplarla ortak. Kartta Aynı İçerikli ve Neredeyse Aynı ayrı
+  satırlarda; grup başlığında "İlişki" yazar.
+- Bilgi (`BILGI_KONTROLLERI`, işlem yapılmaz): Pencere Tutarlılığı
+  (`pencere`; adı yalnız "Son" türü parçayla ayrılan ardışık pencere
+  çiftleri; toplam, adet, en büyükte kısa > uzun, en küçükte kısa <
+  uzun; toplam ve adette negatifi olan kolon girmez; ortalama girmez),
+  Tutar ve Adet Uyumsuzluğu (`tutar_adet`; adı tek parçayla ayrılan
+  çiftler: adet 0 ya da boşken tutar 0 dışı, en büyük < ortalama).
+- Uygulanmadı sebepleri kartta yazar (dönem yok, tek dönem, dönem tarih
+  okunamadı, tarih kolonu yok, metin kolon yok, hedef iki sınıflı değil,
+  anlam türü onaylı dönem parçası yok, eşleşen çift yok).
+- Bilinen sınır: `sfa.profil_cikar` datetime kolonları "metin" sayar;
+  50'den fazla farklı tarihi olan tarih kolonu Kardinalitesi Aşırı
+  Yüksek'e düşüp kusurlu olur ve tarih kontrollerine girmez (önceden
+  var olan davranış, değiştirilmedi).
 
 **02.2 Kural Tabanlı Değişken Üretimi: plan isteği**
 - `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)

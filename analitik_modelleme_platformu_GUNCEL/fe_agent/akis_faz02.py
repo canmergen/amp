@@ -337,7 +337,8 @@ def cozum_kolonlari_ekle(durum, df):
 # uretime girer; secilen duzeltme analiz tablosunda uygulanir (girdi veri
 # seti degismez). Gizli eksikte istenirse <KOL>_KOD bayragi uretilir.
 # ===========================================================================
-DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "negatif", "uc")
+DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "tarih_kod", "metin_bos", "yazim",
+                        "negatif", "uc")
 
 
 def _teshis_kusurlu(p):
@@ -366,6 +367,8 @@ def duzeltme_onerileri(durum):
                     kayit["kod"] = float(str(x.get("deger")).replace(",", "."))
                 except (TypeError, ValueError):
                     continue
+            elif a == "yazim":
+                kayit["anahtar"] = dict(x.get("anahtar") or {})
             cikti.setdefault(a, {})[k] = {"secenekler": list(kc.DUZELTME_SECENEK[a]),
                                           "oneri": kc.DUZELTME_ONERI[a], "kayit": kayit}
     return cikti
@@ -392,7 +395,7 @@ def _duzeltme_ogren(durum, df, tr, mevcut):
                 continue
             b = kc.duzeltme_ogren(a, c, df[k], tr, (oneri[a][k] or {}).get("kayit"))
             kol = []
-            if c == "kod_bos_bayrak":
+            if c in kc.BAYRAKLI_DUZELTME:
                 ad = kc.yeni_kolon_adi(k, c, mevcut)
                 kol = [ad]
                 mevcut.add(ad)
@@ -409,6 +412,12 @@ def _duzeltme_ozeti(kontrol, secim, b):
         return "Kod %s boş sayılır." % _sayi_metni(b["kod"])
     if kontrol == "negatif":
         return "Negatif değerler boş sayılır."
+    if kontrol == "tarih_kod":
+        return "Kod tarihler boş sayılır."
+    if kontrol == "metin_bos":
+        return "Boş anlamına gelen yazılar boş hücreye çevrilir."
+    if kontrol == "yazim" and b.get("anahtar"):
+        return "%s değerin farklı yazımları tek yazıma çevrilir." % _sayi(len(b["anahtar"]))
     if kontrol == "uc" and "sinir" in b:
         return "Sınır %s; üstündeki değerler sınıra çekilir." % _sayi_metni(b["sinir"])
     return ""
@@ -677,12 +686,17 @@ PROFIL_KARAR_CIKAR = "cikar"
 def _kart_olculeri(durum):
     """{kolon: kolon kartinin olcu alani} (01.2.4 Kolon Kartlari). Kart
     yoksa {}: Beklenmeyen Negatif kontrolu uygulanmaz."""
+    return _kart_alani(durum, "OLCU")
+
+
+def _kart_alani(durum, alan):
+    """{kolon: kolon kartinin alani} (OLCU, ISTATISTIK ...); yoksa {}."""
     try:
         from fe_agent import sozluk_calisma
         sz = sozluk_oku(durum)
         ad_k = sozluk_calisma.degisken_kolonu_bul(sz)
         harita = {str(c).strip().upper(): c for c in sz.columns}
-        olcu_k = harita.get("OLCU")
+        olcu_k = harita.get(alan)
         if ad_k is None or olcu_k is None:
             return {}
         return {str(a): str(o) for a, o in zip(sz[ad_k], sz[olcu_k].fillna(""))
@@ -718,6 +732,14 @@ PROFIL_ESIKLERI = (
     ("uc_kat", "Uç Değer Yoğunluğu",
      "En büyük değer, değerlerin %99'unun altında kaldığı sınırın bu katından büyükse",
      "kat", 2, 1000000000),
+    ("yakin_kor", "Neredeyse Aynı Kolonlar",
+     "İki sayısal kolonun korelasyonu bu değer ya da üstündeyse", "yuzde", 0.90, 0.99999),
+    ("sizinti_auc", "Hedefle Neredeyse Birebir",
+     "Kolon tek başına hedefi bu ayırma gücüyle (AUC) ya da daha iyi ayırıyorsa",
+     "yuzde", 0.70, 0.9999),
+    ("kayma_kat", "Dönemler Arası Değer Kayması",
+     "Değerlerin %25, %50 ve %75'lik değerleri art arda iki dönem arasında aynı yönde "
+     "en az bu kat değişiyorsa", "kat", 2, 1000000),
 )
 # Formda her kontrolun duz dille aciklamasi: "kisa" satirda, "bilgi" i
 # balonunda (nedir, neden onemli, ornek, yakalanirsa ne olur, onerilen
@@ -868,6 +890,71 @@ PROFIL_ESIK_ACIKLAMA = {
                  "**Neden 100 kat önerildi?** Gelir, tutar gibi kolonlarda doğal olarak büyük "
                  "değerler vardır; 100 katın üstü doğal yayılımın çok dışındadır."},
 }
+PROFIL_ESIK_ACIKLAMA.update({
+    "yakin_kor": {
+        "kisa": "Birebir aynı olmasa da aynı bilgiyi taşıyan kolonlar (biri ötekinin kuruş "
+                "karşılığı ya da yuvarlanmış hali gibi).",
+        "sonuc": "Biri kalır, diğerleri üretime girmez",
+        "bilgi": "**Nedir?** Sayısal kolon çiftlerinin korelasyonuna bakar; ayrıca birinin "
+                 "ötekinin sabit katı olup olmadığına bakar (ör. kuruş ile TL).\n\n"
+                 "**Neden önemli?** Aynı bilgi iki kolonda olunca model onu iki kez sayar; "
+                 "ağırlıklar ve açıklamalar yanıltıcı olur. Birebir aynı olmadıkları için Aynı "
+                 "İçerikli Kolonlar kontrolü bunları yakalamaz.\n\n"
+                 "**Örnek:** bakiye kolonu ile onun yüz katı olan kuruş cinsinden bakiye kolonu; "
+                 "ya da biri küsuratlı biri yuvarlanmış iki tutar kolonu (korelasyon %99,99).\n\n"
+                 "**Kapsam:** sayısal kolonlar. Aday çiftler boş ve sıfır sayısı birebir aynı, "
+                 "ölçeklenmiş dağılımı aynı olan kolonlardan seçilir; korelasyon bütün "
+                 "satırlarla kesin hesaplanır. Birebir aynı kolonlar Aynı İçerikli Kolonlar "
+                 "kontrolünde gösterilir, burada tekrar edilmez.\n\n"
+                 "**Yakalanırsa:** her gruptan bir kolon kalır, diğerleri üretime girmez. "
+                 "Hangisinin kalacağını dil modeli adlarına ve açıklamalarına bakıp önerir, "
+                 "siz seçersiniz.\n\n"
+                 "**Neden %99 önerildi?** %99 ve üstü korelasyonda iki kolon pratikte aynı "
+                 "sırayı verir; daha düşük eşik ilişkili ama farklı bilgi taşıyan kolonları "
+                 "(ör. 3 ay ve 6 ay toplamı) da yakalar."},
+    "sizinti_auc": {
+        "kisa": "Tek başına hedefi neredeyse kusursuz ayıran kolon çoğu zaman hedeften sonra "
+                "oluşmuş bir bilgidir (sızıntı).",
+        "sonuc": "Kararınıza bırakılır; önerilen Çıkar",
+        "bilgi": "**Nedir?** Her kolonun hedefi tek başına ne kadar iyi ayırdığını ayırma gücü "
+                 "(AUC) ile ölçer. %50 hiç ayırmıyor, %100 kusursuz ayırıyor demektir.\n\n"
+                 "**Neden önemli?** Gerçek hayatta tek bir kolon hedefi neredeyse kusursuz "
+                 "ayırmaz. Ayırıyorsa genellikle hedef olayından sonra kaydedilmiş bir bilgidir "
+                 "(ör. takibe alınma tarihi, tahsilat durumu). Model bunu öğrenirse geliştirmede "
+                 "çok iyi görünür, kullanımda çöker.\n\n"
+                 "**Örnek:** yasal takip durumu kolonu temerrüde düşenlerin hepsinde dolu, "
+                 "düşmeyenlerde boş: AUC %99,8.\n\n"
+                 "**Kapsam:** hedef iki sınıflıysa (0 ve 1). Sayısal kolonda değerlerin "
+                 "sırasına, kategorik kolonda (en çok 50 farklı değer) her değerin hedef "
+                 "oranına bakılır. Boş hücre ayrı bir değer sayılır. Bütün satırlar "
+                 "kullanılır.\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; Çıkar seçili "
+                 "gelir. Kolonun hedeften önce bilinen bir bilgi olduğundan eminseniz "
+                 "tutabilirsiniz.\n\n"
+                 "**Neden %95 önerildi?** Kredi riskinde en güçlü tek değişkenler (ör. "
+                 "gecikme gün sayısı) bile genellikle %85 civarında kalır; %95 üstü olağan "
+                 "dışıdır."},
+    "kayma_kat": {
+        "kisa": "Bir dönemden ötekine değerleri topluca kat kat değişen kolon, birim ya da "
+                "hesap değişikliğine işaret eder.",
+        "sonuc": "Kararınıza bırakılır",
+        "bilgi": "**Nedir?** Sayısal kolonun sıfır dışı değerlerinin %25, %50 ve %75'lik "
+                 "değerlerini dönem dönem hesaplar. Art arda iki dönem arasında üçü de aynı "
+                 "yönde eşik kadar ya da daha fazla değişiyorsa işaretler.\n\n"
+                 "**Neden önemli?** Bütün dağılımın birden kayması çoğu zaman gerçek bir "
+                 "değişim değil, birim (TL yerine kuruş, bin TL) ya da hesap yöntemi "
+                 "değişikliğidir. Model eski ve yeni dönemi aynı ölçüde sanır.\n\n"
+                 "**Örnek:** Mart'a kadar ortanca bakiye 1.700, Nisan'dan sonra 170.000: 100 "
+                 "kat; eşik 10 kat ise gösterilir.\n\n"
+                 "**Kapsam:** dönem kolonu seçildiyse, sayısal kolonlar. Her iki dönemde de en "
+                 "az 30 sıfır dışı dolu satır olmalı. Üç yüzdelik birlikte aranır; iki tepeli "
+                 "dağılımlarda ortanca tek başına sıçrayabilir, bu yanlış alarm vermez.\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; değişikliğin "
+                 "gerçek olup olmadığını siz bilirsiniz.\n\n"
+                 "**Neden 10 kat önerildi?** Gerçek iş değişimleri dağılımı nadiren bir dönemde "
+                 "10 katına çıkarır; birim değişiklikleri ise genellikle 100 ya da 1.000 "
+                 "kattır."},
+})
 ESIK_BIRIM_ADI = {"yuzde": "%", "puan": "puan", "sayi": "", "kat": "kat"}
 ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her kontrolün bir "
               "sınırı (eşik) var ve önerilen değerle dolu geliyor. Olduğu gibi onaylayabilir "
@@ -1009,6 +1096,191 @@ def veri_profili_girdi(durum, mesaj, yeniden_sor=False):
     return False, ESIK_METNI
 
 
+# ===========================================================================
+# 02.1 AD TABANLI KONTROLLER: kolon adinin parcalari, 01.2.4'te onaylanan
+# donem anlam turleri ve kolon kartlari (OLCU, ISTATISTIK) ile.
+#   gelecek_pencere : donem parcasinin turu ileriye bakiyor (sizinti riski)
+#   pencere         : ayni olcunun kisa ve uzun "Son" penceresi celisiyor
+#   tutar_adet      : adet 0 iken tutar dolu; en buyuk ortalamadan kucuk
+# Ciftler adin yalniz bir parcasiyla ayrilan kolonlardir. Ad parcalari
+# 01.2.4.4'ten ONCEKI (eski) adlardan okunur: turler eski adla saklidir.
+# ===========================================================================
+_ADET_PARCA = {"CNT", "COUNT", "ADET", "NUM", "SAY", "SAYI", "NB", "NO_OF"}
+_TUTAR_PARCA = {"AMT", "AMOUNT", "TUTAR", "SUM", "TOT", "TOTAL", "TOPLAM", "VOL", "HACIM"}
+_MAKS_PARCA = {"MAX", "MAKS", "MAXIMUM", "ENBUYUK"}
+_MIN_PARCA = {"MIN", "MINIMUM", "ENKUCUK"}
+_ORT_PARCA = {"AVG", "ORT", "MEAN", "ORTALAMA", "MED", "MEDIAN", "AVERAGE"}
+
+
+def _istat_sinifi(metin):
+    """Kolon kartinin ISTATISTIK alanindan: ort, maks, min, toplam, adet."""
+    t = profil_ek_kucuk(metin)
+    if not t:
+        return ""
+    if "ortalama" in t or "medyan" in t or "ortanca" in t:
+        return "ort"
+    if "en büyük" in t or "maks" in t or "en yüksek" in t:
+        return "maks"
+    if "en küçük" in t or "min" in t or "en düşük" in t:
+        return "min"
+    if "toplam" in t:
+        return "toplam"
+    if "adet" in t or "sayı" in t or "sayısı" in t:
+        return "adet"
+    return ""
+
+
+def _olcu_sinifi(metin):
+    """Kolon kartinin OLCU alanindan: adet ya da tutar."""
+    t = profil_ek_kucuk(metin)
+    if not t:
+        return ""
+    if "adet" in t or "sayı" in t:
+        return "adet"
+    if "tutar" in t or "tl" in t.split() or "para" in t or "bakiye" in t or "₺" in t:
+        return "tutar"
+    return ""
+
+
+def profil_ek_kucuk(metin):
+    from fe_agent import profil_ek
+    return profil_ek._tr_kucuk(str(metin or "").strip())
+
+
+def _ad_kontrolleri(durum, df, adaylar, ek):
+    """ek'e gelecek_pencere, pencere, tutar_adet (ve donem_tur_var,
+    pencere_cift, tutar_cift) ekler. Hata olursa kontrol bos kalir."""
+    from fe_agent import profil_ek
+    ek["gelecek_pencere"], ek["pencere"], ek["tutar_adet"] = [], [], []
+    ek["donem_tur_var"], ek["pencere_cift"], ek["tutar_cift"] = False, 0, 0
+    try:
+        from fe_agent import akis_faz01, donem_tur, parca as parca_mod
+        eski = {str(y): str(e) for e, y in (durum.get("_amp_yeniden_ad") or {}).items()}
+        try:
+            kolon_tur = akis_faz01._kolon_donem_turleri(durum) or {}
+        except Exception:
+            kolon_tur = {}
+        ozel = {}
+        for _kalip, turler in (durum.get("donem_anlam_turleri") or {}).items():
+            if isinstance(turler, dict):
+                ozel.update({t: x for t, x in turler.items()
+                             if t not in donem_tur.SABIT_KODLAR and isinstance(x, dict)})
+        istat = {k: _istat_sinifi(v) for k, v in _kart_alani(durum, "ISTATISTIK").items()}
+        olcu = {k: _olcu_sinifi(v) for k, v in _kart_olculeri(durum).items()}
+        sayisal = [k for k in adaylar if pd.api.types.is_numeric_dtype(df[k])
+                   and not pd.api.types.is_bool_dtype(df[k])]
+
+        def kart(sozluk, k):
+            return sozluk.get(k) or sozluk.get(eski.get(k, k)) or ""
+
+        # Kolon -> (eski ad parcalari, {parca: (tur, yon, bicim)})
+        bilgi = {}
+        for k in adaylar:
+            e = eski.get(k, k)
+            turler = kolon_tur.get(e) or kolon_tur.get(k) or {}
+            t = {}
+            for parca, tur in turler.items():
+                if tur:
+                    yon, bicim = donem_tur.tur_bilgisi(tur, ozel)
+                    t[parca] = (tur, yon, bicim)
+            bilgi[k] = ([str(x).upper() for x in parca_mod.toklar(e)], t)
+        ek["donem_tur_var"] = any(t for _p, t in bilgi.values())
+
+        # GELECEK PENCERESI
+        for k in adaylar:
+            parcalar = []
+            for parca, (tur, yon, _b) in bilgi[k][1].items():
+                if yon in ("gelecek", "iki"):
+                    ad = donem_tur.TUR_ADI.get(tur) or str((ozel.get(tur) or {}).get("ad") or tur)
+                    parcalar.append({"parca": parca, "tur": tur,
+                                     "tur_adi": "%s (%s)" % (ad, donem_tur.YON_ADI.get(yon, yon))})
+            if parcalar:
+                ek["gelecek_pencere"].append({"kolon": k, "parcalar": parcalar})
+
+        def stat(k):
+            """Kolonun istatistik sinifi: kart, yoksa ad parcalari."""
+            s_ = kart(istat, k)
+            if s_:
+                return s_
+            tok = set(bilgi[k][0])
+            if tok & _ORT_PARCA:
+                return "ort"
+            if tok & _MAKS_PARCA:
+                return "maks"
+            if tok & _MIN_PARCA:
+                return "min"
+            if tok & _TUTAR_PARCA:
+                return "toplam"
+            if tok & _ADET_PARCA:
+                return "adet"
+            return ""
+
+        negatifsiz = {}
+
+        def neg_yok(k):
+            if k not in negatifsiz:
+                negatifsiz[k] = not bool((pd.to_numeric(df[k], errors="coerce") < 0).any())
+            return negatifsiz[k]
+
+        # PENCERE TUTARLILIGI: yalniz Son turu (gecmise bakan pencere).
+        kova = {}
+        for k in sayisal:
+            tok, t = bilgi[k]
+            for i, parca in enumerate(tok):
+                x = t.get(parca) or t.get(parca.lower()) or next(
+                    (v for pp, v in t.items() if pp.upper() == parca), None)
+                if not x or x[1] != "gecmis" or x[2] != "pencere":
+                    continue
+                m = re.search(r"\d+", parca)
+                if not m:
+                    continue
+                birim = re.sub(r"\d+", "#", parca)
+                anahtar = tuple(tok[:i]) + ("*" + birim,) + tuple(tok[i + 1:])
+                kova.setdefault(anahtar, []).append((int(m.group(0)), k))
+        ciftler = []
+        for uyeler in kova.values():
+            uyeler = sorted(set(uyeler))
+            for (n1, k1), (n2, k2) in zip(uyeler[:-1], uyeler[1:]):
+                if n1 == n2:
+                    continue
+                s1, s2 = stat(k1), stat(k2)
+                if not s1 or s1 != s2 or s1 == "ort":
+                    continue
+                if s1 in ("toplam", "adet") and not (neg_yok(k1) and neg_yok(k2)):
+                    continue
+                ciftler.append((k1, k2, "azalan" if s1 == "min" else "artan"))
+        ek["pencere_cift"] = len(ciftler)
+        ek["pencere"] = profil_ek.pencere_tutarliligi(df, ciftler)
+
+        # TUTAR / ADET ve EN BUYUK / ORTALAMA: adin tek parcasiyla ayrilan
+        # ciftler.
+        kova = {}
+        for k in sayisal:
+            tok = bilgi[k][0]
+            for i in range(len(tok)):
+                kova.setdefault(tuple(tok[:i]) + ("*",) + tuple(tok[i + 1:]), []).append((tok[i], k))
+        adet_tutar, maks_ort = set(), set()
+        for uyeler in kova.values():
+            if len(uyeler) < 2:
+                continue
+            for p1, k1 in uyeler:
+                for p2, k2 in uyeler:
+                    if k1 == k2:
+                        continue
+                    o1 = kart(olcu, k1) or ("adet" if p1 in _ADET_PARCA else "")
+                    o2 = kart(olcu, k2) or ("tutar" if p2 in _TUTAR_PARCA else "")
+                    if o1 == "adet" and o2 == "tutar" and (p1 in _ADET_PARCA or p2 in _TUTAR_PARCA):
+                        adet_tutar.add((k1, k2))
+                    i1 = kart(istat, k1) or ("maks" if p1 in _MAKS_PARCA else "")
+                    i2 = kart(istat, k2) or ("ort" if p2 in _ORT_PARCA else "")
+                    if i1 == "maks" and i2 == "ort" and (p1 in _MAKS_PARCA or p2 in _ORT_PARCA):
+                        maks_ort.add((k1, k2))
+        ek["tutar_cift"] = len(adet_tutar) + len(maks_ort)
+        ek["tutar_adet"] = profil_ek.tutar_adet_uyumu(df, sorted(adet_tutar), sorted(maks_ort))
+    except Exception as e:      # ad kontrolleri profili durdurmasin
+        ek["ad_kontrol_hata"] = str(e)[:200]
+    return ek
+
 def profil_hesapla(durum):
     """Veri profilini tablonun TAMAMINDAN cikarir: dort temel kontrol
     (sfa.profil_cikar) ve ek kontroller (profil_ek). Sonuc durum["profil"]."""
@@ -1030,6 +1302,7 @@ def profil_hesapla(durum):
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
                                  hedef=m.get("target"), olculer=_kart_olculeri(durum),
                                  esik=esik)
+    _ad_kontrolleri(durum, df, adaylar, ek)
     # Sabit kolonun tek degeri (kartta bulgu olarak).
     ek["sabit_deger"] = {}
     for k in teshis.get("sabit") or []:
@@ -1100,11 +1373,20 @@ def _ayni_gruplari(durum, ek, p):
     ilk kolonu. Ayni uyelerle onceden alinmis dil modeli onerisi tekrar
     sorulmaz (esik degisince yeniden hesaplanan profilde)."""
     ham = ek.get("ayni_icerik") or []
-    if not ham:
+    yakin = ek.get("yakin_icerik") or []
+    if not ham and not yakin:
         return []
     onceki = {g["id"]: g for g in ((p.get("profil_ek") or {}).get("ayni_gruplar") or [])
               if isinstance(g, dict) and g.get("kaynak") == "dil modeli"}
     gruplar = [{"id": g["kalan"], "uyeler": [g["kalan"]] + list(g["kopyalar"])} for g in ham]
+    # Neredeyse ayni gruplar: id "yakin:<ilk kolon>" (birebir grubun id'siyle
+    # cakismasin); iliski ilk kolona gore.
+    for g in yakin:
+        x = {"id": "yakin:" + g["kalan"], "uyeler": [g["kalan"]] + list(g["kopyalar"]),
+             "tur": "yakin", "iliski": g.get("iliski") or {}}
+        x["iliski_metni"] = "; ".join("%s, %s kolonunun %s" % (
+            k, g["kalan"], _yakin_iliski_metni(x, g["kalan"], k)) for k in g["kopyalar"])
+        gruplar.append(x)
     aciklama = _aciklamalar(durum)
     sorulacak = [g for g in gruplar
                  if not (g["id"] in onceki and onceki[g["id"]].get("uyeler") == g["uyeler"])]
@@ -1113,8 +1395,9 @@ def _ayni_gruplari(durum, ek, p):
         try:
             from fe_agent import llm as llm_mod
             oneri, hata = llm_mod.ayni_icerik_sec(
-                [{"id": g["id"], "uyeler": [{"ad": u, "aciklama": aciklama.get(u, "")}
-                                            for u in g["uyeler"]]} for g in sorulacak])
+                [{"id": g["id"], "iliski": g.get("iliski_metni", ""),
+                  "uyeler": [{"ad": u, "aciklama": aciklama.get(u, "")}
+                             for u in g["uyeler"]]} for g in sorulacak])
         except Exception as e:      # dil modeli yoksa kural gecerli
             hata = str(e)[:120]
     for g in gruplar:
@@ -1148,10 +1431,19 @@ def _karar_adaylari(p):
     ya da sabit, donemler arasi eksik sicramasi. Ayni icerikli gruplarda kalmayan kolon karar istemez."""
     ek = p.get("profil_ek") or {}
     kopya = set(_ayni_kopyalar(p))
-    ad = [x["kolon"] for x in (ek.get("baskin") or [])]
-    ad += [x["kolon"] for x in (ek.get("donem") or [])]
-    ad += [x["kolon"] for x in (ek.get("sicrama") or [])]
+    ad = []
+    for a in ("gelecek_pencere", "birebir", "tarih_sonra", "baskin", "donem", "sicrama",
+              "kayma"):
+        ad += [x["kolon"] for x in (ek.get(a) or [])]
     return [k for k in dict.fromkeys(ad) if k not in kopya]
+
+
+def _karar_varsayilan(p):
+    """{kolon: "cikar"}: sizinti riski olan karar kolonlarinda varsayilan
+    Çıkar (kullanici karar vermediyse)."""
+    ek = p.get("profil_ek") or {}
+    return {x["kolon"]: PROFIL_KARAR_CIKAR for a in KARAR_VARSAYILAN_CIKAR
+            for x in (ek.get(a) or [])}
 
 
 def profil_karar_kolonlari(durum):
@@ -1199,7 +1491,8 @@ def veri_profili_uygula(durum):
     if isinstance(karar, dict) and isinstance(karar.get("cikar"), list):
         cikar = {str(k) for k in karar["cikar"]} & set(adaylar)
     else:
-        cikar = {a for a in adaylar if onceki.get(a) == PROFIL_KARAR_CIKAR}
+        vars_ = _karar_varsayilan(p)
+        cikar = {a for a in adaylar if onceki.get(a, vars_.get(a)) == PROFIL_KARAR_CIKAR}
     # Ayni icerikli gruplarda kalacak kolon: {"ayni": {grup id: kolon}}.
     gruplar = (p.get("profil_ek") or {}).get("ayni_gruplar") or []
     if isinstance(karar, dict) and isinstance(karar.get("ayni"), dict):
@@ -1296,6 +1589,16 @@ def _yuzde_ekli(oran):
     return y + _ilgi_eki(y)
 
 
+def _okunur_sayi(v):
+    """Bulguda sayi: 100 ve ustu tam sayiya yuvarlanir (binlik ayracli),
+    alti en cok iki ondalik (us gosterimi yok)."""
+    f = float(v)
+    if abs(f) >= 100:
+        return _sayi(int(round(f)))
+    t = ("%.2f" % f).rstrip("0").rstrip(".")
+    return t.replace(".", ",")
+
+
 def _sayi_metni(v):
     """Ekranda sayi: tam sayi binlik ayracli, ondalik virgullu."""
     f = float(v)
@@ -1334,6 +1637,25 @@ def _profil_kurallari(esik=None):
               "büyük." % _sayi_metni(e["uc_kat"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
+        "yakin_icerik": "İki sayısal kolonun korelasyonu %s ya da üstünde, ya da biri "
+                        "ötekinin sabit katı." % _yuzde_metni(e["yakin_kor"]),
+        "gelecek_pencere": "Kolon adındaki dönem parçasının anlam türü ileriye bakıyor "
+                           "(Sonraki, Sonra ya da Çevre).",
+        "birebir": "Kolon tek başına hedefi %s ya da daha yüksek ayırma gücüyle (AUC) "
+                   "ayırıyor." % _yuzde_metni(e["sizinti_auc"]),
+        "tarih_sonra": "Tarih kolonunda satırın dönem sonundan sonraki bir tarih var.",
+        "kayma": "Sıfır dışı değerlerin %%25, %%50 ve %%75'lik değerleri art arda iki dönem "
+                 "arasında aynı yönde en az %s kat değişiyor." % _sayi_metni(e["kayma_kat"]),
+        "metin_bos": "Metin kolonda NULL, «-», «?», Bilinmiyor ya da yalnız boşluk gibi boş "
+                     "anlamına gelen bir yazı var.",
+        "yazim": "Aynı değer büyük küçük harf, Türkçe karakter ya da fazla boşluk farkıyla "
+                 "birden fazla biçimde yazılmış.",
+        "tarih_kod": "Tarih kolonunda yılı 1901'den önce ya da 2200'den sonra olan bir tarih "
+                     "var.",
+        "pencere": "Aynı ölçünün kısa penceresi uzun penceresinden büyük (toplam, adet, en "
+                   "büyük) ya da küçük (en küçük).",
+        "tutar_adet": "Adet 0 ya da boşken tutar dolu, ya da en büyük değer ortalamadan "
+                      "küçük.",
     }
 
 
@@ -1345,7 +1667,8 @@ def _profil_kurallari(esik=None):
 _KONTROL_ESIK_ANAHTARI = {"cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
                           "yuksek_kardinalite": "kardinalite", "baskin": "baskin",
                           "donem": "donem_min_satir", "gizli_eksik": "gizli", "sifir": "sifir",
-                          "sicrama": "sicrama", "uc": "uc_kat"}
+                          "sicrama": "sicrama", "uc": "uc_kat", "yakin_icerik": "yakin_kor",
+                          "birebir": "sizinti_auc", "kayma": "kayma_kat"}
 _KONTROL_ACIKLAMA_EK = {
     "sabit": {
         "kisa": "Bütün satırlarda aynı değeri alan kolon hiçbir şey ayırt etmez.",
@@ -1410,6 +1733,119 @@ _KONTROL_ACIKLAMA_EK = {
                  "**Yakalanırsa:** bilgi için gösterilir."},
 }
 
+_KONTROL_ACIKLAMA_EK.update({
+    "gelecek_pencere": {
+        "kisa": "Adındaki dönem parçası ileriye bakan kolon (sonraki 3 ay gibi), gözlem anından "
+                "sonra oluşan bilgiyi taşır; modele girerse sızıntı olur.",
+        "bilgi": "**Nedir?** Kolon adındaki dönem parçasının 01.2.4'te onaylanan anlam türüne "
+                 "bakar. Türü Sonraki (sonraki 3 ay), Sonra (3 ay sonra) ya da Çevre (3 ay "
+                 "öncesi ve sonrası) olan, yani gözlem anından ileriye bakan kolonları "
+                 "işaretler.\n\n"
+                 "**Neden önemli?** Model kullanılırken gelecek bilinmez. İleriye bakan bir "
+                 "kolon geliştirmede hedefi çok iyi tahmin eder ama kullanımda hiç olmayan bir "
+                 "bilgiye dayanır; bu, sonuçları olduğundan iyi gösteren sızıntıdır.\n\n"
+                 "**Örnek:** sonraki 3 ayın gecikme gün sayısı; hedef de sonraki 12 ayda "
+                 "temerrütse bu kolon hedefin bir parçasını içerir.\n\n"
+                 "**Kapsam:** adında anlam türü onaylanmış dönem parçası olan kolonlar. Tür "
+                 "01.2.4.3'te kolon kolon belirlenir; kullanıcı tanımlı türde yön alanına "
+                 "bakılır.\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; Çıkar seçili "
+                 "gelir. Kolonun gözlem anında bilindiğinden eminseniz tutabilirsiniz."},
+    "tarih_sonra": {
+        "kisa": "Satırın dönem sonundan sonraki bir tarih, o dönemde henüz bilinmeyen bir "
+                "bilgidir.",
+        "bilgi": "**Nedir?** Tarih kolonlarında, satırın dönem değerinin son gününden (ör. "
+                 "202403 için 31 Mart 2024) sonraki tarihleri sayar.\n\n"
+                 "**Neden önemli?** Dönem sonundan sonraki bir tarih, gözlem anında henüz "
+                 "gerçekleşmemiş bir olaydır (ör. kapanış tarihi). Modele girerse sızıntı "
+                 "olur. Ancak vade bitiş tarihi gibi ileriye yazılan tarihler doğal olarak "
+                 "gelecektedir.\n\n"
+                 "**Örnek:** 202403 dönemindeki satırda hesap kapanış tarihi 2024-07-15.\n\n"
+                 "**Kapsam:** dönem kolonu seçildiyse ve değerleri yıl, yıl ay ya da yıl ay gün "
+                 "olarak okunabiliyorsa; tarih tipindeki kolonlar. 1900-01-01, 9999-12-31 gibi "
+                 "kod tarihler sayılmaz (Özel Tarih Kodu kontrolünde gösterilir).\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; Tut seçili "
+                 "gelir, çünkü vade gibi tarihler doğal olarak ileridedir. Olayın gözlem "
+                 "anından sonra kaydedildiğini biliyorsanız çıkarın."},
+    "metin_bos": {
+        "kisa": "Boş hücre yerine «NULL», «-», «?», «Bilinmiyor» gibi bir yazı yazılmış; model "
+                "bunu ayrı bir kategori sanır.",
+        "bilgi": "**Nedir?** Metin kolonlarda boş anlamına gelen yazıları arar: boş ya da "
+                 "yalnız boşluk, NULL, None, NaN, N/A, NA, #N/A, «-», «--», «?», «.», "
+                 "Bilinmiyor, Belirtilmemiş, Tanımsız (büyük küçük harf fark etmez).\n\n"
+                 "**Neden önemli?** Bu yazılar gerçek boş hücre gibi davranmaz: model onları "
+                 "ayrı bir kategori olarak öğrenir, boş oranı da olduğundan düşük görünür. Aynı "
+                 "bilgi yok durumu birkaç farklı değere bölünür.\n\n"
+                 "**Örnek:** meslek kolonunda 120 satırda «NULL», 40 satırda «-» yazıyor, 300 "
+                 "satır gerçekten boş.\n\n"
+                 "**Kapsam:** metin kolonlar. Payına bakılmaz; tek satır bile yeterlidir.\n\n"
+                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
+                 "Önerilen: bu yazılar boş hücreye çevrilir. Diğer seçenekler: boş saymak ve "
+                 "yazının olduğu satırları kolon adının sonuna _BOS eklenmiş bir 1/0 "
+                 "bayrağıyla işaretlemek, ya da olduğu gibi bırakmak."},
+    "yazim": {
+        "kisa": "Aynı değer farklı yazılmış (büyük küçük harf, Türkçe karakter, fazla boşluk); "
+                "model bunları ayrı kategoriler sanır.",
+        "bilgi": "**Nedir?** Metin kolonun değerlerini baş ve sondaki boşluk, çoklu boşluk, "
+                 "büyük küçük harf ve Türkçe karakter (ç, ğ, ı, ö, ş, ü) farkı olmadan "
+                 "karşılaştırır. Aynı kalan farklı yazımları gruplar.\n\n"
+                 "**Neden önemli?** Aynı değerin yazımları ayrı kategori sayılır; her biri az "
+                 "satırlı kalır, kategorinin gerçek etkisi bölünür.\n\n"
+                 "**Örnek:** il kolonunda «İstanbul» 1.992, «Istanbul» 51, «istanbul » 10 "
+                 "satır.\n\n"
+                 "**Kapsam:** metin kolonlar. Boş anlamına gelen yazılar bu kontrole girmez.\n\n"
+                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
+                 "Önerilen: her grubun yazımları grubun en sık geçen yazımına çevrilir. Diğer "
+                 "seçenek: olduğu gibi bırakmak."},
+    "tarih_kod": {
+        "kisa": "Tarih kolonunda 1900-01-01, 9999-12-31 gibi bir kod tarih, boş ya da süresiz "
+                "anlamına gelir; gerçek tarih gibi kullanılırsa gün farkları bozulur.",
+        "bilgi": "**Nedir?** Tarih kolonlarında yılı 1901'den önce ya da 2200'den sonra olan "
+                 "tarihleri arar.\n\n"
+                 "**Neden önemli?** Bu tarihler bilgi yok ya da süresiz demektir. Tarihten "
+                 "gün farkı (ör. hesap açılışından bu yana geçen gün) hesaplanınca on binlerce "
+                 "yıllık anlamsız değerler çıkar.\n\n"
+                 "**Örnek:** vade tarihi kolonunda süresiz ürünlerde 9999-12-31, bilinmeyen "
+                 "doğum tarihlerinde 1900-01-01.\n\n"
+                 "**Kapsam:** tarih tipindeki kolonlar ve değerlerinin çoğu yıl ay gün "
+                 "biçiminde yazılmış metin kolonlar. Payına bakılmaz.\n\n"
+                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
+                 "Önerilen: kod tarihler boş sayılır ve kodun olduğu satırlar kolon adının "
+                 "sonuna _KOD eklenmiş bir 1/0 bayrağıyla işaretlenir (süresiz bilgisi "
+                 "kaybolmaz). Diğer seçenekler: yalnız boş saymak ya da olduğu gibi "
+                 "bırakmak."},
+    "pencere": {
+        "kisa": "Aynı ölçünün kısa pencere değeri uzun pencere değerini geçiyorsa (son 3 ay "
+                "toplamı son 6 ay toplamından büyük gibi) hesapta hata vardır.",
+        "bilgi": "**Nedir?** Adı yalnız geçmişe bakan pencere parçasıyla (Son türü: son 3 ay, "
+                 "son 6 ay) ayrılan kolon çiftlerini bulur. Toplam, adet ve en büyük değerde "
+                 "kısa pencere uzun pencereden büyük olamaz; en küçük değerde küçük olamaz. "
+                 "Kuralı bozan satırları sayar.\n\n"
+                 "**Neden önemli?** Kuralı bozan satırlar, pencerelerin farklı tarihlerden ya "
+                 "da farklı kaynaklardan hesaplandığını gösterir; bu kolonlardan üretilen oran "
+                 "ve fark değişkenleri yanlış olur.\n\n"
+                 "**Örnek:** son 3 ay işlem adedi 12, son 6 ay işlem adedi 9.\n\n"
+                 "**Kapsam:** dönem parçasının türü Son olan ve adın geri kalanı birebir aynı "
+                 "kolonlar. İstatistiği kolon kartından (yoksa adındaki CNT, SUM, AMT, MAX, MIN "
+                 "gibi parçalardan) okunur; ortalama gibi kurala bağlı olmayan istatistikler "
+                 "girmez. Toplam ve adette negatif değeri olan kolonlar girmez.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir; veri kaynağını kontrol etmeniz için."},
+    "tutar_adet": {
+        "kisa": "Adet sıfırken tutarın dolu olması ya da en büyük değerin ortalamadan küçük "
+                "olması, iki kolonun birbiriyle çeliştiğini gösterir.",
+        "bilgi": "**Nedir?** Adı yalnız bir parçayla ayrılan kolon çiftlerinde iki kuralı "
+                 "dener: adet kolonu 0 ya da boşken aynı ölçünün tutar kolonu 0 dışında dolu "
+                 "olmamalı; en büyük değer kolonu ortalama kolonundan küçük olmamalı. Kuralı "
+                 "bozan satırları sayar.\n\n"
+                 "**Neden önemli?** Çelişki, kolonların farklı kaynaklardan ya da farklı "
+                 "tarihlerde hesaplandığını gösterir; iki kolondan türetilen ortalama tutar gibi "
+                 "değişkenler yanlış olur.\n\n"
+                 "**Örnek:** işlem adedi 0, işlem tutarı 2.500.\n\n"
+                 "**Kapsam:** adet ve tutar ölçüsü kolon kartından (yoksa adındaki CNT, COUNT, "
+                 "ADET ile AMT, SUM, TUTAR gibi parçalardan), en büyük ve ortalama istatistiği "
+                 "kolon kartından (yoksa MAX ile AVG gibi parçalardan) okunur.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir; veri kaynağını kontrol etmeniz için."},
+})
 
 def kontrol_aciklamasi(anahtar):
     """(kisa, bilgi) - karar kartindaki kontrol satiri icin."""
@@ -1470,16 +1906,30 @@ PROFIL_KONTROLLERI = (
     ("kimlik_gibi", "Kimlik Benzeri", SONUC_GIRMEZ, "Kimlik benzeri"),
     ("yuksek_kardinalite", "Kardinalitesi Aşırı Yüksek", SONUC_GIRMEZ, "Kardinalite yüksek"),
     ("ayni_icerik", "Aynı İçerikli Kolonlar", SONUC_GIRMEZ, "Aynı içerik"),
+    ("yakin_icerik", "Neredeyse Aynı Kolonlar", SONUC_GIRMEZ, "Neredeyse aynı"),
+    ("gelecek_pencere", "Gelecek Penceresi (Sızıntı Riski)", SONUC_KARAR, "Gelecek penceresi"),
+    ("birebir", "Hedefle Neredeyse Birebir", SONUC_KARAR, "Hedefle birebir"),
+    ("tarih_sonra", "Dönemden Sonraki Tarih", SONUC_KARAR, "Dönemden sonraki tarih"),
     ("baskin", "Neredeyse Sabit", SONUC_KARAR, "Neredeyse sabit"),
     ("donem", "Dönemde Boş ya da Sabit", SONUC_KARAR, "Dönemde boş ya da sabit"),
     ("gizli_eksik", "Gizli Eksik (Özel Kod)", SONUC_DUZELT, "Gizli eksik"),
     ("karisik_eksik", "Karışık Eksik Kodlaması", SONUC_DUZELT, "Karışık eksik"),
+    ("tarih_kod", "Özel Tarih Kodu", SONUC_DUZELT, "Özel tarih kodu"),
+    ("metin_bos", "Metin Olarak Yazılmış Boş", SONUC_DUZELT, "Metin olarak boş"),
+    ("yazim", "Kategori Yazım Tutarsızlığı", SONUC_DUZELT, "Yazım tutarsızlığı"),
     ("sifir", "Sıfır Yoğunluğu", SONUC_BILGI, "Sıfır yoğun"),
     ("negatif", "Beklenmeyen Negatif", SONUC_DUZELT, "Beklenmeyen negatif"),
     ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_KARAR, "Eksik sıçraması"),
+    ("kayma", "Dönemler Arası Değer Kayması", SONUC_KARAR, "Değer kayması"),
     ("uc", "Uç Değer Yoğunluğu", SONUC_DUZELT, "Uç değer"),
+    ("pencere", "Pencere Tutarlılığı", SONUC_BILGI, "Pencere tutarsız"),
+    ("tutar_adet", "Tutar ve Adet Uyumsuzluğu", SONUC_BILGI, "Tutar ve adet uyumsuz"),
     ("tekrar", "Tekrar Eden Satır", SONUC_BILGI, ""),
 )
+# Karar isteyen kontrollerden varsayilani Çıkar olanlar (sizinti riski).
+KARAR_VARSAYILAN_CIKAR = ("gelecek_pencere", "birebir")
+# Bilgi icin gosterilen ve islem yapilmayan kontroller.
+BILGI_KONTROLLERI = ("sifir", "pencere", "tutar_adet")
 DONEM_LISTE_EN_COK = 6
 
 
@@ -1495,13 +1945,58 @@ def _ek_bulgulari(p):
     gruplarda kalmayan kolonlar diger kontrollerde gosterilmez."""
     ek = p.get("profil_ek") or {}
     kopya = set(_ayni_kopyalar(p))
-    b = {a: {} for a in ("ayni_icerik", "baskin", "donem", "gizli_eksik", "karisik_eksik", "sifir",
-                         "negatif", "sicrama", "uc")}
+    b = {a: {} for a in ("ayni_icerik", "yakin_icerik", "gelecek_pencere", "birebir",
+                         "tarih_sonra", "baskin", "donem", "gizli_eksik", "karisik_eksik",
+                         "tarih_kod", "metin_bos", "yazim", "sifir", "negatif", "sicrama",
+                         "kayma", "uc", "pencere", "tutar_adet")}
     for g in ek.get("ayni_gruplar") or []:
         kalan = _ayni_kalan(p, g)
         for k in g["uyeler"]:
-            if k != kalan:
+            if k == kalan:
+                continue
+            if g.get("tur") == "yakin":
+                b["yakin_icerik"][k] = "%s ile neredeyse aynı (%s); %s kalır" % (
+                    kalan, _yakin_iliski_metni(g, kalan, k), kalan)
+            else:
                 b["ayni_icerik"][k] = "%s ile birebir aynı; %s kalır" % (kalan, kalan)
+    for x in ek.get("gelecek_pencere") or []:
+        b["gelecek_pencere"][x["kolon"]] = "; ".join(
+            "Ad parçası %s: %s" % (t["parca"], t["tur_adi"]) for t in x["parcalar"])
+    for x in ek.get("birebir") or []:
+        b["birebir"][x["kolon"]] = "Tek başına ayırma gücü (AUC) %s" % _yuzde_metni(x["auc"])
+    for x in ek.get("tarih_sonra") or []:
+        b["tarih_sonra"][x["kolon"]] = "%s satırda (payı %s); en geç %s" % (
+            _sayi(x["adet"]), _yuzde_metni(x["pay"]), x["en_gec"])
+    for x in ek.get("kayma") or []:
+        b["kayma"][x["kolon"]] = "Ortanca %s dönemi %s, %s dönemi %s (%s kat)" % (
+            x["once"], _okunur_sayi(x["once_deger"]), x["sonra"], _okunur_sayi(x["sonra_deger"]),
+            _okunur_sayi(x["kat"]))
+    for x in ek.get("tarih_kod") or []:
+        b["tarih_kod"][x["kolon"]] = "%s; toplam %s satır (payı %s)" % (
+            ", ".join("%s: %s" % (d["deger"], _sayi(d["adet"])) for d in x["degerler"][:3]),
+            _sayi(x["adet"]), _yuzde_metni(x["pay"]))
+    for x in ek.get("metin_bos") or []:
+        b["metin_bos"][x["kolon"]] = "%s; toplam %s satır (payı %s)" % (
+            ", ".join("«%s»: %s" % (d["deger"], _sayi(d["adet"])) for d in x["degerler"][:4]),
+            _sayi(x["adet"]), _yuzde_metni(x["pay"]))
+    for x in ek.get("yazim") or []:
+        g0 = x["gruplar"][0]
+        b["yazim"][x["kolon"]] = "%s değer farklı yazılmış, %s satır çevrilir. Ör. %s" % (
+            _sayi(x["grup"]), _sayi(x["satir"]),
+            ", ".join("«%s»" % y["deger"] for y in g0["yazimlar"][:4]))
+    for x in ek.get("pencere") or []:
+        b["pencere"][x["kolon"]] = "%s satırda %s kolonundan %s (payı %s)" % (
+            _sayi(x["adet"]), x["karsi"], "büyük" if x["yon"] == "artan" else "küçük",
+            _yuzde_metni(x["pay"]))
+    for x in ek.get("tutar_adet") or []:
+        if x["tur"] == "adet_tutar":
+            metin = "%s satırda %s 0 ya da boşken dolu (payı %s)" % (
+                _sayi(x["adet"]), x["karsi"], _yuzde_metni(x["pay"]))
+        else:
+            metin = "%s satırda %s kolonundan küçük (payı %s)" % (
+                _sayi(x["adet"]), x["karsi"], _yuzde_metni(x["pay"]))
+        onceki = b["tutar_adet"].get(x["kolon"])
+        b["tutar_adet"][x["kolon"]] = (onceki + ". " + metin) if onceki else metin
     for x in ek.get("baskin") or []:
         b["baskin"][x["kolon"]] = "En sık değer %s, payı %s" % (x["deger"], _yuzde_metni(x["pay"]))
     for x in ek.get("donem") or []:
@@ -1530,10 +2025,36 @@ def _ek_bulgulari(p):
         b["uc"][x["kolon"]] = "En büyük değer %s, %%99'luk değer %s" % (
             _sayi_metni(x["maks"]), _sayi_metni(x["p99"]))
     for a, kolonlar in b.items():
-        if a != "ayni_icerik":
+        if a not in ("ayni_icerik", "yakin_icerik"):
             for k in [k for k in kolonlar if k in kopya]:
                 del kolonlar[k]
     return b
+
+
+def _yakin_iliski_metni(g, kalan, k):
+    """Neredeyse ayni grupta k'nin kalanla iliskisi: "1.000 katı" ya da
+    "korelasyon %99,99". Iliski grubun ilk kolonuna gore saklanir."""
+    il = (g.get("iliski") or {})
+    ilk = g["uyeler"][0]
+
+    def kat(a, b):
+        """b = a * kat (a, b uye)."""
+        if a == b:
+            return 1.0
+        if a == ilk and (il.get(b) or {}).get("tur") == "kat":
+            return il[b]["kat"]
+        if b == ilk and (il.get(a) or {}).get("tur") == "kat":
+            return 1.0 / il[a]["kat"]
+        if (il.get(a) or {}).get("tur") == "kat" and (il.get(b) or {}).get("tur") == "kat":
+            return il[b]["kat"] / il[a]["kat"]
+        return None
+    c = kat(kalan, k)
+    if c:
+        return "%s katı" % _sayi_metni(round(c, 6) if abs(c) < 1 else round(c, 4))
+    x = il.get(k) if k != ilk else il.get(kalan)
+    if isinstance(x, dict) and x.get("tur") == "kor":
+        return "korelasyon %s" % _yuzde_metni(abs(x["kor"]))
+    return "korelasyon çok yüksek"
 
 
 def _profil_ozeti(durum):
@@ -1549,7 +2070,7 @@ def _profil_ozeti(durum):
     karar_ad = profil_karar_kolonlari(durum)
     bekleyen = {k for k in karar_ad if k not in karar}
     bilgi = set()
-    for a in ("gizli_eksik", "karisik_eksik", "sifir", "negatif", "uc"):
+    for a in DUZELTME_KONTROLLERI + BILGI_KONTROLLERI:
         bilgi |= {x["kolon"] for x in (ek.get(a) or [])}
     bilgi |= {k for k in karar_ad if karar.get(k) == PROFIL_KARAR_TUT}
     bilgi -= girmez | bekleyen
@@ -1581,17 +2102,15 @@ def profil_metni(durum, karar=False):
             parca.append("Bunlardan %s kolonun yerine çözümle üretilen %s kolon değişken "
                          "üretimine girer." % (_sayi(len(cozumlu)), _sayi(yeni)))
     if oz["bekleyen"]:
-        parca.append("%s kolon için kararınız gerekiyor: Neredeyse Sabit, Dönemde Boş "
-                     "ya da Sabit ve Dönemler Arası Eksik Sıçraması kontrollerinde her kolonu "
-                     "tutun ya da çıkarın."
+        parca.append("%s kolon için kararınız gerekiyor: Ne Olacak sütununda Kararınıza "
+                     "bırakılır yazan kontrollerde her kolonu tutun ya da çıkarın. Sızıntı "
+                     "riski olan kolonlarda Çıkar seçili gelir."
                      % _sayi(len(oz["bekleyen"])))
     duz = duzeltme_secimi(durum)
     n_duz = sum(len(v) for v in duz.values())
     if karar and n_duz:
-        parca.append("Gizli Eksik, Karışık Eksik Kodlaması, Beklenmeyen Negatif ve Uç Değer "
-                     "kontrollerinde %s kolon "
-                     "için düzeltme seçin; önerilen seçili gelir. Bu kolonlar üretime girer."
-                     % _sayi(n_duz))
+        parca.append("Düzeltme seçilen kontrollerde %s kolon için düzeltme seçin; önerilen "
+                     "seçili gelir. Bu kolonlar üretime girer." % _sayi(n_duz))
     elif n_duz:
         uyg = sum(1 for v in duz.values() for c in v.values() if c != "birak")
         parca.append(("%s kolonda düzeltme uygulandı" % _sayi(uyg) if uyg else
@@ -1600,8 +2119,8 @@ def profil_metni(durum, karar=False):
                         if n_duz - uyg else "."))
     gruplar = ((durum.get("profil") or {}).get("profil_ek") or {}).get("ayni_gruplar") or []
     if karar and gruplar:
-        parca.append("Değerleri birebir aynı %s kolon grubunda hangi kolonun kalacağını "
-                     "seçin; dil modelinin önerisi seçili gelir." % _sayi(len(gruplar)))
+        parca.append("Değerleri birebir ya da neredeyse aynı %s kolon grubunda hangi kolonun "
+                     "kalacağını seçin; dil modelinin önerisi seçili gelir." % _sayi(len(gruplar)))
     if oz["bilgi"]:
         parca.append("%s kolonda bilgi notu var; bu kolonlar değişken üretimine girer."
                      % _sayi(len(oz["bilgi"])))
@@ -1664,6 +2183,7 @@ def profil_karti(durum, karar=False):
     duz_sec = duzeltme_secimi(durum)
     duz_bilgi = p.get("duzeltme_bilgi") or {}
     donemler = ek.get("donemler")
+    karar_vars = _karar_varsayilan(p)
     kontroller = []
     for a, ad, sonuc, _kisa in PROFIL_KONTROLLERI:
         kisa, bilgi = kontrol_aciklamasi(a)
@@ -1673,21 +2193,42 @@ def profil_karti(durum, karar=False):
              "birim": "kolon", "kolonlar": []}
         if a == "yuksek_kardinalite" and not turler.get("kategorik"):
             k["uygulandi"], k["sebep"] = False, "Kategorik kolon yok"
-        elif a in ("donem", "sicrama") and donemler is None:
+        elif a in ("donem", "sicrama", "kayma", "tarih_sonra") and donemler is None:
             k["uygulandi"], k["sebep"] = False, "Dönem kolonu seçilmedi"
-        elif a in ("donem", "sicrama") and len(donemler or []) < 2:
+        elif a in ("donem", "sicrama", "kayma") and len(donemler or []) < 2:
             k["uygulandi"], k["sebep"] = False, "Tabloda tek dönem var"
+        elif a == "tarih_sonra" and ek.get("tarih_sonra") is None:
+            k["uygulandi"], k["sebep"] = False, "Dönem değerleri tarih olarak okunamadı"
+        elif a == "tarih_sonra" and not ek.get("tarih_kolon"):
+            k["uygulandi"], k["sebep"] = False, "Tarih kolonu yok"
+        elif a == "tarih_kod" and not ek.get("tarih_kolon"):
+            k["uygulandi"], k["sebep"] = False, "Tarih kolonu yok"
+        elif a in ("metin_bos", "yazim") and not ek.get("metin_kolon", 1):
+            k["uygulandi"], k["sebep"] = False, "Metin kolon yok"
         elif a == "negatif" and not ek.get("olcu_var"):
             k["uygulandi"], k["sebep"] = False, "Kolon kartlarında ölçü bilgisi yok"
-        if a == "sifir":
+        elif a == "birebir" and ek.get("birebir") is None:
+            k["uygulandi"], k["sebep"] = False, "Hedef iki sınıflı (0 ve 1) değil"
+        elif a == "gelecek_pencere" and not ek.get("donem_tur_var"):
+            k["uygulandi"], k["sebep"] = False, "Kolon adlarında anlam türü onaylı dönem parçası yok"
+        elif a == "pencere" and not ek.get("pencere_cift"):
+            k["uygulandi"], k["sebep"] = False, "Aynı ölçünün farklı pencereli kolonu yok"
+        elif a == "tutar_adet" and not ek.get("tutar_cift"):
+            k["uygulandi"], k["sebep"] = False, "Eşleşen adet ve tutar ya da en büyük ve ortalama kolonu yok"
+        if a in BILGI_KONTROLLERI:
             k["ne_olacak"] = "Bilgi için gösterilir; işlem yapılmaz"
-        if a == "ayni_icerik" and ek.get("ayni_gruplar"):
-            k["ne_olacak"] = "Biri kalır, diğerleri üretime girmez"
-            k["gruplar"] = [{"id": g["id"], "oneri": g["oneri"], "gerekce": g.get("gerekce", ""),
-                             "kaynak": g.get("kaynak", ""), "secim": _ayni_kalan(p, g),
-                             "uyeler": [{"ad": u, "aciklama": aciklama.get(u, "")}
-                                        for u in g["uyeler"]]}
-                            for g in ek["ayni_gruplar"]]
+        if a in ("ayni_icerik", "yakin_icerik"):
+            gr = [g for g in ek.get("ayni_gruplar") or []
+                  if (g.get("tur") == "yakin") == (a == "yakin_icerik")]
+            if gr:
+                k["ne_olacak"] = "Biri kalır, diğerleri üretime girmez"
+                k["gruplar"] = [{"id": g["id"], "oneri": g["oneri"],
+                                 "gerekce": g.get("gerekce", ""),
+                                 "kaynak": g.get("kaynak", ""), "secim": _ayni_kalan(p, g),
+                                 "iliski": g.get("iliski_metni", ""),
+                                 "uyeler": [{"ad": u, "aciklama": aciklama.get(u, "")}
+                                            for u in g["uyeler"]]}
+                                for g in gr]
         if a == "tekrar":
             tk = ek.get("tekrar") or {}
             k["birim"] = "satır"
@@ -1705,7 +2246,7 @@ def profil_karti(durum, karar=False):
         for kol, metin in (bulgu.get(a) or {}).items():
             satir = {"ad": kol, "aciklama": aciklama.get(kol, ""), "bulgu": metin}
             if sonuc == SONUC_KARAR:
-                satir["karar"] = karar_deger.get(kol, PROFIL_KARAR_TUT)
+                satir["karar"] = karar_deger.get(kol, karar_vars.get(kol, PROFIL_KARAR_TUT))
             if a in COZUM_KONTROLLERI and (cozum_oneri.get(kol) or {}).get("kontrol") == a:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
             elif a in DUZELTME_KONTROLLERI and kol in (duz_oneri.get(a) or {}):

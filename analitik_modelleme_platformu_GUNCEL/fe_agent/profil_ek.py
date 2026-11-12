@@ -38,9 +38,13 @@ UC_DEGER_KAT = 100
 UC_DEGER_YUZDELIK = 0.99
 # Kullanicinin 02.1'de onayladigi esikler bu anahtarlarla gelir (yoksa
 # varsayilan). Gizli eksik kod listesi ve kopukluk kati sabittir.
+SIZINTI_AUC = 0.95
+YAKIN_KOR = 0.99
+KAYMA_KAT = 10
 ESIK_VARSAYILAN = {"baskin": BASKIN_ESIK, "sifir": SIFIR_ESIK, "gizli": GIZLI_EKSIK_ESIK,
                    "donem_min_satir": DONEM_SABIT_MIN_SATIR, "sicrama": DONEM_SICRAMA_ESIK,
-                   "uc_kat": UC_DEGER_KAT}
+                   "uc_kat": UC_DEGER_KAT, "sizinti_auc": SIZINTI_AUC, "yakin_kor": YAKIN_KOR,
+                   "kayma_kat": KAYMA_KAT}
 
 
 def esik_birlestir(esik=None):
@@ -344,4 +348,424 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     sonuc["tekrar"] = tekrar_satirlar(df, kimlik, donem)
     sonuc["hedef"] = hedef_ozeti(df, hedef, donem)
     sonuc["olcu_var"] = any(str(v or "").strip() for v in (olculer or {}).values())
+    # Ikinci set (pencere ve tutar / adet ciftleri kolon kartina ve donem
+    # turlerine bagli; akis_faz02.profil_hesapla ekler).
+    sonuc["metin_bos"] = metin_bos_kontrol(df, adaylar)
+    sonuc["yazim"] = yazim_kontrol(df, adaylar)
+    sonuc["tarih_kod"], sonuc["tarih_kolon"] = tarih_kod_kontrol(df, adaylar)
+    sonuc["metin_kolon"] = sum(1 for k in adaylar if _metin_kolonu_mu(df[k]))
+    sonuc["tarih_sonra"] = tarih_sonra_kontrol(df, adaylar, donem)
+    sonuc["kayma"] = deger_kaymasi(df, [k for k in adaylar if k not in baskin], donem, esik)
+    sonuc["birebir"] = hedef_birebir(df, adaylar, hedef, esik)
+    kopya = {k for g in sonuc["ayni_icerik"] for k in g["kopyalar"]}
+    sonuc["yakin_icerik"] = yakin_kopyalar(df, adaylar, esik, haric=kopya | baskin)
+    return sonuc
+
+
+
+# ===========================================================================
+# 02.1 EK KONTROLLER (ikinci set): metin olarak yazilmis bos, kategori
+# yazim tutarsizligi, ozel tarih kodu, donemden sonraki tarih, donemler
+# arasi deger kaymasi, hedefle neredeyse birebir, neredeyse ayni kolonlar,
+# pencere tutarliligi, tutar / adet uyumsuzlugu. Hepsi tablonun TAMAMINDAN;
+# ornekleme yok.
+# ===========================================================================
+# Metin olarak yazilmis bos: kirpilmis, kucuk harfe cevrilmis karsilastirma.
+METIN_BOS_DEGERLER = frozenset((
+    "", "null", "none", "nan", "nat", "n/a", "na", "#n/a", "nil", "undefined",
+    "-", "--", "---", "?", "??", ".", "boş", "bos", "bilinmiyor", "bilinmeyen",
+    "belirtilmemiş", "belirtilmemis", "tanımsız", "tanimsiz"))
+# Ozel tarih kodu: yili bu araligin disindaki tarih (1900-01-01, 9999-12-31).
+TARIH_YIL_ALT = 1901
+TARIH_YIL_UST = 2200
+# Deger kaymasi: donemde en az bu kadar sifir disi dolu satir olmali.
+KAYMA_MIN_SATIR = 30
+# Hedefle birebir: kategorik kolonda en cok bu kadar farkli deger (fazlasi
+# hedef oraniyla kodlaninca ezberler, yaniltir).
+BIREBIR_KAT_MAX = 50
+# Yazim tutarsizligi: kolon basina saklanan en cok esleme.
+YAZIM_HARITA_MAX = 5000
+_TR_KATLA = str.maketrans({"ç": "c", "ğ": "g", "ı": "i", "ö": "o", "ş": "s", "ü": "u",
+                           "â": "a", "î": "i", "û": "u"})
+
+
+def _metin_kolonu_mu(s):
+    return not (pd.api.types.is_numeric_dtype(s) or pd.api.types.is_bool_dtype(s)
+                or pd.api.types.is_datetime64_any_dtype(s))
+
+
+def _metin_sayimi(s):
+    d = s.dropna()
+    if not len(d):
+        return pd.Series(dtype="int64")
+    return d.astype(str).value_counts()
+
+
+def metin_bos_normal(v):
+    return _tr_kucuk(str(v).strip())
+
+
+def metin_bos_kontrol(df, adaylar):
+    """[{"kolon", "degerler": [{"deger", "adet"}], "adet", "pay"}]: metin
+    kolonda "NULL", "-", "?", "" gibi bos anlamina gelen yazilar."""
+    sonuc = []
+    for kol in adaylar:
+        s = df[kol]
+        if not _metin_kolonu_mu(s):
+            continue
+        vc = _metin_sayimi(s)
+        if not len(vc):
+            continue
+        bul = [(v, int(n)) for v, n in vc.items() if metin_bos_normal(v) in METIN_BOS_DEGERLER]
+        if bul:
+            adet = sum(n for _v, n in bul)
+            sonuc.append({"kolon": kol, "degerler": [{"deger": v, "adet": n} for v, n in bul],
+                          "adet": adet, "pay": adet / max(int(s.notna().sum()), 1)})
+    return sonuc
+
+
+def yazim_anahtari(v):
+    """Ayni degerin farkli yazimlari ayni anahtara duser: bas / son bosluk,
+    coklu bosluk, buyuk / kucuk harf, Turkce karakter."""
+    t = re.sub(r"\s+", " ", str(v).strip())
+    return _tr_kucuk(t).translate(_TR_KATLA)
+
+
+def yazim_kontrol(df, adaylar):
+    """[{"kolon", "gruplar": [{"hedef", "yazimlar": [{"deger", "adet"}]}],
+    "anahtar": {yazim anahtari: hedef}, "satir", "grup"}]: ayni degerin
+    farkli yazimlari. Hedef yazim grubun en sik gecen yazimidir; satir
+    hedeften farkli yazilmis satir sayisi."""
+    sonuc = []
+    for kol in adaylar:
+        s = df[kol]
+        if not _metin_kolonu_mu(s):
+            continue
+        vc = _metin_sayimi(s)
+        if len(vc) < 2:
+            continue
+        gruplar = {}
+        for v, n in vc.items():
+            if metin_bos_normal(v) in METIN_BOS_DEGERLER:
+                continue
+            gruplar.setdefault(yazim_anahtari(v), []).append((v, int(n)))
+        cok = [g for g in gruplar.values() if len(g) > 1]
+        if not cok:
+            continue
+        anahtar, liste, satir = {}, [], 0
+        for g in sorted(cok, key=lambda g: -sum(n for _v, n in g)):
+            hedef = g[0][0]          # value_counts sirasi: en sik once
+            if len(anahtar) < YAZIM_HARITA_MAX:
+                anahtar[yazim_anahtari(hedef)] = hedef
+            satir += sum(n for _v, n in g[1:])
+            liste.append({"hedef": hedef, "yazimlar": [{"deger": v, "adet": n} for v, n in g]})
+        sonuc.append({"kolon": kol, "gruplar": liste[:20], "grup": len(liste),
+                      "anahtar": anahtar, "satir": satir})
+    return sonuc
+
+
+_TARIH_METIN = re.compile(r"^\s*(\d{4})-\d{2}-\d{2}")
+
+
+def _tarih_kodlu(s):
+    """Ozel tarih kodu olan hucrelerin maskesi (datetime ya da 'YYYY-AA-GG'
+    metni); tarih kolonu degilse None."""
+    if pd.api.types.is_datetime64_any_dtype(s):
+        yil = s.dt.year
+        return (yil < TARIH_YIL_ALT) | (yil > TARIH_YIL_UST)
+    if not _metin_kolonu_mu(s):
+        return None
+    vc = _metin_sayimi(s)
+    if not len(vc):
+        return None
+    tarih = [v for v in vc.index if _TARIH_METIN.match(str(v))]
+    if len(tarih) < 0.8 * len(vc):
+        return None
+    kod = {v for v in tarih if not (TARIH_YIL_ALT <= int(_TARIH_METIN.match(v).group(1))
+                                    <= TARIH_YIL_UST)}
+    if not kod:
+        return pd.Series(False, index=s.index)
+    return s.notna() & s.astype(str).isin(kod)
+
+
+def tarih_kod_kontrol(df, adaylar):
+    """([{"kolon", "degerler": [{"deger", "adet"}], "adet", "pay"}], tarih
+    kolonu sayisi): tarih kolonunda 1900-01-01, 9999-12-31 gibi kod
+    tarihler."""
+    sonuc, tarih = [], 0
+    for kol in adaylar:
+        s = df[kol]
+        m = _tarih_kodlu(s)
+        if m is not None:
+            tarih += 1
+        if m is None or not bool(m.any()):
+            continue
+        vc = s[m].astype(str).str[:10].value_counts()
+        adet = int(m.sum())
+        sonuc.append({"kolon": kol, "degerler": [{"deger": v, "adet": int(n)} for v, n in vc.items()][:10],
+                      "adet": adet, "pay": adet / max(int(s.notna().sum()), 1)})
+    return sonuc, tarih
+
+
+def donem_sonu(seri):
+    """Donem degerinin son gunu (YYYYAA -> ayin son gunu, YYYYAAGG -> o gun,
+    YYYY -> yil sonu). Cozulemeyen None; yarisi cozulemiyorsa None doner."""
+    t = seri.astype(str).str.replace(r"\D", "", regex=True)
+    sonuc = pd.Series(pd.NaT, index=seri.index, dtype="datetime64[ns]")
+    ay = t.str.len() == 6
+    gun = t.str.len() == 8
+    yil = t.str.len() == 4
+    if ay.any():
+        sonuc[ay] = (pd.to_datetime(t[ay] + "01", format="%Y%m%d", errors="coerce")
+                     + pd.offsets.MonthEnd(0))
+    if gun.any():
+        sonuc[gun] = pd.to_datetime(t[gun], format="%Y%m%d", errors="coerce")
+    if yil.any():
+        sonuc[yil] = pd.to_datetime(t[yil] + "1231", format="%Y%m%d", errors="coerce")
+    if sonuc.notna().sum() < 0.5 * max(int(seri.notna().sum()), 1):
+        return None
+    return sonuc
+
+
+def _tarih_serisi(s):
+    if not pd.api.types.is_datetime64_any_dtype(s):
+        return None
+    try:
+        if getattr(s.dt, "tz", None) is not None:
+            s = s.dt.tz_localize(None)
+    except Exception:
+        pass
+    return s
+
+
+def tarih_sonra_kontrol(df, adaylar, donem):
+    """[{"kolon", "adet", "pay", "en_gec"}]: tarih kolonunda satirin gozlem
+    doneminden SONRAKI tarihler (gelecek bilgisi, sizinti riski)."""
+    if not donem or donem not in df.columns:
+        return None
+    son = donem_sonu(df[donem])
+    if son is None:
+        return None
+    sonuc = []
+    for kol in adaylar:
+        if kol == donem:
+            continue
+        t = _tarih_serisi(df[kol])
+        if t is None:
+            continue
+        kod = _tarih_kodlu(t)
+        m = t.notna() & son.notna() & (t > son)
+        if kod is not None:
+            m &= ~kod
+        adet = int(m.sum())
+        if adet:
+            sonuc.append({"kolon": kol, "adet": adet,
+                          "pay": adet / max(int((t.notna() & son.notna()).sum()), 1),
+                          "en_gec": str(t[m].max())[:10]})
+    return sonuc
+
+
+def deger_kaymasi(df, adaylar, donem, esik=None):
+    """[{"kolon", "once", "sonra", "once_deger", "sonra_deger", "kat"}]:
+    sayisal kolonun sifir disi mutlak degerlerinin %25, %50 ve %75'lik
+    degerleri art arda iki donem arasinda AYNI YONDE en az kayma_kat kat
+    degisiyor (birim degisikligi gibi). Uc yuzdelik birlikte aranir: iki
+    tepeli dagilimda medyan tek basina zipliyabilir. once_deger /
+    sonra_deger medyandir; kat uc oranin en kucugu."""
+    if not donem or donem not in df.columns:
+        return None
+    e = esik_birlestir(esik)
+    g = df[donem]
+    donemler = _donem_sirasi([d for d in g.dropna().unique()])
+    if len(donemler) < 2:
+        return None
+    sayisal = [k for k in adaylar if k != donem and _sayisal_mi(df[k])
+               and not pd.api.types.is_bool_dtype(df[k])]
+    sonuc = []
+    for i in range(0, len(sayisal), DONEM_PARCA):
+        parca = sayisal[i:i + DONEM_PARCA]
+        a = df[parca].apply(pd.to_numeric, errors="coerce").abs()
+        a = a.where(a != 0)
+        grp = a.groupby(g)
+        q = {qq: grp.quantile(qq).reindex(donemler) for qq in (0.25, 0.5, 0.75)}
+        say = grp.count().reindex(donemler)
+        for kol in parca:
+            en = None
+            for d1, d2 in zip(donemler[:-1], donemler[1:]):
+                if say[kol][d1] < KAYMA_MIN_SATIR or say[kol][d2] < KAYMA_MIN_SATIR:
+                    continue
+                oranlar = []
+                for qq in (0.25, 0.5, 0.75):
+                    x1, x2 = float(q[qq][kol][d1]), float(q[qq][kol][d2])
+                    if not (x1 > 0 and x2 > 0):
+                        break
+                    oranlar.append(x2 / x1)
+                if len(oranlar) < 3:
+                    continue
+                if all(o > 1 for o in oranlar):
+                    kat = min(oranlar)
+                elif all(o < 1 for o in oranlar):
+                    kat = 1.0 / max(oranlar)
+                else:
+                    continue
+                m1, m2 = float(q[0.5][kol][d1]), float(q[0.5][kol][d2])
+                if kat >= e["kayma_kat"] and (en is None or kat > en["kat"]):
+                    en = {"kolon": kol, "once": deger_metni(d1), "sonra": deger_metni(d2),
+                          "once_deger": m1, "sonra_deger": m2, "kat": kat}
+            if en:
+                sonuc.append(en)
+    return sonuc
+
+
+def _auc(skor, y):
+    """Tek degiskenli AUC (sira tabanli; esitlikler ortalama sira)."""
+    n1 = int(y.sum())
+    n0 = int(len(y) - n1)
+    if not n1 or not n0:
+        return None
+    r = pd.Series(skor).rank(method="average").to_numpy()
+    return float((r[y.to_numpy() == 1].sum() - n1 * (n1 + 1) / 2.0) / (n1 * n0))
+
+
+def hedef_birebir(df, adaylar, hedef, esik=None):
+    """[{"kolon", "auc"}]: tek basina hedefi neredeyse kusursuz ayiran kolon
+    (AUC ya da 1 - AUC >= sizinti_auc). Bos deger kendi grubudur. Yalniz
+    iki sinifli hedefte; kategorik kolonda en cok BIREBIR_KAT_MAX deger."""
+    if not hedef or hedef not in df.columns:
+        return None
+    yh = pd.to_numeric(df[hedef], errors="coerce")
+    sinif = set(yh.dropna().unique().tolist())
+    if not sinif or not sinif <= {0, 1}:
+        return None
+    e = esik_birlestir(esik)
+    gecerli = yh.notna()
+    y = yh[gecerli].astype(int)
+    sonuc = []
+    for kol in adaylar:
+        if kol == hedef:
+            continue
+        s = df.loc[gecerli, kol]
+        if _sayisal_mi(s) and not pd.api.types.is_bool_dtype(s):
+            x = pd.to_numeric(s, errors="coerce")
+            if x.nunique() < 2 and not x.isna().any():
+                continue
+            alt = (x.min() if x.notna().any() else 0) - 1
+            skor = x.fillna(alt).to_numpy(dtype=float)
+        else:
+            k = s.astype(object).where(s.notna(), "__BOS__").astype(str)
+            if k.nunique() > BIREBIR_KAT_MAX or k.nunique() < 2:
+                continue
+            skor = k.map(y.groupby(k).mean()).to_numpy(dtype=float)
+        a = _auc(skor, y)
+        if a is None:
+            continue
+        a = max(a, 1 - a)
+        if a >= e["sizinti_auc"]:
+            sonuc.append({"kolon": kol, "auc": a})
+    return sonuc
+
+
+def yakin_kopyalar(df, adaylar, esik=None, haric=()):
+    """[{"kalan", "kopyalar", "iliski"}]: birebir ayni olmayan ama neredeyse
+    ayni sayisal kolonlar (korelasyon >= yakin_kor) ya da biri otekinin
+    sabit kati (birim farki). Aday cifti bos ve sifir sayisi ile olceklenmis
+    dagilimi ayni olan kolonlardan; kesin olcum tum satirlarla."""
+    e = esik_birlestir(esik)
+    haric = set(haric)
+    kova = {}
+    for kol in adaylar:
+        if kol in haric:
+            continue
+        s = df[kol]
+        if not _sayisal_mi(s) or pd.api.types.is_bool_dtype(s):
+            continue
+        x = pd.to_numeric(s, errors="coerce")
+        d = x.dropna()
+        if d.nunique() < 3:
+            continue
+        sd = float(d.std())
+        if not sd:
+            continue
+        z = (d - float(d.mean())) / sd
+        q = np.round(np.quantile(z.to_numpy(), [0.1, 0.25, 0.5, 0.75, 0.9]), 1)
+        qn = np.round(-q[::-1], 1)
+        imza = min(tuple(q.tolist()), tuple(qn.tolist()))
+        anahtar = (int(x.isna().sum()), int((x == 0).sum()), imza)
+        kova.setdefault(anahtar, []).append(kol)
+    sonuc = []
+    for uyeler in kova.values():
+        if len(uyeler) < 2:
+            continue
+        kalan = list(uyeler)
+        while len(kalan) > 1:
+            ilk, digerleri = kalan[0], kalan[1:]
+            a = pd.to_numeric(df[ilk], errors="coerce")
+            grup, iliski = [], {}
+            for k in digerleri:
+                b = pd.to_numeric(df[k], errors="coerce")
+                ikisi = a.notna() & b.notna()
+                if int(ikisi.sum()) < 3:
+                    continue
+                r = float(np.corrcoef(a[ikisi], b[ikisi])[0, 1])
+                if not np.isfinite(r) or abs(r) < e["yakin_kor"]:
+                    continue
+                grup.append(k)
+                sifirsiz = ikisi & (a != 0)
+                oran = (b[sifirsiz] / a[sifirsiz]) if sifirsiz.any() else pd.Series(dtype=float)
+                if len(oran) and float(oran.std() or 0) <= 1e-9 * max(abs(float(oran.mean())), 1):
+                    iliski[k] = {"tur": "kat", "kat": float(oran.mean())}
+                else:
+                    iliski[k] = {"tur": "kor", "kor": r}
+            if grup:
+                sonuc.append({"kalan": ilk, "kopyalar": grup, "iliski": iliski})
+            kalan = [k for k in digerleri if k not in grup]
+    return sonuc
+
+
+def pencere_tutarliligi(df, ciftler):
+    """ciftler: [(kisa, uzun, yon)] - ayni olcunun kisa ve uzun penceresi;
+    yon "artan": kisa <= uzun beklenir, "azalan": kisa >= uzun. Doner:
+    [{"kolon", "karsi", "yon", "adet", "pay"}]."""
+    sonuc = []
+    for kisa, uzun, yon in ciftler:
+        if kisa not in df.columns or uzun not in df.columns:
+            continue
+        a = pd.to_numeric(df[kisa], errors="coerce")
+        b = pd.to_numeric(df[uzun], errors="coerce")
+        ikisi = a.notna() & b.notna()
+        tol = 1e-9 * (b.abs() + 1)
+        m = ikisi & ((a > b + tol) if yon == "artan" else (a < b - tol))
+        adet = int(m.sum())
+        if adet:
+            sonuc.append({"kolon": kisa, "karsi": uzun, "yon": yon, "adet": adet,
+                          "pay": adet / max(int(ikisi.sum()), 1)})
+    return sonuc
+
+
+def tutar_adet_uyumu(df, adet_tutar, maks_ort):
+    """adet_tutar: [(adet, tutar)] - adet 0 iken tutar 0 disi ya da adet bos
+    iken tutar dolu; maks_ort: [(maks, ort)] - en buyuk ortalamadan kucuk.
+    Doner: [{"kolon", "karsi", "tur", "adet", "pay"}]."""
+    sonuc = []
+    for adet_k, tutar_k in adet_tutar:
+        if adet_k not in df.columns or tutar_k not in df.columns:
+            continue
+        a = pd.to_numeric(df[adet_k], errors="coerce")
+        t = pd.to_numeric(df[tutar_k], errors="coerce")
+        m = ((a == 0) & t.notna() & (t != 0)) | (a.isna() & t.notna() & (t != 0))
+        adet = int(m.sum())
+        if adet:
+            sonuc.append({"kolon": tutar_k, "karsi": adet_k, "tur": "adet_tutar", "adet": adet,
+                          "pay": adet / max(int(t.notna().sum()), 1)})
+    for maks_k, ort_k in maks_ort:
+        if maks_k not in df.columns or ort_k not in df.columns:
+            continue
+        mx = pd.to_numeric(df[maks_k], errors="coerce")
+        ort = pd.to_numeric(df[ort_k], errors="coerce")
+        ikisi = mx.notna() & ort.notna()
+        m = ikisi & (mx < ort - 1e-9 * (ort.abs() + 1))
+        adet = int(m.sum())
+        if adet:
+            sonuc.append({"kolon": maks_k, "karsi": ort_k, "tur": "maks_ort", "adet": adet,
+                          "pay": adet / max(int(ikisi.sum()), 1)})
     return sonuc

@@ -59,6 +59,11 @@ COZUM_ADI = {
     "negatif_bos": "Negatifleri boş say",
     "kirp": "Uçları kırp",
     "birak": "Olduğu gibi bırak",
+    "tarih_bos_bayrak": "Kod tarihi boş say ve bayrak üret",
+    "tarih_bos": "Kod tarihi boş say",
+    "metin_bos": "Boş say",
+    "metin_bos_bayrak": "Boş say ve bayrak üret",
+    "tek_yazim": "Tek yazıma çevir",
 }
 COZUM_ACIKLAMA = {
     "hedef_grupla": ("Hedef oranı birbirine yakın değerler aynı grupta birleşir (en fazla 8 "
@@ -86,17 +91,38 @@ COZUM_ACIKLAMA.update({
              "öğrenilir: sıfır olmayan değerlerin %99'luk değeri (seyrek kolonda sıfırlar "
              "sınırı düşürmesin diye)."),
     "birak": "Kolon değiştirilmeden kullanılır.",
+    "tarih_bos_bayrak": ("1900-01-01, 9999-12-31 gibi kod tarihler boş sayılır; kodun olduğu "
+                         "satırlar ayrıca 1/0 bayrağıyla işaretlenir (ör. «süresiz» bilgisi "
+                         "kaybolmaz). Tarihten gün farkı gibi hesaplar bozulmaz."),
+    "tarih_bos": "Kod tarihler boş sayılır; kodun olduğu satırlar ayrıca işaretlenmez.",
+    "metin_bos": ("«NULL», «-», «?», «Bilinmiyor», boşluk gibi yazılar gerçek boş hücreye "
+                  "çevrilir; aynı «bilgi yok» durumu tek biçimde görünür."),
+    "metin_bos_bayrak": ("Bu yazılar boş hücreye çevrilir; yazının olduğu satırlar ayrıca 1/0 "
+                         "bayrağıyla işaretlenir (yazı boş hücreden farklı bir anlam "
+                         "taşıyorsa bilgi kaybolmaz)."),
+    "tek_yazim": ("Aynı değerin farklı yazımları (büyük küçük harf, Türkçe karakter, fazla "
+                  "boşluk) en sık geçen yazıma çevrilir; «İstanbul», «Istanbul» ve "
+                  "«istanbul » tek kategori olur."),
 })
 # Duzeltme: kolon uretime girer, secilen duzeltme analiz tablosunda
 # uygulanir (girdi veri seti degismez). Kontrol -> secenekler, oneri.
 DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
                     "karisik_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
+                    "tarih_kod": ["tarih_bos_bayrak", "tarih_bos", "birak"],
+                    "metin_bos": ["metin_bos", "metin_bos_bayrak", "birak"],
+                    "yazim": ["tek_yazim", "birak"],
                     "negatif": ["negatif_bos", "birak"],
                     "uc": ["birak", "kirp"]}
 DUZELTME_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "kod_bos_bayrak",
-                  "negatif": "negatif_bos", "uc": "birak"}
-DUZELTME_SIRA = ("gizli_eksik", "karisik_eksik", "negatif", "uc")
+                  "tarih_kod": "tarih_bos_bayrak", "metin_bos": "metin_bos",
+                  "yazim": "tek_yazim", "negatif": "negatif_bos", "uc": "birak"}
+# Uygulama sirasi: once eksik kodlari (sayi, tarih, metin), sonra yazim,
+# en son deger duzeltmeleri.
+DUZELTME_SIRA = ("gizli_eksik", "karisik_eksik", "tarih_kod", "metin_bos", "yazim",
+                 "negatif", "uc")
 KOD_KONTROLLERI = ("gizli_eksik", "karisik_eksik")
+# Bayrak kolonu ureten duzeltmeler (<KOLON>_<COZUM_EKI>).
+BAYRAKLI_DUZELTME = ("kod_bos_bayrak", "tarih_bos_bayrak", "metin_bos_bayrak")
 
 
 def duzeltme_ogren(kontrol, secim, x, egitim, kayit=None):
@@ -105,6 +131,8 @@ def duzeltme_ogren(kontrol, secim, x, egitim, kayit=None):
     kayit = kayit or {}
     if kontrol in KOD_KONTROLLERI:
         return {"kod": float(kayit.get("kod"))}
+    if kontrol == "yazim":
+        return {"anahtar": dict((kayit or {}).get("anahtar") or {})}
     if kontrol == "uc" and secim == "kirp":
         t = pd.to_numeric(x[egitim], errors="coerce").dropna()
         t = t[t != 0]
@@ -119,6 +147,18 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
     uygulansa da sonuc degismez (bayrak ayrica, ham degerden hesaplanir)."""
     if secim == "birak":
         return x, None
+    if kontrol == "tarih_kod":
+        from fe_agent import profil_ek as pe
+        m = pe._tarih_kodlu(x)
+        if m is None:
+            return x, None
+        m = m.fillna(False).astype(bool)
+        return x.where(~m), (m.astype("int8") if secim == "tarih_bos_bayrak" else None)
+    if kontrol == "metin_bos":
+        m = metin_bos_maskesi(x)
+        return x.where(~m), (m.astype("int8") if secim == "metin_bos_bayrak" else None)
+    if kontrol == "yazim" and secim == "tek_yazim":
+        return yazim_uygula(x, (bilgi or {}).get("anahtar") or {}), None
     sx = pd.to_numeric(x, errors="coerce")
     if kontrol in KOD_KONTROLLERI and "kod" in bilgi:
         kodlu = sx == float(bilgi["kod"])
@@ -131,9 +171,42 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
     return x, None
 
 
+def metin_bos_maskesi(x):
+    """Metin olarak yazilmis bos hucreler (benzersiz degerler uzerinden)."""
+    from fe_agent import profil_ek as pe
+    if not pe._metin_kolonu_mu(x):
+        return pd.Series(False, index=x.index)
+    d = x.dropna()
+    bos = {v for v in pd.unique(d.astype(str))
+           if pe.metin_bos_normal(v) in pe.METIN_BOS_DEGERLER}
+    if not bos:
+        return pd.Series(False, index=x.index)
+    return x.notna() & x.astype(str).isin(bos)
+
+
+def yazim_uygula(x, anahtar):
+    """{yazim anahtari: hedef yazim}: anahtari esleseni hedefe cevirir
+    (yeni veride gorulen baska bir yazim da ayni anahtara duserse cevrilir)."""
+    if not anahtar:
+        return x
+    from fe_agent import profil_ek as pe
+    d = x.dropna()
+    esle = {}
+    for v in pd.unique(d.astype(str)):
+        h = anahtar.get(pe.yazim_anahtari(v))
+        if h is not None and h != v:
+            esle[v] = h
+    if not esle:
+        return x
+    s = x.astype(object)
+    m = s.notna() & s.astype(str).isin(esle)
+    return s.where(~m, s.astype(str).map(esle))
+
+
 # Yeni kolonun adi: <KOLON>_<EK>.
 COZUM_EKI = {"hedef_grupla": "GRP", "seyrek_grupla": "GRP", "onek_grupla": "ONEK_GRP",
-             "dolu_bayrak": "DOLU", "kod_bos_bayrak": "KOD"}
+             "dolu_bayrak": "DOLU", "kod_bos_bayrak": "KOD", "tarih_bos_bayrak": "KOD",
+             "metin_bos_bayrak": "BOS"}
 
 
 def _metin_mi(s):
