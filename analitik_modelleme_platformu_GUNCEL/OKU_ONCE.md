@@ -1953,23 +1953,30 @@ tanıtır; sayfalar sol bardan açılır.
 **02.1 Veri Profili ve Kalite kartı**
 - Önce Kontrol Eşikleri formu (`veri_profili_girdi`, tip `profil_esik`;
   app.js `profilEsikKartiEkle`): dokuz eşik (`akis_faz02.PROFIL_ESIKLERI`)
-  Kontrol, Açıklama, Eşik, Önerilen sütunlarıyla. Kontrol hücresinde ad,
-  altında tek cümlelik açıklama ve "Yakalanırsa: çözüm önerilir; çözüm
-  yoksa üretime girmez / kararınıza bırakılır / bilgi için gösterilir"
-  (kırmızı, amber, soluk). Açıklama sütununda ayrıntı balonsuz, açık
-  yazılı: "Eşik: <eşiğin anlamı> kolon yakalanır." ve ardından nedir,
-  neden önemli, örnek, kapsam, yakalanırsa ne olur, önerilen değerin
-  gerekçesi paragrafları (kontrol satırında "i" yok). Metinler
+  Kontrol, Ölçüt, Yakalanırsa, Eşik, Önerilen, Neden Bu Değer
+  sütunlarıyla; ayrıntı balonsuz, sütunlara bölünmüş
+  (`aciklama_parcalari` bilgi metnini **Etiket** paragraflarından ayırır):
+  Kontrol: ad, tek cümle ve "Neden önemli?". Ölçüt: "<eşiğin anlamı>
+  kolon yakalanır.", varsa "Eşik ne yapar?", Kapsam ve Örnek.
+  Yakalanırsa: renkli kısa sonuç (çözüm önerilir; çözüm yoksa üretime
+  girmez / kararınıza bırakılır / bilgi için gösterilir) ve ayrıntısı.
+  Neden Bu Değer: önerilen değerin gerekçesi. "Nedir?" paragrafı
+  gösterilmez (Kontrol ve Ölçüt aynı şeyi söyler). Metinler
   `akis_faz02.PROFIL_ESIK_ACIKLAMA`'da (kisa, bilgi, sonuc; sonuç sözleri
   `NE_OLACAK` ile aynı). Önerilenden farklı satır amber vurgulu, hatalı
   değer kırmızı ve gönderilmez, "Önerilenlere Dön". Ekranda "varsayılan"
   sözü yok: önerilen değer (ör. "Değiştirilen eşikler: … (önerilen %50)").
-- Karar kartının Kontroller tablosunda da her kontrolün adının yanında
-  "i" ve altında tek cümlelik açıklama (`akis_faz02.kontrol_aciklamasi`:
-  eşikli kontrollerde eşik formunun metni, önerilen değerin gerekçesi
-  hariç; sabit, aynı içerik, beklenmeyen negatif ve tekrar eden satır
-  için `_KONTROL_ACIKLAMA_EK`). "Neye Bakıldı" kuralları eşik formuyla
-  aynı dille (`_profil_kurallari`). "Eşikleri Onayla ve Profili Çıkar" `{"dogrulama": {"adim":
+- Karar kartının Kontroller tablosu aynı düzende: Kontrol, Ölçüt,
+  Bulunan, Ne Olacak, Neden Bu Değer (`kontrol_parcalari`: eşikli
+  kontrollerde eşik formunun metni; sabit, aynı içerik, beklenmeyen
+  negatif ve tekrar eden satır için `_KONTROL_ACIKLAMA_EK`, bunlarda
+  Neden Bu Değer "Eşiği yok, kural sabit"). Ölçüt onaylanan eşikle
+  kuraldır (`_profil_kurallari`; kapsam ve yakalanırsa ile tekrar
+  etmez), Kapsam ve Örnek altında. Ne Olacak bulgu varsa kısa sonuç ve
+  yakalanırsa ayrıntısı; bulgu yoksa "İşlem yok". Yakalanırsa ayrı sütun
+  değil, Ne Olacak ile birleşik (iki sütun aynı şeyi söylerdi). Çözüm
+  kontrollerinde seçilebilir çözüm yoksa "Üretime girmez; uygun çözüm
+  bulunmadı". Bu iki tablo 900 px'ten dar alanda yatay kayar. "Eşikleri Onayla ve Profili Çıkar" `{"dogrulama": {"adim":
   "veri_profili", "esikler": {anahtar: ekrandaki sayı}}}` gönderir;
   `esik_dogrula` aralığı denetler (yüzde ve puan ekranda 100 ile çarpılı,
   Türkçe yazım: 1.000 binlik, 0,5 ondalık), `profil["esikler"]`'e yazar.

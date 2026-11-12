@@ -538,7 +538,8 @@ PROFIL_ESIK_ACIKLAMA = {
                  "kullanılırsa ortalama, toplam gibi hesaplar bozulur.\n\n"
                  "**Örnek:** bakiye kolonunda dolu satırların %3'ü -999 ise, eşik %1 olduğu "
                  "için gösterilir.\n\n"
-                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer. Sonraki adımlarda "
+                 "kodun boş gibi ele alınması önerilir.\n\n"
                  "**Neden %1 önerildi?** %1'in altında kalan kod birkaç tesadüfi satır olabilir; "
                  "üstündeyse kolonun dolduruluş biçimidir."},
     "sifir": {
@@ -674,6 +675,7 @@ def esik_formu(durum, hata=None, kilitli=False):
         satirlar.append({"anahtar": a, "kontrol": kontrol, "anlam": anlam, "birim": birim,
                          "kisa": ac.get("kisa", ""), "bilgi": ac.get("bilgi", ""),
                          "sonuc": ac.get("sonuc", ""),
+                         "parca": aciklama_parcalari(ac.get("bilgi")),
                          "birim_adi": ESIK_BIRIM_ADI[birim],
                          "deger": _esik_ekran(birim, simdiki[a]),
                          "varsayilan": _esik_ekran(birim, varsayilan[a]),
@@ -997,21 +999,17 @@ def _profil_kurallari(esik=None):
         "cok_bos": "Kolonun boş hücre oranı %s üstünde." % _yuzde_ekli(e["cok_bos"]),
         "sabit": "Kolonda tek bir değer var. Bir değer ile boş hücrelerden oluşan kolon "
                  "iki değerli sayılır.",
-        "kimlik_gibi": "Farklı değer sayısının satır sayısına oranı %s üstünde olan tam sayı "
-                       "ya da metin kolon (müşteri numarası gibi). Ondalıklı tutarlar bu "
-                       "kurala girmez." % _yuzde_ekli(e["kimlik"]),
+        "kimlik_gibi": "Farklı değer sayısının satır sayısına oranı %s üstünde."
+                       % _yuzde_ekli(e["kimlik"]),
         "yuksek_kardinalite": "Metin kolonda farklı değer sayısı %s üstünde."
                               % (kat + _ilgi_eki(kat)),
-        "ayni_icerik": "Değerleri satır satır birebir aynı olan kolonlar. Her gruptan bir "
-                       "kolon kalır: dil modeli adına ve açıklamasına bakıp önerir, siz "
-                       "seçersiniz.",
+        "ayni_icerik": "Değerleri satır satır birebir aynı olan kolonlar.",
         "baskin": "En sık görülen değer satırların en az %s kadarında geçiyor. Boş hücre de "
                   "değer sayılır." % _yuzde_metni(e["baskin"]),
         "donem": "Kolon bazı dönemlerde tamamen boş, ya da en az %s satırı olan bir dönemde "
                  "bütün satırlarda aynı değerde." % _sayi(e["donem_min_satir"]),
         "gizli_eksik": "-1, -99, -999, 9999 gibi bir değer dolu satırların %s fazlasında "
-                       "geçiyor ve kolonun geri kalan değerlerinden kopuk. Sonraki "
-                       "adımlarda boş gibi ele alınması önerilir." % _yuzde_ekli(e["gizli"]),
+                       "geçiyor ve kolonun geri kalan değerlerinden kopuk." % _yuzde_ekli(e["gizli"]),
         "sifir": "Dolu satırlarda sıfırın payı %s ya da üstünde. Çoğu zaman işlem yok "
                  "anlamına gelir." % _yuzde_metni(e["sifir"]),
         "negatif": "Kolon kartında ölçüsü adet, gün ya da süre olan kolonda negatif değer var.",
@@ -1024,10 +1022,11 @@ def _profil_kurallari(esik=None):
     }
 
 
-# KARAR KARTI ACIKLAMALARI: her kontrolun tek cumlesi ("kisa") ve "i"
-# balonu ("bilgi": nedir, neden onemli, ornek, kapsam, yakalanirsa).
-# Esikli kontroller esik formunun metnini kullanir (onerilen degerin
-# gerekcesi karar kartinda yazilmaz; esik zaten onaylandi).
+# KARAR KARTI ACIKLAMALARI: her kontrolun tek cumlesi ("kisa") ve ayrinti
+# ("bilgi": nedir, neden onemli, ornek, kapsam, yakalanirsa). Kartta
+# ayrinti sutunlara bolunur (kontrol_parcalari): Kontrol, Ölçüt (kural,
+# kapsam, ornek), Ne Olacak (yakalanirsa), Neden Bu Değer (gerekce).
+# Kural metni kapsam ve yakalanirsa ile tekrar etmez.
 _KONTROL_ESIK_ANAHTARI = {"cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
                           "yuksek_kardinalite": "kardinalite", "baskin": "baskin",
                           "donem": "donem_min_satir", "gizli_eksik": "gizli", "sifir": "sifir",
@@ -1083,6 +1082,47 @@ def kontrol_aciklamasi(anahtar):
     paragraf = [y for y in str(x.get("bilgi") or "").split("\n\n")
                 if not (y.startswith("**Neden ") and "önerildi" in y)]
     return str(x.get("kisa") or ""), "\n\n".join(paragraf)
+
+
+_PARCA_ETIKET = (("Nedir?", "nedir"), ("Neden önemli?", "onemli"), ("Örnek:", "ornek"),
+                 ("Kapsam:", "kapsam"), ("Eşik ne yapar?", "esik_ne"),
+                 ("Yakalanırsa:", "yakalanirsa"))
+
+
+def aciklama_parcalari(bilgi):
+    """Ayrinti metnini (**Etiket** paragraflari) tablo sutunlarina boler:
+    {"nedir", "onemli", "ornek", "kapsam", "esik_ne", "yakalanirsa",
+    "gerekce", "onerilen"}. "Neden X önerildi?" paragrafi gerekce olur, X
+    onerilen deger metnidir. Bilinmeyen etiketli paragraf atlanmaz:
+    nedir'e eklenir."""
+    import re as _re
+    cikti = {}
+    for par in str(bilgi or "").split("\n\n"):
+        par = par.strip()
+        m = _re.match(r"^\*\*(.+?)\*\*\s*(.*)$", par, _re.S)
+        if not m:
+            if par:
+                cikti["nedir"] = (cikti.get("nedir", "") + " " + par).strip()
+            continue
+        etiket, metin = m.group(1).strip(), m.group(2).strip()
+        g = _re.match(r"^Neden (.+) önerildi\?$", etiket)
+        if g:
+            cikti["onerilen"], cikti["gerekce"] = g.group(1), metin
+            continue
+        anahtar = dict(_PARCA_ETIKET).get(etiket)
+        if anahtar:
+            cikti[anahtar] = metin[:1].upper() + metin[1:] if metin else ""
+        else:
+            cikti["nedir"] = (cikti.get("nedir", "") + " " + metin).strip()
+    return cikti
+
+
+def kontrol_parcalari(anahtar):
+    """Karar kartindaki kontrol satirinin sutun parcalari (gerekce dahil)."""
+    if anahtar in _KONTROL_ACIKLAMA_EK:
+        return aciklama_parcalari(_KONTROL_ACIKLAMA_EK[anahtar]["bilgi"])
+    x = PROFIL_ESIK_ACIKLAMA.get(_KONTROL_ESIK_ANAHTARI.get(anahtar, "")) or {}
+    return aciklama_parcalari(x.get("bilgi"))
 
 
 # (anahtar, kontrolun adi, sonuc, kolon satirindaki kisa bulgu adi)
@@ -1268,7 +1308,7 @@ def profil_karti(durum, karar=False):
     for a, ad, sonuc, _kisa in PROFIL_KONTROLLERI:
         kisa, bilgi = kontrol_aciklamasi(a)
         k = {"anahtar": a, "ad": ad, "kural": kurallar[a], "sonuc": sonuc,
-             "kisa": kisa, "bilgi": bilgi,
+             "kisa": kisa, "bilgi": bilgi, "parca": kontrol_parcalari(a),
              "ne_olacak": NE_OLACAK[sonuc], "uygulandi": True, "sebep": "",
              "birim": "kolon", "kolonlar": []}
         if a == "yuksek_kardinalite" and not turler.get("kategorik"):
@@ -1315,6 +1355,8 @@ def profil_karti(durum, karar=False):
             k["kolonlar"].append(satir)
         if any(len((s.get("cozum") or {}).get("secenekler") or []) > 1 for s in k["kolonlar"]):
             k["ne_olacak"] = "Çözüm seçilir; ham kolon üretime girmez"
+        elif a in COZUM_KONTROLLERI and k["kolonlar"]:
+            k["ne_olacak"] = "Üretime girmez; uygun çözüm bulunmadı"
         k["sayi"] = len(k["kolonlar"])
         kontroller.append(k)
 
