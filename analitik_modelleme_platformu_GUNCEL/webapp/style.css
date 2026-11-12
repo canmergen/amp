@@ -2166,7 +2166,8 @@ Bu kural aynı önceliği bir sınıf fazlasıyla yeniyor.
 /* Doğrudan geçiş: kayma / animasyon yok. */
 #kabuk.analiz-dar #analiz-panel { display: none; }
 #analiz-icerik {
-  flex: 1; min-height: 0; min-width: 0; width: auto; max-width: 1440px; margin: 0 auto;
+  /* Genişlik sınırı yok: panel ekranın tamamını kullanır. */
+  flex: 1; min-height: 0; min-width: 0; width: auto; max-width: none; margin: 0;
   display: flex; flex-direction: column; overflow: hidden;
 }
 
@@ -2517,8 +2518,9 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
 .ft-satir {
   display: grid;
   /* ÜÇ SÜTUN: DEĞİŞKEN / TİP / SÖZLÜK TANIMI. */
-  /* TİP 80px: en uzun tip adı ("kategorik") bölünmeden sığar. */
-  grid-template-columns: 26px minmax(84px, 1.3fr) 80px minmax(104px, 2.2fr);
+  /* TİP 104px ve bölünmez: en uzun tip adı ("kategorik") büyük yazı
+     ölçeğinde de tek satırda kalır. */
+  grid-template-columns: 26px minmax(84px, 1.3fr) 104px minmax(104px, 2.2fr);
   align-items: start; gap: var(--b-2);
   min-width: var(--ft-en); min-height: var(--ft-satir-h);
   padding: 3px 0;
@@ -2528,7 +2530,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
    Sınıf JS'ten geliyor; :has() kullanılmadı, Dataiku'nun gömdüğü eski
    WebView'lerde destek yok. */
 .ft-tablo.salt-okunur .ft-satir {
-  grid-template-columns: minmax(84px, 1.3fr) 80px minmax(104px, 2.2fr);
+  grid-template-columns: minmax(84px, 1.3fr) 104px minmax(104px, 2.2fr);
 }
 /* METİN KIRPILMAZ: uzun ad ve tanım alt satıra kayar. */
 .ft-hucre {
@@ -2536,6 +2538,7 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   font-size: var(--fs-govde); color: var(--metin);
 }
 .ft-satir .ft-ad { font-weight: var(--fw-kalin); }
+.ft-hucre.ft-tip { white-space: nowrap; overflow-wrap: normal; }
 .ft-sayi { text-align: right; }
 .ft-sec { display: flex; align-items: center; justify-content: center; }
 
@@ -5673,7 +5676,14 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 
 /* Veri ve Sözlük: Güncel (UPDT) / Baz seçimi başlıkta. */
 .panel-bolum-baslik.vk-baslik { display: flex; align-items: center; gap: var(--b-2); flex-wrap: wrap; }
-.vk-sec { font: inherit; font-weight: var(--fw-normal); max-width: 100%; }
+.vk-sekmeler { display: inline-flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--kenar);
+  border-radius: 999px; overflow: hidden; }
+.vk-sekme { font: inherit; font-size: var(--fs-kucuk); font-weight: var(--fw-normal); padding: 3px 14px;
+  border: 0; background: var(--yuzey); color: var(--metin-soluk); cursor: pointer; white-space: nowrap; }
+.vk-sekme + .vk-sekme { border-left: 1px solid var(--kenar); }
+.vk-sekme.secili { background: var(--kirmizi-acik); color: var(--kirmizi); font-weight: var(--fw-kalin); }
+.vk-sekme:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--kirmizi-halka); }
+.vk-not { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin: 0 0 var(--b-2); }
 .bs-sar { max-height: 420px; overflow: auto; border: 1px solid var(--kenar); border-radius: var(--r-kucuk); margin-top: var(--b-2); }
 .dg-tablo.bs-tablo { width: max-content; min-width: 100%; }
 .dg-tablo.bs-tablo td { max-width: 420px; white-space: normal; overflow-wrap: break-word; }

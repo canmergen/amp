@@ -2125,7 +2125,7 @@ const FT_KART_ALANLARI = [["konu", "Konu"], ["yon", "Yön"], ["nitelik", "Niteli
                           ["birim", "Birim"], ["diger", "Diğer"]];
 const FT_ALANLAR = [
     { alan: "feature",   baslik: "DEĞİŞKEN",      sinif: "ft-ad" },
-    { alan: "tip",       baslik: "TİP" },
+    { alan: "tip",       baslik: "TİP",           sinif: "ft-tip" },
     { alan: "tanim",     baslik: "SÖZLÜK TANIMI", sinif: "ft-tanim" }
 ];
 
@@ -5757,18 +5757,22 @@ function kaynakBasligiYaz(el, onEk, secenekler, secili, ad, degisti) {
     el.textContent = "";
     el.classList.add("vk-baslik");
     if ((secenekler || []).length > 1) {
+        /* Yan yana iki sekme: Güncel · <UPDT> | Baz · <BAZ>. */
         el.appendChild(elYap("span", "", onEk));
-        const sec = elYap("select", "vk-sec");
-        sec.setAttribute("aria-label", onEk + " seçimi");
+        const grup = elYap("div", "vk-sekmeler");
+        grup.setAttribute("role", "tablist");
+        grup.setAttribute("aria-label", onEk + " seçimi");
+        const aktif = secili === "baz" ? "baz" : "updt";
         secenekler.forEach(o => {
-            const op = document.createElement("option");
-            op.value = o.kod;
-            op.textContent = (o.kod === "baz" ? "Baz · " : "Güncel · ") + o.ad;
-            sec.appendChild(op);
+            const b = elYap("button", "vk-sekme" + (o.kod === aktif ? " secili" : ""),
+                            (o.kod === "baz" ? "Baz · " : "Güncel · ") + o.ad);
+            b.type = "button";
+            b.setAttribute("role", "tab");
+            b.setAttribute("aria-selected", o.kod === aktif ? "true" : "false");
+            b.onclick = () => { if (o.kod !== aktif) degisti(o.kod); };
+            grup.appendChild(b);
         });
-        sec.value = secili === "baz" ? "baz" : "updt";
-        sec.onchange = () => degisti(sec.value);
-        el.appendChild(sec);
+        el.appendChild(grup);
         return;
     }
     el.textContent = onEk + (ad ? " · " + ad : "");
@@ -5979,6 +5983,7 @@ function onizlemeCiz(kap, baslikEl) {
             kap.appendChild(elYap("div", "dag-not", tireSade(d.not || "Veri seti seçildikten sonra dolar.")));
             return;
         }
+        if (d.updt_not) kap.appendChild(elYap("div", "vk-not", d.updt_not));
         const satirlar = d.satirlar || [];
         /* Önceki veride olmayan dönem seçimi / sıralama kolonu düşer. */
         const donemler = (d.gruplar || []).map(g => g.donem === null ? VO_BOS_DONEM : String(g.donem));

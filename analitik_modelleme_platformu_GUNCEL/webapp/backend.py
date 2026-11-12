@@ -2555,11 +2555,16 @@ def _onizleme_secenekleri(durum):
     """Veri ve Sözlük'teki veri secimi (yeni duzen, 01.3'ten sonra):
     [{kod, ad}] - once Güncel (UPDT veri), sonra Baz (BAZ veri). Eski
     calismada ve 01.3 oncesinde bos (tek tablo gosterilir)."""
+    from fe_agent import amp as amp_mod
     kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
     baz = (durum.get("amp_ham") or {}).get("dataset") or ""
-    if not (str(kayit.get("dataset") or "").endswith("_UPDT_VERI") and baz.endswith("_BAZ_VERI")):
+    if not baz.endswith("_BAZ_VERI"):
         return []
-    return [{"kod": "updt", "ad": kayit["dataset"]}, {"kod": "baz", "ad": baz}]
+    updt = kayit.get("dataset") if str(kayit.get("dataset") or "").endswith("_UPDT_VERI") \
+        else amp_mod.updt_veri_adi(durum)
+    return [{"kod": "updt", "ad": updt,
+             "yazildi": str(kayit.get("dataset") or "").endswith("_UPDT_VERI")},
+            {"kod": "baz", "ad": baz}]
 
 
 def _onizleme_hesapla(durum, kaynak="updt"):
@@ -2617,15 +2622,21 @@ def _onizleme_hesapla(durum, kaynak="updt"):
             or akis.AMP_VERI_ADI
     else:
         kaynak_ad = str(ad or "")
+    updt_not = ""
     if baz:
         kaynak_ad = secenekler[1]["ad"]
-    elif not secenekler and str((durum.get("amp_ham") or {}).get("dataset") or "").endswith("_BAZ_VERI"):
-        # Yeni duzen, 01.3 oncesi: UPDT veri henuz yazilmadi; gorunen
-        # tablo baz verinin (tip donusumleri okumada uygulanmis) hali.
-        kaynak_ad = durum["amp_ham"]["dataset"]
+    elif secenekler:
+        kaynak_ad = secenekler[0]["ad"]
+        if not secenekler[0].get("yazildi"):
+            # Yeni duzen, 01.3 oncesi: UPDT veri henuz yazilmadi; gorunen
+            # tablo baz verinin bugune kadarki kararlarla hali.
+            updt_not = ("%s, Değişken Listesi ve Tip Kontrolü onayında yazılır. Şimdi "
+                        "görünen, baz verinin bugüne kadarki kararlarla (tip dönüşümleri, "
+                        "çıkarılan kolonlar) hâli." % kaynak_ad)
     return {"kolonlar": kolonlar, "satirlar": satirlar, "excel": excel,
             "kaynak_ad": kaynak_ad, "amp": bool(amp_mi),
             "kaynak": "baz" if baz else "updt", "secenekler": secenekler,
+            "updt_not": updt_not,
             "donem": donem or None, "gruplar": gruplar, "imza": imza,
             "toplam_satir": int(len(df)) if donem else None}
 

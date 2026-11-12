@@ -145,16 +145,20 @@ bağlantı ve model adları ve eski ekran adları (kolon adları bozulmaz).
     kolonlar hariç (eskisi gibi modelleme tablosunun kendi kolonları).
   - Eski çalışmalar (`updt_modu` False) `_ENRICHED` / `_BAZ` yoluyla
     çalışır.
-- **Model Değişkenleri > Veri ve Sözlük:** iki başlıkta seçim kutusu:
+- **Model Değişkenleri > Veri ve Sözlük:** iki başlıkta yan yana iki sekme (`vk-sekme`):
   "Güncel · <EK>_UPDT_VERI" (varsayılan) ve "Baz · <EK>_BAZ_VERI";
   sözlükte "Güncel · <EK>_UPDT_SOZLUK" (düzenlenebilir değişken listesi)
   ve "Baz · <EK>_BAZ_SOZLUK" (salt okunur, bütün satırlar, arama;
   `/sozluk_baz`). Veri seçimi `/veri_onizleme?kaynak=baz|updt`
   (`_onizleme_hesapla`, `_onizleme_secenekleri`); Excel indirme seçili
-  tabloyu indirir. Seçim yalnız yeni düzende ve 01.3'ten sonra (veri) ya
-  da baz sözlük yazıldıysa (sözlük) çıkar; 01.3 öncesinde başlıkta baz
-  veri adı yazar. Eski çalışmada başlık AMP_VERISETI / AMP_SOZLUK, seçim
+  tabloyu indirir. Sekmeler yeni düzende her zaman çıkar (sözlükte baz
+  sözlük yazıldıysa). 01.3 öncesinde Güncel sekmesi UPDT veri adını taşır
+  ve tablonun üstünde not yazar: UPDT veri 01.3 onayında yazılır, şimdi
+  görünen baz verinin tip dönüşümleri ve çıkarılan kolonlarla hali
+  (`updt_not`). Eski çalışmada başlık AMP_VERISETI / AMP_SOZLUK, sekme
   yok. Ön yüz durumu `VK` (`app.js`).
+- Analiz paneli (`#analiz-icerik`) genişlik sınırı yok, ekranın tamamını
+  kullanır. Sözlük listesinde TİP sütunu 104 px ve bölünmez (`ft-tip`).
 - Henüz taşınmayanlar (Parça 3): 04/05 tabloları (`_SECIM`, `_KATALOG`),
   04/05'in `_ENRICHED` yedek okuması, `MODELLEME_LINEAGE`,
   `uretim_kodu.py`'nin kaynak ve hedefi.
