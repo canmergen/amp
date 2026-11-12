@@ -145,6 +145,16 @@ bağlantı ve model adları ve eski ekran adları (kolon adları bozulmaz).
     kolonlar hariç (eskisi gibi modelleme tablosunun kendi kolonları).
   - Eski çalışmalar (`updt_modu` False) `_ENRICHED` / `_BAZ` yoluyla
     çalışır.
+- **Model Değişkenleri > Veri ve Sözlük:** iki başlıkta seçim kutusu:
+  "Güncel · <EK>_UPDT_VERI" (varsayılan) ve "Baz · <EK>_BAZ_VERI";
+  sözlükte "Güncel · <EK>_UPDT_SOZLUK" (düzenlenebilir değişken listesi)
+  ve "Baz · <EK>_BAZ_SOZLUK" (salt okunur, bütün satırlar, arama;
+  `/sozluk_baz`). Veri seçimi `/veri_onizleme?kaynak=baz|updt`
+  (`_onizleme_hesapla`, `_onizleme_secenekleri`); Excel indirme seçili
+  tabloyu indirir. Seçim yalnız yeni düzende ve 01.3'ten sonra (veri) ya
+  da baz sözlük yazıldıysa (sözlük) çıkar; 01.3 öncesinde başlıkta baz
+  veri adı yazar. Eski çalışmada başlık AMP_VERISETI / AMP_SOZLUK, seçim
+  yok. Ön yüz durumu `VK` (`app.js`).
 - Henüz taşınmayanlar (Parça 3): 04/05 tabloları (`_SECIM`, `_KATALOG`),
   04/05'in `_ENRICHED` yedek okuması, `MODELLEME_LINEAGE`,
   `uretim_kodu.py`'nin kaynak ve hedefi.

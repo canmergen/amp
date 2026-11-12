@@ -5670,3 +5670,10 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .dg-acik-kullan-metin:hover { color: var(--kirmizi); text-decoration-color: var(--kirmizi); }
 .dg-acik-kullan-metin:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--kirmizi-halka); border-radius: 3px; }
 .dg-acik-kullan { padding: 1px 8px; }
+
+/* Veri ve Sözlük: Güncel (UPDT) / Baz seçimi başlıkta. */
+.panel-bolum-baslik.vk-baslik { display: flex; align-items: center; gap: var(--b-2); flex-wrap: wrap; }
+.vk-sec { font: inherit; font-weight: var(--fw-normal); max-width: 100%; }
+.bs-sar { max-height: 420px; overflow: auto; border: 1px solid var(--kenar); border-radius: var(--r-kucuk); margin-top: var(--b-2); }
+.dg-tablo.bs-tablo { width: max-content; min-width: 100%; }
+.dg-tablo.bs-tablo td { max-width: 420px; white-space: normal; overflow-wrap: break-word; }

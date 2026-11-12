@@ -1265,6 +1265,8 @@ def feature_tablo(durum):
         # "Köken" satirinda yaziyor.
         "sozluk_kaynak": (_platform_adlari(durum)[1]
                           if sozluk_calisma.sozluk_adi(durum) else None),
+        # Baz sozluk (yeni duzen): Veri ve Sözlük'te Güncel / Baz secimi.
+        "sozluk_baz": _platform_adlari(durum)[3],
     }
 
 

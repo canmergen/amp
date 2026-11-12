@@ -2551,15 +2551,32 @@ def _onizleme_excel_degeri(v):
     return _onizleme_degeri(v)
 
 
-def _onizleme_hesapla(durum):
+def _onizleme_secenekleri(durum):
+    """Veri ve Sözlük'teki veri secimi (yeni duzen, 01.3'ten sonra):
+    [{kod, ad}] - once Güncel (UPDT veri), sonra Baz (BAZ veri). Eski
+    calismada ve 01.3 oncesinde bos (tek tablo gosterilir)."""
+    kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+    baz = (durum.get("amp_ham") or {}).get("dataset") or ""
+    if not (str(kayit.get("dataset") or "").endswith("_UPDT_VERI") and baz.endswith("_BAZ_VERI")):
+        return []
+    return [{"kod": "updt", "ad": kayit["dataset"]}, {"kod": "baz", "ad": baz}]
+
+
+def _onizleme_hesapla(durum, kaynak="updt"):
     """{kolonlar, satirlar (ekran metni), excel (tipli), donem, gruplar,
-    imza}. Veri ve sozluge yazmaz; yalniz okur."""
+    imza}. Veri ve sozluge yazmaz; yalniz okur. kaynak="baz": BAZ veri
+    (secilen tablonun birebir kopyasi; yeni duzende)."""
     import pandas as pd
     donem = str((durum.get("meta") or {}).get("donem") or "")
-    df = akis.modelleme_df(durum, limit=-1 if donem else ONIZLEME_SATIR)
+    secenekler = _onizleme_secenekleri(durum)
+    baz = kaynak == "baz" and len(secenekler) > 1
+    if baz:
+        df = akis_durum._df_oku(secenekler[1]["ad"], limit=-1 if donem else ONIZLEME_SATIR)
+    else:
+        df = akis.modelleme_df(durum, limit=-1 if donem else ONIZLEME_SATIR)
     # 01.2.3.1'de veri setinden cikarilan kolonlar gosterilmez (AMP_VERISETI
-    # yazilmadan once okunan tam kopyada da).
-    cikan = akis_durum.cikarilan_kolonlar(durum)
+    # yazilmadan once okunan tam kopyada da). Baz veri oldugu gibi.
+    cikan = set() if baz else akis_durum.cikarilan_kolonlar(durum)
     if cikan:
         df = df[[c for c in df.columns if str(c) not in cikan]]
     kolonlar = [str(c) for c in df.columns]
@@ -2586,7 +2603,7 @@ def _onizleme_hesapla(durum):
     hamlar = list(goster.itertuples(index=False, name=None))
     satirlar = [[_onizleme_degeri(v) for v in r] for r in hamlar]
     excel = [[_onizleme_excel_degeri(v) for v in r] for r in hamlar]
-    imza = hashlib.md5(json.dumps([kolonlar, satirlar], ensure_ascii=False)
+    imza = hashlib.md5(json.dumps([kolonlar, satirlar, kaynak], ensure_ascii=False)
                        .encode("utf-8")).hexdigest()
     # Gosterilen tablonun adi: teyitten sonra AMP_VERISETI (son hal),
     # oncesinde kullanicinin sectigi veri seti.
@@ -2600,8 +2617,15 @@ def _onizleme_hesapla(durum):
             or akis.AMP_VERI_ADI
     else:
         kaynak_ad = str(ad or "")
+    if baz:
+        kaynak_ad = secenekler[1]["ad"]
+    elif not secenekler and str((durum.get("amp_ham") or {}).get("dataset") or "").endswith("_BAZ_VERI"):
+        # Yeni duzen, 01.3 oncesi: UPDT veri henuz yazilmadi; gorunen
+        # tablo baz verinin (tip donusumleri okumada uygulanmis) hali.
+        kaynak_ad = durum["amp_ham"]["dataset"]
     return {"kolonlar": kolonlar, "satirlar": satirlar, "excel": excel,
             "kaynak_ad": kaynak_ad, "amp": bool(amp_mi),
+            "kaynak": "baz" if baz else "updt", "secenekler": secenekler,
             "donem": donem or None, "gruplar": gruplar, "imza": imza,
             "toplam_satir": int(len(df)) if donem else None}
 
@@ -2614,9 +2638,10 @@ def veri_onizleme_endpoint():
         if not durum.get("veri_seti"):
             return jsonify({"tamam": True, "kolonlar": [], "satirlar": [],
                             "not": "Veri seti seçildikten sonra dolar."})
-        sonuc = _onizleme_hesapla(durum)
+        kaynak = "baz" if request.args.get("kaynak") == "baz" else "updt"
+        sonuc = _onizleme_hesapla(durum, kaynak)
         with _ONIZLEME_KILIT:
-            _ONIZLEME_ONBELLEK[anahtar] = sonuc
+            _ONIZLEME_ONBELLEK[(anahtar, kaynak)] = sonuc
         govde = {k: v for k, v in sonuc.items() if k != "excel"}
         govde["tamam"] = True
         return jsonify(govde)
@@ -2624,6 +2649,28 @@ def veri_onizleme_endpoint():
         return jsonify({"tamam": False, "hata": str(e)})
     except Exception as e:
         return jsonify(_hata_govdesi("veri_onizleme", e, "Önizleme okunamadı."))
+
+
+@app.route("/sozluk_baz")
+def sozluk_baz_endpoint():
+    """Baz sozluk (<EK>_BAZ_SOZLUK): secilen sozlugun birebir kopyasi,
+    butun satirlariyla, salt okunur. {kolonlar, satirlar, ad}."""
+    try:
+        anahtar = _oturum_anahtari(_temiz(request.args.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        ad = durum.get("baz_sozluk")
+        if not ad:
+            return jsonify({"tamam": True, "kolonlar": [], "satirlar": [], "ad": "",
+                            "not": "Baz sözlük sözlük seçildikten sonra dolar."})
+        df = akis_durum._df_oku(ad)
+        satirlar = [[_onizleme_degeri(v) for v in r]
+                    for r in df.itertuples(index=False, name=None)]
+        return jsonify({"tamam": True, "ad": ad, "kolonlar": [str(c) for c in df.columns],
+                        "satirlar": satirlar})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("sozluk_baz", e, "Baz sözlük okunamadı."))
 
 
 @app.route("/veri_onizleme_excel", methods=["POST"])
@@ -2637,13 +2684,14 @@ def veri_onizleme_excel_endpoint():
     try:
         istek = request.get_json(force=True) or {}
         anahtar = _oturum_anahtari(_calisma_id(istek))
+        kaynak = "baz" if istek.get("kaynak") == "baz" else "updt"
         with _ONIZLEME_KILIT:
-            sonuc = _ONIZLEME_ONBELLEK.get(anahtar)
+            sonuc = _ONIZLEME_ONBELLEK.get((anahtar, kaynak))
         if not sonuc or sonuc.get("imza") != istek.get("imza"):
             durum = _durum_al(anahtar)
-            sonuc = _onizleme_hesapla(durum)
+            sonuc = _onizleme_hesapla(durum, kaynak)
             with _ONIZLEME_KILIT:
-                _ONIZLEME_ONBELLEK[anahtar] = sonuc
+                _ONIZLEME_ONBELLEK[(anahtar, kaynak)] = sonuc
             if sonuc.get("imza") != istek.get("imza"):
                 return Response(
                     "Veri önizlemesi ekranda gördüğünüzden farklı (veri "

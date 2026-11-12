@@ -4830,16 +4830,25 @@ function analizCiz(tab) {
        ilerledikçe son hâl). */
     if (tab === "degisken" && DG.alt === "veri") {
         const o = ANALIZ_VERI.ozet;
-        const veriBaslik = elYap("div", "panel-bolum-baslik",
-            "Veri Seti" + (ONIZLEME.veri && ONIZLEME.veri.kaynak_ad
-                           ? " · " + ONIZLEME.veri.kaynak_ad : ""));
+        const veriBaslik = elYap("div", "panel-bolum-baslik");
+        const ov = ONIZLEME.veri;
+        kaynakBasligiYaz(veriBaslik, "Veri Seti", ov ? ov.secenekler : [], VK.veri,
+                         ov ? ov.kaynak_ad : "", k => { VK.veri = k; analizCiz("degisken"); });
         analizGovde.appendChild(veriBaslik);
         guncellemeIzle("veri_seti", veriBaslik);
         const onizKap = elYap("div", "iskele-kart vo-kart");
         analizGovde.appendChild(onizKap);
-        const sk = o && o.feature_tablo && o.feature_tablo.sozluk_kaynak;
-        panelBolumBasligi("Sözlük" + (sk ? " · " + sk : ""), "sozluk");
-        if (o && o.feature_tablo) featureTabloCiz(ftSaltOku(o.feature_tablo));
+        const ft = o && o.feature_tablo;
+        const sk = ft && ft.sozluk_kaynak;
+        const sozBaslik = panelBolumBasligi("", "sozluk");
+        const sozSec = ft && ft.sozluk_baz
+            ? [{ kod: "updt", ad: sk }, { kod: "baz", ad: ft.sozluk_baz }] : [];
+        if (!sozSec.length) VK.sozluk = "updt";
+        kaynakBasligiYaz(sozBaslik, "Sözlük", sozSec, VK.sozluk,
+                         VK.sozluk === "baz" ? ft.sozluk_baz : sk,
+                         k => { VK.sozluk = k; analizCiz("degisken"); });
+        if (VK.sozluk === "baz" && sozSec.length) bazSozlukCiz(analizGovde);
+        else if (ft) featureTabloCiz(ftSaltOku(ft));
         else analizGovde.appendChild(elYap("div", "set-not",
             "Sözlük listesi veri seti seçildikten sonra burada görünür."));
         onizlemeCiz(onizKap, veriBaslik);
@@ -5735,7 +5744,102 @@ function dagilimGovdeCiz(govde, d) {
    yenilenince sıfırlanır. Arama/süzme/sıralama yalnız ekranı daraltır,
    veriye dokunmaz. */
 const ONIZLEME = { veri: null, istek: 0 };
-function onizlemeSifirla() { ONIZLEME.veri = null; ONIZLEME.istek++; }
+function onizlemeSifirla() { ONIZLEME.veri = null; ONIZLEME.istek++; BAZ_SOZLUK.veri = null; }
+
+/* VERİ VE SÖZLÜK: hangi tablo gösteriliyor. "updt": güncel hâl (varsayılan),
+   "baz": seçimdeki birebir kopya. Seçenek yalnız yeni düzende (BAZ / UPDT)
+   ve 01.3'ten sonra (veri) ya da baz sözlük yazıldıysa (sözlük) çıkar. */
+const VK = { veri: "updt", sozluk: "updt" };
+
+/* Başlık: "Veri Seti · AD" ya da seçenek varsa "Veri Seti" + seçim kutusu
+   (Güncel · AD / Baz · AD). */
+function kaynakBasligiYaz(el, onEk, secenekler, secili, ad, degisti) {
+    el.textContent = "";
+    el.classList.add("vk-baslik");
+    if ((secenekler || []).length > 1) {
+        el.appendChild(elYap("span", "", onEk));
+        const sec = elYap("select", "vk-sec");
+        sec.setAttribute("aria-label", onEk + " seçimi");
+        secenekler.forEach(o => {
+            const op = document.createElement("option");
+            op.value = o.kod;
+            op.textContent = (o.kod === "baz" ? "Baz · " : "Güncel · ") + o.ad;
+            sec.appendChild(op);
+        });
+        sec.value = secili === "baz" ? "baz" : "updt";
+        sec.onchange = () => degisti(sec.value);
+        el.appendChild(sec);
+        return;
+    }
+    el.textContent = onEk + (ad ? " · " + ad : "");
+}
+
+/* Baz sözlük: seçilen sözlüğün birebir kopyası, salt okunur; arama ile. */
+const BAZ_SOZLUK = { veri: null, istek: 0 };
+function bazSozlukCiz(govde) {
+    const kap = elYap("div", "iskele-kart vo-kart bs-kart");
+    govde.appendChild(kap);
+    const ciz = d => {
+        kap.textContent = "";
+        if (!d || d.hata || d.tamam === false) {
+            kap.appendChild(elYap("div", "dag-not dag-hata",
+                tireSade((d && (d.hata || d.metin)) || "Baz sözlük okunamadı.")));
+            return;
+        }
+        const kol = d.kolonlar || [], satirlar = d.satirlar || [];
+        if (!kol.length) {
+            kap.appendChild(elYap("div", "dag-not", tireSade(d.not || "Baz sözlük boş.")));
+            return;
+        }
+        const ust = elYap("div", "ft-ust");
+        const say = elYap("div", "ft-sayac");
+        ust.appendChild(say);
+        kap.appendChild(ust);
+        const ara = document.createElement("input");
+        ara.type = "search";
+        ara.className = "ft-ara";
+        ara.placeholder = "Değişken adı veya tanımda ara";
+        kap.appendChild(ara);
+        const sar = elYap("div", "ft-sar bs-sar");
+        kap.appendChild(sar);
+        const tabloCiz = () => {
+            const q = ara.value.trim().toLocaleLowerCase("tr");
+            const gor = q ? satirlar.filter(r => r.some(v => v !== null &&
+                String(v).toLocaleLowerCase("tr").indexOf(q) !== -1)) : satirlar;
+            say.textContent = ftBinlik(gor.length) + " / " + ftBinlik(satirlar.length) + " satır · " + d.ad;
+            sar.textContent = "";
+            const t = elYap("table", "dg-tablo bs-tablo");
+            const th = elYap("tr");
+            kol.forEach(k => th.appendChild(elYap("th", "", k)));
+            const thead = elYap("thead"); thead.appendChild(th); t.appendChild(thead);
+            const tb = elYap("tbody");
+            gor.forEach(r => {
+                const tr = elYap("tr");
+                kol.forEach((_, i) => {
+                    const v = r[i] === undefined ? null : r[i];
+                    tr.appendChild(elYap("td", v === null ? "vo-bos" : "", v === null ? BOS_SIMGE : v));
+                });
+                tb.appendChild(tr);
+            });
+            t.appendChild(tb);
+            sar.appendChild(t);
+            if (!gor.length) sar.appendChild(elYap("div", "ft-bos", "Aramayla eşleşen satır yok."));
+        };
+        ara.addEventListener("input", tabloCiz);
+        tabloCiz();
+    };
+    if (BAZ_SOZLUK.veri) { ciz(BAZ_SOZLUK.veri); return; }
+    kap.appendChild(elYap("div", "dag-not", "Baz sözlük yükleniyor"));
+    const istek = ++BAZ_SOZLUK.istek;
+    fetch(getWebAppBackendUrl("sozluk_baz") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+        .then(r => r.json())
+        .then(d => {
+            if (istek !== BAZ_SOZLUK.istek) return;
+            if (d && d.tamam !== false && !d.hata) BAZ_SOZLUK.veri = d;
+            if (kap.isConnected) ciz(d);
+        })
+        .catch(e => { if (kap.isConnected) ciz({ hata: "Baz sözlük okunamadı: " + e }); });
+}
 
 /* Süzgeç durumu çizimler arasında korunur (FT ile aynı mantık). */
 const VO = { arama: "", tip: "", donem: "", kolSira: "", satirKol: null, yon: 1,
@@ -5862,7 +5966,8 @@ function voAdayDegerler(d, k) {
 function onizlemeCiz(kap, baslikEl) {
     const ciz = d => {
         if (baslikEl && d && d.kaynak_ad)
-            baslikEl.textContent = "Veri Seti · " + d.kaynak_ad;
+            kaynakBasligiYaz(baslikEl, "Veri Seti", d.secenekler, VK.veri, d.kaynak_ad,
+                             k => { VK.veri = k; analizCiz("degisken"); });
         kap.textContent = "";
         if (!d || d.hata || d.tamam === false) {
             kap.appendChild(elYap("div", "dag-not dag-hata",
@@ -5894,6 +5999,7 @@ function onizlemeCiz(kap, baslikEl) {
         const excel = excelSeridiYap("onizleme", "Excel İndir", "",
             () => ({
                 imza: d.imza,
+                kaynak: d.kaynak || "updt",
                 kolonlar: suz.kolIdx.map(i => kol[i]),
                 satirlar: [].concat.apply([], suz.gruplar.map(gr => gr.satirlar))
             }));
@@ -6057,10 +6163,12 @@ function onizlemeCiz(kap, baslikEl) {
         }
         tabloCiz();
     };
-    if (ONIZLEME.veri) { ciz(ONIZLEME.veri); return; }
+    if (ONIZLEME.veri && (ONIZLEME.veri.kaynak || "updt") === (VK.veri === "baz" ? "baz" : "updt")
+        || (ONIZLEME.veri && !(ONIZLEME.veri.secenekler || []).length)) { ciz(ONIZLEME.veri); return; }
     kap.appendChild(elYap("div", "dag-not", "Önizleme yükleniyor"));
     const istek = ++ONIZLEME.istek;
-    fetch(getWebAppBackendUrl("veri_onizleme") + "?oturum_id=" + encodeURIComponent(OTURUM_ID))
+    fetch(getWebAppBackendUrl("veri_onizleme") + "?oturum_id=" + encodeURIComponent(OTURUM_ID)
+          + "&kaynak=" + encodeURIComponent(VK.veri))
         .then(r => r.json())
         .then(d => {
             if (istek !== ONIZLEME.istek) return;
