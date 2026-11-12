@@ -501,32 +501,37 @@ tanıtır; sayfalar sol bardan açılır.
   gelmez). Değerler onaylanana kadar çalışmaya kaydedilmez; kullanıcı
   her alanı değiştirebilir ya da boşaltabilir. B'de baz veri seti
   platformun birleştirme çıktısı olduğu için önceki rol gelmez.
-- **01.2.2 Kolon Rolleri:** ilk seçim model tipi (Classification,
-  Regression, Time Series Forecasting, Clustering). Şu an seçilebilen tek
-  tip Classification olduğu için seçili gelir. Hedef listesi tipe göre
-  değişir: Classification'da yalnız 0 ve 1 değeri alan kolonlar;
-  Regression ve Time Series Forecasting'de ikiden fazla farklı değer alan
-  tam ya da ondalıklı sayı kolonları (tam sayı tipindeki kimlik adayları
-  hariç); Clustering'de hedef seçilmez. Listeler profilden (tam tablo)
-  çıkar. Sonraki adımlar (tek değişken analizi, bölme, model ve başarı
-  ölçütleri) şu an yalnız Classification için hazır: öbür üç tip kapalı
+- **01.2.2 Kolon Rolleri:** ilk seçim model tipi (Sınıflandırma
+  (Classification), Regresyon (Regression), Zaman Serisi Tahmini (Time
+  Series Forecasting), Kümeleme (Clustering)). Şu an seçilebilen tek tip
+  Sınıflandırma olduğu için seçili gelir. Hedef listesi tipe göre
+  değişir: Sınıflandırmada yalnız 0 ve 1 değeri alan kolonlar; Regresyon
+  ve Zaman Serisi Tahmininde ikiden fazla farklı değer alan tam ya da
+  ondalıklı sayı kolonları (tam sayı tipindeki kimlik adayları hariç);
+  Kümelemede hedef seçilmez. Listeler profilden (tam tablo) çıkar.
+  Sonraki adımlar (tek değişken analizi, bölme, model ve başarı
+  ölçütleri) şu an yalnız Sınıflandırma için hazır: öbür üç tip kapalı
   (soluk, tıklanmaz, açıklamasının altında "Şu An Kapalı"), yazarak
   girilse de kaydedilmez. Seçim `durum["problem"]`de durur.
-  Her kartta adın altında Türkçe karşılığı (Sınıflandırma, Regresyon,
-  Zaman Serisi Tahmini, Kümeleme) ve sağ üst köşede "i" var: tip nedir,
-  ne için kullanılır ve hiç bilmeyenin anlayacağı bir örnek. "i" kartın
-  dışında durduğu için kapalı tiplerde de solmaz ve açılır. Metinler
-  `akis_faz01.PROBLEM_TIPLERI`'nde, Türkçe adlar
-  `akis_metin.MODEL_TIPI_TURKCE`'de.
+  Kartın başlığı önce Türkçe ad, parantezde İngilizcesi; sağ üst köşede
+  "i" var: tip nedir, ne için kullanılır ve hiç bilmeyenin anlayacağı bir
+  örnek. "i" kartın dışında durduğu için kapalı tiplerde de solmaz ve
+  açılır. Metinler `akis_faz01.PROBLEM_TIPLERI`'nde.
 - **Model tipi rollerin üstünde yazılır.** Hedef, kimlik ve dönem
   kolonunun yazıldığı her yerde ilk satır model tipidir: Özet sayfasının
   Modelleme Tanımları bölümü, sağ paneldeki Veri Seti kartı, Arşiv'deki
   çalışma özeti, model dokümanı (genel bilgiler, model özeti ve hedef
-  bölümü), senaryo konfig JSON'u (`model_tipi`, ilk anahtar), Değişken
-  Kataloğu (`MODEL_TIPI` kolonu, `HEDEF`'in solunda) ve çalışma durumu
-  JSON'u (`problem`, `meta`'nın hemen üstünde). Ad tek kaynaktan gelir
-  (`akis_metin.MODEL_TIPI_ADI`). Model tipi seçimi gelmeden önce hedefi
-  tanımlanmış çalışmalar Classification sayılır.
+  bölümü), senaryo konfig JSON'u (`model_tipi`, ilk anahtar; kod:
+  `classification`), Değişken Kataloğu (`MODEL_TIPI` kolonu, `HEDEF`'in
+  solunda) ve çalışma durumu JSON'u (`problem`, `meta`'nın hemen
+  üstünde). Ekrandaki ad tek kaynaktan gelir
+  (`akis_metin.MODEL_TIPI_GORUNUR`, `model_tipi_adi`): "Sınıflandırma
+  (Classification)". İngilizce ad (`MODEL_TIPI_ADI`) yazarak girilen
+  tipi tanımak, eski arşiv özetlerini okumak (`veri_gecmisi._TIP_KODU`
+  ikisini de tanır) ve Değişken Kataloğu'nun `MODEL_TIPI` kolonu için
+  kalır (tablodaki değer eski satırlarla aynı: "Classification"). Model
+  tipi seçimi gelmeden önce hedefi tanımlanmış çalışmalar Sınıflandırma
+  sayılır.
 - **01.2.3 Eksik Sözlük Tanımları:** sözlükte tanımı olmayan kolonlar
   listelenir; işaretlenip açıklaması yazılan kolon sözlüğün çalışma
   kopyasına eklenir. İşaretlenmeyen kolon tanımsız kalır ve

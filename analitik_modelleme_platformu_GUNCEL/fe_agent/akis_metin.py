@@ -214,6 +214,12 @@ MODEL_TIPI_TURKCE = {
     "time_series": "Zaman Serisi Tahmini",
     "clustering": "Kümeleme",
 }
+# Ekranda, ozette ve dokumanda gorunen ad: once Turkcesi, parantezde
+# Ingilizcesi ("Sınıflandırma (Classification)"). MODEL_TIPI_ADI
+# (Ingilizce) yazarak girilen tipi tanimak ve eski kayitlari okumak icin
+# kalir.
+MODEL_TIPI_GORUNUR = {k: "%s (%s)" % (MODEL_TIPI_TURKCE[k], MODEL_TIPI_ADI[k])
+                      for k in MODEL_TIPI_ADI}
 
 
 def model_tipi(durum):
@@ -227,8 +233,9 @@ def model_tipi(durum):
 
 
 def model_tipi_adi(durum):
-    """Ekranda ve kayitlarda gorunen ad: "Classification"; secim yoksa bos."""
-    return MODEL_TIPI_ADI.get(model_tipi(durum), "")
+    """Ekranda ve kayitlarda gorunen ad: "Sınıflandırma (Classification)";
+    secim yoksa bos."""
+    return MODEL_TIPI_GORUNUR.get(model_tipi(durum), "")
 
 # norm (kucuk harf, Turkce karaktersiz) uzerinde calisir.
 # "onceki adim\w*": akisin kendi onerdigi "önceki adıma dön" cumlesi

@@ -14,7 +14,7 @@ import pandas as pd
 
 from fe_agent import tablo_io
 from fe_agent.akis_durum import _folder
-from fe_agent.akis_metin import model_tipi_adi
+from fe_agent.akis_metin import MODEL_TIPI_ADI, model_tipi
 
 SUTUNLAR = ["KOSU_ID", "ZAMAN", "FEATURE", "KAYNAK", "IFADE", "KAYNAK_KOLONLAR",
             "GEREKCE", "PYTHON_KODU", "KALITE", "SECIM", "SECIM_GEREKCE", "MI",
@@ -144,7 +144,9 @@ def olustur(durum, oturum_id=None):
             # Tum modelin delta'si — degisken bazli katki DEGIL.
             "MODEL_TOPLAM_DELTA_AUC": delta,
             "VERI_SETI": durum.get("veri_seti"),
-            "MODEL_TIPI": model_tipi_adi(durum),
+            # Tablo degeri sabit kalir (eski satirlarla ayni: "Classification");
+            # ekrandaki Turkce ad (model_tipi_adi) burada kullanilmaz.
+            "MODEL_TIPI": MODEL_TIPI_ADI.get(model_tipi(durum), ""),
             "HEDEF": (durum.get("meta") or {}).get("target"),
             "TARIH": tarih,
         })

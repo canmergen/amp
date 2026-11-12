@@ -40,7 +40,7 @@ import time
 from concurrent import futures
 
 from fe_agent.akis_durum import _folder
-from fe_agent.akis_metin import MODEL_TIPI_ADI
+from fe_agent.akis_metin import MODEL_TIPI_ADI, MODEL_TIPI_GORUNUR
 
 DOSYA = "/VERI_SETI_GECMISI.json"
 ROLLER = ("problem", "target", "id", "donem", "segment")
@@ -53,7 +53,10 @@ _V_OZET = re.compile(r"^/?(v\d{1,6})/ozet\.json$")
 # Arsiv ozetindeki etiketler (backend._calisma_secimleri).
 _OZET_ROL = {"Hedef Değişken": "target", "Kimlik Kolonu": "id",
              "Dönem Kolonu": "donem"}
-_TIP_KODU = {ad: kod for kod, ad in MODEL_TIPI_ADI.items()}
+# Arsiv ozetindeki "Model Tipi": yeni kayitta "Sınıflandırma
+# (Classification)", eski kayitta "Classification"; ikisi de okunur.
+_TIP_KODU = dict({ad: kod for kod, ad in MODEL_TIPI_ADI.items()},
+                 **{ad: kod for kod, ad in MODEL_TIPI_GORUNUR.items()})
 
 
 def adlara_ayir(metin):

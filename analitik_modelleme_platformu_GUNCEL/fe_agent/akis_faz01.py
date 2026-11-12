@@ -36,7 +36,7 @@ from fe_agent import kontrol_gecmisi
 
 from fe_agent.akis_metin import (
     ACIK_MODLAR, ADIM_ADI, KARSILAMA, MOD_ADLARI, MOD_KALIP, MOD_SECENEKLERI,
-    MODEL_TIPI_ADI, MODEL_TIPI_TURKCE, model_tipi,
+    MODEL_TIPI_GORUNUR, model_tipi,
     MOD_SIRA, KONTROL_SECENEKLERI, KONTROL_SORUSU, KONTROL_ONCEKI_BASLIK,
     KONTROL_SORUSU_ONCEKI, KONTROL_ADIM_ADIM_BASLIK)
 from fe_agent.akis_durum import (
@@ -8111,12 +8111,11 @@ PROBLEM_HAZIR = {"classification"}
 # reddedilir.
 PROBLEM_HAZIR_DEGIL = (
     "Sonraki adımlar (tek değişken analizi, bölme, model ve başarı "
-    "ölçütleri) şu an yalnız Classification için hazır.")
+    "ölçütleri) şu an yalnız Sınıflandırma (Classification) için hazır.")
 # "bilgi": kartin kosesindeki "i"de acilan metin. Hic bilmeyen icin
 # yazildi: tip nedir, ne icin kullanilir, ornek. Kapali tipte de okunur.
 PROBLEM_TIPLERI = [
-    {"deger": "classification", "baslik": MODEL_TIPI_ADI["classification"],
-     "turkce": MODEL_TIPI_TURKCE["classification"],
+    {"deger": "classification", "baslik": MODEL_TIPI_GORUNUR["classification"],
      "bilgi": "**Nedir?** Her kaydın iki gruptan hangisine gireceğini tahmin "
              "eder. Hedef değişken yalnız 0 ve 1 değerini alır: 1 olay oldu, 0 "
              "olmadı.\n\n"
@@ -8134,8 +8133,7 @@ PROBLEM_TIPLERI = [
      "hedef_ipucu": "0 ve 1 değeri alan kolonlar listelenir",
      "hedef_yok": "Yalnızca 0 ve 1 değeri alan kolon bulunamadı; tüm "
                   "kolonlar listeleniyor."},
-    {"deger": "regression", "baslik": MODEL_TIPI_ADI["regression"],
-     "turkce": MODEL_TIPI_TURKCE["regression"],
+    {"deger": "regression", "baslik": MODEL_TIPI_GORUNUR["regression"],
      "bilgi": "**Nedir?** Bir sayının kendisini tahmin eder. Hedef değişken bir "
              "miktardır: tutar, adet, süre gibi; iki değerle sınırlı değildir.\n\n"
              "**Ne için kullanılır?** Cevabı «olur mu, olmaz mı» değil «ne "
@@ -8145,13 +8143,12 @@ PROBLEM_TIPLERI = [
              "toplam harcama tutarı. Model her müşteri için bir tutar verir "
              "(örneğin 12.500 TL); bir evin satış fiyatını tahmin etmek de "
              "regresyondur.\n\n"
-             "**Şu an kapalı:** sonraki adımlar yalnız Classification için hazır.",
+             "**Şu an kapalı:** sonraki adımlar yalnız Sınıflandırma (Classification) için hazır.",
      "aciklama": "Hedef sayısaldır: bir miktarın değeri tahmin edilir.",
      "hedef_ipucu": "İkiden fazla farklı değer alan sayısal kolonlar listelenir",
      "hedef_yok": "İkiden fazla farklı değer alan sayısal kolon bulunamadı; "
                   "tüm kolonlar listeleniyor."},
-    {"deger": "time_series", "baslik": MODEL_TIPI_ADI["time_series"],
-     "turkce": MODEL_TIPI_TURKCE["time_series"],
+    {"deger": "time_series", "baslik": MODEL_TIPI_GORUNUR["time_series"],
      "bilgi": "**Nedir?** Bir değerin geçmiş dönemlerdeki seyrinden gelecek "
              "dönemlerdeki değerini tahmin eder. Veri dönemlere (gün, ay, çeyrek) "
              "göre sıralıdır; bu yüzden dönem kolonu zorunludur.\n\n"
@@ -8162,14 +8159,13 @@ PROBLEM_TIPLERI = [
              "**Örnek:** Son 36 ayın aylık mevduat hacminden önümüzdeki 6 ayın "
              "hacmini tahmin etmek; ya da her yıl aralıkta artan kart "
              "harcamasının gelecek aralıktaki tutarını öngörmek.\n\n"
-             "**Şu an kapalı:** sonraki adımlar yalnız Classification için hazır.",
+             "**Şu an kapalı:** sonraki adımlar yalnız Sınıflandırma (Classification) için hazır.",
      "aciklama": "Hedef sayısaldır ve dönemlere bağlıdır: gelecek dönemlerin "
                  "değeri tahmin edilir. Dönem kolonu gerekir.",
      "hedef_ipucu": "İkiden fazla farklı değer alan sayısal kolonlar listelenir",
      "hedef_yok": "İkiden fazla farklı değer alan sayısal kolon bulunamadı; "
                   "tüm kolonlar listeleniyor."},
-    {"deger": "clustering", "baslik": MODEL_TIPI_ADI["clustering"],
-     "turkce": MODEL_TIPI_TURKCE["clustering"],
+    {"deger": "clustering", "baslik": MODEL_TIPI_GORUNUR["clustering"],
      "bilgi": "**Nedir?** Hedef değişken yoktur. Model kayıtları birbirine "
              "benzerliklerine göre gruplara (kümelere) ayırır; gruplar önceden "
              "tanımlanmaz, veriden çıkar.\n\n"
@@ -8180,10 +8176,10 @@ PROBLEM_TIPLERI = [
              "ama az harcayanlar, seyrek ama çok harcayanlar, yalnız internetten "
              "işlem yapanlar gibi. Model grupları bulur; her grubun ne anlama "
              "geldiğini analist yorumlar.\n\n"
-             "**Şu an kapalı:** sonraki adımlar yalnız Classification için hazır.",
+             "**Şu an kapalı:** sonraki adımlar yalnız Sınıflandırma (Classification) için hazır.",
      "aciklama": "Hedef değişken yoktur: kayıtlar benzerliklerine göre "
                  "gruplara ayrılır.",
-     "hedef_ipucu": "Clustering'de hedef değişken seçilmez",
+     "hedef_ipucu": "Kümelemede hedef değişken seçilmez",
      "hedef_yok": ""},
 ]
 
@@ -8330,7 +8326,7 @@ def _tanimlar_formu(durum, meta=None):
             (_ekle(aday, m.get("target")) if t["deger"] == problem else aday)
             if aday else kolonlar)
         tipler.append({
-            "deger": t["deger"], "baslik": t["baslik"], "turkce": t["turkce"],
+            "deger": t["deger"], "baslik": t["baslik"],
             "aciklama": t["aciklama"], "bilgi": t["bilgi"],
             "hazir": t["deger"] in PROBLEM_HAZIR,
             "not": "" if t["deger"] in PROBLEM_HAZIR else PROBLEM_HAZIR_DEGIL,
@@ -8440,7 +8436,7 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
         # Kapali tip yazilarak girildi: kaydedilmez, form oldugu gibi kalir.
         _tanimlar_formu(durum, meta)
         return False, "%s şu an seçilemez. %s" % (
-            MODEL_TIPI_ADI[pm.group(1)], PROBLEM_HAZIR_DEGIL)
+            MODEL_TIPI_GORUNUR[pm.group(1)], PROBLEM_HAZIR_DEGIL)
     if pm:
         durum["problem"] = pm.group(1)
     elif re.search(r"\btarget\b", norm) and model_tipi(durum) not in PROBLEM_HAZIR:
@@ -8492,7 +8488,7 @@ def tanimlar_girdi(durum, mesaj, yeniden_sor=False):
     p = _donem_adaylarini_hazirla(durum)
     aday_kurali = [
         ("target", _hedef_adaylari(durum, problem, p), "hedef değişken",
-         "Classification'da yalnızca 0/1 değerli bir kolon olabilir"
+         "Sınıflandırmada yalnızca 0/1 değerli bir kolon olabilir"
          if problem == "classification" else
          "yalnızca ikiden fazla farklı değer alan sayısal bir kolon olabilir"),
         ("id", p.get("kimlik_adaylari"), "kimlik kolonu",
