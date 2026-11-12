@@ -170,7 +170,8 @@ def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
     bos ya da None ise negatif kontrolu uygulanmaz."""
     e = esik_birlestir(esik)
     n = len(df)
-    sonuc = {"baskin": [], "gizli_eksik": [], "sifir": [], "negatif": [], "uc": []}
+    sonuc = {"baskin": [], "gizli_eksik": [], "karisik_eksik": [], "sifir": [], "negatif": [],
+             "uc": []}
     if not n:
         return sonuc
     olculer = olculer or {}
@@ -193,9 +194,19 @@ def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
         sayim = sn.value_counts()
         en_kucuk, en_buyuk = float(sn.min()), float(sn.max())
         gizli = _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk, e["gizli"])
+        bos = int(s.isna().sum())
         if gizli:
             sonuc["gizli_eksik"].append({"kolon": kol, "deger": deger_metni(gizli[0]),
-                                         "adet": gizli[1], "pay": gizli[1] / dolu})
+                                         "adet": gizli[1], "pay": gizli[1] / dolu, "bos": bos})
+        elif bos:
+            # KARISIK EKSIK KODLAMASI: kolonda bos hucre VAR ve ayni kolonda
+            # -1, -99, 9999 gibi kopuk bir ozel kod da var. Payina bakilmaz
+            # (tek satir bile olsa): eksik bilgi iki farkli bicimde yazilmis.
+            karisik = _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk, 0.0)
+            if karisik:
+                sonuc["karisik_eksik"].append({"kolon": kol, "deger": deger_metni(karisik[0]),
+                                               "adet": karisik[1], "pay": karisik[1] / dolu,
+                                               "bos": bos})
         sifir = int(sayim.get(0, 0) or 0)
         if not baskin and sifir / dolu >= e["sifir"]:
             sonuc["sifir"].append({"kolon": kol, "adet": sifir, "pay": sifir / dolu})

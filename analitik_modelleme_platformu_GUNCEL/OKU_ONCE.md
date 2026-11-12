@@ -2223,6 +2223,14 @@ tanıtır; sayfalar sol bardan açılır.
     - Uç Değer: "Olduğu gibi bırak" (önerilen), "Uçları kırp" (sınır
       eğitim satırlarında sıfır olmayan değerlerin %99'u; seyrek kolonda
       sıfırlar sınırı düşürmesin diye).
+  - Karışık Eksik Kodlaması (`karisik_eksik`, eşiksiz): sayısal kolonda
+    hem boş hücre hem de -1, -9, -99, ... ya da 9999, 99999, ... gibi
+    kopuk bir özel kod varsa, kodun payına bakılmadan yakalanır (tek
+    satır yeter; `profil_ek.kolon_kontrolleri`, `_gizli_eksik` eşik 0
+    ile). Gizli Eksik'te yakalanan kolon burada tekrar gösterilmez; Gizli
+    Eksik bulgusu boş hücre sayısını da yazar. Seçenekler Gizli Eksik
+    ile aynı (önerilen "Kodu boş say ve bayrak üret"); gerçek negatif
+    değerli ya da boş hücresiz kolon yakalanmaz.
   - Dönemler Arası Eksik Sıçraması: `SONUC_KARAR` (Tut / Çıkar),
     `_karar_adaylari`'na girer; Çıkar denen kolon üretime girmez.
   - Sıfır Yoğunluğu: bilgi olarak kalır, işlem yapılmaz ("Bilgi için

@@ -90,17 +90,20 @@ COZUM_ACIKLAMA.update({
 # Duzeltme: kolon uretime girer, secilen duzeltme analiz tablosunda
 # uygulanir (girdi veri seti degismez). Kontrol -> secenekler, oneri.
 DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
+                    "karisik_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
                     "negatif": ["negatif_bos", "birak"],
                     "uc": ["birak", "kirp"]}
-DUZELTME_ONERI = {"gizli_eksik": "kod_bos_bayrak", "negatif": "negatif_bos", "uc": "birak"}
-DUZELTME_SIRA = ("gizli_eksik", "negatif", "uc")
+DUZELTME_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "kod_bos_bayrak",
+                  "negatif": "negatif_bos", "uc": "birak"}
+DUZELTME_SIRA = ("gizli_eksik", "karisik_eksik", "negatif", "uc")
+KOD_KONTROLLERI = ("gizli_eksik", "karisik_eksik")
 
 
 def duzeltme_ogren(kontrol, secim, x, egitim, kayit=None):
     """Secilen duzeltmenin bilgisi. gizli: {"kod"}; uc/kirp: {"sinir"}
     (egitim satirlarinda sifir olmayan dolu degerlerin %99'u)."""
     kayit = kayit or {}
-    if kontrol == "gizli_eksik":
+    if kontrol in KOD_KONTROLLERI:
         return {"kod": float(kayit.get("kod"))}
     if kontrol == "uc" and secim == "kirp":
         t = pd.to_numeric(x[egitim], errors="coerce").dropna()
@@ -117,7 +120,7 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
     if secim == "birak":
         return x, None
     sx = pd.to_numeric(x, errors="coerce")
-    if kontrol == "gizli_eksik" and "kod" in bilgi:
+    if kontrol in KOD_KONTROLLERI and "kod" in bilgi:
         kodlu = sx == float(bilgi["kod"])
         bayrak = kodlu.astype("int8") if secim == "kod_bos_bayrak" else None
         return sx.where(~kodlu), bayrak

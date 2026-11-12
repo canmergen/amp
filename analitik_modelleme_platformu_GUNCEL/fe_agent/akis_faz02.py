@@ -337,7 +337,7 @@ def cozum_kolonlari_ekle(durum, df):
 # uretime girer; secilen duzeltme analiz tablosunda uygulanir (girdi veri
 # seti degismez). Gizli eksikte istenirse <KOL>_KOD bayragi uretilir.
 # ===========================================================================
-DUZELTME_KONTROLLERI = ("gizli_eksik", "negatif", "uc")
+DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "negatif", "uc")
 
 
 def _teshis_kusurlu(p):
@@ -361,7 +361,7 @@ def duzeltme_onerileri(durum):
             if not k or k in kusur:
                 continue
             kayit = {}
-            if a == "gizli_eksik":
+            if a in ("gizli_eksik", "karisik_eksik"):
                 try:
                     kayit["kod"] = float(str(x.get("deger")).replace(",", "."))
                 except (TypeError, ValueError):
@@ -405,7 +405,7 @@ def _duzeltme_ogren(durum, df, tr, mevcut):
 
 
 def _duzeltme_ozeti(kontrol, secim, b):
-    if kontrol == "gizli_eksik" and "kod" in b:
+    if kontrol in ("gizli_eksik", "karisik_eksik") and "kod" in b:
         return "Kod %s boş sayılır." % _sayi_metni(b["kod"])
     if kontrol == "negatif":
         return "Negatif değerler boş sayılır."
@@ -1321,6 +1321,8 @@ def _profil_kurallari(esik=None):
                   "değer sayılır." % _yuzde_metni(e["baskin"]),
         "donem": "Kolon bazı dönemlerde tamamen boş, ya da en az %s satırı olan bir dönemde "
                  "bütün satırlarda aynı değerde." % _sayi(e["donem_min_satir"]),
+        "karisik_eksik": "Kolonda hem boş hücre hem de -1, -99, 999, 9999 gibi özel bir kod "
+                         "var. Kodun payına bakılmaz.",
         "gizli_eksik": "-1, -99, -999, 9999 gibi bir değer dolu satırların %s fazlasında "
                        "geçiyor ve kolonun geri kalan değerlerinden kopuk." % _yuzde_ekli(e["gizli"]),
         "sifir": "Dolu satırlarda sıfırın payı %s ya da üstünde. Çoğu zaman işlem yok "
@@ -1363,6 +1365,27 @@ _KONTROL_ACIKLAMA_EK = {
                  "**Örnek:** biri eski biri yeni adla gelen aynı tutar kolonu.\n\n"
                  "**Yakalanırsa:** her gruptan bir kolon kalır, diğerleri üretime girmez. Hangisinin "
                  "kalacağını dil modeli adlarına ve açıklamalarına bakıp önerir, siz seçersiniz."},
+    "karisik_eksik": {
+        "kisa": "Eksik bilgi aynı kolonda iki biçimde yazılmış: bazı satırlarda boş, bazılarında "
+                "-1, 9999 gibi bir kod.",
+        "bilgi": "**Nedir?** Sayısal kolonda boş hücre olup olmadığına ve aynı kolonda -1, -9, "
+                 "-99, -999 ya da 9999, 99999 gibi bir özel kodun geçip geçmediğine bakar. Kod, "
+                 "kolonun geri kalan değerlerinden kopuk olmalı (negatif kodda kolonda başka "
+                 "negatif değer yok; pozitif kodda geri kalan en büyük değer kodun onda birinden "
+                 "küçük).\n\n"
+                 "**Neden önemli?** Biri eksik değeri boş bırakmış, biri veriye bakmadan -1 ya da "
+                 "999 yazmış olabilir. Kod gerçek sayı gibi kullanılırsa ortalama, toplam ve "
+                 "aralıklar bozulur; aynı «bilgi yok» durumu iki farklı değer gibi görünür.\n\n"
+                 "**Örnek:** gün sayısı kolonunda 3 satır boş, 12 satırda -1 yazıyor (payı "
+                 "%0,1). Gizli Eksik kontrolünün %1 eşiğine takılmaz ama burada yakalanır.\n\n"
+                 "**Kapsam:** yalnız boş hücresi olan sayısal kolonlar. Kodun payına bakılmaz; "
+                 "tek satır bile yeterlidir. Gizli Eksik kontrolünde yakalanan kolon burada "
+                 "tekrar gösterilmez (o kontrolün bulgusunda boş hücre sayısı da yazar).\n\n"
+                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
+                 "Önerilen: kod boş sayılır ve kodun olduğu satırlar, kolon adının sonuna _KOD "
+                 "eklenmiş bir 1/0 bayrağıyla işaretlenir (iki eksik biçimi farklı anlam "
+                 "taşıyorsa bilgi kaybolmaz). Diğer seçenekler: yalnız boş saymak ya da olduğu "
+                 "gibi bırakmak."},
     "negatif": {
         "kisa": "Adet, gün, süre gibi negatif olamayacak bir ölçüde negatif değer veri hatasıdır.",
         "bilgi": "**Nedir?** Kolon kartında ölçüsü adet, sayı, gün, süre, yaş, ay ya da yıl olan "
@@ -1450,6 +1473,7 @@ PROFIL_KONTROLLERI = (
     ("baskin", "Neredeyse Sabit", SONUC_KARAR, "Neredeyse sabit"),
     ("donem", "Dönemde Boş ya da Sabit", SONUC_KARAR, "Dönemde boş ya da sabit"),
     ("gizli_eksik", "Gizli Eksik (Özel Kod)", SONUC_DUZELT, "Gizli eksik"),
+    ("karisik_eksik", "Karışık Eksik Kodlaması", SONUC_DUZELT, "Karışık eksik"),
     ("sifir", "Sıfır Yoğunluğu", SONUC_BILGI, "Sıfır yoğun"),
     ("negatif", "Beklenmeyen Negatif", SONUC_DUZELT, "Beklenmeyen negatif"),
     ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_KARAR, "Eksik sıçraması"),
@@ -1471,7 +1495,7 @@ def _ek_bulgulari(p):
     gruplarda kalmayan kolonlar diger kontrollerde gosterilmez."""
     ek = p.get("profil_ek") or {}
     kopya = set(_ayni_kopyalar(p))
-    b = {a: {} for a in ("ayni_icerik", "baskin", "donem", "gizli_eksik", "sifir",
+    b = {a: {} for a in ("ayni_icerik", "baskin", "donem", "gizli_eksik", "karisik_eksik", "sifir",
                          "negatif", "sicrama", "uc")}
     for g in ek.get("ayni_gruplar") or []:
         kalan = _ayni_kalan(p, g)
@@ -1487,8 +1511,12 @@ def _ek_bulgulari(p):
         if x.get("sabit"):
             parca.append("Tek değerli dönemler: %s" % _donem_listesi(x["sabit"]))
         b["donem"][x["kolon"]] = ". ".join(parca)
+    for x in ek.get("karisik_eksik") or []:
+        b["karisik_eksik"][x["kolon"]] = "Kod %s: %s satır (payı %s); boş hücre: %s satır" % (
+            x["deger"], _sayi(x["adet"]), _yuzde_metni(x["pay"]), _sayi(x.get("bos") or 0))
     for x in ek.get("gizli_eksik") or []:
-        b["gizli_eksik"][x["kolon"]] = "Kod %s, payı %s (%s satır)" % (
+        b["gizli_eksik"][x["kolon"]] = ("Boş hücre de var: %s satır. " % _sayi(x["bos"])
+                                        if x.get("bos") else "") + "Kod %s, payı %s (%s satır)" % (
             x["deger"], _yuzde_metni(x["pay"]), _sayi(x["adet"]))
     for x in ek.get("sifir") or []:
         b["sifir"][x["kolon"]] = "Sıfırın payı %s" % _yuzde_metni(x["pay"])
@@ -1521,7 +1549,7 @@ def _profil_ozeti(durum):
     karar_ad = profil_karar_kolonlari(durum)
     bekleyen = {k for k in karar_ad if k not in karar}
     bilgi = set()
-    for a in ("gizli_eksik", "sifir", "negatif", "uc"):
+    for a in ("gizli_eksik", "karisik_eksik", "sifir", "negatif", "uc"):
         bilgi |= {x["kolon"] for x in (ek.get(a) or [])}
     bilgi |= {k for k in karar_ad if karar.get(k) == PROFIL_KARAR_TUT}
     bilgi -= girmez | bekleyen
@@ -1560,7 +1588,8 @@ def profil_metni(durum, karar=False):
     duz = duzeltme_secimi(durum)
     n_duz = sum(len(v) for v in duz.values())
     if karar and n_duz:
-        parca.append("Gizli Eksik, Beklenmeyen Negatif ve Uç Değer kontrollerinde %s kolon "
+        parca.append("Gizli Eksik, Karışık Eksik Kodlaması, Beklenmeyen Negatif ve Uç Değer "
+                     "kontrollerinde %s kolon "
                      "için düzeltme seçin; önerilen seçili gelir. Bu kolonlar üretime girer."
                      % _sayi(n_duz))
     elif n_duz:
