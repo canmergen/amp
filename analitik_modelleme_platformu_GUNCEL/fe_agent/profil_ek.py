@@ -469,6 +469,8 @@ def yazim_kontrol(df, adaylar):
 
 
 _TARIH_METIN = re.compile(r"^\s*(\d{4})-\d{2}-\d{2}")
+# Gun.ay.yil yazilisi (31.12.2024); yil sondaki dort hane.
+_TARIH_METIN_GAY = re.compile(r"^\s*\d{2}\.\d{2}\.(\d{4})")
 # Sayi olarak yazilmis tarih (YYYYAAGG): dolu degerlerin en az bu kadari
 # gecerli bir takvim gunu olmali (8 haneli kimlik numarasi tarih sanilmasin).
 TARIH_SAYI_GECERLI = 0.99
@@ -486,7 +488,8 @@ def _sayi_tarih_gecerli(v):
 
 def tarih_turu(s):
     """Kolon tarih mi: "tip" (tarih tipinde), "metin" (dolu degerlerin
-    cogu YYYY-AA-GG), "sayi" (YYYYAAGG sekiz haneli tam sayi) ya da None."""
+    cogu YYYY-AA-GG), "metin_gay" (cogu GG.AA.YYYY), "sayi" (YYYYAAGG
+    sekiz haneli tam sayi) ya da None."""
     if pd.api.types.is_datetime64_any_dtype(s):
         return "tip"
     if pd.api.types.is_bool_dtype(s):
@@ -503,8 +506,11 @@ def tarih_turu(s):
     vc = _metin_sayimi(s)
     if not len(vc):
         return None
-    tarih = sum(1 for v in vc.index if _TARIH_METIN.match(str(v)))
-    return "metin" if tarih >= 0.8 * len(vc) else None
+    iso = sum(1 for v in vc.index if _TARIH_METIN.match(str(v)))
+    if iso >= 0.8 * len(vc):
+        return "metin"
+    gay = sum(1 for v in vc.index if _TARIH_METIN_GAY.match(str(v)))
+    return "metin_gay" if gay >= 0.8 * len(vc) else None
 
 
 def _tarih_yili(s, tur):
@@ -513,13 +519,14 @@ def _tarih_yili(s, tur):
         return s.dt.year.astype("float64")
     if tur == "sayi":
         return (pd.to_numeric(s, errors="coerce") // 10000).astype("float64")
-    return pd.to_numeric(s.astype(str).str.extract(r"^\s*(\d{4})-\d{2}-\d{2}")[0],
+    desen = _TARIH_METIN_GAY.pattern if tur == "metin_gay" else _TARIH_METIN.pattern
+    return pd.to_numeric(s.astype(str).str.extract(desen)[0],
                          errors="coerce").where(s.notna())
 
 
 def tarih_serisi(s, tur=None):
-    """Kolonu tarih serisine cevirir (tip, metin YYYY-AA-GG, sayi
-    YYYYAAGG); tarih degilse None. Ozel tarih kodlari (yil 1901'den once
+    """Kolonu tarih serisine cevirir (tip, metin YYYY-AA-GG ya da
+    GG.AA.YYYY, sayi YYYYAAGG); tarih degilse None. Ozel tarih kodlari (yil 1901'den once
     ya da 2200'den sonra) bos (NaT) doner."""
     tur = tur or tarih_turu(s)
     if tur is None:
@@ -537,7 +544,8 @@ def tarih_serisi(s, tur=None):
         t = pd.to_datetime(metin, format="%Y%m%d", errors="coerce").reindex(s.index)
     else:
         t = pd.to_datetime(s.where(s.notna()).astype(str).str.strip().str[:10],
-                           format="%Y-%m-%d", errors="coerce")
+                           format="%d.%m.%Y" if tur == "metin_gay" else "%Y-%m-%d",
+                           errors="coerce")
     yil = _tarih_yili(s, tur)
     kod = (yil < TARIH_YIL_ALT) | (yil > TARIH_YIL_UST)
     return pd.to_datetime(t, errors="coerce").where(~kod.fillna(False))

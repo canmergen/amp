@@ -2378,12 +2378,14 @@ tanıtır; sayfalar sol bardan açılır.
   (eşitlik gerekçede yazar). Kartta üye satırında "Hedefi ayırma gücü
   (AUC, eğitim)"; grup tablosu başlığı "Öneri". Birebir aynı gruplar
   değerleri aynı olduğu için dil modeliyle kalır.
-- Tarih: `profil_ek.tarih_turu` tarih tipini, değerlerinin çoğu
-  YYYY-AA-GG olan metin kolonu ve YYYYAAGG sekiz haneli sayı kolonunu
-  (tekil değerlerin en az %99'u geçerli takvim günü) tarih sayar;
+- Tarih: `profil_ek.tarih_turu` tarih tipini ("tip"), değerlerinin çoğu
+  YYYY-AA-GG olan metin kolonu ("metin"), çoğu GG.AA.YYYY olan metin
+  kolonu ("metin_gay"; ör. 31.12.2024, saat eki olabilir) ve YYYYAAGG
+  sekiz haneli sayı kolonunu ("sayi";
+  tekil değerlerin en az %99'u geçerli takvim günü) tarih sayar;
   `sfa.profil_cikar` bunları `teshis["tarih"]`'e yazar (TYPE "date"),
   kimlik ve kardinaliteye sokmaz. Hiçbir tarih alanı model değişkeni
-  olmaz. `tarih_serisi` üç biçimi tarihe çevirir, özel tarih kodları
+  olmaz. `tarih_serisi` dört biçimi tarihe çevirir, özel tarih kodları
   (yıl < 1901 ya da > 2200) boş döner; `gun_farki` ve Dönemden Sonraki
   Tarih bunu kullanır.
 - Özel Tarih Kodu ayrı kontrol ve düzeltme olmaktan çıktı

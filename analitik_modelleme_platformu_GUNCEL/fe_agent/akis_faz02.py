@@ -1494,6 +1494,7 @@ def profil_hesapla(durum):
 
 
 TARIH_YAZILIS = {"metin": "Metin olarak yazılmış (YYYY-AA-GG)",
+                 "metin_gay": "Metin olarak yazılmış (GG.AA.YYYY)",
                  "sayi": "Sayı olarak yazılmış (YYYYAAGG)"}
 
 
@@ -1932,8 +1933,8 @@ def _profil_kurallari(esik=None):
               "büyük." % _sayi_metni(e["uc_kat"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
-        "tarih": "Kolon tarih: tarih tipinde, YYYY-AA-GG metni ya da YYYYAAGG sayısı. Hiçbir "
-                 "tarih alanı model değişkeni olmaz.",
+        "tarih": "Kolon tarih: tarih tipinde, YYYY-AA-GG ya da GG.AA.YYYY metni, ya da "
+                 "YYYYAAGG sayısı. Hiçbir tarih alanı model değişkeni olmaz.",
         "yakin_icerik": "İki sayısal kolonun korelasyonu %s ya da üstünde, ya da biri "
                         "ötekinin sabit katı." % _yuzde_metni(e["yakin_kor"]),
         "gelecek_pencere": "Kolon adındaki dönem parçasının anlam türü ileriye bakıyor "
@@ -2041,7 +2042,8 @@ _KONTROL_ACIKLAMA_EK.update({
         "kisa": "Ham tarih modelde değişken olarak anlamlı değildir; yerine dönem sonuna gün "
                 "farkı kullanılır.",
         "bilgi": "**Nedir?** Tarih olan kolonları ayırır: tarih tipindekiler, değerlerinin "
-                 "çoğu YYYY-AA-GG biçiminde yazılmış metin kolonlar ve YYYYAAGG biçiminde "
+                 "çoğu YYYY-AA-GG ya da GG.AA.YYYY (ör. 31.12.2024) biçiminde yazılmış metin "
+                 "kolonlar ve YYYYAAGG biçiminde "
                  "sekiz haneli sayı kolonlar (değerlerin en az %99'u geçerli bir takvim günü). "
                  "Tarih kolonları kimlik benzeri ve kardinalite kontrollerine girmez; "
                  "Dönemden Sonraki Tarih kontrolünden geçer.\n\n"
@@ -2088,8 +2090,8 @@ _KONTROL_ACIKLAMA_EK.update({
                  "gelecektedir.\n\n"
                  "**Örnek:** 202403 dönemindeki satırda hesap kapanış tarihi 2024-07-15.\n\n"
                  "**Kapsam:** dönem kolonu seçildiyse ve değerleri yıl, yıl ay ya da yıl ay gün "
-                 "olarak okunabiliyorsa; tarih kolonları (tarih tipinde, YYYY-AA-GG metni ya da "
-                 "YYYYAAGG sayısı). 1900-01-01, 9999-12-31 gibi kod tarihler sayılmaz.\n\n"
+                 "olarak okunabiliyorsa; tarih kolonları (tarih tipinde, YYYY-AA-GG ya da "
+                 "GG.AA.YYYY metni, ya da YYYYAAGG sayısı). 1900-01-01, 9999-12-31 gibi kod tarihler sayılmaz.\n\n"
                  "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; Tut seçili "
                  "gelir, çünkü vade gibi tarihler doğal olarak ileridedir. Olayın gözlem "
                  "anından sonra kaydedildiğini biliyorsanız çıkarın. Çıkar denirse "
