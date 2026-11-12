@@ -889,6 +889,24 @@ PLATFORM_VERI_ADI = AMP_VERI_ADI
 PLATFORM_SOZLUK_ADI = AMP_SOZLUK_ADI
 
 
+def _yeni_duzen_mi(durum):
+    """Calisma BAZ / UPDT duzeninde mi (secim kopyasi <EK>_BAZ_VERI)?"""
+    ham = (durum or {}).get("amp_ham") or {}
+    # Kopya calisma kaynaginin BAZ verisini paylasir (BAZ hic degismez).
+    return str(ham.get("dataset") or "").endswith("_BAZ_VERI")
+
+
+def _platform_adlari(durum):
+    """(veri, sozluk, baz veri, baz sozluk): yeni duzende UPDT ve BAZ adlari,
+    eski calismada AMP_VERISETI / AMP_SOZLUK (baz adlari None)."""
+    from fe_agent import amp as amp_mod
+    if _yeni_duzen_mi(durum):
+        return (amp_mod.updt_veri_adi(durum), amp_mod.updt_sozluk_adi(durum),
+                (durum.get("amp_ham") or {}).get("dataset"),
+                (durum or {}).get("baz_sozluk") or None)
+    return PLATFORM_VERI_ADI, PLATFORM_SOZLUK_ADI, None, None
+
+
 def _adim_gecildi(durum, anahtar):
     """anahtar adimi TAMAMLANDI mi? Adim o modun listesinde yoksa False.
 
@@ -1033,8 +1051,10 @@ def veri_paneli(durum):
     veri_kart = _kart("Veri Seti", [
         # HAM AD DEGIL platformun adi; hangi tablodan gelindigi
         # "Köken" satirinda, cumle icinde yaziyor.
-        ("Veri Seti", PLATFORM_VERI_ADI if durum.get("veri_seti") else None,
+        ("Veri Seti", _platform_adlari(durum)[0] if durum.get("veri_seti") else None,
          veri_adimi),
+        ("Baz Veri", _platform_adlari(durum)[2],
+         veri_adimi if not (durum.get("amp_ham") and not _yeni_duzen_mi(durum)) else None),
         ("Köken", _veri_kokeni(durum), veri_adimi),
         ("Kayıt Yeri", _kayit_yeri(durum, "veri"), KAYIT_ADIMI),
         ("Satır × Kolon", boyut, veri_adimi),
@@ -1243,7 +1263,7 @@ def feature_tablo(durum):
         # PLATFORMUN ADI, ham ad degil: hemen yanindaki kart da
         # "Sözlük: AMP_SOZLUK" diyor. Hangi sozlukten gelindigi kartin
         # "Köken" satirinda yaziyor.
-        "sozluk_kaynak": (PLATFORM_SOZLUK_ADI
+        "sozluk_kaynak": (_platform_adlari(durum)[1]
                           if sozluk_calisma.sozluk_adi(durum) else None),
     }
 
@@ -1408,8 +1428,10 @@ def _sozluk_karti(durum):
         # HAM AD DEGIL platformun adi; hangi sozlukten gelindigi
         # "Köken" satirinda, cumle icinde yaziyor.
         ("Sözlük",
-         PLATFORM_SOZLUK_ADI if sozluk_calisma.sozluk_adi(durum) else None,
+         _platform_adlari(durum)[1] if sozluk_calisma.sozluk_adi(durum) else None,
          sozluk_adimi),
+        ("Baz Sözlük", _platform_adlari(durum)[3],
+         sozluk_adimi if not (durum.get("amp_ham") and not _yeni_duzen_mi(durum)) else None),
         ("Köken", _sozluk_kokeni(durum), sozluk_adimi),
         ("Kayıt Yeri", _kayit_yeri(durum, "sozluk"), KAYIT_ADIMI),
         ("Tanım Sayısı", tanim_sayisi,

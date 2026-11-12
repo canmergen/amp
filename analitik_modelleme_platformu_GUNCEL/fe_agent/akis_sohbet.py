@@ -413,6 +413,14 @@ def _tamamlandi_yaz(durum, anahtar, cikti):
     if karar_alan:
         kayit["karar_alan"] = karar_alan
     durum["_tamamlanan"] = kayit
+    # UPDT SOZLUK: her adim sonunda sozlugun o anki hali Flow'daki
+    # <EK>_UPDT_SOZLUK veri setine yazilir (icerik degismediyse yazilmaz).
+    # Yazilamazsa adim durmaz; sozlugun kaynagi calisma klasorundeki tablo.
+    try:
+        from fe_agent import amp as _amp
+        _amp.updt_sozluk_yayinla(durum)
+    except Exception:
+        pass
     # BIR TURDA BIRDEN FAZLA ADIM BITEBILIR (bolme -> profil -> SFA ->
     # aralik karti, onaysiz zincir). Hepsi SIRAYLA tutulur.
     durum.setdefault("_tamamlananlar", []).append(kayit)

@@ -120,7 +120,7 @@ ADIMLAR = {
     "tanimsiz_karar": {
         "baslik": ADIM_ADI["tanimsiz_karar"],
         "aciklama": "Tamamen boş ve tek değerli kolonlar (sözlükte tanımları olsa "
-                    "da) her zaman AMP_VERISETI'nden ve AMP_SOZLUK'ten çıkarılır. "
+                    "da) her zaman UPDT veriden ve UPDT sözlükten çıkarılır. "
                     "Sözlükte tanımı olmayan kolonlardan çıkarılması onaylananlar da "
                     "çıkarılır; kalanlar veri setinde kalır, sözlükte tanımları boş durur.",
         "girdi": None, "plan": tanimsiz_karar_plan,

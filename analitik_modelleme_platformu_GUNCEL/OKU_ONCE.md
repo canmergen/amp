@@ -55,8 +55,11 @@ Gereken Flow nesnelerini webapp kendisi kurar; Flow'a elle bir şey eklenmez.
 | İş | Recipe | Çıktılar |
 |---|---|---|
 | Profil | `compute_AMP_PROFIL` | `AMP_PROFIL` (klasör) |
-| Alt alta ekleme | `compute_AMP_BAZ` | `MODELLEME_BAZ`, `AMP_BAZ_SONUC` |
-| AMP_VERISETI yazma | `compute_AMP_VERISETI` | `AMP_VERISETI`, `AMP_SONUC` |
+| Baz veri (seçim kopyası ya da alt alta ekleme) | `compute_<EK>_BAZ_VERI` | `<EK>_BAZ_VERI`, `<EK>_BAZ_VERI_SONUC` (klasör) |
+| UPDT veri (01.3 ve 01.4) | `compute_<EK>_UPDT_VERI` | `<EK>_UPDT_VERI`, `<EK>_UPDT_VERI_SONUC` (klasör) |
+
+`<EK>` çalışmanın kısa adıdır (ör. `V8`). Eski çalışmaların recipe'leri
+(`compute_AMP_VERISETI_V3` gibi) eski adlarıyla çalışmaya devam eder.
 
 **LLM:** Dataiku LLM Connections üzerinden. Varsayılan model `fe_agent/llm.py`
 içindeki `VARSAYILAN_MODEL`.
@@ -85,8 +88,38 @@ bağlantı ve model adları ve eski ekran adları (kolon adları bozulmaz).
 ## Veri kuralı
 
 - Kullanıcının seçtiği veri setine ve sözlüğe yazılmaz.
-- Seçim yapıldıktan sonra platform yalnız kendi kopyalarıyla çalışır:
-  `AMP_VERISETI` ve `AMP_SOZLUK`. Adımlar ilerledikçe bu kopyalar güncellenir.
+- Bir çalışma Flow'da yalnız dört veri seti yazar, hepsi çalışmaya özel
+  (`<EK>` çalışmanın kısa adı, ör. `V8`; `amp.baz_veri_adi` vb.):
+
+  | Veri seti | Ne zaman | İçerik |
+  |---|---|---|
+  | `<EK>_BAZ_VERI` | Veri seçilince, bir kez | Seçilen tablonun birebir kopyası; Mod B/D'de birleştirme sonucu doğrudan buraya yazılır. Bir daha değişmez. |
+  | `<EK>_BAZ_SOZLUK` | Sözlük seçilince, bir kez | Seçilen sözlüğün (birden çoksa birleştirilmiş, Mod B'de kaynak sözlüklerden kurulan, Mod C/D'de üretilen) birebir kopyası. Bir daha değişmez. |
+  | `<EK>_UPDT_VERI` | 01.3'ten itibaren | Verinin en son hali: 01.3'te tip dönüşümleri, çıkarılan kolonlar ve yeni adlar; 01.4'te `_SPLIT`. |
+  | `<EK>_UPDT_SOZLUK` | Her adım sonunda | Sözlüğün en son hali (çalışma kopyası, 01.3'ten sonra AMP_SOZLUK tablosu). İçerik değişmediyse yazılmaz (`amp.updt_sozluk_yayinla`, `akis_sohbet._tamamlandi_yaz`). |
+
+- Kaldırılanlar: `AMP_VERISETI_HAM` (yerine BAZ veri), ortak
+  `MODELLEME_BAZ` ve çalışma kopyası `MODELLEME_BAZ.parquet` (yerine BAZ
+  veri), `MODELLEME_SOZLUK` ve `KAYNAK_SOZLUK` (yerine BAZ sözlük),
+  `KOLON_AD_ESLEME` (eski ad UPDT sözlüğün `ESKI_AD` kolonunda). Pandas
+  yolunda AMP_VERISETI artık klasör dosyası değil, UPDT veri veri setidir.
+  `BIRLESIK_SOZLUK.parquet`, sözlük çalışma kopyası ve AMP_SOZLUK
+  çalışma klasöründe iç kayıt olarak kalır (Flow'da veri seti değil).
+- Spark yolunda bir veri seti aynı recipe'in hem girdisi hem çıktısı
+  olamaz: 01.4'te UPDT veri, BAZ veriden 01.3 isteği (kayıtta `istek`)
+  ve bölme ile yeniden kurulur. Pandas yolunda UPDT okunur, `_SPLIT`
+  eklenip aynı veri setine yazılır.
+- Çalışma kopyalanınca UPDT veri (pandas boyutunda) ve UPDT sözlük yeni
+  çalışmanın adlarına kopyalanır (`backend._updt_kopyala`); BAZ veri ve
+  BAZ sözlük paylaşılır (hiç değişmezler). Spark boyutundaki UPDT veri
+  kopyalanmaz; kopya 01.3'ü yeniden onaylayınca kendi UPDT'sini yazar.
+- 01.3 öncesine dönülünce UPDT veri silinmez; 01.3 yeniden onaylanınca
+  BAZ veriden yeniden yazılır.
+- Eski çalışmalar (`AMP_VERISETI`, `AMP_VERISETI_HAM`, `MODELLEME_BAZ`)
+  eski adlarıyla okunmaya devam eder; yeni adlar yalnız yeni yazımlarda.
+- Henüz taşınmayanlar (sonraki parçalar): 02.x ve 03.x tabloları
+  (`_PROFIL`, `_ENRICHED`, `_SFA`, `_PSI`, `_BAZ`), 04/05 tabloları
+  (`_SECIM`, `_KATALOG`), `MODELLEME_LINEAGE`.
 - Profil ve sayımlar tam veri üzerinden yapılır.
 - Profil sayısal kolonda min, maks, kantiller (0, 0,25, 0,5, 0,75, 1) ve
   ortalamayı (`ortalama`: sonlu değerlerin toplamı / sonlu değer adedi)

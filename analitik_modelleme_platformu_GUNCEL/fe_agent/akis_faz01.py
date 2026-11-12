@@ -540,17 +540,17 @@ def birlestirme_uygula(durum):
         tablolar = list(plan.get("tablolar") or [])
         oz = _alt_alta_uygula(durum, tablolar)
         onbellek_temizle()
-        durum["veri_seti"] = BAZ_ADI
-        durum["birlestirme"].update({"dataset": BAZ_ADI, "dosya": None,
+        baz_ad = oz.get("dataset") or amp_mod.baz_veri_adi(durum)
+        durum["veri_seti"] = baz_ad
+        durum["birlestirme"].update({"dataset": baz_ad, "dosya": None,
                                      "ozet": {"satir": oz.get("satir"),
                                               "kolon": oz.get("kolon")}})
-        sahip_yaz(BAZ_ADI, durum)
         _secim_kopyasi(durum)
         _temel_profil(durum, _profil(durum, taze=True))
         sozluk_not = ""
         if durum.get("mod") == "B":
             # Koken: her kolon ilk tablodaki ayni adli kolondan (hepsinde ayni).
-            ornek = _df_oku(BAZ_ADI, limit=1)
+            ornek = _df_oku(baz_ad, limit=1)
             kutuk = pd.DataFrame([{"KOLON": c, "KAYNAK_TABLO": tablolar[0],
                                    "KAYNAK_KOLON": c, "TUR": "alt alta"}
                                   for c in ornek.columns])
@@ -563,7 +563,7 @@ def birlestirme_uygula(durum):
                 "  Baz veri seti : %s satır × %s kolon\n"
                 "  Kayıt : %s veri seti"
                 % ("\n".join(satirlar), _sayi(oz.get("satir")),
-                   _sayi(oz.get("kolon")), BAZ_ADI)) + sozluk_not
+                   _sayi(oz.get("kolon")), baz_ad)) + sozluk_not
 
     baz, kutuk, ozet = birl_mod.calistir(plan, lambda ad: _df_oku(ad))
 
@@ -573,11 +573,10 @@ def birlestirme_uygula(durum):
     lineage_yazildi, lineage_yedek = _yaz(LINEAGE_ADI, kutuk, "/lineage.parquet")
     durum["birlestirme"]["lineage"] = lineage_yazildi
 
-    ad = BAZ_ADI
-    kopya = dosya_yaz(_amp_yolu(durum, ad), baz)
-    durum["birlestirme"]["dosya"] = kopya or None
-    # MODELLEME_BAZ Flow'da yoksa webapp kurar (kullanici bir sey eklemez);
-    # sonraki Spark isleri (profil, AMP) girdi olarak bu veri setini okur.
+    # BAZ VERI: birlestirme sonucu calismaya ozel <EK>_BAZ_VERI veri setine
+    # (Flow'da yoksa webapp kurar); ayri bir kopya alinmaz.
+    ad = amp_mod.baz_veri_adi(durum)
+    durum["birlestirme"]["dosya"] = None
     spark_is.veri_seti_hazirla(ad, durum["ham_tablolar"][0])
     if not dataset_yaz(ad, baz):
         durum["veri_seti"] = None
@@ -585,7 +584,6 @@ def birlestirme_uygula(durum):
                          "yazamadım." % ad)
     durum["birlestirme"]["dataset"] = ad
     durum["veri_seti"] = ad
-    sahip_yaz(ad, durum)
     onbellek_temizle()
 
     # Mod B/D'de veri seti burada olusuyor ve tablo zaten bellekte;
@@ -753,22 +751,16 @@ def sozluk_uret_uygula(durum):
 
     tablo = sozluk_mod.tablo_olustur(profiller, aciklamalar)
 
-    try:
-        yazildi, yedek = _yaz(SOZLUK_ADI, tablo, "/degisken_sozlugu.parquet")
-    except Exception as e:
+    # BAZ SOZLUK: uretilen sozluk calismaya ozel <EK>_BAZ_SOZLUK veri
+    # setine bir kez yazilir; sonraki okumalar oradan.
+    hata = amp_mod.baz_sozluk_yaz(durum, tablo)
+    if hata:
         durum["sozluk"], durum["sozluk_yedek"] = None, None
-        raise AdimHatasi(
-            "Sözlük üretildi ama hiçbir yere yazamadım (%s veri seti yok ve "
-            "yedek dosya da yazılamadı: %s). Adımı tamamlamıyorum."
-            % (SOZLUK_ADI, str(e)[:140]))
+        raise AdimHatasi("Sözlük üretildi ama yazılamadı: %s Adımı tamamlamıyorum." % hata)
 
     oz = sozluk_mod.ozet(tablo)
-
-    # Yedek yolu da
-    # durumda tutuluyor — sozluk okuyan taraf akis_durum.sozluk_oku()
-    # uzerinden iki kaynagi da kullanabilir.
-    durum["sozluk"] = yazildi or None
-    durum["sozluk_yedek"] = yedek
+    durum["sozluk"] = amp_mod.baz_sozluk_adi(durum)
+    durum["sozluk_yedek"] = None
     durum.pop("sozlukler", None)
     durum["sozluk_uretim"] = oz
 
@@ -1250,13 +1242,13 @@ def kaynak_sozlugunden_kur(durum, baz, kutuk):
 def _mod_b_sozlugu(durum, baz, kutuk):
     """Birlestirmeden sonra Mod B'nin sozluk isi. Doner: rapor metni."""
     tablo, oz = kaynak_sozlugunden_kur(durum, baz, kutuk)
-    # CALISMANIN KENDI KLASORUNE.
-    yedek = dosya_yaz(_amp_yolu(durum, "KAYNAK_SOZLUK"), tablo)
-    if not yedek:
-        raise AdimHatasi("Kaynak sözlüklerden kurulan baz sözlük çalışma "
-                         "klasörüne yazılamadı.")
-    durum["sozluk"] = None
-    durum["sozluk_yedek"] = yedek
+    # BAZ SOZLUK: kaynak sozluklerden kurulan sozluk <EK>_BAZ_SOZLUK veri
+    # setine bir kez yazilir.
+    hata = amp_mod.baz_sozluk_yaz(durum, tablo)
+    if hata:
+        raise AdimHatasi("Kaynak sözlüklerden kurulan baz sözlük yazılamadı: %s" % hata)
+    durum["sozluk"] = amp_mod.baz_sozluk_adi(durum)
+    durum["sozluk_yedek"] = None
     durum.pop("sozlukler", None)
     durum["sozluk_uretim"] = {"kaynak": "kaynak sözlükleri", **oz}
     # Profil + kapsam SIMDI: baz zaten bellekte. Modelleme tanimlari
@@ -1731,9 +1723,9 @@ KOLON_AD_BILGI = (
     "Satırlar ailedir: adı yalnız sayılarla ayrılan kolonlar (TXN_30D_CNT, "
     "TXN_90D_CNT) tek satırda onaylanır. Her ailede «Yeni Ad» ya da «Eski Ad "
     "Kalsın» seçilip onaylanır.\n\n"
-    "Yeni adlar YALNIZ platformun kopyalarında geçerli olur: AMP_VERISETI ve "
-    "AMP_SOZLUK. Girdi veri setiniz ve sözlüğünüz değişmez; eski ad ile yeni "
-    "ad eşlemesi çalışma klasörüne KOLON_AD_ESLEME olarak yazılır. Hedef, "
+    "Yeni adlar YALNIZ platformun kopyalarında geçerli olur: UPDT veri ve "
+    "UPDT sözlük. Girdi veri setiniz ve sözlüğünüz değişmez; eski ad ile yeni "
+    "ad UPDT sözlüğün Eski Ad kolonunda durur. Hedef, "
     "kimlik, dönem ve segment kolonları ve süreç dışı kolonlar yeniden "
     "adlandırılmaz.")
 KOLON_AD_DUGME = {"bos": "Kolon Adlarını Onayla ve Devam Et"}
@@ -2452,7 +2444,7 @@ def kolon_ad_uygula(durum):
         metin += "; %s parçanın türü düzeltildi" % _sayi(len(degisen))
     if durum["donem_ad_yazilis"]:
         metin += "; %s dönem yazılışı var" % _sayi(len(durum["donem_ad_yazilis"]))
-    metin += ". Yeni adlar AMP_VERISETI ve AMP_SOZLUK'te geçerli olur."
+    metin += ". Yeni adlar UPDT veri ve UPDT sözlükte geçerli olur."
     if hata:
         metin += " " + hata
     if tur_hata:
@@ -7382,9 +7374,18 @@ def kurulum_uygula(durum):
     profil ve sonraki butun okumalar o kopyadan."""
     _secim_kopyasi(durum)
     _kapsami_cikar(durum, taze=True)
+    # BAZ SOZLUK: secilen (birden coksa birlestirilmis) sozlugun birebir
+    # kopyasi, bir kez. Sozluk secilmediyse bos sozluk.
+    baz_not = ""
+    try:
+        hata = amp_mod.baz_sozluk_yaz(durum, sozluk_orijinal_oku(durum))
+    except AdimHatasi as e:
+        hata = str(e)
+    if hata:
+        baz_not = "\n\nNOT: Baz sözlük yazılamadı (%s)." % hata
     # Calisma kopyasi sozluk baglanir baglanmaz cikarilir: satir_ekle
     # yalnizca kopyaya yazar, kopya yoksa yazacak yer yoktur.
-    return (_birlesim_metni(durum) + _calisma_kopyasi_kur(durum)).strip()
+    return (_birlesim_metni(durum) + _calisma_kopyasi_kur(durum) + baz_not).strip()
 
 
 def sozluk_tanim_uygula(durum):
@@ -7486,9 +7487,9 @@ def sozluk_tanim_uygula(durum):
 # seti ve sozluk degismez.
 # ---------------------------------------------------------------------------
 TANIMSIZ_KARAR_NOT = (
-    "Sözlükte tanımı bulunmayan %s kolon. İşaretlediğiniz kolonlar AMP_VERISETI'nden "
-    "ve AMP_SOZLUK'ten çıkarılır. İşaretlemedikleriniz veri setinde kalır, "
-    "AMP_SOZLUK'te tanımları boş durur. Girdi veri setiniz ve sözlüğünüz değişmez.")
+    "Sözlükte tanımı bulunmayan %s kolon. İşaretlediğiniz kolonlar UPDT veriden "
+    "ve UPDT sözlükten çıkarılır. İşaretlemedikleriniz veri setinde kalır, "
+    "UPDT sözlükte tanımları boş durur. Girdi veri setiniz ve sözlüğünüz değişmez.")
 TANIMSIZ_KARAR_DUGME = {
     "cikar": "%s Kolonu Çıkar ve Devam Et",
     "kalsin": "Hepsi Veri Setinde Kalsın ve Devam Et",
@@ -7566,7 +7567,7 @@ SORUNLU_GRUPLAR = (
      "Kilitli: her zaman çıkarılır."),
     ("tanimsiz", "Sözlükte Tanımı Bulunmayan Kolonlar",
      "İşaretlediğiniz kolonlar çıkarılır; işaretlemedikleriniz veri setinde kalır, "
-     "AMP_SOZLUK'te tanımları boş durur."),
+     "UPDT sözlükte tanımları boş durur."),
 )
 
 
@@ -7658,11 +7659,11 @@ def tanimsiz_karar_notu(sayi):
     metin = ""
     if parca:
         metin += ("%s. Bu kolonlar modele bilgi katmaz; sözlükte tanımları olsa da "
-                  "AMP_VERISETI'nden ve AMP_SOZLUK'ten çıkarılır. "
+                  "UPDT veriden ve UPDT sözlükten çıkarılır. "
                   % " ve ".join(parca))
     if sayi.get("tanimsiz"):
         metin += ("Sözlükte tanımı bulunmayan %s kolon var. İşaretlediğiniz kolonlar "
-                  "çıkarılır; işaretlemedikleriniz veri setinde kalır, AMP_SOZLUK'te "
+                  "çıkarılır; işaretlemedikleriniz veri setinde kalır, UPDT sözlükte "
                   "tanımları boş durur. " % _sayi(sayi["tanimsiz"]))
     return metin + "Girdi veri setiniz ve sözlüğünüz değişmez."
 
@@ -7698,7 +7699,7 @@ def tanimsiz_karar_uygula(durum):
 # ---------------------------------------------------------------------------
 BIRLESIM_NOT = (
     "Seçtiğiniz sözlüklerde %s kolonun tanımı farklı. Her kolon için kalacak tanımı "
-    "seçin ya da kendiniz yazın. Seçtiğiniz tanım AMP_SOZLUK'e yazılır; girdi "
+    "seçin ya da kendiniz yazın. Seçtiğiniz tanım UPDT sözlüğe yazılır; girdi "
     "sözlükleriniz değişmez.")
 BIRLESIM_DUGME = {"bos": "Tanımları Onayla ve Devam Et"}
 BIRLESIM_KULLANICI = "Kullanıcı"
@@ -9425,9 +9426,9 @@ def amp_ciktilarini_yaz(durum):
 
 
 def _yeniden_ad_isle(durum, esleme):
-    """AMP_VERISETI'nde uygulanan kolon adlari: durumda saklanir, sag
-    paneldeki kolon ozeti yeni adlara cevrilir (eski ad korunur) ve
-    esleme calisma klasorune yazilir (KOLON_AD_ESLEME.parquet)."""
+    """UPDT veride uygulanan kolon adlari: durumda saklanir ve sag
+    paneldeki kolon ozeti yeni adlara cevrilir (eski ad korunur). Eski ad
+    UPDT sozlugun ESKI_AD kolonunda; ayri bir esleme tablosu yazilmaz."""
     durum["_amp_yeniden_ad"] = dict(esleme or {})
     p = durum.get("profil") or {}
     for satir in p.get("kolon_ozet") or []:
@@ -9435,16 +9436,6 @@ def _yeniden_ad_isle(durum, esleme):
         if ad in esleme:
             satir["eski_ad"] = ad
             satir["ad"] = esleme[ad]
-    if not esleme:
-        return
-    try:
-        tablo = pd.DataFrame([{"ESKI_AD": a, "YENI_AD": y} for a, y in sorted(esleme.items())])
-        from fe_agent.akis_durum import _folder as _klasor
-        from fe_agent import tablo_io
-        tablo_io.klasore_yaz(_klasor(), "/%s/KOLON_AD_ESLEME.parquet" % amp_klasor_adi(durum),
-                             tablo)
-    except Exception:
-        pass
 
 
 def _yeniden_ad_geri_al(durum):
@@ -9457,9 +9448,12 @@ def _yeniden_ad_geri_al(durum):
 
 def _amp_veri_kaydi(oz):
     """amp_yaz / amp_bolme_yaz sonucundan durum["amp_cikti"]["veri"]."""
-    return {"ad": AMP_VERI_ADI, "dataset": oz.get("dataset"),
+    return {"ad": oz.get("dataset") or AMP_VERI_ADI, "dataset": oz.get("dataset"),
             "dosya": oz.get("dosya"), "taban": oz.get("taban"),
             "motor": oz.get("motor"),
+            # UPDT VERI: teyit istegi ve kaynagi (BAZ veri); bolme UPDT'yi
+            # Spark'ta BAZ'dan bu istekle yeniden kurar.
+            "istek": oz.get("istek"), "kaynak": oz.get("kaynak"),
             "satir": int(oz.get("satir") or 0), "kolon": int(oz.get("kolon") or 0),
             "dusen_kolon": len(oz.get("dusen") or []),
             # Tabloya yazilmayan kolonlarin adlari (kayit mesajinda
@@ -9515,7 +9509,7 @@ def _amp_sozluk_tablosu(durum, esleme, veri_kolon=None):
         tablo["DEGISKEN"] = [esleme.get(str(k), k) for k in tablo["DEGISKEN"]]
     if veri_kolon is not None and int(veri_kolon) != len(tablo):
         raise AdimHatasi(
-            "AMP_SOZLUK ile AMP_VERISETI eşleşmedi: veri setinde %s kolon, "
+            "UPDT sözlük ile UPDT veri eşleşmedi: veri setinde %s kolon, "
             "sözlükte %s satır var." % (_sayi(veri_kolon), _sayi(len(tablo))))
     return tablo
 
@@ -9548,11 +9542,12 @@ def _amp_sozluk_split_ekle(durum):
                       ignore_index=True)
     yeni_yol = sozluk_calisma.amp_sozluk_yaz(durum, tablo)
     if not yeni_yol:
-        return ("AMP_SOZLUK yazılamadı; %s satırı sözlüğe eklenemedi." % SPLIT_KOLON)
+        return ("Sözlük yazılamadı; %s satırı sözlüğe eklenemedi." % SPLIT_KOLON)
     sozluk_kayit = (durum.get("amp_cikti") or {}).get("sozluk")
     if isinstance(sozluk_kayit, dict):
         sozluk_kayit["satir"] = int(len(tablo))
-    return ""
+    hata = amp_mod.updt_sozluk_yayinla(durum)
+    return ("UPDT sözlük güncellenemedi (%s)." % hata) if hata else ""
 
 
 def _amp_sozluk_ve_kayit(durum, sonuc, tablo, hata=""):
@@ -9570,6 +9565,15 @@ def _amp_sozluk_ve_kayit(durum, sonuc, tablo, hata=""):
                            "dosya": yol, "satir": int(len(tablo))}
         if not yol:
             sonuc["sozluk"]["hata"] = "çalışma klasörüne yazılamadı"
+        else:
+            # UPDT SOZLUK: sozlugun bu andaki hali Flow'daki veri setine.
+            durum.pop("_updt_sozluk_imza", None)
+            yhata = amp_mod.updt_sozluk_yayinla(durum)
+            if yhata:
+                sonuc["sozluk"]["hata"] = yhata
+            else:
+                sonuc["sozluk"].update(ad=amp_mod.updt_sozluk_adi(durum),
+                                       dataset=amp_mod.updt_sozluk_adi(durum))
 
     sonuc["klasor"] = amp_klasor_adi(durum)
     durum["amp_cikti"] = sonuc
@@ -9633,7 +9637,11 @@ def amp_gecersiz_kil(durum):
         validasyon.temizle(durum)
     except Exception:
         pass
+    durum.pop("_updt_sozluk_imza", None)
     onbellek_temizle()
+    if kayit.get("dataset") and kayit.get("istek") is not None:
+        return ("Bu adımdan sonraki bütün sonuçlar sıfırlandı; UPDT veri bu adım "
+                "yeniden onaylanınca baz veriden yeniden yazılır.")
     return ("AMP_VERISETI ve AMP_SOZLUK silindi; bu adımdan sonraki bütün "
             "sonuçlar yeniden oluşturulacak.")
 
@@ -10137,6 +10145,7 @@ def _bolme_uygula_spark(durum):
     kayit = _amp_veri_kaydi(oz)
     # Surec disi kolonlar teyitte dustu; bolme yeni kolon dusurmez.
     kayit["dusen_kolon"] = eski.get("dusen_kolon", kayit["dusen_kolon"])
+    kayit["dusen_adlar"] = eski.get("dusen_adlar", kayit.get("dusen_adlar") or [])
     durum["amp_cikti"]["veri"] = kayit
     split_notu = _amp_sozluk_split_ekle(durum)
     if split_notu:

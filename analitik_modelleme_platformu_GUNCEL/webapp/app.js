@@ -3504,7 +3504,7 @@ function ftDetayCiz() {
 
     kutu.appendChild(elYap("div", "ft-detay-ad", s.yeni_ad || s.feature));
     if (s.yeni_ad) kutu.appendChild(elYap("div", "ft-eski-ad", "Eski adı: " + s.feature
-        + ". Yeni ad Kolon Adları adımında onaylandı; AMP_VERISETI bu adla yazılır."));
+        + ". Yeni ad Kolon Adları adımında onaylandı; UPDT veri bu adla yazılır."));
     /* Satir govdesinde (SOZLESME7 §5) tekil/ornek gelmeyebilir.
        GELMEYEN ALAN HIC CIZILMEZ - bos "∅" kullaniciya "olculdu ve
        bostu" diye okunuyor. */
@@ -3561,7 +3561,7 @@ function ozet0124Ciz(o, satirlar) {
     const kok = elYap("div", "oz0124");
     const bas = elYap("div", "oz0124-bas", "Sözlük ve Kolon Adı Kontrolü sonuçları");
     bas.appendChild(bolmeBilgiSimgesi("01.2.4 adımlarında onaylananlar. Tablodaki açıklamalar ve yeni adlar "
-        + "bunlarla güncel; AMP_VERISETI ve AMP_SOZLUK Değişken Listesi ve Tip Kontrolü onayında bu hâliyle "
+        + "bunlarla güncel; UPDT veri ve UPDT sözlük Değişken Listesi ve Tip Kontrolü onayında bu hâliyle "
         + "yazılır. Girdi veri setiniz ve sözlüğünüz değişmez.", "Sözlük ve Kolon Adı Kontrolü sonuçları"));
     kok.appendChild(bas);
     const bolum = (anahtar, baslik, ozet, icerik, bilgi) => {

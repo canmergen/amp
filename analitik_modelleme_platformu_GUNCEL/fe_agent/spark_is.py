@@ -332,13 +332,21 @@ def hata_ozeti(is_):
 # ===========================================================================
 # DIS ARAYUZ
 # ===========================================================================
-def tanim_al(is_adi, ad_eki=None):
+def tanim_al(is_adi, ad_eki=None, cikti_adi=None):
     """ISLER[is_adi]; ad_eki verilirse recipe ve ciktilar CALISMAYA OZEL
     adlarla ("compute_AMP_VERISETI_V8", "AMP_VERISETI_V8", "AMP_SONUC_V8").
     Her calismanin AMP_VERISETI'si kendine ait; baska bir
     calisma onu ezemez. Dataiku'da bir veri seti yalnizca tek recipe'in
     ciktisi olabildigi icin recipe de calismaya ozel."""
     tanim = dict(ISLER[is_adi])
+    if cikti_adi:
+        # BAZ / UPDT: cikti veri setinin adi dogrudan verilir
+        # ("V8_BAZ_VERI"); recipe "compute_V8_BAZ_VERI", sonuc klasoru
+        # "V8_BAZ_VERI_SONUC" (recipe veri ciktisini adinda SONUC
+        # gecmeyen ciktidan tanir).
+        tanim["recete"] = "compute_%s" % cikti_adi
+        tanim["ciktilar"] = [(cikti_adi, "VERI"), ("%s_SONUC" % cikti_adi, "KLASOR")]
+        return tanim
     if ad_eki:
         tanim["recete"] = "%s_%s" % (tanim["recete"], ad_eki)
         tanim["ciktilar"] = [("%s_%s" % (ad, ad_eki), tur)
@@ -346,10 +354,10 @@ def tanim_al(is_adi, ad_eki=None):
     return tanim
 
 
-def calistir(is_adi, girdiler, istek, sahip, kosu_id=None, ad_eki=None):
+def calistir(is_adi, girdiler, istek, sahip, kosu_id=None, ad_eki=None, cikti_adi=None):
     """ISLER[is_adi] isini `girdiler` (tablo adlari) icin calistirir.
     Doner: kosu_id. Hata -> AdimHatasi (mesaj kullaniciya gider)."""
-    tanim = tanim_al(is_adi, ad_eki)
+    tanim = tanim_al(is_adi, ad_eki, cikti_adi)
     etiket = tanim["etiket"]
     girdiler = [g for g in (girdiler or []) if g]
     if not girdiler:
@@ -390,9 +398,9 @@ def veri_seti_hazirla(ad, kaynak_tablo):
     _cikti_kur(proje, ad, "VERI", baglanti, baglanti_turu, ad)
 
 
-def sonuc_oku(is_adi, yol, kosu_id, ad_eki=None):
+def sonuc_oku(is_adi, yol, kosu_id, ad_eki=None, cikti_adi=None):
     """Isin sonuc klasorundeki JSON; bu kosuya ait degilse AdimHatasi."""
-    tanim = tanim_al(is_adi, ad_eki)
+    tanim = tanim_al(is_adi, ad_eki, cikti_adi)
     klasor_ad = [ad for ad, tur in tanim["ciktilar"] if tur == "KLASOR"][0]
     sonuc = json_oku(klasor(klasor_ad), yol)
     if not isinstance(sonuc, dict):

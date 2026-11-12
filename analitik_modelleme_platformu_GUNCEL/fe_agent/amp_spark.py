@@ -473,7 +473,8 @@ def baz_recete_calistir():
 
     girdiler = recipe.get_input_names_for_role("main")
     ciktilar = recipe.get_output_names_for_role("main")
-    veri_cikti = [c for c in ciktilar if c.split(".")[-1] == "MODELLEME_BAZ"]
+    veri_cikti = [c for c in ciktilar if c.split(".")[-1] == "MODELLEME_BAZ"] or \
+        [c for c in ciktilar if "SONUC" not in c.split(".")[-1].upper()]
     klasor_cikti = [c for c in ciktilar if c not in veri_cikti]
     if len(girdiler) < 2 or not veri_cikti or not klasor_cikti:
         raise RuntimeError("compute_AMP_BAZ recipe'inin en az iki girdisi, "

@@ -174,7 +174,7 @@ KONTROL_SECENEKLERI = [
     {"deger": "yap", "rozet": "A", "baslik": "Sözlük ve Kolon Adları Kontrol Edilsin",
      "aciklama": "Kolon adlarının parçaları, her kolonun kartı ve açıklaması ve "
                  "yeni kolon adları sırayla kontrol edilip onaylanır. Düzeltmeler yalnız platformun "
-                 "kopyalarına (AMP_VERISETI, AMP_SOZLUK) yazılır."},
+                 "kopyalarına (UPDT veri, UPDT sözlük) yazılır."},
     {"deger": "atla", "rozet": "B", "baslik": "Kontrol Edilmeden Geçilsin",
      "aciklama": "Açıklamalar ve kolon adları olduğu gibi kalır; bu dört adım "
                  "atlanır ve Değişken Listesi ve Tip Kontrolü'ne geçilir."},

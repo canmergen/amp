@@ -2002,11 +2002,52 @@ def calisma_kopyala_endpoint():
         # Eski bicimli AMP klasoru kaynaga ait: kopya kendi klasorune yazar.
         yeni.pop("_amp_klasor", None)
         yeni.pop("_oneri_is", None)
+        yeni = _updt_kopyala(durum, yeni)
         _kaydet(hedef_anahtar, yeni)
         return jsonify({"calisma_id": hedef, "kaynak": kaynak})
     except Exception as e:
         return jsonify(_hata_govdesi("calisma_kopyala", e,
                                      "Çalışma kopyalanamadı."))
+
+
+def _updt_kopyala(kaynak_durum, yeni):
+    """Kopya calismanin UPDT veri ve UPDT sozlugu kendine ait olmali:
+    kaynagin UPDT veri setleri yeni calismanin adlarina (<EK>_UPDT_VERI,
+    <EK>_UPDT_SOZLUK) kopyalanir ve durumdaki adlar degistirilir. BAZ veri
+    ve BAZ sozluk hic degismedigi icin paylasilir. Spark boyutundaki UPDT
+    veri webapp'te kopyalanmaz: adi degistirilmez; kopya 01.3'u yeniden
+    onaylayinca kendi UPDT verisini BAZ'dan yazar."""
+    from fe_agent import amp as amp_mod, motor
+    eski_veri, yeni_veri = amp_mod.updt_veri_adi(kaynak_durum), amp_mod.updt_veri_adi(yeni)
+    eski_soz, yeni_soz = amp_mod.updt_sozluk_adi(kaynak_durum), amp_mod.updt_sozluk_adi(yeni)
+    if eski_veri == yeni_veri:
+        return yeni
+    degis = {}
+    kayit = ((yeni.get("amp_cikti") or {}).get("veri") or {})
+    kaynak = (kayit.get("kaynak") or yeni.get("veri_seti"))
+    if kayit.get("dataset") == eski_veri:
+        try:
+            if motor.sec([eski_veri])[0] == motor.PANDAS:
+                amp_mod._pandas_yaz(yeni_veri, akis_durum._df_oku(eski_veri, onbellek=False),
+                                    kaynak or eski_veri)
+                degis[eski_veri] = yeni_veri
+        except Exception:
+            pass
+    if yeni.get("updt_sozluk") == eski_soz:
+        yeni.pop("_updt_sozluk_imza", None)
+        degis[eski_soz] = yeni_soz
+    if not degis:
+        return yeni
+    metin = json.dumps(yeni, ensure_ascii=False)
+    for e, y in degis.items():
+        metin = metin.replace('"%s"' % e, '"%s"' % y)
+    yeni = json.loads(metin)
+    if eski_soz in degis:
+        try:
+            amp_mod.updt_sozluk_yayinla(yeni)
+        except Exception:
+            pass
+    return yeni
 
 
 def _klasor_dosyalari(hafiza, kimlik):

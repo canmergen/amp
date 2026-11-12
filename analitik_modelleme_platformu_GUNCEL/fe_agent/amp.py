@@ -73,7 +73,7 @@ def _donusum_istegi(durum, kolonlar):
     return cikti
 
 
-def _sonuc_ile_calistir(is_adi, girdiler, istek, sahip, ad_eki=None):
+def _sonuc_ile_calistir(is_adi, girdiler, istek, sahip, ad_eki=None, cikti_adi=None):
     """Isi calistirir ve sonuc.json'u doner. Is basarisiz bittiyse ama
     recipe kendi hatasini (ornegin cevrilemeyen hucre) sonuca yazdiysa o
     daha anlasilir oldugu icin o gosterilir."""
@@ -81,16 +81,16 @@ def _sonuc_ile_calistir(is_adi, girdiler, istek, sahip, ad_eki=None):
     kosu_id = uuid.uuid4().hex
     try:
         spark_is.calistir(is_adi, girdiler, istek, sahip, kosu_id=kosu_id,
-                          ad_eki=ad_eki)
+                          ad_eki=ad_eki, cikti_adi=cikti_adi)
     except AdimHatasi:
         try:
-            sonuc = spark_is.sonuc_oku(is_adi, SONUC_DOSYA, kosu_id, ad_eki)
+            sonuc = spark_is.sonuc_oku(is_adi, SONUC_DOSYA, kosu_id, ad_eki, cikti_adi)
         except AdimHatasi:
             sonuc = None
         if isinstance(sonuc, dict) and sonuc.get("hata"):
             raise AdimHatasi(sonuc["hata"])
         raise
-    sonuc = spark_is.sonuc_oku(is_adi, SONUC_DOSYA, kosu_id, ad_eki)
+    sonuc = spark_is.sonuc_oku(is_adi, SONUC_DOSYA, kosu_id, ad_eki, cikti_adi)
     if sonuc.get("hata"):
         raise AdimHatasi(sonuc["hata"])
     return sonuc
@@ -113,6 +113,100 @@ def calisma_eki(durum):
     return ek.strip("_").upper() or "CALISMA"
 
 
+# ===========================================================================
+# DORT TABLO: BAZ VERI, BAZ SOZLUK, UPDT VERI, UPDT SOZLUK
+# ---------------------------------------------------------------------------
+# Bir calisma Flow'da yalniz dort veri seti yazar, hepsi calismaya ozel
+# (onek calisma eki, ornek "V8"):
+#   <EK>_BAZ_VERI    : secilen tablonun (Mod B/D'de birlestirmenin) birebir
+#                      kopyasi; secimden sonra hic degismez.
+#   <EK>_BAZ_SOZLUK  : secilen (birlesik / kaynak / uretilen) sozlugun
+#                      birebir kopyasi; hic degismez.
+#   <EK>_UPDT_VERI   : verinin her zaman en son hali (01.3'ten itibaren her
+#                      adim gunceller).
+#   <EK>_UPDT_SOZLUK : sozlugun her zaman en son hali (calisma kopyasi /
+#                      AMP_SOZLUK'ün Flow'daki yayini; her adim sonunda).
+# Eski calismalar (AMP_VERISETI, AMP_VERISETI_HAM ...) eski adlariyla
+# okunmaya devam eder; yeni adlar yalniz yeni yazimlarda kullanilir.
+# ===========================================================================
+def baz_veri_adi(durum):
+    return "%s_BAZ_VERI" % calisma_eki(durum)
+
+
+def baz_sozluk_adi(durum):
+    return "%s_BAZ_SOZLUK" % calisma_eki(durum)
+
+
+def updt_veri_adi(durum):
+    return "%s_UPDT_VERI" % calisma_eki(durum)
+
+
+def updt_sozluk_adi(durum):
+    return "%s_UPDT_SOZLUK" % calisma_eki(durum)
+
+
+def sozluk_veri_setine_yaz(durum, ad, tablo):
+    """Sozluk tablosunu Flow'daki veri setine yazar (yoksa secili veri
+    setinin baglantisinda kurulur). Doner: hata metni ya da None."""
+    kaynak = durum.get("veri_seti") or (durum.get("amp_ham") or {}).get("kaynak")
+    try:
+        if kaynak:
+            spark_is.veri_seti_hazirla(ad, kaynak)
+        if not dataset_yaz(ad, _sozluk_yazilabilir(tablo)):
+            return "%s veri setine yazılamadı." % ad
+    except Exception as e:      # pylint: disable=broad-except
+        return "%s veri seti kurulamadı (%s)." % (ad, str(e)[:160])
+    onbellek_temizle(ad)
+    return None
+
+
+def _sozluk_yazilabilir(tablo):
+    """Karisik tipli (ornek liste, sozluk) hucreler veri setine metin
+    olarak gider."""
+    t = tablo.copy()
+    for k in t.columns:
+        if t[k].dtype == object:
+            t[k] = t[k].map(lambda v: v if v is None or isinstance(v, (str, int, float, bool))
+                            else str(v))
+    return t
+
+
+def baz_sozluk_yaz(durum, tablo):
+    """BAZ sozluk: secilen sozlugun birebir kopyasi (bir kez, secimde).
+    Doner: hata metni ya da None."""
+    hata = sozluk_veri_setine_yaz(durum, baz_sozluk_adi(durum), tablo)
+    if not hata:
+        durum["baz_sozluk"] = baz_sozluk_adi(durum)
+    return hata
+
+
+def updt_sozluk_yayinla(durum):
+    """UPDT sozluk: sozlugun o anki hali (calisma kopyasi ya da AMP_SOZLUK)
+    Flow'daki veri setine yazilir. Icerik degismediyse yazilmaz. Doner:
+    hata metni ya da None."""
+    from fe_agent import sozluk_calisma
+    try:
+        tablo = sozluk_calisma.calisma_df(durum)
+    except Exception:           # pylint: disable=broad-except
+        tablo = None
+    if tablo is None or not len(tablo.columns):
+        return None
+    try:
+        import pandas as pd
+        imza = "%d:%d:%s" % (len(tablo), len(tablo.columns), int(
+            pd.util.hash_pandas_object(tablo.astype(str), index=False).sum()))
+    except Exception:           # pylint: disable=broad-except
+        imza = None
+    ad = updt_sozluk_adi(durum)
+    if imza and durum.get("_updt_sozluk_imza") == [ad, imza]:
+        return None
+    hata = sozluk_veri_setine_yaz(durum, ad, tablo)
+    if not hata:
+        durum["updt_sozluk"] = ad
+        durum["_updt_sozluk_imza"] = [ad, imza]
+    return hata
+
+
 def amp_dosya_yolu(durum):
     """Pandas yolunda AMP_VERISETI'nin calisma klasorundeki yeri."""
     from fe_agent.akis_faz01 import amp_klasor_adi
@@ -123,7 +217,7 @@ def _klasore_yaz(yol, tablo):
     try:
         yol = tablo_io.klasore_yaz(_folder(), yol, tablo)
     except Exception as e:
-        raise AdimHatasi("AMP_VERISETI çalışma klasörüne yazılamadı (%s)." % str(e)[:200])
+        raise AdimHatasi("Veri çalışma klasörüne yazılamadı (%s)." % str(e)[:200])
     onbellek_temizle(yol)
     return yol
 
@@ -160,25 +254,31 @@ def amp_ham_yaz(durum, df=None):
     satir, kolon}."""
     veri = durum.get("veri_seti")
     if not veri:
-        raise AdimHatasi("Veri seti seçilmeden AMP_VERISETI oluşturulamaz.")
+        raise AdimHatasi("Veri seti seçilmeden BAZ veri oluşturulamaz.")
+    baz = baz_veri_adi(durum)
     secilen, boyut = motor.sec([veri])
-    if secilen == motor.PANDAS:
+    if veri == baz:
+        # Mod B/D: birlestirme sonucu dogrudan BAZ veriye yazildi; kopya yok.
         if df is None:
-            from fe_agent.akis_durum import _calisma_kopyasi, _dosya_oku
-            kopya = _calisma_kopyasi(durum, veri)
-            df = _dosya_oku(kopya) if kopya else _df_oku(veri, onbellek=False)
-        kayit = {"dosya": _klasore_yaz(amp_ham_yolu(durum), df), "dataset": None,
-                 "motor": motor.PANDAS, "satir": int(len(df)),
-                 "kolon": int(len(df.columns))}
+            df = _df_oku(baz, limit=1)
+            satir = ((durum.get("birlestirme") or {}).get("ozet") or {}).get("satir")
+        else:
+            satir = int(len(df))
+        kayit = {"dosya": None, "dataset": baz, "motor": secilen,
+                 "satir": satir, "kolon": int(len(df.columns))}
+    elif secilen == motor.PANDAS:
+        if df is None:
+            df = _df_oku(veri, onbellek=False)
+        _pandas_yaz(baz, df, veri)
+        kayit = {"dosya": None, "dataset": baz, "motor": motor.PANDAS,
+                 "satir": int(len(df)), "kolon": int(len(df.columns))}
     else:
-        ek = "%s_%s" % (calisma_eki(durum), AMP_HAM_EKI)
         istek = {"donusum": {}, "dusen": [], "hedef": None, "bolme": None,
                  "yeniden_ad": {}}
         sonuc = _sonuc_ile_calistir("amp", [veri], istek, durum.get("_oturum_id") or "",
-                                    ad_eki=ek)
-        ad = "%s_%s" % (AMP_VERI_ADI, ek)
-        motor.unut(ad)
-        kayit = {"dosya": None, "dataset": ad, "motor": motor.SPARK,
+                                    cikti_adi=baz)
+        motor.unut(baz)
+        kayit = {"dosya": None, "dataset": baz, "motor": motor.SPARK,
                  "satir": int(sonuc.get("satir") or 0),
                  "kolon": int(sonuc.get("kolon") or 0)}
     # Motor ve boyut SECILEN tablonunki (kopyanin yolu boyut olcmez).
@@ -203,20 +303,20 @@ def amp_yaz(durum, prof):
         # rol ve surec disi kolonlar haric. Girdi tabloya dokunulmaz.
         "yeniden_ad": yeniden_ad_esleme(durum, list(kolonlar)),
     }
+    updt = updt_veri_adi(durum)
     if motor.sec([veri])[0] == motor.PANDAS:
         from fe_agent import amp_pandas
         tablo, sonuc = amp_pandas.amp_hazirla(_df_oku(veri), istek)
         if sonuc.get("hata"):
             raise AdimHatasi(sonuc["hata"])
-        sonuc.update(motor=motor.PANDAS, dataset=None,
-                     dosya=_klasore_yaz(amp_dosya_yolu(durum), tablo))
+        _pandas_yaz(updt, tablo, veri)
+        sonuc.update(motor=motor.PANDAS, dataset=updt, dosya=None, istek=istek, kaynak=veri)
         return sonuc
-    ek = calisma_eki(durum)
     sonuc = _sonuc_ile_calistir("amp", [veri], istek, durum.get("_oturum_id") or "",
-                                ad_eki=ek)
-    ad = "%s_%s" % (AMP_VERI_ADI, ek)
-    motor.unut(ad)
-    sonuc.update(motor=motor.SPARK, dataset=ad, dosya=None, taban=ad)
+                                cikti_adi=updt)
+    motor.unut(updt)
+    sonuc.update(motor=motor.SPARK, dataset=updt, dosya=None, taban=updt,
+                 istek=istek, kaynak=veri)
     return sonuc
 
 
@@ -229,13 +329,38 @@ def amp_bolme_yaz(durum, bolme):
     AMP_VERISETI odur. Doner: amp_yaz ile ayni bicim + setler."""
     kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
     if not (kayit.get("dosya") or kayit.get("dataset")):
-        raise AdimHatasi("AMP_VERISETI henüz oluşturulmadı; önce %s adımını "
+        raise AdimHatasi("UPDT veri henüz oluşturulmadı; önce %s adımını "
                          "kaydedin." % akis_atif.adim("teyit", durum))
     istek = {"donusum": {}, "dusen": [],
              "hedef": (durum.get("meta") or {}).get("target"), "bolme": bolme,
              # Segment kolonu: set x segment sayimi (01.4 segment tablosu)
              "segment": (durum.get("meta") or {}).get("segment")}
     from fe_agent import amp_pandas
+    if kayit.get("dataset") and kayit.get("istek") is not None \
+            and kayit["dataset"] == updt_veri_adi(durum):
+        # UPDT VERI: ayni veri setine yazilir. Pandas: UPDT okunur, eski
+        # _SPLIT atilir, yenisi eklenir. Spark: bir veri seti ayni recipe'in
+        # hem girdisi hem ciktisi olamaz; UPDT BAZ veriden teyit istegi +
+        # bolme ile yeniden kurulur (sonuc ayni: teyit + _SPLIT).
+        updt = kayit["dataset"]
+        if kayit.get("motor") == motor.PANDAS:
+            df = _df_oku(updt, onbellek=False)
+            df = df.drop(columns=[amp_pandas.SPLIT_KOLON], errors="ignore")
+            tablo, sonuc = amp_pandas.amp_hazirla(df, istek)
+            if sonuc.get("hata"):
+                raise AdimHatasi(sonuc["hata"])
+            _pandas_yaz(updt, tablo, kayit.get("kaynak") or updt)
+            sonuc.update(motor=motor.PANDAS, dataset=updt, dosya=None,
+                         istek=kayit["istek"], kaynak=kayit.get("kaynak"))
+            return sonuc
+        tam = dict(kayit["istek"], bolme=bolme,
+                   segment=(durum.get("meta") or {}).get("segment"))
+        sonuc = _sonuc_ile_calistir("amp", [kayit.get("kaynak")], tam,
+                                    durum.get("_oturum_id") or "", cikti_adi=updt)
+        motor.unut(updt)
+        sonuc.update(motor=motor.SPARK, dataset=updt, dosya=None, taban=updt,
+                     istek=kayit["istek"], kaynak=kayit.get("kaynak"))
+        return sonuc
     if kayit.get("dosya"):
         df = tablo_io.klasorden_oku(_folder(), kayit["dosya"])
         df = df.drop(columns=[amp_pandas.SPLIT_KOLON], errors="ignore")
@@ -256,20 +381,22 @@ def amp_bolme_yaz(durum, bolme):
 
 
 def baz_yaz(durum, tablolar):
-    """Ayni kolonlu kaynak tablolari alt alta MODELLEME_BAZ'a yazar.
+    """Ayni kolonlu kaynak tablolari alt alta BAZ veriye (<EK>_BAZ_VERI) yazar.
     Doner: {tablolar: {ad: {satir, kolon}}, satir, kolon, motor}. Motor
     tablolarin TOPLAM boyutuna gore secilir."""
     tablolar = list(tablolar)
+    baz = baz_veri_adi(durum)
     if motor.sec(tablolar)[0] == motor.PANDAS:
         from fe_agent import amp_pandas
         tablo, sonuc = amp_pandas.alt_alta(
             tablolar, lambda ad: _df_oku(ad, onbellek=False))
         if sonuc.get("hata"):
             raise AdimHatasi(sonuc["hata"])
-        _pandas_yaz(BAZ_VERI_ADI, tablo, tablolar[0])
-        sonuc["motor"] = motor.PANDAS
+        _pandas_yaz(baz, tablo, tablolar[0])
+        sonuc.update(motor=motor.PANDAS, dataset=baz)
         return sonuc
-    sonuc = _sonuc_ile_calistir("baz", tablolar, {}, durum.get("_oturum_id") or "")
-    motor.unut(BAZ_VERI_ADI)
-    sonuc["motor"] = motor.SPARK
+    sonuc = _sonuc_ile_calistir("baz", tablolar, {}, durum.get("_oturum_id") or "",
+                                cikti_adi=baz)
+    motor.unut(baz)
+    sonuc.update(motor=motor.SPARK, dataset=baz)
     return sonuc
