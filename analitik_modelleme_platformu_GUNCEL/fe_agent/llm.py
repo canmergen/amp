@@ -3888,28 +3888,36 @@ Kurallar:
 SISTEM_AYNI = """Sen bir kredi riski veri bilimcisisin. Sana değerleri satır
 satır birebir aynı (ya da "ilişki" satırı varsa neredeyse aynı: biri ötekinin
 sabit katı ya da korelasyonu çok yüksek) olan kolon grupları verilecek; her
-kolonun adı ve sözlük açıklaması var. Değerler aynı bilgiyi taşıdığı için her
-gruptan yalnız bir kolon modelde kalacak. Her grup için, adı ve açıklaması bu ortak değerin anlamını EN DOĞRU
-anlatan kolonu seç.
+kolonun adı, sözlük açıklaması ve veri profilinin öteki kontrollerinde o kolon
+için bulunanlar ("bulgular") var. Aynı bilgiyi taşıdıkları için her gruptan
+yalnız bir kolon modelde kalacak. Her grup için kolonları KALMA SIRASINA koy:
+ilk sıradaki kalır; o başka bir yerde çıkarılırsa sıradaki kalır.
 
 Ölçütler, sırayla:
-- Açıklamalar farklı şeyler anlatıyorsa: değerler aynı olduğuna göre ikisinden
-  hangisinin anlamı veriyle tutarlı ve daha genel, onu seç; daha dar ya da
-  yanıltıcı anlatanı seçme.
-- Açıklamalar aynı anlamdaysa: adı daha sade ve standart olanı seç.
-- Açıklaması boş ya da belirsiz olanı seçme.
+1. "ÇIKARILIR" yazan kolonu (başka bir kontrolde zaten çıkarılacak) sona koy;
+   onu seçmek boşa karar olur.
+2. Daha az değişiklik isteyen kolonu öne koy: düzeltme gerektiren bulgusu
+   (özel kod, metin olarak yazılmış boş, yazım tutarsızlığı, negatif, uç değer)
+   ya da karar isteyen bulgusu olmayan kolon, olandan önce gelir.
+3. Bulgular denkse: açıklamalar farklı şeyler anlatıyorsa değerler aynı
+   olduğuna göre anlamı veriyle tutarlı ve daha genel olanı öne koy; dar ya da
+   yanıltıcı anlatanı sona koy. Açıklamalar aynı anlamdaysa adı daha sade ve
+   standart olanı öne koy. Açıklaması boş ya da belirsiz olanı sona koy.
 
 ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
-{"gruplar":[{"id":"...","kalan":"KOLON_ADI","gerekce":"bir cümle, Türkçe"}]}
-"id" ve kolon adlarını sana verildiği gibi AYNEN kopyala. Gerekçede iki
-kolonun anlamını karşılaştır.""" + SINIRLAYICI_KURALI
+{"gruplar":[{"id":"...","sira":["KOLON_1","KOLON_2"],"gerekce":"bir cümle, Türkçe"}]}
+"id" ve kolon adlarını sana verildiği gibi AYNEN kopyala; "sira" grubun bütün
+kolonlarını içersin. Gerekçede ilk sıradakinin neden seçildiğini söyle
+(bulgu farkı ya da anlam farkı).""" + SINIRLAYICI_KURALI
 AYNI_PARCA = 40
 
 
 def ayni_icerik_sec(gruplar):
-    """gruplar: [{"id", "uyeler": [{"ad", "aciklama"}]}]. Doner:
-    ({id: {"kalan", "gerekce"}}, hata). Gecersiz oneri (grupta olmayan kolon)
-    alinmaz; o grup sonucta yer almaz."""
+    """gruplar: [{"id", "iliski", "uyeler": [{"ad", "aciklama", "bulgular":
+    [metin], "cikar": sebep ya da ""}]}]. Doner: ({id: {"sira", "kalan",
+    "gerekce"}}, hata). sira grubun butun uyeleri (eksik uye kendi sirasiyla
+    sona eklenir, grupta olmayan ad atilir); hic gecerli ad yoksa grup
+    sonucta yer almaz."""
     sonuc, hatalar = {}, []
     for i in range(0, len(gruplar), AYNI_PARCA):
         parca = gruplar[i:i + AYNI_PARCA]
@@ -3920,19 +3928,99 @@ def ayni_icerik_sec(gruplar):
                 satirlar.append("  ilişki: %s" % g["iliski"])
             for u in g["uyeler"]:
                 satirlar.append("  - %s: %s" % (u["ad"], (u.get("aciklama") or "(açıklama yok)")[:200]))
+                if u.get("cikar"):
+                    satirlar.append("      ÇIKARILIR: %s" % u["cikar"])
+                for b in (u.get("bulgular") or [])[:6]:
+                    satirlar.append("      bulgu: %s" % str(b)[:160])
         try:
             ham = _cagir(SISTEM_AYNI, _veri_blogu("Gruplar:", "\n".join(satirlar)), sicaklik=0.1)
         except Exception as e:
             hatalar.append(_hata_metni(e))
             continue
         veri = _json_ayristir(ham, {}, dict)
-        uyeler = {g["id"]: {u["ad"] for u in g["uyeler"]} for g in parca}
+        uyeler = {g["id"]: [u["ad"] for u in g["uyeler"]] for g in parca}
         for k in (veri.get("gruplar") or []) if isinstance(veri, dict) else []:
             if not isinstance(k, dict):
                 continue
-            gid, kalan = str(k.get("id") or ""), str(k.get("kalan") or "")
-            if gid in uyeler and kalan in uyeler[gid]:
-                sonuc[gid] = {"kalan": kalan, "gerekce": str(k.get("gerekce") or "").strip()[:300]}
+            gid = str(k.get("id") or "")
+            if gid not in uyeler:
+                continue
+            ham_sira = k.get("sira")
+            if not isinstance(ham_sira, list):          # eski bicim: tek "kalan"
+                ham_sira = [k.get("kalan")] if k.get("kalan") else []
+            sira = [str(a) for a in ham_sira if str(a) in uyeler[gid]]
+            sira = list(dict.fromkeys(sira))
+            if not sira:
+                continue
+            sira += [a for a in uyeler[gid] if a not in sira]
+            sonuc[gid] = {"sira": sira, "kalan": sira[0],
+                          "gerekce": str(k.get("gerekce") or "").strip()[:300]}
+    return sonuc, (hatalar[-1] if hatalar else None)
+
+
+# ===========================================================================
+# 02.1 OZEL KOD DUZELTMESI: hangisi onerilsin
+# ===========================================================================
+# Sayisal kolonda -1, -99, 9999 gibi bir ozel kod (Gizli Eksik) ya da hem
+# bos hucre hem kod (Karisik Eksik) bulundu. Kodun anlami kolona gore
+# degisir: "hic islem yok" gibi bir bilgi de olabilir, "bilgi yok" da.
+# Dil modeli kolonun adina, aciklamasina ve sayilara bakip onerir; kod
+# yalniz gecerli secenegi alir, kullanici kartta degistirebilir.
+SISTEM_KOD = """Sen bir kredi riski veri bilimcisisin. Sana sayısal kolonlar
+verilecek; her birinde -1, -99, 9999 gibi bir özel kod bulundu. Her kolonun
+adı, sözlük açıklaması, ölçüsü, kod, kodlu satır sayısı, boş hücre sayısı ve
+dolu satır sayısı var. Her kolon için verilen seçeneklerden BİRİNİ öner.
+
+Seçenekler (yalnız kolonun "secenekler" listesindekiler geçerli):
+- kod_bos_bayrak: kod boş sayılır, kodun olduğu satırlar ayrıca 1/0 bayrağıyla
+  işaretlenir. Kod "bilgi yok" demek ama kodun konduğu durumun kendisi bilgi
+  taşıyabiliyorsa.
+- kod_bos: kod boş sayılır, bayrak yok. Kod açıkça "bilgi yok / ölçülmedi"
+  demekse ve boş hücrelerle aynı anlamdaysa.
+- bos_koda: boş hücreler de koda çevrilir (eksik bilgi tek biçimde, verideki
+  kodla). Kod, veriyi hazırlayanın bilinçli olarak koyduğu bir değerse (ör.
+  hiç işlem yoksa -1) ve boş hücreler de aynı durumu anlatıyorsa.
+- birak: hiçbir şey değiştirilmez. Kodun anlamı açıklamadan çıkarılamıyorsa
+  ya da kod ile boş hücre farklı şeyler anlatıyorsa (değiştirmek bilgiyi
+  bozabilir).
+
+Veriyi hazırlayanın koyduğu kodu boşa çevirmeyi yalnız açıklama kodun "bilgi
+yok" anlamına geldiğini gösteriyorsa öner. Emin değilsen "birak" öner.
+
+ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
+{"kolonlar":[{"kolon":"KOLON_ADI","secim":"...","gerekce":"bir cümle, Türkçe"}]}
+Kolon adlarını AYNEN kopyala.""" + SINIRLAYICI_KURALI
+KOD_PARCA = 40
+
+
+def kod_duzeltme_sec(kolonlar):
+    """kolonlar: [{"kolon", "aciklama", "olcu", "kod", "kod_adet", "bos_adet",
+    "dolu_adet", "secenekler"}]. Doner: ({kolon: {"secim", "gerekce"}},
+    hata). Kolonun seceneklerinde olmayan secim alinmaz."""
+    sonuc, hatalar = {}, []
+    for i in range(0, len(kolonlar), KOD_PARCA):
+        parca = kolonlar[i:i + KOD_PARCA]
+        satirlar = []
+        for x in parca:
+            satirlar.append("- %s | açıklama: %s | ölçü: %s | kod: %s | kodlu satır: %s | "
+                            "boş hücre: %s | dolu satır: %s | secenekler: %s" % (
+                                x["kolon"], (x.get("aciklama") or "(açıklama yok)")[:200],
+                                x.get("olcu") or "-", x.get("kod"), x.get("kod_adet"),
+                                x.get("bos_adet"), x.get("dolu_adet"),
+                                ", ".join(x.get("secenekler") or [])))
+        try:
+            ham = _cagir(SISTEM_KOD, _veri_blogu("Kolonlar:", "\n".join(satirlar)), sicaklik=0.1)
+        except Exception as e:
+            hatalar.append(_hata_metni(e))
+            continue
+        veri = _json_ayristir(ham, {}, dict)
+        gecerli = {x["kolon"]: set(x.get("secenekler") or []) for x in parca}
+        for k in (veri.get("kolonlar") or []) if isinstance(veri, dict) else []:
+            if not isinstance(k, dict):
+                continue
+            ad, secim = str(k.get("kolon") or ""), str(k.get("secim") or "")
+            if ad in gecerli and secim in gecerli[ad]:
+                sonuc[ad] = {"secim": secim, "gerekce": str(k.get("gerekce") or "").strip()[:300]}
     return sonuc, (hatalar[-1] if hatalar else None)
 
 

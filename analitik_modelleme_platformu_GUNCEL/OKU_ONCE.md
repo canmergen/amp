@@ -2338,6 +2338,36 @@ tanıtır; sayfalar sol bardan açılır.
     Dönemden Sonraki Tarih'te Çıkar denen tarihin `_GUN` kolonu da yok.
   - Kart bulgusu: en eski ve en yeni tarih (kod tarihler hariç).
 
+**02.1 karar sırası: aynı içerikli grup ve özel kod önerisi**
+- Aynı ve neredeyse aynı kolon grupları (`_ayni_gruplari`): her üyenin
+  öteki kontrollerdeki durumu `_uye_durumlari` ile çıkarılır (bulgular,
+  düzeltme ve karar sayısı, "çıkarılır" sebebi: varsayılanı Çıkar olan
+  sızıntı kontrolü ya da önceki Çıkar kararı). Dil modeli
+  (`llm.ayni_icerik_sec`) kolonları KALMA SIRASINA koyar (`sira`):
+  çıkarılan sona, az düzeltme ve karar isteyen öne, sonra anlam ve ad. Kod
+  denetler: çıkarılan üye dil modeli öne koysa da sona gider. Dil modeli
+  yoksa `_kural_sirasi` (çıkarılmayan, az düzeltme ve karar, tablo sırası;
+  bilgi notları sırayı etkilemez). Üye durumu değişince (imza) yeniden
+  sorulur.
+- `_ayni_kalan` dinamik: kullanıcının seçimi, yoksa sıradaki ilk; seçilen
+  kolon başka kontrolde Çıkar denmişse sıradaki çıkarılmayan ilk kolon.
+  `veri_profili_uygula` önce kalanı, sonra kararları, sonra kalanı yeniden
+  kurar; kalan değişince kartta gösterilmeyen yeni karar adayı varsayılan
+  kararını alır (sızıntıda Çıkar).
+- Kartta üye satırında kırmızı "… kontrolünde Çıkar önerilir" ve soluk
+  "Bulgular: …"; üyeler sırayla.
+- Özel kod düzeltmesi (Gizli Eksik, Karışık Eksik): öneriyi
+  `llm.kod_duzeltme_sec` kolonun adı, açıklaması, ölçüsü, kod ve sayılarla
+  verir (`p["kod_oneri"]`, imzayla önbellekli; `_kod_onerileri`). Yeni
+  seçenek "Boşları da koda çevir" (`bos_koda`, yalnız boş hücresi olan
+  kolonda; boşlar kodla doldurulur). Dil modeli yoksa kural: Gizli Eksik
+  kodu boş say ve bayrak, Karışık Eksik olduğu gibi bırak (kodu veriyi
+  hazırlayan bilerek koymuş olabilir). Gerekçe Bulgu sütununda "Öneri
+  gerekçesi: …".
+- Toplu düzeltme listesi bütün kolonların seçeneklerini taşır; öneri yalnız
+  hepsinde aynıysa işaretli, değilse "Düzeltme seçin"; kolonun
+  seçeneklerinde olmayan seçim o kolona yazılmaz.
+
 **02.2 Kural Tabanlı Değişken Üretimi: plan isteği**
 - `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)
   `PLAN_PARCA_KARAKTER` (12.000 karakter) parçalarına böler, parçalar

@@ -5565,6 +5565,8 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-ayni-grup-bas { display: flex; gap: var(--b-3); align-items: baseline; flex-wrap: wrap; }
 .pf-ayni-grup-sayi { color: var(--metin-soluk); }
 .pf-ayni-gerekce { color: var(--metin-soluk); line-height: 1.4; margin-top: 2px; overflow-wrap: break-word; }
+.pf-ayni-uye-not { color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1.4; margin-top: 2px; overflow-wrap: break-word; }
+.pf-ayni-uye-not.cikar { color: var(--kirmizi); }
 .pf-ayni-uye.kalir > td { background: color-mix(in srgb, var(--yesil) 7%, var(--yuzey)); }
 .pf-ayni-uye.cikar .pf-kolon-ad { color: var(--metin-soluk); text-decoration: line-through; text-decoration-thickness: 1px; }
 .pf-ayni-cip {

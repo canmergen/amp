@@ -17119,7 +17119,14 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
         g.uyeler.forEach(u => {
             const r = elYap("tr", "pf-ayni-uye");
             r.appendChild(elYap("td", "pf-kolon-ad", u.ad));
-            r.appendChild(elYap("td", "pf-kolon-acik", u.aciklama || BOS_SIMGE));
+            /* Üyenin öteki kontrollerdeki durumu: kalacak kolon buna göre
+               sıralandı (başka yerde çıkarılan seçilmez, az düzeltme
+               isteyen öne). */
+            const aTd = elYap("td", "pf-kolon-acik", u.aciklama || BOS_SIMGE);
+            if (u.cikar) aTd.appendChild(elYap("div", "pf-ayni-uye-not cikar", u.cikar));
+            const bul = (u.bulgular || []).map(b => String(b).split(":")[0]);
+            if (bul.length) aTd.appendChild(elYap("div", "pf-ayni-uye-not", "Bulgular: " + bul.join(", ")));
+            r.appendChild(aTd);
             const oTd = elYap("td", "pf-ayni-oneri");
             if (u.ad === g.oneri && g.kaynak === "dil modeli") oTd.appendChild(elYap("span", "pf-ayni-cip", "Önerilen"));
             else if (u.ad === g.oneri) oTd.appendChild(elYap("span", "pf-ayni-cip pasif", "Öneri alınamadı"));
@@ -17533,18 +17540,34 @@ function profilKartiEkle(alan, blok) {
         const cozumlu = duzeltmeli || (k.kolonlar || []).some(c => c.cozum || c.cozum_baska);
         if (duzeltmeli && kararModu) {
             /* Toplu düzeltme: seçilen düzeltme bu kontroldeki bütün kolonlara. */
-            const ilk = (k.kolonlar || []).find(c => c.duzeltme).duzeltme;
+            /* Kolonların seçenekleri ve önerisi farklı olabilir (önerinin
+               dil modeli kolon kolon verir; boşları koda çevirmek yalnız boş
+               hücresi olan kolonda). Toplu listede bütün seçenekler; öneri
+               yalnız hepsinde aynıysa işaretli. Uygulanınca kolonun
+               seçeneklerinde olmayan seçim o kolona yazılmaz. */
+            const duzKol = (k.kolonlar || []).filter(c => c.duzeltme);
+            const ilk = { secenekler: [], oneri: null };
+            duzKol.forEach(c => (c.duzeltme.secenekler || []).forEach(o => {
+                if (!ilk.secenekler.some(x => x.kod === o.kod)) ilk.secenekler.push(o);
+            }));
+            const oneriler = new Set(duzKol.map(c => c.duzeltme.oneri));
+            if (oneriler.size === 1) ilk.oneri = duzKol[0].duzeltme.oneri;
             const ust = elYap("div", "pf-toplu");
             ust.appendChild(elYap("span", "pf-toplu-not", "Bu kontroldeki bütün kolonlar için:"));
             const tsel = elYap("select", "pf-cozum-sec pf-toplu-sec");
             tsel.setAttribute("aria-label", k.ad + " toplu düzeltme");
-            (ilk.secenekler || []).forEach(o => {
+            if (!ilk.oneri) {
+                const op = document.createElement("option");
+                op.value = ""; op.textContent = "Düzeltme seçin";
+                tsel.appendChild(op);
+            }
+            ilk.secenekler.forEach(o => {
                 const op = document.createElement("option");
                 op.value = o.kod;
                 op.textContent = o.ad + (o.kod === ilk.oneri ? " (önerilen)" : "");
                 tsel.appendChild(op);
             });
-            tsel.value = ilk.oneri;
+            tsel.value = ilk.oneri || "";
             /* Seçeneklerin açıklaması burada bir kez; satırlarda yalnız seçim. */
             const tacik = elYap("div", "pf-cozum-acik pf-toplu-acik");
             const taciklama = () => {
@@ -17555,7 +17578,11 @@ function profilKartiEkle(alan, blok) {
             tb.type = "button";
             tb.onclick = () => {
                 if (kart.classList.contains("kilitli")) return;
-                (k.kolonlar || []).forEach(c => { if (c.duzeltme) duzSecim[k.anahtar][c.ad] = tsel.value; });
+                if (!tsel.value) return;
+                (k.kolonlar || []).forEach(c => {
+                    if (c.duzeltme && (c.duzeltme.secenekler || []).some(o => o.kod === tsel.value))
+                        duzSecim[k.anahtar][c.ad] = tsel.value;
+                });
                 kararCiz();
             };
             kararCizenler.push(() => { tsel.disabled = kart.classList.contains("kilitli"); });
@@ -17581,7 +17608,9 @@ function profilKartiEkle(alan, blok) {
             r.appendChild(elYap("td", "pf-kolon-ad", c.ad));
             if (birim !== "satır") r.appendChild(elYap("td", "pf-kolon-acik", c.aciklama || BOS_SIMGE));
             const bTd = elYap("td", "pf-bulgu", c.bulgu || "");
-            if (c.cozum && c.cozum.gerekce) bTd.appendChild(elYap("div", "pf-cozum-gerekce", c.cozum.gerekce));
+            const gz = (c.cozum && c.cozum.gerekce) || (c.duzeltme && c.duzeltme.gerekce);
+            if (gz) bTd.appendChild(elYap("div", "pf-cozum-gerekce",
+                (c.duzeltme && c.duzeltme.gerekce ? "Öneri gerekçesi: " : "") + tireSade(gz)));
             r.appendChild(bTd);
             if (kararli) {
                 const kt = elYap("td", "pf-karar-hucre");

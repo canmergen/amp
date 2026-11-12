@@ -56,6 +56,7 @@ COZUM_ADI = {
     "cikar": "Çıkar",
     "kod_bos_bayrak": "Kodu boş say ve bayrak üret",
     "kod_bos": "Kodu boş say",
+    "bos_koda": "Boşları da koda çevir",
     "negatif_bos": "Negatifleri boş say",
     "kirp": "Uçları kırp",
     "birak": "Olduğu gibi bırak",
@@ -86,6 +87,9 @@ COZUM_ACIKLAMA.update({
                        "ayrıca 1/0 bayrağıyla işaretlenir. Kodun taşıdığı bilgi (ör. «hiç "
                        "işlem yok») kaybolmaz, sayı gibi de kullanılmaz."),
     "kod_bos": "Özel kod olan hücreler boş sayılır; kodun olduğu satırlar ayrıca işaretlenmez.",
+    "bos_koda": ("Boş hücreler de kodla (ör. -1) doldurulur: veriyi hazırlayanın koyduğu kod "
+                 "korunur, eksik bilgi tek biçimde görünür. Kod sayı olarak kalır; aralıklara "
+                 "bölmede ve ağaç tabanlı modellerde ayrı bir grup olur."),
     "negatif_bos": ("Negatif olamayacak bir ölçüdeki negatif değerler hatalı sayılır ve boş "
                     "yapılır; diğer değerler değişmez."),
     "kirp": ("Sınırın üstündeki değerler sınıra çekilir. Sınır yalnız eğitim satırlarından "
@@ -166,6 +170,8 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
     if kontrol == "yazim" and secim == "tek_yazim":
         return yazim_uygula(x, (bilgi or {}).get("anahtar") or {}), None
     sx = pd.to_numeric(x, errors="coerce")
+    if kontrol in KOD_KONTROLLERI and secim == "bos_koda" and "kod" in bilgi:
+        return sx.fillna(float(bilgi["kod"])), None
     if kontrol in KOD_KONTROLLERI and "kod" in bilgi:
         kodlu = sx == float(bilgi["kod"])
         bayrak = kodlu.astype("int8") if secim == "kod_bos_bayrak" else None
