@@ -195,17 +195,61 @@ def updt_dusen_kolonlar(durum):
         return set()
 
 
+def updt_sozluk_ek(durum):
+    """02.1'de uretilen yeni kolonlarin sozluk satirlari (bkz.
+    akis_faz02.yeni_kolon_sozlugu); 02.1 onaylanmadiysa []."""
+    if durum.get("updt_asama") not in UPDT_DUSMUS_ASAMALAR:
+        return []
+    ek = (durum.get("profil") or {}).get("sozluk_ek")
+    return [x for x in ek if isinstance(x, dict) and x.get("DEGISKEN")] if isinstance(ek, list) else []
+
+
 def updt_sozluk_suz(durum, tablo):
     """UPDT sozluk UPDT veriyle ayni kolonlari anlatir: 02.1'de cikan
-    kolonlarin satirlari yazilmaz (calisma kopyasi degismez)."""
-    dus = updt_dusen_kolonlar(durum)
-    if not dus:
-        return tablo
+    kolonlarin satirlari yazilmaz, 02.1'de uretilen yeni kolonlarin
+    satirlari eklenir (calisma kopyasi degismez). Yeni satir sozlugun kendi
+    kolonlarina yazilir: ad, aciklama, varsa TIP, NULL_ORANI, SUREC_DISI ve
+    EK_BILGI (nereden uretildigi)."""
     from fe_agent import sozluk_calisma
     ad = sozluk_calisma.degisken_kolonu_bul(tablo)
     if ad is None:
         return tablo
-    return tablo[~tablo[ad].astype(str).str.strip().isin(dus)].reset_index(drop=True)
+    dus = updt_dusen_kolonlar(durum)
+    if dus:
+        tablo = tablo[~tablo[ad].astype(str).str.strip().isin(dus)].reset_index(drop=True)
+    ek = updt_sozluk_ek(durum)
+    if not ek:
+        return tablo
+    import pandas as pd
+    var = set(tablo[ad].astype(str).str.strip())
+    tanim = sozluk_calisma.tanim_kolonu_bul(tablo)
+    buyuk = {str(c).strip().upper(): c for c in tablo.columns}
+    try:
+        from fe_agent.akis_faz01 import _DISI_METNI
+        disi = _DISI_METNI[False]
+    except Exception:           # pylint: disable=broad-except
+        disi = None
+    yeni = []
+    for x in ek:
+        if str(x["DEGISKEN"]) in var:
+            continue
+        r = {ad: x["DEGISKEN"]}
+        if tanim is not None:
+            r[tanim] = x.get("ACIKLAMA", "")
+        if "TIP" in buyuk:
+            r[buyuk["TIP"]] = x.get("TIP", "")
+        if "NULL_ORANI" in buyuk:
+            r[buyuk["NULL_ORANI"]] = x.get("NULL_ORANI")
+        if "SUREC_DISI" in buyuk and disi is not None:
+            r[buyuk["SUREC_DISI"]] = disi
+        if "EK_BILGI" in buyuk:
+            r[buyuk["EK_BILGI"]] = ("02.1 Veri Profili ve Kalite adımında %s kolonundan üretildi."
+                                    % x.get("KAYNAK_KOLON", ""))
+        yeni.append(r)
+    if not yeni:
+        return tablo
+    return pd.concat([tablo, pd.DataFrame(yeni).reindex(columns=list(tablo.columns))],
+                     ignore_index=True)
 
 
 def updt_sozluk_yayinla(durum):

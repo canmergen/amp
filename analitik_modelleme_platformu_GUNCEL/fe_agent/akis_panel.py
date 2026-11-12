@@ -1276,6 +1276,23 @@ def feature_tablo(durum):
             satir["eski_tanim"] = et
         satirlar.append(satir)
 
+    # 02.1'de uretilen yeni kolonlar (cozum ve duzeltme bayraklari): UPDT
+    # sozlukteki satirlariyla, listenin sonunda.
+    try:
+        from fe_agent import amp as amp_mod
+        ek = amp_mod.updt_sozluk_ek(durum)
+    except Exception:
+        ek = []
+    var = {str(s_["feature"]) for s_ in satirlar}
+    for x in ek:
+        if str(x["DEGISKEN"]) in var:
+            continue
+        satirlar.append({"feature": str(x["DEGISKEN"]), "tip": x.get("TIP"),
+                         "tanim": x.get("ACIKLAMA") or None, "null_oran": x.get("NULL_ORANI"),
+                         "durum": DURUM_TANIMLI, "iv": None, "c": None,
+                         "uretilen": "02.1 adımında %s kolonundan üretildi"
+                                     % x.get("KAYNAK_KOLON", "")})
+
     return {
         "kolonlar": list(FEATURE_KOLONLARI),
         "satirlar": satirlar,

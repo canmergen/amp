@@ -561,6 +561,86 @@ def _duzeltmeleri_uygula(durum, df):
     return df
 
 
+# ===========================================================================
+# 02.1 YENI KOLONLARIN SOZLUK SATIRLARI: cozum kolonlari (gruplama, dolu
+# bayragi, metinden ozellik, gun farki) ve duzeltme bayraklari (_KOD,
+# _BOS) UPDT sozluge eklenir. Satirlar 02.1 onayinda UPDT veri yazilirken
+# kurulur (bos orani yazilan tablodan, kesin); p["sozluk_ek"].
+# ===========================================================================
+SOZLUK_EK_KAYNAK = "02.1 Veri Profili ve Kalite adımında üretildi"
+
+
+def _yeni_kolon_aciklamasi(kolon, kaynak, kaynak_tanim, cozum, ozet, bilgi):
+    """Yeni kolonun sozluk aciklamasi (duz Turkce, tek paragraf)."""
+    from fe_agent import kolon_cozum as kc
+    ref = "%s kolonu" % kaynak + ((" (%s)" % kaynak_tanim.rstrip(".")) if kaynak_tanim else "")
+    if cozum == "gun_farki":
+        return ("%s ile satırın dönem sonu arasındaki gün sayısı: dönem sonu eksi tarih. "
+                "Geçmişteki tarih pozitif, gelecekteki tarih negatif; kod tarihlerde boş."
+                % ref)
+    if cozum == "dolu_bayrak":
+        return "%s dolu ise 1, boş ise 0." % ref
+    if cozum in ("hedef_grupla", "seyrek_grupla", "onek_grupla"):
+        return "%s değerlerinin gruplanmış hali (%s). %s" % (
+            ref, kc.COZUM_ADI.get(cozum, cozum).lower(), ozet or "")
+    if cozum == "metin":
+        if kolon.endswith("_SOZCUK"):
+            return "%s metnindeki sözcük sayısı." % ref
+        if kolon.endswith("_SKOR"):
+            return ("%s metnindeki sözcüklerin hedefle ilişkisinden hesaplanan skor (eğitim "
+                    "satırlarından öğrenildi)." % ref)
+        if kolon.endswith("_KONU"):
+            return "%s metninin konusu (birlikte geçen sözcüklerden çıkarılan konu grubu)." % ref
+        if "_K_" in kolon:
+            ek = kolon.split("_K_", 1)[1].rstrip("_")
+            soz = next((str(b_.get("sozcuk")) for b_ in (bilgi or {}).get("bayrak") or []
+                        if isinstance(b_, dict) and kc._sozcuk_kolon_eki(str(b_.get("sozcuk"))) == ek),
+                       ek.lower())
+            return "%s metninde hedefle ilişkili «%s» sözcüğü geçiyorsa 1, geçmiyorsa 0." % (
+                ref, soz)
+        return "%s metninden üretilen özellik." % ref
+    if cozum == "kod_bos_bayrak":
+        return "%s özel kod %s ise 1, değilse 0 (kod veride boş sayıldı)." % (
+            ref, _sayi_metni((bilgi or {}).get("kod")) if (bilgi or {}).get("kod") is not None
+            else "")
+    if cozum == "metin_bos_bayrak":
+        return ("%s boş anlamına gelen bir yazı (NULL, «-», «?» gibi) taşıyorsa 1, değilse 0 "
+                "(yazı veride boş hücreye çevrildi)." % ref)
+    return "%s kolonundan üretildi." % ref
+
+
+def _sozluk_tip(s):
+    if pd.api.types.is_numeric_dtype(s) and not pd.api.types.is_bool_dtype(s):
+        return "sayısal"
+    return "kategorik"
+
+
+def yeni_kolon_sozlugu(durum, df):
+    """[{"DEGISKEN", "TIP", "ACIKLAMA", "NULL_ORANI", "KAYNAK_KOLON"}]: 02.1'de
+    uretilip `df`'te (UPDT veri) bulunan yeni kolonlar."""
+    p = durum.get("profil") or {}
+    tanim = _aciklamalar(durum)
+    satirlar, gor = [], set()
+
+    def ekle(kolon, kaynak, cozum, ozet, bilgi):
+        if kolon in gor or kolon not in df.columns:
+            return
+        gor.add(kolon)
+        satirlar.append({
+            "DEGISKEN": kolon, "TIP": _sozluk_tip(df[kolon]),
+            "ACIKLAMA": _yeni_kolon_aciklamasi(kolon, kaynak, str(tanim.get(kaynak) or ""),
+                                               cozum, ozet, bilgi).strip(),
+            "NULL_ORANI": round(float(df[kolon].isna().mean()), 4) if len(df) else 0.0,
+            "KAYNAK_KOLON": kaynak})
+    for k, v in (p.get("cozum_bilgi") or {}).items():
+        for c in v.get("kolonlar") or []:
+            ekle(c, k, v.get("cozum"), v.get("ozet") or "", v.get("bilgi"))
+    for _a, kolonlar in (p.get("duzeltme_bilgi") or {}).items():
+        for k, v in kolonlar.items():
+            for c in v.get("kolonlar") or []:
+                ekle(c, k, v.get("secim"), v.get("ozet") or "", v.get("bilgi"))
+    return satirlar
+
 def uretim_kolonlari(durum):
     """Kural / kesif adimlarinin urettigi kolonlar (cozum kolonlari haric)."""
     cozum = set(((durum.get("uretilen_kaynak") or {}).get(COZUM_KAYNAK)) or [])
@@ -1839,10 +1919,13 @@ def veri_profili_uygula(durum):
     # (02.1 sonu). Kaynak her zaman 01 sonu (geri donulduyse BAZ'dan).
     if updt_modu(durum):
         if _asama_katkisi(durum, "02.1"):
-            updt_yaz(durum, girmez_dusur(durum, cozum_kolonlari_ekle(durum, asama_df(durum, "01"))),
-                     "02.1")
+            df21 = girmez_dusur(durum, cozum_kolonlari_ekle(durum, asama_df(durum, "01")))
+            updt_yaz(durum, df21, "02.1")
+            # Yeni kolonlarin UPDT sozluk satirlari (amp.updt_sozluk_suz ekler).
+            p["sozluk_ek"] = yeni_kolon_sozlugu(durum, df21)
         else:
             updt_ilerlet(durum, "02.1", "01")
+            p["sozluk_ek"] = []
     # Profil degisti: SFA ve kararlari eski profile aitti, yeniden hesaplanir.
     eski = (durum.pop("sfa", None) or {}).get("ai_is")
     if eski:

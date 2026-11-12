@@ -3369,6 +3369,17 @@ function ftSatirCiz(s, i) {
         if (a.alan === "tanim") { satir.appendChild(ftTanimHucresi(s)); return; }
         /* 01.2.4.4'te adı değişen kolon: yeni ad, altında soluk eski ad
            (AMP_VERISETI 01.3'te yeni adla yazılır). */
+        /* 02.1'de üretilen yeni kolon: adın altında nereden üretildiği. */
+        if (a.alan === "feature" && s.uretilen) {
+            const h = elYap("span", "ft-hucre " + (a.sinif || ""));
+            h.setAttribute("role", "cell");
+            h.setAttribute("data-alan", a.alan);
+            h.appendChild(elYap("span", "ft-yeni-ad", s.feature));
+            h.appendChild(elYap("span", "ft-eski-ad", "Yeni kolon: " + s.uretilen));
+            h.title = s.feature + " (" + s.uretilen + ")";
+            satir.appendChild(h);
+            return;
+        }
         if (a.alan === "feature" && (s.yeni_ad || s.eski_ad)) {
             /* Yeni ad henüz yazılmadıysa (yeni_ad) satırın adı eski addır;
                UPDT veri yeni adla yazıldıktan sonra eski ad eski_ad'dan. */
@@ -3519,6 +3530,8 @@ function ftDetayCiz() {
     kutu.appendChild(elYap("div", "ft-detay-ad", s.yeni_ad || s.feature));
     if (s.yeni_ad) kutu.appendChild(elYap("div", "ft-eski-ad", "Eski adı: " + s.feature
         + ". Yeni ad Kolon Adları adımında onaylandı; UPDT veri bu adla yazılır."));
+    else if (s.uretilen) kutu.appendChild(elYap("div", "ft-eski-ad", "Yeni kolon: " + s.uretilen
+        + ". Girdi veri setinizde ve sözlüğünüzde yok; UPDT veri ve UPDT sözlükte var."));
     else if (s.eski_ad) kutu.appendChild(elYap("div", "ft-eski-ad", "Eski adı: " + s.eski_ad
         + ". Ad Kolon Adları adımında değişti; girdi veri setinizde ve sözlüğünüzde eski adla durur."));
     /* Satir govdesinde (SOZLESME7 §5) tekil/ornek gelmeyebilir.

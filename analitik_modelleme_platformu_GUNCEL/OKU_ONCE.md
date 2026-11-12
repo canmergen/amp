@@ -2358,6 +2358,21 @@ tanıtır; sayfalar sol bardan açılır.
   (`dusme_metni`). 03.3 yine düşürme kümesini uygular (kolon zaten yoksa
   atlanır).
 - _SPLIT 02.1 profiline girmez (hedef, kimlik, dönem gibi).
+- YENİ KOLONLAR SÖZLÜKTE: 02.1 onayında UPDT veri yazılırken
+  `yeni_kolon_sozlugu` üretilen her kolon için satır kurar
+  (`p["sozluk_ek"]`: DEGISKEN, TIP, ACIKLAMA, NULL_ORANI yazılan tablodan,
+  KAYNAK_KOLON). Kaynak: `cozum_bilgi` (gruplama `_GRP`/`_ONEK_GRP`, dolu
+  bayrağı `_DOLU`, metinden `_SOZCUK`, `_SKOR`, `_K_<sözcük>`, `_KONU`, gün
+  farkı `_GUN`) ve `duzeltme_bilgi` bayrakları (`_KOD`, `_BOS`). Açıklama
+  `_yeni_kolon_aciklamasi`: kaynak kolon ve onun açıklaması, ne olduğu
+  (ör. "GUN kolonu (Son ödemeden bu yana geçen gün) özel kod -1 ise 1,
+  değilse 0"). 02.1 bir şey katmadıysa liste boş.
+- `amp.updt_sozluk_suz` bu satırları UPDT sözlüğün kendi kolonlarına ekler
+  (ad, açıklama; varsa TIP, NULL_ORANI, SUREC_DISI "hayır", EK_BILGI "02.1
+  Veri Profili ve Kalite adımında X kolonundan üretildi"). Çalışma kopyası
+  değişmez. Veri ve Sözlük Güncel listesinde de listenin sonunda, adın
+  altında "Yeni kolon: 02.1 adımında X kolonundan üretildi"
+  (`feature_tablo` satırında `uretilen`).
 
 **02.1 karar sırası: aynı içerikli grup ve özel kod önerisi**
 - Aynı ve neredeyse aynı kolon grupları (`_ayni_gruplari`): her üyenin
