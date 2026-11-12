@@ -9184,6 +9184,12 @@ def teyit_satirlari(durum):
         orijinal = {}
     # Yeni ad verilmis kolonun ilk aciklamasi ESKI adiyla durur.
     eski_ad = {str(y): str(e) for e, y in (durum.get("_amp_yeniden_ad") or {}).items()}
+    # 01.2.4.4'te onaylanan YENI AD: liste kaydedilene (AMP_VERISETI
+    # yazilana) kadar kolonlar eski adla durur; kart yeni adi gosterir,
+    # kararlar (tanim, surec disi, tip) eski adla gider. Kayittan sonra
+    # kolon zaten yeni adla gelir, eski ad eski_ad'dan.
+    yeni_ad = akis_panel._uygulanacak_adlar(
+        durum, [str(r.get("feature") or "") for r in tablo.get("satirlar") or []])
     satirlar = []
     for r in tablo.get("satirlar") or []:
         ad = str(r.get("feature") or "")
@@ -9200,6 +9206,8 @@ def teyit_satirlari(durum):
             donusumler = _tip_secenekleri(durum, tam, ad, kaynak_tip)
         satirlar.append({
             "kolon": ad,
+            "yeni_ad": yeni_ad.get(ad, ""),
+            "eski_ad": eski_ad.get(ad, ""),
             "tip": tip,
             "kaynak_tip": kaynak_tip,
             "tanim": r.get("tanim") or "",

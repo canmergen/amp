@@ -16589,24 +16589,40 @@ function teyitKartiEkle(alan, blok) {
             tr.dataset.kolon = ad;
             tr.dataset.islem = sat.disi ? "haric" : "ekle";
 
-            const tdK = elYap("td", "dg-kolon", ad);
-            tdK.title = ad;
+            /* YENİ AD: 01.2.4.4'te onaylanan ad gösterilir (liste
+               kaydedilince veri ve sözlük bu adla yazılır); altında eski
+               ad. Kararlar (tanım, süreç dışı, tip) kolonun kayıttaki
+               adıyla (tr.dataset.kolon) gider. */
+            const gorunen = String(sat.yeni_ad || ad);
+            const eskiAd = sat.yeni_ad ? ad : String(sat.eski_ad || "");
+            const tdK = elYap("td", "dg-kolon", "");
+            tdK.appendChild(elYap("div", "", gorunen));
+            if (eskiAd && eskiAd !== gorunen)
+                tdK.appendChild(elYap("div", "dg-teyit-eski-ad", "Eski ad: " + eskiAd));
+            tdK.title = eskiAd && eskiAd !== gorunen ? gorunen + " (eski ad: " + eskiAd + ")" : gorunen;
             tr.appendChild(tdK);
             const tipEl = elYap("td", "dg-tip", tireSade(sat.tip));
             tr.appendChild(tipEl);
 
             const tdA = elYap("td", "dg-aciklama-hucre");
-            const giris = document.createElement("input");
-            giris.type = "text";
-            giris.className = "dg-giris";
+            /* TAM OKUNUR: tanım kutusu metne göre uzar (sıkıştırılmaz);
+               ölçüm toplu (boylaPlanla), genişlik değişince yeniden.
+               Enter yeni satır açmaz (tanım tek paragraf). */
+            const giris = document.createElement("textarea");
+            giris.rows = 1;
+            giris.className = "dg-giris dg-teyit-tanim";
+            giris.defaultValue = tireSade(sat.tanim);
             giris.value = tireSade(sat.tanim);
             giris.placeholder = "Tanım yok";
-            giris.setAttribute("aria-label", ad + " sözlük tanımı");
+            giris.setAttribute("aria-label", gorunen + " sözlük tanımı");
             giris.disabled = !dg.duzenlenebilir;
+            giris.addEventListener("keydown", e => { if (e.key === "Enter") e.preventDefault(); });
             /* Odak çıkınca kaydedilir; her tuşta istek göndermek 1.042
                satırlık listede sunucuyu boğardı. */
             giris.onchange = () => tanimKaydet(ad, giris, hataEl);
-            giris.addEventListener("input", () => satirVurgu());
+            giris.addEventListener("input", () => { satirVurgu(); boylaPlanla(giris); });
+            if (BOYLA_GOZCU) BOYLA_GOZCU.observe(giris);
+            boylaPlanla(giris);
             tdA.appendChild(giris);
             tr.appendChild(tdA);
 
@@ -16660,7 +16676,8 @@ function teyitKartiEkle(alan, blok) {
             tr.appendChild(tdI);
             kutu._disiCiz();
 
-            satirlar.push({ tr: tr, ad: ftSade(ad), tanim: ftSade(sat.tanim || ""),
+            satirlar.push({ tr: tr, ad: ftSade(gorunen), adAra: ftSade(gorunen + " " + eskiAd),
+                            tanim: ftSade(sat.tanim || ""),
                             tip: ftSade(sat.tip || ""),
                             tipHam: tireSade(sat.tip || "").trim(),
                             giris: giris, kutu: kutu });
@@ -16678,7 +16695,7 @@ function teyitKartiEkle(alan, blok) {
             const f = ftSade(ara.value || "");
             const t = tipSec.value;
             satirlar.forEach(r => {
-                r.tr.hidden = (!!f && r.ad.indexOf(f) === -1
+                r.tr.hidden = (!!f && r.adAra.indexOf(f) === -1
                                    && r.tanim.indexOf(f) === -1)
                               || (!!t && r.tipHam !== t);
             });

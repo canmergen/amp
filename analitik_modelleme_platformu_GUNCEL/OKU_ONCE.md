@@ -99,6 +99,17 @@ bağlantı ve model adları ve eski ekran adları (kolon adları bozulmaz).
 
 ## Ekran
 
+**01.3 Değişken Listesi ve Tip Kontrolü kartı 01.2.4 sonuçlarıyla.**
+Değişken hücresinde 01.2.4.4'te onaylanan yeni ad, altında soluk "Eski
+ad: …" (`teyit_satirlari` `yeni_ad`, `akis_panel._uygulanacak_adlar`;
+kayıttan sonra kolon zaten yeni adla gelir, eski ad `eski_ad`'da).
+Arama iki adla da bulur, sıralama yeni adla. Kararlar (tanım, süreç
+dışı, tip dönüşümü) kolonun kayıttaki adıyla gider; liste kaydedilince
+AMP_VERISETI ve AMP_SOZLUK yeni adlarla ve 01.2.4.3'te onaylanan
+tanımlarla yazılır, sonraki bütün adımlar bu ikisini okur. Sözlük
+Tanımı kutusu metnin tamamını gösterir (`dg-teyit-tanim`, yükseklik
+metne göre, `boylaPlanla`; Enter yeni satır açmaz).
+
 **Veri ve Sözlük sekmesi: 01.2.4 sonuçları hemen görünür.** AMP_VERISETI
 ve AMP_SOZLUK dosyaları eskisi gibi 01.3 Değişken Listesi ve Tip
 Kontrolü onayında bir kez, her şey uygulanmış olarak yazılır. Sağ paneldeki

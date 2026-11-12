@@ -1689,6 +1689,11 @@ body { background-color: #FFFFFF; }
   transition: border-color .15s, box-shadow .15s;
 }
 .dg-giris::placeholder { color: var(--yer-tutucu); }
+/* 01.3 sözlük tanımı: metne göre uzayan kutu (app.js boylaPlanla). */
+.dg-giris.dg-teyit-tanim { display: block; height: auto; min-height: var(--btn-h-kucuk);
+  padding: 4px var(--b-2); line-height: 1.4; font-family: inherit; resize: none;
+  overflow-y: hidden; text-align: center; }
+.dg-teyit-eski-ad { color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: var(--fw-normal); }
 .dg-giris:focus {
   border-color: var(--kirmizi-cizgi); box-shadow: 0 0 0 var(--halka) var(--kirmizi-halka);
 }
