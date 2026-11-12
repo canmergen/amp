@@ -585,9 +585,8 @@ PROFIL_ESIK_ACIKLAMA = {
 ESIK_BIRIM_ADI = {"yuzde": "%", "puan": "puan", "sayi": "", "kat": "kat"}
 ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her kontrolün bir "
               "sınırı (eşik) var ve önerilen değerle dolu geliyor. Olduğu gibi onaylayabilir "
-              "ya da değiştirebilirsiniz; kontroller onayladığınız değerlerle yapılır. Bir "
-              "kontrolün ne yaptığını ve önerilen değerin nedenini adının yanındaki «i»de "
-              "okuyabilirsiniz.")
+              "ya da değiştirebilirsiniz; kontroller onayladığınız değerlerle yapılır. Her "
+              "kontrolün ne yaptığı ve önerilen değerin nedeni Açıklama sütununda yazar.")
 ESIK_DUGME = "Eşikleri Onayla ve Profili Çıkar"
 
 

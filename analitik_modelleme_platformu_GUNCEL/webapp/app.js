@@ -17526,8 +17526,9 @@ function profilKartiEkle(alan, blok) {
 /* ==================== 02.1 Kontrol eşikleri formu ====================
    Profil çıkarılmadan önce eşikler sorulur: her kontrolün eşiği,
    değiştirilebilir kutuda; önerilen değer yanında. Kontrol hücresinde
-   kısa açıklama, yakalanan kolona ne olduğu ve "i"de ayrıntı (nedir,
-   neden önemli, örnek, önerilen değerin gerekçesi). Önerilenden farklı
+   kısa açıklama ve yakalanan kolona ne olduğu; Açıklama sütununda
+   ayrıntı açık yazılı (eşik, nedir, neden önemli, örnek, önerilen
+   değerin gerekçesi). Önerilenden farklı
    satır vurgulanır. Gönderim: {"dogrulama": {"adim": "veri_profili",
    "esikler": {anahtar: ekrandaki sayı}}}. Kilitli halde (onaylandı ya da
    yenileme) kutular salt okunur. */
@@ -17578,32 +17579,28 @@ function profilEsikKartiEkle(alan, blok) {
     tablo.appendChild(cg);
     const thead = elYap("thead");
     const htr = elYap("tr");
-    ["Kontrol", "Ne Zaman Yakalanır", "Eşik", "Önerilen"].forEach(b => htr.appendChild(elYap("th", "", b)));
+    ["Kontrol", "Açıklama", "Eşik", "Önerilen"].forEach(b => htr.appendChild(elYap("th", "", b)));
     thead.appendChild(htr);
     tablo.appendChild(thead);
     const tbody = elYap("tbody");
     const girisler = [];
     (alan.satirlar || []).forEach(r => {
         const tr = elYap("tr", "pf-esik-satir");
-        /* Kontrol: ad + "i" (ayrıntı), altında kısa açıklama ve yakalanan
-           kolona ne olduğu. */
+        /* Kontrol: ad, altında kısa açıklama ve yakalanan kolona ne olduğu. */
         const tdAd = elYap("td", "pf-kontrol-ad");
         const adSatir = elYap("div", "pf-esik-ad");
         adSatir.appendChild(elYap("b", "", r.kontrol));
-        if (r.bilgi) {
-            /* Ayrıntı uzun: geniş balon (daha az kaydırma). */
-            const ib = bolmeBilgiSimgesi(r.bilgi, r.kontrol);
-            const tip = ib.querySelector(".bolme-tip");
-            if (tip) tip.classList.add("pf-esik-tip");
-            adSatir.appendChild(ib);
-        }
         tdAd.appendChild(adSatir);
         if (r.kisa) tdAd.appendChild(elYap("div", "pf-esik-kisa", r.kisa));
         if (r.sonuc) tdAd.appendChild(elYap("div", "pf-esik-sonuc pf-esik-sonuc-"
             + (r.sonuc === "Üretime girmez" || /^Çözüm önerilir/.test(r.sonuc || "") ? "girmez" : r.sonuc === "Kararınıza bırakılır" ? "karar" : "bilgi"),
             "Yakalanırsa: " + r.sonuc.charAt(0).toLocaleLowerCase("tr") + r.sonuc.slice(1)));
         tr.appendChild(tdAd);
-        tr.appendChild(elYap("td", "pf-kural", r.anlam));
+        /* Açıklama: eşiğin anlamı ve ayrıntı paragrafları, balonsuz. */
+        const tdAc = elYap("td", "pf-esik-aciklama");
+        ["**Eşik:** " + r.anlam + (/(se|sa)$/.test(r.anlam || "") ? " kolon yakalanır." : ".")].concat(String(r.bilgi || "").split(/\n\n+/))
+            .filter(x => x && x.trim()).forEach(x => tdAc.appendChild(metinYaz(elYap("div", "pf-esik-par"), x.trim())));
+        tr.appendChild(tdAc);
         const td = elYap("td", "pf-esik-hucre");
         const kutu = elYap("span", "pf-esik-kutu");
         /* Birim yuvaları sabit genişlikte: kutular alt alta hizalı. */

@@ -5569,7 +5569,7 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 /* 02.1 Kontrol eşikleri formu */
 .dg-tablo.pf-esik-tablo { table-layout: fixed; width: 100%; }
 .dg-tablo.pf-esik-tablo th { width: auto; white-space: normal; }
-.dg-tablo.pf-esik-tablo col.pf-e-kontrol { width: 40%; }
+.dg-tablo.pf-esik-tablo col.pf-e-kontrol { width: 26%; }
 .dg-tablo.pf-esik-tablo col.pf-e-anlam { width: auto; }
 .dg-tablo.pf-esik-tablo col.pf-e-deger { width: 190px; }
 .dg-tablo.pf-esik-tablo col.pf-e-vars { width: 120px; }
@@ -5589,6 +5589,8 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-esik-tablo td.pf-kontrol-ad, .pf-tablo td.pf-kontrol-ad { font-weight: var(--fw-normal); }
 .pf-esik-ad { display: inline-flex; align-items: center; gap: 6px; }
 .bolme-tip.pf-esik-tip { width: 30rem; }
+.pf-esik-aciklama { line-height: 1.45; overflow-wrap: break-word; }
+.pf-esik-par + .pf-esik-par { margin-top: var(--b-2); }
 .pf-esik-kisa { color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1.4; margin-top: 2px; }
 .pf-esik-sonuc { font-size: var(--fs-kucuk); margin-top: 3px; font-weight: var(--fw-kalin); }
 .pf-esik-sonuc-girmez { color: var(--kirmizi); }

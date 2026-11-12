@@ -1953,11 +1953,13 @@ tanıtır; sayfalar sol bardan açılır.
 **02.1 Veri Profili ve Kalite kartı**
 - Önce Kontrol Eşikleri formu (`veri_profili_girdi`, tip `profil_esik`;
   app.js `profilEsikKartiEkle`): dokuz eşik (`akis_faz02.PROFIL_ESIKLERI`)
-  Kontrol, Ne Zaman Yakalanır, Eşik, Önerilen sütunlarıyla. Kontrol
-  hücresinde adın yanında "i" (geniş balon: nedir, neden önemli, örnek,
-  kapsam, yakalanırsa ne olur, önerilen değerin gerekçesi), altında tek
-  cümlelik açıklama ve "Yakalanırsa: üretime girmez / kararınıza bırakılır
-  / bilgi için gösterilir" (kırmızı, amber, soluk). Metinler
+  Kontrol, Açıklama, Eşik, Önerilen sütunlarıyla. Kontrol hücresinde ad,
+  altında tek cümlelik açıklama ve "Yakalanırsa: çözüm önerilir; çözüm
+  yoksa üretime girmez / kararınıza bırakılır / bilgi için gösterilir"
+  (kırmızı, amber, soluk). Açıklama sütununda ayrıntı balonsuz, açık
+  yazılı: "Eşik: <eşiğin anlamı> kolon yakalanır." ve ardından nedir,
+  neden önemli, örnek, kapsam, yakalanırsa ne olur, önerilen değerin
+  gerekçesi paragrafları (kontrol satırında "i" yok). Metinler
   `akis_faz02.PROFIL_ESIK_ACIKLAMA`'da (kisa, bilgi, sonuc; sonuç sözleri
   `NE_OLACAK` ile aynı). Önerilenden farklı satır amber vurgulu, hatalı
   değer kırmızı ve gönderilmez, "Önerilenlere Dön". Ekranda "varsayılan"
