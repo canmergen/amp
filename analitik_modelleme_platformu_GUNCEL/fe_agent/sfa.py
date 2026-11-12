@@ -272,7 +272,10 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
         # girmez: farkli tarih sayisi dogal olarak yuksektir. Ham tarih
         # modelde anlamli degildir; "tarih" teshisiyle uretime girmez,
         # yerine 02.1'de donem sonuna gun farki onerilir.
-        tarih = pd.api.types.is_datetime64_any_dtype(s)
+        # Tarih: tarih tipi, YYYY-AA-GG metni ya da YYYYAAGG sayisi (bkz.
+        # profil_ek.tarih_turu). Hicbir tarih alani modele girmez.
+        from fe_agent import profil_ek
+        tarih = profil_ek.tarih_turu(s) is not None
 
         # Teshisler birbirini DISLAMAZ: bir kolon hem asiri null hem sabit
         # olabilir. Hepsi toplanir, hicbiri digerini maskelemez.
@@ -304,7 +307,7 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
 
         kayitlar.append({
             "FEATURE": kol,
-            "TYPE": "numeric" if sayisal else ("date" if tarih else "categorical"),
+            "TYPE": "date" if tarih else ("numeric" if sayisal else "categorical"),
             "NULL_COUNT": null_adet,
             "NULL_RATIO": round(null_oran, 4),
             "UNIQUE": tekil,

@@ -469,27 +469,87 @@ def yazim_kontrol(df, adaylar):
 
 
 _TARIH_METIN = re.compile(r"^\s*(\d{4})-\d{2}-\d{2}")
+# Sayi olarak yazilmis tarih (YYYYAAGG): dolu degerlerin en az bu kadari
+# gecerli bir takvim gunu olmali (8 haneli kimlik numarasi tarih sanilmasin).
+TARIH_SAYI_GECERLI = 0.99
 
 
-def _tarih_kodlu(s):
-    """Ozel tarih kodu olan hucrelerin maskesi (datetime ya da 'YYYY-AA-GG'
-    metni); tarih kolonu degilse None."""
+def _sayi_tarih_gecerli(v):
+    import datetime as _dt
+    try:
+        v = int(v)
+        _dt.date(v // 10000, (v // 100) % 100, v % 100)
+        return True
+    except (ValueError, OverflowError, TypeError):
+        return False
+
+
+def tarih_turu(s):
+    """Kolon tarih mi: "tip" (tarih tipinde), "metin" (dolu degerlerin
+    cogu YYYY-AA-GG), "sayi" (YYYYAAGG sekiz haneli tam sayi) ya da None."""
     if pd.api.types.is_datetime64_any_dtype(s):
-        yil = s.dt.year
-        return (yil < TARIH_YIL_ALT) | (yil > TARIH_YIL_UST)
-    if not _metin_kolonu_mu(s):
+        return "tip"
+    if pd.api.types.is_bool_dtype(s):
         return None
+    if pd.api.types.is_numeric_dtype(s):
+        d = pd.to_numeric(s, errors="coerce").dropna()
+        if not len(d) or float(d.min()) < 10000101 or float(d.max()) > 99991231:
+            return None
+        if not bool((d == d.round()).all()):
+            return None
+        tekil = pd.unique(d.astype("int64"))
+        gecerli = sum(1 for v in tekil if _sayi_tarih_gecerli(v))
+        return "sayi" if gecerli >= TARIH_SAYI_GECERLI * len(tekil) else None
     vc = _metin_sayimi(s)
     if not len(vc):
         return None
-    tarih = [v for v in vc.index if _TARIH_METIN.match(str(v))]
-    if len(tarih) < 0.8 * len(vc):
+    tarih = sum(1 for v in vc.index if _TARIH_METIN.match(str(v)))
+    return "metin" if tarih >= 0.8 * len(vc) else None
+
+
+def _tarih_yili(s, tur):
+    """Her hucrenin yili (cevrilemeyen NaN); kod tarihler dahil."""
+    if tur == "tip":
+        return s.dt.year.astype("float64")
+    if tur == "sayi":
+        return (pd.to_numeric(s, errors="coerce") // 10000).astype("float64")
+    return pd.to_numeric(s.astype(str).str.extract(r"^\s*(\d{4})-\d{2}-\d{2}")[0],
+                         errors="coerce").where(s.notna())
+
+
+def tarih_serisi(s, tur=None):
+    """Kolonu tarih serisine cevirir (tip, metin YYYY-AA-GG, sayi
+    YYYYAAGG); tarih degilse None. Ozel tarih kodlari (yil 1901'den once
+    ya da 2200'den sonra) bos (NaT) doner."""
+    tur = tur or tarih_turu(s)
+    if tur is None:
         return None
-    kod = {v for v in tarih if not (TARIH_YIL_ALT <= int(_TARIH_METIN.match(v).group(1))
-                                    <= TARIH_YIL_UST)}
-    if not kod:
-        return pd.Series(False, index=s.index)
-    return s.notna() & s.astype(str).isin(kod)
+    if tur == "tip":
+        t = s
+        try:
+            if getattr(t.dt, "tz", None) is not None:
+                t = t.dt.tz_localize(None)
+        except Exception:
+            pass
+    elif tur == "sayi":
+        d = pd.to_numeric(s, errors="coerce")
+        metin = d.dropna().astype("int64").astype(str)
+        t = pd.to_datetime(metin, format="%Y%m%d", errors="coerce").reindex(s.index)
+    else:
+        t = pd.to_datetime(s.where(s.notna()).astype(str).str.strip().str[:10],
+                           format="%Y-%m-%d", errors="coerce")
+    yil = _tarih_yili(s, tur)
+    kod = (yil < TARIH_YIL_ALT) | (yil > TARIH_YIL_UST)
+    return pd.to_datetime(t, errors="coerce").where(~kod.fillna(False))
+
+
+def _tarih_kodlu(s, tur=None):
+    """Ozel tarih kodu olan hucrelerin maskesi; tarih kolonu degilse None."""
+    tur = tur or tarih_turu(s)
+    if tur is None:
+        return None
+    yil = _tarih_yili(s, tur)
+    return ((yil < TARIH_YIL_ALT) | (yil > TARIH_YIL_UST)).fillna(False)
 
 
 def tarih_kod_kontrol(df, adaylar):
@@ -499,7 +559,8 @@ def tarih_kod_kontrol(df, adaylar):
     sonuc, tarih = [], 0
     for kol in adaylar:
         s = df[kol]
-        m = _tarih_kodlu(s)
+        tur = tarih_turu(s)
+        m = _tarih_kodlu(s, tur)
         if m is not None:
             tarih += 1
         if m is None or not bool(m.any()):
@@ -531,17 +592,6 @@ def donem_sonu(seri):
     return sonuc
 
 
-def _tarih_serisi(s):
-    if not pd.api.types.is_datetime64_any_dtype(s):
-        return None
-    try:
-        if getattr(s.dt, "tz", None) is not None:
-            s = s.dt.tz_localize(None)
-    except Exception:
-        pass
-    return s
-
-
 def tarih_sonra_kontrol(df, adaylar, donem):
     """[{"kolon", "adet", "pay", "en_gec"}]: tarih kolonunda satirin gozlem
     doneminden SONRAKI tarihler (gelecek bilgisi, sizinti riski)."""
@@ -554,13 +604,10 @@ def tarih_sonra_kontrol(df, adaylar, donem):
     for kol in adaylar:
         if kol == donem:
             continue
-        t = _tarih_serisi(df[kol])
+        t = tarih_serisi(df[kol])          # kod tarihler bos (sayilmaz)
         if t is None:
             continue
-        kod = _tarih_kodlu(t)
         m = t.notna() & son.notna() & (t > son)
-        if kod is not None:
-            m &= ~kod
         adet = int(m.sum())
         if adet:
             sonuc.append({"kolon": kol, "adet": adet,

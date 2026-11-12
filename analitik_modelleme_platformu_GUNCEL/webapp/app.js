@@ -17095,7 +17095,7 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
     });
     it.appendChild(icg);
     const ith = elYap("tr");
-    ["Kolon", "Açıklama", "Dil Modeli", kararModu ? "Kalsın" : "Sonuç"].forEach(b => ith.appendChild(elYap("th", "", b)));
+    ["Kolon", "Açıklama", "Öneri", kararModu ? "Kalsın" : "Sonuç"].forEach(b => ith.appendChild(elYap("th", "", b)));
     const ithead = elYap("thead"); ithead.appendChild(ith); it.appendChild(ithead);
     const itb = elYap("tbody");
     gruplar.forEach((g, gi) => {
@@ -17124,11 +17124,14 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
                isteyen öne). */
             const aTd = elYap("td", "pf-kolon-acik", u.aciklama || BOS_SIMGE);
             if (u.cikar) aTd.appendChild(elYap("div", "pf-ayni-uye-not cikar", u.cikar));
+            if (u.guc !== null && u.guc !== undefined)
+                aTd.appendChild(elYap("div", "pf-ayni-uye-not", "Hedefi ayırma gücü (AUC, eğitim): "
+                    + yuzdeMetni(u.guc, 2)));
             const bul = (u.bulgular || []).map(b => String(b).split(":")[0]);
             if (bul.length) aTd.appendChild(elYap("div", "pf-ayni-uye-not", "Bulgular: " + bul.join(", ")));
             r.appendChild(aTd);
             const oTd = elYap("td", "pf-ayni-oneri");
-            if (u.ad === g.oneri && g.kaynak === "dil modeli") oTd.appendChild(elYap("span", "pf-ayni-cip", "Önerilen"));
+            if (u.ad === g.oneri && g.kaynak !== "kural") oTd.appendChild(elYap("span", "pf-ayni-cip", "Önerilen"));
             else if (u.ad === g.oneri) oTd.appendChild(elYap("span", "pf-ayni-cip pasif", "Öneri alınamadı"));
             r.appendChild(oTd);
             const kTd = elYap("td", "pf-karar-hucre");
@@ -17716,7 +17719,7 @@ function profilKartiEkle(alan, blok) {
             if (adlar.length) parca.push(ftBinlik(adlar.length) + " kolon için karar: "
                 + ftBinlik(adlar.length - cik) + " tutulacak, " + ftBinlik(cik) + " çıkarılacak.");
             if (gid.length) parca.push(ftBinlik(gid.length) + " birebir ya da neredeyse aynı kolon grubunda kalacak kolon seçildi"
-                + (farkli ? " (" + ftBinlik(farkli) + " grupta öneriden farklı)." : " (hepsi dil modelinin önerisi)."));
+                + (farkli ? " (" + ftBinlik(farkli) + " grupta öneriden farklı)." : " (hepsi önerilen kolon)."));
             const dz = Object.values(duzSecim).flatMap(m => Object.values(m));
             if (dz.length) {
                 const birak = dz.filter(x => x === "birak").length;

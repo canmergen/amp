@@ -2368,6 +2368,29 @@ tanıtır; sayfalar sol bardan açılır.
   hepsinde aynıysa işaretli, değilse "Düzeltme seçin"; kolonun
   seçeneklerinde olmayan seçim o kolona yazılmaz.
 
+**02.1 neredeyse aynı gruplarda hedef, tarih alanı hiç girmez**
+- Neredeyse aynı (korelasyonu yüksek) gruplarda kalacak kolonu HEDEF
+  belirler (`_hedef_gucleri`): iki sınıflı hedefte EĞİTİM satırlarında
+  tek değişkenli ayırma gücü (AUC ya da 1 eksi AUC; boş en küçüğün altına).
+  Sıra: başka kontrolde çıkarılan sona, sonra ayırma gücü büyükten
+  küçüğe; gerekçe güçleri yazar. Güçler eşitse (fark < 0,0001; ör. biri
+  ötekinin sabit katı) ya da hedef iki sınıflı değilse dil modeli sıralar
+  (eşitlik gerekçede yazar). Kartta üye satırında "Hedefi ayırma gücü
+  (AUC, eğitim)"; grup tablosu başlığı "Öneri". Birebir aynı gruplar
+  değerleri aynı olduğu için dil modeliyle kalır.
+- Tarih: `profil_ek.tarih_turu` tarih tipini, değerlerinin çoğu
+  YYYY-AA-GG olan metin kolonu ve YYYYAAGG sekiz haneli sayı kolonunu
+  (tekil değerlerin en az %99'u geçerli takvim günü) tarih sayar;
+  `sfa.profil_cikar` bunları `teshis["tarih"]`'e yazar (TYPE "date"),
+  kimlik ve kardinaliteye sokmaz. Hiçbir tarih alanı model değişkeni
+  olmaz. `tarih_serisi` üç biçimi tarihe çevirir, özel tarih kodları
+  (yıl < 1901 ya da > 2200) boş döner; `gun_farki` ve Dönemden Sonraki
+  Tarih bunu kullanır.
+- Özel Tarih Kodu ayrı kontrol ve düzeltme olmaktan çıktı
+  (`PROFIL_KONTROLLERI`, `DUZELTME_KONTROLLERI`'nden kalktı): kod tarihler
+  Tarih Kolonu bulgusunda sayılır ("Kod tarih 15 satır (1900-01-01); gün
+  farkında boş"), yazılış biçimi de yazar (metin ya da sayı).
+
 **02.2 Kural Tabanlı Değişken Üretimi: plan isteği**
 - `llm.gelenekse_plan_oner` kolon kataloğunu (aile ya da kolon satırları)
   `PLAN_PARCA_KARAKTER` (12.000 karakter) parçalarına böler, parçalar

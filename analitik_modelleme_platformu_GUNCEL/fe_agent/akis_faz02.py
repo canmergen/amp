@@ -366,7 +366,7 @@ def _gun_ozeti(gun):
 # uretime girer; secilen duzeltme analiz tablosunda uygulanir (girdi veri
 # seti degismez). Gizli eksikte istenirse <KOL>_KOD bayragi uretilir.
 # ===========================================================================
-DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "tarih_kod", "metin_bos", "yazim",
+DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "metin_bos", "yazim",
                         "negatif", "uc")
 
 
@@ -1017,11 +1017,12 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "ölçeklenmiş dağılımı aynı olan kolonlardan seçilir; korelasyon bütün "
                  "satırlarla kesin hesaplanır. Birebir aynı kolonlar Aynı İçerikli Kolonlar "
                  "kontrolünde gösterilir, burada tekrar edilmez.\n\n"
-                 "**Yakalanırsa:** her gruptan bir kolon kalır, diğerleri üretime girmez. Dil "
-                 "modeli kolonları kalma sırasına koyar (başka kontrolde çıkarılan sona, az "
-                 "düzeltme isteyen öne, sonra ad ve açıklama); ilk sıradaki önerilir, siz "
-                 "seçersiniz. Seçtiğiniz kolon başka bir kontrolde Çıkar denirse sıradaki "
-                 "kolon kalır.\n\n"
+                 "**Yakalanırsa:** her gruptan bir kolon kalır, diğerleri üretime girmez. "
+                 "Hedefi eğitim satırlarında daha iyi ayıran (tek değişkenli ayırma gücü, "
+                 "AUC) kolon önerilir; başka bir kontrolde çıkarılan kolon sona gider. Hedef "
+                 "iki sınıflı değilse sırayı dil modeli verir (az düzeltme isteyen öne, sonra "
+                 "ad ve açıklama). Siz seçersiniz; seçtiğiniz kolon başka bir kontrolde Çıkar "
+                 "denirse sıradaki kolon kalır.\n\n"
                  "**Neden %99 önerildi?** %99 ve üstü korelasyonda iki kolon pratikte aynı "
                  "sırayı verir; daha düşük eşik ilişkili ama farklı bilgi taşıyan kolonları "
                  "(ör. 3 ay ve 6 ay toplamı) da yakalar."},
@@ -1417,11 +1418,15 @@ def profil_hesapla(durum):
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
                                  hedef=m.get("target"), olculer=_kart_olculeri(durum),
                                  esik=esik, tarihler=tarihler)
-    ek["tarih_aralik"] = {}
+    # TARIH KOLONLARI: en eski / en yeni tarih (ozel tarih kodlari haric),
+    # yazilis bicimi ve kod tarihler (Tarih Kolonu satirinin bulgusu).
+    ek["tarih_aralik"], ek["tarih_tur"] = {}, {}
     for k in teshis.get("tarih") or []:
-        d = pd.to_datetime(df[k], errors="coerce").dropna()
-        d = d[(d.dt.year >= profil_ek.TARIH_YIL_ALT) & (d.dt.year <= profil_ek.TARIH_YIL_UST)]
-        if len(d):     # ozel tarih kodlari (1900-01-01 gibi) aralikta sayilmaz
+        tur = profil_ek.tarih_turu(df[k])
+        ek["tarih_tur"][str(k)] = tur or ""
+        d = profil_ek.tarih_serisi(df[k], tur)
+        d = d.dropna() if d is not None else pd.Series(dtype="datetime64[ns]")
+        if len(d):
             ek["tarih_aralik"][str(k)] = [str(d.min())[:10], str(d.max())[:10]]
     _ad_kontrolleri(durum, df, adaylar, ek)
     # Sabit kolonun tek degeri (kartta bulgu olarak).
@@ -1429,7 +1434,7 @@ def profil_hesapla(durum):
     for k in teshis.get("sabit") or []:
         dolu = df[k].dropna()
         ek["sabit_deger"][k] = profil_ek.deger_metni(dolu.iloc[0]) if len(dolu) else "boş"
-    ek["ayni_gruplar"] = _ayni_gruplari(durum, ek, p)
+    ek["ayni_gruplar"] = _ayni_gruplari(durum, ek, p, df)
     p["kod_oneri"] = _kod_onerileri(durum, ek, p)
     p["profil_teshis"] = teshis
     p["profil_ek"] = ek
@@ -1486,6 +1491,10 @@ def profil_hesapla(durum):
     p["profil_kayit"] = _kayit_metni(yazildi, yedek)
     durum["profil"] = p
     return p
+
+
+TARIH_YAZILIS = {"metin": "Metin olarak yazılmış (YYYY-AA-GG)",
+                 "sayi": "Sayı olarak yazılmış (YYYYAAGG)"}
 
 
 def _tarih_onerileri(df, teshis, donem, dolu):
@@ -1559,7 +1568,39 @@ def _kural_sirasi(uyeler, durum_):
         uyeler.index(u)))
 
 
-def _ayni_gruplari(durum, ek, p):
+def _hedef_gucleri(durum, df, kolonlar):
+    """{kolon: ayirma gucu}: iki sinifli hedefte EGITIM satirlarinda tek
+    degiskenli AUC (ya da 1 eksi AUC; bos deger en kucugun altina). Hedef
+    iki sinifli degilse ya da bolme okunamazsa {}."""
+    from fe_agent import profil_ek
+    target = (durum.get("meta") or {}).get("target")
+    if df is None or not target or target not in df.columns:
+        return {}
+    y = pd.to_numeric(df[target], errors="coerce")
+    if not set(y.dropna().unique().tolist()) <= {0, 1} or y.nunique() < 2:
+        return {}
+    try:
+        egitim = pd.Series(setler(durum, df)["egitim"], index=df.index).fillna(False).astype(bool)
+    except Exception:
+        return {}
+    m = egitim & y.notna()
+    if not m.any():
+        return {}
+    yy = y[m].astype(int)
+    cikti = {}
+    for k in kolonlar:
+        if k not in df.columns:
+            continue
+        x = pd.to_numeric(df.loc[m, k], errors="coerce")
+        if not x.notna().any():
+            continue
+        a = profil_ek._auc(x.fillna(float(x.min()) - 1).to_numpy(dtype=float), yy)
+        if a is not None:
+            cikti[k] = max(a, 1 - a)
+    return cikti
+
+
+def _ayni_gruplari(durum, ek, p, df=None):
     """Ayni icerikli gruplar ve dil modelinin kalacak kolon onerisi:
     [{"id", "uyeler", "oneri", "gerekce", "kaynak"}]. id: grubun tablodaki
     ilk kolonu. Ayni uyelerle onceden alinmis dil modeli onerisi tekrar
@@ -1577,8 +1618,7 @@ def _ayni_gruplari(durum, ek, p):
     for g in yakin:
         x = {"id": "yakin:" + g["kalan"], "uyeler": [g["kalan"]] + list(g["kopyalar"]),
              "tur": "yakin", "iliski": g.get("iliski") or {}}
-        x["iliski_metni"] = "; ".join("%s, %s kolonunun %s" % (
-            k, g["kalan"], _yakin_iliski_metni(x, g["kalan"], k)) for k in g["kopyalar"])
+        x["iliski_metni"] = "; ".join(_iliski_cumlesi(x, g["kalan"], k) for k in g["kopyalar"])
         gruplar.append(x)
     aciklama = _aciklamalar(durum)
     # Uyelerin oteki kontrollerdeki durumu: baska yerde cikarilan uye
@@ -1595,7 +1635,19 @@ def _ayni_gruplari(durum, ek, p):
     ayni_mi = lambda g: (g["id"] in onceki and onceki[g["id"]].get("uyeler") == g["uyeler"]
                          and onceki[g["id"]].get("imza") == g["imza"]
                          and onceki[g["id"]].get("sira"))
-    sorulacak = [g for g in gruplar if not ayni_mi(g)]
+    # NEREDEYSE AYNI gruplarda kalacak kolonu HEDEF belirler: egitim
+    # satirlarinda hedefi daha iyi ayiran kolon once (baska kontrolde
+    # cikarilan yine sona). Hedef iki sinifli degilse dil modeline sorulur.
+    guc = _hedef_gucleri(durum, df, [u for g in gruplar if g.get("tur") == "yakin"
+                                      for u in g["uyeler"]])
+    for g in gruplar:
+        if g.get("tur") == "yakin" and all(u in guc for u in g["uyeler"]):
+            g["guc"] = {u: round(guc[u], 6) for u in g["uyeler"]}
+            # Ayirma gucleri esitse (ör. biri otekinin sabit kati: sira ayni)
+            # hedef karar vermez; anlam ve bulgulara gore dil modeli siralar.
+            g["guc_esit"] = max(g["guc"].values()) - min(g["guc"].values()) < 1e-4
+    hedefle = lambda g: bool(g.get("guc")) and not g.get("guc_esit")
+    sorulacak = [g for g in gruplar if not ayni_mi(g) and not hedefle(g)]
     oneri, hata = {}, None
     if sorulacak:
         try:
@@ -1609,7 +1661,15 @@ def _ayni_gruplari(durum, ek, p):
         except Exception as e:      # dil modeli yoksa kural gecerli
             hata = str(e)[:120]
     for g in gruplar:
-        if ayni_mi(g):
+        if hedefle(g):
+            sira = sorted(g["uyeler"], key=lambda u: (-g["guc"][u], g["uyeler"].index(u)))
+            ilk = [u for u in sira if u not in g["elenen"]] or sira
+            gerekce = ("%s hedefi eğitim satırlarında daha iyi ayırıyor: ayırma gücü (AUC) %s"
+                       % (ilk[0], "; ".join("%s %s" % (u, _yuzde_metni(g["guc"][u])) for u in sira)))
+            if ilk[0] != sira[0]:
+                gerekce += ". %s başka bir kontrolde çıkarıldığı için kalmaz" % sira[0]
+            kaynak = "hedef"
+        elif ayni_mi(g):
             o = onceki[g["id"]]
             sira, gerekce, kaynak = list(o["sira"]), o.get("gerekce", ""), "dil modeli"
         elif g["id"] in oneri:
@@ -1621,6 +1681,9 @@ def _ayni_gruplari(durum, ek, p):
         # Kod denetimi: baska kontrolde cikarilan uye sona (dil modeli
         # koymadiysa bile).
         sira = [u for u in sira if u not in g["elenen"]] + [u for u in sira if u in g["elenen"]]
+        if g.get("guc_esit"):
+            gerekce = ("Kolonların hedefi ayırma gücü eşit (AUC %s); karar anlam ve bulgulara "
+                       "göre. " % _yuzde_metni(list(g["guc"].values())[0])) + (gerekce or "")
         g.update({"sira": sira, "oneri": sira[0], "gerekce": gerekce, "kaynak": kaynak})
     return gruplar
 
@@ -1869,7 +1932,8 @@ def _profil_kurallari(esik=None):
               "büyük." % _sayi_metni(e["uc_kat"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
-        "tarih": "Kolonun tipi tarih. Ham tarih değişken olarak kullanılmaz.",
+        "tarih": "Kolon tarih: tarih tipinde, YYYY-AA-GG metni ya da YYYYAAGG sayısı. Hiçbir "
+                 "tarih alanı model değişkeni olmaz.",
         "yakin_icerik": "İki sayısal kolonun korelasyonu %s ya da üstünde, ya da biri "
                         "ötekinin sabit katı." % _yuzde_metni(e["yakin_kor"]),
         "gelecek_pencere": "Kolon adındaki dönem parçasının anlam türü ileriye bakıyor "
@@ -1976,10 +2040,11 @@ _KONTROL_ACIKLAMA_EK.update({
     "tarih": {
         "kisa": "Ham tarih modelde değişken olarak anlamlı değildir; yerine dönem sonuna gün "
                 "farkı kullanılır.",
-        "bilgi": "**Nedir?** Tipi tarih olan kolonları ayırır. Tarih kolonları kimlik benzeri "
-                 "ve kardinalite kontrollerine girmez (farklı tarih sayısı doğal olarak "
-                 "yüksektir); Özel Tarih Kodu ve Dönemden Sonraki Tarih kontrollerinden "
-                 "geçer.\n\n"
+        "bilgi": "**Nedir?** Tarih olan kolonları ayırır: tarih tipindekiler, değerlerinin "
+                 "çoğu YYYY-AA-GG biçiminde yazılmış metin kolonlar ve YYYYAAGG biçiminde "
+                 "sekiz haneli sayı kolonlar (değerlerin en az %99'u geçerli bir takvim günü). "
+                 "Tarih kolonları kimlik benzeri ve kardinalite kontrollerine girmez; "
+                 "Dönemden Sonraki Tarih kontrolünden geçer.\n\n"
                  "**Neden önemli?** Ham tarih her dönemde ileri kayar: aynı müşteri için "
                  "geçen yıl ile bu yıl farklı değer alır, model eski dönemde öğrendiğini yeni "
                  "dönemde uygulayamaz. Anlamlı olan, gözlem anına göre ne kadar önce ya da "
@@ -1987,12 +2052,14 @@ _KONTROL_ACIKLAMA_EK.update({
                  "**Örnek:** 202403 dönemindeki satırda hesap açılış tarihi 2020-03-31 ise "
                  "dönem sonuna gün farkı 1.461 gün; vade tarihi 2024-06-30 ise -91 gün "
                  "(vadeye kalan).\n\n"
-                 "**Kapsam:** tipi tarih olan kolonlar (01.3'te tarih olarak teyit "
-                 "edilenler). Metin olarak duran tarihler bu kontrole girmez.\n\n"
-                 "**Yakalanırsa:** ham tarih üretime girmez. Dönem kolonu tarih olarak "
-                 "okunabiliyorsa yerine dönem sonuna gün farkı kolonu (kolon adının sonuna "
-                 "_GUN eklenmiş) önerilir; Çıkar seçerseniz kolon kullanılmaz. Özel tarih "
-                 "kodu düzeltmesi gün farkından önce uygulanır."},
+                 "**Kapsam:** hedef, kimlik ve dönem dışındaki bütün kolonlar. 1900-01-01, "
+                 "9999-12-31 gibi kod tarihler (yılı 1901'den önce ya da 2200'den sonra) "
+                 "bulguda sayılır.\n\n"
+                 "**Yakalanırsa:** hiçbir tarih alanı model değişkeni olmaz; ham tarih "
+                 "üretime girmez. Dönem kolonu tarih olarak okunabiliyorsa yerine dönem "
+                 "sonuna gün farkı kolonu (kolon adının sonuna _GUN eklenmiş, sayı) önerilir; "
+                 "kod tarihlerde gün farkı boş kalır. Çıkar seçerseniz kolondan hiçbir şey "
+                 "üretilmez."},
     "gelecek_pencere": {
         "kisa": "Adındaki dönem parçası ileriye bakan kolon (sonraki 3 ay gibi), gözlem anından "
                 "sonra oluşan bilgiyi taşır; modele girerse sızıntı olur.",
@@ -2021,8 +2088,8 @@ _KONTROL_ACIKLAMA_EK.update({
                  "gelecektedir.\n\n"
                  "**Örnek:** 202403 dönemindeki satırda hesap kapanış tarihi 2024-07-15.\n\n"
                  "**Kapsam:** dönem kolonu seçildiyse ve değerleri yıl, yıl ay ya da yıl ay gün "
-                 "olarak okunabiliyorsa; tarih tipindeki kolonlar. 1900-01-01, 9999-12-31 gibi "
-                 "kod tarihler sayılmaz (Özel Tarih Kodu kontrolünde gösterilir).\n\n"
+                 "olarak okunabiliyorsa; tarih kolonları (tarih tipinde, YYYY-AA-GG metni ya da "
+                 "YYYYAAGG sayısı). 1900-01-01, 9999-12-31 gibi kod tarihler sayılmaz.\n\n"
                  "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; Tut seçili "
                  "gelir, çünkü vade gibi tarihler doğal olarak ileridedir. Olayın gözlem "
                  "anından sonra kaydedildiğini biliyorsanız çıkarın. Çıkar denirse "
@@ -2175,7 +2242,6 @@ PROFIL_KONTROLLERI = (
     ("donem", "Dönemde Boş ya da Sabit", SONUC_KARAR, "Dönemde boş ya da sabit"),
     ("gizli_eksik", "Gizli Eksik (Özel Kod)", SONUC_DUZELT, "Gizli eksik"),
     ("karisik_eksik", "Karışık Eksik Kodlaması", SONUC_DUZELT, "Karışık eksik"),
-    ("tarih_kod", "Özel Tarih Kodu", SONUC_DUZELT, "Özel tarih kodu"),
     ("metin_bos", "Metin Olarak Yazılmış Boş", SONUC_DUZELT, "Metin olarak boş"),
     ("yazim", "Kategori Yazım Tutarsızlığı", SONUC_DUZELT, "Yazım tutarsızlığı"),
     ("sifir", "Sıfır Yoğunluğu", SONUC_BILGI, "Sıfır yoğun"),
@@ -2319,6 +2385,14 @@ def _yakin_iliski_metni(g, kalan, k):
     return "korelasyon çok yüksek"
 
 
+def _iliski_cumlesi(g, kalan, k):
+    """"B, A kolonunun 100 katı" ya da "A ile B arasında korelasyon %99,5"."""
+    m = _yakin_iliski_metni(g, kalan, k)
+    if m.startswith("korelasyon"):
+        return "%s ile %s arasında %s" % (kalan, k, m)
+    return "%s, %s kolonunun %s" % (k, kalan, m)
+
+
 def _profil_ozeti(durum):
     """Kartin ve metnin ortak sayilari."""
     p = durum.get("profil") or {}
@@ -2430,10 +2504,18 @@ def profil_karti(durum, karar=False):
         bulgu.setdefault("sabit", {})[k] = ("Bütün hücreler boş" if deger == "boş"
                                             else "Tek değer: %s" % deger if deger
                                             else "Tek değerli")
+    tarih_kod = {x["kolon"]: x for x in ek.get("tarih_kod") or []}
     for k in t.get("tarih") or []:
         ar = (ek.get("tarih_aralik") or {}).get(k)
-        bulgu.setdefault("tarih", {})[k] = ("En eski %s, en yeni %s" % (ar[0], ar[1])) if ar \
-            else "Bütün hücreler boş"
+        parca = [("En eski %s, en yeni %s" % (ar[0], ar[1])) if ar else "Geçerli tarih yok"]
+        tur = (ek.get("tarih_tur") or {}).get(k)
+        if tur in TARIH_YAZILIS:
+            parca.append(TARIH_YAZILIS[tur])
+        x = tarih_kod.get(k)
+        if x:
+            parca.append("Kod tarih %s satır (%s); gün farkında boş" % (
+                _sayi(x["adet"]), ", ".join(d["deger"] for d in x["degerler"][:3])))
+        bulgu.setdefault("tarih", {})[k] = ". ".join(parca)
     for a in ("kimlik_gibi", "yuksek_kardinalite"):
         for k in t.get(a) or []:
             tekil = (ozet.get(k) or {}).get("tekil")
@@ -2497,6 +2579,7 @@ def profil_karti(durum, karar=False):
                                  "iliski": g.get("iliski_metni", ""),
                                  "uyeler": [{"ad": u, "aciklama": aciklama.get(u, ""),
                                              "cikar": (g.get("elenen") or {}).get(u, ""),
+                                             "guc": (g.get("guc") or {}).get(u),
                                              "bulgular": (g.get("uye_bulgu") or {}).get(u, [])}
                                             for u in (g.get("sira") or g["uyeler"])]}
                                 for g in gr]

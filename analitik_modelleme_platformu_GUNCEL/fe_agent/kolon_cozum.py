@@ -108,8 +108,8 @@ COZUM_ACIKLAMA.update({
     "gun_farki": ("Tarih yerine, satırın dönem sonu ile tarih arasındaki gün sayısı kolonu "
                   "üretilir (dönem sonu eksi tarih): geçmişteki tarih pozitif (ör. hesap "
                   "açılışından bu yana geçen gün), gelecekteki tarih negatif (ör. vadeye "
-                  "kalan gün). Ham tarih kullanılmaz; her satırda kendi dönemine göre "
-                  "hesaplandığı için dönemden döneme kaymaz."),
+                  "kalan gün). Üretilen kolon tarih değil, sayıdır; ham tarih kullanılmaz. "
+                  "1900-01-01, 9999-12-31 gibi kod tarihlerde gün farkı boş kalır."),
     "tek_yazim": ("Aynı değerin farklı yazımları (büyük küçük harf, Türkçe karakter, fazla "
                   "boşluk) en sık geçen yazıma çevrilir; «İstanbul», «Istanbul» ve "
                   "«istanbul » tek kategori olur."),
@@ -185,16 +185,14 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
 
 def gun_farki(x, donem):
     """Satirin donem sonu ile tarih arasindaki gun sayisi (donem sonu eksi
-    tarih). Donem okunamayan ya da tarihi bos satir bos kalir."""
+    tarih). Donem okunamayan, tarihi bos ya da ozel tarih kodu olan satir
+    bos kalir."""
     from fe_agent import profil_ek as pe
     son = pe.donem_sonu(donem)
-    t = pd.to_datetime(x, errors="coerce")
-    try:
-        if getattr(t.dt, "tz", None) is not None:
-            t = t.dt.tz_localize(None)
-    except Exception:
-        pass
-    if son is None:
+    # Tarih tipi, YYYY-AA-GG metni ya da YYYYAAGG sayisi; ozel tarih kodlari
+    # (1900-01-01, 9999-12-31 gibi) bos sayilir.
+    t = pe.tarih_serisi(x)
+    if son is None or t is None:
         return pd.Series(np.nan, index=x.index)
     return (son - t.dt.normalize()).dt.days.astype("float64")
 
