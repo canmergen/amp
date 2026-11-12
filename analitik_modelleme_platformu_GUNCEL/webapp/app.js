@@ -17329,9 +17329,10 @@ function profilKartiEkle(alan, blok) {
                           + ftBinlik(h.surec_disi) + " kolon" : "");
     const bilgi = [
         "Modelleme tablosundaki her kolon tablonun tamamı üzerinden incelenir; örneklem kullanılmaz, sayımlar kesindir.",
-        "Kontrollerin sonucu üç türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
-            + tireSade(alan.dusme_atif || "") + " adımında veri setinden çıkarılır. Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",
-        "Gizli Eksik, Beklenmeyen Negatif ve Uç Değer kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz (kodu boş sayma, negatifleri boş sayma, uçları kırpma ya da olduğu gibi bırakma), önerilen seçili gelir.",
+        "Kontrollerin sonucu dört türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
+            + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
+            + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",
+        "Gizli Eksik, Karışık Eksik Kodlaması, Metin Olarak Yazılmış Boş, Kategori Yazım Tutarsızlığı, Beklenmeyen Negatif ve Uç Değer kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz, önerilen seçili gelir.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""

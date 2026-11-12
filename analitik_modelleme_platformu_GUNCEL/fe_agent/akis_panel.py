@@ -1216,6 +1216,14 @@ def feature_tablo(durum):
     sfa_harita = _sfa_haritasi(durum)
     haric = set(durum.get("haric_kolonlar") or [])
     kolon_listesi = _kolon_listesi(durum, sozluk_harita)
+    # 02.1 onayinda UPDT veriden cikan kolonlar Guncel listede yok.
+    try:
+        from fe_agent import amp as amp_mod
+        dusen = amp_mod.updt_dusen_kolonlar(durum)
+    except Exception:
+        dusen = set()
+    if dusen:
+        kolon_listesi = [o for o in kolon_listesi if str(o.get("ad")) not in dusen]
     # 01.2.4 SONUCLARI HEMEN GORUNUR: yeni ad (01.2.4.4 onayi; AMP_VERISETI
     # 01.3'te bu adla yazilir) ve kolon karti (01.2.4.3 onayi). Tanim zaten
     # calisma kopyasindan (onayli aciklama oraya yazildi).

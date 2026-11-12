@@ -197,6 +197,16 @@ def _atlanan_notu(ozet, baslik):
 # ===========================================================================
 # ANALIZ TABLOSU: ham + uretilen degiskenler
 # ===========================================================================
+def girmez_dusur(durum, df):
+    """02.1 kararlari onaylaninca UPDT veriden cikan kolonlar: uretime
+    girmeyenler (eksik orani yuksek, sabit, kimlik benzeri, kardinalite,
+    tarih, ayni icerikli kopya) ve Çıkar denenler. Hedef, kimlik, donem ve
+    _SPLIT korunur. Cozum kolonlari (ör. IL_GRP, TARIH_GUN) ham kolondan
+    ONCE uretilmis olmali (cozum_kolonlari_ekle)."""
+    dus = [k for k in kusurlu_kolonlar(durum) if k in df.columns and k not in _meta_kolonlar(durum)]
+    return df.drop(columns=dus) if dus else df
+
+
 def kusurlu_kolonlar(durum):
     """Veri Profili'nin kusurlu buldugu ham kolonlar (asiri bos, sabit,
     kimlik benzeri, kardinalitesi asiri yuksek, ayni icerikli kopya) ve
@@ -601,7 +611,8 @@ def _asama_katkisi(durum, asama):
     if asama == "02.1":
         p = durum.get("profil") or {}
         return bool(p.get("cozum_bilgi")) or any(
-            v for v in (p.get("duzeltme_bilgi") or {}).values())
+            v for v in (p.get("duzeltme_bilgi") or {}).values()) \
+            or bool(set(kusurlu_kolonlar(durum)) - _meta_kolonlar(durum))
     if asama in ("02.2", "02.3"):
         from fe_agent.akis_faz03 import KURAL_KAYNAK, KESIF_KAYNAK
         kaynak = KURAL_KAYNAK if asama == "02.2" else KESIF_KAYNAK
@@ -617,7 +628,7 @@ def _asama_imzasi(durum, asama):
     p = durum.get("profil") or {}
     parca = [asama, durum.get("updt_asama"), kayit.get("istek"), kayit.get("bolme_tarif"),
              (durum.get("meta") or {}).get("segment"), p.get("cozum_bilgi"),
-             p.get("duzeltme_bilgi"), durum.get("kod_bloklari")]
+             p.get("duzeltme_bilgi"), durum.get("kod_bloklari"), kusurlu_kolonlar(durum)]
     return hashlib.md5(_json.dumps(parca, sort_keys=True, default=str)
                        .encode("utf-8")).hexdigest()
 
@@ -683,7 +694,7 @@ def asama_df(durum, asama):
     if asama in ("01.3", "01"):
         df = _updt_01_kur(durum)
     elif asama == "02.1":
-        df = cozum_kolonlari_ekle(durum, asama_df(durum, "01"))
+        df = girmez_dusur(durum, cozum_kolonlari_ekle(durum, asama_df(durum, "01")))
     elif asama == "02.2":
         from fe_agent.akis_faz03 import KURAL_KAYNAK
         df = _kod_bloklarini_uygula(durum, asama_df(durum, "02.1"), KURAL_KAYNAK)
@@ -1401,7 +1412,9 @@ def profil_hesapla(durum):
     from fe_agent import profil_ek
     df = asama_df(durum, "01") if updt_modu(durum) else modelleme_df(durum)
     m = durum["meta"]
-    haric = set(durum.get("haric_kolonlar") or []) | {m.get("target"), m.get("id"), m.get("donem")}
+    # Bolme kolonu (_SPLIT) da hedef, kimlik ve donem gibi incelenmez.
+    haric = set(durum.get("haric_kolonlar") or []) | {m.get("target"), m.get("id"), m.get("donem")} \
+        | {SPLIT_KOLON}
 
     esik = profil_esikleri(durum)
     tablo, teshis = sfa_mod.profil_cikar(df, haric=haric, null_esik=esik["cok_bos"],
@@ -1826,7 +1839,8 @@ def veri_profili_uygula(durum):
     # (02.1 sonu). Kaynak her zaman 01 sonu (geri donulduyse BAZ'dan).
     if updt_modu(durum):
         if _asama_katkisi(durum, "02.1"):
-            updt_yaz(durum, cozum_kolonlari_ekle(durum, asama_df(durum, "01")), "02.1")
+            updt_yaz(durum, girmez_dusur(durum, cozum_kolonlari_ekle(durum, asama_df(durum, "01"))),
+                     "02.1")
         else:
             updt_ilerlet(durum, "02.1", "01")
     # Profil degisti: SFA ve kararlari eski profile aitti, yeniden hesaplanir.
@@ -2425,8 +2439,14 @@ def profil_metni(durum, karar=False):
              "incelendi." % (_sayi(len(oz["incelenen"])), _sayi(len(PROFIL_KONTROLLERI))))
     parca = []
     if oz["girmez"]:
-        parca.append("%s kolon değişken üretimine girmez; %s adımında veri setinden "
-                     "çıkarılır." % (_sayi(len(oz["girmez"])), akis_atif.adim("baz")))
+        if karar or not updt_modu(durum):
+            parca.append("%s kolon değişken üretimine girmez; %s." % (
+                _sayi(len(oz["girmez"])),
+                "kararlarınızı onaylayınca UPDT veriden çıkarılır" if updt_modu(durum)
+                else "%s adımında veri setinden çıkarılır" % akis_atif.adim("baz")))
+        else:
+            parca.append("%s kolon değişken üretimine girmez ve UPDT veriden çıkarıldı."
+                         % _sayi(len(oz["girmez"])))
         sec = cozum_secimi(durum)
         cozumlu = [k for k, c in sec.items() if c != "cikar" and k in oz["girmez"]]
         secilebilir = cozum_secilebilir(durum)
@@ -2653,6 +2673,9 @@ def profil_karti(durum, karar=False):
                   "surec_disi": len(set(durum.get("haric_kolonlar") or []))},
         "kayit": kayit,
         "dusme_atif": akis_atif.adim("baz"),
+        "dusme_metni": ("kararlarınızı onayladığınızda UPDT veriden çıkarılır"
+                        if updt_modu(durum) else
+                        "%s adımında veri setinden çıkarılır" % akis_atif.adim("baz")),
     }
 
 

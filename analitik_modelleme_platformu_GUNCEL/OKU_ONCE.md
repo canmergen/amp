@@ -2338,6 +2338,27 @@ tanıtır; sayfalar sol bardan açılır.
     Dönemden Sonraki Tarih'te Çıkar denen tarihin `_GUN` kolonu da yok.
   - Kart bulgusu: en eski ve en yeni tarih (kod tarihler hariç).
 
+**02.1 kararları onayda UPDT veriye uygulanır**
+- "Kararları Onayla" ile (`veri_profili_uygula`) UPDT veri 02.1 sonu hâliyle
+  yazılır: düzeltmeler ve çözüm kolonları eklenir, ardından
+  `girmez_dusur` üretime girmeyen kolonları (eksik oranı yüksek, sabit,
+  kimlik benzeri, kardinalite, tarih, aynı içerikli kopya) ve Çıkar denen
+  kolonları SİLER (`kusurlu_kolonlar`; hedef, kimlik, dönem ve _SPLIT
+  korunur). Önceden bu kolonlar 03.3'e kadar UPDT'de duruyordu. Çözüm
+  kolonları ham kolondan önce üretildiği için kaybolmaz.
+- `asama_df("02.1")` BAZ'dan yeniden kurarken de aynı sırayı uygular;
+  `_asama_katkisi("02.1")` çıkan kolon varsa da doğrudur, asama imzası
+  çıkan kolon listesini içerir. Geri dönüp kararı değiştirince kolon geri
+  gelir (BAZ'dan kurulur).
+- UPDT sözlük de aynı kolonları anlatır: `amp.updt_sozluk_suz` çıkan
+  kolonların satırlarını yayınlamaz (çalışma kopyası değişmez). Veri ve
+  Sözlük panelinde Güncel liste çıkan kolonları göstermez
+  (`amp.updt_dusen_kolonlar`; 02.1 onaylanmadan boş).
+- 02.1 metni ve kartın i balonu "onayınızla UPDT veriden çıkarılır" der
+  (`dusme_metni`). 03.3 yine düşürme kümesini uygular (kolon zaten yoksa
+  atlanır).
+- _SPLIT 02.1 profiline girmez (hedef, kimlik, dönem gibi).
+
 **02.1 karar sırası: aynı içerikli grup ve özel kod önerisi**
 - Aynı ve neredeyse aynı kolon grupları (`_ayni_gruplari`): her üyenin
   öteki kontrollerdeki durumu `_uye_durumlari` ile çıkarılır (bulgular,

@@ -180,6 +180,34 @@ def baz_sozluk_yaz(durum, tablo):
     return hata
 
 
+UPDT_DUSMUS_ASAMALAR = ("02.1", "02.2", "02.3", "03.3")
+
+
+def updt_dusen_kolonlar(durum):
+    """02.1 onayindan sonra UPDT veriden cikan kolonlar (bkz.
+    akis_faz02.girmez_dusur); 02.1 onaylanmadiysa bos kume."""
+    if durum.get("updt_asama") not in UPDT_DUSMUS_ASAMALAR:
+        return set()
+    try:
+        from fe_agent import akis_faz02
+        return set(akis_faz02.kusurlu_kolonlar(durum)) - akis_faz02._meta_kolonlar(durum)
+    except Exception:           # pylint: disable=broad-except
+        return set()
+
+
+def updt_sozluk_suz(durum, tablo):
+    """UPDT sozluk UPDT veriyle ayni kolonlari anlatir: 02.1'de cikan
+    kolonlarin satirlari yazilmaz (calisma kopyasi degismez)."""
+    dus = updt_dusen_kolonlar(durum)
+    if not dus:
+        return tablo
+    from fe_agent import sozluk_calisma
+    ad = sozluk_calisma.degisken_kolonu_bul(tablo)
+    if ad is None:
+        return tablo
+    return tablo[~tablo[ad].astype(str).str.strip().isin(dus)].reset_index(drop=True)
+
+
 def updt_sozluk_yayinla(durum):
     """UPDT sozluk: sozlugun o anki hali (calisma kopyasi ya da AMP_SOZLUK)
     Flow'daki veri setine yazilir. Icerik degismediyse yazilmaz. Doner:
@@ -191,6 +219,7 @@ def updt_sozluk_yayinla(durum):
         tablo = None
     if tablo is None or not len(tablo.columns):
         return None
+    tablo = updt_sozluk_suz(durum, tablo)
     try:
         import pandas as pd
         imza = "%d:%d:%s" % (len(tablo), len(tablo.columns), int(
