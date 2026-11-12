@@ -11365,7 +11365,12 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
             giris.value = ackTaban(v);
             giris.setAttribute("aria-label", v.kolon + " için düzenlemeniz");
             giris.addEventListener("blur", () => notKaydet(v.kolon));
-            giris.addEventListener("input", () => { if (degisti) degisti(); });
+            /* TAM OKUNUR: kutunun yüksekliği metne göre (sıkıştırılmaz);
+               genişlik değişince ya da satır açılınca (gizli aile üyesi)
+               yeniden ölçülür. Toplu ölçüm: boylaPlanla. */
+            giris.addEventListener("input", () => { boylaPlanla(giris); if (degisti) degisti(); });
+            if (BOYLA_GOZCU) BOYLA_GOZCU.observe(giris);
+            boylaPlanla(giris);
             tdN.appendChild(giris);
         } else {
             tdN.appendChild(elYap("div", "dg-acik-salt", ackElleNot(v) ? tireSade(v.not) : ""));
@@ -11623,8 +11628,10 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         e.onayK.disabled = kilitli || saltOkunur || bekliyorMu(v);
         e.tr.classList.toggle("dg-parca-onayli", !!v.onayli);
         if (e.giris) {
-            if (document.activeElement !== e.giris && ackSade(e.giris.value) !== ackSade(ackTaban(v)))
+            if (document.activeElement !== e.giris && ackSade(e.giris.value) !== ackSade(ackTaban(v))) {
                 e.giris.value = ackTaban(v);
+                boylaPlanla(e.giris);
+            }
             e.giris.disabled = kilit;
         }
         duzeltilmisCiz(e.tdD, v);
@@ -11858,7 +11865,7 @@ function aciklamaBolumuEkle(kart, aa, ilkKilit, degisti) {
         /* Öneri (ya da önceki düzenleme) aynen kaldıysa kayıt yok. Alan
            boşaltılırsa düzenleme kalkar, öneriyi dil modeli yeniden yazar. */
         if (ackSade(metin) === ackSade(ackTaban(v))) return;
-        if (!metin && !ackElleNot(v)) { e.giris.value = ackTaban(v); return; }
+        if (!metin && !ackElleNot(v)) { e.giris.value = ackTaban(v); boylaPlanla(e.giris); return; }
         v.not = metin;
         v.elle = true;
         v.durum = "isleniyor";

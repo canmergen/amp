@@ -3619,7 +3619,8 @@ span.bolme-cip { cursor: default; }
 .dg-acik-aile { color: var(--metin-tamam); margin-top: 2px; font-weight: var(--fw-normal); }
 .dg-acik-orijinal { overflow-wrap: anywhere; }
 .dg-acik-bos { color: var(--yer-tutucu); font-style: italic; }
-.dg-acik-giris { width: 100%; resize: vertical; min-height: 44px; font: inherit; }
+/* Yükseklik metne göre (app.js boylaPlanla); kaydırma çubuğu çıkmaz. */
+.dg-acik-giris { width: 100%; resize: vertical; min-height: 44px; font: inherit; overflow-y: hidden; }
 .dg-acik-aile-btn { margin-top: var(--b-1); }
 .dg-acik-salt { overflow-wrap: anywhere; }
 .dg-acik-metin { overflow-wrap: anywhere; }

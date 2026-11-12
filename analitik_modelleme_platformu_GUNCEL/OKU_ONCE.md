@@ -1544,7 +1544,10 @@ tanıtır; sayfalar sol bardan açılır.
     2. aşama satırlarını (görünsün görünmesin) onaylar.
   - **Sizin Düzenlemeniz = önerinin düzenlenebilir hâli:** alan dil
     modelinin önerdiği açıklamayla dolu gelir (sizin düzenlemeniz varsa o;
-    app.js `ackTaban`). Değiştirip alandan çıkınca metin aynen kolonun
+    app.js `ackTaban`). Kutu metnin tamamını gösterir: yüksekliği metne
+    göre ölçülür (`boylaPlanla`, toplu ölçüm; yazarken, öneri gelince ve
+    genişlik değişince ya da gizli satır açılınca `BOYLA_GOZCU` ile
+    yeniden), kaydırma çubuğu çıkmaz. Değiştirip alandan çıkınca metin aynen kolonun
     açıklaması olur (`islem: "not", tam: true`;
     `aciklama_duzen.elle_yaz`, kayıtta `elle`; `girdileri_ver` bu kolonu
     dil modeline göndermez, sonucu `elle_sonuc`: metin, tarz düzeltmesi,
