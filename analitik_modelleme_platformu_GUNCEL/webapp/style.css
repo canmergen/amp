@@ -5554,7 +5554,7 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 /* 02.1 Kontrol eşikleri formu */
 .dg-tablo.pf-esik-tablo { table-layout: fixed; width: 100%; }
 .dg-tablo.pf-esik-tablo th { width: auto; white-space: normal; }
-.dg-tablo.pf-esik-tablo col.pf-e-kontrol { width: 24%; }
+.dg-tablo.pf-esik-tablo col.pf-e-kontrol { width: 40%; }
 .dg-tablo.pf-esik-tablo col.pf-e-anlam { width: auto; }
 .dg-tablo.pf-esik-tablo col.pf-e-deger { width: 190px; }
 .dg-tablo.pf-esik-tablo col.pf-e-vars { width: 120px; }
@@ -5570,6 +5570,15 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-esik-birim.on { width: 14px; text-align: right; flex-shrink: 0; }
 .pf-esik-birim.son { width: 46px; text-align: left; flex-shrink: 0; white-space: nowrap; }
 .pf-esik-vars { color: var(--metin-soluk); }
+/* Kontrol hücresi: ad + "i", kısa açıklama, yakalanırsa ne olur. */
+.pf-esik-tablo td.pf-kontrol-ad { font-weight: var(--fw-normal); }
+.pf-esik-ad { display: inline-flex; align-items: center; gap: 6px; }
+.bolme-tip.pf-esik-tip { width: 30rem; }
+.pf-esik-kisa { color: var(--metin-soluk); font-size: var(--fs-kucuk); line-height: 1.4; margin-top: 2px; }
+.pf-esik-sonuc { font-size: var(--fs-kucuk); margin-top: 3px; font-weight: var(--fw-kalin); }
+.pf-esik-sonuc-girmez { color: var(--kirmizi); }
+.pf-esik-sonuc-karar { color: var(--amber); }
+.pf-esik-sonuc-bilgi { color: var(--metin-soluk); }
 .pf-esik-satir.degisti > td { background: color-mix(in srgb, var(--amber) 9%, var(--yuzey)); }
 .pf-esik-satir.degisti .pf-esik-giris { border-color: var(--amber); font-weight: var(--fw-kalin); }
 .pf-esik-satir.hatali .pf-esik-giris { border-color: var(--kirmizi); }

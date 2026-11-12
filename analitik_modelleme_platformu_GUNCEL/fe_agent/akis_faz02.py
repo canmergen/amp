@@ -298,24 +298,166 @@ def _kart_olculeri(durum):
 # "yuzde" ve "puan" ekranda 100 ile carpilmis yazilir, "sayi" ve "kat"
 # oldugu gibi. (anahtar, kontrol, esigin anlami, birim, en kucuk, en buyuk)
 PROFIL_ESIKLERI = (
-    ("cok_bos", "Eksik Oranı Yüksek", "Boş hücre oranı bunun üstündeyse", "yuzde", 0.01, 0.99),
-    ("kimlik", "Kimlik Benzeri", "Farklı değer oranı bunun üstündeyse", "yuzde", 0.50, 0.9999),
-    ("kardinalite", "Kardinalitesi Aşırı Yüksek", "Metin kolonda farklı değer sayısı bunun üstündeyse",
-     "sayi", 2, 1000000),
-    ("baskin", "Neredeyse Sabit", "En sık değerin payı en az bu kadarsa", "yuzde", 0.50, 0.9999),
+    ("cok_bos", "Eksik Oranı Yüksek",
+     "Kolonun boş hücre oranı bu değerin üstündeyse", "yuzde", 0.01, 0.99),
+    ("kimlik", "Kimlik Benzeri",
+     "Farklı değer sayısının satır sayısına oranı bu değerin üstündeyse", "yuzde", 0.50, 0.9999),
+    ("kardinalite", "Kardinalitesi Aşırı Yüksek",
+     "Metin kolonda farklı değer sayısı bu değerin üstündeyse", "sayi", 2, 1000000),
+    ("baskin", "Neredeyse Sabit",
+     "En sık görülen değer satırların en az bu kadarında geçiyorsa", "yuzde", 0.50, 0.9999),
     ("donem_min_satir", "Dönemde Boş ya da Sabit",
-     "Tek değerli dönem aranırken dönemin en az satır sayısı", "sayi", 1, 1000000000),
-    ("gizli", "Gizli Eksik (Özel Kod)", "Özel kodun dolu satırlardaki payı bunun üstündeyse",
+     "Tek değer, yalnız en az bu kadar satırı olan dönemlerde aranır",
+     "sayi", 1, 1000000000),
+    ("gizli", "Gizli Eksik (Özel Kod)",
+     "-999, 9999 gibi özel bir kod dolu satırların bu değerinden fazlasında geçiyorsa",
      "yuzde", 0.0001, 0.50),
-    ("sifir", "Sıfır Yoğunluğu", "Sıfırın dolu satırlardaki payı en az bu kadarsa", "yuzde", 0.50, 1.0),
+    ("sifir", "Sıfır Yoğunluğu",
+     "Dolu satırların en az bu kadarı sıfırsa", "yuzde", 0.50, 1.0),
     ("sicrama", "Dönemler Arası Eksik Sıçraması",
-     "Art arda iki dönemde eksik oranı farkı bundan fazlaysa", "puan", 0.01, 0.99),
-    ("uc_kat", "Uç Değer Yoğunluğu", "En büyük değer, %99'luk değerin bu katından büyükse",
+     "Art arda iki dönem arasında boş hücre oranı bu kadar puandan fazla değişiyorsa",
+     "puan", 0.01, 0.99),
+    ("uc_kat", "Uç Değer Yoğunluğu",
+     "En büyük değer, değerlerin %99'unun altında kaldığı sınırın bu katından büyükse",
      "kat", 2, 1000000000),
 )
+# Formda her kontrolun duz dille aciklamasi: "kisa" satirda, "bilgi" i
+# balonunda (nedir, neden onemli, ornek, yakalanirsa ne olur, onerilen
+# degerin gerekcesi), "sonuc" yakalanan kolona ne oldugu (NE_OLACAK ile
+# ayni sozler).
+PROFIL_ESIK_ACIKLAMA = {
+    "cok_bos": {
+        "kisa": "Çoğu boş olan kolon modele güvenilir bilgi taşımaz.",
+        "sonuc": "Üretime girmez",
+        "bilgi": "**Nedir?** Kolonun satırlarının ne kadarının boş olduğuna bakar.\n\n"
+                 "**Neden önemli?** Satırların çoğunda boş olan kolon, modele ancak az sayıda "
+                 "satırda bilgi verir; boşlukların nasıl doldurulduğu sonucu belirler hale gelir.\n\n"
+                 "**Örnek:** 100.000 satırın 60.000'inde boş olan kolonun boş oranı %60'tır; eşik "
+                 "%50 ise yakalanır.\n\n"
+                 "**Yakalanırsa:** kolon değişken üretimine girmez.\n\n"
+                 "**Neden %50 önerildi?** Kolonun en az yarısı dolu olsun diye. Daha sıkı (ör. "
+                 "%30) seçerseniz daha çok kolon dışarıda kalır; daha gevşek (ör. %80) seçerseniz "
+                 "çok boş kolonlar da üretime girer."},
+    "kimlik": {
+        "kisa": "Neredeyse her satırda farklı değer alan kolon (müşteri no, işlem no gibi) "
+                "bir şey öğretmez, yalnız satırı tanır.",
+        "sonuc": "Üretime girmez",
+        "bilgi": "**Nedir?** Kolondaki farklı değer sayısını satır sayısına böler. Bu oran çok "
+                 "yüksekse kolon bir kimlik gibi davranır.\n\n"
+                 "**Neden önemli?** Kimlik gibi bir kolon her satırda farklı olduğu için model "
+                 "ondan genellenebilir bir şey öğrenemez; ezberler.\n\n"
+                 "**Örnek:** 100.000 satırda 98.000 farklı değer: oran %98; eşik %95 ise "
+                 "yakalanır.\n\n"
+                 "**Kapsam:** yalnız tam sayı ve metin kolonlara bakılır. Bakiye, tutar gibi "
+                 "ondalıklı kolonlar doğal olarak hep farklıdır, bu kontrole girmez. 100'den az "
+                 "farklı değeri olan kolon da girmez.\n\n"
+                 "**Yakalanırsa:** kolon değişken üretimine girmez.\n\n"
+                 "**Neden %95 önerildi?** Gerçek kimlik kolonları %100'e çok yakındır; %95, "
+                 "küçük tekrarlara rağmen kimlikleri yakalar, gerçek bilgi taşıyan kolonları "
+                 "bırakır."},
+    "kardinalite": {
+        "kisa": "Çok fazla farklı değeri olan metin kolon (açık adres, serbest not gibi) "
+                "gruplara ayrılamaz.",
+        "sonuc": "Üretime girmez",
+        "bilgi": "**Nedir?** Metin (kategorik) kolonda kaç farklı değer olduğunu sayar.\n\n"
+                 "**Neden önemli?** Kategorik kolonlar her değer için ayrı grup olarak "
+                 "kullanılır. Yüzlerce farklı değer, her biri az satırlı yüzlerce grup demektir; "
+                 "model bu küçük gruplardan güvenilir bir şey öğrenemez.\n\n"
+                 "**Örnek:** 81 farklı il adı olan kolon, eşik 50 ise yakalanır.\n\n"
+                 "**Kapsam:** yalnız metin kolonlar; sayısal kolonlar girmez.\n\n"
+                 "**Yakalanırsa:** kolon değişken üretimine girmez.\n\n"
+                 "**Neden 50 önerildi?** 50'ye kadar farklı değer, her gruba yeterince satır "
+                 "düşecek kadar azdır. İl gibi kolonları tutmak istiyorsanız eşiği yükseltin."},
+    "baskin": {
+        "kisa": "Neredeyse bütün satırlarda aynı değeri alan kolon az bilgi taşır.",
+        "sonuc": "Kararınıza bırakılır",
+        "bilgi": "**Nedir?** Kolonda en sık görülen değerin satırların ne kadarında geçtiğine "
+                 "bakar.\n\n"
+                 "**Neden önemli?** Satırların %99'unda aynı değer varsa kolon yalnız kalan %1'de "
+                 "bilgi taşır; bu bazen değerli (nadir bir durum), çoğu zaman gürültüdür.\n\n"
+                 "**Örnek:** 100.000 satırın 99.500'ünde 0 olan bayrak kolonu, eşik %99 ise "
+                 "yakalanır.\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur.\n\n"
+                 "**Neden %99 önerildi?** Yalnız gerçekten neredeyse sabit olanlar sorulsun "
+                 "diye; daha düşük seçerseniz daha çok kolon için karar vermeniz gerekir."},
+    "donem_min_satir": {
+        "kisa": "Bazı dönemlerde tamamen boş ya da tek değerli olan kolon, o dönemde veri "
+                "toplanmamış olabilir.",
+        "sonuc": "Kararınıza bırakılır",
+        "bilgi": "**Nedir?** Kolona dönem dönem bakar: bir dönemde bütün satırlar boşsa ya da "
+                 "hepsi aynı değerdeyse işaretler.\n\n"
+                 "**Neden önemli?** Bu, o dönemde verinin toplanmadığını ya da kaynağın "
+                 "değiştiğini gösterebilir; model o dönemlerde yanlış öğrenir.\n\n"
+                 "**Eşik ne yapar?** Az satırlı bir dönemde tek değer tesadüfen çıkabilir. Bu "
+                 "yüzden tek değer yalnız en az bu kadar satırı olan dönemlerde aranır. "
+                 "Tamamen boş dönem ise satır sayısından bağımsız her zaman işaretlenir.\n\n"
+                 "**Örnek:** 2023 Mart'ta 5.000 satırın hepsinde değer 0 ise (eşik 100) "
+                 "işaretlenir; 30 satırlık bir dönemde hepsi 0 ise işaretlenmez.\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur. Dönem kolonu "
+                 "seçilmediyse bu kontrol yapılmaz.\n\n"
+                 "**Neden 100 önerildi?** 100 satırda bütün değerlerin tesadüfen aynı çıkması "
+                 "çok düşük bir ihtimaldir."},
+    "gizli": {
+        "kisa": "Boş yerine -999, 9999 gibi bir kodla doldurulmuş hücreler gerçek değer "
+                "sanılır.",
+        "sonuc": "Bilgi için gösterilir",
+        "bilgi": "**Nedir?** Sayısal kolonda -1, -9, -99, -999 ya da 9999, 99999 gibi değerlerin "
+                 "dolu satırların ne kadarında geçtiğine bakar. Değer, dağılımın geri "
+                 "kalanından kopuksa (ör. öbür değerler 0 ile 500 arasında) özel kod sayılır.\n\n"
+                 "**Neden önemli?** Bu kodlar aslında «bilgi yok» demektir; gerçek sayı gibi "
+                 "kullanılırsa ortalama, toplam gibi hesaplar bozulur.\n\n"
+                 "**Örnek:** bakiye kolonunda dolu satırların %3'ü -999 ise, eşik %1 olduğu "
+                 "için gösterilir.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer.\n\n"
+                 "**Neden %1 önerildi?** %1'in altında kalan kod birkaç tesadüfi satır olabilir; "
+                 "üstündeyse kolonun dolduruluş biçimidir."},
+    "sifir": {
+        "kisa": "Dolu satırların çoğu sıfır olan kolon (çoğu müşterinin hiç yapmadığı bir "
+                "işlem gibi).",
+        "sonuc": "Bilgi için gösterilir",
+        "bilgi": "**Nedir?** Sayısal kolonda dolu satırların ne kadarının tam sıfır olduğuna "
+                 "bakar.\n\n"
+                 "**Neden önemli?** Sıfır yoğun kolonlarda ortalama ve sapma yanıltıcı olur; "
+                 "bu kolonlar çoğu zaman «var mı, yok mu» olarak daha iyi kullanılır.\n\n"
+                 "**Örnek:** dolu satırların %97'si 0 olan yurt dışı harcama kolonu, eşik %95 "
+                 "ise gösterilir.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer.\n\n"
+                 "**Neden %95 önerildi?** Yalnız sıfırın gerçekten baskın olduğu kolonlar "
+                 "gösterilsin diye."},
+    "sicrama": {
+        "kisa": "Bir dönemden ötekine boş oranı birden değişen kolon, veri kaynağında bir "
+                "değişikliğe işaret eder.",
+        "sonuc": "Bilgi için gösterilir",
+        "bilgi": "**Nedir?** Art arda iki dönem arasında kolonun boş hücre oranının kaç puan "
+                 "değiştiğine bakar.\n\n"
+                 "**Neden önemli?** Ani değişim, verinin bir dönemden sonra farklı "
+                 "toplandığını gösterebilir; model eski ve yeni dönemi aynı sanır.\n\n"
+                 "**Örnek:** Ocak'ta %5 boş, Şubat'ta %30 boş: fark 25 puan; eşik 20 puan ise "
+                 "gösterilir.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer. Dönem kolonu "
+                 "seçilmediyse bu kontrol yapılmaz.\n\n"
+                 "**Neden 20 puan önerildi?** Dönemden döneme küçük oynamalar doğaldır; 20 "
+                 "puanın üstü genellikle bir değişikliktir."},
+    "uc_kat": {
+        "kisa": "Diğer değerlerden çok büyük tekil değerler (ör. hatalı girilmiş tutar) "
+                "hesapları bozar.",
+        "sonuc": "Bilgi için gösterilir",
+        "bilgi": "**Nedir?** Kolonun en büyük değerini, değerlerin %99'unun altında kaldığı "
+                 "sınırla (99. yüzdelik) karşılaştırır.\n\n"
+                 "**Neden önemli?** Birkaç aşırı büyük değer ortalama gibi hesapları tek başına "
+                 "çeker; bunlar çoğu zaman hatalı giriştir.\n\n"
+                 "**Örnek:** değerlerin %99'u 10.000 TL'nin altında, en büyük değer 5.000.000 "
+                 "TL: 500 kat; eşik 100 kat ise gösterilir.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir, kolon üretime girer.\n\n"
+                 "**Neden 100 kat önerildi?** Gelir, tutar gibi kolonlarda doğal olarak büyük "
+                 "değerler vardır; 100 katın üstü doğal yayılımın çok dışındadır."},
+}
 ESIK_BIRIM_ADI = {"yuzde": "%", "puan": "puan", "sayi": "", "kat": "kat"}
-ESIK_METNI = ("Veri profili aşağıdaki eşiklerle çıkarılacak. Eşikleri olduğu gibi onaylayabilir "
-              "ya da değiştirebilirsiniz; kontroller onayladığınız eşiklerle yapılır.")
+ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her kontrolün bir "
+              "sınırı (eşik) var ve önerilen değerle dolu geliyor. Olduğu gibi onaylayabilir "
+              "ya da değiştirebilirsiniz; kontroller onayladığınız değerlerle yapılır. Bir "
+              "kontrolün ne yaptığını ve önerilen değerin nedenini adının yanındaki «i»de "
+              "okuyabilirsiniz.")
 ESIK_DUGME = "Eşikleri Onayla ve Profili Çıkar"
 
 
@@ -399,7 +541,10 @@ def esik_formu(durum, hata=None, kilitli=False):
     varsayilan = _esik_varsayilan()
     satirlar = []
     for a, kontrol, anlam, birim, en_az, en_cok in PROFIL_ESIKLERI:
+        ac = PROFIL_ESIK_ACIKLAMA.get(a) or {}
         satirlar.append({"anahtar": a, "kontrol": kontrol, "anlam": anlam, "birim": birim,
+                         "kisa": ac.get("kisa", ""), "bilgi": ac.get("bilgi", ""),
+                         "sonuc": ac.get("sonuc", ""),
                          "birim_adi": ESIK_BIRIM_ADI[birim],
                          "deger": _esik_ekran(birim, simdiki[a]),
                          "varsayilan": _esik_ekran(birim, varsayilan[a]),
@@ -412,7 +557,7 @@ def esik_formu(durum, hata=None, kilitli=False):
 def esik_degisiklik_notu(durum):
     """Varsayilandan farkli esikler (kartta ve metinde)."""
     simdiki, varsayilan = profil_esikleri(durum), _esik_varsayilan()
-    parca = ["%s %s (varsayılan %s)" % (kontrol, _esik_metni(birim, simdiki[a]),
+    parca = ["%s %s (önerilen %s)" % (kontrol, _esik_metni(birim, simdiki[a]),
                                         _esik_metni(birim, varsayilan[a]))
              for a, kontrol, _an, birim, _x, _y in PROFIL_ESIKLERI
              if abs(float(simdiki[a]) - float(varsayilan[a])) > 1e-12]

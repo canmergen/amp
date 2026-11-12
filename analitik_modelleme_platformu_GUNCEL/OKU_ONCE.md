@@ -1953,9 +1953,15 @@ tanıtır; sayfalar sol bardan açılır.
 **02.1 Veri Profili ve Kalite kartı**
 - Önce Kontrol Eşikleri formu (`veri_profili_girdi`, tip `profil_esik`;
   app.js `profilEsikKartiEkle`): dokuz eşik (`akis_faz02.PROFIL_ESIKLERI`)
-  Kontrol, Eşik, Değer, Varsayılan sütunlarıyla; varsayılandan farklı satır
-  amber vurgulu, hatalı değer kırmızı ve gönderilmez, "Varsayılanlara
-  Dön". "Eşikleri Onayla ve Profili Çıkar" `{"dogrulama": {"adim":
+  Kontrol, Ne Zaman Yakalanır, Eşik, Önerilen sütunlarıyla. Kontrol
+  hücresinde adın yanında "i" (geniş balon: nedir, neden önemli, örnek,
+  kapsam, yakalanırsa ne olur, önerilen değerin gerekçesi), altında tek
+  cümlelik açıklama ve "Yakalanırsa: üretime girmez / kararınıza bırakılır
+  / bilgi için gösterilir" (kırmızı, amber, soluk). Metinler
+  `akis_faz02.PROFIL_ESIK_ACIKLAMA`'da (kisa, bilgi, sonuc; sonuç sözleri
+  `NE_OLACAK` ile aynı). Önerilenden farklı satır amber vurgulu, hatalı
+  değer kırmızı ve gönderilmez, "Önerilenlere Dön". Ekranda "varsayılan"
+  sözü yok: önerilen değer (ör. "Değiştirilen eşikler: … (önerilen %50)"). "Eşikleri Onayla ve Profili Çıkar" `{"dogrulama": {"adim":
   "veri_profili", "esikler": {anahtar: ekrandaki sayı}}}` gönderir;
   `esik_dogrula` aralığı denetler (yüzde ve puan ekranda 100 ile çarpılı,
   Türkçe yazım: 1.000 binlik, 0,5 ondalık), `profil["esikler"]`'e yazar.

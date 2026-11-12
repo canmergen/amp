@@ -17414,7 +17414,9 @@ function profilKartiEkle(alan, blok) {
 
 /* ==================== 02.1 Kontrol eşikleri formu ====================
    Profil çıkarılmadan önce eşikler sorulur: her kontrolün eşiği,
-   değiştirilebilir kutuda; varsayılan yanında. Varsayılandan farklı
+   değiştirilebilir kutuda; önerilen değer yanında. Kontrol hücresinde
+   kısa açıklama, yakalanan kolona ne olduğu ve "i"de ayrıntı (nedir,
+   neden önemli, örnek, önerilen değerin gerekçesi). Önerilenden farklı
    satır vurgulanır. Gönderim: {"dogrulama": {"adim": "veri_profili",
    "esikler": {anahtar: ekrandaki sayı}}}. Kilitli halde (onaylandı ya da
    yenileme) kutular salt okunur. */
@@ -17441,8 +17443,12 @@ function profilEsikKartiEkle(alan, blok) {
     const bas = elYap("div", "pf-bas");
     bas.appendChild(elYap("b", "pf-baslik", kilitli ? "Onaylanan Kontrol Eşikleri" : "Kontrol Eşikleri"));
     bas.appendChild(bolmeBilgiSimgesi(
-        "Veri profilindeki kontroller bu eşiklerle yapılır. Bir eşiği değiştirirseniz kontrol "
-        + "değiştirdiğiniz değerle çalışır; değiştirmediğiniz eşikler varsayılan kalır.\n\n"
+        "Veri profilinde her kolon bu kontrollerden geçer. Eşik, bir kolonun o kontrolde "
+        + "yakalanması için aşması gereken sınırdır. Önerilen değerlerle dolu gelir; bir eşiği "
+        + "değiştirirseniz kontrol sizin değerinizle yapılır.\n\n"
+        + "Yakalanan kolona ne olacağı kontrolün altında yazar: «Üretime girmez» (kolon değişken "
+        + "üretiminde kullanılmaz), «Kararınıza bırakılır» (profil sonrası size sorulur), «Bilgi için "
+        + "gösterilir» (kolon kullanılır, yalnız dikkatinize sunulur).\n\n"
         + "Yüzdeli eşikler yüzde olarak yazılır (ör. 99 yazılırsa %99). Ondalık için virgül kullanılabilir.",
         "Kontrol Eşikleri"));
     kart.appendChild(bas);
@@ -17460,14 +17466,31 @@ function profilEsikKartiEkle(alan, blok) {
     tablo.appendChild(cg);
     const thead = elYap("thead");
     const htr = elYap("tr");
-    ["Kontrol", "Eşik", "Değer", "Varsayılan"].forEach(b => htr.appendChild(elYap("th", "", b)));
+    ["Kontrol", "Ne Zaman Yakalanır", "Eşik", "Önerilen"].forEach(b => htr.appendChild(elYap("th", "", b)));
     thead.appendChild(htr);
     tablo.appendChild(thead);
     const tbody = elYap("tbody");
     const girisler = [];
     (alan.satirlar || []).forEach(r => {
         const tr = elYap("tr", "pf-esik-satir");
-        tr.appendChild(elYap("td", "pf-kontrol-ad", r.kontrol));
+        /* Kontrol: ad + "i" (ayrıntı), altında kısa açıklama ve yakalanan
+           kolona ne olduğu. */
+        const tdAd = elYap("td", "pf-kontrol-ad");
+        const adSatir = elYap("div", "pf-esik-ad");
+        adSatir.appendChild(elYap("b", "", r.kontrol));
+        if (r.bilgi) {
+            /* Ayrıntı uzun: geniş balon (daha az kaydırma). */
+            const ib = bolmeBilgiSimgesi(r.bilgi, r.kontrol);
+            const tip = ib.querySelector(".bolme-tip");
+            if (tip) tip.classList.add("pf-esik-tip");
+            adSatir.appendChild(ib);
+        }
+        tdAd.appendChild(adSatir);
+        if (r.kisa) tdAd.appendChild(elYap("div", "pf-esik-kisa", r.kisa));
+        if (r.sonuc) tdAd.appendChild(elYap("div", "pf-esik-sonuc pf-esik-sonuc-"
+            + (r.sonuc === "Üretime girmez" ? "girmez" : r.sonuc === "Kararınıza bırakılır" ? "karar" : "bilgi"),
+            "Yakalanırsa: " + r.sonuc.charAt(0).toLocaleLowerCase("tr") + r.sonuc.slice(1)));
+        tr.appendChild(tdAd);
         tr.appendChild(elYap("td", "pf-kural", r.anlam));
         const td = elYap("td", "pf-esik-hucre");
         const kutu = elYap("span", "pf-esik-kutu");
@@ -17518,16 +17541,16 @@ function profilEsikKartiEkle(alan, blok) {
         const hatali = sonuc.filter(x => !x.ok).length;
         ozetEl.textContent = hatali
             ? ftBinlik(hatali) + " eşik hatalı; düzeltmeden devam edilemez."
-            : (degisen ? ftBinlik(degisen) + " eşik varsayılandan farklı; kontroller bu değerlerle "
+            : (degisen ? ftBinlik(degisen) + " eşik önerilenden farklı; kontroller bu değerlerle "
                          + (kilitli ? "yapıldı." : "yapılır.")
-                       : (kilitli ? "Kontroller varsayılan eşiklerle yapıldı." : "Bütün eşikler varsayılan."));
+                       : (kilitli ? "Kontroller önerilen eşiklerle yapıldı." : "Bütün eşikler önerilen değerde."));
         ozetEl.classList.toggle("hatali", !!hatali);
         return { hatali: hatali, degisen: degisen };
     }
     alt.appendChild(ozetEl);
     if (!kilitli) {
         const dugmeler = elYap("div", "pf-esik-dugmeler");
-        const vars = elYap("button", "dg-toplu-btn", "Varsayılanlara Dön");
+        const vars = elYap("button", "dg-toplu-btn", "Önerilenlere Dön");
         vars.type = "button";
         vars.onclick = () => {
             if (kart.classList.contains("kilitli")) return;
