@@ -5898,3 +5898,4 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-cip-eklendi { border-style: dashed; }
 .gl-serit { margin: var(--b-2) 0; padding: 8px 12px; border-radius: var(--r-kucuk); background: var(--kirmizi-acik);
   color: var(--metin); border: 1px solid var(--kirmizi-cizgi); line-height: 1.45; }
+.gl-oneri-birimler > summary { cursor: pointer; color: var(--metin-soluk); font-size: var(--fs-kucuk); }

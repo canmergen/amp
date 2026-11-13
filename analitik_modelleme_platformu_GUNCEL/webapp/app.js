@@ -18385,6 +18385,8 @@ function gelenekselKartiEkle(alan, blok) {
     const kodAsama = c => Number((katalog[c] || {}).asama || 3);
     const ASAMA_KISA = { 1: "1. aşama", 2: "2. aşama", 3: "3. aşama" };
     const PARAMLI = ["esik", "kova", "segment", "grup_oran"];
+    /* Sıralamayı koruyan dönüşümler: IV kaynakla aynı; doğrusal modelde katkıları IV ile ölçülmez. */
+    const MONOTON = ["log", "islog", "karekok", "yeo", "winsor", "rank", "zskor", "robust"];
     const paramMetni = (c, param) => {
         const p = (param || {})[c] || {};
         if (c === "esik" && p.esik !== undefined) return " " + (p.yon === "<=" ? "≤ " : "≥ ") + String(p.esik).replace(".", ",");
@@ -18647,6 +18649,7 @@ function gelenekselKartiEkle(alan, blok) {
         Object.entries(kt.kodlar || {}).sort((a, b_) => kodAsama(a[0]) - kodAsama(b_[0]) || (b_[1].iv || 0) - (a[1].iv || 0)).forEach(([c, m]) => {
             const r = document.createElement("tr");
             let [sinif, metin] = degerlendir(m);
+            if (modelTuru === "dogrusal" && MONOTON.includes(c)) { sinif = ""; metin = "IV ile ölçülmez (ölçek dönüşümü)"; }
             /* Aynı sırada olan başka dönüşüm (ör. aynı pencere çiftinde oran ve normalize oran): IV'si yüksek olan esas. */
             const kodlar_ = kt.kodlar || {};
             const ust = Object.keys(m.benzer || {}).filter(x => kodlar_[x] && ((kodlar_[x].iv || 0) > (m.iv || 0)
@@ -19097,6 +19100,17 @@ function gelenekselKartiEkle(alan, blok) {
                     elYap("span", "", " · " + t.join(" · ")));
                 if (d.toplu && d.atlanan) metin.appendChild(elYap("div", "gl-oneri-neden",
                     ftBinlik(d.atlanan) + " birimde bu model türünde uygulanamadığı için atlanır."));
+                if (d.toplu && (d.ids || []).length) {
+                    /* Hangi birimler: açılır liste. */
+                    const bl = document.createElement("details");
+                    bl.className = "gl-oneri-birimler";
+                    const bs = document.createElement("summary");
+                    bs.textContent = "Birimleri göster (" + ftBinlik(d.ids.length) + ")";
+                    bl.appendChild(bs);
+                    bl.appendChild(elYap("div", "gl-oneri-neden", d.ids.slice(0, 300).map(i => birimAdi[i] || i).join(", ")
+                        + (d.ids.length > 300 ? " ve " + ftBinlik(d.ids.length - 300) + " birim daha" : "")));
+                    metin.appendChild(bl);
+                }
                 if (d.neden) metin.appendChild(elYap("div", "gl-oneri-neden", d.neden));
                 const dug = elYap("div", "gl-oneri-dug");
                 const u = elYap("button", "dg-toplu-btn", "Uygula");

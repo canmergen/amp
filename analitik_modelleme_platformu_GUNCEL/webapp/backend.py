@@ -2716,16 +2716,39 @@ def geleneksel_sohbet_endpoint():
             ayrinti=ayrinti, model_turu=model_turu)
         # Toplu degisiklikler (kapsamla) birimlere genisler; dil modeli hicbir
         # degisiklik uretmediyse kod mesajdan niyeti okur.
-        toplu = sonuc.get("toplu") or []
-        if not toplu and not sonuc.get("degisiklikler") and not sonuc.get("yeni"):
-            toplu = G.niyet_bul(mesaj)
-        genis = G.toplu_genislet(birimler, karar, toplu, model_turu, g.get("segmentler") or [])
-        sonuc["degisiklikler"] = genis + list(sonuc.get("degisiklikler") or [])
-        if genis and not sonuc.get("cevap"):
-            sonuc["cevap"] = G.toplu_cevap(genis)
-        elif toplu and not genis and not sonuc.get("cevap"):
+        katki = g.get("katki") or {}
+        segler = g.get("segmentler") or []
+        # Olcume dayali tarama (deger katanlari ekle / katmayanlari cikar):
+        # birimleri dil modeli degil kod secer; cevap da olcumden kurulur.
+        tara = {"katki_tara": "ekle", "katki_ele": "cikar"}.get(sonuc.get("arac")) or \
+            (G.analiz_niyeti(mesaj) if not G.niyet_bul(mesaj) else None)
+        if tara:
+            oner = G.katki_tara(birimler, karar, katki, model_turu, segler, tara)
+            sonuc["degisiklikler"] = oner
+            sonuc["cevap"] = (G.toplu_cevap(oner, katki) if oner else
+                              ("Ölçüme göre eklenince yeni bilgi getirecek, seçili olmayan dönüşüm yok." if tara == "ekle"
+                               else "Ölçüme göre seçili olup yeni bilgi taşımayan dönüşüm yok.")
+                              if katki else "Bu çalışmada ölçüm yok; planı yeniden açınca ölçülür.")
+            toplu = []
+        else:
+            toplu = sonuc.get("toplu") or []
+            if not toplu and not sonuc.get("degisiklikler") and not sonuc.get("yeni"):
+                toplu = G.niyet_bul(mesaj)
+        genis = G.toplu_genislet(birimler, karar, toplu, model_turu, segler)
+        if genis:
+            # Toplu degisiklikte cevabi kod kurar (ne kadar birim, olcume gore
+            # etkisi); dil modelinin metni yalniz sayiya dayaniyor ve "yapildi"
+            # demiyorsa eklenir.
+            dm = str(sonuc.get("cevap") or "")
+            ek = dm if (re.search(r"\d", dm) and not re.search(
+                r"(kaldırıldı|eklendi|uygulandı|çıkarıldı|silindi)", dm, re.I)) else ""
+            sonuc["cevap"] = G.toplu_cevap(genis, katki) + (("\n" + ek) if ek else "")
+        elif toplu:
+            # Istenen donusum hicbir birimde degismiyor: dil modelinin "yaptim"
+            # cevabi yerine durumu kod yazar.
             sonuc["cevap"] = ("İstenen dönüşüm şu anki kararlarda hiçbir birimde %s; değişecek bir şey yok."
                               % ("seçili değil" if toplu[0]["islem"] == "cikar" else "eklenebilir değil"))
+        sonuc["degisiklikler"] = genis + list(sonuc.get("degisiklikler") or [])
         if hata and not sonuc.get("cevap"):
             return jsonify({"tamam": False, "hata": "Dil modeli cevap vermedi (%s)." % model_adi_gizle(hata)})
         # Sohbette onerilen yeni aileler arasi iliskiler: kod dogrular ve

@@ -811,7 +811,9 @@ def kural_onerisi(b, model_turu="agac", katki=None):
         for c in aday:
             if not any(x in (kod[c].get("benzer") or {}) for x in sec):
                 sec.append(c)
-        sec = [c for c in katki_kodlari(b, model_turu) if c in sec]
+        sec = [c for c in katki_kodlari(b, model_turu) if c in sec and c not in MONOTON]
+        if model_turu == "dogrusal":
+            sec += [c for c in kural_onerisi(b, model_turu)["sec"] if c in MONOTON and c not in sec]
         param = {c: {"segment": kod[c]["segment"]} for c in sec if c in ("segment", "grup_oran")
                  and kod[c].get("segment")}
         g1, g2 = katki_gerekcesi(b, katki, sec, model_turu)
@@ -1440,6 +1442,10 @@ def ozet_metni(b):
 # ayni kalir, IV degismez (agacta gereksiz olmalarinin sayisal karsiligi).
 # ---------------------------------------------------------------------------
 KATKI_SURUM = 1
+# Siralamayi koruyan tek kolon donusumleri: IV'leri kaynakla aynidir. Agacta
+# gereksizdir; dogrusal modelde katkilari olcek (dogrusal uyum) ile ilgilidir
+# ve IV ile olculemez: olcumle eklenip cikarilmaz.
+MONOTON = ("log", "islog", "karekok", "yeo", "winsor", "rank", "zskor", "robust")
 KATKI_DILIM = 10
 KATKI_ARTIS = 0.02          # IV artisi bundan azsa belirgin katki yok
 KATKI_ILISKI = 0.95         # kaynakla sira iliskisi bundan cok ise ayni bilgi
@@ -1655,12 +1661,18 @@ def katki_gerekcesi(b, k, sec, model_turu):
     kod = k.get("kodlar") or {}
     bas = "Kaynak kolonların en iyi IV'si %s (%s). " % (_iv_yaz(k.get("kaynak_iv")), k.get("kaynak_kolon") or "-") \
         if k.get("kaynak_iv") is not None else ""
-    secilen = [katki_satiri(c, kod[c]) for c in sec if c in kod]
+    secilen = [katki_satiri(c, kod[c]) if c not in MONOTON else
+               "%s: sıralamayı koruyan dönüşüm (IV aynı, %s); doğrusal modelde değerin ölçeğini düzeltmek için"
+               % (KATALOG_HARITA[c]["ad"], _iv_yaz(kod[c].get("iv"))) for c in sec if c in kod]
     secilmeyen = []
     for c in katki_kodlari(b, model_turu):
         if c in sec or c not in kod:
             continue
         m = kod[c]
+        if c in MONOTON:
+            secilmeyen.append("%s: sıralamayı koruyan dönüşüm, IV kaynakla aynı (%s); doğrusal modelde katkısı "
+                              "ölçekle ilgilidir, IV ile ölçülmez" % (KATALOG_HARITA[c]["ad"], _iv_yaz(m.get("iv"))))
+            continue
         ben = [x for x in (m.get("benzer") or {}) if x in sec]
         neden = ("seçilen %s ile aynı sıra (ilişki %s), tekrar olur" % (
                     KATALOG_HARITA[ben[0]]["ad"], ("%.2f" % m["benzer"][ben[0]]).replace(".", ","))
@@ -2007,10 +2019,10 @@ def toplu_genislet(birimler, karar, toplu, model_turu, segmentler=()):
         if not ids and not atlanan:
             continue
         ks = []
-        if turler:
-            ks.append("/".join(sorted(turler)))
-        if asamalar:
-            ks.append("%s. aşama" % "/".join(str(x) for x in sorted(asamalar)))
+        if turler and turler < set(_TUR_ADI):
+            ks.append(", ".join(_TUR_ADI[x] for x in sorted(turler) if x in _TUR_ADI))
+        if asamalar and asamalar < {1, 2, 3}:
+            ks.append("%s. aşama" % " ve ".join(str(x) for x in sorted(asamalar)))
         if ad:
             ks.append("adında «%s»" % kap.get("ad"))
         if tip:
@@ -2022,7 +2034,119 @@ def toplu_genislet(birimler, karar, toplu, model_turu, segmentler=()):
     return cikti
 
 
-def toplu_cevap(degisiklikler):
+_TUR_ADI = {"kolon": "tek kolonlar", "aile": "pencere aileleri", "cift": "kolon çiftleri",
+            "grup": "kolon grupları", "satir": "satır düzeyi"}
+
+
+def _ort(v):
+    return sum(v) / len(v) if v else None
+
+
+def katki_etkisi(d, katki):
+    """Toplu degisikligin olcume gore etkisi (tek cumle, sayilarla)."""
+    katki = katki or {}
+    kodlar = d.get("cikar") or d.get("ekle") or []
+    if kodlar and all(c in MONOTON for c in kodlar):
+        return ("%s sıralamayı korur: IV'yi değiştirmez, ölçüm bu yüzden katkısını gösteremez. Doğrusal "
+                "modelde işi ölçeği düzeltmektir (uç değerin ya da çarpıklığın katsayıyı bozmasını önler); "
+                "çıkarınca bu koruma kalkar, ağaç modelinde zaten gerekmez."
+                % ", ".join(KATALOG_HARITA[c]["ad"] for c in kodlar))
+    deg, art = [], []
+    for i in d.get("ids") or []:
+        for c in kodlar:
+            m = ((katki.get(i) or {}).get("kodlar") or {}).get(c)
+            if not m:
+                continue
+            if m.get("artis") is not None:
+                art.append((m["artis"], i))
+            if katki_degerli(m):
+                deg.append((m.get("artis") if m.get("artis") is not None else m.get("iv") or 0, i))
+    if not art and not deg:
+        return "Bu birimlerde bu dönüşüm ölçülmedi."
+    olculen = len({i for _a, i in art}) or len({i for _a, i in deg})
+    t = "Ölçüm (eğitim satırları): %s birimde ölçüldü" % olculen
+    if art:
+        en = max(art)
+        t += ", kaynağa göre IV artışı ortalama %s, en çok %s" % (_artis_yaz(_ort([a for a, _i in art])),
+                                                                 _artis_yaz(en[0]))
+    if d.get("cikar"):
+        if deg:
+            t += ". Dikkat: %s birimde ölçüme göre yeni bilgi taşıyor (en çok %s); çıkarınca bu bilgi kaybolur." % (
+                len(deg), _artis_yaz(max(deg)[0]))
+        else:
+            t += ". Hiçbir birimde ölçüme göre yeni bilgi taşımıyor; çıkarmak bilgi kaybettirmez."
+    else:
+        t += ". %s birimde ölçüme göre yeni bilgi taşıyor." % len(deg) if deg else \
+            ". Hiçbir birimde belirgin katkı ölçülmedi; eklemek kolon sayısını artırır."
+    return t
+
+
+def katki_tara(birimler, karar, katki, model_turu, segmentler=(), yon="ekle"):
+    """Olcume gore toplu oneriler, donusum basina bir kayit.
+    yon "ekle": secili olmayan ama yeni bilgi tasiyan (secili bir
+    donusumle ayni sirada olmayan) kodlar. yon "cikar": secili ama olcume
+    gore yeni bilgi tasimayan ya da secili baska bir donusumle ayni sirada
+    olan (IV'si dusuk olan) kodlar."""
+    katki = katki or {}
+    grup = {}
+    for b in birimler:
+        k = (katki.get(b["id"]) or {}).get("kodlar") or {}
+        if not k:
+            continue
+        sec = list(((karar or {}).get(b["id"]) or {}).get("sec") or [])
+        mm = set(katki_kodlari(b, model_turu)) - set(MONOTON)
+        if yon == "ekle":
+            adaylar = sorted([c for c in mm if c not in sec and katki_degerli(k.get(c))],
+                             key=lambda c: -(k[c].get("iv") or 0))
+            tut = [c for c in sec if c in k]
+            for c in adaylar:
+                if any(x in (k[c].get("benzer") or {}) for x in tut):
+                    continue                     # secili biriyle ayni bilgi
+                tut.append(c)
+                grup.setdefault(c, []).append((b["id"], k[c]))
+        else:
+            for c in sec:
+                m = k.get(c)
+                if not m or c in MONOTON:
+                    continue
+                ust = [x for x in (m.get("benzer") or {}) if x in sec and (k.get(x) or {}).get("iv", 0) > m.get("iv", 0)]
+                if ust or not katki_degerli(m):
+                    grup.setdefault(c, []).append((b["id"], m))
+    cikti = []
+    for c, lst in sorted(grup.items(), key=lambda x: -len(x[1])):
+        art = [m.get("artis") for _i, m in lst if m.get("artis") is not None]
+        ivs = [m.get("iv") for _i, m in lst if m.get("iv") is not None]
+        if yon == "ekle":
+            neden = "Ölçüme göre yeni bilgi: IV artışı ortalama %s, en çok %s." % (
+                _artis_yaz(_ort(art)), _artis_yaz(max(art))) if art else \
+                "Ölçüme göre hedefle ilişkili: IV ortalama %s." % _iv_yaz(_ort(ivs))
+        else:
+            neden = "Ölçüme göre yeni bilgi yok ya da seçili başka bir dönüşümle aynı sırada: IV artışı ortalama %s." % (
+                _artis_yaz(_ort(art)) if art else "-")
+        cikti.append({"toplu": True, "ids": [i for i, _m in lst], "ekle": [c] if yon == "ekle" else [],
+                      "cikar": [c] if yon != "ekle" else [], "param": {}, "neden": neden,
+                      "kapsam_metni": "ölçüme göre seçilen birimler", "atlanan": 0})
+    return cikti
+
+
+_TARA_EKLE = ("değer kat", "deger kat", "katkı", "katki", "fayda", "iyileştir", "ekstra", "eksik kal",
+              "işe yarayan", "bilgi taşıyan", "bilgi katan")
+_TARA_CIKAR = ("değer katmayan", "katkısız", "gereksiz", "işe yaramayan", "bilgi katmayan", "tekrar eden",
+               "aynı bilgi")
+
+
+def analiz_niyeti(mesaj):
+    """Olcume dayali tarama istegi: "ekle" (deger katanlari ekle), "cikar"
+    (deger katmayanlari cikar) ya da None."""
+    m = _kucuk(mesaj)
+    if any(x in m for x in _TARA_CIKAR) and any(x in m for x in ("çıkar", "kaldır", "ele", "temizle", "sil")):
+        return "cikar"
+    if any(x in m for x in _TARA_EKLE) and any(x in m for x in ("ekle", "bak", "var mı", "öner", "bul", "neler")):
+        return "ekle"
+    return None
+
+
+def toplu_cevap(degisiklikler, katki=None):
     """Dil modelinin cevabi yoksa degisikliklerden kisa cevap."""
     par = []
     for d in degisiklikler:
@@ -2034,13 +2158,15 @@ def toplu_cevap(degisiklikler):
         if not d["ids"]:
             par.append("%s hiçbir birime eklenemiyor: %s." % (adlar, atla or "uygun birim yok"))
             continue
-        par.append("%s %s %s (%s)%s." % (
+        par.append("Öneri: %s %s %s (%s)%s. %s" % (
             adlar, "%s birimden" % len(d["ids"]) if d.get("cikar") else "%s birime" % len(d["ids"]),
-            "çıkarılacak" if d.get("cikar") else "eklenecek", d["kapsam_metni"], ("; " + atla) if atla else ""))
+            "çıkarılsın" if d.get("cikar") else "eklensin", d["kapsam_metni"], ("; " + atla) if atla else "",
+            katki_etkisi(d, katki) if katki is not None else ""))
     if not par:
         return ""
     yap = any(d.get("toplu") and d["ids"] for d in degisiklikler)
-    return " ".join(par) + (" Uygula ile sola aktarabilirsiniz." if yap else "")
+    return "\n".join(p_.strip() for p_ in par) + (
+        "\nPlan henüz değişmedi; Uygula'ya basınca sola aktarılır." if yap else "")
 
 
 def plan_satirlari(birimler, karar, model_turu="agac", mesaj="", en_cok=900, katki=None):

@@ -2678,6 +2678,32 @@ tanıtır; sayfalar sol bardan açılır.
   Seçimleriniz korunuyor"), iş bitince kart yeni önerilerle ve
   farklarınızla yeniden çizilir. Bekleme kartı yalnız ilk açılışta.
 
+**02.2 sohbet: toplu işlerde cevap ve öneri ölçümden, kod kurar**
+- ÖLÇÜME DAYALI TARAMA: "değer katanları ekle" / "değer katmayanları
+  çıkar" istekleri (dil modelinin `arac`: katki_tara / katki_ele ya da
+  `analiz_niyeti`; mesajda tek bir dönüşüm adı geçiyorsa `niyet_bul`
+  önceliklidir) birimleri dil modeline seçtirmez: `katki_tara` bütün
+  birimlerin ölçümüne bakar. Ekle: seçili olmayan, `katki_degerli` ve
+  seçili bir dönüşümle aynı sırada olmayan kodlar. Çıkar: seçili olup
+  yeni bilgi taşımayan ya da seçili ve IV'si daha yüksek bir dönüşümle
+  aynı sırada olan kodlar. Dönüşüm başına bir toplu öneri.
+- TOPLU CEVAP KODDAN: toplu değişiklikte cevap `toplu_cevap(degisiklikler,
+  katki)`: "Öneri: X N birimden çıkarılsın (kapsam)" + `katki_etkisi`
+  (ölçülen birim sayısı, IV artışı ortalaması ve en çoğu, yeni bilgi
+  taşıyan birim sayısı; çıkarmada kaybolacak bilgi uyarısı) + "Plan henüz
+  değişmedi; Uygula'ya basınca sola aktarılır." Dil modelinin metni yalnız
+  sayı içeriyor ve "kaldırıldı, eklendi, uygulandı" demiyorsa eklenir.
+  Değişiklik yoksa durumu kod yazar.
+- Kapsam metni Türkçe; bütün türler ve aşamalar "bütün birimler".
+- Öneri satırında "Birimleri göster (N)" açılır listesi.
+- MONOTON (log, işaretli log, karekök, Yeo-Johnson, kırpma, sıra, z-skor,
+  robust): IV'leri kaynakla aynı. Doğrusal modelde katkıları ölçekle ilgili
+  ve IV ile ölçülemez: tarama bunları eklemez ve çıkarmaz, kural eski
+  (çarpıklık, uç değer) mantığıyla seçer, ölçüm tablosunda "IV ile
+  ölçülmez (ölçek dönüşümü)", toplu cevapta bu açıklanır.
+- İstem: önerilen değişiklik için "kaldırıldı / eklendi" denmez; ölçüme
+  dayanmayan performans iddiası yazılmaz.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).
