@@ -2752,6 +2752,23 @@ tanıtır; sayfalar sol bardan açılır.
 - Ölçüme dayalı ekleme taraması (`katki_tara`, `sapma`) kullanıcının o
   birimden çıkardığı dönüşümü yeniden önermez.
 
+**02.2 "kullanılabilir" ve seçilen dönüşüm sayısı**
+- Katalogdaki "Bu modelde" sütunu yalnız model türünde seçilebilir olup
+  olmadığını söyler; her birimde değil. Altında hangi birim türünde
+  uygulandığı yazar (`geleneksel.kod_yeri`): tek kolon ve ailenin her
+  penceresi, pencere ailesi (en az 2 ya da 3 pencere), toplanabilir aile,
+  gelen ve giden çifti, alt kırılım ve toplam, kategorik kolon, satır.
+- Birim satırında "seçili / uygulanabilir dönüşüm · kolon" (ör. "4 / 22
+  dönüşüm · 23 kolon"). Uygulanabilen her kod gerçekten üretilir (8
+  pencereli ailede doğrusalda 22 kodun hepsi denendi, kolon sayıları
+  `kolon_sayisi` ile aynı; hepsi seçilse 190 kolon).
+- TEKRAR AYIKLAMA (`tekrar_ele`, dil modeli önerisinde ve önbellekteki
+  önerilerde): normalize oran ile oran (normalize oran oranın sabit katı),
+  oran ile bütün çiftlerde oran, fark ile bütün çiftlerde fark birlikte
+  seçilmez; ağaçta ölçüme göre aynı sırada olanlardan IV'si düşük olan da
+  çıkar. Elenenler öneride `elenen` ve birimde "Kod ayıkladı" satırı. Eski
+  kural önerisi aileye artık yalnız oranı seçer.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

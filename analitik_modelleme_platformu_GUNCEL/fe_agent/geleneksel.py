@@ -812,6 +812,9 @@ def kural_onerisi(b, model_turu="agac", katki=None):
             if not any(x in (kod[c].get("benzer") or {}) for x in sec):
                 sec.append(c)
         sec = [c for c in katki_kodlari(b, model_turu) if c in sec and c not in MONOTON]
+        for c, ust, _n in TEKRAR_KESIN:
+            if c in sec and ust in sec:
+                sec.remove(c)
         if model_turu == "dogrusal":
             sec += [c for c in kural_onerisi(b, model_turu)["sec"] if c in MONOTON and c not in sec]
         param = {c: {"segment": kod[c]["segment"]} for c in sec if c in ("segment", "grup_oran")
@@ -852,8 +855,9 @@ def kural_onerisi(b, model_turu="agac", katki=None):
                     ", WoE (hedef iki sınıflı)" if "woe" in sec else "")}
     carp = oz.get("carpiklik") or 0
     if b["tur"] == "aile":
-        sec += ["oran", "norm"]
-        neden.append("aynı ölçünün %s penceresi: kısa / uzun oran ve günlük ortalama oranı"
+        # Normalize oran, oranin sabit katidir (ayni bilgi); yalniz oran.
+        sec += ["oran"]
+        neden.append("aynı ölçünün %s penceresi: kısa / uzun pencere oranı"
                      % len(b["kolonlar"]))
         if "egim" in mm:
             sec.append("egim")
@@ -1714,6 +1718,58 @@ def _sayili(metin):
     return bool(re.search(r"\d", str(metin or "")))
 
 
+# Donusumun uygulandigi birim turu (katalogdaki "nerede" bilgisi).
+_YER_GRUP = {"tekli": "Tek kolon ve pencere ailesinin her penceresi", "aile": "Pencere ailesi (en az 2 pencere)",
+             "kategorik": "Kategorik tek kolon", "satir": "Satır düzeyi"}
+_YER_KOD = {"net": "Gelen ve giden çifti; aileler arası çift", "cift_oran": "Gelen ve giden çifti; aileler arası çift",
+            "ort": "Tutar ve adet çifti", "pay": "Alt kırılım ve toplam çifti", "carpim": "Kolon çiftleri",
+            "kesisim": "İki az değerli kategorik kolon", "yogunlasma": "Aynı toplamın en az iki alt kırılımı",
+            "oran_tum": "Pencere ailesi (en az 3 pencere)", "fark_tum": "Pencere ailesi (en az 3 pencere)",
+            "egim": "Pencere ailesi (en az 3 pencere)", "dk": "Pencere ailesi (en az 3 pencere)",
+            "ardisik": "Toplanabilir pencere ailesi (en az 3 pencere)",
+            "donem": "Toplanabilir pencere ailesi", "donem_pay": "Toplanabilir pencere ailesi",
+            "donem_oran": "Toplanabilir pencere ailesi", "en_yogun": "Toplanabilir pencere ailesi",
+            "buyume": "Toplanabilir pencere ailesi"}
+
+
+def kod_yeri(kod):
+    return _YER_KOD.get(kod) or _YER_GRUP.get(KATALOG_HARITA[kod]["grup"], "")
+
+
+# Ayni bilgiyi veren ciftler (her model turunde): normalize oran, oranin sabit
+# katidir; "butun ciftler" sıradaki ciftleri de icerir.
+TEKRAR_KESIN = [("norm", "oran", "Normalize oran aynı pencere çiftinde Oran'ın sabit bir katıdır (pencere "
+                 "uzunluklarının oranı); aynı bilgi."),
+                ("oran", "oran_tum", "Oran (bütün pencere çiftleri) sıradaki çiftleri de üretir."),
+                ("fark", "fark_tum", "Fark (bütün pencere çiftleri) sıradaki çiftleri de üretir.")]
+
+
+def tekrar_ele(o, b, k, model_turu):
+    """Secimde ayni bilgiyi veren donusumleri ayiklar (kod): kesin olanlar
+    her modelde; agacta olcume gore ayni sirada olanlardan IV'si dusuk olan
+    da (agac sira kullanir). Doner: (yeni oneri, elenen [{kod, neden}])."""
+    sec = list(o.get("sec") or [])
+    elenen = []
+    for c, ust, neden in TEKRAR_KESIN:
+        if c in sec and ust in sec:
+            sec.remove(c)
+            elenen.append({"kod": c, "neden": neden})
+    kod = (k or {}).get("kodlar") or {}
+    if model_turu == "agac" and kod:
+        for c in sorted([x for x in sec if x in kod], key=lambda x: (kod[x].get("iv") or 0)):
+            ust = [x for x in (kod[c].get("benzer") or {}) if x in sec and x != c
+                   and (kod.get(x) or {}).get("iv", 0) >= (kod[c].get("iv") or 0)]
+            if ust and c in sec:
+                sec.remove(c)
+                elenen.append({"kod": c, "neden": "%s ile aynı sırada (ilişki %s); ağaç sırayı kullandığı için aynı bilgi."
+                               % (KATALOG_HARITA[ust[0]]["ad"], ("%.2f" % kod[c]["benzer"][ust[0]]).replace(".", ","))})
+    if not elenen:
+        return o, []
+    o = dict(o, sec=sec, param={c: v for c, v in (o.get("param") or {}).items() if c in sec})
+    o["elenen"] = elenen
+    return o, elenen
+
+
 def olcum_ekle(o, b, k, model_turu):
     """Oneriye kodun sayisal gerekcesini ekler (olcum, olcum_secilmeyen).
     Dil modelinin gerekcesinde sayi yoksa (genel cumle) gosterilmez."""
@@ -1775,6 +1831,7 @@ def oneri_birlestir(birimler, cikti, alinan, model_turu, sorulan=None, katki=Non
         o = alinan.get(b["id"])
         kk = (katki or {}).get(b["id"])
         if o is not None:
+            o, _el = tekrar_ele(dict(o), b, kk, model_turu)
             cikti[b["id"]] = olcum_ekle(dict(o, kaynak="dil modeli", imza=_oneri_imza(b, model_turu)),
                                         b, kk, model_turu)
         else:

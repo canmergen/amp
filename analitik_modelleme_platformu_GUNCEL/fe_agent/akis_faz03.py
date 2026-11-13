@@ -188,7 +188,7 @@ def geleneksel_karti(durum, kilitli=False):
         "agac_gereksiz": list(G.AGAC_GEREKSIZ), "agac_nedeni": G.AGAC_NEDENI,
         "asama_adlari": {str(k): v for k, v in G.ASAMA_ADI.items()},
         "katalog": [{"kod": k, "ad": a, "grup": gr, "grup_adi": G.GRUP_ADI[gr], "aciklama": c,
-                     "asama": G.ASAMA.get(k, 3),
+                     "asama": G.ASAMA.get(k, 3), "yer": G.kod_yeri(k),
                      "ne_yapar": G.ACIKLAMA_UZUN[k][0], "ornek": G.ACIKLAMA_UZUN[k][1],
                      "ne_zaman": G.ACIKLAMA_UZUN[k][2]}
                     for k, a, gr, c in G.KATALOG],
@@ -466,8 +466,8 @@ def geleneksel_is_durumu(durum):
     if d.get("katki") is not None:
         g["katki"] = d["katki"]
     katki = g.get("katki") or {}
-    cikti = {k: G.olcum_ekle(o, b, katki.get(k), model_turu) for b in birimler
-             for k, o in [(b["id"], (g.get("oneri") or {}).get(b["id"]))]
+    cikti = {k: G.olcum_ekle(G.tekrar_ele(o, b, katki.get(k), model_turu)[0], b, katki.get(k), model_turu)
+             for b in birimler for k, o in [(b["id"], (g.get("oneri") or {}).get(b["id"]))]
              if o and o.get("kaynak") in ("dil modeli", "secenek yok", "sohbet")}
     oneri = G.oneri_birlestir(birimler, cikti, d.get("sonuc") or {}, model_turu, d.get("sorulan") or [],
                               katki)

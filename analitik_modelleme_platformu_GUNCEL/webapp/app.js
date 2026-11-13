@@ -18533,7 +18533,7 @@ function gelenekselKartiEkle(alan, blok) {
     });
     at.appendChild(acg);
     const ath = document.createElement("thead"), atr = document.createElement("tr");
-    ["Dönüşüm", "Ne yapar, örnek, ne zaman", "Bu modelde"].forEach(x => atr.appendChild(elYap("th", "", x)));
+    ["Dönüşüm", "Ne yapar, örnek, ne zaman", "Bu modelde, hangi birimde"].forEach(x => atr.appendChild(elYap("th", "", x)));
     ath.appendChild(atr); at.appendChild(ath);
     const atb = document.createElement("tbody");
     let sonGrup = "";
@@ -18551,7 +18551,14 @@ function gelenekselKartiEkle(alan, blok) {
         if (k.ornek) ne.appendChild(elYap("div", "gl-k-alt", "Örnek: " + k.ornek));
         if (k.ne_zaman) ne.appendChild(elYap("div", "gl-k-alt", "Ne zaman: " + k.ne_zaman));
         r.append(elYap("td", "pf-kolon-ad", k.ad), ne,
-                 elYap("td", "gl-k-model-hucre" + (gereksiz(k.kod) ? " gl-gereksiz" : ""), gereksiz(k.kod) ? "Gereksiz (ağaç)" : "Kullanılabilir"));
+                 (() => {
+                     /* Bu modelde seçilebilir mi ve HANGİ BİRİMDE: "Kullanılabilir" her
+                        birimde değil, yalnız yazılan birim türünde. */
+                     const td = elYap("td", "gl-k-model-hucre" + (gereksiz(k.kod) ? " gl-gereksiz" : ""));
+                     td.appendChild(elYap("div", "", gereksiz(k.kod) ? "Gereksiz (ağaç)" : "Kullanılabilir"));
+                     if (k.yer) td.appendChild(elYap("div", "gl-k-alt", k.yer));
+                     return td;
+                 })());
         atb.appendChild(r);
     });
     at.appendChild(atb);
@@ -18705,7 +18712,11 @@ function gelenekselKartiEkle(alan, blok) {
         ust.appendChild(elYap("span", "gl-tur", tur));
         if (farkli(b.id)) ust.appendChild(elYap("span", "gl-fark", "Öneriden farklı"));
         const sayi = kolonSayisi(b, k.sec);
-        if (sayi) ust.appendChild(elYap("span", "gl-sayi", ftBinlik(sayi) + " kolon"));
+        const mmSayi = mumkunGor(b).length;
+        const sy = elYap("span", "gl-sayi", ftBinlik((k.sec || []).length) + " / " + ftBinlik(mmSayi) + " dönüşüm"
+            + (sayi ? " · " + ftBinlik(sayi) + " kolon" : ""));
+        sy.title = "Seçili dönüşüm / bu birimde bu model türünde uygulanabilen dönüşüm. Uygulanabilenlerin hepsi birimi açınca görünür.";
+        ust.appendChild(sy);
         sm.appendChild(ust);
         /* Çipler tıklanır: yeşil (seçili) tıklanınca kaldırılır; önerilip
            kaldırılan üstü çizili kalır, tıklanınca geri eklenir. */
@@ -18769,6 +18780,7 @@ function gelenekselKartiEkle(alan, blok) {
             if (o.g2) satir(ASAMA_KISA[2], ASAMA_ADI[2].replace(/^2\. /, "") + ": " + tireSade(o.g2));
             if (o.g3) satir(ASAMA_KISA[3], ASAMA_ADI[3].replace(/^3\. /, "") + ": " + tireSade(o.g3));
         } else if (!o.sayisiz && o.gerekce && o.gerekce !== o.olcum) satir("Neden", tireSade(o.gerekce));
+        if ((o.elenen || []).length) satir("Kod ayıkladı", o.elenen.map(e => kodAdi(e.kod) + ": " + e.neden).join(" "));
         if (o.olcum) satir(o.sayisiz || !(o.g1 || o.g2 || o.g3 || o.gerekce) ? "Neden" : "Ölçüm", tireSade(o.olcum));
         if (!o.sayisiz && o.secilmeyen && o.secilmeyen !== o.olcum_secilmeyen) satir("Seçilmeyenler", tireSade(o.secilmeyen));
         /* Seçilmeyenlerin ölçümü aşağıdaki tabloda; tabloyu yoksa metin. */
