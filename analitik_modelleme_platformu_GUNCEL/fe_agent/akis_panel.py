@@ -2093,3 +2093,94 @@ def sfa_paneli(durum):
                           "ai_is": s.get("ai_is"), "onaylandi": bool(s.get("onaylandi")),
                           "girmeyen": len(ko.get("girmeyen") or [])}
     return veri
+
+
+# ===========================================================================
+# VERI VE SOZLUK KARSILASTIRMASI (Veri ve Sözlük sekmesi): veride olup
+# sozlukte olmayan kolonlar, sozlukte olup veride olmayan degiskenler,
+# yalniz harf buyuklugu farkli adlar ve sozlukte birden cok satiri olan
+# degiskenler. Guncel: UPDT veri ile UPDT sozluk (yayinlanan hali); Baz: BAZ
+# veri ile BAZ sozluk. Yalniz okur.
+# ===========================================================================
+def _sozluk_satirlari(tablo):
+    """[(ad, aciklama)]: sozluk tablosunun degisken adlari ve aciklamalari."""
+    if tablo is None or not len(tablo.columns):
+        return []
+    ad = sozluk_calisma.degisken_kolonu_bul(tablo)
+    if ad is None:
+        return []
+    tanim = sozluk_calisma.tanim_kolonu_bul(tablo)
+    cikti = []
+    for i in range(len(tablo)):
+        a = tablo[ad].iloc[i]
+        if a is None or (isinstance(a, float) and a != a) or not str(a).strip():
+            continue
+        t = tablo[tanim].iloc[i] if tanim is not None else None
+        t = "" if t is None or (isinstance(t, float) and t != t) else str(t).strip()
+        cikti.append((str(a).strip(), t))
+    return cikti
+
+
+def veri_sozluk_karsilastir(veri_kolonlari, sozluk_satirlari):
+    """Ad karsilastirmasi (bastaki ve sondaki bosluk yok sayilir). Doner:
+    {"veri_sayi", "sozluk_sayi", "ortak", "veride_var", "sozlukte_var",
+    "harf_farki", "tekrar"}."""
+    veri = [str(k).strip() for k in veri_kolonlari]
+    vset = set(veri)
+    sozluk = {}
+    tekrar = {}
+    for a, t in sozluk_satirlari:
+        if a in sozluk:
+            tekrar[a] = tekrar.get(a, 1) + 1
+            continue
+        sozluk[a] = t
+    sset = set(sozluk)
+    v_buyuk = {}
+    for k in veri:
+        v_buyuk.setdefault(k.upper(), k)
+    s_buyuk = {}
+    for k in sozluk:
+        s_buyuk.setdefault(k.upper(), k)
+    harf = [{"veri": v_buyuk[u], "sozluk": s_buyuk[u]}
+            for u in sorted(set(v_buyuk) & set(s_buyuk))
+            if v_buyuk[u] != s_buyuk[u] and v_buyuk[u] not in sset and s_buyuk[u] not in vset]
+    harf_veri = {x["veri"] for x in harf}
+    harf_soz = {x["sozluk"] for x in harf}
+    return {
+        "veri_sayi": len(vset), "sozluk_sayi": len(sset), "ortak": len(vset & sset),
+        "veride_var": [k for k in veri if k not in sset and k not in harf_veri],
+        "sozlukte_var": [{"ad": a, "aciklama": sozluk[a]} for a in sozluk
+                         if a not in vset and a not in harf_soz],
+        "harf_farki": harf,
+        "tekrar": [{"ad": a, "satir": n} for a, n in tekrar.items()],
+    }
+
+
+def veri_sozluk_eslesmesi(durum, kaynak="updt"):
+    """Veri Seti ile Sözlük'ün karsilastirmasi. kaynak "updt" (Güncel) ya da
+    "baz" (Baz). Doner: veri_sozluk_karsilastir + {"veri_ad", "sozluk_ad",
+    "kaynak"} ya da {"hata"}."""
+    from fe_agent import amp as amp_mod
+    from fe_agent import akis_durum as ad_
+    baz_veri = (durum.get("amp_ham") or {}).get("dataset") or ""
+    if kaynak == "baz":
+        if not baz_veri.endswith("_BAZ_VERI") or not durum.get("baz_sozluk"):
+            return {"hata": "Baz veri ya da baz sözlük henüz yazılmadı."}
+        veri_ad, sozluk_ad = baz_veri, durum["baz_sozluk"]
+        veri = list(ad_._df_oku(veri_ad, limit=1).columns)
+        sozluk_tablo = ad_._df_oku(sozluk_ad)
+    else:
+        df = ad_.modelleme_df(durum, limit=1)
+        cikan = cikarilan_kolonlar(durum)
+        veri = [c for c in df.columns if str(c) not in cikan]
+        kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+        veri_ad = kayit.get("dataset") or kayit.get("ad") or durum.get("veri_seti") or ""
+        sozluk_tablo = sozluk_calisma.calisma_df(durum)
+        if baz_veri.endswith("_BAZ_VERI"):
+            sozluk_tablo = amp_mod.updt_sozluk_suz(durum, sozluk_tablo)
+            sozluk_ad = amp_mod.updt_sozluk_adi(durum)
+        else:
+            sozluk_ad = sozluk_calisma.sozluk_adi(durum) or ""
+    sonuc = veri_sozluk_karsilastir(veri, _sozluk_satirlari(sozluk_tablo))
+    sonuc.update({"veri_ad": veri_ad, "sozluk_ad": sozluk_ad, "kaynak": kaynak})
+    return sonuc

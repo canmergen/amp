@@ -5751,3 +5751,9 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
   color: var(--metin-soluk); background: var(--yuzey-alt); border: 1px solid var(--kenar);
 }
 .pf-karar-bolum-kaynak.dm { color: var(--yesil); border-color: color-mix(in srgb, var(--yesil) 40%, var(--yuzey)); background: var(--yesil-acik); }
+/* Veri ve Sözlük Karşılaştırması */
+.vse { margin-top: var(--b-3); }
+.vse-bas { display: flex; align-items: center; gap: var(--b-3); flex-wrap: wrap; color: var(--metin-soluk); margin-bottom: var(--b-2); }
+.vse-alt { margin-top: var(--b-3); }
+.vse-sar { max-height: 320px; overflow: auto; }
+.dg-tablo.vse-tablo th, .dg-tablo.vse-tablo td { text-align: center; }

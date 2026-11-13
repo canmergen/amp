@@ -2437,6 +2437,19 @@ tanıtır; sayfalar sol bardan açılır.
   birleşik önerisi), `karar_kaynak`, `karar_gerekce` (kural ise
   `KARAR_KURAL_GEREKCESI`); düzeltme ve çözüm alanında `kaynak`.
 
+**Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
+- Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
+  `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).
+- `akis_panel.veri_sozluk_eslesmesi`: Güncel = UPDT veri kolonları
+  (`modelleme_df`, 01.2.3.1'de çıkarılanlar hariç) ile UPDT sözlük
+  (`calisma_df` + `updt_sozluk_suz`, yayınlanan hâli); Baz = BAZ veri ile
+  BAZ sözlük. Sözlük seçicisi (Güncel / Baz) hangisinin karşılaştırılacağını
+  belirler.
+- `veri_sozluk_karsilastir`: veride olup sözlükte olmayan, sözlükte olup
+  veride olmayan (sözlükteki açıklamasıyla), yalnız harf büyüklüğü farklı
+  adlar, sözlükte birden çok satırı olan değişkenler. Baştaki ve sondaki
+  boşluk yok sayılır.
+
 **02.1 yeni kolonların sözlük satırları her zaman tam**
 - `amp.updt_sozluk_ek`: `p["sozluk_ek"]` (02.1 onayında kurulur) eksikse ya
   da hiç yoksa (eski oturum) 02.1'de üretilen her kolonun satırı

@@ -3578,6 +3578,98 @@ function ftDetayCiz() {
     kutu.appendChild(kapat);
 }
 
+/* ==================== VERİ VE SÖZLÜK KARŞILAŞTIRMASI ====================
+   Veri ve Sözlük sekmesinde, sözlük tablosunun altında açılır bölüm:
+   veride olup sözlükte olmayan kolonlar, sözlükte olup veride olmayan
+   değişkenler, yalnız harf büyüklüğü farklı adlar ve sözlükte birden çok
+   satırı olanlar. Güncel sözlük seçiliyse Güncel veriyle, Baz seçiliyse
+   Baz veriyle karşılaştırılır. Açılınca sunucudan istenir (yalnız okur);
+   açık / kapalı durumu ve son sonuç yeniden çizimde korunur. */
+const VSE = { acik: false, sonuc: {}, yukleniyor: {} };
+function veriSozlukEslemeCiz(kaynak) {
+    const d = document.createElement("details");
+    d.className = "oz0124-bolum vse";
+    d.open = VSE.acik;
+    const sm = document.createElement("summary");
+    sm.appendChild(elYap("span", "oz0124-baslik", "Veri ve Sözlük Karşılaştırması"));
+    const ib = bolmeBilgiSimgesi("Veri setindeki kolon adlarıyla sözlükteki değişken adlarını karşılaştırır. "
+        + "Güncel sözlük seçiliyse Güncel veriyle (UPDT), Baz sözlük seçiliyse Baz veriyle karşılaştırılır.\n\n"
+        + "Veride olup sözlükte olmayan: açıklaması olmayan kolon. Sözlükte olup veride olmayan: veride "
+        + "artık bulunmayan ya da adı farklı yazılmış değişken. Yalnız harf büyüklüğü farklı adlar ve "
+        + "sözlükte birden çok satırı olan değişkenler ayrıca gösterilir. Adların başındaki ve sonundaki "
+        + "boşluk yok sayılır. Hiçbir şey değiştirilmez.", "Veri ve Sözlük Karşılaştırması");
+    ib.addEventListener("click", e => e.preventDefault());
+    sm.appendChild(ib);
+    const ozet = elYap("span", "oz0124-ozet", "");
+    sm.appendChild(ozet);
+    d.appendChild(sm);
+    const ic = elYap("div", "oz0124-ic");
+    d.appendChild(ic);
+    const listeTablosu = (basliklar, satirlar) => {
+        const t = elYap("table", "dg-tablo oz0124-tablo vse-tablo");
+        const th = document.createElement("thead"), hr = document.createElement("tr");
+        basliklar.forEach(b => hr.appendChild(elYap("th", "", b)));
+        th.appendChild(hr); t.appendChild(th);
+        const tb = document.createElement("tbody");
+        satirlar.forEach(h => {
+            const tr = document.createElement("tr");
+            h.forEach((x, i) => tr.appendChild(elYap("td", i === 0 ? "pf-kolon-ad" : "", x)));
+            tb.appendChild(tr);
+        });
+        t.appendChild(tb);
+        const sar = elYap("div", "dg-tablo-sar vse-sar");
+        sar.appendChild(t);
+        return sar;
+    };
+    const ciz = () => {
+        ic.textContent = "";
+        const r = VSE.sonuc[kaynak];
+        if (VSE.yukleniyor[kaynak] && !r) { ic.appendChild(elYap("div", "oz0124-not", "Karşılaştırılıyor")); return; }
+        if (!r) { ic.appendChild(elYap("div", "oz0124-not", "Açılınca karşılaştırılır.")); return; }
+        if (!r.tamam) { ic.appendChild(elYap("div", "oz0124-not", r.hata || r.not || "Karşılaştırma yapılamadı.")); return; }
+        const vy = (r.veride_var || []).length, sy = (r.sozlukte_var || []).length;
+        const hf = (r.harf_farki || []).length, tk = (r.tekrar || []).length;
+        ozet.textContent = (vy || sy || hf || tk)
+            ? [vy ? ftBinlik(vy) + " kolon sözlükte yok" : "", sy ? ftBinlik(sy) + " değişken veride yok" : "",
+               hf ? ftBinlik(hf) + " harf farkı" : "", tk ? ftBinlik(tk) + " tekrar" : ""].filter(Boolean).join(" · ")
+            : "Bütün adlar eşleşiyor";
+        const bas = elYap("div", "vse-bas");
+        bas.appendChild(elYap("span", "", r.veri_ad + ": " + ftBinlik(r.veri_sayi) + " kolon · "
+            + r.sozluk_ad + ": " + ftBinlik(r.sozluk_sayi) + " değişken · ortak " + ftBinlik(r.ortak)));
+        const yb = elYap("button", "ft-mini", "Yenile");
+        yb.type = "button";
+        yb.onclick = () => yukle(true);
+        bas.appendChild(yb);
+        ic.appendChild(bas);
+        const bolum = (baslik, n, icerik) => {
+            ic.appendChild(elYap("div", "pf-alt-baslik vse-alt", baslik + " (" + ftBinlik(n) + ")"));
+            ic.appendChild(n ? icerik() : elYap("div", "oz0124-not", "Yok"));
+        };
+        bolum("Veride olup sözlükte olmayan", vy, () => listeTablosu(["Kolon"], r.veride_var.map(k => [k])));
+        bolum("Sözlükte olup veride olmayan", sy, () => listeTablosu(["Değişken", "Sözlükteki açıklama"],
+            r.sozlukte_var.map(x => [x.ad, x.aciklama || BOS_SIMGE])));
+        if (hf) bolum("Yalnız harf büyüklüğü farklı", hf, () => listeTablosu(["Veride", "Sözlükte"],
+            r.harf_farki.map(x => [x.veri, x.sozluk])));
+        if (tk) bolum("Sözlükte birden çok satırı olan", tk, () => listeTablosu(["Değişken", "Satır"],
+            r.tekrar.map(x => [x.ad, ftBinlik(x.satir)])));
+    };
+    const yukle = (zorla) => {
+        if (VSE.yukleniyor[kaynak] || (VSE.sonuc[kaynak] && !zorla)) { ciz(); return; }
+        VSE.yukleniyor[kaynak] = true;
+        if (zorla) delete VSE.sonuc[kaynak];
+        ciz();
+        fetch(getWebAppBackendUrl("veri_sozluk_esleme") + "?oturum_id=" + encodeURIComponent(OTURUM_ID)
+              + "&kaynak=" + encodeURIComponent(kaynak))
+            .then(r => r.json())
+            .then(j => { VSE.sonuc[kaynak] = j; })
+            .catch(() => { VSE.sonuc[kaynak] = { tamam: false, hata: "Karşılaştırma alınamadı." }; })
+            .finally(() => { VSE.yukleniyor[kaynak] = false; if (d.isConnected) ciz(); });
+    };
+    d.addEventListener("toggle", () => { VSE.acik = d.open; if (d.open) yukle(false); });
+    if (d.open) yukle(false); else ciz();
+    return d;
+}
+
 /* ==================== 01.2.4 SONUÇLARI (Değişken Listesi'nin altında) ====
    Sözlük ve Kolon Adı Kontrolü'nde onaylananlar, açılır bölümlerde:
    Dönem Bilgisi, Ad Parçaları, Kolon Adları kuralları ve Kolon Kartları.
@@ -4881,6 +4973,7 @@ function analizCiz(tab) {
         else if (ft) featureTabloCiz(ftSaltOku(ft));
         else analizGovde.appendChild(elYap("div", "set-not",
             "Sözlük listesi veri seti seçildikten sonra burada görünür."));
+        if (ft) analizGovde.appendChild(veriSozlukEslemeCiz(sozSec.length && VK.sozluk === "baz" ? "baz" : "updt"));
         onizlemeCiz(onizKap, veriBaslik);
         ftOdakGeriVer(odak);
         return;

@@ -2684,6 +2684,27 @@ def sozluk_baz_endpoint():
         return jsonify(_hata_govdesi("sozluk_baz", e, "Baz sözlük okunamadı."))
 
 
+@app.route("/veri_sozluk_esleme")
+def veri_sozluk_esleme_endpoint():
+    """Veri ve Sözlük karşılaştırması (bkz. akis_panel.veri_sozluk_eslesmesi):
+    veride olup sözlükte olmayan, sözlükte olup veride olmayan adlar."""
+    try:
+        anahtar = _oturum_anahtari(_temiz(request.args.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        if not durum.get("veri_seti"):
+            return jsonify({"tamam": True, "bos": True,
+                            "not": "Veri seti seçildikten sonra dolar."})
+        from fe_agent import akis_panel
+        kaynak = "baz" if request.args.get("kaynak") == "baz" else "updt"
+        sonuc = akis_panel.veri_sozluk_eslesmesi(durum, kaynak)
+        sonuc["tamam"] = "hata" not in sonuc
+        return jsonify(sonuc)
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("veri_sozluk_esleme", e, "Karşılaştırma yapılamadı."))
+
+
 @app.route("/veri_onizleme_excel", methods=["POST"])
 def veri_onizleme_excel_endpoint():
     """Veri Onizleme'yi .xlsx olarak indirir: "Tümü" sayfasi ekrandaki
