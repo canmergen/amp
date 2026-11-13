@@ -17341,7 +17341,10 @@ function profilKartiEkle(alan, blok) {
         + (h.surec_disi ? (disari.length ? " ve " : "") + "süreç dışı bırakılan "
                           + ftBinlik(h.surec_disi) + " kolon" : "");
     const bilgi = [
-        "Modelleme tablosundaki her kolon tablonun tamamı üzerinden incelenir; örneklem kullanılmaz, sayımlar kesindir.",
+        (alan.kapsam || {}).train
+            ? "Modelleme tablosundaki her kolon yalnız Train (MS) satırlarında incelenir (" + ftBinlik(alan.kapsam.satir)
+              + " satır; val, test ve OOT hariç), model kurar gibi: kontroller, öneriler ve öğrenilen her şey Train'den; kararlar ve düzeltmeler onayınızla bütün satırlara (" + ftBinlik(alan.kapsam.toplam) + ") aynı şekilde uygulanır. Örneklem kullanılmaz, sayımlar kesindir."
+            : "Modelleme tablosundaki her kolon bütün satırlarda incelenir (bölme okunamadı); örneklem kullanılmaz, sayımlar kesindir.",
         "Kontrollerin sonucu dört türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",
@@ -17361,7 +17364,8 @@ function profilKartiEkle(alan, blok) {
         k.appendChild(elYap("div", "pf-karo-etiket", etiket));
         karolar.appendChild(k);
     };
-    karo("Satır", alan.satir);
+    /* Kontroller yalnız Train (MS) satırlarında (bölme varsa). */
+    karo((alan.kapsam || {}).train ? "Satır (Train)" : "Satır", alan.satir);
     karo("İncelenen Kolon", alan.kolon);
     karo("Sorunsuz", alan.temiz, Number(alan.temiz) ? "tamam" : "");
     karo("Bilgi Notu Olan", alan.bilgi || 0, Number(alan.bilgi) ? "bilgi" : "");
