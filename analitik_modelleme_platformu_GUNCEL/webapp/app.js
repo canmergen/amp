@@ -18970,7 +18970,29 @@ function gelenekselKartiEkle(alan, blok) {
     }
 
     /* ---- SAĞ: sohbet ---- */
-    sag.appendChild(elYap("div", "gl-sag-baslik", "Plan Üzerine Sohbet"));
+    /* Başlık ve sohbeti temizleme: konuşma (sunucudaki geçmiş dahil) silinir,
+       dil modeli önceki mesajları bağlam olarak görmez. Plan ve kararlar değişmez. */
+    const sagBas = elYap("div", "gl-sag-baslik");
+    sagBas.appendChild(elYap("span", "", "Plan Üzerine Sohbet"));
+    const temizBtn = elYap("button", "gl-sohbet-temizle", "⟳ Yeni Sohbet");
+    temizBtn.type = "button";
+    temizBtn.title = "Geçmiş mesajları siler; dil modeli yeni konuşmaya önceki mesajları görmeden başlar. Kararlar değişmez.";
+    temizBtn.onclick = () => {
+        if (kart.classList.contains("kilitli") || temizBtn.disabled) return;
+        temizBtn.disabled = true;
+        fetch(getWebAppBackendUrl("geleneksel_sohbet_temizle"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oturum_id: OTURUM_ID })
+        }).then(r => r.json()).then(j => {
+            if (!j.tamam) { bekle.textContent = j.hata || "Sohbet temizlenemedi."; return; }
+            mesajlar.textContent = "";
+            mesajlar.appendChild(elYap("div", "gl-not gl-bos", "Henüz mesaj yok."));
+            bekle.textContent = "";
+        }).catch(() => { bekle.textContent = "Sohbet temizlenemedi."; })
+          .finally(() => { temizBtn.disabled = false; });
+    };
+    if (!kilitli) sagBas.appendChild(temizBtn);
+    sag.appendChild(sagBas);
     sag.appendChild(elYap("div", "gl-not gl-sag-not", "Soru sorun ya da değişiklik isteyin: «eğim nedir», «gecikme "
         + "kolonlarına 30 gün eşik bayrağı ekle», «neden bakiyede log yok». Önerdiği değişiklikleri Uygula ile sola aktarırsınız."));
     const mesajlar = elYap("div", "gl-mesajlar");

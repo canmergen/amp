@@ -2750,6 +2750,27 @@ def geleneksel_sohbet_endpoint():
         return jsonify(_hata_govdesi("geleneksel_sohbet", e, "Sohbet yanıtı alınamadı."))
 
 
+@app.route("/geleneksel_sohbet_temizle", methods=["POST"])
+def geleneksel_sohbet_temizle_endpoint():
+    """02.2 sohbetini temizler (gecmis mesajlar silinir; plan ve kararlar
+    degismez). Govde: {oturum_id}."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        g = durum.get("geleneksel") or {}
+        g["sohbet"] = []
+        durum["geleneksel"] = g
+        if (durum.get("_secim_alani") or {}).get("tip") == "geleneksel":
+            durum["_secim_alani"]["sohbet"] = []
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": True})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("geleneksel_sohbet_temizle", e, "Sohbet temizlenemedi."))
+
+
 @app.route("/geleneksel_oneri_durum", methods=["POST"])
 def geleneksel_oneri_durum_endpoint():
     """02.2 dil modeli isinin ilerlemesi. Is bitince sonuclar durumda

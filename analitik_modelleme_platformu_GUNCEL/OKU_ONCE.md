@@ -2561,6 +2561,11 @@ tanıtır; sayfalar sol bardan açılır.
   yatay kayar). Liste aşama süzgeçli; birimde çipler ve seçilebilen
   dönüşümler aşamaya göre; kova sınırları ve medyan segmenti parametre
   satırları.
+- YENİ SOHBET: sohbet başlığında "⟳ Yeni Sohbet" (`/geleneksel_sohbet_temizle`):
+  `geleneksel["sohbet"]` ve kart verisindeki sohbet boşalır; dil modeli
+  sonraki mesajda önceki konuşmayı bağlam olarak görmez. Plan, kararlar ve
+  sohbetten kurulmuş aileler arası birimler değişmez; uygulanmamış öneriler
+  kaybolur. Kilitli kartta düğme yok.
 - SOHBET SAĞLAMLIĞI: JSON'da cevap boşsa ham metin düşünme blokları
   silinerek kullanılır; o da JSON ise aynı istek düz metin istemiyle
   (`SISTEM_GELENEKSEL_DUZ`) bir kez daha sorulur; ham cevabın başı log'a
