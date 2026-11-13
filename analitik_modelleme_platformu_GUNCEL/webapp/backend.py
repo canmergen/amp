@@ -2704,13 +2704,19 @@ def geleneksel_sohbet_endpoint():
         from fe_agent import geleneksel as G
         from fe_agent import llm as llm_mod
         karar = istek.get("karar") if isinstance(istek.get("karar"), dict) else (g.get("karar") or {})
+        model_turu = g.get("model_turu") or "agac"
+        plan, ayrinti = G.plan_satirlari(birimler, karar, model_turu, mesaj)
         sonuc, hata = llm_mod.geleneksel_sohbet(
-            mesaj, g.get("sohbet") or [], G.plan_satirlari(birimler, karar), G.katalog_metni(),
-            g.get("segmentler") or [], {b["id"]: set(b.get("mumkun") or []) for b in birimler})
+            mesaj, g.get("sohbet") or [], plan, G.katalog_metni(uzun=True),
+            g.get("segmentler") or [], {b["id"]: set(G.model_mumkun(b, model_turu)) for b in birimler},
+            ayrinti=ayrinti, model_turu=model_turu)
         if hata and not sonuc.get("cevap"):
             return jsonify({"tamam": False, "hata": "Dil modeli cevap vermedi (%s)." % model_adi_gizle(hata)})
         sohbet = list(g.get("sohbet") or [])
         sohbet.append({"rol": "kullanici", "metin": mesaj})
+        if not sonuc.get("cevap"):
+            sonuc["cevap"] = ("Değişiklik önerisi aşağıda." if sonuc.get("degisiklikler")
+                              else "Dil modeli bu mesaja cevap üretmedi; soruyu biraz daha açık yazar mısınız?")
         sohbet.append({"rol": "model", "metin": sonuc.get("cevap") or "",
                        "degisiklikler": sonuc.get("degisiklikler") or []})
         g["sohbet"] = sohbet[-60:]
@@ -2722,6 +2728,24 @@ def geleneksel_sohbet_endpoint():
         return jsonify({"tamam": False, "hata": str(e)})
     except Exception as e:
         return jsonify(_hata_govdesi("geleneksel_sohbet", e, "Sohbet yanıtı alınamadı."))
+
+
+@app.route("/geleneksel_model", methods=["POST"])
+def geleneksel_model_endpoint():
+    """02.2 model turu (agac / dogrusal) degisti: oneriler yeniden alinir,
+    yeni kart doner. Govde: {oturum_id, model_turu}."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        from fe_agent import akis_faz03
+        kart = akis_faz03.geleneksel_model_degistir(durum, str(istek.get("model_turu") or ""))
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": True, "kart": kart})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("geleneksel_model", e, "Model türü değiştirilemedi."))
 
 
 @app.route("/veri_sozluk_esleme")

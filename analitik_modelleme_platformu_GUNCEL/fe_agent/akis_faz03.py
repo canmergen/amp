@@ -169,10 +169,15 @@ def geleneksel_karti(durum, kilitli=False):
     karar = g.get("karar") or {}
     return {
         "tip": "geleneksel", "adim": "kural", "kilitli": bool(kilitli),
-        "katalog": [{"kod": k, "ad": a, "grup": gr, "grup_adi": G.GRUP_ADI[gr], "aciklama": c}
+        "model_turu": g.get("model_turu") or "agac", "model_turleri": G.MODEL_TURLERI,
+        "agac_gereksiz": list(G.AGAC_GEREKSIZ), "agac_nedeni": G.AGAC_NEDENI,
+        "katalog": [{"kod": k, "ad": a, "grup": gr, "grup_adi": G.GRUP_ADI[gr], "aciklama": c,
+                     "ne_yapar": G.ACIKLAMA_UZUN[k][0], "ornek": G.ACIKLAMA_UZUN[k][1],
+                     "ne_zaman": G.ACIKLAMA_UZUN[k][2]}
                     for k, a, gr, c in G.KATALOG],
         "birimler": [{"id": b["id"], "tur": b["tur"], "ad": b["ad"], "kolonlar": b["kolonlar"],
                       "gunler": b.get("gunler"), "cift": b.get("cift"), "tip": b.get("tip"),
+                      "ciftler": b.get("ciftler"),
                       "aciklama": b.get("aciklama") or "", "ozet": G.ozet_metni(b),
                       "tekil": (b.get("ozet") or {}).get("tekil"),
                       "mumkun": b.get("mumkun") or [], "imkansiz": b.get("imkansiz") or {}}
@@ -186,6 +191,30 @@ def geleneksel_karti(durum, kilitli=False):
     }
 
 
+def geleneksel_model_degistir(durum, model_turu):
+    """Model turu degisti: oneriler o ture gore yeniden alinir (ayni ture
+    ait onceki dil modeli onerileri tekrar sorulmaz); kullanicinin sapmalari
+    o turde gecerliyse korunur. Doner: yeni kart."""
+    from fe_agent import geleneksel as G
+    g = durum.get("geleneksel") or {}
+    if model_turu not in G.MODEL_TURLERI or not g.get("birimler"):
+        return geleneksel_karti(durum)
+    birimler, segmentler = g["birimler"], g.get("segmentler") or []
+    eski = dict(g.get("oneri_tur") or {})
+    eski[g.get("model_turu") or "agac"] = g.get("oneri") or {}
+    oneri = G.oneri_hesapla(birimler, segmentler, eski.get(model_turu) or {}, model_turu)
+    eski[model_turu] = oneri
+    karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {})}
+             for i, o in oneri.items()}
+    karar.update(G.karar_dogrula(birimler, g.get("sapma") or {}, segmentler, model_turu))
+    g.update({"model_turu": model_turu, "oneri": oneri, "karar": karar, "oneri_tur": eski})
+    durum["geleneksel"] = g
+    kart = geleneksel_karti(durum)
+    if (durum.get("_secim_alani") or {}).get("tip") == "geleneksel":
+        durum["_secim_alani"] = kart
+    return kart
+
+
 def kural_plan(durum):
     """02.2 GELENEKSEL URETIM PLANI: birimler (kolon ailesi, tek kolon, kolon
     cifti, satir), her birimde mumkun donusumler (kod) ve oneri (dil modeli;
@@ -196,12 +225,13 @@ def kural_plan(durum):
     haric = set(durum.get("haric_kolonlar") or []) | _kusurlu(durum)
     birimler, girmeyen, segmentler = G.birimleri_kur(durum, df, haric)
     g = durum.get("geleneksel") or {}
-    oneri = G.oneri_hesapla(birimler, segmentler, g.get("oneri") or {})
+    model_turu = g.get("model_turu") or "agac"
+    oneri = G.oneri_hesapla(birimler, segmentler, g.get("oneri") or {}, model_turu)
     karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {})}
              for i, o in oneri.items()}
-    karar.update(G.karar_dogrula(birimler, g.get("sapma") or {}, segmentler))
+    karar.update(G.karar_dogrula(birimler, g.get("sapma") or {}, segmentler, model_turu))
     g.update({"birimler": birimler, "girmeyen": girmeyen, "segmentler": segmentler,
-              "oneri": oneri, "karar": karar})
+              "oneri": oneri, "karar": karar, "model_turu": model_turu})
     durum["geleneksel"] = g
     durum["plan"] = []            # eski numarali secim yolu kapali
     durum["_secim_alani"] = geleneksel_karti(durum)
@@ -213,11 +243,12 @@ def kural_plan(durum):
         kaynak[o.get("kaynak")] = kaynak.get(o.get("kaynak"), 0) + 1
     toplam = sum(G.kolon_sayisi(b, (karar.get(b["id"]) or {}).get("sec")) for b in birimler)
     return ("Geleneksel değişken üretimi için %s birim hazırlandı (%s pencere ailesi, %s tek kolon, "
-            "%s kolon çifti%s). Önerilen dönüşümlerle yaklaşık %s yeni kolon üretilecek. Önerilerin "
+            "%s kolon çifti grubu%s). Model türü: %s. Önerilen dönüşümlerle yaklaşık %s yeni kolon üretilecek. Önerilerin "
             "%s tanesi dil modelinden%s. Soldaki kararları değiştirebilir, sağdaki sohbette "
             "tartışabilirsiniz; onayladığınızda üretilir."
             % (_sayi(len(birimler)), _sayi(tur.get("aile", 0)), _sayi(tur.get("kolon", 0)),
                _sayi(tur.get("cift", 0)), ", satır düzeyi" if tur.get("satir") else "",
+               G.MODEL_TURLERI.get(model_turu, model_turu),
                _sayi(toplam), _sayi(kaynak.get("dil modeli", 0)),
                (", %s tanesi veriye bakan kuraldan (dil modeline ulaşılamadı)"
                 % _sayi(kaynak.get("kural", 0))) if kaynak.get("kural") else ""))
@@ -343,10 +374,11 @@ def kural_uygula(durum, secim=None):
         g = durum.get("geleneksel") or {}
     birimler, segmentler = g.get("birimler") or [], g.get("segmentler") or []
     govde = durum.get("_dogrulama_karari")
+    model_turu = g.get("model_turu") or "agac"
     if isinstance(govde, dict) and govde.get("adim") == "kural" and isinstance(govde.get("karar"), dict):
-        karar = G.karar_dogrula(birimler, govde["karar"], segmentler)
+        karar = G.karar_dogrula(birimler, govde["karar"], segmentler, model_turu)
     else:
-        karar = G.karar_dogrula(birimler, g.get("karar") or {}, segmentler)
+        karar = G.karar_dogrula(birimler, g.get("karar") or {}, segmentler, model_turu)
     oneri = g.get("oneri") or {}
     g["karar"] = karar
     g["sapma"] = {i: k for i, k in karar.items()

@@ -2477,6 +2477,31 @@ tanıtır; sayfalar sol bardan açılır.
 - `kural_uygula`: önceki kural ve keşif üretimi silinir, yeni kolonlar UPDT
   veriye (02.2) yazılır; sözlük satırları `geleneksel["sozluk_ek"]`
   (`amp.updt_sozluk_ek` 02.2 ve sonrasında ekler).
+- MODEL TÜRÜ (`geleneksel["model_turu"]`, varsayılan "agac": platformun
+  modeli HistGradientBoosting). Ağaçta `AGAC_GEREKSIZ` (log, işaretli log,
+  karekök, Yeo-Johnson, uç kırpma, sıra, z-skor, robust, dilim, işaret,
+  sıfır, eşik) seçilemez: ağaç tek kolonun sıralamayı koruyan dönüşümünden
+  etkilenmez, eşiği kendisi bulur (`model_mumkun`). Kartta Ağaç / Doğrusal
+  seçimi; değişince `/geleneksel_model` önerileri o türe göre yeniden alır
+  (tür başına öneri önbelleği `oneri_tur`), sapmalar o türde geçerliyse kalır.
+- KOLON ÇİFTİ GRUBU: aynı iki aileden (ya da aynı iki kolondan) gelen
+  çiftler tek birim (`ciftler` listesi; gelen ve giden tutarın 8 penceresi
+  bir birim). Dil modeline giden birim sayısı bu sayede azalır.
+- DİL MODELİ: birim başına tek satır, 25'lik parçalar, bütçe
+  `GELENEKSEL_BUTCE` = 240 sn; log'a "02.2 dil modeli önerisi: alınan / toplam
+  birim" yazılır.
+- SOHBET: kullanıcının mesajı sınırlayıcının DIŞINDA (talimattır); plan ve
+  kolon bilgisi içinde (veri). Plan bütün birimler kısa (id, ad, seçili);
+  mesajda adı ya da kolonu geçen en çok 40 birim ayrıntılı (açıklama, sayılar,
+  mümkün kodlar). Dönüşümlerin uzun açıklaması (`ACIKLAMA_UZUN`: ne yapar,
+  örnek, ne zaman) gider; dönüşüm sorularına cevap verir. Boş cevapta
+  açıklayıcı metin.
+- KART: "Dönüşümler ne yapar?" tablosu (ne yapar, örnek, ne zaman işe yarar,
+  bu modelde kullanılabilir mi), birimde "Seçili dönüşümler ne yapar",
+  ağaçta gereksizler tek satırda ortak nedeniyle. Sohbet paneli kırmızı
+  başlıklı, platform sohbet balonlarıyla. Kart kendi onay düğmesini taşır
+  (`KENDI_DUGMELI_KARTLAR`): genel "Onayla ve Uygula" çıkmaz (karttaki
+  değişiklikleri göndermeden onaylardı).
 
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca

@@ -789,7 +789,7 @@ tutamakKur(tutamakSag, "sag", analizPanel);
 /* Kendi onay düğmesi kartın EN ALTINDA olan kartlar: blok ayrıca
    "Onayla ve Uygula / Değiştir" taşımaz (02.1 karar kartı ve eşik formu
    dahil; yoksa genel düğmeler metnin altına, kartın üstüne düşüyordu). */
-const KENDI_DUGMELI_KARTLAR = ["dogrulama", "bolme", "profil", "profil_esik"];
+const KENDI_DUGMELI_KARTLAR = ["dogrulama", "bolme", "profil", "profil_esik", "geleneksel"];
 
 /* ---- Sohbet kutusunun kilidi ----
    Ekranda bir kart, form ya da seçenek takımı varken kullanıcı bir
@@ -18264,6 +18264,10 @@ function gelenekselKartiEkle(alan, blok) {
     const katalog = {};
     (alan.katalog || []).forEach(k => { katalog[k.kod] = k; });
     const kodAdi = kod => (katalog[kod] || {}).ad || kod;
+    const modelTuru = alan.model_turu || "agac";
+    const agacGereksiz = new Set(alan.agac_gereksiz || []);
+    const gereksiz = c => modelTuru === "agac" && agacGereksiz.has(c);
+    const mumkunGor = b => (b.mumkun || []).filter(c => !gereksiz(c));
     const birimler = alan.birimler || [];
     const oneri = alan.oneri || {};
     const karar = {};
@@ -18280,7 +18284,7 @@ function gelenekselKartiEkle(alan, blok) {
         (sec || []).forEach(c => {
             const g = (katalog[c] || {}).grup;
             if (b.tur === "satir") t += 2;
-            else if (g === "cift") t += 1;
+            else if (g === "cift") t += (b.ciftler || [1]).length;
             else if (["oran", "fark", "norm", "buyume"].includes(c)) t += n - 1;
             else if (["egim", "dk"].includes(c)) t += 1;
             else if (c === "onehot") t += Math.min(Number(b.tekil || 0), 10);
@@ -18334,6 +18338,78 @@ function gelenekselKartiEkle(alan, blok) {
     const sag = elYap("div", "gl-sag");
     izgara.append(sol, sag);
     kart.appendChild(izgara);
+
+    /* ---- SOL: model türü ---- */
+    const mt = elYap("div", "gl-model");
+    mt.appendChild(elYap("span", "gl-model-ad", "Model türü"));
+    const mtGrup = elYap("div", "pf-karar");
+    Object.entries(alan.model_turleri || { agac: "Ağaç", dogrusal: "Doğrusal" }).forEach(([kod, ad]) => {
+        const b = elYap("button", "pf-karar-btn gl-model-btn" + (kod === modelTuru ? " secili" : ""), ad);
+        b.type = "button";
+        b.disabled = kilitli;
+        b.onclick = () => {
+            if (kod === modelTuru || kart.classList.contains("kilitli")) return;
+            mtNot.textContent = "Öneriler " + ad + " için yeniden alınıyor";
+            mtGrup.querySelectorAll("button").forEach(x => { x.disabled = true; });
+            fetch(getWebAppBackendUrl("geleneksel_model"), {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ oturum_id: OTURUM_ID, model_turu: kod })
+            }).then(r => r.json()).then(j => {
+                if (!j.tamam) { mtNot.textContent = j.hata || "Model türü değiştirilemedi."; mtGrup.querySelectorAll("button").forEach(x => { x.disabled = false; }); return; }
+                const yer = kart.parentNode, sonraki = kart.nextSibling;
+                kart.remove();
+                const gecici = elYap("div");
+                yer.insertBefore(gecici, sonraki);
+                gelenekselKartiEkle(j.kart, Object.assign({}, blok || {}, { _yer: gecici }));
+            }).catch(() => { mtNot.textContent = "Model türü değiştirilemedi."; mtGrup.querySelectorAll("button").forEach(x => { x.disabled = false; }); });
+        };
+        mtGrup.appendChild(b);
+    });
+    mt.appendChild(mtGrup);
+    const mtNot = elYap("span", "gl-not", modelTuru === "agac"
+        ? "Ağaç modelinde tek kolonun sıralamayı koruyan dönüşümleri (log, kırpma, sıra, ölçekleme, eşik) gereksizdir; kapalıdır."
+        : "Doğrusal modelde tek kolon dönüşümleri de seçilebilir.");
+    mt.appendChild(mtNot);
+    sol.appendChild(mt);
+
+    /* ---- SOL: dönüşümlerin açıklaması ---- */
+    const aciklamaKutu = document.createElement("details");
+    aciklamaKutu.className = "gl-birim gl-sozluk";
+    const asm = document.createElement("summary");
+    const asmUst = elYap("div", "gl-birim-ust");
+    asmUst.append(elYap("span", "gl-birim-ad", "Dönüşümler ne yapar?"),
+                  elYap("span", "gl-tur", ftBinlik((alan.katalog || []).length) + " dönüşüm; ne yaptığı, örneği ve ne zaman işe yaradığı"));
+    asm.appendChild(asmUst);
+    aciklamaKutu.appendChild(asm);
+    const at = elYap("table", "dg-tablo gl-katalog");
+    const acg = document.createElement("colgroup");
+    ["gl-k-ad", "gl-k-ne", "gl-k-ornek", "gl-k-zaman", "gl-k-model"].forEach(c => {
+        const col = document.createElement("col"); col.className = c; acg.appendChild(col);
+    });
+    at.appendChild(acg);
+    const ath = document.createElement("thead"), atr = document.createElement("tr");
+    ["Dönüşüm", "Ne yapar", "Örnek", "Ne zaman işe yarar", "Bu modelde"].forEach(x => atr.appendChild(elYap("th", "", x)));
+    ath.appendChild(atr); at.appendChild(ath);
+    const atb = document.createElement("tbody");
+    let sonGrup = "";
+    (alan.katalog || []).forEach(k => {
+        if (k.grup_adi !== sonGrup) {
+            sonGrup = k.grup_adi;
+            const gr = document.createElement("tr");
+            const gt = elYap("td", "gl-katalog-grup", k.grup_adi);
+            gt.colSpan = 5; gr.appendChild(gt); atb.appendChild(gr);
+        }
+        const r = document.createElement("tr");
+        r.append(elYap("td", "pf-kolon-ad", k.ad), elYap("td", "", k.ne_yapar || k.aciklama),
+                 elYap("td", "", k.ornek || ""), elYap("td", "", k.ne_zaman || ""),
+                 elYap("td", gereksiz(k.kod) ? "gl-gereksiz" : "", gereksiz(k.kod) ? "Gereksiz (ağaç)" : "Kullanılabilir"));
+        atb.appendChild(r);
+    });
+    at.appendChild(atb);
+    const atSar = elYap("div", "gl-birim-ic gl-katalog-sar");
+    atSar.appendChild(at);
+    aciklamaKutu.appendChild(atSar);
+    sol.appendChild(aciklamaKutu);
 
     /* ---- SOL: sekmeler ---- */
     const sekmeBar = elYap("div", "dg-sekmeler");
@@ -18418,12 +18494,22 @@ function gelenekselKartiEkle(alan, blok) {
         satir("Açıklama", b.aciklama);
         satir("Sayılar", b.ozet);
         satir("Önerilen", (o.sec || []).map(kodAdi).join(", ") || "Dönüşüm yok");
+        if ((k.sec || []).length) {
+            const sd = elYap("div", "gl-secili-acik");
+            (k.sec || []).forEach(c => {
+                const r = elYap("div", "gl-secili-satir");
+                r.append(elYap("span", "gl-cip secili", kodAdi(c)), elYap("span", "", (katalog[c] || {}).ne_yapar || ""));
+                sd.appendChild(r);
+            });
+            ic.appendChild(elYap("div", "gl-alt-baslik", "Seçili dönüşümler ne yapar"));
+            ic.appendChild(sd);
+        }
         satir("Neden", tireSade(o.gerekce || ""));
         satir("Seçilmeyenler", tireSade(o.secilmeyen || ""));
         satir("", kaynakMetni(o));
         /* Seçilebilen dönüşümler: gruplu, tıklanınca ekle / çıkar */
         const gruplar = {};
-        (b.mumkun || []).forEach(c => { const g = (katalog[c] || {}).grup_adi || ""; (gruplar[g] = gruplar[g] || []).push(c); });
+        mumkunGor(b).forEach(c => { const g = (katalog[c] || {}).grup_adi || ""; (gruplar[g] = gruplar[g] || []).push(c); });
         const sec = elYap("div", "gl-secim");
         sec.appendChild(elYap("div", "gl-alt-baslik", "Uygulanabilen dönüşümler (tıklayın)"));
         Object.entries(gruplar).forEach(([g, kodlar]) => {
@@ -18432,7 +18518,7 @@ function gelenekselKartiEkle(alan, blok) {
             kodlar.forEach(c => {
                 const btn = elYap("button", "gl-cip gl-cip-btn" + ((k.sec || []).includes(c) ? " secili" : ""), kodAdi(c));
                 btn.type = "button";
-                btn.title = (katalog[c] || {}).aciklama || "";
+                btn.title = ((katalog[c] || {}).ne_yapar || "") + ((katalog[c] || {}).ornek ? " Örnek: " + katalog[c].ornek : "");
                 btn.disabled = kilitli;
                 btn.onclick = () => {
                     if (kart.classList.contains("kilitli")) return;
@@ -18456,7 +18542,7 @@ function gelenekselKartiEkle(alan, blok) {
         ic.appendChild(sec);
         /* Parametreli dönüşümler: eşik değeri ve yönü, segment kolonu. */
         const paramOku = {}, paramOdak = {};
-        if ((b.mumkun || []).includes("esik") && !kilitli) {
+        if (mumkunGor(b).includes("esik") && !kilitli) {
             const r = elYap("div", "gl-param");
             r.appendChild(elYap("span", "gl-secim-grup-ad", "Eşik bayrağı"));
             const yon = document.createElement("select");
@@ -18488,7 +18574,7 @@ function gelenekselKartiEkle(alan, blok) {
             r.append(yon, gi, gb_);
             ic.appendChild(r);
         }
-        if ((b.mumkun || []).includes("segment") && !kilitli) {
+        if (mumkunGor(b).includes("segment") && !kilitli) {
             const r = elYap("div", "gl-param");
             r.appendChild(elYap("span", "gl-secim-grup-ad", "Segment kolonu"));
             const ss = document.createElement("select");
@@ -18510,12 +18596,21 @@ function gelenekselKartiEkle(alan, blok) {
             ic.appendChild(r);
         }
         const imk = Object.entries(b.imkansiz || {});
+        /* Ağaç modelinde gereksiz olanlar tek satırda, ortak nedeniyle. */
+        const agacta = (b.mumkun || []).filter(gereksiz);
+        if (agacta.length) imk.push([null, (alan.agac_nedeni || "Ağaç modelinde gereksiz."), agacta]);
         if (imk.length) {
             const u = elYap("div", "gl-secim");
             u.appendChild(elYap("div", "gl-alt-baslik", "Uygulanamayan dönüşümler"));
-            imk.forEach(([c, neden]) => {
+            imk.forEach(([c, neden, liste]) => {
                 const r = elYap("div", "gl-imkansiz");
-                r.append(elYap("span", "gl-cip pasif", kodAdi(c)), elYap("span", "", neden));
+                if (liste) {
+                    const cl = elYap("span", "gl-cipler");
+                    liste.forEach(x => cl.appendChild(elYap("span", "gl-cip pasif", kodAdi(x))));
+                    const ic_ = elYap("div", "gl-imkansiz-grup");
+                    ic_.append(cl, elYap("span", "", neden));
+                    r.appendChild(ic_);
+                } else r.append(elYap("span", "gl-cip pasif", kodAdi(c)), elYap("span", "", neden));
                 u.appendChild(r);
             });
             ic.appendChild(u);
@@ -18565,21 +18660,32 @@ function gelenekselKartiEkle(alan, blok) {
 
     /* ---- SAĞ: sohbet ---- */
     sag.appendChild(elYap("div", "gl-sag-baslik", "Plan Üzerine Sohbet"));
-    sag.appendChild(elYap("div", "gl-not", "Planı dil modeliyle tartışın: «gecikme kolonlarına 30 gün eşik bayrağı ekle», "
-        + "«neden bakiyede log yok» gibi. Önerdiği değişiklikleri Uygula ile sola aktarırsınız."));
+    sag.appendChild(elYap("div", "gl-not gl-sag-not", "Soru sorun ya da değişiklik isteyin: «eğim nedir», «gecikme "
+        + "kolonlarına 30 gün eşik bayrağı ekle», «neden bakiyede log yok». Önerdiği değişiklikleri Uygula ile sola aktarırsınız."));
     const mesajlar = elYap("div", "gl-mesajlar");
     sag.appendChild(mesajlar);
     const birimAdi = {};
     birimler.forEach(b => { birimAdi[b.id] = b.ad; });
+    const birimHarita = {};
+    birimler.forEach(b => { birimHarita[b.id] = b; });
+    /* Öneri uygulanırken de birimde bu model türünde seçilebilen kodlar alınır. */
     const degisiklikUygula = d => {
         const k = karar[d.id];
-        if (!k) return;
+        if (!k || !birimHarita[d.id]) return;
+        const mm = new Set(mumkunGor(birimHarita[d.id]));
         (d.cikar || []).forEach(c => { const i = k.sec.indexOf(c); if (i >= 0) k.sec.splice(i, 1); delete k.param[c]; });
-        (d.ekle || []).forEach(c => { if (!k.sec.includes(c)) k.sec.push(c); if ((d.param || {})[c]) k.param[c] = d.param[c]; });
+        (d.ekle || []).filter(c => mm.has(c)).forEach(c => {
+            if (!k.sec.includes(c)) k.sec.push(c);
+            if ((d.param || {})[c]) k.param[c] = d.param[c];
+        });
     };
     const mesajEkle = (m) => {
-        const kut = elYap("div", "gl-mesaj " + (m.rol === "kullanici" ? "kullanici" : "model"));
-        kut.appendChild(elYap("div", "gl-mesaj-metin", m.metin || ""));
+        /* Platformun sohbet balonları: bot solda kırmızı şeritli, kullanıcı sağda. */
+        const sat = elYap("div", "satir gl-mesaj " + (m.rol === "kullanici" ? "kullanici" : "bot"));
+        const kut = elYap("div", "balon gl-balon");
+        sat.appendChild(kut);
+        kut.appendChild(elYap("div", "gl-mesaj-metin", m.metin
+            || (m.rol === "kullanici" ? "" : "Dil modeli bu mesaja cevap üretmedi.")));
         const deg = m.degisiklikler || [];
         if (deg.length) {
             const dl = elYap("div", "gl-oneriler");
@@ -18623,7 +18729,7 @@ function gelenekselKartiEkle(alan, blok) {
             }
             kut.appendChild(dl);
         }
-        mesajlar.appendChild(kut);
+        mesajlar.appendChild(sat);
         mesajlar.scrollTop = mesajlar.scrollHeight;
     };
     (alan.sohbet || []).forEach(mesajEkle);
@@ -18701,6 +18807,7 @@ function gelenekselKartiEkle(alan, blok) {
         listeCiz();
     }
     tumunuCiz();
+    if (blok && blok._yer) { blok._yer.replaceWith(kart); return; }
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
 }
 
