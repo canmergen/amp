@@ -2855,6 +2855,10 @@ def geleneksel_sohbet_temizle_endpoint():
         if (durum.get("_secim_alani") or {}).get("tip") == "geleneksel":
             durum["_secim_alani"]["sohbet"] = []
         _kaydet(anahtar, durum)
+        if istek.get("hafiza"):
+            # Hafizayi da sil: klasordeki konusma ozeti dosyasi silinir.
+            from fe_agent import akis_faz03
+            akis_faz03.sohbet_hafiza_sil(anahtar)
         return jsonify({"tamam": True})
     except CalismaErisimYok as e:
         return jsonify({"tamam": False, "hata": str(e)})

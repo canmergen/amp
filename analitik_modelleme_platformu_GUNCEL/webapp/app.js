@@ -18477,11 +18477,15 @@ function gelenekselKartiEkle(alan, blok) {
     karoEl.dm.parentNode.onclick = () => { aktif = "ozet"; listeCiz(); };
 
     /* İki sütun */
+    /* Düzen: model türü üstte; solda "Dönüşümler ne yapar", sağda kararlar
+       (Uygulanacak, Uygulanmayacak ...); sohbet altta, tam genişlikte. */
     const izgara = elYap("div", "gl-izgara");
+    const katSutun = elYap("div", "gl-kat-sutun");
     const sol = elYap("div", "gl-sol");
     const sag = elYap("div", "gl-sag");
-    izgara.append(sol, sag);
+    izgara.append(katSutun, sol);
     kart.appendChild(izgara);
+    kart.appendChild(sag);
 
     /* ---- SOL: model türü ---- */
     const mt = elYap("div", "gl-model");
@@ -18514,7 +18518,7 @@ function gelenekselKartiEkle(alan, blok) {
         ? "Ağaç modelinde tek kolonun sıralamayı koruyan dönüşümleri (log, kırpma, sıra, ölçekleme, eşik) gereksizdir; kapalıdır."
         : "Doğrusal modelde tek kolon dönüşümleri de seçilebilir.");
     mt.appendChild(mtNot);
-    sol.appendChild(mt);
+    kart.insertBefore(mt, izgara);
 
     /* ---- SOL: dönüşümlerin açıklaması (her zaman açık, aşamaya göre) ---- */
     const aciklamaKutu = elYap("div", "gl-birim gl-sozluk");
@@ -18524,12 +18528,12 @@ function gelenekselKartiEkle(alan, blok) {
     aciklamaKutu.appendChild(asmUst);
     const at = elYap("table", "dg-tablo gl-katalog");
     const acg = document.createElement("colgroup");
-    ["gl-k-ad", "gl-k-ne", "gl-k-ornek", "gl-k-zaman", "gl-k-model"].forEach(c => {
+    ["gl-k-ad", "gl-k-ne", "gl-k-model"].forEach(c => {
         const col = document.createElement("col"); col.className = c; acg.appendChild(col);
     });
     at.appendChild(acg);
     const ath = document.createElement("thead"), atr = document.createElement("tr");
-    ["Dönüşüm", "Ne yapar", "Örnek", "Ne zaman işe yarar", "Bu modelde"].forEach(x => atr.appendChild(elYap("th", "", x)));
+    ["Dönüşüm", "Ne yapar, örnek, ne zaman", "Bu modelde"].forEach(x => atr.appendChild(elYap("th", "", x)));
     ath.appendChild(atr); at.appendChild(ath);
     const atb = document.createElement("tbody");
     let sonGrup = "";
@@ -18539,11 +18543,14 @@ function gelenekselKartiEkle(alan, blok) {
             sonGrup = grupAdi;
             const gr = document.createElement("tr");
             const gt = elYap("td", "gl-katalog-grup", grupAdi);
-            gt.colSpan = 5; gr.appendChild(gt); atb.appendChild(gr);
+            gt.colSpan = 3; gr.appendChild(gt); atb.appendChild(gr);
         }
         const r = document.createElement("tr");
-        r.append(elYap("td", "pf-kolon-ad", k.ad), elYap("td", "", k.ne_yapar || k.aciklama),
-                 elYap("td", "", k.ornek || ""), elYap("td", "", k.ne_zaman || ""),
+        const ne = elYap("td", "gl-k-ne-hucre");
+        ne.appendChild(elYap("div", "", k.ne_yapar || k.aciklama));
+        if (k.ornek) ne.appendChild(elYap("div", "gl-k-alt", "Örnek: " + k.ornek));
+        if (k.ne_zaman) ne.appendChild(elYap("div", "gl-k-alt", "Ne zaman: " + k.ne_zaman));
+        r.append(elYap("td", "pf-kolon-ad", k.ad), ne,
                  elYap("td", "gl-k-model-hucre" + (gereksiz(k.kod) ? " gl-gereksiz" : ""), gereksiz(k.kod) ? "Gereksiz (ağaç)" : "Kullanılabilir"));
         atb.appendChild(r);
     });
@@ -18551,7 +18558,7 @@ function gelenekselKartiEkle(alan, blok) {
     const atSar = elYap("div", "gl-birim-ic gl-katalog-sar");
     atSar.appendChild(at);
     aciklamaKutu.appendChild(atSar);
-    sol.appendChild(aciklamaKutu);
+    katSutun.appendChild(aciklamaKutu);
 
     /* ---- SOL: sekmeler ---- */
     const sekmeBar = elYap("div", "dg-sekmeler");
@@ -19040,7 +19047,7 @@ function gelenekselKartiEkle(alan, blok) {
     sagBas.appendChild(elYap("span", "", "Plan Üzerine Sohbet"));
     const temizBtn = elYap("button", "gl-sohbet-temizle", "⟳ Yeni Sohbet");
     temizBtn.type = "button";
-    temizBtn.title = "Ekrandaki mesajları siler. Konuşmaların kısa özeti çalışmanın klasöründe kalır; dil modeli önceki isteklerinizi oradan hatırlar. Kararlar değişmez.";
+    temizBtn.title = "Ekrandaki mesajları siler. Konuşmaların kısa özeti (hafıza) çalışmanın klasöründe kalır; dil modeli önceki isteklerinizi oradan hatırlar. Kararlar değişmez.";
     temizBtn.onclick = () => {
         if (kart.classList.contains("kilitli") || temizBtn.disabled) return;
         temizBtn.disabled = true;
@@ -19055,7 +19062,38 @@ function gelenekselKartiEkle(alan, blok) {
         }).catch(() => { bekle.textContent = "Sohbet temizlenemedi."; })
           .finally(() => { temizBtn.disabled = false; });
     };
-    if (!kilitli) sagBas.appendChild(temizBtn);
+    /* Hafızayı da sil: iki adımlı (ilk tıklamada onay istenir). */
+    const hafizaBtn = elYap("button", "gl-sohbet-temizle", "Hafızayı Sil");
+    hafizaBtn.type = "button";
+    hafizaBtn.title = "Ekrandaki mesajları ve klasördeki konuşma özetini (hafızayı) siler. Dil modeli önceki konuşmaları hatırlamaz. Kararlarınız değişmez.";
+    let hafizaOnay = null;
+    hafizaBtn.onclick = () => {
+        if (kart.classList.contains("kilitli") || hafizaBtn.disabled) return;
+        if (!hafizaOnay) {
+            hafizaBtn.textContent = "Silmeyi Onayla";
+            hafizaBtn.classList.add("gl-sohbet-onay");
+            hafizaOnay = setTimeout(() => { hafizaOnay = null; hafizaBtn.textContent = "Hafızayı Sil"; hafizaBtn.classList.remove("gl-sohbet-onay"); }, 5000);
+            return;
+        }
+        clearTimeout(hafizaOnay); hafizaOnay = null;
+        hafizaBtn.disabled = true;
+        fetch(getWebAppBackendUrl("geleneksel_sohbet_temizle"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oturum_id: OTURUM_ID, hafiza: true })
+        }).then(r => r.json()).then(j => {
+            if (!j.tamam) { bekle.textContent = j.hata || "Hafıza silinemedi."; return; }
+            mesajlar.textContent = "";
+            mesajlar.appendChild(elYap("div", "gl-not gl-bos", "Hafıza ve mesajlar silindi."));
+            bekle.textContent = "";
+            sonBekleyen = null; sonUygula = null;
+        }).catch(() => { bekle.textContent = "Hafıza silinemedi."; })
+          .finally(() => { hafizaBtn.disabled = false; hafizaBtn.textContent = "Hafızayı Sil"; hafizaBtn.classList.remove("gl-sohbet-onay"); });
+    };
+    if (!kilitli) {
+        const dg = elYap("div", "gl-sag-dugmeler");
+        dg.append(temizBtn, hafizaBtn);
+        sagBas.appendChild(dg);
+    }
     sag.appendChild(sagBas);
     sag.appendChild(elYap("div", "gl-not gl-sag-not", "Soru sorun ya da değişiklik isteyin: «eğim nedir», «gecikme "
         + "kolonlarına 30 gün eşik bayrağı ekle», «neden bakiyede log yok». Önerdiği değişiklikleri Uygula ile sola aktarırsınız."));
@@ -19204,10 +19242,6 @@ function gelenekselKartiEkle(alan, blok) {
     giris.append(ta, gb);
     if (!kilitli) { sag.appendChild(giris); sag.appendChild(bekle); }
 
-    /* Sağ panelin içeriği iç kutuya: panel sol sütun boyunca uzar. */
-    const sagIc = elYap("div", "gl-sag-ic");
-    while (sag.firstChild) sagIc.appendChild(sag.firstChild);
-    sag.appendChild(sagIc);
 
     /* ---- Alt: özet ve onay ---- */
     const alt = elYap("div", "pf-karar-alt");

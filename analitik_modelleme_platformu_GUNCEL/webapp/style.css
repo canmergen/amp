@@ -5759,22 +5759,20 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .dg-tablo.vse-tablo th, .dg-tablo.vse-tablo td { text-align: center; }
 
 /* 02.2 Geleneksel Değişken Üretimi: iki sütun (kararlar ve sohbet) */
-.gl-izgara { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: var(--b-4); align-items: stretch; }
+.gl-izgara { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--b-4); align-items: start; }
+.gl-kat-sutun { min-width: 0; display: flex; flex-direction: column; gap: var(--b-2); }
 @media (max-width: 1000px) {
   .gl-izgara { grid-template-columns: 1fr; }
-  .gl-sag { min-height: 0; }
-  .gl-sag-ic { position: static; }
-  .gl-mesajlar { min-height: 160px; max-height: 52vh; }
+  .gl-sag { height: 480px; }
 }
 .gl-sol, .gl-sag { min-width: 0; display: flex; flex-direction: column; gap: var(--b-2); }
-/* Sohbet paneli sol sütunun boyu kadar uzar: içerik mutlak konumlu iç
-   kutuda, böylece satırın yüksekliğini sol sütun belirler; mesajlar alanı
-   kalan yüksekliği doldurur, giriş kutusu altta kalır. */
-.gl-sag { border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r); padding: 0;
-  background: color-mix(in srgb, var(--kirmizi) 7%, var(--yuzey)); position: relative;
-  min-height: 560px; overflow: hidden; }
-.gl-sag-ic { position: absolute; inset: 0; display: flex; flex-direction: column; gap: var(--b-2);
-  padding: 0 var(--b-3) var(--b-3); min-height: 0; }
+/* Sohbet altta, tam genişlikte, sabit yükseklikte: mesajlar alanı kendi
+   içinde kayar, giriş kutusu altta. */
+.gl-sag { margin-top: var(--b-3); border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r);
+  padding: 0 var(--b-3) var(--b-3); background: color-mix(in srgb, var(--kirmizi) 7%, var(--yuzey));
+  height: 440px; flex: 0 0 auto; overflow: hidden; }
+.gl-sag-dugmeler { display: flex; gap: var(--b-2); }
+.gl-sohbet-onay { background: #fff !important; color: var(--kirmizi) !important; }
 .gl-sag-baslik { font-weight: var(--fw-kalin); color: #fff; background: var(--kirmizi-dolgu);
   margin: 0 calc(-1 * var(--b-3)); padding: 9px var(--b-3); }
 .gl-sag-not { margin-top: var(--b-1); }
@@ -5792,7 +5790,7 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-model-btn:disabled { cursor: default; }
 .gl-sozluk > summary { padding: 7px 10px; }
 .gl-katalog-sar { max-height: 420px; overflow: auto; }
-.dg-tablo.gl-katalog { width: 100%; min-width: 840px; table-layout: fixed; }
+.dg-tablo.gl-katalog { width: 100%; min-width: 440px; table-layout: fixed; }
 .dg-tablo.gl-katalog th, .dg-tablo.gl-katalog td { text-align: center; white-space: normal; overflow-wrap: break-word; vertical-align: middle; }
 .gl-katalog-grup { background: var(--yuzey-alt); font-weight: var(--fw-kalin); }
 .gl-gereksiz { color: var(--metin-soluk); }
@@ -5859,11 +5857,11 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-kart .gl-mesajlar .satir.kullanici .balon.gl-balon {
   background: var(--user-zemin); padding-left: 10px; box-shadow: none;
 }
-.dg-tablo.gl-katalog col.gl-k-ad { width: 15%; }
-.dg-tablo.gl-katalog col.gl-k-ne { width: 27%; }
-.dg-tablo.gl-katalog col.gl-k-ornek { width: 22%; }
-.dg-tablo.gl-katalog col.gl-k-zaman { width: 19%; }
-.dg-tablo.gl-katalog col.gl-k-model { width: 17%; }
+
+
+
+
+
 .dg-tablo.gl-katalog td.gl-k-model-hucre { white-space: nowrap; overflow-wrap: normal; word-break: keep-all; }
 /* 02.2: her zaman açık dönüşüm tablosu */
 .gl-sozluk-ust { padding: 7px 10px; }
@@ -5909,3 +5907,11 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-serit { margin: var(--b-2) 0; padding: 8px 12px; border-radius: var(--r-kucuk); background: var(--kirmizi-acik);
   color: var(--metin); border: 1px solid var(--kirmizi-cizgi); line-height: 1.45; }
 .gl-oneri-birimler > summary { cursor: pointer; color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+
+/* 02.2 donusum tablosu: 3 sutun, ornek ve ne zaman "Ne yapar" hucresinde */
+.dg-tablo.gl-katalog col.gl-k-ad { width: 25%; }
+.dg-tablo.gl-katalog col.gl-k-ne { width: 50%; }
+.dg-tablo.gl-katalog col.gl-k-model { width: 25%; }
+.gl-k-alt { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-top: 3px; line-height: 1.4; }
+.gl-katalog-sar { max-height: 70vh; }
+.dg-tablo.gl-katalog td.gl-k-model-hucre { white-space: normal; word-break: keep-all; overflow-wrap: normal; }

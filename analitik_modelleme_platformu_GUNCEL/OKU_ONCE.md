@@ -2724,11 +2724,19 @@ tanıtır; sayfalar sol bardan açılır.
   olan dönüşüm için sayılır ("N birimde bu model türünde gereksiz olduğu
   için eklenmez").
 
-**02.2 sohbet paneli boyu ve sohbet hafızası**
-- PANEL: sohbet paneli sol sütunun boyu kadar uzar (`.gl-izgara`
-  align-items stretch; içerik `.gl-sag-ic` mutlak konumlu, böylece satır
-  yüksekliğini sol sütun belirler, mesajlar kalan yeri doldurur, giriş
-  kutusu altta). En az 560 px. 1.000 px altında tek sütun ve eski düzen.
+**02.2 kart düzeni ve sohbet hafızası**
+- DÜZEN: model türü üstte; altında iki sütun: solda "Dönüşümler ne yapar"
+  (`.gl-kat-sutun`; 3 sütun: dönüşüm, ne yapar + örnek + ne zaman, bu
+  modelde; en az 440 px), sağda kararlar (`.gl-sol`: Uygulanacak,
+  Uygulanmayacak, Üretime Girmeyen, Öneri Özeti). Sohbet (`.gl-sag`) altta,
+  tam genişlikte, 440 px yükseklikte (mesajlar kendi içinde kayar). 1.000
+  px altında tek sütun, sohbet 480 px. (Önceki tur: sohbet sağda sol sütun
+  boyunca uzuyordu; boş ve uzun durduğu için kaldırıldı.)
+- HAFIZAYI SİL: sohbet başlığında "Hafızayı Sil" (iki adımlı: ilk tıklama
+  "Silmeyi Onayla"ya döner, 5 sn içinde ikinci tıklama siler).
+  `/geleneksel_sohbet_temizle` `hafiza: true` ile ekranı ve
+  `akis_faz03.sohbet_hafiza_sil` ile klasördeki hafıza dosyasını siler
+  (silinemezse boş yazar). Kararlar değişmez.
 - HAFIZA: her konuşma turu çalışmanın klasöründe
   `PROJE_HAFIZASI/<çalışma>/geleneksel_sohbet_hafizasi.json` dosyasına
   kodla özetlenir (`akis_faz03.sohbet_hafiza_ekle`): zaman, kullanıcının

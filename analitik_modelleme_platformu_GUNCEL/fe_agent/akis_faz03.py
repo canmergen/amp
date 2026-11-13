@@ -297,6 +297,17 @@ def sohbet_hafiza_ekle(anahtar, mesaj, cevap, degisiklikler=(), uygulanan=0):
     return h
 
 
+def sohbet_hafiza_sil(anahtar):
+    """Klasordeki konusma ozetini siler (Hafizayi Sil). Dosya yoksa sessiz."""
+    try:
+        _folder().delete_path(sohbet_hafiza_yolu(anahtar))
+    except Exception:
+        try:                                        # silinemezse bos yazilir
+            _folder().upload_stream(sohbet_hafiza_yolu(anahtar), b'{"kayitlar": []}')
+        except Exception:
+            pass
+
+
 def sapma_ozeti(g):
     """Kullanicinin kararlarda oneriden yaptigi farklar, donusum basina
     (kalici tercih olarak dil modeline gider)."""
