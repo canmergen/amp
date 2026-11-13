@@ -5889,3 +5889,12 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-param-giris.gl-param-uzun { width: 180px; }
 .pf-karo.gl-karo-tik:hover { outline: 1px solid var(--kenar); }
 .dg-tablo.gl-katalog th { width: auto; }
+
+/* 02.2: tiklanir cipler ve model degisimi seridi */
+.gl-cip-tik { cursor: pointer; font: inherit; font-size: var(--fs-kucuk); }
+.gl-cip-tik:hover { filter: brightness(.96); outline: 1px solid var(--kenar); }
+.gl-cip-tik:disabled { cursor: default; }
+.gl-cip-kaldirildi { text-decoration: line-through; color: var(--metin-soluk); background: transparent; border-style: dashed; }
+.gl-cip-eklendi { border-style: dashed; }
+.gl-serit { margin: var(--b-2) 0; padding: 8px 12px; border-radius: var(--r-kucuk); background: var(--kirmizi-acik);
+  color: var(--metin); border: 1px solid var(--kirmizi-cizgi); line-height: 1.45; }

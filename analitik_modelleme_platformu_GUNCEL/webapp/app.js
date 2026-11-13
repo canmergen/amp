@@ -18336,7 +18336,10 @@ function gelenekselBekleKarti(alan, blok) {
 }
 
 function gelenekselKartiEkle(alan, blok) {
-    if (alan.bekliyor && !alan.kilitli && !(blok && blok.kilit)) return gelenekselBekleKarti(alan, blok);
+    /* Yalnız İLK açılışta bekleme kartı; model türü değişimi gibi sonraki
+       işlerde kart açık kalır, üstte ilerleme görünür. */
+    if (alan.bekliyor && alan.bekliyor.ilk !== false && !alan.kilitli && !(blok && blok.kilit))
+        return gelenekselBekleKarti(alan, blok);
     const kart = elYap("div", "secim-kart pf-kart gl-kart");
     const kilitli = !!alan.kilitli || !!(blok && blok.kilit);
     if (kilitli) kart.classList.add("kilitli");
@@ -18431,6 +18434,40 @@ function gelenekselKartiEkle(alan, blok) {
     karo("fark", "Öneriden Farklı", "karar");
     karolar.style.setProperty("--pf-karo-sayi", "5");
     kart.appendChild(karolar);
+    /* Model türü değişiminden sonraki iş: kart açık, kararlar korunur; iş
+       bitince öneriler güncellenir ve farklarınız yeni önerilerin üstüne
+       uygulanır. */
+    if (alan.bekliyor && alan.bekliyor.ilk === false && !kilitli) {
+        const serit = elYap("div", "gl-serit", "");
+        kart.appendChild(serit);
+        const yaz = b => {
+            b = b || {};
+            serit.textContent = (b.evre === "olcum"
+                ? "Yeni model türü için dönüşümlerin katkısı ölçülüyor: " + ftBinlik(b.olcum_biten || 0) + " / " + ftBinlik(b.olcum_toplam || 0) + " birim."
+                : "Yeni model türü için dil modeli önerileri alınıyor: " + ftBinlik(b.biten || 0) + " / " + ftBinlik(b.toplam || 0) + " birim.")
+                + " Seçimleriniz korunuyor; iş bitince öneriler güncellenir ve sizin değişiklikleriniz yeni önerilerin üstüne uygulanır.";
+        };
+        yaz(alan.bekliyor);
+        let bitti_ = false;
+        const yokla = () => {
+            if (bitti_ || !document.body.contains(kart)) return;
+            fetch(getWebAppBackendUrl("geleneksel_oneri_durum"), {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ oturum_id: OTURUM_ID, karar: karar })
+            }).then(r => r.json()).then(j => {
+                if (j.tamam && j.bitti && j.kart) {
+                    bitti_ = true;
+                    const gecici = elYap("div");
+                    kart.replaceWith(gecici);
+                    gelenekselKartiEkle(j.kart, Object.assign({}, blok || {}, { _yer: gecici }));
+                    return;
+                }
+                if (j.tamam) yaz(j.bekliyor);
+                setTimeout(yokla, 3000);
+            }).catch(() => setTimeout(yokla, 6000));
+        };
+        setTimeout(yokla, 2000);
+    }
     /* Dil modeli karosu Öneri Özeti sekmesini açar. */
     karoEl.dm.parentNode.title = "Dil modelinin karar verdiği birim sayısı / dil modeline sorulan birim sayısı. "
         + "Bu model türünde uygulanabilen dönüşümü olmayan birimler sorulmaz. Ayrıntı için tıklayın: Öneri Özeti.";
@@ -18458,7 +18495,7 @@ function gelenekselKartiEkle(alan, blok) {
             mtGrup.querySelectorAll("button").forEach(x => { x.disabled = true; });
             fetch(getWebAppBackendUrl("geleneksel_model"), {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ oturum_id: OTURUM_ID, model_turu: kod })
+                body: JSON.stringify({ oturum_id: OTURUM_ID, model_turu: kod, karar: karar })
             }).then(r => r.json()).then(j => {
                 if (!j.tamam) { mtNot.textContent = j.hata || "Model türü değiştirilemedi."; mtGrup.querySelectorAll("button").forEach(x => { x.disabled = false; }); return; }
                 const yer = kart.parentNode, sonraki = kart.nextSibling;
@@ -18660,14 +18697,35 @@ function gelenekselKartiEkle(alan, blok) {
         const sayi = kolonSayisi(b, k.sec);
         if (sayi) ust.appendChild(elYap("span", "gl-sayi", ftBinlik(sayi) + " kolon"));
         sm.appendChild(ust);
+        /* Çipler tıklanır: yeşil (seçili) tıklanınca kaldırılır; önerilip
+           kaldırılan üstü çizili kalır, tıklanınca geri eklenir. */
         const cipler = elYap("div", "gl-cipler");
-        (k.sec || []).slice().sort((a, b_) => kodAsama(a) - kodAsama(b_)).forEach(c => {
-            const cp = elYap("span", "gl-cip secili", kodAdi(c) + paramMetni(c, k.param));
-            cp.title = ASAMA_ADI[kodAsama(c)] || "";
+        const gorunen = Array.from(new Set((o.sec || []).filter(c => mumkunGor(b).includes(c)).concat(k.sec || [])))
+            .sort((a, b_) => kodAsama(a) - kodAsama(b_));
+        gorunen.forEach(c => {
+            const secili = (k.sec || []).includes(c);
+            const onerili = (o.sec || []).includes(c);
+            const cp = elYap("button", "gl-cip gl-cip-tik" + (secili ? " secili" : " gl-cip-kaldirildi")
+                + (secili && !onerili ? " gl-cip-eklendi" : ""),
+                kodAdi(c) + paramMetni(c, secili ? k.param : o.param));
+            cp.type = "button";
+            cp.disabled = kilitli;
+            cp.title = (secili ? (onerili ? "Önerildi ve seçili." : "Sizin eklediğiniz.") + " Tıklayın: kaldır."
+                : "Önerildi, kaldırdınız. Tıklayın: geri ekle.") + " " + (ASAMA_ADI[kodAsama(c)] || "");
             cp.setAttribute("data-asama", String(kodAsama(c)));
+            cp.onclick = e => {
+                e.preventDefault(); e.stopPropagation();
+                if (kart.classList.contains("kilitli")) return;
+                if (secili) { k.sec = k.sec.filter(x => x !== c); delete k.param[c]; }
+                else {
+                    k.sec.push(c);
+                    if ((o.param || {})[c]) k.param[c] = JSON.parse(JSON.stringify(o.param[c]));
+                }
+                tumunuCiz();
+            };
             cipler.appendChild(cp);
         });
-        if (!(k.sec || []).length) cipler.appendChild(elYap("span", "gl-cip-yok",
+        if (!gorunen.length) cipler.appendChild(elYap("span", "gl-cip-yok",
             o.secilmeyen || o.gerekce || "Dönüşüm seçilmedi"));
         sm.appendChild(cipler);
         d.appendChild(sm);
@@ -18884,7 +18942,7 @@ function gelenekselKartiEkle(alan, blok) {
             return;
         }
         sekmeNot.textContent = aktif === "uyg"
-            ? "En az bir dönüşüm seçili birimler. Açınca nedeni, seçilebilen ve uygulanamayan dönüşümler."
+            ? "En az bir dönüşüm seçili birimler. Yeşil dönüşüme tıklayınca kaldırılır, üstü çizili olana tıklayınca geri eklenir. Açınca nedeni, ölçümü, seçilebilen ve uygulanamayan dönüşümler."
             : "Dönüşüm seçilmeyen birimler ve nedeni. Açıp dönüşüm ekleyebilirsiniz.";
         const gosterilen = (aktif === "uyg" ? uyg : yok).filter(eslesir);
         gosterilen.forEach(b => liste.appendChild(birimSatiri(b)));
@@ -19139,7 +19197,23 @@ function gelenekselKartiEkle(alan, blok) {
     }
     kart.appendChild(alt);
 
+    /* Her değişiklik sunucuya yazılır (kısa gecikmeyle): model türü
+       değişince, kart yeniden çizilince ya da sayfa yenilenince seçimler
+       kaybolmaz. */
+    let kayitZaman = null, ilkCizim = true;
+    const kararKaydet = () => {
+        if (kilitli || kart.classList.contains("kilitli")) return;
+        clearTimeout(kayitZaman);
+        kayitZaman = setTimeout(() => {
+            fetch(getWebAppBackendUrl("geleneksel_karar_kaydet"), {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ oturum_id: OTURUM_ID, karar: karar })
+            }).catch(() => { /* bir sonraki değişiklikte yeniden denenir */ });
+        }, 600);
+    };
     function tumunuCiz() {
+        if (!ilkCizim) kararKaydet();
+        ilkCizim = false;
         const uyg = birimler.filter(b => (karar[b.id].sec || []).length).length;
         const kol = birimler.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec), 0);
         const dm = Object.values(oneri).filter(o => o.kaynak === "dil modeli" || o.kaynak === "sohbet").length;

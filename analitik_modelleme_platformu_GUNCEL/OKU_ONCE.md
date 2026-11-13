@@ -2657,6 +2657,27 @@ tanıtır; sayfalar sol bardan açılır.
   oran_tum) IV'si yüksek olan seçilir. Benzerlik en iyi kolonlar arasında
   ölçülür.
 
+**02.2 kararlar kalıcı, çipler tıklanır, model türü değişince kart kapanmaz**
+- Birim satırındaki çipler düğme: yeşil (seçili) tıklanınca kaldırılır;
+  önerilip kaldırılan üstü çizili kesik kenarlı kalır, tıklanınca geri
+  eklenir (öneri parametresiyle); öneride olmayıp sizin eklediğiniz yeşil
+  ve kesik kenarlı. Çipe tıklamak birimi açmaz (birim adına tıklayınca
+  açılır).
+- KAYIT: karttaki her değişiklik 600 ms sonra `/geleneksel_karar_kaydet`
+  ile sunucuya yazılır (`akis_faz03.geleneksel_karar_kaydet`): karar ve
+  sapma. Sohbet isteği, model türü isteği ve kart açıkken yoklama da
+  ekrandaki kararı taşır ve önce kaydeder.
+- SAPMA artık FARK: birim başına {ekle, cikar, param} (`sapma_hesapla`).
+  `_karar_kur` öneriye farkı uygular, böylece model türü ya da öneri
+  değişince de istek geçerli kalır. `sapma_birlestir`: o model türünde
+  seçilemeyen kodlardaki eski istekler korunur (doğrusalda uç kırpmayı
+  kaldırıp ağaca geçip dönünce kaldırma kalır). Eski biçim ({sec, param})
+  birimin kararını olduğu gibi değiştirir.
+- MODEL TÜRÜ DEĞİŞİMİ: iş başlarsa kart KAPANMAZ (`bekliyor.ilk` false);
+  üstte şerit ("Yeni model türü için dil modeli önerileri alınıyor ...
+  Seçimleriniz korunuyor"), iş bitince kart yeni önerilerle ve
+  farklarınızla yeniden çizilir. Bekleme kartı yalnız ilk açılışta.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

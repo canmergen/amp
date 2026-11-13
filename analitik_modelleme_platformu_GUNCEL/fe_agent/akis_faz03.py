@@ -177,7 +177,11 @@ def geleneksel_karti(durum, kilitli=False):
                     "tur": d.get("tur", 1), "evre": d.get("evre", "birim"),
                     "olcum_biten": d.get("olcum_biten", 0), "olcum_toplam": d.get("olcum_toplam", 0),
                     "gecen": int(time.time() - float(g["oneri_is"].get("baslangic") or time.time())),
-                    "arasi_sor": bool(g["oneri_is"].get("arasi_sor"))}
+                    "arasi_sor": bool(g["oneri_is"].get("arasi_sor")),
+                    # Ilk acilista kart beklenir; sonraki islerde (model turu
+                    # degisimi) kart acik kalir, ustte ilerleme gorunur.
+                    "ilk": bool(g["oneri_is"].get("ilk", True)),
+                    "model_turu": g["oneri_is"].get("model_turu")}
     return {
         "tip": "geleneksel", "adim": "kural", "kilitli": bool(kilitli), "bekliyor": bekliyor,
         "model_turu": g.get("model_turu") or "agac", "model_turleri": G.MODEL_TURLERI,
@@ -209,12 +213,89 @@ def geleneksel_karti(durum, kilitli=False):
     }
 
 
+def sapma_hesapla(karar, oneri):
+    """Kullanicinin oneriden farki, birim basina FARK olarak: {"ekle",
+    "cikar", "param"}. Fark olarak saklanir ki model turu ya da oneri
+    degisince de ayni istek uygulanabilsin ("uc kirpma istemiyorum" yeni
+    oneride de kaldirilir)."""
+    sapma = {}
+    for i, k in (karar or {}).items():
+        o = oneri.get(i) or {}
+        sec, osec = list(k.get("sec") or []), list(o.get("sec") or [])
+        ekle = [c for c in sec if c not in osec]
+        cikar = [c for c in osec if c not in sec]
+        param = {c: v for c, v in (k.get("param") or {}).items()
+                 if c in sec and (c in ekle or (o.get("param") or {}).get(c) != v)}
+        if ekle or cikar or param:
+            sapma[i] = {"ekle": ekle, "cikar": cikar, "param": param}
+    return sapma
+
+
+def sapma_birlestir(g, karar, birimler, model_turu):
+    """Yeni sapma: bu model turunde gorulebilen kodlarda karttaki fark;
+    bu turde secilemeyen kodlardaki onceki istekler (dogrusalda "uc kirpma
+    istemiyorum" gibi) korunur, baska ture gecip donunce kaybolmaz."""
+    from fe_agent import geleneksel as G
+    yeni = sapma_hesapla(karar, g.get("oneri") or {})
+    harita = {b["id"]: b for b in birimler}
+    for i, v in (g.get("sapma") or {}).items():
+        if not isinstance(v, dict) or "sec" in v or i not in harita:
+            continue
+        mm = set(G.model_mumkun(harita[i], model_turu))
+        ek = [c for c in v.get("ekle") or [] if c not in mm]
+        ck = [c for c in v.get("cikar") or [] if c not in mm]
+        pr = {c: p for c, p in (v.get("param") or {}).items() if c not in mm}
+        if ek or ck or pr:
+            h = yeni.setdefault(i, {"ekle": [], "cikar": [], "param": {}})
+            h["ekle"] = list(dict.fromkeys(h["ekle"] + ek))
+            h["cikar"] = list(dict.fromkeys(h["cikar"] + ck))
+            h["param"].update(pr)
+    return yeni
+
+
 def _karar_kur(g, birimler, oneri, segmentler, model_turu):
+    """Karar = oneri + kullanicinin farklari (sapma). Eski bicimdeki sapma
+    ({"sec", "param"}) birimin kararini oldugu gibi degistirir."""
     from fe_agent import geleneksel as G
     karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {})}
              for i, o in oneri.items()}
-    karar.update(G.karar_dogrula(birimler, g.get("sapma") or {}, segmentler, model_turu))
+    sapma = g.get("sapma") or {}
+    eski = {i: v for i, v in sapma.items() if isinstance(v, dict) and "sec" in v}
+    for i, v in sapma.items():
+        if not isinstance(v, dict) or "sec" in v or i not in karar:
+            continue
+        k = karar[i]
+        k["sec"] = [c for c in k["sec"] if c not in (v.get("cikar") or [])]
+        for c in v.get("ekle") or []:
+            if c not in k["sec"]:
+                k["sec"].append(c)
+        k["param"] = {c: p for c, p in k["param"].items() if c in k["sec"]}
+        k["param"].update({c: p for c, p in (v.get("param") or {}).items() if c in k["sec"]})
+    karar = G.karar_dogrula(birimler, karar, segmentler, model_turu)
+    karar.update(G.karar_dogrula(birimler, eski, segmentler, model_turu))
+    for b in birimler:
+        karar.setdefault(b["id"], {"sec": [], "param": {}})
     return karar
+
+
+def geleneksel_karar_kaydet(durum, karar):
+    """Karttaki guncel kararlari sunucuya yazar (her degisiklikte): karar ve
+    sapma (oneriden fark). Boylece model turu degisince, kart yeniden
+    cizilince ya da sayfa yenilenince secimler kaybolmaz."""
+    from fe_agent import geleneksel as G
+    g = durum.get("geleneksel") or {}
+    birimler = g.get("birimler") or []
+    if not birimler or not isinstance(karar, dict):
+        return
+    model_turu = g.get("model_turu") or "agac"
+    temiz = G.karar_dogrula(birimler, karar, g.get("segmentler") or [], model_turu)
+    eski = dict(g.get("karar") or {})
+    eski.update(temiz)
+    g["karar"] = eski
+    g["sapma"] = sapma_birlestir(g, eski, birimler, model_turu)
+    durum["geleneksel"] = g
+    if (durum.get("_secim_alani") or {}).get("tip") == "geleneksel":
+        durum["_secim_alani"]["karar"] = eski
 
 
 def _veri_al(durum):
@@ -330,12 +411,14 @@ def geleneksel_sohbet_birimleri(durum, yeni):
              b.get("gerekce") or "") for b in eklenen]
 
 
-def geleneksel_model_degistir(durum, model_turu):
+def geleneksel_model_degistir(durum, model_turu, karar=None):
     """Model turu degisti: oneriler o ture gore yeniden alinir (ayni ture
     ait onceki dil modeli onerileri tekrar sorulmaz; gerekirse arka plan
     isi baslar); kullanicinin sapmalari o turde gecerliyse korunur. Doner:
     yeni kart."""
     from fe_agent import geleneksel as G
+    if karar is not None:
+        geleneksel_karar_kaydet(durum, karar)      # once ekrandaki secimler
     g = durum.get("geleneksel") or {}
     if model_turu not in G.MODEL_TURLERI or not g.get("birimler"):
         return geleneksel_karti(durum)
@@ -352,6 +435,8 @@ def geleneksel_model_degistir(durum, model_turu):
             onceki[b["id"]] = dict(o, sec=[c for c in o.get("sec") or [] if c in mm],
                                    imza=G._oneri_imza(b, model_turu))
     oneri = _oneri_baslat(g, birimler, segmentler, model_turu, onceki, _veri_al(durum))
+    if g.get("oneri_is"):
+        g["oneri_is"]["ilk"] = False
     for b in birimler:
         if b.get("bulan") in ("dil modeli", "sohbet"):
             oneri[b["id"]] = onceki[b["id"]]
@@ -544,9 +629,7 @@ def kural_uygula(durum, secim=None):
         karar = G.karar_dogrula(birimler, g.get("karar") or {}, segmentler, model_turu)
     oneri = g.get("oneri") or {}
     g["karar"] = karar
-    g["sapma"] = {i: k for i, k in karar.items()
-                  if sorted(k.get("sec") or []) != sorted((oneri.get(i) or {}).get("sec") or [])
-                  or (k.get("param") or {}) != ((oneri.get(i) or {}).get("param") or {})}
+    g["sapma"] = sapma_birlestir(g, karar, birimler, model_turu)
     durum["geleneksel"] = g
     yeni_duzen = _f2.updt_modu(durum)
     hedef = _f2.updt_adi(durum) if yeni_duzen else "%s_ENRICHED" % durum["veri_seti"]

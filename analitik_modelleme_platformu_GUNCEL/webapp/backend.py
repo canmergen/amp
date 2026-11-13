@@ -2705,6 +2705,10 @@ def geleneksel_sohbet_endpoint():
         from fe_agent import llm as llm_mod
         karar = istek.get("karar") if isinstance(istek.get("karar"), dict) else (g.get("karar") or {})
         model_turu = g.get("model_turu") or "agac"
+        # Ekrandaki secimler sunucuya (yeniden cizimde kaybolmasin).
+        from fe_agent import akis_faz03 as _f3
+        _f3.geleneksel_karar_kaydet(durum, karar)
+        g = durum.get("geleneksel") or {}
         plan, ayrinti = G.plan_satirlari(birimler, karar, model_turu, mesaj, katki=g.get("katki"))
         sonuc, hata = llm_mod.geleneksel_sohbet(
             mesaj, g.get("sohbet") or [], plan, G.katalog_metni(uzun=True),
@@ -2762,6 +2766,24 @@ def geleneksel_sohbet_endpoint():
         return jsonify(_hata_govdesi("geleneksel_sohbet", e, "Sohbet yanıtı alınamadı."))
 
 
+@app.route("/geleneksel_karar_kaydet", methods=["POST"])
+def geleneksel_karar_kaydet_endpoint():
+    """02.2 kartindaki guncel kararlar (her degisiklikte). Govde: {oturum_id,
+    karar}."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        from fe_agent import akis_faz03
+        akis_faz03.geleneksel_karar_kaydet(durum, istek.get("karar"))
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": True})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("geleneksel_karar_kaydet", e, "Kararlar kaydedilemedi."))
+
+
 @app.route("/geleneksel_sohbet_temizle", methods=["POST"])
 def geleneksel_sohbet_temizle_endpoint():
     """02.2 sohbetini temizler (gecmis mesajlar silinir; plan ve kararlar
@@ -2792,6 +2814,10 @@ def geleneksel_oneri_durum_endpoint():
         anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
         durum = _durum_al(anahtar)
         from fe_agent import akis_faz03
+        # Kart acikken (model turu degisimi) ekrandaki secimler once yazilir.
+        if isinstance(istek.get("karar"), dict) and (durum.get("geleneksel") or {}).get("oneri_is"):
+            akis_faz03.geleneksel_karar_kaydet(durum, istek["karar"])
+            _kaydet(anahtar, durum)
         bitti, degisti = akis_faz03.geleneksel_is_durumu(durum)
         if degisti:
             _kaydet(anahtar, durum)
@@ -2813,7 +2839,9 @@ def geleneksel_model_endpoint():
         anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
         durum = _durum_al(anahtar)
         from fe_agent import akis_faz03
-        kart = akis_faz03.geleneksel_model_degistir(durum, str(istek.get("model_turu") or ""))
+        kart = akis_faz03.geleneksel_model_degistir(
+            durum, str(istek.get("model_turu") or ""),
+            istek.get("karar") if isinstance(istek.get("karar"), dict) else None)
         _kaydet(anahtar, durum)
         return jsonify({"tamam": True, "kart": kart})
     except CalismaErisimYok as e:
