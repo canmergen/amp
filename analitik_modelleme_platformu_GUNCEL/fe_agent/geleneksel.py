@@ -1958,7 +1958,29 @@ _EK = r"(?:y?[ıiuü]|[ıiuü]n|y?[ae]|d[ae]n|t[ae]n|l[ae]r[ıi]?|s[ıi]n[ıi]?|
 _HARF = "a-zçğıöşü"
 
 
-def niyet_bul(mesaj):
+_YAPILDI = re.compile(r"(eklen(di|miştir|mistir)|kaldırıl(dı|mıştır)|çıkarıl(dı|mıştır)|uygulan(dı|mıştır)|"
+                      r"silin(di|miştir)|değiştiril(di|miştir)|ekledim|kaldırdım|çıkardım|uyguladım)", re.I)
+_ONAY = re.compile(r"^\s*(evet|olur|tamam|tamamdır|kabul|onayla|onaylıyorum|uygula|uygulayalım|ekle|ekleyelim|"
+                   r"çıkar|çıkaralım|kaldır|yap|yapalım|katılıyorum|aynen)\b.{0,25}$", re.I | re.S)
+
+
+def yapildi_der(metin):
+    """Cevap bir degisikligin YAPILDIGINI soyluyor mu."""
+    return bool(_YAPILDI.search(str(metin or "")))
+
+
+def eylem_mi(mesaj):
+    """Mesaj bir ekleme ya da cikarma istiyor mu."""
+    m = _kucuk(mesaj)
+    return any(re.search("(?<![%s])%s" % (_HARF, x), m) for x in _HAYIR + _EVET)
+
+
+def onay_mi(mesaj):
+    """Kisa onay mesaji mi ("evet", "ekle bence de")."""
+    return bool(_ONAY.match(_kucuk(mesaj)))
+
+
+def niyet_bul(mesaj, coklu=False):
     """Mesajdan kod ile toplu niyet: [{"islem", "kodlar", "kapsam", "neden"}]
     ya da []. Yalniz TEK bir donusum adi ve acik bir fiil (istemiyorum,
     cikar, ekle gibi) birlikte gecerse; birden cok ad ya da karisik istek
@@ -1973,7 +1995,7 @@ def niyet_bul(mesaj):
     # Baska bir eslesen ifadenin parcasi olan ifade sayilmaz ("oran" ve "normalize oran").
     ifadeler = [x for x in eslesme if not any(x != y and x in y for y in eslesme)]
     kodlar = list(dict.fromkeys(eslesme[x] for x in ifadeler))
-    if len(kodlar) != 1:
+    if not kodlar or (len(kodlar) != 1 and not coklu):
         return []
     hayir = any(re.search("(?<![%s])%s" % (_HARF, x), m) for x in _HAYIR)
     evet = any(re.search("(?<![%s])%s" % (_HARF, x), m) for x in _EVET)
@@ -2014,8 +2036,8 @@ def toplu_genislet(birimler, karar, toplu, model_turu, segmentler=()):
                 ekle_, _p = param_temizle(ekle_, t.get("param"), segmentler)
                 if ekle_:
                     ids.append(b["id"])
-                elif any(c not in mm for c in t["kodlar"]):
-                    atlanan += 1
+                elif any(c in (b.get("mumkun") or []) and c not in mm for c in t["kodlar"]):
+                    atlanan += 1             # birimde olur ama bu model turunde gereksiz
         if not ids and not atlanan:
             continue
         ks = []
@@ -2153,8 +2175,8 @@ def toplu_cevap(degisiklikler, katki=None):
         adlar = ", ".join(KATALOG_HARITA[c]["ad"] for c in (d.get("cikar") or d.get("ekle") or []))
         if not d.get("toplu"):
             continue
-        atla = ("%s birimde bu model türünde uygulanamıyor (ağaç modelinde gereksiz ya da birimde "
-                "mümkün değil)" % d["atlanan"]) if d.get("atlanan") else ""
+        atla = ("%s birimde bu model türünde gereksiz olduğu için eklenmez" % d["atlanan"]) \
+            if d.get("atlanan") else ""
         if not d["ids"]:
             par.append("%s hiçbir birime eklenemiyor: %s." % (adlar, atla or "uygun birim yok"))
             continue

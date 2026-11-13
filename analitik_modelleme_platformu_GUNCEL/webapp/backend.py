@@ -2704,6 +2704,24 @@ def geleneksel_sohbet_endpoint():
         from fe_agent import geleneksel as G
         from fe_agent import llm as llm_mod
         karar = istek.get("karar") if isinstance(istek.get("karar"), dict) else (g.get("karar") or {})
+        # Kullanici onay yazdi ve kart bekleyen onerileri uyguladi: dil modeli
+        # cagrilmaz, durum kodla yazilir ve kaydedilir.
+        try:
+            uygulanan = int(istek.get("uygulanan") or 0)
+        except (TypeError, ValueError):
+            uygulanan = 0
+        if uygulanan > 0:
+            from fe_agent import akis_faz03 as _f3o
+            _f3o.geleneksel_karar_kaydet(durum, karar)
+            g = durum.get("geleneksel") or {}
+            cevap = ("Önceki mesajdaki %s öneri sola aktarıldı; kararlar güncellendi. Üretim için "
+                     "\"Kararları Onayla ve Üret\" düğmesine basın." % uygulanan)
+            sohbet = list(g.get("sohbet") or []) + [{"rol": "kullanici", "metin": mesaj},
+                                                     {"rol": "model", "metin": cevap, "degisiklikler": []}]
+            g["sohbet"] = sohbet[-60:]
+            durum["geleneksel"] = g
+            _kaydet(anahtar, durum)
+            return jsonify({"tamam": True, "cevap": cevap, "degisiklikler": []})
         model_turu = g.get("model_turu") or "agac"
         # Ekrandaki secimler sunucuya (yeniden cizimde kaybolmasin).
         from fe_agent import akis_faz03 as _f3
@@ -2734,20 +2752,34 @@ def geleneksel_sohbet_endpoint():
             toplu = sonuc.get("toplu") or []
             if not toplu and not sonuc.get("degisiklikler") and not sonuc.get("yeni"):
                 toplu = G.niyet_bul(mesaj)
+                # Onay mesaji ("ekle bence de") ve onceki cevap metinde bir
+                # oneri yapmissa: o metindeki donusumler oneriye cevrilir.
+                if not toplu and G.onay_mi(mesaj):
+                    onceki = [m_ for m_ in (g.get("sohbet") or []) if m_.get("rol") == "model"]
+                    if onceki:
+                        toplu = G.niyet_bul(onceki[-1].get("metin") or "", coklu=True)
+                # Dil modeli metinde onerip listeye yazmadiysa metinden.
+                # (yalniz kullanici bir eylem istediyse; aciklama sorusunda degil)
+                if not toplu and G.eylem_mi(mesaj):
+                    toplu = G.niyet_bul(sonuc.get("cevap") or "", coklu=True)
         genis = G.toplu_genislet(birimler, karar, toplu, model_turu, segler)
         if genis:
             # Toplu degisiklikte cevabi kod kurar (ne kadar birim, olcume gore
             # etkisi); dil modelinin metni yalniz sayiya dayaniyor ve "yapildi"
             # demiyorsa eklenir.
             dm = str(sonuc.get("cevap") or "")
-            ek = dm if (re.search(r"\d", dm) and not re.search(
-                r"(kaldırıldı|eklendi|uygulandı|çıkarıldı|silindi)", dm, re.I)) else ""
+            ek = dm if (re.search(r"\d", dm) and not G.yapildi_der(dm)) else ""
             sonuc["cevap"] = G.toplu_cevap(genis, katki) + (("\n" + ek) if ek else "")
-        elif toplu:
-            # Istenen donusum hicbir birimde degismiyor: dil modelinin "yaptim"
-            # cevabi yerine durumu kod yazar.
-            sonuc["cevap"] = ("İstenen dönüşüm şu anki kararlarda hiçbir birimde %s; değişecek bir şey yok."
-                              % ("seçili değil" if toplu[0]["islem"] == "cikar" else "eklenebilir değil"))
+        elif toplu or (not sonuc.get("degisiklikler") and not sonuc.get("yeni") and G.yapildi_der(sonuc.get("cevap"))):
+            # Istenen donusum hicbir birimde degismiyor ya da dil modeli
+            # degisiklik vermeden "ekledim / kaldirdim" diyor: durumu kod yazar.
+            if not toplu:
+                sonuc["cevap"] = ("Bu mesajla planda hiçbir değişiklik yapılmadı. Değişiklik ancak bir öneri "
+                                  "çıkınca ve Uygula'ya basınca olur; ne eklemek ya da çıkarmak istediğinizi "
+                                  "dönüşüm adıyla yazın (örneğin \"bütün ailelere eğim ekle\").")
+            else:
+                sonuc["cevap"] = ("İstenen dönüşüm şu anki kararlarda hiçbir birimde %s; değişecek bir şey yok."
+                                  % ("seçili değil" if toplu[0]["islem"] == "cikar" else "eklenebilir değil"))
         sonuc["degisiklikler"] = genis + list(sonuc.get("degisiklikler") or [])
         if hata and not sonuc.get("cevap"):
             return jsonify({"tamam": False, "hata": "Dil modeli cevap vermedi (%s)." % model_adi_gizle(hata)})

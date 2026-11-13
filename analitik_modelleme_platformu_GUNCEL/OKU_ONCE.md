@@ -2704,6 +2704,26 @@ tanıtır; sayfalar sol bardan açılır.
 - İstem: önerilen değişiklik için "kaldırıldı / eklendi" denmez; ölçüme
   dayanmayan performans iddiası yazılmaz.
 
+**02.2 sohbet: "yapıldı" yalanına ve metinde kalan önerilere karşı**
+- ONAY: kısa onay mesajı ("evet", "olur", "tamam", "ekle bence de",
+  "uygula"; `ONAY` deseni) yazılırsa ve son cevapta bekleyen öneri varsa
+  kart önerileri uygular, isteğe `uygulanan` sayısını koyar; sunucu dil
+  modelini çağırmaz, "Önceki mesajdaki N öneri sola aktarıldı" yazar ve
+  kararı kaydeder.
+- METİNDE KALAN ÖNERİ: dil modeli bir dönüşümü yalnız metinde önerirse
+  (yapılandırılmış değişiklik yok) ve kullanıcı bir eylem istediyse
+  (`eylem_mi`), metindeki dönüşümler (`niyet_bul(..., coklu=True)`) toplu
+  öneriye çevrilir. Onay mesajında yapılandırılmış öneri yoksa önceki
+  cevabın metni kullanılır. Açıklama sorularında ("eğim nedir") metinden
+  öneri çıkarılmaz.
+- YAPILDI YALANI: dil modeli hiçbir değişiklik vermeden "eklendi,
+  eklenmiştir, kaldırıldı, uygulandı" derse (`yapildi_der`) cevap kodla
+  değiştirilir: "Bu mesajla planda hiçbir değişiklik yapılmadı ...". Toplu
+  cevaba dil modelinin metni yalnız "yapıldı" demiyorsa eklenir.
+- Atlanan sayısı yalnız birimde olabilen ama bu model türünde gereksiz
+  olan dönüşüm için sayılır ("N birimde bu model türünde gereksiz olduğu
+  için eklenmez").
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

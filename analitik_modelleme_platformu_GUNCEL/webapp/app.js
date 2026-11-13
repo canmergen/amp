@@ -19078,6 +19078,7 @@ function gelenekselKartiEkle(alan, blok) {
             if ((d.param || {})[c]) k.param[c] = d.param[c];
         });
     };
+    let sonBekleyen = null, sonUygula = null;
     const mesajEkle = (m) => {
         /* Platformun sohbet balonları: bot solda kırmızı şeritli, kullanıcı sağda. */
         const sat = elYap("div", "satir gl-mesaj " + (m.rol === "kullanici" ? "kullanici" : "bot"));
@@ -19099,7 +19100,7 @@ function gelenekselKartiEkle(alan, blok) {
                     + (d.kapsam_metni || "bütün birimler") + ")" : (birimAdi[d.id] || d.id)),
                     elYap("span", "", " · " + t.join(" · ")));
                 if (d.toplu && d.atlanan) metin.appendChild(elYap("div", "gl-oneri-neden",
-                    ftBinlik(d.atlanan) + " birimde bu model türünde uygulanamadığı için atlanır."));
+                    ftBinlik(d.atlanan) + " birimde bu model türünde gereksiz olduğu için eklenmez."));
                 if (d.toplu && (d.ids || []).length) {
                     /* Hangi birimler: açılır liste. */
                     const bl = document.createElement("details");
@@ -19129,6 +19130,16 @@ function gelenekselKartiEkle(alan, blok) {
                 return { r, ciz };
             });
             satirlar.forEach(s => dl.appendChild(s.r));
+            /* Son öneriler: kullanıcı "evet", "ekle bence de" gibi onay yazarsa
+               bekleyenler buradan uygulanır. */
+            sonBekleyen = () => deg.filter((d, i) => durumlar[i] === "bekliyor");
+            sonUygula = () => {
+                let n = 0;
+                deg.forEach((d, i) => { if (durumlar[i] === "bekliyor") { degisiklikUygula(d); durumlar[i] = "uygulandi"; n++; } });
+                satirlar.forEach(s => s.ciz());
+                tumunuCiz();
+                return n;
+            };
             if (deg.length > 1 && !kilitli) {
                 const hep = elYap("button", "dg-toplu-btn", "Hepsini Uygula");
                 hep.type = "button";
@@ -19155,6 +19166,8 @@ function gelenekselKartiEkle(alan, blok) {
     gb.type = "button";
     const bekle = elYap("div", "gl-not", "");
     let gidiyor = false;
+    /* Kısa onay mesajı: "evet", "olur", "tamam", "ekle bence de", "uygula". */
+    const ONAY = /^\s*(evet|olur|tamam|tamamdır|kabul|onayla|onaylıyorum|uygula|uygulayalım|ekle|ekleyelim|çıkar|çıkaralım|kaldır|yap|yapalım|katılıyorum|aynen)\b[\s\S]{0,25}$/i;
     const yolla = () => {
         const metin = ta.value.trim();
         if (!metin || gidiyor || kart.classList.contains("kilitli")) return;
@@ -19165,9 +19178,13 @@ function gelenekselKartiEkle(alan, blok) {
         mesajEkle({ rol: "kullanici", metin: metin });
         ta.value = "";
         bekle.textContent = "Yanıt bekleniyor";
+        /* Onay ve bekleyen öneri varsa öneriler burada uygulanır; sunucu
+           yalnız konuşmayı kaydeder (dil modeli "ekledim" diyemez). */
+        let uygulanan = 0;
+        if (ONAY.test(metin) && sonBekleyen && sonBekleyen().length) uygulanan = sonUygula();
         fetch(getWebAppBackendUrl("geleneksel_sohbet"), {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ oturum_id: OTURUM_ID, mesaj: metin, karar: karar })
+            body: JSON.stringify({ oturum_id: OTURUM_ID, mesaj: metin, karar: karar, uygulanan: uygulanan })
         }).then(r => r.json()).then(j => {
             if (j.tamam && j.kart) {
                 /* Sohbette yeni aileler arası birim kuruldu: kart yeni birimle
