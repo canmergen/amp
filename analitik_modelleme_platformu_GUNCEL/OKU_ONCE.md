@@ -2356,6 +2356,24 @@ tanıtır; sayfalar sol bardan açılır.
 - `p["profil_kapsam"] = {train: False, hedef_train, satir, toplam,
   train_satir}`; 02.1 metni ve kartın i balonu bunu söyler.
 
+**02.1 Ondalık Hassasiyeti (`ondalik`, düzeltme)**
+- `profil_ek.ondalik_kontrol` üretime giren ondalık (float) tipteki
+  kolonlara bütün satırlarda bakar: boş hücresi olmayan ve bütün değerleri
+  tam sayı olan kolon "tam" (öneri "Tam sayıya çevir", `tam_sayi`);
+  değerlerinden en az biri kolonun basamağından fazla ondalık hane
+  taşıyan kolon "uzun" (öneri "Basamağa yuvarla", `yuvarla`). Seçenek
+  ayrıca "Olduğu gibi bırak". Boş hücresi olan tam sayılı kolon listelenmez
+  (ondalık tipte kalmak zorunda, değerleri zaten tam).
+- Basamak: eşik formunda `ondalik` (varsayılan 4, 0 ile 12). Küçük değerli
+  kolonda `ondalik_basamagi`: sıfır dışı mutlak değerlerin %1'lik değerinin
+  ilk 2 anlamlı hanesi korunacak kadar (en çok 12); tek bir çok küçük değer
+  bütün kolonu etkilemez.
+- Uygulama `kolon_cozum.duzeltme_uygula("ondalik", ...)`, `DUZELTME_SIRA`'da
+  EN SON (uç kırpmadan sonra). `tam_sayi`: boş yoksa ve değerler tamsa
+  int64, değilse (ör. özel kod boş yapıldı) basamağa yuvarlanmış ondalık;
+  özet bunu yazar. Girdi veri değişmez, UPDT veriye yazılır.
+- Aynı içerikli grup sıralamasında bu düzeltme ceza sayılmaz.
+
 **02.1 Setler Arası Çakışma**
 - `profil_ek.set_cakismasi`: 01.4 bölmesinin setleri (`setler()`) bütün
   satırlarla karşılaştırılır. Test (OOS), Validasyon (OOT) ve OOT setinin

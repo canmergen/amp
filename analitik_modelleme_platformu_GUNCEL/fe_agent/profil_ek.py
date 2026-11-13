@@ -41,10 +41,11 @@ UC_DEGER_YUZDELIK = 0.99
 SIZINTI_AUC = 0.95
 YAKIN_KOR = 0.99
 KAYMA_KAT = 10
+ONDALIK_BASAMAK = 4
 ESIK_VARSAYILAN = {"baskin": BASKIN_ESIK, "sifir": SIFIR_ESIK, "gizli": GIZLI_EKSIK_ESIK,
                    "donem_min_satir": DONEM_SABIT_MIN_SATIR, "sicrama": DONEM_SICRAMA_ESIK,
                    "uc_kat": UC_DEGER_KAT, "sizinti_auc": SIZINTI_AUC, "yakin_kor": YAKIN_KOR,
-                   "kayma_kat": KAYMA_KAT}
+                   "kayma_kat": KAYMA_KAT, "ondalik": ONDALIK_BASAMAK}
 
 
 def esik_birlestir(esik=None):
@@ -352,6 +353,7 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     # Ikinci set (pencere ve tutar / adet ciftleri kolon kartina ve donem
     # turlerine bagli; akis_faz02.profil_hesapla ekler).
     sonuc["metin_bos"] = metin_bos_kontrol(df, adaylar)
+    sonuc["ondalik"] = ondalik_kontrol(df, adaylar, esik_birlestir(esik)["ondalik"])
     sonuc["yazim"] = yazim_kontrol(df, adaylar)
     # Tarih tipindeki kolonlar (tarihler) genel kontrollere girmez, tarih
     # kontrollerine girer.
@@ -893,4 +895,59 @@ def set_cakismasi(df, setler, kimlik=None, donem=None, haric=()):
             if bool(tam.any()):
                 sonuc["cakisma"].append({"set": ad, "tur": "tam", "kimlik": None,
                                          "satir": int(tam.sum()), "pay": int(tam.sum()) / n})
+    return sonuc
+
+
+
+# Ondalik hassasiyeti: bir kolonda en cok bu kadar basamak (kucuk degerli
+# kolonda bile).
+ONDALIK_EN_COK = 12
+# Kucuk degerli kolonda sifir disi kucuk degerlerin (%1'lik deger)
+# korunacak anlamli hanesi (0,000012345 -> 0,000012).
+ONDALIK_ANLAMLI = 2
+
+
+def ondalik_basamagi(x, basamak):
+    """Kolonun yuvarlanacagi basamak: en az `basamak`; kucuk degerli
+    kolonda sifir disi mutlak degerlerin %1'lik degerinin ilk
+    ONDALIK_ANLAMLI hanesi korunacak kadar (tek bir cok kucuk deger butun
+    kolonu etkilemesin; en cok ONDALIK_EN_COK). Ör. %1'lik deger 0,0123
+    ise 3 basamak yeter, esik 4 ise 4; 0,0000093 ise 7 basamak (0,0000093)."""
+    a = x.abs()
+    a = a[(a > 0) & np.isfinite(a)]
+    if not len(a):
+        return int(basamak)
+    kucuk = float(np.quantile(a.to_numpy(dtype=float), 0.01))
+    gerek = ONDALIK_ANLAMLI - 1 - int(np.floor(np.log10(kucuk)))
+    return int(min(max(int(basamak), gerek), ONDALIK_EN_COK))
+
+
+def ondalik_kontrol(df, adaylar, basamak=ONDALIK_BASAMAK):
+    """[{"kolon", "tur": "tam" | "uzun", "basamak", "ornek", "ornek_yeni"}]:
+    ondalik (float) tipteki kolonlar. "tam": bos hucresi yok ve butun
+    degerleri tam sayi (12.0) -> tam sayi tipine cevrilebilir. "uzun":
+    degerlerin en az biri `basamak`tan fazla ondalik hane tasiyor ->
+    yuvarlanabilir. Butun satirlar, kesin."""
+    sonuc = []
+    for kol in adaylar:
+        s = df[kol]
+        if not pd.api.types.is_float_dtype(s):
+            continue
+        d = s.dropna()
+        d = d[np.isfinite(d)]
+        if not len(d):
+            continue
+        tam = d == np.floor(d)
+        if bool(tam.all()):
+            if len(d) == len(s):
+                ornek = float(d.iloc[0])
+                sonuc.append({"kolon": kol, "tur": "tam", "basamak": 0,
+                              "ornek": ornek, "ornek_yeni": int(ornek)})
+            continue
+        b = ondalik_basamagi(d, basamak)
+        degisen = d.round(b) != d
+        if bool(degisen.any()):
+            v = float(d[degisen].iloc[0])
+            sonuc.append({"kolon": kol, "tur": "uzun", "basamak": b,
+                          "ornek": v, "ornek_yeni": round(v, b)})
     return sonuc

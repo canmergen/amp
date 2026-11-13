@@ -66,6 +66,8 @@ COZUM_ADI = {
     "metin_bos_bayrak": "Boş say ve bayrak üret",
     "tek_yazim": "Tek yazıma çevir",
     "gun_farki": "Dönem sonuna gün farkı üret",
+    "tam_sayi": "Tam sayıya çevir",
+    "yuvarla": "Basamağa yuvarla",
 }
 COZUM_ACIKLAMA = {
     "hedef_grupla": ("Hedef oranı birbirine yakın değerler aynı grupta birleşir (en fazla 8 "
@@ -110,6 +112,12 @@ COZUM_ACIKLAMA.update({
                   "açılışından bu yana geçen gün), gelecekteki tarih negatif (ör. vadeye "
                   "kalan gün). Üretilen kolon tarih değil, sayıdır; ham tarih kullanılmaz. "
                   "1900-01-01, 9999-12-31 gibi kod tarihlerde gün farkı boş kalır."),
+    "tam_sayi": ("Bütün değerleri tam sayı olan (12.0 gibi) ondalık kolon tam sayı tipine "
+                 "çevrilir; değerler değişmez, gereksiz «.0» kalkar."),
+    "yuvarla": ("Değerler kolon için belirlenen basamağa yuvarlanır (ör. 1234,5678912 → "
+                "1234,5679). Anlamsız uzun ondalıklar kalkar; PSI ve aralıklara bölme gibi "
+                "hesaplar sade değerlerle yapılır. Çok küçük değerli kolonda değerlerin ilk "
+                "anlamlı haneleri korunacak kadar basamak bırakılır."),
     "tek_yazim": ("Aynı değerin farklı yazımları (büyük küçük harf, Türkçe karakter, fazla "
                   "boşluk) en sık geçen yazıma çevrilir; «İstanbul», «Istanbul» ve "
                   "«istanbul » tek kategori olur."),
@@ -122,14 +130,16 @@ DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
                     "metin_bos": ["metin_bos", "metin_bos_bayrak", "birak"],
                     "yazim": ["tek_yazim", "birak"],
                     "negatif": ["negatif_bos", "birak"],
-                    "uc": ["birak", "kirp"]}
+                    "uc": ["birak", "kirp"],
+                    "ondalik": ["yuvarla", "tam_sayi", "birak"]}
 DUZELTME_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "kod_bos_bayrak",
                   "tarih_kod": "tarih_bos_bayrak", "metin_bos": "metin_bos",
-                  "yazim": "tek_yazim", "negatif": "negatif_bos", "uc": "birak"}
+                  "yazim": "tek_yazim", "negatif": "negatif_bos", "uc": "birak",
+                  "ondalik": "yuvarla"}
 # Uygulama sirasi: once eksik kodlari (sayi, tarih, metin), sonra yazim,
 # en son deger duzeltmeleri.
 DUZELTME_SIRA = ("gizli_eksik", "karisik_eksik", "tarih_kod", "metin_bos", "yazim",
-                 "negatif", "uc")
+                 "negatif", "uc", "ondalik")
 KOD_KONTROLLERI = ("gizli_eksik", "karisik_eksik")
 # Bayrak kolonu ureten duzeltmeler (<KOLON>_<COZUM_EKI>).
 BAYRAKLI_DUZELTME = ("kod_bos_bayrak", "tarih_bos_bayrak", "metin_bos_bayrak")
@@ -143,6 +153,8 @@ def duzeltme_ogren(kontrol, secim, x, egitim, kayit=None):
         return {"kod": float(kayit.get("kod"))}
     if kontrol == "yazim":
         return {"anahtar": dict((kayit or {}).get("anahtar") or {})}
+    if kontrol == "ondalik":
+        return {"basamak": int((kayit or {}).get("basamak") or 0)}
     if kontrol == "uc" and secim == "kirp":
         t = pd.to_numeric(x[egitim], errors="coerce").dropna()
         t = t[t != 0]
@@ -169,6 +181,19 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
         return x.where(~m), (m.astype("int8") if secim == "metin_bos_bayrak" else None)
     if kontrol == "yazim" and secim == "tek_yazim":
         return yazim_uygula(x, (bilgi or {}).get("anahtar") or {}), None
+    if kontrol == "ondalik":
+        # En son uygulanir (kirpma sinirindan sonra). Tam sayiya cevirme
+        # yalniz bos hucresiz ve butun degerleri tam sayi olan kolonda
+        # (ozel kod bos yapildiysa ondalik tip kalir); degilse yuvarlanir.
+        sx = pd.to_numeric(x, errors="coerce")
+        b = int((bilgi or {}).get("basamak") or 0)
+        if secim == "tam_sayi":
+            if bool(sx.notna().all()) and bool((sx == np.floor(sx)).all()):
+                return sx.astype("int64"), None
+            return sx.round(b), None
+        if secim == "yuvarla":
+            return sx.round(b), None
+        return x, None
     sx = pd.to_numeric(x, errors="coerce")
     if kontrol in KOD_KONTROLLERI and secim == "bos_koda" and "kod" in bilgi:
         return sx.fillna(float(bilgi["kod"])), None

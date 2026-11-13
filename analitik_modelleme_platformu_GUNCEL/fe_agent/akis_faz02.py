@@ -377,7 +377,7 @@ def _gun_ozeti(gun):
 # seti degismez). Gizli eksikte istenirse <KOL>_KOD bayragi uretilir.
 # ===========================================================================
 DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "metin_bos", "yazim",
-                        "negatif", "uc")
+                        "negatif", "uc", "ondalik")
 
 
 def _teshis_kusurlu(p):
@@ -415,6 +415,10 @@ def duzeltme_onerileri(durum):
                     oneri = KOD_KURAL_ONERI[a]
             elif a == "yazim":
                 kayit["anahtar"] = dict(x.get("anahtar") or {})
+            elif a == "ondalik":
+                kayit["basamak"] = int(x.get("basamak") or 0)
+                secenek = ["tam_sayi", "birak"] if x.get("tur") == "tam" else ["yuvarla", "birak"]
+                oneri = secenek[0]
             cikti.setdefault(a, {})[k] = {"secenekler": secenek, "oneri": oneri,
                                           "gerekce": gerekce, "kayit": kayit}
     return cikti
@@ -519,6 +523,14 @@ def _duzeltme_ogren(durum, df, tr, mevcut):
                                                 "kolonlar": kol,
                                                 "ozet": _duzeltme_ozeti(a, c, b)}
             yeni += kol
+    # Tam sayiya cevrilecek kolonda ozel kod bos yapildiysa (ya da negatif
+    # bos yapildiysa) bos hucre olusur: kolon ondalik tipte kalir.
+    bos_yapan = {k for a_ in ("gizli_eksik", "karisik_eksik", "negatif")
+                 for k, v in (bilgi_hepsi.get(a_) or {}).items()
+                 if v.get("secim") in ("kod_bos", "kod_bos_bayrak", "negatif_bos")}
+    for k, v in (bilgi_hepsi.get("ondalik") or {}).items():
+        if v.get("secim") == "tam_sayi" and k in bos_yapan:
+            v["ozet"] = "Değerler tam sayı; düzeltmeyle boş hücre oluştuğu için ondalık tipte kalır."
     p["duzeltme_bilgi"] = bilgi_hepsi
     return yeni
 
@@ -534,6 +546,10 @@ def _duzeltme_ozeti(kontrol, secim, b):
         return "Kod tarihler boş sayılır."
     if kontrol == "metin_bos":
         return "Boş anlamına gelen yazılar boş hücreye çevrilir."
+    if kontrol == "ondalik" and secim == "tam_sayi":
+        return "Tam sayı tipine çevrilir."
+    if kontrol == "ondalik" and secim == "yuvarla":
+        return "%s basamağa yuvarlanır." % _sayi(b.get("basamak") or 0)
     if kontrol == "yazim" and b.get("anahtar"):
         return "%s değerin farklı yazımları tek yazıma çevrilir." % _sayi(len(b["anahtar"]))
     if kontrol == "uc" and "sinir" in b:
@@ -938,6 +954,9 @@ PROFIL_ESIKLERI = (
     ("sizinti_auc", "Hedefle Neredeyse Birebir",
      "Kolon tek başına hedefi bu ayırma gücüyle (AUC) ya da daha iyi ayırıyorsa",
      "yuzde", 0.70, 0.9999),
+    ("ondalik", "Ondalık Hassasiyeti",
+     "Ondalık kolonlar bu kadar basamağa yuvarlanır (çok küçük değerli kolonda daha fazla)",
+     "sayi", 0, 12),
     ("kayma_kat", "Dönemler Arası Değer Kayması",
      "Değerlerin %25, %50 ve %75'lik değerleri art arda iki dönem arasında aynı yönde "
      "en az bu kat değişiyorsa", "kat", 2, 1000000),
@@ -1095,6 +1114,29 @@ PROFIL_ESIK_ACIKLAMA = {
                  "değerler vardır; 100 katın üstü doğal yayılımın çok dışındadır."},
 }
 PROFIL_ESIK_ACIKLAMA.update({
+    "ondalik": {
+        "kisa": "Gereksiz uzun ondalıklar (1234,5678912345 gibi) ve «.0» ile yazılmış tam "
+                "sayılar hesapları ve tabloları gereksiz yere karmaşıklaştırır.",
+        "sonuc": "Düzeltme seçilir; kolon üretime girer",
+        "bilgi": "**Nedir?** Ondalık tipteki kolonlara bakar. Boş hücresi olmayan ve bütün "
+                 "değerleri tam sayı olan kolon (12.0, 3.0 gibi) tam sayı tipine çevrilebilir. "
+                 "Değerlerinden en az biri eşikteki basamaktan fazla ondalık hane taşıyan "
+                 "kolon yuvarlanabilir.\n\n"
+                 "**Neden önemli?** Ondalığın onuncu hanesi bilgi taşımaz ama PSI, aralıklara "
+                 "bölme ve tablolar bu farkları ayrı değer gibi görür; sonuçlar ve çıktılar "
+                 "gereksiz yere karmaşıklaşır.\n\n"
+                 "**Örnek:** oran kolonunda 0,123456789 değeri 4 basamakta 0,1235 olur; "
+                 "adet kolonunda 3.0 değeri 3 olur.\n\n"
+                 "**Kapsam:** üretime giren ondalık tipteki kolonlar, bütün satırlar. Çok "
+                 "küçük değerli kolonda (ör. 0,000012) küçük değerlerin (en küçük %1'lik dilim) "
+                 "ilk 2 anlamlı hanesi korunacak kadar basamak bırakılır, en çok 12. Boş hücresi olan tam sayılı "
+                 "kolon ondalık tipte kalır (değerleri zaten tam).\n\n"
+                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
+                 "Önerilen: tam sayılı kolonda tam sayıya çevirmek, diğerlerinde yuvarlamak. "
+                 "Diğer seçenek: olduğu gibi bırakmak. Düzeltme en son uygulanır (uç kırpmadan "
+                 "sonra).\n\n"
+                 "**Neden 4 önerildi?** Tutarlarda kuruş (2 basamak), oranlarda binde bir "
+                 "duyarlılık için yeter; daha fazlası modele bilgi katmaz."},
     "yakin_kor": {
         "kisa": "Birebir aynı olmasa da aynı bilgiyi taşıyan kolonlar (biri ötekinin kuruş "
                 "karşılığı ya da yuvarlanmış hali gibi).",
@@ -1671,7 +1713,7 @@ def _uye_durumlari(ek, p):
             u["bulgular"].append("%s: %s" % (ad.get(a, a), metin))
             if a in KARAR_VARSAYILAN_CIKAR and karar.get(k) != PROFIL_KARAR_TUT:
                 u["cikar"] = u["cikar"] or "%s kontrolünde Çıkar önerilir" % ad.get(a, a)
-            elif a in DUZELTME_KONTROLLERI:
+            elif a in DUZELTME_KONTROLLERI and a != "ondalik":
                 u["duzeltme"] += 1
             elif a in _UYE_KARAR:
                 u["karar"] += 1
@@ -2012,6 +2054,14 @@ def _yuzde_ekli(oran):
     return y + _ilgi_eki(y)
 
 
+def _ondalik_yazi(v):
+    """Ondalik ornegi oldugu gibi (us gosterimi yok, virgulle): 1234,5678912."""
+    if isinstance(v, int) or (isinstance(v, float) and v == int(v) and abs(v) < 1e15):
+        return "%s,0" % int(v) if isinstance(v, float) else str(v)
+    t = ("%.12f" % float(v)).rstrip("0").rstrip(".")
+    return t.replace(".", ",")
+
+
 def _okunur_sayi(v):
     """Bulguda sayi: 100 ve ustu tam sayiya yuvarlanir (binlik ayracli),
     alti en cok iki ondalik (us gosterimi yok)."""
@@ -2060,6 +2110,8 @@ def _profil_kurallari(esik=None):
               "büyük." % _sayi_metni(e["uc_kat"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
+        "ondalik": "Ondalık kolon ya bütün değerleri tam sayı (boş hücresiz), ya da değerleri "
+                   "%s basamaktan fazla ondalık hane taşıyor." % _sayi(e["ondalik"]),
         "set_cakisma": "Test (OOS) ya da Validasyon (OOT) setinde Train'de (MS) de geçen kimlik, "
                        "kimlik ve dönem ya da bütün kolonları Train'deki bir satırla aynı satır.",
         "tarih": "Kolon tarih: tarih tipinde, YYYY-AA-GG ya da GG.AA.YYYY metni, ya da "
@@ -2091,7 +2143,7 @@ def _profil_kurallari(esik=None):
 # ayrinti sutunlara bolunur (kontrol_parcalari): Kontrol, Ölçüt (kural,
 # kapsam, ornek), Ne Olacak (yakalanirsa), Neden Bu Değer (gerekce).
 # Kural metni kapsam ve yakalanirsa ile tekrar etmez.
-_KONTROL_ESIK_ANAHTARI = {"cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
+_KONTROL_ESIK_ANAHTARI = {"ondalik": "ondalik", "cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
                           "yuksek_kardinalite": "kardinalite", "baskin": "baskin",
                           "donem": "donem_min_satir", "gizli_eksik": "gizli", "sifir": "sifir",
                           "sicrama": "sicrama", "uc": "uc_kat", "yakin_icerik": "yakin_kor",
@@ -2400,6 +2452,7 @@ PROFIL_KONTROLLERI = (
     ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_KARAR, "Eksik sıçraması"),
     ("kayma", "Dönemler Arası Değer Kayması", SONUC_KARAR, "Değer kayması"),
     ("uc", "Uç Değer Yoğunluğu", SONUC_DUZELT, "Uç değer"),
+    ("ondalik", "Ondalık Hassasiyeti", SONUC_DUZELT, "Ondalık hane"),
     ("pencere", "Pencere Tutarlılığı", SONUC_BILGI, "Pencere tutarsız"),
     ("tutar_adet", "Tutar ve Adet Uyumsuzluğu", SONUC_BILGI, "Tutar ve adet uyumsuz"),
     ("tekrar", "Tekrar Eden Satır", SONUC_BILGI, ""),
@@ -2428,7 +2481,7 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
     b = {a: {} for a in ("ayni_icerik", "yakin_icerik", "gelecek_pencere", "birebir",
                          "tarih_sonra", "baskin", "donem", "gizli_eksik", "karisik_eksik",
                          "tarih_kod", "metin_bos", "yazim", "sifir", "negatif", "sicrama",
-                         "kayma", "uc", "pencere", "tutar_adet")}
+                         "kayma", "uc", "ondalik", "pencere", "tutar_adet")}
     for g in ek.get("ayni_gruplar") or []:
         kalan = _ayni_kalan(p, g)
         for k in g["uyeler"]:
@@ -2501,6 +2554,13 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
     for x in ek.get("sicrama") or []:
         b["sicrama"][x["kolon"]] = "Eksik oranı %s dönemi %s, %s dönemi %s" % (
             x["once"], _yuzde_metni(x["once_oran"]), x["sonra"], _yuzde_metni(x["sonra_oran"]))
+    for x in ek.get("ondalik") or []:
+        if x["tur"] == "tam":
+            b["ondalik"][x["kolon"]] = ("Bütün değerler tam sayı (ör. %s); tam sayı tipine "
+                                        "çevrilebilir" % _ondalik_yazi(x["ornek"]))
+        else:
+            b["ondalik"][x["kolon"]] = "Ondalık hane fazla (ör. %s → %s); %s basamak" % (
+                _ondalik_yazi(x["ornek"]), _ondalik_yazi(x["ornek_yeni"]), _sayi(x["basamak"]))
     for x in ek.get("uc") or []:
         b["uc"][x["kolon"]] = "En büyük değer %s, %%99'luk değer %s" % (
             _sayi_metni(x["maks"]), _sayi_metni(x["p99"]))
