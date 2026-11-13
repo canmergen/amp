@@ -181,6 +181,14 @@ def baz_sozluk_yaz(durum, tablo):
 
 
 UPDT_DUSMUS_ASAMALAR = ("02.1", "02.2", "02.3", "03.3")
+# 01.4 bolmesinden sonra UPDT veride _SPLIT kolonu var.
+UPDT_BOLMELI_ASAMALAR = ("01",) + UPDT_DUSMUS_ASAMALAR
+
+
+def updt_split_var(durum):
+    """UPDT veride _SPLIT kolonu var mi (01.4 bolmesi yazildi)."""
+    kayit = (durum.get("amp_cikti") or {}).get("veri") or {}
+    return durum.get("updt_asama") in UPDT_BOLMELI_ASAMALAR and bool(kayit.get("bolme_tarif"))
 
 
 def updt_dusen_kolonlar(durum):
@@ -217,7 +225,17 @@ def updt_sozluk_suz(durum, tablo):
     dus = updt_dusen_kolonlar(durum)
     if dus:
         tablo = tablo[~tablo[ad].astype(str).str.strip().isin(dus)].reset_index(drop=True)
-    ek = updt_sozluk_ek(durum)
+    ek = list(updt_sozluk_ek(durum))
+    # 01.4'un ekledigi bolme kolonu (_SPLIT) da sozlukte anlatilir.
+    if updt_split_var(durum):
+        from fe_agent import amp_pandas
+        try:
+            from fe_agent.akis_faz01 import SPLIT_ACIKLAMA
+        except Exception:       # pylint: disable=broad-except
+            SPLIT_ACIKLAMA = "Kaydın örneklem seti: train, val ya da test."
+        ek.insert(0, {"DEGISKEN": amp_pandas.SPLIT_KOLON, "TIP": "kategorik",
+                      "ACIKLAMA": SPLIT_ACIKLAMA, "NULL_ORANI": 0.0, "KAYNAK_KOLON": "",
+                      "_ek_bilgi": "01.4 Örneklem ve Doğrulama Tasarımı adımında eklendi."})
     if not ek:
         return tablo
     import pandas as pd
@@ -243,8 +261,9 @@ def updt_sozluk_suz(durum, tablo):
         if "SUREC_DISI" in buyuk and disi is not None:
             r[buyuk["SUREC_DISI"]] = disi
         if "EK_BILGI" in buyuk:
-            r[buyuk["EK_BILGI"]] = ("02.1 Veri Profili ve Kalite adımında %s kolonundan üretildi."
-                                    % x.get("KAYNAK_KOLON", ""))
+            r[buyuk["EK_BILGI"]] = x.get("_ek_bilgi") or (
+                "02.1 Veri Profili ve Kalite adımında %s kolonundan üretildi."
+                % x.get("KAYNAK_KOLON", ""))
         yeni.append(r)
     if not yeni:
         return tablo

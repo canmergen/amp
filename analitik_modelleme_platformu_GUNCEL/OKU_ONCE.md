@@ -2407,6 +2407,13 @@ tanıtır; sayfalar sol bardan açılır.
   değişmez. Veri ve Sözlük Güncel listesinde de listenin sonunda, adın
   altında "Yeni kolon: 02.1 adımında X kolonundan üretildi"
   (`feature_tablo` satırında `uretilen`).
+- _SPLIT SATIRI: 01.4 bölmesinden sonra (`amp.updt_split_var`: UPDT
+  aşaması 01 ya da sonrası ve veri kaydında `bolme_tarif` var)
+  `updt_sozluk_suz` UPDT sözlüğe _SPLIT satırını ekler: TIP kategorik,
+  açıklama `akis_faz01.SPLIT_ACIKLAMA` (train Train (MS), val Test (OOS),
+  test ya da oot Validasyon (OOT), disarida; model değişkeni değildir),
+  EK_BILGI "01.4 Örneklem ve Doğrulama Tasarımı adımında eklendi."
+  Sözlükte zaten varsa tekrar eklenmez.
 
 **02.1 karar sırası: aynı içerikli grup ve özel kod önerisi**
 - Aynı ve neredeyse aynı kolon grupları (`_ayni_gruplari`): her üyenin

@@ -9517,9 +9517,10 @@ def _amp_sozluk_tablosu(durum, esleme, veri_kolon=None):
     return tablo
 
 
-SPLIT_ACIKLAMA = ("Kaydın örneklem seti: train, val ya da test; hiçbir sete "
-                  "girmeyen kayıtta disarida. Örneklem ve Doğrulama Tasarımı "
-                  "adımında platform tarafından eklenir.")
+SPLIT_ACIKLAMA = ("Kaydın örneklem seti (01.4 bölmesi): train Train (MS), val Test "
+                  "(OOS), test ya da oot Validasyon (OOT); hiçbir sete girmeyen "
+                  "kayıtta disarida. Örneklem ve Doğrulama Tasarımı adımında "
+                  "platform tarafından eklenir; model değişkeni değildir.")
 
 
 def _amp_sozluk_split_ekle(durum):
