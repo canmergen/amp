@@ -2338,28 +2338,23 @@ tanıtır; sayfalar sol bardan açılır.
     Dönemden Sonraki Tarih'te Çıkar denen tarihin `_GUN` kolonu da yok.
   - Kart bulgusu: en eski ve en yeni tarih (kod tarihler hariç).
 
-**02.1 yalnız Train (MS) satırlarında çalışır**
-- Model kurar gibi: `profil_hesapla` 01.4 bölmesinin eğitim satırlarını
-  alır (`egitim_maskesi`; `setler()["egitim"]`, val, test ve OOT hariç) ve
-  BÜTÜN kontrolleri (temel dört kontrol, ek kontroller, ad tabanlı
-  kontroller, tarih aralığı, hedef özeti, tekrar eden satır, eksik değer
-  sekmesi, kolon özeti) yalnız bu satırlarda yapar. Öğrenilen her şey
-  (çözümler, kırpma sınırı, neredeyse aynı grupta ayırma gücü, yazım
-  haritası, özel kodlar) Train'den. Kararlar ve düzeltmeler onayda bütün
-  satırlara aynı şekilde uygulanır (ör. Train'de bulunan -999 kodu test
-  satırlarında da boş sayılır).
-- `p["profil_kapsam"] = {train, satir, toplam}`; kartta "Satır (Train)"
-  karosu ve i balonu, 02.1 metninde "yalnız Train (MS) satırları (N
-  satır; val, test ve OOT hariç)". Bölme okunamazsa bütün satırlar ve
-  metin bunu söyler.
-- Sonucu: yalnız val, test ya da OOT satırlarında görülen bir sorun (ör.
-  yalnız testte geçen -999) 02.1'de yakalanmaz; Train'deki karar ve
-  düzeltme oraya da uygulanır.
-- Üretilen değişkenlerin teşhisi (`_uretilen_profili`, SFA öncesi) de
-  Train satırlarında. Önceden de Train'de olanlar: SFA, aralıklar, 02.2
-  dönüşüm parametreleri, doldurma değerleri.
-- UPDT sözlükteki yeni kolon NULL_ORANI bütün satırlardan (sözlük veriyi
-  anlatır, analiz değildir).
+**02.1 hangi satırlarla çalışır**
+- VERİ PROFİLİ VE KALİTE TABLONUN TAMAMINDA (train, val, test ve OOT
+  birlikte): `profil_hesapla` bütün kontrolleri (temel dört, ek kontroller,
+  ad tabanlı, tarih, hedef özeti, tekrar eden satır, eksik değer sekmesi,
+  kolon özeti) bütün satırlarda yapar; yalnız testte görülen bir veri
+  sorunu da yakalanır.
+- HEDEFLE İLGİLİ ÖLÇÜMLER VE ÖĞRENİLENLER YALNIZ TRAIN (MS) SATIRLARINDAN
+  (`egitim_maskesi`, `setler()["egitim"]`; val, test ve OOT hariç):
+  Hedefle Neredeyse Birebir (`ek_kontroller(hedef_maske=...)`), neredeyse
+  aynı grupta ayırma gücü, çözümler (gruplama, metin, dolu bayrağı testi),
+  kırpma sınırı. Kararlar ve düzeltmeler onayda bütün satırlara aynı
+  şekilde uygulanır. Bölme okunamazsa bunlar da bütün satırlarla.
+- Değişken üretimi ve sonrası Train'de: üretilen değişkenlerin teşhisi
+  (`_uretilen_profili`), SFA, aralıklar, 02.2 dönüşüm parametreleri,
+  doldurma değerleri; val ve test Train'de öğrenilenle dönüştürülür.
+- `p["profil_kapsam"] = {train: False, hedef_train, satir, toplam,
+  train_satir}`; 02.1 metni ve kartın i balonu bunu söyler.
 
 **02.1 kararları onayda UPDT veriye uygulanır**
 - "Kararları Onayla" ile (`veri_profili_uygula`) UPDT veri 02.1 sonu hâliyle

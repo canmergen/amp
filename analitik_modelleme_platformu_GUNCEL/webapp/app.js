@@ -17341,10 +17341,10 @@ function profilKartiEkle(alan, blok) {
         + (h.surec_disi ? (disari.length ? " ve " : "") + "süreç dışı bırakılan "
                           + ftBinlik(h.surec_disi) + " kolon" : "");
     const bilgi = [
-        (alan.kapsam || {}).train
-            ? "Modelleme tablosundaki her kolon yalnız Train (MS) satırlarında incelenir (" + ftBinlik(alan.kapsam.satir)
-              + " satır; val, test ve OOT hariç), model kurar gibi: kontroller, öneriler ve öğrenilen her şey Train'den; kararlar ve düzeltmeler onayınızla bütün satırlara (" + ftBinlik(alan.kapsam.toplam) + ") aynı şekilde uygulanır. Örneklem kullanılmaz, sayımlar kesindir."
-            : "Modelleme tablosundaki her kolon bütün satırlarda incelenir (bölme okunamadı); örneklem kullanılmaz, sayımlar kesindir.",
+        "Modelleme tablosundaki her kolon tablonun tamamında (train, val, test ve OOT birlikte) incelenir; örneklem kullanılmaz, sayımlar kesindir."
+            + ((alan.kapsam || {}).hedef_train
+               ? " Hedefle ilgili ölçümler (Hedefle Neredeyse Birebir, neredeyse aynı kolonlarda ayırma gücü) ve öğrenilen her şey (çözümler, kırpma sınırı) yalnız Train (MS) satırlarından (" + ftBinlik(alan.kapsam.train_satir) + " satır); kararlar ve düzeltmeler onayınızla bütün satırlara aynı şekilde uygulanır."
+               : ""),
         "Kontrollerin sonucu dört türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",

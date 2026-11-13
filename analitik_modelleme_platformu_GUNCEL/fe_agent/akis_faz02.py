@@ -1108,7 +1108,7 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "ya da biri küsuratlı biri yuvarlanmış iki tutar kolonu (korelasyon %99,99).\n\n"
                  "**Kapsam:** sayısal kolonlar. Aday çiftler boş ve sıfır sayısı birebir aynı, "
                  "ölçeklenmiş dağılımı aynı olan kolonlardan seçilir; korelasyon bütün "
-                 "Train satırlarıyla kesin hesaplanır. Birebir aynı kolonlar Aynı İçerikli Kolonlar "
+                 "satırlarla kesin hesaplanır. Birebir aynı kolonlar Aynı İçerikli Kolonlar "
                  "kontrolünde gösterilir, burada tekrar edilmez.\n\n"
                  "**Yakalanırsa:** her gruptan bir kolon kalır, diğerleri üretime girmez. "
                  "Hedefi eğitim satırlarında daha iyi ayıran (tek değişkenli ayırma gücü, "
@@ -1499,15 +1499,16 @@ def egitim_maskesi(durum, df):
 
 
 def profil_hesapla(durum):
-    """Veri profilini YALNIZ TRAIN (MS) SATIRLARINDAN, orneklemsiz cikarir:
-    dort temel kontrol (sfa.profil_cikar) ve ek kontroller (profil_ek).
-    Model kurar gibi: analiz train'de, kararlar ve duzeltmeler sonra butun
-    satirlara (val, test, OOT) ayni sekilde uygulanir. Bolme yoksa butun
-    satirlar. Sonuc durum["profil"]."""
+    """Veri profilini TABLONUN TAMAMINDAN (train, val, test ve OOT
+    birlikte), orneklemsiz cikarir: dort temel kontrol (sfa.profil_cikar)
+    ve ek kontroller (profil_ek). Hedefle ilgili olcumler (Hedefle
+    Neredeyse Birebir, neredeyse ayni grupta ayirma gucu) ve ogrenilen her
+    sey (cozumler, kirpma siniri) yalniz TRAIN (MS) satirlarindan; kararlar
+    ve duzeltmeler butun satirlara uygulanir. Sonuc durum["profil"]."""
     from fe_agent import profil_ek
     df_tum = asama_df(durum, "01") if updt_modu(durum) else modelleme_df(durum)
     egitim = egitim_maskesi(durum, df_tum)
-    df = df_tum[egitim] if egitim is not None else df_tum
+    df = df_tum
     m = durum["meta"]
     # Bolme kolonu (_SPLIT) da hedef, kimlik ve donem gibi incelenmez.
     haric = set(durum.get("haric_kolonlar") or []) | {m.get("target"), m.get("id"), m.get("donem")} \
@@ -1520,8 +1521,9 @@ def profil_hesapla(durum):
     yazildi, yedek = ara_tablo_kaydet(durum, "PROFIL", tablo, "/veri_profili.parquet")
 
     p = durum.get("profil") or {}
-    p["profil_kapsam"] = {"train": egitim is not None, "satir": int(len(df)),
-                          "toplam": int(len(df_tum))}
+    p["profil_kapsam"] = {"train": False, "hedef_train": egitim is not None,
+                          "satir": int(len(df)), "toplam": int(len(df_tum)),
+                          "train_satir": int(egitim.sum()) if egitim is not None else 0}
     temel = set(teshis.get("cok_bos") or []) | set(teshis.get("sabit") or []) \
         | set(teshis.get("kimlik_gibi") or []) | set(teshis.get("yuksek_kardinalite") or [])
     tarihler = [str(k) for k in teshis.get("tarih") or [] if k not in temel]
@@ -1529,7 +1531,7 @@ def profil_hesapla(durum):
     adaylar = [str(k) for k in df.columns if k not in haric and k not in temel]
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
                                  hedef=m.get("target"), olculer=_kart_olculeri(durum),
-                                 esik=esik, tarihler=tarihler)
+                                 esik=esik, tarihler=tarihler, hedef_maske=egitim)
     # TARIH KOLONLARI: en eski / en yeni tarih (ozel tarih kodlari haric),
     # yazilis bicimi ve kod tarihler (Tarih Kolonu satirinin bulgusu).
     ek["tarih_aralik"], ek["tarih_tur"] = {}, {}
@@ -2535,14 +2537,13 @@ def profil_metni(durum, karar=False):
     """02.1 bloğunun metni: ne yapildi ve sonuc, tek bakista."""
     oz = _profil_ozeti(durum)
     kap = (durum.get("profil") or {}).get("profil_kapsam") or {}
-    if kap.get("train"):
-        kapsam = ("yalnız Train (MS) satırları (%s satır; val, test ve OOT hariç) üzerinden"
-                  % _sayi(kap.get("satir") or 0))
-    else:
-        kapsam = "bütün satırlar üzerinden (bölme okunamadı)"
-    metin = ("Modelleme tablosundaki %s kolon, %s %s kontrolle incelendi. Kararlar ve "
-             "düzeltmeler onayınızla bütün satırlara aynı şekilde uygulanır."
-             % (_sayi(len(oz["incelenen"])), kapsam, _sayi(len(PROFIL_KONTROLLERI))))
+    metin = ("Modelleme tablosundaki %s kolon, tablonun tamamı (train, val, test ve OOT "
+             "birlikte) üzerinden %s kontrolle incelendi." % (
+                 _sayi(len(oz["incelenen"])), _sayi(len(PROFIL_KONTROLLERI))))
+    if kap.get("hedef_train"):
+        metin += (" Hedefle ilgili ölçümler ve öğrenilen her şey (çözümler, kırpma sınırı) "
+                  "yalnız Train (MS) satırlarından; kararlar ve düzeltmeler onayınızla bütün "
+                  "satırlara aynı şekilde uygulanır.")
     parca = []
     if oz["girmez"]:
         if karar or not updt_modu(durum):

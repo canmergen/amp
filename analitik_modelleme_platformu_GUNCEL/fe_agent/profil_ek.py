@@ -332,7 +332,7 @@ def hedef_ozeti(df, hedef, donem=None):
 
 
 def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None, esik=None,
-                  tarihler=()):
+                  tarihler=(), hedef_maske=None):
     """Butun ek kontroller. adaylar: dort temel kontrolden gecen kolonlar
     (tablodaki sirasiyla)."""
     adaylar = [k for k in adaylar if k in df.columns]
@@ -360,7 +360,10 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     sonuc["metin_kolon"] = sum(1 for k in adaylar if _metin_kolonu_mu(df[k]))
     sonuc["tarih_sonra"] = tarih_sonra_kontrol(df, tarihli, donem)
     sonuc["kayma"] = deger_kaymasi(df, [k for k in adaylar if k not in baskin], donem, esik)
-    sonuc["birebir"] = hedef_birebir(df, adaylar, hedef, esik)
+    # Hedefle birebir: hedef YALNIZ TRAIN satirlarinda (hedef_maske); val
+    # ve test hedefi karara karismaz. Maske yoksa butun satirlar.
+    sonuc["birebir"] = hedef_birebir(df[hedef_maske] if hedef_maske is not None else df,
+                                     adaylar, hedef, esik)
     kopya = {k for g in sonuc["ayni_icerik"] for k in g["kopyalar"]}
     sonuc["yakin_icerik"] = yakin_kopyalar(df, adaylar, esik, haric=kopya | baskin)
     return sonuc
