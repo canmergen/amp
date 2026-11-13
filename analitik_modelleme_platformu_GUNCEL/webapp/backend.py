@@ -2712,6 +2712,24 @@ def geleneksel_sohbet_endpoint():
             ayrinti=ayrinti, model_turu=model_turu)
         if hata and not sonuc.get("cevap"):
             return jsonify({"tamam": False, "hata": "Dil modeli cevap vermedi (%s)." % model_adi_gizle(hata)})
+        # Sohbette onerilen yeni aileler arasi iliskiler: kod dogrular ve
+        # birimi kurar; karttaki guncel kararlar korunur, kart yenilenir.
+        kart = None
+        if sonuc.get("yeni"):
+            from fe_agent import akis_faz03
+            g["karar"] = G.karar_dogrula(birimler, karar, g.get("segmentler") or [], model_turu)
+            durum["geleneksel"] = g
+            eklenen = akis_faz03.geleneksel_sohbet_birimleri(durum, sonuc["yeni"])
+            g = durum.get("geleneksel") or {}
+            for bid, islem, neden in eklenen:
+                if islem:
+                    sonuc.setdefault("degisiklikler", []).append(
+                        {"id": bid, "ekle": islem, "cikar": [], "param": {},
+                         "neden": neden or "Sohbette önerilen yeni aileler arası ilişki."})
+            if eklenen:
+                kart = akis_faz03.geleneksel_karti(durum)
+                if (durum.get("_secim_alani") or {}).get("tip") == "geleneksel":
+                    durum["_secim_alani"] = kart
         sohbet = list(g.get("sohbet") or [])
         sohbet.append({"rol": "kullanici", "metin": mesaj})
         if not sonuc.get("cevap"):
@@ -2722,12 +2740,35 @@ def geleneksel_sohbet_endpoint():
         g["sohbet"] = sohbet[-60:]
         durum["geleneksel"] = g
         _kaydet(anahtar, durum)
+        if kart is not None:
+            kart["sohbet"] = (g.get("sohbet") or [])[-40:]
         return jsonify({"tamam": True, "cevap": sonuc.get("cevap") or "",
-                        "degisiklikler": sonuc.get("degisiklikler") or []})
+                        "degisiklikler": sonuc.get("degisiklikler") or [], "kart": kart})
     except CalismaErisimYok as e:
         return jsonify({"tamam": False, "hata": str(e)})
     except Exception as e:
         return jsonify(_hata_govdesi("geleneksel_sohbet", e, "Sohbet yanıtı alınamadı."))
+
+
+@app.route("/geleneksel_oneri_durum", methods=["POST"])
+def geleneksel_oneri_durum_endpoint():
+    """02.2 dil modeli isinin ilerlemesi. Is bitince sonuclar durumda
+    birlesir ve kart doner. Govde: {oturum_id}."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        from fe_agent import akis_faz03
+        bitti, degisti = akis_faz03.geleneksel_is_durumu(durum)
+        if degisti:
+            _kaydet(anahtar, durum)
+        kart = akis_faz03.geleneksel_karti(durum)
+        return jsonify({"tamam": True, "bitti": bitti, "bekliyor": kart.get("bekliyor"),
+                        "kart": kart if bitti else None})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("geleneksel_oneri_durum", e, "Dil modeli işinin durumu okunamadı."))
 
 
 @app.route("/geleneksel_model", methods=["POST"])

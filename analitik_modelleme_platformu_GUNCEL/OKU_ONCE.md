@@ -2457,8 +2457,8 @@ tanıtır; sayfalar sol bardan açılır.
 - `uygunluk`: dönüşüm birimde mümkün mü ve değilse neden (negatif değer,
   farklı değer sayısı, pencere sayısı, hedef iki sınıflı mı, segment kolonu
   var mı). Dil modeli ve sohbet yalnız mümkün kodları seçebilir.
-- ÖNERİ: `llm.geleneksel_oneri_sec` (20'lik parçalar, `_PROFIL_HAVUZ`, 120 sn
-  bütçe); alınamazsa `kural_onerisi` (veriye bakan). Aynı imzalı birimde
+- ÖNERİ: `llm.geleneksel_oneri_sec` (arka plan işi, üç tur; aşağıda);
+  alınamazsa `kural_onerisi` (veriye bakan). Aynı imzalı birimde
   önceki dil modeli önerisi tekrar sorulmaz. Onayda `geleneksel["sapma"]`
   (öneriden farklı seçimler) saklanır; yeniden planda korunur.
 - ÖĞRENME: hepsi train satırlarından; WoE ve hedef ortalaması train'de kat
@@ -2487,9 +2487,8 @@ tanıtır; sayfalar sol bardan açılır.
 - KOLON ÇİFTİ GRUBU: aynı iki aileden (ya da aynı iki kolondan) gelen
   çiftler tek birim (`ciftler` listesi; gelen ve giden tutarın 8 penceresi
   bir birim). Dil modeline giden birim sayısı bu sayede azalır.
-- DİL MODELİ: birim başına tek satır, 25'lik parçalar, bütçe
-  `GELENEKSEL_BUTCE` = 240 sn; log'a "02.2 dil modeli önerisi: alınan / toplam
-  birim" yazılır.
+- DİL MODELİ: birim başına tek satır; parça, tur ve süre için aşağıdaki
+  "tam dil modeli kapsaması" bölümüne bakın (eski 240 sn bütçe kalktı).
 - SOHBET: kullanıcının mesajı sınırlayıcının DIŞINDA (talimattır); plan ve
   kolon bilgisi içinde (veri). Plan bütün birimler kısa (id, ad, seçili);
   mesajda adı ya da kolonu geçen en çok 40 birim ayrıntılı (açıklama, sayılar,
@@ -2502,6 +2501,78 @@ tanıtır; sayfalar sol bardan açılır.
   başlıklı, platform sohbet balonlarıyla. Kart kendi onay düğmesini taşır
   (`KENDI_DUGMELI_KARTLAR`): genel "Onayla ve Uygula" çıkmaz (karttaki
   değişiklikleri göndermeden onaylardı).
+
+**02.2 aşamalı karar, tam dil modeli kapsaması, aileler arası (son hâl)**
+- AŞAMA (`geleneksel.ASAMA`, `ASAMA_ADI`, birimde `asama`): 1 kolonun
+  kendi dönüşümü (tek kolon ve kategorik kodlar), 2 aile içi (pencereler
+  arası: oran, fark, normalize oran, büyüme, eğim, değişkenlik, art arda
+  artış, en yoğun dönem payı), 3 aileler arası (çift, grup, segment, satır,
+  dil modelinin ya da sohbetin bulduğu aileler arası birimler). Tek kolon
+  birimi 1, aile 2, diğerleri 3. Dil modeli her birimde aşama gerekçesini
+  ayrı yazar (`g1`, `g2`, `g3`); kartta ve Öneri Özeti'nde aşamaya göre.
+- KATALOG 36 dönüşüm. Yeni: kare terimi, iş kuralı kovaları (`kova`,
+  param `sinirlar`), segment medyanına oran (`grup_oran`, param `segment`),
+  art arda artış sayısı (`ardisik`: pencerelerin arasındaki dönemlerde
+  günlük ortalamanın eskiden yeniye kaç kez arttığı, en az 3 pencere),
+  en yoğun dönem payı (`en_yogun`), çarpım (`carpim`), kategori kesişimi
+  (`kesisim`: hedef iki sınıflıysa kat dışı WoE, değilse frekans),
+  yoğunlaşma (`yogunlasma`: HHI ve en büyük pay). Ağaçta gereksizlere kare,
+  kova ve çarpım eklendi. Parametre doğrulaması tek yerde
+  (`param_temizle`): eşik, kova, segment, grup_oran.
+- YOĞUNLAŞMA BİRİMİ (`grup:`): aynı toplamın en az iki alt kırılımı (alt
+  kırılım ve toplam çiftlerinden); toplamın ailesine göre tek birim.
+- AİLELER ARASI (`arasi:`): `llm.geleneksel_arasi_oner` aile ve tek kolon
+  birimlerinin bir satırlık özetini görür, ilişki önerir (oran, fark,
+  çarpım, kesişim). Kod doğrular ve kurar (`arasi_birimleri`,
+  `arasi_ekle`): aile ile aile aynı günlü pencereleri eşler (ortak pencere
+  yoksa olmaz), aile ile tek kolon her pencereyi o kolonla, kesişim yalnız
+  iki az değerli (en çok 20) kategorikte; kodun bulduğu çift ve var olan
+  birim tekrar kurulmaz; en çok 60 birim. Öneriler `geleneksel["arasi_dm"]`
+  ve imza (`arasi_imzasi`, aile ve tek kolon id'leri; model türüne bağlı
+  değil) ile saklanır; imza aynıysa yeniden planda tekrar sorulmaz. Sohbet
+  de "yeni" listesiyle ilişki önerebilir; kurulan birim
+  (`geleneksel_sohbet_birimleri`, `arasi_sohbet`, kaynak "sohbet") kartta
+  belirir, eklenmesi Uygula ile.
+- TAM KAPSAMA: kart dil modeli bütün birimlere karar verince açılır.
+  `kural_plan` öneriyi ARKA PLAN İŞİ olarak başlatır
+  (`geleneksel.oneri_isi_baslat`, bellekte `_ISLER`); kart `bekliyor`
+  alanıyla bekleme ekranı gösterir (`gelenekselBekleKarti`) ve
+  `/geleneksel_oneri_durum`'u 3 sn'de bir yoklar. İş bitince
+  `akis_faz03.geleneksel_is_durumu` sonuçları birleştirir (öneri, aileler
+  arası birimler, karar, `oneri_tur`) ve kart açılır. Sunucu yeniden
+  başladıysa (iş bellekte yok) iş yeniden başlar. `llm.geleneksel_oneri_sec`
+  üç tur: 12'lik parçalar, cevapsız kalanlar 4'lü, sonra teker teker
+  (`GELENEKSEL_TURLER`), 6 eşzamanlı (`GELENEKSEL_PARALEL`, kendi havuzu),
+  çağrı başına 180 sn, bütün iş en çok 1.800 sn. Üç turda da alınamayan
+  birim kod önerisiyle kalır ve `dm_yok` ile işaretlenir. Ayrıştırılamayan
+  cevabın ilk 300 karakteri log'a yazılır.
+- KAYNAK (`oneri[id]["kaynak"]`): "dil modeli", "sohbet", "kural" (`dm_yok`
+  ise dil modeli cevap vermedi), "secenek yok" (bu model türünde birimde
+  uygulanabilen dönüşüm yok; dil modeline sorulmaz; ağaçta sayısal tek
+  kolonların çoğu, segment kolonu yoksa). Kartta "Dil Modeli Kararı" karosu
+  dil modeli ve sohbet kararı / sorulan birim (seçeneksizler hariç);
+  tıklanınca Öneri Özeti.
+- ÖNERİ ÖZETİ sekmesi: her birimde aşama, birimi bulan (kod, dil modeli,
+  sohbet), öneriyi veren, önerilen dönüşümler, aşama gerekçeleri; süzgeç
+  (bütün, dil modeli, kod, cevap vermedi, birimi dil modeli ya da sohbet
+  buldu) ve aşama süzgeci; üstte sayım cümlesi.
+- KART: "Dönüşümler ne yapar" tablosu her zaman açık, aşamaya göre
+  gruplu; "Bu modelde" sütunu tek satır (tablo en az 840 px, dar ekranda
+  yatay kayar). Liste aşama süzgeçli; birimde çipler ve seçilebilen
+  dönüşümler aşamaya göre; kova sınırları ve medyan segmenti parametre
+  satırları.
+- SOHBET SAĞLAMLIĞI: JSON'da cevap boşsa ham metin düşünme blokları
+  silinerek kullanılır; o da JSON ise aynı istek düz metin istemiyle
+  (`SISTEM_GELENEKSEL_DUZ`) bir kez daha sorulur; ham cevabın başı log'a
+  yazılır.
+- ÜRETİLEMEYEN liste maddeleri (geleneksel_feature_uretim.md): ham işlem
+  verisi gerektirenler (6.1 toplama, ayrı değer sayısı, aktif gün, 6.4
+  yakınlık ve sıklık, 6.5 saat ve takvim payları, mevsimsellik) tablo
+  zaten toplanmış geldiği için; sıralı ve hiyerarşi kodlaması (sıra ya da
+  eşleme bilgisi yok); grup bazlı doldurma (ağaç boşluğu kendisi işler,
+  02.1 doldurmayı kapsar); çok sınıflı kodlamalar (hedef iki sınıflı).
+  Eksik işareti, doldurma, nadir kategori birleştirme 02.1'de; hedefe göre
+  ve monoton aralıklar SFA'da.
 
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca

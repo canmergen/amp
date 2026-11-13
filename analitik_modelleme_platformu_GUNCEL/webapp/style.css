@@ -5777,7 +5777,7 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-model-btn:disabled { cursor: default; }
 .gl-sozluk > summary { padding: 7px 10px; }
 .gl-katalog-sar { max-height: 420px; overflow: auto; }
-.dg-tablo.gl-katalog { width: 100%; table-layout: fixed; }
+.dg-tablo.gl-katalog { width: 100%; min-width: 840px; table-layout: fixed; }
 .dg-tablo.gl-katalog th, .dg-tablo.gl-katalog td { text-align: center; white-space: normal; overflow-wrap: break-word; vertical-align: middle; }
 .gl-katalog-grup { background: var(--yuzey-alt); font-weight: var(--fw-kalin); }
 .gl-gereksiz { color: var(--metin-soluk); }
@@ -5844,9 +5844,32 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-kart .gl-mesajlar .satir.kullanici .balon.gl-balon {
   background: var(--user-zemin); padding-left: 10px; box-shadow: none;
 }
-.dg-tablo.gl-katalog col.gl-k-ad { width: 16%; }
-.dg-tablo.gl-katalog col.gl-k-ne { width: 30%; }
-.dg-tablo.gl-katalog col.gl-k-ornek { width: 26%; }
-.dg-tablo.gl-katalog col.gl-k-zaman { width: 18%; }
-.dg-tablo.gl-katalog col.gl-k-model { width: 10%; }
+.dg-tablo.gl-katalog col.gl-k-ad { width: 15%; }
+.dg-tablo.gl-katalog col.gl-k-ne { width: 27%; }
+.dg-tablo.gl-katalog col.gl-k-ornek { width: 22%; }
+.dg-tablo.gl-katalog col.gl-k-zaman { width: 19%; }
+.dg-tablo.gl-katalog col.gl-k-model { width: 17%; }
+.dg-tablo.gl-katalog td.gl-k-model-hucre { white-space: nowrap; overflow-wrap: normal; word-break: keep-all; }
+/* 02.2: her zaman açık dönüşüm tablosu */
+.gl-sozluk-ust { padding: 7px 10px; }
+/* 02.2: dil modeli bekleme kartı */
+.gl-bekle-baslik { font-weight: var(--fw-kalin); margin-top: var(--b-2); }
+.gl-bekle-cubuk { height: 8px; border-radius: 999px; background: var(--yuzey-alt); overflow: hidden; margin: var(--b-2) 0; }
+.gl-bekle-dolgu { height: 100%; width: 0; background: var(--kirmizi-dolgu); border-radius: 999px; transition: width .4s ease; }
+.gl-bekle-adimlar { margin: var(--b-2) 0 0; padding-left: 0; list-style: none; color: var(--metin-soluk); line-height: 1.6; }
+/* 02.2: Öneri Özeti */
+.gl-ozet-sar { overflow: auto; max-height: 70vh; }
+.dg-tablo.gl-ozet { width: 100%; table-layout: fixed; }
+.dg-tablo.gl-ozet th, .dg-tablo.gl-ozet td { text-align: center; vertical-align: middle; white-space: normal; overflow-wrap: anywhere; }
+.dg-tablo.gl-ozet col.gl-o-birim { width: 19%; }
+.dg-tablo.gl-ozet col.gl-o-asama { width: 7%; }
+.dg-tablo.gl-ozet col.gl-o-bulan { width: 10%; }
+.dg-tablo.gl-ozet col.gl-o-veren { width: 13%; }
+.dg-tablo.gl-ozet col.gl-o-oneri { width: 21%; }
+.dg-tablo.gl-ozet col.gl-o-neden { width: 30%; }
+.gl-ozet-oneri .gl-cip { margin: 2px; }
+.gl-ozet-neden { white-space: pre-line !important; font-size: var(--fs-kucuk); line-height: 1.45; }
+.gl-uyari { color: var(--amber); font-weight: var(--fw-kalin); }
+.gl-param-giris.gl-param-uzun { width: 180px; }
+.pf-karo.gl-karo-tik:hover { outline: 1px solid var(--kenar); }
 .dg-tablo.gl-katalog th { width: auto; }

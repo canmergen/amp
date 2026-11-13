@@ -7,6 +7,8 @@ uretime girmez. Sonuc _ENRICHED (ham + uretilen); Faz 03 (SFA, stabilite,
 baz set) bu tabloyla calisir. Uretim degisince SFA kararlari gecersizdir.
 """
 
+import time
+
 import dataiku
 import numpy as np
 import pandas as pd
@@ -161,23 +163,35 @@ def _uretim_kaynagi(durum):
 
 def geleneksel_karti(durum, kilitli=False):
     """02.2 karti (tip geleneksel): solda birimler ve kararlar, sagda
-    sohbet. Kart verisi durum["geleneksel"]'den."""
+    sohbet. Kart verisi durum["geleneksel"]'den. Dil modeli isi suruyorsa
+    "bekliyor" alani dolu; kart kararlari gostermez, ilerlemeyi gosterir."""
     from fe_agent import geleneksel as G
     g = durum.get("geleneksel") or {}
     birimler = g.get("birimler") or []
     oneri = g.get("oneri") or {}
     karar = g.get("karar") or {}
+    bekliyor = None
+    if g.get("oneri_is"):
+        d = G.oneri_isi_durumu(g["oneri_is"].get("kimlik")) or {}
+        bekliyor = {"biten": d.get("biten", 0), "toplam": d.get("toplam", g["oneri_is"].get("toplam", 0)),
+                    "tur": d.get("tur", 1), "evre": d.get("evre", "birim"),
+                    "gecen": int(time.time() - float(g["oneri_is"].get("baslangic") or time.time())),
+                    "arasi_sor": bool(g["oneri_is"].get("arasi_sor"))}
     return {
-        "tip": "geleneksel", "adim": "kural", "kilitli": bool(kilitli),
+        "tip": "geleneksel", "adim": "kural", "kilitli": bool(kilitli), "bekliyor": bekliyor,
         "model_turu": g.get("model_turu") or "agac", "model_turleri": G.MODEL_TURLERI,
         "agac_gereksiz": list(G.AGAC_GEREKSIZ), "agac_nedeni": G.AGAC_NEDENI,
+        "asama_adlari": {str(k): v for k, v in G.ASAMA_ADI.items()},
         "katalog": [{"kod": k, "ad": a, "grup": gr, "grup_adi": G.GRUP_ADI[gr], "aciklama": c,
+                     "asama": G.ASAMA.get(k, 3),
                      "ne_yapar": G.ACIKLAMA_UZUN[k][0], "ornek": G.ACIKLAMA_UZUN[k][1],
                      "ne_zaman": G.ACIKLAMA_UZUN[k][2]}
                     for k, a, gr, c in G.KATALOG],
         "birimler": [{"id": b["id"], "tur": b["tur"], "ad": b["ad"], "kolonlar": b["kolonlar"],
                       "gunler": b.get("gunler"), "cift": b.get("cift"), "tip": b.get("tip"),
-                      "ciftler": b.get("ciftler"),
+                      "ciftler": b.get("ciftler"), "gruplar": b.get("gruplar"),
+                      "asama": b.get("asama") or G.birim_asamasi(b),
+                      "bulan": b.get("bulan") or "kod",
                       "aciklama": b.get("aciklama") or "", "ozet": G.ozet_metni(b),
                       "tekil": (b.get("ozet") or {}).get("tekil"),
                       "mumkun": b.get("mumkun") or [], "imkansiz": b.get("imkansiz") or {}}
@@ -191,23 +205,134 @@ def geleneksel_karti(durum, kilitli=False):
     }
 
 
+def _karar_kur(g, birimler, oneri, segmentler, model_turu):
+    from fe_agent import geleneksel as G
+    karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {})}
+             for i, o in oneri.items()}
+    karar.update(G.karar_dogrula(birimler, g.get("sapma") or {}, segmentler, model_turu))
+    return karar
+
+
+def _oneri_baslat(g, birimler, segmentler, model_turu, onceki):
+    """Onbellekte olmayan birimler icin dil modeli isini baslatir. Doner:
+    oneri (bekleyenlerde gecici kural onerisi)."""
+    from fe_agent import geleneksel as G
+    cikti, sor = G.oneri_onbellek(birimler, onceki, model_turu)
+    arasi_imza = G.arasi_imzasi(birimler, model_turu)
+    arasi_sor = g.get("arasi_imza") != arasi_imza
+    g.pop("oneri_is", None)
+    if sor or arasi_sor:
+        kimlik = G.oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor)
+        g["oneri_is"] = {"kimlik": kimlik, "model_turu": model_turu, "arasi_imza": arasi_imza,
+                         "arasi_sor": arasi_sor, "baslangic": time.time(), "toplam": len(sor)}
+    return G.oneri_birlestir(birimler, cikti, {}, model_turu, [])
+
+
+def geleneksel_is_durumu(durum):
+    """Dil modeli isinin durumu. Is bittiyse sonuclar birlestirilir (oneri,
+    aileler arasi birimler, karar) ve kart yenilenir. Sunucu yeniden
+    basladiysa (is bellekte yok) is yeniden baslatilir. Doner: (bitti,
+    degisti)."""
+    from fe_agent import geleneksel as G
+    g = durum.get("geleneksel") or {}
+    i = g.get("oneri_is")
+    if not i:
+        return True, False
+    d = G.oneri_isi_durumu(i.get("kimlik"))
+    birimler, segmentler = g.get("birimler") or [], g.get("segmentler") or []
+    model_turu = i.get("model_turu") or g.get("model_turu") or "agac"
+    if d is None:
+        onceki = {k: o for k, o in (g.get("oneri") or {}).items() if o.get("kaynak") == "dil modeli"}
+        g["oneri"] = _oneri_baslat(g, birimler, segmentler, model_turu, onceki)
+        durum["geleneksel"] = g
+        durum["_secim_alani"] = geleneksel_karti(durum)
+        return not g.get("oneri_is"), True
+    if d.get("durum") != "bitti":
+        return False, False
+    cikti = {k: o for k, o in (g.get("oneri") or {}).items()
+             if o.get("kaynak") in ("dil modeli", "secenek yok", "sohbet")}
+    oneri = G.oneri_birlestir(birimler, cikti, d.get("sonuc") or {}, model_turu, d.get("sorulan") or [])
+    if i.get("arasi_sor") and d.get("arasi") is not None:
+        birimler = [b for b in birimler if b.get("bulan") != "dil modeli"]
+        oneri = {k: o for k, o in oneri.items() if k in {b["id"] for b in birimler}}
+        yeni = G.arasi_ekle(birimler, d["arasi"], segmentler, "dil modeli")
+        for b in yeni:
+            mm = set(G.model_mumkun(b, model_turu))
+            oneri[b["id"]] = {"sec": [c for c in b.get("oneri_islem") or [] if c in mm], "param": {},
+                              "gerekce": b.get("gerekce") or "", "g3": b.get("gerekce") or "",
+                              "secilmeyen": "", "kaynak": "dil modeli",
+                              "imza": G._imza(b) + model_turu}
+        birimler = birimler + yeni
+        g["arasi_dm"] = d["arasi"]
+        g["arasi_imza"] = i.get("arasi_imza")
+    g.update({"birimler": birimler, "oneri": oneri,
+              "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu),
+              "oneri_hata": d.get("hata")})
+    tur = dict(g.get("oneri_tur") or {})
+    tur[model_turu] = oneri
+    g["oneri_tur"] = tur
+    g.pop("oneri_is", None)
+    durum["geleneksel"] = g
+    if (durum.get("_secim_alani") or {}).get("tip") == "geleneksel":
+        durum["_secim_alani"] = geleneksel_karti(durum)
+    return True, True
+
+
+def geleneksel_sohbet_birimleri(durum, yeni):
+    """Sohbette dil modelinin onerdigi yeni aileler arasi iliskiler: kod
+    dogrular, birimi kurar (karar bos; oneri sohbetten). Doner: [(id,
+    oneri_islem, gerekce)]."""
+    from fe_agent import geleneksel as G
+    g = durum.get("geleneksel") or {}
+    birimler = g.get("birimler") or []
+    if not yeni or not birimler:
+        return []
+    model_turu = g.get("model_turu") or "agac"
+    eklenen = G.arasi_ekle(birimler, yeni, g.get("segmentler") or [], "sohbet")
+    if not eklenen:
+        return []
+    oneri = dict(g.get("oneri") or {})
+    karar = dict(g.get("karar") or {})
+    for b in eklenen:
+        oneri[b["id"]] = {"sec": [], "param": {}, "gerekce": b.get("gerekce") or "",
+                          "g3": b.get("gerekce") or "", "secilmeyen": "",
+                          "kaynak": "sohbet", "imza": G._imza(b) + model_turu}
+        karar[b["id"]] = {"sec": [], "param": {}}
+    g["birimler"] = birimler + eklenen
+    g["oneri"], g["karar"] = oneri, karar
+    g["arasi_sohbet"] = list(g.get("arasi_sohbet") or []) + list(yeni)
+    durum["geleneksel"] = g
+    return [(b["id"], [c for c in b.get("oneri_islem") or [] if c in G.model_mumkun(b, model_turu)],
+             b.get("gerekce") or "") for b in eklenen]
+
+
 def geleneksel_model_degistir(durum, model_turu):
     """Model turu degisti: oneriler o ture gore yeniden alinir (ayni ture
-    ait onceki dil modeli onerileri tekrar sorulmaz); kullanicinin sapmalari
-    o turde gecerliyse korunur. Doner: yeni kart."""
+    ait onceki dil modeli onerileri tekrar sorulmaz; gerekirse arka plan
+    isi baslar); kullanicinin sapmalari o turde gecerliyse korunur. Doner:
+    yeni kart."""
     from fe_agent import geleneksel as G
     g = durum.get("geleneksel") or {}
     if model_turu not in G.MODEL_TURLERI or not g.get("birimler"):
         return geleneksel_karti(durum)
     birimler, segmentler = g["birimler"], g.get("segmentler") or []
     eski = dict(g.get("oneri_tur") or {})
-    eski[g.get("model_turu") or "agac"] = g.get("oneri") or {}
-    oneri = G.oneri_hesapla(birimler, segmentler, eski.get(model_turu) or {}, model_turu)
-    eski[model_turu] = oneri
-    karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {})}
-             for i, o in oneri.items()}
-    karar.update(G.karar_dogrula(birimler, g.get("sapma") or {}, segmentler, model_turu))
-    g.update({"model_turu": model_turu, "oneri": oneri, "karar": karar, "oneri_tur": eski})
+    if not g.get("oneri_is"):
+        eski[g.get("model_turu") or "agac"] = g.get("oneri") or {}
+    onceki = dict(eski.get(model_turu) or {})
+    # Aileler arasi (dil modeli ve sohbet) birimlerin onerisi korunur.
+    for b in birimler:
+        o = (g.get("oneri") or {}).get(b["id"]) or {}
+        if b.get("bulan") in ("dil modeli", "sohbet") and b["id"] not in onceki:
+            mm = set(G.model_mumkun(b, model_turu))
+            onceki[b["id"]] = dict(o, sec=[c for c in o.get("sec") or [] if c in mm],
+                                   imza=G._imza(b) + model_turu)
+    oneri = _oneri_baslat(g, birimler, segmentler, model_turu, onceki)
+    for b in birimler:
+        if b.get("bulan") in ("dil modeli", "sohbet"):
+            oneri[b["id"]] = onceki[b["id"]]
+    g.update({"model_turu": model_turu, "oneri": oneri, "oneri_tur": eski,
+              "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu)})
     durum["geleneksel"] = g
     kart = geleneksel_karti(durum)
     if (durum.get("_secim_alani") or {}).get("tip") == "geleneksel":
@@ -216,42 +341,53 @@ def geleneksel_model_degistir(durum, model_turu):
 
 
 def kural_plan(durum):
-    """02.2 GELENEKSEL URETIM PLANI: birimler (kolon ailesi, tek kolon, kolon
-    cifti, satir), her birimde mumkun donusumler (kod) ve oneri (dil modeli;
-    ulasilamazsa veriye bakan kural). Onceki onayda oneriden farkli
-    secilenler (sapma) korunur. Kart: solda kararlar, sagda sohbet."""
+    """02.2 GELENEKSEL URETIM PLANI: birimler (tek kolon, kolon ailesi,
+    kolon cifti ve grubu, satir), her birimde mumkun donusumler (kod) ve
+    oneri. Oneriyi dil modeli BUTUN birimler icin verir (arka plan isi;
+    kart is bitince acilir); ardindan aileler arasi iliskileri onerir.
+    Onceki onayda oneriden farkli secilenler (sapma) korunur."""
     from fe_agent import geleneksel as G
     df, _yeni = _uretim_kaynagi(durum)
     haric = set(durum.get("haric_kolonlar") or []) | _kusurlu(durum)
     birimler, girmeyen, segmentler = G.birimleri_kur(durum, df, haric)
     g = durum.get("geleneksel") or {}
     model_turu = g.get("model_turu") or "agac"
-    oneri = G.oneri_hesapla(birimler, segmentler, g.get("oneri") or {}, model_turu)
-    karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {})}
-             for i, o in oneri.items()}
-    karar.update(G.karar_dogrula(birimler, g.get("sapma") or {}, segmentler, model_turu))
+    onceki = dict(g.get("oneri") or {})
+    eklenen = []
+    if g.get("arasi_imza") == G.arasi_imzasi(birimler, model_turu):
+        eklenen += G.arasi_ekle(birimler, g.get("arasi_dm") or [], segmentler, "dil modeli")
+    eklenen += G.arasi_ekle(birimler + eklenen, g.get("arasi_sohbet") or [], segmentler, "sohbet")
+    birimler = birimler + eklenen
+    for b in eklenen:
+        o = onceki.get(b["id"])
+        if o:
+            onceki[b["id"]] = dict(o, kaynak=o.get("kaynak") or "dil modeli", imza=G._imza(b) + model_turu)
     g.update({"birimler": birimler, "girmeyen": girmeyen, "segmentler": segmentler,
-              "oneri": oneri, "karar": karar, "model_turu": model_turu})
+              "model_turu": model_turu})
+    oneri = _oneri_baslat(g, birimler, segmentler, model_turu, onceki)
+    for b in eklenen:
+        if b["id"] in onceki:
+            oneri[b["id"]] = onceki[b["id"]]
+    g.update({"oneri": oneri, "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu)})
     durum["geleneksel"] = g
     durum["plan"] = []            # eski numarali secim yolu kapali
     durum["_secim_alani"] = geleneksel_karti(durum)
     tur = {}
     for b in birimler:
         tur[b["tur"]] = tur.get(b["tur"], 0) + 1
-    kaynak = {}
-    for o in oneri.values():
-        kaynak[o.get("kaynak")] = kaynak.get(o.get("kaynak"), 0) + 1
-    toplam = sum(G.kolon_sayisi(b, (karar.get(b["id"]) or {}).get("sec")) for b in birimler)
-    return ("Geleneksel değişken üretimi için %s birim hazırlandı (%s pencere ailesi, %s tek kolon, "
-            "%s kolon çifti grubu%s). Model türü: %s. Önerilen dönüşümlerle yaklaşık %s yeni kolon üretilecek. Önerilerin "
-            "%s tanesi dil modelinden%s. Soldaki kararları değiştirebilir, sağdaki sohbette "
-            "tartışabilirsiniz; onayladığınızda üretilir."
-            % (_sayi(len(birimler)), _sayi(tur.get("aile", 0)), _sayi(tur.get("kolon", 0)),
-               _sayi(tur.get("cift", 0)), ", satır düzeyi" if tur.get("satir") else "",
-               G.MODEL_TURLERI.get(model_turu, model_turu),
-               _sayi(toplam), _sayi(kaynak.get("dil modeli", 0)),
-               (", %s tanesi veriye bakan kuraldan (dil modeline ulaşılamadı)"
-                % _sayi(kaynak.get("kural", 0))) if kaynak.get("kural") else ""))
+    metin = ("Geleneksel değişken üretimi için %s birim hazırlandı (%s tek kolon, %s pencere ailesi, "
+             "%s kolon çifti ve grubu%s). Model türü: %s. "
+             % (_sayi(len(birimler)), _sayi(tur.get("kolon", 0)), _sayi(tur.get("aile", 0)),
+                _sayi(tur.get("cift", 0) + tur.get("grup", 0)), ", satır düzeyi" if tur.get("satir") else "",
+                G.MODEL_TURLERI.get(model_turu, model_turu)))
+    if g.get("oneri_is"):
+        return metin + ("Dil modeli %s birimi aşama aşama değerlendiriyor (önce kolonun kendi dönüşümü, "
+                        "sonra aile içi, en son aileler arası). Bütün kararlar gelince kart açılır."
+                        % _sayi(g["oneri_is"].get("toplam") or 0))
+    toplam = sum(G.kolon_sayisi(b, (g["karar"].get(b["id"]) or {}).get("sec")) for b in birimler)
+    return metin + ("Önerilen dönüşümlerle yaklaşık %s yeni kolon üretilecek. Soldaki kararları "
+                    "değiştirebilir, sağdaki sohbette tartışabilirsiniz; onayladığınızda üretilir."
+                    % _sayi(toplam))
 
 
 def _ogrenme_serisi(s, ogren_maske):

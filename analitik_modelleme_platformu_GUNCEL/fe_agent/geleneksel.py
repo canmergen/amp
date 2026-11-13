@@ -20,6 +20,8 @@ hedef ortalamasi train satirlarinda kat disi (5 kat) hesaplanir.
 
 import math
 import re
+import threading
+import time
 
 import numpy as np
 import pandas as pd
@@ -34,6 +36,7 @@ KATALOG = [
     ("log", "Log (log1p)", "tekli", "Sağa çarpık ve negatif olmayan değerleri sıkıştırır."),
     ("islog", "İşaretli log", "tekli", "Negatif değer de olan kolonda işaret korunarak log alınır."),
     ("karekok", "Karekök", "tekli", "Logdan yumuşak çarpıklık düzeltmesi; sıfırı korur."),
+    ("kare", "Kare terimi", "tekli", "Değerin karesi; eğilim U şeklindeyse doğrusal modelde eğriliği yakalar."),
     ("yeo", "Yeo-Johnson", "tekli", "Dağılımı normale yaklaştırır; parametre eğitim satırlarından."),
     ("winsor", "Uç kırpma (%1, %99)", "tekli", "Uçlar eğitim satırlarının %1 ve %99'luk değerlerine çekilir."),
     ("rank", "Sıra (yüzdelik)", "tekli", "Değerin eğitim dağılımındaki yüzdeliği (0 ile 1 arası)."),
@@ -43,8 +46,12 @@ KATALOG = [
     ("sifir", "Sıfır bayrağı", "tekli", "Değer sıfırsa 1, değilse 0 (hiç işlem yok ile az işlem ayrımı)."),
     ("esik", "Eşik bayrağı", "tekli", "Değer verilen eşiğin üstündeyse (ya da altındaysa) 1."),
     ("dilim", "Eşit frekans dilimi", "tekli", "Eğitim satırlarının 10'luk dilimlerine göre dilim numarası."),
+    ("kova", "İş kuralı kovaları", "tekli",
+     "Değerler verilen sınırlarla kovalara bölünür (gecikme 0, 1 ile 29, 30 ile 59 gibi)."),
     ("segment", "Segment içi yüzdelik ve sapma", "tekli",
      "Değerin kendi segmenti içindeki yüzdeliği ve z-skoru; segment kolonu seçilir."),
+    ("grup_oran", "Segment medyanına oran", "tekli",
+     "Değerin kendi segmentinin medyanına oranı; segment kolonu seçilir."),
     # Pencere ailesi (mevcut: oran, fark)
     ("oran", "Oran (kısa / uzun pencere)", "aile", "Art arda iki pencerenin oranı; 1'den büyükse son dönemde artış."),
     ("fark", "Fark (kısa eksi uzun pencere)", "aile", "Art arda iki pencerenin farkı."),
@@ -55,11 +62,20 @@ KATALOG = [
     ("egim", "Eğim", "aile", "Günlük ortalamanın pencere uzunluğuna göre eğimi (en az 3 pencere)."),
     ("dk", "Değişkenlik katsayısı", "aile",
      "Pencerelerin günlük ortalamalarının std / ortalaması (en az 3 pencere)."),
+    ("ardisik", "Art arda artış sayısı", "aile",
+     "Pencereler arasındaki dönemlerde günlük ortalamanın eskiden yeniye kaç kez arttığı."),
+    ("en_yogun", "En yoğun dönemin payı", "aile",
+     "Pencereler arasındaki dönemlerden en yoğun olanın en uzun pencere toplamındaki payı."),
     # Kolon ciftleri
     ("net", "Net (fark)", "cift", "İki kolonun farkı (gelen eksi giden gibi)."),
     ("cift_oran", "Oran", "cift", "İki kolonun oranı (gelen / giden gibi)."),
     ("ort", "Ortalama tutar (tutar / adet)", "cift", "Tutarın adede bölümü."),
     ("pay", "Pay (alt kırılım / toplam)", "cift", "Alt kırılımın toplam içindeki payı."),
+    ("carpim", "Çarpım", "cift", "İki kolonun çarpımı; iki etkinin birlikte görülmesi."),
+    ("kesisim", "Kategori kesişimi", "cift",
+     "İki kategorik kolonun birleşimi; hedef iki sınıflıysa WoE'si, değilse frekansı."),
+    ("yogunlasma", "Yoğunlaşma (HHI ve en büyük pay)", "cift",
+     "Bir toplamın alt kırılımları arasında payların karelerinin toplamı ve en büyük pay."),
     # Kategorik
     ("frekans", "Frekans kodlama", "kategorik", "Kategorinin eğitim satırlarındaki payı."),
     ("onehot", "One-hot", "kategorik", "Az değerli kolonda her değer için 1/0 kolonu."),
@@ -82,6 +98,9 @@ ACIKLAMA_UZUN = {
               "Net akış −5.000 iken −8,5; +5.000 iken +8,5.", "Negatif değeri olan çarpık kolonda."),
     "karekok": ("Değerin karekökü. Logdan daha hafif sıkıştırır.", "100 iken 10, 10.000 iken 100.",
                 "Hafif çarpık ve negatif olmayan kolonda."),
+    "kare": ("Değerin karesi (polinom terimi); ham değerle birlikte kullanılır.",
+             "Yaş 20 iken 400, 60 iken 3.600: risk hem gençte hem yaşlıda yüksekse.",
+             "Doğrusal modelde U şekilli ilişki (ağaç kendisi bulur)."),
     "yeo": ("Dağılımı normale yaklaştıran parametreli dönüşüm; parametre eğitim satırlarından.",
             "Çok çarpık bakiye dağılımı simetriğe yakın hâle gelir.", "Doğrusal modelde, log yetmediğinde."),
     "winsor": ("Eğitim satırlarının %1'lik değerinin altı ve %99'luk değerinin üstü bu sınırlara çekilir.",
@@ -135,14 +154,46 @@ ACIKLAMA_UZUN = {
                   "Çok değerli kategorik kolonda."),
     "eksik_sayi": ("Satırda boş olan kolon sayısı ve oranı.", "60 kolondan 12'si boşsa 12 ve 0,2.",
                    "Eksik bilgi profili (yeni müşteri, ürünü olmayan)."),
+    "kova": ("Değerler iş kuralı sınırlarıyla kovalara bölünür; kova numarası.",
+             "Gecikme günü sınırları 1, 30, 60, 90: 0 gün kova 1, 45 gün kova 3.",
+             "Skorkartta iş kuralından gelen aralıklar."),
+    "grup_oran": ("Değer bölü kendi segmentinin medyanı (eğitim satırlarından).",
+                  "KOBİ medyan bakiyesi 50.000 iken 100.000 bakiye 2 olur.",
+                  "Segmentler arası ölçek farkı varsa (tek model)."),
+    "ardisik": ("Pencerelerin arasında kalan dönemlerde günlük ortalama, en eski dönemden en yeniye "
+                "kaç kez arttı.", "90 ile 30, 30 ile 7, 7 ile 3 gün arasında hep artış: 2.",
+                "Süreklilik gösteren artış ya da azalış."),
+    "en_yogun": ("Pencerelerin arasında kalan dönemlerden en yoğun olanın en uzun pencere toplamındaki payı.",
+                 "90 günlük harcamanın %70'i son 7 günde ise 0,7.", "Tek seferlik sıçrama."),
+    "carpim": ("İki kolonun çarpımı.", "Yeni müşteri bayrağı × limit kullanımı.",
+               "Doğrusal modelde etkileşim (ağaç kendisi bulur)."),
+    "kesisim": ("İki kategorik kolonun birleşik değeri; WoE ya da frekansla sayıya çevrilir.",
+                "Ürün × kanal: KART_MOBIL, KART_SUBE.", "İki kategorinin birlikte risk taşıması."),
+    "yogunlasma": ("Alt kırılımların paylarının karelerinin toplamı (HHI) ve en büyük pay.",
+                   "Harcamanın %90'ı tek kanaldaysa HHI 0,82, en büyük pay 0,9.",
+                   "Kanal, ürün, karşı taraf yoğunlaşması."),
 }
+
+# KARAR ASAMALARI: once kolonun kendi donusumu, sonra aile ici (pencere ve
+# icerik), en son aileler arasi.
+ASAMA = {}
+for _k in ("log", "islog", "karekok", "kare", "yeo", "winsor", "rank", "zskor", "robust", "isaret",
+           "sifir", "esik", "dilim", "kova", "frekans", "onehot", "woe", "hedef_ort"):
+    ASAMA[_k] = 1
+for _k in ("oran", "fark", "norm", "buyume", "egim", "dk", "ardisik", "en_yogun"):
+    ASAMA[_k] = 2
+for _k in ("net", "cift_oran", "ort", "pay", "carpim", "kesisim", "yogunlasma", "segment",
+           "grup_oran", "eksik_sayi"):
+    ASAMA[_k] = 3
+ASAMA_ADI = {1: "1. Kolonun kendi dönüşümü", 2: "2. Aile içi (pencere ve içerik)",
+             3: "3. Aileler arası"}
 
 # AGAC MODELI: platformun modeli HistGradientBoosting (bkz. model.py). Ağaç
 # modeller tek kolonun monoton dönüşümünden etkilenmez (aynı bölünmeyi ham
 # kolonla bulur); eşik ve işaret bayraklarını da kendisi bulur. Bu
 # dönüşümler ağaç modelinde gereksizdir; doğrusal modelde işe yarar.
-AGAC_GEREKSIZ = ("log", "islog", "karekok", "yeo", "winsor", "rank", "zskor", "robust",
-                 "dilim", "isaret", "sifir", "esik")
+AGAC_GEREKSIZ = ("log", "islog", "karekok", "kare", "yeo", "winsor", "rank", "zskor", "robust",
+                 "dilim", "isaret", "sifir", "esik", "kova", "carpim")
 AGAC_NEDENI = ("Ağaç modeli (platformda HistGradientBoosting) tek kolonun sıralamayı koruyan "
                "dönüşümünden etkilenmez; aynı bölünmeyi ham kolonla bulur.")
 MODEL_TURLERI = {"agac": "Ağaç (HistGradientBoosting)", "dogrusal": "Doğrusal (lojistik, skorkart)"}
@@ -311,7 +362,7 @@ def _aile_adi(kolonlar, i):
     return guvenli_ad("_".join(t))
 
 
-def birimleri_kur(durum, df, haric=()):
+def birimleri_kur(durum, df, haric=(), arasi=()):
     """Doner: (birimler, girmeyenler). birim: {"id", "tur", "ad", "kolonlar",
     "gunler", "tip", "aciklama", "olcu", "istat", "ozet", "mumkun",
     "imkansiz"}. girmeyen: {"kolonlar", "neden"} (neden basina gruplu)."""
@@ -400,14 +451,31 @@ def birimleri_kur(durum, df, haric=()):
         birimler.append({"id": "cift:%s|%s|%s" % (tur, ka, kb), "tur": "cift", "kolonlar": kol,
                          "ciftler": [list(c) for c in ciftler],
                          "ad": "%s ile %s" % (ka, kb), "tip": "sayisal", "cift": tur})
+    # Yogunlasma: ayni toplamin en az iki alt kirilimi (kanal, urun gibi).
+    # Toplamin ailesine gore tek birimde toplanir.
+    alt = {}
+    for a, b, tur in aday_ciftler(sayisal, istat, olcu):
+        if tur == "pay":
+            alt.setdefault(b, []).append(a)
+    grup_kova = {}
+    for top, altlar in alt.items():
+        if len(set(altlar)) >= 2:
+            grup_kova.setdefault(aile_kok.get(top, top), []).append((top, sorted(set(altlar))))
+    for kok, liste in grup_kova.items():
+        birimler.append({"id": "grup:" + kok, "tur": "grup", "ad": "%s alt kırılımları" % kok,
+                         "kolonlar": list(dict.fromkeys([x for t, al in liste for x in [t] + al])),
+                         "gruplar": [al for _t, al in liste],
+                         "kok_adlar": {al[0]: t for t, al in liste}, "tip": "sayisal"})
     # Satir duzeyi
     bosu_olan = [k for k in sayisal + kategorik if ozet[k]["bos_pay"] > 0]
     if bosu_olan:
         birimler.append({"id": "satir", "tur": "satir", "kolonlar": sayisal + kategorik,
                          "ad": "Satır düzeyi", "tip": "satir", "bosu_olan": len(bosu_olan)})
+    birimler += arasi_birimleri(birimler, arasi, ozet)
     for b in birimler:
         k0 = b["kolonlar"][0]
-        b["aciklama"] = str(aciklama.get(k0) or "")
+        b["asama"] = birim_asamasi(b)
+        b["aciklama"] = str(b.get("aciklama") or aciklama.get(k0) or "")
         b["olcu"] = str(olcu.get(k0) or "")
         b["istat"] = _istat(k0, istat)
         b["ozet"] = _birim_ozeti(b, ozet)
@@ -415,12 +483,144 @@ def birimleri_kur(durum, df, haric=()):
     return birimler, [{"neden": n, "kolonlar": k} for n, k in girmeyen.items()], segmentler
 
 
+def birim_asamasi(b):
+    """1: tek kolon (kendi donusumu), 2: pencere ailesi (once kendi
+    donusumu, sonra aile ici), 3: aileler arasi (cift, grup, satir)."""
+    return {"kolon": 1, "aile": 2}.get(b["tur"], 3)
+
+
+ARASI_ISLEM = {"oran": "cift_oran", "fark": "net", "carpim": "carpim", "kesisim": "kesisim"}
+ARASI_EN_COK = 60
+
+
+def arasi_birimleri(birimler, oneriler, ozet=None):
+    """Dil modelinin onerdigi aileler arasi birimleri kod dogrular ve
+    kurar. oneri: {"islem": oran|fark|carpim|kesisim, "a": birim id,
+    "b": birim id, "gerekce"}. Aile ile aile: ayni gunlu pencereler
+    eslesir (ortak pencere yoksa olmaz); aile ile tek kolon: her pencere o
+    kolonla; tek kolon ile tek kolon: bir cift. Kesisim yalniz iki az
+    degerli kategorik kolonda. Kodun zaten buldugu cift tekrar kurulmaz."""
+    harita = {b["id"]: b for b in birimler}
+    var = {tuple(c) for b in birimler if b["tur"] == "cift" for c in (b.get("ciftler") or [])}
+    cikti, sira = {}, []
+    for o in oneriler or []:
+        if not isinstance(o, dict):
+            continue
+        islem = ARASI_ISLEM.get(str(o.get("islem") or ""), str(o.get("islem") or ""))
+        a, c = harita.get(str(o.get("a") or "")), harita.get(str(o.get("b") or ""))
+        if islem not in ARASI_ISLEM.values() or not a or not c or a is c:
+            continue
+        if a["tur"] not in ("aile", "kolon") or c["tur"] not in ("aile", "kolon"):
+            continue
+        if islem == "kesisim":
+            if not (a.get("tip") == c.get("tip") == "kategorik"):
+                continue
+            tk = lambda u: ((ozet or {}).get(u["kolonlar"][0]) or u.get("ozet") or {}).get("tekil", 99)
+            if tk(a) > SEGMENT_EN_COK or tk(c) > SEGMENT_EN_COK:
+                continue
+            ciftler = [(a["kolonlar"][0], c["kolonlar"][0])]
+            tip = "kategorik"
+        else:
+            if a.get("tip") != "sayisal" or c.get("tip") != "sayisal":
+                continue
+            if a["tur"] == "aile" and c["tur"] == "aile":
+                gc = dict(zip(c["gunler"], c["kolonlar"]))
+                ciftler = [(k, gc[g]) for g, k in zip(a["gunler"], a["kolonlar"]) if g in gc]
+            elif a["tur"] == "aile":
+                ciftler = [(k, c["kolonlar"][0]) for k in a["kolonlar"]]
+            elif c["tur"] == "aile":
+                ciftler = [(a["kolonlar"][0], k) for k in c["kolonlar"]]
+            else:
+                ciftler = [(a["kolonlar"][0], c["kolonlar"][0])]
+            ciftler = [x for x in ciftler if x not in var and (x[1], x[0]) not in var]
+            tip = "sayisal"
+        if not ciftler:
+            continue
+        bid = "arasi:%s|%s" % (a["id"], c["id"])
+        if bid in harita or "arasi:%s|%s" % (c["id"], a["id"]) in harita:
+            continue                  # bu iliski zaten bir birim
+        if bid not in cikti:
+            if len(cikti) >= ARASI_EN_COK:
+                continue
+            cikti[bid] = {"id": bid, "tur": "cift", "cift": "arasi", "tip": tip,
+                          "ad": "%s ile %s" % (a["ad"], c["ad"]),
+                          "kolonlar": list(dict.fromkeys([x for p_ in ciftler for x in p_])),
+                          "ciftler": [list(x) for x in ciftler], "oneri_islem": [],
+                          "gerekce": "", "bulan": "dil modeli",
+                          "kaynak_birimler": [a["id"], c["id"]]}
+            sira.append(bid)
+        u = cikti[bid]
+        if islem not in u["oneri_islem"]:
+            u["oneri_islem"].append(islem)
+        g = str(o.get("gerekce") or "").strip()[:300]
+        if g and g not in u["gerekce"]:
+            u["gerekce"] = (u["gerekce"] + " " + g).strip()
+    return [cikti[i] for i in sira]
+
+
+def arasi_ekle(birimler, oneriler, segmentler=(), bulan="dil modeli"):
+    """Kurulmus birimlere (veri okumadan) aileler arasi birimleri ekler:
+    sayilar kaynak birimlerin ozetinden. Doner: yeni birimler."""
+    tek = {}
+    for b in birimler:
+        if b["tur"] in ("kolon", "aile"):
+            for k in b["kolonlar"]:
+                tek[k] = b.get("ozet") or {}
+    harita = {b["id"]: b for b in birimler}
+    yeni = arasi_birimleri(birimler, oneriler)
+    for b in yeni:
+        kb = [harita[i] for i in b["kaynak_birimler"]]
+        b["bulan"] = bulan
+        b["asama"] = 3
+        b["aciklama"] = b.get("gerekce") or ""
+        b["olcu"] = " ile ".join(x.get("olcu") or "-" for x in kb)
+        b["istat"] = ""
+        b["ozet"] = _birim_ozeti(b, tek)
+        b["mumkun"], b["imkansiz"] = uygunluk(b, False, segmentler)
+    return yeni
+
+
+def param_temizle(sec, param, segmentler):
+    """Secilen kodlarin parametrelerini dogrular; parametresi gecersiz
+    kod secimden cikar. Doner: (sec, param)."""
+    sec = [c for c in dict.fromkeys(sec or []) if c in KATALOG_HARITA]
+    param = param if isinstance(param, dict) else {}
+    param = {c: v for c, v in param.items() if c in sec and isinstance(v, dict)}
+    for c in ("segment", "grup_oran"):
+        if c in sec and str((param.get(c) or {}).get("segment")) not in segmentler:
+            sec.remove(c)
+            param.pop(c, None)
+    if "esik" in sec:
+        try:
+            v = float(str((param.get("esik") or {}).get("esik")).replace(",", "."))
+            yon = (param.get("esik") or {}).get("yon")
+            param["esik"] = {"esik": v, "yon": "<=" if yon == "<=" else ">="}
+        except (TypeError, ValueError):
+            sec.remove("esik")
+            param.pop("esik", None)
+    if "kova" in sec:
+        try:
+            sinir = sorted(set(float(str(x).replace(",", ".")) for x in
+                               ((param.get("kova") or {}).get("sinirlar") or [])))
+        except (TypeError, ValueError):
+            sinir = []
+        if sinir:
+            param["kova"] = {"sinirlar": sinir[:20]}
+        else:
+            sec.remove("kova")
+            param.pop("kova", None)
+    return sec, param
+
+
 def _birim_ozeti(b, ozet):
     oz = [ozet.get(k) or {} for k in b["kolonlar"] if b["tur"] != "satir"]
     if b["tur"] == "satir":
         return {"kolon": len(b["kolonlar"]), "bosu_olan": b.get("bosu_olan", 0)}
     if b["tip"] == "kategorik":
-        return dict(oz[0])
+        o = dict(oz[0])
+        if len(oz) > 1:
+            o["tekil"] = int(np.prod([max(1, x.get("tekil") or 1) for x in oz]))
+        return o
     o = {"min": min((x.get("min") for x in oz if x.get("min") is not None), default=None),
          "max": max((x.get("max") for x in oz if x.get("max") is not None), default=None),
          "tekil": min((x.get("tekil") or 0) for x in oz),
@@ -488,12 +688,27 @@ def uygunluk(b, hedef_ikili, segmentler=()):
     if b["tur"] == "satir":
         ekle("eksik_sayi", True)
         return mumkun, imkansiz
+    if b["tur"] == "grup":
+        ekle("yogunlasma", True)
+        return mumkun, imkansiz
     if b["tur"] == "cift":
         t = b.get("cift")
+        if t == "kat":
+            ekle("kesisim", True)
+            return mumkun, imkansiz
+        if t == "arasi":
+            if b.get("tip") == "kategorik":
+                ekle("kesisim", True)
+            else:
+                ekle("net", True)
+                ekle("cift_oran", True)
+                ekle("carpim", True)
+            return mumkun, imkansiz
         ekle("net", t == "yon", "Yalnız gelen ile giden gibi yön çiftinde.")
         ekle("cift_oran", t == "yon", "Yalnız gelen ile giden gibi yön çiftinde.")
         ekle("ort", t == "ort", "Yalnız tutar ile adet çiftinde.")
         ekle("pay", t == "pay", "Yalnız alt kırılım ile toplam çiftinde.")
+        ekle("carpim", True)
         return mumkun, imkansiz
     if b["tip"] == "kategorik":
         tekil = oz.get("tekil") or 0
@@ -509,6 +724,7 @@ def uygunluk(b, hedef_ikili, segmentler=()):
     ekle("log", not neg, "Negatif değer var; işaretli log kullanılır.")
     ekle("islog", neg, "Negatif değer yok; log yeterli.")
     ekle("karekok", not neg, "Negatif değer var.")
+    ekle("kare", tekil >= 3, "Farklı değer sayısı az (%s); kare terimi yeni bilgi taşımaz." % tekil)
     az = "Farklı değer sayısı az (%s); dağılım dönüşümü anlamsız." % tekil
     ekle("yeo", tekil >= TEKIL_EN_AZ, az)
     ekle("winsor", tekil >= TEKIL_EN_AZ, az)
@@ -520,7 +736,10 @@ def uygunluk(b, hedef_ikili, segmentler=()):
          % ("%.1f" % (100 * sifir)).replace(".", ","))
     ekle("esik", True)
     ekle("dilim", tekil >= TEKIL_EN_AZ, az)
+    ekle("kova", True)
     ekle("segment", bool(segmentler), "Segment olarak kullanılabilecek az değerli kategorik kolon yok.")
+    ekle("grup_oran", bool(segmentler) and not neg,
+         "Segment kolonu yok ya da negatif değer var (medyana oran anlamsız).")
     if b["tur"] == "aile":
         n = len(b["kolonlar"])
         ekle("oran", True)
@@ -531,6 +750,10 @@ def uygunluk(b, hedef_ikili, segmentler=()):
              "Yalnız toplam ya da adet gibi toplanabilir ve negatif olmayan ölçüde.")
         ekle("egim", n >= 3, "En az 3 pencere gerekir (%s var)." % n)
         ekle("dk", n >= 3, "En az 3 pencere gerekir (%s var)." % n)
+        ekle("ardisik", n >= 3 and topl and not neg,
+             "En az 3 pencere ve toplanabilir, negatif olmayan ölçü gerekir.")
+        ekle("en_yogun", n >= 2 and topl and not neg,
+             "Toplanabilir ve negatif olmayan ölçü gerekir.")
     return mumkun, imkansiz
 
 
@@ -546,6 +769,13 @@ def kural_onerisi(b, model_turu="agac"):
         return {"sec": ["eksik_sayi"], "param": {}, "secilmeyen": "",
                 "gerekce": "%s kolonda boş hücre var; satırdaki eksik sayısı eksik bilgi profilini taşır."
                 % oz.get("bosu_olan", 0)}
+    if b["tur"] == "grup":
+        return {"sec": ["yogunlasma"], "param": {}, "secilmeyen": "",
+                "gerekce": "Aynı toplamın %s alt kırılımı var: dağılımın tek kırılımda toplanıp "
+                "toplanmadığı (yoğunlaşma)." % len(b["kolonlar"])}
+    if b["tur"] == "cift" and b.get("cift") == "arasi":
+        return {"sec": [c for c in b.get("oneri_islem") or [] if c in mm], "param": {},
+                "secilmeyen": "", "gerekce": b.get("gerekce") or ""}
     if b["tur"] == "cift":
         t = b.get("cift")
         sec = {"yon": ["net", "cift_oran"], "ort": ["ort"], "pay": ["pay"]}.get(t, [])
@@ -732,13 +962,55 @@ def _birim_uygula(df, b, kod, param, tr, y, koy):
             _kodla("SATIR_EKSIK_ORANI", "df[%s].isna().sum(axis=1) / %s" % (liste, float(len(kol)))),
             "Satırda boş olan kolonların oranı (%s kolon üzerinden)." % len(kol))
         return
+    if b["tur"] == "grup":
+        for grp in b.get("gruplar") or []:
+            x = pd.concat([_sayi(df[k]).clip(lower=0) for k in grp], axis=1)
+            top = x.sum(axis=1, min_count=1).replace(0, np.nan)
+            pay = x.div(top, axis=0)
+            kok = guvenli_ad("%s__GRUP%s" % (b["ad"], len(grp)))[:60] if len(grp) else b["ad"]
+            kok = b.get("kok_adlar", {}).get(grp[0], kok)
+            terim = "pd.concat([%s], axis=1)" % ", ".join('_s(df, "%s").clip(lower=0)' % k for k in grp)
+            koy(kok + "__HHI", (pay ** 2).sum(axis=1, min_count=1), kod, b, grp,
+                _kodla(kok + "__HHI", "(lambda _t: (_t.div(_t.sum(axis=1, min_count=1).replace(0, np.nan), "
+                       "axis=0) ** 2).sum(axis=1, min_count=1))(%s)" % terim),
+                "%s kolonlarının toplam içindeki paylarının karelerinin toplamı (HHI): 1'e yakınsa tek "
+                "kırılımda yoğunlaşma." % ", ".join(grp))
+            koy(kok + "__MAXPAY", pay.max(axis=1), kod, b, grp,
+                _kodla(kok + "__MAXPAY", "(lambda _t: _t.div(_t.sum(axis=1, min_count=1).replace(0, np.nan), "
+                       "axis=0).max(axis=1))(%s)" % terim),
+                "%s kolonlarından en büyüğünün toplam içindeki payı." % ", ".join(grp))
+        return
+    if b["tur"] == "cift" and kod == "kesisim":
+        for a, c in (b.get("ciftler") or [kol[:2]]):
+            k2 = _kategori(df[a]) + "|" + _kategori(df[c])
+            ad = guvenli_ad("%s__X__%s" % (a, c))
+            ifk = ('(df["%s"].astype(object).where(df["%s"].notna(), "__BOS__").astype(str) + "|" + '
+                   'df["%s"].astype(object).where(df["%s"].notna(), "__BOS__").astype(str))' % (a, a, c, c))
+            if y is not None:
+                seri, hm, vars_ = _hedef_kodla(k2, y, tr, "woe")
+                koy(ad + "__WOE", seri, kod, b, [a, c],
+                    _kodla(ad + "__WOE", "%s.map(%r).fillna(%r)" % (ifk, hm, vars_)),
+                    "%s ve %s birleşik değerinin WoE'si (eğitimden, eğitimde kat dışı)." % (a, c),
+                    {"harita": hm})
+            else:
+                h = k2[tr].value_counts(normalize=True)
+                hm = {str(a_): round(float(v), 6) for a_, v in h.items()}
+                koy(ad + "__FRK", k2.map(hm).fillna(0.0), kod, b, [a, c],
+                    _kodla(ad + "__FRK", "%s.map(%r).fillna(0.0)" % (ifk, hm)),
+                    "%s ve %s birleşik değerinin eğitim satırlarındaki payı." % (a, c), {"harita": hm})
+        return
     if b["tur"] == "cift":
         for a, c in (b.get("ciftler") or [kol[:2]]):
             xa, xc = _sayi(df[a]), _sayi(df[c])
+            if kod == "carpim":
+                koy("%s__X__%s" % (a, c), xa * xc, kod, b, [a, c],
+                    _kodla("%s__X__%s" % (a, c), '_s(df, "%s") * _s(df, "%s")' % (a, c)),
+                    "%s çarpı %s." % (a, c))
+                continue
             if kod == "net":
                 koy("%s__MINUS__%s" % (a, c), xa - xc, kod, b, [a, c],
                     _kodla("%s__MINUS__%s" % (a, c), '_s(df, "%s") - _s(df, "%s")' % (a, c)),
-                    "%s eksi %s (net akış)." % (a, c))
+                    "%s eksi %s (%s)." % (a, c, "net akış" if b.get("cift") == "yon" else "fark"))
             else:
                 aciklama = {"cift_oran": "%s bölü %s.", "ort": "%s bölü %s: adet başına ortalama tutar.",
                             "pay": "%s bölü %s: alt kırılımın toplam içindeki payı."}[kod] % (a, c)
@@ -776,6 +1048,38 @@ def _birim_uygula(df, b, kod, param, tr, y, koy):
                                % (a, c, a, _f(ga / float(gc - ga)), c, a, _f(ga / float(gc - ga)))),
                         "%s kolonunun, %s içinde kalan önceki dönemin aynı uzunluğa (%s gün) düşen "
                         "değerine göre büyümesi. Önceki dönem sıfırsa boş." % (a, c, ga))
+            return
+        if kod in ("ardisik", "en_yogun"):
+            # Pencereler arasindaki donemler (kisa pencere en yeni): donem k =
+            # x_k - x_(k-1), gun g_k - g_(k-1); x_0 = 0.
+            parca, parca_kod = [], []
+            onceki, onceki_kod, og = None, None, 0
+            for xx, k_, gg in zip(x, kol, g):
+                parca.append((xx - onceki) if onceki is not None else xx)
+                parca_kod.append(('(_s(df, "%s") - _s(df, "%s"))' % (k_, onceki_kod))
+                                 if onceki_kod else '_s(df, "%s")' % k_)
+                onceki, onceki_kod = xx, k_
+            uzun = [gg - og_ for gg, og_ in zip(g, [0] + list(g[:-1]))]
+            if kod == "ardisik":
+                hiz = [p_ / float(u) for p_, u in zip(parca, uzun)]
+                say = sum(((hiz[i] > hiz[i + 1]).astype(float)) for i in range(len(hiz) - 1))
+                bos = pd.concat(hiz, axis=1).isna().any(axis=1)
+                terim = " + ".join("((%s / %s) > (%s / %s)).astype(float)" % (
+                    parca_kod[i], float(uzun[i]), parca_kod[i + 1], float(uzun[i + 1]))
+                    for i in range(len(hiz) - 1))
+                koy(b["ad"] + "__ARDISIK", say.where(~bos), kod, b, kol,
+                    _kodla(b["ad"] + "__ARDISIK", "(%s).where(~pd.concat([%s], axis=1).isna().any(axis=1))"
+                           % (terim, ", ".join('_s(df, "%s")' % k_ for k_ in kol))),
+                    "Pencereler (%s gün) arasındaki dönemlerde günlük ortalamanın eskiden yeniye kaç "
+                    "kez arttığı." % ", ".join(str(x_) for x_ in g))
+            else:
+                top = x[-1].replace(0, np.nan)
+                en = pd.concat(parca, axis=1).max(axis=1)
+                koy(b["ad"] + "__ENYOGUN", en / top, kod, b, kol,
+                    _kodla(b["ad"] + "__ENYOGUN", "pd.concat([%s], axis=1).max(axis=1) / _s(df, \"%s\").replace(0, np.nan)"
+                           % (", ".join(parca_kod), kol[-1])),
+                    "Pencereler (%s gün) arasındaki dönemlerden en yoğun olanın %s içindeki payı."
+                    % (", ".join(str(x_) for x_ in g), kol[-1]))
             return
         gun = np.array(g, dtype=float)
         oranlar = pd.concat([xx / gg for xx, gg in zip(x, g)], axis=1).to_numpy(dtype=float)
@@ -847,6 +1151,9 @@ def _tekli_uygula(df, b, k, kod, param, tr, y, koy):
     elif kod == "karekok":
         koy(k + "__SQRT", np.sqrt(x.clip(lower=0)), kod, b, [k],
             _kodla(k + "__SQRT", "np.sqrt(%s.clip(lower=0))" % s_), "%s kolonunun karekökü." % k)
+    elif kod == "kare":
+        koy(k + "__KARE", x ** 2, kod, b, [k], _kodla(k + "__KARE", "%s ** 2" % s_),
+            "%s kolonunun karesi." % k)
     elif kod == "yeo" and len(xt) > 2:
         lam = _yj_lambda(xt.to_numpy())
         poz = ("np.log1p(%s.clip(lower=0))" % s_) if abs(lam) < 1e-8 else \
@@ -919,6 +1226,30 @@ def _tekli_uygula(df, b, k, kod, param, tr, y, koy):
                    'side="right") + 1.0, index=df.index).where(%s.notna())' % (sinir, s_, s_)),
             "%s kolonunun eğitim satırlarına göre eşit frekanslı dilim numarası (1 ile %s arası)."
             % (k, len(sinir) + 1), {"sinirlar": sinir})
+    elif kod == "kova":
+        try:
+            sinir = sorted(set(float(str(v).replace(",", ".")) for v in (param.get("sinirlar") or [])))
+        except (TypeError, ValueError):
+            raise ValueError("kova sınırları sayı değil")
+        if not sinir:
+            raise ValueError("kova sınırları verilmedi")
+        koy(k + "__KOVA", pd.Series(np.searchsorted(np.array(sinir), x.to_numpy(dtype=float), side="right")
+                                    + 1.0, index=df.index).where(x.notna()), kod, b, [k],
+            _kodla(k + "__KOVA", 'pd.Series(np.searchsorted(np.array(%r), %s.to_numpy(dtype=float), '
+                   'side="right") + 1.0, index=df.index).where(%s.notna())' % (sinir, s_, s_)),
+            "%s kovası (sınırlar %s; ilk kova 1)." % (k, ", ".join(_sayi_yaz(v) for v in sinir)),
+            {"sinirlar": sinir})
+    elif kod == "grup_oran":
+        seg = str(param.get("segment") or "")
+        if seg not in df.columns:
+            raise ValueError("segment kolonu verilmedi")
+        c = _kategori(df[seg])
+        med = pd.DataFrame({"x": x[tr], "c": c[tr]}).dropna().groupby("c")["x"].median()
+        hm = {str(a): round(float(v), 6) for a, v in med.items() if v}
+        ifs = 'df["%s"].astype(object).where(df["%s"].notna(), "__BOS__").astype(str)' % (seg, seg)
+        koy("%s__GRO_%s" % (k, guvenli_ad(seg)), x / c.map(hm).astype(float), kod, b, [k, seg],
+            _kodla("%s__GRO_%s" % (k, guvenli_ad(seg)), "%s / %s.map(%r).astype(float)" % (s_, ifs, hm)),
+            "%s bölü kendi %s segmentinin medyanı (eğitimden)." % (k, seg), {"medyan": hm})
     elif kod == "segment":
         seg = str(param.get("segment") or "")
         if seg not in df.columns:
@@ -1000,39 +1331,143 @@ def _imza(b):
                        ensure_ascii=False, sort_keys=True)
 
 
-def oneri_hesapla(birimler, segmentler, onceki=None, model_turu="agac"):
-    """{id: {"sec", "param", "gerekce", "secilmeyen", "kaynak", "imza"}}.
-    Ayni birim icin onceki dil modeli onerisi (imza ayni) tekrar sorulmaz;
-    alinamayan birimde kural onerisi."""
+def llm_ogesi(b, model_turu):
+    return {"id": b["id"], "tur": b["tur"], "ad": b["ad"], "kolonlar": b["kolonlar"],
+            "aciklama": b.get("aciklama"), "olcu": b.get("olcu"), "istat": b.get("istat"),
+            "ozet": ozet_metni(b), "mumkun": model_mumkun(b, model_turu), "asama": b.get("asama"),
+            "ciftler": len(b.get("ciftler") or []), "gerekce": b.get("gerekce") or "",
+            "kural": kural_onerisi(b, model_turu)["sec"]}
+
+
+def oneri_onbellek(birimler, onceki=None, model_turu="agac"):
+    """(cikti, sor): onceki dil modeli onerisi (imza ve model turu ayni)
+    olan birimler cikti'da; digerleri dil modeline sorulacak (sor)."""
     onceki = onceki or {}
     cikti, sor = {}, []
     for b in birimler:
         o = onceki.get(b["id"]) or {}
-        if o.get("kaynak") == "dil modeli" and o.get("imza") == _imza(b) + model_turu:
+        if not model_mumkun(b, model_turu):
+            # Bu model turunde secenek yok: dil modeline sorulacak bir sey yok.
+            k = kural_onerisi(b, model_turu)
+            cikti[b["id"]] = dict(k, kaynak="secenek yok", imza=_imza(b) + model_turu,
+                                  gerekce=k.get("gerekce") or SECENEK_YOK)
+        elif o.get("kaynak") in ("dil modeli", "sohbet") and o.get("imza") == _imza(b) + model_turu:
             cikti[b["id"]] = o
         else:
             sor.append(b)
-    alinan = {}
-    if sor:
-        try:
-            from fe_agent import llm as llm_mod
-            alinan, _h = llm_mod.geleneksel_oneri_sec(
-                [{"id": b["id"], "tur": b["tur"], "ad": b["ad"], "kolonlar": b["kolonlar"],
-                  "aciklama": b.get("aciklama"), "olcu": b.get("olcu"), "istat": b.get("istat"),
-                  "ozet": ozet_metni(b), "mumkun": model_mumkun(b, model_turu),
-                  "ciftler": len(b.get("ciftler") or []),
-                  "kural": kural_onerisi(b, model_turu)["sec"]} for b in sor],
-                katalog_metni(), segmentler, model_turu=model_turu)
-        except Exception:
-            alinan = {}
-    for b in sor:
+    return cikti, sor
+
+
+SECENEK_YOK = "Bu model türünde bu birimde uygulanabilen dönüşüm yok."
+
+
+def oneri_birlestir(birimler, cikti, alinan, model_turu, sorulan=None):
+    """Dil modelinden alinanlar dil modeli kaynakli; sorulup alinamayanlar
+    kural (dm_yok: dil modeli cevap vermedi)."""
+    sorulan = set(sorulan or [])
+    cikti = dict(cikti)
+    for b in birimler:
+        if b["id"] in cikti and b["id"] not in alinan:
+            continue
         o = alinan.get(b["id"])
         if o is not None:
             cikti[b["id"]] = dict(o, kaynak="dil modeli", imza=_imza(b) + model_turu)
         else:
             k = kural_onerisi(b, model_turu)
-            cikti[b["id"]] = dict(k, kaynak="kural", imza=_imza(b) + model_turu)
+            cikti[b["id"]] = dict(k, kaynak="kural", imza=_imza(b) + model_turu,
+                                  dm_yok=b["id"] in sorulan)
     return cikti
+
+
+def arasi_imzasi(birimler, model_turu):
+    import hashlib
+    # Model turune bagli degil: aileler arasi iliskiler veriye ve anlama bagli.
+    t = "|".join(sorted(b["id"] for b in birimler if b["tur"] in ("aile", "kolon")))
+    return hashlib.sha1(t.encode("utf-8")).hexdigest()[:16]
+
+
+# ARKA PLAN ISI: butun birimler dil modeline sorulur (parca parca,
+# alinamayanlar daha kucuk parcalarla yeniden); ardindan aileler arasi
+# oneriler. Kart is bitince acilir; is durumu bellekte tutulur, sunucu
+# yeniden baslarsa kart isi yeniden baslatir.
+_ISLER = {}
+_IS_KILIT = threading.Lock()
+IS_SINIRI = 20
+
+
+def oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor=True):
+    import uuid
+    from fe_agent import llm as llm_mod
+    kimlik = uuid.uuid4().hex[:12]
+    ogeler = [llm_ogesi(b, model_turu) for b in sorted(sor, key=lambda b: b.get("asama") or 3)]
+    with _IS_KILIT:
+        for k in sorted(_ISLER, key=lambda k: _ISLER[k]["zaman"])[:-IS_SINIRI or None]:
+            if _ISLER[k]["durum"] != "calisiyor":
+                _ISLER.pop(k, None)
+        _ISLER[kimlik] = {"durum": "calisiyor", "zaman": time.time(), "biten": 0,
+                          "toplam": len(ogeler), "tur": 1, "evre": "birim", "sonuc": {},
+                          "arasi": None, "hata": None, "model_turu": model_turu,
+                          "sorulan": [o["id"] for o in ogeler], "arasi_sor": bool(arasi_sor)}
+
+    def ilerle(biten, tur):
+        with _IS_KILIT:
+            _ISLER[kimlik].update(biten=biten, tur=tur)
+
+    def calis():
+        hata = None
+        try:
+            sonuc, hata = llm_mod.geleneksel_oneri_sec(ogeler, katalog_metni(), list(segmentler),
+                                                       model_turu=model_turu, ilerleme=ilerle)
+            with _IS_KILIT:
+                _ISLER[kimlik]["sonuc"] = sonuc
+            if arasi_sor:
+                with _IS_KILIT:
+                    _ISLER[kimlik]["evre"] = "arasi"
+                satirlar = [arasi_satiri(b) for b in birimler if b["tur"] in ("aile", "kolon")]
+                mevcut = [b["ad"] for b in birimler if b["tur"] in ("cift", "grup")]
+                oneriler, h2 = llm_mod.geleneksel_arasi_oner(satirlar, mevcut, model_turu)
+                with _IS_KILIT:
+                    _ISLER[kimlik]["arasi"] = oneriler
+                hata = hata or h2
+        except Exception as e:      # pylint: disable=broad-except
+            hata = "%s: %s" % (type(e).__name__, str(e)[:200])
+        with _IS_KILIT:
+            _ISLER[kimlik].update(durum="bitti", hata=hata)
+
+    threading.Thread(target=calis, daemon=True).start()
+    return kimlik
+
+
+def oneri_isi_durumu(kimlik):
+    with _IS_KILIT:
+        d = _ISLER.get(str(kimlik or ""))
+        return None if d is None else dict(d)
+
+
+def arasi_satiri(b):
+    oz = b.get("ozet") or {}
+    ek = ("pencereler (gün): %s" % ", ".join(str(g) for g in b["gunler"])) if b.get("gunler") \
+        else ("%s değer" % oz.get("tekil") if b.get("tip") == "kategorik" else "")
+    return "id=%s | %s | %s | ölçü: %s | istatistik: %s | %s | açıklama: %s" % (
+        b["id"], b["ad"], "kategorik" if b.get("tip") == "kategorik" else "sayısal",
+        b.get("olcu") or "-", b.get("istat") or "-", ek or "-", (b.get("aciklama") or "-")[:90])
+
+
+def oneri_hesapla(birimler, segmentler, onceki=None, model_turu="agac"):
+    """Eszamanli oneri (testler ve arka plan isi olmayan cagrilar):
+    {id: {"sec", "param", "gerekce", "g1", "g2", "g3", "secilmeyen",
+    "kaynak", "imza"}}."""
+    cikti, sor = oneri_onbellek(birimler, onceki, model_turu)
+    alinan = {}
+    if sor:
+        try:
+            from fe_agent import llm as llm_mod
+            alinan, _h = llm_mod.geleneksel_oneri_sec(
+                [llm_ogesi(b, model_turu) for b in sor], katalog_metni(), segmentler,
+                model_turu=model_turu)
+        except Exception:
+            alinan = {}
+    return oneri_birlestir(birimler, cikti, alinan, model_turu, [b["id"] for b in sor])
 
 
 def karar_dogrula(birimler, karar, segmentler, model_turu=None):
@@ -1044,17 +1479,9 @@ def karar_dogrula(birimler, karar, segmentler, model_turu=None):
         if not isinstance(k, dict):
             continue
         mm = model_mumkun(b, model_turu) if model_turu else (b.get("mumkun") or [])
-        sec = [c for c in (k.get("sec") or []) if c in mm]
-        param = k.get("param") if isinstance(k.get("param"), dict) else {}
-        param = {c: v for c, v in param.items() if c in sec and isinstance(v, dict)}
-        if "segment" in sec and str((param.get("segment") or {}).get("segment")) not in segmentler:
-            sec.remove("segment")
-        if "esik" in sec:
-            try:
-                float(str((param.get("esik") or {}).get("esik")).replace(",", "."))
-            except (TypeError, ValueError):
-                sec.remove("esik")
-        temiz[b["id"]] = {"sec": list(dict.fromkeys(sec)), "param": param}
+        sec, param = param_temizle([c for c in (k.get("sec") or []) if c in mm], k.get("param"),
+                                   segmentler)
+        temiz[b["id"]] = {"sec": sec, "param": param}
     return temiz
 
 
@@ -1086,16 +1513,20 @@ def kolon_sayisi(b, sec):
         g = KATALOG_HARITA[c]["grup"]
         if b["tur"] == "satir":
             t += 2
+        elif c == "yogunlasma":
+            t += 2 * len(b.get("gruplar") or [1])
         elif g == "cift":
             t += len(b.get("ciftler") or [1])
         elif c in ("oran", "fark", "norm", "buyume"):
             t += n - 1
-        elif c in ("egim", "dk"):
+        elif c in ("egim", "dk", "ardisik", "en_yogun"):
             t += 1
         elif c == "onehot":
             t += min((b.get("ozet") or {}).get("tekil") or 0, ONEHOT_EN_COK)
         elif c == "segment":
             t += 2 * n
+        elif c == "grup_oran":
+            t += n
         else:
             t += n
     return t
