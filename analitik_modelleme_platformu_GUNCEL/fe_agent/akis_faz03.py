@@ -149,45 +149,79 @@ def _uretim_kodu_yaz(durum, hedef):
         return False, str(e)[:120]
 
 
+def _uretim_kaynagi(durum):
+    """02.2'nin okudugu tablo (02.1 sonu) ve yeni duzen mi."""
+    from fe_agent import akis_faz02 as _f2
+    from fe_agent.akis_faz02 import cozum_kolonlari_ekle
+    yeni_duzen = _f2.updt_modu(durum)
+    df = _f2.asama_df(durum, "02.1") if yeni_duzen \
+        else cozum_kolonlari_ekle(durum, modelleme_df(durum))
+    return df, yeni_duzen
+
+
+def geleneksel_karti(durum, kilitli=False):
+    """02.2 karti (tip geleneksel): solda birimler ve kararlar, sagda
+    sohbet. Kart verisi durum["geleneksel"]'den."""
+    from fe_agent import geleneksel as G
+    g = durum.get("geleneksel") or {}
+    birimler = g.get("birimler") or []
+    oneri = g.get("oneri") or {}
+    karar = g.get("karar") or {}
+    return {
+        "tip": "geleneksel", "adim": "kural", "kilitli": bool(kilitli),
+        "katalog": [{"kod": k, "ad": a, "grup": gr, "grup_adi": G.GRUP_ADI[gr], "aciklama": c}
+                    for k, a, gr, c in G.KATALOG],
+        "birimler": [{"id": b["id"], "tur": b["tur"], "ad": b["ad"], "kolonlar": b["kolonlar"],
+                      "gunler": b.get("gunler"), "cift": b.get("cift"), "tip": b.get("tip"),
+                      "aciklama": b.get("aciklama") or "", "ozet": G.ozet_metni(b),
+                      "tekil": (b.get("ozet") or {}).get("tekil"),
+                      "mumkun": b.get("mumkun") or [], "imkansiz": b.get("imkansiz") or {}}
+                     for b in birimler],
+        "oneri": {i: {k: v for k, v in o.items() if k != "imza"} for i, o in oneri.items()},
+        "karar": karar,
+        "girmeyen": g.get("girmeyen") or [],
+        "segmentler": g.get("segmentler") or [],
+        "sohbet": (g.get("sohbet") or [])[-40:],
+        "uretilen_sayi": len(g.get("uretilen") or []),
+    }
+
+
 def kural_plan(durum):
-    sz = sozluk_oku(durum)   # CSV yedegini de okur
-    # Kusurlu ham kolonlardan (Veri Profili) degisken uretilmez.
-    haric = sorted(set(durum.get("haric_kolonlar") or []) | _kusurlu(durum))
-    plan, hata = llm_mod.gelenekse_plan_oner(
-        sozluk_df=sz, haric=haric, meta=durum.get("meta", {}))
-    durum["plan"] = plan or []
+    """02.2 GELENEKSEL URETIM PLANI: birimler (kolon ailesi, tek kolon, kolon
+    cifti, satir), her birimde mumkun donusumler (kod) ve oneri (dil modeli;
+    ulasilamazsa veriye bakan kural). Onceki onayda oneriden farkli
+    secilenler (sapma) korunur. Kart: solda kararlar, sagda sohbet."""
+    from fe_agent import geleneksel as G
+    df, _yeni = _uretim_kaynagi(durum)
+    haric = set(durum.get("haric_kolonlar") or []) | _kusurlu(durum)
+    birimler, girmeyen, segmentler = G.birimleri_kur(durum, df, haric)
+    g = durum.get("geleneksel") or {}
+    oneri = G.oneri_hesapla(birimler, segmentler, g.get("oneri") or {})
+    karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {})}
+             for i, o in oneri.items()}
+    karar.update(G.karar_dogrula(birimler, g.get("sapma") or {}, segmentler))
+    g.update({"birimler": birimler, "girmeyen": girmeyen, "segmentler": segmentler,
+              "oneri": oneri, "karar": karar})
+    durum["geleneksel"] = g
+    durum["plan"] = []            # eski numarali secim yolu kapali
+    durum["_secim_alani"] = geleneksel_karti(durum)
+    tur = {}
+    for b in birimler:
+        tur[b["tur"]] = tur.get(b["tur"], 0) + 1
+    kaynak = {}
+    for o in oneri.values():
+        kaynak[o.get("kaynak")] = kaynak.get(o.get("kaynak"), 0) + 1
+    toplam = sum(G.kolon_sayisi(b, (karar.get(b["id"]) or {}).get("sec")) for b in birimler)
+    return ("Geleneksel değişken üretimi için %s birim hazırlandı (%s pencere ailesi, %s tek kolon, "
+            "%s kolon çifti%s). Önerilen dönüşümlerle yaklaşık %s yeni kolon üretilecek. Önerilerin "
+            "%s tanesi dil modelinden%s. Soldaki kararları değiştirebilir, sağdaki sohbette "
+            "tartışabilirsiniz; onayladığınızda üretilir."
+            % (_sayi(len(birimler)), _sayi(tur.get("aile", 0)), _sayi(tur.get("kolon", 0)),
+               _sayi(tur.get("cift", 0)), ", satır düzeyi" if tur.get("satir") else "",
+               _sayi(toplam), _sayi(kaynak.get("dil modeli", 0)),
+               (", %s tanesi veriye bakan kuraldan (dil modeline ulaşılamadı)"
+                % _sayi(kaynak.get("kural", 0))) if kaynak.get("kural") else ""))
 
-    if hata and not plan:
-        # Hatayi yutma: kullaniciya goster, adimi ilerletme.
-        return ("Dönüşüm planını hazırlayamadım.\n\n  %s\n\n"
-                "Tekrar denemek için onaylayın, bu adımı geçebilir ya da "
-                "önceki adıma dönebilirsiniz." % hata)
-
-    if not plan:
-        return ("Kullanılabilir bir plan çıkaramadım. Bu adımı geçebilir ya da "
-                "önceki adıma dönebilirsiniz.")
-
-    kirilim = {}
-    for p in plan:
-        kirilim[p["donusum"]] = kirilim.get(p["donusum"], 0) + 1
-
-    satirlar = []
-    for i, p in enumerate(plan, 1):
-        satirlar.append("  %2d. %-24s → %-7s  (%s kolon)"
-                        % (i, p["ad"][:24], p["donusum"], _sayi(len(p["kolonlar"]))))
-        if p.get("gerekce"):
-            satirlar.append("      %s" % p["gerekce"][:88])
-
-    return ("Kolon açıklamalarını inceledim ve %s klasik dönüşüm ailesi "
-            "belirledim (%s):\n\n%s\n\n"
-            "Toplam yaklaşık %s yeni kolon üretilecek.\n\n"
-            "Tümünü uygulamak için onaylayın; bir kısmını seçmek için "
-            "numaralarını belirtin (örneğin 1, 3, 5)."
-            % (_sayi(len(plan)),
-               " · ".join("%s %s" % (v, k) for k, v in sorted(kirilim.items())),
-               "\n".join(satirlar),
-               _sayi(sum(len(p["kolonlar"]) for p in plan)))
-            + (("\n\nNot: %s" % hata) if hata else ""))
 
 def _ogrenme_serisi(s, ogren_maske):
     """Parametrelerin ogrenilecegi satirlar. Maske yoksa tum satirlar."""
@@ -298,134 +332,100 @@ def _winsor_kod(k, alt, ust):
 
 
 def kural_uygula(durum, secim=None):
-    plan = _secimi_uygula(durum.get("plan") or [], secim)
+    """Kartta onaylanan kararlar ({"dogrulama": {"adim": "kural", "karar":
+    {birim id: {"sec", "param"}}}}) uygulanir; govde yoksa karttaki son
+    karar. Ogrenilen her sey train satirlarindan."""
     from fe_agent import akis_faz02 as _f2
+    from fe_agent import geleneksel as G
+    g = durum.get("geleneksel") or {}
+    if not g.get("birimler"):
+        kural_plan(durum)
+        g = durum.get("geleneksel") or {}
+    birimler, segmentler = g.get("birimler") or [], g.get("segmentler") or []
+    govde = durum.get("_dogrulama_karari")
+    if isinstance(govde, dict) and govde.get("adim") == "kural" and isinstance(govde.get("karar"), dict):
+        karar = G.karar_dogrula(birimler, govde["karar"], segmentler)
+    else:
+        karar = G.karar_dogrula(birimler, g.get("karar") or {}, segmentler)
+    oneri = g.get("oneri") or {}
+    g["karar"] = karar
+    g["sapma"] = {i: k for i, k in karar.items()
+                  if sorted(k.get("sec") or []) != sorted((oneri.get(i) or {}).get("sec") or [])
+                  or (k.get("param") or {}) != ((oneri.get(i) or {}).get("param") or {})}
+    durum["geleneksel"] = g
     yeni_duzen = _f2.updt_modu(durum)
     hedef = _f2.updt_adi(durum) if yeni_duzen else "%s_ENRICHED" % durum["veri_seti"]
 
-    # IDEMPOTANS: bu adim yeniden calistiriliyorsa once kendi kayitlarini
-    # sil. Kaynak her zaman baz set oldugu icin _ENRICHED uzerine yazilir
-    # ve kesif adiminin urettigi kolonlar da veriden dusmus olur; onlarin
-    # kayitlarini da temizleyip kullaniciya bildiriyoruz.
     silinen_kural = _adim_temizle(durum, KURAL_KAYNAK)
     silinen_kesif = _adim_temizle(durum, KESIF_KAYNAK)
     _sfa_gecersiz(durum)
-
-    if not plan:
+    if not any(k.get("sec") for k in karar.values()):
+        g["uretilen"], g["sozluk_ek"] = [], []
         if yeni_duzen:
             _f2.updt_ilerlet(durum, "02.2", "02.1")
-        return ("Bu adımda üretim yapılmadı." +
-                _yeniden_notu(silinen_kural, silinen_kesif))
+        return ("Bu adımda üretim yapılmadı." + _yeniden_notu(silinen_kural, silinen_kesif))
 
-    # Kaynak modelleme tablosu (tip donusumleri okumada uygulanmis);
-    # baz set uretimden SONRA kurulur.
-    # 02.1 cozum kolonlari (IL_GRP, NOT_SKOR ...) _ENRICHED'e de girer.
-    from fe_agent.akis_faz02 import cozum_kolonlari_ekle
-    df = _f2.asama_df(durum, "02.1") if yeni_duzen \
-        else cozum_kolonlari_ekle(durum, modelleme_df(durum))
+    df, _yd = _uretim_kaynagi(durum)
     tr, _te = maskeler(durum, df)            # LEAKAGE SINIRI
     yasak = _meta_yasak(durum) | _kusurlu(durum)
-    ogrenilen = {}
-
-    uretilen, kod_satirlari, elenen = {}, [], []
-    for p in plan:
-        d = p["donusum"]
-        # Ikinci savunma katmani: hedef/kimlik/donem hicbir dönüşüme girmez
-        kolonlar = [k for k in (p.get("kolonlar") or [])
-                    if k in df.columns and k not in yasak]
-        aciklama = "%s: %s" % (p["ad"], p.get("gerekce", ""))
-
-        if d in ("delta", "oran"):
-            yeni = _ikili(df, kolonlar, d)
-            for i in range(len(kolonlar) - 1):
-                a, b = kolonlar[i], kolonlar[i + 1]
-                ad = ("%s__MINUS__%s" if d == "delta" else "%s__DIV__%s") % (a, b)
-                if ad not in yeni or ad in yasak:
-                    continue
-                ifd = ("fark(%s, %s)" if d == "delta" else "%s / %s") % (a, b)
-                try:
-                    kod = ifade_mod.python_kodu(ad, ifd)
-                except Exception as e:
-                    elenen.append((ad, str(e)[:60]))
-                    continue
-                uretilen[ad] = yeni[ad]
-                kod_satirlari.append((ad, kod, aciklama))
-        else:
-            yeni = _tekli(df, kolonlar, d, ogren_maske=tr, kayit=ogrenilen)
-            for k in kolonlar:
-                for sonek, ifd in (("__LOG", "log1p(%s)" % k),):
-                    ad = k + sonek
-                    if ad not in yeni or ad in yasak:
-                        continue
-                    try:
-                        kod = ifade_mod.python_kodu(ad, ifd)
-                    except Exception as e:
-                        elenen.append((ad, str(e)[:60]))
-                        continue
-                    uretilen[ad] = yeni[ad]
-                    kod_satirlari.append((ad, kod, aciklama))
-
-                if k + "__RANK" in yeni and (k + "__RANK") not in yasak:
-                    try:
-                        kod = _rank_kod(
-                            k, ogrenilen.get("rank", {})[k]["izgara"])
-                    except Exception as e:
-                        elenen.append((k + "__RANK", str(e)[:60]))
-                    else:
-                        uretilen[k + "__RANK"] = yeni[k + "__RANK"]
-                        kod_satirlari.append((k + "__RANK", kod, aciklama))
-
-                if k + "__WNS" in yeni and (k + "__WNS") not in yasak:
-                    par = ogrenilen.get("winsor", {})[k]
-                    try:
-                        kod = _winsor_kod(k, par["alt"], par["ust"])
-                    except Exception as e:
-                        elenen.append((k + "__WNS", str(e)[:60]))
-                    else:
-                        uretilen[k + "__WNS"] = yeni[k + "__WNS"]
-                        kod_satirlari.append((k + "__WNS", kod, aciklama))
-
-    for ad, seri in uretilen.items():
-        df[ad] = seri
-
+    hedef_kolon = (durum.get("meta") or {}).get("target")
+    yeni, kayit, hatalar = G.uygula(df, birimler, karar, pd.Series(tr, index=df.index), hedef_kolon)
+    kod_satirlari, elenen, sozluk = [], [], []
+    for r in kayit:
+        if r["ad"] in yasak:
+            continue
+        try:
+            ifade_mod.ad_dogrula(r["ad"])
+            ifade_mod._kod_satiri_dogrula(r["kod_satiri"])
+        except Exception as e:
+            elenen.append((r["ad"], str(e)[:60]))
+            continue
+        df[r["ad"]] = yeni[r["ad"]]
+        kod_satirlari.append((r["ad"], r["kod_satiri"],
+                              "%s: %s" % (G.KATALOG_HARITA[r["kod"]]["ad"], r["aciklama"])[:200]))
+        sozluk.append({"DEGISKEN": r["ad"], "TIP": "sayısal", "ACIKLAMA": r["aciklama"],
+                       "NULL_ORANI": round(float(yeni[r["ad"]].isna().mean()), 4) if len(df) else 0.0,
+                       "KAYNAK_KOLON": ", ".join(r["kaynaklar"]),
+                       "_ek_bilgi": "02.2 Kural Tabanlı Değişken Üretimi adımında %s kolonundan "
+                                    "üretildi (%s)." % (", ".join(r["kaynaklar"]),
+                                                       G.KATALOG_HARITA[r["kod"]]["ad"]),
+                       "_uretilen": "02.2 adımında %s kolonundan üretildi (%s)"
+                                    % (", ".join(r["kaynaklar"]), G.KATALOG_HARITA[r["kod"]]["ad"])})
+    uretilen = [a for a, _k, _g in kod_satirlari]
     try:
         if yeni_duzen:
             _f2.updt_yaz(durum, df, "02.2")
         else:
             dataiku.Dataset(hedef).write_with_schema(df)
     except Exception as e:
-        return ("Üretilen %s kolon hesaplandı ama '%s' veri setine "
-                "YAZILAMADI: %s\n\n"
-                "Dataiku akışında bu veri setini oluşturup adımı yeniden "
-                "çalıştırın. Bu adımda hiçbir değişken kaydedilmedi."
-                % (_sayi(len(uretilen)), hedef, str(e)[:120]))
-    # Bu yazma _yaz() uzerinden GECMIYOR (hedef dataset yoksa farkli bir
-    # hata metni gerekiyor), dolayisiyla onbellek iptalini kendisi yapar.
-    onbellek_temizle(hedef)      # tablo degisti; bayat kopya okunmasin
-
+        return ("Üretilen %s kolon hesaplandı ama '%s' veri setine YAZILAMADI: %s\n\n"
+                "Bu adımda hiçbir değişken kaydedilmedi." % (_sayi(len(uretilen)), hedef, str(e)[:120]))
+    onbellek_temizle(hedef)
     durum["uretilen"] = sorted(set(durum.get("uretilen") or []) | set(uretilen))
     _kaynaga_yaz(durum, KURAL_KAYNAK, uretilen)
     durum["kod_bloklari"] = (durum.get("kod_bloklari") or []) + \
         [["Kural tabanlı üretim", kod_satirlari, KURAL_KAYNAK]]
-    # Ogrenilen kesim noktalari ve rank referansi: tekrar uretilebilirlik
     ogr = durum.get("ogrenilen_donusum") or {}
-    ogr["kural"] = ogrenilen
+    ogr["kural"] = {r["ad"]: r["ogrenilen"] for r in kayit if r["ogrenilen"] and r["ad"] in uretilen}
     durum["ogrenilen_donusum"] = ogr
-
+    g["uretilen"], g["sozluk_ek"] = uretilen, sozluk
+    durum["geleneksel"] = g
     _yazildi, kod_hata = _uretim_kodu_yaz(durum, hedef)
-
-    elenen_not = ("\n\n%s" % _liste(
-        "Geçersiz değişken adı nedeniyle elenen %s öneri:" % _sayi(len(elenen)),
-        ["%s: %s" % e for e in elenen], 6)) if elenen else ""
-    kod_not = ("\n\nÜretim kodu dosyası yazılamadı: %s" % kod_hata) if kod_hata \
-        else "\n\nTüm üretimin Python kodu PROJE_HAFIZASI/uretim_kodu.py dosyasında."
-
-    return ("%s dönüşümden %s yeni kolon üretildi ve %s veri setine yazıldı.\n"
-            "Winsorize kesim noktaları ve sıralama referans dağılımı "
-            "YALNIZCA geliştirme satırlarından öğrenildi.%s%s%s"
-            % (_sayi(len(plan)), _sayi(len(uretilen)), hedef,
-               _yeniden_notu(silinen_kural, silinen_kesif),
-               elenen_not, kod_not))
+    birim_sayi = sum(1 for k in karar.values() if k.get("sec"))
+    notlar = []
+    if hatalar:
+        notlar.append(_liste("Uygulanamayan %s dönüşüm:" % _sayi(len(hatalar)), hatalar, 6))
+    if elenen:
+        notlar.append(_liste("Geçersiz ad nedeniyle elenen %s kolon:" % _sayi(len(elenen)),
+                             ["%s: %s" % e for e in elenen], 6))
+    notlar.append(("Üretim kodu dosyası yazılamadı: %s" % kod_hata) if kod_hata else
+                  "Tüm üretimin Python kodu PROJE_HAFIZASI/uretim_kodu.py dosyasında.")
+    return ("%s birimde %s yeni kolon üretildi ve %s veri setine yazıldı. Öğrenilen her şey "
+            "(kırpma sınırları, sıra ızgarası, ortalama ve standart sapma, dilim sınırları, "
+            "frekans, WoE ve hedef ortalaması) yalnız geliştirme satırlarından öğrenildi; WoE ve "
+            "hedef ortalaması geliştirme satırlarında kat dışı hesaplandı.%s\n\n%s"
+            % (_sayi(birim_sayi), _sayi(len(uretilen)), hedef,
+               _yeniden_notu(silinen_kural, silinen_kesif), "\n\n".join(notlar)))
 
 
 def _yeniden_notu(silinen_kural, silinen_kesif):

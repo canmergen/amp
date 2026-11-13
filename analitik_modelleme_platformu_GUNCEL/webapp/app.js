@@ -18246,6 +18246,464 @@ function profilKartiEkle(alan, blok) {
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
 }
 
+/* ==================== 02.2 GELENEKSEL DEĞİŞKEN ÜRETİMİ ====================
+   Tek blokta iki sütun. SOLDA kararlar, üç sekmede: Uygulanacak (en az bir
+   dönüşüm seçili birim ve nedeni), Uygulanmayacak (dönüşüm seçilmeyen birim
+   ve nedeni) ve Üretime Girmeyen (koda göre hiç girmeyen kolonlar ve
+   nedeni). Birim: pencere ailesi, tek kolon, kolon çifti ya da satır düzeyi;
+   açılınca kolonlar, sayılar, önerinin gerekçesi, seçilebilen dönüşümler
+   (tıklayınca eklenir ya da çıkar) ve uygulanamayan dönüşümlerin nedeni.
+   SAĞDA sohbet: plan dil modeliyle tartışılır; dil modelinin önerdiği
+   değişiklikler Uygula ile sol tarafa geçer. Onayla: son kararlar
+   gönderilir ({"dogrulama": {"adim": "kural", "karar": {...}}}). */
+const GL_ACIK = new Set();
+function gelenekselKartiEkle(alan, blok) {
+    const kart = elYap("div", "secim-kart pf-kart gl-kart");
+    const kilitli = !!alan.kilitli || !!(blok && blok.kilit);
+    if (kilitli) kart.classList.add("kilitli");
+    const katalog = {};
+    (alan.katalog || []).forEach(k => { katalog[k.kod] = k; });
+    const kodAdi = kod => (katalog[kod] || {}).ad || kod;
+    const birimler = alan.birimler || [];
+    const oneri = alan.oneri || {};
+    const karar = {};
+    birimler.forEach(b => {
+        const k = (alan.karar || {})[b.id] || oneri[b.id] || { sec: [], param: {} };
+        karar[b.id] = { sec: (k.sec || []).slice(), param: JSON.parse(JSON.stringify(k.param || {})) };
+    });
+    const ayni = (a, b) => JSON.stringify((a || []).slice().sort()) === JSON.stringify((b || []).slice().sort());
+    const farkli = id => !ayni(karar[id].sec, (oneri[id] || {}).sec)
+        || JSON.stringify(karar[id].param || {}) !== JSON.stringify((oneri[id] || {}).param || {});
+    const kolonSayisi = (b, sec) => {
+        const n = (b.kolonlar || []).length;
+        let t = 0;
+        (sec || []).forEach(c => {
+            const g = (katalog[c] || {}).grup;
+            if (b.tur === "satir") t += 2;
+            else if (g === "cift") t += 1;
+            else if (["oran", "fark", "norm", "buyume"].includes(c)) t += n - 1;
+            else if (["egim", "dk"].includes(c)) t += 1;
+            else if (c === "onehot") t += Math.min(Number(b.tekil || 0), 10);
+            else if (c === "segment") t += 2 * n;
+            else t += n;
+        });
+        return t;
+    };
+    const TUR_ADI = { aile: "Pencere ailesi", kolon: "Tek kolon", cift: "Kolon çifti", satir: "Satır düzeyi" };
+    const CIFT_ADI = { yon: "gelen ve giden", ort: "tutar ve adet", pay: "alt kırılım ve toplam" };
+
+    /* Başlık */
+    const bas = elYap("div", "pf-bas");
+    bas.appendChild(elYap("b", "pf-baslik", "Geleneksel Değişken Üretimi"));
+    bas.appendChild(bolmeBilgiSimgesi(
+        "Solda her birim için hangi geleneksel dönüşümlerin uygulanacağı ve nedeni yazar. Birim: aynı "
+        + "ölçünün farklı pencereleri (pencere ailesi), tek kolon, anlamlı kolon çifti (gelen ve giden, "
+        + "tutar ve adet, alt kırılım ve toplam) ya da satır düzeyi.\n\n"
+        + "Hangi dönüşümün birimde uygulanabildiğine kod karar verir (tip, negatif değer, pencere sayısı, "
+        + "hedef türü). Uygulanabilenlerden hangilerinin seçileceğini dil modeli önerir; ulaşılamazsa "
+        + "veriye bakan kural önerir. Dönüşüme tıklayarak ekleyip çıkarabilirsiniz.\n\n"
+        + "Sağdaki sohbette planı tartışabilirsiniz; dil modelinin önerdiği değişiklikler Uygula ile "
+        + "sola geçer. Onayladığınızda seçilen dönüşümler üretilir, önceki üretim kaldırılır.\n\n"
+        + "Öğrenilen her şey (kırpma sınırları, sıra ızgarası, ortalama ve standart sapma, dilim "
+        + "sınırları, Yeo-Johnson parametresi, frekans, WoE, hedef ortalaması) yalnız Train (MS) "
+        + "satırlarından öğrenilir; WoE ve hedef ortalaması Train'de kat dışı (5 kat) hesaplanır.",
+        "Geleneksel Değişken Üretimi"));
+    kart.appendChild(bas);
+
+    /* Sayılar */
+    const karolar = elYap("div", "pf-karolar");
+    const karoEl = {};
+    const karo = (anahtar, etiket, sinif) => {
+        const k = elYap("div", "pf-karo" + (sinif ? " " + sinif : ""));
+        const d = elYap("div", "pf-karo-deger", "");
+        k.append(d, elYap("div", "pf-karo-etiket", etiket));
+        karolar.appendChild(k);
+        karoEl[anahtar] = d;
+    };
+    karo("birim", "Birim");
+    karo("uyg", "Uygulanacak Birim", "tamam");
+    karo("kolon", "Üretilecek Kolon", "bilgi");
+    karo("dm", "Dil Modeli Önerisi");
+    karo("fark", "Öneriden Farklı", "karar");
+    karolar.style.setProperty("--pf-karo-sayi", "5");
+    kart.appendChild(karolar);
+
+    /* İki sütun */
+    const izgara = elYap("div", "gl-izgara");
+    const sol = elYap("div", "gl-sol");
+    const sag = elYap("div", "gl-sag");
+    izgara.append(sol, sag);
+    kart.appendChild(izgara);
+
+    /* ---- SOL: sekmeler ---- */
+    const sekmeBar = elYap("div", "dg-sekmeler");
+    sekmeBar.setAttribute("role", "tablist");
+    const SEKMELER = [["uyg", "Uygulanacak"], ["yok", "Uygulanmayacak"], ["dis", "Üretime Girmeyen"]];
+    const sekmeDugme = {}, sekmeSayi = {};
+    let aktif = "uyg";
+    SEKMELER.forEach(([ad, et]) => {
+        const b = elYap("button", "dg-sekme", "");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        sekmeSayi[ad] = elYap("span", "dg-sekme-sayi", "");
+        b.append(elYap("span", "", et), sekmeSayi[ad]);
+        b.onclick = () => { aktif = ad; listeCiz(); };
+        sekmeBar.appendChild(b);
+        sekmeDugme[ad] = b;
+    });
+    sol.appendChild(sekmeBar);
+    const arac = elYap("div", "gl-arac");
+    const ara = document.createElement("input");
+    ara.type = "search";
+    ara.className = "gl-ara";
+    ara.placeholder = "Birim ya da kolon adında ara";
+    ara.oninput = () => listeCiz();
+    arac.appendChild(ara);
+    const geriBtn = elYap("button", "dg-toplu-btn", "Hepsini Önerilere Döndür");
+    geriBtn.type = "button";
+    geriBtn.onclick = () => {
+        if (kart.classList.contains("kilitli")) return;
+        birimler.forEach(b => {
+            const o = oneri[b.id] || { sec: [], param: {} };
+            karar[b.id] = { sec: (o.sec || []).slice(), param: JSON.parse(JSON.stringify(o.param || {})) };
+        });
+        tumunuCiz();
+    };
+    if (!kilitli) arac.appendChild(geriBtn);
+    sol.appendChild(arac);
+    const sekmeNot = elYap("div", "gl-not", "");
+    sol.appendChild(sekmeNot);
+    const liste = elYap("div", "gl-liste");
+    sol.appendChild(liste);
+
+    const kaynakMetni = o => !o ? "" : o.kaynak === "dil modeli" ? "Kaynak: Dil modeli"
+        : "Kaynak: Kod, veriye bakan kural (dil modeline ulaşılamadı)";
+
+    const birimSatiri = b => {
+        const k = karar[b.id];
+        const o = oneri[b.id] || {};
+        const d = document.createElement("details");
+        d.className = "gl-birim" + (farkli(b.id) ? " farkli" : "");
+        d.open = GL_ACIK.has(b.id);
+        d.addEventListener("toggle", () => { if (d.open) GL_ACIK.add(b.id); else GL_ACIK.delete(b.id); });
+        const sm = document.createElement("summary");
+        const ust = elYap("div", "gl-birim-ust");
+        ust.appendChild(elYap("span", "gl-birim-ad", b.ad));
+        const tur = TUR_ADI[b.tur] + (b.tur === "aile" ? ", " + (b.kolonlar || []).length + " pencere"
+            : b.tur === "cift" ? ", " + (CIFT_ADI[b.cift] || "") : b.tip === "kategorik" ? ", kategorik" : "");
+        ust.appendChild(elYap("span", "gl-tur", tur));
+        if (farkli(b.id)) ust.appendChild(elYap("span", "gl-fark", "Öneriden farklı"));
+        const sayi = kolonSayisi(b, k.sec);
+        if (sayi) ust.appendChild(elYap("span", "gl-sayi", ftBinlik(sayi) + " kolon"));
+        sm.appendChild(ust);
+        const cipler = elYap("div", "gl-cipler");
+        (k.sec || []).forEach(c => cipler.appendChild(elYap("span", "gl-cip secili", kodAdi(c)
+            + (c === "esik" && (k.param.esik || {}).esik !== undefined
+               ? " " + ((k.param.esik.yon === "<=") ? "≤ " : "≥ ") + k.param.esik.esik : "")
+            + (c === "segment" && (k.param.segment || {}).segment ? " (" + k.param.segment.segment + ")" : ""))));
+        if (!(k.sec || []).length) cipler.appendChild(elYap("span", "gl-cip-yok",
+            o.secilmeyen || o.gerekce || "Dönüşüm seçilmedi"));
+        sm.appendChild(cipler);
+        d.appendChild(sm);
+        const ic = elYap("div", "gl-birim-ic");
+        const satir = (et, deger) => {
+            if (!deger) return;
+            const r = elYap("div", "gl-satir");
+            r.append(elYap("span", "gl-satir-ad", et), elYap("span", "", deger));
+            ic.appendChild(r);
+        };
+        satir("Kolonlar", (b.kolonlar || []).length > 12 ? b.kolonlar.slice(0, 12).join(", ") + " ve "
+              + ftBinlik(b.kolonlar.length - 12) + " kolon daha" : (b.kolonlar || []).join(", "));
+        if (b.gunler) satir("Pencereler", b.gunler.map(g => g + " gün").join(", "));
+        satir("Açıklama", b.aciklama);
+        satir("Sayılar", b.ozet);
+        satir("Önerilen", (o.sec || []).map(kodAdi).join(", ") || "Dönüşüm yok");
+        satir("Neden", tireSade(o.gerekce || ""));
+        satir("Seçilmeyenler", tireSade(o.secilmeyen || ""));
+        satir("", kaynakMetni(o));
+        /* Seçilebilen dönüşümler: gruplu, tıklanınca ekle / çıkar */
+        const gruplar = {};
+        (b.mumkun || []).forEach(c => { const g = (katalog[c] || {}).grup_adi || ""; (gruplar[g] = gruplar[g] || []).push(c); });
+        const sec = elYap("div", "gl-secim");
+        sec.appendChild(elYap("div", "gl-alt-baslik", "Uygulanabilen dönüşümler (tıklayın)"));
+        Object.entries(gruplar).forEach(([g, kodlar]) => {
+            const r = elYap("div", "gl-secim-grup");
+            r.appendChild(elYap("span", "gl-secim-grup-ad", g));
+            kodlar.forEach(c => {
+                const btn = elYap("button", "gl-cip gl-cip-btn" + ((k.sec || []).includes(c) ? " secili" : ""), kodAdi(c));
+                btn.type = "button";
+                btn.title = (katalog[c] || {}).aciklama || "";
+                btn.disabled = kilitli;
+                btn.onclick = () => {
+                    if (kart.classList.contains("kilitli")) return;
+                    const i = k.sec.indexOf(c);
+                    if (i >= 0) { k.sec.splice(i, 1); delete k.param[c]; }
+                    else {
+                        /* Eşik ve segment parametreyle eklenir (aşağıdaki satır). */
+                        if (c === "esik" || c === "segment") {
+                            const p = paramOku[c] && paramOku[c]();
+                            if (!p) { if (paramOdak[c]) paramOdak[c](); return; }
+                            k.param[c] = p;
+                        }
+                        k.sec.push(c);
+                    }
+                    tumunuCiz();
+                };
+                r.appendChild(btn);
+            });
+            sec.appendChild(r);
+        });
+        ic.appendChild(sec);
+        /* Parametreli dönüşümler: eşik değeri ve yönü, segment kolonu. */
+        const paramOku = {}, paramOdak = {};
+        if ((b.mumkun || []).includes("esik") && !kilitli) {
+            const r = elYap("div", "gl-param");
+            r.appendChild(elYap("span", "gl-secim-grup-ad", "Eşik bayrağı"));
+            const yon = document.createElement("select");
+            yon.className = "gl-param-sec";
+            [[">=", "değer ≥ eşik ise 1"], ["<=", "değer ≤ eşik ise 1"]].forEach(([v, t]) => {
+                const op = document.createElement("option"); op.value = v; op.textContent = t; yon.appendChild(op);
+            });
+            const gi = document.createElement("input");
+            gi.type = "text";
+            gi.inputMode = "decimal";
+            gi.className = "gl-param-giris";
+            gi.placeholder = "Eşik (ör. 30)";
+            const mevcut = (k.param || {}).esik;
+            if (mevcut) { gi.value = String(mevcut.esik).replace(".", ","); yon.value = mevcut.yon || ">="; }
+            paramOku.esik = () => {
+                const v = pfEsikSayi(gi.value);
+                return isFinite(v) ? { esik: v, yon: yon.value } : null;
+            };
+            paramOdak.esik = () => gi.focus();
+            const gb_ = elYap("button", "dg-toplu-btn", (k.sec || []).includes("esik") ? "Güncelle" : "Ekle");
+            gb_.type = "button";
+            gb_.onclick = () => {
+                const p = paramOku.esik();
+                if (!p) { gi.focus(); return; }
+                k.param.esik = p;
+                if (!k.sec.includes("esik")) k.sec.push("esik");
+                tumunuCiz();
+            };
+            r.append(yon, gi, gb_);
+            ic.appendChild(r);
+        }
+        if ((b.mumkun || []).includes("segment") && !kilitli) {
+            const r = elYap("div", "gl-param");
+            r.appendChild(elYap("span", "gl-secim-grup-ad", "Segment kolonu"));
+            const ss = document.createElement("select");
+            ss.className = "gl-param-sec";
+            (alan.segmentler || []).forEach(v => {
+                const op = document.createElement("option"); op.value = v; op.textContent = v; ss.appendChild(op);
+            });
+            if ((k.param.segment || {}).segment) ss.value = k.param.segment.segment;
+            paramOku.segment = () => ss.value ? { segment: ss.value } : null;
+            paramOdak.segment = () => ss.focus();
+            const gb_ = elYap("button", "dg-toplu-btn", (k.sec || []).includes("segment") ? "Güncelle" : "Ekle");
+            gb_.type = "button";
+            gb_.onclick = () => {
+                k.param.segment = paramOku.segment();
+                if (!k.sec.includes("segment")) k.sec.push("segment");
+                tumunuCiz();
+            };
+            r.append(ss, gb_);
+            ic.appendChild(r);
+        }
+        const imk = Object.entries(b.imkansiz || {});
+        if (imk.length) {
+            const u = elYap("div", "gl-secim");
+            u.appendChild(elYap("div", "gl-alt-baslik", "Uygulanamayan dönüşümler"));
+            imk.forEach(([c, neden]) => {
+                const r = elYap("div", "gl-imkansiz");
+                r.append(elYap("span", "gl-cip pasif", kodAdi(c)), elYap("span", "", neden));
+                u.appendChild(r);
+            });
+            ic.appendChild(u);
+        }
+        d.appendChild(ic);
+        return d;
+    };
+
+    function listeCiz() {
+        liste.textContent = "";
+        const q = ara.value.trim().toUpperCase();
+        const eslesir = b => !q || b.ad.toUpperCase().includes(q) || (b.kolonlar || []).some(x => String(x).toUpperCase().includes(q));
+        const uyg = birimler.filter(b => (karar[b.id].sec || []).length);
+        const yok = birimler.filter(b => !(karar[b.id].sec || []).length);
+        const disSayi = (alan.girmeyen || []).reduce((t, g) => t + (g.kolonlar || []).length, 0);
+        sekmeSayi.uyg.textContent = ftBinlik(uyg.length);
+        sekmeSayi.yok.textContent = ftBinlik(yok.length);
+        sekmeSayi.dis.textContent = ftBinlik(disSayi);
+        SEKMELER.forEach(([ad]) => {
+            sekmeDugme[ad].classList.toggle("secili", ad === aktif);
+            sekmeDugme[ad].setAttribute("aria-selected", ad === aktif ? "true" : "false");
+        });
+        ara.hidden = aktif === "dis";
+        if (aktif === "dis") {
+            sekmeNot.textContent = "Bu kolonlar geleneksel üretime hiç girmez; neden kod tarafından belirlenir.";
+            (alan.girmeyen || []).forEach(g => {
+                const d = document.createElement("details");
+                d.className = "gl-birim";
+                const sm = document.createElement("summary");
+                const ust = elYap("div", "gl-birim-ust");
+                ust.append(elYap("span", "gl-birim-ad", g.neden), elYap("span", "gl-sayi", ftBinlik((g.kolonlar || []).length) + " kolon"));
+                sm.appendChild(ust);
+                d.appendChild(sm);
+                d.appendChild(elYap("div", "gl-birim-ic gl-kolon-liste", (g.kolonlar || []).join(", ")));
+                liste.appendChild(d);
+            });
+            if (!(alan.girmeyen || []).length) liste.appendChild(elYap("div", "gl-not", "Yok"));
+            return;
+        }
+        sekmeNot.textContent = aktif === "uyg"
+            ? "En az bir dönüşüm seçili birimler. Açınca nedeni, seçilebilen ve uygulanamayan dönüşümler."
+            : "Dönüşüm seçilmeyen birimler ve nedeni. Açıp dönüşüm ekleyebilirsiniz.";
+        const gosterilen = (aktif === "uyg" ? uyg : yok).filter(eslesir);
+        gosterilen.forEach(b => liste.appendChild(birimSatiri(b)));
+        if (!gosterilen.length) liste.appendChild(elYap("div", "gl-not", q ? "Aramayla eşleşen birim yok." : "Yok"));
+    }
+
+    /* ---- SAĞ: sohbet ---- */
+    sag.appendChild(elYap("div", "gl-sag-baslik", "Plan Üzerine Sohbet"));
+    sag.appendChild(elYap("div", "gl-not", "Planı dil modeliyle tartışın: «gecikme kolonlarına 30 gün eşik bayrağı ekle», "
+        + "«neden bakiyede log yok» gibi. Önerdiği değişiklikleri Uygula ile sola aktarırsınız."));
+    const mesajlar = elYap("div", "gl-mesajlar");
+    sag.appendChild(mesajlar);
+    const birimAdi = {};
+    birimler.forEach(b => { birimAdi[b.id] = b.ad; });
+    const degisiklikUygula = d => {
+        const k = karar[d.id];
+        if (!k) return;
+        (d.cikar || []).forEach(c => { const i = k.sec.indexOf(c); if (i >= 0) k.sec.splice(i, 1); delete k.param[c]; });
+        (d.ekle || []).forEach(c => { if (!k.sec.includes(c)) k.sec.push(c); if ((d.param || {})[c]) k.param[c] = d.param[c]; });
+    };
+    const mesajEkle = (m) => {
+        const kut = elYap("div", "gl-mesaj " + (m.rol === "kullanici" ? "kullanici" : "model"));
+        kut.appendChild(elYap("div", "gl-mesaj-metin", m.metin || ""));
+        const deg = m.degisiklikler || [];
+        if (deg.length) {
+            const dl = elYap("div", "gl-oneriler");
+            const durumlar = deg.map(() => "bekliyor");
+            const satirlar = deg.map((d, i) => {
+                const r = elYap("div", "gl-oneri");
+                const t = [];
+                if ((d.ekle || []).length) t.push("ekle: " + d.ekle.map(c => kodAdi(c)
+                    + (c === "esik" && (d.param || {}).esik ? " " + ((d.param.esik.yon === "<=") ? "≤ " : "≥ ") + d.param.esik.esik : "")
+                    + (c === "segment" && (d.param || {}).segment ? " (" + d.param.segment.segment + ")" : "")).join(", "));
+                if ((d.cikar || []).length) t.push("çıkar: " + d.cikar.map(kodAdi).join(", "));
+                const metin = elYap("div", "gl-oneri-metin");
+                metin.append(elYap("b", "", birimAdi[d.id] || d.id), elYap("span", "", " · " + t.join(" · ")));
+                if (d.neden) metin.appendChild(elYap("div", "gl-oneri-neden", d.neden));
+                const dug = elYap("div", "gl-oneri-dug");
+                const u = elYap("button", "dg-toplu-btn", "Uygula");
+                const v = elYap("button", "dg-toplu-btn", "Vazgeç");
+                u.type = v.type = "button";
+                const dur = elYap("span", "gl-oneri-durum", "");
+                const ciz = () => {
+                    u.hidden = v.hidden = durumlar[i] !== "bekliyor" || kart.classList.contains("kilitli");
+                    dur.textContent = durumlar[i] === "uygulandi" ? "Uygulandı" : durumlar[i] === "vazgecildi" ? "Vazgeçildi" : "";
+                };
+                u.onclick = () => { degisiklikUygula(d); durumlar[i] = "uygulandi"; ciz(); tumunuCiz(); };
+                v.onclick = () => { durumlar[i] = "vazgecildi"; ciz(); };
+                dug.append(u, v, dur);
+                r.append(metin, dug);
+                ciz();
+                return { r, ciz };
+            });
+            satirlar.forEach(s => dl.appendChild(s.r));
+            if (deg.length > 1 && !kilitli) {
+                const hep = elYap("button", "dg-toplu-btn", "Hepsini Uygula");
+                hep.type = "button";
+                hep.onclick = () => {
+                    deg.forEach((d, i) => { if (durumlar[i] === "bekliyor") { degisiklikUygula(d); durumlar[i] = "uygulandi"; } });
+                    satirlar.forEach(s => s.ciz());
+                    tumunuCiz();
+                };
+                dl.appendChild(hep);
+            }
+            kut.appendChild(dl);
+        }
+        mesajlar.appendChild(kut);
+        mesajlar.scrollTop = mesajlar.scrollHeight;
+    };
+    (alan.sohbet || []).forEach(mesajEkle);
+    if (!(alan.sohbet || []).length) mesajlar.appendChild(elYap("div", "gl-not gl-bos", "Henüz mesaj yok."));
+    const giris = elYap("div", "gl-giris");
+    const ta = document.createElement("textarea");
+    ta.className = "gl-metin";
+    ta.rows = 3;
+    ta.placeholder = "Planla ilgili sorunuzu ya da isteğinizi yazın";
+    const gb = elYap("button", "secim-onay gl-gonder", "Gönder");
+    gb.type = "button";
+    const bekle = elYap("div", "gl-not", "");
+    let gidiyor = false;
+    const yolla = () => {
+        const metin = ta.value.trim();
+        if (!metin || gidiyor || kart.classList.contains("kilitli")) return;
+        gidiyor = true;
+        gb.disabled = true;
+        const bos = mesajlar.querySelector(".gl-bos");
+        if (bos) bos.remove();
+        mesajEkle({ rol: "kullanici", metin: metin });
+        ta.value = "";
+        bekle.textContent = "Yanıt bekleniyor";
+        fetch(getWebAppBackendUrl("geleneksel_sohbet"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oturum_id: OTURUM_ID, mesaj: metin, karar: karar })
+        }).then(r => r.json()).then(j => {
+            if (j.tamam) mesajEkle({ rol: "model", metin: j.cevap, degisiklikler: j.degisiklikler || [] });
+            else mesajEkle({ rol: "model", metin: j.hata || "Yanıt alınamadı." });
+        }).catch(() => mesajEkle({ rol: "model", metin: "Yanıt alınamadı." }))
+          .finally(() => { gidiyor = false; gb.disabled = false; bekle.textContent = ""; });
+    };
+    gb.onclick = yolla;
+    ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); yolla(); } });
+    giris.append(ta, gb);
+    if (!kilitli) { sag.appendChild(giris); sag.appendChild(bekle); }
+
+    /* ---- Alt: özet ve onay ---- */
+    const alt = elYap("div", "pf-karar-alt");
+    const ozetEl = elYap("div", "pf-karar-ozet");
+    alt.appendChild(ozetEl);
+    let btn = null;
+    if (!kilitli) {
+        btn = elYap("button", "secim-onay", "Kararları Onayla ve Üret");
+        btn.type = "button";
+        btn.onclick = () => {
+            if (mesgul || btn.disabled) return;
+            kart.classList.add("kilitli");
+            btn.hidden = true;
+            btn.disabled = true;
+            tumunuCiz();
+            geriAlKilit = () => { kart.classList.remove("kilitli"); btn.hidden = false; btn.disabled = false; tumunuCiz(); };
+            const n = birimler.filter(b => (karar[b.id].sec || []).length).length;
+            const kol = birimler.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec), 0);
+            gonder(ftBinlik(n) + " birimde yaklaşık " + ftBinlik(kol) + " kolon üretilsin", false,
+                   { dogrulama: { adim: "kural", karar: JSON.parse(JSON.stringify(karar)) } });
+        };
+        alt.appendChild(btn);
+    }
+    kart.appendChild(alt);
+
+    function tumunuCiz() {
+        const uyg = birimler.filter(b => (karar[b.id].sec || []).length).length;
+        const kol = birimler.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec), 0);
+        const dm = Object.values(oneri).filter(o => o.kaynak === "dil modeli").length;
+        const fk = birimler.filter(b => farkli(b.id)).length;
+        karoEl.birim.textContent = ftBinlik(birimler.length);
+        karoEl.uyg.textContent = ftBinlik(uyg);
+        karoEl.kolon.textContent = ftBinlik(kol);
+        karoEl.dm.textContent = ftBinlik(dm) + " / " + ftBinlik(birimler.length);
+        karoEl.fark.textContent = ftBinlik(fk);
+        ozetEl.textContent = (kilitli ? "Onaylanan: " : "") + ftBinlik(uyg) + " birimde yaklaşık "
+            + ftBinlik(kol) + " yeni kolon" + (fk ? "; " + ftBinlik(fk) + " birimde öneriden farklı seçim." : "; bütün seçimler öneriyle aynı.");
+        geriBtn.disabled = kart.classList.contains("kilitli");
+        listeCiz();
+    }
+    tumunuCiz();
+    (adimKabiAl(blok) || sohbetEl).appendChild(kart);
+}
+
 /* ==================== 02.1 Kontrol eşikleri formu ====================
    Profil çıkarılmadan önce eşikler sorulur: her kontrolün eşiği,
    değiştirilebilir kutuda; önerilen değer yanında. Kontrol hücresinde
@@ -18445,6 +18903,7 @@ function secimAlaniEkle(alan, blok) {
     if (alan.tip === "profil_esik") { profilEsikKartiEkle(alan, blok); return; }
     /* 02.1 Veri Profili: sonuç; gerekirse Tut ya da Çıkar kararı */
     if (alan.tip === "profil") { profilKartiEkle(alan, blok); return; }
+    if (alan.tip === "geleneksel") { gelenekselKartiEkle(alan, blok); return; }
 
     const kart = document.createElement("div");
     kart.className = "secim-kart";

@@ -2437,6 +2437,47 @@ tanıtır; sayfalar sol bardan açılır.
   birleşik önerisi), `karar_kaynak`, `karar_gerekce` (kural ise
   `KARAR_KURAL_GEREKCESI`); düzeltme ve çözüm alanında `kaynak`.
 
+**02.2 Geleneksel Değişken Üretimi (yeni yapı, `fe_agent/geleneksel.py`)**
+- BİRİM: pencere ailesi (aynı ölçünün farklı pencereleri; addaki pencere
+  parçası `L30D`, `3M` gibi; 01.2.4 dönem türü varsa yalnız geçmişe bakan
+  pencere; gün sayısıyla sıralı), aile dışı tek kolon (sayısal ya da
+  kategorik), anlamlı kolon çifti (gelen ve giden, tutar ve adet, alt kırılım
+  ve toplam; adın tek parçasıyla ayrılan, en çok 400) ve satır düzeyi.
+- GİRMEYEN (kod belirler, nedeniyle): hedef, kimlik, dönem, `_SPLIT`; süreç
+  dışı ve 02.1'de üretime girmeyen; tarih tipi; boş ya da tek değerli;
+  0/1 bayrak; 200'den çok değerli metin.
+- KATALOG (`KATALOG`, 28 dönüşüm): tek değişkenli (log, işaretli log,
+  karekök, Yeo-Johnson, uç kırpma, sıra, z-skor, robust ölçek, işaret, sıfır
+  bayrağı, eşik bayrağı, eşit frekans dilimi, segment içi yüzdelik ve
+  sapma), pencere ailesi (oran, fark, normalize oran, büyüme, eğim,
+  değişkenlik katsayısı), çift (net, oran, ortalama tutar, pay), kategorik
+  (frekans, one-hot, WoE, hedef ortalaması), satır (eksik sayısı ve oranı).
+  Mevcut 5 dönüşüm (log, rank, winsor, oran, fark) aynı adlarla kaldı
+  (`__LOG`, `__RANK`, `__WNS`, `__DIV__`, `__MINUS__`).
+- `uygunluk`: dönüşüm birimde mümkün mü ve değilse neden (negatif değer,
+  farklı değer sayısı, pencere sayısı, hedef iki sınıflı mı, segment kolonu
+  var mı). Dil modeli ve sohbet yalnız mümkün kodları seçebilir.
+- ÖNERİ: `llm.geleneksel_oneri_sec` (20'lik parçalar, `_PROFIL_HAVUZ`, 120 sn
+  bütçe); alınamazsa `kural_onerisi` (veriye bakan). Aynı imzalı birimde
+  önceki dil modeli önerisi tekrar sorulmaz. Onayda `geleneksel["sapma"]`
+  (öneriden farklı seçimler) saklanır; yeniden planda korunur.
+- ÖĞRENME: hepsi train satırlarından; WoE ve hedef ortalaması train'de kat
+  dışı (5 kat, sıra tabanlı katlar), val ve test tam train haritasıyla.
+  Her kolonun kod satırı (`uretim_kodu.py`, `_kod_bloklarini_uygula`)
+  öğrenilen parametreleri gömülü taşır; geri dönülünce tablo bu satırlarla
+  kurulur (WoE / hedef ortalamasında train satırları da tam haritayla).
+- KART (`akis_faz03.geleneksel_karti`, tip `geleneksel`, `gelenekselKartiEkle`):
+  solda sekmeler Uygulanacak / Uygulanmayacak / Üretime Girmeyen, arama,
+  birim açılınca kolonlar, pencereler, sayılar, öneri ve gerekçe, kaynak,
+  tıklanabilir dönüşümler (eşik ve segment parametre satırıyla),
+  uygulanamayanlar ve nedeni. Sağda sohbet (`/geleneksel_sohbet`,
+  `llm.geleneksel_sohbet`): cevap ve değişiklik önerileri; Uygula, Vazgeç,
+  Hepsini Uygula. Konuşma `geleneksel["sohbet"]`'te. Onay:
+  `{"dogrulama": {"adim": "kural", "karar": {birim id: {"sec", "param"}}}}`.
+- `kural_uygula`: önceki kural ve keşif üretimi silinir, yeni kolonlar UPDT
+  veriye (02.2) yazılır; sözlük satırları `geleneksel["sozluk_ek"]`
+  (`amp.updt_sozluk_ek` 02.2 ve sonrasında ekler).
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

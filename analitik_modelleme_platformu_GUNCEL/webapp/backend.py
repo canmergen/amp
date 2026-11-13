@@ -2684,6 +2684,46 @@ def sozluk_baz_endpoint():
         return jsonify(_hata_govdesi("sozluk_baz", e, "Baz sözlük okunamadı."))
 
 
+@app.route("/geleneksel_sohbet", methods=["POST"])
+def geleneksel_sohbet_endpoint():
+    """02.2 Geleneksel Degisken Uretimi sohbeti: kullanici plani tartisir;
+    dil modeli cevap ve (onaylanmak uzere) degisiklik onerileri verir.
+    Govde: {oturum_id, mesaj, karar (karttaki guncel kararlar)}. Konusma
+    durumda saklanir; plan burada degismez (degisikligi kart uygular)."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        g = durum.get("geleneksel") or {}
+        birimler = g.get("birimler") or []
+        if not birimler:
+            return jsonify({"tamam": False, "hata": "02.2 planı henüz hazırlanmadı."})
+        mesaj = str(istek.get("mesaj") or "").strip()[:2000]
+        if not mesaj:
+            return jsonify({"tamam": False, "hata": "Mesaj boş."})
+        from fe_agent import geleneksel as G
+        from fe_agent import llm as llm_mod
+        karar = istek.get("karar") if isinstance(istek.get("karar"), dict) else (g.get("karar") or {})
+        sonuc, hata = llm_mod.geleneksel_sohbet(
+            mesaj, g.get("sohbet") or [], G.plan_satirlari(birimler, karar), G.katalog_metni(),
+            g.get("segmentler") or [], {b["id"]: set(b.get("mumkun") or []) for b in birimler})
+        if hata and not sonuc.get("cevap"):
+            return jsonify({"tamam": False, "hata": "Dil modeli cevap vermedi (%s)." % model_adi_gizle(hata)})
+        sohbet = list(g.get("sohbet") or [])
+        sohbet.append({"rol": "kullanici", "metin": mesaj})
+        sohbet.append({"rol": "model", "metin": sonuc.get("cevap") or "",
+                       "degisiklikler": sonuc.get("degisiklikler") or []})
+        g["sohbet"] = sohbet[-60:]
+        durum["geleneksel"] = g
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": True, "cevap": sonuc.get("cevap") or "",
+                        "degisiklikler": sonuc.get("degisiklikler") or []})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("geleneksel_sohbet", e, "Sohbet yanıtı alınamadı."))
+
+
 @app.route("/veri_sozluk_esleme")
 def veri_sozluk_esleme_endpoint():
     """Veri ve Sözlük karşılaştırması (bkz. akis_panel.veri_sozluk_eslesmesi):

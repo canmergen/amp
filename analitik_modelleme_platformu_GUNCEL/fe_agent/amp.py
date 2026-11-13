@@ -219,6 +219,11 @@ def updt_sozluk_ek(durum):
         ek += [x for x in akis_faz02.yeni_kolon_sozlugu(durum) if str(x["DEGISKEN"]) not in var]
     except Exception:           # pylint: disable=broad-except
         pass
+    # 02.2 Kural Tabanli Degisken Uretimi'nin kolonlari (02.2 onaylandiysa).
+    if durum.get("updt_asama") in ("02.2", "02.3", "03.3"):
+        var = {str(x["DEGISKEN"]) for x in ek}
+        ek += [x for x in ((durum.get("geleneksel") or {}).get("sozluk_ek") or [])
+               if isinstance(x, dict) and x.get("DEGISKEN") and str(x["DEGISKEN"]) not in var]
     return ek
 
 

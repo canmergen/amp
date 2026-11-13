@@ -231,8 +231,10 @@ ADIMLAR = {
 
     "kural": {
         "baslik": "Kural Tabanlı Değişken Üretimi",
-        "aciklama": "Yapay zekâ hangi aileye fark, oran, log, sıralama veya "
-                    "budama uygulanacağını önerir; Python üretir.",
+        "aciklama": "Her pencere ailesi, tek kolon ve anlamlı kolon çifti için "
+                    "geleneksel dönüşümler (log, oran, büyüme, eğim, WoE, hedef "
+                    "ortalaması gibi) önerilir; solda karar verir, sağda sohbetle "
+                    "tartışırsınız, onayda üretilir.",
         "girdi": None, "plan": kural_plan, "uygula": kural_uygula},
     "kesif": {
         "baslik": "AI Değişken Keşfi",

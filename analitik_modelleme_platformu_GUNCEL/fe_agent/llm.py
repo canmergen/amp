@@ -4494,3 +4494,163 @@ def soru_cevapla(soru, baglam, gecmis=None):
     if not metin:
         return None, "Dil modeli boş yanıt döndü."
     return metin, None
+
+
+# ===========================================================================
+# 02.2 GELENEKSEL DEGISKEN URETIMI: birim (kolon ailesi, tek kolon, kolon
+# cifti, satir) basina hangi donusumlerin uygulanacagi ve sohbet. Kod her
+# birim icin MUMKUN donusumleri verir; dil modeli yalniz onlardan secer.
+# ===========================================================================
+SISTEM_GELENEKSEL = """Sen bir kredi riski modelleme uzmanısın. Sınıflandırma
+modeli için geleneksel (kural tabanlı) değişken üretimi planlıyorsun. Her
+BİRİM bir kolon ailesi (aynı ölçünün farklı pencereleri), tek kolon, anlamlı
+bir kolon çifti ya da satır düzeyidir. Her birimde kolonların adı, açıklaması,
+sayıları (en küçük, en büyük, farklı değer, sıfır payı, çarpıklık, boş payı)
+ve o birimde MÜMKÜN olan dönüşüm kodları var.
+
+Her birim için mümkün kodlardan modele bilgi katacak olanları seç:
+- Aynı amaca hizmet eden dönüşümlerden birini seç (log, işaretli log,
+  karekök, Yeo-Johnson çarpıklık içindir; birini seç).
+- Pencere ailesinde oran ya da normalize oran, toplanabilir ölçüde büyüme,
+  en az 3 pencerede eğim değerlidir.
+- Kategorik kolonda frekans; hedef iki sınıflıysa WoE ya da hedef
+  ortalaması; one-hot yalnız az değerli kolonda.
+- esik yalnız açıklamadan açık bir iş eşiği çıkıyorsa (gecikme günü 30 gibi):
+  "param": {"esik": {"esik": 30, "yon": ">="}}.
+- segment yalnız verilen segment kolonlarından biriyle:
+  "param": {"segment": {"segment": "KOLON"}}.
+- Gereksiz kolon çoğaltma: bilgi katmayacak dönüşümü seçme. Hiçbiri bilgi
+  katmıyorsa boş liste ver.
+- Kural önerisi verilir; daha iyisi yoksa ona yakın kal.
+
+GEREKÇE: "gerekce" seçtiklerinin bu kolon için nedeni (kolonun anlamı ve
+sayılarına değinen bir cümle). "secilmeyen" seçmediğin mümkün kodların
+nedeni (bir cümle). İlke cümlelerini kopyalama.
+
+ÇIKTI KURALI: YALNIZCA JSON:
+{"birimler":[{"id":"...","sec":["kod",...],"param":{},"gerekce":"...","secilmeyen":"..."}]}
+"id" AYNEN kopyalanır.""" + SINIRLAYICI_KURALI
+GELENEKSEL_PARCA = 20
+
+
+def _geleneksel_parca(parca, katalog_metni, segmentler):
+    satirlar = []
+    for x in parca:
+        satirlar.append("BİRİM id=%s | tür: %s | ad: %s" % (x["id"], x.get("tur"), x.get("ad")))
+        if x.get("kolonlar"):
+            satirlar.append("  kolonlar: %s" % ", ".join(x["kolonlar"][:6])
+                            + (" (+%d)" % (len(x["kolonlar"]) - 6) if len(x["kolonlar"]) > 6 else ""))
+        satirlar.append("  açıklama: %s | ölçü: %s | istatistik: %s" % (
+            (x.get("aciklama") or "-")[:160], x.get("olcu") or "-", x.get("istat") or "-"))
+        satirlar.append("  sayılar: %s" % x.get("ozet", ""))
+        satirlar.append("  mümkün: %s" % ", ".join(x.get("mumkun") or []))
+        satirlar.append("  kural önerisi: %s" % ", ".join(x.get("kural") or []))
+    istek = ("Dönüşüm kodları:\n%s\n\nSegment olarak kullanılabilecek kolonlar: %s\n\n%s"
+             % (katalog_metni, ", ".join(segmentler) or "yok",
+                _veri_blogu("Birimler:", "\n".join(satirlar))))
+    ham = _cagir(SISTEM_GELENEKSEL, istek, sicaklik=0.1, zaman_asimi=PROFIL_ONERI_ZAMAN_ASIMI,
+                 deneme=1, havuz=_PROFIL_HAVUZ)
+    veri = _json_ayristir(ham, {}, dict)
+    gecerli = {x["id"]: set(x.get("mumkun") or []) for x in parca}
+    sonuc = {}
+    for k in (veri.get("birimler") or []) if isinstance(veri, dict) else []:
+        if not isinstance(k, dict) or str(k.get("id") or "") not in gecerli:
+            continue
+        i = str(k["id"])
+        sec = [str(c) for c in (k.get("sec") or []) if str(c) in gecerli[i]]
+        param = k.get("param") if isinstance(k.get("param"), dict) else {}
+        param = {c: v for c, v in param.items() if c in sec and isinstance(v, dict)}
+        if "segment" in sec and str((param.get("segment") or {}).get("segment")) not in segmentler:
+            sec.remove("segment")
+        if "esik" in sec and (param.get("esik") or {}).get("esik") is None:
+            sec.remove("esik")
+        ger = str(k.get("gerekce") or "").strip()[:300]
+        param = {c: v for c, v in param.items() if c in sec}
+        sonuc[i] = {"sec": list(dict.fromkeys(sec)), "param": param,
+                    "gerekce": "" if _ilke_kopyasi(ger) else ger,
+                    "secilmeyen": str(k.get("secilmeyen") or "").strip()[:300]}
+    return sonuc
+
+
+def geleneksel_oneri_sec(ogeler, katalog_metni, segmentler=(), butce=None):
+    """ogeler: [{"id", "tur", "ad", "kolonlar", "aciklama", "olcu", "istat",
+    "ozet", "mumkun", "kural"}]. Doner: ({id: {"sec", "param", "gerekce",
+    "secilmeyen"}}, hata). Parcalar eszamanli; butce dolunca kalanlar kural."""
+    isler = [ogeler[i:i + GELENEKSEL_PARCA] for i in range(0, len(ogeler), GELENEKSEL_PARCA)]
+    sonuc, hatalar = {}, []
+    if not isler:
+        return sonuc, None
+    butce = PROFIL_ONERI_BUTCE if butce is None else butce
+    ex = futures.ThreadPoolExecutor(max_workers=len(isler))
+    fs = [ex.submit(_geleneksel_parca, p, katalog_metni, list(segmentler)) for p in isler]
+    bitti, kalan = futures.wait(fs, timeout=butce)
+    for f in fs:
+        if f in bitti:
+            try:
+                sonuc.update(f.result())
+            except Exception as e:
+                hatalar.append(_hata_metni(e))
+    if kalan:
+        hatalar.append("%d parça %g saniyede bitmedi" % (len(kalan), butce))
+        for f in kalan:
+            f.cancel()
+    ex.shutdown(wait=False)
+    return sonuc, (hatalar[-1] if hatalar else None)
+
+
+SISTEM_GELENEKSEL_SOHBET = """Sen bir kredi riski modelleme uzmanısın ve
+kullanıcıyla geleneksel değişken üretim planını tartışıyorsun. Plan birimlerden
+oluşur (kolon ailesi, tek kolon, kolon çifti, satır düzeyi); her birimde seçili
+dönüşümler ve mümkün dönüşümler verilir. Kullanıcının sorusunu kısa ve açık
+Türkçe cevapla. Kullanıcı bir değişiklik isterse ya da önerirsen, değişikliği
+"degisiklikler" listesine yaz; uygulamayı kullanıcı onaylar.
+
+Kurallar:
+- Yalnız verilen birim id'lerini ve o birimde MÜMKÜN olan kodları kullan.
+- Birden çok birimi etkileyen istekte (ör. "bütün tutar ailelerine büyüme
+  ekle") her birimi ayrı yaz.
+- esik için "param": {"esik": {"esik": SAYI, "yon": ">=" ya da "<="}};
+  segment için "param": {"segment": {"segment": "KOLON"}} (verilen segment
+  kolonlarından).
+- Değişiklik yoksa boş liste ver. Uydurma kolon adı yazma.
+
+ÇIKTI KURALI: YALNIZCA JSON:
+{"cevap":"...","degisiklikler":[{"id":"...","ekle":["kod"],"cikar":["kod"],"param":{},"neden":"bir cümle"}]}""" + SINIRLAYICI_KURALI
+
+
+def geleneksel_sohbet(mesaj, gecmis, plan_satirlari, katalog_metni, segmentler, gecerli):
+    """mesaj: kullanicinin yazdigi; gecmis: [{"rol", "metin"}]; plan_satirlari:
+    plan ozeti satirlari; gecerli: {id: set(mumkun)}. Doner: ({"cevap",
+    "degisiklikler"}, hata)."""
+    konusma = "\n".join("%s: %s" % ("Kullanıcı" if g.get("rol") == "kullanici" else "Sen",
+                                    str(g.get("metin") or "")[:600]) for g in (gecmis or [])[-8:])
+    istek = ("Dönüşüm kodları:\n%s\n\nSegment olarak kullanılabilecek kolonlar: %s\n\n%s\n\n%s\n\n"
+             "Kullanıcının yeni mesajı:\n%s"
+             % (katalog_metni, ", ".join(segmentler) or "yok",
+                _veri_blogu("Plan:", "\n".join(plan_satirlari)),
+                _veri_blogu("Önceki konuşma:", konusma or "(yok)"),
+                _veri_blogu("Mesaj:", str(mesaj or "")[:2000])))
+    try:
+        ham = _cagir(SISTEM_GELENEKSEL_SOHBET, istek, sicaklik=0.2, zaman_asimi=90)
+    except Exception as e:
+        return {"cevap": "", "degisiklikler": []}, _hata_metni(e)
+    veri = _json_ayristir(ham, {}, dict)
+    if not isinstance(veri, dict):
+        return {"cevap": str(ham or "")[:1500], "degisiklikler": []}, None
+    deg = []
+    for d in veri.get("degisiklikler") or []:
+        if not isinstance(d, dict) or str(d.get("id") or "") not in gecerli:
+            continue
+        i = str(d["id"])
+        ekle = [str(c) for c in (d.get("ekle") or []) if str(c) in gecerli[i]]
+        cikar = [str(c) for c in (d.get("cikar") or []) if str(c) in gecerli[i]]
+        param = d.get("param") if isinstance(d.get("param"), dict) else {}
+        param = {c: v for c, v in param.items() if c in ekle and isinstance(v, dict)}
+        if "segment" in ekle and str((param.get("segment") or {}).get("segment")) not in segmentler:
+            ekle.remove("segment")
+        if "esik" in ekle and (param.get("esik") or {}).get("esik") is None:
+            ekle.remove("esik")
+        if ekle or cikar:
+            deg.append({"id": i, "ekle": ekle, "cikar": cikar, "param": param,
+                        "neden": str(d.get("neden") or "").strip()[:300]})
+    return {"cevap": str(veri.get("cevap") or "").strip()[:3000], "degisiklikler": deg}, None
