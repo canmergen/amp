@@ -2383,6 +2383,16 @@ tanıtır; sayfalar sol bardan açılır.
   önerisi.". Kartta öneri çipinin altında kaynak: "Veriden hesaplandı",
   "Dil modeli" ya da "Kural"; özette kaynak sayımı.
 - Log satırındaki `dil modeli` sayımında `kod` = kodla verilen öneri sayısı.
+- ÖNERİ EŞİKLERİ EŞİK FORMUNDA (`PROFIL_ONERI_ESIKLERI`, `PROFIL_ESIKLERI`'ne
+  eklenir; formda "Öneri Eşikleri" başlığı altında, satırda `grup: "oneri"`):
+  `baskin_min_satir` (30), `baskin_kat` (1,5 kat), `donem_tut_pay` (%35),
+  `sicrama_cikar` (%50), `uc_kirp_kat` (100 kat), `negatif_bos_pay` (%5),
+  `metin_bayrak_pay` (%5). Kolonun yakalanmasını değiştirmez, yalnız öneriyi.
+  `_veri_onerileri` değerleri `profil_esikleri(durum)`'dan okur; modül
+  sabitleri yalnız varsayılan. Açıklamalar `PROFIL_ESIK_ACIKLAMA`'da; ilgili
+  kontrollerin "Yakalanırsa" metinleri öneri kuralını ve eşiğin adını söyler.
+  Değer kaymasındaki "10'un kuvvetine yakın" toleransı (log10 farkı 0,05)
+  formda değil.
 
 **02.1 önerileri kolon bazında dil modelinden (ESKİ, karma ile daraltıldı)**
 - 02.1'deki her kolon bazlı seçimin ÖNERİSİ dil modelinden

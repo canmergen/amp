@@ -456,7 +456,9 @@ BASKIN_KAT = 1.5            # hedef orani bu kat farkliysa kolon bilgi tasir
 UC_KIRP_KAT = 100.0         # en buyuk / %99'luk >= bu kat: hatali giris, kirp
 NEGATIF_BOS_PAY = 0.05      # negatif payi bunun altindaysa hatali kayit
 METIN_BAYRAK_PAY = 0.05     # bos yazisi payi bunun ustundeyse bayrakla
-DONEM_TUT_PAY = 1.0 / 3     # yalniz ilk donemler bos ve en cok bu pay: Tut
+DONEM_TUT_PAY = 0.35        # yalniz ilk donemler bos ve en cok bu pay: Tut
+SICRAMA_CIKAR_PAY = 0.5     # eksik artip bu paya ya da ustune cikti: Çıkar
+# Bu sabitler varsayilan; gecerli degerler esik formundan (profil_esikleri).
 _KOD_AD_PARCA = {"KOD", "CODE", "CD", "NO", "ID", "KIMLIK", "NUMARA", "NUM"}
 
 
@@ -472,6 +474,11 @@ def _veri_onerileri(durum, ek, df, egitim):
     m = durum.get("meta") or {}
     hedef = m.get("target")
     cikti = {}
+    e = profil_esikleri(durum)
+    BASKIN_MIN_SATIR, BASKIN_KAT = int(e["baskin_min_satir"]), float(e["baskin_kat"])
+    DONEM_TUT_PAY, SICRAMA_CIKAR = float(e["donem_tut_pay"]), float(e["sicrama_cikar"])
+    UC_KIRP_KAT, NEGATIF_BOS_PAY = float(e["uc_kirp_kat"]), float(e["negatif_bos_pay"])
+    METIN_BAYRAK_PAY = float(e["metin_bayrak_pay"])
 
     def yaz(a, k, oneri, gerekce):
         cikti.setdefault(a, {})[k] = {"oneri": oneri, "gerekce": gerekce}
@@ -543,9 +550,9 @@ def _veri_onerileri(durum, ek, df, egitim):
         o1, o2 = float(x["once_oran"]), float(x["sonra_oran"])
         oran = "Eksik oranı %s döneminde %s, %s döneminde %s" % (
             x["once"], _yuzde_metni(o1), x["sonra"], _yuzde_metni(o2))
-        if o2 > o1 and o2 >= 0.5:
-            yaz("sicrama", x["kolon"], PROFIL_KARAR_CIKAR, oran + "; kolonun yarısından fazlası "
-                "boşaldı, veri toplama sorunu gibi, kolon çıkarılır.")
+        if o2 > o1 and o2 >= SICRAMA_CIKAR:
+            yaz("sicrama", x["kolon"], PROFIL_KARAR_CIKAR, oran + "; eksik %s sınırını aştı, "
+                "veri toplama sorunu gibi, kolon çıkarılır." % _yuzde_metni(SICRAMA_CIKAR))
         elif o2 > o1:
             yaz("sicrama", x["kolon"], PROFIL_KARAR_TUT, oran + "; eksik arttı ama kolonun çoğu "
                 "dolu, kolon tutulur.")
@@ -1205,6 +1212,29 @@ PROFIL_ESIKLERI = (
      "Değerlerin %25, %50 ve %75'lik değerleri art arda iki dönem arasında aynı yönde "
      "en az bu kat değişiyorsa", "kat", 2, 1000000),
 )
+# ONERI ESIKLERI: kolonun yakalanmasini degil, yakalanan kolona hangi
+# secenegin ONERILECEGINI belirler (_veri_onerileri). Formda ayri baslikta.
+PROFIL_ONERI_ESIKLERI = (
+    ("baskin_min_satir", "Neredeyse Sabit: Satır Sınırı",
+     "Baskın değer dışında eğitimde bundan az satır varsa Çıkar önerilir", "sayi", 1, 1000000000),
+    ("baskin_kat", "Neredeyse Sabit: Hedef Farkı",
+     "Baskın değer dışındaki satırlarda hedef oranı baskın değerdekinin en az bu katı ya da "
+     "en çok bu kadar biri ise Tut önerilir", "kat", 1.01, 1000),
+    ("donem_tut_pay", "Dönemde Boş ya da Sabit: İlk Dönemler",
+     "Yalnız ilk dönemler boş ya da tek değerli ve bunlar dönemlerin en çok bu kadarıysa Tut "
+     "önerilir", "yuzde", 0.01, 0.99),
+    ("sicrama_cikar", "Dönemler Arası Eksik Sıçraması: Çıkarma Sınırı",
+     "Eksik oranı artıp bu değere ya da üstüne çıktıysa Çıkar önerilir", "yuzde", 0.01, 1.0),
+    ("uc_kirp_kat", "Uç Değer Yoğunluğu: Kırpma Sınırı",
+     "En büyük değer %99'luk değerin en az bu katıysa kırpma önerilir", "kat", 2, 1000000000),
+    ("negatif_bos_pay", "Beklenmeyen Negatif: Boş Sayma Sınırı",
+     "Negatif satırlar dolu satırların bundan azıysa boş sayma önerilir", "yuzde", 0.0001, 1.0),
+    ("metin_bayrak_pay", "Metin Olarak Yazılmış Boş: Bayrak Sınırı",
+     "Boş yerine yazılmış değerler dolu satırların en az bu kadarıysa boş sayıp bayrak üretme "
+     "önerilir", "yuzde", 0.0001, 1.0),
+)
+PROFIL_ESIKLERI = PROFIL_ESIKLERI + PROFIL_ONERI_ESIKLERI
+ONERI_ESIK_ANAHTARLARI = {x[0] for x in PROFIL_ONERI_ESIKLERI}
 # Formda her kontrolun duz dille aciklamasi: "kisa" satirda, "bilgi" i
 # balonunda (nedir, neden onemli, ornek, yakalanirsa ne olur, onerilen
 # degerin gerekcesi), "sonuc" yakalanan kolona ne oldugu (NE_OLACAK ile
@@ -1271,7 +1301,10 @@ PROFIL_ESIK_ACIKLAMA = {
                  "bilgi taşır; bu bazen değerli (nadir bir durum), çoğu zaman gürültüdür.\n\n"
                  "**Örnek:** 100.000 satırın 99.500'ünde 0 olan bayrak kolonu, eşik %99 ise "
                  "yakalanır.\n\n"
-                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur.\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur. Öneri kolonun "
+                 "sayılarından: baskın değer dışında eğitimde Satır Sınırı'ndan (30) az satır "
+                 "varsa Çıkar; varsa ve bu satırlarda hedef oranı baskın değere göre Hedef "
+                 "Farkı (1,5 kat) ya da daha fazla farklıysa Tut, değilse Çıkar.\n\n"
                  "**Neden %99 önerildi?** Yalnız gerçekten neredeyse sabit olanlar sorulsun "
                  "diye; daha düşük seçerseniz daha çok kolon için karar vermeniz gerekir."},
     "donem_min_satir": {
@@ -1287,8 +1320,10 @@ PROFIL_ESIK_ACIKLAMA = {
                  "Tamamen boş dönem ise satır sayısından bağımsız her zaman işaretlenir.\n\n"
                  "**Örnek:** 2023 Mart'ta 5.000 satırın hepsinde değer 0 ise (eşik 100) "
                  "işaretlenir; 30 satırlık bir dönemde hepsi 0 ise işaretlenmez.\n\n"
-                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur. Dönem kolonu "
-                 "seçilmediyse bu kontrol yapılmaz.\n\n"
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur. Öneri: son "
+                 "dönem etkileniyorsa Çıkar; yalnız ilk dönemler etkileniyor ve dönemlerin İlk "
+                 "Dönemler payından (%35) fazlası değilse Tut (kolon sonradan eklenmiş); "
+                 "değilse Çıkar. Dönem kolonu seçilmediyse bu kontrol yapılmaz.\n\n"
                  "**Neden 100 önerildi?** 100 satırda bütün değerlerin tesadüfen aynı çıkması "
                  "çok düşük bir ihtimaldir."},
     "gizli": {
@@ -1336,7 +1371,9 @@ PROFIL_ESIK_ACIKLAMA = {
                  "**Örnek:** Ocak'ta %5 boş, Şubat'ta %30 boş: fark 25 puan; eşik 20 puan ise "
                  "gösterilir.\n\n"
                  "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; veri "
-                 "kaynağının değişip değişmediğini siz bilirsiniz. Dönem kolonu seçilmediyse "
+                 "kaynağının değişip değişmediğini siz bilirsiniz. Öneri: eksik oranı artıp "
+                 "Çıkarma Sınırı'na (%50) ya da üstüne çıktıysa Çıkar, değilse Tut. Dönem "
+                 "kolonu seçilmediyse "
                  "bu kontrol yapılmaz.\n\n"
                  "**Neden 20 puan önerildi?** Dönemden döneme küçük oynamalar doğaldır; 20 "
                  "puanın üstü genellikle bir değişikliktir."},
@@ -1351,13 +1388,111 @@ PROFIL_ESIK_ACIKLAMA = {
                  "**Örnek:** değerlerin %99'u 10.000 TL'nin altında, en büyük değer 5.000.000 "
                  "TL: 500 kat; eşik 100 kat ise gösterilir.\n\n"
                  "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
-                 "Öneriyi kolon bazında dil modeli verir; ulaşılamazsa kural önerisi: olduğu gibi bırakmak (tutarlarda büyük değer çoğu zaman gerçektir, "
-                 "kırpmak bilgi kaybettirir). Diğer seçenek: uçları eğitim satırlarından "
-                 "öğrenilen sınıra kırpmak.\n\n"
+                 "Öneri kolonun sayılarından: en büyük değer %99'luk değerin Kırpma Sınırı "
+                 "(öneri eşiği, 100 kat) ya da daha fazla katıysa kırpmak, değilse olduğu gibi "
+                 "bırakmak (tutarlarda büyük değer çoğu zaman gerçektir, kırpmak bilgi "
+                 "kaybettirir). Kırpma: uçlar eğitim satırlarından öğrenilen sınıra çekilir.\n\n"
                  "**Neden 100 kat önerildi?** Gelir, tutar gibi kolonlarda doğal olarak büyük "
                  "değerler vardır; 100 katın üstü doğal yayılımın çok dışındadır."},
 }
 PROFIL_ESIK_ACIKLAMA.update({
+    "baskin_min_satir": {
+        "kisa": "Baskın değer dışındaki satır çok azsa, o satırlardaki hedef oranı güvenilir "
+                "bir ayrım göstermez.",
+        "sonuc": "Öneri: altındaysa Çıkar",
+        "bilgi": "**Nedir?** Neredeyse Sabit kontrolüne takılan kolonda, en sık değer dışında "
+                 "kalan eğitim satırlarını sayar.\n\n"
+                 "**Neden önemli?** 10 satırlık bir grupta hedef oranı tesadüfen çok farklı "
+                 "çıkabilir; bu farka dayanarak kolon tutulmaz.\n\n"
+                 "**Örnek:** 6.000 satırın 5.979'u 0, 21'i 1: 21 satır, eşik 30 ise Çıkar "
+                 "önerilir.\n\n"
+                 "**Yakalanırsa:** yalnız öneriyi belirler; kolonun yakalanmasını değiştirmez, "
+                 "kararı siz verirsiniz.\n\n"
+                 "**Neden 30 önerildi?** Bir oranın kabaca yorumlanabilmesi için istatistikte "
+                 "yaygın kullanılan en küçük grup büyüklüğü."},
+    "baskin_kat": {
+        "kisa": "Baskın değer dışındaki az sayıdaki satır hedefi belirgin biçimde ayırıyorsa "
+                "kolon az ama değerli bilgi taşır (takibe düşme bayrağı gibi).",
+        "sonuc": "Öneri: fark bu kat ya da daha fazlaysa Tut",
+        "bilgi": "**Nedir?** Eğitim satırlarında hedef oranını baskın değerde ve diğer "
+                 "değerlerde ayrı hesaplar; büyüğünü küçüğüne böler.\n\n"
+                 "**Neden önemli?** Nadir değer hedefle ilişkiliyse kolonu atmak bilgi "
+                 "kaybıdır; ilişkili değilse kolon gürültüdür.\n\n"
+                 "**Örnek:** baskın değerde hedef oranı %4, diğerlerinde %10: 2,5 kat; eşik "
+                 "1,5 ise Tut önerilir. %4 ile %4,5: 1,1 kat, Çıkar önerilir.\n\n"
+                 "**Kapsam:** hedef iki sınıflıysa (0 ve 1); değilse Tut önerilir.\n\n"
+                 "**Yakalanırsa:** yalnız öneriyi belirler; kararı siz verirsiniz.\n\n"
+                 "**Neden 1,5 kat önerildi?** Risk modellerinde %50 daha yüksek ya da düşük "
+                 "temerrüt oranı anlamlı bir ayrım sayılır."},
+    "donem_tut_pay": {
+        "kisa": "Kolon yalnız ilk dönemlerde boşsa sonradan eklenmiştir ve güncel veride "
+                "kullanılabilir; dağınık ya da son dönemde boşsa güvenilmez.",
+        "sonuc": "Öneri: altındaysa Tut",
+        "bilgi": "**Nedir?** Dönemde Boş ya da Sabit kontrolüne takılan kolonda, etkilenen "
+                 "dönemlerin yalnız ilk dönemler olup olmadığına ve bütün dönemlerin ne "
+                 "kadarını tuttuğuna bakar.\n\n"
+                 "**Neden önemli?** Son dönemi boş olan kolon skorlamada yoktur (her zaman "
+                 "Çıkar önerilir). Yalnız ilk birkaç dönemi boş olan kolon sonradan eklenmiştir; "
+                 "çoğu dönemde doluysa kullanılabilir.\n\n"
+                 "**Örnek:** 12 dönemin ilk 3'ü boş: %25; eşik %35 ise Tut önerilir.\n\n"
+                 "**Yakalanırsa:** yalnız öneriyi belirler; kararı siz verirsiniz.\n\n"
+                 "**Neden %35 önerildi?** Dönemlerin yaklaşık üçte biri; kolonun en az üçte "
+                 "ikisi dolu dönemlerden öğrenilir."},
+    "sicrama_cikar": {
+        "kisa": "Eksik oranı bir dönemde birden yükselip kolonun yarısını aşıyorsa veri "
+                "toplamada sorun olmuştur.",
+        "sonuc": "Öneri: üstündeyse Çıkar",
+        "bilgi": "**Nedir?** Eksik Sıçraması kontrolüne takılan kolonda, sıçramadan sonraki "
+                 "dönemin eksik oranına bakar.\n\n"
+                 "**Neden önemli?** Eksik azaldıysa veri iyileşmiştir; arttı ama kolon çoğunlukla "
+                 "doluysa kullanılabilir; yarısından fazlası boşaldıysa güncel veride "
+                 "güvenilmez.\n\n"
+                 "**Örnek:** eksik oranı 202403'te %0, 202404'te %55: eşik %50 ise Çıkar "
+                 "önerilir.\n\n"
+                 "**Yakalanırsa:** yalnız öneriyi belirler; kararı siz verirsiniz.\n\n"
+                 "**Neden %50 önerildi?** Kolonun yarısından fazlası boşsa, Eksik Oranı Yüksek "
+                 "kontrolünün de varsayılan sınırı aşılmış olur."},
+    "uc_kirp_kat": {
+        "kisa": "En büyük değer, değerlerin büyük çoğunluğunun kat kat üstündeyse hatalı "
+                "girişe benzer.",
+        "sonuc": "Öneri: bu kat ya da üstündeyse kırp",
+        "bilgi": "**Nedir?** Uç Değer kontrolüne takılan kolonda en büyük değeri %99'luk "
+                 "değere böler.\n\n"
+                 "**Neden önemli?** Tutar, gelir, bakiye doğal olarak büyük uç değer alır; "
+                 "bunları kırpmak gerçek bilgiyi siler. Ama 5.000.000 yerine 50.000.000.000 "
+                 "gibi kat kat büyük değer çoğu zaman hatalı giriştir.\n\n"
+                 "**Örnek:** %99'luk değer 988, en büyük 50.000.000: 50.565 kat; eşik 100 ise "
+                 "kırpma önerilir.\n\n"
+                 "**Yakalanırsa:** yalnız öneriyi belirler; düzeltmeyi siz seçersiniz.\n\n"
+                 "**Neden 100 kat önerildi?** Gerçek gelir ve bakiye dağılımlarında en büyük "
+                 "değer %99'luk değerin genellikle birkaç ile birkaç on katıdır; 100 kat ve "
+                 "üstü olağan dışıdır."},
+    "negatif_bos_pay": {
+        "kisa": "Az sayıda negatif değer hatalı kayıttır; çok sayıda negatif değer sistematik "
+                "bir anlam taşır (iade, düzeltme kaydı).",
+        "sonuc": "Öneri: altındaysa boş say",
+        "bilgi": "**Nedir?** Beklenmeyen Negatif kontrolüne takılan kolonda negatif "
+                 "satırların dolu satırlara oranına bakar.\n\n"
+                 "**Neden önemli?** Birkaç negatif adet hatadır ve boş sayılmalıdır; satırların "
+                 "%20'si negatifse bu bir iş kuralıdır, değiştirilmemelidir.\n\n"
+                 "**Örnek:** 6.000 dolu satırın 69'u negatif: %1,15; eşik %5 ise boş sayma "
+                 "önerilir.\n\n"
+                 "**Yakalanırsa:** yalnız öneriyi belirler; düzeltmeyi siz seçersiniz.\n\n"
+                 "**Neden %5 önerildi?** Hatalı kayıtlar genellikle satırların küçük bir "
+                 "kısmıdır; %5 üstü sistematik sayılır."},
+    "metin_bayrak_pay": {
+        "kisa": "Boş yerine yazılmış değerler çoksa, boş olma durumu da bilgi taşıyabilir; "
+                "bayrakta tutulur.",
+        "sonuc": "Öneri: bu pay ya da üstündeyse boş say ve bayrak üret",
+        "bilgi": "**Nedir?** Metin Olarak Yazılmış Boş kontrolüne takılan kolonda «NULL», "
+                 "«-» gibi değerlerin dolu satırlara oranına bakar.\n\n"
+                 "**Neden önemli?** Birkaç satırsa yalnız boş saymak yeter; çoksa boş olup "
+                 "olmaması müşteri grubunu ayırabilir, 1/0 bayrağı bu bilgiyi korur.\n\n"
+                 "**Örnek:** 17 satır, %0,28: boş sayılır; 900 satır, %15: boş sayılır ve "
+                 "bayrak üretilir.\n\n"
+                 "**Yakalanırsa:** yalnız öneriyi belirler; düzeltmeyi siz seçersiniz.\n\n"
+                 "**Neden %5 önerildi?** Bayrağın modelde işe yaraması için yeterli satır; "
+                 "daha azında bayrak çoğu zaman sabite yakındır."},
     "ondalik": {
         "kisa": "Gereksiz uzun ondalıklar (1234,5678912345 gibi) ve «.0» ile yazılmış tam "
                 "sayılar hesapları ve tabloları gereksiz yere karmaşıklaştırır.",
@@ -1376,7 +1511,7 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "ilk 2 anlamlı hanesi korunacak kadar basamak bırakılır, en çok 12. Boş hücresi olan tam sayılı "
                  "kolon ondalık tipte kalır (değerleri zaten tam).\n\n"
                  "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
-                 "Öneriyi kolon bazında dil modeli verir; ulaşılamazsa kural önerisi: tam sayılı kolonda tam sayıya çevirmek, diğerlerinde yuvarlamak. "
+                 "Öneri kolondan: adında KOD, NO, ID gibi bir parça varsa olduğu gibi bırakmak; tam sayılı kolonda tam sayıya çevirmek, diğerlerinde yuvarlamak. "
                  "Diğer seçenek: olduğu gibi bırakmak. Düzeltme en son uygulanır (uç kırpmadan "
                  "sonra).\n\n"
                  "**Neden 4 önerildi?** Tutarlarda kuruş (2 basamak), oranlarda binde bir "
@@ -1443,7 +1578,8 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "az 30 sıfır dışı dolu satır olmalı. Üç yüzdelik birlikte aranır; iki tepeli "
                  "dağılımlarda ortanca tek başına sıçrayabilir, bu yanlış alarm vermez.\n\n"
                  "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; değişikliğin "
-                 "gerçek olup olmadığını siz bilirsiniz.\n\n"
+                 "gerçek olup olmadığını siz bilirsiniz. Öneri: kat 10, 100, 1.000 gibi 10'un "
+                 "kuvvetine yakınsa birim değişikliği sayılır, Çıkar; değilse Tut.\n\n"
                  "**Neden 10 kat önerildi?** Gerçek iş değişimleri dağılımı nadiren bir dönemde "
                  "10 katına çıkarır; birim değişiklikleri ise genellikle 100 ya da 1.000 "
                  "kattır."},
@@ -1460,6 +1596,10 @@ def _esik_varsayilan():
     from fe_agent import profil_ek as pe
     d = dict(pe.ESIK_VARSAYILAN)
     d.update({"cok_bos": sfa_mod.NULL_ESIK, "kimlik": 0.95, "kardinalite": sfa_mod.KATEGORIK_MAX})
+    d.update({"baskin_min_satir": BASKIN_MIN_SATIR, "baskin_kat": BASKIN_KAT,
+              "donem_tut_pay": DONEM_TUT_PAY, "sicrama_cikar": SICRAMA_CIKAR_PAY,
+              "uc_kirp_kat": UC_KIRP_KAT, "negatif_bos_pay": NEGATIF_BOS_PAY,
+              "metin_bayrak_pay": METIN_BAYRAK_PAY})
     return d
 
 
@@ -1545,7 +1685,8 @@ def esik_formu(durum, hata=None, kilitli=False):
                          "deger": _esik_ekran(birim, simdiki[a]),
                          "varsayilan": _esik_ekran(birim, varsayilan[a]),
                          "varsayilan_metni": _esik_metni(birim, varsayilan[a]),
-                         "en_az": _esik_ekran(birim, en_az), "en_cok": _esik_ekran(birim, en_cok)})
+                         "en_az": _esik_ekran(birim, en_az), "en_cok": _esik_ekran(birim, en_cok),
+                         "grup": "oneri" if a in ONERI_ESIK_ANAHTARLARI else "yakalama"})
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
             "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
 
@@ -2534,8 +2675,9 @@ _KONTROL_ACIKLAMA_EK = {
                  "**Kapsam:** yalnız 01.2.4.3'te kolon kartının Ölçü alanı dolu olan kolonlar. "
                  "Ölçü bilgisi yoksa kontrol yapılmaz.\n\n"
                  "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
-                 "Öneriyi kolon bazında dil modeli verir; ulaşılamazsa kural önerisi: negatif değerler hatalı sayılır ve boş yapılır. Diğer seçenek: "
-                 "olduğu gibi bırakmak."},
+                 "Öneri kolonun sayılarından: negatif satırlar dolu satırların Boş Sayma Sınırı'ndan "
+                 "(öneri eşiği, %5) azsa hatalı sayılıp boş yapılır, değilse (iade, düzeltme "
+                 "kaydı gibi sistematik) olduğu gibi bırakılır."},
     "tekrar": {
         "kisa": "Aynı kayıt birden fazla satırda geçiyorsa o kayıt modelde fazla ağırlık alır.",
         "bilgi": "**Nedir?** Aynı kimlik ve dönemle birden fazla satır olup olmadığına, ayrıca "
@@ -2641,9 +2783,10 @@ _KONTROL_ACIKLAMA_EK.update({
                  "satır gerçekten boş.\n\n"
                  "**Kapsam:** metin kolonlar. Payına bakılmaz; tek satır bile yeterlidir.\n\n"
                  "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
-                 "Öneriyi kolon bazında dil modeli verir; ulaşılamazsa kural önerisi: bu yazılar boş hücreye çevrilir. Diğer seçenekler: boş saymak ve "
-                 "yazının olduğu satırları kolon adının sonuna _BOS eklenmiş bir 1/0 "
-                 "bayrağıyla işaretlemek, ya da olduğu gibi bırakmak."},
+                 "Öneri kolonun sayılarından: bu yazılar dolu satırların Bayrak Sınırı'ndan (öneri "
+                 "eşiği, %5) azsa boş hücreye çevrilir; fazlaysa boş sayılır ve yazının olduğu "
+                 "satırlar kolon adının sonuna _BOS eklenmiş bir 1/0 bayrağıyla işaretlenir. "
+                 "Diğer seçenek: olduğu gibi bırakmak."},
     "yazim": {
         "kisa": "Aynı değer farklı yazılmış (büyük küçük harf, Türkçe karakter, fazla boşluk); "
                 "model bunları ayrı kategoriler sanır.",
@@ -2656,7 +2799,7 @@ _KONTROL_ACIKLAMA_EK.update({
                  "satır.\n\n"
                  "**Kapsam:** metin kolonlar. Boş anlamına gelen yazılar bu kontrole girmez.\n\n"
                  "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
-                 "Öneriyi kolon bazında dil modeli verir; ulaşılamazsa kural önerisi: her grubun yazımları grubun en sık geçen yazımına çevrilir. Diğer "
+                 "Öneri: her grubun yazımları grubun en sık geçen yazımına çevrilir. Diğer "
                  "seçenek: olduğu gibi bırakmak."},
     "tarih_kod": {
         "kisa": "Tarih kolonunda 1900-01-01, 9999-12-31 gibi bir kod tarih, boş ya da süresiz "

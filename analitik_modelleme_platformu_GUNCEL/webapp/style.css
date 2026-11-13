@@ -5740,3 +5740,9 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 }
 .pf-oneri-kaynak { font-size: var(--fs-kucuk); color: var(--metin-soluk); margin-top: 2px; }
 .pf-oneri-kaynak.dm { color: var(--yesil); }
+/* 02.1 eşik formu: yakalama ve öneri eşikleri başlıkları */
+.dg-tablo.pf-esik-tablo > tbody > tr.pf-esik-grup > td {
+  text-align: left; padding: var(--b-2) var(--b-3); background: var(--yuzey-alt);
+  border-top: 1px solid var(--kenar);
+}
+.pf-esik-grup-not { color: var(--metin-soluk); margin-left: var(--b-3); }

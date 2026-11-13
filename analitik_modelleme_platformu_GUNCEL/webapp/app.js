@@ -18183,7 +18183,27 @@ function profilEsikKartiEkle(alan, blok) {
     tablo.appendChild(thead);
     const tbody = elYap("tbody");
     const girisler = [];
+    /* Öneri eşikleri ayrı başlık altında: kolonun yakalanmasını değil,
+       yakalanan kolona hangi seçeneğin önerileceğini belirler. */
+    const grupBasligi = (baslik, not) => {
+        const gtr = elYap("tr", "pf-esik-grup");
+        const gtd = elYap("td");
+        gtd.colSpan = 6;
+        gtd.appendChild(elYap("b", "", baslik));
+        if (not) gtd.appendChild(elYap("span", "pf-esik-grup-not", not));
+        gtr.appendChild(gtd);
+        tbody.appendChild(gtr);
+    };
+    let sonGrup = null;
+    const oneriVar = (alan.satirlar || []).some(r => r.grup === "oneri");
     (alan.satirlar || []).forEach(r => {
+        const grup = r.grup || "yakalama";
+        if (oneriVar && grup !== sonGrup) {
+            if (grup === "oneri") grupBasligi("Öneri Eşikleri",
+                "Kolonun yakalanmasını değiştirmez; yakalanan kolon için hangi seçeneğin önerileceğini belirler. Kararı yine siz verirsiniz.");
+            else grupBasligi("Yakalama Eşikleri", "Kolonun kontrole takılması için aşması gereken sınır.");
+            sonGrup = grup;
+        }
         const tr = elYap("tr", "pf-esik-satir");
         const pr = r.parca || {};
         tr.appendChild(pfKontrolHucresi(r.kontrol, r.kisa, pr.onemli));
