@@ -2566,6 +2566,21 @@ tanıtır; sayfalar sol bardan açılır.
   sonraki mesajda önceki konuşmayı bağlam olarak görmez. Plan, kararlar ve
   sohbetten kurulmuş aileler arası birimler değişmez; uygulanmamış öneriler
   kaybolur. Kilitli kartta düğme yok.
+- TOPLU DEĞİŞİKLİK: genel istekler ("uç kırpma istemiyorum", "ailelere eğim
+  ekle") dil modelinden `toplu` kaydıyla gelir: {islem ekle | cikar, kodlar,
+  kapsam {tur, asama, ad, tip}, param, neden}. `geleneksel.toplu_genislet`
+  karttaki güncel kararlara göre kapsama uyan ve etkisi olan birimleri bulur
+  (çıkarmada kodun seçili olduğu, eklemede bu model türünde mümkün olup
+  seçili olmadığı; mümkün olmayanlar `atlanan`). Kartta tek öneri satırı
+  ("Toplu: N birim (kapsam)"), Uygula bütün birimlere uygular. Dil modeli
+  hiçbir değişiklik vermezse `niyet_bul` mesajdan kod ile okur: TEK bir
+  dönüşüm adı (katalog adı ya da `_ES_AD` eşanlamlısı, Türkçe ekleriyle) ve
+  açık bir fiil (istemiyorum, çıkar, kaldır, olmasın / ekle, olsun);
+  birden çok ad ya da karışık istek dil modeline kalır. Cevap boşsa
+  `toplu_cevap` kısa metin kurar.
+- CEVAP METİN OLMALI: dil modeli cevaba true, false, sayı ya da üç harften
+  kısa değer yazarsa cevap yok sayılır (düz metin denemesi ya da toplu
+  cevap); önceki sürümde ekranda "true" görünüyordu.
 - SOHBET SAĞLAMLIĞI: JSON'da cevap boşsa ham metin düşünme blokları
   silinerek kullanılır; o da JSON ise aynı istek düz metin istemiyle
   (`SISTEM_GELENEKSEL_DUZ`) bir kez daha sorulur; ham cevabın başı log'a

@@ -1915,6 +1915,134 @@ def karar_dogrula(birimler, karar, segmentler, model_turu=None):
     return temiz
 
 
+# ---------------------------------------------------------------------------
+# SOHBETTE TOPLU DEGISIKLIK: "uc kirpma istemiyorum" gibi genel istekler
+# birim birim degil, kapsamla gelir; kod kapsama uyan butun birimlere
+# genisletir. Dil modeli bir sey uretmezse ya da cevabi bos kalirsa kod
+# mesajdan niyeti okur (donusum adi + istemiyorum / cikar / ekle gibi).
+# ---------------------------------------------------------------------------
+_ES_AD = {"winsor": ["uç kırpma", "uc kirpma", "kırpma", "winsor", "winsorize"],
+          "log": ["log1p", "logaritma"], "islog": ["işaretli log"], "karekok": ["karekök", "karekok"],
+          "kare": ["kare terimi", "polinom"], "yeo": ["yeo-johnson", "yeo johnson", "box-cox"],
+          "rank": ["sıra", "rank", "yüzdelik"], "zskor": ["z-skor", "z skor", "zskor", "standartlaştırma"],
+          "robust": ["robust"], "isaret": ["işaret"], "sifir": ["sıfır bayrağı"], "esik": ["eşik"],
+          "dilim": ["dilim", "eşit frekans"], "kova": ["kova"], "oran": ["ratio"], "fark": ["delta"],
+          "norm": ["normalize oran", "normalize"], "buyume": ["büyüme"], "egim": ["eğim", "trend"],
+          "dk": ["değişkenlik"], "onehot": ["one-hot", "onehot", "gölge değişken"], "woe": ["woe"],
+          "hedef_ort": ["hedef ortalaması", "target encoding"], "frekans": ["frekans"],
+          "oran_tum": ["bütün pencere çiftleri", "bütün çiftler"], "donem": ["dönem parçaları"],
+          "donem_pay": ["dönem payları"], "donem_oran": ["dönem oranları"], "eksik_sayi": ["eksik sayısı"],
+          "yogunlasma": ["yoğunlaşma", "hhi"], "segment": ["segment içi"], "grup_oran": ["segment medyanı"]}
+_HAYIR = ("istemiyorum", "istemem", "olmasın", "olmasin", "çıkar", "cikar", "kaldır", "kaldir", "sil",
+          "kullanma", "gerek yok", "gereksiz", "yapma", "iptal")
+_EVET = ("ekle", "istiyorum", "olsun", "kullan", "uygula", "yap")
+
+
+def _kucuk(t):
+    return str(t or "").replace("I", "ı").replace("İ", "i").lower()
+
+
+_EK = r"(?:y?[ıiuü]|[ıiuü]n|y?[ae]|d[ae]n|t[ae]n|l[ae]r[ıi]?|s[ıi]n[ıi]?|n[ıi]n|y[ıi]|n[ıi])?"
+_HARF = "a-zçğıöşü"
+
+
+def niyet_bul(mesaj):
+    """Mesajdan kod ile toplu niyet: [{"islem", "kodlar", "kapsam", "neden"}]
+    ya da []. Yalniz TEK bir donusum adi ve acik bir fiil (istemiyorum,
+    cikar, ekle gibi) birlikte gecerse; birden cok ad ya da karisik istek
+    dil modeline birakilir."""
+    m = _kucuk(mesaj)
+    eslesme = {}                      # ifade -> ilk kod (katalog sirasi)
+    for k, a, _g, _c in KATALOG:
+        adlar = [_kucuk(re.sub(r"\s*\(.*?\)", "", a))] + [_kucuk(x) for x in _ES_AD.get(k, [])]
+        for x in adlar:
+            if len(x) >= 3 and re.search("(?<![%s])%s%s(?![%s])" % (_HARF, re.escape(x), _EK, _HARF), m):
+                eslesme.setdefault(x, k)
+    # Baska bir eslesen ifadenin parcasi olan ifade sayilmaz ("oran" ve "normalize oran").
+    ifadeler = [x for x in eslesme if not any(x != y and x in y for y in eslesme)]
+    kodlar = list(dict.fromkeys(eslesme[x] for x in ifadeler))
+    if len(kodlar) != 1:
+        return []
+    hayir = any(re.search("(?<![%s])%s" % (_HARF, x), m) for x in _HAYIR)
+    evet = any(re.search("(?<![%s])%s" % (_HARF, x), m) for x in _EVET)
+    if hayir == evet:
+        return []
+    return [{"islem": "cikar" if hayir else "ekle", "kodlar": kodlar, "kapsam": {}, "param": {},
+             "neden": "Mesajınızdan okundu."}]
+
+
+def toplu_genislet(birimler, karar, toplu, model_turu, segmentler=()):
+    """Toplu kayitlari birim degisikliklerine cevirir. Doner: [{"toplu":
+    True, "ids", "ekle", "cikar", "param", "neden", "kapsam_metni",
+    "atlanan"}]; yalniz etkisi olan birimler."""
+    cikti = []
+    for t in toplu or []:
+        kap = t.get("kapsam") or {}
+        turler = set(kap.get("tur") or [])
+        asamalar = {int(x) for x in (kap.get("asama") or []) if str(x).isdigit()}
+        ad = _kucuk(kap.get("ad") or "")
+        tip = kap.get("tip")
+        ids, atlanan = [], 0
+        for b in birimler:
+            if turler and b["tur"] not in turler:
+                continue
+            if asamalar and (b.get("asama") or birim_asamasi(b)) not in asamalar:
+                continue
+            if ad and ad not in _kucuk(b["ad"]) and not any(ad in _kucuk(k) for k in b["kolonlar"]):
+                continue
+            if tip and b.get("tip") != tip:
+                continue
+            sec = set(((karar or {}).get(b["id"]) or {}).get("sec") or [])
+            mm = set(model_mumkun(b, model_turu))
+            if t["islem"] == "cikar":
+                if sec & set(t["kodlar"]):
+                    ids.append(b["id"])
+            else:
+                ekle_ = [c for c in t["kodlar"] if c in mm and c not in sec]
+                ekle_, _p = param_temizle(ekle_, t.get("param"), segmentler)
+                if ekle_:
+                    ids.append(b["id"])
+                elif any(c not in mm for c in t["kodlar"]):
+                    atlanan += 1
+        if not ids and not atlanan:
+            continue
+        ks = []
+        if turler:
+            ks.append("/".join(sorted(turler)))
+        if asamalar:
+            ks.append("%s. aşama" % "/".join(str(x) for x in sorted(asamalar)))
+        if ad:
+            ks.append("adında «%s»" % kap.get("ad"))
+        if tip:
+            ks.append(tip)
+        cikti.append({"toplu": True, "ids": ids, "ekle": t["kodlar"] if t["islem"] == "ekle" else [],
+                      "cikar": t["kodlar"] if t["islem"] == "cikar" else [],
+                      "param": t.get("param") or {}, "neden": t.get("neden") or "",
+                      "kapsam_metni": ", ".join(ks) or "bütün birimler", "atlanan": atlanan})
+    return cikti
+
+
+def toplu_cevap(degisiklikler):
+    """Dil modelinin cevabi yoksa degisikliklerden kisa cevap."""
+    par = []
+    for d in degisiklikler:
+        adlar = ", ".join(KATALOG_HARITA[c]["ad"] for c in (d.get("cikar") or d.get("ekle") or []))
+        if not d.get("toplu"):
+            continue
+        atla = ("%s birimde bu model türünde uygulanamıyor (ağaç modelinde gereksiz ya da birimde "
+                "mümkün değil)" % d["atlanan"]) if d.get("atlanan") else ""
+        if not d["ids"]:
+            par.append("%s hiçbir birime eklenemiyor: %s." % (adlar, atla or "uygun birim yok"))
+            continue
+        par.append("%s %s %s (%s)%s." % (
+            adlar, "%s birimden" % len(d["ids"]) if d.get("cikar") else "%s birime" % len(d["ids"]),
+            "çıkarılacak" if d.get("cikar") else "eklenecek", d["kapsam_metni"], ("; " + atla) if atla else ""))
+    if not par:
+        return ""
+    yap = any(d.get("toplu") and d["ids"] for d in degisiklikler)
+    return " ".join(par) + (" Uygula ile sola aktarabilirsiniz." if yap else "")
+
+
 def plan_satirlari(birimler, karar, model_turu="agac", mesaj="", en_cok=900, katki=None):
     """Sohbet icin plan: butun birimler kisa (id | ad | secili); mesajda
     adi ya da kolonu gecen birimler ayrintili (aciklama, sayilar, mumkun)."""

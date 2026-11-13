@@ -2710,6 +2710,18 @@ def geleneksel_sohbet_endpoint():
             mesaj, g.get("sohbet") or [], plan, G.katalog_metni(uzun=True),
             g.get("segmentler") or [], {b["id"]: set(G.model_mumkun(b, model_turu)) for b in birimler},
             ayrinti=ayrinti, model_turu=model_turu)
+        # Toplu degisiklikler (kapsamla) birimlere genisler; dil modeli hicbir
+        # degisiklik uretmediyse kod mesajdan niyeti okur.
+        toplu = sonuc.get("toplu") or []
+        if not toplu and not sonuc.get("degisiklikler") and not sonuc.get("yeni"):
+            toplu = G.niyet_bul(mesaj)
+        genis = G.toplu_genislet(birimler, karar, toplu, model_turu, g.get("segmentler") or [])
+        sonuc["degisiklikler"] = genis + list(sonuc.get("degisiklikler") or [])
+        if genis and not sonuc.get("cevap"):
+            sonuc["cevap"] = G.toplu_cevap(genis)
+        elif toplu and not genis and not sonuc.get("cevap"):
+            sonuc["cevap"] = ("İstenen dönüşüm şu anki kararlarda hiçbir birimde %s; değişecek bir şey yok."
+                              % ("seçili değil" if toplu[0]["islem"] == "cikar" else "eklenebilir değil"))
         if hata and not sonuc.get("cevap"):
             return jsonify({"tamam": False, "hata": "Dil modeli cevap vermedi (%s)." % model_adi_gizle(hata)})
         # Sohbette onerilen yeni aileler arasi iliskiler: kod dogrular ve

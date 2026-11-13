@@ -19006,6 +19006,8 @@ function gelenekselKartiEkle(alan, blok) {
     birimler.forEach(b => { birimHarita[b.id] = b; });
     /* Öneri uygulanırken de birimde bu model türünde seçilebilen kodlar alınır. */
     const degisiklikUygula = d => {
+        /* Toplu değişiklik: kapsamdaki bütün birimlere aynı ekle / çıkar. */
+        if (d.toplu) { (d.ids || []).forEach(id => degisiklikUygula(Object.assign({}, d, { toplu: false, id: id }))); return; }
         const k = karar[d.id];
         if (!k || !birimHarita[d.id]) return;
         const mm = new Set(mumkunGor(birimHarita[d.id]));
@@ -19032,7 +19034,11 @@ function gelenekselKartiEkle(alan, blok) {
                 if ((d.ekle || []).length) t.push("ekle: " + d.ekle.map(c => kodAdi(c) + paramMetni(c, d.param)).join(", "));
                 if ((d.cikar || []).length) t.push("çıkar: " + d.cikar.map(kodAdi).join(", "));
                 const metin = elYap("div", "gl-oneri-metin");
-                metin.append(elYap("b", "", birimAdi[d.id] || d.id), elYap("span", "", " · " + t.join(" · ")));
+                metin.append(elYap("b", "", d.toplu ? "Toplu: " + ftBinlik((d.ids || []).length) + " birim ("
+                    + (d.kapsam_metni || "bütün birimler") + ")" : (birimAdi[d.id] || d.id)),
+                    elYap("span", "", " · " + t.join(" · ")));
+                if (d.toplu && d.atlanan) metin.appendChild(elYap("div", "gl-oneri-neden",
+                    ftBinlik(d.atlanan) + " birimde bu model türünde uygulanamadığı için atlanır."));
                 if (d.neden) metin.appendChild(elYap("div", "gl-oneri-neden", d.neden));
                 const dug = elYap("div", "gl-oneri-dug");
                 const u = elYap("button", "dg-toplu-btn", "Uygula");
@@ -19040,7 +19046,7 @@ function gelenekselKartiEkle(alan, blok) {
                 u.type = v.type = "button";
                 const dur = elYap("span", "gl-oneri-durum", "");
                 const ciz = () => {
-                    u.hidden = v.hidden = durumlar[i] !== "bekliyor" || kart.classList.contains("kilitli");
+                    u.hidden = v.hidden = durumlar[i] !== "bekliyor" || kart.classList.contains("kilitli") || (d.toplu && !(d.ids || []).length);
                     dur.textContent = durumlar[i] === "uygulandi" ? "Uygulandı" : durumlar[i] === "vazgecildi" ? "Vazgeçildi" : "";
                 };
                 u.onclick = () => { degisiklikUygula(d); durumlar[i] = "uygulandi"; ciz(); tumunuCiz(); };
