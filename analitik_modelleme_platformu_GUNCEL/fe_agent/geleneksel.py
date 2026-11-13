@@ -53,8 +53,10 @@ KATALOG = [
     ("grup_oran", "Segment medyanına oran", "tekli",
      "Değerin kendi segmentinin medyanına oranı; segment kolonu seçilir."),
     # Pencere ailesi (mevcut: oran, fark)
-    ("oran", "Oran (kısa / uzun pencere)", "aile", "Art arda iki pencerenin oranı; 1'den büyükse son dönemde artış."),
-    ("fark", "Fark (kısa eksi uzun pencere)", "aile", "Art arda iki pencerenin farkı."),
+    ("oran", "Oran (sıradaki pencere çifti)", "aile",
+     "Kısa pencere bölü sıradaki uzun pencere (3/7, 7/14); eski adıyla ratio."),
+    ("fark", "Fark (sıradaki pencere çifti)", "aile",
+     "Kısa pencere eksi sıradaki uzun pencere (3 eksi 7); eski adıyla delta."),
     ("norm", "Normalize oran", "aile",
      "Pencerelerin günlük ortalamalarının oranı; pencere uzunluğu farkını giderir."),
     ("buyume", "Büyüme oranı", "aile",
@@ -64,6 +66,16 @@ KATALOG = [
      "Pencerelerin günlük ortalamalarının std / ortalaması (en az 3 pencere)."),
     ("ardisik", "Art arda artış sayısı", "aile",
      "Pencereler arasındaki dönemlerde günlük ortalamanın eskiden yeniye kaç kez arttığı."),
+    ("oran_tum", "Oran (bütün pencere çiftleri)", "aile",
+     "Her kısa pencere bölü her uzun pencere (yalnız sıradaki değil: 3/30, 7/90 gibi)."),
+    ("fark_tum", "Fark (bütün pencere çiftleri)", "aile",
+     "Her kısa pencere eksi her uzun pencere (yalnız sıradaki değil)."),
+    ("donem", "Dönem parçaları", "aile",
+     "Pencerelerin arasında kalan her dönemin kendi değeri (7 günlük eksi 3 günlük: 4. ile 7. gün)."),
+    ("donem_pay", "Dönem payları", "aile",
+     "Her dönemin en uzun pencere toplamındaki payı."),
+    ("donem_oran", "Dönem oranları", "aile",
+     "Sıradaki iki dönemin günlük ortalamalarının oranı (yeni dönem bölü bir önceki dönem)."),
     ("en_yogun", "En yoğun dönemin payı", "aile",
      "Pencereler arasındaki dönemlerden en yoğun olanın en uzun pencere toplamındaki payı."),
     # Kolon ciftleri
@@ -122,10 +134,12 @@ ACIKLAMA_UZUN = {
               "En düşük %10 dilim 1, en yüksek %10 dilim 10.", "Doğrusal olmayan ilişkiyi kaba gruplarla yakalar."),
     "segment": ("Değerin kendi segmenti (ör. müşteri tipi) içindeki yüzdeliği ve z-skoru.",
                 "KOBİ içinde yüksek ama bireyselde sıradan bakiye.", "Segmentler arası ölçek farkı varsa."),
-    "oran": ("Art arda iki pencerenin oranı (kısa / uzun).",
+    "oran": ("Kısa pencere bölü gün sırasında bir sonraki uzun pencere (eski 02.2'deki ratio). Yalnız "
+             "sıradaki çiftler; bütün çiftler için Oran (bütün pencere çiftleri).",
              "Son 7 gün 300, son 30 gün 600 iken 0,5: harcamanın yarısı son haftada.",
              "Son dönemdeki hızlanma ya da yavaşlama."),
-    "fark": ("Art arda iki pencerenin farkı (kısa eksi uzun).", "Son 30 gün eksi son 90 gün.",
+    "fark": ("Kısa pencere eksi gün sırasında bir sonraki uzun pencere (eski 02.2'deki delta). Birikimli "
+             "pencerede değer sıfır ya da eksidir: aradaki dönemin eksi işaretlisi.", "Son 30 gün eksi son 90 gün.",
              "Mutlak değişim."),
     "norm": ("Pencerelerin günlük ortalamalarının oranı: (kısa / gün) bölü (uzun / gün).",
              "Son 7 gün günde 50, son 30 gün günde 20 iken 2,5: son hafta normalin 2,5 katı.",
@@ -163,6 +177,23 @@ ACIKLAMA_UZUN = {
     "ardisik": ("Pencerelerin arasında kalan dönemlerde günlük ortalama, en eski dönemden en yeniye "
                 "kaç kez arttı.", "90 ile 30, 30 ile 7, 7 ile 3 gün arasında hep artış: 2.",
                 "Süreklilik gösteren artış ya da azalış."),
+    "oran_tum": ("Ailenin bütün pencere çiftlerinde kısa pencere bölü uzun pencere. Sıradaki çiftler "
+                 "Oran ile aynıdır; burada atlanan çiftler de üretilir.",
+                 "3, 7, 30, 90 günlük ailede 6 kolon: 3/7, 3/30, 3/90, 7/30, 7/90, 30/90.",
+                 "Hızlanmanın hangi ufukta (son günler ya da son aylar) görüldüğü önemliyse."),
+    "fark_tum": ("Ailenin bütün pencere çiftlerinde kısa pencere eksi uzun pencere.",
+                 "3, 7, 30, 90 günlük ailede 6 kolon.",
+                 "Mutlak değişimin hangi ufukta olduğu önemliyse."),
+    "donem": ("Birikimli pencerelerin arasında kalan her dönemin kendi değeri: uzun pencere eksi bir önceki "
+              "kısa pencere.", "3 ve 7 günlük adet 5 ve 9 ise 4. ile 7. gün arası 4.",
+              "Pencereler birbirini içerdiğinde (7 gün 3 günü kapsar) dönemleri ayırmak için."),
+    "donem_pay": ("Her dönemin (ilk pencere dahil) en uzun pencere toplamındaki payı.",
+                  "90 günlük 100 işlemin 30'u 31. ile 90. gün arasındaysa o dönemin payı 0,3.",
+                  "İşlemin hangi döneme yığıldığı."),
+    "donem_oran": ("Sıradaki iki dönemin günlük ortalamalarının oranı: yeni dönem bölü bir önceki dönem. "
+                   "(3 gün eksi 7 gün) bölü (3 gün eksi 14 gün) gibi farkların oranıyla aynı sırayı verir.",
+                   "1. ile 3. gün günde 2, 4. ile 7. gün günde 1 ise oran 2.",
+                   "Son dönemin hemen önceki döneme göre hızlanması."),
     "en_yogun": ("Pencerelerin arasında kalan dönemlerden en yoğun olanın en uzun pencere toplamındaki payı.",
                  "90 günlük harcamanın %70'i son 7 günde ise 0,7.", "Tek seferlik sıçrama."),
     "carpim": ("İki kolonun çarpımı.", "Yeni müşteri bayrağı × limit kullanımı.",
@@ -180,7 +211,8 @@ ASAMA = {}
 for _k in ("log", "islog", "karekok", "kare", "yeo", "winsor", "rank", "zskor", "robust", "isaret",
            "sifir", "esik", "dilim", "kova", "frekans", "onehot", "woe", "hedef_ort"):
     ASAMA[_k] = 1
-for _k in ("oran", "fark", "norm", "buyume", "egim", "dk", "ardisik", "en_yogun"):
+for _k in ("oran", "fark", "norm", "buyume", "egim", "dk", "ardisik", "en_yogun", "oran_tum", "fark_tum",
+           "donem", "donem_pay", "donem_oran"):
     ASAMA[_k] = 2
 for _k in ("net", "cift_oran", "ort", "pay", "carpim", "kesisim", "yogunlasma", "segment",
            "grup_oran", "eksik_sayi"):
@@ -752,6 +784,12 @@ def uygunluk(b, hedef_ikili, segmentler=()):
         ekle("dk", n >= 3, "En az 3 pencere gerekir (%s var)." % n)
         ekle("ardisik", n >= 3 and topl and not neg,
              "En az 3 pencere ve toplanabilir, negatif olmayan ölçü gerekir.")
+        ekle("oran_tum", n >= 3, "Bütün çiftler için en az 3 pencere gerekir (2 pencerede Oran ile aynı).")
+        ekle("fark_tum", n >= 3, "Bütün çiftler için en az 3 pencere gerekir (2 pencerede Fark ile aynı).")
+        dn = "Toplanabilir (toplam ya da adet) ve negatif olmayan birikimli ölçü gerekir."
+        ekle("donem", topl and not neg, dn)
+        ekle("donem_pay", topl and not neg, dn)
+        ekle("donem_oran", topl and not neg, dn)
         ekle("en_yogun", n >= 2 and topl and not neg,
              "Toplanabilir ve negatif olmayan ölçü gerekir.")
     return mumkun, imkansiz
@@ -1065,6 +1103,56 @@ def _birim_uygula(df, b, kod, param, tr, y, koy):
                                % (a, c, a, _f(ga / float(gc - ga)), c, a, _f(ga / float(gc - ga)))),
                         "%s kolonunun, %s içinde kalan önceki dönemin aynı uzunluğa (%s gün) düşen "
                         "değerine göre büyümesi. Önceki dönem sıfırsa boş." % (a, c, ga))
+            return
+        if kod in ("oran_tum", "fark_tum"):
+            for i in range(len(kol)):
+                for j in range(i + 1, len(kol)):
+                    a, c = kol[i], kol[j]
+                    if kod == "oran_tum":
+                        koy("%s__DIV__%s" % (a, c), _bol(x[i], x[j]), kod, b, [a, c],
+                            _kodla("%s__DIV__%s" % (a, c), '_bol(_s(df, "%s"), _s(df, "%s"))' % (a, c)),
+                            "%s bölü %s (kısa / uzun pencere). Payda sıfırsa boş." % (a, c))
+                    else:
+                        koy("%s__MINUS__%s" % (a, c), x[i] - x[j], kod, b, [a, c],
+                            _kodla("%s__MINUS__%s" % (a, c), '_s(df, "%s") - _s(df, "%s")' % (a, c)),
+                            "%s eksi %s (kısa ve uzun pencere farkı)." % (a, c))
+            return
+        if kod in ("donem", "donem_pay", "donem_oran"):
+            # Donemler: 1. donem en kisa pencere; k. donem = x_k eksi x_(k-1),
+            # gunleri (g_(k-1), g_k]. Ad: AILE__DNM_<bas>_<son> (gun).
+            sinir = [0] + list(g)
+            parca, pkod, etiket = [], [], []
+            for i, k_ in enumerate(kol):
+                if i == 0:
+                    parca.append(x[0]); pkod.append('_s(df, "%s")' % k_)
+                else:
+                    parca.append(x[i] - x[i - 1])
+                    pkod.append('(_s(df, "%s") - _s(df, "%s"))' % (k_, kol[i - 1]))
+                etiket.append((sinir[i] + 1, sinir[i + 1]))
+            ad0 = b["ad"]
+            if kod == "donem":
+                for i in range(1, len(kol)):
+                    a_, z_ = etiket[i]
+                    ad = "%s__DNM_%s_%s" % (ad0, a_, z_)
+                    koy(ad, parca[i], kod, b, [kol[i], kol[i - 1]], _kodla(ad, pkod[i]),
+                        "%s. ile %s. gün arasındaki değer (%s eksi %s)." % (a_, z_, kol[i], kol[i - 1]))
+            elif kod == "donem_pay":
+                for i in range(len(kol)):
+                    a_, z_ = etiket[i]
+                    ad = "%s__DPAY_%s_%s" % (ad0, a_, z_)
+                    koy(ad, _bol(parca[i], x[-1]), kod, b, sorted({kol[i], kol[-1]} | ({kol[i - 1]} if i else set())),
+                        _kodla(ad, '_bol(%s, _s(df, "%s"))' % (pkod[i], kol[-1])),
+                        "%s. ile %s. gün arasındaki değerin %s içindeki payı. Payda sıfırsa boş."
+                        % (a_, z_, kol[-1]))
+            else:
+                for i in range(len(kol) - 1):
+                    (a1, z1), (a2, z2) = etiket[i], etiket[i + 1]
+                    u1, u2 = float(z1 - a1 + 1), float(z2 - a2 + 1)
+                    ad = "%s__DORAN_%s_%s__%s_%s" % (ad0, a1, z1, a2, z2)
+                    koy(ad, _bol(parca[i] / u1, parca[i + 1] / u2), kod, b, kol[:i + 2],
+                        _kodla(ad, '_bol(%s / %s, %s / %s)' % (pkod[i], u1, pkod[i + 1], u2)),
+                        "%s. ile %s. gün arasının günlük ortalaması bölü %s. ile %s. gün arasının günlük "
+                        "ortalaması (yeni dönem bölü önceki dönem). Payda sıfırsa boş." % (a1, z1, a2, z2))
             return
         if kod in ("ardisik", "en_yogun"):
             # Pencereler arasindaki donemler (kisa pencere en yeni): donem k =
@@ -1864,6 +1952,12 @@ def kolon_sayisi(b, sec):
             t += n - 1
         elif c in ("egim", "dk", "ardisik", "en_yogun"):
             t += 1
+        elif c in ("oran_tum", "fark_tum"):
+            t += n * (n - 1) // 2
+        elif c in ("donem", "donem_oran"):
+            t += n - 1
+        elif c == "donem_pay":
+            t += n
         elif c == "onehot":
             t += min((b.get("ozet") or {}).get("tekil") or 0, ONEHOT_EN_COK)
         elif c == "segment":

@@ -18367,6 +18367,9 @@ function gelenekselKartiEkle(alan, blok) {
             else if (g === "cift") t += (b.ciftler || [1]).length;
             else if (["oran", "fark", "norm", "buyume"].includes(c)) t += n - 1;
             else if (["egim", "dk", "ardisik", "en_yogun"].includes(c)) t += 1;
+            else if (["oran_tum", "fark_tum"].includes(c)) t += n * (n - 1) / 2;
+            else if (["donem", "donem_oran"].includes(c)) t += n - 1;
+            else if (c === "donem_pay") t += n;
             else if (c === "onehot") t += Math.min(Number(b.tekil || 0), 10);
             else if (c === "segment") t += 2 * n;
             else t += n;

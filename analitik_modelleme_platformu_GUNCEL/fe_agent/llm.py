@@ -4514,9 +4514,13 @@ KARAR AŞAMALARI (bu sırayla düşün):
    işaret, sıfır bayrağı, eşik, dilim, kova) ve kategorik kodlar (frekans,
    one-hot, WoE, hedef ortalaması).
 2. aşama, aile içi (yalnız pencere ailesinde): pencereler arasından
-   çıkarılabilecek bilginin en çoğu: oran, fark, normalize oran, büyüme,
-   eğim, değişkenlik, art arda artış, en yoğun dönem payı. Bilgi katacak
-   olanların hepsini seç; aynı bilgiyi tekrarlayanlardan birini seç.
+   çıkarılabilecek bilginin en çoğu: oran, fark (sıradaki pencere çiftleri),
+   oran ve fark bütün pencere çiftlerinde (oran_tum, fark_tum), dönem
+   parçaları, payları ve oranları (donem, donem_pay, donem_oran: birikimli
+   pencerelerin arasında kalan dönemler), normalize oran, büyüme, eğim,
+   değişkenlik, art arda artış, en yoğun dönem payı. Bilgi katacak olanların
+   hepsini seç; aynı bilgiyi tekrarlayanlardan birini seç (aynı çiftte oran,
+   normalize oran ve büyüme aynı sırayı verir).
 3. aşama, aileler arası (çift, grup, segment, satır): net akış, oran,
    ortalama tutar, pay, yoğunlaşma, segment içi göreli değer, segment
    medyanına oran, satırdaki eksik sayısı.

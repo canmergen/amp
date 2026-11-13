@@ -2624,6 +2624,24 @@ tanıtır; sayfalar sol bardan açılır.
   2,3 sn. Satır ve birim sayısıyla doğrusal artar; log'da "02.2 katkı
   ölçümü: n birim, s sn".
 
+**02.2 bütün pencere çiftleri ve dönem parçaları (aile içi, 2. aşama)**
+- `oran` ve `fark` (adları "sıradaki pencere çifti"; eski 02.2'deki ratio ve
+  delta) yalnız gün sırasında komşu çiftler: 3/7, 7/14, 14/30.
+- `oran_tum`, `fark_tum`: bütün çiftler (n pencerede n(n eksi 1)/2 kolon;
+  komşu çiftler `oran` / `fark` ile aynı adlı, ikisi seçilirse bir kez
+  üretilir). En az 3 pencere.
+- `donem`, `donem_pay`, `donem_oran`: birikimli pencerelerin arasındaki
+  dönemler (1. dönem en kısa pencere, k. dönem x_k eksi x_(k eksi 1), günleri
+  önceki pencere + 1 ile bu pencere arası). Adlar `AILE__DNM_4_7` (değer),
+  `AILE__DPAY_1_3` (en uzun pencere içindeki pay, ilk dönem dahil),
+  `AILE__DORAN_1_3__4_7` (sıradaki iki dönemin günlük ortalamaları oranı).
+  (3 eksi 7) / (3 eksi 14) gibi farkların oranı `DORAN` ile aynı sırayı
+  verir (testte sıra ilişkisi 0,9999). Yalnız toplanabilir ve negatif
+  olmayan ölçüde.
+- Katkı ölçümü bu kodları da ölçer; aynı sırada olanlardan (ör. oran ile
+  oran_tum) IV'si yüksek olan seçilir. Benzerlik en iyi kolonlar arasında
+  ölçülür.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).
