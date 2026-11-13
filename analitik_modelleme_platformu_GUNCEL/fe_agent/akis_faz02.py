@@ -882,23 +882,38 @@ def _sozluk_tip(s):
     return "kategorik"
 
 
-def yeni_kolon_sozlugu(durum, df):
+# Uretilen kolonun tipi veri okunmadan: bayraklar, gun farki, sozcuk sayisi
+# ve skor sayisal; gruplama ve konu kategorik.
+_SAYISAL_COZUM = ("kod_bos_bayrak", "metin_bos_bayrak", "tarih_bos_bayrak", "dolu_bayrak",
+                  "gun_farki")
+
+
+def yeni_kolon_sozlugu(durum, df=None):
     """[{"DEGISKEN", "TIP", "ACIKLAMA", "NULL_ORANI", "KAYNAK_KOLON"}]: 02.1'de
-    uretilip `df`'te (UPDT veri) bulunan yeni kolonlar."""
+    uretilip `df`'te (UPDT veri) bulunan yeni kolonlar. df verilmezse (eski
+    oturumda 02.1 onayinda kaydedilmemis satirlar) tip kolondan tahmin
+    edilir, bos orani yazilmaz."""
     p = durum.get("profil") or {}
     tanim = _aciklamalar(durum)
     satirlar, gor = [], set()
 
     def ekle(kolon, kaynak, cozum, ozet, bilgi):
-        if kolon in gor or kolon not in df.columns:
+        if kolon in gor or (df is not None and kolon not in df.columns):
             return
         gor.add(kolon)
+        if df is not None:
+            tip = _sozluk_tip(df[kolon])
+            bos = round(float(df[kolon].isna().mean()), 4) if len(df) else 0.0
+        else:
+            sayisal = cozum in _SAYISAL_COZUM or str(kolon).endswith(("_SOZCUK", "_SKOR")) \
+                or "_K_" in str(kolon)
+            tip = "sayısal" if sayisal else "kategorik"
+            bos = 0.0 if cozum in _SAYISAL_COZUM and cozum != "gun_farki" else None
         satirlar.append({
-            "DEGISKEN": kolon, "TIP": _sozluk_tip(df[kolon]),
+            "DEGISKEN": kolon, "TIP": tip,
             "ACIKLAMA": _yeni_kolon_aciklamasi(kolon, kaynak, str(tanim.get(kaynak) or ""),
                                                cozum, ozet, bilgi).strip(),
-            "NULL_ORANI": round(float(df[kolon].isna().mean()), 4) if len(df) else 0.0,
-            "KAYNAK_KOLON": kaynak})
+            "NULL_ORANI": bos, "KAYNAK_KOLON": kaynak})
     for k, v in (p.get("cozum_bilgi") or {}).items():
         for c in v.get("kolonlar") or []:
             ekle(c, k, v.get("cozum"), v.get("ozet") or "", v.get("bilgi"))

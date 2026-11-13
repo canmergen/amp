@@ -2437,6 +2437,19 @@ tanıtır; sayfalar sol bardan açılır.
   birleşik önerisi), `karar_kaynak`, `karar_gerekce` (kural ise
   `KARAR_KURAL_GEREKCESI`); düzeltme ve çözüm alanında `kaynak`.
 
+**02.1 yeni kolonların sözlük satırları her zaman tam**
+- `amp.updt_sozluk_ek`: `p["sozluk_ek"]` (02.1 onayında kurulur) eksikse ya
+  da hiç yoksa (eski oturum) 02.1'de üretilen her kolonun satırı
+  `akis_faz02.yeni_kolon_sozlugu(durum)` ile (veri okunmadan) tamamlanır:
+  çözüm kolonları ve düzeltme bayrakları (`_KOD`, `_BOS`). Tip kolondan
+  tahmin edilir (bayrak, gün farkı, sözcük, skor sayısal), bayrakta boş oranı
+  0, diğerlerinde yazılmaz.
+- `updt_sozluk_suz`: sözlükte satırı olup açıklaması boş olan üretilmiş
+  kolona açıklama yazılır.
+- Sözlük paneli (`akis_panel.feature_tablo`): `_SPLIT` açıklamasıyla
+  ("01.4 … adımında eklendi"); kolon özetinden gelen ama sözlük tanımı boş
+  üretilmiş kolon üretim açıklamasını alır.
+
 **02.1 hız: dil modeli önerileri ve süre kaydı**
 - Öneriler `llm._PROFIL_HAVUZ`'da (8 eşzamanlı) gider; parça 20 bulgu,
   çağrı zaman aşımı 75 sn, yeniden deneme yok. Bütün adım en çok

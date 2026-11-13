@@ -1284,14 +1284,35 @@ def feature_tablo(durum):
     except Exception:
         ek = []
     var = {str(s_["feature"]) for s_ in satirlar}
+    # 01.4'un ekledigi bolme kolonu (_SPLIT): UPDT sozlukte oldugu gibi
+    # panelde de, aciklamasiyla.
+    try:
+        from fe_agent import amp_pandas
+        from fe_agent.akis_faz01 import SPLIT_ACIKLAMA
+        if amp_mod.updt_split_var(durum):
+            ek = [{"DEGISKEN": amp_pandas.SPLIT_KOLON, "TIP": "kategorik",
+                   "ACIKLAMA": SPLIT_ACIKLAMA, "NULL_ORANI": 0.0,
+                   "_uretilen": "01.4 Örneklem ve Doğrulama Tasarımı adımında eklendi"}] + list(ek)
+    except Exception:
+        pass
+    # Listede zaten olan (kolon ozetinde gelen) uretilmis kolonun sozlukte
+    # tanimi yoksa uretim aciklamasi yazilir.
+    ek_harita = {str(x["DEGISKEN"]): x for x in ek}
+    for s_ in satirlar:
+        x = ek_harita.get(str(s_["feature"]))
+        if x and not str(s_.get("tanim") or "").strip():
+            s_["tanim"] = x.get("ACIKLAMA") or None
+            s_["durum"] = DURUM_TANIMLI if s_.get("durum") != DURUM_HARIC else s_["durum"]
+            s_["uretilen"] = x.get("_uretilen") or ("02.1 adımında %s kolonundan üretildi"
+                                                    % x.get("KAYNAK_KOLON", ""))
     for x in ek:
         if str(x["DEGISKEN"]) in var:
             continue
         satirlar.append({"feature": str(x["DEGISKEN"]), "tip": x.get("TIP"),
                          "tanim": x.get("ACIKLAMA") or None, "null_oran": x.get("NULL_ORANI"),
                          "durum": DURUM_TANIMLI, "iv": None, "c": None,
-                         "uretilen": "02.1 adımında %s kolonundan üretildi"
-                                     % x.get("KAYNAK_KOLON", "")})
+                         "uretilen": x.get("_uretilen") or ("02.1 adımında %s kolonundan üretildi"
+                                                            % x.get("KAYNAK_KOLON", ""))})
 
     return {
         "kolonlar": list(FEATURE_KOLONLARI),

@@ -209,7 +209,17 @@ def updt_sozluk_ek(durum):
     if durum.get("updt_asama") not in UPDT_DUSMUS_ASAMALAR:
         return []
     ek = (durum.get("profil") or {}).get("sozluk_ek")
-    return [x for x in ek if isinstance(x, dict) and x.get("DEGISKEN")] if isinstance(ek, list) else []
+    ek = [x for x in ek if isinstance(x, dict) and x.get("DEGISKEN")] if isinstance(ek, list) else []
+    # EKSIK SATIR TAMAMLANIR: 02.1'de uretilen her kolonun (cozum ve
+    # duzeltme bayraklari) satiri olmali. Onayda kaydedilmemis (eski oturum)
+    # ya da eksik kalmis satir kolonun bilgisinden kurulur.
+    try:
+        from fe_agent import akis_faz02
+        var = {str(x["DEGISKEN"]) for x in ek}
+        ek += [x for x in akis_faz02.yeni_kolon_sozlugu(durum) if str(x["DEGISKEN"]) not in var]
+    except Exception:           # pylint: disable=broad-except
+        pass
+    return ek
 
 
 def updt_sozluk_suz(durum, tablo):
@@ -248,6 +258,15 @@ def updt_sozluk_suz(durum, tablo):
     except Exception:           # pylint: disable=broad-except
         disi = None
     yeni = []
+    # Sozlukte satiri olup aciklamasi bos olan uretilmis kolon: aciklama yazilir.
+    if tanim is not None:
+        tablo = tablo.copy()
+        adlar = tablo[ad].astype(str).str.strip()
+        for x in ek:
+            m = (adlar == str(x["DEGISKEN"])) & tablo[tanim].isna() | (
+                (adlar == str(x["DEGISKEN"])) & (tablo[tanim].astype(str).str.strip() == ""))
+            if bool(m.any()):
+                tablo.loc[m, tanim] = x.get("ACIKLAMA", "")
     for x in ek:
         if str(x["DEGISKEN"]) in var:
             continue
