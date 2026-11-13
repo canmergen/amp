@@ -1543,6 +1543,18 @@ def profil_hesapla(durum):
         if len(d):
             ek["tarih_aralik"][str(k)] = [str(d.min())[:10], str(d.max())[:10]]
     _ad_kontrolleri(durum, df, adaylar, ek)
+    # SETLER ARASI CAKISMA (01.4 bolmesi): Train ile val, test ve OOT.
+    try:
+        st = setler(durum, df_tum)
+    except Exception:
+        st = None
+    ek["set_cakisma"] = (profil_ek.set_cakismasi(df_tum, st, m.get("id"), m.get("donem"),
+                                                 haric={SPLIT_KOLON}) if st else None)
+    try:
+        a_ = bolme_ayarlari(durum)
+        ek["set_bolme"] = {"birim": a_.get("birim"), "test_tanim": a_.get("test_tanim")}
+    except Exception:
+        ek["set_bolme"] = {}
     # Sabit kolonun tek degeri (kartta bulgu olarak).
     ek["sabit_deger"] = {}
     for k in teshis.get("sabit") or []:
@@ -2048,6 +2060,8 @@ def _profil_kurallari(esik=None):
               "büyük." % _sayi_metni(e["uc_kat"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
+        "set_cakisma": "Test (OOS) ya da Validasyon (OOT) setinde Train'de (MS) de geçen kimlik, "
+                       "kimlik ve dönem ya da bütün kolonları Train'deki bir satırla aynı satır.",
         "tarih": "Kolon tarih: tarih tipinde, YYYY-AA-GG ya da GG.AA.YYYY metni, ya da "
                  "YYYYAAGG sayısı. Hiçbir tarih alanı model değişkeni olmaz.",
         "yakin_icerik": "İki sayısal kolonun korelasyonu %s ya da üstünde, ya da biri "
@@ -2153,6 +2167,26 @@ _KONTROL_ACIKLAMA_EK = {
 }
 
 _KONTROL_ACIKLAMA_EK.update({
+    "set_cakisma": {
+        "kisa": "Aynı kayıt hem Train'de hem test setinde varsa model onu ezberler, test sonucu "
+                "olduğundan iyi görünür.",
+        "bilgi": "**Nedir?** 01.4'te ayrılan setleri Train (MS) ile karşılaştırır. Test (OOS) ve "
+                 "Validasyon (OOT) setinin her biri için üç şeye bakar: Train'de de geçen kimlik (aynı müşteri), "
+                 "Train'de de geçen kimlik ve dönem (aynı kayıt) ve bütün kolonları Train'deki "
+                 "bir satırla birebir aynı satır.\n\n"
+                 "**Neden önemli?** Model Train'deki kaydı öğrenir; aynı kayıt test setinde de "
+                 "varsa test onu zaten bilinen bir kayıt olarak ölçer ve başarı olduğundan iyi "
+                 "çıkar (sızıntı). Rastgele bölmede aynı müşterinin farklı ayları iki sete "
+                 "dağılırsa da benzer etki olur.\n\n"
+                 "**Örnek:** 202403 dönemindeki bir müşteri satırı hem Train'de hem Test (OOS) "
+                 "setinde.\n\n"
+                 "**Kapsam:** bütün satırlar; kimlik kolonu seçilmediyse yalnız bütün kolonları "
+                 "aynı satırlara bakılır (bölme kolonu _SPLIT karşılaştırmaya girmez). Zamansal "
+                 "bölmede aynı müşterinin sonraki dönemlerde (OOT) yer alması beklenir; "
+                 "asıl sorun aynı kimlik ve dönemin ya da aynı satırın iki sette olmasıdır.\n\n"
+                 "**Yakalanırsa:** bilgi için gösterilir. Çakışmayı önlemek için 01.4 "
+                 "Örneklem ve Doğrulama Tasarımı'nda bölme birimini Kimlik seçebilir ya da "
+                 "tekrar eden satırları kaynak veride giderebilirsiniz."},
     "tarih": {
         "kisa": "Ham tarih modelde değişken olarak anlamlı değildir; yerine dönem sonuna gün "
                 "farkı kullanılır.",
@@ -2369,6 +2403,7 @@ PROFIL_KONTROLLERI = (
     ("pencere", "Pencere Tutarlılığı", SONUC_BILGI, "Pencere tutarsız"),
     ("tutar_adet", "Tutar ve Adet Uyumsuzluğu", SONUC_BILGI, "Tutar ve adet uyumsuz"),
     ("tekrar", "Tekrar Eden Satır", SONUC_BILGI, ""),
+    ("set_cakisma", "Setler Arası Çakışma", SONUC_BILGI, ""),
 )
 # Karar isteyen kontrollerden varsayilani Çıkar olanlar (sizinti riski).
 KARAR_VARSAYILAN_CIKAR = ("gelecek_pencere", "birebir")
@@ -2596,6 +2631,11 @@ def profil_metni(durum, karar=False):
     notu = esik_degisiklik_notu(durum)
     if notu:
         parca.append(notu)
+    sizinti, _top = set_cakisma_sayilari((durum.get("profil") or {}).get("profil_ek") or {})
+    if sizinti:
+        parca.append("Test (OOS) ya da Validasyon (OOT) setinde %s satır Train'deki bir kaydın aynısı (aynı "
+                     "kimlik ve dönem ya da aynı satır); test sonucu olduğundan iyi görünebilir. "
+                     "Ayrıntısı Setler Arası Çakışma kontrolünde." % _sayi(sizinti))
     tk = ((durum.get("profil") or {}).get("profil_ek") or {}).get("tekrar") or {}
     tekrar = int(tk.get("toplam") or 0)
     if tekrar:
@@ -2712,6 +2752,10 @@ def profil_karti(durum, karar=False):
                                              "bulgular": (g.get("uye_bulgu") or {}).get(u, [])}
                                             for u in (g.get("sira") or g["uyeler"])]}
                                 for g in gr]
+        if a == "set_cakisma":
+            _set_cakisma_satiri(k, ek)
+            kontroller.append(k)
+            continue
         if a == "tekrar":
             tk = ek.get("tekrar") or {}
             k["birim"] = "satır"
@@ -2785,6 +2829,63 @@ def profil_karti(durum, karar=False):
                         if updt_modu(durum) else
                         "%s adımında veri setinden çıkarılır" % akis_atif.adim("baz")),
     }
+
+
+SET_TUR_ADI = {"kimlik": "aynı kimlik", "anahtar": "aynı kimlik ve dönem",
+               "tam": "bütün kolonları aynı satır"}
+
+
+def set_cakisma_sayilari(ek):
+    """(sizinti satiri, toplam cakisan satir): sizinti = ayni kimlik ve
+    donem ya da ayni satir; toplam = herhangi bir cakismasi olan satir
+    (set basina en buyuk sayim; kimlik cakismasi digerlerini kapsar)."""
+    sc = ek.get("set_cakisma") or {}
+    toplam, sizinti = {}, {}
+    for x in sc.get("cakisma") or []:
+        toplam[x["set"]] = max(toplam.get(x["set"], 0), x["satir"])
+        if x["tur"] in ("anahtar", "tam"):
+            sizinti[x["set"]] = max(sizinti.get(x["set"], 0), x["satir"])
+    return sum(sizinti.values()), sum(toplam.values())
+
+
+def _set_cakisma_satiri(k, ek):
+    """Setler Arasi Cakisma kontrol satirinin bulgu satirlari."""
+    from fe_agent.akis_durum import set_basligi
+    sc = ek.get("set_cakisma")
+    b = ek.get("set_bolme") or {}
+    k["birim"] = "satır"
+    if sc is None:
+        k["uygulandi"], k["sebep"] = False, "Bölme okunamadı"
+        k["sayi"] = 0
+        return
+    if len(sc.get("setler") or {}) < 2:
+        k["uygulandi"], k["sebep"] = False, "Train dışında set yok"
+        k["sayi"] = 0
+        return
+    zamansal = b.get("test_tanim") == "zamansal"
+    for x in sc.get("cakisma") or []:
+        ad = "%s: %s" % (set_basligi(x["set"], b.get("test_tanim")), SET_TUR_ADI[x["tur"]])
+        if x["tur"] == "kimlik":
+            metin = "Train'de de geçen %s kimlik, %s satır (setin %s)" % (
+                _sayi(x["kimlik"]), _sayi(x["satir"]), _yuzde_metni(x["pay"]))
+            if zamansal and x["set"] in ("test", "oot"):
+                metin += ". Zamansal bölmede aynı müşterinin sonraki dönemlerde olması beklenir"
+            elif b.get("birim") == "satir":
+                metin += (". Bölme birimi Satır; Kimlik seçilirse aynı müşteri tek sette "
+                          "kalır")
+        elif x["tur"] == "anahtar":
+            metin = ("Aynı kimlik ve dönem Train'de de var: %s satır (setin %s). Aynı kayıt "
+                     "iki sette, test sonucu olduğundan iyi görünür" % (
+                         _sayi(x["satir"]), _yuzde_metni(x["pay"])))
+        else:
+            metin = ("Bütün kolonları Train'deki bir satırla aynı: %s satır (setin %s)"
+                     % (_sayi(x["satir"]), _yuzde_metni(x["pay"])))
+        k["kolonlar"].append({"ad": ad, "aciklama": "", "bulgu": metin})
+    sizinti, toplam = set_cakisma_sayilari(ek)
+    k["sayi"] = toplam
+    if sizinti:
+        k["ne_olacak"] = ("Bilgi için gösterilir; aynı kayıt iki sette, bölmeyi 01.4'te "
+                          "değiştirebilirsiniz")
 
 
 def _cozum_satiri(kol, oneri, secim, bilgi):

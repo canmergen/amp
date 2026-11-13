@@ -17612,7 +17612,7 @@ function profilKartiEkle(alan, blok) {
             td.appendChild(tacik);
         }
         const sutunlar = birim === "satır"
-            ? [["Tekrar", "pf-i-ad"], ["Bulgu", "pf-i-bulgu"]]
+            ? [[k.anahtar === "set_cakisma" ? "Çakışma" : "Tekrar", "pf-i-ad"], ["Bulgu", "pf-i-bulgu"]]
             : [["Kolon", "pf-i-ad"], ["Açıklama", "pf-i-acik"], ["Bulgu", "pf-i-bulgu"]]
                 .concat(kararli ? [["Karar", "pf-i-karar"]] : [])
                 .concat(cozumlu ? [[duzeltmeli ? "Düzeltme" : "Çözüm", "pf-i-cozum"]] : []);

@@ -831,3 +831,66 @@ def tutar_adet_uyumu(df, adet_tutar, maks_ort):
             sonuc.append({"kolon": maks_k, "karsi": ort_k, "tur": "maks_ort", "adet": adet,
                           "pay": adet / max(int(ikisi.sum()), 1)})
     return sonuc
+
+
+def set_cakismasi(df, setler, kimlik=None, donem=None, haric=()):
+    """Train (MS) ile val, test ve OOT setleri arasindaki cakisma (01.4
+    bolmesi). setler: {"egitim", "val", "test", "oot": bool Series}. Doner:
+    {"setler": {ad: satir}, "cakisma": [{"set", "tur", "kimlik", "satir",
+    "pay"}]} ya da Train yoksa None. tur: "kimlik" (ayni kimlik Train'de
+    de var), "anahtar" (ayni kimlik ve donem Train'de de var), "tam" (butun
+    kolonlari ayni satir Train'de de var; haric kolonlar, ör. _SPLIT,
+    karsilastirmaya girmez). Butun satirlar, kesin sayim (tam satir 64
+    bitlik satir ozetiyle)."""
+    eg = setler.get("egitim")
+    if eg is None or not bool(pd.Series(eg).any()):
+        return None
+    eg = pd.Series(eg, index=df.index).fillna(False).astype(bool)
+    diger = {}
+    for ad in ("val", "test", "oot"):
+        m = setler.get(ad)
+        if m is None:
+            continue
+        m = pd.Series(m, index=df.index).fillna(False).astype(bool) & ~eg
+        if bool(m.any()):
+            diger[ad] = m
+    # test ve oot ayni satirlari gosterebilir (rastgele bolmede); bir kez.
+    if "test" in diger and "oot" in diger and bool((diger["test"] == diger["oot"]).all()):
+        diger.pop("oot")
+    sonuc = {"setler": {"egitim": int(eg.sum())}, "cakisma": []}
+    sonuc["setler"].update({a: int(m.sum()) for a, m in diger.items()})
+    if not diger:
+        return sonuc
+    kimlik_var = bool(kimlik) and kimlik in df.columns
+    anahtar = ([kimlik] + ([donem] if donem and donem in df.columns else [])) if kimlik_var else []
+    kolonlar = [c for c in df.columns if c not in set(haric)]
+    ozet = pd.util.hash_pandas_object(df[kolonlar], index=False) if kolonlar else None
+    tr_ozet = set(ozet[eg].tolist()) if ozet is not None else set()
+    if kimlik_var:
+        tr_kimlik = set(df.loc[eg, kimlik].dropna().tolist())
+        if len(anahtar) > 1:
+            tr_anahtar = set(map(tuple, df.loc[eg, anahtar].dropna().itertuples(index=False,
+                                                                               name=None)))
+    for ad, m in diger.items():
+        n = int(m.sum())
+        if kimlik_var:
+            k = df.loc[m, kimlik]
+            ortak = k.isin(tr_kimlik)
+            if bool(ortak.any()):
+                sonuc["cakisma"].append({"set": ad, "tur": "kimlik",
+                                         "kimlik": int(k[ortak].nunique()),
+                                         "satir": int(ortak.sum()), "pay": int(ortak.sum()) / n})
+            if len(anahtar) > 1:
+                cift = pd.Series([tuple(x) in tr_anahtar for x in
+                                  df.loc[m, anahtar].itertuples(index=False, name=None)],
+                                 index=k.index)
+                if bool(cift.any()):
+                    sonuc["cakisma"].append({"set": ad, "tur": "anahtar",
+                                             "kimlik": int(k[cift].nunique()),
+                                             "satir": int(cift.sum()), "pay": int(cift.sum()) / n})
+        if ozet is not None:
+            tam = ozet[m].isin(tr_ozet)
+            if bool(tam.any()):
+                sonuc["cakisma"].append({"set": ad, "tur": "tam", "kimlik": None,
+                                         "satir": int(tam.sum()), "pay": int(tam.sum()) / n})
+    return sonuc

@@ -2356,6 +2356,22 @@ tanıtır; sayfalar sol bardan açılır.
 - `p["profil_kapsam"] = {train: False, hedef_train, satir, toplam,
   train_satir}`; 02.1 metni ve kartın i balonu bunu söyler.
 
+**02.1 Setler Arası Çakışma**
+- `profil_ek.set_cakismasi`: 01.4 bölmesinin setleri (`setler()`) bütün
+  satırlarla karşılaştırılır. Test (OOS), Validasyon (OOT) ve OOT setinin
+  her biri için Train (MS) ile: aynı kimlik (`kimlik`), aynı kimlik ve dönem
+  (`anahtar`), bütün kolonları aynı satır (`tam`; _SPLIT hariç, 64 bitlik
+  satır özeti). Test ile OOT aynı satırlarsa bir kez sayılır.
+- Kartta "Setler Arası Çakışma" (`SONUC_BILGI`, birim satır, iç tablo
+  başlığı "Çakışma"): set başlığı ve tür, bulgu (kimlik, satır, setin
+  payı). Aynı kimlik zamansal bölmenin test ya da OOT setinde "beklenir"
+  notuyla; rastgele ve Satır birimli bölmede "Kimlik seçilirse aynı
+  müşteri tek sette kalır" notuyla. Aynı kimlik ve dönem ya da aynı satır
+  varsa Ne Olacak "aynı kayıt iki sette, bölmeyi 01.4'te
+  değiştirebilirsiniz" ve 02.1 metninde ayrı cümle
+  (`set_cakisma_sayilari`). Bölme okunamazsa ya da Train dışında set
+  yoksa uygulanmadı sebebi yazar.
+
 **02.1 kararları onayda UPDT veriye uygulanır**
 - "Kararları Onayla" ile (`veri_profili_uygula`) UPDT veri 02.1 sonu hâliyle
   yazılır: düzeltmeler ve çözüm kolonları eklenir, ardından
