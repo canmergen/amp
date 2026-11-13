@@ -2356,6 +2356,33 @@ tanıtır; sayfalar sol bardan açılır.
 - `p["profil_kapsam"] = {train: False, hedef_train, satir, toplam,
   train_satir}`; 02.1 metni ve kartın i balonu bunu söyler.
 
+**02.1 önerileri kolon bazında dil modelinden**
+- 02.1'deki her kolon bazlı seçimin ÖNERİSİ dil modelinden
+  (`llm.profil_oneri_sec`, `_profil_llm_onerileri`, `p["llm_oneri"] =
+  {kontrol: {kolon: {oneri, gerekce, kaynak, imza}}}`): Tut / Çıkar
+  kararları (`KARAR_KONTROLLERI`: gelecek penceresi, hedefle birebir,
+  dönemden sonraki tarih, neredeyse sabit, dönemde boş ya da sabit, eksik
+  sıçraması, değer kayması), bütün düzeltmeler (`_duzeltme_ham`) ve iki ya
+  da daha çok seçenekli çözümler (gruplama, metin, dolu bayrağı, gün farkı).
+  Her öğede kolon adı, açıklama, ölçü, tip, boş oranı, bulgu metni,
+  seçenekler (açıklamalarıyla) ve kural önerisi gider; 40'lık parçalar 3
+  eşzamanlı. Geçersiz seçim alınmaz; dil modeline ulaşılamazsa kural
+  önerisi (`kaynak: "kural"`). Aynı bulgu, seçenek, açıklama ve kural
+  imzasıyla alınmış öneri tekrar sorulmaz.
+- Çözüm önerileri gruplardan ÖNCE hesaplanır; dil modeli önerisi
+  `cozum_oneri[kolon]["oneri"]` ve `gerekce`'ye yazılır (kural gerekçesi
+  `kural_gerekce`). Karar varsayılanı `_karar_varsayilan` /
+  `_karar_cikar_sebebi` (bir kolon birden çok karar kontrolündeyse biri
+  Çıkar diyorsa Çıkar); aynı içerikli grup sıralaması da bunu kullanır.
+- Kartta gerekçe Bulgu sütununda: kararda "Önerilen Tut: …" ya da
+  "Önerilen Çıkar: …", düzeltmede "Öneri gerekçesi: …".
+- Toplu düzeltme listesi en çok önerilen seçimle açılır ("(önerilen)"
+  hepsinde aynıysa, değilse "(çoğuna önerilen)"); boş seçenek yok.
+- Kural tabanlı kalanlar: eşikler (genel), neredeyse aynı grupta kalacak
+  kolon (hedefi daha iyi ayıran; eşitse dil modeli), çözüm seçeneklerinin
+  hangilerinin sunulacağı (ör. gruplamanın tutarlılık testi), yuvarlama
+  basamağı ve kırpma sınırı gibi parametreler.
+
 **02.1 Ondalık Hassasiyeti (`ondalik`, düzeltme)**
 - `profil_ek.ondalik_kontrol` üretime giren ondalık (float) tipteki
   kolonlara bütün satırlarda bakar: boş hücresi olmayan ve bütün değerleri

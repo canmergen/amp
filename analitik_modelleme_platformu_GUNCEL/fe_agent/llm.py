@@ -4024,6 +4024,96 @@ def kod_duzeltme_sec(kolonlar):
     return sonuc, (hatalar[-1] if hatalar else None)
 
 
+# ===========================================================================
+# 02.1 KOLON BAZINDA ONERI: her kontrol bulgusunda (Tut / Çıkar karari,
+# duzeltme, cozum) hangi secenegin onerilecegini dil modeli kolonun adina,
+# aciklamasina ve bulgudaki sayilara bakip soyler. Tek dogru yok; karar
+# veriye gore. Kod yalniz gecerli secenegi alir; dil modeline ulasilamazsa
+# kural onerisi gecerli. Kullanici kartta degistirebilir.
+# ===========================================================================
+SISTEM_PROFIL_ONERI = """Sen bir kredi riski modelleme uzmanısın. Veri profili
+kontrollerinin bulguları verilecek; her bulgu bir kolon ve bir kontrol için.
+Her bulguda kolonun adı, sözlük açıklaması, ölçüsü, tipi, boş oranı, bulgudaki
+sayılar, seçenekler (kod: ne yapar) ve kural önerisi var. Her bulgu için
+seçeneklerden BİRİNİ öner. Tek doğru yok: kararı kolonun anlamına ve bulgudaki
+sayılara göre ver.
+
+İlkeler:
+- Sızıntı kontrolleri (Gelecek Penceresi, Hedefle Neredeyse Birebir, Dönemden
+  Sonraki Tarih): kolon gözlem anında bilinemeyecek bir bilgi taşıyorsa (hedef
+  olayından sonra kaydedilen durum, ileriye bakan pencere) cikar; vade gibi
+  doğal olarak ileri yazılan tarih ya da gözlem anında bilinen bir bilgi ise tut.
+- Neredeyse Sabit, Dönemde Boş ya da Sabit, Eksik Sıçraması, Değer Kayması:
+  veri toplama ya da birim değişikliği gibi bir kaynak sorunu görünüyorsa
+  cikar; gerçek iş davranışı ya da nadir ama anlamlı bir durumsa (takip, iflas,
+  dava bayrağı gibi) tut.
+- Özel kod (Gizli Eksik, Karışık Eksik): kod "bilgi yok" demekse kod_bos ya da
+  kod_bos_bayrak; kodun konduğu durum ayrıca bilgi taşıyorsa kod_bos_bayrak;
+  kod veriyi hazırlayanın bilinçli koyduğu bir değerse ve boşlar da aynı
+  durumu anlatıyorsa bos_koda; anlamı çıkarılamıyorsa birak.
+- Beklenmeyen Negatif: ölçü negatif olamıyorsa negatif_bos; negatif anlamlı
+  olabiliyorsa (iade, düzeltme kaydı) birak.
+- Uç Değer: tutar, gelir, bakiye gibi doğal olarak büyük değer alan kolonda
+  birak; değer açıkça hatalı girişe benziyorsa kirp.
+- Metin Olarak Yazılmış Boş ve Yazım Tutarsızlığı: genellikle düzelt; yazının
+  ayrı bir anlamı varsa bayraklı seçenek ya da birak.
+- Ondalık Hassasiyeti: genellikle tam_sayi ya da yuvarla; kesin değer
+  taşıyan kod ya da kimlik benzeri kolonda birak.
+- Çözümler (üretime girmeyen kolon): kolonun anlamına göre en çok bilgi
+  koruyan çözüm; gerçek kimlik numarası ya da anlamsız koddaysa cikar.
+- Emin değilsen kural önerisini seç.
+
+ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
+{"oneriler":[{"id":"...","secim":"...","gerekce":"bir cümle, Türkçe"}]}
+"id" değerini AYNEN kopyala; "secim" o bulgunun seçenek kodlarından biri
+olsun. Gerekçede kolonun anlamına ve bulgudaki sayıya değin.""" + SINIRLAYICI_KURALI
+PROFIL_ONERI_PARCA = 40
+PROFIL_ONERI_PARALEL = 3
+
+
+def _profil_oneri_parca(parca):
+    satirlar = []
+    for x in parca:
+        satirlar.append("BULGU id=%s" % x["id"])
+        satirlar.append("  kontrol: %s" % x.get("kontrol", ""))
+        satirlar.append("  kolon: %s | açıklama: %s | ölçü: %s | tip: %s | boş oranı: %s" % (
+            x.get("kolon"), (x.get("aciklama") or "(açıklama yok)")[:200], x.get("olcu") or "-",
+            x.get("tip") or "-", x.get("bos_orani") or "-"))
+        satirlar.append("  bulgu: %s" % str(x.get("bulgu") or "")[:300])
+        for o in x.get("secenekler") or []:
+            satirlar.append("  seçenek %s: %s" % (o["kod"], str(o.get("aciklama") or o.get("ad") or "")[:160]))
+        satirlar.append("  kural önerisi: %s" % x.get("kural", ""))
+    ham = _cagir(SISTEM_PROFIL_ONERI, _veri_blogu("Bulgular:", "\n".join(satirlar)), sicaklik=0.1)
+    veri = _json_ayristir(ham, {}, dict)
+    gecerli = {x["id"]: {o["kod"] for o in x.get("secenekler") or []} for x in parca}
+    sonuc = {}
+    for k in (veri.get("oneriler") or []) if isinstance(veri, dict) else []:
+        if not isinstance(k, dict):
+            continue
+        i, secim = str(k.get("id") or ""), str(k.get("secim") or "")
+        if i in gecerli and secim in gecerli[i]:
+            sonuc[i] = {"secim": secim, "gerekce": str(k.get("gerekce") or "").strip()[:300]}
+    return sonuc
+
+
+def profil_oneri_sec(ogeler):
+    """ogeler: [{"id", "kontrol", "kolon", "aciklama", "olcu", "tip",
+    "bos_orani", "bulgu", "secenekler": [{"kod", "ad", "aciklama"}],
+    "kural"}]. Doner: ({id: {"secim", "gerekce"}}, hata). Parcalar
+    PROFIL_ONERI_PARALEL eszamanli gider; gecersiz secim alinmaz."""
+    parcalar = [ogeler[i:i + PROFIL_ONERI_PARCA] for i in range(0, len(ogeler), PROFIL_ONERI_PARCA)]
+    sonuc, hatalar = {}, []
+    if not parcalar:
+        return sonuc, None
+    with futures.ThreadPoolExecutor(max_workers=PROFIL_ONERI_PARALEL) as ex:
+        for f in [ex.submit(_profil_oneri_parca, p) for p in parcalar]:
+            try:
+                sonuc.update(f.result())
+            except Exception as e:
+                hatalar.append(_hata_metni(e))
+    return sonuc, (hatalar[-1] if hatalar else None)
+
+
 def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None):
     """Kisitli gramerle yeni degisken hipotezleri. Ciktı ifade.dogrula()
     ile AST duzeyinde ayrica denetlenir.

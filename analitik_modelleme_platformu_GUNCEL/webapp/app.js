@@ -17571,24 +17571,25 @@ function profilKartiEkle(alan, blok) {
             duzKol.forEach(c => (c.duzeltme.secenekler || []).forEach(o => {
                 if (!ilk.secenekler.some(x => x.kod === o.kod)) ilk.secenekler.push(o);
             }));
-            const oneriler = new Set(duzKol.map(c => c.duzeltme.oneri));
-            if (oneriler.size === 1) ilk.oneri = duzKol[0].duzeltme.oneri;
+            /* Toplu listenin seçili değeri: kolonlara en çok önerilen seçim
+               (öneriyi kolon kolon dil modeli verir). Hepsinde aynıysa
+               "(önerilen)", değilse "(çoğuna önerilen)". */
+            const sayac = {};
+            duzKol.forEach(c => { sayac[c.duzeltme.oneri] = (sayac[c.duzeltme.oneri] || 0) + 1; });
+            const sirali = Object.keys(sayac).sort((x, y) => sayac[y] - sayac[x]);
+            ilk.oneri = sirali[0] || ((ilk.secenekler[0] || {}).kod);
+            const hepsiAyni = sirali.length === 1;
             const ust = elYap("div", "pf-toplu");
             ust.appendChild(elYap("span", "pf-toplu-not", "Bu kontroldeki bütün kolonlar için:"));
             const tsel = elYap("select", "pf-cozum-sec pf-toplu-sec");
             tsel.setAttribute("aria-label", k.ad + " toplu düzeltme");
-            if (!ilk.oneri) {
-                const op = document.createElement("option");
-                op.value = ""; op.textContent = "Düzeltme seçin";
-                tsel.appendChild(op);
-            }
             ilk.secenekler.forEach(o => {
                 const op = document.createElement("option");
                 op.value = o.kod;
-                op.textContent = o.ad + (o.kod === ilk.oneri ? " (önerilen)" : "");
+                op.textContent = o.ad + (o.kod === ilk.oneri ? (hepsiAyni ? " (önerilen)" : " (çoğuna önerilen)") : "");
                 tsel.appendChild(op);
             });
-            tsel.value = ilk.oneri || "";
+            tsel.value = ilk.oneri;
             /* Seçeneklerin açıklaması burada bir kez; satırlarda yalnız seçim. */
             const tacik = elYap("div", "pf-cozum-acik pf-toplu-acik");
             const taciklama = () => {
@@ -17632,6 +17633,8 @@ function profilKartiEkle(alan, blok) {
             const gz = (c.cozum && c.cozum.gerekce) || (c.duzeltme && c.duzeltme.gerekce);
             if (gz) bTd.appendChild(elYap("div", "pf-cozum-gerekce",
                 (c.duzeltme && c.duzeltme.gerekce ? "Öneri gerekçesi: " : "") + tireSade(gz)));
+            /* Tut / Çıkar önerisinin gerekçesi (kolon bazında dil modeli). */
+            if (c.karar_gerekce) bTd.appendChild(elYap("div", "pf-cozum-gerekce", tireSade(c.karar_gerekce)));
             r.appendChild(bTd);
             if (kararli) {
                 const kt = elYap("td", "pf-karar-hucre");
