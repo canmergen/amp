@@ -3271,6 +3271,8 @@ def profil_karti(durum, karar=False):
             k["uygulandi"], k["sebep"] = False, "Eşleşen adet ve tutar ya da en büyük ve ortalama kolonu yok"
         if a in BILGI_KONTROLLERI:
             k["ne_olacak"] = "Bilgi için gösterilir; işlem yapılmaz"
+        # Onerinin kaynagi (kartta bolum basliginda): dil modeli ya da kod.
+        k["oneri_kaynagi"] = "dil modeli" if a in LLM_KONTROLLERI or a == "ayni_icerik" else "kod"
         if a in ("ayni_icerik", "yakin_icerik"):
             gr = [g for g in ek.get("ayni_gruplar") or []
                   if (g.get("tur") == "yakin") == (a == "yakin_icerik")]

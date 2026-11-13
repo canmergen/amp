@@ -5746,3 +5746,8 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
   border-top: 1px solid var(--kenar);
 }
 .pf-esik-grup-not { color: var(--metin-soluk); margin-left: var(--b-3); }
+.pf-karar-bolum-kaynak {
+  margin-left: var(--b-3); padding: 1px 10px; border-radius: 999px; font-size: var(--fs-kucuk);
+  color: var(--metin-soluk); background: var(--yuzey-alt); border: 1px solid var(--kenar);
+}
+.pf-karar-bolum-kaynak.dm { color: var(--yesil); border-color: color-mix(in srgb, var(--yesil) 40%, var(--yuzey)); background: var(--yesil-acik); }

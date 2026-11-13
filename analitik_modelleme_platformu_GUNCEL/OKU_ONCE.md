@@ -2383,6 +2383,15 @@ tanıtır; sayfalar sol bardan açılır.
   önerisi.". Kartta öneri çipinin altında kaynak: "Veriden hesaplandı",
   "Dil modeli" ya da "Kural"; özette kaynak sayımı.
 - Log satırındaki `dil modeli` sayımında `kod` = kodla verilen öneri sayısı.
+- KAYNAK KARTTA AÇIK: kontrol satırında `oneri_kaynagi` ("dil modeli" ya da
+  "kod"). Kararlar sekmesinde her bölüm başlığında kaynak çipi ("Öneriyi dil
+  modeli verir (kolonun anlamından)" / "Öneriyi kod verir (kolonun
+  sayılarından)"; Tut ya da Çıkar'da kontrollere göre ikisi birden; çözüm ve
+  gruplarda kendi notu). Her satırda "Kaynak: Dil modeli", "Kaynak: Kod
+  (kolonun sayılarından)" ya da "Kaynak: Kod, sabit kural (dil modeline
+  ulaşılamadı)"; çok kontrollü Tut ya da Çıkar satırında her gerekçede
+  kontrol, önerisi ve kaynağı. Bayraklı seçenekler (kod_bos_bayrak,
+  metin_bos_bayrak) kullanıcı kararıyla olduğu gibi kaldı.
 - ÖNERİ EŞİKLERİ EŞİK FORMUNDA (`PROFIL_ONERI_ESIKLERI`, `PROFIL_ESIKLERI`'ne
   eklenir; formda "Öneri Eşikleri" başlığı altında, satırda `grup: "oneri"`):
   `baskin_min_satir` (30), `baskin_kat` (1,5 kat), `donem_tut_pay` (%35),
