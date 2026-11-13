@@ -2103,7 +2103,7 @@ def katki_etkisi(d, katki):
     return t
 
 
-def katki_tara(birimler, karar, katki, model_turu, segmentler=(), yon="ekle"):
+def katki_tara(birimler, karar, katki, model_turu, segmentler=(), yon="ekle", sapma=None):
     """Olcume gore toplu oneriler, donusum basina bir kayit.
     yon "ekle": secili olmayan ama yeni bilgi tasiyan (secili bir
     donusumle ayni sirada olmayan) kodlar. yon "cikar": secili ama olcume
@@ -2118,7 +2118,9 @@ def katki_tara(birimler, karar, katki, model_turu, segmentler=(), yon="ekle"):
         sec = list(((karar or {}).get(b["id"]) or {}).get("sec") or [])
         mm = set(katki_kodlari(b, model_turu)) - set(MONOTON)
         if yon == "ekle":
-            adaylar = sorted([c for c in mm if c not in sec and katki_degerli(k.get(c))],
+            # Kullanicinin bu birimden cikardigi donusum yeniden onerilmez.
+            cikan = set(((sapma or {}).get(b["id"]) or {}).get("cikar") or [])
+            adaylar = sorted([c for c in mm if c not in sec and c not in cikan and katki_degerli(k.get(c))],
                              key=lambda c: -(k[c].get("iv") or 0))
             tut = [c for c in sec if c in k]
             for c in adaylar:

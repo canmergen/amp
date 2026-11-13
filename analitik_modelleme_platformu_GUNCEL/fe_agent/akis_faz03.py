@@ -231,6 +231,110 @@ def sapma_hesapla(karar, oneri):
     return sapma
 
 
+# ---------------------------------------------------------------------------
+# 02.2 SOHBET HAFIZASI: her konusma turunun kisa ozeti calismanin klasorunde
+# (PROJE_HAFIZASI/<calisma>/geleneksel_sohbet_hafizasi.json). Ozet kodla
+# kurulur (dil modeline yazdirilmaz): kullanicinin istegi, cevabin basi,
+# onerilen ve uygulanan degisiklikler. "Yeni Sohbet" ekrani temizler, hafiza
+# kalir. Dil modeline son kayitlar ve kullanicinin kararlarda yaptigi
+# farklar (sapma ozeti) gider.
+# ---------------------------------------------------------------------------
+SOHBET_HAFIZA_EN_COK = 40
+
+
+def sohbet_hafiza_yolu(anahtar):
+    import re as _re
+    temiz = _re.sub(r"[^A-Za-z0-9_-]", "", str(anahtar or "ana"))
+    if _re.match(r"^v\d{1,6}$", temiz):
+        return "/%s/geleneksel_sohbet_hafizasi.json" % temiz
+    return "/oturum_%s_geleneksel_sohbet_hafizasi.json" % temiz
+
+
+def sohbet_hafiza_oku(anahtar):
+    import json as _json
+    try:
+        with _folder().get_download_stream(sohbet_hafiza_yolu(anahtar)) as akis:
+            veri = _json.loads(akis.read().decode("utf-8"))
+        return veri if isinstance(veri, dict) else {"kayitlar": []}
+    except Exception:
+        return {"kayitlar": []}
+
+
+def sohbet_hafiza_ekle(anahtar, mesaj, cevap, degisiklikler=(), uygulanan=0):
+    """Bir konusma turunu hafizaya ekler (en cok SOHBET_HAFIZA_EN_COK kayit;
+    eskiler tek satirlik "eski" ozetine katlanir). Yazilamazsa sessiz."""
+    import json as _json
+    import time as _time
+    from fe_agent import geleneksel as G
+    h = sohbet_hafiza_oku(anahtar)
+    oneriler = []
+    for d in degisiklikler or []:
+        kod = d.get("cikar") or d.get("ekle") or []
+        ad = ", ".join(G.KATALOG_HARITA[c]["ad"] for c in kod if c in G.KATALOG_HARITA)
+        if not ad:
+            continue
+        n = len(d.get("ids") or []) if d.get("toplu") else 1
+        oneriler.append("%s: %s birimden %s" % (ad, n, "çıkar" if d.get("cikar") else "ekle")
+                        if d.get("cikar") else "%s: %s birime ekle" % (ad, n))
+    kayit = {"zaman": _time.strftime("%Y-%m-%d %H:%M"), "kullanici": str(mesaj or "")[:240],
+             "cevap": " ".join(str(cevap or "").split())[:240], "oneriler": oneriler[:8]}
+    if uygulanan:
+        kayit["uygulanan"] = int(uygulanan)
+    kayitlar = list(h.get("kayitlar") or []) + [kayit]
+    if len(kayitlar) > SOHBET_HAFIZA_EN_COK:
+        fazla = kayitlar[:-SOHBET_HAFIZA_EN_COK]
+        eski = str(h.get("eski") or "")
+        eski = (eski + " " + " ".join("[%s] %s" % (k.get("zaman", ""), k.get("kullanici", "")[:80])
+                                      for k in fazla)).strip()
+        h["eski"] = eski[-1500:]
+        kayitlar = kayitlar[-SOHBET_HAFIZA_EN_COK:]
+    h["kayitlar"] = kayitlar
+    try:
+        _folder().upload_stream(sohbet_hafiza_yolu(anahtar),
+                                _json.dumps(h, ensure_ascii=False).encode("utf-8"))
+    except Exception:
+        pass
+    return h
+
+
+def sapma_ozeti(g):
+    """Kullanicinin kararlarda oneriden yaptigi farklar, donusum basina
+    (kalici tercih olarak dil modeline gider)."""
+    from fe_agent import geleneksel as G
+    ek, ck = {}, {}
+    for v in (g.get("sapma") or {}).values():
+        if not isinstance(v, dict) or "sec" in v:
+            continue
+        for c in v.get("ekle") or []:
+            ek[c] = ek.get(c, 0) + 1
+        for c in v.get("cikar") or []:
+            ck[c] = ck.get(c, 0) + 1
+    par = ["%s %s birimden çıkardı" % (G.KATALOG_HARITA[c]["ad"], n) for c, n in sorted(ck.items(), key=lambda x: -x[1])
+           if c in G.KATALOG_HARITA]
+    par += ["%s %s birime ekledi" % (G.KATALOG_HARITA[c]["ad"], n) for c, n in sorted(ek.items(), key=lambda x: -x[1])
+            if c in G.KATALOG_HARITA]
+    return ("Kullanıcı: " + "; ".join(par[:20]) + ".") if par else ""
+
+
+def sohbet_hafiza_metni(anahtar, g, en_cok=15):
+    """Dil modeline giden hafiza: kalici tercihler + son konusma ozetleri."""
+    h = sohbet_hafiza_oku(anahtar)
+    sat = []
+    so = sapma_ozeti(g)
+    if so:
+        sat.append("Kararlardaki kalıcı değişiklikler: " + so)
+    if h.get("eski"):
+        sat.append("Daha eski konuşmalar (kısa): " + h["eski"][-600:])
+    for k in (h.get("kayitlar") or [])[-en_cok:]:
+        t = "[%s] Kullanıcı: %s | Cevap: %s" % (k.get("zaman", ""), k.get("kullanici", ""), k.get("cevap", "")[:160])
+        if k.get("oneriler"):
+            t += " | Öneriler: " + "; ".join(k["oneriler"])
+        if k.get("uygulanan"):
+            t += " | %s öneri uygulandı" % k["uygulanan"]
+        sat.append(t)
+    return "\n".join(sat)
+
+
 def sapma_birlestir(g, karar, birimler, model_turu):
     """Yeni sapma: bu model turunde gorulebilen kodlarda karttaki fark;
     bu turde secilemeyen kodlardaki onceki istekler (dogrusalda "uc kirpma

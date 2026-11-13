@@ -4764,6 +4764,10 @@ Ne yapabilirsin:
   isterse ("değer katanları ekle", "gereksizleri çıkar") birimleri sen
   seçme: "arac": "katki_tara" (ekleme) ya da "katki_ele" (çıkarma) yaz; kod
   bütün birimlerin ölçümüne bakar ve önerileri kurar.
+- HAFIZA verilir: önceki konuşmaların özeti ve kullanıcının kararlarda
+  yaptığı kalıcı değişiklikler. Kullanıcının önceki isteklerini hatırla;
+  çıkardığı bir dönüşümü kendiliğinden yeniden önerme, sorulursa önceki
+  kararını hatırlat.
 - Önerdiğin değişiklik henüz yapılmadı: "kaldırıldı", "eklendi" DEME;
   "öneriyorum, Uygula ile aktarılır" de. Ölçüme dayanmayan performans
   iddiası ("olumsuz etki yaratabilir", "modeli iyileştirir") yazma; ölçüm
@@ -4781,7 +4785,7 @@ sınırlayıcıların dışındadır ve sana yazılmıştır.""" % (VERI_BAS, VE
 
 
 def geleneksel_sohbet(mesaj, gecmis, plan_satirlari, katalog_metni, segmentler, gecerli,
-                      ayrinti=None, model_turu="agac"):
+                      ayrinti=None, model_turu="agac", hafiza=""):
     """mesaj: kullanicinin yazdigi (sinirlayici DISINDA: talimattir);
     gecmis: [{"rol", "metin"}]; plan_satirlari: butun birimler kisa;
     ayrinti: mesajda gecen birimlerin ayrintisi; gecerli: {id: set(mumkun)}.
@@ -4795,7 +4799,9 @@ def geleneksel_sohbet(mesaj, gecmis, plan_satirlari, katalog_metni, segmentler, 
                 katalog_metni, ", ".join(segmentler) or "yok",
                 _veri_blogu("Plan (id | ad | seçili):", "\n".join(plan_satirlari)),
                 _veri_blogu("Mesajda geçen birimlerin ayrıntısı:", "\n".join(ayrinti or []) or "(yok)"),
-                _veri_blogu("Önceki konuşma:", konusma or "(yok)"),
+                _veri_blogu("Önceki konuşma:", konusma or "(yok)") + "\n\n" +
+                _veri_blogu("Hafıza (önceki konuşmaların özeti ve kullanıcının kalıcı değişiklikleri):",
+                            hafiza or "(yok)"),
                 str(mesaj or "")[:2000]))
     try:
         ham = _cagir(SISTEM_GELENEKSEL_SOHBET, istek, sicaklik=0.2, zaman_asimi=150)

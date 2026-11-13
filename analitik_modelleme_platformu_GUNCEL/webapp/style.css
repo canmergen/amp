@@ -5759,12 +5759,22 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .dg-tablo.vse-tablo th, .dg-tablo.vse-tablo td { text-align: center; }
 
 /* 02.2 Geleneksel Değişken Üretimi: iki sütun (kararlar ve sohbet) */
-.gl-izgara { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: var(--b-4); align-items: start; }
-@media (max-width: 1000px) { .gl-izgara { grid-template-columns: 1fr; } }
+.gl-izgara { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: var(--b-4); align-items: stretch; }
+@media (max-width: 1000px) {
+  .gl-izgara { grid-template-columns: 1fr; }
+  .gl-sag { min-height: 0; }
+  .gl-sag-ic { position: static; }
+  .gl-mesajlar { min-height: 160px; max-height: 52vh; }
+}
 .gl-sol, .gl-sag { min-width: 0; display: flex; flex-direction: column; gap: var(--b-2); }
-.gl-sag { border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r); padding: 0 var(--b-3) var(--b-3);
-  background: color-mix(in srgb, var(--kirmizi) 7%, var(--yuzey)); position: sticky; top: var(--b-3);
-  max-height: 82vh; overflow: hidden; }
+/* Sohbet paneli sol sütunun boyu kadar uzar: içerik mutlak konumlu iç
+   kutuda, böylece satırın yüksekliğini sol sütun belirler; mesajlar alanı
+   kalan yüksekliği doldurur, giriş kutusu altta kalır. */
+.gl-sag { border: 1px solid var(--kirmizi-cizgi); border-radius: var(--r); padding: 0;
+  background: color-mix(in srgb, var(--kirmizi) 7%, var(--yuzey)); position: relative;
+  min-height: 560px; overflow: hidden; }
+.gl-sag-ic { position: absolute; inset: 0; display: flex; flex-direction: column; gap: var(--b-2);
+  padding: 0 var(--b-3) var(--b-3); min-height: 0; }
 .gl-sag-baslik { font-weight: var(--fw-kalin); color: #fff; background: var(--kirmizi-dolgu);
   margin: 0 calc(-1 * var(--b-3)); padding: 9px var(--b-3); }
 .gl-sag-not { margin-top: var(--b-1); }
@@ -5822,7 +5832,7 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-param-sec { font: inherit; }
 .gl-imkansiz { display: flex; gap: var(--b-2); align-items: baseline; color: var(--metin-soluk); line-height: 1.4; }
 .gl-kolon-liste { overflow-wrap: anywhere; line-height: 1.5; }
-.gl-mesajlar { flex: 1; min-height: 160px; max-height: 52vh; overflow: auto; display: flex; flex-direction: column; gap: var(--b-2); }
+.gl-mesajlar { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--b-2); }
 .gl-oneriler { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; white-space: normal; }
 .gl-oneri { border-top: 1px dashed var(--kenar); padding-top: 6px; display: flex; flex-direction: column; gap: 4px; }
 .gl-oneri-neden { color: var(--metin-soluk); font-size: var(--fs-kucuk); }

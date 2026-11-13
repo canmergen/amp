@@ -2724,6 +2724,26 @@ tanıtır; sayfalar sol bardan açılır.
   olan dönüşüm için sayılır ("N birimde bu model türünde gereksiz olduğu
   için eklenmez").
 
+**02.2 sohbet paneli boyu ve sohbet hafızası**
+- PANEL: sohbet paneli sol sütunun boyu kadar uzar (`.gl-izgara`
+  align-items stretch; içerik `.gl-sag-ic` mutlak konumlu, böylece satır
+  yüksekliğini sol sütun belirler, mesajlar kalan yeri doldurur, giriş
+  kutusu altta). En az 560 px. 1.000 px altında tek sütun ve eski düzen.
+- HAFIZA: her konuşma turu çalışmanın klasöründe
+  `PROJE_HAFIZASI/<çalışma>/geleneksel_sohbet_hafizasi.json` dosyasına
+  kodla özetlenir (`akis_faz03.sohbet_hafiza_ekle`): zaman, kullanıcının
+  mesajı (240 karakter), cevabın başı (240), öneriler ("Uç kırpma: 80
+  birimden çıkar"), onayla uygulanan öneri sayısı. En çok 40 kayıt;
+  eskiler tek satırlık "eski" özetine katlanır (1.500 karakter).
+  Yazılamazsa sessiz geçer.
+- Dil modeline her mesajda "Hafıza" bloğu gider (`sohbet_hafiza_metni`):
+  kararlardaki kalıcı değişiklikler (`sapma_ozeti`: "Uç kırpma 80 birimden
+  çıkardı") + eski özet + son 15 kayıt. İstem: önceki istekleri hatırla,
+  çıkarılan dönüşümü kendiliğinden yeniden önerme.
+- "Yeni Sohbet" ekrandaki mesajları siler; hafıza dosyası kalır.
+- Ölçüme dayalı ekleme taraması (`katki_tara`, `sapma`) kullanıcının o
+  birimden çıkardığı dönüşümü yeniden önermez.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

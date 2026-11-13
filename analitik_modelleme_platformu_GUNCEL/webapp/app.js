@@ -19040,7 +19040,7 @@ function gelenekselKartiEkle(alan, blok) {
     sagBas.appendChild(elYap("span", "", "Plan Üzerine Sohbet"));
     const temizBtn = elYap("button", "gl-sohbet-temizle", "⟳ Yeni Sohbet");
     temizBtn.type = "button";
-    temizBtn.title = "Geçmiş mesajları siler; dil modeli yeni konuşmaya önceki mesajları görmeden başlar. Kararlar değişmez.";
+    temizBtn.title = "Ekrandaki mesajları siler. Konuşmaların kısa özeti çalışmanın klasöründe kalır; dil modeli önceki isteklerinizi oradan hatırlar. Kararlar değişmez.";
     temizBtn.onclick = () => {
         if (kart.classList.contains("kilitli") || temizBtn.disabled) return;
         temizBtn.disabled = true;
@@ -19203,6 +19203,11 @@ function gelenekselKartiEkle(alan, blok) {
     ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); yolla(); } });
     giris.append(ta, gb);
     if (!kilitli) { sag.appendChild(giris); sag.appendChild(bekle); }
+
+    /* Sağ panelin içeriği iç kutuya: panel sol sütun boyunca uzar. */
+    const sagIc = elYap("div", "gl-sag-ic");
+    while (sag.firstChild) sagIc.appendChild(sag.firstChild);
+    sag.appendChild(sagIc);
 
     /* ---- Alt: özet ve onay ---- */
     const alt = elYap("div", "pf-karar-alt");

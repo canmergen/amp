@@ -2721,6 +2721,7 @@ def geleneksel_sohbet_endpoint():
             g["sohbet"] = sohbet[-60:]
             durum["geleneksel"] = g
             _kaydet(anahtar, durum)
+            _f3o.sohbet_hafiza_ekle(anahtar, mesaj, cevap, [], uygulanan)
             return jsonify({"tamam": True, "cevap": cevap, "degisiklikler": []})
         model_turu = g.get("model_turu") or "agac"
         # Ekrandaki secimler sunucuya (yeniden cizimde kaybolmasin).
@@ -2731,7 +2732,7 @@ def geleneksel_sohbet_endpoint():
         sonuc, hata = llm_mod.geleneksel_sohbet(
             mesaj, g.get("sohbet") or [], plan, G.katalog_metni(uzun=True),
             g.get("segmentler") or [], {b["id"]: set(G.model_mumkun(b, model_turu)) for b in birimler},
-            ayrinti=ayrinti, model_turu=model_turu)
+            ayrinti=ayrinti, model_turu=model_turu, hafiza=_f3.sohbet_hafiza_metni(anahtar, g))
         # Toplu degisiklikler (kapsamla) birimlere genisler; dil modeli hicbir
         # degisiklik uretmediyse kod mesajdan niyeti okur.
         katki = g.get("katki") or {}
@@ -2741,7 +2742,7 @@ def geleneksel_sohbet_endpoint():
         tara = {"katki_tara": "ekle", "katki_ele": "cikar"}.get(sonuc.get("arac")) or \
             (G.analiz_niyeti(mesaj) if not G.niyet_bul(mesaj) else None)
         if tara:
-            oner = G.katki_tara(birimler, karar, katki, model_turu, segler, tara)
+            oner = G.katki_tara(birimler, karar, katki, model_turu, segler, tara, g.get("sapma"))
             sonuc["degisiklikler"] = oner
             sonuc["cevap"] = (G.toplu_cevap(oner, katki) if oner else
                               ("Ölçüme göre eklenince yeni bilgi getirecek, seçili olmayan dönüşüm yok." if tara == "ekle"
@@ -2811,6 +2812,7 @@ def geleneksel_sohbet_endpoint():
         g["sohbet"] = sohbet[-60:]
         durum["geleneksel"] = g
         _kaydet(anahtar, durum)
+        _f3.sohbet_hafiza_ekle(anahtar, mesaj, sonuc.get("cevap") or "", sonuc.get("degisiklikler") or [])
         if kart is not None:
             kart["sohbet"] = (g.get("sohbet") or [])[-40:]
         return jsonify({"tamam": True, "cevap": sonuc.get("cevap") or "",
