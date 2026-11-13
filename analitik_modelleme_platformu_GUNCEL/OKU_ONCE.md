@@ -2374,8 +2374,42 @@ tanıtır; sayfalar sol bardan açılır.
   `kural_gerekce`). Karar varsayılanı `_karar_varsayilan` /
   `_karar_cikar_sebebi` (bir kolon birden çok karar kontrolündeyse biri
   Çıkar diyorsa Çıkar); aynı içerikli grup sıralaması da bunu kullanır.
-- Kartta gerekçe Bulgu sütununda: kararda "Önerilen Tut: …" ya da
-  "Önerilen Çıkar: …", düzeltmede "Öneri gerekçesi: …".
+- GEREKÇE KURALI (`SISTEM_PROFIL_ONERI`): gerekçe o kolonun kararıdır;
+  kolonun adından ya da açıklamasından çıkan anlam, bulgudan en az bir
+  sayı ve seçeneğin bu kolonda ne sağladığı. İlke cümlesini kopyalayan ya
+  da sayısız koşullu cümle ("…yorsa") olan gerekçe `llm._ilke_kopyasi` ile
+  alınmaz (öneri kalır, gerekçe boş: kartta "Gerekçe verilmedi.").
+- ÖNCEKİ SEÇİMLER ÖNERİYİ EZMEZ: onayda `secim_sapmalari` yalnız öneriden
+  farklı seçilenleri `p["secim_sapma"] = {karar, cozum, duzeltme, ayni}`
+  olarak kaydeder. `profil_hesapla` profili yeniden çıkarınca
+  `profil_karar`, `cozum_secim`, `duzeltme_secim`, `ayni_secim` YALNIZ bu
+  sapmalardan (hâlâ geçerli olanlar) kurulur; gerisi yeni öneriyi alır.
+  `secim_sapma` olmayan eski oturumda hiçbir eski seçim taşınmaz.
+- Kart satırlarında öneri ve kaynağı ayrı: karar satırında
+  `karar_oneri` (bu kontrolün önerisi), `karar_oneri_kolon` (kolonun
+  birleşik önerisi), `karar_kaynak`, `karar_gerekce` (kural ise
+  `KARAR_KURAL_GEREKCESI`); düzeltme ve çözüm alanında `kaynak`.
+
+**02.1 kartı: Analiz ve Kararlar sekmeleri (`profilKartiEkle`)**
+- Üstte sayı karoları; altında iki sekme. **Analiz**: türler, eksik değer
+  çubuğu, Kontroller tablosu (detayda yalnız Kolon, Açıklama, Bulgu; aynı
+  içerikli gruplarda `pfAyniAnaliz`: Grup, Kolonlar, İlişki), hedef
+  dağılımı. Karar içeren kontrolün detayında "Kararlara Git".
+  **Kararlar** (karar beklerken açık gelir; sekmede toplam karar sayısı):
+  - "Dil Modelinin Önerileri" özeti: her bölüm için kolon sayısı ve
+    önerilen seçeneklerin dağılımı, kural önerisi kullanılan öğe sayısı,
+    seçimlerin öneriden kaç yerde farklı olduğu (canlı) ve "Hepsini
+    Önerilere Döndür".
+  - Bölümler: Tut ya da Çıkar (kolon başına tek satır; birden çok
+    kontroldeki bulgular alt alta, öneri biri Çıkar diyorsa Çıkar), her
+    düzeltme kontrolü (toplu seçim ve seçenek açıklamaları bir kez),
+    Üretime Girmeyen Kolonların Çözümü, Aynı ve Neredeyse Aynı Kolonlar
+    (`pfAyniTablosu`).
+  - Tablo: Kolon (açıklama altında), Bulgu, Önerilen (yeşil çip dil
+    modeli, gri çip kural; altında gerekçe), Seçiminiz (onay sonrası
+    Karar). Öneriden farklı satır sarı ve "Öneriden farklı".
+- Onay alanı (sekmelerin altında) özetin sonunda öneriden farklı seçim
+  sayısını da yazar. Gönderilen veri değişmedi.
 - Toplu düzeltme listesi en çok önerilen seçimle açılır ("(önerilen)"
   hepsinde aynıysa, değilse "(çoğuna önerilen)"); boş seçenek yok.
 - Kural tabanlı kalanlar: eşikler (genel), neredeyse aynı grupta kalacak

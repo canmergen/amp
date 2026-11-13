@@ -427,11 +427,13 @@ def duzeltme_onerileri(durum):
             o = (lo.get(a) or {}).get(k) or {}
             if o.get("kaynak") == "dil modeli" and o.get("oneri") in v["secenekler"]:
                 oneri, gerekce = o["oneri"], str(o.get("gerekce") or "")
+                kaynak = "dil modeli"
             else:
-                oneri = v["kural"]
-                gerekce = KOD_KURAL_GEREKCESI.get(a, "") if a in KOD_DUZELTMELERI else ""
+                oneri, kaynak = v["kural"], "kural"
+                gerekce = KOD_KURAL_GEREKCESI.get(a, "Dil modeli önerisi alınamadı; kural önerisi.")
             cikti.setdefault(a, {})[k] = {"secenekler": v["secenekler"], "oneri": oneri,
-                                          "gerekce": gerekce, "kayit": v["kayit"]}
+                                          "gerekce": gerekce, "kayit": v["kayit"],
+                                          "kaynak": kaynak}
     return cikti
 
 
@@ -441,6 +443,12 @@ def duzeltme_onerileri(durum):
 # onceden alinmis oneri tekrar sorulmaz. Dil modeline ulasilamazsa kural.
 KARAR_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "baskin", "donem",
                      "sicrama", "kayma")
+
+
+KARAR_KURAL_GEREKCESI = {
+    "cikar": "Dil modeli önerisi alınamadı; sızıntı kontrolünde kural önerisi Çıkar.",
+    "tut": "Dil modeli önerisi alınamadı; kural önerisi Tut.",
+}
 
 
 def _karar_kurali(a):
@@ -1659,28 +1667,33 @@ def profil_hesapla(durum):
         if o.get("kaynak") == "dil modeli" and o.get("oneri") in (v.get("secenekler") or []):
             v["kural_gerekce"] = v.get("gerekce", "")
             v["oneri"], v["gerekce"] = o["oneri"], o.get("gerekce") or v.get("gerekce", "")
+            v["kaynak"] = "dil modeli"
     ek["ayni_gruplar"] = _ayni_gruplari(durum, ek, p, df_tum)
     p.pop("kod_oneri", None)
     p["profil_teshis"] = teshis
     p["profil_ek"] = ek
     p["profil_dataset"] = yazildi
-    # Onceki secim yalniz hala var olan gruplarda ve grubun uyesiyse gecerli.
-    eski_secim = p.get("ayni_secim") if isinstance(p.get("ayni_secim"), dict) else {}
+    # ONCEKI SECIMLER: profil yeniden cikarilinca kartta her bulguda dil
+    # modelinin (yoksa kuralin) YENI onerisi secili gelir. Onceki onaydan
+    # yalniz kullanicinin oneriden BILEREK farkli sectikleri (p["secim_sapma"])
+    # tasinir; hala gecerli olanlar. Eski oturumda sapma kaydi yoksa hicbir
+    # eski secim tasinmaz (eski tam secimler yeni oneriyi ezmesin).
+    sapma = p.get("secim_sapma") if isinstance(p.get("secim_sapma"), dict) else {}
     uyeler = {g["id"]: set(g["uyeler"]) for g in ek["ayni_gruplar"]}
-    p["ayni_secim"] = {k: v for k, v in eski_secim.items() if v in uyeler.get(k, set())}
+    p["ayni_secim"] = {k: v for k, v in (sapma.get("ayni") or {}).items()
+                       if v in uyeler.get(k, set())}
+    p["profil_karar"] = dict(sapma.get("karar") or {})
     teshis["ayni_icerik"] = _ayni_kopyalar(p)
-    # Onceki kararlar yalniz hala karar isteyen kolonlar icin gecerli.
-    eski_karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
-    p["profil_karar"] = {k: v for k, v in eski_karar.items()
-                         if k in set(_karar_adaylari(p))}
-    # Cozum secimi: onceki secim yalniz hala gecerli secenekse kalir.
-    eski_cozum = p.get("cozum_secim") if isinstance(p.get("cozum_secim"), dict) else {}
-    p["cozum_secim"] = {k: v for k, v in eski_cozum.items()
+    # Sapma yalniz hala karar isteyen kolonlar icin gecerli.
+    p["profil_karar"] = {k: v for k, v in p["profil_karar"].items()
+                         if k in set(_karar_adaylari(p))
+                         and v in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR)}
+    teshis["ayni_icerik"] = _ayni_kopyalar(p)
+    p["cozum_secim"] = {k: v for k, v in (sapma.get("cozum") or {}).items()
                         if v in ((p["cozum_oneri"].get(k) or {}).get("secenekler") or [])}
-    # Duzeltme secimleri: yalniz hala gecerli kontrol/kolon/secenek kalir.
-    eski_duz = p.get("duzeltme_secim") if isinstance(p.get("duzeltme_secim"), dict) else {}
     durum["profil"] = p
     duz_oneri = duzeltme_onerileri(durum)
+    eski_duz = sapma.get("duzeltme") or {}
     p["duzeltme_secim"] = {a: {k: c for k, c in (eski_duz.get(a) or {}).items()
                                if c in ((duz_oneri.get(a) or {}).get(k) or {}).get("secenekler", [])}
                            for a in duz_oneri}
@@ -1963,6 +1976,32 @@ def _karar_cikar_sebebi(p, ek=None):
     return cikti
 
 
+def secim_sapmalari(durum):
+    """Kullanicinin oneriden farkli sectikleri: {"karar": {kolon: tut|cikar},
+    "cozum": {kolon: kod}, "duzeltme": {kontrol: {kolon: kod}}, "ayni":
+    {grup id: kolon}}. Profil yeniden cikarilinca yalniz bunlar tasinir;
+    gerisi yeni oneriyi alir."""
+    p = durum.get("profil") or {}
+    vars_ = _karar_varsayilan(p)
+    karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    cikti = {"karar": {k: v for k, v in karar.items()
+                       if v != vars_.get(k, PROFIL_KARAR_TUT)}}
+    oneri = cozum_onerileri(durum)
+    cikti["cozum"] = {k: c for k, c in (p.get("cozum_secim") or {}).items()
+                      if k in oneri and c != oneri[k].get("oneri")}
+    duz = duzeltme_onerileri(durum)
+    cikti["duzeltme"] = {}
+    for a, kolonlar in (p.get("duzeltme_secim") or {}).items():
+        for k, c in (kolonlar or {}).items():
+            o = (duz.get(a) or {}).get(k)
+            if o and c != o.get("oneri"):
+                cikti["duzeltme"].setdefault(a, {})[k] = c
+    gruplar = {g["id"]: g for g in ((p.get("profil_ek") or {}).get("ayni_gruplar") or [])}
+    cikti["ayni"] = {gid: v for gid, v in (p.get("ayni_secim") or {}).items()
+                     if gid in gruplar and v != gruplar[gid].get("oneri")}
+    return cikti
+
+
 def profil_karar_kolonlari(durum):
     return _karar_adaylari(durum.get("profil") or {})
 
@@ -2049,6 +2088,7 @@ def veri_profili_uygula(durum):
                 if c in (((duz_oneri.get(str(a)) or {}).get(str(k)) or {}).get("secenekler") or []):
                     sec.setdefault(str(a), {})[str(k)] = str(c)
         p["duzeltme_secim"] = sec
+    p["secim_sapma"] = secim_sapmalari(durum)
     durum["profil"] = p
     _cozum_ogren(durum)
     # UPDT VERI: duzeltmeler ve cozum kolonlari dogrudan veriye yazilir
@@ -2900,9 +2940,15 @@ def profil_karti(durum, karar=False):
             if sonuc == SONUC_KARAR:
                 satir["karar"] = karar_deger.get(kol, karar_vars.get(kol, PROFIL_KARAR_TUT))
                 o = ((p.get("llm_oneri") or {}).get(a) or {}).get(kol) or {}
-                if o.get("kaynak") == "dil modeli" and o.get("gerekce"):
-                    satir["karar_gerekce"] = "Önerilen %s: %s" % (
-                        "Çıkar" if o.get("oneri") == PROFIL_KARAR_CIKAR else "Tut", o["gerekce"])
+                llm_var = o.get("kaynak") == "dil modeli" \
+                    and o.get("oneri") in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR)
+                # Bu kontrolun onerisi (kolon birden cok kontroldeyse biri
+                # Çıkar diyorsa kolonun onerisi Çıkar: karar_oneri_kolon).
+                satir["karar_oneri"] = o["oneri"] if llm_var else _karar_kurali(a)
+                satir["karar_oneri_kolon"] = karar_vars.get(kol, PROFIL_KARAR_TUT)
+                satir["karar_kaynak"] = "dil modeli" if llm_var else "kural"
+                satir["karar_gerekce"] = (o.get("gerekce") or "") if llm_var else \
+                    KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "")
             if a in COZUM_KONTROLLERI and (cozum_oneri.get(kol) or {}).get("kontrol") == a:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
             elif a in DUZELTME_KONTROLLERI and kol in (duz_oneri.get(a) or {}):
@@ -3025,7 +3071,7 @@ def _cozum_satiri(kol, oneri, secim, bilgi):
                          "aciklama": kc.COZUM_ACIKLAMA.get(x, "")}
                         for x in oneri.get("secenekler") or []],
          "oneri": oneri.get("oneri"), "secim": secim.get(kol, oneri.get("oneri")),
-         "gerekce": oneri.get("gerekce", "")}
+         "gerekce": oneri.get("gerekce", ""), "kaynak": oneri.get("kaynak") or "kural"}
     b = bilgi.get(kol)
     if isinstance(b, dict) and b.get("cozum") == c["secim"]:
         c["kolonlar"] = list(b.get("kolonlar") or [])
@@ -3040,7 +3086,8 @@ def _duzeltme_satiri(oneri, secim, bilgi):
     c = {"secenekler": [{"kod": x, "ad": kc.COZUM_ADI.get(x, x),
                          "aciklama": kc.COZUM_ACIKLAMA.get(x, "")}
                         for x in oneri.get("secenekler") or []],
-         "oneri": oneri.get("oneri"), "secim": secim, "gerekce": oneri.get("gerekce") or ""}
+         "oneri": oneri.get("oneri"), "secim": secim, "gerekce": oneri.get("gerekce") or "",
+         "kaynak": oneri.get("kaynak") or "kural"}
     if isinstance(bilgi, dict) and bilgi.get("secim") == secim:
         c["kolonlar"] = list(bilgi.get("kolonlar") or [])
         c["ozet_kisa"] = c["ozet"] = bilgi.get("ozet") or ""

@@ -4063,12 +4063,46 @@ sayılara göre ver.
   koruyan çözüm; gerçek kimlik numarası ya da anlamsız koddaysa cikar.
 - Emin değilsen kural önerisini seç.
 
+GEREKÇE KURALI: Gerekçe BU kolon için verdiğin kararın kendisidir, ilkenin
+tekrarı değildir. Bir cümle yaz ve şunları içersin:
+- kolonun adından ya da açıklamasından anladığın anlam (ör. "gecikme günü
+  sayısı", "son 3 ayın kredi kartı harcaması");
+- bulgudaki en az bir sayı (kod değeri, pay, satır sayısı, oran);
+- seçtiğin seçeneğin bu kolonda ne sağladığı.
+Yukarıdaki ilkelerin cümlelerini kopyalama, "ise", "-sa", "-se" ile kurulan
+koşullu cümle yazma, "kolon", "bilgi taşıyabilir" gibi genel sözlerle
+yetinme. Anlamı çıkaramıyorsan bunu açıkça söyle ve kural önerisini seç.
+İyi örnek: "GECIKME_GUN gecikme günü sayısı; -1 kodu satırların %12'sinde
+ve gecikme kaydı olmadığını gösteriyor, boş sayılıp bayrakta tutulursa bu
+bilgi kaybolmaz."
+Kötü örnek: "Kod bilgi yok demek ama kodun konduğu durum bilgi
+taşıyabiliyorsa."
+
 ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
 {"oneriler":[{"id":"...","secim":"...","gerekce":"bir cümle, Türkçe"}]}
 "id" değerini AYNEN kopyala; "secim" o bulgunun seçenek kodlarından biri
-olsun. Gerekçede kolonun anlamına ve bulgudaki sayıya değin.""" + SINIRLAYICI_KURALI
+olsun.""" + SINIRLAYICI_KURALI
 PROFIL_ONERI_PARCA = 40
 PROFIL_ONERI_PARALEL = 3
+
+
+def _sozcukler(metin):
+    return re.findall(r"\w+", str(metin or "").lower())
+
+
+def _ilke_kopyasi(gerekce, n=5):
+    """Gerekce sistem metninin ilkelerinden art arda n sozcugu aynen
+    tekrarliyorsa ya da kolona ozgu hicbir sey (sayi) icermeyen kosullu
+    cumleyse True: kolona ozgu degil, ilkenin kopyasi."""
+    g = _sozcukler(gerekce)
+    if not g:
+        return False
+    ilke = _sozcukler(SISTEM_PROFIL_ONERI.split("GEREKÇE KURALI")[0])
+    kume = {tuple(ilke[i:i + n]) for i in range(len(ilke) - n + 1)}
+    if any(tuple(g[i:i + n]) in kume for i in range(len(g) - n + 1)):
+        return True
+    son = g[-1]
+    return not re.search(r"\d", gerekce) and bool(re.search(r"(y?sa|y?se)$", son))
 
 
 def _profil_oneri_parca(parca):
@@ -4092,7 +4126,10 @@ def _profil_oneri_parca(parca):
             continue
         i, secim = str(k.get("id") or ""), str(k.get("secim") or "")
         if i in gecerli and secim in gecerli[i]:
-            sonuc[i] = {"secim": secim, "gerekce": str(k.get("gerekce") or "").strip()[:300]}
+            gerekce = str(k.get("gerekce") or "").strip()[:300]
+            if _ilke_kopyasi(gerekce):      # ilkeyi tekrar eden gerekce alinmaz
+                gerekce = ""
+            sonuc[i] = {"secim": secim, "gerekce": gerekce}
     return sonuc
 
 
