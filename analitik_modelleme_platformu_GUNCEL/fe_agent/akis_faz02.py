@@ -425,12 +425,13 @@ def duzeltme_onerileri(durum):
     for a, kolonlar in _duzeltme_ham(p.get("profil_ek") or {}, _teshis_kusurlu(p)).items():
         for k, v in kolonlar.items():
             o = (lo.get(a) or {}).get(k) or {}
-            if o.get("kaynak") == "dil modeli" and o.get("oneri") in v["secenekler"]:
+            if o.get("kaynak") in ("dil modeli", "kod") and o.get("oneri") in v["secenekler"]:
                 oneri, gerekce = o["oneri"], str(o.get("gerekce") or "")
-                kaynak = "dil modeli"
+                kaynak = o["kaynak"]
             else:
                 oneri, kaynak = v["kural"], "kural"
-                gerekce = KOD_KURAL_GEREKCESI.get(a, "Dil modeli önerisi alınamadı; kural önerisi.")
+                gerekce = (KOD_KURAL_GEREKCESI.get(a, "Dil modeli önerisi alınamadı; kural önerisi.")
+                           if a in LLM_KONTROLLERI else "Kural önerisi.")
             cikti.setdefault(a, {})[k] = {"secenekler": v["secenekler"], "oneri": oneri,
                                           "gerekce": gerekce, "kayit": v["kayit"],
                                           "kaynak": kaynak}
@@ -443,6 +444,191 @@ def duzeltme_onerileri(durum):
 # onceden alinmis oneri tekrar sorulmaz. Dil modeline ulasilamazsa kural.
 KARAR_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "baskin", "donem",
                      "sicrama", "kayma")
+
+
+# ONERI KAYNAGI (karma): kolonun ANLAMINI gerektiren az sayida bulgu dil
+# modeline sorulur (ozel kodun anlami, sizinti kontrolleri; ayni icerikli
+# gruplar _ayni_gruplari'nda). Gerisini KOD kolonun kendi sayilarina bakarak
+# verir (_veri_onerileri, kaynak "kod"); cozumler kolon_cozum testleriyle.
+LLM_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "gizli_eksik", "karisik_eksik")
+BASKIN_MIN_SATIR = 30       # baskin deger disinda en az bu kadar egitim satiri
+BASKIN_KAT = 1.5            # hedef orani bu kat farkliysa kolon bilgi tasir
+UC_KIRP_KAT = 100.0         # en buyuk / %99'luk >= bu kat: hatali giris, kirp
+NEGATIF_BOS_PAY = 0.05      # negatif payi bunun altindaysa hatali kayit
+METIN_BAYRAK_PAY = 0.05     # bos yazisi payi bunun ustundeyse bayrakla
+DONEM_TUT_PAY = 1.0 / 3     # yalniz ilk donemler bos ve en cok bu pay: Tut
+_KOD_AD_PARCA = {"KOD", "CODE", "CD", "NO", "ID", "KIMLIK", "NUMARA", "NUM"}
+
+
+def _kat_metni(v):
+    v = float(v)
+    return _sayi(int(round(v))) if v >= 10 else ("%.1f" % v).replace(".", ",")
+
+
+def _veri_onerileri(durum, ek, df, egitim):
+    """{kontrol: {kolon: {"oneri", "gerekce"}}}: dil modeline sorulmayan
+    karar ve duzeltme bulgularinda kolonun kendi sayilarina bakan kural.
+    Gerekce sayilarla."""
+    m = durum.get("meta") or {}
+    hedef = m.get("target")
+    cikti = {}
+
+    def yaz(a, k, oneri, gerekce):
+        cikti.setdefault(a, {})[k] = {"oneri": oneri, "gerekce": gerekce}
+
+    # NEREDEYSE SABIT: baskin deger disindaki satirlar hedefi ayiriyor mu
+    # (egitim satirlari, iki sinifli hedef).
+    y, maske = None, None
+    if hedef and hedef in df.columns:
+        yh = pd.to_numeric(df[hedef], errors="coerce")
+        if yh.notna().any() and set(yh.dropna().unique().tolist()) <= {0, 1}:
+            maske = yh.notna()
+            if egitim is not None:
+                maske &= egitim.reindex(df.index).fillna(False).astype(bool)
+            y = yh
+    for x in ek.get("baskin") or []:
+        k = x["kolon"]
+        if k not in df.columns:
+            continue
+        if y is None or not bool(maske.any()):
+            yaz("baskin", k, PROFIL_KARAR_TUT, "Hedef iki sınıflı değil; baskın değer dışındaki "
+                "satırların hedefi ayırması ölçülemedi, kolon tutulur.")
+            continue
+        sx = df.loc[maske, k]
+        vc = sx.value_counts(dropna=False)
+        ust = vc.index[0]
+        bas = sx.isna() if pd.isna(ust) else (sx == ust)
+        yy = y[maske]
+        n_az = int((~bas).sum())
+        if n_az < BASKIN_MIN_SATIR:
+            yaz("baskin", k, PROFIL_KARAR_CIKAR, "Baskın değer (%s) dışında eğitimde yalnız %s satır "
+                "var; güvenilir bir ayrım için az, kolon çıkarılır." % (x.get("deger"), _sayi(n_az)))
+            continue
+        o_az, o_bas = float(yy[~bas].mean()), float(yy[bas].mean())
+        oranlar = "Baskın değer dışındaki %s eğitim satırında hedef oranı %s, baskın değerde %s" % (
+            _sayi(n_az), _yuzde_metni(o_az), _yuzde_metni(o_bas))
+        kucuk, buyuk = min(o_az, o_bas), max(o_az, o_bas)
+        if buyuk == 0:
+            yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + "; hedef iki grupta da yok, kolon "
+                "bilgi taşımıyor.")
+        elif kucuk == 0 or buyuk / kucuk >= BASKIN_KAT:
+            kat = ("" if kucuk == 0 else " (%s kat)" % _kat_metni(buyuk / kucuk))
+            yaz("baskin", k, PROFIL_KARAR_TUT, oranlar + kat + "; az satırda ama hedefi ayırıyor, "
+                "kolon tutulur.")
+        else:
+            yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + "; fark %s kattan az, kolon bilgi "
+                "taşımıyor." % _kat_metni(BASKIN_KAT))
+
+    # DONEMDE BOS YA DA SABIT: son donem etkileniyorsa kolon guncel veride
+    # yok; yalniz ilk donemlerse kolon sonradan eklenmis.
+    D = [str(d) for d in (ek.get("donemler") or [])]
+    for x in ek.get("donem") or []:
+        P = set(map(str, (x.get("bos") or []) + (x.get("sabit") or [])))
+        Ps = [d for d in D if d in P] or sorted(P)
+        liste = _donem_listesi(Ps)
+        if D and D[-1] in P:
+            yaz("donem", x["kolon"], PROFIL_KARAR_CIKAR, "Son dönem (%s) boş ya da tek değerli; "
+                "kolon güncel veride bilgi taşımıyor, skorlamada kullanılamaz." % D[-1])
+        elif D and Ps == D[:len(Ps)] and len(Ps) <= DONEM_TUT_PAY * len(D):
+            yaz("donem", x["kolon"], PROFIL_KARAR_TUT, "Yalnız ilk %s dönem (%s) boş ya da tek "
+                "değerli; kolon sonradan eklenmiş, kalan %s dönemde dolu, kolon tutulur." % (
+                    _sayi(len(Ps)), liste, _sayi(len(D) - len(Ps))))
+        else:
+            yaz("donem", x["kolon"], PROFIL_KARAR_CIKAR, "%s dönemin %s tanesi boş ya da tek değerli "
+                "(%s); dönemler arasında tutarsız, kolon çıkarılır." % (
+                    _sayi(len(D)), _sayi(len(Ps)), liste))
+
+    # EKSIK SICRAMASI
+    for x in ek.get("sicrama") or []:
+        o1, o2 = float(x["once_oran"]), float(x["sonra_oran"])
+        oran = "Eksik oranı %s döneminde %s, %s döneminde %s" % (
+            x["once"], _yuzde_metni(o1), x["sonra"], _yuzde_metni(o2))
+        if o2 > o1 and o2 >= 0.5:
+            yaz("sicrama", x["kolon"], PROFIL_KARAR_CIKAR, oran + "; kolonun yarısından fazlası "
+                "boşaldı, veri toplama sorunu gibi, kolon çıkarılır.")
+        elif o2 > o1:
+            yaz("sicrama", x["kolon"], PROFIL_KARAR_TUT, oran + "; eksik arttı ama kolonun çoğu "
+                "dolu, kolon tutulur.")
+        else:
+            yaz("sicrama", x["kolon"], PROFIL_KARAR_TUT, oran + "; eksik azaldı, veri iyileşmiş, "
+                "kolon tutulur.")
+
+    # DEGER KAYMASI: kat 10'un kuvvetine yakinsa birim degisikligi.
+    import math
+    for x in ek.get("kayma") or []:
+        kat = float(x["kat"])
+        us = math.log10(kat) if kat > 0 else 0.0
+        yakin = round(us)
+        med = "Medyan %s döneminde %s, %s döneminde %s" % (
+            x["once"], _okunur_sayi(x["once_deger"]), x["sonra"], _okunur_sayi(x["sonra_deger"]))
+        if yakin >= 1 and abs(us - yakin) <= 0.05:
+            yaz("kayma", x["kolon"], PROFIL_KARAR_CIKAR, med + ": yaklaşık %s kat, 10'un kuvveti; "
+                "birim değişikliği gibi (TL ile kuruş, bin TL), eski ve yeni dönem aynı ölçüde "
+                "değil, kolon çıkarılır." % _sayi(10 ** yakin))
+        else:
+            yaz("kayma", x["kolon"], PROFIL_KARAR_TUT, med + ": %s kat, 10'un kuvveti değil; gerçek "
+                "iş değişimi olabilir, kolon tutulur." % _kat_metni(kat))
+
+    # UC DEGER
+    for x in ek.get("uc") or []:
+        p99, maks = float(x["p99"]), float(x["maks"])
+        kat = maks / p99 if p99 > 0 else float("inf")
+        bas = "En büyük değer (%s) %%99'luk değerin (%s) %s katı" % (
+            _okunur_sayi(maks), _okunur_sayi(p99), _kat_metni(kat) if kat != float("inf") else "çok üstü")
+        if kat >= UC_KIRP_KAT:
+            yaz("uc", x["kolon"], "kirp", bas + "; hatalı girişe benziyor, uçlar kırpılır.")
+        else:
+            yaz("uc", x["kolon"], "birak", bas + "; %s kattan az, doğal olarak büyük değer olabilir, "
+                "olduğu gibi bırakılır." % _sayi(int(UC_KIRP_KAT)))
+
+    # BEKLENMEYEN NEGATIF
+    for x in ek.get("negatif") or []:
+        k = x["kolon"]
+        dolu = int(pd.to_numeric(df[k], errors="coerce").notna().sum()) if k in df.columns else 0
+        pay = x["adet"] / max(dolu, 1)
+        bas = "Ölçü %s; negatif satır %s (dolu satırların %s), en küçük %s" % (
+            x.get("olcu"), _sayi(x["adet"]), _yuzde_metni(pay), _okunur_sayi(x["en_kucuk"]))
+        if pay < NEGATIF_BOS_PAY:
+            yaz("negatif", k, "negatif_bos", bas + "; az, hatalı kayıt gibi, boş sayılır.")
+        else:
+            yaz("negatif", k, "birak", bas + "; az değil, sistematik (iade ya da düzeltme kaydı "
+                "olabilir), olduğu gibi bırakılır.")
+
+    # METIN OLARAK YAZILMIS BOS
+    for x in ek.get("metin_bos") or []:
+        ornek = ", ".join("«%s»" % d["deger"] for d in (x.get("degerler") or [])[:3])
+        bas = "Boş yerine yazılmış değerler (%s) %s satır, dolu satırların %s" % (
+            ornek, _sayi(x["adet"]), _yuzde_metni(x["pay"]))
+        if x["pay"] >= METIN_BAYRAK_PAY:
+            yaz("metin_bos", x["kolon"], "metin_bos_bayrak", bas + "; pay yüksek, boş sayılır ve "
+                "boş olduğu bayrakta tutulur.")
+        else:
+            yaz("metin_bos", x["kolon"], "metin_bos", bas + "; az, boş sayılır.")
+
+    # YAZIM TUTARSIZLIGI
+    for x in ek.get("yazim") or []:
+        g = (x.get("gruplar") or [{}])[0]
+        ornek = ", ".join("«%s»" % y_["deger"] for y_ in (g.get("yazimlar") or [])[:3])
+        yaz("yazim", x["kolon"], "tek_yazim", "%s değerin farklı yazımları %s satırda (ör. %s); "
+            "aynı değer tek yazıma çevrilir." % (_sayi(x.get("grup") or 0), _sayi(x.get("satir") or 0),
+                                                ornek))
+
+    # ONDALIK: kod ya da kimlik gibi adli kolon degistirilmez.
+    for x in ek.get("ondalik") or []:
+        k = x["kolon"]
+        parca = set(re.split(r"[^A-Za-z0-9]+", str(k).upper()))
+        kodlu = sorted(parca & _KOD_AD_PARCA)
+        if kodlu:
+            yaz("ondalik", k, "birak", "Ad kod ya da kimlik gibi (%s); kesin değer taşıyabilir, "
+                "değiştirilmez." % ", ".join(kodlu))
+        elif x["tur"] == "tam":
+            yaz("ondalik", k, "tam_sayi", "Bütün değerler tam sayı (ör. %s); tam sayı tipine "
+                "çevrilir, değerler değişmez." % _ondalik_yazi(x["ornek"]))
+        else:
+            yaz("ondalik", k, "yuvarla", "Ondalık hane fazla (ör. %s → %s); %s basamak yeter, "
+                "yuvarlanır." % (_ondalik_yazi(x["ornek"]), _ondalik_yazi(x["ornek_yeni"]),
+                                _sayi(x["basamak"])))
+    return cikti
 
 
 KARAR_KURAL_GEREKCESI = {
@@ -467,8 +653,18 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
              | set(teshis.get("kimlik_gibi") or []) | set(teshis.get("yuksek_kardinalite") or []))
     ogeler = []      # (kontrol, kolon, oge)
 
+    veri = p.get("veri_oneri") if isinstance(p.get("veri_oneri"), dict) else {}
+    kodlu = {}
+
     def ekle(a, k, metin, secenek, kural, kural_gerekce=""):
         if len(secenek) < 2:
+            return
+        if a not in LLM_KONTROLLERI:
+            # Kod onerisi (kolonun sayilari); dil modeline sorulmaz.
+            v = (veri.get(a) or {}).get(k)
+            if v and v["oneri"] in secenek:
+                kodlu.setdefault(a, {})[k] = {"oneri": v["oneri"], "gerekce": v["gerekce"],
+                                              "kaynak": "kod"}
             return
         sec = [{"kod": c, "ad": kc.COZUM_ADI.get(c, {"tut": "Tut", "cikar": "Çıkar"}.get(c, c)),
                 "aciklama": kc.COZUM_ACIKLAMA.get(c, {"tut": "Kolon üretime girer.",
@@ -487,12 +683,7 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
     for a, kolonlar in _duzeltme_ham(ek, kusur).items():
         for k, v in kolonlar.items():
             ekle(a, k, (bulgu.get(a) or {}).get(k, ""), v["secenekler"], v["kural"])
-    for k, v in (p.get("cozum_oneri") or {}).items():
-        a = v.get("kontrol")
-        if not a:
-            continue
-        ekle(a, k, (bulgu.get(a) or {}).get(k, "") or kad.get(a, a), list(v.get("secenekler") or []),
-             v.get("oneri"), v.get("gerekce") or "")
+    # Cozumler dil modeline sorulmaz: oneri kolon_cozum testlerinden (kod).
     cikti, sorulacak = {}, []
     for a, k, oge in ogeler:
         imza = json.dumps([oge["bulgu"], [x["kod"] for x in oge["secenekler"]], oge["aciklama"],
@@ -510,7 +701,10 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
         except Exception:       # dil modeli yoksa kural gecerli
             oneri = {}
     p["llm_oneri_sayim"] = {"oge": len(ogeler), "sorulan": len(sorulacak),
-                            "alinan": len(oneri), "onbellek": len(ogeler) - len(sorulacak)}
+                            "alinan": len(oneri), "onbellek": len(ogeler) - len(sorulacak),
+                            "kod": sum(len(x) for x in kodlu.values())}
+    for a, x in kodlu.items():
+        cikti.setdefault(a, {}).update(x)
     for a, k, imza, oge in sorulacak:
         o = oneri.get(oge["id"])
         if o:
@@ -1675,7 +1869,16 @@ def profil_hesapla(durum):
     p["cozum_oneri"].update(_tarih_onerileri(df_tum, teshis, m.get("donem"),
                                              set(p["cozum_oneri"])))
     _isaret("tarih_ad_set_cozum")
-    # KOLON BAZINDA DIL MODELI ONERISI: kararlar, duzeltmeler, cozumler.
+    # KOLON BAZINDA ONERI: kod kolonun sayilarina bakar (veri_oneri);
+    # anlam isteyen LLM_KONTROLLERI dil modeline sorulur. p["llm_oneri"]
+    # ikisini birlikte tasir (kaynak "kod" / "dil modeli" / "kural").
+    for v in p["cozum_oneri"].values():
+        v["kaynak"] = "kod"
+    try:
+        p["veri_oneri"] = _veri_onerileri(durum, ek, df_tum, egitim)
+    except Exception as e:      # kural onerisi gecerli
+        p["veri_oneri"] = {}
+        ek["veri_oneri_hata"] = str(e)[:200]
     p["llm_oneri"] = _profil_llm_onerileri(durum, p, ek, teshis)
     _isaret("dil_modeli_onerileri")
     for k, v in p["cozum_oneri"].items():
@@ -2963,15 +3166,16 @@ def profil_karti(durum, karar=False):
             if sonuc == SONUC_KARAR:
                 satir["karar"] = karar_deger.get(kol, karar_vars.get(kol, PROFIL_KARAR_TUT))
                 o = ((p.get("llm_oneri") or {}).get(a) or {}).get(kol) or {}
-                llm_var = o.get("kaynak") == "dil modeli" \
+                llm_var = o.get("kaynak") in ("dil modeli", "kod") \
                     and o.get("oneri") in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR)
                 # Bu kontrolun onerisi (kolon birden cok kontroldeyse biri
                 # Çıkar diyorsa kolonun onerisi Çıkar: karar_oneri_kolon).
                 satir["karar_oneri"] = o["oneri"] if llm_var else _karar_kurali(a)
                 satir["karar_oneri_kolon"] = karar_vars.get(kol, PROFIL_KARAR_TUT)
-                satir["karar_kaynak"] = "dil modeli" if llm_var else "kural"
-                satir["karar_gerekce"] = (o.get("gerekce") or "") if llm_var else \
-                    KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "")
+                satir["karar_kaynak"] = o["kaynak"] if llm_var else "kural"
+                satir["karar_gerekce"] = (o.get("gerekce") or "") if llm_var else (
+                    KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "") if a in LLM_KONTROLLERI
+                    else "Kural önerisi.")
             if a in COZUM_KONTROLLERI and (cozum_oneri.get(kol) or {}).get("kontrol") == a:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
             elif a in DUZELTME_KONTROLLERI and kol in (duz_oneri.get(a) or {}):
@@ -3094,7 +3298,7 @@ def _cozum_satiri(kol, oneri, secim, bilgi):
                          "aciklama": kc.COZUM_ACIKLAMA.get(x, "")}
                         for x in oneri.get("secenekler") or []],
          "oneri": oneri.get("oneri"), "secim": secim.get(kol, oneri.get("oneri")),
-         "gerekce": oneri.get("gerekce", ""), "kaynak": oneri.get("kaynak") or "kural"}
+         "gerekce": oneri.get("gerekce", ""), "kaynak": oneri.get("kaynak") or "kod"}
     b = bilgi.get(kol)
     if isinstance(b, dict) and b.get("cozum") == c["secim"]:
         c["kolonlar"] = list(b.get("kolonlar") or [])

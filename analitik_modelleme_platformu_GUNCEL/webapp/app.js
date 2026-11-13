@@ -17382,7 +17382,7 @@ function profilKartiEkle(alan, blok) {
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",
         "Gizli Eksik, Karışık Eksik Kodlaması, Metin Olarak Yazılmış Boş, Kategori Yazım Tutarsızlığı, Beklenmeyen Negatif, Uç Değer ve Ondalık Hassasiyeti kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz.",
-        "Kart iki sekmedir. Analiz: kontroller ve bulgular, yalnız ne bulunduğu. Kararlar: her bulguda dil modelinin kolonun adına, açıklamasına ve bulgudaki sayılara bakarak verdiği öneri ve gerekçesi, önerilerin özeti ve seçimleriniz. Öneri seçili gelir; değiştirdiğiniz satır işaretlenir. Dil modeline ulaşılamazsa kural önerisi kullanılır. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
+        "Kart iki sekmedir. Analiz: kontroller ve bulgular, yalnız ne bulunduğu. Kararlar: her bulguda öneri ve gerekçesi, önerilerin özeti ve seçimleriniz. Önerilerin çoğunu kolonun kendi sayılarına bakan kurallar verir; kolonun anlamını gerektiren bulgularda (özel kodun anlamı, sızıntı kontrolleri, birebir aynı kolonlardan kalacak olan) dil modeli önerir, ulaşılamazsa kural. Öneri seçili gelir; değiştirdiğiniz satır işaretlenir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
@@ -17750,11 +17750,14 @@ function profilKartiEkle(alan, blok) {
     if (kararPano) {
         /* Öneri hücresi: önerilen seçenek (dil modeli ya da kural) ve
            gerekçesi. */
+        const KAYNAK_ADI = { "dil modeli": "Dil modeli", kod: "Veriden hesaplandı", hedef: "Veriden hesaplandı",
+                             kural: "Kural" };
         const oneriHucresi = (metin, gerekceler, kaynak) => {
             const td = elYap("td", "pf-oneri-hucre");
             const cip = elYap("span", "pf-oneri-cip" + (kaynak === "kural" ? " kural" : ""), metin);
-            cip.title = kaynak === "kural" ? "Dil modeli önerisi alınamadı; kural önerisi" : "Dil modelinin önerisi";
             td.appendChild(cip);
+            td.appendChild(elYap("div", "pf-oneri-kaynak" + (kaynak === "dil modeli" ? " dm" : ""),
+                                 KAYNAK_ADI[kaynak] || "Kural"));
             const g = (gerekceler || []).filter(Boolean);
             if (g.length) g.forEach(x => td.appendChild(elYap("div", "pf-oneri-gerekce", tireSade(x))));
             else td.appendChild(elYap("div", "pf-oneri-gerekce bos", "Gerekçe verilmedi."));
@@ -17807,11 +17810,12 @@ function profilKartiEkle(alan, blok) {
         /* ÖZET: dil modelinin önerileri ve seçimlerinizin öneriden farkı. */
         const oz = elYap("div", "pf-oneri-ozet");
         const ozBas = elYap("div", "pf-oneri-ozet-bas");
-        ozBas.appendChild(elYap("b", "", "Dil Modelinin Önerileri"));
+        ozBas.appendChild(elYap("b", "", "Öneriler"));
         oz.appendChild(ozBas);
-        oz.appendChild(elYap("div", "pf-oneri-ozet-not", kararModu
-            ? "Her bulguda dil modeli kolonun adına, açıklamasına ve bulgudaki sayılara bakıp bir seçenek önerir; öneri seçili gelir. Değiştirdiğiniz satır sarı işaretlenir."
-            : "Her bulguda dil modelinin önerisi ve onaylanan karar."));
+        oz.appendChild(elYap("div", "pf-oneri-ozet-not", (kararModu
+            ? "Her bulguda bir öneri seçili gelir; değiştirdiğiniz satır sarı işaretlenir. "
+            : "Her bulguda öneri ve onaylanan karar. ")
+            + "Önerilerin çoğunu kolonun kendi sayılarına bakan kurallar verir (Veriden hesaplandı). Kolonun anlamını gerektiren bulgularda dil modeli önerir: özel kodun anlamı (Gizli Eksik, Karışık Eksik), sızıntı kontrolleri (Gelecek Penceresi, Hedefle Neredeyse Birebir, Dönemden Sonraki Tarih) ve birebir aynı kolonlardan hangisinin kalacağı."));
         const liste = elYap("ul", "pf-oneri-liste");
         const sayimMetni = (sayac, adi) => Object.keys(sayac).sort((a, b) => sayac[b] - sayac[a])
             .map(kod => adi(kod) + " " + ftBinlik(sayac[kod])).join(", ");
@@ -17862,8 +17866,18 @@ function profilKartiEkle(alan, blok) {
             liste.appendChild(li);
         });
         oz.appendChild(liste);
-        if (kuralSayi) oz.appendChild(elYap("div", "pf-oneri-ozet-not", ftBinlik(kuralSayi)
-            + " öneride dil modeline ulaşılamadı; kural önerisi kullanıldı (gri işaretli)."));
+        /* Kaynak sayımı: veriden, dil modelinden, kural (dil modeline ulaşılamadı). */
+        const kaynaklar = [];
+        tcKolon.forEach(x => x.bulgular.forEach(b => kaynaklar.push(b.kaynak)));
+        duzKontrol.forEach(d => d.kolonlar.forEach(c => kaynaklar.push(c.duzeltme.kaynak)));
+        cozumSatir.forEach(({ c }) => kaynaklar.push(c.cozum.kaynak || "kod"));
+        grupKontrol.forEach(k => k.gruplar.forEach(g => kaynaklar.push(g.kaynak)));
+        const kSay = t => kaynaklar.filter(x => t.includes(x || "kural")).length;
+        const kParca = [];
+        if (kSay(["kod", "hedef"])) kParca.push(ftBinlik(kSay(["kod", "hedef"])) + " öneri veriden hesaplandı");
+        if (kSay(["dil modeli"])) kParca.push(ftBinlik(kSay(["dil modeli"])) + " öneri dil modelinden");
+        if (kSay(["kural"])) kParca.push(ftBinlik(kSay(["kural"])) + " öneride dil modeline ulaşılamadı, kural kullanıldı (gri)");
+        if (kParca.length) oz.appendChild(elYap("div", "pf-oneri-ozet-not", "Kaynak: " + kParca.join("; ") + "."));
         const farkSatir = elYap("div", "pf-oneri-fark");
         const farkMetin = elYap("span", "", "");
         farkSatir.appendChild(farkMetin);
@@ -17928,7 +17942,8 @@ function profilKartiEkle(alan, blok) {
                 const cok = x.bulgular.length > 1;
                 r.appendChild(oneriHucresi(x.oneri === "cikar" ? "Çıkar" : "Tut",
                     x.bulgular.map(bl => bl.gerekce ? (cok ? bl.kontrol + " (" + (bl.oneri === "cikar" ? "Çıkar" : "Tut") + "): " : "") + bl.gerekce : ""),
-                    x.bulgular.some(bl => bl.kaynak === "kural") ? "kural" : ""));
+                    x.bulgular.some(bl => bl.kaynak === "kural") ? "kural"
+                        : x.bulgular.some(bl => bl.kaynak === "dil modeli") ? "dil modeli" : "kod"));
                 const kt = elYap("td", "pf-karar-hucre");
                 if (kararModu) kt.appendChild(kararDugmesi(x.ad));
                 else kt.appendChild(elYap("span", "pf-karar-sonuc " + (x.karar === "cikar" ? "cikar" : "tut"),

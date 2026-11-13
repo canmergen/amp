@@ -5738,3 +5738,5 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
   .dg-tablo.pf-karar-tablo col.pf-kt-secim { width: 190px; }
   .dg-tablo.pf-karar-tablo col.pf-kt-kolon { width: 22%; }
 }
+.pf-oneri-kaynak { font-size: var(--fs-kucuk); color: var(--metin-soluk); margin-top: 2px; }
+.pf-oneri-kaynak.dm { color: var(--yesil); }

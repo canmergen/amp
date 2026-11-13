@@ -2356,7 +2356,35 @@ tanıtır; sayfalar sol bardan açılır.
 - `p["profil_kapsam"] = {train: False, hedef_train, satir, toplam,
   train_satir}`; 02.1 metni ve kartın i balonu bunu söyler.
 
-**02.1 önerileri kolon bazında dil modelinden**
+**02.1 öneri kaynağı: KARMA (kod + dil modeli)**
+- GÜNCEL KURAL (aşağıdaki "dil modelinden" bölümünün yerine geçer): önerilerin
+  çoğunu KOD verir, kolonun kendi sayılarına bakarak (`_veri_onerileri`,
+  `p["veri_oneri"]`, kaynak `"kod"`, gerekçe sayılarla). Dil modeli yalnız
+  `LLM_KONTROLLERI` = gelecek_pencere, birebir, tarih_sonra, gizli_eksik,
+  karisik_eksik ve aynı içerikli gruplar (`_ayni_gruplari`, değişmedi).
+  Çözümler dil modeline sorulmaz (kolon_cozum testleri, kaynak "kod").
+- Kod kuralları (sabitler `akis_faz02` başında):
+  - Neredeyse Sabit: eğitimde baskın değer dışında `BASKIN_MIN_SATIR` (30)
+    satırdan az: Çıkar; hedef oranı iki grupta `BASKIN_KAT` (1,5) kat ya da
+    daha farklı: Tut; değilse Çıkar. Hedef iki sınıflı değilse Tut.
+  - Dönemde Boş ya da Sabit: son dönem etkileniyorsa Çıkar; yalnız ilk
+    dönemler ve en çok üçte biri: Tut (kolon sonradan eklenmiş); değilse Çıkar.
+  - Eksik Sıçraması: eksik arttı ve %50 ya da üstü: Çıkar; değilse Tut.
+  - Değer Kayması: kat 10'un kuvvetine yakın (log10 farkı ≤ 0,05): Çıkar
+    (birim değişikliği); değilse Tut.
+  - Uç Değer: en büyük / %99'luk ≥ `UC_KIRP_KAT` (100): kırp; değilse bırak.
+  - Beklenmeyen Negatif: dolu satırların %5'inden azı: boş say; değilse bırak.
+  - Metin Olarak Yazılmış Boş: pay ≥ %5: boş say ve bayrak; değilse boş say.
+  - Yazım Tutarsızlığı: tek yazım.
+  - Ondalık: adda KOD, CODE, CD, NO, ID, KIMLIK, NUMARA, NUM parçası varsa
+    bırak; tam sayılıysa tam sayıya çevir; değilse yuvarla.
+- Dil modeline ulaşılamazsa LLM kontrollerinde kural önerisi ("Dil modeli
+  önerisi alınamadı…"); kod kontrollerinde kural hesaplanamazsa "Kural
+  önerisi.". Kartta öneri çipinin altında kaynak: "Veriden hesaplandı",
+  "Dil modeli" ya da "Kural"; özette kaynak sayımı.
+- Log satırındaki `dil modeli` sayımında `kod` = kodla verilen öneri sayısı.
+
+**02.1 önerileri kolon bazında dil modelinden (ESKİ, karma ile daraltıldı)**
 - 02.1'deki her kolon bazlı seçimin ÖNERİSİ dil modelinden
   (`llm.profil_oneri_sec`, `_profil_llm_onerileri`, `p["llm_oneri"] =
   {kontrol: {kolon: {oneri, gerekce, kaynak, imza}}}`): Tut / Çıkar
