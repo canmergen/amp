@@ -2705,7 +2705,7 @@ def geleneksel_sohbet_endpoint():
         from fe_agent import llm as llm_mod
         karar = istek.get("karar") if isinstance(istek.get("karar"), dict) else (g.get("karar") or {})
         model_turu = g.get("model_turu") or "agac"
-        plan, ayrinti = G.plan_satirlari(birimler, karar, model_turu, mesaj)
+        plan, ayrinti = G.plan_satirlari(birimler, karar, model_turu, mesaj, katki=g.get("katki"))
         sonuc, hata = llm_mod.geleneksel_sohbet(
             mesaj, g.get("sohbet") or [], plan, G.katalog_metni(uzun=True),
             g.get("segmentler") or [], {b["id"]: set(G.model_mumkun(b, model_turu)) for b in birimler},

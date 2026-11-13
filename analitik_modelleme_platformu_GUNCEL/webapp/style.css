@@ -5861,12 +5861,23 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-ozet-sar { overflow: auto; max-height: 70vh; }
 .dg-tablo.gl-ozet { width: 100%; table-layout: fixed; }
 .dg-tablo.gl-ozet th, .dg-tablo.gl-ozet td { text-align: center; vertical-align: middle; white-space: normal; overflow-wrap: anywhere; }
-.dg-tablo.gl-ozet col.gl-o-birim { width: 19%; }
+.dg-tablo.gl-ozet { min-width: 860px; }
+.dg-tablo.gl-ozet col.gl-o-birim { width: 17%; }
 .dg-tablo.gl-ozet col.gl-o-asama { width: 7%; }
-.dg-tablo.gl-ozet col.gl-o-bulan { width: 10%; }
-.dg-tablo.gl-ozet col.gl-o-veren { width: 13%; }
-.dg-tablo.gl-ozet col.gl-o-oneri { width: 21%; }
-.dg-tablo.gl-ozet col.gl-o-neden { width: 30%; }
+.dg-tablo.gl-ozet col.gl-o-bulan { width: 9%; }
+.dg-tablo.gl-ozet col.gl-o-artis { width: 9%; }
+.dg-tablo.gl-ozet col.gl-o-veren { width: 11%; }
+.dg-tablo.gl-ozet col.gl-o-oneri { width: 19%; }
+.dg-tablo.gl-ozet col.gl-o-neden { width: 28%; }
+/* 02.2: katki olcumu */
+.gl-katki { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.gl-katki-sar { overflow-x: auto; }
+.dg-tablo.gl-katki-tablo { width: 100%; min-width: 680px; table-layout: fixed; }
+.dg-tablo.gl-katki-tablo th { white-space: normal; overflow-wrap: normal; word-break: normal; }
+.dg-tablo.gl-katki-tablo th, .dg-tablo.gl-katki-tablo td { text-align: center; vertical-align: middle; }
+.gl-k-yeni { color: var(--yesil); font-weight: var(--fw-kalin); }
+.gl-k-ayni { color: var(--metin-soluk); }
+.gl-k-zayif { color: var(--amber); }
 .gl-ozet-oneri .gl-cip { margin: 2px; }
 .gl-ozet-neden { white-space: pre-line !important; font-size: var(--fs-kucuk); line-height: 1.45; }
 .gl-uyari { color: var(--amber); font-weight: var(--fw-kalin); }

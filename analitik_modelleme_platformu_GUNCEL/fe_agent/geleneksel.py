@@ -760,8 +760,25 @@ def uygunluk(b, hedef_ikili, segmentler=()):
 # ---------------------------------------------------------------------------
 # KURAL ONERISI (dil modeline ulasilamazsa)
 # ---------------------------------------------------------------------------
-def kural_onerisi(b, model_turu="agac"):
-    """{"sec", "param", "gerekce", "secilmeyen"}: veriye bakan varsayilan."""
+def kural_onerisi(b, model_turu="agac", katki=None):
+    """{"sec", "param", "gerekce", "secilmeyen"}: veriye bakan varsayilan.
+    Katki olcumu varsa: olculen kodlardan IV artisi belirgin ve kaynakla
+    ayni sirada olmayanlar secilir, gerekce sayilarla."""
+    if katki and katki.get("kodlar"):
+        kod = katki["kodlar"]
+        aday = sorted([c for c in katki_kodlari(b, model_turu) if katki_degerli(kod.get(c))],
+                      key=lambda c: -kod[c]["iv"])
+        # Birbiriyle ayni sirada olanlardan (benzer) IV'si yuksek olan kalir.
+        sec = []
+        for c in aday:
+            if not any(x in (kod[c].get("benzer") or {}) for x in sec):
+                sec.append(c)
+        sec = [c for c in katki_kodlari(b, model_turu) if c in sec]
+        param = {c: {"segment": kod[c]["segment"]} for c in sec if c in ("segment", "grup_oran")
+                 and kod[c].get("segment")}
+        g1, g2 = katki_gerekcesi(b, katki, sec, model_turu)
+        return {"sec": sec, "param": param, "gerekce": g1 or "Ölçülen dönüşümlerin hiçbiri belirgin IV artışı "
+                "getirmedi.", "secilmeyen": g2}
     oz = b.get("ozet") or {}
     mm = set(model_mumkun(b, model_turu))
     sec, neden = [], []
@@ -1325,21 +1342,305 @@ def ozet_metni(b):
     return ", ".join(parca)
 
 
+# ---------------------------------------------------------------------------
+# KATKI OLCUMU: her donusumun urettigi kolonlarin hedefle iliskisi (IV) ve
+# kaynak kolonlara benzerligi (Spearman), YALNIZ EGITIM satirlarinda,
+# orneklemesiz. Dil modeli kararini ve gerekcesini bu sayilara dayandirir;
+# kural onerisi de bunlarla secer.
+# IV: 10 esit frekansli aralik (ayni degerler tek aralikta) + bos aralik;
+# kategorikte her deger bir aralik. Siralamayi koruyan donusumde aralik
+# ayni kalir, IV degismez (agacta gereksiz olmalarinin sayisal karsiligi).
+# ---------------------------------------------------------------------------
+KATKI_SURUM = 1
+KATKI_DILIM = 10
+KATKI_ARTIS = 0.02          # IV artisi bundan azsa belirgin katki yok
+KATKI_ILISKI = 0.95         # kaynakla sira iliskisi bundan cok ise ayni bilgi
+_PARAMLI = ("esik", "kova")  # parametresi kullanicidan / dil modelinden
+
+
+def iv_hesapla(x, y):
+    """x: kolon (egitim satirlari), y: 0/1 (ayni index). IV ya da None."""
+    y = np.asarray(y, dtype=float)
+    if len(y) == 0:
+        return None
+    if pd.api.types.is_numeric_dtype(x):
+        v = pd.to_numeric(x, errors="coerce").to_numpy(dtype=float)
+        dolu = np.isfinite(v)
+        if dolu.sum() == 0:
+            return None
+        tekil = np.unique(v[dolu])
+        if len(tekil) <= KATKI_DILIM:
+            kod = np.searchsorted(tekil, np.where(dolu, v, tekil[0]))
+        else:
+            sinir = np.unique(np.quantile(v[dolu], np.linspace(0, 1, KATKI_DILIM + 1)[1:-1]))
+            kod = np.searchsorted(sinir, np.where(dolu, v, 0.0), side="left")
+        kod = np.where(dolu, kod + 1, 0)
+    else:
+        kod = pd.factorize(x.astype(object).where(x.notna(), "__BOS__").astype(str))[0]
+    k = int(kod.max()) + 1
+    n1 = np.bincount(kod, weights=y, minlength=k)
+    n = np.bincount(kod, minlength=k).astype(float)
+    n0 = n - n1
+    t1, t0 = n1.sum(), n0.sum()
+    if t1 == 0 or t0 == 0:
+        return None
+    var = n > 0
+    p1 = (n1[var] + 0.5) / (t1 + 0.5 * var.sum())
+    p0 = (n0[var] + 0.5) / (t0 + 0.5 * var.sum())
+    return float(np.sum((p1 - p0) * np.log(p1 / p0)))
+
+
+def _sira(x):
+    return pd.to_numeric(x, errors="coerce").rank(method="average")
+
+
+def _iliski(ra, rb):
+    m = ra.notna() & rb.notna()
+    if m.sum() < 3:
+        return None
+    a, b = ra[m].to_numpy(dtype=float), rb[m].to_numpy(dtype=float)
+    if a.std() == 0 or b.std() == 0:
+        return None
+    return float(abs(np.corrcoef(a, b)[0, 1]))
+
+
+def hedef_ikili_mi(df, hedef):
+    if not hedef or hedef not in df.columns:
+        return False
+    yv = set(pd.to_numeric(df[hedef], errors="coerce").dropna().unique().tolist())
+    return bool(yv) and yv <= {0, 1}
+
+
+def katki_kodlari(b, model_turu):
+    """Olculecek kodlar: bu model turunde secilebilen, parametresi
+    kendiliginden belirlenebilen kodlar."""
+    return [c for c in model_mumkun(b, model_turu) if c not in _PARAMLI]
+
+
+def katki_olc(df, birimler, tr, hedef, model_turu, segmentler=(), onceki=None, ilerleme=None):
+    """{birim id: {"imza", "kaynak_iv", "kaynak_kolon", "kodlar": {kod:
+    {"iv", "kolon", "artis", "iliski", "kolon_sayisi", "segment"}},
+    "olculmeyen": {kod: neden}}}. onceki'de olculmus kodlar tekrar
+    olculmez. Yalniz egitim satirlari (tr)."""
+    onceki = onceki or {}
+    if not hedef_ikili_mi(df, hedef):
+        return {}
+    tr = pd.Series(tr, index=df.index).fillna(False).astype(bool)
+    d = df.loc[tr]
+    y = pd.to_numeric(d[hedef], errors="coerce")
+    d = d.loc[y.notna()]
+    y = y.loc[d.index].astype(float)
+    hep = pd.Series(True, index=d.index)
+    iv_bel, sira_bel = {}, {}
+
+    def kol_iv(k):
+        if k not in iv_bel:
+            iv_bel[k] = iv_hesapla(d[k], y) if k in d.columns else None
+        return iv_bel[k]
+
+    def kol_sira(k):
+        if k not in sira_bel:
+            sira_bel[k] = _sira(d[k])
+        return sira_bel[k]
+
+    # Segment: hedefle iliskisi en yuksek olan (dil modeli baskasini secebilir)
+    seg_iv = sorted(((kol_iv(sg) or 0.0, sg) for sg in segmentler if sg in d.columns), reverse=True)
+    seg = seg_iv[0][1] if seg_iv else None
+    cikti = {}
+    for no, b in enumerate(birimler):
+        en_sira = {}                     # kod -> en iyi kolonun sirasi (kodlar arasi benzerlik)
+        eski = onceki.get(b["id"]) or {}
+        imza = _imza(b)
+        if eski.get("imza") != imza or eski.get("surum") != KATKI_SURUM:
+            eski = {}
+        kodlar = dict(eski.get("kodlar") or {})
+        olculmeyen = dict(eski.get("olculmeyen") or {})
+        kaynak = [k for k in b["kolonlar"] if k in d.columns] if b["tur"] != "satir" else []
+        kiv = [(kol_iv(k), k) for k in kaynak]
+        kiv = [(v, k) for v, k in kiv if v is not None]
+        kaynak_iv, kaynak_kolon = (max(kiv) if kiv else (None, None))
+        for c in katki_kodlari(b, model_turu):
+            if c in kodlar or c in olculmeyen:
+                continue
+            param = {}
+            if c in ("segment", "grup_oran"):
+                if not seg:
+                    olculmeyen[c] = "segment kolonu yok"
+                    continue
+                param = {c: {"segment": seg}}
+            try:
+                yeni, _kayit, hata = uygula(d, [b], {b["id"]: {"sec": [c], "param": param}}, hep, hedef)
+            except Exception as e:      # pylint: disable=broad-except
+                olculmeyen[c] = str(e)[:80]
+                continue
+            if not len(d):
+                olculmeyen[c] = "eğitim satırı yok"
+                continue
+            if not yeni:
+                olculmeyen[c] = (hata[0] if hata else "kolon üretilmedi")[:120]
+                continue
+            ivs = [(iv_hesapla(sr, y), ad) for ad, sr in yeni.items()]
+            ivs = [(v, a) for v, a in ivs if v is not None]
+            if not ivs:
+                olculmeyen[c] = "IV hesaplanamadı (kolon boş ya da sabit)"
+                continue
+            en_iv, en_ad = max(ivs)
+            iliski = None
+            rs = _sira(yeni[en_ad])
+            en_sira[c] = rs
+            if kaynak and len(kaynak) <= 40:
+                il = [_iliski(rs, kol_sira(k)) for k in kaynak]
+                il = [v for v in il if v is not None]
+                iliski = max(il) if il else None
+            # Kategorik kolon modele ancak kodlanarak girer: artis yerine IV'nin kendisi.
+            artis_yok = kaynak_iv is None or b.get("tip") == "kategorik" and b["tur"] == "kolon"
+            kodlar[c] = {"iv": round(en_iv, 4), "kolon": en_ad, "kolon_sayisi": len(yeni),
+                         "artis": None if artis_yok else round(en_iv - kaynak_iv, 4),
+                         "iliski": None if iliski is None else round(iliski, 3),
+                         "segment": (param.get(c) or {}).get("segment")}
+        # Kodlar arasi benzerlik: ayni pencere ciftinde oran, normalize oran
+        # ve buyume ayni siradadir; biri yeter.
+        ad_ = list(en_sira)
+        for i_, c1 in enumerate(ad_):
+            for c2 in ad_[i_ + 1:]:
+                v = _iliski(en_sira[c1], en_sira[c2])
+                if v is not None and v >= KATKI_ILISKI:
+                    kodlar[c1].setdefault("benzer", {})[c2] = round(v, 3)
+                    kodlar[c2].setdefault("benzer", {})[c1] = round(v, 3)
+        cikti[b["id"]] = {"imza": imza, "surum": KATKI_SURUM,
+                          "kaynak_iv": None if kaynak_iv is None else round(kaynak_iv, 4),
+                          "kaynak_kolon": kaynak_kolon, "kodlar": kodlar, "olculmeyen": olculmeyen}
+        if ilerleme:
+            ilerleme(no + 1)
+    return cikti
+
+
+def _iv_yaz(v):
+    return "-" if v is None else ("%.3f" % v).replace(".", ",")
+
+
+def _artis_yaz(v):
+    if v is None:
+        return "-"
+    return ("+" if v >= 0 else "eksi ") + ("%.3f" % abs(v)).replace(".", ",")
+
+
+def katki_satiri(c, m):
+    """Bir kodun olcumu tek cumle (sayilarla)."""
+    t = "%s: en iyi kolonun IV'si %s" % (KATALOG_HARITA[c]["ad"], _iv_yaz(m.get("iv")))
+    if m.get("artis") is not None:
+        t += ", kaynağa göre %s" % _artis_yaz(m["artis"])
+    if m.get("iliski") is not None:
+        t += ", kaynakla sıra ilişkisi %s" % ("%.2f" % m["iliski"]).replace(".", ",")
+    return t
+
+
+def katki_metni(k, model_turu="agac"):
+    """Dil modeline giden olcum ozeti (tek satir)."""
+    if not k:
+        return ""
+    par = ["kaynak kolonların en iyi IV'si %s (%s)" % (_iv_yaz(k.get("kaynak_iv")), k.get("kaynak_kolon") or "-")]
+    for c, m in (k.get("kodlar") or {}).items():
+        par.append("%s: IV %s, artış %s, ilişki %s%s" % (
+            c, _iv_yaz(m.get("iv")), _artis_yaz(m.get("artis")),
+            "-" if m.get("iliski") is None else ("%.2f" % m["iliski"]).replace(".", ","),
+            (", %s ile aynı sıra" % "/".join(sorted(m["benzer"]))) if m.get("benzer") else ""))
+    return "; ".join(par)
+
+
+def katki_degerli(m):
+    """Olcume gore yeni bilgi var mi: IV artisi belirgin ve kaynakla ayni
+    sira degil. Kaynak IV'si yoksa (satir duzeyi) IV en az KATKI_ARTIS."""
+    if not m or m.get("iv") is None:
+        return False
+    if m.get("iliski") is not None and m["iliski"] >= KATKI_ILISKI:
+        return False
+    if m.get("artis") is None:
+        return m["iv"] >= KATKI_ARTIS
+    return m["artis"] >= KATKI_ARTIS
+
+
+def katki_gerekcesi(b, k, sec, model_turu):
+    """Kodun sayisal gerekcesi: (secilenler, secilmeyenler) cumleleri."""
+    if not k:
+        return "", ""
+    kod = k.get("kodlar") or {}
+    bas = "Kaynak kolonların en iyi IV'si %s (%s). " % (_iv_yaz(k.get("kaynak_iv")), k.get("kaynak_kolon") or "-") \
+        if k.get("kaynak_iv") is not None else ""
+    secilen = [katki_satiri(c, kod[c]) for c in sec if c in kod]
+    secilmeyen = []
+    for c in katki_kodlari(b, model_turu):
+        if c in sec or c not in kod:
+            continue
+        m = kod[c]
+        ben = [x for x in (m.get("benzer") or {}) if x in sec]
+        neden = ("seçilen %s ile aynı sıra (ilişki %s), tekrar olur" % (
+                    KATALOG_HARITA[ben[0]]["ad"], ("%.2f" % m["benzer"][ben[0]]).replace(".", ","))
+                 if ben else
+                 "kaynakla neredeyse aynı sıra, yeni bilgi yok" if (m.get("iliski") or 0) >= KATKI_ILISKI
+                 else "IV artışı %s'ten az" % _iv_yaz(KATKI_ARTIS) if m.get("artis") is not None
+                 and m["artis"] < KATKI_ARTIS else "")
+        secilmeyen.append(katki_satiri(c, m) + (" (%s)" % neden if neden else ""))
+    s1 = (bas + "; ".join(secilen) + ".") if secilen else (bas.strip() if bas else "")
+    s2 = ("; ".join(secilmeyen) + ".") if secilmeyen else ""
+    if model_turu == "agac" and b["tur"] == "kolon" and b.get("tip") != "kategorik":
+        s2 = (s2 + " " if s2 else "") + ("Log, kırpma, sıra, ölçekleme gibi sıralamayı koruyan dönüşümler "
+                                         "aralıkları değiştirmez; IV aynı kalır (%s), ağaçta yeni kolon gereksiz."
+                                         % _iv_yaz(k.get("kaynak_iv")))
+    return s1.strip(), s2.strip()
+
+
+def _oneri_imza(b, model_turu):
+    """Onerinin gecerli oldugu durum: birim, model turu ve olcum surumu."""
+    return _imza(b) + model_turu + "|k%d" % KATKI_SURUM
+
+
+def katki_eksik(birimler, katki, model_turu):
+    """Olcumu eksik ya da eskimis birimler (bu model turunun kodlariyla)."""
+    katki = katki or {}
+    eksik = []
+    for b in birimler:
+        k = katki.get(b["id"]) or {}
+        if k.get("imza") != _imza(b) or k.get("surum") != KATKI_SURUM:
+            eksik.append(b)
+            continue
+        bilinen = set(k.get("kodlar") or {}) | set(k.get("olculmeyen") or {})
+        if any(c not in bilinen for c in katki_kodlari(b, model_turu)):
+            eksik.append(b)
+    return eksik
+
+
+def _sayili(metin):
+    return bool(re.search(r"\d", str(metin or "")))
+
+
+def olcum_ekle(o, b, k, model_turu):
+    """Oneriye kodun sayisal gerekcesini ekler (olcum, olcum_secilmeyen).
+    Dil modelinin gerekcesinde sayi yoksa (genel cumle) gosterilmez."""
+    o = dict(o)
+    if k:
+        o["olcum"], o["olcum_secilmeyen"] = katki_gerekcesi(b, k, o.get("sec") or [], model_turu)
+    metin = " ".join(str(o.get(a) or "") for a in ("g1", "g2", "g3", "gerekce"))
+    o["sayisiz"] = o.get("kaynak") in ("dil modeli", "sohbet") and not _sayili(metin)
+    return o
+
+
 def _imza(b):
     import json as _json
     return _json.dumps([b["kolonlar"], b.get("mumkun"), ozet_metni(b), b.get("aciklama")],
                        ensure_ascii=False, sort_keys=True)
 
 
-def llm_ogesi(b, model_turu):
+def llm_ogesi(b, model_turu, katki=None):
+    k = (katki or {}).get(b["id"])
     return {"id": b["id"], "tur": b["tur"], "ad": b["ad"], "kolonlar": b["kolonlar"],
             "aciklama": b.get("aciklama"), "olcu": b.get("olcu"), "istat": b.get("istat"),
             "ozet": ozet_metni(b), "mumkun": model_mumkun(b, model_turu), "asama": b.get("asama"),
             "ciftler": len(b.get("ciftler") or []), "gerekce": b.get("gerekce") or "",
-            "kural": kural_onerisi(b, model_turu)["sec"]}
+            "katki": katki_metni(k), "kural": kural_onerisi(b, model_turu, k)["sec"]}
 
 
-def oneri_onbellek(birimler, onceki=None, model_turu="agac"):
+def oneri_onbellek(birimler, onceki=None, model_turu="agac", katki=None):
     """(cikti, sor): onceki dil modeli onerisi (imza ve model turu ayni)
     olan birimler cikti'da; digerleri dil modeline sorulacak (sor)."""
     onceki = onceki or {}
@@ -1348,10 +1649,12 @@ def oneri_onbellek(birimler, onceki=None, model_turu="agac"):
         o = onceki.get(b["id"]) or {}
         if not model_mumkun(b, model_turu):
             # Bu model turunde secenek yok: dil modeline sorulacak bir sey yok.
+            kk = (katki or {}).get(b["id"])
             k = kural_onerisi(b, model_turu)
-            cikti[b["id"]] = dict(k, kaynak="secenek yok", imza=_imza(b) + model_turu,
-                                  gerekce=k.get("gerekce") or SECENEK_YOK)
-        elif o.get("kaynak") in ("dil modeli", "sohbet") and o.get("imza") == _imza(b) + model_turu:
+            o = dict(k, kaynak="secenek yok", imza=_oneri_imza(b, model_turu),
+                     gerekce=k.get("gerekce") or SECENEK_YOK)
+            cikti[b["id"]] = olcum_ekle(o, b, kk, model_turu)
+        elif o.get("kaynak") in ("dil modeli", "sohbet") and o.get("imza") == _oneri_imza(b, model_turu):
             cikti[b["id"]] = o
         else:
             sor.append(b)
@@ -1361,7 +1664,7 @@ def oneri_onbellek(birimler, onceki=None, model_turu="agac"):
 SECENEK_YOK = "Bu model türünde bu birimde uygulanabilen dönüşüm yok."
 
 
-def oneri_birlestir(birimler, cikti, alinan, model_turu, sorulan=None):
+def oneri_birlestir(birimler, cikti, alinan, model_turu, sorulan=None, katki=None):
     """Dil modelinden alinanlar dil modeli kaynakli; sorulup alinamayanlar
     kural (dm_yok: dil modeli cevap vermedi)."""
     sorulan = set(sorulan or [])
@@ -1370,12 +1673,14 @@ def oneri_birlestir(birimler, cikti, alinan, model_turu, sorulan=None):
         if b["id"] in cikti and b["id"] not in alinan:
             continue
         o = alinan.get(b["id"])
+        kk = (katki or {}).get(b["id"])
         if o is not None:
-            cikti[b["id"]] = dict(o, kaynak="dil modeli", imza=_imza(b) + model_turu)
+            cikti[b["id"]] = olcum_ekle(dict(o, kaynak="dil modeli", imza=_oneri_imza(b, model_turu)),
+                                        b, kk, model_turu)
         else:
-            k = kural_onerisi(b, model_turu)
-            cikti[b["id"]] = dict(k, kaynak="kural", imza=_imza(b) + model_turu,
-                                  dm_yok=b["id"] in sorulan)
+            k = kural_onerisi(b, model_turu, kk)
+            cikti[b["id"]] = olcum_ekle(dict(k, kaynak="kural", imza=_oneri_imza(b, model_turu),
+                                             dm_yok=b["id"] in sorulan), b, kk, model_turu)
     return cikti
 
 
@@ -1395,27 +1700,54 @@ _IS_KILIT = threading.Lock()
 IS_SINIRI = 20
 
 
-def oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor=True):
+def oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor=True, veri_al=None,
+                     katki=None):
+    """Arka plan isi: (1) olcumu eksik birimlerde katki olcumu (veri_al():
+    (df, egitim maskesi, hedef)), (2) sorulacak birimler dil modeline
+    (olcumle), (3) aileler arasi oneriler ve onlarin olcumu."""
     import uuid
     from fe_agent import llm as llm_mod
     kimlik = uuid.uuid4().hex[:12]
-    ogeler = [llm_ogesi(b, model_turu) for b in sorted(sor, key=lambda b: b.get("asama") or 3)]
+    katki = dict(katki or {})
+    eksik = katki_eksik(birimler, katki, model_turu) if veri_al else []
+    sor = sorted(sor, key=lambda b: b.get("asama") or 3)
     with _IS_KILIT:
         for k in sorted(_ISLER, key=lambda k: _ISLER[k]["zaman"])[:-IS_SINIRI or None]:
             if _ISLER[k]["durum"] != "calisiyor":
                 _ISLER.pop(k, None)
         _ISLER[kimlik] = {"durum": "calisiyor", "zaman": time.time(), "biten": 0,
-                          "toplam": len(ogeler), "tur": 1, "evre": "birim", "sonuc": {},
-                          "arasi": None, "hata": None, "model_turu": model_turu,
-                          "sorulan": [o["id"] for o in ogeler], "arasi_sor": bool(arasi_sor)}
+                          "toplam": len(sor), "tur": 1, "evre": "olcum" if eksik else "birim",
+                          "olcum_biten": 0, "olcum_toplam": len(eksik), "sonuc": {},
+                          "arasi": None, "hata": None, "model_turu": model_turu, "katki": None,
+                          "sorulan": [b["id"] for b in sor], "arasi_sor": bool(arasi_sor)}
 
     def ilerle(biten, tur):
         with _IS_KILIT:
             _ISLER[kimlik].update(biten=biten, tur=tur)
 
+    def olc_ilerle(n):
+        with _IS_KILIT:
+            _ISLER[kimlik]["olcum_biten"] = n
+
     def calis():
         hata = None
+        veri = None
         try:
+            if eksik:
+                # Olcum hatasi isi durdurmaz: dil modeli olcumsuz karar verir.
+                try:
+                    veri = veri_al()
+                    bas = time.time()
+                    katki.update(katki_olc(veri[0], eksik, veri[1], veri[2], model_turu, segmentler,
+                                           katki, olc_ilerle))
+                    print("02.2 katkı ölçümü: %d birim, %.0f sn" % (len(eksik), time.time() - bas),
+                          flush=True)
+                except Exception as e:      # pylint: disable=broad-except
+                    print("02.2 katkı ölçümü yapılamadı: %s: %s" % (type(e).__name__, str(e)[:200]),
+                          flush=True)
+            with _IS_KILIT:
+                _ISLER[kimlik].update(evre="birim", katki=dict(katki))
+            ogeler = [llm_ogesi(b, model_turu, katki) for b in sor]
             sonuc, hata = llm_mod.geleneksel_oneri_sec(ogeler, katalog_metni(), list(segmentler),
                                                        model_turu=model_turu, ilerleme=ilerle)
             with _IS_KILIT:
@@ -1426,11 +1758,21 @@ def oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor=True):
                 satirlar = [arasi_satiri(b) for b in birimler if b["tur"] in ("aile", "kolon")]
                 mevcut = [b["ad"] for b in birimler if b["tur"] in ("cift", "grup")]
                 oneriler, h2 = llm_mod.geleneksel_arasi_oner(satirlar, mevcut, model_turu)
+                if oneriler and veri_al:
+                    try:
+                        yeni = arasi_ekle(birimler, oneriler, segmentler)
+                        if yeni:
+                            veri = veri or veri_al()
+                            katki.update(katki_olc(veri[0], yeni, veri[1], veri[2], model_turu,
+                                                   segmentler, katki))
+                    except Exception as e:      # pylint: disable=broad-except
+                        print("02.2 aileler arası ölçüm yapılamadı: %s" % str(e)[:200], flush=True)
                 with _IS_KILIT:
-                    _ISLER[kimlik]["arasi"] = oneriler
+                    _ISLER[kimlik].update(arasi=oneriler, katki=dict(katki))
                 hata = hata or h2
         except Exception as e:      # pylint: disable=broad-except
             hata = "%s: %s" % (type(e).__name__, str(e)[:200])
+            print("02.2 öneri işi hatası: %s" % hata, flush=True)
         with _IS_KILIT:
             _ISLER[kimlik].update(durum="bitti", hata=hata)
 
@@ -1485,7 +1827,7 @@ def karar_dogrula(birimler, karar, segmentler, model_turu=None):
     return temiz
 
 
-def plan_satirlari(birimler, karar, model_turu="agac", mesaj="", en_cok=900):
+def plan_satirlari(birimler, karar, model_turu="agac", mesaj="", en_cok=900, katki=None):
     """Sohbet icin plan: butun birimler kisa (id | ad | secili); mesajda
     adi ya da kolonu gecen birimler ayrintili (aciklama, sayilar, mumkun)."""
     m = str(mesaj or "").upper()
@@ -1497,9 +1839,10 @@ def plan_satirlari(birimler, karar, model_turu="agac", mesaj="", en_cok=900):
         if b["ad"].upper() in m or any(x.upper() in tok for x in b["kolonlar"][:40]) \
                 or any(t in b["ad"].upper() for t in tok if len(t) >= 5):
             if len(ayrinti) < 40:
-                ayrinti.append("%s | %s | açıklama: %s | sayılar: %s | mümkün: %s" % (
+                ayrinti.append("%s | %s | açıklama: %s | sayılar: %s | mümkün: %s | ölçüm: %s" % (
                     b["id"], b["ad"], (b.get("aciklama") or "")[:120], ozet_metni(b),
-                    ", ".join(model_mumkun(b, model_turu))))
+                    ", ".join(model_mumkun(b, model_turu)),
+                    katki_metni((katki or {}).get(b["id"])) or "yok"))
     if len(birimler) > en_cok:
         satirlar.append("(+%d birim daha)" % (len(birimler) - en_cok))
     return satirlar, ayrinti

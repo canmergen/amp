@@ -2574,6 +2574,51 @@ tanıtır; sayfalar sol bardan açılır.
   Eksik işareti, doldurma, nadir kategori birleştirme 02.1'de; hedefe göre
   ve monoton aralıklar SFA'da.
 
+**02.2 katkı ölçümü: kararlar ve gerekçeler sayıya dayanır**
+- `geleneksel.katki_olc`: her birimde bu model türünde seçilebilen her
+  dönüşüm (eşik ve kova hariç: parametreleri iş kuralından) yalnız eğitim
+  satırlarında, örneklemesiz uygulanır ve ölçülür: üretilen kolonların en
+  iyi IV'si (`iv_hesapla`: 10 eşit frekanslı aralık, aynı değerler tek
+  aralıkta, boş ayrı aralık; kategorikte her değer bir aralık; 0,5
+  düzeltmeli), kaynak kolonların en iyi IV'sine göre artış, en iyi kolonun
+  kaynak kolonlarla sıra ilişkisi (Spearman) ve dönüşümler arası benzerlik
+  (`benzer`: aynı sırada olan başka dönüşüm, ör. aynı pencere çiftinde oran,
+  normalize oran ve büyüme). Segment dönüşümleri hedefle ilişkisi en yüksek
+  segment kolonuyla ölçülür. Kategorik tek kolonda artış yerine IV'nin
+  kendisi (kolon modele ancak kodlanarak girer). Sıralamayı koruyan
+  dönüşümde IV değişmez (ağaçta gereksiz olmanın sayısal karşılığı).
+- Eşikler: `KATKI_ARTIS` 0,02 (IV artışı), `KATKI_ILISKI` 0,95 (kaynakla ya
+  da başka dönüşümle bu kadar aynı sıradaysa yeni bilgi yok),
+  `KATKI_DILIM` 10. `katki_degerli` bu eşiklerle karar verir.
+- Saklama: `geleneksel["katki"]` (birim başına, `imza` ve `KATKI_SURUM`
+  ile); `katki_eksik` eksik ya da eskimiş birimleri (model türü
+  değişince yeni kodlar) bulur, yalnız onlar ölçülür. Öneri imzası
+  (`_oneri_imza`) ölçüm sürümünü içerir: sürüm değişince öneriler yeniden
+  alınır.
+- Arka plan işi önce ölçer (`evre` "olcum", bekleme kartında "Dönüşümlerin
+  katkısı ölçülüyor: n / toplam birim"), sonra dil modeline ölçümle sorar,
+  sonra aileler arası birimleri kurar ve onları da ölçer. Ölçüm hatası işi
+  durdurmaz (dil modeli ölçümsüz karar verir; log'a yazılır).
+  `_veri_al(durum)` tabloyu ve eğitim maskesini tembel okur (model türü
+  değişince ve iş yeniden başlarken).
+- Dil modeli istemi: her birimde "katkı" satırı; kararı bu sayılara
+  dayandırması, gerekçede sayıları ve dönüşümün yakaladığı davranışı
+  yazması, "bilgi katar" gibi sayısız cümle yazmaması istenir. Sohbette
+  ayrıntılı birimlere ölçüm eklenir.
+- `olcum_ekle`: her öneriye kodun sayılı gerekçesi (`olcum`,
+  `olcum_secilmeyen`, `katki_gerekcesi`); dil modelinin gerekçesinde hiç
+  sayı yoksa `sayisiz` ve kartta gösterilmez, yerine ölçüm yazar.
+  `kural_onerisi(b, model_turu, katki)`: ölçüm varsa değerli olanları
+  IV sırasıyla seçer, birbirinin aynısı olanlardan yalnız IV'si yüksek
+  olanı tutar.
+- Kart: birimde "Ölçüm" tablosu (dönüşüm, kolon sayısı, en iyi IV, kaynağa
+  göre, kaynakla ilişki, değerlendirme: Yeni bilgi / Kaynakla aynı bilgi /
+  X ile aynı bilgi / Belirgin artış yok, seçili); Öneri Özeti'nde "En iyi
+  IV artışı" sütunu.
+- Süre (test makinesi): 200 bin satırda 4 pencereli aile ve iki tek kolon
+  2,3 sn. Satır ve birim sayısıyla doğrusal artar; log'da "02.2 katkı
+  ölçümü: n birim, s sn".
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

@@ -18271,7 +18271,8 @@ function gelenekselBekleKarti(alan, blok) {
     cubuk.appendChild(dolgu);
     const ayrinti = elYap("div", "gl-not", "");
     const adimlar = elYap("ul", "gl-bekle-adimlar");
-    [["1. aşama", "Kolonun kendi dönüşümü modele bilgi katar mı"],
+    [["Ölçüm", "Her dönüşümün IV'si, kaynağa göre artışı ve kaynakla benzerliği (eğitim satırları)"],
+     ["1. aşama", "Kolonun kendi dönüşümü modele bilgi katar mı"],
      ["2. aşama", "Ailenin pencereleri arasından çıkarılabilecek en çok bilgi"],
      ["3. aşama", "Aileler arası anlamlı ilişkiler (dil modeli önerir, kod doğrular)"]].forEach(([a, t]) => {
         const li = elYap("li", "");
@@ -18286,7 +18287,13 @@ function gelenekselBekleKarti(alan, blok) {
         dolgu.style.width = Math.round(oran * 100) + "%";
         const dk = Math.floor((b.gecen || 0) / 60), sn = (b.gecen || 0) % 60;
         const sure = (dk ? dk + " dk " : "") + sn + " sn";
-        if (b.evre === "arasi") {
+        if (b.evre === "olcum") {
+            const t = Number(b.olcum_toplam || 0), n = Number(b.olcum_biten || 0);
+            dolgu.style.width = (t ? Math.round(100 * n / t) : 0) + "%";
+            baslik.textContent = "Dönüşümlerin katkısı ölçülüyor: " + ftBinlik(n) + " / " + ftBinlik(t) + " birim";
+            ayrinti.textContent = "Her dönüşümün ürettiği kolonun IV'si ve kaynak kolonlarla benzerliği eğitim satırlarında, örneklemesiz hesaplanıyor; "
+                + "dil modeli kararını bu sayılara göre verecek. Geçen süre " + sure + ".";
+        } else if (b.evre === "arasi") {
             baslik.textContent = "Dil modeli aileler arası ilişkileri öneriyor";
             ayrinti.textContent = ftBinlik(biten) + " birimin kararı alındı. Geçen süre " + sure + ".";
         } else {
@@ -18570,6 +18577,65 @@ function gelenekselKartiEkle(alan, blok) {
         : o.dm_yok ? "Öneriyi veren: Kod, veriye bakan kural (dil modeli üç denemede cevap vermedi)"
         : "Öneriyi veren: Kod, veriye bakan kural";
 
+    /* Kodun ölçtüğü katkı: her dönüşümün ürettiği kolonların en iyi IV'si,
+       kaynağa göre artışı ve kaynakla sıra ilişkisi (eğitim satırları). */
+    const ES = alan.katki_esik || { artis: 0.02, iliski: 0.95, dilim: 10 };
+    const sayiYaz = (v, h) => v === null || v === undefined ? "-" : Number(v).toFixed(h).replace(".", ",");
+    const degerlendir = m => {
+        if (!m || m.iv === null || m.iv === undefined) return ["", "Ölçülemedi"];
+        if (m.iliski !== null && m.iliski !== undefined && m.iliski >= ES.iliski) return ["gl-k-ayni", "Kaynakla aynı bilgi"];
+        if (m.artis === null || m.artis === undefined) return m.iv >= ES.artis ? ["gl-k-yeni", "Hedefle ilişkili"] : ["gl-k-zayif", "Hedefle ilişkisi zayıf"];
+        return m.artis >= ES.artis ? ["gl-k-yeni", "Yeni bilgi"] : ["gl-k-zayif", "Belirgin artış yok"];
+    };
+    function katkiTablosu(b, k) {
+        const kt = b.katki || {};
+        const sar = elYap("div", "gl-katki");
+        sar.appendChild(elYap("div", "gl-alt-baslik", "Ölçüm (eğitim satırları, örneklemesiz)"));
+        sar.appendChild(elYap("div", "gl-not", (kt.kaynak_iv !== null && kt.kaynak_iv !== undefined
+            ? "Kaynak kolonların en iyi IV'si " + sayiYaz(kt.kaynak_iv, 3) + " (" + (kt.kaynak_kolon || "") + "). " : "")
+            + "IV " + ES.dilim + " eşit frekanslı aralıkla; artış, dönüşümün en iyi kolonunun IV'si eksi kaynağın en iyi IV'si; "
+            + "ilişki, en iyi kolonun kaynak kolonlarla sıra ilişkisi (Spearman). Artış en az " + sayiYaz(ES.artis, 2)
+            + " ve ilişki " + sayiYaz(ES.iliski, 2) + " altındaysa yeni bilgi sayılır."));
+        const t = elYap("table", "dg-tablo gl-katki-tablo");
+        const kcg = document.createElement("colgroup");
+        [24, 8, 10, 12, 11, 25, 10].forEach(w => { const col = document.createElement("col"); col.style.width = w + "%"; kcg.appendChild(col); });
+        t.appendChild(kcg);
+        const th = document.createElement("thead"), tr = document.createElement("tr");
+        ["Dönüşüm", "Kolon", "En iyi IV", "Kaynağa göre", "Kaynakla ilişki", "Değerlendirme", "Seçili"].forEach(x => tr.appendChild(elYap("th", "", x)));
+        th.appendChild(tr); t.appendChild(th);
+        const tb = document.createElement("tbody");
+        Object.entries(kt.kodlar || {}).sort((a, b_) => kodAsama(a[0]) - kodAsama(b_[0]) || (b_[1].iv || 0) - (a[1].iv || 0)).forEach(([c, m]) => {
+            const r = document.createElement("tr");
+            let [sinif, metin] = degerlendir(m);
+            /* Aynı sırada olan başka dönüşüm (ör. aynı pencere çiftinde oran ve normalize oran): IV'si yüksek olan esas. */
+            const kodlar_ = kt.kodlar || {};
+            const ust = Object.keys(m.benzer || {}).filter(x => kodlar_[x] && ((kodlar_[x].iv || 0) > (m.iv || 0)
+                || ((kodlar_[x].iv || 0) === (m.iv || 0) && kodAsama(x) * 100 + Object.keys(kodlar_).indexOf(x) < kodAsama(c) * 100 + Object.keys(kodlar_).indexOf(c))));
+            if (ust.length && sinif === "gl-k-yeni") { sinif = "gl-k-ayni"; metin = kodAdi(ust[0]) + " ile aynı bilgi"; }
+            const ad = elYap("td", "pf-kolon-ad", kodAdi(c) + (m.segment ? " (" + m.segment + ")" : ""));
+            ad.title = "En iyi kolon: " + (m.kolon || "");
+            r.append(ad, elYap("td", "", ftBinlik(m.kolon_sayisi || 0)), elYap("td", "", sayiYaz(m.iv, 3)),
+                     elYap("td", "", m.artis === null || m.artis === undefined ? "-" : (m.artis >= 0 ? "+" : "eksi ") + sayiYaz(Math.abs(m.artis), 3)),
+                     elYap("td", "", sayiYaz(m.iliski, 2)), elYap("td", sinif, metin),
+                     elYap("td", "", (k.sec || []).includes(c) ? "Evet" : "Hayır"));
+            tb.appendChild(r);
+        });
+        Object.entries(kt.olculmeyen || {}).forEach(([c, neden]) => {
+            const r = document.createElement("tr");
+            const td = elYap("td", "", "Ölçülmedi: " + neden);
+            td.colSpan = 5;
+            r.append(elYap("td", "pf-kolon-ad", kodAdi(c)), td, elYap("td", "", (k.sec || []).includes(c) ? "Evet" : "Hayır"));
+            tb.appendChild(r);
+        });
+        t.appendChild(tb);
+        const ts = elYap("div", "gl-katki-sar");
+        ts.appendChild(t);
+        sar.appendChild(ts);
+        if (!Object.keys(kt.kodlar || {}).length && !Object.keys(kt.olculmeyen || {}).length)
+            sar.appendChild(elYap("div", "gl-not", "Bu model türünde ölçülecek dönüşüm yok."));
+        return sar;
+    }
+
     const birimSatiri = b => {
         const k = karar[b.id];
         const o = oneri[b.id] || {};
@@ -18625,12 +18691,18 @@ function gelenekselKartiEkle(alan, blok) {
             ic.appendChild(elYap("div", "gl-alt-baslik", "Seçili dönüşümler ne yapar"));
             ic.appendChild(sd);
         }
-        if (o.g1 || o.g2 || o.g3) {
+        /* Gerekçe: dil modelinin sayılı gerekçesi; sayısız (genel) cümleler
+           gösterilmez, yerine kodun ölçümü yazar. */
+        if (!o.sayisiz && (o.g1 || o.g2 || o.g3)) {
             if (o.g1) satir(ASAMA_KISA[1], ASAMA_ADI[1].replace(/^1\. /, "") + ": " + tireSade(o.g1));
             if (o.g2) satir(ASAMA_KISA[2], ASAMA_ADI[2].replace(/^2\. /, "") + ": " + tireSade(o.g2));
             if (o.g3) satir(ASAMA_KISA[3], ASAMA_ADI[3].replace(/^3\. /, "") + ": " + tireSade(o.g3));
-        } else satir("Neden", tireSade(o.gerekce || ""));
-        satir("Seçilmeyenler", tireSade(o.secilmeyen || ""));
+        } else if (!o.sayisiz && o.gerekce && o.gerekce !== o.olcum) satir("Neden", tireSade(o.gerekce));
+        if (o.olcum) satir(o.sayisiz || !(o.g1 || o.g2 || o.g3 || o.gerekce) ? "Neden" : "Ölçüm", tireSade(o.olcum));
+        if (!o.sayisiz && o.secilmeyen && o.secilmeyen !== o.olcum_secilmeyen) satir("Seçilmeyenler", tireSade(o.secilmeyen));
+        /* Seçilmeyenlerin ölçümü aşağıdaki tabloda; tabloyu yoksa metin. */
+        if (o.olcum_secilmeyen && !b.katki) satir(o.sayisiz || !o.secilmeyen ? "Seçilmeyenler" : "Seçilmeyen ölçüm", tireSade(o.olcum_secilmeyen));
+        if (b.katki) ic.appendChild(katkiTablosu(b, k));
         satir("", kaynakMetni(o));
         /* Seçilebilen dönüşümler: gruplu, tıklanınca ekle / çıkar */
         const gruplar = {};
@@ -18854,12 +18926,12 @@ function gelenekselKartiEkle(alan, blok) {
         const sar = elYap("div", "gl-ozet-sar");
         const t = elYap("table", "dg-tablo gl-ozet");
         const cg = document.createElement("colgroup");
-        ["gl-o-birim", "gl-o-asama", "gl-o-bulan", "gl-o-veren", "gl-o-oneri", "gl-o-neden"].forEach(c => {
+        ["gl-o-birim", "gl-o-asama", "gl-o-bulan", "gl-o-artis", "gl-o-veren", "gl-o-oneri", "gl-o-neden"].forEach(c => {
             const col = document.createElement("col"); col.className = c; cg.appendChild(col);
         });
         t.appendChild(cg);
         const th = document.createElement("thead"), tr = document.createElement("tr");
-        ["Birim", "Aşama", "Birimi bulan", "Öneriyi veren", "Önerilen dönüşümler", "Gerekçe"].forEach(x => tr.appendChild(elYap("th", "", x)));
+        ["Birim", "Aşama", "Birimi bulan", "En iyi IV artışı", "Öneriyi veren", "Önerilen dönüşümler", "Gerekçe"].forEach(x => tr.appendChild(elYap("th", "", x)));
         th.appendChild(tr); t.appendChild(th);
         const tb = document.createElement("tbody");
         gos.slice(0, 1500).forEach(b => {
@@ -18875,9 +18947,17 @@ function gelenekselKartiEkle(alan, blok) {
                 ne.appendChild(cp);
             });
             else ne.appendChild(elYap("span", "gl-cip-yok", "Dönüşüm yok"));
-            const ger = [o.g1 && ASAMA_ADI[1] + ": " + o.g1, o.g2 && ASAMA_ADI[2] + ": " + o.g2,
-                         o.g3 && ASAMA_ADI[3] + ": " + o.g3].filter(Boolean);
+            const ger = o.sayisiz ? [o.olcum].filter(Boolean)
+                : [o.g1 && ASAMA_ADI[1] + ": " + o.g1, o.g2 && ASAMA_ADI[2] + ": " + o.g2,
+                   o.g3 && ASAMA_ADI[3] + ": " + o.g3].filter(Boolean);
+            if (!ger.length && o.olcum) ger.push(o.olcum);
+            const km = (b.katki || {}).kodlar || {};
+            const art = sec.map(c => (km[c] || {}).artis).filter(v => v !== null && v !== undefined);
+            const ivs = sec.map(c => (km[c] || {}).iv).filter(v => v !== null && v !== undefined);
+            const enArt = art.length ? Math.max(...art) : null;
             r.append(ad, elYap("td", "", String(b.asama || 3)), elYap("td", "", BULAN_ADI[b.bulan || "kod"] || "Kod"),
+                     elYap("td", "", enArt !== null ? (enArt >= 0 ? "+" : "eksi ") + sayiYaz(Math.abs(enArt), 3)
+                         : ivs.length ? "IV " + sayiYaz(Math.max(...ivs), 3) : "-"),
                      elYap("td", o.dm_yok ? "gl-uyari" : "", kaynakAdi(o)), ne,
                      elYap("td", "gl-ozet-neden", tireSade(ger.join("\n") || o.gerekce || o.secilmeyen || "")));
             tb.appendChild(r);

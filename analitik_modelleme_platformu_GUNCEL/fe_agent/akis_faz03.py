@@ -175,6 +175,7 @@ def geleneksel_karti(durum, kilitli=False):
         d = G.oneri_isi_durumu(g["oneri_is"].get("kimlik")) or {}
         bekliyor = {"biten": d.get("biten", 0), "toplam": d.get("toplam", g["oneri_is"].get("toplam", 0)),
                     "tur": d.get("tur", 1), "evre": d.get("evre", "birim"),
+                    "olcum_biten": d.get("olcum_biten", 0), "olcum_toplam": d.get("olcum_toplam", 0),
                     "gecen": int(time.time() - float(g["oneri_is"].get("baslangic") or time.time())),
                     "arasi_sor": bool(g["oneri_is"].get("arasi_sor"))}
     return {
@@ -194,8 +195,11 @@ def geleneksel_karti(durum, kilitli=False):
                       "bulan": b.get("bulan") or "kod",
                       "aciklama": b.get("aciklama") or "", "ozet": G.ozet_metni(b),
                       "tekil": (b.get("ozet") or {}).get("tekil"),
-                      "mumkun": b.get("mumkun") or [], "imkansiz": b.get("imkansiz") or {}}
+                      "mumkun": b.get("mumkun") or [], "imkansiz": b.get("imkansiz") or {},
+                      "katki": {k: v for k, v in ((g.get("katki") or {}).get(b["id"]) or {}).items()
+                                if k not in ("imza", "surum")} or None}
                      for b in birimler],
+        "katki_esik": {"artis": G.KATKI_ARTIS, "iliski": G.KATKI_ILISKI, "dilim": G.KATKI_DILIM},
         "oneri": {i: {k: v for k, v in o.items() if k != "imza"} for i, o in oneri.items()},
         "karar": karar,
         "girmeyen": g.get("girmeyen") or [],
@@ -213,19 +217,33 @@ def _karar_kur(g, birimler, oneri, segmentler, model_turu):
     return karar
 
 
-def _oneri_baslat(g, birimler, segmentler, model_turu, onceki):
-    """Onbellekte olmayan birimler icin dil modeli isini baslatir. Doner:
-    oneri (bekleyenlerde gecici kural onerisi)."""
+def _veri_al(durum):
+    """Arka plan isi icin tembel okuyucu: (02.2 kaynak tablosu, egitim
+    maskesi, hedef). Durumun o anki kopyasi kullanilir."""
+    d = dict(durum)
+
+    def al():
+        df, _y = _uretim_kaynagi(d)
+        tr, _te = maskeler(d, df)
+        return df, pd.Series(tr, index=df.index), (d.get("meta") or {}).get("target")
+    return al
+
+
+def _oneri_baslat(g, birimler, segmentler, model_turu, onceki, veri_al=None):
+    """Onbellekte olmayan birimler icin arka plan isini baslatir (olcum,
+    dil modeli, aileler arasi). Doner: oneri (bekleyenlerde gecici kural)."""
     from fe_agent import geleneksel as G
-    cikti, sor = G.oneri_onbellek(birimler, onceki, model_turu)
+    katki = g.get("katki") or {}
+    cikti, sor = G.oneri_onbellek(birimler, onceki, model_turu, katki)
     arasi_imza = G.arasi_imzasi(birimler, model_turu)
     arasi_sor = g.get("arasi_imza") != arasi_imza
+    eksik = G.katki_eksik(birimler, katki, model_turu) if veri_al else []
     g.pop("oneri_is", None)
-    if sor or arasi_sor:
-        kimlik = G.oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor)
+    if sor or arasi_sor or eksik:
+        kimlik = G.oneri_isi_baslat(birimler, sor, segmentler, model_turu, arasi_sor, veri_al, katki)
         g["oneri_is"] = {"kimlik": kimlik, "model_turu": model_turu, "arasi_imza": arasi_imza,
                          "arasi_sor": arasi_sor, "baslangic": time.time(), "toplam": len(sor)}
-    return G.oneri_birlestir(birimler, cikti, {}, model_turu, [])
+    return G.oneri_birlestir(birimler, cikti, {}, model_turu, [], katki)
 
 
 def geleneksel_is_durumu(durum):
@@ -243,25 +261,31 @@ def geleneksel_is_durumu(durum):
     model_turu = i.get("model_turu") or g.get("model_turu") or "agac"
     if d is None:
         onceki = {k: o for k, o in (g.get("oneri") or {}).items() if o.get("kaynak") == "dil modeli"}
-        g["oneri"] = _oneri_baslat(g, birimler, segmentler, model_turu, onceki)
+        g["oneri"] = _oneri_baslat(g, birimler, segmentler, model_turu, onceki, _veri_al(durum))
         durum["geleneksel"] = g
         durum["_secim_alani"] = geleneksel_karti(durum)
         return not g.get("oneri_is"), True
     if d.get("durum") != "bitti":
         return False, False
-    cikti = {k: o for k, o in (g.get("oneri") or {}).items()
-             if o.get("kaynak") in ("dil modeli", "secenek yok", "sohbet")}
-    oneri = G.oneri_birlestir(birimler, cikti, d.get("sonuc") or {}, model_turu, d.get("sorulan") or [])
+    if d.get("katki") is not None:
+        g["katki"] = d["katki"]
+    katki = g.get("katki") or {}
+    cikti = {k: G.olcum_ekle(o, b, katki.get(k), model_turu) for b in birimler
+             for k, o in [(b["id"], (g.get("oneri") or {}).get(b["id"]))]
+             if o and o.get("kaynak") in ("dil modeli", "secenek yok", "sohbet")}
+    oneri = G.oneri_birlestir(birimler, cikti, d.get("sonuc") or {}, model_turu, d.get("sorulan") or [],
+                              katki)
     if i.get("arasi_sor") and d.get("arasi") is not None:
         birimler = [b for b in birimler if b.get("bulan") != "dil modeli"]
         oneri = {k: o for k, o in oneri.items() if k in {b["id"] for b in birimler}}
         yeni = G.arasi_ekle(birimler, d["arasi"], segmentler, "dil modeli")
         for b in yeni:
             mm = set(G.model_mumkun(b, model_turu))
-            oneri[b["id"]] = {"sec": [c for c in b.get("oneri_islem") or [] if c in mm], "param": {},
-                              "gerekce": b.get("gerekce") or "", "g3": b.get("gerekce") or "",
-                              "secilmeyen": "", "kaynak": "dil modeli",
-                              "imza": G._imza(b) + model_turu}
+            oneri[b["id"]] = G.olcum_ekle({"sec": [c for c in b.get("oneri_islem") or [] if c in mm],
+                                           "param": {}, "gerekce": b.get("gerekce") or "",
+                                           "g3": b.get("gerekce") or "", "secilmeyen": "",
+                                           "kaynak": "dil modeli", "imza": G._oneri_imza(b, model_turu)},
+                                          b, katki.get(b["id"]), model_turu)
         birimler = birimler + yeni
         g["arasi_dm"] = d["arasi"]
         g["arasi_imza"] = i.get("arasi_imza")
@@ -296,7 +320,7 @@ def geleneksel_sohbet_birimleri(durum, yeni):
     for b in eklenen:
         oneri[b["id"]] = {"sec": [], "param": {}, "gerekce": b.get("gerekce") or "",
                           "g3": b.get("gerekce") or "", "secilmeyen": "",
-                          "kaynak": "sohbet", "imza": G._imza(b) + model_turu}
+                          "kaynak": "sohbet", "imza": G._oneri_imza(b, model_turu)}
         karar[b["id"]] = {"sec": [], "param": {}}
     g["birimler"] = birimler + eklenen
     g["oneri"], g["karar"] = oneri, karar
@@ -326,8 +350,8 @@ def geleneksel_model_degistir(durum, model_turu):
         if b.get("bulan") in ("dil modeli", "sohbet") and b["id"] not in onceki:
             mm = set(G.model_mumkun(b, model_turu))
             onceki[b["id"]] = dict(o, sec=[c for c in o.get("sec") or [] if c in mm],
-                                   imza=G._imza(b) + model_turu)
-    oneri = _oneri_baslat(g, birimler, segmentler, model_turu, onceki)
+                                   imza=G._oneri_imza(b, model_turu))
+    oneri = _oneri_baslat(g, birimler, segmentler, model_turu, onceki, _veri_al(durum))
     for b in birimler:
         if b.get("bulan") in ("dil modeli", "sohbet"):
             oneri[b["id"]] = onceki[b["id"]]
@@ -361,10 +385,13 @@ def kural_plan(durum):
     for b in eklenen:
         o = onceki.get(b["id"])
         if o:
-            onceki[b["id"]] = dict(o, kaynak=o.get("kaynak") or "dil modeli", imza=G._imza(b) + model_turu)
+            onceki[b["id"]] = dict(o, kaynak=o.get("kaynak") or "dil modeli", imza=G._oneri_imza(b, model_turu))
     g.update({"birimler": birimler, "girmeyen": girmeyen, "segmentler": segmentler,
               "model_turu": model_turu})
-    oneri = _oneri_baslat(g, birimler, segmentler, model_turu, onceki)
+    tr, _te = maskeler(durum, df)
+    hedef = (durum.get("meta") or {}).get("target")
+    veri = (df, pd.Series(tr, index=df.index), hedef)
+    oneri = _oneri_baslat(g, birimler, segmentler, model_turu, onceki, lambda: veri)
     for b in eklenen:
         if b["id"] in onceki:
             oneri[b["id"]] = onceki[b["id"]]

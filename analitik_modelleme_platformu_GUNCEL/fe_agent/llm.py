@@ -4536,11 +4536,25 @@ KURALLAR:
 - MODEL TÜRÜ verilir. Ağaç modelinde tek kolonun sıralamayı koruyan
   dönüşümleri gereksizdir ve mümkün listesinde yoktur.
 
+ÖLÇÜM: her birimde kodun ÖLÇTÜĞÜ katkı verilir ("katkı" alanı): kaynak
+kolonların en iyi IV'si ve her dönüşümün ürettiği kolonların en iyi IV'si,
+kaynağa göre artış ve kaynakla sıra ilişkisi (Spearman, 0 ile 1). IV 10 eşit
+frekanslı aralıkla, yalnız eğitim satırlarında, örneklemesiz ölçülür.
+Sıralamayı koruyan dönüşümün IV'si kaynakla aynıdır. Kararını bu sayılara
+dayandır: artış belirgin (0,02 ve üstü) ve ilişki 0,95'in altındaysa yeni
+bilgi var; ilişki 0,95 ve üstüyse kaynakla aynı bilgi; aynı bilgiyi taşıyan
+iki dönüşümden IV'si yüksek olanı seç.
+
 GEREKÇE: her birimde ilgili aşamanın gerekçesini ayrı yaz: "g1" (1. aşama:
-kolonun kendi dönüşümü neden var ya da yok), "g2" (yalnız ailede, 2. aşama:
-pencereler arası hangi bilgi neden), "g3" (yalnız çift, grup, segment ve
-satırda). Kolonun anlamına ve sayılarına değin; ilke cümlesi kopyalama.
-"secilmeyen": seçilmeyen mümkün kodların nedeni (bir cümle).
+kolonun kendi dönüşümü), "g2" (yalnız ailede, 2. aşama: pencereler arası),
+"g3" (yalnız çift, grup, segment ve satırda). HER gerekçe iki şey söyler:
+(a) ölçülen sayılar (IV, artış, ilişki), (b) dönüşümün kolonun anlamında
+hangi davranışı yakaladığı. Örnek: "Son 3 günün 30 güne normalize oranı
+IV'yi 0,15'ten 0,22'ye çıkarıyor (artış 0,07), kaynakla ilişkisi 0,41: son
+günlerde hızlanan işlem adedi riskle ilişkili." "Bilgi katar", "bilgi
+katmaz", "modele katkı sağlar" gibi sayısız, genel cümle YAZMA.
+"secilmeyen": seçilmeyen her mümkün kodun sayıyla nedeni (ör. "Fark: artış
+0,00, ilişki 0,97, oranla aynı bilgi").
 
 ÇIKTI KURALI: YALNIZCA JSON:
 {"birimler":[{"id":"...","sec":["kod",...],"param":{},"g1":"...","g2":"...","g3":"...","secilmeyen":"..."}]}
@@ -4568,13 +4582,14 @@ def _geleneksel_parca(parca, katalog_metni, segmentler, model_turu="agac"):
             continue
         kol = x.get("kolonlar") or []
         satirlar.append("id=%s | %s, %s. aşama | %s | kolon: %s%s | açıklama: %s | ölçü: %s | sayılar: %s | "
-                        "mümkün: %s | kural: %s%s" % (
+                        "mümkün: %s | kural: %s%s | katkı: %s" % (
                             x["id"], x.get("tur"), x.get("asama") or "-", x.get("ad"), ", ".join(kol[:3]),
                             (" (+%d)" % (len(kol) - 3)) if len(kol) > 3 else "",
                             (x.get("aciklama") or "-")[:140], x.get("olcu") or "-",
                             x.get("ozet", ""), ", ".join(x.get("mumkun") or []),
                             ", ".join(x.get("kural") or []) or "yok",
-                            (" | öneri nedeni: %s" % x["gerekce"][:160]) if x.get("gerekce") else ""))
+                            (" | öneri nedeni: %s" % x["gerekce"][:160]) if x.get("gerekce") else "",
+                            x.get("katki") or "ölçülmedi"))
     if not satirlar:
         return {}
     istek = ("Model türü: %s\n\nDönüşüm kodları:\n%s\n\nSegment olarak kullanılabilecek kolonlar: %s\n\n%s"
@@ -4728,6 +4743,9 @@ Ne yapabilirsin:
   (aile:...) ya da kolon (kolon:...) id'leridir. Kod doğrular ve birimi kurar.
 - esik ve kova: "param": {"kova": {"sinirlar": [1, 30, 60]}};
   grup_oran: "param": {"grup_oran": {"segment": "KOLON"}}.
+- Ayrıntılı birimlerde kodun ölçtüğü katkı ("ölçüm": IV, kaynağa göre
+  artış, kaynakla sıra ilişkisi; eğitim satırlarında) verilir. "Neden" ve
+  "ne katıyor" sorularını bu sayılarla cevapla; sayısız genel cümle yazma.
 - "cevap" HER ZAMAN dolu olsun; değişiklik yoksa liste boş.
 
 ÇIKTI KURALI: YALNIZCA JSON:
