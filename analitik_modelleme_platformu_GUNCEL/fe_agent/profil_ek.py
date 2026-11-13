@@ -573,7 +573,7 @@ def tarih_kod_kontrol(df, adaylar):
     for kol in adaylar:
         s = df[kol]
         tur = tarih_turu(s)
-        m = _tarih_kodlu(s, tur)
+        m = _tarih_kodlu(s, tur) if tur is not None else None
         if m is not None:
             tarih += 1
         if m is None or not bool(m.any()):

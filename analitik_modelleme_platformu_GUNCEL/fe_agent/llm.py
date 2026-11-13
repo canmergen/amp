@@ -4082,8 +4082,39 @@ taşıyabiliyorsa."
 {"oneriler":[{"id":"...","secim":"...","gerekce":"bir cümle, Türkçe"}]}
 "id" değerini AYNEN kopyala; "secim" o bulgunun seçenek kodlarından biri
 olsun.""" + SINIRLAYICI_KURALI
-PROFIL_ONERI_PARCA = 40
-PROFIL_ONERI_PARALEL = 3
+# HIZ: 02.1'de yuzlerce bulgu cikabilir (ör. Ondalık Hassasiyeti cogu tutar
+# kolonunda). Kucuk parcalar (kisa cevap, zaman asimina takilmaz) kendi
+# havuzunda eszamanli gider; yeniden deneme yok (alinamayan parca kural
+# onerisiyle kalir, profil yeniden cikarilinca tekrar sorulur). Butun adim
+# PROFIL_ONERI_BUTCE saniyeyi gecmez: bitmeyen parcalar kural.
+PROFIL_ONERI_PARCA = 20
+PROFIL_ONERI_PARALEL = 8
+PROFIL_ONERI_ZAMAN_ASIMI = 75.0
+PROFIL_ONERI_BUTCE = 120.0
+_PROFIL_HAVUZ = futures.ThreadPoolExecutor(max_workers=PROFIL_ONERI_PARALEL)
+# KISA BICIM: cok sayida benzer bulgu (ondalik) tek satirla gider; dil
+# modeli her kolon icin yalniz secimi yazar, gerekceyi yalniz kural
+# onerisinden farkli sectiginde. Cikti kucuk kalir.
+PROFIL_KISA_KONTROLLER = ("ondalik",)
+PROFIL_KISA_PARCA = 120
+
+SISTEM_PROFIL_KISA = """Sen bir kredi riski modelleme uzmanısın. Ondalık tipteki
+kolonlar verilecek; her satırda kolonun adı, açıklaması, bulgu (bütün değerleri
+tam sayı ya da ondalık hanesi fazla, örnek değer ve yeni hali) ve seçenekler.
+Her kolon için seçeneklerden BİRİNİ seç:
+- tam_sayi: değerler tam sayıysa tam sayı tipine çevir;
+- yuvarla: uzun ondalıkları kolonun basamağına yuvarla;
+- birak: kesin değer taşıyan kod, kimlik, oran tablosu anahtarı gibi
+  yuvarlanmaması ya da tipi değişmemesi gereken kolon.
+Emin değilsen kural önerisini seç.
+
+ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
+{"secimler":{"<id>":"<seçenek kodu>", ...},
+ "gerekceler":{"<id>":"bir cümle, Türkçe", ...}}
+"secimler"de HER id olsun. "gerekceler"e YALNIZ kural önerisinden farklı
+seçtiğin id'leri yaz; gerekçede kolonun anlamına ve örnek değere değin.""" + SINIRLAYICI_KURALI
+PROFIL_KISA_GEREKCE = ("Dil modeli bu kolonda kural önerisini seçti; gerekçe yalnız kural "
+                       "önerisinden farklı seçimlerde istenir.")
 
 
 def _sozcukler(metin):
@@ -4117,7 +4148,8 @@ def _profil_oneri_parca(parca):
         for o in x.get("secenekler") or []:
             satirlar.append("  seçenek %s: %s" % (o["kod"], str(o.get("aciklama") or o.get("ad") or "")[:160]))
         satirlar.append("  kural önerisi: %s" % x.get("kural", ""))
-    ham = _cagir(SISTEM_PROFIL_ONERI, _veri_blogu("Bulgular:", "\n".join(satirlar)), sicaklik=0.1)
+    ham = _cagir(SISTEM_PROFIL_ONERI, _veri_blogu("Bulgular:", "\n".join(satirlar)), sicaklik=0.1,
+                 zaman_asimi=PROFIL_ONERI_ZAMAN_ASIMI, deneme=1, havuz=_PROFIL_HAVUZ)
     veri = _json_ayristir(ham, {}, dict)
     gecerli = {x["id"]: {o["kod"] for o in x.get("secenekler") or []} for x in parca}
     sonuc = {}
@@ -4133,21 +4165,72 @@ def _profil_oneri_parca(parca):
     return sonuc
 
 
-def profil_oneri_sec(ogeler):
-    """ogeler: [{"id", "kontrol", "kolon", "aciklama", "olcu", "tip",
-    "bos_orani", "bulgu", "secenekler": [{"kod", "ad", "aciklama"}],
-    "kural"}]. Doner: ({id: {"secim", "gerekce"}}, hata). Parcalar
-    PROFIL_ONERI_PARALEL eszamanli gider; gecersiz secim alinmaz."""
-    parcalar = [ogeler[i:i + PROFIL_ONERI_PARCA] for i in range(0, len(ogeler), PROFIL_ONERI_PARCA)]
+def _profil_kisa_parca(parca):
+    """Kisa bicim (ondalik): satir basina tek satir; cevapta her id icin
+    secim, gerekce yalniz kuraldan farkli secimde."""
+    satirlar = []
+    for x in parca:
+        satirlar.append("id=%s | kolon: %s | açıklama: %s | bulgu: %s | seçenekler: %s | kural: %s" % (
+            x["id"], x.get("kolon"), (x.get("aciklama") or "-")[:120], str(x.get("bulgu") or "")[:160],
+            ", ".join(o["kod"] for o in x.get("secenekler") or []), x.get("kural", "")))
+    ham = _cagir(SISTEM_PROFIL_KISA, _veri_blogu("Kolonlar:", "\n".join(satirlar)), sicaklik=0.1,
+                 zaman_asimi=PROFIL_ONERI_ZAMAN_ASIMI, deneme=1, havuz=_PROFIL_HAVUZ)
+    veri = _json_ayristir(ham, {}, dict)
+    secimler = veri.get("secimler") if isinstance(veri, dict) else None
+    gerekceler = veri.get("gerekceler") if isinstance(veri, dict) else None
+    secimler = secimler if isinstance(secimler, dict) else {}
+    gerekceler = gerekceler if isinstance(gerekceler, dict) else {}
+    sonuc = {}
+    for x in parca:
+        secim = str(secimler.get(x["id"]) or "")
+        if secim not in {o["kod"] for o in x.get("secenekler") or []}:
+            continue
+        if secim == x.get("kural"):
+            gerekce = PROFIL_KISA_GEREKCE
+        else:
+            gerekce = str(gerekceler.get(x["id"]) or "").strip()[:300]
+            if _ilke_kopyasi(gerekce):
+                gerekce = ""
+        sonuc[x["id"]] = {"secim": secim, "gerekce": gerekce}
+    return sonuc
+
+
+def profil_oneri_sec(ogeler, butce=None):
+    """ogeler: [{"id", "kontrol_kodu", "kontrol", "kolon", "aciklama",
+    "olcu", "tip", "bos_orani", "bulgu", "secenekler": [{"kod", "ad",
+    "aciklama"}], "kural"}]. Doner: ({id: {"secim", "gerekce"}}, hata).
+    Parcalar _PROFIL_HAVUZ'da eszamanli gider (PROFIL_KISA_KONTROLLER kisa
+    bicimde); gecersiz secim alinmaz. Butce (saniye) dolunca bitmeyen
+    parcalar beklenmez: o ogeler kural onerisiyle kalir."""
+    kisa = [x for x in ogeler if x.get("kontrol_kodu") in PROFIL_KISA_KONTROLLER]
+    uzun = [x for x in ogeler if x.get("kontrol_kodu") not in PROFIL_KISA_KONTROLLER]
+    isler = [(_profil_oneri_parca, uzun[i:i + PROFIL_ONERI_PARCA])
+             for i in range(0, len(uzun), PROFIL_ONERI_PARCA)]
+    isler += [(_profil_kisa_parca, kisa[i:i + PROFIL_KISA_PARCA])
+              for i in range(0, len(kisa), PROFIL_KISA_PARCA)]
     sonuc, hatalar = {}, []
-    if not parcalar:
+    if not isler:
         return sonuc, None
-    with futures.ThreadPoolExecutor(max_workers=PROFIL_ONERI_PARALEL) as ex:
-        for f in [ex.submit(_profil_oneri_parca, p) for p in parcalar]:
-            try:
-                sonuc.update(f.result())
-            except Exception as e:
-                hatalar.append(_hata_metni(e))
+    # Her parca kendi is parcaciginda; _cagir cagriyi _PROFIL_HAVUZ'a verir.
+    # "with" kullanilmaz: cikista butun islerin bitmesini bekler, butce
+    # islemez. Butce dolunca kalan isler arka planda kendi zaman asimiyla
+    # biter, sonuclari kullanilmaz.
+    butce = PROFIL_ONERI_BUTCE if butce is None else butce
+    ex = futures.ThreadPoolExecutor(max_workers=len(isler))
+    fs = [ex.submit(fn, p) for fn, p in isler]
+    bitti, kalan = futures.wait(fs, timeout=butce)
+    for f in fs:
+        if f not in bitti:
+            continue
+        try:
+            sonuc.update(f.result())
+        except Exception as e:
+            hatalar.append(_hata_metni(e))
+    if kalan:
+        hatalar.append("%d parça %g saniyede bitmedi" % (len(kalan), butce))
+        for f in kalan:
+            f.cancel()
+    ex.shutdown(wait=False)
     return sonuc, (hatalar[-1] if hatalar else None)
 
 

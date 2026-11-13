@@ -476,7 +476,7 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
                for c in secenek]
         o = ozet.get(k) or {}
         ogeler.append((a, k, {
-            "id": "%s|%s" % (a, k), "kontrol": kad.get(a, a), "kolon": k,
+            "id": "%s|%s" % (a, k), "kontrol_kodu": a, "kontrol": kad.get(a, a), "kolon": k,
             "aciklama": aciklama.get(k, ""), "olcu": olcu.get(k, ""), "tip": o.get("tip") or "",
             "bos_orani": (_yuzde_metni(o["null_oran"]) if o.get("null_oran") is not None else ""),
             "bulgu": (metin + ((". " + kural_gerekce) if kural_gerekce else "")).strip(),
@@ -509,6 +509,8 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
             oneri, _hata = llm_mod.profil_oneri_sec([q[3] for q in sorulacak])
         except Exception:       # dil modeli yoksa kural gecerli
             oneri = {}
+    p["llm_oneri_sayim"] = {"oge": len(ogeler), "sorulan": len(sorulacak),
+                            "alinan": len(oneri), "onbellek": len(ogeler) - len(sorulacak)}
     for a, k, imza, oge in sorulacak:
         o = oneri.get(oge["id"])
         if o:
@@ -1596,10 +1598,19 @@ def profil_hesapla(durum):
     sey (cozumler, kirpma siniri) yalniz TRAIN (MS) satirlarindan; kararlar
     ve duzeltmeler butun satirlara uygulanir. Sonuc durum["profil"]."""
     from fe_agent import profil_ek
+    import time as _time
+    # SURE KAYDI: adim sureleri p["profil_sure"] ve backend log'unda.
+    sure, t0 = {}, [_time.time()]
+
+    def _isaret(ad):
+        t = _time.time()
+        sure[ad] = round(t - t0[0], 1)
+        t0[0] = t
     df_tum = asama_df(durum, "01") if updt_modu(durum) else modelleme_df(durum)
     egitim = egitim_maskesi(durum, df_tum)
     df = df_tum
     m = durum["meta"]
+    _isaret("veri_okuma")
     # Bolme kolonu (_SPLIT) da hedef, kimlik ve donem gibi incelenmez.
     haric = set(durum.get("haric_kolonlar") or []) | {m.get("target"), m.get("id"), m.get("donem")} \
         | {SPLIT_KOLON}
@@ -1608,7 +1619,9 @@ def profil_hesapla(durum):
     tablo, teshis = sfa_mod.profil_cikar(df, haric=haric, null_esik=esik["cok_bos"],
                                          kimlik_esik=esik["kimlik"],
                                          kategorik_max=esik["kardinalite"])
+    _isaret("temel_kontroller")
     yazildi, yedek = ara_tablo_kaydet(durum, "PROFIL", tablo, "/veri_profili.parquet")
+    _isaret("profil_tablosu_yazma")
 
     p = durum.get("profil") or {}
     p["profil_kapsam"] = {"train": False, "hedef_train": egitim is not None,
@@ -1622,6 +1635,7 @@ def profil_hesapla(durum):
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
                                  hedef=m.get("target"), olculer=_kart_olculeri(durum),
                                  esik=esik, tarihler=tarihler, hedef_maske=egitim)
+    _isaret("ek_kontroller")
     # TARIH KOLONLARI: en eski / en yeni tarih (ozel tarih kodlari haric),
     # yazilis bicimi ve kod tarihler (Tarih Kolonu satirinin bulgusu).
     ek["tarih_aralik"], ek["tarih_tur"] = {}, {}
@@ -1660,8 +1674,10 @@ def profil_hesapla(durum):
                                    egitim=egitim)
     p["cozum_oneri"].update(_tarih_onerileri(df_tum, teshis, m.get("donem"),
                                              set(p["cozum_oneri"])))
+    _isaret("tarih_ad_set_cozum")
     # KOLON BAZINDA DIL MODELI ONERISI: kararlar, duzeltmeler, cozumler.
     p["llm_oneri"] = _profil_llm_onerileri(durum, p, ek, teshis)
+    _isaret("dil_modeli_onerileri")
     for k, v in p["cozum_oneri"].items():
         o = (p["llm_oneri"].get(v.get("kontrol")) or {}).get(k) or {}
         if o.get("kaynak") == "dil modeli" and o.get("oneri") in (v.get("secenekler") or []):
@@ -1669,6 +1685,7 @@ def profil_hesapla(durum):
             v["oneri"], v["gerekce"] = o["oneri"], o.get("gerekce") or v.get("gerekce", "")
             v["kaynak"] = "dil modeli"
     ek["ayni_gruplar"] = _ayni_gruplari(durum, ek, p, df_tum)
+    _isaret("ayni_gruplar")
     p.pop("kod_oneri", None)
     p["profil_teshis"] = teshis
     p["profil_ek"] = ek
@@ -1714,6 +1731,12 @@ def profil_hesapla(durum):
     # Kartin satir sayisi ve kayit yeri (02.1 Veri Profili karti).
     p["profil_satir"] = int(len(df))
     p["profil_kayit"] = _kayit_metni(yazildi, yedek)
+    _isaret("ozet")
+    sure["toplam"] = round(sum(sure.values()), 1)
+    p["profil_sure"] = sure
+    print("02.1 profil süreleri (sn): %s; dil modeli: %s; satır %s, kolon %s" % (
+        json.dumps(sure, ensure_ascii=False), json.dumps(p.get("llm_oneri_sayim") or {}),
+        len(df), len(df.columns)), flush=True)
     durum["profil"] = p
     return p
 

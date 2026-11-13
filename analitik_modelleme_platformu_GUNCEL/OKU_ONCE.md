@@ -2390,6 +2390,26 @@ tanıtır; sayfalar sol bardan açılır.
   birleşik önerisi), `karar_kaynak`, `karar_gerekce` (kural ise
   `KARAR_KURAL_GEREKCESI`); düzeltme ve çözüm alanında `kaynak`.
 
+**02.1 hız: dil modeli önerileri ve süre kaydı**
+- Öneriler `llm._PROFIL_HAVUZ`'da (8 eşzamanlı) gider; parça 20 bulgu,
+  çağrı zaman aşımı 75 sn, yeniden deneme yok. Bütün adım en çok
+  `PROFIL_ONERI_BUTCE` = 120 sn: bitmeyen parçaların öğeleri kural
+  önerisiyle kalır (önbelleğe girmez, profil yeniden çıkarılınca tekrar
+  sorulur).
+- KISA BİÇİM (`PROFIL_KISA_KONTROLLER = ("ondalik",)`): çok sayıda benzer
+  bulgu 120'lik parçalarla tek satırda gider (`SISTEM_PROFIL_KISA`); dil
+  modeli her kolon için yalnız seçimi yazar, gerekçeyi yalnız kural
+  önerisinden farklı seçtiğinde. Kurala uyan seçimde gerekçe
+  `PROFIL_KISA_GEREKCE` ("Dil modeli bu kolonda kural önerisini seçti…").
+- `profil_hesapla` adım sürelerini `p["profil_sure"]`'ye yazar ve backend
+  log'una "02.1 profil süreleri (sn): {...}; dil modeli: {oge, sorulan,
+  alinan, onbellek}" satırını basar (veri okuma, temel kontroller, profil
+  tablosu yazma, ek kontroller, tarih/ad/set/çözüm, dil modeli önerileri,
+  aynı gruplar, özet).
+- Yerel ölçüm (pandas, sahte dil modeli): 100 bin satır × 200 kolon
+  yaklaşık 25 sn, 200 bin × 400 yaklaşık 80 sn (en büyük pay ek kontroller:
+  neredeyse aynı kolonlar, hedefle birebir, değer kayması).
+
 **02.1 kartı: Analiz ve Kararlar sekmeleri (`profilKartiEkle`)**
 - Üstte sayı karoları; altında iki sekme. **Analiz**: türler, eksik değer
   çubuğu, Kontroller tablosu (detayda yalnız Kolon, Açıklama, Bulgu; aynı
