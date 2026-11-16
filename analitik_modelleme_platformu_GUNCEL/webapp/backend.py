@@ -2723,7 +2723,7 @@ def geleneksel_sohbet_endpoint():
             _kaydet(anahtar, durum)
             _f3o.sohbet_hafiza_ekle(anahtar, mesaj, cevap, [], uygulanan)
             return jsonify({"tamam": True, "cevap": cevap, "degisiklikler": []})
-        model_turu = g.get("model_turu") or "agac"
+        model_turu = "hepsi"           # model turu ayrimi yok
         # Ekrandaki secimler sunucuya (yeniden cizimde kaybolmasin).
         from fe_agent import akis_faz03 as _f3
         _f3.geleneksel_karar_kaydet(durum, karar)

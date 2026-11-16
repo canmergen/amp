@@ -2769,6 +2769,47 @@ tanıtır; sayfalar sol bardan açılır.
   çıkar. Elenenler öneride `elenen` ve birimde "Kod ayıkladı" satırı. Eski
   kural önerisi aileye artık yalnız oranı seçer.
 
+**02.2 tek mod, sade adlar, canlı sayılar, üç aşamalı öneri tablosu**
+- MODEL TÜRÜ AYRIMI KALKTI: `model_turu` her yerde "hepsi" (kartta Ağaç /
+  Doğrusal düğmesi yok; `/geleneksel_model` gelen türü yok sayar, yalnız
+  kararı kaydeder). `model_mumkun(b, "hepsi")` birimde mümkün olan bütün
+  kodları verir. Üretilenler iki model türüne de uygun: ölçek dönüşümleri
+  (MONOTON) yalnız çarpık ya da uç değerli kolonlarda (eski kural mantığı)
+  seçilir; ağaçta zararsız, doğrusalda gerekli. Eski çalışmalarda öneri
+  imzası değiştiği için ilk açılışta öneriler yeniden alınır, yeni kodlar
+  ölçülür.
+- ÖLÇÜMLE TAMAMLAMA (`olcum_tamamla`): dil modelinin önerisinde olmayan ama
+  ölçüme göre yeni bilgi getiren (`katki_degerli`) ve seçili bir dönüşümle
+  aynı sırada olmayan kodları kod ekler (`kod_ekledi`, birimde "Kod ekledi"
+  satırı). Tek modda `tekrar_ele` ölçek dönüşümlerini sıra benzerliğiyle
+  ayıklamaz. İstem: ölçüme göre değerli olanların hepsini seç.
+- SADE ADLAR (`SADE`): her kod için hiç bilmeyenin anlayacağı ad, ne yaptığı,
+  bir kolon üzerinden örnek, ne zaman işe yaradığı ve iki model türündeki
+  anlamı (`MODEL_NOTU`). `KATALOG`, `KATALOG_HARITA`, `ACIKLAMA_UZUN` bunlarla
+  kurulur; eski adlar `ESKI_AD` ile sohbette tanınmaya devam eder.
+- KATALOG DURUMU (`katalog_durumu`): her dönüşümde uygulanabilir, önerilen,
+  ölçülen ve yeni bilgi getiren birim sayısı; kullanılabilir mi ve nedeni
+  (kullanılabilirse `kod_yeri` ve birim sayısı; değilse birimlerdeki en sık
+  `imkansiz` nedeni ya da `_YOK_NEDEN`); kullanılabilir olup hiç
+  önerilmediyse nedeni. `ornek_bu_veride`: verideki ilk uygun birimle
+  üretilecek kolonun adı ve formülü (değer yok).
+- KART: üstte model ayrımı olmadığını söyleyen not. Solda "Dönüşümler"
+  tablosu: dönüşüm, bu veride (kullanılabilir mi), uygulanabilir, önerilen,
+  şu an seçili (her tıklamada güncellenir, "N çıkarıldı, M eklendi"); aşama
+  (kendi dönüşümü, aile içi, aileler arası) ve durum (kullanılabilir,
+  kullanılamaz, kullanılabilir ama önerilmedi) süzgeçleri; satıra tıklayınca
+  ayrıntı ve "Uygulanabilen birimleri göster" (sağ listeyi o dönüşüme
+  süzer). Karolarda "Önerilen / Seçili Dönüşüm". Karoların altında
+  "Son değişiklikler" günlüğü: her işlem (çip, düğme, sohbet önerisi, toplu)
+  önceki çizime göre farktan yazılır ("Eğilim: 80 birim çıkarıldı"), son 6
+  işlem, her biri "Geri al" ile geri alınır.
+- "Öneriler" sekmesi (eski Öneri Özeti): her (birim, dönüşüm) bir satır;
+  aşama dönüşümün aşaması (ailenin pencerelerine logaritma 1. aşama);
+  durum (seçili, önerildi ama çıkarıldı, sonradan eklendi), öneren (dil
+  modeli, kod ölçüm, kod kural, sohbet, siz), ölçüm (IV ve artış) ve
+  gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
+  süzgeci; en çok 2.000 satır.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

@@ -4537,8 +4537,13 @@ KURALLAR:
   "param": {"grup_oran": {"segment": "KOLON"}}.
 - Bilgi katmayacak dönüşümü seçme; hiçbiri katmıyorsa boş liste ver.
 - Kod önerisi (kural) verilir; daha iyisini biliyorsan değiştir.
-- MODEL TÜRÜ verilir. Ağaç modelinde tek kolonun sıralamayı koruyan
-  dönüşümleri gereksizdir ve mümkün listesinde yoktur.
+- MODEL: üretilen değişkenler hem ağaç hem doğrusal modelde kullanılacak;
+  model türüne göre ayırma yok. Ölçek dönüşümlerini (log, kırpma, sıra,
+  standartlaştırma) yalnız çarpıklık ya da uç değer varsa seç: doğrusal
+  model için gereklidir, ağaç için zararsızdır.
+- ÖLÇÜME GÖRE yeni bilgi getiren (artış 0,02 ve üstü, ilişki 0,95'in
+  altında) dönüşümlerin HEPSİNİ seç; yalnız aynı bilgiyi tekrarlayanlardan
+  birini bırak. Seçmezsen kod ölçüme göre ekler.
 
 ÖLÇÜM: her birimde kodun ÖLÇTÜĞÜ katkı verilir ("katkı" alanı): kaynak
 kolonların en iyi IV'si ve her dönüşümün ürettiği kolonların en iyi IV'si,
@@ -4600,7 +4605,7 @@ def _geleneksel_parca(parca, katalog_metni, segmentler, model_turu="agac"):
     if not satirlar:
         return {}
     istek = ("Model türü: %s\n\nDönüşüm kodları:\n%s\n\nSegment olarak kullanılabilecek kolonlar: %s\n\n%s"
-             % ("ağaç (gradient boosting)" if model_turu == "agac" else "doğrusal (lojistik, skorkart)",
+             % ({"agac": "ağaç (gradient boosting)", "dogrusal": "doğrusal (lojistik, skorkart)"}.get(model_turu, "ağaç ve doğrusal modelin ikisi (ayrım yok)"),
                 katalog_metni, ", ".join(segmentler) or "yok",
                 _veri_blogu("Birimler:", "\n".join(satirlar))))
     ham = _cagir(SISTEM_GELENEKSEL, istek, sicaklik=0.1, zaman_asimi=GELENEKSEL_ZAMAN_ASIMI,
@@ -4704,7 +4709,7 @@ def geleneksel_arasi_oner(satirlar, mevcut, model_turu="agac"):
     if len(satirlar) < 2:
         return [], None
     istek = ("Model türü: %s\n\n%s\n\n%s" % (
-        "ağaç (gradient boosting)" if model_turu == "agac" else "doğrusal (lojistik, skorkart)",
+        {"agac": "ağaç (gradient boosting)", "dogrusal": "doğrusal (lojistik, skorkart)"}.get(model_turu, "ağaç ve doğrusal modelin ikisi (ayrım yok)"),
         _veri_blogu("Kodun bulduğu çiftler ve gruplar:", "\n".join(mevcut[:300]) or "(yok)"),
         _veri_blogu("Birimler:", "\n".join(satirlar))))
     try:
@@ -4795,7 +4800,7 @@ def geleneksel_sohbet(mesaj, gecmis, plan_satirlari, katalog_metni, segmentler, 
     istek = ("Model türü: %s\n\nDönüşümler (kod: ad (grup). ne yapar):\n%s\n\n"
              "Segment olarak kullanılabilecek kolonlar: %s\n\n%s\n\n%s\n\n%s\n\n"
              "KULLANICININ MESAJI (buna cevap ver):\n%s"
-             % ("ağaç (gradient boosting)" if model_turu == "agac" else "doğrusal (lojistik, skorkart)",
+             % ({"agac": "ağaç (gradient boosting)", "dogrusal": "doğrusal (lojistik, skorkart)"}.get(model_turu, "ağaç ve doğrusal modelin ikisi (ayrım yok)"),
                 katalog_metni, ", ".join(segmentler) or "yok",
                 _veri_blogu("Plan (id | ad | seçili):", "\n".join(plan_satirlari)),
                 _veri_blogu("Mesajda geçen birimlerin ayrıntısı:", "\n".join(ayrinti or []) or "(yok)"),

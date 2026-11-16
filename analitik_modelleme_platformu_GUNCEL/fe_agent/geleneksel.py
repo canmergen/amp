@@ -217,8 +217,162 @@ for _k in ("oran", "fark", "norm", "buyume", "egim", "dk", "ardisik", "en_yogun"
 for _k in ("net", "cift_oran", "ort", "pay", "carpim", "kesisim", "yogunlasma", "segment",
            "grup_oran", "eksik_sayi"):
     ASAMA[_k] = 3
-ASAMA_ADI = {1: "1. Kolonun kendi dönüşümü", 2: "2. Aile içi (pencere ve içerik)",
-             3: "3. Aileler arası"}
+ASAMA_ADI = {1: "1. Kolonun kendi dönüşümü", 2: "2. Aile içi üretim",
+             3: "3. Aileler arası üretim"}
+
+# ---------------------------------------------------------------------------
+# SADE ADLAR VE ACIKLAMALAR: hic bilmeyenin anlayacagi ad, ne yaptigi, bir
+# kolon uzerinden ornek, ne zaman ise yaradigi ve iki model turunde ne
+# anlama geldigi. Eski adlar sohbette taninmaya devam eder (ESKI_AD).
+# ---------------------------------------------------------------------------
+ESKI_AD = {k: a for k, a, _g, _c in KATALOG}
+_OLCEK = ("Doğrusal modelde ölçeği düzeltir; ağaç modeli yalnız sıralamaya baktığı için etkilemez ama "
+          "zarar da vermez.")
+_IKI = "İki model türünde de yeni bilgi verir."
+_ETK = "Doğrusal modelde gerekir; ağaç modeli bunu kendisi bulur, ağaçta zararsızdır."
+SADE = {
+    "log": ("Logaritma alma", "Değeri log(1 + değer) yapar: büyük sayıları sıkıştırır, küçük sayılar "
+            "arasındaki farkı korur.", "Son 30 günde giden işlem tutarı (TXN_OUT_AMT_L30D) 100, 10.000 ve "
+            "1.000.000 iken yeni kolon 4,6, 9,2 ve 13,8 olur; birkaç çok büyük müşteri ortalamayı bozmaz.",
+            "Tutar ve adet gibi sağa çarpık (az sayıda çok büyük değerli) kolonlarda.", _OLCEK),
+    "islog": ("İşaretli logaritma", "Eksi değer alabilen kolonlarda logaritma: işareti korur, büyüklüğü "
+              "sıkıştırır.", "Net nakit akışı eksi 5.000 iken eksi 8,5; artı 5.000 iken artı 8,5 olur.",
+              "Hem eksi hem artı değer alan çarpık kolonlarda (net akış, bakiye).", _OLCEK),
+    "karekok": ("Karekök alma", "Değerin karekökünü alır; logaritmadan daha hafif sıkıştırır.",
+                "Son 30 gündeki işlem adedi 100 iken 10, 10.000 iken 100 olur.",
+                "Hafif çarpık, eksi değeri olmayan kolonlarda.", _OLCEK),
+    "kare": ("Kare alma", "Değerin karesini ekler; risk hem çok düşük hem çok yüksek değerde artıyorsa "
+             "(U şekli) bunu yakalar.", "Müşteri yaşı 20 iken 400, 60 iken 3.600: hem gençte hem yaşlıda "
+             "yüksek riski doğrusal model görebilir.", "U şeklinde ilişki beklenen kolonlarda (yaş, kullanım "
+             "oranı).", _ETK),
+    "yeo": ("Çarpıklık düzeltme (Yeo-Johnson)", "Dağılımı çan eğrisine yaklaştıran, gücü eğitim verisinden "
+            "öğrenilen dönüşüm.", "Çok çarpık bakiye kolonu dönüşümden sonra daha simetrik dağılır.",
+            "Logaritmanın yetmediği ya da eksi değer olan çok çarpık kolonlarda.", _OLCEK),
+    "winsor": ("Uç değerleri kırpma", "Eğitim verisindeki %1'lik değerin altını ve %99'luk değerin üstünü "
+               "bu sınırlara çeker.", "Son 30 gün giden tutarda %99'luk değer 50.000 ise 5.000.000 olan "
+               "müşteri 50.000 sayılır.", "Birkaç aşırı değerin katsayıyı bozduğu kolonlarda.", _OLCEK),
+    "rank": ("Sıraya çevirme (yüzdelik)", "Değeri eğitim verisindeki sırasına çevirir: 0 en küçük, 1 en "
+             "büyük.", "Son 30 gün işlem adedi müşterilerin %80'inden fazla olan müşteri 0,8 alır.",
+             "Ölçek ya da uç değer önemsizken yalnız sıralama önemliyse.", _OLCEK),
+    "zskor": ("Standartlaştırma (z-skor)", "(Değer eksi ortalama) bölü standart sapma: değerin ortalamadan "
+              "kaç standart sapma uzak olduğu.", "Ortalama bakiye 1.000, standart sapma 500 ise 2.000 bakiyeli "
+              "müşteri 2 olur.", "Farklı ölçekteki kolonların katsayıları karşılaştırılacaksa.", _OLCEK),
+    "robust": ("Medyana göre standartlaştırma", "(Değer eksi medyan) bölü çeyrekler arası açıklık; uç "
+               "değerlerden etkilenmez.", "Medyan bakiye 800, çeyrekler arası açıklık 400 ise 1.600 bakiye "
+               "2 olur.", "Uç değeri çok olan kolonlarda z-skor yerine.", _OLCEK),
+    "isaret": ("Artı, eksi ya da sıfır", "Değer eksi ise eksi 1, sıfırsa 0, artı ise 1 olan kolon ekler.",
+               "Net akış eksi 300 ise eksi 1: müşteri bu dönemde para kaybetmiş.",
+               "Eksi değerin kendisinin anlamlı olduğu kolonlarda (net akış, bakiye).", _IKI),
+    "sifir": ("Sıfır mı bayrağı", "Değer sıfırsa 1, değilse 0 olan kolon ekler.",
+              "Son 30 günde hiç giden işlemi olmayan müşteri 1 alır: 'hiç işlem yok' ayrı bir davranıştır.",
+              "Sıfırın payı %1 ile %99 arasında olan kolonlarda.", _ETK),
+    "esik": ("Eşik bayrağı (iş kuralı)", "Değer verilen eşiğin üstündeyse (ya da altındaysa) 1 olan kolon "
+             "ekler; eşik iş kuralından gelir.", "En büyük gecikme günü 30 ve üstüyse 1: '30 gün gecikme' "
+             "kuralı.", "Açıklamadan ya da iş kuralından bilinen bir eşik varsa.", _ETK),
+    "dilim": ("Ondalık dilim (10 eşit grup)", "Değeri, eğitimde 10 eşit sayıda müşteriye bölünmüş "
+              "gruplardan hangisinde olduğuna çevirir (1 ile 10).", "Son 30 gün giden tutarı en düşük %10'da "
+              "olan müşteri 1, en yüksek %10'da olan 10 alır.", "Doğrusal olmayan ilişkiyi kaba gruplarla "
+              "yakalamak için.", _OLCEK),
+    "kova": ("İş kuralı aralıkları", "Değeri sizin verdiğiniz sınırlarla aralıklara böler, aralık numarasını "
+             "yazar.", "Gecikme günü sınırları 1, 30, 60, 90: 0 gün 1. aralık, 45 gün 3. aralık.",
+             "Skorkartta iş kuralından gelen aralıklar istendiğinde.", _ETK),
+    "segment": ("Segment içindeki yeri", "Değerin kendi segmentindeki (bireysel, KOBİ gibi) yüzdeliğini ve "
+                "ortalamadan sapmasını iki kolon olarak ekler.", "50.000 bakiye KOBİ'ler içinde %30'luk "
+                "dilimde, bireysellerde %95'lik dilimde olabilir: aynı tutar segmentine göre farklı anlam "
+                "taşır.", "Segmentler arasında ölçek farkı varken tek model kurulacaksa.", _IKI),
+    "grup_oran": ("Segment medyanına oran", "Değeri kendi segmentinin medyanına böler.",
+                  "KOBİ'lerin medyan bakiyesi 50.000 iken 100.000 bakiyeli KOBİ 2 alır: segmentinin iki katı.",
+                  "Segmentler arasında ölçek farkı varken tek model kurulacaksa.", _IKI),
+    "oran": ("Kısa dönem bölü uzun dönem (yan yana pencereler)", "Ailede gün sırasıyla yan yana iki "
+             "pencereyi böler (3 günlük bölü 7 günlük, 7 günlük bölü 14 günlük gibi).",
+             "Son 7 günde 3, son 30 günde 10 işlem: 3 bölü 10 = 0,3; işlemlerin %30'u son haftada, hızlanma "
+             "var.", "Son dönemdeki hızlanma ya da yavaşlama riskle ilişkiliyse.", _IKI),
+    "fark": ("Kısa dönem eksi uzun dönem (yan yana pencereler)", "Ailede yan yana iki pencerenin farkı "
+             "(3 günlük eksi 7 günlük gibi).", "Son 7 günde 3, son 30 günde 10 işlem: 3 eksi 10 = eksi 7, "
+             "yani 8. ile 30. gün arasında 7 işlem.", "Mutlak değişimin büyüklüğü önemliyse.", _IKI),
+    "norm": ("Günlük ortalamaların oranı", "Kısa pencerenin günlük ortalamasını uzun pencerenin günlük "
+             "ortalamasına böler; 1'den büyükse son günlerde hızlanma var.", "Son 7 günde 7 işlem (günde 1), "
+             "son 30 günde 15 işlem (günde 0,5): 2, son hafta iki kat hızlı.", "Pencere uzunlukları farklıyken "
+             "hızı karşılaştırmak için. Aynı çiftteki 'kısa dönem bölü uzun dönem' ile aynı bilgidir, yalnız "
+             "okunuşu farklıdır; ikisi birlikte seçilmez.", _IKI),
+    "buyume": ("Önceki döneme göre büyüme", "Kısa pencereyi, uzun pencerenin geri kalanında aynı uzunluğa "
+               "düşen değerle karşılaştırır.", "Son 7 günde 14 işlem, önceki 23 günde 23 işlem (7 güne 7 "
+               "düşer): (14 eksi 7) bölü 7 = 1, yani %100 artış.", "Adet ve tutar gibi toplanabilir "
+               "ölçülerde dönemsel büyüme önemliyse.", _IKI),
+    "egim": ("Eğilim (artıyor mu, azalıyor mu)", "Ailenin bütün pencerelerindeki günlük ortalamalara doğru "
+             "uydurur, eğimini yazar.", "Günlük işlem son 3 günde 2, son 7 günde 1,5, son 30 günde 1, son 90 "
+             "günde 0,5 ise eğim artı: işlem giderek artıyor.", "En az 3 pencere varken uzun vadeli yön "
+             "önemliyse.", _IKI),
+    "dk": ("Düzensizlik (değişkenlik katsayısı)", "Pencerelerin günlük ortalamalarının standart sapması "
+           "bölü ortalaması.", "Her dönemde günde 1 işlem yapan müşteride 0'a yakın; bir dönem 10, bir dönem "
+           "0 yapanda büyük.", "Düzenli ve düzensiz davranışı ayırmak için.", _IKI),
+    "ardisik": ("Art arda artış sayısı", "Pencerelerin arasında kalan dönemlerde, eskiden yeniye günlük "
+                "ortalamanın kaç kez arttığı.", "61. ile 90. gün arası günde 0,5, 31. ile 60. gün 1, son 30 "
+                "gün 2 işlem: 2 kez art arda artış.", "Sürekli artan ya da azalan davranış önemliyse.", _IKI),
+    "en_yogun": ("En yoğun dönemin payı", "Pencerelerin arasında kalan dönemlerden en yoğun olanın en uzun "
+                 "penceredeki toplam içindeki payı.", "90 günlük 100 işlemin 70'i son 7 gündeyse 0,7: tek "
+                 "seferlik sıçrama.", "Ani sıçramaları yakalamak için.", _IKI),
+    "oran_tum": ("Bütün pencere çiftlerinin oranı", "Yalnız yan yana olanları değil, her kısa pencereyi her "
+                 "uzun pencereye böler (3 günlük bölü 90 günlük gibi).", "Son 3 gün bölü son 90 gün: çok kısa "
+                 "vadeli hızlanma; son 30 gün bölü son 360 gün: yılın içinde son ay.", "Hızlanmanın hangi "
+                 "ufukta görüldüğü önemliyse; kolon sayısı çok olur (8 pencerede 28).", _IKI),
+    "fark_tum": ("Bütün pencere çiftlerinin farkı", "Her kısa pencereden her uzun pencereyi çıkarır.",
+                 "Son 3 gün eksi son 90 gün gibi bütün çiftler (8 pencerede 28 kolon).",
+                 "Mutlak değişimin hangi ufukta olduğu önemliyse.", _IKI),
+    "donem": ("Dönem dilimleri", "Birikimli pencerelerin arasında kalan her dönemin kendi değeri (7 günlük "
+              "eksi 3 günlük = 4. ile 7. gün arası).", "Son 3 günde 2, son 7 günde 5 işlem: 4. ile 7. gün "
+              "arasında 3 işlem.", "Pencereler birbirini içeriyorsa (7 gün 3 günü kapsar) dönemleri ayrı "
+              "görmek için.", _IKI),
+    "donem_pay": ("Dönem dilimlerinin payı", "Her dönem diliminin en uzun penceredeki toplam içindeki payı.",
+                  "90 günde 100 işlem, 31. ile 90. gün arasında 30: o dilimin payı 0,3.",
+                  "İşlemin hangi döneme yığıldığını görmek için.", _IKI),
+    "donem_oran": ("Yan yana dönem dilimlerinin oranı", "Yan yana iki dönem diliminin günlük ortalamalarını "
+                   "böler (yeni dilim bölü önceki dilim).", "1. ile 3. gün arası günde 2, 4. ile 7. gün arası "
+                   "günde 1 işlem: 2, son günler iki kat hızlı. (3 gün eksi 7 gün) bölü (3 gün eksi 14 gün) "
+                   "gibi farkların oranıyla aynı sırayı verir.", "Son dilimin hemen önceki dilime göre "
+                   "hızlanması önemliyse.", _IKI),
+    "net": ("Net akış (gelen eksi giden)", "Gelen ile giden çiftinde gelen eksi giden.",
+            "Son 30 gün gelen havale 10.000, giden 12.000: net eksi 2.000.",
+            "Para giriş çıkış dengesi riskle ilişkiliyse.", _IKI),
+    "cift_oran": ("İki kolonun oranı", "Bir kolonu diğerine böler (gelen bölü giden, harcama bölü limit "
+                  "gibi).", "Kart harcaması 8.000, limit 10.000: 0,8, limitin %80'i kullanılmış.",
+                  "Anlamlı bir oran oluşturan kolon çiftlerinde.", _IKI),
+    "ort": ("İşlem başına ortalama tutar", "Tutar bölü adet.", "Son 30 günde 10 işlemde 5.000: işlem başına "
+            "500.", "Tutar ve adet kolonları birlikte varsa.", _IKI),
+    "pay": ("Alt kırılımın toplamdaki payı", "Bir alt kırılımı (mobil işlem gibi) kendi toplamına böler.",
+            "Toplam 100 işlemin 80'i mobilden: mobil payı 0,8.", "Kanal, ürün gibi kırılımlar ve toplamı "
+            "varsa.", _IKI),
+    "carpim": ("İki kolonun çarpımı", "İki kolonun etkisinin birlikte görüldüğü kolon.", "Yeni müşteri "
+               "bayrağı (1) çarpı limit kullanımı (0,9) = 0,9: yalnız yeni müşterilerde yüksek kullanım.",
+               "İki etkinin birlikte riski artırdığı düşünülüyorsa.", _ETK),
+    "kesisim": ("İki kategorinin birleşimi", "İki kategorik kolonun değerlerini birleştirir (KART ve MOBİL: "
+                "KART|MOBİL), sonra risk puanına ya da sıklığa çevirir.", "Kart ürünü mobil kanalda ayrı, "
+                "şubede ayrı risk taşıyorsa bunu yakalar.", "İki kategorinin birlikte anlam taşıdığı "
+                "durumlarda.", _IKI),
+    "yogunlasma": ("Tek kanala yoğunlaşma", "Bir toplamın alt kırılımlarının (kanal, ürün) paylarının "
+                   "karelerinin toplamı ve en büyük pay.", "Harcamanın %90'ı tek kanaldaysa en büyük pay 0,9; "
+                   "yoğunlaşma yüksek.", "Kanal, ürün, karşı taraf dağılımı önemliyse.", _IKI),
+    "frekans": ("Kategorinin sıklığı", "Her kategoriyi eğitim verisindeki payına çevirir.", "Şehir İstanbul "
+                "müşterilerin %20'siyse 0,2; nadir şehirler küçük sayı alır.", "Kategorik kolonu hedefe "
+                "bakmadan sayıya çevirmek için.", _IKI),
+    "onehot": ("Her kategori için ayrı 0/1 kolon", "Her değer için 'bu değer mi' kolonu ekler.", "Segment "
+               "BİREYSEL, KOBİ, TİCARİ ise üç kolon: KOBİ müşterisinde yalnız KOBİ kolonu 1.",
+               "En çok 10 değerli kategorik kolonlarda.", _ETK),
+    "woe": ("Kategorinin risk puanı (WoE)", "Her kategoriyi, o kategoride temerrüt edenlerin ve etmeyenlerin "
+            "oranından hesaplanan risk puanına çevirir; eğitimde kat dışı hesaplanır.", "Temerrüt oranı "
+            "ortalamanın üstündeki şehir eksi, altındaki artı puan alır.", "Hedef iki sınıflıysa (temerrüt "
+            "var ya da yok); skorkartın standart yolu.", _IKI),
+    "hedef_ort": ("Kategorinin temerrüt oranı", "Her kategoriyi o kategorideki temerrüt oranına çevirir; az "
+                  "gözlemli kategoriler genel orana çekilir; eğitimde kat dışı hesaplanır.", "İstanbul'da "
+                  "temerrüt %3, Ankara'da %2 ise 0,03 ve 0,02.", "Hedef iki sınıflıysa.", _IKI),
+    "eksik_sayi": ("Satırdaki boş alan sayısı", "Her müşteri satırında kaç kolonun boş olduğunu ve oranını "
+                   "yazar.", "60 kolondan 12'si boş müşteri: 12 ve 0,2; yeni ya da ürünü olmayan müşteri "
+                   "olabilir.", "Eksik bilginin kendisi riskle ilişkiliyse.", _IKI),
+}
+KATALOG = [(k, SADE[k][0], g, SADE[k][1]) for k, _a, g, _c in KATALOG]
+KATALOG_HARITA = {k: {"kod": k, "ad": a, "grup": g, "aciklama": c} for k, a, g, c in KATALOG}
+ACIKLAMA_UZUN = {k: (v[1], v[2], v[3]) for k, v in SADE.items()}
+MODEL_NOTU = {k: v[4] for k, v in SADE.items()}
 
 # AGAC MODELI: platformun modeli HistGradientBoosting (bkz. model.py). Ağaç
 # modeller tek kolonun monoton dönüşümünden etkilenmez (aynı bölünmeyi ham
@@ -234,6 +388,7 @@ MODEL_TURLERI = {"agac": "Ağaç (HistGradientBoosting)", "dogrusal": "Doğrusal
 def model_mumkun(b, model_turu):
     """Birimde model turune gore secilebilen kodlar."""
     m = list(b.get("mumkun") or [])
+    # "hepsi" (varsayilan): model turu ayrimi yok, uretilenler iki modele de uygun.
     return [c for c in m if not (model_turu == "agac" and c in AGAC_GEREKSIZ)]
 GRUP_ADI = {"tekli": "Tek değişkenli", "aile": "Pencere ailesi", "cift": "Kolon çifti",
             "kategorik": "Kategorik", "satir": "Satır düzeyi"}
@@ -815,7 +970,7 @@ def kural_onerisi(b, model_turu="agac", katki=None):
         for c, ust, _n in TEKRAR_KESIN:
             if c in sec and ust in sec:
                 sec.remove(c)
-        if model_turu == "dogrusal":
+        if model_turu != "agac":
             sec += [c for c in kural_onerisi(b, model_turu)["sec"] if c in MONOTON and c not in sec]
         param = {c: {"segment": kod[c]["segment"]} for c in sec if c in ("segment", "grup_oran")
                  and kod[c].get("segment")}
@@ -1732,6 +1887,133 @@ _YER_KOD = {"net": "Gelen ve giden çifti; aileler arası çift", "cift_oran": "
             "buyume": "Toplanabilir pencere ailesi"}
 
 
+def _ilk_birim(kod, birimler):
+    for b in birimler:
+        if kod in (b.get("mumkun") or []):
+            return b
+    return None
+
+
+def ornek_bu_veride(kod, birimler, segmentler=()):
+    """Bu verideki ilk uygun birim uzerinden uretilecek kolonun adi ve
+    formulu (degerler degil). Uygun birim yoksa bos."""
+    b = _ilk_birim(kod, birimler)
+    if not b:
+        return ""
+    kol = b["kolonlar"]
+    k = kol[0]
+    acik = (b.get("aciklama") or "").strip()
+    g = b.get("gunler") or []
+    seg = (list(segmentler) or ["SEGMENT"])[0]
+    cf = (b.get("ciftler") or [[k, kol[1] if len(kol) > 1 else k]])[0]
+    a_, c_ = cf[0], cf[1]
+    if b["tur"] == "aile" and len(kol) > 1:
+        a_, c_ = kol[0], kol[1]
+    son = kol[-1]
+    aile = b["ad"]
+    sablon = {
+        "log": "%s yerine log(1 + %s): %s__LOG" % (k, k, k), "islog": "%s için işaretli log: %s__SLOG" % (k, k),
+        "karekok": "%s kolonunun karekökü: %s__SQRT" % (k, k), "kare": "%s çarpı %s: %s__KARE" % (k, k, k),
+        "yeo": "%s için Yeo-Johnson: %s__YJ" % (k, k), "winsor": "%s eğitimdeki %%1 ve %%99 değerlerine kırpılır: %s__WNS" % (k, k),
+        "rank": "%s eğitimdeki yüzdelik sırasına çevrilir: %s__RANK" % (k, k),
+        "zskor": "(%s eksi ortalama) bölü standart sapma: %s__Z" % (k, k),
+        "robust": "(%s eksi medyan) bölü çeyrekler arası açıklık: %s__RZ" % (k, k),
+        "isaret": "%s eksi ise eksi 1, sıfırsa 0, artı ise 1: %s__ISR" % (k, k),
+        "sifir": "%s sıfırsa 1, değilse 0: %s__SIFIR" % (k, k),
+        "esik": "%s verilen eşiğin üstündeyse 1: %s__GE_<eşik>" % (k, k),
+        "dilim": "%s eğitimde 10 eşit gruba bölünür: %s__DLM" % (k, k),
+        "kova": "%s verilen sınırlarla aralıklara bölünür: %s__KOVA" % (k, k),
+        "segment": "%s kolonunun %s içindeki yüzdeliği ve sapması: %s__PCT_%s, %s__ZS_%s" % (k, seg, k, seg, k, seg),
+        "grup_oran": "%s bölü kendi %s segmentinin medyanı: %s__GRO_%s" % (k, seg, k, seg),
+        "oran": "%s bölü %s: %s__DIV__%s" % (a_, c_, a_, c_), "fark": "%s eksi %s: %s__MINUS__%s" % (a_, c_, a_, c_),
+        "norm": "%s günlük ortalaması bölü %s günlük ortalaması: %s__NDIV__%s" % (a_, c_, a_, c_),
+        "buyume": "%s, %s içindeki önceki döneme göre büyümesi: %s__GRW__%s" % (a_, c_, a_, c_),
+        "egim": "%s ailesinin %s penceresindeki günlük ortalamaların eğilimi: %s__EGIM" % (aile, len(kol), aile),
+        "dk": "%s ailesinin günlük ortalamalarındaki düzensizlik: %s__DK" % (aile, aile),
+        "ardisik": "%s ailesinde dönemden döneme artış sayısı: %s__ARDISIK" % (aile, aile),
+        "en_yogun": "%s ailesinde en yoğun dönemin %s içindeki payı: %s__ENYOGUN" % (aile, son, aile),
+        "oran_tum": "%s ailesinde her kısa pencere bölü her uzun pencere, %s kolon: %s__DIV__%s gibi"
+                    % (aile, len(kol) * (len(kol) - 1) // 2, kol[0], son),
+        "fark_tum": "%s ailesinde her kısa pencere eksi her uzun pencere, %s kolon: %s__MINUS__%s gibi"
+                    % (aile, len(kol) * (len(kol) - 1) // 2, kol[0], son),
+        "donem": ("%s eksi %s = %s. ile %s. gün arası: %s__DNM_%s_%s" % (c_, a_, g[0] + 1, g[1], aile, g[0] + 1, g[1]))
+                 if len(g) > 1 else "",
+        "donem_pay": ("%s. ile %s. gün arasının %s içindeki payı: %s__DPAY_%s_%s" % (g[0] + 1, g[1], son, aile, g[0] + 1, g[1]))
+                     if len(g) > 1 else "",
+        "donem_oran": ("1. ile %s. gün arası günlük ortalama bölü %s. ile %s. gün arası günlük ortalama: %s__DORAN_1_%s__%s_%s"
+                       % (g[0], g[0] + 1, g[1], aile, g[0], g[0] + 1, g[1])) if len(g) > 1 else "",
+        "net": "%s eksi %s: %s__MINUS__%s" % (a_, c_, a_, c_), "cift_oran": "%s bölü %s: %s__DIV__%s" % (a_, c_, a_, c_),
+        "ort": "%s bölü %s (tutar bölü adet): %s__DIV__%s" % (a_, c_, a_, c_),
+        "pay": "%s bölü %s (alt kırılım bölü toplam): %s__DIV__%s" % (a_, c_, a_, c_),
+        "carpim": "%s çarpı %s: %s__X__%s" % (a_, c_, a_, c_),
+        "kesisim": "%s ve %s değerleri birleşir, risk puanına ya da sıklığa çevrilir: %s__X__%s__WOE" % (a_, c_, a_, c_),
+        "yogunlasma": "%s kolonlarının paylarının karelerinin toplamı ve en büyük pay: __HHI, __MAXPAY"
+                      % ", ".join((b.get("gruplar") or [kol])[0][:4]),
+        "frekans": "%s değerinin eğitimdeki sıklığı: %s__FRK" % (k, k),
+        "onehot": "%s her değeri için 0/1 kolon: %s__OH_<değer>" % (k, k),
+        "woe": "%s her değeri için risk puanı: %s__WOE" % (k, k),
+        "hedef_ort": "%s her değeri için temerrüt oranı: %s__TE" % (k, k),
+        "eksik_sayi": "satırdaki boş kolon sayısı ve oranı (%s kolon üzerinden): SATIR_EKSIK_SAYISI, SATIR_EKSIK_ORANI"
+                      % len(kol),
+    }.get(kod, "")
+    if not sablon:
+        return ""
+    return sablon + (" (%s: %s)" % (k, acik[:120]) if acik and b["tur"] in ("kolon", "aile") else "")
+
+
+_YOK_NEDEN = {"aile": "Veride bu dönüşüme uygun pencere ailesi yok.",
+              "kategorik": "Veride üretime giren kategorik kolon yok.",
+              "satir": "Hiçbir kolonda boş değer yok.",
+              "net": "Veride gelen ve giden çifti yok.", "cift_oran": "Veride gelen ve giden çifti yok.",
+              "ort": "Veride tutar ve adet çifti yok.", "pay": "Veride alt kırılım ve toplam çifti yok.",
+              "carpim": "Veride kolon çifti yok.",
+              "kesisim": "Aileler arası adımda iki az değerli kategorik kolon önerilmedi.",
+              "yogunlasma": "Veride aynı toplamın en az iki alt kırılımı yok.",
+              "segment": "Segment olarak kullanılabilecek az değerli kategorik kolon yok.",
+              "grup_oran": "Segment olarak kullanılabilecek kolon yok ya da kolonlarda eksi değer var."}
+
+
+def katalog_durumu(birimler, oneri, katki=None, karar=None):
+    """Her donusum icin: kac birimde uygulanabilir, kac birimde onerildi,
+    olcume gore kac birimde yeni bilgi getiriyor; kullanilabilir ya da
+    kullanilamaz olmasinin nedeni ve onerilmediyse nedeni."""
+    katki = katki or {}
+    cikti = {}
+    for kod, ad, grup, _c in KATALOG:
+        uyg = [b for b in birimler if kod in (b.get("mumkun") or [])]
+        oner = [b for b in uyg if kod in ((oneri.get(b["id"]) or {}).get("sec") or [])]
+        olc = [b for b in uyg if kod in ((katki.get(b["id"]) or {}).get("kodlar") or {})]
+        deg = [b for b in olc if katki_degerli(katki[b["id"]]["kodlar"][kod])]
+        d = {"uygulanabilir": len(uyg), "onerilen": len(oner), "olculen": len(olc), "degerli": len(deg),
+             "kullanilabilir": bool(uyg)}
+        if uyg:
+            d["neden"] = "%s: bu veride %s birimde koşul sağlanıyor." % (kod_yeri(kod), len(uyg))
+        else:
+            sayim = {}
+            for b in birimler:
+                n_ = (b.get("imkansiz") or {}).get(kod)
+                if n_:
+                    sayim[n_] = sayim.get(n_, 0) + 1
+            if sayim:
+                n_, say = max(sayim.items(), key=lambda x: x[1])
+                d["neden"] = "%s birimde: %s" % (say, n_)
+            else:
+                d["neden"] = _YOK_NEDEN.get(kod) or _YOK_NEDEN.get(grup) or "Veride uygun birim yok."
+        if uyg and not oner:
+            if kod in MONOTON:
+                d["onerilmeme"] = ("Sıralamayı değiştirmez, IV ile ölçülemez; yalnız çarpık ya da uç değerli "
+                                   "kolonlarda önerilir.")
+            elif kod in _PARAMLI:
+                d["onerilmeme"] = "Eşik ya da sınırlar iş kuralından gelir; açıklamalardan çıkmadı. Elle ekleyebilirsiniz."
+            elif olc:
+                d["onerilmeme"] = "Ölçülen %s birimin %s tanesinde yeni bilgi getiriyor." % (len(olc), len(deg)) + (
+                    " Getirdiği birimlerde seçili başka bir dönüşümle aynı bilgiyi taşıyor." if deg else "")
+            else:
+                d["onerilmeme"] = "Bu birimlerde ölçülmedi."
+        cikti[kod] = d
+    return cikti
+
+
 def kod_yeri(kod):
     return _YER_KOD.get(kod) or _YER_GRUP.get(KATALOG_HARITA[kod]["grup"], "")
 
@@ -1755,19 +2037,53 @@ def tekrar_ele(o, b, k, model_turu):
             sec.remove(c)
             elenen.append({"kod": c, "neden": neden})
     kod = (k or {}).get("kodlar") or {}
-    if model_turu == "agac" and kod:
-        for c in sorted([x for x in sec if x in kod], key=lambda x: (kod[x].get("iv") or 0)):
+    if model_turu in ("agac", "hepsi") and kod:
+        # Tek modda olcek donusumleri (MONOTON) ayiklanmaz: dogrusal model icin
+        # sira ayni olsa da olcek farklidir.
+        for c in sorted([x for x in sec if x in kod and not (model_turu == "hepsi" and x in MONOTON)],
+                        key=lambda x: (kod[x].get("iv") or 0)):
             ust = [x for x in (kod[c].get("benzer") or {}) if x in sec and x != c
+                   and not (model_turu == "hepsi" and x in MONOTON)
                    and (kod.get(x) or {}).get("iv", 0) >= (kod[c].get("iv") or 0)]
             if ust and c in sec:
                 sec.remove(c)
-                elenen.append({"kod": c, "neden": "%s ile aynı sırada (ilişki %s); ağaç sırayı kullandığı için aynı bilgi."
+                elenen.append({"kod": c, "neden": "%s ile aynı sırada (ilişki %s); aynı bilgi."
                                % (KATALOG_HARITA[ust[0]]["ad"], ("%.2f" % kod[c]["benzer"][ust[0]]).replace(".", ","))})
     if not elenen:
         return o, []
     o = dict(o, sec=sec, param={c: v for c, v in (o.get("param") or {}).items() if c in sec})
     o["elenen"] = elenen
     return o, elenen
+
+
+def olcum_tamamla(o, b, k, model_turu):
+    """Olcume gore yeni bilgi getiren (katki_degerli) ve secili bir donusumle
+    ayni sirada olmayan kodlar secimde yoksa kod ekler; "kod_ekledi" ile
+    isaretlenir. Kullanicinin kendi cikardiklari (sapma) bu oneriye degil
+    karara uygulandigi icin geri gelmez."""
+    kod = (k or {}).get("kodlar") or {}
+    if not kod:
+        return o
+    sec = list(o.get("sec") or [])
+    tut = [c for c in sec if c in kod]
+    ekl = []
+    for c in sorted([c for c in katki_kodlari(b, model_turu) if c not in sec and c not in MONOTON
+                     and katki_degerli(kod.get(c))], key=lambda c: -(kod[c].get("iv") or 0)):
+        if any(x in (kod[c].get("benzer") or {}) for x in tut):
+            continue
+        if any(c == alt and ust in sec for alt, ust, _n in TEKRAR_KESIN):
+            continue
+        sec.append(c)
+        tut.append(c)
+        m = kod[c]
+        ekl.append({"kod": c, "neden": "Ölçüme göre yeni bilgi: IV %s, kaynağa göre %s, kaynakla ilişki %s." % (
+            _iv_yaz(m.get("iv")), _artis_yaz(m.get("artis")),
+            "-" if m.get("iliski") is None else ("%.2f" % m["iliski"]).replace(".", ","))})
+        if m.get("segment") and c in ("segment", "grup_oran"):
+            o = dict(o, param=dict(o.get("param") or {}, **{c: {"segment": m["segment"]}}))
+    if not ekl:
+        return o
+    return dict(o, sec=sec, kod_ekledi=ekl)
 
 
 def olcum_ekle(o, b, k, model_turu):
@@ -1832,6 +2148,7 @@ def oneri_birlestir(birimler, cikti, alinan, model_turu, sorulan=None, katki=Non
         kk = (katki or {}).get(b["id"])
         if o is not None:
             o, _el = tekrar_ele(dict(o), b, kk, model_turu)
+            o = olcum_tamamla(o, b, kk, model_turu)
             cikti[b["id"]] = olcum_ekle(dict(o, kaynak="dil modeli", imza=_oneri_imza(b, model_turu)),
                                         b, kk, model_turu)
         else:
@@ -2045,7 +2362,8 @@ def niyet_bul(mesaj, coklu=False):
     m = _kucuk(mesaj)
     eslesme = {}                      # ifade -> ilk kod (katalog sirasi)
     for k, a, _g, _c in KATALOG:
-        adlar = [_kucuk(re.sub(r"\s*\(.*?\)", "", a))] + [_kucuk(x) for x in _ES_AD.get(k, [])]
+        adlar = [_kucuk(re.sub(r"\s*\(.*?\)", "", a)), _kucuk(re.sub(r"\s*\(.*?\)", "", ESKI_AD.get(k, "")))] \
+            + [_kucuk(x) for x in _ES_AD.get(k, [])]
         for x in adlar:
             if len(x) >= 3 and re.search("(?<![%s])%s%s(?![%s])" % (_HARF, re.escape(x), _EK, _HARF), m):
                 eslesme.setdefault(x, k)

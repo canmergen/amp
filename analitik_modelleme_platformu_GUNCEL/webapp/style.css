@@ -5915,3 +5915,28 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-k-alt { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-top: 3px; line-height: 1.4; }
 .gl-katalog-sar { max-height: 70vh; }
 .dg-tablo.gl-katalog td.gl-k-model-hucre { white-space: normal; word-break: keep-all; overflow-wrap: normal; }
+
+/* 02.2 donusumler tablosu, suzgecler, gunluk */
+.gl-kat-suz { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 4px 10px; }
+.gl-suz-btn { font: inherit; font-size: var(--fs-kucuk); padding: 2px 10px; border-radius: 999px; border: 1px solid var(--kenar);
+  background: var(--yuzey); color: var(--metin); cursor: pointer; }
+.gl-suz-btn.secili { background: var(--kirmizi-acik); color: var(--kirmizi); border-color: var(--kirmizi-cizgi); font-weight: var(--fw-kalin); }
+.gl-kat-satir { cursor: pointer; }
+.gl-kat-satir:hover td { background: var(--yuzey-alt); }
+.gl-kat-ok { color: var(--metin-soluk); }
+.gl-k-evet { color: var(--yesil); font-weight: var(--fw-kalin); }
+.gl-k-hayir { color: var(--metin-soluk); }
+.gl-k-degisti { color: var(--amber); font-weight: var(--fw-kalin); }
+.gl-kat-ayrinti { text-align: left !important; background: var(--yuzey-alt); }
+.gl-kat-sat { display: flex; gap: var(--b-2); line-height: 1.45; margin: 3px 0; }
+.gl-kat-sat > b { flex: 0 0 150px; color: var(--metin-soluk); font-weight: var(--fw-kalin); }
+.gl-gunluk { margin: var(--b-2) 0; padding: 8px 12px; border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey); display: flex; flex-direction: column; gap: 4px; }
+.gl-gunluk-baslik { font-weight: var(--fw-kalin); color: var(--metin-soluk); }
+.gl-gunluk-satir { display: flex; justify-content: space-between; gap: var(--b-2); align-items: center; line-height: 1.4; }
+.gl-kod-suz { display: flex; align-items: center; gap: var(--b-2); padding: 6px 10px; border-radius: var(--r-kucuk);
+  background: var(--kirmizi-acik); }
+.dg-tablo.gl-katalog { min-width: 480px; }
+.dg-tablo.gl-katalog th { word-break: normal; overflow-wrap: normal; hyphens: none; }
+.dg-tablo.gl-ozet { min-width: 0; font-size: var(--fs-kucuk); }
+.dg-tablo.gl-ozet th { word-break: normal; overflow-wrap: normal; }
