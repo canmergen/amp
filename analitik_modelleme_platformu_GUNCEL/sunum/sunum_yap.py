@@ -2,10 +2,24 @@
 """sunum_yap.py — Akilli Modelleme Platformu tanitim sunumunu (.pptx) ureten betik.
 
 NE YAPAR
-  13 slaytlik tanitim sunumunu bastan uretir: kapak (gorsel yer tutuculu) ve
-  12 icerik slayti. Butun kutular, oklar ve yazilar PowerPoint'in kendi
-  ogeleridir; resim yoktur, her sey PowerPoint'te duzenlenebilir. Her slaytin
+  Tanitim sunumunu bastan uretir: kurumsal kirmizi zeminli kapak, 12 icerik
+  slayti ve kapanis. Butun kutular, oklar ve yazilar PowerPoint'in kendi
+  ogeleridir, PowerPoint'te duzenlenebilir. Robot gorselleri platformun kendi
+  gorsel klasorunden (LLM_WEBAPP_GORSEL) okunup sunuma gomulur. Her slaytin
   konusmaci notu da yazilir.
+
+GORSELLER
+  Hangi dosyanin nerede kullanildigi asagidaki GORSELLER sozlugundedir.
+  robot_header.png disindakiler uygulamanin da kullandigi dosyalardir
+  (webapp/backend.py: GORSELLER). Dosya adi buyuk kucuk harf, alt cizgi ve
+  uzanti (png, jpg) farkina takilmadan bulunur. Bir gorsel
+  bulunamazsa sunum yine uretilir: o gorselin yeri bos kalir ya da eski
+  gorunum (numara dairesi, yer tutucu) kullanilir. Calisma sonunda hangi
+  gorselin bulundugu ekrana yazilir.
+  Pillow (PIL) kuruluysa gorsellerin saydam kenarlari kirpilir ve buyuk
+  gorseller kucultulur; kurulu degilse gorseller oldugu gibi gomulur.
+  KAPANIS ve BASLIK_AVATARI ayarlariyla kapanis slaydi ve basliklardaki kucuk
+  robot kapatilabilir.
 
 NEDEN BAGIMLILIKSIZ
   fe_agent/docx_yaz.py ve xlsx_yaz.py ile AYNI sebep: Dataiku kod ortaminda
@@ -16,17 +30,19 @@ NEDEN BAGIMLILIKSIZ
 
 NASIL CALISTIRILIR
   1. Dataiku Python defteri (notebook): dosyanin tamamini bir hucreye
-     yapistirip calistirin. KLASOR bos ise ciktida bir indirme baglantisi
-     gorunur.
+     yapistirip calistirin. Gorseller GORSEL_KLASOR'den okunur. KLASOR bos
+     ise ciktida bir indirme baglantisi gorunur.
   2. Dataiku Python recipe ya da baglanti calismazsa: asagidaki KLASOR
      degiskenine bir managed folder adi (ya da kimligi) yazin; dosya o
      klasore yazilir, klasor ekranindan indirilir. Recipe'te bu klasor
-     recipe'in CIKTISI olarak eklenmis olmalidir (Dataiku, recipe'in girdisi
-     ya da ciktisi olmayan klasore erisime izin vermez).
+     recipe'in CIKTISI, GORSEL_KLASOR de GIRDISI olarak eklenmis olmalidir
+     (Dataiku, recipe'in girdisi ya da ciktisi olmayan klasore erisime izin
+     vermez).
   3. Proje kutuphanesine (lib/python) konursa, defter ya da recipe'ten:
          import sunum_yap
          sunum_yap.kaydet(sunum_yap.uret(), "KLASOR_ADI")
-  4. Bilgisayarda: python sunum_yap.py [cikti.pptx]
+  4. Bilgisayarda: python sunum_yap.py [cikti.pptx] [gorsel_dizini]
+     Gorsel dizini verilmezse betigin yanindaki "gorseller" dizinine bakilir.
 
 DUZENLEME
   Metinler ve yerlesim dosyanin sonundaki SLAYTLAR bolumundedir. Olculer inc
@@ -38,7 +54,9 @@ import base64
 import datetime
 import io
 import os
+import struct
 import sys
+import unicodedata
 import uuid
 import zipfile
 from xml.sax.saxutils import escape, quoteattr
@@ -51,10 +69,30 @@ from xml.sax.saxutils import escape, quoteattr
 KLASOR = None
 DOSYA = "Akilli_Modelleme_Platformu_Sunum.pptx"
 
-# Renkler (onaltilik, # isareti yok)
-KIR, KIR2 = "C8102E", "8E0B20"            # kirmizi, koyu kirmizi
+# Gorsellerin okundugu Dataiku managed folder (webapp ile ayni klasor).
+GORSEL_KLASOR = "LLM_WEBAPP_GORSEL"
+# Dataiku disinda calisirken gorsellerin bulundugu dizin. None ise betigin
+# yanindaki "gorseller" dizinine bakilir. Dolu ise Dataiku klasoru yerine
+# HER ZAMAN bu dizin kullanilir.
+GORSEL_DIZIN = None
+# Sunumdaki yeri -> dosya adi. Dosyayi degistirmek icin yalniz burayi duzenleyin.
+GORSELLER = {
+    "kapak": "robot_header.png",          # kapaktaki robot (beyaz panelin icinde)
+    "karsilama": "robot_welcome.png",     # ilk icerik slaydinin basligi ve kapanis
+    "bot": "robot_chat.png",              # yapay zeka: baslik avatari, rol karti, ekran semasi
+    "user": "robot_llm_person.png",       # kullanici: rol karti
+    "dusunme": "robot_think.png",         # uzerinde calisilan adim
+    "robot_alt": "robot_alt.png",         # sonunda hedeflenen (kitaplar ve kupa)
+}
+KAPANIS = True                             # sona tesekkur slaydi eklensin mi
+BASLIK_AVATARI = True                      # icerik slaytlarinda basligin solunda kucuk robot olsun mu
+
+# Renkler (onaltilik, # isareti yok). Kirmizi ve pembe platformun kendi
+# renkleridir (webapp/style.css: --kirmizi, --kirmizi-koyu, --pembe-secili).
+KIR, KIR2 = "D51115", "A00D10"            # kirmizi, koyu kirmizi
+KIR_PARLAK = "E3231C"                      # kapak zemininin ortasi
 KOYU, GRI, SOLUK = "262626", "595959", "A6A6A6"
-ACIK, BEJ, BEYAZ = "F2F2F2", "F6DDD0", "FFFFFF"
+ACIK, PEMBE, BEYAZ = "F2F2F2", "FBE4E5", "FFFFFF"
 
 EMU = 914400                               # 1 inc
 SLAYT_CX, SLAYT_CY = 12192000, 6858000     # 13,333 x 7,5 inc
@@ -192,6 +230,244 @@ def _ilk_metin(icerik):
 
 
 # ===========================================================================
+# GORSELLER
+# ===========================================================================
+class Gorsel(object):
+    """Sunuma gomulecek bir resim."""
+
+    def __init__(self, veri, uzanti, en, boy, saydam, kaynak, alt_kesik=False):
+        self.veri = veri              # dosyanin baytlari
+        self.uzanti = uzanti          # "png" ya da "jpeg"
+        self.en = en                  # piksel
+        self.boy = boy
+        self.saydam = saydam          # saydamlik bilgisi var mi
+        self.kaynak = kaynak          # okundugu yol (bilgi satiri icin)
+        self.alt_kesik = alt_kesik    # cizim gorselin alt kenarinda kesiliyor mu (Pillow varsa bilinir)
+
+    @property
+    def oran(self):
+        return self.en / float(self.boy)
+
+
+# Gorsel basina hazirlik: (saydam kenarlar kirpilsin mi, uzun kenarin en cok
+# kac piksel olacagi). Avatarlar KIRPILMAZ: uygulamadaki gibi tuvalin tamami
+# ortadan daireye alinir (kirpmak robotun basini ya da antenini kesebilir).
+_HAZIRLIK = {
+    "kapak": (True, 1400), "robot_alt": (True, 1100), "karsilama": (False, 800),
+    "bot": (False, 320), "user": (False, 320), "dusunme": (False, 320),
+}
+_UZANTILAR = (".png", ".jpg", ".jpeg")
+_onbellek = {}                 # mantiksal ad -> Gorsel ya da None
+_neden = {}                    # mantiksal ad -> gorsel neden kullanilamadi
+_kaynak_onbellek = []          # [(ad, yollar, okuyucu)] ya da [None]
+_gorsel_notlari = []           # okuma sirasinda biriken uyarilar
+
+
+def gorselleri_sifirla():
+    """Gorsel onbellegini bosaltir; ayar degistirip yeniden uretmeden once cagrilir."""
+    _onbellek.clear()
+    _neden.clear()
+    del _kaynak_onbellek[:]
+    del _gorsel_notlari[:]
+
+
+def _resim_bilgi(veri):
+    """(uzanti, en, boy, saydam) doner; PNG ve JPEG disindaki tur icin None."""
+    if veri[:8] == b"\x89PNG\r\n\x1a\n" and veri[12:16] == b"IHDR":
+        en, boy = struct.unpack(">II", veri[16:24])
+        saydam = bytearray(veri[25:26])[0] in (4, 6)
+        i = 8
+        while not saydam and i + 8 <= len(veri):          # paletli PNG'de saydamlik tRNS parcasindadir
+            uzunluk = struct.unpack(">I", veri[i:i + 4])[0]
+            parca = veri[i + 4:i + 8]
+            if parca == b"tRNS":
+                saydam = True
+            if parca in (b"IDAT", b"IEND"):
+                break
+            i += 12 + uzunluk
+        return "png", en, boy, saydam
+    if veri[:2] == b"\xff\xd8":
+        bayt = bytearray(veri)
+        i = 2
+        while i + 9 < len(bayt):
+            if bayt[i] != 0xFF:
+                i += 1
+                continue
+            isaret = bayt[i + 1]
+            if isaret == 0xFF:
+                i += 1
+                continue
+            if isaret in (0x01, 0xD8) or 0xD0 <= isaret <= 0xD7:
+                i += 2
+                continue
+            if 0xC0 <= isaret <= 0xCF and isaret not in (0xC4, 0xC8, 0xCC):
+                boy, en = struct.unpack(">HH", veri[i + 5:i + 9])
+                return "jpeg", en, boy, False
+            i += 2 + struct.unpack(">H", veri[i + 2:i + 4])[0]
+    return None
+
+
+def _hazirla(veri, kirp, azami):
+    """Pillow varsa gorseli sunuma hazirlar ve (veri, alt_kesik) doner: saydamligi
+    olmayan saydamlik kanalini atar, kirp ise saydam kenarlari kirpar, uzun kenari
+    azami pikseli gecen gorseli kucultur. alt_kesik: cizim gorselin alt kenarina
+    kadar iniyor mu (kenarda kesilmis bir cizim). Pillow yoksa ya da bir sorun
+    cikarsa veriyi OLDUGU GIBI doner."""
+    try:
+        from PIL import Image
+    except Exception:
+        return veri, False
+    try:
+        resim = Image.open(io.BytesIO(veri))
+        bicim = resim.format
+        resim.load()
+        degisti = False
+        alt_kesik = False
+        if bicim == "PNG" and resim.mode not in ("RGB", "RGBA"):
+            resim = resim.convert("RGBA")
+        if resim.mode == "RGBA":
+            alfa = resim.split()[-1]
+            if alfa.getextrema()[0] == 255:               # kanal var ama gorsel tumuyle opak
+                resim = resim.convert("RGB")
+                degisti = True
+            else:
+                kutu = alfa.point(lambda deger: 255 if deger > 8 else 0).getbbox()
+                alt_kesik = bool(kutu) and kutu[3] == resim.size[1]
+                if kirp and kutu and tuple(kutu) != (0, 0) + resim.size:
+                    resim = resim.crop(kutu)
+                    degisti = True
+        if max(resim.size) > azami:
+            olcek = azami / float(max(resim.size))
+            resim = resim.resize((max(1, int(round(resim.size[0] * olcek))),
+                                  max(1, int(round(resim.size[1] * olcek)))), Image.LANCZOS)
+            degisti = True
+        if not degisti:
+            return veri, alt_kesik
+        cikti = io.BytesIO()
+        if bicim == "JPEG":
+            resim.convert("RGB").save(cikti, "JPEG", quality=90)
+        else:
+            resim.save(cikti, "PNG", optimize=True)
+        return cikti.getvalue(), alt_kesik
+    except Exception:
+        return veri, False
+
+
+def _sade(ad):
+    """Dosya adinin karsilastirma anahtari: uzanti, buyuk kucuk harf, alt cizgi,
+    tire ve bosluk farki elenir ("Robot_Header.PNG" ile "robotheader.png" ayni)."""
+    govde = os.path.splitext(os.path.basename(ad.replace("\\", "/")))[0]
+    govde = unicodedata.normalize("NFC", govde).casefold()
+    return "".join(harf for harf in govde if harf.isalnum())
+
+
+def _eslesen(yollar, dosya):
+    """yollar icinden dosya adina uyan yolu secer: once tam ad, sonra sade ad."""
+    hedef = os.path.basename(dosya).casefold()
+    for yol in yollar:
+        if os.path.basename(yol.replace("\\", "/")).casefold() == hedef:
+            return yol
+    adaylar = [yol for yol in yollar
+               if _sade(yol) == _sade(dosya) and os.path.splitext(yol)[1].lower() in _UZANTILAR]
+    adaylar.sort(key=lambda yol: _UZANTILAR.index(os.path.splitext(yol)[1].lower()))
+    return adaylar[0] if adaylar else None
+
+
+def _yerel_dizin():
+    try:
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), "gorseller")
+    except NameError:                                     # defterde __file__ yoktur
+        return os.path.join(os.getcwd(), "gorseller")
+
+
+def _kaynak():
+    """Gorsellerin okunacagi yer: (ad, yollar, okuyucu) ya da None. GORSEL_DIZIN
+    dolu ise o dizin; degilse Dataiku klasoru; o da yoksa yerel "gorseller"."""
+    if _kaynak_onbellek:
+        return _kaynak_onbellek[0]
+    sonuc = None
+    if not GORSEL_DIZIN:
+        try:
+            import dataiku
+        except ImportError:
+            dataiku = None
+        if dataiku is not None:
+            try:
+                klasor = dataiku.Folder(GORSEL_KLASOR)
+                yollar = list(klasor.list_paths_in_partition())
+
+                def klasorden(yol, klasor=klasor):
+                    with klasor.get_download_stream(yol) as akis:
+                        return akis.read()
+                sonuc = ("managed folder %s" % GORSEL_KLASOR, yollar, klasorden)
+            except Exception as hata:
+                _gorsel_notlari.append("Görsel klasörü okunamadı (%s): %s" % (GORSEL_KLASOR, hata))
+    if sonuc is None:
+        dizin = GORSEL_DIZIN or _yerel_dizin()
+        if os.path.isdir(dizin):
+            def dizinden(yol):
+                with open(yol, "rb") as f:
+                    return f.read()
+            sonuc = ("dizin %s" % dizin, [os.path.join(dizin, ad) for ad in sorted(os.listdir(dizin))], dizinden)
+        elif GORSEL_DIZIN:
+            _gorsel_notlari.append("Görsel dizini bulunamadı: %s" % dizin)
+    _kaynak_onbellek.append(sonuc)
+    return sonuc
+
+
+def _gorsel(ad):
+    """GORSELLER anahtarini Gorsel nesnesine cevirir; bulunamaz ya da okunamazsa None."""
+    if ad in _onbellek:
+        return _onbellek[ad]
+    sonuc = None
+    dosya = GORSELLER.get(ad)
+    kaynak = _kaynak()
+    neden = "%s bulunamadı" % dosya
+    if dosya and kaynak:
+        yol = _eslesen(kaynak[1], dosya)
+        if yol is None:
+            baska = [aday for aday in kaynak[1] if _sade(aday) == _sade(dosya)]
+            if baska:
+                neden = ("%s desteklenmeyen türde (PNG ya da JPEG olmalı)"
+                         % os.path.basename(baska[0].replace("\\", "/")))
+        else:
+            dosya_adi = os.path.basename(yol.replace("\\", "/"))
+            try:
+                kirp, azami = _HAZIRLIK.get(ad, (False, 1600))
+                veri, alt_kesik = _hazirla(kaynak[2](yol), kirp, azami)
+                bilgi = _resim_bilgi(veri)
+                if bilgi:
+                    sonuc = Gorsel(veri, bilgi[0], bilgi[1], bilgi[2], bilgi[3], yol, alt_kesik)
+                else:
+                    neden = "%s PNG ya da JPEG olarak okunamadı" % dosya_adi
+            except Exception as hata:
+                neden = "%s okunamadı (%s)" % (dosya_adi, hata)
+    _onbellek[ad] = sonuc
+    if sonuc is None:
+        _neden[ad] = neden
+    return sonuc
+
+
+def gorsel_raporu():
+    """Hangi gorselin bulundugunu anlatan satirlar (calisma sonunda yazilir)."""
+    kaynak = _kaynak()
+    satirlar = ["Görsel kaynağı: %s" % (kaynak[0] if kaynak else "yok (Dataiku klasörü ya da görsel dizini bulunamadı)")]
+    for ad in sorted(GORSELLER):
+        g = _gorsel(ad)
+        if g:
+            satirlar.append("  %s: %s, %d x %d piksel, %d KB" % (ad, os.path.basename(g.kaynak.replace("\\", "/")),
+                                                                g.en, g.boy, len(g.veri) // 1024))
+        else:
+            satirlar.append("  %s: %s; yeri boş bırakıldı ya da eski görünüm kullanıldı" % (ad, _neden.get(ad, "yok")))
+    try:
+        from PIL import Image                             # noqa: F401 (yalniz var mi diye bakilir)
+    except Exception:
+        if any(_gorsel(ad) for ad in GORSELLER):
+            satirlar.append("Pillow (PIL) bulunamadı: görseller kırpılmadan ve küçültülmeden gömüldü; dosya büyük olabilir.")
+    return satirlar + list(_gorsel_notlari)
+
+
+# ===========================================================================
 # SEKIL XML'I
 # ===========================================================================
 def _cizgi_xml(cizgi, ucu_ok=False):
@@ -227,12 +503,25 @@ def _dolgu(renk):
     return '<a:solidFill><a:srgbClr val="%s"/></a:solidFill>' % renk if renk else '<a:noFill/>'
 
 
+def _resim_xml(sid, ad, rid, x, y, w, h, daire=False, cizgi=None, kirpma=None):
+    """Tek bir <p:pic>. rid: slaydin iliski numarasi; kirpma: (sol, ust, sag, alt)
+    binde yuz birimiyle kaynak kirpmasi; daire ise resim daire icinde gorunur."""
+    kirp = ""
+    if kirpma and any(kirpma):
+        kirp = '<a:srcRect%s/>' % "".join(' %s="%d"' % (kenar, pay) for kenar, pay in zip("ltrb", kirpma) if pay)
+    return ('<p:pic><p:nvPicPr><p:cNvPr id="%d" name=%s/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>'
+            '<p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId%d"/>%s<a:stretch><a:fillRect/></a:stretch>'
+            '</p:blipFill><p:spPr><a:xfrm><a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm>%s%s</p:spPr></p:pic>'
+            % (sid, _oz(ad), rid, kirp, _emu(x), _emu(y), _emu(w), _emu(h),
+               _geo("ellipse" if daire else "rect"), _cizgi_xml(cizgi) if cizgi else ""))
+
+
 # Kutu turleri: (dolgu, cizgi, golge)
 _TURLER = {
     "veri": (KIR, None, True),                       # veri ya da cikti
     "islem": (BEYAZ, (KIR, 1.5, False), False),      # kodun yaptigi islem
     "simdi": (BEYAZ, (KIR, 3.5, False), False),      # uzerinde calisilan
-    "onay": (BEJ, (KIR, 1.5, False), False),         # kullanici onayi
+    "onay": (PEMBE, (KIR, 1.5, False), False),       # kullanici onayi
     "sirada": (BEYAZ, (KIR, 1.5, True), False),      # istege bagli (kesik kirmizi)
     "gri": (ACIK, None, False),                      # aciklama karti, yapay zeka
     "soluk": (BEYAZ, (SOLUK, 1.5, True), False),     # sirada (kesik gri)
@@ -246,15 +535,20 @@ _TURLER = {
 class Slayt(object):
     """Bir slayt: sekiller sirayla eklenir. Olculer inc."""
 
-    def __init__(self, yerlesim, bolum, baslik, ust=None, alt=None):
+    def __init__(self, yerlesim, bolum, baslik, ust=None, alt=None, avatar="bot"):
         self.yerlesim = yerlesim          # "KAPAK" ya da "AKIS"
         self.bolum = bolum
         self.baslik = baslik
-        self.ust = ust                    # AKIS: baslik altindaki cumle; KAPAK: alt baslik
+        self.ust = ust                    # AKIS: baslik altindaki cumle; KAPAK: birim satiri
         self.alt = alt                    # KAPAK: tarih satiri
         self.notlar = ""
+        self.gorseller = []               # bu slayttaki gorseller, iliski sirasiyla
+        self.kapak_gorseli = False        # KAPAK: banda gorsel kondu mu (konmadiysa yer tutucu kalir)
         self._x = []
         self._sid = 3 if yerlesim == "AKIS" else 5      # ilk kimlikler yer tutucularin
+        if yerlesim == "AKIS" and avatar and baslik_avatari_var():
+            # Basligin solundaki kucuk robot: uygulamadaki sohbet bloklarinin basligi gibi
+            self.avatar(avatar if _gorsel(avatar) else "bot", 0.9, 0.55, 0.8)
 
     def _id(self):
         self._sid += 1
@@ -294,6 +588,48 @@ class Slayt(object):
         self._x.append(_sp(self._id(), ad, _geo("rect"), x, y, w, h, '<a:noFill/>',
                            _govde(icerik, boy, renk, kalin, egik, hiza, dikey, yazitipi, bosluk),
                            metin_kutusu=True))
+
+    # ---- gorseller ---------------------------------------------------------
+    def _resim(self, g_ad, x, y, w, h, daire=False, cizgi=None, kirpma=None):
+        if g_ad not in self.gorseller:
+            self.gorseller.append(g_ad)
+        # rId1 yerlesim, rId2 not sayfasi; gorseller rId3'ten baslar
+        self._x.append(_resim_xml(self._id(), "görsel " + GORSELLER[g_ad], 3 + self.gorseller.index(g_ad),
+                                  x, y, w, h, daire, cizgi, kirpma))
+
+    def resim(self, g_ad, x, y, w, h, yatay="ctr", dikey="ctr"):
+        """Gorseli kutuya oranini bozmadan sigdirir. yatay: l, ctr, r; dikey: t,
+        ctr, b. Gorsel yoksa hicbir sey eklemez ve None doner; varsa gorselin
+        yerlestigi (x, y, w, h) doner."""
+        g = _gorsel(g_ad)
+        if g is None:
+            return None
+        olcek = min(w / float(g.en), h / float(g.boy))
+        rw, rh = g.en * olcek, g.boy * olcek
+        rx = x if yatay == "l" else (x + w - rw if yatay == "r" else x + (w - rw) / 2.0)
+        ry = y if dikey == "t" else (y + h - rh if dikey == "b" else y + (h - rh) / 2.0)
+        self._resim(g_ad, rx, ry, rw, rh)
+        return rx, ry, rw, rh
+
+    def avatar(self, g_ad, cx, cy, d, halka=1.5):
+        """Daire icinde gorsel (uygulamadaki sohbet avatari gibi): tuval ortadan
+        kareye kirpilir, altina pembe zemin gelir. Zemini dolu gorselin cevresine
+        kirmizi halka cizilir; saydam zeminli gorsele cizilmez (hazir kesilmis
+        avatarin kendi halkasi varsa cift halka olmasin). Gorsel yoksa hicbir sey
+        eklemez ve False doner."""
+        g = _gorsel(g_ad)
+        if g is None:
+            return False
+        kirpma = None
+        if g.en > g.boy:
+            pay = int(round((g.en - g.boy) / 2.0 / g.en * 100000))
+            kirpma = (pay, 0, pay, 0)
+        elif g.boy > g.en:
+            pay = int(round((g.boy - g.en) / 2.0 / g.boy * 100000))
+            kirpma = (0, pay, 0, pay)
+        self.elips(cx, cy, d, PEMBE, None, "avatar zemini")
+        self._resim(g_ad, cx - d / 2.0, cy - d / 2.0, d, d, True, None if g.saydam else (KIR, halka, False), kirpma)
+        return True
 
     # ---- bilesik ogeler ---------------------------------------------------
     def daire(self, metin, cx, cy, d, boy=12, ad=None):
@@ -356,12 +692,15 @@ class Slayt(object):
         x = [_BAS, '<p:sld %s><p:cSld><p:spTree>' % _NS3, _GRUP,
              self._yer_tutucu(2, "Başlık", 'type="title"', self.baslik)]
         if self.yerlesim == "KAPAK":
-            x.append(self._yer_tutucu(3, "Alt Başlık", 'type="body" sz="quarter" idx="10"', self.ust or ""))
-            x.append(self._yer_tutucu(4, "Tarih Satırı", 'type="body" sz="quarter" idx="11"', self.alt or ""))
-            # Bos resim yer tutucusu: PowerPoint'te tiklaninca resim eklenir.
-            x.append('<p:sp><p:nvSpPr><p:cNvPr id="5" name="Kapak Görseli"/><p:cNvSpPr>'
-                     '<a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="pic" sz="quarter" idx="12"/>'
-                     '</p:nvPr></p:nvSpPr><p:spPr/></p:sp>')
+            if self.ust:
+                x.append(self._yer_tutucu(3, "Birim", 'type="body" sz="quarter" idx="10"', self.ust))
+            if self.alt:
+                x.append(self._yer_tutucu(4, "Tarih Satırı", 'type="body" sz="quarter" idx="11"', self.alt))
+            if not self.kapak_gorseli:
+                # Gorsel bulunamadi: bos resim yer tutucusu kalir, PowerPoint'te tiklaninca resim eklenir.
+                x.append('<p:sp><p:nvSpPr><p:cNvPr id="5" name="Kapak Görseli"/><p:cNvSpPr>'
+                         '<a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="pic" sz="quarter" idx="12"/>'
+                         '</p:nvPr></p:nvSpPr><p:spPr/></p:sp>')
         else:
             x.append(self._yer_tutucu(3, "Özet Cümle", 'type="body" sz="quarter" idx="10"', self.ust or ""))
         x.extend(self._x)
@@ -469,9 +808,9 @@ def _numara_yt(sid, ph_idx):
             % (sid, ph_idx, _emu(12.35), _emu(7.08), _emu(0.5), _emu(0.25), SOLUK, _ALAN_NO, DIL, DIL))
 
 
-def _duz_cizgi(sid, ad, x, y, w, kalinlik):
-    """Yerlesimdeki kirmizi yatay cizgi."""
-    return _sp(sid, ad, _geo("line"), x, y, w, 0, '<a:noFill/>' + _cizgi_xml((KIR, kalinlik, False)))
+def _duz_cizgi(sid, ad, x, y, w, kalinlik, renk=None):
+    """Yerlesimdeki yatay cizgi (varsayilan kirmizi)."""
+    return _sp(sid, ad, _geo("line"), x, y, w, 0, '<a:noFill/>' + _cizgi_xml((renk or KIR, kalinlik, False)))
 
 
 def _ana_slayt():
@@ -493,37 +832,62 @@ def _ana_slayt():
             + _duzeyler(1800) + '</p:otherStyle></p:txStyles></p:sldMaster>')
 
 
-def _yerlesim(ad, ogeler):
-    return (_BAS + '<p:sldLayout %s preserve="1" userDrawn="1"><p:cSld name=%s><p:bg><p:bgPr><a:solidFill>'
-            '<a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>%s%s</p:spTree></p:cSld>'
-            '<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>' % (_NS3, _oz(ad), _GRUP, ogeler))
+def _yerlesim(ad, ogeler, zemin=None):
+    """zemin: arka plan dolgusunun XML'i; verilmezse beyaz."""
+    return (_BAS + '<p:sldLayout %s preserve="1" userDrawn="1"><p:cSld name=%s><p:bg><p:bgPr>%s'
+            '<a:effectLst/></p:bgPr></p:bg><p:spTree>%s%s</p:spTree></p:cSld>'
+            '<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>'
+            % (_NS3, _oz(ad), zemin or _dolgu(BEYAZ), _GRUP, ogeler))
+
+
+# Kapaktaki beyaz panel (inc): gorsel bunun icinde durur. Metinlerin sol kenari
+# panelin sol kenariyla ayni hizadadir.
+PANEL_X, PANEL_Y, PANEL_W, PANEL_H = 0.6, 2.55, 12.133, 3.6
 
 
 def _yerlesim_kapak():
-    """Kapak: solda baslik, alt baslik ve tarih satiri; sagda resim yer tutucusu."""
-    resim = ('<p:sp><p:nvSpPr><p:cNvPr id="6" name="Kapak Görseli"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>'
+    """Kapak ve kapanis: kurumsal kapak gibi kirmizi zemin (ortasi parlak,
+    kenarlari koyu), ustte beyaz baslik ve birim satiri, ortada kosesi yuvarlak
+    beyaz panel (gorsel bunun icinde durur), altta tarih satiri."""
+    zemin = ('<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:srgbClr val="%s"/></a:gs>'
+             '<a:gs pos="55000"><a:srgbClr val="%s"/></a:gs><a:gs pos="100000"><a:srgbClr val="%s"/></a:gs>'
+             '</a:gsLst><a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path>'
+             '</a:gradFill>' % (KIR_PARLAK, KIR, KIR2))
+    golge = ('<a:effectLst><a:outerShdw blurRad="101600" dist="38100" dir="5400000" algn="t" rotWithShape="0">'
+             '<a:srgbClr val="000000"><a:alpha val="28000"/></a:srgbClr></a:outerShdw></a:effectLst>')
+    panel = _sp(3, "beyaz panel", _geo("roundRect", 5000), PANEL_X, PANEL_Y, PANEL_W, PANEL_H,
+                _dolgu(BEYAZ) + _cizgi_xml(None) + golge)
+    resim = ('<p:sp><p:nvSpPr><p:cNvPr id="7" name="Kapak Görseli"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>'
              '<p:nvPr><p:ph type="pic" sz="quarter" idx="12" hasCustomPrompt="1"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm>'
              '<a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>'
              '<p:txBody><a:bodyPr vert="horz" rtlCol="0" anchor="ctr"><a:noAutofit/></a:bodyPr><a:lstStyle>'
              '<a:lvl1pPr marL="0" indent="0" algn="ctr"><a:buNone/><a:defRPr sz="1400"><a:solidFill>'
              '<a:srgbClr val="%s"/></a:solidFill></a:defRPr></a:lvl1pPr></a:lstStyle><a:p><a:r><a:rPr lang="%s"/>'
              '<a:t>Kapak görseli</a:t></a:r></a:p></p:txBody></p:sp>'
-             % (_emu(7.4), _emu(0.75), _emu(5.43), _emu(6.0), GRI, DIL))
+             % (_emu(PANEL_X + (PANEL_W - 5.0) / 2.0), _emu(PANEL_Y + 0.25), _emu(5.0), _emu(PANEL_H - 0.5), GRI, DIL))
     return _yerlesim("Kapak",
-                     _yt(2, "Başlık", 'type="title"', 0.6, 1.75, 6.4, 1.8, "b", "l", 40, KIR, True,
-                         "Başlık")
-                     + _duz_cizgi(3, "başlık çizgisi", 0.6, 3.75, 1.6, 2.5)
-                     + _yt(4, "Alt Başlık", 'type="body" sz="quarter" idx="10"', 0.6, 3.95, 6.4, 1.2, "t", "l", 20,
-                           KOYU, False, "Alt başlık")
-                     + _yt(5, "Tarih Satırı", 'type="body" sz="quarter" idx="11"', 0.6, 5.55, 6.4, 0.4, "ctr", "l", 13,
-                           GRI, False, "Tarih")
-                     + resim)
+                     panel
+                     + _yt(2, "Başlık", 'type="title"', PANEL_X, 0.4, PANEL_W, 0.8, "b", "l", 32, BEYAZ, False,
+                           "Başlık")
+                     + _duz_cizgi(4, "başlık çizgisi", PANEL_X, 1.33, 1.6, 2.25, BEYAZ)
+                     + _yt(5, "Birim", 'type="body" sz="quarter" idx="10"', PANEL_X, 1.45, PANEL_W, 0.42, "t", "l", 20,
+                           BEYAZ, False, "Birim")
+                     + _yt(6, "Tarih Satırı", 'type="body" sz="quarter" idx="11"', PANEL_X, 6.48, 8.0, 0.4, "ctr", "l",
+                           14, BEYAZ, True, "Tarih")
+                     + resim, zemin)
+
+
+def baslik_avatari_var():
+    """Icerik slaytlarinda basligin soluna kucuk robot konacak mi (ayar acik ve gorseli varsa)."""
+    return bool(BASLIK_AVATARI) and _gorsel("bot") is not None
 
 
 def _yerlesim_akis():
-    """Icerik slayti: kirmizi baslik, altinda cizgi, ozet cumle, slayt numarasi."""
+    """Icerik slayti: kirmizi baslik, altinda cizgi, ozet cumle, slayt numarasi.
+    Baslik avatari varsa baslik ona yer acmak icin saga kayar."""
+    bx, bw = (1.42, 7.6) if baslik_avatari_var() else (0.5, 8.5)
     return _yerlesim("İçerik",
-                     _yt(2, "Başlık", 'type="title"', 0.5, 0.28, 8.5, 0.58, "ctr", "l", 24, KIR, True, "Başlık")
+                     _yt(2, "Başlık", 'type="title"', bx, 0.28, bw, 0.58, "ctr", "l", 24, KIR, True, "Başlık")
                      + _duz_cizgi(3, "başlık çizgisi", 0.5, 0.92, 12.33, 1.0)
                      + _yt(4, "Özet Cümle", 'type="body" sz="quarter" idx="10"', 0.5, 1.0, 12.33, 0.42, "ctr", "l",
                            13.5, GRI, False, "Özet cümle")
@@ -599,9 +963,19 @@ def paketle(slaytlar, baslik, zaman=None):
     yerlesim_no = {"KAPAK": 1, "AKIS": 2}
     p = []                                            # [(ad, icerik)]
 
+    # Gorseller: her gorsel pakete BIR kez girer; slaytlar ona iliskiyle baglanir
+    ortam = []                                        # [(gorsel adi, pakette parca adi)]
+    for s in slaytlar:
+        for g_ad in s.gorseller:
+            if g_ad not in [o[0] for o in ortam]:
+                ortam.append((g_ad, "ppt/media/image%d.%s" % (len(ortam) + 1, _gorsel(g_ad).uzanti)))
+    ortam_yolu = dict(ortam)
+
     # Icerik turleri
     tur = ['<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
            '<Default Extension="xml" ContentType="application/xml"/>']
+    for uzanti in sorted(set(yol.rsplit(".", 1)[1] for _, yol in ortam)):
+        tur.append('<Default Extension="%s" ContentType="image/%s"/>' % (uzanti, uzanti))
 
     def ek(ad, icerik_turu):
         tur.append('<Override PartName="/%s" ContentType="%s"/>' % (ad, icerik_turu))
@@ -702,10 +1076,14 @@ def paketle(slaytlar, baslik, zaman=None):
         p.append(("ppt/slides/slide%d.xml" % no, s.xml(no)))
         p.append(("ppt/slides/_rels/slide%d.xml.rels" % no, _iliskiler(
             [("slideLayout", "../slideLayouts/slideLayout%d.xml" % yerlesim_no[s.yerlesim]),
-             ("notesSlide", "../notesSlides/notesSlide%d.xml" % no)])))
+             ("notesSlide", "../notesSlides/notesSlide%d.xml" % no)]
+            + [("image", "../media/" + ortam_yolu[g_ad].rsplit("/", 1)[1]) for g_ad in s.gorseller])))
         p.append(("ppt/notesSlides/notesSlide%d.xml" % no, _not_sayfasi(s.notlar, no)))
         p.append(("ppt/notesSlides/_rels/notesSlide%d.xml.rels" % no, _iliskiler(
             [("notesMaster", "../notesMasters/notesMaster1.xml"), ("slide", "../slides/slide%d.xml" % no)])))
+
+    for g_ad, yol in ortam:
+        p.append((yol, _gorsel(g_ad).veri))
 
     tampon = io.BytesIO()
     tarih = (zaman.year, zaman.month, zaman.day, zaman.hour, zaman.minute, zaman.second)
@@ -714,7 +1092,7 @@ def paketle(slaytlar, baslik, zaman=None):
             bilgi = zipfile.ZipInfo(ad, date_time=tarih)
             bilgi.compress_type = zipfile.ZIP_DEFLATED
             bilgi.external_attr = 0o600 << 16
-            paket.writestr(bilgi, icerik.encode("utf-8"))
+            paket.writestr(bilgi, icerik if isinstance(icerik, bytes) else icerik.encode("utf-8"))
     return tampon.getvalue()
 
 
@@ -725,19 +1103,55 @@ B1, B2, B3, B4 = "Giriş", "Nasıl çalışır", "Yapılanlar", "Sırada ve duru
 LEJANT = [("veri", "Veri / Çıktı"), ("islem", "İşlem (kod)"), ("onay", "Kullanıcı onayı"), ("sirada", "İsteğe bağlı")]
 
 
+def _panele_gorsel(s, g_ad):
+    """Kapaktaki beyaz panele gorsel yerlestirir, panelin ortasina hizalar.
+    Saydam zeminli gorsel panelin ustune tasar (robotun basi panelin disina
+    cikar); zemini dolu gorsel panelin icinde kalir. Alt kenarinda kesilmis
+    cizim panelin alt kenarina oturur, digerleri biraz yukarida durur. En boy
+    orani ne olursa olsun sigar: genis gorsel ene, dar gorsel boya gore
+    olceklenir. Gorsel yoksa False doner."""
+    g = _gorsel(g_ad)
+    if g is None:
+        return False
+    tasma, alt_bosluk, azami_en = 0.45, (0 if g.alt_kesik else 0.18), PANEL_W - 0.8
+    h = PANEL_H - alt_bosluk + tasma if g.saydam else PANEL_H - 0.5
+    w = h * g.oran
+    daraldi = w > azami_en                            # cok genis gorsel: ene gore olceklenir
+    if daraldi:
+        w, h = azami_en, azami_en / g.oran
+    if g.saydam and (g.alt_kesik or not daraldi):
+        taban = PANEL_Y + PANEL_H - alt_bosluk        # panelin tabanina oturur, ustten tasar
+    else:
+        taban = PANEL_Y + (PANEL_H + h) / 2.0         # panelin icinde, dikeyde ortada
+    s._resim(g_ad, PANEL_X + (PANEL_W - w) / 2.0, taban - h, w, h)
+    s.kapak_gorseli = True
+    return True
+
+
 def slayt_kapak():
-    s = Slayt("KAPAK", B1, "Akıllı Modelleme Platformu",
-              "Ne amaçlıyor, nasıl çalışıyor, bugüne kadar ne yapıldı", "Ekiplere tanıtım · Kasım 2026")
-    s.notlar = ("Kapak görseli için sağdaki yer tutucuya tıklayıp resim ekleyin. Sunum, platformu hiç bilmeyen ekiplere "
-                "göre sıralandı: neden yapıyoruz, nedir, nasıl çalışır, bugüne kadar hangi adımlar geliştirildi, "
-                "sırada ne var.")
+    s = Slayt("KAPAK", B1, "Kurumsal Analitik, Tahminleme ve İçgörü Platformu",
+              "Perakende Krediler Analitik ve Tahsis İş Birimi", "Ekiplere tanıtım · Kasım 2026")
+    _panele_gorsel(s, "kapak")
+    s.notlar = ("Kapak. Robot görseli platformun görsel klasöründen gelir; bulunamadıysa beyaz panelin içinde resim yer "
+                "tutucusu kalır, tıklayıp resim ekleyebilirsiniz. Sunum, platformu hiç bilmeyen ekiplere göre sıralandı: "
+                "neden yapıyoruz, nedir, nasıl çalışır, bugüne kadar hangi adımlar geliştirildi, sırada ne var.")
+    return s
+
+
+def slayt_kapanis():
+    s = Slayt("KAPAK", B4, "Teşekkürler", "Sorularınız ve önerileriniz için")
+    if s.avatar("karsilama", PANEL_X + PANEL_W / 2.0, PANEL_Y + PANEL_H / 2.0, 3.0, halka=2.25):
+        s.kapak_gorseli = True
+    else:
+        _panele_gorsel(s, "kapak")
+    s.notlar = "Kapanış. Soruları ve önerileri bu slaytta alın."
     return s
 
 
 def slayt_neden():
     s = Slayt("AKIS", B1, "Akıllı Modelleme Platformu · Neden Yapıyoruz",
               "Model geliştirmenin tekrar eden işleri bugün büyük ölçüde elle yürüyor; platform bu işleri tek akışta "
-              "toplamayı amaçlıyor.")
+              "toplamayı amaçlıyor.", avatar="karsilama")
     s.yazi("Projenin Amacı", 0.5, 1.52, 1.6, 0.66, boy=15, egik=True, renk=KIR, hiza="l")
     s.kutu(2.15, 1.52, 10.68, 0.66, "islem", "amaç")
     s.yazi("Model geliştirme sürecini yapay zekâ ile hızlandırmak, modele yalnız katkısı ölçülen değişkenleri almak ve "
@@ -791,11 +1205,20 @@ def slayt_nedir():
          ["Bütün sayım ve ölçümleri verinin tamamında yapar", "Onaylanan düzeltmeleri ve değişkenleri üretir",
           "Yapay zekânın cevabını denetler", "Kararı, gerekçeyi ve üretim kodunu kaydeder"]),
     ]
+    # Uygulamadaki avatarlar: yapay zeka (bot) ve kullanici (user); kod icin kod
+    # isareti. Iki gorselden biri yoksa uc kartta da numara dairesi kullanilir.
+    gorselli = _gorsel("bot") is not None and _gorsel("user") is not None
     for i, (tur, ad, liste) in enumerate(roller):
         x = 0.5 + i * (3.75 + 0.54)
         s.kutu(x, 1.6, 3.75, 3.0, tur, "rol " + ad)
-        s.daire(i + 1, x + 0.5, 2.05, 0.5, boy=16, ad="rol no %d" % (i + 1))
-        s.yazi(ad, x + 0.9, 1.8, 2.7, 0.5, boy=17, kalin=True, renk=KIR, hiza="l")
+        if gorselli and i < 2:
+            s.avatar(("bot", "user")[i], x + 0.56, 2.05, 0.68)
+        elif gorselli:
+            s.elips(x + 0.56, 2.05, 0.68, KIR, None, "rol kod")
+            s.yazi("</>", x + 0.22, 1.71, 0.68, 0.68, boy=14, kalin=True, renk=BEYAZ, yazitipi="Courier New")
+        else:
+            s.daire(i + 1, x + 0.5, 2.05, 0.5, boy=16, ad="rol no %d" % (i + 1))
+        s.yazi(ad, x + (1.05 if gorselli else 0.9), 1.8, 2.6, 0.5, boy=17, kalin=True, renk=KIR, hiza="l")
         s.yazi(maddeler(liste), x + 0.25, 2.5, 3.3, 2.0, boy=12.5, hiza="l", dikey="t", bosluk=8)
         if i < 2:
             s.ok(x + 3.75 + 0.06, 3.1, x + 3.75 + 0.48, 3.1, "ok rol %d" % i)
@@ -828,6 +1251,7 @@ def slayt_akis():
     s.kutu(px, 1.52, 12.83 - px, 0.4, "islem", "yapay zekâ bandı")
     s.yazi([[R("Yapay Zekâ ve Sohbet  ", kalin=True, renk=KIR),
              "her adımda öneriyi gerekçesiyle sunar, soruları yanıtlar"]], px, 1.52, 12.83 - px, 0.4, boy=11.5)
+    s.avatar("bot", px + 0.02, 1.72, 0.6)
     s.veri(0.5, 2.47, 1.5, 1.45, "Girdi", "Veri seti ve sözlük; hiç değişmez")
     s.ok(2.0, 3.2, px - 0.02, 3.2, "ok girdi")
     fazlar = [
@@ -928,7 +1352,8 @@ def slayt_adim():
     s.yazi("bulunulan faz ve adım", mx + 0.98, y0 + 0.16, 1.7, 0.42, boy=9, renk=GRI, hiza="l")
     s.yazi("tamamlanan / toplam adım", mx + mw - 1.75, y0 + 0.16, 1.67, 0.42, boy=9, renk=GRI, hiza="r")
     s.kutu(mx, y0 + 0.74, mw, 3.0, "islem", "adım bloğu")
-    s.yazi("Adım bloğu", mx + 0.15, y0 + 0.82, 2.4, 0.28, boy=11.5, kalin=True, renk=KIR, hiza="l")
+    blok_x = mx + 0.58 if s.avatar("bot", mx + 0.32, y0 + 0.96, 0.34, halka=1) else mx + 0.15
+    s.yazi("Adım bloğu", blok_x, y0 + 0.82, 2.4, 0.28, boy=11.5, kalin=True, renk=KIR, hiza="l")
     s.yazi("sonuç ve öneri, gerekçesiyle", mx + 0.15, y0 + 1.1, 2.8, 0.24, boy=9, renk=GRI, hiza="l")
     for k in range(4):
         yy = y0 + 1.48 + k * 0.36
@@ -1299,9 +1724,11 @@ def slayt_sirada():
         s.yazi(cikti, x, 4.22, sw, 0.58, boy=11.5, kalin=True, renk=GRI)
     s.yazi("Çıktı", 0.5, 4.22, 1.65, 0.58, boy=11, kalin=True, renk=GRI, hiza="r")
     s.kutu(0.5, 5.2, 12.33, 1.15, "gri", "hedef")
+    gorsel_var = s.resim("robot_alt", 9.2, 5.3, 3.45, 0.95, yatay="r") is not None
     s.yazi([R("Sonunda hedeflenen", kalin=True, renk=KIR, boy=13),
             R("Yeni değişkenlerin modele katkısı ölçülmüş, her kararı izlenebilen ve belgelenmiş bir final model; "
-              "yanında değişken kataloğu ve model dokümanı.", boy=12)], 0.7, 5.2, 11.93, 1.15, hiza="l", bosluk=3)
+              "yanında değişken kataloğu ve model dokümanı.", boy=12)],
+           0.7, 5.2, 8.3 if gorsel_var else 11.93, 1.15, hiza="l", bosluk=3)
     s.notlar = ("Bu adımlar henüz bu yapıya göre ele alınmadı; ilk sürümleri kodda duruyor. Anlatırken hedeflenen akış "
                 "olarak sunun. 02.3'te yapay zekâ serbest kod değil, yalnız izinli işlemlerden oluşan bir formül yazar; "
                 "formül kodla denetlenir. 05'te yeni değişkenlerin katkısı, aynı bölme ve aynı ayarlarla kurulan iki "
@@ -1325,7 +1752,7 @@ def slayt_durum():
         if durum == "g":
             s.elips(cx, cy, d, KIR, (KIR, 1, False), "adım " + no)
         elif durum == "s":
-            s.elips(cx, cy, d, BEJ, (KIR, 3, False), "adım " + no)
+            s.elips(cx, cy, d, PEMBE, (KIR, 3, False), "adım " + no)
         else:
             s.elips(cx, cy, d, BEYAZ, (SOLUK, 1.5, True), "adım " + no)
         s.yazi(no, cx - d / 2, cy - d / 2, d, d, boy=14 if len(no) > 2 else 17, kalin=True,
@@ -1337,7 +1764,8 @@ def slayt_durum():
                renk=KIR if durum == "s" else GRI)
         if durum == "s":
             s.kutu(cx - 0.85, 1.67, 1.7, 0.28, "veri", "şu an buradayız")
-            s.yazi("Şu an buradayız", cx - 0.85, 1.67, 1.7, 0.28, boy=10.5, kalin=True, renk=BEYAZ)
+            kayma = 0.25 if s.avatar("dusunme", cx - 0.85, 1.81, 0.5, halka=1.25) else 0
+            s.yazi("Şu an buradayız", cx - 0.85 + kayma, 1.67, 1.7 - kayma, 0.28, boy=10.5, kalin=True, renk=BEYAZ)
     kw = (12.33 - 0.5) / 3
     s.kart(0.5, 4.32, kw, 2.0, "gri", "Geliştirilen",
            ["01 Çalışma Kurulumu: veri seti ve sözlük, kolon rolleri, eksik tanımlar, sözlük ve kolon adı kontrolü, "
@@ -1361,10 +1789,13 @@ def slayt_durum():
 # URETIM VE KAYIT
 # ===========================================================================
 def uret(zaman=None):
-    """Sunumun .pptx icerigini bayt olarak doner."""
+    """Sunumun .pptx icerigini bayt olarak doner. Gorseller her cagrida yeniden okunur."""
+    gorselleri_sifirla()
     slaytlar = [slayt_kapak(), slayt_neden(), slayt_nedir(), slayt_akis(), slayt_adim(), slayt_veri_kurali(),
                 slayt_kurulum(), slayt_sozluk(), slayt_kalite(), slayt_uretim(), slayt_asamalar(), slayt_sirada(),
                 slayt_durum()]
+    if KAPANIS:
+        slaytlar.append(slayt_kapanis())
     return paketle(slaytlar, "Akıllı Modelleme Platformu", zaman)
 
 
@@ -1394,6 +1825,12 @@ def _indirme_baglantisi(veri, dosya):
     return True
 
 
+def _rapor_yaz():
+    """Hangi gorselin bulundugunu ekrana yazar."""
+    for satir in gorsel_raporu():
+        _yaz(satir)
+
+
 def kaydet(veri, klasor=None, dosya=DOSYA):
     """Sunumu yazar: klasor verilirse Dataiku managed folder'a, verilmezse
     calisma dizinine (defterde ayrica indirme baglantisi gosterir)."""
@@ -1410,6 +1847,7 @@ def kaydet(veri, klasor=None, dosya=DOSYA):
             raise RuntimeError("Managed folder'a yazılamadı (%s). Klasörün adını ya da kimliğini ve yazma yetkinizi "
                                "kontrol edin. Hata: %s" % (klasor, hata))
         _yaz("Sunum yazıldı. Managed folder: %s, dosya: %s, boyut: %d bayt." % (klasor, yol, len(veri)))
+        _rapor_yaz()
         return
     baglanti = _indirme_baglantisi(veri, os.path.basename(dosya))
     try:
@@ -1423,13 +1861,17 @@ def kaydet(veri, klasor=None, dosya=DOSYA):
     if baglanti:
         _yaz("İndirmek için yukarıdaki bağlantıya basın. Bağlantı çalışmazsa KLASOR değişkenine bir managed "
              "folder adı yazıp yeniden çalıştırın.")
+    _rapor_yaz()
 
 
 def calistir():
+    global GORSEL_DIZIN
     hedef = DOSYA
     for arguman in sys.argv[1:]:
         if arguman.lower().endswith(".pptx"):
             hedef = arguman
+        elif os.path.isdir(arguman):
+            GORSEL_DIZIN = arguman
     kaydet(uret(), KLASOR, hedef)
 
 
