@@ -607,8 +607,9 @@ class Slayt(object):
         self.elips(cx, cy, d, KIR, None, "daire " + (ad or str(metin)))
         self.yazi(str(metin), cx - d / 2.0, cy - d / 2.0, d, d, boy=boy, kalin=True, renk=BEYAZ)
 
-    def dipnot(self, metin):
-        self.yazi(metin, 0.5, 6.62, 11.7, 0.28, boy=10.5, egik=True, renk=GRI, hiza="l")
+    def dipnot(self, metin, h=0.28):
+        """Slaydin altindaki egik not. Iki satirlik not icin h buyutulur."""
+        self.yazi(metin, 0.5, 6.62, 11.7, h, boy=10.5, egik=True, renk=GRI, hiza="l", dikey="t" if h > 0.3 else "ctr")
 
     def etiket(self, metin, x, y, w=5):
         self.yazi(metin, x, y, w, 0.26, boy=11, kalin=True, renk=GRI, hiza="l")
@@ -1183,30 +1184,38 @@ def slayt_ihtiyac():
          "Aynı 26 kontrol verinin tamamında yapılır ve her eleme kararı gerekçesiyle kaydedilir."),
         ("Değişken Üretimi",
          "Dönüşüm kodu elle yazılır. Hangi dönüşümlerin deneneceği kişinin deneyimine ve zamanına kalır.",
-         "41 dönüşümün katkısı ölçülür, yeni bilgi taşıyanlar önerilir. Seçimi kullanıcı yapar, kodu platform yazar."),
+         "41 geleneksel dönüşümün katkısı ölçülür, yeni bilgi taşıyanlar önerilir. Seçimi kullanıcı yapar, kodu "
+         "platform yazar."),
+        ("Yapay Zekâ ile Keşif",
+         "Hazır kalıpların dışındaki değişken fikirleri kişinin aklına geldiği kadarıyla sınırlı kalır.",
+         "Yapay zekâ modele ve değişkenlere bakarak kendisi de değişken önerir. Bunlar üretilip kontrol edilir, "
+         "onaylanırsa eklenir."),
         ("İzlenebilirlik",
          "Kararların izi dağınık notlarda ve dosyalarda kalır. Çalışmayı devralmak ve denetlemek zordur.",
          "Her adımın kararı, gerekçesi ve üretim kodu tek yerde durur. Çalışma kaldığı yerden açılır."),
     ]
-    h, ara = 0.44, 0.05
+    h, ara = 0.4, 0.045
     for i, (konu, elle, platform) in enumerate(satirlar):
-        y = 2.6 + i * (h + ara)
+        y = 2.58 + i * (h + ara)
         s.veri(kx, y, kw, h, konu)
         s.kutu(ex, y, ew, h, "cerceve", "elle " + konu)
         s.yazi(elle, ex + 0.12, y, ew - 0.24, h, boy=10.5, renk=GRI, hiza="l")
         s.ok(ex + ew + 0.04, y + h / 2, px - 0.04, y + h / 2, "ok " + konu)
         s.kutu(px, y, pw, h, "islem", "platform " + konu)
         s.yazi(platform, px + 0.12, y, pw - 0.24, h, boy=10.5, hiza="l")
-    s.dipnot("Platform şu an sınıflandırma modelleri (0 ve 1 değerli hedef) için açıktır. Farklı veri setlerinde aynı "
-             "akış kullanılır.")
+    s.dipnot("Platform şu an sınıflandırma modelleri (0 ve 1 değerli hedef) için açıktır. Sınıflandırma beklendiği "
+             "gibi tamamlandıktan sonra regresyon, segmentasyon ve zaman serisi tahmini modelleri için de açılması "
+             "hedeflenmektedir.", h=0.4)
     s.notlar = ("Bu slayt ihtiyacı ve amacı anlatır. Soldaki sütun elle yürütülen bir model geliştirme sürecinde sık "
                 "karşılaşılan durumu, sağdaki sütun platformun bunu nasıl ele aldığını gösterir. En büyük amaç iki "
                 "parçalıdır. Birincisi hazır tablolardan üretilebilecek en iyi değişken kombinasyonlarını bulmaktır. "
                 "İkincisi baz tabloyu kaynak tablolardan kurabilmektir. Böylece akla gelmeyen tablolar da birleştirilir "
                 "ve modele katkı sağlayan başka değişkenler elde edilebilir. Öne çıkan üç sorun "
                 "var. Benzer modellerde bile yöntem kişiden kişiye değişiyor. Bir modelde yapılan üretim ve elemeler "
-                "başka modellerde kullanılamıyor. Bunların sonucunda süreler uzuyor. Sağdaki maddeler platformda bugün "
-                "çalışan özelliklerdir. Üretilen değişkenlerin kalıcı kataloğu 05.4 adımıdır ve sıradadır. Soldaki "
+                "başka modellerde kullanılamıyor. Bunların sonucunda süreler uzuyor. Sağdaki maddelerin çoğu platformda "
+                "bugün çalışan özelliklerdir. Yapay zekâ ile keşif 02.3 adımıdır, üretilen değişkenlerin kalıcı "
+                "kataloğu ise 05.4 adımıdır. İkisinin de ilk sürümü kodda var ve sırada bekliyor. Öbür model tipleri "
+                "uygulamada kapalı olarak görünür. Soldaki "
                 "ifadeler genel çerçevedir, kendi ekibinizin durumuna göre düzenleyebilirsiniz.")
     return s
 
@@ -1400,17 +1409,19 @@ def slayt_kurulum_rol():
               "ayrılır.")
     s.adim_tablosu(1.5, [
         ("g", "01.2.2", "Kolon Rolleri", "Kod adayları çıkarır, kullanıcı seçer",
-         "Model tipi ile hedef, kimlik ve dönem kolonları belirlenir. Kod hedef olabilecek kolonları verinin "
-         "tamamından çıkarır ve hedefin dağılımını gösterir. Sınıflandırmada yalnız 0 ve 1 değeri alan kolonlar hedef "
-         "olabilir. Tablonun önceki onaylı rolleri dolu gelir.",
-         "Bütün ölçümler hedefe göre yapılır. Dönem kolonu zamana göre bölmeyi ve dönem kontrollerini mümkün kılar. "
-         "Kimlik kolonu aynı müşterinin satırlarını bir arada tutar. Rol kolonları hiçbir dönüşüme girmez.",
-         [["Hedef ", K("DEFAULT_FLAG"), " (0 ve 1)"], ["Kimlik ", K("CUSTOMER_ID")], ["Dönem ", K("SNAPSHOT_DATE")],
+         "Model tipi ile hedef ve kimlik kolonu seçilir. Dönem ve segment kolonu isteğe bağlıdır. Segment, veriyi "
+         "ürün, kanal ya da müşteri tipi gibi alt gruplara ayıran kolondur. Kod adayları verinin tamamından çıkarır "
+         "ve hedefin dağılımını gösterir. Tablonun önceki onaylı rolleri dolu gelir.",
+         "Bütün ölçümler hedefe göre yapılır. Kimlik aynı müşterinin satırlarını bir arada tutar. Dönem seçilirse "
+         "veri zamana göre bölünebilir ve stabilite ölçülebilir. Segment seçilirse sonuçlar segment bazında da "
+         "gösterilir.",
+         [["Hedef ", K("DEFAULT_FLAG"), " yalnız 0 ve 1 değeri alır"], ["Kimlik ", K("CUSTOMER_ID")],
+          ["Dönem ", K("SNAPSHOT_DATE")], ["Segment ", K("PRODUCT_TYPE"), " ürün tipini gösterir"],
           "Şu an açık olan tek model tipi sınıflandırmadır."]),
         ("g", "01.2.3", "Eksik Sözlük Tanımları", "Hafıza ve yapay zekâ önerir, kullanıcı onaylar",
          "Sözlükte tanımı olmayan kolonlar listelenir. Tanım önce onaylı tanım hafızasından gelir. Hafızada yoksa "
          "yapay zekâ önerir ve önerirken onaylı ad parçalarını kesin bilgi sayar. Kullanıcı düzeltir, onayladığı "
-         "tanımlar sözlüğe eklenir. Hedef, kimlik ve dönem kolonlarının tanımı zorunludur.",
+         "tanımlar sözlüğe eklenir. Hedef ve kimlik kolonunun tanımı zorunludur, dönem ve segment seçildiyse onlarınki de.",
          "Tanımı olmayan kolonu ne insan ne de sonraki adımlardaki yapay zekâ doğru yorumlayabilir. Değişken üretimi "
          "kolonun anlamına dayanır.",
          [["Adı yalnız sayıyla ayrılan kolonlar bir ailedir. ", K("TXN_3D_CNT"), " için son 3 günde işlem adedi "
@@ -1426,7 +1437,10 @@ def slayt_kurulum_rol():
     ], 1.44)
     s.dipnot("Örneklerdeki kolon adları gösterim amaçlıdır.")
     s.notlar = ("Kolon rollerinde ilk seçim model tipidir. Şu an seçilebilen tek tip sınıflandırmadır, öbür tipler "
-                "kapalı görünür. Eksik tanımlarda bir öncelik sırası vardır. Aynı veri setinde daha önce onaylanan "
+                "kapalı görünür. Hedef ve kimlik zorunludur, dönem ve segment isteğe bağlıdır. Segment seçilirse her "
+                "segmentin satır sayısı ve hedef dağılımı ayrı görülür. Segment seçilmezse veri tek parça olarak "
+                "modellenir. 2 ile 20 arası farklı değer alan kolonlar segment adayı olur. 02.2 adımındaki segment içindeki yer gibi dönüşümler de bu kolonu kullanır. Rol kolonları "
+                "değişken sayılmaz, dönüştürülmez ve yeniden adlandırılmaz. Eksik tanımlarda bir öncelik sırası vardır. Aynı veri setinde daha önce onaylanan "
                 "tanım doğrudan gelir. Böyle bir tanım yoksa yapay zekâ önerir ve önerirken hafızadaki onaylı ad "
                 "parçalarını ve dönem kalıplarını kesin bilgi olarak kullanır. Ailede yapay zekâ yalnız bir kolonun "
                 "tanımını yazar, tanım kardeş kolonlara sayı değiştirilerek kodla aktarılır. Tanımsız ve sorunlu "
@@ -1436,9 +1450,9 @@ def slayt_kurulum_rol():
 
 def slayt_sozluk():
     s = Slayt("AKIS", B2, "01.2.4 Sözlük ve Kolon Adı Kontrolü",
-              "Sözlüğe de kolon adlarına da tam güvenilemez. Bu adım, sonraki adımlardaki yapay zekânın da insanın da "
+              "Sözlüğe de kolon adlarına da tam güvenilemez. İsteğe bağlı olan bu adım, yapay zekânın da insanın da "
               "her kolonu kesin olarak anlamasını sağlar.")
-    s.adim_tablosu(1.5, [
+    y = s.adim_tablosu(1.5, [
         ("g", "01.2.4.1", "Dönem Bilgisi", "Yapay zekâ önerir, kullanıcı onaylar",
          "Adlardaki sayılı zaman parçaları bulunur ve anlamları onaylanır. Parça yalnız süreyi söyler. Dönemin geçmişe "
          "mi geleceğe mi baktığı burada belirlenmez, her kolon için ayrıca belirlenir.",
@@ -1460,16 +1474,35 @@ def slayt_sozluk():
          [[K("LOAN_DUE_AMT_30D"), " sözlükte 30 gün sonra vade tutar diye geçiyor. Yön sonra olarak okunur ve açıklama "
                                   "30 gün sonra vadesi gelecek tutar diye yazılır."]]),
         ("g", "01.2.4.4", "Kolon Adları", "Adı kod kurar, kullanıcı onaylar",
-         "Yeni adlar standart yazılışlarla ve Ad Standardı sırasıyla kodla kurulur. Dönem, kolonun yönüne göre "
-         "yazılır. Yeni ad yalnız platformun kopyalarında geçerlidir ve eski ad sözlükte saklanır.",
+         "Yeni adlar standart yazılışlarla ve Ad Standardı sırasıyla kodla kurulur. Dönem kolonun yönüne göre "
+         "yazılır, son için L, sonra için A, önce için B kullanılır. Eski ad sözlükte saklanır.",
          "Standart ad, kolonun ne olduğunu tek bakışta söyler. Geleceğe bakan kolon 02.1 adımında sızıntı riski "
          "olarak sorulur. 02.2 adımında aileler bu adlardan kurulur.",
          [[K("TXN_OUT_AMT_30D", 9), OK_ISARETI, K("TXN_OUT_AMT_L30D", 9)],
           [K("LOAN_DUE_AMT_30D", 9), OK_ISARETI, K("LOAN_DUE_AMT_A30D", 9)],
           [K("BAL_30D", 9), OK_ISARETI, K("BAL_B30D", 9)]]),
-    ], 1.06)
-    s.dipnot("Kontrol isteğe bağlıdır. Adım adım yapılabilir, atlanabilir ya da aynı veri seti için önceki onaylı "
-             "kontrol uygulanabilir. Yeni adlarda L son, A sonra, B önce anlamına gelir.")
+    ], 0.9)
+    s.etiket("Bir kolonun baştan sona örneği", 0.5, y + 0.08)
+    ornek = [
+        ("gri", "Başlangıç",
+         [[K("TXN_OUT_AMT_30D", 9)], ["Sözlükteki açıklama ", R("son 30 gün giden işlem tutar", egik=True)]]),
+        ("islem", "01.2.4.1 Dönem Bilgisi", [[K("30D", 9), " parçası 30 gün demektir"]]),
+        ("islem", "01.2.4.2 Ad Parçaları",
+         [[K("TXN", 9), " işlem, ", K("OUT", 9), " giden, ", K("AMT", 9), " tutar demektir"]]),
+        ("islem", "01.2.4.3 Kolon Kartı",
+         [["Yön açıklamadan son olarak okunur. Yeni açıklama ",
+           R("son 30 günde giden işlemlerin tutarı", egik=True)]]),
+        ("onay", "01.2.4.4 Kolon Adı",
+         [[K("TXN_OUT_AMT_L30D", 9)], "Eski ad ve ilk açıklama sözlükte saklanır"]),
+    ]
+    ow, oy, oh = (12.33 - 4 * 0.24) / 5, y + 0.36, 0.76
+    for i, (tur, ad, govde) in enumerate(ornek):
+        x = 0.5 + i * (ow + 0.24)
+        s.kutu(x, oy, ow, oh, tur, "örnek " + ad)
+        s.yazi([R(ad, kalin=True, renk=KIR, boy=10)] + govde, x + 0.1, oy + 0.03, ow - 0.2, oh - 0.06, boy=9.5,
+               bosluk=1.5)
+        if i < 4:
+            s.ok(x + ow + 0.03, oy + oh / 2, x + ow + 0.21, oy + oh / 2, "ok örnek %d" % i)
     s.notlar = ("Dört alt adım sırayla çalışır ve her biri bir öncekinin onayladığını kesin bilgi olarak kullanır. Her "
                 "satır kullanıcı onaylamadan geçilmez. Kilit nokta dönemdir. 30D adda yalnız 30 gün demektir, yönü her "
                 "kolonda ayrı belirlenir. Önce kullanıcının seçimine, sonra açıklamadaki ifadeye, sonra yapay zekânın "
@@ -1477,8 +1510,11 @@ def slayt_sozluk():
                 "vardır. Bunlar son (L), önce (B), sonraki (N), sonra (A), öncesi ve sonrası (PM), takvim (C), beri "
                 "(S) ve süredir. Açıklamayı yapay zekâ üç aşamada yazar. Önce yazar, sonra denetler, gerekirse karar "
                 "verir. Karttaki sayıların açıklamada geçip geçmediğini kod denetler. Güncel sözlükte yeni ad, eski "
-                "ad, onaylanan açıklama ve ilk açıklama birlikte durur. Onaylanan anlamlar hafızaya yazılır. Aynı "
-                "veri seti için önceki onaylı kontrol tek seçimle yeniden uygulanabilir. Örnekler gösterim amaçlıdır.")
+                "ad, onaylanan açıklama ve ilk açıklama birlikte durur. Onaylanan anlamlar hafızaya yazılır. Kontrol "
+                "isteğe bağlıdır. Adım adım yapılabilir, atlanabilir ya da aynı veri seti için önceki onaylı kontrol "
+                "tek seçimle yeniden uygulanabilir. Yeni adlar yalnız platformun kopyalarında geçerlidir. Alttaki "
+                "örnek tek bir kolonun adının ve açıklamasının dört adımda nasıl değiştiğini gösterir. Örnekler "
+                "gösterim amaçlıdır.")
     return s
 
 
@@ -1541,7 +1577,7 @@ def slayt_profil():
         if i < 3:
             s.ok(x + aw + 0.03, 1.8, x + aw + 0.27, 1.8, "ok aşama %d" % i)
     s.adim_tablosu(2.2, [
-        ("g", "", "Üretime girmez", "7 kontrol, öneriyi kod verir",
+        ("g", "", "Üretime girmez", "7 kontrol, öneriyi kod ve yapay zekâ verir",
          "Eksik oranı yüksek, sabit ya da tek değerli, kimlik benzeri, kardinalitesi aşırı yüksek, tarih kolonu, aynı "
          "içerikli kolonlar, neredeyse aynı kolonlar",
          "Bu kolonlardan üretilen değişken bilgi taşımaz ya da kimliği ezberler. İşe yarayan bir çözüm varsa önerilir.",
@@ -1791,7 +1827,9 @@ def slayt_durum():
     s.kart(0.5 + 2 * (kw + 0.25), 4.32, kw, 2.0, "soluk", "Sırada",
            ["02.3 AI Değişken Keşfi",
             "03 Veri Anlama ve Hazırlama, 04 Değişken Değerlendirme ve 05 Modelleme ve Finalizasyon. İlk sürümleri "
-            "kodda var, bu yapıya göre ele alınacak"], baslik_boy=14, boy=11.5)
+            "kodda var, bu yapıya göre ele alınacak",
+            "Sınıflandırmadan sonra regresyon, segmentasyon ve zaman serisi tahmini modellerinin açılması "
+            "hedefleniyor"], baslik_boy=14, boy=11)
     s.notlar = ("Durum slaytı. Akış beş fazdan oluşuyor. 01 ve 02.1 geliştirildi, şu an 02.2 üzerinde çalışılıyor. "
                 "02.3 ve sonrasının ilk sürümleri kodda var ama bu yapıya göre henüz ele alınmadı.")
     return s
