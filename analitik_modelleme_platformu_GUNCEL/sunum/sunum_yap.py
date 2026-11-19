@@ -1109,9 +1109,9 @@ def slayt_kapak():
     s = Slayt("KAPAK", B1, "Kurumsal Analitik, Tahminleme ve İçgörü Platformu",
               "Bireysel Krediler Analitik ve Tahsis BI")
     _kapak_gorseli(s)
-    s.notlar = ("Kapak. Görsel platformun görsel klasöründen gelir; bulunamadıysa yerinde resim yer tutucusu "
-                "kalır, tıklayıp resim ekleyebilirsiniz. Sunum, platformu hiç bilmeyen ekiplere göre sıralandı: neden "
-                "yapıyoruz, nedir, nasıl çalışır, bugüne kadar hangi adımlar geliştirildi, sırada ne var.")
+    s.notlar = ("Kapak. Görsel platformun görsel klasöründen gelir. Bulunamadıysa yerinde resim yer tutucusu kalır, "
+                "tıklayıp resim ekleyebilirsiniz. Sunum platformu hiç bilmeyen ekiplere göre sıralandı. Önce ihtiyaç ve "
+                "amaç, sonra çalışma prensibi, ardından iş akışındaki adımlar ve en sonda durum anlatılır.")
     return s
 
 
@@ -1128,7 +1128,7 @@ def slayt_kapanis():
         s._resim("kapanis", (en - w) / 2.0, boy - h, w, h)
         bos = boy - h
     s.baslik_kutu = (0.5, 0.0, en - 1.0, bos)         # baslik bu alanin tam ortasinda durur
-    s.notlar = "Kapanış. Soruları ve önerileri bu slaytta alın."
+    s.notlar = "Kapanış. Soruları ve önerileri bu slaytta alabilirsiniz."
     return s
 
 
@@ -1137,46 +1137,50 @@ def K(metin, boy=9.5):
     return R(metin, kalin=True, renk=KIR, boy=boy, yazitipi="Courier New")
 
 
+# YAZIM KURALI: slaytlarda ve notlarda iki nokta, noktali virgul, orta nokta ve
+# uzun cizgi kullanilmaz; metinler duz cumlelerle yazilir.
 # Durum: "g" gelistirildi, "s" uzerinde calisiliyor, "r" sirada
-SIRADA_CUMLE = ("Sıradaki adımlar: ilk sürümleri kodda var; 02.2 tamamlandıktan sonra bu yapıya göre sırayla ele "
+GIRINTI = chr(160) * 4                      # bolunmez bosluk (alt adim girintisi)
+OK_ISARETI = " " + chr(8594) + " "          # eski ad ile yeni ad arasindaki ok
+SIRADA_CUMLE = ("Bu adımlar sıradadır. İlk sürümleri kodda var, 02.2 tamamlandıktan sonra bu yapıya göre sırayla ele "
                 "alınacak.")
 
 
 def slayt_ihtiyac():
     s = Slayt("AKIS", B1, "İhtiyaç ve Amaç")
     s.dik(0.5, 1.1, 0.06, 0.78, KIR, "amaç çizgisi")
-    s.yazi("Model geliştirmede veri hazırlığı, eleme ve değişken üretimi bugün büyük ölçüde elle ve her modelde farklı "
-           "biçimde yürütülüyor; bir modelde yapılan iş o modelde kalıyor, süreler uzuyor. Platform bu adımları tek, "
-           "standart ve izlenebilir bir akışta toplar: süreci yapay zekâ desteğiyle hızlandırmayı, modele yalnız "
-           "katkısı ölçülen değişkenleri almayı ve emeği katma değeri yüksek işlere yönlendirmeyi amaçlar.",
+    s.yazi("Model geliştirirken veri hazırlığı, eleme ve değişken üretimi bugün büyük ölçüde elle yapılıyor ve her "
+           "modelde farklı yürütülüyor. Bir modelde yapılan iş o modelde kalıyor, süreler uzuyor. Platform bu adımları "
+           "herkes için aynı olan, izlenebilir tek bir akışta toplar. Amaç süreci yapay zekâ desteğiyle hızlandırmak, "
+           "modele yalnız katkısı ölçülmüş değişkenleri almak ve emeği katma değeri yüksek işlere ayırmaktır.",
            0.7, 1.1, 12.13, 0.78, boy=12.5, hiza="l")
     kx, kw, ex, ew, px, pw = 0.5, 2.3, 2.95, 4.6, 7.93, 4.9
     s.sutun_basliklari(2.04, [(kx, kw, "Konu"), (ex, ew, "Elle Yürütülen Süreçte"), (px, pw, "Platformda")])
     satirlar = [
-        ("Yöntem birliği",
-         "Benzer modellerde bile hazırlık, eleme ve üretim adımları kişiden kişiye farklı uygulanır; sonuçlar "
-         "karşılaştırılamaz.",
+        ("Yöntem Birliği",
+         "Benzer modellerde bile hazırlık, eleme ve üretim adımlarını herkes kendi bildiği gibi uygular. Sonuçları "
+         "karşılaştırmak zorlaşır.",
          "Aynı adımlar, aynı kontroller ve aynı ölçütler her çalışmada aynı sırayla uygulanır."),
-        ("Yeniden kullanım",
-         "Bir modelde üretilen değişkenler ve yapılan elemeler o modelde kalır; yeni model geliştiren bunlardan "
+        ("Yeniden Kullanım",
+         "Bir modelde üretilen değişkenler ve yapılan elemeler o modelde kalır. Yeni model geliştiren kişi bunlardan "
          "yararlanamaz.",
-         "Onaylanan tanımlar, adlar ve kararlar proje hafızasına yazılır; sonraki çalışmada hazır gelir."),
+         "Onaylanan tanımlar, adlar ve kararlar proje hafızasına yazılır ve sonraki çalışmada hazır gelir."),
         ("Süre",
-         "Sözlük okuma, veri temizliği ve dönüşüm kodu her modelde baştan yapılır; işler gecikir, geliştirme süresi "
+         "Sözlük okuma, veri temizliği ve dönüşüm kodu her modelde baştan yapılır. İşler gecikir, geliştirme süresi "
          "uzar.",
-         "Sayımı ve ölçümü kod yapar, öneriyi yapay zekâ hazırlar; kullanıcı zamanını incelemeye ve karara ayırır."),
-        ("Sözlük ve kolon adları",
-         "Kısaltmalı adlar ile eksik ya da tutarsız açıklamalar her çalışmada yeniden çözülür.",
-         "Adlar ve açıklamalar bir kez kontrol edilip onaylanır; adlar standart yazılışa çevrilir."),
-        ("Veri kalitesi ve eleme",
-         "Hangi kontrolün yapılacağı kişiye bağlıdır; neyin neden elendiği çoğu zaman kayda geçmez.",
-         "Aynı 26 kontrol verinin tamamında yapılır; her eleme kararı gerekçesiyle kaydedilir."),
-        ("Değişken üretimi",
-         "Dönüşüm kodu elle yazılır; hangi dönüşümlerin deneneceği kişinin deneyimine ve zamanına bağlıdır.",
-         "41 dönüşümün katkısı ölçülür; yeni bilgi taşıyanlar önerilir, seçimi kullanıcı yapar, kodu platform yazar."),
+         "Sayımı ve ölçümü kod yapar, öneriyi yapay zekâ hazırlar. Kullanıcı zamanını incelemeye ve karara ayırır."),
+        ("Sözlük ve Kolon Adları",
+         "Kısaltmalı adlar ve eksik ya da tutarsız açıklamalar her çalışmada yeniden çözülür.",
+         "Adlar ve açıklamalar bir kez kontrol edilip onaylanır, adlar standart yazılışa çevrilir."),
+        ("Veri Kalitesi ve Eleme",
+         "Hangi kontrolün yapılacağı kişiye bağlıdır. Neyin neden elendiği çoğu zaman kayda geçmez.",
+         "Aynı 26 kontrol verinin tamamında yapılır ve her eleme kararı gerekçesiyle kaydedilir."),
+        ("Değişken Üretimi",
+         "Dönüşüm kodu elle yazılır. Hangi dönüşümlerin deneneceği kişinin deneyimine ve zamanına kalır.",
+         "41 dönüşümün katkısı ölçülür, yeni bilgi taşıyanlar önerilir. Seçimi kullanıcı yapar, kodu platform yazar."),
         ("İzlenebilirlik",
-         "Kararların izi dağınık notlarda ve dosyalarda kalır; çalışmayı devralmak ve denetlemek zordur.",
-         "Her adımın kararı, gerekçesi ve üretim kodu tek yerde durur; çalışma kaldığı yerden açılır."),
+         "Kararların izi dağınık notlarda ve dosyalarda kalır. Çalışmayı devralmak ve denetlemek zordur.",
+         "Her adımın kararı, gerekçesi ve üretim kodu tek yerde durur. Çalışma kaldığı yerden açılır."),
     ]
     h, ara = 0.5, 0.07
     for i, (konu, elle, platform) in enumerate(satirlar):
@@ -1187,37 +1191,37 @@ def slayt_ihtiyac():
         s.ok(ex + ew + 0.04, y + h / 2, px - 0.04, y + h / 2, "ok " + konu)
         s.kutu(px, y, pw, h, "islem", "platform " + konu)
         s.yazi(platform, px + 0.12, y, pw - 0.24, h, boy=10.5, hiza="l")
-    s.dipnot("Platform şu an sınıflandırma modelleri (0 ve 1 değerli hedef) için açıktır; farklı veri setlerinde aynı "
+    s.dipnot("Platform şu an sınıflandırma modelleri (0 ve 1 değerli hedef) için açıktır. Farklı veri setlerinde aynı "
              "akış kullanılır.")
-    s.notlar = ("Bu slayt ihtiyacı ve amacı anlatır. Soldaki sütun elle yürütülen bir model geliştirme sürecindeki tipik "
-                "durumu, sağdaki sütun platformun bunu nasıl ele aldığını gösterir. Öne çıkan üç sorun: benzer "
-                "modellerde bile yöntemin kişiden kişiye değişmesi, bir modelde yapılan üretim ve elemelerin başka "
-                "modellerde kullanılamaması ve bunların sonucu olarak sürelerin uzaması. Sağdaki maddeler platformda "
-                "bugün çalışan özelliklerdir. Üretilen değişkenlerin kalıcı kataloğu 05.4 adımıdır ve sıradadır. "
-                "Soldaki ifadeler genel çerçevedir; kendi ekibinizin durumuna göre düzenleyin.")
+    s.notlar = ("Bu slayt ihtiyacı ve amacı anlatır. Soldaki sütun elle yürütülen bir model geliştirme sürecinde sık "
+                "karşılaşılan durumu, sağdaki sütun platformun bunu nasıl ele aldığını gösterir. Öne çıkan üç sorun "
+                "var. Benzer modellerde bile yöntem kişiden kişiye değişiyor. Bir modelde yapılan üretim ve elemeler "
+                "başka modellerde kullanılamıyor. Bunların sonucunda süreler uzuyor. Sağdaki maddeler platformda bugün "
+                "çalışan özelliklerdir. Üretilen değişkenlerin kalıcı kataloğu 05.4 adımıdır ve sıradadır. Soldaki "
+                "ifadeler genel çerçevedir, kendi ekibinizin durumuna göre düzenleyebilirsiniz.")
     return s
 
 
 def slayt_prensip():
     s = Slayt("AKIS", B1, "Çalışma Prensibi ve Roller",
-              "Dataiku içinde çalışan bir web uygulaması: ham veriden modele giden yolu adım adım yürütür. Her adımda "
-              "sıra aynıdır.")
+              "Platform Dataiku içinde çalışan bir web uygulamasıdır ve ham veriden modele giden yolu adım adım "
+              "yürütür. Her adımda sıra aynıdır.")
     roller = [
         ("islem", "Kod ölçer",
-         ["Sayımı ve ölçümü verinin tamamında, örnekleme yapmadan yapar",
-          "Sayıya dayanan öneriyi kendisi verir; gerekçesini ölçtüğü değerle yazar",
-          "Yapay zekânın cevabını denetler: sayılar, kolon adları ve formüller kontrol edilir"],
-         "Eksik oranı, tekil değer sayısı, bilgi değeri (IV)"),
+         ["Sayımı ve ölçümü verinin tamamında yapar, örnekleme yapmaz",
+          "Sayıya dayanan öneriyi kendisi verir ve gerekçesini ölçtüğü değerle yazar",
+          "Yapay zekânın cevabındaki sayıları, kolon adlarını ve formülleri denetler"],
+         "Örneğin eksik oranını, tekil değer sayısını ve bilgi değerini (IV) hesaplar."),
         ("gri", "Yapay zekâ önerir",
          ["Kolon adlarının ve açıklamalarının anlamını yorumlar",
-          "Anlam gerektiren yerde öneri verir; gerekçesini kodun ölçtüğü sayılara dayandırır",
+          "Anlam gerektiren yerde öneri verir ve gerekçesini kodun ölçtüğü sayılara dayandırır",
           "Sayı hesaplamaz, veriyi değiştirmez, karar vermez"],
-         "Bir kolonun açıklamasından geleceğe baktığını okur ve sızıntı riski olarak işaretler"),
+         "Örneğin açıklamasından bir kolonun geleceğe baktığını anlar ve sızıntı riski diye işaretler."),
         ("onay", "Kullanıcı karar verir",
          ["Ölçümü, öneriyi ve gerekçeyi aynı kartta görür",
           "Öneriyi kabul eder, değiştirir, ekler ya da çıkarır",
-          "Onaylamadığı hiçbir şey veriye uygulanmaz; son karar her zaman kullanıcınındır"],
-         "Neredeyse sabit bir kolonu tutar ya da çıkarır"),
+          "Onaylamadığı hiçbir şey veriye uygulanmaz, son karar her zaman kullanıcınındır"],
+         "Örneğin neredeyse sabit bir kolonu tutmaya ya da çıkarmaya karar verir."),
     ]
     rw, rh = 3.75, 2.86
     for i, (tur, ad, liste, ornek) in enumerate(roller):
@@ -1227,40 +1231,42 @@ def slayt_prensip():
         s.yazi(ad, x + 0.86, 1.73, 2.75, 0.46, boy=16, kalin=True, renk=KIR, hiza="l")
         s.yazi(maddeler(liste), x + 0.22, 2.34, rw - 0.44, 1.42, boy=11, hiza="l", dikey="t", bosluk=4)
         s.hat(x + 0.22, 3.8, x + rw - 0.22, 3.8, "örnek çizgisi", SOLUK, 0.75)
-        s.yazi([[R("Örnek:  ", kalin=True, renk=KIR), ornek]], x + 0.22, 3.84, rw - 0.44, 0.52, boy=10.5, hiza="l")
+        s.yazi(ornek, x + 0.22, 3.84, rw - 0.44, 0.52, boy=10.5, egik=True, renk=GRI, hiza="l")
         if i < 2:
             s.ok(x + rw + 0.06, 2.99, x + rw + 0.48, 2.99, "ok rol %d" % i)
     s.kutu(0.5, 4.56, 12.33, 0.44, "veri", "karardan sonra")
-    s.yazi([[R("Karardan sonra  ", kalin=True),
-             "kod kararı güncel veriye uygular; karar, gerekçe ve üretim kodu kaydedilir. İstenen adıma geri dönülebilir."]],
+    s.yazi([[R("Karardan sonra", kalin=True),
+             " kod kararı güncel veriye uygular. Karar, gerekçe ve üretim kodu kaydedilir, istenen adıma geri "
+             "dönülebilir."]],
            0.7, 4.56, 11.93, 0.44, boy=12, renk=BEYAZ)
     s.etiket("Altyapı", 0.5, 5.12)
     altyapi = [
-        ("Dataiku içinde", "Tarayıcıdan, Dataiku projesinin içinden açılır; yetkili olunan veri setleri listelenir"),
-        ("Tam veri", "Sayımlar verinin tamamında yapılır; büyük tablolar Spark ile kümede işlenir"),
-        ("Kaynak veri korunur", "Seçilen veri setine ve sözlüğe yazılmaz; platform kendi kopyalarıyla çalışır"),
-        ("Proje hafızası", "Onaylanan tanımlar, ad parçaları ve kararlar saklanır; sonraki çalışmada hazır gelir"),
+        ("Dataiku İçinde", "Tarayıcıdan, Dataiku projesinin içinden açılır. Yetkili olunan veri setleri listelenir."),
+        ("Tam Veri", "Sayımlar verinin tamamında yapılır. Büyük tablolar Spark ile kümede işlenir."),
+        ("Kaynak Verinin Korunması", "Seçilen veri setine ve sözlüğe yazılmaz. Platform kendi kopyalarıyla çalışır."),
+        ("Proje Hafızası", "Onaylanan tanımlar, ad parçaları ve kararlar saklanır, sonraki çalışmada hazır gelir."),
     ]
     nw = (12.33 - 0.75) / 4
     for i, (ad, aciklama) in enumerate(altyapi):
         x = 0.5 + i * (nw + 0.25)
         s.kutu(x, 5.4, nw, 1.02, "gri", "altyapı " + ad)
         s.yazi([R(ad, kalin=True, boy=12, renk=KIR), R(aciklama, boy=10.5)], x + 0.12, 5.4, nw - 0.24, 1.02, bosluk=2)
-    s.dipnot("Sohbet 02.2 Kural Tabanlı Değişken Üretimi adımında açılır; o ana kadar seçimler kartlarla yapılır, "
+    s.dipnot("Sohbet 02.2 Kural Tabanlı Değişken Üretimi adımında açılır. O ana kadar seçimler kartlarla yapılır ve "
              "gerekçe kartın içinde yazar.")
-    s.notlar = ("Platformda üç rol vardır ve sıra her adımda aynıdır. Önce kod veriyi sayar ve ölçer. Yapay zekâ (bir dil "
-                "modeli) anlam gerektiren yerde öneri verir; gerekçesini kodun ölçtüğü sayılara dayandırır, kendisi sayı "
-                "hesaplamaz. Kullanıcı ölçümü, öneriyi ve gerekçeyi aynı kartta görür; kabul eder, değiştirir, ekler ya "
-                "da çıkarır. Son karar her zaman kullanıcınındır. Karardan sonra kod kararı veriye uygular ve kaydeder. "
-                "Her adımda yapay zekâ olmak zorunda değildir: sayıya dayanan önerileri kod kendisi verir. Sonraki "
-                "slaytlarda her adımın kutusunda kimin ne yaptığı ayrıca yazar. Dil modeline Dataiku'nun LLM bağlantısı "
-                "üzerinden erişilir.")
+    s.notlar = ("Platformda üç rol vardır ve sıra her adımda aynıdır. Önce kod veriyi sayar ve ölçer. Yapay zekâ, yani "
+                "bir dil modeli, anlam gerektiren yerde öneri verir. Gerekçesini kodun ölçtüğü sayılara dayandırır, "
+                "kendisi sayı hesaplamaz. Kullanıcı ölçümü, öneriyi ve gerekçeyi aynı kartta görür. Öneriyi kabul "
+                "eder, değiştirir, ekler ya da çıkarır. Son karar her zaman kullanıcınındır. Karardan sonra kod kararı "
+                "veriye uygular ve kaydeder. Her adımda yapay zekâ olmak zorunda değildir, sayıya dayanan önerileri "
+                "kod kendisi verir. Sonraki slaytlarda her adımın kutusunda kimin ne yaptığı ayrıca yazar. Dil "
+                "modeline Dataiku'nun LLM bağlantısı üzerinden erişilir.")
     return s
 
 
 def slayt_akis():
-    s = Slayt("AKIS", B1, "İş Akışı · Beş Faz ve Adımları",
-              "Web uygulamasındaki İş Akışı ile aynı sıra: beş faz vardır, her faz bir öncekinin çıktısını kullanır.")
+    s = Slayt("AKIS", B1, "İş Akışının Beş Fazı ve Adımları",
+              "Sıra web uygulamasındaki İş Akışı ile aynıdır. Beş faz vardır ve her faz bir öncekinin çıktısını "
+              "kullanır.")
     fazlar = [
         ("01", "Çalışma Kurulumu", "Veri seti, sözlük, kolon rolleri ve örneklem tasarımı", "g",
          [("01.1", "Başlangıç Seçimi", "g", 0), ("01.2", "Veri Seti, Sözlük ve Kolon Rolleri", "g", 0),
@@ -1270,24 +1276,24 @@ def slayt_akis():
           ("01.4", "Örneklem ve Doğrulama Tasarımı", "g", 0)],
          "Güncel Veri ve Sözlük", "Geliştirildi"),
         ("02", "Değişken Mühendisliği", "Profil, kural tabanlı ve AI destekli üretim", "s",
-         [("02.1", "Veri Profili ve Kalite", "g", "verinin kusurları bulunur"),
-          ("02.2", "Kural Tabanlı Değişken Üretimi", "s", "bilinen dönüşümlerle yeni değişkenler"),
-          ("02.3", "AI Değişken Keşfi", "r", "yapay zekâ ile yeni değişken fikirleri")],
+         [("02.1", "Veri Profili ve Kalite", "g", "Verinin kusurları bulunur"),
+          ("02.2", "Kural Tabanlı Değişken Üretimi", "s", "Bilinen dönüşümlerle yeni değişkenler"),
+          ("02.3", "AI Değişken Keşfi", "r", "Yapay zekâ ile yeni değişken fikirleri")],
          "Yeni Değişkenler", "02.2 üzerinde çalışılıyor"),
         ("03", "Veri Anlama ve Hazırlama", "SFA, stabilite ve analitik baz set", "r",
-         [("03.1", "Tek Değişken Analizi (SFA)", "r", "her değişkenin hedefle ilişkisi"),
-          ("03.2", "Stabilite Analizi (PSI)", "r", "dağılım zamanla kayıyor mu"),
-          ("03.3", "Analitik Baz Set", "r", "temizlenmiş ve dondurulmuş set")],
+         [("03.1", "Tek Değişken Analizi (SFA)", "r", "Her değişkenin hedefle ilişkisi"),
+          ("03.2", "Stabilite Analizi (PSI)", "r", "Dağılım zamanla kayıyor mu"),
+          ("03.3", "Analitik Baz Set", "r", "Temizlenmiş ve dondurulmuş set")],
          "Analitik Baz Set", "Sırada"),
         ("04", "Değişken Değerlendirme", "Sızıntı kontrolü ve aday değişken seti", "r",
-         [("04.1", "Sızıntı Kontrolü", "r", "hedefi ele veren değişkenler ayrılır"),
-          ("04.2", "Aday Değişken Seti", "r", "tekrar eden ve zayıf değişkenler elenir")],
+         [("04.1", "Sızıntı Kontrolü", "r", "Hedefi ele veren değişkenler ayrılır"),
+          ("04.2", "Aday Değişken Seti", "r", "Tekrar eden ve zayıf değişkenler elenir")],
          "Aday Değişken Seti", "Sırada"),
         ("05", "Modelleme ve Finalizasyon", "Model seçimi, katkı ölçümü ve doğrulama", "r",
-         [("05.1", "Model Karşılaştırması", "r", "yeni değişkenlerin katkısı ölçülür"),
-          ("05.2", "Algoritma Seçimi", "r", "dört algoritma aynı koşulda"),
-          ("05.3", "Model Finalizasyonu", "r", "son eğitim, doğrulama, kayıt"),
-          ("05.4", "Değişken Kataloğu", "r", "her değişkenin formülü ve kodu")],
+         [("05.1", "Model Karşılaştırması", "r", "Yeni değişkenlerin katkısı ölçülür"),
+          ("05.2", "Algoritma Seçimi", "r", "Dört algoritma aynı koşulda"),
+          ("05.3", "Model Finalizasyonu", "r", "Son eğitim, doğrulama ve kayıt"),
+          ("05.4", "Değişken Kataloğu", "r", "Her değişkenin formülü ve kodu")],
          "Final Model ve Katalog", "Sırada"),
     ]
     enler, ara, x = [3.0, 2.2, 2.2, 2.2, 2.2], 0.1325, 0.5
@@ -1304,7 +1310,7 @@ def slayt_akis():
         satirlar = []
         for kod, adim, d, ek in adimlar:
             # ek: 1 ise alt adim (girintili); metin ise adimin kisa aciklamasi (alt satirda, soluk)
-            bas = u"\u00a0\u00a0\u00a0\u00a0" if ek == 1 else ""
+            bas = GIRINTI if ek == 1 else ""
             if d == "g":
                 satirlar.append([R(bas + kod + "  ", kalin=True, renk=KIR), adim])
             elif d == "s":
@@ -1319,200 +1325,203 @@ def slayt_akis():
         s.yazi(cikti, x + 0.05, 5.14, w - 0.1, 0.44, boy=11.5, kalin=True, renk=BEYAZ if durum != "r" else GRI)
         s.yazi(durum_yazi, x, 5.62, w, 0.24, boy=10, kalin=(durum == "s"), renk=KIR if durum == "s" else GRI)
         x += w + ara
-    s.kutu(0.5, 5.96, 12.33, 0.56, "gri", "sıra neden böyle")
-    s.yazi([[R("Sıra neden böyle:  ", kalin=True, renk=KIR),
-             "Profil üretimden önce gelir; boş, sabit ve kimlik benzeri kolonlardan değişken üretilmesin. Tek değişken "
-             "analizi ve stabilite üretimden sonra gelir; ham ve üretilen değişkenlerin hepsi aynı ölçümden geçsin."]],
+    s.kutu(0.5, 5.96, 12.33, 0.56, "gri", "neden bu sıra")
+    s.yazi([[R("Neden bu sıra?", kalin=True, renk=KIR),
+             " Profil üretimden önce gelir ki boş, sabit ve kimlik benzeri kolonlardan değişken üretilmesin. Tek "
+             "değişken analizi ve stabilite üretimden sonra gelir, böylece ham ve üretilen değişkenlerin hepsi aynı "
+             "ölçümden geçer."]],
            0.7, 5.96, 11.93, 0.56, boy=10.5, hiza="l")
-    s.dipnot("Dolu kırmızı kutu: geliştirildi · kalın çerçeve: üzerinde çalışılıyor · kesik çerçeve: sırada. Sonraki "
-             "slaytlar bu sırayı izler.")
+    s.dipnot("Dolu kırmızı kutu geliştirilen, kalın çerçeve üzerinde çalışılan, kesik çerçeve sıradaki adımları "
+             "gösterir. Sonraki slaytlar bu sırayı izler.")
     s.notlar = ("Bu slayt web uygulamasının sol tarafındaki İş Akışı ağacının aynısıdır. Beş faz vardır ve her faz bir "
-                "öncekinin çıktısını kullanır. 01 Çalışma Kurulumu ve 02.1 Veri Profili ve Kalite geliştirildi; şu an "
+                "öncekinin çıktısını kullanır. 01 Çalışma Kurulumu ile 02.1 Veri Profili ve Kalite geliştirildi. Şu an "
                 "02.2 Kural Tabanlı Değişken Üretimi üzerinde çalışılıyor. 02.3 ve sonrasının ilk sürümleri kodda var. "
-                "Sıranın gerekçesi: kusurlu kolonlardan değişken üretilmesin diye profil üretimden önce gelir; tek "
-                "değişken analizi ve stabilite, ham ve üretilen değişkenlerin tamamına birlikte uygulansın diye "
-                "üretimden sonra gelir. Sonraki slaytlar her adımı aynı düzende anlatır: ne yapılır, neden gerekli, "
-                "örnek. Adım kutusunun altındaki satır kimin ne yaptığını söyler.")
+                "Sıranın bir gerekçesi var. Profil üretimden önce gelir ki kusurlu kolonlardan değişken üretilmesin. "
+                "Tek değişken analizi ve stabilite üretimden sonra gelir, böylece ham ve üretilen değişkenlerin tamamı "
+                "birlikte ölçülür. Sonraki slaytlar her adımı aynı düzende anlatır. Önce ne yapıldığı, sonra neden "
+                "gerekli olduğu, sonra da bir örnek verilir. Adım kutusunun altındaki satır kimin ne yaptığını söyler.")
     return s
 
 
 def slayt_kurulum_veri():
-    s = Slayt("AKIS", B2, "01 Çalışma Kurulumu · Veri Seti ve Sözlük",
-              "Çalışmanın hangi tabloyla ve hangi sözlükle yürüyeceği belirlenir; platform bundan sonra kendi "
+    s = Slayt("AKIS", B2, "01 Çalışma Kurulumunda Veri Seti ve Sözlük",
+              "Çalışmanın hangi tabloyla ve hangi sözlükle yürüyeceği belirlenir. Platform bundan sonra kendi "
               "kopyalarıyla çalışır.")
     s.adim_tablosu(1.5, [
-        ("g", "01.1", "Başlangıç Seçimi", "Karar: kullanıcı",
-         "Çalışmanın nereden başlayacağı seçilir. Baz Veri Seti Mevcut: modellemeye girecek tablo hazırdır. Kaynak "
-         "Tablolar Mevcut: baz veri seti, seçilen kaynak tablolar birleştirilerek kurulur. Sözlük iki seçenekte de "
-         "isteğe bağlıdır.",
-         "Her ekibin verisi aynı hazırlıkta gelmez. Sonraki adımlar bu seçime göre şekillenir: tablo hazırsa doğrudan "
+        ("g", "01.1", "Başlangıç Seçimi", "Kullanıcı seçer",
+         "Çalışmanın nereden başlayacağı seçilir. Modellemeye girecek tablo hazırsa Baz Veri Seti Mevcut seçilir. "
+         "Tablo hazır değilse Kaynak Tablolar Mevcut seçilir ve baz veri seti bu tablolar birleştirilerek kurulur. "
+         "Sözlük iki seçenekte de isteğe bağlıdır.",
+         "Her ekibin verisi aynı hazırlıkta gelmez. Sonraki adımlar bu seçime göre şekillenir. Tablo hazırsa doğrudan "
          "seçilir, değilse önce birleştirme planı çıkarılır.",
-         "Tek modelleme tablosu varsa birinci seçenek; müşteri, işlem ve ürün tabloları ayrı duruyorsa ikinci "
-         "seçenek."),
-        ("g", "01.2.1", "Baz Veri Seti ve Baz Sözlük", "Kopya ve sayım: kod · Seçim: kullanıcı",
-         "Veri seti ve bir ya da birden çok sözlük seçilir. Kod ikisinin birebir kopyasını alır (baz kopya) ve "
-         "sözlüğün kolonların ne kadarını tanımladığını hesaplar. Sonraki bütün değişiklikler ayrı bir güncel kopyaya "
-         "yazılır.",
+         "Tek bir modelleme tablosu varsa birinci seçenek uygundur. Müşteri, işlem ve ürün tabloları ayrı duruyorsa "
+         "ikinci seçenek seçilir."),
+        ("g", "01.2.1", "Baz Veri Seti ve Baz Sözlük", "Kod kopyalar ve sayar, kullanıcı seçer",
+         "Veri seti ile bir ya da birden çok sözlük seçilir. Kod ikisinin birebir kopyasını alır ve sözlüğün "
+         "kolonların ne kadarını tanımladığını hesaplar. Bu kopyaya baz kopya denir. Sonraki bütün değişiklikler ayrı "
+         "bir güncel kopyaya yazılır.",
          "Seçilen veri setine ve sözlüğe hiçbir zaman yazılmaz. Baz kopya değişmediği için her adım geri alınabilir "
          "ve güncel hâl başlangıçla karşılaştırılabilir.",
          [[K("V8_BAZ_VERI"), " ve ", K("V8_BAZ_SOZLUK"), " bir kez yazılır."],
-          [K("V8_UPDT_VERI"), " ve ", K("V8_UPDT_SOZLUK"), " adım adım güncellenir. V8 çalışmanın kısa adıdır."]]),
-        ("g", "01.2.1.1", "Sözlük Birleştirme", "Karar: kullanıcı",
-         "Birden çok sözlük seçildiyse tek sözlükte birleştirilir. Aynı kolonun sözlüklerde farklı tanımı varsa bu "
-         "kolonlar listelenir; kullanıcı kalacak tanımı seçer ya da kendisi yazar. Çakışma yoksa adım sorulmadan "
-         "geçilir.",
-         "Bir tablonun kolon açıklamaları farklı sözlüklere dağılmış olabilir. Hangi tanımın geçerli olduğu belirsiz "
-         "kalırsa sonraki adımlar yanlış anlam üzerine kurulur.",
-         [[K("BAL_AMT"), " için bir sözlükte bakiye tutarı, öbüründe ay sonu bakiyesi yazıyor; kullanıcı birini seçer "
+          [K("V8_UPDT_VERI"), " ve ", K("V8_UPDT_SOZLUK"), " her adımda güncellenir. V8 çalışmanın kısa adıdır."]]),
+        ("g", "01.2.1.1", "Sözlük Birleştirme", "Kullanıcı karar verir",
+         "Birden çok sözlük seçildiyse bunlar tek sözlükte birleştirilir. Aynı kolonun sözlüklerde farklı tanımı "
+         "varsa bu kolonlar listelenir. Kullanıcı kalacak tanımı seçer ya da kendisi yazar. Çakışma yoksa adım "
+         "sorulmadan geçilir.",
+         "Bir tablonun kolon açıklamaları farklı sözlüklere dağılmış olabilir. Hangi tanımın geçerli olduğu belli "
+         "olmazsa sonraki adımlar yanlış anlam üzerine kurulur.",
+         [[K("BAL_AMT"), " için bir sözlükte bakiye tutarı, öbüründe ay sonu bakiyesi yazıyor. Kullanıcı birini seçer "
                          "ya da doğrusunu yazar."]]),
     ], 1.44)
-    s.dipnot("Kaynak tablolarla başlanırsa tablolar ve sözlükleri seçilir; birleştirme planını yapay zekâ önerir, "
+    s.dipnot("Kaynak tablolarla başlanırsa tablolar ve sözlükleri seçilir, birleştirme planını yapay zekâ önerir, "
              "kullanıcı onaylar. Her satır yalnız kendi tarihinden önceki bilgiyi görür.")
-    s.notlar = ("01 fazı geliştirildi. Başlangıçta iki seçenek açıktır: baz veri seti mevcut ya da kaynak tablolar "
-                "mevcut. Üçüncü seçenek olan otomatik pilot şu an kapalıdır. Sözlük isteğe bağlıdır; seçilmezse bütün "
-                "kolonlar 01.2.3 adımında tanımlanır. Veri kuralı bu adımda başlar: seçilen veri setine ve sözlüğe "
-                "yazılmaz. Platform bir çalışma için dört veri seti yazar: baz veri ve baz sözlük (birebir kopya, bir "
-                "kez yazılır, değişmez) ile güncel veri ve güncel sözlük (her adımın sonucuyla güncellenir). Bir veri "
-                "setiyle daha önce kullanılan sözlük seçili gelir. Örnekteki adlar gösterim amaçlıdır.")
+    s.notlar = ("01 fazı geliştirildi. Başlangıçta iki seçenek açıktır. Ya baz veri seti hazırdır ya da kaynak "
+                "tablolardan kurulur. Üçüncü seçenek olan otomatik pilot şu an kapalıdır. Sözlük isteğe bağlıdır, "
+                "seçilmezse bütün kolonlar 01.2.3 adımında tanımlanır. Veri kuralı bu adımda başlar ve seçilen veri "
+                "setine ve sözlüğe yazılmaz. Platform bir çalışma için dört veri seti yazar. Baz veri ve baz sözlük "
+                "birebir kopyadır, bir kez yazılır ve değişmez. Güncel veri ve güncel sözlük ise her adımın sonucuyla "
+                "güncellenir. Bir veri setiyle daha önce kullanılan sözlük seçili gelir. Örnekteki adlar gösterim "
+                "amaçlıdır.")
     return s
 
 
 def slayt_kurulum_rol():
-    s = Slayt("AKIS", B2, "01 Çalışma Kurulumu · Kolon Rolleri ve Sözlük Tanımları",
-              "Neyin tahmin edileceği ve her kolonun ne anlama geldiği netleştirilir; bilgi taşımayan kolonlar baştan "
+    s = Slayt("AKIS", B2, "01 Çalışma Kurulumunda Kolon Rolleri ve Sözlük Tanımları",
+              "Neyin tahmin edileceği ve her kolonun ne anlama geldiği netleştirilir. Bilgi taşımayan kolonlar baştan "
               "ayrılır.")
     s.adim_tablosu(1.5, [
-        ("g", "01.2.2", "Kolon Rolleri", "Aday listesi: kod · Karar: kullanıcı",
-         "Model tipi, hedef, kimlik ve dönem kolonu belirlenir. Kod hedef olabilecek kolonları verinin tamamından "
-         "çıkarır (sınıflandırmada yalnız 0 ve 1 değeri alan kolonlar) ve hedefin dağılımını gösterir. Tablonun "
-         "önceki onaylı rolleri dolu gelir.",
-         "Bütün ölçümler hedefe göre yapılır. Dönem, zamana göre bölmeyi ve dönem kontrollerini; kimlik, aynı "
-         "müşterinin satırlarını bir arada tutmayı sağlar. Rol kolonları hiçbir dönüşüme girmez.",
+        ("g", "01.2.2", "Kolon Rolleri", "Kod adayları çıkarır, kullanıcı seçer",
+         "Model tipi ile hedef, kimlik ve dönem kolonları belirlenir. Kod hedef olabilecek kolonları verinin "
+         "tamamından çıkarır ve hedefin dağılımını gösterir. Sınıflandırmada yalnız 0 ve 1 değeri alan kolonlar hedef "
+         "olabilir. Tablonun önceki onaylı rolleri dolu gelir.",
+         "Bütün ölçümler hedefe göre yapılır. Dönem kolonu zamana göre bölmeyi ve dönem kontrollerini mümkün kılar. "
+         "Kimlik kolonu aynı müşterinin satırlarını bir arada tutar. Rol kolonları hiçbir dönüşüme girmez.",
          [["Hedef ", K("DEFAULT_FLAG"), " (0 ve 1)"], ["Kimlik ", K("CUSTOMER_ID")], ["Dönem ", K("SNAPSHOT_DATE")],
-          "Şu an açık model tipi: sınıflandırma."]),
-        ("g", "01.2.3", "Eksik Sözlük Tanımları", "Öneri: hafıza ve yapay zekâ · Karar: kullanıcı",
-         "Sözlükte tanımı olmayan kolonlar listelenir. Tanım önce onaylı tanım hafızasından gelir; yoksa yapay zekâ, "
-         "onaylı ad parçalarını kesin bilgi sayarak önerir. Kullanıcı düzeltir; onayladıkları sözlüğe eklenir. Hedef, "
-         "kimlik ve dönemin tanımı zorunludur.",
-         "Tanımı olmayan kolonu ne insan ne de sonraki adımlardaki yapay zekâ doğru yorumlayabilir; değişken üretimi "
+          "Şu an açık olan tek model tipi sınıflandırmadır."]),
+        ("g", "01.2.3", "Eksik Sözlük Tanımları", "Hafıza ve yapay zekâ önerir, kullanıcı onaylar",
+         "Sözlükte tanımı olmayan kolonlar listelenir. Tanım önce onaylı tanım hafızasından gelir. Hafızada yoksa "
+         "yapay zekâ önerir ve önerirken onaylı ad parçalarını kesin bilgi sayar. Kullanıcı düzeltir, onayladığı "
+         "tanımlar sözlüğe eklenir. Hedef, kimlik ve dönem kolonlarının tanımı zorunludur.",
+         "Tanımı olmayan kolonu ne insan ne de sonraki adımlardaki yapay zekâ doğru yorumlayabilir. Değişken üretimi "
          "kolonun anlamına dayanır.",
-         [["Adı yalnız sayıyla ayrılan kolonlar ailedir. ", K("TXN_3D_CNT"), " için son 3 günde işlem adedi yazılır; ",
-           K("TXN_7D_CNT"), " tanımı sayı değiştirilerek alır."]]),
-        ("g", "01.2.3.1", "Tanımsız ve Sorunlu Kolonlar", "Tespit: kod · Karar: kullanıcı",
-         "Kod üç grubu listeler: tamamen boş kolonlar, tek değerli kolonlar ve hâlâ tanımı olmayan kolonlar. İlk iki "
-         "grup güncel veriden ve sözlükten her zaman çıkarılır; tanımsız kolonlarda çıkarma kararını kullanıcı verir.",
-         "Boş ve tek değerli kolon modele bilgi katmaz; tanımsız kolon yorumlanamaz. Burada ayrıldıkları için sonraki "
-         "ad ve sözlük kontrollerinde bunlara zaman harcanmaz.",
-         "Kartta nedeni yazar: bütün satırlarda aynı değer (7) var ve boş hücre yok. Kolon yalnız platformun "
-         "kopyasından çıkar, kaynak tablo değişmez."),
+         [["Adı yalnız sayıyla ayrılan kolonlar bir ailedir. ", K("TXN_3D_CNT"), " için son 3 günde işlem adedi "
+           "yazılır. ", K("TXN_7D_CNT"), " aynı tanımı sayısı değiştirilerek alır."]]),
+        ("g", "01.2.3.1", "Tanımsız ve Sorunlu Kolonlar", "Kod bulur, kullanıcı karar verir",
+         "Kod üç grubu listeler. Bunlar tamamen boş kolonlar, tek değerli kolonlar ve hâlâ tanımı olmayan kolonlardır. "
+         "İlk iki grup güncel veriden ve sözlükten her zaman çıkarılır. Tanımsız kolonların çıkarılıp "
+         "çıkarılmayacağına kullanıcı karar verir.",
+         "Boş ve tek değerli kolon modele bilgi katmaz, tanımsız kolon da yorumlanamaz. Burada ayrıldıkları için "
+         "sonraki ad ve sözlük kontrollerinde bunlara zaman harcanmaz.",
+         "Kartta kolonun neden çıkarıldığı yazar. Örneğin bütün satırlarda aynı değer (7) var ve boş hücre yok. Kolon "
+         "yalnız platformun kopyasından çıkar, kaynak tablo değişmez."),
     ], 1.44)
     s.dipnot("Örneklerdeki kolon adları gösterim amaçlıdır.")
-    s.notlar = ("Kolon rollerinde ilk seçim model tipidir; şu an seçilebilen tek tip sınıflandırmadır, öbür tipler "
-                "kapalı görünür. Eksik tanımlarda öncelik sırası şöyledir: aynı veri setinde daha önce onaylanan tanım "
-                "doğrudan gelir; yoksa yapay zekâ önerir ve önerirken hafızadaki onaylı ad parçalarını ve dönem "
-                "kalıplarını kesin bilgi olarak kullanır. Ailede yapay zekâ yalnız bir kolonun tanımını yazar; tanım "
-                "kardeş kolonlara sayı değiştirilerek kodla aktarılır. Tanımsız ve sorunlu kolonlar adımında üç grup da "
-                "boşsa adım sorulmadan geçilir.")
+    s.notlar = ("Kolon rollerinde ilk seçim model tipidir. Şu an seçilebilen tek tip sınıflandırmadır, öbür tipler "
+                "kapalı görünür. Eksik tanımlarda bir öncelik sırası vardır. Aynı veri setinde daha önce onaylanan "
+                "tanım doğrudan gelir. Böyle bir tanım yoksa yapay zekâ önerir ve önerirken hafızadaki onaylı ad "
+                "parçalarını ve dönem kalıplarını kesin bilgi olarak kullanır. Ailede yapay zekâ yalnız bir kolonun "
+                "tanımını yazar, tanım kardeş kolonlara sayı değiştirilerek kodla aktarılır. Tanımsız ve sorunlu "
+                "kolonlar adımında üç grup da boşsa adım sorulmadan geçilir.")
     return s
 
 
 def slayt_sozluk():
     s = Slayt("AKIS", B2, "01.2.4 Sözlük ve Kolon Adı Kontrolü",
-              "Sözlüğe de kolon adlarına da tam güvenilemez. Amaç, sonraki adımlardaki yapay zekânın da insanın da her "
-              "kolonu kesin anlamasıdır.")
+              "Sözlüğe de kolon adlarına da tam güvenilemez. Bu adım, sonraki adımlardaki yapay zekânın da insanın da "
+              "her kolonu kesin olarak anlamasını sağlar.")
     s.adim_tablosu(1.5, [
-        ("g", "01.2.4.1", "Dönem Bilgisi", "Öneri: yapay zekâ · Onay: kullanıcı",
-         "Adlardaki sayılı zaman parçaları bulunur, anlamları onaylanır. Parça yalnız birimi söyler; dönemin yönü "
-         "burada değil, kolon bazında belirlenir.",
-         "Aynı parça farklı kolonlarda farklı yöne bakabilir. Yön ada göre varsayılsaydı geleceğe bakan kolon geçmişe "
-         "bakıyor sanılırdı.",
-         [[K("30D"), ": 30 gün"], [K("M3"), " ve ", K("3_M"), " aynı kalıptır: 3 ay"]]),
-        ("g", "01.2.4.2", "Ad Parçaları", "Öneri: yapay zekâ · Onay: kullanıcı",
-         "Kalan parçaların (kısaltmalar ve sözcükler) anlamı ve adlarda kullanılacak standart yazılışı onaylanır. Aynı "
-         "şeyi anlatan farklı yazılışlar tek yazılışta birleşir.",
+        ("g", "01.2.4.1", "Dönem Bilgisi", "Yapay zekâ önerir, kullanıcı onaylar",
+         "Adlardaki sayılı zaman parçaları bulunur ve anlamları onaylanır. Parça yalnız süreyi söyler. Dönemin geçmişe "
+         "mi geleceğe mi baktığı burada belirlenmez, her kolon için ayrıca belirlenir.",
+         "Aynı parça farklı kolonlarda farklı yöne bakabilir. Yön ada bakılarak varsayılsaydı geleceğe bakan bir kolon "
+         "geçmişe bakıyor sanılabilirdi.",
+         [[K("30D"), " 30 gün demektir."], [K("M3"), " ile ", K("3_M"), " aynı kalıptır ve 3 ay demektir."]]),
+        ("g", "01.2.4.2", "Ad Parçaları", "Yapay zekâ önerir, kullanıcı onaylar",
+         "Kalan parçaların, yani kısaltmaların ve sözcüklerin anlamı ile adlarda kullanılacak standart yazılışı "
+         "onaylanır. Aynı şeyi anlatan farklı yazılışlar tek yazılışta birleştirilir.",
          "Aynı kavram farklı kısaltmalarla yazılırsa aynı ölçünün kolonları aile olarak tanınmaz. Onaylanan anlam "
-         "hafızada kalır, sonraki çalışmada yeniden sorulmaz.",
-         [[K("TRX"), " ve ", K("TXN"), ": işlem; standart yazılış ", K("TXN")],
-          [K("AMT"), ": tutar · ", K("CNT"), ": adet"]]),
-        ("g", "01.2.4.3", "Kolon Kartları", "Kart: kod · Açıklama: yapay zekâ · Onay: kullanıcı",
-         "Her kolonun kartı onaylı parçalardan kodla kurulur. Yapay zekâ kartı sözlükteki tanımla karşılaştırıp tek ve "
-         "açık bir açıklama yazar. Dönemin yönü açıklamadan okunur; okunamazsa kullanıcıya sorulur.",
+         "hafızada kalır ve sonraki çalışmada yeniden sorulmaz.",
+         [[K("TRX"), " ile ", K("TXN"), " işlem demektir, standart yazılış ", K("TXN"), " olur."],
+          [K("AMT"), " tutar, ", K("CNT"), " adet demektir."]]),
+        ("g", "01.2.4.3", "Kolon Kartları", "Kartı kod kurar, açıklamayı yapay zekâ yazar, kullanıcı onaylar",
+         "Her kolonun kartı onaylı parçalardan kodla kurulur. Yapay zekâ kartı sözlükteki tanımla karşılaştırır ve "
+         "tek, açık bir açıklama yazar. Dönemin yönü açıklamadan okunur, okunamazsa kullanıcıya sorulur.",
          "Ad ile sözlük tanımı çelişebilir ya da tanım eksik kalabilir. Çelişki kullanıcıya soru olarak gelir, "
          "sessizce geçilmez.",
-         [[K("LOAN_DUE_AMT_30D"), ", sözlükte: 30 gün sonra vade tutar. Okunan yön: sonra. Onaylanan açıklama: 30 gün "
-                                  "sonra vadesi gelecek tutar."]]),
-        ("g", "01.2.4.4", "Kolon Adları", "Ad: kod · Onay: kullanıcı",
-         "Yeni adlar standart yazılışlarla ve Ad Standardı sırasıyla kodla kurulur; dönem, kolonun yönüne göre "
-         "yazılır. Yeni ad yalnız platformun kopyalarında geçerlidir, eski ad sözlükte saklanır.",
-         "Standart ad kolonun ne olduğunu tek bakışta söyler. Geleceğe bakan kolon 02.1'de sızıntı riski olarak "
-         "sorulur; 02.2'de aileler bu adlardan kurulur.",
-         [[K("TXN_OUT_AMT_30D", 9), u" \u2192 ", K("TXN_OUT_AMT_L30D", 9)],
-          [K("LOAN_DUE_AMT_30D", 9), u" \u2192 ", K("LOAN_DUE_AMT_A30D", 9)],
-          [K("BAL_30D", 9), u" \u2192 ", K("BAL_B30D", 9)]]),
+         [[K("LOAN_DUE_AMT_30D"), " sözlükte 30 gün sonra vade tutar diye geçiyor. Yön sonra olarak okunur ve açıklama "
+                                  "30 gün sonra vadesi gelecek tutar diye yazılır."]]),
+        ("g", "01.2.4.4", "Kolon Adları", "Adı kod kurar, kullanıcı onaylar",
+         "Yeni adlar standart yazılışlarla ve Ad Standardı sırasıyla kodla kurulur. Dönem, kolonun yönüne göre "
+         "yazılır. Yeni ad yalnız platformun kopyalarında geçerlidir ve eski ad sözlükte saklanır.",
+         "Standart ad, kolonun ne olduğunu tek bakışta söyler. Geleceğe bakan kolon 02.1 adımında sızıntı riski "
+         "olarak sorulur. 02.2 adımında aileler bu adlardan kurulur.",
+         [[K("TXN_OUT_AMT_30D", 9), OK_ISARETI, K("TXN_OUT_AMT_L30D", 9)],
+          [K("LOAN_DUE_AMT_30D", 9), OK_ISARETI, K("LOAN_DUE_AMT_A30D", 9)],
+          [K("BAL_30D", 9), OK_ISARETI, K("BAL_B30D", 9)]]),
     ], 1.06)
-    s.dipnot("Kontrol isteğe bağlıdır: adım adım yapılır, atlanır ya da aynı veri seti için önceki onaylı kontrol "
-             "uygulanır. Yön harfleri: son L, sonra A, önce B. Örnekler gösterim amaçlıdır.")
-    s.notlar = ("Dört alt adım sırayla çalışır ve her biri bir öncekinin onayladığını kesin bilgi olarak kullanır; her "
-                "satır kullanıcı onaylamadan geçilmez. Kilit nokta dönemdir: 30D adda yalnız 30 gün demektir. Yönü her "
-                "kolonda ayrı belirlenir: önce kullanıcının seçimine, sonra açıklamadaki ifadeye (kod okur), sonra "
-                "yapay zekânın önerisine bakılır; hiçbiri yoksa kullanıcıya sorulur. Sekiz hazır tür vardır: son (L), "
-                "önce (B), sonraki (N), sonra (A), öncesi ve sonrası (PM), takvim (C), beri (S) ve süre. Açıklamayı "
-                "yapay zekâ üç aşamada yazar: yazar, denetçi, gerekirse karar; karttaki sayıların açıklamada geçtiğini "
-                "kod denetler. Güncel sözlükte yeni ad, eski ad, onaylanan açıklama ve ilk açıklama birlikte durur. "
-                "Onaylanan anlamlar hafızaya yazılır; aynı veri seti için önceki onaylı kontrol tek seçimle yeniden "
-                "uygulanabilir.")
+    s.dipnot("Kontrol isteğe bağlıdır. Adım adım yapılabilir, atlanabilir ya da aynı veri seti için önceki onaylı "
+             "kontrol uygulanabilir. Yeni adlarda L son, A sonra, B önce anlamına gelir.")
+    s.notlar = ("Dört alt adım sırayla çalışır ve her biri bir öncekinin onayladığını kesin bilgi olarak kullanır. Her "
+                "satır kullanıcı onaylamadan geçilmez. Kilit nokta dönemdir. 30D adda yalnız 30 gün demektir, yönü her "
+                "kolonda ayrı belirlenir. Önce kullanıcının seçimine, sonra açıklamadaki ifadeye, sonra yapay zekânın "
+                "önerisine bakılır. Açıklamadaki ifadeyi kod okur. Hiçbiri yoksa kullanıcıya sorulur. Sekiz hazır tür "
+                "vardır. Bunlar son (L), önce (B), sonraki (N), sonra (A), öncesi ve sonrası (PM), takvim (C), beri "
+                "(S) ve süredir. Açıklamayı yapay zekâ üç aşamada yazar. Önce yazar, sonra denetler, gerekirse karar "
+                "verir. Karttaki sayıların açıklamada geçip geçmediğini kod denetler. Güncel sözlükte yeni ad, eski "
+                "ad, onaylanan açıklama ve ilk açıklama birlikte durur. Onaylanan anlamlar hafızaya yazılır. Aynı "
+                "veri seti için önceki onaylı kontrol tek seçimle yeniden uygulanabilir. Örnekler gösterim amaçlıdır.")
     return s
 
 
 def slayt_kurulum_bolme():
-    s = Slayt("AKIS", B2, "01 Çalışma Kurulumu · Tip Kontrolü ve Bölme",
-              "Kurulumun son iki adımı: liste ve tipler son kez gözden geçirilir, veri eğitim ve ölçüm setlerine "
-              "ayrılır.")
+    s = Slayt("AKIS", B2, "01 Çalışma Kurulumunda Tip Kontrolü ve Bölme",
+              "Kurulumun son iki adımında liste ve tipler son kez gözden geçirilir, ardından veri eğitim ve ölçüm "
+              "setlerine ayrılır.")
     y = s.adim_tablosu(1.5, [
-        ("g", "01.3", "Değişken Listesi ve Tip Kontrolü", "Denetim: kod · Karar: kullanıcı",
+        ("g", "01.3", "Değişken Listesi ve Tip Kontrolü", "Kod denetler, kullanıcı karar verir",
          "Değişken listesi, tanımlar ve tipler bölmeden önce son kez gözden geçirilir. Kullanıcı yalnız verinin izin "
-         "verdiği tip dönüşümlerini seçebilir; kod seçimi kolonun tamamında dener, tek değer bile çevrilemezse kabul "
-         "etmez. Onayla güncel veri ve güncel sözlük yazılır.",
-         "Kaynak tabloda tip çoğu zaman yanlış gelir. Yanlış tipli kolonda ölçümler anlamsızlaşır: sayı sanılan kod "
-         "alanı yüzlerce aralığa bölünür, metin sanılan tutar tek tek etiket olur.",
-         "Metin olarak gelen 1.234,50 sayıya, tam sayı olarak gelen 20240131 tarihe çevrilir; sayı gibi görünen şube "
+         "verdiği tip dönüşümlerini seçebilir. Kod seçimi kolonun tamamında dener ve tek bir değer bile çevrilemezse "
+         "dönüşümü kabul etmez. Onayla birlikte güncel veri ve güncel sözlük yazılır.",
+         "Kaynak tabloda tip çoğu zaman yanlış gelir. Tipi yanlış olan kolonda ölçümler anlamını yitirir. Sayı sanılan "
+         "bir kod alanı yüzlerce aralığa bölünür, metin sanılan bir tutar tek tek etiket olur.",
+         "Metin olarak gelen 1.234,50 sayıya, tam sayı olarak gelen 20240131 tarihe çevrilir. Sayı gibi görünen şube "
          "kodu kategorik yapılır."),
-        ("g", "01.4", "Örneklem ve Doğrulama Tasarımı", "Öneri: kod · Karar: kullanıcı",
-         "Verinin nasıl bölüneceği belirlenir: Train, isteğe bağlı Test ve Validasyon. Kod veriye bakarak bir ayar "
-         "önerir ve gerekçesini yazar. Kullanıcı öneriyi uygular ya da özel ayar seçer: zamana göre ya da rastgele, "
-         "satır ya da kimlik bazında.",
-         "Bu sınır sızıntı sınırıdır: doldurma değerleri, dönüşüm ayarları ve eğitim yalnız Train setinden hesaplanır. "
-         "Validasyon modelin hiç görmediği veridir; son ölçüm orada yapılır.",
-         "Zamana göre bölme: eski dönemler Train, son dönemler Validasyon. Kimlik bazında: aynı müşterinin satırları "
-         "aynı tarafta kalır."),
+        ("g", "01.4", "Örneklem ve Doğrulama Tasarımı", "Kod önerir, kullanıcı karar verir",
+         "Verinin Train, Test ve Validasyon setlerine nasıl bölüneceği belirlenir. Test seti isteğe bağlıdır. Kod "
+         "veriye bakarak bir ayar önerir ve gerekçesini yazar. Kullanıcı öneriyi uygular ya da kendi ayarını seçer. "
+         "Bölme zamana göre ya da rastgele, satır ya da kimlik bazında yapılabilir.",
+         "Bu sınır sızıntıya karşı çizilen sınırdır. Doldurma değerleri, dönüşüm ayarları ve eğitim yalnız Train "
+         "setinden hesaplanır. Validasyon seti modelin hiç görmediği veridir ve son ölçüm orada yapılır.",
+         "Zamana göre bölmede eski dönemler Train, son dönemler Validasyon olur. Kimlik bazında bölmede aynı "
+         "müşterinin satırları aynı tarafta kalır."),
     ], 1.6)
     s.etiket("01 fazının çıktıları", 0.5, y + 0.1)
-    ciktilar = [("Baz Kopya", "girdinin değişmeyen kopyası"),
-                ("Güncel Veri ve Sözlük", "tipler, tanımlar, yeni adlar"),
-                ("Bölme", "her satırın hangi sette olduğu"),
-                ("Proje Hafızası", "onaylanan tanımlar ve anlamlar")]
+    ciktilar = [("Baz Kopya", "Girdinin değişmeyen kopyası"),
+                ("Güncel Veri ve Sözlük", "Tipler, tanımlar ve yeni adlar"),
+                ("Bölme", "Her satırın hangi sette olduğu"),
+                ("Proje Hafızası", "Onaylanan tanımlar ve anlamlar")]
     ow = (12.33 - 0.75) / 4
     for i, (ad, alt) in enumerate(ciktilar):
         s.veri(0.5 + i * (ow + 0.25), y + 0.4, ow, 0.74, ad, alt)
-    s.dipnot("Set adları: Train (MS), Test (OOS), Validasyon (OOT).")
-    s.notlar = ("Tip kontrolünde kullanıcı serbestçe tip atayamaz; yalnız verinin izin verdiği dönüşümler seçilebilir. "
+    s.dipnot("Setlerin uygulamadaki tam adları Train (MS), Test (OOS) ve Validasyon (OOT) şeklindedir.")
+    s.notlar = ("Tip kontrolünde kullanıcı serbestçe tip atayamaz, yalnız verinin izin verdiği dönüşümleri seçebilir. "
                 "Uygun olmayan seçenek listeden silinmez, kilitli görünür ve nedeni yazar. Sayısal bir kolon ancak en "
-                "çok 50 farklı değer alıyorsa kategorik yapılabilir. Bölmede üç set vardır: model Train setinde öğrenir, "
-                "ayarlar isteğe bağlı Test setinde seçilir, son ölçüm Validasyon setinde yapılır. Kod öneriyi veriden "
-                "çıkarır: dönem kolonu ve yeterli sayıda dönem varsa zamana göre bölme, aynı kimliğin birden çok satırı "
-                "varsa kimlik bazında bölme önerir. Zamana göre bölmede iki set arasına boşluk dönemi konabilir. Bölme, "
-                "güncel veriye bir set kolonu olarak yazılır.")
+                "çok 50 farklı değer alıyorsa kategorik yapılabilir. Bölmede üç set vardır. Model Train setinde "
+                "öğrenir, ayarlar isteğe bağlı Test setinde seçilir, son ölçüm Validasyon setinde yapılır. Kod öneriyi "
+                "veriden çıkarır. Dönem kolonu ve yeterli sayıda dönem varsa zamana göre bölme önerir. Aynı kimliğin "
+                "birden çok satırı varsa kimlik bazında bölme önerir. Zamana göre bölmede iki set arasına boşluk "
+                "dönemi konabilir. Bölme, güncel veriye bir set kolonu olarak yazılır.")
     return s
 
 
 def slayt_profil():
     s = Slayt("AKIS", B3, "02.1 Veri Profili ve Kalite",
-              "Değişken üretmeden önce verinin kusurları bulunur; boş, sabit ya da hatalı kolondan değişken "
-              "üretilmesin.")
+              "Değişken üretmeden önce verinin kusurları bulunur. Böylece boş, sabit ya da hatalı kolondan değişken "
+              "üretilmez.")
     asamalar = [
-        ("1  Kontrol Eşikleri", "onay", "20 eşik önerilen değeriyle gelir; kullanıcı onaylar"),
+        ("1  Kontrol Eşikleri", "onay", "20 eşik önerilen değeriyle gelir, kullanıcı onaylar"),
         ("2  Ölçüm", "islem", "Kod 26 kontrolü verinin tamamında yapar"),
-        ("3  Karar Kartı", "onay", "Her bulgu ölçülen değeri, önerisi ve gerekçesiyle"),
+        ("3  Karar Kartı", "onay", "Her bulgu ölçülen değeri, önerisi ve gerekçesiyle gelir"),
         ("4  Uygulama", "islem", "Onaylanan kararlar güncel veriye yazılır"),
     ]
     aw = (12.33 - 3 * 0.3) / 4
@@ -1523,202 +1532,216 @@ def slayt_profil():
         if i < 3:
             s.ok(x + aw + 0.03, 1.8, x + aw + 0.27, 1.8, "ok aşama %d" % i)
     s.adim_tablosu(2.2, [
-        ("g", "", "Üretime girmez", "7 kontrol · öneri: kod",
-         "Eksik oranı yüksek · sabit ya da tek değerli · kimlik benzeri · kardinalitesi aşırı yüksek · tarih kolonu · "
-         "aynı içerikli kolonlar · neredeyse aynı kolonlar",
+        ("g", "", "Üretime girmez", "7 kontrol, öneriyi kod verir",
+         "Eksik oranı yüksek, sabit ya da tek değerli, kimlik benzeri, kardinalitesi aşırı yüksek, tarih kolonu, aynı "
+         "içerikli kolonlar, neredeyse aynı kolonlar",
          "Bu kolonlardan üretilen değişken bilgi taşımaz ya da kimliği ezberler. İşe yarayan bir çözüm varsa önerilir.",
-         "Çoğu boş kolonda dolu mu bayrağı; çok değerli kolonda gruplama; tarihte dönem sonuna gün farkı."),
-        ("g", "", "Kararınıza bırakılır", "7 kontrol · öneri: kod ve yapay zekâ",
-         "Gelecek penceresi (sızıntı riski) · hedefle neredeyse birebir · dönemden sonraki tarih · neredeyse sabit · "
-         "dönemde boş ya da sabit · dönemler arası eksik sıçraması · dönemler arası değer kayması",
-         "Kolon kullanılabilir de olabilir, riskli de; bunu iş bilgisi belirler. Kullanıcı tutar ya da çıkarır.",
-         [[K("LOAN_DUE_AMT_A30D"), " geleceğe bakıyor: model kullanılırken bilinmeyecek bir bilgi, sızıntı riski olarak "
-                                   "sorulur."]]),
-        ("g", "", "Düzeltme seçilir", "7 kontrol · öneri: kod ve yapay zekâ",
-         "Gizli eksik (özel kod) · karışık eksik kodlaması · metin olarak yazılmış boş · kategori yazım tutarsızlığı · "
-         "beklenmeyen negatif · uç değer yoğunluğu · ondalık hassasiyeti",
-         "Kolon değerlidir ama içindeki kusur ölçümü bozar. Kolon düzeltilmiş hâliyle üretime girer.",
-         "Boş yerine 9999 yazılmışsa boşa çevrilir. En büyük değer, değerlerin yüzde 99'unun altında kaldığı sınırın "
-         "100 katını aşıyorsa kırpma önerilir."),
-        ("g", "", "Bilgi için gösterilir", "5 kontrol · işlem yapılmaz",
-         "Sıfır yoğunluğu · pencere tutarlılığı · tutar ve adet uyumsuzluğu · tekrar eden satır · setler arası çakışma",
-         "Kolonu elemeyi gerektirmez ama sonuçları yorumlarken bilinmesi gerekir.",
-         "Son 30 günün toplamı son 90 günün toplamından büyük çıkıyorsa pencere tutarsızlığı olarak gösterilir."),
+         "Çoğu boş olan kolonda boşluk bayrağı, çok değerli kolonda gruplama, tarih kolonunda dönem sonuna olan gün "
+         "farkı önerilir."),
+        ("g", "", "Kararınıza bırakılır", "7 kontrol, öneriyi kod ve yapay zekâ verir",
+         "Gelecek penceresi (sızıntı riski), hedefle neredeyse birebir, dönemden sonraki tarih, neredeyse sabit, "
+         "dönemde boş ya da sabit, dönemler arası eksik sıçraması, dönemler arası değer kayması",
+         "Kolon kullanılabilir de olabilir, riskli de. Bunu iş bilgisi belirler. Kullanıcı kolonu tutar ya da çıkarır.",
+         [[K("LOAN_DUE_AMT_A30D"), " geleceğe bakıyor. Model kullanılırken bu bilgi henüz bilinmeyeceği için sızıntı "
+                                   "riski olarak sorulur."]]),
+        ("g", "", "Düzeltme seçilir", "7 kontrol, öneriyi kod ve yapay zekâ verir",
+         "Gizli eksik (özel kod), karışık eksik kodlaması, metin olarak yazılmış boş, kategori yazım tutarsızlığı, "
+         "beklenmeyen negatif, uç değer yoğunluğu, ondalık hassasiyeti",
+         "Kolon değerlidir ama içindeki kusur ölçümü bozar. Düzeltme seçilir ve kolon düzeltilmiş hâliyle üretime "
+         "girer.",
+         "Boş yerine 9999 yazılmışsa bu değer boşa çevrilir. En büyük değer, değerlerin yüzde 99'unun altında kaldığı "
+         "sınırın 100 katını aşıyorsa kırpma önerilir."),
+        ("g", "", "Bilgi için gösterilir", "5 kontrol, işlem yapılmaz",
+         "Sıfır yoğunluğu, pencere tutarlılığı, tutar ve adet uyumsuzluğu, tekrar eden satır, setler arası çakışma",
+         "Kolonu elemeyi gerektirmez ama sonuçlar yorumlanırken bilinmesi gerekir.",
+         "Son 30 günün toplamı son 90 günün toplamından büyük çıkıyorsa bu durum pencere tutarsızlığı olarak "
+         "gösterilir."),
     ], 0.9, basliklar=("Sonuç", "Kontroller", "Neden Gerekli", "Örnek"))
-    s.dipnot("Öneri kaynağı her satırda yazar. Yapay zekâ yalnız anlam gerektiren beş kontrolde ve aynı içerikli "
-             "kolonlarda önerir; öbür öneriler koddan gelir. Bu adımda sohbet yoktur.")
-    s.notlar = ("02.1 geliştirildi. Önce eşikler sorulur, kullanıcı onaylar; kontroller bu eşiklerle verinin tamamında "
-                "çalışır. Karar kartında satırlar renklidir: sorunsuz, dikkat, üretime girmez. Yapay zekânın öneri "
-                "verdiği beş kontrol: gelecek penceresi, hedefle neredeyse birebir, dönemden sonraki tarih, gizli eksik "
-                "ve karışık eksik kodlaması; bunlar kolonun anlamına bakmayı gerektirir. Çözüm seçeneği yalnız işe "
-                "yarayacaksa sunulur. Öğrenilen her şey (gruplar, sınırlar) yalnız Train setinden gelir. Onayla "
-                "düzeltmeler ve çözüm kolonları güncel veriye yazılır; üretime girmeyen ve çıkarılan kolonlar güncel "
-                "veriden çıkar. Örnekteki değerler gösterim amaçlıdır.")
+    s.dipnot("Önerinin kaynağı her satırda yazar. Yapay zekâ yalnız anlam gerektiren beş kontrolde ve aynı içerikli "
+             "kolonlarda önerir, öbür öneriler koddan gelir. Bu adımda sohbet yoktur.")
+    s.notlar = ("02.1 geliştirildi. Önce eşikler sorulur ve kullanıcı onaylar. Kontroller bu eşiklerle verinin "
+                "tamamında çalışır. Karar kartında satırlar sorunsuz, dikkat ve üretime girmez olarak renklendirilir. "
+                "Yapay zekâ beş kontrolde öneri verir. Bunlar gelecek penceresi, hedefle neredeyse birebir, dönemden "
+                "sonraki tarih, gizli eksik ve karışık eksik kodlamasıdır, çünkü hepsi kolonun anlamına bakmayı "
+                "gerektirir. Çözüm seçeneği yalnız işe yarayacaksa sunulur. Öğrenilen gruplar ve sınırlar yalnız Train "
+                "setinden gelir. Onayla birlikte düzeltmeler ve çözüm kolonları güncel veriye yazılır, üretime "
+                "girmeyen ve çıkarılan kolonlar güncel veriden çıkar. Örnekteki değerler gösterim amaçlıdır.")
     return s
 
 
 def slayt_uretim():
-    s = Slayt("AKIS", B3, "02.2 Kural Tabanlı Değişken Üretimi · İşleyiş",
+    s = Slayt("AKIS", B3, "02.2 Kural Tabanlı Değişken Üretimi Nasıl İşler",
               "Var olan kolonlardan oran, büyüme, eğilim gibi bilinen dönüşümlerle yeni değişkenler türetilir. Şu an "
-              "üzerinde çalışılan adım.")
+              "üzerinde çalışılan adım budur.")
     s.adim_tablosu(1.5, [
-        ("s", "", "1. Hazırlık", "Kod",
-         "Kolonlar birlikte değerlendirilecek birimlere ayrılır: tek kolon, aynı ölçünün farklı dönemleri (aile) ve "
-         "anlamlı kolon çiftleri. 41 dönüşümden hangilerinin her birimde yapılabileceği belirlenir.",
-         "Her dönüşüm her kolona uymaz. Uygunluk baştan belli olursa anlamsız değişken üretilmez; kullanıcı neden "
-         "yapılamadığını kartta görür.",
-         [[K("TXN_OUT_AMT_L30D"), ", ", K("L90D"), " ve ", K("L180D"), " bir ailedir. Logaritma yalnız negatif "
-                                                                     "olmayan kolonda kullanılabilir."]]),
-        ("s", "", "2. Katkı Ölçümü", "Kod",
-         "Yapılabilen her dönüşüm Train satırlarında, örnekleme yapılmadan denenir. Bilgi değeri (IV) en iyi kaynağına "
-         "göre en az 0,02 artıyor mu ve kaynaklarıyla aynı sıralamayı mı veriyor (0,95 ve üstü ilişki) ölçülür.",
-         "Öneri ve karar izlenime değil sayıya dayansın diye ölçüm öneriden önce yapılır. Kaynağının kopyası olan "
+        ("s", "", "1. Hazırlık", "Kod yapar",
+         "Kolonlar birlikte değerlendirilecek birimlere ayrılır. Birim tek bir kolon, aynı ölçünün farklı "
+         "dönemlerinden oluşan bir aile ya da anlamlı bir kolon çifti olabilir. Sonra 41 dönüşümden hangilerinin her "
+         "birimde yapılabileceği belirlenir.",
+         "Her dönüşüm her kolona uymaz. Uygunluk baştan belli olunca anlamsız değişken üretilmez ve kullanıcı bir "
+         "dönüşümün neden yapılamadığını kartta görür.",
+         [[K("TXN_OUT_AMT_L30D"), ", ", K("L90D"), " ve ", K("L180D"), " kolonları bir ailedir. Logaritma yalnız "
+                                                                     "negatif değer almayan kolonda kullanılabilir."]]),
+        ("s", "", "2. Katkı Ölçümü", "Kod yapar",
+         "Yapılabilen her dönüşüm Train satırlarında, örnekleme yapılmadan denenir. İki şeye bakılır. Bilgi değeri "
+         "(IV) en iyi kaynağına göre en az 0,02 artıyor mu? Dönüşüm kaynaklarıyla aynı sıralamayı mı veriyor, yani "
+         "sıra ilişkisi 0,95 ve üstünde mi?",
+         "Öneri ve karar izlenime değil sayıya dayansın diye ölçüm öneriden önce yapılır. Kaynağının kopyası olan bir "
          "değişken modele yeni bilgi katmaz.",
-         "Kaynağın bilgi değeri 0,10, oranın 0,14 ise artış 0,04: yeni bilgi sayılır. Artış 0,01 olsaydı sayılmazdı."),
-        ("s", "", "3. Öneri ve Tamamlama", "Yapay zekâ, ardından kod",
+         "Kaynağın bilgi değeri 0,10, oranınki 0,14 ise artış 0,04 olur ve oran yeni bilgi sayılır. Artış 0,01 "
+         "olsaydı sayılmazdı."),
+        ("s", "", "3. Öneri ve Tamamlama", "Önce yapay zekâ, sonra kod",
          "Yapay zekâ ölçüme bakarak her birim için dönüşüm önerir ve gerekçesini sayılarla yazar. Kod, ölçüme göre "
-         "değerli olup önerilmeyeni ekler, aynı bilgiyi veren tekrarı ayıklar.",
-         "Yapay zekâ kolonun anlamını bilir, kod sayıyı; ikisi birbirinin eksiğini kapatır. Öneriyi kimin verdiği "
+         "değerli olduğu hâlde önerilmemiş dönüşümleri ekler ve aynı bilgiyi veren tekrarları ayıklar.",
+         "Yapay zekâ kolonun anlamını bilir, kod ise sayıyı. İkisi birbirinin eksiğini kapatır. Öneriyi kimin verdiği "
          "her satırda görünür.",
-         "Farklı ailelerden anlamlı çiftleri de yapay zekâ önerir; bu çiftler de aynı ölçümden geçer."),
-        ("s", "", "4. Karar ve Üretim", "Kullanıcı, ardından kod",
-         "Kullanıcı ölçümü ve öneriyi görür; kartta tek tıkla ekler ya da çıkarır, Plan Üzerine Sohbet'te soru sorar "
-         "ya da toplu değişiklik ister. Onayla kod seçilen dönüşümleri üretir ve üretim kodunu kaydeder.",
-         "Son seçim iş bilgisi gerektirir. Kaydedilen üretim kodu, aynı değişkenlerin yeniden üretilebilmesini sağlar.",
-         "Sohbette eğim nedir diye sorulabilir ya da bir kolon grubuna dönüşüm eklenmesi istenebilir; öneri gelir, "
-         "uygulamak kullanıcıya kalır."),
+         "Farklı ailelerden anlamlı çiftleri de yapay zekâ önerir. Bu çiftler de aynı ölçümden geçer."),
+        ("s", "", "4. Karar ve Üretim", "Önce kullanıcı, sonra kod",
+         "Kullanıcı ölçümü ve öneriyi görür. Kartta tek tıkla dönüşüm ekler ya da çıkarır. Plan Üzerine Sohbet "
+         "bölümünde soru sorabilir ya da toplu değişiklik isteyebilir. Onaydan sonra kod seçilen dönüşümleri üretir "
+         "ve üretim kodunu kaydeder.",
+         "Son seçim iş bilgisi gerektirir. Kaydedilen üretim kodu sayesinde aynı değişkenler yeniden üretilebilir.",
+         "Sohbette eğimin ne olduğu sorulabilir ya da bir kolon grubuna dönüşüm eklenmesi istenebilir. Öneri gelir, "
+         "uygulayıp uygulamamak kullanıcıya kalır."),
     ], 1.06, basliklar=("Aşama", "Ne Yapılır", "Neden Gerekli", "Örnek"))
-    s.dipnot("Sohbet platformda bu adımda açılır. Örnekteki sayılar gösterim amaçlıdır; eşikler: bilgi değeri artışı "
-             "0,02, sıra ilişkisi 0,95.")
-    s.notlar = ("Şu an üzerinde çalışılan adım. Birim, birlikte değerlendirilen kolon ya da kolon grubudur; örneğin "
-                "aynı ölçünün son 30, 90 ve 180 günlük kolonları bir ailedir. Sıra önemlidir: kod önce her dönüşümün "
-                "katkısını ölçer, yapay zekâ bu ölçüme bakarak önerir, kod eksik kalanı tamamlar ve tekrarı ayıklar, "
-                "kullanıcı bunların hepsini görerek karar verir. Ölçüm yalnız Train satırlarında yapılır: bilgi değeri "
-                "(IV) en iyi kaynağa göre en az 0,02 artıyorsa ve kaynaklarla sıra ilişkisi 0,95'in altındaysa dönüşüm "
-                "yeni bilgi sayılır. Kart ve sohbet geri bildirimle güncelleniyor; açık konular üretilen değişken "
-                "sayısı ve yeni bilgi eşiğidir.")
+    s.dipnot("Sohbet platformda bu adımda açılır. Örnekteki sayılar gösterim amaçlıdır. Kullanılan eşikler bilgi "
+             "değeri artışı için 0,02, sıra ilişkisi için 0,95 değeridir.")
+    s.notlar = ("Şu an üzerinde çalışılan adım budur. Birim, birlikte değerlendirilen kolon ya da kolon grubudur. "
+                "Örneğin aynı ölçünün son 30, 90 ve 180 günlük kolonları bir ailedir. Sıra önemlidir. Kod önce her "
+                "dönüşümün katkısını ölçer. Yapay zekâ bu ölçüme bakarak önerir. Kod eksik kalanı tamamlar ve tekrarı "
+                "ayıklar. Kullanıcı bunların hepsini görerek karar verir. Ölçüm yalnız Train satırlarında yapılır. "
+                "Bilgi değeri (IV) en iyi kaynağa göre en az 0,02 artıyorsa ve kaynaklarla sıra ilişkisi 0,95 değerinin "
+                "altındaysa dönüşüm yeni bilgi sayılır. Kart ve sohbet geri bildirimle güncelleniyor. Üretilen "
+                "değişken sayısı ve yeni bilgi eşiği henüz açık konulardır.")
     return s
 
 
 def slayt_asamalar():
-    s = Slayt("AKIS", B3, "02.2 Kural Tabanlı Değişken Üretimi · Üç Aşama, 41 Dönüşüm",
-              "Dönüşümler neye bakarak üretildiklerine göre üç aşamada toplanır; kartta öneriler bu sırayla gösterilir.")
+    s = Slayt("AKIS", B3, "02.2 Kural Tabanlı Değişken Üretiminde Üç Aşama ve 41 Dönüşüm",
+              "Dönüşümler neye bakarak üretildiklerine göre üç aşamada toplanır. Kartta öneriler bu sırayla gösterilir.")
     s.adim_tablosu(1.5, [
         ("s", "", "1. Kolonun kendi dönüşümü", "18 dönüşüm",
-         "Tek kolon kendi içinde dönüştürülür: ölçeği düzeltilir, bayrak ya da dilim üretilir, kategori sayıya "
-         "çevrilir. Dönüşümlerden: logaritma, karekök, uç kırpma, sıra, sıfır bayrağı, eşit frekans dilimi, frekans "
-         "kodlama, WoE, hedef ortalaması.",
-         "Ham kolonun dağılımı çoğu zaman çarpıktır; birkaç çok büyük değer ilişkiyi gizler. Kategorik kolon modele "
-         "ancak sayıya çevrilerek girer.",
-         [[K("TXN_OUT_AMT_L30D"), " kolonunun logaritması: çok büyük tutarların etkisi sıkışır, küçük farklar "
+         "Tek bir kolon kendi içinde dönüştürülür. Ölçeği düzeltilir, bayrak ya da dilim üretilir, kategori sayıya "
+         "çevrilir. Logaritma, karekök, uç kırpma, sıra, sıfır bayrağı, eşit frekans dilimi, frekans kodlama, WoE ve "
+         "hedef ortalaması bu aşamadaki dönüşümlerden bazılarıdır.",
+         "Ham kolonun dağılımı çoğu zaman çarpıktır ve birkaç çok büyük değer ilişkiyi gizler. Kategorik kolon ise "
+         "modele ancak sayıya çevrilerek girebilir.",
+         [[K("TXN_OUT_AMT_L30D"), " kolonunun logaritması alınır. Çok büyük tutarların etkisi sıkışır, küçük farklar "
                                   "korunur."]]),
         ("s", "", "2. Aile içi üretim", "13 dönüşüm",
-         "Aynı ölçünün farklı dönemleri birbiriyle karşılaştırılır: kısa dönem bölü uzun dönem, önceki döneme göre "
-         "büyüme, eğilim, düzensizlik, en yoğun dönemin payı.",
-         "Tek dönemin düzeyinden çok zaman içindeki değişim ayırt edicidir: aynı tutarı harcayan iki müşteriden biri "
-         "hızlanıyor, öbürü yavaşlıyor olabilir.",
-         [[K("TXN_OUT_AMT_L30D"), " bölü ", K("TXN_OUT_AMT_L90D"), ": son 30 günün son 90 güne oranı; harcama "
-                                                                 "hızlanıyor mu, yavaşlıyor mu."]]),
+         "Aynı ölçünün farklı dönemleri birbiriyle karşılaştırılır. Kısa dönemin uzun döneme oranı, önceki döneme göre "
+         "büyüme, eğilim, düzensizlik ve en yoğun dönemin payı bu aşamada üretilir.",
+         "Çoğu zaman tek bir dönemin düzeyinden çok, zaman içindeki değişim ayırt edicidir. Aynı tutarı harcayan iki "
+         "müşteriden biri hızlanıyor, öbürü yavaşlıyor olabilir.",
+         [[K("TXN_OUT_AMT_L30D"), " bölü ", K("TXN_OUT_AMT_L90D"), " son 30 günün son 90 güne oranını verir. "
+                                                                 "Harcamanın hızlandığını ya da yavaşladığını "
+                                                                 "gösterir."]]),
         ("s", "", "3. Aileler arası üretim", "10 dönüşüm",
-         "Birbiriyle anlamlı ilişkisi olan farklı kolonlar birleştirilir: net akış, işlem başına ortalama tutar, alt "
-         "kırılımın toplamdaki payı, tek kanala yoğunlaşma, segment içindeki yer.",
-         "Bazı bilgiler tek kolonda yoktur, iki kolonun ilişkisinde ortaya çıkar. Anlamlı çifti yapay zekâ kolonların "
-         "anlamından önerir, katkısını kod ölçer.",
-         [[K("TXN_IN_AMT_L30D"), " eksi ", K("TXN_OUT_AMT_L30D"), ": net akış; hesaba giren mi fazla, çıkan mı."]]),
+         "Aralarında anlamlı bir ilişki olan farklı kolonlar birleştirilir. Net akış, işlem başına ortalama tutar, alt "
+         "kırılımın toplamdaki payı, tek kanala yoğunlaşma ve segment içindeki yer bu aşamada üretilir.",
+         "Bazı bilgiler tek kolonda bulunmaz, iki kolonun ilişkisinde ortaya çıkar. Anlamlı çifti yapay zekâ "
+         "kolonların anlamından yola çıkarak önerir, katkısını kod ölçer.",
+         [[K("TXN_IN_AMT_L30D"), " eksi ", K("TXN_OUT_AMT_L30D"), " net akışı verir. Hesaba girenin mi çıkanın mı "
+                                                                "fazla olduğunu gösterir."]]),
     ], 1.44, basliklar=("Aşama", "Ne Yapılır", "Neden Gerekli", "Örnek"))
-    s.dipnot("Kartta 41 dönüşümün her biri sade adı, ne yaptığı, bu verideki örneği ve bu veride neden kullanılabilir "
-             "ya da kullanılamaz olduğuyla listelenir.")
+    s.dipnot("Kartta 41 dönüşümün her biri sade adı, ne yaptığı, bu verideki örneği ve bu veride neden kullanılabildiği "
+             "ya da kullanılamadığıyla listelenir.")
     s.notlar = ("Aşama, dönüşümün neye baktığını söyler. Birinci aşama tek kolonla, ikinci aşama aynı ölçünün farklı "
-                "dönemleriyle, üçüncü aşama birbiriyle ilişkili farklı kolonlarla çalışır. Hangi dönüşüm önerilir: "
-                "türetildiği kolonlardan belirgin biçimde daha fazla bilgi taşıyan ve onların kopyası olmayan. Son seçim "
-                "kullanıcınındır. Kolon adları 01 fazında standartlaştırılan adlardır; örnekler gösterim amaçlıdır.")
+                "dönemleriyle, üçüncü aşama birbiriyle ilişkili farklı kolonlarla çalışır. Türetildiği kolonlardan "
+                "belirgin biçimde daha fazla bilgi taşıyan ve onların kopyası olmayan dönüşümler önerilir. Son seçim "
+                "kullanıcınındır. Kolon adları 01 fazında standartlaştırılan adlardır ve örnekler gösterim amaçlıdır.")
     return s
 
 
 def slayt_sirada_hazirlama():
-    s = Slayt("AKIS", B4, "02.3 ve 03 · Yapay Zekâ ile Keşif, Veri Anlama ve Hazırlama", SIRADA_CUMLE)
+    s = Slayt("AKIS", B4, "02.3 AI Değişken Keşfi ile 03 Veri Anlama ve Hazırlama", SIRADA_CUMLE)
     s.adim_tablosu(1.5, [
-        ("r", "02.3", "AI Değişken Keşfi", "Öneri: yapay zekâ · Denetim ve hesap: kod",
-         "Bilinen kalıpların dışında yeni değişken fikirleri aranır. Yapay zekâ kod yazmaz, yalnız formül önerir; kod "
-         "formülü denetler (var olan kolonlar, izinli işlemler; hedef ve kimlik kullanılamaz) ve hesabı kendisi yapar.",
-         "Hazır dönüşümler yaygın kalıpları kapsar, veriye özgü fikirler dışarıda kalır. Denetim, önerinin güvenle "
-         "çalıştırılmasını sağlar.",
-         "Kullanılan limitin toplam limite oranı gibi, iki kolonun anlamına dayanan bir formül."),
-        ("r", "03.1", "Tek Değişken Analizi (SFA)", "Ölçüm: kod · Öneri: yapay zekâ · Onay: kullanıcı",
-         "Ham ve üretilen her değişkenin hedefle ilişkisi tek tek ölçülür: bilgi değeri (IV), beş dönüşümle ayırma "
-         "gücü, hedefe göre aralıklar. Eleme yapılmaz; değişkenin modele hangi hâliyle gireceği önerilir.",
-         "Bir değişken ham hâliyle zayıf, aralıklara bölünmüş ya da dönüştürülmüş hâliyle güçlü olabilir. Doğru hâl "
-         "baştan seçilirse sonraki elemeler adil olur.",
+        ("r", "02.3", "AI Değişken Keşfi", "Yapay zekâ önerir, kod denetler ve hesaplar",
+         "Bilinen kalıpların dışında yeni değişken fikirleri aranır. Yapay zekâ kod yazmaz, yalnız formül önerir. Kod "
+         "formülü denetler ve hesabı kendisi yapar. Formülde yalnız var olan kolonlar ve izinli işlemler bulunabilir, "
+         "hedef ve kimlik kolonu kullanılamaz.",
+         "Hazır dönüşümler yaygın kalıpları kapsar ama veriye özgü fikirler dışarıda kalır. Denetim sayesinde öneri "
+         "güvenle çalıştırılabilir.",
+         "Kullanılan limitin toplam limite oranı gibi, iki kolonun anlamına dayanan bir formül önerilebilir."),
+        ("r", "03.1", "Tek Değişken Analizi (SFA)", "Kod ölçer, yapay zekâ önerir, kullanıcı onaylar",
+         "Ham ve üretilen her değişkenin hedefle ilişkisi tek tek ölçülür. Bilgi değeri (IV), beş dönüşümle ayırma "
+         "gücü ve hedefe göre aralıklar hesaplanır. Bu adımda eleme yapılmaz, değişkenin modele hangi hâliyle "
+         "gireceği önerilir.",
+         "Bir değişken ham hâliyle zayıf görünüp aralıklara bölündüğünde ya da dönüştürüldüğünde güçlü olabilir. Doğru "
+         "hâl baştan seçilirse sonraki elemeler adil olur.",
          "Yaş kolonu modele ham hâliyle değil, hedefe göre bulunan aralıklarla girer."),
-        ("r", "03.2", "Stabilite Analizi (PSI)", "Ölçüm: kod",
-         "Değişken dağılımlarının zaman içinde kayıp kaymadığı ölçülür: Train seti ile Validasyon seti karşılaştırılır. "
-         "Kararsız kolonlar bir sonraki adımda düşürülecekler arasında gösterilir.",
-         "Dağılımı zamanla değişen değişken geçmişte iyi ayırsa da yeni dönemde aynı davranmaz; model kullanımda "
-         "bozulur.",
+        ("r", "03.2", "Stabilite Analizi (PSI)", "Kod ölçer",
+         "Değişken dağılımlarının zaman içinde kayıp kaymadığı ölçülür. Bunun için Train seti ile Validasyon seti "
+         "karşılaştırılır. Kararsız çıkan kolonlar bir sonraki adımda düşürülecekler arasında gösterilir.",
+         "Dağılımı zamanla değişen bir değişken geçmişte iyi ayırmış olsa bile yeni dönemde aynı davranmaz ve model "
+         "kullanımda bozulur.",
          "Kampanya döneminde sıçrayan bir işlem adedi kolonu kararsız çıkar."),
-        ("r", "03.3", "Analitik Baz Set", "Plan: kod · Onay: kullanıcı",
-         "Kusurlu ve kararsız kolonlar düşürülür, tek değişken analizindeki kararlar uygulanır, kalan eksikler Train "
+        ("r", "03.3", "Analitik Baz Set", "Kod planlar, kullanıcı onaylar",
+         "Kusurlu ve kararsız kolonlar düşürülür, tek değişken analizindeki kararlar uygulanır. Kalan eksikler Train "
          "setinin medyanıyla doldurulur ve set dondurulur.",
-         "Sonraki adımların hepsi aynı, değişmeyen veride çalışmalıdır; yoksa sonuçlar karşılaştırılamaz. Doldurma "
+         "Sonraki adımların hepsi aynı ve değişmeyen veride çalışmalıdır, yoksa sonuçlar karşılaştırılamaz. Doldurma "
          "değerinin yalnız Train setinden gelmesi sızıntıyı önler.",
-         "Plan düşecek kolonları sebebiyle sayar: eksik, sabit, kimlik benzeri, kararsız."),
+         "Plan, düşecek kolonları eksik, sabit, kimlik benzeri ve kararsız gibi sebeplerine göre sayar."),
     ], 1.06)
     s.dipnot("Örnekler gösterim amaçlıdır.")
-    s.notlar = ("Bu dört adımın ilk sürümleri kodda var; henüz 01 ve 02.1'deki yapıya göre ele alınmadı, ayrıntılar "
-                "değişebilir. 02.3'te yapay zekânın yazdığı formül kodla denetlenir; geçersiz formül, olmayan kolon ya "
-                "da hedefi kullanan öneri reddedilir. 03 fazı üretimden sonra gelir; böylece ham ve üretilen "
-                "değişkenlerin hepsi aynı ölçümden geçer. Analitik baz set dondurulduktan sonra sızıntı kontrolü, aday "
-                "değişken seti ve modelleme bu sette yapılır.")
+    s.notlar = ("Bu dört adımın ilk sürümleri kodda var. Henüz 01 ve 02.1 adımlarındaki yapıya göre ele alınmadılar, "
+                "bu yüzden ayrıntılar değişebilir. 02.3 adımında yapay zekânın yazdığı formül kodla denetlenir. "
+                "Geçersiz formül, olmayan bir kolon ya da hedefi kullanan öneri reddedilir. 03 fazı üretimden sonra "
+                "gelir, böylece ham ve üretilen değişkenlerin hepsi aynı ölçümden geçer. Analitik baz set "
+                "dondurulduktan sonra sızıntı kontrolü, aday değişken seti ve modelleme bu sette yapılır.")
     return s
 
 
 def slayt_sirada_model():
-    s = Slayt("AKIS", B4, "04 ve 05 · Değişken Değerlendirme, Modelleme ve Finalizasyon", SIRADA_CUMLE)
+    s = Slayt("AKIS", B4, "04 Değişken Değerlendirme ile 05 Modelleme ve Finalizasyon", SIRADA_CUMLE)
     s.adim_tablosu(1.5, [
         ("r", "04.1", "Sızıntı Kontrolü", "",
-         "Train satırlarında hedefle ilişkisi aşırı yüksek olan değişkenler sızıntı şüphelisi sayılır; aday sete ve "
-         "modele alınmaz.",
-         "Hedefi ele veren değişken başarıyı kâğıt üstünde yükseltir, gerçek kullanımda işe yaramaz.",
+         "Train satırlarında hedefle ilişkisi aşırı yüksek çıkan değişkenler sızıntı şüphelisi sayılır. Bunlar aday "
+         "sete ve modele alınmaz.",
+         "Hedefi ele veren değişken başarıyı kâğıt üstünde yükseltir ama gerçek kullanımda işe yaramaz.",
          "Olaydan sonra dolan bir takip kolonu hedefle neredeyse birebir çıkar."),
         ("r", "04.2", "Aday Değişken Seti", "",
-         "Dört aşama sırayla uygulanır: yarı sabit eleme, fazlalık eleme, karşılıklı bilgi skoru, model önemi. Hepsi "
-         "yalnız eğitim satırlarında hesaplanır.",
-         "Aynı bilgiyi taşıyan değişkenler modeli şişirir. Her değişkenin hangi aşamada elendiği kayıtta kalır.",
+         "Sırayla dört aşama uygulanır. Bunlar yarı sabit eleme, fazlalık eleme, karşılıklı bilgi skoru ve model "
+         "önemidir. Hepsi yalnız eğitim satırlarında hesaplanır.",
+         "Aynı bilgiyi taşıyan değişkenler modeli gereksiz büyütür. Her değişkenin hangi aşamada elendiği kayıtta "
+         "kalır.",
          "Birbiriyle çok yüksek ilişkili iki değişkenden bilgi değeri düşük olan elenir."),
         ("r", "05.1", "Model Karşılaştırması", "",
-         "Baz değişkenlerle kurulan model ile yeni değişkenlerin eklendiği model aynı bölme ve aynı ayarlarla "
-         "karşılaştırılır; ölçüm birkaç kez tekrarlanır.",
-         "Asıl soru: üretilen değişkenler ölçülebilir katkı sağladı mı. Tek koşudaki fark tesadüf olabilir.",
-         "Fark yüzde 95 güven aralığıyla raporlanır; aralık sıfırı içeriyorsa katkı kanıtlanmamıştır."),
+         "Baz değişkenlerle kurulan model, yeni değişkenlerin eklendiği modelle aynı bölme ve aynı ayarlarla "
+         "karşılaştırılır. Ölçüm birkaç kez tekrarlanır.",
+         "Asıl soru üretilen değişkenlerin ölçülebilir bir katkı sağlayıp sağlamadığıdır. Tek koşudaki fark tesadüf "
+         "olabilir.",
+         "Fark yüzde 95 güven aralığıyla raporlanır. Aralık sıfırı içeriyorsa katkı kanıtlanmış sayılmaz."),
         ("r", "05.2", "Algoritma Seçimi", "",
-         "Dört algoritma aynı değişken seti, aynı bölme ve aynı ayarlarla eğitilir; ayırma gücü ve eğitim süresi "
+         "Dört algoritma aynı değişken seti, aynı bölme ve aynı ayarlarla eğitilir. Ayırma güçleri ve eğitim süreleri "
          "karşılaştırılır.",
-         "Tek fark algoritma olursa karşılaştırma adil olur; algoritma ölçülerek seçilir.",
-         "Ölçütler: ROC-AUC, Gini, KS ve eğitim süresi. Eğitim Dataiku senaryosunda çalışır."),
+         "Tek fark algoritma olunca karşılaştırma adil olur ve algoritma ölçülerek seçilir.",
+         "ROC-AUC, Gini, KS ve eğitim süresine bakılır. Eğitim Dataiku senaryosunda çalışır."),
         ("r", "05.3", "Model Finalizasyonu", "",
-         "Seçilen model son hâliyle eğitilir, modelin hiç görmediği sette doğrulanır ve kaydedilir; ardından "
-         "validasyon ölçütlerinden geçirilir.",
-         "Model kullanıma hazır ve denetlenebilir olmalıdır.",
-         "Ölçütler: Gini, Gini düşüşü, KS, skor kararlılığı, yeni değişken katkısı."),
+         "Seçilen model son hâliyle eğitilir, hiç görmediği sette doğrulanır ve kaydedilir. Ardından validasyon "
+         "ölçütlerinden geçirilir.",
+         "Modelin kullanıma hazır ve denetlenebilir olması gerekir.",
+         "Gini, Gini düşüşü, KS, skor kararlılığı ve yeni değişkenlerin katkısına bakılır."),
         ("r", "05.4", "Değişken Kataloğu", "",
-         "Kabul edilen her değişkenin formülü, kaynak kolonları, çalıştırılabilir kodu, seçim sonucu ve modele katkısı "
-         "kalıcı kataloğa yazılır.",
-         "Üretilen değişken o modelde kalmasın: başka bir çalışma aynı değişkeni katalogdaki koduyla yeniden üretebilir.",
-         "Katalog satırı: ad, formül, kaynak kolonlar, kod, gerekçe, seçim sonucu."),
+         "Kabul edilen her değişkenin formülü, kaynak kolonları, çalıştırılabilir kodu, seçim sonucu ve modele "
+         "katkısı kalıcı kataloğa yazılır.",
+         "Böylece üretilen değişken o modelde kalmaz. Başka bir çalışma aynı değişkeni katalogdaki koduyla yeniden "
+         "üretebilir.",
+         "Katalog satırında ad, formül, kaynak kolonlar, kod, gerekçe ve seçim sonucu bulunur."),
     ], 0.69)
-    s.dipnot("Bu fazlarda kimin önerdiği ve kimin karar verdiği, adımlar ele alınırken 01 ve 02'deki düzene göre "
+    s.dipnot("Bu fazlarda kimin önerip kimin karar vereceği, adımlar ele alınırken 01 ve 02 fazlarındaki düzene göre "
              "netleşecek. Örnekler gösterim amaçlıdır.")
-    s.notlar = ("Bu altı adımın ilk sürümleri kodda var; henüz 01 ve 02.1'deki yapıya göre ele alınmadı, ayrıntılar "
-                "değişebilir. 04 fazı dondurulmuş analitik baz sette çalışır ve yalnız eğitim satırlarını kullanır; "
-                "böylece seçim kararına ölçüm verisinden bilgi karışmaz. 05.1 asıl soruyu cevaplar: üretilen "
-                "değişkenler modele ölçülebilir katkı sağladı mı. Değişken kataloğu, ihtiyaç slaytındaki yeniden "
-                "kullanım sorununun karşılığıdır.")
+    s.notlar = ("Bu altı adımın ilk sürümleri kodda var. Henüz 01 ve 02.1 adımlarındaki yapıya göre ele alınmadılar, "
+                "bu yüzden ayrıntılar değişebilir. 04 fazı dondurulmuş analitik baz sette çalışır ve yalnız eğitim "
+                "satırlarını kullanır. Böylece seçim kararına ölçüm verisinden bilgi karışmaz. 05.1 adımı asıl soruyu "
+                "cevaplar ve üretilen değişkenlerin modele ölçülebilir bir katkı sağlayıp sağlamadığını gösterir. "
+                "Değişken kataloğu, ihtiyaç slaytındaki yeniden kullanım sorununun karşılığıdır.")
     return s
 
 
 def slayt_durum():
-    s = Slayt("AKIS", B4, "Durum · Geliştirilenler ve Sıradakiler",
-              "01 ve 02.1 geliştirildi; şu an 02.2 Kural Tabanlı Değişken Üretimi üzerinde çalışılıyor.")
+    s = Slayt("AKIS", B4, "Geliştirilenler ve Sıradakiler",
+              "01 ve 02.1 geliştirildi. Şu an 02.2 Kural Tabanlı Değişken Üretimi üzerinde çalışılıyor.")
     s.kutu(0.5, 1.58, 12.33, 2.5, "gri", "akış bandı")
     adimlar = [("01", "Çalışma Kurulumu", "g"), ("02.1", "Veri Profili ve Kalite", "g"),
                ("02.2", "Kural Tabanlı Değişken Üretimi", "s"), ("02.3", "AI Değişken Keşfi", "r"),
@@ -1747,19 +1770,20 @@ def slayt_durum():
             s.yazi("Şu an buradayız", cx - 0.85, 1.67, 1.7, 0.28, boy=10.5, kalin=True, renk=BEYAZ)
     kw = (12.33 - 0.5) / 3
     s.kart(0.5, 4.32, kw, 2.0, "gri", "Geliştirilen",
-           ["01 Çalışma Kurulumu: veri seti ve sözlük, kolon rolleri, eksik tanımlar, sözlük ve kolon adı kontrolü, "
-            "tip kontrolü, bölme",
-            "02.1 Veri Profili ve Kalite: 20 eşik, 26 kontrol, düzeltme ve çözüm önerileri"], baslik_boy=14, boy=11.5)
-    s.kart(0.5 + kw + 0.25, 4.32, kw, 2.0, "simdi", "Üzerinde çalışılan",
-           ["02.2 Kural Tabanlı Değişken Üretimi: kod 41 dönüşümün katkısını ölçer, yapay zekâ ölçüme bakarak önerir, "
-            "kullanıcı kartta ve sohbette karar verir",
-            "Açık konular: üretilen değişken sayısı ve yeni bilgi eşiği"],
+           ["01 Çalışma Kurulumu tamamlandı. Veri seti ve sözlük, kolon rolleri, eksik tanımlar, sözlük ve kolon adı "
+            "kontrolü, tip kontrolü ve bölme adımlarını kapsar",
+            "02.1 Veri Profili ve Kalite tamamlandı. 20 eşik, 26 kontrol, düzeltme ve çözüm önerileri içerir"],
+           baslik_boy=14, boy=11.5)
+    s.kart(0.5 + kw + 0.25, 4.32, kw, 2.0, "simdi", "Üzerinde Çalışılan",
+           ["02.2 Kural Tabanlı Değişken Üretimi sürüyor. Kod 41 dönüşümün katkısını ölçer, yapay zekâ ölçüme "
+            "bakarak önerir, kullanıcı kartta ve sohbette karar verir",
+            "Üretilen değişken sayısı ve yeni bilgi eşiği henüz açık konulardır"],
            baslik_boy=14, boy=11.5)
     s.kart(0.5 + 2 * (kw + 0.25), 4.32, kw, 2.0, "soluk", "Sırada",
            ["02.3 AI Değişken Keşfi",
-            "03 Veri Anlama ve Hazırlama, 04 Değişken Değerlendirme, 05 Modelleme ve Finalizasyon: ilk sürümleri "
+            "03 Veri Anlama ve Hazırlama, 04 Değişken Değerlendirme ve 05 Modelleme ve Finalizasyon. İlk sürümleri "
             "kodda var, bu yapıya göre ele alınacak"], baslik_boy=14, boy=11.5)
-    s.notlar = ("Durum slaytı. Akış beş fazdan oluşuyor; 01 ve 02.1 geliştirildi, şu an 02.2 üzerinde çalışılıyor. "
+    s.notlar = ("Durum slaytı. Akış beş fazdan oluşuyor. 01 ve 02.1 geliştirildi, şu an 02.2 üzerinde çalışılıyor. "
                 "02.3 ve sonrasının ilk sürümleri kodda var ama bu yapıya göre henüz ele alınmadı.")
     return s
 
