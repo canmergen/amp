@@ -1148,14 +1148,17 @@ SIRADA_CUMLE = ("Bu adımlar sıradadır. İlk sürümleri kodda var, 02.2 tamam
 
 def slayt_ihtiyac():
     s = Slayt("AKIS", B1, "İhtiyaç ve Amaç")
-    s.dik(0.5, 1.1, 0.06, 0.78, KIR, "amaç çizgisi")
-    s.yazi("Model geliştirirken veri hazırlığı, eleme ve değişken üretimi bugün büyük ölçüde elle yapılıyor ve her "
-           "modelde farklı yürütülüyor. Bir modelde yapılan iş o modelde kalıyor, süreler uzuyor. Platform bu adımları "
-           "herkes için aynı olan, izlenebilir tek bir akışta toplar. Amaç süreci yapay zekâ desteğiyle hızlandırmak, "
-           "modele yalnız katkısı ölçülmüş değişkenleri almak ve emeği katma değeri yüksek işlere ayırmaktır.",
-           0.7, 1.1, 12.13, 0.78, boy=12.5, hiza="l")
+    s.dik(0.5, 1.08, 0.06, 1.0, KIR, "amaç çizgisi")
+    s.yazi([["Model geliştirirken veri hazırlığı, eleme ve değişken üretimi bugün büyük ölçüde elle yapılıyor ve her "
+             "modelde farklı yürütülüyor. Bir modelde yapılan iş o modelde kalıyor, süreler uzuyor. ",
+             R("Platformun en büyük amacı, hazır tablolardan üretilebilecek en iyi değişken kombinasyonlarını bulmak "
+               "ve baz tabloyu kaynak tablolardan kurabilmektir.", kalin=True, renk=KIR),
+             " Böylece akla gelmeyen tablolar da birleştirilir, modele katkı sağlayan yeni değişkenler elde edilir ve "
+             "model performansı yükselir. Bunu yaparken süreci yapay zekâ desteğiyle hızlandırmak, modele yalnız "
+             "katkısı ölçülmüş değişkenleri almak ve emeği katma değeri yüksek işlere ayırmak hedeflenir."]],
+           0.7, 1.08, 12.13, 1.0, boy=11.5, hiza="l")
     kx, kw, ex, ew, px, pw = 0.5, 2.3, 2.95, 4.6, 7.93, 4.9
-    s.sutun_basliklari(2.04, [(kx, kw, "Konu"), (ex, ew, "Elle Yürütülen Süreçte"), (px, pw, "Platformda")])
+    s.sutun_basliklari(2.16, [(kx, kw, "Konu"), (ex, ew, "Elle Yürütülen Süreçte"), (px, pw, "Platformda")])
     satirlar = [
         ("Yöntem Birliği",
          "Benzer modellerde bile hazırlık, eleme ve üretim adımlarını herkes kendi bildiği gibi uygular. Sonuçları "
@@ -1169,6 +1172,9 @@ def slayt_ihtiyac():
          "Sözlük okuma, veri temizliği ve dönüşüm kodu her modelde baştan yapılır. İşler gecikir, geliştirme süresi "
          "uzar.",
          "Sayımı ve ölçümü kod yapar, öneriyi yapay zekâ hazırlar. Kullanıcı zamanını incelemeye ve karara ayırır."),
+        ("Kaynak Tablolar",
+         "Baz tablo bilinen birkaç tablodan elle kurulur. Akla gelmeyen tablolardaki bilgi modele hiç girmez.",
+         "Baz tablo seçilen kaynak tablolardan kurulabilir. Birleştirme planını yapay zekâ önerir, kullanıcı onaylar."),
         ("Sözlük ve Kolon Adları",
          "Kısaltmalı adlar ve eksik ya da tutarsız açıklamalar her çalışmada yeniden çözülür.",
          "Adlar ve açıklamalar bir kez kontrol edilip onaylanır, adlar standart yazılışa çevrilir."),
@@ -1182,9 +1188,9 @@ def slayt_ihtiyac():
          "Kararların izi dağınık notlarda ve dosyalarda kalır. Çalışmayı devralmak ve denetlemek zordur.",
          "Her adımın kararı, gerekçesi ve üretim kodu tek yerde durur. Çalışma kaldığı yerden açılır."),
     ]
-    h, ara = 0.5, 0.07
+    h, ara = 0.44, 0.05
     for i, (konu, elle, platform) in enumerate(satirlar):
-        y = 2.5 + i * (h + ara)
+        y = 2.6 + i * (h + ara)
         s.veri(kx, y, kw, h, konu)
         s.kutu(ex, y, ew, h, "cerceve", "elle " + konu)
         s.yazi(elle, ex + 0.12, y, ew - 0.24, h, boy=10.5, renk=GRI, hiza="l")
@@ -1194,7 +1200,10 @@ def slayt_ihtiyac():
     s.dipnot("Platform şu an sınıflandırma modelleri (0 ve 1 değerli hedef) için açıktır. Farklı veri setlerinde aynı "
              "akış kullanılır.")
     s.notlar = ("Bu slayt ihtiyacı ve amacı anlatır. Soldaki sütun elle yürütülen bir model geliştirme sürecinde sık "
-                "karşılaşılan durumu, sağdaki sütun platformun bunu nasıl ele aldığını gösterir. Öne çıkan üç sorun "
+                "karşılaşılan durumu, sağdaki sütun platformun bunu nasıl ele aldığını gösterir. En büyük amaç iki "
+                "parçalıdır. Birincisi hazır tablolardan üretilebilecek en iyi değişken kombinasyonlarını bulmaktır. "
+                "İkincisi baz tabloyu kaynak tablolardan kurabilmektir. Böylece akla gelmeyen tablolar da birleştirilir "
+                "ve modele katkı sağlayan başka değişkenler elde edilebilir. Öne çıkan üç sorun "
                 "var. Benzer modellerde bile yöntem kişiden kişiye değişiyor. Bir modelde yapılan üretim ve elemeler "
                 "başka modellerde kullanılamıyor. Bunların sonucunda süreler uzuyor. Sağdaki maddeler platformda bugün "
                 "çalışan özelliklerdir. Üretilen değişkenlerin kalıcı kataloğu 05.4 adımıdır ve sıradadır. Soldaki "
@@ -1352,8 +1361,8 @@ def slayt_kurulum_veri():
          "Çalışmanın nereden başlayacağı seçilir. Modellemeye girecek tablo hazırsa Baz Veri Seti Mevcut seçilir. "
          "Tablo hazır değilse Kaynak Tablolar Mevcut seçilir ve baz veri seti bu tablolar birleştirilerek kurulur. "
          "Sözlük iki seçenekte de isteğe bağlıdır.",
-         "Her ekibin verisi aynı hazırlıkta gelmez. Sonraki adımlar bu seçime göre şekillenir. Tablo hazırsa doğrudan "
-         "seçilir, değilse önce birleştirme planı çıkarılır.",
+         "Her ekibin verisi aynı hazırlıkta gelmez. Kaynak tablolardan başlamak, akla gelmeyen tabloların da "
+         "birleştirilmesine ve modele katkı sağlayacak yeni değişkenlerin bulunmasına imkân verir.",
          "Tek bir modelleme tablosu varsa birinci seçenek uygundur. Müşteri, işlem ve ürün tabloları ayrı duruyorsa "
          "ikinci seçenek seçilir."),
         ("g", "01.2.1", "Baz Veri Seti ve Baz Sözlük", "Kod kopyalar ve sayar, kullanıcı seçer",
