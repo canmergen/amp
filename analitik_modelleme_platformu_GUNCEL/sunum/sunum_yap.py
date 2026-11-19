@@ -75,7 +75,7 @@ GORSEL_KLASOR = "LLM_WEBAPP_GORSEL"
 GORSEL_DIZIN = None
 # Sunumdaki yeri -> dosya adi. Dosyayi degistirmek icin yalniz burayi duzenleyin.
 GORSELLER = {
-    "kapak": "robot_header.png",          # kapakta, slaydin tam ortasinda
+    "kapak": "robot_header.png",          # kapakta, basligin ustunde, ortada ve buyuk
     "kapanis": "robot_alt.png",           # son slaytta, en altta, alt kenara yapisik
 }
 KAPANIS = True                             # sona tesekkur slaydi eklensin mi
@@ -523,15 +523,15 @@ _TURLER = {
 class Slayt(object):
     """Bir slayt: sekiller sirayla eklenir. Olculer inc."""
 
-    def __init__(self, yerlesim, bolum, baslik, ust=None, alt=None):
-        self.yerlesim = yerlesim          # "KAPAK" ya da "AKIS"
+    def __init__(self, yerlesim, bolum, baslik, ust=None):
+        self.yerlesim = yerlesim          # "KAPAK", "AKIS" ya da "KAPANIS"
         self.bolum = bolum
         self.baslik = baslik
         self.ust = ust                    # AKIS: baslik altindaki cumle; KAPAK: birim satiri
-        self.alt = alt                    # KAPAK: tarih satiri
+        self.baslik_kutu = None           # (x, y, w, h): baslik yer tutucusunun bu slayttaki yeri (yerlesimdekini ezer)
         self.notlar = ""
         self.gorseller = []               # bu slayttaki gorseller, iliski sirasiyla
-        self.kapak_gorseli = False        # KAPAK: banda gorsel kondu mu (konmadiysa yer tutucu kalir)
+        self.kapak_gorseli = False        # KAPAK: gorsel kondu mu (konmadiysa resim yer tutucusu kalir)
         self._x = []
         self._sid = 3 if yerlesim == "AKIS" else 5      # ilk kimlikler yer tutucularin
 
@@ -668,27 +668,30 @@ class Slayt(object):
         self.yazi(govde, x + 0.2, y + 0.48, w - 0.4, h - 0.56, boy=boy, hiza="l", dikey="t", bosluk=3)
 
     # ---- XML --------------------------------------------------------------
-    def _yer_tutucu(self, sid, ad, ph, metin):
+    def _yer_tutucu(self, sid, ad, ph, metin, kutu=None):
+        """kutu verilirse (x, y, w, h, inc) yer tutucunun yerlesimdeki yerini ezer."""
+        yer = '<p:spPr/>'
+        if kutu:
+            yer = ('<p:spPr><a:xfrm><a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm></p:spPr>'
+                   % tuple(_emu(v) for v in kutu))
         return ('<p:sp><p:nvSpPr><p:cNvPr id="%d" name=%s/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>'
-                '<p:nvPr><p:ph %s/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/>'
+                '<p:nvPr><p:ph %s/></p:nvPr></p:nvSpPr>%s<p:txBody><a:bodyPr/><a:lstStyle/>'
                 '<a:p><a:r><a:rPr lang="%s" dirty="0"/><a:t>%s</a:t></a:r></a:p></p:txBody></p:sp>'
-                % (sid, _oz(ad), ph, DIL, _kacis(metin)))
+                % (sid, _oz(ad), ph, yer, DIL, _kacis(metin)))
 
     def xml(self, sira):
         """Slaytin XML'i. sira: 1'den baslayan slayt numarasi."""
         x = [_BAS, '<p:sld %s><p:cSld><p:spTree>' % _NS3, _GRUP,
-             self._yer_tutucu(2, "Başlık", 'type="title"', self.baslik)]
+             self._yer_tutucu(2, "Başlık", 'type="title"', self.baslik, self.baslik_kutu)]
         if self.yerlesim == "KAPAK":
             if self.ust:
                 x.append(self._yer_tutucu(3, "Birim", 'type="body" sz="quarter" idx="10"', self.ust))
-            if self.alt:
-                x.append(self._yer_tutucu(4, "Tarih Satırı", 'type="body" sz="quarter" idx="11"', self.alt))
             if not self.kapak_gorseli:
                 # Gorsel bulunamadi: bos resim yer tutucusu kalir, PowerPoint'te tiklaninca resim eklenir.
                 x.append('<p:sp><p:nvSpPr><p:cNvPr id="5" name="Kapak Görseli"/><p:cNvSpPr>'
                          '<a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="pic" sz="quarter" idx="12"/>'
                          '</p:nvPr></p:nvSpPr><p:spPr/></p:sp>')
-        else:
+        elif self.yerlesim == "AKIS":
             x.append(self._yer_tutucu(3, "Özet Cümle", 'type="body" sz="quarter" idx="10"', self.ust or ""))
         x.extend(self._x)
         if self.yerlesim == "AKIS":
@@ -810,7 +813,7 @@ def _ana_slayt():
                   "Asıl metin stillerini düzenlemek için tıklayın")
             + _numara_yt(4, 4)
             + '</p:spTree></p:cSld><p:clrMap %s/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/>'
-            '<p:sldLayoutId id="2147483650" r:id="rId2"/></p:sldLayoutIdLst><p:txStyles><p:titleStyle>'
+            '<p:sldLayoutId id="2147483650" r:id="rId2"/><p:sldLayoutId id="2147483651" r:id="rId3"/></p:sldLayoutIdLst><p:txStyles><p:titleStyle>'
             '<a:lvl1pPr algn="ctr" defTabSz="914400" rtl="0" eaLnBrk="1" latinLnBrk="0" hangingPunct="1">'
             '<a:spcBef><a:spcPct val="0"/></a:spcBef><a:buNone/><a:defRPr sz="4400" kern="1200"><a:solidFill>'
             '<a:schemeClr val="tx1"/></a:solidFill><a:latin typeface="+mj-lt"/><a:ea typeface="+mj-ea"/>'
@@ -829,26 +832,41 @@ def _yerlesim(ad, ogeler, zemin=None):
 
 
 
+# Kapak olculeri (inc): gorsel alani ustte, baslik ve birim satiri sol altta
+KAPAK_GORSEL = (0.5, 0.4, 12.33, 5.6)       # gorselin sigdirildigi alan (x, y, w, h)
+KAPAK_BASLIK = (0.5, 6.25, 12.33, 0.6)
+KAPAK_BIRIM = (0.5, 6.85, 12.33, 0.4)
+KAPANIS_BOY = 54                            # son slayttaki basligin punto boyu
+
+
 def _yerlesim_kapak():
-    """Kapak ve kapanis: beyaz zemin; sol ustte kirmizi baslik ve altinda birim
-    satiri, sol altta tarih satiri. Kapak gorseli slaydin tam ortasinda durur;
-    gorsel bulunamazsa ayni yerde resim yer tutucusu kalir."""
-    resim = ('<p:sp><p:nvSpPr><p:cNvPr id="6" name="Kapak Görseli"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>'
+    """Kapak: beyaz zemin, cizgi yok. Gorsel ustteki alanin ortasinda, sigabildigi
+    en buyuk boyda; sol altta kirmizi baslik ve altinda birim satiri. Gorsel
+    bulunamazsa ayni alanda resim yer tutucusu kalir."""
+    gx, gy, gw, gh = KAPAK_GORSEL
+    resim = ('<p:sp><p:nvSpPr><p:cNvPr id="4" name="Kapak Görseli"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>'
              '<p:nvPr><p:ph type="pic" sz="quarter" idx="12" hasCustomPrompt="1"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm>'
              '<a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>'
              '<p:txBody><a:bodyPr vert="horz" rtlCol="0" anchor="ctr"><a:noAutofit/></a:bodyPr><a:lstStyle>'
              '<a:lvl1pPr marL="0" indent="0" algn="ctr"><a:buNone/><a:defRPr sz="1400"><a:solidFill>'
              '<a:srgbClr val="%s"/></a:solidFill></a:defRPr></a:lvl1pPr></a:lstStyle><a:p><a:r><a:rPr lang="%s"/>'
              '<a:t>Kapak görseli</a:t></a:r></a:p></p:txBody></p:sp>'
-             % (_emu(1.67), _emu(1.25), _emu(10.0), _emu(5.0), GRI, DIL))
+             % (_emu(gx), _emu(gy), _emu(gw), _emu(gh), GRI, DIL))
+    bx, by, bw, bh = KAPAK_BASLIK
+    ux, uy, uw, uh = KAPAK_BIRIM
     return _yerlesim("Kapak",
-                     _yt(2, "Başlık", 'type="title"', 0.5, 0.26, 12.33, 0.6, "ctr", "l", 28, KIR, True, "Başlık")
-                     + _duz_cizgi(3, "başlık çizgisi", 0.5, 0.92, 12.33, 1.0)
-                     + _yt(4, "Birim", 'type="body" sz="quarter" idx="10"', 0.5, 1.0, 12.33, 0.4, "ctr", "l", 16,
+                     _yt(2, "Başlık", 'type="title"', bx, by, bw, bh, "ctr", "l", 28, KIR, True, "Başlık")
+                     + _yt(3, "Birim", 'type="body" sz="quarter" idx="10"', ux, uy, uw, uh, "ctr", "l", 16,
                            KOYU, False, "Birim")
-                     + _yt(5, "Tarih Satırı", 'type="body" sz="quarter" idx="11"', 0.5, 6.9, 8.0, 0.32, "ctr", "l",
-                           12, GRI, False, "Tarih")
                      + resim)
+
+
+def _yerlesim_kapanis():
+    """Kapanis: beyaz zemin, cizgi yok; ortali, buyuk, kirmizi baslik. Basligin
+    dikey yeri slaytta, alttaki gorselin boyuna gore ayarlanir."""
+    return _yerlesim("Kapanış",
+                     _yt(2, "Başlık", 'type="title"', 0.5, 0.5, 12.33, 4.0, "ctr", "ctr", KAPANIS_BOY, KIR, True,
+                         "Başlık"))
 
 
 def _yerlesim_akis():
@@ -927,7 +945,7 @@ def paketle(slaytlar, baslik, zaman=None):
     n = len(slaytlar)
     zaman = zaman or datetime.datetime.now(datetime.timezone.utc)
     damga = zaman.strftime("%Y-%m-%dT%H:%M:%SZ")
-    yerlesim_no = {"KAPAK": 1, "AKIS": 2}
+    yerlesim_no = {"KAPAK": 1, "AKIS": 2, "KAPANIS": 3}
     p = []                                            # [(ad, icerik)]
 
     # Gorseller: her gorsel pakete BIR kez girer; slaytlar ona iliskiyle baglanir
@@ -949,7 +967,7 @@ def paketle(slaytlar, baslik, zaman=None):
 
     ek("ppt/presentation.xml", _ICERIK + "presentation.main+xml")
     ek("ppt/slideMasters/slideMaster1.xml", _ICERIK + "slideMaster+xml")
-    for i in (1, 2):
+    for i in (1, 2, 3):
         ek("ppt/slideLayouts/slideLayout%d.xml" % i, _ICERIK + "slideLayout+xml")
     for i in range(1, n + 1):
         ek("ppt/slides/slide%d.xml" % i, _ICERIK + "slide+xml")
@@ -1027,8 +1045,8 @@ def paketle(slaytlar, baslik, zaman=None):
     p.append(("ppt/slideMasters/slideMaster1.xml", _ana_slayt()))
     p.append(("ppt/slideMasters/_rels/slideMaster1.xml.rels", _iliskiler(
         [("slideLayout", "../slideLayouts/slideLayout1.xml"), ("slideLayout", "../slideLayouts/slideLayout2.xml"),
-         ("theme", "../theme/theme1.xml")])))
-    for i, icerik in ((1, _yerlesim_kapak()), (2, _yerlesim_akis())):
+         ("slideLayout", "../slideLayouts/slideLayout3.xml"), ("theme", "../theme/theme1.xml")])))
+    for i, icerik in ((1, _yerlesim_kapak()), (2, _yerlesim_akis()), (3, _yerlesim_kapanis())):
         p.append(("ppt/slideLayouts/slideLayout%d.xml" % i, icerik))
         p.append(("ppt/slideLayouts/_rels/slideLayout%d.xml.rels" % i,
                   _iliskiler([("slideMaster", "../slideMasters/slideMaster1.xml")])))
@@ -1071,40 +1089,42 @@ LEJANT = [("veri", "Veri / Çıktı"), ("islem", "İşlem (kod)"), ("onay", "Kul
 
 
 def _kapak_gorseli(s):
-    """Kapak gorseli: slaydin TAM ORTASINDA, sigabilecegi en buyuk boyda."""
+    """Kapak gorseli: basligin ustundeki alanin ortasinda, sigabildigi en buyuk boyda."""
     g = _gorsel("kapak")
     if g is None:
         return False
-    en, boy = SLAYT_CX / float(EMU), SLAYT_CY / float(EMU)
-    w, h = 12.3, 12.3 / g.oran
-    if h > 5.5:
-        w, h = 5.5 * g.oran, 5.5
-    s._resim("kapak", (en - w) / 2.0, (boy - h) / 2.0, w, h)
+    gx, gy, gw, gh = KAPAK_GORSEL
+    w, h = gw, gw / g.oran
+    if h > gh:
+        w, h = gh * g.oran, gh
+    s._resim("kapak", gx + (gw - w) / 2.0, gy + (gh - h) / 2.0, w, h)
     s.kapak_gorseli = True
     return True
 
 
 def slayt_kapak():
     s = Slayt("KAPAK", B1, "Kurumsal Analitik, Tahminleme ve İçgörü Platformu",
-              "Perakende Krediler Analitik ve Tahsis İş Birimi", "Ekiplere tanıtım · Kasım 2026")
+              "Perakende Krediler Analitik ve Tahsis İş Birimi")
     _kapak_gorseli(s)
-    s.notlar = ("Kapak. Ortadaki görsel platformun görsel klasöründen gelir; bulunamadıysa yerinde resim yer tutucusu "
+    s.notlar = ("Kapak. Görsel platformun görsel klasöründen gelir; bulunamadıysa yerinde resim yer tutucusu "
                 "kalır, tıklayıp resim ekleyebilirsiniz. Sunum, platformu hiç bilmeyen ekiplere göre sıralandı: neden "
                 "yapıyoruz, nedir, nasıl çalışır, bugüne kadar hangi adımlar geliştirildi, sırada ne var.")
     return s
 
 
 def slayt_kapanis():
-    s = Slayt("KAPAK", B4, "Teşekkürler", "Sorularınız ve önerileriniz için")
-    s.kapak_gorseli = True                            # bu slaytta ortada resim yer tutucusu olmaz
+    s = Slayt("KAPANIS", B4, "Teşekkürler")
+    en, boy = SLAYT_CX / float(EMU), SLAYT_CY / float(EMU)
+    bos = boy                                         # basligin ortalanacagi yukseklik: gorselin ustunde kalan alan
     g = _gorsel("kapanis")
     if g is not None:
         # En altta, slaydin alt kenarina yapisik; ene sigdirilir
-        en, boy = SLAYT_CX / float(EMU), SLAYT_CY / float(EMU)
         w, h = en, en / g.oran
         if h > 3.2:
             w, h = 3.2 * g.oran, 3.2
         s._resim("kapanis", (en - w) / 2.0, boy - h, w, h)
+        bos = boy - h
+    s.baslik_kutu = (0.5, 0.0, en - 1.0, bos)         # baslik bu alanin tam ortasinda durur
     s.notlar = "Kapanış. Soruları ve önerileri bu slaytta alın."
     return s
 
