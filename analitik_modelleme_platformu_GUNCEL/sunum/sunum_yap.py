@@ -1481,28 +1481,31 @@ def slayt_sozluk():
          [[K("TXN_OUT_AMT_30D", 9), OK_ISARETI, K("TXN_OUT_AMT_L30D", 9)],
           [K("LOAN_DUE_AMT_30D", 9), OK_ISARETI, K("LOAN_DUE_AMT_A30D", 9)],
           [K("BAL_30D", 9), OK_ISARETI, K("BAL_B30D", 9)]]),
-    ], 0.9)
-    s.etiket("Bir kolonun baştan sona örneği", 0.5, y + 0.08)
+    ], 0.86)
+    s.etiket("Bir kolonun adı ve açıklaması baştan sona nasıl değişir", 0.5, y + 0.08, 8)
     ornek = [
         ("gri", "Başlangıç",
-         [[K("TXN_OUT_AMT_30D", 9)], ["Sözlükteki açıklama ", R("son 30 gün giden işlem tutar", egik=True)]]),
+         [[K("OUT_TRX_30D_AMT", 9)], ["Açıklama ", R("son 30 gün giden işlem tutar", egik=True)]]),
         ("islem", "01.2.4.1 Dönem Bilgisi", [[K("30D", 9), " parçası 30 gün demektir"]]),
         ("islem", "01.2.4.2 Ad Parçaları",
-         [[K("TXN", 9), " işlem, ", K("OUT", 9), " giden, ", K("AMT", 9), " tutar demektir"]]),
+         [[K("TRX", 9), " işlem demektir ve ", K("TXN", 9), " diye yazılır. ", K("OUT", 9), " giden, ", K("AMT", 9),
+           " tutar"]]),
         ("islem", "01.2.4.3 Kolon Kartı",
-         [["Yön açıklamadan son olarak okunur. Yeni açıklama ",
-           R("son 30 günde giden işlemlerin tutarı", egik=True)]]),
-        ("onay", "01.2.4.4 Kolon Adı",
-         [[K("TXN_OUT_AMT_L30D", 9)], "Eski ad ve ilk açıklama sözlükte saklanır"]),
+         ["Yön açıklamadan son olarak okunur ve açıklama yeniden yazılır"]),
+        ("islem", "01.2.4.4 Kolon Adı",
+         ["Parçalar konu, yön, ölçü, zaman sırasına dizilir. Zaman sona gelir"]),
+        ("onay", "Sonuç",
+         [[K("TXN_OUT_AMT_L30D", 9)], ["Açıklama ", R("son 30 günde giden işlemlerin tutarı", egik=True)]]),
     ]
-    ow, oy, oh = (12.33 - 4 * 0.24) / 5, y + 0.36, 0.76
+    adet, bosluk = len(ornek), 0.2
+    ow, oy, oh = (12.33 - (adet - 1) * bosluk) / adet, y + 0.36, 0.88
     for i, (tur, ad, govde) in enumerate(ornek):
-        x = 0.5 + i * (ow + 0.24)
+        x = 0.5 + i * (ow + bosluk)
         s.kutu(x, oy, ow, oh, tur, "örnek " + ad)
         s.yazi([R(ad, kalin=True, renk=KIR, boy=10)] + govde, x + 0.1, oy + 0.03, ow - 0.2, oh - 0.06, boy=9.5,
                bosluk=1.5)
-        if i < 4:
-            s.ok(x + ow + 0.03, oy + oh / 2, x + ow + 0.21, oy + oh / 2, "ok örnek %d" % i)
+        if i < adet - 1:
+            s.ok(x + ow + 0.02, oy + oh / 2, x + ow + bosluk - 0.02, oy + oh / 2, "ok örnek %d" % i)
     s.notlar = ("Dört alt adım sırayla çalışır ve her biri bir öncekinin onayladığını kesin bilgi olarak kullanır. Her "
                 "satır kullanıcı onaylamadan geçilmez. Kilit nokta dönemdir. 30D adda yalnız 30 gün demektir, yönü her "
                 "kolonda ayrı belirlenir. Önce kullanıcının seçimine, sonra açıklamadaki ifadeye, sonra yapay zekânın "
@@ -1513,7 +1516,11 @@ def slayt_sozluk():
                 "ad, onaylanan açıklama ve ilk açıklama birlikte durur. Onaylanan anlamlar hafızaya yazılır. Kontrol "
                 "isteğe bağlıdır. Adım adım yapılabilir, atlanabilir ya da aynı veri seti için önceki onaylı kontrol "
                 "tek seçimle yeniden uygulanabilir. Yeni adlar yalnız platformun kopyalarında geçerlidir. Alttaki "
-                "örnek tek bir kolonun adının ve açıklamasının dört adımda nasıl değiştiğini gösterir. Örnekler "
+                "örnek tek bir kolonun adının ve açıklamasının dört adımda nasıl değiştiğini gösterir. Örnekte üç şey "
+                "birden değişir. TRX parçası standart yazılışı olan TXN ile yazılır. Parçaların sırası değişir ve "
+                "zaman parçası sona gelir. Dönem, açıklamadan okunan yöne göre L30D olur. Sözlük açıklaması da tek ve "
+                "açık bir cümleye çevrilir. Ad Standardı'nın varsayılan sırası konu, yön, nitelik, ölçü, istatistik, "
+                "zaman, karşılaştırma, birim ve diğerdir. Kullanıcı bu sırayı sürükleyerek değiştirebilir. Örnekler "
                 "gösterim amaçlıdır.")
     return s
 
