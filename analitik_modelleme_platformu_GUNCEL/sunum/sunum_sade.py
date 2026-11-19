@@ -1266,15 +1266,12 @@ def slayt_ihtiyac():
     ikon_tablo(s, 1.82, 5.36, 0.9, 0.62, KIR)
     s.elips(5.05, cy, 1.2, PEMBE, (KIR, 1.5, False), "yapay zekâ zemini")
     ikon_isilti(s, 5.05, cy, 0.92)
-    for i, ad in enumerate(["oran", "büyüme", "net akış"]):
-        etiketli_cip(s, 7.6, 4.95 + i * 0.38, 1.6, 0.32, ad, "islem", boy=12, renk=KIR)
+    ikon_tablo(s, 7.7, 5.0, 1.4, 1.0, KIR, vurgulu_sutun=2)          # yeni kolonu olan tablo
     ikon_cubuklar(s, 10.8, 4.98, 1.3, 1.0, [0.35, 0.55, 0.75, 1.0])
     for x1, x2 in ((2.95, 4.3), (5.8, 7.45), (9.35, 10.55)):
         s.ok(x1, cy, x2, cy, "ok şema")
     for cx, ad in ((2.0, "Tablolar"), (5.05, "Yapay zekâ"), (8.4, "Yeni değişkenler"), (11.45, "Daha iyi model")):
         s.yazi(ad, cx - 1.4, 6.15, 2.8, 0.36, boy=14, kalin=True)
-    s.yazi("Platform şu an sınıflandırma modelleri (0 ve 1 değerli hedef) için açıktır. Sonraki hedef regresyon, "
-           "segmentasyon ve zaman serisi tahmini modelleridir.", SOL, 6.62, EN, 0.3, boy=11, renk=GRI)
     s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 2. Üstte dört sorun var. Değişken üretimi elle yapılıyor ve "
                 "kişiye bağlı kalıyor. Bir modelde üretilen değişken o modelde kalıyor. Akla gelmeyen tablolar ve "
                 "fikirler modele girmiyor. Hazırlık uzun sürüyor. Amaç yapay zekâ ile modele katkı sağlayan yeni "
@@ -1286,15 +1283,14 @@ def slayt_nerede():
     s = Slayt("AKIS", B1, "Yapay Zekâ Değişkeni Nerede Üretir")
     sutunlar = [
         ("Kaynak tablolardan", "01 Çalışma Kurulumu", "Tabloların nasıl birleşeceğini ve dönem toplamlarını önerir",
-         "Örneğin işlem tablosundan son 30 günün işlem adedi", "g", "Geliştirildi"),
+         "Örneğin işlem tablosundan son 30 günün işlem adedi"),
         ("Bilinen dönüşümlerle", "02.2 Kural Tabanlı Değişken Üretimi",
-         "41 dönüşümün katkısı ölçülür, işe yarayanları önerir", "Örneğin son 30 günün son 90 güne oranı", "s",
-         "Üzerinde çalışılıyor"),
-        ("Yeni fikirlerle", "02.3 AI Değişken Keşfi", "Kalıpların dışında formül önerir, kod denetler ve hesaplar",
-         "Örneğin kullanılan limit bölü toplam limit", "r", "Sırada"),
+         "Kodun ölçtüğü dönüşümlerden bu veride işe yarayanları önerir", "Örneğin işlem başına ortalama tutar"),
+        ("Yeni fikirlerle", "02.3 AI Değişken Keşfi", "Kalıpların dışında formül önerir, hesabı kod yapar",
+         "Örneğin kullanılan limit bölü toplam limit"),
     ]
     w = (EN - 0.6) / 3
-    for i, (baslik, adim, metin, ornek, durum, durum_adi) in enumerate(sutunlar):
+    for i, (baslik, adim, metin, ornek) in enumerate(sutunlar):
         x = SOL + i * (w + 0.3)
         s.kutu(x, 1.45, w, 0.95, "veri", "başlık " + baslik)
         s.yazi([R(baslik, kalin=True, boy=19), R(adim, boy=11.5)], x + 0.1, 1.45, w - 0.2, 0.95, renk=BEYAZ, bosluk=2)
@@ -1307,12 +1303,15 @@ def slayt_nerede():
                 ikon_tablo(s, px + 0.25, ty, 0.72, 0.42, ORTA_GRI if j else KIR)
                 s.ok(px + 1.02, ty + 0.21, px + 1.72, 3.88, "ok birleşme", SOLUK)
             ikon_tablo(s, px + 1.78, 3.3, 1.5, 1.16, KIR, vurgulu_sutun=2)
-        elif i == 1:                                  # iki donem bolunur, yeni degisken cikar
-            etiketli_cip(s, px + 0.3, 3.05, 1.1, 0.6, "L30D", "islem", boy=14, renk=KIR, kod=True)
-            islem_rozeti(s, px + pw / 2, 3.35, "bölü")
-            etiketli_cip(s, px + pw - 1.4, 3.05, 1.1, 0.6, "L90D", "islem", boy=14, renk=KIR, kod=True)
-            s.ok(px + pw / 2, 3.72, px + pw / 2, 4.08, "ok sonuç")
-            etiketli_cip(s, px + pw / 2 - 0.8, 4.12, 1.6, 0.6, "oran", "veri", boy=15, renk=BEYAZ)
+        elif i == 1:                                  # olculen donusumlerden esigi gecenler secilir
+            boylar = [0.35, 0.8, 0.5, 1.0, 0.3, 0.7]
+            bx0, taban, en_buyuk = px + (pw - 2.74) / 2, 4.5, 1.35
+            for j, b in enumerate(boylar):
+                s.sekil("rect", bx0 + j * 0.48, taban - b * en_buyuk, 0.34, b * en_buyuk,
+                        KIR if b >= 0.7 else ORTA_GRI, None, "dönüşüm %d" % (j + 1))
+            s.hat(bx0 - 0.15, taban, bx0 + 2.89, taban, "taban", SOLUK, 1)
+            s.hat(bx0 - 0.15, taban - 0.62 * en_buyuk, bx0 + 2.89, taban - 0.62 * en_buyuk, "eşik", KOYU, 1.25, True)
+            s.yazi("ölçülen dönüşümler", px, 4.55, pw, 0.3, boy=10.5, renk=GRI)
         else:                                         # oneri, formul, denetim
             cyy = 3.75
             s.elips(px + 0.62, cyy, 0.86, PEMBE, None, "öneri zemini")
@@ -1326,8 +1325,6 @@ def slayt_nerede():
             s.yazi("kod denetler", px + 2.5, 4.3, 1.25, 0.3, boy=10.5, renk=GRI)
         s.yazi([R(metin, boy=15), R(ornek, boy=12.5, egik=True, renk=GRI)], x + 0.25, 5.15, w - 0.5, 1.25,
                hiza="l", dikey="t", bosluk=4)
-        durum_noktasi(s, x + 0.37, 6.72, durum, ad="durum " + baslik)
-        s.yazi(durum_adi, x + 0.6, 6.55, w - 0.8, 0.34, boy=12, renk=GRI, hiza="l")
     s.notlar = ("Bu slaydın ayrıntılı sunumda karşılığı yoktur, amaçtan hemen sonra gösterilir. Yapay zekâ üç yerde "
                 "değişken üretimine katkı verir. Kaynak tablolarla başlanırsa birleştirme planını ve dönem toplamlarını "
                 "önerir. 02.2 adımında bilinen 41 dönüşümden bu veride işe yarayanları önerir. 02.3 adımında kalıpların "
@@ -1341,41 +1338,31 @@ def slayt_prensip():
     adimlar = [
         ("Kod ölçer", "Verinin tamamında sayar ve ölçer", "Örneğin eksik oranı, tekil değer sayısı, bilgi değeri"),
         ("Yapay zekâ önerir", "Ölçüme ve kolonların anlamına bakar",
-         "Örneğin bir kolonun geleceğe baktığını açıklamasından anlar"),
+         "Örneğin kısaltmalı bir kolon adının ne anlama geldiğini yorumlar"),
         ("Kullanıcı karar verir", "Öneriyi kabul eder ya da değiştirir",
          "Örneğin neredeyse sabit bir kolonu tutar ya da çıkarır"),
-        ("Kod üretir", "Kararı uygular ve kodunu kaydeder", "Karar, gerekçe ve üretim kodu kayıtta kalır"),
+        ("Kod üretir", "Kararı güncel veriye uygular", "Karar, gerekçe ve üretim kodu kayıtta kalır"),
     ]
     w, bindirme = surec_bandi(s, 1.55, 0.85, [a for a, _m, _o in adimlar], vurgu=2, boy=18)
     for i, (_ad, metin, ornek) in enumerate(adimlar):
         cx = SOL + i * (w - bindirme) + w / 2
-        s.elips(cx, 3.15, 1.2, PEMBE, None, "ikon zemini")
+        s.elips(cx, 3.3, 1.35, PEMBE, None, "ikon zemini")
         if i == 0:
-            ikon_cubuklar(s, cx - 0.34, 2.83, 0.68, 0.62, [0.4, 0.7, 1.0, 0.6])
+            ikon_cubuklar(s, cx - 0.38, 2.94, 0.76, 0.7, [0.4, 0.7, 1.0, 0.6])
         elif i == 1:
-            ikon_isilti(s, cx, 3.15, 0.9)
+            ikon_isilti(s, cx, 3.3, 1.0)
         elif i == 2:
-            ikon_onay(s, cx, 3.15, 0.9)
+            ikon_onay(s, cx, 3.3, 1.0)
         else:
-            ikon_disli(s, cx, 3.15, 0.76)
-        s.yazi([R(metin, kalin=True, boy=14), R(ornek, boy=12, egik=True, renk=GRI)], cx - 1.4, 3.85, 2.8, 1.1,
+            ikon_disli(s, cx, 3.3, 0.86)
+        s.yazi([R(metin, kalin=True, boy=14), R(ornek, boy=12, egik=True, renk=GRI)], cx - 1.4, 4.1, 2.8, 1.15,
                dikey="t", bosluk=4)
-    s.kutu(SOL, 5.0, EN, 0.85, "veri", "son karar")
-    s.elips(SOL + 0.75, 5.425, 0.58, BEYAZ, None, "onay zemini")
-    ikon_onay(s, SOL + 0.75, 5.425, 0.48, KIR, 3)
-    s.yazi([R("Son karar her zaman kullanıcınındır", kalin=True, boy=20),
-            R("Yapay zekâ sayı hesaplamaz ve karar vermez. Kullanıcının onaylamadığı hiçbir şey veriye uygulanmaz.",
-              boy=12.5)], SOL + 1.2, 5.0, EN - 2.4, 0.85, renk=BEYAZ, bosluk=2)
-    kurallar = [("Dataiku içinde", "Tarayıcıdan, projenin içinden açılır"),
-                ("Tam veri", "Sayımlar örnekleme yapılmadan yapılır"),
-                ("Kaynak veri korunur", "Seçilen veriye ve sözlüğe yazılmaz"),
-                ("Proje hafızası", "Onaylanan kararlar sonraki çalışmada hazır gelir")]
-    kw = (EN - 0.6) / 4
-    for i, (ad, metin) in enumerate(kurallar):
-        x = SOL + i * (kw + 0.2)
-        s.kutu(x, 6.0, kw, 0.72, "gri", "kural " + ad)
-        s.yazi([R(ad, kalin=True, boy=12, renk=KIR), R(metin, boy=10.5, renk=GRI)], x + 0.08, 6.0, kw - 0.16, 0.72,
-               bosluk=1)
+    s.kutu(SOL, 5.45, EN, 0.95, "veri", "son karar")
+    s.elips(SOL + 0.8, 5.925, 0.62, BEYAZ, None, "onay zemini")
+    ikon_onay(s, SOL + 0.8, 5.925, 0.5, KIR, 3)
+    s.yazi([R("Son karar her zaman kullanıcınındır", kalin=True, boy=22),
+            R("Yapay zekâ sayı hesaplamaz, veriyi değiştirmez ve karar vermez", boy=13)],
+           SOL + 1.3, 5.45, EN - 2.6, 0.95, renk=BEYAZ, bosluk=2)
     s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 3. Platform Dataiku içinde çalışan bir web uygulamasıdır. Sıra her "
                 "adımda aynıdır. Kod ölçer, yapay zekâ önerir, "
                 "kullanıcı karar verir, kod kararı uygular. Yapay zekâ sayı hesaplamaz ve karar vermez. Kullanıcının "
@@ -1390,24 +1377,24 @@ def slayt_akis():
         ("01", "Çalışma Kurulumu", "g", "Güncel Veri ve Sözlük",
          [("01.1", "Başlangıç Seçimi", "g"), ("01.2", "Veri Seti, Sözlük ve Kolon Rolleri", "g"),
           ("01.3", "Değişken Listesi ve Tip Kontrolü", "g"), ("01.4", "Örneklem ve Doğrulama Tasarımı", "g")]),
-        ("02", "Değişken Mühendisliği", "s", "Yeni Değişkenler",
-         [("02.1", "Veri Profili ve Kalite", "g"), ("02.2", "Kural Tabanlı Değişken Üretimi", "s"),
-          ("02.3", "AI Değişken Keşfi", "r")]),
-        ("03", "Veri Anlama ve Hazırlama", "r", "Analitik Baz Set",
-         [("03.1", "Tek Değişken Analizi (SFA)", "r"), ("03.2", "Stabilite Analizi (PSI)", "r"),
-          ("03.3", "Analitik Baz Set", "r")]),
-        ("04", "Değişken Değerlendirme", "r", "Aday Değişken Seti",
-         [("04.1", "Sızıntı Kontrolü", "r"), ("04.2", "Aday Değişken Seti", "r")]),
-        ("05", "Modelleme ve Finalizasyon", "r", "Final Model ve Katalog",
-         [("05.1", "Model Karşılaştırması", "r"), ("05.2", "Algoritma Seçimi", "r"),
-          ("05.3", "Model Finalizasyonu", "r"), ("05.4", "Değişken Kataloğu", "r")]),
+        ("02", "Değişken Mühendisliği", "g", "Yeni Değişkenler",
+         [("02.1", "Veri Profili ve Kalite", "g"), ("02.2", "Kural Tabanlı Değişken Üretimi", "g"),
+          ("02.3", "AI Değişken Keşfi", "g")]),
+        ("03", "Veri Anlama ve Hazırlama", "g", "Analitik Baz Set",
+         [("03.1", "Tek Değişken Analizi (SFA)", "g"), ("03.2", "Stabilite Analizi (PSI)", "g"),
+          ("03.3", "Analitik Baz Set", "g")]),
+        ("04", "Değişken Değerlendirme", "g", "Aday Değişken Seti",
+         [("04.1", "Sızıntı Kontrolü", "g"), ("04.2", "Aday Değişken Seti", "g")]),
+        ("05", "Modelleme ve Finalizasyon", "g", "Final Model ve Katalog",
+         [("05.1", "Model Karşılaştırması", "g"), ("05.2", "Algoritma Seçimi", "g"),
+          ("05.3", "Model Finalizasyonu", "g"), ("05.4", "Değişken Kataloğu", "g")]),
     ]
     y, h, bindirme = 1.5, 1.15, 0.3
     w = (EN + 4 * bindirme) / 5
     for i, (no, ad, durum, cikti, adimlar) in enumerate(fazlar):
         x = SOL + i * (w - bindirme)
         dolgu = KIR if durum == "g" else (PEMBE if durum == "s" else BEYAZ)
-        cizgi = None if durum == "g" else ((KIR, 3, False) if durum == "s" else (SOLUK, 1.5, True))
+        cizgi = (BEYAZ, 2, False) if durum == "g" else ((KIR, 3, False) if durum == "s" else (SOLUK, 1.5, True))
         ana = BEYAZ if durum == "g" else (KIR if durum == "s" else GRI)
         s.sekil("homePlate" if i == 0 else "chevron", x, y, w, h, dolgu, cizgi, "faz " + no, ayar=26087)
         ic_x = x + (0.15 if i == 0 else bindirme + 0.1)
@@ -1425,18 +1412,14 @@ def slayt_akis():
                 "çıktı oku")
         s.kutu(ic_x - 0.05, 5.5, ic_w + 0.05, 0.5, "veri" if durum != "r" else "soluk", "çıktı " + no)
         s.yazi(cikti, ic_x - 0.05, 5.5, ic_w + 0.05, 0.5, boy=12, kalin=True, renk=BEYAZ if durum != "r" else GRI)
-    for i, (ad, d) in enumerate((("Geliştirildi", "g"), ("Üzerinde çalışılıyor", "s"), ("Sırada", "r"))):
-        lx = 7.6 + i * 1.75                           # gosterim anahtari, basligin saginda
-        durum_noktasi(s, lx, 0.62, d, ad="anahtar " + ad)
-        s.yazi(ad, lx + 0.2, 0.45, 1.5, 0.34, boy=11, renk=GRI, hiza="l")
     s.kutu(SOL, 6.22, EN, 0.52, "gri", "neden bu sıra")
     s.yazi([[R("Neden bu sıra?", kalin=True, renk=KIR),
              " Profil üretimden önce gelir ki kusurlu kolondan değişken üretilmesin. Ölçüm üretimden sonra gelir, "
              "böylece ham ve üretilen değişkenlerin hepsi birlikte ölçülür."]],
            SOL + 0.2, 6.22, EN - 0.4, 0.52, boy=11.5, hiza="l")
     s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 4. Web uygulamasındaki İş Akışı ile aynı sıra. Beş faz vardır ve "
-                "her faz bir öncekinin çıktısını kullanır. 01 ve 02.1 geliştirildi, 02.2 üzerinde çalışılıyor, gerisi "
-                "sırada. Profil üretimden önce gelir ki kusurlu kolonlardan değişken üretilmesin. Tek değişken analizi "
+                "her faz bir öncekinin çıktısını kullanır. Hangi adımın geliştirildiği son slaytta "
+                "gösterilir. Profil üretimden önce gelir ki kusurlu kolonlardan değişken üretilmesin. Tek değişken analizi "
                 "ve stabilite üretimden sonra gelir, böylece ham ve üretilen değişkenlerin hepsi birlikte ölçülür.")
     return s
 
@@ -1458,7 +1441,7 @@ def slayt_kurulum_veri():
         s.ok(SOL + 0.9, 4.65 + j * 0.53, SOL + 1.2, 5.2, "ok birleşme", SOLUK)
     ikon_tablo(s, SOL + 1.25, 4.9, 0.75, 0.58, KIR)
     s.yazi([R("Kaynak tablolar mevcut", kalin=True, boy=14.5),
-            R("Birleştirme planını yapay zekâ önerir, kullanıcı onaylar", boy=12, renk=GRI),
+            R("Birleştirilerek kurulur", boy=12.5, renk=GRI),
             R("Örneğin müşteri, işlem ve ürün tabloları ayrıysa", boy=11, egik=True, renk=GRI)],
            SOL + 2.2, 4.2, 1.75, 2.05, hiza="l", bosluk=3)
     s.sekil("rightArrow", 4.62, 3.85, 0.5, 0.5, ORTA_GRI, None, "sonra")
@@ -1540,13 +1523,13 @@ def slayt_kurulum_rol():
     s.yazi("isteğe bağlı", SOL + 2 * (kw + ara), ky + bh + gh + 0.1, 2 * kw + ara, 0.3, boy=11.5, renk=GRI)
     kartlar = [
         (SOL, 4 * kw + 3 * ara, "01.2.2", "Kolon Rolleri",
-         "Model tipi, hedef ve kimlik seçilir. Kod adayları çıkarır, kullanıcı seçer. Hedef yalnız 0 ve 1 değeri "
-         "alan bir kolon olabilir."),
+         "Model tipi, hedef ve kimlik seçilir. Aday kolonları kod çıkarır. Hedef yalnız 0 ve 1 değeri alan bir "
+         "kolon olabilir."),
         (SOL + 4 * (kw + ara), 3 * kw + 2 * ara, "01.2.3", "Eksik Sözlük Tanımları",
-         "Tanım önce hafızadan gelir, yoksa yapay zekâ önerir ve kullanıcı onaylar. TXN_3D_CNT tanımı TXN_7D_CNT "
-         "kolonuna sayısı değiştirilerek aktarılır."),
+         "Tanım önce hafızadan gelir, yoksa yapay zekâ önerir. TXN_3D_CNT tanımı TXN_7D_CNT kolonuna sayısı "
+         "değiştirilerek aktarılır."),
         (SOL + 7 * (kw + ara), 2 * kw + ara, "01.2.3.1", "Tanımsız ve Sorunlu Kolonlar",
-         "Boş ve tek değerli kolon çıkarılır. Tanımsız kalan için kararı kullanıcı verir."),
+         "Tamamen boş ve tek değerli kolon çıkarılır. Tanımsız kalan kolon ayrıca sorulur."),
     ]
     for x, w, kod, ad, metin in kartlar:
         s.hat(x, 4.55, x + w, 4.55, "grup çizgisi " + kod, KIR, 2)
@@ -1564,17 +1547,15 @@ def slayt_kurulum_rol():
 def slayt_sozluk():
     s = Slayt("AKIS", B2, "01.2.4 Sözlük ve Kolon Adı Kontrolü",
               "Sözlüğe de kolon adlarına da tam güvenilemez. Bu adım her kolonun kesin olarak anlaşılmasını sağlar.")
-    adimlar = [("Dönem Bilgisi", "30D parçası 30 gün demektir", "Yapay zekâ önerir, kullanıcı onaylar"),
-               ("Ad Parçaları", "TRX ve TXN aynıdır, TXN yazılır", "Yapay zekâ önerir, kullanıcı onaylar"),
-               ("Kolon Kartları", "Açıklama tek ve açık cümle olur", "Yapay zekâ yazar, kullanıcı onaylar"),
-               ("Kolon Adları", "Parçalar standart sıraya dizilir", "Kod kurar, kullanıcı onaylar")]
-    for i, (ad, alt, rol) in enumerate(adimlar):
+    adimlar = [("Dönem Bilgisi", "30D parçası 30 gün demektir"), ("Ad Parçaları", "TRX ve TXN aynıdır, TXN yazılır"),
+               ("Kolon Kartları", "Yapay zekâ açıklamayı tek cümleye çevirir"),
+               ("Kolon Adları", "Kod parçaları standart sıraya dizer")]
+    for i, (ad, alt) in enumerate(adimlar):
         y = 1.8 + i * 1.18
         if i < 3:
             s.hat(SOL + 0.32, y + 0.67, SOL + 0.32, y + 1.31, "adım çizgisi", SOLUK, 1.5)
         s.daire(i + 1, SOL + 0.32, y + 0.4, 0.54, boy=17, ad="alt adım %d" % (i + 1))
-        s.yazi([R(ad, kalin=True, boy=17), R(alt, boy=12.5, renk=GRI), R(rol, boy=11, egik=True, renk=GRI)],
-               SOL + 0.8, y - 0.1, 3.6, 1.0, hiza="l", bosluk=2)
+        s.yazi([R(ad, kalin=True, boy=17), R(alt, boy=12.5, renk=GRI)], SOL + 0.8, y, 3.6, 0.8, hiza="l", bosluk=2)
     # Sema: kolon adinin parcalari yeniden dizilir
     px, pw = 4.9, 7.93
     s.kutu(px, 1.6, pw, 4.85, "gri", "şema zemini")
@@ -1596,7 +1577,7 @@ def slayt_sozluk():
              "ok parça %d" % ustteki)
     s.yazi([[R("Sonra  ", kalin=True, renk=KIR), R("son 30 günde giden işlemlerin tutarı", egik=True)]], x0, 5.6, 6.9,
            0.4, boy=14, hiza="l")
-    s.yazi("Yeni adda L son, A sonra, B önce demektir. Bu adım isteğe bağlıdır ve her satırı kullanıcı onaylar.",
+    s.yazi("Yeni adda L son, A sonra, B önce demektir. Bu adım isteğe bağlıdır.",
            x0, 6.02, 6.9, 0.34, boy=11.5, renk=GRI, hiza="l")
     s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 7. Dört alt adım sırayla çalışır ve her satırı kullanıcı onaylar. "
                 "Şemada bir kolonun adı ve açıklaması baştan sona değişir. TRX yerine standart yazılış olan TXN yazılır, "
@@ -1649,8 +1630,8 @@ def slayt_kurulum_bolme():
     s.yazi([R("sızıntı sınırı", kalin=True, boy=11.5), R("Validasyon setini model hiç görmez", boy=10.5, renk=GRI)],
            sinir - 1.6, 4.62, 3.2, 0.5, dikey="t", bosluk=1)
     s.yazi([R("Doldurma değerleri ve dönüşümler yalnız Train setinden hesaplanır", kalin=True, boy=13),
-            R("Bölme zamana göre ya da rastgele, satır ya da kimlik bazında yapılabilir. Kod bir bölme önerir, "
-              "kararı kullanıcı verir.", boy=11.5, renk=GRI)],
+            R("Bölme zamana göre ya da rastgele, satır ya da kimlik bazında yapılabilir. Kod veriye bakarak bir "
+              "bölme önerir.", boy=11.5, renk=GRI)],
            x0 + 0.2, 5.3, rw - 0.4, 1.05, bosluk=3)
     s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 8. Tip kontrolünde kullanıcı yalnız verinin izin verdiği "
                 "dönüşümleri seçebilir. Kod seçimi kolonun tamamında dener, tek bir değer bile çevrilemezse kabul "
@@ -1665,16 +1646,15 @@ def slayt_kurulum_bolme():
 # ---- 02 Degisken Muhendisligi ----------------------------------------------
 def slayt_profil():
     s = Slayt("AKIS", B3, "02.1 Veri Profili ve Kalite",
-              "Değişken üretmeden önce verinin kusurları bulunur. Kusurlu kolondan değişken üretilmez.")
+              "Her kolon aynı kontrollerden geçer ve her bulgu dört sonuçtan birine bağlanır.")
     s.sekil("funnel", 0.8, 1.7, 3.2, 3.6, KIR, None, "huni")            # butun kolonlar 26 kontrolden gecer
     s.yazi("26", 0.8, 1.98, 3.2, 0.95, boy=48, kalin=True, renk=KIR)      # huninin beyaz agzinda
     s.yazi("kontrol", 0.8, 3.42, 3.2, 0.5, boy=20, kalin=True, renk=BEYAZ)   # huninin govdesinde
-    s.yazi([R("verinin tamamında", boy=15), R("20 eşiği kullanıcı onaylar", boy=12.5)], 0.8, 5.4, 3.2, 0.8,
-           renk=GRI, bosluk=3)
+    s.yazi("20 eşik önerilen değeriyle gelir", 0.8, 5.4, 3.2, 0.5, boy=14, renk=GRI)
     sonuclar = [
-        (7, "Üretime girmez", "Boş, sabit ya da kimlik gibi kolonlar", KIR2, BEYAZ,
-         "Örneğin çoğu boş olan kolon girmez, yerine boşluk bayrağı önerilir"),
-        (7, "Kararınıza bırakılır", "Geleceğe bakan ya da hedefi ele veren kolonlar", KIR, BEYAZ,
+        (7, "Üretime girmez", "Çoğu boş, kimlik benzeri ya da aynı içerikli kolonlar", KIR2, BEYAZ,
+         "Örneğin çok değerli bir kategori kolonu girmez, yerine gruplama önerilir"),
+        (7, "Kararınıza bırakılır", "Geleceğe bakan ya da neredeyse sabit kolonlar", KIR, BEYAZ,
          "Örneğin LOAN_DUE_AMT_A30D geleceğe bakar, sızıntı riski diye sorulur"),
         (7, "Düzeltme seçilir", "Gizli eksik ya da uç değer taşıyan kolonlar", ORTA_PEMBE, KOYU,
          "Örneğin boş yerine yazılmış 9999 değeri boşa çevrilir"),
@@ -1707,14 +1687,15 @@ def slayt_profil():
 
 def slayt_uretim():
     s = Slayt("AKIS", B3, "02.2 Kural Tabanlı Değişken Üretimi Nasıl İşler",
-              "Var olan kolonlardan bilinen dönüşümlerle yeni değişkenler türetilir. Şu an üzerinde çalışılan adım budur.")
+              "Var olan kolonlardan bilinen dönüşümlerle yeni değişkenler türetilir.")
     surec_bandi(s, 1.55, 0.85, ["Hazırlık", "Katkı Ölçümü", "Öneri ve Tamamlama", "Karar ve Üretim"], vurgu=3, boy=16)
-    yazilar = [("Kolonlar birimlere ayrılır", "41 dönüşümden hangilerinin yapılabileceği belirlenir."),
+    yazilar = [("Kolonlar birimlere ayrılır", "Her dönüşümün hangi birimde yapılabileceği belirlenir."),
                ("Bilgi değeri en az 0,02 artmalı",
-                "Kaynağının kopyası olan dönüşüm sayılmaz. Ölçüm Train satırlarında, örnekleme yapılmadan yapılır."),
+                "Artış en iyi kaynağa göre ölçülür. Kaynağının kopyası olan dönüşüm sayılmaz."),
                ("Yapay zekâ önerir, kod eksiği tamamlar",
-                "Yapay zekâ farklı ailelerden anlamlı çiftleri de önerir. Kod değerli olup önerilmeyeni ekler."),
-               ("Kullanıcı kartta ve sohbette seçer", "Onaydan sonra kod üretir ve üretim kodunu kaydeder.")]
+                "Kod değerli olduğu hâlde önerilmeyeni ekler, aynı bilgiyi veren tekrarı ayıklar."),
+               ("Kullanıcı kartta ve sohbette seçer",
+                "Kartta tek tıkla dönüşüm ekler ya da çıkarır.")]
     w = (EN - 0.75) / 4
     for i, (metin, ek) in enumerate(yazilar):
         x = SOL + i * (w + 0.25)
@@ -1747,7 +1728,8 @@ def slayt_uretim():
         s.yazi([R(metin, kalin=True, boy=13.5), R(ek, boy=11.5, renk=GRI)], x + 0.15, 4.6, w - 0.3, 1.25,
                dikey="t", bosluk=3)
     s.kutu(SOL, 6.05, EN, 0.5, "onay", "sohbet notu")
-    s.yazi("Sohbet platformda bu adımda açılır", SOL, 6.05, EN, 0.5, boy=15, kalin=True, renk=KIR)
+    s.yazi("Sohbet platformda ilk kez bu adımda açılır. Soru sorulabilir ya da toplu değişiklik istenebilir.", SOL,
+           6.05, EN, 0.5, boy=14, kalin=True, renk=KIR)
     s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 10. Sıra önemlidir. Kod önce kolonları birimlere ayırır ve her "
                 "dönüşümün katkısını Train satırlarında ölçer. Bilgi değeri en iyi kaynağına göre en az 0,02 artıyorsa "
                 "ve dönüşüm kaynağının kopyası değilse yeni bilgi sayılır. Yapay zekâ bu ölçüme bakarak önerir, kod "
@@ -1760,19 +1742,19 @@ def slayt_asamalar():
     s = Slayt("AKIS", B3, "02.2 Kural Tabanlı Değişken Üretiminde Üç Aşama ve 41 Dönüşüm",
               "Dönüşümler neye bakarak üretildiklerine göre üç aşamada toplanır.")
     asamalar = [
-        ("Kolonun kendi dönüşümü", 18, "Büyük tutarların etkisi sıkışır", KIR2, BEYAZ, "tek kolon",
+        ("Kolonun kendi dönüşümü", 18, "Büyük tutarların etkisi sıkışır", KIR2, BEYAZ, "Ölçek düzeltilir, bayrak ya da dilim üretilir",
          [[K("TXN_OUT_AMT_L30D", 10), " kolonunun logaritması"]]),
-        ("Aile içi üretim", 13, "Harcama hızlanıyor mu?", KIR, BEYAZ, "aynı ölçünün farklı dönemleri",
+        ("Aile içi üretim", 13, "Harcama hızlanıyor mu?", KIR, BEYAZ, "Aynı ölçünün farklı dönemleri karşılaştırılır",
          [[K("TXN_OUT_AMT_L30D", 10), " bölü ", K("TXN_OUT_AMT_L90D", 10)]]),
         ("Aileler arası üretim", 10, "Giren mi fazla, çıkan mı?", ORTA_PEMBE, KOYU,
-         "anlamlı çifti yapay zekâ önerir",
+         "Anlamlı kolon çiftini yapay zekâ önerir",
          [[K("TXN_IN_AMT_L30D", 10), " eksi ", K("TXN_OUT_AMT_L30D", 10)]]),
     ]
     w = (EN - 0.6) / 3
     for i, (baslik, sayi, anlam, _d, _y, bakis, ornek) in enumerate(asamalar):
         x = SOL + i * (w + 0.3)
         s.kutu(x, 1.5, w, 0.9, "veri", "aşama " + baslik)
-        s.yazi([R(baslik, kalin=True, boy=18), R("%d dönüşüm, %s" % (sayi, bakis), boy=12.5)],
+        s.yazi([R(baslik, kalin=True, boy=18), R(bakis, boy=12.5)],
                x + 0.1, 1.5, w - 0.2, 0.9, renk=BEYAZ, bosluk=2)
         s.kutu(x, 2.5, w, 2.7, "gri", "şema " + baslik)
         if i == 0:                                    # carpik dagilim, donusumden sonra dengelenir
@@ -1798,7 +1780,7 @@ def slayt_asamalar():
             s.yazi("giren", x + 0.35, 4.0, 0.9, 0.28, boy=10.5, renk=GRI)
             s.yazi("çıkan", x + 1.65, 4.0, 0.9, 0.28, boy=10.5, renk=GRI)
         s.yazi([R(anlam, kalin=True, boy=15)] + ornek, x + 0.1, 4.32, w - 0.2, 0.85, boy=11, bosluk=3)
-    s.yazi("41 dönüşüm", SOL, 5.55, 2.2, 0.8, boy=20, kalin=True, renk=KIR, hiza="l")
+    s.yazi("Aşamalara dağılım", SOL, 5.55, 2.2, 0.8, boy=16, kalin=True, renk=KIR, hiza="l")
     x0, bw, bosluk = SOL + 2.3, EN - 2.3, 0.04                           # 41 donusumun uc asamaya dagilimi
     birim = (bw - 2 * bosluk) / 41.0
     x = x0
@@ -1814,24 +1796,21 @@ def slayt_asamalar():
 
 
 # ---- sirada ve durum -------------------------------------------------------
-SIRADA_CUMLE = "Bu adımlar sıradadır. İlk sürümleri kodda var, 02.2 tamamlandıktan sonra sırayla ele alınacak."
-
-
 def slayt_sirada_hazirlama():
-    s = Slayt("AKIS", B4, "02.3 AI Değişken Keşfi ile 03 Veri Anlama ve Hazırlama", SIRADA_CUMLE)
+    s = Slayt("AKIS", B4, "02.3 AI Değişken Keşfi ile 03 Veri Anlama ve Hazırlama")
     karolar = [
-        ("02.3", "AI Değişken Keşfi", "Yapay zekâ formül önerir, kod denetler ve hesaplar",
-         "Formülde yalnız var olan kolonlar bulunur, hedef ve kimlik kullanılamaz"),
+        ("02.3", "AI Değişken Keşfi", "Önerilen formülü kod denetler",
+         "Formülde yalnız var olan kolonlar ve izinli işlemler bulunur, hedef ve kimlik kullanılamaz"),
         ("03.1", "Tek Değişken Analizi (SFA)", "Her değişkenin hedefle ilişkisi ölçülür",
          "Eleme yapılmaz, değişkenin modele hangi hâliyle gireceği önerilir"),
         ("03.2", "Stabilite Analizi (PSI)", "Dağılım zamanla kayıyor mu diye bakılır",
          "Train seti ile Validasyon seti karşılaştırılır"),
         ("03.3", "Analitik Baz Set", "Set temizlenir ve dondurulur",
-         "Kalan eksikler Train setinin medyanıyla doldurulur"),
+         "Sonraki adımların hepsi bu değişmeyen sette çalışır"),
     ]
     w = (EN - 0.75) / 4
     for i, (kod, ad, metin, ek) in enumerate(karolar):
-        cx, cy, _d = karo(s, SOL + i * (w + 0.25), 1.75, w, 4.7, kod, ad, metin, ek=ek)
+        cx, cy, _d = karo(s, SOL + i * (w + 0.25), 1.55, w, 4.8, kod, ad, metin, ek=ek)
         if i == 0:
             ikon_isilti(s, cx, cy, 1.25)
         elif i == 1:
@@ -1851,22 +1830,23 @@ def slayt_sirada_hazirlama():
 
 
 def slayt_sirada_model():
-    s = Slayt("AKIS", B4, "04 Değişken Değerlendirme ile 05 Modelleme ve Finalizasyon", SIRADA_CUMLE)
+    s = Slayt("AKIS", B4, "04 Değişken Değerlendirme ile 05 Modelleme ve Finalizasyon")
     karolar = [
         ("04.1", "Sızıntı Kontrolü", "Hedefi ele veren değişkenler ayrılır",
-         "Train satırlarında hedefle ilişkisi aşırı yüksek olanlar"),
+         "Hedefle ilişkisi aşırı yüksek çıkan şüpheli sayılır"),
         ("04.2", "Aday Değişken Seti", "Tekrar eden ve zayıf değişkenler elenir",
-         "Dört aşama, yalnız eğitim satırlarında"),
+         "Sırayla dört aşama uygulanır"),
         ("05.1", "Model Karşılaştırması", "Yeni değişkenlerin katkısı ölçülür",
          "Fark yüzde 95 güven aralığıyla raporlanır"),
-        ("05.2", "Algoritma Seçimi", "Dört algoritma aynı koşulda yarışır", "ROC-AUC, Gini, KS ve süreye bakılır"),
-        ("05.3", "Model Finalizasyonu", "Son eğitim, doğrulama ve kayıt", "Model hiç görmediği sette doğrulanır"),
+        ("05.2", "Algoritma Seçimi", "Dört algoritma aynı koşulda yarışır",
+         "Lojistik Regresyon, Random Forest, Gradient Boosting, XGBoost"),
+        ("05.3", "Model Finalizasyonu", "Son eğitim, doğrulama ve kayıt", "Gini, KS ve skor kararlılığına bakılır"),
         ("05.4", "Değişken Kataloğu", "Her değişkenin formülü ve kodu saklanır",
-         "Değişken o modelde kalmaz, yeniden üretilebilir"),
+         "Başka bir çalışma değişkeni buradaki kodla yeniden üretir"),
     ]
-    w, h = (EN - 0.5) / 3, 2.25
+    w, h = (EN - 0.5) / 3, 2.35
     for i, (kod, ad, metin, ek) in enumerate(karolar):
-        cx, cy, _d = karo(s, SOL + (i % 3) * (w + 0.25), 1.75 + (i // 3) * (h + 0.2), w, h, kod, ad, metin, yatay=True,
+        cx, cy, _d = karo(s, SOL + (i % 3) * (w + 0.25), 1.55 + (i // 3) * (h + 0.2), w, h, kod, ad, metin, yatay=True,
                           ek=ek)
         if i == 0:
             ikon_uyari(s, cx, cy, 0.82)
@@ -1891,11 +1871,10 @@ def slayt_sirada_model():
 
 def slayt_durum():
     s = Slayt("AKIS", B4, "Geliştirilenler ve Sıradakiler",
-              "01 ve 02.1 geliştirildi. Şu an 02.2 Kural Tabanlı Değişken Üretimi üzerinde çalışılıyor.")
+              "Sıradaki adımların ilk sürümleri kodda var, 02.2 tamamlandıktan sonra sırayla ele alınacak.")
     s.kutu(SOL, 1.65, EN, 2.75, "gri", "akış bandı")
-    adimlar = [("01", "Çalışma Kurulumu", "g", "Veri, sözlük, roller, adlar, tipler ve bölme"),
-               ("02.1", "Veri Profili ve Kalite", "g", "20 eşik, 26 kontrol"),
-               ("02.2", "Kural Tabanlı Değişken Üretimi", "s", "41 dönüşüm, katkı ölçümü, sohbet"),
+    adimlar = [("01", "Çalışma Kurulumu", "g", ""), ("02.1", "Veri Profili ve Kalite", "g", ""),
+               ("02.2", "Kural Tabanlı Değişken Üretimi", "s", ""),
                ("02.3", "AI Değişken Keşfi", "r", ""), ("03", "Veri Anlama ve Hazırlama", "r", ""),
                ("04", "Değişken Değerlendirme", "r", ""), ("05", "Modelleme ve Finalizasyon", "r", "")]
     sl, cy = EN / 7, 2.75
@@ -1924,7 +1903,7 @@ def slayt_durum():
         s.yazi(ad, lx + 0.24, 4.55, 2.1, 0.34, boy=12.5, renk=GRI, hiza="l")
     s.kutu(SOL, 5.3, EN, 1.05, "gri", "sonraki hedef")
     s.yazi([R("Sonraki hedef", kalin=True, boy=17, renk=KIR),
-            R("Sınıflandırma tamamlandıktan sonra", boy=10.5, renk=GRI)],
+            R("Şu an yalnız sınıflandırma açık", boy=10.5, renk=GRI)],
            SOL + 0.3, 5.3, 2.5, 1.05, hiza="l", bosluk=2)
     for i, ad in enumerate(["Regresyon", "Segmentasyon", "Zaman serisi tahmini"]):
         x = SOL + 2.9 + i * 3.15
