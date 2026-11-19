@@ -1104,7 +1104,7 @@ def _kapak_gorseli(s):
 
 def slayt_kapak():
     s = Slayt("KAPAK", B1, "Kurumsal Analitik, Tahminleme ve İçgörü Platformu",
-              "Perakende Krediler Analitik ve Tahsis İş Birimi")
+              "Bireysel Krediler Analitik ve Tahsis BI")
     _kapak_gorseli(s)
     s.notlar = ("Kapak. Görsel platformun görsel klasöründen gelir; bulunamadıysa yerinde resim yer tutucusu "
                 "kalır, tıklayıp resim ekleyebilirsiniz. Sunum, platformu hiç bilmeyen ekiplere göre sıralandı: neden "
