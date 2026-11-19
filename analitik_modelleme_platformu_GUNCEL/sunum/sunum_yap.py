@@ -1107,7 +1107,7 @@ def _kapak_gorseli(s):
 
 
 def slayt_kapak():
-    s = Slayt("KAPAK", B1, "Kurumsal Analitik, Tahminleme ve İçgörü Platformu",
+    s = Slayt("KAPAK", B1, "Analitik, Tahminleme ve İçgörü Platformu",
               "Bireysel Krediler Analitik ve Tahsis BI")
     _kapak_gorseli(s)
     s.notlar = ("Kapak. Görsel platformun görsel klasöründen gelir. Bulunamadıysa yerinde resim yer tutucusu kalır, "
@@ -1846,7 +1846,7 @@ def uret(zaman=None):
                 slayt_asamalar(), slayt_sirada_hazirlama(), slayt_sirada_model(), slayt_durum()]
     if KAPANIS:
         slaytlar.append(slayt_kapanis())
-    return paketle(slaytlar, "Kurumsal Analitik, Tahminleme ve İçgörü Platformu", zaman)
+    return paketle(slaytlar, "Analitik, Tahminleme ve İçgörü Platformu", zaman)
 
 
 def _yaz(metin):
