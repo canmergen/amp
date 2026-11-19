@@ -553,9 +553,20 @@ class Slayt(object):
     def sekil(self, hazir, x, y, w, h, dolgu=None, cizgi=None, ad=None, ayar=None, don=0):
         """PowerPoint'in hazir sekillerinden biri: chevron, homePlate, can, funnel,
         gear6, star4, triangle, upArrow ... dolgu: renk ya da None; cizgi: (renk,
-        kalinlik, kesik_mi) ya da None; ayar: seklin ayar degeri; don: derece."""
+        kalinlik, kesik_mi) ya da None; ayar: seklin ayar degeri ya da degerleri
+        (AYAR_ADLARI'ndaki sirayla); don: derece."""
         cevir = (' rot="%d"' % int(round(don * 60000))) if don else ""
-        self._x.append(_sp(self._id(), ad or hazir, _geo(hazir, ayar), x, y, w, h,
+        if ayar is None:
+            geo = _geo(hazir)
+        else:
+            degerler = tuple(ayar) if isinstance(ayar, (tuple, list)) else (ayar,)
+            adlar = AYAR_ADLARI.get(hazir, ())
+            if len(degerler) > len(adlar):
+                raise ValueError("Sekil ayari taninmiyor: %s icin %d deger verildi, bilinen ayar adlari: %s"
+                                 % (hazir, len(degerler), ", ".join(adlar) or "yok"))
+            geo = '<a:prstGeom prst="%s"><a:avLst>%s</a:avLst></a:prstGeom>' % (
+                hazir, "".join('<a:gd name="%s" fmla="val %d"/>' % (a, d) for a, d in zip(adlar, degerler)))
+        self._x.append(_sp(self._id(), ad or hazir, geo, x, y, w, h,
                            _dolgu(dolgu) + _cizgi_xml(cizgi), cevir=cevir))
 
     def elips(self, cx, cy, d, dolgu, cizgi, ad):
@@ -1022,6 +1033,16 @@ def paketle(slaytlar, baslik, zaman=None):
 B1, B2, B3, B4 = "Giriş", "01 Çalışma Kurulumu", "02 Değişken Mühendisliği", "Sırada ve durum"
 SOL, EN = 0.5, 12.33                        # icerik alaninin sol kenari ve eni (inc)
 ORTA_PEMBE, ORTA_GRI = "F08C8F", "C4C4C4"   # sema renkleri (kirmizi ile acik pembe arasi, orta gri)
+
+
+# Hazir sekillerin ayar adlari. PowerPoint her seklin ayarini kendi adiyla bekler;
+# yanlis adla yazilan ayar dosyanin "onarilmasi gerekiyor" uyarisiyla acilmasina yol acar.
+AYAR_ADLARI = {
+    "roundRect": ("adj",), "star4": ("adj",), "chevron": ("adj",), "homePlate": ("adj",),
+    "foldedCorner": ("adj",), "can": ("adj",), "triangle": ("adj",),
+    "rightArrow": ("adj1", "adj2"), "downArrow": ("adj1", "adj2"), "upArrow": ("adj1", "adj2"),
+    "gear6": ("adj1", "adj2"), "wedgeRoundRectCallout": ("adj1", "adj2", "adj3"),
+}
 
 
 def K(metin, boy=12, renk=KIR):
@@ -1583,7 +1604,7 @@ def slayt_kurulum_bolme():
     adim_etiketi(s, x0, 1.55, rw, "01.4", "Örneklem ve Doğrulama Tasarımı")
     s.kutu(x0, 1.95, rw, 4.45, "gri", "bölme")
     bx, bw = x0 + 0.3, rw - 0.6
-    s.sekil("rightArrow", bx, 2.25, bw, 0.34, ORTA_GRI, None, "zaman", ayar=60000)
+    s.sekil("rightArrow", bx, 2.25, bw, 0.34, ORTA_GRI, None, "zaman", ayar=(60000, 50000))
     s.yazi("eski dönemler", bx + 0.05, 2.25, 2.0, 0.34, boy=10.5, kalin=True, renk=KOYU, hiza="l")
     s.yazi("son dönemler", bx + bw - 2.35, 2.25, 2.0, 0.34, boy=10.5, kalin=True, renk=KOYU, hiza="r")
     setler = [("Train", "Model öğrenir", 0.5, KIR, BEYAZ), ("Test", "Ayar seçilir", 0.17, ORTA_PEMBE, KOYU),
