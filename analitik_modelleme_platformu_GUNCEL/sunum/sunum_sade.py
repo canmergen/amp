@@ -2,9 +2,9 @@
 """sunum_sade.py — Platformun KISA tanitim sunumunu (.pptx) ureten betik.
 
 NE YAPAR
-  Baska ekiplere anlatilan kisa sunumu bastan uretir: kapak, 6 icerik
-  slayti ve kapanis. Ne yapildigini ve ne kattigini anlatir, yontemin
-  ayrintisina girmez. Her slaytta bir sema vardir. Ayrintili
+  Ayrintili sunumun ozeti olan kisa sunumu bastan uretir: kapak, 6 icerik
+  slayti ve kapanis. Gorunum ve cumleler ayrintili sunumla aynidir, satir
+  sayisi azdir ve yontemin ic ayrintisi yoktur. Ayrintili
   sunum icin ayni dizindeki sunum_yap.py kullanilir; iki betik birbirinden
   bagimsizdir. Butun kutular, oklar ve yazilar PowerPoint'in kendi
   ogeleridir, PowerPoint'te duzenlenebilir. Robot gorselleri platformun kendi
@@ -550,24 +550,9 @@ class Slayt(object):
         self._x.append(_sp(self._id(), ad, _geo("roundRect", ayar), x, y, w, h,
                            _dolgu(dolgu) + _cizgi_xml(cizgi) + (_GOLGE if golge else "")))
 
-    def sekil(self, hazir, x, y, w, h, dolgu=None, cizgi=None, ad=None, ayar=None, don=0):
-        """PowerPoint'in hazir sekillerinden biri: chevron, homePlate, can, funnel,
-        gear6, star4, triangle, upArrow ... dolgu: renk ya da None; cizgi: (renk,
-        kalinlik, kesik_mi) ya da None; ayar: seklin ayar degeri ya da degerleri
-        (AYAR_ADLARI'ndaki sirayla); don: derece."""
-        cevir = (' rot="%d"' % int(round(don * 60000))) if don else ""
-        if ayar is None:
-            geo = _geo(hazir)
-        else:
-            degerler = tuple(ayar) if isinstance(ayar, (tuple, list)) else (ayar,)
-            adlar = AYAR_ADLARI.get(hazir, ())
-            if len(degerler) > len(adlar):
-                raise ValueError("Sekil ayari taninmiyor: %s icin %d deger verildi, bilinen ayar adlari: %s"
-                                 % (hazir, len(degerler), ", ".join(adlar) or "yok"))
-            geo = '<a:prstGeom prst="%s"><a:avLst>%s</a:avLst></a:prstGeom>' % (
-                hazir, "".join('<a:gd name="%s" fmla="val %d"/>' % (a, d) for a, d in zip(adlar, degerler)))
-        self._x.append(_sp(self._id(), ad or hazir, geo, x, y, w, h,
-                           _dolgu(dolgu) + _cizgi_xml(cizgi), cevir=cevir))
+    def dik(self, x, y, w, h, renk, ad):
+        """Koseli, cizgisiz dolu dikdortgen."""
+        self._x.append(_sp(self._id(), ad, _geo("rect"), x, y, w, h, _dolgu(renk) + _cizgi_xml(None)))
 
     def elips(self, cx, cy, d, dolgu, cizgi, ad):
         self._x.append(_sp(self._id(), ad, _geo("ellipse"), cx - d / 2.0, cy - d / 2.0, d, d,
@@ -605,6 +590,28 @@ class Slayt(object):
         """Icinde beyaz kalin yazi olan kirmizi daire."""
         self.elips(cx, cy, d, KIR, None, "daire " + (ad or str(metin)))
         self.yazi(str(metin), cx - d / 2.0, cy - d / 2.0, d, d, boy=boy, kalin=True, renk=BEYAZ)
+
+    def dipnot(self, metin, h=0.28):
+        """Slaydin altindaki egik not. Iki satirlik not icin h buyutulur."""
+        self.yazi(metin, 0.5, 6.62, 11.7, h, boy=10.5, egik=True, renk=GRI, hiza="l", dikey="t" if h > 0.3 else "ctr")
+
+    def etiket(self, metin, x, y, w=5):
+        self.yazi(metin, x, y, w, 0.26, boy=11, kalin=True, renk=GRI, hiza="l")
+
+    def veri(self, x, y, w, h, baslik, alt=None):
+        """Veri ya da cikti kutusu (kirmizi, beyaz yazi)."""
+        self.kutu(x, y, w, h, "veri", baslik)
+        p = [R(baslik, kalin=True, boy=12.5)]
+        if alt:
+            p.append(R(alt, boy=10.5))
+        self.yazi(p, x + 0.06, y, w - 0.12, h, renk=BEYAZ)
+
+    def sutun_basliklari(self, y, sutunlar, h=0.34, boy=12.5):
+        """Sutun basliklari: her biri kendi sutununun ustunde ortali ve kalin;
+        altinda sutun eninde kirmizi cizgi. sutunlar: [(x, w, ad), ...]."""
+        for x, w, ad in sutunlar:
+            self.yazi(ad, x, y, w, h - 0.04, boy=boy, kalin=True, renk=KIR)
+            self.hat(x, y + h, x + w, y + h, "başlık çizgisi " + ad, KIR, 1.5)
 
     # ---- XML --------------------------------------------------------------
     def _yer_tutucu(self, sid, ad, ph, metin, kutu=None):
@@ -1023,148 +1030,62 @@ def paketle(slaytlar, baslik, zaman=None):
 # ===========================================================================
 # SLAYTLAR
 # ===========================================================================
-# Kisa sunum BASKA EKIPLERE anlatilir: kapak, alti icerik slayti ve kapanis.
-# NE yapildigini ve NE kattigini anlatir, NASIL yapildigini anlatmaz. Yontemin
-# ayrintisi (esikler, kontrol ve donusum listeleri, adimlarda kimin neyi nasil
-# yaptigi, ad standardi) bu sunumda ve notlarinda YER ALMAZ; o ayrinti
-# ayrintili sunumdadir (sunum_yap.py). Dil olumludur: var olan calismanin
-# eksigi degil, platformun ona ekledigi anlatilir.
-# YAZIM KURALI: her bilgi TEK slaytta gecer. Slaytlarda ve notlarda iki
-# nokta, noktali virgul, orta nokta ve uzun cizgi kullanilmaz. Sekillerin
-# hepsi PowerPoint'in kendi sekilleridir. Ornekler gosterim amaclidir.
+# Kisa sunum, ayrintili sunumun (sunum_yap.py) ozetidir: ayni gorunum, ayni
+# cumleler, daha az satir. Kapak, alti icerik slayti ve kapanis. Baska ekiplere
+# anlatilir: her adimda NE yapildigini ve NEDEN gerekli oldugunu soyler,
+# yontemin ic ayrintisina (esikler, kontrol ve donusum listeleri, alt adimlar)
+# girmez. Dil olumludur: platformun var olan calismaya ekledigi anlatilir.
+# YAZIM KURALI: slaytlarda ve notlarda iki nokta, noktali virgul, orta nokta ve
+# uzun cizgi kullanilmaz; metinler duz cumlelerle yazilir. Her bilgi tek
+# slaytta gecer. Ornekler gosterim amaclidir.
+# Durum: "g" gelistirildi, "s" uzerinde calisiliyor, "r" sirada
 B1, B2, B3 = "Giriş", "Fazlar", "Kapanış"
 SOL, EN = 0.5, 12.33                        # icerik alaninin sol kenari ve eni (inc)
-ORTA_PEMBE, ORTA_GRI = "F08C8F", "C4C4C4"   # sema renkleri (kirmizi ile acik pembe arasi, orta gri)
-DURUM_ADI = {"g": "Geliştirildi", "s": "Üzerinde çalışılıyor", "r": "Sırada"}
+GIRINTI = chr(160) * 4                      # bolunmez bosluk (alt adim girintisi)
+OK_ISARETI = " " + chr(8594) + " "          # eski ad ile yeni ad arasindaki ok
+TABLO_ARA = 0.1                             # tablo sutunlari arasindaki bosluk (inc)
 
 
-# Hazir sekillerin ayar adlari. PowerPoint her seklin ayarini kendi adiyla bekler;
-# yanlis adla yazilan ayar dosyanin "onarilmasi gerekiyor" uyarisiyla acilmasina yol acar.
-AYAR_ADLARI = {
-    "roundRect": ("adj",), "star4": ("adj",), "chevron": ("adj",), "homePlate": ("adj",),
-    "foldedCorner": ("adj",), "can": ("adj",), "triangle": ("adj",),
-    "rightArrow": ("adj1", "adj2"), "downArrow": ("adj1", "adj2"), "upArrow": ("adj1", "adj2"),
-    "gear6": ("adj1", "adj2"), "wedgeRoundRectCallout": ("adj1", "adj2", "adj3"),
-}
+def K(metin, boy=None, renk=KIR):
+    """Kolon adi gibi kod parcasi: sabit aralikli, kalin."""
+    return R(metin, kalin=True, renk=renk, boy=boy, yazitipi="Courier New")
 
 
-# ---- kucuk ikonlar ve sema parcalari -------------------------------------
-def ikon_tablo(s, x, y, w, h, renk=KIR, kesik=False, vurgulu_sutun=None):
-    """Tablo ikonu: ustte baslik seridi, altinda izgara. vurgulu_sutun: 0, 1 ya da 2."""
-    bh = h * 0.26
-    s.sekil("rect", x, y, w, h, BEYAZ, (renk, 1.25, kesik), "tablo")
-    if vurgulu_sutun is not None:
-        s.sekil("rect", x + w * vurgulu_sutun / 3.0, y + bh, w / 3.0, h - bh, ORTA_PEMBE, None, "yeni sütun")
-    if not kesik:
-        s.sekil("rect", x, y, w, bh, renk, None, "tablo başlığı")
-    else:
-        s.hat(x, y + bh, x + w, y + bh, "tablo çizgisi", renk, 0.75, True)
-    for i in (1, 2):
-        yy = y + bh + (h - bh) * i / 3.0
-        s.hat(x, yy, x + w, yy, "tablo çizgisi", renk, 0.75, kesik)
-        xx = x + w * i / 3.0
-        s.hat(xx, y + bh, xx, y + h, "tablo çizgisi", renk, 0.75, kesik)
+def adim_kutusu(s, x, y, w, h, durum, no, ad, rol=None):
+    """Tablonun sol sutunundaki adim kutusu: numara ile ad ayni satirda,
+    altinda (varsa) kimin ne yaptigi. Dolu kirmizi gelistirilen, kalin cerceve
+    uzerinde calisilan, kesik cerceve siradaki adimdir."""
+    s.kutu(x, y, w, h, {"g": "veri", "s": "simdi", "r": "soluk"}[durum], "adım " + no)
+    ana = BEYAZ if durum == "g" else (KIR if durum == "s" else GRI)
+    p = [[R(no + "  ", kalin=True, boy=12, renk=ana), R(ad, kalin=True, boy=11.5, renk=ana)]]
+    if rol:
+        p.append(R(rol, boy=9.5, renk=BEYAZ if durum == "g" else GRI))
+    s.yazi(p, x + 0.12, y + 0.04, w - 0.24, h - 0.08, bosluk=3)
 
 
-def ikon_cubuklar(s, x, y, w, h, degerler, renk=KIR, taban=True):
-    """Kucuk cubuk semasi. degerler: 0 ile 1 arasi yukseklikler."""
-    n = len(degerler)
-    bw = w / (n * 1.5 - 0.5)
-    for i, d in enumerate(degerler):
-        s.sekil("rect", x + i * bw * 1.5, y + h * (1 - d), bw, h * d, renk, None, "çubuk")
-    if taban:
-        s.hat(x - 0.05, y + h, x + w + 0.05, y + h, "taban çizgisi", SOLUK, 1)
-
-
-def ikon_isilti(s, cx, cy, b, renk=KIR):
-    """Yapay zeka icin isilti: biri buyuk biri kucuk dort koseli yildiz."""
-    s.sekil("star4", cx - b * 0.42, cy - b * 0.45, b * 0.66, b * 0.66, renk, None, "ışıltı", ayar=18000)
-    s.sekil("star4", cx + b * 0.1, cy + b * 0.05, b * 0.36, b * 0.36, renk, None, "küçük ışıltı", ayar=18000)
-
-
-def ikon_onay(s, cx, cy, b, renk=KIR, kalinlik=4.5):
-    """Onay isareti: iki cizgi."""
-    s.hat(cx - b * 0.3, cy + b * 0.02, cx - b * 0.08, cy + b * 0.24, "onay", renk, kalinlik)
-    s.hat(cx - b * 0.08, cy + b * 0.24, cx + b * 0.32, cy - b * 0.22, "onay", renk, kalinlik)
-
-
-def ikon_disli(s, cx, cy, b, renk=KIR, gobek=BEYAZ):
-    s.sekil("gear6", cx - b / 2.0, cy - b / 2.0, b, b, renk, None, "dişli")
-    s.elips(cx, cy, b * 0.3, gobek, None, "dişli göbeği")
-
-
-def ikon_kilit(s, cx, cy, b, renk=KIR):
-    s.elips(cx, cy - b * 0.2, b * 0.5, None, (renk, 2.5, False), "kilit halkası")
-    s.sekil("roundRect", cx - b * 0.36, cy - b * 0.12, b * 0.72, b * 0.54, renk, None, "kilit gövdesi", ayar=15000)
-
-
-def ikon_belge(s, x, y, w, h, renk=KIR):
-    """Belge (sozluk) ikonu: kosesi kivrik kagit ve uc satir."""
-    s.sekil("foldedCorner", x, y, w, h, BEYAZ, (renk, 1.25, False), "belge", ayar=22000)
-    for i in range(3):
-        yy = y + h * (0.3 + i * 0.2)
-        s.hat(x + w * 0.2, yy, x + w * 0.8, yy, "belge satırı", renk, 1)
-
-
-def ikon_uyari(s, cx, cy, b, renk=KIR):
-    s.sekil("triangle", cx - b / 2.0, cy - b * 0.48, b, b * 0.9, renk, None, "uyarı")
-    s.yazi("!", cx - b / 2.0, cy - b * 0.25, b, b * 0.65, boy=b * 34, kalin=True, renk=BEYAZ)
-
-
-def etiketli_cip(s, x, y, w, h, metin, tur="cerceve", boy=13, renk=KOYU, kod=False):
-    """Kucuk kutu icinde tek sozcuk. kod=True ise sabit aralikli yazi."""
-    s.kutu(x, y, w, h, tur, "çip " + metin)
-    s.yazi(metin, x, y, w, h, boy=boy, kalin=True, renk=renk, yazitipi="Courier New" if kod else None)
-
-
-def islem_rozeti(s, cx, cy, metin, d=0.62, boy=11):
-    """Iki parcanin arasindaki islem: kirmizi daire icinde bolu ya da eksi."""
-    s.elips(cx, cy, d, KIR, None, "işlem " + metin)
-    s.yazi(metin, cx - d / 2.0, cy - d / 2.0, d, d, boy=boy, kalin=True, renk=BEYAZ)
-
-
-def surec_bandi(s, y, h, adimlar, vurgu=None, boy=17):
-    """Yan yana ok bicimli adimlar. vurgu: pembe gosterilecek adimin sirasi."""
-    n = len(adimlar)
-    bindirme = h * 0.3
-    w = (EN + (n - 1) * bindirme) / n
-    for i, metin in enumerate(adimlar):
-        x = SOL + i * (w - bindirme)
-        pembe = (i == vurgu)
-        s.sekil("homePlate" if i == 0 else "chevron", x, y, w, h, PEMBE if pembe else KIR,
-                (KIR, 1.5, False) if pembe else None, "adım " + metin, ayar=30000)
-        s.yazi(metin, x + (0.1 if i == 0 else bindirme + 0.05), y, w - bindirme - (0.2 if i == 0 else bindirme),
-               h, boy=boy, kalin=True, renk=KIR if pembe else BEYAZ)
-    return w, bindirme
-
-
-def durum_bicimi(durum):
-    """Durumun gorunusu, doner: (dolgu, cizgi, yazi rengi).
-    g gelistirildi (dolu kirmizi), s uzerinde calisiliyor (pembe, kirmizi cerceve), r sirada (kesik gri)."""
-    if durum == "g":
-        return KIR, None, BEYAZ
-    if durum == "s":
-        return PEMBE, (KIR, 2.5, False), KIR
-    return BEYAZ, (SOLUK, 1.5, True), GRI
-
-
-def hap(s, x, y, w, h, metin, dolgu, cizgi, renk, boy=11, kalin=True):
-    """Uclari tam yuvarlak etiket."""
-    s.sekil("roundRect", x, y, w, h, dolgu, cizgi, "etiket " + metin, ayar=50000)
-    s.yazi(metin, x, y, w, h, boy=boy, kalin=kalin, renk=renk)
-
-
-def yz_etiketi(s, x, y):
-    """Kartin altindaki kucuk etiket: bu adimda yapay zeka oneride bulunur."""
-    s.elips(x + 0.18, y + 0.18, 0.36, BEYAZ, None, "yapay zekâ zemini")
-    ikon_isilti(s, x + 0.18, y + 0.18, 0.27)
-    s.yazi("Yapay zekâ destekli", x + 0.46, y, 2.0, 0.36, boy=11, kalin=True, renk=KIR, hiza="l")
-
-
-def ikon_pencere(s, x, y, w, h, renk=KIR):
-    """Uygulama penceresi ikonu: cerceve ve ust serit."""
-    s.sekil("rect", x, y, w, h, BEYAZ, (renk, 1.25, False), "pencere")
-    s.sekil("rect", x, y, w, h * 0.28, renk, None, "pencere başlığı")
+def tablo(s, y, basliklar, enler, satirlar, yukseklik, bosluk=0.08, boy=11.5):
+    """Adim tablosu: solda adim kutusu, yaninda metin sutunlari.
+    basliklar ve enler: ilk oge adim sutununun, kalanlar metin sutunlarinindir.
+    satirlar: [(durum, no, ad, rol, [hucre, ...]), ...]. yukseklik: satir boyu (inc).
+    Doner: tablonun bittigi y."""
+    xs, x = [], SOL
+    for w in enler:
+        xs.append(x)
+        x += w + TABLO_ARA
+    s.sutun_basliklari(y, [(xs[i], enler[i], basliklar[i]) for i in range(len(enler))])
+    son = len(enler) - 1
+    sy = y + 0.46
+    for durum, no, ad, rol, hucreler in satirlar:
+        adim_kutusu(s, xs[0], sy, enler[0], yukseklik, durum, no, ad, rol)
+        s.kutu(xs[1], sy, xs[son] + enler[son] - xs[1], yukseklik, "gri", "satır " + no)
+        for i in range(2, son + 1):
+            cx = xs[i] - TABLO_ARA / 2.0
+            s.hat(cx, sy + 0.1, cx, sy + yukseklik - 0.1, "sütun ayracı", SOLUK, 0.75)
+        for i, icerik in enumerate(hucreler):
+            s.yazi(icerik, xs[i + 1] + 0.14, sy + 0.05, enler[i + 1] - 0.28, yukseklik - 0.1, boy=boy, hiza="l",
+                   bosluk=2)
+        sy += yukseklik + bosluk
+    return sy - bosluk
 
 
 # ---- kapak ve kapanis ------------------------------------------------------
@@ -1207,417 +1128,299 @@ def slayt_kapanis():
 
 # ---- 1. Amac ve katki ------------------------------------------------------
 def slayt_amac():
-    """Amac, kavram semasi ve platformun modelleme calismalarina kattiklari.
-    Dil olumludur: var olan calismanin eksigi degil, platformun ekledigi anlatilir."""
-    s = Slayt("AKIS", B1, "Amaç ve Katkı",
-              "Platform, yürüyen modelleme çalışmalarına ek katkı sağlamak için geliştiriliyor.")
-    s.kutu(SOL, 1.55, EN, 1.2, "veri", "amaç")
-    s.elips(SOL + 0.85, 2.15, 0.82, BEYAZ, None, "yapay zekâ zemini")
-    ikon_isilti(s, SOL + 0.85, 2.15, 0.62)
-    s.yazi([R("Yapay zekâ ile modele katkı sağlayan yeni değişkenler üretmek", kalin=True, boy=23),
-            R("Hazır tablolardan en iyi değişken kombinasyonlarını bulmak ve baz tabloyu kaynak tablolardan "
-              "kurabilmek", boy=13.5)], SOL + 1.4, 1.55, EN - 1.8, 1.2, renk=BEYAZ, bosluk=3)
-    # Kavram semasi: tablolar, yapay zeka, yeni degiskenler, modele ek katki
-    s.kutu(SOL, 2.93, EN, 1.72, "gri", "kavram şeması")
-    cy = 3.58
-    ikon_tablo(s, 1.4, cy - 0.5, 0.9, 0.62, ORTA_GRI)
-    ikon_tablo(s, 1.66, cy - 0.33, 0.9, 0.62, ORTA_PEMBE)
-    ikon_tablo(s, 1.92, cy - 0.16, 0.9, 0.62, KIR)
-    s.elips(5.05, cy, 1.1, BEYAZ, (KIR, 1.5, False), "yapay zekâ")
-    ikon_isilti(s, 5.05, cy, 0.84)
-    ikon_tablo(s, 7.7, cy - 0.48, 1.4, 0.96, KIR, vurgulu_sutun=2)
-    ikon_cubuklar(s, 10.85, cy - 0.48, 1.2, 0.96, [0.4, 0.6, 0.8, 1.0])
-    for x1, x2 in ((3.1, 4.3), (5.8, 7.45), (9.35, 10.6)):
-        s.ok(x1, cy, x2, cy, "ok şema")
-    for cx, ad in ((2.1, "Tablolar"), (5.05, "Yapay zekâ"), (8.4, "Yeni değişkenler"), (11.45, "Modele ek katkı")):
-        s.yazi(ad, cx - 1.4, 4.22, 2.8, 0.34, boy=13.5, kalin=True)
-    s.yazi("Modelleme çalışmalarına kattıkları", SOL, 4.83, 6.0, 0.3, boy=13, kalin=True, renk=KIR, hiza="l")
-    katkilar = [("Ortak yöntem", "Çalışmalar aynı adımlarla ve aynı kontrollerle yürür"),
-                ("Yeniden kullanım", "Üretilen değişkenler ve alınan kararlar sonraki çalışmaya taşınır"),
-                ("Daha geniş arama", "Bilinenlere ek olarak yeni tablo birleşimleri ve değişken fikirleri denenir"),
-                ("Zaman kazancı", "Hazırlık adımları otomatikleşir, emek incelemeye ve karara ayrılır")]
-    w = (EN - 0.6) / 4
-    for i, (ad, metin) in enumerate(katkilar):
-        x = SOL + i * (w + 0.2)
-        s.kutu(x, 5.2, w, 1.45, "islem", "katkı " + ad)
-        s.elips(x + 0.45, 5.57, 0.48, KIR, None, "onay zemini")
-        ikon_onay(s, x + 0.45, 5.57, 0.4, BEYAZ, 2.5)
-        s.yazi(ad, x + 0.82, 5.31, w - 0.95, 0.52, boy=15, kalin=True, renk=KIR, hiza="l")
-        s.yazi(metin, x + 0.22, 5.88, w - 0.44, 0.7, boy=12, renk=GRI, hiza="l", dikey="t")
-    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 2. Platform, yürüyen modelleme çalışmalarına ek katkı sağlamak "
-                "için geliştiriliyor. Amaç yapay zekâ ile modele katkı sağlayan yeni değişkenler üretmektir. Hazır "
-                "tablolardan en iyi değişken kombinasyonları bulunur ve baz tablo kaynak tablolardan kurulabilir. "
-                "Altta platformun modelleme çalışmalarına kattıkları yer alıyor. Ortak yöntem, yeniden kullanım, daha "
-                "geniş arama ve zaman kazancı.")
+    """Ayrintili sunumun 2. slaydi: amac paragrafi ve platformun kattiklari.
+    Elle yurutulen surecle karsilastirma yoktur, yalniz platformun ekledigi yazar."""
+    s = Slayt("AKIS", B1, "Amaç ve Katkı")
+    s.dik(SOL, 1.12, 0.06, 1.2, KIR, "amaç çizgisi")
+    s.yazi([["Platform, model geliştirme sürecini ham veriden modele kadar adım adım yürüten bir web uygulamasıdır. "
+             "Mevcut modelleme çalışmalarına ek katkı sağlamak için geliştirilmektedir. ",
+             R("Platformun en büyük amacı, hazır tablolardan üretilebilecek en iyi değişken kombinasyonlarını bulmak "
+               "ve baz tabloyu kaynak tablolardan kurabilmektir.", kalin=True, renk=KIR),
+             " Böylece farklı tablolar da birleştirilir, modele katkı sağlayan yeni değişkenler elde edilir ve model "
+             "performansı yükselir. Bunu yaparken süreci yapay zekâ desteğiyle hızlandırmak, modele yalnız katkısı "
+             "ölçülmüş değişkenleri almak ve emeği katma değeri yüksek işlere ayırmak hedeflenir."]],
+           SOL + 0.2, 1.12, EN - 0.2, 1.2, boy=12, hiza="l")
+    ust = 2.64                                        # tablo basliklarinin y konumu (inc)
+    kx, kw, px, pw = SOL, 2.2, SOL + 2.2 + 0.15, 5.45
+    s.sutun_basliklari(ust, [(kx, kw, "Konu"), (px, pw, "Platformun Kattığı")])
+    satirlar = [
+        ("Yöntem Birliği",
+         "Aynı adımlar, aynı kontroller ve aynı ölçütler her çalışmada aynı sırayla uygulanır."),
+        ("Yeniden Kullanım",
+         "Onaylanan tanımlar, adlar ve kararlar proje hafızasına yazılır ve sonraki çalışmada hazır gelir."),
+        ("Süre",
+         "Hazırlık adımlarının büyük bölümü otomatik yürür. Kullanıcı zamanını incelemeye ve karara ayırır."),
+        ("İzlenebilirlik",
+         "Her adımın kararı, gerekçesi ve üretim kodu tek yerde durur. Çalışma kaldığı yerden açılır."),
+    ]
+    h, ara = 0.78, 0.1
+    for i, (konu, metin) in enumerate(satirlar):
+        y = ust + 0.46 + i * (h + ara)
+        s.veri(kx, y, kw, h, konu)
+        s.kutu(px, y, pw, h, "islem", "katkı " + konu)
+        s.yazi(metin, px + 0.18, y, pw - 0.36, h, boy=12, hiza="l")
+    # Sag bolme: kapsam. Hangi model tipi acik, hangileri siradaki hedef
+    gx = px + pw + 0.3
+    gw = SOL + EN - gx
+    gh = 4 * h + 3 * ara
+    s.sutun_basliklari(ust, [(gx, gw, "Kapsam")])
+    s.kutu(gx, ust + 0.46, gw, gh, "gri", "kapsam")
+    tipler = [("Sınıflandırma", True), ("Regresyon", False), ("Segmentasyon", False), ("Zaman Serisi Tahmini", False)]
+    for i, (ad, acik) in enumerate(tipler):
+        ty = ust + 0.62 + i * 0.55
+        if i:
+            s.hat(gx + 0.22, ty - 0.03, gx + gw - 0.22, ty - 0.03, "ayırıcı", BEYAZ, 1.5)
+        s.elips(gx + 0.36, ty + 0.23, 0.17, KIR if acik else BEYAZ, None if acik else (SOLUK, 1.25, False),
+                "durum " + ad)
+        s.yazi(ad, gx + 0.58, ty, gw - 2.3, 0.46, boy=12, kalin=True, renk=KOYU if acik else GRI, hiza="l")
+        s.yazi("Açık" if acik else "Sonraki hedef", gx + gw - 1.75, ty, 1.53, 0.46, boy=11, kalin=acik,
+               renk=KIR if acik else GRI, hiza="r")
+    s.yazi("Sınıflandırmada hedef 0 ve 1 değeri alan bir kolondur. Öbür model tiplerinin sınıflandırma "
+           "tamamlandıktan sonra açılması hedeflenmektedir.", gx + 0.22, ust + 2.88, gw - 0.44, 0.9, boy=11, renk=GRI,
+           hiza="l", dikey="t")
+    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 2. Platform, mevcut modelleme çalışmalarına ek katkı sağlamak "
+                "için geliştirilmektedir. En büyük amacı hazır tablolardan üretilebilecek en iyi değişken kombinasyonlarını "
+                "bulmak ve baz tabloyu kaynak tablolardan kurabilmektir. Tabloda platformun her çalışmaya kattıkları "
+                "yer alıyor. Şu an sınıflandırma modelleri için açıktır, öbür model tipleri sonraki hedeftir.")
     return s
 
 
 # ---- 2. Calisma prensibi ve roller -----------------------------------------
 def slayt_prensip():
-    """Dort rol sirayla, altinda son kararin kimde oldugu ve uc guvence.
-    Rollerin adimlarda nasil uygulandigi bu sunumda anlatilmaz."""
-    s = Slayt("AKIS", B1, "Çalışma Prensibi ve Roller",
-              "Platform bir web uygulamasıdır. Dört rol her adımda bu sırayla çalışır.")
-    adimlar = [
-        ("Kod ölçer", "Sayımı ve ölçümü yapar", "Örneğin eksik oranı, tekil değer sayısı, bilgi değeri"),
-        ("Yapay zekâ önerir", "Ölçüme ve kolonların anlamına bakar",
-         "Örneğin yeni bir değişken ya da eksik bir tanım önerir"),
-        ("Kullanıcı karar verir", "Öneriyi kabul eder ya da değiştirir",
-         "Örneğin önerilen bir değişkeni ekler ya da çıkarır"),
-        ("Kod uygular", "Kararı veriye uygular", "Karar, gerekçe ve üretim kodu kayıtta kalır"),
+    """Ayrintili sunumun 3. slaydi: uc rol, karardan sonra ne oldugu ve altyapi."""
+    s = Slayt("AKIS", B1, "Çalışma Prensibi ve Roller", "Platformda üç rol vardır ve sıra her adımda aynıdır.")
+    roller = [
+        ("islem", "Kod ölçer",
+         ["Sayımı ve ölçümü yapar, sonuçlar karar kartında görünür",
+          "Sayıya dayanan öneriyi kendisi verir ve gerekçesini ölçtüğü değerle yazar"],
+         "Örneğin eksik oranını, tekil değer sayısını ve bilgi değerini (IV) hesaplar."),
+        ("gri", "Yapay zekâ önerir",
+         ["Kolon adlarının ve açıklamalarının anlamını yorumlar, anlam gerektiren yerde öneri verir",
+          "Sayı hesaplamaz, veriyi değiştirmez, karar vermez"],
+         "Örneğin açıklamasından bir kolonun geleceğe baktığını anlar ve sızıntı riski diye işaretler."),
+        ("onay", "Kullanıcı karar verir",
+         ["Ölçümü, öneriyi ve gerekçeyi aynı kartta görür",
+          "Öneriyi kabul eder, değiştirir, ekler ya da çıkarır. Onaylamadığı hiçbir şey veriye uygulanmaz"],
+         "Örneğin neredeyse sabit bir kolonu tutmaya ya da çıkarmaya karar verir."),
     ]
-    w, bindirme = surec_bandi(s, 1.55, 0.85, [a for a, _m, _o in adimlar], vurgu=2, boy=18)
-    for i, (_ad, metin, ornek) in enumerate(adimlar):
-        cx = SOL + i * (w - bindirme) + w / 2
-        s.elips(cx, 3.15, 1.2, PEMBE, None, "ikon zemini")
-        if i == 0:
-            ikon_cubuklar(s, cx - 0.34, 2.84, 0.68, 0.6, [0.4, 0.7, 1.0, 0.6])
-        elif i == 1:
-            ikon_isilti(s, cx, 3.15, 0.9)
-        elif i == 2:
-            ikon_onay(s, cx, 3.15, 0.9)
-        else:
-            ikon_disli(s, cx, 3.15, 0.76)
-        s.yazi([R(metin, kalin=True, boy=14.5), R(ornek, boy=12, egik=True, renk=GRI)], cx - 1.4, 3.88, 2.8, 1.04,
-               dikey="t", bosluk=4)
-    s.kutu(SOL, 5.0, EN, 0.87, "veri", "son karar")
-    s.elips(SOL + 0.78, 5.435, 0.58, BEYAZ, None, "onay zemini")
-    ikon_onay(s, SOL + 0.78, 5.435, 0.48, KIR, 3)
-    s.yazi([R("Son karar her zaman kullanıcınındır", kalin=True, boy=21),
-            R("Yapay zekâ yalnız önerir, veriyi değiştirmez ve karar vermez", boy=13)],
-           SOL + 1.3, 5.0, EN - 2.6, 0.87, renk=BEYAZ, bosluk=2)
-    guvenceler = [("Dataiku içinde", "Tarayıcıdan, Dataiku projesinin içinden açılır"),
-                  ("Tam veri", "Sayımlar verinin tamamında, örnekleme yapılmadan yapılır"),
-                  ("Kaynak veri korunur", "Seçilen veriye ve sözlüğe yazılmaz, platform kendi kopyasıyla çalışır")]
-    gw = (EN - 0.4) / 3
-    for i, (ad, metin) in enumerate(guvenceler):
-        x = SOL + i * (gw + 0.2)
-        s.kutu(x, 6.02, gw, 0.78, "gri", "güvence " + ad)
-        s.elips(x + 0.47, 6.41, 0.54, BEYAZ, None, "ikon zemini")
-        if i == 0:
-            ikon_pencere(s, x + 0.3, 6.29, 0.34, 0.25)
-        elif i == 1:
-            ikon_tablo(s, x + 0.3, 6.29, 0.34, 0.25, KIR)
-        else:
-            ikon_kilit(s, x + 0.47, 6.43, 0.31)
-        s.yazi([R(ad, kalin=True, boy=12.5, renk=KIR), R(metin, boy=11, renk=GRI)], x + 0.88, 6.02, gw - 1.0, 0.78,
-               hiza="l", bosluk=1)
-    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 3. Dört rol her adımda aynı sırayla çalışır. Kod ölçer, yapay zekâ "
-                "önerir, kullanıcı karar verir, kod kararı uygular. Yapay zekâ yalnız önerir, kullanıcının onaylamadığı "
-                "hiçbir şey veriye uygulanmaz. Platform Dataiku içinde çalışır, sayımlar verinin tamamında yapılır ve "
-                "seçilen veri setine yazılmaz.")
+    rw, rh = 3.75, 2.7
+    for i, (tur, ad, liste, ornek) in enumerate(roller):
+        x = SOL + i * (rw + 0.54)
+        s.kutu(x, 1.56, rw, rh, tur, "rol " + ad)
+        s.daire(i + 1, x + 0.48, 1.96, 0.46, boy=15, ad="rol no %d" % (i + 1))
+        s.yazi(ad, x + 0.86, 1.73, 2.75, 0.46, boy=16, kalin=True, renk=KIR, hiza="l")
+        s.yazi(maddeler(liste), x + 0.22, 2.38, rw - 0.44, 1.2, boy=11.5, hiza="l", dikey="t", bosluk=5)
+        s.hat(x + 0.22, 3.62, x + rw - 0.22, 3.62, "örnek çizgisi", SOLUK, 0.75)
+        s.yazi(ornek, x + 0.22, 3.66, rw - 0.44, 0.54, boy=10.5, egik=True, renk=GRI, hiza="l")
+        if i < 2:
+            s.ok(x + rw + 0.06, 2.91, x + rw + 0.48, 2.91, "ok rol %d" % i)
+    s.kutu(SOL, 4.44, EN, 0.5, "gri", "karardan sonra")
+    s.yazi([[R("Karardan sonra", kalin=True, renk=KIR),
+             " kod kararı güncel veriye uygular. İstenen adıma geri dönülebilir."]],
+           SOL + 0.2, 4.44, EN - 0.4, 0.5, boy=11.5)
+    s.etiket("Altyapı", SOL, 5.12)
+    altyapi = [
+        ("Dataiku İçinde", "Tarayıcıdan, Dataiku projesinin içinden açılır. Yetkili olunan veri setleri listelenir."),
+        ("Tam Veri", "Sayımlar verinin tamamında yapılır, örnekleme yapılmaz. Büyük tablolar Spark ile kümede işlenir."),
+        ("Kaynak Verinin Korunması", "Seçilen veri setine ve sözlüğe yazılmaz. Platform kendi kopyalarıyla çalışır."),
+    ]
+    nw = (EN - 0.5) / 3
+    for i, (ad, aciklama) in enumerate(altyapi):
+        x = SOL + i * (nw + 0.25)
+        s.kutu(x, 5.42, nw, 1.08, "gri", "altyapı " + ad)
+        s.yazi([R(ad, kalin=True, boy=12, renk=KIR), R(aciklama, boy=11)], x + 0.15, 5.42, nw - 0.3, 1.08, bosluk=2)
+    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 3. Sıra her adımda aynıdır. Önce kod veriyi sayar ve ölçer. Yapay "
+                "zekâ anlam gerektiren yerde öneri verir, kendisi sayı hesaplamaz. Kullanıcı ölçümü, öneriyi ve gerekçeyi "
+                "aynı kartta görür ve kararı verir. Karardan sonra kod kararı veriye uygular. Her adımda yapay zekâ "
+                "olmak zorunda değildir, sayıya dayanan önerileri kod kendisi verir.")
     return s
 
 
 # ---- 3. Is akisi ve bugunku durum ------------------------------------------
 def slayt_akis():
-    """Bes faz tek bakista: ne yapilir, ne cikar, hangisi gelistirildi. Altta
-    platformun hangi model tipine acik oldugu."""
-    s = Slayt("AKIS", B1, "İş Akışı ve Bugünkü Durum")
+    """Ayrintili sunumun 4. ve 14. slaydi: bes faz, adimlari, ciktilari ve durumu."""
+    s = Slayt("AKIS", B1, "İş Akışı ve Bugünkü Durum",
+              "Sıra web uygulamasındaki İş Akışı ile aynıdır. Beş faz vardır ve her faz bir öncekinin çıktısını "
+              "kullanır.")
     fazlar = [
-        ("01", "Çalışma Kurulumu", "g", "Veri seçilir, tanınır ve hazırlanır", "Güncel Veri ve Sözlük"),
-        ("02", "Değişken Mühendisliği", "s", "Veri kontrol edilir, yeni değişkenler üretilir", "Yeni Değişkenler"),
-        ("03", "Veri Anlama ve Hazırlama", "r", "Değişkenler ölçülür, veri son hâlini alır", "Analitik Baz Set"),
-        ("04", "Değişken Değerlendirme", "r", "Riskli ve zayıf değişkenler elenir", "Aday Değişken Seti"),
-        ("05", "Modelleme ve Finalizasyon", "r", "Model kurulur, katkı ölçülür ve kaydedilir",
-         "Final Model ve Katalog"),
+        ("01", "Çalışma Kurulumu", "Veri seti, sözlük, kolon rolleri ve örneklem tasarımı", "g",
+         [("01.1", "Başlangıç Seçimi", "g", 0), ("01.2", "Veri Seti, Sözlük ve Kolon Rolleri", "g", 0),
+          ("01.2.1", "Baz Veri Seti ve Baz Sözlük", "g", 1), ("01.2.2", "Kolon Rolleri", "g", 1),
+          ("01.2.3", "Eksik Sözlük Tanımları", "g", 1), ("01.2.4", "Sözlük ve Kolon Adı Kontrolü", "g", 1),
+          ("01.3", "Değişken Listesi ve Tip Kontrolü", "g", 0),
+          ("01.4", "Örneklem ve Doğrulama Tasarımı", "g", 0)],
+         "Güncel Veri ve Sözlük", "Geliştirildi"),
+        ("02", "Değişken Mühendisliği", "Profil, kural tabanlı ve AI destekli üretim", "s",
+         [("02.1", "Veri Profili ve Kalite", "g", 0), ("02.2", "Kural Tabanlı Değişken Üretimi", "s", 0),
+          ("02.3", "AI Değişken Keşfi", "r", 0)],
+         "Yeni Değişkenler", "02.2 üzerinde çalışılıyor"),
+        ("03", "Veri Anlama ve Hazırlama", "SFA, stabilite ve analitik baz set", "r",
+         [("03.1", "Tek Değişken Analizi (SFA)", "r", 0), ("03.2", "Stabilite Analizi (PSI)", "r", 0),
+          ("03.3", "Analitik Baz Set", "r", 0)],
+         "Analitik Baz Set", "Sırada"),
+        ("04", "Değişken Değerlendirme", "Sızıntı kontrolü ve aday değişken seti", "r",
+         [("04.1", "Sızıntı Kontrolü", "r", 0), ("04.2", "Aday Değişken Seti", "r", 0)],
+         "Aday Değişken Seti", "Sırada"),
+        ("05", "Modelleme ve Finalizasyon", "Model seçimi, katkı ölçümü ve doğrulama", "r",
+         [("05.1", "Model Karşılaştırması", "r", 0), ("05.2", "Algoritma Seçimi", "r", 0),
+          ("05.3", "Model Finalizasyonu", "r", 0), ("05.4", "Değişken Kataloğu", "r", 0)],
+         "Final Model ve Katalog", "Sırada"),
     ]
-    y, h, bindirme = 1.75, 1.1, 0.3
-    w = (EN + 4 * bindirme) / 5
-    for i in sorted(range(5), key=lambda k: "rgs".index(fazlar[k][2])):     # sirada, gelistirildi, uzerinde calisilan
-        no, durum = fazlar[i][0], fazlar[i][2]
-        dolgu, cizgi, _ana = durum_bicimi(durum)
-        if durum == "g":
-            cizgi = (BEYAZ, 2, False)
-        s.sekil("homePlate" if i == 0 else "chevron", SOL + i * (w - bindirme), y, w, h, dolgu, cizgi, "faz " + no,
-                ayar=26087)
-    for i, (no, ad, durum, ne, cikti) in enumerate(fazlar):
-        x = SOL + i * (w - bindirme)
-        dolgu, cizgi, ana = durum_bicimi(durum)
-        ic_x = x + (0.15 if i == 0 else bindirme + 0.1)
-        ic_w = w - bindirme - (0.25 if i == 0 else bindirme + 0.1)
-        cx = ic_x + ic_w / 2
-        s.yazi([R(no, kalin=True, boy=22, renk=ana), R(ad, kalin=True, boy=12, renk=ana)], ic_x, y, ic_w, h, bosluk=1)
-        if durum == "s":
-            s.sekil("wedgeRoundRectCallout", cx - 0.95, 1.2, 1.9, 0.36, KIR, None, "şu an buradayız",
-                    ayar=(0, 80000, 16667))             # ucu tam ortadan asagi bakar
-            s.yazi("Şu an buradayız", cx - 0.95, 1.2, 1.9, 0.36, boy=11.5, kalin=True, renk=BEYAZ)
-        hap(s, cx - 0.9, 3.02, 1.8, 0.3, DURUM_ADI[durum], dolgu, cizgi, ana)
-        renk = KIR if durum != "r" else SOLUK                 # ikon: sirada olan faz gri
-        s.elips(cx, 3.95, 0.95, PEMBE if durum != "r" else ACIK, None, "ikon zemini " + no)
-        if i == 0:
-            ikon_tablo(s, cx - 0.3, 3.73, 0.6, 0.44, renk)
-        elif i == 1:
-            ikon_isilti(s, cx, 3.95, 0.72, renk)
-        elif i == 2:
-            ikon_cubuklar(s, cx - 0.26, 3.72, 0.52, 0.46, [0.4, 0.65, 1.0], renk, taban=False)
-        elif i == 3:
-            s.sekil("funnel", cx - 0.27, 3.68, 0.54, 0.54, renk, None, "eleme")
-        else:
-            ikon_onay(s, cx, 3.95, 0.7, renk, 3.5)
-        s.yazi(ne, ic_x - 0.05, 4.52, ic_w + 0.1, 0.56, boy=13, kalin=True, renk=KOYU if durum != "r" else GRI)
-        s.sekil("downArrow", cx - 0.15, 5.13, 0.3, 0.22, KIR if durum != "r" else ORTA_GRI, None, "çıktı oku")
-        s.kutu(ic_x - 0.05, 5.4, ic_w + 0.1, 0.5, {"g": "veri", "s": "onay", "r": "soluk"}[durum], "çıktı " + no)
-        s.yazi(cikti, ic_x - 0.05, 5.4, ic_w + 0.1, 0.5, boy=12, kalin=True, renk=ana)
-    s.kutu(SOL, 6.12, EN, 0.62, "gri", "model tipleri")
-    s.yazi("Şu an açık", SOL + 0.25, 6.12, 1.2, 0.62, boy=12.5, kalin=True, renk=KIR, hiza="l")
-    hap(s, SOL + 1.4, 6.23, 2.1, 0.4, "Sınıflandırma", KIR, None, BEYAZ, boy=12.5)
-    s.yazi("Sonraki hedef", SOL + 3.95, 6.12, 1.5, 0.62, boy=12.5, kalin=True, renk=GRI, hiza="l")
-    for i, ad in enumerate(["Regresyon", "Segmentasyon", "Zaman serisi tahmini"]):
-        hap(s, SOL + 5.4 + i * 2.28, 6.23, 2.12, 0.4, ad, BEYAZ, (SOLUK, 1.5, True), GRI, boy=12.5)
-    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 4 ve slayt 14. Beş faz vardır ve her faz bir öncekinin "
-                "çıktısını kullanır. 01 Çalışma Kurulumu geliştirildi. 02 Değişken Mühendisliği üzerinde çalışılıyor. "
-                "03, 04 ve 05 fazları sırada. Platform şu an sınıflandırma modelleri için açıktır. Sonraki hedef "
-                "regresyon, segmentasyon ve zaman serisi tahmini modelleridir.")
+    enler, ara, x = [3.0, 2.2, 2.2, 2.2, 2.2], 0.1325, SOL
+    for i, (no, ad, ozet, durum, adimlar, cikti, durum_yazi) in enumerate(fazlar):
+        w = enler[i]
+        tur = {"g": "veri", "s": "simdi", "r": "soluk"}[durum]
+        ana = BEYAZ if durum == "g" else (KIR if durum == "s" else GRI)
+        s.kutu(x, 1.54, w, 0.7, tur, "faz " + no)
+        s.yazi([R(no, kalin=True, boy=15, renk=ana), R(ad, kalin=True, boy=12, renk=ana)], x + 0.08, 1.54, w - 0.16, 0.7)
+        if i < 4:
+            s.ok(x + w + 0.01, 1.89, x + w + ara - 0.01, 1.89, "ok faz %d" % i, KIR if durum != "r" else SOLUK)
+        s.yazi(ozet, x + 0.05, 2.28, w - 0.1, 0.42, boy=10.5, egik=True, renk=GRI)
+        s.kutu(x, 2.76, w, 2.08, "cerceve", "adımlar " + no)
+        satirlar = []
+        for kod, adim, d, alt_adim in adimlar:
+            bas = GIRINTI if alt_adim else ""
+            if d == "g":
+                satirlar.append([R(bas + kod + "  ", kalin=True, renk=KIR), adim])
+            elif d == "s":
+                satirlar.append([R(bas + kod + "  " + adim, kalin=True, renk=KIR)])
+            else:
+                satirlar.append([R(bas + kod + "  ", kalin=True, renk=GRI), R(adim, renk=GRI)])
+        s.yazi(satirlar, x + 0.12, 2.86, w - 0.24, 1.92, boy=10.5, hiza="l", dikey="t", bosluk=4)
+        s.ok(x + w / 2, 4.86, x + w / 2, 4.99, "ok çıktı " + no, KIR if durum != "r" else SOLUK)
+        s.kutu(x, 5.01, w, 0.44, "veri" if durum != "r" else "soluk", "çıktı " + no)
+        s.yazi(cikti, x + 0.05, 5.01, w - 0.1, 0.44, boy=11.5, kalin=True, renk=BEYAZ if durum != "r" else GRI)
+        s.yazi(durum_yazi, x, 5.48, w, 0.26, boy=10.5, kalin=(durum == "s"), renk=KIR if durum == "s" else GRI)
+        x += w + ara
+    s.kutu(SOL, 5.9, EN, 0.6, "gri", "neden bu sıra")
+    s.yazi([[R("Neden bu sıra?", kalin=True, renk=KIR),
+             " Profil üretimden önce gelir ki boş, sabit ve kimlik benzeri kolonlardan değişken üretilmesin. Tek "
+             "değişken analizi ve stabilite üretimden sonra gelir, böylece ham ve üretilen değişkenlerin hepsi aynı "
+             "ölçümden geçer."]],
+           SOL + 0.2, 5.9, EN - 0.4, 0.6, boy=11, hiza="l")
+    s.dipnot("Dolu kırmızı kutu geliştirilen, kalın çerçeve üzerinde çalışılan, kesik çerçeve sıradaki adımları "
+             "gösterir. Sonraki slaytlar bu sırayı izler.")
+    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 4 ve slayt 14. Bu slayt web uygulamasının sol tarafındaki İş Akışı "
+                "ağacının aynısıdır. 01 Çalışma Kurulumu ile 02.1 Veri Profili ve Kalite geliştirildi. Şu an 02.2 Kural "
+                "Tabanlı Değişken Üretimi üzerinde çalışılıyor. 02.3 ve sonrasının ilk sürümleri kodda var. Sonraki "
+                "slaytlar her fazı aynı düzende anlatır, önce ne yapıldığı, sonra neden gerekli olduğu.")
     return s
 
 
 # ---- 4. 01 Calisma Kurulumu ------------------------------------------------
 def slayt_kurulum():
-    """01 fazinin dort adimi yan yana: her kartta bir sema ve ne yapildigi.
-    Etiket, yapay zekanin oneride bulundugu adimlari gosterir; neyi nasil
-    onerdigi bu sunumda anlatilmaz."""
+    """Ayrintili sunumun 5 ile 8 arasi slaytlari: 01 fazinin adimlari, her biri
+    bir satir. Altta bir kolonun adinin ve aciklamasinin nasil degistigi."""
     s = Slayt("AKIS", B2, "01 Çalışma Kurulumu",
-              "Değişken üretimi kolonun anlamına dayanır. Bu faz veriyi ve her kolonun anlamını netleştirir.")
-    kartlar = [
-        ("Veri ve Sözlük",
-         "Hazır baz tablo seçilir ya da baz tablo kaynak tablolardan kurulur. Sözlük varsa birlikte seçilir.", True),
-        ("Kolon Rolleri ve Tanımlar",
-         "Neyin tahmin edileceği belirlenir. Tanımı olmayan kolonların tanımı tamamlanır.", True),
-        ("Sözlük ve Kolon Adı Kontrolü",
-         "Kısaltmalar çözülür, açıklama netleşir ve ad ortak bir yazılışa getirilir.", True),
-        ("Tip Kontrolü ve Bölme",
-         "Kolon tipleri düzeltilir. Veri, modelin öğreneceği ve hiç görmeden sınanacağı setlere ayrılır.", False),
+              "Değişken üretimi kolonun anlamına dayanır. Bu faz veriyi, sözlüğü ve kolonların anlamını netleştirir.")
+    satirlar = [
+        ("g", "01.1", "Başlangıç Seçimi", "Kullanıcı seçer",
+         ["Modellemeye girecek tablo hazırsa baz veri seti seçilir. Hazır değilse baz veri seti kaynak tablolar "
+          "birleştirilerek kurulur, birleştirme planını yapay zekâ önerir.",
+          "Her ekibin verisi aynı hazırlıkta gelmez. İki seçenek, tablo hazır olsa da olmasa da çalışmaya "
+          "başlamayı sağlar."]),
+        ("g", "01.2", "Veri Seti, Sözlük ve Kolon Rolleri", "Kod ve yapay zekâ önerir, kullanıcı seçer",
+         ["Veri seti ve sözlük seçilir, hedef ve kimlik kolonu belirlenir. Dönem ve segment isteğe bağlıdır. "
+          "Sözlükte tanımı olmayan kolonlara tanım önerilir.",
+          "Bütün ölçümler hedefe göre yapılır. Tanımı olmayan kolonu ne insan ne de yapay zekâ doğru "
+          "yorumlayabilir."]),
+        ("g", "01.2.4", "Sözlük ve Kolon Adı Kontrolü", "Yapay zekâ önerir, kullanıcı onaylar",
+         ["Adlardaki kısaltmaların anlamı onaylanır, açıklamalar netleştirilir ve adlar standart yazılışa çevrilir. "
+          "Bu adım isteğe bağlıdır.",
+          "Sözlüğe de kolon adlarına da tam güvenilemez. Bu adım her kolonun kesin olarak anlaşılmasını sağlar."]),
+        ("g", "01.3", "Değişken Listesi ve Tip Kontrolü", "Kod denetler, kullanıcı karar verir",
+         ["Değişken listesi, tanımlar ve tipler bölmeden önce son kez gözden geçirilir. Yalnız verinin izin verdiği "
+          "tip dönüşümleri seçilebilir.",
+          "Tipi yanlış olan kolonda ölçümler anlamını yitirir. Sayı sanılan bir kod alanı yüzlerce aralığa "
+          "bölünür."]),
+        ("g", "01.4", "Örneklem ve Doğrulama Tasarımı", "Kod önerir, kullanıcı karar verir",
+         ["Veri Train, Test ve Validasyon setlerine ayrılır. Bölme zamana göre ya da rastgele, satır ya da kimlik "
+          "bazında yapılabilir.",
+          "Doldurma değerleri ve dönüşüm ayarları yalnız Train setinden hesaplanır. Son ölçüm modelin hiç "
+          "görmediği veride yapılır."]),
     ]
-    w = (EN - 0.6) / 4
-    ky, kh = 1.6, 4.8
-    for i, (ad, metin, yapay_zeka) in enumerate(kartlar):
-        x = SOL + i * (w + 0.2)
-        s.kutu(x, ky, w, kh, "gri", "kart " + ad)
-        s.daire(i + 1, x + 0.45, ky + 0.47, 0.52, boy=16, ad="adım %d" % (i + 1))
-        s.yazi(ad, x + 0.85, ky + 0.09, w - 0.98, 0.78, boy=15, kalin=True, hiza="l")
-        gx, gy, gw, gh = x + 0.15, ky + 1.0, w - 0.3, 2.2              # sema alani
-        s.kutu(gx, gy, gw, gh, "cerceve", "şema " + ad)
-        orta = gx + gw / 2
-        if i == 0:                                    # hazir tablo ya da kaynak tablolardan kurulan tablo
-            s.yazi("Hazır tablo", gx + 0.22, gy + 0.2, 1.15, 0.7, boy=11.5, kalin=True, hiza="l")
-            ikon_tablo(s, gx + 1.58, gy + 0.22, 0.9, 0.66, KIR)
-            s.hat(gx + 0.22, gy + 1.1, orta - 0.32, gy + 1.1, "ayırıcı", SOLUK, 0.75, True)
-            s.hat(orta + 0.32, gy + 1.1, gx + gw - 0.22, gy + 1.1, "ayırıcı", SOLUK, 0.75, True)
-            s.yazi("ya da", orta - 0.3, gy + 0.97, 0.6, 0.26, boy=10, egik=True, renk=GRI)
-            s.yazi("Kaynak tablolar", gx + 0.22, gy + 1.3, 1.05, 0.72, boy=11.5, kalin=True, hiza="l")
-            for j in range(3):
-                ikon_tablo(s, gx + 1.4, gy + 1.3 + j * 0.26, 0.3, 0.2, ORTA_GRI)
-                s.ok(gx + 1.73, gy + 1.4 + j * 0.26, gx + 1.92, gy + 1.66, "ok birleşme", SOLUK)
-            ikon_tablo(s, gx + 1.95, gy + 1.4, 0.53, 0.52, KIR, vurgulu_sutun=2)
-        elif i == 1:                                  # dort rol: ikisi zorunlu, ikisi istege bagli
-            roller = [("Hedef", KIR, BEYAZ), ("Kimlik", KIR, BEYAZ), ("Dönem", ORTA_PEMBE, KOYU),
-                      ("Segment", ORTA_PEMBE, KOYU)]
-            cw, ara = 0.58, 0.06
-            x0 = gx + (gw - (4 * cw + 3 * ara)) / 2
-            for j, (rol, dolgu, yazi_rengi) in enumerate(roller):
-                cxx = x0 + j * (cw + ara)
-                s.sekil("rect", cxx, gy + 0.25, cw, 0.4, dolgu, None, "rol " + rol)
-                s.yazi(rol, cxx, gy + 0.25, cw, 0.4, boy=9.5, kalin=True, renk=yazi_rengi)
-                for k in range(4):
-                    s.sekil("rect", cxx, gy + 0.7 + k * 0.29, cw, 0.25, ACIK, None, "hücre")
-            s.yazi("zorunlu", x0, gy + 1.87, 2 * cw + ara, 0.26, boy=10, renk=GRI)
-            s.yazi("isteğe bağlı", x0 + 2 * (cw + ara), gy + 1.87, 2 * cw + ara, 0.26, boy=10, renk=GRI)
-        elif i == 2:                                  # bir kolonun adi ve aciklamasi once ve sonra
-            etiketli_cip(s, gx + 0.25, gy + 0.18, gw - 0.5, 0.4, "OUT_TRX_30D_AMT", "cerceve", boy=11.5, renk=KOYU,
-                         kod=True)
-            s.yazi("son 30 gün giden işlem tutar", gx + 0.05, gy + 0.62, gw - 0.1, 0.26, boy=10, egik=True, renk=GRI)
-            s.ok(orta, gy + 0.96, orta, gy + 1.22, "ok ad")
-            etiketli_cip(s, gx + 0.25, gy + 1.27, gw - 0.5, 0.4, "TXN_OUT_AMT_L30D", "onay", boy=11.5, renk=KIR,
-                         kod=True)
-            s.yazi("son 30 günde giden işlemlerin tutarı", gx + 0.05, gy + 1.71, gw - 0.1, 0.28, boy=10, egik=True,
-                   renk=GRI)
-        else:                                         # veri uc sete ayrilir
-            bx, bw = gx + 0.15, gw - 0.3
-            s.yazi("eski dönemler", bx, gy + 0.38, 1.2, 0.26, boy=10, renk=GRI, hiza="l")
-            s.yazi("son dönemler", bx + bw - 1.2, gy + 0.38, 1.2, 0.26, boy=10, renk=GRI, hiza="r")
-            setler = [("Train", 0.5, KIR, BEYAZ), ("Test", 0.17, ORTA_PEMBE, KOYU), ("Validasyon", 0.33, KIR2, BEYAZ)]
-            sx = bx
-            for j, (ad2, pay, dolgu, yazi_rengi) in enumerate(setler):
-                sw = bw * pay - (0.04 if j < 2 else 0)
-                s.sekil("rect", sx, gy + 0.72, sw, 0.7, dolgu, None, "set " + ad2)
-                s.yazi(ad2, sx, gy + 0.72, sw, 0.7, boy=10, kalin=True, renk=yazi_rengi)
-                sx += sw + 0.04
-            s.yazi("model öğrenir", bx, gy + 1.5, bw * 0.5, 0.26, boy=10, renk=GRI)
-            s.yazi("son ölçüm", bx + bw * 0.67, gy + 1.5, bw * 0.33, 0.26, boy=10, renk=GRI)
-        s.yazi(metin, x + 0.2, ky + 3.38, w - 0.4, 1.0, boy=12.5, hiza="l", dikey="t")
-        if yapay_zeka:
-            yz_etiketi(s, x + 0.2, ky + 4.3)
-    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 5, 6, 7 ve 8. Bu fazda veri ve sözlük seçilir, kolon rolleri "
-                "belirlenir, kolonların adı ve açıklaması netleştirilir, veri eğitim ve sınama setlerine ayrılır. Hedef "
-                "ve kimlik zorunludur, dönem ve segment isteğe bağlıdır. İlk üç adımda yapay zekâ öneride bulunur. "
-                "Örnekler gösterim amaçlıdır.")
+    bitis = tablo(s, 1.56, ("Adım", "Ne Yapılır", "Neden Gerekli"), (2.55, 5.3, 4.28), satirlar, 0.76)
+    y = bitis + 0.14                                  # bir kolonun adi ve aciklamasi, 01.2.4 adimindan once ve sonra
+    s.kutu(SOL, y, EN, 0.48, "cerceve", "ad örneği")
+    s.yazi("01.2.4 örneği", SOL + 0.2, y, 1.3, 0.48, boy=11, kalin=True, renk=KIR, hiza="l")
+    s.yazi([[K("OUT_TRX_30D_AMT", renk=KOYU), R("   son 30 gün giden işlem tutar", egik=True, renk=GRI)]],
+           SOL + 1.55, y, 4.6, 0.48, boy=10.5, hiza="l")
+    s.ok(SOL + 6.2, y + 0.24, SOL + 6.75, y + 0.24, "ok ad")
+    s.yazi([[K("TXN_OUT_AMT_L30D"), R("   son 30 günde giden işlemlerin tutarı", egik=True, renk=GRI)]],
+           SOL + 6.95, y, 5.2, 0.48, boy=10.5, hiza="l")
+    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 5, 6, 7 ve 8. Her satır bir adımdır, solda adımın adı ve kimin ne "
+                "yaptığı yazar. Hedef ve kimlik zorunludur, dönem ve segment isteğe bağlıdır. Sözlük ve kolon adı "
+                "kontrolü isteğe bağlı bir adımdır, alttaki örnek bir kolonun adının ve açıklamasının bu adımdan önceki "
+                "ve sonraki hâlini gösterir. Örnek gösterim amaçlıdır.")
     return s
 
 
 # ---- 5. 02 Degisken Muhendisligi -------------------------------------------
 def slayt_uretim():
-    """02 fazinin uc adimi: once kalite, sonra bilinen donusumler, sonra yapay
-    zekanin kendi onerileri. Ne uretildigi orneklerle gosterilir; donusum
-    turleri, olcum yontemi ve denetim adimlari bu sunumda anlatilmaz."""
+    """Ayrintili sunumun 9 ile 12 arasi slaytlari: 02 fazinin uc adimi."""
     s = Slayt("AKIS", B2, "02 Değişken Mühendisliği",
-              "Platformun asıl işi bu fazdadır. Yeni değişkenler üç adımda üretilir.")
-    yw, ara = 3.25, 0.3
-    ow = EN - 2 * yw - 2 * ara
-    xa, xb, xc = SOL, SOL + yw + ara, SOL + yw + ara + ow + ara
-    by, bh = 2.55, 3.3                                # govdelerin ustu ve boyu
-    basliklar = [(xa, yw, "02.1 Veri Profili ve Kalite", "g"), (xb, ow, "02.2 Kural Tabanlı Değişken Üretimi", "s"),
-                 (xc, yw, "02.3 AI Değişken Keşfi", "r")]
-    for x, w, ad, durum in basliklar:
-        dolgu, cizgi, renk = durum_bicimi(durum)
-        s.kutu(x, 1.6, w, 0.85, {"g": "veri", "s": "onay", "r": "soluk"}[durum], "başlık " + ad)
-        s.yazi([R(ad, kalin=True, boy=15.5), R(DURUM_ADI[durum], boy=11.5)], x + 0.1, 1.6, w - 0.2, 0.85, renk=renk,
-               bosluk=1)
-    for x in (xb - ara, xc - ara):
-        s.sekil("rightArrow", x + 0.04, 1.89, ara - 0.08, 0.27, ORTA_GRI, None, "sonra")
-
-    # 02.1: once kalite. Kusurlu kolonlar ayrilir
-    s.kutu(xa, by, yw, bh, "gri", "gövde 02.1")
-    s.sekil("funnel", xa + 0.35, by + 0.2, 0.8, 0.85, KIR, None, "kontroller")
-    s.yazi([[R("26 ", kalin=True, boy=38, renk=KIR), R("kontrol", kalin=True, boy=16)]], xa + 1.3, by + 0.15,
-           yw - 1.4, 0.95, hiza="l")
-    kw, kara = 0.3, 0.12                              # kolon semasi: alti kolondan ikisi kusurlu
-    kx0 = xa + (yw - (6 * kw + 5 * kara)) / 2
-    for j in range(6):
-        kx, kusurlu = kx0 + j * (kw + kara), j in (1, 4)
-        if kusurlu:
-            s.sekil("rect", kx, by + 1.32, kw, 0.72, BEYAZ, (SOLUK, 1, True), "kusurlu kolon")
-            s.hat(kx + 0.06, by + 1.5, kx + kw - 0.06, by + 1.86, "çarpı", ORTA_PEMBE, 1.5)
-            s.hat(kx + 0.06, by + 1.86, kx + kw - 0.06, by + 1.5, "çarpı", ORTA_PEMBE, 1.5)
-        else:
-            s.sekil("rect", kx, by + 1.32, kw, 0.72, PEMBE, None, "kolon")
-            s.sekil("rect", kx, by + 1.32, kw, 0.16, KIR, None, "kolon başlığı")
-    s.yazi([R("Önce verinin kusurları bulunur", kalin=True, boy=12.5),
-            R("Örneğin çoğu boş olan ya da hep aynı değeri taşıyan kolon üretime girmez", boy=11, egik=True,
-              renk=GRI)], xa + 0.3, by + 2.22, yw - 0.6, 0.95, hiza="l", dikey="t", bosluk=3)
-
-    # 02.2: bilinen donusumler ve uretilen degiskenlerden ornekler
-    s.kutu(xb, by, ow, bh, "islem", "gövde 02.2")
-    ikon_disli(s, xb + 0.72, by + 0.56, 0.74)
-    s.yazi([[R("41 ", kalin=True, boy=38, renk=KIR), R("dönüşüm", kalin=True, boy=16)]], xb + 1.3, by + 0.12, 2.6,
-           0.88, hiza="l")
-    s.yazi("Bilinen dönüşümler denenir, modele yeni bilgi katanlar önerilir.", xb + 0.3, by + 1.0, ow - 0.6, 0.42,
-           boy=12.5, hiza="l")
-    ornekler = [("Oran", "Son 30 gün bölü son 90 gün"), ("Eğilim", "Dönemden döneme artış ya da azalış"),
-                ("Net akış", "Giren eksi çıkan")]
-    tw = (ow - 0.6 - 0.3) / 3
-    for j, (ad, aciklama) in enumerate(ornekler):
-        tx, ty = xb + 0.3 + j * (tw + 0.15), by + 1.55
-        s.kutu(tx, ty, tw, 1.55, "gri", "örnek " + ad)
-        ocx, ocy = tx + tw / 2, ty + 0.42             # semanin ortasi
-        if j == 0:                                    # kisa donem bolu uzun donem
-            s.sekil("rect", ocx - 0.5, ocy - 0.02, 0.22, 0.26, KIR, None, "kısa dönem")
-            islem_rozeti(s, ocx, ocy, "bölü", 0.38, 8)
-            s.sekil("rect", ocx + 0.28, ocy - 0.26, 0.22, 0.5, ORTA_GRI, None, "uzun dönem")
-        elif j == 1:                                  # donemden doneme artan degerler
-            ikon_cubuklar(s, ocx - 0.32, ocy - 0.26, 0.64, 0.5, [0.3, 0.5, 0.75, 1.0], KIR, taban=False)
-        else:                                         # giren eksi cikan
-            s.sekil("upArrow", ocx - 0.52, ocy - 0.25, 0.3, 0.5, KIR, None, "giren")
-            islem_rozeti(s, ocx, ocy, "eksi", 0.38, 8)
-            s.sekil("downArrow", ocx + 0.22, ocy - 0.25, 0.3, 0.5, ORTA_GRI, None, "çıkan")
-        s.yazi([R(ad, kalin=True, boy=13), R(aciklama, boy=10.5, egik=True, renk=GRI)], tx + 0.08, ty + 0.8,
-               tw - 0.16, 0.7, dikey="t", bosluk=2)
-
-    # 02.3: yapay zekanin kendi onerdigi degiskenler
-    s.kutu(xc, by, yw, bh, "gri", "gövde 02.3")
-    s.elips(xc + 0.75, by + 0.62, 0.85, PEMBE, None, "yapay zekâ zemini")
-    ikon_isilti(s, xc + 0.75, by + 0.62, 0.64)
-    s.yazi("Yeni fikirler", xc + 1.35, by + 0.15, yw - 1.45, 0.95, boy=19, kalin=True, hiza="l")
-    cx0 = xc + (yw - 2.64) / 2                         # ornek bir oneri: iki kolon ve aralarindaki islem
-    etiketli_cip(s, cx0, by + 1.42, 1.2, 0.42, "kullanılan limit", "islem", boy=10, renk=KIR)
-    islem_rozeti(s, cx0 + 1.43, by + 1.63, "bölü", 0.38, 8)
-    etiketli_cip(s, cx0 + 1.66, by + 1.42, 0.98, 0.42, "toplam limit", "islem", boy=10, renk=KIR)
-    s.yazi("örnek bir öneri", xc + 0.3, by + 1.88, yw - 0.6, 0.24, boy=10, egik=True, renk=GRI)
-    s.yazi([R("Bilinen dönüşümlerin dışında veriye özgü fikirler önerilir", kalin=True, boy=12.5)],
-           xc + 0.3, by + 2.22, yw - 0.6, 0.95, hiza="l", dikey="t")
-
-    s.kutu(SOL, 6.03, EN, 0.58, "onay", "öneri nasıl gelir")
-    s.yazi("Her öneri, ölçülmüş katkısı ve gerekçesiyle birlikte sunulur", SOL + 0.2, 6.03, EN - 0.4, 0.58, boy=14,
-           kalin=True, renk=KIR)
-    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 9, 10 ve 11. Yeni değişkenler üç adımda üretilir. Önce veri "
-                "kalitesi kontrol edilir, bu adım geliştirildi. Sonra bilinen dönüşümler denenir ve modele yeni bilgi "
-                "katanlar önerilir, şu an üzerinde çalışılan adım budur. Son adımda yapay zekâ bilinen dönüşümlerin "
-                "dışında yeni değişken fikirleri önerir, bu adım sıradadır. Her öneri ölçülmüş katkısı ve gerekçesiyle "
-                "birlikte sunulur, hangisinin üretileceğine kullanıcı karar verir. Örnekler gösterim amaçlıdır.")
+              "Yeni değişkenler bu fazda üretilir. Önce veri kalitesi kontrol edilir, sonra bilinen dönüşümler ve "
+              "yapay zekânın kendi önerileri gelir.")
+    satirlar = [
+        ("g", "02.1", "Veri Profili ve Kalite", "Kod ölçer, kullanıcı karar verir",
+         ["Verideki kusurlar bulunur. Kod 26 kontrol yapar, her bulgu ölçülen değeri, "
+          "önerisi ve gerekçesiyle karar kartına gelir.",
+          "Kusur taşıyan kolon ölçümü bozar. Kimi kolon düzeltilerek kullanılır, kiminde karar iş bilgisi "
+          "gerektirir ve kullanıcıya bırakılır.",
+          "Çoğu boş olan kolonda boşluk bayrağı önerilir. Boş yerine yazılmış 9999 değeri boşa çevrilir."]),
+        ("s", "02.2", "Kural Tabanlı Değişken Üretimi", "Kod ölçer, yapay zekâ önerir, kullanıcı seçer",
+         ["Var olan kolonlardan oran, büyüme, eğilim gibi bilinen 41 dönüşümle yeni değişkenler türetilir. "
+          "Dönüşümlerin katkısı ölçülür, yeni bilgi taşıyanlar önerilir. Seçimi kullanıcı yapar, kodu platform yazar.",
+          "Öneri ve karar izlenime değil ölçüme dayanır. Kaynağının kopyası olan bir değişken modele yeni bilgi "
+          "katmaz.",
+          [[K("TXN_OUT_AMT_L30D", 10.5), " bölü ", K("TXN_OUT_AMT_L90D", 10.5),
+            " harcamanın hızlandığını ya da yavaşladığını gösterir."]]]),
+        ("r", "02.3", "AI Değişken Keşfi", "Yapay zekâ önerir, kullanıcı onaylar",
+         ["Yapay zekâ modele ve değişkenlere bakarak bilinen kalıpların dışında kendisi de değişken önerir. Öneriler "
+          "üretilip kontrol edilir, onaylanırsa eklenir.",
+          "Hazır dönüşümler yaygın kalıpları kapsar. Veriye özgü fikirler bu adımda aranır.",
+          "Kullanılan limitin toplam limite oranı gibi, iki kolonun anlamına dayanan bir değişken önerilebilir."]),
+    ]
+    tablo(s, 1.56, ("Adım", "Ne Yapılır", "Neden Gerekli", "Örnek"), (2.1, 4.1, 3.15, 2.68), satirlar, 1.4,
+          bosluk=0.1, boy=12)
+    s.dipnot("Örnekler gösterim amaçlıdır.")
+    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 9, 10, 11 ve 12. İlk adım geliştirildi, ikinci adım şu an "
+                "üzerinde çalışılan adımdır, üçüncü adım sıradadır. İkinci adımda öneri ve karar ölçüme dayanır, seçimi "
+                "kullanıcı yapar ve üretim kodunu platform yazar. Üçüncü adımda yapay zekâ bilinen kalıpların dışında "
+                "kendisi de değişken önerir. Örnekler gösterim amaçlıdır.")
     return s
 
 
-# ---- 6. 03, 04 ve 05 fazlari -----------------------------------------------
+# ---- 6. Siradaki fazlar ----------------------------------------------------
 def slayt_sonraki():
-    """Sirada olan uc faz: her satir bir faz, sagda o fazin adimlari. Altta katkinin nerede olculdugu."""
-    s = Slayt("AKIS", B2, "03, 04 ve 05 Fazlarında Ölçme, Eleme ve Modelleme",
-              "Bu üç fazın ilk sürümleri kodda var. 02 tamamlandıktan sonra sırayla ele alınacak.")
-    fazlar = [
-        ("03", "Veri Anlama ve Hazırlama",
-         [("03.1", "Tek Değişken Analizi (SFA)", "Her değişkenin hedefle ilişkisi ölçülür"),
-          ("03.2", "Stabilite Analizi (PSI)", "Dağılımı zamanla kayan değişken bulunur"),
-          ("03.3", "Analitik Baz Set", "Set temizlenir ve dondurulur")]),
-        ("04", "Değişken Değerlendirme",
-         [("04.1", "Sızıntı Kontrolü", "Hedefi ele veren değişkenler ayrılır"),
-          ("04.2", "Aday Değişken Seti", "Aynı bilgiyi taşıyanlar ve katkısı düşük olanlar çıkarılır")]),
-        ("05", "Modelleme ve Finalizasyon",
-         [("05.1", "Model Karşılaştırması", "Baz model ile yeni değişkenlerin eklendiği model karşılaştırılır"),
-          ("05.2", "Algoritma Seçimi", "Dört algoritma aynı koşulda karşılaştırılır"),
-          ("05.3", "Model Finalizasyonu", "Model son hâliyle eğitilir, doğrulanır ve kaydedilir"),
-          ("05.4", "Değişken Kataloğu", "Her değişken formülü ve koduyla saklanır")]),
+    """Ayrintili sunumun 12. ve 13. slaydi: 03, 04 ve 05 fazlari, her faz bir satir."""
+    s = Slayt("AKIS", B2, "Sıradaki Fazlar",
+              "Bu fazların ilk sürümleri kodda var. 02.2 tamamlandıktan sonra bu yapıya göre sırayla ele alınacak.")
+    satirlar = [
+        ("r", "03", "Veri Anlama ve Hazırlama", None,
+         ["Her değişkenin hedefle ilişkisi ölçülür, dağılımının zaman içinde kayıp kaymadığına bakılır. Kusurlu "
+          "ve kararsız kolonlar düşürülür ve set dondurulur.",
+          "Sonraki adımların hepsi aynı ve değişmeyen veride çalışmalıdır, yoksa sonuçlar karşılaştırılamaz.",
+          "Kampanya döneminde sıçrayan bir işlem adedi kolonu kararsız çıkar."]),
+        ("r", "04", "Değişken Değerlendirme", None,
+         ["Hedefle ilişkisi aşırı yüksek çıkan değişkenler sızıntı şüphelisi sayılır ve ayrılır. Kalanlardan aynı "
+          "bilgiyi taşıyanlar ve zayıf kalanlar elenir.",
+          "Hedefi ele veren değişken başarıyı kâğıt üstünde yükseltir ama gerçek kullanımda işe yaramaz.",
+          "Olaydan sonra dolan bir takip kolonu hedefle neredeyse birebir çıkar."]),
+        ("r", "05", "Modelleme ve Finalizasyon", None,
+         ["Baz değişkenlerle kurulan model, yeni değişkenlerin eklendiği modelle aynı koşulda karşılaştırılır. "
+          "Algoritma seçilir, model eğitilip doğrulanır ve değişkenler kataloğa yazılır.",
+          "Yeni değişkenlerin modele kattığı ölçülerek gösterilir. Katalogdaki değişken başka bir çalışmada "
+          "yeniden üretilebilir.",
+          "Fark güven aralığıyla raporlanır. Katalog satırında ad, formül, kaynak kolonlar ve kod bulunur."]),
     ]
-    rw, tx0 = 2.4, SOL + 2.4 + 0.2                    # sol raydaki faz kutusunun eni, adim karolarinin sol kenari
-    tw_toplam = SOL + EN - tx0
-    th, bosluk, ic_bosluk = 1.0, 0.2, 0.12            # karo boyu, fazlar arasi ve faz ici bosluk
-    y = 1.58
-    sira = 0
-    for i, (no, ad, adimlar) in enumerate(fazlar):
-        satir_sayisi = 2 if len(adimlar) == 4 else 1  # dort adimli faz iki satira yayilir
-        n = len(adimlar) // satir_sayisi
-        fh = satir_sayisi * th + (satir_sayisi - 1) * ic_bosluk
-        s.kutu(SOL, y, rw, fh, "soluk", "faz " + no)
-        s.yazi(no, SOL + 0.1, y, 0.85, fh, boy=30, kalin=True, renk=SOLUK)
-        s.yazi(ad, SOL + 0.95, y, rw - 1.05, fh, boy=12.5, kalin=True, hiza="l")
-        if i < 2:
-            s.sekil("downArrow", SOL + rw / 2 - 0.15, y + fh + 0.02, 0.3, bosluk - 0.04, ORTA_GRI, None, "sonra")
-        tw = (tw_toplam - (n - 1) * 0.18) / n
-        for j, (kod, adim, metin) in enumerate(adimlar):
-            x = tx0 + (j % n) * (tw + 0.18)
-            ty = y + (j // n) * (th + ic_bosluk)
-            s.kutu(x, ty, tw, th, "gri", "adım " + kod)
-            cx, cy = x + 0.5, ty + th / 2
-            s.elips(cx, cy, 0.62, PEMBE, None, "ikon zemini " + kod)
-            if sira == 0:
-                ikon_cubuklar(s, cx - 0.16, cy - 0.15, 0.32, 0.29, [0.4, 0.7, 1.0], KIR, taban=False)
-            elif sira == 1:                           # iki donemin dagilimi, biri kaymis
-                ikon_cubuklar(s, cx - 0.2, cy - 0.14, 0.17, 0.28, [0.5, 1.0], ORTA_GRI, taban=False)
-                ikon_cubuklar(s, cx + 0.03, cy - 0.14, 0.17, 0.28, [1.0, 0.45], KIR, taban=False)
-            elif sira == 2:
-                ikon_kilit(s, cx, cy + 0.02, 0.32)
-            elif sira == 3:
-                ikon_uyari(s, cx, cy, 0.32)
-            elif sira == 4:
-                s.sekil("funnel", cx - 0.17, cy - 0.17, 0.34, 0.34, KIR, None, "eleme")
-            elif sira == 5:                           # baz model ile yeni degiskenli model
-                s.sekil("rect", cx - 0.16, cy - 0.01, 0.13, 0.16, ORTA_GRI, None, "baz model")
-                s.sekil("rect", cx + 0.03, cy - 0.15, 0.13, 0.3, KIR, None, "yeni model")
-            elif sira == 6:
-                ikon_cubuklar(s, cx - 0.18, cy - 0.14, 0.36, 0.28, [0.7, 1.0, 0.85, 0.6], KIR, taban=False)
-            elif sira == 7:
-                ikon_onay(s, cx, cy, 0.42, KIR, 2.5)
-            else:
-                ikon_belge(s, cx - 0.12, cy - 0.16, 0.24, 0.32)
-            s.yazi([[R(kod + "  ", kalin=True, renk=KIR), R(adim, kalin=True)], R(metin, boy=11.5, renk=GRI)],
-                   x + 0.98, ty + 0.05, tw - 1.1, th - 0.1, boy=12.5, hiza="l", bosluk=2)
-            sira += 1
-        y += fh + bosluk
-    s.kutu(SOL, 6.26, EN, 0.54, "onay", "katkı ölçümü")
-    s.yazi("Yeni değişkenlerin modele kattığı, 05.1 adımında ölçülerek gösterilir", SOL + 0.2, 6.26, EN - 0.4,
-           0.54, boy=14, kalin=True, renk=KIR)
-    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 12 ve 13. Bu üç fazın ilk sürümleri kodda var ve sırayla "
-                "ele alınacak. 03 fazında değişkenler ölçülür ve set dondurulur. 04 fazında riskli olan ve aynı bilgiyi "
-                "taşıyan değişkenler elenir. 05 fazında model kurulur, yeni değişkenlerin modele kattığı ölçülerek "
-                "gösterilir ve değişkenler kataloğa yazılır.")
+    tablo(s, 1.56, ("Faz", "Ne Yapılır", "Neden Gerekli", "Örnek"), (2.1, 4.1, 3.15, 2.68), satirlar, 1.4,
+          bosluk=0.1, boy=12)
+    s.dipnot("Örnekler gösterim amaçlıdır.")
+    s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 12 ve 13. Bu fazların ilk sürümleri kodda var ve sırayla ele "
+                "alınacak. 03 fazında değişkenler ölçülür ve set dondurulur. 04 fazında sızıntı şüphelileri ayrılır, "
+                "aynı bilgiyi taşıyan değişkenler elenir. 05 fazında model kurulur, yeni değişkenlerin modele kattığı "
+                "ölçülerek gösterilir ve değişkenler kataloğa yazılır.")
     return s
 
 
