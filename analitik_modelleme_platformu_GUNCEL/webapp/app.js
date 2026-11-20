@@ -18356,31 +18356,119 @@ function gelenekselKartiEkle(alan, blok) {
     const birimler = alan.birimler || [];
     const oneri = alan.oneri || {};
     const karar = {};
+    const kopya = v => JSON.parse(JSON.stringify(v || {}));
+    /* Karar: seçili dönüşümler (sec), parametreleri (param) ve seçili bir
+       dönüşümün üretilmeyecek kolonları (haric: {dönüşüm: [kolon adı]}). */
     birimler.forEach(b => {
         const k = (alan.karar || {})[b.id] || oneri[b.id] || { sec: [], param: {} };
-        karar[b.id] = { sec: (k.sec || []).slice(), param: JSON.parse(JSON.stringify(k.param || {})) };
+        karar[b.id] = { sec: (k.sec || []).slice(), param: kopya(k.param), haric: kopya(k.haric) };
     });
     const ayni = (a, b) => JSON.stringify((a || []).slice().sort()) === JSON.stringify((b || []).slice().sort());
+    const haricAyni = (a, b, sec) => (sec || []).every(c => ayni((a || {})[c], (b || {})[c]));
     const farkli = id => !ayni(karar[id].sec, (oneri[id] || {}).sec)
-        || JSON.stringify(karar[id].param || {}) !== JSON.stringify((oneri[id] || {}).param || {});
-    const kolonSayisi = (b, sec) => {
-        const n = (b.kolonlar || []).length;
-        let t = 0;
-        (sec || []).forEach(c => {
-            const g = (katalog[c] || {}).grup;
-            if (b.tur === "satir") t += 2;
-            else if (c === "yogunlasma") t += 2 * (b.gruplar || [1]).length;
-            else if (g === "cift") t += (b.ciftler || [1]).length;
-            else if (["oran", "fark", "norm", "buyume"].includes(c)) t += n - 1;
-            else if (["egim", "dk", "ardisik", "en_yogun"].includes(c)) t += 1;
-            else if (["oran_tum", "fark_tum"].includes(c)) t += n * (n - 1) / 2;
-            else if (["donem", "donem_oran"].includes(c)) t += n - 1;
-            else if (c === "donem_pay") t += n;
-            else if (c === "onehot") t += Math.min(Number(b.tekil || 0), 10);
-            else if (c === "segment") t += 2 * n;
-            else t += n;
+        || JSON.stringify(karar[id].param || {}) !== JSON.stringify((oneri[id] || {}).param || {})
+        || !haricAyni(karar[id].haric, (oneri[id] || {}).haric, karar[id].sec);
+    /* Kolon bazında ölçüm: her dönüşümün ürettiği her kolonun adı, IV'si,
+       kaynağa göre artışı, kaynakla ilişkisi ve doğrusal uyumu. Sunucudan
+       ayrı istenir (kart hafif kalır): açılışta önerilen ve seçili bütün
+       (birim, dönüşüm) çiftleri, birim açılınca o birimin öbür dönüşümleri.
+       Satır: [ad, IV, artış, ilişki, doğrusal uyum, yeni bilgi mi (0 ya da 1)]. */
+    const KOL = {};
+    const kolIstenen = new Set();
+    const kolSatir = (id, c) => (KOL[id] || {})[c] || null;
+    const olculen = (b, c) => !!(((b.katki || {}).kodlar || {})[c]);
+    const kodKolonSayisi = (b, c) => {
+        const s = kolSatir(b.id, c);
+        if (s) return s.length;
+        const m = ((b.katki || {}).kodlar || {})[c];
+        if (m && m.kolon_sayisi) return m.kolon_sayisi;
+        const n = (b.kolonlar || []).length, g = (katalog[c] || {}).grup;
+        if (b.tur === "satir") return 2;
+        if (c === "yogunlasma") return 2 * (b.gruplar || [1]).length;
+        if (g === "cift") return (b.ciftler || [1]).length;
+        if (["oran", "fark", "norm", "buyume"].includes(c)) return n - 1;
+        if (["egim", "dk", "ardisik", "en_yogun"].includes(c)) return 1;
+        if (["oran_tum", "fark_tum"].includes(c)) return n * (n - 1) / 2;
+        if (["donem", "donem_oran"].includes(c)) return n - 1;
+        if (c === "donem_pay") return n;
+        if (c === "onehot") return Math.min(Number(b.tekil || 0), 10);
+        if (c === "segment") return 2 * n;
+        return n;
+    };
+    const kolonSayisi = (b, sec, haric) => (sec || []).reduce((t, c) =>
+        t + Math.max(0, kodKolonSayisi(b, c) - ((haric || {})[c] || []).length), 0);
+    /* Bir dönüşüm eklenince dışarıda kalacak kolonlar: öneride varsa önerinin
+       seçimi; yoksa ölçüme göre yeni bilgi taşımayanlar (en az bir kolon yeni
+       bilgi taşıyorsa). Ölçüm satırları henüz gelmediyse null. */
+    const varsayilanHaric = (b, c) => {
+        const o = oneri[b.id] || {};
+        if ((o.sec || []).includes(c)) return ((o.haric || {})[c] || []).slice();
+        const s = kolSatir(b.id, c);
+        if (!s) return olculen(b, c) ? null : [];
+        const degersiz = s.filter(r => !r[5]).map(r => r[0]);
+        return degersiz.length && degersiz.length < s.length ? degersiz : [];
+    };
+    const haricBekleyen = new Set();
+    const kodEkle = (b, c) => {
+        const k = karar[b.id];
+        if (!k.sec.includes(c)) k.sec.push(c);
+        const h = varsayilanHaric(b, c);
+        if (h === null) { haricBekleyen.add(b.id + "|" + c); delete k.haric[c]; }
+        else if (h.length) k.haric[c] = h; else delete k.haric[c];
+    };
+    const kodCikar = (b, c) => {
+        const k = karar[b.id];
+        k.sec = k.sec.filter(x => x !== c);
+        delete k.param[c]; delete k.haric[c];
+        haricBekleyen.delete(b.id + "|" + c);
+    };
+    const kolonIste = (istek, sonra) => {
+        const temiz = {}, anahtarlar = [];
+        Object.entries(istek || {}).forEach(([id, kodlar]) => {
+            const yeni = kodlar.filter(c => !kolIstenen.has(id + "|" + c));
+            yeni.forEach(c => { kolIstenen.add(id + "|" + c); anahtarlar.push(id + "|" + c); });
+            if (yeni.length) temiz[id] = yeni;
         });
-        return t;
+        if (!anahtarlar.length) return;
+        fetch(getWebAppBackendUrl("geleneksel_kolonlar"), {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oturum_id: OTURUM_ID, istek: temiz })
+        }).then(r => r.json()).then(j => {
+            if (!j.tamam) throw new Error("kolon");
+            Object.entries(j.kolonlar || {}).forEach(([id, kodlar]) => { KOL[id] = Object.assign(KOL[id] || {}, kodlar); });
+            if (document.body.contains(kart) && sonra) sonra();
+        }).catch(() => { anahtarlar.forEach(a => kolIstenen.delete(a)); });   // sonraki çizimde yeniden denenir
+    };
+    /* Önerilen ya da seçili olup ölçüm satırı henüz istenmemiş çiftler. */
+    const eksikKolonlar = () => {
+        const istek = {};
+        birimler.forEach(b => {
+            const kodlar = Array.from(new Set(((oneri[b.id] || {}).sec || []).concat(karar[b.id].sec || [])))
+                .filter(c => olculen(b, c) && !kolSatir(b.id, c) && !kolIstenen.has(b.id + "|" + c));
+            if (kodlar.length) istek[b.id] = kodlar;
+        });
+        return istek;
+    };
+    /* Tek kolonu üretime alır ya da dışarıda bırakır. Dönüşüm seçili değilse
+       yalnız bu kolonla eklenir; son kolon da çıkarılırsa dönüşüm kalkar. */
+    const kolonDegistir = (b, c, ad, uret) => {
+        if (kart.classList.contains("kilitli")) return;
+        const k = karar[b.id], s = kolSatir(b.id, c) || [];
+        if (!k.sec.includes(c)) {
+            if (!uret) return;
+            k.sec.push(c);
+            const op = ((oneri[b.id] || {}).param || {})[c];
+            if (op) k.param[c] = kopya(op);
+            const oburleri = s.map(r => r[0]).filter(x => x !== ad);
+            if (oburleri.length) k.haric[c] = oburleri; else delete k.haric[c];
+            tumunuCiz();
+            return;
+        }
+        const h = new Set(k.haric[c] || []);
+        if (uret) h.delete(ad); else h.add(ad);
+        if (s.length && s.every(r => h.has(r[0]))) kodCikar(b, c);
+        else if (h.size) k.haric[c] = Array.from(h); else delete k.haric[c];
+        tumunuCiz();
     };
     const TUR_ADI = { aile: "Pencere ailesi", kolon: "Tek kolon", cift: "Kolon çifti", grup: "Kolon grubu", satir: "Satır düzeyi" };
     const TUR_ACIK = {
@@ -18395,8 +18483,6 @@ function gelenekselKartiEkle(alan, blok) {
     const kodAsama = c => Number((katalog[c] || {}).asama || 3);
     const ASAMA_KISA = { 1: "1. aşama", 2: "2. aşama", 3: "3. aşama" };
     const PARAMLI = ["esik", "kova", "segment", "grup_oran"];
-    /* Sıralamayı koruyan dönüşümler: IV kaynakla aynı; doğrusal modelde katkıları IV ile ölçülmez. */
-    const MONOTON = ["log", "islog", "karekok", "yeo", "winsor", "rank", "zskor", "robust"];
     const paramMetni = (c, param) => {
         const p = (param || {})[c] || {};
         if (c === "esik" && p.esik !== undefined) return " " + (p.yon === "<=" ? "≤ " : "≥ ") + String(p.esik).replace(".", ",");
@@ -18423,11 +18509,17 @@ function gelenekselKartiEkle(alan, blok) {
         + "(aileler arası ilişkileri dil modeli önerir, kod doğrular). Kart, dil modeli bütün birimlere "
         + "karar verince açılır; üç denemede cevap alınamayan birimde kod önerisi kalır ve işaretlenir. "
         + "Dönüşüme tıklayarak ekleyip çıkarabilirsiniz.\n\n"
+        + "Ölçüm kolon bazındadır: her dönüşümün üreteceği her kolon adıyla, kendi IV'siyle, kaynağa göre "
+        + "artışıyla ve doğrusal uyumuyla listelenir; kolonlar tek tek üretime alınır ya da dışarıda "
+        + "bırakılır. Seçili bir dönüşümde yeni bilgi taşımayan kolonlar öneride dışarıda gelir. Doğrusal "
+        + "uyum, kolonun kaynağıyla birlikte doğrusal modele kattığı ayırma gücüdür (C-value artışı); kare "
+        + "alma gibi sıralamayı değiştirmeyen dönüşümlerin katkısını IV göstermez, bu ölçüm gösterir.\n\n"
+        + (alan.olcek_notu ? alan.olcek_notu + "\n\n" : "")
         + "Alttaki sohbette planı tartışabilirsiniz; dil modelinin önerdiği değişiklikler Uygula ile "
         + "kararlara geçer. Onayladığınızda seçilen dönüşümler üretilir, önceki üretim kaldırılır.\n\n"
-        + "Öğrenilen her şey (kırpma sınırları, sıra ızgarası, ortalama ve standart sapma, dilim "
-        + "sınırları, Yeo-Johnson parametresi, frekans, WoE, hedef ortalaması) yalnız Train (MS) "
-        + "satırlarından öğrenilir; WoE ve hedef ortalaması Train'de kat dışı (5 kat) hesaplanır.",
+        + "Öğrenilen her şey (dilim sınırları, segment ortalaması ve medyanı, frekans, WoE, hedef "
+        + "ortalaması) yalnız Train (MS) satırlarından öğrenilir; WoE ve hedef ortalaması Train'de kat "
+        + "dışı (5 kat) hesaplanır.",
         "Geleneksel Değişken Üretimi"));
     kart.appendChild(bas);
 
@@ -18479,19 +18571,32 @@ function gelenekselKartiEkle(alan, blok) {
     };
     const gunlukFark = () => {
         /* Önceki çizime göre fark: dönüşüm başına eklenen ve çıkarılan birimler. */
-        const ekl = {}, cik = {}, once = {};
+        const ekl = {}, cik = {}, once = {}, kolPar = [];
         birimler.forEach(b => {
             const a = new Set((oncekiKarar[b.id] || {}).sec || []), y = new Set(karar[b.id].sec || []);
             let degisti = false;
             y.forEach(c => { if (!a.has(c)) { (ekl[c] = ekl[c] || []).push(b); degisti = true; } });
             a.forEach(c => { if (!y.has(c)) { (cik[c] = cik[c] || []).push(b); degisti = true; } });
+            /* Kolon bazında fark: iki durumda da seçili dönüşümlerde. */
+            y.forEach(c => {
+                if (!a.has(c)) return;
+                const ha = new Set(((oncekiKarar[b.id] || {}).haric || {})[c] || []), hy = new Set((karar[b.id].haric || {})[c] || []);
+                let kc = 0, ke = 0;
+                hy.forEach(x => { if (!ha.has(x)) kc++; });
+                ha.forEach(x => { if (!hy.has(x)) ke++; });
+                if (kc) kolPar.push(kodAdi(c) + ": " + b.ad + " biriminde " + ftBinlik(kc) + " kolon çıkarıldı");
+                if (ke) kolPar.push(kodAdi(c) + ": " + b.ad + " biriminde " + ftBinlik(ke) + " kolon eklendi");
+                if (kc || ke) degisti = true;
+            });
             if (degisti || JSON.stringify((oncekiKarar[b.id] || {}).param || {}) !== JSON.stringify(karar[b.id].param || {}))
-                once[b.id] = oncekiKarar[b.id] || { sec: [], param: {} };
+                once[b.id] = oncekiKarar[b.id] || { sec: [], param: {}, haric: {} };
         });
         const par = [];
         const yaz = (h, fiil) => Object.entries(h).forEach(([c, bl]) => par.push(kodAdi(c) + ": "
             + (bl.length === 1 ? bl[0].ad : ftBinlik(bl.length) + " birim") + (fiil)));
         yaz(cik, " çıkarıldı"); yaz(ekl, " eklendi");
+        kolPar.slice(0, 3).forEach(x => par.push(x));
+        if (kolPar.length > 3) par.push("ve " + ftBinlik(kolPar.length - 3) + " kolon değişikliği daha");
         if (par.length) gunluk.push({ metin: par.join("; ") + ".", once });
         oncekiKarar = JSON.parse(JSON.stringify(karar));
     };
@@ -18562,9 +18667,8 @@ function gelenekselKartiEkle(alan, blok) {
 
     /* ---- Üstte bilgi: tek seferde, iki model türüne de uygun ---- */
     const mt = elYap("div", "gl-model");
-    mt.appendChild(elYap("span", "gl-not", "Üretilen değişkenler ağaç ve doğrusal modelin ikisinde de kullanılabilir; "
-        + "model türüne göre ayırma yok. Ölçek dönüşümleri (logaritma, kırpma, sıra) yalnız çarpık ya da uç değerli "
-        + "kolonlarda önerilir: doğrusal model için gereklidir, ağaç için zararsızdır."));
+    mt.appendChild(elYap("span", "gl-not", "Bu adım yalnız yeni bilgi taşıyan değişkenleri üretir; üretilenler ağaç ve "
+        + "doğrusal modelin ikisinde de kullanılabilir. " + (alan.olcek_notu || "")));
     kart.insertBefore(mt, izgara);
 
     /* ---- SOL: Dönüşümler tablosu. Her dönüşüm: kullanılabilir mi ve neden,
@@ -18658,7 +18762,7 @@ function gelenekselKartiEkle(alan, blok) {
                 sat("Ne zaman işe yarar", k.ne_zaman);
                 sat("Model türleri", k.model_notu);
                 sat(kul ? "Neden kullanılabilir" : "Neden kullanılamaz", k.neden, kul ? "" : "gl-uyari");
-                if (k.olculen) sat("Ölçüm", "Ölçülen " + ftBinlik(k.olculen) + " birimin " + ftBinlik(k.degerli || 0) + " tanesinde yeni bilgi getiriyor (IV artışı en az 0,02, kaynakla ilişki 0,95 altı).");
+                if (k.olculen) sat("Ölçüm", "Ölçülen " + ftBinlik(k.olculen) + " birimin " + ftBinlik(k.degerli || 0) + " tanesinde yeni bilgi getiriyor (IV artışı en az 0,02 ve kaynakla ilişki 0,95 altı ya da doğrusal uyum artışı en az 0,01).");
                 if (kul && !k.onerilen) sat("Neden önerilmedi", k.onerilmeme, "gl-uyari");
                 if (kul) {
                     const db = elYap("button", "dg-toplu-btn", "Uygulanabilen birimleri göster");
@@ -18704,6 +18808,9 @@ function gelenekselKartiEkle(alan, blok) {
        dönüşüm ve arama. Çiplerdeki sayılar öbür süzgeçlere göre canlıdır.
        Birimler'de öğe birimdir, Üretim Planı'nda (birim, dönüşüm) satırıdır. ---- */
     const suz = { tip: "", durum: "uret", kod: "", kodMod: "secili", oneren: "" };
+    /* Üretim Planı görünümü: kolon bazında (her satır üretilecek bir kolon)
+       ya da dönüşüm bazında (her satır bir birimde bir dönüşüm). */
+    let planGor = "kolon";
     const TUR_SIRA = ["kolon", "aile", "cift", "grup", "satir"];
     const suzgec = elYap("div", "gl-suzgec");
     const suzSatiri = etiket => {
@@ -18714,6 +18821,7 @@ function gelenekselKartiEkle(alan, blok) {
         suzgec.appendChild(r);
         return ic;
     };
+    const gorunumCipler = suzSatiri("Görünüm");
     const tipCipler = suzSatiri("Birim tipi");
     const durumCipler = suzSatiri("Durum");
     const arac = suzSatiri("Dönüşüm");
@@ -18746,7 +18854,7 @@ function gelenekselKartiEkle(alan, blok) {
     const ara = document.createElement("input");
     ara.type = "search";
     ara.className = "gl-ara";
-    ara.placeholder = "Birim ya da kolon adında ara";
+    ara.placeholder = "Birim, kaynak kolon ya da üretilecek kolon adında ara";
     ara.oninput = () => listeCiz();
     const suzTemizle = elYap("button", "dg-toplu-btn", "Süzgeçleri Temizle");
     suzTemizle.type = "button";
@@ -18777,18 +18885,18 @@ function gelenekselKartiEkle(alan, blok) {
         return aramaEsler(b);
     };
     /* Üretim Planı satırları: önerilen ya da seçili her (birim, dönüşüm). */
-    const planSatirlari = haric => {
+    const planSatirlari = (haric, ham) => {
         const cikti = [];
         birimler.forEach(b => {
             if (haric !== "tip" && suz.tip && b.tur !== suz.tip) return;
-            if (!aramaEsler(b)) return;
+            if (!ham && !aramaEsler(b)) return;
             const o = oneri[b.id] || {}, ks = karar[b.id].sec || [], os = o.sec || [];
             const kodEk = new Set((o.kod_ekledi || []).map(e => e.kod));
             const km = (b.katki || {}).kodlar || {};
             Array.from(new Set(os.concat(ks))).forEach(c => {
                 if (!kodEsler(c)) return;
                 const durum = os.includes(c) ? (ks.includes(c) ? "secili" : "cikan") : "eklenen";
-                if (haric !== "durum") {
+                if (!ham && haric !== "durum") {
                     if (suz.durum === "uret" && durum === "cikan") return;
                     if (suz.durum === "yok" && durum !== "cikan") return;
                     if (suz.durum === "fark" && durum === "secili") return;
@@ -18805,13 +18913,55 @@ function gelenekselKartiEkle(alan, blok) {
         });
         return cikti;
     };
+    /* Kolon bazında plan: her satır bir kolon. Durum: secili (üretilecek,
+       öneriyle aynı), eklenen (üretilecek, öneride yoktu), cikan (önerildi,
+       üretilmeyecek), disarida (öneri de dışarıda bırakmıştı). Ölçüm satırı
+       olmayan dönüşüm (eşik, iş kuralı aralıkları) tek satırda kalır. */
+    const planKolonlari = haric => {
+        const cikti = [];
+        const q = ara.value.trim().toUpperCase();
+        planSatirlari(haric, true).forEach(x => {
+            const k = karar[x.b.id], o = oneri[x.b.id] || {};
+            const s = kolSatir(x.b.id, x.c);
+            const kh = new Set((k.haric || {})[x.c] || []), oh = new Set((o.haric || {})[x.c] || []);
+            const kodSecili = x.durum !== "cikan", kodOnerili = x.durum !== "eklenen";
+            const birimEslesti = !q || aramaEsler(x.b);
+            const ekle = (r, n) => {
+                if (!birimEslesti && !(r && String(r[0]).toUpperCase().includes(q))) return;
+                const uret = kodSecili && !(r && kh.has(r[0]));
+                const onerildi = kodOnerili && !(r && oh.has(r[0]));
+                const durum = uret ? (onerildi ? "secili" : "eklenen") : (onerildi ? "cikan" : "disarida");
+                if (haric !== "durum") {
+                    if (suz.durum === "uret" && !uret) return;
+                    if (suz.durum === "yok" && uret) return;
+                    if (suz.durum === "fark" && uret === onerildi) return;
+                }
+                cikti.push({ b: x.b, c: x.c, a: x.a, m: x.m, ger: x.ger, oneren: x.oneren, kodDurum: x.durum, r, n, durum });
+            };
+            if (s && s.length) s.forEach(r => ekle(r, 1));
+            else ekle(null, kodKolonSayisi(x.b, x.c));
+        });
+        return cikti;
+    };
     const DURUM_SUZ = [["", "Hepsi", "Süzgeç yok."],
-        ["uret", "Üretilecek", "Birimler: en az bir dönüşümü seçili birimler. Üretim Planı: seçili satırlar."],
-        ["yok", "Üretilmeyecek", "Birimler: hiçbir dönüşümü seçili olmayan birimler. Üretim Planı: önerilip çıkarılan satırlar."],
-        ["fark", "Öneriden farklı", "Birimler: seçimi öneriden farklı birimler. Üretim Planı: eklenen ya da çıkarılan satırlar."]];
+        ["uret", "Üretilecek", "Birimler: en az bir dönüşümü seçili birimler. Üretim Planı: üretilecek kolonlar ya da seçili dönüşümler."],
+        ["yok", "Üretilmeyecek", "Birimler: hiçbir dönüşümü seçili olmayan birimler. Üretim Planı: dışarıda bırakılan kolonlar ya da çıkarılan dönüşümler."],
+        ["fark", "Öneriden farklı", "Birimler: seçimi öneriden farklı birimler. Üretim Planı: sizin eklediğiniz ya da çıkardığınız satırlar."]];
     function suzgecCiz() {
         const plan = aktif === "plan";
-        const ogeler = haric => plan ? planSatirlari(haric) : birimler.filter(b => birimEsler(b, haric));
+        const ogeler = haric => plan ? (planGor === "kolon" ? planKolonlari(haric) : planSatirlari(haric))
+            : birimler.filter(b => birimEsler(b, haric));
+        /* Görünüm (yalnız Üretim Planı) */
+        gorunumCipler.parentNode.hidden = !plan;
+        gorunumCipler.textContent = "";
+        [["kolon", "Kolon bazında", "Her satır üretilecek bir kolon: adı, kendi IV'si, kaynağa göre artışı ve doğrusal uyumu."],
+         ["donusum", "Dönüşüm bazında", "Her satır bir birimde bir dönüşüm: kaç kolon üreteceği, en iyi kolonunun ölçümü ve gerekçesi."]]
+            .forEach(([v, t, baslik]) => {
+                const b = elYap("button", "gl-suz-btn" + (planGor === v ? " secili" : ""), t);
+                b.type = "button"; b.title = baslik;
+                b.onclick = () => { planGor = v; listeCiz(); };
+                gorunumCipler.appendChild(b);
+            });
         const cip = (kap, secili, metin, sayi, tikla, baslik) => {
             const b = elYap("button", "gl-suz-btn" + (secili ? " secili" : ""), metin);
             b.type = "button";
@@ -18834,7 +18984,10 @@ function gelenekselKartiEkle(alan, blok) {
         const dOge = ogeler("durum");
         const dSay = { "": dOge.length, uret: 0, yok: 0, fark: 0 };
         dOge.forEach(x => {
-            if (plan) { if (x.durum !== "cikan") dSay.uret++; else dSay.yok++; if (x.durum !== "secili") dSay.fark++; }
+            if (plan) {
+                if (x.durum === "secili" || x.durum === "eklenen") dSay.uret++; else dSay.yok++;
+                if (x.durum === "eklenen" || x.durum === "cikan") dSay.fark++;
+            }
             else { if ((karar[x.id].sec || []).length) dSay.uret++; else dSay.yok++; if (farkli(x.id)) dSay.fark++; }
         });
         DURUM_SUZ.forEach(([v, t, baslik]) =>
@@ -18854,8 +19007,9 @@ function gelenekselKartiEkle(alan, blok) {
         if (kart.classList.contains("kilitli")) return;
         birimler.forEach(b => {
             const o = oneri[b.id] || { sec: [], param: {} };
-            karar[b.id] = { sec: (o.sec || []).slice(), param: JSON.parse(JSON.stringify(o.param || {})) };
+            karar[b.id] = { sec: (o.sec || []).slice(), param: kopya(o.param), haric: kopya(o.haric) };
         });
+        haricBekleyen.clear();
         tumunuCiz();
     };
     const sekmeNot = elYap("div", "gl-not", "");
@@ -18875,51 +19029,123 @@ function gelenekselKartiEkle(alan, blok) {
        kaynağa göre artışı ve kaynakla sıra ilişkisi (eğitim satırları). */
     const ES = alan.katki_esik || { artis: 0.02, iliski: 0.95, dilim: 10 };
     const sayiYaz = (v, h) => v === null || v === undefined ? "-" : Number(v).toFixed(h).replace(".", ",");
-    const degerlendir = m => {
+    const UYUM_ESIK = ES.uyum || 0.01;
+    const uyumVar = m => !!m && m.uyum !== null && m.uyum !== undefined && m.uyum >= UYUM_ESIK;
+    const ivDegerlendir = m => {
         if (!m || m.iv === null || m.iv === undefined) return ["", "Ölçülemedi"];
         if (m.iliski !== null && m.iliski !== undefined && m.iliski >= ES.iliski) return ["gl-k-ayni", "Kaynakla aynı bilgi"];
         if (m.artis === null || m.artis === undefined) return m.iv >= ES.artis ? ["gl-k-yeni", "Hedefle ilişkili"] : ["gl-k-zayif", "Hedefle ilişkisi zayıf"];
         return m.artis >= ES.artis ? ["gl-k-yeni", "Yeni bilgi"] : ["gl-k-zayif", "Belirgin artış yok"];
     };
+    /* IV yeni bilgi göstermese de doğrusal uyum belirginse doğrusal modelde yeni bilgidir. */
+    const degerlendir = m => {
+        const d = ivDegerlendir(m);
+        return d[0] !== "gl-k-yeni" && uyumVar(m) ? ["gl-k-yeni", "Doğrusal modelde yeni bilgi"] : d;
+    };
+    const kolonDegerlendir = r => degerlendir({ iv: r[1], artis: r[2], iliski: r[3], uyum: r[4] });
+    const artisYaz = v => v === null || v === undefined ? "-" : (v >= 0 ? "+" : "eksi ") + sayiYaz(Math.abs(v), 3);
+    /* Birimde açık (kolonları görünen) dönüşümler: "id|kod" -> true / false;
+       yoksa seçili dönüşüm açık, seçili olmayan kapalı gelir. */
+    const kolAcik = {};
     function katkiTablosu(b, k) {
         const kt = b.katki || {};
         const sar = elYap("div", "gl-katki");
-        sar.appendChild(elYap("div", "gl-alt-baslik", "Ölçüm (eğitim satırları, örneklemesiz)"));
+        sar.appendChild(elYap("div", "gl-alt-baslik", "Ölçüm ve kolon seçimi (eğitim satırları, örneklemesiz)"));
         sar.appendChild(elYap("div", "gl-not", (kt.kaynak_iv !== null && kt.kaynak_iv !== undefined
             ? "Kaynak kolonların en iyi IV'si " + sayiYaz(kt.kaynak_iv, 3) + " (" + (kt.kaynak_kolon || "") + "). " : "")
-            + "IV " + ES.dilim + " eşit frekanslı aralıkla; artış, dönüşümün en iyi kolonunun IV'si eksi kaynağın en iyi IV'si; "
-            + "ilişki, en iyi kolonun kaynak kolonlarla sıra ilişkisi (Spearman). Artış en az " + sayiYaz(ES.artis, 2)
-            + " ve ilişki " + sayiYaz(ES.iliski, 2) + " altındaysa yeni bilgi sayılır."));
-        const t = elYap("table", "dg-tablo gl-katki-tablo");
+            + "Her dönüşümün ürettiği her kolon ayrı ölçülür. IV " + ES.dilim + " eşit frekanslı aralıkla; kaynağa göre, kolonun IV'si eksi "
+            + "kaynağın en iyi IV'si; ilişki, kolonun kaynak kolonlarla sıra ilişkisi (Spearman). Artış en az " + sayiYaz(ES.artis, 2)
+            + " ve ilişki " + sayiYaz(ES.iliski, 2) + " altındaysa yeni bilgi sayılır. Doğrusal uyum, kolonun kaynağıyla birlikte "
+            + "doğrusal modele kattığı C-value artışıdır (kare alma, ondalık dilim, işaret ve sıfır bayrağında ölçülür); en az "
+            + sayiYaz(UYUM_ESIK, 2) + " ise doğrusal modelde yeni bilgi sayılır. Dönüşüm satırına tıklayınca kolonları açılır; "
+            + "seçili dönüşümde kutuyla tek tek üretime alınır ya da dışarıda bırakılır."));
+        const t = elYap("table", "dg-tablo gl-katki-tablo gl-kolon-tablo");
         const kcg = document.createElement("colgroup");
-        [24, 8, 10, 12, 11, 25, 10].forEach(w => { const col = document.createElement("col"); col.style.width = w + "%"; kcg.appendChild(col); });
+        [34, 9, 8, 10, 10, 9, 14, 6].forEach(w => { const col = document.createElement("col"); col.style.width = w + "%"; kcg.appendChild(col); });
         t.appendChild(kcg);
         const th = document.createElement("thead"), tr = document.createElement("tr");
-        ["Dönüşüm", "Kolon", "En iyi IV", "Kaynağa göre", "Kaynakla ilişki", "Değerlendirme", "Seçili"].forEach(x => tr.appendChild(elYap("th", "", x)));
+        [["Dönüşüm ve Kolon", ""], ["Kolon", "Seçili dönüşümde üretilecek kolon sayısı bölü dönüşümün ürettiği kolon sayısı"], ["IV", ""],
+         ["Kaynağa Göre", "Kolonun IV'si eksi kaynak kolonların en iyi IV'si"], ["Kaynakla İlişki", "Kaynak kolonlarla sıra ilişkisi (Spearman)"],
+         ["Doğrusal Uyum", "Kaynak kolonla birlikte doğrusal modelin C-value artışı"], ["Değerlendirme", ""], ["Üret", "Kolon üretilecek mi"]]
+            .forEach(([x, bas]) => { const h = elYap("th", "", x); if (bas) h.title = bas; tr.appendChild(h); });
         th.appendChild(tr); t.appendChild(th);
         const tb = document.createElement("tbody");
         Object.entries(kt.kodlar || {}).sort((a, b_) => kodAsama(a[0]) - kodAsama(b_[0]) || (b_[1].iv || 0) - (a[1].iv || 0)).forEach(([c, m]) => {
-            const r = document.createElement("tr");
+            const r = elYap("tr", "gl-kod-satir");
             let [sinif, metin] = degerlendir(m);
-            if (modelTuru !== "agac" && MONOTON.includes(c)) { sinif = ""; metin = "IV ile ölçülmez (ölçek dönüşümü)"; }
             /* Aynı sırada olan başka dönüşüm (ör. aynı pencere çiftinde oran ve normalize oran): IV'si yüksek olan esas. */
             const kodlar_ = kt.kodlar || {};
             const ust = Object.keys(m.benzer || {}).filter(x => kodlar_[x] && ((kodlar_[x].iv || 0) > (m.iv || 0)
                 || ((kodlar_[x].iv || 0) === (m.iv || 0) && kodAsama(x) * 100 + Object.keys(kodlar_).indexOf(x) < kodAsama(c) * 100 + Object.keys(kodlar_).indexOf(c))));
-            if (ust.length && sinif === "gl-k-yeni") { sinif = "gl-k-ayni"; metin = kodAdi(ust[0]) + " ile aynı bilgi"; }
-            const ad = elYap("td", "pf-kolon-ad", kodAdi(c) + (m.segment ? " (" + m.segment + ")" : ""));
-            ad.title = "En iyi kolon: " + (m.kolon || "");
-            r.append(ad, elYap("td", "", ftBinlik(m.kolon_sayisi || 0)), elYap("td", "", sayiYaz(m.iv, 3)),
-                     elYap("td", "", m.artis === null || m.artis === undefined ? "-" : (m.artis >= 0 ? "+" : "eksi ") + sayiYaz(Math.abs(m.artis), 3)),
-                     elYap("td", "", sayiYaz(m.iliski, 2)), elYap("td", sinif, metin),
-                     elYap("td", "", (k.sec || []).includes(c) ? "Evet" : "Hayır"));
+            if (ust.length && sinif === "gl-k-yeni" && !uyumVar(m)) { sinif = "gl-k-ayni"; metin = kodAdi(ust[0]) + " ile aynı bilgi"; }
+            const secili = (k.sec || []).includes(c);
+            const satirlar = kolSatir(b.id, c);
+            const toplam = satirlar ? satirlar.length : (m.kolon_sayisi || 0);
+            const disarida = secili ? ((k.haric || {})[c] || []).length : 0;
+            const anahtar = b.id + "|" + c;
+            const acik = kolAcik[anahtar] !== undefined ? kolAcik[anahtar] : secili;
+            const ad = elYap("td", "pf-kolon-ad gl-kod-ad");
+            ad.append(elYap("span", "gl-kat-ok", acik ? "▾" : "▸"), elYap("span", "", " " + kodAdi(c) + (m.segment ? " (" + m.segment + ")" : "")));
+            ad.title = "En iyi kolon: " + (m.kolon || "") + ". Tıklayın: kolonları " + (acik ? "gizle" : "göster") + ".";
+            r.append(ad, elYap("td", "", secili ? ftBinlik(toplam - disarida) + " / " + ftBinlik(toplam) : ftBinlik(toplam)),
+                     elYap("td", "", sayiYaz(m.iv, 3)), elYap("td", "", artisYaz(m.artis)),
+                     elYap("td", "", sayiYaz(m.iliski, 2)), elYap("td", "", m.uyum === null || m.uyum === undefined ? "-" : artisYaz(m.uyum)),
+                     elYap("td", sinif, metin), elYap("td", secili ? "gl-k-evet" : "", secili ? "Seçili" : "Hayır"));
+            r.onclick = () => { kolAcik[anahtar] = !acik; listeCiz(); };
             tb.appendChild(r);
+            if (!acik) return;
+            if (!satirlar) {
+                const br = elYap("tr", "gl-kolon-satir");
+                const td = elYap("td", "gl-not", kolIstenen.has(anahtar) ? "Kolon ölçümleri yükleniyor." : "Kolon ölçümü yok.");
+                td.colSpan = 8; br.appendChild(td); tb.appendChild(br);
+                return;
+            }
+            /* Toplu seçim: bütün kolonlar ya da yalnız yeni bilgi taşıyanlar. */
+            if (secili && !kilitli && satirlar.length > 1) {
+                const ar = elYap("tr", "gl-kolon-satir gl-kolon-arac");
+                const td = elYap("td", "");
+                td.colSpan = 8;
+                const degersiz = satirlar.filter(x => !x[5]).map(x => x[0]);
+                const dugme = (metin_, baslik, uygula) => {
+                    const bt = elYap("button", "dg-toplu-btn", metin_);
+                    bt.type = "button"; bt.title = baslik;
+                    bt.onclick = e => { e.stopPropagation(); if (kart.classList.contains("kilitli")) return; uygula(); tumunuCiz(); };
+                    td.appendChild(bt);
+                };
+                dugme("Bütün kolonları üret", "Bu dönüşümün ürettiği " + ftBinlik(satirlar.length) + " kolonun hepsi üretilir.", () => { delete k.haric[c]; });
+                if (degersiz.length && degersiz.length < satirlar.length)
+                    dugme("Yalnız yeni bilgi taşıyanlar", ftBinlik(satirlar.length - degersiz.length) + " kolon üretilir, ölçüme göre yeni bilgi taşımayan "
+                        + ftBinlik(degersiz.length) + " kolon dışarıda kalır.", () => { k.haric[c] = degersiz.slice(); });
+                ar.appendChild(td); tb.appendChild(ar);
+            }
+            const hs = new Set((k.haric || {})[c] || []);
+            satirlar.forEach(x => {
+                const uret = secili && !hs.has(x[0]);
+                const kr = elYap("tr", "gl-kolon-satir" + (secili && !uret ? " gl-kolon-disarida" : ""));
+                const [ks, km] = kolonDegerlendir(x);
+                const sec = elYap("td", "");
+                const kutu = document.createElement("input");
+                kutu.type = "checkbox";
+                kutu.className = "gl-kolon-kutu";
+                kutu.checked = uret;
+                kutu.disabled = kilitli || !secili;
+                kutu.title = !secili ? "Dönüşüm seçili değil; önce dönüşümü ekleyin." : uret ? "Üretilecek. Kaldırın: kolon dışarıda kalır." : "Dışarıda. İşaretleyin: kolon üretilir.";
+                kutu.setAttribute("aria-label", x[0] + " kolonunu üret");
+                kutu.onclick = e => e.stopPropagation();
+                kutu.onchange = () => kolonDegistir(b, c, x[0], kutu.checked);
+                sec.appendChild(kutu);
+                kr.append(elYap("td", "gl-kolon-ad", x[0]), elYap("td", "", ""), elYap("td", "", sayiYaz(x[1], 3)),
+                          elYap("td", "", artisYaz(x[2])), elYap("td", "", sayiYaz(x[3], 2)),
+                          elYap("td", "", x[4] === null || x[4] === undefined ? "-" : artisYaz(x[4])), elYap("td", ks, km), sec);
+                tb.appendChild(kr);
+            });
         });
         Object.entries(kt.olculmeyen || {}).forEach(([c, neden]) => {
             const r = document.createElement("tr");
             const td = elYap("td", "", "Ölçülmedi: " + neden);
-            td.colSpan = 5;
-            r.append(elYap("td", "pf-kolon-ad", kodAdi(c)), td, elYap("td", "", (k.sec || []).includes(c) ? "Evet" : "Hayır"));
+            td.colSpan = 6;
+            const secili = (k.sec || []).includes(c);
+            r.append(elYap("td", "pf-kolon-ad", kodAdi(c)), td, elYap("td", secili ? "gl-k-evet" : "", secili ? "Seçili" : "Hayır"));
             tb.appendChild(r);
         });
         t.appendChild(tb);
@@ -18927,7 +19153,7 @@ function gelenekselKartiEkle(alan, blok) {
         ts.appendChild(t);
         sar.appendChild(ts);
         if (!Object.keys(kt.kodlar || {}).length && !Object.keys(kt.olculmeyen || {}).length)
-            sar.appendChild(elYap("div", "gl-not", "Bu model türünde ölçülecek dönüşüm yok."));
+            sar.appendChild(elYap("div", "gl-not", "Bu birimde ölçülecek dönüşüm yok."));
         return sar;
     }
 
@@ -18942,7 +19168,13 @@ function gelenekselKartiEkle(alan, blok) {
         const d = document.createElement("details");
         d.className = "gl-birim" + (farkli(b.id) ? " farkli" : "");
         d.open = GL_ACIK.has(b.id);
-        d.addEventListener("toggle", () => { if (d.open) GL_ACIK.add(b.id); else GL_ACIK.delete(b.id); });
+        d.addEventListener("toggle", () => {
+            if (!d.open) { GL_ACIK.delete(b.id); return; }
+            GL_ACIK.add(b.id);
+            /* Birim açıldı: seçili olmayan dönüşümlerin kolon ölçümleri de istenir. */
+            const kodlar = Object.keys((b.katki || {}).kodlar || {}).filter(c => !kolSatir(b.id, c));
+            if (kodlar.length) kolonIste({ [b.id]: kodlar }, () => tumunuCiz(false, true));
+        });
         const sm = document.createElement("summary");
         const ust = elYap("div", "gl-birim-ust");
         /* Birim tipi rozeti: tek kolon, pencere ailesi, kolon çifti ... */
@@ -18956,7 +19188,7 @@ function gelenekselKartiEkle(alan, blok) {
             .filter(Boolean).join(", ");
         if (tur) ust.appendChild(elYap("span", "gl-tur", tur));
         if (farkli(b.id)) ust.appendChild(elYap("span", "gl-fark", "Öneriden farklı"));
-        const sayi = kolonSayisi(b, k.sec);
+        const sayi = kolonSayisi(b, k.sec, k.haric);
         const mmSayi = mumkunGor(b).length;
         const sy = elYap("span", "gl-sayi", ftBinlik((k.sec || []).length) + " seçili · " + ftBinlik(mmSayi) + " uygulanabilir"
             + (sayi ? " · " + ftBinlik(sayi) + " kolon" : ""));
@@ -18974,9 +19206,11 @@ function gelenekselKartiEkle(alan, blok) {
         gorunen.forEach(c => {
             const secili = (k.sec || []).includes(c);
             const onerili = (o.sec || []).includes(c);
+            const hn = secili ? ((k.haric || {})[c] || []).length : 0;
             const cp = elYap("button", "gl-cip gl-cip-tik" + (secili ? " secili" : " gl-cip-kaldirildi")
                 + (secili && !onerili ? " gl-cip-eklendi" : ""),
-                kodAdi(c) + paramMetni(c, secili ? k.param : o.param));
+                kodAdi(c) + paramMetni(c, secili ? k.param : o.param)
+                + (hn ? " (" + ftBinlik(Math.max(0, kodKolonSayisi(b, c) - hn)) + " / " + ftBinlik(kodKolonSayisi(b, c)) + " kolon)" : ""));
             cp.type = "button";
             cp.disabled = kilitli;
             cp.title = (secili ? (onerili ? "Önerildi ve seçili." : "Sizin eklediğiniz.") + " Tıklayın: kaldır."
@@ -18985,9 +19219,9 @@ function gelenekselKartiEkle(alan, blok) {
             cp.onclick = e => {
                 e.preventDefault(); e.stopPropagation();
                 if (kart.classList.contains("kilitli")) return;
-                if (secili) { k.sec = k.sec.filter(x => x !== c); delete k.param[c]; }
+                if (secili) kodCikar(b, c);
                 else {
-                    k.sec.push(c);
+                    kodEkle(b, c);
                     if ((o.param || {})[c]) k.param[c] = JSON.parse(JSON.stringify(o.param[c]));
                 }
                 tumunuCiz();
@@ -19016,7 +19250,8 @@ function gelenekselKartiEkle(alan, blok) {
         satir("Uygulanabilen", ftBinlik(topD) + " dönüşümden " + ftBinlik(mmSayi) + " tanesi bu birimde uygulanabilir. "
             + (uymayan ? ftBinlik(uymayan) + " tanesi bu birimin verisine uymuyor (nedenleri en altta). " : "")
             + (baska ? ftBinlik(baska) + " tanesi başka birim tiplerine aittir." : ""));
-        satir("Önerilen", (o.sec || []).map(kodAdi).join(", ") || "Dönüşüm yok");
+        satir("Önerilen", (o.sec || []).map(c => kodAdi(c) + (((o.haric || {})[c] || []).length
+            ? " (" + ftBinlik(o.haric[c].length) + " kolon dışarıda)" : "")).join(", ") || "Dönüşüm yok");
         if ((k.sec || []).length) {
             const sd = elYap("div", "gl-secili-acik");
             (k.sec || []).forEach(c => {
@@ -19059,7 +19294,7 @@ function gelenekselKartiEkle(alan, blok) {
                 btn.onclick = () => {
                     if (kart.classList.contains("kilitli")) return;
                     const i = k.sec.indexOf(c);
-                    if (i >= 0) { k.sec.splice(i, 1); delete k.param[c]; }
+                    if (i >= 0) kodCikar(b, c);
                     else {
                         /* Eşik, kova ve segment parametreyle eklenir (aşağıdaki satır). */
                         if (PARAMLI.includes(c)) {
@@ -19067,7 +19302,7 @@ function gelenekselKartiEkle(alan, blok) {
                             if (!p) { if (paramOdak[c]) paramOdak[c](); return; }
                             k.param[c] = p;
                         }
-                        k.sec.push(c);
+                        kodEkle(b, c);
                     }
                     tumunuCiz();
                 };
@@ -19186,11 +19421,13 @@ function gelenekselKartiEkle(alan, blok) {
         const seciliD = birimler.reduce((t, b) => t + (karar[b.id].sec || []).length, 0);
         const disSayi = (alan.girmeyen || []).reduce((t, g) => t + (g.kolonlar || []).length, 0);
         sekmeSayi.birim.textContent = ftBinlik(birimler.length);
-        sekmeSayi.plan.textContent = ftBinlik(seciliD);
+        sekmeSayi.plan.textContent = ftBinlik(planGor === "kolon"
+            ? birimler.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec, karar[b.id].haric), 0) : seciliD);
         sekmeSayi.dis.textContent = ftBinlik(disSayi);
         sekmeSayi.kat.textContent = ftBinlik((alan.katalog || []).length);
         sekmeDugme.birim.title = "Birim: tek kolon, pencere ailesi, kolon çifti, kolon grubu ya da satır düzeyi. Sayı: bütün birimler.";
-        sekmeDugme.plan.title = "Hangi birimde hangi dönüşüm üretilecek. Sayı: seçili (birim, dönüşüm) satırı.";
+        sekmeDugme.plan.title = "Hangi kolon hangi birimden hangi dönüşümle üretilecek. Sayı: kolon bazında görünümde üretilecek kolon, "
+            + "dönüşüm bazında görünümde seçili (birim, dönüşüm) satırı.";
         sekmeDugme.dis.title = "Geleneksel üretime hiç girmeyen kaynak kolonlar ve nedeni. Sayı: kolon.";
         sekmeDugme.kat.title = "Dönüşümlerin ne yaptığı, örneği ve bu veride kaç birimde uygulanabildiği. Sayı: dönüşüm.";
         SEKMELER.forEach(([ad]) => {
@@ -19221,9 +19458,10 @@ function gelenekselKartiEkle(alan, blok) {
             return;
         }
         const gosterilen = birimler.filter(b => birimEsler(b));
-        const kol = gosterilen.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec), 0);
-        sekmeNot.textContent = "Gösterilen: " + ftBinlik(gosterilen.length) + " birim, yaklaşık " + ftBinlik(kol) + " yeni kolon. "
-            + "Yeşil dönüşüme tıklayınca kaldırılır, üstü çizili olana tıklayınca geri eklenir. Birimi açınca gerekçe, ölçüm ve seçilebilen öbür dönüşümler görünür.";
+        const kol = gosterilen.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec, karar[b.id].haric), 0);
+        sekmeNot.textContent = "Gösterilen: " + ftBinlik(gosterilen.length) + " birim, " + ftBinlik(kol) + " yeni kolon. "
+            + "Yeşil dönüşüme tıklayınca kaldırılır, üstü çizili olana tıklayınca geri eklenir. Birimi açınca gerekçe, her kolonun ölçümü, "
+            + "kolon seçimi ve seçilebilen öbür dönüşümler görünür.";
         /* Çok birimde tarayıcı yorulmasın: ilk dilim çizilir, kalanı istenince. */
         const DILIM = 300;
         const ciz = bas => {
@@ -19244,26 +19482,104 @@ function gelenekselKartiEkle(alan, blok) {
        üretilecek kolon sayısı, durum, kim önerdi, ölçüm ve gerekçe. Sıra:
        ölçülen IV artışı yüksek olan üstte. Satırdan çıkarılır ya da geri
        eklenir. Süzgeç çubuğu aynen geçerlidir. ---- */
+    function planKolonCiz() {
+        const satirlar = planKolonlari();
+        const say = { secili: 0, eklenen: 0, cikan: 0, disarida: 0 };
+        let kol = 0;
+        satirlar.forEach(x => { say[x.durum]++; if (x.durum === "secili" || x.durum === "eklenen") kol += x.n; });
+        sekmeNot.textContent = "Her satır bir kolon; yeni bilgi taşıyanlar ve IV artışı yüksek olanlar üstte. Gösterilen: "
+            + ftBinlik(satirlar.length) + " satır, " + ftBinlik(kol) + " kolon üretilecek; " + ftBinlik(say.eklenen)
+            + " satırı siz eklediniz, " + ftBinlik(say.cikan) + " satırı siz çıkardınız, " + ftBinlik(say.disarida)
+            + " satır ölçüme göre dışarıda.";
+        const sar = elYap("div", "gl-ozet-sar");
+        const t = elYap("table", "dg-tablo gl-ozet gl-plan gl-plan-kolon");
+        const cg = document.createElement("colgroup");
+        (kilitli ? [11, 14, 13, 23, 6, 7, 7, 10, 9] : [11, 14, 12, 20, 5, 7, 7, 10, 8, 6]).forEach(w => {
+            const col = document.createElement("col"); col.style.width = w + "%"; cg.appendChild(col);
+        });
+        t.appendChild(cg);
+        const th = document.createElement("thead"), tr = document.createElement("tr");
+        [["Birim Tipi", ""], ["Birim", ""], ["Dönüşüm", ""], ["Kolon", "Üretilecek kolonun adı"], ["IV", "Kolonun kendi IV'si (eğitim satırları)"],
+         ["Kaynağa Göre", "Kolonun IV'si eksi kaynak kolonların en iyi IV'si"], ["Doğrusal Uyum", "Kaynak kolonla birlikte doğrusal modelin C-value artışı"],
+         ["Değerlendirme", ""], ["Durum", "Üretilecek mi ve kimin kararı"]]
+            .concat(kilitli ? [] : [["İşlem", ""]]).forEach(([x, bas]) => { const h = elYap("th", "", x); if (bas) h.title = bas; tr.appendChild(h); });
+        th.appendChild(tr); t.appendChild(th);
+        const tb = document.createElement("tbody");
+        const DUR = { secili: "Üretilecek", eklenen: "Eklendi", cikan: "Çıkarıldı", disarida: "Dışarıda" };
+        const KIM = x => x.durum === "secili" ? x.oneren : x.durum === "eklenen" ? "Siz eklediniz"
+            : x.durum === "cikan" ? "Siz çıkardınız" : "Ölçüme göre";
+        const sira = x => x.r ? [x.r[5] ? 1 : 0, x.r[2] !== null && x.r[2] !== undefined ? x.r[2] : (x.r[1] !== null && x.r[1] !== undefined ? x.r[1] - 10 : -99),
+                                 x.r[4] !== null && x.r[4] !== undefined ? x.r[4] : -99] : [-1, -99, -99];
+        satirlar.sort((x, y) => {
+            const a = sira(x), b_ = sira(y);
+            return b_[0] - a[0] || b_[1] - a[1] || b_[2] - a[2] || x.b.ad.localeCompare(y.b.ad) || kodAsama(x.c) - kodAsama(y.c);
+        }).slice(0, 2000).forEach(x => {
+            const uret = x.durum === "secili" || x.durum === "eklenen";
+            const r = elYap("tr", uret ? "" : "gl-kolon-disarida");
+            const tipTd = elYap("td", "");
+            tipTd.appendChild(tipRozeti(x.b));
+            const birimTd = elYap("td", "pf-kolon-ad", x.b.ad);
+            birimTd.title = (x.b.kolonlar || []).slice(0, 30).join(", ");
+            const donTd = elYap("td", "", kodAdi(x.c) + paramMetni(x.c, x.kodDurum === "cikan" ? (oneri[x.b.id] || {}).param : karar[x.b.id].param));
+            if (x.ger) donTd.title = tireSade(x.ger);
+            const [ks, km] = x.r ? kolonDegerlendir(x.r) : ["", "Ölçülmedi"];
+            const durTd = elYap("td", "");
+            durTd.append(elYap("div", x.durum === "cikan" ? "gl-uyari" : x.durum === "eklenen" ? "gl-k-evet" : x.durum === "disarida" ? "gl-k-ayni" : "", DUR[x.durum]),
+                         elYap("div", "gl-k-alt", KIM(x)));
+            r.append(tipTd, birimTd, donTd,
+                     elYap("td", "gl-kolon-ad", x.r ? x.r[0] : ftBinlik(x.n) + " kolon (ölçülmedi)"),
+                     elYap("td", "", x.r ? sayiYaz(x.r[1], 3) : "-"), elYap("td", "", x.r ? artisYaz(x.r[2]) : "-"),
+                     elYap("td", "", x.r && x.r[4] !== null && x.r[4] !== undefined ? artisYaz(x.r[4]) : "-"),
+                     elYap("td", ks, km), durTd);
+            if (!kilitli) {
+                const td = elYap("td", "");
+                const ib = elYap("button", "dg-toplu-btn", uret ? "Çıkar" : "Ekle");
+                ib.type = "button";
+                ib.title = uret ? "Bu kolon üretilmez." : "Bu kolon üretilir.";
+                ib.onclick = () => {
+                    if (kart.classList.contains("kilitli")) return;
+                    if (x.r) { kolonDegistir(x.b, x.c, x.r[0], !uret); return; }
+                    if (uret) kodCikar(x.b, x.c);
+                    else {
+                        kodEkle(x.b, x.c);
+                        const op = ((oneri[x.b.id] || {}).param || {})[x.c];
+                        if (op) karar[x.b.id].param[x.c] = kopya(op);
+                    }
+                    tumunuCiz();
+                };
+                td.appendChild(ib);
+                r.appendChild(td);
+            }
+            tb.appendChild(r);
+        });
+        t.appendChild(tb);
+        sar.appendChild(t);
+        liste.appendChild(sar);
+        if (satirlar.length > 2000) liste.appendChild(elYap("div", "gl-not", "İlk 2.000 satır gösteriliyor; aramayla ya da süzgeçle daraltın."));
+        if (!satirlar.length) liste.appendChild(elYap("div", "gl-not", "Süzgeçle eşleşen satır yok."));
+    }
+
     function planCiz() {
+        if (planGor === "kolon") { planKolonCiz(); return; }
         const satirlar = planSatirlari();
         const say = { secili: 0, cikan: 0, eklenen: 0 };
         let kol = 0;
         satirlar.forEach(x => {
             say[x.durum] = (say[x.durum] || 0) + 1;
-            if (x.durum !== "cikan") kol += kolonSayisi(x.b, [x.c]);
+            if (x.durum !== "cikan") kol += kolonSayisi(x.b, [x.c], karar[x.b.id].haric);
         });
         sekmeNot.textContent = "Her satır bir birimde üretilecek bir dönüşüm; IV artışı yüksek olan üstte. Gösterilen: "
-            + ftBinlik(satirlar.length) + " satır, yaklaşık " + ftBinlik(kol) + " yeni kolon; " + ftBinlik(say.secili)
+            + ftBinlik(satirlar.length) + " satır, " + ftBinlik(kol) + " yeni kolon; " + ftBinlik(say.secili)
             + " önerildi ve seçili, " + ftBinlik(say.eklenen) + " sonradan eklendi, " + ftBinlik(say.cikan) + " önerildi ama çıkarıldı.";
         const sar = elYap("div", "gl-ozet-sar");
         const t = elYap("table", "dg-tablo gl-ozet gl-plan");
         const cg = document.createElement("colgroup");
-        (kilitli ? [11, 18, 17, 6, 9, 10, 12, 17] : [10, 16, 16, 6, 8, 9, 11, 15, 9]).forEach(w => {
+        (kilitli ? [11, 18, 17, 6, 9, 10, 12, 17] : [11, 16, 16, 6, 8, 9, 11, 14, 9]).forEach(w => {
             const col = document.createElement("col"); col.style.width = w + "%"; cg.appendChild(col);
         });
         t.appendChild(cg);
         const th = document.createElement("thead"), tr = document.createElement("tr");
-        [["Birim Tipi", ""], ["Birim", ""], ["Dönüşüm", ""], ["Kolon", "Bu dönüşümün bu birimde üreteceği kolon sayısı"], ["Durum", ""],
+        [["Birim Tipi", ""], ["Birim", ""], ["Dönüşüm", ""], ["Kolon", "Bu dönüşümün bu birimde üreteceği kolon sayısı (dışarıda bırakılanlar düşülür)"], ["Durum", ""],
          ["Öneren", ""], ["Ölçüm", "Dönüşümün en iyi kolonunun IV'si ve kaynak kolonlara göre artışı (eğitim satırları)"], ["Gerekçe", ""]]
             .concat(kilitli ? [] : [["İşlem", ""]]).forEach(([x, bas]) => { const h = elYap("th", "", x); if (bas) h.title = bas; tr.appendChild(h); });
         th.appendChild(tr); t.appendChild(th);
@@ -19273,13 +19589,16 @@ function gelenekselKartiEkle(alan, blok) {
         satirlar.sort((x, y) => artis(y) - artis(x) || x.b.ad.localeCompare(y.b.ad) || kodAsama(x.c) - kodAsama(y.c)).slice(0, 2000).forEach(x => {
             const r = document.createElement("tr");
             const olc = x.m ? ("IV " + sayiYaz(x.m.iv, 3) + (x.m.artis !== null && x.m.artis !== undefined
-                ? ", " + (x.m.artis >= 0 ? "+" : "eksi ") + sayiYaz(Math.abs(x.m.artis), 3) : "")) : MONOTON.includes(x.c) ? "Ölçek dönüşümü" : "-";
+                ? ", " + (x.m.artis >= 0 ? "+" : "eksi ") + sayiYaz(Math.abs(x.m.artis), 3) : "")
+                + (uyumVar(x.m) ? ", doğrusal uyum " + artisYaz(x.m.uyum) : "")) : "-";
             const ger = x.ger || (x.m ? "Ölçüme göre " + (degerlendir(x.m)[1] || "").toLowerCase() + "." : "");
             const tipTd = elYap("td", "");
             tipTd.appendChild(tipRozeti(x.b));
             const birimTd = elYap("td", "pf-kolon-ad", x.b.ad);
             birimTd.title = (x.b.kolonlar || []).slice(0, 30).join(", ");
-            const kolTd = elYap("td", "", ftBinlik(kolonSayisi(x.b, [x.c])));
+            const kolHn = x.durum === "cikan" ? 0 : ((karar[x.b.id].haric || {})[x.c] || []).length;
+            const kolTd = elYap("td", "", kolHn ? ftBinlik(Math.max(0, kodKolonSayisi(x.b, x.c) - kolHn)) + " / " + ftBinlik(kodKolonSayisi(x.b, x.c))
+                : ftBinlik(kodKolonSayisi(x.b, x.c)));
             if (x.m && x.m.kolon) kolTd.title = "En iyi kolon: " + x.m.kolon;
             r.append(tipTd, birimTd, elYap("td", "", kodAdi(x.c) + paramMetni(x.c, x.durum === "cikan" ? (oneri[x.b.id] || {}).param : karar[x.b.id].param)), kolTd,
                      elYap("td", x.durum === "cikan" ? "gl-uyari" : x.durum === "eklenen" ? "gl-k-evet" : "", DUR[x.durum]),
@@ -19292,9 +19611,9 @@ function gelenekselKartiEkle(alan, blok) {
                     if (kart.classList.contains("kilitli")) return;
                     const k = karar[x.b.id], o = oneri[x.b.id] || {};
                     if (x.durum === "cikan") {
-                        if (!k.sec.includes(x.c)) k.sec.push(x.c);
+                        kodEkle(x.b, x.c);
                         if ((o.param || {})[x.c]) k.param[x.c] = JSON.parse(JSON.stringify(o.param[x.c]));
-                    } else { k.sec = k.sec.filter(c => c !== x.c); delete k.param[x.c]; }
+                    } else kodCikar(x.b, x.c);
                     tumunuCiz();
                 };
                 td.appendChild(ib);
@@ -19365,7 +19684,7 @@ function gelenekselKartiEkle(alan, blok) {
     }
     sag.appendChild(sagBas);
     sag.appendChild(elYap("div", "gl-not gl-sag-not", "Soru sorun ya da değişiklik isteyin: «eğim nedir», «gecikme "
-        + "kolonlarına 30 gün eşik bayrağı ekle», «neden bakiyede log yok». Önerdiği değişiklikleri Uygula ile kararlara aktarırsınız."));
+        + "kolonlarına 30 gün eşik bayrağı ekle», «neden yaşta kare alma önerildi». Önerdiği değişiklikleri Uygula ile kararlara aktarırsınız."));
     const mesajlar = elYap("div", "gl-mesajlar");
     sag.appendChild(mesajlar);
     const birimAdi = {};
@@ -19379,10 +19698,10 @@ function gelenekselKartiEkle(alan, blok) {
         const k = karar[d.id];
         if (!k || !birimHarita[d.id]) return;
         const mm = new Set(mumkunGor(birimHarita[d.id]));
-        (d.cikar || []).forEach(c => { const i = k.sec.indexOf(c); if (i >= 0) k.sec.splice(i, 1); delete k.param[c]; });
+        (d.cikar || []).forEach(c => kodCikar(birimHarita[d.id], c));
         (d.ekle || []).filter(c => mm.has(c)).forEach(c => {
-            if (!k.sec.includes(c)) k.sec.push(c);
-            if ((d.param || {})[c]) k.param[c] = d.param[c];
+            if (!karar[d.id].sec.includes(c)) kodEkle(birimHarita[d.id], c);
+            if ((d.param || {})[c]) karar[d.id].param[c] = d.param[c];
         });
     };
     let sonBekleyen = null, sonUygula = null;
@@ -19528,8 +19847,8 @@ function gelenekselKartiEkle(alan, blok) {
             tumunuCiz();
             geriAlKilit = () => { kart.classList.remove("kilitli"); btn.hidden = false; btn.disabled = false; tumunuCiz(); };
             const n = birimler.filter(b => (karar[b.id].sec || []).length).length;
-            const kol = birimler.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec), 0);
-            gonder(ftBinlik(n) + " birimde yaklaşık " + ftBinlik(kol) + " kolon üretilsin", false,
+            const kol = birimler.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec, karar[b.id].haric), 0);
+            gonder(ftBinlik(n) + " birimde " + ftBinlik(kol) + " kolon üretilsin", false,
                    { dogrulama: { adim: "kural", karar: JSON.parse(JSON.stringify(karar)) } });
         };
         alt.appendChild(btn);
@@ -19550,14 +19869,33 @@ function gelenekselKartiEkle(alan, blok) {
             }).catch(() => { /* bir sonraki değişiklikte yeniden denenir */ });
         }, 600);
     };
-    function tumunuCiz(geriAlindi) {
-        if (!ilkCizim) kararKaydet();
-        if (!ilkCizim && !geriAlindi) gunlukFark();
+    /* sessiz: yalnız yeniden çizim (kolon ölçümleri geldi); karar kaydedilmez,
+       değişiklik günlüğüne yazılmaz. */
+    function tumunuCiz(geriAlindi, sessiz) {
+        if (!ilkCizim && !sessiz) kararKaydet();
+        if (!ilkCizim && !geriAlindi && !sessiz) gunlukFark();
         ilkCizim = false;
+        /* Önerilen ve seçili dönüşümlerin kolon ölçümleri eksikse istenir.
+           Ölçüm gelince: ölçümü beklenirken eklenen dönüşümlerde yeni bilgi
+           taşımayan kolonlar dışarıda bırakılır (kullanıcı tek tek değiştirebilir). */
+        kolonIste(eksikKolonlar(), () => {
+            let degisti = false;
+            Array.from(haricBekleyen).forEach(a => {
+                const i = a.indexOf("|"), id = a.slice(0, i), c = a.slice(i + 1);
+                const b = birimHarita[id];
+                if (!b || !kolSatir(id, c)) return;
+                haricBekleyen.delete(a);
+                if (!karar[id].sec.includes(c)) return;
+                const h = varsayilanHaric(b, c);
+                if (h && h.length) { karar[id].haric[c] = h; degisti = true; }
+            });
+            if (degisti) { oncekiKarar = JSON.parse(JSON.stringify(karar)); kararKaydet(); }
+            tumunuCiz(false, true);
+        });
         gunlukYaz();
         katalogCiz();
         const uyg = birimler.filter(b => (karar[b.id].sec || []).length).length;
-        const kol = birimler.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec), 0);
+        const kol = birimler.reduce((t, b) => t + kolonSayisi(b, karar[b.id].sec, karar[b.id].haric), 0);
         const dm = Object.values(oneri).filter(o => o.kaynak === "dil modeli" || o.kaynak === "sohbet").length;
         const sorulan = Object.values(oneri).filter(o => o.kaynak !== "secenek yok").length;
         const fk = birimler.filter(b => farkli(b.id)).length;
@@ -19573,7 +19911,7 @@ function gelenekselKartiEkle(alan, blok) {
         });
         karoEl.fark.textContent = ftBinlik(onerilenD) + " / " + ftBinlik(seciliD);
         karoEl.fark.parentNode.title = ftBinlik(cikD) + " dönüşüm çıkarıldı, " + ftBinlik(eklD) + " eklendi. Tıklayın: Üretim Planı, öneriden farklı satırlar.";
-        ozetEl.textContent = (kilitli ? "Onaylanan: " : "") + ftBinlik(uyg) + " birimde yaklaşık "
+        ozetEl.textContent = (kilitli ? "Onaylanan: " : "") + ftBinlik(uyg) + " birimde "
             + ftBinlik(kol) + " yeni kolon; önerilen " + ftBinlik(onerilenD) + " dönüşümden " + ftBinlik(cikD) + " tanesi çıkarıldı, "
             + ftBinlik(eklD) + " dönüşüm eklendi" + (fk ? " (" + ftBinlik(fk) + " birimde öneriden farklı)." : ".");
         geriBtn.disabled = kart.classList.contains("kilitli");

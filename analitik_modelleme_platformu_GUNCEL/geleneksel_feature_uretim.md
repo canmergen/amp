@@ -21,8 +21,10 @@ Her maddenin sonunda iki etiket var:
     girer.
   - **Hepsi:** dört türün hepsinde.
 - **Platformda:**
-  - **Var (02.2):** Kural Tabanlı Değişken Üretimi bugün üretiyor (delta,
-    oran, log, rank, winsor).
+  - **Var (02.2):** Kural Tabanlı Değişken Üretimi bugün üretiyor (yeni
+    bilgi taşıyan değişkenler: oran, fark, eğim, kare, bayraklar gibi).
+    Logaritma, kırpma, sıra gibi ölçek dönüşümleri 02.2'de üretilmez;
+    bunlara 03.1 Tek Değişken Analizi'nde karar verilir.
   - **Var (SFA):** Tek Değişken Analizi kararlarında seçenek olarak var
     (eksik değer, aykırı, dönüşüm, ayrıklaştırma).
   - **Yok:** bugün üretilmiyor.
@@ -366,7 +368,7 @@ Bankacılıkta en çok değişken buradan çıkar. Pencere seti örneği: son 3,
 
 | Grup | Bugün var | Eklenebilir (öncelik önerisi sırayla) |
 |---|---|---|
-| Tek değişkenli dönüşüm | log, rank, winsor (02.2); log, üstel, sıra, winsor (SFA) | işaret bayrakları, eşik bayrakları, Yeo-Johnson, ölçekleme |
+| Tek değişkenli dönüşüm | kare, işaret, sıfır ve eşik bayrağı, ondalık dilim (02.2); log, üstel, sıra, winsor (SFA) | Yeo-Johnson, ölçekleme |
 | Eksik değer | medyan, sabit, işaret, kategorik eksik (SFA) | satırdaki eksik sayısı, grup bazlı doldurma |
 | Ayrıklaştırma | hedefe göre önerilen aralıklar (SFA) | monoton aralıklar, iş kuralı kovaları |
 | Hedef kodlama | yok | WoE (ikili), sınıf başına WoE ve hedef kodlama (çok sınıflı), birikimli (sıralı) |

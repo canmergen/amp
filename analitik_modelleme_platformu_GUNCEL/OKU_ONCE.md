@@ -2851,6 +2851,82 @@ tanıtır; sayfalar sol bardan açılır.
 - Sohbet metinlerinde "sola aktarılır" yerine "kararlara aktarılır" (sol
   sütun kalmadı).
 
+**02.2 ölçek dönüşümleri çıktı (33 dönüşüm), kolon bazında ölçüm ve seçim, doğrusal uyum**
+- Bu bölüm, yukarıdaki 02.2 notlarında geçen 28, 36 ve 41 dönüşüm
+  sayılarının, ölçek dönüşümlerinin (MONOTON) ve "IV ile ölçülmez" notunun
+  yerine geçer.
+- NEDEN: logaritma, kırpma, sıra gibi ölçek dönüşümleri hem 02.2'de hem
+  03.1 Tek Değişken Analizi'nde vardı; 02.2'de IV ile ölçülemiyor, ekranı
+  kalabalıklaştırıyordu. Ölçüm dönüşüm başına tek sayıydı (en iyi kolon);
+  hangi kolonun üretileceği seçilemiyordu. Kare alma gibi sıralamayı
+  değiştirmeyen dönüşümlerin doğrusal modele katkısı hiç ölçülmüyordu.
+- ÖLÇEK DÖNÜŞÜMLERİ ÇIKTI (`geleneksel.OLCEK_KODLARI`: log, islog, karekok,
+  yeo, winsor, rank, zskor, robust). 02.2 yalnız yeni bilgi taşıyan
+  değişkenleri üretir; her değişkenin modele hangi hâliyle gireceğine 03.1
+  karar verir (`OLCEK_NOTU`, kartın üstünde ve i balonunda yazar). KATALOG
+  33 dönüşüm: 1. aşama 10 (kare, işaret, sıfır bayrağı, eşik bayrağı,
+  ondalık dilim, iş kuralı aralıkları, frekans, tek sıcak, WoE, hedef
+  ortalaması), 2. aşama 13 (aile içi), 3. aşama 10 (segment, çift, satır).
+  Eski kayıtlardaki ölçek kodları karttan, öneriden ve karardan ayıklanır
+  (`geleneksel_karti`, `karar_dogrula`); eski üretimdeki kolonlar yeni
+  onayda kaldırılır (önceki üretim her onayda silinir).
+- KOLON BAZINDA ÖLÇÜM (`katki_olc`, `KATKI_SURUM = 3`; ilk açılışta ölçüm
+  baştan koşar): her dönüşümün ürettiği HER kolon ayrı ölçülür. Satır:
+  [kolon adı, IV, kaynağa göre artış, kaynakla ilişki, doğrusal uyum].
+  İlişki en iyi kolonda ve artışı eşiği geçen kolonlarda hesaplanır.
+  Dönüşüm özeti durumda kalır (en iyi kolon, `kolon_sayisi`, `degerli`:
+  yeni bilgi taşıyan kolon sayısı, `uyum`); kolon satırları durumu
+  şişirmesin diye çalışmanın klasöründe ayrı dosyadadır
+  (`geleneksel_kolonlar.json`; `akis_faz03.kolonlari_oku`,
+  `_kolonlari_yaz`, `_kolonlari_ayir`). Dosya kaybolursa plan açılışında o
+  birimler yeniden ölçülür. Ekran satırları `POST /geleneksel_kolonlar`
+  ile ister (`{oturum_id, istek: {birim: [kod]}}`; cevapta altıncı değer
+  yeni bilgi mi).
+- DOĞRUSAL UYUM (`uyum_artisi`; `UYUM_KODLARI`: kare, dilim, işaret, sıfır
+  bayrağı): [kaynak, yeni kolon] ile kurulan lojistik modelin C-value'su
+  eksi yalnız kaynakla kurulanın C-value'su. Yalnız eğitim satırları, iki
+  katlı çapraz ölçüm (model satırların bir yarısında kurulur, öbür
+  yarısında puanlanır); iki standart hatadan küçük artış tesadüften ayırt
+  edilemez, 0 yazılır. Artış en az 0,01 (`UYUM_ARTIS`) ise kolon doğrusal
+  modelde yeni bilgi sayılır; IV bunu göstermez (pozitif kolonda kare alma
+  sıralamayı değiştirmez). Örnek: riskin hem genç hem ileri yaşta arttığı
+  yaş kolonunda kare alma böyle önerilir; hedefle ilgisiz kolonda önerilmez.
+- YENİ BİLGİ KURALI (`kolon_degerli`): doğrusal uyum en az 0,01 YA DA IV
+  artışı en az 0,02 ve kaynakla ilişki 0,95 altında.
+- KOLON BAZINDA KARAR: karar `{"sec", "param", "haric"}`; `haric`
+  `{dönüşüm: [üretilmeyecek kolon adı]}`. Öneride seçili bir dönüşümün yeni
+  bilgi taşımayan kolonları dışarıda gelir (`haric_hesapla`, `haric_ekle`;
+  hiçbir kolonu yeni bilgi taşımıyorsa dönüşüm anlamdan seçilmiştir, hepsi
+  kalır). `uygula` dışarıdaki kolonu üretmez; `kolon_sayisi(b, sec, haric)`
+  ve ekrandaki sayılar buna göre. Kullanıcının kolon seçimi sapmada
+  (`sapma_hesapla`: `haric`) saklanır, öneri yenilenince korunur.
+- EKRAN (`gelenekselKartiEkle`): birim açılınca "Ölçüm ve kolon seçimi"
+  tablosu. Dönüşüm satırı (kalın) özetidir ve tıklanınca kolonları açılır
+  (seçili dönüşüm açık gelir): kolon adı, IV, Kaynağa Göre, Kaynakla
+  İlişki, Doğrusal Uyum, Değerlendirme ve Üret kutusu. Kutu yalnız seçili
+  dönüşümde etkindir; son kolon da çıkarılırsa dönüşüm kalkar. Toplu:
+  "Bütün kolonları üret", "Yalnız yeni bilgi taşıyanlar". Çipte ve satırda
+  "4 / 6 kolon" (üretilecek bölü üretilen). Seçili olmayan dönüşümlerin
+  kolon ölçümleri birim açılınca istenir.
+- ÜRETİM PLANI iki görünümlü (süzgeç çubuğunda Görünüm): "Kolon bazında"
+  (varsayılan, `planKolonCiz`) her satır bir kolon: Birim Tipi, Birim,
+  Dönüşüm, Kolon adı, IV, Kaynağa Göre, Doğrusal Uyum, Değerlendirme,
+  Durum (Üretilecek, Eklendi, Çıkarıldı, Dışarıda ve kimin kararı), İşlem
+  (Çıkar / Ekle). Yeni bilgi taşıyanlar ve artışı yüksek olanlar üstte.
+  "Dönüşüm bazında" eski tablodur; Kolon sütunu "4 / 6" yazar. Arama
+  üretilecek kolon adında da arar. Ölçülmeyen dönüşüm (eşik bayrağı, iş
+  kuralı aralıkları) kolon görünümünde tek satırdır.
+- Bir dönüşüm ölçüm satırları gelmeden eklenirse (sohbet önerisi gibi)
+  satırlar gelince yeni bilgi taşımayan kolonları dışarıda bırakılır
+  (`haricBekleyen`); kullanıcı tek tek değiştirebilir.
+- Tablolarda sütun genişlikleri colgroup'tan gelir (`.gl-ozet`,
+  `.gl-katki-tablo`, `.gl-katalog` başlıklarında genel `.dg-tablo th`
+  genişlikleri geçersiz); Üretim Planı'nın ilk sütunu artık gereğinden
+  geniş değil.
+- Dil modeli yönergeleri (`SISTEM_GELENEKSEL`, `SISTEM_GELENEKSEL_SOHBET`):
+  ölçek dönüşümleri bu adımda yoktur, 03.1'de kararlaştırılır; doğrusal
+  uyum ölçümü ve kolon bazında dışarıda bırakma anlatılır.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

@@ -5966,3 +5966,22 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .dg-tablo.gl-plan td .dg-toplu-btn { white-space: nowrap; }
 .gl-daha { align-self: center; }
 .pf-karo.gl-karo-tik { cursor: pointer; }
+
+/* 02.2: kolon bazinda olcum ve secim (birim icindeki tablo ve Uretim Plani kolon gorunumu).
+   Sutun genislikleri colgroup'tan gelir; genel tablo kuralindaki baslik genislikleri gecersiz. */
+.dg-tablo.gl-ozet th, .dg-tablo.gl-katki-tablo th, .dg-tablo.gl-katalog th { width: auto; }
+.gl-suz-satir[hidden] { display: none; }
+.dg-tablo.gl-kolon-tablo { min-width: 820px; }
+.gl-kod-satir { cursor: pointer; }
+.gl-kod-satir td { background: var(--yuzey-alt); font-weight: var(--fw-kalin); }
+.gl-kod-satir:hover td { background: var(--kenar-acik); }
+.gl-kolon-satir td { font-size: var(--fs-kucuk); }
+.dg-tablo td.gl-kolon-ad { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-kucuk); overflow-wrap: anywhere; word-break: break-all; }
+.gl-kolon-disarida td { color: var(--metin-soluk); }
+.gl-kolon-disarida td.gl-kolon-ad { text-decoration: line-through; }
+.gl-kolon-disarida td .gl-k-yeni, .gl-kolon-disarida td.gl-k-yeni { color: var(--metin-soluk); font-weight: var(--fw-normal); }
+.gl-kolon-arac .dg-toplu-btn { margin: 0 3px; }
+.gl-kolon-kutu { width: 16px; height: 16px; accent-color: var(--kirmizi); cursor: pointer; }
+.gl-kolon-kutu:disabled { cursor: default; }
+.dg-tablo.gl-plan-kolon { min-width: 1080px; }

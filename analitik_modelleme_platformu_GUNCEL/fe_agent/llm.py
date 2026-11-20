@@ -4510,9 +4510,11 @@ kodları var.
 
 KARAR AŞAMALARI (bu sırayla düşün):
 1. aşama, kolonun kendi dönüşümü: modele bilgi katar mı? Tek kolon kodları
-   (log, işaretli log, karekök, Yeo-Johnson, kırpma, sıra, ölçekleme,
-   işaret, sıfır bayrağı, eşik, dilim, kova) ve kategorik kodlar (frekans,
-   one-hot, WoE, hedef ortalaması).
+   (kare, işaret, sıfır bayrağı, eşik, dilim, kova) ve kategorik kodlar
+   (frekans, one-hot, WoE, hedef ortalaması). Ölçek dönüşümleri (logaritma,
+   karekök, kırpma, sıra, standartlaştırma) bu adımda YOKTUR; her değişkenin
+   modele hangi hâliyle gireceğine sonraki adımda (03.1 Tek Değişken
+   Analizi) karar verilir.
 2. aşama, aile içi (yalnız pencere ailesinde): pencereler arasından
    çıkarılabilecek bilginin en çoğu: oran, fark (sıradaki pencere çiftleri),
    oran ve fark bütün pencere çiftlerinde (oran_tum, fark_tum), dönem
@@ -4526,8 +4528,6 @@ KARAR AŞAMALARI (bu sırayla düşün):
    medyanına oran, satırdaki eksik sayısı.
 
 KURALLAR:
-- Aynı amaca hizmet eden dönüşümlerden birini seç (log, işaretli log,
-  karekök, Yeo-Johnson çarpıklık içindir).
 - esik yalnız açıklamadan açık bir iş eşiği çıkıyorsa:
   "param": {"esik": {"esik": 30, "yon": ">="}}.
 - kova yalnız açıklamadan iş kuralı aralıkları çıkıyorsa:
@@ -4538,21 +4538,22 @@ KURALLAR:
 - Bilgi katmayacak dönüşümü seçme; hiçbiri katmıyorsa boş liste ver.
 - Kod önerisi (kural) verilir; daha iyisini biliyorsan değiştir.
 - MODEL: üretilen değişkenler hem ağaç hem doğrusal modelde kullanılacak;
-  model türüne göre ayırma yok. Ölçek dönüşümlerini (log, kırpma, sıra,
-  standartlaştırma) yalnız çarpıklık ya da uç değer varsa seç: doğrusal
-  model için gereklidir, ağaç için zararsızdır.
+  model türüne göre ayırma yok.
 - ÖLÇÜME GÖRE yeni bilgi getiren (artış 0,02 ve üstü, ilişki 0,95'in
-  altında) dönüşümlerin HEPSİNİ seç; yalnız aynı bilgiyi tekrarlayanlardan
-  birini bırak. Seçmezsen kod ölçüme göre ekler.
+  altında; ya da doğrusal uyum 0,01 ve üstü) dönüşümlerin HEPSİNİ seç;
+  yalnız aynı bilgiyi tekrarlayanlardan birini bırak. Seçmezsen kod ölçüme
+  göre ekler. Seçilen dönüşümün kolonlarından değer taşımayanları kod
+  üretimin dışında bırakır; kolon seçmen gerekmez.
 
 ÖLÇÜM: her birimde kodun ÖLÇTÜĞÜ katkı verilir ("katkı" alanı): kaynak
 kolonların en iyi IV'si ve her dönüşümün ürettiği kolonların en iyi IV'si,
 kaynağa göre artış ve kaynakla sıra ilişkisi (Spearman, 0 ile 1). IV 10 eşit
 frekanslı aralıkla, yalnız eğitim satırlarında, örneklemesiz ölçülür.
-Sıralamayı koruyan dönüşümün (log, işaretli log, karekök, Yeo-Johnson,
-kırpma, sıra, z-skor, robust) IV'si kaynakla aynıdır: ağaçta gereksizdir;
-doğrusal modelde katkısı ölçekle (çarpıklık, uç değer) ilgilidir ve IV ile
-ölçülemez, onları çarpıklık ve uç değer sayılarına göre seç. Kararını bu sayılara
+IV sıra tabanlıdır: kaynağın sırasını koruyan tek kolon dönüşümünde
+(pozitif kolonda kare, dilim, işaret, sıfır bayrağı) IV artmaz. Bunlar için
+ayrıca "doğrusal uyum" verilir: dönüşüm kaynak kolonla birlikte lojistik
+modele girince C-value ne kadar artıyor (0,01 ve üstü belirgin; U şeklindeki
+ilişkide kare terimi böyle görünür). Kararını bu sayılara
 dayandır: artış belirgin (0,02 ve üstü) ve ilişki 0,95'in altındaysa yeni
 bilgi var; ilişki 0,95 ve üstüyse kaynakla aynı bilgi; aynı bilgiyi taşıyan
 iki dönüşümden IV'si yüksek olanı seç.
@@ -4740,11 +4741,11 @@ Ne yapabilirsin:
 - Soruları cevapla: bir dönüşümün ne olduğu ve ne işe yaradığı (dönüşüm
   açıklamaları verilir), bir birime neden o dönüşümün önerildiği, model
   türüne göre neyin gerekli olduğu. Açık, kısa, örnekli Türkçe yaz.
-- Kullanıcı bir dönüşümü GENEL olarak istemiyor ya da istiyorsa ("uç
-  kırpma istemiyorum", "bütün ailelere eğim ekle", "kategoriklerde one-hot
+- Kullanıcı bir dönüşümü GENEL olarak istemiyor ya da istiyorsa ("fark
+  istemiyorum", "bütün ailelere eğim ekle", "kategoriklerde one-hot
   olmasın") TEK bir "toplu" kaydı yaz; birimleri tek tek SAYMA, kod
   kapsama uyan bütün birimlere uygular:
-  {"islem": "cikar" ya da "ekle", "kodlar": ["winsor"],
+  {"islem": "cikar" ya da "ekle", "kodlar": ["egim"],
    "kapsam": {"tur": ["kolon","aile","cift","grup","satir"] (boşsa hepsi),
               "asama": [1,2,3] (boşsa hepsi), "ad": "adda geçen metin" (boşsa hepsi),
               "tip": "sayisal" ya da "kategorik" (boşsa hepsi)},
@@ -4762,8 +4763,13 @@ Ne yapabilirsin:
   (aile:...) ya da kolon (kolon:...) id'leridir. Kod doğrular ve birimi kurar.
 - esik ve kova: "param": {"kova": {"sinirlar": [1, 30, 60]}};
   grup_oran: "param": {"grup_oran": {"segment": "KOLON"}}.
+- Logaritma, karekök, uç kırpma, sıraya çevirme ve standartlaştırma gibi
+  ölçek dönüşümleri bu adımda YOKTUR (yeni bilgi taşımazlar). Kullanıcı
+  isterse ekleme önerme; her değişkenin modele hangi hâliyle gireceğine
+  sonraki adımda (03.1 Tek Değişken Analizi) karar verildiğini söyle.
 - Ayrıntılı birimlerde kodun ölçtüğü katkı ("ölçüm": IV, kaynağa göre
-  artış, kaynakla sıra ilişkisi; eğitim satırlarında) verilir. "Neden" ve
+  artış, kaynakla sıra ilişkisi, varsa doğrusal uyum; eğitim satırlarında)
+  verilir. "Neden" ve
   "ne katıyor" sorularını bu sayılarla cevapla; sayısız genel cümle yazma.
 - Kullanıcı ölçüme göre değer katanları eklemek ya da katmayanları çıkarmak
   isterse ("değer katanları ekle", "gereksizleri çıkar") birimleri sen

@@ -12,10 +12,15 @@ aciklamasi. Bir donusumun birim icin MUMKUN olup olmadigini kod belirler
 (tip, negatif deger, pencere sayisi, hedef turu ...); dil modeli yalniz
 mumkun olanlardan secer, sohbet de yalniz mumkun olanlari ekleyebilir.
 
-SIZINTI: ogrenilen her sey (winsor sinirlari, siralama izgarasi, ortalama
-ve standart sapma, dilim sinirlari, Yeo-Johnson parametresi, frekans,
-WoE ve hedef ortalamasi) yalniz TRAIN (MS) satirlarindan ogrenilir; WoE ve
-hedef ortalamasi train satirlarinda kat disi (5 kat) hesaplanir.
+SIZINTI: ogrenilen her sey (dilim sinirlari, segment ortalamasi, standart
+sapmasi, medyani ve yuzdelik izgarasi, frekans, WoE ve hedef ortalamasi)
+yalniz TRAIN (MS) satirlarindan ogrenilir; WoE ve hedef ortalamasi train
+satirlarinda kat disi (5 kat) hesaplanir.
+
+OLCUM VE SECIM KOLON BAZINDADIR: her donusumun urettigi HER kolonun IV'si,
+kaynaga gore artisi ve (tek kolonun fonksiyonu olan donusumlerde) dogrusal
+modeldeki uyum artisi olculur. Karar {"sec", "param", "haric"}: "haric"
+secili donusumun uretilmeyecek kolonlaridir ({kod: [kolon adi]}).
 """
 
 import math
@@ -32,16 +37,10 @@ import pandas as pd
 # grup: "tekli" (sayisal kolon basina), "aile" (pencere ailesi), "cift"
 # (iki kolon), "kategorik" (metin kolon basina), "satir" (butun satir).
 KATALOG = [
-    # Tekli sayisal (mevcut: log, rank, winsor)
-    ("log", "Log (log1p)", "tekli", "Sağa çarpık ve negatif olmayan değerleri sıkıştırır."),
-    ("islog", "İşaretli log", "tekli", "Negatif değer de olan kolonda işaret korunarak log alınır."),
-    ("karekok", "Karekök", "tekli", "Logdan yumuşak çarpıklık düzeltmesi; sıfırı korur."),
+    # Tekli sayisal. Olcek donusumleri (logaritma, karekok, Yeo-Johnson, kirpma,
+    # sira, standartlastirma) burada YOK: degiskenin modele hangi haliyle
+    # girecegine 03.1 Tek Degisken Analizi karar verir (bkz. OLCEK_KODLARI).
     ("kare", "Kare terimi", "tekli", "Değerin karesi; eğilim U şeklindeyse doğrusal modelde eğriliği yakalar."),
-    ("yeo", "Yeo-Johnson", "tekli", "Dağılımı normale yaklaştırır; parametre eğitim satırlarından."),
-    ("winsor", "Uç kırpma (%1, %99)", "tekli", "Uçlar eğitim satırlarının %1 ve %99'luk değerlerine çekilir."),
-    ("rank", "Sıra (yüzdelik)", "tekli", "Değerin eğitim dağılımındaki yüzdeliği (0 ile 1 arası)."),
-    ("zskor", "Z-skor", "tekli", "(değer eksi ortalama) bölü standart sapma; eğitim satırlarından."),
-    ("robust", "Robust ölçek", "tekli", "(değer eksi medyan) bölü çeyrekler arası açıklık; eğitim satırlarından."),
     ("isaret", "İşaret (eksi 1, 0, 1)", "tekli", "Değerin negatif, sıfır ya da pozitif olması."),
     ("sifir", "Sıfır bayrağı", "tekli", "Değer sıfırsa 1, değilse 0 (hiç işlem yok ile az işlem ayrımı)."),
     ("esik", "Eşik bayrağı", "tekli", "Değer verilen eşiğin üstündeyse (ya da altındaysa) 1."),
@@ -103,27 +102,9 @@ KATALOG_HARITA = {k: {"kod": k, "ad": a, "grup": g, "aciklama": c} for k, a, g, 
 
 # Kartin "Dönüşümler ne yapar?" tablosu: ne yapar, örnek, ne zaman işe yarar.
 ACIKLAMA_UZUN = {
-    "log": ("log(1 + değer). Büyük değerleri sıkıştırır, küçük değerleri ayırır.",
-            "İşlem tutarı 10, 100, 10.000 iken log1p 2,4, 4,6, 9,2 olur.",
-            "Doğrusal modelde sağa çarpık tutar ve adetlerde."),
-    "islog": ("işaret · log(1 + |değer|). Log gibi, ama negatif değerde işaret korunur.",
-              "Net akış −5.000 iken −8,5; +5.000 iken +8,5.", "Negatif değeri olan çarpık kolonda."),
-    "karekok": ("Değerin karekökü. Logdan daha hafif sıkıştırır.", "100 iken 10, 10.000 iken 100.",
-                "Hafif çarpık ve negatif olmayan kolonda."),
     "kare": ("Değerin karesi (polinom terimi); ham değerle birlikte kullanılır.",
              "Yaş 20 iken 400, 60 iken 3.600: risk hem gençte hem yaşlıda yüksekse.",
              "Doğrusal modelde U şekilli ilişki (ağaç kendisi bulur)."),
-    "yeo": ("Dağılımı normale yaklaştıran parametreli dönüşüm; parametre eğitim satırlarından.",
-            "Çok çarpık bakiye dağılımı simetriğe yakın hâle gelir.", "Doğrusal modelde, log yetmediğinde."),
-    "winsor": ("Eğitim satırlarının %1'lik değerinin altı ve %99'luk değerinin üstü bu sınırlara çekilir.",
-               "%99'luk değer 50.000 iken 5.000.000 olan değer 50.000 olur.",
-               "Doğrusal modelde tek uç değerin katsayıyı bozmasını önler."),
-    "rank": ("Değerin eğitim dağılımındaki yüzdeliği (0 ile 1 arası).",
-             "Medyandaki müşteri 0,5, en üst %1'deki 0,99 alır.", "Ölçek farkını ve uç değerleri ortadan kaldırır."),
-    "zskor": ("(değer eksi ortalama) bölü standart sapma; eğitim satırlarından.",
-              "Ortalama 1.000, std 200 iken 1.400, 2 olur.", "Doğrusal modelde ölçekleri eşitler."),
-    "robust": ("(değer eksi medyan) bölü çeyrekler arası açıklık; uç değerden etkilenmez.",
-               "Medyan 1.000, açıklık 400 iken 1.800, 2 olur.", "Uç değeri çok olan kolonda ölçekleme."),
     "isaret": ("Değer negatifse eksi 1, sıfırsa 0, pozitifse 1.", "Net akış eksiyse eksi 1.",
                "Yönün kendisi bilgi taşıyorsa."),
     "sifir": ("Değer sıfırsa 1, değilse 0.", "Hiç işlem yoksa 1.",
@@ -208,8 +189,7 @@ ACIKLAMA_UZUN = {
 # KARAR ASAMALARI: once kolonun kendi donusumu, sonra aile ici (pencere ve
 # icerik), en son aileler arasi.
 ASAMA = {}
-for _k in ("log", "islog", "karekok", "kare", "yeo", "winsor", "rank", "zskor", "robust", "isaret",
-           "sifir", "esik", "dilim", "kova", "frekans", "onehot", "woe", "hedef_ort"):
+for _k in ("kare", "isaret", "sifir", "esik", "dilim", "kova", "frekans", "onehot", "woe", "hedef_ort"):
     ASAMA[_k] = 1
 for _k in ("oran", "fark", "norm", "buyume", "egim", "dk", "ardisik", "en_yogun", "oran_tum", "fark_tum",
            "donem", "donem_pay", "donem_oran"):
@@ -231,35 +211,10 @@ _OLCEK = ("Doğrusal modelde ölçeği düzeltir; ağaç modeli yalnız sıralam
 _IKI = "İki model türünde de yeni bilgi verir."
 _ETK = "Doğrusal modelde gerekir; ağaç modeli bunu kendisi bulur, ağaçta zararsızdır."
 SADE = {
-    "log": ("Logaritma alma", "Değeri log(1 + değer) yapar: büyük sayıları sıkıştırır, küçük sayılar "
-            "arasındaki farkı korur.", "Son 30 günde giden işlem tutarı (TXN_OUT_AMT_L30D) 100, 10.000 ve "
-            "1.000.000 iken yeni kolon 4,6, 9,2 ve 13,8 olur; birkaç çok büyük müşteri ortalamayı bozmaz.",
-            "Tutar ve adet gibi sağa çarpık (az sayıda çok büyük değerli) kolonlarda.", _OLCEK),
-    "islog": ("İşaretli logaritma", "Eksi değer alabilen kolonlarda logaritma: işareti korur, büyüklüğü "
-              "sıkıştırır.", "Net nakit akışı eksi 5.000 iken eksi 8,5; artı 5.000 iken artı 8,5 olur.",
-              "Hem eksi hem artı değer alan çarpık kolonlarda (net akış, bakiye).", _OLCEK),
-    "karekok": ("Karekök alma", "Değerin karekökünü alır; logaritmadan daha hafif sıkıştırır.",
-                "Son 30 gündeki işlem adedi 100 iken 10, 10.000 iken 100 olur.",
-                "Hafif çarpık, eksi değeri olmayan kolonlarda.", _OLCEK),
     "kare": ("Kare alma", "Değerin karesini ekler; risk hem çok düşük hem çok yüksek değerde artıyorsa "
              "(U şekli) bunu yakalar.", "Müşteri yaşı 20 iken 400, 60 iken 3.600: hem gençte hem yaşlıda "
              "yüksek riski doğrusal model görebilir.", "U şeklinde ilişki beklenen kolonlarda (yaş, kullanım "
              "oranı).", _ETK),
-    "yeo": ("Çarpıklık düzeltme (Yeo-Johnson)", "Dağılımı çan eğrisine yaklaştıran, gücü eğitim verisinden "
-            "öğrenilen dönüşüm.", "Çok çarpık bakiye kolonu dönüşümden sonra daha simetrik dağılır.",
-            "Logaritmanın yetmediği ya da eksi değer olan çok çarpık kolonlarda.", _OLCEK),
-    "winsor": ("Uç değerleri kırpma", "Eğitim verisindeki %1'lik değerin altını ve %99'luk değerin üstünü "
-               "bu sınırlara çeker.", "Son 30 gün giden tutarda %99'luk değer 50.000 ise 5.000.000 olan "
-               "müşteri 50.000 sayılır.", "Birkaç aşırı değerin katsayıyı bozduğu kolonlarda.", _OLCEK),
-    "rank": ("Sıraya çevirme (yüzdelik)", "Değeri eğitim verisindeki sırasına çevirir: 0 en küçük, 1 en "
-             "büyük.", "Son 30 gün işlem adedi müşterilerin %80'inden fazla olan müşteri 0,8 alır.",
-             "Ölçek ya da uç değer önemsizken yalnız sıralama önemliyse.", _OLCEK),
-    "zskor": ("Standartlaştırma (z-skor)", "(Değer eksi ortalama) bölü standart sapma: değerin ortalamadan "
-              "kaç standart sapma uzak olduğu.", "Ortalama bakiye 1.000, standart sapma 500 ise 2.000 bakiyeli "
-              "müşteri 2 olur.", "Farklı ölçekteki kolonların katsayıları karşılaştırılacaksa.", _OLCEK),
-    "robust": ("Medyana göre standartlaştırma", "(Değer eksi medyan) bölü çeyrekler arası açıklık; uç "
-               "değerlerden etkilenmez.", "Medyan bakiye 800, çeyrekler arası açıklık 400 ise 1.600 bakiye "
-               "2 olur.", "Uç değeri çok olan kolonlarda z-skor yerine.", _OLCEK),
     "isaret": ("Artı, eksi ya da sıfır", "Değer eksi ise eksi 1, sıfırsa 0, artı ise 1 olan kolon ekler.",
                "Net akış eksi 300 ise eksi 1: müşteri bu dönemde para kaybetmiş.",
                "Eksi değerin kendisinin anlamlı olduğu kolonlarda (net akış, bakiye).", _IKI),
@@ -371,6 +326,14 @@ SADE = {
 }
 KATALOG = [(k, SADE[k][0], g, SADE[k][1]) for k, _a, g, _c in KATALOG]
 KATALOG_HARITA = {k: {"kod": k, "ad": a, "grup": g, "aciklama": c} for k, a, g, c in KATALOG}
+# 02.2'DEN CIKAN OLCEK DONUSUMLERI: yeni bilgi uretmezler, degerin olcegini
+# duzeltirler. Her degiskenin (02.2'nin urettikleri dahil) modele hangi
+# haliyle girecegine 03.1 Tek Degisken Analizi karar verir (eksik, uc deger,
+# donusum, araliklar). Eski kayitlardaki bu kodlar kararlardan sessizce duser.
+OLCEK_KODLARI = ("log", "islog", "karekok", "yeo", "winsor", "rank", "zskor", "robust")
+OLCEK_NOTU = ("Logaritma, karekök, uç kırpma, sıraya çevirme ve standartlaştırma gibi ölçek dönüşümleri bu "
+              "adımda üretilmez: yeni bilgi taşımazlar. Her değişkenin modele hangi hâliyle gireceğine "
+              "03.1 Tek Değişken Analizi'nde karar verilir.")
 ACIKLAMA_UZUN = {k: (v[1], v[2], v[3]) for k, v in SADE.items()}
 MODEL_NOTU = {k: v[4] for k, v in SADE.items()}
 
@@ -378,8 +341,7 @@ MODEL_NOTU = {k: v[4] for k, v in SADE.items()}
 # modeller tek kolonun monoton dönüşümünden etkilenmez (aynı bölünmeyi ham
 # kolonla bulur); eşik ve işaret bayraklarını da kendisi bulur. Bu
 # dönüşümler ağaç modelinde gereksizdir; doğrusal modelde işe yarar.
-AGAC_GEREKSIZ = ("log", "islog", "karekok", "kare", "yeo", "winsor", "rank", "zskor", "robust",
-                 "dilim", "isaret", "sifir", "esik", "kova", "carpim")
+AGAC_GEREKSIZ = ("kare", "dilim", "isaret", "sifir", "esik", "kova", "carpim")
 AGAC_NEDENI = ("Ağaç modeli (platformda HistGradientBoosting) tek kolonun sıralamayı koruyan "
                "dönüşümünden etkilenmez; aynı bölünmeyi ham kolonla bulur.")
 MODEL_TURLERI = {"agac": "Ağaç (HistGradientBoosting)", "dogrusal": "Doğrusal (lojistik, skorkart)"}
@@ -393,8 +355,6 @@ def model_mumkun(b, model_turu):
 GRUP_ADI = {"tekli": "Tek değişkenli", "aile": "Pencere ailesi", "cift": "Kolon çifti",
             "kategorik": "Kategorik", "satir": "Satır düzeyi"}
 
-WINSOR_ALT, WINSOR_UST = 0.01, 0.99
-RANK_IZGARA = 100
 DILIM_SAYI = 10
 ONEHOT_EN_COK = 10           # one-hot en cok bu kadar degerli kolonda
 KATEGORIK_EN_COK = 200       # daha cok degerli metin kolon uretime girmez
@@ -908,16 +868,8 @@ def uygunluk(b, hedef_ikili, segmentler=()):
     neg = bool(oz.get("negatif"))
     tekil = oz.get("tekil") or 0
     sifir = oz.get("sifir_pay") or 0
-    ekle("log", not neg, "Negatif değer var; işaretli log kullanılır.")
-    ekle("islog", neg, "Negatif değer yok; log yeterli.")
-    ekle("karekok", not neg, "Negatif değer var.")
     ekle("kare", tekil >= 3, "Farklı değer sayısı az (%s); kare terimi yeni bilgi taşımaz." % tekil)
     az = "Farklı değer sayısı az (%s); dağılım dönüşümü anlamsız." % tekil
-    ekle("yeo", tekil >= TEKIL_EN_AZ, az)
-    ekle("winsor", tekil >= TEKIL_EN_AZ, az)
-    ekle("rank", tekil >= TEKIL_EN_AZ, az)
-    ekle("zskor", True)
-    ekle("robust", tekil >= TEKIL_EN_AZ, az)
     ekle("isaret", neg, "Negatif değer yok; işaret sıfır bayrağıyla aynı bilgiyi verir.")
     ekle("sifir", 0.01 <= sifir <= 0.99, "Sıfırın payı %%%s; bayrak bilgi taşımaz."
          % ("%.1f" % (100 * sifir)).replace(".", ","))
@@ -964,14 +916,13 @@ def kural_onerisi(b, model_turu="agac", katki=None):
         # Birbiriyle ayni sirada olanlardan (benzer) IV'si yuksek olan kalir.
         sec = []
         for c in aday:
-            if not any(x in (kod[c].get("benzer") or {}) for x in sec):
+            uy = uyum_degerli(kod[c])    # dogrusal uyumla degerli olan, sirasi ayni diye elenmez
+            if not any(x in (kod[c].get("benzer") or {}) for x in sec if not uy or x in UYUM_KODLARI):
                 sec.append(c)
-        sec = [c for c in katki_kodlari(b, model_turu) if c in sec and c not in MONOTON]
+        sec = [c for c in katki_kodlari(b, model_turu) if c in sec]
         for c, ust, _n in TEKRAR_KESIN:
             if c in sec and ust in sec:
                 sec.remove(c)
-        if model_turu != "agac":
-            sec += [c for c in kural_onerisi(b, model_turu)["sec"] if c in MONOTON and c not in sec]
         param = {c: {"segment": kod[c]["segment"]} for c in sec if c in ("segment", "grup_oran")
                  and kod[c].get("segment")}
         g1, g2 = katki_gerekcesi(b, katki, sec, model_turu)
@@ -1008,7 +959,6 @@ def kural_onerisi(b, model_turu="agac", katki=None):
                 "gerekce": "%s farklı değer: frekans%s%s." % (
                     oz.get("tekil"), ", one-hot" if "onehot" in sec else "",
                     ", WoE (hedef iki sınıflı)" if "woe" in sec else "")}
-    carp = oz.get("carpiklik") or 0
     if b["tur"] == "aile":
         # Normalize oran, oranin sabit katidir (ayni bilgi); yalniz oran.
         sec += ["oran"]
@@ -1017,22 +967,10 @@ def kural_onerisi(b, model_turu="agac", katki=None):
         if "egim" in mm:
             sec.append("egim")
             neden.append("eğim")
-    if carp > 1:
-        if "log" in mm:
-            sec.append("log")
-        elif "islog" in mm:
-            sec.append("islog")
-        neden.append("sağa çarpık (çarpıklık %s)" % ("%.1f" % carp).replace(".", ","))
-    uk = oz.get("uc_kat")
-    if uk and uk >= 10 and "winsor" in mm:
-        sec.append("winsor")
-        neden.append("en büyük değer %%99'luk değerin %s katı" % int(uk))
-    if not sec and "rank" in mm:
-        sec.append("rank")
-        neden.append("dağılımdan bağımsız sıra")
     sec = [s for s in sec if s in mm]
-    if not sec and model_turu == "agac" and b["tur"] == "kolon" and b.get("tip") != "kategorik":
-        neden = ["ağaç modeli ham kolonu doğrudan kullanır; tek kolon dönüşümü bilgi katmaz"]
+    if not sec and b["tur"] == "kolon" and b.get("tip") != "kategorik":
+        neden = ["tek kolonda yeni bilgi üreten dönüşüm ölçümle seçilir; ölçek dönüşümleri 03.1 Tek "
+                 "Değişken Analizi'nde kararlaştırılır"]
     return {"sec": sec, "param": {}, "secilmeyen": "",
             "gerekce": ("; ".join(neden) + ".").capitalize() if neden else ""}
 
@@ -1046,41 +984,6 @@ def _sayi(s):
 
 def _bol(a, b):
     return a / b.replace(0, np.nan)
-
-
-def _yj(x, lam):
-    x = np.asarray(x, dtype=float)
-    y = np.full_like(x, np.nan)
-    p = x >= 0
-    if abs(lam) > 1e-8:
-        y[p] = ((x[p] + 1) ** lam - 1) / lam
-    else:
-        y[p] = np.log1p(x[p])
-    n = ~p & ~np.isnan(x)
-    if abs(lam - 2) > 1e-8:
-        y[n] = -(((-x[n] + 1) ** (2 - lam)) - 1) / (2 - lam)
-    else:
-        y[n] = -np.log1p(-x[n])
-    return y
-
-
-def _yj_lambda(x):
-    """Yeo-Johnson parametresi: en buyuk olabilirlik, -2 ile 4 arasi izgara."""
-    x = np.asarray(x, dtype=float)
-    x = x[np.isfinite(x)]
-    if len(x) < 3:
-        return 1.0
-    en, en_ll = 1.0, -np.inf
-    log_terim = np.sign(x) * np.log1p(np.abs(x))
-    for lam in np.linspace(-2, 4, 61):
-        y = _yj(x, lam)
-        v = np.var(y)
-        if not np.isfinite(v) or v <= 0:
-            continue
-        ll = -len(x) / 2.0 * np.log(v) + (lam - 1) * log_terim.sum()
-        if ll > en_ll:
-            en, en_ll = float(lam), ll
-    return round(en, 3)
 
 
 def _kat_no(n):
@@ -1126,7 +1029,8 @@ def _kodla(ad, ifade):
 
 def uygula(df, birimler, karar, tr, hedef=None):
     """Kararlari uygular. karar: {birim id: {"sec": [kod], "param": {kod:
-    {...}}}}. tr: train maskesi (bool Series). Doner: (yeni {ad: seri},
+    {...}}, "haric": {kod: [uretilmeyecek kolon adi]}}}. tr: train maskesi
+    (bool Series). Doner: (yeni {ad: seri},
     kayitlar [{"ad", "kod", "birim", "kaynaklar", "kod_satiri", "aciklama",
     "ogrenilen"}], hatalar [str])."""
     yeni, kayit, hatalar = {}, [], []
@@ -1134,10 +1038,11 @@ def uygula(df, birimler, karar, tr, hedef=None):
         else pd.Series(True, index=df.index)
     y = pd.to_numeric(df[hedef], errors="coerce") if hedef and hedef in df.columns else None
     harita = {b["id"]: b for b in birimler}
+    atla = set()                         # o an uygulanan (birim, kod) icin uretilmeyecek kolonlar
 
     def koy(ad, seri, kod, b, kaynaklar, satir, aciklama, ogrenilen=None):
         ad = guvenli_ad(ad) if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", ad) else ad
-        if ad in df.columns or ad in yeni:
+        if ad in df.columns or ad in yeni or ad in atla:
             return
         seri = pd.Series(seri, index=df.index).astype(float)
         seri = seri.where(np.isfinite(seri))
@@ -1150,9 +1055,12 @@ def uygula(df, birimler, karar, tr, hedef=None):
         if not b:
             continue
         param = k.get("param") or {}
+        haric = k.get("haric") or {}
         for kod in k.get("sec") or []:
-            if kod not in (b.get("mumkun") or []):
+            if kod not in (b.get("mumkun") or []) or kod not in KATALOG_HARITA:
                 continue
+            atla.clear()
+            atla.update(haric.get(kod) or [])
             try:
                 _birim_uygula(df, b, kod, param.get(kod) or {}, tr, y, koy)
             except Exception as e:      # tek donusum hatasi uretimi durdurmasin
@@ -1407,61 +1315,9 @@ def _tekli_uygula(df, b, k, kod, param, tr, y, koy):
     x = _sayi(df[k])
     xt = x[tr].dropna()
     s_ = '_s(df, "%s")' % k
-    if kod == "log":
-        koy(k + "__LOG", np.log1p(x.clip(lower=0)), kod, b, [k],
-            _kodla(k + "__LOG", "np.log1p(%s.clip(lower=0))" % s_), "log(1 + %s)." % k)
-    elif kod == "islog":
-        koy(k + "__SLOG", np.sign(x) * np.log1p(x.abs()), kod, b, [k],
-            _kodla(k + "__SLOG", "np.sign(%s) * np.log1p(%s.abs())" % (s_, s_)),
-            "İşaretli log: işaret(%s) · log(1 + |%s|)." % (k, k))
-    elif kod == "karekok":
-        koy(k + "__SQRT", np.sqrt(x.clip(lower=0)), kod, b, [k],
-            _kodla(k + "__SQRT", "np.sqrt(%s.clip(lower=0))" % s_), "%s kolonunun karekökü." % k)
-    elif kod == "kare":
+    if kod == "kare":
         koy(k + "__KARE", x ** 2, kod, b, [k], _kodla(k + "__KARE", "%s ** 2" % s_),
             "%s kolonunun karesi." % k)
-    elif kod == "yeo" and len(xt) > 2:
-        lam = _yj_lambda(xt.to_numpy())
-        poz = ("np.log1p(%s.clip(lower=0))" % s_) if abs(lam) < 1e-8 else \
-            ("((%s.clip(lower=0) + 1) ** %s - 1) / %s" % (s_, _f(lam), _f(lam)))
-        neg = ("-np.log1p(-%s.clip(upper=0))" % s_) if abs(lam - 2) < 1e-8 else \
-            ("-((-%s.clip(upper=0) + 1) ** %s - 1) / %s" % (s_, _f(2 - lam), _f(2 - lam)))
-        koy(k + "__YJ", _yj(x.to_numpy(dtype=float), lam), kod, b, [k],
-            _kodla(k + "__YJ", "pd.Series(np.where(%s >= 0, %s, %s), index=df.index).where(%s.notna())"
-                   % (s_, poz, neg, s_)),
-            "%s kolonunun Yeo-Johnson dönüşümü (λ = %s, eğitim satırlarından)." % (
-                k, str(lam).replace(".", ",")), {"lambda": lam})
-    elif kod == "winsor" and len(xt) > 1:
-        alt, ust = float(xt.quantile(WINSOR_ALT)), float(xt.quantile(WINSOR_UST))
-        koy(k + "__WNS", x.clip(alt, ust), kod, b, [k],
-            _kodla(k + "__WNS", "%s.clip(%s, %s)" % (s_, _f(alt), _f(ust))),
-            "%s, eğitim satırlarının %%1 (%s) ve %%99 (%s) değerlerine kırpılmış." % (
-                k, _sayi_yaz(alt), _sayi_yaz(ust)), {"alt": alt, "ust": ust})
-    elif kod == "rank" and len(xt) > 1:
-        izgara = [round(float(v), 6) for v in np.nanpercentile(
-            xt.to_numpy(dtype=float), np.linspace(0, 100, RANK_IZGARA + 1))]
-        ref = np.asarray(izgara)
-        p = np.searchsorted(ref, x.to_numpy(dtype=float), side="right") / float(len(ref))
-        koy(k + "__RANK", pd.Series(p, index=df.index).where(x.notna()), kod, b, [k],
-            _kodla(k + "__RANK", 'pd.Series(np.searchsorted(np.array(%r), %s.to_numpy(dtype=float), '
-                   'side="right") / %s, index=df.index).where(%s.notna())'
-                   % (izgara, s_, float(len(ref)), s_)),
-            "%s kolonunun eğitim dağılımındaki yüzdeliği (0 ile 1 arası)." % k, {"izgara": izgara})
-    elif kod == "zskor" and len(xt) > 1:
-        o, sd = float(xt.mean()), float(xt.std(ddof=0))
-        if sd > 0:
-            koy(k + "__Z", (x - o) / sd, kod, b, [k],
-                _kodla(k + "__Z", "(%s - %s) / %s" % (s_, _f(o), _f(sd))),
-                "%s kolonunun z-skoru (ortalama %s, std %s, eğitimden)." % (k, _sayi_yaz(o), _sayi_yaz(sd)),
-                {"ortalama": o, "std": sd})
-    elif kod == "robust" and len(xt) > 1:
-        med = float(xt.median())
-        iqr = float(xt.quantile(0.75) - xt.quantile(0.25))
-        if iqr > 0:
-            koy(k + "__RZ", (x - med) / iqr, kod, b, [k],
-                _kodla(k + "__RZ", "(%s - %s) / %s" % (s_, _f(med), _f(iqr))),
-                "(%s eksi medyan) bölü çeyrekler arası açıklık (medyan %s, açıklık %s, eğitimden)."
-                % (k, _sayi_yaz(med), _sayi_yaz(iqr)), {"medyan": med, "iqr": iqr})
     elif kod == "isaret":
         koy(k + "__ISR", np.sign(x), kod, b, [k], _kodla(k + "__ISR", "np.sign(%s)" % s_),
             "%s negatifse eksi 1, sıfırsa 0, pozitifse 1." % k)
@@ -1600,15 +1456,22 @@ def ozet_metni(b):
 # kategorikte her deger bir aralik. Siralamayi koruyan donusumde aralik
 # ayni kalir, IV degismez (agacta gereksiz olmalarinin sayisal karsiligi).
 # ---------------------------------------------------------------------------
-KATKI_SURUM = 1
-# Siralamayi koruyan tek kolon donusumleri: IV'leri kaynakla aynidir. Agacta
-# gereksizdir; dogrusal modelde katkilari olcek (dogrusal uyum) ile ilgilidir
-# ve IV ile olculemez: olcumle eklenip cikarilmaz.
-MONOTON = ("log", "islog", "karekok", "yeo", "winsor", "rank", "zskor", "robust")
+KATKI_SURUM = 3
 KATKI_DILIM = 10
 KATKI_ARTIS = 0.02          # IV artisi bundan azsa belirgin katki yok
 KATKI_ILISKI = 0.95         # kaynakla sira iliskisi bundan cok ise ayni bilgi
 _PARAMLI = ("esik", "kova")  # parametresi kullanicidan / dil modelinden
+# DOGRUSAL UYUM: IV sira tabanlidir; kaynagin sirasini koruyan ya da
+# kabalastiran tek kolon donusumunde (pozitif kolonda kare, dilim, isaret,
+# sifir bayragi) IV artmaz. Bunlarin dogrusal modele kattigi ayri olculur:
+# kaynak kolonla BIRLIKTE lojistik modele girince C-value (AUC) ne kadar
+# artiyor. U seklindeki iliskide kare terimi boyle gorunur. Olcum iki katli
+# caprazdir (model bir yarida kurulur, obur yarida puanlanir) ve iki standart
+# hatadan kucuk artis sifir sayilir: hedefle ilgisiz kolonda tesadufi uyum
+# katki gibi gorunmez.
+UYUM_KODLARI = ("kare", "dilim", "isaret", "sifir")
+UYUM_ARTIS = 0.01           # C-value artisi bundan azsa dogrusal modelde belirgin katki yok
+UYUM_EN_AZ = 50             # bundan az dolu satirda uyum olculmez
 
 
 def iv_hesapla(x, y):
@@ -1647,6 +1510,99 @@ def _sira(x):
     return pd.to_numeric(x, errors="coerce").rank(method="average")
 
 
+def _auc(skor, y):
+    """C-value (AUC): skor ve y (0/1) dolu numpy dizileri. Kucuk sinif buyuk
+    sinifin sirali puanlarinda aranir; esit puan yarim sayilir (kesin deger)."""
+    bir = y == 1
+    poz, neg = skor[bir], skor[~bir]
+    n1, n0 = len(poz), len(neg)
+    if n1 == 0 or n0 == 0:
+        return None
+    if n1 <= n0:
+        sirali = np.sort(neg)
+        kucuk = np.searchsorted(sirali, poz, side="left")
+        esit = np.searchsorted(sirali, poz, side="right") - kucuk
+        return float((kucuk.sum() + 0.5 * esit.sum()) / (float(n1) * n0))
+    sirali = np.sort(poz)
+    buyuk = n1 - np.searchsorted(sirali, neg, side="right")
+    esit = np.searchsorted(sirali, neg, side="right") - np.searchsorted(sirali, neg, side="left")
+    return float((buyuk.sum() + 0.5 * esit.sum()) / (float(n1) * n0))
+
+
+def _lojistik_katsayi(X, y, tur=25):
+    """Sabitli lojistik regresyonun katsayilari (Newton; X standart). Doner:
+    [sabit, b1, ...] ya da None."""
+    n, p = X.shape
+    A = np.column_stack([np.ones(n), X])
+    oran = min(max(float(y.mean()), 1e-9), 1 - 1e-9)
+    b = np.zeros(p + 1)
+    b[0] = np.log(oran / (1 - oran))
+    for _ in range(tur):
+        pr = 1.0 / (1.0 + np.exp(-np.clip(A @ b, -30, 30)))
+        w = pr * (1 - pr)
+        try:
+            adim = np.linalg.solve((A * w[:, None]).T @ A + 1e-8 * np.eye(p + 1), A.T @ (y - pr))
+        except np.linalg.LinAlgError:
+            return None
+        b += adim
+        if np.max(np.abs(adim)) < 1e-4:        # C-value icin yeterli; fazlasi sureyi uzatir
+            break
+    return b if np.all(np.isfinite(b)) else None
+
+
+def _capraz_auc(X, y):
+    """Iki katli capraz C-value: model satirlarin bir yarisinda kurulur, obur
+    yarisinda puanlanir; iki yarinin C-value ortalamasi. Modeli kuruldugu
+    satirlarda olcmek tesadufi uyumu katki gibi gosterir; bu onu ayiklar."""
+    cikti = []
+    for k in (0, 1):                     # tek ve cift siradaki satirlar
+        b = _lojistik_katsayi(X[1 - k::2], y[1 - k::2])
+        if b is None:
+            return None
+        c = _auc(b[0] + X[k::2] @ b[1:], y[k::2])
+        if c is None:
+            return None
+        cikti.append(c)
+    return float(np.mean(cikti))
+
+
+def uyum_artisi(kaynak, yeni, y, onbellek=None, anahtar=None):
+    """Dogrusal modelde katki: [kaynak, yeni] ile kurulan lojistik modelin
+    C-value'su eksi yalniz kaynakla kurulanin C-value'su (ikisinin de dolu
+    oldugu egitim satirlari; iki katli capraz olcum). Iki standart hatadan
+    kucuk arti fark tesadufen ayirt edilemez: 0 doner. Olculemezse None.
+    onbellek ve anahtar (kaynak kolonun adi) verilirse yalniz kaynakla
+    kurulan modelin C-value'su ayni kaynagin obur donusumlerinde yeniden
+    hesaplanmaz (satir kumesi ayniysa)."""
+    x = pd.to_numeric(kaynak, errors="coerce").to_numpy(dtype=float)
+    t = pd.to_numeric(yeni, errors="coerce").to_numpy(dtype=float)
+    yy = np.asarray(y, dtype=float)
+    taban = np.isfinite(x) & np.isfinite(yy)
+    dolu = taban & np.isfinite(t)
+    if dolu.sum() < UYUM_EN_AZ:
+        return None
+    ayni_kume = int(dolu.sum()) == int(taban.sum())
+    if not dolu.all():
+        x, t, yy = x[dolu], t[dolu], yy[dolu]
+    if x.std() == 0 or t.std() == 0:
+        return None
+    xs, ts = (x - x.mean()) / x.std(), (t - t.mean()) / t.std()
+    if onbellek is not None and anahtar is not None and ayni_kume:
+        if anahtar not in onbellek:
+            onbellek[anahtar] = _capraz_auc(xs[:, None], yy)
+        c0 = onbellek[anahtar]
+    else:
+        c0 = _capraz_auc(xs[:, None], yy)
+    c1 = _capraz_auc(np.column_stack([xs, ts]), yy)
+    if c0 is None or c1 is None:
+        return None
+    artis = float(c1 - max(c0, 0.5))
+    n1 = float(yy.sum())
+    n0 = float(len(yy) - n1)
+    hata = float(np.sqrt((n1 + n0 + 1.0) / (12.0 * n1 * n0)))     # C-value'nun tesaduf altindaki standart hatasi
+    return 0.0 if 0 < artis < 2 * hata else artis
+
+
 def _iliski(ra, rb):
     m = ra.notna() & rb.notna()
     if m.sum() < 3:
@@ -1672,9 +1628,12 @@ def katki_kodlari(b, model_turu):
 
 def katki_olc(df, birimler, tr, hedef, model_turu, segmentler=(), onceki=None, ilerleme=None):
     """{birim id: {"imza", "kaynak_iv", "kaynak_kolon", "kodlar": {kod:
-    {"iv", "kolon", "artis", "iliski", "kolon_sayisi", "segment"}},
-    "olculmeyen": {kod: neden}}}. onceki'de olculmus kodlar tekrar
-    olculmez. Yalniz egitim satirlari (tr)."""
+    {"iv", "kolon", "artis", "iliski", "uyum", "kolon_sayisi", "degerli",
+    "segment", "kolonlar"}}, "olculmeyen": {kod: neden}}}. "kolonlar" kolon
+    bazinda olcum: [[ad, iv, artis, iliski, uyum], ...] (iliski yalniz
+    artisi belirgin kolonda, uyum yalniz UYUM_KODLARI'nda). "degerli": yeni
+    bilgi tasiyan kolon sayisi. onceki'de olculmus kodlar tekrar olculmez.
+    Yalniz egitim satirlari (tr), orneklemesiz."""
     onceki = onceki or {}
     if not hedef_ikili_mi(df, hedef):
         return {}
@@ -1684,7 +1643,7 @@ def katki_olc(df, birimler, tr, hedef, model_turu, segmentler=(), onceki=None, i
     d = d.loc[y.notna()]
     y = y.loc[d.index].astype(float)
     hep = pd.Series(True, index=d.index)
-    iv_bel, sira_bel = {}, {}
+    iv_bel, sira_bel, uyum_bel = {}, {}, {}
 
     def kol_iv(k):
         if k not in iv_bel:
@@ -1722,7 +1681,7 @@ def katki_olc(df, birimler, tr, hedef, model_turu, segmentler=(), onceki=None, i
                     continue
                 param = {c: {"segment": seg}}
             try:
-                yeni, _kayit, hata = uygula(d, [b], {b["id"]: {"sec": [c], "param": param}}, hep, hedef)
+                yeni, kayit_, hata = uygula(d, [b], {b["id"]: {"sec": [c], "param": param}}, hep, hedef)
             except Exception as e:      # pylint: disable=broad-except
                 olculmeyen[c] = str(e)[:80]
                 continue
@@ -1732,8 +1691,8 @@ def katki_olc(df, birimler, tr, hedef, model_turu, segmentler=(), onceki=None, i
             if not yeni:
                 olculmeyen[c] = (hata[0] if hata else "kolon üretilmedi")[:120]
                 continue
-            ivs = [(iv_hesapla(sr, y), ad) for ad, sr in yeni.items()]
-            ivs = [(v, a) for v, a in ivs if v is not None]
+            iv_hepsi = {ad: iv_hesapla(sr, y) for ad, sr in yeni.items()}
+            ivs = [(v, a) for a, v in iv_hepsi.items() if v is not None]
             if not ivs:
                 olculmeyen[c] = "IV hesaplanamadı (kolon boş ya da sabit)"
                 continue
@@ -1747,10 +1706,32 @@ def katki_olc(df, birimler, tr, hedef, model_turu, segmentler=(), onceki=None, i
                 iliski = max(il) if il else None
             # Kategorik kolon modele ancak kodlanarak girer: artis yerine IV'nin kendisi.
             artis_yok = kaynak_iv is None or b.get("tip") == "kategorik" and b["tur"] == "kolon"
+            # KOLON BAZINDA: her kolonun IV'si, kaynaga gore artisi, (artisi
+            # belirginse) kaynakla iliskisi ve (tek kaynakli fonksiyonsa) dogrusal uyumu.
+            kay = {r_["ad"]: r_["kaynaklar"] for r_ in kayit_}
+            satirlar = []
+            for ad, sr in yeni.items():
+                v = iv_hepsi.get(ad)
+                art = None if (v is None or artis_yok) else v - kaynak_iv
+                uy = None
+                tek = [x_ for x_ in kay.get(ad) or [] if x_ in d.columns]
+                if c in UYUM_KODLARI and len(tek) == 1 and b.get("tip") != "kategorik":
+                    uy = uyum_artisi(d[tek[0]], sr, y, uyum_bel, tek[0])
+                il = iliski if ad == en_ad else None
+                if ad != en_ad and art is not None and art >= KATKI_ARTIS and kaynak and len(kaynak) <= 40:
+                    rs_ = _sira(sr)
+                    ils = [_iliski(rs_, kol_sira(k)) for k in kaynak]
+                    ils = [x_ for x_ in ils if x_ is not None]
+                    il = max(ils) if ils else None
+                satirlar.append([ad, None if v is None else round(v, 4), None if art is None else round(art, 4),
+                                 None if il is None else round(il, 3), None if uy is None else round(uy, 4)])
+            uyumlar = [r_[4] for r_ in satirlar if r_[4] is not None]
             kodlar[c] = {"iv": round(en_iv, 4), "kolon": en_ad, "kolon_sayisi": len(yeni),
                          "artis": None if artis_yok else round(en_iv - kaynak_iv, 4),
                          "iliski": None if iliski is None else round(iliski, 3),
-                         "segment": (param.get(c) or {}).get("segment")}
+                         "uyum": max(uyumlar) if uyumlar else None,
+                         "degerli": sum(1 for r_ in satirlar if kolon_degerli(r_)),
+                         "segment": (param.get(c) or {}).get("segment"), "kolonlar": satirlar}
         # Kodlar arasi benzerlik: ayni pencere ciftinde oran, normalize oran
         # ve buyume ayni siradadir; biri yeter.
         ad_ = list(en_sira)
@@ -1785,6 +1766,8 @@ def katki_satiri(c, m):
         t += ", kaynağa göre %s" % _artis_yaz(m["artis"])
     if m.get("iliski") is not None:
         t += ", kaynakla sıra ilişkisi %s" % ("%.2f" % m["iliski"]).replace(".", ",")
+    if m.get("uyum") is not None:
+        t += ", doğrusal modelde kaynakla birlikte C-value artışı %s" % _artis_yaz(m["uyum"])
     return t
 
 
@@ -1794,16 +1777,61 @@ def katki_metni(k, model_turu="agac"):
         return ""
     par = ["kaynak kolonların en iyi IV'si %s (%s)" % (_iv_yaz(k.get("kaynak_iv")), k.get("kaynak_kolon") or "-")]
     for c, m in (k.get("kodlar") or {}).items():
-        par.append("%s: IV %s, artış %s, ilişki %s%s" % (
+        par.append("%s: IV %s, artış %s, ilişki %s%s%s" % (
             c, _iv_yaz(m.get("iv")), _artis_yaz(m.get("artis")),
             "-" if m.get("iliski") is None else ("%.2f" % m["iliski"]).replace(".", ","),
+            (", doğrusal uyum %s" % _artis_yaz(m["uyum"])) if m.get("uyum") is not None else "",
             (", %s ile aynı sıra" % "/".join(sorted(m["benzer"]))) if m.get("benzer") else ""))
     return "; ".join(par)
 
 
+def uyum_degerli(m):
+    """Dogrusal modelde belirgin katki: kaynakla birlikte C-value artisi."""
+    return bool(m) and m.get("uyum") is not None and m["uyum"] >= UYUM_ARTIS
+
+
+def kolon_degerli(r):
+    """Kolon bazinda olcum satiri ([ad, iv, artis, iliski, uyum]) yeni bilgi tasiyor mu."""
+    _ad, iv, artis, iliski, uyum = (list(r) + [None] * 5)[:5]
+    if uyum is not None and uyum >= UYUM_ARTIS:
+        return True
+    if iv is None:
+        return False
+    if iliski is not None and iliski >= KATKI_ILISKI:
+        return False
+    if artis is None:
+        return iv >= KATKI_ARTIS
+    return artis >= KATKI_ARTIS
+
+
+def haric_hesapla(sec, kolonlar):
+    """Secili donusumlerde deger tasimayan kolonlar: {kod: [kolon adi]}.
+    kolonlar: {kod: [[ad, iv, artis, iliski, uyum], ...]}. Bir donusumde hic
+    degerli kolon yoksa (anlamdan secilmis olabilir) kolonlarin hepsi kalir."""
+    cikti = {}
+    for c in sec or []:
+        satirlar = (kolonlar or {}).get(c) or []
+        degersiz = [r[0] for r in satirlar if not kolon_degerli(r)]
+        if degersiz and len(degersiz) < len(satirlar):
+            cikti[c] = degersiz
+    return cikti
+
+
+def haric_ekle(oneri, kolonlar):
+    """Onerilere "haric" alanini (uretilmeyecek kolonlar) olcume gore yazar.
+    kolonlar: {birim id: {kod: satirlar}}; olcumu olmayan birimde bos."""
+    for i, o in (oneri or {}).items():
+        if isinstance(o, dict):
+            o["haric"] = haric_hesapla(o.get("sec"), (kolonlar or {}).get(i))
+    return oneri
+
+
 def katki_degerli(m):
     """Olcume gore yeni bilgi var mi: IV artisi belirgin ve kaynakla ayni
-    sira degil. Kaynak IV'si yoksa (satir duzeyi) IV en az KATKI_ARTIS."""
+    sira degil, ya da dogrusal modelde uyum artisi belirgin. Kaynak IV'si
+    yoksa (satir duzeyi) IV en az KATKI_ARTIS."""
+    if uyum_degerli(m):
+        return True
     if not m or m.get("iv") is None:
         return False
     if m.get("iliski") is not None and m["iliski"] >= KATKI_ILISKI:
@@ -1820,18 +1848,12 @@ def katki_gerekcesi(b, k, sec, model_turu):
     kod = k.get("kodlar") or {}
     bas = "Kaynak kolonların en iyi IV'si %s (%s). " % (_iv_yaz(k.get("kaynak_iv")), k.get("kaynak_kolon") or "-") \
         if k.get("kaynak_iv") is not None else ""
-    secilen = [katki_satiri(c, kod[c]) if c not in MONOTON else
-               "%s: sıralamayı koruyan dönüşüm (IV aynı, %s); doğrusal modelde değerin ölçeğini düzeltmek için"
-               % (KATALOG_HARITA[c]["ad"], _iv_yaz(kod[c].get("iv"))) for c in sec if c in kod]
+    secilen = [katki_satiri(c, kod[c]) for c in sec if c in kod]
     secilmeyen = []
     for c in katki_kodlari(b, model_turu):
         if c in sec or c not in kod:
             continue
         m = kod[c]
-        if c in MONOTON:
-            secilmeyen.append("%s: sıralamayı koruyan dönüşüm, IV kaynakla aynı (%s); doğrusal modelde katkısı "
-                              "ölçekle ilgilidir, IV ile ölçülmez" % (KATALOG_HARITA[c]["ad"], _iv_yaz(m.get("iv"))))
-            continue
         ben = [x for x in (m.get("benzer") or {}) if x in sec]
         neden = ("seçilen %s ile aynı sıra (ilişki %s), tekrar olur" % (
                     KATALOG_HARITA[ben[0]]["ad"], ("%.2f" % m["benzer"][ben[0]]).replace(".", ","))
@@ -1842,10 +1864,6 @@ def katki_gerekcesi(b, k, sec, model_turu):
         secilmeyen.append(katki_satiri(c, m) + (" (%s)" % neden if neden else ""))
     s1 = (bas + "; ".join(secilen) + ".") if secilen else (bas.strip() if bas else "")
     s2 = ("; ".join(secilmeyen) + ".") if secilmeyen else ""
-    if model_turu == "agac" and b["tur"] == "kolon" and b.get("tip") != "kategorik":
-        s2 = (s2 + " " if s2 else "") + ("Log, kırpma, sıra, ölçekleme gibi sıralamayı koruyan dönüşümler "
-                                         "aralıkları değiştirmez; IV aynı kalır (%s), ağaçta yeni kolon gereksiz."
-                                         % _iv_yaz(k.get("kaynak_iv")))
     return s1.strip(), s2.strip()
 
 
@@ -1912,12 +1930,7 @@ def ornek_bu_veride(kod, birimler, segmentler=()):
     son = kol[-1]
     aile = b["ad"]
     sablon = {
-        "log": "%s yerine log(1 + %s): %s__LOG" % (k, k, k), "islog": "%s için işaretli log: %s__SLOG" % (k, k),
-        "karekok": "%s kolonunun karekökü: %s__SQRT" % (k, k), "kare": "%s çarpı %s: %s__KARE" % (k, k, k),
-        "yeo": "%s için Yeo-Johnson: %s__YJ" % (k, k), "winsor": "%s eğitimdeki %%1 ve %%99 değerlerine kırpılır: %s__WNS" % (k, k),
-        "rank": "%s eğitimdeki yüzdelik sırasına çevrilir: %s__RANK" % (k, k),
-        "zskor": "(%s eksi ortalama) bölü standart sapma: %s__Z" % (k, k),
-        "robust": "(%s eksi medyan) bölü çeyrekler arası açıklık: %s__RZ" % (k, k),
+        "kare": "%s çarpı %s: %s__KARE" % (k, k, k),
         "isaret": "%s eksi ise eksi 1, sıfırsa 0, artı ise 1: %s__ISR" % (k, k),
         "sifir": "%s sıfırsa 1, değilse 0: %s__SIFIR" % (k, k),
         "esik": "%s verilen eşiğin üstündeyse 1: %s__GE_<eşik>" % (k, k),
@@ -2000,10 +2013,7 @@ def katalog_durumu(birimler, oneri, katki=None, karar=None):
             else:
                 d["neden"] = _YOK_NEDEN.get(kod) or _YOK_NEDEN.get(grup) or "Veride uygun birim yok."
         if uyg and not oner:
-            if kod in MONOTON:
-                d["onerilmeme"] = ("Sıralamayı değiştirmez, IV ile ölçülemez; yalnız çarpık ya da uç değerli "
-                                   "kolonlarda önerilir.")
-            elif kod in _PARAMLI:
+            if kod in _PARAMLI:
                 d["onerilmeme"] = "Eşik ya da sınırlar iş kuralından gelir; açıklamalardan çıkmadı. Elle ekleyebilirsiniz."
             elif olc:
                 d["onerilmeme"] = "Ölçülen %s birimin %s tanesinde yeni bilgi getiriyor." % (len(olc), len(deg)) + (
@@ -2038,12 +2048,10 @@ def tekrar_ele(o, b, k, model_turu):
             elenen.append({"kod": c, "neden": neden})
     kod = (k or {}).get("kodlar") or {}
     if model_turu in ("agac", "hepsi") and kod:
-        # Tek modda olcek donusumleri (MONOTON) ayiklanmaz: dogrusal model icin
-        # sira ayni olsa da olcek farklidir.
-        for c in sorted([x for x in sec if x in kod and not (model_turu == "hepsi" and x in MONOTON)],
-                        key=lambda x: (kod[x].get("iv") or 0)):
+        for c in sorted([x for x in sec if x in kod], key=lambda x: (kod[x].get("iv") or 0)):
+            if uyum_degerli(kod[c]):
+                continue                 # sirasi ayni olsa da dogrusal modelde yeni bilgi
             ust = [x for x in (kod[c].get("benzer") or {}) if x in sec and x != c
-                   and not (model_turu == "hepsi" and x in MONOTON)
                    and (kod.get(x) or {}).get("iv", 0) >= (kod[c].get("iv") or 0)]
             if ust and c in sec:
                 sec.remove(c)
@@ -2067,18 +2075,26 @@ def olcum_tamamla(o, b, k, model_turu):
     sec = list(o.get("sec") or [])
     tut = [c for c in sec if c in kod]
     ekl = []
-    for c in sorted([c for c in katki_kodlari(b, model_turu) if c not in sec and c not in MONOTON
+    for c in sorted([c for c in katki_kodlari(b, model_turu) if c not in sec
                      and katki_degerli(kod.get(c))], key=lambda c: -(kod[c].get("iv") or 0)):
-        if any(x in (kod[c].get("benzer") or {}) for x in tut):
+        m = kod[c]
+        uy = uyum_degerli(m)
+        # Ayni sirada olan secili donusum: dogrusal uyumla degerli olan yalniz
+        # yine dogrusal uyumla olculen bir donusumle ayni bilgi sayilir.
+        if any(x in (m.get("benzer") or {}) for x in tut if not uy or x in UYUM_KODLARI):
             continue
         if any(c == alt and ust in sec for alt, ust, _n in TEKRAR_KESIN):
             continue
         sec.append(c)
         tut.append(c)
-        m = kod[c]
-        ekl.append({"kod": c, "neden": "Ölçüme göre yeni bilgi: IV %s, kaynağa göre %s, kaynakla ilişki %s." % (
-            _iv_yaz(m.get("iv")), _artis_yaz(m.get("artis")),
-            "-" if m.get("iliski") is None else ("%.2f" % m["iliski"]).replace(".", ","))})
+        if uy and not (m.get("artis") is not None and m["artis"] >= KATKI_ARTIS):
+            neden = ("Ölçüme göre doğrusal modelde yeni bilgi: kaynak kolonla birlikte C-value artışı %s "
+                     "(IV sıra tabanlı olduğu için bunu göstermez)." % _artis_yaz(m["uyum"]))
+        else:
+            neden = "Ölçüme göre yeni bilgi: IV %s, kaynağa göre %s, kaynakla ilişki %s." % (
+                _iv_yaz(m.get("iv")), _artis_yaz(m.get("artis")),
+                "-" if m.get("iliski") is None else ("%.2f" % m["iliski"]).replace(".", ","))
+        ekl.append({"kod": c, "neden": neden})
         if m.get("segment") and c in ("segment", "grup_oran"):
             o = dict(o, param=dict(o.get("param") or {}, **{c: {"segment": m["segment"]}}))
     if not ekl:
@@ -2286,9 +2302,12 @@ def oneri_hesapla(birimler, segmentler, onceki=None, model_turu="agac"):
     return oneri_birlestir(birimler, cikti, alinan, model_turu, [b["id"] for b in sor])
 
 
+HARIC_EN_COK = 2000          # bir donusumde disarida birakilabilecek kolon adi
+
+
 def karar_dogrula(birimler, karar, segmentler, model_turu=None):
     """Gelen karari birimlerin mumkun kodlariyla (model turu verilmisse ona
-    gore) suzer."""
+    gore) suzer. "haric" (uretilmeyecek kolonlar) yalniz secili kodlarda kalir."""
     temiz = {}
     for b in birimler:
         k = (karar or {}).get(b["id"])
@@ -2297,7 +2316,14 @@ def karar_dogrula(birimler, karar, segmentler, model_turu=None):
         mm = model_mumkun(b, model_turu) if model_turu else (b.get("mumkun") or [])
         sec, param = param_temizle([c for c in (k.get("sec") or []) if c in mm], k.get("param"),
                                    segmentler)
-        temiz[b["id"]] = {"sec": sec, "param": param}
+        haric = {}
+        if isinstance(k.get("haric"), dict):
+            for c, adlar in k["haric"].items():
+                if c in sec and isinstance(adlar, (list, tuple)):
+                    adlar = list(dict.fromkeys(str(a) for a in adlar if isinstance(a, str)))[:HARIC_EN_COK]
+                    if adlar:
+                        haric[c] = adlar
+        temiz[b["id"]] = {"sec": sec, "param": param, "haric": haric}
     return temiz
 
 
@@ -2307,11 +2333,7 @@ def karar_dogrula(birimler, karar, segmentler, model_turu=None):
 # genisletir. Dil modeli bir sey uretmezse ya da cevabi bos kalirsa kod
 # mesajdan niyeti okur (donusum adi + istemiyorum / cikar / ekle gibi).
 # ---------------------------------------------------------------------------
-_ES_AD = {"winsor": ["uç kırpma", "uc kirpma", "kırpma", "winsor", "winsorize"],
-          "log": ["log1p", "logaritma"], "islog": ["işaretli log"], "karekok": ["karekök", "karekok"],
-          "kare": ["kare terimi", "polinom"], "yeo": ["yeo-johnson", "yeo johnson", "box-cox"],
-          "rank": ["sıra", "rank", "yüzdelik"], "zskor": ["z-skor", "z skor", "zskor", "standartlaştırma"],
-          "robust": ["robust"], "isaret": ["işaret"], "sifir": ["sıfır bayrağı"], "esik": ["eşik"],
+_ES_AD = {"kare": ["kare terimi", "polinom"], "isaret": ["işaret"], "sifir": ["sıfır bayrağı"], "esik": ["eşik"],
           "dilim": ["dilim", "eşit frekans"], "kova": ["kova"], "oran": ["ratio"], "fark": ["delta"],
           "norm": ["normalize oran", "normalize"], "buyume": ["büyüme"], "egim": ["eğim", "trend"],
           "dk": ["değişkenlik"], "onehot": ["one-hot", "onehot", "gölge değişken"], "woe": ["woe"],
@@ -2443,11 +2465,6 @@ def katki_etkisi(d, katki):
     """Toplu degisikligin olcume gore etkisi (tek cumle, sayilarla)."""
     katki = katki or {}
     kodlar = d.get("cikar") or d.get("ekle") or []
-    if kodlar and all(c in MONOTON for c in kodlar):
-        return ("%s sıralamayı korur: IV'yi değiştirmez, ölçüm bu yüzden katkısını gösteremez. Doğrusal "
-                "modelde işi ölçeği düzeltmektir (uç değerin ya da çarpıklığın katsayıyı bozmasını önler); "
-                "çıkarınca bu koruma kalkar, ağaç modelinde zaten gerekmez."
-                % ", ".join(KATALOG_HARITA[c]["ad"] for c in kodlar))
     deg, art = [], []
     for i in d.get("ids") or []:
         for c in kodlar:
@@ -2491,7 +2508,7 @@ def katki_tara(birimler, karar, katki, model_turu, segmentler=(), yon="ekle", sa
         if not k:
             continue
         sec = list(((karar or {}).get(b["id"]) or {}).get("sec") or [])
-        mm = set(katki_kodlari(b, model_turu)) - set(MONOTON)
+        mm = set(katki_kodlari(b, model_turu))
         if yon == "ekle":
             # Kullanicinin bu birimden cikardigi donusum yeniden onerilmez.
             cikan = set(((sapma or {}).get(b["id"]) or {}).get("cikar") or [])
@@ -2506,7 +2523,7 @@ def katki_tara(birimler, karar, katki, model_turu, segmentler=(), yon="ekle", sa
         else:
             for c in sec:
                 m = k.get(c)
-                if not m or c in MONOTON:
+                if not m:
                     continue
                 ust = [x for x in (m.get("benzer") or {}) if x in sec and (k.get(x) or {}).get("iv", 0) > m.get("iv", 0)]
                 if ust or not katki_degerli(m):
@@ -2589,10 +2606,11 @@ def plan_satirlari(birimler, karar, model_turu="agac", mesaj="", en_cok=900, kat
     return satirlar, ayrinti
 
 
-def kolon_sayisi(b, sec):
-    """Birimde secilen donusumlerin uretecegi kolon sayisi (tahmin)."""
+def kolon_sayisi(b, sec, haric=None):
+    """Birimde secilen donusumlerin uretecegi kolon sayisi (tahmin);
+    haric ({kod: [kolon adi]}) verilirse disarida birakilanlar dusulur."""
     n = len(b["kolonlar"])
-    t = 0
+    t = -sum(len((haric or {}).get(c) or []) for c in sec or [])
     for c in sec or []:
         g = KATALOG_HARITA[c]["grup"]
         if b["tur"] == "satir":
@@ -2619,4 +2637,4 @@ def kolon_sayisi(b, sec):
             t += n
         else:
             t += n
-    return t
+    return max(0, t)

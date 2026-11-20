@@ -2841,6 +2841,23 @@ def geleneksel_karar_kaydet_endpoint():
         return jsonify(_hata_govdesi("geleneksel_karar_kaydet", e, "Kararlar kaydedilemedi."))
 
 
+@app.route("/geleneksel_kolonlar", methods=["POST"])
+def geleneksel_kolonlar_endpoint():
+    """02.2 kolon bazinda olcum (calismanin klasorundeki ayri dosyadan).
+    Govde: {oturum_id, istek: {birim id: [kod, ...]}}; istek bos ise onerilen
+    ve secili butun (birim, donusum) ciftleri. Yalniz okur."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        from fe_agent import akis_faz03
+        return jsonify({"tamam": True, "kolonlar": akis_faz03.geleneksel_kolonlar(durum, istek.get("istek"))})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("geleneksel_kolonlar", e, "Kolon ölçümleri okunamadı."))
+
+
 @app.route("/geleneksel_sohbet_temizle", methods=["POST"])
 def geleneksel_sohbet_temizle_endpoint():
     """02.2 sohbetini temizler (gecmis mesajlar silinir; plan ve kararlar

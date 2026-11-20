@@ -161,6 +161,89 @@ def _uretim_kaynagi(durum):
     return df, yeni_duzen
 
 
+# 02.2 KOLON BAZINDA OLCUM: her donusumun urettigi her kolonun IV'si, artisi,
+# kaynakla iliskisi ve dogrusal uyumu. Durum dosyasini sisirmemek icin
+# calismanin klasorunde ayri JSON ({birim id: {kod: [[ad, iv, artis, iliski,
+# uyum], ...]}}); ekran /geleneksel_kolonlar ucundan ister.
+KOLON_DOSYA = "geleneksel_kolonlar.json"
+_KOLON_BELLEK = {}                       # yol -> veri (dosya yazilamasa da ayni surecte gecerli)
+
+
+def _kolon_yolu(durum):
+    try:
+        from fe_agent.akis_faz01 import amp_klasor_adi
+        return "/%s/%s" % (amp_klasor_adi(durum), KOLON_DOSYA)
+    except Exception:
+        return "/%s" % KOLON_DOSYA
+
+
+def kolonlari_oku(durum):
+    """{birim id: {kod: satirlar}}; yoksa {}."""
+    yol = _kolon_yolu(durum)
+    if yol in _KOLON_BELLEK:
+        return _KOLON_BELLEK[yol]
+    try:
+        from fe_agent import sfa_karar
+        veri = sfa_karar.detay_oku(yol)
+    except Exception:
+        veri = {}
+    return veri if isinstance(veri, dict) else {}
+
+
+def _kolonlari_yaz(durum, yeni, birimler):
+    """Yeni olculen birimlerin kolon satirlarini dosyaya isler; artik
+    olmayan birimler duser. Yazilamazsa ayni surecte bellekten okunur."""
+    yol = _kolon_yolu(durum)
+    var = {b["id"] for b in birimler}
+    veri = {i: v for i, v in dict(kolonlari_oku(durum)).items() if i in var}
+    veri.update({i: v for i, v in (yeni or {}).items() if i in var})
+    _KOLON_BELLEK[yol] = veri
+    while len(_KOLON_BELLEK) > 6:
+        _KOLON_BELLEK.pop(next(iter(_KOLON_BELLEK)))
+    try:
+        from fe_agent import sfa_karar
+        sfa_karar.detay_yaz(yol, veri)
+    except Exception:
+        pass
+    return veri
+
+
+def _kolonlari_ayir(katki):
+    """Olcum sonucundan kolon satirlarini ayirir (durumda yalniz ozet kalir).
+    Doner: {birim id: {kod: satirlar}}."""
+    cikti = {}
+    for bid, kb in (katki or {}).items():
+        for c, olc in ((kb or {}).get("kodlar") or {}).items():
+            if isinstance(olc, dict) and "kolonlar" in olc:
+                cikti.setdefault(bid, {})[c] = olc.pop("kolonlar")
+    return cikti
+
+
+def geleneksel_kolonlar(durum, istek=None):
+    """Ekranin istedigi kolon olcumleri. istek: {birim id: [kod, ...]}; bos
+    ise onerilen ve secili butun (birim, kod) ciftleri. Doner: {birim id:
+    {kod: [[ad, iv, artis, iliski, uyum, degerli(0 ya da 1)], ...]}}."""
+    from fe_agent import geleneksel as G
+    g = durum.get("geleneksel") or {}
+    veri = kolonlari_oku(durum)
+    if not isinstance(istek, dict) or not istek:
+        istek = {}
+        for b in g.get("birimler") or []:
+            kodlar = set(((g.get("oneri") or {}).get(b["id"]) or {}).get("sec") or []) \
+                | set(((g.get("karar") or {}).get(b["id"]) or {}).get("sec") or [])
+            if kodlar:
+                istek[b["id"]] = sorted(kodlar)
+    cikti = {}
+    for bid, kodlar in istek.items():
+        kb = veri.get(str(bid)) or {}
+        for c in kodlar if isinstance(kodlar, (list, tuple)) else []:
+            satirlar = kb.get(str(c))
+            if satirlar:
+                cikti.setdefault(str(bid), {})[str(c)] = [list(r)[:5] + [1 if G.kolon_degerli(r) else 0]
+                                                         for r in satirlar]
+    return cikti
+
+
 def geleneksel_karti(durum, kilitli=False):
     """02.2 karti (tip geleneksel): solda birimler ve kararlar, sagda
     sohbet. Kart verisi durum["geleneksel"]'den. Dil modeli isi suruyorsa
@@ -168,8 +251,30 @@ def geleneksel_karti(durum, kilitli=False):
     from fe_agent import geleneksel as G
     g = durum.get("geleneksel") or {}
     birimler = g.get("birimler") or []
-    oneri = g.get("oneri") or {}
-    karar = g.get("karar") or {}
+    # Katalogdan cikan kodlar (olcek donusumleri) eski kayitlarda kalmis
+    # olabilir: birimlerden, oneriden ve karardan ayiklanir.
+    var = G.KATALOG_HARITA
+    for b in birimler:
+        if any(c not in var for c in b.get("mumkun") or []) or any(c not in var for c in b.get("imkansiz") or {}):
+            b["mumkun"] = [c for c in b.get("mumkun") or [] if c in var]
+            b["imkansiz"] = {c: n for c, n in (b.get("imkansiz") or {}).items() if c in var}
+
+    def _ayikla(kayitlar):
+        cikti = {}
+        for i, o in (kayitlar or {}).items():
+            if not isinstance(o, dict):
+                continue
+            o = dict(o)
+            o["sec"] = [c for c in o.get("sec") or [] if c in var]
+            o["param"] = {c: p for c, p in (o.get("param") or {}).items() if c in o["sec"]}
+            o["haric"] = {c: list(a) for c, a in (o.get("haric") or {}).items() if c in o["sec"] and a}
+            for alan in ("elenen", "kod_ekledi"):
+                if o.get(alan):
+                    o[alan] = [e for e in o[alan] if e.get("kod") in var]
+            cikti[i] = o
+        return cikti
+    oneri = _ayikla(g.get("oneri"))
+    karar = {i: {"sec": k["sec"], "param": k["param"], "haric": k["haric"]} for i, k in _ayikla(g.get("karar")).items()}
     bekliyor = None
     if g.get("oneri_is"):
         d = G.oneri_isi_durumu(g["oneri_is"].get("kimlik")) or {}
@@ -205,7 +310,9 @@ def geleneksel_karti(durum, kilitli=False):
                       "katki": {k: v for k, v in ((g.get("katki") or {}).get(b["id"]) or {}).items()
                                 if k not in ("imza", "surum")} or None}
                      for b in birimler],
-        "katki_esik": {"artis": G.KATKI_ARTIS, "iliski": G.KATKI_ILISKI, "dilim": G.KATKI_DILIM},
+        "katki_esik": {"artis": G.KATKI_ARTIS, "iliski": G.KATKI_ILISKI, "dilim": G.KATKI_DILIM,
+                       "uyum": G.UYUM_ARTIS},
+        "uyum_kodlari": list(G.UYUM_KODLARI), "olcek_notu": G.OLCEK_NOTU,
         "oneri": {i: {k: v for k, v in o.items() if k != "imza"} for i, o in oneri.items()},
         "karar": karar,
         "girmeyen": g.get("girmeyen") or [],
@@ -228,8 +335,12 @@ def sapma_hesapla(karar, oneri):
         cikar = [c for c in osec if c not in sec]
         param = {c: v for c, v in (k.get("param") or {}).items()
                  if c in sec and (c in ekle or (o.get("param") or {}).get(c) != v)}
-        if ekle or cikar or param:
-            sapma[i] = {"ekle": ekle, "cikar": cikar, "param": param}
+        # Kolon bazinda fark: secili donusumde disarida birakilan kolonlar oneriden farkliysa.
+        hk, ho = k.get("haric") or {}, o.get("haric") or {}
+        haric = {c: list(hk.get(c) or []) for c in sec
+                 if sorted(hk.get(c) or []) != sorted(ho.get(c) or [])}
+        if ekle or cikar or param or haric:
+            sapma[i] = {"ekle": ekle, "cikar": cikar, "param": param, "haric": haric}
     return sapma
 
 
@@ -363,18 +474,23 @@ def sapma_birlestir(g, karar, birimler, model_turu):
         ck = [c for c in v.get("cikar") or [] if c not in mm]
         pr = {c: p for c, p in (v.get("param") or {}).items() if c not in mm}
         if ek or ck or pr:
-            h = yeni.setdefault(i, {"ekle": [], "cikar": [], "param": {}})
+            h = yeni.setdefault(i, {"ekle": [], "cikar": [], "param": {}, "haric": {}})
             h["ekle"] = list(dict.fromkeys(h["ekle"] + ek))
             h["cikar"] = list(dict.fromkeys(h["cikar"] + ck))
             h["param"].update(pr)
     return yeni
 
 
-def _karar_kur(g, birimler, oneri, segmentler, model_turu):
+def _karar_kur(g, birimler, oneri, segmentler, model_turu, kolonlar=None):
     """Karar = oneri + kullanicinin farklari (sapma). Eski bicimdeki sapma
-    ({"sec", "param"}) birimin kararini oldugu gibi degistirir."""
+    ({"sec", "param"}) birimin kararini oldugu gibi degistirir. kolonlar
+    (kolon bazinda olcum) verilirse onerilere "haric" (deger tasimayan,
+    uretilmeyecek kolonlar) yazilir."""
     from fe_agent import geleneksel as G
-    karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {})}
+    if kolonlar is not None:
+        G.haric_ekle(oneri, kolonlar)
+    karar = {i: {"sec": list(o.get("sec") or []), "param": dict(o.get("param") or {}),
+                 "haric": {c: list(a) for c, a in (o.get("haric") or {}).items()}}
              for i, o in oneri.items()}
     sapma = g.get("sapma") or {}
     eski = {i: v for i, v in sapma.items() if isinstance(v, dict) and "sec" in v}
@@ -388,10 +504,14 @@ def _karar_kur(g, birimler, oneri, segmentler, model_turu):
                 k["sec"].append(c)
         k["param"] = {c: p for c, p in k["param"].items() if c in k["sec"]}
         k["param"].update({c: p for c, p in (v.get("param") or {}).items() if c in k["sec"]})
+        for c, adlar in (v.get("haric") or {}).items():       # kullanicinin kolon secimi
+            if c in k["sec"]:
+                k["haric"][c] = list(adlar or [])
+        k["haric"] = {c: a for c, a in k["haric"].items() if c in k["sec"] and a}
     karar = G.karar_dogrula(birimler, karar, segmentler, model_turu)
     karar.update(G.karar_dogrula(birimler, eski, segmentler, model_turu))
     for b in birimler:
-        karar.setdefault(b["id"], {"sec": [], "param": {}})
+        karar.setdefault(b["id"], {"sec": [], "param": {}, "haric": {}})
     return karar
 
 
@@ -465,7 +585,9 @@ def geleneksel_is_durumu(durum):
         return not g.get("oneri_is"), True
     if d.get("durum") != "bitti":
         return False, False
+    yeni_kolonlar = None
     if d.get("katki") is not None:
+        yeni_kolonlar = _kolonlari_ayir(d["katki"])     # durumda yalniz ozet kalir
         g["katki"] = d["katki"]
     katki = g.get("katki") or {}
     cikti = {k: G.olcum_ekle(G.tekrar_ele(o, b, katki.get(k), model_turu)[0], b, katki.get(k), model_turu)
@@ -487,8 +609,10 @@ def geleneksel_is_durumu(durum):
         birimler = birimler + yeni
         g["arasi_dm"] = d["arasi"]
         g["arasi_imza"] = i.get("arasi_imza")
+    if yeni_kolonlar is not None:        # birim listesi kesinlestikten sonra (aileler arasi dahil)
+        _kolonlari_yaz(durum, yeni_kolonlar, birimler)
     g.update({"birimler": birimler, "oneri": oneri,
-              "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu),
+              "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu, kolonlari_oku(durum)),
               "oneri_hata": d.get("hata")})
     tur = dict(g.get("oneri_tur") or {})
     tur[model_turu] = oneri
@@ -559,7 +683,7 @@ def geleneksel_model_degistir(durum, model_turu, karar=None):
         if b.get("bulan") in ("dil modeli", "sohbet"):
             oneri[b["id"]] = onceki[b["id"]]
     g.update({"model_turu": model_turu, "oneri": oneri, "oneri_tur": eski,
-              "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu)})
+              "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu, kolonlari_oku(durum))})
     durum["geleneksel"] = g
     kart = geleneksel_karti(durum)
     if (durum.get("_secim_alani") or {}).get("tip") == "geleneksel":
@@ -591,6 +715,11 @@ def kural_plan(durum):
             onceki[b["id"]] = dict(o, kaynak=o.get("kaynak") or "dil modeli", imza=G._oneri_imza(b, model_turu))
     g.update({"birimler": birimler, "girmeyen": girmeyen, "segmentler": segmentler,
               "model_turu": model_turu})
+    # Kolon olcum dosyasi kaybolduysa (klasor temizligi) o birimler yeniden olculur.
+    kol = kolonlari_oku(durum)
+    for bid, kb in list((g.get("katki") or {}).items()):
+        if (kb or {}).get("kodlar") and bid not in kol:
+            g["katki"].pop(bid, None)
     tr, _te = maskeler(durum, df)
     hedef = (durum.get("meta") or {}).get("target")
     veri = (df, pd.Series(tr, index=df.index), hedef)
@@ -598,7 +727,8 @@ def kural_plan(durum):
     for b in eklenen:
         if b["id"] in onceki:
             oneri[b["id"]] = onceki[b["id"]]
-    g.update({"oneri": oneri, "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu)})
+    g.update({"oneri": oneri,
+              "karar": _karar_kur(g, birimler, oneri, segmentler, model_turu, kolonlari_oku(durum))})
     durum["geleneksel"] = g
     durum["plan"] = []            # eski numarali secim yolu kapali
     durum["_secim_alani"] = geleneksel_karti(durum)
@@ -614,9 +744,10 @@ def kural_plan(durum):
         return metin + ("Dil modeli %s birimi aşama aşama değerlendiriyor (önce kolonun kendi dönüşümü, "
                         "sonra aile içi, en son aileler arası). Bütün kararlar gelince kart açılır."
                         % _sayi(g["oneri_is"].get("toplam") or 0))
-    toplam = sum(G.kolon_sayisi(b, (g["karar"].get(b["id"]) or {}).get("sec")) for b in birimler)
-    return metin + ("Önerilen dönüşümlerle yaklaşık %s yeni kolon üretilecek. Soldaki kararları "
-                    "değiştirebilir, sağdaki sohbette tartışabilirsiniz; onayladığınızda üretilir."
+    toplam = sum(G.kolon_sayisi(b, (g["karar"].get(b["id"]) or {}).get("sec"),
+                                (g["karar"].get(b["id"]) or {}).get("haric")) for b in birimler)
+    return metin + ("Önerilen dönüşümlerle yaklaşık %s yeni kolon üretilecek. Kararları "
+                    "değiştirebilir, alttaki sohbette tartışabilirsiniz; onayladığınızda üretilir."
                     % _sayi(toplam))
 
 
