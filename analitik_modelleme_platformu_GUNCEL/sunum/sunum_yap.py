@@ -1184,8 +1184,8 @@ def slayt_ihtiyac():
          "Aynı 26 kontrol verinin tamamında yapılır ve her eleme kararı gerekçesiyle kaydedilir."),
         ("Değişken Üretimi",
          "Dönüşüm kodu elle yazılır. Hangi dönüşümlerin deneneceği kişinin deneyimine ve zamanına kalır.",
-         "41 geleneksel dönüşümün katkısı ölçülür, yeni bilgi taşıyanlar önerilir. Seçimi kullanıcı yapar, kodu "
-         "platform yazar."),
+         "33 geleneksel dönüşümün ürettiği her kolonun katkısı ölçülür, yeni bilgi taşıyanlar önerilir. Seçimi "
+         "kullanıcı yapar, kodu platform yazar."),
         ("Yapay Zekâ ile Keşif",
          "Hazır kalıpların dışındaki değişken fikirleri kişinin aklına geldiği kadarıyla sınırlı kalır.",
          "Yapay zekâ modele ve değişkenlere bakarak kendisi de değişken önerir. Bunlar üretilip kontrol edilir, "
@@ -1628,58 +1628,64 @@ def slayt_uretim():
     s.adim_tablosu(1.5, [
         ("s", "", "1. Hazırlık", "Kod yapar",
          "Kolonlar birlikte değerlendirilecek birimlere ayrılır. Birim tek bir kolon, aynı ölçünün farklı "
-         "dönemlerinden oluşan bir aile ya da anlamlı bir kolon çifti olabilir. Sonra 41 dönüşümden hangilerinin her "
+         "dönemlerinden oluşan bir aile ya da anlamlı bir kolon çifti olabilir. Sonra 33 dönüşümden hangilerinin her "
          "birimde yapılabileceği belirlenir.",
          "Her dönüşüm her kolona uymaz. Uygunluk baştan belli olunca anlamsız değişken üretilmez ve kullanıcı bir "
          "dönüşümün neden yapılamadığını kartta görür.",
-         [[K("TXN_OUT_AMT_L30D"), ", ", K("L90D"), " ve ", K("L180D"), " kolonları bir ailedir. Logaritma yalnız "
-                                                                     "negatif değer almayan kolonda kullanılabilir."]]),
+         [[K("TXN_OUT_AMT_L30D"), ", ", K("L90D"), " ve ", K("L180D"), " kolonları bir ailedir. Artı eksi bayrağı "
+                                                                     "yalnız negatif değer de alan kolonda üretilir."]]),
         ("s", "", "2. Katkı Ölçümü", "Kod yapar",
-         "Yapılabilen her dönüşüm Train satırlarında, örnekleme yapılmadan denenir. İki şeye bakılır. Bilgi değeri "
-         "(IV) en iyi kaynağına göre en az 0,02 artıyor mu? Dönüşüm kaynaklarıyla aynı sıralamayı mı veriyor, yani "
-         "sıra ilişkisi 0,95 ve üstünde mi?",
+         "Her dönüşüm Train satırlarının tamamında denenir ve ürettiği her kolon ayrı ölçülür. Bilgi değeri (IV) en "
+         "iyi kaynağına göre en az 0,02 artıyor mu? Kaynaklarıyla sıra ilişkisi 0,95 değerinin altında mı? Kare alma "
+         "gibi dönüşümlerde doğrusal uyuma da bakılır.",
          "Öneri ve karar izlenime değil sayıya dayansın diye ölçüm öneriden önce yapılır. Kaynağının kopyası olan bir "
          "değişken modele yeni bilgi katmaz.",
          "Kaynağın bilgi değeri 0,10, oranınki 0,14 ise artış 0,04 olur ve oran yeni bilgi sayılır. Artış 0,01 "
          "olsaydı sayılmazdı."),
         ("s", "", "3. Öneri ve Tamamlama", "Önce yapay zekâ, sonra kod",
-         "Yapay zekâ ölçüme bakarak her birim için dönüşüm önerir ve gerekçesini sayılarla yazar. Kod, ölçüme göre "
-         "değerli olduğu hâlde önerilmemiş dönüşümleri ekler ve aynı bilgiyi veren tekrarları ayıklar.",
+         "Yapay zekâ ölçüme bakarak her birim için dönüşüm önerir ve gerekçesini sayılarla yazar. Kod, değerli "
+         "olduğu hâlde önerilmemiş dönüşümleri ekler, tekrarları ayıklar ve yeni bilgi taşımayan kolonları dışarıda "
+         "bırakır.",
          "Yapay zekâ kolonun anlamını bilir, kod ise sayıyı. İkisi birbirinin eksiğini kapatır. Öneriyi kimin verdiği "
          "her satırda görünür.",
          "Farklı ailelerden anlamlı çiftleri de yapay zekâ önerir. Bu çiftler de aynı ölçümden geçer."),
         ("s", "", "4. Karar ve Üretim", "Önce kullanıcı, sonra kod",
-         "Kullanıcı ölçümü ve öneriyi görür. Kartta tek tıkla dönüşüm ekler ya da çıkarır. Plan Üzerine Sohbet "
-         "bölümünde soru sorabilir ya da toplu değişiklik isteyebilir. Onaydan sonra kod seçilen dönüşümleri üretir "
-         "ve üretim kodunu kaydeder.",
+         "Kullanıcı her kolonun ölçümünü ve öneriyi görür. Kartta dönüşümü ya da tek tek kolonu ekler ve çıkarır. "
+         "Plan Üzerine Sohbet bölümünde soru sorabilir ya da toplu değişiklik isteyebilir. Onaydan sonra kod seçilen "
+         "kolonları üretir ve üretim kodunu kaydeder.",
          "Son seçim iş bilgisi gerektirir. Kaydedilen üretim kodu sayesinde aynı değişkenler yeniden üretilebilir.",
          "Sohbette eğimin ne olduğu sorulabilir ya da bir kolon grubuna dönüşüm eklenmesi istenebilir. Öneri gelir, "
          "uygulayıp uygulamamak kullanıcıya kalır."),
     ], 1.06, basliklar=("Aşama", "Ne Yapılır", "Neden Gerekli", "Örnek"))
-    s.dipnot("Sohbet platformda bu adımda açılır. Örnekteki sayılar gösterim amaçlıdır. Kullanılan eşikler bilgi "
-             "değeri artışı için 0,02, sıra ilişkisi için 0,95 değeridir.")
+    s.dipnot("Doğrusal uyum, kolonun kaynağıyla birlikte doğrusal modele kattığı ayırma gücüdür. Eşikler bilgi değeri "
+             "artışı için 0,02, sıra ilişkisi için 0,95, doğrusal uyum artışı için 0,01 değeridir. Örnekteki sayılar "
+             "gösterim amaçlıdır. Sohbet platformda bu adımda açılır.", h=0.4)
     s.notlar = ("Şu an üzerinde çalışılan adım budur. Birim, birlikte değerlendirilen kolon ya da kolon grubudur. "
                 "Örneğin aynı ölçünün son 30, 90 ve 180 günlük kolonları bir ailedir. Sıra önemlidir. Kod önce her "
-                "dönüşümün katkısını ölçer. Yapay zekâ bu ölçüme bakarak önerir. Kod eksik kalanı tamamlar ve tekrarı "
-                "ayıklar. Kullanıcı bunların hepsini görerek karar verir. Ölçüm yalnız Train satırlarında yapılır. "
-                "Bilgi değeri (IV) en iyi kaynağa göre en az 0,02 artıyorsa ve kaynaklarla sıra ilişkisi 0,95 değerinin "
-                "altındaysa dönüşüm yeni bilgi sayılır. Kart ve sohbet geri bildirimle güncelleniyor. Üretilen "
-                "değişken sayısı ve yeni bilgi eşiği henüz açık konulardır.")
+                "dönüşümün ürettiği her kolonun katkısını ölçer. Yapay zekâ bu ölçüme bakarak önerir. Kod eksik kalanı "
+                "tamamlar, tekrarı ayıklar ve yeni bilgi taşımayan kolonları dışarıda bırakır. Kullanıcı bunların "
+                "hepsini görerek karar verir ve isterse kolonları tek tek seçer. Ölçüm yalnız Train satırlarında "
+                "yapılır. Bilgi değeri (IV) en iyi kaynağa göre en az 0,02 artıyorsa ve kaynaklarla sıra ilişkisi 0,95 "
+                "değerinin altındaysa kolon yeni bilgi sayılır. Doğrusal uyum, kolonun kaynağıyla birlikte doğrusal "
+                "modele kattığı ayırma gücüdür. Bilgi değeri sıralamaya baktığı için kare almanın katkısını göstermez, "
+                "bu ölçüm gösterir. Kart ve sohbet geri bildirimle güncelleniyor. Üretilen değişken sayısı ve yeni "
+                "bilgi eşiği henüz açık konulardır.")
     return s
 
 
 def slayt_asamalar():
-    s = Slayt("AKIS", B3, "02.2 Kural Tabanlı Değişken Üretiminde Üç Aşama ve 41 Dönüşüm",
+    s = Slayt("AKIS", B3, "02.2 Kural Tabanlı Değişken Üretiminde Üç Aşama ve 33 Dönüşüm",
               "Dönüşümler neye bakarak üretildiklerine göre üç aşamada toplanır. Kartta öneriler bu sırayla gösterilir.")
     s.adim_tablosu(1.5, [
-        ("s", "", "1. Kolonun kendi dönüşümü", "18 dönüşüm",
-         "Tek bir kolon kendi içinde dönüştürülür. Ölçeği düzeltilir, bayrak ya da dilim üretilir, kategori sayıya "
-         "çevrilir. Logaritma, karekök, uç kırpma, sıra, sıfır bayrağı, eşit frekans dilimi, frekans kodlama, WoE ve "
-         "hedef ortalaması bu aşamadaki dönüşümlerden bazılarıdır.",
-         "Ham kolonun dağılımı çoğu zaman çarpıktır ve birkaç çok büyük değer ilişkiyi gizler. Kategorik kolon ise "
+        ("s", "", "1. Kolonun kendi dönüşümü", "10 dönüşüm",
+         "Tek bir kolondan yeni bilgi taşıyan kolon üretilir. Karesi alınır, bayrak ya da dilim üretilir, kategori "
+         "sayıya çevrilir. Kare alma, sıfır bayrağı, eşik bayrağı, ondalık dilim, frekans kodlama, WoE ve hedef "
+         "ortalaması bu aşamadaki dönüşümlerden bazılarıdır. Logaritma ve uç kırpma gibi ölçek dönüşümleri bu adımda "
+         "üretilmez, o kararlar 03.1 adımında verilir.",
+         "Bazı ilişkiler düz bir çizgi izlemez, risk hem düşük hem yüksek değerde artabilir. Kategorik kolon ise "
          "modele ancak sayıya çevrilerek girebilir.",
-         [[K("TXN_OUT_AMT_L30D"), " kolonunun logaritması alınır. Çok büyük tutarların etkisi sıkışır, küçük farklar "
-                                  "korunur."]]),
+         "Yaş kolonunun karesi alınır. Risk hem genç hem ileri yaşta artıyorsa doğrusal model bu ilişkiyi kare "
+         "terimiyle görür."),
         ("s", "", "2. Aile içi üretim", "13 dönüşüm",
          "Aynı ölçünün farklı dönemleri birbiriyle karşılaştırılır. Kısa dönemin uzun döneme oranı, önceki döneme göre "
          "büyüme, eğilim, düzensizlik ve en yoğun dönemin payı bu aşamada üretilir.",
@@ -1696,11 +1702,13 @@ def slayt_asamalar():
          [[K("TXN_IN_AMT_L30D"), " eksi ", K("TXN_OUT_AMT_L30D"), " net akışı verir. Hesaba girenin mi çıkanın mı "
                                                                 "fazla olduğunu gösterir."]]),
     ], 1.44, basliklar=("Aşama", "Ne Yapılır", "Neden Gerekli", "Örnek"))
-    s.dipnot("Kartta 41 dönüşümün her biri sade adı, ne yaptığı, bu verideki örneği ve bu veride neden kullanılabildiği "
+    s.dipnot("Kartta 33 dönüşümün her biri sade adı, ne yaptığı, bu verideki örneği ve bu veride neden kullanılabildiği "
              "ya da kullanılamadığıyla listelenir.")
     s.notlar = ("Aşama, dönüşümün neye baktığını söyler. Birinci aşama tek kolonla, ikinci aşama aynı ölçünün farklı "
                 "dönemleriyle, üçüncü aşama birbiriyle ilişkili farklı kolonlarla çalışır. Türetildiği kolonlardan "
-                "belirgin biçimde daha fazla bilgi taşıyan ve onların kopyası olmayan dönüşümler önerilir. Son seçim "
+                "belirgin biçimde daha fazla bilgi taşıyan ve onların kopyası olmayan kolonlar önerilir. Logaritma, "
+                "uç kırpma ve sıraya çevirme gibi ölçek dönüşümleri yeni bilgi taşımadığı için bu adımda yer almaz. "
+                "Değişkenin modele hangi hâliyle gireceğine 03.1 Tek Değişken Analizi adımında karar verilir. Son seçim "
                 "kullanıcınındır. Kolon adları 01 fazında standartlaştırılan adlardır ve örnekler gösterim amaçlıdır.")
     return s
 
@@ -1827,7 +1835,7 @@ def slayt_durum():
             "02.1 Veri Profili ve Kalite tamamlandı. 20 eşik, 26 kontrol, düzeltme ve çözüm önerileri içerir"],
            baslik_boy=14, boy=11.5)
     s.kart(0.5 + kw + 0.25, 4.32, kw, 2.0, "simdi", "Üzerinde Çalışılan",
-           ["02.2 Kural Tabanlı Değişken Üretimi sürüyor. Kod 41 dönüşümün katkısını ölçer, yapay zekâ ölçüme "
+           ["02.2 Kural Tabanlı Değişken Üretimi sürüyor. Kod 33 dönüşümün katkısını ölçer, yapay zekâ ölçüme "
             "bakarak önerir, kullanıcı kartta ve sohbette karar verir",
             "Üretilen değişken sayısı ve yeni bilgi eşiği henüz açık konulardır"],
            baslik_boy=14, boy=11.5)

@@ -1470,10 +1470,10 @@ def slayt_uretim():
     # 02.2: bilinen donusumler ve uretilen degiskenlerden ornekler
     s.kutu(xb, by, ow, bh, "islem", "gövde 02.2")
     ikon_disli(s, xb + 0.72, by + 0.56, 0.74)
-    s.yazi([[R("41 ", kalin=True, boy=38, renk=KIR), R("dönüşüm", kalin=True, boy=16)]], xb + 1.3, by + 0.12, 2.6,
+    s.yazi([[R("33 ", kalin=True, boy=38, renk=KIR), R("dönüşüm", kalin=True, boy=16)]], xb + 1.3, by + 0.12, 2.6,
            0.88, hiza="l")
-    s.yazi("Bilinen dönüşümler denenir, modele yeni bilgi katanlar önerilir.", xb + 0.3, by + 1.0, ow - 0.6, 0.42,
-           boy=12.5, hiza="l")
+    s.yazi("Dönüşümler denenir, her kolon ölçülür, yeni bilgi katanlar önerilir.", xb + 0.3, by + 1.0,
+           ow - 0.6, 0.42, boy=12.5, hiza="l")
     ornekler = [("Oran", "Son 30 gün bölü son 90 gün"), ("Eğilim", "Dönemden döneme artış ya da azalış"),
                 ("Net akış", "Giren eksi çıkan")]
     tw = (ow - 0.6 - 0.3) / 3
@@ -1511,9 +1511,10 @@ def slayt_uretim():
     s.yazi("Her öneri, ölçülmüş katkısı ve gerekçesiyle birlikte sunulur", SOL + 0.2, 6.03, EN - 0.4, 0.58, boy=14,
            kalin=True, renk=KIR)
     s.notlar = ("Ayrıntılı sunumdaki karşılığı slayt 9, 10 ve 11. Yeni değişkenler üç adımda üretilir. Önce veri "
-                "kalitesi kontrol edilir, bu adım geliştirildi. Sonra bilinen dönüşümler denenir ve modele yeni bilgi "
-                "katanlar önerilir, şu an üzerinde çalışılan adım budur. Son adımda yapay zekâ bilinen dönüşümlerin "
-                "dışında yeni değişken fikirleri önerir, bu adım sıradadır. Her öneri ölçülmüş katkısı ve gerekçesiyle "
+                "kalitesi kontrol edilir, bu adım geliştirildi. Sonra bilinen dönüşümler denenir, üretilen her kolon "
+                "ayrı ölçülür ve modele yeni bilgi katanlar önerilir, şu an üzerinde çalışılan adım budur. Son adımda "
+                "yapay zekâ bilinen dönüşümlerin dışında yeni değişken fikirleri önerir, bu adım sıradadır. Her öneri "
+                "ölçülmüş katkısı ve gerekçesiyle "
                 "birlikte sunulur, hangisinin üretileceğine kullanıcı karar verir. Örnekler gösterim amaçlıdır.")
     return s
 
