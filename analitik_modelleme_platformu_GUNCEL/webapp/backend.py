@@ -2714,7 +2714,7 @@ def geleneksel_sohbet_endpoint():
             from fe_agent import akis_faz03 as _f3o
             _f3o.geleneksel_karar_kaydet(durum, karar)
             g = durum.get("geleneksel") or {}
-            cevap = ("Önceki mesajdaki %s öneri sola aktarıldı; kararlar güncellendi. Üretim için "
+            cevap = ("Önceki mesajdaki %s öneri kararlara aktarıldı; kararlar güncellendi. Üretim için "
                      "\"Kararları Onayla ve Üret\" düğmesine basın." % uygulanan)
             sohbet = list(g.get("sohbet") or []) + [{"rol": "kullanici", "metin": mesaj},
                                                      {"rol": "model", "metin": cevap, "degisiklikler": []}]

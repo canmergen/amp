@@ -5758,11 +5758,9 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .vse-sar { max-height: 320px; overflow: auto; }
 .dg-tablo.vse-tablo th, .dg-tablo.vse-tablo td { text-align: center; }
 
-/* 02.2 Geleneksel Değişken Üretimi: iki sütun (kararlar ve sohbet) */
-.gl-izgara { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--b-4); align-items: start; }
-.gl-kat-sutun { min-width: 0; display: flex; flex-direction: column; gap: var(--b-2); }
+/* 02.2 Geleneksel Değişken Üretimi: tek sütun (süzgeç çubuğu, sekmeler), sohbet altta */
+.gl-izgara { display: block; }
 @media (max-width: 1000px) {
-  .gl-izgara { grid-template-columns: 1fr; }
   .gl-sag { height: 480px; }
 }
 .gl-sol, .gl-sag { min-width: 0; display: flex; flex-direction: column; gap: var(--b-2); }
@@ -5940,3 +5938,31 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .dg-tablo.gl-katalog th { word-break: normal; overflow-wrap: normal; hyphens: none; }
 .dg-tablo.gl-ozet { min-width: 0; font-size: var(--fs-kucuk); }
 .dg-tablo.gl-ozet th { word-break: normal; overflow-wrap: normal; }
+
+/* 02.2: suzgec cubugu (birim tipi, durum, donusum, arama), birim tipi rozetleri, Uretim Plani */
+.gl-suzgec { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--kenar);
+  border-radius: var(--r-kucuk); background: var(--yuzey-alt); }
+.gl-suzgec[hidden], .gl-alt-arac[hidden] { display: none; }
+.gl-suz-satir { display: flex; align-items: center; gap: var(--b-2); }
+.gl-suz-ad { flex: 0 0 84px; color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+.gl-suz-cipler { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; flex: 1; min-width: 0; }
+.gl-suz-say { margin-left: 6px; color: var(--metin-soluk); font-weight: var(--fw-normal); }
+.gl-suz-btn.secili .gl-suz-say { color: inherit; }
+.gl-suz-btn:disabled { opacity: .45; cursor: default; }
+.gl-kod-sec { max-width: 300px; }
+.gl-suzgec .gl-param-sec { padding: 4px 6px; border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey); color: var(--metin); }
+.gl-alt-arac { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--b-3); }
+.gl-alt-arac .gl-not { flex: 1; min-width: 0; }
+.gl-alt-arac .dg-toplu-btn { flex: 0 0 auto; }
+.gl-tip { display: inline-block; padding: 1px 9px; border-radius: var(--r-kucuk); font-size: var(--fs-kucuk);
+  font-weight: var(--fw-kalin); border: 1px solid var(--kenar); background: var(--yuzey-alt); color: var(--metin);
+  white-space: nowrap; }
+.gl-tip-aile { background: var(--dg-llm); border-color: transparent; }
+.gl-tip-cift { background: var(--dg-hafiza); border-color: transparent; }
+.gl-tip-grup { background: var(--bilgi-zemin); border-color: var(--bilgi-kenar); }
+.gl-tip-satir { background: var(--amber-acik); border-color: transparent; }
+.dg-tablo.gl-plan { min-width: 980px; }
+.dg-tablo.gl-plan td .dg-toplu-btn { white-space: nowrap; }
+.gl-daha { align-self: center; }
+.pf-karo.gl-karo-tik { cursor: pointer; }

@@ -2565,7 +2565,7 @@ def toplu_cevap(degisiklikler, katki=None):
         return ""
     yap = any(d.get("toplu") and d["ids"] for d in degisiklikler)
     return "\n".join(p_.strip() for p_ in par) + (
-        "\nPlan henüz değişmedi; Uygula'ya basınca sola aktarılır." if yap else "")
+        "\nPlan henüz değişmedi; Uygula'ya basınca kararlara aktarılır." if yap else "")
 
 
 def plan_satirlari(birimler, karar, model_turu="agac", mesaj="", en_cok=900, katki=None):

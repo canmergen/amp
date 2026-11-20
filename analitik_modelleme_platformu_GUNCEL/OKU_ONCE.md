@@ -2691,7 +2691,7 @@ tanıtır; sayfalar sol bardan açılır.
   katki)`: "Öneri: X N birimden çıkarılsın (kapsam)" + `katki_etkisi`
   (ölçülen birim sayısı, IV artışı ortalaması ve en çoğu, yeni bilgi
   taşıyan birim sayısı; çıkarmada kaybolacak bilgi uyarısı) + "Plan henüz
-  değişmedi; Uygula'ya basınca sola aktarılır." Dil modelinin metni yalnız
+  değişmedi; Uygula'ya basınca kararlara aktarılır." Dil modelinin metni yalnız
   sayı içeriyor ve "kaldırıldı, eklendi, uygulandı" demiyorsa eklenir.
   Değişiklik yoksa durumu kod yazar.
 - Kapsam metni Türkçe; bütün türler ve aşamalar "bütün birimler".
@@ -2708,7 +2708,7 @@ tanıtır; sayfalar sol bardan açılır.
 - ONAY: kısa onay mesajı ("evet", "olur", "tamam", "ekle bence de",
   "uygula"; `ONAY` deseni) yazılırsa ve son cevapta bekleyen öneri varsa
   kart önerileri uygular, isteğe `uygulanan` sayısını koyar; sunucu dil
-  modelini çağırmaz, "Önceki mesajdaki N öneri sola aktarıldı" yazar ve
+  modelini çağırmaz, "Önceki mesajdaki N öneri kararlara aktarıldı" yazar ve
   kararı kaydeder.
 - METİNDE KALAN ÖNERİ: dil modeli bir dönüşümü yalnız metinde önerirse
   (yapılandırılmış değişiklik yok) ve kullanıcı bir eylem istediyse
@@ -2809,6 +2809,47 @@ tanıtır; sayfalar sol bardan açılır.
   modeli, kod ölçüm, kod kural, sohbet, siz), ölçüm (IV ve artış) ve
   gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
   süzgeci; en çok 2.000 satır.
+
+**02.2 süzgeç çubuğu, birim tipi rozetleri ve Üretim Planı (tek sütun düzen)**
+- NEDEN: birimin tipi (tek kolon, pencere ailesi, kolon çifti) satırda küçük
+  gri yazıydı ve süzülemiyordu; hangi dönüşümün hangi birimde üretileceği
+  süzülemiyordu; "5 / 19 dönüşüm" neyin kaçta kaçı olduğunu söylemiyordu;
+  katalog tablosu ekranın yarısını kaplıyordu.
+- DÜZEN (`gelenekselKartiEkle`): tek sütun (`.gl-izgara` blok). Sekmeler:
+  Birimler, Üretim Planı, Üretime Girmeyen, Dönüşümler. Eski Uygulanacak ve
+  Uygulanmayacak sekmeleri Birimler'de Durum süzgecine, eski Öneriler
+  sekmesi Üretim Planı'na, sol sütundaki katalog tablosu Dönüşümler
+  sekmesine taşındı (`.gl-kat-sutun` kalktı).
+- SÜZGEÇ ÇUBUĞU (`.gl-suzgec`, durum `suz`; Birimler ve Üretim Planı'nda):
+  Birim tipi çipleri (Tek kolon, Pencere ailesi, Kolon çifti, Kolon grubu,
+  Satır düzeyi; yalnız veride olan tipler), Durum çipleri (Hepsi,
+  Üretilecek, Üretilmeyecek, Öneriden farklı; varsayılan Üretilecek),
+  Dönüşüm seçimi (tek dönüşüm ya da bir aşamanın hepsi; "seçili olduğu" ya
+  da "uygulanabildiği" birimler), arama, Süzgeçleri Temizle. Çiplerdeki
+  sayılar öbür süzgeçlere göre canlıdır (`suzgecCiz`, `birimEsler`,
+  `planSatirlari`; sayılan boyut `haric` ile atlanır). Üretim Planı'nda
+  öğe (birim, dönüşüm) satırıdır: Üretilecek seçili satır, Üretilmeyecek
+  önerilip çıkarılan satır; ek olarak Öneren seçimi (dil modeli, kod, siz).
+- BİRİM SATIRI: başta renkli tip rozeti (`tipRozeti`, `.gl-tip-<tur>`);
+  sağda "N seçili · M uygulanabilir · K kolon". Birim açılınca "Uygulanabilen"
+  satırı sayının nedenini yazar: "41 dönüşümden 26 tanesi bu birimde
+  uygulanabilir. 3 tanesi bu birimin verisine uymuyor (nedenleri en altta).
+  12 tanesi başka birim tiplerine aittir." Uygulanabilen sayı
+  `geleneksel.uygunluk` kurallarından gelir: birim tipi, negatif değer,
+  farklı değer sayısı, sıfırın payı, segment kolonu, pencere sayısı ve
+  ölçünün toplanabilir olması.
+- ÜRETİM PLANI (`planCiz`, `.gl-plan`): Birim Tipi, Birim, Dönüşüm, Kolon
+  (o dönüşümün o birimde üreteceği kolon sayısı), Durum, Öneren, Ölçüm,
+  Gerekçe, İşlem (Çıkar / Geri Ekle; kilitli kartta yok). Sıra: ölçülen IV
+  artışı yüksek olan üstte. En çok 2.000 satır.
+- KAROLAR kısayoldur: Birim (süzgeçsiz Birimler), Üretilecek Birim
+  (Birimler, Üretilecek), Üretilecek Kolon (Üretim Planı, seçili), Dil
+  Modeli Kararı (Üretim Planı, öneren dil modeli), Önerilen / Seçili
+  (Üretim Planı, öneriden farklı).
+- Birimler listesi 300'er birimlik dilimlerle çizilir ("Sonraki N birimi
+  göster"); çok birimli veride tarayıcı yorulmaz.
+- Sohbet metinlerinde "sola aktarılır" yerine "kararlara aktarılır" (sol
+  sütun kalmadı).
 
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
