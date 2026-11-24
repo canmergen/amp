@@ -34,7 +34,10 @@ GIZLI_EKSIK_DEGERLER = (-1, -9, -99, -999, -9999, -99999, -999999, -9999999,
 # biri altinda kalmali (9999 ile 9.998 ayni dagilimdir, kod sayilmaz).
 GIZLI_KOPUK_KAT = 10
 DONEM_SICRAMA_ESIK = 0.20
-DONEM_SABIT_MIN_SATIR = 100
+# TESADUF OLASILIGI (anlamlilik duzeyi): bir bulgunun tesadufen cikma
+# olasiligi bunun altindaysa gercek sayilir. Donemde bos ya da sabit
+# kontrolu ve baskin degerin Tut / Cikar onerisi bununla karar verir.
+TESADUF = 0.05
 # UC DEGER (hatali giris, iki yonlu): yayilim = %99'luk - %1'lik.
 # Ust: en buyuk > %99'luk + KAT x yayilim; alt: en kucuk < %1'lik - KAT x
 # yayilim. Pozitif kolonda (%1'lik ~ 0) ust kural eski "en buyuk >
@@ -50,7 +53,7 @@ YAKIN_KOR = 0.99
 KAYMA_KAT = 10
 ONDALIK_BASAMAK = 4
 ESIK_VARSAYILAN = {"baskin": BASKIN_ESIK, "gizli": GIZLI_EKSIK_ESIK,
-                   "donem_min_satir": DONEM_SABIT_MIN_SATIR, "sicrama": DONEM_SICRAMA_ESIK,
+                   "tesaduf": TESADUF, "sicrama": DONEM_SICRAMA_ESIK,
                    "uc_yayilim": UC_DEGER_KAT, "sizinti_auc": SIZINTI_AUC, "yakin_kor": YAKIN_KOR,
                    "kayma_kat": KAYMA_KAT}
 
@@ -267,9 +270,21 @@ def donem_kontrolleri(df, adaylar, donem, esik=None):
     if len(donemler) < 2:
         return donemler, None, None
     e = esik_birlestir(esik)
+    alfa = float(e["tesaduf"])
     satir = g.value_counts()
-    buyuk = {d for d in donemler if int(satir.get(d, 0)) >= e["donem_min_satir"]}
     bos_sabit, sicrama = [], []
+
+    def tesadufi_mi(s, d, deger=None):
+        """Donem d'de kolonun tamami bos (deger None) ya da tamami `deger`.
+        Oteki donemlerde bu durumun payi p ise, d'nin n satirinin hepsinin
+        tesadufen boyle cikma olasiligi p^n. Bu olasilik alfa'dan kucukse
+        bulgu gercektir (tesadufi degildir)."""
+        dis = g.notna() & (g != d)
+        if not bool(dis.any()):
+            return True
+        p = float(s[dis].isna().mean()) if deger is None else float((s[dis] == deger).mean())
+        n = int(satir.get(d, 0))
+        return (p ** n) >= alfa
     for i in range(0, len(adaylar), DONEM_PARCA):
         parca = list(adaylar[i:i + DONEM_PARCA])
         alt = df[parca]
@@ -278,12 +293,16 @@ def donem_kontrolleri(df, adaylar, donem, esik=None):
         for kol in parca:
             oran = bos_oran[kol]
             bos = [d for d in donemler if float(oran[d]) >= 1.0]
-            sabit = [d for d in donemler if d in buyuk and float(oran[d]) == 0.0
-                     and int(tekil[kol][d]) == 1]
+            sabit = [d for d in donemler if float(oran[d]) == 0.0 and int(tekil[kol][d]) == 1]
             # Butun donemlerde ayni tek deger: kolon sabittir, temel kontrol
             # yakalar; burada yalniz donemden doneme degisen kolon.
             if sabit and len(sabit) == len(donemler):
                 sabit = []
+            if bos or sabit:
+                sk = df[kol]
+                bos = [d for d in bos if not tesadufi_mi(sk, d)]
+                sabit = [d for d in sabit
+                         if not tesadufi_mi(sk, d, sk[g == d].dropna().iloc[0])]
             if bos or sabit:
                 bos_sabit.append({"kolon": kol, "bos": [deger_metni(d) for d in bos],
                                   "sabit": [deger_metni(d) for d in sabit]})

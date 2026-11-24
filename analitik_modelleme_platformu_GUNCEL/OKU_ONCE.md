@@ -3317,3 +3317,14 @@ tanıtır; sayfalar sol bardan açılır.
 - ARALIK TUTARLILIĞI yalnız Test (OOS) setinde; Validasyon (OOT) hedefi SFA
   kararına girmez.
 
+
+## 02.1 istatistiksel eşikler (keyfî sayılar kaldırıldı)
+
+- **Tesadüf Olasılığı (%5)**: Eşik formunun en üstünde "Genel ayar" olarak durur. Bir bulgunun tesadüfen çıkma olasılığı bu değerin altındaysa gerçek sayılır. %5 istatistiksel testlerde yaygın kullanılan anlamlılık düzeyidir.
+- **Baskın değer Tut/Çıkar önerisi**:
+  - Baskın değer dışındaki satır sayısı × eğitim hedef oranı 5'ten küçükse Çıkar önerilir. Bu Cochran kuralıdır: beklenen sayı 5'in altındaysa oran karşılaştırması güvenilmez.
+  - Aksi halde iki grubun hedef oranı iki oran testiyle karşılaştırılır. Olasılık tesadüf olasılığının altındaysa ve ayırma gücü IV ≥ 0,02 ise Tut önerilir, değilse Çıkar. IV 0,02 altı yaygın kabulle "bilgi taşımıyor" sayılır.
+  - Eski "Satır sınırı" ve "Hedef farkı" eşikleri kaldırıldı.
+- **Metinde çok değer**: Önerilen değer = eğitimde hedefi 1 olan satır sayısı ÷ 5. Her değerde ortalama en az 5 hedef olayı kalsın diye. En az 2, en çok 50 (SFA'nın çalıştığı üst sınır).
+- **Dönemde boş/sabit**: Bir dönem tamamen boş ya da tek değerliyse, diğer dönemlerdeki oranla bunun tesadüfen olma olasılığı (oran^satır sayısı) hesaplanır. Olasılık tesadüf olasılığının altındaysa bulgu sayılır. Eski "dönem en az satır" eşiği kaldırıldı.
+- Kaldırılan anahtarlar (`baskin_min_satir`, `baskin_kat`, `donem_min_satir`) önceki oturumlarda onaylanmış olsa da artık okunmaz. Diğer onaylı eşikler korunur.

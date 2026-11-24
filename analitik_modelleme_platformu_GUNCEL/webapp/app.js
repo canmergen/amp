@@ -20128,6 +20128,26 @@ function profilEsikKartiEkle(alan, blok) {
     /* DÜZEN: başlık (en solda, kutunun dışında) → sütun başlıkları →
        kuralların tablosu. Bir kuralın öneri eşikleri o kuralla aynı
        grupta: altında «… kuralının öneri eşikleri» ara başlığı ve içeride. */
+    /* GENEL AYAR: birden çok kontrolün kullandığı istatistik eşiği
+       (Tesadüf olasılığı) kontrollerden önce, kendi bölümünde. */
+    if ((alan.genel || []).some(a => esikHarita[a])) {
+        const bolum = elYap("section", "pf-ek-bolum");
+        const kb = elYap("div", "pf-ek-kbas");
+        kb.appendChild(elYap("b", "", "Genel ayar"));
+        kb.appendChild(elYap("span", "", "Birden çok kontrol bu değerle karar verir"));
+        bolum.appendChild(kb);
+        const kk = elYap("div", "pf-ek-kontrol");
+        kk.appendChild(sutunBas());
+        alan.genel.forEach(a => {
+            const r = esikHarita[a];
+            if (!r) return;
+            const grup = elYap("div", "pf-ek-grup");
+            grup.appendChild(kuralSatiri(r.kontrol, r.anlam, r.sonuc, r, false));
+            kk.appendChild(grup);
+        });
+        bolum.appendChild(kk);
+        govde.appendChild(bolum);
+    }
     kontroller.forEach(k => {
         const bolum = elYap("section", "pf-ek-bolum");
         const kb = elYap("div", "pf-ek-kbas");
