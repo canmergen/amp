@@ -3333,7 +3333,7 @@ tanıtır; sayfalar sol bardan açılır.
 
 - 02.1'deki bütün kural, eşik ve öneri metinleri konuyu hiç bilmeyen birinin okuyup anlayacağı dille yazılır.
 - Terim kullanılmaz: AUC, korelasyon, yüzdelik, IV, kardinalite, winsor, medyan yazılmaz. Karşılıkları: "isabet", "benzerlik", "normal aralık", "ortadaki değer", "şans eseri olma ihtimali".
-- Eşik formunda "Neye bakıyor" sütununda tek cümle ve altında küçük sayılarla bir örnek vardır (`KURAL_FORM_OLCUT`, `KURAL_FORM_ORNEK`, `ONERI_FORM_OLCUT`, `ONERI_FORM_ORNEK`).
-- i balonunda sıra: Nedir, Neden sorun, Kapsam, Örnek, Yakalanırsa, Neden bu değer önerildi (`_ac`).
+- Eşik formunda açıklama i balonunda değil, satırın içindedir. "Neye bakıyor" sütunu: ne aradığı, neden sorun olduğu, kapsam ve küçük sayılarla örnek. "Yakalanırsa" sütunu: renkli etiket ve altında ne olacağı. "Önerilen" sütunu: değer ve neden o değer. Hepsi `_ac` ile yazılan tek metinden gelir (`kontrol_parcalari`).
+- Eşiği olmayan kontroller formda gösterilmez; sonuçları Veri Profili kartındadır.
 - Öneri gerekçeleri (`_veri_onerileri`) sayıyı verir, ardından düz cümleyle sonucu söyler ve "Tut" ya da "Çıkar" ile biter.
 - Yeni bir kural eklenirse aynı dille ve örnekle yazılır.

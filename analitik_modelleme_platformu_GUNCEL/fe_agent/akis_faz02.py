@@ -1404,7 +1404,8 @@ _KOD_SAKLA = ("bu sayı boş sayılır; hangi satırlarda yazdığı da ayrı bi
 PROFIL_ESIK_ACIKLAMA = {
     "cok_bos": _ac(
         "Büyük kısmı boş olan kolon.",
-        "Kolondaki hücrelerin ne kadarının boş olduğuna bakar.",
+        "Kolondaki hücrelerin yüzde kaçının boş olduğuna bakar. Boş oranı eşiğin üstündeyse "
+        "kolon yakalanır.",
         "100 satırın 85'i boşsa boş oranı %85'tir. Eşik %80 ise kolon yakalanır.",
         "kolon olduğu gibi kullanılmaz. Yerine «bu satırda değer var mı, yok mu» bilgisini "
         "taşıyan 1/0 kolonu önerilir; kabul edip etmemek size kalır.",
@@ -1415,7 +1416,9 @@ PROFIL_ESIK_ACIKLAMA = {
         sonuc="Çözüm önerilir; çözüm yoksa üretime girmez"),
     "kimlik": _ac(
         "Neredeyse her satırda başka değer olan kolon (müşteri numarası gibi).",
-        "Kolonda kaç farklı değer olduğunu satır sayısıyla karşılaştırır.",
+        "Kolonda kaç farklı değer olduğunu sayar ve satır sayısına böler. Sonuç %100'e yakınsa "
+        "neredeyse her satırda başka bir değer var demektir. Sonuç eşiğin üstündeyse kolon "
+        "yakalanır.",
         "100 satırda 98 farklı değer varsa oran %98'dir. Eşik %95 ise kolon yakalanır.",
         "kolon olduğu gibi kullanılmaz. Değerler bir kod gibi düzenliyse (örneğin ilk iki harf "
         "şubeyi gösteriyorsa) ilk harflere göre gruplama önerilir.",
@@ -1429,7 +1432,8 @@ PROFIL_ESIK_ACIKLAMA = {
         sonuc="Çözüm önerilir; çözüm yoksa üretime girmez"),
     "kardinalite": _ac(
         "Çok fazla farklı değeri olan yazı kolonu.",
-        "Yazı kolonunda kaç farklı değer olduğunu sayar.",
+        "Yazı kolonunda kaç farklı değer olduğunu sayar. Sayı eşiğin üstündeyse kolon "
+        "yakalanır.",
         "Şehir kolonunda 81 farklı şehir var. Eşik 50 ise kolon yakalanır.",
         "kolon olduğu gibi kullanılmaz. Benzer değerleri birleştirip daha az gruba indirmek "
         "önerilir.",
@@ -1442,8 +1446,8 @@ PROFIL_ESIK_ACIKLAMA = {
         sonuc="Çözüm önerilir; çözüm yoksa üretime girmez"),
     "baskin": _ac(
         "Satırların neredeyse hepsinde aynı değer.",
-        "En çok görülen değerin satırların ne kadarında geçtiğine bakar. Boş hücre de bir değer "
-        "sayılır.",
+        "Kolonda en çok görülen değeri bulur ve satırların yüzde kaçında geçtiğine bakar. Bu "
+        "pay eşik kadar ya da daha fazlaysa kolon yakalanır. Boş hücre de bir değer sayılır.",
         "100 satırın 99'unda 0 yazıyorsa pay %99'dur. Eşik %99 ise kolon yakalanır.",
         "kolonu tutmak ya da çıkarmak size sorulur. Sistem bir öneri de verir: farklı değerdeki "
         "az sayıdaki satıra bakar. Bu satırlarda hedef, öteki satırlardan belirgin biçimde "
@@ -1456,8 +1460,8 @@ PROFIL_ESIK_ACIKLAMA = {
         sonuc="Kararınıza bırakılır"),
     "gizli": _ac(
         "Boş bırakmak yerine -999, 9999 gibi uydurma bir sayı yazılmış.",
-        "Kolonun öteki değerlerinden kopuk duran -1, -99, -999, 9999 gibi bir sayının ne kadar "
-        "sık geçtiğine bakar.",
+        "Kolonun öteki değerlerinden kopuk duran -1, -99, -999, 9999 gibi bir sayı arar. Böyle "
+        "bir sayı dolu satırların eşikten fazlasında yazıyorsa kolon yakalanır.",
         "Yaş kolonunda dolu 100 satırın 3'ünde -999 yazıyor: %3. Eşik %1 ise kolon yakalanır.",
         "kolon kullanılır. Öneri: " + _KOD_SAKLA + ".",
         "Neden %1 önerildi?",
@@ -1467,7 +1471,8 @@ PROFIL_ESIK_ACIKLAMA = {
         sonuc="Düzeltme önerilir; kolon üretime girer"),
     "sicrama": _ac(
         "Boş oranı bir dönemden sonrakine birden değişen kolon.",
-        "Art arda iki dönemin boş oranlarını karşılaştırır.",
+        "Her dönemde (ay gibi) kolonun yüzde kaçının boş olduğunu hesaplar ve art arda gelen "
+        "iki dönemi karşılaştırır. Aradaki fark eşikten büyükse kolon yakalanır.",
         "Mart'ta 100 satırın 5'i boş, Nisan'da 40'ı boş. Fark 35 puan; eşik 20 puan ise kolon "
         "yakalanır.",
         "kolonu tutmak ya da çıkarmak size sorulur. Öneri: boş oranı artıp «Çıkarma sınırı»nı "
@@ -1496,7 +1501,8 @@ PROFIL_ESIK_ACIKLAMA = {
     "yakin_kor": _ac(
         "Başka bir kolonla neredeyse aynı şeyi söyleyen kolon.",
         "İki sayı kolonunun birlikte ne kadar aynı hareket ettiğine bakar. Biri artınca öteki de "
-        "hep aynı oranda artıyorsa benzerlik %100'dür.",
+        "hep aynı oranda artıyorsa benzerlik %100'dür. Benzerlik eşik kadar ya da daha fazlaysa "
+        "kolonlar yakalanır.",
         "Aynı tutar bir kolonda TL, ötekinde bin TL olarak tutulmuş: benzerlik %100.",
         "benzer kolonlardan biri kalır, ötekiler üretime girmez. Hangisinin kalacağını siz "
         "seçersiniz; hedefi daha iyi ayırt eden önerilir.",
@@ -1508,7 +1514,8 @@ PROFIL_ESIK_ACIKLAMA = {
         "Hedefi tek başına şaşırtıcı derecede iyi bilen kolon.",
         "Her kolon için şunu ölçer: hedefi 1 olan bir satırla hedefi 0 olan bir satır yan yana "
         "konsa, yalnız bu kolona bakarak hangisinin 1 olduğu 100 denemenin kaçında doğru "
-        "bulunur? 50, yazı tura atmak kadardır; 100, hiç yanılmamaktır.",
+        "bulunur? 50, yazı tura atmak kadardır; 100, hiç yanılmamaktır. Sonuç eşik kadar ya "
+        "da daha yüksekse kolon yakalanır.",
         "«Kapanış nedeni» kolonu yalnız olay gerçekleştikten sonra doluyor; hedefi 100 denemenin "
         "99'unda doğru gösteriyor.",
         "kolonu tutmak ya da çıkarmak size sorulur. Öneri: isabet %95 ve üstüyse Çıkar; "
@@ -1541,35 +1548,40 @@ PROFIL_ESIK_ACIKLAMA.update({
     "tesaduf": {
         "kisa": "Sistemin «bu şans eseri olabilir» deme sınırı.",
         "bilgi": "\n\n".join([
-            "**Nedir?** Sistem bazı bulgularda «bu şans eseri olabilir mi?» diye bakar ve şans "
-            "eseri olma ihtimalini hesaplar. İhtimal bu sınırdan düşükse bulguyu gerçek sayar, "
-            "yüksekse görmezden gelir.",
-            "**Kapsam:** iki yerde kullanılır: «Dönemde boş ya da sabit» kuralı ve «Baskın "
-            "değer» kuralının Tut / Çıkar önerisi.",
-            "**Örnek:** Yazı turada 10 kez üst üste yazı gelme ihtimali binde 1'dir; buna şans "
-            "denmez, parada bir sorun vardır. 2 kez üst üste yazı gelme ihtimali dörtte 1'dir; "
-            "bu şans olabilir. Aynı mantıkla: kolonun genelde %90'ı 0 ise, 50 satırlık bir "
-            "dönemin tamamının 0 çıkması şansla açıklanmaz (ihtimal %0,5); 10 satırlık dönemde "
-            "açıklanır (ihtimal %35).",
-            "**Eşik ne yapar?** Sınırı küçültürseniz sistem daha zor ikna olur ve daha az kolon "
-            "yakalar; büyütürseniz daha çok kolon yakalar.",
-            "**Neden %5 önerildi?** 20'de 1 ihtimal demektir. Bilimsel çalışmalarda en yaygın "
-            "kullanılan sınırdır."]),
+            "**Nedir?** Bazı kurallar az sayıda satıra bakarak karar verir. Az satırda görülen "
+            "bir şey gerçek bir sorun olabilir, ama şans eseri de olmuş olabilir. Sistem her "
+            "seferinde şunu hesaplar: «Ortada bir sorun olmasaydı, bu durumu görme ihtimalim ne "
+            "olurdu?» İhtimal bu sınırın altındaysa «şans değil, gerçek» der ve kolonu yakalar. "
+            "Üstündeyse «şans olabilir» der, yakalamaz.",
+            "**Kapsam:** iki yerde kullanılır. 1) «Dönemde boş ya da sabit» kuralı: bir dönemin "
+            "tamamen boş ya da hep aynı değerde olması şans mı? 2) «Baskın değer» kuralının Tut / "
+            "Çıkar önerisi: az sayıdaki farklı satırda hedefin farklı çıkması şans mı?",
+            "**Örnek:** Bir kolonun genelde 100 satırından 90'ında 0 yazıyor. Bir ayda yalnız 10 "
+            "satır var ve hepsinde 0 yazıyor: bu şans eseri olabilir (ihtimal %35), yakalanmaz. "
+            "Başka bir ayda 50 satır var ve hepsinde 0 yazıyor: şansla bu neredeyse hiç olmaz "
+            "(ihtimal %0,5), o ay kolonda bir sorun vardır, yakalanır.",
+            "**Eşik ne yapar?** %5 yerine %1 yazarsanız sistem daha zor ikna olur, daha az kolon "
+            "yakalar. %10 yazarsanız daha kolay ikna olur, daha çok kolon yakalar.",
+            "**Neden %5 önerildi?** 100 denemede 5'ten az görülecek bir şey şans sayılmaz. "
+            "İstatistikte en yaygın kullanılan sınırdır."]),
         "sonuc": "Küçülürse daha az, büyürse daha çok kolon yakalanır"},
     "donem_tut_pay": _ac(
         "Sorun yalnız en baştaki dönemlerdeyse kolon sonradan eklenmiştir.",
-        "«Dönemde boş ya da sabit» kuralına takılan kolonda, sorunlu dönemlerin yalnız en "
-        "baştakiler olup olmadığına ve bütün dönemlerin ne kadarını tuttuğuna bakar.",
-        "24 dönemin ilk 6'sı boş: %25. Sınır %35 ise Tut önerilir. Son dönem sorunluysa sınıra "
-        "bakılmaz, Çıkar önerilir; çünkü kolon güncel veride yoktur.",
+        "Kolon «Dönemde boş ya da sabit» kuralına takıldıysa sistem sorunlu dönemlerin nerede "
+        "olduğuna bakar. Yalnız en baştaki dönemler sorunluysa kolon sonradan eklenmiştir, "
+        "sonrası düzgündür. Baştaki sorunlu dönemler bütün dönemlerin bu sınırını geçmiyorsa "
+        "Tut, geçiyorsa Çıkar önerilir. Son dönem sorunluysa sınıra bakılmadan Çıkar önerilir; "
+        "çünkü kolon güncel veride yoktur.",
+        "24 dönemin ilk 6'sı boş: %25. Sınır %35 ise Tut önerilir.",
         "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %35 önerildi?",
         "Dönemlerin kabaca üçte biri. Bundan azı sorunluysa kalan dönemler model için yeter.",
         sonuc="Öneri: altındaysa Tut"),
     "sicrama_cikar": _ac(
         "Boş oranı artıp sınırı geçtiyse kolon artık çoğunlukla boştur.",
-        "«Eksik sıçraması» kuralına takılan kolonda, sıçramadan sonraki dönemin boş oranına "
-        "bakar.",
+        "Kolon «Eksik sıçraması» kuralına takıldıysa sistem sıçramadan sonraki dönemin boş "
+        "oranına bakar. Boş oranı artmış ve bu sınırı geçmişse Çıkar önerilir. Artmış ama sınırı "
+        "geçmemişse ya da azalmışsa Tut önerilir.",
         "Boş oranı %5'ten %55'e çıktı. Sınır %50 ise Çıkar önerilir.",
         "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %50 önerildi?",
@@ -1577,10 +1589,11 @@ PROFIL_ESIK_ACIKLAMA.update({
         sonuc="Öneri: üstündeyse Çıkar"),
     "negatif_bos_pay": _ac(
         "Az sayıda eksi değer yanlış kayıttır.",
-        "«Negatif değer» kuralına takılan kolonda eksi değerli satırların ne kadar olduğuna "
-        "bakar.",
-        "Dolu 100 satırın 1'i eksi: %1. Sınır %5 ise eksi değerlerin boş sayılması önerilir. %5 "
-        "ve üstündeyse olduğu gibi bırakılması önerilir.",
+        "Kolon «Negatif değer» kuralına takıldıysa sistem eksi değerli satırların ne kadar "
+        "olduğuna bakar. Bu sınırdan azsa yanlış kayıt sayılır ve boş sayılması önerilir. Sınır "
+        "kadar ya da daha çoksa bir anlamı olabilir (iade gibi); olduğu gibi bırakılması "
+        "önerilir.",
+        "Dolu 100 satırın 1'i eksi: %1. Sınır %5 ise eksi değerlerin boş sayılması önerilir.",
         "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %5 önerildi?",
         "Yanlış kayıt tek tük olur. 100 satırın 5'inden fazlası eksiyse bu hata değil, bir "
@@ -1588,9 +1601,11 @@ PROFIL_ESIK_ACIKLAMA.update({
         sonuc="Öneri: altındaysa boş say"),
     "metin_bayrak_pay": _ac(
         "«Bilinmiyor» gibi yazılar çoksa, boş olmak da bir bilgi olabilir.",
-        "«Metin olarak boş» kuralına takılan kolonda bu yazıların ne kadar sık geçtiğine bakar.",
-        "100 satırın 15'inde «Bilinmiyor» yazıyor: %15. Sınır %5 ise bu yazılar boş sayılır ve "
-        "«boş mu, dolu mu» gösteren 1/0 kolonu da önerilir. %5'in altındaysa yalnız boş sayılır.",
+        "Kolon «Metin olarak boş» kuralına takıldıysa bu yazılar her durumda boş sayılır. Sistem "
+        "ayrıca yazıların ne kadar sık geçtiğine bakar: bu sınır kadar ya da daha çoksa, «boş "
+        "mu, dolu mu» bilgisini taşıyan ek bir 1/0 kolonu da önerilir; çünkü çok sayıda satırda "
+        "bilginin olmaması kendisi bir bilgi olabilir.",
+        "100 satırın 15'inde «Bilinmiyor» yazıyor: %15. Sınır %5 ise ek kolon da önerilir.",
         "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %5 önerildi?",
         "100 satırın 5'inden azında görülüyorsa ek kolon neredeyse hep 0 olur, işe yaramaz.",
@@ -1667,7 +1682,8 @@ ONERILEN_DAYANAK = {
                    "belli olduktan sonra doldurulmuştur.",
     "kayma_kat": "Gerçek değerler bir dönemde 10 katına çıkmaz; çıktıysa çoğu zaman birim "
                  "değişmiştir (TL yerine bin TL gibi).",
-    "tesaduf": "20'de 1 ihtimal. Bilimsel çalışmalarda en yaygın kullanılan sınırdır.",
+    "tesaduf": "100 denemede 5'ten az görülecek bir şey şans sayılmaz. İstatistikte en yaygın "
+               "kullanılan sınırdır.",
     "donem_tut_pay": "Dönemlerin kabaca üçte biri. Bundan azı sorunluysa kalan dönemler yeter.",
     "sicrama_cikar": "Yarısından fazlası boş olan kolon artık çoğunlukla boştur.",
     "negatif_bos_pay": "Yanlış kayıt tek tük olur; 100 satırın 5'inden fazlası eksiyse bir anlamı "
@@ -1803,12 +1819,9 @@ def esik_formu(durum, hata=None, kilitli=False):
         r["dayanak"] = dayanak.get(r["anahtar"]) or ONERILEN_DAYANAK.get(r["anahtar"], "")
         if r["anahtar"] in ONERI_ESIK_AD:
             r["oneri_ad"] = ONERI_ESIK_AD[r["anahtar"]]
-        if r["anahtar"] in ONERI_FORM_OLCUT:
-            r["form_olcut"] = ONERI_FORM_OLCUT[r["anahtar"]]
-            r["form_ornek"] = ONERI_FORM_ORNEK.get(r["anahtar"], "")
-    kontroller, esiksiz = esik_form_kontrolleri(durum)
+    kontroller, _esiksiz = esik_form_kontrolleri(durum)
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
-            "kontroller": kontroller, "esiksiz": esiksiz,
+            "kontroller": kontroller,
             "genel": [x[0] for x in PROFIL_GENEL_ESIKLER],
             "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
 
@@ -1853,81 +1866,6 @@ ESIK_KURAL = {
     "kayma_kat": "kayma", "gizli": "gizli_eksik", "metin_bayrak_pay": "metin_bos",
     "negatif_bos_pay": "negatif", "uc_yayilim": "uc",
 }
-# Formun "Neye bakıyor" sutunu: gundelik dille tek cumle (terim yok);
-# altinda kucuk sayilarla ornek (KURAL_FORM_ORNEK).
-KURAL_FORM_OLCUT = {
-    "cok_bos": "Kolonun büyük kısmı boş mu diye bakar.",
-    "sabit": "Kolonun her satırında aynı değer mi var diye bakar.",
-    "baskin": "Satırların neredeyse hepsinde aynı değer mi var diye bakar.",
-    "kimlik_gibi": "Neredeyse her satırda başka bir değer mi var diye bakar (müşteri numarası "
-                   "gibi).",
-    "yuksek_kardinalite": "Yazı kolonunda kaç farklı değer olduğuna bakar.",
-    "tarih": "Kolon tarih mi diye bakar.",
-    "ayni_icerik": "İki kolon satır satır aynı mı diye bakar.",
-    "yakin_icerik": "İki sayı kolonu neredeyse aynı şeyi mi söylüyor diye bakar. Benzerlik %100 "
-                    "ise ikisi tıpatıp aynı hareket eder.",
-    "gelecek_pencere": "Kolonun adı gelecekteki bir zamanı mı anlatıyor diye bakar.",
-    "birebir": "Kolon tek başına hedefi şaşırtıcı derecede iyi mi biliyor diye bakar. %50 yazı "
-               "tura atmak kadardır, %100 hiç yanılmamaktır.",
-    "tarih_sonra": "Tarih, satırın ait olduğu dönemden sonraya mı düşüyor diye bakar.",
-    "donem": "Kolon bazı dönemlerde (ay gibi) tamamen boş ya da hep aynı değerde mi diye bakar. "
-             "Çok az satırlı dönemde bu şans eseri olabilir; o zaman yakalanmaz.",
-    "sicrama": "Boş oranı bir dönemden sonrakine birden mi değişiyor diye bakar.",
-    "kayma": "Kolondaki sayılar bir dönemden sonrakine topluca kaç kat büyümüş ya da küçülmüş "
-             "diye bakar.",
-    "gizli_eksik": "«Bilgi yok» demek için -999, 9999 gibi uydurma bir sayı mı yazılmış diye "
-                   "bakar.",
-    "karisik_eksik": "Aynı kolonda hem boş hücre hem de -999 gibi uydurma sayı mı var diye bakar.",
-    "metin_bos": "Boş bırakmak yerine «NULL», «-», «Bilinmiyor» gibi bir yazı mı yazılmış diye "
-                 "bakar.",
-    "yazim": "Aynı değer farklı biçimlerde mi yazılmış diye bakar.",
-    "negatif": "Eksi olamayacak bir kolonda (adet, gün, süre) eksi değer var mı diye bakar.",
-    "uc": "Yanlış yazıldığı belli olacak kadar büyük ya da küçük bir değer var mı diye bakar. "
-          "Değer, kolonun normal aralığının çok dışındaysa yakalanır.",
-}
-KURAL_FORM_ORNEK = {
-    "cok_bos": "100 satırın 85'i boş: %85.",
-    "sabit": "Her satırda «TR» yazıyor.",
-    "baskin": "100 satırın 99'unda 0 yazıyor: %99.",
-    "kimlik_gibi": "100 satırda 98 farklı değer: %98.",
-    "yuksek_kardinalite": "Şehir kolonunda 81 farklı şehir.",
-    "tarih": "15.03.2024",
-    "ayni_icerik": "Aynı bilgi tabloya iki farklı adla girmiş.",
-    "yakin_icerik": "Aynı tutar bir kolonda TL, ötekinde bin TL.",
-    "gelecek_pencere": "«Sonraki 3 ayda yapılan ödeme».",
-    "birebir": "«Kapanış nedeni» kolonu yalnız olay olduktan sonra doluyor, o yüzden hedefi hep "
-               "biliyor.",
-    "tarih_sonra": "Satır Mart 2024'e ait, kolondaki tarih Temmuz 2024.",
-    "donem": "Ocak–Mart tamamen boş, Nisan'dan sonra dolu.",
-    "sicrama": "Mart'ta 100 satırın 5'i boş, Nisan'da 40'ı boş: 35 puan fark.",
-    "kayma": "Tutarlar Mart'a kadar TL, Nisan'dan sonra bin TL: sayılar 1.000 kat küçülür.",
-    "gizli_eksik": "Yaş kolonunda 100 satırın 3'ünde -999: %3.",
-    "karisik_eksik": "Bazı satırlar boş, bazılarında -1 yazıyor.",
-    "metin_bos": "Meslek kolonunda «Bilinmiyor».",
-    "yazim": "«İstanbul», «ISTANBUL», «istanbul ».",
-    "negatif": "İşlem adedi -3.",
-    "uc": "Değerler 0 ile 10.000 arasında (genişlik 10.000). 100 kat ile sınır 1.010.000; bir "
-          "satırda 5.000.000 yazıyor.",
-}
-ONERI_FORM_OLCUT = {
-    "donem_tut_pay": "Sorunlu dönemler yalnız en baştaysa kolon sonradan eklenmiştir. Bunlar "
-                     "bütün dönemlerin bu kadarını geçmiyorsa Tut, geçiyorsa Çıkar önerilir.",
-    "sicrama_cikar": "Boş oranı artıp bu sınırı geçtiyse Çıkar, geçmediyse Tut önerilir.",
-    "negatif_bos_pay": "Eksi değerler bu sınırdan azsa yanlış kayıt sayılır, boş sayılması "
-                       "önerilir. Fazlaysa bir anlamı olabilir, dokunulmaması önerilir.",
-    "metin_bayrak_pay": "Bu yazılar bu sınır kadar ya da daha çoksa, «boş mu, dolu mu» gösteren "
-                        "ek bir 1/0 kolonu da önerilir.",
-    "tesaduf": "Sistem bir şey bulduğunda «bu şans eseri olabilir mi?» diye bakar. Şans eseri "
-               "olma ihtimali bu değerden düşükse bulguyu gerçek sayar.",
-}
-ONERI_FORM_ORNEK = {
-    "donem_tut_pay": "24 dönemin ilk 6'sı boş (%25): Tut önerilir.",
-    "sicrama_cikar": "Boş oranı %5'ten %55'e çıktı: Çıkar önerilir.",
-    "negatif_bos_pay": "100 satırın 1'i eksi (%1): boş sayılır.",
-    "metin_bayrak_pay": "100 satırın 15'inde «Bilinmiyor» (%15): ek kolon önerilir.",
-    "tesaduf": "Yazı turada 10 kez üst üste yazı gelmesi şansla açıklanmaz (binde 1); 2 kez "
-               "gelmesi açıklanır (dörtte 1).",
-}
 ONERI_ESIK_AD = {
     "donem_tut_pay": "İlk dönemler", "sicrama_cikar": "Çıkarma sınırı",
     "metin_bayrak_pay": "Bayrak sınırı", "negatif_bos_pay": "Boş sayma sınırı",
@@ -1955,8 +1893,10 @@ def esik_form_kontrolleri(durum):
             ac = PROFIL_ESIK_ACIKLAMA.get(ana) or {}
             kurallar.append({
                 "anahtar": u, "ad": KURAL_FORM_AD.get(u, pk.get(u, (u, u))[1]),
-                "olcut": KURAL_FORM_OLCUT.get(u) or kurallar_metin.get(u, ""),
-                "ornek": KURAL_FORM_ORNEK.get(u, ""),
+                "olcut": kurallar_metin.get(u, ""),
+                # Formda "Neye bakıyor" ve "Yakalanırsa" bu parcalardan: nedir,
+                # onemli (neden sorun), kapsam, ornek, yakalanirsa.
+                "parca": kontrol_parcalari(u),
                 "sonuc": ac.get("sonuc") or NE_OLACAK.get(pk[u][2], "") if u in pk else "",
                 "esik": ana, "oneri": oneri})
         if not any(k["esik"] or k["oneri"] for k in kurallar):
@@ -3036,7 +2976,9 @@ def aciklama_parcalari(bilgi):
             continue
         anahtar = dict(_PARCA_ETIKET).get(etiket)
         if anahtar:
-            cikti[anahtar] = metin[:1].upper() + metin[1:] if metin else ""
+            # Turkce buyuk harf: "iki" -> "İki" (upper() "Iki" yapar).
+            ilk = {"i": "İ", "ı": "I"}.get(metin[:1], metin[:1].upper())
+            cikti[anahtar] = ilk + metin[1:] if metin else ""
         else:
             cikti["nedir"] = (cikti.get("nedir", "") + " " + metin).strip()
     return cikti
