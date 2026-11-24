@@ -6030,6 +6030,8 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-ek-sonuc.pf-esik-sonuc-bilgi { color: var(--mavi); font-weight: var(--fw-kalin); }
 .pf-ek-deger { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .pf-ek-yok { color: var(--metin-soluk); font-style: italic; }
+.pf-ek-ornek { margin-top: 4px; font-size: var(--fs-kucuk); color: var(--metin-soluk, #5b6470); }
+.pf-ek-ornek b { font-weight: 600; color: inherit; }
 .pf-ek-onerilen { display: flex; flex-direction: column; align-items: center; }
 .pf-ek-onerilen b { font-size: inherit; }
 .pf-ek-dayanak { color: var(--metin-soluk); font-size: var(--fs-kucuk); }

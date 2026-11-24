@@ -3328,3 +3328,12 @@ tanıtır; sayfalar sol bardan açılır.
 - **Metinde çok değer**: Önerilen değer = eğitimde hedefi 1 olan satır sayısı ÷ 5. Her değerde ortalama en az 5 hedef olayı kalsın diye. En az 2, en çok 50 (SFA'nın çalıştığı üst sınır).
 - **Dönemde boş/sabit**: Bir dönem tamamen boş ya da tek değerliyse, diğer dönemlerdeki oranla bunun tesadüfen olma olasılığı (oran^satır sayısı) hesaplanır. Olasılık tesadüf olasılığının altındaysa bulgu sayılır. Eski "dönem en az satır" eşiği kaldırıldı.
 - Kaldırılan anahtarlar (`baskin_min_satir`, `baskin_kat`, `donem_min_satir`) önceki oturumlarda onaylanmış olsa da artık okunmaz. Diğer onaylı eşikler korunur.
+
+## 02.1 açıklamaları gündelik dille
+
+- 02.1'deki bütün kural, eşik ve öneri metinleri konuyu hiç bilmeyen birinin okuyup anlayacağı dille yazılır.
+- Terim kullanılmaz: AUC, korelasyon, yüzdelik, IV, kardinalite, winsor, medyan yazılmaz. Karşılıkları: "isabet", "benzerlik", "normal aralık", "ortadaki değer", "şans eseri olma ihtimali".
+- Eşik formunda "Neye bakıyor" sütununda tek cümle ve altında küçük sayılarla bir örnek vardır (`KURAL_FORM_OLCUT`, `KURAL_FORM_ORNEK`, `ONERI_FORM_OLCUT`, `ONERI_FORM_ORNEK`).
+- i balonunda sıra: Nedir, Neden sorun, Kapsam, Örnek, Yakalanırsa, Neden bu değer önerildi (`_ac`).
+- Öneri gerekçeleri (`_veri_onerileri`) sayıyı verir, ardından düz cümleyle sonucu söyler ve "Tut" ya da "Çıkar" ile biter.
+- Yeni bir kural eklenirse aynı dille ve örnekle yazılır.

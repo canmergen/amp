@@ -484,12 +484,13 @@ def uc_bulgu_metni(x):
     yon = x.get("yon") or "ust"
     parca = []
     if yon in ("ust", "iki"):
-        parca.append("en büyük değer %s, %%99'luk değer %s" % (_okunur_sayi(maks), _okunur_sayi(p99)))
+        parca.append("en büyük değer %s; oysa satırların %%99'unda değer %s ya da daha küçük"
+                     % (_okunur_sayi(maks), _okunur_sayi(p99)))
     if yon in ("alt", "iki") and x.get("en_kucuk") is not None:
-        parca.append("en küçük değer %s, %%1'lik değer %s" % (
+        parca.append("en küçük değer %s; oysa satırların %%99'unda değer %s ya da daha büyük" % (
             _okunur_sayi(float(x["en_kucuk"])), _okunur_sayi(float(x["p1"]))))
-    m = "; ".join(parca)
-    return (m[:1].upper() + m[1:]) if m else ""
+    m = ". ".join(p[:1].upper() + p[1:] for p in parca)
+    return m
 
 
 def _veri_onerileri(durum, ek, df, egitim):
@@ -523,8 +524,8 @@ def _veri_onerileri(durum, ek, df, egitim):
         if k not in df.columns:
             continue
         if y is None or not bool(maske.any()):
-            yaz("baskin", k, PROFIL_KARAR_TUT, "Hedef iki sınıflı değil; baskın değer dışındaki "
-                "satırların hedefi ayırması ölçülemedi, kolon tutulur.")
+            yaz("baskin", k, PROFIL_KARAR_TUT, "Hedef yalnız 1 ve 0'dan oluşmadığı için kolonun "
+                "işe yarayıp yaramadığı ölçülemedi: Tut.")
             continue
         sx = df.loc[maske, k]
         vc = sx.value_counts(dropna=False)
@@ -535,18 +536,19 @@ def _veri_onerileri(durum, ek, df, egitim):
         olay_az, olay_bas = float(yy[~bas].sum()), float(yy[bas].sum())
         genel = (olay_az + olay_bas) / max(n_az + n_bas, 1)
         if n_az == 0 or genel <= 0 or genel >= 1:
-            yaz("baskin", k, PROFIL_KARAR_CIKAR, "Baskın değer (%s) dışında eğitimde ayırt edecek "
-                "satır yok, kolon çıkarılır." % x.get("deger"))
+            yaz("baskin", k, PROFIL_KARAR_CIKAR, "Eğitim verisinde %s dışında değer yok; kolon "
+                "hiçbir şeyi ayırt etmiyor: Çıkar." % x.get("deger"))
             continue
         o_az, o_bas = olay_az / n_az, olay_bas / max(n_bas, 1)
-        oranlar = "Baskın değer dışındaki %s eğitim satırında hedef oranı %s, baskın değerde %s" % (
-            _sayi(n_az), _yuzde_metni(o_az), _yuzde_metni(o_bas))
+        oranlar = ("Farklı değerdeki %s eğitim satırında hedefi 1 olanların oranı %s; öteki "
+                   "satırlarda %s" % (_sayi(n_az), _yuzde_metni(o_az), _yuzde_metni(o_bas)))
         # 1) Cochran: bu satirlarda beklenen hedefi 1 olan satir 5'ten azsa
         #    oran guvenilmez.
         beklenen = n_az * genel
         if beklenen < COCHRAN_EN_AZ:
-            yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + "; bu satırlarda beklenen hedefi 1 olan "
-                "satır %s, 5'ten az: oran güvenilmez, kolon çıkarılır." % _sayi_metni(round(beklenen, 1)))
+            yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + ". Bu kadar az satırla güvenilir bir "
+                "karşılaştırma yapılamaz (bu satırlarda hedefi 1 olan yaklaşık %s satır beklenir, "
+                "en az 5 gerekir): Çıkar." % _sayi_metni(round(beklenen, 1)))
             continue
         # 2) Iki oran testi: fark tesadufen bu kadar buyuk cikabilir mi?
         se = math.sqrt(genel * (1 - genel) * (1.0 / n_az + 1.0 / max(n_bas, 1)))
@@ -559,15 +561,16 @@ def _veri_onerileri(durum, ek, df, egitim):
             pb, pg = (o + 0.5) / (B + 1.0), (n_ - o + 0.5) / (G + 1.0)
             iv += (pg - pb) * math.log(pg / pb)
         if p < TESADUF and iv >= IV_EN_AZ:
-            yaz("baskin", k, PROFIL_KARAR_TUT, oranlar + "; fark tesadüf değil (olasılık %s) ve "
-                "ayırma gücü IV %s: kolon tutulur." % (
-                    _yuzde_metni(p) if p >= 0.0001 else "%0,01'den az", _sayi_metni(round(iv, 3))))
+            yaz("baskin", k, PROFIL_KARAR_TUT, oranlar + ". Fark belirgin ve şans eseri olamayacak "
+                "kadar büyük (şans eseri olma ihtimali %s): kolon işe yarıyor, Tut." % (
+                    _yuzde_metni(p) if p >= 0.0001 else "%0,01'den az"))
         elif p >= TESADUF:
-            yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + "; fark tesadüf olabilir (olasılık %s): "
-                "kolon bilgi taşımıyor, çıkarılır." % _yuzde_metni(p))
+            yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + ". Fark şans eseri olabilecek kadar "
+                "küçük (şans eseri olma ihtimali %s): kolon bir şey ayırt etmiyor, Çıkar."
+                % _yuzde_metni(p))
         else:
-            yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + "; fark gerçek ama çok küçük (IV %s, "
-                "0,02'den az): kolon çıkarılır." % _sayi_metni(round(iv, 3)))
+            yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + ". Fark şans eseri değil ama modele "
+                "katkı sağlamayacak kadar küçük: Çıkar.")
 
     # DONEMDE BOS YA DA SABIT: son donem etkileniyorsa kolon guncel veride
     # yok; yalniz ilk donemlerse kolon sonradan eklenmis.
@@ -577,110 +580,113 @@ def _veri_onerileri(durum, ek, df, egitim):
         Ps = [d for d in D if d in P] or sorted(P)
         liste = _donem_listesi(Ps)
         if D and D[-1] in P:
-            yaz("donem", x["kolon"], PROFIL_KARAR_CIKAR, "Son dönem (%s) boş ya da tek değerli; "
-                "kolon güncel veride bilgi taşımıyor, skorlamada kullanılamaz." % D[-1])
+            yaz("donem", x["kolon"], PROFIL_KARAR_CIKAR, "Son dönem (%s) tamamen boş ya da hep "
+                "aynı değerde. Kolon güncel veride bilgi taşımıyor; model gerçek kullanımda bu "
+                "kolonu boş görür: Çıkar." % D[-1])
         elif D and Ps == D[:len(Ps)] and len(Ps) <= DONEM_TUT_PAY * len(D):
-            yaz("donem", x["kolon"], PROFIL_KARAR_TUT, "Yalnız ilk %s dönem (%s) boş ya da tek "
-                "değerli; kolon sonradan eklenmiş, kalan %s dönemde dolu, kolon tutulur." % (
+            yaz("donem", x["kolon"], PROFIL_KARAR_TUT, "Yalnız ilk %s dönem (%s) boş ya da hep "
+                "aynı değerde. Kolon sonradan eklenmiş, kalan %s dönemde düzgün: Tut." % (
                     _sayi(len(Ps)), liste, _sayi(len(D) - len(Ps))))
         else:
-            yaz("donem", x["kolon"], PROFIL_KARAR_CIKAR, "%s dönemin %s tanesi boş ya da tek değerli "
-                "(%s); dönemler arasında tutarsız, kolon çıkarılır." % (
+            yaz("donem", x["kolon"], PROFIL_KARAR_CIKAR, "%s dönemin %s tanesi boş ya da hep aynı "
+                "değerde (%s). Kolon dönemden döneme tutarsız: Çıkar." % (
                     _sayi(len(D)), _sayi(len(Ps)), liste))
 
     # EKSIK SICRAMASI
     for x in ek.get("sicrama") or []:
         o1, o2 = float(x["once_oran"]), float(x["sonra_oran"])
-        oran = "Eksik oranı %s döneminde %s, %s döneminde %s" % (
+        oran = "Boş oranı %s döneminde %s, %s döneminde %s" % (
             x["once"], _yuzde_metni(o1), x["sonra"], _yuzde_metni(o2))
         if o2 > o1 and o2 >= SICRAMA_CIKAR:
-            yaz("sicrama", x["kolon"], PROFIL_KARAR_CIKAR, oran + "; eksik %s sınırını aştı, "
-                "veri toplama sorunu gibi, kolon çıkarılır." % _yuzde_metni(SICRAMA_CIKAR))
+            yaz("sicrama", x["kolon"], PROFIL_KARAR_CIKAR, oran + ". Boş oranı %s sınırını geçti; "
+                "kolon artık çoğunlukla boş: Çıkar." % _yuzde_metni(SICRAMA_CIKAR))
         elif o2 > o1:
-            yaz("sicrama", x["kolon"], PROFIL_KARAR_TUT, oran + "; eksik arttı ama kolonun çoğu "
-                "dolu, kolon tutulur.")
+            yaz("sicrama", x["kolon"], PROFIL_KARAR_TUT, oran + ". Boş oranı arttı ama kolonun "
+                "çoğu hâlâ dolu: Tut.")
         else:
-            yaz("sicrama", x["kolon"], PROFIL_KARAR_TUT, oran + "; eksik azaldı, veri iyileşmiş, "
-                "kolon tutulur.")
+            yaz("sicrama", x["kolon"], PROFIL_KARAR_TUT, oran + ". Boş oranı azaldı, veri "
+                "iyileşmiş: Tut.")
 
     # DEGER KAYMASI: kat 10'un kuvvetine yakinsa birim degisikligi.
     for x in ek.get("kayma") or []:
         kat = float(x["kat"])
         us = math.log10(kat) if kat > 0 else 0.0
         yakin = round(us)
-        med = "Medyan %s döneminde %s, %s döneminde %s" % (
+        med = "Ortadaki değer %s döneminde %s, %s döneminde %s" % (
             x["once"], _okunur_sayi(x["once_deger"]), x["sonra"], _okunur_sayi(x["sonra_deger"]))
         if yakin >= 1 and abs(us - yakin) <= 0.05:
-            yaz("kayma", x["kolon"], PROFIL_KARAR_CIKAR, med + ": yaklaşık %s kat, 10'un kuvveti; "
-                "birim değişikliği gibi (ör. birim ile bin birim), eski ve yeni dönem aynı ölçüde "
-                "değil, kolon çıkarılır." % _sayi(10 ** yakin))
+            yaz("kayma", x["kolon"], PROFIL_KARAR_CIKAR, med + ": yaklaşık %s kat. Böyle yuvarlak "
+                "bir kat çoğu zaman birim değişikliğidir (TL yerine bin TL gibi); eski ve yeni "
+                "dönem aynı ölçüde değil: Çıkar." % _sayi(10 ** yakin))
         else:
-            yaz("kayma", x["kolon"], PROFIL_KARAR_TUT, med + ": %s kat, 10'un kuvveti değil; gerçek "
-                "iş değişimi olabilir, kolon tutulur." % _kat_metni(kat))
+            yaz("kayma", x["kolon"], PROFIL_KARAR_TUT, med + ": %s kat. Yuvarlak bir kat değil, "
+                "gerçek bir değişim olabilir: Tut." % _kat_metni(kat))
 
     # UC DEGER
     # Yakalanan uc zaten dogal yayilimin cok disinda (hatali giris): kirp.
     for x in ek.get("uc") or []:
-        yaz("uc", x["kolon"], "kirp", uc_bulgu_metni(x) + "; hatalı girişe benziyor, "
-            "yakalanan uç sınıra çekilir.")
+        yaz("uc", x["kolon"], "kirp", uc_bulgu_metni(x) + ". Yanlış yazılmış bir sayıya "
+            "benziyor; normal aralığın ucuna çekilir.")
 
     # BEKLENMEYEN NEGATIF
     for x in ek.get("negatif") or []:
         k = x["kolon"]
         dolu = int(pd.to_numeric(df[k], errors="coerce").notna().sum()) if k in df.columns else 0
         pay = x["adet"] / max(dolu, 1)
-        bas = "Ölçü %s; negatif satır %s (dolu satırların %s), en küçük %s" % (
+        bas = "Ölçü %s; eksi değerli %s satır var (dolu satırların %s), en küçüğü %s" % (
             x.get("olcu"), _sayi(x["adet"]), _yuzde_metni(pay), _okunur_sayi(x["en_kucuk"]))
         if pay < NEGATIF_BOS_PAY:
-            yaz("negatif", k, "negatif_bos", bas + "; az, hatalı kayıt gibi, boş sayılır.")
+            yaz("negatif", k, "negatif_bos", bas + ". Az sayıda, yanlış kayıt gibi: boş sayılır.")
         else:
-            yaz("negatif", k, "birak", bas + "; az değil, sistematik (iade ya da düzeltme kaydı "
-                "olabilir), olduğu gibi bırakılır.")
+            yaz("negatif", k, "birak", bas + ". Az değil, bir anlamı olabilir (iade ya da "
+                "düzeltme kaydı gibi): olduğu gibi bırakılır.")
 
     # METIN OLARAK YAZILMIS BOS
     for x in ek.get("metin_bos") or []:
         ornek = ", ".join("«%s»" % d["deger"] for d in (x.get("degerler") or [])[:3])
-        bas = "Boş yerine yazılmış değerler (%s) %s satır, dolu satırların %s" % (
+        bas = "«Bilgi yok» anlamındaki yazılar (%s) %s satırda, dolu satırların %s" % (
             ornek, _sayi(x["adet"]), _yuzde_metni(x["pay"]))
         if x["pay"] >= METIN_BAYRAK_PAY:
-            yaz("metin_bos", x["kolon"], "metin_bos_bayrak", bas + "; pay yüksek, boş sayılır ve "
-                "boş olduğu bayrakta tutulur.")
+            yaz("metin_bos", x["kolon"], "metin_bos_bayrak", bas + ". Sık geçiyor: boş sayılır ve "
+                "«boş mu, dolu mu» gösteren 1/0 kolonu da üretilir.")
         else:
-            yaz("metin_bos", x["kolon"], "metin_bos", bas + "; az, boş sayılır.")
+            yaz("metin_bos", x["kolon"], "metin_bos", bas + ". Az: yalnız boş sayılır.")
 
     # YAZIM TUTARSIZLIGI
     for x in ek.get("yazim") or []:
         g = (x.get("gruplar") or [{}])[0]
         ornek = ", ".join("«%s»" % y_["deger"] for y_ in (g.get("yazimlar") or [])[:3])
-        yaz("yazim", x["kolon"], "tek_yazim", "%s değerin farklı yazımları %s satırda (ör. %s); "
-            "aynı değer tek yazıma çevrilir." % (_sayi(x.get("grup") or 0), _sayi(x.get("satir") or 0),
+        yaz("yazim", x["kolon"], "tek_yazim", "%s değer farklı biçimlerde yazılmış, %s satırda "
+            "(ör. %s). Hepsi tek yazıma çevrilir." % (_sayi(x.get("grup") or 0), _sayi(x.get("satir") or 0),
                                                 ornek))
 
     # SIZINTI: gelecek penceresi ve donemden sonraki tarih Çıkar; hedefle
     # birebir ayirma gucune gore (neredeyse kusursuzsa Çıkar).
     for x in ek.get("gelecek_pencere") or []:
         yaz("gelecek_pencere", x["kolon"], PROFIL_KARAR_CIKAR,
-            "Adındaki dönem ileriye bakıyor; gözlem anından sonraki bilgi, çıkarılır.")
+            "Kolonun adı gelecekteki bir dönemi anlatıyor. Tahmin anında gelecek bilinmez: "
+            "Çıkar.")
     for x in ek.get("tarih_sonra") or []:
         yaz("tarih_sonra", x["kolon"], PROFIL_KARAR_CIKAR,
-            "Dönem sonundan sonraki tarih var; gözlem anında bilinmeyen bilgi olabilir, "
-            "çıkarılır. Vade gibi doğal olarak ileri bir tarihse Tut seçin.")
+            "Satırın döneminden sonraki bir tarih var; tahmin anında bilinmeyen bir bilgi "
+            "olabilir: Çıkar. Tarih doğal olarak ilerideyse (vade tarihi gibi) Tut seçin.")
     for x in ek.get("birebir") or []:
         auc = float(x.get("auc") or 0)
         if auc >= SIZINTI_CIKAR_AUC:
             yaz("birebir", x["kolon"], PROFIL_KARAR_CIKAR,
-                "Tek başına ayırma gücü %s: neredeyse kusursuz, hedeften sonra oluşmuş bilgi "
-                "gibi; çıkarılır." % _yuzde_metni(auc))
+                "Kolon tek başına hedefi %s isabetle biliyor: neredeyse hiç yanılmıyor. Büyük "
+                "ihtimalle sonuç belli olduktan sonra doldurulmuş: Çıkar." % _yuzde_metni(auc))
         else:
             yaz("birebir", x["kolon"], PROFIL_KARAR_TUT,
-                "Tek başına ayırma gücü %s: çok güçlü ama kusursuz değil (en güçlü gerçek "
-                "değişkenler bu düzeydedir); tutulur, hedeften önce bilindiğini kontrol edin."
+                "Kolon tek başına hedefi %s isabetle biliyor: çok iyi ama kusursuz değil, "
+                "gerçekten güçlü bir kolon olabilir: Tut. Tahmin anında bilindiğini kontrol edin."
                 % _yuzde_metni(auc))
     # OZEL KOD: kod bos sayilir, bilgi bayrakta.
     for a_ in ("gizli_eksik", "karisik_eksik"):
         for x in ek.get(a_) or []:
-            yaz(a_, x["kolon"], "kod_bos_bayrak", "Kod %s boş sayılır; kodun olduğu satırlar "
-                "_KOD bayrağında kalır." % x.get("deger"))
+            yaz(a_, x["kolon"], "kod_bos_bayrak", "%s «bilgi yok» anlamında yazılmış: boş "
+                "sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_KOD) saklanır."
+                % x.get("deger"))
     return cikti
 
 
@@ -1296,26 +1302,26 @@ PROFIL_ESIKLERI = (
     ("kimlik", "Kimlik Benzeri",
      "Farklı değer sayısının satır sayısına oranı bu değerin üstündeyse", "yuzde", 0.50, 0.9999),
     ("kardinalite", "Kardinalitesi Aşırı Yüksek",
-     "Metin kolonda farklı değer sayısı bu değerin üstündeyse", "sayi", 2, 1000000),
+     "Yazı kolonunda farklı değer sayısı bu değerin üstündeyse", "sayi", 2, 1000000),
     ("baskin", "Neredeyse Sabit",
      "En sık görülen değer satırların en az bu kadarında geçiyorsa", "yuzde", 0.50, 0.9999),
     ("gizli", "Gizli Eksik (Özel Kod)",
-     "-999, 9999 gibi özel bir kod dolu satırların bu değerinden fazlasında geçiyorsa",
+     "-999, 9999 gibi uydurma bir sayı dolu satırların bu kadarından fazlasında yazıyorsa",
      "yuzde", 0.0001, 0.50),
     ("sicrama", "Dönemler Arası Eksik Sıçraması",
      "Art arda iki dönem arasında boş hücre oranı bu kadar puandan fazla değişiyorsa",
      "puan", 0.01, 0.99),
     ("uc_yayilim", "Uç Değer Yoğunluğu",
-     "En büyük değer %99'luk değeri ya da en küçük değer %1'lik değeri, ikisi arasındaki "
-     "farkın bu katından fazla aşıyorsa", "kat", 2, 1000000000),
+     "En büyük ya da en küçük değer, kolonun normal aralığının dışına aralığın genişliğinin "
+     "bu katından fazla taşıyorsa", "kat", 2, 1000000000),
     ("yakin_kor", "Neredeyse Aynı Kolonlar",
-     "İki sayısal kolonun korelasyonu bu değer ya da üstündeyse", "yuzde", 0.90, 0.99999),
+     "İki sayı kolonu bu kadar ya da daha fazla benzer hareket ediyorsa", "yuzde", 0.90, 0.99999),
     ("sizinti_auc", "Hedefle Neredeyse Birebir",
-     "Kolon tek başına hedefi bu ayırma gücüyle (AUC) ya da daha iyi ayırıyorsa",
+     "Kolon tek başına hedefi bu isabetle ya da daha iyi biliyorsa",
      "yuzde", 0.70, 0.9999),
     ("kayma_kat", "Dönemler Arası Değer Kayması",
-     "Değerlerin %25, %50 ve %75'lik değerleri art arda iki dönem arasında aynı yönde "
-     "en az bu kat değişiyorsa", "kat", 2, 1000000),
+     "Kolondaki tipik değerler art arda iki dönem arasında aynı yönde en az bu kat "
+     "değişiyorsa", "kat", 2, 1000000),
 )
 # ONERI ESIKLERI: kolonun yakalanmasini degil, yakalanan kolona hangi
 # secenegin ONERILECEGINI belirler (_veri_onerileri). Formda ayri baslikta.
@@ -1326,7 +1332,7 @@ PROFIL_ONERI_ESIKLERI = (
     ("sicrama_cikar", "Dönemler Arası Eksik Sıçraması: Çıkarma Sınırı",
      "Eksik oranı artıp bu değere ya da üstüne çıktıysa Çıkar önerilir", "yuzde", 0.01, 1.0),
     ("negatif_bos_pay", "Beklenmeyen Negatif: Boş Sayma Sınırı",
-     "Negatif satırlar dolu satırların bundan azıysa boş sayma önerilir", "yuzde", 0.0001, 1.0),
+     "Eksi değerli satırlar dolu satırların bundan azıysa boş sayma önerilir", "yuzde", 0.0001, 1.0),
     ("metin_bayrak_pay", "Metin Olarak Yazılmış Boş: Bayrak Sınırı",
      "Boş yerine yazılmış değerler dolu satırların en az bu kadarıysa boş sayıp bayrak üretme "
      "önerilir", "yuzde", 0.0001, 1.0),
@@ -1334,7 +1340,7 @@ PROFIL_ONERI_ESIKLERI = (
 # GENEL: birden cok kontrolun kullandigi istatistik ayari (formun basinda).
 PROFIL_GENEL_ESIKLER = (
     ("tesaduf", "Tesadüf Olasılığı",
-     "Bir bulgunun tesadüfen çıkma olasılığı bu değerin altındaysa gerçek sayılır",
+     "Bir bulgunun şans eseri olma ihtimali bu değerin altındaysa bulgu gerçek sayılır",
      "yuzde", 0.001, 0.20),
 )
 GENEL_ESIK_ANAHTARLARI = {x[0] for x in PROFIL_GENEL_ESIKLER}
@@ -1371,10 +1377,15 @@ def esik_adi(anahtar, kontrol=""):
 # balonunda (nedir, neden onemli, ornek, yakalanirsa ne olur, onerilen
 # degerin gerekcesi), "sonuc" yakalanan kolona ne oldugu (NE_OLACAK ile
 # ayni sozler).
-def _ac(kisa, nedir, ornek, yakala, neden_etiket=None, neden=None, kapsam=None, sonuc=None):
-    """Sade aciklama: tek cumle (kisa) ve i balonu (bilgi). Her veri ve her
-    siniflandirma problemi icin genel; alana ozel terim yok."""
+def _ac(kisa, nedir, ornek, yakala, neden_etiket=None, neden=None, kapsam=None, sonuc=None,
+        sorun=None):
+    """Sade aciklama: tek cumle (kisa) ve i balonu (bilgi). GUNDELIK DIL:
+    istatistik terimi yok (AUC, korelasyon, yuzdelik, IV yazilmaz), her
+    kuralda kucuk sayilarla ornek. Her veri ve her siniflandirma problemi
+    icin genel; alana ozel terim yok."""
     p = ["**Nedir?** " + nedir]
+    if sorun:
+        p.append("**Neden sorun?** " + sorun)
     if kapsam:
         p.append("**Kapsam:** " + kapsam)
     p.append("**Örnek:** " + ornek)
@@ -1388,167 +1399,207 @@ def _ac(kisa, nedir, ornek, yakala, neden_etiket=None, neden=None, kapsam=None, 
 
 
 _VERIDEN = "Önerilen nereden?"
+_KOD_SAKLA = ("bu sayı boş sayılır; hangi satırlarda yazdığı da ayrı bir 1/0 kolonunda (_KOD) "
+              "saklanır")
 PROFIL_ESIK_ACIKLAMA = {
     "cok_bos": _ac(
-        "Çoğu boş olan kolon.",
-        "Kolonun boş hücre oranına bakar. Çok boş kolon modele az satırda bilgi verir.",
-        "100.000 satırın 85.000'i boşsa oran %85; eşik %80 ise yakalanır.",
-        "ham kolon üretime girmez; yerine dolu mu boş mu gösteren 1/0 bayrağı önerilir, siz "
-        "seçersiniz.",
+        "Büyük kısmı boş olan kolon.",
+        "Kolondaki hücrelerin ne kadarının boş olduğuna bakar.",
+        "100 satırın 85'i boşsa boş oranı %85'tir. Eşik %80 ise kolon yakalanır.",
+        "kolon olduğu gibi kullanılmaz. Yerine «bu satırda değer var mı, yok mu» bilgisini "
+        "taşıyan 1/0 kolonu önerilir; kabul edip etmemek size kalır.",
         "Neden %80 önerildi?",
-        "Boş olmak da bilgi taşıyabilir; %80'e kadar boş kolon doldurularak kullanılır.",
+        "Kolonun beşte dördü boşsa geriye işe yarar bilgi kalmaz. Daha az boş olan kolon, boşlar "
+        "doldurularak kullanılır.",
+        sorun="Kolonun çoğu boşsa model o kolondan bir şey öğrenemez.",
         sonuc="Çözüm önerilir; çözüm yoksa üretime girmez"),
     "kimlik": _ac(
-        "Neredeyse her satırda farklı değer alan kolon (kayıt numarası gibi).",
-        "Farklı değer sayısını satır sayısına böler. Oran çok yüksekse kolon yalnız satırı "
-        "tanıtır, genellenebilir bilgi taşımaz.",
-        "100.000 satırda 98.000 farklı değer: %98; eşik %95 ise yakalanır.",
-        "ham kolon üretime girmez; değerler kod yapısındaysa ilk karakterlere göre gruplama "
-        "önerilir.",
+        "Neredeyse her satırda başka değer olan kolon (müşteri numarası gibi).",
+        "Kolonda kaç farklı değer olduğunu satır sayısıyla karşılaştırır.",
+        "100 satırda 98 farklı değer varsa oran %98'dir. Eşik %95 ise kolon yakalanır.",
+        "kolon olduğu gibi kullanılmaz. Değerler bir kod gibi düzenliyse (örneğin ilk iki harf "
+        "şubeyi gösteriyorsa) ilk harflere göre gruplama önerilir.",
         "Neden %95 önerildi?",
-        "Gerçek kimlik kolonları %100'e çok yakındır; %95 küçük tekrarlara rağmen onları yakalar.",
-        kapsam="tam sayı ve metin kolonlar. Ondalık ölçüler doğal olarak hep farklıdır, "
-               "bakılmaz.",
+        "Numara gibi kolonlarda her satır farklıdır. %95, arada birkaç tekrar olsa bile bunları "
+        "yakalar.",
+        kapsam="tam sayı ve yazı kolonları. Küsuratlı sayılar (tutar gibi) doğal olarak hep "
+               "farklıdır, onlara bakılmaz.",
+        sorun="Her satırda farklı olan değer yalnız o satırı tanıtır; model bundan genel bir "
+              "kural çıkaramaz.",
         sonuc="Çözüm önerilir; çözüm yoksa üretime girmez"),
     "kardinalite": _ac(
-        "Metin kolonda çok fazla farklı değer.",
-        "Metin kolondaki farklı değer sayısına bakar. Her değer ayrı grup olur; değer çoksa "
-        "gruplar küçülür ve güvenilmez olur.",
-        "80 farklı değeri olan metin kolonu; eşik 50 ise yakalanır.",
-        "ham kolon üretime girmez; değerlerin hedef oranına ya da sıklığına göre gruplanması "
+        "Çok fazla farklı değeri olan yazı kolonu.",
+        "Yazı kolonunda kaç farklı değer olduğunu sayar.",
+        "Şehir kolonunda 81 farklı şehir var. Eşik 50 ise kolon yakalanır.",
+        "kolon olduğu gibi kullanılmaz. Benzer değerleri birleştirip daha az gruba indirmek "
         "önerilir.",
         _VERIDEN,
-        "Bu veriye göre: her değere ortalama en az 20 tane hedefi 1 olan satır düşecek kadar "
-        "değer olabilir. Örneğin eğitimde hedefi 1 olan 600 satır varsa 30 değer. En az 10, en "
-        "çok 50; hedef bilinmiyorsa 50.",
+        "Eğitim verisinde hedefi 1 olan satır sayısı 5'e bölünür. Bir değere bunlardan 5'ten azı "
+        "düşerse o değer için güvenilir bir şey söylenemez. Sonuç en az 2, en çok 50 olur; hedef "
+        "bilinmiyorsa 50.",
+        sorun="Değer çoğaldıkça her birine az satır düşer; az satıra bakarak doğru sonuç "
+              "çıkarılamaz.",
         sonuc="Çözüm önerilir; çözüm yoksa üretime girmez"),
     "baskin": _ac(
         "Satırların neredeyse hepsinde aynı değer.",
-        "En sık değerin satırlardaki payına bakar; boş hücre de değer sayılır. Kalan az satır "
-        "nadiren bilgi taşır.",
-        "100.000 satırın 99.500'ünde 0: pay %99,5; eşik %99 ise yakalanır.",
-        "Tut ya da Çıkar size sorulur. Öneri bir testle verilir: baskın değer dışındaki "
-        "satırların hedef oranı baskın değerdekinden gerçekten farklıysa (fark tesadüf "
-        "olasılığının altında ve ayırma gücü IV en az 0,02) Tut, değilse Çıkar. Bu satırlarda "
-        "beklenen hedefi 1 olan satır 5'ten azsa oran güvenilmez, Çıkar.",
+        "En çok görülen değerin satırların ne kadarında geçtiğine bakar. Boş hücre de bir değer "
+        "sayılır.",
+        "100 satırın 99'unda 0 yazıyorsa pay %99'dur. Eşik %99 ise kolon yakalanır.",
+        "kolonu tutmak ya da çıkarmak size sorulur. Sistem bir öneri de verir: farklı değerdeki "
+        "az sayıdaki satıra bakar. Bu satırlarda hedef, öteki satırlardan belirgin biçimde "
+        "farklıysa kolon işe yarıyordur: Tut. Fark yoksa, fark şans eseri olabilecek kadar "
+        "küçükse ya da karar verecek kadar satır yoksa: Çıkar.",
         "Neden %99 önerildi?",
-        "Yalnız gerçekten neredeyse sabit olan kolonlar sorulsun diye.",
+        "100 satırın 99'u aynıysa kolon neredeyse hep aynıdır. Sayıyı düşürürseniz daha çok "
+        "kolon size sorulur.",
+        sorun="Hemen her satırda aynı olan kolon satırları birbirinden ayırt etmez.",
         sonuc="Kararınıza bırakılır"),
     "gizli": _ac(
-        "Boş değer yerine -999, 9999 gibi bir kod girilmiş.",
-        "Kolonun geri kalan değerlerinden kopuk -1, -99, -999, 9999 gibi bir değerin dolu "
-        "satırlardaki payına bakar. Kod gerçek sayı gibi hesaba girerse sonucu bozar.",
-        "Dolu satırların %3'ü -999; eşik %1 ise yakalanır.",
-        "kolon üretime girer; öneri: kod boş sayılır, kodun olduğu satırlar _KOD bayrağında "
-        "kalır.",
+        "Boş bırakmak yerine -999, 9999 gibi uydurma bir sayı yazılmış.",
+        "Kolonun öteki değerlerinden kopuk duran -1, -99, -999, 9999 gibi bir sayının ne kadar "
+        "sık geçtiğine bakar.",
+        "Yaş kolonunda dolu 100 satırın 3'ünde -999 yazıyor: %3. Eşik %1 ise kolon yakalanır.",
+        "kolon kullanılır. Öneri: " + _KOD_SAKLA + ".",
         "Neden %1 önerildi?",
-        "Tek tük görülen değer kod olmayabilir; %1 ve üstü sistematiktir.",
+        "100 satırda 1'den az görülen sayı gerçek bir değer olabilir. Daha sık görülüyorsa "
+        "bilerek yazılmış bir koddur.",
+        sorun="Bu sayı gerçek bir değer gibi hesaba girerse ortalamaları ve sonucu bozar.",
         sonuc="Düzeltme önerilir; kolon üretime girer"),
     "sicrama": _ac(
-        "Boş oranı bir dönemden ötekine birden değişen kolon.",
-        "Art arda iki dönem arasındaki boş oranı farkına bakar. Ani değişim, veri toplamanın "
-        "değiştiğini gösterir.",
-        "Boş oranı bir dönemde %5, sonrakinde %40: 35 puan; eşik 20 ise yakalanır.",
-        "Tut ya da Çıkar size sorulur; öneri Çıkarma sınırı eşiğinden gelir.",
+        "Boş oranı bir dönemden sonrakine birden değişen kolon.",
+        "Art arda iki dönemin boş oranlarını karşılaştırır.",
+        "Mart'ta 100 satırın 5'i boş, Nisan'da 40'ı boş. Fark 35 puan; eşik 20 puan ise kolon "
+        "yakalanır.",
+        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: boş oranı artıp «Çıkarma sınırı»nı "
+        "geçtiyse Çıkar; geçmediyse ya da azaldıysa Tut.",
         "Neden 20 puan önerildi?",
-        "Küçük oynamalar doğaldır; 20 puanın üstü genellikle bir değişikliktir.",
+        "Bir dönemden ötekine birkaç puan oynama normaldir. 20 puan birden değişiyorsa veride "
+        "bir şey değişmiştir.",
+        sorun="Boş oranı birden değişiyorsa verinin toplanma biçimi değişmiştir; eski ve yeni "
+              "dönem aynı şeyi anlatmıyor olabilir.",
         sonuc="Kararınıza bırakılır"),
     "uc_yayilim": _ac(
-        "Saçma derecede büyük ya da küçük değer (hatalı giriş).",
-        "Yayılım = %99'luk değer − %1'lik değer. En büyük değer %99'luk değeri ya da en küçük "
-        "değer %1'lik değeri yayılımın eşik katından fazla aşıyorsa yakalar. Özel kodlar "
-        "hesaba girmez.",
-        "%1'lik 0, %99'luk 10.000, en büyük 5.000.000. Sınır 10.000 + 100 × 10.000 = "
-        "1.010.000: yakalanır.",
-        "kolon üretime girer; öneri: yakalanan uç %99'luk ya da %1'lik değere çekilir (kırpma).",
+        "Yanlış yazıldığı belli olan çok büyük ya da çok küçük değer.",
+        "Önce kolonun normal aralığı bulunur: en küçük %1 ve en büyük %1'lik değerler dışarıda "
+        "bırakılır, kalanların alt ve üst ucu normal aralıktır. En büyük ya da en küçük değer bu "
+        "aralığın çok dışındaysa yakalanır. «Çok» şu demek: aralığın genişliğinin eşik katından "
+        "fazla. -999 gibi uydurma sayılar bu hesaba katılmaz.",
+        "Normal aralık 0 ile 10.000 (genişlik 10.000). Eşik 100 kat ise sınır 10.000 + 100 × "
+        "10.000 = 1.010.000. Bir satırda 5.000.000 yazıyorsa kolon yakalanır.",
+        "kolon kullanılır. Öneri: yakalanan değer normal aralığın ucuna çekilir (örnekte "
+        "5.000.000 yerine 10.000 yazılır).",
         "Neden 100 kat önerildi?",
-        "Yalnız hatalı girişler yakalansın diye. Gerçek ama uçta kalan değerler SFA'da (winsor) "
-        "ele alınır.",
+        "Yüksek tutuldu ki yalnız yanlış yazıldığı belli olan değerler yakalansın. Büyük ama "
+        "gerçek olabilecek değerlere sonraki adımda (SFA) bakılır.",
+        sorun="Tek bir yanlış yazılmış sayı ortalamayı ve modelin öğrendiğini bozar.",
         sonuc="Düzeltme önerilir; kolon üretime girer"),
     "yakin_kor": _ac(
-        "Başka bir kolonla neredeyse aynı bilgiyi taşıyan kolon.",
-        "İki sayısal kolonun korelasyonuna bakar; biri ötekinin sabit katıysa da (birim farkı) "
-        "yakalar.",
-        "Aynı ölçünün iki birimde tutulması: korelasyon %99,9.",
-        "gruptan bir kolon kalır, diğerleri üretime girmez. Hedef iki sınıflıysa hedefi daha "
-        "iyi ayıran önerilir.",
+        "Başka bir kolonla neredeyse aynı şeyi söyleyen kolon.",
+        "İki sayı kolonunun birlikte ne kadar aynı hareket ettiğine bakar. Biri artınca öteki de "
+        "hep aynı oranda artıyorsa benzerlik %100'dür.",
+        "Aynı tutar bir kolonda TL, ötekinde bin TL olarak tutulmuş: benzerlik %100.",
+        "benzer kolonlardan biri kalır, ötekiler üretime girmez. Hangisinin kalacağını siz "
+        "seçersiniz; hedefi daha iyi ayırt eden önerilir.",
         "Neden %99 önerildi?",
-        "Bu düzeyde iki kolon pratikte aynıdır; ikisi birlikte yalnız tekrar üretir.",
+        "%99 benzer iki kolon pratikte aynıdır; ikisini de tutmak bir şey kazandırmaz.",
+        sorun="Aynı bilgiyi iki kez vermek modele bir şey kazandırmaz, yalnız kalabalık yapar.",
         sonuc="Biri kalır, diğerleri üretime girmez"),
     "sizinti_auc": _ac(
-        "Tek başına hedefi çok iyi ayıran kolon hedeften sonra oluşmuş olabilir (sızıntı).",
-        "Her kolonun hedefi tek başına ne kadar iyi ayırdığını AUC ile ölçer: %50 hiç, %100 "
-        "kusursuz ayırır.",
-        "Olay olduktan sonra doldurulan bir durum kolonu: AUC %99.",
-        "Tut ya da Çıkar size sorulur. Öneri: AUC %95 ve üstüyse Çıkar, altındaysa Tut (kolonun "
-        "hedeften önce bilindiğini kontrol edin).",
+        "Hedefi tek başına şaşırtıcı derecede iyi bilen kolon.",
+        "Her kolon için şunu ölçer: hedefi 1 olan bir satırla hedefi 0 olan bir satır yan yana "
+        "konsa, yalnız bu kolona bakarak hangisinin 1 olduğu 100 denemenin kaçında doğru "
+        "bulunur? 50, yazı tura atmak kadardır; 100, hiç yanılmamaktır.",
+        "«Kapanış nedeni» kolonu yalnız olay gerçekleştikten sonra doluyor; hedefi 100 denemenin "
+        "99'unda doğru gösteriyor.",
+        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: isabet %95 ve üstüyse Çıkar; "
+        "altındaysa Tut, ama kolonun tahmin anında gerçekten bilinip bilinmediğini kontrol edin.",
         "Neden %85 önerildi?",
-        "Gerçek değişkenler tek başına nadiren bunun üstüne çıkar; üstü incelenmeye değer.",
-        kapsam="hedef iki sınıflıysa; yalnız eğitim satırları.",
+        "Sıradan bir kolon tek başına bu kadar iyi bilemez. Biliyorsa çoğu zaman sonuç belli "
+        "olduktan sonra doldurulmuştur.",
+        kapsam="hedef yalnız 1 ve 0 değerlerini alıyorsa; yalnız eğitim satırlarına bakılır.",
+        sorun="Bir kolon hedefi bu kadar iyi biliyorsa çoğu zaman sonuç belli olduktan sonra "
+              "doldurulmuştur. Sınav kâğıdına cevap anahtarını koymak gibidir: model eğitimde "
+              "çok başarılı görünür, gerçek kullanımda o bilgi elinde olmadığı için işe yaramaz.",
         sonuc="Kararınıza bırakılır"),
     "kayma_kat": _ac(
-        "Değerleri bir dönemden ötekine topluca kat kat değişen kolon.",
-        "Sıfır dışı değerlerin %25, %50 ve %75'lik değerleri art arda iki dönem arasında aynı "
-        "yönde eşik kat değişiyor mu diye bakar. Çoğu zaman birim değişikliğidir.",
-        "Ortanca 1.200'den 1,2'ye düştü: 1.000 kat.",
-        "Tut ya da Çıkar size sorulur; öneri: kat 10, 100, 1.000 gibi 10'un kuvvetiyse (birim "
-        "değişikliği) Çıkar, değilse Tut.",
+        "Sayıları bir dönemden sonrakine topluca kat kat değişen kolon.",
+        "Kolondaki tipik değerlerin (küçük, orta ve büyük değerlerin) art arda iki dönem "
+        "arasında kaç kat değiştiğine bakar. Üçü de aynı yönde eşik kadar ya da daha fazla "
+        "değiştiyse yakalanır. Sıfırlar hesaba katılmaz.",
+        "Tutarlar Mart'a kadar TL, Nisan'dan sonra bin TL yazılmış: ortadaki değer 1.200'den "
+        "1,2'ye düşer, 1.000 kat.",
+        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: değişim 10, 100, 1.000 gibi yuvarlak "
+        "bir katsa (birim değişikliği) Çıkar, değilse Tut.",
         "Neden 10 kat önerildi?",
-        "Gerçek değişimler nadiren bu kadar büyüktür; birim değişiklikleri 10'un katıdır.",
+        "Gerçek değerler bir dönemde 10 katına çıkmaz. Çıktıysa çoğu zaman birim değişmiştir "
+        "(TL yerine bin TL gibi).",
+        sorun="Sayılar topluca kat kat değişiyorsa çoğu zaman değerin birimi değişmiştir; eski "
+              "ve yeni dönem aynı ölçüde değildir.",
         sonuc="Kararınıza bırakılır"),
 }
 PROFIL_ESIK_ACIKLAMA.update({
-    "tesaduf": _ac(
-        "Bir bulgunun tesadüf olup olmadığına bu olasılıkla karar verilir.",
-        "Bazı kontroller bir bulgunun tesadüfen çıkma olasılığını hesaplar. Olasılık bu "
-        "değerin altındaysa bulgu gerçek sayılır. Kullanan kontroller: Dönemde boş ya da sabit "
-        "(küçük bir dönemde tek değer tesadüfen çıkabilir) ve Baskın değerin Tut / Çıkar "
-        "önerisi (az satırdaki oran farkı tesadüf olabilir).",
-        "Kolonun %90'ı 0; 50 satırlık bir dönemin tamamının tesadüfen 0 çıkma olasılığı "
-        "%0,5, %5'ten küçük: gerçek sorun. 10 satırlık dönemde %35: tesadüf olabilir.",
-        "eşik küçülürse yalnız çok güçlü bulgular kalır; büyürse daha çok bulgu yakalanır.",
-        "Neden %5 önerildi?",
-        "İstatistiksel testlerde en yaygın kullanılan anlamlılık düzeyidir.",
-        sonuc="Bulguların gerçek mi tesadüf mü olduğuna karar verir"),
+    "tesaduf": {
+        "kisa": "Sistemin «bu şans eseri olabilir» deme sınırı.",
+        "bilgi": "\n\n".join([
+            "**Nedir?** Sistem bazı bulgularda «bu şans eseri olabilir mi?» diye bakar ve şans "
+            "eseri olma ihtimalini hesaplar. İhtimal bu sınırdan düşükse bulguyu gerçek sayar, "
+            "yüksekse görmezden gelir.",
+            "**Kapsam:** iki yerde kullanılır: «Dönemde boş ya da sabit» kuralı ve «Baskın "
+            "değer» kuralının Tut / Çıkar önerisi.",
+            "**Örnek:** Yazı turada 10 kez üst üste yazı gelme ihtimali binde 1'dir; buna şans "
+            "denmez, parada bir sorun vardır. 2 kez üst üste yazı gelme ihtimali dörtte 1'dir; "
+            "bu şans olabilir. Aynı mantıkla: kolonun genelde %90'ı 0 ise, 50 satırlık bir "
+            "dönemin tamamının 0 çıkması şansla açıklanmaz (ihtimal %0,5); 10 satırlık dönemde "
+            "açıklanır (ihtimal %35).",
+            "**Eşik ne yapar?** Sınırı küçültürseniz sistem daha zor ikna olur ve daha az kolon "
+            "yakalar; büyütürseniz daha çok kolon yakalar.",
+            "**Neden %5 önerildi?** 20'de 1 ihtimal demektir. Bilimsel çalışmalarda en yaygın "
+            "kullanılan sınırdır."]),
+        "sonuc": "Küçülürse daha az, büyürse daha çok kolon yakalanır"},
     "donem_tut_pay": _ac(
-        "Sorun yalnız ilk dönemlerdeyse kolon sonradan eklenmiştir.",
-        "Dönemde boş ya da sabit kontrolüne takılan kolonda, sorunlu dönemlerin yalnız baştaki "
-        "dönemler olup olmadığına ve kaç tane olduğuna bakar.",
-        "24 dönemin ilk 6'sı boş (%25); eşik %35 ise Tut önerilir.",
-        "yalnız öneriyi belirler.",
+        "Sorun yalnız en baştaki dönemlerdeyse kolon sonradan eklenmiştir.",
+        "«Dönemde boş ya da sabit» kuralına takılan kolonda, sorunlu dönemlerin yalnız en "
+        "baştakiler olup olmadığına ve bütün dönemlerin ne kadarını tuttuğuna bakar.",
+        "24 dönemin ilk 6'sı boş: %25. Sınır %35 ise Tut önerilir. Son dönem sorunluysa sınıra "
+        "bakılmaz, Çıkar önerilir; çünkü kolon güncel veride yoktur.",
+        "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %35 önerildi?",
-        "Dönemlerin üçte birinden azı eksikse kalan dönemler kullanılabilir.",
+        "Dönemlerin kabaca üçte biri. Bundan azı sorunluysa kalan dönemler model için yeter.",
         sonuc="Öneri: altındaysa Tut"),
     "sicrama_cikar": _ac(
-        "Boş oranı artıp yarıyı geçtiyse kolon güncel veride güvenilmez.",
-        "Eksik sıçramasına takılan kolonda, sıçramadan sonraki dönemin boş oranına bakar.",
-        "Boş oranı %5'ten %55'e çıktı; eşik %50 ise Çıkar önerilir.",
-        "yalnız öneriyi belirler.",
+        "Boş oranı artıp sınırı geçtiyse kolon artık çoğunlukla boştur.",
+        "«Eksik sıçraması» kuralına takılan kolonda, sıçramadan sonraki dönemin boş oranına "
+        "bakar.",
+        "Boş oranı %5'ten %55'e çıktı. Sınır %50 ise Çıkar önerilir.",
+        "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %50 önerildi?",
-        "Yarısı boşa dönen kolonu model kullanımda çoğunlukla boş görür.",
+        "Yarısından fazlası boş olan kolon artık çoğunlukla boştur.",
         sonuc="Öneri: üstündeyse Çıkar"),
     "negatif_bos_pay": _ac(
-        "Az sayıda negatif değer hatalı kayıttır.",
-        "Beklenmeyen negatife takılan kolonda negatif satırların dolu satırlara oranına bakar.",
-        "Dolu satırların %1'i negatif; eşik %5 ise boş sayma önerilir.",
-        "yalnız öneriyi belirler.",
+        "Az sayıda eksi değer yanlış kayıttır.",
+        "«Negatif değer» kuralına takılan kolonda eksi değerli satırların ne kadar olduğuna "
+        "bakar.",
+        "Dolu 100 satırın 1'i eksi: %1. Sınır %5 ise eksi değerlerin boş sayılması önerilir. %5 "
+        "ve üstündeyse olduğu gibi bırakılması önerilir.",
+        "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %5 önerildi?",
-        "Hatalı kayıtlar küçük bir paydır; %5'in üstü sistematik bir anlam taşıyabilir.",
+        "Yanlış kayıt tek tük olur. 100 satırın 5'inden fazlası eksiyse bu hata değil, bir "
+        "anlamı vardır (iade gibi).",
         sonuc="Öneri: altındaysa boş say"),
     "metin_bayrak_pay": _ac(
-        "Boş yazısı çoksa boş olmak da bilgi taşıyabilir.",
-        "Metin olarak boşa takılan kolonda bu yazıların dolu satırlara oranına bakar.",
-        "Satırların %15'inde «Bilinmiyor»; eşik %5 ise boş sayıp 1/0 bayrağı üretmek önerilir.",
-        "yalnız öneriyi belirler.",
+        "«Bilinmiyor» gibi yazılar çoksa, boş olmak da bir bilgi olabilir.",
+        "«Metin olarak boş» kuralına takılan kolonda bu yazıların ne kadar sık geçtiğine bakar.",
+        "100 satırın 15'inde «Bilinmiyor» yazıyor: %15. Sınır %5 ise bu yazılar boş sayılır ve "
+        "«boş mu, dolu mu» gösteren 1/0 kolonu da önerilir. %5'in altındaysa yalnız boş sayılır.",
+        "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %5 önerildi?",
-        "Bayrağın modelde işe yaraması için yeterli satır gerekir.",
+        "100 satırın 5'inden azında görülüyorsa ek kolon neredeyse hep 0 olur, işe yaramaz.",
         sonuc="Öneri: bu pay ya da üstündeyse boş say ve bayrak üret"),
 })
 ESIK_BIRIM_ADI = {"yuzde": "%", "puan": "puan", "sayi": "", "kat": "kat"}
-ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her kontrolün bir "
-              "sınırı (eşik) var ve önerilen değerle dolu geliyor. Olduğu gibi onaylayabilir "
-              "ya da değiştirebilirsiniz; kontroller onayladığınız değerlerle yapılır. Her "
-              "kontrolün ne yaptığı ve önerilen değerin nedeni Açıklama sütununda yazar.")
+ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her kuralın yanında "
+              "neye baktığı, bir örnek ve sınırı (eşik) yazar. Sınırlar önerilen değerle dolu "
+              "gelir; olduğu gibi onaylayabilir ya da değiştirebilirsiniz.")
 ESIK_DUGME = "Eşikleri Onayla ve Profili Çıkar"
 
 
@@ -1600,24 +1651,30 @@ def _veri_ozeti(durum):
 # hesaplananlarda hesap (veriye_gore_onerilen), bilgi yoksa sabit degerin
 # nedeni; digerlerinde kisa gerekce.
 ONERILEN_DAYANAK = {
-    "cok_bos": "Boş olmak da bilgi taşır; %80'e kadar boş kolon doldurularak kullanılabilir.",
-    "kimlik": "Kimlik kolonlarında oran %100'e yakındır; küçük tekrarlara rağmen yakalar.",
-    "kardinalite": "Hedef bilinmediği için SFA'nın sınırı 50; hedef bilinse her değerde en az "
-                   "5 hedefi 1 olan satır olacak kadar değer hesaplanırdı.",
-    "baskin": "Yalnız gerçekten neredeyse sabit olan kolonlar sorulsun diye.",
-    "gizli": "Tek tük görülen değer kod olmayabilir; %1 ve üstü sistematiktir.",
-    "sicrama": "Küçük oynamalar doğaldır; 20 puanın üstü bir değişikliktir.",
-    "uc_yayilim": "Yalnız hatalı girişler yakalansın; gerçek uç değerler SFA'da ele alınır.",
-    "yakin_kor": "Bu düzeyde iki kolon pratikte aynı bilgiyi taşır.",
-    "sizinti_auc": "Gerçek değişkenler tek başına nadiren bunun üstüne çıkar.",
-    "kayma_kat": "Birim değişiklikleri 10'un katıdır; gerçek değişim nadiren bu kadar büyüktür.",
-    "tesaduf": "İstatistiksel testlerde en yaygın kullanılan anlamlılık düzeyi.",
-    "donem_tut_pay": "Dönemlerin üçte birinden azı eksikse kalan dönemler kullanılabilir.",
-    "sicrama_cikar": "Yarısı boşa dönen kolon kullanımda çoğunlukla boş görünür.",
-    "negatif_bos_pay": "Hatalı kayıt küçük bir paydır; %5'in üstü sistematik olabilir.",
-    "metin_bayrak_pay": "Bayrağın işe yaraması için yeterli satır gerekir.",
+    "cok_bos": "Kolonun beşte dördü boşsa geriye işe yarar bilgi kalmaz.",
+    "kimlik": "Numara gibi kolonlarda her satır farklıdır; %95, arada birkaç tekrar olsa bile "
+              "bunları yakalar.",
+    "kardinalite": "Hedef bilinmediği için sistemin üst sınırı olan 50 kullanıldı.",
+    "baskin": "100 satırın 99'u aynıysa kolon neredeyse hep aynıdır. Düşürürseniz daha çok kolon "
+              "size sorulur.",
+    "gizli": "100 satırda 1'den az görülen sayı gerçek bir değer olabilir; daha sık görülüyorsa "
+             "bilerek yazılmış bir koddur.",
+    "sicrama": "Birkaç puan oynama normaldir. 20 puan birden değişiyorsa veride bir şey "
+               "değişmiştir.",
+    "uc_yayilim": "Yüksek tutuldu ki yalnız yanlış yazıldığı belli olan değerler yakalansın.",
+    "yakin_kor": "%99 benzer iki kolon pratikte aynıdır; ikisini de tutmak bir şey kazandırmaz.",
+    "sizinti_auc": "Sıradan bir kolon tek başına bu kadar iyi bilemez; biliyorsa çoğu zaman sonuç "
+                   "belli olduktan sonra doldurulmuştur.",
+    "kayma_kat": "Gerçek değerler bir dönemde 10 katına çıkmaz; çıktıysa çoğu zaman birim "
+                 "değişmiştir (TL yerine bin TL gibi).",
+    "tesaduf": "20'de 1 ihtimal. Bilimsel çalışmalarda en yaygın kullanılan sınırdır.",
+    "donem_tut_pay": "Dönemlerin kabaca üçte biri. Bundan azı sorunluysa kalan dönemler yeter.",
+    "sicrama_cikar": "Yarısından fazlası boş olan kolon artık çoğunlukla boştur.",
+    "negatif_bos_pay": "Yanlış kayıt tek tük olur; 100 satırın 5'inden fazlası eksiyse bir anlamı "
+                       "vardır (iade gibi).",
+    "metin_bayrak_pay": "100 satırın 5'inden azında görülüyorsa ek kolon neredeyse hep 0 olur, işe "
+                        "yaramaz.",
 }
-
 
 def veriye_gore_onerilen(durum):
     """{anahtar: (deger, aciklama)}: veriden hesaplanan onerilenler (dil
@@ -1632,15 +1689,17 @@ def veriye_gore_onerilen(durum):
         ham = tem // COCHRAN_EN_AZ
         k = int(min(sfa_mod.KATEGORIK_MAX, max(2, ham)))
         if k == ham:
-            m = ("Eğitimde hedefi 1 olan %s satır var. Her değerde en az 5 tane olabilmesi için "
-                 "kolonun en çok %s değeri olabilir." % (_sayi(tem), _sayi(k)))
+            m = ("Eğitim verisinde hedefi 1 olan %s satır var. Bir değere bunlardan 5'ten azı "
+                 "düşerse o değer için güvenilir bir şey söylenemez. %s ÷ 5 = %s."
+                 % (_sayi(tem), _sayi(tem), _sayi(k)))
         elif k < ham:
-            m = ("Eğitimde hedefi 1 olan %s satır var; %s değere kadar her değerde en az 5 tane "
-                 "olur, ama SFA en çok %s değerli kolonla çalıştığı için %s."
-                 % (_sayi(tem), _sayi(ham), _sayi(k), _sayi(k)))
+            m = ("Eğitim verisinde hedefi 1 olan %s satır var. Bir değere bunlardan 5'ten azı "
+                 "düşerse o değer için güvenilir bir şey söylenemez. %s ÷ 5 = %s; ama sistemin "
+                 "üst sınırı %s olduğu için %s."
+                 % (_sayi(tem), _sayi(tem), _sayi(ham), _sayi(k), _sayi(k)))
         else:
-            m = ("Eğitimde hedefi 1 olan yalnız %s satır var; 2 değerden fazlasında her değere "
-                 "5'ten az düşer." % _sayi(tem))
+            m = ("Eğitim verisinde hedefi 1 olan yalnız %s satır var; ikiden fazla değere "
+                 "bölünürse her birine 5'ten az düşer." % _sayi(tem))
         cikti["kardinalite"] = (k, m)
     return cikti
 
@@ -1744,7 +1803,9 @@ def esik_formu(durum, hata=None, kilitli=False):
         r["dayanak"] = dayanak.get(r["anahtar"]) or ONERILEN_DAYANAK.get(r["anahtar"], "")
         if r["anahtar"] in ONERI_ESIK_AD:
             r["oneri_ad"] = ONERI_ESIK_AD[r["anahtar"]]
-            r["form_olcut"] = ONERI_FORM_OLCUT.get(r["anahtar"], "")
+        if r["anahtar"] in ONERI_FORM_OLCUT:
+            r["form_olcut"] = ONERI_FORM_OLCUT[r["anahtar"]]
+            r["form_ornek"] = ONERI_FORM_ORNEK.get(r["anahtar"], "")
     kontroller, esiksiz = esik_form_kontrolleri(durum)
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
             "kontroller": kontroller, "esiksiz": esiksiz,
@@ -1756,20 +1817,20 @@ def esik_formu(durum, hata=None, kilitli=False):
 # olmayan), esikli kuralin altinda onun oneri esikleri. Esigi olmayan
 # kontroller en altta tek satir.
 KONTROL_FORM_KISA = {
-    "cok_bos": "Çoğu boş olan kolon",
-    "g_sabit": "Kolonun (neredeyse) tamamında aynı değer",
-    "g_kardinalite": "Çok fazla farklı değer; olduğu gibi modele giremez",
-    "tarih": "Tarih kolonu ham haliyle değişken olmaz",
-    "g_ayni": "Başka bir kolonla aynı bilgiyi taşıyan kolon",
-    "g_sizinti": "Hedeften ya da gözlem anından sonraki bilgi",
-    "g_donem": "Kolon dönemden döneme bozuluyor",
-    "g_gizli": "Boş değer özel kodla ya da yazıyla girilmiş",
+    "cok_bos": "Büyük kısmı boş olan kolon",
+    "g_sabit": "Her satırda ya da neredeyse her satırda aynı değer",
+    "g_kardinalite": "O kadar çok farklı değer var ki kolon olduğu gibi kullanılamaz",
+    "tarih": "Tarih kolonu olduğu gibi kullanılmaz",
+    "g_ayni": "Başka bir kolonla aynı şeyi söyleyen kolon",
+    "g_sizinti": "Tahmin anında henüz bilinmeyen bilgiyi taşıyan kolon",
+    "g_donem": "Bazı dönemlerde bozulan kolon",
+    "g_gizli": "«Bilgi yok» demek için boş bırakmak yerine sayı ya da yazı yazılmış",
     "yazim": "Aynı değer farklı biçimlerde yazılmış",
-    "negatif": "Negatif olamayacak ölçüde negatif değer",
-    "uc": "Saçma büyük ya da küçük değer (hatalı giriş)",
-    "g_iliskili": "Birbirine bağlı iki kolon çelişiyor",
-    "tekrar": "Aynı satır birden fazla geçiyor",
-    "set_cakisma": "Train'deki kayıt test ya da OOT setinde de var",
+    "negatif": "Eksi olamayacak kolonda eksi değer",
+    "uc": "Yanlış yazıldığı belli olan çok büyük ya da çok küçük değer",
+    "g_iliskili": "Birbirine bağlı iki kolon birbirini tutmuyor",
+    "tekrar": "Aynı satır birden fazla kez yazılmış",
+    "set_cakisma": "Aynı kayıt hem eğitim hem sınama verisinde var",
 }
 KURAL_FORM_AD = {
     "cok_bos": "Boş hücre oranı", "sabit": "Tek değer", "baskin": "Baskın değer",
@@ -1792,39 +1853,80 @@ ESIK_KURAL = {
     "kayma_kat": "kayma", "gizli": "gizli_eksik", "metin_bayrak_pay": "metin_bos",
     "negatif_bos_pay": "negatif", "uc_yayilim": "uc",
 }
-# Formun "Neye bakıyor" sutunu: kisa, esik kelimesiyle (deger kutuda).
+# Formun "Neye bakıyor" sutunu: gundelik dille tek cumle (terim yok);
+# altinda kucuk sayilarla ornek (KURAL_FORM_ORNEK).
 KURAL_FORM_OLCUT = {
-    "cok_bos": "Boş hücre oranı eşiği aşarsa yakalanır.",
-    "sabit": "Kolonda tek bir değer varsa yakalanır (boş hücre ayrı değer sayılır).",
-    "baskin": "En sık değerin payı eşik ya da üstündeyse yakalanır.",
-    "kimlik_gibi": "Farklı değer sayısı ÷ satır sayısı eşiği aşarsa yakalanır.",
-    "yuksek_kardinalite": "Metin kolonda farklı değer sayısı eşiği aşarsa yakalanır.",
-    "tarih": "Kolon tarih biçimindeyse yakalanır.",
-    "ayni_icerik": "İki kolon bütün satırlarda aynıysa yakalanır.",
-    "yakin_icerik": "İki sayısal kolonun korelasyonu eşik ya da üstündeyse yakalanır.",
-    "gelecek_pencere": "Adındaki dönem ileriye bakıyorsa yakalanır.",
-    "birebir": "Kolon tek başına hedefi eşik ya da üstü AUC ile ayırıyorsa yakalanır.",
-    "tarih_sonra": "Dönem sonundan sonraki bir tarih varsa yakalanır.",
-    "donem": "Bir dönemde tamamen boş ya da tek değerliyse ve bu tesadüf olasılığının altında "
-             "kalıyorsa yakalanır.",
-    "sicrama": "Boş oranı art arda iki dönem arasında eşikten fazla değişirse yakalanır.",
-    "kayma": "Değerler art arda iki dönem arasında eşik kat değişirse yakalanır.",
-    "gizli_eksik": "-999, 9999 gibi kopuk bir kod dolu satırların eşikten fazlasındaysa "
-                   "yakalanır.",
-    "karisik_eksik": "Kolonda hem boş hücre hem özel kod varsa yakalanır.",
-    "metin_bos": "«NULL», «-», «Bilinmiyor» gibi boş yazısı varsa yakalanır.",
-    "yazim": "Aynı değer farklı yazılmışsa yakalanır.",
-    "negatif": "Adet, gün ya da süre ölçüsünde negatif değer varsa yakalanır.",
-    "uc": "En büyük ya da en küçük değer, uç yüzdelikleri yayılımın eşik katından fazla "
-          "aşarsa yakalanır.",
+    "cok_bos": "Kolonun büyük kısmı boş mu diye bakar.",
+    "sabit": "Kolonun her satırında aynı değer mi var diye bakar.",
+    "baskin": "Satırların neredeyse hepsinde aynı değer mi var diye bakar.",
+    "kimlik_gibi": "Neredeyse her satırda başka bir değer mi var diye bakar (müşteri numarası "
+                   "gibi).",
+    "yuksek_kardinalite": "Yazı kolonunda kaç farklı değer olduğuna bakar.",
+    "tarih": "Kolon tarih mi diye bakar.",
+    "ayni_icerik": "İki kolon satır satır aynı mı diye bakar.",
+    "yakin_icerik": "İki sayı kolonu neredeyse aynı şeyi mi söylüyor diye bakar. Benzerlik %100 "
+                    "ise ikisi tıpatıp aynı hareket eder.",
+    "gelecek_pencere": "Kolonun adı gelecekteki bir zamanı mı anlatıyor diye bakar.",
+    "birebir": "Kolon tek başına hedefi şaşırtıcı derecede iyi mi biliyor diye bakar. %50 yazı "
+               "tura atmak kadardır, %100 hiç yanılmamaktır.",
+    "tarih_sonra": "Tarih, satırın ait olduğu dönemden sonraya mı düşüyor diye bakar.",
+    "donem": "Kolon bazı dönemlerde (ay gibi) tamamen boş ya da hep aynı değerde mi diye bakar. "
+             "Çok az satırlı dönemde bu şans eseri olabilir; o zaman yakalanmaz.",
+    "sicrama": "Boş oranı bir dönemden sonrakine birden mi değişiyor diye bakar.",
+    "kayma": "Kolondaki sayılar bir dönemden sonrakine topluca kaç kat büyümüş ya da küçülmüş "
+             "diye bakar.",
+    "gizli_eksik": "«Bilgi yok» demek için -999, 9999 gibi uydurma bir sayı mı yazılmış diye "
+                   "bakar.",
+    "karisik_eksik": "Aynı kolonda hem boş hücre hem de -999 gibi uydurma sayı mı var diye bakar.",
+    "metin_bos": "Boş bırakmak yerine «NULL», «-», «Bilinmiyor» gibi bir yazı mı yazılmış diye "
+                 "bakar.",
+    "yazim": "Aynı değer farklı biçimlerde mi yazılmış diye bakar.",
+    "negatif": "Eksi olamayacak bir kolonda (adet, gün, süre) eksi değer var mı diye bakar.",
+    "uc": "Yanlış yazıldığı belli olacak kadar büyük ya da küçük bir değer var mı diye bakar. "
+          "Değer, kolonun normal aralığının çok dışındaysa yakalanır.",
+}
+KURAL_FORM_ORNEK = {
+    "cok_bos": "100 satırın 85'i boş: %85.",
+    "sabit": "Her satırda «TR» yazıyor.",
+    "baskin": "100 satırın 99'unda 0 yazıyor: %99.",
+    "kimlik_gibi": "100 satırda 98 farklı değer: %98.",
+    "yuksek_kardinalite": "Şehir kolonunda 81 farklı şehir.",
+    "tarih": "15.03.2024",
+    "ayni_icerik": "Aynı bilgi tabloya iki farklı adla girmiş.",
+    "yakin_icerik": "Aynı tutar bir kolonda TL, ötekinde bin TL.",
+    "gelecek_pencere": "«Sonraki 3 ayda yapılan ödeme».",
+    "birebir": "«Kapanış nedeni» kolonu yalnız olay olduktan sonra doluyor, o yüzden hedefi hep "
+               "biliyor.",
+    "tarih_sonra": "Satır Mart 2024'e ait, kolondaki tarih Temmuz 2024.",
+    "donem": "Ocak–Mart tamamen boş, Nisan'dan sonra dolu.",
+    "sicrama": "Mart'ta 100 satırın 5'i boş, Nisan'da 40'ı boş: 35 puan fark.",
+    "kayma": "Tutarlar Mart'a kadar TL, Nisan'dan sonra bin TL: sayılar 1.000 kat küçülür.",
+    "gizli_eksik": "Yaş kolonunda 100 satırın 3'ünde -999: %3.",
+    "karisik_eksik": "Bazı satırlar boş, bazılarında -1 yazıyor.",
+    "metin_bos": "Meslek kolonunda «Bilinmiyor».",
+    "yazim": "«İstanbul», «ISTANBUL», «istanbul ».",
+    "negatif": "İşlem adedi -3.",
+    "uc": "Değerler 0 ile 10.000 arasında (genişlik 10.000). 100 kat ile sınır 1.010.000; bir "
+          "satırda 5.000.000 yazıyor.",
 }
 ONERI_FORM_OLCUT = {
-    "donem_tut_pay": "Sorun yalnız ilk dönemlerde ve dönemlerin en çok eşik kadarındaysa Tut "
-                     "önerilir.",
-    "sicrama_cikar": "Boş oranı artıp eşiğe ya da üstüne çıktıysa Çıkar önerilir.",
-    "negatif_bos_pay": "Negatif satırlar dolu satırların eşikten azıysa boş sayma önerilir.",
-    "metin_bayrak_pay": "Boş yazıları dolu satırların eşik kadarı ya da fazlasıysa 1/0 bayrağı "
-                        "da önerilir.",
+    "donem_tut_pay": "Sorunlu dönemler yalnız en baştaysa kolon sonradan eklenmiştir. Bunlar "
+                     "bütün dönemlerin bu kadarını geçmiyorsa Tut, geçiyorsa Çıkar önerilir.",
+    "sicrama_cikar": "Boş oranı artıp bu sınırı geçtiyse Çıkar, geçmediyse Tut önerilir.",
+    "negatif_bos_pay": "Eksi değerler bu sınırdan azsa yanlış kayıt sayılır, boş sayılması "
+                       "önerilir. Fazlaysa bir anlamı olabilir, dokunulmaması önerilir.",
+    "metin_bayrak_pay": "Bu yazılar bu sınır kadar ya da daha çoksa, «boş mu, dolu mu» gösteren "
+                        "ek bir 1/0 kolonu da önerilir.",
+    "tesaduf": "Sistem bir şey bulduğunda «bu şans eseri olabilir mi?» diye bakar. Şans eseri "
+               "olma ihtimali bu değerden düşükse bulguyu gerçek sayar.",
+}
+ONERI_FORM_ORNEK = {
+    "donem_tut_pay": "24 dönemin ilk 6'sı boş (%25): Tut önerilir.",
+    "sicrama_cikar": "Boş oranı %5'ten %55'e çıktı: Çıkar önerilir.",
+    "negatif_bos_pay": "100 satırın 1'i eksi (%1): boş sayılır.",
+    "metin_bayrak_pay": "100 satırın 15'inde «Bilinmiyor» (%15): ek kolon önerilir.",
+    "tesaduf": "Yazı turada 10 kez üst üste yazı gelmesi şansla açıklanmaz (binde 1); 2 kez "
+               "gelmesi açıklanır (dörtte 1).",
 }
 ONERI_ESIK_AD = {
     "donem_tut_pay": "İlk dönemler", "sicrama_cikar": "Çıkarma sınırı",
@@ -1854,6 +1956,7 @@ def esik_form_kontrolleri(durum):
             kurallar.append({
                 "anahtar": u, "ad": KURAL_FORM_AD.get(u, pk.get(u, (u, u))[1]),
                 "olcut": KURAL_FORM_OLCUT.get(u) or kurallar_metin.get(u, ""),
+                "ornek": KURAL_FORM_ORNEK.get(u, ""),
                 "sonuc": ac.get("sonuc") or NE_OLACAK.get(pk[u][2], "") if u in pk else "",
                 "esik": ana, "oneri": oneri})
         if not any(k["esik"] or k["oneri"] for k in kurallar):
@@ -2711,56 +2814,57 @@ def _sayi_metni(v):
 
 
 def _profil_kurallari(esik=None):
-    """Her kontrolun sade kurali; esikler kullanicinin onayladigi degerler."""
+    """Her kontrolun sade kurali (gundelik dil, terim yok); esikler
+    kullanicinin onayladigi degerler."""
     e = esik or _esik_varsayilan()
     kat = _sayi(e["kardinalite"])
     return {
-        "cok_bos": "Kolonun boş hücre oranı %s üstünde." % _yuzde_ekli(e["cok_bos"]),
-        "sabit": "Kolonda tek bir değer var. Bir değer ile boş hücrelerden oluşan kolon "
-                 "iki değerli sayılır.",
-        "kimlik_gibi": "Farklı değer sayısının satır sayısına oranı %s üstünde."
-                       % _yuzde_ekli(e["kimlik"]),
-        "yuksek_kardinalite": "Metin kolonda farklı değer sayısı %s üstünde."
+        "cok_bos": "Boş hücre oranı %s üstünde." % _yuzde_ekli(e["cok_bos"]),
+        "sabit": "Her satırda aynı değer var. Bir değer ve boş hücrelerden oluşan kolon "
+                 "sayılmaz.",
+        "kimlik_gibi": "Neredeyse her satırda başka değer var: farklı değer sayısı ÷ satır "
+                       "sayısı %s üstünde." % _yuzde_ekli(e["kimlik"]),
+        "yuksek_kardinalite": "Yazı kolonunda farklı değer sayısı %s üstünde."
                               % (kat + _ilgi_eki(kat)),
-        "ayni_icerik": "Değerleri satır satır birebir aynı olan kolonlar.",
-        "baskin": "En sık görülen değer satırların en az %s kadarında geçiyor. Boş hücre de "
-                  "değer sayılır." % _yuzde_metni(e["baskin"]),
-        "donem": "Kolon bir dönemde tamamen boş ya da bütün satırlarda aynı değerde ve bunun "
-                 "tesadüfen olma olasılığı %s altında." % _yuzde_ekli(e["tesaduf"]),
-        "karisik_eksik": "Kolonda hem boş hücre hem de -1, -99, 999, 9999 gibi özel bir kod "
-                         "var. Kodun payına bakılmaz.",
-        "gizli_eksik": "-1, -99, -999, 9999 gibi bir değer dolu satırların %s fazlasında "
-                       "geçiyor ve kolonun geri kalan değerlerinden kopuk." % _yuzde_ekli(e["gizli"]),
-        "negatif": "Kolon kartında ölçüsü adet, gün ya da süre olan kolonda negatif değer var.",
-        "sicrama": "Eksik oranı art arda iki dönem arasında %s puandan fazla değişiyor."
+        "ayni_icerik": "Bütün satırlarda birbirinin aynısı olan kolonlar.",
+        "baskin": "Satırların en az %s kadarında aynı değer var. Boş hücre de değer sayılır."
+                  % _yuzde_metni(e["baskin"]),
+        "donem": "Kolon bir dönemde tamamen boş ya da hep aynı değerde ve bunun şans eseri olma "
+                 "ihtimali %s altında." % _yuzde_ekli(e["tesaduf"]),
+        "karisik_eksik": "Kolonda hem boş hücre hem de -1, -99, 999, 9999 gibi uydurma bir sayı "
+                         "var. Sayının ne kadar sık geçtiğine bakılmaz.",
+        "gizli_eksik": "-1, -99, -999, 9999 gibi uydurma bir sayı dolu satırların %s fazlasında "
+                       "yazıyor ve kolonun öteki değerlerinden kopuk." % _yuzde_ekli(e["gizli"]),
+        "negatif": "Adet, gün ya da süre tutan kolonda eksi değer var.",
+        "sicrama": "Boş oranı art arda iki dönem arasında %s puandan fazla değişiyor."
                    % _sayi_metni(round(e["sicrama"] * 100, 2)),
-        "uc": "En büyük değer %%99'luk değeri ya da en küçük değer %%1'lik değeri, ikisi "
-              "arasındaki farkın %s katından fazla aşıyor (hatalı giriş)." % _sayi_metni(e["uc_yayilim"]),
-        "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
+        "uc": "En büyük ya da en küçük değer kolonun normal aralığının çok dışında: aralığın "
+              "genişliğinin %s katından fazla (yanlış yazılmış sayı)." % _sayi_metni(e["uc_yayilim"]),
+        "tekrar": "Aynı kimlik ve dönemle birden fazla satır ya da bütün kolonları aynı olan "
                   "satırlar.",
-        "set_cakisma": "Test (OOS) ya da Validasyon (OOT) setinde Train'de (MS) de geçen kimlik, "
-                       "kimlik ve dönem ya da bütün kolonları Train'deki bir satırla aynı satır.",
-        "tarih": "Kolon tarih: tarih tipinde, YYYY-AA-GG ya da GG.AA.YYYY metni, ya da "
-                 "YYYYAAGG sayısı. Hiçbir tarih alanı model değişkeni olmaz.",
-        "yakin_icerik": "İki sayısal kolonun korelasyonu %s ya da üstünde, ya da biri "
-                        "ötekinin sabit katı." % _yuzde_metni(e["yakin_kor"]),
-        "gelecek_pencere": "Kolon adındaki dönem parçasının anlam türü ileriye bakıyor "
-                           "(Sonraki, Sonra ya da Çevre).",
-        "birebir": "Kolon tek başına hedefi %s ya da daha yüksek ayırma gücüyle (AUC) "
-                   "ayırıyor." % _yuzde_metni(e["sizinti_auc"]),
-        "tarih_sonra": "Tarih kolonunda satırın dönem sonundan sonraki bir tarih var.",
-        "kayma": "Sıfır dışı değerlerin %%25, %%50 ve %%75'lik değerleri art arda iki dönem "
-                 "arasında aynı yönde en az %s kat değişiyor." % _sayi_metni(e["kayma_kat"]),
-        "metin_bos": "Metin kolonda NULL, «-», «?», Bilinmiyor ya da yalnız boşluk gibi boş "
-                     "anlamına gelen bir yazı var.",
-        "yazim": "Aynı değer büyük küçük harf, Türkçe karakter ya da fazla boşluk farkıyla "
-                 "birden fazla biçimde yazılmış.",
-        "tarih_kod": "Tarih kolonunda yılı 1901'den önce ya da 2200'den sonra olan bir tarih "
-                     "var.",
-        "pencere": "Aynı ölçünün kısa penceresi uzun penceresinden büyük (toplam, adet, en "
-                   "büyük) ya da küçük (en küçük); satırların en az %1'inde.",
-        "tutar_adet": "Adet 0 ya da boşken tutar dolu, ya da en büyük değer ortalamadan "
-                      "küçük; satırların en az %1'inde.",
+        "set_cakisma": "Test (OOS) ya da Validasyon (OOT) setinde, Train'de (MS) de bulunan "
+                       "kimlik, kimlik ve dönem ya da birebir aynı satır.",
+        "tarih": "Kolon bir tarih (15.03.2024, 2024-03-15 ya da 20240315 gibi). Tarih kolonları "
+                 "olduğu gibi model değişkeni olmaz.",
+        "yakin_icerik": "İki sayı kolonu %s ya da daha fazla benzer hareket ediyor, ya da biri "
+                        "ötekinin sabit bir katı." % _yuzde_metni(e["yakin_kor"]),
+        "gelecek_pencere": "Kolonun adındaki dönem ifadesi ileriye bakıyor (Sonraki, Sonra ya da "
+                           "Çevre).",
+        "birebir": "Kolon tek başına hedefi %s ya da daha yüksek isabetle biliyor (%%50 yazı "
+                   "tura, %%100 hiç yanılmıyor)." % _yuzde_metni(e["sizinti_auc"]),
+        "tarih_sonra": "Tarih kolonunda, satırın döneminden sonraki bir tarih var.",
+        "kayma": "Sıfır dışındaki tipik değerler (küçük, orta, büyük) art arda iki dönem arasında "
+                 "aynı yönde en az %s kat değişiyor." % _sayi_metni(e["kayma_kat"]),
+        "metin_bos": "Yazı kolonunda «NULL», «-», «?», «Bilinmiyor» ya da yalnız boşluk gibi "
+                     "«bilgi yok» anlamına gelen bir yazı var.",
+        "yazim": "Aynı değer büyük küçük harf, Türkçe harf ya da fazladan boşluk farkıyla birden "
+                 "fazla biçimde yazılmış.",
+        "tarih_kod": "Tarih kolonunda yılı 1901'den önce ya da 2200'den sonra olan uydurma bir "
+                     "tarih var.",
+        "pencere": "Aynı ölçünün kısa süreli hali uzun süreli halinden büyük (toplam, adet, en "
+                   "büyük) ya da küçük (en küçük); 100 satırın en az 1'inde.",
+        "tutar_adet": "Adet 0 ya da boşken tutar dolu, ya da en büyük değer ortalamadan küçük; "
+                      "100 satırın en az 1'inde.",
     }
 
 
@@ -2776,96 +2880,121 @@ _KONTROL_ESIK_ANAHTARI = {"cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
                           "birebir": "sizinti_auc", "kayma": "kayma_kat"}
 _KONTROL_ACIKLAMA_EK = {
     "donem": _ac(
-        "Bir dönemde tamamen boş ya da tek değerli kolon.",
-        "Her dönemde kolonun tamamen boş ya da hep aynı değerde olup olmadığına bakar. Bunun "
-        "tesadüfen olma olasılığı hesaplanır: öteki dönemlerde bu durumun payı p ise, n satırlık "
-        "dönemde olasılık p'nin n'inci kuvvetidir. Olasılık Tesadüf Olasılığı eşiğinin altındaysa "
-        "yakalanır; böylece küçük dönemlerde tesadüfen çıkan tek değer sorun sayılmaz.",
-        "Kolonun %90'ı 0. 50 satırlık dönemin tamamı 0: olasılık %0,5, yakalanır. 10 satırlık "
-        "dönemin tamamı 0: olasılık %35, tesadüf olabilir.",
-        "Tut ya da Çıkar size sorulur; öneri İlk dönemler eşiğinden gelir."),
+        "Bazı dönemlerde tamamen boş ya da hep aynı değerde olan kolon.",
+        "Her dönemde (ay gibi) kolonun tamamen boş ya da hep aynı değerde olup olmadığına bakar. "
+        "Çok az satırlı bir dönemde bu şans eseri de olabilir; şans eseri olma ihtimali "
+        "«Tesadüf Olasılığı» sınırının altındaysa yakalanır.",
+        "Ocak–Mart tamamen boş, Nisan'dan sonra dolu. Bir başka örnek: kolonun genelde %90'ı 0; "
+        "50 satırlık bir dönemin tamamı 0 ise yakalanır, 10 satırlık dönemin tamamı 0 ise şans "
+        "olabilir, yakalanmaz.",
+        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: son dönem sorunluysa Çıkar; sorun "
+        "yalnız baştaki birkaç dönemdeyse Tut («İlk dönemler» sınırı); dönemlere dağınıksa Çıkar.",
+        sorun="Kolon bazı dönemlerde yoksa model o dönemlerde kolondan bir şey öğrenemez; son "
+              "dönemde yoksa güncel veride de yoktur."),
     "sabit": _ac(
-        "Bütün satırlarda aynı değer.",
-        "Kolonda tek bir değer olup olmadığına bakar. Bir değer ile boş hücrelerden oluşan "
-        "kolon iki değerli sayılır.",
-        "Bütün satırlarda aynı yazının geçtiği bir kolon.",
-        "üretime girmez; hiçbir şeyi ayırt etmez."),
+        "Her satırında aynı değer olan kolon.",
+        "Kolonda tek bir değer mi var diye bakar. Bir değer ve boş hücrelerden oluşan kolon iki "
+        "değerli sayılır, yakalanmaz.",
+        "Her satırda «TR» yazıyor.",
+        "üretime girmez.",
+        sorun="Hep aynı olan kolon satırları birbirinden ayırt etmez."),
     "ayni_icerik": _ac(
-        "Değerleri birebir aynı olan kolonlar.",
+        "Satır satır birbirinin aynısı olan kolonlar.",
         "İki kolonun bütün satırlarda aynı değeri taşıyıp taşımadığına bakar.",
-        "Aynı alanın iki farklı adla tabloya girmesi.",
-        "gruptan bir kolon kalır; hangisinin kalacağını siz seçersiniz. Öneri: başka kontrolde "
-        "çıkarılmayan, en az düzeltme isteyen, eşitse adı kısa olan."),
+        "Aynı bilgi tabloya iki farklı adla girmiş.",
+        "biri kalır, ötekiler üretime girmez. Hangisinin kalacağını siz seçersiniz. Öneri: başka "
+        "bir kontrole takılmayan, en az düzeltme isteyen; eşitlik varsa adı kısa olan.",
+        sorun="Aynı bilgiyi iki kez vermek modele bir şey kazandırmaz."),
     "karisik_eksik": _ac(
-        "Eksik bilgi hem boş hücreyle hem kodla yazılmış.",
-        "Kolonda hem boş hücre hem -1, 9999 gibi bir kod olup olmadığına bakar; tek satır "
-        "yeter.",
-        "Bazı satırlar boş, bazıları -1.",
-        "kolon üretime girer; öneri: kod boş sayılır, kodun olduğu satırlar _KOD bayrağında "
-        "kalır."),
+        "Eksik bilgi bazen boş bırakılmış, bazen -999 gibi bir sayıyla yazılmış.",
+        "Aynı kolonda hem boş hücre hem de -1, 9999 gibi uydurma bir sayı var mı diye bakar. Tek "
+        "bir satır bile yeter.",
+        "Bazı satırlar boş, bazılarında -1 yazıyor.",
+        "kolon kullanılır. Öneri: " + _KOD_SAKLA + ".",
+        sorun="İkisi de «bilgi yok» demek; ama sayı gerçek değer gibi hesaba girip sonucu bozar."),
     "negatif": _ac(
-        "Negatif olamayacak bir ölçüde negatif değer.",
-        "Kolon kartında ölçüsü adet, gün ya da süre olan kolonlarda negatif değer arar.",
-        "Adet kolonunda -3.",
-        "kolon üretime girer; öneri Boş sayma sınırı eşiğinden gelir."),
+        "Eksi olamayacak bir kolonda eksi değer.",
+        "Adet, gün ya da süre tutan kolonlarda sıfırdan küçük değer arar.",
+        "İşlem adedi kolonunda -3.",
+        "kolon kullanılır. Öneri: eksi değerler azsa boş sayılır, çoksa olduğu gibi bırakılır "
+        "(«Boş sayma sınırı»).",
+        sorun="Adet ya da süre eksi olamaz; eksi değer ya yanlış kayıttır ya da özel bir anlamı "
+              "vardır (iade gibi)."),
     "tekrar": _ac(
-        "Aynı satır birden fazla geçiyor.",
-        "Aynı kimlik ve dönemle birden fazla satır ya da bütün kolonları aynı satır arar.",
-        "Aynı kayıt aynı dönemde iki kez.",
-        "bilgi için gösterilir; tekrar eden satır modelde iki kat ağırlık alır.",
-        kapsam="kimlik kolonu seçilmediyse yalnız bütün kolonları aynı satırlara bakılır."),
+        "Aynı satır birden fazla kez yazılmış.",
+        "Aynı kimlik ve aynı dönemle birden fazla satır ya da bütün kolonları aynı olan satır "
+        "arar.",
+        "Aynı müşteri için aynı ayda iki satır.",
+        "bilgi için gösterilir; bir şey değiştirilmez.",
+        kapsam="kimlik kolonu seçilmediyse yalnız bütün kolonları aynı olan satırlara bakılır.",
+        sorun="İki kez yazılan satır modelde iki kat söz hakkı alır."),
     "set_cakisma": _ac(
-        "Eğitimdeki kayıt test ya da OOT setinde de var.",
-        "Test (OOS) ya da Validasyon (OOT) setinde Train'de de geçen kimlik, kimlik ve dönem ya "
-        "da birebir aynı satır arar.",
-        "Aynı kimlik hem Train'de hem Test'te.",
-        "bilgi için gösterilir; çakışma test sonucunu olduğundan iyi gösterir."),
+        "Aynı kayıt hem eğitim hem sınama verisinde var.",
+        "Test (OOS) ya da Validasyon (OOT) setinde, Train'de (eğitim verisi) de bulunan bir "
+        "kimlik ya da birebir aynı satır var mı diye bakar.",
+        "Aynı müşteri hem Train'de hem Test'te.",
+        "bilgi için gösterilir; bir şey değiştirilmez.",
+        sorun="Model sınavda daha önce gördüğü soruyla karşılaşır; başarısı olduğundan iyi "
+              "görünür."),
     "tarih": _ac(
-        "Tarih kolonu ham haliyle değişken olmaz.",
-        "Kolonun tarih olup olmadığına bakar: tarih tipi, YYYY-AA-GG ya da GG.AA.YYYY metni, "
-        "YYYYAAGG sayısı.",
-        "Bir açılış tarihi kolonu.",
-        "ham kolon üretime girmez; yerine dönem sonuna gün farkı kolonu üretilebilir."),
+        "Tarih kolonu olduğu gibi kullanılmaz.",
+        "Kolon tarih mi diye bakar (15.03.2024, 2024-03-15 ya da 20240315 gibi).",
+        "Hesap açılış tarihi.",
+        "kolon olduğu gibi üretime girmez. Yerine «dönem sonuna göre kaç gün» kolonu "
+        "üretilebilir.",
+        sorun="Model için tarihin kendisi değil, üzerinden ne kadar zaman geçtiği anlamlıdır."),
     "gelecek_pencere": _ac(
-        "Adındaki dönem ileriye bakan kolon.",
-        "Kolon adındaki dönem parçasının türü ileriye bakıyor mu (Sonraki, Sonra, Çevre) diye "
-        "bakar; bu bilgi gözlem anında bilinmez.",
-        "«Sonraki 3 ay» bilgisini taşıyan bir kolon.",
-        "Tut ya da Çıkar size sorulur; öneri Çıkar."),
+        "Adı gelecekteki bir zamanı anlatan kolon.",
+        "Kolon adındaki dönem ifadesinin ileriye bakıp bakmadığına bakar («sonraki», «sonra» "
+        "gibi).",
+        "«Sonraki 3 ayda yapılan ödeme».",
+        "kolonu tutmak ya da çıkarmak size sorulur; öneri Çıkar.",
+        sorun="Tahmin yapılırken gelecek bilinmez. Gelecekten bilgi taşıyan kolon modeli "
+              "eğitimde başarılı gösterir, gerçek kullanımda işe yaramaz."),
     "tarih_sonra": _ac(
-        "Dönem sonundan sonraki tarih taşıyan kolon.",
-        "Tarih kolonunda satırın dönem sonundan sonraki bir tarih olup olmadığına bakar.",
-        "Dönem 2024-03, tarih 2024-07.",
-        "Tut ya da Çıkar size sorulur; öneri Çıkar. Doğal olarak ileri bir tarihse (vade gibi) "
-        "Tut seçin. Çıkar denirse gün farkı kolonu da üretilmez."),
+        "Satırın döneminden sonraki bir tarih taşıyan kolon.",
+        "Tarih kolonunda, satırın ait olduğu dönem bittikten sonraki bir tarih var mı diye bakar.",
+        "Satır Mart 2024'e ait, kolondaki tarih Temmuz 2024.",
+        "kolonu tutmak ya da çıkarmak size sorulur; öneri Çıkar. Tarih doğal olarak ilerideyse "
+        "(vade tarihi gibi) Tut seçin. Çıkar seçilirse gün farkı kolonu da üretilmez.",
+        sorun="Dönemden sonraki tarih, tahmin anında henüz bilinmeyen bir olayı gösteriyor "
+              "olabilir."),
     "metin_bos": _ac(
-        "Boş yerine «NULL», «-», «Bilinmiyor» gibi yazı.",
-        "Metin kolonda boş anlamına gelen yazıları arar.",
-        "Satırların bir kısmında «?».",
-        "kolon üretime girer; bu yazılar boş sayılır, payı yüksekse 1/0 bayrağı da önerilir."),
+        "Boş bırakmak yerine «NULL», «-», «Bilinmiyor» gibi yazı yazılmış.",
+        "Yazı kolonunda «bilgi yok» anlamına gelen yazıları arar.",
+        "Meslek kolonunda «Bilinmiyor», «?», «-».",
+        "kolon kullanılır; bu yazılar boş sayılır. Çok sık geçiyorlarsa «boş mu, dolu mu» "
+        "gösteren 1/0 kolonu da önerilir («Bayrak sınırı»).",
+        sorun="Bu yazılar gerçek bir değer gibi sayılırsa boş hücreler gözden kaçar."),
     "yazim": _ac(
         "Aynı değer farklı biçimlerde yazılmış.",
-        "Büyük küçük harf, Türkçe karakter ya da fazla boşluk farkıyla aynı olan değerleri "
-        "arar.",
+        "Büyük küçük harf, Türkçe harf ya da fazladan boşluk dışında aynı olan değerleri arar.",
         "«İstanbul», «ISTANBUL», «istanbul ».",
-        "kolon üretime girer; tek yazıma çevrilmesi önerilir."),
+        "kolon kullanılır; hepsinin tek bir yazıma çevrilmesi önerilir.",
+        sorun="Aynı değer farklı yazılınca ayrı değerlermiş gibi sayılır."),
     "tarih_kod": _ac(
-        "1900-01-01, 9999-12-31 gibi kod tarih.",
+        "Tarih yerine 01.01.1900 ya da 31.12.9999 gibi uydurma tarih yazılmış.",
         "Tarih kolonunda yılı 1901'den önce ya da 2200'den sonra olan tarih arar.",
-        "Süresiz kayıtlar için 9999-12-31.",
-        "öneri: kod tarihler boş sayılır, kodun olduğu satırlar _KOD bayrağında kalır."),
+        "Bitiş tarihi olmayan kayıtlarda 31.12.9999.",
+        "öneri: bu tarihler boş sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_KOD) "
+        "saklanır.",
+        sorun="Bu tarihler gerçek değil, «bilgi yok» ya da «süresiz» demek için yazılmıştır; "
+              "gerçek tarih gibi hesaba girerse sonucu bozar."),
     "pencere": _ac(
-        "Kısa pencere uzun pencereden büyük.",
-        "Aynı ölçünün kısa penceresi uzun penceresinden büyük mü (toplam, adet, en büyük) ya "
-        "da küçük mü (en küçük) diye bakar; satırların en az %1'inde.",
-        "Son 7 gün toplamı son 30 gün toplamından büyük.",
-        "bilgi için gösterilir; veri hatasına işaret eder."),
+        "Kısa sürenin değeri uzun süreninkinden büyük çıkıyor.",
+        "Aynı ölçünün kısa ve uzun süreli hallerini karşılaştırır. Son 7 günün toplamı son 30 "
+        "günün toplamından büyük olamaz; oluyorsa yakalanır. Tek tük satırda değil, 100 satırın "
+        "en az 1'inde görülmesi gerekir.",
+        "Son 7 gün toplamı 500, son 30 gün toplamı 300.",
+        "bilgi için gösterilir; bir şey değiştirilmez.",
+        sorun="Bu mümkün olmadığı için veride hata olduğunu gösterir."),
     "tutar_adet": _ac(
-        "Adet ile tutar çelişiyor.",
-        "Adet 0 ya da boşken tutar dolu mu, ya da en büyük değer ortalamadan küçük mü diye "
-        "bakar; satırların en az %1'inde.",
-        "Adet 0, tutar 500.",
-        "bilgi için gösterilir; veri hatasına işaret eder."),
+        "Adet ile tutar birbirini tutmuyor.",
+        "Adet 0 ya da boşken tutar dolu mu, ya da en büyük değer ortalamadan küçük mü diye bakar. "
+        "Tek tük satırda değil, 100 satırın en az 1'inde görülmesi gerekir.",
+        "İşlem adedi 0, işlem tutarı 500.",
+        "bilgi için gösterilir; bir şey değiştirilmez.",
+        sorun="Bu mümkün olmadığı için veride hata olduğunu gösterir."),
 }
 
 def kontrol_aciklamasi(anahtar):
@@ -2879,7 +3008,8 @@ def kontrol_aciklamasi(anahtar):
     return str(x.get("kisa") or ""), "\n\n".join(paragraf)
 
 
-_PARCA_ETIKET = (("Nedir?", "nedir"), ("Neden önemli?", "onemli"), ("Örnek:", "ornek"),
+_PARCA_ETIKET = (("Nedir?", "nedir"), ("Neden önemli?", "onemli"), ("Neden sorun?", "onemli"),
+                 ("Örnek:", "ornek"),
                  ("Kapsam:", "kapsam"), ("Eşik ne yapar?", "esik_ne"),
                  ("Yakalanırsa:", "yakalanirsa"), ("Önerilen nereden?", "gerekce"))
 
@@ -2955,25 +3085,25 @@ PROFIL_KONTROLLERI = (
 # tek satirdir. (anahtar, ad, kisa aciklama, uyeler)
 KONTROL_GRUPLARI = (
     ("g_sabit", "Sabit ya da Neredeyse Sabit",
-     "Kolonun tamamında ya da neredeyse tamamında aynı değer var.",
+     "Her satırda ya da neredeyse her satırda aynı değer var.",
      ("sabit", "baskin")),
     ("g_ayni", "Aynı ya da Neredeyse Aynı Kolonlar",
-     "Kolon başka bir kolonla birebir ya da neredeyse aynı bilgiyi taşıyor.",
+     "Kolon başka bir kolonla aynı şeyi söylüyor.",
      ("ayni_icerik", "yakin_icerik")),
     ("g_kardinalite", "Çok Fazla Farklı Değer",
-     "Kolonda çok fazla farklı değer var; olduğu gibi modele giremez.",
+     "O kadar çok farklı değer var ki kolon olduğu gibi kullanılamaz.",
      ("kimlik_gibi", "yuksek_kardinalite")),
     ("g_sizinti", "Sızıntı Riski",
-     "Kolon hedeften ya da gözlem tarihinden sonraki bilgiyi taşıyor olabilir.",
+     "Kolon, tahmin anında henüz bilinmeyen bir bilgiyi taşıyor olabilir.",
      ("gelecek_pencere", "birebir", "tarih_sonra")),
     ("g_donem", "Dönemler Arası Tutarsızlık",
-     "Kolon dönemden döneme bozuluyor: bir dönemde boş ya da sabit, eksik oranı ya da değerleri birden değişiyor.",
+     "Kolon bazı dönemlerde bozuluyor: tamamen boş ya da hep aynı, boş oranı ya da sayıları birden değişiyor.",
      ("donem", "sicrama", "kayma")),
     ("g_gizli", "Gizli Eksik",
-     "Boş değerler boş hücre yerine özel bir kodla ya da metinle yazılmış.",
+     "«Bilgi yok» demek için boş bırakmak yerine sayı ya da yazı yazılmış.",
      ("gizli_eksik", "karisik_eksik", "metin_bos")),
     ("g_iliskili", "İlişkili Kolonlar Arası Tutarsızlık",
-     "Birbirine bağlı iki kolon birbiriyle çelişiyor.",
+     "Birbirine bağlı iki kolon birbirini tutmuyor.",
      ("pencere", "tutar_adet")),
 )
 KONTROL_ALT_AD = {
@@ -3011,7 +3141,7 @@ def _grup_satiri(g, uyeler):
         else:
             kural.append("**%s:** %s" % (alt(u).capitalize(), u.get("kural") or ""))
     parca = {}
-    for alan in ("nedir", "kapsam", "ornek", "esik_ne", "yakalanirsa"):
+    for alan in ("nedir", "onemli", "kapsam", "ornek", "esik_ne", "yakalanirsa"):
         degerler = [(u, (u.get("parca") or {}).get(alan)) for u in uyg]
         degerler = [(u, v) for u, v in degerler if v]
         if len(degerler) == 1:

@@ -20032,21 +20032,24 @@ function profilEsikKartiEkle(alan, blok) {
     const bas = elYap("div", "pf-bas");
     bas.appendChild(elYap("b", "pf-baslik", kilitli ? "Onaylanan Kontrol Eşikleri" : "Kontrol Eşikleri"));
     bas.appendChild(bolmeBilgiSimgesi(
-        "Veri profilinde her kolon bu kontrollerden geçer. Eşik, bir kolonun o kontrolde "
-        + "yakalanması için aşması gereken sınırdır. Önerilen değerlerle dolu gelir; bir eşiği "
-        + "değiştirirseniz kontrol sizin değerinizle yapılır.\n\n"
-        + "Yakalanan kolona ne olacağı kontrolün altında yazar: «Üretime girmez» (kolon değişken "
-        + "üretiminde kullanılmaz), «Çözüm önerilir» (ham kolon kullanılmaz; gruplama, bayrak ya da "
-        + "metinden özellik gibi bir çözüm önerilir, seçtiğiniz çözümün yeni kolonu kullanılır), «Düzeltme önerilir» "
-        + "(kolon kullanılır; özel kodu ya da hatalı değeri boş sayma gibi bir düzeltme seçersiniz), «Kararınıza bırakılır» (profil sonrası size sorulur), «Bilgi için "
-        + "gösterilir» (kolon kullanılır, yalnız dikkatinize sunulur).\n\n"
-        + "Yüzdeli eşikler yüzde olarak yazılır (ör. 99 yazılırsa %99). Ondalık için virgül kullanılabilir.",
+        "Her kolon bu kontrollerden geçer. Eşik bir sınırdır: kolon bu sınırı aşarsa o kurala "
+        + "«yakalanır». Sınırlar önerilen değerle dolu gelir; değiştirirseniz kontrol sizin "
+        + "değerinizle yapılır.\n\n"
+        + "Yakalanan kolona ne olacağı «Yakalanırsa» sütununda yazar:\n\n"
+        + "**Üretime girmez:** kolon sonraki adımlarda kullanılmaz.\n\n"
+        + "**Çözüm önerilir:** kolon olduğu gibi kullanılmaz; yerine geçecek yeni bir kolon önerilir "
+        + "(değerleri gruplamak ya da «dolu mu, boş mu» kolonu gibi). Seçerseniz o kullanılır.\n\n"
+        + "**Düzeltme önerilir:** kolon kullanılır; içindeki hatalı değerler için bir düzeltme önerilir.\n\n"
+        + "**Kararınıza bırakılır:** kolonu tutmak ya da çıkarmak size sorulur; sistem bir öneri de verir.\n\n"
+        + "**Bilgi için gösterilir:** bir şey değiştirilmez, yalnız dikkatinize sunulur.\n\n"
+        + "Yüzdeler yüzde olarak yazılır (99 yazarsanız %99). Küsurat için virgül kullanılabilir.",
         "Kontrol Eşikleri"));
     kart.appendChild(bas);
     if (alan.kontroller)
-        kart.appendChild(elYap("div", "pf-not", "Her kontrol bir kart; içinde kuralları ve eşikleri. "
-            + "Önerilen değer bu veri setinin satır sayısı, hedef oranı ve dönem yapısından ya da sabit "
-            + "kuraldan gelir; dil modeli kullanılmaz."));
+        kart.appendChild(elYap("div", "pf-not", "Her kolon aşağıdaki kontrollerden geçer. Her kuralın yanında "
+            + "neye baktığı, bir örnek, kolon yakalanırsa ne olacağı ve sınırı (eşik) yazar. Sınırlar önerilen "
+            + "değerle dolu gelir; bir şey değiştirmeden onaylayabilirsiniz. «Üretime girmez», kolonun sonraki "
+            + "adımlarda kullanılmayacağı demektir."));
     const hataEl = elYap("div", "pf-esik-hata");
     hataEl.hidden = !alan.hata;
     hataEl.textContent = alan.hata || "";
@@ -20070,15 +20073,24 @@ function profilEsikKartiEkle(alan, blok) {
         return sb;
     };
     const cumle = t => { t = String(t || "").trim(); return t && !/[.!?]$/.test(t) ? t + "." : t; };
-    const kuralSatiri = (ad, olcut, sonuc, r, ic) => {
+    const kuralSatiri = (ad, olcut, sonuc, r, ic, ornek) => {
         const sat = elYap("div", "pf-ek-kural" + (ic ? " ic" : ""));
         const adEl = elYap("div", "pf-ek-ad");
         adEl.appendChild(elYap("span", "", ad));
         if (r && r.bilgi) adEl.appendChild(bolmeBilgiSimgesi(r.bilgi, ad));
         sat.appendChild(adEl);
-        sat.appendChild(elYap("div", "pf-ek-olcut", cumle(olcut)));
+        /* NEYE BAKIYOR: gündelik dille tek cümle; altında küçük sayılarla örnek. */
+        const olEl = elYap("div", "pf-ek-olcut");
+        olEl.appendChild(elYap("div", "", cumle(olcut)));
+        if (ornek) {
+            const or = elYap("div", "pf-ek-ornek");
+            or.appendChild(elYap("b", "", "Örnek: "));
+            or.appendChild(document.createTextNode(cumle(ornek)));
+            olEl.appendChild(or);
+        }
+        sat.appendChild(olEl);
         sat.appendChild(elYap("div", "pf-ek-sonuc pf-esik-sonuc-" + (ic ? "karar" : pfSonucSinifi(sonuc)),
-                              ic ? "Yalnız öneriyi belirler" : (sonuc || "")));
+                              ic ? "Yalnız sistemin önerisini değiştirir; karar sizde" : (sonuc || "")));
         const td = elYap("div", "pf-ek-deger");
         const onr = elYap("div", "pf-ek-onerilen");
         if (!r) {
@@ -20134,7 +20146,7 @@ function profilEsikKartiEkle(alan, blok) {
         const bolum = elYap("section", "pf-ek-bolum");
         const kb = elYap("div", "pf-ek-kbas");
         kb.appendChild(elYap("b", "", "Genel ayar"));
-        kb.appendChild(elYap("span", "", "Birden çok kontrol bu değerle karar verir"));
+        kb.appendChild(elYap("span", "", "Sistemin «bu şans eseri olabilir» deme sınırı; iki kural kullanır"));
         bolum.appendChild(kb);
         const kk = elYap("div", "pf-ek-kontrol");
         kk.appendChild(sutunBas());
@@ -20142,7 +20154,7 @@ function profilEsikKartiEkle(alan, blok) {
             const r = esikHarita[a];
             if (!r) return;
             const grup = elYap("div", "pf-ek-grup");
-            grup.appendChild(kuralSatiri(r.kontrol, r.anlam, r.sonuc, r, false));
+            grup.appendChild(kuralSatiri(r.kontrol, r.form_olcut || r.anlam, r.sonuc, r, false, r.form_ornek));
             kk.appendChild(grup);
         });
         bolum.appendChild(kk);
@@ -20160,13 +20172,13 @@ function profilEsikKartiEkle(alan, blok) {
             const r = u.esik ? esikHarita[u.esik] : null;
             const olcut = u.olcut || (r ? r.anlam + (/(se|sa)$/.test(r.anlam || "") ? " kolon yakalanır" : "") : "");
             const grup = elYap("div", "pf-ek-grup" + ((u.oneri || []).length ? " oneri-var" : ""));
-            grup.appendChild(kuralSatiri(u.ad, olcut, u.sonuc || (r && r.sonuc), r, false));
+            grup.appendChild(kuralSatiri(u.ad, olcut, u.sonuc || (r && r.sonuc), r, false, u.ornek));
             const oneriler = (u.oneri || []).map(o => esikHarita[o]).filter(Boolean);
             if (oneriler.length) {
-                grup.appendChild(elYap("div", "pf-ek-alt-bas", "↳ «" + u.ad + "» kuralının öneri eşikleri "
-                    + "(kolon bu kurala takılırsa önerinin Tut mu Çıkar mı olacağını belirler)"));
+                grup.appendChild(elYap("div", "pf-ek-alt-bas", "↳ Kolon «" + u.ad + "» kuralına takılırsa sistem "
+                    + "size ne önersin? Aşağıdaki sınır yalnız bu öneriyi belirler; kararı yine siz verirsiniz."));
                 oneriler.forEach(ro => grup.appendChild(
-                    kuralSatiri(ro.oneri_ad || ro.kontrol, ro.form_olcut || ro.anlam, "", ro, true)));
+                    kuralSatiri(ro.oneri_ad || ro.kontrol, ro.form_olcut || ro.anlam, "", ro, true, ro.form_ornek)));
             }
             kk.appendChild(grup);
         });
@@ -20177,7 +20189,7 @@ function profilEsikKartiEkle(alan, blok) {
         const es = elYap("div", "pf-ek-esiksiz");
         es.appendChild(elYap("b", "", "Eşiksiz çalışan kontroller: "));
         es.appendChild(document.createTextNode(alan.esiksiz.map(x => x.no + ". " + x.ad).join(" · ")
-            + ". Kuralları sabittir; sonuçları Veri Profili kartında görünür."));
+            + ". Bunlarda ayarlanacak bir sınır yoktur; sonuçları Veri Profili kartında görünür."));
         govde.appendChild(es);
     }
     const sar = elYap("div", "pf-tablo-sar");
