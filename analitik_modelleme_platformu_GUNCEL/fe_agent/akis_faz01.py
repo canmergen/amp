@@ -1815,6 +1815,9 @@ def _donem_yazilis_satirlari(durum, secim=None):
     adaylar = {}
     korunan = _korunan_kolonlar(durum)
     haric = set(map(str, durum.get("haric_kolonlar") or []))
+    # Kolonun TEK parcali kaliplara bakilacak parcalari: iki parcali kalibin
+    # (3D_6D, 3D_X2) parcalari bunlarda yok.
+    tekli = []
     for ad in _veri_kolonlari(durum):
         if ad in korunan or ad in haric:
             continue
@@ -1840,6 +1843,7 @@ def _donem_yazilis_satirlari(durum, secim=None):
                     gorulen.add(k)
                     ornek.setdefault(k, p)
         sayi.update(gorulen)
+        tekli.append((ad, [p for i, p in enumerate(t) if i not in ikide]))
     cikti = []
     # YAZILISTA OLMAYAN BILGI: onayli anlamdaki yon (son, önce, sonra)
     # kalibin yazilisinda yoksa ve kullanici ya da hafiza bir yazilis
@@ -1863,11 +1867,12 @@ def _donem_yazilis_satirlari(durum, secim=None):
             k, birim, ozel=ozel, haf=haf_t, haf_anlam=str(donem_mod.hafiza().get(k) or ""),
             haf_ad=str(haf.get(k) or ""))}
         say, orn, ady = Counter(), {}, {}
-        # Turu kolon kolon say (butun kolonlar; aday listesi sinirli).
-        for ad in _veri_kolonlari(durum):
-            if ad in korunan or ad in haric:
-                continue
-            for p_ in parca_mod.toklar(ad):
+        # Turu kolon kolon say (butun kolonlar; aday listesi sinirli). Iki
+        # parcali kalibin parcasi (3D_6D'deki 3D) burada sayilmaz: o kolonun
+        # donemi iki parcali kalibin yazilisiyla adlanir; sayilsaydi turu
+        # olmadigi icin "Belirsiz" satirina duserdi.
+        for ad, parcalar in tekli:
+            for p_ in parcalar:
                 if desen[k].match(p_):
                     t_ = (kolon_tur.get(ad) or {}).get(p_, "") or donem_tur.BELIRSIZ
                     say[t_] += 1
@@ -4354,7 +4359,10 @@ def onceki_karti(durum, adim):
                 return None
             d = aciklama_mod.depo(_aciklama_klasoru(durum))
             with aciklama_mod._KILIT:
-                toplam = len(d.girdiler)
+                # Girdiler yalniz bellekte: arka uc yeniden baslayinca bos
+                # gelir. Kartin satirlari onaylanan halden (dosyada) cizilir;
+                # kolon sayisi da oradan.
+                toplam = len(d.girdiler) or len(d.onay)
             if not toplam:
                 return None
             kart = _adim_karti("aciklama", {"aciklama_duzen": _aciklama_karti(durum, toplam, "")},
@@ -9145,9 +9153,11 @@ def _tip_kilidi(durum, ad, kod):
         "{kolon_rolleri}", akis_atif.adim("tanimlar", durum))
 
 
-def teyit_satirlari(durum):
+def teyit_satirlari(durum, teklif=True):
     """Teyit kartindaki degisken listesi: ad, tip, tanim, surec disi mi,
-    tip donusum secenekleri ve secilmis donusum.
+    tip donusum secenekleri ve secilmis donusum. teklif=False: tip donusum
+    teklifleri kurulmaz, veri okunmaz (gecilmis adimin salt okunur karti;
+    secilen donusumun etiketi satirda durur).
 
     ACIK ISIM: karar verildikten sonra (bir kolon surec disina alinip
     tanimi duzeltilince) kartin tazelenmesi gerekiyor."""
@@ -9168,10 +9178,12 @@ def teyit_satirlari(durum):
     secilen = durum.get("tip_donusum") or {}
     # TAM TABLO: secenekler ornekle degil tam kolonla
     # hesaplaniyor; uygulanamayan secenek listede HIC gorunmuyor.
-    try:
-        tam = profil_mod.kolonlar(_profil(durum))
-    except Exception:
-        tam = None
+    tam = None
+    if teklif:
+        try:
+            tam = profil_mod.kolonlar(_profil(durum))
+        except Exception:
+            tam = None
     # Orijinal sozluk tanimlari: kullanici bir tanimi degistirdiyse satir
     # sari gosterilir (bkz. app.js oneriVurgusu).
     # Kaynak: AMP_SOZLUK'ün secim anindaki aciklamasi (ILK_ACIKLAMA);
@@ -9253,6 +9265,8 @@ def teyit_satirlari(durum):
                                .get("etiket", "") if kod else ""),
             "donusumler": donusumler,
         })
+        if not teklif:
+            satirlar[-1].pop("donusumler", None)
     return satirlar, bool(tablo.get("duzenlenebilir"))
 
 
@@ -9775,16 +9789,27 @@ def _teyit_karti(durum):
                       "olarak işaretlendi; veri setinde kalmasını istediğiniz "
                       "varsa işareti kaldırın." % _sayi(len(otomatik)))
     # 01.2.3.1'de cikarilan kolon listede yok: onun icin not yazilmaz.
+    tek_notu = _tek_deger_notu(durum)
+    if tek_notu:
+        notlar.append(tek_notu)
+    durum["_secim_alani"] = _teyit_govdesi(durum, satirlar, duzenlenebilir, " ".join(notlar))
+
+
+def _tek_deger_notu(durum):
+    """Tek deger tasidigi icin surec disi birakilan kolonlarin notu (yoksa "")."""
     cik = cikarilan_kolonlar(durum)
     tek_hepsi = [k for k in durum.get("_tek_degerli") or [] if str(k) not in cik]
-    if tek_hepsi:
-        adlar = ", ".join(str(k) for k in tek_hepsi[:3]) + (
-            " ve %s değişken daha" % _sayi(len(tek_hepsi) - 3)
-            if len(tek_hepsi) > 3 else "")
-        notlar.append("%s tüm veri setinde tek bir değer taşıdığı için modele "
-                      "bilgi katmaz; süreç dışı bırakıldı ve kilitlendi."
-                      % adlar)
-    durum["_secim_alani"] = {
+    if not tek_hepsi:
+        return ""
+    adlar = ", ".join(str(k) for k in tek_hepsi[:3]) + (
+        " ve %s değişken daha" % _sayi(len(tek_hepsi) - 3)
+        if len(tek_hepsi) > 3 else "")
+    return ("%s tüm veri setinde tek bir değer taşıdığı için modele "
+            "bilgi katmaz; süreç dışı bırakıldı ve kilitlendi." % adlar)
+
+
+def _teyit_govdesi(durum, satirlar, duzenlenebilir, otomatik_not):
+    return {
         "tip": "teyit",
         "baslik": ADIM_ADI["teyit"],
         "aciklama": TEYIT_ACIKLAMASI,
@@ -9792,7 +9817,7 @@ def _teyit_karti(durum):
         # Otomatik isaretleme SESSIZ YAPILMAZ: kullanici kartta neden
         # bazi kutularin isaretli geldigini gormeli, yoksa kendisinin
         # isaretledigini sanir ya da fark etmeden kolon kaybeder.
-        "otomatik_not": " ".join(notlar),
+        "otomatik_not": otomatik_not,
         # "Kaydet": dugme bir onay degil, bir YAZMA
         # islemi yapiyor - tanimlar, tip secimleri ve surec disi karari
         # kaydediliyor ve ancak kaydedildikten sonra Excel'e indirilebilir
@@ -9807,6 +9832,47 @@ def _teyit_karti(durum):
             "duzenlenebilir": duzenlenebilir,
         },
     }
+
+
+def teyit_gecmis_karti(durum):
+    """GECILMIS 01.3 adiminin karti, durumdaki son kararlarla (salt okunur).
+    Veri okunmaz ve durum degismez: tip donusum teklifleri kurulmaz,
+    kolonlar yeniden isaretlenmez. Kurulamazsa None."""
+    try:
+        satirlar, _duz = teyit_satirlari(durum, teklif=False)
+    except Exception:
+        return None
+    if not satirlar:
+        return None
+    return _teyit_govdesi(durum, satirlar, False, _tek_deger_notu(durum))
+
+
+def teyit_gecmisini_tazele(durum, gecmis):
+    """Yenilemede 01.3 Degisken Listesi blogunun karti. Kartin govdesi cok
+    kolonlu veride transkriptin saklama sinirina takilir ve yazilmaz (bkz.
+    backend._gecmise_ekle, _gecmisi_kirp_boyuta); blok yalniz metinle
+    kalirdi. Adim gecilmisse ve transkriptte karti yoksa kart durumdan
+    kurulur. Transkript degismez: yeni liste doner."""
+    from fe_agent.akis_kayit import adim_sirasi
+    sira = adim_sirasi(durum.get("mod"))
+    if "teyit" not in sira or sira.index("teyit") >= int(durum.get("i") or 0):
+        return gecmis
+    satirlar = [n for n, k in enumerate(gecmis or [])
+                if isinstance(k, dict) and k.get("rol") == "bot" and k.get("adim") == "teyit"]
+    if not satirlar or any((gecmis[n].get("ekran") or {}).get("secim_alani") for n in satirlar):
+        return gecmis
+    kart = teyit_gecmis_karti(durum)
+    if not kart:
+        return gecmis
+    # Kart, canli akista durdugu yere (adimin ilk satiri; ozet metni onun
+    # altinda) yazilir.
+    hedef = next((n for n in satirlar if gecmis[n].get("ekran_atlandi")), satirlar[0])
+    yeni = list(gecmis)
+    k = dict(yeni[hedef])
+    k["ekran"] = {"secim_alani": kart}
+    k.pop("ekran_atlandi", None)
+    yeni[hedef] = k
+    return yeni
 
 
 def teyit_girdi(durum, mesaj, yeniden_sor=False):

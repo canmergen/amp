@@ -2927,6 +2927,35 @@ tanıtır; sayfalar sol bardan açılır.
   ölçek dönüşümleri bu adımda yoktur, 03.1'de kararlaştırılır; doğrusal
   uyum ölçümü ve kolon bazında dışarıda bırakma anlatılır.
 
+**Yenilemede kaybolan kartlar (01.2.4.3 ve 01.3) ve Dönem Yazılışları'nda yanlış "Belirsiz" sayısı**
+- 01.2.4.3 KOLON KARTLARI (önceki onaylı kararla geçilen adım): kartı
+  yenilemede `onceki_karti` kurar; kolon sayısını `aciklama_duzen` deposunun
+  `girdiler` alanından alıyordu. `girdiler` yalnız bellektedir; arka uç
+  yeniden başlayınca (kod kaydı, yeniden başlatma) boş gelir, kart
+  kurulmaz, blokta yalnız "Önceki onaylı karar uygulandı" metni kalırdı.
+  Artık sayı `girdiler` yoksa onaylanan halden (`onay`, dosyada) gelir;
+  kartın satırları zaten oradan çizilir (`aciklama_alani`, salt okunur).
+- 01.3 DEĞİŞKEN LİSTESİ: kartın gövdesi kolon başına bir satır taşır;
+  çok kolonlu veride tek kart sınırını (`backend.EKRAN_SINIRI`, 512 KB)
+  ya da toplam transkript sınırını (`TRANSKRIPT_SINIRI`, 4 MB) aşar ve
+  transkripte yazılmaz (`ekran_atlandi`). Yenilemede blok yalnız
+  "Değişken listesi kaydedildi" metniyle kalırdı. Artık adım geçilmişse
+  ve transkriptte kartı yoksa kart durumdan kurulur
+  (`akis_faz01.teyit_gecmisini_tazele`, `teyit_gecmis_karti`;
+  `backend._surdurme_govdesi` çağırır). Veri okunmaz ve durum değişmez:
+  tip dönüşüm teklifleri kurulmaz (`teyit_satirlari(durum, teklif=False)`),
+  kolonlar yeniden işaretlenmez; kart salt okunurdur. Transkript değişmez
+  (kart yalnız yanıta eklenir). Kartı transkriptte duran (az kolonlu)
+  çalışmada dokunulmaz.
+- DÖNEM YAZILIŞLARI (01.2.4.4): tek parçalı birimli kalıbın ([sayı]D)
+  tür sayımı, iki parçalı kalıpların (3D_6D, 3D_X2) kolonlarını da
+  sayıyordu; o parçaların kolonda türü olmadığı için "Belirsiz" satırına
+  düşüyor, "dönemin anlamı belirlenmedi" notu çıkıyordu (ör. 256 + 28 =
+  284 kolon). Adlar doğruydu (kolon iki parçalı kalıbın yazılışıyla
+  adlanır); yalnız sayım yanlıştı. `_donem_yazilis_satirlari` artık iki
+  parçalı kalıbın parçalarını tek parçalı kalıpta saymaz (`tekli`).
+  Gerçekten belirsiz kolon varsa satır yine çıkar.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

@@ -1213,6 +1213,12 @@ def _surdurme_govdesi(durum):
         govde["gecmis"] = akis.onceki_gecmisini_tazele(durum, govde["gecmis"])
     except Exception:
         pass
+    # 01.3 Degisken Listesi: govdesi saklama sinirina takilip transkripte
+    # yazilamayan kart (cok kolonlu veri) durumdan kurulur.
+    try:
+        govde["gecmis"] = akis.teyit_gecmisini_tazele(durum, govde["gecmis"])
+    except Exception:
+        pass
     return govde
 
 
