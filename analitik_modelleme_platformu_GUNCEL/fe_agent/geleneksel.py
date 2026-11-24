@@ -439,7 +439,9 @@ def _pencere(kolon, turler=None):
         gun = int(m.group(1)) * _GUN[m.group(2)]
         if gun <= 0:
             continue
-        anahtar = tuple(t[:i]) + ("*" + re.sub(r"\d+", "#", p),) + tuple(t[i + 1:])
+        # Birimden bagimsiz anahtar: L7D, L30D ve L3M, L6M ayni ailedir
+        # (pencereler gun sayisina cevrilir; ayni gunlu ikiden biri kalir).
+        anahtar = tuple(t[:i]) + ("*PNC",) + tuple(t[i + 1:])
         return anahtar, gun, i
     return None
 
@@ -566,15 +568,31 @@ def birimleri_kur(durum, df, haric=(), arasi=()):
             kova.setdefault(p[0], []).append((p[1], k, p[2]))
     aileli = set()
     birimler = []
+    aile_adlari = set()
     for anahtar, uyeler in kova.items():
         uyeler = sorted(set(uyeler))
+        # Ayni gun sayili pencere (L90D ile L3M): ilki ailede kalir, digeri
+        # tekil kolon olarak birim olur (aile atlanmaz).
+        tekil, gorulen = [], set()
+        for x in uyeler:
+            if x[0] in gorulen:
+                continue
+            gorulen.add(x[0])
+            tekil.append(x)
+        uyeler = tekil
         gunler = [g for g, _k, _i in uyeler]
-        if len(uyeler) < 2 or len(set(gunler)) < len(gunler):
+        if len(uyeler) < 2:
             continue
         kol = [k for _g, k, _i in uyeler]
         aileli.update(kol)
+        ad = _aile_adi(kol, uyeler[0][2])
+        n_ = 2
+        while ad in aile_adlari:           # farkli iki aile ayni koku almasin
+            ad = "%s_%d" % (_aile_adi(kol, uyeler[0][2]), n_)
+            n_ += 1
+        aile_adlari.add(ad)
         birimler.append({"id": "aile:" + kol[0], "tur": "aile", "kolonlar": kol, "gunler": gunler,
-                         "ad": _aile_adi(kol, uyeler[0][2]), "tip": "sayisal"})
+                         "ad": ad, "tip": "sayisal"})
     for k in sayisal:
         if k not in aileli:
             birimler.append({"id": "kolon:" + k, "tur": "kolon", "kolonlar": [k], "ad": k,
