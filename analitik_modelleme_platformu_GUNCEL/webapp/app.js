@@ -5042,7 +5042,7 @@ const SFA_SECENEK = {
     kullan: [["evet", "Evet"], ["hayir", "Hayır"]],
     eksik: [["yok", "Yok"], ["medyan", "Medyan"], ["sabit", "Sabit Değer"],
             ["isaret", "Eksik İşareti + Medyan"], ["missing", "MISSING Kategorisi"]],
-    aykiri: [["yok", "Yok"], ["winsor", "Winsor (%5)"]],
+    aykiri: [["yok", "Yok"], ["winsor", "Winsor (%1)"]],
     donusum: [["yok", "Yok"], ["log", "Log"], ["ustel", "Üstel"], ["sira", "Sıra"]],
     ayriklastirma: [["yok", "Yok"], ["onerilen", "Önerilen Aralıklar"]]
 };
@@ -5270,7 +5270,7 @@ function sfaDetayCiz(td, ozet, yenidenCiz) {
     const cbas = elYap("tr");
     const cth = elYap("th", "sfa-c-bas", "C-value");
     cth.colSpan = 5;
-    cth.title = "Kırpılmış: Train %5 ve %95 yüzdeliklerinde. Log, üstel ve sıra "
+    cth.title = "Kırpılmış: Train %1 ve %99 yüzdeliklerinde. Log, üstel ve sıra "
         + "tekdüze dönüşüm olduğu için tek değişkenli C-value'yu değiştirmez.";
     cbas.appendChild(cth);
     ct.appendChild(cbas); ct.appendChild(cb); ct.appendChild(cd);
@@ -5281,7 +5281,7 @@ function sfaDetayCiz(td, ozet, yenidenCiz) {
     bolum("Dağılım ve Hedef Oranı");
     const dag = v.dagilim || {};
     const secenekler = kategorik ? [["ham", "Kategoriler"], ["onerilen", "Önerilen Gruplar"]]
-        : [["ham", "Ham"], ["kirpik", "Kırpılmış (%5)"], ["onerilen", "Önerilen Aralıklar"]];
+        : [["ham", "Ham"], ["kirpik", "Kırpılmış (%1)"], ["onerilen", "Önerilen Aralıklar"]];
     if (!secenekler.some(([k]) => k === ARALIK.gorunum)) ARALIK.gorunum = "ham";
     const gs = elYap("div", "aralik-secim");
     secenekler.forEach(([k, e]) => {

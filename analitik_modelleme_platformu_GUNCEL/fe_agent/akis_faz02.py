@@ -411,6 +411,14 @@ def _duzeltme_ham(ek, kusur):
                 kayit["basamak"] = int(x.get("basamak") or 0)
                 secenek = ["tam_sayi", "birak"] if x.get("tur") == "tam" else ["yuvarla", "birak"]
                 kural = secenek[0]
+            elif a == "uc":
+                kayit["yon"] = x.get("yon") or "ust"
+                for g in (ek.get("gizli_eksik") or []):
+                    if g.get("kolon") == k:
+                        try:
+                            kayit["kod"] = float(str(g.get("deger")).replace(",", "."))
+                        except (TypeError, ValueError):
+                            pass
             cikti.setdefault(a, {})[k] = {"secenekler": secenek, "kural": kural, "kayit": kayit}
     return cikti
 
@@ -453,7 +461,6 @@ KARAR_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "baskin", "don
 LLM_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "gizli_eksik", "karisik_eksik")
 BASKIN_MIN_SATIR = 30       # baskin deger disinda en az bu kadar egitim satiri
 BASKIN_KAT = 1.5            # hedef orani bu kat farkliysa kolon bilgi tasir
-UC_KIRP_KAT = 100.0         # en buyuk / %99'luk >= bu kat: hatali giris, kirp
 NEGATIF_BOS_PAY = 0.05      # negatif payi bunun altindaysa hatali kayit
 METIN_BAYRAK_PAY = 0.05     # bos yazisi payi bunun ustundeyse bayrakla
 DONEM_TUT_PAY = 0.35        # yalniz ilk donemler bos ve en cok bu pay: Tut
@@ -467,6 +474,21 @@ def _kat_metni(v):
     return _sayi(int(round(v))) if v >= 10 else ("%.1f" % v).replace(".", ",")
 
 
+def uc_bulgu_metni(x):
+    """Uc deger bulgusu: hangi uc, degeri ve sinirlari. Eski kayitta (yalniz
+    maks ve p99) ust uc yazilir."""
+    p99, maks = float(x["p99"]), float(x["maks"])
+    yon = x.get("yon") or "ust"
+    parca = []
+    if yon in ("ust", "iki"):
+        parca.append("en büyük değer %s, %%99'luk değer %s" % (_okunur_sayi(maks), _okunur_sayi(p99)))
+    if yon in ("alt", "iki") and x.get("en_kucuk") is not None:
+        parca.append("en küçük değer %s, %%1'lik değer %s" % (
+            _okunur_sayi(float(x["en_kucuk"])), _okunur_sayi(float(x["p1"]))))
+    m = "; ".join(parca)
+    return (m[:1].upper() + m[1:]) if m else ""
+
+
 def _veri_onerileri(durum, ek, df, egitim):
     """{kontrol: {kolon: {"oneri", "gerekce"}}}: dil modeline sorulmayan
     karar ve duzeltme bulgularinda kolonun kendi sayilarina bakan kural.
@@ -477,7 +499,7 @@ def _veri_onerileri(durum, ek, df, egitim):
     e = profil_esikleri(durum)
     BASKIN_MIN_SATIR, BASKIN_KAT = int(e["baskin_min_satir"]), float(e["baskin_kat"])
     DONEM_TUT_PAY, SICRAMA_CIKAR = float(e["donem_tut_pay"]), float(e["sicrama_cikar"])
-    UC_KIRP_KAT, NEGATIF_BOS_PAY = float(e["uc_kirp_kat"]), float(e["negatif_bos_pay"])
+    NEGATIF_BOS_PAY = float(e["negatif_bos_pay"])
     METIN_BAYRAK_PAY = float(e["metin_bayrak_pay"])
 
     def yaz(a, k, oneri, gerekce):
@@ -577,16 +599,10 @@ def _veri_onerileri(durum, ek, df, egitim):
                 "iş değişimi olabilir, kolon tutulur." % _kat_metni(kat))
 
     # UC DEGER
+    # Yakalanan uc zaten dogal yayilimin cok disinda (hatali giris): kirp.
     for x in ek.get("uc") or []:
-        p99, maks = float(x["p99"]), float(x["maks"])
-        kat = maks / p99 if p99 > 0 else float("inf")
-        bas = "En büyük değer (%s) %%99'luk değerin (%s) %s katı" % (
-            _okunur_sayi(maks), _okunur_sayi(p99), _kat_metni(kat) if kat != float("inf") else "çok üstü")
-        if kat >= UC_KIRP_KAT:
-            yaz("uc", x["kolon"], "kirp", bas + "; hatalı girişe benziyor, uçlar kırpılır.")
-        else:
-            yaz("uc", x["kolon"], "birak", bas + "; %s kattan az, doğal olarak büyük değer olabilir, "
-                "olduğu gibi bırakılır." % _sayi(int(UC_KIRP_KAT)))
+        yaz("uc", x["kolon"], "kirp", uc_bulgu_metni(x) + "; hatalı girişe benziyor, "
+            "yakalanan uç sınıra çekilir.")
 
     # BEKLENMEYEN NEGATIF
     for x in ek.get("negatif") or []:
@@ -803,8 +819,14 @@ def _duzeltme_ozeti(kontrol, secim, b):
         return "%s basamağa yuvarlanır." % _sayi(b.get("basamak") or 0)
     if kontrol == "yazim" and b.get("anahtar"):
         return "%s değerin farklı yazımları tek yazıma çevrilir." % _sayi(len(b["anahtar"]))
-    if kontrol == "uc" and "sinir" in b:
-        return "Sınır %s; üstündeki değerler sınıra çekilir." % _sayi_metni(b["sinir"])
+    if kontrol == "uc" and any(x in b for x in ("ust", "alt", "sinir")):
+        p = []
+        if b.get("ust", b.get("sinir")) is not None:
+            p.append("üst sınır %s" % _sayi_metni(b.get("ust", b.get("sinir"))))
+        if b.get("alt") is not None:
+            p.append("alt sınır %s" % _sayi_metni(b["alt"]))
+        m = ", ".join(p)
+        return m[:1].upper() + m[1:] + "; dışındaki değerler sınıra çekilir."
     return ""
 
 
@@ -1212,9 +1234,9 @@ PROFIL_ESIKLERI = (
     ("sicrama", "Dönemler Arası Eksik Sıçraması",
      "Art arda iki dönem arasında boş hücre oranı bu kadar puandan fazla değişiyorsa",
      "puan", 0.01, 0.99),
-    ("uc_kat", "Uç Değer Yoğunluğu",
-     "En büyük değer, değerlerin %99'unun altında kaldığı sınırın bu katından büyükse",
-     "kat", 2, 1000000000),
+    ("uc_yayilim", "Uç Değer Yoğunluğu",
+     "En büyük değer %99'luk değeri ya da en küçük değer %1'lik değeri, ikisi arasındaki "
+     "farkın bu katından fazla aşıyorsa", "kat", 2, 1000000000),
     ("yakin_kor", "Neredeyse Aynı Kolonlar",
      "İki sayısal kolonun korelasyonu bu değer ya da üstündeyse", "yuzde", 0.90, 0.99999),
     ("sizinti_auc", "Hedefle Neredeyse Birebir",
@@ -1240,8 +1262,6 @@ PROFIL_ONERI_ESIKLERI = (
      "önerilir", "yuzde", 0.01, 0.99),
     ("sicrama_cikar", "Dönemler Arası Eksik Sıçraması: Çıkarma Sınırı",
      "Eksik oranı artıp bu değere ya da üstüne çıktıysa Çıkar önerilir", "yuzde", 0.01, 1.0),
-    ("uc_kirp_kat", "Uç Değer Yoğunluğu: Kırpma Sınırı",
-     "En büyük değer %99'luk değerin en az bu katıysa kırpma önerilir", "kat", 2, 1000000000),
     ("negatif_bos_pay", "Beklenmeyen Negatif: Boş Sayma Sınırı",
      "Negatif satırlar dolu satırların bundan azıysa boş sayma önerilir", "yuzde", 0.0001, 1.0),
     ("metin_bayrak_pay", "Metin Olarak Yazılmış Boş: Bayrak Sınırı",
@@ -1271,8 +1291,7 @@ ESIK_KONTROL = (
     ("gizli", "Gizli Eksik", "Özel kod"),
     ("metin_bayrak_pay", "Gizli Eksik", "Metin olarak boş: bayrak sınırı"),
     ("negatif_bos_pay", "Beklenmeyen Negatif", "Boş sayma sınırı"),
-    ("uc_kat", "Uç Değer Yoğunluğu", "Uç değer"),
-    ("uc_kirp_kat", "Uç Değer Yoğunluğu", "Kırpma sınırı"),
+    ("uc_yayilim", "Uç Değer Yoğunluğu", "Uç değer"),
     ("ondalik", "Ondalık Hassasiyeti", "Basamak sayısı"),
 )
 _ESIK_KONTROL = {a: (i, k, alt) for i, (a, k, alt) in enumerate(ESIK_KONTROL)}
@@ -1425,23 +1444,30 @@ PROFIL_ESIK_ACIKLAMA = {
                  "bu kontrol yapılmaz.\n\n"
                  "**Neden 20 puan önerildi?** Dönemden döneme küçük oynamalar doğaldır; 20 "
                  "puanın üstü genellikle bir değişikliktir."},
-    "uc_kat": {
-        "kisa": "Diğer değerlerden çok büyük tekil değerler (ör. hatalı girilmiş tutar) "
-                "hesapları bozar.",
+    "uc_yayilim": {
+        "kisa": "Diğer değerlerden çok büyük ya da çok küçük tekil değerler (ör. hatalı "
+                "girilmiş tutar) hesapları bozar.",
         "sonuc": "Düzeltme önerilir; kolon üretime girer",
-        "bilgi": "**Nedir?** Kolonun en büyük değerini, değerlerin %99'unun altında kaldığı "
-                 "sınırla (99. yüzdelik) karşılaştırır.\n\n"
-                 "**Neden önemli?** Birkaç aşırı büyük değer ortalama gibi hesapları tek başına "
-                 "çeker; bunlar çoğu zaman hatalı giriştir.\n\n"
-                 "**Örnek:** değerlerin %99'u 10.000 TL'nin altında, en büyük değer 5.000.000 "
-                 "TL: 500 kat; eşik 100 kat ise gösterilir.\n\n"
-                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
-                 "Öneri kolonun sayılarından: en büyük değer %99'luk değerin Kırpma Sınırı "
-                 "(öneri eşiği, 100 kat) ya da daha fazla katıysa kırpmak, değilse olduğu gibi "
-                 "bırakmak (tutarlarda büyük değer çoğu zaman gerçektir, kırpmak bilgi "
-                 "kaybettirir). Kırpma: uçlar eğitim satırlarından öğrenilen sınıra çekilir.\n\n"
-                 "**Neden 100 kat önerildi?** Gelir, tutar gibi kolonlarda doğal olarak büyük "
-                 "değerler vardır; 100 katın üstü doğal yayılımın çok dışındadır."},
+        "bilgi": "**Nedir?** Kolonun iki ucuna bakar. Yayılım = %99'luk değer − %1'lik "
+                 "değer. En büyük değer %99'luk değeri yayılımın bu katından fazla aşıyorsa "
+                 "üst uç, en küçük değer %1'lik değerin altına yayılımın bu katından fazla "
+                 "iniyorsa alt uç yakalanır. -999, 9999 gibi özel kodlar hesaba girmez; "
+                 "negatif olamayan ölçülerde (adet, gün, süre) alt uca Beklenmeyen Negatif "
+                 "kontrolü bakar.\n\n"
+                 "**Neden önemli?** Birkaç saçma değer ortalama gibi hesapları tek başına "
+                 "çeker; bunlar çoğu zaman hatalı giriştir. İstatistiksel aykırı değer "
+                 "(gerçek ama uçta kalan müşteri) burada değil, SFA'da (winsor) ele alınır.\n\n"
+                 "**Örnek:** %1'lik değer 0, %99'luk değer 10.000 TL (yayılım 10.000); en "
+                 "büyük değer 5.000.000 TL, sınır 10.000 + 100 × 10.000 = 1.010.000 TL, "
+                 "yakalanır. Bakiye değişiminde %1'lik −5.000, %99'luk 5.000 (yayılım 10.000); "
+                 "en küçük −80.000.000, sınır −1.005.000, alt uç yakalanır.\n\n"
+                 "**Yakalanırsa:** kolon üretime girer; kırpma önerilir (yakalanan uç, eğitim "
+                 "satırlarından öğrenilen %99'luk ya da %1'lik değere çekilir). Olduğu gibi "
+                 "bırakmayı da seçebilirsiniz.\n\n"
+                 "**Neden 100 kat önerildi?** Değerleri sıfırdan başlayan kolonda bu kural "
+                 "«en büyük değer %99'luk değerin 100 katından büyük» kuralına denk gelir; "
+                 "gelir, tutar gibi kolonlarda doğal büyük değerler bunun çok altında kalır, "
+                 "yalnız saçma girişler yakalanır."},
 }
 PROFIL_ESIK_ACIKLAMA.update({
     "baskin_min_satir": {
@@ -1500,21 +1526,6 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "**Yakalanırsa:** yalnız öneriyi belirler; kararı siz verirsiniz.\n\n"
                  "**Neden %50 önerildi?** Kolonun yarısından fazlası boşsa, Eksik Oranı Yüksek "
                  "kontrolünün de varsayılan sınırı aşılmış olur."},
-    "uc_kirp_kat": {
-        "kisa": "En büyük değer, değerlerin büyük çoğunluğunun kat kat üstündeyse hatalı "
-                "girişe benzer.",
-        "sonuc": "Öneri: bu kat ya da üstündeyse kırp",
-        "bilgi": "**Nedir?** Uç Değer kontrolüne takılan kolonda en büyük değeri %99'luk "
-                 "değere böler.\n\n"
-                 "**Neden önemli?** Tutar, gelir, bakiye doğal olarak büyük uç değer alır; "
-                 "bunları kırpmak gerçek bilgiyi siler. Ama 5.000.000 yerine 50.000.000.000 "
-                 "gibi kat kat büyük değer çoğu zaman hatalı giriştir.\n\n"
-                 "**Örnek:** %99'luk değer 988, en büyük 50.000.000: 50.565 kat; eşik 100 ise "
-                 "kırpma önerilir.\n\n"
-                 "**Yakalanırsa:** yalnız öneriyi belirler; düzeltmeyi siz seçersiniz.\n\n"
-                 "**Neden 100 kat önerildi?** Gerçek gelir ve bakiye dağılımlarında en büyük "
-                 "değer %99'luk değerin genellikle birkaç ile birkaç on katıdır; 100 kat ve "
-                 "üstü olağan dışıdır."},
     "negatif_bos_pay": {
         "kisa": "Az sayıda negatif değer hatalı kayıttır; çok sayıda negatif değer sistematik "
                 "bir anlam taşır (iade, düzeltme kaydı).",
@@ -1646,7 +1657,7 @@ def _esik_varsayilan():
     d.update({"cok_bos": sfa_mod.NULL_ESIK, "kimlik": 0.95, "kardinalite": sfa_mod.KATEGORIK_MAX})
     d.update({"baskin_min_satir": BASKIN_MIN_SATIR, "baskin_kat": BASKIN_KAT,
               "donem_tut_pay": DONEM_TUT_PAY, "sicrama_cikar": SICRAMA_CIKAR_PAY,
-              "uc_kirp_kat": UC_KIRP_KAT, "negatif_bos_pay": NEGATIF_BOS_PAY,
+              "negatif_bos_pay": NEGATIF_BOS_PAY,
               "metin_bayrak_pay": METIN_BAYRAK_PAY})
     return d
 
@@ -2630,8 +2641,8 @@ def _profil_kurallari(esik=None):
         "negatif": "Kolon kartında ölçüsü adet, gün ya da süre olan kolonda negatif değer var.",
         "sicrama": "Eksik oranı art arda iki dönem arasında %s puandan fazla değişiyor."
                    % _sayi_metni(round(e["sicrama"] * 100, 2)),
-        "uc": "En büyük değer, değerlerin %%99'unun altında kaldığı sınırın %s katından "
-              "büyük." % _sayi_metni(e["uc_kat"]),
+        "uc": "En büyük değer %%99'luk değeri ya da en küçük değer %%1'lik değeri, ikisi "
+              "arasındaki farkın %s katından fazla aşıyor (hatalı giriş)." % _sayi_metni(e["uc_yayilim"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
         "ondalik": "Ondalık kolon ya bütün değerleri tam sayı (boş hücresiz), ya da değerleri "
@@ -2670,7 +2681,7 @@ def _profil_kurallari(esik=None):
 _KONTROL_ESIK_ANAHTARI = {"ondalik": "ondalik", "cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
                           "yuksek_kardinalite": "kardinalite", "baskin": "baskin",
                           "donem": "donem_min_satir", "gizli_eksik": "gizli", "sifir": "sifir",
-                          "sicrama": "sicrama", "uc": "uc_kat", "yakin_icerik": "yakin_kor",
+                          "sicrama": "sicrama", "uc": "uc_yayilim", "yakin_icerik": "yakin_kor",
                           "birebir": "sizinti_auc", "kayma": "kayma_kat"}
 _KONTROL_ACIKLAMA_EK = {
     "sabit": {
@@ -3250,8 +3261,7 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
             b["ondalik"][x["kolon"]] = "Ondalık hane fazla (ör. %s → %s); %s basamak" % (
                 _ondalik_yazi(x["ornek"]), _ondalik_yazi(x["ornek_yeni"]), _sayi(x["basamak"]))
     for x in ek.get("uc") or []:
-        b["uc"][x["kolon"]] = "En büyük değer %s, %%99'luk değer %s" % (
-            _sayi_metni(x["maks"]), _sayi_metni(x["p99"]))
+        b["uc"][x["kolon"]] = uc_bulgu_metni(x)
     for a, kolonlar in b.items():
         if a not in ("ayni_icerik", "yakin_icerik"):
             for k in [k for k in kolonlar if k in kopya]:

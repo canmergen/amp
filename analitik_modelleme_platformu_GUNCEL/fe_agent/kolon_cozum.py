@@ -94,9 +94,10 @@ COZUM_ACIKLAMA.update({
                  "bölmede ve ağaç tabanlı modellerde ayrı bir grup olur."),
     "negatif_bos": ("Negatif olamayacak bir ölçüdeki negatif değerler hatalı sayılır ve boş "
                     "yapılır; diğer değerler değişmez."),
-    "kirp": ("Sınırın üstündeki değerler sınıra çekilir. Sınır yalnız eğitim satırlarından "
-             "öğrenilir: sıfır olmayan değerlerin %99'luk değeri (seyrek kolonda sıfırlar "
-             "sınırı düşürmesin diye)."),
+    "kirp": ("Yakalanan uçtaki değerler sınıra çekilir: üstte %99'luk, altta %1'lik değer. "
+             "Sınırlar yalnız eğitim satırlarından, sıfır olmayan değerlerden öğrenilir "
+             "(seyrek kolonda sıfırlar sınırı kaydırmasın diye); özel kod (-999, 9999) "
+             "hesaba girmez ve kırpılmaz."),
     "birak": "Kolon değiştirilmeden kullanılır.",
     "tarih_bos_bayrak": ("1900-01-01, 9999-12-31 gibi kod tarihler boş sayılır; kodun olduğu "
                          "satırlar ayrıca 1/0 bayrağıyla işaretlenir (ör. «süresiz» bilgisi "
@@ -134,7 +135,7 @@ DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
                     "ondalik": ["yuvarla", "tam_sayi", "birak"]}
 DUZELTME_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "kod_bos_bayrak",
                   "tarih_kod": "tarih_bos_bayrak", "metin_bos": "metin_bos",
-                  "yazim": "tek_yazim", "negatif": "negatif_bos", "uc": "birak",
+                  "yazim": "tek_yazim", "negatif": "negatif_bos", "uc": "kirp",
                   "ondalik": "yuvarla"}
 # Uygulama sirasi: once eksik kodlari (sayi, tarih, metin), sonra yazim,
 # en son deger duzeltmeleri.
@@ -146,8 +147,9 @@ BAYRAKLI_DUZELTME = ("kod_bos_bayrak", "tarih_bos_bayrak", "metin_bos_bayrak")
 
 
 def duzeltme_ogren(kontrol, secim, x, egitim, kayit=None):
-    """Secilen duzeltmenin bilgisi. gizli: {"kod"}; uc/kirp: {"sinir"}
-    (egitim satirlarinda sifir olmayan dolu degerlerin %99'u)."""
+    """Secilen duzeltmenin bilgisi. gizli: {"kod"}; uc/kirp: {"ust", "alt"}
+    (yalniz yakalanan uc(lar): egitim satirlarinda sifir olmayan dolu
+    degerlerin %99'u ve %1'i; sifir varsa sinir sifiri kirpmaz)."""
     kayit = kayit or {}
     if kontrol in KOD_KONTROLLERI:
         return {"kod": float(kayit.get("kod"))}
@@ -157,10 +159,25 @@ def duzeltme_ogren(kontrol, secim, x, egitim, kayit=None):
         return {"basamak": int((kayit or {}).get("basamak") or 0)}
     if kontrol == "uc" and secim == "kirp":
         t = pd.to_numeric(x[egitim], errors="coerce").dropna()
+        kod = kayit.get("kod")
+        if kod is not None:
+            t = t[t != float(kod)]
+        sifir_var = bool((t == 0).any())
         t = t[t != 0]
         if not len(t):
             return {}
-        return {"sinir": float(np.nanpercentile(t.to_numpy(dtype=float), 99))}
+        a = t.to_numpy(dtype=float)
+        yon = kayit.get("yon") or "ust"
+        b = {}
+        if yon in ("ust", "iki"):
+            u = float(np.nanpercentile(a, 99))
+            b["ust"] = max(u, 0.0) if sifir_var else u
+        if yon in ("alt", "iki"):
+            l_ = float(np.nanpercentile(a, 1))
+            b["alt"] = min(l_, 0.0) if sifir_var else l_
+        if kod is not None:
+            b["kod"] = float(kod)
+        return b
     return {}
 
 
@@ -203,8 +220,17 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
         return sx.where(~kodlu), bayrak
     if kontrol == "negatif" and secim == "negatif_bos":
         return sx.where(~(sx < 0)), None
-    if kontrol == "uc" and secim == "kirp" and "sinir" in bilgi:
-        return sx.clip(upper=float(bilgi["sinir"])), None
+    if kontrol == "uc" and secim == "kirp":
+        b = bilgi or {}
+        ust = b.get("ust", b.get("sinir"))      # "sinir": eski kayit (yalniz ust)
+        alt = b.get("alt")
+        if ust is None and alt is None:
+            return x, None
+        yeni = sx.clip(lower=None if alt is None else float(alt),
+                       upper=None if ust is None else float(ust))
+        if b.get("kod") is not None:          # ozel kod (birakildiysa) kirpilmaz
+            yeni = yeni.where(sx != float(b["kod"]), sx)
+        return yeni, None
     return x, None
 
 

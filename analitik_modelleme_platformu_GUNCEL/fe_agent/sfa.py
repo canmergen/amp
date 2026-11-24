@@ -15,7 +15,7 @@ import pandas as pd
 
 IV_ESIK = 0.05           # bilgi amacli (eleme YOK)
 C_ESIK = 0.55
-KIRPMA = 0.05            # kirpilmis C-value: train %5 ve %95 yuzdelikleri
+KIRPMA = 0.01            # kirpilmis C-value: train %1 ve %99 yuzdelikleri (winsor ile ayni)
 
 # IV bantlari (bilgi amacli): etkisiz / zayif / orta / guclu
 IV_BANTLARI = ((0.02, "etkisiz"), (0.10, "zayıf"), (0.30, "orta"), (None, "güçlü"))

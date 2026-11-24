@@ -3485,7 +3485,7 @@ aynen bu yazımla):
           işareti kolonu + medyan; eksiklerin hedef oranı dolulardan
           belirgin farklıysa) | "missing" (yalnızca kategorik)
   eksik_deger: yalnızca eksik="sabit" ise sayı, değilse null
-  aykiri: "yok" | "winsor" (%5-%95 kırpma; uç değer payı yüksekse ya da
+  aykiri: "yok" | "winsor" (%1-%99 kırpma; uç değer payı yüksekse ya da
           kırpılmış C-value hamdan iyiyse)
   donusum: "yok" | "log" | "ustel" | "sira" (çarpıklığa, dağılıma ve
           eğilimin şekline göre; tekdüze dönüşümler tek değişkenli

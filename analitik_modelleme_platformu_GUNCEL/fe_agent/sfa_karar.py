@@ -7,7 +7,7 @@ TEMEL KURALLAR
   - Metrikleri KOD hesaplar; her degisken icin nasil girecegine YAPAY ZEKA
     karar verir (degisken basina ayri karar). Kullanici her karari panelde
     degistirebilir; kullanicinin karari yapay zekanin ustundedir.
-  - C-value bes donusumle olculur: ham, kirpilmis (%5), log, ustel, sira.
+  - C-value bes donusumle olculur: ham, kirpilmis (%1), log, ustel, sira.
   - Aralik onerileri SFA'nin icindedir: "Ayrıklaştırma: Önerilen Aralıklar".
 
 KARAR ALANLARI (her degisken)
@@ -21,7 +21,7 @@ KARAR ALANLARI (her degisken)
                    isaret : eksik isareti kolonu (<K>_EKSIK) + medyan
                    missing: kategorikte eksikler ayri "MISSING" kategorisi
   eksik_deger    sabit doldurma degeri
-  aykiri         "yok" | "winsor"   (train %5 - %95)
+  aykiri         "yok" | "winsor"   (train %1 - %99)
   donusum        "yok" | "log" | "ustel" | "sira"
   ayriklastirma  "yok" | "onerilen" (SFA'nin hedefe gore araliklari)
   yorum, gerekce, kaynak ("kural" | "yapay_zeka" | "kullanici")
@@ -50,7 +50,7 @@ from fe_agent import tip_donusum
 KARAR_DOSYA = "sfa_kararlar.json"
 GRAFIK_ARALIK = 20          # grafikteki ince aralik sayisi
 KATEGORI_GOSTER = 19        # grafikte en cok kategori; gerisi "Diğer"
-KIRPMA = 0.05               # winsor: train %5 ve %95
+KIRPMA = 0.01               # winsor: train %1 ve %99 (kredi riskinde yaygin; %5 cok sert)
 CARPIK_ESIK = 2.0           # varsayilan log donusumu icin carpiklik esigi
 AYKIRI_ESIK = 0.005         # uc cit disindaki pay bunu gecerse winsor
 
@@ -64,7 +64,7 @@ ETIKET = {
     "kullan": {"evet": "Evet", "hayir": "Hayır"},
     "eksik": {"yok": "Yok", "medyan": "Medyan", "sabit": "Sabit Değer",
               "isaret": "Eksik İşareti + Medyan", "missing": "MISSING Kategorisi"},
-    "aykiri": {"yok": "Yok", "winsor": "Winsor (%5)"},
+    "aykiri": {"yok": "Yok", "winsor": "Winsor (%1)"},
     "donusum": {"yok": "Yok", "log": "Log", "ustel": "Üstel", "sira": "Sıra"},
     "ayriklastirma": {"yok": "Yok", "onerilen": "Önerilen Aralıklar"},
 }
@@ -244,7 +244,7 @@ def degisken_detayi(s, y, tr, c_ler=None):
         aykiri_payi=_yuvarla(((xn < cit_alt) | (xn > cit_ust)).mean(), 4),
         tekil=int(xn.nunique()))
     dagilim["ham"] = _sayisal_tablo(xn, dolu_t, toplam)
-    dagilim["kirpik"] = _sayisal_tablo(xn.clip(q[1], q[5]), dolu_t, toplam)
+    dagilim["kirpik"] = _sayisal_tablo(xn.clip(q[0], q[6]), dolu_t, toplam)
     return {"sfa": metrik, "dagilim": dagilim}
 
 

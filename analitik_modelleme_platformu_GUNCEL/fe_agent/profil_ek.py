@@ -10,7 +10,9 @@ benzeri, kardinalite) ek olarak:
   * sifir         : dolu satirlarin SIFIR_ESIK'i ya da fazlasi sifir
   * negatif       : kolon kartinin olcusu adet, gun, sure iken negatif deger
   * sicrama       : eksik orani art arda iki donem arasinda sicriyor
-  * uc            : en buyuk deger, %99'luk degerin UC_DEGER_KAT kati ustunde
+  * uc            : en buyuk deger %99'luk degeri ya da en kucuk deger %1'lik
+                    degeri, (%99'luk - %1'lik) farkinin UC_DEGER_KAT katindan
+                    fazla asiyor (iki yonlu; hatali giris)
   * tekrar        : ayni kimlik ve donemle birden fazla satir, tamamen ayni satir
   * hedef         : sinif dagilimi, hedefi bos satir, donem basina sinif paylari
 
@@ -34,8 +36,14 @@ GIZLI_EKSIK_DEGERLER = (-1, -9, -99, -999, -9999, -99999, -999999, -9999999,
 GIZLI_KOPUK_KAT = 10
 DONEM_SICRAMA_ESIK = 0.20
 DONEM_SABIT_MIN_SATIR = 100
+# UC DEGER (hatali giris, iki yonlu): yayilim = %99'luk - %1'lik.
+# Ust: en buyuk > %99'luk + KAT x yayilim; alt: en kucuk < %1'lik - KAT x
+# yayilim. Pozitif kolonda (%1'lik ~ 0) ust kural eski "en buyuk >
+# 100 x %99'luk" kuralina denk. Ozel kod (gizli eksik) hesaba girmez;
+# negatif olamayan olcude alt uc Beklenmeyen Negatif kontrolunde.
 UC_DEGER_KAT = 100
 UC_DEGER_YUZDELIK = 0.99
+UC_DEGER_ALT_YUZDELIK = 0.01
 # Kullanicinin 02.1'de onayladigi esikler bu anahtarlarla gelir (yoksa
 # varsayilan). Gizli eksik kod listesi ve kopukluk kati sabittir.
 SIZINTI_AUC = 0.95
@@ -44,7 +52,7 @@ KAYMA_KAT = 10
 ONDALIK_BASAMAK = 4
 ESIK_VARSAYILAN = {"baskin": BASKIN_ESIK, "sifir": SIFIR_ESIK, "gizli": GIZLI_EKSIK_ESIK,
                    "donem_min_satir": DONEM_SABIT_MIN_SATIR, "sicrama": DONEM_SICRAMA_ESIK,
-                   "uc_kat": UC_DEGER_KAT, "sizinti_auc": SIZINTI_AUC, "yakin_kor": YAKIN_KOR,
+                   "uc_yayilim": UC_DEGER_KAT, "sizinti_auc": SIZINTI_AUC, "yakin_kor": YAKIN_KOR,
                    "kayma_kat": KAYMA_KAT, "ondalik": ONDALIK_BASAMAK}
 
 
@@ -215,12 +223,22 @@ def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
         sifir = int(sayim.get(0, 0) or 0)
         if not baskin and sifir / dolu >= e["sifir"]:
             sonuc["sifir"].append({"kolon": kol, "adet": sifir, "pay": sifir / dolu})
-        # Uc deger: ust uctaki ozel kod (9999) uc deger sayilmaz.
-        ust_gizli = gizli is not None and gizli[0] > 0
-        if not ust_gizli:
-            p99 = float(sn.quantile(UC_DEGER_YUZDELIK))
-            if p99 > 0 and en_buyuk > e["uc_kat"] * p99:
-                sonuc["uc"].append({"kolon": kol, "maks": en_buyuk, "p99": p99})
+        # Uc deger (iki yonlu): ozel kod (-999, 9999) hesaba girmez.
+        su = sn[sn != gizli[0]] if gizli is not None else sn
+        neg_yok = olcu_negatif_olamaz(olculer.get(kol))
+        if len(su):
+            p1 = float(su.quantile(UC_DEGER_ALT_YUZDELIK))
+            p99 = float(su.quantile(UC_DEGER_YUZDELIK))
+            yay = p99 - p1
+            if yay > 0:
+                kat = float(e["uc_yayilim"])
+                mx, mn = float(su.max()), float(su.min())
+                ust = mx > p99 + kat * yay
+                alt = (not neg_yok) and mn < p1 - kat * yay
+                if ust or alt:
+                    sonuc["uc"].append({"kolon": kol, "maks": mx, "en_kucuk": mn,
+                                        "p1": p1, "p99": p99,
+                                        "yon": "iki" if (ust and alt) else ("ust" if ust else "alt")})
         if olcu_negatif_olamaz(olculer.get(kol)):
             negatif = sn < 0
             if gizli is not None and gizli[0] < 0:

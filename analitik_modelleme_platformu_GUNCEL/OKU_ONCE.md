@@ -3004,6 +3004,22 @@ tanıtır; sayfalar sol bardan açılır.
   `ESIK_KONTROL` sırasıyla (karttaki kontrol sırası,
   `kart_kontrol_sirasi`). Hata mesajı ve değişiklik notu satırdaki adla
   (`esik_adi`). Profil kartında numara yok.
+- UÇ DEĞER İKİ YÖNLÜ (02.1): yayılım = %99'luk − %1'lik. Üst uç: en
+  büyük > %99'luk + K × yayılım; alt uç: en küçük < %1'lik − K × yayılım
+  (`profil_ek.kolon_kontrolleri`, eşik `uc_yayilim`, önerilen 100: sıfırdan
+  başlayan kolonda eski "en büyük > 100 × %99'luk" kuralına denk). Özel kod
+  (gizli eksik) hesaba girmez; negatif olamayan ölçüde alt uca Beklenmeyen
+  Negatif bakar. Bulgu `yon` (ust / alt / iki) taşır. Öneri her zaman
+  kırp (yakalanan şey doğal yayılımın çok dışında); kırpma yalnız yakalanan
+  uç(lar)da, sınırlar eğitimdeki sıfır olmayan değerlerin %99'u / %1'i
+  (sıfırlı kolonda sınır sıfırı kırpmaz), özel kod kırpılmaz
+  (`kolon_cozum.duzeltme_ogren/uygula`: {"ust", "alt", "kod"}; eski kayıt
+  {"sinir"} yalnız üst). Eski "uc_kat" ve "uc_kirp_kat" (Kırpma Sınırı)
+  eşikleri kalktı, kayıtlı eski değerleri yok sayılır; formda 19 eşik.
+  İstatistiksel aykırı değer SFA'da (winsor).
+- SFA WINSOR %1–%99 (önceden %5–%95, verinin ~%10'una dokunuyordu):
+  `sfa_karar.KIRPMA` ve kırpılmış C-value (`sfa.KIRPMA`) ve kırpılmış
+  dağılım grafiği aynı sınırla; etiket "Winsor (%1)".
 - AÇIK EŞİK FORMU YENİLEMEDE GÜNCEL: onay bekleyen form eski kayıttan
   (eski adlar, sayılar yok) gösterilmez; `acik_esik_tazele` (backend
   `_surdurme_govdesi`) ve `profil_gecmisini_tazele` formu güncel koddan
