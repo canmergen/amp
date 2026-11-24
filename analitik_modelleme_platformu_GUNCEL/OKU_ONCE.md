@@ -2956,6 +2956,25 @@ tanıtır; sayfalar sol bardan açılır.
   parçalı kalıbın parçalarını tek parçalı kalıpta saymaz (`tekli`).
   Gerçekten belirsiz kolon varsa satır yine çıkar.
 
+**01.4 Test (OOS) payı neye göre, kayıt sayıları ve eğitim havuzunun bölünmesi**
+- YENİ AYAR `val_taban` (rastgele bölmede, Test (OOS) açıkken; satır
+  "Test (OOS) Payı Neye Göre"): "egitim" = Kalan eğitimden (önce
+  Validasyon (OOT) ayrılır, Test (OOS) kalan havuzun yüzdesi: OOT %20, OOS
+  %20 -> Train %64, Test %16, OOT %20); "toplam" = Toplam veriden (Train
+  %60, Test %20, OOT %20). Öneri "egitim"; alanı olmayan eski oturum
+  "toplam" kalır (kayıtlı bölme değişmez). Zamansal bölmede etkisiz (OOS
+  zaten eğitim dönemlerinden ayrılır).
+- Tüm verideki pay tek yerde: `akis_durum.val_payi(a)`; bölme oranları
+  (`setler`, `_bolme_tarifi`), oran özeti, küçük segment hesabı, uyarılar
+  ve yan panel bunu kullanır.
+- KART: başlıkta toplam kayıt; çubuk parçalarında yüzdenin yanında kayıt
+  sayısı (bölme uygulandıysa gerçek, değilse paydan beklenen, "≈");
+  Test (OOS) açıksa çubuğun altında "Eğitim havuzunun bölünmesi" satırı
+  (havuz büyüklüğü, havuz içindeki Train ve Test payı ve toplam veride
+  karşılıkları, hangi tabanın seçili olduğu). Validasyon ve Test
+  büyüklüğü çiplerinin yanında kayıt karşılığı.
+- Satır görünürlüğünde ikinci koşul (`kosul2`) desteklenir.
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

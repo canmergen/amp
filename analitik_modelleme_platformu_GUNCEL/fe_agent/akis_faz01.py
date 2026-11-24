@@ -10034,6 +10034,7 @@ def _oneri_ayarlari(durum, ek):
         "birim": a.get("birim"),
         "val_var": "kullan" if a.get("val_var") else "kullanma",
         "val_oran": round(float(a.get("val_oran") or 0.20), 4),
+        "val_taban": a.get("val_taban") or "toplam",
         "cv": a.get("cv"),
         "kat": int(a.get("kat") or 5),
         "seedler": ", ".join(str(x) for x in (a.get("seedler") or [])),
@@ -10166,7 +10167,8 @@ def _bolme_tarifi(durum, a, b, notlar):
                 "gap": a.get("gap")}
     oranlar = [["test", a["test_oran"]]]
     if a["val_var"]:
-        oranlar.append(["val", a["val_oran"]])
+        from fe_agent.akis_durum import val_payi
+        oranlar.append(["val", val_payi(a)])
     kimlik = m.get("id") if a["birim"] == "kimlik" else None
     if kimlik and kimlik in kol:
         pass        # kartta yaziyor: "Aynı <kimlik>: bir arada tutulur"
@@ -10186,7 +10188,7 @@ def _bolme_uygula_spark(durum):
     yazilir; set sayilari recipe'ten gelir. Tablo webapp'te okunmaz."""
     b = dict(durum.get("bolme") or {})
     a = bolme_ayarlari(durum)
-    for k in ("test_tanim", "tur", "birim", "katmanla", "val_var", "val_oran",
+    for k in ("test_tanim", "tur", "birim", "katmanla", "val_var", "val_oran", "val_taban",
               "test_oran", "cv", "kat", "oot_adet", "oot_tanim", "seed",
               "seed_tur", "tekrar", "gap"):
         b[k] = a[k]

@@ -2783,6 +2783,9 @@ button.sonuc-kart:hover, button.sonuc-kart:focus-visible {
   flex-direction: column; min-height: 48px; line-height: 1.35; gap: 2px;
 }
 .bolme-cubuk-alt { font-weight: var(--fw-normal, 400); opacity: .92; }
+.bolme-havuz { font-size: var(--fs-kucuk); color: var(--metin); margin: 2px 0 6px; line-height: 1.45; }
+.bolme-havuz b { font-weight: var(--fw-kalin); }
+.bolme-toplam { margin-left: 10px; color: var(--metin-soluk); font-size: var(--fs-kucuk); font-weight: var(--fw-normal); }
 .bolme-cubuk-egitim { background: #3B5F9E; }
 .bolme-cubuk-val    { background: #6E8FCF; }
 .bolme-cubuk-gap    { background: var(--kenar-guclu); color: var(--metin); }

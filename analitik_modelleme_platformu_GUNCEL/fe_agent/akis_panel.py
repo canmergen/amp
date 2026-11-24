@@ -1786,6 +1786,12 @@ def bolme_formu(durum):
     if val_oran["kilitli"]:
         val_oran["not"] = ("Test (OOS) seti kapalı; açarsanız bu pay "
                            "kullanılır.")
+    from fe_agent.akis_durum import VAL_TABAN_ADI, VAL_TABAN_ACIKLAMA
+    val_taban = _alan("val_taban", a.get("val_taban") or "toplam",
+                      secenekler=[{"anahtar": k, "etiket": VAL_TABAN_ADI[k],
+                                   "aciklama": VAL_TABAN_ACIKLAMA[k]}
+                                  for k in ("egitim", "toplam")],
+                      kilitli=not a["val_var"] or a["test_tanim"] != "rastgele")
 
     birim_kisit = _kisit("birim", "kimlik")
     birim = _alan("birim", a["birim"],
@@ -1862,6 +1868,7 @@ def bolme_formu(durum):
                          en_az=0, en_cok=GAP_EN_COK,
                          kilitli=a["test_tanim"] != "zamansal"),
             "val_oran": val_oran,
+            "val_taban": val_taban,
             "cv": _alan("cv", a["cv"],
                         secenekler=bolme_secenek_listesi(
                             "cv", ["yok", "kfold", "zaman"],
@@ -1894,6 +1901,9 @@ def bolme_formu(durum):
                         if p.get("hedef_tip") == "binary" and p.get("event_rate") is not None
                         else None),
         "set_hedef_oran": (durum.get("bolme") or {}).get("hedef_oran") or {},
+        # Bolme uygulandiysa setlerin gercek satir sayisi (karttaki cubukta).
+        "set_satir": ((durum.get("bolme") or {}).get("satir")
+                      if isinstance((durum.get("bolme") or {}).get("satir"), dict) else {}),
         # SEGMENT TABLOSU (01.4): segment basina satir ve hedef orani;
         # bolme uygulandiysa set bazinda gercek sayilar.
         "segment": _segment_bilgisi(durum),
@@ -1972,6 +1982,9 @@ def bolme_satirlari(durum, oneri_ayarlari=None):
         if tanim.get("kosul"):
             kayit["kosul"] = {"alan": tanim["kosul"]["alan"],
                               "degerler": list(tanim["kosul"]["degerler"])}
+        if tanim.get("kosul2"):
+            kayit["kosul2"] = {"alan": tanim["kosul2"]["alan"],
+                               "degerler": list(tanim["kosul2"]["degerler"])}
         satirlar.append(kayit)
     return satirlar
 
@@ -2008,6 +2021,12 @@ def bolme_ozet_karti(durum):
                          % (round(100 * (1 - float(a["test_oran"]))),
                             round(100 * float(a["test_oran"]))),
                          BOLME_ADIMI))
+        if a["val_var"]:
+            from fe_agent.akis_durum import val_payi
+            vp = val_payi(a)
+            satirlar.append(("Test (OOS)", "%%%d (%s %%%d)" % (
+                round(100 * vp), "kalan eğitimin" if a.get("val_taban") == "egitim" else "toplam verinin",
+                round(100 * float(a["val_oran"]))), BOLME_ADIMI))
     satirlar.append(("Kalan Verinin Kullanımı",
                      bolme_etiket("train_kullanimi", a["train_kullanimi"]),
                      BOLME_ADIMI))

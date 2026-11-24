@@ -684,6 +684,8 @@ def _bolme(durum):
         ("Validasyon (OOT) oranı", ("%%%d" % round(100 * float(a["test_oran"])))
                        if not zamansal else None),
         ("Test (OOS) oranı", ("%%%d" % round(100 * float(a["val_oran"])))
+                             + ("" if zamansal else (" (kalan eğitimden)" if a.get("val_taban") == "egitim"
+                                                     else " (toplam veriden)"))
                              if a["val_var"] else None),
         ("Toplam satır", _n(b.get("toplam_satir")) if b.get("toplam_satir")
                          else None),

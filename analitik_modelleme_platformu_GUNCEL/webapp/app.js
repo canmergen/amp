@@ -4171,6 +4171,9 @@ function bfAlanlar(f) {
         birim: d("birim", "satir"),
         val_var: valVar ? "kullan" : "kullanma",
         val_oran: oran("val_oran", 0.20),
+        /* Test (OOS) payı neye göre: "egitim" (Validasyon dışında kalan
+           havuzdan) ya da "toplam" (bütün veriden). Eski gövdede yok. */
+        val_taban: d("val_taban", "toplam") === "egitim" ? "egitim" : "toplam",
         cv: cv,
         kat: d("kat", 5),
         katmanla: d("katmanla", "koru"),
@@ -4198,6 +4201,7 @@ function bfGovdeDen(a) {
         segment_katmanla: bfKatmanla(a.segment_katmanla),
         val_var: bfValVar(a.val_var),
         val_oran: String(bfSayi(a.val_oran, 0.20)),
+        val_taban: a.val_taban === "egitim" ? "egitim" : "toplam",
         cv: a.cv, kat: String(bfTam(a.kat, 5)),
         seed: bfTam(a.seed, 42),
         seed_tur: a.seed_tur, tekrar: String(bfTam(a.tekrar, 1)),
@@ -4236,8 +4240,24 @@ function bfZamansalMi() { return BF.alan.test_tanim === "zamansal"; }
 function bfPaylar() {
     const a = BF.alan;
     const test = bfZamansalMi() ? 0 : bfSayi(a.test_oran, 0.20);
-    const val = bfValVar(a.val_var) ? bfSayi(a.val_oran, 0.20) : 0;
+    let val = bfValVar(a.val_var) ? bfSayi(a.val_oran, 0.20) : 0;
+    /* Rastgele bölmede "kalan eğitimden": OOS payı OOT dışındaki havuza
+       göre; tüm verideki payı havuz payıyla çarpılır (arka uç val_payi).
+       Zamansal bölmede val zaten "eğitimin yüzdesi" olarak okunur. */
+    if (!bfZamansalMi() && a.val_taban === "egitim") val = val * Math.max(1 - test, 0);
     return { train: Math.max(1 - test - val, 0), val: val, test: test };
+}
+
+/* Toplam kayıt sayısı (bölme öncesi); bilinmiyorsa 0. */
+function bfToplamSatir() {
+    const al = (BF.veri && BF.veri.alanlar) || {};
+    return Number((al.val_oran || {}).toplam_satir || (al.test_oran || {}).toplam_satir) || 0;
+}
+
+/* Bir payın kayıt karşılığı ("1.600"); toplam bilinmiyorsa "". */
+function bfAdet(pay) {
+    const n = bfToplamSatir();
+    return n && pay > 0 ? ftBinlik(Math.round(n * pay)) : "";
 }
 
 /* Kaydetmeden gorunen ozet: SATIR SAYISI DEGIL, oranlar. Arka ucun
@@ -4466,6 +4486,7 @@ function bfTaslakPasif(ad) {
     if (ad === "oot_adet") return a.test_tanim !== "zamansal";
     if (ad === "test_oran") return a.test_tanim !== "rastgele";
     if (ad === "val_oran") return !bfValVar(a.val_var);
+    if (ad === "val_taban") return !bfValVar(a.val_var) || a.test_tanim !== "rastgele";
     if (ad === "kat") return a.cv === "yok";
     if (ad === "tekrar" || ad === "seedler") return a.seed_tur !== "coklu";
     if (ad === "gap") return a.test_tanim !== "zamansal";
@@ -15830,13 +15851,44 @@ function bolmeOzetCubukCiz(kok, alan) {
         const p = bfPaylar();
         const cubuk = elYap("div", "bolme-cubuk");
         const yz = v => Math.round(100 * v);
+        /* Yüzdenin yanında kayıt sayısı (toplam biliniyorsa): bölme
+           uygulandıysa setlerin gerçek sayısı, değilse paydan beklenen. */
+        const gercekSayi = !bfDegisti() ? ((BF.veri || {}).set_satir || {}) : {};
+        const adetYaz = (ad, pay) => {
+            const g = gercekSayi[ad];
+            if (g !== undefined && g !== null) return " · " + ftBinlik(Number(g));
+            const n = bfAdet(pay);
+            return n ? " · ≈" + n : "";
+        };
         /* TAM AD, KISALTMA YOK. Parça yüzdeyle
            orantılı büyür ama yazısından dar olamaz (bolmeCubukParca). */
-        if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), "Train (MS) %" + yz(p.train), hedefYaz("egitim")));
-        if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), "Test (OOS) %" + yz(p.val), hedefYaz("val")));
-        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), TEST_OOS2 + " %" + yz(p.test), hedefYaz("test")));
+        if (p.train > 0) cubuk.appendChild(bolmeCubukParca("egitim", yz(p.train), "Train (MS) %" + yz(p.train) + adetYaz("egitim", p.train), hedefYaz("egitim")));
+        if (p.val > 0) cubuk.appendChild(bolmeCubukParca("val", yz(p.val), "Test (OOS) %" + yz(p.val) + adetYaz("val", p.val), hedefYaz("val")));
+        if (p.test > 0) cubuk.appendChild(bolmeCubukParca("test", yz(p.test), TEST_OOS2 + " %" + yz(p.test) + adetYaz("test", p.test), hedefYaz("test")));
         kutu.appendChild(cubuk);
+        /* EĞİTİM HAVUZUNUN BÖLÜNMESİ: Test (OOS) açıksa, Validasyon (OOT)
+           dışında kalan havuzun Train ve Test'e nasıl bölündüğü; iki
+           hesap (havuza göre ve toplama göre) birlikte yazar. */
+        if (p.val > 0) {
+            const havuz = Math.max(1 - p.test, 0);
+            const yzk = v => "%" + (Math.round(1000 * v) / 10).toLocaleString("tr-TR");
+            const trH = havuz ? p.train / havuz : 0, vaH = havuz ? p.val / havuz : 0;
+            const sat = elYap("div", "bolme-havuz");
+            sat.appendChild(elYap("b", "", "Eğitim havuzunun bölünmesi: "));
+            const n = bfAdet(havuz);
+            sat.appendChild(document.createTextNode(
+                "Validasyon (OOT) dışında kalan %" + yz(havuz) + (n ? " (≈" + n + " kayıt)" : "")
+                + " → havuz içinde Train (MS) " + yzk(trH) + ", Test (OOS) " + yzk(vaH)
+                + " (toplam veride %" + yz(p.train) + " ve %" + yz(p.val) + "). "
+                + (a.val_taban === "egitim"
+                    ? "Test (OOS) payı kalan eğitime göre seçili."
+                    : "Test (OOS) payı toplam veriye göre seçili.")));
+            kutu.appendChild(sat);
+        }
     }
+    /* Toplam kayıt (bölme öncesi). */
+    if (bfToplamSatir() && a.test_tanim !== "hazir")
+        bas.insertBefore(elYap("span", "bolme-toplam", "Toplam " + ftBinlik(bfToplamSatir()) + " kayıt"), bas.children[1] || null);
 
     /* Tek satır özet: çubukta yer almayan ayarlar. */
     const parcalar = [];
@@ -15997,11 +16049,10 @@ function bolmeAyarlariCiz(alan, pasif) {
 /* Satır görünür mü?
    Koşul taslaktan hesaplanıyor. */
 function bolmeSatirGorunur(sat) {
-    const k = sat.kosul;
-    if (!k || !k.alan) return true;
     const kaynak = BF.alan || {};
-    return (k.degerler || []).some(
-        v => bfKiyasDeger(k.alan, v) === bfKiyasDeger(k.alan, kaynak[k.alan]));
+    /* kosul ve (varsa) kosul2 birlikte sağlanmalı. */
+    return [sat.kosul, sat.kosul2].every(k => !k || !k.alan || (k.degerler || []).some(
+        v => bfKiyasDeger(k.alan, v) === bfKiyasDeger(k.alan, kaynak[k.alan])));
 }
 
 /* Bir satır: etiket | çipler (+ "önerilene dön") | i */
@@ -16192,7 +16243,7 @@ function bfCipKabi(kutu, notMetni) {
 
    Gerçekten dışarıdan gelen kısıtlar (dönem kolonu yok gibi) bu yoldan
    gelmez; arka uç o durumda seçenek listesini BOŞ gönderir. */
-const BF_TASLAK_ALANLARI = ["oot_adet", "test_oran", "val_oran",
+const BF_TASLAK_ALANLARI = ["oot_adet", "test_oran", "val_oran", "val_taban",
                             "kat", "tekrar", "gap", "seedler"];
 
 function bfCipAlani(ad, al, pasif) {
@@ -16281,6 +16332,15 @@ function bfMetinAlani(ad, k, kapali, ipucu) {
 /* YÜZDE: hazır çipler (%10 %20 %30) + "Özel" -> 1-99 arası serbest kutu.
    Satır karşılığı ("≈ 2.000 satır") ÖN YÜZDE hesaplanıyor ve yazarken
    anında güncelleniyor. */
+/* Alanın seçilen yüzdesinin TÜM VERİDEKİ payı (Test (OOS) kalan
+   eğitimden ise havuz payıyla çarpılır). */
+function bfAlanPayi(ad, oran) {
+    const a = BF.alan || {};
+    if (ad === "val_oran" && !bfZamansalMi() && a.val_taban === "egitim")
+        return oran * Math.max(1 - bfSayi(a.test_oran, 0.20), 0);
+    return oran;
+}
+
 function bfCipYuzde(ad, k, kapali, not) {
     const enAz = (k.en_az === undefined || k.en_az === null) ? 1 : Number(k.en_az);
     const enCok = (k.en_cok === undefined || k.en_cok === null) ? 99 : Number(k.en_cok);
@@ -16305,6 +16365,11 @@ function bfCipYuzde(ad, k, kapali, not) {
 
     const kap = elYap("div", "bolme-satir-deger");
     kap.appendChild(kutu);
+    /* Seçili payın kayıt karşılığı her zaman yazar (yalnız Özel'de değil). */
+    if (!acik && !kapali && (ad === "test_oran" || ad === "val_oran")) {
+        const adet = bfAdet(bfAlanPayi(ad, simdi / 100));
+        if (adet) kutu.appendChild(elYap("span", "bf-yuzde-satir", "≈ " + adet + " kayıt"));
+    }
 
     if (acik) {
         const sat = elYap("div", "bolme-ozel-kutu");
@@ -16324,7 +16389,7 @@ function bfCipYuzde(ad, k, kapali, not) {
         function satirYaz(v) {
             const toplam = Number(k.toplam_satir) || 0;
             if (!toplam || !(v > 0)) { ipucu.textContent = ""; return; }
-            ipucu.textContent = "≈ " + ftBinlik(Math.round(toplam * v / 100))
+            ipucu.textContent = "≈ " + ftBinlik(Math.round(toplam * bfAlanPayi(ad, v / 100)))
                 + " satır";
         }
         satirYaz(simdi);

@@ -1235,6 +1235,13 @@ def bolme_ayarlari(durum):
     a["val_var"] = bool(b.get("val_var", False))
     a["val_oran"] = _oran_kirp(b.get("val_oran"), 0.20)
     a["test_oran"] = _oran_kirp(b.get("test_oran"), 0.20)
+    # TEST (OOS) PAYI NEYE GORE (yalniz rastgele bolmede): "toplam" pay
+    # butun veriye gore (OOT %20, OOS %20 -> Train %60); "egitim" pay
+    # Validasyon (OOT) disinda kalan egitim havuzuna gore (OOT %20, OOS
+    # havuzun %20'si -> Train %64, OOS %16). Eski oturumda alan yok:
+    # onceki davranis ("toplam") korunur. Zamansal bolmede OOS zaten
+    # egitim donemlerinin icinden ayrilir.
+    a["val_taban"] = b.get("val_taban") if b.get("val_taban") in VAL_TABANLARI else "toplam"
 
     a["cv"] = b.get("cv") if b.get("cv") in ("yok", "kfold", "zaman") \
         else "kfold"
@@ -1413,6 +1420,24 @@ BOLME_ALAN_ACIKLAMA = {
 TRAIN_KULLANIMI_BASLIK.update(
     {k: v[0] for k, v in BOLME_SECENEK["train_kullanimi"].items()
      if k in TRAIN_KULLANIMI})
+
+
+VAL_TABANLARI = ("egitim", "toplam")
+VAL_TABAN_ADI = {"egitim": "Kalan eğitimden", "toplam": "Toplam veriden"}
+VAL_TABAN_ACIKLAMA = {
+    "egitim": "Önce Validasyon (OOT) ayrılır; Test (OOS) kalan eğitim havuzunun bu yüzdesi kadardır.",
+    "toplam": "Test (OOS) bütün verinin bu yüzdesi kadardır."}
+
+
+def val_payi(a):
+    """Test (OOS) setinin TUM VERIDEKI payi (rastgele bolme). "egitim"
+    tabaninda pay Validasyon (OOT) disinda kalan havuza gore verilir."""
+    if not a.get("val_var"):
+        return 0.0
+    v = float(a.get("val_oran") or 0.0)
+    if a.get("test_tanim") == "rastgele" and a.get("val_taban") == "egitim":
+        return v * max(1.0 - float(a.get("test_oran") or 0.0), 0.0)
+    return v
 
 
 def bolme_etiket(alan, deger):
@@ -2074,7 +2099,7 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
     # (kimlik/donem kolonu, hedef tipi); baglam sonradan degisirse ayni
     # bolme baska satirlari ayirirdi. Kalici bolmenin ayarlari da kalici.
     for k in ("test_tanim", "tur", "birim", "katmanla", "segment_katmanla",
-              "val_var", "val_oran",
+              "val_var", "val_oran", "val_taban",
               "test_oran", "cv", "kat", "oot_adet", "oot_tanim", "seed",
               "seed_tur", "tekrar", "gap"):
         b[k] = a[k]
@@ -2126,7 +2151,7 @@ def bolme_hazirla(durum, df, yazici=None, yedek_dosya=None):
 
     oranlar = [("test", a["test_oran"])]
     if a["val_var"]:
-        oranlar.append(("val", a["val_oran"]))
+        oranlar.append(("val", val_payi(a)))
 
     donem = m.get("donem")
     # setler() ile AYNI kosul: `oot_deger` aranirsa zamansal secim sessizce
@@ -2466,7 +2491,7 @@ def katlar(durum, df, y=None):
 # oldugu gibi yazilsaydi istemci "kalici" ya da "test_kimlikleri" gonderip
 # hic hesaplanmamis bir bolmeyi hesaplanmis gibi gosterebilirdi.
 BOLME_FORM_ALANLARI = ("test_tanim", "katmanla", "segment_katmanla", "val_var",
-                       "val_oran", "test_oran", "cv", "kat", "oot_adet",
+                       "val_oran", "val_taban", "test_oran", "cv", "kat", "oot_adet",
                        "oot_tanim", "seed", "seed_tur", "tekrar", "gap",
                        "oot_deger", "train_kullanimi", "seedler")
 
@@ -2545,6 +2570,8 @@ def bolme_kaydet(durum, gelen):
     # gonderir; bool degerler de kabul edilir.
     if isinstance(gelen.get("val_var"), str):
         gelen["val_var"] = gelen["val_var"] == "kullan"
+    if "val_taban" in gelen and gelen["val_taban"] not in VAL_TABANLARI:
+        gelen.pop("val_taban")
     if isinstance(gelen.get("katmanla"), str):
         gelen["katmanla"] = gelen["katmanla"] == "koru"
     if isinstance(gelen.get("segment_katmanla"), str):
@@ -2577,7 +2604,7 @@ def bolme_kaydet(durum, gelen):
     # Cozulen degerler yaziliyor: kullanici "kimlik" sectiyse ama kimlik
     # kolonu yoksa formda da uygulamada da "satir" gorunmeli.
     for k in ("test_tanim", "tur", "birim", "katmanla", "segment_katmanla",
-              "val_var", "val_oran",
+              "val_var", "val_oran", "val_taban",
               "test_oran", "cv", "kat", "oot_adet", "oot_tanim", "seed",
               "seed_tur", "tekrar", "gap"):
         b[k] = a[k]
@@ -2762,6 +2789,10 @@ BOLME_SATIRLARI = (
     {"anahtar": "val_oran", "etiket": "Test (OOS) Büyüklüğü",
      "bolum": "dogrulama", "alanlar": ("val_oran",),
      "kosul": {"alan": "val_var", "degerler": (True,)}},
+    {"anahtar": "val_taban", "etiket": "Test (OOS) Payı Neye Göre",
+     "bolum": "dogrulama", "alanlar": ("val_taban",),
+     "kosul": {"alan": "val_var", "degerler": (True,)},
+     "kosul2": {"alan": "test_tanim", "degerler": ("rastgele",)}},
     {"anahtar": "cv", "etiket": "Çapraz Doğrulama",
      "bolum": "dogrulama", "alanlar": ("cv",)},
     {"anahtar": "kat", "etiket": "Kat Sayısı",
@@ -2835,10 +2866,21 @@ BOLME_SATIR_BILGI = {
         "önerilir; küçükse veri harcamamak için çapraz doğrulama tercih "
         "edilir."),
     "val_oran": (
-        "Verinin yüzde kaçı Test (OOS) olsun. Rastgele bölmede pay toplam "
-        "veriye göredir: Validasyon (OOT) %20, Test (OOS) %20 seçilirse "
-        "Train (MS) setine verinin %60'ı kalır. Zamansal bölmede Test (OOS), "
+        "Test (OOS) setinin büyüklüğü. Payın neye göre olduğu bir alttaki "
+        "satırda seçilir: Validasyon (OOT) %20 ve Test (OOS) %20 iken "
+        "«Kalan eğitimden» seçilirse kalan %80'in %20'si Test (OOS) olur "
+        "(Train %64, Test %16); «Toplam veriden» seçilirse verinin %20'si "
+        "Test (OOS) olur (Train %60, Test %20). Zamansal bölmede Test (OOS), "
         "eğitim dönemlerinin içinden ayrılır."),
+    "val_taban": (
+        "Test (OOS) büyüklüğünün neye göre hesaplanacağı.\n\n"
+        "Kalan eğitimden: önce Validasyon (OOT) ayrılır, Test (OOS) kalan "
+        "eğitim havuzunun yüzdesi kadardır. Örnek: 10.000 kayıt, Validasyon "
+        "%20 (2.000), Test havuzun %20'si: Test 1.600, Train 6.400.\n\n"
+        "Toplam veriden: Test (OOS) bütün verinin yüzdesi kadardır. Aynı "
+        "örnekte Test 2.000, Train 6.000.\n\n"
+        "Kartın üstündeki çubuğun altında eğitim havuzunun nasıl bölündüğü "
+        "iki türlü de yazar."),
     "cv": (
         "Çapraz doğrulama (cross-validation, CV): eğitim verisini birkaç "
         "parçaya böler, her turda bir parçayı dışarıda bırakıp kalanla "
@@ -3025,6 +3067,11 @@ def bolme_satir_degeri(anahtar, a, durum=None):
             return "-"
         return "%%%d" % round(100 * float(a.get("val_oran") or 0))
 
+    if anahtar == "val_taban":
+        if not a.get("val_var") or a.get("test_tanim") != "rastgele":
+            return "-"
+        return VAL_TABAN_ADI.get(a.get("val_taban"), "")
+
     if anahtar == "cv":
         return bolme_etiket("cv", a.get("cv"))
 
@@ -3143,6 +3190,7 @@ def bolme_onerisi(durum):
         "birim": "kimlik" if kimlik else "satir",
         "katmanla": katmanla,
         "val_oran": 0.20,
+        "val_taban": "egitim",
         "kat": 5,
         "oot_tanim": {"tur": "son_donem", "deger": None, "adet": 1},
         "seed": 42,
@@ -3268,6 +3316,7 @@ def _bolme_oran_ozeti(durum):
         return " · ".join(parcalar) + "   (satır sayıları bölme uygulanınca)"
 
     test = float(a.get("test_oran") or 0.0)
+    val = val_payi(a)
     egitim = max(1.0 - test - val, 0.0)
 
     def parca(ad, oran):
@@ -3386,7 +3435,7 @@ def kucuk_segmentler(durum, a=None):
     if a["test_tanim"] != "rastgele":
         return []
     test_o = float(a.get("test_oran") or 0.0)
-    val_o = float(a.get("val_oran") or 0.0) if a.get("val_var") else 0.0
+    val_o = val_payi(a)
     paylar = [p for p in (1.0 - test_o - val_o, test_o, val_o) if p > 0]
     for seg, n, poz in (segment_ozeti(durum) or []):
         for p in paylar:
@@ -3423,7 +3472,8 @@ def bolme_uyarilari(durum):
     # Zamansal testte test_oran KULLANILMIYOR (test donem bazli ayriliyor).
     test_o = (0.0 if a["test_tanim"] == "zamansal"
               else float(a.get("test_oran") or 0.0))
-    val_o = float(a.get("val_oran") or 0.0) if a.get("val_var") else 0.0
+    val_o = (float(a.get("val_oran") or 0.0) if a.get("val_var") else 0.0) \
+        if a["test_tanim"] == "zamansal" else val_payi(a)
     if test_o + val_o >= 1.0:
         uyarilar.append(
             "%s (%%%d) ve Test (OOS) (%%%d) paylarının toplamı tüm "
