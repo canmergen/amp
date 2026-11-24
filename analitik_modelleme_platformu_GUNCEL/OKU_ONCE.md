@@ -3375,5 +3375,7 @@ Dört kural artık "bilgi için gösterilir" değil; Kararlar sekmesinde seçim 
 
 ## 02.1 eşik formunda numaralar
 
-- Tesadüf Olasılığı formda **1** numaradır (genel ayar). Kendi başına kolon yakalamaz; üç kuralın (Dönemde boş ya da sabit, Eksik sıçraması, Baskın değerin Tut / Çıkar önerisi) kolonu yakalayıp yakalamayacağını belirler.
-- Kontroller **2–15** arasıdır (14 kontrol, 24 kural). Numaralar yalnız eşik formunda yazar (`esik_formu` → `genel_no`, `esik_form_kontrolleri(ilk_no=2)`).
+- Tesadüf Olasılığı da kontrol sayılır ve formda **1** numaradır. Kendi başına kolon yakalamaz; üç kuralın (Dönemde boş ya da sabit, Eksik sıçraması, Baskın değerin Tut / Çıkar önerisi) kolonu yakalayıp yakalamayacağını belirler.
+- Toplam **15 kontrol, 25 kural, 15 ayarlanabilir sınır** (`gorunur_kontrol_sayisi`, `toplam_kural_sayisi`). Öteki kontroller 2–15 arasıdır.
+- Veri Profili kartında da ilk satırdır: geçerli sınırı gösterir (`_genel_kontrol_satirlari`, satırda `ayar`).
+- Numaralar yalnız eşik formunda yazar (`esik_formu` → `genel_no`, `esik_form_kontrolleri(ilk_no=2)`).
