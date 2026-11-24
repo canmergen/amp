@@ -17487,6 +17487,15 @@ function pfCozumHucresi(ad, cz, secim, kararModu, kart, cizenler, ciz, aciklamas
     return td;
 }
 
+/* Birleşik kontroller (sunucu: akis_faz02.KONTROL_GRUPLARI) kartta tek
+   satırdır; kararlar, düzeltmeler ve çözümler üye kontrol bazındadır.
+   Karar verilerini kuran her yer üye listesini kullanır. */
+function pfUyeKontroller(alan) {
+    const liste = [];
+    (alan.kontroller || []).forEach(k => (k.uye_kontroller || [k]).forEach(u => liste.push(u)));
+    return liste;
+}
+
 function profilKartiEkle(alan, blok) {
     const kart = elYap("div", "secim-kart pf-kart");
     const kararModu = !!alan.karar_bekliyor && !(blok && blok.kilit);
@@ -17495,21 +17504,21 @@ function profilKartiEkle(alan, blok) {
        kontrolünde birden geçebilir; iki satır aynı kararı gösterir. */
     const kararlar = {};
     const kararCizenler = [];
-    (alan.kontroller || []).filter(k => k.sonuc === "karar")
+    pfUyeKontroller(alan).filter(k => k.sonuc === "karar")
         .forEach(k => (k.kolonlar || []).forEach(c => { kararlar[c.ad] = c.karar || "tut"; }));
     const kararCiz = () => kararCizenler.forEach(f => f());
     /* Aynı içerikli gruplar: grup id -> kalacak kolon (dil modeli önerisi
        ya da önceki seçim). */
     const ayniSecim = {};
     const ayniOneri = {};
-    (alan.kontroller || []).forEach(k => (k.gruplar || []).forEach(g => {
+    pfUyeKontroller(alan).forEach(k => (k.gruplar || []).forEach(g => {
         ayniSecim[g.id] = g.secim || g.oneri;
         ayniOneri[g.id] = g.oneri;
     }));
     /* Çözümler: kolon -> çözüm kodu (önceki seçim ya da öneri). */
     const cozumSecim = {};
     const cozumOneri = {};
-    (alan.kontroller || []).forEach(k => (k.kolonlar || []).forEach(c => {
+    pfUyeKontroller(alan).forEach(k => (k.kolonlar || []).forEach(c => {
         if (!c.cozum || (c.cozum.secenekler || []).length < 2) return;
         cozumSecim[c.ad] = c.cozum.secim || c.cozum.oneri;
         cozumOneri[c.ad] = c.cozum.oneri;
@@ -17517,7 +17526,7 @@ function profilKartiEkle(alan, blok) {
     /* Düzeltmeler (gizli eksik, negatif, uç değer): kontrol -> kolon ->
        düzeltme kodu (önceki seçim ya da öneri). */
     const duzSecim = {};
-    (alan.kontroller || []).forEach(k => (k.kolonlar || []).forEach(c => {
+    pfUyeKontroller(alan).forEach(k => (k.kolonlar || []).forEach(c => {
         if (!c.duzeltme) return;
         (duzSecim[k.anahtar] = duzSecim[k.anahtar] || {})[c.ad] = c.duzeltme.secim || c.duzeltme.oneri;
     }));
@@ -17577,7 +17586,7 @@ function profilKartiEkle(alan, blok) {
     const duzKontrol = [];
     const cozumSatir = [];
     const grupKontrol = [];
-    (alan.kontroller || []).forEach(k => {
+    pfUyeKontroller(alan).forEach(k => {
         if (k.sonuc === "karar") (k.kolonlar || []).forEach(c => {
             let x = tcKolon.get(c.ad);
             if (!x) {
@@ -17798,8 +17807,9 @@ function profilKartiEkle(alan, blok) {
         const td = elYap("td");
         td.colSpan = 5;
         /* Bu kontrolde karar verilen bir şey varsa Kararlar sekmesine geçiş. */
-        const kararli = k.sonuc === "karar" || (k.gruplar || []).length > 0
-            || (k.kolonlar || []).some(c => c.duzeltme || (c.cozum && (c.cozum.secenekler || []).length > 1));
+        const kararli = (k.uye_kontroller || [k]).some(u => (u.sonuc === "karar" && (u.kolonlar || []).length)
+            || (u.gruplar || []).length > 0
+            || (u.kolonlar || []).some(c => c.duzeltme || (c.cozum && (c.cozum.secenekler || []).length > 1)));
         if (kararli && kararPano) {
             const git = elYap("div", "pf-toplu pf-karara-git");
             git.appendChild(elYap("span", "pf-toplu-not", kararModu
@@ -17830,7 +17840,7 @@ function profilKartiEkle(alan, blok) {
                 if (birim !== "satır") r.appendChild(elYap("td", "pf-kolon-acik", c.aciklama || BOS_SIMGE));
                 const bTd = elYap("td", "pf-bulgu", c.bulgu || "");
                 /* Çözümü olmayan ya da başka satırda çözülen kolon: bilgi. */
-                if (c.cozum && (c.cozum.secenekler || []).length < 2)
+                if ((c.cozum && (c.cozum.secenekler || []).length < 2) || c.cozum_yok)
                     bTd.appendChild(elYap("div", "pf-cozum-gerekce", "Uygun çözüm bulunmadı; kolon üretime girmez."));
                 else if (c.cozum_baska)
                     bTd.appendChild(elYap("div", "pf-cozum-gerekce", "Çözümü " + c.cozum_baska + " kontrolünde seçilir."));

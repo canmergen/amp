@@ -2975,6 +2975,27 @@ tanıtır; sayfalar sol bardan açılır.
   büyüklüğü çiplerinin yanında kayıt karşılığı.
 - Satır görünürlüğünde ikinci koşul (`kosul2`) desteklenir.
 
+**02.1 birleşik kontroller (26 kontrol kartta 15 satır)**
+- Aynı soruyu farklı eşikle ya da biçimde soran kontroller kartta tek
+  satırdır (`akis_faz02.KONTROL_GRUPLARI`, `kontrolleri_grupla`):
+  Sabit ya da Neredeyse Sabit (sabit, baskin, sifir); Aynı ya da Neredeyse
+  Aynı Kolonlar (ayni_icerik, yakin_icerik); Çok Fazla Farklı Değer
+  (kimlik_gibi, yuksek_kardinalite); Sızıntı Riski (gelecek_pencere,
+  birebir, tarih_sonra); Dönemler Arası Tutarsızlık (donem, sicrama,
+  kayma); Gizli Eksik (gizli_eksik, karisik_eksik, metin_bos); İlişkili
+  Kolonlar Arası Tutarsızlık (pencere, tutar_adet). Kalan 8 kontrol aynen.
+- Algılama kuralları, eşikler, kararlar, düzeltmeler ve çözümler üye
+  kontrol bazında AYNEN kalır (`PROFIL_KONTROLLERI` 26 üye). Grup satırı
+  üyeleri `uye_kontroller`'de taşır; ön yüz kararlar sekmesini bunlardan
+  kurar (`pfUyeKontroller`), Analiz tablosu grup satırını çizer.
+- Grup satırı: kural ve açıklama alt bulgu adıyla birleşik (uygulanmayan
+  alt bulgu sebebiyle yazar); sonuç bulunan alt bulguların en ağırı
+  (üretime girmez > karar > düzeltme > bilgi); kolon başına tek satır,
+  bulgu alt bulgu adıyla ("Baskın değer: ..."); iki alt bulguya takılan
+  kolonun bulguları aynı satırda. Kararlar sekmesinde üye adı birleşik
+  adla görünür ("Gizli Eksik (özel kod)").
+- Profil metnindeki kontrol sayısı `gorunur_kontrol_sayisi()` (15).
+
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
   `/veri_sozluk_esleme?kaynak=updt|baz` istenir; yalnız okur).

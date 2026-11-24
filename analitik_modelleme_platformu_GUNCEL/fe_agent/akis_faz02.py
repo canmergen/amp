@@ -2947,6 +2947,143 @@ PROFIL_KONTROLLERI = (
     ("tekrar", "Tekrar Eden Satır", SONUC_BILGI, ""),
     ("set_cakisma", "Setler Arası Çakışma", SONUC_BILGI, ""),
 )
+# KARTTA BIRLESIK KONTROLLER: ayni soruyu farkli esikle ya da farkli
+# bicimde soran kontroller kartta tek satirdir. Algilama kurallari,
+# esikler, kararlar ve duzeltmeler uye kontrol bazinda AYNEN kalir; kart
+# grup satirinin altinda uyeleri (uye_kontroller) tasir. Kolon satirinda
+# hangi alt bulgudan geldigi yazar; bir kolon iki alt bulguya takilirsa
+# tek satirdir. (anahtar, ad, kisa aciklama, uyeler)
+KONTROL_GRUPLARI = (
+    ("g_sabit", "Sabit ya da Neredeyse Sabit",
+     "Kolonun tamamında ya da neredeyse tamamında aynı değer var.",
+     ("sabit", "baskin", "sifir")),
+    ("g_ayni", "Aynı ya da Neredeyse Aynı Kolonlar",
+     "Kolon başka bir kolonla birebir ya da neredeyse aynı bilgiyi taşıyor.",
+     ("ayni_icerik", "yakin_icerik")),
+    ("g_kardinalite", "Çok Fazla Farklı Değer",
+     "Kolonda çok fazla farklı değer var; olduğu gibi modele giremez.",
+     ("kimlik_gibi", "yuksek_kardinalite")),
+    ("g_sizinti", "Sızıntı Riski",
+     "Kolon hedeften ya da gözlem tarihinden sonraki bilgiyi taşıyor olabilir.",
+     ("gelecek_pencere", "birebir", "tarih_sonra")),
+    ("g_donem", "Dönemler Arası Tutarsızlık",
+     "Kolon dönemden döneme bozuluyor: bir dönemde boş ya da sabit, eksik oranı ya da değerleri birden değişiyor.",
+     ("donem", "sicrama", "kayma")),
+    ("g_gizli", "Gizli Eksik",
+     "Boş değerler boş hücre yerine özel bir kodla ya da metinle yazılmış.",
+     ("gizli_eksik", "karisik_eksik", "metin_bos")),
+    ("g_iliskili", "İlişkili Kolonlar Arası Tutarsızlık",
+     "Birbirine bağlı iki kolon birbiriyle çelişiyor.",
+     ("pencere", "tutar_adet")),
+)
+KONTROL_ALT_AD = {
+    "sabit": "tek değer", "baskin": "baskın değer", "sifir": "çoğu sıfır",
+    "ayni_icerik": "birebir aynı", "yakin_icerik": "neredeyse aynı",
+    "kimlik_gibi": "kimlik benzeri", "yuksek_kardinalite": "metinde çok değer",
+    "gelecek_pencere": "gelecek penceresi", "birebir": "hedefle birebir",
+    "tarih_sonra": "dönemden sonraki tarih",
+    "donem": "dönemde boş ya da sabit", "sicrama": "eksik sıçraması", "kayma": "değer kayması",
+    "gizli_eksik": "özel kod", "karisik_eksik": "özel kod ve boş hücre", "metin_bos": "metin olarak boş",
+    "pencere": "pencere tutarlılığı", "tutar_adet": "tutar ve adet",
+}
+_SONUC_SIRA = {SONUC_GIRMEZ: 0, SONUC_KARAR: 1, SONUC_DUZELT: 2, SONUC_BILGI: 3}
+
+
+def gorunur_kontrol_sayisi():
+    """Kartta gorunen kontrol sayisi (birlesik kontroller tek sayilir)."""
+    uye = {a for g in KONTROL_GRUPLARI for a in g[3]}
+    return len([x for x in PROFIL_KONTROLLERI if x[0] not in uye]) + len(KONTROL_GRUPLARI)
+
+
+def _grup_satiri(g, uyeler):
+    """Birlesik kontrolun kart satiri: uyelerin kurallari, bulunan kolonlar
+    (kolon basina tek satir, alt bulgu adiyla) ve uyelerin kendisi
+    (kararlar sekmesi bunlardan kurulur)."""
+    anahtar, ad, kisa, _u = g
+    alt = lambda u: KONTROL_ALT_AD.get(u["anahtar"], u["ad"])
+    uyg = [u for u in uyeler if u.get("uygulandi") is not False]
+    bulunan = [u for u in uyg if u.get("sayi")]
+    sonuc = min((u["sonuc"] for u in (bulunan or uyg or uyeler)), key=lambda x: _SONUC_SIRA.get(x, 9))
+    kural = []
+    for u in uyeler:
+        if u.get("uygulandi") is False:
+            kural.append("**%s:** uygulanmadı (%s)." % (alt(u).capitalize(), u.get("sebep") or ""))
+        else:
+            kural.append("**%s:** %s" % (alt(u).capitalize(), u.get("kural") or ""))
+    parca = {}
+    for alan in ("nedir", "kapsam", "ornek", "esik_ne", "yakalanirsa"):
+        degerler = [(u, (u.get("parca") or {}).get(alan)) for u in uyg]
+        degerler = [(u, v) for u, v in degerler if v]
+        if len(degerler) == 1:
+            parca[alan] = degerler[0][1]
+        elif degerler:
+            parca[alan] = " ".join("%s: %s" % (alt(u).capitalize(), v) for u, v in degerler)
+    gerekce = [(u, u.get("parca") or {}) for u in uyg if (u.get("parca") or {}).get("gerekce")]
+    if gerekce:
+        parca["gerekce"] = " ".join(
+            "%s%s: %s" % (alt(u).capitalize(), (" (önerilen %s)" % p["onerilen"]) if p.get("onerilen") else "",
+                          p["gerekce"]) for u, p in gerekce)
+    # Ne olacak: alt bulgularda ayniysa bir kez, farkliysa alt bulgu adiyla.
+    ne_ham = [(u, u["ne_olacak"]) for u in bulunan if u.get("ne_olacak")]
+    if len({v for _u, v in ne_ham}) <= 1:
+        ne = [ne_ham[0][1]] if ne_ham else []
+    else:
+        ne = ["%s: %s" % (alt(u).capitalize(), v) for u, v in ne_ham]
+    kolonlar, sira = {}, []
+    for u in bulunan:
+        for c in u.get("kolonlar") or []:
+            ham = str(c.get("bulgu") or "")
+            # Bulgu alt bulgunun adiyla basliyorsa ("Tek değer: 7") tekrar yazilmaz.
+            metin = ham if ham.lower().startswith(alt(u).lower()) else "%s: %s" % (alt(u).capitalize(), ham)
+            x = kolonlar.get(c["ad"])
+            if x is None:
+                x = kolonlar[c["ad"]] = {"ad": c["ad"], "aciklama": c.get("aciklama", ""), "bulgu": metin}
+                sira.append(c["ad"])
+            else:
+                x["bulgu"] += "; " + metin
+            if c.get("cozum") and len(c["cozum"].get("secenekler") or []) < 2:
+                x["cozum_yok"] = True
+            if c.get("cozum_baska"):
+                x["cozum_baska"] = c["cozum_baska"]
+    gruplar = [gr for u in bulunan for gr in (u.get("gruplar") or [])]
+    for u in uyeler:
+        # Kararlar sekmesinde uye adi birlesik kontrolun adiyla gorunur.
+        u["ad"] = "%s (%s)" % (ad, alt(u))
+        u["grup"] = anahtar
+    satir = {"anahtar": anahtar, "ad": ad, "kural": " ".join(kural), "sonuc": sonuc,
+             "kisa": kisa, "bilgi": "\n\n".join(u.get("bilgi") or "" for u in uyg if u.get("bilgi")),
+             "parca": parca, "ne_olacak": "; ".join(ne) or ((uyg or uyeler)[0].get("ne_olacak") or ""),
+             "uygulandi": bool(uyg),
+             "sebep": "" if uyg else "; ".join(dict.fromkeys(u.get("sebep") or "" for u in uyeler)),
+             "birim": "kolon", "kolonlar": [kolonlar[a] for a in sira], "sayi": len(sira),
+             "oneri_kaynagi": "dil modeli" if any(u.get("oneri_kaynagi") == "dil modeli" for u in bulunan)
+             else "kod",
+             "alt_kontroller": [{"anahtar": u["anahtar"], "ad": alt(u), "sayi": int(u.get("sayi") or 0),
+                                 "uygulandi": u.get("uygulandi") is not False} for u in uyeler],
+             "uye_kontroller": uyeler}
+    if gruplar:
+        satir["gruplar"] = gruplar
+    return satir
+
+
+def kontrolleri_grupla(kontroller):
+    """Uye kontrol satirlarindan kartin satirlari: birlesik kontrol, ilk
+    uyesinin yerinde tek satir."""
+    harita = {k["anahtar"]: k for k in kontroller}
+    grup_of = {a: g for g in KONTROL_GRUPLARI for a in g[3]}
+    cikti, eklenen = [], set()
+    for k in kontroller:
+        g = grup_of.get(k["anahtar"])
+        if g is None:
+            cikti.append(k)
+            continue
+        if g[0] in eklenen:
+            continue
+        eklenen.add(g[0])
+        cikti.append(_grup_satiri(g, [harita[a] for a in g[3] if a in harita]))
+    return cikti
+
+
 # Karar isteyen kontrollerden varsayilani Çıkar olanlar (sizinti riski).
 KARAR_VARSAYILAN_CIKAR = ("gelecek_pencere", "birebir")
 # Bilgi icin gosterilen ve islem yapilmayan kontroller.
@@ -3123,7 +3260,7 @@ def profil_metni(durum, karar=False):
     kap = (durum.get("profil") or {}).get("profil_kapsam") or {}
     metin = ("Modelleme tablosundaki %s kolon, tablonun tamamı (train, val, test ve OOT "
              "birlikte) üzerinden %s kontrolle incelendi." % (
-                 _sayi(len(oz["incelenen"])), _sayi(len(PROFIL_KONTROLLERI))))
+                 _sayi(len(oz["incelenen"])), _sayi(gorunur_kontrol_sayisi())))
     if kap.get("hedef_train"):
         metin += (" Hedefle ilgili ölçümler ve öğrenilen her şey (çözümler, kırpma sınırı) "
                   "yalnız Train (MS) satırlarından; kararlar ve düzeltmeler onayınızla bütün "
@@ -3380,7 +3517,7 @@ def profil_karti(durum, karar=False):
         "eksik_kolon": p.get("null_kolon_adet"),
         "eksik_maks": p.get("null_maks"),
         "eksik_maks_kolon": p.get("null_maks_kolon"),
-        "kontroller": kontroller,
+        "kontroller": kontrolleri_grupla(kontroller),
         "hedef": ek.get("hedef"),
         "haric": {"hedef": m.get("target") or "", "kimlik": m.get("id") or "",
                   "donem": m.get("donem") or "",
