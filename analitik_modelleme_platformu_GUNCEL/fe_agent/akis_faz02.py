@@ -4069,7 +4069,7 @@ def sfa_uygula(durum):
              "  Tip Değişikliği : %s\n"
              "  Önerilen Aralıklarla : %s\n"
              "  Dönüşüm : log %s · üstel %s · sıra %s\n"
-             "  Winsor (%%5) : %s\n"
+             "  Winsor (%%1) : %s\n"
              "  Eksik İşareti : %s\n"
              "  Karar Kaynağı : yapay zekâ %s · sizin %s · kural %s\n"
              "Kararlar %s adımında uygulanır."
