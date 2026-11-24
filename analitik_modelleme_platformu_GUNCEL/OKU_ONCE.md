@@ -3372,3 +3372,8 @@ Dört kural artık "bilgi için gösterilir" değil; Kararlar sekmesinde seçim 
   - Satır çıkarma yalnız yeni düzende (UPDT veri) çalışır; eski düzendeki çalışmalarda bu iki kural bilgi olarak kalır.
   - Üretim kodu (`uretim_kodu.py`) satır silmez; skorlamada satır sayısı değişmemelidir.
   - 01.4'teki set satır sayıları satır çıkarıldıktan sonra yeniden hesaplanmaz; güncel sayı `satir_bilgi.sonra` alanındadır.
+
+## 02.1 eşik formunda numaralar
+
+- Tesadüf Olasılığı formda **1** numaradır (genel ayar). Kendi başına kolon yakalamaz; üç kuralın (Dönemde boş ya da sabit, Eksik sıçraması, Baskın değerin Tut / Çıkar önerisi) kolonu yakalayıp yakalamayacağını belirler.
+- Kontroller **2–15** arasıdır (14 kontrol, 24 kural). Numaralar yalnız eşik formunda yazar (`esik_formu` → `genel_no`, `esik_form_kontrolleri(ilk_no=2)`).

@@ -20064,10 +20064,12 @@ function profilEsikKartiEkle(alan, blok) {
     if (alan.sayim) {
         const sy = alan.sayim;
         const st = elYap("div", "pf-not pf-ek-sayim");
-        metinYaz(st, "Aşağıda bütün kontroller ve kuralları yer alır: toplam **" + sy.kontrol + " kontrol**, bunların "
-            + "altında **" + sy.kural + " kural**. Numaralı başlıklar kontroldür; altlarındaki satırlar o kontrolün "
-            + "kurallarıdır. **" + sy.esik + " sınır** ayarlanabilir; ayarlanacak sınırı olmayan kuralın "
-            + "satırında «eşik yok» yazar, o kural da çalışır.");
+        const gn = alan.genel_no ? Number(alan.genel_no) : 0;
+        metinYaz(st, (gn ? "**" + gn + "** numara genel ayardır (Tesadüf Olasılığı). **" + (gn + 1) + "–" + (gn + sy.kontrol)
+                + "** arası kontrollerdir: " : "Aşağıda bütün kontroller ve kuralları yer alır: ")
+            + "toplam **" + sy.kontrol + " kontrol**, bunların altında **" + sy.kural + " kural**. Numaralı başlık "
+            + "kontroldür; altındaki satırlar o kontrolün kurallarıdır. **" + sy.esik + " sınır** ayarlanabilir; "
+            + "ayarlanacak sınırı olmayan kuralın satırında «eşik yok» yazar, o kural da çalışır.");
         kart.appendChild(st);
     }
     const hataEl = elYap("div", "pf-esik-hata");
@@ -20175,8 +20177,10 @@ function profilEsikKartiEkle(alan, blok) {
     if ((alan.genel || []).some(a => esikHarita[a])) {
         const bolum = elYap("section", "pf-ek-bolum");
         const kb = elYap("div", "pf-ek-kbas");
-        kb.appendChild(elYap("b", "", "Genel ayar"));
-        kb.appendChild(elYap("span", "", "Sistemin «bu şans eseri olabilir» deme sınırı; üç kural kullanır"));
+        /* Genel ayar da numaralı (1): üç kuralın kolonu yakalayıp yakalamayacağını o belirler. */
+        const gAd = (esikHarita[alan.genel[0]] || {}).kontrol || "Genel ayar";
+        kb.appendChild(elYap("b", "", (alan.genel_no ? alan.genel_no + ". " : "") + gAd));
+        kb.appendChild(elYap("span", "", "Genel ayar: sistemin «bu şans eseri olabilir» deme sınırı; üç kural bununla karar verir"));
         bolum.appendChild(kb);
         const kk = elYap("div", "pf-ek-kontrol");
         kk.appendChild(sutunBas());

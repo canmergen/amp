@@ -2005,7 +2005,11 @@ def esik_formu(durum, hata=None, kilitli=False):
         r["dayanak"] = dayanak.get(r["anahtar"]) or ONERILEN_DAYANAK.get(r["anahtar"], "")
         if r["anahtar"] in ONERI_ESIK_AD:
             r["oneri_ad"] = ONERI_ESIK_AD[r["anahtar"]]
-    kontroller, _esiksiz = esik_form_kontrolleri(durum)
+    # NUMARALAR: genel ayar (Tesadüf Olasılığı) formda 1 numaradir; birden
+    # cok kuralin kolonu yakalayip yakalamayacagini o belirler. Kontroller
+    # 2'den baslar.
+    genel = [x[0] for x in PROFIL_GENEL_ESIKLER]
+    kontroller, _esiksiz = esik_form_kontrolleri(durum, ilk_no=len(genel) + 1)
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
             "kontroller": kontroller,
             # SAYIM: toplam kontrol (kartta gorunen), bunlarin altindaki
@@ -2014,7 +2018,7 @@ def esik_formu(durum, hata=None, kilitli=False):
                       "esik": len(PROFIL_ESIKLERI), "esiksiz_kontrol": len(_esiksiz),
                       "esiksiz_kural": sum(1 for k in kontroller for u in k["kurallar"]
                                            if not u["esik"] and not u["oneri"])},
-            "genel": [x[0] for x in PROFIL_GENEL_ESIKLER],
+            "genel": genel, "genel_no": 1,
             "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
 
 
@@ -2064,7 +2068,7 @@ ONERI_ESIK_AD = {
 }
 
 
-def esik_form_kontrolleri(durum):
+def esik_form_kontrolleri(durum, ilk_no=1):
     """([{"no", "ad", "kisa", "kurallar": [{"anahtar", "ad", "olcut", "sonuc",
     "esik", "oneri": [anahtar]}]}], [{"no", "ad"}] esiksiz kontroller)."""
     kurallar_metin = _profil_kurallari(profil_esikleri(durum))
@@ -2075,7 +2079,7 @@ def esik_form_kontrolleri(durum):
         esik_of.setdefault(k, []).append(a)
     sira = [x[0] for x in PROFIL_ESIKLERI]
     kontroller, esiksiz = [], []
-    for no, (a, ad) in enumerate(kart_kontrol_sirasi(), 1):
+    for no, (a, ad) in enumerate(kart_kontrol_sirasi(), ilk_no):
         kurallar = []
         for u in uyeler.get(a, (a,)):
             esikler = sorted(esik_of.get(u, []), key=sira.index)
