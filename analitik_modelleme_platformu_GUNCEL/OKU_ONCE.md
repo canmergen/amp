@@ -3379,3 +3379,36 @@ Dört kural artık "bilgi için gösterilir" değil; Kararlar sekmesinde seçim 
 - Toplam **15 kontrol, 25 kural, 15 ayarlanabilir sınır** (`gorunur_kontrol_sayisi`, `toplam_kural_sayisi`). Öteki kontroller 2–15 arasıdır.
 - Veri Profili kartında da ilk satırdır: geçerli sınırı gösterir (`_genel_kontrol_satirlari`, satırda `ayar`).
 - Numaralar yalnız eşik formunda yazar (`esik_formu` → `genel_no`, `esik_form_kontrolleri(ilk_no=2)`).
+
+## 02.1 kural adları (gündelik dille)
+
+Kural adları terimsizdir ve formda, Veri Profili kartında, eşik notunda ve hata metninde aynıdır (`KURAL_FORM_AD`; kart adları bundan türetilir: `KONTROL_ALT_AD`; eşik adı: `esik_adi`). Kontrol başlıkları değişmedi.
+
+| Eski ad | Yeni ad |
+|---|---|
+| Boş hücre oranı | Çoğu boş kolon |
+| Tek değer | Hep aynı değer |
+| Baskın değer | Neredeyse hep aynı değer |
+| Kimlik benzeri | Numara gibi kolon |
+| Metinde çok değer | Çok çeşitli yazı kolonu |
+| Birebir aynı | Birebir aynı kolonlar |
+| Neredeyse aynı | Neredeyse aynı kolonlar |
+| Gelecek penceresi | Adı geleceği anlatan kolon |
+| Hedefle birebir | Hedefi fazla iyi bilen kolon |
+| Dönemde boş ya da sabit | Bazı dönemlerde boş ya da hep aynı |
+| Eksik sıçraması | Boş oranı birden değişmiş |
+| Değer kayması | Sayılar topluca değişmiş |
+| Özel kod | Boş yerine sayı yazılmış |
+| Özel kod ve boş hücre | Hem boş hücre hem sayı |
+| Metin olarak boş | Boş yerine yazı yazılmış |
+| Yazım tutarsızlığı | Aynı değer farklı yazılmış |
+| Negatif değer | Eksi değer |
+| Uç değer | Aşırı büyük ya da küçük değer |
+| Pencere tutarlılığı | Kısa süre uzun süreden büyük |
+| Tutar ve adet | Adet ile tutar tutmuyor |
+| Tekrar eden satır | Aynı satır birden fazla |
+| Setler arası çakışma | Aynı kayıt iki sette |
+| İlk dönemler (öneri sınırı) | Baştaki dönem sınırı |
+| Bayrak sınırı (öneri sınırı) | Ek kolon sınırı |
+
+"Tarih kolonu", "Dönemden sonraki tarih", "Çıkarma sınırı" ve "Boş sayma sınırı" aynı kaldı.

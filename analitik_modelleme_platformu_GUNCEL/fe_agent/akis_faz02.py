@@ -917,7 +917,8 @@ def _duzeltmeleri_uygula(durum, df):
 # satirlarda tekrar.
 # ===========================================================================
 SATIR_KONTROLLERI = ("set_cakisma", "tekrar")
-KURAL_SONUC_ADI = {"tekrar": "Düzeltme önerilir: fazla satırlar çıkar",
+KURAL_SONUC_ADI = {"ayni_icerik": "Biri kalır, diğerleri üretime girmez",
+                   "tekrar": "Düzeltme önerilir: fazla satırlar çıkar",
                    "set_cakisma": "Düzeltme önerilir: çakışan satırlar Test / OOT'den çıkar"}
 
 
@@ -1590,10 +1591,14 @@ _ESIK_KONTROL = {a: (i, k, alt) for i, (a, k, alt) in enumerate(ESIK_KONTROL)}
 
 
 def esik_adi(anahtar, kontrol=""):
-    """Eşigin ekrandaki adi: formdaki satir adi (PROFIL_ESIKLERI)."""
-    if kontrol:
-        return kontrol
-    return {x[0]: x[1] for x in PROFIL_ESIKLERI}.get(anahtar, anahtar)
+    """Eşigin ekrandaki adi (esik notu, hata metni): ait oldugu kuralin
+    formdaki adi; oneri esiginde "kural: sinir adi". Kurali olmayan esik
+    (Tesadüf Olasılığı) kendi adiyla."""
+    kural = ESIK_KURAL.get(anahtar)
+    if kural:
+        ad = KURAL_FORM_AD.get(kural, kontrol or anahtar)
+        return "%s: %s" % (ad, _kucuk_bas(ONERI_ESIK_AD[anahtar])) if anahtar in ONERI_ESIK_AD else ad
+    return kontrol or {x[0]: x[1] for x in PROFIL_ESIKLERI}.get(anahtar, anahtar)
 # Formda her kontrolun duz dille aciklamasi: "kisa" satirda, "bilgi" i
 # balonunda (nedir, neden onemli, ornek, yakalanirsa ne olur, onerilen
 # degerin gerekcesi), "sonuc" yakalanan kolona ne oldugu (NE_OLACAK ile
@@ -1780,9 +1785,9 @@ PROFIL_ESIK_ACIKLAMA.update({
             "Üstündeyse «şans olabilir» der, yakalamaz. Çok sayıda dönem tek tek sınandığında "
             "şans eseri bir bulgu çıkma ihtimali artar; bu yüzden dönem kurallarında sınır sınanan "
             "dönem sayısına bölünür.",
-            "**Kapsam:** üç yerde kullanılır. 1) «Dönemde boş ya da sabit» kuralı: bir dönemin "
-            "tamamen boş ya da hep aynı değerde olması şans mı? 2) «Eksik sıçraması» kuralı: iki "
-            "dönemin boş oranı arasındaki fark şans mı? 3) «Baskın değer» kuralının Tut / Çıkar "
+            "**Kapsam:** üç yerde kullanılır. 1) «Bazı dönemlerde boş ya da hep aynı» kuralı: bir dönemin "
+            "tamamen boş ya da hep aynı değerde olması şans mı? 2) «Boş oranı birden değişmiş» kuralı: iki "
+            "dönemin boş oranı arasındaki fark şans mı? 3) «Neredeyse hep aynı değer» kuralının Tut / Çıkar "
             "önerisi: az sayıdaki farklı satırda hedefin farklı çıkması şans mı?",
             "**Örnek:** Bir kolonun genelde 100 satırından 90'ında 0 yazıyor. Bir ayda yalnız 10 "
             "satır var ve hepsinde 0 yazıyor: bu şans eseri olabilir (ihtimal %35), yakalanmaz. "
@@ -1795,7 +1800,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         "sonuc": "Küçülürse daha az, büyürse daha çok kolon yakalanır"},
     "donem_tut_pay": _ac(
         "Sorun yalnız en baştaki dönemlerdeyse kolon sonradan eklenmiştir.",
-        "Kolon «Dönemde boş ya da sabit» kuralına takıldıysa sistem sorunlu dönemlerin nerede "
+        "Kolon «Bazı dönemlerde boş ya da hep aynı» kuralına takıldıysa sistem sorunlu dönemlerin nerede "
         "olduğuna bakar. Yalnız en baştaki dönemler sorunluysa kolon sonradan eklenmiştir, "
         "sonrası düzgündür. Baştaki sorunlu dönemler bütün dönemlerin bu sınırını geçmiyorsa "
         "Tut, geçiyorsa Çıkar önerilir. Son dönem sorunluysa sınıra bakılmadan Çıkar önerilir; "
@@ -1807,7 +1812,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         sonuc="Öneri: altındaysa Tut"),
     "sicrama_cikar": _ac(
         "Boş oranı artıp sınırı geçtiyse kolon artık çoğunlukla boştur.",
-        "Kolon «Eksik sıçraması» kuralına takıldıysa sistem sıçramadan sonraki dönemin boş "
+        "Kolon «Boş oranı birden değişmiş» kuralına takıldıysa sistem sıçramadan sonraki dönemin boş "
         "oranına bakar. Boş oranı artmış ve bu sınırı geçmişse Çıkar önerilir. Artmış ama sınırı "
         "geçmemişse ya da azalmışsa Tut önerilir.",
         "Boş oranı %5'ten %55'e çıktı. Sınır %50 ise Çıkar önerilir.",
@@ -1817,7 +1822,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         sonuc="Öneri: üstündeyse Çıkar"),
     "negatif_bos_pay": _ac(
         "Az sayıda eksi değer yanlış kayıttır.",
-        "Kolon «Negatif değer» kuralına takıldıysa sistem eksi değerli satırların ne kadar "
+        "Kolon «Eksi değer» kuralına takıldıysa sistem eksi değerli satırların ne kadar "
         "olduğuna bakar. Bu sınırdan azsa yanlış kayıt sayılır ve boş sayılması önerilir. Sınır "
         "kadar ya da daha çoksa bir anlamı olabilir (iade gibi); olduğu gibi bırakılması "
         "önerilir.",
@@ -1829,7 +1834,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         sonuc="Öneri: altındaysa boş say"),
     "metin_bayrak_pay": _ac(
         "«Bilinmiyor» gibi yazılar çoksa, boş olmak da bir bilgi olabilir.",
-        "Kolon «Metin olarak boş» kuralına takıldıysa bu yazılar her durumda boş sayılır. Sistem "
+        "Kolon «Boş yerine yazı yazılmış» kuralına takıldıysa bu yazılar her durumda boş sayılır. Sistem "
         "ayrıca yazıların ne kadar sık geçtiğine bakar: bu sınır kadar ya da daha çoksa, «boş "
         "mu, dolu mu» bilgisini taşıyan ek bir 1/0 kolonu da önerilir; çünkü çok sayıda satırda "
         "bilginin olmaması kendisi bir bilgi olabilir.",
@@ -2083,17 +2088,22 @@ KONTROL_FORM_KISA = {
     "tekrar": "Aynı satır birden fazla kez yazılmış",
     "set_cakisma": "Aynı kayıt hem eğitim hem sınama verisinde var",
 }
+# KURAL ADLARI: gundelik dille, terimsiz. Formda, Veri Profili kartinda
+# (KONTROL_ALT_AD bunlardan), esik notunda ve hata metninde AYNI ad.
 KURAL_FORM_AD = {
-    "cok_bos": "Boş hücre oranı", "sabit": "Tek değer", "baskin": "Baskın değer",
-    "kimlik_gibi": "Kimlik benzeri", "yuksek_kardinalite": "Metinde çok değer",
-    "tarih": "Tarih kolonu", "ayni_icerik": "Birebir aynı", "yakin_icerik": "Neredeyse aynı",
-    "gelecek_pencere": "Gelecek penceresi", "birebir": "Hedefle birebir",
-    "tarih_sonra": "Dönemden sonraki tarih", "donem": "Dönemde boş ya da sabit",
-    "sicrama": "Eksik sıçraması", "kayma": "Değer kayması", "gizli_eksik": "Özel kod",
-    "karisik_eksik": "Özel kod ve boş hücre", "metin_bos": "Metin olarak boş",
-    "yazim": "Yazım tutarsızlığı", "negatif": "Negatif değer", "uc": "Uç değer",
-    "pencere": "Pencere tutarlılığı", "tutar_adet": "Tutar ve adet",
-    "tekrar": "Tekrar eden satır", "set_cakisma": "Setler arası çakışma",
+    "cok_bos": "Çoğu boş kolon", "sabit": "Hep aynı değer", "baskin": "Neredeyse hep aynı değer",
+    "kimlik_gibi": "Numara gibi kolon", "yuksek_kardinalite": "Çok çeşitli yazı kolonu",
+    "tarih": "Tarih kolonu", "ayni_icerik": "Birebir aynı kolonlar",
+    "yakin_icerik": "Neredeyse aynı kolonlar",
+    "gelecek_pencere": "Adı geleceği anlatan kolon", "birebir": "Hedefi fazla iyi bilen kolon",
+    "tarih_sonra": "Dönemden sonraki tarih", "donem": "Bazı dönemlerde boş ya da hep aynı",
+    "sicrama": "Boş oranı birden değişmiş", "kayma": "Sayılar topluca değişmiş",
+    "gizli_eksik": "Boş yerine sayı yazılmış", "karisik_eksik": "Hem boş hücre hem sayı",
+    "metin_bos": "Boş yerine yazı yazılmış",
+    "yazim": "Aynı değer farklı yazılmış", "negatif": "Eksi değer",
+    "uc": "Aşırı büyük ya da küçük değer",
+    "pencere": "Kısa süre uzun süreden büyük", "tutar_adet": "Adet ile tutar tutmuyor",
+    "tekrar": "Aynı satır birden fazla", "set_cakisma": "Aynı kayıt iki sette",
 }
 # Esik -> ait oldugu kural (PROFIL_KONTROLLERI anahtari).
 ESIK_KURAL = {
@@ -2105,8 +2115,8 @@ ESIK_KURAL = {
     "negatif_bos_pay": "negatif", "uc_yayilim": "uc",
 }
 ONERI_ESIK_AD = {
-    "donem_tut_pay": "İlk dönemler", "sicrama_cikar": "Çıkarma sınırı",
-    "metin_bayrak_pay": "Bayrak sınırı", "negatif_bos_pay": "Boş sayma sınırı",
+    "donem_tut_pay": "Baştaki dönem sınırı", "sicrama_cikar": "Çıkarma sınırı",
+    "metin_bayrak_pay": "Ek kolon sınırı", "negatif_bos_pay": "Boş sayma sınırı",
 }
 
 
@@ -3098,7 +3108,7 @@ _KONTROL_ACIKLAMA_EK = {
         "100 satırlık bir dönemin tamamı 0 ise yakalanır, 10 satırlık dönemin tamamı 0 ise şans "
         "olabilir, yakalanmaz.",
         "kolonu tutmak ya da çıkarmak size sorulur. Öneri: son dönem sorunluysa Çıkar; sorun "
-        "yalnız baştaki birkaç dönemdeyse Tut («İlk dönemler» sınırı); dönemlere dağınıksa Çıkar.",
+        "yalnız baştaki birkaç dönemdeyse Tut («Baştaki dönem sınırı»); dönemlere dağınıksa Çıkar.",
         sorun="Kolon bazı dönemlerde yoksa model o dönemlerde kolondan bir şey öğrenemez; son "
               "dönemde yoksa güncel veride de yoktur."),
     "sabit": _ac(
@@ -3180,7 +3190,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Yazı kolonunda «bilgi yok» anlamına gelen yazıları arar.",
         "Meslek kolonunda «Bilinmiyor», «?», «-».",
         "kolon kullanılır; bu yazılar boş sayılır. Çok sık geçiyorlarsa «boş mu, dolu mu» "
-        "gösteren 1/0 kolonu da önerilir («Bayrak sınırı»).",
+        "gösteren 1/0 kolonu da önerilir («Ek kolon sınırı»).",
         sorun="Bu yazılar gerçek bir değer gibi sayılırsa boş hücreler gözden kaçar."),
     "yazim": _ac(
         "Aynı değer farklı biçimlerde yazılmış.",
@@ -3275,27 +3285,27 @@ def kontrol_parcalari(anahtar):
 # (anahtar, kontrolun adi, sonuc, kolon satirindaki kisa bulgu adi)
 PROFIL_KONTROLLERI = (
     ("cok_bos", "Eksik Oranı Yüksek", SONUC_GIRMEZ, "Eksik oranı yüksek"),
-    ("sabit", "Sabit ya da Tek Değerli", SONUC_GIRMEZ, "Sabit"),
-    ("kimlik_gibi", "Kimlik Benzeri", SONUC_GIRMEZ, "Kimlik benzeri"),
-    ("yuksek_kardinalite", "Kardinalitesi Aşırı Yüksek", SONUC_GIRMEZ, "Kardinalite yüksek"),
+    ("sabit", "Hep Aynı Değer", SONUC_GIRMEZ, "Hep aynı değer"),
+    ("kimlik_gibi", "Numara Gibi Kolon", SONUC_GIRMEZ, "Numara gibi kolon"),
+    ("yuksek_kardinalite", "Çok Çeşitli Yazı Kolonu", SONUC_GIRMEZ, "Çok çeşitli yazı kolonu"),
     ("tarih", "Tarih Kolonu", SONUC_GIRMEZ, "Tarih kolonu"),
-    ("ayni_icerik", "Aynı İçerikli Kolonlar", SONUC_GIRMEZ, "Aynı içerik"),
+    ("ayni_icerik", "Birebir Aynı Kolonlar", SONUC_GIRMEZ, "Birebir aynı"),
     ("yakin_icerik", "Neredeyse Aynı Kolonlar", SONUC_GIRMEZ, "Neredeyse aynı"),
-    ("gelecek_pencere", "Gelecek Penceresi (Sızıntı Riski)", SONUC_KARAR, "Gelecek penceresi"),
-    ("birebir", "Hedefle Neredeyse Birebir", SONUC_KARAR, "Hedefle birebir"),
+    ("gelecek_pencere", "Adı Geleceği Anlatan Kolon", SONUC_KARAR, "Adı geleceği anlatıyor"),
+    ("birebir", "Hedefi Fazla İyi Bilen Kolon", SONUC_KARAR, "Hedefi fazla iyi biliyor"),
     ("tarih_sonra", "Dönemden Sonraki Tarih", SONUC_KARAR, "Dönemden sonraki tarih"),
-    ("baskin", "Neredeyse Sabit", SONUC_KARAR, "Neredeyse sabit"),
-    ("donem", "Dönemde Boş ya da Sabit", SONUC_KARAR, "Dönemde boş ya da sabit"),
-    ("gizli_eksik", "Gizli Eksik (Özel Kod)", SONUC_DUZELT, "Gizli eksik"),
-    ("karisik_eksik", "Karışık Eksik Kodlaması", SONUC_DUZELT, "Karışık eksik"),
-    ("metin_bos", "Metin Olarak Yazılmış Boş", SONUC_DUZELT, "Metin olarak boş"),
+    ("baskin", "Neredeyse Hep Aynı Değer", SONUC_KARAR, "Neredeyse hep aynı değer"),
+    ("donem", "Bazı Dönemlerde Boş ya da Hep Aynı", SONUC_KARAR, "Bazı dönemlerde boş ya da hep aynı"),
+    ("gizli_eksik", "Boş Yerine Sayı Yazılmış", SONUC_DUZELT, "Boş yerine sayı"),
+    ("karisik_eksik", "Hem Boş Hücre Hem Sayı", SONUC_DUZELT, "Hem boş hem sayı"),
+    ("metin_bos", "Boş Yerine Yazı Yazılmış", SONUC_DUZELT, "Boş yerine yazı"),
     ("yazim", "Kategori Yazım Tutarsızlığı", SONUC_DUZELT, "Yazım tutarsızlığı"),
     ("negatif", "Beklenmeyen Negatif", SONUC_DUZELT, "Beklenmeyen negatif"),
-    ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_KARAR, "Eksik sıçraması"),
-    ("kayma", "Dönemler Arası Değer Kayması", SONUC_KARAR, "Değer kayması"),
+    ("sicrama", "Boş Oranı Birden Değişmiş", SONUC_KARAR, "Boş oranı birden değişmiş"),
+    ("kayma", "Sayılar Topluca Değişmiş", SONUC_KARAR, "Sayılar topluca değişmiş"),
     ("uc", "Uç Değer Yoğunluğu", SONUC_DUZELT, "Uç değer"),
-    ("pencere", "Pencere Tutarlılığı", SONUC_KARAR, "Pencere tutarsız"),
-    ("tutar_adet", "Tutar ve Adet Uyumsuzluğu", SONUC_KARAR, "Tutar ve adet uyumsuz"),
+    ("pencere", "Kısa Süre Uzun Süreden Büyük", SONUC_KARAR, "Kısa süre uzun süreden büyük"),
+    ("tutar_adet", "Adet ile Tutar Tutmuyor", SONUC_KARAR, "Adet ile tutar tutmuyor"),
     ("tekrar", "Tekrar Eden Satır", SONUC_DUZELT, ""),
     ("set_cakisma", "Setler Arası Çakışma", SONUC_DUZELT, ""),
 )
@@ -3328,16 +3338,13 @@ KONTROL_GRUPLARI = (
      "Birbirine bağlı iki kolon birbirini tutmuyor.",
      ("pencere", "tutar_adet")),
 )
-KONTROL_ALT_AD = {
-    "sabit": "tek değer", "baskin": "baskın değer",
-    "ayni_icerik": "birebir aynı", "yakin_icerik": "neredeyse aynı",
-    "kimlik_gibi": "kimlik benzeri", "yuksek_kardinalite": "metinde çok değer",
-    "gelecek_pencere": "gelecek penceresi", "birebir": "hedefle birebir",
-    "tarih_sonra": "dönemden sonraki tarih",
-    "donem": "dönemde boş ya da sabit", "sicrama": "eksik sıçraması", "kayma": "değer kayması",
-    "gizli_eksik": "özel kod", "karisik_eksik": "özel kod ve boş hücre", "metin_bos": "metin olarak boş",
-    "pencere": "pencere tutarlılığı", "tutar_adet": "tutar ve adet",
-}
+def _kucuk_bas(ad):
+    """Ilk harf kucuk (Turkce): "İlk" -> "ilk", "Işık" -> "ışık"."""
+    return {"İ": "i", "I": "ı"}.get(ad[:1], ad[:1].lower()) + ad[1:] if ad else ad
+
+
+# Kartta alt bulgu adi = kural adi (kucuk harfle baslar); formla ayni.
+KONTROL_ALT_AD = {a: _kucuk_bas(KURAL_FORM_AD[a]) for g in KONTROL_GRUPLARI for a in g[3]}
 _SONUC_SIRA = {SONUC_GIRMEZ: 0, SONUC_KARAR: 1, SONUC_DUZELT: 2, SONUC_BILGI: 3}
 
 
@@ -3526,12 +3533,12 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
         b["gelecek_pencere"][x["kolon"]] = "; ".join(
             "Ad parçası %s: %s" % (t["parca"], t["tur_adi"]) for t in x["parcalar"])
     for x in ek.get("birebir") or []:
-        b["birebir"][x["kolon"]] = "Tek başına ayırma gücü (AUC) %s" % _yuzde_metni(x["auc"])
+        b["birebir"][x["kolon"]] = "Tek başına hedefi %s isabetle biliyor" % _yuzde_metni(x["auc"])
     for x in ek.get("tarih_sonra") or []:
         b["tarih_sonra"][x["kolon"]] = "%s satırda (payı %s); en geç %s" % (
             _sayi(x["adet"]), _yuzde_metni(x["pay"]), x["en_gec"])
     for x in ek.get("kayma") or []:
-        b["kayma"][x["kolon"]] = "Ortanca %s dönemi %s, %s dönemi %s (%s kat)" % (
+        b["kayma"][x["kolon"]] = "Ortadaki değer %s dönemi %s, %s dönemi %s (%s kat)" % (
             x["once"], _okunur_sayi(x["once_deger"]), x["sonra"], _okunur_sayi(x["sonra_deger"]),
             _okunur_sayi(x["kat"]))
     for x in ek.get("tarih_kod") or []:
@@ -3573,7 +3580,7 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
         if x.get("bos"):
             parca.append("Boş dönemler: %s" % _donem_listesi(x["bos"]))
         if x.get("sabit"):
-            parca.append("Tek değerli dönemler: %s" % _donem_listesi(x["sabit"]))
+            parca.append("Hep aynı değerde olan dönemler: %s" % _donem_listesi(x["sabit"]))
         b["donem"][x["kolon"]] = ". ".join(parca)
     for x in ek.get("karisik_eksik") or []:
         b["karisik_eksik"][x["kolon"]] = "Kod %s: %s satır (payı %s); boş hücre: %s satır" % (
@@ -3583,10 +3590,10 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
                                         if x.get("bos") else "") + "Kod %s, payı %s (%s satır)" % (
             x["deger"], _yuzde_metni(x["pay"]), _sayi(x["adet"]))
     for x in ek.get("negatif") or []:
-        b["negatif"][x["kolon"]] = "Ölçü: %s. Negatif satır %s, en küçük değer %s" % (
+        b["negatif"][x["kolon"]] = "Ölçü: %s. Eksi değerli satır %s, en küçük değer %s" % (
             x["olcu"], _sayi(x["adet"]), _sayi_metni(x["en_kucuk"]))
     for x in ek.get("sicrama") or []:
-        b["sicrama"][x["kolon"]] = "Eksik oranı %s dönemi %s, %s dönemi %s" % (
+        b["sicrama"][x["kolon"]] = "Boş oranı %s dönemi %s, %s dönemi %s" % (
             x["once"], _yuzde_metni(x["once_oran"]), x["sonra"], _yuzde_metni(x["sonra_oran"]))
     for x in ek.get("uc") or []:
         b["uc"][x["kolon"]] = uc_bulgu_metni(x)
@@ -3765,8 +3772,8 @@ def profil_karti(durum, karar=False):
     for k in t.get("sabit") or []:
         deger = (ek.get("sabit_deger") or {}).get(k)
         bulgu.setdefault("sabit", {})[k] = ("Bütün hücreler boş" if deger == "boş"
-                                            else "Tek değer: %s" % deger if deger
-                                            else "Tek değerli")
+                                            else "Her satırda %s" % deger if deger
+                                            else "Her satırda aynı değer")
     tarih_kod = {x["kolon"]: x for x in ek.get("tarih_kod") or []}
     for k in t.get("tarih") or []:
         ar = (ek.get("tarih_aralik") or {}).get(k)

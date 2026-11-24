@@ -17548,12 +17548,12 @@ function profilKartiEkle(alan, blok) {
     const bilgi = [
         "Modelleme tablosundaki her kolon tablonun tamamında (train, val, test ve OOT birlikte) incelenir; örneklem kullanılmaz, sayımlar kesindir."
             + ((alan.kapsam || {}).hedef_train
-               ? " Hedefle ilgili ölçümler (Hedefle Neredeyse Birebir, neredeyse aynı kolonlarda ayırma gücü) ve öğrenilen her şey (çözümler, kırpma sınırı) yalnız Train (MS) satırlarından (" + ftBinlik(alan.kapsam.train_satir) + " satır); kararlar ve düzeltmeler onayınızla bütün satırlara aynı şekilde uygulanır."
+               ? " Hedefle ilgili ölçümler (hedefi fazla iyi bilen kolon, neredeyse aynı kolonlarda hedefi ayırt etme gücü) ve öğrenilen her şey (çözümler, kırpma sınırı) yalnız Train (MS) satırlarından (" + ftBinlik(alan.kapsam.train_satir) + " satır); kararlar ve düzeltmeler onayınızla bütün satırlara aynı şekilde uygulanır."
                : ""),
-        "Kontrollerin sonucu dört türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
+        "Kontrollerin sonucu üç türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
-            + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır. Bilgi için gösterilir: kolon üretime girer, bulgu yalnız bilmeniz için.",
-        "Gizli Eksik, Karışık Eksik Kodlaması, Metin Olarak Yazılmış Boş, Kategori Yazım Tutarsızlığı, Beklenmeyen Negatif, Uç Değer ve Ondalık Hassasiyeti kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz.",
+            + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır; satır kurallarında fazla ya da çakışan satırlar çalışma tablosundan çıkar.",
+        "Gizli Eksik, Kategori Yazım Tutarsızlığı, Beklenmeyen Negatif ve Uç Değer Yoğunluğu kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz. Tekrar Eden Satır ve Setler Arası Çakışma kontrollerinde çıkarılacak satırları seçersiniz.",
         "Kart iki sekmedir. Analiz: kontroller ve bulgular, yalnız ne bulunduğu. Kararlar: her bulguda öneri ve gerekçesi, önerilerin özeti ve seçimleriniz. Önerileri kolonun kendi sayılarına ve bulgusuna bakan kurallar verir (dil modeli kullanılmaz). Öneri seçili gelir; değiştirdiğiniz satır işaretlenir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
@@ -18010,7 +18010,7 @@ function profilKartiEkle(alan, blok) {
         oz.appendChild(elYap("div", "pf-oneri-ozet-not", (kararModu
             ? "Her bulguda bir öneri seçili gelir; değiştirdiğiniz satır sarı işaretlenir. "
             : "Her bulguda öneri ve onaylanan karar. ")
-            + "Önerilerin çoğunu kolonun kendi sayılarına bakan kurallar verir (Veriden hesaplandı). Kolonun anlamını gerektiren bulgularda dil modeli önerir: özel kodun anlamı (Gizli Eksik, Karışık Eksik), sızıntı kontrolleri (Gelecek Penceresi, Hedefle Neredeyse Birebir, Dönemden Sonraki Tarih) ve birebir aynı kolonlardan hangisinin kalacağı."));
+            + "Önerileri kolonun kendi sayılarına ve bulgusuna bakan kurallar verir (Veriden hesaplandı); dil modeli kullanılmaz."));
         const liste = elYap("ul", "pf-oneri-liste");
         const sayimMetni = (sayac, adi) => Object.keys(sayac).sort((a, b) => sayac[b] - sayac[a])
             .map(kod => adi(kod) + " " + ftBinlik(sayac[kod])).join(", ");
