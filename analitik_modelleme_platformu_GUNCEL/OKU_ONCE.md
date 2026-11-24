@@ -3015,6 +3015,12 @@ tanıtır; sayfalar sol bardan açılır.
   satırda (`ILISKI_MIN_PAY`).
 - KALDIRILAN KONTROLLER: Sıfır Yoğunluğu ve Ondalık Hassasiyeti (veri hatası
   göstermiyor, modeli değiştirmiyordu). Kartta 14 kontrol, 24 kural.
+- SADE VE GENEL AÇIKLAMALAR: 02.1 kontrol ve eşik açıklamaları (`_ac` ile
+  kurulan PROFIL_ESIK_ACIKLAMA ve _KONTROL_ACIKLAMA_EK) her veri ve her
+  sınıflandırma problemi için genel: alana özel terim yok ("temerrüt" yerine
+  "hedefi 1 olan satır"). Her biri kısa: Nedir, (Kapsam), Örnek, Yakalanırsa,
+  Neden bu değer ya da "Önerilen nereden?" (veriden hesaplananlar;
+  `_PARCA_ETIKET` bunu gerekçe sütununa koyar).
 - DİL MODELİ 02.1'DE YOK: `LLM_KONTROLLERI = ()`. Kural önerileri
   (`_veri_onerileri`): gelecek penceresi ve dönemden sonraki tarih Çıkar,
   hedefle birebir AUC'ye göre, özel kod ve karışık eksik "boş say + _KOD
