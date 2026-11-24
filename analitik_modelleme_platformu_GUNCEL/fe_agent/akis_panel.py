@@ -465,7 +465,7 @@ def detay(durum):
         bolumler.append(_bolum("VERİ PROFİLİ", [
             ("Sorunsuz Kolon", _sayi(_sorunsuz)),
             ("Bilgi Notu Olan", _sayi(_bilgi)),
-            ("Eksik Oranı Yüksek", _sayi(len(t.get("cok_bos") or []))),
+            ("Çoğu Boş Kolon", _sayi(len(t.get("cok_bos") or []))),
             ("Sabit", _sayi(len(t.get("sabit") or []))),
             ("Numara Gibi Kolon", _sayi(len(t.get("kimlik_gibi") or []))),
             ("Çok Çeşitli Yazı Kolonu", _sayi(len(t.get("yuksek_kardinalite") or []))),

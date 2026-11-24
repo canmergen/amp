@@ -3382,7 +3382,7 @@ Dört kural artık "bilgi için gösterilir" değil; Kararlar sekmesinde seçim 
 
 ## 02.1 kural adları (gündelik dille)
 
-Kural adları terimsizdir ve formda, Veri Profili kartında, eşik notunda ve hata metninde aynıdır (`KURAL_FORM_AD`; kart adları bundan türetilir: `KONTROL_ALT_AD`; eşik adı: `esik_adi`). Kontrol başlıkları değişmedi.
+Kural adları terimsizdir ve formda, Veri Profili kartında, eşik notunda ve hata metninde aynıdır (`KURAL_FORM_AD`; kart adları bundan türetilir: `KONTROL_ALT_AD`; eşik adı: `esik_adi`).
 
 | Eski ad | Yeni ad |
 |---|---|
@@ -3412,3 +3412,25 @@ Kural adları terimsizdir ve formda, Veri Profili kartında, eşik notunda ve ha
 | Bayrak sınırı (öneri sınırı) | Ek kolon sınırı |
 
 "Tarih kolonu", "Dönemden sonraki tarih", "Çıkarma sınırı" ve "Boş sayma sınırı" aynı kaldı.
+
+## 02.1 kontrol başlıkları (gündelik dille)
+
+Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazılmaz (`PROFIL_KONTROLLERI`, `KONTROL_GRUPLARI`, `ESIK_KONTROL`).
+
+| No | Eski başlık | Yeni başlık |
+|---|---|---|
+| 1 | Tesadüf Olasılığı | aynı |
+| 2 | Eksik Oranı Yüksek | Boş Hücreler |
+| 3 | Sabit ya da Neredeyse Sabit | Değişmeyen Kolonlar |
+| 4 | Çok Fazla Farklı Değer | aynı |
+| 5 | Tarih Kolonu | aynı |
+| 6 | Aynı ya da Neredeyse Aynı Kolonlar | Birbirinin Aynısı Kolonlar |
+| 7 | Sızıntı Riski | Tahmin Anında Bilinmeyen Bilgi |
+| 8 | Dönemler Arası Tutarsızlık | Dönemden Döneme Bozulan Kolonlar |
+| 9 | Gizli Eksik | Boş Yerine Başka Şey Yazılmış |
+| 10 | Kategori Yazım Tutarsızlığı | Yazım Farkları |
+| 11 | Beklenmeyen Negatif | Eksi Olamayacak Değerler |
+| 12 | Uç Değer Yoğunluğu | Aşırı Değerler |
+| 13 | İlişkili Kolonlar Arası Tutarsızlık | Birbirini Tutmayan Kolonlar |
+| 14 | Tekrar Eden Satır | aynı |
+| 15 | Setler Arası Çakışma | Setlerde Ortak Kayıt |

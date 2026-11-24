@@ -1519,7 +1519,7 @@ def _kart_alani(durum, alan):
 # "yuzde" ve "puan" ekranda 100 ile carpilmis yazilir, "sayi" ve "kat"
 # oldugu gibi. (anahtar, kontrol, esigin anlami, birim, en kucuk, en buyuk)
 PROFIL_ESIKLERI = (
-    ("cok_bos", "Eksik Oranı Yüksek",
+    ("cok_bos", "Boş Hücreler",
      "Kolonun boş hücre oranı bu değerin üstündeyse", "yuzde", 0.01, 0.99),
     ("kimlik", "Kimlik Benzeri",
      "Farklı değer sayısının satır sayısına oranı bu değerin üstündeyse", "yuzde", 0.50, 0.9999),
@@ -1533,7 +1533,7 @@ PROFIL_ESIKLERI = (
     ("sicrama", "Dönemler Arası Eksik Sıçraması",
      "Art arda iki dönem arasında boş hücre oranı bu kadar puandan fazla değişiyorsa",
      "puan", 0.01, 0.99),
-    ("uc_yayilim", "Uç Değer Yoğunluğu",
+    ("uc_yayilim", "Aşırı Değerler",
      "En büyük ya da en küçük değer, kolonun normal aralığının dışına aralığın genişliğinin "
      "bu katından fazla taşıyorsa", "kat", 2, 1000000000),
     ("yakin_kor", "Neredeyse Aynı Kolonlar",
@@ -1572,20 +1572,20 @@ ONERI_ESIK_ANAHTARLARI = {x[0] for x in PROFIL_ONERI_ESIKLERI}
 # kontrolun adi ve alt eşik adiyla gosterilir; sira karttaki sira. Boylece
 # 20 eşik 20 kontrol gibi gorunmez. (kontrol, alt eşik adi)
 ESIK_KONTROL = (
-    ("cok_bos", "Eksik Oranı Yüksek", "Boş hücre oranı"),
-    ("baskin", "Sabit ya da Neredeyse Sabit", "Baskın değer"),
+    ("cok_bos", "Boş Hücreler", "Boş hücre oranı"),
+    ("baskin", "Değişmeyen Kolonlar", "Baskın değer"),
     ("kimlik", "Çok Fazla Farklı Değer", "Kimlik benzeri"),
     ("kardinalite", "Çok Fazla Farklı Değer", "Metinde çok değer"),
-    ("yakin_kor", "Aynı ya da Neredeyse Aynı Kolonlar", "Neredeyse aynı"),
-    ("sizinti_auc", "Sızıntı Riski", "Hedefle birebir"),
-    ("sicrama", "Dönemler Arası Tutarsızlık", "Eksik sıçraması"),
-    ("kayma_kat", "Dönemler Arası Tutarsızlık", "Değer kayması"),
-    ("donem_tut_pay", "Dönemler Arası Tutarsızlık", "Dönemde boş ya da sabit: ilk dönemler"),
-    ("sicrama_cikar", "Dönemler Arası Tutarsızlık", "Eksik sıçraması: çıkarma sınırı"),
-    ("gizli", "Gizli Eksik", "Özel kod"),
-    ("metin_bayrak_pay", "Gizli Eksik", "Metin olarak boş: bayrak sınırı"),
-    ("negatif_bos_pay", "Beklenmeyen Negatif", "Boş sayma sınırı"),
-    ("uc_yayilim", "Uç Değer Yoğunluğu", "Uç değer"),
+    ("yakin_kor", "Birbirinin Aynısı Kolonlar", "Neredeyse aynı"),
+    ("sizinti_auc", "Tahmin Anında Bilinmeyen Bilgi", "Hedefle birebir"),
+    ("sicrama", "Dönemden Döneme Bozulan Kolonlar", "Eksik sıçraması"),
+    ("kayma_kat", "Dönemden Döneme Bozulan Kolonlar", "Değer kayması"),
+    ("donem_tut_pay", "Dönemden Döneme Bozulan Kolonlar", "Dönemde boş ya da sabit: ilk dönemler"),
+    ("sicrama_cikar", "Dönemden Döneme Bozulan Kolonlar", "Eksik sıçraması: çıkarma sınırı"),
+    ("gizli", "Boş Yerine Başka Şey Yazılmış", "Özel kod"),
+    ("metin_bayrak_pay", "Boş Yerine Başka Şey Yazılmış", "Metin olarak boş: bayrak sınırı"),
+    ("negatif_bos_pay", "Eksi Olamayacak Değerler", "Boş sayma sınırı"),
+    ("uc_yayilim", "Aşırı Değerler", "Uç değer"),
 )
 _ESIK_KONTROL = {a: (i, k, alt) for i, (a, k, alt) in enumerate(ESIK_KONTROL)}
 
@@ -2078,13 +2078,13 @@ KONTROL_FORM_KISA = {
     "g_kardinalite": "O kadar çok farklı değer var ki kolon olduğu gibi kullanılamaz",
     "tarih": "Tarih kolonu olduğu gibi kullanılmaz",
     "g_ayni": "Başka bir kolonla aynı şeyi söyleyen kolon",
-    "g_sizinti": "Tahmin anında henüz bilinmeyen bilgiyi taşıyan kolon",
-    "g_donem": "Bazı dönemlerde bozulan kolon",
+    "g_sizinti": "Kolon gelecekten ya da sonuçtan bilgi taşıyor olabilir",
+    "g_donem": "Boş oranı ya da sayıları dönemden döneme tutmuyor",
     "g_gizli": "«Bilgi yok» demek için boş bırakmak yerine sayı ya da yazı yazılmış",
     "yazim": "Aynı değer farklı biçimlerde yazılmış",
-    "negatif": "Eksi olamayacak kolonda eksi değer",
+    "negatif": "Adet, gün ya da süre eksi çıkmış",
     "uc": "Yanlış yazıldığı belli olan çok büyük ya da çok küçük değer",
-    "g_iliskili": "Birbirine bağlı iki kolon birbirini tutmuyor",
+    "g_iliskili": "Aynı şeyi ölçen iki kolon çelişiyor",
     "tekrar": "Aynı satır birden fazla kez yazılmış",
     "set_cakisma": "Aynı kayıt hem eğitim hem sınama verisinde var",
 }
@@ -3284,7 +3284,7 @@ def kontrol_parcalari(anahtar):
 
 # (anahtar, kontrolun adi, sonuc, kolon satirindaki kisa bulgu adi)
 PROFIL_KONTROLLERI = (
-    ("cok_bos", "Eksik Oranı Yüksek", SONUC_GIRMEZ, "Eksik oranı yüksek"),
+    ("cok_bos", "Boş Hücreler", SONUC_GIRMEZ, "Çoğu boş"),
     ("sabit", "Hep Aynı Değer", SONUC_GIRMEZ, "Hep aynı değer"),
     ("kimlik_gibi", "Numara Gibi Kolon", SONUC_GIRMEZ, "Numara gibi kolon"),
     ("yuksek_kardinalite", "Çok Çeşitli Yazı Kolonu", SONUC_GIRMEZ, "Çok çeşitli yazı kolonu"),
@@ -3299,15 +3299,15 @@ PROFIL_KONTROLLERI = (
     ("gizli_eksik", "Boş Yerine Sayı Yazılmış", SONUC_DUZELT, "Boş yerine sayı"),
     ("karisik_eksik", "Hem Boş Hücre Hem Sayı", SONUC_DUZELT, "Hem boş hem sayı"),
     ("metin_bos", "Boş Yerine Yazı Yazılmış", SONUC_DUZELT, "Boş yerine yazı"),
-    ("yazim", "Kategori Yazım Tutarsızlığı", SONUC_DUZELT, "Yazım tutarsızlığı"),
-    ("negatif", "Beklenmeyen Negatif", SONUC_DUZELT, "Beklenmeyen negatif"),
+    ("yazim", "Yazım Farkları", SONUC_DUZELT, "Yazım farkı"),
+    ("negatif", "Eksi Olamayacak Değerler", SONUC_DUZELT, "Eksi değer"),
     ("sicrama", "Boş Oranı Birden Değişmiş", SONUC_KARAR, "Boş oranı birden değişmiş"),
     ("kayma", "Sayılar Topluca Değişmiş", SONUC_KARAR, "Sayılar topluca değişmiş"),
-    ("uc", "Uç Değer Yoğunluğu", SONUC_DUZELT, "Uç değer"),
+    ("uc", "Aşırı Değerler", SONUC_DUZELT, "Aşırı değer"),
     ("pencere", "Kısa Süre Uzun Süreden Büyük", SONUC_KARAR, "Kısa süre uzun süreden büyük"),
     ("tutar_adet", "Adet ile Tutar Tutmuyor", SONUC_KARAR, "Adet ile tutar tutmuyor"),
     ("tekrar", "Tekrar Eden Satır", SONUC_DUZELT, ""),
-    ("set_cakisma", "Setler Arası Çakışma", SONUC_DUZELT, ""),
+    ("set_cakisma", "Setlerde Ortak Kayıt", SONUC_DUZELT, ""),
 )
 # KARTTA BIRLESIK KONTROLLER: ayni soruyu farkli esikle ya da farkli
 # bicimde soran kontroller kartta tek satirdir. Algilama kurallari,
@@ -3316,26 +3316,26 @@ PROFIL_KONTROLLERI = (
 # hangi alt bulgudan geldigi yazar; bir kolon iki alt bulguya takilirsa
 # tek satirdir. (anahtar, ad, kisa aciklama, uyeler)
 KONTROL_GRUPLARI = (
-    ("g_sabit", "Sabit ya da Neredeyse Sabit",
+    ("g_sabit", "Değişmeyen Kolonlar",
      "Her satırda ya da neredeyse her satırda aynı değer var.",
      ("sabit", "baskin")),
-    ("g_ayni", "Aynı ya da Neredeyse Aynı Kolonlar",
+    ("g_ayni", "Birbirinin Aynısı Kolonlar",
      "Kolon başka bir kolonla aynı şeyi söylüyor.",
      ("ayni_icerik", "yakin_icerik")),
     ("g_kardinalite", "Çok Fazla Farklı Değer",
      "O kadar çok farklı değer var ki kolon olduğu gibi kullanılamaz.",
      ("kimlik_gibi", "yuksek_kardinalite")),
-    ("g_sizinti", "Sızıntı Riski",
-     "Kolon, tahmin anında henüz bilinmeyen bir bilgiyi taşıyor olabilir.",
+    ("g_sizinti", "Tahmin Anında Bilinmeyen Bilgi",
+     "Kolon gelecekten ya da sonuçtan bilgi taşıyor olabilir.",
      ("gelecek_pencere", "birebir", "tarih_sonra")),
-    ("g_donem", "Dönemler Arası Tutarsızlık",
+    ("g_donem", "Dönemden Döneme Bozulan Kolonlar",
      "Kolon bazı dönemlerde bozuluyor: tamamen boş ya da hep aynı, boş oranı ya da sayıları birden değişiyor.",
      ("donem", "sicrama", "kayma")),
-    ("g_gizli", "Gizli Eksik",
+    ("g_gizli", "Boş Yerine Başka Şey Yazılmış",
      "«Bilgi yok» demek için boş bırakmak yerine sayı ya da yazı yazılmış.",
      ("gizli_eksik", "karisik_eksik", "metin_bos")),
-    ("g_iliskili", "İlişkili Kolonlar Arası Tutarsızlık",
-     "Birbirine bağlı iki kolon birbirini tutmuyor.",
+    ("g_iliskili", "Birbirini Tutmayan Kolonlar",
+     "Aynı şeyi ölçen iki kolon çelişiyor.",
      ("pencere", "tutar_adet")),
 )
 def _kucuk_bas(ad):
@@ -3729,7 +3729,7 @@ def profil_metni(durum, karar=False):
     if sizinti:
         parca.append("Test (OOS) ya da Validasyon (OOT) setinde %s satır Train'deki bir kaydın aynısı (aynı "
                      "kimlik ve dönem ya da aynı satır); test sonucu olduğundan iyi görünebilir. "
-                     "Ayrıntısı Setler Arası Çakışma kontrolünde." % _sayi(sizinti))
+                     "Ayrıntısı Setlerde Ortak Kayıt kontrolünde." % _sayi(sizinti))
     tk = ((durum.get("profil") or {}).get("profil_ek") or {}).get("tekrar") or {}
     tekrar = int(tk.get("toplam") or 0)
     if tekrar:
