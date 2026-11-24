@@ -6002,8 +6002,9 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-ek-kural { padding: 8px var(--b-3); border-top: 1px solid var(--kenar-acik, var(--kenar)); text-align: left; }
 .pf-ek-kbas + .pf-ek-kural { border-top: 0; }
 .pf-ek-kural.ic { padding-left: calc(var(--b-3) + 24px); grid-template-columns: 196px minmax(0, 1fr) 210px 190px 170px; background: var(--amber-acik); background: color-mix(in srgb, var(--amber-acik) 35%, var(--yuzey)); }
-.pf-ek-kural.degisti { box-shadow: inset 3px 0 0 var(--amber); }
-.pf-ek-kural.hatali { box-shadow: inset 3px 0 0 var(--kirmizi); }
+/* Önerilenden farklı ya da hatalı değer: yalnız kutu işaretlenir (satırda çizgi yok). */
+.pf-ek-kural.degisti .pf-esik-giris { border-color: var(--amber); font-weight: var(--fw-kalin); }
+.pf-ek-kural.hatali .pf-esik-giris { border-color: var(--kirmizi); }
 .pf-ek-ad { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; font-weight: var(--fw-kalin); }
 .pf-ek-sonuc { font-size: var(--fs-kucuk); }
 .pf-ek-sonuc.pf-esik-sonuc-girmez { color: var(--kirmizi); font-weight: var(--fw-kalin); }
