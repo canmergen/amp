@@ -4095,7 +4095,7 @@ _PROFIL_HAVUZ = futures.ThreadPoolExecutor(max_workers=PROFIL_ONERI_PARALEL)
 # KISA BICIM: cok sayida benzer bulgu (ondalik) tek satirla gider; dil
 # modeli her kolon icin yalniz secimi yazar, gerekceyi yalniz kural
 # onerisinden farkli sectiginde. Cikti kucuk kalir.
-PROFIL_KISA_KONTROLLER = ("ondalik",)
+PROFIL_KISA_KONTROLLER = ()
 PROFIL_KISA_PARCA = 120
 
 SISTEM_PROFIL_KISA = """Sen bir kredi riski modelleme uzmanısın. Ondalık tipteki

@@ -9,6 +9,7 @@ SONRA, eldeki butun degiskenlerle (ham + uretilen; _ENRICHED) calisir.
 
 
 import json
+import math
 import re
 
 import numpy as np
@@ -376,8 +377,10 @@ def _gun_ozeti(gun):
 # uretime girer; secilen duzeltme analiz tablosunda uygulanir (girdi veri
 # seti degismez). Gizli eksikte istenirse <KOL>_KOD bayragi uretilir.
 # ===========================================================================
+# Sifir Yogunlugu ve Ondalik Hassasiyeti kaldirildi: veri hatasi gostermiyor,
+# modeli degistirmiyordu (eski kayittaki sonuc ve secimleri yok sayilir).
 DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "metin_bos", "yazim",
-                        "negatif", "uc", "ondalik")
+                        "negatif", "uc")
 
 
 def _teshis_kusurlu(p):
@@ -407,10 +410,6 @@ def _duzeltme_ham(ek, kusur):
                 kural = KOD_KURAL_ONERI[a]
             elif a == "yazim":
                 kayit["anahtar"] = dict(x.get("anahtar") or {})
-            elif a == "ondalik":
-                kayit["basamak"] = int(x.get("basamak") or 0)
-                secenek = ["tam_sayi", "birak"] if x.get("tur") == "tam" else ["yuvarla", "birak"]
-                kural = secenek[0]
             elif a == "uc":
                 kayit["yon"] = x.get("yon") or "ust"
                 for g in (ek.get("gizli_eksik") or []):
@@ -433,13 +432,12 @@ def duzeltme_onerileri(durum):
     for a, kolonlar in _duzeltme_ham(p.get("profil_ek") or {}, _teshis_kusurlu(p)).items():
         for k, v in kolonlar.items():
             o = (lo.get(a) or {}).get(k) or {}
-            if o.get("kaynak") in ("dil modeli", "kod") and o.get("oneri") in v["secenekler"]:
+            if o.get("kaynak") == "kod" and o.get("oneri") in v["secenekler"]:
                 oneri, gerekce = o["oneri"], str(o.get("gerekce") or "")
                 kaynak = o["kaynak"]
             else:
                 oneri, kaynak = v["kural"], "kural"
-                gerekce = (KOD_KURAL_GEREKCESI.get(a, "Dil modeli önerisi alınamadı; kural önerisi.")
-                           if a in LLM_KONTROLLERI else "Kural önerisi.")
+                gerekce = KOD_KURAL_GEREKCESI.get(a, "Kural önerisi.")
             cikti.setdefault(a, {})[k] = {"secenekler": v["secenekler"], "oneri": oneri,
                                           "gerekce": gerekce, "kayit": v["kayit"],
                                           "kaynak": kaynak}
@@ -458,7 +456,10 @@ KARAR_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "baskin", "don
 # modeline sorulur (ozel kodun anlami, sizinti kontrolleri; ayni icerikli
 # gruplar _ayni_gruplari'nda). Gerisini KOD kolonun kendi sayilarina bakarak
 # verir (_veri_onerileri, kaynak "kod"); cozumler kolon_cozum testleriyle.
-LLM_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "gizli_eksik", "karisik_eksik")
+# DIL MODELI 02.1 ONERILERINDE KULLANILMAZ: butun oneriler kural (kolonun
+# sayilari ve bulgusu, _veri_onerileri). Eski kayittaki "dil modeli"
+# onerileri okunmaz.
+LLM_KONTROLLERI = ()
 BASKIN_MIN_SATIR = 30       # baskin deger disinda en az bu kadar egitim satiri
 BASKIN_KAT = 1.5            # hedef orani bu kat farkliysa kolon bilgi tasir
 NEGATIF_BOS_PAY = 0.05      # negatif payi bunun altindaysa hatali kayit
@@ -636,27 +637,37 @@ def _veri_onerileri(durum, ek, df, egitim):
             "aynı değer tek yazıma çevrilir." % (_sayi(x.get("grup") or 0), _sayi(x.get("satir") or 0),
                                                 ornek))
 
-    # ONDALIK: kod ya da kimlik gibi adli kolon degistirilmez.
-    for x in ek.get("ondalik") or []:
-        k = x["kolon"]
-        parca = set(re.split(r"[^A-Za-z0-9]+", str(k).upper()))
-        kodlu = sorted(parca & _KOD_AD_PARCA)
-        if kodlu:
-            yaz("ondalik", k, "birak", "Ad kod ya da kimlik gibi (%s); kesin değer taşıyabilir, "
-                "değiştirilmez." % ", ".join(kodlu))
-        elif x["tur"] == "tam":
-            yaz("ondalik", k, "tam_sayi", "Bütün değerler tam sayı (ör. %s); tam sayı tipine "
-                "çevrilir, değerler değişmez." % _ondalik_yazi(x["ornek"]))
+    # SIZINTI: gelecek penceresi ve donemden sonraki tarih Çıkar; hedefle
+    # birebir ayirma gucune gore (neredeyse kusursuzsa Çıkar).
+    for x in ek.get("gelecek_pencere") or []:
+        yaz("gelecek_pencere", x["kolon"], PROFIL_KARAR_CIKAR,
+            "Adındaki dönem ileriye bakıyor; gözlem anından sonraki bilgi, çıkarılır.")
+    for x in ek.get("tarih_sonra") or []:
+        yaz("tarih_sonra", x["kolon"], PROFIL_KARAR_CIKAR,
+            "Dönem sonundan sonraki tarih var; gözlem anında bilinmeyen bilgi olabilir, "
+            "çıkarılır. Vade gibi doğal olarak ileri bir tarihse Tut seçin.")
+    for x in ek.get("birebir") or []:
+        auc = float(x.get("auc") or 0)
+        if auc >= SIZINTI_CIKAR_AUC:
+            yaz("birebir", x["kolon"], PROFIL_KARAR_CIKAR,
+                "Tek başına ayırma gücü %s: neredeyse kusursuz, hedeften sonra oluşmuş bilgi "
+                "gibi; çıkarılır." % _yuzde_metni(auc))
         else:
-            yaz("ondalik", k, "yuvarla", "Ondalık hane fazla (ör. %s → %s); %s basamak yeter, "
-                "yuvarlanır." % (_ondalik_yazi(x["ornek"]), _ondalik_yazi(x["ornek_yeni"]),
-                                _sayi(x["basamak"])))
+            yaz("birebir", x["kolon"], PROFIL_KARAR_TUT,
+                "Tek başına ayırma gücü %s: çok güçlü ama kusursuz değil (en güçlü gerçek "
+                "değişkenler bu düzeydedir); tutulur, hedeften önce bilindiğini kontrol edin."
+                % _yuzde_metni(auc))
+    # OZEL KOD: kod bos sayilir, bilgi bayrakta.
+    for a_ in ("gizli_eksik", "karisik_eksik"):
+        for x in ek.get(a_) or []:
+            yaz(a_, x["kolon"], "kod_bos_bayrak", "Kod %s boş sayılır; kodun olduğu satırlar "
+                "_KOD bayrağında kalır." % x.get("deger"))
     return cikti
 
 
 KARAR_KURAL_GEREKCESI = {
-    "cikar": "Dil modeli önerisi alınamadı; sızıntı kontrolünde kural önerisi Çıkar.",
-    "tut": "Dil modeli önerisi alınamadı; kural önerisi Tut.",
+    "cikar": "Sızıntı kontrolü: kural önerisi Çıkar.",
+    "tut": "Kural önerisi Tut.",
 }
 
 
@@ -745,10 +756,11 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
 # bayrak, karisik eksikte olduğu gibi birak (bos ile kodun ayni anlama
 # geldigi bilinmeden deger degistirilmez).
 KOD_DUZELTMELERI = ("gizli_eksik", "karisik_eksik")
-KOD_KURAL_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "birak"}
+KOD_KURAL_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "kod_bos_bayrak"}
 KOD_KURAL_GEREKCESI = {
-    "gizli_eksik": "Dil modeli önerisi alınamadı; kod boş sayılır, bilgi bayrakta kalır.",
-    "karisik_eksik": "Dil modeli önerisi alınamadı; kodun anlamı bilinmeden değer değiştirilmez.",
+    "gizli_eksik": "Kod boş sayılır; kodun olduğu satırlar _KOD bayrağında kalır, bilgi kaybolmaz.",
+    "karisik_eksik": "Eksik bilgi iki biçimde yazılmış; kod boş sayılır, kodun olduğu satırlar "
+                     "_KOD bayrağında kalır (kod ile boşun farkı bilgi taşıyorsa kaybolmaz).",
 }
 
 
@@ -795,9 +807,6 @@ def _duzeltme_ogren(durum, df, tr, mevcut):
     bos_yapan = {k for a_ in ("gizli_eksik", "karisik_eksik", "negatif")
                  for k, v in (bilgi_hepsi.get(a_) or {}).items()
                  if v.get("secim") in ("kod_bos", "kod_bos_bayrak", "negatif_bos")}
-    for k, v in (bilgi_hepsi.get("ondalik") or {}).items():
-        if v.get("secim") == "tam_sayi" and k in bos_yapan:
-            v["ozet"] = "Değerler tam sayı; düzeltmeyle boş hücre oluştuğu için ondalık tipte kalır."
     p["duzeltme_bilgi"] = bilgi_hepsi
     return yeni
 
@@ -1229,8 +1238,6 @@ PROFIL_ESIKLERI = (
     ("gizli", "Gizli Eksik (Özel Kod)",
      "-999, 9999 gibi özel bir kod dolu satırların bu değerinden fazlasında geçiyorsa",
      "yuzde", 0.0001, 0.50),
-    ("sifir", "Sıfır Yoğunluğu",
-     "Dolu satırların en az bu kadarı sıfırsa", "yuzde", 0.50, 1.0),
     ("sicrama", "Dönemler Arası Eksik Sıçraması",
      "Art arda iki dönem arasında boş hücre oranı bu kadar puandan fazla değişiyorsa",
      "puan", 0.01, 0.99),
@@ -1242,9 +1249,6 @@ PROFIL_ESIKLERI = (
     ("sizinti_auc", "Hedefle Neredeyse Birebir",
      "Kolon tek başına hedefi bu ayırma gücüyle (AUC) ya da daha iyi ayırıyorsa",
      "yuzde", 0.70, 0.9999),
-    ("ondalik", "Ondalık Hassasiyeti",
-     "Ondalık kolonlar bu kadar basamağa yuvarlanır (çok küçük değerli kolonda daha fazla)",
-     "sayi", 0, 12),
     ("kayma_kat", "Dönemler Arası Değer Kayması",
      "Değerlerin %25, %50 ve %75'lik değerleri art arda iki dönem arasında aynı yönde "
      "en az bu kat değişiyorsa", "kat", 2, 1000000),
@@ -1276,7 +1280,6 @@ ONERI_ESIK_ANAHTARLARI = {x[0] for x in PROFIL_ONERI_ESIKLERI}
 ESIK_KONTROL = (
     ("cok_bos", "Eksik Oranı Yüksek", "Boş hücre oranı"),
     ("baskin", "Sabit ya da Neredeyse Sabit", "Baskın değer"),
-    ("sifir", "Sabit ya da Neredeyse Sabit", "Çoğu sıfır"),
     ("baskin_min_satir", "Sabit ya da Neredeyse Sabit", "Baskın değer: satır sınırı"),
     ("baskin_kat", "Sabit ya da Neredeyse Sabit", "Baskın değer: hedef farkı"),
     ("kimlik", "Çok Fazla Farklı Değer", "Kimlik benzeri"),
@@ -1292,7 +1295,6 @@ ESIK_KONTROL = (
     ("metin_bayrak_pay", "Gizli Eksik", "Metin olarak boş: bayrak sınırı"),
     ("negatif_bos_pay", "Beklenmeyen Negatif", "Boş sayma sınırı"),
     ("uc_yayilim", "Uç Değer Yoğunluğu", "Uç değer"),
-    ("ondalik", "Ondalık Hassasiyeti", "Basamak sayısı"),
 )
 _ESIK_KONTROL = {a: (i, k, alt) for i, (a, k, alt) in enumerate(ESIK_KONTROL)}
 
@@ -1314,13 +1316,14 @@ PROFIL_ESIK_ACIKLAMA = {
         "bilgi": "**Nedir?** Kolonun satırlarının ne kadarının boş olduğuna bakar.\n\n"
                  "**Neden önemli?** Satırların çoğunda boş olan kolon, modele ancak az sayıda "
                  "satırda bilgi verir; boşlukların nasıl doldurulduğu sonucu belirler hale gelir.\n\n"
-                 "**Örnek:** 100.000 satırın 60.000'inde boş olan kolonun boş oranı %60'tır; eşik "
-                 "%50 ise yakalanır.\n\n"
+                 "**Örnek:** 100.000 satırın 85.000'inde boş olan kolonun boş oranı %85'tir; eşik "
+                 "%80 ise yakalanır.\n\n"
                  "**Yakalanırsa:** ham kolon değişken üretimine girmez. Yerine kolonun dolu "
                  "olup olmadığını gösteren 1/0 bayrağı önerilir; siz seçersiniz.\n\n"
-                 "**Neden %50 önerildi?** Kolonun en az yarısı dolu olsun diye. Daha sıkı (ör. "
-                 "%30) seçerseniz daha çok kolon dışarıda kalır; daha gevşek (ör. %80) seçerseniz "
-                 "çok boş kolonlar da üretime girer."},
+                 "**Neden %80 önerildi?** Kredi verisinde çok boş kolonlar da bilgi taşır "
+                 "(ör. kartı olmayan müşterinin kart kolonları boştur); %80'e kadar boş kolon "
+                 "doldurularak kullanılır. Daha sıkı (ör. %50) seçerseniz daha çok kolon "
+                 "dışarıda kalır."},
     "kimlik": {
         "kisa": "Neredeyse her satırda farklı değer alan kolon (müşteri no, işlem no gibi) "
                 "bir şey öğretmez, yalnız satırı tanır.",
@@ -1356,9 +1359,10 @@ PROFIL_ESIK_ACIKLAMA = {
                  "göre gruplama, seyrek değerleri «Diğer»de toplama, kodun ilk karakterleriyle "
                  "gruplama ya da metinden özellik önerilir; siz seçersiniz. Hiçbiri işe "
                  "yaramıyorsa kolon çıkarılır.\n\n"
-                 "**Neden 50 önerildi?** 50'ye kadar farklı değer, her gruba yeterince satır "
-                 "düşecek kadar azdır. Daha fazla değeri olan il gibi kolonlar yakalansa da "
-                 "gruplanarak kullanılır."},
+                 "**Önerilen nereden?** Bu veriden: her değere ortalama en az 20 temerrüt "
+                 "düşsün diye eğitimdeki temerrüt sayısı ÷ 20; en az 10, en çok 50 (ör. 1.000 "
+                 "temerrütte 50, 400 temerrütte 20). Daha çok değeri olan kolon yakalanır ve "
+                 "gruplanarak kullanılır. Hedef bilinmiyorsa 50."},
     "baskin": {
         "kisa": "Neredeyse bütün satırlarda aynı değeri alan kolon az bilgi taşır.",
         "sonuc": "Kararınıza bırakılır",
@@ -1391,8 +1395,9 @@ PROFIL_ESIK_ACIKLAMA = {
                  "dönem etkileniyorsa Çıkar; yalnız ilk dönemler etkileniyor ve dönemlerin İlk "
                  "Dönemler payından (%35) fazlası değilse Tut (kolon sonradan eklenmiş); "
                  "değilse Çıkar. Dönem kolonu seçilmediyse bu kontrol yapılmaz.\n\n"
-                 "**Neden 100 önerildi?** 100 satırda bütün değerlerin tesadüfen aynı çıkması "
-                 "çok düşük bir ihtimaldir."},
+                 "**Önerilen nereden?** Bu veriden: dönem başına ortalama satırın %10'u, en "
+                 "az 30 (ör. 24 dönemde 200.000 satır: 833). Çok küçük dönemlerde tek değer "
+                 "tesadüfen çıkabilir, o dönemlere bakılmaz. Dönem bilinmiyorsa 100."},
     "gizli": {
         "kisa": "Boş yerine -999, 9999 gibi bir kodla doldurulmuş hücreler gerçek değer "
                 "sanılır.",
@@ -1406,27 +1411,13 @@ PROFIL_ESIK_ACIKLAMA = {
                  "için gösterilir.\n\n"
                  "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
                  "Kodun anlamı kolona göre değişir (ör. «hiç işlem yok» da olabilir, «bilgi "
-                 "yok» da); önerilen düzeltmeyi dil modeli kolonun adına ve açıklamasına "
-                 "bakıp seçer, gerekçesi Bulgu sütununda yazar. Seçenekler: kodu boş sayıp "
+                 "yok» da); öneri kuraldır: kod boş sayılır ve _KOD bayrağı üretilir (bilgi "
+                 "kaybolmaz); siz değiştirebilirsiniz. Seçenekler: kodu boş sayıp "
                  "kolon adının sonuna _KOD eklenmiş 1/0 bayrağı üretmek, yalnız boş saymak, "
                  "kolonda boş hücre de varsa boşları da koda çevirmek, olduğu gibi bırakmak. "
-                 "Dil modeline ulaşılamazsa kodu boş sayıp bayrak üretmek önerilir.\n\n"
+                 "\n\n"
                  "**Neden %1 önerildi?** %1'in altında kalan kod birkaç tesadüfi satır olabilir; "
                  "üstündeyse kolonun dolduruluş biçimidir."},
-    "sifir": {
-        "kisa": "Dolu satırların çoğu sıfır olan kolon (çoğu müşterinin hiç yapmadığı bir "
-                "işlem gibi).",
-        "sonuc": "Bilgi için gösterilir; işlem yapılmaz",
-        "bilgi": "**Nedir?** Sayısal kolonda dolu satırların ne kadarının tam sıfır olduğuna "
-                 "bakar.\n\n"
-                 "**Neden önemli?** Böyle bir kolonun bilgisi büyük ölçüde «sıfır mı, değil "
-                 "mi» ayrımındadır. Sıfır geçerli bir değerdir (çoğu zaman «işlem yok») ve "
-                 "kolon bu ayrımı zaten taşır; bilmeniz için gösterilir.\n\n"
-                 "**Örnek:** dolu satırların %97'si 0 olan yurt dışı harcama kolonu, eşik %95 "
-                 "ise gösterilir.\n\n"
-                 "**Yakalanırsa:** işlem yapılmaz, kolon olduğu gibi üretime girer.\n\n"
-                 "**Neden %95 önerildi?** Yalnız sıfırın gerçekten baskın olduğu kolonlar "
-                 "gösterilsin diye."},
     "sicrama": {
         "kisa": "Bir dönemden ötekine boş oranı birden değişen kolon, veri kaynağında bir "
                 "değişikliğe işaret eder.",
@@ -1482,8 +1473,9 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "önerilir.\n\n"
                  "**Yakalanırsa:** yalnız öneriyi belirler; kolonun yakalanmasını değiştirmez, "
                  "kararı siz verirsiniz.\n\n"
-                 "**Neden 30 önerildi?** Bir oranın kabaca yorumlanabilmesi için istatistikte "
-                 "yaygın kullanılan en küçük grup büyüklüğü."},
+                 "**Önerilen nereden?** Bu veriden: o satırlarda en az 5 temerrüt beklensin "
+                 "diye 5 ÷ eğitimdeki hedef oranı (ör. %3 ise 167). 5'ten az temerrütlü bir "
+                 "grubun oranı tesadüfe bağlıdır. Hedef oranı bilinmiyorsa 30."},
     "baskin_kat": {
         "kisa": "Baskın değer dışındaki az sayıdaki satır hedefi belirgin biçimde ayırıyorsa "
                 "kolon az ama değerli bilgi taşır (takibe düşme bayrağı gibi).",
@@ -1524,8 +1516,9 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "**Örnek:** eksik oranı 202403'te %0, 202404'te %55: eşik %50 ise Çıkar "
                  "önerilir.\n\n"
                  "**Yakalanırsa:** yalnız öneriyi belirler; kararı siz verirsiniz.\n\n"
-                 "**Neden %50 önerildi?** Kolonun yarısından fazlası boşsa, Eksik Oranı Yüksek "
-                 "kontrolünün de varsayılan sınırı aşılmış olur."},
+                 "**Neden %50 önerildi?** Kolon önceden doluyken yarısı boşa döndüyse güncel "
+                 "dönemlerde veri toplama bozulmuştur; model kullanımda bu kolonu çoğunlukla "
+                 "boş görür."},
     "negatif_bos_pay": {
         "kisa": "Az sayıda negatif değer hatalı kayıttır; çok sayıda negatif değer sistematik "
                 "bir anlam taşır (iade, düzeltme kaydı).",
@@ -1552,29 +1545,6 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "**Yakalanırsa:** yalnız öneriyi belirler; düzeltmeyi siz seçersiniz.\n\n"
                  "**Neden %5 önerildi?** Bayrağın modelde işe yaraması için yeterli satır; "
                  "daha azında bayrak çoğu zaman sabite yakındır."},
-    "ondalik": {
-        "kisa": "Gereksiz uzun ondalıklar (1234,5678912345 gibi) ve «.0» ile yazılmış tam "
-                "sayılar hesapları ve tabloları gereksiz yere karmaşıklaştırır.",
-        "sonuc": "Düzeltme seçilir; kolon üretime girer",
-        "bilgi": "**Nedir?** Ondalık tipteki kolonlara bakar. Boş hücresi olmayan ve bütün "
-                 "değerleri tam sayı olan kolon (12.0, 3.0 gibi) tam sayı tipine çevrilebilir. "
-                 "Değerlerinden en az biri eşikteki basamaktan fazla ondalık hane taşıyan "
-                 "kolon yuvarlanabilir.\n\n"
-                 "**Neden önemli?** Ondalığın onuncu hanesi bilgi taşımaz ama PSI, aralıklara "
-                 "bölme ve tablolar bu farkları ayrı değer gibi görür; sonuçlar ve çıktılar "
-                 "gereksiz yere karmaşıklaşır.\n\n"
-                 "**Örnek:** oran kolonunda 0,123456789 değeri 4 basamakta 0,1235 olur; "
-                 "adet kolonunda 3.0 değeri 3 olur.\n\n"
-                 "**Kapsam:** üretime giren ondalık tipteki kolonlar, bütün satırlar. Çok "
-                 "küçük değerli kolonda (ör. 0,000012) küçük değerlerin (en küçük %1'lik dilim) "
-                 "ilk 2 anlamlı hanesi korunacak kadar basamak bırakılır, en çok 12. Boş hücresi olan tam sayılı "
-                 "kolon ondalık tipte kalır (değerleri zaten tam).\n\n"
-                 "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
-                 "Öneri kolondan: adında KOD, NO, ID gibi bir parça varsa olduğu gibi bırakmak; tam sayılı kolonda tam sayıya çevirmek, diğerlerinde yuvarlamak. "
-                 "Diğer seçenek: olduğu gibi bırakmak. Düzeltme en son uygulanır (uç kırpmadan "
-                 "sonra).\n\n"
-                 "**Neden 4 önerildi?** Tutarlarda kuruş (2 basamak), oranlarda binde bir "
-                 "duyarlılık için yeter; daha fazlası modele bilgi katmaz."},
     "yakin_kor": {
         "kisa": "Birebir aynı olmasa da aynı bilgiyi taşıyan kolonlar (biri ötekinin kuruş "
                 "karşılığı ya da yuvarlanmış hali gibi).",
@@ -1593,8 +1563,8 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "**Yakalanırsa:** her gruptan bir kolon kalır, diğerleri üretime girmez. "
                  "Hedefi eğitim satırlarında daha iyi ayıran (tek değişkenli ayırma gücü, "
                  "AUC) kolon önerilir; başka bir kontrolde çıkarılan kolon sona gider. Hedef "
-                 "iki sınıflı değilse sırayı dil modeli verir (az düzeltme isteyen öne, sonra "
-                 "ad ve açıklama). Siz seçersiniz; seçtiğiniz kolon başka bir kontrolde Çıkar "
+                 "iki sınıflı değilse sırayı kural verir (başka kontrolde çıkarılmayan ve az "
+                 "düzeltme isteyen öne, eşitse adı kısa olan). Siz seçersiniz; seçtiğiniz kolon başka bir kontrolde Çıkar "
                  "denirse sıradaki kolon kalır.\n\n"
                  "**Neden %99 önerildi?** %99 ve üstü korelasyonda iki kolon pratikte aynı "
                  "sırayı verir; daha düşük eşik ilişkili ama farklı bilgi taşıyan kolonları "
@@ -1615,12 +1585,13 @@ PROFIL_ESIK_ACIKLAMA.update({
                  "sırasına, kategorik kolonda (en çok 50 farklı değer) her değerin hedef "
                  "oranına bakılır. Boş hücre ayrı bir değer sayılır. Yalnız Train "
                  "satırları kullanılır (Test (OOS) ve Validasyon (OOT) hedefi karara karışmaz).\n\n"
-                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; önerilen "
-                 "seçimi kolonun anlamına bakıp dil modeli verir (ulaşılamazsa Çıkar). Kolonun hedeften önce bilinen bir bilgi olduğundan eminseniz "
-                 "tutabilirsiniz.\n\n"
-                 "**Neden %95 önerildi?** Kredi riskinde en güçlü tek değişkenler (ör. "
-                 "gecikme gün sayısı) bile genellikle %85 civarında kalır; %95 üstü olağan "
-                 "dışıdır."},
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur. Öneri "
+                 "kuraldır: ayırma gücü %95 ve üstüyse (neredeyse kusursuz) Çıkar, altındaysa "
+                 "Tut; ikinci durumda kolonun hedeften önce bilindiğini kontrol edin.\n\n"
+                 "**Neden %85 önerildi?** Kredi riskinde en güçlü gerçek tek değişkenler (ör. "
+                 "gecikme gün sayısı) bile genellikle %85 civarında kalır; üstü incelenmeli. "
+                 "%95 ve üstü neredeyse kusursuzdur, bu yüzden öneri orada Çıkar, %85 ile %95 "
+                 "arasında Tut (kontrol edin)."},
     "kayma_kat": {
         "kisa": "Bir dönemden ötekine değerleri topluca kat kat değişen kolon, birim ya da "
                 "hesap değişikliğine işaret eder.",
@@ -1651,20 +1622,75 @@ ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her 
 ESIK_DUGME = "Eşikleri Onayla ve Profili Çıkar"
 
 
-def _esik_varsayilan():
+def _esik_varsayilan(durum=None):
+    """Onerilen esikler; durum verilirse uc esik bu veriden (veriye_gore_onerilen)."""
     from fe_agent import profil_ek as pe
     d = dict(pe.ESIK_VARSAYILAN)
-    d.update({"cok_bos": sfa_mod.NULL_ESIK, "kimlik": 0.95, "kardinalite": sfa_mod.KATEGORIK_MAX})
+    d.update({"cok_bos": COK_BOS_ESIK, "kimlik": 0.95, "kardinalite": sfa_mod.KATEGORIK_MAX})
     d.update({"baskin_min_satir": BASKIN_MIN_SATIR, "baskin_kat": BASKIN_KAT,
               "donem_tut_pay": DONEM_TUT_PAY, "sicrama_cikar": SICRAMA_CIKAR_PAY,
               "negatif_bos_pay": NEGATIF_BOS_PAY,
               "metin_bayrak_pay": METIN_BAYRAK_PAY})
+    if durum:
+        try:
+            d.update({k: v for k, (v, _m) in veriye_gore_onerilen(durum).items()})
+        except Exception:
+            pass
     return d
 
 
+# VERIYE GORE ONERILEN (dil modeli yok): uc esigin onerileni bu veri
+# setinin egitim satiri, hedef orani ve donem sayisindan kuralla; bilgi
+# yoksa sabit. Kalan esikler is kurali, her veride ayni.
+COK_BOS_ESIK = 0.80
+# Pencere tutarliligi ve tutar / adet uyumu: celisen satirlar en az bu payda
+# ise gosterilir (tek tuk hatali satir buyuk veride her kolonda cikar).
+ILISKI_MIN_PAY = 0.01
+
+
+def _veri_ozeti(durum):
+    """(egitim satiri, egitim hedef orani, toplam satir, donem sayisi); bilinmeyen None."""
+    durum = durum or {}
+    b = durum.get("bolme") or {}
+    pr = durum.get("profil") or {}
+    n = pr.get("satir")
+    egitim = (b.get("satir") or {}).get("egitim") if isinstance(b.get("satir"), dict) else None
+    oran = (b.get("hedef_oran") or {}).get("egitim") if isinstance(b.get("hedef_oran"), dict) else None
+    if oran is None and pr.get("hedef_tip") == "binary" and pr.get("event_rate") is not None:
+        oran = float(pr["event_rate"]) / 100.0
+    donem_kol = (durum.get("meta") or {}).get("donem")
+    donem_n = None
+    for o in pr.get("kolon_ozet") or []:
+        if isinstance(o, dict) and donem_kol and o.get("ad") == donem_kol and o.get("tekil"):
+            donem_n = int(o["tekil"])
+    egitim = int(egitim) if egitim else (int(n) if n else None)
+    return egitim, (float(oran) if oran else None), (int(n) if n else None), donem_n
+
+
+def veriye_gore_onerilen(durum):
+    """{anahtar: (deger, dayanak metni)}: veriden hesaplanabilen onerilenler."""
+    egitim, oran, n, donem_n = _veri_ozeti(durum)
+    cikti = {}
+    if oran and 0 < oran < 1:
+        v = int(min(1000, max(10, math.ceil(5.0 / oran))))
+        cikti["baskin_min_satir"] = (v, "en az 5 temerrüt için 5 ÷ hedef oranı %s"
+                                     % _yuzde_metni(oran))
+        if egitim:
+            tem = egitim * oran
+            k = int(min(50, max(10, round(tem / 20.0))))
+            cikti["kardinalite"] = (k, "değer başına en az 20 temerrüt: %s temerrüt ÷ 20"
+                                    % _sayi(int(round(tem))))
+    if n and donem_n and donem_n > 1:
+        v = int(max(30, round(0.10 * n / donem_n)))
+        cikti["donem_min_satir"] = (v, "dönem başına ortalama satırın %%10'u (%s satır, %s dönem)"
+                                    % (_sayi(n), _sayi(donem_n)))
+    return cikti
+
+
 def profil_esikleri(durum):
-    """Gecerli esikler: varsayilan + kullanicinin onayladigi."""
-    d = _esik_varsayilan()
+    """Gecerli esikler: varsayilan (veriye gore onerilen dahil) + kullanicinin
+    onayladigi."""
+    d = _esik_varsayilan(durum)
     kayit = (durum.get("profil") or {}).get("esikler")
     if isinstance(kayit, dict):
         d.update({k: v for k, v in kayit.items() if k in d and v is not None})
@@ -1732,7 +1758,7 @@ def esik_dogrula(gelen):
 def esik_formu(durum, hata=None, kilitli=False):
     """02.1 esik formu (tip profil_esik)."""
     simdiki = profil_esikleri(durum)
-    varsayilan = _esik_varsayilan()
+    varsayilan = _esik_varsayilan(durum)
     satirlar = []
     for a, kontrol, anlam, birim, en_az, en_cok in PROFIL_ESIKLERI:
         ac = PROFIL_ESIK_ACIKLAMA.get(a) or {}
@@ -1751,13 +1777,103 @@ def esik_formu(durum, hata=None, kilitli=False):
     for r in satirlar:
         r["kontrol_no"] = kontrol_no(r["kontrol_grup"])
     satirlar.sort(key=lambda r: (r["kontrol_no"] or 99, r.pop("_sira")))
+    dayanak = {}
+    try:
+        dayanak = {k: m for k, (_v, m) in veriye_gore_onerilen(durum).items()}
+    except Exception:
+        pass
+    for r in satirlar:
+        r["dayanak"] = dayanak.get(r["anahtar"], "sabit kural")
+        if r["anahtar"] in ONERI_ESIK_AD:
+            r["oneri_ad"] = ONERI_ESIK_AD[r["anahtar"]]
+    kontroller, esiksiz = esik_form_kontrolleri(durum)
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
+            "kontroller": kontroller, "esiksiz": esiksiz,
             "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
+
+
+# ESIK FORMU DUZENI: her kontrol bir kart; icinde kurallari (esigi olan ve
+# olmayan), esikli kuralin altinda onun oneri esikleri. Esigi olmayan
+# kontroller en altta tek satir.
+KONTROL_FORM_KISA = {
+    "cok_bos": "Çoğu boş olan kolon",
+    "g_sabit": "Kolonun (neredeyse) tamamında aynı değer",
+    "g_kardinalite": "Çok fazla farklı değer; olduğu gibi modele giremez",
+    "tarih": "Tarih kolonu ham haliyle değişken olmaz",
+    "g_ayni": "Başka bir kolonla aynı bilgiyi taşıyan kolon",
+    "g_sizinti": "Hedeften ya da gözlem anından sonraki bilgi",
+    "g_donem": "Kolon dönemden döneme bozuluyor",
+    "g_gizli": "Boş değer özel kodla ya da yazıyla girilmiş",
+    "yazim": "Aynı değer farklı biçimlerde yazılmış",
+    "negatif": "Negatif olamayacak ölçüde negatif değer",
+    "uc": "Saçma büyük ya da küçük değer (hatalı giriş)",
+    "g_iliskili": "Birbirine bağlı iki kolon çelişiyor",
+    "tekrar": "Aynı satır birden fazla geçiyor",
+    "set_cakisma": "Train'deki müşteri ya da satır test veya OOT setinde de var",
+}
+KURAL_FORM_AD = {
+    "cok_bos": "Boş hücre oranı", "sabit": "Tek değer", "baskin": "Baskın değer",
+    "kimlik_gibi": "Kimlik benzeri", "yuksek_kardinalite": "Metinde çok değer",
+    "tarih": "Tarih kolonu", "ayni_icerik": "Birebir aynı", "yakin_icerik": "Neredeyse aynı",
+    "gelecek_pencere": "Gelecek penceresi", "birebir": "Hedefle birebir",
+    "tarih_sonra": "Dönemden sonraki tarih", "donem": "Dönemde boş ya da sabit",
+    "sicrama": "Eksik sıçraması", "kayma": "Değer kayması", "gizli_eksik": "Özel kod",
+    "karisik_eksik": "Özel kod ve boş hücre", "metin_bos": "Metin olarak boş",
+    "yazim": "Yazım tutarsızlığı", "negatif": "Negatif değer", "uc": "Uç değer",
+    "pencere": "Pencere tutarlılığı", "tutar_adet": "Tutar ve adet",
+    "tekrar": "Tekrar eden satır", "set_cakisma": "Setler arası çakışma",
+}
+# Esik -> ait oldugu kural (PROFIL_KONTROLLERI anahtari).
+ESIK_KURAL = {
+    "cok_bos": "cok_bos", "baskin": "baskin", "baskin_min_satir": "baskin",
+    "baskin_kat": "baskin", "kimlik": "kimlik_gibi", "kardinalite": "yuksek_kardinalite",
+    "yakin_kor": "yakin_icerik", "sizinti_auc": "birebir", "donem_min_satir": "donem",
+    "donem_tut_pay": "donem", "sicrama": "sicrama", "sicrama_cikar": "sicrama",
+    "kayma_kat": "kayma", "gizli": "gizli_eksik", "metin_bayrak_pay": "metin_bos",
+    "negatif_bos_pay": "negatif", "uc_yayilim": "uc",
+}
+ONERI_ESIK_AD = {
+    "baskin_min_satir": "Satır sınırı", "baskin_kat": "Hedef farkı",
+    "donem_tut_pay": "İlk dönemler", "sicrama_cikar": "Çıkarma sınırı",
+    "metin_bayrak_pay": "Bayrak sınırı", "negatif_bos_pay": "Boş sayma sınırı",
+}
+
+
+def esik_form_kontrolleri(durum):
+    """([{"no", "ad", "kisa", "kurallar": [{"anahtar", "ad", "olcut", "sonuc",
+    "esik", "oneri": [anahtar]}]}], [{"no", "ad"}] esiksiz kontroller)."""
+    kurallar_metin = _profil_kurallari(profil_esikleri(durum))
+    pk = {x[0]: x for x in PROFIL_KONTROLLERI}
+    uyeler = {g[0]: g[3] for g in KONTROL_GRUPLARI}
+    esik_of = {}
+    for a, k in ESIK_KURAL.items():
+        esik_of.setdefault(k, []).append(a)
+    sira = [x[0] for x in PROFIL_ESIKLERI]
+    kontroller, esiksiz = [], []
+    for no, (a, ad) in enumerate(kart_kontrol_sirasi(), 1):
+        kurallar = []
+        for u in uyeler.get(a, (a,)):
+            esikler = sorted(esik_of.get(u, []), key=sira.index)
+            yakala = [e for e in esikler if e not in ONERI_ESIK_ANAHTARLARI]
+            oneri = [e for e in esikler if e in ONERI_ESIK_ANAHTARLARI]
+            ana = yakala[0] if yakala else None
+            ac = PROFIL_ESIK_ACIKLAMA.get(ana) or {}
+            kurallar.append({
+                "anahtar": u, "ad": KURAL_FORM_AD.get(u, pk.get(u, (u, u))[1]),
+                "olcut": kurallar_metin.get(u, ""),
+                "sonuc": ac.get("sonuc") or NE_OLACAK.get(pk[u][2], "") if u in pk else "",
+                "esik": ana, "oneri": oneri})
+        if not any(k["esik"] or k["oneri"] for k in kurallar):
+            esiksiz.append({"no": no, "ad": ad})
+            continue
+        kontroller.append({"no": no, "ad": ad, "kisa": KONTROL_FORM_KISA.get(a, ""),
+                           "kurallar": kurallar})
+    return kontroller, esiksiz
 
 
 def esik_degisiklik_notu(durum):
     """Varsayilandan farkli esikler (kartta ve metinde)."""
-    simdiki, varsayilan = profil_esikleri(durum), _esik_varsayilan()
+    simdiki, varsayilan = profil_esikleri(durum), _esik_varsayilan(durum)
     parca = ["%s %s (önerilen %s)" % (esik_adi(a, kontrol), _esik_metni(birim, simdiki[a]),
                                         _esik_metni(birim, varsayilan[a]))
              for a, kontrol, _an, birim, _x, _y in PROFIL_ESIKLERI
@@ -1948,7 +2064,8 @@ def _ad_kontrolleri(durum, df, adaylar, ek):
                     continue
                 ciftler.append((k1, k2, "azalan" if s1 == "min" else "artan"))
         ek["pencere_cift"] = len(ciftler)
-        ek["pencere"] = profil_ek.pencere_tutarliligi(df, ciftler)
+        ek["pencere"] = [x for x in profil_ek.pencere_tutarliligi(df, ciftler)
+                         if x["pay"] >= ILISKI_MIN_PAY]
 
         # TUTAR / ADET ve EN BUYUK / ORTALAMA: adin tek parcasiyla ayrilan
         # ciftler.
@@ -1974,7 +2091,8 @@ def _ad_kontrolleri(durum, df, adaylar, ek):
                     if i1 == "maks" and i2 == "ort" and (p1 in _MAKS_PARCA or p2 in _ORT_PARCA):
                         maks_ort.add((k1, k2))
         ek["tutar_cift"] = len(adet_tutar) + len(maks_ort)
-        ek["tutar_adet"] = profil_ek.tutar_adet_uyumu(df, sorted(adet_tutar), sorted(maks_ort))
+        ek["tutar_adet"] = [x for x in profil_ek.tutar_adet_uyumu(df, sorted(adet_tutar), sorted(maks_ort))
+                            if x["pay"] >= ILISKI_MIN_PAY]
     except Exception as e:      # ad kontrolleri profili durdurmasin
         ek["ad_kontrol_hata"] = str(e)[:200]
     return ek
@@ -2088,10 +2206,6 @@ def profil_hesapla(durum):
     _isaret("dil_modeli_onerileri")
     for k, v in p["cozum_oneri"].items():
         o = (p["llm_oneri"].get(v.get("kontrol")) or {}).get(k) or {}
-        if o.get("kaynak") == "dil modeli" and o.get("oneri") in (v.get("secenekler") or []):
-            v["kural_gerekce"] = v.get("gerekce", "")
-            v["oneri"], v["gerekce"] = o["oneri"], o.get("gerekce") or v.get("gerekce", "")
-            v["kaynak"] = "dil modeli"
     ek["ayni_gruplar"] = _ayni_gruplari(durum, ek, p, df_tum)
     _isaret("ayni_gruplar")
     p.pop("kod_oneri", None)
@@ -2177,8 +2291,8 @@ def _tarih_onerileri(df, teshis, donem, dolu):
     return cikti
 
 
-AYNI_KURAL_GEREKCESI = ("Dil modeli önerisi alınamadı; başka kontrolde çıkarılmayan ve en "
-                        "az düzeltme isteyen kolon önerildi.")
+AYNI_KURAL_GEREKCESI = ("Başka kontrolde çıkarılmayan, en az düzeltme ve karar isteyen "
+                        "kolon önerildi; eşitse adı kısa olan.")
 # Uyenin baska kontrollerdeki durumu (ayni icerikli grupta siralama icin).
 _UYE_KARAR = ("tarih_sonra", "baskin", "donem", "sicrama", "kayma")
 
@@ -2223,7 +2337,7 @@ def _kural_sirasi(uyeler, durum_):
     return sorted(uyeler, key=lambda u: (
         bool((durum_.get(u) or bos)["cikar"]),
         (durum_.get(u) or bos)["duzeltme"] + (durum_.get(u) or bos)["karar"],
-        uyeler.index(u)))
+        len(u), uyeler.index(u)))
 
 
 def _hedef_gucleri(durum, df, kolonlar):
@@ -2267,8 +2381,7 @@ def _ayni_gruplari(durum, ek, p, df=None):
     yakin = ek.get("yakin_icerik") or []
     if not ham and not yakin:
         return []
-    onceki = {g["id"]: g for g in ((p.get("profil_ek") or {}).get("ayni_gruplar") or [])
-              if isinstance(g, dict) and g.get("kaynak") == "dil modeli"}
+    onceki = {}           # dil modeli onerisi kullanilmaz
     durum_ = _uye_durumlari(ek, p)
     gruplar = [{"id": g["kalan"], "uyeler": [g["kalan"]] + list(g["kopyalar"])} for g in ham]
     # Neredeyse ayni gruplar: id "yakin:<ilk kolon>" (birebir grubun id'siyle
@@ -2305,19 +2418,7 @@ def _ayni_gruplari(durum, ek, p, df=None):
             # hedef karar vermez; anlam ve bulgulara gore dil modeli siralar.
             g["guc_esit"] = max(g["guc"].values()) - min(g["guc"].values()) < 1e-4
     hedefle = lambda g: bool(g.get("guc")) and not g.get("guc_esit")
-    sorulacak = [g for g in gruplar if not ayni_mi(g) and not hedefle(g)]
-    oneri, hata = {}, None
-    if sorulacak:
-        try:
-            from fe_agent import llm as llm_mod
-            oneri, hata = llm_mod.ayni_icerik_sec(
-                [{"id": g["id"], "iliski": g.get("iliski_metni", ""),
-                  "uyeler": [{"ad": u, "aciklama": aciklama.get(u, ""),
-                              "cikar": g["elenen"].get(u, ""),
-                              "bulgular": g["uye_bulgu"].get(u, [])}
-                             for u in g["uyeler"]]} for g in sorulacak])
-        except Exception as e:      # dil modeli yoksa kural gecerli
-            hata = str(e)[:120]
+    oneri = {}
     for g in gruplar:
         if hedefle(g):
             sira = sorted(g["uyeler"], key=lambda u: (-g["guc"][u], g["uyeler"].index(u)))
@@ -2340,7 +2441,7 @@ def _ayni_gruplari(durum, ek, p, df=None):
         # koymadiysa bile).
         sira = [u for u in sira if u not in g["elenen"]] + [u for u in sira if u in g["elenen"]]
         if g.get("guc_esit"):
-            gerekce = ("Kolonların hedefi ayırma gücü eşit (AUC %s); karar anlam ve bulgulara "
+            gerekce = ("Kolonların hedefi ayırma gücü eşit (AUC %s); karar kurala "
                        "göre. " % _yuzde_metni(list(g["guc"].values())[0])) + (gerekce or "")
         g.update({"sira": sira, "oneri": sira[0], "gerekce": gerekce, "kaynak": kaynak})
     return gruplar
@@ -2400,7 +2501,8 @@ def _karar_cikar_sebebi(p, ek=None):
         for x in ek.get(a) or []:
             k = x["kolon"]
             o = (lo.get(a) or {}).get(k) or {}
-            v = o.get("oneri") if o.get("oneri") in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR) \
+            v = o.get("oneri") if (o.get("kaynak") == "kod" and o.get("oneri")
+                                   in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR)) \
                 else _karar_kurali(a)
             if v == PROFIL_KARAR_CIKAR:
                 cikti.setdefault(k, a)
@@ -2636,8 +2738,6 @@ def _profil_kurallari(esik=None):
                          "var. Kodun payına bakılmaz.",
         "gizli_eksik": "-1, -99, -999, 9999 gibi bir değer dolu satırların %s fazlasında "
                        "geçiyor ve kolonun geri kalan değerlerinden kopuk." % _yuzde_ekli(e["gizli"]),
-        "sifir": "Dolu satırlarda sıfırın payı %s ya da üstünde. Çoğu zaman işlem yok "
-                 "anlamına gelir." % _yuzde_metni(e["sifir"]),
         "negatif": "Kolon kartında ölçüsü adet, gün ya da süre olan kolonda negatif değer var.",
         "sicrama": "Eksik oranı art arda iki dönem arasında %s puandan fazla değişiyor."
                    % _sayi_metni(round(e["sicrama"] * 100, 2)),
@@ -2645,8 +2745,6 @@ def _profil_kurallari(esik=None):
               "arasındaki farkın %s katından fazla aşıyor (hatalı giriş)." % _sayi_metni(e["uc_yayilim"]),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır, ya da bütün kolonları aynı "
                   "satırlar.",
-        "ondalik": "Ondalık kolon ya bütün değerleri tam sayı (boş hücresiz), ya da değerleri "
-                   "%s basamaktan fazla ondalık hane taşıyor." % _sayi(e["ondalik"]),
         "set_cakisma": "Test (OOS) ya da Validasyon (OOT) setinde Train'de (MS) de geçen kimlik, "
                        "kimlik ve dönem ya da bütün kolonları Train'deki bir satırla aynı satır.",
         "tarih": "Kolon tarih: tarih tipinde, YYYY-AA-GG ya da GG.AA.YYYY metni, ya da "
@@ -2667,9 +2765,9 @@ def _profil_kurallari(esik=None):
         "tarih_kod": "Tarih kolonunda yılı 1901'den önce ya da 2200'den sonra olan bir tarih "
                      "var.",
         "pencere": "Aynı ölçünün kısa penceresi uzun penceresinden büyük (toplam, adet, en "
-                   "büyük) ya da küçük (en küçük).",
+                   "büyük) ya da küçük (en küçük); satırların en az %1'inde.",
         "tutar_adet": "Adet 0 ya da boşken tutar dolu, ya da en büyük değer ortalamadan "
-                      "küçük.",
+                      "küçük; satırların en az %1'inde.",
     }
 
 
@@ -2678,9 +2776,9 @@ def _profil_kurallari(esik=None):
 # ayrinti sutunlara bolunur (kontrol_parcalari): Kontrol, Ölçüt (kural,
 # kapsam, ornek), Ne Olacak (yakalanirsa), Neden Bu Değer (gerekce).
 # Kural metni kapsam ve yakalanirsa ile tekrar etmez.
-_KONTROL_ESIK_ANAHTARI = {"ondalik": "ondalik", "cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
+_KONTROL_ESIK_ANAHTARI = {"cok_bos": "cok_bos", "kimlik_gibi": "kimlik",
                           "yuksek_kardinalite": "kardinalite", "baskin": "baskin",
-                          "donem": "donem_min_satir", "gizli_eksik": "gizli", "sifir": "sifir",
+                          "donem": "donem_min_satir", "gizli_eksik": "gizli",
                           "sicrama": "sicrama", "uc": "uc_yayilim", "yakin_icerik": "yakin_kor",
                           "birebir": "sizinti_auc", "kayma": "kayma_kat"}
 _KONTROL_ACIKLAMA_EK = {
@@ -2724,11 +2822,10 @@ _KONTROL_ACIKLAMA_EK = {
                  "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
                  "Kodu veriyi hazırlayan bilerek koymuş olabilir (ör. hiç işlem yoksa -1); "
                  "onu kendiliğinden boşa çevirmek doğru olmayabilir. Bu yüzden önerilen "
-                 "düzeltmeyi dil modeli kolonun adına ve açıklamasına bakıp seçer, gerekçesi "
+                 "düzeltme kuraldır: kod boş sayılır ve _KOD bayrağı üretilir, gerekçesi "
                  "Bulgu sütununda yazar. Seçenekler: boşları da koda çevirmek (tek biçim, "
                  "verideki kodla), kodu boş sayıp kolon adının sonuna _KOD eklenmiş 1/0 "
-                 "bayrağı üretmek, yalnız boş saymak, olduğu gibi bırakmak. Dil modeline "
-                 "ulaşılamazsa olduğu gibi bırakmak önerilir."},
+                 "bayrağı üretmek, yalnız boş saymak, olduğu gibi bırakmak."},
     "negatif": {
         "kisa": "Adet, gün, süre gibi negatif olamayacak bir ölçüde negatif değer veri hatasıdır.",
         "bilgi": "**Nedir?** Kolon kartında ölçüsü adet, sayı, gün, süre, yaş, ay ya da yıl olan "
@@ -2815,7 +2912,7 @@ _KONTROL_ACIKLAMA_EK.update({
                  "01.2.4.3'te kolon kolon belirlenir; kullanıcı tanımlı türde yön alanına "
                  "bakılır.\n\n"
                  "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; önerilen "
-                 "seçimi kolonun anlamına bakıp dil modeli verir (ulaşılamazsa Çıkar). Kolonun gözlem anında bilindiğinden eminseniz tutabilirsiniz."},
+                 "seçim kuraldır: Çıkar. Kolonun gözlem anında bilindiğinden eminseniz tutabilirsiniz."},
     "tarih_sonra": {
         "kisa": "Satırın dönem sonundan sonraki bir tarih, o dönemde henüz bilinmeyen bir "
                 "bilgidir.",
@@ -2829,10 +2926,9 @@ _KONTROL_ACIKLAMA_EK.update({
                  "**Kapsam:** dönem kolonu seçildiyse ve değerleri yıl, yıl ay ya da yıl ay gün "
                  "olarak okunabiliyorsa; tarih kolonları (tarih tipinde, YYYY-AA-GG ya da "
                  "GG.AA.YYYY metni, ya da YYYYAAGG sayısı). 1900-01-01, 9999-12-31 gibi kod tarihler sayılmaz.\n\n"
-                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; önerilen "
-                 "seçimi kolonun anlamına bakıp dil modeli verir (vade gibi tarihler doğal "
-                 "olarak ileridedir; ulaşılamazsa Tut). Olayın gözlem anından sonra "
-                 "kaydedildiğini biliyorsanız çıkarın. Çıkar denirse "
+                 "**Yakalanırsa:** kolon tutulsun mu çıkarılsın mı size sorulur; öneri "
+                 "kuraldır: Çıkar (gözlem anında bilinmeyen bilgi olabilir). Vade gibi "
+                 "doğal olarak ileri bir tarihse Tut seçin. Çıkar denirse "
                  "kolonun dönem sonuna gün farkı kolonu da üretilmez."},
     "metin_bos": {
         "kisa": "Boş hücre yerine «NULL», «-», «?», «Bilinmiyor» gibi bir yazı yazılmış; model "
@@ -2878,7 +2974,7 @@ _KONTROL_ACIKLAMA_EK.update({
                  "**Kapsam:** tarih tipindeki kolonlar ve değerlerinin çoğu yıl ay gün "
                  "biçiminde yazılmış metin kolonlar. Payına bakılmaz.\n\n"
                  "**Yakalanırsa:** kolon üretime girer; her kolon için düzeltme seçersiniz. "
-                 "Öneriyi kolon bazında dil modeli verir; ulaşılamazsa kural önerisi: kod tarihler boş sayılır ve kodun olduğu satırlar kolon adının "
+                 "Öneri kuraldır: kod tarihler boş sayılır ve kodun olduğu satırlar kolon adının "
                  "sonuna _KOD eklenmiş bir 1/0 bayrağıyla işaretlenir (süresiz bilgisi "
                  "kaybolmaz). Diğer seçenekler: yalnız boş saymak ya da olduğu gibi "
                  "bırakmak."},
@@ -2985,12 +3081,10 @@ PROFIL_KONTROLLERI = (
     ("karisik_eksik", "Karışık Eksik Kodlaması", SONUC_DUZELT, "Karışık eksik"),
     ("metin_bos", "Metin Olarak Yazılmış Boş", SONUC_DUZELT, "Metin olarak boş"),
     ("yazim", "Kategori Yazım Tutarsızlığı", SONUC_DUZELT, "Yazım tutarsızlığı"),
-    ("sifir", "Sıfır Yoğunluğu", SONUC_BILGI, "Sıfır yoğun"),
     ("negatif", "Beklenmeyen Negatif", SONUC_DUZELT, "Beklenmeyen negatif"),
     ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_KARAR, "Eksik sıçraması"),
     ("kayma", "Dönemler Arası Değer Kayması", SONUC_KARAR, "Değer kayması"),
     ("uc", "Uç Değer Yoğunluğu", SONUC_DUZELT, "Uç değer"),
-    ("ondalik", "Ondalık Hassasiyeti", SONUC_DUZELT, "Ondalık hane"),
     ("pencere", "Pencere Tutarlılığı", SONUC_BILGI, "Pencere tutarsız"),
     ("tutar_adet", "Tutar ve Adet Uyumsuzluğu", SONUC_BILGI, "Tutar ve adet uyumsuz"),
     ("tekrar", "Tekrar Eden Satır", SONUC_BILGI, ""),
@@ -3005,7 +3099,7 @@ PROFIL_KONTROLLERI = (
 KONTROL_GRUPLARI = (
     ("g_sabit", "Sabit ya da Neredeyse Sabit",
      "Kolonun tamamında ya da neredeyse tamamında aynı değer var.",
-     ("sabit", "baskin", "sifir")),
+     ("sabit", "baskin")),
     ("g_ayni", "Aynı ya da Neredeyse Aynı Kolonlar",
      "Kolon başka bir kolonla birebir ya da neredeyse aynı bilgiyi taşıyor.",
      ("ayni_icerik", "yakin_icerik")),
@@ -3026,7 +3120,7 @@ KONTROL_GRUPLARI = (
      ("pencere", "tutar_adet")),
 )
 KONTROL_ALT_AD = {
-    "sabit": "tek değer", "baskin": "baskın değer", "sifir": "çoğu sıfır",
+    "sabit": "tek değer", "baskin": "baskın değer",
     "ayni_icerik": "birebir aynı", "yakin_icerik": "neredeyse aynı",
     "kimlik_gibi": "kimlik benzeri", "yuksek_kardinalite": "metinde çok değer",
     "gelecek_pencere": "gelecek penceresi", "birebir": "hedefle birebir",
@@ -3158,9 +3252,12 @@ def kontrolleri_grupla(kontroller):
 
 
 # Karar isteyen kontrollerden varsayilani Çıkar olanlar (sizinti riski).
-KARAR_VARSAYILAN_CIKAR = ("gelecek_pencere", "birebir")
+KARAR_VARSAYILAN_CIKAR = ("gelecek_pencere", "birebir", "tarih_sonra")
+# Hedefle birebir: ayirma gucu bu esik ve ustundeyse Çıkar, altindaysa
+# (Sizinti AUC esigi ile bu deger arasi) Tut; kolon incelenmeli.
+SIZINTI_CIKAR_AUC = 0.95
 # Bilgi icin gosterilen ve islem yapilmayan kontroller.
-BILGI_KONTROLLERI = ("sifir", "pencere", "tutar_adet")
+BILGI_KONTROLLERI = ("pencere", "tutar_adet")
 DONEM_LISTE_EN_COK = 6
 
 
@@ -3179,8 +3276,8 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
     kopya = set(_ayni_kopyalar(p)) if kopya_suz else set()
     b = {a: {} for a in ("ayni_icerik", "yakin_icerik", "gelecek_pencere", "birebir",
                          "tarih_sonra", "baskin", "donem", "gizli_eksik", "karisik_eksik",
-                         "tarih_kod", "metin_bos", "yazim", "sifir", "negatif", "sicrama",
-                         "kayma", "uc", "ondalik", "pencere", "tutar_adet")}
+                         "tarih_kod", "metin_bos", "yazim", "negatif", "sicrama",
+                         "kayma", "uc", "pencere", "tutar_adet")}
     for g in ek.get("ayni_gruplar") or []:
         kalan = _ayni_kalan(p, g)
         for k in g["uyeler"]:
@@ -3245,21 +3342,12 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
         b["gizli_eksik"][x["kolon"]] = ("Boş hücre de var: %s satır. " % _sayi(x["bos"])
                                         if x.get("bos") else "") + "Kod %s, payı %s (%s satır)" % (
             x["deger"], _yuzde_metni(x["pay"]), _sayi(x["adet"]))
-    for x in ek.get("sifir") or []:
-        b["sifir"][x["kolon"]] = "Sıfırın payı %s" % _yuzde_metni(x["pay"])
     for x in ek.get("negatif") or []:
         b["negatif"][x["kolon"]] = "Ölçü: %s. Negatif satır %s, en küçük değer %s" % (
             x["olcu"], _sayi(x["adet"]), _sayi_metni(x["en_kucuk"]))
     for x in ek.get("sicrama") or []:
         b["sicrama"][x["kolon"]] = "Eksik oranı %s dönemi %s, %s dönemi %s" % (
             x["once"], _yuzde_metni(x["once_oran"]), x["sonra"], _yuzde_metni(x["sonra_oran"]))
-    for x in ek.get("ondalik") or []:
-        if x["tur"] == "tam":
-            b["ondalik"][x["kolon"]] = ("Bütün değerler tam sayı (ör. %s); tam sayı tipine "
-                                        "çevrilebilir" % _ondalik_yazi(x["ornek"]))
-        else:
-            b["ondalik"][x["kolon"]] = "Ondalık hane fazla (ör. %s → %s); %s basamak" % (
-                _ondalik_yazi(x["ornek"]), _ondalik_yazi(x["ornek_yeni"]), _sayi(x["basamak"]))
     for x in ek.get("uc") or []:
         b["uc"][x["kolon"]] = uc_bulgu_metni(x)
     for a, kolonlar in b.items():
@@ -3363,7 +3451,7 @@ def profil_metni(durum, karar=False):
     if oz["bekleyen"]:
         parca.append("%s kolon için kararınız gerekiyor: Ne Olacak sütununda Kararınıza "
                      "bırakılır yazan kontrollerde her kolonu tutun ya da çıkarın. Her kolonda "
-                     "dil modelinin kolon bazında önerisi seçili gelir."
+                     "kuralın kolon bazında önerisi seçili gelir."
                      % _sayi(len(oz["bekleyen"])))
     duz = duzeltme_secimi(durum)
     n_duz = sum(len(v) for v in duz.values())
@@ -3379,7 +3467,7 @@ def profil_metni(durum, karar=False):
     gruplar = ((durum.get("profil") or {}).get("profil_ek") or {}).get("ayni_gruplar") or []
     if karar and gruplar:
         parca.append("Değerleri birebir ya da neredeyse aynı %s kolon grubunda hangi kolonun "
-                     "kalacağını seçin; dil modelinin önerisi seçili gelir." % _sayi(len(gruplar)))
+                     "kalacağını seçin; kuralın önerisi seçili gelir." % _sayi(len(gruplar)))
     if oz["bilgi"]:
         parca.append("%s kolonda bilgi notu var; bu kolonlar değişken üretimine girer."
                      % _sayi(len(oz["bilgi"])))
@@ -3496,7 +3584,7 @@ def profil_karti(durum, karar=False):
         if a in BILGI_KONTROLLERI:
             k["ne_olacak"] = "Bilgi için gösterilir; işlem yapılmaz"
         # Onerinin kaynagi (kartta bolum basliginda): dil modeli ya da kod.
-        k["oneri_kaynagi"] = "dil modeli" if a in LLM_KONTROLLERI or a == "ayni_icerik" else "kod"
+        k["oneri_kaynagi"] = "kod"
         if a in ("ayni_icerik", "yakin_icerik"):
             gr = [g for g in ek.get("ayni_gruplar") or []
                   if (g.get("tur") == "yakin") == (a == "yakin_icerik")]
@@ -3535,7 +3623,7 @@ def profil_karti(durum, karar=False):
             if sonuc == SONUC_KARAR:
                 satir["karar"] = karar_deger.get(kol, karar_vars.get(kol, PROFIL_KARAR_TUT))
                 o = ((p.get("llm_oneri") or {}).get(a) or {}).get(kol) or {}
-                llm_var = o.get("kaynak") in ("dil modeli", "kod") \
+                llm_var = o.get("kaynak") == "kod" \
                     and o.get("oneri") in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR)
                 # Bu kontrolun onerisi (kolon birden cok kontroldeyse biri
                 # Çıkar diyorsa kolonun onerisi Çıkar: karar_oneri_kolon).
@@ -3543,8 +3631,7 @@ def profil_karti(durum, karar=False):
                 satir["karar_oneri_kolon"] = karar_vars.get(kol, PROFIL_KARAR_TUT)
                 satir["karar_kaynak"] = o["kaynak"] if llm_var else "kural"
                 satir["karar_gerekce"] = (o.get("gerekce") or "") if llm_var else (
-                    KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "") if a in LLM_KONTROLLERI
-                    else "Kural önerisi.")
+                    KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "Kural önerisi."))
             if a in COZUM_KONTROLLERI and (cozum_oneri.get(kol) or {}).get("kontrol") == a:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
             elif a in DUZELTME_KONTROLLERI and kol in (duz_oneri.get(a) or {}):

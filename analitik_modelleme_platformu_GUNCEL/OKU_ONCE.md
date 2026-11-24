@@ -2995,15 +2995,32 @@ tanıtır; sayfalar sol bardan açılır.
   kolonun bulguları aynı satırda. Kararlar sekmesinde üye adı birleşik
   adla görünür ("Gizli Eksik (özel kod)").
 - Profil metnindeki kontrol sayısı `gorunur_kontrol_sayisi()` (15).
-- KONTROL EŞİKLERİ FORMU: her eşik kendi satırında, kendi adıyla ve
-  önünde sıra numarasıyla ("1. Eksik Oranı Yüksek", "2. Neredeyse
-  Sabit" ... "20. Ondalık Hassasiyeti"); Ölçüt, Yakalanırsa, Değer,
-  Önerilen, Neden Bu Değer sütunları aynı. Başlık satırı, sayı kutuları,
-  ayrı eşik sütunu YOK. Öneri eşiklerinde adın yanında "Öneri eşiği"
-  etiketi. Satırlar ilişkili eşikler art arda gelsin diye
-  `ESIK_KONTROL` sırasıyla (karttaki kontrol sırası,
-  `kart_kontrol_sirasi`). Hata mesajı ve değişiklik notu satırdaki adla
-  (`esik_adi`). Profil kartında numara yok.
+- KONTROL EŞİKLERİ FORMU (yeni düzen): her kontrol bir kart (numara, ad,
+  tek cümle); içinde kuralları alt alta: Kural · Neye bakıyor · Yakalanırsa
+  · Eşik · Önerilen. Eşiği olmayan kural "eşik yok". Öneri eşiği ait olduğu
+  kuralın altında (↳, içeride, "öneri eşiği" etiketi). Eşiği olmayan
+  kontroller en altta tek satır. Yapı `esik_form_kontrolleri` (KONTROL_FORM_KISA,
+  KURAL_FORM_AD, ESIK_KURAL, ONERI_ESIK_AD); girişler ve doğrulama yine
+  `satirlar` üzerinden (17 eşik). Önerilen değerin altında dayanağı:
+  "sabit kural" ya da "bu veriden: ...".
+- VERİYE GÖRE ÖNERİLEN (`veriye_gore_onerilen`, dil modeli yok): Satır
+  Sınırı = 5 ÷ eğitim hedef oranı (10–1000); Metinde çok değer = eğitim
+  temerrüt sayısı ÷ 20 (10–50); Dönemde boş ya da sabit = dönem başına
+  ortalama satırın %10'u (en az 30). Bilgi yoksa sabit (30 / 50 / 100).
+  `_esik_varsayilan(durum)` ve `profil_esikleri` bunları kullanır; onaylanmış
+  eski değerler korunur.
+- EŞİKLER: Eksik oranı %80 (`COK_BOS_ESIK`), Sızıntı AUC %85
+  (`profil_ek.SIZINTI_AUC`); hedefle birebirde öneri AUC ≥ %95 Çıkar, altı
+  Tut (`SIZINTI_CIKAR_AUC`). Pencere tutarlılığı ve Tutar-Adet en az %1
+  satırda (`ILISKI_MIN_PAY`).
+- KALDIRILAN KONTROLLER: Sıfır Yoğunluğu ve Ondalık Hassasiyeti (veri hatası
+  göstermiyor, modeli değiştirmiyordu). Kartta 14 kontrol, 24 kural.
+- DİL MODELİ 02.1'DE YOK: `LLM_KONTROLLERI = ()`. Kural önerileri
+  (`_veri_onerileri`): gelecek penceresi ve dönemden sonraki tarih Çıkar,
+  hedefle birebir AUC'ye göre, özel kod ve karışık eksik "boş say + _KOD
+  bayrağı", aynı içerikli grupta kalacak kolon: başka kontrolde çıkarılmayan,
+  az düzeltme isteyen, eşitse adı kısa olan (hedef iki sınıflıysa ayırma gücü).
+  Eski kayıttaki "dil modeli" önerileri okunmaz.
 - UÇ DEĞER İKİ YÖNLÜ (02.1): yayılım = %99'luk − %1'lik. Üst uç: en
   büyük > %99'luk + K × yayılım; alt uç: en küçük < %1'lik − K × yayılım
   (`profil_ek.kolon_kontrolleri`, eşik `uc_yayilim`, önerilen 100: sıfırdan

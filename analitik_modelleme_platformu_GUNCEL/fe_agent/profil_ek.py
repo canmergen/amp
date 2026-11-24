@@ -7,7 +7,6 @@ benzeri, kardinalite) ek olarak:
   * baskin        : bir deger satirlarin BASKIN_ESIK'i ya da fazlasinda
   * donem         : kolon bazi donemlerde tamamen bos ya da tek degerli
   * gizli_eksik   : -999, 9999 gibi ozel kod; dagilimin geri kalanindan kopuk
-  * sifir         : dolu satirlarin SIFIR_ESIK'i ya da fazlasi sifir
   * negatif       : kolon kartinin olcusu adet, gun, sure iken negatif deger
   * sicrama       : eksik orani art arda iki donem arasinda sicriyor
   * uc            : en buyuk deger %99'luk degeri ya da en kucuk deger %1'lik
@@ -46,14 +45,14 @@ UC_DEGER_YUZDELIK = 0.99
 UC_DEGER_ALT_YUZDELIK = 0.01
 # Kullanicinin 02.1'de onayladigi esikler bu anahtarlarla gelir (yoksa
 # varsayilan). Gizli eksik kod listesi ve kopukluk kati sabittir.
-SIZINTI_AUC = 0.95
+SIZINTI_AUC = 0.85
 YAKIN_KOR = 0.99
 KAYMA_KAT = 10
 ONDALIK_BASAMAK = 4
-ESIK_VARSAYILAN = {"baskin": BASKIN_ESIK, "sifir": SIFIR_ESIK, "gizli": GIZLI_EKSIK_ESIK,
+ESIK_VARSAYILAN = {"baskin": BASKIN_ESIK, "gizli": GIZLI_EKSIK_ESIK,
                    "donem_min_satir": DONEM_SABIT_MIN_SATIR, "sicrama": DONEM_SICRAMA_ESIK,
                    "uc_yayilim": UC_DEGER_KAT, "sizinti_auc": SIZINTI_AUC, "yakin_kor": YAKIN_KOR,
-                   "kayma_kat": KAYMA_KAT, "ondalik": ONDALIK_BASAMAK}
+                   "kayma_kat": KAYMA_KAT}
 
 
 def esik_birlestir(esik=None):
@@ -183,7 +182,7 @@ def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
     bos ya da None ise negatif kontrolu uygulanmaz."""
     e = esik_birlestir(esik)
     n = len(df)
-    sonuc = {"baskin": [], "gizli_eksik": [], "karisik_eksik": [], "sifir": [], "negatif": [],
+    sonuc = {"baskin": [], "gizli_eksik": [], "karisik_eksik": [], "negatif": [],
              "uc": []}
     if not n:
         return sonuc
@@ -220,9 +219,6 @@ def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
                 sonuc["karisik_eksik"].append({"kolon": kol, "deger": deger_metni(karisik[0]),
                                                "adet": karisik[1], "pay": karisik[1] / dolu,
                                                "bos": bos})
-        sifir = int(sayim.get(0, 0) or 0)
-        if not baskin and sifir / dolu >= e["sifir"]:
-            sonuc["sifir"].append({"kolon": kol, "adet": sifir, "pay": sifir / dolu})
         # Uc deger (iki yonlu): ozel kod (-999, 9999) hesaba girmez.
         su = sn[sn != gizli[0]] if gizli is not None else sn
         neg_yok = olcu_negatif_olamaz(olculer.get(kol))
@@ -371,7 +367,6 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     # Ikinci set (pencere ve tutar / adet ciftleri kolon kartina ve donem
     # turlerine bagli; akis_faz02.profil_hesapla ekler).
     sonuc["metin_bos"] = metin_bos_kontrol(df, adaylar)
-    sonuc["ondalik"] = ondalik_kontrol(df, adaylar, esik_birlestir(esik)["ondalik"])
     sonuc["yazim"] = yazim_kontrol(df, adaylar)
     # Tarih tipindeki kolonlar (tarihler) genel kontrollere girmez, tarih
     # kontrollerine girer.
