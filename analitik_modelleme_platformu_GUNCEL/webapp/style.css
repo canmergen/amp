@@ -5994,25 +5994,26 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 
 /* 02.1 eşik formu: kontrol kartları, kurallar, iç içe öneri eşikleri */
 .pf-ek-govde { min-width: 960px; display: flex; flex-direction: column; gap: var(--b-2); margin-top: var(--b-2); }
-.pf-ek-bas, .pf-ek-kural { display: grid; grid-template-columns: 220px minmax(0, 1fr) 210px 190px 170px; gap: var(--b-3); align-items: center; }
+/* Sütunlar ortalı (başlık ve içerik); sütunlar arası 24px. */
+.pf-ek-bas, .pf-ek-kural { display: grid; grid-template-columns: 200px minmax(0, 1fr) 200px 180px 160px; column-gap: 24px; align-items: center; text-align: center; }
 .pf-ek-bas { padding: 0 var(--b-3); color: var(--metin-soluk); font-size: var(--fs-kucuk); }
 .pf-ek-kontrol { border: 1px solid var(--kenar); border-radius: var(--r-orta, 8px); overflow: hidden; background: var(--yuzey); }
-.pf-ek-kbas { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px var(--b-3); padding: 8px var(--b-3); background: var(--yuzey-alt); border-bottom: 1px solid var(--kenar); }
+.pf-ek-kbas { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 4px var(--b-3); padding: 8px var(--b-3); background: var(--yuzey-alt); border-bottom: 1px solid var(--kenar); }
 .pf-ek-kbas span { color: var(--metin-soluk); }
-.pf-ek-kural { padding: 8px var(--b-3); border-top: 1px solid var(--kenar-acik, var(--kenar)); text-align: left; }
+.pf-ek-kural { padding: 8px var(--b-3); border-top: 1px solid var(--kenar-acik, var(--kenar)); }
 .pf-ek-kbas + .pf-ek-kural { border-top: 0; }
-.pf-ek-kural.ic { padding-left: calc(var(--b-3) + 24px); grid-template-columns: 196px minmax(0, 1fr) 210px 190px 170px; background: var(--amber-acik); background: color-mix(in srgb, var(--amber-acik) 35%, var(--yuzey)); }
+.pf-ek-kural.ic { background: var(--amber-acik); background: color-mix(in srgb, var(--amber-acik) 35%, var(--yuzey)); }
 /* Önerilenden farklı ya da hatalı değer: yalnız kutu işaretlenir (satırda çizgi yok). */
 .pf-ek-kural.degisti .pf-esik-giris { border-color: var(--amber); font-weight: var(--fw-kalin); }
 .pf-ek-kural.hatali .pf-esik-giris { border-color: var(--kirmizi); }
-.pf-ek-ad { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; font-weight: var(--fw-kalin); }
+.pf-ek-ad { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 6px; font-weight: var(--fw-kalin); }
 .pf-ek-sonuc { font-size: var(--fs-kucuk); }
 .pf-ek-sonuc.pf-esik-sonuc-girmez { color: var(--kirmizi); font-weight: var(--fw-kalin); }
 .pf-ek-sonuc.pf-esik-sonuc-karar { color: var(--amber); font-weight: var(--fw-kalin); }
-.pf-ek-deger { display: flex; flex-direction: column; gap: 2px; }
+.pf-ek-deger { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .pf-ek-yok { color: var(--metin-soluk); font-style: italic; }
-.pf-ek-onerilen { display: flex; flex-direction: column; }
+.pf-ek-onerilen { display: flex; flex-direction: column; align-items: center; }
 .pf-ek-onerilen b { font-size: inherit; }
 .pf-ek-dayanak { color: var(--metin-soluk); font-size: var(--fs-kucuk); }
-.pf-ek-esiksiz { border: 1px dashed var(--kenar); border-radius: var(--r-orta, 8px); padding: 8px var(--b-3); color: var(--metin-soluk); text-align: left; }
+.pf-ek-esiksiz { border: 1px dashed var(--kenar); border-radius: var(--r-orta, 8px); padding: 8px var(--b-3); color: var(--metin-soluk); text-align: center; }
 .pf-ek-esiksiz b { color: var(--metin); }

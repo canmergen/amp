@@ -20132,11 +20132,11 @@ function profilEsikKartiEkle(alan, blok) {
         kk.appendChild(kb);
         (k.kurallar || []).forEach(u => {
             const r = u.esik ? esikHarita[u.esik] : null;
-            const olcut = r ? r.anlam + (/(se|sa)$/.test(r.anlam || "") ? " kolon yakalanır" : "") : u.olcut;
+            const olcut = u.olcut || (r ? r.anlam + (/(se|sa)$/.test(r.anlam || "") ? " kolon yakalanır" : "") : "");
             kk.appendChild(kuralSatiri(u.ad, olcut, u.sonuc || (r && r.sonuc), r, false));
             (u.oneri || []).forEach(o => {
                 const ro = esikHarita[o];
-                if (ro) kk.appendChild(kuralSatiri(ro.oneri_ad || ro.kontrol, ro.anlam, "", ro, true));
+                if (ro) kk.appendChild(kuralSatiri(ro.oneri_ad || ro.kontrol, ro.form_olcut || ro.anlam, "", ro, true));
             });
         });
         govde.appendChild(kk);

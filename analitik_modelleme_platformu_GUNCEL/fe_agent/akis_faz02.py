@@ -1664,6 +1664,7 @@ def esik_formu(durum, hata=None, kilitli=False):
         r["dayanak"] = dayanak.get(r["anahtar"], "sabit kural")
         if r["anahtar"] in ONERI_ESIK_AD:
             r["oneri_ad"] = ONERI_ESIK_AD[r["anahtar"]]
+            r["form_olcut"] = ONERI_FORM_OLCUT.get(r["anahtar"], "")
     kontroller, esiksiz = esik_form_kontrolleri(durum)
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
             "kontroller": kontroller, "esiksiz": esiksiz,
@@ -1710,6 +1711,43 @@ ESIK_KURAL = {
     "kayma_kat": "kayma", "gizli": "gizli_eksik", "metin_bayrak_pay": "metin_bos",
     "negatif_bos_pay": "negatif", "uc_yayilim": "uc",
 }
+# Formun "Neye bakıyor" sutunu: kisa, esik kelimesiyle (deger kutuda).
+KURAL_FORM_OLCUT = {
+    "cok_bos": "Boş hücre oranı eşiği aşarsa yakalanır.",
+    "sabit": "Kolonda tek bir değer varsa yakalanır (boş hücre ayrı değer sayılır).",
+    "baskin": "En sık değerin payı eşik ya da üstündeyse yakalanır.",
+    "kimlik_gibi": "Farklı değer sayısı ÷ satır sayısı eşiği aşarsa yakalanır.",
+    "yuksek_kardinalite": "Metin kolonda farklı değer sayısı eşiği aşarsa yakalanır.",
+    "tarih": "Kolon tarih biçimindeyse yakalanır.",
+    "ayni_icerik": "İki kolon bütün satırlarda aynıysa yakalanır.",
+    "yakin_icerik": "İki sayısal kolonun korelasyonu eşik ya da üstündeyse yakalanır.",
+    "gelecek_pencere": "Adındaki dönem ileriye bakıyorsa yakalanır.",
+    "birebir": "Kolon tek başına hedefi eşik ya da üstü AUC ile ayırıyorsa yakalanır.",
+    "tarih_sonra": "Dönem sonundan sonraki bir tarih varsa yakalanır.",
+    "donem": "En az eşik kadar satırı olan bir dönemde tamamen boş ya da tek değerliyse "
+             "yakalanır.",
+    "sicrama": "Boş oranı art arda iki dönem arasında eşikten fazla değişirse yakalanır.",
+    "kayma": "Değerler art arda iki dönem arasında eşik kat değişirse yakalanır.",
+    "gizli_eksik": "-999, 9999 gibi kopuk bir kod dolu satırların eşikten fazlasındaysa "
+                   "yakalanır.",
+    "karisik_eksik": "Kolonda hem boş hücre hem özel kod varsa yakalanır.",
+    "metin_bos": "«NULL», «-», «Bilinmiyor» gibi boş yazısı varsa yakalanır.",
+    "yazim": "Aynı değer farklı yazılmışsa yakalanır.",
+    "negatif": "Adet, gün ya da süre ölçüsünde negatif değer varsa yakalanır.",
+    "uc": "En büyük ya da en küçük değer, uç yüzdelikleri yayılımın eşik katından fazla "
+          "aşarsa yakalanır.",
+}
+ONERI_FORM_OLCUT = {
+    "baskin_min_satir": "Baskın değer dışında eşikten az eğitim satırı varsa Çıkar önerilir.",
+    "baskin_kat": "O satırların hedef oranı baskın değerdekinden eşik kat ya da daha fazla "
+                  "farklıysa Tut önerilir.",
+    "donem_tut_pay": "Sorun yalnız ilk dönemlerde ve dönemlerin en çok eşik kadarındaysa Tut "
+                     "önerilir.",
+    "sicrama_cikar": "Boş oranı artıp eşiğe ya da üstüne çıktıysa Çıkar önerilir.",
+    "negatif_bos_pay": "Negatif satırlar dolu satırların eşikten azıysa boş sayma önerilir.",
+    "metin_bayrak_pay": "Boş yazıları dolu satırların eşik kadarı ya da fazlasıysa 1/0 bayrağı "
+                        "da önerilir.",
+}
 ONERI_ESIK_AD = {
     "baskin_min_satir": "Satır sınırı", "baskin_kat": "Hedef farkı",
     "donem_tut_pay": "İlk dönemler", "sicrama_cikar": "Çıkarma sınırı",
@@ -1738,7 +1776,7 @@ def esik_form_kontrolleri(durum):
             ac = PROFIL_ESIK_ACIKLAMA.get(ana) or {}
             kurallar.append({
                 "anahtar": u, "ad": KURAL_FORM_AD.get(u, pk.get(u, (u, u))[1]),
-                "olcut": kurallar_metin.get(u, ""),
+                "olcut": KURAL_FORM_OLCUT.get(u) or kurallar_metin.get(u, ""),
                 "sonuc": ac.get("sonuc") or NE_OLACAK.get(pk[u][2], "") if u in pk else "",
                 "esik": ana, "oneri": oneri})
         if not any(k["esik"] or k["oneri"] for k in kurallar):
