@@ -1593,22 +1593,49 @@ def _veri_ozeti(durum):
     return egitim, (float(oran) if oran else None), (int(n) if n else None), donem_n
 
 
+# ONERILEN NEYE GORE: formun Onerilen sutununda degerin altinda. Veriden
+# hesaplananlarda hesap (veriye_gore_onerilen), bilgi yoksa sabit degerin
+# nedeni; digerlerinde kisa gerekce.
+ONERILEN_DAYANAK = {
+    "cok_bos": "Boş olmak da bilgi taşır; %80'e kadar boş kolon doldurularak kullanılabilir.",
+    "kimlik": "Kimlik kolonlarında oran %100'e yakındır; küçük tekrarlara rağmen yakalar.",
+    "kardinalite": "Hedef bilinmediği için sabit; veride değer başına en az 20 hedefi 1 olan "
+                   "satır düşecek sayı hesaplanır.",
+    "baskin": "Yalnız gerçekten neredeyse sabit olan kolonlar sorulsun diye.",
+    "donem_min_satir": "Dönem bilgisi olmadığı için sabit; veride dönem başına ortalama "
+                       "satırın %10'u hesaplanır.",
+    "gizli": "Tek tük görülen değer kod olmayabilir; %1 ve üstü sistematiktir.",
+    "sicrama": "Küçük oynamalar doğaldır; 20 puanın üstü bir değişikliktir.",
+    "uc_yayilim": "Yalnız hatalı girişler yakalansın; gerçek uç değerler SFA'da ele alınır.",
+    "yakin_kor": "Bu düzeyde iki kolon pratikte aynı bilgiyi taşır.",
+    "sizinti_auc": "Gerçek değişkenler tek başına nadiren bunun üstüne çıkar.",
+    "kayma_kat": "Birim değişiklikleri 10'un katıdır; gerçek değişim nadiren bu kadar büyüktür.",
+    "baskin_min_satir": "Hedef oranı bilinmediği için sabit; veride en az 5 hedefi 1 olan satır "
+                        "düşecek sayı hesaplanır.",
+    "baskin_kat": "Hedef oranında %50 fark anlamlı bir ayrımdır.",
+    "donem_tut_pay": "Dönemlerin üçte birinden azı eksikse kalan dönemler kullanılabilir.",
+    "sicrama_cikar": "Yarısı boşa dönen kolon kullanımda çoğunlukla boş görünür.",
+    "negatif_bos_pay": "Hatalı kayıt küçük bir paydır; %5'in üstü sistematik olabilir.",
+    "metin_bayrak_pay": "Bayrağın işe yaraması için yeterli satır gerekir.",
+}
+
+
 def veriye_gore_onerilen(durum):
     """{anahtar: (deger, dayanak metni)}: veriden hesaplanabilen onerilenler."""
     egitim, oran, n, donem_n = _veri_ozeti(durum)
     cikti = {}
     if oran and 0 < oran < 1:
         v = int(min(1000, max(10, math.ceil(5.0 / oran))))
-        cikti["baskin_min_satir"] = (v, "5 ÷ hedef oranı %s"
+        cikti["baskin_min_satir"] = (v, "en az 5 hedefi 1 olan satır için 5 ÷ hedef oranı %s"
                                      % _yuzde_metni(oran))
         if egitim:
             tem = egitim * oran
             k = int(min(50, max(10, round(tem / 20.0))))
-            cikti["kardinalite"] = (k, "hedefi 1 olan %s satır ÷ 20"
+            cikti["kardinalite"] = (k, "değer başına en az 20 hedefi 1 olan satır için %s ÷ 20"
                                     % _sayi(int(round(tem))))
     if n and donem_n and donem_n > 1:
         v = int(max(30, round(0.10 * n / donem_n)))
-        cikti["donem_min_satir"] = (v, "%s satır ÷ %s dönem × %%10"
+        cikti["donem_min_satir"] = (v, "dönem başına ortalama satırın %%10'u, %s satır ÷ %s dönem × %%10"
                                     % (_sayi(n), _sayi(donem_n)))
     return cikti
 
@@ -1709,7 +1736,8 @@ def esik_formu(durum, hata=None, kilitli=False):
     except Exception:
         pass
     for r in satirlar:
-        r["dayanak"] = dayanak.get(r["anahtar"], "sabit kural")
+        r["dayanak"] = (("Bu veriden: " + dayanak[r["anahtar"]]) if r["anahtar"] in dayanak
+                        else ONERILEN_DAYANAK.get(r["anahtar"], ""))
         if r["anahtar"] in ONERI_ESIK_AD:
             r["oneri_ad"] = ONERI_ESIK_AD[r["anahtar"]]
             r["form_olcut"] = ONERI_FORM_OLCUT.get(r["anahtar"], "")

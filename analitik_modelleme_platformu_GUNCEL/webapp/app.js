@@ -20105,7 +20105,7 @@ function profilEsikKartiEkle(alan, blok) {
         uyari.hidden = true;
         td.appendChild(uyari);
         onr.appendChild(elYap("b", "", r.varsayilan_metni || pfEsikYaz(r.varsayilan)));
-        onr.appendChild(elYap("span", "pf-ek-dayanak", r.dayanak === "sabit kural" ? "sabit kural" : "bu veriden: " + (r.dayanak || "")));
+        if (r.dayanak) onr.appendChild(elYap("span", "pf-ek-dayanak", r.dayanak));
         const ger = (r.parca || {}).gerekce;
         if (ger) onr.title = String(ger).replace(/\*\*/g, "");
         sat.append(td, onr);
