@@ -237,12 +237,18 @@ def degisken_detayi(s, y, tr, c_ler=None):
     q = np.nanpercentile(xn, [1, 5, 25, 50, 75, 95, 99])
     iqr = q[4] - q[2]
     cit_alt, cit_ust = q[2] - 3 * iqr, q[4] + 3 * iqr
+    tekil_n = int(xn.nunique())
+    # Ceyrekler arasi fark 0 (degerlerin yarisindan fazlasi ayni: seyrek
+    # bayrak, cogu sifir sayac) ya da en cok iki farkli deger varsa cit
+    # anlamsizdir: sifir disi her deger "aykiri" sayilirdi. Uc deger payi
+    # olculmez (0), winsor ve log onerilmez.
+    aykiri = 0.0 if (iqr <= 0 or tekil_n <= 2) else float(((xn < cit_alt) | (xn > cit_ust)).mean())
     metrik.update(
         min=_yuvarla(xn.min()), max=_yuvarla(xn.max()), medyan=_yuvarla(q[3]),
         ortalama=_yuvarla(xn.mean()), q05=_yuvarla(q[1]), q95=_yuvarla(q[5]),
         carpiklik=_yuvarla(xn.skew(), 3) if len(xn) > 2 else None,
-        aykiri_payi=_yuvarla(((xn < cit_alt) | (xn > cit_ust)).mean(), 4),
-        tekil=int(xn.nunique()))
+        aykiri_payi=_yuvarla(aykiri, 4),
+        tekil=tekil_n)
     dagilim["ham"] = _sayisal_tablo(xn, dolu_t, toplam)
     dagilim["kirpik"] = _sayisal_tablo(xn.clip(q[0], q[6]), dolu_t, toplam)
     return {"sfa": metrik, "dagilim": dagilim}
@@ -292,7 +298,8 @@ def kural_karari(d, sizinti=False):
                 k["aykiri"] = "winsor"
                 neden.append("uç değer payı %%%s" % aralik_mod._sayi_metni(
                     100 * m["aykiri_payi"]))
-            if (m.get("carpiklik") or 0) > CARPIK_ESIK and (m.get("min") or 0) >= 0:
+            if ((m.get("carpiklik") or 0) > CARPIK_ESIK and (m.get("min") or 0) >= 0
+                    and (m.get("tekil") or 0) > 2):
                 k["donusum"] = "log"
                 neden.append("sağa çarpık dağılım (çarpıklık %s)"
                              % aralik_mod._sayi_metni(m["carpiklik"]))
@@ -582,8 +589,13 @@ def uygula(df, tr, kararlar, detay):
                 rapor["doldurulan"] += 1
             if k.get("aykiri") == "winsor":
                 alt, ust = np.nanpercentile(x[tr].dropna(), [100 * KIRPMA, 100 * (1 - KIRPMA)])
-                x = x.clip(alt, ust)
-                ekler.append("KIRP")
+                kx = x.clip(alt, ust)
+                # Kirpma kolonu tek degere indiriyorsa (seyrek bayrak) uygulanmaz.
+                if alt < ust and kx.nunique(dropna=True) > 1:
+                    x = kx
+                    ekler.append("KIRP")
+                else:
+                    rapor.setdefault("winsor_atlanan", []).append(ad)
             dn = k.get("donusum")
             if dn == "log":
                 x = np.sign(x) * np.log1p(np.abs(x))
