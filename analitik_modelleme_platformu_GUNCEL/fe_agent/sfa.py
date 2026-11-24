@@ -453,6 +453,29 @@ def sfa_calistir(df, target, adaylar, train_maske=None):
 # ===========================================================================
 # 3) STABILITE ANALIZI (PSI)  — zaman/populasyon kaymasi
 # ===========================================================================
+def _sayisal_etiketler(sn, dev_maske):
+    """Desil sinirlari 3'un altina inen sayisal kolon (0/1 bayrak, cogu
+    sifir) icin PSI etiketleri: az farkli degerliyse (<= BIN_SAYISI) her
+    deger bir grup; degilse en sik deger ayri grup, kalan degerler
+    desillere. Bos deger etiketsiz kalir (PSI'da ayri grup). Olusmazsa None."""
+    dev = sn[dev_maske].dropna()
+    if not len(dev):
+        return None
+    if dev.nunique() <= BIN_SAYISI:
+        return sn.map(lambda v: None if pd.isna(v) else repr(float(v))).astype(object)
+    mod = dev.mode().iloc[0]
+    kalan = dev[dev != mod]
+    sinir = np.unique(np.nanpercentile(kalan, np.linspace(0, 100, BIN_SAYISI)))
+    if len(sinir) < 2:
+        return None
+    sinir = np.asarray(sinir, dtype=float)
+    sinir[0], sinir[-1] = -np.inf, np.inf
+    lab = pd.cut(sn, sinir).astype(str).astype(object)
+    lab[sn == mod] = "EN_SIK"
+    lab[sn.isna()] = None
+    return lab
+
+
 def stabilite_calistir(df, adaylar, dev_maske, oot_maske):
     """Doner: (tablo, ozet). Maske yoksa (None, None) doner."""
     if dev_maske is None or oot_maske is None:
@@ -467,6 +490,12 @@ def stabilite_calistir(df, adaylar, dev_maske, oot_maske):
         if sayisal:
             sn = pd.to_numeric(s, errors="coerce")
             psi = _psi(sn[dev_maske], sn[oot_maske])
+            if psi is None:
+                # 0/1 bayrak ya da cogu ayni deger: desiller cakisir; deger
+                # bazli (en sik deger ayri) olculur, sessizce atlanmaz.
+                lab = _sayisal_etiketler(sn, dev_maske)
+                if lab is not None:
+                    psi = _psi(lab[dev_maske], lab[oot_maske], kategorik=True)
         else:
             tekil = int(s.nunique(dropna=True))
             if tekil > KATEGORIK_MAX:
@@ -485,6 +514,10 @@ def stabilite_calistir(df, adaylar, dev_maske, oot_maske):
             psi = _psi(sk[dev_maske], sk[oot_maske], kategorik=True)
 
         if psi is None:
+            atlanan.append(kol)
+            kayitlar.append({"FEATURE": kol, "TYPE": "numeric" if sayisal else "categorical",
+                             "PSI": None, "DURUM": "ATLANDI",
+                             "NOT": "ölçülemedi: setlerden birinde yeterli dolu satır yok"})
             continue
         stabil = psi < PSI_ESIK
         if not stabil:
