@@ -17281,9 +17281,10 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
         if (g.iliski) btd.appendChild(elYap("div", "pf-ayni-gerekce", "İlişki: " + g.iliski));
         if (g.gerekce) {
             const ger = elYap("div", "pf-ayni-gerekce");
+            /* Kural önerisi de öneridir; "kural" eski kayıttaki değer (02.1'de dil modeli kullanılmaz). */
             ger.textContent = (g.kaynak === "dil modeli" ? "Kaynak: Dil modeli. "
-                    : g.kaynak === "hedef" ? "Kaynak: Kod (hedefi ayırma gücü). "
-                    : "Kaynak: Kod, sabit kural (dil modeline ulaşılamadı). ")
+                    : g.kaynak === "hedef" ? "Kaynak: Kod (hedefi hangisi daha iyi biliyor). "
+                    : "Kaynak: Kod (sabit kural). ")
                 + "Önerilen " + g.oneri + ": " + tireSade(g.gerekce);
             btd.appendChild(ger);
         }
@@ -17298,14 +17299,13 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz) {
             const aTd = elYap("td", "pf-kolon-acik", u.aciklama || BOS_SIMGE);
             if (u.cikar) aTd.appendChild(elYap("div", "pf-ayni-uye-not cikar", u.cikar));
             if (u.guc !== null && u.guc !== undefined)
-                aTd.appendChild(elYap("div", "pf-ayni-uye-not", "Hedefi ayırma gücü (AUC, eğitim): "
+                aTd.appendChild(elYap("div", "pf-ayni-uye-not", "Tek başına hedefi bilme isabeti (eğitim satırları): "
                     + yuzdeMetni(u.guc, 2)));
             const bul = (u.bulgular || []).map(b => String(b).split(":")[0]);
             if (bul.length) aTd.appendChild(elYap("div", "pf-ayni-uye-not", "Bulgular: " + bul.join(", ")));
             r.appendChild(aTd);
             const oTd = elYap("td", "pf-ayni-oneri");
-            if (u.ad === g.oneri && g.kaynak !== "kural") oTd.appendChild(elYap("span", "pf-ayni-cip", "Önerilen"));
-            else if (u.ad === g.oneri) oTd.appendChild(elYap("span", "pf-ayni-cip pasif", "Öneri alınamadı"));
+            if (u.ad === g.oneri) oTd.appendChild(elYap("span", "pf-ayni-cip", "Önerilen"));
             r.appendChild(oTd);
             const kTd = elYap("td", "pf-karar-hucre");
             if (kararModu) {
@@ -18072,7 +18072,7 @@ function profilKartiEkle(alan, blok) {
         const kParca = [];
         if (kSay(["kod", "hedef", "satir"])) kParca.push(ftBinlik(kSay(["kod", "hedef", "satir"])) + " öneri veriden hesaplandı");
         if (kSay(["dil modeli"])) kParca.push(ftBinlik(kSay(["dil modeli"])) + " öneri dil modelinden");
-        if (kSay(["kural"])) kParca.push(ftBinlik(kSay(["kural"])) + " öneride dil modeline ulaşılamadı, kural kullanıldı (gri)");
+        if (kSay(["kural"])) kParca.push(ftBinlik(kSay(["kural"])) + " öneride sabit kural kullanıldı (gri)");
         if (kParca.length) oz.appendChild(elYap("div", "pf-oneri-ozet-not", "Kaynak: " + kParca.join("; ") + "."));
         const farkSatir = elYap("div", "pf-oneri-fark");
         const farkMetin = elYap("span", "", "");
@@ -18268,8 +18268,8 @@ function profilKartiEkle(alan, blok) {
         /* 4) AYNI ve NEREDEYSE AYNI kolon grupları: kalacak kolon. */
         grupKontrol.forEach(k => {
             const b = bolumYap(k.ad, ftBinlik(k.gruplar.length) + " grup", k.anahtar === "yakin_icerik"
-                ? "Kalacak kolonu kod önerir (hedefi daha iyi ayıran); ayırma güçleri eşitse dil modeli"
-                : "Kalacak kolonu dil modeli önerir (kolonların anlamından)");
+                ? "Kalacak kolonu kod önerir (hedefi daha iyi bilen; eşitse sabit kural)"
+                : "Kalacak kolonu kod önerir (sabit kural: başka kontrole takılmayan, en az düzeltme isteyen, adı kısa olan)");
             b.appendChild(pfAyniTablosu(k.gruplar, ayniSecim, ayniOneri, kararModu, kart, kararCizenler, kararCiz));
             kararPano.appendChild(b);
         });

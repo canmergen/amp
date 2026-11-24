@@ -3434,3 +3434,10 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 | 13 | İlişkili Kolonlar Arası Tutarsızlık | Birbirini Tutmayan Kolonlar |
 | 14 | Tekrar Eden Satır | aynı |
 | 15 | Setler Arası Çakışma | Setlerde Ortak Kayıt |
+
+## 02.1: "Öneri alınamadı" etiketi kaldırıldı
+
+- Birebir aynı ve neredeyse aynı kolon gruplarında kalacak kolonu kod önerir; 02.1'de dil modeli kullanılmaz.
+- Eskiden kural önerisinin kaynağı `kural` yazılıyor, ekran bunu "Öneri alınamadı" ve "dil modeline ulaşılamadı" diye gösteriyordu. Öneri aslında vardı ve seçili geliyordu.
+- Artık kaynak `kod`; ekranda "Önerilen" ve "Kaynak: Kod (sabit kural)" yazar. Bölüm notu "Kalacak kolonu kod önerir" der.
+- Kural: başka bir kontrolde çıkarılmayan, en az düzeltme ve karar isteyen kolon; eşitlik varsa adı kısa olan. Neredeyse aynı grupta önce hedefi daha iyi bilen kolon; isabetler eşitse aynı kural.

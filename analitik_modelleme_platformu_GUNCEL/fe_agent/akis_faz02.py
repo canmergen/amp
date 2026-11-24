@@ -628,8 +628,10 @@ def _veri_onerileri(durum, ek, df, egitim):
     # UC DEGER
     # Yakalanan uc zaten dogal yayilimin cok disinda (hatali giris): kirp.
     for x in ek.get("uc") or []:
-        yaz("uc", x["kolon"], "kirp", uc_bulgu_metni(x) + ". Yanlış yazılmış bir sayıya "
-            "benziyor; normal aralığın ucuna çekilir.")
+        # Sayilar Bulgu sutununda; gerekce onlari tekrar etmez.
+        yaz("uc", x["kolon"], "kirp", "Değer kolonun normal aralığının çok dışında; yanlış "
+            "yazılmış bir sayıya benziyor. Normal aralığın ucuna çekilir. Değer gerçekse "
+            "«Olduğu gibi bırak» seçin.")
 
     # BEKLENMEYEN NEGATIF
     for x in ek.get("negatif") or []:
@@ -2594,8 +2596,9 @@ def _tarih_onerileri(df, teshis, donem, dolu):
     return cikti
 
 
-AYNI_KURAL_GEREKCESI = ("Başka kontrolde çıkarılmayan, en az düzeltme ve karar isteyen "
-                        "kolon önerildi; eşitse adı kısa olan.")
+AYNI_KURAL_GEREKCESI = ("Kolonlar aynı bilgiyi taşıdığı için hangisinin kalacağı kuralla seçilir: "
+                        "başka bir kontrolde çıkarılmayan, en az düzeltme ve karar isteyen "
+                        "kolon; eşitlik varsa adı kısa olan.")
 # Uyenin baska kontrollerdeki durumu (ayni icerikli grupta siralama icin).
 _UYE_KARAR = ("tarih_sonra", "baskin", "donem", "sicrama", "kayma")
 
@@ -2726,7 +2729,7 @@ def _ayni_gruplari(durum, ek, p, df=None):
         if hedefle(g):
             sira = sorted(g["uyeler"], key=lambda u: (-g["guc"][u], g["uyeler"].index(u)))
             ilk = [u for u in sira if u not in g["elenen"]] or sira
-            gerekce = ("%s hedefi eğitim satırlarında daha iyi ayırıyor: ayırma gücü (AUC) %s"
+            gerekce = ("%s eğitim satırlarında hedefi daha iyi biliyor: tek başına isabet %s"
                        % (ilk[0], "; ".join("%s %s" % (u, _yuzde_metni(g["guc"][u])) for u in sira)))
             if ilk[0] != sira[0]:
                 gerekce += ". %s başka bir kontrolde çıkarıldığı için kalmaz" % sira[0]
@@ -2738,14 +2741,17 @@ def _ayni_gruplari(durum, ek, p, df=None):
             sira, gerekce, kaynak = list(oneri[g["id"]]["sira"]), oneri[g["id"]]["gerekce"], \
                 "dil modeli"
         else:
+            # Kural onerisi de bir oneridir (dil modeli 02.1'de kullanilmaz):
+            # kaynak "kod". Eski "kural" degeri ekranda "Öneri alınamadı"
+            # diye gorunuyordu.
             sira, gerekce, kaynak = _kural_sirasi(g["uyeler"], durum_), AYNI_KURAL_GEREKCESI, \
-                "kural"
+                "kod"
         # Kod denetimi: baska kontrolde cikarilan uye sona (dil modeli
         # koymadiysa bile).
         sira = [u for u in sira if u not in g["elenen"]] + [u for u in sira if u in g["elenen"]]
         if g.get("guc_esit"):
-            gerekce = ("Kolonların hedefi ayırma gücü eşit (AUC %s); karar kurala "
-                       "göre. " % _yuzde_metni(list(g["guc"].values())[0])) + (gerekce or "")
+            gerekce = ("Kolonlar hedefi aynı isabetle biliyor (%s); bu yüzden hedef karar "
+                       "veremez. " % _yuzde_metni(list(g["guc"].values())[0])) + (gerekce or "")
         g.update({"sira": sira, "oneri": sira[0], "gerekce": gerekce, "kaynak": kaynak})
     return gruplar
 
@@ -3626,14 +3632,14 @@ def _yakin_iliski_metni(g, kalan, k):
         return "%s katı" % _sayi_metni(round(c, 6) if abs(c) < 1 else round(c, 4))
     x = il.get(k) if k != ilk else il.get(kalan)
     if isinstance(x, dict) and x.get("tur") == "kor":
-        return "korelasyon %s" % _yuzde_metni(abs(x["kor"]))
-    return "korelasyon çok yüksek"
+        return "benzerlik %s" % _yuzde_metni(abs(x["kor"]))
+    return "benzerlik çok yüksek"
 
 
 def _iliski_cumlesi(g, kalan, k):
     """"B, A kolonunun 100 katı" ya da "A ile B arasında korelasyon %99,5"."""
     m = _yakin_iliski_metni(g, kalan, k)
-    if m.startswith("korelasyon"):
+    if m.startswith("benzerlik"):
         return "%s ile %s arasında %s" % (kalan, k, m)
     return "%s, %s kolonunun %s" % (k, kalan, m)
 
