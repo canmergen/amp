@@ -3013,6 +3013,12 @@ tanıtır; sayfalar sol bardan açılır.
   `sayilar`): 15 kontrol, içlerinde 26 kural, 15 kuralın eşiği var (10
   kontrolde), 20 eşik (13 yakalama, 7 öneri), 11 kural sabit. Kural
   sayımı `ESIK_KURAL` (eşik -> PROFIL_KONTROLLERI anahtarı) ile.
+- KONTROL NUMARASI: karttaki 15 kontrolün sırası `kart_kontrol_sirasi()`
+  (PROFIL_KONTROLLERI sırası, birleşik kontrol ilk üyesinin yerinde);
+  `kontrol_no()` anahtar ya da adla numara verir. Profil kartı satırı
+  `no`, eşik formu satırı `kontrol_no` taşır; ikisinde de adın önünde
+  aynı numara rozeti (`.pf-kontrol-no`). Eşik formu satırları önce bu
+  numaraya göre dizilir.
 - AÇIK EŞİK FORMU YENİLEMEDE GÜNCEL: onay bekleyen form eski kayıttan
   (eski adlar, sayılar yok) gösterilmez; `acik_esik_tazele` (backend
   `_surdurme_govdesi`) ve `profil_gecmisini_tazele` formu güncel koddan

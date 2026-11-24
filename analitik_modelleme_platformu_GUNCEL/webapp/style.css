@@ -5998,3 +5998,4 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-esik-sayi-ek { color: var(--metin-soluk); font-size: var(--fs-kucuk); padding-left: 6px; border-left: 1px solid var(--kenar); }
 .pf-esik-alt-ad { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin: 2px 0 4px; color: var(--metin); }
 .dg-tablo.pf-esik-tablo > tbody > tr.pf-esik-ilk > td { border-top: 2px solid var(--kenar); }
+.pf-kontrol-no { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; border: 1px solid var(--kenar-guclu); background: var(--yuzey-alt); color: var(--metin); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); font-variant-numeric: tabular-nums; }

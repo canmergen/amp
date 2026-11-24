@@ -17384,9 +17384,15 @@ function pfSonucSinifi(sonuc) {
     return /^Üretime girmez|^Çözüm/.test(t) ? "girmez" : /^Kararınıza|^Düzeltme/.test(t) ? "karar" : "bilgi";
 }
 
-function pfKontrolHucresi(ad, kisa, onemli) {
+/* no: karttaki kontrol numarası (profil kartı ve eşik formunda aynı). */
+function pfKontrolHucresi(ad, kisa, onemli, no, toplam) {
     const td = elYap("td", "pf-kontrol-ad");
     const adS = elYap("div", "pf-esik-ad");
+    if (no) {
+        const n = elYap("span", "pf-kontrol-no", String(no));
+        n.title = "Kontrol " + no + (toplam ? " / " + toplam : "") + " (veri profili kartındaki sırası)";
+        adS.appendChild(n);
+    }
     adS.appendChild(elYap("b", "", ad));
     td.appendChild(adS);
     if (kisa) td.appendChild(elYap("div", "pf-esik-kisa", kisa));
@@ -17766,7 +17772,7 @@ function profilKartiEkle(alan, blok) {
             : k.sonuc === "girmez" ? "pf-r-sorun" : "pf-r-dikkat";
         const satir = elYap("tr", "pf-kontrol " + renk + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
         const pr = k.parca || {};
-        satir.appendChild(pfKontrolHucresi(k.ad, k.kisa, pr.onemli));
+        satir.appendChild(pfKontrolHucresi(k.ad, k.kisa, pr.onemli, k.no, (alan.kontroller || []).length));
         satir.appendChild(pfOlcutHucresi(k.kural, pr));
         const bulunan = elYap("td", "pf-sonuc");
         const neOlacak = elYap("td", "pf-ne-olacak");
@@ -20095,7 +20101,7 @@ function profilEsikKartiEkle(alan, blok) {
         const tr = elYap("tr", "pf-esik-satir");
         if (grup !== sonGrup) { tr.classList.add("pf-esik-ilk"); sonGrup = grup; }
         const pr = r.parca || {};
-        const kh = pfKontrolHucresi(grup, r.kisa, pr.onemli);
+        const kh = pfKontrolHucresi(grup, r.kisa, pr.onemli, r.kontrol_no, sy && sy.kontrol);
         const cok = grupSay[grup] > 1 && r.alt;
         if (cok || r.grup === "oneri") {
             const altS = elYap("div", "pf-esik-alt-ad");

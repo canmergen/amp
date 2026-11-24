@@ -1749,7 +1749,9 @@ def esik_formu(durum, hata=None, kilitli=False):
                          "varsayilan_metni": _esik_metni(birim, varsayilan[a]),
                          "en_az": _esik_ekran(birim, en_az), "en_cok": _esik_ekran(birim, en_cok),
                          "grup": "oneri" if a in ONERI_ESIK_ANAHTARLARI else "yakalama"})
-    satirlar.sort(key=lambda r: r.pop("_sira"))
+    for r in satirlar:
+        r["kontrol_no"] = kontrol_no(r["kontrol_grup"])
+    satirlar.sort(key=lambda r: (r["kontrol_no"] or 99, r.pop("_sira")))
     kurallar = {x[0] for x in PROFIL_KONTROLLERI}
     esikli = {ESIK_KURAL[r["anahtar"]] for r in satirlar if r["anahtar"] in ESIK_KURAL}
     sayilar = {"kontrol": gorunur_kontrol_sayisi(), "kural": len(kurallar),
@@ -3123,6 +3125,30 @@ def _grup_satiri(g, uyeler):
     return satir
 
 
+def kart_kontrol_sirasi():
+    """Kartta gorunen kontrollerin sirasi: [(anahtar, ad)]; birlesik
+    kontrol ilk uyesinin yerinde (kontrolleri_grupla ile ayni). Kontrol
+    numarasi (kartta ve esik formunda "1.", "2." ...) bundan."""
+    grup_of = {a: g for g in KONTROL_GRUPLARI for a in g[3]}
+    sira, eklenen = [], set()
+    for a, ad, _s, _k in PROFIL_KONTROLLERI:
+        g = grup_of.get(a)
+        if g is None:
+            sira.append((a, ad))
+        elif g[0] not in eklenen:
+            eklenen.add(g[0])
+            sira.append((g[0], g[1]))
+    return sira
+
+
+def kontrol_no(anahtar_ya_da_ad):
+    """Karttaki kontrol numarasi (1'den); anahtar ya da ad ile."""
+    for i, (a, ad) in enumerate(kart_kontrol_sirasi(), 1):
+        if anahtar_ya_da_ad in (a, ad):
+            return i
+    return None
+
+
 def kontrolleri_grupla(kontroller):
     """Uye kontrol satirlarindan kartin satirlari: birlesik kontrol, ilk
     uyesinin yerinde tek satir."""
@@ -3138,6 +3164,9 @@ def kontrolleri_grupla(kontroller):
             continue
         eklenen.add(g[0])
         cikti.append(_grup_satiri(g, [harita[a] for a in g[3] if a in harita]))
+    numara = {a: i for i, (a, _ad) in enumerate(kart_kontrol_sirasi(), 1)}
+    for k in cikti:
+        k["no"] = numara.get(k.get("anahtar"))
     return cikti
 
 
