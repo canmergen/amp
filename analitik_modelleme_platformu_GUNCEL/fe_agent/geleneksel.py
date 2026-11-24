@@ -1041,7 +1041,11 @@ def uygula(df, birimler, karar, tr, hedef=None):
     atla = set()                         # o an uygulanan (birim, kod) icin uretilmeyecek kolonlar
 
     def koy(ad, seri, kod, b, kaynaklar, satir, aciklama, ogrenilen=None):
-        ad = guvenli_ad(ad) if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", ad) else ad
+        # Ad duzeltilirse (Turkce karakter, bosluk) kod satiri da duzeltilmis
+        # adla yazilir: bellekteki kolon ile uretim kodunun kolonu ayni olur.
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", ad):
+            eski, ad = ad, guvenli_ad(ad)
+            satir = str(satir or "").replace('df["%s"] =' % eski, 'df["%s"] =' % ad)
         if ad in df.columns or ad in yeni or ad in atla:
             return
         seri = pd.Series(seri, index=df.index).astype(float)
@@ -1276,8 +1280,8 @@ def _birim_uygula(df, b, kod, param, tr, y, koy):
             sutun = "pd.concat([%s], axis=1)" % ", ".join(
                 '_s(df, "%s") / %s' % (k, float(gg)) for k, gg in zip(kol, g))
             koy(b["ad"] + "__DK", dk, kod, b, kol,
-                _kodla(b["ad"] + "__DK", "(lambda _t: _t.std(axis=1, ddof=0) / _t.mean(axis=1).abs()"
-                       ".replace(0, np.nan))(%s)" % sutun),
+                _kodla(b["ad"] + "__DK", "(lambda _t: (_t.std(axis=1, ddof=0) / _t.mean(axis=1).abs()"
+                       ".replace(0, np.nan)).where(~_t.isna().any(axis=1)))(%s)" % sutun),
                 "Pencerelerin (%s gün) günlük ortalamalarının değişkenlik katsayısı (std / "
                 "ortalama)." % ", ".join(str(x_) for x_ in g))
         return
