@@ -1833,8 +1833,9 @@ def esik_formu(durum, hata=None, kilitli=False):
             # SAYIM: toplam kontrol (kartta gorunen), bunlarin altindaki
             # kural, ayarlanabilir esik; formda gorunen kontrol ve kural.
             "sayim": {"kontrol": gorunur_kontrol_sayisi(), "kural": len(PROFIL_KONTROLLERI),
-                      "esik": len(PROFIL_ESIKLERI), "form_kontrol": len(kontroller),
-                      "form_kural": sum(len(k["kurallar"]) for k in kontroller)},
+                      "esik": len(PROFIL_ESIKLERI), "esiksiz_kontrol": len(_esiksiz),
+                      "esiksiz_kural": sum(1 for k in kontroller for u in k["kurallar"]
+                                           if not u["esik"] and not u["oneri"])},
             "genel": [x[0] for x in PROFIL_GENEL_ESIKLER],
             "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
 
@@ -1912,9 +1913,10 @@ def esik_form_kontrolleri(durum):
                 "parca": kontrol_parcalari(u),
                 "sonuc": ac.get("sonuc") or NE_OLACAK.get(pk[u][2], "") if u in pk else "",
                 "esik": ana, "oneri": oneri})
+        # BUTUN kontroller ve kurallar formda: esigi olmayan da gorunur
+        # (satirinda "eşik yok"); esiksiz listesi yalniz sayim icin.
         if not any(k["esik"] or k["oneri"] for k in kurallar):
             esiksiz.append({"no": no, "ad": ad})
-            continue
         kontroller.append({"no": no, "ad": ad, "kisa": KONTROL_FORM_KISA.get(a, ""),
                            "kurallar": kurallar})
     return kontroller, esiksiz
@@ -2882,7 +2884,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Aynı kimlik ve aynı dönemle birden fazla satır ya da bütün kolonları aynı olan satır "
         "arar.",
         "Aynı müşteri için aynı ayda iki satır.",
-        "bilgi için gösterilir; bir şey değiştirilmez.",
+        "hiçbir şey değiştirilmez; durum yalnız dikkatinize sunulur.",
         kapsam="kimlik kolonu seçilmediyse yalnız bütün kolonları aynı olan satırlara bakılır.",
         sorun="İki kez yazılan satır modelde iki kat söz hakkı alır."),
     "set_cakisma": _ac(
@@ -2890,7 +2892,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Test (OOS) ya da Validasyon (OOT) setinde, Train'de (eğitim verisi) de bulunan bir "
         "kimlik ya da birebir aynı satır var mı diye bakar.",
         "Aynı müşteri hem Train'de hem Test'te.",
-        "bilgi için gösterilir; bir şey değiştirilmez.",
+        "hiçbir şey değiştirilmez; durum yalnız dikkatinize sunulur.",
         sorun="Model sınavda daha önce gördüğü soruyla karşılaşır; başarısı olduğundan iyi "
               "görünür."),
     "tarih": _ac(
@@ -2943,14 +2945,14 @@ _KONTROL_ACIKLAMA_EK = {
         "günün toplamından büyük olamaz; oluyorsa yakalanır. Tek tük satırda değil, 100 satırın "
         "en az 1'inde görülmesi gerekir.",
         "Son 7 gün toplamı 500, son 30 gün toplamı 300.",
-        "bilgi için gösterilir; bir şey değiştirilmez.",
+        "hiçbir şey değiştirilmez; durum yalnız dikkatinize sunulur.",
         sorun="Bu mümkün olmadığı için veride hata olduğunu gösterir."),
     "tutar_adet": _ac(
         "Adet ile tutar birbirini tutmuyor.",
         "Adet 0 ya da boşken tutar dolu mu, ya da en büyük değer ortalamadan küçük mü diye bakar. "
         "Tek tük satırda değil, 100 satırın en az 1'inde görülmesi gerekir.",
         "İşlem adedi 0, işlem tutarı 500.",
-        "bilgi için gösterilir; bir şey değiştirilmez.",
+        "hiçbir şey değiştirilmez; durum yalnız dikkatinize sunulur.",
         sorun="Bu mümkün olmadığı için veride hata olduğunu gösterir."),
 }
 

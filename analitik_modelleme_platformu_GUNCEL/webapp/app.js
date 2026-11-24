@@ -20056,13 +20056,12 @@ function profilEsikKartiEkle(alan, blok) {
             + "adımlarda kullanılmayacağı demektir."));
     /* SAYIM: toplam kontrol, altındaki kural ve ayarlanabilir sınır sayısı. */
     if (alan.sayim) {
-        const sy = alan.sayim, kalan = sy.kontrol - sy.form_kontrol;
+        const sy = alan.sayim;
         const st = elYap("div", "pf-not pf-ek-sayim");
-        metinYaz(st, "Veri profilinde toplam **" + sy.kontrol + " kontrol** ve bunların altında **" + sy.kural
-            + " kural** var. Aşağıda sınırı ayarlanabilen **" + sy.form_kontrol + " kontrol** (" + sy.form_kural
-            + " kural, " + sy.esik + " sınır) yer alır."
-            + (kalan > 0 ? " Kalan " + kalan + " kontrolün (" + (sy.kural - sy.form_kural) + " kural) ayarlanacak "
-                + "sınırı yoktur; onlar da çalışır, sonuçları Veri Profili kartında görünür." : ""));
+        metinYaz(st, "Aşağıda bütün kontroller ve kuralları yer alır: toplam **" + sy.kontrol + " kontrol**, bunların "
+            + "altında **" + sy.kural + " kural**. Numaralı başlıklar kontroldür; altlarındaki satırlar o kontrolün "
+            + "kurallarıdır. **" + sy.esik + " sınır** ayarlanabilir; ayarlanacak sınırı olmayan kuralın "
+            + "satırında «eşik yok» yazar, o kural da çalışır.");
         kart.appendChild(st);
     }
     const hataEl = elYap("div", "pf-esik-hata");

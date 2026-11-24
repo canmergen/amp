@@ -3334,13 +3334,12 @@ tanıtır; sayfalar sol bardan açılır.
 - 02.1'deki bütün kural, eşik ve öneri metinleri konuyu hiç bilmeyen birinin okuyup anlayacağı dille yazılır.
 - Terim kullanılmaz: AUC, korelasyon, yüzdelik, IV, kardinalite, winsor, medyan yazılmaz. Karşılıkları: "isabet", "benzerlik", "normal aralık", "ortadaki değer", "şans eseri olma ihtimali".
 - Eşik formunda açıklama i balonunda değil, satırın içindedir. "Neye bakıyor" sütunu: ne aradığı, neden sorun olduğu, kapsam ve küçük sayılarla örnek. "Yakalanırsa" sütunu: renkli etiket ve altında ne olacağı. "Önerilen" sütunu: değer ve neden o değer. Hepsi `_ac` ile yazılan tek metinden gelir (`kontrol_parcalari`).
-- Eşiği olmayan kontroller formda gösterilmez; sonuçları Veri Profili kartındadır.
 - Öneri gerekçeleri (`_veri_onerileri`) sayıyı verir, ardından düz cümleyle sonucu söyler ve "Tut" ya da "Çıkar" ile biter.
 - Yeni bir kural eklenirse aynı dille ve örnekle yazılır.
 
 ## 02.1 kontrol denetimi (sayım ve düzeltmeler)
 
-- **Sayım**: 14 kontrol, bunların altında 24 kural, 15 ayarlanabilir sınır. Eşik formunda sınırı olan 9 kontrol (18 kural) görünür; kalan 5 kontrolün (6 kural) sınırı yoktur. Sayım formun üstünde ve Veri Profili kartının "Kontroller" başlığında yazar (`esik_formu` → `sayim`).
+- **Sayım**: 14 kontrol, bunların altında 24 kural, 15 ayarlanabilir sınır. Numaralı başlık kontroldür ("1. Eksik Oranı Yüksek"), altındaki satır kuraldır ("Boş hücre oranı"). Eşik formunda 14 kontrolün ve 24 kuralın hepsi görünür; sınırı olmayan kuralın satırında "eşik yok" yazar. Sayım formun üstünde ve Veri Profili kartının "Kontroller" başlığında yazar (`esik_formu` → `sayim`).
 - **Aynı değer iki kurala takılmaz**: "Özel kod ve boş hücre" kuralında yakalanan kod (9999, -1) artık "Uç değer" ve "Negatif değer" hesabına girmez. Önceden yalnız "Özel kod" kuralının kodu dışarıda tutuluyordu.
 - **-1 / 0 / 1 kolonu**: yalnız bu üç değeri alan kolonda (arttı / azaldı gibi) -1 eksik kodu sayılmaz.
 - **Eksik sıçraması**: fark eşiği geçse de şans eseri olabilecek kadar az satıra dayanıyorsa yakalanmaz (iki oran testi, "Tesadüf Olasılığı" sınırı).
