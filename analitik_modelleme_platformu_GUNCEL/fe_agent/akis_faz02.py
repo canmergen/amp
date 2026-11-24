@@ -1403,8 +1403,9 @@ PROFIL_ESIK_ACIKLAMA = {
         "ham kolon üretime girmez; değerlerin hedef oranına ya da sıklığına göre gruplanması "
         "önerilir.",
         _VERIDEN,
-        "Bu veriden: her değere ortalama en az 20 hedefi 1 olan satır düşsün diye, eğitimde "
-        "hedefi 1 olan satır sayısı ÷ 20; en az 10, en çok 50. Hedef bilinmiyorsa 50.",
+        "Bu veriye göre: her değere ortalama en az 20 tane hedefi 1 olan satır düşecek kadar "
+        "değer olabilir. Örneğin eğitimde hedefi 1 olan 600 satır varsa 30 değer. En az 10, en "
+        "çok 50; hedef bilinmiyorsa 50.",
         sonuc="Çözüm önerilir; çözüm yoksa üretime girmez"),
     "baskin": _ac(
         "Satırların neredeyse hepsinde aynı değer.",
@@ -1422,8 +1423,9 @@ PROFIL_ESIK_ACIKLAMA = {
         "Kolon bir dönemde tamamen boş: o dönemde veri toplanmamış.",
         "Tut ya da Çıkar size sorulur; öneri İlk dönemler eşiğinden gelir.",
         _VERIDEN,
-        "Bu veriden: dönem başına ortalama satırın %10'u, en az 30. Küçük dönemde tek değer "
-        "tesadüfen çıkabilir. Dönem bilinmiyorsa 100.",
+        "Bu veriye göre: bir dönemdeki ortalama satırın onda biri. Örneğin dönemde ortalama "
+        "8.000 satır varsa 800 satırdan küçük dönemlere bakılmaz; orada tek değer tesadüfen "
+        "çıkabilir. En az 30; dönem bilinmiyorsa 100.",
         sonuc="Kararınıza bırakılır"),
     "gizli": _ac(
         "Boş değer yerine -999, 9999 gibi bir kod girilmiş.",
@@ -1495,8 +1497,9 @@ PROFIL_ESIK_ACIKLAMA.update({
         "Baskın değer dışında 12 satır var; eşik 30 ise Çıkar önerilir.",
         "yalnız öneriyi belirler; kararı siz verirsiniz.",
         _VERIDEN,
-        "Bu veriden: o satırlarda en az 5 hedefi 1 olan satır beklensin diye 5 ÷ eğitimdeki "
-        "hedef oranı (%3 ise 167). Hedef oranı bilinmiyorsa 30.",
+        "Bu veriye göre: o satırlar arasında ortalama 5 tane hedefi 1 olan satır çıkacak kadar "
+        "satır istenir. Örneğin her 100 satırdan 3'ünün hedefi 1 ise 167 satır. Hedef oranı "
+        "bilinmiyorsa 30.",
         sonuc="Öneri: altındaysa Çıkar"),
     "baskin_kat": _ac(
         "Az görülen değerler hedefi ayırıyorsa kolon tutulur.",
@@ -1599,19 +1602,19 @@ def _veri_ozeti(durum):
 ONERILEN_DAYANAK = {
     "cok_bos": "Boş olmak da bilgi taşır; %80'e kadar boş kolon doldurularak kullanılabilir.",
     "kimlik": "Kimlik kolonlarında oran %100'e yakındır; küçük tekrarlara rağmen yakalar.",
-    "kardinalite": "Hedef bilinmediği için sabit; veride değer başına en az 20 hedefi 1 olan "
-                   "satır düşecek sayı hesaplanır.",
+    "kardinalite": "Hedef bilinmediği için sabit 50; hedef bilinse bu veriye göre "
+                   "hesaplanırdı.",
     "baskin": "Yalnız gerçekten neredeyse sabit olan kolonlar sorulsun diye.",
-    "donem_min_satir": "Dönem bilgisi olmadığı için sabit; veride dönem başına ortalama "
-                       "satırın %10'u hesaplanır.",
+    "donem_min_satir": "Dönem kolonu seçilmediği için sabit 100; dönem bilinse bu veriye "
+                       "göre hesaplanırdı.",
     "gizli": "Tek tük görülen değer kod olmayabilir; %1 ve üstü sistematiktir.",
     "sicrama": "Küçük oynamalar doğaldır; 20 puanın üstü bir değişikliktir.",
     "uc_yayilim": "Yalnız hatalı girişler yakalansın; gerçek uç değerler SFA'da ele alınır.",
     "yakin_kor": "Bu düzeyde iki kolon pratikte aynı bilgiyi taşır.",
     "sizinti_auc": "Gerçek değişkenler tek başına nadiren bunun üstüne çıkar.",
     "kayma_kat": "Birim değişiklikleri 10'un katıdır; gerçek değişim nadiren bu kadar büyüktür.",
-    "baskin_min_satir": "Hedef oranı bilinmediği için sabit; veride en az 5 hedefi 1 olan satır "
-                        "düşecek sayı hesaplanır.",
+    "baskin_min_satir": "Hedef oranı bilinmediği için sabit 30; hedef bilinse bu veriye göre "
+                        "hesaplanırdı.",
     "baskin_kat": "Hedef oranında %50 fark anlamlı bir ayrımdır.",
     "donem_tut_pay": "Dönemlerin üçte birinden azı eksikse kalan dönemler kullanılabilir.",
     "sicrama_cikar": "Yarısı boşa dönen kolon kullanımda çoğunlukla boş görünür.",
@@ -1621,22 +1624,48 @@ ONERILEN_DAYANAK = {
 
 
 def veriye_gore_onerilen(durum):
-    """{anahtar: (deger, dayanak metni)}: veriden hesaplanabilen onerilenler."""
+    """{anahtar: (deger, aciklama)}: veriden hesaplanabilen onerilenler.
+    Aciklama duz cumle, bu verinin sayilariyla (formul yazilmaz)."""
     egitim, oran, n, donem_n = _veri_ozeti(durum)
     cikti = {}
     if oran and 0 < oran < 1:
-        v = int(min(1000, max(10, math.ceil(5.0 / oran))))
-        cikti["baskin_min_satir"] = (v, "en az 5 hedefi 1 olan satır için 5 ÷ hedef oranı %s"
-                                     % _yuzde_metni(oran))
+        ham = int(math.ceil(5.0 / oran))
+        v = int(min(1000, max(10, ham)))
+        if v == ham:
+            m = ("Her 100 satırdan yaklaşık %s tanesinin hedefi 1: %s satırda ortalama 5 tane "
+                 "olur. Daha az satırda oran tesadüfe kalır." % (_sayi_metni(round(oran * 100, 1)),
+                                                                _sayi(v)))
+        elif v > ham:
+            m = ("Bu veride hedef oranı yüksek (%s); yine de en az %s satıra bakılır."
+                 % (_yuzde_metni(oran), _sayi(v)))
+        else:
+            m = ("Bu veride hedef oranı çok düşük (%s); üst sınır olarak %s satır alındı."
+                 % (_yuzde_metni(oran), _sayi(v)))
+        cikti["baskin_min_satir"] = (v, m)
         if egitim:
-            tem = egitim * oran
-            k = int(min(50, max(10, round(tem / 20.0))))
-            cikti["kardinalite"] = (k, "değer başına en az 20 hedefi 1 olan satır için %s ÷ 20"
-                                    % _sayi(int(round(tem))))
+            tem = int(round(egitim * oran))
+            ham = int(round(tem / 20.0))
+            k = int(min(50, max(10, ham)))
+            if k == ham:
+                m = ("Eğitimde hedefi 1 olan %s satır var: %s değerde her değere ortalama 20 "
+                     "tane düşer. Daha çok değerde oranlar güvenilmez." % (_sayi(tem), _sayi(k)))
+            elif k < ham:
+                m = ("Eğitimde hedefi 1 olan %s satır var, değerler için yeterli; ama 50'den "
+                     "çok değeri olan metin kolonu her durumda gruplanır." % _sayi(tem))
+            else:
+                m = ("Eğitimde hedefi 1 olan yalnız %s satır var; 10'dan çok değerde her değere "
+                     "çok az düşer, bu yüzden en az 10 alındı." % _sayi(tem))
+            cikti["kardinalite"] = (k, m)
     if n and donem_n and donem_n > 1:
-        v = int(max(30, round(0.10 * n / donem_n)))
-        cikti["donem_min_satir"] = (v, "dönem başına ortalama satırın %%10'u, %s satır ÷ %s dönem × %%10"
-                                    % (_sayi(n), _sayi(donem_n)))
+        ort = int(round(float(n) / donem_n))
+        v = int(max(30, round(0.10 * ort)))
+        if v == round(0.10 * ort):
+            m = ("Bir dönemde ortalama %s satır var. Bunun onda birinden (%s) küçük dönemde tek "
+                 "değer tesadüfen çıkabilir; bakılmaz." % (_sayi(ort), _sayi(v)))
+        else:
+            m = ("Dönemler küçük (ortalama %s satır); en az 30 satırı olan dönemlere bakılır."
+                 % _sayi(ort))
+        cikti["donem_min_satir"] = (v, m)
     return cikti
 
 
@@ -1736,8 +1765,7 @@ def esik_formu(durum, hata=None, kilitli=False):
     except Exception:
         pass
     for r in satirlar:
-        r["dayanak"] = (("Bu veriden: " + dayanak[r["anahtar"]]) if r["anahtar"] in dayanak
-                        else ONERILEN_DAYANAK.get(r["anahtar"], ""))
+        r["dayanak"] = dayanak.get(r["anahtar"]) or ONERILEN_DAYANAK.get(r["anahtar"], "")
         if r["anahtar"] in ONERI_ESIK_AD:
             r["oneri_ad"] = ONERI_ESIK_AD[r["anahtar"]]
             r["form_olcut"] = ONERI_FORM_OLCUT.get(r["anahtar"], "")
