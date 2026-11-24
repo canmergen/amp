@@ -17384,15 +17384,9 @@ function pfSonucSinifi(sonuc) {
     return /^Üretime girmez|^Çözüm/.test(t) ? "girmez" : /^Kararınıza|^Düzeltme/.test(t) ? "karar" : "bilgi";
 }
 
-/* no: karttaki kontrol numarası (profil kartı ve eşik formunda aynı). */
-function pfKontrolHucresi(ad, kisa, onemli, no, toplam) {
+function pfKontrolHucresi(ad, kisa, onemli) {
     const td = elYap("td", "pf-kontrol-ad");
     const adS = elYap("div", "pf-esik-ad");
-    if (no) {
-        const n = elYap("span", "pf-kontrol-no", String(no));
-        n.title = "Kontrol " + no + (toplam ? " / " + toplam : "") + " (veri profili kartındaki sırası)";
-        adS.appendChild(n);
-    }
     adS.appendChild(elYap("b", "", ad));
     td.appendChild(adS);
     if (kisa) td.appendChild(elYap("div", "pf-esik-kisa", kisa));
@@ -17772,7 +17766,7 @@ function profilKartiEkle(alan, blok) {
             : k.sonuc === "girmez" ? "pf-r-sorun" : "pf-r-dikkat";
         const satir = elYap("tr", "pf-kontrol " + renk + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
         const pr = k.parca || {};
-        satir.appendChild(pfKontrolHucresi(k.ad, k.kisa, pr.onemli, k.no, (alan.kontroller || []).length));
+        satir.appendChild(pfKontrolHucresi(k.ad, k.kisa, pr.onemli));
         satir.appendChild(pfOlcutHucresi(k.kural, pr));
         const bulunan = elYap("td", "pf-sonuc");
         const neOlacak = elYap("td", "pf-ne-olacak");
@@ -20046,28 +20040,6 @@ function profilEsikKartiEkle(alan, blok) {
         + "Yüzdeli eşikler yüzde olarak yazılır (ör. 99 yazılırsa %99). Ondalık için virgül kullanılabilir.",
         "Kontrol Eşikleri"));
     kart.appendChild(bas);
-    /* SAYILAR: kartta 15 kontrol var ama birleşik kontrollerin içinde
-       ayrı kurallar çalışır (Sabit ya da Neredeyse Sabit = tek değer,
-       baskın değer, çoğu sıfır). Eşik kurala bağlıdır; sayılar iki
-       düzeyde de yazar. */
-    const sy = alan.sayilar;
-    if (sy) {
-        const sayiEl = elYap("div", "pf-esik-sayilar");
-        const kutuYap = (sayi, ad, ek) => {
-            const k = elYap("div", "pf-esik-sayi");
-            k.appendChild(elYap("b", "", ftBinlik(sayi)));
-            k.appendChild(elYap("span", "", ad));
-            if (ek) k.appendChild(elYap("span", "pf-esik-sayi-ek", ek));
-            sayiEl.appendChild(k);
-        };
-        kutuYap(sy.kontrol, "kontrol", "kartta");
-        kutuYap(sy.kural, "kural", "kontrollerin içinde");
-        kutuYap(sy.esikli_kural, "kuralın eşiği var", ftBinlik(sy.esikli_kontrol) + " kontrolde");
-        kutuYap(sy.esik, "eşik", ftBinlik(sy.yakalama) + " yakalama, " + ftBinlik(sy.oneri) + " öneri");
-        kutuYap(sy.sabit_kural, "kural sabit", "eşiksiz");
-        kart.appendChild(sayiEl);
-    }
-
     const hataEl = elYap("div", "pf-esik-hata");
     hataEl.hidden = !alan.hata;
     hataEl.textContent = alan.hata || "";
@@ -20086,32 +20058,18 @@ function profilEsikKartiEkle(alan, blok) {
     tablo.appendChild(thead);
     const tbody = elYap("tbody");
     const girisler = [];
-    /* TEK KONTROL SÜTUNU: satırda karttaki kontrolün adı bir kez yazar.
-       Kontrolün birden çok eşiği varsa adın altında o satırdaki eşiğin
-       adı (Baskın değer, Çoğu sıfır...) durur; tek eşikli kontrolde
-       yalnız kontrolün adı. Aynı kontrolün satırları art arda, kontrol
-       değişince kalın çizgi. Öneri eşiği kolonun yakalanmasını
+    /* Her eşik kendi satırında, kendi adıyla; adın önünde sıra numarası
+       ("1. Eksik Oranı Yüksek"). Öneri eşiği kolonun yakalanmasını
        değiştirmez, yakalanan kolona hangi seçeneğin önerileceğini
-       belirler; etiketi var. Eski kayıtta (kontrol_grup yok) eski ad. */
-    let sonGrup = null;
-    const grupSay = {};
-    (alan.satirlar || []).forEach(r => { const g = r.kontrol_grup || r.kontrol; grupSay[g] = (grupSay[g] || 0) + 1; });
-    (alan.satirlar || []).forEach(r => {
-        const grup = r.kontrol_grup || r.kontrol;
+       belirler; adın yanında etiketi var. */
+    (alan.satirlar || []).forEach((r, sira) => {
         const tr = elYap("tr", "pf-esik-satir");
-        if (grup !== sonGrup) { tr.classList.add("pf-esik-ilk"); sonGrup = grup; }
         const pr = r.parca || {};
-        const kh = pfKontrolHucresi(grup, r.kisa, pr.onemli, r.kontrol_no, sy && sy.kontrol);
-        const cok = grupSay[grup] > 1 && r.alt;
-        if (cok || r.grup === "oneri") {
-            const altS = elYap("div", "pf-esik-alt-ad");
-            if (cok) altS.appendChild(elYap("span", "", r.alt));
-            if (r.grup === "oneri") {
-                const et = elYap("span", "pf-esik-oneri-etiket", "Öneri eşiği");
-                et.title = "Kolonun yakalanmasını değiştirmez; yakalanan kolon için hangi seçeneğin önerileceğini belirler. Kararı yine siz verirsiniz.";
-                altS.appendChild(et);
-            }
-            kh.querySelector(".pf-esik-ad").after(altS);
+        const kh = pfKontrolHucresi((sira + 1) + ". " + r.kontrol, r.kisa, pr.onemli);
+        if (r.grup === "oneri") {
+            const et = elYap("span", "pf-esik-oneri-etiket", "Öneri eşiği");
+            et.title = "Kolonun yakalanmasını değiştirmez; yakalanan kolon için hangi seçeneğin önerileceğini belirler. Kararı yine siz verirsiniz.";
+            kh.querySelector(".pf-esik-ad").appendChild(et);
         }
         tr.appendChild(kh);
         tr.appendChild(pfOlcutHucresi(r.anlam + (/(se|sa)$/.test(r.anlam || "") ? " kolon yakalanır." : "."), pr));
@@ -20125,7 +20083,7 @@ function profilEsikKartiEkle(alan, blok) {
         g.inputMode = "decimal";
         g.className = "pf-esik-giris";
         g.value = pfEsikYaz(r.deger);
-        g.setAttribute("aria-label", (r.kontrol_grup ? r.kontrol_grup + " (" + r.alt + ")" : r.kontrol) + " eşiği");
+        g.setAttribute("aria-label", r.kontrol + " eşiği");
         g.disabled = kilitli;
         kutu.appendChild(g);
         kutu.appendChild(elYap("span", "pf-esik-birim son",

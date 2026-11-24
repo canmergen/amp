@@ -2995,30 +2995,15 @@ tanıtır; sayfalar sol bardan açılır.
   kolonun bulguları aynı satırda. Kararlar sekmesinde üye adı birleşik
   adla görünür ("Gizli Eksik (özel kod)").
 - Profil metnindeki kontrol sayısı `gorunur_kontrol_sayisi()` (15).
-- KONTROL EŞİKLERİ FORMU: 20 eşik eski kontrol adlarıyla ayrı ayrı
-  listelendiği için 20 kontrol gibi görünüyordu. Eşikler artık karttaki
-  kontrolün altında (`ESIK_KONTROL`: eşik -> kontrol ve alt eşik adı; sıra
-  karttaki sıra): başlık satırı kontrolün adı, satırda alt eşik adı
-  ("Baskın değer", "Çoğu sıfır"), öneri eşiklerinde "Öneri eşiği"
-  etiketi. Formun üstünde "15 kontrol var; 10 tanesinin ayarlanabilir
-  eşiği aşağıda (20 eşik)". Değişiklik notu ve hata mesajları
-  `esik_adi` ile ("Sabit ya da Neredeyse Sabit (Baskın değer)"). Eşik
-  anahtarları ve değerleri değişmedi.
-- EŞİK FORMU DÜZENİ (son hali): tek "Kontrol" sütunu; ayrı başlık
-  satırı ve ayrı eşik sütunu yok. Satırda karttaki kontrolün adı bir kez
-  yazar; kontrolün birden çok eşiği varsa adın altında eşiğin adı
-  ("Baskın değer", "Çoğu sıfır"), tek eşikli kontrolde yalnız kontrol
-  adı (aynı ad iki kez ya da "1 eşik" yazmaz). Kontrol değişince kalın
-  çizgi. Formun üstünde sayılar ayrı kutularda (`esik_formu` ->
-  `sayilar`): 15 kontrol, içlerinde 26 kural, 15 kuralın eşiği var (10
-  kontrolde), 20 eşik (13 yakalama, 7 öneri), 11 kural sabit. Kural
-  sayımı `ESIK_KURAL` (eşik -> PROFIL_KONTROLLERI anahtarı) ile.
-- KONTROL NUMARASI: karttaki 15 kontrolün sırası `kart_kontrol_sirasi()`
-  (PROFIL_KONTROLLERI sırası, birleşik kontrol ilk üyesinin yerinde);
-  `kontrol_no()` anahtar ya da adla numara verir. Profil kartı satırı
-  `no`, eşik formu satırı `kontrol_no` taşır; ikisinde de adın önünde
-  aynı numara rozeti (`.pf-kontrol-no`). Eşik formu satırları önce bu
-  numaraya göre dizilir.
+- KONTROL EŞİKLERİ FORMU: her eşik kendi satırında, kendi adıyla ve
+  önünde sıra numarasıyla ("1. Eksik Oranı Yüksek", "2. Neredeyse
+  Sabit" ... "20. Ondalık Hassasiyeti"); Ölçüt, Yakalanırsa, Değer,
+  Önerilen, Neden Bu Değer sütunları aynı. Başlık satırı, sayı kutuları,
+  ayrı eşik sütunu YOK. Öneri eşiklerinde adın yanında "Öneri eşiği"
+  etiketi. Satırlar ilişkili eşikler art arda gelsin diye
+  `ESIK_KONTROL` sırasıyla (karttaki kontrol sırası,
+  `kart_kontrol_sirasi`). Hata mesajı ve değişiklik notu satırdaki adla
+  (`esik_adi`). Profil kartında numara yok.
 - AÇIK EŞİK FORMU YENİLEMEDE GÜNCEL: onay bekleyen form eski kayıttan
   (eski adlar, sayılar yok) gösterilmez; `acik_esik_tazele` (backend
   `_surdurme_govdesi`) ve `profil_gecmisini_tazele` formu güncel koddan

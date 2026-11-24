@@ -1276,25 +1276,13 @@ ESIK_KONTROL = (
     ("ondalik", "Ondalık Hassasiyeti", "Basamak sayısı"),
 )
 _ESIK_KONTROL = {a: (i, k, alt) for i, (a, k, alt) in enumerate(ESIK_KONTROL)}
-# Esigin ait oldugu kontrol kurali (PROFIL_KONTROLLERI anahtari): formdaki
-# sayimlar (kac kuralin esigi ayarlanabilir) bundan.
-ESIK_KURAL = {
-    "cok_bos": "cok_bos", "baskin": "baskin", "sifir": "sifir",
-    "baskin_min_satir": "baskin", "baskin_kat": "baskin",
-    "kimlik": "kimlik_gibi", "kardinalite": "yuksek_kardinalite",
-    "yakin_kor": "yakin_icerik", "sizinti_auc": "birebir",
-    "donem_min_satir": "donem", "donem_tut_pay": "donem",
-    "sicrama": "sicrama", "sicrama_cikar": "sicrama", "kayma_kat": "kayma",
-    "gizli": "gizli_eksik", "metin_bayrak_pay": "metin_bos",
-    "negatif_bos_pay": "negatif", "uc_kat": "uc", "uc_kirp_kat": "uc",
-    "ondalik": "ondalik",
-}
 
 
 def esik_adi(anahtar, kontrol=""):
-    """Eşigin ekrandaki adi: "Sabit ya da Neredeyse Sabit (Baskın değer)"."""
-    x = _ESIK_KONTROL.get(anahtar)
-    return "%s (%s)" % (x[1], x[2]) if x else kontrol
+    """Eşigin ekrandaki adi: formdaki satir adi (PROFIL_ESIKLERI)."""
+    if kontrol:
+        return kontrol
+    return {x[0]: x[1] for x in PROFIL_ESIKLERI}.get(anahtar, anahtar)
 # Formda her kontrolun duz dille aciklamasi: "kisa" satirda, "bilgi" i
 # balonunda (nedir, neden onemli, ornek, yakalanirsa ne olur, onerilen
 # degerin gerekcesi), "sonuc" yakalanan kolona ne oldugu (NE_OLACAK ile
@@ -1752,16 +1740,7 @@ def esik_formu(durum, hata=None, kilitli=False):
     for r in satirlar:
         r["kontrol_no"] = kontrol_no(r["kontrol_grup"])
     satirlar.sort(key=lambda r: (r["kontrol_no"] or 99, r.pop("_sira")))
-    kurallar = {x[0] for x in PROFIL_KONTROLLERI}
-    esikli = {ESIK_KURAL[r["anahtar"]] for r in satirlar if r["anahtar"] in ESIK_KURAL}
-    sayilar = {"kontrol": gorunur_kontrol_sayisi(), "kural": len(kurallar),
-               "esikli_kural": len(esikli & kurallar),
-               "esikli_kontrol": len({r["kontrol_grup"] for r in satirlar}),
-               "sabit_kural": len(kurallar - esikli), "esik": len(satirlar),
-               "yakalama": sum(1 for r in satirlar if r["grup"] == "yakalama"),
-               "oneri": sum(1 for r in satirlar if r["grup"] == "oneri")}
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
-            "sayilar": sayilar,
             "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
 
 
@@ -3127,8 +3106,8 @@ def _grup_satiri(g, uyeler):
 
 def kart_kontrol_sirasi():
     """Kartta gorunen kontrollerin sirasi: [(anahtar, ad)]; birlesik
-    kontrol ilk uyesinin yerinde (kontrolleri_grupla ile ayni). Kontrol
-    numarasi (kartta ve esik formunda "1.", "2." ...) bundan."""
+    kontrol ilk uyesinin yerinde (kontrolleri_grupla ile ayni). Esik
+    formunda iliskili esikler bu siraya gore art arda dizilir."""
     grup_of = {a: g for g in KONTROL_GRUPLARI for a in g[3]}
     sira, eklenen = [], set()
     for a, ad, _s, _k in PROFIL_KONTROLLERI:
@@ -3164,9 +3143,6 @@ def kontrolleri_grupla(kontroller):
             continue
         eklenen.add(g[0])
         cikti.append(_grup_satiri(g, [harita[a] for a in g[3] if a in harita]))
-    numara = {a: i for i, (a, _ad) in enumerate(kart_kontrol_sirasi(), 1)}
-    for k in cikti:
-        k["no"] = numara.get(k.get("anahtar"))
     return cikti
 
 

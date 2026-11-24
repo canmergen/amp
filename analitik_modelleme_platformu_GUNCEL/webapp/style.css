@@ -5989,13 +5989,5 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-kolon-kutu { width: 16px; height: 16px; accent-color: var(--kirmizi); cursor: pointer; }
 .gl-kolon-kutu:disabled { cursor: default; }
 .dg-tablo.gl-plan-kolon { min-width: 1080px; }
-.pf-esik-oneri-etiket { display: inline-block; white-space: nowrap; padding: 0 6px; border-radius: var(--r-kucuk); font-size: var(--fs-kucuk); font-weight: var(--fw-normal); background: var(--amber-acik); color: var(--metin); }
+.pf-esik-oneri-etiket { display: inline-block; white-space: nowrap; margin-left: 6px; padding: 0 6px; border-radius: var(--r-kucuk); font-size: var(--fs-kucuk); font-weight: var(--fw-normal); background: var(--amber-acik); color: var(--metin); }
 
-/* 02.1 eşik formu: sayılar ve satırları kapsayan kontrol hücresi */
-.pf-esik-sayilar { display: flex; flex-wrap: wrap; gap: var(--b-2); margin: var(--b-2) 0 var(--b-3); }
-.pf-esik-sayi { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 6px; padding: 6px 10px; border: 1px solid var(--kenar); border-radius: var(--r-kucuk); background: var(--yuzey); }
-.pf-esik-sayi b { font-size: 1.15em; color: var(--metin); }
-.pf-esik-sayi-ek { color: var(--metin-soluk); font-size: var(--fs-kucuk); padding-left: 6px; border-left: 1px solid var(--kenar); }
-.pf-esik-alt-ad { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin: 2px 0 4px; color: var(--metin); }
-.dg-tablo.pf-esik-tablo > tbody > tr.pf-esik-ilk > td { border-top: 2px solid var(--kenar); }
-.pf-kontrol-no { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; border: 1px solid var(--kenar-guclu); background: var(--yuzey-alt); color: var(--metin); font-size: var(--fs-kucuk); font-weight: var(--fw-kalin); font-variant-numeric: tabular-nums; }
