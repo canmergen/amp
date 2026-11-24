@@ -1198,6 +1198,11 @@ def _surdurme_govdesi(durum):
         akis.acik_kart_tazele(durum)
     except Exception:
         pass
+    # Acik 02.1 esik formu da guncel koddan (eski kayittaki form degil).
+    try:
+        akis.acik_esik_tazele(durum)
+    except Exception:
+        pass
     govde = _yanit(durum, metin)
     govde["metin"] = govde["cevap"]
     govde["devam"] = True

@@ -20069,43 +20069,43 @@ function profilEsikKartiEkle(alan, blok) {
 
     const tablo = elYap("table", "dg-tablo pf-esik-tablo");
     const cg = document.createElement("colgroup");
-    ["pf-e-kontrol", "pf-e-esik", "pf-e-olcut", "pf-e-yakala", "pf-e-deger", "pf-e-vars", "pf-e-gerekce"].forEach(c => {
+    ["pf-e-kontrol", "pf-e-olcut", "pf-e-yakala", "pf-e-deger", "pf-e-vars", "pf-e-gerekce"].forEach(c => {
         const col = document.createElement("col"); col.className = c; cg.appendChild(col);
     });
     tablo.appendChild(cg);
     const thead = elYap("thead");
     const htr = elYap("tr");
-    ["Kontrol", "Eşik", "Ölçüt", "Yakalanırsa", "Değer", "Önerilen", "Neden Bu Değer"].forEach(b => htr.appendChild(elYap("th", "", b)));
+    ["Kontrol", "Ölçüt", "Yakalanırsa", "Değer", "Önerilen", "Neden Bu Değer"].forEach(b => htr.appendChild(elYap("th", "", b)));
     thead.appendChild(htr);
     tablo.appendChild(thead);
     const tbody = elYap("tbody");
     const girisler = [];
-    /* KONTROL HÜCRESİ SATIRLARI BİRLEŞTİRİR: karttaki kontrolün adı ve
-       eşik sayısı bir kez, o kontrolün eşik satırlarını kapsayarak yazar
-       (ayrı başlık satırı yok). Eşik sütununda eşiğin kendi adı; öneri
-       eşiği kolonun yakalanmasını değiştirmez, yakalanan kolona hangi
-       seçeneğin önerileceğini belirler, etiketi var. */
+    /* TEK KONTROL SÜTUNU: satırda karttaki kontrolün adı bir kez yazar.
+       Kontrolün birden çok eşiği varsa adın altında o satırdaki eşiğin
+       adı (Baskın değer, Çoğu sıfır...) durur; tek eşikli kontrolde
+       yalnız kontrolün adı. Aynı kontrolün satırları art arda, kontrol
+       değişince kalın çizgi. Öneri eşiği kolonun yakalanmasını
+       değiştirmez, yakalanan kolona hangi seçeneğin önerileceğini
+       belirler; etiketi var. Eski kayıtta (kontrol_grup yok) eski ad. */
     let sonGrup = null;
     const grupSay = {};
     (alan.satirlar || []).forEach(r => { const g = r.kontrol_grup || r.kontrol; grupSay[g] = (grupSay[g] || 0) + 1; });
     (alan.satirlar || []).forEach(r => {
         const grup = r.kontrol_grup || r.kontrol;
         const tr = elYap("tr", "pf-esik-satir");
-        if (grup !== sonGrup) {
-            const ktd = elYap("td", "pf-esik-kontrol");
-            ktd.rowSpan = grupSay[grup];
-            ktd.appendChild(elYap("b", "", grup));
-            ktd.appendChild(elYap("div", "pf-esik-kontrol-say", ftBinlik(grupSay[grup]) + " eşik"));
-            tr.appendChild(ktd);
-            tr.classList.add("pf-esik-ilk");
-            sonGrup = grup;
-        }
+        if (grup !== sonGrup) { tr.classList.add("pf-esik-ilk"); sonGrup = grup; }
         const pr = r.parca || {};
-        const kh = pfKontrolHucresi(r.alt || r.kontrol, r.kisa, pr.onemli);
-        if (r.grup === "oneri") {
-            const et = elYap("span", "pf-esik-oneri-etiket", "Öneri eşiği");
-            et.title = "Kolonun yakalanmasını değiştirmez; yakalanan kolon için hangi seçeneğin önerileceğini belirler. Kararı yine siz verirsiniz.";
-            kh.querySelector(".pf-esik-ad").appendChild(et);
+        const kh = pfKontrolHucresi(grup, r.kisa, pr.onemli);
+        const cok = grupSay[grup] > 1 && r.alt;
+        if (cok || r.grup === "oneri") {
+            const altS = elYap("div", "pf-esik-alt-ad");
+            if (cok) altS.appendChild(elYap("span", "", r.alt));
+            if (r.grup === "oneri") {
+                const et = elYap("span", "pf-esik-oneri-etiket", "Öneri eşiği");
+                et.title = "Kolonun yakalanmasını değiştirmez; yakalanan kolon için hangi seçeneğin önerileceğini belirler. Kararı yine siz verirsiniz.";
+                altS.appendChild(et);
+            }
+            kh.querySelector(".pf-esik-ad").after(altS);
         }
         tr.appendChild(kh);
         tr.appendChild(pfOlcutHucresi(r.anlam + (/(se|sa)$/.test(r.anlam || "") ? " kolon yakalanır." : "."), pr));

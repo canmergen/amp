@@ -3004,15 +3004,19 @@ tanıtır; sayfalar sol bardan açılır.
   eşiği aşağıda (20 eşik)". Değişiklik notu ve hata mesajları
   `esik_adi` ile ("Sabit ya da Neredeyse Sabit (Baskın değer)"). Eşik
   anahtarları ve değerleri değişmedi.
-- EŞİK FORMU DÜZENİ (sonraki hali): ayrı başlık satırı yok. İlk sütun
-  "Kontrol" karttaki kontrolün adını ve eşik sayısını bir kez yazar,
-  o kontrolün eşik satırlarını kapsar (rowspan); "Eşik" sütununda eşiğin
-  kendi adı, giriş sütunu "Değer". Formun üstünde sayılar ayrı kutularda
-  (`esik_formu` -> `sayilar`): 15 kontrol, içlerinde 26 kural, 15
-  kuralın eşiği var (10 kontrolde), 20 eşik (13 yakalama, 7 öneri), 11
-  kural sabit. Kural sayımı `ESIK_KURAL` (eşik -> PROFIL_KONTROLLERI
-  anahtarı) ile; birleşik kontrollerin içinde birden çok eşikli kural
-  olduğu için "eşikli kontrol" sayısı kural düzeyinde de yazar.
+- EŞİK FORMU DÜZENİ (son hali): tek "Kontrol" sütunu; ayrı başlık
+  satırı ve ayrı eşik sütunu yok. Satırda karttaki kontrolün adı bir kez
+  yazar; kontrolün birden çok eşiği varsa adın altında eşiğin adı
+  ("Baskın değer", "Çoğu sıfır"), tek eşikli kontrolde yalnız kontrol
+  adı (aynı ad iki kez ya da "1 eşik" yazmaz). Kontrol değişince kalın
+  çizgi. Formun üstünde sayılar ayrı kutularda (`esik_formu` ->
+  `sayilar`): 15 kontrol, içlerinde 26 kural, 15 kuralın eşiği var (10
+  kontrolde), 20 eşik (13 yakalama, 7 öneri), 11 kural sabit. Kural
+  sayımı `ESIK_KURAL` (eşik -> PROFIL_KONTROLLERI anahtarı) ile.
+- AÇIK EŞİK FORMU YENİLEMEDE GÜNCEL: onay bekleyen form eski kayıttan
+  (eski adlar, sayılar yok) gösterilmez; `acik_esik_tazele` (backend
+  `_surdurme_govdesi`) ve `profil_gecmisini_tazele` formu güncel koddan
+  kurar, yazılmış hata mesajı korunur.
 
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca

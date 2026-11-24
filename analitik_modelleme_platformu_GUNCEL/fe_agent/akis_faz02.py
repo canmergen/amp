@@ -3710,6 +3710,21 @@ def _esik_satiri_mi(kayit):
     return alan.get("tip") == "profil_esik"
 
 
+def acik_esik_tazele(durum):
+    """Kayitli oturum yuklenirken ACIK (onay bekleyen) esik formu guncel
+    koddan yeniden kurulur: eski kayitta kalan form (eski adlar, sayilar
+    yok) gosterilmez. Girilmis hata mesaji korunur; esik degerleri zaten
+    durumdan (profil_esikleri) gelir."""
+    alan = durum.get("_secim_alani")
+    if not (isinstance(alan, dict) and alan.get("tip") == "profil_esik") or alan.get("kilitli"):
+        return False
+    try:
+        durum["_secim_alani"] = esik_formu(durum, alan.get("hata") or None)
+        return True
+    except Exception:
+        return False
+
+
 def profil_gecmisini_tazele(durum, gecmis):
     """Yenilemede 02.1 blogu guncel haliyle cizilir. Transkript degismez:
     doner yeni liste.
@@ -3732,11 +3747,13 @@ def profil_gecmisini_tazele(durum, gecmis):
         return gecmis
     yeni = list(gecmis)
     esik_satirlari = [n for n in satirlar if _esik_satiri_mi(gecmis[n])]
-    if esik_kilit:
-        for n in esik_satirlari:
-            k = dict(yeni[n])
-            k["ekran"] = {"secim_alani": esik_formu(durum, kilitli=True)}
-            yeni[n] = k
+    # Kilitli degilse (form acik) eski kayittaki form da guncel koddan.
+    for n in esik_satirlari:
+        k = dict(yeni[n])
+        eski_ = ((k.get("ekran") or {}).get("secim_alani") or {})
+        k["ekran"] = {"secim_alani": esik_formu(durum, kilitli=True) if esik_kilit
+                      else esik_formu(durum, eski_.get("hata") or None)}
+        yeni[n] = k
     if not gecti:
         return yeni
     kart = profil_karti(durum)
