@@ -15,8 +15,9 @@ KURALLAR
   - Komsu araliklarin oranlari istatistiksel olarak farkli olmali
     (iki oran z-testi, p <= 0,05); degilse birlestirilir. En fazla 8 aralik.
   - Sizinti: araliklar ve oranlar YALNIZCA EGITIM satirlarindan ogrenilir.
-    Dogrulama / test setlerinde yalnizca egilimin ayni sirada kalip
-    kalmadigi KONTROL edilir (karar icin kullanilmaz).
+    Yalniz Test (OOS) setinde egilimin ayni sirada kalip kalmadigi
+    kontrol edilir (oneri metnine girer). Validasyon (OOT) hedefi hic
+    kullanilmaz: son sinama seti temiz kalir.
 
 EKSIK DEGER IKI GORUNUMDE
   ayri    : eksikler kendi araliginda (doldurmadan once).

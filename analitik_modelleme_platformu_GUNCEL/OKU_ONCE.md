@@ -3290,3 +3290,30 @@ tanıtır; sayfalar sol bardan açılır.
 | `amp_akis_acik` | İş Akışı bölmesi açık / kapalı |
 | `amp_dg_alt` | Model Değişkenleri'nde açık görünüm |
 | `fe_agent_calisma_id` | Açık çalışmanın kimliği |
+
+## 02.2 ve SFA düzeltmeleri (tarama listesinin ilk 9 maddesi)
+- HEDEF SIZINTISI (yeniden kurulum): kod satırları WoE / hedef ortalamasını
+  tam train haritasıyla yazar; analiz tablosu bu satırlardan kurulunca
+  (`asama_df`, `_kod_bloklarini_uygula`) train satırları
+  `_hedef_kodlarini_kat_disi_yap` ile 02.2'deki gibi KAT DIŞI değere çekilir
+  (`geleneksel.kat_disi_hedef_kodu`). Hangi kolon: ogrenilen
+  `hedef_kodlama` ({tur, kaynaklar}); eski kayıtta kod satırından (__WOE/__TE).
+- DK üretim kodu: bir pencere boşsa boş (bellekle aynı).
+- Türkçe / boşluklu kolon adı: `koy` düzeltilmiş adı kod satırına da yazar.
+- PENCERE AİLELERİ: aile anahtarı birimden bağımsız (`*PNC`); L7D, L30D, L3M
+  tek aile, aynı günlü ikinci pencere tekil kolon; aile adları çakışmaz.
+- ÜRETİM KODUNDA 02.1: `uretim_kodu.py` başta `kolon_cozum.profil_uygula`
+  ile 02.1 düzeltmelerini ve çözüm kolonlarını uygular (tek satır,
+  öğrenilen bilgi gömülü; `akis_faz03._profil_blogu`). Üretim ortamında
+  fe_agent kütüphanesi içe aktarılabilir olmalı.
+- SFA WINSOR: çeyrekler arası fark 0 ya da en çok 2 farklı değer varsa uç
+  payı ölçülmez (seyrek bayrak sıfıra kırpılmaz), log önerilmez; kırpma
+  kolonu tek değere indirecekse uygulanmaz (`rapor["winsor_atlanan"]`).
+- STABİLİTE: desilleri çakışan sayısal kolon (0/1 bayrak, çoğu sıfır) değer
+  bazlı ya da "en sık değer + desil" ile ölçülür (`sfa._sayisal_etiketler`);
+  ölçülemeyen tabloda ATLANDI.
+- ARALIK KODU: baz sette aralık etiketlerinin sayı kodu eğitimdeki hedef
+  oranı sırasıyla (`hedefe_gore_sirala`); U şekli doğrusal modelde kaybolmaz.
+- ARALIK TUTARLILIĞI yalnız Test (OOS) setinde; Validasyon (OOT) hedefi SFA
+  kararına girmez.
+

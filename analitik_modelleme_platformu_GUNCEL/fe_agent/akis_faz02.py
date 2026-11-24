@@ -3745,8 +3745,11 @@ def sfa_kararlari_oku(durum):
 
 
 def _diger_setler(durum, s):
+    """Aralik onerisinin SIRA TUTARLILIGI yalniz Test (OOS) setinde olculur.
+    Validasyon (OOT) son sinama setidir: hedefi SFA kararina (dil modeli
+    girdisi, oneri metni) girerse temiz sinama olmaktan cikar."""
     test_tanim = bolme_ayarlari(durum).get("test_tanim")
-    return {set_basligi(ad, test_tanim): s[ad] for ad in ("val", "test", "oot")
+    return {set_basligi(ad, test_tanim): s[ad] for ad in ("val",)
             if ad in s and bool(s[ad].any())}
 
 
