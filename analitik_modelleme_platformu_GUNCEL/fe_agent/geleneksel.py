@@ -1023,6 +1023,23 @@ def _kategori(s):
     return s.astype(object).where(s.notna(), "__BOS__").astype(str)
 
 
+def kat_disi_hedef_kodu(df, kaynaklar, tur, hedef, tr):
+    """Hedef kodlamali kolonun (WoE / hedef ortalamasi) degerleri: train
+    satirlarinda KAT DISI, digerlerinde tam train haritasi. Tablo kod
+    satirlarindan yeniden kurulurken train satirlarina tam harita
+    yazilmasin (hedef sizintisi) diye kullanilir. kaynaklar: [kolon] ya da
+    [a, c] (kesisim). Doner: seri ya da None."""
+    if not hedef or hedef not in df.columns or any(k not in df.columns for k in kaynaklar):
+        return None
+    k = _kategori(df[kaynaklar[0]])
+    for c in kaynaklar[1:]:
+        k = k + "|" + _kategori(df[c])
+    y = pd.to_numeric(df[hedef], errors="coerce")
+    tr = pd.Series(tr, index=df.index).fillna(False).astype(bool)
+    seri, _h, _v = _hedef_kodla(k, y, tr, "woe" if tur == "woe" else "hedef_ort")
+    return seri
+
+
 def _kodla(ad, ifade):
     return 'df["%s"] = %s' % (ad, ifade)
 
@@ -1119,7 +1136,7 @@ def _birim_uygula(df, b, kod, param, tr, y, koy):
                 koy(ad + "__WOE", seri, kod, b, [a, c],
                     _kodla(ad + "__WOE", "%s.map(%r).fillna(%r)" % (ifk, hm, vars_)),
                     "%s ve %s birleşik değerinin WoE'si (eğitimden, eğitimde kat dışı)." % (a, c),
-                    {"harita": hm})
+                    {"harita": hm, "hedef_kodlama": {"tur": "woe", "kaynaklar": [a, c]}})
             else:
                 h = k2[tr].value_counts(normalize=True)
                 hm = {str(a_): round(float(v), 6) for a_, v in h.items()}
@@ -1314,7 +1331,8 @@ def _tekli_uygula(df, b, k, kod, param, tr, y, koy):
                 ("%s değerinin WoE'si: ln(olay olmayan payı / olay payı), eğitim satırlarından; "
                  "eğitimde kat dışı (%s kat)." if kod == "woe" else
                  "%s değerinin yumuşatılmış hedef oranı, eğitim satırlarından; eğitimde kat dışı "
-                 "(%s kat).") % (k, KAT_SAYISI), {"harita": hm, "varsayilan": vars_})
+                 "(%s kat).") % (k, KAT_SAYISI), {"harita": hm, "varsayilan": vars_,
+                                                   "hedef_kodlama": {"tur": kod, "kaynaklar": [k]}})
         return
     x = _sayi(df[k])
     xt = x[tr].dropna()

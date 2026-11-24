@@ -1067,7 +1067,55 @@ def _kod_bloklarini_uygula(durum, df, kaynak):
                 continue
             if ad in df.columns and pd.api.types.is_numeric_dtype(df[ad]):
                 df[ad] = df[ad].replace([np.inf, -np.inf], np.nan)
+    _hedef_kodlarini_kat_disi_yap(durum, df, kaynak)
     return df
+
+
+def _hedef_kodlarini_kat_disi_yap(durum, df, kaynak):
+    """HEDEF SIZINTISI ONLEMI: kod satirlari WoE / hedef ortalamasini tam
+    train haritasiyla yazar (uretim kodu boyle olmali). Analiz tablosu bu
+    satirlardan yeniden kurulunca train satirlari da tam haritayi alir ve
+    kolon olduğundan guclu gorunur. Train satirlari burada 02.2'deki gibi
+    KAT DISI degerle yeniden yazilir. Hangi kolonun hedef kodlu oldugu
+    ogrenilen bilgisinden (hedef_kodlama); eski kayitta kod satirindan
+    (ad __WOE / __TE ile biter, kaynak kolonlar satirdaki df["..."])."""
+    if kaynak != "kural":
+        return
+    from fe_agent import geleneksel as G
+    from fe_agent.akis_durum import maskeler
+    hedef = (durum.get("meta") or {}).get("target")
+    if not hedef or hedef not in df.columns:
+        return
+    ogr = ((durum.get("ogrenilen_donusum") or {}).get("kural") or {})
+    isler = {}
+    for b in durum.get("kod_bloklari") or []:
+        if len(b) < 3 or b[2] != kaynak:
+            continue
+        for satir in b[1] or []:
+            ad, kod = satir[0], str(satir[1] or "")
+            spec = (ogr.get(ad) or {}).get("hedef_kodlama")
+            if not spec and (ad.endswith("__WOE") or ad.endswith("__TE")):
+                sag = kod.split("=", 1)[1] if "=" in kod else kod
+                kay = list(dict.fromkeys(re.findall(r'df\["([^"]+)"\]', sag)))
+                if 1 <= len(kay) <= 2:
+                    spec = {"tur": "woe" if ad.endswith("__WOE") else "hedef_ort", "kaynaklar": kay}
+            if spec and ad in df.columns:
+                isler[ad] = spec
+    if not isler:
+        return
+    try:
+        tr, _te = maskeler(durum, df)
+    except Exception:
+        return
+    tr = pd.Series(tr, index=df.index).fillna(False).astype(bool)
+    for ad, spec in isler.items():
+        try:
+            seri = G.kat_disi_hedef_kodu(df, list(spec.get("kaynaklar") or []), spec.get("tur"),
+                                         hedef, tr)
+        except Exception:
+            seri = None
+        if seri is not None:
+            df.loc[tr, ad] = seri[tr].values
 
 
 def asama_df(durum, asama):
