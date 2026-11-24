@@ -17722,7 +17722,11 @@ function profilKartiEkle(alan, blok) {
     /* Kontroller (yalnız bulgular; öneri ve seçim Kararlar sekmesinde) */
     const kb = elYap("div", "pf-bolum");
     const kbBas = elYap("div", "pf-bolum-bas");
+    /* Başlıkta toplam: kontrol sayısı ve altlarındaki kural sayısı. */
+    const pfKural = (alan.kontroller || []).reduce((t, k) => t + ((k.uye_kontroller || []).length || 1), 0);
     kbBas.appendChild(elYap("span", "pf-bolum-ad", "Kontroller"));
+    if ((alan.kontroller || []).length)
+        kbBas.appendChild(elYap("span", "pf-bolum-not", (alan.kontroller || []).length + " kontrol, " + pfKural + " kural"));
     kb.appendChild(kbBas);
     const tablo = elYap("table", "dg-tablo pf-tablo");
     const cg = document.createElement("colgroup");
@@ -20050,6 +20054,17 @@ function profilEsikKartiEkle(alan, blok) {
             + "neye baktığı, neden sorun olduğu, bir örnek, kolon yakalanırsa ne olacağı ve sınırı (eşik) yazar. Sınırlar önerilen "
             + "değerle dolu gelir; bir şey değiştirmeden onaylayabilirsiniz. «Üretime girmez», kolonun sonraki "
             + "adımlarda kullanılmayacağı demektir."));
+    /* SAYIM: toplam kontrol, altındaki kural ve ayarlanabilir sınır sayısı. */
+    if (alan.sayim) {
+        const sy = alan.sayim, kalan = sy.kontrol - sy.form_kontrol;
+        const st = elYap("div", "pf-not pf-ek-sayim");
+        metinYaz(st, "Veri profilinde toplam **" + sy.kontrol + " kontrol** ve bunların altında **" + sy.kural
+            + " kural** var. Aşağıda sınırı ayarlanabilen **" + sy.form_kontrol + " kontrol** (" + sy.form_kural
+            + " kural, " + sy.esik + " sınır) yer alır."
+            + (kalan > 0 ? " Kalan " + kalan + " kontrolün (" + (sy.kural - sy.form_kural) + " kural) ayarlanacak "
+                + "sınırı yoktur; onlar da çalışır, sonuçları Veri Profili kartında görünür." : ""));
+        kart.appendChild(st);
+    }
     const hataEl = elYap("div", "pf-esik-hata");
     hataEl.hidden = !alan.hata;
     hataEl.textContent = alan.hata || "";
@@ -20156,7 +20171,7 @@ function profilEsikKartiEkle(alan, blok) {
         const bolum = elYap("section", "pf-ek-bolum");
         const kb = elYap("div", "pf-ek-kbas");
         kb.appendChild(elYap("b", "", "Genel ayar"));
-        kb.appendChild(elYap("span", "", "Sistemin «bu şans eseri olabilir» deme sınırı; iki kural kullanır"));
+        kb.appendChild(elYap("span", "", "Sistemin «bu şans eseri olabilir» deme sınırı; üç kural kullanır"));
         bolum.appendChild(kb);
         const kk = elYap("div", "pf-ek-kontrol");
         kk.appendChild(sutunBas());

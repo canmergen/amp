@@ -3337,3 +3337,13 @@ tanıtır; sayfalar sol bardan açılır.
 - Eşiği olmayan kontroller formda gösterilmez; sonuçları Veri Profili kartındadır.
 - Öneri gerekçeleri (`_veri_onerileri`) sayıyı verir, ardından düz cümleyle sonucu söyler ve "Tut" ya da "Çıkar" ile biter.
 - Yeni bir kural eklenirse aynı dille ve örnekle yazılır.
+
+## 02.1 kontrol denetimi (sayım ve düzeltmeler)
+
+- **Sayım**: 14 kontrol, bunların altında 24 kural, 15 ayarlanabilir sınır. Eşik formunda sınırı olan 9 kontrol (18 kural) görünür; kalan 5 kontrolün (6 kural) sınırı yoktur. Sayım formun üstünde ve Veri Profili kartının "Kontroller" başlığında yazar (`esik_formu` → `sayim`).
+- **Aynı değer iki kurala takılmaz**: "Özel kod ve boş hücre" kuralında yakalanan kod (9999, -1) artık "Uç değer" ve "Negatif değer" hesabına girmez. Önceden yalnız "Özel kod" kuralının kodu dışarıda tutuluyordu.
+- **-1 / 0 / 1 kolonu**: yalnız bu üç değeri alan kolonda (arttı / azaldı gibi) -1 eksik kodu sayılmaz.
+- **Eksik sıçraması**: fark eşiği geçse de şans eseri olabilecek kadar az satıra dayanıyorsa yakalanmaz (iki oran testi, "Tesadüf Olasılığı" sınırı).
+- **Çok dönem düzeltmesi**: dönem kurallarında (boş / sabit, sıçrama) sınır sınanan dönem sayısına bölünür. Kolon başına yanlış alarm ihtimali böylece tesadüf sınırını aşmaz.
+- **Kimlik benzeri**: kolon kartında ölçüsü (tutar, adet, süre) yazan sayı kolonu kimlik sayılmaz (`sfa.profil_cikar(olcu_kolonlari=...)`). Tam sayı tutulan bakiye de neredeyse her satırda farklıdır ama ölçüdür.
+- **Hedef oranı %50 üstünde**: "Metinde çok değer" önerileni ve "Baskın değer" yeterli satır şartı az görülen sınıfa göre hesaplanır (hedefi 0 olan satırlar).

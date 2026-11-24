@@ -249,10 +249,14 @@ def _ondalikli(s):
 # 1) VERI PROFILI VE KALITE  (dataset seviyesi, hedef iliskisi YOK)
 # ===========================================================================
 def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
-                 kategorik_max=KATEGORIK_MAX):
+                 kategorik_max=KATEGORIK_MAX, olcu_kolonlari=()):
     """Doner: (tablo, teshis). Esikler 02.1'de kullanicinin onayladigi
-    degerlerle gelir; verilmezse varsayilan."""
+    degerlerle gelir; verilmezse varsayilan. olcu_kolonlari: kolon
+    kartinda olcusu (tutar, adet, sure ...) yazan kolonlar; bunlar sayi
+    ise kimlik benzeri sayilmaz (tam sayi tutulan bakiye de neredeyse her
+    satirda farklidir ama kimlik degil, olcudur)."""
     haric = set(h for h in haric if h)
+    olcu_kolonlari = set(olcu_kolonlari or ())
     satir = float(len(df))
 
     kayitlar = []
@@ -293,7 +297,8 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
         # ya da tam sayidir, ondalikli degildir.
         if tarih:
             tarih_kolonlari.append(kol); teshisler.append("tarih")
-        elif kard_oran > kimlik_esik and tekil > MIN_SATIR and not _ondalikli(s):
+        elif kard_oran > kimlik_esik and tekil > MIN_SATIR and not _ondalikli(s) \
+                and not (sayisal and kol in olcu_kolonlari):
             kimlik_gibi.append(kol); teshisler.append("kimlik benzeri")
         if (not sayisal) and (not tarih) and tekil > kategorik_max:
             yuksek_kardinalite.append(kol); teshisler.append("yüksek kardinalite")

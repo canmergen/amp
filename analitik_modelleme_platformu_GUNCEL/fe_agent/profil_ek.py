@@ -19,6 +19,7 @@ HEPSI TABLONUN TAMAMINDA, KESIN SAYIMLA: orneklem yok, yaklasik sayim yok.
 Ek kontroller yalniz dort temel kontrolden gecen (kusurlu olmayan)
 kolonlara uygulanir; kusurlu kolonlar zaten degisken uretimine girmez.
 """
+import math
 import hashlib
 import re
 
@@ -164,8 +165,13 @@ def _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk, esik=GIZLI_EKSIK_ESIK):
             continue
         if v < 0:
             # Kolonda bu koddan baska negatif deger yok.
-            kalan_min = min((float(k) for k in sayim.index if float(k) != v), default=None)
+            kalan = [float(k) for k in sayim.index if float(k) != v]
+            kalan_min = min(kalan, default=None)
             if kalan_min is not None and kalan_min < 0:
+                continue
+            # -1 / 0 / 1 (yon, artti / azaldi) kolonunda -1 gercek degerdir,
+            # eksik kodu degil: oteki degerler yalniz 0 ve 1 ise kod sayilmaz.
+            if v == -1 and kalan and set(kalan) <= {0.0, 1.0}:
                 continue
             if en_kucuk != v:
                 continue
@@ -210,6 +216,7 @@ def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
         en_kucuk, en_buyuk = float(sn.min()), float(sn.max())
         gizli = _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk, e["gizli"])
         bos = int(s.isna().sum())
+        kod = gizli
         if gizli:
             sonuc["gizli_eksik"].append({"kolon": kol, "deger": deger_metni(gizli[0]),
                                          "adet": gizli[1], "pay": gizli[1] / dolu, "bos": bos})
@@ -219,11 +226,14 @@ def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
             # (tek satir bile olsa): eksik bilgi iki farkli bicimde yazilmis.
             karisik = _gizli_eksik(sayim, dolu, en_kucuk, en_buyuk, 0.0)
             if karisik:
+                kod = karisik
                 sonuc["karisik_eksik"].append({"kolon": kol, "deger": deger_metni(karisik[0]),
                                                "adet": karisik[1], "pay": karisik[1] / dolu,
                                                "bos": bos})
-        # Uc deger (iki yonlu): ozel kod (-999, 9999) hesaba girmez.
-        su = sn[sn != gizli[0]] if gizli is not None else sn
+        # Uc deger (iki yonlu): ozel kod (-999, 9999) hesaba girmez. Kod,
+        # Ozel Kod ya da Ozel Kod ve Bos Hucre kuralinda yakalanan deger:
+        # ayni deger bir de uc deger ya da negatif sayilmaz.
+        su = sn[sn != kod[0]] if kod is not None else sn
         neg_yok = olcu_negatif_olamaz(olculer.get(kol))
         if len(su):
             p1 = float(su.quantile(UC_DEGER_ALT_YUZDELIK))
@@ -240,8 +250,8 @@ def kolon_kontrolleri(df, adaylar, olculer=None, esik=None):
                                         "yon": "iki" if (ust and alt) else ("ust" if ust else "alt")})
         if olcu_negatif_olamaz(olculer.get(kol)):
             negatif = sn < 0
-            if gizli is not None and gizli[0] < 0:
-                negatif &= sn != gizli[0]
+            if kod is not None and kod[0] < 0:
+                negatif &= sn != kod[0]
             adet = int(negatif.sum())
             if adet:
                 sonuc["negatif"].append({"kolon": kol, "adet": adet,
@@ -259,6 +269,20 @@ def _donem_sirasi(degerler):
     return sorted(degerler, key=anahtar)
 
 
+def sicrama_tesadufi(p1, n1, p2, n2, alfa):
+    """Iki donemin bos orani farki sans eseri olabilir mi (iki oran testi)?
+    Az satirli donemde bos orani kendiliginden oynar: 10 satirin 3'u ile
+    6'si arasindaki 30 puanlik fark sans eseri cikabilir. Farkin sans
+    eseri olma ihtimali alfa ya da ustundeyse True (yakalanmaz)."""
+    if n1 <= 0 or n2 <= 0:
+        return True
+    p = (p1 * n1 + p2 * n2) / float(n1 + n2)
+    se = math.sqrt(p * (1 - p) * (1.0 / n1 + 1.0 / n2))
+    if se <= 0:
+        return False
+    return math.erfc(abs(p1 - p2) / se / math.sqrt(2)) >= alfa
+
+
 def donem_kontrolleri(df, adaylar, donem, esik=None):
     """Doner: (donem_listesi, [{"kolon", "bos": [donem], "sabit": [donem]}],
     [{"kolon", "once", "sonra", "once_oran", "sonra_oran"}]).
@@ -270,7 +294,13 @@ def donem_kontrolleri(df, adaylar, donem, esik=None):
     if len(donemler) < 2:
         return donemler, None, None
     e = esik_birlestir(esik)
-    alfa = float(e["tesaduf"])
+    # COKLU KARSILASTIRMA: ne kadar cok donem sinanirsa sans eseri bir
+    # bulgu cikma ihtimali o kadar artar. Sinir sinama sayisina bolunur
+    # (Bonferroni): kolon basina yanlis alarm ihtimali tesaduf sinirini
+    # asmaz. Bos / sabit: donem sayisi kadar sinama; sicrama: art arda
+    # donem cifti kadar.
+    alfa_donem = float(e["tesaduf"]) / len(donemler)
+    alfa_cift = float(e["tesaduf"]) / (len(donemler) - 1)
     satir = g.value_counts()
     bos_sabit, sicrama = [], []
 
@@ -284,7 +314,7 @@ def donem_kontrolleri(df, adaylar, donem, esik=None):
             return True
         p = float(s[dis].isna().mean()) if deger is None else float((s[dis] == deger).mean())
         n = int(satir.get(d, 0))
-        return (p ** n) >= alfa
+        return (p ** n) >= alfa_donem
     for i in range(0, len(adaylar), DONEM_PARCA):
         parca = list(adaylar[i:i + DONEM_PARCA])
         alt = df[parca]
@@ -310,7 +340,9 @@ def donem_kontrolleri(df, adaylar, donem, esik=None):
             en_iyi = None
             for a, b in zip(donemler, donemler[1:]):
                 fark = abs(float(oran[b]) - float(oran[a]))
-                if fark > e["sicrama"] and (en_iyi is None or fark > en_iyi[0]):
+                if fark > e["sicrama"] and (en_iyi is None or fark > en_iyi[0]) \
+                        and not sicrama_tesadufi(float(oran[a]), int(satir.get(a, 0)),
+                                                 float(oran[b]), int(satir.get(b, 0)), alfa_cift):
                     en_iyi = (fark, a, b)
             if en_iyi:
                 _f, a, b = en_iyi

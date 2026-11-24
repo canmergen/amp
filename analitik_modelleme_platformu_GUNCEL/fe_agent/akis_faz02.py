@@ -544,11 +544,12 @@ def _veri_onerileri(durum, ek, df, egitim):
                    "satırlarda %s" % (_sayi(n_az), _yuzde_metni(o_az), _yuzde_metni(o_bas)))
         # 1) Cochran: bu satirlarda beklenen hedefi 1 olan satir 5'ten azsa
         #    oran guvenilmez.
-        beklenen = n_az * genel
+        beklenen = n_az * min(genel, 1 - genel)
         if beklenen < COCHRAN_EN_AZ:
             yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + ". Bu kadar az satırla güvenilir bir "
-                "karşılaştırma yapılamaz (bu satırlarda hedefi 1 olan yaklaşık %s satır beklenir, "
-                "en az 5 gerekir): Çıkar." % _sayi_metni(round(beklenen, 1)))
+                "karşılaştırma yapılamaz (bu satırlarda hedefi %s olan yaklaşık %s satır beklenir, "
+                "en az 5 gerekir): Çıkar." % ("1" if genel <= 0.5 else "0",
+                                              _sayi_metni(round(beklenen, 1))))
             continue
         # 2) Iki oran testi: fark tesadufen bu kadar buyuk cikabilir mi?
         se = math.sqrt(genel * (1 - genel) * (1.0 / n_az + 1.0 / max(n_bas, 1)))
@@ -1426,7 +1427,8 @@ PROFIL_ESIK_ACIKLAMA = {
         "Numara gibi kolonlarda her satır farklıdır. %95, arada birkaç tekrar olsa bile bunları "
         "yakalar.",
         kapsam="tam sayı ve yazı kolonları. Küsuratlı sayılar (tutar gibi) doğal olarak hep "
-               "farklıdır, onlara bakılmaz.",
+               "farklıdır, onlara bakılmaz. Kolon kartında ölçüsü (tutar, adet, süre gibi) yazan "
+               "sayı kolonlarına da bakılmaz; onlar numara değil, ölçüdür.",
         sorun="Her satırda farklı olan değer yalnız o satırı tanıtır; model bundan genel bir "
               "kural çıkaramaz.",
         sonuc="Çözüm önerilir; çözüm yoksa üretime girmez"),
@@ -1461,7 +1463,8 @@ PROFIL_ESIK_ACIKLAMA = {
     "gizli": _ac(
         "Boş bırakmak yerine -999, 9999 gibi uydurma bir sayı yazılmış.",
         "Kolonun öteki değerlerinden kopuk duran -1, -99, -999, 9999 gibi bir sayı arar. Böyle "
-        "bir sayı dolu satırların eşikten fazlasında yazıyorsa kolon yakalanır.",
+        "bir sayı dolu satırların eşikten fazlasında yazıyorsa kolon yakalanır. Yalnız -1, 0 ve "
+        "1 değerlerini alan kolonda (arttı / azaldı gibi) -1 gerçek değerdir, yakalanmaz.",
         "Yaş kolonunda dolu 100 satırın 3'ünde -999 yazıyor: %3. Eşik %1 ise kolon yakalanır.",
         "kolon kullanılır. Öneri: " + _KOD_SAKLA + ".",
         "Neden %1 önerildi?",
@@ -1472,7 +1475,9 @@ PROFIL_ESIK_ACIKLAMA = {
     "sicrama": _ac(
         "Boş oranı bir dönemden sonrakine birden değişen kolon.",
         "Her dönemde (ay gibi) kolonun yüzde kaçının boş olduğunu hesaplar ve art arda gelen "
-        "iki dönemi karşılaştırır. Aradaki fark eşikten büyükse kolon yakalanır.",
+        "iki dönemi karşılaştırır. Aradaki fark eşikten büyükse kolon yakalanır. Az satırlı "
+        "dönemlerde boş oranı kendiliğinden oynar; fark şans eseri olabilecek kadar küçük bir "
+        "dönemden geliyorsa yakalanmaz («Tesadüf Olasılığı» sınırı).",
         "Mart'ta 100 satırın 5'i boş, Nisan'da 40'ı boş. Fark 35 puan; eşik 20 puan ise kolon "
         "yakalanır.",
         "kolonu tutmak ya da çıkarmak size sorulur. Öneri: boş oranı artıp «Çıkarma sınırı»nı "
@@ -1552,14 +1557,17 @@ PROFIL_ESIK_ACIKLAMA.update({
             "bir şey gerçek bir sorun olabilir, ama şans eseri de olmuş olabilir. Sistem her "
             "seferinde şunu hesaplar: «Ortada bir sorun olmasaydı, bu durumu görme ihtimalim ne "
             "olurdu?» İhtimal bu sınırın altındaysa «şans değil, gerçek» der ve kolonu yakalar. "
-            "Üstündeyse «şans olabilir» der, yakalamaz.",
-            "**Kapsam:** iki yerde kullanılır. 1) «Dönemde boş ya da sabit» kuralı: bir dönemin "
-            "tamamen boş ya da hep aynı değerde olması şans mı? 2) «Baskın değer» kuralının Tut / "
-            "Çıkar önerisi: az sayıdaki farklı satırda hedefin farklı çıkması şans mı?",
+            "Üstündeyse «şans olabilir» der, yakalamaz. Çok sayıda dönem tek tek sınandığında "
+            "şans eseri bir bulgu çıkma ihtimali artar; bu yüzden dönem kurallarında sınır sınanan "
+            "dönem sayısına bölünür.",
+            "**Kapsam:** üç yerde kullanılır. 1) «Dönemde boş ya da sabit» kuralı: bir dönemin "
+            "tamamen boş ya da hep aynı değerde olması şans mı? 2) «Eksik sıçraması» kuralı: iki "
+            "dönemin boş oranı arasındaki fark şans mı? 3) «Baskın değer» kuralının Tut / Çıkar "
+            "önerisi: az sayıdaki farklı satırda hedefin farklı çıkması şans mı?",
             "**Örnek:** Bir kolonun genelde 100 satırından 90'ında 0 yazıyor. Bir ayda yalnız 10 "
             "satır var ve hepsinde 0 yazıyor: bu şans eseri olabilir (ihtimal %35), yakalanmaz. "
-            "Başka bir ayda 50 satır var ve hepsinde 0 yazıyor: şansla bu neredeyse hiç olmaz "
-            "(ihtimal %0,5), o ay kolonda bir sorun vardır, yakalanır.",
+            "Başka bir ayda 100 satır var ve hepsinde 0 yazıyor: şansla bu neredeyse hiç olmaz "
+            "(ihtimal %0,003), o ay kolonda bir sorun vardır, yakalanır.",
             "**Eşik ne yapar?** %5 yerine %1 yazarsanız sistem daha zor ikna olur, daha az kolon "
             "yakalar. %10 yazarsanız daha kolay ikna olur, daha çok kolon yakalar.",
             "**Neden %5 önerildi?** 100 denemede 5'ten az görülecek bir şey şans sayılmaz. "
@@ -1701,21 +1709,21 @@ def veriye_gore_onerilen(durum):
     egitim, oran, n, donem_n = _veri_ozeti(durum)
     cikti = {}
     if oran and 0 < oran < 1 and egitim:
-        tem = int(round(egitim * oran))
+        # Az gorulen sinif: hedef orani %50 ustundeyse az gorulen 0'dir.
+        sinif = "1" if oran <= 0.5 else "0"
+        tem = int(round(egitim * min(oran, 1 - oran)))
         ham = tem // COCHRAN_EN_AZ
         k = int(min(sfa_mod.KATEGORIK_MAX, max(2, ham)))
+        bas = ("Eğitim verisinde hedefi %s olan %s satır var. Bir değere bunlardan 5'ten azı "
+               "düşerse o değer için güvenilir bir şey söylenemez." % (sinif, _sayi(tem)))
         if k == ham:
-            m = ("Eğitim verisinde hedefi 1 olan %s satır var. Bir değere bunlardan 5'ten azı "
-                 "düşerse o değer için güvenilir bir şey söylenemez. %s ÷ 5 = %s."
-                 % (_sayi(tem), _sayi(tem), _sayi(k)))
+            m = bas + " %s ÷ 5 = %s." % (_sayi(tem), _sayi(k))
         elif k < ham:
-            m = ("Eğitim verisinde hedefi 1 olan %s satır var. Bir değere bunlardan 5'ten azı "
-                 "düşerse o değer için güvenilir bir şey söylenemez. %s ÷ 5 = %s; ama sistemin "
-                 "üst sınırı %s olduğu için %s."
-                 % (_sayi(tem), _sayi(tem), _sayi(ham), _sayi(k), _sayi(k)))
+            m = bas + " %s ÷ 5 = %s; ama sistemin üst sınırı %s olduğu için %s." % (
+                _sayi(tem), _sayi(ham), _sayi(k), _sayi(k))
         else:
-            m = ("Eğitim verisinde hedefi 1 olan yalnız %s satır var; ikiden fazla değere "
-                 "bölünürse her birine 5'ten az düşer." % _sayi(tem))
+            m = ("Eğitim verisinde hedefi %s olan yalnız %s satır var; ikiden fazla değere "
+                 "bölünürse her birine 5'ten az düşer." % (sinif, _sayi(tem)))
         cikti["kardinalite"] = (k, m)
     return cikti
 
@@ -1822,6 +1830,11 @@ def esik_formu(durum, hata=None, kilitli=False):
     kontroller, _esiksiz = esik_form_kontrolleri(durum)
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
             "kontroller": kontroller,
+            # SAYIM: toplam kontrol (kartta gorunen), bunlarin altindaki
+            # kural, ayarlanabilir esik; formda gorunen kontrol ve kural.
+            "sayim": {"kontrol": gorunur_kontrol_sayisi(), "kural": len(PROFIL_KONTROLLERI),
+                      "esik": len(PROFIL_ESIKLERI), "form_kontrol": len(kontroller),
+                      "form_kural": sum(len(k["kurallar"]) for k in kontroller)},
             "genel": [x[0] for x in PROFIL_GENEL_ESIKLER],
             "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
 
@@ -2169,9 +2182,12 @@ def profil_hesapla(durum):
         | {SPLIT_KOLON}
 
     esik = profil_esikleri(durum)
+    olculer = _kart_olculeri(durum)
     tablo, teshis = sfa_mod.profil_cikar(df, haric=haric, null_esik=esik["cok_bos"],
                                          kimlik_esik=esik["kimlik"],
-                                         kategorik_max=esik["kardinalite"])
+                                         kategorik_max=esik["kardinalite"],
+                                         olcu_kolonlari=[k for k, v in olculer.items()
+                                                         if str(v or "").strip()])
     _isaret("temel_kontroller")
     yazildi, yedek = ara_tablo_kaydet(durum, "PROFIL", tablo, "/veri_profili.parquet")
     _isaret("profil_tablosu_yazma")
@@ -2186,7 +2202,7 @@ def profil_hesapla(durum):
     temel |= set(teshis.get("tarih") or [])
     adaylar = [str(k) for k in df.columns if k not in haric and k not in temel]
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
-                                 hedef=m.get("target"), olculer=_kart_olculeri(durum),
+                                 hedef=m.get("target"), olculer=olculer,
                                  esik=esik, tarihler=tarihler, hedef_maske=egitim)
     _isaret("ek_kontroller")
     # TARIH KOLONLARI: en eski / en yeni tarih (ozel tarih kodlari haric),
@@ -2776,7 +2792,8 @@ def _profil_kurallari(esik=None):
         "gizli_eksik": "-1, -99, -999, 9999 gibi uydurma bir sayı dolu satırların %s fazlasında "
                        "yazıyor ve kolonun öteki değerlerinden kopuk." % _yuzde_ekli(e["gizli"]),
         "negatif": "Adet, gün ya da süre tutan kolonda eksi değer var.",
-        "sicrama": "Boş oranı art arda iki dönem arasında %s puandan fazla değişiyor."
+        "sicrama": "Boş oranı art arda iki dönem arasında %s puandan fazla değişiyor ve bu "
+                   "fark şans eseri olamayacak kadar çok satıra dayanıyor."
                    % _sayi_metni(round(e["sicrama"] * 100, 2)),
         "uc": "En büyük ya da en küçük değer kolonun normal aralığının çok dışında: aralığın "
               "genişliğinin %s katından fazla (yanlış yazılmış sayı)." % _sayi_metni(e["uc_yayilim"]),
@@ -2825,7 +2842,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Çok az satırlı bir dönemde bu şans eseri de olabilir; şans eseri olma ihtimali "
         "«Tesadüf Olasılığı» sınırının altındaysa yakalanır.",
         "Ocak–Mart tamamen boş, Nisan'dan sonra dolu. Bir başka örnek: kolonun genelde %90'ı 0; "
-        "50 satırlık bir dönemin tamamı 0 ise yakalanır, 10 satırlık dönemin tamamı 0 ise şans "
+        "100 satırlık bir dönemin tamamı 0 ise yakalanır, 10 satırlık dönemin tamamı 0 ise şans "
         "olabilir, yakalanmaz.",
         "kolonu tutmak ya da çıkarmak size sorulur. Öneri: son dönem sorunluysa Çıkar; sorun "
         "yalnız baştaki birkaç dönemdeyse Tut («İlk dönemler» sınırı); dönemlere dağınıksa Çıkar.",
@@ -3348,8 +3365,9 @@ def profil_metni(durum, karar=False):
     oz = _profil_ozeti(durum)
     kap = (durum.get("profil") or {}).get("profil_kapsam") or {}
     metin = ("Modelleme tablosundaki %s kolon, tablonun tamamı (train, val, test ve OOT "
-             "birlikte) üzerinden %s kontrolle incelendi." % (
-                 _sayi(len(oz["incelenen"])), _sayi(gorunur_kontrol_sayisi())))
+             "birlikte) üzerinden %s kontrolle (bunların altında toplam %s kural) incelendi." % (
+                 _sayi(len(oz["incelenen"])), _sayi(gorunur_kontrol_sayisi()),
+                 _sayi(len(PROFIL_KONTROLLERI))))
     if kap.get("hedef_train"):
         metin += (" Hedefle ilgili ölçümler ve öğrenilen her şey (çözümler, kırpma sınırı) "
                   "yalnız Train (MS) satırlarından; kararlar ve düzeltmeler onayınızla bütün "
