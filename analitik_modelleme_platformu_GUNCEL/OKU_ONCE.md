@@ -3371,7 +3371,7 @@ Dört kural artık "bilgi için gösterilir" değil; Kararlar sekmesinde seçim 
 - **Sınırlar.**
   - Satır çıkarma yalnız yeni düzende (UPDT veri) çalışır; eski düzendeki çalışmalarda bu iki kural bilgi olarak kalır.
   - Üretim kodu (`uretim_kodu.py`) satır silmez; skorlamada satır sayısı değişmemelidir.
-  - 01.4'teki set satır sayıları satır çıkarıldıktan sonra yeniden hesaplanmaz; güncel sayı `satir_bilgi.sonra` alanındadır.
+  - 01.4 set özeti satır çıkarıldıktan sonraki tablodan güncellenir (`bolme_sayimini_guncelle`): set satır sayıları, hedef oranları ve toplam satır. Özet satırında "02.1'de N satır çıkarıldı; sayılar güncel" yazar. İlk sayım `bolme.satir_ilk` altında saklanır; seçimler "Bırak" yapılırsa ya da bölme yeniden yapılırsa ilk sayıma dönülür.
 
 ## 02.1 eşik formunda numaralar
 

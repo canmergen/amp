@@ -1045,6 +1045,48 @@ def satir_kararlarini_uygula(durum, df, kaydet=False):
     return df.loc[~cik].reset_index(drop=True)
 
 
+def bolme_sayimini_guncelle(durum, df=None):
+    """01.4 SET OZETI: 02.1'de satir cikarildiysa setlerin satir sayisi ve
+    hedef orani cikarmadan SONRAKI tablodan (df) yeniden yazilir; ilk
+    sayim b["satir_ilk"]'te saklanir. df None: satir cikarilmadi, ilk
+    sayima donulur."""
+    b = durum.get("bolme")
+    if not isinstance(b, dict) or not isinstance(b.get("satir"), dict):
+        return
+    ilk = b.get("satir_ilk")
+    if df is None:
+        if isinstance(ilk, dict):
+            b["satir"] = dict(ilk.get("satir") or {})
+            b["hedef_oran"] = dict(ilk.get("hedef_oran") or {})
+            if ilk.get("toplam_satir") is not None:
+                b["toplam_satir"] = ilk["toplam_satir"]
+            b.pop("satir_ilk", None)
+        b.pop("satir_cikan", None)
+    else:
+        if not isinstance(ilk, dict):
+            ilk = b["satir_ilk"] = {"satir": dict(b["satir"]),
+                                    "hedef_oran": dict(b.get("hedef_oran") or {}),
+                                    "toplam_satir": b.get("toplam_satir")}
+        s = setler(durum, df)
+        b["satir"] = {ad: (int(pd.Series(s[ad]).sum()) if ad in s else n)
+                      for ad, n in ilk["satir"].items()}
+        hedef = (durum.get("meta") or {}).get("target")
+        if ilk.get("hedef_oran") and hedef in df.columns:
+            y = pd.to_numeric(df[hedef], errors="coerce")
+            b["hedef_oran"] = {}
+            for ad in ilk["hedef_oran"]:
+                m = pd.Series(s[ad], index=df.index).fillna(False).astype(bool) if ad in s else None
+                if m is not None and bool(m.any()) and bool(y[m].notna().any()):
+                    b["hedef_oran"][ad] = float((y[m] == 1).sum()) / int(m.sum())
+        b["satir_cikan"] = int(((durum.get("profil") or {}).get("satir_bilgi") or {}).get("toplam") or 0)
+        if ilk.get("toplam_satir") is not None:
+            b["toplam_satir"] = int(len(df))
+    if "egitim" in b["satir"]:
+        b["train_satir"] = b["satir"]["egitim"]
+    if "test" in b["satir"]:
+        b["test_satir"] = b["satir"]["test"]
+
+
 def _satir_duzeltme(durum, kontrol, ad):
     """Kart satirinin duzeltme alani (satir cikarma secimi) ya da None."""
     o = (satir_onerileri(durum).get(kontrol) or {}).get(ad)
@@ -2891,10 +2933,13 @@ def veri_profili_uygula(durum):
             updt_yaz(durum, df21, "02.1")
             # Yeni kolonlarin UPDT sozluk satirlari (amp.updt_sozluk_suz ekler).
             p["sozluk_ek"] = yeni_kolon_sozlugu(durum, df21)
+            # 01.4 set ozeti: satir cikarildiysa yeni tablodan.
+            bolme_sayimini_guncelle(durum, df21 if (p.get("satir_bilgi") or {}).get("toplam") else None)
         else:
             updt_ilerlet(durum, "02.1", "01")
             p["sozluk_ek"] = []
             p.pop("satir_bilgi", None)
+            bolme_sayimini_guncelle(durum, None)
     # Profil degisti: SFA ve kararlari eski profile aitti, yeniden hesaplanir.
     eski = (durum.pop("sfa", None) or {}).get("ai_is")
     if eski:

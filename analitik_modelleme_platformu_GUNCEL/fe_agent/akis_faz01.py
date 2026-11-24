@@ -10258,6 +10258,9 @@ def _bolme_uygula_spark(durum):
     ikili = (durum.get("profil") or {}).get("hedef_tip") == "binary"
     # Setlerin GERCEK hedef oranlari: karttaki cubuk bunlari yazar.
     b["hedef_oran"] = {}
+    # Yeni bolme: 02.1'de satir cikarilinca tutulan ilk sayim gecersiz.
+    b.pop("satir_ilk", None)
+    b.pop("satir_cikan", None)
     if ikili:
         for ad in SET_ADLARI:
             st = setler.get(SPLIT_ETIKET[ad]) or {}

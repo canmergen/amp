@@ -2259,6 +2259,9 @@ def _bitir(durum, s, notlar):
     b = durum["bolme"]
     test_tanim = bolme_ayarlari(durum)["test_tanim"]
     b["satir"] = {ad: int(s[ad].sum()) for ad in SET_ADLARI}
+    # Yeni bolme: 02.1'de satir cikarilinca tutulan ilk sayim gecersiz.
+    b.pop("satir_ilk", None)
+    b.pop("satir_cikan", None)
     # train_satir / test_satir: ust serit, senaryo konfigi ve eski oturum
     # dosyalari bu iki adi okur.
     b["train_satir"] = b["satir"]["egitim"]
@@ -3367,6 +3370,9 @@ def bolme_ozeti(durum):
             metin += "   (OOT: son %d dönem)" % adet
     else:
         metin += "   (%%%d rastgele)" % round(100 * float(a["test_oran"]))
+    # 02.1'de satir cikarildiysa sayilar cikarmadan SONRAKI tablodandir.
+    if b.get("satir_cikan"):
+        metin += "   (02.1'de %s satır çıkarıldı; sayılar güncel)" % _sayi(int(b["satir_cikan"]))
     return metin
 
 
