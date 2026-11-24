@@ -4143,6 +4143,15 @@ def baz_plan(durum):
                _sayi(ko["isaret"]), durum["veri_seti"]))
 
 
+def hedefe_gore_sirala(etiketler, seri, y, tr):
+    """Aralik etiketleri egitimdeki hedef oranina gore (artan); egitimde
+    gorulmeyen etiket sona (eski sirasiyla)."""
+    et = [str(e) for e in etiketler]
+    oran = y[tr].groupby(seri[tr].astype(str)).mean()
+    return sorted(et, key=lambda e: (e not in oran.index or pd.isna(oran.get(e)),
+                                     float(oran.get(e, 0) or 0), et.index(e)))
+
+
 def aralik_siralari(durum):
     """{baz setteki aralik kolonu: [etiket, ...]}: modelin ve secimin
     etiketleri sira numarasina cevirmesi icin. Baz set kaydinda yoksa
@@ -4231,6 +4240,19 @@ def baz_uygula(durum):
             et = (detay.get(kaynak[c]) or {}).get("etiketler")
             if et:
                 aralik_sira[c] = [str(e) for e in et]
+    # SIRA = EGITIMDEKI HEDEF ORANI (artan): aralik kodu degerin sirasi
+    # degil, hedef oranini izler; U seklindeki iliski dogrusal modelde de
+    # kaybolmaz. Egitimde gorulmeyen etiket sona.
+    try:
+        _hedef = (durum.get("meta") or {}).get("target")
+        if aralik_sira and _hedef in df.columns:
+            _tr = pd.Series(maskeler(durum, df)[0], index=df.index).fillna(False).astype(bool)
+            _y = pd.to_numeric(df[_hedef], errors="coerce")
+            for c, et in list(aralik_sira.items()):
+                if c in df.columns:
+                    aralik_sira[c] = hedefe_gore_sirala(et, df[c], _y, _tr)
+    except Exception:
+        pass
 
     # Hedef veri seti akista tanimli degilse adim COKMESIN: hesap korunur,
     # tablo yedek dosyaya yazilir ve kullaniciya acik bir uyari verilir.
