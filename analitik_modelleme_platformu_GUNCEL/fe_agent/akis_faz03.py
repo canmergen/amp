@@ -7,6 +7,7 @@ uretime girmez. Sonuc _ENRICHED (ham + uretilen); Faz 03 (SFA, stabilite,
 baz set) bu tabloyla calisir. Uretim degisince SFA kararlari gecersizdir.
 """
 
+import json
 import time
 
 import dataiku
@@ -144,11 +145,25 @@ def _uretim_kodu_yaz(durum, hedef):
             kaynak_dataset=_kaynak_ad(durum),
             hedef_dataset=hedef, doldurma=None,
             # script_olustur 2'li blok bekliyor; kaynak alani atilir.
-            bloklar=[(b[0], b[1]) for b in bloklar])
+            bloklar=_profil_blogu(durum) + [(b[0], b[1]) for b in bloklar])
         _folder().upload_stream("/uretim_kodu.py", script.encode("utf-8"))
         return True, None
     except Exception as e:
         return False, str(e)[:120]
+
+
+def _profil_blogu(durum):
+    """URETIM KODUNDA 02.1: 02.2 ve 02.3 kolonlari 02.1'in duzelttigi ve
+    cozum kolonu ekledigi tablodan uretildigi icin uretim kodu ayni
+    duzeltme ve cozumleri basta uygular (ogrenilen bilgiyle; ayni
+    fonksiyon: kolon_cozum.profil_uygula). Tek deyim: kod satiri kurali."""
+    p = durum.get("profil") or {}
+    spec = {"duzeltme": p.get("duzeltme_bilgi") or {}, "cozum": p.get("cozum_bilgi") or {}}
+    if not spec["duzeltme"] and not spec["cozum"]:
+        return []
+    satir = ('df = __import__("fe_agent.kolon_cozum", fromlist=["profil_uygula"])'
+             '.profil_uygula(df, %r)' % (json.loads(json.dumps(spec)),))
+    return [("02.1 Veri Profili: düzeltmeler ve çözüm kolonları", [("PROFIL_021", satir)])]
 
 
 def _uretim_kaynagi(durum):

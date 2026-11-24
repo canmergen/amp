@@ -749,3 +749,37 @@ def metin_ozeti(bilgi):
     elif bilgi.get("konu_notu"):
         parca.append(bilgi["konu_notu"])
     return " ".join(parca) or "Hedefle anlamlı ilişkili sözcük bulunmadı; yalnız sözcük sayısı ve skor üretildi."
+
+
+def profil_uygula(df, spec):
+    """URETIM KODU ICIN 02.1: secilen duzeltmeler ve cozum kolonlari,
+    ogrenilen bilgiyle (hedef gerekmez). spec: {"duzeltme": {kontrol:
+    {kolon: {"secim", "bilgi", "kolonlar"}}}, "cozum": {kolon: {"cozum",
+    "bilgi", "kolonlar"}}} (durum["profil"]["duzeltme_bilgi"] ve
+    ["cozum_bilgi"]). Uygulamadaki sirayla: once duzeltmeler, sonra
+    cozumler. Doner: yeni df."""
+    df = df.copy()
+    db = (spec or {}).get("duzeltme") or {}
+    for a in DUZELTME_SIRA:
+        for k, v in (db.get(a) or {}).items():
+            if k not in df.columns:
+                continue
+            yeni, bayrak = duzeltme_uygula(a, v.get("secim"), df[k], v.get("bilgi") or {})
+            for ad in v.get("kolonlar") or []:
+                if bayrak is not None and ad not in df.columns:
+                    df[ad] = bayrak
+            df[k] = yeni
+    for k, v in ((spec or {}).get("cozum") or {}).items():
+        if k not in df.columns or not v.get("kolonlar"):
+            continue
+        if v.get("cozum") == "metin":
+            cikti = metin_uygula(df[k], v.get("bilgi") or {}, kolon=k)
+            for c in cikti.columns:
+                df[c] = cikti[c]
+        elif v.get("cozum") == "gun_farki":
+            donem = (v.get("bilgi") or {}).get("donem")
+            if donem in df.columns:
+                df[v["kolonlar"][0]] = gun_farki(df[k], df[donem])
+        else:
+            df[v["kolonlar"][0]] = uygula(v["cozum"], df[k], v.get("bilgi") or {})
+    return df
