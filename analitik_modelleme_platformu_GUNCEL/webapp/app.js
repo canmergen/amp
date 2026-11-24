@@ -17769,7 +17769,8 @@ function profilKartiEkle(alan, blok) {
            bırakılan ya da bilgi notu), kırmızı üretime girmez, gri
            uygulanmadı. Açılan liste satırı da aynı renkte, girintili. */
         const nBul = Number(k.sayi || 0);
-        const renk = k.uygulandi === false ? "pf-r-pasif" : !nBul ? "pf-r-tamam"
+        /* Genel kontrol (Tesadüf Olasılığı): kolon yakalamaz, geçerli sınırı gösterilir (mavi). */
+        const renk = k.ayar ? "pf-r-bilgi" : k.uygulandi === false ? "pf-r-pasif" : !nBul ? "pf-r-tamam"
             : k.sonuc === "girmez" ? "pf-r-sorun" : k.sonuc === "bilgi" ? "pf-r-bilgi" : "pf-r-dikkat";
         const satir = elYap("tr", "pf-kontrol " + renk + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
         const pr = k.parca || {};
@@ -17782,6 +17783,14 @@ function profilKartiEkle(alan, blok) {
         const n = Number(k.sayi || 0);
         const birim = k.birim || "kolon";
 
+        if (k.ayar) {
+            const a = elYap("span", "pf-durum bilgi");
+            a.append(elYap("span", "pf-durum-ikon", "i"), elYap("span", "", "Sınır " + k.ayar));
+            bulunan.appendChild(a);
+            neOlacak.appendChild(elYap("span", "pf-ne pf-sonuc-bilgi", "Üç kuralda kullanılır"));
+            tbody.appendChild(satir);
+            return;
+        }
         if (k.uygulandi === false) {
             const u = elYap("span", "pf-durum pasif");
             u.append(elYap("span", "pf-durum-ikon", "○"), elYap("span", "", "Uygulanmadı"));
@@ -20064,12 +20073,10 @@ function profilEsikKartiEkle(alan, blok) {
     if (alan.sayim) {
         const sy = alan.sayim;
         const st = elYap("div", "pf-not pf-ek-sayim");
-        const gn = alan.genel_no ? Number(alan.genel_no) : 0;
-        metinYaz(st, (gn ? "**" + gn + "** numara genel ayardır (Tesadüf Olasılığı). **" + (gn + 1) + "–" + (gn + sy.kontrol)
-                + "** arası kontrollerdir: " : "Aşağıda bütün kontroller ve kuralları yer alır: ")
-            + "toplam **" + sy.kontrol + " kontrol**, bunların altında **" + sy.kural + " kural**. Numaralı başlık "
-            + "kontroldür; altındaki satırlar o kontrolün kurallarıdır. **" + sy.esik + " sınır** ayarlanabilir; "
-            + "ayarlanacak sınırı olmayan kuralın satırında «eşik yok» yazar, o kural da çalışır.");
+        metinYaz(st, "Aşağıda bütün kontroller ve kuralları yer alır: toplam **" + sy.kontrol + " kontrol**, bunların "
+            + "altında **" + sy.kural + " kural**. Numaralı başlık kontroldür; altındaki satırlar o kontrolün "
+            + "kurallarıdır. **" + sy.esik + " sınır** ayarlanabilir; ayarlanacak sınırı olmayan kuralın "
+            + "satırında «eşik yok» yazar, o kural da çalışır.");
         kart.appendChild(st);
     }
     const hataEl = elYap("div", "pf-esik-hata");
@@ -20180,7 +20187,7 @@ function profilEsikKartiEkle(alan, blok) {
         /* Genel ayar da numaralı (1): üç kuralın kolonu yakalayıp yakalamayacağını o belirler. */
         const gAd = (esikHarita[alan.genel[0]] || {}).kontrol || "Genel ayar";
         kb.appendChild(elYap("b", "", (alan.genel_no ? alan.genel_no + ". " : "") + gAd));
-        kb.appendChild(elYap("span", "", "Genel ayar: sistemin «bu şans eseri olabilir» deme sınırı; üç kural bununla karar verir"));
+        kb.appendChild(elYap("span", "", "Sistemin «bu şans eseri olabilir» deme sınırı; üç kural bununla karar verir"));
         bolum.appendChild(kb);
         const kk = elYap("div", "pf-ek-kontrol");
         kk.appendChild(sutunBas());

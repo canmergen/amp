@@ -2014,7 +2014,7 @@ def esik_formu(durum, hata=None, kilitli=False):
             "kontroller": kontroller,
             # SAYIM: toplam kontrol (kartta gorunen), bunlarin altindaki
             # kural, ayarlanabilir esik; formda gorunen kontrol ve kural.
-            "sayim": {"kontrol": gorunur_kontrol_sayisi(), "kural": len(PROFIL_KONTROLLERI),
+            "sayim": {"kontrol": gorunur_kontrol_sayisi(), "kural": toplam_kural_sayisi(),
                       "esik": len(PROFIL_ESIKLERI), "esiksiz_kontrol": len(_esiksiz),
                       "esiksiz_kural": sum(1 for k in kontroller for u in k["kurallar"]
                                            if not u["esik"] and not u["oneri"])},
@@ -3297,9 +3297,32 @@ _SONUC_SIRA = {SONUC_GIRMEZ: 0, SONUC_KARAR: 1, SONUC_DUZELT: 2, SONUC_BILGI: 3}
 
 
 def gorunur_kontrol_sayisi():
-    """Kartta gorunen kontrol sayisi (birlesik kontroller tek sayilir)."""
+    """Kartta gorunen kontrol sayisi (birlesik kontroller tek sayilir).
+    Tesadüf Olasılığı da kontrol sayilir (formda 1 numara): 15 kontrol."""
     uye = {a for g in KONTROL_GRUPLARI for a in g[3]}
-    return len([x for x in PROFIL_KONTROLLERI if x[0] not in uye]) + len(KONTROL_GRUPLARI)
+    return len([x for x in PROFIL_KONTROLLERI if x[0] not in uye]) + len(KONTROL_GRUPLARI) \
+        + len(PROFIL_GENEL_ESIKLER)
+
+
+def toplam_kural_sayisi():
+    """Kontrollerin altindaki kural sayisi; Tesadüf Olasılığı tek kurallidir: 25 kural."""
+    return len(PROFIL_KONTROLLERI) + len(PROFIL_GENEL_ESIKLER)
+
+
+def _genel_kontrol_satirlari(esik):
+    """Kartin basindaki genel kontrol satiri (Tesadüf Olasılığı): kolon
+    yakalamaz; uc kuralin kolonu yakalayip yakalamayacagini belirleyen
+    sinirdir ("ayar": gecerli deger)."""
+    cikti = []
+    for a, ad, _an, birim, _x, _y in PROFIL_GENEL_ESIKLER:
+        ac = PROFIL_ESIK_ACIKLAMA.get(a) or {}
+        deger = _esik_metni(birim, esik[a])
+        cikti.append({"anahtar": a, "ad": ad, "kural": "Geçerli sınır %s." % deger,
+                      "sonuc": SONUC_BILGI, "kisa": ac.get("kisa", ""), "bilgi": ac.get("bilgi", ""),
+                      "parca": aciklama_parcalari(ac.get("bilgi")), "ne_olacak": "",
+                      "uygulandi": True, "sebep": "", "birim": "kolon", "kolonlar": [], "sayi": 0,
+                      "ayar": deger, "oneri_kaynagi": "kod"})
+    return cikti
 
 
 def _grup_satiri(g, uyeler):
@@ -3593,7 +3616,7 @@ def profil_metni(durum, karar=False):
     metin = ("Modelleme tablosundaki %s kolon, tablonun tamamı (train, val, test ve OOT "
              "birlikte) üzerinden %s kontrolle (bunların altında toplam %s kural) incelendi." % (
                  _sayi(len(oz["incelenen"])), _sayi(gorunur_kontrol_sayisi()),
-                 _sayi(len(PROFIL_KONTROLLERI))))
+                 _sayi(toplam_kural_sayisi())))
     if kap.get("hedef_train"):
         metin += (" Hedefle ilgili ölçümler ve öğrenilen her şey (çözümler, kırpma sınırı) "
                   "yalnız Train (MS) satırlarından; kararlar ve düzeltmeler onayınızla bütün "
@@ -3858,7 +3881,7 @@ def profil_karti(durum, karar=False):
         "eksik_kolon": p.get("null_kolon_adet"),
         "eksik_maks": p.get("null_maks"),
         "eksik_maks_kolon": p.get("null_maks_kolon"),
-        "kontroller": kontrolleri_grupla(kontroller),
+        "kontroller": _genel_kontrol_satirlari(esik) + kontrolleri_grupla(kontroller),
         "hedef": ek.get("hedef"),
         "haric": {"hedef": m.get("target") or "", "kimlik": m.get("id") or "",
                   "donem": m.get("donem") or "",
