@@ -6006,13 +6006,20 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-ek-govde { min-width: 960px; display: flex; flex-direction: column; gap: var(--b-2); margin-top: var(--b-2); }
 /* Sütunlar ortalı (başlık ve içerik); sütunlar arası 24px. */
 .pf-ek-bas, .pf-ek-kural { display: grid; grid-template-columns: 200px minmax(0, 1fr) 200px 180px 160px; column-gap: 24px; align-items: center; text-align: center; }
-.pf-ek-bas { padding: 0 var(--b-3); color: var(--metin-soluk); font-size: var(--fs-kucuk); }
+.pf-ek-bas { padding: 6px var(--b-3); color: var(--metin-soluk); font-size: var(--fs-kucuk); background: var(--yuzey-alt); border-bottom: 1px solid var(--kenar); }
+.pf-ek-bolum { display: flex; flex-direction: column; gap: 6px; margin-top: var(--b-2); }
 .pf-ek-kontrol { border: 1px solid var(--kenar); border-radius: var(--r-orta, 8px); overflow: hidden; background: var(--yuzey); }
-.pf-ek-kbas { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 4px var(--b-3); padding: 8px var(--b-3); background: var(--yuzey-alt); border-bottom: 1px solid var(--kenar); }
+.pf-ek-kbas { display: flex; align-items: baseline; justify-content: flex-start; flex-wrap: wrap; gap: 4px var(--b-3); padding: 0 2px; text-align: left; }
+.pf-ek-kbas b { font-size: 1.05em; }
 .pf-ek-kbas span { color: var(--metin-soluk); }
 .pf-ek-kural { padding: 8px var(--b-3); border-top: 1px solid var(--kenar-acik, var(--kenar)); }
-.pf-ek-kbas + .pf-ek-kural { border-top: 0; }
-.pf-ek-kural.ic { background: var(--amber-acik); background: color-mix(in srgb, var(--amber-acik) 35%, var(--yuzey)); }
+.pf-ek-bas + .pf-ek-grup > .pf-ek-kural:first-child { border-top: 0; }
+/* Kural ve öneri eşikleri tek grup: grup arası çizgi, grup içi ara başlık. */
+.pf-ek-grup + .pf-ek-grup { border-top: 1px solid var(--kenar); }
+.pf-ek-grup > .pf-ek-kural + .pf-ek-kural, .pf-ek-grup > .pf-ek-alt-bas + .pf-ek-kural { border-top: 1px dashed var(--kenar-acik, var(--kenar)); }
+.pf-ek-grup.oneri-var > .pf-ek-kural:first-child { border-top: 0; }
+.pf-ek-alt-bas { padding: 4px var(--b-3) 4px calc(var(--b-3) + 24px); font-size: var(--fs-kucuk); color: var(--amber); text-align: left; background: color-mix(in srgb, var(--amber-acik) 35%, var(--yuzey)); }
+.pf-ek-kural.ic { border-top: 0; background: var(--amber-acik); background: color-mix(in srgb, var(--amber-acik) 35%, var(--yuzey)); }
 /* Önerilenden farklı ya da hatalı değer: yalnız kutu işaretlenir (satırda çizgi yok). */
 .pf-ek-kural.degisti .pf-esik-giris { border-color: var(--amber); font-weight: var(--fw-kalin); }
 .pf-ek-kural.hatali .pf-esik-giris { border-color: var(--kirmizi); }
