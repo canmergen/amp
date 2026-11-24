@@ -60,6 +60,9 @@ COZUM_ADI = {
     "negatif_bos": "Negatifleri boş say",
     "kirp": "Uçları kırp",
     "birak": "Olduğu gibi bırak",
+    "kopya_kaldir": "Fazla kopyaları kaldır",
+    "ilk_tut": "İlk satırı tut, ötekileri çıkar",
+    "satir_cikar": "Çakışan satırları bu setten çıkar",
     "tarih_bos_bayrak": "Kod tarihi boş say ve bayrak üret",
     "tarih_bos": "Kod tarihi boş say",
     "metin_bos": "Boş say",
@@ -99,6 +102,12 @@ COZUM_ACIKLAMA.update({
              "(seyrek kolonda sıfırlar sınırı kaydırmasın diye); özel kod (-999, 9999) "
              "hesaba girmez ve kırpılmaz."),
     "birak": "Kolon değiştirilmeden kullanılır.",
+    "kopya_kaldir": ("Birebir aynı satırlardan biri kalır, fazlası çalışma tablosundan çıkar. "
+                     "İçerik aynı olduğu için bilgi kaybı olmaz. Girdi verisi değişmez."),
+    "ilk_tut": ("Aynı kimlik ve dönem için birden fazla satır varsa tablodaki ilk satır kalır, "
+                "ötekiler çalışma tablosundan çıkar. Girdi verisi değişmez."),
+    "satir_cikar": ("Train'de de bulunan kayıtlar bu setten çıkar; Train'e dokunulmaz. Sınama "
+                    "seti modelin daha önce görmediği kayıtlardan oluşur. Girdi verisi değişmez."),
     "tarih_bos_bayrak": ("1900-01-01, 9999-12-31 gibi kod tarihler boş sayılır; kodun olduğu "
                          "satırlar ayrıca 1/0 bayrağıyla işaretlenir (ör. «süresiz» bilgisi "
                          "kaybolmaz). Tarihten gün farkı gibi hesaplar bozulmaz."),

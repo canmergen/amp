@@ -276,6 +276,8 @@ def _cozum_ogren(durum):
     duz_yeni = []
     if secim or duz:
         df = asama_df(durum, "01") if updt_modu(durum) else modelleme_df(durum)
+        # Cozum ve duzeltmeler satir cikarildiktan SONRAKI tablodan ogrenilir.
+        df = satir_kararlarini_uygula(durum, df)
         target = (durum.get("meta") or {}).get("target")
         tr = setler(durum, df)["egitim"]
         y = df[target] if target in df.columns else pd.Series(np.nan, index=df.index)
@@ -449,7 +451,7 @@ def duzeltme_onerileri(durum):
 # {"oneri", "gerekce", "kaynak", "imza"}}}; ayni bulgu ve seceneklerle
 # onceden alinmis oneri tekrar sorulmaz. Dil modeline ulasilamazsa kural.
 KARAR_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "baskin", "donem",
-                     "sicrama", "kayma")
+                     "sicrama", "kayma", "pencere", "tutar_adet")
 
 
 # ONERI KAYNAGI (karma): kolonun ANLAMINI gerektiren az sayida bulgu dil
@@ -682,6 +684,26 @@ def _veri_onerileri(durum, ek, df, egitim):
                 "Kolon tek başına hedefi %s isabetle biliyor: çok iyi ama kusursuz değil, "
                 "gerçekten güçlü bir kolon olabilir: Tut. Tahmin anında bilindiğini kontrol edin."
                 % _yuzde_metni(auc))
+    # CELISEN KOLON CIFTI (pencere tutarliligi, tutar ve adet): hangi kolonun
+    # yanlis oldugu veriden anlasilamaz. Birden fazla kolonla celisen kolon
+    # ortak nokta oldugu icin Çıkar; tek kolonla celisen Tut (kullanici
+    # tanima bakip karar verir).
+    for a_ in ("pencere", "tutar_adet"):
+        cift = {}
+        for x in ek.get(a_) or []:
+            cift.setdefault(x["kolon"], []).append(x)
+        for k, xs in cift.items():
+            karsi = sorted({x["karsi"] for x in xs})
+            enb = max(xs, key=lambda x: x["pay"])
+            if len(karsi) >= 2:
+                yaz(a_, k, PROFIL_KARAR_CIKAR, "%s ayrı kolonla çelişiyor (%s). Birden fazla "
+                    "kolonla çelişen kolon büyük ihtimalle yanlış olandır: Çıkar." % (
+                        _sayi(len(karsi)), ", ".join(karsi[:4])))
+            else:
+                yaz(a_, k, PROFIL_KARAR_TUT, "%s kolonuyla %s satırda (%s) çelişiyor. İkisinden "
+                    "hangisinin yanlış olduğu veriden anlaşılamıyor: Tut. İki kolonun nasıl "
+                    "hesaplandığına bakın; yanlış olanı Çıkar seçin." % (
+                        karsi[0], _sayi(enb["adet"]), _yuzde_metni(enb["pay"])))
     # OZEL KOD: kod bos sayilir, bilgi bayrakta.
     for a_ in ("gizli_eksik", "karisik_eksik"):
         for x in ek.get(a_) or []:
@@ -886,6 +908,159 @@ def _duzeltmeleri_uygula(durum, df):
 
 
 # ===========================================================================
+# 02.1 SATIR CIKARMA: Tekrar Eden Satir ve Setler Arasi Cakisma kurallari
+# bilgi icin gosterilmez; fazla / cakisan satirlar CALISMA TABLOSUNDAN
+# (UPDT veri, 02.1 sonu) cikarilir. Girdi verisi degismez; uretim kodu
+# satir silmez (skorlamada satir sayisi degismemeli). Secim Kararlar
+# sekmesinde, duzeltmelerle ayni bicimde: {kontrol: {oge adi: kod}}.
+# Sira: once setler arasi cakisma (Train'e dokunulmaz), sonra kalan
+# satirlarda tekrar.
+# ===========================================================================
+SATIR_KONTROLLERI = ("set_cakisma", "tekrar")
+KURAL_SONUC_ADI = {"tekrar": "Düzeltme önerilir: fazla satırlar çıkar",
+                   "set_cakisma": "Düzeltme önerilir: çakışan satırlar Test / OOT'den çıkar"}
+
+
+def _tekrar_ogeleri(ek):
+    """[(oge adi, tur, fazla satir)]: birebir ayni satirlar ve ayni kimlik
+    (ve donem) icin icerigi farkli satirlar (ayrik sayim)."""
+    tk = ek.get("tekrar") or {}
+    tam, toplam = int(tk.get("tam") or 0), int(tk.get("toplam") or 0)
+    cikti = []
+    if tam:
+        cikti.append(("Bütün kolonları aynı satır", "tam", tam))
+    if tk.get("kimlik") and toplam - tam > 0:
+        cikti.append(("Aynı %s, içeriği farklı" % " ve ".join(tk.get("anahtar") or []),
+                      "anahtar", toplam - tam))
+    return cikti
+
+
+def _set_oge_adi(x, b):
+    from fe_agent.akis_durum import set_basligi
+    return "%s: %s" % (set_basligi(x["set"], (b or {}).get("test_tanim")), SET_TUR_ADI[x["tur"]])
+
+
+def satir_onerileri(durum):
+    """{kontrol: {oge adi: {"secenekler", "oneri", "gerekce", "kaynak",
+    "kayit"}}}: satir cikarma secenekleri ve kural onerisi. Yalniz yeni
+    duzende (UPDT veri); eski duzende satir cikarilmaz."""
+    p = durum.get("profil") or {}
+    ek = p.get("profil_ek") or {}
+    if not updt_modu(durum) or not ek:
+        return {}
+    cikti = {}
+    for ad, tur, n in _tekrar_ogeleri(ek):
+        if tur == "tam":
+            cikti.setdefault("tekrar", {})[ad] = {
+                "secenekler": ["kopya_kaldir", "birak"], "oneri": "kopya_kaldir", "kaynak": "satir",
+                "gerekce": "%s fazla satır başka bir satırın birebir aynısı. Biri kalır, fazlası "
+                           "çıkar; içerik aynı olduğu için bilgi kaybı olmaz." % _sayi(n),
+                "kayit": {"tur": tur}}
+        else:
+            cikti.setdefault("tekrar", {})[ad] = {
+                "secenekler": ["ilk_tut", "birak"], "oneri": "ilk_tut", "kaynak": "satir",
+                "gerekce": "%s fazla satırda aynı kayıt için farklı içerik var. Hangisinin doğru "
+                           "olduğu veriden anlaşılamaz; tablodaki ilk satır kalır, ötekiler çıkar. "
+                           "Çok satır etkileniyorsa veri hazırlığında birleştirme hatası olabilir."
+                           % _sayi(n),
+                "kayit": {"tur": tur}}
+    sc = ek.get("set_cakisma") or {}
+    for x in sc.get("cakisma") or []:
+        if x["tur"] not in ("anahtar", "tam"):
+            continue
+        cikti.setdefault("set_cakisma", {})[_set_oge_adi(x, ek.get("set_bolme"))] = {
+            "secenekler": ["satir_cikar", "birak"], "oneri": "satir_cikar", "kaynak": "satir",
+            "gerekce": "%s satır Train'deki bir kaydın aynısı. Bu setten çıkarılırsa model "
+                       "sınamada daha önce gördüğü kayıtla karşılaşmaz; Train'e dokunulmaz."
+                       % _sayi(x["satir"]),
+            "kayit": {"set": x["set"], "tur": x["tur"]}}
+    return cikti
+
+
+def satir_secimi(durum):
+    """{kontrol: {oge adi: kod}}: kullanicinin secimi, yoksa oneri."""
+    p = durum.get("profil") or {}
+    sec = p.get("satir_secim") if isinstance(p.get("satir_secim"), dict) else {}
+    return {a: {k: ((sec.get(a) or {}).get(k) if (sec.get(a) or {}).get(k) in v["secenekler"]
+                    else v["oneri"]) for k, v in ogeler.items()}
+            for a, ogeler in satir_onerileri(durum).items()}
+
+
+def satir_cikarma_var(durum):
+    return any(c != "birak" for a in satir_secimi(durum).values() for c in a.values())
+
+
+def satir_cikar_maskesi(durum, df):
+    """(cikacak satirlarin maskesi (numpy bool), {oge adi: cikan satir}).
+    Once setler arasi cakisma, sonra KALAN satirlarda tekrar (boylece
+    Train'deki satir yerinde kalir)."""
+    from fe_agent import profil_ek
+    oneri, secim = satir_onerileri(durum), satir_secimi(durum)
+    m = durum.get("meta") or {}
+    cik = np.zeros(len(df), dtype=bool)
+    say = {}
+    sc = {ad: oneri["set_cakisma"][ad]["kayit"] for ad, c in (secim.get("set_cakisma") or {}).items()
+          if c == "satir_cikar"}
+    if sc:
+        mk = profil_ek.set_cakisma_maskeleri(df, setler(durum, df), m.get("id"), m.get("donem"),
+                                             haric={SPLIT_KOLON})
+        for ad, kayit in sc.items():
+            x = mk.get((kayit["set"], kayit["tur"]))
+            if x is None:
+                continue
+            x = x.to_numpy(dtype=bool) & ~cik
+            say[ad] = int(x.sum())
+            cik |= x
+    tk = {ad: oneri["tekrar"][ad]["kayit"]["tur"] for ad, c in (secim.get("tekrar") or {}).items()
+          if c != "birak"}
+    if tk:
+        kalan = np.flatnonzero(~cik)
+        tm = profil_ek.tekrar_maskeleri(df.iloc[kalan], m.get("id"), m.get("donem"),
+                                        haric={SPLIT_KOLON})
+        for ad, tur in tk.items():
+            if tur not in tm:
+                continue
+            x = np.zeros(len(df), dtype=bool)
+            x[kalan[tm[tur].to_numpy(dtype=bool)]] = True
+            x &= ~cik
+            say[ad] = int(x.sum())
+            cik |= x
+    return cik, say
+
+
+def satir_kararlarini_uygula(durum, df, kaydet=False):
+    """Secilen satir cikarma kararlarini df'e (01 sonu tablo) uygular.
+    kaydet=True: cikan satir sayilari p["satir_bilgi"]'ye yazilir."""
+    if not updt_modu(durum) or not satir_cikarma_var(durum):
+        if kaydet:
+            (durum.get("profil") or {}).pop("satir_bilgi", None)
+        return df
+    cik, say = satir_cikar_maskesi(durum, df)
+    if kaydet:
+        (durum.get("profil") or {})["satir_bilgi"] = {
+            "cikan": say, "toplam": int(cik.sum()), "once": int(len(df)),
+            "sonra": int(len(df) - cik.sum())}
+    if not cik.any():
+        return df
+    return df.loc[~cik].reset_index(drop=True)
+
+
+def _satir_duzeltme(durum, kontrol, ad):
+    """Kart satirinin duzeltme alani (satir cikarma secimi) ya da None."""
+    o = (satir_onerileri(durum).get(kontrol) or {}).get(ad)
+    if not o:
+        return None
+    c = _duzeltme_satiri(o, satir_secimi(durum)[kontrol][ad], None)
+    for sec in c["secenekler"]:
+        if sec["kod"] == "birak":
+            sec["aciklama"] = "Satırlara dokunulmaz; tablo olduğu gibi kalır."
+    b = ((durum.get("profil") or {}).get("satir_bilgi") or {}).get("cikan") or {}
+    if ad in b and c["secim"] != "birak":
+        c["ozet_kisa"] = c["ozet"] = "%s satır çalışma tablosundan çıkarıldı." % _sayi(b[ad])
+    return c
+
+
+# ===========================================================================
 # 02.1 YENI KOLONLARIN SOZLUK SATIRLARI: cozum kolonlari (gruplama, dolu
 # bayragi, metinden ozellik, gun farki) ve duzeltme bayraklari (_KOD,
 # _BOS) UPDT sozluge eklenir. Satirlar 02.1 onayinda UPDT veri yazilirken
@@ -1031,7 +1206,8 @@ def _asama_katkisi(durum, asama):
         p = durum.get("profil") or {}
         return bool(p.get("cozum_bilgi")) or any(
             v for v in (p.get("duzeltme_bilgi") or {}).values()) \
-            or bool(set(kusurlu_kolonlar(durum)) - _meta_kolonlar(durum))
+            or bool(set(kusurlu_kolonlar(durum)) - _meta_kolonlar(durum)) \
+            or satir_cikarma_var(durum)
     if asama in ("02.2", "02.3"):
         from fe_agent.akis_faz03 import KURAL_KAYNAK, KESIF_KAYNAK
         kaynak = KURAL_KAYNAK if asama == "02.2" else KESIF_KAYNAK
@@ -1047,7 +1223,8 @@ def _asama_imzasi(durum, asama):
     p = durum.get("profil") or {}
     parca = [asama, durum.get("updt_asama"), kayit.get("istek"), kayit.get("bolme_tarif"),
              (durum.get("meta") or {}).get("segment"), p.get("cozum_bilgi"),
-             p.get("duzeltme_bilgi"), durum.get("kod_bloklari"), kusurlu_kolonlar(durum)]
+             p.get("duzeltme_bilgi"), durum.get("kod_bloklari"), kusurlu_kolonlar(durum),
+             satir_secimi(durum)]
     return hashlib.md5(_json.dumps(parca, sort_keys=True, default=str)
                        .encode("utf-8")).hexdigest()
 
@@ -1161,7 +1338,8 @@ def asama_df(durum, asama):
     if asama in ("01.3", "01"):
         df = _updt_01_kur(durum)
     elif asama == "02.1":
-        df = girmez_dusur(durum, cozum_kolonlari_ekle(durum, asama_df(durum, "01")))
+        df = girmez_dusur(durum, cozum_kolonlari_ekle(
+            durum, satir_kararlarini_uygula(durum, asama_df(durum, "01"))))
     elif asama == "02.2":
         from fe_agent.akis_faz03 import KURAL_KAYNAK
         df = _kod_bloklarini_uygula(durum, asama_df(durum, "02.1"), KURAL_KAYNAK)
@@ -1911,7 +2089,8 @@ def esik_form_kontrolleri(durum):
                 # Formda "Neye bakıyor" ve "Yakalanırsa" bu parcalardan: nedir,
                 # onemli (neden sorun), kapsam, ornek, yakalanirsa.
                 "parca": kontrol_parcalari(u),
-                "sonuc": ac.get("sonuc") or NE_OLACAK.get(pk[u][2], "") if u in pk else "",
+                "sonuc": (ac.get("sonuc") or KURAL_SONUC_ADI.get(u)
+                          or NE_OLACAK.get(pk[u][2], "")) if u in pk else "",
                 "esik": ana, "oneri": oneri})
         # BUTUN kontroller ve kurallar formda: esigi olmayan da gorunur
         # (satirinda "eşik yok"); esiksiz listesi yalniz sayim icin.
@@ -2115,8 +2294,8 @@ def _ad_kontrolleri(durum, df, adaylar, ek):
                     continue
                 ciftler.append((k1, k2, "azalan" if s1 == "min" else "artan"))
         ek["pencere_cift"] = len(ciftler)
-        ek["pencere"] = [x for x in profil_ek.pencere_tutarliligi(df, ciftler)
-                         if x["pay"] >= ILISKI_MIN_PAY]
+        ek["pencere"] = _cift_iki_yonlu([x for x in profil_ek.pencere_tutarliligi(df, ciftler)
+                                         if x["pay"] >= ILISKI_MIN_PAY])
 
         # TUTAR / ADET ve EN BUYUK / ORTALAMA: adin tek parcasiyla ayrilan
         # ciftler.
@@ -2142,11 +2321,24 @@ def _ad_kontrolleri(durum, df, adaylar, ek):
                     if i1 == "maks" and i2 == "ort" and (p1 in _MAKS_PARCA or p2 in _ORT_PARCA):
                         maks_ort.add((k1, k2))
         ek["tutar_cift"] = len(adet_tutar) + len(maks_ort)
-        ek["tutar_adet"] = [x for x in profil_ek.tutar_adet_uyumu(df, sorted(adet_tutar), sorted(maks_ort))
-                            if x["pay"] >= ILISKI_MIN_PAY]
+        ek["tutar_adet"] = _cift_iki_yonlu(
+            [x for x in profil_ek.tutar_adet_uyumu(df, sorted(adet_tutar), sorted(maks_ort))
+             if x["pay"] >= ILISKI_MIN_PAY])
     except Exception as e:      # ad kontrolleri profili durdurmasin
         ek["ad_kontrol_hata"] = str(e)[:200]
     return ek
+
+def _cift_iki_yonlu(liste):
+    """Celisen kolon cifti IKI kolonun da bulgusudur (hangisinin yanlis
+    oldugu bilinmez): her bulgu karsi kolon icin de yazilir ("ters")."""
+    cikti = []
+    for x in liste:
+        cikti.append(x)
+        t = dict(x)
+        t["kolon"], t["karsi"], t["ters"] = x["karsi"], x["kolon"], True
+        cikti.append(t)
+    return cikti
+
 
 def egitim_maskesi(durum, df):
     """Train (MS) satirlari (01.4 bolmesi; val, test ve OOT haric). Bolme
@@ -2205,7 +2397,8 @@ def profil_hesapla(durum):
     adaylar = [str(k) for k in df.columns if k not in haric and k not in temel]
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
                                  hedef=m.get("target"), olculer=olculer,
-                                 esik=esik, tarihler=tarihler, hedef_maske=egitim)
+                                 esik=esik, tarihler=tarihler, hedef_maske=egitim,
+                                 satir_haric={SPLIT_KOLON})
     _isaret("ek_kontroller")
     # TARIH KOLONLARI: en eski / en yeni tarih (ozel tarih kodlari haric),
     # yazilis bicimi ve kod tarihler (Tarih Kolonu satirinin bulgusu).
@@ -2532,8 +2725,7 @@ def _karar_adaylari(p):
     ek = p.get("profil_ek") or {}
     kopya = set(_ayni_kopyalar(p))
     ad = []
-    for a in ("gelecek_pencere", "birebir", "tarih_sonra", "baskin", "donem", "sicrama",
-              "kayma"):
+    for a in KARAR_KONTROLLERI:
         ad += [x["kolon"] for x in (ek.get(a) or [])]
     return [k for k in dict.fromkeys(ad) if k not in kopya]
 
@@ -2598,7 +2790,8 @@ def profil_karar_var(durum):
     grup var."""
     p = durum.get("profil") or {}
     return bool(profil_karar_kolonlari(durum) or (p.get("profil_ek") or {}).get("ayni_gruplar")
-                or cozum_secilebilir(durum) or duzeltme_onerileri(durum))
+                or cozum_secilebilir(durum) or duzeltme_onerileri(durum)
+                or satir_onerileri(durum))
 
 
 def _profil_karar_bekliyor(durum):
@@ -2666,15 +2859,22 @@ def veri_profili_uygula(durum):
         p["cozum_secim"] = sec
     # DUZELTMELER: {"duzeltme": {kontrol: {kolon: kod}}}.
     duz_oneri = duzeltme_onerileri(durum)
+    sat_oneri = satir_onerileri(durum)
     if isinstance(karar, dict) and isinstance(karar.get("duzeltme"), dict):
         sec = {a: dict(v) for a, v in (p.get("duzeltme_secim") or {}).items()}
+        # Satir cikarma secimleri (Tekrar Eden Satir, Setler Arasi Cakisma)
+        # ayni alanla gelir; ayri saklanir (p["satir_secim"]).
+        sat = {a: dict(v) for a, v in (p.get("satir_secim") or {}).items()}
         for a, kolonlar in karar["duzeltme"].items():
             if not isinstance(kolonlar, dict):
                 continue
             for k, c in kolonlar.items():
                 if c in (((duz_oneri.get(str(a)) or {}).get(str(k)) or {}).get("secenekler") or []):
                     sec.setdefault(str(a), {})[str(k)] = str(c)
+                elif c in (((sat_oneri.get(str(a)) or {}).get(str(k)) or {}).get("secenekler") or []):
+                    sat.setdefault(str(a), {})[str(k)] = str(c)
         p["duzeltme_secim"] = sec
+        p["satir_secim"] = sat
     p["secim_sapma"] = secim_sapmalari(durum)
     durum["profil"] = p
     _cozum_ogren(durum)
@@ -2682,20 +2882,22 @@ def veri_profili_uygula(durum):
     # (02.1 sonu). Kaynak her zaman 01 sonu (geri donulduyse BAZ'dan).
     if updt_modu(durum):
         if _asama_katkisi(durum, "02.1"):
-            df21 = girmez_dusur(durum, cozum_kolonlari_ekle(durum, asama_df(durum, "01")))
+            df21 = girmez_dusur(durum, cozum_kolonlari_ekle(
+                durum, satir_kararlarini_uygula(durum, asama_df(durum, "01"), kaydet=True)))
             updt_yaz(durum, df21, "02.1")
             # Yeni kolonlarin UPDT sozluk satirlari (amp.updt_sozluk_suz ekler).
             p["sozluk_ek"] = yeni_kolon_sozlugu(durum, df21)
         else:
             updt_ilerlet(durum, "02.1", "01")
             p["sozluk_ek"] = []
+            p.pop("satir_bilgi", None)
     # Profil degisti: SFA ve kararlari eski profile aitti, yeniden hesaplanir.
     eski = (durum.pop("sfa", None) or {}).get("ai_is")
     if eski:
         sfa_karar.ai_durdur(eski)
     # Karar kartli dalda metin ve kart blokta zaten duruyor (kart kilitlenir);
     # tekrar yazilmaz.
-    if adaylar or gruplar or cozum_secilebilir(durum) or duz_oneri:
+    if adaylar or gruplar or cozum_secilebilir(durum) or duz_oneri or sat_oneri:
         return ""
     return profil_metni(durum)
 
@@ -2884,15 +3086,21 @@ _KONTROL_ACIKLAMA_EK = {
         "Aynı kimlik ve aynı dönemle birden fazla satır ya da bütün kolonları aynı olan satır "
         "arar.",
         "Aynı müşteri için aynı ayda iki satır.",
-        "hiçbir şey değiştirilmez; durum yalnız dikkatinize sunulur.",
+        "fazla satırları çıkarmak size sorulur. Öneri: birebir aynı satırlardan biri kalır, "
+        "fazlası çıkar. Aynı kimlik ve dönemde içeriği farklı satırlar varsa hangisinin doğru "
+        "olduğu veriden anlaşılamaz; tablodaki ilk satır kalır, ötekiler çıkar. Satırlar çalışma "
+        "tablosundan çıkar, girdi verisi değişmez.",
         kapsam="kimlik kolonu seçilmediyse yalnız bütün kolonları aynı olan satırlara bakılır.",
         sorun="İki kez yazılan satır modelde iki kat söz hakkı alır."),
     "set_cakisma": _ac(
         "Aynı kayıt hem eğitim hem sınama verisinde var.",
         "Test (OOS) ya da Validasyon (OOT) setinde, Train'de (eğitim verisi) de bulunan bir "
         "kimlik ya da birebir aynı satır var mı diye bakar.",
-        "Aynı müşteri hem Train'de hem Test'te.",
-        "hiçbir şey değiştirilmez; durum yalnız dikkatinize sunulur.",
+        "Aynı müşteri aynı ay için hem Train'de hem Test'te.",
+        "çakışan satırları çıkarmak size sorulur. Öneri: aynı kayıt (aynı kimlik ve dönem ya da "
+        "birebir aynı satır) Test / OOT setinden çıkar, Train'e dokunulmaz. Yalnız kimlik ortaksa "
+        "(aynı müşteri, başka dönem) satır çıkarılmaz: zamana göre bölmede bu normaldir; rastgele "
+        "bölmede 01.4'te bölme birimi Kimlik seçilirse aynı müşteri tek sette kalır.",
         sorun="Model sınavda daha önce gördüğü soruyla karşılaşır; başarısı olduğundan iyi "
               "görünür."),
     "tarih": _ac(
@@ -2945,14 +3153,18 @@ _KONTROL_ACIKLAMA_EK = {
         "günün toplamından büyük olamaz; oluyorsa yakalanır. Tek tük satırda değil, 100 satırın "
         "en az 1'inde görülmesi gerekir.",
         "Son 7 gün toplamı 500, son 30 gün toplamı 300.",
-        "hiçbir şey değiştirilmez; durum yalnız dikkatinize sunulur.",
+        "çelişen iki kolonu tutmak ya da çıkarmak size sorulur. Hangisinin yanlış olduğu veriden "
+        "anlaşılamaz. Öneri: kolon birden fazla kolonla çelişiyorsa Çıkar; tek bir kolonla "
+        "çelişiyorsa Tut, iki kolonun nasıl hesaplandığına bakıp siz karar verirsiniz.",
         sorun="Bu mümkün olmadığı için veride hata olduğunu gösterir."),
     "tutar_adet": _ac(
         "Adet ile tutar birbirini tutmuyor.",
         "Adet 0 ya da boşken tutar dolu mu, ya da en büyük değer ortalamadan küçük mü diye bakar. "
         "Tek tük satırda değil, 100 satırın en az 1'inde görülmesi gerekir.",
         "İşlem adedi 0, işlem tutarı 500.",
-        "hiçbir şey değiştirilmez; durum yalnız dikkatinize sunulur.",
+        "çelişen iki kolonu tutmak ya da çıkarmak size sorulur. Hangisinin yanlış olduğu veriden "
+        "anlaşılamaz. Öneri: kolon birden fazla kolonla çelişiyorsa Çıkar; tek bir kolonla "
+        "çelişiyorsa Tut, iki kolonun nasıl hesaplandığına bakıp siz karar verirsiniz.",
         sorun="Bu mümkün olmadığı için veride hata olduğunu gösterir."),
 }
 
@@ -3033,10 +3245,10 @@ PROFIL_KONTROLLERI = (
     ("sicrama", "Dönemler Arası Eksik Sıçraması", SONUC_KARAR, "Eksik sıçraması"),
     ("kayma", "Dönemler Arası Değer Kayması", SONUC_KARAR, "Değer kayması"),
     ("uc", "Uç Değer Yoğunluğu", SONUC_DUZELT, "Uç değer"),
-    ("pencere", "Pencere Tutarlılığı", SONUC_BILGI, "Pencere tutarsız"),
-    ("tutar_adet", "Tutar ve Adet Uyumsuzluğu", SONUC_BILGI, "Tutar ve adet uyumsuz"),
-    ("tekrar", "Tekrar Eden Satır", SONUC_BILGI, ""),
-    ("set_cakisma", "Setler Arası Çakışma", SONUC_BILGI, ""),
+    ("pencere", "Pencere Tutarlılığı", SONUC_KARAR, "Pencere tutarsız"),
+    ("tutar_adet", "Tutar ve Adet Uyumsuzluğu", SONUC_KARAR, "Tutar ve adet uyumsuz"),
+    ("tekrar", "Tekrar Eden Satır", SONUC_DUZELT, ""),
+    ("set_cakisma", "Setler Arası Çakışma", SONUC_DUZELT, ""),
 )
 # KARTTA BIRLESIK KONTROLLER: ayni soruyu farkli esikle ya da farkli
 # bicimde soran kontroller kartta tek satirdir. Algilama kurallari,
@@ -3204,8 +3416,10 @@ KARAR_VARSAYILAN_CIKAR = ("gelecek_pencere", "birebir", "tarih_sonra")
 # Hedefle birebir: ayirma gucu bu esik ve ustundeyse Çıkar, altindaysa
 # (Sizinti AUC esigi ile bu deger arasi) Tut; kolon incelenmeli.
 SIZINTI_CIKAR_AUC = 0.95
-# Bilgi icin gosterilen ve islem yapilmayan kontroller.
-BILGI_KONTROLLERI = ("pencere", "tutar_adet")
+# Bilgi icin gosterilen ve islem yapilmayan kontrol kalmadi: Pencere
+# Tutarliligi ve Tutar ve Adet karar (Tut / Çıkar), Tekrar Eden Satir ve
+# Setler Arasi Cakisma satir cikarma (SATIR_KONTROLLERI).
+BILGI_KONTROLLERI = ()
 DONEM_LISTE_EN_COK = 6
 
 
@@ -3262,16 +3476,22 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
             _sayi(x["grup"]), _sayi(x["satir"]),
             ", ".join("«%s»" % y["deger"] for y in g0["yazimlar"][:4]))
     for x in ek.get("pencere") or []:
-        b["pencere"][x["kolon"]] = "%s satırda %s kolonundan %s (payı %s)" % (
-            _sayi(x["adet"]), x["karsi"], "büyük" if x["yon"] == "artan" else "küçük",
-            _yuzde_metni(x["pay"]))
+        buyuk = (x["yon"] == "artan") != bool(x.get("ters"))
+        metin = "%s satırda %s kolonundan %s (payı %s)" % (
+            _sayi(x["adet"]), x["karsi"], "büyük" if buyuk else "küçük", _yuzde_metni(x["pay"]))
+        onceki = b["pencere"].get(x["kolon"])
+        b["pencere"][x["kolon"]] = (onceki + ". " + metin) if onceki else metin
     for x in ek.get("tutar_adet") or []:
-        if x["tur"] == "adet_tutar":
+        if x["tur"] == "adet_tutar" and x.get("ters"):
+            metin = "%s satırda 0 ya da boşken %s dolu (payı %s)" % (
+                _sayi(x["adet"]), x["karsi"], _yuzde_metni(x["pay"]))
+        elif x["tur"] == "adet_tutar":
             metin = "%s satırda %s 0 ya da boşken dolu (payı %s)" % (
                 _sayi(x["adet"]), x["karsi"], _yuzde_metni(x["pay"]))
         else:
-            metin = "%s satırda %s kolonundan küçük (payı %s)" % (
-                _sayi(x["adet"]), x["karsi"], _yuzde_metni(x["pay"]))
+            metin = "%s satırda %s kolonundan %s (payı %s)" % (
+                _sayi(x["adet"]), x["karsi"], "büyük" if x.get("ters") else "küçük",
+                _yuzde_metni(x["pay"]))
         onceki = b["tutar_adet"].get(x["kolon"])
         b["tutar_adet"][x["kolon"]] = (onceki + ". " + metin) if onceki else metin
     for x in ek.get("baskin") or []:
@@ -3436,6 +3656,13 @@ def profil_metni(durum, karar=False):
     if tekrar:
         parca.append("Tabloda %s tekrar eden satır var; Tekrar Eden Satır kontrolünde "
                      "ayrıntısı görünür." % _sayi(tekrar))
+    sb = (durum.get("profil") or {}).get("satir_bilgi") or {}
+    if sb.get("toplam"):
+        parca.append("Kararlarınızla %s satır çalışma tablosundan çıkarıldı (%s); tabloda %s satır "
+                     "kaldı. Girdi verisi değişmedi." % (
+                         _sayi(sb["toplam"]),
+                         "; ".join("%s: %s" % (a, _sayi(n)) for a, n in (sb.get("cikan") or {}).items() if n),
+                         _sayi(sb.get("sonra") or 0)))
     return metin + " " + " ".join(parca)
 
 
@@ -3550,19 +3777,21 @@ def profil_karti(durum, karar=False):
                                             for u in (g.get("sira") or g["uyeler"])]}
                                 for g in gr]
         if a == "set_cakisma":
-            _set_cakisma_satiri(k, ek)
+            _set_cakisma_satiri(k, ek, durum)
             kontroller.append(k)
             continue
         if a == "tekrar":
             tk = ek.get("tekrar") or {}
             k["birim"] = "satır"
-            if tk.get("kimlik"):
-                k["kolonlar"].append({"ad": "Aynı %s" % " ve ".join(tk.get("anahtar") or []),
-                                      "aciklama": "", "bulgu": "%s fazla satır" % _sayi(tk["kimlik"])})
-            if tk.get("tam"):
-                k["kolonlar"].append({"ad": "Bütün kolonları aynı satır", "aciklama": "",
-                                      "bulgu": "%s fazla satır" % _sayi(tk["tam"])})
+            for oge, _tur, n_ in _tekrar_ogeleri(ek):
+                satir = {"ad": oge, "aciklama": "", "bulgu": "%s fazla satır" % _sayi(n_)}
+                dz = _satir_duzeltme(durum, "tekrar", oge)
+                if dz:
+                    satir["duzeltme"] = dz
+                k["kolonlar"].append(satir)
             k["sayi"] = int(tk.get("toplam") or 0)
+            k["ne_olacak"] = KURAL_SONUC_ADI["tekrar"] if updt_modu(durum) \
+                else "Bilgi için gösterilir"
             if tk.get("kimlik") is None:
                 k["kural"] += " Kimlik kolonu seçilmediği için yalnız bütün kolonları aynı satırlara bakıldı."
             kontroller.append(k)
@@ -3655,12 +3884,14 @@ def set_cakisma_sayilari(ek):
     return sum(sizinti.values()), sum(toplam.values())
 
 
-def _set_cakisma_satiri(k, ek):
-    """Setler Arasi Cakisma kontrol satirinin bulgu satirlari."""
+def _set_cakisma_satiri(k, ek, durum=None):
+    """Setler Arasi Cakisma kontrol satirinin bulgu satirlari; ayni kayit
+    (ayni kimlik ve donem ya da ayni satir) icin satir cikarma secimi."""
     from fe_agent.akis_durum import set_basligi
     sc = ek.get("set_cakisma")
     b = ek.get("set_bolme") or {}
     k["birim"] = "satır"
+    k["ne_olacak"] = "Bilgi için gösterilir"
     if sc is None:
         k["uygulandi"], k["sebep"] = False, "Bölme okunamadı"
         k["sayi"] = 0
@@ -3687,12 +3918,17 @@ def _set_cakisma_satiri(k, ek):
         else:
             metin = ("Bütün kolonları Train'deki bir satırla aynı: %s satır (setin %s)"
                      % (_sayi(x["satir"]), _yuzde_metni(x["pay"])))
-        k["kolonlar"].append({"ad": ad, "aciklama": "", "bulgu": metin})
+        satir = {"ad": ad, "aciklama": "", "bulgu": metin}
+        dz = _satir_duzeltme(durum, "set_cakisma", ad) if durum is not None else None
+        if dz:
+            satir["duzeltme"] = dz
+        k["kolonlar"].append(satir)
     sizinti, toplam = set_cakisma_sayilari(ek)
     k["sayi"] = toplam
     if sizinti:
-        k["ne_olacak"] = ("Bilgi için gösterilir; aynı kayıt iki sette, bölmeyi 01.4'te "
-                          "değiştirebilirsiniz")
+        k["ne_olacak"] = KURAL_SONUC_ADI["set_cakisma"] if (durum is not None and updt_modu(durum)) \
+            else ("Bilgi için gösterilir; aynı kayıt iki sette, bölmeyi 01.4'te "
+                  "değiştirebilirsiniz")
 
 
 def _cozum_satiri(kol, oneri, secim, bilgi):

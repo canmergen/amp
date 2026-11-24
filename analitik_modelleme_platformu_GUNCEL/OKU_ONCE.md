@@ -3346,3 +3346,29 @@ tanıtır; sayfalar sol bardan açılır.
 - **Çok dönem düzeltmesi**: dönem kurallarında (boş / sabit, sıçrama) sınır sınanan dönem sayısına bölünür. Kolon başına yanlış alarm ihtimali böylece tesadüf sınırını aşmaz.
 - **Kimlik benzeri**: kolon kartında ölçüsü (tutar, adet, süre) yazan sayı kolonu kimlik sayılmaz (`sfa.profil_cikar(olcu_kolonlari=...)`). Tam sayı tutulan bakiye de neredeyse her satırda farklıdır ama ölçüdür.
 - **Hedef oranı %50 üstünde**: "Metinde çok değer" önerileni ve "Baskın değer" yeterli satır şartı az görülen sınıfa göre hesaplanır (hedefi 0 olan satırlar).
+
+## 02.1: bilgi için gösterilen dört kuralın aksiyonu
+
+Dört kural artık "bilgi için gösterilir" değil; Kararlar sekmesinde seçim ister.
+
+- **Pencere tutarlılığı ve Tutar ve adet → Tut / Çıkar.**
+  - Çelişen çiftin iki kolonu da sorulur; hangisinin yanlış olduğu veriden anlaşılamaz.
+  - Öneri: kolon birden fazla kolonla çelişiyorsa Çıkar, tek kolonla çelişiyorsa Tut.
+  - Bulgu iki kolon için de yazılır (`_cift_iki_yonlu`).
+- **Tekrar eden satır → satır çıkarma.**
+  - Bütün kolonları aynı satır: "Fazla kopyaları kaldır" (biri kalır) ya da "Olduğu gibi bırak".
+  - Aynı kimlik ve dönem, içeriği farklı: "İlk satırı tut, ötekileri çıkar" ya da "Olduğu gibi bırak".
+  - Birebir aynı satır sayılırken `_SPLIT` kolonu karşılaştırmaya girmez.
+- **Setler arası çakışma → satır çıkarma.**
+  - Aynı kayıt (aynı kimlik ve dönem ya da birebir aynı satır) Train dışındaki setten çıkar; Train'e dokunulmaz.
+  - Yalnız kimliği ortak satır çıkarılmaz; rastgele bölmede 01.4'te bölme birimi Kimlik seçilmelidir.
+- **Uygulama.**
+  - Satırlar çalışma tablosundan (UPDT veri, 02.1 sonu) çıkar; girdi verisi değişmez.
+  - Sıra: önce setler arası çakışma, sonra kalan satırlarda tekrar (`satir_cikar_maskesi`).
+  - Çözüm ve düzeltmeler satır çıkarıldıktan sonraki tablodan öğrenilir.
+  - Çıkan satır sayıları `profil.satir_bilgi` altında durur ve adım metninde yazar.
+  - Seçimler `profil.satir_secim` altında saklanır; ön yüzden düzeltme seçimleriyle aynı alanda gelir.
+- **Sınırlar.**
+  - Satır çıkarma yalnız yeni düzende (UPDT veri) çalışır; eski düzendeki çalışmalarda bu iki kural bilgi olarak kalır.
+  - Üretim kodu (`uretim_kodu.py`) satır silmez; skorlamada satır sayısı değişmemelidir.
+  - 01.4'teki set satır sayıları satır çıkarıldıktan sonra yeniden hesaplanmaz; güncel sayı `satir_bilgi.sonra` alanındadır.

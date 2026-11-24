@@ -17931,6 +17931,7 @@ function profilKartiEkle(alan, blok) {
         /* Önerinin kaynağı açıkça: dil modeli, kod (kolonun sayıları) ya da
            kodun sabit kuralı (dil modeline ulaşılamadı). */
         const kaynakMetni = (kaynak, llm) => kaynak === "dil modeli" ? "Kaynak: Dil modeli"
+            : kaynak === "satir" ? "Kaynak: Kod (satır sayımından)"
             : (kaynak === "kod" || kaynak === "hedef") ? "Kaynak: Kod (kolonun sayılarından)"
             : llm ? "Kaynak: Kod, sabit kural (dil modeline ulaşılamadı)" : "Kaynak: Kod, sabit kural";
         const oneriHucresi = (metin, gerekceler, kaynak, llm) => {
@@ -18025,7 +18026,7 @@ function profilKartiEkle(alan, blok) {
             const sec = [];
             d.kolonlar.forEach(c => (c.duzeltme.secenekler || []).forEach(o => { if (!sec.some(x => x.kod === o.kod)) sec.push(o); }));
             const li = elYap("li");
-            metinYaz(li, "**" + d.k.ad + ":** " + ftBinlik(d.kolonlar.length) + " kolon, öneri "
+            metinYaz(li, "**" + d.k.ad + ":** " + ftBinlik(d.kolonlar.length) + (d.k.birim === "satır" ? " satır grubu, öneri " : " kolon, öneri ")
                 + (d.k.oneri_kaynagi === "dil modeli" ? "dil modelinden" : "koddan") + ". Önerilen: "
                 + sayimMetni(sayac, kod => secenekAdi(sec, kod)) + ".");
             liste.appendChild(li);
@@ -18060,7 +18061,7 @@ function profilKartiEkle(alan, blok) {
         grupKontrol.forEach(k => k.gruplar.forEach(g => kaynaklar.push(g.kaynak)));
         const kSay = t => kaynaklar.filter(x => t.includes(x || "kural")).length;
         const kParca = [];
-        if (kSay(["kod", "hedef"])) kParca.push(ftBinlik(kSay(["kod", "hedef"])) + " öneri veriden hesaplandı");
+        if (kSay(["kod", "hedef", "satir"])) kParca.push(ftBinlik(kSay(["kod", "hedef", "satir"])) + " öneri veriden hesaplandı");
         if (kSay(["dil modeli"])) kParca.push(ftBinlik(kSay(["dil modeli"])) + " öneri dil modelinden");
         if (kSay(["kural"])) kParca.push(ftBinlik(kSay(["kural"])) + " öneride dil modeline ulaşılamadı, kural kullanıldı (gri)");
         if (kParca.length) oz.appendChild(elYap("div", "pf-oneri-ozet-not", "Kaynak: " + kParca.join("; ") + "."));
@@ -18163,7 +18164,10 @@ function profilKartiEkle(alan, blok) {
            açıklaması bir kez. */
         duzKontrol.forEach(({ k, kolonlar: duzKol }) => {
             const llmK = k.oneri_kaynagi === "dil modeli";
-            const b = bolumYap(k.ad, ftBinlik(duzKol.length) + " kolon", llmK ? DM_NOTU : KOD_NOTU);
+            /* Satır kuralları (Tekrar Eden Satır, Setler Arası Çakışma): öğe kolon değil, satır grubu. */
+            const satirK = k.birim === "satır";
+            const b = bolumYap(k.ad, ftBinlik(duzKol.length) + (satirK ? " satır grubu" : " kolon"),
+                               satirK ? "Öneriyi kod verir (satır sayımından)" : (llmK ? DM_NOTU : KOD_NOTU));
             const ilk = { secenekler: [], oneri: null };
             duzKol.forEach(c => (c.duzeltme.secenekler || []).forEach(o => {
                 if (!ilk.secenekler.some(x => x.kod === o.kod)) ilk.secenekler.push(o);
@@ -18179,7 +18183,8 @@ function profilKartiEkle(alan, blok) {
                 ilk.oneri = sirali[0] || ((ilk.secenekler[0] || {}).kod);
                 const hepsiAyni = sirali.length === 1;
                 const ust = elYap("div", "pf-toplu");
-                ust.appendChild(elYap("span", "pf-toplu-not", "Bu kontroldeki bütün kolonlar için:"));
+                ust.appendChild(elYap("span", "pf-toplu-not", satirK ? "Bu kontroldeki bütün satır grupları için:"
+                                      : "Bu kontroldeki bütün kolonlar için:"));
                 const tsel = elYap("select", "pf-cozum-sec pf-toplu-sec");
                 tsel.setAttribute("aria-label", k.ad + " toplu düzeltme");
                 ilk.secenekler.forEach(o => {
@@ -18207,6 +18212,7 @@ function profilKartiEkle(alan, blok) {
             b.appendChild(elYap("div", "pf-cozum-acik pf-toplu-acik",
                 ilk.secenekler.map(o => o.ad + ": " + (o.aciklama || "")).join("\n")));
             const t = kararTablosu();
+            if (satirK) { const th = t.kap.querySelector("th"); if (th) th.textContent = "Satır grubu"; }
             duzKol.forEach(c => {
                 const r = elYap("tr");
                 r.appendChild(kolonHucresi(c.ad, c.aciklama));
@@ -18278,8 +18284,8 @@ function profilKartiEkle(alan, blok) {
             const dz = Object.values(duzSecim).flatMap(m => Object.values(m));
             if (dz.length) {
                 const birak = dz.filter(x => x === "birak").length;
-                parca.push(ftBinlik(dz.length) + " kolon için düzeltme: " + ftBinlik(dz.length - birak)
-                    + " kolonda uygulanacak, " + ftBinlik(birak) + " kolon olduğu gibi kalacak.");
+                parca.push(ftBinlik(dz.length) + " düzeltme kararı: " + ftBinlik(dz.length - birak)
+                    + " uygulanacak, " + ftBinlik(birak) + " olduğu gibi kalacak.");
             }
             const cz = Object.keys(cozumSecim);
             if (cz.length) {

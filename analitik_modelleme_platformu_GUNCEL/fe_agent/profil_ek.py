@@ -351,11 +351,11 @@ def donem_kontrolleri(df, adaylar, donem, esik=None):
     return [deger_metni(d) for d in donemler], bos_sabit, sicrama
 
 
-def tekrar_satirlar(df, kimlik=None, donem=None):
+def tekrar_satirlar(df, kimlik=None, donem=None, haric=()):
     """Doner: {"kimlik": fazla satir sayisi ya da None, "anahtar": [kolonlar],
     "tam": tamamen ayni fazla satir sayisi, "toplam": ikisinden en az birine
     takilan fazla satir sayisi (her satir bir kez)}."""
-    tam = df.duplicated() if len(df) else pd.Series([], dtype=bool)
+    tam = _tam_tekrar(df, haric)
     sonuc = {"kimlik": None, "anahtar": [], "tam": int(tam.sum()), "toplam": int(tam.sum())}
     if kimlik and kimlik in df.columns:
         anahtar = [kimlik] + ([donem] if donem and donem in df.columns else [])
@@ -365,6 +365,29 @@ def tekrar_satirlar(df, kimlik=None, donem=None):
         # Ayni satir iki kez sayilmaz (tamamen ayni satir anahtarda da tekrardir).
         sonuc["toplam"] = int((anahtar_tekrar | tam).sum())
     return sonuc
+
+
+def _tam_tekrar(df, haric=()):
+    """Butun kolonlari ayni olan fazla satirlar (ilk gorulen kalir). haric
+    kolonlar (ör. _SPLIT) karsilastirmaya girmez: ayni satir iki sette
+    olsa da kopyadir."""
+    if not len(df):
+        return pd.Series([], dtype=bool, index=df.index)
+    kolonlar = [c for c in df.columns if c not in set(haric or ())]
+    return df.duplicated(kolonlar) if kolonlar else pd.Series(False, index=df.index)
+
+
+def tekrar_maskeleri(df, kimlik=None, donem=None, haric=()):
+    """SATIR CIKARMA icin tekrar eden satirlarin maskeleri (ilk gorulen
+    satir kalir): {"tam": butun kolonlari ayni olan fazla satirlar,
+    "anahtar": ayni kimlik (ve donem) icin icerigi FARKLI fazla satirlar}.
+    Iki maske ayriktir; kimlik yoksa yalniz "tam"."""
+    tam = _tam_tekrar(df, haric)
+    cikti = {"tam": tam}
+    if kimlik and kimlik in df.columns:
+        anahtar = [kimlik] + ([donem] if donem and donem in df.columns else [])
+        cikti["anahtar"] = df.duplicated(anahtar) & ~tam
+    return cikti
 
 
 def hedef_ozeti(df, hedef, donem=None):
@@ -398,7 +421,7 @@ def hedef_ozeti(df, hedef, donem=None):
 
 
 def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None, esik=None,
-                  tarihler=(), hedef_maske=None):
+                  tarihler=(), hedef_maske=None, satir_haric=()):
     """Butun ek kontroller. adaylar: dort temel kontrolden gecen kolonlar
     (tablodaki sirasiyla)."""
     adaylar = [k for k in adaylar if k in df.columns]
@@ -412,7 +435,7 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     sonuc["donemler"] = donemler
     sonuc["donem"] = bos_sabit
     sonuc["sicrama"] = sicrama
-    sonuc["tekrar"] = tekrar_satirlar(df, kimlik, donem)
+    sonuc["tekrar"] = tekrar_satirlar(df, kimlik, donem, haric=satir_haric)
     sonuc["hedef"] = hedef_ozeti(df, hedef, donem)
     sonuc["olcu_var"] = any(str(v or "").strip() for v in (olculer or {}).values())
     # Ikinci set (pencere ve tutar / adet ciftleri kolon kartina ve donem
@@ -961,6 +984,46 @@ def set_cakismasi(df, setler, kimlik=None, donem=None, haric=()):
                                          "satir": int(tam.sum()), "pay": int(tam.sum()) / n})
     return sonuc
 
+
+
+def set_cakisma_maskeleri(df, setler, kimlik=None, donem=None, haric=()):
+    """SATIR CIKARMA icin: {(set, tur): bool Series} - Train disindaki
+    sette (val, test, oot) Train'de de bulunan AYNI KAYIT. tur "anahtar":
+    ayni kimlik ve donem; "tam": butun kolonlari ayni satir (haric
+    kolonlar karsilastirmaya girmez). Yalniz kimligi ortak olan satir
+    (ayni musteri, baska donem) ayni kayit degildir, maskeye girmez.
+    Sayimlar set_cakismasi ile aynidir."""
+    eg = setler.get("egitim")
+    if eg is None or not bool(pd.Series(eg).any()):
+        return {}
+    eg = pd.Series(eg, index=df.index).fillna(False).astype(bool)
+    diger = {}
+    for ad in ("val", "test", "oot"):
+        m = setler.get(ad)
+        if m is None:
+            continue
+        m = pd.Series(m, index=df.index).fillna(False).astype(bool) & ~eg
+        if bool(m.any()):
+            diger[ad] = m
+    if "test" in diger and "oot" in diger and bool((diger["test"] == diger["oot"]).all()):
+        diger.pop("oot")
+    cikti = {}
+    kimlik_var = bool(kimlik) and kimlik in df.columns
+    anahtar = ([kimlik] + [donem]) if kimlik_var and donem and donem in df.columns else []
+    kolonlar = [c for c in df.columns if c not in set(haric)]
+    ozet = pd.util.hash_pandas_object(df[kolonlar], index=False) if kolonlar else None
+    tr_ozet = set(ozet[eg].tolist()) if ozet is not None else set()
+    tr_anahtar = set(map(tuple, df.loc[eg, anahtar].dropna().itertuples(index=False, name=None))) \
+        if anahtar else set()
+    for ad, m in diger.items():
+        if anahtar:
+            cift = pd.Series([tuple(x) in tr_anahtar for x in
+                              df.loc[m, anahtar].itertuples(index=False, name=None)],
+                             index=df.index[m.to_numpy()])
+            cikti[(ad, "anahtar")] = cift.reindex(df.index, fill_value=False)
+        if ozet is not None:
+            cikti[(ad, "tam")] = (m & ozet.isin(tr_ozet))
+    return cikti
 
 
 # Ondalik hassasiyeti: bir kolonda en cok bu kadar basamak (kucuk degerli
