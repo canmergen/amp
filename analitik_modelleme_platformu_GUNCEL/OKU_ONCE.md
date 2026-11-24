@@ -2995,6 +2995,15 @@ tanıtır; sayfalar sol bardan açılır.
   kolonun bulguları aynı satırda. Kararlar sekmesinde üye adı birleşik
   adla görünür ("Gizli Eksik (özel kod)").
 - Profil metnindeki kontrol sayısı `gorunur_kontrol_sayisi()` (15).
+- KONTROL EŞİKLERİ FORMU: 20 eşik eski kontrol adlarıyla ayrı ayrı
+  listelendiği için 20 kontrol gibi görünüyordu. Eşikler artık karttaki
+  kontrolün altında (`ESIK_KONTROL`: eşik -> kontrol ve alt eşik adı; sıra
+  karttaki sıra): başlık satırı kontrolün adı, satırda alt eşik adı
+  ("Baskın değer", "Çoğu sıfır"), öneri eşiklerinde "Öneri eşiği"
+  etiketi. Formun üstünde "15 kontrol var; 10 tanesinin ayarlanabilir
+  eşiği aşağıda (20 eşik)". Değişiklik notu ve hata mesajları
+  `esik_adi` ile ("Sabit ya da Neredeyse Sabit (Baskın değer)"). Eşik
+  anahtarları ve değerleri değişmedi.
 
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca

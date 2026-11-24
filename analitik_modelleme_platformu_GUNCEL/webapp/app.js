@@ -20040,6 +20040,10 @@ function profilEsikKartiEkle(alan, blok) {
         + "Yüzdeli eşikler yüzde olarak yazılır (ör. 99 yazılırsa %99). Ondalık için virgül kullanılabilir.",
         "Kontrol Eşikleri"));
     kart.appendChild(bas);
+    if (alan.toplam_kontrol && alan.kontrol_sayisi)
+        kart.appendChild(elYap("div", "pf-not", "Veri profilinde " + ftBinlik(alan.toplam_kontrol) + " kontrol var; "
+            + ftBinlik(alan.kontrol_sayisi) + " tanesinin ayarlanabilir eşiği aşağıda, kendi kontrolünün altında ("
+            + ftBinlik((alan.satirlar || []).length) + " eşik). Öteki kontroller sabit kuralla çalışır."));
 
     const hataEl = elYap("div", "pf-esik-hata");
     hataEl.hidden = !alan.hata;
@@ -20070,19 +20074,28 @@ function profilEsikKartiEkle(alan, blok) {
         gtr.appendChild(gtd);
         tbody.appendChild(gtr);
     };
+    /* EŞİKLER KARTTAKİ KONTROLLERİN ALTINDA: başlık satırı karttaki
+       (birleşik) kontrolün adı, altında o kontrolün eşikleri. Öneri eşiği
+       kolonun yakalanmasını değiştirmez, yakalanan kolona hangi seçeneğin
+       önerileceğini belirler; satırında etiketi var. */
     let sonGrup = null;
-    const oneriVar = (alan.satirlar || []).some(r => r.grup === "oneri");
+    const grupSay = {};
+    (alan.satirlar || []).forEach(r => { const g = r.kontrol_grup || r.kontrol; grupSay[g] = (grupSay[g] || 0) + 1; });
     (alan.satirlar || []).forEach(r => {
-        const grup = r.grup || "yakalama";
-        if (oneriVar && grup !== sonGrup) {
-            if (grup === "oneri") grupBasligi("Öneri Eşikleri",
-                "Kolonun yakalanmasını değiştirmez; yakalanan kolon için hangi seçeneğin önerileceğini belirler. Kararı yine siz verirsiniz.");
-            else grupBasligi("Yakalama Eşikleri", "Kolonun kontrole takılması için aşması gereken sınır.");
+        const grup = r.kontrol_grup || r.kontrol;
+        if (grup !== sonGrup) {
+            grupBasligi(grup, grupSay[grup] > 1 ? ftBinlik(grupSay[grup]) + " eşik" : "");
             sonGrup = grup;
         }
         const tr = elYap("tr", "pf-esik-satir");
         const pr = r.parca || {};
-        tr.appendChild(pfKontrolHucresi(r.kontrol, r.kisa, pr.onemli));
+        const kh = pfKontrolHucresi(r.alt || r.kontrol, r.kisa, pr.onemli);
+        if (r.grup === "oneri") {
+            const et = elYap("span", "pf-esik-oneri-etiket", "Öneri eşiği");
+            et.title = "Kolonun yakalanmasını değiştirmez; yakalanan kolon için hangi seçeneğin önerileceğini belirler. Kararı yine siz verirsiniz.";
+            kh.querySelector(".pf-esik-ad").appendChild(et);
+        }
+        tr.appendChild(kh);
         tr.appendChild(pfOlcutHucresi(r.anlam + (/(se|sa)$/.test(r.anlam || "") ? " kolon yakalanır." : "."), pr));
         tr.appendChild(pfYakalanirsaHucresi(r.sonuc, pr.yakalanirsa));
         const td = elYap("td", "pf-esik-hucre");
@@ -20094,7 +20107,7 @@ function profilEsikKartiEkle(alan, blok) {
         g.inputMode = "decimal";
         g.className = "pf-esik-giris";
         g.value = pfEsikYaz(r.deger);
-        g.setAttribute("aria-label", r.kontrol + " eşiği");
+        g.setAttribute("aria-label", (r.kontrol_grup ? r.kontrol_grup + " (" + r.alt + ")" : r.kontrol) + " eşiği");
         g.disabled = kilitli;
         kutu.appendChild(g);
         kutu.appendChild(elYap("span", "pf-esik-birim son",

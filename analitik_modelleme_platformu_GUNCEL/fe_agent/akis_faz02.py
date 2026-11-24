@@ -1250,6 +1250,38 @@ PROFIL_ONERI_ESIKLERI = (
 )
 PROFIL_ESIKLERI = PROFIL_ESIKLERI + PROFIL_ONERI_ESIKLERI
 ONERI_ESIK_ANAHTARLARI = {x[0] for x in PROFIL_ONERI_ESIKLERI}
+# FORMDA ESIKLER KARTTAKI KONTROLLERIN ALTINDA: eşik, karttaki (birlesik)
+# kontrolun adi ve alt eşik adiyla gosterilir; sira karttaki sira. Boylece
+# 20 eşik 20 kontrol gibi gorunmez. (kontrol, alt eşik adi)
+ESIK_KONTROL = (
+    ("cok_bos", "Eksik Oranı Yüksek", "Eksik oranı"),
+    ("baskin", "Sabit ya da Neredeyse Sabit", "Baskın değer"),
+    ("sifir", "Sabit ya da Neredeyse Sabit", "Çoğu sıfır"),
+    ("baskin_min_satir", "Sabit ya da Neredeyse Sabit", "Baskın değer: satır sınırı"),
+    ("baskin_kat", "Sabit ya da Neredeyse Sabit", "Baskın değer: hedef farkı"),
+    ("kimlik", "Çok Fazla Farklı Değer", "Kimlik benzeri"),
+    ("kardinalite", "Çok Fazla Farklı Değer", "Metinde çok değer"),
+    ("yakin_kor", "Aynı ya da Neredeyse Aynı Kolonlar", "Neredeyse aynı"),
+    ("sizinti_auc", "Sızıntı Riski", "Hedefle birebir"),
+    ("donem_min_satir", "Dönemler Arası Tutarsızlık", "Dönemde boş ya da sabit"),
+    ("sicrama", "Dönemler Arası Tutarsızlık", "Eksik sıçraması"),
+    ("kayma_kat", "Dönemler Arası Tutarsızlık", "Değer kayması"),
+    ("donem_tut_pay", "Dönemler Arası Tutarsızlık", "Dönemde boş ya da sabit: ilk dönemler"),
+    ("sicrama_cikar", "Dönemler Arası Tutarsızlık", "Eksik sıçraması: çıkarma sınırı"),
+    ("gizli", "Gizli Eksik", "Özel kod"),
+    ("metin_bayrak_pay", "Gizli Eksik", "Metin olarak boş: bayrak sınırı"),
+    ("negatif_bos_pay", "Beklenmeyen Negatif", "Boş sayma sınırı"),
+    ("uc_kat", "Uç Değer Yoğunluğu", "Uç değer"),
+    ("uc_kirp_kat", "Uç Değer Yoğunluğu", "Kırpma sınırı"),
+    ("ondalik", "Ondalık Hassasiyeti", "Basamak sayısı"),
+)
+_ESIK_KONTROL = {a: (i, k, alt) for i, (a, k, alt) in enumerate(ESIK_KONTROL)}
+
+
+def esik_adi(anahtar, kontrol=""):
+    """Eşigin ekrandaki adi: "Sabit ya da Neredeyse Sabit (Baskın değer)"."""
+    x = _ESIK_KONTROL.get(anahtar)
+    return "%s (%s)" % (x[1], x[2]) if x else kontrol
 # Formda her kontrolun duz dille aciklamasi: "kisa" satirda, "bilgi" i
 # balonunda (nedir, neden onemli, ornek, yakalanirsa ne olur, onerilen
 # degerin gerekcesi), "sonuc" yakalanan kolona ne oldugu (NE_OLACAK ile
@@ -1666,18 +1698,18 @@ def esik_dogrula(gelen):
     gelen = gelen if isinstance(gelen, dict) else {}
     for a, kontrol, _anlam, birim, en_az, en_cok in PROFIL_ESIKLERI:
         if a not in gelen or str(gelen[a]).strip() == "":
-            hatalar.append("%s: değer boş" % kontrol)
+            hatalar.append("%s: değer boş" % esik_adi(a, kontrol))
             continue
         try:
             v = _esik_ic(birim, gelen[a])
         except (TypeError, ValueError):
-            hatalar.append("%s: sayı değil" % kontrol)
+            hatalar.append("%s: sayı değil" % esik_adi(a, kontrol))
             continue
         if birim in ("sayi", "kat"):
             v = int(round(v)) if float(v).is_integer() or birim == "sayi" else v
         if not (en_az <= v <= en_cok):
             hatalar.append("%s: %s ile %s arasında olmalı" % (
-                kontrol, _esik_metni(birim, en_az), _esik_metni(birim, en_cok)))
+                esik_adi(a, kontrol), _esik_metni(birim, en_az), _esik_metni(birim, en_cok)))
             continue
         sonuc[a] = v
     if hatalar:
@@ -1692,7 +1724,9 @@ def esik_formu(durum, hata=None, kilitli=False):
     satirlar = []
     for a, kontrol, anlam, birim, en_az, en_cok in PROFIL_ESIKLERI:
         ac = PROFIL_ESIK_ACIKLAMA.get(a) or {}
+        ek_ = _ESIK_KONTROL.get(a, (99, kontrol, kontrol))
         satirlar.append({"anahtar": a, "kontrol": kontrol, "anlam": anlam, "birim": birim,
+                         "kontrol_grup": ek_[1], "alt": ek_[2], "_sira": ek_[0],
                          "kisa": ac.get("kisa", ""), "bilgi": ac.get("bilgi", ""),
                          "sonuc": ac.get("sonuc", ""),
                          "parca": aciklama_parcalari(ac.get("bilgi")),
@@ -1702,14 +1736,17 @@ def esik_formu(durum, hata=None, kilitli=False):
                          "varsayilan_metni": _esik_metni(birim, varsayilan[a]),
                          "en_az": _esik_ekran(birim, en_az), "en_cok": _esik_ekran(birim, en_cok),
                          "grup": "oneri" if a in ONERI_ESIK_ANAHTARLARI else "yakalama"})
+    satirlar.sort(key=lambda r: r.pop("_sira"))
     return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
+            "kontrol_sayisi": len({r["kontrol_grup"] for r in satirlar}),
+            "toplam_kontrol": gorunur_kontrol_sayisi(),
             "hata": hata or "", "kilitli": bool(kilitli), "buton": ESIK_DUGME}
 
 
 def esik_degisiklik_notu(durum):
     """Varsayilandan farkli esikler (kartta ve metinde)."""
     simdiki, varsayilan = profil_esikleri(durum), _esik_varsayilan()
-    parca = ["%s %s (önerilen %s)" % (kontrol, _esik_metni(birim, simdiki[a]),
+    parca = ["%s %s (önerilen %s)" % (esik_adi(a, kontrol), _esik_metni(birim, simdiki[a]),
                                         _esik_metni(birim, varsayilan[a]))
              for a, kontrol, _an, birim, _x, _y in PROFIL_ESIKLERI
              if abs(float(simdiki[a]) - float(varsayilan[a])) > 1e-12]
