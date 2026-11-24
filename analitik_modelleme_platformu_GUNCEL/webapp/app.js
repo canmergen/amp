@@ -20040,10 +20040,27 @@ function profilEsikKartiEkle(alan, blok) {
         + "Yüzdeli eşikler yüzde olarak yazılır (ör. 99 yazılırsa %99). Ondalık için virgül kullanılabilir.",
         "Kontrol Eşikleri"));
     kart.appendChild(bas);
-    if (alan.toplam_kontrol && alan.kontrol_sayisi)
-        kart.appendChild(elYap("div", "pf-not", "Veri profilinde " + ftBinlik(alan.toplam_kontrol) + " kontrol var; "
-            + ftBinlik(alan.kontrol_sayisi) + " tanesinin ayarlanabilir eşiği aşağıda, kendi kontrolünün altında ("
-            + ftBinlik((alan.satirlar || []).length) + " eşik). Öteki kontroller sabit kuralla çalışır."));
+    /* SAYILAR: kartta 15 kontrol var ama birleşik kontrollerin içinde
+       ayrı kurallar çalışır (Sabit ya da Neredeyse Sabit = tek değer,
+       baskın değer, çoğu sıfır). Eşik kurala bağlıdır; sayılar iki
+       düzeyde de yazar. */
+    const sy = alan.sayilar;
+    if (sy) {
+        const sayiEl = elYap("div", "pf-esik-sayilar");
+        const kutuYap = (sayi, ad, ek) => {
+            const k = elYap("div", "pf-esik-sayi");
+            k.appendChild(elYap("b", "", ftBinlik(sayi)));
+            k.appendChild(elYap("span", "", ad));
+            if (ek) k.appendChild(elYap("span", "pf-esik-sayi-ek", ek));
+            sayiEl.appendChild(k);
+        };
+        kutuYap(sy.kontrol, "kontrol", "kartta");
+        kutuYap(sy.kural, "kural", "kontrollerin içinde");
+        kutuYap(sy.esikli_kural, "kuralın eşiği var", ftBinlik(sy.esikli_kontrol) + " kontrolde");
+        kutuYap(sy.esik, "eşik", ftBinlik(sy.yakalama) + " yakalama, " + ftBinlik(sy.oneri) + " öneri");
+        kutuYap(sy.sabit_kural, "kural sabit", "eşiksiz");
+        kart.appendChild(sayiEl);
+    }
 
     const hataEl = elYap("div", "pf-esik-hata");
     hataEl.hidden = !alan.hata;
@@ -20052,42 +20069,37 @@ function profilEsikKartiEkle(alan, blok) {
 
     const tablo = elYap("table", "dg-tablo pf-esik-tablo");
     const cg = document.createElement("colgroup");
-    ["pf-e-kontrol", "pf-e-olcut", "pf-e-yakala", "pf-e-deger", "pf-e-vars", "pf-e-gerekce"].forEach(c => {
+    ["pf-e-kontrol", "pf-e-esik", "pf-e-olcut", "pf-e-yakala", "pf-e-deger", "pf-e-vars", "pf-e-gerekce"].forEach(c => {
         const col = document.createElement("col"); col.className = c; cg.appendChild(col);
     });
     tablo.appendChild(cg);
     const thead = elYap("thead");
     const htr = elYap("tr");
-    ["Kontrol", "Ölçüt", "Yakalanırsa", "Eşik", "Önerilen", "Neden Bu Değer"].forEach(b => htr.appendChild(elYap("th", "", b)));
+    ["Kontrol", "Eşik", "Ölçüt", "Yakalanırsa", "Değer", "Önerilen", "Neden Bu Değer"].forEach(b => htr.appendChild(elYap("th", "", b)));
     thead.appendChild(htr);
     tablo.appendChild(thead);
     const tbody = elYap("tbody");
     const girisler = [];
-    /* Öneri eşikleri ayrı başlık altında: kolonun yakalanmasını değil,
-       yakalanan kolona hangi seçeneğin önerileceğini belirler. */
-    const grupBasligi = (baslik, not) => {
-        const gtr = elYap("tr", "pf-esik-grup");
-        const gtd = elYap("td");
-        gtd.colSpan = 6;
-        gtd.appendChild(elYap("b", "", baslik));
-        if (not) gtd.appendChild(elYap("span", "pf-esik-grup-not", not));
-        gtr.appendChild(gtd);
-        tbody.appendChild(gtr);
-    };
-    /* EŞİKLER KARTTAKİ KONTROLLERİN ALTINDA: başlık satırı karttaki
-       (birleşik) kontrolün adı, altında o kontrolün eşikleri. Öneri eşiği
-       kolonun yakalanmasını değiştirmez, yakalanan kolona hangi seçeneğin
-       önerileceğini belirler; satırında etiketi var. */
+    /* KONTROL HÜCRESİ SATIRLARI BİRLEŞTİRİR: karttaki kontrolün adı ve
+       eşik sayısı bir kez, o kontrolün eşik satırlarını kapsayarak yazar
+       (ayrı başlık satırı yok). Eşik sütununda eşiğin kendi adı; öneri
+       eşiği kolonun yakalanmasını değiştirmez, yakalanan kolona hangi
+       seçeneğin önerileceğini belirler, etiketi var. */
     let sonGrup = null;
     const grupSay = {};
     (alan.satirlar || []).forEach(r => { const g = r.kontrol_grup || r.kontrol; grupSay[g] = (grupSay[g] || 0) + 1; });
     (alan.satirlar || []).forEach(r => {
         const grup = r.kontrol_grup || r.kontrol;
+        const tr = elYap("tr", "pf-esik-satir");
         if (grup !== sonGrup) {
-            grupBasligi(grup, grupSay[grup] > 1 ? ftBinlik(grupSay[grup]) + " eşik" : "");
+            const ktd = elYap("td", "pf-esik-kontrol");
+            ktd.rowSpan = grupSay[grup];
+            ktd.appendChild(elYap("b", "", grup));
+            ktd.appendChild(elYap("div", "pf-esik-kontrol-say", ftBinlik(grupSay[grup]) + " eşik"));
+            tr.appendChild(ktd);
+            tr.classList.add("pf-esik-ilk");
             sonGrup = grup;
         }
-        const tr = elYap("tr", "pf-esik-satir");
         const pr = r.parca || {};
         const kh = pfKontrolHucresi(r.alt || r.kontrol, r.kisa, pr.onemli);
         if (r.grup === "oneri") {

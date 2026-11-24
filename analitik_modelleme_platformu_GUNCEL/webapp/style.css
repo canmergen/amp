@@ -5386,7 +5386,8 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .pf-tablo-sar { overflow-x: auto; }
 /* 02.1 kontrol tabloları 5 ve 6 metin sütunlu: alan daralınca sütunlar
    ezilmez, tablo yatay kayar. */
-.dg-tablo.pf-tablo, .dg-tablo.pf-esik-tablo { min-width: 900px; }
+.dg-tablo.pf-tablo { min-width: 900px; }
+.dg-tablo.pf-esik-tablo { min-width: 1020px; }
 .pf-yakala-ayrinti, .pf-olcut, .pf-gerekce { overflow-wrap: anywhere; }
 .dg-tablo.pf-tablo { table-layout: fixed; width: 100%; }
 .dg-tablo.pf-tablo col.pf-k-ad { width: 21%; }
@@ -5584,9 +5585,10 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 /* 02.1 Kontrol eşikleri formu */
 .dg-tablo.pf-esik-tablo { table-layout: fixed; width: 100%; }
 .dg-tablo.pf-esik-tablo th { width: auto; white-space: normal; }
-.dg-tablo.pf-esik-tablo col.pf-e-kontrol { width: 19%; }
-.dg-tablo.pf-esik-tablo col.pf-e-olcut { width: 24%; }
-.dg-tablo.pf-esik-tablo col.pf-e-yakala { width: 19%; }
+.dg-tablo.pf-esik-tablo col.pf-e-kontrol { width: 12%; }
+.dg-tablo.pf-esik-tablo col.pf-e-esik { width: 17%; }
+.dg-tablo.pf-esik-tablo col.pf-e-olcut { width: 20%; }
+.dg-tablo.pf-esik-tablo col.pf-e-yakala { width: 16%; }
 .dg-tablo.pf-esik-tablo col.pf-e-deger { width: 172px; }
 .dg-tablo.pf-esik-tablo col.pf-e-vars { width: 88px; }
 .dg-tablo.pf-esik-tablo col.pf-e-gerekce { width: auto; }
@@ -5628,7 +5630,7 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-esik-dugmeler { display: flex; align-items: center; justify-content: center; gap: var(--b-3); flex-wrap: wrap; }
 .pf-esik-notu { color: var(--amber); }
 @media (max-width: 720px) {
-  .dg-tablo.pf-esik-tablo { min-width: 900px; }
+  .dg-tablo.pf-esik-tablo { min-width: 1020px; }
 }
 
 /* ==================== 01.2.3 aile düzeni ====================
@@ -5989,3 +5991,12 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .gl-kolon-kutu:disabled { cursor: default; }
 .dg-tablo.gl-plan-kolon { min-width: 1080px; }
 .pf-esik-oneri-etiket { display: inline-block; white-space: nowrap; margin-left: 6px; padding: 0 6px; border-radius: var(--r-kucuk); font-size: var(--fs-kucuk); font-weight: var(--fw-normal); background: var(--amber-acik); color: var(--metin); }
+
+/* 02.1 eşik formu: sayılar ve satırları kapsayan kontrol hücresi */
+.pf-esik-sayilar { display: flex; flex-wrap: wrap; gap: var(--b-2); margin: var(--b-2) 0 var(--b-3); }
+.pf-esik-sayi { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 6px; padding: 6px 10px; border: 1px solid var(--kenar); border-radius: var(--r-kucuk); background: var(--yuzey); }
+.pf-esik-sayi b { font-size: 1.15em; color: var(--metin); }
+.pf-esik-sayi-ek { color: var(--metin-soluk); font-size: var(--fs-kucuk); padding-left: 6px; border-left: 1px solid var(--kenar); }
+.dg-tablo.pf-esik-tablo > tbody > tr > td.pf-esik-kontrol { background: var(--yuzey-alt); border-right: 1px solid var(--kenar); }
+.pf-esik-kontrol-say { color: var(--metin-soluk); font-size: var(--fs-kucuk); margin-top: 2px; }
+.dg-tablo.pf-esik-tablo > tbody > tr.pf-esik-ilk > td { border-top: 2px solid var(--kenar); }

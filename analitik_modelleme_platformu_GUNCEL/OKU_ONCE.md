@@ -3004,6 +3004,15 @@ tanıtır; sayfalar sol bardan açılır.
   eşiği aşağıda (20 eşik)". Değişiklik notu ve hata mesajları
   `esik_adi` ile ("Sabit ya da Neredeyse Sabit (Baskın değer)"). Eşik
   anahtarları ve değerleri değişmedi.
+- EŞİK FORMU DÜZENİ (sonraki hali): ayrı başlık satırı yok. İlk sütun
+  "Kontrol" karttaki kontrolün adını ve eşik sayısını bir kez yazar,
+  o kontrolün eşik satırlarını kapsar (rowspan); "Eşik" sütununda eşiğin
+  kendi adı, giriş sütunu "Değer". Formun üstünde sayılar ayrı kutularda
+  (`esik_formu` -> `sayilar`): 15 kontrol, içlerinde 26 kural, 15
+  kuralın eşiği var (10 kontrolde), 20 eşik (13 yakalama, 7 öneri), 11
+  kural sabit. Kural sayımı `ESIK_KURAL` (eşik -> PROFIL_KONTROLLERI
+  anahtarı) ile; birleşik kontrollerin içinde birden çok eşikli kural
+  olduğu için "eşikli kontrol" sayısı kural düzeyinde de yazar.
 
 **Veri ve Sözlük Karşılaştırması (Veri ve Sözlük sekmesi)**
 - Sözlük tablosunun altında açılır bölüm (`veriSozlukEslemeCiz`, açılınca
