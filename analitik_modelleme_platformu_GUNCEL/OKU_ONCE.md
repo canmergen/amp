@@ -3015,6 +3015,11 @@ tanıtır; sayfalar sol bardan açılır.
   satırda (`ILISKI_MIN_PAY`).
 - KALDIRILAN KONTROLLER: Sıfır Yoğunluğu ve Ondalık Hassasiyeti (veri hatası
   göstermiyor, modeli değiştirmiyordu). Kartta 14 kontrol, 24 kural.
+- 02.1 RENKLERİ (form ve profil kartı aynı): kırmızı = sistem kendisi almaz
+  (Üretime girmez, Çözüm yoksa girmez, Biri kalır); sarı = size sorulur ya da
+  önerilir (Kararınıza bırakılır, Düzeltme, öneri eşikleri); mavi = bilgi için
+  gösterilir (`--mavi`, kartta `pf-r-bilgi`); gri = uygulanmadı / eşik yok;
+  yeşil = sorunsuz. Sınıf `pfSonucSinifi` metinden.
 - SADE VE GENEL AÇIKLAMALAR: 02.1 kontrol ve eşik açıklamaları (`_ac` ile
   kurulan PROFIL_ESIK_ACIKLAMA ve _KONTROL_ACIKLAMA_EK) her veri ve her
   sınıflandırma problemi için genel: alana özel terim yok ("temerrüt" yerine

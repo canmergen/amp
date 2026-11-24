@@ -17381,7 +17381,10 @@ function pfAyniAnaliz(gruplar) {
    pr: akis_faz02.aciklama_parcalari çıktısı. */
 function pfSonucSinifi(sonuc) {
     const t = String(sonuc || "");
-    return /^Üretime girmez|^Çözüm/.test(t) ? "girmez" : /^Kararınıza|^Düzeltme/.test(t) ? "karar" : "bilgi";
+    /* RENK: kırmızı = sistem kendisi almaz (üretime girmez, biri kalır),
+       sarı = size sorulur ya da önerilir, mavi = bilgi için gösterilir. */
+    return /^Üretime girmez|^Çözüm|^Biri kalır/.test(t) ? "girmez"
+        : /^Kararınıza|^Düzeltme|^Öneri|^Yalnız öneriyi/.test(t) ? "karar" : "bilgi";
 }
 
 function pfKontrolHucresi(ad, kisa, onemli) {
@@ -17763,7 +17766,7 @@ function profilKartiEkle(alan, blok) {
            uygulanmadı. Açılan liste satırı da aynı renkte, girintili. */
         const nBul = Number(k.sayi || 0);
         const renk = k.uygulandi === false ? "pf-r-pasif" : !nBul ? "pf-r-tamam"
-            : k.sonuc === "girmez" ? "pf-r-sorun" : "pf-r-dikkat";
+            : k.sonuc === "girmez" ? "pf-r-sorun" : k.sonuc === "bilgi" ? "pf-r-bilgi" : "pf-r-dikkat";
         const satir = elYap("tr", "pf-kontrol " + renk + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
         const pr = k.parca || {};
         satir.appendChild(pfKontrolHucresi(k.ad, k.kisa, pr.onemli));
@@ -20076,7 +20079,7 @@ function profilEsikKartiEkle(alan, blok) {
         if (r && r.bilgi) adEl.appendChild(bolmeBilgiSimgesi(r.bilgi, ad));
         sat.appendChild(adEl);
         sat.appendChild(elYap("div", "pf-ek-olcut", cumle(olcut)));
-        sat.appendChild(elYap("div", "pf-ek-sonuc pf-esik-sonuc-" + (ic ? "bilgi" : pfSonucSinifi(sonuc)),
+        sat.appendChild(elYap("div", "pf-ek-sonuc pf-esik-sonuc-" + (ic ? "karar" : pfSonucSinifi(sonuc)),
                               ic ? "Yalnız öneriyi belirler" : (sonuc || "")));
         const td = elYap("div", "pf-ek-deger");
         const onr = elYap("div", "pf-ek-onerilen");
