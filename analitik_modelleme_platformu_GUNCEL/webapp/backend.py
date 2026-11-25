@@ -1461,6 +1461,20 @@ def mesaj_endpoint():
                                 hedef_adim if isinstance(hedef_adim, str)
                                 else None)
 
+        # ESKI PROFIL UYARISI: profil eski kuralla cikarildiysa ve akis
+        # 02.1'i gectiyse, calisma basina BIR KEZ cevabin sonuna yazilir
+        # (02.1 kartinda surekli durur, bkz. akis_faz02.profil_eski_uyarisi).
+        try:
+            _sira = akis.adim_sirasi(durum.get("mod"))
+            if ("veri_profili" in _sira and int(durum.get("i") or 0) > _sira.index("veri_profili")
+                    and not durum.get("_profil_eski_uyarildi")):
+                _uyari = akis.profil_eski_uyarisi(durum)
+                if _uyari:
+                    cevap = ((cevap or "").rstrip() + "\n\n" + _uyari).strip()
+                    durum["_profil_eski_uyarildi"] = True
+        except Exception:
+            pass
+
         # Geri donus GERCEKLESTIYSE ekran gecmisi de geri sarilir.
         # Kosul "istendi" degil "oldu": ileri atlama reddediliyor
         # (bkz. akis_sohbet._hedefe_don) ve o durumda gecmise

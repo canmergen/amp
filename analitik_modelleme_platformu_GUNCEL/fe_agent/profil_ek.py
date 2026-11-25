@@ -1050,6 +1050,135 @@ def set_disi_bozulma(df, setler, adaylar, esik=None):
     return sonuc
 
 
+def _train_disi_setler(df, setler):
+    """(train maskesi, {set: maske}): Train disindaki dolu setler (val,
+    test, oot); test ile oot ayni satirlarsa tek set. Train yoksa (None, {})."""
+    eg = setler.get("egitim")
+    if eg is None:
+        return None, {}
+    eg = pd.Series(eg, index=df.index).fillna(False).astype(bool)
+    if not bool(eg.any()):
+        return None, {}
+    diger = {}
+    for ad in ("val", "test", "oot"):
+        m = setler.get(ad)
+        if m is None:
+            continue
+        m = pd.Series(m, index=df.index).fillna(False).astype(bool) & ~eg
+        if bool(m.any()):
+            diger[ad] = m
+    if "test" in diger and "oot" in diger and bool((diger["test"] == diger["oot"]).all()):
+        diger.pop("oot")
+    return eg, diger
+
+
+def set_disi_deger(df, setler, adaylar, esik=None, olculer=None):
+    """Train'de GORULMEYEN ama Train disindaki bir sette (val, test, oot)
+    gorulen DEGER sorunlari. Kontroller train'de yapildigi icin bunlar
+    baska hicbir kuralda cikmaz. Doner {"kod": [...], "uc": [...],
+    "kayma": [...]}; her bulgu "set" tasir.
+      kod  : sette bos yerine yazilmis ozel kod (-999 gibi); train'de bu
+             kod yok ya da gizli esiginin altinda. Bicim gizli_eksik ile
+             ayni (kolon, deger, adet, pay, bos): ayni duzeltme uygulanir.
+      uc   : sette, train'in normal araliginin (p1 - kat x yayilim,
+             p99 + kat x yayilim) disinda deger; train'de boyle deger yok.
+             Bicim uc ile ayni (maks, en_kucuk, p1, p99, yon); p1 / p99
+             train'den, maks / en_kucuk setten.
+      kayma: sifir disi mutlak degerlerin %25, %50, %75'i train ile set
+             arasinda ayni yonde en az kayma_kat kat farkli (birim
+             degisikligi gibi). Bicim set_disi ile ayni (tur "kayma").
+    Kod payi az satirli sette sans eseri olabilir: iki oran testi, sinir
+    sinanan set sayisina bolunur. Kolon ve set basina tek bulgu (once kod,
+    sonra uc, sonra kayma)."""
+    e = esik_birlestir(esik)
+    sonuc = {"kod": [], "uc": [], "kayma": []}
+    eg, diger = _train_disi_setler(df, setler)
+    if not diger:
+        return sonuc
+    alfa = float(e["tesaduf"]) / len(diger)
+    olculer = olculer or {}
+    kat = float(e["uc_yayilim"])
+    for kol in adaylar:
+        if kol not in df.columns:
+            continue
+        s_ = df[kol]
+        if not _sayisal_mi(s_) or pd.api.types.is_bool_dtype(s_):
+            continue
+        sn = pd.to_numeric(s_, errors="coerce")
+        trn = sn[eg].dropna()
+        if not len(trn):
+            continue
+        # Train'in kendi ozel kodu (varsa) aralik hesabina girmez.
+        tr_kod = _gizli_eksik(trn.value_counts(), len(trn), float(trn.min()), float(trn.max()),
+                              e["gizli"])
+        tsu = trn[trn != tr_kod[0]] if tr_kod is not None else trn
+        if not len(tsu):
+            continue
+        p1, p99 = float(tsu.quantile(UC_DEGER_ALT_YUZDELIK)), float(tsu.quantile(UC_DEGER_YUZDELIK))
+        yay = p99 - p1
+        tr_mx, tr_mn = float(tsu.max()), float(tsu.min())
+        neg_yok = olcu_negatif_olamaz(olculer.get(kol))
+        ta = tsu.abs()
+        ta = ta[ta != 0]
+        for ad, m in diger.items():
+            x = sn[m].dropna()
+            if not len(x):
+                continue
+            # 1) OZEL KOD: sette var, train'de yok / esigin altinda.
+            kod = _gizli_eksik(x.value_counts(), len(x), float(x.min()), float(x.max()), e["gizli"])
+            if kod is not None and (tr_kod is None or tr_kod[0] != kod[0]):
+                p_tr = float((trn == kod[0]).mean())
+                p_set = kod[1] / float(len(x))
+                if p_tr <= e["gizli"] and not sicrama_tesadufi(p_tr, len(trn), p_set, len(x), alfa):
+                    sonuc["kod"].append({"kolon": kol, "deger": deger_metni(kod[0]), "adet": int(kod[1]),
+                                         "pay": p_set, "bos": int(s_[m].isna().sum()), "set": ad,
+                                         "train_pay": p_tr})
+                    continue
+            xs = x[x != kod[0]] if kod is not None else x
+            if not len(xs):
+                continue
+            # 2) DEV DEGER: train'in normal araliginin cok disinda; train'in
+            # kendisinde boyle deger yok (olsaydi Asiri Degerler yakalardi).
+            if yay > 0:
+                ust_s, alt_s = p99 + kat * yay, p1 - kat * yay
+                mx, mn = float(xs.max()), float(xs.min())
+                ust = mx > ust_s and tr_mx <= ust_s
+                alt = (not neg_yok) and mn < alt_s and tr_mn >= alt_s
+                if ust or alt:
+                    sonuc["uc"].append({"kolon": kol, "maks": mx, "en_kucuk": mn, "p1": p1, "p99": p99,
+                                        "yon": "iki" if (ust and alt) else ("ust" if ust else "alt"),
+                                        "set": ad,
+                                        "adet": int(((xs > ust_s) if ust else (xs < alt_s)).sum())})
+                    continue
+            # 3) DAGILIM KAYMASI (birim degisikligi gibi): uc ceyreklik de
+            # ayni yonde en az kayma_kat kat.
+            xa = xs.abs()
+            xa = xa[xa != 0]
+            if len(ta) < KAYMA_MIN_SATIR or len(xa) < KAYMA_MIN_SATIR:
+                continue
+            oranlar = []
+            for qq in (0.25, 0.5, 0.75):
+                a1, a2 = float(ta.quantile(qq)), float(xa.quantile(qq))
+                if not (a1 > 0 and a2 > 0):
+                    break
+                oranlar.append(a2 / a1)
+            if len(oranlar) < 3:
+                continue
+            if all(o > 1 for o in oranlar):
+                k_ = min(oranlar)
+            elif all(o < 1 for o in oranlar):
+                k_ = 1.0 / max(oranlar)
+            else:
+                continue
+            if k_ >= e["kayma_kat"]:
+                sonuc["kayma"].append({"kolon": kol, "set": ad, "tur": "kayma", "kat": k_,
+                                       "train_deger": float(ta.quantile(0.5)),
+                                       "set_deger": float(xa.quantile(0.5)),
+                                       "train_oran": float(s_[eg].isna().mean()),
+                                       "set_oran": float(s_[m].isna().mean()), "deger": None})
+    return sonuc
+
+
 def set_cakisma_maskeleri(df, setler, kimlik=None, donem=None, haric=()):
     """SATIR CIKARMA icin: {(set, tur): bool Series} - Train disindaki
     sette (val, test, oot) Train'de de bulunan AYNI KAYIT. tur "anahtar":

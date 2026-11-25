@@ -17583,6 +17583,9 @@ function profilKartiEkle(alan, blok) {
     karolar.style.setProperty("--pf-karo-sayi", String(karolar.children.length));
     kart.appendChild(karolar);
     if (alan.esik_notu) kart.appendChild(elYap("div", "pf-not pf-esik-notu", alan.esik_notu));
+    /* Profil eski kuralla çıkarıldıysa (bkz. akis_faz02.profil_eski_uyarisi)
+       ne yapılacağını söyleyen sarı uyarı. */
+    if (alan.eski_uyari) kart.appendChild(elYap("div", "pf-not pf-eski-uyari", alan.eski_uyari));
 
     /* KARAR VERİLERİ: kararlar sekmesinin satırları (Tut ya da Çıkar kolon
        bazında birleşik; düzeltmeler kontrol başına; çözümler; aynı içerikli

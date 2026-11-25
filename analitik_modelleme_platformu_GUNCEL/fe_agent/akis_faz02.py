@@ -479,19 +479,26 @@ def _kat_metni(v):
     return _sayi(int(round(v))) if v >= 10 else ("%.1f" % v).replace(".", ",")
 
 
-def uc_bulgu_metni(x):
+def uc_bulgu_metni(x, set_tanim=None):
     """Uc deger bulgusu: hangi uc, degeri ve sinirlari. Eski kayitta (yalniz
     maks ve p99) ust uc yazilir."""
     p99, maks = float(x["p99"]), float(x["maks"])
     yon = x.get("yon") or "ust"
+    # Yalniz Train disindaki sette gorulen dev deger (profil_ek.set_disi_deger):
+    # en buyuk / en kucuk deger o setten, %99 / %1 Train'den.
+    satirlar = "Train satırlarının" if x.get("set") else "satırların"
     parca = []
     if yon in ("ust", "iki"):
-        parca.append("en büyük değer %s; oysa satırların %%99'unda değer %s ya da daha küçük"
-                     % (_okunur_sayi(maks), _okunur_sayi(p99)))
+        parca.append("en büyük değer %s; oysa %s %%99'unda değer %s ya da daha küçük"
+                     % (_okunur_sayi(maks), satirlar, _okunur_sayi(p99)))
     if yon in ("alt", "iki") and x.get("en_kucuk") is not None:
-        parca.append("en küçük değer %s; oysa satırların %%99'unda değer %s ya da daha büyük" % (
-            _okunur_sayi(float(x["en_kucuk"])), _okunur_sayi(float(x["p1"]))))
+        parca.append("en küçük değer %s; oysa %s %%99'unda değer %s ya da daha büyük" % (
+            _okunur_sayi(float(x["en_kucuk"])), satirlar, _okunur_sayi(float(x["p1"]))))
     m = ". ".join(p[:1].upper() + p[1:] for p in parca)
+    if x.get("set"):
+        from fe_agent.akis_durum import set_basligi
+        m = "Yalnız %s setinde (%s satır; Train'de böyle değer yok). %s" % (
+            set_basligi(x["set"], set_tanim), _sayi(x.get("adet") or 0), m)
     return m
 
 
@@ -717,6 +724,21 @@ def _veri_onerileri(durum, ek, df, egitim):
     for k, xs in _sd.items():
         guncel = [x for x in xs if _tt == "zamansal" and x["set"] in ("test", "oot")
                   and x["tur"] in ("bos", "sabit")]
+        kayan = [x for x in xs if x["tur"] == "kayma"]
+        if kayan and not guncel:
+            x = kayan[0]
+            us = math.log10(float(x["kat"])) if float(x["kat"]) > 0 else 0.0
+            med = "Ortadaki değer Train'de %s, %s setinde %s" % (
+                _okunur_sayi(x["train_deger"]), _sb(x["set"], _tt), _okunur_sayi(x["set_deger"]))
+            if round(us) >= 1 and abs(us - round(us)) <= 0.05:
+                yaz("set_disi", k, PROFIL_KARAR_CIKAR, med + ": yaklaşık %s kat. Böyle yuvarlak bir "
+                    "kat çoğu zaman birim değişikliğidir (TL yerine bin TL gibi); Train ile o set "
+                    "aynı ölçüde değil, model o sette yanlış sonuç verir: Çıkar." % _sayi(10 ** round(us)))
+            else:
+                yaz("set_disi", k, PROFIL_KARAR_TUT, med + ": %s kat. Yuvarlak bir kat değil, gerçek "
+                    "bir değişim olabilir: Tut. Kalıcı bir ölçü değişikliğiyse Çıkar seçin."
+                    % _kat_metni(float(x["kat"])))
+            continue
         if guncel:
             yaz("set_disi", k, PROFIL_KARAR_CIKAR, "Kolon en güncel dönemleri taşıyan %s setinde %s. "
                 "Güncel veride bilgi taşımıyor; model canlıda bu kolonu hep aynı görür: Çıkar." % (
@@ -729,6 +751,14 @@ def _veri_onerileri(durum, ek, df, egitim):
     # OZEL KOD: kod bos sayilir, bilgi bayrakta.
     for a_ in ("gizli_eksik", "karisik_eksik"):
         for x in ek.get(a_) or []:
+            if x.get("set"):
+                # Kod yalniz Train disindaki sette: bayrak kolonu Train'de
+                # hep 0 olur, model ondan bir sey ogrenemez. Yalniz bos say.
+                yaz(a_, x["kolon"], "kod_bos", "%s yalnız %s setinde «bilgi yok» anlamında "
+                    "yazılmış; Train'de bu kod yok. Model bu sayıyı hiç görmediği için gerçek bir "
+                    "değer sanar: boş sayılır. Ayrı 1/0 kolonu üretilmez, çünkü Train'de hep 0 "
+                    "olurdu." % (x.get("deger"), _sb(x["set"], _tt)))
+                continue
             yaz(a_, x["kolon"], "kod_bos_bayrak", "%s «bilgi yok» anlamında yazılmış: boş "
                 "sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_KOD) saklanır."
                 % x.get("deger"))
@@ -1717,6 +1747,10 @@ PROFIL_ESIK_ACIKLAMA = {
         "Neden %1 önerildi?",
         "100 satırda 1'den az görülen sayı gerçek bir değer olabilir. Daha sık görülüyorsa "
         "bilerek yazılmış bir koddur.",
+        kapsam="Train satırları. Ayrıca Train dışındaki setlere (Test, Validasyon) de bakılır: "
+               "kod Train'de hiç yokken o sette eşikten fazla yazıyorsa kolon yine yakalanır. O "
+               "durumda öneri yalnız «boş say»dır; ayrı 1/0 kolonu üretilmez, çünkü Train'de hep "
+               "0 olurdu.",
         sorun="Bu sayı gerçek bir değer gibi hesaba girerse ortalamaları ve sonucu bozar.",
         sonuc="Düzeltme önerilir; kolon üretime girer"),
     "sicrama": _ac(
@@ -1748,6 +1782,9 @@ PROFIL_ESIK_ACIKLAMA = {
         "Neden 100 kat önerildi?",
         "Yüksek tutuldu ki yalnız yanlış yazıldığı belli olan değerler yakalansın. Büyük ama "
         "gerçek olabilecek değerlere sonraki adımda (SFA) bakılır.",
+        kapsam="Train satırları. Ayrıca Train dışındaki setlere (Test, Validasyon) de bakılır: "
+               "Train'de böyle bir değer yokken o sette Train'in normal aralığının çok dışında "
+               "bir değer varsa kolon yine yakalanır. Normal aralık her zaman Train'den hesaplanır.",
         sorun="Tek bir yanlış yazılmış sayı ortalamayı ve modelin öğrendiğini bozar.",
         sonuc="Düzeltme önerilir; kolon üretime girer"),
     "yakin_kor": _ac(
@@ -2108,7 +2145,7 @@ KONTROL_FORM_KISA = {
     "negatif": "Adet, gün ya da süre eksi çıkmış",
     "uc": "Yanlış yazıldığı belli olan çok büyük ya da çok küçük değer",
     "g_iliskili": "Aynı şeyi ölçen iki kolon çelişiyor",
-    "set_disi": "Train'de sağlam, öteki sette boş ya da hep aynı",
+    "set_disi": "Train'de sağlam, öteki sette boş, hep aynı ya da sayıları değişmiş",
     "tekrar": "Aynı satır birden fazla kez yazılmış",
     "set_cakisma": "Aynı kayıt hem eğitim hem sınama verisinde var",
 }
@@ -2421,6 +2458,41 @@ def _cift_iki_yonlu(liste):
     return cikti
 
 
+# PROFIL KAPSAM SURUMU: profilin hangi kuralla cikarildigi. 1 (alan yok):
+# tablonun tamamindan; 2: yalniz Train satirlarindan; 3: Train disindaki
+# setlerde gorulen kod, dev deger ve dagilim kaymasi da aranir. Kural
+# degisince artirilir; eski surumle cikarilmis profil "eski" sayilir.
+PROFIL_KAPSAM_SURUMU = 3
+PROFIL_ESKI_UYARI = (
+    "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
+    "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
+    "ayrıca aranır. Güncellemek için 02.1 Veri Profili adımına geri dönün: profil yeniden "
+    "çıkar, onayladığınız eşikler ve verdiğiniz kararlar korunur; yeni yakalanan kolonlar "
+    "size sorulur.")
+
+
+def profil_eski_mi(durum):
+    """Profil cikarilmis ama guncel kuraldan ONCE cikarilmis mi?"""
+    p = durum.get("profil") or {}
+    if not isinstance(p.get("profil_teshis"), dict):
+        return False
+    try:
+        return int((p.get("profil_kapsam") or {}).get("surum") or 1) < PROFIL_KAPSAM_SURUMU
+    except (TypeError, ValueError):
+        return True
+
+
+def profil_eski_uyarisi(durum):
+    """Eski kuralla cikarilmis profilin uyari metni; guncelse bos."""
+    if not profil_eski_mi(durum):
+        return ""
+    kap = (durum.get("profil") or {}).get("profil_kapsam") or {}
+    neden = ("Train dışındaki setlerde görülen uydurma sayı, dev değer ve sayı kayması aranmamış"
+             if kap else "kontroller tablonun tamamına bakmış (Test ve Validasyon satırları da "
+                         "kolon kararına karışmış)")
+    return PROFIL_ESKI_UYARI % neden
+
+
 def egitim_maskesi(durum, df):
     """Train (MS) satirlari (01.4 bolmesi; val, test ve OOT haric). Bolme
     okunamazsa ya da train bossa None: analiz butun satirlarla yapilir."""
@@ -2476,7 +2548,8 @@ def profil_hesapla(durum):
     _isaret("profil_tablosu_yazma")
 
     p = durum.get("profil") or {}
-    p["profil_kapsam"] = {"train": bool(train_ayri), "hedef_train": egitim is not None,
+    p["profil_kapsam"] = {"surum": PROFIL_KAPSAM_SURUMU,
+                          "train": bool(train_ayri), "hedef_train": egitim is not None,
                           "satir": int(len(df)), "toplam": int(len(df_tum)),
                           "train_satir": int(egitim.sum()) if egitim is not None else 0}
     temel = set(teshis.get("cok_bos") or []) | set(teshis.get("sabit") or []) \
@@ -2522,6 +2595,30 @@ def profil_hesapla(durum):
     except Exception as e_:
         ek["set_disi"] = None
         ek["set_disi_hata"] = str(e_)[:200]
+    # TRAIN DISINDA GORULEN DEGER SORUNLARI (train'de yok): ozel kod Bos
+    # Yerine Baska Sey Yazilmis'a, dev deger Asiri Degerler'e eklenir (ayni
+    # duzeltme butun satirlara uygulanir); dagilim kaymasi Train Disinda
+    # Bozulan Kolonlar'a. Bulgu "set" tasir. Train'de zaten yakalanan
+    # kolon ikinci kez yazilmaz.
+    if st and train_ayri:
+        try:
+            sd = profil_ek.set_disi_deger(df_tum, st, adaylar, esik, olculer)
+            kodlu = {x["kolon"] for a__ in ("gizli_eksik", "karisik_eksik") for x in ek.get(a__) or []}
+            for x in sd["kod"]:
+                if x["kolon"] not in kodlu:
+                    kodlu.add(x["kolon"])
+                    ek.setdefault("gizli_eksik", []).append(x)
+            uclu = {x["kolon"] for x in ek.get("uc") or []}
+            for x in sd["uc"]:
+                if x["kolon"] not in uclu:
+                    uclu.add(x["kolon"])
+                    ek.setdefault("uc", []).append(x)
+            var = {(x["kolon"], x["set"]) for x in ek.get("set_disi") or []}
+            for x in sd["kayma"]:
+                if (x["kolon"], x["set"]) not in var:
+                    ek["set_disi"] = (ek.get("set_disi") or []) + [x]
+        except Exception as e_:
+            ek["set_disi_hata"] = str(e_)[:200]
     try:
         a_ = bolme_ayarlari(durum)
         ek["set_bolme"] = {"birim": a_.get("birim"), "test_tanim": a_.get("test_tanim")}
@@ -3114,9 +3211,10 @@ def _profil_kurallari(esik=None):
         "uc": "En büyük ya da en küçük değer kolonun normal aralığının çok dışında: aralığın "
               "genişliğinin %s katından fazla (yanlış yazılmış sayı)." % _sayi_metni(e["uc_yayilim"]),
         "set_disi": "Kolon Train'de sağlam; Train dışındaki bir sette (Test ya da Validasyon) "
-                    "tamamen boş, hep aynı değerde ya da boş oranı Train'dekinden %s puandan fazla "
-                    "farklı ve bu şans eseri olamayacak kadar çok satıra dayanıyor."
-                    % _sayi_metni(round(e["sicrama"] * 100, 2)),
+                    "tamamen boş, hep aynı değerde, boş oranı Train'dekinden %s puandan fazla "
+                    "farklı (şans eseri olamayacak kadar çok satıra dayanıyor) ya da sayıları "
+                    "Train'dekine göre topluca %s kat ya da daha fazla değişmiş."
+                    % (_sayi_metni(round(e["sicrama"] * 100, 2)), _sayi_metni(e["kayma_kat"])),
         "tekrar": "Aynı kimlik ve dönemle birden fazla satır ya da bütün kolonları aynı olan "
                   "satırlar.",
         "set_cakisma": "Test (OOS) ya da Validasyon (OOT) setinde, Train'de (MS) de bulunan "
@@ -3201,15 +3299,20 @@ _KONTROL_ACIKLAMA_EK = {
         "Train'de sağlam görünüp öteki sette bozuk olan kolon.",
         "Kontroller yalnız Train satırlarına bakar. Bu kural öteki setlere (Test, Validasyon) "
         "bakıp şunu arar: kolon Train'de sağlamken o sette tamamen boş mu, hep aynı değerde mi, "
-        "ya da boş oranı Train'dekinden çok mu farklı? Az satırlı sette bu şans eseri olabilir; "
-        "o zaman yakalanmaz («Tesadüf Olasılığı» sınırı).",
+        "boş oranı Train'dekinden çok mu farklı, ya da sayıları Train'dekine göre topluca kat kat "
+        "mı değişmiş («Sayılar topluca değişmiş» sınırı)? Az satırlı sette bu şans eseri "
+        "olabilir; o zaman yakalanmaz («Tesadüf Olasılığı» sınırı). Bölme zamana göreyse "
+        "Validasyon en güncel dönemlerdir: dönem kuralları yalnız Train'in dönemlerine baktığı "
+        "için en güncel dönemlerdeki bozulma bu kuralda çıkar.",
         "Kolon Train'de 100 satırın 2'sinde boş; en güncel dönemleri taşıyan Validasyon (OOT) "
         "setinde tamamen boş.",
         "kolonu tutmak ya da çıkarmak size sorulur. Öneri: bölme zamana göreyse ve kolon en "
         "güncel dönemlerde (Validasyon) tamamen boş ya da hep aynıysa Çıkar; çünkü model canlıda "
-        "bu kolonu hep boş görür. Öteki durumlarda Tut; kolonun neden değiştiğine bakın.",
-        kapsam="01.4'te Train dışında bir set ayrıldıysa. Yalnız kolonun dolu olup olmadığına "
-               "bakılır; hedefe bakılmaz.",
+        "bu kolonu hep boş görür. Sayılar 10, 100, 1.000 gibi yuvarlak bir kat değiştiyse (birim "
+        "değişikliği) yine Çıkar. Öteki durumlarda Tut; kolonun neden değiştiğine bakın.",
+        kapsam="01.4'te Train dışında bir set ayrıldıysa. Yalnız kolonun kendi değerlerine "
+               "bakılır; hedefe bakılmaz. O sette görülen uydurma sayı (-999 gibi) «Boş Yerine "
+               "Başka Şey Yazılmış», dev değer «Aşırı Değerler» kontrolünde çıkar.",
         sorun="Model Train'de bu kolona güvenmeyi öğrenir; sınamada ya da canlıda kolon boş "
               "gelirse o bilgi yoktur ve sonuç bozulur."),
     "tekrar": _ac(
@@ -3654,6 +3757,9 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
             metin = "%s setinde tamamen boş (Train'de boş oranı %s)" % (ad, _yuzde_metni(x["train_oran"]))
         elif x["tur"] == "sabit":
             metin = "%s setinde her satırda %s (Train'de birden fazla değer var)" % (ad, x.get("deger"))
+        elif x["tur"] == "kayma":
+            metin = "Ortadaki değer Train'de %s, %s setinde %s (%s kat)" % (
+                _okunur_sayi(x["train_deger"]), ad, _okunur_sayi(x["set_deger"]), _kat_metni(x["kat"]))
         else:
             metin = "Boş oranı Train'de %s, %s setinde %s" % (
                 _yuzde_metni(x["train_oran"]), ad, _yuzde_metni(x["set_oran"]))
@@ -3672,6 +3778,14 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
         b["karisik_eksik"][x["kolon"]] = "Kod %s: %s satır (payı %s); boş hücre: %s satır" % (
             x["deger"], _sayi(x["adet"]), _yuzde_metni(x["pay"]), _sayi(x.get("bos") or 0))
     for x in ek.get("gizli_eksik") or []:
+        if x.get("set"):
+            # Kod yalniz Train disindaki sette (profil_ek.set_disi_deger).
+            b["gizli_eksik"][x["kolon"]] = (
+                "Yalnız %s setinde: kod %s, o setteki dolu satırların %s (%s satır). Train'de bu "
+                "kod %s" % (set_basligi(x["set"], tt), x["deger"], _yuzde_metni(x["pay"]),
+                            _sayi(x["adet"]),
+                            "yok" if not x.get("train_pay") else "payı %s" % _yuzde_metni(x["train_pay"])))
+            continue
         b["gizli_eksik"][x["kolon"]] = ("Boş hücre de var: %s satır. " % _sayi(x["bos"])
                                         if x.get("bos") else "") + "Kod %s, payı %s (%s satır)" % (
             x["deger"], _yuzde_metni(x["pay"]), _sayi(x["adet"]))
@@ -3682,7 +3796,7 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
         b["sicrama"][x["kolon"]] = "Boş oranı %s dönemi %s, %s dönemi %s" % (
             x["once"], _yuzde_metni(x["once_oran"]), x["sonra"], _yuzde_metni(x["sonra_oran"]))
     for x in ek.get("uc") or []:
-        b["uc"][x["kolon"]] = uc_bulgu_metni(x)
+        b["uc"][x["kolon"]] = uc_bulgu_metni(x, tt)
     for a, kolonlar in b.items():
         if a not in ("ayni_icerik", "yakin_icerik"):
             for k in [k for k in kolonlar if k in kopya]:
@@ -4027,6 +4141,8 @@ def profil_karti(durum, karar=False):
                   "orta": int(n.get("orta") or 0), "asiri": int(n.get("asiri") or 0)},
         "eksik_esik": {"az": NULL_AZ, "asiri": esik["cok_bos"]},
         "esik_notu": esik_degisiklik_notu(durum),
+        # Profil eski kuralla cikarildiysa kartin ustunde sari uyari.
+        "eski_uyari": profil_eski_uyarisi(durum),
         "eksik_kolon": p.get("null_kolon_adet"),
         "eksik_maks": p.get("null_maks"),
         "eksik_maks_kolon": p.get("null_maks_kolon"),
