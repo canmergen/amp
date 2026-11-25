@@ -4314,6 +4314,15 @@ Türlere göre neye bakacaksın:
   gruplara ayrılıyorsa gruplama seçeneği; kod ise ve ilk karakterleri üst
   grubu gösteriyorsa "onek_grupla"; serbest yazıysa "metin". Tarih tahmin
   anında biliniyorsa "gun_farki", sonradan doluyorsa "cikar".
+- satir: Kolon değil SATIR kararı. Tabloda tekrar eden satırlar ya da Train
+  ile sınama seti arasında ortak kayıt bulundu; "açıklama" tablonun kimlik
+  ve dönem kolonlarını söyler. Bir kayıt (kimlik, varsa dönemle birlikte)
+  bu tabloda doğal olarak BİR kez mi geçmeli? Öyleyse fazla satır veri
+  hazırlığı hatasıdır ve çıkarılır (kodun önerisi). Aynı kimliğin birden çok
+  satırı tablonun doğasıysa (her satır ayrı bir olay, işlem ya da ölçümse)
+  satırlara dokunulmaz ("birak"). Sınama setindeki bir kayıt Train'dekinin
+  aynısıysa sınama sonucu olduğundan iyi görünür: gerçek bir neden yoksa
+  çıkarılır.
 
 ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
 {"gorusler":{"<id>":{"secim":"<seçenek>","gerekce":"bir cümle, Türkçe"}}}
@@ -4329,7 +4338,7 @@ PROFIL_GORUS_PARCA = 30
 PROFIL_GORUS_BUTCE = 120.0
 PROFIL_GORUS_BUTCE_TUR = 30.0
 PROFIL_GORUS_BUTCE_EN_COK = 180.0
-PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "duzeltme", "cozum")
+PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "duzeltme", "cozum", "satir")
 
 
 def _profil_gorus_parca(parca):

@@ -17549,7 +17549,7 @@ function profilKartiEkle(alan, blok) {
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır; satır kurallarında fazla ya da çakışan satırlar çalışma tablosundan çıkar.",
         "Boş Yerine Başka Şey Yazılmış, Yazım Farkları, Eksi Olamayacak Değerler ve Aşırı Değerler kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz. Tekrar Eden Satır ve Setlerde Ortak Kayıt kontrollerinde çıkarılacak satırları seçersiniz.",
-        "Analiz ve kararlar aynı yerdedir: kontrol satırını açınca her kolonun bulgusu, önerisi (gerekçesiyle) ve seçiminiz aynı tabloda durur; kararı orada verir ve değiştirirsiniz. Kod kolonun kendi sayılarına bakıp bulguyu ve kendi önerisini çıkarır. Kararı dil modeli verir: takılan her kolonda (Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar) kolonun anlamına, takıldığı kurala ve kodun bulgusuna birlikte bakar; seçili gelen öneri onun kararıdır. Kodun önerisi aynı hücrede «Kodun önerisi» kutusunda durur; dil modelinden farklıysa satır işaretlenir ve «Kodun önerisini seç» ile seçimi ona çevirebilirsiniz. Dil modelinden karar alınamayan satırda kodun önerisi seçilidir. Değiştirdiğiniz satır işaretlenir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
+        "Analiz ve kararlar aynı yerdedir: kontrol satırını açınca her kolonun bulgusu, önerisi (gerekçesiyle) ve seçiminiz aynı tabloda durur; kararı orada verir ve değiştirirsiniz. Kod kolonun kendi sayılarına bakıp bulguyu ve kendi önerisini çıkarır. Kararı dil modeli verir: takılan her kolonda (Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar) kolonun anlamına, takıldığı kurala ve kodun bulgusuna birlikte bakar; seçili gelen öneri onun kararıdır. Kodun önerisi aynı hücrede «Kodun önerisi» kutusunda durur; dil modelinden farklıysa satır işaretlenir ve «Kodun önerisini seç» ile seçimi ona çevirebilirsiniz. Dil modelinden karar alınamayan satırda kodun önerisi seçilidir. Tek tıkla toplu seçim: öneriler kutusundaki «Dil Modelinin Kararlarını Seç» ve «Kodun Önerilerini Seç» düğmeleri bütün kurallara, her kuralın başındaki aynı düğmeler yalnız o kurala uygulanır; sonra tek tek değiştirebilirsiniz. Satır kurallarında da (Tekrar Eden Satır, Setlerde Ortak Kayıt) kararı dil modeli verir. Değiştirdiğiniz satır işaretlenir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
@@ -17700,6 +17700,66 @@ function profilKartiEkle(alan, blok) {
         td.appendChild(kutu);
         if (g.farkli && r) r.classList.add("pf-gorus-farkli");
     };
+    /* TEK TIKLA TOPLU SEÇİM: "dil modelinin kararları" ya da "kodun
+       önerileri". Bir kuralın (üye kontrolün) satırlarına ya da bütün karta
+       uygulanır. Dil modelinin kararı satırın önerisidir (oneri); kodun
+       önerisi c.kod.secim (dil modelinden karar alınamadıysa öneri zaten
+       kodundur). Tut / Çıkar kolon içindir: bütün kartta kolonun herhangi
+       bir kuralı Çıkar diyorsa Çıkar; tek kuralda o kuralın dediği. */
+    const kodDegeri = (c, oneri) => (c.kod && c.kod.secim) ? c.kod.secim : oneri;
+    const uyeTopluSec = (u, kaynak) => {
+        (u.kolonlar || []).forEach(c => {
+            if (c.duzeltme && (c.duzeltme.secenekler || []).length > 1 && duzSecim[u.anahtar] && (c.ad in duzSecim[u.anahtar])) {
+                const v = kaynak === "kod" ? kodDegeri(c, c.duzeltme.oneri) : c.duzeltme.oneri;
+                if ((c.duzeltme.secenekler || []).some(o => o.kod === v)) duzSecim[u.anahtar][c.ad] = v;
+            } else if (c.cozum && (c.cozum.secenekler || []).length > 1 && (c.ad in cozumSecim)) {
+                const v = kaynak === "kod" ? kodDegeri(c, c.cozum.oneri) : c.cozum.oneri;
+                if ((c.cozum.secenekler || []).some(o => o.kod === v)) cozumSecim[c.ad] = v;
+            } else if (("karar" in c) && (c.ad in kararlar)) {
+                kararlar[c.ad] = kaynak === "kod" ? kodDegeri(c, c.karar_oneri) : c.karar_oneri;
+            }
+        });
+        (u.gruplar || []).forEach(g => {
+            if (g.id in ayniSecim) ayniSecim[g.id] = (kaynak === "kod" && g.kod && g.kod.secim) ? g.kod.secim : g.oneri;
+        });
+    };
+    const butunUyeler = () => {
+        const cikti = [];
+        (alan.kontroller || []).forEach(k => ((k.uye_kontroller && k.uye_kontroller.length) ? k.uye_kontroller : [k]).forEach(u => cikti.push(u)));
+        return cikti;
+    };
+    const hepsiTopluSec = kaynak => {
+        const uyeler = butunUyeler();
+        uyeler.forEach(u => uyeTopluSec(u, kaynak));
+        /* Tut / Çıkar: kolon bazında birleşik (bir kural Çıkar diyorsa Çıkar). */
+        const cik = {};
+        uyeler.forEach(u => (u.kolonlar || []).forEach(c => {
+            if (!("karar" in c) || !(c.ad in kararlar)) return;
+            const v = kaynak === "kod" ? kodDegeri(c, c.karar_oneri) : c.karar_oneri;
+            cik[c.ad] = cik[c.ad] || v === "cikar";
+        }));
+        Object.keys(cik).forEach(a => { kararlar[a] = kaynak === "kod" ? (cik[a] ? "cikar" : "tut") : (kararOneri[a] || (cik[a] ? "cikar" : "tut")); });
+    };
+    /* Üyede kodun önerisi dil modelinin kararından farklı kaç satır var. */
+    const uyeFarkSayisi = u => (u.kolonlar || []).filter(c => c.kod && c.kod.farkli).length
+        + (u.gruplar || []).filter(g => g.kod && g.kod.farkli).length;
+    const uyeDmVar = u => (u.kolonlar || []).some(c => c.kod) || (u.gruplar || []).some(g => g.kod);
+    const topluDugmeler = (not, dmSec, kodSec, fark) => {
+        const ust = elYap("div", "pf-toplu pf-toplu-kaynak");
+        ust.appendChild(elYap("span", "pf-toplu-not", not));
+        const b1 = elYap("button", "dg-toplu-btn pf-toplu-dm", "Dil Modelinin Kararlarını Seç");
+        const b2 = elYap("button", "dg-toplu-btn pf-toplu-kod", "Kodun Önerilerini Seç");
+        [[b1, dmSec], [b2, kodSec]].forEach(([b, f]) => {
+            b.type = "button";
+            b.onclick = () => { if (kart.classList.contains("kilitli")) return; f(); kararCiz(); };
+            ust.appendChild(b);
+        });
+        ust.appendChild(elYap("span", "pf-toplu-fark", fark
+            ? ftBinlik(fark) + " yerde ikisi farklı."
+            : "İkisi her yerde aynı."));
+        kararCizenler.push(() => { b1.disabled = b2.disabled = kart.classList.contains("kilitli"); });
+        return ust;
+    };
     let oz = null;
     if (kararOgeSayisi) {
         oz = elYap("div", "pf-oneri-ozet");
@@ -17781,8 +17841,8 @@ function profilKartiEkle(alan, blok) {
             const gn = elYap("div", "pf-oneri-ozet-not pf-gorus-ozet" + (Number(gs.farkli) ? " farkli" : ""));
             const gsuz = Number(gs.gorussuz != null ? gs.gorussuz : Math.max(0, Number(gs.oge || 0) - Number(gs.alinan)));
             metinYaz(gn, "**Kararı dil modeli verdi:** seçim isteyen **" + ftBinlik(gs.oge || gs.alinan)
-                + "** kolon bulgusunun **" + ftBinlik(gs.alinan) + "** tanesinde "
-                + "(Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar). "
+                + "** bulgunun **" + ftBinlik(gs.alinan) + "** tanesinde "
+                + "(Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar, satır kuralları). "
                 + (Number(gs.farkli) ? "**" + ftBinlik(gs.farkli) + "** tanesinde kodun yalnız sayılara bakan önerisinden farklı karar verdi; o satırlar «Dil modelinden farklı» diye işaretli. "
                                      : "Hepsinde kodun önerisiyle aynı kararda. ")
                 + (gsuz ? "**" + ftBinlik(gsuz) + "** bulguda karar alınamadı (süre doldu ya da cevap gelmedi); o satırlarda kodun önerisi seçili. " : "")
@@ -17792,6 +17852,9 @@ function profilKartiEkle(alan, blok) {
             oz.appendChild(elYap("div", "pf-oneri-ozet-not pf-gorus-ozet farkli",
                 "Dil modeline ulaşılamadı; " + ftBinlik(gs.oge) + " bulguda karar alınamadı. Kodun önerileri seçili. «Boş Yerine Sıfır Yazılmış» kuralı çalışmadı."));
         }
+        if (kararModu && dmKullanildi)
+            oz.appendChild(topluDugmeler("Bütün kurallarda tek tıkla:", () => hepsiTopluSec("dm"), () => hepsiTopluSec("kod"),
+                                         butunUyeler().reduce((t, u) => t + uyeFarkSayisi(u), 0)));
         const farkSatir = elYap("div", "pf-oneri-fark");
         const farkMetin = elYap("span", "", "");
         farkSatir.appendChild(farkMetin);
@@ -18016,6 +18079,8 @@ function profilKartiEkle(alan, blok) {
                     : u.anahtar === "yakin_icerik"
                     ? "Her grupta bir kolon kalır, ötekiler çıkar. Kalacak kolonu kod önerir (hedefi daha iyi bilen; eşitse sabit kural)."
                     : "Her grupta bir kolon kalır, ötekiler çıkar. Kalacak kolonu kod önerir (sabit kural: başka kontrole takılmayan, en az düzeltme isteyen, adı kısa olan)."));
+                if (kararModu && uyeDmVar(u))
+                    td.appendChild(topluDugmeler("Bu kuralda tek tıkla:", () => uyeTopluSec(u, "dm"), () => uyeTopluSec(u, "kod"), uyeFarkSayisi(u)));
                 td.appendChild(pfAyniTablosu(u.gruplar, ayniSecim, ayniOneri, kararModu, kart, kararCizenler, kararCiz));
                 return;
             }
@@ -18025,6 +18090,8 @@ function profilKartiEkle(alan, blok) {
             const secimli = tcVar || duzKol.length > 0 || czKol.length > 0;
             if (secimli) secimVar = true;
             const llmK = u.oneri_kaynagi === "dil modeli";
+            if (secimli && kararModu && uyeDmVar(u))
+                td.appendChild(topluDugmeler("Bu kuralda tek tıkla:", () => uyeTopluSec(u, "dm"), () => uyeTopluSec(u, "kod"), uyeFarkSayisi(u)));
 
             /* Toplu seçim ve seçeneklerin açıklaması (bir kez). */
             if (tcVar && kararModu && uKol.length > 1) {

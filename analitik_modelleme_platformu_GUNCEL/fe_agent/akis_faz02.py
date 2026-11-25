@@ -897,9 +897,10 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
 # Kullanici her karari elle degistirebilir.
 # Kapsam: kodun oneri verdigi BUTUN kolon bulgulari: butun Tut / Çıkar
 # kararlari, butun duzeltmeler, cozum secimleri, ayni kolon gruplari.
-# Disarida kalanlar: secenegi olmayan bulgu (hep ayni deger; tek cozumu
-# Çıkar olan kolon) ve satir kurallari (tekrar eden satir, setlerde ortak
-# kayit: kolon degil satir karari).
+# Satir kurallari da (tekrar eden satir, setlerde ortak kayit) sorulur:
+# dil modeli tablonun kimlik / donem kolonlarina ve bulguya bakar
+# (satir_onerileri). Disarida kalan yalniz SECENEGI OLMAYAN bulgudur (hep
+# ayni deger; tek cozumu Çıkar olan kolon): secilecek bir sey yoktur.
 # Dil modelinden karar alinamayan bulguda (ulasilamadi, sure doldu) kodun
 # onerisi gecerlidir (kaynak "kod").
 # p["llm_gorus"] = {kontrol: {kolon ya da grup id: {"secim", "gerekce",
@@ -988,6 +989,18 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
         if a in COZUM_KONTROLLERI and o.get("oneri") in (o.get("secenekler") or []):
             ekle(a, k, "cozum", k, (bulgu.get(a) or {}).get(k) or str(o.get("gerekce") or "")[:200],
                  o["secenekler"], o["oneri"], o.get("gerekce") or "")
+    # 3) Satir kurallari (tekrar eden satir, setlerde ortak kayit): kolon
+    # degil satir karari; dil modeli tablonun kimlik / donem kolonlarinin
+    # anlamina ve bulguya bakar.
+    m = durum.get("meta") or {}
+    tablo = "; ".join(x for x in (
+        ("kimlik kolonu %s (%s)" % (m["id"], aciklama.get(m["id"]) or "açıklama yok")) if m.get("id") else "kimlik kolonu seçilmedi",
+        ("dönem kolonu %s (%s)" % (m["donem"], aciklama.get(m["donem"]) or "açıklama yok")) if m.get("donem") else "dönem kolonu seçilmedi",
+        ("hedef %s" % m["target"]) if m.get("target") else "") if x)
+    for a, satirlar in _satir_onerileri_kod(durum, ek).items():
+        for ad, o in satirlar.items():
+            ekle(a, ad, "satir", "(satır kuralı) " + ad, ad, o["secenekler"], o["oneri"],
+                 o.get("gerekce") or "", acik="Tablo: " + tablo)
     cikti, sorulacak = {}, []
     for a, anahtar, oge in ogeler:
         imza = json.dumps([oge["tur"], oge["kolon"], oge["aciklama"], oge["bulgu"], oge["secenekler"],
@@ -1233,10 +1246,25 @@ def _set_oge_adi(x, b):
 
 def satir_onerileri(durum):
     """{kontrol: {oge adi: {"secenekler", "oneri", "gerekce", "kaynak",
-    "kayit"}}}: satir cikarma secenekleri ve kural onerisi. Yalniz yeni
-    duzende (UPDT veri); eski duzende satir cikarilmaz."""
+    "kayit"}}}: satir cikarma secenekleri ve onerisi. KARARI dil modeli
+    verir (p["llm_gorus"]; kodun onerisi "kod_oneri" / "kod_gerekce"
+    olarak kalir); karar alinamadiysa kodun onerisi (kaynak "satir").
+    Yalniz yeni duzende (UPDT veri); eski duzende satir cikarilmaz."""
     p = durum.get("profil") or {}
-    ek = p.get("profil_ek") or {}
+    cikti = _satir_onerileri_kod(durum, p.get("profil_ek") or {})
+    G = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
+    for a, ogeler in cikti.items():
+        for ad, o in ogeler.items():
+            g = (G.get(a) or {}).get(ad) or {}
+            if g.get("secim") in o["secenekler"]:
+                o["kod_oneri"], o["kod_gerekce"] = o["oneri"], o["gerekce"]
+                o["oneri"], o["kaynak"] = g["secim"], "dil modeli"
+                o["gerekce"] = g.get("gerekce") or o["kod_gerekce"]
+    return cikti
+
+
+def _satir_onerileri_kod(durum, ek):
+    """Satir kurallarinda KODUN onerisi (satir sayimindan)."""
     if not updt_modu(durum) or not ek:
         return {}
     cikti = {}
@@ -1384,6 +1412,8 @@ def _satir_duzeltme(durum, kontrol, ad):
     if not o:
         return None
     c = _duzeltme_satiri(o, satir_secimi(durum)[kontrol][ad], None)
+    if o.get("kaynak") == "dil modeli":
+        c["kod"] = kod_karti(o.get("kod_oneri"), o.get("kod_gerekce"), o.get("oneri"))
     for sec in c["secenekler"]:
         if sec["kod"] == "birak":
             sec["aciklama"] = "Satırlara dokunulmaz; tablo olduğu gibi kalır."
@@ -2712,7 +2742,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 7
+PROFIL_KAPSAM_SURUMU = 8
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -2755,7 +2785,10 @@ def profil_eski_uyarisi(durum):
              "dil modelinin ikinci görüşü yalnız bir kısım bulguda alınmış"
              if surum == 5 else
              "öneriler yalnız kodun sayılara bakan kurallarından gelmiş; artık takılan her kolonda "
-             "kararı dil modeli veriyor (kolonun anlamı, takıldığı kural ve kodun bulgusu birlikte)")
+             "kararı dil modeli veriyor (kolonun anlamı, takıldığı kural ve kodun bulgusu birlikte)"
+             if surum == 6 else
+             "satır kurallarında (tekrar eden satır, setlerde ortak kayıt) karar dil modelinden "
+             "alınmamış")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -4477,6 +4510,9 @@ def profil_karti(durum, karar=False):
                 satir = {"ad": oge, "aciklama": "", "bulgu": "%s fazla satır" % _sayi(n_)}
                 dz = _satir_duzeltme(durum, "tekrar", oge)
                 if dz:
+                    if dz.get("kod"):
+                        satir["kod"] = dz.pop("kod")
+                        k["oneri_kaynagi"] = "dil modeli"
                     satir["duzeltme"] = dz
                 k["kolonlar"].append(satir)
             k["sayi"] = int(tk.get("toplam") or 0)
@@ -4631,6 +4667,9 @@ def _set_cakisma_satiri(k, ek, durum=None):
         satir = {"ad": ad, "aciklama": "", "bulgu": metin}
         dz = _satir_duzeltme(durum, "set_cakisma", ad) if durum is not None else None
         if dz:
+            if dz.get("kod"):
+                satir["kod"] = dz.pop("kod")
+                k["oneri_kaynagi"] = "dil modeli"
             satir["duzeltme"] = dz
         k["kolonlar"].append(satir)
     sizinti, toplam = set_cakisma_sayilari(ek)
