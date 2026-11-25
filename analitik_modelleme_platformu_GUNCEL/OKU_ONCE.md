@@ -3441,3 +3441,19 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - Eskiden kural önerisinin kaynağı `kural` yazılıyor, ekran bunu "Öneri alınamadı" ve "dil modeline ulaşılamadı" diye gösteriyordu. Öneri aslında vardı ve seçili geliyordu.
 - Artık kaynak `kod`; ekranda "Önerilen" ve "Kaynak: Kod (sabit kural)" yazar. Bölüm notu "Kalacak kolonu kod önerir" der.
 - Kural: başka bir kontrolde çıkarılmayan, en az düzeltme ve karar isteyen kolon; eşitlik varsa adı kısa olan. Neredeyse aynı grupta önce hedefi daha iyi bilen kolon; isabetler eşitse aynı kural.
+
+## 02.1 kontrolleri yalnız Train'e bakar
+
+- **Kural.** Kolon hakkında karar doğuran bütün kontroller yalnız Train (MS) satırlarına bakar (01.4 bölmesi). Val, test ve OOT satırları karara karışmaz.
+- **Neden.** Tablonun tamamına bakınca iki hata oluyordu: Train'deki sorun (hep aynı değer, çoğu boş) öteki setlerin içinde eriyip kaçıyordu; test'teki tek bir satır da (dev değer, -999) kolon kararını değiştiriyordu. İkincisi sınama sonucunu taraflı yapar.
+- **Tablonun tamamına bakanlar.** Tekrar Eden Satır, Setlerde Ortak Kayıt, hedef dağılımı (gösterim) ve yeni "Train Dışında Bozulan Kolonlar" kontrolü.
+- **01.4 seçenekleri.** Train dışında set ayrılmadıysa ya da bölme okunamıyorsa bütün satırlar Train sayılır; "Train Dışında Bozulan Kolonlar" kontrolü "Uygulanmadı: Train dışında set yok" yazar. Yalnız var olan setlere bakılır (val yoksa val'e bakılmaz).
+- **Kod.** `profil_hesapla`: `train_ayri`, `df = df_tum.loc[egitim]`; `profil_kapsam.train` True olur. Adım metni ve kartın bilgi balonu kapsamı yazar.
+
+### Train Dışında Bozulan Kolonlar (16. kontrol)
+
+- **Ne arar.** Kolon Train'de sağlamken Train dışındaki bir sette tamamen boş mu, hep aynı değerde mi, ya da boş oranı Train'dekinden "Boş oranı birden değişmiş" sınırından fazla farklı mı (`profil_ek.set_disi_bozulma`).
+- **Şans payı.** Az satırlı sette bu şans eseri olabilir; şans eseri olma ihtimali Tesadüf Olasılığı sınırının (sınanan set sayısına bölünmüş) altındaysa bulgu sayılır.
+- **Sonuç.** Tut / Çıkar sorulur. Bölme zamana göreyse ve kolon en güncel dönemlerde (Validasyon / OOT) tamamen boş ya da hep aynıysa öneri Çıkar; öteki durumlarda Tut.
+- **Hedefe bakmaz.** Yalnız kolonun dolu olup olmadığına bakar; bu yüzden sınama setine bakması sonucu taraflı yapmaz.
+- Sayım: 16 kontrol, 26 kural, 15 ayarlanabilir sınır. Tesadüf Olasılığı dört yerde kullanılır.

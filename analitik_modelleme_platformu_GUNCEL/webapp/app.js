@@ -17546,10 +17546,13 @@ function profilKartiEkle(alan, blok) {
         + (h.surec_disi ? (disari.length ? " ve " : "") + "süreç dışı bırakılan "
                           + ftBinlik(h.surec_disi) + " kolon" : "");
     const bilgi = [
-        "Modelleme tablosundaki her kolon tablonun tamamında (train, val, test ve OOT birlikte) incelenir; örneklem kullanılmaz, sayımlar kesindir."
-            + ((alan.kapsam || {}).hedef_train
-               ? " Hedefle ilgili ölçümler (hedefi fazla iyi bilen kolon, neredeyse aynı kolonlarda hedefi ayırt etme gücü) ve öğrenilen her şey (çözümler, kırpma sınırı) yalnız Train (MS) satırlarından (" + ftBinlik(alan.kapsam.train_satir) + " satır); kararlar ve düzeltmeler onayınızla bütün satırlara aynı şekilde uygulanır."
-               : ""),
+        ((alan.kapsam || {}).train
+            ? "Kolon hakkında karar doğuran bütün kontroller yalnız Train (MS) satırlarına bakar (" + ftBinlik(alan.kapsam.train_satir)
+              + " satır; tabloda " + ftBinlik(alan.kapsam.toplam) + "). Test ve Validasyon satırları karara karışmaz; böylece "
+              + "sınama sonucu tarafsız kalır. Öğrenilen her şey (çözümler, kırpma sınırı) de Train'dendir; kararlar ve düzeltmeler "
+              + "onayınızla bütün satırlara aynı şekilde uygulanır. Tablonun tamamına bakan kurallar: Tekrar Eden Satır, Setlerde "
+              + "Ortak Kayıt ve Train Dışında Bozulan Kolonlar. Örneklem kullanılmaz, sayımlar kesindir."
+            : "01.4'te Train dışında set ayrılmadığı için kontroller tablonun tamamına bakar. Örneklem kullanılmaz, sayımlar kesindir."),
         "Kontrollerin sonucu üç türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır; satır kurallarında fazla ya da çakışan satırlar çalışma tablosundan çıkar.",

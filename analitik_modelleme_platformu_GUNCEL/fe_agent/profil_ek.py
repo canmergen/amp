@@ -986,6 +986,70 @@ def set_cakismasi(df, setler, kimlik=None, donem=None, haric=()):
 
 
 
+def set_disi_bozulma(df, setler, adaylar, esik=None):
+    """[{"kolon", "set", "tur", "train_oran", "set_oran", "deger"}]: TRAIN'de
+    saglam gorunup Train disindaki bir sette (val, test, oot) bozuk olan
+    kolonlar. Kontroller train'de yapildigi icin bu durum baska hicbir
+    kuralda gorunmez; model o kolonu sinamada / canlida bozuk gorur.
+      tur "bos": sette tamamen bos (train'de degil)
+      tur "sabit": sette hep ayni deger (train'de birden fazla deger)
+      tur "bos_fark": bos orani train'e gore sicrama esiginden fazla farkli
+    Az satirli sette bu sans eseri olabilir: sans eseri olma ihtimali
+    tesaduf sinirinin (sinanan set sayisina bolunmus) altindaysa bulgu.
+    Kolon ve set basina tek bulgu (once bos, sonra sabit, sonra fark)."""
+    e = esik_birlestir(esik)
+    eg = setler.get("egitim")
+    if eg is None:
+        return []
+    eg = pd.Series(eg, index=df.index).fillna(False).astype(bool)
+    if not bool(eg.any()):
+        return []
+    diger = {}
+    for ad in ("val", "test", "oot"):
+        m = setler.get(ad)
+        if m is None:
+            continue
+        m = pd.Series(m, index=df.index).fillna(False).astype(bool) & ~eg
+        if bool(m.any()):
+            diger[ad] = m
+    if "test" in diger and "oot" in diger and bool((diger["test"] == diger["oot"]).all()):
+        diger.pop("oot")
+    if not diger:
+        return []
+    alfa = float(e["tesaduf"]) / len(diger)
+    n_tr = int(eg.sum())
+    sonuc = []
+    for kol in adaylar:
+        if kol not in df.columns:
+            continue
+        s_ = df[kol]
+        tr = s_[eg]
+        p_bos = float(tr.isna().mean())
+        tr_dolu = tr.dropna()
+        tr_tekil = int(tr_dolu.nunique())
+        for ad, m in diger.items():
+            x = s_[m]
+            n = int(len(x))
+            oran = float(x.isna().mean())
+            if oran >= 1.0:
+                if p_bos < 1.0 and (p_bos ** n) < alfa:
+                    sonuc.append({"kolon": kol, "set": ad, "tur": "bos", "train_oran": p_bos,
+                                  "set_oran": oran, "deger": None})
+                continue
+            dolu = x.dropna()
+            if oran == 0.0 and int(dolu.nunique()) == 1 and tr_tekil > 1:
+                deger = dolu.iloc[0]
+                p = float((tr == deger).mean())
+                if (p ** n) < alfa:
+                    sonuc.append({"kolon": kol, "set": ad, "tur": "sabit", "train_oran": p_bos,
+                                  "set_oran": oran, "deger": deger_metni(deger)})
+                    continue
+            if abs(oran - p_bos) > e["sicrama"] and not sicrama_tesadufi(p_bos, n_tr, oran, n, alfa):
+                sonuc.append({"kolon": kol, "set": ad, "tur": "bos_fark", "train_oran": p_bos,
+                              "set_oran": oran, "deger": None})
+    return sonuc
+
+
 def set_cakisma_maskeleri(df, setler, kimlik=None, donem=None, haric=()):
     """SATIR CIKARMA icin: {(set, tur): bool Series} - Train disindaki
     sette (val, test, oot) Train'de de bulunan AYNI KAYIT. tur "anahtar":
