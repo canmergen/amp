@@ -3457,3 +3457,12 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Sonuç.** Tut / Çıkar sorulur. Bölme zamana göreyse ve kolon en güncel dönemlerde (Validasyon / OOT) tamamen boş ya da hep aynıysa öneri Çıkar; öteki durumlarda Tut.
 - **Hedefe bakmaz.** Yalnız kolonun dolu olup olmadığına bakar; bu yüzden sınama setine bakması sonucu taraflı yapmaz.
 - Sayım: 16 kontrol, 26 kural, 15 ayarlanabilir sınır. Tesadüf Olasılığı dört yerde kullanılır.
+
+## 01.4: kaydedilen özel bölme ayarı yenilemede kayboluyordu
+
+- **Belirti.** 01.4 kartında bir ayar değiştirilip (örneğin Test (OOS) Seti: Kullan) "Bu Ayarları Seç"e basıldıktan sonra sayfa yenilenince ya da adıma geri dönülünce kart yine önerilen değerlerle (Kullanma) açılıyordu. O hâlde "Bu Ayarları Seç"e basılırsa öneri, kayıtlı ayarın üstüne yazılıyordu.
+- **Neden.** `/bolme_kaydet` modu `durum["_bolme_mod"] = "ozel"` yapıyor, hemen ardından `bolme_kartini_tazele` kartı AÇIK KARTIN ESKİ MODUYLA ("oneri") yeniden kuruyordu; `bolme_karti` de bu modu duruma geri yazıyordu. Ayarın kendisi doğru kaydediliyor, yalnız mod "oneri"ye dönüyordu. Ön yüz "oneri" modundaki açık kartta taslağı öneriyle doldurduğu için (`bolmeTaslagiOneriyleDoldur`) seçim ekrandan kayboluyordu.
+- **Düzeltme.** `akis_faz01.bolme_kartini_tazele` modu açık karttan değil durumdan okur (`bolme_karti(durum)`).
+- **Kapsam.** Düzeltmeden önce kaydedilmiş çalışmalarda mod "oneri" kalmıştır; o çalışmada ayar bir kez yeniden seçilip onaylanmalıdır.
+- **Değişmeyen.** Seçim "Bu Ayarları Seç"e basılınca kaydedilir; basılmadan sayfa yenilenirse taslak tarayıcıda kaldığı için kaybolur.
+- **Test.** `bolme_mod_test.py` (12): gerçek uç noktası üzerinden kaydet, yenile, onayla (bölme Test (OOS) ile uygulanır), geri dön, öneriye dön, yeniden özel.

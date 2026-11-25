@@ -10106,11 +10106,19 @@ def bolme_kartini_tazele(durum):
     """Acik bolme kartini YERINDE gunceller.
 
     /bolme_kaydet bir ayari degistirdiginde kartin ozeti, uyarilari ve
-    kisitlari da degisir."""
+    kisitlari da degisir.
+
+    MOD DURUMDAN OKUNUR (durum["_bolme_mod"]), ACIK KARTIN ESKI MODUNDAN
+    DEGIL. Kart "oneri" moduyla acilir; kullanici bir ayari degistirip
+    kaydedince uc noktasi modu "ozel" yapar. Burada eski kartin modu
+    verilirse o kayit hemen "oneri"ye geri doner: sayfa yenilendiginde ya
+    da adima geri donuldugunde taslak oneriyle dolar, kullanicinin secimi
+    (ornegin Test (OOS) Seti: Kullan) ekrandan kaybolur ve onay dugmesi
+    oneriyi kayitli ayarin ustune yazar."""
     alan = durum.get("_secim_alani")
     if not isinstance(alan, dict) or alan.get("tip") != "bolme":
         return None
-    return bolme_karti(durum, alan.get("mod"))
+    return bolme_karti(durum)
 
 
 def bolme_oneriyi_uygula(durum):
