@@ -3605,7 +3605,7 @@ def _grup_satiri(g, uyeler):
                 x["cozum_baska"] = c["cozum_baska"]
     gruplar = [gr for u in bulunan for gr in (u.get("gruplar") or [])]
     for u in uyeler:
-        # Kararlar sekmesinde uye adi birlesik kontrolun adiyla gorunur.
+        # Kartta uye kuralin adi birlesik kontrolun adiyla gorunur.
         u["ad"] = "%s (%s)" % (ad, alt(u))
         u["grup"] = anahtar
     satir = {"anahtar": anahtar, "ad": ad, "kural": " ".join(kural), "sonuc": sonuc,

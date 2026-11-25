@@ -5638,6 +5638,14 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-karar-ozet.hatali { color: var(--kirmizi); }
 .pf-esik-dugmeler { display: flex; align-items: center; justify-content: center; gap: var(--b-3); flex-wrap: wrap; }
 .pf-esik-notu { color: var(--amber); }
+/* 02.1 karti: analiz ve kararlar ayni yerde (kontrol satiri acilinca). */
+.pf-uye-baslik { display: flex; justify-content: center; align-items: baseline; gap: 8px; margin: 12px 0 4px; }
+.pf-uye-baslik:first-child { margin-top: 2px; }
+.pf-uye-sayi { color: var(--metin-soluk, #6b7280); font-weight: 400; }
+.pf-uye-not { text-align: center; margin: 2px 0 6px; }
+.pf-oneri-diger { font-style: italic; }
+.pf-detay .pf-toplu { justify-content: center; margin: 4px 0 6px; }
+.pf-detay .pf-toplu-acik { text-align: center; margin-bottom: 6px; }
 .pf-eski-uyari { color: var(--amber); border: 1px solid var(--amber); border-radius: 6px; padding: 8px 10px; margin: 8px 0; }
 @media (max-width: 720px) {
   .dg-tablo.pf-esik-tablo { min-width: 900px; }

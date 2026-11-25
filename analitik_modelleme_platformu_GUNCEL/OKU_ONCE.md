@@ -3523,3 +3523,18 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **05 plan metinlerinde bölme satırı.** "rastgele %80 / %20" sabit yazıyordu; artık 01.4'te uygulanan bölmenin özeti (`_bolme_adi` → `bolme_ozeti`).
 - **Tohumlar.** Karşılaştırma `model.SEED` (42) ile sabitti; 01.4'teki tohum seçimi kullanılmıyordu.
 - **01.4 modu.** Bkz. "01.4: kaydedilen özel bölme ayarı yenilemede kayboluyordu".
+
+## 02.1 kartı: analiz ve kararlar aynı yerde
+
+- **Ne değişti.** Kartta "Analiz" ve "Kararlar" sekmeleri kalktı. Kontrol satırı açılınca her kolonun bulgusu, önerisi (gerekçesi ve kaynağıyla) ve seçimi AYNI tabloda durur (`Kolon | Bulgu | Önerilen | Seçiminiz`); karar orada verilir ve değiştirilir. "Kararlara Git" düğmesi ve ayrı karar bölümleri yok.
+- **Düzen (`profilKartiEkle`).**
+  - Önerilerin özeti ("Öneriler" kutusu, öneriden farklı seçim sayısı, "Hepsini Önerilere Döndür") Kontroller tablosunun üstünde.
+  - Birleşik kontrolde her üye kural kendi başlığı altında (`pf-uye-baslik`); karar, düzeltme ve çözüm üye bazında.
+  - Seçim istemeyen kuralda (çözümü olmayan üretime girmez, bilgi) tablo iki sütun: `Kolon | Bulgu`.
+  - Toplu seçim kuralın kendi tablosunun üstünde: Tut ya da Çıkar'da "Hepsini Tut / Hepsini Çıkar", düzeltmede seçim kutusu ve "Hepsine Uygula"; seçeneklerin açıklaması bir kez yazar.
+  - Aynı ve neredeyse aynı kolon gruplarında kalacak kolon aynı yerde seçilir (`pfAyniTablosu`); yalnız bulgu gösteren `pfAyniAnaliz` kaldırıldı.
+- **Tut ya da Çıkar kolon bazındadır.** Kolon birden çok kuralda yakalandıysa her satırda o kuralın önerisi ve gerekçesi yazar; öteki kurallar ve kolonun birleşik önerisi (bir kural Çıkar öneriyorsa Çıkar) notla belirtilir. Bir satırda değişen karar öteki satırlarda da değişir.
+- **Açılış.** Karar beklerken seçim isteyen kontroller açık gelir; onaylanmış (kilitli) kartta kapalıdır, açılınca "Seçiminiz" yerine onaylanan karar yazar.
+- **Gönderilen gövde değişmedi** (`dogrulama: {adim, cikar, ayni, cozum, duzeltme}`); arka uçta değişiklik yok.
+- **Düzeltilen etiket.** Tesadüf Olasılığı satırında "Üç kuralda kullanılır" yazıyordu; dört yerde kullanılıyor.
+- **Test.** `birlesik_ui.js` (14), güncellenen `kgrup_ui.js`, `aksiyon_ui.js`, `ayni_ui.js`.
