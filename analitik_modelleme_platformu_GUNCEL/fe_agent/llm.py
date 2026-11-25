@@ -4234,9 +4234,13 @@ def profil_oneri_sec(ogeler, butce=None):
     return sonuc, (hatalar[-1] if hatalar else None)
 
 
-def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None):
+def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None,
+                     onceki_uretilen=None, onceki_reddedilen=None):
     """Kisitli gramerle yeni degisken hipotezleri. Ciktı ifade.dogrula()
     ile AST duzeyinde ayrica denetlenir.
+    onceki_uretilen / onceki_reddedilen: degisken defterinden satirlar
+    ("AD = ifade | anlam"); dil modeli bunlari ve ayni hesabi yapanlari
+    ONERMEZ (cagiran taraf donen onerileri ayrica kodla eler).
     Doner: (hipotezler, hata)."""
     meta = meta or {}
     ad_kol, ack_kol, kolon_hata = _sozluk_kolonlari(sozluk_df)
@@ -4271,6 +4275,17 @@ def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None):
         istek += "\n\n" + _veri_blogu(
             "Tek başına en güçlü değişkenler (bunları birbiriyle ya da diğer "
             "kolonlarla birleştirmeyi düşün):", en_iyi)
+
+    if onceki_reddedilen:
+        istek += "\n\n" + _veri_blogu(
+            "Daha önce denenip REDDEDİLEN değişkenler. Bunları, yeniden adlandırılmış hâllerini ya "
+            "da aynı hesabı yapan ifadeleri ÖNERME (işe yaramadıkları için çıkarıldılar):",
+            "\n".join(onceki_reddedilen))
+    if onceki_uretilen:
+        istek += "\n\n" + _veri_blogu(
+            "Veri setinde ZATEN ÜRETİLMİŞ değişkenler. Bunları ya da aynı hesabı yapan ifadeleri "
+            "ÖNERME; gerçekten farklı bir bilgi taşıyan yeni fikirler üret:",
+            "\n".join(onceki_uretilen))
 
     try:
         ham = _cagir(SISTEM_KESIF_IFADE, istek, sicaklik=0.6)

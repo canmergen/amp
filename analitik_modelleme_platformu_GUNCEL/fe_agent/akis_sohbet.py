@@ -421,6 +421,15 @@ def _tamamlandi_yaz(durum, anahtar, cikti):
         _amp.updt_sozluk_yayinla(durum)
     except Exception:
         pass
+    # DEGISKEN DEFTERI: baz veri tamamlandiktan sonra her adim sonunda
+    # veri setinde kalan ve cikarilan / reddedilen butun degiskenler
+    # calisma klasorundeki degisken_defteri.json'a yazilir (icerik
+    # degismediyse yazilmaz). Yazilamazsa adim durmaz.
+    try:
+        from fe_agent import degisken_defteri as _defter
+        _defter.guncelle(durum)
+    except Exception:
+        pass
     # BIR TURDA BIRDEN FAZLA ADIM BITEBILIR (bolme -> profil -> SFA ->
     # aralik karti, onaysiz zincir). Hepsi SIRAYLA tutulur.
     durum.setdefault("_tamamlananlar", []).append(kayit)

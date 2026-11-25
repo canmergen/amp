@@ -901,7 +901,13 @@ def kural_uygula(durum, secim=None):
     silinen_kural = _adim_temizle(durum, KURAL_KAYNAK)
     silinen_kesif = _adim_temizle(durum, KESIF_KAYNAK)
     _sfa_gecersiz(durum)
+    # DEGISKEN DEFTERI: 02.3 kolonlari tablo yeniden kuruldugu icin dustu
+    # (reddedilmedi; yeniden onerilebilir).
+    from fe_agent import degisken_defteri as _defter
+    if silinen_kesif:
+        _defter.adim_silindi(durum, KESIF_KAYNAK)
     if not any(k.get("sec") for k in karar.values()):
+        _defter.adim_yenilendi(durum, KURAL_KAYNAK, [])
         g["uretilen"], g["sozluk_ek"] = [], []
         if yeni_duzen:
             _f2.updt_ilerlet(durum, "02.2", "02.1")
@@ -952,6 +958,17 @@ def kural_uygula(durum, secim=None):
     durum["ogrenilen_donusum"] = ogr
     g["uretilen"], g["sozluk_ek"] = uretilen, sozluk
     durum["geleneksel"] = g
+    # DEGISKEN DEFTERI: uretilenler (ozetleriyle); onceki turda uretilip bu
+    # turda uretilmeyenler reddedilenlere gecer.
+    try:
+        _ur = set(uretilen)
+        _defter.uretim_kaydet(durum, KURAL_KAYNAK, [
+            {"ad": r["ad"], "anlam": r["aciklama"], "kaynak_kolonlar": r["kaynaklar"],
+             "ifade": "", "ozet": _defter.ozet_cikar(df[r["ad"]])}
+            for r in kayit if r["ad"] in _ur and r["ad"] in df.columns])
+        _defter.adim_yenilendi(durum, KURAL_KAYNAK, uretilen)
+    except Exception:
+        pass
     _yazildi, kod_hata = _uretim_kodu_yaz(durum, hedef)
     birim_sayi = sum(1 for k in karar.values() if k.get("sec"))
     notlar = []
@@ -999,8 +1016,19 @@ def kesif_plan(durum):
     sz = sozluk_oku(durum)   # CSV yedegini de okur
     yasak = _meta_yasak(durum)
 
+    # DEGISKEN DEFTERI: daha once uretilen ve uretilip / onerilip reddedilen
+    # degiskenler dil modeline "bunlari onerme" diye gider; donen oneriler
+    # ayrica kodla (ad ve ifade imzasi) elenir.
+    from fe_agent import degisken_defteri as _defter
+    try:
+        bilinen = _defter.bilinenler(durum)
+        red_satir, ure_satir = _defter.kesif_notu(durum)
+    except Exception:
+        bilinen, red_satir, ure_satir = None, [], []
+
     ham, hata = llm_mod.kesif_ifade_oner(
-        sozluk_df=sz, kolonlar=kolonlar, meta=durum.get("meta", {}))
+        sozluk_df=sz, kolonlar=kolonlar, meta=durum.get("meta", {}),
+        onceki_uretilen=ure_satir, onceki_reddedilen=red_satir)
 
     if hata:
         # Hatayi yutma: kullaniciya goster, adimi ilerletme.
@@ -1010,13 +1038,21 @@ def kesif_plan(durum):
                 "önceki adıma dönebilirsiniz." % hata)
 
     gecerli, reddedilen, ad_elenen = [], [], 0
+    tekrar = []
     for o in (ham or []):
+        # Daha once uretilmis ya da reddedilmis: yeniden onerilmez.
+        neden_ = _defter.tekrar_mi(durum, o.get("ad"), o.get("ifade"), bilinen) if bilinen else ""
+        if neden_:
+            tekrar.append((o.get("ad", "?"), neden_))
+            continue
         ok, dogrulama_hatasi, kullanilan = ifade_mod.dogrula(o["ifade"], kolonlar)
         if not ok:
             reddedilen.append((o.get("ad", "?"), dogrulama_hatasi))
+            _defter.red_kaydet(durum, KESIF_KAYNAK, [o], "Denetimden geçemedi: %s" % dogrulama_hatasi)
             continue
         if o.get("ad") in yasak or (set(kullanilan) & yasak):
             reddedilen.append((o.get("ad", "?"), "hedef/kimlik kolonu kullanılamaz"))
+            _defter.red_kaydet(durum, KESIF_KAYNAK, [o], "Hedef ya da kimlik kolonunu kullanıyor")
             continue
         # LLM'in urettigi ad sablona enjeksiyon yapabilir; ifade.py
         # gecersiz adda ValueError firlatir. Oneriyi atla, sayisini bildir.
@@ -1029,17 +1065,37 @@ def kesif_plan(durum):
         o["kolonlar"] = kullanilan
         gecerli.append(o)
 
+    # ONCEKI TURDA 02.3'TE URETILENLER listeye tasinir (basta): adim
+    # yeniden calisinca eski kolonlar tablodan silinir; secilmeyen
+    # reddedilenlere gecer. Sonraki adimlarda elenmis olanlar tasinmaz.
+    tasinan = []
+    try:
+        for o in _defter.kesif_tasinacaklar(durum):
+            ok, _h, kullanilan = ifade_mod.dogrula(o["ifade"], kolonlar)
+            if not ok or o["ad"] in yasak or (set(kullanilan) & yasak):
+                continue
+            o["kod"] = ifade_mod.python_kodu(o["ad"], o["ifade"])
+            o["kolonlar"] = kullanilan
+            o["onceki"] = True
+            tasinan.append(o)
+    except Exception:
+        tasinan = []
+    gecerli = tasinan + gecerli
     durum["hipotez"] = gecerli
     durum["_kesif_ad_elenen"] = ad_elenen
+    durum["_kesif_tekrar"] = len(tekrar)
+    tekrar_not = ("\n\nDeğişken defterine göre %s öneri daha önce üretilmiş ya da reddedilmiş "
+                  "değişkenin aynısıydı; listeye alınmadı (%s)."
+                  % (_sayi(len(tekrar)), ", ".join(a for a, _n in tekrar[:5]))) if tekrar else ""
     if not gecerli:
-        return ("Bu turda geçerli bir hipotez üretilemedi.\n\n%s\n\n"
+        return ("Bu turda geçerli bir hipotez üretilemedi.\n\n%s%s\n\n"
                 "Adımı geçebilirsiniz."
-                % _liste("Kontrolden geçemeyen öneriler:",
-                         ["%s: %s" % r for r in reddedilen], 6))
+                % (_liste("Kontrolden geçemeyen öneriler:",
+                          ["%s: %s" % r for r in reddedilen], 6), tekrar_not))
 
     satirlar = []
     for i, o in enumerate(gecerli, 1):
-        satirlar.append("  %2d. %s" % (i, o["ad"]))
+        satirlar.append("  %2d. %s%s" % (i, o["ad"], "  (önceki turda üretildi)" if o.get("onceki") else ""))
         satirlar.append("      %s" % o["ifade"])
         if o.get("gerekce"):
             satirlar.append("      %s" % o["gerekce"][:88])
@@ -1049,13 +1105,20 @@ def kesif_plan(durum):
     ad_not = ("\n\nBunların %s tanesi geçersiz değişken adı yüzünden elendi."
               % _sayi(ad_elenen)) if ad_elenen else ""
 
+    bilinen_not = ""
+    if bilinen and (bilinen["uretilen"] or bilinen["reddedilen"]):
+        bilinen_not = ("\n\nDaha önce üretilen %s ve reddedilen %s değişken dil modeline "
+                       "«bunları yeniden önerme» diye verildi (değişken defteri)."
+                       % (_sayi(len(bilinen["uretilen"])), _sayi(len(bilinen["reddedilen"]))))
     return ("Klasik kalıpların dışına çıkarak %s yeni değişken hipotezi "
-            "üretildi. Her ifade denetimden geçti.\n\n%s%s%s\n\n"
+            "üretildi. Her ifade denetimden geçti.\n\n%s%s%s%s%s\n\n"
             "Tümünü uygulamak için onaylayın; seçmek için numaralarını belirtin."
-            % (_sayi(len(gecerli)), "\n".join(satirlar), red_not, ad_not))
+            % (_sayi(len(gecerli)), "\n".join(satirlar), red_not, ad_not, tekrar_not, bilinen_not))
 
 def kesif_uygula(durum, secim=None):
+    tum_hipotez = list(durum.get("hipotez") or [])
     hipotez = _secimi_uygula(durum.get("hipotez") or [], secim)
+    from fe_agent import degisken_defteri as _defter
     from fe_agent import akis_faz02 as _f2
     yeni_duzen = _f2.updt_modu(durum)
     hedef = _f2.updt_adi(durum) if yeni_duzen else "%s_ENRICHED" % durum["veri_seti"]
@@ -1067,6 +1130,12 @@ def kesif_uygula(durum, secim=None):
 
     if not hipotez:
         mesaj = "Bu adımda üretim yapılmadı."
+        # Onerilip secilmeyenler ve onceki turun kolonlari reddedilenlere.
+        try:
+            _defter.red_kaydet(durum, KESIF_KAYNAK, tum_hipotez, "Önerildi; seçmediniz")
+            _defter.adim_yenilendi(durum, KESIF_KAYNAK, [])
+        except Exception:
+            pass
         if yeni_duzen:
             _f2.updt_ilerlet(durum, "02.3", "02.2")
         if silinen:
@@ -1124,6 +1193,22 @@ def kesif_uygula(durum, secim=None):
     _kaynaga_yaz(durum, KESIF_KAYNAK, uretilen)
     durum["kod_bloklari"] = (durum.get("kod_bloklari") or []) + \
         [["AI değişken keşfi", kod_satirlari, KESIF_KAYNAK]]
+    # DEGISKEN DEFTERI: uretilenler (ozetleriyle); onerilip secilmeyenler,
+    # hesaplanamayanlar ve onceki turda uretilip bu turda uretilmeyenler
+    # reddedilenlere gecer (02.3 bunlari yeniden onermez).
+    try:
+        _ur = set(uretilen)
+        _secili = {h.get("ad") for h in hipotez}
+        _defter.uretim_kaydet(durum, KESIF_KAYNAK, [
+            dict(h, kaynak_kolonlar=h.get("kolonlar") or [], ozet=_defter.ozet_cikar(df[h["ad"]]))
+            for h in hipotez if h.get("ad") in _ur])
+        _defter.red_kaydet(durum, KESIF_KAYNAK, [h for h in tum_hipotez if h.get("ad") not in _secili],
+                           "Önerildi; seçmediniz")
+        _defter.red_kaydet(durum, KESIF_KAYNAK, [h for h in hipotez if h.get("ad") not in _ur],
+                           {a: "Hesaplanamadı: %s" % n for a, n in hatali})
+        _defter.adim_yenilendi(durum, KESIF_KAYNAK, uretilen)
+    except Exception:
+        pass
 
     _yazildi, kod_hata = _uretim_kodu_yaz(durum, hedef)
 
