@@ -3437,7 +3437,7 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 
 ## 02.1: "Öneri alınamadı" etiketi kaldırıldı
 
-- Birebir aynı ve neredeyse aynı kolon gruplarında kalacak kolonu kod önerir; 02.1'de dil modeli kullanılmaz.
+- Birebir aynı ve neredeyse aynı kolon gruplarında kalacak kolonu kod önerir; dil modeli yalnız ikinci görüş yazar (bkz. "02.1: dil modeli ikinci görüşü").
 - Eskiden kural önerisinin kaynağı `kural` yazılıyor, ekran bunu "Öneri alınamadı" ve "dil modeline ulaşılamadı" diye gösteriyordu. Öneri aslında vardı ve seçili geliyordu.
 - Artık kaynak `kod`; ekranda "Önerilen" ve "Kaynak: Kod (sabit kural)" yazar. Bölüm notu "Kalacak kolonu kod önerir" der.
 - Kural: başka bir kontrolde çıkarılmayan, en az düzeltme ve karar isteyen kolon; eşitlik varsa adı kısa olan. Neredeyse aynı grupta önce hedefi daha iyi bilen kolon; isabetler eşitse aynı kural.
@@ -3562,3 +3562,24 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Yazım farkı ve farklı değer sayısı.** Farklı değer sayısı yalnız yazım farkı yüzünden sınırı aşan kolon (30 değer, 90 yazım) artık "Çok Fazla Farklı Değer"e takılmaz (`sfa.profil_cikar`, `teshis.yazim_kardinalite`); Yazım Farkları kuralı yakalar ve tek yazımı önerir. "Olduğu gibi bırak" seçilirse kolon çok çeşitli kalır ve üretime girmez.
 - **Sürüm.** `PROFIL_KAPSAM_SURUMU = 4`; eski profil uyarısı nedeni sürüme göre yazar.
 - **Test.** `etkin_bos_test.py` (25).
+
+## 02.1: dil modeli ikinci görüşü ve "Boş Yerine Sıfır Yazılmış" kuralı
+
+- **İlke.** Öneriyi kod verir ve seçili gelen odur. Kolonun anlamını bilmeden karar verilemeyen bulgularda dil modeli aynı satırda ayrı bir görüş yazar; görüş seçimi kendiliğinden değiştirmez.
+- **Nerede sorulur** (`akis_faz02._profil_llm_gorusleri`; `GORUS_SIZINTI`, `GORUS_KOD`, `GORUS_GRUP`):
+  - **Tahmin Anında Bilinmeyen Bilgi** (adı geleceği anlatan, hedefi fazla iyi bilen, dönem sonrası tarih): Tut ya da Çıkar.
+  - **Boş Yerine Başka Şey Yazılmış** (boş yerine sayı yazılmış, hem boş hücre hem sayı): kod gerçekten «bilgi yok» mu, gerçek bir değer mi.
+  - **Boş Yerine Sıfır Yazılmış** (yeni kural, aşağıda): 0 bu kolonda «bilgi yok» anlamına mı geliyor.
+  - **Birbirinin Aynısı Kolonlar**: grupta hangi kolon asıl kolon.
+- **Dil modeline giden bilgi.** Kolon adı, onaylı açıklaması, kolon kartındaki ölçüsü, bulgunun metni, seçenekler ve kodun önerisi. Satır verisi gitmez. 40'lık parçalarla sorulur (`llm.profil_gorus_al`, `PROFIL_GORUS_PARCA`), toplam süre sınırı 120 sn (`PROFIL_GORUS_BUTCE`); süre dolarsa kalan bulgular görüşsüz kalır.
+- **Saklama.** `p["llm_gorus"][kontrol][anahtar] = {secim, gerekce, kod_oneri, imza}`. İmza (kolon, açıklama, bulgu, seçenekler, kodun önerisi) değişmediyse profil yeniden çıkınca aynı soru yeniden sorulmaz. Sayım: `p["llm_gorus_sayim"] = {oge, sorulan, alinan, farkli, hata, sifir_aday}`.
+- **Kart.** Satırda `gorus = {secim, ad, gerekce, farkli}` (`gorus_karti`); grup tablosunda `g.gorus`; kart düzeyinde `gorus` sayımı.
+- **Ekran** (`profilKartiEkle` içinde `gorusBlogu`, `pfAyniTablosu`): "Önerilen" hücresinde kodun önerisinin altında mavi kutu «Dil modeli görüşü: ...» ve gerekçesi. Görüş kodun önerisinden farklıysa kutu sarı olur, «Koddan farklı» yazar ve «Bu görüşü seç» düğmesi çıkar; düğme seçimi görüşe çevirir. Özet kutusunda kaç bulguda görüş verildiği ve kaçında farklı olduğu yazar.
+- **Dil modeline ulaşılamazsa.** Kodun önerileri aynen geçerlidir, görüş kutusu çıkmaz, özet kutusunda bu yazar.
+- **Boş Yerine Sıfır Yazılmış** (`sifir_bos`; "Boş Yerine Başka Şey Yazılmış" kontrolünün dördüncü kuralı):
+  - **Aday** (`profil_ek.sifir_adaylari`): sayı kolonu, hiç boş hücresi yok, etkin boş bulgusu yok, ikiden fazla farklı değeri var, 0 yazan satırların payı "boş yerine sayı" sınırının (önerilen %1) üstünde.
+  - **Bulgu.** Yalnız dil modelinin «0 bu kolonda gerçek bir değer olamaz» dediği adaylar listelenir (yaş, boy gibi). Sayılardan 0'ın gerçek mi olduğu anlaşılamaz; bu yüzden dil modeline ulaşılamazsa kural çalışmaz ve satırında «Uygulanmadı: dil modeline ulaşılamadı» yazar.
+  - **Seçenekler.** «Olduğu gibi bırak» (kodun önerisi, seçili gelir) ya da «Sıfırı boş say» (dil modelinin görüşü). «Sıfırı boş say» seçilirse 0'lar boş hücreye çevrilir (`kolon_cozum.duzeltme_uygula`); öteki değerler aynen kalır.
+- **Sayım:** 16 kontrol, 27 kural, 15 ayarlanabilir sınır.
+- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 5`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca görüşler alınır.
+- **Test.** `gorus_test.py` (18, dil modeli cevabı taklit edilerek), `gorus_ui.js` (18). Gerçek dil modeliyle canlı ortamda denenmedi.

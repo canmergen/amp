@@ -4234,6 +4234,109 @@ def profil_oneri_sec(ogeler, butce=None):
     return sonuc, (hatalar[-1] if hatalar else None)
 
 
+# ===========================================================================
+# 02.1 IKINCI GORUS: oneriyi KOD verir (kolonun sayilari); dil modeli yalniz
+# kolonun ANLAMINI gerektiren bulgularda ayri bir gorus yazar. Kodun onerisi
+# secili kalir; gorus kodla ayrisirsa satir isaretlenir, karar kullanicinin.
+#   sizinti : kolon tahmin aninda bilinen bir bilgi mi?
+#   kod     : -1 / 9999 gercek bir deger mi, "bilgi yok" mu?
+#   sifir   : bu kolonda 0 gercek bir deger mi, "bilgi yok" yerine mi yazilmis?
+#   ayni    : ayni seyi soyleyen kolonlardan hangisi asil kolon?
+# ===========================================================================
+SISTEM_PROFIL_GORUS = """Sen deneyimli bir veri bilimcisin. Bir sınıflandırma
+modeli için hazırlanan tablonun kolonları hakkında, kolonun ADINDAN ve SÖZLÜK
+AÇIKLAMASINDAN anlamını çıkararak görüş vereceksin. Her satır bir sorudur:
+tür, kolon(lar), açıklama, ölçü, bulgu, seçenekler ve kodun (sayılara bakan
+kuralın) önerisi verilir. Her soru için seçeneklerden BİRİNİ seç.
+
+Türlere göre neye bakacaksın:
+- sizinti: Kolon, tahmin yapılacağı anda BİLİNEN bir bilgi mi? Sonuç belli
+  olduktan sonra doldurulan, sonucun kendisini ya da sonrasını anlatan kolon
+  (kapanış nedeni, sonuç durumu, ileriye bakan pencere) "cikar"; tahmin
+  anında elde olan bilgi (doğal olarak ileri tarihli vade, plan, sözleşme
+  bitişi gibi) "tut".
+- kod: Yazan sayı (-1, -99, 9999 gibi) bu kolonda gerçek bir değer mi, yoksa
+  "bilgi yok" demek için mi yazılmış? "Bilgi yok" ise ve kodun yazıldığı
+  durum ayrıca bir şey anlatıyorsa "kod_bos_bayrak", anlatmıyorsa "kod_bos";
+  gerçek bir değerse ya da anlam çıkarılamıyorsa "birak".
+- sifir: Bu kolonda 0 gerçek bir değer mi? Adet, tutar, sayı, süre, bakiye
+  gibi kolonlarda 0 gerçektir ("hiç olmadı") ve "birak" seçilir. Yaş, oran,
+  puan, skor, fiyat, ölçüm, tarihten türeyen değer gibi 0'ın doğal olarak
+  beklenmediği kolonlarda 0 büyük ihtimalle "bilgi yok" yerine yazılmıştır:
+  "sifir_bos". Emin değilsen "birak".
+- ayni: Listelenen kolonlar aynı (ya da neredeyse aynı) değerleri taşıyor.
+  Hangisi ASIL kolon? Anlamı en açık, en genel ve türetilmemiş olanı seç;
+  seçenekler kolon adlarıdır.
+
+Emin değilsen kodun önerisini seç. Kolonun anlamını çıkaramıyorsan da kodun
+önerisini seç.
+
+ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
+{"gorusler":{"<id>":{"secim":"<seçenek>","gerekce":"bir cümle, Türkçe"}}}
+HER id için "secim" yaz. "gerekce"yi YALNIZ seçimin kodun önerisinden
+FARKLIYSA yaz: kolonun adından ya da açıklamasından anladığın anlamı ve
+neden böyle düşündüğünü tek cümleyle söyle.""" + SINIRLAYICI_KURALI
+PROFIL_GORUS_PARCA = 40
+PROFIL_GORUS_BUTCE = 120.0
+PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni")
+
+
+def _profil_gorus_parca(parca):
+    satirlar = []
+    for x in parca:
+        satirlar.append(
+            "id=%s | tür: %s | kolon: %s | açıklama: %s | ölçü: %s | bulgu: %s | seçenekler: %s | "
+            "kodun önerisi: %s" % (
+                x["id"], x.get("tur"), x.get("kolon"), (x.get("aciklama") or "(açıklama yok)")[:160],
+                x.get("olcu") or "-", str(x.get("bulgu") or "")[:220],
+                ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", "")))
+    ham = _cagir(SISTEM_PROFIL_GORUS, _veri_blogu("Sorular:", "\n".join(satirlar)), sicaklik=0.1,
+                 zaman_asimi=PROFIL_ONERI_ZAMAN_ASIMI, deneme=1, havuz=_PROFIL_HAVUZ)
+    veri = _json_ayristir(ham, {}, dict)
+    gorusler = veri.get("gorusler") if isinstance(veri, dict) else None
+    gorusler = gorusler if isinstance(gorusler, dict) else {}
+    sonuc = {}
+    for x in parca:
+        g = gorusler.get(x["id"])
+        if isinstance(g, str):
+            g = {"secim": g}
+        if not isinstance(g, dict):
+            continue
+        secim = str(g.get("secim") or "")
+        if secim not in {str(o) for o in x.get("secenekler") or []}:
+            continue
+        sonuc[x["id"]] = {"secim": secim, "gerekce": str(g.get("gerekce") or "").strip()[:300]}
+    return sonuc
+
+
+def profil_gorus_al(ogeler, butce=None):
+    """ogeler: [{"id", "tur" (PROFIL_GORUS_TURLERI), "kolon", "aciklama",
+    "olcu", "bulgu", "secenekler": [kod], "kod_oneri"}]. Doner: ({id:
+    {"secim", "gerekce"}}, hata). Parcalar _PROFIL_HAVUZ'da eszamanli; butce
+    (saniye) dolunca bitmeyen parcalar beklenmez: o ogelerde gorus olmaz."""
+    isler = [ogeler[i:i + PROFIL_GORUS_PARCA] for i in range(0, len(ogeler), PROFIL_GORUS_PARCA)]
+    sonuc, hatalar = {}, []
+    if not isler:
+        return sonuc, None
+    butce = PROFIL_GORUS_BUTCE if butce is None else butce
+    ex = futures.ThreadPoolExecutor(max_workers=len(isler))
+    fs = [ex.submit(_profil_gorus_parca, p) for p in isler]
+    bitti, kalan = futures.wait(fs, timeout=butce)
+    for f in fs:
+        if f not in bitti:
+            continue
+        try:
+            sonuc.update(f.result())
+        except Exception as e:
+            hatalar.append(_hata_metni(e))
+    if kalan:
+        hatalar.append("%d parça %g saniyede bitmedi" % (len(kalan), butce))
+        for f in kalan:
+            f.cancel()
+    ex.shutdown(wait=False)
+    return sonuc, (hatalar[-1] if hatalar else None)
+
+
 def kesif_ifade_oner(sozluk_df, kolonlar, meta, sfa_ozet=None, max_satir=None,
                      onceki_uretilen=None, onceki_reddedilen=None):
     """Kisitli gramerle yeni degisken hipotezleri. Ciktı ifade.dogrula()

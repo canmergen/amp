@@ -409,7 +409,7 @@ def _gun_ozeti(gun):
 # ===========================================================================
 # Sifir Yogunlugu ve Ondalik Hassasiyeti kaldirildi: veri hatasi gostermiyor,
 # modeli degistirmiyordu (eski kayittaki sonuc ve secimleri yok sayilir).
-DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "metin_bos", "yazim",
+DUZELTME_KONTROLLERI = ("gizli_eksik", "karisik_eksik", "sifir_bos", "metin_bos", "yazim",
                         "negatif", "uc")
 
 
@@ -883,6 +883,108 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
     return cikti
 
 
+# ===========================================================================
+# 02.1 DIL MODELI IKINCI GORUSU. Oneriyi KOD verir (kolonun sayilari ve
+# bulgusu); dil modeli yalniz kolonun ANLAMINI gerektiren bulgularda ayri
+# bir gorus yazar (llm.profil_gorus_al). Kodun onerisi secili kalir; gorus
+# kodla ayrisirsa kartta satir isaretlenir, karar kullanicinindir.
+# p["llm_gorus"] = {kontrol: {kolon ya da grup id: {"secim", "gerekce",
+# "imza"}}}; ayni soru (imza) icin onceden alinmis gorus yeniden sorulmaz.
+# ===========================================================================
+GORUS_SIZINTI = ("gelecek_pencere", "birebir", "tarih_sonra")
+GORUS_KOD = ("gizli_eksik", "karisik_eksik")
+GORUS_GRUP = "ayni"          # gruplar: anahtar grup id
+
+
+def _profil_llm_gorusleri(durum, p, ek, teshis):
+    onceki = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
+    aciklama = _aciklamalar(durum)
+    olcu = _kart_olculeri(durum)
+    bulgu = _ek_bulgulari(p, ek=ek, kopya_suz=False)
+    veri = p.get("llm_oneri") if isinstance(p.get("llm_oneri"), dict) else {}
+    kusur = (set(teshis.get("cok_bos") or []) | set(teshis.get("sabit") or [])
+             | set(teshis.get("kimlik_gibi") or []) | set(teshis.get("yuksek_kardinalite") or []))
+    ogeler = []      # (kontrol, anahtar, oge)
+
+    def ekle(a, anahtar, tur, kolon, metin, secenekler, kod_oneri, acik=None):
+        if len(secenekler) < 2:
+            return
+        ogeler.append((a, anahtar, {
+            "id": "%s|%s" % (a, anahtar), "tur": tur, "kolon": kolon,
+            "aciklama": aciklama.get(anahtar, "") if acik is None else acik,
+            "olcu": olcu.get(anahtar, ""), "bulgu": metin,
+            "secenekler": list(secenekler), "kod_oneri": kod_oneri}))
+    for a in GORUS_SIZINTI:
+        for k, metin in (bulgu.get(a) or {}).items():
+            o = (veri.get(a) or {}).get(k) or {}
+            ekle(a, k, "sizinti", k, metin, [PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR],
+                 o.get("oneri") or _karar_kurali(a))
+    ham = _duzeltme_ham(ek, kusur)
+    for a in GORUS_KOD:
+        for k, v in (ham.get(a) or {}).items():
+            o = (veri.get(a) or {}).get(k) or {}
+            ekle(a, k, "kod", k, (bulgu.get(a) or {}).get(k, ""), v["secenekler"],
+                 o.get("oneri") or v["kural"])
+    for x in ek.get("sifir_aday") or []:
+        k = x["kolon"]
+        ekle("sifir_bos", k, "sifir", k, "0 yazan satırların payı %s; kolonda hiç boş hücre yok"
+             % _yuzde_metni(x["pay"]), ["birak", "sifir_bos"], "birak")
+    for g in ek.get("ayni_gruplar") or []:
+        uy = [u for u in g.get("uyeler") or [] if u not in (g.get("elenen") or {})]
+        if len(uy) < 2:
+            continue
+        ekle(GORUS_GRUP, g["id"], "ayni", ", ".join(uy),
+             "Kolonların değerleri %s" % ("neredeyse aynı: " + (g.get("iliski_metni") or "")
+                                           if g.get("tur") == "yakin" else "birebir aynı"),
+             uy, g.get("oneri") or uy[0],
+             acik="; ".join("%s: %s" % (u, (aciklama.get(u) or "(açıklama yok)")[:80]) for u in uy))
+    cikti, sorulacak = {}, []
+    for a, anahtar, oge in ogeler:
+        imza = json.dumps([oge["tur"], oge["kolon"], oge["aciklama"], oge["bulgu"], oge["secenekler"],
+                           oge["kod_oneri"]], ensure_ascii=False)
+        o = (onceki.get(a) or {}).get(anahtar) or {}
+        if o.get("imza") == imza and o.get("secim") in oge["secenekler"]:
+            cikti.setdefault(a, {})[anahtar] = o
+        else:
+            sorulacak.append((a, anahtar, imza, oge))
+    gorus, hata = {}, None
+    if sorulacak:
+        try:
+            from fe_agent import llm as llm_mod
+            gorus, hata = llm_mod.profil_gorus_al([q[3] for q in sorulacak])
+        except Exception as e:       # dil modeli yoksa gorus de yok; kod onerisi gecerli
+            gorus, hata = {}, str(e)[:160]
+    for a, anahtar, imza, oge in sorulacak:
+        g = gorus.get(oge["id"])
+        if g:
+            cikti.setdefault(a, {})[anahtar] = {"secim": g["secim"], "gerekce": g.get("gerekce", ""),
+                                                "kod_oneri": oge["kod_oneri"], "imza": imza}
+    for a, anahtar, _imza, oge in [(q[0], q[1], None, q[2]) for q in ogeler]:
+        g = (cikti.get(a) or {}).get(anahtar)
+        if g is not None:
+            g["kod_oneri"] = oge["kod_oneri"]
+    alinan = sum(len(x) for x in cikti.values())
+    farkli = sum(1 for x in cikti.values() for g in x.values() if g.get("secim") != g.get("kod_oneri"))
+    p["llm_gorus_sayim"] = {"oge": len(ogeler), "sorulan": len(sorulacak), "alinan": alinan,
+                            "farkli": farkli, "hata": hata or "",
+                            "sifir_aday": len(ek.get("sifir_aday") or [])}
+    return cikti
+
+
+def gorus_karti(durum, kontrol, anahtar, secenek_adi=None):
+    """Kart satirindaki dil modeli gorusu: {"secim", "ad", "gerekce",
+    "farkli"} ya da None (gorus alinmadi)."""
+    g = (((durum.get("profil") or {}).get("llm_gorus") or {}).get(kontrol) or {}).get(anahtar)
+    if not isinstance(g, dict) or not g.get("secim"):
+        return None
+    from fe_agent import kolon_cozum as kc
+    ad = (secenek_adi or {}).get(g["secim"]) or kc.COZUM_ADI.get(
+        g["secim"], {"tut": "Tut", "cikar": "Çıkar"}.get(g["secim"], g["secim"]))
+    farkli = g.get("secim") != g.get("kod_oneri")
+    return {"secim": g["secim"], "ad": ad, "farkli": bool(farkli),
+            "gerekce": g.get("gerekce") or ("" if farkli else "Kodun önerisiyle aynı görüşte.")}
+
+
 # OZEL KOD DUZELTMESI (Gizli Eksik, Karisik Eksik): oneriyi dil modeli
 # kolonun anlamina bakip verir (kodu veriyi hazirlayan bilerek koymus
 # olabilir). Dil modeline ulasilamazsa kural: gizli eksikte kodu bos say ve
@@ -966,6 +1068,8 @@ def _duzeltme_ozeti(kontrol, secim, b):
         return "Boş hücreler kod %s ile doldurulur." % _sayi_metni(b["kod"])
     if kontrol in ("gizli_eksik", "karisik_eksik") and "kod" in b:
         return "Kod %s boş sayılır." % _sayi_metni(b["kod"])
+    if kontrol == "sifir_bos":
+        return "0 boş sayılır."
     if kontrol == "negatif":
         return "Negatif değerler boş sayılır."
     if kontrol == "tarih_kod":
@@ -2218,6 +2322,7 @@ KURAL_FORM_AD = {
     "tarih_sonra": "Dönemden sonraki tarih", "donem": "Bazı dönemlerde boş ya da hep aynı",
     "sicrama": "Boş oranı birden değişmiş", "kayma": "Sayılar topluca değişmiş",
     "gizli_eksik": "Boş yerine sayı yazılmış", "karisik_eksik": "Hem boş hücre hem sayı",
+    "sifir_bos": "Boş yerine sıfır yazılmış",
     "metin_bos": "Boş yerine yazı yazılmış",
     "yazim": "Aynı değer farklı yazılmış", "negatif": "Eksi değer",
     "uc": "Aşırı büyük ya da küçük değer",
@@ -2523,7 +2628,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 4
+PROFIL_KAPSAM_SURUMU = 5
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -2557,7 +2662,11 @@ def profil_eski_uyarisi(durum):
              "Train dışındaki setlerde görülen uydurma sayı, dev değer ve sayı kayması aranmamış"
              if surum == 2 else
              "boş yerine yazılmış değerler (-999, «bilinmiyor» gibi) boş sayılmamış; çoğu böyle "
-             "doldurulmuş kolonlar «Boş Hücreler»e takılmamış")
+             "doldurulmuş kolonlar «Boş Hücreler»e takılmamış"
+             if surum == 3 else
+             "«boş yerine sıfır yazılmış» kuralı çalışmamış ve dil modelinin ikinci görüşü "
+             "(tahmin anında bilinmeyen bilgi, boş yerine yazılmış değer, birbirinin aynısı kolonlar) "
+             "alınmamış")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -2762,6 +2871,28 @@ def profil_hesapla(durum):
         o = (p["llm_oneri"].get(v.get("kontrol")) or {}).get(k) or {}
     ek["ayni_gruplar"] = _ayni_gruplari(durum, ek, p, df_tum)
     _isaret("ayni_gruplar")
+    # DIL MODELI IKINCI GORUSU (kolonun anlami): sizinti, ozel kod, bos
+    # yerine sifir, ayni kolonlardan hangisi kalsin. Kodun onerisi secili
+    # kalir; gorus ayri yazilir. "Bos yerine sifir" bulgulari yalniz dil
+    # modelinin "0 bilgi yok demek" dedigi kolonlardir.
+    try:
+        ek["sifir_aday"] = profil_ek.sifir_adaylari(df, adaylar, haric=set(ek.get("etkin_bos") or {}),
+                                                    esik=esik)
+    except Exception:
+        ek["sifir_aday"] = []
+    ek["sifir_bos"] = []
+    p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis)
+    ek["sifir_bos"] = [x for x in ek["sifir_aday"]
+                       if ((p["llm_gorus"].get("sifir_bos") or {}).get(x["kolon"]) or {}).get("secim") == "sifir_bos"]
+    for x in ek["sifir_bos"]:
+        o = {"oneri": "birak", "kaynak": "kod", "gerekce": (
+            "0 yazan satır %s (payı %s). 0'ın gerçek bir değer mi, «bilgi yok» yerine mi yazıldığı "
+            "sayılardan anlaşılamaz: olduğu gibi bırakılır. Dil modelinin görüşüne katılıyorsanız "
+            "«Sıfırı boş say» seçin." % (_sayi(x["adet"]), _yuzde_metni(x["pay"])))}
+        p.setdefault("veri_oneri", {}).setdefault("sifir_bos", {})[x["kolon"]] = {
+            "oneri": o["oneri"], "gerekce": o["gerekce"]}
+        p["llm_oneri"].setdefault("sifir_bos", {})[x["kolon"]] = o
+    _isaret("dil_modeli_gorusleri")
     p.pop("kod_oneri", None)
     p["profil_teshis"] = teshis
     p["profil_ek"] = ek
@@ -3321,6 +3452,9 @@ def _profil_kurallari(esik=None):
                  "ihtimali %s altında." % _yuzde_ekli(e["tesaduf"]),
         "karisik_eksik": "Kolonda hem boş hücre hem de -1, -99, 999, 9999 gibi uydurma bir sayı "
                          "var. Sayının ne kadar sık geçtiğine bakılmaz.",
+        "sifir_bos": "Kolonda hiç boş hücre yok, 0 dolu satırların %s fazlasında yazıyor ve dil "
+                     "modeli kolonun anlamına bakıp «bu kolonda 0 gerçek bir değer olamaz» diyor."
+                     % _yuzde_ekli(e["gizli"]),
         "gizli_eksik": "-1, -99, -999, 9999 gibi uydurma bir sayı dolu satırların %s fazlasında "
                        "yazıyor ve kolonun öteki değerlerinden kopuk." % _yuzde_ekli(e["gizli"]),
         "negatif": "Adet, gün ya da süre tutan kolonda eksi değer var.",
@@ -3406,6 +3540,21 @@ _KONTROL_ACIKLAMA_EK = {
         "Bazı satırlar boş, bazılarında -1 yazıyor.",
         "kolon kullanılır. Öneri: " + _KOD_SAKLA + ".",
         sorun="İkisi de «bilgi yok» demek; ama sayı gerçek değer gibi hesaba girip sonucu bozar."),
+    "sifir_bos": _ac(
+        "«Bilgi yok» demek için boş bırakmak yerine 0 yazılmış olabilir.",
+        "0'ın gerçek bir değer mi («hiç olmadı»), yoksa «bilgi yok» yerine mi yazıldığı sayılardan "
+        "anlaşılmaz; ikisi de 0 görünür. Bu yüzden karar kolonun anlamına bakılarak verilir: dil "
+        "modeli kolonun adını ve sözlük açıklamasını okur. Yalnız hiç boş hücresi olmayan, 0'ı "
+        "dolu satırların eşikten fazlasında yazan sayı kolonları sorulur (boş hücresi olan "
+        "kolonda eksik bilgi zaten boş bırakılmıştır).",
+        "Yaş kolonunda 100 satırın 12'sinde 0 yazıyor: yaş 0 olamaz, büyük ihtimalle bilgi yok. "
+        "İşlem adedi kolonunda 0 ise gerçektir: hiç işlem yapılmamış.",
+        "kolon kullanılır. Kodun önerisi «olduğu gibi bırak»tır (sayılardan anlaşılamaz); dil "
+        "modelinin görüşü aynı satırda yazar. Katılıyorsanız «Sıfırı boş say» seçersiniz: 0'lar "
+        "boş hücreye çevrilir.",
+        kapsam="Train satırları. Yalnız dil modelinin «0 bilgi yok demek» dediği kolonlar "
+               "listelenir. Dil modeline ulaşılamazsa bu kural çalışmaz.",
+        sorun="0 gerçek bir değer gibi hesaba girerse ortalamaları ve sonucu bozar."),
     "negatif": _ac(
         "Eksi olamayacak bir kolonda eksi değer.",
         "Adet, gün ya da süre tutan kolonlarda sıfırdan küçük değer arar.",
@@ -3592,6 +3741,7 @@ PROFIL_KONTROLLERI = (
     ("donem", "Bazı Dönemlerde Boş ya da Hep Aynı", SONUC_KARAR, "Bazı dönemlerde boş ya da hep aynı"),
     ("gizli_eksik", "Boş Yerine Sayı Yazılmış", SONUC_DUZELT, "Boş yerine sayı"),
     ("karisik_eksik", "Hem Boş Hücre Hem Sayı", SONUC_DUZELT, "Hem boş hem sayı"),
+    ("sifir_bos", "Boş Yerine Sıfır Yazılmış", SONUC_DUZELT, "Boş yerine sıfır"),
     ("metin_bos", "Boş Yerine Yazı Yazılmış", SONUC_DUZELT, "Boş yerine yazı"),
     ("yazim", "Yazım Farkları", SONUC_DUZELT, "Yazım farkı"),
     ("negatif", "Eksi Olamayacak Değerler", SONUC_DUZELT, "Eksi değer"),
@@ -3628,7 +3778,7 @@ KONTROL_GRUPLARI = (
      ("donem", "sicrama", "kayma")),
     ("g_gizli", "Boş Yerine Başka Şey Yazılmış",
      "«Bilgi yok» demek için boş bırakmak yerine sayı ya da yazı yazılmış.",
-     ("gizli_eksik", "karisik_eksik", "metin_bos")),
+     ("gizli_eksik", "karisik_eksik", "sifir_bos", "metin_bos")),
     ("g_iliskili", "Birbirini Tutmayan Kolonlar",
      "Aynı şeyi ölçen iki kolon çelişiyor.",
      ("pencere", "tutar_adet")),
@@ -3652,7 +3802,7 @@ def gorunur_kontrol_sayisi():
 
 
 def toplam_kural_sayisi():
-    """Kontrollerin altindaki kural sayisi; Tesadüf Olasılığı tek kurallidir: 25 kural."""
+    """Kontrollerin altindaki kural sayisi (Tesadüf Olasılığı tek kurallidir)."""
     return len(PROFIL_KONTROLLERI) + len(PROFIL_GENEL_ESIKLER)
 
 
@@ -3812,7 +3962,7 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
     kopya = set(_ayni_kopyalar(p)) if kopya_suz else set()
     b = {a: {} for a in ("ayni_icerik", "yakin_icerik", "gelecek_pencere", "birebir",
                          "tarih_sonra", "baskin", "donem", "gizli_eksik", "karisik_eksik",
-                         "tarih_kod", "metin_bos", "yazim", "negatif", "sicrama",
+                         "sifir_bos", "tarih_kod", "metin_bos", "yazim", "negatif", "sicrama",
                          "kayma", "uc", "pencere", "tutar_adet", "set_disi")}
     for g in ek.get("ayni_gruplar") or []:
         kalan = _ayni_kalan(p, g)
@@ -3893,6 +4043,9 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
         if x.get("sabit"):
             parca.append("Hep aynı değerde olan dönemler: %s" % _donem_listesi(x["sabit"]))
         b["donem"][x["kolon"]] = ". ".join(parca)
+    for x in ek.get("sifir_bos") or []:
+        b["sifir_bos"][x["kolon"]] = "0 yazan satır %s (payı %s); kolonda hiç boş hücre yok" % (
+            _sayi(x["adet"]), _yuzde_metni(x["pay"]))
     for x in ek.get("karisik_eksik") or []:
         b["karisik_eksik"][x["kolon"]] = "Kod %s: %s satır (payı %s); boş hücre: %s satır" % (
             x["deger"], _sayi(x["adet"]), _yuzde_metni(x["pay"]), _sayi(x.get("bos") or 0))
@@ -4186,6 +4339,10 @@ def profil_karti(durum, karar=False):
             k["uygulandi"], k["sebep"] = False, "Kolon adlarında anlam türü onaylı dönem parçası yok"
         elif a == "set_disi" and ek.get("set_disi") is None:
             k["uygulandi"], k["sebep"] = False, "Train dışında set yok"
+        elif a == "sifir_bos" and (p.get("llm_gorus_sayim") or {}).get("sifir_aday") \
+                and not (p.get("llm_gorus") or {}).get("sifir_bos"):
+            # Sifirin anlami yalniz dil modeline sorulabilir.
+            k["uygulandi"], k["sebep"] = False, "Dil modeline ulaşılamadı; 0'ın anlamı sorulamadı"
         elif a == "pencere" and not ek.get("pencere_cift"):
             k["uygulandi"], k["sebep"] = False, "Aynı ölçünün farklı pencereli kolonu yok"
         elif a == "tutar_adet" and not ek.get("tutar_cift"):
@@ -4200,6 +4357,8 @@ def profil_karti(durum, karar=False):
             if gr:
                 k["ne_olacak"] = "Biri kalır, diğerleri üretime girmez"
                 k["gruplar"] = [{"id": g["id"], "oneri": g["oneri"],
+                                 "gorus": gorus_karti(durum, GORUS_GRUP, g["id"],
+                                                      {u: u for u in g["uyeler"]}),
                                  "gerekce": g.get("gerekce", ""),
                                  "kaynak": g.get("kaynak", ""), "secim": _ayni_kalan(p, g),
                                  "iliski": g.get("iliski_metni", ""),
@@ -4243,11 +4402,21 @@ def profil_karti(durum, karar=False):
                 satir["karar_kaynak"] = o["kaynak"] if llm_var else "kural"
                 satir["karar_gerekce"] = (o.get("gerekce") or "") if llm_var else (
                     KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "Kural önerisi."))
+                if a in GORUS_SIZINTI:
+                    gk = gorus_karti(durum, a, kol)
+                    if gk:
+                        gk["farkli"] = gk["secim"] != satir["karar_oneri"]
+                        satir["gorus"] = gk
             if a in COZUM_KONTROLLERI and (cozum_oneri.get(kol) or {}).get("kontrol") == a:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
             elif a in DUZELTME_KONTROLLERI and kol in (duz_oneri.get(a) or {}):
                 satir["duzeltme"] = _duzeltme_satiri(duz_oneri[a][kol], duz_sec[a][kol],
                                                      (duz_bilgi.get(a) or {}).get(kol))
+                if a in GORUS_KOD or a == "sifir_bos":
+                    gk = gorus_karti(durum, a, kol)
+                    if gk:
+                        gk["farkli"] = gk["secim"] != satir["duzeltme"].get("oneri")
+                        satir["gorus"] = gk
             elif a in COZUM_KONTROLLERI and kol in cozum_oneri \
                     and len(cozum_oneri[kol].get("secenekler") or []) < 2:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
@@ -4284,6 +4453,8 @@ def profil_karti(durum, karar=False):
                   "orta": int(n.get("orta") or 0), "asiri": int(n.get("asiri") or 0)},
         "eksik_esik": {"az": NULL_AZ, "asiri": esik["cok_bos"]},
         "esik_notu": esik_degisiklik_notu(durum),
+        # Dil modeli ikinci gorusu: {"oge", "alinan", "farkli", "hata", "sifir_aday"}.
+        "gorus": p.get("llm_gorus_sayim") or {},
         # Bos sayimina bos yerine yazilmis deger de katildi: {"kolon", "cok_bos"}.
         "etkin_bos": p.get("etkin_bos_sayim") or {},
         # Profil eski kuralla cikarildiysa kartin ustunde sari uyari.

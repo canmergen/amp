@@ -59,6 +59,7 @@ COZUM_ADI = {
     "oldugu_gibi": "Değer gerçektir; kolonu olduğu gibi kullan",
     "kod_bos_bayrak": "Kodu boş say ve bayrak üret",
     "kod_bos": "Kodu boş say",
+    "sifir_bos": "Sıfırı boş say",
     "bos_koda": "Boşları da koda çevir",
     "negatif_bos": "Negatifleri boş say",
     "kirp": "Uçları kırp",
@@ -93,6 +94,8 @@ COZUM_ACIKLAMA = {
                     "çevrilmez, kolon değişken üretimine olduğu gibi girer."),
 }
 COZUM_ACIKLAMA.update({
+    "sifir_bos": ("0 «bilgi yok» anlamında sayılır ve boş hücreye çevrilir; kolonun öteki "
+                  "değerleri aynen kalır."),
     "kod_bos_bayrak": ("Özel kod (ör. -1, -999) olan hücreler boş sayılır; kodun olduğu satırlar "
                        "ayrıca 1/0 bayrağıyla işaretlenir. Kodun taşıdığı bilgi (ör. «hiç "
                        "işlem yok») kaybolmaz, sayı gibi de kullanılmaz."),
@@ -141,6 +144,9 @@ COZUM_ACIKLAMA.update({
 # uygulanir (girdi veri seti degismez). Kontrol -> secenekler, oneri.
 DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
                     "karisik_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
+                    # Bos yerine sifir: veriden anlasilmaz; kod onerisi birak,
+                    # dil modeli kolonun anlamindan gorus verir.
+                    "sifir_bos": ["birak", "sifir_bos"],
                     "tarih_kod": ["tarih_bos_bayrak", "tarih_bos", "birak"],
                     "metin_bos": ["metin_bos", "metin_bos_bayrak", "birak"],
                     "yazim": ["tek_yazim", "birak"],
@@ -148,12 +154,13 @@ DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
                     "uc": ["birak", "kirp"],
                     "ondalik": ["yuvarla", "tam_sayi", "birak"]}
 DUZELTME_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "kod_bos_bayrak",
+                  "sifir_bos": "birak",
                   "tarih_kod": "tarih_bos_bayrak", "metin_bos": "metin_bos",
                   "yazim": "tek_yazim", "negatif": "negatif_bos", "uc": "kirp",
                   "ondalik": "yuvarla"}
 # Uygulama sirasi: once eksik kodlari (sayi, tarih, metin), sonra yazim,
 # en son deger duzeltmeleri.
-DUZELTME_SIRA = ("gizli_eksik", "karisik_eksik", "tarih_kod", "metin_bos", "yazim",
+DUZELTME_SIRA = ("gizli_eksik", "karisik_eksik", "sifir_bos", "tarih_kod", "metin_bos", "yazim",
                  "negatif", "uc", "ondalik")
 KOD_KONTROLLERI = ("gizli_eksik", "karisik_eksik")
 # Bayrak kolonu ureten duzeltmeler (<KOLON>_<COZUM_EKI>).
@@ -226,6 +233,8 @@ def duzeltme_uygula(kontrol, secim, x, bilgi):
             return sx.round(b), None
         return x, None
     sx = pd.to_numeric(x, errors="coerce")
+    if kontrol == "sifir_bos" and secim == "sifir_bos":
+        return sx.where(sx != 0), None
     if kontrol in KOD_KONTROLLERI and secim == "bos_koda" and "kod" in bilgi:
         return sx.fillna(float(bilgi["kod"])), None
     if kontrol in KOD_KONTROLLERI and "kod" in bilgi:

@@ -484,6 +484,37 @@ def etkin_bos_donustur(df, bilgi):
     return yeni
 
 
+def sifir_adaylari(df, adaylar, haric=(), esik=None):
+    """[{"kolon", "adet", "pay"}]: "BOS YERINE SIFIR" kuralinin adaylari.
+    Sifirin gercek deger mi, "bilgi yok" yerine mi yazildigi veriden
+    anlasilmaz (ikisi de 0 gorunur); karari kolonun ANLAMI verir (dil
+    modeli gorusu). Burada yalniz sorulmaya deger kolonlar secilir: sayi
+    kolonu, HIC bos hucresi yok (bos hucresi olan kolonda eksik bilgi zaten
+    bos birakilmis; 0 gercek degerdir), ozel kodu yok (haric), ikiden fazla
+    farkli degeri var (0 / 1 bayragi degil) ve 0 dolu satirlarin gizli
+    esiginden fazlasinda."""
+    e = esik_birlestir(esik)
+    haric = set(haric or ())
+    n = len(df)
+    cikti = []
+    if not n:
+        return cikti
+    for kol in adaylar:
+        if kol in haric or kol not in df.columns:
+            continue
+        s = df[kol]
+        if not _sayisal_mi(s) or pd.api.types.is_bool_dtype(s) or bool(s.isna().any()):
+            continue
+        sn = pd.to_numeric(s, errors="coerce")
+        adet = int((sn == 0).sum())
+        if not adet or adet / float(n) <= e["gizli"] or adet == n:
+            continue
+        if int(sn.nunique()) <= 2:
+            continue
+        cikti.append({"kolon": kol, "adet": adet, "pay": adet / float(n)})
+    return cikti
+
+
 def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None, esik=None,
                   tarihler=(), hedef_maske=None, satir_haric=()):
     """Butun ek kontroller. adaylar: dort temel kontrolden gecen kolonlar
