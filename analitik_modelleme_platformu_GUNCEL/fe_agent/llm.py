@@ -4235,10 +4235,10 @@ def profil_oneri_sec(ogeler, butce=None):
 
 
 # ===========================================================================
-# 02.1 IKINCI GORUS: oneriyi KOD verir (kolonun sayilari); dil modeli kodun
-# oneri verdigi BUTUN kolon bulgularinda kolonun anlamina bakip ayri bir
-# gorus yazar. Kodun onerisi secili kalir; gorus kodla ayrisirsa satir
-# isaretlenir, karar kullanicinin.
+# 02.1 KARARI DIL MODELI VERIR: kod kolonun sayilarindan bulguyu ve kendi
+# onerisini (gerekcesiyle) cikarir; dil modeli kolonun anlamina, takildigi
+# kurala ve kodun bu kanitina bakip karari verir. Secili gelen oneri dil
+# modelinin kararidir; kodun onerisi yaninda durur, kullanici degistirebilir.
 #   sizinti  : kolon tahmin aninda bilinen bir bilgi mi?
 #   kod      : -1 / 9999 gercek bir deger mi, "bilgi yok" mu?
 #   sifir    : bu kolonda 0 gercek bir deger mi, "bilgi yok" yerine mi yazilmis?
@@ -4250,10 +4250,23 @@ def profil_oneri_sec(ogeler, butce=None):
 #   cozum    : oldugu gibi kullanilamayan kolondan nasil yararlanilsin?
 # ===========================================================================
 SISTEM_PROFIL_GORUS = """Sen deneyimli bir veri bilimcisin. Bir sınıflandırma
-modeli için hazırlanan tablonun kolonları hakkında, kolonun ADINDAN ve SÖZLÜK
-AÇIKLAMASINDAN anlamını çıkararak görüş vereceksin. Her satır bir sorudur:
-tür, kolon(lar), açıklama, ölçü, bulgu, seçenekler ve kodun (sayılara bakan
-kuralın) önerisi verilir. Her soru için seçeneklerden BİRİNİ seç.
+modeli için hazırlanan tablonun kolonları veri kalitesi kurallarından
+geçirildi; takılan her kolon için KARARI SEN VERECEKSİN. Her satır bir
+karardır: tür, kural (kolonun takıldığı yer), kolon(lar), açıklama, ölçü,
+bulgu, seçenekler, kodun (yalnız sayılara bakan kuralın) önerisi ve kodun
+gerekçesi verilir. Her karar için seçeneklerden BİRİNİ seç.
+
+NASIL KARAR VERİRSİN: üç şeyi birlikte tart.
+1) Kolonun ANLAMI: adından ve sözlük açıklamasından ne olduğunu çıkar.
+2) TAKILDIĞI KURAL ve BULGU: kolonda ne bulundu.
+3) KODUN KANITI: kodun gerekçesindeki sayılar (tesadüf olasılığı, ayırma
+   gücü, pay, satır sayısı) ölçülmüş gerçektir; yok sayma. Ama kod kolonun
+   ne olduğunu bilmez; sabit bir sınırla karar verir. "Fark şans eseri değil
+   ama katkı küçük" gibi bir gerekçe tek başına son söz değildir: kolon
+   anlamca önemli bir olayı ya da durumu gösteriyorsa tutulabilir; anlamca
+   bir şey ifade etmiyorsa, sayılar sınırı az farkla geçse bile çıkarılabilir.
+Kodun önerisini ancak kolonun anlamı bunu gerektiriyorsa değiştir; anlamı
+çıkaramıyorsan ya da emin değilsen kodun önerisini seç.
 
 Türlere göre neye bakacaksın:
 - sizinti: Kolon, tahmin yapılacağı anda BİLİNEN bir bilgi mi? Sonuç belli
@@ -4302,16 +4315,14 @@ Türlere göre neye bakacaksın:
   grubu gösteriyorsa "onek_grupla"; serbest yazıysa "metin". Tarih tahmin
   anında biliniyorsa "gun_farki", sonradan doluyorsa "cikar".
 
-Emin değilsen kodun önerisini seç. Kolonun anlamını çıkaramıyorsan da kodun
-önerisini seç.
-
 ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
 {"gorusler":{"<id>":{"secim":"<seçenek>","gerekce":"bir cümle, Türkçe"}}}
-HER id için "secim" yaz. "gerekce"yi YALNIZ seçimin kodun önerisinden
-FARKLIYSA yaz: kolonun adından ya da açıklamasından anladığın anlamı ve
-neden böyle düşündüğünü tek cümleyle söyle.""" + SINIRLAYICI_KURALI
-PROFIL_GORUS_PARCA = 40
-# Toplam bekleme: ilk PROFIL_ONERI_PARALEL parca (320 bulgu) icin 120 sn,
+HER id için "secim" VE "gerekce" yaz. Gerekçe tek kısa cümle olsun ve iki
+şeyi söylesin: kolonun anlamından ne anladığın ve bu bulguda neden bu
+kararı verdiğin. Kodun önerisinden farklı karar verdiysen nedenini açıkça
+yaz. Uydurma sayı yazma; sayı yazacaksan yalnız sana verilenleri kullan.""" + SINIRLAYICI_KURALI
+PROFIL_GORUS_PARCA = 30
+# Toplam bekleme: ilk PROFIL_ONERI_PARALEL parca (240 bulgu) icin 120 sn,
 # sonraki her tur icin 30 sn daha, en cok 180 sn (istek 5 dakikada kesilir;
 # profilin kendi hesabi da ayni istekte). Sure dolunca bitmeyen parcalar
 # gorussuz kalir; parcalar sorulma sirasiyla islenir.
@@ -4327,11 +4338,12 @@ def _profil_gorus_parca(parca):
         sozluk.update(x.get("secenek_ad") or {})
         satirlar.append(
             "id=%s | tür: %s | kural: %s | kolon: %s | açıklama: %s | ölçü: %s | bulgu: %s | "
-            "seçenekler: %s | kodun önerisi: %s" % (
+            "seçenekler: %s | kodun önerisi: %s | kodun gerekçesi: %s" % (
                 x["id"], x.get("tur"), x.get("kural") or "-", x.get("kolon"),
                 (x.get("aciklama") or "(açıklama yok)")[:160],
                 x.get("olcu") or "-", str(x.get("bulgu") or "")[:220],
-                ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", "")))
+                ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", ""),
+                " ".join(str(x.get("kod_gerekce") or "-").split())[:300]))
     # Secenek kodlarinin ne yaptigi (yalniz bu parcada gecenler)
     istek = _veri_blogu("Sorular:", "\n".join(satirlar))
     if sozluk:
@@ -4359,7 +4371,7 @@ def _profil_gorus_parca(parca):
 def profil_gorus_al(ogeler, butce=None):
     """ogeler: [{"id", "tur" (PROFIL_GORUS_TURLERI), "kural", "kolon",
     "aciklama", "olcu", "bulgu", "secenekler": [kod], "kod_oneri",
-    "secenek_ad": {kod: ad}}]. Doner: ({id:
+    "kod_gerekce", "secenek_ad": {kod: ad}}]. Doner: ({id:
     {"secim", "gerekce"}}, hata). Parcalar _PROFIL_HAVUZ'da eszamanli; butce
     (saniye) dolunca bitmeyen parcalar beklenmez: o ogelerde gorus olmaz."""
     isler = [ogeler[i:i + PROFIL_GORUS_PARCA] for i in range(0, len(ogeler), PROFIL_GORUS_PARCA)]

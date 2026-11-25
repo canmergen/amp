@@ -3437,7 +3437,7 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 
 ## 02.1: "Öneri alınamadı" etiketi kaldırıldı
 
-- Birebir aynı ve neredeyse aynı kolon gruplarında kalacak kolonu kod önerir; dil modeli yalnız ikinci görüş yazar (bkz. "02.1: dil modeli ikinci görüşü").
+- Birebir aynı ve neredeyse aynı kolon gruplarında kalacak kolonu kod önerir; kararı dil modeli verir (bkz. "02.1.2: kararı dil modeli verir").
 - Eskiden kural önerisinin kaynağı `kural` yazılıyor, ekran bunu "Öneri alınamadı" ve "dil modeline ulaşılamadı" diye gösteriyordu. Öneri aslında vardı ve seçili geliyordu.
 - Artık kaynak `kod`; ekranda "Önerilen" ve "Kaynak: Kod (sabit kural)" yazar. Bölüm notu "Kalacak kolonu kod önerir" der.
 - Kural: başka bir kontrolde çıkarılmayan, en az düzeltme ve karar isteyen kolon; eşitlik varsa adı kısa olan. Neredeyse aynı grupta önce hedefi daha iyi bilen kolon; isabetler eşitse aynı kural.
@@ -3563,25 +3563,29 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Sürüm.** `PROFIL_KAPSAM_SURUMU = 4`; eski profil uyarısı nedeni sürüme göre yazar.
 - **Test.** `etkin_bos_test.py` (25).
 
-## 02.1: dil modeli ikinci görüşü ve "Boş Yerine Sıfır Yazılmış" kuralı
+## 02.1.2: kararı dil modeli verir; "Boş Yerine Sıfır Yazılmış" kuralı
 
-- **İlke.** Öneriyi kod verir ve seçili gelen odur. Dil modeli, kodun öneri verdiği **bütün kolon bulgularında** kolonun anlamına bakıp aynı satırda ayrı bir görüş yazar; görüş seçimi kendiliğinden değiştirmez.
-- **Nerede sorulur** (`akis_faz02._profil_llm_gorusleri`). İlk sürümde yalnız dört yerde soruluyordu (sızıntı, özel kod, sıfır, aynı kolonlar); ayrım "karar sayılardan çıkar mı" yargısına dayanıyordu, ölçülmüş bir kural değildi. Öteki bulgularda da anlam kararı değiştirebildiği için (eksi değer bu kolonda gerçek mi, aşırı değer doğal mı, nadir olay bayrağı mı) artık hepsinde sorulur:
+- **İlke.** Kod kolonun sayılarına bakıp bulguyu ve kendi önerisini (gerekçesiyle: tesadüf olasılığı, ayırma gücü, pay) çıkarır. **Kararı dil modeli verir:** takılan her kolonda kolonun anlamına, takıldığı kurala ve kodun bu kanıtına birlikte bakar. Seçili gelen öneri dil modelinin kararıdır; kullanıcı her kararı elle değiştirebilir.
+- **Neden.** Kodun kararı sabit sınıra dayanır ("fark şans eseri değil ama katkı küçük: Çıkar" gibi) ve kolonun ne olduğunu bilmez. Aynı sayılar anlamca önemli bir kolonda Tut, anlamsız bir kolonda Çıkar demek olabilir.
+- **Gelişim.** Önce yalnız dört yerde ikinci görüş olarak eklendi (sızıntı, özel kod, sıfır, aynı kolonlar; ayrım ölçülmüş bir kurala değil "karar sayılardan çıkar mı" yargısına dayanıyordu), sonra bütün bulgulara genişletildi, son olarak görüş karara çevrildi.
+- **Kapsam** (`akis_faz02._profil_llm_gorusleri`): kodun öneri verdiği bütün kolon bulguları.
   - **Bütün Tut ya da Çıkar kararları** (`KARAR_KONTROLLERI`): tahmin anında bilinmeyen bilgi (tür `sizinti`); neredeyse hep aynı değer, dönemden döneme bozulan, birbirini tutmayan, Train dışında bozulan kolonlar (tür `karar`).
-  - **Bütün düzeltmeler** (`DUZELTME_KONTROLLERI`): boş yerine sayı (tür `kod`), boş yerine sıfır (tür `sifir`, aşağıda); boş yerine yazı, yazım farkı, eksi değer, aşırı değer (tür `duzeltme`).
-  - **Çözüm seçimleri** (`COZUM_KONTROLLERI`, birden çok seçeneği olanlar): çoğu boş, numara gibi, çok çeşitli yazı, tarih kolonundan nasıl yararlanılacağı (tür `cozum`).
-  - **Birbirinin Aynısı Kolonlar**: grupta hangi kolon asıl kolon (tür `ayni`).
-- **Sorulmayanlar.** Seçeneği olmayan bulgu (hep aynı değer; tek çözümü Çıkar olan kolon) ve satır kuralları (Tekrar Eden Satır, Setlerde Ortak Kayıt: kolon değil satır kararı).
-- **Dil modeline giden bilgi.** Kuralın adı, kolon adı, onaylı açıklaması, kolon kartındaki ölçüsü, bulgunun metni, seçenekler (kodların adlarıyla) ve kodun önerisi. Satır verisi gitmez.
-- **Süre.** 40'lık parçalarla, aynı anda 8 parça sorulur (`llm.profil_gorus_al`, `PROFIL_GORUS_PARCA`). Toplam bekleme 320 bulguya kadar 120 sn, sonraki her 320 bulgu için 30 sn daha, en çok 180 sn (`PROFIL_GORUS_BUTCE`, `_TUR`, `_EN_COK`). Süre dolarsa bitmeyen parçalar görüşsüz kalır. Sıra: önce anlam olmadan hiç karar verilemeyenler (sızıntı, özel kod, sıfır, aynı kolonlar), sonra öteki kararlar, düzeltmeler, çözümler; görüşsüz kalan olursa sondakilerdir. Kaç bulgunun görüşsüz kaldığı özet kutusunda yazar (`llm_gorus_sayim.gorussuz`).
-- **Saklama.** `p["llm_gorus"][kontrol][anahtar] = {secim, gerekce, kod_oneri, imza}`. İmza (kolon, açıklama, bulgu, seçenekler, kodun önerisi) değişmediyse profil yeniden çıkınca aynı soru yeniden sorulmaz. Sayım: `p["llm_gorus_sayim"] = {oge, sorulan, alinan, gorussuz, farkli, hata, sifir_aday}`.
-- **Kart.** Satırda `gorus = {secim, ad, gerekce, farkli}` (`gorus_karti`); grup tablosunda `g.gorus`; kart düzeyinde `gorus` sayımı.
-- **Ekran** (`profilKartiEkle` içinde `gorusBlogu`, `pfAyniTablosu`): "Önerilen" hücresinde kodun önerisinin altında mavi kutu «Dil modeli görüşü: ...» ve gerekçesi. Görüş kodun önerisinden farklıysa kutu sarı olur, «Koddan farklı» yazar ve «Bu görüşü seç» düğmesi çıkar; düğme seçimi görüşe çevirir. Özet kutusunda kaç bulguda görüş verildiği ve kaçında farklı olduğu yazar.
-- **Dil modeline ulaşılamazsa.** Kodun önerileri aynen geçerlidir, görüş kutusu çıkmaz, özet kutusunda bu yazar.
+  - **Bütün düzeltmeler** (`DUZELTME_KONTROLLERI`): boş yerine sayı (tür `kod`), boş yerine sıfır (tür `sifir`); boş yerine yazı, yazım farkı, eksi değer, aşırı değer (tür `duzeltme`).
+  - **Çözüm seçimleri** (`COZUM_KONTROLLERI`, birden çok seçeneği olanlar; tür `cozum`).
+  - **Birbirinin Aynısı Kolonlar**: grupta hangi kolon kalsın (tür `ayni`).
+- **Kapsam dışı.** Seçeneği olmayan bulgu (hep aynı değer; tek çözümü Çıkar olan kolon) ve satır kuralları (Tekrar Eden Satır, Setlerde Ortak Kayıt: kolon değil satır kararı; öneri koddan).
+- **Dil modeline giden bilgi.** Kuralın adı, kolon adı, onaylı açıklaması, kolon kartındaki ölçüsü, bulgunun metni, seçenekler (kodların adlarıyla), kodun önerisi ve **kodun gerekçesi** (sayısal kanıt). Satır verisi gitmez. Dil modeli her kararda tek cümle gerekçe yazar; emin değilse ya da anlamı çıkaramıyorsa kodun önerisini seçer (`llm.SISTEM_PROFIL_GORUS`).
+- **Kararın öneriye yazılması** (`_gorusu_karara_yaz`): Tut / Çıkar ve düzeltmelerde `p["llm_oneri"][kontrol][kolon] = {oneri, gerekce, kaynak: "dil modeli", kod_oneri, kod_gerekce}`; çözümlerde `p["cozum_oneri"][kolon]` (aynı alanlar); aynı kolon gruplarında grubun sırası ve `oneri`. Varsayılan seçimler (`_karar_varsayilan`, `duzeltme_secimi`, `cozum_secimi`, `_ayni_kalan`) bu öneriyi okur (`ONERI_KAYNAKLARI`). Kolon birden çok Tut / Çıkar kuralındaysa biri Çıkar diyorsa kolon Çıkar'dır (değişmedi).
+- **Karar alınamazsa** (dil modeline ulaşılamadı, süre doldu, cevap gelmedi): o bulguda kodun önerisi seçilidir (kaynak `kod`), satırda "Dil modelinden karar alınamadı; kodun önerisi seçili." yazar.
+- **Saklama.** `p["llm_gorus"][kontrol][anahtar] = {secim, gerekce, kod_oneri, kod_gerekce, imza}`. İmza (kolon, açıklama, bulgu, seçenekler, kodun önerisi ve gerekçesi) değişmediyse profil yeniden çıkınca aynı soru yeniden sorulmaz. Sayım: `p["llm_gorus_sayim"] = {oge, sorulan, alinan, gorussuz, farkli, hata, sifir_aday}`.
+- **Süre.** 30'luk parçalarla, aynı anda 8 parça sorulur (`llm.profil_gorus_al`, `PROFIL_GORUS_PARCA`). Toplam bekleme 240 bulguya kadar 120 sn, sonraki her 240 bulgu için 30 sn daha, en çok 180 sn. Sıra: önce anlam olmadan hiç karar verilemeyenler (sızıntı, özel kod, sıfır, aynı kolonlar), sonra öteki kararlar, düzeltmeler, çözümler; karar alınamayan olursa sondakilerdir.
+- **Kart.** Satırda öneri alanları dil modelinin kararını taşır (`karar_oneri` / `duzeltme.oneri` / `cozum.oneri`, kaynak `dil modeli`); kodun önerisi `kod = {secim, ad, gerekce, farkli}` (`kod_karti`); grupta `g.kod`. Kontrolün `oneri_kaynagi` alanı `dil modeli` olur.
+- **Ekran** (`profilKartiEkle` içinde `kodBlogu`, `pfAyniTablosu`): "Önerilen" hücresinde dil modelinin kararı, "Kaynak: Dil modeli (kolonun anlamı ve kodun bulgusu)" ve gerekçesi; altında "Kodun önerisi" kutusu (kodun gerekçesiyle). Aynıysa mavi ve "Dil modeliyle aynı"; farklıysa sarı, "Dil modelinden farklı" ve "Kodun önerisini seç" düğmesi. Özet kutusu kaç bulguda kararı dil modelinin verdiğini, kaçında koddan farklı olduğunu ve kaçında karar alınamadığını yazar.
+- **Kural metinleri.** "Ne Olacak" sütunundaki ve eşik formundaki "Öneri: ..." cümleleri kodun kuralını anlattığı için "Kodun önerisi: ..." oldu.
 - **Boş Yerine Sıfır Yazılmış** (`sifir_bos`; "Boş Yerine Başka Şey Yazılmış" kontrolünün dördüncü kuralı):
   - **Aday** (`profil_ek.sifir_adaylari`): sayı kolonu, hiç boş hücresi yok, etkin boş bulgusu yok, ikiden fazla farklı değeri var, 0 yazan satırların payı "boş yerine sayı" sınırının (önerilen %1) üstünde.
-  - **Bulgu.** Yalnız dil modelinin «0 bu kolonda gerçek bir değer olamaz» dediği adaylar listelenir (yaş, boy gibi). Sayılardan 0'ın gerçek mi olduğu anlaşılamaz; bu yüzden dil modeline ulaşılamazsa kural çalışmaz ve satırında «Uygulanmadı: dil modeline ulaşılamadı» yazar.
-  - **Seçenekler.** «Olduğu gibi bırak» (kodun önerisi, seçili gelir) ya da «Sıfırı boş say» (dil modelinin görüşü). «Sıfırı boş say» seçilirse 0'lar boş hücreye çevrilir (`kolon_cozum.duzeltme_uygula`); öteki değerler aynen kalır.
+  - **Bulgu.** Yalnız dil modelinin «0 bu kolonda gerçek bir değer olamaz» dediği adaylar listelenir (yaş, boy gibi). Dil modeline ulaşılamazsa kural çalışmaz ve satırında «Uygulanmadı: dil modeline ulaşılamadı» yazar.
+  - **Seçenekler.** «Sıfırı boş say» seçili gelir (dil modelinin kararı): 0'lar boş hücreye çevrilir (`kolon_cozum.duzeltme_uygula`), öteki değerler aynen kalır. Kodun önerisi «Olduğu gibi bırak»tır (sayılardan anlaşılamaz).
 - **Sayım:** 16 kontrol, 27 kural, 15 ayarlanabilir sınır.
-- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 6`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca görüşler alınır.
-- **Test.** `gorus_test.py` (18) ve `gorus2_test.py` (18; bütün bulgu türleri, süre hesabı), dil modeli cevabı taklit edilerek; `gorus_ui.js` (18), `gorus2_ui.js` (13). Gerçek dil modeliyle canlı ortamda denenmedi.
+- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 7`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca kararlar alınır. Profil yeniden çıkınca yalnız kullanıcının öneriden farklı seçtikleri taşınır; gerisi yeni öneriyi (dil modelinin kararını) alır.
+- **Test.** `gorus_test.py` (18), `gorus2_test.py` (22; bütün bulgu türleri, varsayılan seçimler, süre hesabı), dil modeli cevabı taklit edilerek; `karar_ui.js` (21). Gerçek dil modeliyle canlı ortamda denenmedi.

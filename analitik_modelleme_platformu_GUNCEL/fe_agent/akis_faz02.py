@@ -462,7 +462,7 @@ def duzeltme_onerileri(durum):
     for a, kolonlar in _duzeltme_ham(p.get("profil_ek") or {}, _teshis_kusurlu(p)).items():
         for k, v in kolonlar.items():
             o = (lo.get(a) or {}).get(k) or {}
-            if o.get("kaynak") == "kod" and o.get("oneri") in v["secenekler"]:
+            if o.get("kaynak") in ONERI_KAYNAKLARI and o.get("oneri") in v["secenekler"]:
                 oneri, gerekce = o["oneri"], str(o.get("gerekce") or "")
                 kaynak = o["kaynak"]
             else:
@@ -471,6 +471,9 @@ def duzeltme_onerileri(durum):
             cikti.setdefault(a, {})[k] = {"secenekler": v["secenekler"], "oneri": oneri,
                                           "gerekce": gerekce, "kayit": v["kayit"],
                                           "kaynak": kaynak}
+            if kaynak == "dil modeli" and o.get("kod_oneri") in v["secenekler"]:
+                cikti[a][k]["kod_oneri"] = o["kod_oneri"]
+                cikti[a][k]["kod_gerekce"] = o.get("kod_gerekce") or ""
     return cikti
 
 
@@ -486,9 +489,10 @@ KARAR_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra", "baskin", "don
 # modeline sorulur (ozel kodun anlami, sizinti kontrolleri; ayni icerikli
 # gruplar _ayni_gruplari'nda). Gerisini KOD kolonun kendi sayilarina bakarak
 # verir (_veri_onerileri, kaynak "kod"); cozumler kolon_cozum testleriyle.
-# DIL MODELI 02.1 ONERILERINDE KULLANILMAZ: butun oneriler kural (kolonun
-# sayilari ve bulgusu, _veri_onerileri). Eski kayittaki "dil modeli"
-# onerileri okunmaz.
+# KODUN ONERISI burada uretilir (kolonun sayilari ve bulgusu,
+# _veri_onerileri); LLM_KONTROLLERI bos oldugu icin bu asamada dil modeline
+# sorulmaz. KARARI sonra dil modeli verir (_profil_llm_gorusleri +
+# _gorusu_karara_yaz): kodun onerisi ve gerekcesi ona kanit olarak gider.
 LLM_KONTROLLERI = ()
 # Baskin deger Tut / Cikar: Cochran kurali (beklenen en az 5 olay), iki oran
 # testi (tesadüf olasiligi) ve ayirma gucu (IV en az 0,02).
@@ -884,20 +888,28 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
 
 
 # ===========================================================================
-# 02.1 DIL MODELI IKINCI GORUSU. Oneriyi KOD verir (kolonun sayilari ve
-# bulgusu); dil modeli KODUN ONERI VERDIGI BUTUN KOLON BULGULARINDA kolonun
-# anlamina bakip ayri bir gorus yazar (llm.profil_gorus_al): butun Tut /
-# Çıkar kararlari, butun duzeltmeler, cozum secimleri ve ayni kolon
-# gruplari. Kodun onerisi secili kalir; gorus kodla ayrisirsa kartta satir
-# isaretlenir, karar kullanicinindir. Disarida kalanlar: secenegi olmayan
-# bulgu (hep ayni deger; tek cozumu Çıkar olan kolon) ve satir kurallari
-# (tekrar eden satir, setlerde ortak kayit: kolon degil satir karari).
+# 02.1 KARARI DIL MODELI VERIR. Kod kolonun sayilarina bakip bulguyu ve
+# kendi onerisini (gerekcesiyle: tesaduf olasiligi, ayirma gucu, pay ...)
+# cikarir; dil modeli KOLONUN ANLAMINA, TAKILDIGI KURALA ve kodun bu
+# kanitina bakip karari verir (llm.profil_gorus_al). SECILI GELEN ONERI DIL
+# MODELININ KARARIDIR (_gorusu_karara_yaz); kodun onerisi ve gerekcesi ayni
+# satirda "Kodun önerisi" diye durur, ikisi ayrisirsa satir isaretlenir.
+# Kullanici her karari elle degistirebilir.
+# Kapsam: kodun oneri verdigi BUTUN kolon bulgulari: butun Tut / Çıkar
+# kararlari, butun duzeltmeler, cozum secimleri, ayni kolon gruplari.
+# Disarida kalanlar: secenegi olmayan bulgu (hep ayni deger; tek cozumu
+# Çıkar olan kolon) ve satir kurallari (tekrar eden satir, setlerde ortak
+# kayit: kolon degil satir karari).
+# Dil modelinden karar alinamayan bulguda (ulasilamadi, sure doldu) kodun
+# onerisi gecerlidir (kaynak "kod").
 # p["llm_gorus"] = {kontrol: {kolon ya da grup id: {"secim", "gerekce",
-# "imza"}}}; ayni soru (imza) icin onceden alinmis gorus yeniden sorulmaz.
+# "kod_oneri", "kod_gerekce", "imza"}}}; ayni soru (imza) icin onceden
+# alinmis karar yeniden sorulmaz.
 # Sorulma sirasi: once anlam olmadan hic karar verilemeyenler (sizinti, ozel
 # kod, sifir, ayni kolonlar), sonra oteki kararlar, duzeltmeler, cozumler;
-# sure dolarsa gorussuz kalanlar sondakilerdir.
+# sure dolarsa kararsiz kalanlar sondakilerdir.
 # ===========================================================================
+ONERI_KAYNAKLARI = ("kod", "dil modeli")     # gecerli oneri kaynaklari
 GORUS_SIZINTI = ("gelecek_pencere", "birebir", "tarih_sonra")
 GORUS_KOD = ("gizli_eksik", "karisik_eksik")
 GORUS_GRUP = "ayni"          # gruplar: anahtar grup id
@@ -917,7 +929,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
     kad = {x[0]: x[1] for x in PROFIL_KONTROLLERI}
     secenek_ad = dict(kc.COZUM_ADI, tut="Tut", cikar="Çıkar")
 
-    def ekle(a, anahtar, tur, kolon, metin, secenekler, kod_oneri, acik=None):
+    def ekle(a, anahtar, tur, kolon, metin, secenekler, kod_oneri, kod_gerekce="", acik=None):
         if len(secenekler) < 2:
             return
         ogeler.append((a, anahtar, {
@@ -926,29 +938,38 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
             "aciklama": aciklama.get(anahtar, "") if acik is None else acik,
             "olcu": olcu.get(anahtar, ""), "bulgu": metin,
             "secenekler": list(secenekler), "kod_oneri": kod_oneri,
+            "kod_gerekce": str(kod_gerekce or ""),
             "secenek_ad": {x: secenek_ad[x] for x in secenekler if x in secenek_ad}}))
 
     def kararlar(kontroller, tur):
         for a in kontroller:
             for k, metin in (bulgu.get(a) or {}).items():
                 o = (veri.get(a) or {}).get(k) or {}
-                ekle(a, k, tur, k, metin, [PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR],
-                     o.get("oneri") or _karar_kurali(a))
+                if o.get("oneri") in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR):
+                    oneri, ger = o["oneri"], o.get("gerekce") or ""
+                else:
+                    oneri = _karar_kurali(a)
+                    ger = KARAR_KURAL_GEREKCESI.get(oneri, "")
+                ekle(a, k, tur, k, metin, [PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR], oneri, ger)
     ham = _duzeltme_ham(ek, kusur)
 
     def duzeltmeler(kontroller, tur):
         for a in kontroller:
             for k, v in (ham.get(a) or {}).items():
                 o = (veri.get(a) or {}).get(k) or {}
-                ekle(a, k, tur, k, (bulgu.get(a) or {}).get(k, ""), v["secenekler"],
-                     o.get("oneri") if o.get("oneri") in v["secenekler"] else v["kural"])
+                if o.get("oneri") in v["secenekler"]:
+                    oneri, ger = o["oneri"], o.get("gerekce") or ""
+                else:
+                    oneri, ger = v["kural"], KOD_KURAL_GEREKCESI.get(a, "")
+                ekle(a, k, tur, k, (bulgu.get(a) or {}).get(k, ""), v["secenekler"], oneri, ger)
     # 1) Anlam olmadan hic karar verilemeyenler
     kararlar(GORUS_SIZINTI, "sizinti")
     duzeltmeler(GORUS_KOD, "kod")
     for x in ek.get("sifir_aday") or []:
         k = x["kolon"]
         ekle("sifir_bos", k, "sifir", k, "0 yazan satırların payı %s; kolonda hiç boş hücre yok"
-             % _yuzde_metni(x["pay"]), ["birak", "sifir_bos"], "birak")
+             % _yuzde_metni(x["pay"]), ["birak", "sifir_bos"], "birak",
+             "0'ın gerçek bir değer mi, «bilgi yok» yerine mi yazıldığı sayılardan anlaşılamaz.")
     for g in ek.get("ayni_gruplar") or []:
         uy = [u for u in g.get("uyeler") or [] if u not in (g.get("elenen") or {})]
         if len(uy) < 2:
@@ -956,7 +977,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
         ekle(GORUS_GRUP, g["id"], "ayni", ", ".join(uy),
              "Kolonların değerleri %s" % ("neredeyse aynı: " + (g.get("iliski_metni") or "")
                                            if g.get("tur") == "yakin" else "birebir aynı"),
-             uy, g.get("oneri") or uy[0],
+             uy, g.get("oneri") or uy[0], g.get("gerekce") or "",
              acik="; ".join("%s: %s" % (u, (aciklama.get(u) or "(açıklama yok)")[:80]) for u in uy))
     # 2) Kodun sayilardan oneri verdigi oteki butun kolon bulgulari
     kararlar([a for a in KARAR_KONTROLLERI if a not in GORUS_SIZINTI], "karar")
@@ -966,11 +987,11 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
         a = o.get("kontrol")
         if a in COZUM_KONTROLLERI and o.get("oneri") in (o.get("secenekler") or []):
             ekle(a, k, "cozum", k, (bulgu.get(a) or {}).get(k) or str(o.get("gerekce") or "")[:200],
-                 o["secenekler"], o["oneri"])
+                 o["secenekler"], o["oneri"], o.get("gerekce") or "")
     cikti, sorulacak = {}, []
     for a, anahtar, oge in ogeler:
         imza = json.dumps([oge["tur"], oge["kolon"], oge["aciklama"], oge["bulgu"], oge["secenekler"],
-                           oge["kod_oneri"]], ensure_ascii=False)
+                           oge["kod_oneri"], oge["kod_gerekce"], "karar"], ensure_ascii=False)
         o = (onceki.get(a) or {}).get(anahtar) or {}
         if o.get("imza") == imza and o.get("secim") in oge["secenekler"]:
             cikti.setdefault(a, {})[anahtar] = o
@@ -992,6 +1013,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
         g = (cikti.get(a) or {}).get(anahtar)
         if g is not None:
             g["kod_oneri"] = oge["kod_oneri"]
+            g["kod_gerekce"] = oge["kod_gerekce"]
     alinan = sum(len(x) for x in cikti.values())
     farkli = sum(1 for x in cikti.values() for g in x.values() if g.get("secim") != g.get("kod_oneri"))
     p["llm_gorus_sayim"] = {"oge": len(ogeler), "sorulan": len(sorulacak), "alinan": alinan,
@@ -1001,18 +1023,50 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
     return cikti
 
 
-def gorus_karti(durum, kontrol, anahtar, secenek_adi=None):
-    """Kart satirindaki dil modeli gorusu: {"secim", "ad", "gerekce",
-    "farkli"} ya da None (gorus alinmadi)."""
-    g = (((durum.get("profil") or {}).get("llm_gorus") or {}).get(kontrol) or {}).get(anahtar)
-    if not isinstance(g, dict) or not g.get("secim"):
+def _gorusu_karara_yaz(p, ek):
+    """Dil modelinin kararini ONERI yapar (secili gelen odur): Tut / Çıkar
+    ve duzeltmelerde p["llm_oneri"], cozumlerde p["cozum_oneri"], ayni
+    kolon gruplarinda grubun sirasi. Kodun onerisi ve gerekcesi "kod_oneri"
+    / "kod_gerekce" olarak kalir. Karar alinamayan bulguya dokunulmaz (kodun
+    onerisi gecerli)."""
+    G = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
+    lo = p.get("llm_oneri") if isinstance(p.get("llm_oneri"), dict) else {}
+    p["llm_oneri"] = lo
+    for a in KARAR_KONTROLLERI + DUZELTME_KONTROLLERI:
+        for k, g in (G.get(a) or {}).items():
+            if not g.get("secim"):
+                continue
+            lo.setdefault(a, {})[k] = {
+                "oneri": g["secim"], "kaynak": "dil modeli",
+                "gerekce": g.get("gerekce") or g.get("kod_gerekce") or "",
+                "kod_oneri": g.get("kod_oneri"), "kod_gerekce": g.get("kod_gerekce") or ""}
+    for k, v in (p.get("cozum_oneri") or {}).items():
+        g = (G.get(v.get("kontrol")) or {}).get(k) or {}
+        if g.get("secim") in (v.get("secenekler") or []):
+            v["kod_oneri"], v["kod_gerekce"] = v.get("oneri"), v.get("gerekce") or ""
+            v["oneri"], v["kaynak"] = g["secim"], "dil modeli"
+            v["gerekce"] = g.get("gerekce") or v["kod_gerekce"]
+    for gr in ek.get("ayni_gruplar") or []:
+        g = (G.get(GORUS_GRUP) or {}).get(gr["id"]) or {}
+        s = g.get("secim")
+        if s in (gr.get("uyeler") or []) and s not in (gr.get("elenen") or {}):
+            gr["kod_oneri"], gr["kod_gerekce"] = gr.get("oneri"), gr.get("gerekce") or ""
+            sira = list(gr.get("sira") or gr["uyeler"])
+            gr["sira"] = [s] + [u for u in sira if u != s]
+            gr["oneri"], gr["kaynak"] = s, "dil modeli"
+            gr["gerekce"] = g.get("gerekce") or gr["kod_gerekce"]
+
+
+def kod_karti(kod_oneri, kod_gerekce, oneri, secenek_adi=None):
+    """Kart satirinda KODUN onerisi (karari dil modeli verdiyse): {"secim",
+    "ad", "gerekce", "farkli"}; farkli: kod dil modelinden baska oneriyor."""
+    if not kod_oneri:
         return None
     from fe_agent import kolon_cozum as kc
-    ad = (secenek_adi or {}).get(g["secim"]) or kc.COZUM_ADI.get(
-        g["secim"], {"tut": "Tut", "cikar": "Çıkar"}.get(g["secim"], g["secim"]))
-    farkli = g.get("secim") != g.get("kod_oneri")
-    return {"secim": g["secim"], "ad": ad, "farkli": bool(farkli),
-            "gerekce": g.get("gerekce") or ("" if farkli else "Kodun önerisiyle aynı görüşte.")}
+    ad = (secenek_adi or {}).get(kod_oneri) or kc.COZUM_ADI.get(
+        kod_oneri, {"tut": "Tut", "cikar": "Çıkar"}.get(kod_oneri, kod_oneri))
+    return {"secim": kod_oneri, "ad": ad, "farkli": kod_oneri != oneri,
+            "gerekce": kod_gerekce or ""}
 
 
 # OZEL KOD DUZELTMESI (Gizli Eksik, Karisik Eksik): oneriyi dil modeli
@@ -1917,7 +1971,7 @@ PROFIL_ESIK_ACIKLAMA = {
         "Kolonda en çok görülen değeri bulur ve satırların yüzde kaçında geçtiğine bakar. Bu "
         "pay eşik kadar ya da daha fazlaysa kolon yakalanır. Boş hücre de bir değer sayılır.",
         "100 satırın 99'unda 0 yazıyorsa pay %99'dur. Eşik %99 ise kolon yakalanır.",
-        "kolonu tutmak ya da çıkarmak size sorulur. Sistem bir öneri de verir: farklı değerdeki "
+        "kolonu tutmak ya da çıkarmak size sorulur. Kod sayılara bakıp bir öneri verir: farklı değerdeki "
         "az sayıdaki satıra bakar. Bu satırlarda hedef, öteki satırlardan belirgin biçimde "
         "farklıysa kolon işe yarıyordur: Tut. Fark yoksa, fark şans eseri olabilecek kadar "
         "küçükse ya da karar verecek kadar satır yoksa: Çıkar.",
@@ -1932,7 +1986,7 @@ PROFIL_ESIK_ACIKLAMA = {
         "bir sayı dolu satırların eşikten fazlasında yazıyorsa kolon yakalanır. Yalnız -1, 0 ve "
         "1 değerlerini alan kolonda (arttı / azaldı gibi) -1 gerçek değerdir, yakalanmaz.",
         "Yaş kolonunda dolu 100 satırın 3'ünde -999 yazıyor: %3. Eşik %1 ise kolon yakalanır.",
-        "kolon kullanılır. Öneri: " + _KOD_SAKLA + ".",
+        "kolon kullanılır. Kodun önerisi: " + _KOD_SAKLA + ".",
         "Neden %1 önerildi?",
         "100 satırda 1'den az görülen sayı gerçek bir değer olabilir. Daha sık görülüyorsa "
         "bilerek yazılmış bir koddur.",
@@ -1953,7 +2007,7 @@ PROFIL_ESIK_ACIKLAMA = {
         "dönemden geliyorsa yakalanmaz («Tesadüf Olasılığı» sınırı).",
         "Mart'ta 100 satırın 5'i boş, Nisan'da 40'ı boş. Fark 35 puan; eşik 20 puan ise kolon "
         "yakalanır.",
-        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: boş oranı artıp «Çıkarma sınırı»nı "
+        "kolonu tutmak ya da çıkarmak size sorulur. Kodun önerisi: boş oranı artıp «Çıkarma sınırı»nı "
         "geçtiyse Çıkar; geçmediyse ya da azaldıysa Tut.",
         "Neden 20 puan önerildi?",
         "Bir dönemden ötekine birkaç puan oynama normaldir. 20 puan birden değişiyorsa veride "
@@ -1969,7 +2023,7 @@ PROFIL_ESIK_ACIKLAMA = {
         "fazla. -999 gibi uydurma sayılar bu hesaba katılmaz.",
         "Normal aralık 0 ile 10.000 (genişlik 10.000). Eşik 100 kat ise sınır 10.000 + 100 × "
         "10.000 = 1.010.000. Bir satırda 5.000.000 yazıyorsa kolon yakalanır.",
-        "kolon kullanılır. Öneri: yakalanan değer normal aralığın ucuna çekilir (örnekte "
+        "kolon kullanılır. Kodun önerisi: yakalanan değer normal aralığın ucuna çekilir (örnekte "
         "5.000.000 yerine 10.000 yazılır).",
         "Neden 100 kat önerildi?",
         "Yüksek tutuldu ki yalnız yanlış yazıldığı belli olan değerler yakalansın. Büyük ama "
@@ -1999,7 +2053,7 @@ PROFIL_ESIK_ACIKLAMA = {
         "da daha yüksekse kolon yakalanır.",
         "«Kapanış nedeni» kolonu yalnız olay gerçekleştikten sonra doluyor; hedefi 100 denemenin "
         "99'unda doğru gösteriyor.",
-        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: isabet %95 ve üstüyse Çıkar; "
+        "kolonu tutmak ya da çıkarmak size sorulur. Kodun önerisi: isabet %95 ve üstüyse Çıkar; "
         "altındaysa Tut, ama kolonun tahmin anında gerçekten bilinip bilinmediğini kontrol edin.",
         "Neden %85 önerildi?",
         "Sıradan bir kolon tek başına bu kadar iyi bilemez. Biliyorsa çoğu zaman sonuç belli "
@@ -2016,7 +2070,7 @@ PROFIL_ESIK_ACIKLAMA = {
         "değiştiyse yakalanır. Sıfırlar hesaba katılmaz.",
         "Tutarlar Mart'a kadar TL, Nisan'dan sonra bin TL yazılmış: ortadaki değer 1.200'den "
         "1,2'ye düşer, 1.000 kat.",
-        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: değişim 10, 100, 1.000 gibi yuvarlak "
+        "kolonu tutmak ya da çıkarmak size sorulur. Kodun önerisi: değişim 10, 100, 1.000 gibi yuvarlak "
         "bir katsa (birim değişikliği) Çıkar, değilse Tut.",
         "Neden 10 kat önerildi?",
         "Gerçek değerler bir dönemde 10 katına çıkmaz. Çıktıysa çoğu zaman birim değişmiştir "
@@ -2061,7 +2115,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %35 önerildi?",
         "Dönemlerin kabaca üçte biri. Bundan azı sorunluysa kalan dönemler model için yeter.",
-        sonuc="Öneri: altındaysa Tut"),
+        sonuc="Kodun önerisi: altındaysa Tut"),
     "sicrama_cikar": _ac(
         "Boş oranı artıp sınırı geçtiyse kolon artık çoğunlukla boştur.",
         "Kolon «Boş oranı birden değişmiş» kuralına takıldıysa sistem sıçramadan sonraki dönemin boş "
@@ -2071,7 +2125,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %50 önerildi?",
         "Yarısından fazlası boş olan kolon artık çoğunlukla boştur.",
-        sonuc="Öneri: üstündeyse Çıkar"),
+        sonuc="Kodun önerisi: üstündeyse Çıkar"),
     "negatif_bos_pay": _ac(
         "Az sayıda eksi değer yanlış kayıttır.",
         "Kolon «Eksi değer» kuralına takıldıysa sistem eksi değerli satırların ne kadar "
@@ -2083,7 +2137,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         "Neden %5 önerildi?",
         "Yanlış kayıt tek tük olur. 100 satırın 5'inden fazlası eksiyse bu hata değil, bir "
         "anlamı vardır (iade gibi).",
-        sonuc="Öneri: altındaysa boş say"),
+        sonuc="Kodun önerisi: altındaysa boş say"),
     "metin_bayrak_pay": _ac(
         "«Bilinmiyor» gibi yazılar çoksa, boş olmak da bir bilgi olabilir.",
         "Kolon «Boş yerine yazı yazılmış» kuralına takıldıysa bu yazılar her durumda boş sayılır. Sistem "
@@ -2094,7 +2148,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %5 önerildi?",
         "100 satırın 5'inden azında görülüyorsa ek kolon neredeyse hep 0 olur, işe yaramaz.",
-        sonuc="Öneri: bu pay ya da üstündeyse boş say ve bayrak üret"),
+        sonuc="Kodun önerisi: bu pay ya da üstündeyse boş say ve bayrak üret"),
 })
 ESIK_BIRIM_ADI = {"yuzde": "%", "puan": "puan", "sayi": "", "kat": "kat"}
 ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her kuralın yanında "
@@ -2658,7 +2712,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 6
+PROFIL_KAPSAM_SURUMU = 7
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -2698,8 +2752,10 @@ def profil_eski_uyarisi(durum):
              "(tahmin anında bilinmeyen bilgi, boş yerine yazılmış değer, birbirinin aynısı kolonlar) "
              "alınmamış"
              if surum == 4 else
-             "dil modelinin ikinci görüşü yalnız bir kısım bulguda alınmış; artık kodun öneri verdiği "
-             "bütün kolon bulgularında alınıyor")
+             "dil modelinin ikinci görüşü yalnız bir kısım bulguda alınmış"
+             if surum == 5 else
+             "öneriler yalnız kodun sayılara bakan kurallarından gelmiş; artık takılan her kolonda "
+             "kararı dil modeli veriyor (kolonun anlamı, takıldığı kural ve kodun bulgusu birlikte)")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -2920,11 +2976,17 @@ def profil_hesapla(durum):
     for x in ek["sifir_bos"]:
         o = {"oneri": "birak", "kaynak": "kod", "gerekce": (
             "0 yazan satır %s (payı %s). 0'ın gerçek bir değer mi, «bilgi yok» yerine mi yazıldığı "
-            "sayılardan anlaşılamaz: olduğu gibi bırakılır. Dil modelinin görüşüne katılıyorsanız "
-            "«Sıfırı boş say» seçin." % (_sayi(x["adet"]), _yuzde_metni(x["pay"])))}
+            "sayılardan anlaşılamaz; kod tek başına «olduğu gibi bırak» der." % (
+                _sayi(x["adet"]), _yuzde_metni(x["pay"])))}
         p.setdefault("veri_oneri", {}).setdefault("sifir_bos", {})[x["kolon"]] = {
             "oneri": o["oneri"], "gerekce": o["gerekce"]}
         p["llm_oneri"].setdefault("sifir_bos", {})[x["kolon"]] = o
+        g = (p["llm_gorus"].get("sifir_bos") or {}).get(x["kolon"])
+        if g:
+            g["kod_gerekce"] = o["gerekce"]
+    # KARARI DIL MODELI VERIR: secili gelen oneri onun karari olur; kodun
+    # onerisi ve gerekcesi yaninda kalir.
+    _gorusu_karara_yaz(p, ek)
     _isaret("dil_modeli_gorusleri")
     p.pop("kod_oneri", None)
     p["profil_teshis"] = teshis
@@ -3222,7 +3284,7 @@ def _karar_cikar_sebebi(p, ek=None):
         for x in ek.get(a) or []:
             k = x["kolon"]
             o = (lo.get(a) or {}).get(k) or {}
-            v = o.get("oneri") if (o.get("kaynak") == "kod" and o.get("oneri")
+            v = o.get("oneri") if (o.get("kaynak") in ONERI_KAYNAKLARI and o.get("oneri")
                                    in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR)) \
                 else _karar_kurali(a)
             if v == PROFIL_KARAR_CIKAR:
@@ -3548,7 +3610,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Ocak–Mart tamamen boş, Nisan'dan sonra dolu. Bir başka örnek: kolonun genelde %90'ı 0; "
         "100 satırlık bir dönemin tamamı 0 ise yakalanır, 10 satırlık dönemin tamamı 0 ise şans "
         "olabilir, yakalanmaz.",
-        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: son dönem sorunluysa Çıkar; sorun "
+        "kolonu tutmak ya da çıkarmak size sorulur. Kodun önerisi: son dönem sorunluysa Çıkar; sorun "
         "yalnız baştaki birkaç dönemdeyse Tut («Baştaki dönem sınırı»); dönemlere dağınıksa Çıkar.",
         sorun="Kolon bazı dönemlerde yoksa model o dönemlerde kolondan bir şey öğrenemez; son "
               "dönemde yoksa güncel veride de yoktur."),
@@ -3563,7 +3625,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Satır satır birbirinin aynısı olan kolonlar.",
         "İki kolonun bütün satırlarda aynı değeri taşıyıp taşımadığına bakar.",
         "Aynı bilgi tabloya iki farklı adla girmiş.",
-        "biri kalır, ötekiler üretime girmez. Hangisinin kalacağını siz seçersiniz. Öneri: başka "
+        "biri kalır, ötekiler üretime girmez. Hangisinin kalacağını siz seçersiniz. Kodun önerisi: başka "
         "bir kontrole takılmayan, en az düzeltme isteyen; eşitlik varsa adı kısa olan.",
         sorun="Aynı bilgiyi iki kez vermek modele bir şey kazandırmaz."),
     "karisik_eksik": _ac(
@@ -3571,7 +3633,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Aynı kolonda hem boş hücre hem de -1, 9999 gibi uydurma bir sayı var mı diye bakar. Tek "
         "bir satır bile yeter.",
         "Bazı satırlar boş, bazılarında -1 yazıyor.",
-        "kolon kullanılır. Öneri: " + _KOD_SAKLA + ".",
+        "kolon kullanılır. Kodun önerisi: " + _KOD_SAKLA + ".",
         sorun="İkisi de «bilgi yok» demek; ama sayı gerçek değer gibi hesaba girip sonucu bozar."),
     "sifir_bos": _ac(
         "«Bilgi yok» demek için boş bırakmak yerine 0 yazılmış olabilir.",
@@ -3582,9 +3644,9 @@ _KONTROL_ACIKLAMA_EK = {
         "kolonda eksik bilgi zaten boş bırakılmıştır).",
         "Yaş kolonunda 100 satırın 12'sinde 0 yazıyor: yaş 0 olamaz, büyük ihtimalle bilgi yok. "
         "İşlem adedi kolonunda 0 ise gerçektir: hiç işlem yapılmamış.",
-        "kolon kullanılır. Kodun önerisi «olduğu gibi bırak»tır (sayılardan anlaşılamaz); dil "
-        "modelinin görüşü aynı satırda yazar. Katılıyorsanız «Sıfırı boş say» seçersiniz: 0'lar "
-        "boş hücreye çevrilir.",
+        "kolon kullanılır. Kararı dil modeli verir: listelenen kolonlarda «Sıfırı boş say» seçili "
+        "gelir ve 0'lar boş hücreye çevrilir. Kod tek başına «olduğu gibi bırak» der (sayılardan "
+        "anlaşılamaz); 0 bu kolonda gerçek bir değerse siz de «Olduğu gibi bırak» seçersiniz.",
         kapsam="Train satırları. Yalnız dil modelinin «0 bilgi yok demek» dediği kolonlar "
                "listelenir. Dil modeline ulaşılamazsa bu kural çalışmaz.",
         sorun="0 gerçek bir değer gibi hesaba girerse ortalamaları ve sonucu bozar."),
@@ -3592,7 +3654,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Eksi olamayacak bir kolonda eksi değer.",
         "Adet, gün ya da süre tutan kolonlarda sıfırdan küçük değer arar.",
         "İşlem adedi kolonunda -3.",
-        "kolon kullanılır. Öneri: eksi değerler azsa boş sayılır, çoksa olduğu gibi bırakılır "
+        "kolon kullanılır. Kodun önerisi: eksi değerler azsa boş sayılır, çoksa olduğu gibi bırakılır "
         "(«Boş sayma sınırı»).",
         sorun="Adet ya da süre eksi olamaz; eksi değer ya yanlış kayıttır ya da özel bir anlamı "
               "vardır (iade gibi)."),
@@ -3607,7 +3669,7 @@ _KONTROL_ACIKLAMA_EK = {
         "için en güncel dönemlerdeki bozulma bu kuralda çıkar.",
         "Kolon Train'de 100 satırın 2'sinde boş; en güncel dönemleri taşıyan Validasyon (OOT) "
         "setinde tamamen boş.",
-        "kolonu tutmak ya da çıkarmak size sorulur. Öneri: bölme zamana göreyse ve kolon en "
+        "kolonu tutmak ya da çıkarmak size sorulur. Kodun önerisi: bölme zamana göreyse ve kolon en "
         "güncel dönemlerde (Validasyon) tamamen boş ya da hep aynıysa Çıkar; çünkü model canlıda "
         "bu kolonu hep boş görür. Sayılar 10, 100, 1.000 gibi yuvarlak bir kat değiştiyse (birim "
         "değişikliği) yine Çıkar. Öteki durumlarda Tut; kolonun neden değiştiğine bakın.",
@@ -3621,7 +3683,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Aynı kimlik ve aynı dönemle birden fazla satır ya da bütün kolonları aynı olan satır "
         "arar.",
         "Aynı müşteri için aynı ayda iki satır.",
-        "fazla satırları çıkarmak size sorulur. Öneri: birebir aynı satırlardan biri kalır, "
+        "fazla satırları çıkarmak size sorulur. Kodun önerisi: birebir aynı satırlardan biri kalır, "
         "fazlası çıkar. Aynı kimlik ve dönemde içeriği farklı satırlar varsa hangisinin doğru "
         "olduğu veriden anlaşılamaz; tablodaki ilk satır kalır, ötekiler çıkar. Satırlar çalışma "
         "tablosundan çıkar, girdi verisi değişmez.",
@@ -3632,7 +3694,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Test (OOS) ya da Validasyon (OOT) setinde, Train'de (eğitim verisi) de bulunan bir "
         "kimlik ya da birebir aynı satır var mı diye bakar.",
         "Aynı müşteri aynı ay için hem Train'de hem Test'te.",
-        "çakışan satırları çıkarmak size sorulur. Öneri: aynı kayıt (aynı kimlik ve dönem ya da "
+        "çakışan satırları çıkarmak size sorulur. Kodun önerisi: aynı kayıt (aynı kimlik ve dönem ya da "
         "birebir aynı satır) Test / OOT setinden çıkar, Train'e dokunulmaz. Yalnız kimlik ortaksa "
         "(aynı müşteri, başka dönem) satır çıkarılmaz: zamana göre bölmede bu normaldir; rastgele "
         "bölmede 01.4'te bölme birimi Kimlik seçilirse aynı müşteri tek sette kalır.",
@@ -3650,14 +3712,14 @@ _KONTROL_ACIKLAMA_EK = {
         "Kolon adındaki dönem ifadesinin ileriye bakıp bakmadığına bakar («sonraki», «sonra» "
         "gibi).",
         "«Sonraki 3 ayda yapılan ödeme».",
-        "kolonu tutmak ya da çıkarmak size sorulur; öneri Çıkar.",
+        "kolonu tutmak ya da çıkarmak size sorulur; kodun önerisi Çıkar.",
         sorun="Tahmin yapılırken gelecek bilinmez. Gelecekten bilgi taşıyan kolon modeli "
               "eğitimde başarılı gösterir, gerçek kullanımda işe yaramaz."),
     "tarih_sonra": _ac(
         "Satırın döneminden sonraki bir tarih taşıyan kolon.",
         "Tarih kolonunda, satırın ait olduğu dönem bittikten sonraki bir tarih var mı diye bakar.",
         "Satır Mart 2024'e ait, kolondaki tarih Temmuz 2024.",
-        "kolonu tutmak ya da çıkarmak size sorulur; öneri Çıkar. Tarih doğal olarak ilerideyse "
+        "kolonu tutmak ya da çıkarmak size sorulur; kodun önerisi Çıkar. Tarih doğal olarak ilerideyse "
         "(vade tarihi gibi) Tut seçin. Çıkar seçilirse gün farkı kolonu da üretilmez.",
         sorun="Dönemden sonraki tarih, tahmin anında henüz bilinmeyen bir olayı gösteriyor "
               "olabilir."),
@@ -3689,7 +3751,7 @@ _KONTROL_ACIKLAMA_EK = {
         "en az 1'inde görülmesi gerekir.",
         "Son 7 gün toplamı 500, son 30 gün toplamı 300.",
         "çelişen iki kolonu tutmak ya da çıkarmak size sorulur. Hangisinin yanlış olduğu veriden "
-        "anlaşılamaz. Öneri: kolon birden fazla kolonla çelişiyorsa Çıkar; tek bir kolonla "
+        "anlaşılamaz. Kodun önerisi: kolon birden fazla kolonla çelişiyorsa Çıkar; tek bir kolonla "
         "çelişiyorsa Tut, iki kolonun nasıl hesaplandığına bakıp siz karar verirsiniz.",
         sorun="Bu mümkün olmadığı için veride hata olduğunu gösterir."),
     "tutar_adet": _ac(
@@ -3698,7 +3760,7 @@ _KONTROL_ACIKLAMA_EK = {
         "Tek tük satırda değil, 100 satırın en az 1'inde görülmesi gerekir.",
         "İşlem adedi 0, işlem tutarı 500.",
         "çelişen iki kolonu tutmak ya da çıkarmak size sorulur. Hangisinin yanlış olduğu veriden "
-        "anlaşılamaz. Öneri: kolon birden fazla kolonla çelişiyorsa Çıkar; tek bir kolonla "
+        "anlaşılamaz. Kodun önerisi: kolon birden fazla kolonla çelişiyorsa Çıkar; tek bir kolonla "
         "çelişiyorsa Tut, iki kolonun nasıl hesaplandığına bakıp siz karar verirsiniz.",
         sorun="Bu mümkün olmadığı için veride hata olduğunu gösterir."),
 }
@@ -4389,9 +4451,12 @@ def profil_karti(durum, karar=False):
                   if (g.get("tur") == "yakin") == (a == "yakin_icerik")]
             if gr:
                 k["ne_olacak"] = "Biri kalır, diğerleri üretime girmez"
+                if any(g.get("kaynak") == "dil modeli" for g in gr):
+                    k["oneri_kaynagi"] = "dil modeli"
                 k["gruplar"] = [{"id": g["id"], "oneri": g["oneri"],
-                                 "gorus": gorus_karti(durum, GORUS_GRUP, g["id"],
-                                                      {u: u for u in g["uyeler"]}),
+                                 "kod": kod_karti(g.get("kod_oneri"), g.get("kod_gerekce"),
+                                                  g["oneri"], {u: u for u in g["uyeler"]})
+                                 if g.get("kaynak") == "dil modeli" else None,
                                  "gerekce": g.get("gerekce", ""),
                                  "kaynak": g.get("kaynak", ""), "secim": _ayni_kalan(p, g),
                                  "iliski": g.get("iliski_metni", ""),
@@ -4421,12 +4486,13 @@ def profil_karti(durum, karar=False):
                 k["kural"] += " Kimlik kolonu seçilmediği için yalnız bütün kolonları aynı satırlara bakıldı."
             kontroller.append(k)
             continue
+        dm_var = False
         for kol, metin in (bulgu.get(a) or {}).items():
             satir = {"ad": kol, "aciklama": aciklama.get(kol, ""), "bulgu": metin}
             if sonuc == SONUC_KARAR:
                 satir["karar"] = karar_deger.get(kol, karar_vars.get(kol, PROFIL_KARAR_TUT))
                 o = ((p.get("llm_oneri") or {}).get(a) or {}).get(kol) or {}
-                llm_var = o.get("kaynak") == "kod" \
+                llm_var = o.get("kaynak") in ONERI_KAYNAKLARI \
                     and o.get("oneri") in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR)
                 # Bu kontrolun onerisi (kolon birden cok kontroldeyse biri
                 # Çıkar diyorsa kolonun onerisi Çıkar: karar_oneri_kolon).
@@ -4435,23 +4501,22 @@ def profil_karti(durum, karar=False):
                 satir["karar_kaynak"] = o["kaynak"] if llm_var else "kural"
                 satir["karar_gerekce"] = (o.get("gerekce") or "") if llm_var else (
                     KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "Kural önerisi."))
-                gk = gorus_karti(durum, a, kol)
-                if gk:
-                    gk["farkli"] = gk["secim"] != satir["karar_oneri"]
-                    satir["gorus"] = gk
+                if llm_var and o.get("kaynak") == "dil modeli":
+                    satir["kod"] = kod_karti(o.get("kod_oneri"), o.get("kod_gerekce"), o["oneri"])
+                    dm_var = True
             if a in COZUM_KONTROLLERI and (cozum_oneri.get(kol) or {}).get("kontrol") == a:
-                satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
-                gk = gorus_karti(durum, a, kol) if len(satir["cozum"]["secenekler"]) > 1 else None
-                if gk and any(o["kod"] == gk["secim"] for o in satir["cozum"]["secenekler"]):
-                    gk["farkli"] = gk["secim"] != satir["cozum"].get("oneri")
-                    satir["gorus"] = gk
+                co = cozum_oneri[kol]
+                satir["cozum"] = _cozum_satiri(kol, co, cozum_sec, cozum_bilgi)
+                if co.get("kaynak") == "dil modeli":
+                    satir["kod"] = kod_karti(co.get("kod_oneri"), co.get("kod_gerekce"), co.get("oneri"))
+                    dm_var = True
             elif a in DUZELTME_KONTROLLERI and kol in (duz_oneri.get(a) or {}):
-                satir["duzeltme"] = _duzeltme_satiri(duz_oneri[a][kol], duz_sec[a][kol],
+                do = duz_oneri[a][kol]
+                satir["duzeltme"] = _duzeltme_satiri(do, duz_sec[a][kol],
                                                      (duz_bilgi.get(a) or {}).get(kol))
-                gk = gorus_karti(durum, a, kol)
-                if gk and any(o["kod"] == gk["secim"] for o in satir["duzeltme"]["secenekler"]):
-                    gk["farkli"] = gk["secim"] != satir["duzeltme"].get("oneri")
-                    satir["gorus"] = gk
+                if do.get("kaynak") == "dil modeli":
+                    satir["kod"] = kod_karti(do.get("kod_oneri"), do.get("kod_gerekce"), do.get("oneri"))
+                    dm_var = True
             elif a in COZUM_KONTROLLERI and kol in cozum_oneri \
                     and len(cozum_oneri[kol].get("secenekler") or []) < 2:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
@@ -4464,6 +4529,8 @@ def profil_karti(durum, karar=False):
         elif a in COZUM_KONTROLLERI and k["kolonlar"]:
             k["ne_olacak"] = "Üretime girmez; uygun çözüm bulunmadı"
         k["sayi"] = len(k["kolonlar"])
+        if dm_var:
+            k["oneri_kaynagi"] = "dil modeli"
         kontroller.append(k)
 
     m = durum.get("meta") or {}
