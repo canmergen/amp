@@ -4235,13 +4235,19 @@ def profil_oneri_sec(ogeler, butce=None):
 
 
 # ===========================================================================
-# 02.1 IKINCI GORUS: oneriyi KOD verir (kolonun sayilari); dil modeli yalniz
-# kolonun ANLAMINI gerektiren bulgularda ayri bir gorus yazar. Kodun onerisi
-# secili kalir; gorus kodla ayrisirsa satir isaretlenir, karar kullanicinin.
-#   sizinti : kolon tahmin aninda bilinen bir bilgi mi?
-#   kod     : -1 / 9999 gercek bir deger mi, "bilgi yok" mu?
-#   sifir   : bu kolonda 0 gercek bir deger mi, "bilgi yok" yerine mi yazilmis?
-#   ayni    : ayni seyi soyleyen kolonlardan hangisi asil kolon?
+# 02.1 IKINCI GORUS: oneriyi KOD verir (kolonun sayilari); dil modeli kodun
+# oneri verdigi BUTUN kolon bulgularinda kolonun anlamina bakip ayri bir
+# gorus yazar. Kodun onerisi secili kalir; gorus kodla ayrisirsa satir
+# isaretlenir, karar kullanicinin.
+#   sizinti  : kolon tahmin aninda bilinen bir bilgi mi?
+#   kod      : -1 / 9999 gercek bir deger mi, "bilgi yok" mu?
+#   sifir    : bu kolonda 0 gercek bir deger mi, "bilgi yok" yerine mi yazilmis?
+#   ayni     : ayni seyi soyleyen kolonlardan hangisi asil kolon?
+#   karar    : kalite kuralina takilan kolon (neredeyse hep ayni, donemde
+#              bozuk, birbirini tutmayan ...) tutulsun mu, ciksin mi?
+#   duzeltme : bulunan kusur (eksi deger, asiri deger, yazim farki, bos
+#              anlamli yazi) bu kolonda gercek mi, duzeltilsin mi?
+#   cozum    : oldugu gibi kullanilamayan kolondan nasil yararlanilsin?
 # ===========================================================================
 SISTEM_PROFIL_GORUS = """Sen deneyimli bir veri bilimcisin. Bir sınıflandırma
 modeli için hazırlanan tablonun kolonları hakkında, kolonun ADINDAN ve SÖZLÜK
@@ -4267,6 +4273,34 @@ Türlere göre neye bakacaksın:
 - ayni: Listelenen kolonlar aynı (ya da neredeyse aynı) değerleri taşıyor.
   Hangisi ASIL kolon? Anlamı en açık, en genel ve türetilmemiş olanı seç;
   seçenekler kolon adlarıdır.
+- karar: Kolon bir veri kalitesi kuralına takıldı ("kural" ve "bulgu" neye
+  takıldığını söyler). Kodun önerisi yalnız sayılara bakar. Sen kolonun
+  anlamına bak: bulgu kolonun DOĞASINDAN geliyorsa (nadir görülen ama
+  anlamlı bir olayı gösteren kolonun neredeyse hep aynı değeri taşıması;
+  sonradan toplanmaya başlanan bir bilginin ilk dönemlerde boş olması;
+  iki kolonun farklı şeyi ölçtüğü için birbirini tutmaması gibi) "tut".
+  Bulgu kolonu güvenilmez kılıyorsa (ölçüm ya da tanım dönemden döneme
+  değişmiş, kolon model kullanılırken aynı biçimde gelmeyecek, taşıdığı
+  bilgi yok denecek kadar az) "cikar".
+- duzeltme: Kolonda bir kusur bulundu; bu kusur bu kolonda GERÇEK olabilir
+  mi? Eksi değer: fark, değişim, bakiye, kâr / zarar, sıcaklık gibi
+  kolonlarda gerçektir ("birak"); adet, yaş, süre, miktar gibi kolonlarda
+  olamaz ("negatif_bos"). Aşırı değer: tutar, gelir, hacim gibi doğal
+  olarak çok büyük değer alabilen kolonlarda gerçektir ve bilgi taşır
+  ("birak"); doğal bir üst sınırı olan (yaş, oran, puan) ya da hatalı kayıt
+  olduğu anlaşılan kolonlarda "kirp". Yazım farkı: farklı yazımlar aynı
+  şeyi anlatıyorsa "tek_yazim"; büyük küçük harfin ayrı anlam taşıdığı kod
+  kolonlarında "birak". Boş anlamına gelen yazı: yazının yazıldığı durum
+  ayrıca bir şey anlatıyorsa "metin_bos_bayrak", anlatmıyorsa "metin_bos";
+  yazı gerçek bir kategoriyse "birak".
+- cozum: Kolon olduğu gibi kullanılamıyor (çoğu boş, numara gibi, çok fazla
+  farklı değer, tarih). Seçenekler kolondan nasıl yararlanılacağını söyler.
+  Kolon bir kayıt numarası ya da kimlikse, bilgi taşımıyorsa "cikar".
+  Değerin kendisi değil DOLU OLMASI bilgi taşıyorsa (yalnız belli durumda
+  doldurulan kolon) "dolu_bayrak". Kategori ise ve değerler anlamlı
+  gruplara ayrılıyorsa gruplama seçeneği; kod ise ve ilk karakterleri üst
+  grubu gösteriyorsa "onek_grupla"; serbest yazıysa "metin". Tarih tahmin
+  anında biliniyorsa "gun_farki", sonradan doluyorsa "cikar".
 
 Emin değilsen kodun önerisini seç. Kolonun anlamını çıkaramıyorsan da kodun
 önerisini seç.
@@ -4277,20 +4311,33 @@ HER id için "secim" yaz. "gerekce"yi YALNIZ seçimin kodun önerisinden
 FARKLIYSA yaz: kolonun adından ya da açıklamasından anladığın anlamı ve
 neden böyle düşündüğünü tek cümleyle söyle.""" + SINIRLAYICI_KURALI
 PROFIL_GORUS_PARCA = 40
+# Toplam bekleme: ilk PROFIL_ONERI_PARALEL parca (320 bulgu) icin 120 sn,
+# sonraki her tur icin 30 sn daha, en cok 180 sn (istek 5 dakikada kesilir;
+# profilin kendi hesabi da ayni istekte). Sure dolunca bitmeyen parcalar
+# gorussuz kalir; parcalar sorulma sirasiyla islenir.
 PROFIL_GORUS_BUTCE = 120.0
-PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni")
+PROFIL_GORUS_BUTCE_TUR = 30.0
+PROFIL_GORUS_BUTCE_EN_COK = 180.0
+PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "duzeltme", "cozum")
 
 
 def _profil_gorus_parca(parca):
-    satirlar = []
+    satirlar, sozluk = [], {}
     for x in parca:
+        sozluk.update(x.get("secenek_ad") or {})
         satirlar.append(
-            "id=%s | tür: %s | kolon: %s | açıklama: %s | ölçü: %s | bulgu: %s | seçenekler: %s | "
-            "kodun önerisi: %s" % (
-                x["id"], x.get("tur"), x.get("kolon"), (x.get("aciklama") or "(açıklama yok)")[:160],
+            "id=%s | tür: %s | kural: %s | kolon: %s | açıklama: %s | ölçü: %s | bulgu: %s | "
+            "seçenekler: %s | kodun önerisi: %s" % (
+                x["id"], x.get("tur"), x.get("kural") or "-", x.get("kolon"),
+                (x.get("aciklama") or "(açıklama yok)")[:160],
                 x.get("olcu") or "-", str(x.get("bulgu") or "")[:220],
                 ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", "")))
-    ham = _cagir(SISTEM_PROFIL_GORUS, _veri_blogu("Sorular:", "\n".join(satirlar)), sicaklik=0.1,
+    # Secenek kodlarinin ne yaptigi (yalniz bu parcada gecenler)
+    istek = _veri_blogu("Sorular:", "\n".join(satirlar))
+    if sozluk:
+        istek = "Seçenek kodları: %s\n\n%s" % (
+            "; ".join("%s = %s" % (k, v) for k, v in sorted(sozluk.items())), istek)
+    ham = _cagir(SISTEM_PROFIL_GORUS, istek, sicaklik=0.1,
                  zaman_asimi=PROFIL_ONERI_ZAMAN_ASIMI, deneme=1, havuz=_PROFIL_HAVUZ)
     veri = _json_ayristir(ham, {}, dict)
     gorusler = veri.get("gorusler") if isinstance(veri, dict) else None
@@ -4310,15 +4357,18 @@ def _profil_gorus_parca(parca):
 
 
 def profil_gorus_al(ogeler, butce=None):
-    """ogeler: [{"id", "tur" (PROFIL_GORUS_TURLERI), "kolon", "aciklama",
-    "olcu", "bulgu", "secenekler": [kod], "kod_oneri"}]. Doner: ({id:
+    """ogeler: [{"id", "tur" (PROFIL_GORUS_TURLERI), "kural", "kolon",
+    "aciklama", "olcu", "bulgu", "secenekler": [kod], "kod_oneri",
+    "secenek_ad": {kod: ad}}]. Doner: ({id:
     {"secim", "gerekce"}}, hata). Parcalar _PROFIL_HAVUZ'da eszamanli; butce
     (saniye) dolunca bitmeyen parcalar beklenmez: o ogelerde gorus olmaz."""
     isler = [ogeler[i:i + PROFIL_GORUS_PARCA] for i in range(0, len(ogeler), PROFIL_GORUS_PARCA)]
     sonuc, hatalar = {}, []
     if not isler:
         return sonuc, None
-    butce = PROFIL_GORUS_BUTCE if butce is None else butce
+    if butce is None:
+        tur = -(-len(isler) // PROFIL_ONERI_PARALEL)
+        butce = min(PROFIL_GORUS_BUTCE_EN_COK, PROFIL_GORUS_BUTCE + PROFIL_GORUS_BUTCE_TUR * (tur - 1))
     ex = futures.ThreadPoolExecutor(max_workers=len(isler))
     fs = [ex.submit(_profil_gorus_parca, p) for p in isler]
     bitti, kalan = futures.wait(fs, timeout=butce)

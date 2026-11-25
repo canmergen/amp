@@ -885,11 +885,18 @@ def _profil_llm_onerileri(durum, p, ek, teshis):
 
 # ===========================================================================
 # 02.1 DIL MODELI IKINCI GORUSU. Oneriyi KOD verir (kolonun sayilari ve
-# bulgusu); dil modeli yalniz kolonun ANLAMINI gerektiren bulgularda ayri
-# bir gorus yazar (llm.profil_gorus_al). Kodun onerisi secili kalir; gorus
-# kodla ayrisirsa kartta satir isaretlenir, karar kullanicinindir.
+# bulgusu); dil modeli KODUN ONERI VERDIGI BUTUN KOLON BULGULARINDA kolonun
+# anlamina bakip ayri bir gorus yazar (llm.profil_gorus_al): butun Tut /
+# Çıkar kararlari, butun duzeltmeler, cozum secimleri ve ayni kolon
+# gruplari. Kodun onerisi secili kalir; gorus kodla ayrisirsa kartta satir
+# isaretlenir, karar kullanicinindir. Disarida kalanlar: secenegi olmayan
+# bulgu (hep ayni deger; tek cozumu Çıkar olan kolon) ve satir kurallari
+# (tekrar eden satir, setlerde ortak kayit: kolon degil satir karari).
 # p["llm_gorus"] = {kontrol: {kolon ya da grup id: {"secim", "gerekce",
 # "imza"}}}; ayni soru (imza) icin onceden alinmis gorus yeniden sorulmaz.
+# Sorulma sirasi: once anlam olmadan hic karar verilemeyenler (sizinti, ozel
+# kod, sifir, ayni kolonlar), sonra oteki kararlar, duzeltmeler, cozumler;
+# sure dolarsa gorussuz kalanlar sondakilerdir.
 # ===========================================================================
 GORUS_SIZINTI = ("gelecek_pencere", "birebir", "tarih_sonra")
 GORUS_KOD = ("gizli_eksik", "karisik_eksik")
@@ -906,25 +913,38 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
              | set(teshis.get("kimlik_gibi") or []) | set(teshis.get("yuksek_kardinalite") or []))
     ogeler = []      # (kontrol, anahtar, oge)
 
+    from fe_agent import kolon_cozum as kc
+    kad = {x[0]: x[1] for x in PROFIL_KONTROLLERI}
+    secenek_ad = dict(kc.COZUM_ADI, tut="Tut", cikar="Çıkar")
+
     def ekle(a, anahtar, tur, kolon, metin, secenekler, kod_oneri, acik=None):
         if len(secenekler) < 2:
             return
         ogeler.append((a, anahtar, {
             "id": "%s|%s" % (a, anahtar), "tur": tur, "kolon": kolon,
+            "kural": kad.get(a, ""),
             "aciklama": aciklama.get(anahtar, "") if acik is None else acik,
             "olcu": olcu.get(anahtar, ""), "bulgu": metin,
-            "secenekler": list(secenekler), "kod_oneri": kod_oneri}))
-    for a in GORUS_SIZINTI:
-        for k, metin in (bulgu.get(a) or {}).items():
-            o = (veri.get(a) or {}).get(k) or {}
-            ekle(a, k, "sizinti", k, metin, [PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR],
-                 o.get("oneri") or _karar_kurali(a))
+            "secenekler": list(secenekler), "kod_oneri": kod_oneri,
+            "secenek_ad": {x: secenek_ad[x] for x in secenekler if x in secenek_ad}}))
+
+    def kararlar(kontroller, tur):
+        for a in kontroller:
+            for k, metin in (bulgu.get(a) or {}).items():
+                o = (veri.get(a) or {}).get(k) or {}
+                ekle(a, k, tur, k, metin, [PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR],
+                     o.get("oneri") or _karar_kurali(a))
     ham = _duzeltme_ham(ek, kusur)
-    for a in GORUS_KOD:
-        for k, v in (ham.get(a) or {}).items():
-            o = (veri.get(a) or {}).get(k) or {}
-            ekle(a, k, "kod", k, (bulgu.get(a) or {}).get(k, ""), v["secenekler"],
-                 o.get("oneri") or v["kural"])
+
+    def duzeltmeler(kontroller, tur):
+        for a in kontroller:
+            for k, v in (ham.get(a) or {}).items():
+                o = (veri.get(a) or {}).get(k) or {}
+                ekle(a, k, tur, k, (bulgu.get(a) or {}).get(k, ""), v["secenekler"],
+                     o.get("oneri") if o.get("oneri") in v["secenekler"] else v["kural"])
+    # 1) Anlam olmadan hic karar verilemeyenler
+    kararlar(GORUS_SIZINTI, "sizinti")
+    duzeltmeler(GORUS_KOD, "kod")
     for x in ek.get("sifir_aday") or []:
         k = x["kolon"]
         ekle("sifir_bos", k, "sifir", k, "0 yazan satırların payı %s; kolonda hiç boş hücre yok"
@@ -938,6 +958,15 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
                                            if g.get("tur") == "yakin" else "birebir aynı"),
              uy, g.get("oneri") or uy[0],
              acik="; ".join("%s: %s" % (u, (aciklama.get(u) or "(açıklama yok)")[:80]) for u in uy))
+    # 2) Kodun sayilardan oneri verdigi oteki butun kolon bulgulari
+    kararlar([a for a in KARAR_KONTROLLERI if a not in GORUS_SIZINTI], "karar")
+    duzeltmeler([a for a in DUZELTME_KONTROLLERI if a not in GORUS_KOD and a != "sifir_bos"],
+                "duzeltme")
+    for k, o in (p.get("cozum_oneri") or {}).items():
+        a = o.get("kontrol")
+        if a in COZUM_KONTROLLERI and o.get("oneri") in (o.get("secenekler") or []):
+            ekle(a, k, "cozum", k, (bulgu.get(a) or {}).get(k) or str(o.get("gerekce") or "")[:200],
+                 o["secenekler"], o["oneri"])
     cikti, sorulacak = {}, []
     for a, anahtar, oge in ogeler:
         imza = json.dumps([oge["tur"], oge["kolon"], oge["aciklama"], oge["bulgu"], oge["secenekler"],
@@ -966,6 +995,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis):
     alinan = sum(len(x) for x in cikti.values())
     farkli = sum(1 for x in cikti.values() for g in x.values() if g.get("secim") != g.get("kod_oneri"))
     p["llm_gorus_sayim"] = {"oge": len(ogeler), "sorulan": len(sorulacak), "alinan": alinan,
+                            "gorussuz": max(0, len(ogeler) - alinan),
                             "farkli": farkli, "hata": hata or "",
                             "sifir_aday": len(ek.get("sifir_aday") or [])}
     return cikti
@@ -2628,7 +2658,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 5
+PROFIL_KAPSAM_SURUMU = 6
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -2666,7 +2696,10 @@ def profil_eski_uyarisi(durum):
              if surum == 3 else
              "«boş yerine sıfır yazılmış» kuralı çalışmamış ve dil modelinin ikinci görüşü "
              "(tahmin anında bilinmeyen bilgi, boş yerine yazılmış değer, birbirinin aynısı kolonlar) "
-             "alınmamış")
+             "alınmamış"
+             if surum == 4 else
+             "dil modelinin ikinci görüşü yalnız bir kısım bulguda alınmış; artık kodun öneri verdiği "
+             "bütün kolon bulgularında alınıyor")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -4402,21 +4435,23 @@ def profil_karti(durum, karar=False):
                 satir["karar_kaynak"] = o["kaynak"] if llm_var else "kural"
                 satir["karar_gerekce"] = (o.get("gerekce") or "") if llm_var else (
                     KARAR_KURAL_GEREKCESI.get(_karar_kurali(a), "Kural önerisi."))
-                if a in GORUS_SIZINTI:
-                    gk = gorus_karti(durum, a, kol)
-                    if gk:
-                        gk["farkli"] = gk["secim"] != satir["karar_oneri"]
-                        satir["gorus"] = gk
+                gk = gorus_karti(durum, a, kol)
+                if gk:
+                    gk["farkli"] = gk["secim"] != satir["karar_oneri"]
+                    satir["gorus"] = gk
             if a in COZUM_KONTROLLERI and (cozum_oneri.get(kol) or {}).get("kontrol") == a:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)
+                gk = gorus_karti(durum, a, kol) if len(satir["cozum"]["secenekler"]) > 1 else None
+                if gk and any(o["kod"] == gk["secim"] for o in satir["cozum"]["secenekler"]):
+                    gk["farkli"] = gk["secim"] != satir["cozum"].get("oneri")
+                    satir["gorus"] = gk
             elif a in DUZELTME_KONTROLLERI and kol in (duz_oneri.get(a) or {}):
                 satir["duzeltme"] = _duzeltme_satiri(duz_oneri[a][kol], duz_sec[a][kol],
                                                      (duz_bilgi.get(a) or {}).get(kol))
-                if a in GORUS_KOD or a == "sifir_bos":
-                    gk = gorus_karti(durum, a, kol)
-                    if gk:
-                        gk["farkli"] = gk["secim"] != satir["duzeltme"].get("oneri")
-                        satir["gorus"] = gk
+                gk = gorus_karti(durum, a, kol)
+                if gk and any(o["kod"] == gk["secim"] for o in satir["duzeltme"]["secenekler"]):
+                    gk["farkli"] = gk["secim"] != satir["duzeltme"].get("oneri")
+                    satir["gorus"] = gk
             elif a in COZUM_KONTROLLERI and kol in cozum_oneri \
                     and len(cozum_oneri[kol].get("secenekler") or []) < 2:
                 satir["cozum"] = _cozum_satiri(kol, cozum_oneri[kol], cozum_sec, cozum_bilgi)

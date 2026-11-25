@@ -17548,7 +17548,7 @@ function profilKartiEkle(alan, blok) {
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır; satır kurallarında fazla ya da çakışan satırlar çalışma tablosundan çıkar.",
         "Boş Yerine Başka Şey Yazılmış, Yazım Farkları, Eksi Olamayacak Değerler ve Aşırı Değerler kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz. Tekrar Eden Satır ve Setlerde Ortak Kayıt kontrollerinde çıkarılacak satırları seçersiniz.",
-        "Analiz ve kararlar aynı yerdedir: kontrol satırını açınca her kolonun bulgusu, önerisi (gerekçesiyle) ve seçiminiz aynı tabloda durur; kararı orada verir ve değiştirirsiniz. Önerileri kolonun kendi sayılarına ve bulgusuna bakan kurallar (kod) verir; seçili gelen odur. Kolonun anlamını gerektiren bulgularda (tahmin anında bilinmeyen bilgi, boş yerine yazılmış sayı ya da 0, birbirinin aynısı kolonlar) dil modeli aynı hücrede ayrı bir görüş yazar; kodun önerisinden farklıysa satır «Koddan farklı» diye işaretlenir ve «Bu görüşü seç» ile seçimi görüşe çevirebilirsiniz. Değiştirdiğiniz satır işaretlenir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
+        "Analiz ve kararlar aynı yerdedir: kontrol satırını açınca her kolonun bulgusu, önerisi (gerekçesiyle) ve seçiminiz aynı tabloda durur; kararı orada verir ve değiştirirsiniz. Önerileri kolonun kendi sayılarına ve bulgusuna bakan kurallar (kod) verir; seçili gelen odur. Kodun öneri verdiği bütün kolon bulgularında (Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar) dil modeli kolonun anlamına bakıp aynı hücrede ayrı bir görüş yazar; kodun önerisinden farklıysa satır «Koddan farklı» diye işaretlenir ve «Bu görüşü seç» ile seçimi görüşe çevirebilirsiniz. Değiştirdiğiniz satır işaretlenir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
@@ -17665,8 +17665,8 @@ function profilKartiEkle(alan, blok) {
     };
     const secenekAdi = (secenekler, kod) => ((secenekler || []).find(o => o.kod === kod) || {}).ad || kod;
     /* DİL MODELİ İKİNCİ GÖRÜŞÜ (bkz. akis_faz02.gorus_karti): öneriyi kod
-       verir ve seçili gelen odur; dil modeli kolonun anlamına bakıp aynı
-       hücrede ayrı bir görüş yazar. Görüş kodun önerisinden farklıysa
+       verir ve seçili gelen odur; dil modeli kodun öneri verdiği bütün kolon
+       bulgularında kolonun anlamına bakıp aynı hücrede ayrı bir görüş yazar. Görüş kodun önerisinden farklıysa
        satır işaretlenir; "Bu görüşü seç" seçimi görüşe çevirir. */
     const gorusBlogu = (td, r, g, sec) => {
         if (!g) return;
@@ -17767,10 +17767,13 @@ function profilKartiEkle(alan, blok) {
         const gs = alan.gorus || {};
         if (Number(gs.alinan) > 0) {
             const gn = elYap("div", "pf-oneri-ozet-not pf-gorus-ozet" + (Number(gs.farkli) ? " farkli" : ""));
-            metinYaz(gn, "**Dil modeli görüşü:** kolonun anlamını gerektiren **" + ftBinlik(gs.alinan)
-                + "** bulguda görüş verdi (tahmin anında bilinmeyen bilgi, boş yerine yazılmış sayı ya da 0, birbirinin aynısı kolonlar). "
+            const gsuz = Number(gs.gorussuz != null ? gs.gorussuz : Math.max(0, Number(gs.oge || 0) - Number(gs.alinan)));
+            metinYaz(gn, "**Dil modeli görüşü:** kodun öneri verdiği **" + ftBinlik(gs.oge || gs.alinan)
+                + "** kolon bulgusunun **" + ftBinlik(gs.alinan) + "** tanesinde kolonun anlamına bakıp görüş verdi "
+                + "(Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar). "
                 + (Number(gs.farkli) ? "**" + ftBinlik(gs.farkli) + "** tanesinde kodun önerisinden farklı düşünüyor; o satırlar «Koddan farklı» diye işaretli. "
                                      : "Hepsinde kodun önerisiyle aynı görüşte. ")
+                + (gsuz ? "**" + ftBinlik(gsuz) + "** bulguda görüş alınamadı (süre doldu ya da cevap gelmedi); o satırlarda yalnız kodun önerisi var. " : "")
                 + "Seçili gelen her zaman kodun önerisidir; karar sizindir.");
             oz.appendChild(gn);
         } else if (gs.hata && Number(gs.oge) > 0) {
@@ -18110,7 +18113,11 @@ function profilKartiEkle(alan, blok) {
                         r.appendChild(sTd);
                         farkIsareti(r, sTd, () => (kararModu ? duzSecim[u.anahtar][c.ad] : c.duzeltme.secim) !== c.duzeltme.oneri);
                     } else if (c.cozum && (c.cozum.secenekler || []).length > 1) {
-                        r.appendChild(oneriHucresi(secenekAdi(c.cozum.secenekler, c.cozum.oneri), [c.cozum.gerekce], c.cozum.kaynak));
+                        const oTdC = oneriHucresi(secenekAdi(c.cozum.secenekler, c.cozum.oneri), [c.cozum.gerekce], c.cozum.kaynak);
+                        gorusBlogu(oTdC, r, c.gorus, kod => {
+                            if ((c.cozum.secenekler || []).some(o => o.kod === kod)) cozumSecim[c.ad] = kod;
+                        });
+                        r.appendChild(oTdC);
                         const sTd = pfCozumHucresi(c.ad, c.cozum, cozumSecim, kararModu, kart, kararCizenler, kararCiz, true);
                         r.appendChild(sTd);
                         farkIsareti(r, sTd, () => (kararModu ? cozumSecim[c.ad] : c.cozum.secim) !== c.cozum.oneri);

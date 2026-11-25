@@ -3565,14 +3565,16 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 
 ## 02.1: dil modeli ikinci görüşü ve "Boş Yerine Sıfır Yazılmış" kuralı
 
-- **İlke.** Öneriyi kod verir ve seçili gelen odur. Kolonun anlamını bilmeden karar verilemeyen bulgularda dil modeli aynı satırda ayrı bir görüş yazar; görüş seçimi kendiliğinden değiştirmez.
-- **Nerede sorulur** (`akis_faz02._profil_llm_gorusleri`; `GORUS_SIZINTI`, `GORUS_KOD`, `GORUS_GRUP`):
-  - **Tahmin Anında Bilinmeyen Bilgi** (adı geleceği anlatan, hedefi fazla iyi bilen, dönem sonrası tarih): Tut ya da Çıkar.
-  - **Boş Yerine Başka Şey Yazılmış** (boş yerine sayı yazılmış, hem boş hücre hem sayı): kod gerçekten «bilgi yok» mu, gerçek bir değer mi.
-  - **Boş Yerine Sıfır Yazılmış** (yeni kural, aşağıda): 0 bu kolonda «bilgi yok» anlamına mı geliyor.
-  - **Birbirinin Aynısı Kolonlar**: grupta hangi kolon asıl kolon.
-- **Dil modeline giden bilgi.** Kolon adı, onaylı açıklaması, kolon kartındaki ölçüsü, bulgunun metni, seçenekler ve kodun önerisi. Satır verisi gitmez. 40'lık parçalarla sorulur (`llm.profil_gorus_al`, `PROFIL_GORUS_PARCA`), toplam süre sınırı 120 sn (`PROFIL_GORUS_BUTCE`); süre dolarsa kalan bulgular görüşsüz kalır.
-- **Saklama.** `p["llm_gorus"][kontrol][anahtar] = {secim, gerekce, kod_oneri, imza}`. İmza (kolon, açıklama, bulgu, seçenekler, kodun önerisi) değişmediyse profil yeniden çıkınca aynı soru yeniden sorulmaz. Sayım: `p["llm_gorus_sayim"] = {oge, sorulan, alinan, farkli, hata, sifir_aday}`.
+- **İlke.** Öneriyi kod verir ve seçili gelen odur. Dil modeli, kodun öneri verdiği **bütün kolon bulgularında** kolonun anlamına bakıp aynı satırda ayrı bir görüş yazar; görüş seçimi kendiliğinden değiştirmez.
+- **Nerede sorulur** (`akis_faz02._profil_llm_gorusleri`). İlk sürümde yalnız dört yerde soruluyordu (sızıntı, özel kod, sıfır, aynı kolonlar); ayrım "karar sayılardan çıkar mı" yargısına dayanıyordu, ölçülmüş bir kural değildi. Öteki bulgularda da anlam kararı değiştirebildiği için (eksi değer bu kolonda gerçek mi, aşırı değer doğal mı, nadir olay bayrağı mı) artık hepsinde sorulur:
+  - **Bütün Tut ya da Çıkar kararları** (`KARAR_KONTROLLERI`): tahmin anında bilinmeyen bilgi (tür `sizinti`); neredeyse hep aynı değer, dönemden döneme bozulan, birbirini tutmayan, Train dışında bozulan kolonlar (tür `karar`).
+  - **Bütün düzeltmeler** (`DUZELTME_KONTROLLERI`): boş yerine sayı (tür `kod`), boş yerine sıfır (tür `sifir`, aşağıda); boş yerine yazı, yazım farkı, eksi değer, aşırı değer (tür `duzeltme`).
+  - **Çözüm seçimleri** (`COZUM_KONTROLLERI`, birden çok seçeneği olanlar): çoğu boş, numara gibi, çok çeşitli yazı, tarih kolonundan nasıl yararlanılacağı (tür `cozum`).
+  - **Birbirinin Aynısı Kolonlar**: grupta hangi kolon asıl kolon (tür `ayni`).
+- **Sorulmayanlar.** Seçeneği olmayan bulgu (hep aynı değer; tek çözümü Çıkar olan kolon) ve satır kuralları (Tekrar Eden Satır, Setlerde Ortak Kayıt: kolon değil satır kararı).
+- **Dil modeline giden bilgi.** Kuralın adı, kolon adı, onaylı açıklaması, kolon kartındaki ölçüsü, bulgunun metni, seçenekler (kodların adlarıyla) ve kodun önerisi. Satır verisi gitmez.
+- **Süre.** 40'lık parçalarla, aynı anda 8 parça sorulur (`llm.profil_gorus_al`, `PROFIL_GORUS_PARCA`). Toplam bekleme 320 bulguya kadar 120 sn, sonraki her 320 bulgu için 30 sn daha, en çok 180 sn (`PROFIL_GORUS_BUTCE`, `_TUR`, `_EN_COK`). Süre dolarsa bitmeyen parçalar görüşsüz kalır. Sıra: önce anlam olmadan hiç karar verilemeyenler (sızıntı, özel kod, sıfır, aynı kolonlar), sonra öteki kararlar, düzeltmeler, çözümler; görüşsüz kalan olursa sondakilerdir. Kaç bulgunun görüşsüz kaldığı özet kutusunda yazar (`llm_gorus_sayim.gorussuz`).
+- **Saklama.** `p["llm_gorus"][kontrol][anahtar] = {secim, gerekce, kod_oneri, imza}`. İmza (kolon, açıklama, bulgu, seçenekler, kodun önerisi) değişmediyse profil yeniden çıkınca aynı soru yeniden sorulmaz. Sayım: `p["llm_gorus_sayim"] = {oge, sorulan, alinan, gorussuz, farkli, hata, sifir_aday}`.
 - **Kart.** Satırda `gorus = {secim, ad, gerekce, farkli}` (`gorus_karti`); grup tablosunda `g.gorus`; kart düzeyinde `gorus` sayımı.
 - **Ekran** (`profilKartiEkle` içinde `gorusBlogu`, `pfAyniTablosu`): "Önerilen" hücresinde kodun önerisinin altında mavi kutu «Dil modeli görüşü: ...» ve gerekçesi. Görüş kodun önerisinden farklıysa kutu sarı olur, «Koddan farklı» yazar ve «Bu görüşü seç» düğmesi çıkar; düğme seçimi görüşe çevirir. Özet kutusunda kaç bulguda görüş verildiği ve kaçında farklı olduğu yazar.
 - **Dil modeline ulaşılamazsa.** Kodun önerileri aynen geçerlidir, görüş kutusu çıkmaz, özet kutusunda bu yazar.
@@ -3581,5 +3583,5 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
   - **Bulgu.** Yalnız dil modelinin «0 bu kolonda gerçek bir değer olamaz» dediği adaylar listelenir (yaş, boy gibi). Sayılardan 0'ın gerçek mi olduğu anlaşılamaz; bu yüzden dil modeline ulaşılamazsa kural çalışmaz ve satırında «Uygulanmadı: dil modeline ulaşılamadı» yazar.
   - **Seçenekler.** «Olduğu gibi bırak» (kodun önerisi, seçili gelir) ya da «Sıfırı boş say» (dil modelinin görüşü). «Sıfırı boş say» seçilirse 0'lar boş hücreye çevrilir (`kolon_cozum.duzeltme_uygula`); öteki değerler aynen kalır.
 - **Sayım:** 16 kontrol, 27 kural, 15 ayarlanabilir sınır.
-- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 5`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca görüşler alınır.
-- **Test.** `gorus_test.py` (18, dil modeli cevabı taklit edilerek), `gorus_ui.js` (18). Gerçek dil modeliyle canlı ortamda denenmedi.
+- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 6`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca görüşler alınır.
+- **Test.** `gorus_test.py` (18) ve `gorus2_test.py` (18; bütün bulgu türleri, süre hesabı), dil modeli cevabı taklit edilerek; `gorus_ui.js` (18), `gorus2_ui.js` (13). Gerçek dil modeliyle canlı ortamda denenmedi.
