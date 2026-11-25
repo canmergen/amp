@@ -20135,7 +20135,7 @@ function profilEsikKartiEkle(alan, blok) {
             };
             const ozet = oz.degisen ? ftBinlik(oz.degisen) + " eşik değiştirilerek onaylandı"
                                     : "Eşikler varsayılan değerlerle onaylandı";
-            gonder(ozet, false, { dogrulama: { adim: "veri_profili", esikler: esikler } });
+            gonder(ozet, false, { dogrulama: { adim: alan.adim || "profil_ayar", esikler: esikler } });
         };
         dugmeler.append(vars, btn);
         alt.appendChild(dugmeler);

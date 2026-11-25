@@ -128,7 +128,7 @@ MOD_ADLARI.update({
 SONRAKI_FAZLAR = [
     {"no": "02", "baslik": "Değişken Mühendisliği",
      "ozet": "Profil, kural tabanlı ve AI destekli üretim",
-     "adimlar": ["veri_profili", "kural", "kesif"]},
+     "adimlar": ["profil_ayar", "veri_profili", "kural", "kesif"]},
     {"no": "03", "baslik": "Veri Anlama ve Hazırlama",
      "ozet": "SFA, stabilite ve analitik baz set",
      "adimlar": ["sfa", "stabilite", "baz"]},
@@ -162,6 +162,9 @@ ADIM_ADI = {
     "aciklama": "Kolon Kartları",
     "kolon_ad": "Kolon Adları",
     "bolme":  "Örneklem ve Doğrulama Tasarımı",
+    # 02.1 Veri Profili ve Kalite iki adimdir (bkz. akis_kayit.ADIM_GRUPLARI).
+    "profil_ayar": "Kontrol Ayarları",
+    "veri_profili": "Bulgular ve Kararlar",
 }
 # SOZLUK VE KOLON ADI KONTROLU: baslangic secimi gibi iki kartli secim.
 # "yap": Donem Bilgisi, Ad Parcalari, Kolon Kartlari ve Kolon Adlari
@@ -198,6 +201,8 @@ KONTROL_SORUSU_ONCEKI = (
 
 # Gruplu blogun ortak basligi: kurulum + kolon rolleri + sozluk adimlari.
 GRUP_ADI_VERI_SOZLUK = "Veri Seti, Sözlük ve Kolon Rolleri"
+# 02.1: Kontrol Ayarlari (02.1.1) + Bulgular ve Kararlar (02.1.2).
+GRUP_ADI_VERI_PROFILI = "Veri Profili ve Kalite"
 
 # MODEL TIPI (Kolon Rolleri'nin ilk secimi). Ad, rollerin yazildigi her
 # yerde (Ozet, Veri Seti karti, Arsiv ozeti, dokuman, senaryo konfigi,

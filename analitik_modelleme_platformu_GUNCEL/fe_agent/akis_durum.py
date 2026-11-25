@@ -352,7 +352,7 @@ def _mod_goc(durum):
 # Eski kayitlarda adim konumu (durum["i"]) kaydin surumundeki adim
 # listesine gore bir SAYIDIR; okunurken surum surum guncel siraya
 # kaydirilir (bkz. _sira_goc, _faz_sirasi_goc).
-SIRA_SURUMU = 15
+SIRA_SURUMU = 16
 # surum -> (eklenen adim sayisi (cikan adimda -1), {mod: eklenen adimdan
 # ONCEKI adimin yeri ya da cikan adimin yeri})
 _SIRA_GOCLERI = {
@@ -371,7 +371,13 @@ _SIRA_GOCLERI = {
     # Kisaltma Sozlugu cikti, Ad Parcalari girdi (Dönem Bilgisi'nden sonra,
     # Kolon Kartlari'ndan once): adim sayisi ayni.
     15: (0, {}),
+    # 02.1 ikiye ayrildi: Kontrol Ayarlari (yeni) Veri Profili'nden ONCE
+    # girdi. "Yer" eski Veri Profili'nin konumudur: o adimda duran calisma
+    # yeni Kontrol Ayarlari'nda kalir (ayni sayi), sonrakiler bir kayar.
+    16: (1, {"A": 13, "B": 14, "C": 6, "D": 7}),
 }
+# Faz 01 DISINA eklenen adimlar (surum 12 gocundeki Faz 01 sayimina girmez).
+_FAZ01_DISI_GOCLER = (16,)
 # surum -> {mod: (ilk, son)}: bu surumden onceki sirada [ilk, son]
 # araligindaki adimda duran calisma "ilk" adimda yeniden acilir.
 _YENIDEN_ACILAN = {
@@ -379,6 +385,9 @@ _YENIDEN_ACILAN = {
     # Eski Aciklama Duzenleme / Kisaltma Sozlugu / Yeni Kolon Adlari'nda
     # duran calisma Ad Parcalari'nda yeniden acilir.
     15: {"A": (8, 10), "B": (9, 11)},
+    # Eski 02.1'de (esik formu ya da karar karti) duran calisma yeni
+    # 02.1.1 Kontrol Ayarlari'nda yeniden acilir; esikler ve kararlar durur.
+    16: {"A": (13, 13), "B": (14, 14), "C": (6, 6), "D": (7, 7)},
 }
 # Yeniden acilan calismada eski kararlar temizlenir.
 _YENIDEN_ACILAN_ALANLAR = {
@@ -412,7 +421,8 @@ def _faz_sirasi_goc(durum, i):
     # Veri Profili'nin surum 12 sirasindaki yeri: sonraki surumlerde Faz
     # 01'e eklenen adimlar dusulur.
     profil = len(faz01) - sum(adet for h, (adet, yer) in _SIRA_GOCLERI.items()
-                              if h > 12 and durum.get("mod") in yer)
+                              if h > 12 and h not in _FAZ01_DISI_GOCLER
+                              and durum.get("mod") in yer)
     # Eski sira: profil, sfa, stabilite, baz, kural, kesif, kalite, secim
     if profil + 1 <= i <= profil + 7:
         i = profil + 1                        # yeni sirada kural

@@ -1908,7 +1908,7 @@ ESIK_BIRIM_ADI = {"yuzde": "%", "puan": "puan", "sayi": "", "kat": "kat"}
 ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her kuralın yanında "
               "neye baktığı, bir örnek ve sınırı (eşik) yazar. Sınırlar önerilen değerle dolu "
               "gelir; olduğu gibi onaylayabilir ya da değiştirebilirsiniz.")
-ESIK_DUGME = "Eşikleri Onayla ve Profili Çıkar"
+ESIK_DUGME = "Ayarları Onayla ve Bulgulara Geç"
 
 
 def _esik_varsayilan(durum=None):
@@ -2117,7 +2117,7 @@ def esik_formu(durum, hata=None, kilitli=False):
     # 2'den baslar.
     genel = [x[0] for x in PROFIL_GENEL_ESIKLER]
     kontroller, _esiksiz = esik_form_kontrolleri(durum, ilk_no=len(genel) + 1)
-    return {"tip": "profil_esik", "adim": "veri_profili", "satirlar": satirlar,
+    return {"tip": "profil_esik", "adim": "profil_ayar", "satirlar": satirlar,
             "kontroller": kontroller,
             # SAYIM: toplam kontrol (kartta gorunen), bunlarin altindaki
             # kural, ayarlanabilir esik; formda gorunen kontrol ve kural.
@@ -2230,11 +2230,12 @@ def esik_degisiklik_notu(durum):
 
 
 def veri_profili_girdi(durum, mesaj, yeniden_sor=False):
-    """02.1'e girilince esik formu acilir. Form gonderilince ({"dogrulama":
-    {"adim": "veri_profili", "esikler": {...}}}) esikler dogrulanir ve
-    kaydedilir; yazarak onayda mevcut esikler gecerli."""
+    """02.1.1 Kontrol Ayarlari'na girilince esik formu acilir. Form
+    gonderilince ({"dogrulama": {"adim": "profil_ayar", "esikler": {...}}};
+    eski on yuz "veri_profili" yollar) esikler dogrulanir ve kaydedilir;
+    yazarak onayda mevcut esikler gecerli."""
     karar = durum.get("_dogrulama_karari")
-    if not yeniden_sor and isinstance(karar, dict) and karar.get("adim") == "veri_profili" \
+    if not yeniden_sor and isinstance(karar, dict) and karar.get("adim") in ("profil_ayar", "veri_profili") \
             and isinstance(karar.get("esikler"), dict):
         durum.pop("_dogrulama_karari", None)
         esik, hata = esik_dogrula(karar["esikler"])
@@ -2466,9 +2467,9 @@ PROFIL_KAPSAM_SURUMU = 3
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
-    "ayrıca aranır. Güncellemek için 02.1 Veri Profili adımına geri dönün: profil yeniden "
-    "çıkar, onayladığınız eşikler ve verdiğiniz kararlar korunur; yeni yakalanan kolonlar "
-    "size sorulur.")
+    "ayrıca aranır. Güncellemek için 02.1.2 Bulgular ve Kararlar adımına geri dönün: profil "
+    "yeniden çıkar, onayladığınız ayarlar ve verdiğiniz kararlar korunur; yeni yakalanan "
+    "kolonlar size sorulur.")
 
 
 def profil_eski_mi(durum):
@@ -3004,6 +3005,19 @@ def _profil_karar_bekliyor(durum):
     p = durum.get("profil") or {}
     karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
     return any(k not in karar for k in profil_karar_kolonlari(durum))
+
+
+def profil_ayar_uygula(durum):
+    """02.1.1 Kontrol Ayarlari: sinirlar girdi asamasinda dogrulanip
+    kaydedildi (veri_profili_girdi). Burada yalniz ozet yazilir; profil bir
+    sonraki adimda (02.1.2 Bulgular ve Kararlar) bu sinirlarla cikarilir."""
+    durum.pop("_profil_hazir", None)
+    try:
+        notu = esik_degisiklik_notu(durum)
+    except Exception:
+        notu = ""
+    return ("Kontrol ayarları onaylandı. %s\n\nBulgular bu sınırlarla çıkarılır; sınırları değiştirmek "
+            "için bu adıma geri dönebilirsiniz." % (notu or "Bütün sınırlar önerilen değerde."))
 
 
 def veri_profili_plan(durum):
@@ -4319,13 +4333,18 @@ def profil_gecmisini_tazele(durum, gecmis):
     i = int(durum.get("i") or 0)
     adim_i = sira.index("veri_profili")
     gecti = adim_i < i
-    esik_kilit = gecti or (adim_i == i and durum.get("bekleyen") == "onay")
-    satirlar = [n for n, k in enumerate(gecmis or [])
-                if isinstance(k, dict) and k.get("rol") == "bot" and k.get("adim") == "veri_profili"]
-    if not satirlar:
+    # Esikler 02.1.1 Kontrol Ayarlari gecilince onaylanmis olur. Eski
+    # kayitlarda esik formu da "veri_profili" satirindadir.
+    esik_kilit = (i > sira.index("profil_ayar")) if "profil_ayar" in sira \
+        else (gecti or (adim_i == i and durum.get("bekleyen") == "onay"))
+    tum = [n for n, k in enumerate(gecmis or [])
+           if isinstance(k, dict) and k.get("rol") == "bot"
+           and k.get("adim") in ("veri_profili", "profil_ayar")]
+    if not tum:
         return gecmis
     yeni = list(gecmis)
-    esik_satirlari = [n for n in satirlar if _esik_satiri_mi(gecmis[n])]
+    esik_satirlari = [n for n in tum if _esik_satiri_mi(gecmis[n])]
+    satirlar = [n for n in tum if gecmis[n].get("adim") == "veri_profili"]
     # Kilitli degilse (form acik) eski kayittaki form da guncel koddan.
     for n in esik_satirlari:
         k = dict(yeni[n])

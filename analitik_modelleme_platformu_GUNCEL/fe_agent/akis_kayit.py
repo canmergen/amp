@@ -2,7 +2,7 @@
 """fe_agent/akis_kayit.py - Adim kayit defteri ve faz agaci."""
 
 from fe_agent.akis_metin import (
-    ADIM_ADI, FAZ01_OZET, GRUP_ADI_VERI_SOZLUK, SONRAKI_FAZLAR)
+    ADIM_ADI, FAZ01_OZET, GRUP_ADI_VERI_PROFILI, GRUP_ADI_VERI_SOZLUK, SONRAKI_FAZLAR)
 from fe_agent.akis_faz01 import (
     birlestirme_plan, birlestirme_uygula, bolme_girdi, bolme_uygula,
     ham_veri_girdi, ham_veri_plan, ham_veri_uygula, kurulum_girdi,
@@ -21,6 +21,7 @@ from fe_agent.akis_faz01 import (
 from fe_agent.akis_faz02 import (
     baz_plan, baz_uygula, sfa_girdi, sfa_uygula, stabilite_plan,
     stabilite_uygula, veri_profili_girdi, veri_profili_plan, veri_profili_uygula,
+    profil_ayar_uygula,
 )
 from fe_agent.akis_faz03 import kesif_plan, kesif_uygula, kural_plan, kural_uygula
 from fe_agent.akis_faz04 import kalite_plan, kalite_uygula, secim_plan, secim_uygula
@@ -196,16 +197,27 @@ ADIMLAR = {
         # "Doğru mu?" asamasi ayni onayi ikinci kez sormak olurdu.
         "girdi": bolme_girdi, "plan": None, "uygula": bolme_uygula},
 
+    # 02.1 VERI PROFILI VE KALITE IKI ADIMDIR (sohbette tek blok, sol
+    # panelde tek satir; bkz. ADIM_GRUPLARI):
+    #   02.1.1 Kontrol Ayarlari    : kontrollerin sinirlari (esik formu).
+    #   02.1.2 Bulgular ve Kararlar: profil o sinirlarla cikarilir; her
+    #          bulguda oneri ve secim (Tut / Çıkar, duzeltme, cozum).
+    "profil_ayar": {
+        "baslik": ADIM_ADI["profil_ayar"],
+        "aciklama": "Veri profilindeki kontrollerin sınırları (eşikler) "
+                    "onaylanır. Her sınır önerilen değerle dolu gelir; olduğu "
+                    "gibi onaylanabilir ya da değiştirilebilir. Bulgular bir "
+                    "sonraki adımda bu sınırlarla çıkarılır.",
+        "girdi": veri_profili_girdi, "plan": None,
+        "uygula": profil_ayar_uygula},
     "veri_profili": {
-        "baslik": "Veri Profili ve Kalite",
-        "aciklama": "Tablonun tamamında 13 kontrol: eksik değer, sabit, kimlik "
-                    "benzeri, kardinalite, aynı içerikli kolonlar, neredeyse sabit, "
-                    "dönemde boş ya da sabit, gizli eksik, sıfır yoğunluğu, beklenmeyen "
-                    "negatif, eksik sıçraması, uç değer ve tekrar eden satır; ayrıca "
-                    "hedef dağılımı. Üretime girmeyen kolonlardan değişken üretilmez; "
-                    "neredeyse sabit ve dönemde boş ya da sabit kolonlar için karar "
-                    "kullanıcınındır.",
-        "girdi": veri_profili_girdi, "plan": veri_profili_plan,
+        "baslik": ADIM_ADI["veri_profili"],
+        "aciklama": "Onaylanan sınırlarla veri profili çıkarılır (kontroller "
+                    "yalnız Train satırlarına bakar). Her bulguda öneri ve "
+                    "seçim aynı yerdedir: kolonu tutmak ya da çıkarmak, "
+                    "düzeltme ve çözüm. Üretime girmeyen kolonlardan değişken "
+                    "üretilmez.",
+        "girdi": None, "plan": veri_profili_plan,
         "uygula": veri_profili_uygula},
     "sfa": {
         "baslik": "Tek Değişken Analizi (SFA)",
@@ -332,12 +344,16 @@ ADIM_GRUPLARI = {
     # C modu: veri seti secimi + sozluk uretimi + modelleme tanimlari
     "veri_sec":    "veri_sozluk",
     "sozluk_uret": "veri_sozluk",
+    # 02.1 Veri Profili ve Kalite: ayarlar + bulgular ve kararlar.
+    "profil_ayar": "veri_profili",
+    "veri_profili": "veri_profili",
     # B ve D modunda ham tablolar ve birlestirme AYRI kalir: onlar veri
     # hazirlama isi, sozluk ve tanimlar ayri bir karar kumesi.
 }
 
 GRUP_BASLIKLARI = {
     "veri_sozluk": GRUP_ADI_VERI_SOZLUK,
+    "veri_profili": GRUP_ADI_VERI_PROFILI,
 }
 
 

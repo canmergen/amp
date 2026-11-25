@@ -3538,3 +3538,14 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Gönderilen gövde değişmedi** (`dogrulama: {adim, cikar, ayni, cozum, duzeltme}`); arka uçta değişiklik yok.
 - **Düzeltilen etiket.** Tesadüf Olasılığı satırında "Üç kuralda kullanılır" yazıyordu; dört yerde kullanılıyor.
 - **Test.** `birlesik_ui.js` (14), güncellenen `kgrup_ui.js`, `aksiyon_ui.js`, `ayni_ui.js`.
+
+## 02.1 iki adım: Kontrol Ayarları ve Bulgular ve Kararlar
+
+- **Ne değişti.** 02.1 Veri Profili ve Kalite artık iki adımdır; sohbette tek blok (alt başlıklı), sol panelde tek satır (`ADIM_GRUPLARI`, grup `veri_profili`, başlık `GRUP_ADI_VERI_PROFILI`). 02.2 ve 02.3'ün numarası değişmedi.
+  - **02.1.1 Kontrol Ayarları** (`profil_ayar`): kontrollerin sınırları (eşik formu). `girdi = veri_profili_girdi`, plan yok, `uygula = profil_ayar_uygula` (yalnız özet: değiştirilen sınırlar). Form gövdesi `{"dogrulama": {"adim": "profil_ayar", "esikler": {...}}}`; eski ön yüzün yolladığı `"veri_profili"` de kabul edilir.
+  - **02.1.2 Bulgular ve Kararlar** (`veri_profili`): profil onaylanan sınırlarla çıkarılır (`veri_profili_plan`), kartta bulgu, öneri ve seçim aynı yerdedir; onayda `veri_profili_uygula`. Girdi aşaması yok.
+- **Geri dönüş.** Yalnız kararları değiştirmek için 02.1.2'ye, sınırları değiştirmek için 02.1.1'e dönülür; 02.1.1 onaylanınca profil yeni sınırlarla yeniden çıkar.
+- **Eski çalışmalar (`SIRA_SURUMU = 16`).** Araya bir adım girdiği için konumlar kaydırılır (`_SIRA_GOCLERI[16]`): 02.2 ve sonrasında duran çalışma yerinde kalır; eski 02.1'de duran çalışma 02.1.1'de yeniden açılır (`_YENIDEN_ACILAN[16]`), sınırları ve kararları korunur. Faz 01 dışına eklenen adım sürüm 12 göçündeki sayıma girmez (`_FAZ01_DISI_GOCLER`).
+- **Yenileme.** `profil_gecmisini_tazele` ayar formunu `profil_ayar` satırında (eski kayıtta `veri_profili` satırında) kilitli ve onaylanan değerlerle, kartı `veri_profili` satırında güncel hâliyle çizer.
+- **Düğme.** "Ayarları Onayla ve Bulgulara Geç".
+- **Test.** `iki_adim_test.py` (26): numaralar, akış, yanlış adıma gelen gövde, eski çalışmaların konumu, yenileme.
