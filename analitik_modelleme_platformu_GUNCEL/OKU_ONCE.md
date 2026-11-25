@@ -3549,3 +3549,16 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Yenileme.** `profil_gecmisini_tazele` ayar formunu `profil_ayar` satırında (eski kayıtta `veri_profili` satırında) kilitli ve onaylanan değerlerle, kartı `veri_profili` satırında güncel hâliyle çizer.
 - **Düğme.** "Ayarları Onayla ve Bulgulara Geç".
 - **Test.** `iki_adim_test.py` (26): numaralar, akış, yanlış adıma gelen gövde, eski çalışmaların konumu, yenileme.
+
+## 02.1: etkin boş (boş hücre + boş yerine yazılmış değer)
+
+- **Sorun.** Boş oranına bakan kurallar yalnız boş hücreyi sayıyordu. Boşları -1 ya da «bilinmiyor» ile doldurulmuş kolon "hiç boşu yok" görünüyor, %85'i -1 olan kolon yalnız "Boş Yerine Başka Şey Yazılmış"a takılıp üretime giriyordu. Kod payı dönemden döneme ya da Validasyon'da sıçrayan kolon da yakalanmıyordu.
+- **Etkin boş (`profil_ek.etkin_bos_bilgisi`, `etkin_bos_donustur`).** Boş hücre + özel kod (aynı kural: `_gizli_eksik`; boş hücresi de olan kolonda paya bakılmaz) + boş anlamlı yazı (`METIN_BOS_DEGERLER`; "unknown", "missing", "bilgi yok", "veri yok" vb. eklendi; "yok" tek başına alınmaz, var / yok gerçek değerdir). Train satırlarından.
+- **Nerede kullanılır.**
+  - **Boş Hücreler:** etkin boş oranı sınırı aşan kolon da çok boş sayılır (`teshis.cok_bos`; `p["etkin_bos"]` kolonun dökümünü tutar). Bulgu: "Boş hücre %0; boş yerine yazılmış -1 sayısı %85: birlikte %85 boş". Kolon "Boş Yerine Başka Şey Yazılmış"ta ikinci kez sorulmaz.
+  - **Dönem kuralları** (dönemde boş, boş oranı birden değişmiş, sayılar topluca değişmiş) ve **Train Dışında Bozulan Kolonlar** (boş, boş oranı farkı): değer boşa çevrilmiş tablodan hesaplanır; bulguda "(boş yerine yazılan -999 de boş sayıldı)" yazar.
+  - **Eksik değer dağılımı** (karttaki çubuk, profil tablosundaki NULL_RATIO) etkin boşla sayılır; kartta kaç kolonda değerin boş sayıldığı yazar.
+- **Çözüm.** Bu kolonlarda değer her zaman boşa çevrilir (`_duzeltme_ogren` zorunlu kayıt: `duzeltme_bilgi.gizli_eksik[k] = kod_bos` ya da `metin_bos[k]`); böylece «dolu mu» bayrağı doğru satırları boş sayar ve üretim kodu aynı yoldan uygular. Çözüm seçeneklerine **"Değer gerçektir; kolonu olduğu gibi kullan"** (`oldugu_gibi`) eklendi: seçilirse değer boşa çevrilmez, kolon üretime girer (`etkin_bos_gercek`, `kusurlu_kolonlar`).
+- **Yazım farkı ve farklı değer sayısı.** Farklı değer sayısı yalnız yazım farkı yüzünden sınırı aşan kolon (30 değer, 90 yazım) artık "Çok Fazla Farklı Değer"e takılmaz (`sfa.profil_cikar`, `teshis.yazim_kardinalite`); Yazım Farkları kuralı yakalar ve tek yazımı önerir. "Olduğu gibi bırak" seçilirse kolon çok çeşitli kalır ve üretime girmez.
+- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 4`; eski profil uyarısı nedeni sürüme göre yazar.
+- **Test.** `etkin_bos_test.py` (25).

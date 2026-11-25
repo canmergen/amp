@@ -262,6 +262,11 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
     kayitlar = []
     cok_bos, sabit, kimlik_gibi, yuksek_kardinalite = [], [], [], []
     tarih_kolonlari = []
+    # Farkli deger sayisi yalniz YAZIM FARKI yuzunden siniri asan kolonlar
+    # (ayni deger farkli yazilmis: "Ankara", "ANKARA", "ankara "): yazimlar
+    # birlestirilince sinirin altinda kalir. Cok cesitli sayilmaz; Yazim
+    # Farklari kurali yakalar ve tek yazima cevirmeyi onerir.
+    yazim_kardinalite = []
 
     for kol in df.columns:
         if kol in haric:
@@ -301,7 +306,15 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
                 and not (sayisal and kol in olcu_kolonlari):
             kimlik_gibi.append(kol); teshisler.append("kimlik benzeri")
         if (not sayisal) and (not tarih) and tekil > kategorik_max:
-            yuksek_kardinalite.append(kol); teshisler.append("yüksek kardinalite")
+            try:
+                gercek = {profil_ek.yazim_anahtari(v) for v in s.dropna().unique()
+                          if profil_ek.metin_bos_normal(v) not in profil_ek.METIN_BOS_DEGERLER}
+            except Exception:
+                gercek = None
+            if gercek is not None and 0 < len(gercek) <= kategorik_max:
+                yazim_kardinalite.append(kol)
+            else:
+                yuksek_kardinalite.append(kol); teshisler.append("yüksek kardinalite")
         durum = " + ".join(teshisler) if teshisler else "OK"
 
         if sayisal:
@@ -329,6 +342,7 @@ def profil_cikar(df, haric=(), null_esik=NULL_ESIK, kimlik_esik=0.95,
     teshis = {
         "cok_bos": cok_bos, "sabit": sabit,
         "kimlik_gibi": kimlik_gibi, "yuksek_kardinalite": yuksek_kardinalite,
+        "yazim_kardinalite": yazim_kardinalite,
         "tarih": tarih_kolonlari,
         "temiz": [r["FEATURE"] for r in kayitlar if r["DURUM"] == "OK"],
     }

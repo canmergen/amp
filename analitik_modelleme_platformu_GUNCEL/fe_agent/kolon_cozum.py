@@ -54,6 +54,9 @@ COZUM_ADI = {
     "dolu_bayrak": "«Dolu mu» bayrağı üret",
     "metin": "Metinden özellik çıkar",
     "cikar": "Çıkar",
+    # Bos Hucreler'de ozel kod / bos anlamli yazi yuzunden yakalanan kolon:
+    # kullanici "bu deger bos degil, gercek" diyebilir.
+    "oldugu_gibi": "Değer gerçektir; kolonu olduğu gibi kullan",
     "kod_bos_bayrak": "Kodu boş say ve bayrak üret",
     "kod_bos": "Kodu boş say",
     "bos_koda": "Boşları da koda çevir",
@@ -86,6 +89,8 @@ COZUM_ACIKLAMA = {
               "sözcüklerden konular çıkarılır, her satır için bayrak ve sayı kolonları "
               "üretilir. Bütün satırlarda kodla yapılır."),
     "cikar": "Kolon değişken üretimine girmez.",
+    "oldugu_gibi": ("Boş yerine yazıldığı düşünülen değer gerçek bir değer sayılır: boşa "
+                    "çevrilmez, kolon değişken üretimine olduğu gibi girer."),
 }
 COZUM_ACIKLAMA.update({
     "kod_bos_bayrak": ("Özel kod (ör. -1, -999) olan hücreler boş sayılır; kodun olduğu satırlar "

@@ -17792,6 +17792,14 @@ function profilKartiEkle(alan, blok) {
             lj.appendChild(l);
         });
         eb.appendChild(lj);
+        /* Boş sayımına boş yerine yazılmış değer de katıldıysa (etkin boş). */
+        if (Number((alan.etkin_bos || {}).kolon) > 0) {
+            const eb2 = elYap("div", "pf-not");
+            metinYaz(eb2, "**" + ftBinlik(alan.etkin_bos.kolon) + "** kolonda boş yerine yazılmış değer (-999 gibi sayı ya da «bilinmiyor» gibi yazı) boş sayıldı"
+                + (Number(alan.etkin_bos.cok_bos) > 0 ? "; bunların **" + ftBinlik(alan.etkin_bos.cok_bos)
+                    + "** tanesi yalnız bu yüzden «Boş Hücreler»de yakalandı." : "."));
+            eb.appendChild(eb2);
+        }
         if (alan.eksik_maks_kolon && Number(alan.eksik_maks) > 0) {
             const en = elYap("div", "pf-not");
             metinYaz(en, "Eksik değeri olan kolon: **" + ftBinlik(alan.eksik_kolon) + "**. En çok eksik olan: **"

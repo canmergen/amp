@@ -420,6 +420,70 @@ def hedef_ozeti(df, hedef, donem=None):
     return sonuc
 
 
+# ===========================================================================
+# ETKIN BOS: bos hucre + bos YERINE yazilmis deger (-999 gibi ozel kod,
+# "bilinmiyor" gibi yazi). Bos oranina bakan butun kurallar (Bos Hucreler,
+# donemlerde bos, bos oraninin sicramasi, Train disinda bos) etkin bosa
+# bakar; yoksa butun boslari -1 ile doldurulmus bir kolon "hic bos yok"
+# gorunur ve hicbir bos kuralina takilmaz.
+# ===========================================================================
+def etkin_bos_bilgisi(df, kolonlar, esik=None):
+    """{kolon: {"bos" (bos hucre orani), "kod" (ozel kod ya da None),
+    "metinler" (bos anlamli yazilar), "ek" (kod / yazi satirlarinin orani),
+    "etkin" (bos + ek)}}: yalniz ozel kodu ya da bos anlamli yazisi olan
+    kolonlar. Ozel kod kolon_kontrolleri ile ayni kuralla (_gizli_eksik;
+    bos hucresi de olan kolonda payina bakilmaz)."""
+    e = esik_birlestir(esik)
+    n = len(df)
+    cikti = {}
+    if not n:
+        return cikti
+    for kol in kolonlar:
+        if kol not in df.columns:
+            continue
+        s = df[kol]
+        bos = int(s.isna().sum())
+        if _sayisal_mi(s) and not pd.api.types.is_bool_dtype(s):
+            sn = pd.to_numeric(s, errors="coerce").dropna()
+            if not len(sn):
+                continue
+            sayim = sn.value_counts()
+            kod = _gizli_eksik(sayim, len(sn), float(sn.min()), float(sn.max()), e["gizli"])
+            if kod is None and bos:
+                kod = _gizli_eksik(sayim, len(sn), float(sn.min()), float(sn.max()), 0.0)
+            if kod is None:
+                continue
+            cikti[kol] = {"bos": bos / float(n), "kod": float(kod[0]), "metinler": [],
+                          "ek": int(kod[1]) / float(n), "etkin": (bos + int(kod[1])) / float(n)}
+        elif _metin_kolonu_mu(s):
+            vc = _metin_sayimi(s)
+            bul = [(v, int(a)) for v, a in vc.items() if metin_bos_normal(v) in METIN_BOS_DEGERLER]
+            if not bul:
+                continue
+            adet = sum(a for _v, a in bul)
+            cikti[kol] = {"bos": bos / float(n), "kod": None, "metinler": [v for v, _a in bul],
+                          "ek": adet / float(n), "etkin": (bos + adet) / float(n)}
+    return cikti
+
+
+def etkin_bos_donustur(df, bilgi):
+    """df'in kopyasi: bilgi'deki kolonlarda ozel kod ve bos anlamli yazilar
+    bos hucreye cevrilir (oteki kolonlara dokunulmaz)."""
+    kolonlar = [k for k in (bilgi or {}) if k in df.columns]
+    if not kolonlar:
+        return df
+    yeni = df.copy(deep=False)
+    for k in kolonlar:
+        v = bilgi[k]
+        s = df[k]
+        if v.get("kod") is not None:
+            sn = pd.to_numeric(s, errors="coerce")
+            yeni[k] = s.where(sn != float(v["kod"]))
+        elif v.get("metinler"):
+            yeni[k] = s.where(~s.isin(set(v["metinler"])))
+    return yeni
+
+
 def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None, esik=None,
                   tarihler=(), hedef_maske=None, satir_haric=()):
     """Butun ek kontroller. adaylar: dort temel kontrolden gecen kolonlar
@@ -430,11 +494,18 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     # bagli; bulgular her uye icin hesaplanir, gosterirken kopyalar elenir.
     sonuc["ayni_icerik"] = ayni_icerik(df, adaylar)
     baskin = {x["kolon"] for x in sonuc["baskin"]}
+    # DONEM KURALLARI ETKIN BOSA BAKAR: ozel kod ve bos anlamli yazi bos
+    # sayilir (kod payi donemle degisiyorsa bos orani degisiyor demektir;
+    # kod sayi olarak kalirsa tipik degerleri de kaydirir).
+    sonuc["etkin_bos"] = etkin_bos_bilgisi(df, adaylar, esik)
+    df_ham, df = df, etkin_bos_donustur(df, sonuc["etkin_bos"])
     donemler, bos_sabit, sicrama = donem_kontrolleri(
         df, [k for k in adaylar if k not in baskin], donem, esik)
     sonuc["donemler"] = donemler
     sonuc["donem"] = bos_sabit
     sonuc["sicrama"] = sicrama
+    sonuc["kayma"] = deger_kaymasi(df, [k for k in adaylar if k not in baskin], donem, esik)
+    df = df_ham                         # geri kalan kontroller ham degerlerle
     sonuc["tekrar"] = tekrar_satirlar(df, kimlik, donem, haric=satir_haric)
     sonuc["hedef"] = hedef_ozeti(df, hedef, donem)
     sonuc["olcu_var"] = any(str(v or "").strip() for v in (olculer or {}).values())
@@ -448,7 +519,6 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
     sonuc["tarih_kod"], sonuc["tarih_kolon"] = tarih_kod_kontrol(df, tarihli)
     sonuc["metin_kolon"] = sum(1 for k in adaylar if _metin_kolonu_mu(df[k]))
     sonuc["tarih_sonra"] = tarih_sonra_kontrol(df, tarihli, donem)
-    sonuc["kayma"] = deger_kaymasi(df, [k for k in adaylar if k not in baskin], donem, esik)
     # Hedefle birebir: hedef YALNIZ TRAIN satirlarinda (hedef_maske); val
     # ve test hedefi karara karismaz. Maske yoksa butun satirlar.
     sonuc["birebir"] = hedef_birebir(df[hedef_maske] if hedef_maske is not None else df,
@@ -470,7 +540,10 @@ def ek_kontroller(df, adaylar, donem=None, kimlik=None, hedef=None, olculer=None
 METIN_BOS_DEGERLER = frozenset((
     "", "null", "none", "nan", "nat", "n/a", "na", "#n/a", "nil", "undefined",
     "-", "--", "---", "?", "??", ".", "boş", "bos", "bilinmiyor", "bilinmeyen",
-    "belirtilmemiş", "belirtilmemis", "tanımsız", "tanimsiz"))
+    "belirtilmemiş", "belirtilmemis", "tanımsız", "tanimsiz",
+    # "yok" tek basina alinmaz: var / yok gercek bir degerdir.
+    "unknown", "missing", "not available", "bilgi yok", "veri yok", "kayıt yok",
+    "kayit yok", "girilmemiş", "girilmemis", "mevcut değil", "mevcut degil"))
 # Ozel tarih kodu: yili bu araligin disindaki tarih (1900-01-01, 9999-12-31).
 TARIH_YIL_ALT = 1901
 TARIH_YIL_UST = 2200
@@ -986,7 +1059,7 @@ def set_cakismasi(df, setler, kimlik=None, donem=None, haric=()):
 
 
 
-def set_disi_bozulma(df, setler, adaylar, esik=None):
+def set_disi_bozulma(df, setler, adaylar, esik=None, etkin_bos=None):
     """[{"kolon", "set", "tur", "train_oran", "set_oran", "deger"}]: TRAIN'de
     saglam gorunup Train disindaki bir sette (val, test, oot) bozuk olan
     kolonlar. Kontroller train'de yapildigi icin bu durum baska hicbir
@@ -998,6 +1071,9 @@ def set_disi_bozulma(df, setler, adaylar, esik=None):
     tesaduf sinirinin (sinanan set sayisina bolunmus) altindaysa bulgu.
     Kolon ve set basina tek bulgu (once bos, sonra sabit, sonra fark)."""
     e = esik_birlestir(esik)
+    # ETKIN BOS: Train'de bulunan ozel kod / bos anlamli yazi bos sayilir
+    # (etkin_bos: etkin_bos_bilgisi ciktisi).
+    df = etkin_bos_donustur(df, etkin_bos)
     eg = setler.get("egitim")
     if eg is None:
         return []

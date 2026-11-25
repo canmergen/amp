@@ -216,12 +216,39 @@ def kusurlu_kolonlar(durum):
     p = durum.get("profil") or {}
     t = p.get("profil_teshis") or {}
     karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
-    return sorted(set(t.get("cok_bos") or []) | set(t.get("sabit") or [])
+    # Bos Hucreler'de bos YERINE yazilmis deger yuzunden yakalanan kolonda
+    # kullanici "deger gercektir" dediyse kolon cok bos sayilmaz.
+    gercek = etkin_bos_gercek(durum)
+    # Farkli deger sayisi yalniz yazim farki yuzunden siniri asan kolon:
+    # yazimlar birlestirilirse girer; "olduğu gibi bırak" denirse cok
+    # cesitli kalir ve girmez.
+    yz = ((p.get("duzeltme_secim") or {}).get("yazim") or {}) \
+        if isinstance(p.get("duzeltme_secim"), dict) else {}
+    yazim_birak = {k for k in (t.get("yazim_kardinalite") or []) if yz.get(k) == "birak"}
+    return sorted({k for k in (t.get("cok_bos") or []) if k not in gercek}
+                  | yazim_birak
+                  | set(t.get("sabit") or [])
                   | set(t.get("kimlik_gibi") or [])
                   | set(t.get("yuksek_kardinalite") or [])
                   | set(t.get("tarih") or [])
                   | set(t.get("ayni_icerik") or [])
                   | {k for k, v in karar.items() if v == "cikar"})
+
+
+def etkin_bos_kolonlari(durum):
+    """{kolon: {"bos", "kod", "metinler", "ek", "etkin"}}: bos hucre orani
+    tek basina sinirin altinda olup bos YERINE yazilmis degerle (ozel kod,
+    "bilinmiyor" gibi yazi) birlikte Bos Hucreler sinirini asan kolonlar."""
+    eb = (durum.get("profil") or {}).get("etkin_bos")
+    return eb if isinstance(eb, dict) else {}
+
+
+def etkin_bos_gercek(durum):
+    """Etkin bos kolonlardan kullanicinin "deger gercektir; oldugu gibi
+    kullan" dedikleri: boşa cevrilmez, uretime girer."""
+    sec = (durum.get("profil") or {}).get("cozum_secim")
+    sec = sec if isinstance(sec, dict) else {}
+    return {k for k in etkin_bos_kolonlari(durum) if sec.get(k) == "oldugu_gibi"}
 
 
 # ===========================================================================
@@ -269,8 +296,9 @@ def _cozum_ogren(durum):
     # sonraki tarihi olan tarih kolonunun gun farki).
     karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
     secim = {k: c for k, c in cozum_secimi(durum).items()
-             if c != "cikar" and karar.get(k) != PROFIL_KARAR_CIKAR}
-    duz = any(c != "birak" for a in duzeltme_secimi(durum).values() for c in a.values())
+             if c not in ("cikar", "oldugu_gibi") and karar.get(k) != PROFIL_KARAR_CIKAR}
+    duz = any(c != "birak" for a in duzeltme_secimi(durum).values() for c in a.values()) \
+        or bool(set(etkin_bos_kolonlari(durum)) - etkin_bos_gercek(durum))
     bilgi_hepsi = {}
     p["duzeltme_bilgi"] = {}
     duz_yeni = []
@@ -668,9 +696,14 @@ def _veri_onerileri(durum, ek, df, egitim):
     for x in ek.get("yazim") or []:
         g = (x.get("gruplar") or [{}])[0]
         ornek = ", ".join("«%s»" % y_["deger"] for y_ in (g.get("yazimlar") or [])[:3])
+        _yk = x["kolon"] in set(((durum.get("profil") or {}).get("profil_teshis") or {}).get("yazim_kardinalite") or []) \
+            or x["kolon"] in set(ek.get("yazim_kardinalite") or [])
         yaz("yazim", x["kolon"], "tek_yazim", "%s değer farklı biçimlerde yazılmış, %s satırda "
-            "(ör. %s). Hepsi tek yazıma çevrilir." % (_sayi(x.get("grup") or 0), _sayi(x.get("satir") or 0),
-                                                ornek))
+            "(ör. %s). Hepsi tek yazıma çevrilir.%s" % (
+                _sayi(x.get("grup") or 0), _sayi(x.get("satir") or 0), ornek,
+                (" Kolonun farklı değer sayısı yalnız bu yazım farkları yüzünden «Çok Fazla Farklı "
+                 "Değer» sınırını aşıyor; birleştirince sınırın altında kalır. «Olduğu gibi bırak» "
+                 "seçerseniz kolon çok çeşitli sayılır ve üretime girmez.") if _yk else ""))
 
     # SIZINTI: gelecek penceresi ve donemden sonraki tarih Çıkar; hedefle
     # birebir ayirma gucune gore (neredeyse kusursuzsa Çıkar).
@@ -902,6 +935,23 @@ def _duzeltme_ogren(durum, df, tr, mevcut):
                                                 "kolonlar": kol,
                                                 "ozet": _duzeltme_ozeti(a, c, b)}
             yeni += kol
+    # ETKIN BOS KOLONLAR (Bos Hucreler'de bos yerine yazilmis degerle
+    # yakalananlar): deger HER ZAMAN bosa cevrilir (kullanici "deger
+    # gercektir" demediyse). Boylece «dolu mu» bayragi ve uretim kodu dogru
+    # satirlari bos sayar; duzeltme oteki duzeltmelerle ayni yoldan uygulanir.
+    gercek = etkin_bos_gercek(durum)
+    for k, v in etkin_bos_kolonlari(durum).items():
+        if k in gercek or k not in df.columns:
+            continue
+        if v.get("kod") is not None:
+            b = {"kod": float(v["kod"])}
+            bilgi_hepsi.setdefault("gizli_eksik", {})[k] = {
+                "secim": "kod_bos", "bilgi": b, "kolonlar": [],
+                "ozet": _duzeltme_ozeti("gizli_eksik", "kod_bos", b)}
+        elif v.get("metinler"):
+            bilgi_hepsi.setdefault("metin_bos", {})[k] = {
+                "secim": "metin_bos", "bilgi": {}, "kolonlar": [],
+                "ozet": _duzeltme_ozeti("metin_bos", "metin_bos", {})}
     # Tam sayiya cevrilecek kolonda ozel kod bos yapildiysa (ya da negatif
     # bos yapildiysa) bos hucre olusur: kolon ondalik tipte kalir.
     bos_yapan = {k for a_ in ("gizli_eksik", "karisik_eksik", "negatif")
@@ -1683,10 +1733,15 @@ PROFIL_ESIK_ACIKLAMA = {
     "cok_bos": _ac(
         "Büyük kısmı boş olan kolon.",
         "Kolondaki hücrelerin yüzde kaçının boş olduğuna bakar. Boş oranı eşiğin üstündeyse "
-        "kolon yakalanır.",
-        "100 satırın 85'i boşsa boş oranı %85'tir. Eşik %80 ise kolon yakalanır.",
+        "kolon yakalanır. Boş bırakmak yerine yazılmış sayı (-1, -999, 9999 gibi) ya da yazı "
+        "(«bilinmiyor», «-» gibi) da boş sayılır: yoksa bütün boşları -1 ile doldurulmuş bir "
+        "kolon hiç boşu yokmuş gibi görünür.",
+        "100 satırın 85'i boşsa boş oranı %85'tir. Eşik %80 ise kolon yakalanır. 100 satırın "
+        "5'i boş, 80'inde -1 yazıyorsa boş oranı yine %85'tir.",
         "kolon olduğu gibi kullanılmaz. Yerine «bu satırda değer var mı, yok mu» bilgisini "
-        "taşıyan 1/0 kolonu önerilir; kabul edip etmemek size kalır.",
+        "taşıyan 1/0 kolonu önerilir; kabul edip etmemek size kalır. Kolon boş yerine yazılmış "
+        "değer yüzünden yakalandıysa ve o değer aslında gerçek bir değerse «Değer gerçektir» "
+        "seçersiniz; kolon olduğu gibi kullanılır.",
         "Neden %80 önerildi?",
         "Kolonun beşte dördü boşsa geriye işe yarar bilgi kalmaz. Daha az boş olan kolon, boşlar "
         "doldurularak kullanılır.",
@@ -1750,7 +1805,10 @@ PROFIL_ESIK_ACIKLAMA = {
         kapsam="Train satırları. Ayrıca Train dışındaki setlere (Test, Validasyon) de bakılır: "
                "kod Train'de hiç yokken o sette eşikten fazla yazıyorsa kolon yine yakalanır. O "
                "durumda öneri yalnız «boş say»dır; ayrı 1/0 kolonu üretilmez, çünkü Train'de hep "
-               "0 olurdu.",
+               "0 olurdu. Bu sayı boş hücrelerle birlikte «Boş Hücreler» sınırını aşıyorsa kolon "
+               "burada değil orada yakalanır (kolonun çoğu aslında boştur). Boş oranına bakan "
+               "öteki kurallar da (dönemlerde boş, boş oranı birden değişmiş, Train dışında "
+               "bozuk) bu sayıyı boş sayar.",
         sorun="Bu sayı gerçek bir değer gibi hesaba girerse ortalamaları ve sonucu bozar.",
         sonuc="Düzeltme önerilir; kolon üretime girer"),
     "sicrama": _ac(
@@ -2461,9 +2519,11 @@ def _cift_iki_yonlu(liste):
 
 # PROFIL KAPSAM SURUMU: profilin hangi kuralla cikarildigi. 1 (alan yok):
 # tablonun tamamindan; 2: yalniz Train satirlarindan; 3: Train disindaki
-# setlerde gorulen kod, dev deger ve dagilim kaymasi da aranir. Kural
-# degisince artirilir; eski surumle cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 3
+# setlerde gorulen kod, dev deger ve dagilim kaymasi da aranir; 4: bos
+# yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
+# deger sayisini sisirmez. Kural degisince artirilir; eski surumle
+# cikarilmis profil "eski" sayilir.
+PROFIL_KAPSAM_SURUMU = 4
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -2488,9 +2548,16 @@ def profil_eski_uyarisi(durum):
     if not profil_eski_mi(durum):
         return ""
     kap = (durum.get("profil") or {}).get("profil_kapsam") or {}
-    neden = ("Train dışındaki setlerde görülen uydurma sayı, dev değer ve sayı kayması aranmamış"
-             if kap else "kontroller tablonun tamamına bakmış (Test ve Validasyon satırları da "
-                         "kolon kararına karışmış)")
+    try:
+        surum = int(kap.get("surum") or (2 if kap else 1))
+    except (TypeError, ValueError):
+        surum = 1
+    neden = ("kontroller tablonun tamamına bakmış (Test ve Validasyon satırları da kolon kararına "
+             "karışmış)" if surum <= 1 else
+             "Train dışındaki setlerde görülen uydurma sayı, dev değer ve sayı kayması aranmamış"
+             if surum == 2 else
+             "boş yerine yazılmış değerler (-999, «bilinmiyor» gibi) boş sayılmamış; çoğu böyle "
+             "doldurulmuş kolonlar «Boş Hücreler»e takılmamış")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -2544,11 +2611,31 @@ def profil_hesapla(durum):
                                          kategorik_max=esik["kardinalite"],
                                          olcu_kolonlari=[k for k, v in olculer.items()
                                                          if str(v or "").strip()])
+    # ETKIN BOS: bos hucre + bos YERINE yazilmis deger (ozel kod, "bilinmiyor"
+    # gibi yazi). Birlikte Bos Hucreler sinirini asan kolon da cok bos
+    # sayilir; yoksa butun boslari -1 ile doldurulmus kolon hicbir bos
+    # kuralina takilmaz. Kolonun bos sayimi (tablo, eksik dagilimi) da etkin
+    # bosla yazilir.
+    eb_tum = profil_ek.etkin_bos_bilgisi(
+        df, [k for k in df.columns if k not in haric and k not in set(teshis.get("tarih") or [])], esik)
+    eski_cb = set(teshis.get("cok_bos") or [])
+    yeni_cb = [k for k, v in eb_tum.items() if k not in eski_cb and v["etkin"] > esik["cok_bos"]]
+    if yeni_cb:
+        teshis["cok_bos"] = list(teshis.get("cok_bos") or []) + yeni_cb
+    if eb_tum and len(tablo):
+        n_ = float(len(df)) or 1.0
+        oran = tablo["FEATURE"].map(lambda k_: (eb_tum.get(k_) or {}).get("etkin"))
+        tablo["NULL_RATIO"] = oran.where(oran.notna(), tablo["NULL_RATIO"]).astype(float).round(4)
+        tablo["NULL_COUNT"] = (tablo["NULL_RATIO"] * n_).round().astype(int)
+        tablo = tablo.sort_values("NULL_RATIO", ascending=False, kind="stable").reset_index(drop=True)
     _isaret("temel_kontroller")
     yazildi, yedek = ara_tablo_kaydet(durum, "PROFIL", tablo, "/veri_profili.parquet")
     _isaret("profil_tablosu_yazma")
 
     p = durum.get("profil") or {}
+    p["etkin_bos"] = _json_uyumlu({k: eb_tum[k] for k in yeni_cb})
+    # Bos sayimina katilan ozel kod / yazi (kartta ve bulgularda yazar).
+    p["etkin_bos_sayim"] = {"kolon": len(eb_tum), "cok_bos": len(yeni_cb)}
     p["profil_kapsam"] = {"surum": PROFIL_KAPSAM_SURUMU,
                           "train": bool(train_ayri), "hedef_train": egitim is not None,
                           "satir": int(len(df)), "toplam": int(len(df_tum)),
@@ -2558,11 +2645,13 @@ def profil_hesapla(durum):
     tarihler = [str(k) for k in teshis.get("tarih") or [] if k not in temel]
     temel |= set(teshis.get("tarih") or [])
     adaylar = [str(k) for k in df.columns if k not in haric and k not in temel]
+    ek_yk = list(teshis.get("yazim_kardinalite") or [])
     ek = profil_ek.ek_kontroller(df, adaylar, donem=m.get("donem"), kimlik=m.get("id"),
                                  hedef=m.get("target"), olculer=olculer,
                                  esik=esik, tarihler=tarihler,
                                  hedef_maske=None if train_ayri else egitim,
                                  satir_haric={SPLIT_KOLON})
+    ek["yazim_kardinalite"] = ek_yk
     if train_ayri:
         # Tekrar eden satir ve hedef dagilimi TABLONUN TAMAMINDAN (setler
         # arasi sayim ve gosterim; kolon kararina karismaz).
@@ -2591,7 +2680,8 @@ def profil_hesapla(durum):
     # TRAIN DISINDA BOZULAN KOLONLAR: train'de saglam, oteki sette bos ya da
     # hep ayni. 01.4'te Train disinda set yoksa None (kural uygulanmaz).
     try:
-        ek["set_disi"] = (profil_ek.set_disi_bozulma(df_tum, st, adaylar, esik)
+        ek["set_disi"] = (profil_ek.set_disi_bozulma(df_tum, st, adaylar, esik,
+                                                     etkin_bos=ek.get("etkin_bos"))
                           if (st and train_ayri) else None)
     except Exception as e_:
         ek["set_disi"] = None
@@ -2635,9 +2725,23 @@ def profil_hesapla(durum):
     # satirlar). Kolon bazinda oneriyi dil modeli verir (asagida).
     from fe_agent import kolon_cozum as kc
     target = (durum.get("meta") or {}).get("target")
-    p["cozum_oneri"] = kc.oneriler(df_tum, teshis, esik["kardinalite"],
+    # Etkin bos kolonlarda cozum (dolu mu bayragi) deger bosa cevrilmis
+    # tablodan olculur; ayrica "deger gercektir" secenegi sunulur.
+    p["cozum_oneri"] = kc.oneriler(profil_ek.etkin_bos_donustur(df_tum, p["etkin_bos"]), teshis,
+                                   esik["kardinalite"],
                                    y=df_tum[target] if target in df_tum.columns else None,
                                    egitim=egitim)
+    for k, v in p["etkin_bos"].items():
+        o = p["cozum_oneri"].get(k)
+        if not o or o.get("kontrol") != "cok_bos":
+            continue
+        ne = ("%s sayısı" % profil_ek.deger_metni(v["kod"])) if v.get("kod") is not None \
+            else ("%s yazısı" % ", ".join("«%s»" % x for x in (v.get("metinler") or [])[:3]))
+        o["secenekler"] = list(o["secenekler"]) + ["oldugu_gibi"]
+        o["gerekce"] = ("Boş hücre %s; %s «bilgi yok» anlamında %s satırda yazıyor: birlikte %s boş. "
+                        "%s Bu değer gerçek bir değerse «Değer gerçektir» seçin." % (
+                            _yuzde_metni(v["bos"]), ne, _yuzde_metni(v["ek"]), _yuzde_metni(v["etkin"]),
+                            o.get("gerekce") or ""))
     p["cozum_oneri"].update(_tarih_onerileri(df_tum, teshis, m.get("donem"),
                                              set(p["cozum_oneri"])))
     _isaret("tarih_ad_set_cozum")
@@ -3202,7 +3306,8 @@ def _profil_kurallari(esik=None):
     e = esik or _esik_varsayilan()
     kat = _sayi(e["kardinalite"])
     return {
-        "cok_bos": "Boş hücre oranı %s üstünde." % _yuzde_ekli(e["cok_bos"]),
+        "cok_bos": "Boş hücre oranı %s üstünde. Boş yerine yazılmış sayı (-999 gibi) ya da yazı "
+                   "(«bilinmiyor» gibi) da boş sayılır." % _yuzde_ekli(e["cok_bos"]),
         "sabit": "Her satırda aynı değer var. Bir değer ve boş hücrelerden oluşan kolon "
                  "sayılmaz.",
         "kimlik_gibi": "Neredeyse her satırda başka değer var: farklı değer sayısı ÷ satır "
@@ -3811,6 +3916,18 @@ def _ek_bulgulari(p, ek=None, kopya_suz=True):
             x["once"], _yuzde_metni(x["once_oran"]), x["sonra"], _yuzde_metni(x["sonra_oran"]))
     for x in ek.get("uc") or []:
         b["uc"][x["kolon"]] = uc_bulgu_metni(x, tt)
+    # ETKIN BOS: bos oranina bakan bulgularda bos yerine yazilmis deger de
+    # bos sayildi; bulguda yazar.
+    eb_ = ek.get("etkin_bos") if isinstance(ek.get("etkin_bos"), dict) else {}
+    for a in ("donem", "sicrama", "set_disi"):
+        for k in list(b.get(a) or {}):
+            v = eb_.get(k)
+            if not v:
+                continue
+            from fe_agent import profil_ek as _pe2
+            ne = _pe2.deger_metni(v["kod"]) if v.get("kod") is not None \
+                else ", ".join("«%s»" % x for x in (v.get("metinler") or [])[:3])
+            b[a][k] += " (boş yerine yazılan %s de boş sayıldı)" % ne
     for a, kolonlar in b.items():
         if a not in ("ayni_icerik", "yakin_icerik"):
             for k in [k for k in kolonlar if k in kopya]:
@@ -3989,7 +4106,19 @@ def profil_karti(durum, karar=False):
         turler[tur] = turler.get(tur, 0) + 1
 
     bulgu = _ek_bulgulari(p)
+    from fe_agent import profil_ek as _pe
+    eb = p.get("etkin_bos") if isinstance(p.get("etkin_bos"), dict) else {}
     for k in t.get("cok_bos") or []:
+        v = eb.get(k)
+        if v:
+            # Bos hucre tek basina sinirin altinda; bos yerine yazilmis
+            # degerle birlikte ustunde.
+            ne = ("%s sayısı" % _pe.deger_metni(v["kod"])) if v.get("kod") is not None \
+                else ("%s yazısı" % ", ".join("«%s»" % x for x in (v.get("metinler") or [])[:3]))
+            bulgu.setdefault("cok_bos", {})[k] = (
+                "Boş hücre %s; boş yerine yazılmış %s %s: birlikte %s boş" % (
+                    _yuzde_metni(v["bos"]), ne, _yuzde_metni(v["ek"]), _yuzde_metni(v["etkin"])))
+            continue
         bulgu.setdefault("cok_bos", {})[k] = "Eksik oranı %s" % _yuzde_metni(
             (ozet.get(k) or {}).get("null_oran") or 0)
     for k in t.get("sabit") or []:
@@ -4155,6 +4284,8 @@ def profil_karti(durum, karar=False):
                   "orta": int(n.get("orta") or 0), "asiri": int(n.get("asiri") or 0)},
         "eksik_esik": {"az": NULL_AZ, "asiri": esik["cok_bos"]},
         "esik_notu": esik_degisiklik_notu(durum),
+        # Bos sayimina bos yerine yazilmis deger de katildi: {"kolon", "cok_bos"}.
+        "etkin_bos": p.get("etkin_bos_sayim") or {},
         # Profil eski kuralla cikarildiysa kartin ustunde sari uyari.
         "eski_uyari": profil_eski_uyarisi(durum),
         "eksik_kolon": p.get("null_kolon_adet"),
