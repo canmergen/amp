@@ -74,6 +74,36 @@ def _guven_metni(delta, std, ga, basamak=4):
     return metin
 
 
+def _bolme_adi(durum):
+    """Plan metinlerindeki bolme satiri: 01.4'te UYGULANAN bolmenin ozeti
+    (set adlari ve satir sayilari). Sabit "rastgele %80 / %20" yazilmaz:
+    kullanici oranlari ve setleri 01.4'te kendisi secti."""
+    try:
+        from fe_agent.akis_durum import bolme_ozeti
+        ozet = str(bolme_ozeti(durum) or "").strip()
+    except Exception:
+        ozet = ""
+    if ozet:
+        return ozet
+    b = durum.get("bolme") or {}
+    return "zamansal" if b.get("tur") == "zamansal" else "rastgele"
+
+
+def model_seedleri(durum):
+    """Karsilastirmanin rastgelelik tohumlari 01.4'TEKI SECIMDEN: "Çoklu
+    tekrar" secildiyse oradaki tohum listesi; "Sabit bölme" secildiyse
+    oradaki tohumdan baslayan model.TEKRAR ardisik tohum (tek kosunun farki
+    gurultuyu tasiyamadigi icin olcum her durumda tekrarlanir)."""
+    try:
+        a = bolme_ayarlari(durum)
+        if a.get("seed_tur") == "coklu" and len(a.get("seedler") or []) >= 2:
+            return [int(x) for x in a["seedler"]]
+        ilk = int(a.get("seed") if a.get("seed") is not None else model_mod.SEED)
+    except Exception:
+        ilk = model_mod.SEED
+    return [ilk + i for i in range(max(int(model_mod.TEKRAR), 1))]
+
+
 def _sifir_iceriyor(ga):
     return bool(ga) and len(ga) == 2 and ga[0] is not None and ga[1] is not None \
         and float(ga[0]) <= 0.0 <= float(ga[1])
@@ -97,18 +127,223 @@ def _bolme_ozeti(durum):
     return b
 
 
+# ===========================================================================
+# DORT VERI SETI KARSILASTIRMASI: Ham / Temizlenmis / + Kural / + AI
+# ---------------------------------------------------------------------------
+# Her adimin (02.1 temizlik, 02.2 kural tabanli uretim, 02.3 AI kesfi) modele
+# ne kattigi AYNI kuralla olculur (model.coklu_karsilastir):
+#   * Model yalniz 01.4'te Train (MS) olarak kalan satirlarla kurulur.
+#   * Dort veri seti ayni satirlari ve ayni bolmeyi kullanir (02.1'de
+#     cikarilan satirlar Ham'dan da cikar).
+#   * Olcum 01.4'te secilen duzene gore: Validasyon (OOT) varsa orada,
+#     yoksa Test (OOS)'ta, o da yoksa Train icinde capraz dogrulamayla
+#     (01.4'teki katlar; yoksa 5 kat). Hangi sette olculdugu sonucta yazar.
+#   * Veri setleri UPDT asamalarindan kurulur (akis_faz02.asama_df): Ham =
+#     01 sonu, Temizlenmis = 02.1 sonu, + Kural = 02.2 sonu, + AI = 02.3
+#     sonu. Hedef, kimlik, donem, segment, bolme kolonu ve surec disi
+#     kolonlar modele girmez. 02.1'de SIZINTI suphesiyle cikarilan kolonlar
+#     Ham'a da alinmaz: sizinti gercek bir bilgi degildir, Ham'i haksiz
+#     yere yuksek gosterir.
+# ===========================================================================
+DORTLU_ADLAR = (("01", "Ham"), ("02.1", "Temizlenmiş"), ("02.2", "+ Kural"), ("02.3", "+ AI"))
+SIZINTI_KONTROLLERI = ("gelecek_pencere", "birebir", "tarih_sonra")
+DORTLU_EN_AZ_SATIR = 50
+
+
+def _sizinti_cikanlar(durum):
+    """02.1'de sizinti kontrolunde yakalanip Çıkar denen kolonlar."""
+    from fe_agent import akis_faz02 as f2
+    p = durum.get("profil") or {}
+    karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    vo = p.get("veri_oneri") if isinstance(p.get("veri_oneri"), dict) else {}
+    aday = {str(k) for a in SIZINTI_KONTROLLERI for k in (vo.get(a) or {})}
+    return {k for k in aday if karar.get(k) == f2.PROFIL_KARAR_CIKAR}
+
+
+def dortlu_veriler(durum):
+    """([{"ad", "asama", "df", "kolonlar", "egitim", "olcum"}], bilgi) ya da
+    (None, neden). bilgi: {"olcum_set", "olcum_adi", "katlar", "grup",
+    "sizinti", "train_satir", "olcum_satir"}."""
+    from fe_agent import akis_faz02 as f2
+    from fe_agent.akis_durum import SPLIT_KOLON, set_basligi
+    if not f2.updt_modu(durum):
+        return None, "Bu çalışma eski düzende; adım adım veri setleri yeniden kurulamıyor."
+    m = durum.get("meta") or {}
+    haric = {str(v) for v in m.values() if v} | {SPLIT_KOLON} \
+        | set(map(str, durum.get("haric_kolonlar") or []))
+    sizinti = _sizinti_cikanlar(durum)
+    tablolar = []
+    for asama, ad in DORTLU_ADLAR:
+        df = f2.asama_df(durum, asama)
+        if asama == "01":
+            # AYNI SATIRLAR: 02.1'de cikarilan satirlar Ham'dan da cikar.
+            df = f2.satir_kararlarini_uygula(durum, df)
+        tablolar.append((asama, ad, df.reset_index(drop=True)))
+    if len({len(df) for _a, _ad, df in tablolar}) != 1:
+        return None, ("Veri setlerinin satır sayıları birbirini tutmuyor (%s); aynı satırlarla "
+                      "ölçüm yapılamaz." % ", ".join("%s: %s" % (ad, _sayi(len(df)))
+                                                     for _a, ad, df in tablolar))
+    a = bolme_ayarlari(durum)
+    s0 = setler(durum, tablolar[0][2])
+    hedef = m.get("target")
+    y0 = tablolar[0][2][hedef]
+
+    def yeterli(maske):
+        maske = maske.fillna(False).astype(bool)
+        return int(maske.sum()) >= DORTLU_EN_AZ_SATIR and int(y0[maske].nunique(dropna=True)) >= 2
+    # Olcum seti: Validasyon (OOT; "test" ya da ayri "oot"), yoksa Test (OOS; "val").
+    olcum_set = None
+    for aday in ("test", "oot", "val"):
+        if yeterli(s0[aday]):
+            olcum_set = aday
+            break
+    kat_listesi, kat_notu = None, ""
+    if olcum_set is None:
+        try:
+            # katlar() durum["bolme"]'ye yazar; kopya uzerinde calisilir.
+            kat_listesi, notlar = katlar(dict(durum), tablolar[0][2])
+            kat_notu = " ".join(notlar or [])
+        except Exception:
+            kat_listesi = None
+    kimlik = (durum.get("bolme") or {}).get("kimlik_kolon") or m.get("id")
+    grup = tablolar[0][2][kimlik].astype(str) \
+        if a["birim"] == "kimlik" and kimlik and kimlik in tablolar[0][2].columns else None
+    veriler = []
+    for asama, ad, df in tablolar:
+        s_ = setler(durum, df)
+        kolonlar = [str(k) for k in df.columns if str(k) not in haric
+                    and not (asama == "01" and str(k) in sizinti)]
+        veriler.append({"ad": ad, "asama": asama, "df": df, "kolonlar": kolonlar,
+                        "egitim": s_["egitim"], "olcum": s_[olcum_set] if olcum_set else None})
+    return veriler, {"olcum_set": olcum_set,
+                     "olcum_adi": set_basligi(olcum_set, a["test_tanim"]) if olcum_set else None,
+                     "train_adi": set_basligi("egitim", a["test_tanim"]),
+                     "katlar": kat_listesi or None, "kat_notu": kat_notu, "grup": grup,
+                     "sizinti": sorted(sizinti)}
+
+
+def dortlu_karsilastir(durum):
+    """Dort veri setini olcer. Doner: sonuc sozlugu ({"hata"} / {"atlandi"}
+    olabilir); durum["model"]["dortlu"]'ya cagiran yazar."""
+    try:
+        veriler, bilgi = dortlu_veriler(durum)
+    except Exception as e:
+        return {"hata": "Veri setleri kurulamadı: %s" % str(e)[:160]}
+    if veriler is None:
+        return {"atlandi": bilgi}
+    sonuc = model_mod.coklu_karsilastir(
+        veriler, (durum.get("meta") or {}).get("target"), olcum_adi=bilgi["olcum_adi"],
+        katlar=bilgi["katlar"], grup=bilgi["grup"], seedler=model_seedleri(durum))
+    if sonuc.get("hata"):
+        return sonuc
+    asama = {v["ad"]: v["asama"] for v in veriler}
+    for s_ in sonuc["setler"]:
+        s_["asama"] = asama.get(s_["ad"])
+        s_.pop("kosular", None)          # durum sismesin; ozet yeterli
+    sonuc.update({"train_adi": bilgi["train_adi"], "kat_notu": bilgi["kat_notu"],
+                  "sizinti_haric": bilgi["sizinti"]})
+    return sonuc
+
+
+def dortlu_metni(sonuc):
+    """Dortlu karsilastirmanin adim metni."""
+    if not isinstance(sonuc, dict):
+        return ""
+    if sonuc.get("atlandi"):
+        return "DÖRT VERİ SETİ KARŞILAŞTIRMASI yapılmadı: %s" % sonuc["atlandi"]
+    if sonuc.get("hata"):
+        return "DÖRT VERİ SETİ KARŞILAŞTIRMASI tamamlanamadı: %s" % sonuc["hata"]
+    setler_ = sonuc.get("setler") or []
+    ilk = next((s_ for s_ in setler_ if s_.get("auc") is not None), None)
+    if ilk is None:
+        return ""
+    if sonuc.get("olcum") == "cv":
+        olcum = ("Train içinde %s katlı çapraz doğrulama (%s); 01.4'te ölçüm için ayrı bir set yok"
+                 % (_sayi(sonuc.get("kat") or 0), sonuc.get("kat_kaynagi") or "-"))
+    else:
+        olcum = "%s setinde (%s satır)" % (sonuc.get("olcum_adi"), _sayi(ilk.get("olcum_satir") or 0))
+    satirlar = []
+    for s_ in setler_:
+        kolon = _sayi(s_.get("kolon") or 0)
+        if (s_.get("kolon_toplam") or 0) > (s_.get("kolon") or 0):
+            kolon += " / %s" % _sayi(s_["kolon_toplam"])
+        if s_.get("atlandi"):
+            satirlar.append("  %-13s %-13s %s" % (s_["ad"], kolon, s_["atlandi"]))
+            continue
+        if s_["ad"] == sonuc.get("taban"):
+            fark = "-"
+        else:
+            fark = _guven_metni((s_.get("delta") or {}).get("auc"), (s_.get("delta_std") or {}).get("auc"),
+                                (s_.get("delta_ga") or {}).get("auc"))
+        satirlar.append("  %-13s %-13s %-9s %-9s %-9s %s" % (
+            s_["ad"], kolon, _ond(s_["auc"], 4), _ond(s_["gini"], 4),
+            "-" if s_.get("ks") is None else _ond(s_["ks"], 4), fark))
+    # ADIM YORUMU: her adim bir oncekine gore ne katti; Ham'a gore fark
+    # gurultuden ayirt edilebiliyor mu.
+    adim_adi = {"Temizlenmiş": "02.1 temizlik", "+ Kural": "02.2 kural tabanlı üretim",
+                "+ AI": "02.3 AI keşfi"}
+    yorum = []
+    for s_ in setler_:
+        if s_["ad"] == sonuc.get("taban") or s_.get("auc") is None:
+            continue
+        if s_.get("ayni"):
+            yorum.append("  %s: bu adımda veri setine değişken eklenmedi ya da çıkarılmadı; sonuç bir "
+                         "önceki satırla aynı." % adim_adi.get(s_["ad"], s_["ad"]))
+            continue
+        ad_ = (s_.get("adim_delta") or {}).get("auc")
+        ga = (s_.get("adim_ga") or {}).get("auc")
+        if ad_ is None:
+            continue
+        # HUKUM ADIMIN KENDI KATKISINA: bir onceki satira gore fark ve onun
+        # guven araligi (Ham'a gore fark tabloda).
+        if _sifir_iceriyor(ga):
+            hukum = "bu adımın katkısı gürültüden ayırt edilemiyor (güven aralığı sıfırı içeriyor)"
+        elif ad_ > 0:
+            hukum = "bu adım modeli iyileştirdi (güven aralığı tamamen sıfırın üstünde)"
+        else:
+            hukum = "bu adım modeli kötüleştirdi (güven aralığı tamamen sıfırın altında)"
+        yorum.append("  %s: bir önceki satıra göre ROC-AUC %s%s%s; %s." % (
+            adim_adi.get(s_["ad"], s_["ad"]), "+" if ad_ >= 0 else "", _ond(ad_, 4),
+            ("  [%s; %s]" % (_ond(ga[0], 4), _ond(ga[1], 4))) if ga and ga[0] is not None else "",
+            hukum))
+    notlar = []
+    if any((s_.get("kolon_toplam") or 0) > (s_.get("kolon") or 0) for s_ in setler_):
+        notlar.append("Değişken sütununda «kullanılan / toplam» yazar: %s değişkenden fazlası olan veri "
+                      "setinde, Train'de tek başına ayırma gücü en yüksek %s değişken alındı (kural "
+                      "dört veri setinde aynı)." % (_sayi(sonuc.get("en_cok_kolon") or 0),
+                                                    _sayi(sonuc.get("en_cok_kolon") or 0)))
+    if sonuc.get("sizinti_haric"):
+        notlar.append("02.1'de sızıntı şüphesiyle çıkardığınız %s kolon Ham'a da alınmadı (%s): "
+                      "sızıntı gerçek bir bilgi değildir, Ham'ı haksız yere yüksek gösterirdi."
+                      % (_sayi(len(sonuc["sizinti_haric"])), ", ".join(sonuc["sizinti_haric"][:4])
+                         + (" +%s" % _sayi(len(sonuc["sizinti_haric"]) - 4)
+                            if len(sonuc["sizinti_haric"]) > 4 else "")))
+    if not sonuc.get("ayni_satir", True):
+        notlar.append("UYARI: veri setlerinin Train ya da ölçüm satırları birbirini tutmuyor; "
+                      "farklar yalnız değişkenlerden kaynaklanmıyor olabilir.")
+    if sonuc.get("kat_notu"):
+        notlar.append(sonuc["kat_notu"])
+    return ("DÖRT VERİ SETİ KARŞILAŞTIRMASI\n"
+            "  Model  : yalnız %s satırlarıyla kuruldu (%s satır)\n"
+            "  Ölçüm  : %s\n"
+            "  Tekrar : %s rastgelelik tohumu; dört veri seti aynı satırlar, aynı bölme, aynı tohumlar\n\n"
+            "                Değişken      ROC-AUC   Gini      KS        Ham'a göre ROC-AUC farkı (ort ± std [%%95 GA])\n"
+            "%s\n\n%s%s"
+            % (sonuc.get("train_adi") or "Train (MS)", _sayi(ilk.get("egitim_satir") or 0), olcum,
+               _sayi(sonuc.get("tekrar") or 0), "\n".join(satirlar), "\n".join(yorum),
+               ("\n\n" + "\n".join(notlar)) if notlar else ""))
+
+
 def model_plan(durum):
     baz = _baz_kolonlari(durum)
     yeni = (durum.get("secim") or {}).get("secilen_liste") or []
-    b = durum.get("bolme") or {}
-    bolme_ad = ("zamansal - test dönemi %s" % b.get("oot_deger")) \
-        if b.get("tur") == "zamansal" else "rastgele %%80 / %%20"
+    bolme_ad = _bolme_adi(durum)
     return ("Asıl soruyu cevaplayacağız: ürettiğimiz değişkenler modele "
             "ölçülebilir katkı sağladı mı?\n\n"
             "  Baz model         : %s değişken\n"
             "  Zenginleştirilmiş : %s değişken   (+%s yeni)\n"
             "  Bölme             : %s\n"
-            "  Rastgelelik tohumu: %d (ve sonraki %s tohum)\n"
+            "  Rastgelelik tohumu: %s (01.4'teki seçiminizden)\n"
             "  Metrikler         : ROC-AUC, Gini, KS\n\n"
             "GÜRÜLTÜ BANDI\n"
             "Tek koşudan çıkan fark, koşudan koşuya değişen gürültüyü "
@@ -116,10 +351,16 @@ def model_plan(durum):
             "farkın ortalaması, standart sapması ve %%95 güven aralığı "
             "birlikte raporlanacak. Güven aralığı sıfırı içeriyorsa katkı "
             "gürültüden ayırt edilemiyor demektir.\n\n"
+            "DÖRT VERİ SETİ\n"
+            "Ayrıca her adımın katkısı ayrı ayrı ölçülecek: Ham, Temizlenmiş (02.1), + Kural "
+            "(02.2) ve + AI (02.3) veri setleriyle dört model kurulacak. Dördü de yalnız Train "
+            "satırlarıyla kurulur, aynı satırları ve aynı bölmeyi kullanır; ölçüm 01.4'te "
+            "seçtiğiniz düzene göre yapılır (Validasyon varsa orada, yoksa Test'te, o da yoksa "
+            "Train içinde çapraz doğrulamayla).\n\n"
             "Eğitim birkaç dakika sürebilir. Başlayalım mı?"
             % (_sayi(len(baz)), _sayi(len(baz) + len(yeni)), _sayi(len(yeni)),
-               bolme_ad, model_mod.SEED, _sayi(max(model_mod.TEKRAR - 1, 0)),
-               _sayi(model_mod.TEKRAR)))
+               bolme_ad, ", ".join(str(x) for x in model_seedleri(durum)),
+               _sayi(len(model_seedleri(durum)))))
 
 def model_uygula(durum):
     kaynak, zengin = _kaynak(durum)
@@ -153,11 +394,20 @@ def model_uygula(durum):
         # Bolme TURU acikca bildirilir; modul maskenin dolulugundan cikarim
         # yapip rastgele bolmeyi "zamansal (OOT)" diye etiketlemesin.
         bolme_turu=(durum.get("bolme") or {}).get("tur"),
-        egitim_maske=s["egitim"], grup=grup)
+        egitim_maske=s["egitim"], grup=grup, seedler=model_seedleri(durum))
 
+    # DORT VERI SETI: Ham / Temizlenmis / + Kural / + AI (ayni satirlar,
+    # ayni bolme). Olculemezse adim durmaz; nedeni metinde yazar.
+    try:
+        dortlu = dortlu_karsilastir(durum)
+    except Exception as e_:
+        dortlu = {"hata": str(e_)[:160]}
+    sonuc["dortlu"] = dortlu
+    dortlu_not = dortlu_metni(dortlu)
+    dortlu_not = ("\n\n" + dortlu_not) if dortlu_not else ""
     durum["model"] = sonuc
     if sonuc.get("hata"):
-        return "Karşılaştırmayı tamamlayamadım: %s%s" % (sonuc["hata"], not_metni)
+        return "Karşılaştırmayı tamamlayamadım: %s%s%s" % (sonuc["hata"], not_metni, dortlu_not)
 
     b, e, d = sonuc["baseline"], sonuc["enhanced"], sonuc["delta"]
     ds = sonuc.get("delta_std") or {}
@@ -220,7 +470,7 @@ def model_uygula(durum):
                _sayi(sonuc["baz_kolon"]),
                _sayi(sonuc["baz_kolon"] + sonuc["yeni_kolon"]),
                "+%s" % _sayi(sonuc["yeni_kolon"]),
-               _sayi(sonuc.get("tekrar") or 0), yorum, nan_not, not_metni))
+               _sayi(sonuc.get("tekrar") or 0), yorum, nan_not, not_metni)) + dortlu_not
 
 # ===========================================================================
 # ADIM 5.2: ALGORITMA SECIMI   (Dataiku senaryosunda calisir)
@@ -274,9 +524,7 @@ def _hiperparametre_secimi(durum):
 def algoritma_plan(durum):
     baz = len(_baz_kolonlari(durum))
     yeni = len((durum.get("secim") or {}).get("secilen_liste") or [])
-    b = durum.get("bolme") or {}
-    bolme_ad = ("zamansal - test dönemi %s" % b.get("oot_deger")) \
-        if b.get("tur") == "zamansal" else "rastgele %%80 / %%20"
+    bolme_ad = _bolme_adi(durum)
     arama, yer, uyari = _hiperparametre_secimi(durum)
 
     return ("Hangi algoritmanın bu veriye uyduğunu ölçeceğiz. Dört aday "

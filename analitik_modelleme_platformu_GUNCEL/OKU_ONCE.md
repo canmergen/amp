@@ -3466,3 +3466,60 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Kapsam.** Düzeltmeden önce kaydedilmiş çalışmalarda mod "oneri" kalmıştır; o çalışmada ayar bir kez yeniden seçilip onaylanmalıdır.
 - **Değişmeyen.** Seçim "Bu Ayarları Seç"e basılınca kaydedilir; basılmadan sayfa yenilenirse taslak tarayıcıda kaldığı için kaybolur.
 - **Test.** `bolme_mod_test.py` (12): gerçek uç noktası üzerinden kaydet, yenile, onayla (bölme Test (OOS) ile uygulanır), geri dön, öneriye dön, yeniden özel.
+
+## 02.1: Train dışındaki setlerde görülen değer sorunları
+
+- **Neden.** Kontroller yalnız Train'e baktığı için yalnız Test ya da Validasyon'da görülen uydurma sayı (-999), dev değer ve topluca kayma hiçbir yerde görünmüyordu.
+- **Kural (`profil_ek.set_disi_deger`).** Üç tür, her bulgu `set` taşır; kolon ve set başına tek bulgu:
+  - **Uydurma sayı:** sette eşikten fazla yazıyor, Train'de yok ya da eşiğin altında; fark şans eseri değil (iki oran testi, sınır set sayısına bölünür). «Boş Yerine Başka Şey Yazılmış»a eklenir. Öneri `kod_bos` (yalnız boş say); bayrak üretilmez, çünkü Train'de hep 0 olurdu.
+  - **Dev değer:** sette Train'in normal aralığının (Train'in %1 ve %99'u, «Aşırı Değerler» katı) dışında değer var, Train'de yok. «Aşırı Değerler»e eklenir; öneri kırpma (sınırlar Train'den).
+  - **Sayı kayması:** sıfır dışı değerlerin %25, %50, %75'i Train ile set arasında aynı yönde «Sayılar topluca değişmiş» sınırı kadar (10 kat) farklı. «Train Dışında Bozulan Kolonlar»a eklenir; yuvarlak katta (10, 100, 1.000) öneri Çıkar, değilse Tut.
+- **Dönem kuralları.** Yalnız Train'in dönemlerine bakar; zamana göre bölmede en güncel dönemlerdeki bozulma (boş, hep aynı, boş oranı, uydurma sayı, dev değer, kayma) bu kurallarda çıkar. Form açıklamaları bunu yazar.
+- **Sayım değişmedi:** 16 kontrol, 26 kural, 15 sınır (bulgular var olan kurallara eklendi).
+- **Test.** `setdeger_test.py` (17): rastgele bölmede 31 kolonda yanlış alarm yok.
+
+## 02.1: eski kuralla çıkarılmış profil uyarısı
+
+- `PROFIL_KAPSAM_SURUMU = 3` (`profil_kapsam.surum`). 1: tablonun tamamı; 2: yalnız Train; 3: Train dışı değer sorunları da.
+- Eski sürümlü profil (`profil_eski_mi`) için: 02.1 kartının üstünde sarı uyarı (`eski_uyari`, kart yenilemede canlı kurulur) ve akış 02.1'i geçtiyse cevabın sonunda çalışma başına bir kez aynı uyarı (`_profil_eski_uyarildi`).
+- Uyarı ne yapılacağını söyler: 02.1'e geri dönülür, profil yeniden çıkar; eşikler ve kararlar korunur.
+- **Kendiliğinden yeniden hesaplanmaz:** profil değişirse 02.1 sonrası adımların (02.2, 02.3, SFA) dayandığı tablo da değişir; bunu kullanıcı görmeden yapmak sonraki adımları sessizce geçersiz kılardı.
+
+## Değişken defteri (JSON)
+
+- **Dosya.** `PROJE_HAFIZASI/<çalışma>/degisken_defteri.json` (`fe_agent/degisken_defteri.py`). Baz veri profili oluştuğu andan itibaren HER ADIM SONUNDA yeniden yazılır (`akis_sohbet._tamamlandi_yaz` → `guncelle`; içerik değişmediyse yazılmaz).
+- **İçerik.**
+  - `kalan`: o an veri setinde duran her değişken (ham + üretilen): `ad`, `eski_ad`, `rol`, `kaynak` (ham / cozum / kural / kesif), `anlam`, `ifade`, `kaynak_kolonlar`, `ozet`.
+  - `cikarilan`: çıkarılan ham kolonlar (01.2.3.1, 01.3 süreç dışı, 02.1), üretilip reddedilenler ve sonraki adımlarda elenenler (03 kalite, 04 seçim): aynı alanlar + `adim`, `neden`.
+  - `ozet` 01.2.3.1 tablosundaki alanlar: tip, boş oranı, tekrar oranı, tekil değer, en sık değerler, min, medyan, ortalama, max. Ham kolonda veri seti profilinden; üretilen değişkende üretildiği an tablodan (`ozet_cikar`). Kişisel veri taşıyan kolonun değerleri yazılmaz.
+- **Kalıcı kayıt `durum["defter"]`** (adım yeniden çalışınca silinmez): `uretilen` {ad: kayıt}, `red` {anahtar: kayıt}, `elenen` {ad: {adim, neden}}.
+  - 02.2: üretilenler kaydedilir; önceki turda üretilip bu turda üretilmeyenler reddedilenlere geçer. Ölçülüp seçilmeyen dönüşümler (birim × dönüşüm) ölçüm özetinden türetilir (`kural_secilmeyenler`), ayrıca saklanmaz.
+  - 02.3: denetimden geçemeyen, önerilip seçilmeyen ve hesaplanamayan öneriler reddedilenlere geçer.
+  - 02.2 yeniden çalışınca düşen 02.3 kolonları reddedilmiş sayılmaz (`adim_silindi`).
+- **02.3 aynı değişkeni yeniden üretmez.**
+  - Dil modeline iki liste gider (`kesif_notu` → `llm.kesif_ifade_oner(onceki_uretilen, onceki_reddedilen)`): "zaten üretilmiş" ve "denenip reddedilmiş"; "bunları ya da aynı hesabı yapanları önerme" denir.
+  - Dönen öneriler ayrıca kodla elenir (`tekrar_mi`): aynı ad ya da aynı ifade imzası (`ifade_imza`: boşluk, harf büyüklüğü, `a + b` / `b + a`, `a * b` / `b * a` farkı silinir). Elenen sayısı adım metninde yazar.
+  - Önceki turda 02.3'te üretilen ve sonradan elenmemiş değişkenler listeye taşınır ("önceki turda üretildi"); seçilmezse reddedilenlere geçer.
+- **Sınır.** İmza yalnız 02.3 ifadelerinde hesaplanır; kural tabanlı değişkenle aynı hesabı yapan bir 02.3 ifadesi kodla yakalanmaz, yalnız dil modeline verilen listeyle önlenir.
+- **Test.** `defter_test.py` (25).
+
+## 05: dört veri seti karşılaştırması
+
+- **Ne.** 05.1 Model Karşılaştırması adımı, var olan Baz / Zengin karşılaştırmasının yanında dört veri setini ölçer (`akis_faz05.dortlu_karsilastir`, `model.coklu_karsilastir`): Ham (01 sonu), Temizlenmiş (02.1 sonu), + Kural (02.2 sonu), + AI (02.3 sonu). Veri setleri `akis_faz02.asama_df` ile kurulur. Sonuç `durum["model"]["dortlu"]`.
+- **Kural.**
+  - Model yalnız 01.4'te Train (MS) kalan satırlarla kurulur.
+  - Dört veri seti aynı satırlar ve aynı bölme: 02.1'de çıkarılan satırlar Ham'dan da çıkar; Train ve ölçüm satır sayıları tutmuyorsa metinde uyarı yazar.
+  - Ölçüm 01.4'teki düzene göre: Validasyon (OOT) varsa orada, yoksa Test (OOS)'ta, o da yoksa Train içinde çapraz doğrulama (01.4 katları; yoksa 5 kat, kimlik bazlı bölmede gruplu). Hangi sette ölçüldüğü ve satır sayısı sonuçta yazar.
+  - Tohumlar 01.4'ten (`model_seedleri`): "Çoklu tekrar"da oradaki liste; "Sabit bölme"de oradaki tohumdan başlayan 5 ardışık tohum. Baz / Zengin karşılaştırması da aynı tohumları kullanır.
+  - Hazırlık dört sette aynı: sayı olmayan kolon Train'deki sıklığına göre sıra numarasına çevrilir; 300'den fazla değişkende Train'de tek başına ayırma gücü en yüksek 300 alınır.
+  - 02.1'de sızıntı şüphesiyle çıkarılan kolonlar Ham'a da alınmaz (Ham'ı haksız yere yüksek gösterirdi); metinde yazar.
+- **Çıktı.** Satır başına değişken sayısı, ROC-AUC, Gini, KS ve Ham'a göre fark (ortalama ± standart sapma, %95 güven aralığı). Altında her adımın bir önceki satıra göre katkısı ve hükmü (güven aralığı sıfırı içeriyorsa "ayırt edilemiyor"). Bir adımda değişken eklenmediyse satır öncekiyle aynıdır ve model yeniden kurulmaz.
+- **Eski düzen** (`updt_modu` False): dörtlü karşılaştırma yapılmaz, nedeni yazar.
+- **Test.** `dortlu_test.py` (21 + 3).
+
+## Denetimde düzeltilenler (01.4, 05)
+
+- **Zamana göre bölmede eğitim satırları (`model.karsilastir`).** Eğitim "test dönemi dışındaki her satır" alınıyordu: Test (OOS) satırları ve eğitim ile test arasındaki boşluk (gap) dönemleri de modele giriyordu. Artık yalnız Train satırları (`egitim_maske`).
+- **05 plan metinlerinde bölme satırı.** "rastgele %80 / %20" sabit yazıyordu; artık 01.4'te uygulanan bölmenin özeti (`_bolme_adi` → `bolme_ozeti`).
+- **Tohumlar.** Karşılaştırma `model.SEED` (42) ile sabitti; 01.4'teki tohum seçimi kullanılmıyordu.
+- **01.4 modu.** Bkz. "01.4: kaydedilen özel bölme ayarı yenilemede kayboluyordu".
