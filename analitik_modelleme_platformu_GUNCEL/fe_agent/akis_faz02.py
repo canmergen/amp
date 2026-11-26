@@ -1072,7 +1072,14 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
              "Kolonların değerleri %s" % ("neredeyse aynı: " + (g.get("iliski_metni") or "")
                                            if g.get("tur") == "yakin" else "birebir aynı"),
              uy, _kodun_onerisi(g)[0] or uy[0], _kodun_onerisi(g)[1],
-             acik="; ".join("%s: %s" % (u, (aciklama.get(u) or "(açıklama yok)")[:80]) for u in uy))
+             # Her uyenin ACIKLAMASI TAM gider (dil modeli hangisini daha iyi
+             # anladigina buna bakarak karar verir), olcusu ve oteki
+             # kontrollerdeki bulgulariyla birlikte.
+             acik=" || ".join("%s: %s%s%s" % (
+                 u, (aciklama.get(u) or "(açıklama yok)")[:500],
+                 (" [ölçü: %s]" % olcu[u]) if olcu.get(u) else "",
+                 (" [başka bulgu: %s]" % ", ".join(map(str, (g.get("uye_bulgu") or {}).get(u) or [])))
+                 if (g.get("uye_bulgu") or {}).get(u) else "") for u in uy))
     # 2) Kodun sayilardan oneri verdigi oteki butun kolon bulgulari
     kararlar([a for a in KARAR_KONTROLLERI if a not in GORUS_SIZINTI], "karar")
     duzeltmeler([a for a in DUZELTME_KONTROLLERI if a not in GORUS_KOD and a != "sifir_bos"],
@@ -1098,7 +1105,8 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     cikti, sorulacak = {}, []
     for a, anahtar, oge in ogeler:
         imza = json.dumps([oge["tur"], oge["kolon"], oge["aciklama"], oge["bulgu"], oge["secenekler"],
-                           oge["kod_oneri"], oge["kod_gerekce"], oge["hedef_profil"], "karar2"],
+                           oge["kod_oneri"], oge["kod_gerekce"], oge["hedef_profil"],
+                           "karar3" if oge["tur"] == "ayni" else "karar2"],
                           ensure_ascii=False)
         o = (onceki.get(a) or {}).get(anahtar) or {}
         if o.get("imza") == imza and o.get("secim") in oge["secenekler"]:
@@ -2912,7 +2920,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 10
+PROFIL_KAPSAM_SURUMU = 11
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -2964,7 +2972,10 @@ def profil_eski_uyarisi(durum):
              "kendiliğinden tamamlanıyor"
              if surum == 8 else
              "hedef oranının değer bantlarındaki gidişi hesaplanmamış ve dil modeli kendi "
-             "gerekçesini yazmamış")
+             "gerekçesini yazmamış"
+             if surum == 9 else
+             "birbirinin aynısı kolonlarda dil modeli kalacak kolonu açıklamasını en iyi anladığı "
+             "kolona göre seçmemiş")
     return PROFIL_ESKI_UYARI % neden
 
 

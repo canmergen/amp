@@ -3598,7 +3598,7 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
   - **Bulgu.** Yalnız dil modelinin «0 bu kolonda gerçek bir değer olamaz» dediği adaylar listelenir (yaş, boy gibi). Dil modeline ulaşılamazsa kural çalışmaz ve satırında «Uygulanmadı: dil modeline ulaşılamadı» yazar.
   - **Seçenekler.** «Sıfırı boş say» seçili gelir (dil modelinin kararı): 0'lar boş hücreye çevrilir (`kolon_cozum.duzeltme_uygula`), öteki değerler aynen kalır. Kodun önerisi «Olduğu gibi bırak»tır (sayılardan anlaşılamaz).
 - **Sayım:** 16 kontrol, 27 kural, 15 ayarlanabilir sınır.
-- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 10`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca kararlar alınır. Profil yeniden çıkınca yalnız kullanıcının öneriden farklı seçtikleri taşınır; gerisi yeni öneriyi (dil modelinin kararını) alır.
+- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 11`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca kararlar alınır. Profil yeniden çıkınca yalnız kullanıcının öneriden farklı seçtikleri taşınır; gerisi yeni öneriyi (dil modelinin kararını) alır.
 - **Test.** `gorus_test.py` (18), `gorus2_test.py` (22; bütün bulgu türleri, varsayılan seçimler, süre hesabı), `gorus3_test.py` (11; satır kuralları), `gorus4_test.py` (17; kısa çıktı, dalga, kararların parça parça tamamlanması), `devam_uc_test.py` (4; arka uç ucu), dil modeli cevabı taklit edilerek; `karar_ui.js` (21), `toplu_ui.js` (18; toplu seçim düğmeleri), `devam_ui.js` (14; kendiliğinden tamamlanma, durdurma, hata, bantlar). Gerçek dil modeliyle canlı ortamda denenmedi.
 
 ## 02.1: eksik oranı çubuğunda dar bantlar
@@ -3641,3 +3641,12 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Saklama.** `profil_ek["hedef_profil"][kolon] = {bantlar: [{ad, n, oran}], yon, p}`.
 - **Sınır.** Az satırlı bantlarda oranlar oynaktır; bu yüzden karar eğilim testinin ihtimaline bağlanır, tek tek bant oranlarına değil.
 - **Test.** `hprofil_test.py` (15), `hprofil_ui.js` (4).
+
+## 02.1.2: Birbirinin Aynısı Kolonlar'da kalacak kolonun seçimi
+
+- **Ölçüt.** Dil modeli, grupta kalacak kolonu **anlamını en iyi anladığı** kolona göre seçer. Gerekçe: kalan kolon sonraki adımlarda yeni değişken üretmek için kullanılır (02.3 AI Değişken Keşfi) ve o önerileri de dil modeli yapar; anlamadığı kolondan iyi değişken öneremez.
+- **İstemdeki sıra** (`llm.SISTEM_PROFIL_GORUS`, tür `ayni`): açıklaması dolu ve net olan (neyi ölçtüğü, birimi, dönemi, kapsamı); adı açıklamasıyla tutarlı, kısaltmaları çözülebilen; ham / temel ölçü olan (kopya, yedek, geçici ya da türetilmiş değil). Açıklaması boş, belirsiz ya da yalnız adı tekrar eden kolon, açıklaması net bir eşi varken seçilmez. Açıklamalar eşit netlikteyse kodun önerisi seçilir. Neredeyse aynı gruplarda kodun gerekçesindeki hedefi ayırma farkı belirginse ona uyulur, küçükse anlamı net olan seçilir.
+- **Dil modeline giden bilgi** (`_profil_llm_gorusleri`): her üyenin açıklaması tam gider (üye başına 500 karaktere kadar; önceden 80 karakterde kesiliyor, grubun toplamı 160'ı geçmiyordu), varsa kolon kartındaki ölçüsü ve öteki kontrollerdeki bulgularıyla birlikte; üyeler ` || ` ile ayrılır.
+- **Kodun önerisi değişmedi** (başka kontrole takılmayan, en az düzeltme isteyen, adı kısa olan; neredeyse aynıda hedefi daha iyi ayıran): "Kodun önerisi" kutusunda durur. Adı kısa ama açıklamasız kolonu kod seçerken dil modeli açıklamalı eşini seçebilir; satır "Dil modelinden farklı" diye işaretlenir.
+- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 11`; önceki kararlar bu ölçütle alınmadığı için gruplar yeniden sorulur (öteki bulguların kararları saklıdır, yeniden sorulmaz).
+- **Test.** `ayni_test.py` (12).

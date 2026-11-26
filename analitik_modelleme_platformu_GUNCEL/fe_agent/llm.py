@@ -4287,9 +4287,25 @@ Türlere göre neye bakacaksın:
   puan, skor, fiyat, ölçüm, tarihten türeyen değer gibi 0'ın doğal olarak
   beklenmediği kolonlarda 0 büyük ihtimalle "bilgi yok" yerine yazılmıştır:
   "sifir_bos". Emin değilsen "birak".
-- ayni: Listelenen kolonlar aynı (ya da neredeyse aynı) değerleri taşıyor.
-  Hangisi ASIL kolon? Anlamı en açık, en genel ve türetilmemiş olanı seç;
-  seçenekler kolon adlarıdır.
+- ayni: Listelenen kolonlar aynı (ya da neredeyse aynı) değerleri taşıyor;
+  biri kalacak, ötekiler çıkacak. Seçenekler kolon adlarıdır; "açıklama"
+  alanında her kolonun sözlük açıklaması (varsa ölçüsü ve başka
+  kontrollerdeki bulguları) " || " ile ayrılmış yazar.
+  KALACAK KOLON SONRAKİ ADIMLARDA YENİ DEĞİŞKEN ÜRETMEK İÇİN KULLANILACAK
+  (oran, fark, eğilim gibi türevler) ve bu önerileri SEN yapacaksın. Bu
+  yüzden ANLAMINI EN İYİ ANLADIĞIN kolonu seç:
+  * açıklaması dolu ve net olan: neyi ölçtüğünü, birimini, dönemini ve
+    kapsamını söyleyen;
+  * adı açıklamasıyla tutarlı olan, kısaltmaları çözülebilen;
+  * ham / temel ölçü olan (kopya, yedek, geçici ya da başka kolondan
+    türetilmiş olan değil).
+  Açıklaması boş, belirsiz ya da yalnız adı tekrar eden kolonu, açıklaması
+  net bir eşi varken SEÇME: anlamadığın kolondan iyi değişken öneremezsin.
+  Açıklamalar eşit derecede netse kodun önerisini seç. Değerler "neredeyse
+  aynı" ise kodun gerekçesi hangisinin hedefi daha iyi ayırdığını söyler:
+  fark belirginse ona uy, küçükse anlamı daha net olanı seç.
+  Gerekçende seçtiğin kolonun neyi ölçtüğünü ve ötekine göre neden daha
+  anlaşılır / kullanışlı olduğunu yaz.
 - karar: Kolon bir veri kalitesi kuralına takıldı ("kural" ve "bulgu" neye
   takıldığını söyler). Kodun önerisi yalnız sayılara bakar. Sen kolonun
   anlamına bak: bulgu kolonun DOĞASINDAN geliyorsa (nadir görülen ama
@@ -4403,7 +4419,8 @@ def _profil_gorus_parca(parca):
             "no=%d | id=%s | tür: %s | kural: %s | kolon: %s | açıklama: %s | ölçü: %s | bulgu: %s | "
             "seçenekler: %s | kodun önerisi: %s | kodun gerekçesi: %s | hedef oranı: %s" % (
                 i, x["id"], x.get("tur"), x.get("kural") or "-", x.get("kolon"),
-                (x.get("aciklama") or "(açıklama yok)")[:160],
+                # ayni: her uyenin aciklamasi tam gitmeli (karar buna bagli)
+                (x.get("aciklama") or "(açıklama yok)")[:(3000 if x.get("tur") == "ayni" else 160)],
                 x.get("olcu") or "-", str(x.get("bulgu") or "")[:220],
                 ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", ""),
                 " ".join(str(x.get("kod_gerekce") or "-").split())[:300],
