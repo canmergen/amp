@@ -484,6 +484,113 @@ def etkin_bos_donustur(df, bilgi):
     return yeni
 
 
+# ===========================================================================
+# HEDEF ORANININ DEGER BANTLARINDAKI GIDISI. Kolonun degeri buyudukce hedefi
+# 1 olanlarin orani artiyor mu, azaliyor mu? Tek bir "farkli deger / oteki"
+# karsilastirmasi bunu gostermez: 27 satirin ortalamasi anlamsiz gorunurken
+# deger buyudukce oran duzenli artiyor olabilir. Bantlar DEGER SIRASIYLA:
+#   - bir deger satirlarin en az yarisindaysa: o degerin altindakiler, o
+#     deger, ustundekiler (yeterli satir varsa ikiye bolunur);
+#   - yoksa esit satirli dort bant (ceyrekler).
+# Egilim: Cochran-Armitage egilim testi (bantlar 0, 1, 2 ... puaniyla; iki
+# yonlu). Yon: egilimin isareti; komsu bantlar arasinda ornekleme payini
+# (bir standart hata) asan ters donus varsa "duzensiz". Yalniz iki sinifli
+# hedef, sayi kolonu.
+# ===========================================================================
+HEDEF_BANT_EN_AZ = 5        # yon icin bantta en az satir
+HEDEF_BANT_BOL = 20         # baskin degerin ustu / alti bu kadar satir varsa ikiye bolunur
+
+
+def hedef_profili(s, y):
+    """s: kolon, y: 0/1 hedef (ayni satirlar; Train). Doner: {"bantlar":
+    [{"ad", "n", "oran"}], "yon": "artiyor" | "azaliyor" | "duzensiz" | None,
+    "p": egilimin sans eseri olma ihtimali ya da None} ya da None (sayi
+    degil, hedef uygun degil, tek bant)."""
+    try:
+        sx = pd.to_numeric(s, errors="coerce")
+        yy = pd.to_numeric(y, errors="coerce")
+    except Exception:
+        return None
+    m = sx.notna() & yy.notna()
+    sx, yy = sx[m], yy[m]
+    if len(sx) < 2 * HEDEF_BANT_EN_AZ or sx.nunique() < 2:
+        return None
+    if not set(yy.unique().tolist()) <= {0, 1}:
+        return None
+    vc = sx.value_counts()
+    bantlar = []        # (ad, maske) deger sirasiyla
+
+    def kisa(v):          # bant kenari: uc anlamli basamak
+        try:
+            return deger_metni(float("%.3g" % v))
+        except (TypeError, ValueError):
+            return deger_metni(v)
+
+    def aralik(mk):
+        a, b = float(sx[mk].min()), float(sx[mk].max())
+        return kisa(a) if a == b else "%s ile %s arası" % (kisa(a), kisa(b))
+
+    def bol(mk):
+        """Maskeyi yeterli satir varsa deger ortancasindan ikiye boler."""
+        if int(mk.sum()) < HEDEF_BANT_BOL or sx[mk].nunique() < 2:
+            return [mk]
+        orta = float(sx[mk].median())
+        a, b = mk & (sx <= orta), mk & (sx > orta)
+        if int(a.sum()) < HEDEF_BANT_EN_AZ or int(b.sum()) < HEDEF_BANT_EN_AZ:
+            return [mk]
+        return [a, b]
+    if float(vc.iloc[0]) / len(sx) >= 0.5:
+        bas = float(vc.index[0])
+        alt, ust = sx < bas, sx > bas
+        for mk in (bol(alt) if bool(alt.any()) else []):
+            bantlar.append((aralik(mk), mk))
+        bantlar.append((deger_metni(bas), sx == bas))
+        for mk in (bol(ust) if bool(ust.any()) else []):
+            bantlar.append((aralik(mk), mk))
+    else:
+        try:
+            kes = pd.qcut(sx, 4, duplicates="drop")
+        except Exception:
+            return None
+        for kat in kes.cat.categories:
+            mk = kes == kat
+            if bool(mk.any()):
+                bantlar.append((aralik(mk), mk))
+    if len(bantlar) < 2:
+        return None
+    satir = [{"ad": ad, "n": int(mk.sum()), "olay": float(yy[mk].sum())} for ad, mk in bantlar]
+    for b in satir:
+        b["oran"] = round(b["olay"] / b["n"], 6) if b["n"] else None
+    N, R = sum(b["n"] for b in satir), sum(b["olay"] for b in satir)
+    p, isaret = None, 0
+    pb = R / N if N else 0.0
+    if len(satir) >= 3 and 0 < R < N:
+        T = sum(i * (b["olay"] - b["n"] * pb) for i, b in enumerate(satir))
+        var = pb * (1 - pb) * (sum(i * i * b["n"] for i, b in enumerate(satir))
+                               - sum(i * b["n"] for i, b in enumerate(satir)) ** 2 / N)
+        if var > 0:
+            p = float(math.erfc(abs(T / math.sqrt(var)) / math.sqrt(2)))
+            isaret = 1 if T > 0 else (-1 if T < 0 else 0)
+    # YON: egilimin isareti (iki bantta oranlarin farki). Komsu iki bant
+    # arasinda ters yonde, ORNEKLEME PAYINI (bir standart hata) asan bir
+    # donus varsa gidis duzenli degildir. Az satirli bantta oran oynar;
+    # kucuk oynamalar yonu bozmaz.
+    guc = [b for b in satir if b["n"] >= HEDEF_BANT_EN_AZ]
+    yon = None
+    if len(guc) >= 2 and 0 < pb < 1:
+        if not isaret:
+            d = guc[-1]["oran"] - guc[0]["oran"]
+            isaret = 1 if d > 0 else (-1 if d < 0 else 0)
+        ters = False
+        for a, b in zip(guc, guc[1:]):
+            se = math.sqrt(pb * (1 - pb) * (1.0 / a["n"] + 1.0 / b["n"]))
+            if (b["oran"] - a["oran"]) * isaret < -se:
+                ters = True
+        yon = "duzensiz" if (ters or not isaret) else ("artiyor" if isaret > 0 else "azaliyor")
+    return {"bantlar": [{"ad": b["ad"], "n": b["n"], "oran": b["oran"]} for b in satir],
+            "yon": yon, "p": (round(p, 6) if p is not None else None)}
+
+
 def sifir_adaylari(df, adaylar, haric=(), esik=None):
     """[{"kolon", "adet", "pay"}]: "BOS YERINE SIFIR" kuralinin adaylari.
     Sifirin gercek deger mi, "bilgi yok" yerine mi yazildigi veriden

@@ -5673,6 +5673,7 @@ tr.dg-dy-belirsiz > td { background: var(--amber-acik); }
 .pf-toplu-kaynak .pf-toplu-dm { border-color: var(--yesil, #0a7d45); color: var(--yesil, #0a7d45); }
 .pf-toplu-kaynak .pf-toplu-kod { border-color: #2e6ab4; color: #2e6ab4; }
 .pf-toplu-fark { color: var(--metin-soluk); }
+.pf-hedef-profil { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--cizgi, #d9d9d9); color: var(--metin-soluk); }
 .pf-gorus-yok { margin-top: 6px; color: var(--amber); }
 .pf-gorus-sec { margin-top: 6px; }
 .pf-gorus-ozet { margin-top: 6px; }

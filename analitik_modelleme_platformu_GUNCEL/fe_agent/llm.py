@@ -4260,7 +4260,11 @@ NASIL KARAR VERİRSİN: üç şeyi birlikte tart.
 1) Kolonun ANLAMI: adından ve sözlük açıklamasından ne olduğunu çıkar.
 2) TAKILDIĞI KURAL ve BULGU: kolonda ne bulundu.
 3) KODUN KANITI: kodun gerekçesindeki sayılar (tesadüf olasılığı, ayırma
-   gücü, pay, satır sayısı) ölçülmüş gerçektir; yok sayma. Ama kod kolonun
+   gücü, pay, satır sayısı) ve "hedef oranı" alanı ölçülmüş gerçektir; yok
+   sayma. "Hedef oranı" kolonun değer bantlarında hedefi 1 olanların oranını
+   ve gidişini verir: değer büyüdükçe oran düzenli artıyor ya da azalıyorsa
+   kolon bilgi taşıyor demektir, bantlarda satır az olsa bile bu gidişi
+   kolonun anlamıyla birlikte değerlendir (anlamca beklenen yönde mi?). Ama kod kolonun
    ne olduğunu bilmez; sabit bir sınırla karar verir. "Fark şans eseri değil
    ama katkı küçük" gibi bir gerekçe tek başına son söz değildir: kolon
    anlamca önemli bir olayı ya da durumu gösteriyorsa tutulabilir; anlamca
@@ -4329,20 +4333,24 @@ başka hiçbir şey yazma:
 no|seçim|gerekçe
 - "no" satırın başındaki numaradır (no=...), "seçim" o satırın
   seçeneklerinden biridir.
-- Seçimin kodun önerisiyle AYNIYSA gerekçe yazma, satırı "no|seçim" diye
-  bırak (kodun gerekçesi geçerli sayılır).
-- Seçimin kodun önerisinden FARKLIYSA gerekçe ZORUNLU: tek kısa cümleyle
-  kolonun anlamından ne anladığını ve neden bu kararı verdiğini yaz.
+- Gerekçe HER kararda ZORUNLU ve SENİN yorumundur: en çok 20 sözcükle
+  kolonun ne olduğunu (anlamı) ve bu bulguda neden bu kararı verdiğini yaz.
+- KODUN GEREKÇESİNİ TEKRARLAMA, aynen ya da başka sözcüklerle kopyalama: o
+  sayılar kullanıcıya ayrıca gösteriliyor. Sen kodun bilemediğini söyle:
+  kolonun anlamı, bu bulgunun o anlamda beklenen bir şey olup olmadığı,
+  hedef oranının gidişinin anlamca tutarlı olup olmadığı.
+- Kodla aynı karara varsan da gerekçen kendi gözünden olsun.
 - HER no için bir satır yaz. Uydurma sayı yazma; sayı yazacaksan yalnız sana
   verilenleri kullan.
 Örnek:
-1|cikar
-2|tut|Başvuru anında bilinen bir puan; sonuçtan sonra doldurulmuyor.""" + SINIRLAYICI_KURALI
+1|cikar|Kapanış nedeni sonuç belli olduktan sonra doluyor; tahmin anında elde olmaz.
+2|tut|Kripto işlemi nadir ama davranışı ayırt eden bir olay; oran büyüdükçe hedef oranı da artıyor.""" + SINIRLAYICI_KURALI
 # CIKTI KISA TUTULUR: dil modelinin hizini cikti uzunlugu belirler. Uzun id
-# yerine satir numarasi, JSON yerine "no|secim|gerekce" satiri ve gerekcenin
-# yalniz kodla ayrisilan kararda yazilmasi ciktiyi kat kat kisaltir (1.000'den
-# fazla bulgulu tabloda kararlarin hepsinin alinabilmesi buna bagli).
-PROFIL_GORUS_PARCA = 40
+# yerine satir numarasi ve JSON yerine "no|secim|gerekce" satiri ciktiyi
+# kisaltir. Gerekce HER kararda yazilir (dil modelinin kendi yorumu, en cok
+# 20 sozcuk); bu yuzden parca 25 bulgudur. Kararlarin hepsi tek istege
+# sigmazsa kart kalanlari kendiliginden tamamlar (profil_kararlari_tamamla).
+PROFIL_GORUS_PARCA = 25
 # DALGA DALGA SORULUR: her dalgada PROFIL_ONERI_PARALEL parca (320 bulgu)
 # birlikte gider, bitince sonraki dalga baslar. Butce (saniye) dolunca YENI
 # DALGA BASLATILMAZ: sorulmayan bulgular kararsiz kalir ve bir sonraki
@@ -4393,12 +4401,13 @@ def _profil_gorus_parca(parca):
         sozluk.update(x.get("secenek_ad") or {})
         satirlar.append(
             "no=%d | id=%s | tür: %s | kural: %s | kolon: %s | açıklama: %s | ölçü: %s | bulgu: %s | "
-            "seçenekler: %s | kodun önerisi: %s | kodun gerekçesi: %s" % (
+            "seçenekler: %s | kodun önerisi: %s | kodun gerekçesi: %s | hedef oranı: %s" % (
                 i, x["id"], x.get("tur"), x.get("kural") or "-", x.get("kolon"),
                 (x.get("aciklama") or "(açıklama yok)")[:160],
                 x.get("olcu") or "-", str(x.get("bulgu") or "")[:220],
                 ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", ""),
-                " ".join(str(x.get("kod_gerekce") or "-").split())[:300]))
+                " ".join(str(x.get("kod_gerekce") or "-").split())[:300],
+                " ".join(str(x.get("hedef_profil") or "-").split())[:320]))
     # Secenek kodlarinin ne yaptigi (yalniz bu parcada gecenler)
     istek = _veri_blogu("Kararlar:", "\n".join(satirlar))
     if sozluk:

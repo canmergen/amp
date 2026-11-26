@@ -18271,6 +18271,8 @@ function profilKartiEkle(alan, blok, devamdan) {
                 const r = elYap("tr");
                 r.appendChild(kolonHucresi(c.ad, satirK ? "" : c.aciklama));
                 const bTd = elYap("td", "pf-bulgu", c.bulgu || "");
+                /* Hedef oranının değer bantlarındaki gidişi (kodun ölçümü). */
+                if (c.hedef_profil) bTd.appendChild(elYap("div", "pf-hedef-profil", tireSade(c.hedef_profil)));
                 /* Çözümü olmayan ya da başka satırda çözülen kolon: bilgi. */
                 if ((c.cozum && (c.cozum.secenekler || []).length < 2) || c.cozum_yok)
                     bTd.appendChild(elYap("div", "pf-cozum-gerekce", "Uygun çözüm bulunmadı; kolon üretime girmez."));

@@ -555,6 +555,40 @@ def uc_bulgu_metni(x, set_tanim=None):
     return m
 
 
+def _bant_iv(bantlar):
+    """Deger bantlariyla ayirma gucu (IV); bos bantlar icin 0,5 duzeltmesi."""
+    B = sum((b.get("oran") or 0) * b["n"] for b in bantlar)
+    G = sum(b["n"] for b in bantlar) - B
+    iv = 0.0
+    for b in bantlar:
+        o = (b.get("oran") or 0) * b["n"]
+        pb, pg = (o + 0.5) / (B + 1.0), (b["n"] - o + 0.5) / (G + 1.0)
+        iv += (pg - pb) * math.log(pg / pb)
+    return iv
+
+
+HEDEF_YON_ADI = {"artiyor": "Değer büyüdükçe hedef oranı artıyor",
+                 "azaliyor": "Değer büyüdükçe hedef oranı azalıyor",
+                 "duzensiz": "Hedef oranı değerle birlikte düzenli artmıyor ya da azalmıyor"}
+
+
+def hedef_profili_metni(pr):
+    """Hedef oraninin deger bantlarindaki gidisi, tek paragraf (profil_ek.
+    hedef_profili). Bos: profil yok."""
+    if not isinstance(pr, dict) or not pr.get("bantlar"):
+        return ""
+    parca = ["%s: %s (%s satır)" % (b["ad"], _yuzde_metni(b["oran"]), _sayi(b["n"]))
+             for b in pr["bantlar"] if b.get("oran") is not None]
+    m = "Değer bantlarında hedefi 1 olanların oranı: " + "; ".join(parca) + "."
+    if pr.get("yon"):
+        m += " " + HEDEF_YON_ADI.get(pr["yon"], "")
+        if pr.get("p") is not None and pr["yon"] != "duzensiz":
+            m += " (eğilimin şans eseri olma ihtimali %s)" % (
+                _yuzde_metni(pr["p"]) if pr["p"] >= 0.0001 else "%0,01'den az")
+        m += "."
+    return m
+
+
 def _veri_onerileri(durum, ek, df, egitim):
     """{kontrol: {kolon: {"oneri", "gerekce"}}}: dil modeline sorulmayan
     karar ve duzeltme bulgularinda kolonun kendi sayilarina bakan kural.
@@ -581,6 +615,26 @@ def _veri_onerileri(durum, ek, df, egitim):
             if egitim is not None:
                 maske &= egitim.reindex(df.index).fillna(False).astype(bool)
             y = yh
+    # HEDEF ORANININ DEGER BANTLARINDAKI GIDISI (profil_ek.hedef_profili):
+    # karar ya da duzeltme isteyen her sayi kolonu icin; kodun kuralina
+    # (asagida), dil modeline giden kanita ve karta girer.
+    hp = {}
+    if y is not None and bool(maske.any()):
+        from fe_agent import profil_ek as _pe
+        adlar = []
+        for a in KARAR_KONTROLLERI + DUZELTME_KONTROLLERI:
+            for x in ek.get(a) or []:
+                if isinstance(x, dict) and isinstance(x.get("kolon"), str):
+                    adlar.append(x["kolon"])
+        for k in dict.fromkeys(adlar):
+            if k in df.columns and k != hedef:
+                try:
+                    pr = _pe.hedef_profili(df.loc[maske, k], y[maske])
+                except Exception:
+                    pr = None
+                if pr:
+                    hp[k] = pr
+    ek["hedef_profil"] = hp
     for x in ek.get("baskin") or []:
         k = x["kolon"]
         if k not in df.columns:
@@ -627,6 +681,16 @@ def _veri_onerileri(durum, ek, df, egitim):
             yaz("baskin", k, PROFIL_KARAR_TUT, oranlar + ". Fark belirgin ve şans eseri olamayacak "
                 "kadar büyük (şans eseri olma ihtimali %s): kolon işe yarıyor, Tut." % (
                     _yuzde_metni(p) if p >= 0.0001 else "%0,01'den az"))
+        elif (hp.get(k) or {}).get("yon") in ("artiyor", "azaliyor") \
+                and len(hp[k]["bantlar"]) >= 3 and hp[k].get("p") is not None \
+                and hp[k]["p"] < TESADUF and _bant_iv(hp[k]["bantlar"]) >= IV_EN_AZ:
+            # Iki grubun ortalamasi fark gostermese de deger buyudukce oran
+            # DUZENLI degisiyorsa kolon bilgi tasiyor (egilim testi).
+            yaz("baskin", k, PROFIL_KARAR_TUT, oranlar + ". İki grubun farkı tek başına belirgin "
+                "değil (şans eseri olma ihtimali %s); ama %s ve bu eğilim şans eseri olamayacak "
+                "kadar düzenli (ihtimali %s): kolon işe yarıyor, Tut." % (
+                    _yuzde_metni(p), HEDEF_YON_ADI[hp[k]["yon"]][0].lower() + HEDEF_YON_ADI[hp[k]["yon"]][1:],
+                    _yuzde_metni(hp[k]["p"]) if hp[k]["p"] >= 0.0001 else "%0,01'den az"))
         elif p >= TESADUF:
             yaz("baskin", k, PROFIL_KARAR_CIKAR, oranlar + ". Fark şans eseri olabilecek kadar "
                 "küçük (şans eseri olma ihtimali %s): kolon bir şey ayırt etmiyor, Çıkar."
@@ -972,6 +1036,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
             "olcu": olcu.get(anahtar, ""), "bulgu": metin,
             "secenekler": list(secenekler), "kod_oneri": kod_oneri,
             "kod_gerekce": str(kod_gerekce or ""),
+            "hedef_profil": hedef_profili_metni((ek.get("hedef_profil") or {}).get(anahtar)),
             "secenek_ad": {x: secenek_ad[x] for x in secenekler if x in secenek_ad}}))
 
     def kararlar(kontroller, tur):
@@ -1033,7 +1098,8 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     cikti, sorulacak = {}, []
     for a, anahtar, oge in ogeler:
         imza = json.dumps([oge["tur"], oge["kolon"], oge["aciklama"], oge["bulgu"], oge["secenekler"],
-                           oge["kod_oneri"], oge["kod_gerekce"], "karar"], ensure_ascii=False)
+                           oge["kod_oneri"], oge["kod_gerekce"], oge["hedef_profil"], "karar2"],
+                          ensure_ascii=False)
         o = (onceki.get(a) or {}).get(anahtar) or {}
         if o.get("imza") == imza and o.get("secim") in oge["secenekler"]:
             cikti.setdefault(a, {})[anahtar] = o
@@ -1065,6 +1131,11 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     return cikti
 
 
+# Dil modelinin gerekcesi KENDI yorumudur (kolonun anlami); kodun sayisal
+# gerekcesi ayri kutuda durur ve dil modelinin gerekcesi yerine YAZILMAZ.
+DM_GEREKCE_YOK = "Dil modeli bu karar için gerekçe yazmadı."
+
+
 def _gorusu_karara_yaz(p, ek):
     """Dil modelinin kararini ONERI yapar (secili gelen odur): Tut / Çıkar
     ve duzeltmelerde p["llm_oneri"], cozumlerde p["cozum_oneri"], ayni
@@ -1080,14 +1151,14 @@ def _gorusu_karara_yaz(p, ek):
                 continue
             lo.setdefault(a, {})[k] = {
                 "oneri": g["secim"], "kaynak": "dil modeli",
-                "gerekce": g.get("gerekce") or g.get("kod_gerekce") or "",
+                "gerekce": g.get("gerekce") or DM_GEREKCE_YOK,
                 "kod_oneri": g.get("kod_oneri"), "kod_gerekce": g.get("kod_gerekce") or ""}
     for k, v in (p.get("cozum_oneri") or {}).items():
         g = (G.get(v.get("kontrol")) or {}).get(k) or {}
         if g.get("secim") in (v.get("secenekler") or []):
             v["kod_oneri"], v["kod_gerekce"] = _kodun_onerisi(v)
             v["oneri"], v["kaynak"] = g["secim"], "dil modeli"
-            v["gerekce"] = g.get("gerekce") or v["kod_gerekce"]
+            v["gerekce"] = g.get("gerekce") or DM_GEREKCE_YOK
     for gr in ek.get("ayni_gruplar") or []:
         g = (G.get(GORUS_GRUP) or {}).get(gr["id"]) or {}
         s = g.get("secim")
@@ -1096,7 +1167,7 @@ def _gorusu_karara_yaz(p, ek):
             sira = list(gr.get("sira") or gr["uyeler"])
             gr["sira"] = [s] + [u for u in sira if u != s]
             gr["oneri"], gr["kaynak"] = s, "dil modeli"
-            gr["gerekce"] = g.get("gerekce") or gr["kod_gerekce"]
+            gr["gerekce"] = g.get("gerekce") or DM_GEREKCE_YOK
 
 
 def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False):
@@ -1358,7 +1429,7 @@ def satir_onerileri(durum):
             if g.get("secim") in o["secenekler"]:
                 o["kod_oneri"], o["kod_gerekce"] = o["oneri"], o["gerekce"]
                 o["oneri"], o["kaynak"] = g["secim"], "dil modeli"
-                o["gerekce"] = g.get("gerekce") or o["kod_gerekce"]
+                o["gerekce"] = g.get("gerekce") or DM_GEREKCE_YOK
     return cikti
 
 
@@ -2841,7 +2912,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 9
+PROFIL_KAPSAM_SURUMU = 10
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -2890,7 +2961,10 @@ def profil_eski_uyarisi(durum):
              "alınmamış"
              if surum == 7 else
              "dil modelinin kararları bulguların yalnız bir kısmında alınabilmiş; artık kalanlar "
-             "kendiliğinden tamamlanıyor")
+             "kendiliğinden tamamlanıyor"
+             if surum == 8 else
+             "hedef oranının değer bantlarındaki gidişi hesaplanmamış ve dil modeli kendi "
+             "gerekçesini yazmamış")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -4649,6 +4723,10 @@ def profil_karti(durum, karar=False):
         dm_var = False
         for kol, metin in (bulgu.get(a) or {}).items():
             satir = {"ad": kol, "aciklama": aciklama.get(kol, ""), "bulgu": metin}
+            if a in KARAR_KONTROLLERI or a in DUZELTME_KONTROLLERI:
+                hpm = hedef_profili_metni((ek.get("hedef_profil") or {}).get(kol))
+                if hpm:
+                    satir["hedef_profil"] = hpm
             if sonuc == SONUC_KARAR:
                 satir["karar"] = karar_deger.get(kol, karar_vars.get(kol, PROFIL_KARAR_TUT))
                 o = ((p.get("llm_oneri") or {}).get(a) or {}).get(kol) or {}
