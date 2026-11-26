@@ -17491,9 +17491,18 @@ function pfUyeKontroller(alan) {
     return liste;
 }
 
-function profilKartiEkle(alan, blok) {
+/* 02.1.2 DİL MODELİ KARARLARININ TAMAMLANMASI: çok bulgulu tabloda kararlar
+   profilin çıkarıldığı tek isteğe sığmaz. Kart, karar alınamayan bulgu
+   kaldıkça /profil_karar_devam ucunu çağırır; her yanıtta tazelenmiş kartla
+   yerinde yeniden çizilir. Sürerken seçim ve onay kapalıdır (yeniden çizimde
+   seçimler kaybolmasın). durdu: kullanıcı durdurdu; bosTur: art arda yeni
+   karar getirmeyen istek sayısı (2 olunca kendiliğinden durur). */
+const PF_DEVAM = { durdu: false, bosTur: 0, hata: "" };
+function profilKartiEkle(alan, blok, devamdan) {
     const kart = elYap("div", "secim-kart pf-kart");
     const kararModu = !!alan.karar_bekliyor && !(blok && blok.kilit);
+    if (!devamdan) { PF_DEVAM.durdu = false; PF_DEVAM.bosTur = 0; PF_DEVAM.hata = ""; }
+    const kartHazir = [];      // kart sayfaya eklendikten sonra çalışacaklar
 
     /* Karar durumu: kolon -> "tut" | "cikar". Bir kolon iki karar
        kontrolünde birden geçebilir; iki satır aynı kararı gösterir. */
@@ -17549,7 +17558,7 @@ function profilKartiEkle(alan, blok) {
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır; satır kurallarında fazla ya da çakışan satırlar çalışma tablosundan çıkar.",
         "Boş Yerine Başka Şey Yazılmış, Yazım Farkları, Eksi Olamayacak Değerler ve Aşırı Değerler kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz. Tekrar Eden Satır ve Setlerde Ortak Kayıt kontrollerinde çıkarılacak satırları seçersiniz.",
-        "Analiz ve kararlar aynı yerdedir: kontrol satırını açınca her kolonun bulgusu, önerisi (gerekçesiyle) ve seçiminiz aynı tabloda durur; kararı orada verir ve değiştirirsiniz. Kod kolonun kendi sayılarına bakıp bulguyu ve kendi önerisini çıkarır. Kararı dil modeli verir: takılan her kolonda (Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar) kolonun anlamına, takıldığı kurala ve kodun bulgusuna birlikte bakar; seçili gelen öneri onun kararıdır. Kodun önerisi aynı hücrede «Kodun önerisi» kutusunda durur; dil modelinden farklıysa satır işaretlenir ve «Kodun önerisini seç» ile seçimi ona çevirebilirsiniz. Dil modelinden karar alınamayan satırda kodun önerisi seçilidir. Tek tıkla toplu seçim: öneriler kutusundaki «Dil Modelinin Kararlarını Seç» ve «Kodun Önerilerini Seç» düğmeleri bütün kurallara, her kuralın başındaki aynı düğmeler yalnız o kurala uygulanır; sonra tek tek değiştirebilirsiniz. Satır kurallarında da (Tekrar Eden Satır, Setlerde Ortak Kayıt) kararı dil modeli verir. Değiştirdiğiniz satır işaretlenir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
+        "Analiz ve kararlar aynı yerdedir: kontrol satırını açınca her kolonun bulgusu, önerisi (gerekçesiyle) ve seçiminiz aynı tabloda durur; kararı orada verir ve değiştirirsiniz. Kod kolonun kendi sayılarına bakıp bulguyu ve kendi önerisini çıkarır. Kararı dil modeli verir: takılan her kolonda (Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar) kolonun anlamına, takıldığı kurala ve kodun bulgusuna birlikte bakar; seçili gelen öneri onun kararıdır. Kodun önerisi aynı hücrede «Kodun önerisi» kutusunda durur; dil modelinden farklıysa satır işaretlenir ve «Kodun önerisini seç» ile seçimi ona çevirebilirsiniz. Çok bulgulu tabloda kararlar birkaç istekte alınır: kart, karar alınmayan bulgu kaldıkça kendiliğinden sormaya devam eder ve her seferinde yenilenir; bu sürerken seçim ve onay kapalıdır, «Durdur» ile durdurabilir, «Kalanları Dil Modeline Sor» ile sürdürebilirsiniz. Dil modelinden karar alınamayan satırda kodun önerisi seçilidir. Tek tıkla toplu seçim: öneriler kutusundaki «Dil Modelinin Kararlarını Seç» ve «Kodun Önerilerini Seç» düğmeleri bütün kurallara, her kuralın başındaki aynı düğmeler yalnız o kurala uygulanır; sonra tek tek değiştirebilirsiniz. Satır kurallarında da (Tekrar Eden Satır, Setlerde Ortak Kayıt) kararı dil modeli verir. Değiştirdiğiniz satır işaretlenir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
@@ -17845,12 +17854,77 @@ function profilKartiEkle(alan, blok) {
                 + "(Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar, satır kuralları). "
                 + (Number(gs.farkli) ? "**" + ftBinlik(gs.farkli) + "** tanesinde kodun yalnız sayılara bakan önerisinden farklı karar verdi; o satırlar «Dil modelinden farklı» diye işaretli. "
                                      : "Hepsinde kodun önerisiyle aynı kararda. ")
-                + (gsuz ? "**" + ftBinlik(gsuz) + "** bulguda karar alınamadı (süre doldu ya da cevap gelmedi); o satırlarda kodun önerisi seçili. " : "")
+                + (gsuz ? "**" + ftBinlik(gsuz) + "** bulguda karar henüz alınmadı; o satırlarda kodun önerisi seçili. " : "")
                 + "Her kararı değiştirebilirsiniz.");
             oz.appendChild(gn);
         } else if (gs.hata && Number(gs.oge) > 0) {
             oz.appendChild(elYap("div", "pf-oneri-ozet-not pf-gorus-ozet farkli",
-                "Dil modeline ulaşılamadı; " + ftBinlik(gs.oge) + " bulguda karar alınamadı. Kodun önerileri seçili. «Boş Yerine Sıfır Yazılmış» kuralı çalışmadı."));
+                "Dil modeline ulaşılamadı; " + ftBinlik(gs.oge) + " bulguda karar alınamadı. Kodun önerileri seçili. «Boş Yerine Sıfır Yazılmış» kuralı çalışmadı. Aşağıdaki düğmeyle yeniden sorabilirsiniz."));
+        }
+        /* Karar alınamayan bulgu kaldıysa: kendiliğinden tamamlanır (ilerleme şeridi). */
+        const kalanKarar = Number(gs.gorussuz != null ? gs.gorussuz : 0);
+        if (kararModu && kalanKarar > 0 && !alan.eski_uyari) {
+            const serit = elYap("div", "pf-devam");
+            const metin = elYap("span", "pf-devam-metin", "");
+            const dugme = elYap("button", "dg-toplu-btn pf-devam-btn", "");
+            dugme.type = "button";
+            serit.append(metin, dugme);
+            oz.appendChild(serit);
+            const toplamK = Number(gs.oge || 0), alinanK = Number(gs.alinan || 0);
+            const sayac = ftBinlik(alinanK) + " / " + ftBinlik(toplamK);
+            const dur = neden => {
+                kart.classList.remove("pf-karar-aliyor");
+                serit.classList.remove("suruyor");
+                metin.textContent = (neden ? neden + " " : "") + "Dil modeli kararı alınan bulgu: " + sayac
+                    + ". Kalan " + ftBinlik(kalanKarar) + " bulguda kodun önerisi seçili.";
+                dugme.textContent = "Kalanları Dil Modeline Sor";
+                dugme.onclick = () => { PF_DEVAM.durdu = false; PF_DEVAM.bosTur = 0; PF_DEVAM.hata = ""; baslat(); };
+                const b = kart.querySelector("button.secim-onay"); if (b) b.disabled = false;
+            };
+            const baslat = () => {
+                kart.classList.add("pf-karar-aliyor");
+                serit.classList.add("suruyor");
+                metin.textContent = "Dil modeli kararları alınıyor: " + sayac
+                    + ". Bitince kart yenilenir; o zamana kadar seçim ve onay kapalıdır.";
+                dugme.textContent = "Durdur";
+                dugme.onclick = () => {
+                    PF_DEVAM.durdu = true;
+                    dugme.disabled = true;
+                    metin.textContent = "Durduruluyor; süren istek bitince kart yenilenir (" + sayac + ").";
+                };
+                const b = kart.querySelector("button.secim-onay"); if (b) b.disabled = true;
+                fetch(getWebAppBackendUrl("profil_karar_devam"), {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(ftKimlikGovdesi({}))
+                })
+                .then(r => r.json())
+                .then(d => {
+                    if (!kart.isConnected || kart.classList.contains("kilitli")) return;
+                    if (d && d.tamam === true && d.secim_alani && d.secim_alani.tip === "profil") {
+                        PF_DEVAM.bosTur = Number((d.sayim || {}).yeni || 0) > 0 ? 0 : PF_DEVAM.bosTur + 1;
+                        PF_DEVAM.hata = "";
+                        const yeni = profilKartiEkle(d.secim_alani, blok, true);
+                        if (yeni && kart.parentNode) { kart.parentNode.insertBefore(yeni, kart); kart.remove(); }
+                    } else {
+                        PF_DEVAM.hata = (d && d.hata) || "Dil modelinden yanıt alınamadı.";
+                        dugme.disabled = false;
+                        dur(PF_DEVAM.hata);
+                    }
+                })
+                .catch(() => {
+                    if (!kart.isConnected) return;
+                    PF_DEVAM.hata = "Dil modeline ulaşılamadı.";
+                    dugme.disabled = false;
+                    dur(PF_DEVAM.hata);
+                });
+            };
+            /* Kendiliğinden sürer; durdurulduysa, iki istek üst üste yeni
+               karar getirmediyse ya da dil modeline hiç ulaşılamadıysa bekler. */
+            const kendiliginden = !PF_DEVAM.durdu && PF_DEVAM.bosTur < 2 && !PF_DEVAM.hata
+                && (alinanK > 0 || !gs.hata);
+            kartHazir.push(() => (kendiliginden ? baslat() : dur(PF_DEVAM.hata
+                || (PF_DEVAM.bosTur >= 2 ? "Dil modeli son iki istekte yeni karar vermedi." : ""))));
         }
         if (kararModu && dmKullanildi)
             oz.appendChild(topluDugmeler("Bütün kurallarda tek tıkla:", () => hepsiTopluSec("dm"), () => hepsiTopluSec("kod"),
@@ -17902,12 +17976,18 @@ function profilKartiEkle(alan, blok) {
     const e = alan.eksik || {};
     const es = alan.eksik_esik || {};
     const azY = pfYuzde(es.az), asY = pfYuzde(es.asiri);
+    /* "%5 ile sınır arası" dar bantlara bölünür (eksik_bant); eski profilde
+       tek banttır. Renk tek tonun açıktan koyuya basamaklarıdır. */
+    const bantlar = (alan.eksik_bant || []).filter(b => b && b.ust > b.alt);
+    const bantToplam = bantlar.reduce((t, b) => t + Number(b.n || 0), 0);
+    const araDilim = (bantlar.length > 1 && bantToplam === Number(e.orta || 0))
+        ? bantlar.map((b, i) => ["bant" + Math.min(4, Math.round((i + 1) * 4 / bantlar.length)),
+                                 pfYuzde(b.alt) + " ile " + pfYuzde(b.ust) + " arası", Number(b.n || 0)])
+        : [["orta", azY + " ile " + asY + " arası", Number(e.orta || 0)]];
     const dilimler = [
         ["yok", "Eksik yok", Number(e.yok || 0)],
-        ["az", azY + " ve altı", Number(e.az || 0)],
-        ["orta", azY + " ile " + asY + " arası", Number(e.orta || 0)],
-        ["asiri", asY + " üstü", Number(e.asiri || 0)]
-    ];
+        ["az", azY + " ve altı", Number(e.az || 0)]
+    ].concat(araDilim, [["asiri", asY + " üstü", Number(e.asiri || 0)]]);
     const top = dilimler.reduce((t, d) => t + d[2], 0);
     const eb = elYap("div", "pf-bolum");
     const ebBas = elYap("div", "pf-bolum-bas");
@@ -18369,6 +18449,8 @@ function profilKartiEkle(alan, blok) {
     if (alan.kayit) kart.appendChild(elYap("div", "pf-kayit", "Profil tablosu: " + alan.kayit));
 
     (adimKabiAl(blok) || sohbetEl).appendChild(kart);
+    kartHazir.forEach(f => f());
+    return kart;
 }
 
 /* ==================== 02.2 GELENEKSEL DEĞİŞKEN ÜRETİMİ ====================

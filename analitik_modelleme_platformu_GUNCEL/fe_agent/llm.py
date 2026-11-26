@@ -4324,87 +4324,132 @@ Türlere göre neye bakacaksın:
   aynısıysa sınama sonucu olduğundan iyi görünür: gerçek bir neden yoksa
   çıkarılır.
 
-ÇIKTI KURALI: Cevabın YALNIZCA JSON olsun, muhakeme yazma:
-{"gorusler":{"<id>":{"secim":"<seçenek>","gerekce":"bir cümle, Türkçe"}}}
-HER id için "secim" VE "gerekce" yaz. Gerekçe tek kısa cümle olsun ve iki
-şeyi söylesin: kolonun anlamından ne anladığın ve bu bulguda neden bu
-kararı verdiğin. Kodun önerisinden farklı karar verdiysen nedenini açıkça
-yaz. Uydurma sayı yazma; sayı yazacaksan yalnız sana verilenleri kullan.""" + SINIRLAYICI_KURALI
-PROFIL_GORUS_PARCA = 30
-# Toplam bekleme: ilk PROFIL_ONERI_PARALEL parca (240 bulgu) icin 120 sn,
-# sonraki her tur icin 30 sn daha, en cok 180 sn (istek 5 dakikada kesilir;
-# profilin kendi hesabi da ayni istekte). Sure dolunca bitmeyen parcalar
-# gorussuz kalir; parcalar sorulma sirasiyla islenir.
-PROFIL_GORUS_BUTCE = 120.0
-PROFIL_GORUS_BUTCE_TUR = 30.0
-PROFIL_GORUS_BUTCE_EN_COK = 180.0
+ÇIKTI KURALI: Muhakeme yazma, açıklama yazma. Her karar için TEK SATIR yaz,
+başka hiçbir şey yazma:
+no|seçim|gerekçe
+- "no" satırın başındaki numaradır (no=...), "seçim" o satırın
+  seçeneklerinden biridir.
+- Seçimin kodun önerisiyle AYNIYSA gerekçe yazma, satırı "no|seçim" diye
+  bırak (kodun gerekçesi geçerli sayılır).
+- Seçimin kodun önerisinden FARKLIYSA gerekçe ZORUNLU: tek kısa cümleyle
+  kolonun anlamından ne anladığını ve neden bu kararı verdiğini yaz.
+- HER no için bir satır yaz. Uydurma sayı yazma; sayı yazacaksan yalnız sana
+  verilenleri kullan.
+Örnek:
+1|cikar
+2|tut|Başvuru anında bilinen bir puan; sonuçtan sonra doldurulmuyor.""" + SINIRLAYICI_KURALI
+# CIKTI KISA TUTULUR: dil modelinin hizini cikti uzunlugu belirler. Uzun id
+# yerine satir numarasi, JSON yerine "no|secim|gerekce" satiri ve gerekcenin
+# yalniz kodla ayrisilan kararda yazilmasi ciktiyi kat kat kisaltir (1.000'den
+# fazla bulgulu tabloda kararlarin hepsinin alinabilmesi buna bagli).
+PROFIL_GORUS_PARCA = 40
+# DALGA DALGA SORULUR: her dalgada PROFIL_ONERI_PARALEL parca (320 bulgu)
+# birlikte gider, bitince sonraki dalga baslar. Butce (saniye) dolunca YENI
+# DALGA BASLATILMAZ: sorulmayan bulgular kararsiz kalir ve bir sonraki
+# cagrida (akis_faz02.profil_kararlari_tamamla) kaldigi yerden sorulur.
+# Boylece istek bittikten sonra arkada calisan cagri kalmaz.
+PROFIL_GORUS_BUTCE = 120.0          # profil cikarilirken (ayni istekte hesap da var)
+PROFIL_GORUS_DEVAM_BUTCE = 150.0    # yalniz kalanlar sorulurken
 PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "duzeltme", "cozum", "satir")
+_GORUS_SATIR = re.compile(r"^\s*(?:no\s*=\s*)?(\d+)\s*[|:=]\s*([^|\n]+?)\s*(?:\|\s*(.*?))?\s*$")
+
+
+def _profil_gorus_coz(ham, parca):
+    """Dil modeli cevabi -> {id: {"secim", "gerekce"}}. Bicim "no|secim|
+    gerekce" satirlari; JSON ({"gorusler": {no ya da id: {...}}}) da okunur.
+    Secenekler disindaki secim atilir."""
+    metin = str(ham or "")
+    aday = {}        # anahtar (no ya da id) -> (secim, gerekce)
+    if "{" in metin and "gorusler" in metin:
+        veri = _json_ayristir(metin, {}, dict)
+        g = veri.get("gorusler") if isinstance(veri, dict) else None
+        for k, v in (g.items() if isinstance(g, dict) else []):
+            if isinstance(v, str):
+                v = {"secim": v}
+            if isinstance(v, dict):
+                aday[str(k).strip()] = (str(v.get("secim") or ""), str(v.get("gerekce") or ""))
+    if not aday:
+        for satir in metin.splitlines():
+            m = _GORUS_SATIR.match(satir.strip().strip("`"))
+            if m:
+                aday[m.group(1)] = (m.group(2).strip().strip('"\''), (m.group(3) or "").strip())
+    sonuc = {}
+    for i, x in enumerate(parca, 1):
+        v = aday.get(str(i)) or aday.get(x["id"])
+        if not v:
+            continue
+        secim = v[0]
+        if secim not in {str(o) for o in x.get("secenekler") or []}:
+            continue
+        sonuc[x["id"]] = {"secim": secim, "gerekce": v[1].strip()[:300]}
+    return sonuc
 
 
 def _profil_gorus_parca(parca):
     satirlar, sozluk = [], {}
-    for x in parca:
+    for i, x in enumerate(parca, 1):
         sozluk.update(x.get("secenek_ad") or {})
         satirlar.append(
-            "id=%s | tür: %s | kural: %s | kolon: %s | açıklama: %s | ölçü: %s | bulgu: %s | "
+            "no=%d | id=%s | tür: %s | kural: %s | kolon: %s | açıklama: %s | ölçü: %s | bulgu: %s | "
             "seçenekler: %s | kodun önerisi: %s | kodun gerekçesi: %s" % (
-                x["id"], x.get("tur"), x.get("kural") or "-", x.get("kolon"),
+                i, x["id"], x.get("tur"), x.get("kural") or "-", x.get("kolon"),
                 (x.get("aciklama") or "(açıklama yok)")[:160],
                 x.get("olcu") or "-", str(x.get("bulgu") or "")[:220],
                 ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", ""),
                 " ".join(str(x.get("kod_gerekce") or "-").split())[:300]))
     # Secenek kodlarinin ne yaptigi (yalniz bu parcada gecenler)
-    istek = _veri_blogu("Sorular:", "\n".join(satirlar))
+    istek = _veri_blogu("Kararlar:", "\n".join(satirlar))
     if sozluk:
         istek = "Seçenek kodları: %s\n\n%s" % (
             "; ".join("%s = %s" % (k, v) for k, v in sorted(sozluk.items())), istek)
     ham = _cagir(SISTEM_PROFIL_GORUS, istek, sicaklik=0.1,
                  zaman_asimi=PROFIL_ONERI_ZAMAN_ASIMI, deneme=1, havuz=_PROFIL_HAVUZ)
-    veri = _json_ayristir(ham, {}, dict)
-    gorusler = veri.get("gorusler") if isinstance(veri, dict) else None
-    gorusler = gorusler if isinstance(gorusler, dict) else {}
-    sonuc = {}
-    for x in parca:
-        g = gorusler.get(x["id"])
-        if isinstance(g, str):
-            g = {"secim": g}
-        if not isinstance(g, dict):
-            continue
-        secim = str(g.get("secim") or "")
-        if secim not in {str(o) for o in x.get("secenekler") or []}:
-            continue
-        sonuc[x["id"]] = {"secim": secim, "gerekce": str(g.get("gerekce") or "").strip()[:300]}
-    return sonuc
+    return _profil_gorus_coz(ham, parca)
 
 
 def profil_gorus_al(ogeler, butce=None):
     """ogeler: [{"id", "tur" (PROFIL_GORUS_TURLERI), "kural", "kolon",
     "aciklama", "olcu", "bulgu", "secenekler": [kod], "kod_oneri",
-    "kod_gerekce", "secenek_ad": {kod: ad}}]. Doner: ({id:
-    {"secim", "gerekce"}}, hata). Parcalar _PROFIL_HAVUZ'da eszamanli; butce
-    (saniye) dolunca bitmeyen parcalar beklenmez: o ogelerde gorus olmaz."""
+    "kod_gerekce", "secenek_ad": {kod: ad}}]. Doner: ({id: {"secim",
+    "gerekce"}}, hata). Dalga dalga sorulur (PROFIL_ONERI_PARALEL parca
+    birlikte); butce (saniye) dolunca yeni dalga baslatilmaz, sorulmayan
+    ogeler sonucta yoktur (hata sayilmaz: sonraki cagrida sorulur)."""
     isler = [ogeler[i:i + PROFIL_GORUS_PARCA] for i in range(0, len(ogeler), PROFIL_GORUS_PARCA)]
     sonuc, hatalar = {}, []
     if not isler:
         return sonuc, None
-    if butce is None:
-        tur = -(-len(isler) // PROFIL_ONERI_PARALEL)
-        butce = min(PROFIL_GORUS_BUTCE_EN_COK, PROFIL_GORUS_BUTCE + PROFIL_GORUS_BUTCE_TUR * (tur - 1))
-    ex = futures.ThreadPoolExecutor(max_workers=len(isler))
-    fs = [ex.submit(_profil_gorus_parca, p) for p in isler]
-    bitti, kalan = futures.wait(fs, timeout=butce)
-    for f in fs:
-        if f not in bitti:
-            continue
-        try:
-            sonuc.update(f.result())
-        except Exception as e:
-            hatalar.append(_hata_metni(e))
-    if kalan:
-        hatalar.append("%d parça %g saniyede bitmedi" % (len(kalan), butce))
-        for f in kalan:
-            f.cancel()
-    ex.shutdown(wait=False)
+    butce = PROFIL_GORUS_BUTCE if butce is None else float(butce)
+    basla = time.time()
+    dalga_sure = 0.0
+    for d in range(0, len(isler), PROFIL_ONERI_PARALEL):
+        gecen = time.time() - basla
+        # Ilk dalga her zaman gider; sonrakiler bir dalganin sigacagi sure
+        # kaldiysa (son dalganin suresi olcu alinir).
+        if d and gecen + max(dalga_sure, 10.0) > butce:
+            break
+        dalga = isler[d:d + PROFIL_ONERI_PARALEL]
+        t0 = time.time()
+        ex = futures.ThreadPoolExecutor(max_workers=len(dalga))
+        fs = [ex.submit(_profil_gorus_parca, p) for p in dalga]
+        bitti, kalan = futures.wait(fs, timeout=max(15.0, min(PROFIL_ONERI_ZAMAN_ASIMI + 10.0,
+                                                               butce - gecen + 30.0)))
+        for f in fs:
+            if f not in bitti:
+                continue
+            try:
+                sonuc.update(f.result())
+            except Exception as e:
+                hatalar.append(_hata_metni(e))
+        if kalan:
+            hatalar.append("%d parça zamanında yanıtlanmadı" % len(kalan))
+            for f in kalan:
+                f.cancel()
+        ex.shutdown(wait=False)
+        dalga_sure = time.time() - t0
+        # Dalganin hicbir parcasi cevap vermediyse (dil modeline ulasilamiyor)
+        # sonraki dalgalar bosuna beklenmez.
+        if not any(f in bitti and not f.exception() for f in fs):
+            break
     return sonuc, (hatalar[-1] if hatalar else None)
 
 

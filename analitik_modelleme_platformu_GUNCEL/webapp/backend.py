@@ -3103,6 +3103,42 @@ def bolme_kaydet_endpoint():
 
 
 # ===========================================================================
+# 02.1.2 DIL MODELI KARARLARININ TAMAMLANMASI
+# ---------------------------------------------------------------------------
+# Cok bulgulu tabloda (1.000'den fazla karar) dil modelinin butun kararlari
+# profilin cikarildigi tek istege sigmaz (istek 5 dakikada kesilir). Kart
+# karar alinamayan bulgu kaldikca bu ucu cagirir: her cagrida kalanlarin bir
+# kismi sorulur (akis.profil_kararlari_tamamla, yaklasik 150 sn), profil
+# yeniden HESAPLANMAZ, alinmis kararlar yeniden sorulmaz. Yanit tazelenmis
+# karti tasir. Yalniz 02.1.2 karti karar beklerken calisir.
+# ===========================================================================
+@app.route("/profil_karar_devam", methods=["POST"])
+def profil_karar_devam_endpoint():
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        acik = durum.get("_secim_alani")
+        if not (isinstance(acik, dict) and acik.get("tip") == "profil"
+                and acik.get("karar_bekliyor")):
+            return jsonify({"tamam": False, "bitti": True,
+                            "hata": "Veri profili kartı karar beklemiyor."})
+        sayim = akis.profil_kararlari_tamamla(durum)
+        if not sayim:
+            return jsonify({"tamam": False, "bitti": True,
+                            "hata": "Profil eski kuralla çıkarılmış; kararlar için "
+                                    "profilin yeniden çıkarılması gerekir."})
+        kart = akis.profil_karti(durum, karar=True)
+        durum["_secim_alani"] = kart
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": True, "sayim": sayim, "secim_alani": kart})
+    except Exception as e:
+        kod = _hata_kaydet("profil_karar_devam", e)
+        return jsonify({"tamam": False,
+                        "hata": "Dil modeli kararları alınamadı (%s)." % kod})
+
+
+# ===========================================================================
 # MODEL GELISTIRME DOKUMANI
 # ---------------------------------------------------------------------------
 # NEDEN AYRI UC, /karsilama VE /mesaj GOVDESINE EKLENMIYOR
