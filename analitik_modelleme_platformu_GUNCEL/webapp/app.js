@@ -17496,8 +17496,13 @@ function pfUyeKontroller(alan) {
    kaldıkça /profil_karar_devam ucunu çağırır; her yanıtta tazelenmiş kartla
    yerinde yeniden çizilir. Sürerken seçim ve onay kapalıdır (yeniden çizimde
    seçimler kaybolmasın). durdu: kullanıcı durdurdu; bosTur: art arda yeni
-   karar getirmeyen istek sayısı (2 olunca kendiliğinden durur). */
-const PF_DEVAM = { durdu: false, bosTur: 0, hata: "" };
+   karar getirmeyen istek sayısı (2 olunca kendiliğinden durur); ucakta:
+   yanıtı beklenen /profil_karar_devam isteği sayısı.
+   SOHBET İSTEĞİYLE ÇAKIŞMAZ: bir /mesaj isteği sürerken (Geri Dön, onay,
+   soru) yeni karar isteği başlatılmaz ve gelen yanıt karta uygulanmaz;
+   istek bitince kart hâlâ yerindeyse kaldığı yerden sürer. Eski kartın
+   süren isteği bitmeden yeni kart kendi isteğini başlatmaz. */
+const PF_DEVAM = { durdu: false, bosTur: 0, hata: "", ucakta: 0 };
 function profilKartiEkle(alan, blok, devamdan) {
     const kart = elYap("div", "secim-kart pf-kart");
     const kararModu = !!alan.karar_bekliyor && !(blok && blok.kilit);
@@ -17881,6 +17886,13 @@ function profilKartiEkle(alan, blok, devamdan) {
                 dugme.onclick = () => { PF_DEVAM.durdu = false; PF_DEVAM.bosTur = 0; PF_DEVAM.hata = ""; baslat(); };
                 const b = kart.querySelector("button.secim-onay"); if (b) b.disabled = false;
             };
+            /* f'yi sohbet isteği (ve istenirse süren karar isteği) bitince çalıştırır;
+               kart o sırada ekrandan kalktıysa ya da kilitlendiyse hiç çalıştırmaz. */
+            const bosken = (f, ucagiBekle) => {
+                if (!kart.isConnected || kart.classList.contains("kilitli")) return;
+                if (mesgul || (ucagiBekle && PF_DEVAM.ucakta > 0)) { setTimeout(() => bosken(f, ucagiBekle), 400); return; }
+                f();
+            };
             const baslat = () => {
                 kart.classList.add("pf-karar-aliyor");
                 serit.classList.add("suruyor");
@@ -17893,14 +17905,15 @@ function profilKartiEkle(alan, blok, devamdan) {
                     metin.textContent = "Durduruluyor; süren istek bitince kart yenilenir (" + sayac + ").";
                 };
                 const b = kart.querySelector("button.secim-onay"); if (b) b.disabled = true;
+                bosken(() => {
+                PF_DEVAM.ucakta++;
                 fetch(getWebAppBackendUrl("profil_karar_devam"), {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(ftKimlikGovdesi({}))
                 })
                 .then(r => r.json())
-                .then(d => {
-                    if (!kart.isConnected || kart.classList.contains("kilitli")) return;
+                .then(d => { PF_DEVAM.ucakta = Math.max(0, PF_DEVAM.ucakta - 1); bosken(() => {
                     if (d && d.tamam === true && d.secim_alani && d.secim_alani.tip === "profil") {
                         PF_DEVAM.bosTur = Number((d.sayim || {}).yeni || 0) > 0 ? 0 : PF_DEVAM.bosTur + 1;
                         PF_DEVAM.hata = "";
@@ -17911,13 +17924,15 @@ function profilKartiEkle(alan, blok, devamdan) {
                         dugme.disabled = false;
                         dur(PF_DEVAM.hata);
                     }
-                })
+                }); })
                 .catch(() => {
+                    PF_DEVAM.ucakta = Math.max(0, PF_DEVAM.ucakta - 1);
                     if (!kart.isConnected) return;
                     PF_DEVAM.hata = "Dil modeline ulaşılamadı.";
                     dugme.disabled = false;
                     dur(PF_DEVAM.hata);
                 });
+                }, true);
             };
             /* Kendiliğinden sürer; durdurulduysa, iki istek üst üste yeni
                karar getirmediyse ya da dil modeline hiç ulaşılamadıysa bekler. */

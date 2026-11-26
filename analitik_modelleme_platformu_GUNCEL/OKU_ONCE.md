@@ -3607,3 +3607,14 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Ara sınırların dayanağı.** Yaygın uygulama: %5'e kadar boşluk ihmal edilebilir; %20'ye kadar doldurma sonucu pek değiştirmez; %50'ye kadar doldurulan değer kolonun önemli bir kısmını oluşturur; üstünde kolonun çoğu boştur ve bilgi daha çok "dolu mu" sorusundadır. Bu sınırlar yalnız gösterim içindir; hiçbir kolon kararını değiştirmez (karar yine "Boş Hücreler" eşiğiyle verilir).
 - **Veri.** `null_ozet["bantlar"] = [{alt, ust, n}]` ("orta" sayımının dökümü); kartta `eksik_bant`. Eski profilde alan yoktur, çubuk tek bantla çizilir.
 - **Renk.** Aynı tonun açıktan koyuya basamakları (`pf-az`, `pf-bant1..4`, `pf-asiri`).
+
+## 02.1.2'ye geri dönüş: kayıtlı profil yeniden hesaplanmaz
+
+- **Sorun.** 02.1.2 bloğundaki Geri Dön'e basınca "bir şey olmuyor" gibi görünüyordu: adıma her dönüşte profil baştan hesaplanıyor (1.000 kolonlu tabloda dakikalar), ardından dil modeline yeniden soruluyordu; ekranda yalnız "Kontrol Ediliyor" kalıyordu. Kart o sırada dil modeli kararlarını tamamlıyorsa iki istek aynı çalışmayı birlikte değiştiriyor, sonradan biten öncekinin sonucunu eziyordu.
+- **Kayıtlı profil** (`akis_faz02.profil_kayitli_gecerli`, `veri_profili_plan`): adıma geri dönüldüğünde profil varsa, güncel kuralla çıkarılmışsa ve dayandığı ayarlar değişmemişse (`_profil_imzasi`: sınırlar, bölme, hariç kolonlar, hedef / kimlik / dönem, veri seti) yeniden hesaplanmaz; kart kayıtlı profilden açılır. Kullanıcının önceki seçimleri kartta seçili gelir.
+- **Yeniden hesaplanan durumlar.** 02.1.1 onaylanınca (`profil_ayar_uygula` `_profil_yenile` işareti koyar; ileri akışta her zaman buradan geçilir), profil eski kuralla çıkmışsa, imza değişmişse ya da profil yoksa.
+- **Çakışmanın önlenmesi.**
+  - Arka uç (`/profil_karar_devam`): kararlar alındıktan sonra güncel durum yeniden okunur; bu sırada başka bir istek kaydettiyse (`_son_islem` değişmiş) eski durum yazılmaz. Kart hâlâ açıksa ve aynı profilse (`profil_no`) yalnız alınan kararlar güncel duruma aktarılır (`profil_kararlarini_aktar`, dil modeline sormadan); değilse hiçbir şey yazılmaz.
+  - Ön yüz (`PF_DEVAM.ucakta`, `bosken`): sohbet isteği (Geri Dön, onay, soru) sürerken yeni karar isteği başlatılmaz ve gelen yanıt karta uygulanmaz; istek bitince kart yerindeyse kaldığı yerden sürer. Eski kartın süren isteği bitmeden yeni kart kendi isteğini başlatmaz.
+- **Profil çıkarılırken dil modeli süresi** 120 saniyeden 60 saniyeye indi (`llm.PROFIL_GORUS_BUTCE`): kart daha erken açılır, kalan kararları kart kendiliğinden tamamlar.
+- **Test.** `geri_test.py` (12), `devam_uc_test.py` (7), `geri_ui.js` (10).

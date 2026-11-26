@@ -948,7 +948,7 @@ def _kodun_onerisi(o):
     return o.get("oneri"), o.get("gerekce") or ""
 
 
-def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None):
+def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     onceki = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
     aciklama = _aciklamalar(durum)
     olcu = _kart_olculeri(durum)
@@ -1040,7 +1040,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None):
         else:
             sorulacak.append((a, anahtar, imza, oge))
     gorus, hata = {}, None
-    if sorulacak:
+    if sorulacak and not sorma:     # sorma: yalniz kayitli kararlar yazilir
         try:
             from fe_agent import llm as llm_mod
             gorus, hata = llm_mod.profil_gorus_al([q[3] for q in sorulacak], butce=butce)
@@ -1099,14 +1099,14 @@ def _gorusu_karara_yaz(p, ek):
             gr["gerekce"] = g.get("gerekce") or gr["kod_gerekce"]
 
 
-def _karar_asamasi(durum, p, ek, teshis, butce=None):
+def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False):
     """Dil modelinden kararlari alir (yalniz daha once alinmamis olanlari),
     "bos yerine sifir" bulgularini kurar ve kararlari oneriye yazar
     (_gorusu_karara_yaz). YENIDEN CALISTIRILABILIR: profil cikarilirken bir
     kez, karar alinamayan bulgular kaldiysa profil_kararlari_tamamla ile
     yeniden (profil yeniden hesaplanmaz)."""
     ek["sifir_bos"] = list(ek.get("sifir_bos") or [])
-    p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=butce)
+    p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=butce, sorma=sorma)
     ek["sifir_bos"] = [x for x in ek.get("sifir_aday") or []
                        if ((p["llm_gorus"].get("sifir_bos") or {}).get(x["kolon"]) or {}).get("secim") == "sifir_bos"]
     p["llm_oneri"] = p.get("llm_oneri") if isinstance(p.get("llm_oneri"), dict) else {}
@@ -1146,6 +1146,27 @@ def profil_kararlari_tamamla(durum, butce=None):
     s = dict(p.get("llm_gorus_sayim") or {})
     s["yeni"] = int(s.get("alinan") or 0) - once
     return s
+
+
+def profil_kararlarini_aktar(hedef, kaynak):
+    """Kararlar tamamlanirken (dakikalar surebilir) calisma baska bir
+    istekle degistiyse: kaynak durumda alinan dil modeli kararlari GUNCEL
+    duruma (hedef) aktarilir, guncel durumun geri kalanina dokunulmaz.
+    Yalniz iki durum AYNI profile bakiyorsa (profil_no); degilse False."""
+    ph, pk = hedef.get("profil") or {}, kaynak.get("profil") or {}
+    if not ph.get("profil_no") or ph.get("profil_no") != pk.get("profil_no"):
+        return False
+    ek, teshis = ph.get("profil_ek"), ph.get("profil_teshis")
+    if not isinstance(ek, dict) or not isinstance(teshis, dict):
+        return False
+    gh = ph.get("llm_gorus") if isinstance(ph.get("llm_gorus"), dict) else {}
+    for a, x in (pk.get("llm_gorus") or {}).items():
+        for k, v in (x or {}).items():
+            gh.setdefault(a, {}).setdefault(k, v)
+    ph["llm_gorus"] = gh
+    _karar_asamasi(hedef, ph, ek, teshis, sorma=True)
+    hedef["profil"] = ph
+    return True
 
 
 def kod_karti(kod_oneri, kod_gerekce, oneri, secenek_adi=None):
@@ -2948,6 +2969,11 @@ def profil_hesapla(durum):
     p["etkin_bos"] = _json_uyumlu({k: eb_tum[k] for k in yeni_cb})
     # Bos sayimina katilan ozel kod / yazi (kartta ve bulgularda yazar).
     p["etkin_bos_sayim"] = {"kolon": len(eb_tum), "cok_bos": len(yeni_cb)}
+    # Profilin neye gore cikarildigi (imza) ve kimligi (no): 02.1.2'ye geri
+    # donuste kayitli profil gecerliyse yeniden hesaplanmaz (veri_profili_plan);
+    # kararlar tamamlanirken profil degistiyse eski sonuc yazilmaz.
+    p["profil_imza"] = _profil_imzasi(durum)
+    p["profil_no"] = "%d-%d" % (int(_time.time() * 1000), id(p) % 100000)
     p["profil_kapsam"] = {"surum": PROFIL_KAPSAM_SURUMU,
                           "train": bool(train_ayri), "hedef_train": egitim is not None,
                           "satir": int(len(df)), "toplam": int(len(df_tum)),
@@ -3440,6 +3466,7 @@ def profil_ayar_uygula(durum):
     kaydedildi (veri_profili_girdi). Burada yalniz ozet yazilir; profil bir
     sonraki adimda (02.1.2 Bulgular ve Kararlar) bu sinirlarla cikarilir."""
     durum.pop("_profil_hazir", None)
+    durum["_profil_yenile"] = True      # sinirlar onaylandi: profil yeniden cikar
     try:
         notu = esik_degisiklik_notu(durum)
     except Exception:
@@ -3448,12 +3475,44 @@ def profil_ayar_uygula(durum):
             "için bu adıma geri dönebilirsiniz." % (notu or "Bütün sınırlar önerilen değerde."))
 
 
+def _profil_imzasi(durum):
+    """Profilin dayandigi ayarlarin imzasi: sinirlar, bolme, haric kolonlar,
+    hedef / kimlik / donem, veri seti. Veri okunmaz."""
+    import hashlib
+    m = durum.get("meta") or {}
+    try:
+        govde = json.dumps([profil_esikleri(durum), durum.get("bolme") or {},
+                            sorted(map(str, durum.get("haric_kolonlar") or [])),
+                            [m.get("target"), m.get("id"), m.get("donem")],
+                            durum.get("veri_seti"), durum.get("mod")],
+                           ensure_ascii=False, sort_keys=True, default=str)
+    except Exception:
+        return ""
+    return hashlib.md5(govde.encode("utf-8")).hexdigest()
+
+
+def profil_kayitli_gecerli(durum):
+    """Kayitli profil yeniden hesaplanmadan kullanilabilir mi: var, guncel
+    kuralla cikarilmis ve dayandigi ayarlar (imza) degismemis. 02.1.2'ye
+    GERI DONUSTE (blogun Geri Dön dugmesi, sonraki adimlardan donus) profil
+    bastan hesaplanmaz: 1.000 kolonlu tabloda dakikalar suruyor ve sonuc
+    ayni cikiyordu. 02.1.1 onaylaninca (sinirlar) her zaman yeniden cikar."""
+    p = durum.get("profil") or {}
+    if not isinstance(p.get("profil_ek"), dict) or not isinstance(p.get("profil_teshis"), dict):
+        return False
+    if profil_eski_mi(durum) or not p.get("profil_imza"):
+        return False
+    return p.get("profil_imza") == _profil_imzasi(durum)
+
+
 def veri_profili_plan(durum):
-    """Esikler onaylaninca (veri_profili_girdi) profil tablonun tamamindan
-    onaylanan esiklerle cikarilir. Karar isteyen kolon yoksa ONAY SORULMAZ,
-    ilk durak Kural Tabanli Degisken Uretimi'nin planidir. Varsa kart her
-    kolon icin Tut ya da Çıkar ister."""
-    profil_hesapla(durum)
+    """Esikler onaylaninca (02.1.1) profil onaylanan esiklerle cikarilir.
+    Adima geri donuldugunde kayitli profil gecerliyse (profil_kayitli_gecerli)
+    yeniden hesaplanmaz, kart kayitli profilden acilir. Karar isteyen kolon
+    yoksa ONAY SORULMAZ, ilk durak Kural Tabanli Degisken Uretimi'nin
+    planidir. Varsa kart her kolon icin Tut ya da Çıkar ister."""
+    if durum.pop("_profil_yenile", False) or not profil_kayitli_gecerli(durum):
+        profil_hesapla(durum)
     durum["_profil_hazir"] = True
     if profil_karar_var(durum):
         durum["_secim_alani"] = profil_karti(durum, karar=True)

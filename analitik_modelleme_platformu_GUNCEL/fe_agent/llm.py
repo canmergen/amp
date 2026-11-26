@@ -4348,7 +4348,9 @@ PROFIL_GORUS_PARCA = 40
 # DALGA BASLATILMAZ: sorulmayan bulgular kararsiz kalir ve bir sonraki
 # cagrida (akis_faz02.profil_kararlari_tamamla) kaldigi yerden sorulur.
 # Boylece istek bittikten sonra arkada calisan cagri kalmaz.
-PROFIL_GORUS_BUTCE = 120.0          # profil cikarilirken (ayni istekte hesap da var)
+# Profil cikarilirken kisa tutulur (ayni istekte profilin hesabi da var; kart
+# bir an once acilsin): kalan kararlari kart kendiliginden tamamlar.
+PROFIL_GORUS_BUTCE = 60.0
 PROFIL_GORUS_DEVAM_BUTCE = 150.0    # yalniz kalanlar sorulurken
 PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "duzeltme", "cozum", "satir")
 _GORUS_SATIR = re.compile(r"^\s*(?:no\s*=\s*)?(\d+)\s*[|:=]\s*([^|\n]+?)\s*(?:\|\s*(.*?))?\s*$")

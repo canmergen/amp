@@ -3123,11 +3123,29 @@ def profil_karar_devam_endpoint():
                 and acik.get("karar_bekliyor")):
             return jsonify({"tamam": False, "bitti": True,
                             "hata": "Veri profili kartı karar beklemiyor."})
+        damga = durum.get("_son_islem")
         sayim = akis.profil_kararlari_tamamla(durum)
         if not sayim:
             return jsonify({"tamam": False, "bitti": True,
                             "hata": "Profil eski kuralla çıkarılmış; kararlar için "
                                     "profilin yeniden çıkarılması gerekir."})
+        # KARARLAR ALINIRKEN CALISMA DEGISMIS OLABILIR (dakikalar surer):
+        # kullanici bu sirada Geri Dön'e basmis ya da adimi onaylamis
+        # olabilir. Eski durumu oldugu gibi yazmak o islemi geri alirdi.
+        # Guncel durum yeniden okunur; degistiyse yalniz alinan kararlar ona
+        # aktarilir (ayni profilse), kart da acik degilse hicbir sey yazilmaz.
+        guncel = _durum_al(anahtar)
+        if guncel.get("_son_islem") != damga:
+            acik = guncel.get("_secim_alani")
+            if not (isinstance(acik, dict) and acik.get("tip") == "profil"
+                    and acik.get("karar_bekliyor")
+                    and akis.profil_kararlarini_aktar(guncel, durum)):
+                return jsonify({"tamam": False, "bitti": True,
+                                "hata": "Çalışma bu sırada değişti; kararlar "
+                                        "güncel profile yazılmadı."})
+            durum = guncel
+            sayim = dict((durum.get("profil") or {}).get("llm_gorus_sayim") or {},
+                         yeni=sayim.get("yeni", 0))
         kart = akis.profil_karti(durum, karar=True)
         durum["_secim_alani"] = kart
         _kaydet(anahtar, durum)
