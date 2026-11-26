@@ -4565,6 +4565,42 @@ def profil_metni(durum, karar=False):
     return metin + " " + " ".join(parca)
 
 
+def _eksik_kolon_listesi(p, ek, incelenen, aciklama):
+    """Eksik degeri olan incelenen kolonlar: [{"ad", "oran", "satir",
+    "aciklama"} (+ "bos", "ek", "deger": bos yerine yazilmis deger
+    sayildiysa dokumu)], orana gore azalan. Oran kolon ozetinden (profilin
+    hesapladigi, bos yerine yazilmis deger dahil etkin bos orani)."""
+    kume = set(incelenen)
+    n = int(p.get("profil_satir") or 0)
+    eb = (ek or {}).get("etkin_bos") or {}
+    cikti = []
+    for o in p.get("kolon_ozet") or []:
+        if not isinstance(o, dict):
+            continue
+        ad = str(o.get("ad"))
+        try:
+            oran = float(o.get("null_oran") or 0)
+        except (TypeError, ValueError):
+            continue
+        if ad not in kume or oran <= 0:
+            continue
+        x = {"ad": ad, "oran": round(oran, 6), "satir": int(round(oran * n)) if n else None,
+             "aciklama": aciklama.get(ad, "")}
+        v = eb.get(ad)
+        if isinstance(v, dict) and v.get("ek"):
+            x["bos"], x["ek"] = v.get("bos") or 0, v.get("ek")
+            x["deger"] = (profil_ek_deger(v.get("kod")) if v.get("kod") is not None
+                          else ", ".join("«%s»" % t for t in (v.get("metinler") or [])[:3]))
+        cikti.append(x)
+    cikti.sort(key=lambda x: (-x["oran"], x["ad"]))
+    return cikti
+
+
+def profil_ek_deger(v):
+    from fe_agent import profil_ek as _pe
+    return _pe.deger_metni(v)
+
+
 def profil_karti(durum, karar=False):
     """02.1 Veri Profili karti (sohbette adimin blogunda). Butun sayilar
     tablonun TAMAMINDAN; orneklem yok. karar=True: neredeyse sabit ve
@@ -4795,6 +4831,8 @@ def profil_karti(durum, karar=False):
         "eksik_esik": {"az": NULL_AZ, "asiri": esik["cok_bos"]},
         # "orta"nin dar bantlari [{"alt", "ust", "n"}]; eski profilde yok (tek bant).
         "eksik_bant": [b for b in (n.get("bantlar") or []) if isinstance(b, dict)],
+        # Eksik degeri olan kolonlar (banda tiklaninca acilan liste), orana gore azalan.
+        "eksik_kolonlar": _eksik_kolon_listesi(p, ek, incelenen, aciklama),
         "esik_notu": esik_degisiklik_notu(durum),
         # Dil modeli ikinci gorusu: {"oge", "alinan", "farkli", "hata", "sifir_aday"}.
         "gorus": p.get("llm_gorus_sayim") or {},

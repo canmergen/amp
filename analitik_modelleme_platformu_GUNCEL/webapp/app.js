@@ -18003,14 +18003,15 @@ function profilKartiEkle(alan, blok, devamdan) {
        tek banttır. Renk tek tonun açıktan koyuya basamaklarıdır. */
     const bantlar = (alan.eksik_bant || []).filter(b => b && b.ust > b.alt);
     const bantToplam = bantlar.reduce((t, b) => t + Number(b.n || 0), 0);
+    /* Dilim: [anahtar, ad, kolon sayısı, alt sınır (hariç), üst sınır (dahil)]. */
     const araDilim = (bantlar.length > 1 && bantToplam === Number(e.orta || 0))
         ? bantlar.map((b, i) => ["bant" + Math.min(4, Math.round((i + 1) * 4 / bantlar.length)),
-                                 pfYuzde(b.alt) + " ile " + pfYuzde(b.ust) + " arası", Number(b.n || 0)])
-        : [["orta", azY + " ile " + asY + " arası", Number(e.orta || 0)]];
+                                 pfYuzde(b.alt) + " ile " + pfYuzde(b.ust) + " arası", Number(b.n || 0), Number(b.alt), Number(b.ust)])
+        : [["orta", azY + " ile " + asY + " arası", Number(e.orta || 0), Number(es.az), Number(es.asiri)]];
     const dilimler = [
-        ["yok", "Eksik yok", Number(e.yok || 0)],
-        ["az", azY + " ve altı", Number(e.az || 0)]
-    ].concat(araDilim, [["asiri", asY + " üstü", Number(e.asiri || 0)]]);
+        ["yok", "Eksik yok", Number(e.yok || 0), -1, 0],
+        ["az", azY + " ve altı", Number(e.az || 0), 0, Number(es.az)]
+    ].concat(araDilim, [["asiri", asY + " üstü", Number(e.asiri || 0), Number(es.asiri), 2]]);
     const top = dilimler.reduce((t, d) => t + d[2], 0);
     const eb = elYap("div", "pf-bolum");
     const ebBas = elYap("div", "pf-bolum-bas");
@@ -18033,12 +18034,84 @@ function profilKartiEkle(alan, blok, devamdan) {
         const kucuk = dolu.filter(d => d[2] / top < CUBUK_EN_AZ);
         const buyukToplam = dolu.filter(d => d[2] / top >= CUBUK_EN_AZ).reduce((t, d) => t + d[2], 0);
         const kalanGenislik = Math.max(0, 1 - kucuk.length * CUBUK_EN_AZ);
-        dolu.forEach(([a, ad, n]) => {
+        /* BANDA TIKLAYINCA O BANTTAKİ KOLONLAR: çubuktaki dilim ya da tablodaki
+           satır tıklanınca tablonun altında küçük bir liste açılır (kolon, eksik
+           oranı, eksik satır); aynı banda yeniden tıklanınca kapanır. */
+        const eksikKol = Array.isArray(alan.eksik_kolonlar) ? alan.eksik_kolonlar : null;
+        let acikBant = null;
+        const bantTik = [];           // [anahtar, öğe]
+        const liste = elYap("div", "pf-eksik-liste");
+        liste.hidden = true;
+        const bantAc = d => {
+            const [a, ad, n, alt, ust] = d;
+            acikBant = (acikBant === a) ? null : a;
+            bantTik.forEach(([k, el]) => { el.classList.toggle("secili", k === acikBant); el.setAttribute("aria-expanded", k === acikBant ? "true" : "false"); });
+            liste.textContent = "";
+            liste.hidden = !acikBant;
+            if (!acikBant) return;
+            const bas = elYap("div", "pf-eksik-liste-bas");
+            bas.appendChild(elYap("b", "", ad));
+            bas.appendChild(elYap("span", "", ftBinlik(n) + " kolon, kolonların " + payi(n)));
+            const kapat = elYap("button", "dg-toplu-btn pf-eksik-kapat", "Kapat");
+            kapat.type = "button";
+            kapat.onclick = () => bantAc(d);
+            bas.appendChild(kapat);
+            liste.appendChild(bas);
+            if (a === "yok") {
+                liste.appendChild(elYap("div", "pf-eksik-liste-not", n
+                    ? "Bu " + ftBinlik(n) + " kolonun hiçbir satırı boş değil; listelenecek eksik değer yok."
+                    : "Bu bantta kolon yok."));
+                return;
+            }
+            if (!eksikKol) {
+                liste.appendChild(elYap("div", "pf-eksik-liste-not", "Kolon listesi bu kartta yok; kart yenilenince gelir."));
+                return;
+            }
+            const kol = eksikKol.filter(x => Number(x.oran) > alt + 1e-12 && Number(x.oran) <= ust + 1e-12);
+            if (!kol.length) {
+                liste.appendChild(elYap("div", "pf-eksik-liste-not", "Bu bantta kolon yok."));
+                return;
+            }
+            const dokum = kol.some(x => x.ek);
+            const sar = elYap("div", "pf-eksik-liste-sar");
+            const t = elYap("table", "dg-tablo pf-eksik-kolon-tablo");
+            const th = elYap("tr");
+            ["Kolon", "Eksik oranı", "Eksik satır"].concat(dokum ? ["Boş hücre", "Boş yerine yazılmış"] : [])
+                .forEach(b => th.appendChild(elYap("th", "", b)));
+            const thead = elYap("thead"); thead.appendChild(th); t.appendChild(thead);
+            const tb = elYap("tbody");
+            kol.forEach(x => {
+                const r = elYap("tr");
+                r.appendChild(kolonHucresi(x.ad, x.aciklama));
+                r.appendChild(elYap("td", "pf-eksik-pay", pfYuzde(x.oran)));
+                r.appendChild(elYap("td", "pf-eksik-sayi", x.satir == null ? BOS_SIMGE : ftBinlik(x.satir)));
+                if (dokum) {
+                    r.appendChild(elYap("td", "pf-eksik-pay", x.ek ? pfYuzde(x.bos || 0) : pfYuzde(x.oran)));
+                    r.appendChild(elYap("td", "pf-eksik-pay", x.ek ? pfYuzde(x.ek) + (x.deger ? " (" + x.deger + ")" : "") : BOS_SIMGE));
+                }
+                tb.appendChild(r);
+            });
+            t.appendChild(tb);
+            sar.appendChild(t);
+            liste.appendChild(sar);
+        };
+        const tiklanir = (el, d) => {
+            el.classList.add("pf-bant-tik");
+            el.setAttribute("role", "button");
+            el.setAttribute("tabindex", "0");
+            el.setAttribute("aria-expanded", "false");
+            el.onclick = () => bantAc(d);
+            el.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); bantAc(d); } };
+            bantTik.push([d[0], el]);
+        };
+        dolu.forEach(d => {
+            const [a, ad, n] = d;
             const p = elYap("span", "pf-dilim pf-" + a);
             const gen = (n / top < CUBUK_EN_AZ) ? CUBUK_EN_AZ : (buyukToplam ? kalanGenislik * n / buyukToplam : kalanGenislik);
             p.style.flex = "0 0 calc(" + (gen * 100).toFixed(3) + "% - 2px)";
-            p.title = ad + ": " + ftBinlik(n) + " kolon (" + payi(n) + ")";
+            p.title = ad + ": " + ftBinlik(n) + " kolon (" + payi(n) + "). Kolonları görmek için tıklayın.";
             p.appendChild(elYap("span", "pf-dilim-yazi", payi(n)));
+            tiklanir(p, d);
             cubuk.appendChild(p);
         });
         cubuk.classList.add("pf-cubuk-dar");
@@ -18051,8 +18124,10 @@ function profilKartiEkle(alan, blok, devamdan) {
         ["Eksik değer oranı", "Kolon sayısı", "Kolonların payı"].forEach(b => eth.appendChild(elYap("th", "", b)));
         const ethead = elYap("thead"); ethead.appendChild(eth); et.appendChild(ethead);
         const etb = elYap("tbody");
-        dilimler.forEach(([a, ad, n]) => {
+        dilimler.forEach(d => {
+            const [a, ad, n] = d;
             const r = elYap("tr", "pf-eksik-satir" + (n ? "" : " sifir"));
+            if (n) tiklanir(r, d);
             const adTd = elYap("td", "pf-eksik-ad");
             const adIc = elYap("span", "pf-eksik-ad-ic");
             adIc.appendChild(elYap("span", "pf-renk pf-" + a));
@@ -18070,6 +18145,8 @@ function profilKartiEkle(alan, blok, devamdan) {
         etb.appendChild(etop);
         et.appendChild(etb);
         eb.appendChild(et);
+        eb.appendChild(elYap("div", "pf-cubuk-not pf-bant-ipucu", "Bir banda (çubukta ya da tabloda) tıklayınca o banttaki kolonlar ve eksik oranları açılır."));
+        eb.appendChild(liste);
         /* Boş sayımına boş yerine yazılmış değer de katıldıysa (etkin boş). */
         if (Number((alan.etkin_bos || {}).kolon) > 0) {
             const eb2 = elYap("div", "pf-not");

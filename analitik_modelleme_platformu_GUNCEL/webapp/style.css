@@ -5394,6 +5394,18 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .pf-cubuk.pf-cubuk-dar { width: min(700px, 100%); margin: 0 auto; }
 .pf-cubuk.pf-cubuk-dar .pf-dilim { min-width: 0; }
 .pf-cubuk-not { text-align: center; color: var(--metin-tamam); }
+/* Banda tiklayinca acilan kolon listesi: kucuk, ortali, kendi icinde kayar. */
+.pf-bant-tik { cursor: pointer; }
+.pf-dilim.pf-bant-tik:hover, .pf-dilim.pf-bant-tik:focus-visible, .pf-dilim.pf-bant-tik.secili { outline: 2px solid var(--metin); outline-offset: -2px; }
+.pf-eksik-tablo tr.pf-bant-tik:hover td, .pf-eksik-tablo tr.pf-bant-tik:focus-visible td { background: rgba(46, 106, 180, 0.07); }
+.pf-eksik-tablo tr.pf-bant-tik.secili td { background: rgba(46, 106, 180, 0.12); font-weight: var(--fw-kalin); }
+.pf-eksik-liste { width: min(900px, 100%); margin: 6px auto 0; padding: 8px 10px; border: 1px solid var(--cizgi, #d9d9d9); border-radius: 6px; background: var(--yuzey); }
+.pf-eksik-liste-bas { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
+.pf-eksik-liste-not { text-align: center; color: var(--metin-soluk); }
+.pf-eksik-liste-sar { max-height: 320px; overflow: auto; }
+.pf-kart table.pf-eksik-kolon-tablo { width: 100%; table-layout: auto; }
+.pf-eksik-kolon-tablo th, .pf-eksik-kolon-tablo td { text-align: center; padding: 4px 12px; }
+.pf-eksik-kolon-tablo thead th { position: sticky; top: 0; background: var(--yuzey); }
 .pf-karo-pay { color: var(--metin-soluk); font-variant-numeric: tabular-nums; }
 .pf-bulunan-pay { margin-top: 4px; color: var(--metin-soluk); font-variant-numeric: tabular-nums; }
 .pf-dilim { display: flex; align-items: center; justify-content: center; overflow: hidden; }
