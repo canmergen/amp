@@ -4301,11 +4301,24 @@ Türlere göre neye bakacaksın:
     türetilmiş olan değil).
   Açıklaması boş, belirsiz ya da yalnız adı tekrar eden kolonu, açıklaması
   net bir eşi varken SEÇME: anlamadığın kolondan iyi değişken öneremezsin.
-  Açıklamalar eşit derecede netse kodun önerisini seç. Değerler "neredeyse
-  aynı" ise kodun gerekçesi hangisinin hedefi daha iyi ayırdığını söyler:
-  fark belirginse ona uy, küçükse anlamı daha net olanı seç.
+  Bu ölçüt değerler "birebir aynı" da olsa "neredeyse aynı" da olsa
+  AYNIDIR. Kodun gerekçesi (adı kısa olan, hedefi daha iyi ayıran) yalnız
+  açıklamalar EŞİT derecede netse belirleyicidir; o zaman kodun önerisini
+  seç.
   Gerekçende seçtiğin kolonun neyi ölçtüğünü ve ötekine göre neden daha
   anlaşılır / kullanışlı olduğunu yaz.
+- celiski: Aynı şeyi ölçen iki kolon birbirini tutmuyor (kısa sürenin
+  değeri uzun süreninkinden büyük; adet 0 iken tutar dolu gibi). Hangisinin
+  yanlış olduğu veriden anlaşılamaz; biri çıkacaksa öteki kalır.
+  "açıklama" alanında bu kolonun ve çeliştiği kolon(lar)ın açıklaması " || "
+  ile ayrılmış yazar. Ölçüt "ayni" türündekiyle AYNIDIR: sonraki adımlarda
+  değişken üretimi için ANLAMINI EN İYİ ANLADIĞIN kolon kalmalı.
+  * Bu kolon çeliştiği kolondan DAHA AZ anlaşılırsa (açıklaması boş,
+    belirsiz, yalnız adı tekrar eden ya da türetilmiş) "cikar".
+  * Bu kolon daha anlaşılır ya da ikisi eşit derecede netse "tut".
+  * Kolon birden fazla kolonla çelişiyorsa büyük ihtimalle yanlış olan
+    odur: "cikar" (kodun önerisi).
+  Gerekçende iki kolonu karşılaştır: hangisinin neyi ölçtüğü daha açık.
 - karar: Kolon bir veri kalitesi kuralına takıldı ("kural" ve "bulgu" neye
   takıldığını söyler). Kodun önerisi yalnız sayılara bakar. Sen kolonun
   anlamına bak: bulgu kolonun DOĞASINDAN geliyorsa (nadir görülen ama
@@ -4376,7 +4389,8 @@ PROFIL_GORUS_PARCA = 25
 # bir an once acilsin): kalan kararlari kart kendiliginden tamamlar.
 PROFIL_GORUS_BUTCE = 60.0
 PROFIL_GORUS_DEVAM_BUTCE = 150.0    # yalniz kalanlar sorulurken
-PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "duzeltme", "cozum", "satir")
+PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "celiski", "duzeltme", "cozum",
+                        "satir")
 _GORUS_SATIR = re.compile(r"^\s*(?:no\s*=\s*)?(\d+)\s*[|:=]\s*([^|\n]+?)\s*(?:\|\s*(.*?))?\s*$")
 
 
@@ -4420,7 +4434,7 @@ def _profil_gorus_parca(parca):
             "seçenekler: %s | kodun önerisi: %s | kodun gerekçesi: %s | hedef oranı: %s" % (
                 i, x["id"], x.get("tur"), x.get("kural") or "-", x.get("kolon"),
                 # ayni: her uyenin aciklamasi tam gitmeli (karar buna bagli)
-                (x.get("aciklama") or "(açıklama yok)")[:(3000 if x.get("tur") == "ayni" else 160)],
+                (x.get("aciklama") or "(açıklama yok)")[:(3000 if x.get("tur") in ("ayni", "celiski") else 160)],
                 x.get("olcu") or "-", str(x.get("bulgu") or "")[:220],
                 ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", ""),
                 " ".join(str(x.get("kod_gerekce") or "-").split())[:300],

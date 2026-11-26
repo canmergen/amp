@@ -999,6 +999,12 @@ ONERI_KAYNAKLARI = ("kod", "dil modeli")     # gecerli oneri kaynaklari
 GORUS_SIZINTI = ("gelecek_pencere", "birebir", "tarih_sonra")
 GORUS_KOD = ("gizli_eksik", "karisik_eksik")
 GORUS_GRUP = "ayni"          # gruplar: anahtar grup id
+# "BIRI CIKAR, OTEKI KALIR" kontrolleri: ayni kolon gruplari (birebir ve
+# neredeyse ayni) ve celisen kolon ciftleri. Hepsinde olcut ayni: dil modeli
+# ANLAMINI EN IYI ANLADIGI kolonu tutar (aciklamasi dolu ve net, ham olcu);
+# kalan kolondan sonraki adimlarda degisken uretilecek ve onerileri dil
+# modeli yapacak.
+CELISKI_KONTROLLERI = ("pencere", "tutar_adet")
 
 
 def _kodun_onerisi(o):
@@ -1046,6 +1052,22 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
                 if oneri not in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR):
                     oneri = _karar_kurali(a)
                     ger = KARAR_KURAL_GEREKCESI.get(oneri, "")
+                # CELISEN CIFT (kisa sure / uzun sure, adet / tutar): "biri
+                # cikar, oteki kalir" karari. Dil modeli iki kolonun da
+                # aciklamasini gorur ve anlamini daha iyi anladigini tutar
+                # (ayni kolon gruplarindaki olcut).
+                if a in CELISKI_KONTROLLERI:
+                    karsi = sorted({x["karsi"] for x in ek.get(a) or []
+                                    if x.get("kolon") == k and x.get("karsi")})
+                    acik = " || ".join(
+                        ["bu kolon %s: %s%s" % (k, (aciklama.get(k) or "(açıklama yok)")[:500],
+                                                 (" [ölçü: %s]" % olcu[k]) if olcu.get(k) else "")]
+                        + ["çeliştiği kolon %s: %s%s" % (
+                            u, (aciklama.get(u) or "(açıklama yok)")[:500],
+                            (" [ölçü: %s]" % olcu[u]) if olcu.get(u) else "") for u in karsi[:4]])
+                    ekle(a, k, "celiski", k, metin, [PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR],
+                         oneri, ger, acik=acik)
+                    continue
                 ekle(a, k, tur, k, metin, [PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR], oneri, ger)
     ham = _duzeltme_ham(ek, kusur)
 
@@ -1106,7 +1128,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     for a, anahtar, oge in ogeler:
         imza = json.dumps([oge["tur"], oge["kolon"], oge["aciklama"], oge["bulgu"], oge["secenekler"],
                            oge["kod_oneri"], oge["kod_gerekce"], oge["hedef_profil"],
-                           "karar3" if oge["tur"] == "ayni" else "karar2"],
+                           "karar4" if oge["tur"] in ("ayni", "celiski") else "karar2"],
                           ensure_ascii=False)
         o = (onceki.get(a) or {}).get(anahtar) or {}
         if o.get("imza") == imza and o.get("secim") in oge["secenekler"]:
@@ -1200,9 +1222,43 @@ def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False):
         g = (p["llm_gorus"].get("sifir_bos") or {}).get(x["kolon"])
         if g:
             g["kod_gerekce"] = o["gerekce"]
+    _celiski_cift_denetimi(p, ek, _aciklamalar(durum))
     # KARARI DIL MODELI VERIR: secili gelen oneri onun karari olur; kodun
     # onerisi ve gerekcesi yaninda kalir.
     _gorusu_karara_yaz(p, ek)
+
+
+def _celiski_cift_denetimi(p, ek, aciklama):
+    """Celisen ciftte dil modeli iki kolona ayri ayri karar verir; ikisine
+    de Çıkar derse bilgi bosuna kaybolur (amac birini tutmak). Yalniz
+    birbiriyle celisen (baska esi olmayan) ciftte ikisi de Çıkar ise
+    aciklamasi daha dolu olan Tut'a cevrilir ve gerekcesine yazilir.
+    Birden fazla kolonla celisen kolona dokunulmaz (o buyuk ihtimalle yanlis
+    olandir)."""
+    G = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
+    for a in CELISKI_KONTROLLERI:
+        g = G.get(a) or {}
+        esler = {}
+        for x in ek.get(a) or []:
+            if x.get("kolon") and x.get("karsi"):
+                esler.setdefault(x["kolon"], set()).add(x["karsi"])
+        gorulen = set()
+        for k, kume in esler.items():
+            if len(kume) != 1:
+                continue
+            u = next(iter(kume))
+            if esler.get(u) != {k} or (u, k) in gorulen:
+                continue
+            gorulen.add((k, u))
+            gk, gu = g.get(k) or {}, g.get(u) or {}
+            if gk.get("secim") == gu.get("secim") == PROFIL_KARAR_CIKAR:
+                kalan = max((k, u), key=lambda c: (len((aciklama.get(c) or "").strip()), -len(c), c))
+                g[kalan]["secim"] = PROFIL_KARAR_TUT
+                g[kalan]["gerekce"] = (
+                    "Çelişen iki kolonun ikisi için de Çıkar kararı çıkmıştı; ikisi birden "
+                    "çıkmasın diye açıklaması daha dolu olan bu kolon tutuldu. "
+                    + (g[kalan].get("gerekce") or "")).strip()
+                g[kalan]["cift_duzeltme"] = True
 
 
 def profil_kararlari_tamamla(durum, butce=None):
@@ -2920,7 +2976,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 11
+PROFIL_KAPSAM_SURUMU = 12
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -2975,7 +3031,10 @@ def profil_eski_uyarisi(durum):
              "gerekçesini yazmamış"
              if surum == 9 else
              "birbirinin aynısı kolonlarda dil modeli kalacak kolonu açıklamasını en iyi anladığı "
-             "kolona göre seçmemiş")
+             "kolona göre seçmemiş"
+             if surum == 10 else
+             "birbirini tutmayan kolon çiftlerinde dil modeli iki kolonun açıklamasını birlikte "
+             "görüp en iyi anladığını tutmamış")
     return PROFIL_ESKI_UYARI % neden
 
 

@@ -3598,7 +3598,7 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
   - **Bulgu.** Yalnız dil modelinin «0 bu kolonda gerçek bir değer olamaz» dediği adaylar listelenir (yaş, boy gibi). Dil modeline ulaşılamazsa kural çalışmaz ve satırında «Uygulanmadı: dil modeline ulaşılamadı» yazar.
   - **Seçenekler.** «Sıfırı boş say» seçili gelir (dil modelinin kararı): 0'lar boş hücreye çevrilir (`kolon_cozum.duzeltme_uygula`), öteki değerler aynen kalır. Kodun önerisi «Olduğu gibi bırak»tır (sayılardan anlaşılamaz).
 - **Sayım:** 16 kontrol, 27 kural, 15 ayarlanabilir sınır.
-- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 11`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca kararlar alınır. Profil yeniden çıkınca yalnız kullanıcının öneriden farklı seçtikleri taşınır; gerisi yeni öneriyi (dil modelinin kararını) alır.
+- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 12`; önceki sürümle çıkarılmış profilde "profil eski kuralla çıkarılmış" uyarısı çıkar ve profil yeniden çıkarılınca kararlar alınır. Profil yeniden çıkınca yalnız kullanıcının öneriden farklı seçtikleri taşınır; gerisi yeni öneriyi (dil modelinin kararını) alır.
 - **Test.** `gorus_test.py` (18), `gorus2_test.py` (22; bütün bulgu türleri, varsayılan seçimler, süre hesabı), `gorus3_test.py` (11; satır kuralları), `gorus4_test.py` (17; kısa çıktı, dalga, kararların parça parça tamamlanması), `devam_uc_test.py` (4; arka uç ucu), dil modeli cevabı taklit edilerek; `karar_ui.js` (21), `toplu_ui.js` (18; toplu seçim düğmeleri), `devam_ui.js` (14; kendiliğinden tamamlanma, durdurma, hata, bantlar). Gerçek dil modeliyle canlı ortamda denenmedi.
 
 ## 02.1: eksik oranı çubuğunda dar bantlar
@@ -3650,3 +3650,15 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Kodun önerisi değişmedi** (başka kontrole takılmayan, en az düzeltme isteyen, adı kısa olan; neredeyse aynıda hedefi daha iyi ayıran): "Kodun önerisi" kutusunda durur. Adı kısa ama açıklamasız kolonu kod seçerken dil modeli açıklamalı eşini seçebilir; satır "Dil modelinden farklı" diye işaretlenir.
 - **Sürüm.** `PROFIL_KAPSAM_SURUMU = 11`; önceki kararlar bu ölçütle alınmadığı için gruplar yeniden sorulur (öteki bulguların kararları saklıdır, yeniden sorulmaz).
 - **Test.** `ayni_test.py` (12).
+
+## 02.1.2: "biri çıkar, öteki kalır" olan bütün kontrollerde aynı ölçüt
+
+- **Kapsam.** Ölçüt (dil modeli anlamını en iyi anladığı, sonraki adımlarda en iyi değişken önerebileceği kolonu tutar) artık 02.1'de biri çıkıp öteki kalan bütün kontrollerde aynıdır:
+  - **Birbirinin Aynısı Kolonlar, birebir aynı** (tür `ayni`).
+  - **Birbirinin Aynısı Kolonlar, neredeyse aynı** (tür `ayni`): ölçüt birebir aynıdakiyle aynıdır. Kodun gerekçesi (hedefi daha iyi ayıran, adı kısa olan) yalnız açıklamalar eşit derecede netse belirleyicidir; önceden hedefi ayırma farkı belirginse ona uyması isteniyordu.
+  - **Birbirini Tutmayan Kolonlar** (kısa süre uzun süreden büyük, adet ile tutar tutmuyor; `CELISKI_KONTROLLERI`, tür `celiski`): hangisinin yanlış olduğu veriden anlaşılamaz. Dil modeline bu kolonun ve çeliştiği kolon(lar)ın açıklaması birlikte gider (kesilmeden, ölçüleriyle). Bu kolon eşinden daha az anlaşılırsa Çıkar, daha anlaşılır ya da eşitse Tut. Birden fazla kolonla çelişen kolon büyük ihtimalle yanlış olandır: Çıkar (kodun önerisi). Önceden dil modeli çiftin öteki kolonunun açıklamasını görmüyordu.
+- **İkisi birden çıkmaz** (`_celiski_cift_denetimi`): çelişen çiftte dil modeli iki kolona ayrı ayrı karar verir. Yalnız birbiriyle çelişen (başka eşi olmayan) bir çiftin ikisine de Çıkar derse açıklaması daha dolu olan Tut'a çevrilir ve gerekçesine yazılır. Birden fazla kolonla çelişen kolona dokunulmaz.
+- **Kodun önerisi değişmedi** (tek eşli çiftte iki kolon da Tut; çok eşlide Çıkar); "Kodun önerisi" kutusunda durur.
+- **Kapsam dışı (öneri).** 04 Değişken Değerlendirme'deki korelasyon elemesi (`secim.korelasyon_ele`) de bir "biri çıkar, öteki kalır" kararıdır; orada kalan kolonu ayırma gücü (IV) belirler ve dil modeli yoktur. Aynı ölçüt oraya, güçleri birbirine yakın çiftlerde eşitlik bozucu olarak eklenebilir; istenmediği için yapılmadı.
+- **Sürüm.** `PROFIL_KAPSAM_SURUMU = 12`. Yalnız aynı kolon grupları ve çelişen çiftler yeniden sorulur; öteki kararlar saklıdır.
+- **Test.** `celiski_test.py` (13), `ayni_test.py` (12).
