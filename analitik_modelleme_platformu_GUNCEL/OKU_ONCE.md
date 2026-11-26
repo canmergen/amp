@@ -3608,7 +3608,11 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Ara sınırların dayanağı.** Yaygın uygulama: %5'e kadar boşluk ihmal edilebilir; %20'ye kadar doldurma sonucu pek değiştirmez; %50'ye kadar doldurulan değer kolonun önemli bir kısmını oluşturur; üstünde kolonun çoğu boştur ve bilgi daha çok "dolu mu" sorusundadır. Bu sınırlar yalnız gösterim içindir; hiçbir kolon kararını değiştirmez (karar yine "Boş Hücreler" eşiğiyle verilir).
 - **Veri.** `null_ozet["bantlar"] = [{alt, ust, n}]` ("orta" sayımının dökümü); kartta `eksik_bant`. Eski profilde alan yoktur, çubuk tek bantla çizilir.
 - **Renk.** Aynı tonun açıktan koyuya basamakları (`pf-az`, `pf-bant1..4`, `pf-asiri`).
-- **Paylar** (hesaptan, sabit sayı yok): her bandın payı = banttaki kolon / incelenen kolon. Çubukta en az %6 paylı dilimin içinde yazar (dar dilimde üzerine gelince görünür); çubuğun altındaki ortalı tabloda (`pf-eksik-tablo`) her bant için kolon sayısı ve pay, altta toplam satırı vardır. Tablo eski lejantın yerini aldı.
+- **Paylar** (hesaptan, sabit sayı yok): her bandın payı = banttaki kolon / incelenen kolon. Çubuğun altındaki ortalı tabloda (`pf-eksik-tablo`) her bant için kolon sayısı ve pay, altta toplam satırı vardır. Tablo eski lejantın yerini aldı.
+- **Çubuk genişliği.** Payı küçük bant (ör. %0,77) birebir oranla çizilince görünmüyor, geri kalan tek renk dev bir şerit oluyordu. Kolonu olan her bant en az %10 genişlikte çizilir (`CUBUK_EN_AZ`) ve içinde gerçek payı yazar; kalan genişlik öteki bantlara paylarıyla orantılı dağıtılır; kolonu olmayan bant çizilmez. Çubuk tabloyla aynı genişlikte ve ortalıdır. Bir bant genişletildiyse altında bunu söyleyen not yazar (genişlik oranı değil, içindeki sayı gerçek paydır).
+- **Karolar ve kontrol satırları.** Karoların altında pay yazar: kolon karolarında incelenen kolonlara oran, satır karosunda Train satırlarının tablodaki payı. Kontroller tablosunda "Bulunan" sütununda bulunan kolonların incelenen kolonlardaki payı yazar (birimi kolon olan kontrollerde).
+- **Özetteki fark sayısı** karttaki satırlardan sayılır (toplu seçim düğmesinin yanındaki sayıyla aynı); önceden arka uç sayımından geliyordu ve kartta görünmeyen bulgular yüzünden 1 fazla çıkabiliyordu.
+- **Profil metni.** "Kuralın önerisi seçili gelir" ifadeleri "dil modelinin kararı seçili gelir (karar alınamadıysa kodun önerisi)" oldu.
 
 ## 02.1.2'ye geri dönüş: kayıtlı profil yeniden hesaplanmaz
 

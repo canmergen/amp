@@ -4518,13 +4518,13 @@ def profil_metni(durum, karar=False):
     if oz["bekleyen"]:
         parca.append("%s kolon için kararınız gerekiyor: Ne Olacak sütununda Kararınıza "
                      "bırakılır yazan kontrollerde her kolonu tutun ya da çıkarın. Her kolonda "
-                     "kuralın kolon bazında önerisi seçili gelir."
+                     "dil modelinin kararı seçili gelir (karar alınamadıysa kodun önerisi)."
                      % _sayi(len(oz["bekleyen"])))
     duz = duzeltme_secimi(durum)
     n_duz = sum(len(v) for v in duz.values())
     if karar and n_duz:
-        parca.append("Düzeltme seçilen kontrollerde %s kolon için düzeltme seçin; önerilen "
-                     "seçili gelir. Bu kolonlar üretime girer." % _sayi(n_duz))
+        parca.append("Düzeltme seçilen kontrollerde %s kolon için düzeltme seçin; dil modelinin "
+                     "kararı seçili gelir. Bu kolonlar üretime girer." % _sayi(n_duz))
     elif n_duz:
         uyg = sum(1 for v in duz.values() for c in v.values() if c != "birak")
         parca.append(("%s kolonda düzeltme uygulandı" % _sayi(uyg) if uyg else
@@ -4534,7 +4534,8 @@ def profil_metni(durum, karar=False):
     gruplar = ((durum.get("profil") or {}).get("profil_ek") or {}).get("ayni_gruplar") or []
     if karar and gruplar:
         parca.append("Değerleri birebir ya da neredeyse aynı %s kolon grubunda hangi kolonun "
-                     "kalacağını seçin; kuralın önerisi seçili gelir." % _sayi(len(gruplar)))
+                     "kalacağını seçin; dil modelinin kararı seçili gelir (karar alınamadıysa "
+                     "kodun önerisi)." % _sayi(len(gruplar)))
     if oz["bilgi"]:
         parca.append("%s kolonda bilgi notu var; bu kolonlar değişken üretimine girer."
                      % _sayi(len(oz["bilgi"])))

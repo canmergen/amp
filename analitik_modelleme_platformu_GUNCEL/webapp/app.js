@@ -17573,19 +17573,25 @@ function profilKartiEkle(alan, blok, devamdan) {
 
     /* Sayılar */
     const karolar = elYap("div", "pf-karolar");
-    const karo = (etiket, deger, sinif) => {
+    /* Karonun altında pay (hesaptan): kolon karolarında incelenen kolonlara,
+       satır karosunda tablonun bütün satırlarına oran. */
+    const karo = (etiket, deger, sinif, pay) => {
         const k = elYap("div", "pf-karo" + (sinif ? " " + sinif : ""));
         k.appendChild(elYap("div", "pf-karo-deger", ftBinlik(deger)));
         k.appendChild(elYap("div", "pf-karo-etiket", etiket));
+        if (pay) k.appendChild(elYap("div", "pf-karo-pay", pay));
         karolar.appendChild(k);
     };
+    const kolonPayi = n => (Number(alan.kolon) > 0) ? pfYuzde(Number(n || 0) / Number(alan.kolon)) : "";
+    const kps = alan.kapsam || {};
     /* Kontroller yalnız Train (MS) satırlarında (bölme varsa). */
-    karo((alan.kapsam || {}).train ? "Satır (Train)" : "Satır", alan.satir);
-    karo("İncelenen Kolon", alan.kolon);
-    karo("Sorunsuz", alan.temiz, Number(alan.temiz) ? "tamam" : "");
-    karo("Bilgi Notu Olan", alan.bilgi || 0, Number(alan.bilgi) ? "bilgi" : "");
-    if (kararModu) karo("Kararınızı Bekleyen", alan.bekleyen || 0, Number(alan.bekleyen) ? "karar" : "");
-    karo("Üretime Girmeyen", alan.kusurlu, Number(alan.kusurlu) ? "sorun" : "");
+    karo(kps.train ? "Satır (Train)" : "Satır", alan.satir, "",
+         (kps.train && Number(kps.toplam) > 0) ? "Tablonun " + pfYuzde(Number(alan.satir || 0) / Number(kps.toplam)) : "");
+    karo("İncelenen Kolon", alan.kolon, "", Number(alan.kolon) > 0 ? pfYuzde(1) : "");
+    karo("Sorunsuz", alan.temiz, Number(alan.temiz) ? "tamam" : "", kolonPayi(alan.temiz));
+    karo("Bilgi Notu Olan", alan.bilgi || 0, Number(alan.bilgi) ? "bilgi" : "", kolonPayi(alan.bilgi));
+    if (kararModu) karo("Kararınızı Bekleyen", alan.bekleyen || 0, Number(alan.bekleyen) ? "karar" : "", kolonPayi(alan.bekleyen));
+    karo("Üretime Girmeyen", alan.kusurlu, Number(alan.kusurlu) ? "sorun" : "", kolonPayi(alan.kusurlu));
     karolar.style.setProperty("--pf-karo-sayi", String(karolar.children.length));
     kart.appendChild(karolar);
     if (alan.esik_notu) kart.appendChild(elYap("div", "pf-not pf-esik-notu", alan.esik_notu));
@@ -17852,13 +17858,15 @@ function profilKartiEkle(alan, blok, devamdan) {
         /* Kararı dil modeli verdi: kaç bulguda, kaçında koddan farklı, kaçında karar alınamadı. */
         const gs = alan.gorus || {};
         if (Number(gs.alinan) > 0) {
-            const gn = elYap("div", "pf-oneri-ozet-not pf-gorus-ozet" + (Number(gs.farkli) ? " farkli" : ""));
+            /* Fark sayısı karttaki satırlardan (toplu seçim düğmesinin yanındakiyle aynı sayı). */
+            const kartFark = butunUyeler().reduce((t, u) => t + uyeFarkSayisi(u), 0);
+            const gn = elYap("div", "pf-oneri-ozet-not pf-gorus-ozet" + (kartFark ? " farkli" : ""));
             const gsuz = Number(gs.gorussuz != null ? gs.gorussuz : Math.max(0, Number(gs.oge || 0) - Number(gs.alinan)));
             metinYaz(gn, "**Kararı dil modeli verdi:** seçim isteyen **" + ftBinlik(gs.oge || gs.alinan)
                 + "** bulgunun **" + ftBinlik(gs.alinan) + "** tanesinde "
                 + "(Tut ya da Çıkar kararları, düzeltmeler, çözümler, birbirinin aynısı kolonlar, satır kuralları). "
-                + (Number(gs.farkli) ? "**" + ftBinlik(gs.farkli) + "** tanesinde kodun yalnız sayılara bakan önerisinden farklı karar verdi; o satırlar «Dil modelinden farklı» diye işaretli. "
-                                     : "Hepsinde kodun önerisiyle aynı kararda. ")
+                + (kartFark ? "**" + ftBinlik(kartFark) + "** yerde kodun yalnız sayılara bakan önerisinden farklı karar verdi; o satırlar «Dil modelinden farklı» diye işaretli. "
+                            : "Hepsinde kodun önerisiyle aynı kararda. ")
                 + (gsuz ? "**" + ftBinlik(gsuz) + "** bulguda karar henüz alınmadı; o satırlarda kodun önerisi seçili. " : "")
                 + "Her kararı değiştirebilirsiniz.");
             oz.appendChild(gn);
@@ -18012,20 +18020,31 @@ function profilKartiEkle(alan, blok, devamdan) {
         const cubuk = elYap("div", "pf-cubuk");
         cubuk.setAttribute("role", "img");
         cubuk.setAttribute("aria-label", dilimler.map(d => d[1] + ": " + ftBinlik(d[2]) + " kolon").join(", "));
-        /* PAYLAR HESAPTAN: her bandın payı = banttaki kolon / incelenen kolon.
-           Çubukta dilimin içinde (dilim yeterince genişse) ve altındaki tabloda
-           yazar; sabit bir sayı yoktur. */
+        /* PAYLAR HESAPTAN: her bandın payı = banttaki kolon / incelenen kolon;
+           sabit bir sayı yoktur. ÇUBUK GENİŞLİĞİ: payı küçük bant (ör. %0,77)
+           birebir oranla çizilince görünmüyor, geri kalan tek renk dev bir
+           şerit oluyordu. Kolonu olan her bant en az CUBUK_EN_AZ genişlikte
+           çizilir ve içinde GERÇEK payı yazar; kalan genişlik öteki bantlara
+           paylarıyla orantılı dağıtılır. Kolonu olmayan bant çizilmez. Çubuk
+           tabloyla aynı genişliktedir. */
         const payi = n => pfYuzde(n / top);
-        dilimler.forEach(([a, ad, n]) => {
-            if (!n) return;
+        const CUBUK_EN_AZ = 0.10;
+        const dolu = dilimler.filter(d => d[2] > 0);
+        const kucuk = dolu.filter(d => d[2] / top < CUBUK_EN_AZ);
+        const buyukToplam = dolu.filter(d => d[2] / top >= CUBUK_EN_AZ).reduce((t, d) => t + d[2], 0);
+        const kalanGenislik = Math.max(0, 1 - kucuk.length * CUBUK_EN_AZ);
+        dolu.forEach(([a, ad, n]) => {
             const p = elYap("span", "pf-dilim pf-" + a);
-            p.style.flexGrow = String(n);
+            const gen = (n / top < CUBUK_EN_AZ) ? CUBUK_EN_AZ : (buyukToplam ? kalanGenislik * n / buyukToplam : kalanGenislik);
+            p.style.flex = "0 0 calc(" + (gen * 100).toFixed(3) + "% - 2px)";
             p.title = ad + ": " + ftBinlik(n) + " kolon (" + payi(n) + ")";
-            /* Dar dilimde yazı sığmaz: en az %6 paylı dilimde gösterilir. */
-            if (n / top >= 0.06) p.appendChild(elYap("span", "pf-dilim-yazi", payi(n)));
+            p.appendChild(elYap("span", "pf-dilim-yazi", payi(n)));
             cubuk.appendChild(p);
         });
+        cubuk.classList.add("pf-cubuk-dar");
         eb.appendChild(cubuk);
+        if (kucuk.length && dolu.length > kucuk.length)
+            eb.appendChild(elYap("div", "pf-cubuk-not", "Payı küçük bantlar görünsün diye en az genişlikte çizildi; dilimin içindeki ve tablodaki pay gerçek paydır."));
         /* Tablo: bant, kolon sayısı, pay (çubuğun okunur karşılığı). */
         const et = elYap("table", "dg-tablo pf-eksik-tablo");
         const eth = elYap("tr");
@@ -18167,6 +18186,12 @@ function profilKartiEkle(alan, blok, devamdan) {
         dg.append(elYap("span", "pf-durum-ikon", tur === "bilgi" ? "i" : "!"),
                   elYap("span", "", ftBinlik(n) + " " + birim), elYap("span", "pf-ok", "▾"));
         bulunan.appendChild(dg);
+        /* Bulunan kolonların incelenen kolonlardaki payı (hesaptan). */
+        if (birim === "kolon" && Number(alan.kolon) > 0 && Number(n) > 0) {
+            const py = elYap("div", "pf-bulunan-pay", "Kolonların " + pfYuzde(Number(n) / Number(alan.kolon)));
+            py.title = ftBinlik(n) + " / " + ftBinlik(alan.kolon) + " kolon";
+            bulunan.appendChild(py);
+        }
 
         const detay = elYap("tr", "pf-detay " + renk);
         detay.hidden = true;

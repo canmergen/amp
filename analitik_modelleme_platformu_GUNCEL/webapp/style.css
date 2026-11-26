@@ -5390,6 +5390,12 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .pf-lejant { display: flex; flex-wrap: wrap; gap: 4px var(--b-5); }
 /* Eksik orani: dilimin icinde pay, altinda ortali tablo (bant, kolon, pay). */
 .pf-cubuk { height: 26px; }
+/* Cubuk tabloyla ayni genislikte ve ortali; dilimler JS'in verdigi genislikte. */
+.pf-cubuk.pf-cubuk-dar { width: min(700px, 100%); margin: 0 auto; }
+.pf-cubuk.pf-cubuk-dar .pf-dilim { min-width: 0; }
+.pf-cubuk-not { text-align: center; color: var(--metin-tamam); }
+.pf-karo-pay { color: var(--metin-soluk); font-variant-numeric: tabular-nums; }
+.pf-bulunan-pay { margin-top: 4px; color: var(--metin-soluk); font-variant-numeric: tabular-nums; }
 .pf-dilim { display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .pf-dilim-yazi { font-weight: var(--fw-kalin); color: var(--metin); white-space: nowrap; padding: 0 6px; }
 .pf-dilim.pf-bant2 .pf-dilim-yazi, .pf-dilim.pf-bant3 .pf-dilim-yazi, .pf-dilim.pf-bant4 .pf-dilim-yazi,
