@@ -5388,6 +5388,22 @@ div:not(:empty) + .dg-donem-kosul-kap .dg-donem-panel { margin-top: var(--b-2); 
 .pf-bant4 { background: color-mix(in srgb, var(--kirmizi) 90%, var(--yuzey)); }
 .pf-asiri { background: var(--kirmizi-koyu); }
 .pf-lejant { display: flex; flex-wrap: wrap; gap: 4px var(--b-5); }
+/* Eksik orani: dilimin icinde pay, altinda ortali tablo (bant, kolon, pay). */
+.pf-cubuk { height: 26px; }
+.pf-dilim { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pf-dilim-yazi { font-weight: var(--fw-kalin); color: var(--metin); white-space: nowrap; padding: 0 6px; }
+.pf-dilim.pf-bant2 .pf-dilim-yazi, .pf-dilim.pf-bant3 .pf-dilim-yazi, .pf-dilim.pf-bant4 .pf-dilim-yazi,
+.pf-dilim.pf-orta .pf-dilim-yazi, .pf-dilim.pf-asiri .pf-dilim-yazi { color: #fff; }
+.pf-kart table.pf-eksik-tablo { width: min(700px, 100%) !important; min-width: 0; max-width: 100%; margin: 0 auto; table-layout: fixed; }
+.pf-eksik-tablo th:nth-child(1), .pf-eksik-tablo td:nth-child(1) { width: 44%; }
+.pf-eksik-tablo th:nth-child(2), .pf-eksik-tablo td:nth-child(2) { width: 28%; }
+.pf-eksik-tablo th:nth-child(3), .pf-eksik-tablo td:nth-child(3) { width: 28%; }
+.pf-eksik-tablo th, .pf-eksik-tablo .pf-eksik-ad-ic { white-space: nowrap; }
+.pf-eksik-tablo th, .pf-eksik-tablo td { text-align: center; padding: 4px 18px; }
+.pf-eksik-tablo .pf-eksik-ad-ic { display: inline-flex; align-items: center; gap: 8px; }
+.pf-eksik-tablo tr.sifir td { color: var(--metin-tamam); }
+.pf-eksik-tablo .pf-eksik-toplam td { font-weight: var(--fw-kalin); border-top: 1px solid var(--cizgi, #d9d9d9); }
+.pf-eksik-tablo .pf-eksik-sayi, .pf-eksik-tablo .pf-eksik-pay { font-variant-numeric: tabular-nums; }
 .pf-lejant-oge { display: inline-flex; align-items: center; gap: 6px; }
 .pf-lejant-oge.sifir { color: var(--metin-tamam); }
 .pf-renk { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }

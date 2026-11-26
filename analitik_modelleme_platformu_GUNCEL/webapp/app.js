@@ -18012,23 +18012,45 @@ function profilKartiEkle(alan, blok, devamdan) {
         const cubuk = elYap("div", "pf-cubuk");
         cubuk.setAttribute("role", "img");
         cubuk.setAttribute("aria-label", dilimler.map(d => d[1] + ": " + ftBinlik(d[2]) + " kolon").join(", "));
+        /* PAYLAR HESAPTAN: her bandın payı = banttaki kolon / incelenen kolon.
+           Çubukta dilimin içinde (dilim yeterince genişse) ve altındaki tabloda
+           yazar; sabit bir sayı yoktur. */
+        const payi = n => pfYuzde(n / top);
         dilimler.forEach(([a, ad, n]) => {
             if (!n) return;
             const p = elYap("span", "pf-dilim pf-" + a);
             p.style.flexGrow = String(n);
-            p.title = ad + ": " + ftBinlik(n) + " kolon (" + pfYuzde(n / top) + ")";
+            p.title = ad + ": " + ftBinlik(n) + " kolon (" + payi(n) + ")";
+            /* Dar dilimde yazı sığmaz: en az %6 paylı dilimde gösterilir. */
+            if (n / top >= 0.06) p.appendChild(elYap("span", "pf-dilim-yazi", payi(n)));
             cubuk.appendChild(p);
         });
         eb.appendChild(cubuk);
-        const lj = elYap("div", "pf-lejant");
+        /* Tablo: bant, kolon sayısı, pay (çubuğun okunur karşılığı). */
+        const et = elYap("table", "dg-tablo pf-eksik-tablo");
+        const eth = elYap("tr");
+        ["Eksik değer oranı", "Kolon sayısı", "Kolonların payı"].forEach(b => eth.appendChild(elYap("th", "", b)));
+        const ethead = elYap("thead"); ethead.appendChild(eth); et.appendChild(ethead);
+        const etb = elYap("tbody");
         dilimler.forEach(([a, ad, n]) => {
-            const l = elYap("span", "pf-lejant-oge" + (n ? "" : " sifir"));
-            l.appendChild(elYap("span", "pf-renk pf-" + a));
-            l.appendChild(elYap("span", "", ad));
-            l.appendChild(elYap("b", "", ftBinlik(n)));
-            lj.appendChild(l);
+            const r = elYap("tr", "pf-eksik-satir" + (n ? "" : " sifir"));
+            const adTd = elYap("td", "pf-eksik-ad");
+            const adIc = elYap("span", "pf-eksik-ad-ic");
+            adIc.appendChild(elYap("span", "pf-renk pf-" + a));
+            adIc.appendChild(elYap("span", "", ad));
+            adTd.appendChild(adIc);
+            r.appendChild(adTd);
+            r.appendChild(elYap("td", "pf-eksik-sayi", ftBinlik(n)));
+            r.appendChild(elYap("td", "pf-eksik-pay", payi(n)));
+            etb.appendChild(r);
         });
-        eb.appendChild(lj);
+        const etop = elYap("tr", "pf-eksik-toplam");
+        etop.appendChild(elYap("td", "pf-eksik-ad", "Toplam"));
+        etop.appendChild(elYap("td", "pf-eksik-sayi", ftBinlik(top)));
+        etop.appendChild(elYap("td", "pf-eksik-pay", pfYuzde(1)));
+        etb.appendChild(etop);
+        et.appendChild(etb);
+        eb.appendChild(et);
         /* Boş sayımına boş yerine yazılmış değer de katıldıysa (etkin boş). */
         if (Number((alan.etkin_bos || {}).kolon) > 0) {
             const eb2 = elYap("div", "pf-not");

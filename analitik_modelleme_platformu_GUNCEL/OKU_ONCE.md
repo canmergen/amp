@@ -3608,6 +3608,7 @@ Başlık konuyu, kural adı o konudaki bulguyu söyler; ikisi aynı sözle yazı
 - **Ara sınırların dayanağı.** Yaygın uygulama: %5'e kadar boşluk ihmal edilebilir; %20'ye kadar doldurma sonucu pek değiştirmez; %50'ye kadar doldurulan değer kolonun önemli bir kısmını oluşturur; üstünde kolonun çoğu boştur ve bilgi daha çok "dolu mu" sorusundadır. Bu sınırlar yalnız gösterim içindir; hiçbir kolon kararını değiştirmez (karar yine "Boş Hücreler" eşiğiyle verilir).
 - **Veri.** `null_ozet["bantlar"] = [{alt, ust, n}]` ("orta" sayımının dökümü); kartta `eksik_bant`. Eski profilde alan yoktur, çubuk tek bantla çizilir.
 - **Renk.** Aynı tonun açıktan koyuya basamakları (`pf-az`, `pf-bant1..4`, `pf-asiri`).
+- **Paylar** (hesaptan, sabit sayı yok): her bandın payı = banttaki kolon / incelenen kolon. Çubukta en az %6 paylı dilimin içinde yazar (dar dilimde üzerine gelince görünür); çubuğun altındaki ortalı tabloda (`pf-eksik-tablo`) her bant için kolon sayısı ve pay, altta toplam satırı vardır. Tablo eski lejantın yerini aldı.
 
 ## 02.1.2'ye geri dönüş: kayıtlı profil yeniden hesaplanmaz
 
