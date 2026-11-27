@@ -17595,6 +17595,17 @@ function profilKartiEkle(alan, blok, devamdan) {
     if (!devamdan) { PF_DEVAM.durdu = false; PF_DEVAM.bosTur = 0; PF_DEVAM.hata = ""; }
     const kartHazir = [];      // kart sayfaya eklendikten sonra çalışacaklar
     const farkAcicilar = [];   // süzgeç açılınca: kod ile dil modelinin ayrıştığı kontrolleri açar
+    /* SÜZGEÇ AÇIKKEN TOPLU SEÇİM YALNIZ GÖRÜNENLERE UYGULANIR. Süzgeç yalnız
+       kod ile dil modelinin ayrıştığı bulguları gösterir; "Dil Modelinin
+       Kararlarını Seç", "Kodun Önerilerini Seç", "Hepsini Tut / Çıkar",
+       "Hepsine Uygula" ve "Hepsini Önerilere Döndür" o sırada gizli duran
+       bulgulara DOKUNMAZ. Düğmelerin yanındaki yazı da buna göre değişir
+       (suzgecEtiketleri: [öğe, süzgeç kapalıyken, açıkken]). */
+    const suzgecAcik = () => kart.classList.contains("pf-yalniz-fark");
+    const gorunurSatir = c => !suzgecAcik() || !!(c && c.kod && c.kod.farkli);
+    const gorunurGrup = g => !suzgecAcik() || !!(g && g.kod && g.kod.farkli);
+    const suzgecEtiketleri = [];
+    const suzgecNotu = (el, normal, suzulmus) => { suzgecEtiketleri.push([el, normal, suzulmus]); el.textContent = normal; return el; };
 
     /* Karar durumu: kolon -> "tut" | "cikar". Bir kolon iki karar
        kontrolünde birden geçebilir; iki satır aynı kararı gösterir. */
@@ -17901,6 +17912,7 @@ function profilKartiEkle(alan, blok, devamdan) {
     const kodDegeri = (c, oneri) => (c.kod && c.kod.secim) ? c.kod.secim : oneri;
     const uyeTopluSec = (u, kaynak) => {
         (u.kolonlar || []).forEach(c => {
+            if (!gorunurSatir(c)) return;
             if (c.duzeltme && (c.duzeltme.secenekler || []).length > 1 && duzSecim[u.anahtar] && (c.ad in duzSecim[u.anahtar])) {
                 const v = kaynak === "kod" ? kodDegeri(c, c.duzeltme.oneri) : c.duzeltme.oneri;
                 if ((c.duzeltme.secenekler || []).some(o => o.kod === v)) duzSecim[u.anahtar][c.ad] = v;
@@ -17912,6 +17924,7 @@ function profilKartiEkle(alan, blok, devamdan) {
             }
         });
         (u.gruplar || []).forEach(g => {
+            if (!gorunurGrup(g)) return;
             if (g.id in ayniSecim) ayniSecim[g.id] = (kaynak === "kod" && g.kod && g.kod.secim) ? g.kod.secim : g.oneri;
         });
     };
@@ -17923,22 +17936,24 @@ function profilKartiEkle(alan, blok, devamdan) {
     const hepsiTopluSec = kaynak => {
         const uyeler = butunUyeler();
         uyeler.forEach(u => uyeTopluSec(u, kaynak));
-        /* Tut / Çıkar: kolon bazında birleşik (bir kural Çıkar diyorsa Çıkar). */
-        const cik = {};
+        /* Tut / Çıkar: kolon bazında birleşik (bir kural Çıkar diyorsa Çıkar).
+           Süzgeç açıkken yalnız görünen (ayrışan) satırı olan kolonlara yazılır. */
+        const cik = {}, gorunen = new Set();
         uyeler.forEach(u => (u.kolonlar || []).forEach(c => {
             if (!("karar" in c) || !(c.ad in kararlar)) return;
             const v = kaynak === "kod" ? kodDegeri(c, c.karar_oneri) : c.karar_oneri;
             cik[c.ad] = cik[c.ad] || v === "cikar";
+            if (gorunurSatir(c)) gorunen.add(c.ad);
         }));
-        Object.keys(cik).forEach(a => { kararlar[a] = kaynak === "kod" ? (cik[a] ? "cikar" : "tut") : (kararOneri[a] || (cik[a] ? "cikar" : "tut")); });
+        Object.keys(cik).filter(a => gorunen.has(a)).forEach(a => { kararlar[a] = kaynak === "kod" ? (cik[a] ? "cikar" : "tut") : (kararOneri[a] || (cik[a] ? "cikar" : "tut")); });
     };
     /* Üyede kodun önerisi dil modelinin kararından farklı kaç satır var. */
     const uyeFarkSayisi = u => (u.kolonlar || []).filter(c => c.kod && c.kod.farkli).length
         + (u.gruplar || []).filter(g => g.kod && g.kod.farkli).length;
     const uyeDmVar = u => (u.kolonlar || []).some(c => c.kod) || (u.gruplar || []).some(g => g.kod);
-    const topluDugmeler = (not, dmSec, kodSec, fark) => {
+    const topluDugmeler = (not, dmSec, kodSec, fark, suzulmusNot) => {
         const ust = elYap("div", "pf-toplu pf-toplu-kaynak");
-        ust.appendChild(elYap("span", "pf-toplu-not", not));
+        ust.appendChild(suzgecNotu(elYap("span", "pf-toplu-not"), not, suzulmusNot || not));
         const b1 = elYap("button", "dg-toplu-btn pf-toplu-dm", "Dil Modelinin Kararlarını Seç");
         const b2 = elYap("button", "dg-toplu-btn pf-toplu-kod", "Kodun Önerilerini Seç");
         [[b1, dmSec], [b2, kodSec]].forEach(([b, f]) => {
@@ -18129,7 +18144,7 @@ function profilKartiEkle(alan, blok, devamdan) {
             const cb = document.createElement("input");
             cb.type = "checkbox";
             et.append(cb, elYap("span", "", "Yalnız kod ile dil modelinin ayrıştığı " + ftBinlik(kartFark) + " bulguyu göster"));
-            const ipucu = elYap("span", "pf-suzgec-ipucu", "Öteki bulgular gizli; seçimleri değişmedi, onayda onlar da gönderilir.");
+            const ipucu = elYap("span", "pf-suzgec-ipucu", "Öteki bulgular gizli; seçimleri değişmez, onayda onlar da gönderilir. Toplu seçim düğmeleri yalnız görünenlere uygulanır.");
             sz.append(et, ipucu);
             oz.appendChild(sz);
             const suzgecUygula = acik => {
@@ -18137,6 +18152,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                 cb.checked = !!acik;
                 kart.classList.toggle("pf-yalniz-fark", !!acik);
                 ipucu.hidden = !acik;
+                suzgecEtiketleri.forEach(([el, normal, suzulmus]) => { el.textContent = acik ? suzulmus : normal; });
                 if (acik) farkAcicilar.forEach(f => f());
             };
             cb.onchange = () => suzgecUygula(cb.checked);
@@ -18144,16 +18160,30 @@ function profilKartiEkle(alan, blok, devamdan) {
             kartHazir.push(() => { if (PF_SUZGEC.fark) suzgecUygula(true); });
         }
         if (kararModu && dmKullanildi)
-            oz.appendChild(topluDugmeler("Bütün kurallarda tek tıkla:", () => hepsiTopluSec("dm"), () => hepsiTopluSec("kod"), kartFark));
+            oz.appendChild(topluDugmeler("Bütün kurallarda tek tıkla:", () => hepsiTopluSec("dm"), () => hepsiTopluSec("kod"), kartFark,
+                                         "Yalnız görünen " + ftBinlik(kartFark) + " bulguda tek tıkla:"));
         const farkSatir = elYap("div", "pf-oneri-fark");
         const farkMetin = elYap("span", "", "");
         farkSatir.appendChild(farkMetin);
         const oneriAdi = dmKullanildi ? "dil modelinin kararından" : "kodun önerisinden";
         if (kararModu) {
-            const geri = elYap("button", "dg-toplu-btn", "Hepsini Önerilere Döndür");
+            const geri = suzgecNotu(elYap("button", "dg-toplu-btn"), "Hepsini Önerilere Döndür", "Görünenleri Önerilere Döndür");
             geri.type = "button";
             geri.onclick = () => {
                 if (kart.classList.contains("kilitli")) return;
+                if (suzgecAcik()) {
+                    /* Süzgeç açık: yalnız görünen bulgular öneriye döner. */
+                    butunUyeler().forEach(u => {
+                        (u.kolonlar || []).filter(gorunurSatir).forEach(c => {
+                            if (c.duzeltme && duzOneri[u.anahtar] && (c.ad in duzOneri[u.anahtar])) duzSecim[u.anahtar][c.ad] = duzOneri[u.anahtar][c.ad];
+                            else if (c.cozum && (c.ad in cozumOneri)) cozumSecim[c.ad] = cozumOneri[c.ad];
+                            else if (("karar" in c) && (c.ad in kararOneri)) kararlar[c.ad] = kararOneri[c.ad];
+                        });
+                        (u.gruplar || []).filter(gorunurGrup).forEach(g => { if (g.id in ayniOneri) ayniSecim[g.id] = ayniOneri[g.id]; });
+                    });
+                    kararCiz();
+                    return;
+                }
                 Object.keys(kararOneri).forEach(a => { kararlar[a] = kararOneri[a]; });
                 Object.keys(ayniOneri).forEach(g => { ayniSecim[g] = ayniOneri[g]; });
                 Object.keys(duzOneri).forEach(a => Object.keys(duzOneri[a]).forEach(c => { duzSecim[a][c] = duzOneri[a][c]; }));
@@ -18537,7 +18567,8 @@ function profilKartiEkle(alan, blok, devamdan) {
                     ? "Kod, hedefi daha iyi bilen kolonu önerir; eşitse sabit kural."
                     : "Kod sabit kuralla önerir: başka kontrole takılmayan, en az düzeltme isteyen, adı kısa olan.")));
             if (kararModu && uyeDmVar(u)) {
-                arac.appendChild(topluDugmeler("Bu kuralda tek tıkla:", () => uyeTopluSec(u, "dm"), () => uyeTopluSec(u, "kod"), fark));
+                arac.appendChild(topluDugmeler("Bu kuralda tek tıkla:", () => uyeTopluSec(u, "dm"), () => uyeTopluSec(u, "kod"), fark,
+                                               "Bu kuralın görünen " + ftBinlik(fark) + " bulgusunda tek tıkla:"));
                 kk.appendChild(arac);
             }
             kk.appendChild(pfAyniTablosu(uGrp, ayniSecim, ayniOneri, kararModu, kart, kararCizenler, kararCiz, dmKullanildi, dmYokMetni));
@@ -18549,17 +18580,19 @@ function profilKartiEkle(alan, blok, devamdan) {
         const czKol = uKol.filter(c => !c.duzeltme && c.cozum && (c.cozum.secenekler || []).length > 1);
         const secimli = tcVar || duzKol.length > 0 || czKol.length > 0;
         if (secimli && kararModu && uyeDmVar(u))
-            arac.appendChild(topluDugmeler("Bu kuralda tek tıkla:", () => uyeTopluSec(u, "dm"), () => uyeTopluSec(u, "kod"), fark));
+            arac.appendChild(topluDugmeler("Bu kuralda tek tıkla:", () => uyeTopluSec(u, "dm"), () => uyeTopluSec(u, "kod"), fark,
+                                               "Bu kuralın görünen " + ftBinlik(fark) + " bulgusunda tek tıkla:"));
         let secenekler = [];
         if (tcVar && kararModu && uKol.length > 1) {
             const ust = elYap("div", "pf-toplu");
-            ust.appendChild(elYap("span", "pf-toplu-not", "Bu kuraldaki bütün kolonlar için:"));
+            ust.appendChild(suzgecNotu(elYap("span", "pf-toplu-not"), "Bu kuraldaki bütün kolonlar için:",
+                                       "Bu kuralın görünen kolonları için:"));
             [["tut", "Hepsini Tut"], ["cikar", "Hepsini Çıkar"]].forEach(([d, et]) => {
                 const bt = elYap("button", "dg-toplu-btn", et);
                 bt.type = "button";
                 bt.onclick = () => {
                     if (kart.classList.contains("kilitli")) return;
-                    uKol.forEach(c => { kararlar[c.ad] = d; });
+                    uKol.filter(gorunurSatir).forEach(c => { kararlar[c.ad] = d; });
                     kararCiz();
                 };
                 ust.appendChild(bt);
@@ -18578,8 +18611,9 @@ function profilKartiEkle(alan, blok, devamdan) {
                 const sirali = Object.keys(sayac).sort((x, y) => sayac[y] - sayac[x]);
                 const ilkOneri = sirali[0] || ((secenekler[0] || {}).kod);
                 const ust = elYap("div", "pf-toplu");
-                ust.appendChild(elYap("span", "pf-toplu-not", satirK ? "Bu kuraldaki bütün satır grupları için:"
-                                      : "Bu kuraldaki bütün kolonlar için:"));
+                ust.appendChild(suzgecNotu(elYap("span", "pf-toplu-not"),
+                    satirK ? "Bu kuraldaki bütün satır grupları için:" : "Bu kuraldaki bütün kolonlar için:",
+                    satirK ? "Bu kuralın görünen satır grupları için:" : "Bu kuralın görünen kolonları için:"));
                 const tsel = elYap("select", "pf-cozum-sec pf-toplu-sec");
                 tsel.setAttribute("aria-label", u.ad + " toplu düzeltme");
                 secenekler.forEach(o => {
@@ -18593,7 +18627,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                 tb.type = "button";
                 tb.onclick = () => {
                     if (kart.classList.contains("kilitli") || !tsel.value) return;
-                    duzKol.forEach(c => {
+                    duzKol.filter(gorunurSatir).forEach(c => {
                         if ((c.duzeltme.secenekler || []).some(o => o.kod === tsel.value))
                             duzSecim[u.anahtar][c.ad] = tsel.value;
                     });
