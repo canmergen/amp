@@ -6557,3 +6557,11 @@ col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-ko
 .dg-tablo.gl-ad-birim td.gl-ad-olcum { min-width: 210px; }
 .gl-ad-birim tr.pf-kay-farkli > td:first-child { box-shadow: inset 4px 0 0 var(--amber); }
 .dg-tablo.gl-ad-birim td.gl-ad-olcum .gl-olc-sat { justify-content: flex-start; }
+
+/* Şeritte kontrolün ürettiği yeni kolonlar ve son tablo toplamı. */
+.pf-asama-yeni { margin-top: 2px; font-size: var(--fs-ustbar); font-weight: var(--fw-kalin); color: var(--mavi); }
+.pf-asama-son { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px 6px;
+    margin: 6px 0 2px; padding: 6px 12px; border-radius: 6px; background: color-mix(in srgb, var(--mavi) 7%, var(--yuzey)); }
+.pf-asama-son-ad { font-weight: var(--fw-kalin); margin-right: 6px; }
+.pf-asama-son-yeni, .pf-asama-son-isaret { color: var(--mavi); }
+.pf-asama-son-not { color: var(--metin-tamam); font-size: var(--fs-ustbar); margin-left: 6px; }

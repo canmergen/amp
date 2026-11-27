@@ -5393,6 +5393,46 @@ def _asama_onaylilari(p):
         return set()
 
 
+def asama_yeni_kolonlari(durum, acik_asama=None):
+    """KONTROLLERIN URETTIGI YENI KOLONLAR: ({asama no: adet}, kesin).
+    Seritteki "giren -> kalan" yalniz incelenen kolonlari sayar; duzeltme
+    bayraklari ve cozum kolonlari (gun farki, gruplama, dolu bayragi,
+    metinden ozellik) bunlarin USTUNE eklenir. Onaylanmis kartta (acik_asama
+    yok) ogrenilmis kayitlardan (duzeltme_bilgi, cozum_bilgi): kesin. Karar
+    surerken secimlerden: bayrak duzeltmesi secilen her kolon bir bayrak
+    kolonu; cozum secilen her kolon EN AZ bir kolon (metinden ozellik birden
+    cok uretebilir; kesin degil). Duzeltme bayraklari kuralinin kontrolune
+    (cogu Kontrol 4), cozum kolonlari Kontrol 1'e yazilir (cozumu olan
+    kolonlar o kontrolun kurallarinda yakalanir)."""
+    from fe_agent import kolon_cozum as kc
+    p = durum.get("profil") or {}
+    kural_no = _kural_asamasi()
+    no = lambda a: kural_no.get(a) or (1 if a == "tarih_kod" else 4)
+    say = {}
+    db = p.get("duzeltme_bilgi") if isinstance(p.get("duzeltme_bilgi"), dict) else {}
+    cb = p.get("cozum_bilgi") if isinstance(p.get("cozum_bilgi"), dict) else {}
+    if not acik_asama and (db or cb):
+        for a, kol in db.items():
+            for v in (kol or {}).values():
+                say[no(a)] = say.get(no(a), 0) + len((v or {}).get("kolonlar") or [])
+        for v in cb.values():
+            say[1] = say.get(1, 0) + len((v or {}).get("kolonlar") or [])
+        return {k: n for k, n in say.items() if n}, True
+    cikan = asama_cikanlari(durum, 3) if profil_asamali(p) else set()
+    for a, kol in duzeltme_secimi(durum).items():
+        for k, c in (kol or {}).items():
+            if c in kc.BAYRAKLI_DUZELTME and k not in cikan:
+                say[no(a)] = say.get(no(a), 0) + 1
+    karar = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
+    kesin = True
+    for k, c in cozum_secimi(durum).items():
+        if c in ("cikar", "oldugu_gibi") or karar.get(k) == PROFIL_KARAR_CIKAR:
+            continue
+        say[1] = say.get(1, 0) + 1
+        kesin = kesin and c != "metin"
+    return {k: n for k, n in say.items() if n}, kesin
+
+
 def _asama_seridi(p, incelenen, asama_haric, acik_asama):
     """Seritteki asamalar: [{"no", "ad", "aciklama", "onayli", "giren",
     "kalan", "git"}]. git: kart karar beklerken seritte bu kontrole basilip
@@ -5441,6 +5481,10 @@ def profil_karti(durum, karar=False):
 
     asamali = profil_asamali(p)
     acik_asama = profil_asamasi(p) if (asamali and karar) else None
+    try:
+        _yeni_say = asama_yeni_kolonlari(durum, acik_asama) if asamali else ({}, True)
+    except Exception:           # pylint: disable=broad-except
+        _yeni_say = ({}, True)
     kural_no = _kural_asamasi()
     _haric, _degerler, _vars = {}, {}, {}
 
@@ -5692,6 +5736,8 @@ def profil_karti(durum, karar=False):
                    "ad": PROFIL_ASAMALARI[acik_asama - 1]["ad"] if acik_asama else "",
                    "aciklama": PROFIL_ASAMALARI[acik_asama - 1]["aciklama"] if acik_asama else "",
                    "adlar": _asama_seridi(p, incelenen, asama_haric, acik_asama),
+                   # Kontrollerin urettigi yeni kolonlar (bayrak, cozum): {asama no: adet}
+                   "yeni": {str(k): n for k, n in _yeni_say[0].items()}, "yeni_kesin": _yeni_say[1],
                    "kolon_toplam": len(incelenen),
                    "giren": (len(incelenen) - len(set(incelenen) & asama_haric(acik_asama)))
                    if acik_asama else len(incelenen),

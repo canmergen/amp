@@ -17786,6 +17786,15 @@ function profilKartiEkle(alan, blok, devamdan) {
                     sayi.appendChild(elYap("span", "", "önceki kontrollere bağlı"));
                 }
                 oge.appendChild(sayi);
+                /* Kontrolün ÜRETTİĞİ yeni kolonlar (bayrak, gün farkı, gruplama …):
+                   «giren → kalan» yalnız incelenen kolonları sayar; bunlar onun
+                   üstüne eklenir. Onaylanan ya da gösterilen kontrolde yazılır. */
+                const yeniN = Number(((asama.yeni || {})[String(x.no)]) || 0);
+                if (yeniN > 0 && (onayli || !kararModu)) {
+                    const y_ = elYap("div", "pf-asama-yeni", "+" + (asama.yeni_kesin === false && Number(x.no) === 1 ? "en az " : "") + ftBinlik(yeniN) + " yeni kolon");
+                    y_.title = "Bu kontrolde seçilen düzeltme ve çözümlerin ürettiği kolonlar (ör. 1 / 0 bayrak). Kalan kolonların üstüne eklenir.";
+                    oge.appendChild(y_);
+                }
                 const cubuk = elYap("div", "pf-asama-cubuk");
                 cubuk.setAttribute("aria-hidden", "true");
                 if (kolonToplam > 0 && giren !== null) {
@@ -17801,6 +17810,18 @@ function profilKartiEkle(alan, blok, devamdan) {
         };
         seritCiz(!!(blok && blok.kilit));
         asamaUst.push(serit);
+        /* SON TABLO: onaylanmış kartta kalan kolon + üretilen yeni kolon. */
+        const yeniTop = Object.values(asama.yeni || {}).reduce((t, n) => t + Number(n || 0), 0);
+        const sonAd = (asama.adlar || [])[(asama.adlar || []).length - 1];
+        if (!kararModu && yeniTop > 0 && sonAd && sonAd.kalan !== null && sonAd.kalan !== undefined) {
+            const son = elYap("div", "pf-asama-son");
+            son.append(elYap("span", "pf-asama-son-ad", "Son tablo"),
+                       elYap("b", "", ftBinlik(Number(sonAd.kalan))), elYap("span", "", "kalan kolon"),
+                       elYap("span", "pf-asama-son-isaret", "+"), elYap("b", "pf-asama-son-yeni", ftBinlik(yeniTop)), elYap("span", "", "yeni kolon"),
+                       elYap("span", "pf-asama-son-isaret", "="), elYap("b", "", ftBinlik(Number(sonAd.kalan) + yeniTop)), elYap("span", "", "kolon"),
+                       elYap("span", "pf-asama-son-not", "(kimlik, hedef gibi rol kolonları ayrıca)"));
+            asamaUst.push(son);
+        }
         asamaUst.push(seritHata);
         /* Açık kontrolün ne baktığı: tek kısa satır (sayılar şeritte). */
         if (asamaNo && asama.aciklama) asamaUst.push(elYap("div", "pf-asama-bilgi", asama.aciklama));

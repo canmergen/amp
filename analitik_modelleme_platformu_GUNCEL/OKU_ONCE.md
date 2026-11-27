@@ -2829,6 +2829,13 @@ tanıtır; sayfalar sol bardan açılır.
 - Karşılıkları: birim birim seçim adım tablolarında; kolon kolon seçim ve değer girişi «Ayrıntı»da; üretime girmeyen kolonlar baştaki kolon grafiğinde; dönüşümlerin açıklaması açılan dönüşüm satırında; «Hepsini Önerilere Döndür» özet adımında.
 - **Karşılığı olmayan:** Üretim Planı'nın tek tabloda üretilecek BÜTÜN kolonların listesi (kolon kolon, ölçümüyle) ve süzgeç çubuğundaki «öneren» / «durum» süzgeçleri. Özet adımındaki sayı karoları artık yalnız bilgidir (kısayol değil).
 
+**02.1.2 şeridi: kontrollerin ürettiği yeni kolonlar**
+
+- Şeritteki «giren → kalan» yalnız incelenen kolonları sayar. Düzeltme bayrakları (ör. «Kodu boş say ve bayrak üret» seçilen her kolon için bir 1 / 0 kolonu) ve çözüm kolonları (gün farkı, gruplama, dolu bayrağı, metinden özellik) bunların üstüne eklenir; şeritte görünmüyordu.
+- `akis_faz02.asama_yeni_kolonlari(durum, acik_asama)`: kontrol başına üretilen yeni kolon sayısı (karta `asama.yeni`, `asama.yeni_kesin`). Onaylanmış kartta öğrenilmiş kayıtlardan (`duzeltme_bilgi`, `cozum_bilgi`), kesin; karar sürerken seçimlerden. Düzeltme bayrakları kuralının kontrolüne (çoğu Kontrol 4), çözüm kolonları Kontrol 1'e yazılır (varsayım: çözümü olan kolonlar o kontrolün kurallarında yakalanır).
+- Kart: kontrol kutusunda «+N yeni kolon»; onaylanmış kartta şeridin altında «Son tablo: kalan + yeni = toplam» (rol kolonları ayrıca).
+- Bayrak kolonunun adı `<KOLON>_KOD` (`kolon_cozum.COZUM_EKI`): «kod» burada «bilgi yok» anlamında yazılmış özel değerdir (ör. -1); kolon o değerin yazdığı satırlarda 1'dir.
+
 **02.2: modelde ölçüm, kodun kararı ve dil modelinin kararı ayrı (ölçüm sürümü 4, öneri sürümü 3)**
 
 Bu bölüm aşağıdaki iki eski bölümün («ölçüme göre ayıklama», «gerekçe kodun ölçümüyle denetlenir») yerini alır; `olcum_ayikla` ve `olcum_tamamla` kaldırıldı.
