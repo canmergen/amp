@@ -17761,7 +17761,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                 const yazi = elYap("span", "pf-asama-yazi");
                 yazi.appendChild(elYap("span", "pf-asama-etiket", "Kontrol " + x.no));
                 yazi.appendChild(elYap("span", "pf-asama-ad", x.ad));
-                yazi.appendChild(elYap("span", "pf-asama-durum", bakilan ? "Onaylandı · gösteriliyor"
+                yazi.appendChild(elYap("span", "pf-asama-durum", bakilan ? "Onaylandı · Gösteriliyor"
                     : acik ? "Şu an buradasınız" : onayli ? "Onaylandı" : "Sırada"));
                 ust.appendChild(yazi);
                 oge.appendChild(ust);
