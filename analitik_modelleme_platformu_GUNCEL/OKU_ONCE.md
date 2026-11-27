@@ -3677,4 +3677,5 @@ Sorun: kartta hangi tablonun hangi kontrole ait olduğu ve hangi önerinin kodda
 - **Yalnız ayrışan satırlar.** Kuralda kod ile dil modeli ayrışıyorsa ve birden çok satır varsa "Yalnız kod ile dil modelinin ayrıştığı N satırı göster" kutusu tabloyu o satırlara indirir (çok bulgulu kuralda gözden geçirilecek satırlar).
 - **Birbirinin aynısı kolon grupları:** grubun başında "Kodun önerisi" ve "Dil modelinin kararı" kutuları yan yanadır (hangi kolon kalsın, gerekçesiyle); üye satırında "Kim Öneriyor" sütununda rozetler durur.
 - **Hizalama:** tablo içindeki her şey ortalıdır (projenin genel kuralı; `#kabuk table ...`).
+- **Aç / Kapat sütunu.** Sütun genişliği yazı boyuna bağlıdır (`calc(var(--fs-govde) * 4.2 + 52px)`). Sabit 92 px iken düğme yazısı sayfa ölçeğiyle büyüdüğü için «Kapat» düğmesi hücresinden ve satırın renkli zemininden yaklaşık 2 px dışarı taşıyordu; düzeltildi.
 - **Sınır:** ekran, gerçek dil modeliyle canlı ortamda denenmedi; test verisiyle (dil modeli yanıtı taklit) ve ekran görüntüleriyle denetlendi.

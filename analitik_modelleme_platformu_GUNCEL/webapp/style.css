@@ -6147,7 +6147,11 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 .dg-tablo.pf-tablo-yeni col.pf-k-bulunan { width: 176px; }
 .dg-tablo.pf-tablo-yeni col.pf-k-sonuc { width: 23%; }
 .dg-tablo.pf-tablo-yeni col.pf-k-kaynak { width: 22%; }
-.dg-tablo.pf-tablo-yeni col.pf-k-ac { width: 92px; }
+/* Aç / Kapat sütunu: genişlik yazı boyuna bağlıdır (düğme yazısı sayfa
+   ölçeğiyle büyür); sabit 92 px iken «Kapat» düğmesi hücresinden ve satırın
+   renkli zemininden dışarı taşıyordu. Hücrenin yan boşluğu da dardır. */
+.dg-tablo.pf-tablo-yeni col.pf-k-ac { width: calc(var(--fs-govde) * 4.2 + 52px); }
+.dg-tablo.pf-tablo-yeni > tbody > tr.pf-kontrol > td.pf-ac-hucre { padding-left: var(--b-2); padding-right: var(--b-3); }
 .dg-tablo.pf-tablo-yeni > tbody > tr.pf-kontrol { cursor: pointer; }
 .dg-tablo.pf-tablo-yeni > tbody > tr.pf-kontrol > td { padding: 9px var(--b-3); }
 .dg-tablo.pf-tablo-yeni > tbody > tr.pf-kontrol.acik > td { border-bottom-color: transparent; }
@@ -6163,7 +6167,7 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 .pf-kim-satir { display: flex; justify-content: center; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .pf-kim-satir + .pf-kim-satir { margin-top: 3px; }
 .pf-kim-yok { color: var(--metin-tamam); }
-.pf-ac { display: inline-flex; align-items: center; gap: 4px; }
+.pf-ac { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
 .pf-ac.acik .pf-ok { transform: rotate(180deg); }
 
 /* Açılan ayrıntı: kontrolün adı, altında kural kutuları */
