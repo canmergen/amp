@@ -17697,6 +17697,13 @@ function profilKartiEkle(alan, blok, devamdan) {
         const serit = elYap("div", "pf-asamalar");
         serit.setAttribute("role", "list");
         serit.setAttribute("aria-label", "Aşamalar");
+        /* HER AŞAMA BİR KONTROLDÜR ("Kontrol 1 … 5"). Altında kolon sayıları:
+           onaylanan kontrolde "giren → kalan kolon" ve çıkan sayısı, açık
+           kontrolde giren kolon; ince çubuk tablonun bütün kolonlarına göre
+           kalanı (dolu) ve o kontrolde çıkanı (kırmızı) gösterir. Sıradaki
+           kontrolde sayı yoktur (önceki kararlara bağlı). Önceden bu bilgi
+           şeridin altında uzun bir paragraftı. */
+        const kolonToplam = Number(asama.kolon_toplam || 0);
         seritCiz = bitti => {
             serit.textContent = "";
             (asama.adlar || []).forEach(x => {
@@ -17706,25 +17713,54 @@ function profilKartiEkle(alan, blok, devamdan) {
                 const oge = elYap("div", "pf-asama-oge" + (acik ? " acik" : "") + (onayli ? " onayli" : ""));
                 oge.setAttribute("role", "listitem");
                 if (acik) oge.setAttribute("aria-current", "step");
-                oge.appendChild(elYap("span", "pf-asama-no", onayli && !acik ? "✓" : String(x.no)));
+                if (x.aciklama) oge.title = x.aciklama;
+                const ust = elYap("div", "pf-asama-ust");
+                ust.appendChild(elYap("span", "pf-asama-no", onayli && !acik ? "✓" : String(x.no)));
                 const yazi = elYap("span", "pf-asama-yazi");
+                yazi.appendChild(elYap("span", "pf-asama-etiket", "Kontrol " + x.no));
                 yazi.appendChild(elYap("span", "pf-asama-ad", x.ad));
                 yazi.appendChild(elYap("span", "pf-asama-durum", acik ? "Şu an buradasınız" : onayli ? "Onaylandı" : "Sırada"));
-                oge.appendChild(yazi);
+                ust.appendChild(yazi);
+                oge.appendChild(ust);
+                /* Sayılar ve çubuk. Son aşama yerinde onaylandıysa (sonOnayli)
+                   o aşama kolon çıkarmaz: kalan = giren. */
+                const giren = x.giren === null || x.giren === undefined ? null : Number(x.giren);
+                let kalan = x.kalan === null || x.kalan === undefined ? null : Number(x.kalan);
+                if (kalan === null && sonOnayli && giren !== null) kalan = giren;
+                const sayi = elYap("div", "pf-asama-sayi");
+                if (giren !== null && kalan !== null && !acik) {
+                    const cikan = Math.max(0, giren - kalan);
+                    sayi.appendChild(elYap("b", "", ftBinlik(giren)));
+                    sayi.appendChild(elYap("span", "pf-asama-ok", "→"));
+                    sayi.appendChild(elYap("b", "", ftBinlik(kalan)));
+                    sayi.appendChild(elYap("span", "", "kolon"));
+                    sayi.appendChild(elYap("span", "pf-asama-cikan" + (cikan ? "" : " yok"), cikan ? "−" + ftBinlik(cikan) : "çıkan yok"));
+                } else if (giren !== null) {
+                    sayi.appendChild(elYap("b", "", ftBinlik(giren)));
+                    sayi.appendChild(elYap("span", "", "kolon giriyor"));
+                } else {
+                    sayi.classList.add("bos");
+                    sayi.appendChild(elYap("span", "", "önceki kontrollere bağlı"));
+                }
+                oge.appendChild(sayi);
+                const cubuk = elYap("div", "pf-asama-cubuk");
+                cubuk.setAttribute("aria-hidden", "true");
+                if (kolonToplam > 0 && giren !== null) {
+                    const kal = kalan !== null && !acik ? kalan : giren;
+                    const dolu = elYap("i", "kalan"), dusen = elYap("i", "cikan");
+                    dolu.style.width = (100 * kal / kolonToplam).toFixed(2) + "%";
+                    dusen.style.width = (100 * Math.max(0, giren - kal) / kolonToplam).toFixed(2) + "%";
+                    cubuk.append(dolu, dusen);
+                }
+                oge.appendChild(cubuk);
                 serit.appendChild(oge);
             });
         };
         seritCiz(!!(blok && blok.kilit));
         asamaUst.push(serit);
-        if (asamaNo) {
-            const ab = elYap("div", "pf-asama-bilgi");
-            metinYaz(ab, "**Aşama " + asamaNo + " / " + asama.toplam + ": " + asama.ad + ".** " + (asama.aciklama || "")
-                + " Bu aşamaya giren kolon: **" + ftBinlik(asama.giren) + "**"
-                + (Number(asama.onceki_cikan) > 0 ? "; önceki aşamalarda çıkan **" + ftBinlik(asama.onceki_cikan)
-                    + "** kolon bu aşamada sorulmaz." : "."));
-            asamaUst.push(ab);
-            if (asamaNo > 1) kart.classList.add("pf-asama-sonraki");
-        }
+        /* Açık kontrolün ne baktığı: tek kısa satır (sayılar şeritte). */
+        if (asamaNo && asama.aciklama) asamaUst.push(elYap("div", "pf-asama-bilgi", asama.aciklama));
+        if (asamaNo > 1) kart.classList.add("pf-asama-sonraki");
     }
 
     /* Sayılar */
@@ -18041,9 +18077,15 @@ function profilKartiEkle(alan, blok, devamdan) {
         const kartFark = kartSay.fark;
         let farkKutu = null;       // "Koddan farklı karar" kutucuğu: süzgecin kısayolu
         if (dmKullanildi) {
-            /* Sayım sunucudan (alan.gorus); eski kartta yoksa karttaki satırlardan. */
-            const alinan = Number(gs.alinan || kartSay.dm), toplam = Number(gs.oge || kartSay.toplam || alinan);
-            const gsuz = Number(gs.gorussuz != null ? gs.gorussuz : Math.max(0, toplam - alinan));
+            /* Sayılar KARTTAKİ BULGULARDAN (satırlar ve gruplar) sayılır; alttaki
+               süzgecin ve toplu seçim düğmelerinin saydığıyla aynıdır. Sunucunun
+               sayımı (alan.gorus) dil modeline SORULAN her şeyi sayar: «0, boş
+               yerine mi yazılmış» diye sorulup bulgu ÇIKMAYAN kolonlar da
+               içindedir; kutucukta o sayı durunca «765 bulgu» yazıp altında 71
+               bulgu gösteriyordu. Sunucu sayımı yalnız sıradaki (henüz
+               sorulmamış) kararların sayısı için kullanılır. */
+            const alinan = kartSay.dm, toplam = kartSay.toplam;
+            const gsuz = (dmSirada && gs.gorussuz != null) ? Number(gs.gorussuz) : Math.max(0, toplam - alinan);
             const sayilar = elYap("div", "pf-ozet-sayilar pf-gorus-ozet" + (kartFark ? " farkli" : ""));
             const sayi = (deger, etiket, sinif) => {
                 const k = elYap("div", "pf-ozet-sayi" + (sinif ? " " + sinif : ""));

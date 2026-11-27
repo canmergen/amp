@@ -5345,6 +5345,30 @@ def profil_ek_deger(v):
     return _pe.deger_metni(v)
 
 
+def _asama_seridi(p, incelenen, asama_haric, acik_asama):
+    """Seritteki asamalar: [{"no", "ad", "aciklama", "onayli", "giren",
+    "kalan"}]. giren: asamaya giren kolon sayisi (onceki asamalarda
+    cikmayanlar); kalan: asamadan sonra kalan kolon sayisi. Sayilar yalniz
+    BILINEN asamalarda doner: onaylanan asamalarda ikisi de, acik asamada
+    yalniz "giren" (asama henuz onaylanmadi); onaylanmis kartta (acik_asama
+    yok) hepsi. Siradaki asamalarda None. asama_haric(no): no'dan ONCEKI
+    asamalarda cikan kolonlar."""
+    try:
+        onayli = {int(y) for y in (p.get("asama_onay") or [])}
+    except (TypeError, ValueError):
+        onayli = set()
+    kume, cikti = set(incelenen), []
+    say = lambda no: len(kume) - len(kume & asama_haric(no))    # no. asamaya giren
+    for x in PROFIL_ASAMALARI:
+        no = x["no"]
+        on = no in onayli
+        bilinen = acik_asama is None or on or no == acik_asama
+        cikti.append({"no": no, "ad": x["ad"], "aciklama": x.get("aciklama") or "", "onayli": on,
+                      "giren": say(no) if bilinen else None,
+                      "kalan": say(no + 1) if (on and no != acik_asama) or acik_asama is None else None})
+    return cikti
+
+
 def profil_karti(durum, karar=False):
     # ASAMALI DUZEN: karar beklerken yalniz ACIK asamanin kontrolleri ve o
     # asamaya giren kolonlar; onaylanmis (gecmis) kartta butun asamalar, her
@@ -5620,9 +5644,8 @@ def profil_karti(durum, karar=False):
         "asama": ({"no": acik_asama or 0, "toplam": ASAMA_SAYISI,
                    "ad": PROFIL_ASAMALARI[acik_asama - 1]["ad"] if acik_asama else "",
                    "aciklama": PROFIL_ASAMALARI[acik_asama - 1]["aciklama"] if acik_asama else "",
-                   "adlar": [{"no": x["no"], "ad": x["ad"],
-                              "onayli": x["no"] in [int(y) for y in (p.get("asama_onay") or [])]}
-                             for x in PROFIL_ASAMALARI],
+                   "adlar": _asama_seridi(p, incelenen, asama_haric, acik_asama),
+                   "kolon_toplam": len(incelenen),
                    "giren": (len(incelenen) - len(set(incelenen) & asama_haric(acik_asama)))
                    if acik_asama else len(incelenen),
                    "onceki_cikan": len(set(incelenen) & asama_haric(acik_asama)) if acik_asama else 0}
