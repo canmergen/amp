@@ -3060,7 +3060,7 @@ PROFIL_ESIK_ACIKLAMA.update({
         sonuc="Kodun önerisi: bu pay ya da üstündeyse boş say ve bayrak üret"),
 })
 ESIK_BIRIM_ADI = {"yuzde": "%", "puan": "puan", "sayi": "", "kat": "kat"}
-ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kontrollerden geçer. Her kuralın yanında "
+ESIK_METNI = ("Veri profilinde her kolon aşağıdaki kurallardan geçer. Her kuralın yanında "
               "neye baktığı, bir örnek ve sınırı (eşik) yazar. Sınırlar önerilen değerle dolu "
               "gelir; olduğu gibi onaylayabilir ya da değiştirebilirsiniz.")
 ESIK_DUGME = "Ayarları Onayla ve Bulgulara Geç"
@@ -3624,7 +3624,7 @@ def _cift_iki_yonlu(liste):
 PROFIL_KAPSAM_SURUMU = 14
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
-    "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
+    "kurallar yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
     "ayrıca aranır. Güncellemek için 02.1.2 Bulgular ve Kararlar adımına geri dönün: profil "
     "yeniden çıkar, onayladığınız ayarlar ve verdiğiniz kararlar korunur; yeni yakalanan "
     "kolonlar size sorulur.")
@@ -3650,7 +3650,7 @@ def profil_eski_uyarisi(durum):
         surum = int(kap.get("surum") or (2 if kap else 1))
     except (TypeError, ValueError):
         surum = 1
-    neden = ("kontroller tablonun tamamına bakmış (Test ve Validasyon satırları da kolon kararına "
+    neden = ("kurallar tablonun tamamına bakmış (Test ve Validasyon satırları da kolon kararına "
              "karışmış)" if surum <= 1 else
              "Train dışındaki setlerde görülen uydurma sayı, dev değer ve sayı kayması aranmamış"
              if surum == 2 else
@@ -4000,7 +4000,7 @@ def _tarih_onerileri(df, teshis, donem, dolu):
 
 
 AYNI_KURAL_GEREKCESI = ("Kolonlar aynı bilgiyi taşıdığı için hangisinin kalacağı kuralla seçilir: "
-                        "başka bir kontrolde çıkarılmayan, en az düzeltme ve karar isteyen "
+                        "başka bir kuralda çıkarılmayan, en az düzeltme ve karar isteyen "
                         "kolon; eşitlik varsa adı kısa olan.")
 # Uyenin baska kontrollerdeki durumu (ayni icerikli grupta siralama icin).
 _UYE_KARAR = ("tarih_sonra", "baskin", "donem", "sicrama", "kayma")
@@ -4027,7 +4027,7 @@ def _uye_durumlari(ek, p):
             u = uye(k)
             u["bulgular"].append("%s: %s" % (ad.get(a, a), metin))
             if cikar_oneri.get(k) == a and karar.get(k) != PROFIL_KARAR_TUT:
-                u["cikar"] = u["cikar"] or "%s kontrolünde Çıkar önerilir" % ad.get(a, a)
+                u["cikar"] = u["cikar"] or "%s kuralında Çıkar önerilir" % ad.get(a, a)
             elif a in DUZELTME_KONTROLLERI and a != "ondalik":
                 u["duzeltme"] += 1
             elif a in _UYE_KARAR:
@@ -4135,7 +4135,7 @@ def _ayni_gruplari(durum, ek, p, df=None):
             gerekce = ("%s eğitim satırlarında hedefi daha iyi biliyor: tek başına isabet %s"
                        % (ilk[0], "; ".join("%s %s" % (u, _yuzde_metni(g["guc"][u])) for u in sira)))
             if ilk[0] != sira[0]:
-                gerekce += ". %s başka bir kontrolde çıkarıldığı için kalmaz" % sira[0]
+                gerekce += ". %s başka bir kuralda çıkarıldığı için kalmaz" % sira[0]
             kaynak = "hedef"
         elif ayni_mi(g):
             o = onceki[g["id"]]
@@ -4620,7 +4620,7 @@ _KONTROL_ACIKLAMA_EK = {
         "İki kolonun bütün satırlarda aynı değeri taşıyıp taşımadığına bakar.",
         "Aynı bilgi tabloya iki farklı adla girmiş.",
         "biri kalır, ötekiler üretime girmez. Hangisinin kalacağını siz seçersiniz. Kodun önerisi: başka "
-        "bir kontrole takılmayan, en az düzeltme isteyen; eşitlik varsa adı kısa olan.",
+        "bir kurala takılmayan, en az düzeltme isteyen; eşitlik varsa adı kısa olan.",
         sorun="Aynı bilgiyi iki kez vermek modele bir şey kazandırmaz."),
     "karisik_eksik": _ac(
         "Eksik bilgi bazen boş bırakılmış, bazen -999 gibi bir sayıyla yazılmış.",
@@ -4654,7 +4654,7 @@ _KONTROL_ACIKLAMA_EK = {
               "vardır (iade gibi)."),
     "set_disi": _ac(
         "Train'de sağlam görünüp öteki sette bozuk olan kolon.",
-        "Kontroller yalnız Train satırlarına bakar. Bu kural öteki setlere (Test, Validasyon) "
+        "Kurallar yalnız Train satırlarına bakar. Bu kural öteki setlere (Test, Validasyon) "
         "bakıp şunu arar: kolon Train'de sağlamken o sette tamamen boş mu, hep aynı değerde mi, "
         "boş oranı Train'dekinden çok mu farklı, ya da sayıları Train'dekine göre topluca kat kat "
         "mı değişmiş («Sayılar topluca değişmiş» sınırı)? Az satırlı sette bu şans eseri "
@@ -4669,7 +4669,7 @@ _KONTROL_ACIKLAMA_EK = {
         "değişikliği) yine Çıkar. Öteki durumlarda Tut; kolonun neden değiştiğine bakın.",
         kapsam="01.4'te Train dışında bir set ayrıldıysa. Yalnız kolonun kendi değerlerine "
                "bakılır; hedefe bakılmaz. O sette görülen uydurma sayı (-999 gibi) «Boş Yerine "
-               "Başka Şey Yazılmış», dev değer «Aşırı Değerler» kontrolünde çıkar.",
+               "Başka Şey Yazılmış», dev değer «Aşırı Değerler» kuralında çıkar.",
         sorun="Model Train'de bu kolona güvenmeyi öğrenir; sınamada ya da canlıda kolon boş "
               "gelirse o bilgi yoktur ve sonuç bozulur."),
     "tekrar": _ac(
@@ -5243,7 +5243,7 @@ def profil_metni(durum, karar=False):
             _sayi(kap.get("train_satir") or 0), _sayi(kap.get("toplam") or 0)))
     else:
         kapsam = "tablonun tamamında (01.4'te Train dışında set ayrılmadı)"
-    metin = ("Modelleme tablosundaki %s kolon %s, %s kontrolle (bunların altında toplam %s "
+    metin = ("Modelleme tablosundaki %s kolon %s, %s kural grubuyla (toplam %s "
              "kural) incelendi." % (
                  _sayi(len(oz["incelenen"])), kapsam, _sayi(gorunur_kontrol_sayisi()),
                  _sayi(toplam_kural_sayisi())))
@@ -5280,13 +5280,13 @@ def profil_metni(durum, karar=False):
                          "üretimine girer." % (_sayi(len(cozumlu)), _sayi(yeni)))
     if oz["bekleyen"]:
         parca.append("%s kolon için kararınız gerekiyor: Ne Olacak sütununda Kararınıza "
-                     "bırakılır yazan kontrollerde her kolonu tutun ya da çıkarın. Her kolonda "
+                     "bırakılır yazan kurallarda her kolonu tutun ya da çıkarın. Her kolonda "
                      "dil modelinin kararı seçili gelir (karar alınamadıysa kodun önerisi)."
                      % _sayi(len(oz["bekleyen"])))
     duz = duzeltme_secimi(durum)
     n_duz = sum(len(v) for v in duz.values())
     if karar and n_duz:
-        parca.append("Düzeltme seçilen kontrollerde %s kolon için düzeltme seçin; dil modelinin "
+        parca.append("Düzeltme seçilen kurallarda %s kolon için düzeltme seçin; dil modelinin "
                      "kararı seçili gelir. Bu kolonlar üretime girer." % _sayi(n_duz))
     elif n_duz:
         uyg = sum(1 for v in duz.values() for c in v.values() if c != "birak")
@@ -5312,11 +5312,11 @@ def profil_metni(durum, karar=False):
     if sizinti:
         parca.append("Test (OOS) ya da Validasyon (OOT) setinde %s satır Train'deki bir kaydın aynısı (aynı "
                      "kimlik ve dönem ya da aynı satır); test sonucu olduğundan iyi görünebilir. "
-                     "Ayrıntısı Setlerde Ortak Kayıt kontrolünde." % _sayi(sizinti))
+                     "Ayrıntısı Setlerde Ortak Kayıt kuralında." % _sayi(sizinti))
     tk = ((durum.get("profil") or {}).get("profil_ek") or {}).get("tekrar") or {}
     tekrar = int(tk.get("toplam") or 0)
     if tekrar:
-        parca.append("Tabloda %s tekrar eden satır var; Tekrar Eden Satır kontrolünde "
+        parca.append("Tabloda %s tekrar eden satır var; Tekrar Eden Satır kuralında "
                      "ayrıntısı görünür." % _sayi(tekrar))
     sb = (durum.get("profil") or {}).get("satir_bilgi") or {}
     if sb.get("toplam"):

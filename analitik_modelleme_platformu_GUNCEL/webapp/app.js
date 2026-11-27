@@ -17651,18 +17651,18 @@ function profilKartiEkle(alan, blok, devamdan) {
                           + ftBinlik(h.surec_disi) + " kolon" : "");
     const bilgi = [
         ((alan.kapsam || {}).train
-            ? "Kolon hakkında karar doğuran bütün kontroller yalnız Train (MS) satırlarına bakar (" + ftBinlik(alan.kapsam.train_satir)
+            ? "Kolon hakkında karar doğuran bütün kurallar yalnız Train (MS) satırlarına bakar (" + ftBinlik(alan.kapsam.train_satir)
               + " satır; tabloda " + ftBinlik(alan.kapsam.toplam) + "). Test ve Validasyon satırları karara karışmaz; böylece "
               + "sınama sonucu tarafsız kalır. Öğrenilen her şey (çözümler, kırpma sınırı) de Train'dendir; kararlar ve düzeltmeler "
               + "onayınızla bütün satırlara aynı şekilde uygulanır. Tablonun tamamına bakan kurallar: Tekrar Eden Satır, Setlerde "
               + "Ortak Kayıt ve Train Dışında Bozulan Kolonlar. Örneklem kullanılmaz, sayımlar kesindir."
-            : "01.4'te Train dışında set ayrılmadığı için kontroller tablonun tamamına bakar. Örneklem kullanılmaz, sayımlar kesindir."),
-        "Kontrollerin sonucu üç türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
+            : "01.4'te Train dışında set ayrılmadığı için kurallar tablonun tamamına bakar. Örneklem kullanılmaz, sayımlar kesindir."),
+        "Kuralların sonucu üç türlüdür. Değişken üretimine girmez: kolondan değişken üretilmez ve kolon "
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır; satır kurallarında fazla ya da çakışan satırlar çalışma tablosundan çıkar.",
-        "Boş Yerine Başka Şey Yazılmış, Yazım Farkları, Eksi Olamayacak Değerler ve Aşırı Değerler kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz. Tekrar Eden Satır ve Setlerde Ortak Kayıt kontrollerinde çıkarılacak satırları seçersiniz.",
+        "Boş Yerine Başka Şey Yazılmış, Yazım Farkları, Eksi Olamayacak Değerler ve Aşırı Değerler kurallarında kolon üretime girer; her kolon için düzeltme seçersiniz. Tekrar Eden Satır ve Setlerde Ortak Kayıt kurallarında çıkarılacak satırları seçersiniz.",
         "Bulgular ve Kararlar beş kontrolde verilir (şeritteki Kontrol 1 … 5): 1) Kolon Kullanılabilir mi, 2) Kolon Güvenilir mi, 3) Aynı Bilgiyi Taşıyan Kolonlar, 4) Düzeltmeler, 5) Satırlar. Kuralların hepsi profil çıkarılırken bir kez hesaplanır; kararlar kontrol kontrol verilir. Bir kontrolü onaylayınca o kontrolde çıkan kolonlar sonraki kontrollere girmez: onlar için yeniden karar sorulmaz, dil modeline de sorulmaz. Birbirinin aynısı kolon grupları üçüncü kontrolde, kalan kolonlarla kurulur. «Önceki Kontrol» ile geri dönüp kararı değiştirebilirsiniz; o zaman sonraki kontroller yeniden onaylanır. Adım son kontrol onaylanınca tamamlanır. Her kontrol onaylandıkça değişken defteri (degisken_defteri.json) güncellenir.",
-        "Kart nasıl okunur: Kontroller duruma göre kesimlere ayrılır (seçiminizi bekleyenler üstte; sonra kendiliğinden üretime girmeyenler, bilgi için gösterilenler, bulgu çıkmayanlar ve uygulanmayanlar). Her kontrol tek satırdır: bulunan, ne olacağı ve kararı kimin verdiği. Satırı açınca kontrolün her kuralı kendi kutusunda durur; kutunun başında kuralın adı, kaç bulgu olduğu ve ne olacağı yazar, «Bu kural neye bakar?» ölçütü ve örneği açar. Tablo o kutunun içindedir.",
+        "Kart nasıl okunur: «Kurallar» bölümünde kural grupları duruma göre kesimlere ayrılır (seçiminizi bekleyenler üstte; sonra kendiliğinden üretime girmeyenler, bilgi için gösterilenler, bulgu çıkmayanlar ve uygulanmayanlar). Her kural grubu tek satırdır: bulunan, ne olacağı ve kararı kimin verdiği. Satırı açınca grubun her kuralı kendi kutusunda durur; kutunun başında kuralın adı, kaç bulgu olduğu ve ne olacağı yazar, «Bu kural neye bakar?» ölçütü ve örneği açar. Tablo o kutunun içindedir.",
         "İki kaynak ayrı sütundadır. «Kodun Önerisi»: kod kolonun yalnız sayılarına bakar (bulgu, hedef oranı) ve kendi gerekçesini yazar. «Dil Modelinin Kararı»: dil modeli kolonun anlamına, takıldığı kurala ve kodun bulgusuna birlikte bakar, kendi gerekçesini yazar; seçili gelen budur ve kodla aynı mı farklı mı yanında yazar. Seçili olan hücre çerçevelidir; öteki hücredeki «Bunu seç» seçimi ona çevirir. «Seçiminiz» sütununda seçimi elle de değiştirirsiniz; altında seçimin hangi kaynaktan geldiği yazar. Dil modelinden karar alınamayan bulguda kodun önerisi seçilidir. Çok bulgulu tabloda kararlar birkaç istekte alınır: kart, karar alınmayan bulgu kaldıkça kendiliğinden sormaya devam eder ve her seferinde yenilenir; bu sürerken seçim ve onay kapalıdır, «Durdur» ile durdurabilir, «Kalanları Dil Modeline Sor» ile sürdürebilirsiniz.",
         "Tek tıkla toplu seçim: Karar Özeti kutusundaki «Dil Modelinin Kararlarını Seç» ve «Kodun Önerilerini Seç» düğmeleri bütün kurallara, her kuralın kutusundaki aynı düğmeler yalnız o kurala uygulanır; sonra tek tek değiştirebilirsiniz. Karar Özeti kutusundaki «Yalnız kod ile dil modelinin ayrıştığı bulguları göster» süzgeci kartın tamamını o bulgulara indirir: ayrışma olmayan satırlar, kurallar ve kontroller gizlenir; seçimleri değişmez. Satır kurallarında da (Tekrar Eden Satır, Setlerde Ortak Kayıt) kararı dil modeli verir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
@@ -18072,8 +18072,8 @@ function profilKartiEkle(alan, blok, devamdan) {
         const ozBas = elYap("div", "pf-oneri-ozet-bas");
         ozBas.appendChild(elYap("b", "", "Karar Özeti"));
         ozBas.appendChild(elYap("span", "pf-oneri-ozet-not", kararModu
-            ? "Her bulguda bir karar seçili gelir. Kontrolü açınca kodun önerisi, dil modelinin kararı ve seçiminiz yan yana durur."
-            : "Kontrolü açınca kodun önerisi, dil modelinin kararı ve onaylanan karar yan yana durur."));
+            ? "Her bulguda bir karar seçili gelir. Satırı açınca kodun önerisi, dil modelinin kararı ve seçiminiz yan yana durur."
+            : "Satırı açınca kodun önerisi, dil modelinin kararı ve onaylanan karar yan yana durur."));
         oz.appendChild(ozBas);
         /* İki kaynak: kim neye bakar (kartın her yerinde aynı iki rozet). */
         const lej = elYap("div", "pf-kay-lejant");
@@ -18579,9 +18579,9 @@ function profilKartiEkle(alan, blok, devamdan) {
     const kbBas = elYap("div", "pf-bolum-bas");
     /* Başlıkta toplam: kontrol sayısı ve altlarındaki kural sayısı. */
     const pfKural = (alan.kontroller || []).reduce((t, k) => t + ((k.uye_kontroller || []).length || 1), 0);
-    kbBas.appendChild(elYap("span", "pf-bolum-ad", "Kontroller"));
+    kbBas.appendChild(elYap("span", "pf-bolum-ad", "Kurallar"));
     if ((alan.kontroller || []).length)
-        kbBas.appendChild(elYap("span", "pf-bolum-not", (alan.kontroller || []).length + " kontrol, " + pfKural + " kural"));
+        kbBas.appendChild(elYap("span", "pf-bolum-not", (alan.kontroller || []).length + " kural grubu, " + pfKural + " kural"));
     kb.appendChild(kbBas);
     if (oz) kb.appendChild(oz);
     const tablo = elYap("table", "dg-tablo pf-tablo pf-tablo-yeni");
@@ -18592,7 +18592,7 @@ function profilKartiEkle(alan, blok, devamdan) {
     tablo.appendChild(cg);
     const thead = elYap("thead");
     const htr = elYap("tr");
-    ["Kontrol", "Bulunan", "Ne Olacak", "Kararı Kim Verdi", ""].forEach(b => htr.appendChild(elYap("th", "", b)));
+    ["Kural Grubu", "Bulunan", "Ne Olacak", "Kararı Kim Verdi", ""].forEach(b => htr.appendChild(elYap("th", "", b)));
     thead.appendChild(htr);
     tablo.appendChild(thead);
     const tbody = elYap("tbody");
@@ -18694,7 +18694,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                     ? "Dil modeli, açıklamasını en iyi anladığı ve ileride en iyi değişken üretebileceği kolonu tutar."
                     : u.anahtar === "yakin_icerik"
                     ? "Kod, hedefi daha iyi bilen kolonu önerir; eşitse sabit kural."
-                    : "Kod sabit kuralla önerir: başka kontrole takılmayan, en az düzeltme isteyen, adı kısa olan.")));
+                    : "Kod sabit kuralla önerir: başka kurala takılmayan, en az düzeltme isteyen, adı kısa olan.")));
             if (kararModu && uyeDmVar(u)) {
                 arac.appendChild(topluDugmeler("Bu kuralda tek tıkla:", () => uyeTopluSec(u, "dm"), () => uyeTopluSec(u, "kod"), fark,
                                                "Bu kuralın görünen " + ftBinlik(fark) + " bulgusunda tek tıkla:"));
@@ -18816,7 +18816,7 @@ function profilKartiEkle(alan, blok, devamdan) {
             if ((c.cozum && (c.cozum.secenekler || []).length < 2) || c.cozum_yok)
                 bTd.appendChild(elYap("div", "pf-cozum-gerekce", "Uygun çözüm bulunmadı; kolon üretime girmez."));
             else if (c.cozum_baska)
-                bTd.appendChild(elYap("div", "pf-cozum-gerekce", "Çözümü " + c.cozum_baska + " kontrolünde seçilir."));
+                bTd.appendChild(elYap("div", "pf-cozum-gerekce", "Çözümü " + c.cozum_baska + " kuralında seçilir."));
             r.appendChild(bTd);
             if (secimli) {
                 let kay = null, al = null, yaz = null, sTd = null, vars = null, adi = null;
@@ -18878,12 +18878,12 @@ function profilKartiEkle(alan, blok, devamdan) {
     };
 
     const KESIMLER = [
-        ["secim", kararModu ? "Seçiminizi Bekleyen Kontroller" : "Karar Verilen Kontroller",
-         kararModu ? "Her bulguda bir karar seçili gelir; kontrolü açıp değiştirebilirsiniz." : ""],
+        ["secim", kararModu ? "Seçiminizi Bekleyen Kurallar" : "Karar Verilen Kurallar",
+         kararModu ? "Her bulguda bir karar seçili gelir; satırı açıp değiştirebilirsiniz." : ""],
         ["girmez", "Kendiliğinden Üretime Girmeyenler", "Çözümü olmayan kolonlar; seçim gerekmez."],
         ["bilgi", "Bilgi İçin Gösterilenler", "Kolon üretime girer; işlem yapılmaz."],
-        ["tamam", "Bulgu Çıkmayan Kontroller", ""],
-        ["pasif", "Uygulanmayan Kontroller", "Gereken kolon ya da ayar olmadığı için çalışmadı."]];
+        ["tamam", "Bulgu Çıkmayan Kurallar", ""],
+        ["pasif", "Uygulanmayan Kurallar", "Gereken kolon ya da ayar olmadığı için çalışmadı."]];
     const kesimSatir = {};
     (alan.kontroller || []).forEach(k => {
         /* SATIR RENGİ: yeşil sorunsuz (bulgu yok), sarı size sorulur,
@@ -19022,7 +19022,7 @@ function profilKartiEkle(alan, blok, devamdan) {
         const ktd = elYap("td");
         ktd.colSpan = 5;
         ktd.appendChild(elYap("b", "pf-kesim-ad", ad));
-        ktd.appendChild(elYap("span", "pf-kesim-sayi", ftBinlik(liste.length) + " kontrol"));
+        ktd.appendChild(elYap("span", "pf-kesim-sayi", ftBinlik(liste.length) + " kural grubu"));
         if (not) ktd.appendChild(elYap("span", "pf-kesim-not", not));
         ks.appendChild(ktd);
         tbody.appendChild(ks);
