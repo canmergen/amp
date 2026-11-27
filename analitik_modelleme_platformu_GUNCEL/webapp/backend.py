@@ -3189,10 +3189,7 @@ def profil_asama_endpoint():
         # Eski karttan gelen istek: hicbir sey degismedi, guncel kart doner.
         # Uyari yalniz bu yanitta gider, kayitli karta yazilmaz.
         uyari = kart.pop("asama_uyari", None) if isinstance(kart, dict) else None
-        # "asama_uyari_kaydet": uyari var ama durum degisti (secimler
-        # kaydedildi, asama ayni): asagidaki olagan kayit yolundan gider.
-        uyari_kaydet = bool(kart.pop("asama_uyari_kaydet", False)) if isinstance(kart, dict) else False
-        if uyari and not uyari_kaydet:
+        if uyari:
             return jsonify({"tamam": True, "secim_alani": kart, "uyari": uyari})
         # SONRAKI ASAMA ACILIRKEN CALISMA DEGISMIS OLABILIR (dil modeli
         # kararlari bir dakikayi bulur): ayni dugmeye ikinci kez basilmis,
@@ -3210,10 +3207,7 @@ def profil_asama_endpoint():
         except Exception as e_:
             _hata_kaydet("profil_asama_defter", e_)
         _kaydet(anahtar, durum)
-        yanit = {"tamam": True, "secim_alani": kart}
-        if uyari:
-            yanit["uyari"] = uyari
-        return jsonify(yanit)
+        return jsonify({"tamam": True, "secim_alani": kart})
     except Exception as e:
         kod = _hata_kaydet("profil_asama", e)
         return jsonify({"tamam": False,

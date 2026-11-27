@@ -17687,9 +17687,10 @@ function profilKartiEkle(alan, blok, devamdan) {
        «Onaylandı» görünür. Önceden kart yerinde kilitlenirken şerit yeniden
        çizilmiyor, son aşama «Şu an buradasınız» diye kalıyordu. */
     let seritCiz = () => {};
-    /* Şeritte bir kontrole basınca oraya gidilir (asamayaGit; aşama
-       düğmeleri kurulurken bağlanır). Geriye her zaman; ileriye yalnız daha
-       önce gelinmiş kontrole (sunucu: adlar[].git). Hata şeridin altında. */
+    /* Şeritte ÖNCEKİ bir kontrole basınca oraya dönülür (asamayaGit; aşama
+       düğmeleri kurulurken bağlanır; sunucu: adlar[].git). İleriye şeritten
+       gidilmez: dönülen kontrol ve sonrakiler yeniden onaylanır. Hata
+       şeridin altında. */
     let asamayaGit = null;
     const seritHata = elYap("div", "pf-serit-hata");
     seritHata.hidden = true;
@@ -17723,8 +17724,8 @@ function profilKartiEkle(alan, blok, devamdan) {
                 if (kararModu && x.git && !bitti) {
                     oge.classList.add("tikla");
                     oge.tabIndex = 0;
-                    oge.title = (x.aciklama ? x.aciklama + " " : "") + "Bu kontrole gitmek için basın.";
-                    oge.setAttribute("aria-label", "Kontrol " + x.no + ": " + x.ad + ". Bu kontrole git.");
+                    oge.title = (x.aciklama ? x.aciklama + " " : "") + "Bu kontrole dönmek için basın; bu kontrol ve sonrakiler yeniden onaylanır.";
+                    oge.setAttribute("aria-label", "Kontrol " + x.no + ": " + x.ad + ". Bu kontrole dön.");
                     oge.onclick = () => { if (asamayaGit) asamayaGit(Number(x.no), oge); };
                     oge.onkeydown = e => {
                         if (e.key !== "Enter" && e.key !== " ") return;
