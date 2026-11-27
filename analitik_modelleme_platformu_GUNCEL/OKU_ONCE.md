@@ -2810,6 +2810,14 @@ tanıtır; sayfalar sol bardan açılır.
   gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
   süzgeci; en çok 2.000 satır.
 
+**02.3 AI Değişken Keşfi kartı (yeni)**
+
+- 02.3 artık numaralı metin listesi değil, 02.1.2 ve 02.2 ile aynı mantıkta bir karttır (`tip: "kesif"`, `akis_faz03.kesif_karti`, `kesifKartiEkle`). Tek tablo, kesimlere ayrılmış: «Üretilecek Değişkenler», «Üretilmeyecek Değişkenler», «Listeye Alınmayan Öneriler» (denetimden geçemeyen ya da daha önce üretilmiş / reddedilmiş; nedeni yazar). 02.2'deki gibi adım şeridi YOKTUR: 02.3'te düzey ayrımı yok, öneriler tek listedir.
+- Satır: değişkenin adı ve dil modelinin gerekçesi, formül, KODUN ÖLÇÜMÜ ve Üret / Üretme. Açılınca gerekçe, kaynak kolonlar (sözlük açıklamasıyla), üretim kodu satırı ve «Örnek Satırlar» (`/kesif_ornek`, `kesif_ornek`: Train'den en çok 8 satırda kaynak değerleri ve kodun ürettiği değer).
+- **Kodun ölçümü yenidir** (`kesif_olc`): öneri planlanırken her formül üretimdeki aynı değerlendiriciyle hesaplanır; Train'de IV'si, kaynak kolonların en iyi IV'sine göre artışı ve o kolonla sıra ilişkisi ölçülür (hedef iki sınıflı değilse ölçüm yok). Ölçümü yeni bilgi gösteren öneri «Üret», göstermeyen «Üretme» ile gelir (`kesif_onerisi`; 02.2 ile aynı eşikler); kullanıcı değiştirebilir.
+- Onay karttan gider: `{"dogrulama": {"adim": "kesif", "sec": [ad, …]}}`. Numarayla seçim hâlâ çalışır; hiçbir seçim verilmeden metinle onaylanırsa ölçüme göre önerilenler üretilir (önceden hepsi üretilirdi).
+- **Sınır:** test verisiyle denendi; canlı ortamda ve gerçek dil modeli önerileriyle denenmedi. Üretim adımının kendisi (`kesif_uygula`) bu oturumda çalıştırılmadı; yalnız seçim okuma kısmı değişti. Sayfa yenilenince onaylanmış 02.3 kartı yeniden çizilmez (metin özeti kalır).
+
 **02.2 özet adımı: üretilecek kolonların listesi**
 
 - Özet adımında, özet tablosunun altında «Üretilecek kolonların listesi» kapalı gelir (başlığında toplam kolon sayısı). Açılınca her satır üretilecek bir kolondur: adı, adımı, dönüşümü (değeriyle), birimi, kodun ölçümü (değerlendirme, IV, kaynağa göre artış) ve öneren. Kolon, birim ve dönüşüm adında arama vardır; 300'er satır gösterilir. Sizin eklediğiniz satırlar işaretlidir.

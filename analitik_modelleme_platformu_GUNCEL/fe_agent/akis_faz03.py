@@ -1110,6 +1110,147 @@ def _yeniden_notu(silinen_kural, silinen_kesif):
                         % (kesif, _sayi(len(silinen_kesif)), kesif))
     return ("\n\n" + "\n".join(parcalar)) if parcalar else ""
 
+# ===========================================================================
+# 02.3 KART (tip "kesif"): dil modelinin onerdigi degiskenler tek tabloda.
+# Her oneri: adi, formulu, kaynak kolonlari, dil modelinin gerekcesi ve KODUN
+# OLCUMU (uretilen kolonun IV'si, kaynak kolonlarin en iyi IV'sine gore
+# artisi, o kolonla sira iliskisi; yalniz Train). Olcumu yeni bilgi
+# gostermeyen oneri "Üretme" ile gelir (kullanici degistirebilir). Listeye
+# alinmayanlar (denetimden gecemeyen, daha once uretilmis ya da reddedilmis)
+# nedenleriyle ayri kesimdedir. Onay: {"dogrulama": {"adim": "kesif",
+# "sec": [ad, ...]}}.
+# ===========================================================================
+def _kesif_verisi(durum):
+    """02.3'un okudugu tablo (02.2 sonu) ve Train maskesi."""
+    from fe_agent import akis_faz02 as _f2
+    from fe_agent.akis_faz02 import cozum_kolonlari_ekle
+    df = _f2.asama_df(durum, "02.2") if _f2.updt_modu(durum) else cozum_kolonlari_ekle(durum, modelleme_df(durum))
+    tr, _te = maskeler(durum, df)
+    return df, pd.Series(tr, index=df.index).fillna(False).astype(bool)
+
+
+def kesif_olc(durum, hipotezler, veri=None):
+    """Her onerinin olcumu: {"iv", "kaynak_iv", "kaynak_kolon", "artis",
+    "iliski"} ya da {"hata"}. Uretimdeki ayni degerlendiriciyle
+    (ifade.degerlendir) tablonun tamaminda hesaplanir; IV ve iliski yalniz
+    Train satirlarinda, orneklemesiz. Hedef iki sinifli degilse olcum yok."""
+    from fe_agent import geleneksel as G
+    if not hipotezler:
+        return {}
+    df, tr = veri if veri is not None else _kesif_verisi(durum)
+    hedef = (durum.get("meta") or {}).get("target")
+    if not G.hedef_ikili_mi(df, hedef):
+        return {}
+    y = pd.to_numeric(df[hedef], errors="coerce")[tr]
+    kaynak_iv = {}
+    cikti = {}
+    for h in hipotezler:
+        try:
+            s = pd.to_numeric(ifade_mod.degerlendir(df, h["ifade"]), errors="coerce")
+            s = s.where(np.isfinite(s))[tr]
+            iv = G.iv_hesapla(s, y)
+            en_iyi, en_kolon = None, None
+            for c in h.get("kolonlar") or []:
+                if c not in df.columns:
+                    continue
+                if c not in kaynak_iv:
+                    kaynak_iv[c] = G.iv_hesapla(df[c][tr], y)
+                if kaynak_iv[c] is not None and (en_iyi is None or kaynak_iv[c] > en_iyi):
+                    en_iyi, en_kolon = kaynak_iv[c], c
+            iliski = None
+            if en_kolon is not None and pd.api.types.is_numeric_dtype(df[en_kolon]):
+                iliski = G._iliski(G._sira(s), G._sira(df[en_kolon][tr]))
+            cikti[h["ad"]] = {"iv": iv, "kaynak_iv": en_iyi, "kaynak_kolon": en_kolon,
+                              "artis": (iv - en_iyi) if (iv is not None and en_iyi is not None) else None,
+                              "iliski": iliski}
+        except Exception as e:           # tek oneri hatasi olcumu durdurmasin
+            cikti[h["ad"]] = {"hata": str(e)[:120]}
+    return cikti
+
+
+def kesif_onerisi(m):
+    """(uretilsin mi, neden): olcume gore varsayilan secim. Olcum yoksa
+    uretilir (hakkinda sayi yok)."""
+    from fe_agent import geleneksel as G
+    if not m or m.get("hata") or m.get("iv") is None:
+        return True, ("Ölçülemedi: %s" % m["hata"]) if (m or {}).get("hata") else "Ölçüm yok; dil modelinin önerisi geçerli."
+    if G.katki_degerli(m):
+        return True, "Ölçüm yeni bilgi gösteriyor."
+    return False, "Ölçüm yeni bilgi göstermedi; isterseniz üretebilirsiniz."
+
+
+def kesif_karti(durum, kilitli=False):
+    """02.3 karti."""
+    from fe_agent import geleneksel as G
+    from fe_agent import akis_faz02 as _f2
+    hip = list(durum.get("hipotez") or [])
+    olcum = durum.get("kesif_olcum") or {}
+    try:
+        acik = _f2._aciklamalar(durum) or {}
+    except Exception:
+        acik = {}
+    satirlar = []
+    for h in hip:
+        m = olcum.get(h["ad"])
+        uret, neden = kesif_onerisi(m)
+        satirlar.append({"ad": h["ad"], "ifade": h.get("ifade") or "", "gerekce": h.get("gerekce") or "",
+                         "kolonlar": list(h.get("kolonlar") or []), "kod": h.get("kod") or "",
+                         "onceki": bool(h.get("onceki")), "olcum": m, "oneri": uret, "oneri_neden": neden})
+    kolonlar = sorted({c for h in satirlar for c in h["kolonlar"]})
+    return {"tip": "kesif", "adim": "kesif", "kilitli": bool(kilitli),
+            "hipotezler": satirlar, "elenen": list(durum.get("kesif_elenen") or []),
+            "secim": list(durum.get("kesif_secim") or []) or None,
+            "kolon_aciklama": {c: str(acik[c]) for c in kolonlar if acik.get(c)},
+            "esik": {"artis": G.KATKI_ARTIS, "iliski": G.KATKI_ILISKI},
+            "olcum_var": bool(olcum)}
+
+
+def kesif_ornek(durum, ad, adet=8):
+    """02.3 «Örnek Satırlar»: onerinin kaynak kolonlarinin degerleri ve
+    kodun urettigi deger, Train'den birkac satirda (uretimdeki ayni
+    degerlendiriciyle). Hicbir sey kaydedilmez."""
+    h = next((x for x in durum.get("hipotez") or [] if x.get("ad") == ad), None)
+    if h is None:
+        return {"hata": "Bu öneri listede yok."}
+    df, tr = _kesif_verisi(durum)
+    try:
+        s = pd.to_numeric(ifade_mod.degerlendir(df, h["ifade"]), errors="coerce")
+    except Exception as e:
+        return {"hata": "Hesaplanamadı: %s" % str(e)[:120]}
+    s = s.where(np.isfinite(s))
+    kaynak = [c for c in (h.get("kolonlar") or []) if c in df.columns][:6]
+    st = s[tr]
+    dolu = st.dropna().sort_values(kind="mergesort")
+    sira = []
+    if len(dolu):
+        for q in (0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0):
+            i = dolu.index[int(round(q * (len(dolu) - 1)))]
+            if i not in sira:
+                sira.append(i)
+    for i in st[st.isna()].index[:1]:
+        sira.append(i)
+    sira = sira[:max(1, int(adet))]
+
+    def yaz(v):
+        try:
+            if v is None or pd.isna(v):
+                return None
+        except (TypeError, ValueError):
+            pass
+        if isinstance(v, (int, np.integer)) and not isinstance(v, bool):
+            return int(v)
+        if isinstance(v, (float, np.floating)):
+            return float("%.6g" % float(v))
+        return str(v)
+    m = durum.get("meta") or {}
+    kimlik = m.get("id") if m.get("id") in df.columns else None
+    return {"kimlik": kimlik, "kaynak": kaynak, "uretilen": [h["ad"]],
+            "satirlar": [([yaz(df.at[i, kimlik])] if kimlik else []) + [yaz(df.at[i, c]) for c in kaynak] + [yaz(s.at[i])]
+                         for i in sira],
+            "aciklama": {h["ad"]: h.get("ifade") or ""}, "kod_satiri": {h["ad"]: h.get("kod") or ""},
+            "toplam_uretilen": 1, "train_satir": int(tr.sum())}
+
+
 def kesif_plan(durum):
     # Kusurlu ham kolonlar (Veri Profili) dil modeline gitmez; ifadede
     # gecerse dogrulamada reddedilir. SFA henuz yok (uretimden sonra).
@@ -1191,6 +1332,15 @@ def kesif_plan(durum):
     durum["hipotez"] = gecerli
     durum["_kesif_ad_elenen"] = ad_elenen
     durum["_kesif_tekrar"] = len(tekrar)
+    # KART: listeye alinmayanlar nedenleriyle; her onerinin olcumu.
+    durum["kesif_elenen"] = ([{"ad": a, "neden": n, "tur": "denetim"} for a, n in reddedilen]
+                             + [{"ad": a, "neden": n, "tur": "tekrar"} for a, n in tekrar])
+    durum.pop("kesif_secim", None)
+    try:
+        durum["kesif_olcum"] = kesif_olc(durum, gecerli)
+    except Exception:
+        durum["kesif_olcum"] = {}
+    durum["_secim_alani"] = kesif_karti(durum) if gecerli else None
     tekrar_not = ("\n\nDeğişken defterine göre %s öneri daha önce üretilmiş ya da reddedilmiş "
                   "değişkenin aynısıydı; listeye alınmadı (%s)."
                   % (_sayi(len(tekrar)), ", ".join(a for a, _n in tekrar[:5]))) if tekrar else ""
@@ -1217,14 +1367,28 @@ def kesif_plan(durum):
         bilinen_not = ("\n\nDaha önce üretilen %s ve reddedilen %s değişken dil modeline "
                        "«bunları yeniden önerme» diye verildi (değişken defteri)."
                        % (_sayi(len(bilinen["uretilen"])), _sayi(len(bilinen["reddedilen"]))))
-    return ("Klasik kalıpların dışına çıkarak %s yeni değişken hipotezi "
-            "üretildi. Her ifade denetimden geçti.\n\n%s%s%s%s%s\n\n"
-            "Tümünü uygulamak için onaylayın; seçmek için numaralarını belirtin."
-            % (_sayi(len(gecerli)), "\n".join(satirlar), red_not, ad_not, tekrar_not, bilinen_not))
+    _olc = durum.get("kesif_olcum") or {}
+    _yeni = sum(1 for o in gecerli if kesif_onerisi(_olc.get(o["ad"]))[0])
+    return ("Dil modeli %s yeni değişken önerdi; her formül denetimden geçti%s. Öneriler, formülleri, "
+            "gerekçeleri ve kodun ölçümü aşağıdaki karttadır; üretilecekleri seçip onaylayın.%s%s%s%s"
+            % (_sayi(len(gecerli)),
+               (" ve kod %s tanesinde yeni bilgi ölçtü (bunlar seçili gelir)" % _sayi(_yeni)) if _olc else "",
+               red_not, ad_not, tekrar_not, bilinen_not))
 
 def kesif_uygula(durum, secim=None):
     tum_hipotez = list(durum.get("hipotez") or [])
-    hipotez = _secimi_uygula(durum.get("hipotez") or [], secim)
+    # Karttan gelen secim ({"dogrulama": {"adim": "kesif", "sec": [ad]}});
+    # yoksa numarali secim; o da yoksa olcume gore onerilenler.
+    govde = durum.pop("_dogrulama_karari", None)
+    if isinstance(govde, dict) and govde.get("adim") == "kesif" and isinstance(govde.get("sec"), list):
+        _sec = {str(a) for a in govde["sec"]}
+        hipotez = [h for h in tum_hipotez if h.get("ad") in _sec]
+    elif secim:
+        hipotez = _secimi_uygula(tum_hipotez, secim)
+    else:
+        _olc = durum.get("kesif_olcum") or {}
+        hipotez = [h for h in tum_hipotez if kesif_onerisi(_olc.get(h.get("ad")))[0]]
+    durum["kesif_secim"] = [h.get("ad") for h in hipotez]
     from fe_agent import degisken_defteri as _defter
     from fe_agent import akis_faz02 as _f2
     yeni_duzen = _f2.updt_modu(durum)

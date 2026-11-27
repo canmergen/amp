@@ -2905,6 +2905,25 @@ def geleneksel_ornek_endpoint():
         return jsonify(_hata_govdesi("geleneksel_ornek", e, "Örnek satırlar hesaplanamadı."))
 
 
+@app.route("/kesif_ornek", methods=["POST"])
+def kesif_ornek_endpoint():
+    """02.3 «Örnek Satırlar»: onerilen degiskenin kaynak kolonlari ve kodun
+    urettigi deger, Train'den birkac satirda. Govde: {oturum_id, ad}."""
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_temiz(istek.get("oturum_id")))
+        durum = _durum_al(anahtar)
+        from fe_agent import akis_faz03
+        ornek = akis_faz03.kesif_ornek(durum, str(istek.get("ad") or ""))
+        if ornek.get("hata"):
+            return jsonify({"tamam": False, "hata": ornek["hata"]})
+        return jsonify({"tamam": True, "ornek": ornek})
+    except CalismaErisimYok as e:
+        return jsonify({"tamam": False, "hata": str(e)})
+    except Exception as e:
+        return jsonify(_hata_govdesi("kesif_ornek", e, "Örnek satırlar hesaplanamadı."))
+
+
 @app.route("/geleneksel_sohbet_temizle", methods=["POST"])
 def geleneksel_sohbet_temizle_endpoint():
     """02.2 sohbetini temizler (gecmis mesajlar silinir; plan ve kararlar

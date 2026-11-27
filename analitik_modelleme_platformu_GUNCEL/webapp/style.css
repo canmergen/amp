@@ -6515,3 +6515,10 @@ col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-ko
 .dg-tablo.gl-ozet-liste-tablo { width: 100%; }
 .gl-ozet-liste-tablo thead th { position: sticky; top: 0; z-index: 1; background: var(--yuzey-alt); }
 .gl-ozet-liste .gl-ad-devam[hidden] { display: none; }
+/* ==================== 02.3 AI DEĞİŞKEN KEŞFİ (kart) ==================== */
+.ks-toplu { margin: 0; justify-content: center; }
+.ks-tablo td.ks-formul { max-width: 0; }
+.ks-ifade { display: block; padding: 3px 6px; border-radius: var(--r-kucuk); background: var(--yuzey); border: 1px solid var(--kenar);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--fs-ustbar); text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dg-tablo.ks-kaynak { width: 100%; }
+.ks-ornek-btn { align-self: center; }

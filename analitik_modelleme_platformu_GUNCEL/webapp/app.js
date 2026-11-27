@@ -19318,6 +19318,237 @@ function profilKartiEkle(alan, blok, devamdan) {
     return kart;
 }
 
+/* ==================== 02.3 AI DEĞİŞKEN KEŞFİ (kart) ====================
+   02.1.2 ve 02.2 ile aynı mantık: tek tablo, kesimlere ayrılmış. Satır dil
+   modelinin önerdiği bir değişkendir: adı, formülü, kodun ölçümü ve Üret /
+   Üretme seçimi; açılınca gerekçe, kaynak kolonlar (sözlük açıklamasıyla),
+   üretim kodu ve «Örnek Satırlar». Kesimler: üretilecekler, üretilmeyecekler
+   (ölçüm yeni bilgi göstermedi ya da siz çıkardınız) ve listeye alınmayan
+   öneriler (denetimden geçemeyen, daha önce üretilmiş ya da reddedilmiş;
+   nedenleriyle). Onay: {"dogrulama": {"adim": "kesif", "sec": [ad, …]}}. */
+const KS_ACIK = new Set();
+function kesifKartiEkle(alan, blok) {
+    const kart = elYap("div", "secim-kart pf-kart gl-kart ks-kart");
+    const kilitli = !!alan.kilitli || !!(blok && blok.kilit);
+    if (kilitli) kart.classList.add("kilitli");
+    const hip = alan.hipotezler || [];
+    const elenen = alan.elenen || [];
+    const acikla = alan.kolon_aciklama || {};
+    const ES = alan.esik || { artis: 0.02, iliski: 0.95 };
+    const secim = {};
+    const onceki = Array.isArray(alan.secim) ? new Set(alan.secim) : null;
+    hip.forEach(h => { secim[h.ad] = onceki ? onceki.has(h.ad) : !!h.oneri; });
+    const sayiYaz = (v, n) => v === null || v === undefined ? "-" : Number(v).toFixed(n).replace(".", ",");
+    const artisYaz = v => v === null || v === undefined ? "-" : (v >= 0 ? "+" : "eksi ") + sayiYaz(Math.abs(v), 3);
+    const degerlendir = m => {
+        if (!m || m.hata) return ["", "Ölçülemedi"];
+        if (m.iv === null || m.iv === undefined) return ["", "Ölçülmedi"];
+        if (m.iliski !== null && m.iliski !== undefined && m.iliski >= ES.iliski) return ["gl-k-ayni", "Kaynakla aynı bilgi"];
+        if (m.artis === null || m.artis === undefined) return m.iv >= ES.artis ? ["gl-k-yeni", "Hedefle ilişkili"] : ["gl-k-zayif", "Hedefle ilişkisi zayıf"];
+        return m.artis >= ES.artis ? ["gl-k-yeni", "Yeni bilgi"] : ["gl-k-zayif", "Belirgin artış yok"];
+    };
+    const bas = elYap("div", "pf-bas");
+    bas.appendChild(elYap("b", "pf-baslik", "AI Değişken Keşfi"));
+    kart.appendChild(bas);
+    kart.appendChild(elYap("div", "gl-amac", "Dil modeli, kural tabanlı üretimin kalıplarına girmeyen yeni değişkenler önerir. Her formül önce denetimden geçer, "
+        + "sonra kod üretilecek kolonu Train satırlarında ölçer" + (alan.olcum_var ? "" : " (bu çalışmada hedef iki sınıflı olmadığı için ölçüm yok)")
+        + ". Ölçümü yeni bilgi gösterenler «Üret» ile gelir; değiştirir ve onaylarsınız."));
+    /* Sayılar */
+    const karolar = elYap("div", "pf-karolar");
+    const karoEl = {};
+    [["one", "Önerilen Değişken", ""], ["uret", "Üretilecek", "tamam"], ["yeni", "Ölçümü Yeni Bilgi Gösteren", "bilgi"], ["dis", "Listeye Alınmayan Öneri", "karar"]].forEach(([a, et, sn]) => {
+        const k = elYap("div", "pf-karo" + (sn ? " " + sn : ""));
+        const d = elYap("div", "pf-karo-deger", "");
+        k.append(d, elYap("div", "pf-karo-etiket", et));
+        karolar.appendChild(k);
+        karoEl[a] = d;
+    });
+    karolar.style.setProperty("--pf-karo-sayi", "4");
+    kart.appendChild(karolar);
+    const toplu = elYap("div", "pf-toplu ks-toplu");
+    const govde = elYap("div", "ks-govde");
+    kart.append(toplu, govde);
+    const ORNEK = {};
+    const ornekIste = ad => {
+        if (ORNEK[ad]) return;
+        ORNEK[ad] = { bekliyor: true };
+        fetch(getWebAppBackendUrl("kesif_ornek"), { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oturum_id: OTURUM_ID, ad: ad }) })
+            .then(r => r.json()).then(j => { ORNEK[ad] = (j && j.tamam === true && j.ornek) ? j.ornek : { hata: (j && j.hata) || "Örnek satırlar alınamadı." }; ciz(); })
+            .catch(() => { ORNEK[ad] = { hata: "Sunucuya ulaşılamadı; örnek satırlar alınamadı." }; ciz(); });
+    };
+    const ornekGoster = new Set();
+    const alt = elYap("div", "pf-karar-alt");
+    const ozetEl = elYap("div", "pf-karar-ozet");
+    alt.appendChild(ozetEl);
+    let btn = null;
+    function ciz() {
+        const kilit = kart.classList.contains("kilitli");
+        const uret = hip.filter(h => secim[h.ad]), yok = hip.filter(h => !secim[h.ad]);
+        karoEl.one.textContent = ftBinlik(hip.length);
+        karoEl.uret.textContent = ftBinlik(uret.length);
+        karoEl.yeni.textContent = alan.olcum_var ? ftBinlik(hip.filter(h => degerlendir(h.olcum)[0] === "gl-k-yeni").length) : "-";
+        karoEl.dis.textContent = ftBinlik(elenen.length);
+        toplu.textContent = "";
+        if (!kilit && hip.length) {
+            toplu.appendChild(elYap("span", "pf-toplu-not", "Tek tıkla:"));
+            [["Ölçüme Göre Önerilenleri Seç", h => !!h.oneri], ["Hepsini Üret", () => true], ["Hiçbirini Üretme", () => false]].forEach(([yazi, f]) => {
+                const b = elYap("button", "dg-toplu-btn", yazi);
+                b.type = "button";
+                b.onclick = () => { if (kart.classList.contains("kilitli")) return; hip.forEach(h => { secim[h.ad] = !!f(h); }); ciz(); };
+                toplu.appendChild(b);
+            });
+        }
+        govde.textContent = "";
+        const tablo = elYap("table", "dg-tablo pf-tablo pf-tablo-yeni gl-ad-tablo ks-tablo");
+        const thead = elYap("thead"), htr = elYap("tr");
+        ["Değişken", "Formül", "Kodun Ölçümü", "Seçiminiz", ""].forEach(b_ => htr.appendChild(elYap("th", "", b_)));
+        thead.appendChild(htr); tablo.appendChild(thead);
+        const tbody = elYap("tbody");
+        const kesim = (ad, n, not, sinif) => {
+            const ks = elYap("tr", "pf-kesim " + sinif);
+            const td = elYap("td"); td.colSpan = 5;
+            td.append(elYap("b", "pf-kesim-ad", ad), elYap("span", "pf-kesim-sayi", ftBinlik(n) + " değişken"), elYap("span", "pf-kesim-not", not));
+            ks.appendChild(td); tbody.appendChild(ks);
+        };
+        const satir = (h, uretilecek) => {
+            const acik = KS_ACIK.has(h.ad);
+            const farkli = secim[h.ad] !== !!h.oneri;
+            const tr = elYap("tr", "pf-kontrol ks-satir " + (uretilecek ? "pf-r-tamam" : "pf-r-bilgi") + (acik ? " acik" : ""));
+            tr.dataset.ad = h.ad;
+            const adTd = pfKontrolHucresi(h.ad, h.gerekce || "", h.onceki ? "Önceki turda üretildi" : "");
+            const fTd = elYap("td", "ks-formul");
+            const kd = document.createElement("code"); kd.className = "ks-ifade"; kd.textContent = h.ifade; fTd.appendChild(kd);
+            const oTd = elYap("td", "gl-ad-olcum");
+            const dgr = degerlendir(h.olcum), m = h.olcum || {};
+            oTd.appendChild(elYap("div", "gl-ad-deger " + dgr[0], dgr[1]));
+            if (m.hata) oTd.appendChild(elYap("div", "gl-ad-olcum-alt", m.hata));
+            else if (m.iv !== null && m.iv !== undefined) oTd.appendChild(elYap("div", "gl-ad-olcum-alt", "IV " + sayiYaz(m.iv, 3)
+                + (m.kaynak_iv !== null && m.kaynak_iv !== undefined ? " · en iyi kaynak " + (m.kaynak_kolon || "") + " IV " + sayiYaz(m.kaynak_iv, 3) + " (" + artisYaz(m.artis) + ")" : "")
+                + (m.iliski !== null && m.iliski !== undefined ? " · kaynakla ilişki " + sayiYaz(m.iliski, 2) : "")));
+            const sTd = elYap("td", "pf-secim-hucre");
+            const grup = elYap("div", "pf-karar");
+            grup.setAttribute("role", "group");
+            grup.setAttribute("aria-label", h.ad + " seçimi");
+            const dU = elYap("button", "pf-karar-btn pf-karar-tut" + (secim[h.ad] ? " secili" : ""), "Üret");
+            const dY = elYap("button", "pf-karar-btn pf-karar-cikar" + (secim[h.ad] ? "" : " secili"), "Üretme");
+            dU.type = dY.type = "button";
+            dU.disabled = dY.disabled = kilit;
+            dU.onclick = e => { e.stopPropagation(); if (!kart.classList.contains("kilitli")) { secim[h.ad] = true; ciz(); } };
+            dY.onclick = e => { e.stopPropagation(); if (!kart.classList.contains("kilitli")) { secim[h.ad] = false; ciz(); } };
+            grup.append(dU, dY);
+            sTd.appendChild(grup);
+            sTd.appendChild(elYap("div", "pf-secim-kaynak" + (farkli ? " farkli" : ""), farkli ? "Öneriden farklı" : (h.oneri_neden || "")));
+            const acTd = elYap("td", "pf-ac-hucre");
+            const ac = elYap("button", "dg-toplu-btn pf-ac" + (acik ? " acik" : ""), acik ? "Kapat" : "Aç");
+            ac.type = "button";
+            const degis = () => { if (KS_ACIK.has(h.ad)) KS_ACIK.delete(h.ad); else KS_ACIK.add(h.ad); ciz(); };
+            ac.onclick = e => { e.stopPropagation(); degis(); };
+            tr.onclick = e => { if (e.target.closest("button, a, input, select")) return; degis(); };
+            acTd.appendChild(ac);
+            tr.append(adTd, fTd, oTd, sTd, acTd);
+            tbody.appendChild(tr);
+            if (!acik) return;
+            const dr = elYap("tr", "pf-detay gl-ad-detay");
+            const td = elYap("td"); td.colSpan = 5;
+            const kutu = elYap("div", "pf-kural-kutu gl-ad-kutu");
+            const acikEl = elYap("div", "gl-ad-acikla");
+            const sat = (et, deger) => { if (!deger) return; const d = elYap("div", "gl-kat-sat"); d.append(elYap("b", "", et), elYap("span", "", deger)); acikEl.appendChild(d); };
+            sat("Dil modelinin gerekçesi", h.gerekce);
+            sat("Formül", h.ifade);
+            sat("Kodun önerisi", h.oneri_neden);
+            kutu.appendChild(acikEl);
+            if ((h.kolonlar || []).length) {
+                const kt = elYap("table", "dg-tablo gl-dg-tablo ks-kaynak");
+                const kh = elYap("thead"), khr = elYap("tr");
+                ["Kaynak Kolon", "Sözlük Açıklaması"].forEach(b_ => khr.appendChild(elYap("th", "", b_)));
+                kh.appendChild(khr); kt.appendChild(kh);
+                const kb = elYap("tbody");
+                h.kolonlar.forEach(c => { const r = elYap("tr"); r.append(elYap("td", "gl-dg-kolon", c), elYap("td", acikla[c] ? "" : "gl-dg-yok", acikla[c] || "Açıklama yok")); kb.appendChild(r); });
+                kt.appendChild(kb);
+                kutu.appendChild(kt);
+            }
+            if (h.kod) { const kd2 = document.createElement("code"); kd2.className = "gl-ornek-kod"; kd2.textContent = h.kod; kutu.appendChild(kd2); }
+            const ob = elYap("button", "dg-toplu-btn ks-ornek-btn", ornekGoster.has(h.ad) ? "Örnekleri Kapat" : "Örnek Satırlar");
+            ob.type = "button";
+            ob.title = "Train'den birkaç satırda kaynak değerleri ve kodun ürettiği değeri yan yana gösterir.";
+            ob.onclick = () => { if (ornekGoster.has(h.ad)) ornekGoster.delete(h.ad); else { ornekGoster.add(h.ad); ornekIste(h.ad); } ciz(); };
+            kutu.appendChild(ob);
+            if (ornekGoster.has(h.ad)) kutu.appendChild(ornekTablosu(ORNEK[h.ad] || { bekliyor: true }));
+            td.appendChild(kutu); dr.appendChild(td); tbody.appendChild(dr);
+        };
+        if (uret.length) { kesim("Üretilecek Değişkenler", uret.length, "Onaylayınca veri setine eklenir.", "ks-kesim-uret"); uret.forEach(h => satir(h, true)); }
+        if (yok.length) { kesim("Üretilmeyecek Değişkenler", yok.length, "Ölçüm yeni bilgi göstermedi ya da siz çıkardınız; «Üret» ile ekleyebilirsiniz.", "ks-kesim-yok"); yok.forEach(h => satir(h, false)); }
+        if (elenen.length) {
+            const ks = elYap("tr", "pf-kesim ks-kesim-dis");
+            const td = elYap("td"); td.colSpan = 5;
+            td.append(elYap("b", "pf-kesim-ad", "Listeye Alınmayan Öneriler"), elYap("span", "pf-kesim-sayi", ftBinlik(elenen.length) + " öneri"), elYap("span", "pf-kesim-not", "Dil modeli önerdi ama kod listeye almadı; nedeni yanında."));
+            ks.appendChild(td); tbody.appendChild(ks);
+            elenen.forEach(x => {
+                const tr = elYap("tr", "pf-kontrol ks-dis-satir pf-r-pasif");
+                const ad = pfKontrolHucresi(x.ad, "", "");
+                const nd = elYap("td", "pf-sebep", (x.tur === "tekrar" ? "Daha önce üretilmiş ya da reddedilmiş: " : "Denetimden geçemedi: ") + (x.neden || ""));
+                nd.colSpan = 3;
+                tr.append(ad, nd, elYap("td", "", ""));
+                tbody.appendChild(tr);
+            });
+        }
+        if (!hip.length && !elenen.length) { const r = elYap("tr"), t0 = elYap("td", "gl-not", "Öneri yok."); t0.colSpan = 5; r.appendChild(t0); tbody.appendChild(r); }
+        tablo.appendChild(tbody);
+        const sar = elYap("div", "pf-tablo-sar");
+        sar.appendChild(tablo);
+        govde.appendChild(sar);
+        const fark = hip.filter(h => secim[h.ad] !== !!h.oneri).length;
+        ozetEl.textContent = (kilitli ? "Onaylanan: " : "") + ftBinlik(hip.length) + " öneriden " + ftBinlik(uret.length) + " değişken üretilecek"
+            + (fark ? "; " + ftBinlik(fark) + " seçim ölçüme göre öneriden farklı." : ".");
+        if (btn) btn.hidden = kilit;
+    }
+    if (!kilitli) {
+        btn = elYap("button", "secim-onay", "Kararları Onayla ve Üret");
+        btn.type = "button";
+        btn.onclick = () => {
+            if (mesgul || btn.disabled) return;
+            kart.classList.add("kilitli");
+            btn.disabled = true;
+            ciz();
+            geriAlKilit = () => { kart.classList.remove("kilitli"); btn.disabled = false; ciz(); };
+            const sec = hip.filter(h => secim[h.ad]).map(h => h.ad);
+            gonder(ftBinlik(sec.length) + " değişken üretilsin", false, { dogrulama: { adim: "kesif", sec: sec } });
+        };
+        alt.appendChild(btn);
+    }
+    kart.appendChild(alt);
+    ciz();
+    (adimKabiAl(blok) || sohbetEl).appendChild(kart);
+    return kart;
+}
+
+/* «Örnek Satırlar» tablosu (02.3): kaynak ve üretilen değerler yan yana. */
+function ornekTablosu(v) {
+    const kutu = elYap("div", "gl-ornek");
+    if (v.bekliyor) { kutu.appendChild(elYap("div", "gl-not", "Örnek satırlar hesaplanıyor…")); return kutu; }
+    if (v.hata) { kutu.appendChild(elYap("div", "gl-uyari", v.hata)); return kutu; }
+    const ur = v.uretilen || [], ka = v.kaynak || [];
+    kutu.appendChild(elYap("div", "gl-ornek-bas", "Train'den " + ftBinlik((v.satirlar || []).length) + " satır: kaynak kolonların değeri ve kodun ürettiği değer. "
+        + "Satırlar üretilen kolonun en küçüğünden en büyüğüne seçilir; değerler veri setinizden okunur."));
+    const sar = elYap("div", "pf-ic-kap gl-ornek-sar");
+    const t = elYap("table", "dg-tablo gl-ornek-tablo");
+    const th = elYap("thead"), hr = elYap("tr");
+    if (v.kimlik) hr.appendChild(elYap("th", "", v.kimlik));
+    ka.forEach(k_ => { const h_ = elYap("th", "gl-ornek-kaynak", ""); h_.append(elYap("div", "", k_), elYap("div", "pf-th-alt", "kaynak")); hr.appendChild(h_); });
+    ur.forEach(u => { const h_ = elYap("th", "gl-ornek-uretilen", ""); h_.append(elYap("div", "", u), elYap("div", "pf-th-alt", "üretilen")); hr.appendChild(h_); });
+    th.appendChild(hr); t.appendChild(th);
+    const tb = elYap("tbody");
+    const yaz = x => x === null || x === undefined ? "boş" : typeof x === "number" ? String(x).replace(".", ",") : String(x);
+    (v.satirlar || []).forEach(r => {
+        const tr_ = elYap("tr");
+        r.forEach((x, i) => tr_.appendChild(elYap("td", (i >= r.length - ur.length ? "gl-ornek-uretilen" : "") + (x === null || x === undefined ? " gl-ornek-bos" : ""), yaz(x))));
+        tb.appendChild(tr_);
+    });
+    t.appendChild(tb); sar.appendChild(t); kutu.appendChild(sar);
+    return kutu;
+}
+
 /* ==================== 02.2 GELENEKSEL DEĞİŞKEN ÜRETİMİ ====================
    Tek sütun. ÜSTTE süzgeç çubuğu: birim tipi (tek kolon, pencere ailesi,
    kolon çifti, kolon grubu, satır düzeyi), durum (üretilecek, üretilmeyecek,
@@ -22109,6 +22340,7 @@ function secimAlaniEkle(alan, blok) {
     /* 02.1 Veri Profili: sonuç; gerekirse Tut ya da Çıkar kararı */
     if (alan.tip === "profil") { profilKartiEkle(alan, blok); return; }
     if (alan.tip === "geleneksel") { gelenekselKartiEkle(alan, blok); return; }
+    if (alan.tip === "kesif") { kesifKartiEkle(alan, blok); return; }
 
     const kart = document.createElement("div");
     kart.className = "secim-kart";
