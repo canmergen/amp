@@ -4357,30 +4357,48 @@ Türlere göre neye bakacaksın:
   aynısıysa sınama sonucu olduğundan iyi görünür: gerçek bir neden yoksa
   çıkarılır.
 
-ÇIKTI KURALI: Muhakeme yazma, açıklama yazma. Her karar için TEK SATIR yaz,
-başka hiçbir şey yazma:
-no|seçim|gerekçe
-- "no" satırın başındaki numaradır (no=...), "seçim" o satırın
-  seçeneklerinden biridir.
-- Gerekçe HER kararda ZORUNLU ve SENİN yorumundur: en çok 20 sözcükle
-  kolonun ne olduğunu (anlamı) ve bu bulguda neden bu kararı verdiğini yaz.
-- KODUN GEREKÇESİNİ TEKRARLAMA, aynen ya da başka sözcüklerle kopyalama: o
-  sayılar kullanıcıya ayrıca gösteriliyor. Sen kodun bilemediğini söyle:
-  kolonun anlamı, bu bulgunun o anlamda beklenen bir şey olup olmadığı,
-  hedef oranının gidişinin anlamca tutarlı olup olmadığı.
-- Kodla aynı karara varsan da gerekçen kendi gözünden olsun.
-- HER no için bir satır yaz. Uydurma sayı yazma; sayı yazacaksan yalnız sana
-  verilenleri kullan.
+ÇIKTI KURALI: Her karar için TEK SATIR yaz, başka hiçbir şey yazma:
+no|gerekçe|seçim
+- "no" satırın başındaki numaradır (no=...). ÖNCE gerekçeyi, EN SONA seçimi
+  yaz; "seçim" o satırın seçeneklerinden biridir (seçeneği aynen yaz).
+- GEREKÇE HER KARARDA ZORUNLUDUR. Gerekçesi olmayan karar eksik sayılır ve
+  yeniden sorulur. Kullanıcı NASIL karar verdiğini bu gerekçeden görecek.
+  Gerekçe şu üç parçadan oluşur; bu etiketlerle, bu sırayla:
+  Anlam: kolonun adından ve açıklamasından ne olduğu ("ayni" ve "celiski"
+    türünde kolonların karşılaştırması: hangisi neyi ölçüyor).
+  Veri: kararını etkileyen ölçüm. Bulgudan, kodun gerekçesinden ya da
+    "hedef oranı" alanından SANA VERİLEN sayıyı yaz: hangi değerde ya da
+    bantta hedef oranı ne, kaç satır, genel orana göre nasıl. Ölçüm
+    verilmediyse "Veri: ölçüm yok" yaz.
+  Sonuç: bu ikisinden neden bu seçim. Kodun önerisine katılıyor musun?
+    Katılmıyorsan kodun neyi göremediğini söyle.
+  Üç parça toplam en çok 45 sözcük.
+- HEDEF ORANINI ŞÖYLE OKU: tablonun genelindeki hedef oranı isteğin başında
+  yazar. Bir değerde ya da bantta oran genelden çok farklıysa (genelde %0,5
+  iken bir değerde hep 1 gibi) bunu "Veri" parçasına yaz ve tart: o değerde
+  satır çoksa kolon hedefi ayırıyor demektir. Satır azsa fark tesadüf
+  olabilir (kodun yazdığı tesadüf olasılığına ve satır sayısına bak); ama
+  kolonun anlamı bu farkı açıklıyorsa (nadir görülen, anlamlı bir olay)
+  kolon değerlidir. Bir değer hedefi neredeyse kusursuz biliyorsa kolon
+  sonuç belli olduktan sonra dolmuş olabilir: anlamına bak.
+- Kodun cümlesini aynen kopyalama. Kodun sayılarını kullan, yorumu sen yap:
+  kolonun anlamı, bulgunun o anlamda beklenen bir şey olup olmadığı, hedef
+  oranındaki farkın anlamca tutarlı olup olmadığı.
+- HER no için bir satır yaz. Uydurma sayı yazma; yalnız sana verilen
+  sayıları kullan.
 Örnek:
-1|cikar|Kapanış nedeni sonuç belli olduktan sonra doluyor; tahmin anında elde olmaz.
-2|tut|Kripto işlemi nadir ama davranışı ayırt eden bir olay; oran büyüdükçe hedef oranı da artıyor.""" + SINIRLAYICI_KURALI
-# CIKTI KISA TUTULUR: dil modelinin hizini cikti uzunlugu belirler. Uzun id
-# yerine satir numarasi ve JSON yerine "no|secim|gerekce" satiri ciktiyi
-# kisaltir. Gerekce HER kararda yazilir (dil modelinin kendi yorumu, en cok
-# 20 sozcuk); bu yuzden parca 25 bulgudur. Kararlarin hepsi tek istege
-# sigmazsa kart kalanlari kendiliginden tamamlar (profil_kararlari_tamamla).
-PROFIL_GORUS_PARCA = 25
-# DALGA DALGA SORULUR: her dalgada PROFIL_ONERI_PARALEL parca (320 bulgu)
+1|Anlam: kapanış nedeni, sonuç belli olunca dolan bilgi. Veri: tek başına hedefi %100 isabetle biliyor. Sonuç: tahmin anında elde olmaz; kodun önerisine katılıyorum.|cikar
+2|Anlam: kripto şirketine giden işlem adedi, nadir ama davranışı ayırt eden bir olay. Veri: 0 olmayan 24 satırda hedef oranı %75, genelde %50. Sonuç: satır az ama fark anlamca beklenen yönde; kod katkıyı küçük buldu, ben tutuyorum.|tut""" + SINIRLAYICI_KURALI
+# CIKTI: uzun id yerine satir numarasi ve JSON yerine "no|gerekce|secim"
+# satiri. GEREKCE ONCE, SECIM SONDA: secim basta iken dil modeli cogu satirda
+# gerekceyi yazmadan birakiyordu ("Dil modeli bu karar icin gerekce yazmadi");
+# gerekce basta olunca secime gelmeden yazilmak zorunda, karar da gerekceden
+# sonra verilir. Gerekce uc parcadir (Anlam / Veri / Sonuc, en cok 45
+# sozcuk): kullanici dil modelinin NASIL karar verdigini buradan gorur.
+# Cikti uzadigi icin parca 15 bulgudur. Kararlarin hepsi tek istege sigmazsa
+# kart kalanlari kendiliginden tamamlar (profil_kararlari_tamamla).
+PROFIL_GORUS_PARCA = 15
+# DALGA DALGA SORULUR: her dalgada PROFIL_ONERI_PARALEL parca (120 bulgu)
 # birlikte gider, bitince sonraki dalga baslar. Butce (saniye) dolunca YENI
 # DALGA BASLATILMAZ: sorulmayan bulgular kararsiz kalir ve bir sonraki
 # cagrida (akis_faz02.profil_kararlari_tamamla) kaldigi yerden sorulur.
@@ -4391,15 +4409,30 @@ PROFIL_GORUS_BUTCE = 60.0
 PROFIL_GORUS_DEVAM_BUTCE = 150.0    # yalniz kalanlar sorulurken
 PROFIL_GORUS_TURLERI = ("sizinti", "kod", "sifir", "ayni", "karar", "celiski", "duzeltme", "cozum",
                         "satir")
-_GORUS_SATIR = re.compile(r"^\s*(?:no\s*=\s*)?(\d+)\s*[|:=]\s*([^|\n]+?)\s*(?:\|\s*(.*?))?\s*$")
+_GORUS_SATIR = re.compile(r"^\s*(?:no\s*=\s*)?(\d+)\s*[|:=]\s*(.+?)\s*$")
+PROFIL_GEREKCE_EN_FAZLA = 600       # karakter
+
+
+def _gorus_satir_ayir(govde, secenekler):
+    """ "gerekce|secim" (yeni) ya da "secim|gerekce" (eski) -> (secim,
+    gerekce). Secim SECENEKLERDEN biri olan uc alandir: once SON alana,
+    sonra ILK alana bakilir; hicbiri secenek degilse (None, "")."""
+    alan = [a.strip().strip('"\'`').strip() for a in str(govde).split("|")]
+    alan = [a for a in alan] or [""]
+    kume = {str(o) for o in secenekler or []}
+    if alan[-1] in kume:
+        return alan[-1], " | ".join(a for a in alan[:-1] if a)
+    if alan[0] in kume:
+        return alan[0], " | ".join(a for a in alan[1:] if a)
+    return None, ""
 
 
 def _profil_gorus_coz(ham, parca):
-    """Dil modeli cevabi -> {id: {"secim", "gerekce"}}. Bicim "no|secim|
-    gerekce" satirlari; JSON ({"gorusler": {no ya da id: {...}}}) da okunur.
-    Secenekler disindaki secim atilir."""
+    """Dil modeli cevabi -> {id: {"secim", "gerekce"}}. Bicim "no|gerekce|
+    secim" satirlari (eski "no|secim|gerekce" de okunur); JSON ({"gorusler":
+    {no ya da id: {...}}}) da okunur. Secenekler disindaki secim atilir."""
     metin = str(ham or "")
-    aday = {}        # anahtar (no ya da id) -> (secim, gerekce)
+    aday = {}        # anahtar (no ya da id) -> satirin govdesi ya da (secim, gerekce)
     if "{" in metin and "gorusler" in metin:
         veri = _json_ayristir(metin, {}, dict)
         g = veri.get("gorusler") if isinstance(veri, dict) else None
@@ -4412,20 +4445,25 @@ def _profil_gorus_coz(ham, parca):
         for satir in metin.splitlines():
             m = _GORUS_SATIR.match(satir.strip().strip("`"))
             if m:
-                aday[m.group(1)] = (m.group(2).strip().strip('"\''), (m.group(3) or "").strip())
+                aday[m.group(1)] = m.group(2)
     sonuc = {}
     for i, x in enumerate(parca, 1):
         v = aday.get(str(i)) or aday.get(x["id"])
         if not v:
             continue
-        secim = v[0]
-        if secim not in {str(o) for o in x.get("secenekler") or []}:
-            continue
-        sonuc[x["id"]] = {"secim": secim, "gerekce": v[1].strip()[:300]}
+        if isinstance(v, tuple):
+            secim, gerekce = v
+            if secim not in {str(o) for o in x.get("secenekler") or []}:
+                continue
+        else:
+            secim, gerekce = _gorus_satir_ayir(v, x.get("secenekler"))
+            if secim is None:
+                continue
+        sonuc[x["id"]] = {"secim": secim, "gerekce": " ".join(gerekce.split())[:PROFIL_GEREKCE_EN_FAZLA]}
     return sonuc
 
 
-def _profil_gorus_parca(parca):
+def _profil_gorus_parca(parca, baglam=""):
     satirlar, sozluk = [], {}
     for i, x in enumerate(parca, 1):
         sozluk.update(x.get("secenek_ad") or {})
@@ -4444,16 +4482,21 @@ def _profil_gorus_parca(parca):
     if sozluk:
         istek = "Seçenek kodları: %s\n\n%s" % (
             "; ".join("%s = %s" % (k, v) for k, v in sorted(sozluk.items())), istek)
+    # Tablonun geneli (hedef kolonu ve genel hedef orani): dil modeli bir
+    # degerdeki hedef oranini bununla karsilastirir.
+    if baglam:
+        istek = "Tablo: %s\n\n%s" % (" ".join(str(baglam).split())[:400], istek)
     ham = _cagir(SISTEM_PROFIL_GORUS, istek, sicaklik=0.1,
                  zaman_asimi=PROFIL_ONERI_ZAMAN_ASIMI, deneme=1, havuz=_PROFIL_HAVUZ)
     return _profil_gorus_coz(ham, parca)
 
 
-def profil_gorus_al(ogeler, butce=None):
+def profil_gorus_al(ogeler, butce=None, baglam=""):
     """ogeler: [{"id", "tur" (PROFIL_GORUS_TURLERI), "kural", "kolon",
     "aciklama", "olcu", "bulgu", "secenekler": [kod], "kod_oneri",
     "kod_gerekce", "secenek_ad": {kod: ad}}]. Doner: ({id: {"secim",
-    "gerekce"}}, hata). Dalga dalga sorulur (PROFIL_ONERI_PARALEL parca
+    "gerekce"}}, hata). baglam: tablonun geneli (hedef kolonu, genel hedef
+    orani), her istegin basina yazilir. Dalga dalga sorulur (PROFIL_ONERI_PARALEL parca
     birlikte); butce (saniye) dolunca yeni dalga baslatilmaz, sorulmayan
     ogeler sonucta yoktur (hata sayilmaz: sonraki cagrida sorulur)."""
     isler = [ogeler[i:i + PROFIL_GORUS_PARCA] for i in range(0, len(ogeler), PROFIL_GORUS_PARCA)]
@@ -4472,7 +4515,7 @@ def profil_gorus_al(ogeler, butce=None):
         dalga = isler[d:d + PROFIL_ONERI_PARALEL]
         t0 = time.time()
         ex = futures.ThreadPoolExecutor(max_workers=len(dalga))
-        fs = [ex.submit(_profil_gorus_parca, p) for p in dalga]
+        fs = [ex.submit(_profil_gorus_parca, p, baglam) for p in dalga]
         bitti, kalan = futures.wait(fs, timeout=max(15.0, min(PROFIL_ONERI_ZAMAN_ASIMI + 10.0,
                                                                butce - gecen + 30.0)))
         for f in fs:

@@ -1018,6 +1018,70 @@ def _kodun_onerisi(o):
     return o.get("oneri"), o.get("gerekce") or ""
 
 
+# GEREKCESIZ KARAR EKSIKTIR: dil modeli secimi yazip gerekceyi yazmadiysa
+# karar gecerli kalir ama gerekcesi icin yeniden sorulur (en cok bu kadar
+# kez; hala yazmazsa kartta "gerekçe yazmadı" diye gorunur).
+GEREKCE_TEKRAR = 2
+
+
+def _gerekce_var(g):
+    """Dil modelinin gerekcesi yazilmis mi (en az uc sozcuk)."""
+    m = str((g or {}).get("gerekce") or "").strip()
+    return len(m.split()) >= 3 and m != DM_GEREKCE_YOK
+
+
+def _tablo_baglami(durum, ek):
+    """Dil modeline her istekte verilen tablo bilgisi: hedef kolonu ve
+    tablonun genelindeki hedef orani (bir degerdeki hedef oranini bununla
+    karsilastirir). Hedef iki sinifli degilse yalniz hedefin adi."""
+    m = durum.get("meta") or {}
+    h = ek.get("hedef") if isinstance(ek.get("hedef"), dict) else {}
+    if not m.get("target"):
+        return ""
+    metin = "hedef kolonu %s" % m["target"]
+    try:
+        bir = [c for c in h.get("siniflar") or [] if str(c.get("deger")) in ("1", "1.0")]
+        if h.get("ikili") and bir:
+            metin += "; tablonun genelinde hedefi 1 olanların oranı %s (%s satır)" % (
+                _yuzde_metni(float(bir[0]["pay"])), _sayi(bir[0]["satir"]))
+    except Exception:
+        pass
+    return metin + "."
+
+
+def _grup_elenen_guncelle(p, ek):
+    """Ayni kolon gruplarinda "baska kontrolde cikariliyor" bilgisini
+    (elenen) GUNCEL kararlardan yeniden kurar. Gruplar profil cikarilirken
+    KODUN onerileriyle kurulur; dil modeli sonradan o kontrolde baska karar
+    verirse (kod Çıkar, dil modeli Tut ya da tersi) grubun adaylari degisir.
+    Adayi iki ve uzeri olan grup dil modeline sorulur; biri kalan grupta
+    secim gerekmez. Bir sey degistiyse True."""
+    gruplar = ek.get("ayni_gruplar") or []
+    if not gruplar:
+        return False
+    durum_ = _uye_durumlari(ek, p)
+    degisti = False
+    for g in gruplar:
+        yeni = {u: (durum_.get(u) or {}).get("cikar") for u in g["uyeler"]
+                if (durum_.get(u) or {}).get("cikar")}
+        if yeni == (g.get("elenen") or {}):
+            continue
+        degisti = True
+        g["elenen"] = yeni
+        sira = [u for u in (g.get("sira") or g["uyeler"]) if u in g["uyeler"]]
+        g["sira"] = [u for u in sira if u not in yeni] + [u for u in sira if u in yeni]
+        if g.get("kaynak") == "dil modeli" and g.get("oneri") not in yeni:
+            continue                    # dil modelinin sectigi hala aday
+        if g.get("kaynak") == "dil modeli":
+            # Dil modelinin sectigi kolon artik baska kontrolde cikiyor:
+            # karari gecersiz, kodun siralamasina donulur (grup yeniden sorulur).
+            g["kaynak"] = "kod"
+            g["gerekce"] = g.pop("kod_gerekce", "") or AYNI_KURAL_GEREKCESI
+            g.pop("kod_oneri", None)
+        g["oneri"] = g["sira"][0]
+    return degisti
+
+
 def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     onceki = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
     aciklama = _aciklamalar(durum)
@@ -1128,25 +1192,37 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     for a, anahtar, oge in ogeler:
         imza = json.dumps([oge["tur"], oge["kolon"], oge["aciklama"], oge["bulgu"], oge["secenekler"],
                            oge["kod_oneri"], oge["kod_gerekce"], oge["hedef_profil"],
-                           "karar4" if oge["tur"] in ("ayni", "celiski") else "karar2"],
+                           "karar5"],
                           ensure_ascii=False)
         o = (onceki.get(a) or {}).get(anahtar) or {}
         if o.get("imza") == imza and o.get("secim") in oge["secenekler"]:
             cikti.setdefault(a, {})[anahtar] = o
+            # Karar var ama gerekcesi yok: karar gecerli, gerekce icin yeniden sorulur.
+            if not _gerekce_var(o) and int(o.get("gerekce_deneme") or 0) < GEREKCE_TEKRAR:
+                sorulacak.append((a, anahtar, imza, oge))
         else:
             sorulacak.append((a, anahtar, imza, oge))
     gorus, hata = {}, None
     if sorulacak and not sorma:     # sorma: yalniz kayitli kararlar yazilir
         try:
             from fe_agent import llm as llm_mod
-            gorus, hata = llm_mod.profil_gorus_al([q[3] for q in sorulacak], butce=butce)
+            gorus, hata = llm_mod.profil_gorus_al([q[3] for q in sorulacak], butce=butce,
+                                                  baglam=_tablo_baglami(durum, ek))
         except Exception as e:       # dil modeli yoksa gorus de yok; kod onerisi gecerli
             gorus, hata = {}, str(e)[:160]
     for a, anahtar, imza, oge in sorulacak:
         g = gorus.get(oge["id"])
-        if g:
-            cikti.setdefault(a, {})[anahtar] = {"secim": g["secim"], "gerekce": g.get("gerekce", ""),
-                                                "kod_oneri": oge["kod_oneri"], "imza": imza}
+        if not g:
+            continue
+        eski = (cikti.get(a) or {}).get(anahtar)
+        if eski is not None and not _gerekce_var(g):
+            # Yeniden soruldu, yine gerekce yazmadi: eski karar kalir, deneme sayilir.
+            eski["gerekce_deneme"] = int(eski.get("gerekce_deneme") or 0) + 1
+            continue
+        cikti.setdefault(a, {})[anahtar] = {
+            "secim": g["secim"], "gerekce": g.get("gerekce", ""),
+            "kod_oneri": oge["kod_oneri"], "imza": imza,
+            "gerekce_deneme": (int(eski.get("gerekce_deneme") or 0) + 1) if eski is not None else 0}
     for a, anahtar, _imza, oge in [(q[0], q[1], None, q[2]) for q in ogeler]:
         g = (cikti.get(a) or {}).get(anahtar)
         if g is not None:
@@ -1154,8 +1230,12 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
             g["kod_gerekce"] = oge["kod_gerekce"]
     alinan = sum(len(x) for x in cikti.values())
     farkli = sum(1 for x in cikti.values() for g in x.values() if g.get("secim") != g.get("kod_oneri"))
+    # gerekcesiz: karari var, gerekcesi yok. tekrar: bunlardan yeniden sorulacak olan.
+    gerekcesiz = [g for x in cikti.values() for g in x.values() if not _gerekce_var(g)]
+    tekrar = sum(1 for g in gerekcesiz if int(g.get("gerekce_deneme") or 0) < GEREKCE_TEKRAR)
     p["llm_gorus_sayim"] = {"oge": len(ogeler), "sorulan": len(sorulacak), "alinan": alinan,
                             "gorussuz": max(0, len(ogeler) - alinan),
+                            "gerekcesiz": len(gerekcesiz), "tekrar": tekrar,
                             "farkli": farkli, "hata": hata or "",
                             "sifir_aday": len(ek.get("sifir_aday") or [])}
     return cikti
@@ -1206,7 +1286,11 @@ def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False):
     (_gorusu_karara_yaz). YENIDEN CALISTIRILABILIR: profil cikarilirken bir
     kez, karar alinamayan bulgular kaldiysa profil_kararlari_tamamla ile
     yeniden (profil yeniden hesaplanmaz)."""
+    import time as _time
+    basla = _time.time()
     ek["sifir_bos"] = list(ek.get("sifir_bos") or [])
+    # Ayni kolon gruplarinin adaylari onceki turda alinan kararlara gore.
+    _grup_elenen_guncelle(p, ek)
     p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=butce, sorma=sorma)
     ek["sifir_bos"] = [x for x in ek.get("sifir_aday") or []
                        if ((p["llm_gorus"].get("sifir_bos") or {}).get(x["kolon"]) or {}).get("secim") == "sifir_bos"]
@@ -1226,6 +1310,13 @@ def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False):
     # KARARI DIL MODELI VERIR: secili gelen oneri onun karari olur; kodun
     # onerisi ve gerekcesi yaninda kalir.
     _gorusu_karara_yaz(p, ek)
+    # Bu turda alinan Tut / Çıkar kararlari bir grubun adaylarini degistirdiyse
+    # (kodun Çıkar dedigi kolona dil modeli Tut dedi: kolon artik aday) o
+    # gruplar ayni istekte, kalan sureyle sorulur; sayim da guncellenir.
+    if _grup_elenen_guncelle(p, ek):
+        kalan = None if butce is None else max(5.0, float(butce) - (_time.time() - basla))
+        p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=kalan, sorma=sorma)
+        _gorusu_karara_yaz(p, ek)
 
 
 def _celiski_cift_denetimi(p, ek, aciklama):
@@ -1266,20 +1357,24 @@ def profil_kararlari_tamamla(durum, butce=None):
     yeniden hesaplanmaz (bulgular ve kodun onerileri kayitli profilden).
     Cok bulgulu tabloda kararlar tek istege sigmaz: on yuz karar bekleyen
     bulgu kaldikca bu fonksiyonu yeniden cagirir (webapp /profil_karar_devam).
-    Onceden alinmis kararlar yeniden sorulmaz (imza). Doner: llm_gorus_sayim
-    + {"yeni": bu cagrida alinan karar sayisi} ya da {} (profil yok / eski)."""
+    Onceden alinmis kararlar yeniden sorulmaz (imza); gerekcesi yazilmamis
+    karar gerekcesi icin yeniden sorulur (en cok GEREKCE_TEKRAR kez). Doner:
+    llm_gorus_sayim + {"yeni": bu cagridaki ilerleme (yeni karar ve
+    tamamlanan gerekce)} ya da {} (profil yok / eski)."""
     p = durum.get("profil") or {}
     ek, teshis = p.get("profil_ek"), p.get("profil_teshis")
     if not isinstance(ek, dict) or not isinstance(teshis, dict) or profil_eski_mi(durum):
         return {}
-    once = int((p.get("llm_gorus_sayim") or {}).get("alinan") or 0)
+    ilerleme = lambda x: 2 * int((x or {}).get("alinan") or 0) - int((x or {}).get("gerekcesiz") or 0)
+    once = ilerleme(p.get("llm_gorus_sayim"))
     if butce is None:
         from fe_agent import llm as llm_mod
         butce = llm_mod.PROFIL_GORUS_DEVAM_BUTCE
     _karar_asamasi(durum, p, ek, teshis, butce=butce)
     durum["profil"] = p
     s = dict(p.get("llm_gorus_sayim") or {})
-    s["yeni"] = int(s.get("alinan") or 0) - once
+    # yeni: bu cagrida alinan karar ve tamamlanan gerekce (ikisi de ilerlemedir).
+    s["yeni"] = max(0, ilerleme(s) - once)
     return s
 
 
@@ -2976,7 +3071,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 12
+PROFIL_KAPSAM_SURUMU = 13
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -3034,7 +3129,10 @@ def profil_eski_uyarisi(durum):
              "kolona göre seçmemiş"
              if surum == 10 else
              "birbirini tutmayan kolon çiftlerinde dil modeli iki kolonun açıklamasını birlikte "
-             "görüp en iyi anladığını tutmamış")
+             "görüp en iyi anladığını tutmamış"
+             if surum == 11 else
+             "dil modeli kararlarının çoğunda gerekçe yazmamış; artık her kararda gerekçesini "
+             "(kolonun anlamı, veride gördüğü, sonuç) yazıyor ve tablonun genel hedef oranını görüyor")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -4792,6 +4890,10 @@ def profil_karti(durum, karar=False):
                 if any(g.get("kaynak") == "dil modeli" for g in gr):
                     k["oneri_kaynagi"] = "dil modeli"
                 k["gruplar"] = [{"id": g["id"], "oneri": g["oneri"],
+                                 # Adayi iki kolondan az olan grupta secim yok
+                                 # (otekiler baska kontrolde cikiyor): dil
+                                 # modeline sorulmaz.
+                                 "aday": len([u for u in g["uyeler"] if u not in (g.get("elenen") or {})]),
                                  "kod": kod_karti(g.get("kod_oneri"), g.get("kod_gerekce"),
                                                   g["oneri"], {u: u for u in g["uyeler"]})
                                  if g.get("kaynak") == "dil modeli" else None,

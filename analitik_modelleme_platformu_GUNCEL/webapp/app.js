@@ -17272,6 +17272,23 @@ function pfKayRozet(tur) {
    "Bunu seç" ile seçilir. Üye satırlarında "Kim Öneriyor" sütunu kolonu
    hangi kaynağın önerdiğini rozetle gösterir. dmKullanildi: kartta dil
    modeli kararı var mı (yoksa yalnız kod kutusu çizilir). */
+/* GEREKÇE: dil modeli gerekçesini üç parçada yazar ("Anlam: ... Veri: ...
+   Sonuç: ..."; bkz. llm.SISTEM_PROFIL_GORUS). Parçalar alt alta, etiketi
+   kalın yazılır: kolonu nasıl anladığı, veride neye baktığı ve neden bu
+   kararı verdiği ayrı ayrı okunur. Bu biçimde olmayan gerekçe (kodunki,
+   eski kararlar) tek paragraf yazılır. */
+function pfGerekceYaz(el, metin) {
+    const m = /^\s*Anlam:\s*([\s\S]*?)\s*Veri:\s*([\s\S]*?)\s*Sonuç:\s*([\s\S]*)$/.exec(String(metin || ""));
+    if (!m) { el.textContent = tireSade(String(metin || "")); return el; }
+    el.classList.add("pf-kay-uclu");
+    [["Anlam", m[1]], ["Veri", m[2]], ["Sonuç", m[3]]].forEach(([ad, govde]) => {
+        const satir = elYap("div", "pf-kay-parca");
+        satir.append(elYap("b", "", ad + ": "), elYap("span", "", tireSade(String(govde).trim())));
+        el.appendChild(satir);
+    });
+    return el;
+}
+
 function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz, dmKullanildi) {
     const it = elYap("table", "dg-tablo pf-ic-tablo pf-ayni-tablo");
     const icg = document.createElement("colgroup");
@@ -17318,8 +17335,8 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz, dm
             b.appendChild(elYap("span", "pf-kay-cip", veri.secim + " kalsın"));
             if (tur === "dm" && kod)
                 b.appendChild(elYap("span", "pf-kay-fark " + (farkli ? "farkli" : "ayni"), farkli ? "Koddan farklı" : "Kodla aynı"));
-            k.appendChild(elYap("div", "pf-kay-gerekce" + (veri.gerekce ? "" : " bos"),
-                                veri.gerekce ? tireSade(veri.gerekce) : "Gerekçe verilmedi."));
+            k.appendChild(pfGerekceYaz(elYap("div", "pf-kay-gerekce" + (veri.gerekce ? "" : " bos")),
+                                       veri.gerekce || "Gerekçe verilmedi."));
             if (veri.temel) k.appendChild(elYap("div", "pf-kay-temel", veri.temel));
             const alt = elYap("div", "pf-kay-alt");
             const isaret = elYap("span", "pf-kay-secili", kararModu ? "✓ Seçili" : "✓ Onaylanan");
@@ -17345,15 +17362,27 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz, dm
             });
             return k;
         };
-        kaynaklar.appendChild(kutu("kod", kod));
-        if (dmKullanildi || dm) kaynaklar.appendChild(kutu("dm", dm));
-        btd.appendChild(kaynaklar);
+        /* SEÇİM GEREKMEYEN GRUP (sunucu: aday < 2): kolonlardan en çok biri
+           kalabiliyor, ötekiler başka bir kontrolde çıkarılıyor. Ortada
+           seçim olmadığı için dil modeline sorulmaz; "dil modeli kararı yok"
+           diye de gösterilmez. */
+        const gerekmez = g.aday !== undefined && g.aday !== null && Number(g.aday) < 2;
+        if (gerekmez) {
+            bt.classList.add("pf-ayni-gerekmez");
+            btd.appendChild(elYap("div", "pf-ayni-gerekmez-not", Number(g.aday) === 1
+                ? "Seçim gerekmez: öteki kolon başka bir kontrolde çıkarılıyor; kalabilecek tek kolon " + g.oneri + "."
+                : "Seçim gerekmez: bu gruptaki kolonların hepsi başka bir kontrolde çıkarılıyor."));
+        } else {
+            kaynaklar.appendChild(kutu("kod", kod));
+            if (dmKullanildi || dm) kaynaklar.appendChild(kutu("dm", dm));
+            btd.appendChild(kaynaklar);
+        }
         /* Seçimin hangi kaynaktan geldiği; öneriden farklıysa grup işaretlenir. */
         cizenler.push(() => {
             const v = al();
             const dmE = !!dm && dm.secim === v, kodE = !!kod && kod.secim === v;
             const farkliSecim = v !== g.oneri;
-            secNot.textContent = (kararModu ? "Seçili: " : "Onaylanan: ") + v + " kalsın ("
+            secNot.textContent = gerekmez ? "" : (kararModu ? "Seçili: " : "Onaylanan: ") + v + " kalsın ("
                 + (dmE ? (kodE ? "dil modelinin kararı, kodla aynı" : "dil modelinin kararı")
                        : kodE ? "kodun önerisi" : "sizin seçiminiz") + ")";
             secNot.className = "pf-secim-kaynak " + (dmE ? "dm" : kodE ? "kod" : "elle") + (farkliSecim ? " farkli" : "");
@@ -17376,8 +17405,9 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz, dm
             if (bul.length) aTd.appendChild(elYap("div", "pf-ayni-uye-not", "Bulgular: " + bul.join(", ")));
             r.appendChild(aTd);
             const oTd = elYap("td", "pf-ayni-oneri");
-            if (kod && u.ad === kod.secim) oTd.appendChild(pfKayRozet("kod"));
-            if (dm && u.ad === dm.secim) oTd.appendChild(pfKayRozet("dm"));
+            /* Seçim gerekmeyen grupta öneren yoktur (rozet yazılmaz). */
+            if (!gerekmez && kod && u.ad === kod.secim) oTd.appendChild(pfKayRozet("kod"));
+            if (!gerekmez && dm && u.ad === dm.secim) oTd.appendChild(pfKayRozet("dm"));
             if (!oTd.childNodes.length) oTd.textContent = BOS_SIMGE;
             r.appendChild(oTd);
             const kTd = elYap("td", "pf-karar-hucre");
@@ -17747,8 +17777,8 @@ function profilKartiEkle(alan, blok, devamdan) {
         if (tur === "dm" && farkli !== null && farkli !== undefined)
             ust.appendChild(elYap("span", "pf-kay-fark " + (farkli ? "farkli" : "ayni"), farkli ? "Koddan farklı" : "Kodla aynı"));
         td.appendChild(ust);
-        td.appendChild(elYap("div", "pf-kay-gerekce" + (veri.gerekce ? "" : " bos"),
-                             veri.gerekce ? tireSade(veri.gerekce) : "Gerekçe verilmedi."));
+        td.appendChild(pfGerekceYaz(elYap("div", "pf-kay-gerekce" + (veri.gerekce ? "" : " bos")),
+                                    veri.gerekce || "Gerekçe verilmedi."));
         if (veri.temel) td.appendChild(elYap("div", "pf-kay-temel", veri.temel));
         const alt = elYap("div", "pf-kay-alt");
         const isaret = elYap("span", "pf-kay-secili", kararModu ? "✓ Seçili" : "✓ Onaylanan");
@@ -17873,8 +17903,14 @@ function profilKartiEkle(alan, blok, devamdan) {
             toplam++;
             if (kay === "dil modeli") dm++;
         });
-        (u.gruplar || []).forEach(g => { toplam++; if (g.kaynak === "dil modeli") dm++; });
-        return { toplam: toplam, dm: dm, fark: uyeFarkSayisi(u) };
+        let gerekmez = 0;
+        (u.gruplar || []).forEach(g => {
+            /* Adayı ikiden az olan grupta seçim yoktur (bkz. pfAyniTablosu). */
+            if (g.aday !== undefined && g.aday !== null && Number(g.aday) < 2) { gerekmez++; return; }
+            toplam++;
+            if (g.kaynak === "dil modeli") dm++;
+        });
+        return { toplam: toplam, dm: dm, fark: uyeFarkSayisi(u), gerekmez: gerekmez };
     };
     /* KARAR ÖZETİ (Kontroller tablosunun üstünde): iki kaynağın ne olduğu,
        sayılar, dil modeli kararlarının ilerlemesi, bütün kurallarda tek
@@ -17935,7 +17971,17 @@ function profilKartiEkle(alan, blok, devamdan) {
                 "Dil modeli kararı alınmadı; her bulguda kodun önerisi seçili gelir."));
         }
         /* Karar alınamayan bulgu kaldıysa: kendiliğinden tamamlanır (ilerleme şeridi). */
-        const kalanKarar = Number(gs.gorussuz != null ? gs.gorussuz : 0);
+        /* GEREKÇESİ EKSİK KARAR da tamamlanır (gs.tekrar): dil modeli seçimi
+           yazıp gerekçeyi yazmadıysa karar geçerlidir ama gerekçesi yeniden
+           istenir (sunucu: akis_faz02.GEREKCE_TEKRAR kez). */
+        const gsuzK = Number(gs.gorussuz != null ? gs.gorussuz : 0), tekrarK = Number(gs.tekrar || 0);
+        const kalanKarar = gsuzK + tekrarK;
+        const kalanMetni = [gsuzK ? "Kalan " + ftBinlik(gsuzK) + " bulguda kodun önerisi seçili." : "",
+            tekrarK ? ftBinlik(tekrarK) + " kararda dil modeli gerekçesini yazmadı; gerekçesi yeniden istenecek." : ""]
+            .filter(Boolean).join(" ");
+        if (Number(gs.gerekcesiz || 0) > 0 && !tekrarK)
+            oz.appendChild(elYap("div", "pf-oneri-ozet-not pf-gerekcesiz-not", ftBinlik(gs.gerekcesiz)
+                + " kararda dil modeli gerekçesini yazmadı (yeniden soruldu, yine yazmadı); o satırlarda «gerekçe yazmadı» notu görünür."));
         if (kararModu && kalanKarar > 0 && !alan.eski_uyari) {
             const serit = elYap("div", "pf-devam");
             const metin = elYap("span", "pf-devam-metin", "");
@@ -17949,7 +17995,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                 kart.classList.remove("pf-karar-aliyor");
                 serit.classList.remove("suruyor");
                 metin.textContent = (neden ? neden + " " : "") + "Dil modeli kararı alınan bulgu: " + sayac
-                    + ". Kalan " + ftBinlik(kalanKarar) + " bulguda kodun önerisi seçili.";
+                    + ". " + kalanMetni;
                 dugme.textContent = "Kalanları Dil Modeline Sor";
                 dugme.onclick = () => { PF_DEVAM.durdu = false; PF_DEVAM.bosTur = 0; PF_DEVAM.hata = ""; baslat(); };
                 const b = kart.querySelector("button.secim-onay"); if (b) b.disabled = false;
@@ -17965,6 +18011,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                 kart.classList.add("pf-karar-aliyor");
                 serit.classList.add("suruyor");
                 metin.textContent = "Dil modeli kararları alınıyor: " + sayac
+                    + (tekrarK ? " (" + ftBinlik(tekrarK) + " kararın gerekçesi yeniden isteniyor)" : "")
                     + ". Bitince kart yenilenir; o zamana kadar seçim ve onay kapalıdır.";
                 dugme.textContent = "Durdur";
                 dugme.onclick = () => {
@@ -18609,8 +18656,9 @@ function profilKartiEkle(alan, blok, devamdan) {
         const tumUye = (k.uye_kontroller && k.uye_kontroller.length) ? k.uye_kontroller : [k];
         const say = tumUye.reduce((t, u) => {
             const s = uyeSecimSay(u);
-            return { toplam: t.toplam + s.toplam, dm: t.dm + s.dm, fark: t.fark + s.fark };
-        }, { toplam: 0, dm: 0, fark: 0 });
+            return { toplam: t.toplam + s.toplam, dm: t.dm + s.dm, fark: t.fark + s.fark,
+                     gerekmez: t.gerekmez + (s.gerekmez || 0) };
+        }, { toplam: 0, dm: 0, fark: 0, gerekmez: 0 });
         const kesim = k.ayar ? "bilgi" : k.uygulandi === false ? "pasif" : !nBul ? "tamam"
             : say.toplam ? "secim" : k.sonuc === "girmez" ? "girmez" : "bilgi";
         const satir = elYap("tr", "pf-kontrol " + renk + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
@@ -18668,7 +18716,9 @@ function profilKartiEkle(alan, blok, devamdan) {
                     say.fark ? ftBinlik(say.fark) + " yerde koddan farklı" : "Hepsi kodla aynı"));
                 if (say.dm < say.toplam) satirEkle("kod", ftBinlik(say.toplam - say.dm) + " öneri (dil modeli kararı yok)");
             } else satirEkle("kod", ftBinlik(say.toplam) + " öneri");
-        } else kimTd.appendChild(elYap("span", "pf-kim-yok", BOS_SIMGE));
+        } else if (!say.gerekmez) kimTd.appendChild(elYap("span", "pf-kim-yok", BOS_SIMGE));
+        if (say.gerekmez) kimTd.appendChild(elYap("div", "pf-kim-gerekmez",
+            ftBinlik(say.gerekmez) + " grupta seçim gerekmez (tek aday)"));
 
         const acBtn = elYap("button", "dg-toplu-btn pf-ac");
         acBtn.type = "button";

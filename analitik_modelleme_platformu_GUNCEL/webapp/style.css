@@ -6228,6 +6228,13 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 .pf-kay-fark.ayni { color: var(--metin-tamam); }
 .pf-kay-gerekce { color: var(--metin-soluk); line-height: 1.45; margin-top: 4px; overflow-wrap: break-word; }
 .pf-kay-gerekce.bos { color: var(--metin-tamam); font-style: italic; }
+/* Dil modelinin gerekçesi üç parçada (Anlam / Veri / Sonuç), alt alta. */
+.pf-kay-gerekce.pf-kay-uclu { display: flex; flex-direction: column; gap: 3px; }
+.pf-kay-parca b { color: var(--metin); font-weight: var(--fw-kalin); }
+.pf-kay-dm-hucre .pf-kay-parca b, .pf-kay-dm-kutu .pf-kay-parca b { color: var(--pf-dm); }
+.pf-kim-gerekmez { color: var(--metin-tamam); font-size: var(--fs-ustbar); margin-top: 3px; }
+.pf-ayni-gerekmez-not { color: var(--metin-tamam); line-height: 1.45; margin-top: 2px; }
+.pf-gerekcesiz-not { color: var(--amber); }
 .pf-kay-temel { color: var(--metin-tamam); font-size: var(--fs-ustbar); margin-top: 2px; }
 .pf-kay-yok { color: var(--metin-tamam); font-style: italic; line-height: 1.45; }
 .pf-kay-alt { display: flex; justify-content: center; align-items: center; min-height: var(--btn-h-kucuk); margin-top: 6px; }
