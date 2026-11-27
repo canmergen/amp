@@ -19581,9 +19581,7 @@ function gelenekselKartiEkle(alan, blok) {
         + "seçimi durur. «Ayrıntı» birimin bütün dönüşümlerini, kolon kolon seçimi ve değer girişini açar. Seçilmeyen "
         + "ve bu veride uygulanamayan dönüşümler ayrı kesimlerdedir, nedenleriyle. Adımlar arasında serbestçe "
         + "gezilir; kararlar dördüncü adımda bir kez onaylanır. Birim birim liste, süzgeçler, Üretim Planı ve "
-        + "dönüşüm kataloğu dördüncü adımdaki «Uzman görünümü» altındadır; aşağıdaki açıklama o görünüm içindir.
-
-"
+        + "dönüşüm kataloğu dördüncü adımdaki «Uzman görünümü» altındadır; aşağıdaki açıklama o görünüm içindir.\n\n"
         + "Birimler sekmesinde her birim için hangi geleneksel dönüşümlerin uygulanacağı ve nedeni yazar. Birim: aynı "
         + "ölçünün farklı pencereleri (pencere ailesi), tek kolon, anlamlı kolon çifti (gelen ve giden, "
         + "tutar ve adet, alt kırılım ve toplam) ya da satır düzeyi. Üstteki süzgeçlerle birim tipine, "
