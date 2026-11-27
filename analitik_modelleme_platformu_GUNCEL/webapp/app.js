@@ -19070,7 +19070,11 @@ function profilKartiEkle(alan, blok, devamdan) {
         const asamaHata = elYap("div", "pf-asama-hata");
         asamaHata.hidden = true;
         if (asama && asamaNo) {
-            const gecisGovdesi = yon => ({ yon: yon,
+            /* "asama": bu kartın gösterdiği aşama. Sunucudaki açık aşama başkaysa
+               (yanıt yolda kaybolmuş, sayfa başka sekmede ilerlemiş) sunucu
+               seçimleri KAYDETMEZ, güncel aşamanın kartını döndürür; yoksa bu
+               aşamanın seçimleri görülmemiş bir aşamaya yazılıp onaylanırdı. */
+            const gecisGovdesi = yon => ({ yon: yon, asama: asamaNo,
                 cikar: Object.keys(kararlar).filter(a => kararlar[a] === "cikar"),
                 ayni: Object.assign({}, ayniSecim), cozum: Object.assign({}, cozumSecim),
                 duzeltme: JSON.parse(JSON.stringify(duzSecim)) });
@@ -19111,6 +19115,8 @@ function profilKartiEkle(alan, blok, devamdan) {
                         kart.parentNode.insertBefore(yeni, kart);
                         kart.remove();
                         try { yeni.scrollIntoView({ block: "start" }); } catch (e) { /* eski tarayıcı */ }
+                        const not = d.uyari && yeni.querySelector(".pf-asama-hata");
+                        if (not) { not.textContent = d.uyari; not.hidden = false; }
                     }
                 })
                 .catch(() => geriAl("Sunucuya ulaşılamadı; aşama değiştirilemedi."));

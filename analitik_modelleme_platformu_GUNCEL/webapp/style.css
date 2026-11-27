@@ -6212,31 +6212,30 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 }
 .pf-suzgec-ad { font-weight: var(--fw-kalin); color: var(--metin); }
 .pf-suzgec-secenekler {
-  display: inline-flex; flex-wrap: wrap; max-width: 100%; border: 1.5px solid var(--amber);
-  border-radius: 999px; overflow: hidden; background: var(--yuzey);
+  display: inline-flex; flex-wrap: wrap; gap: 1.5px; max-width: 100%; border: 1.5px solid var(--amber);
+  border-radius: 18px; overflow: hidden; background: var(--amber);   /* aralıktan görünen zemin: ayırıcı çizgi (yan yana da alt alta da) */
 }
 .pf-suzgec-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--b-2); flex: 1 1 auto;
-  margin: 0; padding: 7px 16px; border: 0; background: transparent; color: var(--metin);
+  min-width: 0; margin: 0; padding: 7px 16px; border: 0; background: var(--yuzey); color: var(--metin);
   font: inherit; font-weight: var(--fw-kalin); line-height: 1.3; cursor: pointer;
 }
-.pf-suzgec-btn + .pf-suzgec-btn { border-left: 1.5px solid var(--amber); }
 .pf-suzgec-btn:hover { background: color-mix(in srgb, var(--amber) 12%, var(--yuzey)); }
 .pf-suzgec-btn.secili, .pf-suzgec-btn.secili:hover { background: var(--amber); color: var(--yuzey); }
 .pf-suzgec-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: -4px; }
 .pf-suzgec-btn.secili:focus-visible { outline-color: var(--yuzey); }
 .pf-suzgec-adet {
   min-width: 1.7em; padding: 0 6px; border-radius: 999px; font-size: var(--fs-ustbar); line-height: 1.6;
-  background: color-mix(in srgb, var(--amber) 16%, var(--yuzey)); color: var(--amber);
+  background: var(--yuzey); color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber);
 }
-.pf-suzgec-btn.secili .pf-suzgec-adet { background: var(--yuzey); color: var(--amber); }
+.pf-suzgec-btn.secili .pf-suzgec-adet { box-shadow: none; }
 .pf-suzgec-ipucu { flex: 1 1 100%; text-align: center; color: var(--metin-tamam); line-height: 1.4; }
 .pf-kart.pf-yalniz-fark .pf-suzgec { background: color-mix(in srgb, var(--amber) 14%, var(--yuzey)); }
 .pf-kart.pf-yalniz-fark .pf-suzgec-ipucu { color: var(--metin); }
 /* "Koddan farklı karar" kutucuğu süzgecin kısayolu. */
 .pf-ozet-sayi-tikla { cursor: pointer; border-color: var(--amber); box-shadow: inset 0 -3px 0 var(--amber); }
 .pf-ozet-sayi-tikla:hover { background: color-mix(in srgb, var(--amber) 9%, var(--yuzey)); }
-.pf-ozet-sayi-tikla.secili { background: color-mix(in srgb, var(--amber) 16%, var(--yuzey)); }
+.pf-ozet-sayi-tikla.secili { background: color-mix(in srgb, var(--amber) 8%, var(--yuzey)); box-shadow: inset 0 0 0 1.5px var(--amber), inset 0 -3px 0 var(--amber); }
 .pf-ozet-sayi-tikla:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
 .pf-ozet-sayi-ek { margin-top: 2px; font-size: var(--fs-ustbar); font-weight: var(--fw-kalin); color: var(--amber); text-decoration: underline; }
 
