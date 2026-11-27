@@ -17661,7 +17661,7 @@ function profilKartiEkle(alan, blok, devamdan) {
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır; satır kurallarında fazla ya da çakışan satırlar çalışma tablosundan çıkar.",
         "Boş Yerine Başka Şey Yazılmış, Yazım Farkları, Eksi Olamayacak Değerler ve Aşırı Değerler kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz. Tekrar Eden Satır ve Setlerde Ortak Kayıt kontrollerinde çıkarılacak satırları seçersiniz.",
-        "Bulgular ve Kararlar beş aşamadır: 1) Kolon Kullanılabilir mi, 2) Kolon Güvenilir mi, 3) Aynı Bilgiyi Taşıyan Kolonlar, 4) Düzeltmeler, 5) Satırlar. Kontrollerin hepsi profil çıkarılırken bir kez hesaplanır; kararlar aşama aşama verilir. Bir aşamayı onaylayınca o aşamada çıkan kolonlar sonraki aşamalara girmez: onlar için yeniden karar sorulmaz, dil modeline de sorulmaz. Birbirinin aynısı kolon grupları üçüncü aşamada, kalan kolonlarla kurulur. «Önceki Aşama» ile geri dönüp kararı değiştirebilirsiniz; o zaman sonraki aşamalar yeniden onaylanır. Adım son aşama onaylanınca tamamlanır. Her aşama onaylandıkça değişken defteri (degisken_defteri.json) güncellenir.",
+        "Bulgular ve Kararlar beş kontrolde verilir (şeritteki Kontrol 1 … 5): 1) Kolon Kullanılabilir mi, 2) Kolon Güvenilir mi, 3) Aynı Bilgiyi Taşıyan Kolonlar, 4) Düzeltmeler, 5) Satırlar. Kuralların hepsi profil çıkarılırken bir kez hesaplanır; kararlar kontrol kontrol verilir. Bir kontrolü onaylayınca o kontrolde çıkan kolonlar sonraki kontrollere girmez: onlar için yeniden karar sorulmaz, dil modeline de sorulmaz. Birbirinin aynısı kolon grupları üçüncü kontrolde, kalan kolonlarla kurulur. «Önceki Kontrol» ile geri dönüp kararı değiştirebilirsiniz; o zaman sonraki kontroller yeniden onaylanır. Adım son kontrol onaylanınca tamamlanır. Her kontrol onaylandıkça değişken defteri (degisken_defteri.json) güncellenir.",
         "Kart nasıl okunur: Kontroller duruma göre kesimlere ayrılır (seçiminizi bekleyenler üstte; sonra kendiliğinden üretime girmeyenler, bilgi için gösterilenler, bulgu çıkmayanlar ve uygulanmayanlar). Her kontrol tek satırdır: bulunan, ne olacağı ve kararı kimin verdiği. Satırı açınca kontrolün her kuralı kendi kutusunda durur; kutunun başında kuralın adı, kaç bulgu olduğu ve ne olacağı yazar, «Bu kural neye bakar?» ölçütü ve örneği açar. Tablo o kutunun içindedir.",
         "İki kaynak ayrı sütundadır. «Kodun Önerisi»: kod kolonun yalnız sayılarına bakar (bulgu, hedef oranı) ve kendi gerekçesini yazar. «Dil Modelinin Kararı»: dil modeli kolonun anlamına, takıldığı kurala ve kodun bulgusuna birlikte bakar, kendi gerekçesini yazar; seçili gelen budur ve kodla aynı mı farklı mı yanında yazar. Seçili olan hücre çerçevelidir; öteki hücredeki «Bunu seç» seçimi ona çevirir. «Seçiminiz» sütununda seçimi elle de değiştirirsiniz; altında seçimin hangi kaynaktan geldiği yazar. Dil modelinden karar alınamayan bulguda kodun önerisi seçilidir. Çok bulgulu tabloda kararlar birkaç istekte alınır: kart, karar alınmayan bulgu kaldıkça kendiliğinden sormaya devam eder ve her seferinde yenilenir; bu sürerken seçim ve onay kapalıdır, «Durdur» ile durdurabilir, «Kalanları Dil Modeline Sor» ile sürdürebilirsiniz.",
         "Tek tıkla toplu seçim: Karar Özeti kutusundaki «Dil Modelinin Kararlarını Seç» ve «Kodun Önerilerini Seç» düğmeleri bütün kurallara, her kuralın kutusundaki aynı düğmeler yalnız o kurala uygulanır; sonra tek tek değiştirebilirsiniz. Karar Özeti kutusundaki «Yalnız kod ile dil modelinin ayrıştığı bulguları göster» süzgeci kartın tamamını o bulgulara indirir: ayrışma olmayan satırlar, kurallar ve kontroller gizlenir; seçimleri değişmez. Satır kurallarında da (Tekrar Eden Satır, Setlerde Ortak Kayıt) kararı dil modeli verir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
@@ -17696,7 +17696,7 @@ function profilKartiEkle(alan, blok, devamdan) {
     if (asama) {
         const serit = elYap("div", "pf-asamalar");
         serit.setAttribute("role", "list");
-        serit.setAttribute("aria-label", "Aşamalar");
+        serit.setAttribute("aria-label", "Kontroller (aşamalar)");
         /* HER AŞAMA BİR KONTROLDÜR ("Kontrol 1 … 5"). Altında kolon sayıları:
            onaylanan kontrolde "giren → kalan kolon" ve çıkan sayısı, açık
            kontrolde giren kolon; ince çubuk tablonun bütün kolonlarına göre
@@ -19167,7 +19167,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                 .then(r => r.json())
                 .then(d => {
                     if (!(d && d.tamam === true && d.secim_alani && d.secim_alani.tip === "profil")) {
-                        geriAl((d && d.hata) || "Aşama değiştirilemedi.");
+                        geriAl((d && d.hata) || "Kontrol değiştirilemedi.");
                         return;
                     }
                     PF_ASAMA.ucakta = false;
@@ -19182,18 +19182,18 @@ function profilKartiEkle(alan, blok, devamdan) {
                         if (not) { not.textContent = d.uyari; not.hidden = false; }
                     }
                 })
-                .catch(() => geriAl("Sunucuya ulaşılamadı; aşama değiştirilemedi."));
+                .catch(() => geriAl("Sunucuya ulaşılamadı; kontrol değiştirilemedi."));
             };
             if (asamaNo > 1) {
-                const geri = elYap("button", "dg-toplu-btn pf-asama-btn pf-asama-geri", "Önceki Aşama");
+                const geri = elYap("button", "dg-toplu-btn pf-asama-btn pf-asama-geri", "Önceki Kontrol");
                 geri.type = "button";
-                geri.onclick = () => asamaGec("geri", geri, "Önceki aşama açılıyor…");
+                geri.onclick = () => asamaGec("geri", geri, "Önceki kontrol açılıyor…");
                 dugmeler.appendChild(geri);
             }
             if (!asamaSon) {
-                const ileri = elYap("button", "secim-onay pf-asama-btn pf-asama-ileri", "Aşamayı Onayla ve Sonrakine Geç");
+                const ileri = elYap("button", "secim-onay pf-asama-btn pf-asama-ileri", "Kontrolü Onayla ve Sonrakine Geç");
                 ileri.type = "button";
-                ileri.onclick = () => asamaGec("ileri", ileri, "Aşama kaydediliyor, sonraki aşama açılıyor…");
+                ileri.onclick = () => asamaGec("ileri", ileri, "Kontrol kaydediliyor, sonraki kontrol açılıyor…");
                 dugmeler.appendChild(ileri);
                 btn.hidden = true;              // adımın onayı yalnız son aşamada
                 btn.disabled = true;

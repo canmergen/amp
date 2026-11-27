@@ -1299,7 +1299,7 @@ def profil_asama_gecisi(durum, govde, butce=None):
     degismez; donen kartta "asama_uyari" bulunur."""
     p = durum.get("profil") or {}
     if not profil_asamali(p) or not isinstance(p.get("profil_ek"), dict) or profil_eski_mi(durum):
-        return None, "Profil aşamalı düzende değil; 02.1.1 adımını onaylayıp profili yeniden çıkarın."
+        return None, "Profil beş kontrollü düzende değil; 02.1.1 adımını onaylayıp profili yeniden çıkarın."
     no = profil_asamasi(p)
     # ESKI KART DENETIMI. Kart hangi asamayi gosterdigini gonderir
     # (govde["asama"]). Sunucudaki acik asama baskaysa istek ESKI bir
@@ -1319,9 +1319,9 @@ def profil_asama_gecisi(durum, govde, butce=None):
             kart = profil_karti(durum, karar=True)
             if isinstance(kart, dict):
                 kart["asama_uyari"] = (
-                    "Bu kart sunucudaki açık aşamayla eşleşmiyordu (kart: %s, açık aşama: Aşama %d). "
-                    "Bu istekte hiçbir seçim kaydedilmedi ve aşama değişmedi; açık aşamanın güncel kartı gösteriliyor."
-                    % (("Aşama %d" % gelen) if 1 <= gelen <= ASAMA_SAYISI else "tanınmayan aşama", no))
+                    "Bu kart sunucudaki açık kontrolle eşleşmiyordu (kart: %s, açık olan: Kontrol %d). "
+                    "Bu istekte hiçbir seçim kaydedilmedi ve kontrol değişmedi; açık kontrolün güncel kartı gösteriliyor."
+                    % (("Kontrol %d" % gelen) if 1 <= gelen <= ASAMA_SAYISI else "tanınmayan kontrol", no))
             return kart, None
     # Bozuk istek hicbir seyi degistirmez: yon yalniz "ileri" / "geri"
     # (yoksa "ileri"); "cikar" gonderildiyse liste olmalidir (liste degilse
@@ -1330,15 +1330,15 @@ def profil_asama_gecisi(durum, govde, butce=None):
     yon = govde.get("yon")
     yon = "ileri" if yon is None else yon
     if yon not in ("ileri", "geri") or ("cikar" in govde and not isinstance(govde["cikar"], list)):
-        return None, "Aşama isteği anlaşılamadı; hiçbir şey değiştirilmedi. Sayfayı yenileyip yeniden deneyin."
+        return None, "Kontrol isteği anlaşılamadı; hiçbir şey değiştirilmedi. Sayfayı yenileyip yeniden deneyin."
     if yon == "geri":
         if no <= 1:
-            return None, "İlk aşamadasınız."
+            return None, "İlk kontroldesiniz."
         profil_asama_kaydet(durum, govde, onay=False)
         profil_asamaya_gir(durum, no - 1, sorma=True)
     else:
         if no >= ASAMA_SAYISI:
-            return None, "Son aşamadasınız; kararları onaylayıp adımı tamamlayın."
+            return None, "Son kontroldesiniz; kararları onaylayıp adımı tamamlayın."
         profil_asama_kaydet(durum, govde, onay=True)
         profil_asamaya_gir(durum, no + 1, butce=butce)
     return profil_karti(durum, karar=True), None
@@ -3665,8 +3665,8 @@ def profil_eski_uyarisi(durum):
              "dil modeli kararlarının çoğunda gerekçe yazmamış; artık her kararda gerekçesini "
              "(kolonun anlamı, veride gördüğü, sonuç) yazıyor ve tablonun genel hedef oranını görüyor"
              if surum == 12 else
-             "kararlar tek kartta hep birlikte istenmiş; artık beş aşamada verilir ve bir aşamada "
-             "çıkan kolon sonraki aşamalara girmez")
+             "kararlar tek kartta hep birlikte istenmiş; artık beş kontrolde verilir ve bir kontrolde "
+             "çıkan kolon sonraki kontrollere girmez")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -4318,8 +4318,8 @@ def veri_profili_plan(durum):
         durum["_secim_alani"] = profil_karti(durum, karar=True)
         metin = profil_metni(durum, karar=True)
         if profil_asamali(durum.get("profil") or {}):
-            metin += ("\n\nKararlar %d aşamada verilir: %s. Bir aşamayı onaylayınca o aşamada çıkan kolonlar "
-                      "sonraki aşamalara girmez; adım son aşama onaylanınca tamamlanır." % (
+            metin += ("\n\nKararlar %d kontrolde verilir: %s. Bir kontrolü onaylayınca o kontrolde çıkan kolonlar "
+                      "sonraki kontrollere girmez; adım son kontrol onaylanınca tamamlanır." % (
                           ASAMA_SAYISI, ", ".join("%d) %s" % (x["no"], x["ad"]) for x in PROFIL_ASAMALARI)))
         return metin
     durum["_plan_otomatik"] = True
@@ -4341,8 +4341,8 @@ def veri_profili_uygula(durum):
         if profil_asamasi(p) < ASAMA_SAYISI:
             from fe_agent.akis_durum import AdimHatasi
             raise AdimHatasi(
-                "Bu adım %d aşamadır; şu an %d. aşamadasınız (%s). Aşamayı kartın altındaki "
-                "«Aşamayı Onayla ve Sonrakine Geç» düğmesiyle onaylayın; adım son aşama onaylanınca "
+                "Bu adım %d kontroldür; şu an %d. kontroldesiniz (%s). Kontrolü kartın altındaki "
+                "«Kontrolü Onayla ve Sonrakine Geç» düğmesiyle onaylayın; adım son kontrol onaylanınca "
                 "tamamlanır." % (ASAMA_SAYISI, profil_asamasi(p),
                                  PROFIL_ASAMALARI[profil_asamasi(p) - 1]["ad"]))
         profil_asama_kaydet(durum, karar, onay=True)
