@@ -6233,6 +6233,8 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 .pf-kay-parca b { color: var(--metin); font-weight: var(--fw-kalin); }
 .pf-kay-dm-hucre .pf-kay-parca b, .pf-kay-dm-kutu .pf-kay-parca b { color: var(--pf-dm); }
 .pf-kim-gerekmez { color: var(--metin-tamam); font-size: var(--fs-ustbar); margin-top: 3px; }
+.pf-kim-sirada { color: var(--pf-dm); font-size: var(--fs-ustbar); margin-top: 3px; }
+.pf-kay-yok.sirada { color: var(--pf-dm); font-style: normal; }
 .pf-ayni-gerekmez-not { color: var(--metin-tamam); line-height: 1.45; margin-top: 2px; }
 .pf-gerekcesiz-not { color: var(--amber); }
 .pf-kay-temel { color: var(--metin-tamam); font-size: var(--fs-ustbar); margin-top: 2px; }

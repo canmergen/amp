@@ -17271,7 +17271,8 @@ function pfKayRozet(tur) {
    (hangi kolon kalsın, gerekçesiyle); seçili olan kutu işaretlidir ve öteki
    "Bunu seç" ile seçilir. Üye satırlarında "Kim Öneriyor" sütunu kolonu
    hangi kaynağın önerdiğini rozetle gösterir. dmKullanildi: kartta dil
-   modeli kararı var mı (yoksa yalnız kod kutusu çizilir). */
+   modeli kararı var mı (yoksa yalnız kod kutusu çizilir). dmYokMetni: dil
+   modeli kararı olmayan grupta yazacak not (sırada / henüz alınmadı). */
 /* GEREKÇE: dil modeli gerekçesini üç parçada yazar ("Anlam: ... Veri: ...
    Sonuç: ..."; bkz. llm.SISTEM_PROFIL_GORUS). Parçalar alt alta, etiketi
    kalın yazılır: kolonu nasıl anladığı, veride neye baktığı ve neden bu
@@ -17289,7 +17290,7 @@ function pfGerekceYaz(el, metin) {
     return el;
 }
 
-function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz, dmKullanildi) {
+function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz, dmKullanildi, dmYokMetni) {
     const it = elYap("table", "dg-tablo pf-ic-tablo pf-ayni-tablo");
     const icg = document.createElement("colgroup");
     ["pf-i-ad", "pf-i-acik", "pf-i-oneri", "pf-i-karar"].forEach(c => {
@@ -17328,7 +17329,7 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz, dm
             k.appendChild(b);
             if (!veri) {
                 k.classList.add("bos");
-                k.appendChild(elYap("div", "pf-kay-yok", tur === "dm" ? "Karar alınamadı; kodun önerisi geçerli."
+                k.appendChild(elYap("div", "pf-kay-yok", tur === "dm" ? (dmYokMetni || "Dil modeli kararı yok; kodun önerisi geçerli.")
                                                                        : "Kod bu grupta öneri vermedi."));
                 return k;
             }
@@ -17749,6 +17750,19 @@ function profilKartiEkle(alan, blok, devamdan) {
         (u.gruplar || []).some(g => g.kaynak === "dil modeli")
         || (u.kolonlar || []).some(c => (c.duzeltme || {}).kaynak === "dil modeli"
             || (c.cozum || {}).kaynak === "dil modeli" || c.karar_kaynak === "dil modeli"));
+    /* DİL MODELİ KARARI OLMAYAN BULGUNUN NOTU duruma göre yazar. Kararlar
+       dalga dalga alınır; sürerken henüz sırası gelmemiş bulguya "karar
+       alınamadı" demek yanlıştı (alınamamış değil, henüz sorulmamış).
+       dmSirada: karar alma kendiliğinden sürüyor (bkz. aşağıda ilerleme
+       şeridi; koşul aynı). */
+    const gsDurum = alan.gorus || {};
+    const dmEksik = Number(gsDurum.gorussuz || 0);
+    const dmSirada = kararModu && dmEksik > 0 && !alan.eski_uyari && !PF_DEVAM.durdu && PF_DEVAM.bosTur < 2
+        && !PF_DEVAM.hata && (Number(gsDurum.alinan || 0) > 0 || !gsDurum.hata);
+    const dmYokMetni = dmSirada ? "Sırada: dil modeli bu bulgunun kararını henüz vermedi. O zamana kadar kodun önerisi seçili."
+        : dmEksik > 0 ? "Dil modelinden karar henüz alınmadı; kodun önerisi seçili."
+            + (kararModu ? " «Kalanları Dil Modeline Sor» ile istenir." : "")
+        : "Dil modeli kararı yok; kodun önerisi geçerli.";
     /* Satırın iki kaynağı: karar dil modelinden geldiyse satırın önerisi
        onundur ve kodunki kodNesne'dedir; gelmediyse öneri kodundur. */
     const kaynakCoz = (kodNesne, oneri, gerekce, kaynak, adi) => {
@@ -17768,8 +17782,8 @@ function profilKartiEkle(alan, blok, devamdan) {
         const td = elYap("td", "pf-kay-hucre pf-kay-" + tur + "-hucre");
         if (!veri) {
             td.classList.add("bos");
-            td.appendChild(elYap("div", "pf-kay-yok", tur === "dm" ? "Karar alınamadı; kodun önerisi geçerli."
-                                                                    : "Kod bu bulguda öneri vermedi."));
+            td.appendChild(elYap("div", "pf-kay-yok" + (tur === "dm" && dmSirada ? " sirada" : ""),
+                                 tur === "dm" ? dmYokMetni : "Kod bu bulguda öneri vermedi."));
             return td;
         }
         const ust = elYap("div", "pf-kay-ust");
@@ -17961,7 +17975,7 @@ function profilKartiEkle(alan, blok, devamdan) {
             sayi(alinan, "Dil modeli karar verdi", "dm");
             sayi(Math.max(0, alinan - kartFark), "Kodla aynı karar", "");
             sayi(kartFark, "Koddan farklı karar", kartFark ? "fark" : "");
-            sayi(gsuz, "Karar alınamadı, kodun önerisi seçili", gsuz ? "eksik" : "");
+            sayi(gsuz, dmSirada ? "Sırada, dil modeli kararı bekleniyor" : "Karar alınmadı, kodun önerisi seçili", gsuz ? "eksik" : "");
             oz.appendChild(sayilar);
         } else if (gs.hata && Number(gs.oge) > 0) {
             oz.appendChild(elYap("div", "pf-oneri-ozet-not pf-gorus-ozet farkli",
@@ -18453,7 +18467,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                 arac.appendChild(topluDugmeler("Bu kuralda tek tıkla:", () => uyeTopluSec(u, "dm"), () => uyeTopluSec(u, "kod"), fark));
                 kk.appendChild(arac);
             }
-            kk.appendChild(pfAyniTablosu(uGrp, ayniSecim, ayniOneri, kararModu, kart, kararCizenler, kararCiz, dmKullanildi));
+            kk.appendChild(pfAyniTablosu(uGrp, ayniSecim, ayniOneri, kararModu, kart, kararCizenler, kararCiz, dmKullanildi, dmYokMetni));
             return { el: kk, secimli: true };
         }
 
@@ -18714,8 +18728,12 @@ function profilKartiEkle(alan, blok, devamdan) {
                 satirEkle("dm", ftBinlik(say.dm) + " karar");
                 kimTd.appendChild(elYap("div", "pf-kay-fark " + (say.fark ? "farkli" : "ayni"),
                     say.fark ? ftBinlik(say.fark) + " yerde koddan farklı" : "Hepsi kodla aynı"));
-                if (say.dm < say.toplam) satirEkle("kod", ftBinlik(say.toplam - say.dm) + " öneri (dil modeli kararı yok)");
-            } else satirEkle("kod", ftBinlik(say.toplam) + " öneri");
+                if (say.dm < say.toplam) satirEkle("kod", ftBinlik(say.toplam - say.dm)
+                    + (dmSirada ? " bulguda dil modeli kararı sırada" : " öneri (dil modeli kararı yok)"));
+            } else {
+                satirEkle("kod", ftBinlik(say.toplam) + " öneri");
+                if (dmSirada) kimTd.appendChild(elYap("div", "pf-kim-sirada", "Dil modeli kararı sırada"));
+            }
         } else if (!say.gerekmez) kimTd.appendChild(elYap("span", "pf-kim-yok", BOS_SIMGE));
         if (say.gerekmez) kimTd.appendChild(elYap("div", "pf-kim-gerekmez",
             ftBinlik(say.gerekmez) + " grupta seçim gerekmez (tek aday)"));

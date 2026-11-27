@@ -1082,6 +1082,18 @@ def _grup_elenen_guncelle(p, ek):
     return degisti
 
 
+def _kural_gosterim_sirasi():
+    """{kural: sira}: kurallarin KARTTAKI sirasi (kontroller yukaridan
+    asagi; birlesik kontrolde uye kurallar kendi sirasiyla)."""
+    uyeler = {u: g[3] for g in KONTROL_GRUPLARI for u in g[3]}
+    sira = []
+    for x in PROFIL_KONTROLLERI:
+        for u in (uyeler.get(x[0]) or (x[0],)):
+            if u not in sira:
+                sira.append(u)
+    return {a: i for i, a in enumerate(sira)}
+
+
 def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     onceki = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
     aciklama = _aciklamalar(durum)
@@ -1202,6 +1214,15 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
                 sorulacak.append((a, anahtar, imza, oge))
         else:
             sorulacak.append((a, anahtar, imza, oge))
+    # KARTTAKI SIRAYLA SORULUR: kararlar dalga dalga alinir ve kart her
+    # dalgada yenilenir; kullanici karti yukaridan asagi doldugunu gorur.
+    # Onceden "anlam olmadan karar verilemeyenler" one aliniyordu; kartin
+    # en ustundeki kontrol yuzlerce karar alindiktan sonra bile bos
+    # ("karar alinamadi") gorunuyordu.
+    gs_ = _kural_gosterim_sirasi()
+    kural_ = lambda a, anahtar: ("yakin_icerik" if str(anahtar).startswith("yakin:") else "ayni_icerik") \
+        if a == GORUS_GRUP else a
+    sorulacak.sort(key=lambda q: gs_.get(kural_(q[0], q[1]), len(gs_)))      # kararli siralama
     gorus, hata = {}, None
     if sorulacak and not sorma:     # sorma: yalniz kayitli kararlar yazilir
         try:
