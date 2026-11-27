@@ -460,6 +460,14 @@ def _duzeltme_ham(ek, kusur):
                     continue
                 secenek = _kod_secenekleri(a, x)
                 kural = KOD_KURAL_ONERI[a] if KOD_KURAL_ONERI[a] in secenek else "kod_bos"
+            elif a == "metin_bos":
+                # Bayrak yalniz gercek bos hucresi de olan kolonda (ozel kodla
+                # ayni kural; bkz. _kod_secenekleri). "bos" alani olmayan eski
+                # profilde bilinmez: secenek kalir.
+                if "bos" in x and not x.get("bos"):
+                    secenek = [c for c in secenek if c != "metin_bos_bayrak"]
+                    if kural not in secenek:
+                        kural = "metin_bos"
             elif a == "yazim":
                 kayit["anahtar"] = dict(x.get("anahtar") or {})
             elif a == "uc":
@@ -776,9 +784,15 @@ def _veri_onerileri(durum, ek, df, egitim):
         ornek = ", ".join("«%s»" % d["deger"] for d in (x.get("degerler") or [])[:3])
         bas = "«Bilgi yok» anlamındaki yazılar (%s) %s satırda, dolu satırların %s" % (
             ornek, _sayi(x["adet"]), _yuzde_metni(x["pay"]))
-        if x["pay"] >= METIN_BAYRAK_PAY:
-            yaz("metin_bos", x["kolon"], "metin_bos_bayrak", bas + ". Sık geçiyor: boş sayılır ve "
-                "«boş mu, dolu mu» gösteren 1/0 kolonu da üretilir.")
+        if x["pay"] >= METIN_BAYRAK_PAY and "bos" in x and not x.get("bos"):
+            # Kolonda baska bos hucre yok: bayrak, kolonun bos olup olmadiginin kopyasi olurdu.
+            yaz("metin_bos", x["kolon"], "metin_bos", bas + ". Sık geçiyor: boş sayılır. Ayrı 1/0 "
+                "kolonu üretilmez: kolonda başka boş hücre olmadığı için o kolon, bu kolonun boş "
+                "olup olmadığının kopyası olurdu.")
+        elif x["pay"] >= METIN_BAYRAK_PAY:
+            yaz("metin_bos", x["kolon"], "metin_bos_bayrak", bas + ". Sık geçiyor: boş sayılır. "
+                "Kolonda gerçek boş hücre de var; yazının yazdığı satırlar ayrı bir 1/0 kolonunda "
+                "(_FLAG) saklanır, böylece «yazı yazılmıştı» ile «zaten boştu» ayrılır.")
         else:
             yaz("metin_bos", x["kolon"], "metin_bos", bas + ". Az: yalnız boş sayılır.")
 
@@ -2333,8 +2347,8 @@ def _satir_duzeltme(durum, kontrol, ad):
 
 # ===========================================================================
 # 02.1 YENI KOLONLARIN SOZLUK SATIRLARI: cozum kolonlari (gruplama, dolu
-# bayragi, metinden ozellik, gun farki) ve duzeltme bayraklari (_FLAG,
-# _BOS) UPDT sozluge eklenir. Satirlar 02.1 onayinda UPDT veri yazilirken
+# bayragi, metinden ozellik, gun farki) ve duzeltme bayraklari (_FLAG)
+# UPDT sozluge eklenir. Satirlar 02.1 onayinda UPDT veri yazilirken
 # kurulur (bos orani yazilan tablodan, kesin); p["sozluk_ek"].
 # ===========================================================================
 SOZLUK_EK_KAYNAK = "02.1 Veri Profili ve Kalite adımında üretildi"
@@ -3079,9 +3093,10 @@ PROFIL_ESIK_ACIKLAMA.update({
     "metin_bayrak_pay": _ac(
         "«Bilinmiyor» gibi yazılar çoksa, boş olmak da bir bilgi olabilir.",
         "Kolon «Boş yerine yazı yazılmış» kuralına takıldıysa bu yazılar her durumda boş sayılır. Sistem "
-        "ayrıca yazıların ne kadar sık geçtiğine bakar: bu sınır kadar ya da daha çoksa, «boş "
-        "mu, dolu mu» bilgisini taşıyan ek bir 1/0 kolonu da önerilir; çünkü çok sayıda satırda "
-        "bilginin olmaması kendisi bir bilgi olabilir.",
+        "ayrıca yazıların ne kadar sık geçtiğine bakar: bu sınır kadar ya da daha çoksa VE kolonda "
+        "gerçek boş hücre de varsa, yazının yazdığı satırları gösteren ek bir 1/0 kolonu da "
+        "önerilir («yazı yazılmıştı» ile «zaten boştu» ayrılsın diye). Kolonda başka boş hücre "
+        "yoksa ek kolon boşluğun kopyası olur, önerilmez.",
         "100 satırın 15'inde «Bilinmiyor» yazıyor: %15. Sınır %5 ise ek kolon da önerilir.",
         "yalnız sistemin önerisini belirler; kararı siz verirsiniz.",
         "Neden %5 önerildi?",

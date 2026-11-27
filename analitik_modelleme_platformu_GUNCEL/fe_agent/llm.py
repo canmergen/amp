@@ -4341,7 +4341,8 @@ Türlere göre neye bakacaksın:
   olduğu anlaşılan kolonlarda "kirp". Yazım farkı: farklı yazımlar aynı
   şeyi anlatıyorsa "tek_yazim"; büyük küçük harfin ayrı anlam taşıdığı kod
   kolonlarında "birak". Boş anlamına gelen yazı: yazının yazıldığı durum
-  ayrıca bir şey anlatıyorsa "metin_bos_bayrak", anlatmıyorsa "metin_bos";
+  ayrıca bir şey anlatıyorsa "metin_bos_bayrak" (yalnız seçeneklerde varsa;
+  yoksa "metin_bos"), anlatmıyorsa "metin_bos";
   yazı gerçek bir kategoriyse "birak".
 - cozum: Kolon olduğu gibi kullanılamıyor (çoğu boş, numara gibi, çok fazla
   farklı değer, tarih). Seçenekler kolondan nasıl yararlanılacağını söyler.

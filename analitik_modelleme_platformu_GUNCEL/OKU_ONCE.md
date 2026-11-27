@@ -2841,7 +2841,8 @@ tanıtır; sayfalar sol bardan açılır.
 - «Kodu boş say ve bayrak üret» seçilince kod (ör. -1) boşa çevrilir, bayrak kod yazan satırda 1 olur. Kolonda başka boş hücre yoksa bayrak, kolonun boş olup olmadığıyla birebir aynıdır: yeni bilgi taşımaz (ağaç modeli boşu kendisi işler; doğrusal model için 03'teki «eksik: işaret» `<KOLON>_EKSIK` kolonunu üretir).
 - Bu yüzden `akis_faz02._kod_secenekleri` gerçek boş hücresi olmayan kolonda (`bos` 0) `kod_bos_bayrak` seçeneğini sunmaz; kodun önerisi «Kodu boş say» olur, gerekçesi nedenini söyler (`KOD_BOS_GEREKCESI`, `kod_kural_gerekcesi`). Dil modeli ya da eski kayıtlı seçim bayraklı seçeneği isterse geçersiz sayılır, öneriye dönülür.
 - Gerçek boş hücresi de olan kolonda bayrak önerilmeye devam eder: «kod yazılmıştı» ile «zaten boştu»yu ayırır. Adı `<KOLON>_FLAG`.
-- Kapsam dışı (değişmedi): uydurma tarih bayrağı (`tarih_bos_bayrak`; «süresiz» gibi ayrı anlamı olabilir) ve metin kolonundaki boş yazısı bayrağı (`metin_bos_bayrak`).
+- **Metin kolonundaki «bilinmiyor» yazısı bayrağı da aynı kurala bağlı** (`metin_bos_bayrak`): `profil_ek.metin_bos_kontrol` kayda gerçek boş hücre sayısını (`bos`) yazar; sıfırsa bayraklı seçenek sunulmaz, kodun önerisi «Boş say» olur. Yazı payı sınırı (`metin_bayrak_pay`) hâlâ geçerli: bayrak, pay sınırın üstündeyse VE gerçek boş hücre de varsa önerilir. Bu bayrağın eki de `_FLAG` oldu (eskiden `_BOS`; yeni anlamı «yazı yazılmıştı, boş değildi» olduğu için eski ad yanıltıcıydı). Kayıtta `bos` alanı olmayan eski profilde durum bilinmez: seçenek olduğu gibi kalır, profil yeniden çıkarılınca kural işler.
+- Kapsam dışı (değişmedi): uydurma tarih bayrağı (`tarih_bos_bayrak`; «süresiz» gibi ayrı anlamı olabilir).
 
 **02.2: modelde ölçüm, kodun kararı ve dil modelinin kararı ayrı (ölçüm sürümü 4, öneri sürümü 3)**
 

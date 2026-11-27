@@ -713,8 +713,10 @@ def metin_bos_normal(v):
 
 
 def metin_bos_kontrol(df, adaylar):
-    """[{"kolon", "degerler": [{"deger", "adet"}], "adet", "pay"}]: metin
-    kolonda "NULL", "-", "?", "" gibi bos anlamina gelen yazilar."""
+    """[{"kolon", "degerler": [{"deger", "adet"}], "adet", "pay", "bos"}]:
+    metin kolonda "NULL", "-", "?", "" gibi bos anlamina gelen yazilar.
+    "bos": kolondaki GERCEK bos hucre sayisi (yazilar haric); bayrak yalniz
+    bu sifirdan buyukse onerilir (bkz. akis_faz02._kod_secenekleri)."""
     sonuc = []
     for kol in adaylar:
         s = df[kol]
@@ -727,7 +729,8 @@ def metin_bos_kontrol(df, adaylar):
         if bul:
             adet = sum(n for _v, n in bul)
             sonuc.append({"kolon": kol, "degerler": [{"deger": v, "adet": n} for v, n in bul],
-                          "adet": adet, "pay": adet / max(int(s.notna().sum()), 1)})
+                          "adet": adet, "pay": adet / max(int(s.notna().sum()), 1),
+                          "bos": int(s.isna().sum())})
     return sonuc
 
 

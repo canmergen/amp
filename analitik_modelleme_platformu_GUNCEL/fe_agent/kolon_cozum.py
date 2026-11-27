@@ -310,7 +310,7 @@ def yazim_uygula(x, anahtar):
 # calisma yeniden onaylanana kadar kalir.)
 COZUM_EKI = {"hedef_grupla": "GRP", "seyrek_grupla": "GRP", "onek_grupla": "ONEK_GRP",
              "dolu_bayrak": "DOLU", "kod_bos_bayrak": "FLAG", "tarih_bos_bayrak": "FLAG",
-             "metin_bos_bayrak": "BOS", "gun_farki": "GUN"}
+             "metin_bos_bayrak": "FLAG", "gun_farki": "GUN"}
 
 
 def _metin_mi(s):
