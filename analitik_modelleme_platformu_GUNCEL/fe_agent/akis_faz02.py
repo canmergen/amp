@@ -459,7 +459,7 @@ def _duzeltme_ham(ek, kusur):
                 except (TypeError, ValueError):
                     continue
                 secenek = _kod_secenekleri(a, x)
-                kural = KOD_KURAL_ONERI[a]
+                kural = KOD_KURAL_ONERI[a] if KOD_KURAL_ONERI[a] in secenek else "kod_bos"
             elif a == "yazim":
                 kayit["anahtar"] = dict(x.get("anahtar") or {})
             elif a == "uc":
@@ -489,7 +489,7 @@ def duzeltme_onerileri(durum):
                 kaynak = o["kaynak"]
             else:
                 oneri, kaynak = v["kural"], "kural"
-                gerekce = KOD_KURAL_GEREKCESI.get(a, "Kural önerisi.")
+                gerekce = kod_kural_gerekcesi(a, oneri) or "Kural önerisi."
             cikti.setdefault(a, {})[k] = {"secenekler": v["secenekler"], "oneri": oneri,
                                           "gerekce": gerekce, "kayit": v["kayit"],
                                           "kaynak": kaynak}
@@ -882,9 +882,17 @@ def _veri_onerileri(durum, ek, df, egitim):
                     "değer sanar: boş sayılır. Ayrı 1/0 kolonu üretilmez, çünkü Train'de hep 0 "
                     "olurdu." % (x.get("deger"), _sb(x["set"], _tt)))
                 continue
+            if "bos" in x and not x.get("bos"):
+                # Kolonda baska bos hucre yok: bayrak, kolonun bos olup
+                # olmadiginin kopyasi olurdu. Yalniz bos say.
+                yaz(a_, x["kolon"], "kod_bos", "%s «bilgi yok» anlamında yazılmış: boş sayılır. "
+                    "Ayrı 1/0 kolonu üretilmez: kolonda başka boş hücre olmadığı için o kolon, "
+                    "bu kolonun boş olup olmadığının kopyası olurdu." % x.get("deger"))
+                continue
             yaz(a_, x["kolon"], "kod_bos_bayrak", "%s «bilgi yok» anlamında yazılmış: boş "
-                "sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_FLAG) saklanır."
-                % x.get("deger"))
+                "sayılır. Kolonda gerçek boş hücre de var; kodun yazdığı satırlar ayrı bir 1/0 "
+                "kolonunda (_FLAG) saklanır, böylece «kod yazılmıştı» ile «zaten boştu» "
+                "ayrılır." % x.get("deger"))
     return cikti
 
 
@@ -1638,7 +1646,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False, asama=N
             for k, v in (ham.get(a) or {}).items():
                 oneri, ger = _kodun_onerisi((veri.get(a) or {}).get(k))
                 if oneri not in v["secenekler"]:
-                    oneri, ger = v["kural"], KOD_KURAL_GEREKCESI.get(a, "")
+                    oneri, ger = v["kural"], kod_kural_gerekcesi(a, v["kural"])
                 ekle(a, k, tur, k, (bulgu.get(a) or {}).get(k, ""), v["secenekler"], oneri, ger)
     # 1) Anlam olmadan hic karar verilemeyenler
     kararlar(GORUS_SIZINTI, "sizinti")
@@ -1963,17 +1971,38 @@ def kod_karti(kod_oneri, kod_gerekce, oneri, secenek_adi=None):
 # geldigi bilinmeden deger degistirilmez).
 KOD_DUZELTMELERI = ("gizli_eksik", "karisik_eksik")
 KOD_KURAL_ONERI = {"gizli_eksik": "kod_bos_bayrak", "karisik_eksik": "kod_bos_bayrak"}
+KOD_BOS_GEREKCESI = ("Kod boş sayılır. Kolonda başka boş hücre yok; ayrı 1/0 kolonu bu kolonun boş "
+                     "olup olmadığının kopyası olacağı için üretilmez.")
+
+
+def kod_kural_gerekcesi(kontrol, oneri):
+    """Kural onerisinin gerekcesi: bayraksiz oneride (gercek bos hucresi
+    olmayan kolon) neden bayrak uretilmedigi."""
+    if kontrol in KOD_DUZELTMELERI and oneri == "kod_bos":
+        return KOD_BOS_GEREKCESI
+    return KOD_KURAL_GEREKCESI.get(kontrol, "")
+
+
 KOD_KURAL_GEREKCESI = {
-    "gizli_eksik": "Kod boş sayılır; kodun olduğu satırlar _FLAG bayrağında kalır, bilgi kaybolmaz.",
+    "gizli_eksik": "Kod boş sayılır; kolonda gerçek boş hücre de olduğu için kodun yazdığı satırlar "
+                   "_FLAG bayrağında kalır.",
     "karisik_eksik": "Eksik bilgi iki biçimde yazılmış; kod boş sayılır, kodun olduğu satırlar "
                      "_FLAG bayrağında kalır (kod ile boşun farkı bilgi taşıyorsa kaybolmaz).",
 }
 
 
 def _kod_secenekleri(kontrol, x):
-    """Kolonun duzeltme secenekleri: bos hucresi varsa "bos_koda" da."""
+    """Kolonun duzeltme secenekleri: bos hucresi varsa "bos_koda" da.
+    BAYRAK YALNIZ GERCEK BOS HUCRESI DE OLAN KOLONDA: kod bosa cevrilince
+    bayrak (kod yazan satirda 1) kolonun bos olup olmadigiyla birebir ayni
+    olur; kolonda baska bos hucre yoksa bayrak yeni bilgi tasimaz (agac
+    modeli bosu kendi isler; dogrusal model icin 03'teki «eksik: işaret»
+    ayni kolonu uretir). Gercek bos hucre de varsa bayrak "kod yazilmisti"
+    ile "zaten bostu"yu ayirir; yalniz o zaman secenek olarak sunulur."""
     from fe_agent import kolon_cozum as kc
     sec = list(kc.DUZELTME_SECENEK[kontrol])
+    if "bos" in x and not x.get("bos"):
+        sec = [c for c in sec if c != "kod_bos_bayrak"]
     if x.get("bos") and "bos_koda" not in sec:
         sec.insert(sec.index("birak") if "birak" in sec else len(sec), "bos_koda")
     return sec
@@ -2824,8 +2853,8 @@ def _ac(kisa, nedir, ornek, yakala, neden_etiket=None, neden=None, kapsam=None, 
 
 
 _VERIDEN = "Önerilen nereden?"
-_KOD_SAKLA = ("bu sayı boş sayılır; hangi satırlarda yazdığı da ayrı bir 1/0 kolonunda (_FLAG) "
-              "saklanır")
+_KOD_SAKLA = ("bu sayı boş sayılır; kolonda gerçek boş hücre de varsa hangi satırlarda yazdığı ayrı "
+              "bir 1/0 kolonunda (_FLAG) saklanır (yoksa o kolon boşluğun kopyası olurdu, üretilmez)")
 PROFIL_ESIK_ACIKLAMA = {
     "cok_bos": _ac(
         "Büyük kısmı boş olan kolon.",

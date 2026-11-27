@@ -3974,7 +3974,9 @@ dolu satır sayısı var. Her kolon için verilen seçeneklerden BİRİNİ öner
 Seçenekler (yalnız kolonun "secenekler" listesindekiler geçerli):
 - kod_bos_bayrak: kod boş sayılır, kodun olduğu satırlar ayrıca 1/0 bayrağıyla
   işaretlenir. Kod "bilgi yok" demek ama kodun konduğu durumun kendisi bilgi
-  taşıyabiliyorsa.
+  taşıyabiliyorsa. Bu seçenek yalnız kolonda gerçek boş hücre de varsa
+  sunulur (bayrak "kod yazılmıştı" ile "zaten boştu"yu ayırır); boş hücresi
+  olmayan kolonda bayrak boşluğun kopyası olur, seçeneklerde yoktur.
 - kod_bos: kod boş sayılır, bayrak yok. Kod açıkça "bilgi yok / ölçülmedi"
   demekse ve boş hücrelerle aynı anlamdaysa.
 - bos_koda: boş hücreler de koda çevrilir (eksik bilgi tek biçimde, verideki
@@ -4048,7 +4050,8 @@ sayılara göre ver.
   cikar; gerçek iş davranışı ya da nadir ama anlamlı bir durumsa (takip, iflas,
   dava bayrağı gibi) tut.
 - Özel kod (Gizli Eksik, Karışık Eksik): kod "bilgi yok" demekse kod_bos ya da
-  kod_bos_bayrak; kodun konduğu durum ayrıca bilgi taşıyorsa kod_bos_bayrak;
+  kod_bos_bayrak; kodun konduğu durum ayrıca bilgi taşıyorsa kod_bos_bayrak
+  (yalnız seçeneklerde varsa; yoksa kod_bos);
   kod veriyi hazırlayanın bilinçli koyduğu bir değerse ve boşlar da aynı
   durumu anlatıyorsa bos_koda; anlamı çıkarılamıyorsa birak.
 - Beklenmeyen Negatif: ölçü negatif olamıyorsa negatif_bos; negatif anlamlı
@@ -4280,7 +4283,8 @@ Türlere göre neye bakacaksın:
   bitişi gibi) "tut".
 - kod: Yazan sayı (-1, -99, 9999 gibi) bu kolonda gerçek bir değer mi, yoksa
   "bilgi yok" demek için mi yazılmış? "Bilgi yok" ise ve kodun yazıldığı
-  durum ayrıca bir şey anlatıyorsa "kod_bos_bayrak", anlatmıyorsa "kod_bos";
+  durum ayrıca bir şey anlatıyorsa "kod_bos_bayrak" (yalnız seçeneklerde
+  varsa; yoksa "kod_bos"), anlatmıyorsa "kod_bos";
   gerçek bir değerse ya da anlam çıkarılamıyorsa "birak".
 - sifir: Bu kolonda 0 gerçek bir değer mi? Adet, tutar, sayı, süre, bakiye
   gibi kolonlarda 0 gerçektir ("hiç olmadı") ve "birak" seçilir. Yaş, oran,

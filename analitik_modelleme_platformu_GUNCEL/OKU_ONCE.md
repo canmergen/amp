@@ -2836,6 +2836,13 @@ tanıtır; sayfalar sol bardan açılır.
 - Kart: kontrol kutusunda «+N yeni kolon»; onaylanmış kartta şeridin altında «Son tablo: kalan + yeni = toplam» (rol kolonları ayrıca).
 - Bayrak kolonunun adı `<KOLON>_FLAG` (`kolon_cozum.COZUM_EKI`; eskiden `_KOD`): kaynak kolonda «bilgi yok» anlamında özel değer (ör. -1 ya da uydurma tarih) yazan satırda 1. Eski ek kimlik / kategori kodu sanıldığı için değişti. Onaylanmış çalışmada kolon adları kayıtlıdır: eski `_KOD` adları 02.1.2 yeniden onaylanana kadar kalır; yeniden onaylanınca sonraki adımlar (02.2 ölçümü dahil) yeni adlarla yeniden yapılır.
 
+**02.1: özel kod bayrağı yalnız gerçek boş hücresi de olan kolonda**
+
+- «Kodu boş say ve bayrak üret» seçilince kod (ör. -1) boşa çevrilir, bayrak kod yazan satırda 1 olur. Kolonda başka boş hücre yoksa bayrak, kolonun boş olup olmadığıyla birebir aynıdır: yeni bilgi taşımaz (ağaç modeli boşu kendisi işler; doğrusal model için 03'teki «eksik: işaret» `<KOLON>_EKSIK` kolonunu üretir).
+- Bu yüzden `akis_faz02._kod_secenekleri` gerçek boş hücresi olmayan kolonda (`bos` 0) `kod_bos_bayrak` seçeneğini sunmaz; kodun önerisi «Kodu boş say» olur, gerekçesi nedenini söyler (`KOD_BOS_GEREKCESI`, `kod_kural_gerekcesi`). Dil modeli ya da eski kayıtlı seçim bayraklı seçeneği isterse geçersiz sayılır, öneriye dönülür.
+- Gerçek boş hücresi de olan kolonda bayrak önerilmeye devam eder: «kod yazılmıştı» ile «zaten boştu»yu ayırır. Adı `<KOLON>_FLAG`.
+- Kapsam dışı (değişmedi): uydurma tarih bayrağı (`tarih_bos_bayrak`; «süresiz» gibi ayrı anlamı olabilir) ve metin kolonundaki boş yazısı bayrağı (`metin_bos_bayrak`).
+
 **02.2: modelde ölçüm, kodun kararı ve dil modelinin kararı ayrı (ölçüm sürümü 4, öneri sürümü 3)**
 
 Bu bölüm aşağıdaki iki eski bölümün («ölçüme göre ayıklama», «gerekçe kodun ölçümüyle denetlenir») yerini alır; `olcum_ayikla` ve `olcum_tamamla` kaldırıldı.
