@@ -6522,3 +6522,14 @@ col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-ko
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--fs-ustbar); text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
 .dg-tablo.ks-kaynak { width: 100%; }
 .ks-ornek-btn { align-self: center; }
+
+/* AYAR NOTU: kural tablosunun üstünde tek satır. Ayar (ör. tesadüf sınırı)
+   kural değildir; tabloda satır olarak durmaz. */
+.pf-ayar-notu { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0;
+    padding: 7px 12px; border-left: 3px solid var(--mavi); border-radius: 6px;
+    background: color-mix(in srgb, var(--mavi) 9%, var(--yuzey)); font-size: var(--fs-kucuk); }
+.pf-ayar-notu[hidden] { display: none; }
+.pf-ayar-etiket { color: var(--mavi); padding: 1px 8px; border-radius: 10px; border: 1px solid currentColor;
+    font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.pf-ayar-ad { font-weight: 600; }
+.pf-ayar-metin { color: var(--metin-soluk); flex: 1 1 260px; }

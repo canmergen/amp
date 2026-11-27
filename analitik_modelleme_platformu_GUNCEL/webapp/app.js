@@ -18602,12 +18602,27 @@ function profilKartiEkle(alan, blok, devamdan) {
     const kb = elYap("div", "pf-bolum pf-kontroller");
     const kbBas = elYap("div", "pf-bolum-bas");
     /* Başlıkta toplam: kontrol sayısı ve altlarındaki kural sayısı. */
-    const pfKural = (alan.kontroller || []).reduce((t, k) => t + ((k.uye_kontroller || []).length || 1), 0);
+    /* AYAR kural değildir: «Tesadüf Olasılığı» kolon yakalamaz, dört kuralın
+       kullandığı sınırdır. Kural tablosunda satır olarak durmaz, sayıma
+       girmez; tablonun üstünde tek satırlık ayar notu olarak yazılır. */
+    const pfKurallar = (alan.kontroller || []).filter(k => !k.ayar);
+    const pfAyarlar = (alan.kontroller || []).filter(k => k.ayar);
+    const pfKural = pfKurallar.reduce((t, k) => t + ((k.uye_kontroller || []).length || 1), 0);
     kbBas.appendChild(elYap("span", "pf-bolum-ad", "Kurallar"));
-    if ((alan.kontroller || []).length)
-        kbBas.appendChild(elYap("span", "pf-bolum-not", (alan.kontroller || []).length + " kural grubu, " + pfKural + " kural"));
+    if (pfKurallar.length)
+        kbBas.appendChild(elYap("span", "pf-bolum-not", pfKurallar.length + " kural grubu, " + pfKural + " kural"));
     kb.appendChild(kbBas);
     if (oz) kb.appendChild(oz);
+    const ayarNotlari = pfAyarlar.map(k => {
+        const n = elYap("div", "pf-ayar-notu");
+        n.dataset.asama = String(k.asama_no || "");
+        n.append(elYap("span", "pf-ayar-etiket", "Ayar"),
+                 elYap("span", "pf-ayar-ad", k.ad + ": " + k.ayar),
+                 elYap("span", "pf-ayar-metin", "Kural değildir, kolon çıkarmaz. Dört kural bir bulguyu, şans eseri olma ihtimali bu sınırın altındaysa gerçek sayar."),
+                 bolmeBilgiSimgesi(k.bilgi, k.ad));
+        kb.appendChild(n);
+        return n;
+    });
     const tablo = elYap("table", "dg-tablo pf-tablo pf-tablo-yeni");
     const cg = document.createElement("colgroup");
     ["pf-k-ad", "pf-k-bulunan", "pf-k-sonuc", "pf-k-kaynak", "pf-k-ac"].forEach(c => {
@@ -18909,13 +18924,12 @@ function profilKartiEkle(alan, blok, devamdan) {
         ["tamam", "Bulgu Çıkmayan Kurallar", ""],
         ["pasif", "Uygulanmayan Kurallar", "Gereken kolon ya da ayar olmadığı için çalışmadı."]];
     const kesimSatir = {};
-    (alan.kontroller || []).forEach(k => {
+    pfKurallar.forEach(k => {
         /* SATIR RENGİ: yeşil sorunsuz (bulgu yok), sarı size sorulur,
            kırmızı üretime girmez, mavi bilgi, gri uygulanmadı. Açılan
            ayrıntı satırı da aynı renkte. */
         const nBul = Number(k.sayi || 0);
-        /* Genel kontrol (Tesadüf Olasılığı): kolon yakalamaz, geçerli sınırı gösterilir (mavi). */
-        const renk = k.ayar ? "pf-r-bilgi" : k.uygulandi === false ? "pf-r-pasif" : !nBul ? "pf-r-tamam"
+        const renk = k.uygulandi === false ? "pf-r-pasif" : !nBul ? "pf-r-tamam"
             : k.sonuc === "girmez" ? "pf-r-sorun" : k.sonuc === "bilgi" ? "pf-r-bilgi" : "pf-r-dikkat";
         const birim = k.birim || "kolon";
         const tumUye = (k.uye_kontroller && k.uye_kontroller.length) ? k.uye_kontroller : [k];
@@ -18924,7 +18938,7 @@ function profilKartiEkle(alan, blok, devamdan) {
             return { toplam: t.toplam + s.toplam, dm: t.dm + s.dm, fark: t.fark + s.fark,
                      gerekmez: t.gerekmez + (s.gerekmez || 0) };
         }, { toplam: 0, dm: 0, fark: 0, gerekmez: 0 });
-        const kesim = k.ayar ? "bilgi" : k.uygulandi === false ? "pasif" : !nBul ? "tamam"
+        const kesim = k.uygulandi === false ? "pasif" : !nBul ? "tamam"
             : say.toplam ? "secim" : k.sonuc === "girmez" ? "girmez" : "bilgi";
         const satir = elYap("tr", "pf-kontrol " + renk + (k.uygulandi === false ? " pf-uygulanmadi" : ""));
         satir.appendChild(pfKontrolHucresi(k.ad, k.kisa, ""));
@@ -18935,12 +18949,7 @@ function profilKartiEkle(alan, blok, devamdan) {
         satir.append(bulunan, neOlacak, kimTd, acTd);
 
         let dg = null;
-        if (k.ayar) {
-            const a = elYap("span", "pf-durum bilgi");
-            a.append(elYap("span", "pf-durum-ikon", "i"), elYap("span", "", "Sınır " + k.ayar));
-            bulunan.appendChild(a);
-            neOlacak.appendChild(elYap("span", "pf-ne pf-sonuc-bilgi", "Dört yerde kullanılır"));
-        } else if (k.uygulandi === false) {
+        if (k.uygulandi === false) {
             const p = elYap("span", "pf-durum pasif");
             p.append(elYap("span", "pf-durum-ikon", "○"), elYap("span", "", "Uygulanmadı"));
             bulunan.appendChild(p);
@@ -19084,6 +19093,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                 ks.classList.toggle("pf-asama-disi", !gorunen);
                 if (sayiEl) sayiEl.textContent = ftBinlik(gorunen) + " kural grubu";
             });
+            ayarNotlari.forEach(n => { n.hidden = !!gorunum && Number(n.dataset.asama) !== gorunum; });
             kart.classList.toggle("pf-kontrol-gorunumu", !!gorunum);
             const x = (asama.adlar || []).find(a => Number(a.no) === gorunum);
             etiket.textContent = x ? "Kontrol " + x.no + ": " + x.ad : "Bütün kontrollerin kuralları";
