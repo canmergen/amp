@@ -4384,6 +4384,13 @@ no|gerekçe|seçim
 - Kodun cümlesini aynen kopyalama. Kodun sayılarını kullan, yorumu sen yap:
   kolonun anlamı, bulgunun o anlamda beklenen bir şey olup olmadığı, hedef
   oranındaki farkın anlamca tutarlı olup olmadığı.
+- HER KARAR TEK SATIRDIR: Anlam, Veri ve Sonuç AYNI satırda arka arkaya
+  yazılır, satırın sonuna seçim gelir. Alt satıra geçme, madde imi koyma.
+- HER SATIR KENDİ BAŞINA OKUNUR: "aynı", "yukarıdaki gibi", "öncekiyle aynı
+  gerekçe" yazma. Birbirine benzeyen kolonlarda da gerekçeyi o kolon için
+  baştan yaz (kolonun kendi anlamı, kendi sayısı).
+- Seçimi seçeneğin KODUYLA yaz (cikar, tut, birak ... ya da kolon adı);
+  seçeneğin açıklamasını ya da başka bir sözcük yazma.
 - HER no için bir satır yaz. Uydurma sayı yazma; yalnız sana verilen
   sayıları kullan.
 Örnek:
@@ -4413,26 +4420,61 @@ _GORUS_SATIR = re.compile(r"^\s*(?:no\s*=\s*)?(\d+)\s*[|:=]\s*(.+?)\s*$")
 PROFIL_GEREKCE_EN_FAZLA = 600       # karakter
 
 
-def _gorus_satir_ayir(govde, secenekler):
+_SECIM_KATLA = str.maketrans("çğıöşüÇĞİÖŞÜI", "cgiosucgiosui")
+
+
+def _secim_norm(v):
+    """Secim karsilastirmasi icin: kucuk harf, Turkce harfler sade, bastaki
+    ve sondaki noktalama / tirnak atilir."""
+    t = str(v or "").translate(_SECIM_KATLA).lower()
+    return " ".join(t.strip(" \t.,;:!?\"'`«»*()[]").split())
+
+
+def _gorus_satir_ayir(govde, secenekler, secenek_ad=None):
     """ "gerekce|secim" (yeni) ya da "secim|gerekce" (eski) -> (secim,
     gerekce). Secim SECENEKLERDEN biri olan uc alandir: once SON alana,
-    sonra ILK alana bakilir; hicbiri secenek degilse (None, "")."""
-    alan = [a.strip().strip('"\'`').strip() for a in str(govde).split("|")]
-    alan = [a for a in alan] or [""]
-    kume = {str(o) for o in secenekler or []}
-    if alan[-1] in kume:
-        return alan[-1], " | ".join(a for a in alan[:-1] if a)
-    if alan[0] in kume:
-        return alan[0], " | ".join(a for a in alan[1:] if a)
+    sonra ILK alana bakilir; hicbiri secenek degilse (None, ""). Secim
+    seceneğin kodu ya da ADI olabilir (cikar / Çıkar); harf buyuklugu, Turkce
+    harf ve sondaki nokta fark sayilmaz."""
+    alan = [a.strip() for a in str(govde).split("|")] or [""]
+    esle = {_secim_norm(o): str(o) for o in secenekler or []}
+    for kod, ad in (secenek_ad or {}).items():
+        if str(kod) in {str(o) for o in secenekler or []}:
+            esle.setdefault(_secim_norm(ad), str(kod))
+    son, ilk = esle.get(_secim_norm(alan[-1])), esle.get(_secim_norm(alan[0]))
+    if son is not None and (len(alan) > 1 or ilk is None):
+        return son, " | ".join(a for a in alan[:-1] if a)
+    if ilk is not None:
+        return ilk, " | ".join(a for a in alan[1:] if a)
     return None, ""
 
 
+def _gorus_kaydi_coz(govde, devam, secenekler, secenek_ad=None):
+    """Bir kararin yaniti: numarali satirin govdesi + onu izleyen numarasiz
+    satirlar (dil modeli Anlam / Veri / Sonuc'u alt alta yazabiliyor ya da
+    secimi yazip gerekceyi alt satirlara birakabiliyor). Doner: (secim,
+    gerekce, ham). Once govde + devam TEK satir gibi okunur ("no|Anlam ..
+    / Veri .. / Sonuc ..|secim"); olmuyorsa govde tek basina, devam
+    satirlari gerekceye eklenir ("no|secim" + alt satirlarda gerekce)."""
+    devam = [d for d in devam if d]
+    tam = (govde + " " + " ".join(devam)).strip() if devam else str(govde).strip()
+    secim, gerekce = _gorus_satir_ayir(tam, secenekler, secenek_ad)
+    if secim is None and devam:
+        secim, gerekce = _gorus_satir_ayir(govde, secenekler, secenek_ad)
+        if secim is not None and len(gerekce.split()) < 3:
+            gerekce = (gerekce + " " + " ".join(devam)).strip()
+    return secim, gerekce, tam
+
+
 def _profil_gorus_coz(ham, parca):
-    """Dil modeli cevabi -> {id: {"secim", "gerekce"}}. Bicim "no|gerekce|
-    secim" satirlari (eski "no|secim|gerekce" de okunur); JSON ({"gorusler":
-    {no ya da id: {...}}}) da okunur. Secenekler disindaki secim atilir."""
+    """Dil modeli cevabi -> {id: {"secim", "gerekce"[, "ham"]}}. Bicim
+    "no|gerekce|secim" satirlari (eski "no|secim|gerekce" de okunur); bir
+    karar birden cok satira yazildiysa da okunur (_gorus_kaydi_coz). JSON
+    ({"gorusler": {no ya da id: {...}}}) da okunur. Secenekler disindaki
+    secim atilir. Gerekce yazilmadiysa (uc sozcukten az) dil modelinin o
+    karar icin yazdigi "ham" alaninda doner: neden yazmadigi gorulebilsin."""
     metin = str(ham or "")
-    aday = {}        # anahtar (no ya da id) -> satirin govdesi ya da (secim, gerekce)
+    aday = {}        # anahtar (no ya da id) -> [govde, [devam satirlari]] ya da (secim, gerekce)
     if "{" in metin and "gorusler" in metin:
         veri = _json_ayristir(metin, {}, dict)
         g = veri.get("gorusler") if isinstance(veri, dict) else None
@@ -4442,24 +4484,39 @@ def _profil_gorus_coz(ham, parca):
             if isinstance(v, dict):
                 aday[str(k).strip()] = (str(v.get("secim") or ""), str(v.get("gerekce") or ""))
     if not aday:
+        son = None
         for satir in metin.splitlines():
-            m = _GORUS_SATIR.match(satir.strip().strip("`"))
-            if m:
-                aday[m.group(1)] = m.group(2)
+            t = satir.strip().strip("`").strip()
+            if not t:
+                continue
+            m = _GORUS_SATIR.match(t)
+            # Yeni karar: numara bu parcada var ve daha once gorulmedi
+            # (gerekcenin icindeki "1: %12 ..." gibi satir karar sayilmasin).
+            if m and m.group(1) not in aday and 1 <= int(m.group(1)) <= len(parca):
+                son = m.group(1)
+                aday[son] = [m.group(2), []]
+            elif son is not None:
+                aday[son][1].append(t.lstrip("-•* ").strip())
     sonuc = {}
     for i, x in enumerate(parca, 1):
         v = aday.get(str(i)) or aday.get(x["id"])
         if not v:
             continue
+        yazilan = ""
         if isinstance(v, tuple):
             secim, gerekce = v
-            if secim not in {str(o) for o in x.get("secenekler") or []}:
-                continue
-        else:
-            secim, gerekce = _gorus_satir_ayir(v, x.get("secenekler"))
+            esle = {_secim_norm(o): str(o) for o in x.get("secenekler") or []}
+            secim = esle.get(_secim_norm(secim))
             if secim is None:
                 continue
-        sonuc[x["id"]] = {"secim": secim, "gerekce": " ".join(gerekce.split())[:PROFIL_GEREKCE_EN_FAZLA]}
+        else:
+            secim, gerekce, yazilan = _gorus_kaydi_coz(v[0], v[1], x.get("secenekler"), x.get("secenek_ad"))
+            if secim is None:
+                continue
+        kayit = {"secim": secim, "gerekce": " ".join(gerekce.split())[:PROFIL_GEREKCE_EN_FAZLA]}
+        if len(kayit["gerekce"].split()) < 3:
+            kayit["ham"] = " ".join(str(yazilan or secim).split())[:300]
+        sonuc[x["id"]] = kayit
     return sonuc
 
 
@@ -4476,7 +4533,11 @@ def _profil_gorus_parca(parca, baglam=""):
                 x.get("olcu") or "-", str(x.get("bulgu") or "")[:220],
                 ", ".join(str(o) for o in x.get("secenekler") or []), x.get("kod_oneri", ""),
                 " ".join(str(x.get("kod_gerekce") or "-").split())[:300],
-                " ".join(str(x.get("hedef_profil") or "-").split())[:320]))
+                " ".join(str(x.get("hedef_profil") or "-").split())[:320])
+            # Gerekcesi icin YENIDEN sorulan karar: neyin eksik oldugu satirda yazar.
+            + (" | UYARI: bu kararın önceki yanıtında gerekçe yoktu. Bu kez Anlam, Veri ve Sonuç'u "
+               "bu satır için baştan, tek satırda yaz; başka satıra atıf yapma."
+               if x.get("gerekce_iste") else ""))
     # Secenek kodlarinin ne yaptigi (yalniz bu parcada gecenler)
     istek = _veri_blogu("Kararlar:", "\n".join(satirlar))
     if sozluk:

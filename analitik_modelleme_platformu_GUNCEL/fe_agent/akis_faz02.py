@@ -1610,7 +1610,7 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False, asama=N
             cikti.setdefault(a, {})[anahtar] = o
             # Karar var ama gerekcesi yok: karar gecerli, gerekce icin yeniden sorulur.
             if not _gerekce_var(o) and int(o.get("gerekce_deneme") or 0) < GEREKCE_TEKRAR:
-                sorulacak.append((a, anahtar, imza, oge))
+                sorulacak.append((a, anahtar, imza, dict(oge, gerekce_iste=True)))
         else:
             sorulacak.append((a, anahtar, imza, oge))
     # KARTTAKI SIRAYLA SORULUR: kararlar dalga dalga alinir ve kart her
@@ -1638,11 +1638,15 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False, asama=N
         if eski is not None and not _gerekce_var(g):
             # Yeniden soruldu, yine gerekce yazmadi: eski karar kalir, deneme sayilir.
             eski["gerekce_deneme"] = int(eski.get("gerekce_deneme") or 0) + 1
+            if g.get("ham"):
+                eski["ham"] = g["ham"]          # son yanitta ne yazdigi
             continue
         cikti.setdefault(a, {})[anahtar] = {
             "secim": g["secim"], "gerekce": g.get("gerekce", ""),
             "kod_oneri": oge["kod_oneri"], "imza": imza,
             "gerekce_deneme": (int(eski.get("gerekce_deneme") or 0) + 1) if eski is not None else 0}
+        if g.get("ham") and not _gerekce_var(g):
+            cikti[a][anahtar]["ham"] = g["ham"]
     for a, anahtar, _imza, oge in [(q[0], q[1], None, q[2]) for q in ogeler]:
         g = (cikti.get(a) or {}).get(anahtar)
         if g is not None:
@@ -1674,6 +1678,17 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False, asama=N
 DM_GEREKCE_YOK = "Dil modeli bu karar için gerekçe yazmadı."
 
 
+def _dm_gerekce(g):
+    """Kartta dil modelinin gerekcesi. Gerekce yazilmadiysa not ve dil
+    modelinin o karar icin YAZDIGI SEY ("ham"): kullanici neden yazmadigini
+    (yalniz secimi mi yazdi, baska bir sey mi yazdi) gorebilsin."""
+    g = g if isinstance(g, dict) else {}
+    if _gerekce_var(g):
+        return str(g.get("gerekce")).strip()
+    ham = " ".join(str(g.get("ham") or g.get("gerekce") or "").split())
+    return DM_GEREKCE_YOK + ((" Yanıtında yalnız şunu yazdı: «%s»." % ham[:200]) if ham else "")
+
+
 def _gorusu_karara_yaz(p, ek):
     """Dil modelinin kararini ONERI yapar (secili gelen odur): Tut / Çıkar
     ve duzeltmelerde p["llm_oneri"], cozumlerde p["cozum_oneri"], ayni
@@ -1689,14 +1704,14 @@ def _gorusu_karara_yaz(p, ek):
                 continue
             lo.setdefault(a, {})[k] = {
                 "oneri": g["secim"], "kaynak": "dil modeli",
-                "gerekce": g.get("gerekce") or DM_GEREKCE_YOK,
+                "gerekce": _dm_gerekce(g),
                 "kod_oneri": g.get("kod_oneri"), "kod_gerekce": g.get("kod_gerekce") or ""}
     for k, v in (p.get("cozum_oneri") or {}).items():
         g = (G.get(v.get("kontrol")) or {}).get(k) or {}
         if g.get("secim") in (v.get("secenekler") or []):
             v["kod_oneri"], v["kod_gerekce"] = _kodun_onerisi(v)
             v["oneri"], v["kaynak"] = g["secim"], "dil modeli"
-            v["gerekce"] = g.get("gerekce") or DM_GEREKCE_YOK
+            v["gerekce"] = _dm_gerekce(g)
     for gr in ek.get("ayni_gruplar") or []:
         g = (G.get(GORUS_GRUP) or {}).get(gr["id"]) or {}
         s = g.get("secim")
@@ -1705,7 +1720,7 @@ def _gorusu_karara_yaz(p, ek):
             sira = list(gr.get("sira") or gr["uyeler"])
             gr["sira"] = [s] + [u for u in sira if u != s]
             gr["oneri"], gr["kaynak"] = s, "dil modeli"
-            gr["gerekce"] = g.get("gerekce") or DM_GEREKCE_YOK
+            gr["gerekce"] = _dm_gerekce(g)
 
 
 def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False, asama=None):
@@ -2018,7 +2033,7 @@ def satir_onerileri(durum):
             if g.get("secim") in o["secenekler"]:
                 o["kod_oneri"], o["kod_gerekce"] = o["oneri"], o["gerekce"]
                 o["oneri"], o["kaynak"] = g["secim"], "dil modeli"
-                o["gerekce"] = g.get("gerekce") or DM_GEREKCE_YOK
+                o["gerekce"] = _dm_gerekce(g)
     return cikti
 
 

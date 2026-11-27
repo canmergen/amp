@@ -3737,3 +3737,13 @@ Dosya aynı: `PROJE_HAFIZASI/<çalışma>/degisken_defteri.json` (`fe_agent/degi
 - **Aşamalar sürerken** onaylanmamış aşamaların kolonları `onaylanan`da kalır; adım tamamlanınca 02.1'in bütün sonucu yazılır.
 - **Sınır.** Defterdeki istatistikler şimdilik yalnız dosyadadır; 02.3'te dil modeline giden kolon listesine eklenmedi (istenirse eklenir).
 - **Test.** `defter_test.py` (14).
+
+## 02.1.2: gerekçesi yazılmayan kararlar (okuma sağlamlaştırıldı, yazdığı şey gösterilir)
+
+Sorun: kararların çoğunda gerekçe gelirken bir kısmında (1.477 kararın 15'i) dil modeli iki kez yeniden sorulduğu halde gerekçe yazmamış göründü. Dil modelinin o kararlar için ne yazdığı saklanmadığı için nedeni görülemiyordu. Canlıdaki ham yanıtlar elde olmadığından kesin neden bilinmiyor; biçimden sapınca gerekçeyi kaybettiren üç yol kapatıldı ve yazdığı şey artık kartta görünüyor.
+
+- **Bir karar birden çok satıra yazılırsa da okunur (`llm._gorus_kaydi_coz`).** İstem "Anlam / Veri / Sonuç"u üç parça olarak anlattığı için dil modeli bunları alt alta yazabiliyor ya da seçimi yazıp gerekçeyi alt satırlara bırakabiliyor; eski okuyucu satır satır baktığı için ilkinde kararı, ikincisinde gerekçeyi kaybediyordu. Artık numaralı satır ve onu izleyen numarasız satırlar tek karar sayılır. Gerekçenin içindeki "1: %12 …" gibi satır yeni karar sayılmaz.
+- **Seçim kod yerine adıyla yazılırsa da kabul edilir** (`_secim_norm`): "Çıkar", "Uçları kırp.", "KIRP" gibi yazımlar koda çevrilir (harf büyüklüğü, Türkçe harf, sondaki nokta fark sayılmaz). Önceden böyle yazılan karar hiç okunmuyordu.
+- **İstem:** her karar tek satır; her satır kendi başına okunur ("aynı", "yukarıdaki gibi" yazılmaz; benzer kolonlarda gerekçe baştan yazılır); seçim seçeneğin koduyla yazılır. Gerekçesi için yeniden sorulan kararın satırında neyin eksik olduğunu söyleyen uyarı yazar.
+- **Yazdığı şey saklanır ve gösterilir.** Gerekçe üç sözcükten azsa dil modelinin o karar için yazdığı metin `ham` alanında tutulur; kartta "Dil modeli bu karar için gerekçe yazmadı. Yanıtında yalnız şunu yazdı: «…»." diye görünür (`akis_faz02._dm_gerekce`). Böylece yalnız seçimi mi yazdığı, "kodla aynı" gibi kısa bir şey mi yazdığı görülür.
+- **Test.** `gerekce_test.py` (28).
