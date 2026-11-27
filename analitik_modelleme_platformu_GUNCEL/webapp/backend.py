@@ -3157,6 +3157,47 @@ def profil_karar_devam_endpoint():
 
 
 # ===========================================================================
+# 02.1.2 ASAMA GECISI
+# ---------------------------------------------------------------------------
+# Bulgular ve Kararlar bes asamadir (akis_faz02.PROFIL_ASAMALARI). Kart
+# "Aşamayı Onayla ve Sonrakine Geç" ya da "Önceki Aşama" dediginde bu uc
+# acik asamanin secimlerini kaydeder, hedef asamayi acar (o asamanin dil
+# modeli kararlari alinir; kalanini kart /profil_karar_devam ile tamamlar)
+# ve yeni asamanin kartini doner. Profil yeniden HESAPLANMAZ. Asama
+# onaylandikca degisken defteri (JSON) de yazilir. Adim yalniz son asama
+# "Kararları Onayla ve Devam Et" ile (/mesaj) tamamlanir.
+# ===========================================================================
+@app.route("/profil_asama", methods=["POST"])
+def profil_asama_endpoint():
+    try:
+        istek = request.get_json(force=True) or {}
+        anahtar = _oturum_anahtari(_calisma_id(istek))
+        durum = _durum_al(anahtar)
+        acik = durum.get("_secim_alani")
+        if not (isinstance(acik, dict) and acik.get("tip") == "profil"
+                and acik.get("karar_bekliyor")):
+            return jsonify({"tamam": False,
+                            "hata": "Veri profili kartı karar beklemiyor."})
+        gecis = istek.get("gecis") if isinstance(istek.get("gecis"), dict) else {}
+        kart, hata = akis.profil_asama_gecisi(durum, gecis)
+        if hata or not kart:
+            return jsonify({"tamam": False, "hata": hata or "Aşama açılamadı."})
+        durum["_secim_alani"] = kart
+        # Onaylananlar ve cikarilanlar deftere (dosya yazilamazsa asama yine acilir).
+        try:
+            from fe_agent import degisken_defteri as _defter
+            _defter.guncelle(durum)
+        except Exception as e_:
+            _hata_kaydet("profil_asama_defter", e_)
+        _kaydet(anahtar, durum)
+        return jsonify({"tamam": True, "secim_alani": kart})
+    except Exception as e:
+        kod = _hata_kaydet("profil_asama", e)
+        return jsonify({"tamam": False,
+                        "hata": "Aşama değiştirilemedi (%s)." % kod})
+
+
+# ===========================================================================
 # MODEL GELISTIRME DOKUMANI
 # ---------------------------------------------------------------------------
 # NEDEN AYRI UC, /karsilama VE /mesaj GOVDESINE EKLENMIYOR

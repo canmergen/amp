@@ -17582,6 +17582,9 @@ function pfUyeKontroller(alan) {
    istek bitince kart hâlâ yerindeyse kaldığı yerden sürer. Eski kartın
    süren isteği bitmeden yeni kart kendi isteğini başlatmaz. */
 const PF_DEVAM = { durdu: false, bosTur: 0, hata: "", ucakta: 0 };
+/* 02.1.2 AŞAMA GEÇİŞİ: yanıtı beklenen /profil_asama isteği var mı (çift
+   tıklama ve iki isteğin üst üste binmesi önlenir). */
+const PF_ASAMA = { ucakta: false };
 function profilKartiEkle(alan, blok, devamdan) {
     const kart = elYap("div", "secim-kart pf-kart");
     const kararModu = !!alan.karar_bekliyor && !(blok && blok.kilit);
@@ -17642,6 +17645,7 @@ function profilKartiEkle(alan, blok, devamdan) {
             + tireSade(alan.dusme_metni || ((alan.dusme_atif || "") + " adımında veri setinden çıkarılır"))
             + ". Kararınıza bırakılır: kolonu siz tutar ya da çıkarırsınız; Çıkar dediğiniz kolon da onayınızla çıkarılır. Düzeltme seçilir: kolon üretime girer, seçtiğiniz düzeltme onayınızla veriye uygulanır; satır kurallarında fazla ya da çakışan satırlar çalışma tablosundan çıkar.",
         "Boş Yerine Başka Şey Yazılmış, Yazım Farkları, Eksi Olamayacak Değerler ve Aşırı Değerler kontrollerinde kolon üretime girer; her kolon için düzeltme seçersiniz. Tekrar Eden Satır ve Setlerde Ortak Kayıt kontrollerinde çıkarılacak satırları seçersiniz.",
+        "Bulgular ve Kararlar beş aşamadır: 1) Kolon Kullanılabilir mi, 2) Kolon Güvenilir mi, 3) Aynı Bilgiyi Taşıyan Kolonlar, 4) Düzeltmeler, 5) Satırlar. Kontrollerin hepsi profil çıkarılırken bir kez hesaplanır; kararlar aşama aşama verilir. Bir aşamayı onaylayınca o aşamada çıkan kolonlar sonraki aşamalara girmez: onlar için yeniden karar sorulmaz, dil modeline de sorulmaz. Birbirinin aynısı kolon grupları üçüncü aşamada, kalan kolonlarla kurulur. «Önceki Aşama» ile geri dönüp kararı değiştirebilirsiniz; o zaman sonraki aşamalar yeniden onaylanır. Adım son aşama onaylanınca tamamlanır. Her aşama onaylandıkça değişken defteri (degisken_defteri.json) güncellenir.",
         "Kart nasıl okunur: Kontroller duruma göre kesimlere ayrılır (seçiminizi bekleyenler üstte; sonra kendiliğinden üretime girmeyenler, bilgi için gösterilenler, bulgu çıkmayanlar ve uygulanmayanlar). Her kontrol tek satırdır: bulunan, ne olacağı ve kararı kimin verdiği. Satırı açınca kontrolün her kuralı kendi kutusunda durur; kutunun başında kuralın adı, kaç bulgu olduğu ve ne olacağı yazar, «Bu kural neye bakar?» ölçütü ve örneği açar. Tablo o kutunun içindedir.",
         "İki kaynak ayrı sütundadır. «Kodun Önerisi»: kod kolonun yalnız sayılarına bakar (bulgu, hedef oranı) ve kendi gerekçesini yazar. «Dil Modelinin Kararı»: dil modeli kolonun anlamına, takıldığı kurala ve kodun bulgusuna birlikte bakar, kendi gerekçesini yazar; seçili gelen budur ve kodla aynı mı farklı mı yanında yazar. Seçili olan hücre çerçevelidir; öteki hücredeki «Bunu seç» seçimi ona çevirir. «Seçiminiz» sütununda seçimi elle de değiştirirsiniz; altında seçimin hangi kaynaktan geldiği yazar. Dil modelinden karar alınamayan bulguda kodun önerisi seçilidir. Çok bulgulu tabloda kararlar birkaç istekte alınır: kart, karar alınmayan bulgu kaldıkça kendiliğinden sormaya devam eder ve her seferinde yenilenir; bu sürerken seçim ve onay kapalıdır, «Durdur» ile durdurabilir, «Kalanları Dil Modeline Sor» ile sürdürebilirsiniz.",
         "Tek tıkla toplu seçim: Karar Özeti kutusundaki «Dil Modelinin Kararlarını Seç» ve «Kodun Önerilerini Seç» düğmeleri bütün kurallara, her kuralın kutusundaki aynı düğmeler yalnız o kurala uygulanır; sonra tek tek değiştirebilirsiniz. Kuralda iki kaynak ayrışıyorsa «Yalnız kod ile dil modelinin ayrıştığı satırları göster» kutusu tabloyu o satırlara indirir. Satır kurallarında da (Tekrar Eden Satır, Setlerde Ortak Kayıt) kararı dil modeli verir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
@@ -17651,6 +17655,44 @@ function profilKartiEkle(alan, blok, devamdan) {
     ].filter(Boolean).join("\n\n");
     bas.appendChild(bolmeBilgiSimgesi(bilgi, "Veri Profili"));
     kart.appendChild(bas);
+
+    /* AŞAMALAR (sunucu: akis_faz02.PROFIL_ASAMALARI). Bulgular ve Kararlar
+       beş aşamadır; kart karar beklerken YALNIZ AÇIK AŞAMANIN kontrollerini
+       ve o aşamaya giren kolonları gösterir. Bir aşamada çıkan kolon
+       sonraki aşamalarda sorulmaz. Şerit hangi aşamada olunduğunu ve
+       onaylananları gösterir; tablonun geneli (karolar, türler, eksik
+       oranı, hedef dağılımı) yalnız ilk aşamada ve onaylanmış kartta durur.
+       asamaNo 0: onaylanmış kart (bütün aşamalar). */
+    const asama = (alan.asama && Number(alan.asama.toplam) > 0) ? alan.asama : null;
+    const asamaNo = asama ? Number(asama.no || 0) : 0;
+    const asamaSon = !!asama && asamaNo === Number(asama.toplam);
+    if (asama) {
+        const serit = elYap("div", "pf-asamalar");
+        serit.setAttribute("role", "list");
+        serit.setAttribute("aria-label", "Aşamalar");
+        (asama.adlar || []).forEach(x => {
+            const acik = Number(x.no) === asamaNo;
+            const oge = elYap("div", "pf-asama-oge" + (acik ? " acik" : "") + (x.onayli ? " onayli" : ""));
+            oge.setAttribute("role", "listitem");
+            if (acik) oge.setAttribute("aria-current", "step");
+            oge.appendChild(elYap("span", "pf-asama-no", x.onayli && !acik ? "✓" : String(x.no)));
+            const yazi = elYap("span", "pf-asama-yazi");
+            yazi.appendChild(elYap("span", "pf-asama-ad", x.ad));
+            yazi.appendChild(elYap("span", "pf-asama-durum", acik ? "Şu an buradasınız" : x.onayli ? "Onaylandı" : "Sırada"));
+            oge.appendChild(yazi);
+            serit.appendChild(oge);
+        });
+        kart.appendChild(serit);
+        if (asamaNo) {
+            const ab = elYap("div", "pf-asama-bilgi");
+            metinYaz(ab, "**Aşama " + asamaNo + " / " + asama.toplam + ": " + asama.ad + ".** " + (asama.aciklama || "")
+                + " Bu aşamaya giren kolon: **" + ftBinlik(asama.giren) + "**"
+                + (Number(asama.onceki_cikan) > 0 ? "; önceki aşamalarda çıkan **" + ftBinlik(asama.onceki_cikan)
+                    + "** kolon bu aşamada sorulmaz." : "."));
+            kart.appendChild(ab);
+            if (asamaNo > 1) kart.classList.add("pf-asama-sonraki");
+        }
+    }
 
     /* Sayılar */
     const karolar = elYap("div", "pf-karolar");
@@ -18012,7 +18054,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                     + ". " + kalanMetni;
                 dugme.textContent = "Kalanları Dil Modeline Sor";
                 dugme.onclick = () => { PF_DEVAM.durdu = false; PF_DEVAM.bosTur = 0; PF_DEVAM.hata = ""; baslat(); };
-                const b = kart.querySelector("button.secim-onay"); if (b) b.disabled = false;
+                kart.querySelectorAll("button.secim-onay, button.pf-asama-btn").forEach(b => { b.disabled = false; });
             };
             /* f'yi sohbet isteği (ve istenirse süren karar isteği) bitince çalıştırır;
                kart o sırada ekrandan kalktıysa ya da kilitlendiyse hiç çalıştırmaz. */
@@ -18033,7 +18075,7 @@ function profilKartiEkle(alan, blok, devamdan) {
                     dugme.disabled = true;
                     metin.textContent = "Durduruluyor; süren istek bitince kart yenilenir (" + sayac + ").";
                 };
-                const b = kart.querySelector("button.secim-onay"); if (b) b.disabled = true;
+                kart.querySelectorAll("button.secim-onay, button.pf-asama-btn").forEach(b => { b.disabled = true; });
                 bosken(() => {
                 PF_DEVAM.ucakta++;
                 fetch(getWebAppBackendUrl("profil_karar_devam"), {
@@ -18709,9 +18751,11 @@ function profilKartiEkle(alan, blok, devamdan) {
                       elYap("span", "", ftBinlik(nBul) + " " + birim), elYap("span", "pf-ok", "▾"));
             bulunan.appendChild(dg);
             /* Bulunan kolonların incelenen kolonlardaki payı (hesaptan). */
-            if (birim === "kolon" && Number(alan.kolon) > 0) {
-                const py = elYap("div", "pf-bulunan-pay", "Kolonların " + pfYuzde(nBul / Number(alan.kolon)));
-                py.title = ftBinlik(nBul) + " / " + ftBinlik(alan.kolon) + " kolon";
+            /* Aşamalı kartta payda o aşamaya GİREN kolon sayısıdır. */
+            const payda = (asama && asamaNo && Number(asama.giren) > 0) ? Number(asama.giren) : Number(alan.kolon);
+            if (birim === "kolon" && payda > 0) {
+                const py = elYap("div", "pf-bulunan-pay", (asama && asamaNo ? "Giren kolonların " : "Kolonların ") + pfYuzde(nBul / payda));
+                py.title = ftBinlik(nBul) + " / " + ftBinlik(payda) + " kolon";
                 bulunan.appendChild(py);
             }
             neOlacak.appendChild(elYap("span", "pf-ne " + (PF_NE_OLACAK_SINIF[k.sonuc] || ""), k.ne_olacak || ""));
@@ -18907,7 +18951,79 @@ function profilKartiEkle(alan, blok, devamdan) {
                                   cozum: Object.assign({}, cozumSecim),
                                   duzeltme: JSON.parse(JSON.stringify(duzSecim)) } });
         };
-        alt.append(ozetEl, btn);
+        /* AŞAMA DÜĞMELERİ. Son aşama dışında adım onaylanmaz: "Aşamayı Onayla
+           ve Sonrakine Geç" açık aşamanın seçimlerini kaydeder ve sonraki
+           aşamanın kartını getirir (/profil_asama; kart yerinde değişir).
+           "Önceki Aşama" seçimleri kaydeder (onaylanmış saymaz) ve geri
+           döner. Son aşamada adımın onay düğmesi durur. */
+        const dugmeler = elYap("div", "pf-asama-dugmeler");
+        const asamaHata = elYap("div", "pf-asama-hata");
+        asamaHata.hidden = true;
+        if (asama && asamaNo) {
+            const gecisGovdesi = yon => ({ yon: yon,
+                cikar: Object.keys(kararlar).filter(a => kararlar[a] === "cikar"),
+                ayni: Object.assign({}, ayniSecim), cozum: Object.assign({}, cozumSecim),
+                duzeltme: JSON.parse(JSON.stringify(duzSecim)) });
+            const asamaGec = (yon, dugme, bekleme) => {
+                if (mesgul || PF_ASAMA.ucakta || PF_DEVAM.ucakta > 0 || kart.classList.contains("kilitli")
+                    || kart.classList.contains("pf-karar-aliyor")) return;
+                PF_ASAMA.ucakta = true;
+                PF_DEVAM.durdu = true;          // bu kartın kendiliğinden karar isteği başlamasın
+                asamaHata.hidden = true;
+                const eskiYazi = dugme.textContent;
+                dugme.textContent = bekleme;
+                kart.querySelectorAll("button.secim-onay, button.pf-asama-btn").forEach(b => { b.disabled = true; });
+                kart.classList.add("pf-asama-geciyor");
+                const geriAl = mesaj => {
+                    PF_ASAMA.ucakta = false;
+                    PF_DEVAM.durdu = false;
+                    dugme.textContent = eskiYazi;
+                    kart.classList.remove("pf-asama-geciyor");
+                    kart.querySelectorAll("button.secim-onay, button.pf-asama-btn").forEach(b => { b.disabled = false; });
+                    asamaHata.textContent = mesaj;
+                    asamaHata.hidden = false;
+                };
+                fetch(getWebAppBackendUrl("profil_asama"), {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(ftKimlikGovdesi({ gecis: gecisGovdesi(yon) }))
+                })
+                .then(r => r.json())
+                .then(d => {
+                    if (!(d && d.tamam === true && d.secim_alani && d.secim_alani.tip === "profil")) {
+                        geriAl((d && d.hata) || "Aşama değiştirilemedi.");
+                        return;
+                    }
+                    PF_ASAMA.ucakta = false;
+                    if (!kart.isConnected) return;
+                    const yeni = profilKartiEkle(d.secim_alani, blok, false);
+                    if (yeni && kart.parentNode) {
+                        kart.parentNode.insertBefore(yeni, kart);
+                        kart.remove();
+                        try { yeni.scrollIntoView({ block: "start" }); } catch (e) { /* eski tarayıcı */ }
+                    }
+                })
+                .catch(() => geriAl("Sunucuya ulaşılamadı; aşama değiştirilemedi."));
+            };
+            if (asamaNo > 1) {
+                const geri = elYap("button", "dg-toplu-btn pf-asama-btn pf-asama-geri", "Önceki Aşama");
+                geri.type = "button";
+                geri.onclick = () => asamaGec("geri", geri, "Önceki aşama açılıyor…");
+                dugmeler.appendChild(geri);
+            }
+            if (!asamaSon) {
+                const ileri = elYap("button", "secim-onay pf-asama-btn pf-asama-ileri", "Aşamayı Onayla ve Sonrakine Geç");
+                ileri.type = "button";
+                ileri.onclick = () => asamaGec("ileri", ileri, "Aşama kaydediliyor, sonraki aşama açılıyor…");
+                dugmeler.appendChild(ileri);
+                btn.hidden = true;              // adımın onayı yalnız son aşamada
+                btn.disabled = true;
+                btn.classList.remove("secim-onay");
+                btn.classList.add("pf-adim-onay-gizli");
+            }
+        }
+        dugmeler.appendChild(btn);
+        alt.append(ozetEl, dugmeler, asamaHata);
         kart.appendChild(alt);
     }
     kararCiz();

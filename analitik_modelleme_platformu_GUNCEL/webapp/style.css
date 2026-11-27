@@ -6271,3 +6271,37 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
   .pf-ozet-sayilar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dg-tablo.pf-karar-tablo col.pf-kt-secim { width: 180px; }
 }
+
+/* ==================== 02.1.2 AŞAMALAR ====================
+   Şerit: beş aşama yan yana; açık aşama çerçeveli, onaylanan yeşil işaretli.
+   Açık aşamadan sonraki aşamalarda tablonun geneli (karolar, türler, eksik
+   oranı, hedef dağılımı) gösterilmez: o bilgiler ilk aşamada duruyor. */
+.pf-asamalar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--b-2); }
+.pf-asama-oge {
+  display: flex; align-items: center; gap: var(--b-2); min-width: 0;
+  padding: var(--b-2) var(--b-3); border: 1px solid var(--kenar); border-radius: var(--r-kucuk);
+  background: var(--yuzey-alt); color: var(--metin-tamam);
+}
+.pf-asama-oge.acik { border: 2px solid var(--metin); background: var(--yuzey); color: var(--metin); }
+.pf-asama-oge.onayli:not(.acik) { color: var(--metin); }
+.pf-asama-no {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 1.7em; height: 1.7em; border-radius: 50%; border: 1.5px solid currentColor;
+  font-weight: var(--fw-kalin); line-height: 1;
+}
+.pf-asama-oge.onayli:not(.acik) .pf-asama-no { color: var(--yesil); background: var(--yesil-acik); }
+.pf-asama-yazi { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.pf-asama-ad { font-weight: var(--fw-kalin); overflow-wrap: anywhere; }
+.pf-asama-durum { font-size: var(--fs-ustbar); color: var(--metin-tamam); }
+.pf-asama-oge.onayli:not(.acik) .pf-asama-durum { color: var(--yesil); }
+.pf-asama-bilgi { line-height: 1.5; color: var(--metin-soluk); }
+.pf-kart.pf-asama-sonraki > .pf-karolar, .pf-kart.pf-asama-sonraki > .pf-satir,
+.pf-kart.pf-asama-sonraki > .pf-esik-notu, .pf-kart.pf-asama-sonraki > .pf-bolum:not(.pf-kontroller) { display: none; }
+.pf-asama-dugmeler { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--b-3); }
+.pf-asama-dugmeler [hidden] { display: none; }
+.pf-asama-hata { color: var(--kirmizi); font-weight: var(--fw-kalin); }
+.pf-asama-hata[hidden] { display: none; }
+.pf-kart.pf-asama-geciyor .pf-karar, .pf-kart.pf-asama-geciyor select.pf-cozum-sec,
+.pf-kart.pf-asama-geciyor input[type=radio], .pf-kart.pf-asama-geciyor .pf-toplu,
+.pf-kart.pf-asama-geciyor .pf-kay-sec { pointer-events: none; opacity: 0.55; }
+@media (max-width: 900px) { .pf-asamalar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -8,6 +8,7 @@ SONRA, eldeki butun degiskenlerle (ham + uretilen; _ENRICHED) calisir.
 """
 
 
+import copy
 import json
 import math
 import re
@@ -1018,6 +1019,269 @@ def _kodun_onerisi(o):
     return o.get("oneri"), o.get("gerekce") or ""
 
 
+# ===========================================================================
+# 02.1.2 ASAMALARI
+# ---------------------------------------------------------------------------
+# Bulgular ve Kararlar BES ASAMADIR. Kontrollerin hepsi profil cikarilirken
+# bir kez hesaplanir (veri bir kez okunur); KARARLAR asama asama verilir:
+# bir asama onaylaninca o asamada cikan kolonlar sonraki asamalara GIRMEZ.
+# Boylece cikarilacak bir kolon icin sonraki kontrollerde karar sorulmaz,
+# dil modeline bosa soru gitmez ve kontroller arasi celiski kalmaz.
+# Kontroller kolon bazinda oldugu icin sonuc, her asamada kalan kolonlarla
+# yeniden hesaplamakla aynidir; birbirinin aynisi kolon GRUPLARI ise ucuncu
+# asamaya girerken kalan kolonlarla yeniden kurulur (_gruplari_buda).
+#   p["asama"]       : acik asama (1..5)
+#   p["asama_onay"]  : onaylanan asamalar
+#   p["asama_karar"] : {"1": {kolon: tut|cikar}, "2": {...}} asama bazinda
+#                      Tut / Çıkar; p["profil_karar"] (kolon bazinda) bundan
+#                      kurulur (_profil_karari_kur)
+# ===========================================================================
+PROFIL_ASAMALARI = (
+    {"no": 1, "ad": "Kolon Kullanılabilir mi",
+     "aciklama": "Çoğu boş, hep ya da neredeyse hep aynı değerli, numara gibi, çok fazla farklı "
+                 "değerli kolonlar ve tarih kolonları.",
+     "kurallar": ("cok_bos", "sabit", "baskin", "kimlik_gibi", "yuksek_kardinalite", "tarih")},
+    {"no": 2, "ad": "Kolon Güvenilir mi",
+     "aciklama": "Tahmin anında bilinmeyen bilgi taşıyan, dönemden döneme ya da Train dışında "
+                 "bozulan ve birbirini tutmayan kolonlar.",
+     "kurallar": ("gelecek_pencere", "birebir", "tarih_sonra", "donem", "sicrama", "kayma",
+                  "pencere", "tutar_adet", "set_disi")},
+    {"no": 3, "ad": "Aynı Bilgiyi Taşıyan Kolonlar",
+     "aciklama": "Birbirinin aynısı ya da neredeyse aynısı kolonlar; her grupta biri kalır.",
+     "kurallar": ("ayni_icerik", "yakin_icerik")},
+    {"no": 4, "ad": "Düzeltmeler",
+     "aciklama": "Kalan kolonlarda boş yerine yazılmış değer, yazım farkı, eksi değer ve aşırı "
+                 "değer; kolon üretime girer, düzeltme seçilir.",
+     "kurallar": ("gizli_eksik", "karisik_eksik", "sifir_bos", "metin_bos", "yazim", "negatif", "uc")},
+    {"no": 5, "ad": "Satırlar",
+     "aciklama": "Tekrar eden satırlar ve setlerde ortak kayıtlar.",
+     "kurallar": ("tekrar", "set_cakisma")},
+)
+ASAMA_SAYISI = len(PROFIL_ASAMALARI)
+
+
+def _kural_asamasi():
+    """{kural: asama no}."""
+    return {a: x["no"] for x in PROFIL_ASAMALARI for a in x["kurallar"]}
+
+
+def asama_kurallari(no):
+    return next((x["kurallar"] for x in PROFIL_ASAMALARI if x["no"] == int(no)), ())
+
+
+def profil_asamali(p):
+    """Profil asamali duzende mi (surum 14 ve sonrasi)."""
+    return isinstance(p, dict) and p.get("asama") is not None
+
+
+def profil_asamasi(p):
+    try:
+        return max(1, min(ASAMA_SAYISI, int((p or {}).get("asama") or 1)))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _asama_vars(p, ek, no):
+    """{kolon: "cikar"}: BU ASAMANIN kurallarinda Çıkar onerilen kolonlar
+    (kolon ayni asamada birden cok kuraldaysa biri Çıkar diyorsa Çıkar)."""
+    return _karar_varsayilan(p, ek, kurallar=asama_kurallari(no))
+
+
+def asama_karar_kolonlari(durum, no):
+    """Bu asamada Tut ya da Çıkar karari istenen kolonlar: asamanin karar
+    kurallarina takilan ve onceki asamalarda cikmamis olanlar."""
+    p = durum.get("profil") or {}
+    ek = p.get("profil_ek") or {}
+    haric = asama_cikanlari(durum, int(no) - 1)
+    ad = [x["kolon"] for a in asama_kurallari(no) if a in KARAR_KONTROLLERI for x in (ek.get(a) or [])]
+    return [k for k in dict.fromkeys(ad) if k not in haric]
+
+
+def asama_karar_degerleri(durum, no):
+    """{kolon: tut|cikar}: asamanin kolonlarinda gecerli secim: o asamada
+    kaydedilen, yoksa onceki onaydan tasinan sapma (p["karar_on"]), yoksa
+    asamanin onerisi."""
+    p = durum.get("profil") or {}
+    ak = (p.get("asama_karar") or {}).get(str(int(no))) if isinstance(p.get("asama_karar"), dict) else None
+    ak = ak if isinstance(ak, dict) else {}
+    on = p.get("karar_on") if isinstance(p.get("karar_on"), dict) else {}
+    vars_ = _asama_vars(p, p.get("profil_ek") or {}, no)
+    return {k: ak.get(k, on.get(k, vars_.get(k, PROFIL_KARAR_TUT)))
+            for k in asama_karar_kolonlari(durum, no)}
+
+
+def asama_cikanlari(durum, son):
+    """1..son asamalarinin kararlariyla CIKAN kolonlar (sonraki asamalara
+    girmeyenler). Asama 1: neredeyse hep ayni degerde Çıkar denenler, hep
+    ayni degerliler, cozumu olmayan ya da cozumu Çıkar secilen "uretime
+    girmez" kolonlari (cozumu secilen kolon kalir: ondan turetilen degisken
+    sonraki asamalardan gecer). Asama 2: Çıkar denenler. Asama 3: grupta
+    kalmayan kopyalar. Asama 4 ve 5 kolon cikarmaz."""
+    son = int(son)
+    if son < 1:
+        return set()
+    p = durum.get("profil") or {}
+    t = p.get("profil_teshis") or {}
+    cikti = {k for k, v in asama_karar_degerleri(durum, 1).items() if v == PROFIL_KARAR_CIKAR}
+    cikti |= set(map(str, t.get("sabit") or []))
+    oneri, sec, gercek = cozum_onerileri(durum), cozum_secimi(durum), etkin_bos_gercek(durum)
+    for a in COZUM_KONTROLLERI:
+        for k in t.get(a) or []:
+            if a == "cok_bos" and k in gercek:
+                continue
+            o = oneri.get(k)
+            if not o or len(o.get("secenekler") or []) < 2 or sec.get(k) == "cikar":
+                cikti.add(str(k))
+    if son >= 2:
+        cikti |= {k for k, v in asama_karar_degerleri(durum, 2).items() if v == PROFIL_KARAR_CIKAR}
+    if son >= 3:
+        cikti |= set(_ayni_kopyalar(p))
+    return cikti
+
+
+def _profil_karari_kur(p):
+    """Kolon bazindaki Tut / Çıkar (p["profil_karar"]) asama kararlarindan:
+    kolon herhangi bir asamada Çıkar dendiyse Çıkar."""
+    ak = p.get("asama_karar") if isinstance(p.get("asama_karar"), dict) else {}
+    karar = {}
+    for no in sorted(ak, key=lambda x: int(x)):
+        for k, v in (ak[no] or {}).items():
+            karar[k] = PROFIL_KARAR_CIKAR if PROFIL_KARAR_CIKAR in (v, karar.get(k)) else PROFIL_KARAR_TUT
+    p["profil_karar"] = karar
+    return karar
+
+
+def _gruplari_buda(p, ek, haric):
+    """Birbirinin aynisi kolon gruplarini KALAN kolonlarla yeniden kurar
+    (ucuncu asamaya girerken): onceki asamalarda cikan uyeler gruptan duser,
+    tek uyesi kalan grup grup olmaktan cikar. Uyeleri degismeyen grubun
+    alinmis karari korunur. Kaynak: profil cikarilirken saklanan
+    ek["ayni_gruplar_ham"] (kodun siralamasi ve gerekcesiyle)."""
+    ham = ek.get("ayni_gruplar_ham")
+    if not isinstance(ham, list):
+        return
+    eski = {g["id"]: g for g in ek.get("ayni_gruplar") or []}
+    yeni = []
+    for h in ham:
+        uy = [u for u in h["uyeler"] if u not in haric]
+        if len(uy) < 2:
+            continue
+        e = eski.get(h["id"])
+        if e is not None and list(e.get("uyeler") or []) == uy:
+            e["elenen"] = {}
+            yeni.append(e)
+            continue
+        g = copy.deepcopy(h)
+        g["uyeler"] = uy
+        g["sira"] = [u for u in (h.get("sira") or h["uyeler"]) if u in uy]
+        g["elenen"] = {}
+        for alan in ("guc", "uye_bulgu"):
+            if isinstance(g.get(alan), dict):
+                g[alan] = {u: v for u, v in g[alan].items() if u in uy}
+        g["oneri"] = g["sira"][0]
+        yeni.append(g)
+    ek["ayni_gruplar"] = yeni
+    uyeler = {g["id"]: set(g["uyeler"]) for g in yeni}
+    p["ayni_secim"] = {k: v for k, v in (p.get("ayni_secim") or {}).items() if v in uyeler.get(k, set())}
+    if isinstance(p.get("profil_teshis"), dict):
+        p["profil_teshis"]["ayni_icerik"] = _ayni_kopyalar(p)
+
+
+def profil_asamaya_gir(durum, no, butce=None, sorma=False):
+    """Asamayi acar: ucuncu asamadan itibaren gruplar kalan kolonlarla
+    kurulur; asamanin bulgulari icin dil modeli kararlari alinir (yalniz
+    alinmamis olanlar; sorma: hic sorulmaz, kayitli kararlar yazilir)."""
+    p = durum.get("profil") or {}
+    ek, teshis = p.get("profil_ek"), p.get("profil_teshis")
+    no = max(1, min(ASAMA_SAYISI, int(no)))
+    p["asama"] = no
+    durum["profil"] = p
+    if no >= 3:
+        _gruplari_buda(p, ek, asama_cikanlari(durum, 2))
+    _karar_asamasi(durum, p, ek, teshis, butce=butce, sorma=sorma, asama=no)
+    durum["profil"] = p
+    return no
+
+
+def profil_asama_kaydet(durum, govde, onay=True):
+    """Acik asamanin secimlerini kaydeder. govde: kartin gonderdigi
+    {"cikar": [...], "ayni": {...}, "cozum": {...}, "duzeltme": {...}}
+    (yalniz bu asamanin satirlari). onay: asama onaylandi sayilir; sonraki
+    asamalarin onayi dusurulur (kalan kolonlar degismis olabilir)."""
+    p = durum.get("profil") or {}
+    ek = p.get("profil_ek") or {}
+    no = profil_asamasi(p)
+    govde = govde if isinstance(govde, dict) else {}
+    ak = dict(p.get("asama_karar") or {}) if isinstance(p.get("asama_karar"), dict) else {}
+    mevcut = asama_karar_degerleri(durum, no)
+    if isinstance(govde.get("cikar"), list):
+        cik = {str(k) for k in govde["cikar"]}
+        ak[str(no)] = {k: (PROFIL_KARAR_CIKAR if k in cik else PROFIL_KARAR_TUT) for k in mevcut}
+    elif onay:
+        ak[str(no)] = dict(mevcut)
+    p["asama_karar"] = ak
+    _profil_karari_kur(p)
+    if isinstance(govde.get("ayni"), dict):
+        uyeler = {g["id"]: set(g["uyeler"]) for g in ek.get("ayni_gruplar") or []}
+        sec = dict(p.get("ayni_secim") or {})
+        for k, v in govde["ayni"].items():
+            if str(v) in uyeler.get(str(k), set()):
+                sec[str(k)] = str(v)
+        p["ayni_secim"] = sec
+        if isinstance(p.get("profil_teshis"), dict):
+            p["profil_teshis"]["ayni_icerik"] = _ayni_kopyalar(p)
+    if isinstance(govde.get("cozum"), dict):
+        oneri = cozum_onerileri(durum)
+        sec = dict(p.get("cozum_secim") or {})
+        for k, c in govde["cozum"].items():
+            if c in ((oneri.get(str(k)) or {}).get("secenekler") or []):
+                sec[str(k)] = str(c)
+        p["cozum_secim"] = sec
+    if isinstance(govde.get("duzeltme"), dict):
+        duz_oneri, sat_oneri = duzeltme_onerileri(durum), satir_onerileri(durum)
+        sec = {a: dict(v) for a, v in (p.get("duzeltme_secim") or {}).items()}
+        sat = {a: dict(v) for a, v in (p.get("satir_secim") or {}).items()}
+        for a, kolonlar in govde["duzeltme"].items():
+            if not isinstance(kolonlar, dict):
+                continue
+            for k, c in kolonlar.items():
+                if c in (((duz_oneri.get(str(a)) or {}).get(str(k)) or {}).get("secenekler") or []):
+                    sec.setdefault(str(a), {})[str(k)] = str(c)
+                elif c in (((sat_oneri.get(str(a)) or {}).get(str(k)) or {}).get("secenekler") or []):
+                    sat.setdefault(str(a), {})[str(k)] = str(c)
+        p["duzeltme_secim"], p["satir_secim"] = sec, sat
+    if onay:
+        try:
+            eski = [int(x) for x in (p.get("asama_onay") or [])]
+        except (TypeError, ValueError):
+            eski = []
+        p["asama_onay"] = sorted({x for x in eski if x < no} | {no})
+    durum["profil"] = p
+    return no
+
+
+def profil_asama_gecisi(durum, govde, butce=None):
+    """Asama degistirir. govde["yon"]: "ileri" (acik asama onaylanir,
+    sonraki acilir) ya da "geri" (secimler kaydedilir ama onaylanmis
+    sayilmaz, onceki asama acilir). Doner: (kart, hata)."""
+    p = durum.get("profil") or {}
+    if not profil_asamali(p) or not isinstance(p.get("profil_ek"), dict) or profil_eski_mi(durum):
+        return None, "Profil aşamalı düzende değil; 02.1.1 adımını onaylayıp profili yeniden çıkarın."
+    no = profil_asamasi(p)
+    yon = str((govde or {}).get("yon") or "ileri")
+    if yon == "geri":
+        if no <= 1:
+            return None, "İlk aşamadasınız."
+        profil_asama_kaydet(durum, govde, onay=False)
+        profil_asamaya_gir(durum, no - 1, sorma=True)
+    else:
+        if no >= ASAMA_SAYISI:
+            return None, "Son aşamadasınız; kararları onaylayıp adımı tamamlayın."
+        profil_asama_kaydet(durum, govde, onay=True)
+        profil_asamaya_gir(durum, no + 1, butce=butce)
+    return profil_karti(durum, karar=True), None
+
+
 # GEREKCESIZ KARAR EKSIKTIR: dil modeli secimi yazip gerekceyi yazmadiysa
 # karar gecerli kalir ama gerekcesi icin yeniden sorulur (en cok bu kadar
 # kez; hala yazmazsa kartta "gerekçe yazmadı" diye gorunur).
@@ -1094,8 +1358,12 @@ def _kural_gosterim_sirasi():
     return {a: i for i, a in enumerate(sira)}
 
 
-def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
+def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False, asama=None):
+    """asama: yalniz o asamanin kurallarindaki, onceki asamalarda cikmamis
+    kolonlarin bulgulari sorulur (None: hepsi; eski duzen)."""
     onceki = p.get("llm_gorus") if isinstance(p.get("llm_gorus"), dict) else {}
+    kural_no = _kural_asamasi()
+    asama_haric = asama_cikanlari(durum, int(asama) - 1) if asama is not None else set()
     aciklama = _aciklamalar(durum)
     olcu = _kart_olculeri(durum)
     bulgu = _ek_bulgulari(p, ek=ek, kopya_suz=False)
@@ -1111,6 +1379,13 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
     def ekle(a, anahtar, tur, kolon, metin, secenekler, kod_oneri, kod_gerekce="", acik=None):
         if len(secenekler) < 2:
             return
+        if asama is not None:
+            kural = ("yakin_icerik" if str(anahtar).startswith("yakin:") else "ayni_icerik") \
+                if a == GORUS_GRUP else a
+            if kural_no.get(kural) != int(asama):
+                return
+            if tur not in ("ayni", "satir") and anahtar in asama_haric:
+                return
         ogeler.append((a, anahtar, {
             "id": "%s|%s" % (a, anahtar), "tur": tur, "kolon": kolon,
             "kural": kad.get(a, ""),
@@ -1251,8 +1526,16 @@ def _profil_llm_gorusleri(durum, p, ek, teshis, butce=None, sorma=False):
             g["kod_gerekce"] = oge["kod_gerekce"]
     alinan = sum(len(x) for x in cikti.values())
     farkli = sum(1 for x in cikti.values() for g in x.values() if g.get("secim") != g.get("kod_oneri"))
+    if asama is not None:
+        # Oteki asamalarin kararlari korunur (sayim yalniz bu asamanin).
+        bu = set(asama_kurallari(asama)) | ({GORUS_GRUP} if int(asama) == 3 else set())
+        for a, x in onceki.items():
+            if a not in bu and a not in cikti:
+                cikti[a] = x
+    bu_asama = [x for a, x in cikti.items()
+                if asama is None or a in (set(asama_kurallari(asama)) | ({GORUS_GRUP} if int(asama) == 3 else set()))]
     # gerekcesiz: karari var, gerekcesi yok. tekrar: bunlardan yeniden sorulacak olan.
-    gerekcesiz = [g for x in cikti.values() for g in x.values() if not _gerekce_var(g)]
+    gerekcesiz = [g for x in bu_asama for g in x.values() if not _gerekce_var(g)]
     tekrar = sum(1 for g in gerekcesiz if int(g.get("gerekce_deneme") or 0) < GEREKCE_TEKRAR)
     p["llm_gorus_sayim"] = {"oge": len(ogeler), "sorulan": len(sorulacak), "alinan": alinan,
                             "gorussuz": max(0, len(ogeler) - alinan),
@@ -1301,7 +1584,7 @@ def _gorusu_karara_yaz(p, ek):
             gr["gerekce"] = g.get("gerekce") or DM_GEREKCE_YOK
 
 
-def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False):
+def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False, asama=None):
     """Dil modelinden kararlari alir (yalniz daha once alinmamis olanlari),
     "bos yerine sifir" bulgularini kurar ve kararlari oneriye yazar
     (_gorusu_karara_yaz). YENIDEN CALISTIRILABILIR: profil cikarilirken bir
@@ -1312,7 +1595,7 @@ def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False):
     ek["sifir_bos"] = list(ek.get("sifir_bos") or [])
     # Ayni kolon gruplarinin adaylari onceki turda alinan kararlara gore.
     _grup_elenen_guncelle(p, ek)
-    p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=butce, sorma=sorma)
+    p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=butce, sorma=sorma, asama=asama)
     ek["sifir_bos"] = [x for x in ek.get("sifir_aday") or []
                        if ((p["llm_gorus"].get("sifir_bos") or {}).get(x["kolon"]) or {}).get("secim") == "sifir_bos"]
     p["llm_oneri"] = p.get("llm_oneri") if isinstance(p.get("llm_oneri"), dict) else {}
@@ -1336,7 +1619,7 @@ def _karar_asamasi(durum, p, ek, teshis, butce=None, sorma=False):
     # gruplar ayni istekte, kalan sureyle sorulur; sayim da guncellenir.
     if _grup_elenen_guncelle(p, ek):
         kalan = None if butce is None else max(5.0, float(butce) - (_time.time() - basla))
-        p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=kalan, sorma=sorma)
+        p["llm_gorus"] = _profil_llm_gorusleri(durum, p, ek, teshis, butce=kalan, sorma=sorma, asama=asama)
         _gorusu_karara_yaz(p, ek)
 
 
@@ -1391,7 +1674,8 @@ def profil_kararlari_tamamla(durum, butce=None):
     if butce is None:
         from fe_agent import llm as llm_mod
         butce = llm_mod.PROFIL_GORUS_DEVAM_BUTCE
-    _karar_asamasi(durum, p, ek, teshis, butce=butce)
+    _karar_asamasi(durum, p, ek, teshis, butce=butce,
+                   asama=profil_asamasi(p) if profil_asamali(p) else None)
     durum["profil"] = p
     s = dict(p.get("llm_gorus_sayim") or {})
     # yeni: bu cagrida alinan karar ve tamamlanan gerekce (ikisi de ilerlemedir).
@@ -1415,7 +1699,8 @@ def profil_kararlarini_aktar(hedef, kaynak):
         for k, v in (x or {}).items():
             gh.setdefault(a, {}).setdefault(k, v)
     ph["llm_gorus"] = gh
-    _karar_asamasi(hedef, ph, ek, teshis, sorma=True)
+    _karar_asamasi(hedef, ph, ek, teshis, sorma=True,
+                   asama=profil_asamasi(ph) if profil_asamali(ph) else None)
     hedef["profil"] = ph
     return True
 
@@ -3092,7 +3377,7 @@ def _cift_iki_yonlu(liste):
 # yerine yazilmis deger bos sayilir (etkin bos) ve yazim farklari farkli
 # deger sayisini sisirmez. Kural degisince artirilir; eski surumle
 # cikarilmis profil "eski" sayilir.
-PROFIL_KAPSAM_SURUMU = 13
+PROFIL_KAPSAM_SURUMU = 14
 PROFIL_ESKI_UYARI = (
     "Bu çalışmanın veri profili (02.1) eski kurala göre çıkarılmış: %s. Güncel kuralda "
     "kontroller yalnız Train satırlarına bakar ve Train dışındaki setlerde görülen sorunlar "
@@ -3153,7 +3438,10 @@ def profil_eski_uyarisi(durum):
              "görüp en iyi anladığını tutmamış"
              if surum == 11 else
              "dil modeli kararlarının çoğunda gerekçe yazmamış; artık her kararda gerekçesini "
-             "(kolonun anlamı, veride gördüğü, sonuç) yazıyor ve tablonun genel hedef oranını görüyor")
+             "(kolonun anlamı, veride gördüğü, sonuç) yazıyor ve tablonun genel hedef oranını görüyor"
+             if surum == 12 else
+             "kararlar tek kartta hep birlikte istenmiş; artık beş aşamada verilir ve bir aşamada "
+             "çıkan kolon sonraki aşamalara girmez")
     return PROFIL_ESKI_UYARI % neden
 
 
@@ -3362,6 +3650,9 @@ def profil_hesapla(durum):
     for k, v in p["cozum_oneri"].items():
         o = (p["llm_oneri"].get(v.get("kontrol")) or {}).get(k) or {}
     ek["ayni_gruplar"] = _ayni_gruplari(durum, ek, p, df_tum)
+    # Gruplarin kodun kurdugu hali: ucuncu asamada kalan kolonlarla yeniden
+    # kurulurken kaynak budur (bkz. _gruplari_buda).
+    ek["ayni_gruplar_ham"] = copy.deepcopy(ek["ayni_gruplar"])
     _isaret("ayni_gruplar")
     # DIL MODELI IKINCI GORUSU (kolonun anlami): sizinti, ozel kod, bos
     # yerine sifir, ayni kolonlardan hangisi kalsin. Kodun onerisi secili
@@ -3373,7 +3664,10 @@ def profil_hesapla(durum):
     except Exception:
         ek["sifir_aday"] = []
     ek["sifir_bos"] = []
-    _karar_asamasi(durum, p, ek, teshis)
+    # ASAMALI DUZEN: profil cikinca ILK asama acilir; dil modeline yalniz o
+    # asamanin bulgulari sorulur. Sonraki asamalar onaylandikca acilir.
+    p["asama"], p["asama_onay"], p["asama_karar"] = 1, [], {}
+    _karar_asamasi(durum, p, ek, teshis, asama=1)
     _isaret("dil_modeli_gorusleri")
     p.pop("kod_oneri", None)
     p["profil_teshis"] = teshis
@@ -3389,6 +3683,9 @@ def profil_hesapla(durum):
     p["ayni_secim"] = {k: v for k, v in (sapma.get("ayni") or {}).items()
                        if v in uyeler.get(k, set())}
     p["profil_karar"] = dict(sapma.get("karar") or {})
+    # Asamali duzende onceki onaydan tasinan sapma on secimdir (karar_on).
+    p["karar_on"] = {k: v for k, v in (sapma.get("karar") or {}).items()
+                     if v in (PROFIL_KARAR_TUT, PROFIL_KARAR_CIKAR)}
     teshis["ayni_icerik"] = _ayni_kopyalar(p)
     # Sapma yalniz hala karar isteyen kolonlar icin gecerli.
     p["profil_karar"] = {k: v for k, v in p["profil_karar"].items()
@@ -3645,29 +3942,33 @@ def _ayni_kopyalar(p):
 
 def _karar_adaylari(p):
     """Karar isteyen kolonlar (sira korunur): neredeyse sabit, donemde bos
-    ya da sabit, donemler arasi eksik sicramasi. Ayni icerikli gruplarda kalmayan kolon karar istemez."""
+    ya da sabit, donemler arasi eksik sicramasi. Ayni icerikli gruplarda kalmayan kolon karar istemez
+    (asamali duzende ister: Tut / Çıkar kararlari gruplardan ONCE verilir)."""
     ek = p.get("profil_ek") or {}
-    kopya = set(_ayni_kopyalar(p))
+    kopya = set() if profil_asamali(p) else set(_ayni_kopyalar(p))
     ad = []
     for a in KARAR_KONTROLLERI:
         ad += [x["kolon"] for x in (ek.get(a) or [])]
     return [k for k in dict.fromkeys(ad) if k not in kopya]
 
 
-def _karar_varsayilan(p, ek=None):
+def _karar_varsayilan(p, ek=None, kurallar=None):
     """{kolon: "cikar"}: kullanici karar vermediyse Çıkar onerilen kolonlar.
     Oneri kolon bazinda dil modelinden (p["llm_oneri"]); yoksa kural
     (sizinti kontrollerinde Çıkar, digerlerinde Tut). Kolon birden cok karar
     kontrolundeyse biri Çıkar diyorsa Çıkar."""
-    return {k: PROFIL_KARAR_CIKAR for k in _karar_cikar_sebebi(p, ek)}
+    return {k: PROFIL_KARAR_CIKAR for k in _karar_cikar_sebebi(p, ek, kurallar)}
 
 
-def _karar_cikar_sebebi(p, ek=None):
-    """{kolon: kontrol}: Çıkar onerilen kolon ve onu oneren kontrol."""
+def _karar_cikar_sebebi(p, ek=None, kurallar=None):
+    """{kolon: kontrol}: Çıkar onerilen kolon ve onu oneren kontrol.
+    kurallar: yalniz bu kurallara bakilir (asamali duzende asamanin kurallari)."""
     ek = (p.get("profil_ek") or {}) if ek is None else ek
     lo = p.get("llm_oneri") if isinstance(p.get("llm_oneri"), dict) else {}
     cikti = {}
     for a in KARAR_KONTROLLERI:
+        if kurallar is not None and a not in kurallar:
+            continue
         for x in ek.get(a) or []:
             k = x["kolon"]
             o = (lo.get(a) or {}).get(k) or {}
@@ -3778,8 +4079,24 @@ def veri_profili_plan(durum):
         profil_hesapla(durum)
     durum["_profil_hazir"] = True
     if profil_karar_var(durum):
+        p = durum.get("profil") or {}
+        if profil_asamali(p):
+            # Adim daha once tamamlanmissa (bes asama da onayli) geri donuste
+            # ILK asamadan acilir; secimler ve alinmis kararlar durur. Yarida
+            # kalan calismada acik asama korunur.
+            try:
+                tamam = ASAMA_SAYISI in [int(x) for x in (p.get("asama_onay") or [])]
+            except (TypeError, ValueError):
+                tamam = False
+            if tamam and profil_asamasi(p) != 1:
+                profil_asamaya_gir(durum, 1, sorma=True)
         durum["_secim_alani"] = profil_karti(durum, karar=True)
-        return profil_metni(durum, karar=True)
+        metin = profil_metni(durum, karar=True)
+        if profil_asamali(durum.get("profil") or {}):
+            metin += ("\n\nKararlar %d aşamada verilir: %s. Bir aşamayı onaylayınca o aşamada çıkan kolonlar "
+                      "sonraki aşamalara girmez; adım son aşama onaylanınca tamamlanır." % (
+                          ASAMA_SAYISI, ", ".join("%d) %s" % (x["no"], x["ad"]) for x in PROFIL_ASAMALARI)))
+        return metin
     durum["_plan_otomatik"] = True
     return profil_metni(durum)
 
@@ -3792,6 +4109,19 @@ def veri_profili_uygula(durum):
     if not durum.pop("_profil_hazir", False):
         profil_hesapla(durum)
     p = durum["profil"]
+    # ASAMALI DUZEN: adim yalniz SON asamada tamamlanir. Onceki asamalarin
+    # secimleri asama onaylanirken kaydedildi (profil_asama_kaydet); burada
+    # son asamanin secimleri kaydedilir, asagisi kayitli secimlerle surer.
+    if profil_asamali(p) and profil_karar_var(durum):
+        if profil_asamasi(p) < ASAMA_SAYISI:
+            from fe_agent.akis_durum import AdimHatasi
+            raise AdimHatasi(
+                "Bu adım %d aşamadır; şu an %d. aşamadasınız (%s). Aşamayı kartın altındaki "
+                "«Aşamayı Onayla ve Sonrakine Geç» düğmesiyle onaylayın; adım son aşama onaylanınca "
+                "tamamlanır." % (ASAMA_SAYISI, profil_asamasi(p),
+                                 PROFIL_ASAMALARI[profil_asamasi(p) - 1]["ad"]))
+        profil_asama_kaydet(durum, karar, onay=True)
+        karar = None
     adaylar = profil_karar_kolonlari(durum)
     onceki = p.get("profil_karar") if isinstance(p.get("profil_karar"), dict) else {}
     if isinstance(karar, dict) and isinstance(karar.get("cikar"), list):
@@ -4791,6 +5121,9 @@ def profil_ek_deger(v):
 
 
 def profil_karti(durum, karar=False):
+    # ASAMALI DUZEN: karar beklerken yalniz ACIK asamanin kontrolleri ve o
+    # asamaya giren kolonlar; onaylanmis (gecmis) kartta butun asamalar, her
+    # kontrol kendi asamasina giren kolonlarla.
     """02.1 Veri Profili karti (sohbette adimin blogunda). Butun sayilar
     tablonun TAMAMINDAN; orneklem yok. karar=True: neredeyse sabit ve
     donemde bos ya da sabit kolonlar icin Tut ya da Çıkar istenir.
@@ -4810,7 +5143,16 @@ def profil_karti(durum, karar=False):
         tur = (ozet.get(k) or {}).get("tip") or "kategorik"
         turler[tur] = turler.get(tur, 0) + 1
 
-    bulgu = _ek_bulgulari(p)
+    asamali = profil_asamali(p)
+    acik_asama = profil_asamasi(p) if (asamali and karar) else None
+    kural_no = _kural_asamasi()
+    _haric, _degerler, _vars = {}, {}, {}
+
+    def asama_haric(no):
+        if no not in _haric:
+            _haric[no] = asama_cikanlari(durum, no - 1)
+        return _haric[no]
+    bulgu = _ek_bulgulari(p, kopya_suz=not asamali)
     from fe_agent import profil_ek as _pe
     eb = p.get("etkin_bos") if isinstance(p.get("etkin_bos"), dict) else {}
     for k in t.get("cok_bos") or []:
@@ -4862,6 +5204,17 @@ def profil_karti(durum, karar=False):
     karar_vars = _karar_varsayilan(p)
     kontroller = []
     for a, ad, sonuc, _kisa in PROFIL_KONTROLLERI:
+        if asamali:
+            no_a = kural_no.get(a, 1)
+            if acik_asama is not None and no_a != acik_asama:
+                continue
+            # Onceki asamalarda cikan kolon bu kontrolde gosterilmez.
+            if a not in SATIR_KONTROLLERI and bulgu.get(a):
+                bulgu[a] = {k_: v_ for k_, v_ in bulgu[a].items() if k_ not in asama_haric(no_a)}
+            if no_a not in _degerler:
+                _degerler[no_a] = asama_karar_degerleri(durum, no_a)
+                _vars[no_a] = _asama_vars(p, ek, no_a)
+            karar_deger, karar_vars = _degerler[no_a], _vars[no_a]
         kisa, bilgi = kontrol_aciklamasi(a)
         k = {"anahtar": a, "ad": ad, "kural": kurallar[a], "sonuc": sonuc,
              "kisa": kisa, "bilgi": bilgi, "parca": kontrol_parcalari(a),
@@ -5036,7 +5389,19 @@ def profil_karti(durum, karar=False):
         "eksik_kolon": p.get("null_kolon_adet"),
         "eksik_maks": p.get("null_maks"),
         "eksik_maks_kolon": p.get("null_maks_kolon"),
-        "kontroller": _genel_kontrol_satirlari(esik) + kontrolleri_grupla(kontroller),
+        "kontroller": (_genel_kontrol_satirlari(esik) if acik_asama in (None, 1) else [])
+        + kontrolleri_grupla(kontroller),
+        # Asamali duzen: acik asama, adlari, onaylananlar, asamaya giren kolon.
+        "asama": ({"no": acik_asama or 0, "toplam": ASAMA_SAYISI,
+                   "ad": PROFIL_ASAMALARI[acik_asama - 1]["ad"] if acik_asama else "",
+                   "aciklama": PROFIL_ASAMALARI[acik_asama - 1]["aciklama"] if acik_asama else "",
+                   "adlar": [{"no": x["no"], "ad": x["ad"],
+                              "onayli": x["no"] in [int(y) for y in (p.get("asama_onay") or [])]}
+                             for x in PROFIL_ASAMALARI],
+                   "giren": (len(incelenen) - len(set(incelenen) & asama_haric(acik_asama)))
+                   if acik_asama else len(incelenen),
+                   "onceki_cikan": len(set(incelenen) & asama_haric(acik_asama)) if acik_asama else 0}
+                  if asamali else None),
         "hedef": ek.get("hedef"),
         "haric": {"hedef": m.get("target") or "", "kimlik": m.get("id") or "",
                   "donem": m.get("donem") or "",

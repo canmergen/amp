@@ -89,6 +89,7 @@ from fe_agent.akis_faz02 import (  # noqa
     stabilite_uygula, veri_profili_plan, veri_profili_uygula, profil_ayar_uygula,
     profil_karti, profil_metni, profil_gecmisini_tazele, acik_esik_tazele,
     profil_kararlari_tamamla, profil_kararlarini_aktar,
+    profil_asama_gecisi,
     profil_eski_mi, profil_eski_uyarisi,
 )
 from fe_agent.akis_faz03 import (  # noqa
@@ -194,6 +195,7 @@ __all__ = [
     "veri_paneli", "veri_profili_plan", "veri_profili_uygula", "profil_ayar_uygula",
     "profil_karti", "profil_metni", "profil_gecmisini_tazele", "acik_esik_tazele",
     "profil_kararlari_tamamla", "profil_kararlarini_aktar",
+    "profil_asama_gecisi",
     "profil_eski_mi", "profil_eski_uyarisi",
     "veri_sozluk_paneli",
     "veri_sec_girdi", "veri_sec_plan", "veri_sec_uygula", "yeni_durum",
