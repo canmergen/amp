@@ -6438,3 +6438,52 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 .gl-dg-tablo tr.gl-dg-grup > td { background: var(--yuzey-alt); }
 .gl-dg-grup-sayi { margin-left: var(--b-2); color: var(--metin-tamam); font-size: var(--fs-ustbar); }
 .gl-dg-tablo tr[hidden] { display: none; }
+
+/* ==================== 02.2 ADIM ADIM DÜZEN ====================
+   Şerit 02.1.2'deki kontrol şeridiyle aynı görünümdedir (dört adım). Her
+   adımda satır bir dönüşümdür; açılınca dönüşümün açıklaması ve birim
+   tablosu gelir. Dördüncü adım özet ve onaydır. */
+.gl-amac { line-height: 1.5; color: var(--metin-soluk); }
+.gl-adim-kap { display: flex; flex-direction: column; gap: var(--b-3); min-width: 0; }
+.pf-asamalar.gl-adim-serit { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gl-adim-serit .pf-asama-oge.acik .pf-asama-ad { text-decoration: none; }
+.gl-adim-arac { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--b-2) var(--b-4); }
+.gl-adim-arac[hidden], .gl-ozet-kap[hidden] { display: none; }
+.gl-adim-ozet { font-weight: var(--fw-kalin); }
+.gl-adim-arac .gl-adim-ara { flex: 0 1 340px; min-width: 180px; }
+col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-kolon { width: 14%; } col.gl-ad-k-kim { width: 27%; }
+.gl-ad-sayi b { font-size: var(--fs-blok); font-weight: var(--fw-kalin); font-variant-numeric: tabular-nums; }
+.gl-ad-fark { color: var(--amber); font-weight: var(--fw-kalin); font-size: var(--fs-ustbar); }
+.gl-ad-kim { display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.5; }
+.gl-ad-kutu { display: flex; flex-direction: column; gap: var(--b-3); }
+.gl-ad-acikla { display: flex; flex-direction: column; gap: var(--b-1); line-height: 1.45; }
+.gl-ad-acikla .gl-kat-sat { display: flex; gap: var(--b-2); justify-content: center; flex-wrap: wrap; }
+.gl-ad-acikla .gl-kat-sat > b { flex: 0 0 auto; }
+.gl-ad-arac { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--b-2) var(--b-4); }
+.gl-ad-gor .pf-suzgec-btn { padding: 5px 12px; }
+.gl-ad-toplu { margin: 0; }
+.dg-tablo.gl-ad-birim { min-width: 860px; }
+.gl-ad-birim .pf-kolon-aciklama { color: var(--metin-tamam); line-height: 1.35; }
+.gl-ad-birim tr.gl-ad-secilmedi > td { background: color-mix(in srgb, var(--metin-tamam) 5%, var(--yuzey)); }
+.gl-ad-deger { font-weight: var(--fw-kalin); }
+.gl-ad-deger.gl-k-yeni { color: var(--yesil); }
+.gl-ad-deger.gl-k-ayni, .gl-ad-deger.gl-k-zayif { color: var(--metin-tamam); }
+.gl-ad-olcum-alt { font-size: var(--fs-ustbar); color: var(--metin-tamam); line-height: 1.35; font-variant-numeric: tabular-nums; }
+.gl-ad-gerekce { line-height: 1.45; }
+.gl-ad-oneren-ad { font-size: var(--fs-ustbar); color: var(--metin-tamam); }
+.gl-ad-ayrinti-btn { display: block; margin: 6px auto 0; }
+.gl-ad-birim-ayrinti > td { background: var(--yuzey-alt); padding: var(--b-3); }
+.gl-ad-deger-gerek { margin-bottom: var(--b-2); color: var(--amber); font-weight: var(--fw-kalin); }
+.gl-ad-devam { align-self: center; }
+.gl-adim-nav { margin-top: var(--b-1); }
+.gl-adim-nav [hidden] { display: none; }
+.gl-ozet-kap { display: flex; flex-direction: column; gap: var(--b-3); }
+.dg-tablo.gl-ozet-adim { width: 100%; }
+.gl-ozet-adim .gl-ozet-kolon { font-weight: var(--fw-kalin); font-variant-numeric: tabular-nums; }
+.gl-ozet-adim tr.gl-ozet-toplam > td { border-top: 2px solid var(--kenar); font-weight: var(--fw-kalin); }
+.gl-ozet-geri { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--b-2) var(--b-3); margin-top: var(--b-2); color: var(--amber); font-weight: var(--fw-kalin); }
+.gl-uzman, .gl-sohbet-ac { border: 1px solid var(--kenar); border-radius: var(--r-kucuk); background: var(--yuzey); }
+.gl-uzman > summary, .gl-sohbet-ac > summary { cursor: pointer; padding: var(--b-2) var(--b-3); }
+.gl-uzman[open] > summary, .gl-sohbet-ac[open] > summary { border-bottom: 1px solid var(--kenar); }
+.gl-uzman > :not(summary), .gl-sohbet-ac > :not(summary) { margin: var(--b-3); }
+@media (max-width: 900px) { .pf-asamalar.gl-adim-serit { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

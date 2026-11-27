@@ -2810,6 +2810,18 @@ tanıtır; sayfalar sol bardan açılır.
   gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
   süzgeci; en çok 2.000 satır.
 
+**02.2 kartı adım adım düzen (yeniden tasarım)**
+
+- Kartın ana görünümü 02.1.2 ile aynı mantıktadır: üstte adım şeridi, altında o adımın tablosu. Sunucuya giden karar biçimi (`{id: {sec, param, haric}}`), onay (`dogrulama.adim = "kural"`), otomatik kayıt ve bütün uçlar DEĞİŞMEDİ; yalnız kartın düzeni değişti.
+- **Dört adım.** Adım 1 «Kolonun Kendi Dönüşümü», Adım 2 «Aile İçi: Pencereler Arası», Adım 3 «Aileler ve Kolonlar Arası» dönüşümün düzeyidir (katalogdaki `asama`: 1, 2, 3); Adım 4 «Özet ve Onay». Şeritte her adımın altında «N dönüşüm → K yeni kolon» ve toplam yeni kolona göre çubuk durur. Adımlar arasında serbestçe gezilir (şerit, «Önceki Adım», «Sonraki Adım»; sunucuya istek gitmez). Onay düğmesi yalnız dördüncü adımdadır.
+- **Her adımda satır bir dönüşümdür** (`adimCiz`, `adimVerisi`). Kesimler: «Üretilecek Dönüşümler» (en az bir birimde seçili), «Seçilmeyen Dönüşümler» (uygulanabiliyor, hiçbir birimde seçili değil; nedeni yazar), «Bu Veride Uygulanamayan Dönüşümler» (nedeni yazar). Sütunlar: Dönüşüm (ad ve ne yaptığı), Kaç Birimde (seçili / uygulanabilir; çıkarılan ve eklenen), Yeni Kolon, Kim Önerdi / Neden.
+- **Satır açılınca** (`donusumDetay`): Ne yapar, Örnek, Ne zaman işe yarar, Bu veride, Model türleri, Ölçüm; iki görünüm («Seçili ve önerilen birimler», «Uygulanabilen bütün birimler»); toplu düğmeler («Önerilenleri Seç», «Uygulanabilen Hepsinde Üret», «Hiçbirinde Üretme»); birim tablosu: Birim, Kodun Ölçümü (değerlendirme, IV, kaynağa göre artış, kaynakla ilişki), Gerekçe (neden seçildi ya da seçilmedi: dil modelinin aşama gerekçesi, kodun ekleme ya da ayıklama nedeni), Öneren, Seçiminiz (Üret / Üretme). Birimler 50'şer gösterilir.
+- **«Ayrıntı»** birimin eski tam kutusunu (`birimSatiri`) satırın altında açar: birimin bütün dönüşümleri, kolon kolon seçim, eşik / aralık / segment değeri girişi, uygulanamayan dönüşümler. Değer isteyen dönüşümde (eşik, kova, segment) öneride değer yoksa «Üret» bu kutuyu açar.
+- **Dördüncü adım:** sayı karoları, adım adım özet tablosu (seçili dönüşüm, birim, yeni kolon, öneriden fark, «Adıma Git»), «Hepsini Önerilere Döndür», «Uzman görünümü» (eski düzenin tamamı: Birimler, Üretim Planı, Üretime Girmeyen, Dönüşümler sekmeleri ve süzgeçler) ve onay düğmesi.
+- Sohbet her adımda «Dil modeliyle tartışın» başlığı altında kapalı gelir; değişiklik günlüğü (geri al) adımların altındadır. Görünüm durumu (`GL_ADIM`: açık adım, açık dönüşümler, arama) kart yeniden çizilince korunur.
+- Birimler grafiğinde dilime basınca o birim tipinin adımı açılır (tek kolon 1, pencere ailesi 2, çift / grup / satır 3).
+- **Sınır:** test verisi ve taklit dil modeli yanıtıyla denendi; canlı ortamda, gerçek büyüklükte veriyle denenmedi.
+
 **02.2 kartının başında kolon ve birim dağılımı (grafik)**
 
 - Kartın en başında (sayı karolarından önce) iki yığılmış yatay çubuk durur (`gl-dagilim`).
