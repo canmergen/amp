@@ -19595,6 +19595,190 @@ function gelenekselKartiEkle(alan, blok) {
         "Geleneksel Değişken Üretimi"));
     kart.appendChild(bas);
 
+    /* ---- KOLON VE BİRİM DAĞILIMI (kartın başında, grafik) ----
+       1) Veri setindeki kolonlar: tek kolon biriminde, pencere ailesinde,
+          üretime girmeyen. Dilime ya da lejanta basınca o kolonlar sözlük
+          açıklamalarıyla listelenir (aile ve girmeme nedeni başlıklarıyla).
+       2) Birimler: tek kolonlu ve birden fazla kolonlu (pencere ailesi,
+          kolon çifti, kolon grubu, satır düzeyi). Dilime basınca aşağıdaki
+          Birimler listesi o tipe süzülür.
+       Sayılar ve yüzdeler karttaki veriden hesaplanır. Renk: yeşil tek
+       kolon, mavi pencere ailesi (iki grafikte aynı), kırmızı üretime
+       girmeyen; öteki çok kolonlu tipler mavinin açık tonları (kenarlı). */
+    let dgSenk = null;
+    {
+        const acikla = alan.kolon_aciklama || {};
+        const girmeyenler = (alan.girmeyen || []).filter(g => (g.kolonlar || []).length);
+        const tekB = birimler.filter(b => b.tur === "kolon");
+        const aileB = birimler.filter(b => b.tur === "aile");
+        const nTek = tekB.length;
+        const nAile = aileB.reduce((t, b) => t + (b.kolonlar || []).length, 0);
+        const nDis = girmeyenler.reduce((t, g) => t + g.kolonlar.length, 0);
+        const nKolon = nTek + nAile + nDis;
+        const dg = elYap("div", "gl-dagilim");
+        const yuzde = (n, t) => (t ? pfYuzde(n / t) : pfYuzde(0));
+        /* Yığılmış yatay çubuk + lejant. dilim: {a, ad, n, sinif, grup}. */
+        const grafik = (baslik, ozet, dilimler, toplam, birimAdi, sec) => {
+            const blok = elYap("div", "gl-dg-blok");
+            const bas_ = elYap("div", "gl-dg-bas");
+            bas_.appendChild(elYap("b", "gl-dg-ad", baslik));
+            bas_.appendChild(elYap("span", "gl-dg-toplam", ftBinlik(toplam) + " " + birimAdi));
+            if (ozet) bas_.appendChild(elYap("span", "gl-dg-ozet", ozet));
+            blok.appendChild(bas_);
+            const cubuk = elYap("div", "gl-dg-cubuk");
+            cubuk.setAttribute("role", "group");
+            cubuk.setAttribute("aria-label", baslik);
+            const lejant = elYap("div", "gl-dg-lejant");
+            const ogeler = {};
+            let sonGrup = null, grupEl = lejant;
+            dilimler.forEach(d => {
+                const ipucu = d.ad + ": " + ftBinlik(d.n) + " " + birimAdi + " (" + yuzde(d.n, toplam) + ")";
+                const dl = elYap("button", "gl-dg-dilim " + d.sinif);
+                dl.type = "button";
+                dl.title = ipucu;
+                dl.setAttribute("aria-label", ipucu);
+                dl.style.flexGrow = String(Math.max(d.n, 0));
+                if (!d.n) dl.hidden = true;
+                /* Dilim yeterince genişse sayısı içinde yazar. */
+                if (toplam && d.n / toplam >= 0.05) dl.appendChild(elYap("span", "gl-dg-dilim-sayi", ftBinlik(d.n)));
+                dl.onclick = () => sec(d.a);
+                cubuk.appendChild(dl);
+                if (d.grup !== undefined && d.grup !== sonGrup) {
+                    sonGrup = d.grup;
+                    grupEl = elYap("div", "gl-dg-lj-grup");
+                    grupEl.appendChild(elYap("span", "gl-dg-lj-grup-ad", d.grup));
+                    lejant.appendChild(grupEl);
+                }
+                const lj = elYap("button", "gl-dg-lj" + (d.n ? "" : " bos"));
+                lj.type = "button";
+                lj.title = ipucu;
+                lj.append(elYap("span", "gl-dg-kare " + d.sinif), elYap("span", "gl-dg-lj-ad", d.ad),
+                          elYap("b", "gl-dg-lj-sayi", ftBinlik(d.n)), elYap("span", "gl-dg-lj-pay", yuzde(d.n, toplam)));
+                lj.onclick = () => sec(d.a);
+                grupEl.appendChild(lj);
+                ogeler[d.a] = [dl, lj];
+            });
+            blok.append(cubuk, lejant);
+            const isaretle = secili => {
+                blok.classList.toggle("secimli", !!secili);
+                Object.entries(ogeler).forEach(([a, els]) => els.forEach(e => {
+                    e.classList.toggle("secili", a === secili);
+                    e.setAttribute("aria-pressed", a === secili ? "true" : "false");
+                }));
+            };
+            return [blok, isaretle];
+        };
+        /* 1) Kolonlar */
+        const ayrinti = elYap("div", "gl-dg-ayrinti");
+        ayrinti.hidden = true;
+        let kolonSecili = "";
+        const KOLON_DILIM = [
+            { a: "tek", ad: "Tek kolon biriminde", n: nTek, sinif: "dg-tek", grup: "Değişken üretimine giren" },
+            { a: "aile", ad: "Pencere ailesinde", n: nAile, sinif: "dg-aile", grup: "Değişken üretimine giren" },
+            { a: "dis", ad: "Üretime girmeyen", n: nDis, sinif: "dg-dis", grup: "Girmeyen" }];
+        const ayrintiCiz = () => {
+            ayrinti.textContent = "";
+            ayrinti.hidden = !kolonSecili;
+            if (!kolonSecili) return;
+            const d = KOLON_DILIM.find(x => x.a === kolonSecili);
+            const ab = elYap("div", "gl-dg-ayrinti-bas");
+            ab.appendChild(elYap("b", "", d.ad + ": " + ftBinlik(d.n) + " kolon"));
+            const ara_ = document.createElement("input");
+            ara_.type = "search";
+            ara_.className = "gl-ara gl-dg-ara";
+            ara_.placeholder = "Kolon adında ya da açıklamada ara";
+            const kapat = elYap("button", "dg-toplu-btn", "Kapat");
+            kapat.type = "button";
+            kapat.onclick = () => kolonSec("");
+            const gorunenEl = elYap("span", "gl-dg-gorunen", "");
+            ab.append(ara_, gorunenEl, kapat);
+            ayrinti.appendChild(ab);
+            /* Gruplar: [başlık (boşsa başlıksız), [kolon adları]] */
+            const gruplar = kolonSecili === "tek"
+                ? [["sayisal", "Sayısal"], ["kategorik", "Kategorik"]].map(([t, ad]) => [ad, tekB.filter(b => b.tip === t).map(b => b.kolonlar[0])])
+                    .concat([["", tekB.filter(b => b.tip !== "sayisal" && b.tip !== "kategorik").map(b => b.kolonlar[0])]])
+                : kolonSecili === "aile"
+                ? aileB.map(b => [b.ad + " · " + ftBinlik(b.kolonlar.length) + " pencere", b.kolonlar])
+                : girmeyenler.map(g => [g.neden, g.kolonlar]);
+            const sar = elYap("div", "gl-dg-liste");
+            const tablo_ = elYap("table", "dg-tablo gl-dg-tablo");
+            const th_ = elYap("tr");
+            ["Kolon", "Sözlük Açıklaması"].forEach(b => th_.appendChild(elYap("th", "", b)));
+            const thd = elYap("thead"); thd.appendChild(th_); tablo_.appendChild(thd);
+            const tb = elYap("tbody");
+            const kayit = [];      // [grup başlık satırı ya da null, [[satır, aranan metin], …], başlık metni]
+            gruplar.filter(([, kol]) => kol.length).forEach(([bas__, kol]) => {
+                let gs = null;
+                if (bas__) {
+                    gs = elYap("tr", "gl-dg-grup");
+                    const gtd = elYap("td", "", "");
+                    gtd.colSpan = 2;
+                    gtd.appendChild(elYap("b", "", bas__));
+                    /* Aile başlığı pencere sayısını zaten söyler. */
+                    if (kolonSecili !== "aile") gtd.appendChild(elYap("span", "gl-dg-grup-sayi", ftBinlik(kol.length) + " kolon"));
+                    gs.appendChild(gtd);
+                    tb.appendChild(gs);
+                }
+                const satirlar = kol.map(k => {
+                    const tr_ = elYap("tr");
+                    tr_.appendChild(elYap("td", "gl-dg-kolon", k));
+                    const a_ = acikla[k];
+                    tr_.appendChild(elYap("td", a_ ? "" : "gl-dg-yok", a_ || "Açıklama yok"));
+                    tb.appendChild(tr_);
+                    return [tr_, (k + " " + (a_ || "")).toLocaleLowerCase("tr")];
+                });
+                kayit.push([gs, satirlar]);
+            });
+            tablo_.appendChild(tb);
+            sar.appendChild(tablo_);
+            ayrinti.appendChild(sar);
+            const suzYaz = () => {
+                const q = ara_.value.trim().toLocaleLowerCase("tr");
+                let gorunen = 0;
+                kayit.forEach(([gs, satirlar]) => {
+                    let n = 0;
+                    satirlar.forEach(([tr_, metin_]) => { const g_ = !q || metin_.includes(q); tr_.hidden = !g_; if (g_) n++; });
+                    if (gs) gs.hidden = !n;
+                    gorunen += n;
+                });
+                gorunenEl.textContent = q ? ftBinlik(gorunen) + " / " + ftBinlik(d.n) + " kolon" : "";
+            };
+            ara_.oninput = suzYaz;
+            suzYaz();
+        };
+        let kolonIsaretle = null;
+        const kolonSec = a => {
+            kolonSecili = (a && a !== kolonSecili) ? a : "";
+            kolonIsaretle(kolonSecili);
+            ayrintiCiz();
+        };
+        const [kolonBlok, kIs] = grafik("Veri setindeki kolonlar", "Dilime basınca kolonlar açıklamalarıyla listelenir.",
+            KOLON_DILIM, nKolon, "kolon", kolonSec);
+        kolonIsaretle = kIs;
+        dg.append(kolonBlok, ayrinti);
+        /* 2) Birimler: tek kolonlu ve birden fazla kolonlu. */
+        const turSay = t => birimler.filter(b => b.tur === t).length;
+        const nCok = birimler.length - nTek;
+        const BIRIM_DILIM = [
+            { a: "kolon", ad: "Tek kolon", n: nTek, sinif: "dg-tek", grup: "Tek kolonlu " + ftBinlik(nTek) },
+            { a: "aile", ad: "Pencere ailesi", n: turSay("aile"), sinif: "dg-aile", grup: "Birden fazla kolonlu " + ftBinlik(nCok) },
+            { a: "cift", ad: "Kolon çifti", n: turSay("cift"), sinif: "dg-cift", grup: "Birden fazla kolonlu " + ftBinlik(nCok) },
+            { a: "grup", ad: "Kolon grubu", n: turSay("grup"), sinif: "dg-grup", grup: "Birden fazla kolonlu " + ftBinlik(nCok) },
+            { a: "satir", ad: "Satır düzeyi", n: turSay("satir"), sinif: "dg-satir", grup: "Birden fazla kolonlu " + ftBinlik(nCok) }];
+        const birimSec = a => {
+            suz.tip = (suz.tip === a) ? "" : a;
+            suz.durum = "";                 // sayı grafikteki sayıyla aynı olsun (üretilmeyecekler dahil)
+            aktif = "birim";
+            listeCiz();
+            if (suz.tip) { try { sekmeBar.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e) { /* eski tarayıcı */ } }
+        };
+        const [birimBlok, bIs] = grafik("Birimler", "Dilime basınca aşağıdaki liste o tipe süzülür.",
+            BIRIM_DILIM, birimler.length, "birim", birimSec);
+        dg.appendChild(birimBlok);
+        dgSenk = () => bIs(aktif === "birim" ? suz.tip : "");
+        kart.appendChild(dg);
+    }
+
     /* Sayılar */
     const karolar = elYap("div", "pf-karolar");
     const karoEl = {};
@@ -20489,6 +20673,7 @@ function gelenekselKartiEkle(alan, blok) {
     };
 
     function listeCiz() {
+        if (dgSenk) dgSenk();
         liste.textContent = "";
         const seciliD = birimler.reduce((t, b) => t + (karar[b.id].sec || []).length, 0);
         const disSayi = (alan.girmeyen || []).reduce((t, g) => t + (g.kolonlar || []).length, 0);

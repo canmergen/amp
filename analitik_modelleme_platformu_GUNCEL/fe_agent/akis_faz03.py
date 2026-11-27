@@ -259,6 +259,20 @@ def geleneksel_kolonlar(durum, istek=None):
     return cikti
 
 
+def _kolon_aciklamalari(durum, kolonlar):
+    """{kolon: sozluk aciklamasi}: verilen kolonlardan aciklamasi olanlar.
+    Adi 01'de degisen kolonda aciklama eski adla kayitli olabilir."""
+    try:
+        from fe_agent import akis_faz02
+        a = dict(akis_faz02._aciklamalar(durum) or {})
+        for e, y in (durum.get("_amp_yeniden_ad") or {}).items():
+            if str(e) in a and str(y) not in a:
+                a[str(y)] = a[str(e)]
+    except Exception:           # pylint: disable=broad-except
+        a = {}
+    return {k: str(a[k]) for k in sorted(kolonlar) if a.get(k)}
+
+
 def geleneksel_karti(durum, kilitli=False):
     """02.2 karti (tip geleneksel): solda birimler ve kararlar, sagda
     sohbet. Kart verisi durum["geleneksel"]'den. Dil modeli isi suruyorsa
@@ -331,6 +345,11 @@ def geleneksel_karti(durum, kilitli=False):
         "oneri": {i: {k: v for k, v in o.items() if k != "imza"} for i, o in oneri.items()},
         "karar": karar,
         "girmeyen": g.get("girmeyen") or [],
+        # Kartin basindaki dagilim grafiginde kolona tiklaninca gosterilen
+        # sozluk aciklamalari (yalniz aciklamasi olan kolonlar).
+        "kolon_aciklama": _kolon_aciklamalari(
+            durum, {str(k) for b in birimler for k in (b.get("kolonlar") or [])}
+            | {str(k) for x in (g.get("girmeyen") or []) for k in (x.get("kolonlar") or [])}),
         "segmentler": g.get("segmentler") or [],
         "sohbet": (g.get("sohbet") or [])[-40:],
         "uretilen_sayi": len(g.get("uretilen") or []),

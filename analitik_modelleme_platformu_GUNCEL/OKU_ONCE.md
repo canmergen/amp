@@ -2810,6 +2810,14 @@ tanıtır; sayfalar sol bardan açılır.
   gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
   süzgeci; en çok 2.000 satır.
 
+**02.2 kartının başında kolon ve birim dağılımı (grafik)**
+
+- Kartın en başında (sayı karolarından önce) iki yığılmış yatay çubuk durur (`gl-dagilim`).
+- **Veri setindeki kolonlar:** toplam kolon = tek kolon biriminde + pencere ailesinde + üretime girmeyen. Dilime ya da lejanttaki düğmeye basınca o kolonlar sözlük açıklamalarıyla listelenir: tek kolonlar tipe göre (Sayısal, Kategorik), ailedekiler aile başlıklarıyla («AD · N pencere»), girmeyenler girmeme nedeni başlıklarıyla. Listede kolon adında ve açıklamada arama vardır; açıklaması olmayan kolonda «Açıklama yok» yazar. Aynı dilime yeniden basınca ya da «Kapat» ile liste kapanır.
+- **Birimler:** toplam birim; lejantta «Tek kolonlu N» ve «Birden fazla kolonlu M» (pencere ailesi, kolon çifti, kolon grubu, satır düzeyi) ayrı gruplardır. Dilime basınca aşağıdaki Birimler listesi o tipe süzülür (Durum süzgeci «Hepsi»ye döner ki sayı grafikteki sayıyla aynı olsun); yeniden basınca süzgeç kalkar. Seçim, «Birim tipi» çipleriyle eşgüdümlüdür.
+- Sayılar ve yüzdeler karttaki veriden hesaplanır (`alan.birimler`, `alan.girmeyen`); açıklamalar sunucudan gelir (`alan.kolon_aciklama`, `akis_faz03._kolon_aciklamalari`).
+- Renk: yeşil tek kolon, mavi pencere ailesi (iki grafikte aynı), kırmızı üretime girmeyen; kolon çifti ve grubu mavinin açık tonları (mavi kenarlı), satır düzeyi gri. Komşu dilimlerin ayrışması üç görünümde normal görüş ve iki renk körlüğü benzetimiyle ölçüldü (en düşük fark 15). Sayı dilimin içinde, ad ve pay lejantta yazar: kimlik yalnız renge bağlı değildir.
+
 **02.2 süzgeç çubuğu, birim tipi rozetleri ve Üretim Planı (tek sütun düzen)**
 - NEDEN: birimin tipi (tek kolon, pencere ailesi, kolon çifti) satırda küçük
   gri yazıydı ve süzülemiyordu; hangi dönüşümün hangi birimde üretileceği
