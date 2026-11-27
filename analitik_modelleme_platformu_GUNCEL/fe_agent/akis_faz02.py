@@ -343,12 +343,25 @@ def _cozum_ogren(durum):
                 b = {"donem": donem}
                 ad = kc.yeni_kolon_adi(k, c, mevcut)
                 kolonlar = [ad] if ad else []
+                # Hem uydurma tarih hem gercek bos hucre var: gun farkinda ikisi
+                # de bos kalir; ayirt edilsin diye bayrak da uretilir.
+                if ad and kc.tarih_bayrak_gerek(df[k], tr):
+                    by = "%s_%s" % (k, kc.TARIH_BAYRAK_EKI)
+                    i_ = 2
+                    while by in mevcut or by == ad:
+                        by = "%s_%s%d" % (k, kc.TARIH_BAYRAK_EKI, i_)
+                        i_ += 1
+                    b["bayrak"] = by
+                    kolonlar.append(by)
                 if donem in df.columns:     # ozet ozel tarih kodu duzeltmesinden sonra
                     dx = _duzeltmeleri_uygula(durum, df[[k, donem]])
                     gun = kc.gun_farki(dx[k], dx[donem])
                 else:
                     gun = None
                 ozet = _gun_ozeti(gun)
+                if b.get("bayrak"):
+                    ozet = (ozet + " " if ozet else "") + ("Uydurma tarih yazan satırlar %s kolonunda "
+                                                          "(1 / 0)." % b["bayrak"])
             elif c == "metin":
                 b = kc.metin_ogren(df[k], y, tr)
                 cikti = kc.metin_uygula(df[k], b, tr, y, kolon=k)
@@ -408,9 +421,7 @@ def cozum_kolonlari_ekle(durum, df):
             for c in cikti.columns:
                 df[c] = cikti[c]
         elif v["cozum"] == "gun_farki" and v.get("kolonlar"):
-            donem = (v.get("bilgi") or {}).get("donem")
-            if donem in df.columns:
-                df[v["kolonlar"][0]] = kc.gun_farki(df[k], df[donem])
+            kc.gun_farki_ekle(df, k, v)
         elif v.get("kolonlar"):
             df[v["kolonlar"][0]] = kc.uygula(v["cozum"], df[k], v["bilgi"])
     return df
@@ -2358,6 +2369,11 @@ def _yeni_kolon_aciklamasi(kolon, kaynak, kaynak_tanim, cozum, ozet, bilgi):
     """Yeni kolonun sozluk aciklamasi (duz Turkce, tek paragraf)."""
     from fe_agent import kolon_cozum as kc
     ref = "%s kolonu" % kaynak + ((" (%s)" % kaynak_tanim.rstrip(".")) if kaynak_tanim else "")
+    if cozum == "gun_farki" and kolon == (bilgi or {}).get("bayrak"):
+        return ("%s içinde uydurma tarih (yılı 1901'den önce ya da 2200'den sonra; «süresiz» ya da "
+                "«bilgi yok» anlamında) yazan satırda 1, öteki satırlarda 0. Kolonda gerçek boş "
+                "hücre de olduğu için üretildi: gün farkı kolonunda ikisi de boş kalır, bu kolon "
+                "onları ayırır." % ref)
     if cozum == "gun_farki":
         return ("%s ile satırın dönem sonu arasındaki gün sayısı: dönem sonu eksi tarih. "
                 "Geçmişteki tarih pozitif, gelecekteki tarih negatif; kod tarihlerde boş."
@@ -4036,6 +4052,16 @@ def _tarih_onerileri(df, teshis, donem, dolu):
                         "oneri": "gun_farki",
                         "gerekce": "Ham tarih modelde anlamlı değil; dönem sonuna gün farkı "
                                    "her dönemde aynı ölçüde kalır."}
+            try:
+                from fe_agent import kolon_cozum as _kc
+                if _kc.tarih_bayrak_gerek(df[k]):
+                    cikti[k]["bayrak"] = True
+                    cikti[k]["gerekce"] += (" Kolonda hem uydurma tarih (01.01.1900 gibi) hem gerçek "
+                                            "boş hücre var; gün farkında ikisi de boş kalacağı için "
+                                            "uydurma tarihin yazdığı satırlar ayrıca %s_FLAG "
+                                            "kolonunda (1 / 0) saklanır." % k)
+            except Exception:           # pylint: disable=broad-except
+                pass
         else:
             cikti[k] = {"kontrol": "tarih", "secenekler": ["cikar"], "oneri": "cikar",
                         "gerekce": "Dönem kolonu yok ya da tarih olarak okunamadı; gün farkı "
@@ -4779,7 +4805,8 @@ _KONTROL_ACIKLAMA_EK = {
         "Tarih kolonunda yılı 1901'den önce ya da 2200'den sonra olan tarih arar.",
         "Bitiş tarihi olmayan kayıtlarda 31.12.9999.",
         "bu tarihler boş sayılır: tarih kolonundan üretilen gün farkı kolonunda o satırlar boş "
-        "kalır. Ayrı 1/0 kolonu üretilmez.",
+        "kalır. Kolonda gerçek boş hücre de varsa uydurma tarihin yazdığı satırlar ayrı bir 1/0 "
+        "kolonunda (_FLAG) saklanır; yoksa o kolon boşluğun kopyası olurdu, üretilmez.",
         sorun="Bu tarihler gerçek değil, «bilgi yok» ya da «süresiz» demek için yazılmıştır; "
               "gerçek tarih gibi hesaba girerse sonucu bozar."),
     "pencere": _ac(
@@ -5473,6 +5500,8 @@ def asama_yeni_kolonlari(durum, acik_asama=None):
         if c in ("cikar", "oldugu_gibi") or karar.get(k) == PROFIL_KARAR_CIKAR:
             continue
         say[1] = say.get(1, 0) + 1
+        if c == "gun_farki" and (cozum_onerileri(durum).get(k) or {}).get("bayrak"):
+            say[1] += 1                  # uydurma tarih bayragi (gercek bos hucre de var)
         kesin = kesin and c != "metin"
     return {k: n for k, n in say.items() if n}, kesin
 

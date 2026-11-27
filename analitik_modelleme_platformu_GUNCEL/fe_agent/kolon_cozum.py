@@ -149,9 +149,9 @@ DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
                     "sifir_bos": ["birak", "sifir_bos"],
                     # tarih_kod AKISTA SUNULMAZ (akis_faz02.DUZELTME_KONTROLLERI'nda
                     # yok): tarih kolonu "gun_farki" cozumuyle <KOLON>_GUN'e
-                    # cevrilir, uydurma tarih orada bos kalir, bayrak uretilmez.
-                    # Ileride sunulursa bayrak, ozel kod ve metinle ayni kurala
-                    # baglanmali: yalniz gercek bos hucresi de olan kolonda.
+                    # cevrilir, uydurma tarih orada bos kalir. Kolonda gercek bos
+                    # hucre de varsa gun farki cozumu <KOLON>_FLAG bayragini da
+                    # uretir (bkz. tarih_bayrak_gerek).
                     "tarih_kod": ["tarih_bos_bayrak", "tarih_bos", "birak"],
                     "metin_bos": ["metin_bos", "metin_bos_bayrak", "birak"],
                     "yazim": ["tek_yazim", "birak"],
@@ -274,6 +274,52 @@ def gun_farki(x, donem):
     if son is None or t is None:
         return pd.Series(np.nan, index=x.index)
     return (son - t.dt.normalize()).dt.days.astype("float64")
+
+
+# UYDURMA TARIH BAYRAGI (gun farki cozumunun ikinci kolonu, <KOLON>_FLAG):
+# uydurma tarih (01.01.1900, 31.12.9999 gibi) yazan satirda 1. Gun farki
+# kolonunda uydurma tarih de gercek bos hucre de bos kalir; kolonda IKISI DE
+# varsa ("süresiz" ile "bilinmiyor" gibi) ayirt edilemezler. Bayrak yalniz o
+# durumda uretilir: ozel kod ve metin bayragiyla ayni kural. Kolonda gercek
+# bos hucre yoksa bayrak, gun farki kolonunun bos olup olmadiginin kopyasi
+# olurdu; uretilmez.
+TARIH_BAYRAK_EKI = "FLAG"
+
+
+def tarih_bayrak_gerek(x, egitim=None):
+    """Kolonda (egitim satirlarinda) hem uydurma tarih hem gercek bos hucre
+    var mi. Tarih kolonu degilse False."""
+    from fe_agent import profil_ek as pe
+    m = pe._tarih_kodlu(x)
+    if m is None:
+        return False
+    m = m.fillna(False).astype(bool)
+    bos = x.isna()
+    if egitim is not None:
+        e = pd.Series(np.asarray(egitim, dtype=bool), index=x.index)
+        m, bos = m[e], bos[e]
+    return bool(m.any()) and bool(bos.any())
+
+
+def tarih_bayragi(x):
+    """Uydurma tarih yazan satirda 1, degilse 0; tarih kolonu degilse None."""
+    from fe_agent import profil_ek as pe
+    m = pe._tarih_kodlu(x)
+    return None if m is None else m.fillna(False).astype("int8")
+
+
+def gun_farki_ekle(df, k, v):
+    """Gun farki cozumunun kolonlarini df'e yazar: v["kolonlar"][0] gun
+    farki; v["bilgi"]["bayrak"] varsa uydurma tarih bayragi."""
+    b = v.get("bilgi") or {}
+    donem = b.get("donem")
+    if donem in df.columns and v.get("kolonlar"):
+        df[v["kolonlar"][0]] = gun_farki(df[k], df[donem])
+    if b.get("bayrak") and b["bayrak"] not in df.columns:
+        by = tarih_bayragi(df[k])
+        if by is not None:
+            df[b["bayrak"]] = by
+    return df
 
 
 def metin_bos_maskesi(x):
@@ -809,9 +855,7 @@ def profil_uygula(df, spec):
             for c in cikti.columns:
                 df[c] = cikti[c]
         elif v.get("cozum") == "gun_farki":
-            donem = (v.get("bilgi") or {}).get("donem")
-            if donem in df.columns:
-                df[v["kolonlar"][0]] = gun_farki(df[k], df[donem])
+            gun_farki_ekle(df, k, v)
         else:
             df[v["kolonlar"][0]] = uygula(v["cozum"], df[k], v.get("bilgi") or {})
     return df
