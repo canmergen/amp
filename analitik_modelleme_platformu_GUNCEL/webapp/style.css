@@ -6323,6 +6323,14 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 }
 .pf-asama-oge.acik { border: 2px solid var(--metin); background: var(--yuzey); color: var(--metin); }
 .pf-asama-oge.onayli:not(.acik) { color: var(--metin); }
+/* Basılıp gidilebilen kontrol (geriye her zaman; ileriye daha önce gelinmişse). */
+.pf-asama-oge.tikla { cursor: pointer; border-color: color-mix(in srgb, var(--metin-tamam) 55%, var(--kenar)); }
+.pf-asama-oge.tikla .pf-asama-ad { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+.pf-asama-oge.tikla:hover { border-color: var(--metin); background: var(--yuzey); box-shadow: 0 1px 4px rgba(0,0,0,.10); }
+.pf-asama-oge.tikla:focus-visible { outline: 2px solid var(--metin); outline-offset: 1px; }
+.pf-kart.pf-asama-geciyor .pf-asama-oge.tikla, .pf-kart.pf-karar-aliyor .pf-asama-oge.tikla { pointer-events: none; opacity: 0.6; }
+.pf-serit-hata { color: var(--kirmizi); font-weight: var(--fw-kalin); text-align: center; }
+.pf-serit-hata[hidden] { display: none; }
 .pf-asama-ust { display: flex; align-items: center; gap: var(--b-2); min-width: 0; }
 .pf-asama-no {
   flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;

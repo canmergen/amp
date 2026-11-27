@@ -17687,6 +17687,12 @@ function profilKartiEkle(alan, blok, devamdan) {
        «Onaylandı» görünür. Önceden kart yerinde kilitlenirken şerit yeniden
        çizilmiyor, son aşama «Şu an buradasınız» diye kalıyordu. */
     let seritCiz = () => {};
+    /* Şeritte bir kontrole basınca oraya gidilir (asamayaGit; aşama
+       düğmeleri kurulurken bağlanır). Geriye her zaman; ileriye yalnız daha
+       önce gelinmiş kontrole (sunucu: adlar[].git). Hata şeridin altında. */
+    let asamayaGit = null;
+    const seritHata = elYap("div", "pf-serit-hata");
+    seritHata.hidden = true;
     /* Şerit ve aşama bilgisi kartın başında DEĞİL, tablonun genelinden
        (karolar, türler, eksik değer oranına göre kolonlar) sonra, hemen
        «Kontroller» bölümünün üstünde durur: aşamalar kontrollerin
@@ -17714,6 +17720,18 @@ function profilKartiEkle(alan, blok, devamdan) {
                 oge.setAttribute("role", "listitem");
                 if (acik) oge.setAttribute("aria-current", "step");
                 if (x.aciklama) oge.title = x.aciklama;
+                if (kararModu && x.git && !bitti) {
+                    oge.classList.add("tikla");
+                    oge.tabIndex = 0;
+                    oge.title = (x.aciklama ? x.aciklama + " " : "") + "Bu kontrole gitmek için basın.";
+                    oge.setAttribute("aria-label", "Kontrol " + x.no + ": " + x.ad + ". Bu kontrole git.");
+                    oge.onclick = () => { if (asamayaGit) asamayaGit(Number(x.no), oge); };
+                    oge.onkeydown = e => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
+                        e.preventDefault();
+                        oge.onclick();
+                    };
+                }
                 const ust = elYap("div", "pf-asama-ust");
                 ust.appendChild(elYap("span", "pf-asama-no", onayli && !acik ? "✓" : String(x.no)));
                 const yazi = elYap("span", "pf-asama-yazi");
@@ -17758,6 +17776,7 @@ function profilKartiEkle(alan, blok, devamdan) {
         };
         seritCiz(!!(blok && blok.kilit));
         asamaUst.push(serit);
+        asamaUst.push(seritHata);
         /* Açık kontrolün ne baktığı: tek kısa satır (sayılar şeritte). */
         if (asamaNo && asama.aciklama) asamaUst.push(elYap("div", "pf-asama-bilgi", asama.aciklama));
         if (asamaNo > 1) kart.classList.add("pf-asama-sonraki");
@@ -19136,33 +19155,40 @@ function profilKartiEkle(alan, blok, devamdan) {
                (yanıt yolda kaybolmuş, sayfa başka sekmede ilerlemiş) sunucu
                seçimleri KAYDETMEZ, güncel aşamanın kartını döndürür; yoksa bu
                aşamanın seçimleri görülmemiş bir aşamaya yazılıp onaylanırdı. */
-            const gecisGovdesi = yon => ({ yon: yon, asama: asamaNo,
+            const gecisGovdesi = (yon, hedef) => ({ yon: yon, asama: asamaNo, hedef: hedef || undefined,
                 cikar: Object.keys(kararlar).filter(a => kararlar[a] === "cikar"),
                 ayni: Object.assign({}, ayniSecim), cozum: Object.assign({}, cozumSecim),
                 duzeltme: JSON.parse(JSON.stringify(duzSecim)) });
-            const asamaGec = (yon, dugme, bekleme) => {
+            /* dugme: basılan aşama düğmesi ya da (hedef verildiyse) şeritteki
+               kontrol kutusu; kutuda bekleme yazısı durum satırına yazılır,
+               hata şeridin altında gösterilir. */
+            const asamaGec = (yon, dugme, bekleme, hedef) => {
                 if (mesgul || PF_ASAMA.ucakta || PF_DEVAM.ucakta > 0 || kart.classList.contains("kilitli")
                     || kart.classList.contains("pf-karar-aliyor")) return;
                 PF_ASAMA.ucakta = true;
                 PF_DEVAM.durdu = true;          // bu kartın kendiliğinden karar isteği başlamasın
+                const seritten = !!hedef;
+                const hataEl = seritten ? seritHata : asamaHata;
                 asamaHata.hidden = true;
-                const eskiYazi = dugme.textContent;
-                dugme.textContent = bekleme;
+                seritHata.hidden = true;
+                const yaziEl = seritten ? (dugme.querySelector(".pf-asama-durum") || dugme) : dugme;
+                const eskiYazi = yaziEl.textContent;
+                yaziEl.textContent = bekleme;
                 kart.querySelectorAll("button.secim-onay, button.pf-asama-btn").forEach(b => { b.disabled = true; });
                 kart.classList.add("pf-asama-geciyor");
                 const geriAl = mesaj => {
                     PF_ASAMA.ucakta = false;
                     PF_DEVAM.durdu = false;
-                    dugme.textContent = eskiYazi;
+                    yaziEl.textContent = eskiYazi;
                     kart.classList.remove("pf-asama-geciyor");
                     kart.querySelectorAll("button.secim-onay, button.pf-asama-btn").forEach(b => { b.disabled = false; });
-                    asamaHata.textContent = mesaj;
-                    asamaHata.hidden = false;
+                    hataEl.textContent = mesaj;
+                    hataEl.hidden = false;
                 };
                 fetch(getWebAppBackendUrl("profil_asama"), {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(ftKimlikGovdesi({ gecis: gecisGovdesi(yon) }))
+                    body: JSON.stringify(ftKimlikGovdesi({ gecis: gecisGovdesi(yon, hedef) }))
                 })
                 .then(r => r.json())
                 .then(d => {
@@ -19178,12 +19204,13 @@ function profilKartiEkle(alan, blok, devamdan) {
                         kart.remove();
                         /* Şerit kartın başında olmayabilir (1. aşamada tablonun genelinden sonra). */
                         try { (yeni.querySelector(".pf-asamalar") || yeni).scrollIntoView({ block: "start" }); } catch (e) { /* eski tarayıcı */ }
-                        const not = d.uyari && yeni.querySelector(".pf-asama-hata");
+                        const not = d.uyari && yeni.querySelector(seritten ? ".pf-serit-hata" : ".pf-asama-hata");
                         if (not) { not.textContent = d.uyari; not.hidden = false; }
                     }
                 })
                 .catch(() => geriAl("Sunucuya ulaşılamadı; kontrol değiştirilemedi."));
             };
+            asamayaGit = (hedef, oge) => asamaGec("git", oge, "Açılıyor…", hedef);
             if (asamaNo > 1) {
                 const geri = elYap("button", "dg-toplu-btn pf-asama-btn pf-asama-geri", "Önceki Kontrol");
                 geri.type = "button";

@@ -1293,8 +1293,12 @@ def profil_asama_kaydet(durum, govde, onay=True):
 
 def profil_asama_gecisi(durum, govde, butce=None):
     """Asama degistirir. govde["yon"]: "ileri" (acik asama onaylanir,
-    sonraki acilir) ya da "geri" (secimler kaydedilir ama onaylanmis
-    sayilmaz, onceki asama acilir). Doner: (kart, hata). Istek eski bir
+    sonraki acilir), "geri" (secimler kaydedilir ama onaylanmis sayilmaz,
+    onceki asama acilir) ya da "git" (seritte bir kontrole basildi:
+    govde["hedef"] asamasi acilir; secimler kaydedilir ama onaylanmis
+    sayilmaz. Geriye her zaman gidilir; ILERIYE yalniz hedeften onceki
+    butun asamalar onayliysa, yani daha once gelinmis bir yere. Degilse
+    asama degismez, kart "asama_uyari" ile doner). Doner: (kart, hata). Istek eski bir
     karttan geliyorsa (govde["asama"] acik asama degil) hicbir sey
     degismez; donen kartta "asama_uyari" bulunur."""
     p = durum.get("profil") or {}
@@ -1329,9 +1333,30 @@ def profil_asama_gecisi(durum, govde, butce=None):
     govde = govde if isinstance(govde, dict) else {}
     yon = govde.get("yon")
     yon = "ileri" if yon is None else yon
-    if yon not in ("ileri", "geri") or ("cikar" in govde and not isinstance(govde["cikar"], list)):
+    if yon not in ("ileri", "geri", "git") or ("cikar" in govde and not isinstance(govde["cikar"], list)):
         return None, "Kontrol isteği anlaşılamadı; hiçbir şey değiştirilmedi. Sayfayı yenileyip yeniden deneyin."
-    if yon == "geri":
+    if yon == "git":
+        try:
+            hedef = int(govde.get("hedef"))
+        except (TypeError, ValueError):
+            hedef = 0
+        if not 1 <= hedef <= ASAMA_SAYISI or hedef == no:
+            return None, "Kontrol isteği anlaşılamadı; hiçbir şey değiştirilmedi. Sayfayı yenileyip yeniden deneyin."
+        profil_asama_kaydet(durum, govde, onay=False)
+        if hedef > no:
+            # Ileriye: yalniz daha once gelinmis yere (onceki asamalarin
+            # hepsi onayli). Acik asamada secim degistiyse onayi dustu.
+            eksik = [x for x in range(1, hedef) if x not in _asama_onaylilari(durum.get("profil") or {})]
+            if eksik:
+                kart = profil_karti(durum, karar=True)
+                if isinstance(kart, dict):
+                    kart["asama_uyari"] = (
+                        "Kontrol %d açılamadı: önce Kontrol %d onaylanmalı. Seçimleriniz kaydedildi; "
+                        "«Kontrolü Onayla ve Sonrakine Geç» ile ilerleyin." % (hedef, eksik[0]))
+                    kart["asama_uyari_kaydet"] = True     # durum degisti (secimler): kaydedilir
+                return kart, None
+        profil_asamaya_gir(durum, hedef, sorma=True)
+    elif yon == "geri":
         if no <= 1:
             return None, "İlk kontroldesiniz."
         profil_asama_kaydet(durum, govde, onay=False)
@@ -5345,18 +5370,25 @@ def profil_ek_deger(v):
     return _pe.deger_metni(v)
 
 
+def _asama_onaylilari(p):
+    """Onaylanan asama numaralari (kume)."""
+    try:
+        return {int(y) for y in ((p or {}).get("asama_onay") or [])}
+    except (TypeError, ValueError):
+        return set()
+
+
 def _asama_seridi(p, incelenen, asama_haric, acik_asama):
     """Seritteki asamalar: [{"no", "ad", "aciklama", "onayli", "giren",
-    "kalan"}]. giren: asamaya giren kolon sayisi (onceki asamalarda
+    "kalan", "git"}]. git: kart karar beklerken seritte bu kontrole basilip
+    gidilebilir mi (geriye her zaman; ileriye yalniz ondan onceki butun
+    asamalar onayliysa). giren: asamaya giren kolon sayisi (onceki asamalarda
     cikmayanlar); kalan: asamadan sonra kalan kolon sayisi. Sayilar yalniz
     BILINEN asamalarda doner: onaylanan asamalarda ikisi de, acik asamada
     yalniz "giren" (asama henuz onaylanmadi); onaylanmis kartta (acik_asama
     yok) hepsi. Siradaki asamalarda None. asama_haric(no): no'dan ONCEKI
     asamalarda cikan kolonlar."""
-    try:
-        onayli = {int(y) for y in (p.get("asama_onay") or [])}
-    except (TypeError, ValueError):
-        onayli = set()
+    onayli = _asama_onaylilari(p)
     kume, cikti = set(incelenen), []
     say = lambda no: len(kume) - len(kume & asama_haric(no))    # no. asamaya giren
     for x in PROFIL_ASAMALARI:
@@ -5364,6 +5396,8 @@ def _asama_seridi(p, incelenen, asama_haric, acik_asama):
         on = no in onayli
         bilinen = acik_asama is None or on or no == acik_asama
         cikti.append({"no": no, "ad": x["ad"], "aciklama": x.get("aciklama") or "", "onayli": on,
+                      "git": bool(acik_asama) and no != acik_asama and (
+                          no < acik_asama or all(y in onayli for y in range(1, no))),
                       "giren": say(no) if bilinen else None,
                       "kalan": say(no + 1) if (on and no != acik_asama) or acik_asama is None else None})
     return cikti
