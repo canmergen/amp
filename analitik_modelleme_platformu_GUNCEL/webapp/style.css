@@ -6505,3 +6505,13 @@ col.gl-ad-k-ad { width: 34%; } col.gl-ad-k-nerede { width: 17%; } col.gl-ad-k-ko
 .gl-ad-kim-yazi { white-space: nowrap; }
 /* 02.2 özet adımındaki sayı karoları yalnız bilgidir (eski düzenin kısayolları kaldırıldı). */
 .gl-ozet-kap .pf-karo { pointer-events: none; cursor: default; }
+/* 02.2 özet: üretilecek kolonların listesi (kapalı gelir). */
+.gl-ozet-liste { margin-top: var(--b-3); border: 1px solid var(--kenar); border-radius: var(--r-kucuk); background: var(--yuzey); }
+.gl-ozet-liste > summary { cursor: pointer; padding: var(--b-2) var(--b-3); }
+.gl-ozet-liste[open] > summary { border-bottom: 1px solid var(--kenar); }
+.gl-ozet-liste-ic { display: flex; flex-direction: column; gap: var(--b-2); padding: var(--b-3); }
+.gl-ozet-liste-ust { display: flex; flex-wrap: wrap; align-items: center; gap: var(--b-2) var(--b-3); }
+.gl-ozet-liste-ust .gl-ozet-liste-ara { flex: 1 1 260px; min-width: 0; }
+.dg-tablo.gl-ozet-liste-tablo { width: 100%; }
+.gl-ozet-liste-tablo thead th { position: sticky; top: 0; z-index: 1; background: var(--yuzey-alt); }
+.gl-ozet-liste .gl-ad-devam[hidden] { display: none; }

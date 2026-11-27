@@ -2810,6 +2810,11 @@ tanıtır; sayfalar sol bardan açılır.
   gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
   süzgeci; en çok 2.000 satır.
 
+**02.2 özet adımı: üretilecek kolonların listesi**
+
+- Özet adımında, özet tablosunun altında «Üretilecek kolonların listesi» kapalı gelir (başlığında toplam kolon sayısı). Açılınca her satır üretilecek bir kolondur: adı, adımı, dönüşümü (değeriyle), birimi, kodun ölçümü (değerlendirme, IV, kaynağa göre artış) ve öneren. Kolon, birim ve dönüşüm adında arama vardır; 300'er satır gösterilir. Sizin eklediğiniz satırlar işaretlidir.
+- Kolon adları kolon ölçümünden gelir (`planKolonlari`); ölçümü olmayan dönüşüm (eşik, iş kuralı aralıkları) ya da ölçümü henüz yüklenmemiş dönüşüm kolon sayısıyla tek satırdır («N kolon (adı üretimde belli olur)»).
+
 **02.2: «Uzman görünümü» kaldırıldı**
 
 - Eski düzen (Birimler / Üretim Planı / Üretime Girmeyen / Dönüşümler sekmeleri, süzgeç çubuğu, birim listesi) artık kartta gösterilmez; düğümleri karttan çıkarılır ve listesi çizilmez (`izgara.isConnected` değilse `listeCiz` çalışmaz). Kodu durur: birim kutusu (`birimSatiri`) «Ayrıntı»da kullanılır.

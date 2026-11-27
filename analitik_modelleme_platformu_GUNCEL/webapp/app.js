@@ -21656,6 +21656,74 @@ function gelenekselKartiEkle(alan, blok) {
         tb.appendChild(tr_);
         t.appendChild(tb);
         ozetTablo.appendChild(t);
+        /* ÜRETİLECEK KOLONLARIN LİSTESİ: her satır üretilecek bir kolon
+           (adım, dönüşüm, birim, kodun ölçümü, öneren). Kolon adları kolon
+           ölçümünden gelir; ölçümü olmayan dönüşüm (eşik, iş kuralı
+           aralıkları) kolon sayısıyla tek satırdır. Kapalı gelir. */
+        Object.assign(suz, { tip: "", durum: "uret", kod: "", oneren: "" });
+        ara.value = "";
+        const kolonlar_ = planKolonlari("");
+        const toplamK = kolonlar_.reduce((t_, x) => t_ + (x.r ? 1 : Number(x.n) || 0), 0);
+        const ld = document.createElement("details");
+        ld.className = "gl-ozet-liste";
+        ld.open = !!GL_ADIM.liste;
+        ld.addEventListener("toggle", () => { GL_ADIM.liste = ld.open; });
+        const lb = document.createElement("summary");
+        lb.append(elYap("b", "", "Üretilecek kolonların listesi"), elYap("span", "gl-not", " " + ftBinlik(toplamK) + " kolon: adı, adımı, dönüşümü, birimi, kodun ölçümü ve öneren."));
+        ld.appendChild(lb);
+        const lic = elYap("div", "gl-ozet-liste-ic");
+        const lara = document.createElement("input");
+        lara.type = "search";
+        lara.className = "gl-ara gl-ozet-liste-ara";
+        lara.placeholder = "Kolon, birim ya da dönüşüm adında ara";
+        lara.value = GL_ADIM.listeAra || "";
+        const lsay = elYap("span", "gl-not", "");
+        const lust = elYap("div", "gl-ozet-liste-ust");
+        lust.append(lara, lsay);
+        const lsar = elYap("div", "gl-dg-liste");
+        const lt = elYap("table", "dg-tablo gl-ozet-liste-tablo");
+        const lth = elYap("thead"), lhr = elYap("tr");
+        ["Üretilecek Kolon", "Adım", "Dönüşüm", "Birim", "Kodun Ölçümü", "Öneren"].forEach(b_ => lhr.appendChild(elYap("th", "", b_)));
+        lth.appendChild(lhr); lt.appendChild(lth);
+        const ltb = elYap("tbody");
+        lt.appendChild(ltb);
+        lsar.appendChild(lt);
+        const ldevam = elYap("button", "dg-toplu-btn gl-ad-devam", "");
+        ldevam.type = "button";
+        const LISTE_SAYFA = 300;
+        let lsinir = LISTE_SAYFA;
+        const listeYaz = () => {
+            GL_ADIM.listeAra = lara.value;
+            const q_ = lara.value.trim().toLocaleLowerCase("tr");
+            const gor = !q_ ? kolonlar_ : kolonlar_.filter(x => ((x.r ? x.r[0] : "") + " " + x.b.ad + " " + kodAdi(x.c)).toLocaleLowerCase("tr").includes(q_));
+            ltb.textContent = "";
+            gor.slice(0, lsinir).forEach(x => {
+                const tr2 = elYap("tr", x.durum === "eklenen" ? "pf-farkli" : "");
+                tr2.appendChild(elYap("td", "gl-dg-kolon", x.r ? x.r[0] : ftBinlik(x.n) + " kolon (adı üretimde belli olur)"));
+                tr2.appendChild(elYap("td", "", "Adım " + x.a));
+                tr2.appendChild(elYap("td", "", kodAdi(x.c) + paramMetni(x.c, karar[x.b.id].param)));
+                tr2.appendChild(elYap("td", "", x.b.ad));
+                const ot = elYap("td", "gl-ad-olcum");
+                if (x.r) {
+                    const dgr = kolonDegerlendir(x.r);
+                    ot.appendChild(elYap("div", "gl-ad-deger " + dgr[0], dgr[1]));
+                    ot.appendChild(elYap("div", "gl-ad-olcum-alt", "IV " + sayiYaz(x.r[1], 3) + (x.r[2] !== null && x.r[2] !== undefined ? " · kaynağa göre " + artisYaz(x.r[2]) : "")));
+                } else ot.appendChild(elYap("div", "gl-ad-deger", "Ölçülmedi"));
+                tr2.appendChild(ot);
+                tr2.appendChild(elYap("td", "", x.oneren));
+                ltb.appendChild(tr2);
+            });
+            if (!gor.length) { const r0 = elYap("tr"), t0 = elYap("td", "gl-not", q_ ? "Aramayla eşleşen kolon yok." : "Üretilecek kolon yok."); t0.colSpan = 6; r0.appendChild(t0); ltb.appendChild(r0); }
+            lsay.textContent = q_ ? ftBinlik(gor.length) + " satır eşleşti" : "";
+            ldevam.hidden = gor.length <= lsinir;
+            ldevam.textContent = "Sonraki " + ftBinlik(Math.min(LISTE_SAYFA, gor.length - lsinir)) + " satır (kalan " + ftBinlik(Math.max(0, gor.length - lsinir)) + ")";
+        };
+        lara.oninput = () => { lsinir = LISTE_SAYFA; listeYaz(); };
+        ldevam.onclick = () => { lsinir += LISTE_SAYFA; listeYaz(); };
+        listeYaz();
+        lic.append(lust, lsar, ldevam);
+        ld.appendChild(lic);
+        ozetTablo.appendChild(ld);
         if (!kilit && (cikT || eklT)) {
             const gs = elYap("div", "gl-ozet-geri");
             gs.appendChild(elYap("span", "", "Öneriden " + [cikT ? ftBinlik(cikT) + " seçim çıkarıldı" : "", eklT ? ftBinlik(eklT) + " seçim eklendi" : ""].filter(Boolean).join(", ") + "."));
