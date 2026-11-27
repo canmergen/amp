@@ -147,6 +147,11 @@ DUZELTME_SECENEK = {"gizli_eksik": ["kod_bos_bayrak", "kod_bos", "birak"],
                     # Bos yerine sifir: veriden anlasilmaz; kod onerisi birak,
                     # dil modeli kolonun anlamindan gorus verir.
                     "sifir_bos": ["birak", "sifir_bos"],
+                    # tarih_kod AKISTA SUNULMAZ (akis_faz02.DUZELTME_KONTROLLERI'nda
+                    # yok): tarih kolonu "gun_farki" cozumuyle <KOLON>_GUN'e
+                    # cevrilir, uydurma tarih orada bos kalir, bayrak uretilmez.
+                    # Ileride sunulursa bayrak, ozel kod ve metinle ayni kurala
+                    # baglanmali: yalniz gercek bos hucresi de olan kolonda.
                     "tarih_kod": ["tarih_bos_bayrak", "tarih_bos", "birak"],
                     "metin_bos": ["metin_bos", "metin_bos_bayrak", "birak"],
                     "yazim": ["tek_yazim", "birak"],

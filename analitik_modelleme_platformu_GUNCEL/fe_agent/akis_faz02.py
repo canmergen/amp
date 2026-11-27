@@ -4778,8 +4778,8 @@ _KONTROL_ACIKLAMA_EK = {
         "Tarih yerine 01.01.1900 ya da 31.12.9999 gibi uydurma tarih yazılmış.",
         "Tarih kolonunda yılı 1901'den önce ya da 2200'den sonra olan tarih arar.",
         "Bitiş tarihi olmayan kayıtlarda 31.12.9999.",
-        "öneri: bu tarihler boş sayılır; hangi satırlarda yazdığı ayrı bir 1/0 kolonunda (_FLAG) "
-        "saklanır.",
+        "bu tarihler boş sayılır: tarih kolonundan üretilen gün farkı kolonunda o satırlar boş "
+        "kalır. Ayrı 1/0 kolonu üretilmez.",
         sorun="Bu tarihler gerçek değil, «bilgi yok» ya da «süresiz» demek için yazılmıştır; "
               "gerçek tarih gibi hesaba girerse sonucu bozar."),
     "pencere": _ac(
