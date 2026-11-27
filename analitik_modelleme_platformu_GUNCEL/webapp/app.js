@@ -21196,7 +21196,11 @@ function gelenekselKartiEkle(alan, blok) {
         const dm = o.kaynak === "dil modeli" || o.kaynak === "sohbet";
         const oneren = !onerili ? (secili ? "siz" : "") : kodEk ? "olcum" : o.kaynak === "dil modeli" ? "dm" : o.kaynak === "sohbet" ? "sohbet" : "kural";
         let ger = "";
-        if (onerili) ger = kodEk ? (kodEk.neden || "") : ((o.sayisiz ? "" : (o["g" + a] || "")) || (m ? "" : o.gerekce || ""));
+        /* Dil modelinin gerekçesindeki sayılar kodun ölçümüyle tutmuyorsa
+           (o.g_tutmuyor) sunucu gerekçeyi göndermez; yerine bu not yazar. */
+        const tutmuyor = onerili && !kodEk && (o.g_tutmuyor || []).includes(Number(a));
+        if (tutmuyor) ger = "Dil modelinin gerekçesi gösterilmiyor: yazdığı sayılar kodun bu birim için ölçtükleriyle tutmuyor. Seçim dil modelinindir; kodun ölçümü yandaki sütundadır.";
+        else if (onerili) ger = kodEk ? (kodEk.neden || "") : ((o.sayisiz ? "" : (o["g" + a] || "")) || (m ? "" : o.gerekce || ""));
         else if (elenen) ger = "Kod ayıkladı: " + (elenen.neden || "ölçüm yeni bilgi göstermedi.");
         else if (secili) ger = "Siz eklediniz; öneride yoktu.";
         else ger = o.dm_yok ? "Dil modelinden karar alınamadı; kod da önermedi." : dm ? "Dil modeli bu birimde seçmedi." : "Kod bu birimde önermedi.";

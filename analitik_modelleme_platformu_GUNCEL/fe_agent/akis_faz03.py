@@ -259,6 +259,23 @@ def geleneksel_kolonlar(durum, istek=None):
     return cikti
 
 
+def _oneri_goster(o, k):
+    """Onerinin karta giden hali. Dil modelinin asama gerekcesindeki sayilar
+    kodun o birim icin olctugu sayilarla tutmuyorsa (baska birimin cumlesi,
+    talimattaki ornegin kopyasi, uydurma sayi) gerekce karta GONDERILMEZ;
+    "g_tutmuyor" hangi asamalarin gizlendigini soyler. Kayitli (eski)
+    onerilerde de her seferinde denetlenir."""
+    from fe_agent import geleneksel as G
+    c = {x: v for x, v in o.items() if x != "imza"}
+    kotu = G.gerekce_denetle(o, k)
+    c["g_tutmuyor"] = kotu
+    for a in kotu:
+        c["g%d" % a] = ""
+    if kotu and c.get("gerekce"):
+        c["gerekce"] = ""
+    return c
+
+
 def _kolon_aciklamalari(durum, kolonlar):
     """{kolon: sozluk aciklamasi}: verilen kolonlardan aciklamasi olanlar.
     Adi 01'de degisen kolonda aciklama eski adla kayitli olabilir."""
@@ -342,7 +359,7 @@ def geleneksel_karti(durum, kilitli=False):
         "katki_esik": {"artis": G.KATKI_ARTIS, "iliski": G.KATKI_ILISKI, "dilim": G.KATKI_DILIM,
                        "uyum": G.UYUM_ARTIS},
         "uyum_kodlari": list(G.UYUM_KODLARI), "olcek_notu": G.OLCEK_NOTU,
-        "oneri": {i: {k: v for k, v in o.items() if k != "imza"} for i, o in oneri.items()},
+        "oneri": {i: _oneri_goster(o, (g.get("katki") or {}).get(i)) for i, o in oneri.items()},
         "karar": karar,
         "girmeyen": g.get("girmeyen") or [],
         # Kartin basindaki dagilim grafiginde kolona tiklaninca gosterilen

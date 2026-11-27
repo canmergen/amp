@@ -1907,9 +1907,16 @@ def katki_gerekcesi(b, k, sec, model_turu):
     return s1.strip(), s2.strip()
 
 
+# Dil modeline verilen talimat degisince artar: eski talimatla alinmis
+# oneriler gecersiz sayilir ve birimler yeniden sorulur. 2: talimattaki
+# sayili ornek cumle kaldirildi (dil modeli onu gerekce diye kopyaliyordu).
+ONERI_SURUM = 2
+
+
 def _oneri_imza(b, model_turu):
-    """Onerinin gecerli oldugu durum: birim, model turu ve olcum surumu."""
-    return _imza(b) + model_turu + "|k%d" % KATKI_SURUM
+    """Onerinin gecerli oldugu durum: birim, model turu, olcum surumu ve
+    talimat surumu."""
+    return _imza(b) + model_turu + "|k%d|o%d" % (KATKI_SURUM, ONERI_SURUM)
 
 
 def katki_eksik(birimler, katki, model_turu):
@@ -2142,14 +2149,61 @@ def olcum_tamamla(o, b, k, model_turu):
     return dict(o, sec=sec, kod_ekledi=ekl)
 
 
+_ONDALIK = re.compile(r"(?<![\w.,])\d+[.,]\d+")
+
+
+def gerekce_tutuyor(metin, k):
+    """Dil modelinin gerekcesindeki ONDALIK sayilar kodun bu birim icin
+    olctugu sayilarla tutuyor mu? Dil modeli hesap yapmaz: kendisine kodun
+    olcumu ("katki": kaynak IV, donusumlerin IV'si, artis, kaynakla iliski,
+    dogrusal uyum) verilir ve gerekcesini bu sayilarla yazmasi istenir.
+    Gerekcedeki ondalik sayilarin en az yarisi olcumde (iki ondaliga
+    yuvarlanmis haliyle) ya da kural esiklerinde yoksa gerekce o birimin
+    olcumunu anlatmiyordur (baska birimin cumlesi, talimattaki ornegin
+    kopyasi ya da uydurma sayi). Ondalik sayi yoksa True ("sayisiz" ayri
+    isaretlenir)."""
+    xs = []
+    for t in _ONDALIK.findall(str(metin or "")):
+        try:
+            xs.append(float(t.replace(",", ".")))
+        except ValueError:
+            pass
+    if not xs:
+        return True
+    olcu = {KATKI_ARTIS, KATKI_ILISKI, UYUM_ARTIS}
+    k = k if isinstance(k, dict) else {}
+    if k.get("kaynak_iv") is not None:
+        olcu.add(float(k["kaynak_iv"]))
+    for m in (k.get("kodlar") or {}).values():
+        for alan in ("iv", "artis", "iliski", "uyum"):
+            if m.get(alan) is not None:
+                olcu.add(abs(float(m[alan])))
+        for v in (m.get("benzer") or {}).values():
+            if v is not None:
+                olcu.add(abs(float(v)))
+    tutan = sum(1 for x in xs if any(abs(x - v) <= 0.0051 for v in olcu))
+    return tutan * 2 >= len(xs)
+
+
+def gerekce_denetle(o, k):
+    """Dil modeli (ya da sohbet) kaynakli oneride asama gerekcelerini kodun
+    olcumuyle karsilastirir: sayilari tutmayan asamalar "g_tutmuyor"
+    listesine yazilir ([1, 2, 3] icinden). Kartta o gerekce gosterilmez."""
+    if not isinstance(o, dict) or o.get("kaynak") not in ("dil modeli", "sohbet"):
+        return []
+    return [a for a in (1, 2, 3) if o.get("g%d" % a) and not gerekce_tutuyor(o["g%d" % a], k)]
+
+
 def olcum_ekle(o, b, k, model_turu):
     """Oneriye kodun sayisal gerekcesini ekler (olcum, olcum_secilmeyen).
-    Dil modelinin gerekcesinde sayi yoksa (genel cumle) gosterilmez."""
+    Dil modelinin gerekcesinde sayi yoksa (genel cumle) gosterilmez;
+    sayilari kodun olcumuyle tutmayan asama gerekcesi de ("g_tutmuyor")."""
     o = dict(o)
     if k:
         o["olcum"], o["olcum_secilmeyen"] = katki_gerekcesi(b, k, o.get("sec") or [], model_turu)
     metin = " ".join(str(o.get(a) or "") for a in ("g1", "g2", "g3", "gerekce"))
     o["sayisiz"] = o.get("kaynak") in ("dil modeli", "sohbet") and not _sayili(metin)
+    o["g_tutmuyor"] = gerekce_denetle(o, k)
     return o
 
 

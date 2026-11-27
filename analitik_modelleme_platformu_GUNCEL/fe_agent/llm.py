@@ -4956,9 +4956,14 @@ GEREKÇE: her birimde ilgili aşamanın gerekçesini ayrı yaz: "g1" (1. aşama:
 kolonun kendi dönüşümü), "g2" (yalnız ailede, 2. aşama: pencereler arası),
 "g3" (yalnız çift, grup, segment ve satırda). HER gerekçe iki şey söyler:
 (a) ölçülen sayılar (IV, artış, ilişki), (b) dönüşümün kolonun anlamında
-hangi davranışı yakaladığı. Örnek: "Son 3 günün 30 güne normalize oranı
-IV'yi 0,15'ten 0,22'ye çıkarıyor (artış 0,07), kaynakla ilişkisi 0,41: son
-günlerde hızlanan işlem adedi riskle ilişkili." "Bilgi katar", "bilgi
+hangi davranışı yakaladığı. Biçim: "<seçtiğin dönüşüm> IV'yi <kaynak IV>'ten
+<dönüşümün IV'si>'ye çıkarıyor (artış <artış>), kaynakla ilişkisi <ilişki>:
+<kolonun anlamında yakaladığı davranış>." Köşeli ayraç içindekiler YER
+TUTUCUDUR: sayıları YALNIZ o birimin "katkı" alanından al; orada olmayan
+sayı YAZMA, başka birimin sayısını ya da cümlesini KOPYALAMA (her gerekçe
+kodun ölçümüyle karşılaştırılır, tutmayan gösterilmez). Her gerekçe o
+aşamada SEÇTİĞİN dönüşümü anlatır: g1 yalnız 1. aşama dönüşümünü, g2 yalnız
+pencereler arası dönüşümü. "Bilgi katar", "bilgi
 katmaz", "modele katkı sağlar" gibi sayısız, genel cümle YAZMA.
 "secilmeyen": seçilmeyen her mümkün kodun sayıyla nedeni (ör. "Fark: artış
 0,00, ilişki 0,97, oranla aynı bilgi").

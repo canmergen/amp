@@ -2810,6 +2810,13 @@ tanıtır; sayfalar sol bardan açılır.
   gerekçe (o aşamanın gerekçesi ya da ölçüm). Üç aşama düğmesi ve satır
   süzgeci; en çok 2.000 satır.
 
+**02.2: dil modelinin gerekçesi kodun ölçümüyle denetlenir**
+
+- Dil modeli hesap yapmaz: her birim için kodun ölçtüğü sayılar (kaynak IV, dönüşümlerin IV'si, artış, kaynakla ilişki, doğrusal uyum) kendisine verilir; yalnız kodun «uygulanabilir» dediği dönüşümlerden seçebilir (`mumkun`; yanıt ve onay bu listeyle süzülür) ve gerekçesini o sayılarla yazması istenir. Üretimi kod yapar (`geleneksel.uygula`), yalnız Train satırlarından öğrenerek.
+- **Bulunan kusur:** talimatta sayılı bir örnek cümle vardı («… IV'yi 0,15'ten 0,22'ye çıkarıyor (artış 0,07), kaynakla ilişkisi 0,41 …»). Dil modeli bu cümleyi birçok birimde gerekçe diye aynen yazıyordu; sayılar yandaki ölçümle çelişiyordu. Önceki denetim yalnız «gerekçede rakam var mı» diye bakıyordu.
+- **Düzeltme:** (1) talimattaki örnek yer tutuculu biçime çevrildi, kopyalama yasağı eklendi (`SISTEM_GELENEKSEL`). (2) `geleneksel.gerekce_tutuyor(metin, katki)`: gerekçedeki ondalık sayıların en az yarısı o birimin ölçümünde (iki ondalığa yuvarlanmış haliyle) ya da kural eşiklerinde yoksa gerekçe tutmuyor sayılır; `gerekce_denetle` aşama aşama bakar (`g_tutmuyor`). (3) Karta giden öneride tutmayan gerekçe GÖNDERİLMEZ (`akis_faz03._oneri_goster`; kayıtlı eski önerilerde de her seferinde denetlenir); birim satırında «Dil modelinin gerekçesi gösterilmiyor: yazdığı sayılar kodun ölçümüyle tutmuyor» notu çıkar. (4) `ONERI_SURUM = 2` öneri imzasına girdi: eski talimatla alınmış öneriler geçersiz sayılır, 02.2 yeniden açılınca birimler dil modeline yeniden sorulur (seçimleriniz korunur).
+- **Değişmeyen:** seçimin kendisi. Kod, dil modelinin seçtiği dönüşümü yalnız tekrar ise ayıklar (`tekrar_ele`) ve ölçümü yeni bilgi gösterenleri ekler (`olcum_tamamla`); ölçümü «kaynakla aynı bilgi» diyen bir seçimi öneriden ÇIKARMAZ (yalnız yeni bilgi taşımayan kolonları dışarıda bırakır).
+
 **02.2 kartı adım adım düzen (yeniden tasarım)**
 
 - Kartın ana görünümü 02.1.2 ile aynı mantıktadır: üstte adım şeridi, altında o adımın tablosu. Sunucuya giden karar biçimi (`{id: {sec, param, haric}}`), onay (`dogrulama.adim = "kural"`), otomatik kayıt ve bütün uçlar DEĞİŞMEDİ; yalnız kartın düzeni değişti.
