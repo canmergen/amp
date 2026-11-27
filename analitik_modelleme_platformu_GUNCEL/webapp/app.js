@@ -18022,6 +18022,7 @@ function profilKartiEkle(alan, blok, devamdan) {
             return { toplam: t.toplam + x.toplam, dm: t.dm + x.dm, fark: t.fark + x.fark };
         }, { toplam: 0, dm: 0, fark: 0 });
         const kartFark = kartSay.fark;
+        let farkKutu = null;       // "Koddan farklı karar" kutucuğu: süzgecin kısayolu
         if (dmKullanildi) {
             /* Sayım sunucudan (alan.gorus); eski kartta yoksa karttaki satırlardan. */
             const alinan = Number(gs.alinan || kartSay.dm), toplam = Number(gs.oge || kartSay.toplam || alinan);
@@ -18032,11 +18033,12 @@ function profilKartiEkle(alan, blok, devamdan) {
                 k.appendChild(elYap("div", "pf-ozet-sayi-deger", ftBinlik(deger)));
                 k.appendChild(elYap("div", "pf-ozet-sayi-etiket", etiket));
                 sayilar.appendChild(k);
+                return k;
             };
             sayi(toplam, "Seçim isteyen bulgu", "");
             sayi(alinan, "Dil modeli karar verdi", "dm");
             sayi(Math.max(0, alinan - kartFark), "Kodla aynı karar", "");
-            sayi(kartFark, "Koddan farklı karar", kartFark ? "fark" : "");
+            farkKutu = sayi(kartFark, "Koddan farklı karar", kartFark ? "fark" : "");
             sayi(gsuz, dmSirada ? "Sırada, dil modeli kararı bekleniyor" : "Karar alınmadı, kodun önerisi seçili", gsuz ? "eksik" : "");
             oz.appendChild(sayilar);
         } else if (gs.hata && Number(gs.oge) > 0) {
@@ -18139,24 +18141,72 @@ function profilKartiEkle(alan, blok, devamdan) {
            bulguların seçimi değişmez ve onayda yine gönderilir. Önceden
            yalnız çok satırlı, ayrışma olan kuralın içinde ayrı ayrı vardı. */
         if (dmKullanildi && kartFark > 0) {
+            /* Göze çarpsın diye kendi şeridinde, iki seçenekli düğme çifti
+               (önceden küçük bir onay kutusuydu, gözden kaçıyordu). Ayrıca
+               "Koddan farklı karar" kutucuğu da aynı süzgeci açıp kapatır. */
             const sz = elYap("div", "pf-suzgec");
-            const et = elYap("label", "pf-yalniz-fark-sec");
-            const cb = document.createElement("input");
-            cb.type = "checkbox";
-            et.append(cb, elYap("span", "", "Yalnız kod ile dil modelinin ayrıştığı " + ftBinlik(kartFark) + " bulguyu göster"));
-            const ipucu = elYap("span", "pf-suzgec-ipucu", "Öteki bulgular gizli; seçimleri değişmez, onayda onlar da gönderilir. Toplu seçim düğmeleri yalnız görünenlere uygulanır.");
-            sz.append(et, ipucu);
+            sz.setAttribute("role", "group");
+            sz.setAttribute("aria-label", "Gösterilecek bulgular");
+            sz.appendChild(elYap("span", "pf-suzgec-ad", "Gösterilecek bulgular"));
+            const secenekler = elYap("div", "pf-suzgec-secenekler");
+            const dugme = (sinif, metin, adet) => {
+                const d = elYap("button", "pf-suzgec-btn " + sinif);
+                d.type = "button";
+                d.appendChild(elYap("span", "pf-suzgec-btn-ad", metin));
+                d.appendChild(elYap("span", "pf-suzgec-adet", ftBinlik(adet)));
+                secenekler.appendChild(d);
+                return d;
+            };
+            const hepsiBtn = dugme("pf-suzgec-hepsi", "Bütün bulgular", kartSay.toplam);
+            const farkBtn = dugme("pf-suzgec-fark", "Yalnız kod ile dil modelinin ayrıştığı bulgular", kartFark);
+            sz.appendChild(secenekler);
+            const ipucuKapali = "Kod ile dil modeli " + ftBinlik(kartFark) + " bulguda farklı karar verdi. İkinci seçenek yalnız onları gösterir.";
+            const ipucuAcik = "Öteki bulgular gizli; seçimleri değişmez, onayda onlar da gönderilir. Toplu seçim düğmeleri yalnız görünenlere uygulanır.";
+            const ipucu = elYap("div", "pf-suzgec-ipucu", ipucuKapali);
+            sz.appendChild(ipucu);
             oz.appendChild(sz);
+            /* Kısayol: "Koddan farklı karar" kutucuğu. */
+            let kisayol = null;
+            if (farkKutu) {
+                farkKutu.classList.add("pf-ozet-sayi-tikla");
+                farkKutu.setAttribute("role", "button");
+                farkKutu.tabIndex = 0;
+                kisayol = elYap("div", "pf-ozet-sayi-ek", "");
+                farkKutu.appendChild(kisayol);
+            }
+            const mesgul = () => kart.classList.contains("pf-karar-aliyor");
             const suzgecUygula = acik => {
-                PF_SUZGEC.fark = !!acik;
-                cb.checked = !!acik;
-                kart.classList.toggle("pf-yalniz-fark", !!acik);
-                ipucu.hidden = !acik;
+                acik = !!acik;
+                PF_SUZGEC.fark = acik;
+                kart.classList.toggle("pf-yalniz-fark", acik);
+                hepsiBtn.classList.toggle("secili", !acik);
+                farkBtn.classList.toggle("secili", acik);
+                hepsiBtn.setAttribute("aria-pressed", acik ? "false" : "true");
+                farkBtn.setAttribute("aria-pressed", acik ? "true" : "false");
+                ipucu.textContent = acik ? ipucuAcik : ipucuKapali;
+                if (farkKutu) {
+                    farkKutu.classList.toggle("secili", acik);
+                    farkKutu.setAttribute("aria-pressed", acik ? "true" : "false");
+                    kisayol.textContent = acik ? "Bütün bulguları göster" : "Yalnız bunları göster";
+                }
                 suzgecEtiketleri.forEach(([el, normal, suzulmus]) => { el.textContent = acik ? suzulmus : normal; });
                 if (acik) farkAcicilar.forEach(f => f());
             };
-            cb.onchange = () => suzgecUygula(cb.checked);
-            ipucu.hidden = true;
+            hepsiBtn.onclick = () => { if (!mesgul()) suzgecUygula(false); };
+            farkBtn.onclick = () => { if (!mesgul()) suzgecUygula(true); };
+            if (farkKutu) {
+                farkKutu.onclick = () => { if (!mesgul()) suzgecUygula(!PF_SUZGEC.fark); };
+                farkKutu.onkeydown = e => {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    farkKutu.onclick();
+                };
+            }
+            /* İlk çizim kapalı görünümle; önceki kartta açık bırakıldıysa
+               kart sayfaya eklenince yeniden açılır. */
+            const onceAcik = PF_SUZGEC.fark;
+            suzgecUygula(false);
+            PF_SUZGEC.fark = onceAcik;
             kartHazir.push(() => { if (PF_SUZGEC.fark) suzgecUygula(true); });
         }
         if (kararModu && dmKullanildi)
