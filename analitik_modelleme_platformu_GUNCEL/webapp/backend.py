@@ -3178,10 +3178,27 @@ def profil_asama_endpoint():
                 and acik.get("karar_bekliyor")):
             return jsonify({"tamam": False,
                             "hata": "Veri profili kartı karar beklemiyor."})
-        gecis = istek.get("gecis") if isinstance(istek.get("gecis"), dict) else {}
+        if not isinstance(istek.get("gecis"), dict):
+            return jsonify({"tamam": False,
+                            "hata": "Aşama isteği anlaşılamadı; hiçbir şey değiştirilmedi."})
+        gecis = istek["gecis"]
+        damga = durum.get("_son_islem")
         kart, hata = akis.profil_asama_gecisi(durum, gecis)
         if hata or not kart:
             return jsonify({"tamam": False, "hata": hata or "Aşama açılamadı."})
+        # Eski karttan gelen istek: hicbir sey degismedi, guncel kart doner.
+        # Uyari yalniz bu yanitta gider, kayitli karta yazilmaz.
+        uyari = kart.pop("asama_uyari", None) if isinstance(kart, dict) else None
+        if uyari:
+            return jsonify({"tamam": True, "secim_alani": kart, "uyari": uyari})
+        # SONRAKI ASAMA ACILIRKEN CALISMA DEGISMIS OLABILIR (dil modeli
+        # kararlari bir dakikayi bulur): ayni dugmeye ikinci kez basilmis,
+        # Geri Dön denmis ya da baska sekmede islem yapilmis olabilir. Eski
+        # durumu yazmak o islemi geri alirdi; boyleyse hicbir sey yazilmaz.
+        if _durum_al(anahtar).get("_son_islem") != damga:
+            return jsonify({"tamam": False,
+                            "hata": "Çalışma bu sırada başka bir işlemle değişti; aşama "
+                                    "geçişi kaydedilmedi. Düğmeye yeniden basın."})
         durum["_secim_alani"] = kart
         # Onaylananlar ve cikarilanlar deftere (dosya yazilamazsa asama yine acilir).
         try:

@@ -1263,12 +1263,43 @@ def profil_asama_kaydet(durum, govde, onay=True):
 def profil_asama_gecisi(durum, govde, butce=None):
     """Asama degistirir. govde["yon"]: "ileri" (acik asama onaylanir,
     sonraki acilir) ya da "geri" (secimler kaydedilir ama onaylanmis
-    sayilmaz, onceki asama acilir). Doner: (kart, hata)."""
+    sayilmaz, onceki asama acilir). Doner: (kart, hata). Istek eski bir
+    karttan geliyorsa (govde["asama"] acik asama degil) hicbir sey
+    degismez; donen kartta "asama_uyari" bulunur."""
     p = durum.get("profil") or {}
     if not profil_asamali(p) or not isinstance(p.get("profil_ek"), dict) or profil_eski_mi(durum):
         return None, "Profil aşamalı düzende değil; 02.1.1 adımını onaylayıp profili yeniden çıkarın."
     no = profil_asamasi(p)
-    yon = str((govde or {}).get("yon") or "ileri")
+    # ESKI KART DENETIMI. Kart hangi asamayi gosterdigini gonderir
+    # (govde["asama"]). Sunucudaki acik asama baskaysa istek ESKI bir
+    # karttan geliyordur: onceki istegin yaniti yolda kaybolmus ve dugmeye
+    # yeniden basilmis, sayfa baska sekmede ilerlemis olabilir. O zaman
+    # HICBIR SEY KAYDEDILMEZ ve asama degismez; guncel asamanin karti
+    # uyariyla doner. Denetim olmasa eski kartin secimleri (baska asamanin
+    # kolonlari) acik asamaya yazilir, o asamanin butun kolonlari "tut"
+    # olur ve kullanicinin gormedigi asama onaylanmis sayilirdi.
+    # "asama" hic yoksa (eski on yuz) denetim yapilmaz.
+    if isinstance(govde, dict) and govde.get("asama") is not None:
+        try:
+            gelen = int(govde.get("asama"))
+        except (TypeError, ValueError):
+            gelen = 0
+        if gelen != no:
+            kart = profil_karti(durum, karar=True)
+            if isinstance(kart, dict):
+                kart["asama_uyari"] = (
+                    "Bu kart sunucudaki açık aşamayla eşleşmiyordu (kart: %s, açık aşama: Aşama %d). "
+                    "Bu istekte hiçbir seçim kaydedilmedi ve aşama değişmedi; açık aşamanın güncel kartı gösteriliyor."
+                    % (("Aşama %d" % gelen) if 1 <= gelen <= ASAMA_SAYISI else "tanınmayan aşama", no))
+            return kart, None
+    # Bozuk istek hicbir seyi degistirmez: yon yalniz "ileri" / "geri"
+    # (yoksa "ileri"); "cikar" gonderildiyse liste olmalidir (liste degilse
+    # asama, gosterilen secimlerle sessizce onaylanirdi).
+    govde = govde if isinstance(govde, dict) else {}
+    yon = govde.get("yon")
+    yon = "ileri" if yon is None else yon
+    if yon not in ("ileri", "geri") or ("cikar" in govde and not isinstance(govde["cikar"], list)):
+        return None, "Aşama isteği anlaşılamadı; hiçbir şey değiştirilmedi. Sayfayı yenileyip yeniden deneyin."
     if yon == "geri":
         if no <= 1:
             return None, "İlk aşamadasınız."
