@@ -17392,7 +17392,7 @@ function pfAyniTablosu(gruplar, secim, oneri, kararModu, kart, cizenler, ciz, dm
         bt.appendChild(btd);
         itb.appendChild(bt);
         g.uyeler.forEach(u => {
-            const r = elYap("tr", "pf-ayni-uye");
+            const r = elYap("tr", "pf-ayni-uye" + (farkli ? " pf-kay-farkli" : ""));
             r.appendChild(elYap("td", "pf-kolon-ad", u.ad));
             /* Üyenin öteki kontrollerdeki durumu: kodun önerisi buna göre
                sıralandı (başka yerde çıkarılan seçilmez, az düzeltme
@@ -17585,11 +17585,16 @@ const PF_DEVAM = { durdu: false, bosTur: 0, hata: "", ucakta: 0 };
 /* 02.1.2 AŞAMA GEÇİŞİ: yanıtı beklenen /profil_asama isteği var mı (çift
    tıklama ve iki isteğin üst üste binmesi önlenir). */
 const PF_ASAMA = { ucakta: false };
+/* 02.1.2 SÜZGEÇ: "yalnız kod ile dil modelinin ayrıştığı bulgular". Kart
+   kararlar alındıkça ve aşama değiştikçe yeniden çizilir; süzgeç açıksa
+   yeni kartta da açık gelir. */
+const PF_SUZGEC = { fark: false };
 function profilKartiEkle(alan, blok, devamdan) {
     const kart = elYap("div", "secim-kart pf-kart");
     const kararModu = !!alan.karar_bekliyor && !(blok && blok.kilit);
     if (!devamdan) { PF_DEVAM.durdu = false; PF_DEVAM.bosTur = 0; PF_DEVAM.hata = ""; }
     const kartHazir = [];      // kart sayfaya eklendikten sonra çalışacaklar
+    const farkAcicilar = [];   // süzgeç açılınca: kod ile dil modelinin ayrıştığı kontrolleri açar
 
     /* Karar durumu: kolon -> "tut" | "cikar". Bir kolon iki karar
        kontrolünde birden geçebilir; iki satır aynı kararı gösterir. */
@@ -17648,7 +17653,7 @@ function profilKartiEkle(alan, blok, devamdan) {
         "Bulgular ve Kararlar beş aşamadır: 1) Kolon Kullanılabilir mi, 2) Kolon Güvenilir mi, 3) Aynı Bilgiyi Taşıyan Kolonlar, 4) Düzeltmeler, 5) Satırlar. Kontrollerin hepsi profil çıkarılırken bir kez hesaplanır; kararlar aşama aşama verilir. Bir aşamayı onaylayınca o aşamada çıkan kolonlar sonraki aşamalara girmez: onlar için yeniden karar sorulmaz, dil modeline de sorulmaz. Birbirinin aynısı kolon grupları üçüncü aşamada, kalan kolonlarla kurulur. «Önceki Aşama» ile geri dönüp kararı değiştirebilirsiniz; o zaman sonraki aşamalar yeniden onaylanır. Adım son aşama onaylanınca tamamlanır. Her aşama onaylandıkça değişken defteri (degisken_defteri.json) güncellenir.",
         "Kart nasıl okunur: Kontroller duruma göre kesimlere ayrılır (seçiminizi bekleyenler üstte; sonra kendiliğinden üretime girmeyenler, bilgi için gösterilenler, bulgu çıkmayanlar ve uygulanmayanlar). Her kontrol tek satırdır: bulunan, ne olacağı ve kararı kimin verdiği. Satırı açınca kontrolün her kuralı kendi kutusunda durur; kutunun başında kuralın adı, kaç bulgu olduğu ve ne olacağı yazar, «Bu kural neye bakar?» ölçütü ve örneği açar. Tablo o kutunun içindedir.",
         "İki kaynak ayrı sütundadır. «Kodun Önerisi»: kod kolonun yalnız sayılarına bakar (bulgu, hedef oranı) ve kendi gerekçesini yazar. «Dil Modelinin Kararı»: dil modeli kolonun anlamına, takıldığı kurala ve kodun bulgusuna birlikte bakar, kendi gerekçesini yazar; seçili gelen budur ve kodla aynı mı farklı mı yanında yazar. Seçili olan hücre çerçevelidir; öteki hücredeki «Bunu seç» seçimi ona çevirir. «Seçiminiz» sütununda seçimi elle de değiştirirsiniz; altında seçimin hangi kaynaktan geldiği yazar. Dil modelinden karar alınamayan bulguda kodun önerisi seçilidir. Çok bulgulu tabloda kararlar birkaç istekte alınır: kart, karar alınmayan bulgu kaldıkça kendiliğinden sormaya devam eder ve her seferinde yenilenir; bu sürerken seçim ve onay kapalıdır, «Durdur» ile durdurabilir, «Kalanları Dil Modeline Sor» ile sürdürebilirsiniz.",
-        "Tek tıkla toplu seçim: Karar Özeti kutusundaki «Dil Modelinin Kararlarını Seç» ve «Kodun Önerilerini Seç» düğmeleri bütün kurallara, her kuralın kutusundaki aynı düğmeler yalnız o kurala uygulanır; sonra tek tek değiştirebilirsiniz. Kuralda iki kaynak ayrışıyorsa «Yalnız kod ile dil modelinin ayrıştığı satırları göster» kutusu tabloyu o satırlara indirir. Satır kurallarında da (Tekrar Eden Satır, Setlerde Ortak Kayıt) kararı dil modeli verir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
+        "Tek tıkla toplu seçim: Karar Özeti kutusundaki «Dil Modelinin Kararlarını Seç» ve «Kodun Önerilerini Seç» düğmeleri bütün kurallara, her kuralın kutusundaki aynı düğmeler yalnız o kurala uygulanır; sonra tek tek değiştirebilirsiniz. Karar Özeti kutusundaki «Yalnız kod ile dil modelinin ayrıştığı bulguları göster» süzgeci kartın tamamını o bulgulara indirir: ayrışma olmayan satırlar, kurallar ve kontroller gizlenir; seçimleri değişmez. Satır kurallarında da (Tekrar Eden Satır, Setlerde Ortak Kayıt) kararı dil modeli verir. Bir kolon birden çok kuralda yakalandıysa Tut ya da Çıkar kararı kolon içindir: bir yerde değiştirdiğinizde öteki satırlarda da değişir. Profil yeniden çıkarılırsa yalnız öneriden farklı seçtikleriniz korunur, gerisi yeni öneriyi alır.",
         "Üretime girmeyen kolon düzeltilebiliyorsa çözüm önerilir: çok sayıda değerli kategori gruplanır, kod yapısındaki değerler ilk karakterleriyle gruplanır, çok boş kolondan dolu mu bayrağı, serbest metinden sözcük, skor ve konu kolonları üretilir. Seçtiğiniz çözümün ürettiği yeni kolon değişken üretimine girer, ham kolon girmez. Çözüm yoksa ya da Çıkar seçilirse kolon kullanılmaz.",
         disariMetni ? "İncelemeye alınmayanlar: " + disariMetni + "." : "",
         alan.kayit ? "Profil tablosunun tamamı: " + alan.kayit : ""
@@ -18112,6 +18117,32 @@ function profilKartiEkle(alan, blok, devamdan) {
             kartHazir.push(() => (kendiliginden ? baslat() : dur(PF_DEVAM.hata
                 || (PF_DEVAM.bosTur >= 2 ? "Dil modeli son iki istekte yeni karar vermedi." : ""))));
         }
+        /* TEK SÜZGEÇ, EN ÜSTTE: "yalnız kod ile dil modelinin ayrıştığı
+           bulgular". Açıkken kartın tamamında yalnız ayrışan satırlar ve
+           gruplar kalır; ayrışma olmayan kural kutuları, kontroller ve kesim
+           başlıkları gizlenir, ayrışma olan kontroller açılır. Gizlenen
+           bulguların seçimi değişmez ve onayda yine gönderilir. Önceden
+           yalnız çok satırlı, ayrışma olan kuralın içinde ayrı ayrı vardı. */
+        if (dmKullanildi && kartFark > 0) {
+            const sz = elYap("div", "pf-suzgec");
+            const et = elYap("label", "pf-yalniz-fark-sec");
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            et.append(cb, elYap("span", "", "Yalnız kod ile dil modelinin ayrıştığı " + ftBinlik(kartFark) + " bulguyu göster"));
+            const ipucu = elYap("span", "pf-suzgec-ipucu", "Öteki bulgular gizli; seçimleri değişmedi, onayda onlar da gönderilir.");
+            sz.append(et, ipucu);
+            oz.appendChild(sz);
+            const suzgecUygula = acik => {
+                PF_SUZGEC.fark = !!acik;
+                cb.checked = !!acik;
+                kart.classList.toggle("pf-yalniz-fark", !!acik);
+                ipucu.hidden = !acik;
+                if (acik) farkAcicilar.forEach(f => f());
+            };
+            cb.onchange = () => suzgecUygula(cb.checked);
+            ipucu.hidden = true;
+            kartHazir.push(() => { if (PF_SUZGEC.fark) suzgecUygula(true); });
+        }
         if (kararModu && dmKullanildi)
             oz.appendChild(topluDugmeler("Bütün kurallarda tek tıkla:", () => hepsiTopluSec("dm"), () => hepsiTopluSec("kod"), kartFark));
         const farkSatir = elYap("div", "pf-oneri-fark");
@@ -18475,7 +18506,7 @@ function profilKartiEkle(alan, blok, devamdan) {
         const uBirim = u.birim || k.birim || "kolon";
         const satirK = uBirim === "satır";
         const uN = uGrp.length || uKol.length;
-        const kk = elYap("div", "pf-kural-kutu" + (uN ? "" : " bos"));
+        const kk = elYap("div", "pf-kural-kutu" + (uN ? "" : " bos") + (uyeFarkSayisi(u) ? "" : " pf-farksiz"));
         const bas = elYap("div", "pf-kural-bas pf-uye-baslik");
         bas.appendChild(elYap("span", "pf-kural-etiket", toplam > 1 ? "Kural " + sira + "/" + toplam : "Kural"));
         bas.appendChild(elYap("b", "pf-kural-ad", u.ad));
@@ -18676,15 +18707,6 @@ function profilKartiEkle(alan, blok, devamdan) {
             itb.appendChild(r);
         });
         it.appendChild(itb);
-        /* Yalnız kod ile dil modelinin ayrıştığı satırlar (çok satırlı kuralda). */
-        if (ikiSutun && fark > 0 && uKol.length > 1) {
-            const et = elYap("label", "pf-yalniz-fark-sec");
-            const cb = document.createElement("input");
-            cb.type = "checkbox";
-            cb.onchange = () => it.classList.toggle("pf-yalniz-fark", cb.checked);
-            et.append(cb, elYap("span", "", "Yalnız kod ile dil modelinin ayrıştığı " + ftBinlik(fark) + " satırı göster"));
-            arac.appendChild(et);
-        }
         if (arac.childNodes.length) kk.appendChild(arac);
         const kap = elYap("div", "pf-ic-kap" + (secimli ? " pf-karar-kap" : ""));
         kap.appendChild(it);
@@ -18824,12 +18846,16 @@ function profilKartiEkle(alan, blok, devamdan) {
         };
         /* Karar beklerken seçim isteyen kontrol açık gelir. */
         if (kararModu && secimVar) ac(true);
+        /* Süzgeç için: kod ile dil modeli bu kontrolde ayrışıyor mu. */
+        if (say.fark) farkAcicilar.push(() => ac(true));
+        else { satir.classList.add("pf-farksiz"); detay.classList.add("pf-farksiz"); }
         (kesimSatir[kesim] = kesimSatir[kesim] || []).push([satir, detay]);
     });
     KESIMLER.forEach(([a, ad, not]) => {
         const liste = kesimSatir[a] || [];
         if (!liste.length) return;
-        const ks = elYap("tr", "pf-kesim pf-kesim-" + a);
+        const ks = elYap("tr", "pf-kesim pf-kesim-" + a
+            + (liste.some(([s_]) => !s_.classList.contains("pf-farksiz")) ? "" : " pf-farksiz"));
         const ktd = elYap("td");
         ktd.colSpan = 5;
         ktd.appendChild(elYap("b", "pf-kesim-ad", ad));

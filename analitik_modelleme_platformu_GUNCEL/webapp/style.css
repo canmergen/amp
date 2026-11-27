@@ -6198,7 +6198,17 @@ details.pf-dokum > summary:focus-visible { outline: 2px solid var(--kirmizi-halk
 .pf-detay .pf-kural-arac .pf-toplu { margin: 0; padding: 2px 0; }
 .pf-yalniz-fark-sec { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0; }
 .pf-yalniz-fark-sec input { width: 16px; height: 16px; accent-color: var(--amber); cursor: pointer; }
-.dg-tablo.pf-karar-tablo.pf-yalniz-fark > tbody > tr:not(.pf-kay-farkli) { display: none; }
+/* Üstteki süzgeç açıkken (kartta pf-yalniz-fark): yalnız kod ile dil
+   modelinin ayrıştığı satırlar ve gruplar; ayrışma olmayan kural kutusu,
+   kontrol ve kesim başlığı gizli. */
+.pf-kart.pf-yalniz-fark .pf-karar-tablo > tbody > tr:not(.pf-kay-farkli),
+.pf-kart.pf-yalniz-fark .pf-ayni-tablo > tbody > tr:not(.pf-kay-farkli),
+.pf-kart.pf-yalniz-fark .pf-farksiz { display: none !important; }
+.pf-suzgec { display: flex; flex-wrap: wrap; align-items: center; gap: var(--b-1) var(--b-4); }
+.pf-suzgec .pf-yalniz-fark-sec { font-weight: var(--fw-kalin); }
+.pf-suzgec-ipucu { color: var(--metin-tamam); }
+.pf-suzgec-ipucu[hidden] { display: none; }
+.pf-kart.pf-yalniz-fark .pf-suzgec { padding: var(--b-2) var(--b-3); border-radius: var(--r-kucuk); background: color-mix(in srgb, var(--amber) 10%, var(--yuzey)); }
 
 /* Karar tablosu: Kodun Önerisi ve Dil Modelinin Kararı ayrı sütunlarda */
 .pf-kural-kutu .pf-ic-kap.pf-karar-kap, .pf-kural-kutu .pf-ic-kap.pf-ayni-kap { max-height: min(72vh, 760px); }
